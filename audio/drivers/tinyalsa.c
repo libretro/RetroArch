@@ -1387,6 +1387,8 @@ restart:
    return x.result;
 }
 
+#if 0
+/* Unused for now */
 /** Starts a PCM.
  * If the PCM has not been prepared,
  * it is prepared in this function.
@@ -1412,9 +1414,6 @@ static int pcm_start(struct pcm *pcm)
    pcm->running = 1;
    return 0;
 }
-
-#if 0
-/* Unused for now */
 
 /** Reads audio samples from PCM.
  * If the PCM has not been started, it is started in this function.
@@ -1716,6 +1715,22 @@ static int pcm_stop(struct pcm *pcm)
 
    pcm->prepared = 0;
    pcm->running = 0;
+   return 0;
+}
+
+static int pcm_can_pause(struct pcm *pcm)
+{
+   if (ioctl(pcm->fd, SNDRV_PCM_INFO_PAUSE) < 0)
+      return 0;
+
+   return 1;
+}
+
+static int pcm_pause(struct pcm *pcm, int enable)
+{
+   if (ioctl(pcm->fd, SNDRV_PCM_IOCTL_PAUSE, enable) < 0)
+      return -1;
+
    return 0;
 }
 
@@ -2203,10 +2218,10 @@ static void * tinyalsa_init(const char *devicestr, unsigned rate,
                               PCM_FORMAT_S16_LE : PCM_FORMAT_S16_BE;
    config.channels          = 2;
    config.period_size       = 1024;
-   config.period_count      = 2;
-   config.start_threshold   = 1024;
-   config.stop_threshold    = 1024 * 2;
-   config.silence_threshold = 1024 * 2;
+   config.period_count      = 4;
+   config.start_threshold   = config.period_size;
+   config.stop_threshold    = 0;
+   config.silence_threshold = 0;
 
    tinyalsa->pcm = pcm_open(card, device, PCM_OUT, &config);
 
@@ -2220,6 +2235,11 @@ static void * tinyalsa_init(const char *devicestr, unsigned rate,
       RARCH_ERR("[TINYALSA]: Cannot open audio device.\n");
       goto error;
    }
+
+   if (pcm_can_pause(tinyalsa->pcm))
+      tinyalsa->can_pause = true;
+
+   RARCH_LOG("[TINYALSA]: Can pause: %s.\n", tinyalsa->can_pause ? "yes" : "no");
 
    buffer_size           = pcm_get_buffer_size(tinyalsa->pcm);
    tinyalsa->buffer_size = pcm_frames_to_bytes(tinyalsa->pcm, buffer_size);
@@ -2238,7 +2258,6 @@ static void * tinyalsa_init(const char *devicestr, unsigned rate,
    latency               -= (unsigned int)initial_latency;
    buffer_size           += latency * frames_per_ms;
 
-   tinyalsa->can_pause   = true;
    tinyalsa->has_float   = false;
 
    RARCH_LOG("[TINYALSA]: Audio rate: %uHz.\n", config.rate);
@@ -2308,7 +2327,7 @@ tinyalsa_stop(void *data)
 
 	if (tinyalsa->can_pause && !tinyalsa->is_paused)
    {
-		int ret = pcm_start(tinyalsa->pcm);
+		int ret = pcm_pause(tinyalsa->pcm, 1);
 		if (ret < 0)
 			return false;
 
@@ -2336,7 +2355,7 @@ tinyalsa_start(void *data, bool is_shutdown)
 
 	if (tinyalsa->can_pause && tinyalsa->is_paused)
    {
-		int ret = pcm_stop(tinyalsa->pcm);
+		int ret = pcm_pause(tinyalsa->pcm, 0);
 
 		if (ret < 0)
       {
