@@ -125,7 +125,7 @@ bool dinput_init_context(void)
    return true;
 
 error:
-   RARCH_ERR("[DINPUT] Failed to initialize DirectInput.\n");
+   RARCH_ERR("[DINPUT]: Failed to initialize DirectInput.\n");
    return false;
 }
 
@@ -137,7 +137,7 @@ static void *dinput_init(const char *joypad_driver)
 
    if (!dinput_init_context())
    {
-      RARCH_ERR("[DINPUT] Failed to start DirectInput driver.\n");
+      RARCH_ERR("[DINPUT]: Failed to start DirectInput driver.\n");
       return NULL;
    }
 
@@ -151,24 +151,24 @@ static void *dinput_init(const char *joypad_driver)
 #ifdef __cplusplus
    if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx, GUID_SysKeyboard, &di->keyboard, NULL)))
    {
-      RARCH_ERR("[DINPUT] Failed to create keyboard device.\n");
+      RARCH_ERR("[DINPUT]: Failed to create keyboard device.\n");
       di->keyboard = NULL;
    }
 
    if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx, GUID_SysMouse, &di->mouse, NULL)))
    {
-      RARCH_ERR("[DINPUT] Failed to create mouse device.\n");
+      RARCH_ERR("[DINPUT]: Failed to create mouse device.\n");
       di->mouse = NULL;
    }
 #else
    if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx, &GUID_SysKeyboard, &di->keyboard, NULL)))
    {
-      RARCH_ERR("[DINPUT] Failed to create keyboard device.\n");
+      RARCH_ERR("[DINPUT]: Failed to create keyboard device.\n");
       di->keyboard = NULL;
    }
    if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx, &GUID_SysMouse, &di->mouse, NULL)))
    {
-      RARCH_ERR("[DINPUT] Failed to create mouse device.\n");
+      RARCH_ERR("[DINPUT]: Failed to create mouse device.\n");
       di->mouse = NULL;
    }
 #endif
@@ -628,7 +628,7 @@ bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lPa
 
             if (!new_pointer)
             {
-               RARCH_ERR("[DINPUT] dinput_handle_message: pointer allocation in WM_POINTERDOWN failed.\n");
+               RARCH_ERR("[DINPUT]: dinput_handle_message: pointer allocation in WM_POINTERDOWN failed.\n");
                return false;
             }
 

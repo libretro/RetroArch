@@ -423,7 +423,7 @@ void playlist_free(playlist_t *playlist)
    if (!playlist)
       return;
 
-   if (playlist->conf_path)
+   if (playlist->conf_path != NULL)
       free(playlist->conf_path);
 
    playlist->conf_path = NULL;
