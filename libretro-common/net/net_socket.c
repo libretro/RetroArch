@@ -68,6 +68,15 @@ error:
    return -1;
 }
 
+int socket_next(void **addrinfo)
+{
+   struct addrinfo *addr = (struct addrinfo*)*addrinfo;
+   if ((*addrinfo = addr = addr->ai_next))
+      return socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
+   else
+      return -1;
+}
+
 ssize_t socket_receive_all_nonblocking(int fd, bool *error,
       void *data_, size_t size)
 {

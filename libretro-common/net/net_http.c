@@ -120,28 +120,25 @@ void net_http_urlencode_full(char **dest, const char *source)
 static int net_http_new_socket(const char *domain, int port)
 {
    int ret;
-   struct addrinfo *addr = NULL;
+   struct addrinfo *addr = NULL, *next_addr = NULL;
    int fd                = socket_init(
          (void**)&addr, port, domain, SOCKET_TYPE_STREAM);
 
-   if (fd < 0)
-      return -1;
+   next_addr = addr;
+   while(fd >= 0)
+   {
+      ret = socket_connect(fd, (void*)next_addr, true);
+      if (ret >= 0 && socket_nonblock(fd))
+         break;
 
-   ret = socket_connect(fd, (void*)addr, true);
+      socket_close(fd);
+      fd = socket_next((void**)&next_addr);
+   }
 
-   freeaddrinfo_retro(addr);
-
-   if (ret < 0)
-      goto error;
-
-   if (!socket_nonblock(fd))
-      goto error;
+   if (addr)
+      freeaddrinfo_retro(addr);
 
    return fd;
-
-error:
-   socket_close(fd);
-   return -1;
 }
 
 static void net_http_send_str(int fd, bool *error, const char *text)
