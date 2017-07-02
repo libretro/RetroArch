@@ -386,8 +386,6 @@ end:
 static void *winraw_init(const char *joypad_driver)
 {
    bool r;
-   video_viewport_t dst_vid_info;
-   struct retro_system_av_info *src_vid_info;
    winraw_input_t *wr = (winraw_input_t *)calloc(1, sizeof(winraw_input_t));
    g_keyboard         = (winraw_keyboard_t*)calloc(1, sizeof(winraw_keyboard_t));
 
