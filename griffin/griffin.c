@@ -136,12 +136,12 @@ ACHIEVEMENTS
 #include "../libretro-common/formats/json/jsonsax.c"
 #include "../network/net_http_special.c"
 #include "../cheevos/cheevos.c"
-#include "../cheevos/hunter/gl3w.c"
-#include "../cheevos/hunter/imgui_impl_glfw_gl3.cpp"
-#include "../cheevos/hunter/imgui_draw.cpp"
-#include "../cheevos/hunter/imgui_demo.cpp"
-#include "../cheevos/hunter/imgui.cpp"
-#include "../cheevos/hunter/hunter.cpp"
+#include "../debug/gl3w.c"
+#include "../debug/imgui_impl_glfw_gl3.cpp"
+#include "../debug/imgui_draw.cpp"
+#include "../debug/imgui_demo.cpp"
+#include "../debug/imgui.cpp"
+#include "../debug/main.cpp"
 #endif
 
 /*============================================================
