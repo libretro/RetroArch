@@ -2914,7 +2914,6 @@ static int cheevos_iterate(coro_t* coro)
          RARCH_ERR("CHEEVOS error loading achievements.\n");
          CORO_STOP();
       }
-   
 #endif
 
 #ifdef CHEEVOS_SAVE_JSON
@@ -2944,6 +2943,35 @@ static int cheevos_iterate(coro_t* coro)
        * Outputs: 
        */
       CORO_GOSUB(PLAYING);
+
+      if(SETTINGS->bools.cheevos_verbose_enable)
+      {
+         const cheevo_t* cheevo       = cheevos_locals.core.cheevos;
+         const cheevo_t* end          = cheevo + cheevos_locals.core.count;
+         int number_of_unlocked       = 0;
+         int mode;
+         char msg[256];
+
+         snprintf(msg, sizeof(msg), "RetroAchievements: logged in as \"%s\".",
+            SETTINGS->arrays.cheevos_username);
+         msg[sizeof(msg) - 1] = 0;
+         runloop_msg_queue_push(msg, 0, 3 * 60, false);
+
+         if(SETTINGS->bools.cheevos_hardcore_mode_enable)
+            mode = CHEEVOS_ACTIVE_HARDCORE;
+         else
+            mode = CHEEVOS_ACTIVE_SOFTCORE;
+
+         for(; cheevo < end; cheevo++)
+            if(cheevo->active & mode)
+               number_of_unlocked++;
+
+         snprintf(msg, sizeof(msg), "You have %d of %d achievements unlocked.",
+            number_of_unlocked, cheevos_locals.core.count);
+         msg[sizeof(msg) - 1] = 0;
+         runloop_msg_queue_push(msg, 0, 6 * 60, false);
+      }
+
       CORO_STOP();
 
    /**************************************************************************

@@ -158,6 +158,7 @@ typedef struct settings
       bool cheevos_enable;
       bool cheevos_test_unofficial;
       bool cheevos_hardcore_mode_enable;
+      bool cheevos_verbose_enable;
 #endif
 
       /* Camera */
