@@ -1399,7 +1399,7 @@ ifeq ($(HAVE_NETWORKING), 1)
    endif
 
    ifneq ($(findstring Win32,$(OS)),)
-      LIBS += -lws2_32 -liphlpapi
+      LIBS += -lws2_32 -liphlpapi -lglfw3 -lgdi32 -lopengl32 -limm32
    endif
 
    # Netplay
@@ -1420,6 +1420,12 @@ ifeq ($(HAVE_NETWORKING), 1)
       ifeq ($(HAVE_THREADS), 1)
          DEFINES += -DHAVE_CHEEVOS
          OBJ += cheevos/cheevos.o \
+					 cheevos/hunter/gl3w.o \
+					 cheevos/hunter/imgui.o \
+					 cheevos/hunter/imgui_demo.o \
+					 cheevos/hunter/imgui_draw.o \
+					 cheevos/hunter/imgui_impl_glfw_gl3.o \
+					 cheevos/hunter/hunter.o \
 					 $(LIBRETRO_COMM_DIR)/utils/md5.o
       endif
    endif

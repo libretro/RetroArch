@@ -48,6 +48,8 @@
 #include "../tasks/tasks_internal.h"
 
 #include "../verbosity.h"
+#include "hunter/hunter.h"
+#include <rthreads/rthreads.h>
 
 /* Define this macro to prevent cheevos from being deactivated. */
 #undef CHEEVOS_DONT_DEACTIVATE
@@ -361,6 +363,24 @@ static cheevos_locals_t cheevos_locals =
 bool cheevos_loaded      = false;
 int  cheats_are_enabled  = 0;
 int  cheats_were_enabled = 0;
+
+typedef struct hunter
+{
+   void *empty;
+   volatile bool quit;
+   slock_t *lock;
+   sthread_t *thread;
+} hunter_t;
+
+static void hunter_thread(void *data)
+{
+   hunter_t *handle = (hunter_t*)data;
+   hunter_init();
+   if(hunter_inited)
+   {
+      hunter_draw();
+   }
+}
 
 /*****************************************************************************
 Supporting functions.
@@ -3582,7 +3602,7 @@ bool cheevos_load(const void *data)
    retro_task_t *task;
    coro_t *coro;
    const struct retro_game_info *info;
-   
+
    cheevos_loaded = 0;
 
    if (!cheevos_locals.core_supports || !data)
@@ -3637,7 +3657,19 @@ bool cheevos_load(const void *data)
    task->user_data = NULL;
    task->progress  = 0;
    task->title     = NULL;
-   
+
    task_queue_push(task);
+
+   hunter_t *handle = (hunter_t*)calloc(1, sizeof(*handle));
+
+   handle->lock         = slock_new();
+   handle->thread       = sthread_create(hunter_thread, handle);
+   if (!handle->thread)
+   {
+      slock_free(handle->lock);
+      free(handle);
+      return NULL;
+   }
+
    return true;
 }
