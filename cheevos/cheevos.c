@@ -370,17 +370,17 @@ typedef struct hunter
    volatile bool quit;
    slock_t *lock;
    sthread_t *thread;
+   bool deinit;
 } hunter_t;
 
 static void hunter_thread(void *data)
 {
    hunter_t *handle = (hunter_t*)data;
    hunter_init();
-   if(hunter_inited)
-   {
-      hunter_draw();
-   }
+   hunter_draw(&(handle->deinit));
 }
+
+hunter_t *handle;
 
 /*****************************************************************************
 Supporting functions.
@@ -2640,6 +2640,9 @@ bool cheevos_unload(void)
 
    cheevos_loaded = 0;
 
+   slock_lock(handle->lock);
+   handle->deinit = true;
+   slock_unlock(handle->lock);
    return true;
 }
 
@@ -3660,7 +3663,7 @@ bool cheevos_load(const void *data)
 
    task_queue_push(task);
 
-   hunter_t *handle = (hunter_t*)calloc(1, sizeof(*handle));
+   handle = (hunter_t*)calloc(1, sizeof(*handle));
 
    handle->lock         = slock_new();
    handle->thread       = sthread_create(hunter_thread, handle);

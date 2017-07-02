@@ -9,8 +9,7 @@
 
 #include <GLFW/glfw3.h>
 
-EXTERNC bool hunter_inited;
 EXTERNC void hunter_init();
-EXTERNC void hunter_draw();
+EXTERNC void hunter_draw(bool* deinit);
 
 #endif // HUNTER_H
