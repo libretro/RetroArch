@@ -1718,12 +1718,14 @@ static int pcm_stop(struct pcm *pcm)
    return 0;
 }
 
-static int pcm_can_pause(struct pcm *pcm)
+static int pcm_params_can_pause(const struct pcm_params *pcm_params)
 {
-   if (ioctl(pcm->fd, SNDRV_PCM_INFO_PAUSE) < 0)
+   const struct snd_pcm_hw_params *params = (const struct snd_pcm_hw_params *)pcm_params;
+
+   if (!params)
       return 0;
 
-   return 1;
+   return (params->info & SNDRV_PCM_INFO_PAUSE) ? 1 : 0;
 }
 
 static int pcm_pause(struct pcm *pcm, int enable)
@@ -2191,6 +2193,9 @@ static void * tinyalsa_init(const char *devicestr, unsigned rate,
       goto error;
    }
 
+   if (pcm_params_can_pause(tinyalsa->params))
+      tinyalsa->can_pause = true;
+
    min_rate = pcm_params_get_min(tinyalsa->params, PCM_PARAM_RATE);
    max_rate = pcm_params_get_max(tinyalsa->params, PCM_PARAM_RATE);
 
@@ -2201,13 +2206,9 @@ static void * tinyalsa_init(const char *devicestr, unsigned rate,
       RARCH_WARN("[TINYALSA]: Trying the default rate or else max rate.\n");
       
       if (max_rate >= 48000)
-      {
          rate = 48000;
-      }
       else 
-      {
          rate = max_rate;
-      }
    }
 
    if (orig_rate != rate)
@@ -2236,11 +2237,6 @@ static void * tinyalsa_init(const char *devicestr, unsigned rate,
       goto error;
    }
 
-   if (pcm_can_pause(tinyalsa->pcm))
-      tinyalsa->can_pause = true;
-
-   RARCH_LOG("[TINYALSA]: Can pause: %s.\n", tinyalsa->can_pause ? "yes" : "no");
-
    buffer_size           = pcm_get_buffer_size(tinyalsa->pcm);
    tinyalsa->buffer_size = pcm_frames_to_bytes(tinyalsa->pcm, buffer_size);
    tinyalsa->frame_bits  = pcm_format_to_bits(config.format) * 2;
@@ -2260,18 +2256,26 @@ static void * tinyalsa_init(const char *devicestr, unsigned rate,
 
    tinyalsa->has_float   = false;
 
+   RARCH_LOG("[TINYALSA]: Can pause: %s.\n", tinyalsa->can_pause ? "yes" : "no");
    RARCH_LOG("[TINYALSA]: Audio rate: %uHz.\n", config.rate);
    RARCH_LOG("[TINYALSA]: Buffer size: %u frames.\n", buffer_size);
    RARCH_LOG("[TINYALSA]: Buffer size: %u bytes.\n", tinyalsa->buffer_size);
    RARCH_LOG("[TINYALSA]: Frame  size: %u bytes.\n", tinyalsa->frame_bits / 8);
    RARCH_LOG("[TINYALSA]: Latency: %ums.\n", buffer_size * 1000 / (rate * 4));
 
+   pcm_params_free(tinyalsa->params);
+
    return tinyalsa;
 
 error:
    RARCH_ERR("[TINYALSA]: Failed to initialize tinyalsa driver.\n");
+
+   if (tinyalsa->params)
+      pcm_params_free(tinyalsa->params);
+
    if (tinyalsa)
       free(tinyalsa);
+
    return NULL;
 }
 
@@ -2388,8 +2392,6 @@ static void tinyalsa_free(void *data)
 
    if (tinyalsa)
    {
-      pcm_params_free(tinyalsa->params);
-
       if (tinyalsa->pcm)
          pcm_close(tinyalsa->pcm);
 
