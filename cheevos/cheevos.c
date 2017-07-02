@@ -49,7 +49,7 @@
 #include "../tasks/tasks_internal.h"
 
 #include "../verbosity.h"
-#include "hunter/hunter.h"
+#include "../debug/main.h"
 #include <rthreads/rthreads.h>
 
 /* Define this macro to prevent cheevos from being deactivated. */

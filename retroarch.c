@@ -67,7 +67,7 @@
 
 #ifdef HAVE_CHEEVOS
 #include "cheevos/cheevos.h"
-#include "cheevos/hunter/hunter.h"
+#include "debug/main.h"
 #endif
 
 #ifdef HAVE_NETWORKING
