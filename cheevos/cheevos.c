@@ -2952,11 +2952,6 @@ static int cheevos_iterate(coro_t* coro)
          int mode;
          char msg[256];
 
-         snprintf(msg, sizeof(msg), "RetroAchievements: logged in as \"%s\".",
-            SETTINGS->arrays.cheevos_username);
-         msg[sizeof(msg) - 1] = 0;
-         runloop_msg_queue_push(msg, 0, 3 * 60, false);
-
          if(SETTINGS->bools.cheevos_hardcore_mode_enable)
             mode = CHEEVOS_ACTIVE_HARDCORE;
          else
@@ -3293,7 +3288,16 @@ static int cheevos_iterate(coro_t* coro)
          free((void*)JSON);
 
          if (!res)
+         {
+            if(SETTINGS->bools.cheevos_verbose_enable)
+            {
+               char msg[256];
+               snprintf(msg, sizeof(msg), "RetroAchievements: logged in as \"%s\".", SETTINGS->arrays.cheevos_username);
+               msg[sizeof(msg) - 1] = 0;
+               runloop_msg_queue_push(msg, 0, 3 * 60, false);
+            }
             CORO_RET();
+         }
       }
 
       runloop_msg_queue_push("Retro Achievements login error.", 0, 5 * 60, false);
