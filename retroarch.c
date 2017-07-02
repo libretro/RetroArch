@@ -67,6 +67,7 @@
 
 #ifdef HAVE_CHEEVOS
 #include "cheevos/cheevos.h"
+#include "cheevos/hunter/hunter.h"
 #endif
 
 #ifdef HAVE_NETWORKING
@@ -2967,6 +2968,7 @@ void runloop_unset(enum runloop_action action)
  **/
 int runloop_iterate(unsigned *sleep_ms)
 {
+
    unsigned i;
    bool input_nonblock_state                    = input_driver_is_nonblock_state();
    settings_t *settings                         = config_get_ptr();
