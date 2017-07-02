@@ -35,25 +35,21 @@ void hunter_init()
 
    ImGui_ImplGlfwGL3_Init(hunter_window, true);
    clear_color = ImColor(114, 144, 154);
-
-   hunter_inited = true;
 }
 
-void hunter_draw()
+void hunter_draw(bool* deinit)
 {
 
-   while (!glfwWindowShouldClose(hunter_window))
+   while (*deinit == false)
    {
       glfwPollEvents();
       ImGui_ImplGlfwGL3_NewFrame();
 
       {
-         static float f = 0.0f;
          ImGui::Text("Hello, world!");
-         ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
          ImGui::ColorEdit3("clear color", (float*)&clear_color);
          if (ImGui::Button("Test Window")) show_test_window ^= 1;
-         ImGui::Text("%.3f ms/frame (%.1f FPS) frames %d", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate, frame);
+         ImGui::Text("frames %d", frame);
          frame ++;
         }
 
@@ -72,11 +68,10 @@ void hunter_draw()
          glfwSwapBuffers(hunter_window);
    }
 
+   ImGui_ImplGlfwGL3_Shutdown();
+   glfwTerminate();
+   hunter_window = NULL;
    return;
 }
 
-void hunter_deinit()
-{
-   ImGui_ImplGlfwGL3_Shutdown();
-   glfwTerminate();
-}
+
