@@ -437,6 +437,47 @@ OBJ += deps/libui/win32/alloc.o \
 		 deps/libui/win32/winutil.o
 endif
 
+ifneq ($(findstring Darwin,$(OS)),)
+OBJ += deps/libui/darwin/alloc.o \
+		 deps/libui/darwin/area.o \
+		 deps/libui/darwin/areaevents.o \
+		 deps/libui/darwin/autolayout.o \
+		 deps/libui/darwin/box.o \
+		 deps/libui/darwin/button.o \
+		 deps/libui/darwin/checkbox.o \
+		 deps/libui/darwin/colorbutton.o \
+		 deps/libui/darwin/combobox.o \
+		 deps/libui/darwin/control.o \
+		 deps/libui/darwin/datetimepicker.o \
+		 deps/libui/darwin/debug.o \
+		 deps/libui/darwin/draw.o \
+		 deps/libui/darwin/drawtext.o \
+		 deps/libui/darwin/editablecombo.o \
+		 deps/libui/darwin/entry.o \
+		 deps/libui/darwin/fontbutton.o \
+		 deps/libui/darwin/form.o \
+		 deps/libui/darwin/grid.o \
+		 deps/libui/darwin/group.o \
+		 deps/libui/darwin/image.o \
+		 deps/libui/darwin/label.o \
+		 deps/libui/darwin/main.o \
+		 deps/libui/darwin/map.o \
+		 deps/libui/darwin/menu.o \
+		 deps/libui/darwin/multilineentry.o \
+		 deps/libui/darwin/progressbar.o \
+		 deps/libui/darwin/radiobuttons.o \
+		 deps/libui/darwin/scrollview.o \
+		 deps/libui/darwin/separator.o \
+		 deps/libui/darwin/slider.o \
+		 deps/libui/darwin/spinbox.o \
+		 deps/libui/darwin/stddialogs.o \
+		 deps/libui/darwin/tab.o \
+		 deps/libui/darwin/text.o \
+		 deps/libui/darwin/util.o \
+		 deps/libui/darwin/window.o \
+		 deps/libui/darwin/winmoveresize.o
+endif
+
 OBJ += deps/libui/common/areaevents.o \
 		 deps/libui/common/control.o \
 		 deps/libui/common/debug.o \
