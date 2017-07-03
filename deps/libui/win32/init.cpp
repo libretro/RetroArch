@@ -158,10 +158,3 @@ void uiFreeInitError(const char *err)
 	if (*(err - 1) == '-')
 		uiFree((void *) (err - 1));
 }
-
-BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
-{
-	if (fdwReason == DLL_PROCESS_ATTACH)
-		hInstance = hinstDLL;
-	return TRUE;
-}
