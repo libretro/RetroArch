@@ -1,5 +1,6 @@
 // 22 may 2015
 #include "uipriv_windows.hpp"
+#Include "winextra.h"
 
 // TODO document all this is what we want
 // TODO do the same for font and color buttons
