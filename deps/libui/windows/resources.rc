@@ -1,0 +1,96 @@
+// 30 may 2015
+#include "winapi.hpp"
+#include "resources.hpp"
+
+// this is a UTF-8 file
+#pragma code_page(65001)
+
+// this is the Common Controls 6 manifest
+// we only define it in a shared build; static builds have to include the appropriate parts of the manifest in the output executable
+// LONGTERM set up the string values here
+#ifndef _UI_STATIC
+ISOLATIONAWARE_MANIFEST_RESOURCE_ID RT_MANIFEST "libui.manifest"
+#endif
+
+// this is the dialog template used by tab pages; see windows/tabpage.c for details
+rcTabPageDialog DIALOGEX 0, 0, 100, 100
+STYLE DS_CONTROL | WS_CHILD | WS_VISIBLE
+EXSTYLE WS_EX_CONTROLPARENT
+BEGIN
+	// nothing
+END
+
+// this is for our custom DirectWrite-based font dialog (see fontdialog.cpp)
+// this is based on the "New Font Dialog with Syslink" in Microsoft's font.dlg
+// LONGTERM look at localization
+// LONGTERM make it look tighter and nicer like the real one, including the actual heights of the font family and style comboboxes
+rcFontDialog DIALOGEX 13, 54, 243, 200
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU | DS_3DLOOK
+CAPTION "Font"
+FONT 9, "Segoe UI"
+BEGIN
+	LTEXT		"&Font:", -1, 7, 7, 98, 9
+	COMBOBOX	rcFontFamilyCombobox, 7, 16, 98, 76,
+		CBS_SIMPLE | CBS_AUTOHSCROLL | CBS_DISABLENOSCROLL |
+		CBS_SORT | WS_VSCROLL | WS_TABSTOP | CBS_HASSTRINGS
+
+	LTEXT		"Font st&yle:", -1, 114, 7, 74, 9
+	COMBOBOX	rcFontStyleCombobox, 114, 16, 74, 76,
+		CBS_SIMPLE | CBS_AUTOHSCROLL | CBS_DISABLENOSCROLL |
+		WS_VSCROLL | WS_TABSTOP | CBS_HASSTRINGS
+
+	LTEXT		"&Size:", -1, 198, 7, 36, 9
+	COMBOBOX	rcFontSizeCombobox, 198, 16, 36, 76,
+		CBS_SIMPLE | CBS_AUTOHSCROLL | CBS_DISABLENOSCROLL |
+		CBS_SORT | WS_VSCROLL | WS_TABSTOP | CBS_HASSTRINGS
+
+	GROUPBOX		"Sample", -1, 7, 97, 227, 70, WS_GROUP
+	CTEXT			"AaBbYyZz", rcFontSamplePlacement, 9, 106, 224, 60, SS_NOPREFIX | NOT WS_VISIBLE
+
+	DEFPUSHBUTTON	"OK", IDOK, 141, 181, 45, 14, WS_GROUP
+	PUSHBUTTON		"Cancel", IDCANCEL, 190, 181, 45, 14, WS_GROUP
+END
+
+rcColorDialog DIALOGEX 13, 54, 344, 209
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU | DS_3DLOOK
+CAPTION "Color"
+FONT 9, "Segoe UI"
+BEGIN
+	// this size should be big enough to get at least 256x256 on font sizes >= 8 pt
+	CTEXT		"AaBbYyZz", rcColorSVChooser, 7, 7, 195, 195, SS_NOPREFIX | SS_BLACKRECT
+
+	// width is the suggested slider height since this is vertical
+	CTEXT		"AaBbYyZz", rcColorHSlider, 206, 7, 15, 195, SS_NOPREFIX | SS_BLACKRECT
+
+	LTEXT		"Preview:", -1, 230, 7, 107, 9, SS_NOPREFIX
+	CTEXT		"AaBbYyZz", rcPreview, 230, 16, 107, 20, SS_NOPREFIX | SS_BLACKRECT
+
+	LTEXT		"Opacity:", -1, 230, 45, 107, 9, SS_NOPREFIX
+	CTEXT		"AaBbYyZz", rcOpacitySlider, 230, 54, 107, 15, SS_NOPREFIX | SS_BLACKRECT
+
+	LTEXT		"&H:", rcHLabel, 230, 81, 8, 8
+	EDITTEXT		rcH, 238, 78, 30, 14, ES_LEFT | ES_AUTOHSCROLL | WS_TABSTOP, WS_EX_CLIENTEDGE
+	LTEXT		"&S:", rcSLabel, 230, 95, 8, 8
+	EDITTEXT		rcS, 238, 92, 30, 14, ES_LEFT | ES_AUTOHSCROLL | WS_TABSTOP, WS_EX_CLIENTEDGE
+	LTEXT		"&V:", rcVLabel, 230, 109, 8, 8
+	EDITTEXT		rcV, 238, 106, 30, 14, ES_LEFT | ES_AUTOHSCROLL | WS_TABSTOP, WS_EX_CLIENTEDGE
+
+	LTEXT		"&R:", rcRLabel, 277, 81, 8, 8
+	EDITTEXT		rcRDouble, 285, 78, 30, 14, ES_LEFT | ES_AUTOHSCROLL | WS_TABSTOP, WS_EX_CLIENTEDGE
+	EDITTEXT		rcRInt, 315, 78, 20, 14, ES_LEFT | ES_AUTOHSCROLL | ES_NUMBER | WS_TABSTOP, WS_EX_CLIENTEDGE
+	LTEXT		"&G:", rcGLabel, 277, 95, 8, 8
+	EDITTEXT		rcGDouble, 285, 92, 30, 14, ES_LEFT | ES_AUTOHSCROLL | WS_TABSTOP, WS_EX_CLIENTEDGE
+	EDITTEXT		rcGInt, 315, 92, 20, 14, ES_LEFT | ES_AUTOHSCROLL | ES_NUMBER | WS_TABSTOP, WS_EX_CLIENTEDGE
+	LTEXT		"&B:", rcBLabel, 277, 109, 8, 8
+	EDITTEXT		rcBDouble, 285, 106, 30, 14, ES_LEFT | ES_AUTOHSCROLL | WS_TABSTOP, WS_EX_CLIENTEDGE
+	EDITTEXT		rcBInt, 315, 106, 20, 14, ES_LEFT | ES_AUTOHSCROLL | ES_NUMBER | WS_TABSTOP, WS_EX_CLIENTEDGE
+	LTEXT		"&A:", rcALabel, 277, 123, 8, 8
+	EDITTEXT		rcADouble, 285, 120, 30, 14, ES_LEFT | ES_AUTOHSCROLL | WS_TABSTOP, WS_EX_CLIENTEDGE
+	EDITTEXT		rcAInt, 315, 120, 20, 14, ES_LEFT | ES_AUTOHSCROLL | ES_NUMBER | WS_TABSTOP, WS_EX_CLIENTEDGE
+
+	LTEXT		"He&x:", rcHexLabel, 269, 146, 16, 8
+	EDITTEXT		rcHex, 285, 143, 50, 14, ES_LEFT | ES_AUTOHSCROLL | WS_TABSTOP, WS_EX_CLIENTEDGE
+
+	DEFPUSHBUTTON	"OK", IDOK, 243, 188, 45, 14, WS_GROUP
+	PUSHBUTTON		"Cancel", IDCANCEL, 292, 188, 45, 14, WS_GROUP
+END
