@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "ui.h"
+#include "../../verbosity.h"
 
 static int onClosing(uiWindow *w, void *data)
 {
@@ -298,7 +299,9 @@ int libui_main(void)
 
 	memset(&options, 0, sizeof (uiInitOptions));
 	err = uiInit(&options);
-	if (err != NULL) {
+	if (err != NULL)
+   {
+      RARCH_ERR("Failed to initialize uiInit\n");
 		fprintf(stderr, "error initializing libui: %s", err);
 		uiFreeInitError(err);
 		return 1;
