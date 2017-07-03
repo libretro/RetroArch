@@ -75,10 +75,16 @@ const char *uiInit(uiInitOptions *o)
 
 	hDefaultIcon = LoadIconW(NULL, IDI_APPLICATION);
 	if (hDefaultIcon == NULL)
+   {
+      RARCH_ERR("error loading default icon for window classes\n"):
 		return ieLastErr("loading default icon for window classes");
+   }
 	hDefaultCursor = LoadCursorW(NULL, IDC_ARROW);
 	if (hDefaultCursor == NULL)
+   {
+      RARCH_ERR("error loading default cursor for window classes\n"):
 		return ieLastErr("loading default cursor for window classes");
+   }
 
    RARCH_LOG("Initializing initUtilWindow.\n");
 	ce = initUtilWindow(hDefaultIcon, hDefaultCursor);
