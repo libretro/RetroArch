@@ -20,8 +20,6 @@ config.log
 *.sdf
 *.opensdf
 *.suo
-Debug
-Release
 ipch
 *.user
 /bootstrap/gx/wii/app_booter/app_booter.bin
