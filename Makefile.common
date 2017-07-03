@@ -485,6 +485,8 @@ OBJ += deps/libui/common/areaevents.o \
 		 deps/libui/common/matrix.o \
 		 deps/libui/common/shouldquit.o \
 		 deps/libui/common/userbugs.o
+
+OBJ += deps/libui/libui_main.o
 endif
 endif
 

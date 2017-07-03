@@ -88,6 +88,8 @@
 #define DEFAULT_NETWORK_CMD_PORT 55355
 #define STDIN_BUF_SIZE           4096
 
+extern int libui_main(void);
+
 struct command
 {
 #ifdef HAVE_STDIN_CMD
@@ -2553,6 +2555,11 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET:
          command_event_restore_default_shader_preset();
+         break;
+      case CMD_EVENT_LIBUI_TEST:
+#if 0
+         libui_main();
+#endif
          break;
       case CMD_EVENT_NONE:
          return false;
