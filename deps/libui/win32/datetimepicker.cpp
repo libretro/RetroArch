@@ -82,7 +82,7 @@ static void setDateTimeFormat(HWND hwnd)
 	date = (WCHAR *) uiAlloc(ndate * sizeof (WCHAR), "WCHAR[]");
 	if (GLI(LOCALE_SSHORTDATE, date, ndate) == 0)
 		logLastError(L"error geting date string");
-	unexpandedDate = date;		/* so we can free it */ */ */ */
+	unexpandedDate = date;		/* so we can free it */
 	date = expandYear(unexpandedDate, ndate);
 	uiFree(unexpandedDate);
 
