@@ -435,7 +435,7 @@ OBJ += deps/libui/win32/alloc.o \
 		 deps/libui/win32/window.o \
 		 deps/libui/win32/winpublic.o \
 		 deps/libui/win32/winutil.o
-LIBS += -luxtheme -ld2d1 -ldwrite
+LIBS += -luxtheme -ld2d1 -ldwrite -lusp10
 endif
 
 ifneq ($(findstring Darwin,$(OS)),)
