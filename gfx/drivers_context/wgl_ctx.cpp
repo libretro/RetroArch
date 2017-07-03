@@ -540,7 +540,7 @@ static void gfx_ctx_wgl_destroy(void *data)
       g_restore_desktop     = false;
    }
 
-   dylib_free(dll_handle);
+   dylib_close(dll_handle);
 
    win32_core_hw_context_enable = false;
    g_inited                     = false;
