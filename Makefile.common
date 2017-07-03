@@ -382,6 +382,61 @@ OBJ += deps/libui/gtk/alloc.o \
 		 deps/libui/gtk/window.o
 endif
 
+ifneq ($(findstring Win32,$(OS)),)
+OBJ += deps/libui/win32/alloc.o \
+		 deps/libui/win32/area.o \
+		 deps/libui/win32/areadraw.o \
+		 deps/libui/win32/areaevents.o \
+		 deps/libui/win32/areascroll.o \
+		 deps/libui/win32/areautil.o \
+		 deps/libui/win32/box.o \
+		 deps/libui/win32/button.o \
+		 deps/libui/win32/checkbox.o \
+		 deps/libui/win32/colorbutton.o \
+		 deps/libui/win32/colordialog.o \
+		 deps/libui/win32/combobox.o \
+		 deps/libui/win32/container.o \
+		 deps/libui/win32/control.o \
+		 deps/libui/win32/d2dscratch.o \
+		 deps/libui/win32/datetimepicker.o \
+		 deps/libui/win32/debug.o \
+		 deps/libui/win32/draw.o \
+		 deps/libui/win32/drawmatrix.o \
+		 deps/libui/win32/drawpath.o \
+		 deps/libui/win32/drawtext.o \
+		 deps/libui/win32/dwrite.o \
+		 deps/libui/win32/editablecombo.o \
+		 deps/libui/win32/entry.o \
+		 deps/libui/win32/events.o \
+		 deps/libui/win32/fontbutton.o \
+		 deps/libui/win32/fontdialog.o \
+		 deps/libui/win32/form.o \
+		 deps/libui/win32/graphemes.o \
+		 deps/libui/win32/grid.o \
+		 deps/libui/win32/group.o \
+		 deps/libui/win32/init.o \
+		 deps/libui/win32/label.o \
+		 deps/libui/win32/main.o \
+		 deps/libui/win32/menu.o \
+		 deps/libui/win32/multilineentry.o \
+		 deps/libui/win32/parent.o \
+		 deps/libui/win32/progressbar.o \
+		 deps/libui/win32/radiobuttons.o \
+		 deps/libui/win32/separator.o \
+		 deps/libui/win32/sizing.o \
+		 deps/libui/win32/slider.o \
+		 deps/libui/win32/spinbox.o \
+		 deps/libui/win32/stddialogs.o \
+		 deps/libui/win32/tab.o \
+		 deps/libui/win32/tabpage.o \
+		 deps/libui/win32/text.o \
+		 deps/libui/win32/utf16.o \
+		 deps/libui/win32/utilwin.o \
+		 deps/libui/win32/window.o \
+		 deps/libui/win32/winpublic.o \
+		 deps/libui/win32/winutil.o
+endif
+
 OBJ += deps/libui/common/areaevents.o \
 		 deps/libui/common/control.o \
 		 deps/libui/common/debug.o \
