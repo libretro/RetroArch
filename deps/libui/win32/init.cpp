@@ -83,7 +83,10 @@ const char *uiInit(uiInitOptions *o)
    RARCH_LOG("Initializing initUtilWindow.\n");
 	ce = initUtilWindow(hDefaultIcon, hDefaultCursor);
 	if (ce != NULL)
+   {
+      RARCH_ERR("Failed initializing util window.\n");
 		return initerr(ce, L"GetLastError() ==", GetLastError());
+   }
 
 	if (registerWindowClass(hDefaultIcon, hDefaultCursor) == 0)
    {
