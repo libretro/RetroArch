@@ -1,5 +1,6 @@
 /* 14 may 2015 */
 #include "uipriv_windows.hpp"
+#include "../../verbosity.h"
 
 /* The utility window is a special window that performs certain tasks internal to libui.
  * It is not a message-only window, and it is always hidden and disabled.
@@ -55,8 +56,11 @@ const char *initUtilWindow(HICON hDefaultIcon, HCURSOR hDefaultCursor)
 	wc.hCursor = hDefaultCursor;
 	wc.hbrBackground = (HBRUSH) (COLOR_BTNFACE + 1);
 	if (RegisterClass(&wc) == 0)
+   {
+      RARCH_ERR("Cannot register class.\n");
 		/* see init.cpp for an explanation of the =s */
 		return "=registering utility window class";
+   }
 
 	utilWindow = CreateWindowExW(0,
 		utilWindowClass, L"libui utility window",
@@ -64,7 +68,10 @@ const char *initUtilWindow(HICON hDefaultIcon, HCURSOR hDefaultCursor)
 		0, 0, 100, 100,
 		NULL, NULL, hInstance, NULL);
 	if (utilWindow == NULL)
+   {
+      RARCH_ERR("Cannot create window.\n");
 		return "=creating utility window";
+   }
 	/* and just to be safe */
 	EnableWindow(utilWindow, FALSE);
 
