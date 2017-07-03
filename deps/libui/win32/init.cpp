@@ -79,6 +79,7 @@ const char *uiInit(uiInitOptions *o)
 	if (hDefaultCursor == NULL)
 		return ieLastErr("loading default cursor for window classes");
 
+   initerr(ce, L"Initializing initUtilWindow.", GetLastError());
 	ce = initUtilWindow(hDefaultIcon, hDefaultCursor);
 	if (ce != NULL)
 		return initerr(ce, L"GetLastError() ==", GetLastError());
