@@ -144,7 +144,6 @@ static void create_gl_context(HWND hwnd, bool *quit)
    struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
    bool debug                           = hwr->debug_context;
    bool core_context                    = (win32_major * 1000 + win32_minor) >= 3001;
-   dll_handle                           = dylib_load("OpenGL32.dll");
    win32_hdc                            = GetDC(hwnd);
 
    setup_pixel_format(win32_hdc);
@@ -456,6 +455,8 @@ static void *gfx_ctx_wgl_init(video_frame_info_t *video_info, void *video_driver
 
    if (g_inited)
       return NULL;
+
+   dll_handle = dylib_load("OpenGL32.dll");
    
    win32_window_reset();
    win32_monitor_init();
@@ -538,6 +539,8 @@ static void gfx_ctx_wgl_destroy(void *data)
       win32_monitor_get_info();
       g_restore_desktop     = false;
    }
+
+   dylib_free(dll_handle);
 
    win32_core_hw_context_enable = false;
    g_inited                     = false;
