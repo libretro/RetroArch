@@ -86,7 +86,10 @@ const char *uiInit(uiInitOptions *o)
 		return initerr(ce, L"GetLastError() ==", GetLastError());
 
 	if (registerWindowClass(hDefaultIcon, hDefaultCursor) == 0)
+   {
+      RARCH_ERR("failed registering uiWindow window class.\n");
 		return ieLastErr("registering uiWindow window class");
+   }
 
 	ZeroMemory(&ncm, sizeof (NONCLIENTMETRICSW));
 	ncm.cbSize = sizeof (NONCLIENTMETRICSW);
