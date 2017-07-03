@@ -2948,7 +2948,7 @@ static int cheevos_iterate(coro_t* coro)
       {
          const cheevo_t* cheevo       = cheevos_locals.core.cheevos;
          const cheevo_t* end          = cheevo + cheevos_locals.core.count;
-         int number_of_unlocked       = 0;
+         int number_of_unlocked       = cheevos_locals.core.count;
          int mode;
          char msg[256];
 
@@ -2959,7 +2959,7 @@ static int cheevos_iterate(coro_t* coro)
 
          for(; cheevo < end; cheevo++)
             if(cheevo->active & mode)
-               number_of_unlocked++;
+               number_of_unlocked--;
 
          snprintf(msg, sizeof(msg), "You have %d of %d achievements unlocked.",
             number_of_unlocked, cheevos_locals.core.count);
