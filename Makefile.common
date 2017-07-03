@@ -333,6 +333,65 @@ OBJ += libretro-db/bintree.o \
        tasks/task_database_cue.o
 endif
 
+ifneq ($(C89_BUILD), 1)
+HAVE_LIBUI   = 0
+HAVE_GTKPLUS = 0
+
+ifeq ($(HAVE_LIBUI), 1)
+ifeq ($(HAVE_GTKPLUS), 1)
+CFLAGS += -I/usr/include/gtk-3.0 -I/usr/include/pango-1.0 -I/usr/include/cairo -I/usr/include/gdk-pixbuf-2.0 -I/usr/include/atk-1.0
+LIBS += -lgtk-3 -lgdk-3 -lpangocairo-1.0 -lpango-1.0 -latk-1.0 -lcairo-gobject -lcairo -lgdk_pixbuf-2.0 -lgio-2.0  -lgobject-2.0 -lglib-2.0
+OBJ += deps/libui/gtk/alloc.o \
+		 deps/libui/gtk/area.o \
+		 deps/libui/gtk/box.o \
+		 deps/libui/gtk/button.o \
+		 deps/libui/gtk/cellrendererbutton.o \
+		 deps/libui/gtk/checkbox.o \
+		 deps/libui/gtk/child.o \
+		 deps/libui/gtk/colorbutton.o \
+		 deps/libui/gtk/combobox.o \
+		 deps/libui/gtk/control.o \
+		 deps/libui/gtk/datetimepicker.o \
+		 deps/libui/gtk/debug.o \
+		 deps/libui/gtk/draw.o \
+		 deps/libui/gtk/drawmatrix.o \
+		 deps/libui/gtk/drawpath.o \
+		 deps/libui/gtk/drawtext.o \
+		 deps/libui/gtk/editablecombo.o \
+		 deps/libui/gtk/entry.o \
+		 deps/libui/gtk/fontbutton.o \
+		 deps/libui/gtk/form.o \
+		 deps/libui/gtk/future.o \
+		 deps/libui/gtk/graphemes.o \
+		 deps/libui/gtk/grid.o \
+		 deps/libui/gtk/group.o \
+		 deps/libui/gtk/image.o \
+		 deps/libui/gtk/label.o \
+		 deps/libui/gtk/main.o \
+		 deps/libui/gtk/menu.o \
+		 deps/libui/gtk/multilineentry.o \
+		 deps/libui/gtk/progressbar.o \
+		 deps/libui/gtk/radiobuttons.o \
+		 deps/libui/gtk/separator.o \
+		 deps/libui/gtk/slider.o \
+		 deps/libui/gtk/spinbox.o \
+		 deps/libui/gtk/stddialogs.o \
+		 deps/libui/gtk/tab.o \
+		 deps/libui/gtk/text.o \
+		 deps/libui/gtk/util.o \
+		 deps/libui/gtk/window.o
+endif
+
+OBJ += deps/libui/common/areaevents.o \
+		 deps/libui/common/control.o \
+		 deps/libui/common/debug.o \
+		 deps/libui/common/matrix.o \
+		 deps/libui/common/shouldquit.o \
+		 deps/libui/common/userbugs.o
+endif
+endif
+
+
 # Miscellaneous
 
 ifeq ($(HAVE_STDIN_CMD), 1)

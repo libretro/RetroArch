@@ -1,4 +1,4 @@
-// 7 april 2015
+/* 7 april 2015 */
 #include <string.h>
 #include "uipriv_unix.h"
 
