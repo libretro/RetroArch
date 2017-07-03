@@ -1,5 +1,6 @@
 // 6 april 2015
 #include "uipriv_windows.hpp"
+#include "../../verbosity.h"
 
 HINSTANCE hInstance;
 int nCmdShow;
@@ -79,7 +80,7 @@ const char *uiInit(uiInitOptions *o)
 	if (hDefaultCursor == NULL)
 		return ieLastErr("loading default cursor for window classes");
 
-   initerr(ce, L"Initializing initUtilWindow.", GetLastError());
+   RARCH_LOG("Initializing initUtilWindow.\n");
 	ce = initUtilWindow(hDefaultIcon, hDefaultCursor);
 	if (ce != NULL)
 		return initerr(ce, L"GetLastError() ==", GetLastError());
