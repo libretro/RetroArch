@@ -1,13 +1,14 @@
-// 14 may 2015
+/* 14 may 2015 */
 #include "uipriv_windows.hpp"
 
-// The utility window is a special window that performs certain tasks internal to libui.
-// It is not a message-only window, and it is always hidden and disabled.
-// Its roles:
-// - It is the initial parent of all controls. When a control loses its parent, it also becomes that control's parent.
-// - It handles WM_QUERYENDSESSION and console end session requests.
-// - It handles WM_WININICHANGE and forwards the message to any child windows that request it.
-// - It handles executing functions queued to run by uiQueueMain().
+/* The utility window is a special window that performs certain tasks internal to libui.
+ * It is not a message-only window, and it is always hidden and disabled.
+ * Its roles:
+ * - It is the initial parent of all controls. When a control loses its parent, it also becomes that control's parent.
+ * - It handles WM_QUERYENDSESSION and console end session requests.
+ * - It handles WM_WININICHANGE and forwards the message to any child windows that request it.
+ * - It handles executing functions queued to run by uiQueueMain().
+ */
 
 #define utilWindowClass L"libui_utilWindowClass"
 
@@ -54,7 +55,7 @@ const char *initUtilWindow(HICON hDefaultIcon, HCURSOR hDefaultCursor)
 	wc.hCursor = hDefaultCursor;
 	wc.hbrBackground = (HBRUSH) (COLOR_BTNFACE + 1);
 	if (RegisterClass(&wc) == 0)
-		// see init.cpp for an explanation of the =s
+		/* see init.cpp for an explanation of the =s */
 		return "=registering utility window class";
 
 	utilWindow = CreateWindowExW(0,
@@ -64,7 +65,7 @@ const char *initUtilWindow(HICON hDefaultIcon, HCURSOR hDefaultCursor)
 		NULL, NULL, hInstance, NULL);
 	if (utilWindow == NULL)
 		return "=creating utility window";
-	// and just to be safe
+	/* and just to be safe */
 	EnableWindow(utilWindow, FALSE);
 
 	return NULL;
