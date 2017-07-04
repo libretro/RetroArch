@@ -22,8 +22,6 @@
 #define EXTERNC
 #endif
 
-#include <GLFW/glfw3.h>
-
 EXTERNC void debugger_init();
 EXTERNC void debugger_draw(bool* deinit);
 
