@@ -1417,13 +1417,20 @@ ifeq ($(HAVE_NETWORKING), 1)
       ifeq ($(HAVE_THREADS), 1)
          DEFINES += -DHAVE_CHEEVOS
          OBJ += cheevos/cheevos.o \
-					 debug/gl3w.o \
-					 debug/imgui.o \
-					 debug/imgui_demo.o \
-					 debug/imgui_draw.o \
-					 debug/imgui_impl_glfw_gl3.o \
-					 debug/main.o \
-					 $(LIBRETRO_COMM_DIR)/utils/md5.o
+                $(LIBRETRO_COMM_DIR)/utils/md5.o
+      endif
+   endif
+
+   ifeq ($(HAVE_DEBUGGER), 1)
+      ifeq ($(HAVE_THREADS), 1)
+         DEFINES += -DHAVE_DEBUGGER
+         CXXFLAGS  += -I$(DEPS_DIR)/gl3w -I$(DEPS_DIR)/imgui -I$(DEPS_DIR)/stb
+         OBJ += $(DEPS_DIR)/gl3w/gl3w.o \
+                $(DEPS_DIR)/imgui/imgui.o \
+                $(DEPS_DIR)/imgui/imgui_demo.o \
+                $(DEPS_DIR)/imgui/imgui_draw.o \
+                $(DEPS_DIR)/imgui/imgui_impl_glfw_gl3.o \
+                debug/main.o
       endif
    endif
 
