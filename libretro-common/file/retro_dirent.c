@@ -26,9 +26,63 @@
 #include <retro_common.h>
 
 #include <boolean.h>
-#include <file/file_path.h>
 #include <retro_dirent.h>
-#include <encodings/utf.h>
+
+#if defined(_WIN32)
+#  ifdef _MSC_VER
+#    define setmode _setmode
+#  endif
+#include <sys/stat.h>
+#  ifdef _XBOX
+#    include <xtl.h>
+#    define INVALID_FILE_ATTRIBUTES -1
+#  else
+#    include <io.h>
+#    include <fcntl.h>
+#    include <direct.h>
+#    include <windows.h>
+#  endif
+#elif defined(VITA)
+#  include <psp2/io/fcntl.h>
+#  include <psp2/io/dirent.h>
+#include <psp2/io/stat.h>
+#else
+#  if defined(PSP)
+#    include <pspiofilemgr.h>
+#  endif
+#  include <sys/types.h>
+#  include <sys/stat.h>
+#  include <dirent.h>
+#  include <unistd.h>
+#endif
+
+#ifdef __CELLOS_LV2__
+#include <cell/cell_fs.h>
+#endif
+
+#if (defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)) || defined(__QNX__) || defined(PSP)
+#include <unistd.h> /* stat() is defined here */
+#endif
+
+struct RDIR
+{
+#if defined(_WIN32)
+   WIN32_FIND_DATA entry;
+   HANDLE directory;
+   bool next;
+   char path[PATH_MAX_LENGTH];
+#elif defined(VITA) || defined(PSP)
+   SceUID directory;
+   SceIoDirent entry;
+#elif defined(__CELLOS_LV2__)
+   CellFsErrno error;
+   int directory;
+   CellFsDirent entry;
+#else
+   DIR *directory;
+   const struct dirent *entry;
+#endif
+};
 
 struct RDIR *retro_opendir(const char *name)
 {
@@ -102,6 +156,45 @@ const char *retro_dirent_get_name(struct RDIR *rdir)
 #endif
 }
 
+static bool path_is_directory_internal(const char *path)
+{
+#if defined(VITA) || defined(PSP)
+   SceIoStat buf;
+   char *tmp  = strdup(path);
+   size_t len = strlen(tmp);
+   if (tmp[len-1] == '/')
+      tmp[len-1]='\0';
+
+   if (sceIoGetstat(tmp, &buf) < 0)
+   {
+      free(tmp);
+      return false;
+   }
+   free(tmp);
+
+   return FIO_S_ISDIR(buf.st_mode);
+#elif defined(__CELLOS_LV2__)
+   CellFsStat buf;
+   if (cellFsStat(path, &buf) < 0)
+      return false;
+   return ((buf.st_mode & S_IFMT) == S_IFDIR);
+#elif defined(_WIN32)
+   struct _stat buf;
+   DWORD file_info = GetFileAttributes(path);
+
+   _stat(path, &buf);
+
+   if (file_info == INVALID_FILE_ATTRIBUTES)
+      return false;
+   return (file_info & FILE_ATTRIBUTE_DIRECTORY);
+#else
+   struct stat buf;
+   if (stat(path, &buf) < 0)
+      return false;
+   return S_ISDIR(buf.st_mode);
+#endif
+}
+
 /**
  *
  * retro_dirent_is_dir:
@@ -134,11 +227,11 @@ bool retro_dirent_is_dir(struct RDIR *rdir, const char *path)
       return true;
    /* This can happen on certain file systems. */
    if (entry->d_type == DT_UNKNOWN || entry->d_type == DT_LNK)
-      return path_is_directory(path);
+      return path_is_directory_internal(path);
    return false;
 #else
    /* dirent struct doesn't have d_type, do it the slow way ... */
-   return path_is_directory(path);
+   return path_is_directory_internal(path);
 #endif
 }
 
