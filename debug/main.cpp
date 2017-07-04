@@ -20,23 +20,13 @@
 #include <SDL_opengl.h>
 
 #include "main.h"
+#include "pluginman.h"
 
 #include "imguidock.h"
-#include "imguial_log.h"
 #include "imguial_fonts.h"
 
-static SDL_Window* s_window;
-static SDL_GLContext s_context;
-
-static ImGuiAl::Log s_logger;
-
-void RARCH_LOG(const char *fmt, ...);
-void RARCH_LOG_OUTPUT_V(const char *tag, const char *msg, va_list ap);
-void RARCH_LOG_OUTPUT(const char *msg, ...);
-void RARCH_WARN_V(const char *tag, const char *fmt, va_list ap);
-void RARCH_WARN(const char *fmt, ...);
-void RARCH_ERR_V(const char *tag, const char *fmt, va_list ap);
-void RARCH_ERR(const char *fmt, ...);
+static SDL_Window*   s_debugger_window;
+static SDL_GLContext s_debugger_context;
 
 void debugger_init()
 {
@@ -55,11 +45,11 @@ void debugger_init()
   SDL_DisplayMode current;
   SDL_GetCurrentDisplayMode(0, &current);
 
-  s_window = SDL_CreateWindow("RetroArch Debugger", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE);
-  s_context = SDL_GL_CreateContext(s_window);
+  s_debugger_window = SDL_CreateWindow("RetroArch Debugger", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE);
+  s_debugger_context = SDL_GL_CreateContext(s_debugger_window);
 
   // Setup ImGui binding
-  ImGui_ImplSdl_Init(s_window);
+  ImGui_ImplSdl_Init(s_debugger_window);
 
   // Load Fonts
   int ttf_size;
@@ -77,24 +67,7 @@ void debugger_init()
   ttf_data = ImGuiAl::Fonts::GetCompressedData(ImGuiAl::Fonts::kFontAwesome, &ttf_size);
   io.Fonts->AddFontFromMemoryCompressedTTF(ttf_data, ttf_size, 12.0f, &config, ranges1);
 
-  // Setup logger
-  static const char* actions[] =
-  {
-    ICON_FA_FILES_O " Copy",
-    ICON_FA_FILE_O " Clear",
-    NULL
-  };
-
-  if (s_logger.Init(0, actions))
-  {
-    s_logger.SetLabel(ImGuiAl::Log::kDebug, ICON_FA_BUG " Debug");
-    s_logger.SetLabel(ImGuiAl::Log::kInfo, ICON_FA_INFO " Info");
-    s_logger.SetLabel(ImGuiAl::Log::kWarn, ICON_FA_EXCLAMATION_TRIANGLE " Warn");
-    s_logger.SetLabel(ImGuiAl::Log::kError, ICON_FA_BOMB " Error");
-    s_logger.SetCumulativeLabel(ICON_FA_SORT_AMOUNT_DESC " Cumulative");
-    s_logger.SetFilterHeaderLabel(ICON_FA_FILTER " Filters");
-    s_logger.SetFilterLabel(ICON_FA_SEARCH " Filter (inc,-exc)");
-  }
+  debugger_pluginman_init();
 }
 
 void debugger_draw(volatile bool* deinit)
@@ -108,7 +81,7 @@ void debugger_draw(volatile bool* deinit)
       ImGui_ImplSdl_ProcessEvent(&event);
     }
 
-    ImGui_ImplSdl_NewFrame(s_window);
+    ImGui_ImplSdl_NewFrame(s_debugger_window);
 
     ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize);
     const ImGuiWindowFlags flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar;
@@ -121,14 +94,7 @@ void debugger_draw(volatile bool* deinit)
     if (visible)
     {
       ImGui::BeginDockspace();
-
-      if (ImGui::BeginDock(ICON_FA_COMMENT " Log"))
-      {
-        s_logger.Draw();
-      }
-
-      ImGui::EndDock();
-
+      debugger_pluginman_draw();
       ImGui::EndDockspace();
     }
 
@@ -139,13 +105,14 @@ void debugger_draw(volatile bool* deinit)
     glClearColor(0.05f, 0.05f, 0.05f, 0);
     glClear(GL_COLOR_BUFFER_BIT);
     ImGui::Render();
-    SDL_GL_SwapWindow(s_window);
+    SDL_GL_SwapWindow(s_debugger_window);
   }
 
   // Cleanup
+  debugger_pluginman_deinit();
   ImGui_ImplSdl_Shutdown();
-  SDL_GL_DeleteContext(s_context);
-  SDL_DestroyWindow(s_window);
+  SDL_GL_DeleteContext(s_debugger_context);
+  SDL_DestroyWindow(s_debugger_window);
 }
 
 
