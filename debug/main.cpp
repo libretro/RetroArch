@@ -14,9 +14,9 @@
  */
 
 #include <stdio.h>
-#include "imgui.h"
-#include "imgui_impl_glfw_gl3.h"
-#include "gl3w.h"
+#include <imgui.h>
+#include <imgui_impl_glfw_gl3.h>
+#include <gl3w.h>
 
 #include "main.h"
 
