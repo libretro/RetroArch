@@ -1426,16 +1426,13 @@ ifeq ($(HAVE_NETWORKING), 1)
 
    ifeq ($(HAVE_DEBUGGER), 1)
       ifeq ($(HAVE_THREADS), 1)
-         ifneq ($(findstring Win32,$(OS)),)
-            LIBS += -lglfw3 -lgdi32 -lopengl32 -limm32
-         endif
          DEFINES += -DHAVE_DEBUGGER
          CXXFLAGS  += -I$(DEPS_DIR)/gl3w -I$(DEPS_DIR)/imgui -I$(DEPS_DIR)/stb
          OBJ += $(DEPS_DIR)/gl3w/gl3w.o \
                 $(DEPS_DIR)/imgui/imgui.o \
                 $(DEPS_DIR)/imgui/imgui_demo.o \
                 $(DEPS_DIR)/imgui/imgui_draw.o \
-                $(DEPS_DIR)/imgui/imgui_impl_glfw_gl3.o \
+                $(DEPS_DIR)/imgui/imgui_impl_sdl.o \
                 debug/main.o
       endif
    endif
