@@ -174,21 +174,10 @@ static int dir_list_read(const char *dir,
 {
    struct RDIR *entry = retro_opendir(dir);
 
-   if (!entry)
-      return -1;
+   if (!entry || retro_dirent_error(entry))
+      goto error;
 
-   if (retro_dirent_error(entry))
-   {
-      retro_closedir(entry);
-      return -1;
-   }
-
-#ifdef _WIN32
-   if (include_hidden)
-      entry->entry.dwFileAttributes |= FILE_ATTRIBUTE_HIDDEN;
-   else
-      entry->entry.dwFileAttributes &= ~FILE_ATTRIBUTE_HIDDEN;
-#endif
+   retro_dirent_include_hidden(entry, include_hidden);
 
    while (retro_readdir(entry))
    {
@@ -222,10 +211,7 @@ static int dir_list_read(const char *dir,
             include_dirs, include_compressed, list, ext_list, file_ext);
 
       if (ret == -1)
-      {
-         retro_closedir(entry);
-         return -1;
-      }
+         goto error;
 
       if (ret == 1)
          continue;
@@ -234,6 +220,11 @@ static int dir_list_read(const char *dir,
    retro_closedir(entry);
 
    return 0;
+
+error:
+   if (entry)
+      retro_closedir(entry);
+   return -1;
 }
 
 /**

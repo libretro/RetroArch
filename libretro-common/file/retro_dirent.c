@@ -235,6 +235,16 @@ bool retro_dirent_is_dir(struct RDIR *rdir, const char *path)
 #endif
 }
 
+void retro_dirent_include_hidden(struct RDIR *rdir, bool include_hidden)
+{
+#ifdef _WIN32
+   if (include_hidden)
+      rdir->entry.dwFileAttributes |= FILE_ATTRIBUTE_HIDDEN;
+   else
+      rdir->entry.dwFileAttributes &= ~FILE_ATTRIBUTE_HIDDEN;
+#endif
+}
+
 void retro_closedir(struct RDIR *rdir)
 {
    if (!rdir)

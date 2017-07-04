@@ -38,6 +38,8 @@ int retro_readdir(struct RDIR *rdir);
 
 bool retro_dirent_error(struct RDIR *rdir);
 
+void retro_dirent_include_hidden(struct RDIR *rdir, bool include_hidden);
+
 const char *retro_dirent_get_name(struct RDIR *rdir);
 
 /**
