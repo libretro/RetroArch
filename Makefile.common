@@ -1427,14 +1427,18 @@ ifeq ($(HAVE_NETWORKING), 1)
 
    ifeq ($(HAVE_DEBUGGER), 1)
       ifeq ($(HAVE_THREADS), 1)
-         DEFINES += -DHAVE_DEBUGGER
+         DEFINES += -DHAVE_DEBUGGER -DIMGUIAL_FONTS_PROGGY_TINY -DIMGUIAL_FONTS_FONT_AWESOME
          CXXFLAGS  += -I$(DEPS_DIR)/gl3w -I$(DEPS_DIR)/imgui -I$(DEPS_DIR)/stb
          OBJ += $(DEPS_DIR)/gl3w/gl3w.o \
                 $(DEPS_DIR)/imgui/imgui.o \
                 $(DEPS_DIR)/imgui/imgui_demo.o \
                 $(DEPS_DIR)/imgui/imgui_draw.o \
                 $(DEPS_DIR)/imgui/imgui_impl_sdl.o \
-                debug/main.o
+                debug/main.o \
+                debug/imguial_fonts.o \
+                debug/imguial_log.o \
+                debug/imguidock.o \
+                debug/imguihelper.o
       endif
    endif
 
