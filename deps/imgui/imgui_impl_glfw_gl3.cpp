@@ -7,7 +7,7 @@
 // https://github.com/ocornut/imgui
 
 #include "imgui.h"
-#include "imgui_impl_glfw_gl3.h"
+#include "imgui_impl_sdl.h"
 
 // GL3W/GLFW
 #include "gl3w.h"    // This example is using gl3w to access OpenGL functions (because it is small). You may use glew/glad/glLoadGen/etc. whatever already works for you.

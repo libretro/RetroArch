@@ -378,8 +378,8 @@ typedef struct hunter
 static void hunter_thread(void *data)
 {
    hunter_t *handle = (hunter_t*)data;
-   hunter_init();
-   hunter_draw(&(handle->deinit));
+   debugger_init();
+   debugger_draw(&(handle->deinit));
 }
 
 hunter_t *handle;
