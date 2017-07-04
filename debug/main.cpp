@@ -40,8 +40,6 @@ void debugger_init()
 
    // Setup window
    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-   SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-   SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
    SDL_DisplayMode current;
@@ -65,7 +63,7 @@ void debugger_init()
 
 }
 
-void debugger_draw(bool* deinit)
+void debugger_draw(volatile bool* deinit)
 {
 
    while (*deinit == false)

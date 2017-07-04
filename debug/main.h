@@ -23,6 +23,6 @@
 #endif
 
 EXTERNC void debugger_init();
-EXTERNC void debugger_draw(bool* deinit);
+EXTERNC void debugger_draw(volatile bool* deinit);
 
 #endif // DEBUGGER_H
