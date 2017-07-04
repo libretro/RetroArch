@@ -1367,14 +1367,17 @@ void rarch_menu_running_finished(void)
 #endif
 
 #ifdef HAVE_DEBUGGER
-   handle = (hunter_t*)calloc(1, sizeof(*handle));
-
-   handle->lock         = slock_new();
-   handle->thread       = sthread_create(hunter_thread, handle);
-   if (!handle->thread)
+   if (!handle)
    {
-      slock_free(handle->lock);
-      free(handle);
+      handle = (hunter_t*)calloc(1, sizeof(*handle));
+
+      handle->lock         = slock_new();
+      handle->thread       = sthread_create(hunter_thread, handle);
+      if (!handle->thread)
+      {
+         slock_free(handle->lock);
+         free(handle);
+      }
    }
 #endif
 }
