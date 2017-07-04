@@ -365,6 +365,7 @@ bool cheevos_loaded      = false;
 int  cheats_are_enabled  = 0;
 int  cheats_were_enabled = 0;
 
+#ifdef HAVE_DEBUGGER
 typedef struct hunter
 {
    void *empty;
@@ -382,6 +383,7 @@ static void hunter_thread(void *data)
 }
 
 hunter_t *handle;
+#endif
 
 /*****************************************************************************
 Supporting functions.
@@ -2641,9 +2643,11 @@ bool cheevos_unload(void)
 
    cheevos_loaded = 0;
 
+#ifdef HAVE_DEBUGGER
    slock_lock(handle->lock);
    handle->deinit = true;
    slock_unlock(handle->lock);
+#endif
    return true;
 }
 
@@ -3664,6 +3668,7 @@ bool cheevos_load(const void *data)
 
    task_queue_push(task);
 
+#ifdef HAVE_DEBUGGER
    handle = (hunter_t*)calloc(1, sizeof(*handle));
 
    handle->lock         = slock_new();
@@ -3674,6 +3679,6 @@ bool cheevos_load(const void *data)
       free(handle);
       return NULL;
    }
-
+#endif
    return true;
 }
