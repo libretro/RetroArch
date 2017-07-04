@@ -1433,11 +1433,12 @@ ifeq ($(HAVE_NETWORKING), 1)
                 $(DEPS_DIR)/imgui/imgui_demo.o \
                 $(DEPS_DIR)/imgui/imgui_draw.o \
                 $(DEPS_DIR)/imgui/imgui_impl_sdl.o \
-                debug/main.o \
                 debug/imguial_fonts.o \
                 debug/imguial_log.o \
                 debug/imguidock.o \
-                debug/imguihelper.o
+                debug/imguihelper.o \
+                debug/main.o \
+                debug/pluginman.o
       endif
    endif
 
