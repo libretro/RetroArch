@@ -1,6 +1,8 @@
 #include "plugin.h"
 
 #include <stdio.h>
+#include <string>
+#include <vector>
 
 #include "imgui.h"
 #include "imguial_fonts.h"
@@ -34,35 +36,30 @@ namespace
     }
   
   protected:
+    struct Region
+    {
+      std::string name;
+      void*       data;
+      size_t      size;
+    };
+
+    std::vector<Region> _regions;
     int _selected;
+    bool _inited;
 
-    void create()
+    void initRegions()
     {
-      _selected = 0;
-    }
-
-    void destroy() {}
-
-    void draw()
-    {
-      struct Region
-      {
-        const char name[64] = {0};
-        void*      data;
-        size_t     size;
-      };
-
-      Region regions[64];
-      unsigned count = 0;
+      Region region;
 
       void*  data = s_info->coreInfo->getMemoryData(RETRO_MEMORY_SAVE_RAM);
       size_t size = s_info->coreInfo->getMemorySize(RETRO_MEMORY_SAVE_RAM);
 
       if (data && size)
       {
-        strcpy(regions[count].name, "Save RAM");
-        regions[count].data = data;
-        regions[count++].size = size;
+        region.name = "Save RAM";
+        region.data = data;
+        region.size = size;
+        _regions.push_back(region);
       }
 
       data = s_info->coreInfo->getMemoryData(RETRO_MEMORY_RTC);
@@ -70,9 +67,10 @@ namespace
 
       if (data && size)
       {
-        strcpy(regions[count].name, "Real Time Clock");
-        regions[count].data = data;
-        regions[count++].size = size;
+        region.name = "Real Time Clock";
+        region.data = data;
+        region.size = size;
+        _regions.push_back(region);
       }
 
       data = s_info->coreInfo->getMemoryData(RETRO_MEMORY_SYSTEM_RAM);
@@ -80,9 +78,10 @@ namespace
 
       if (data && size)
       {
-        strcpy(regions[count].name, "System RAM");
-        regions[count].data = data;
-        regions[count++].size = size;
+        region.name = "System RAM";
+        region.data = data;
+        region.size = size;
+        _regions.push_back(region);
       }
 
       data = s_info->coreInfo->getMemoryData(RETRO_MEMORY_VIDEO_RAM);
@@ -90,9 +89,10 @@ namespace
 
       if (data && size)
       {
-        strcpy(regions[count].name, "Video RAM");
-        regions[count].data = data;
-        regions[count++].size = size;
+        region.name = "Video RAM";
+        region.data = data;
+        region.size = size;
+        _regions.push_back(region);
       }
 
       for (unsigned i = 0;; i++)
@@ -106,9 +106,42 @@ namespace
 
         if (mem->ptr && mem->len)
         {
-          snprintf(regions[count].name, sizeof(regions[count].name), "Memory @%p", mem->start);
-          regions[count].data = (char*)mem->ptr + mem->offset;
-          regions[count++].size = mem->len;
+          char name[128];
+          snprintf(name, sizeof(name), "Memory @%p", mem->start);
+
+          region.name = name;
+          region.data = (char*)mem->ptr + mem->offset;
+          region.size = mem->len;
+          _regions.push_back(region);
+        }
+      }
+    }
+
+    void create()
+    {
+      _selected = 0;
+      _inited = false;
+    }
+
+    void destroy() {}
+
+    void draw()
+    {
+      if (_inited)
+      {
+        if (!s_info->rarchInfo->isGameLoaded())
+        {
+          _regions.clear();
+          _selected = 0;
+          _inited = false;
+        }
+      }
+      else
+      {
+        if (s_info->rarchInfo->isGameLoaded())
+        {
+          initRegions();
+          _inited = true;
         }
       }
 
@@ -122,22 +155,22 @@ namespace
           }
           else
           {
-            auto regions = (Region*)data;
-            *out_text = regions[idx - 1].name;
+            auto regions = (std::vector<Region>*)data;
+            *out_text = (*regions)[idx - 1].name.c_str();
           }
 
           return true;
         }
       };
 
-      ImGui::Combo("Region", &_selected, Getter::description, (void*)&regions, count + 1);
+      ImGui::Combo("Region", &_selected, Getter::description, (void*)&_regions, _regions.size() + 1);
 
       if (_selected != 0)
       {
         static MemoryEditor editor;
 
-        Region* region = regions + _selected - 1;
-        editor.Draw(region->name, (unsigned char*)region->data, region->size, 0);
+        Region* region = &_regions[_selected - 1];
+        editor.Draw(region->name.c_str(), (unsigned char*)region->data, region->size, 0);
       }
     }
   };
