@@ -238,8 +238,21 @@ const debugger_t s_debugger =
   &s_debugger_coreInfo
 };
 
-static std::set<debugger_plugin_t*> s_debugger_plugins;
-static std::map<void*, debugger_plugin_t*> s_debugger_running;
+static std::set<const debugger_plugin_t*> s_debugger_plugins;
+static std::map<void*, const debugger_plugin_t*> s_debugger_running;
+
+static void s_debugger_register_plugin(const debugger_plugin_t* plugin)
+{
+  s_debugger_plugins.insert(plugin);
+
+  void* instance = plugin->create();
+  s_debugger_running.insert(std::pair<void*, const debugger_plugin_t*>(instance, plugin));
+
+  instance = plugin->create();
+  s_debugger_running.insert(std::pair<void*, const debugger_plugin_t*>(instance, plugin));
+}
+
+extern void init_plugin(debugger_register_plugin_t register_plugin, const debugger_t* info);
 
 void debugger_pluginman_init()
 {
@@ -261,6 +274,8 @@ void debugger_pluginman_init()
     s_debugger_logger.SetFilterHeaderLabel(ICON_FA_FILTER " Filters");
     s_debugger_logger.SetFilterLabel(ICON_FA_SEARCH " Filter (inc,-exc)");
   }
+
+  init_plugin(s_debugger_register_plugin, &s_debugger);
 }
 
 void debugger_pluginman_deinit()
@@ -282,7 +297,10 @@ void debugger_pluginman_draw()
 
   for (auto it = s_debugger_running.begin(); it != s_debugger_running.end(); ++it)
   {
-    if (ImGui::BeginDock(it->second->name))
+    char label[512];
+    snprintf(label, sizeof(label), "%s##%p", it->second->name, it->first);
+
+    if (ImGui::BeginDock(label))
     {
       it->second->draw(it->first);
     }
