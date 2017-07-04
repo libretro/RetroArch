@@ -1400,7 +1400,7 @@ ifeq ($(HAVE_NETWORKING), 1)
    endif
 
    ifneq ($(findstring Win32,$(OS)),)
-      LIBS += -lws2_32 -liphlpapi -lglfw3 -lgdi32 -lopengl32 -limm32
+      LIBS += -lws2_32 -liphlpapi
    endif
 
    # Netplay
@@ -1427,6 +1427,9 @@ ifeq ($(HAVE_NETWORKING), 1)
 
    ifeq ($(HAVE_DEBUGGER), 1)
       ifeq ($(HAVE_THREADS), 1)
+         ifneq ($(findstring Win32,$(OS)),)
+            LIBS += -lglfw3 -lgdi32 -lopengl32 -limm32
+         endif
          DEFINES += -DHAVE_DEBUGGER
          CXXFLAGS  += -I$(DEPS_DIR)/gl3w -I$(DEPS_DIR)/imgui -I$(DEPS_DIR)/stb
          OBJ += $(DEPS_DIR)/gl3w/gl3w.o \
