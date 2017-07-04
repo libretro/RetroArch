@@ -1435,7 +1435,8 @@ ifeq ($(HAVE_NETWORKING), 1)
                 debug/imguidock.o \
                 debug/imguihelper.o \
                 debug/main.o \
-                debug/pluginman.o
+                debug/pluginman.o \
+                debug/memwatch.o
       endif
    endif
 
