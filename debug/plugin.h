@@ -1,0 +1,77 @@
+#ifndef DEBUGGER_PLUGIN_H
+#define DEBUGGER_PLUGIN_H
+
+#include <libretro.h>
+#include <stdarg.h>
+
+/* Logging */
+typedef struct
+{
+  unsigned size;
+
+  void (*vprintf)(enum retro_log_level level, const char* format, va_list args);
+  void (*printf)(enum retro_log_level level, const char* format, ...);
+  void (*debug)(const char* format, ...);
+  void (*info)(const char* format, ...);
+  void (*warn)(const char* format, ...);
+  void (*error)(const char* format, ...);
+}
+debugger_log_t;
+
+/* Information from RetroArch */
+typedef struct
+{
+  unsigned size;
+
+  int (*isCoreLoaded)(void);
+  int (*isGameLoaded)(void);
+}
+debugger_rarch_info_t;
+
+/* Information from the core */
+typedef struct
+{
+  unsigned size;
+
+  void                                  (*getCoreName)(char* name, size_t size);
+  unsigned                              (*getApiVersion)(void);
+  const struct retro_system_info*       (*getSystemInfo)(void);
+  const struct retro_system_av_info*    (*getSystemAVInfo)(void);
+  unsigned                              (*getRegion)(void);
+  void*                                 (*getMemoryData)(unsigned id);
+  size_t                                (*getMemorySize)(unsigned id);
+  unsigned                              (*getRotation)(void);
+  unsigned                              (*getPerformanceLevel)(void);
+  enum retro_pixel_format               (*getPixelFormat)(void);
+  int                                   (*supportsNoGame)(void);
+  const struct retro_memory_descriptor* (*getMemoryMap)(unsigned index);
+  int                                   (*supportsCheevos)(void);
+}
+debugger_core_info_t;
+
+typedef struct
+{
+  unsigned size;
+
+  const debugger_log_t*        log;
+  const debugger_rarch_info_t* rarchInfo;
+  const debugger_core_info_t*  coreInfo;
+}
+debugger_t;
+
+typedef struct
+{
+  unsigned size;
+
+  const char* name;
+
+  void* (*create)(void);
+  void  (*destroy)(void* instance);
+  void  (*draw)(void* instance);
+}
+debugger_plugin_t;
+
+typedef void (*debugger_register_plugin_t)(const debugger_plugin_t* plugin);
+typedef void (*debugger_init_plugins_t)(debugger_register_plugin_t register_plugin, const debugger_t* info);
+
+#endif /* DEBUGGER_PLUGIN_H */
