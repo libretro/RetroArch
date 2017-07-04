@@ -1055,7 +1055,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                              " libretro_log, ele é ignorado.\n"
                              " \n"
                              " Registros DEBUG são sempre ignorados a menos \n"
-                             " que o modo verboso esteja ativado (--verbose).\n"
+                             " que o modo detalhado esteja ativado (--verbose).\n"
                              " \n"
                              " DEBUG = 0\n"
                              " INFO  = 1\n"
@@ -1321,7 +1321,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
         case MENU_ENUM_LABEL_LOG_VERBOSITY:
             snprintf(s, len,
                      "Habilitar ou desabilitar o nível \n"
-                             "de verbosidade do frontend.");
+                             "de detalhamento do frontend.");
             break;
         case MENU_ENUM_LABEL_VOLUME_UP:
             snprintf(s, len,
