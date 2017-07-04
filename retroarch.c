@@ -118,6 +118,10 @@
 
 #include "command.h"
 
+#ifdef HAVE_DEBUGGER
+#include "../debug/main.h"
+#endif
+
 #define _PSUPP(var, name, desc) printf("  %s:\n\t\t%s: %s\n", name, desc, _##var##_supp ? "yes" : "no")
 
 #define FAIL_CPU(simd_type) do { \
@@ -129,6 +133,26 @@
 #define DEFAULT_EXT "zip"
 #else
 #define DEFAULT_EXT ""
+#endif
+
+#ifdef HAVE_DEBUGGER
+typedef struct hunter
+{
+   void *empty;
+   volatile bool quit;
+   slock_t *lock;
+   sthread_t *thread;
+   bool deinit;
+} hunter_t;
+
+static void hunter_thread(void *data)
+{
+   hunter_t *handle = (hunter_t*)data;
+   debugger_init();
+   debugger_draw(&(handle->deinit));
+}
+
+hunter_t *handle;
 #endif
 
 /* Descriptive names for options without short variant.
@@ -1336,6 +1360,18 @@ void rarch_menu_running_finished(void)
          command_event(CMD_EVENT_OVERLAY_INIT, NULL);
    }
 #endif
+
+#ifdef HAVE_DEBUGGER
+   handle = (hunter_t*)calloc(1, sizeof(*handle));
+
+   handle->lock         = slock_new();
+   handle->thread       = sthread_create(hunter_thread, handle);
+   if (!handle->thread)
+   {
+      slock_free(handle->lock);
+      free(handle);
+   }
+#endif
 }
 
 /**
@@ -2163,6 +2199,12 @@ bool retroarch_main_quit(void)
       command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
       command_event(CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET, NULL);
    }
+
+#ifdef HAVE_DEBUGGER
+   slock_lock(handle->lock);
+   handle->deinit = true;
+   slock_unlock(handle->lock);
+#endif
 
    runloop_shutdown_initiated = true;
    rarch_menu_running_finished();
