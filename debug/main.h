@@ -24,7 +24,7 @@
 
 #include <GLFW/glfw3.h>
 
-EXTERNC void hunter_init();
-EXTERNC void hunter_draw(bool* deinit);
+EXTERNC void debugger_init();
+EXTERNC void debugger_draw(bool* deinit);
 
 #endif // DEBUGGER_H
