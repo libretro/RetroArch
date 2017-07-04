@@ -21,91 +21,131 @@
 
 #include "main.h"
 
-bool show_test_window = true;
+#include "imguidock.h"
+#include "imguial_log.h"
+#include "imguial_fonts.h"
 
-ImVec4 clear_color;
+static SDL_Window* s_window;
+static SDL_GLContext s_context;
 
-SDL_Window* debugger_window;
-SDL_GLContext glcontext;
+static ImGuiAl::Log s_logger;
+
+void RARCH_LOG(const char *fmt, ...);
+void RARCH_LOG_OUTPUT_V(const char *tag, const char *msg, va_list ap);
+void RARCH_LOG_OUTPUT(const char *msg, ...);
+void RARCH_WARN_V(const char *tag, const char *fmt, va_list ap);
+void RARCH_WARN(const char *fmt, ...);
+void RARCH_ERR_V(const char *tag, const char *fmt, va_list ap);
+void RARCH_ERR(const char *fmt, ...);
 
 void debugger_init()
 {
+  // Setup SDL
+  if (SDL_Init(SDL_INIT_VIDEO|SDL_INIT_TIMER) != 0)
+  {
+    printf("Error: %s\n", SDL_GetError());
+    return;
+  }
 
-   // Setup SDL
-   if (SDL_Init(SDL_INIT_VIDEO|SDL_INIT_TIMER) != 0)
-   {
-      printf("Error: %s\n", SDL_GetError());
-      return;
-   }
+  // Setup window
+  SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
 
-   // Setup window
-   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
-   SDL_DisplayMode current;
-   SDL_GetCurrentDisplayMode(0, &current);
-   debugger_window = SDL_CreateWindow("ImGui SDL2+OpenGL example", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE);
-   SDL_GLContext glcontext = SDL_GL_CreateContext(debugger_window);
+  SDL_DisplayMode current;
+  SDL_GetCurrentDisplayMode(0, &current);
 
-   // Setup ImGui binding
-   ImGui_ImplSdl_Init(debugger_window);
+  s_window = SDL_CreateWindow("RetroArch Debugger", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE);
+  s_context = SDL_GL_CreateContext(s_window);
 
-   // Load Fonts
-   // (there is a default font, this is only if you want to change it. see extra_fonts/README.txt for more details)
-   //ImGuiIO& io = ImGui::GetIO();
-   //io.Fonts->AddFontDefault();
-   //io.Fonts->AddFontFromFileTTF("../../extra_fonts/Cousine-Regular.ttf", 15.0f);
-   //io.Fonts->AddFontFromFileTTF("../../extra_fonts/DroidSans.ttf", 16.0f);
-   //io.Fonts->AddFontFromFileTTF("../../extra_fonts/ProggyClean.ttf", 13.0f);
-   //io.Fonts->AddFontFromFileTTF("../../extra_fonts/ProggyTiny.ttf", 10.0f);
-   //io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
-   clear_color = ImColor(114, 144, 154);
+  // Setup ImGui binding
+  ImGui_ImplSdl_Init(s_window);
 
+  // Load Fonts
+  int ttf_size;
+  const void* ttf_data = ImGuiAl::Fonts::GetCompressedData(ImGuiAl::Fonts::kProggyTiny, &ttf_size);
+
+  ImGuiIO& io = ImGui::GetIO();
+  ImFont* font = io.Fonts->AddFontFromMemoryCompressedTTF(ttf_data, ttf_size, 10.0f);
+  font->DisplayOffset.y = 1.0f;
+
+  ImFontConfig config;
+  config.MergeMode = true;
+  config.PixelSnapH = true;
+
+  static const ImWchar ranges1[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
+  ttf_data = ImGuiAl::Fonts::GetCompressedData(ImGuiAl::Fonts::kFontAwesome, &ttf_size);
+  io.Fonts->AddFontFromMemoryCompressedTTF(ttf_data, ttf_size, 12.0f, &config, ranges1);
+
+  // Setup logger
+  static const char* actions[] =
+  {
+    ICON_FA_FILES_O " Copy",
+    ICON_FA_FILE_O " Clear",
+    NULL
+  };
+
+  if (s_logger.Init(0, actions))
+  {
+    s_logger.SetLabel(ImGuiAl::Log::kDebug, ICON_FA_BUG " Debug");
+    s_logger.SetLabel(ImGuiAl::Log::kInfo, ICON_FA_INFO " Info");
+    s_logger.SetLabel(ImGuiAl::Log::kWarn, ICON_FA_EXCLAMATION_TRIANGLE " Warn");
+    s_logger.SetLabel(ImGuiAl::Log::kError, ICON_FA_BOMB " Error");
+    s_logger.SetCumulativeLabel(ICON_FA_SORT_AMOUNT_DESC " Cumulative");
+    s_logger.SetFilterHeaderLabel(ICON_FA_FILTER " Filters");
+    s_logger.SetFilterLabel(ICON_FA_SEARCH " Filter (inc,-exc)");
+  }
 }
 
 void debugger_draw(volatile bool* deinit)
 {
+  while (*deinit == false)
+  {
+    SDL_Event event;
 
-   while (*deinit == false)
-   {
-      SDL_Event event;
-      while (SDL_PollEvent(&event))
+    while (SDL_PollEvent(&event))
+    {
+      ImGui_ImplSdl_ProcessEvent(&event);
+    }
+
+    ImGui_ImplSdl_NewFrame(s_window);
+
+    ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize);
+    const ImGuiWindowFlags flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar;
+
+    const float oldWindowRounding = ImGui::GetStyle().WindowRounding;
+    ImGui::GetStyle().WindowRounding = 0;
+    const bool visible = ImGui::Begin("Docking Manager", NULL, ImVec2(0, 0), 1.0f, flags);
+    ImGui::GetStyle().WindowRounding = oldWindowRounding;
+
+    if (visible)
+    {
+      ImGui::BeginDockspace();
+
+      if (ImGui::BeginDock(ICON_FA_COMMENT " Log"))
       {
-          ImGui_ImplSdl_ProcessEvent(&event);
-      }
-      ImGui_ImplSdl_NewFrame(debugger_window);
-
-      // 1. Show a simple window
-      // Tip: if we don't call ImGui::Begin()/ImGui::End() the widgets appears in a window automatically called "Debug"
-      {
-          static float f = 0.0f;
-          ImGui::Text("Hello, world!");
-          ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
-          ImGui::ColorEdit3("clear color", (float*)&clear_color);
-          if (ImGui::Button("Test Window")) show_test_window ^= 1;
-          ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+        s_logger.Draw();
       }
 
-      if (show_test_window)
-      {
-          ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiSetCond_FirstUseEver);
-          ImGui::ShowTestWindow(&show_test_window);
-      }
+      ImGui::EndDock();
 
-      // Rendering
-      glViewport(0, 0, (int)ImGui::GetIO().DisplaySize.x, (int)ImGui::GetIO().DisplaySize.y);
-      glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
-      glClear(GL_COLOR_BUFFER_BIT);
-      ImGui::Render();
-      SDL_GL_SwapWindow(debugger_window);
+      ImGui::EndDockspace();
+    }
+
+    ImGui::End();
+
+    // Rendering
+    glViewport(0, 0, (int)ImGui::GetIO().DisplaySize.x, (int)ImGui::GetIO().DisplaySize.y);
+    glClearColor(0.05f, 0.05f, 0.05f, 0);
+    glClear(GL_COLOR_BUFFER_BIT);
+    ImGui::Render();
+    SDL_GL_SwapWindow(s_window);
   }
 
-   // Cleanup
-   ImGui_ImplSdl_Shutdown();
-   SDL_GL_DeleteContext(glcontext);
-   SDL_DestroyWindow(debugger_window);
-   debugger_window = NULL;
-   return;
+  // Cleanup
+  ImGui_ImplSdl_Shutdown();
+  SDL_GL_DeleteContext(s_context);
+  SDL_DestroyWindow(s_window);
 }
 
 
