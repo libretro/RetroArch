@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -60,67 +60,67 @@ void logger_send_v(const char *__format, va_list args);
 } while (0)
 
 #define RARCH_LOG_OUTPUT(...) do { \
-   logger_send("RetroArch Salamander [OUTPUT] :: " __VA_ARGS__); \
+   logger_send("[OUTPUT] " __VA_ARGS__); \
 } while(0)
 
 #define RARCH_LOG_OUTPUT_V(tag, fmt, vp) do { \
-   logger_send("RetroArch Salamander [OUTPUT] :: " tag); \
+   logger_send("[OUTPUT] " tag); \
    logger_send_v(fmt, vp); \
 } while (0)
 
 #define RARCH_ERR(...) do { \
-   logger_send("RetroArch Salamander [ERROR] :: " __VA_ARGS__); \
+   logger_send("[ERROR] " __VA_ARGS__); \
 } while(0)
 
 #define RARCH_ERR_V(tag, fmt, vp) do { \
-   logger_send("RetroArch Salamander [ERROR] :: " tag); \
+   logger_send("[ERROR] " tag); \
    logger_send_v(fmt, vp); \
 } while (0)
 
 #define RARCH_WARN(...) do { \
-   logger_send("RetroArch Salamander [WARN] :: " __VA_ARGS__); \
+   logger_send("[WARN] " __VA_ARGS__); \
 } while(0)
 
 #define RARCH_WARN_V(tag, fmt, vp) do { \
-   logger_send("RetroArch Salamander [WARN] :: " tag); \
+   logger_send("[WARN] " tag); \
    logger_send_v(fmt, vp); \
 } while (0)
 
 #else
 
 #define RARCH_LOG(...) do { \
-   logger_send("RetroArch: " __VA_ARGS__); \
+   logger_send("" __VA_ARGS__); \
 } while(0)
 
 #define RARCH_LOG_V(tag, fmt, vp) do { \
-   logger_send("RetroArch: " tag); \
+   logger_send("" tag); \
    logger_send_v(fmt, vp); \
 } while (0)
 
 #define RARCH_ERR(...) do { \
-   logger_send("RetroArch [ERROR] :: " __VA_ARGS__); \
+   logger_send("[ERROR] " __VA_ARGS__); \
 } while(0)
 
 #define RARCH_ERR_V(tag, fmt, vp) do { \
-   logger_send("RetroArch [ERROR] :: " tag); \
+   logger_send("[ERROR] " tag); \
    logger_send_v(fmt, vp); \
 } while (0)
 
 #define RARCH_WARN(...) do { \
-   logger_send("RetroArch [WARN] :: " __VA_ARGS__); \
+   logger_send("[WARN] " __VA_ARGS__); \
 } while(0)
 
 #define RARCH_WARN_V(tag, fmt, vp) do { \
-   logger_send("RetroArch [WARN] :: " tag); \
+   logger_send("[WARN] :: " tag); \
    logger_send_v(fmt, vp); \
 } while (0)
 
 #define RARCH_LOG_OUTPUT(...) do { \
-   logger_send("RetroArch [OUTPUT] :: " __VA_ARGS__); \
+   logger_send("[OUTPUT] " __VA_ARGS__); \
 } while(0)
 
 #define RARCH_LOG_OUTPUT_V(tag, fmt, vp) do { \
-   logger_send("RetroArch [OUTPUT] :: " tag); \
+   logger_send("[OUTPUT] " tag); \
    logger_send_v(fmt, vp); \
 } while (0)
 

@@ -375,7 +375,7 @@ static void retroarch_print_features(void)
 
    _PSUPP(fbo,             "FBO",             "OpenGL render-to-texture "
                                               "(multi-pass shaders)");
-   
+
    _PSUPP(dynamic,         "Dynamic",         "Dynamic run-time loading of "
                                               "libretro library");
    _PSUPP(ffmpeg,          "FFmpeg",          "On-the-fly recording of gameplay "
@@ -1031,9 +1031,9 @@ static void retroarch_parse_input(int argc, char *argv[])
             retroarch_fail(1, "retroarch_parse_input()");
       }
    }
-   
+
 #ifdef HAVE_GIT_VERSION
-   RARCH_LOG("This is RetroArch version %s (Git %s)\n",
+   RARCH_LOG("RetroArch %s (Git %s)\n",
          PACKAGE_VERSION, retroarch_git_version);
 #endif
 
@@ -1047,10 +1047,10 @@ static void retroarch_parse_input(int argc, char *argv[])
 #ifdef HAVE_DYNAMIC
       else
       {
-         /* Allow stray -L arguments to go through to workaround cases 
+         /* Allow stray -L arguments to go through to workaround cases
           * where it's used as "config file".
           *
-          * This seems to still be the case for Android, which 
+          * This seems to still be the case for Android, which
           * should be properly fixed. */
          retroarch_set_current_core_type(CORE_TYPE_DUMMY, false);
       }
@@ -2214,7 +2214,7 @@ void runloop_msg_queue_push(const char *msg,
 }
 
 
-void runloop_get_status(bool *is_paused, bool *is_idle, 
+void runloop_get_status(bool *is_paused, bool *is_idle,
       bool *is_slowmotion, bool *is_perfcnt_enable)
 {
    *is_paused         = runloop_paused;
@@ -2298,7 +2298,7 @@ static bool input_driver_toggle_button_combo(
       case INPUT_TOGGLE_NONE:
          return false;
    }
-   
+
    return true;
 }
 #endif
@@ -2321,7 +2321,7 @@ static enum runloop_state runloop_check_state(
    bool menu_driver_binding_state   = menu_driver_is_binding_state();
    bool menu_is_alive               = menu_driver_is_alive();
    uint64_t current_input           =
-      menu_is_alive && !(settings->bools.menu_unified_controls && !menu_input_dialog_get_display_kb())? 
+      menu_is_alive && !(settings->bools.menu_unified_controls && !menu_input_dialog_get_display_kb())?
       input_menu_keys_pressed(settings, last_input) :
       input_keys_pressed(settings, last_input);
 #else
@@ -2341,14 +2341,14 @@ static enum runloop_state runloop_check_state(
 #endif
 
    if (input_driver_flushing_input)
-   { 
-      input_driver_flushing_input = false; 
-      if (current_input) 
+   {
+      input_driver_flushing_input = false;
+      if (current_input)
       {
          current_input = 0;
          if (runloop_paused)
             BIT64_SET(current_input, RARCH_PAUSE_TOGGLE);
-         input_driver_flushing_input = true; 
+         input_driver_flushing_input = true;
       }
    }
 
@@ -2548,7 +2548,7 @@ static enum runloop_state runloop_check_state(
             }
          }
       }
-      else if ((!menu_event_kb_is_set(RETROK_F1) && 
+      else if ((!menu_event_kb_is_set(RETROK_F1) &&
                (pressed && !old_pressed)) ||
             (current_core_type == CORE_TYPE_DUMMY))
       {
@@ -2676,12 +2676,12 @@ static enum runloop_state runloop_check_state(
          command_event(CMD_EVENT_PAUSE, NULL);
 
       old_focus           = focused;
-      old_pause_pressed   = pause_pressed; 
+      old_pause_pressed   = pause_pressed;
       old_frameadvance    = frameadvance_pressed;
 
       if (runloop_paused)
       {
-         check_is_oneshot = trig_frameadvance || 
+         check_is_oneshot = trig_frameadvance ||
             runloop_cmd_press(current_input, RARCH_REWIND);
 
          if (fs_toggle_triggered)
@@ -2742,7 +2742,7 @@ static enum runloop_state runloop_check_state(
       bool should_slot_decrease            = runloop_cmd_press(
             current_input, RARCH_STATE_SLOT_MINUS);
 
-      /* Checks if the state increase/decrease keys have been pressed 
+      /* Checks if the state increase/decrease keys have been pressed
        * for this frame. */
       if (should_slot_increase && !old_should_slot_increase)
       {

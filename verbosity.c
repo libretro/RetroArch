@@ -46,7 +46,7 @@
 #include "file_path_special.h"
 #include "verbosity.h"
 
-/* If this is non-NULL. RARCH_LOG and friends 
+/* If this is non-NULL. RARCH_LOG and friends
  * will write to this file. */
 static FILE *log_file            = NULL;
 static bool main_verbosity       = false;
@@ -168,8 +168,7 @@ static aslclient asl_client;
 #else
    fp = stderr;
 #endif
-   fprintf(fp, "%s %s :: ",
-         file_path_str(FILE_PATH_PROGRAM_NAME),
+   fprintf(fp, "%s ",
          tag ? tag : file_path_str(FILE_PATH_LOG_INFO));
    vfprintf(fp, fmt, ap);
    fflush(fp);
