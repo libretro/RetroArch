@@ -334,6 +334,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL,
 	 "Testar Conquistas Não Oficiais"
 	)
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
+     "Modo Detalhado das Conquistas"
+    )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ACHIEVEMENTS,
 	 "Conquistas Desbloqueadas:"
 	)
@@ -1007,7 +1010,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
 	 "Registro de Eventos"
 	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY,
-	 "Verbosidade do Registro de Eventos"
+	 "Detalhamento do Registro de Eventos"
 	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MAIN_MENU,
 	 "Menu Principal"
@@ -2260,6 +2263,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
 	 "Habilitar ou desabilitar Estado de Jogo, Trapaças, Voltar Atrás, Avanço Rápido, Pausa e Câmera Lenta para todos os jogos."
 	)
+MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
+     "Habilitar ou desabilitar detalhamento na tela das conquistas."
+     )
 MSG_HASH(MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
 	 "Alterar os drivers utilizados pelo sistema."
 	)
