@@ -169,10 +169,7 @@ static bool winraw_init_devices(winraw_mouse_t **mice, unsigned *mouse_cnt)
    {
       mice_r = (winraw_mouse_t*)calloc(1, mouse_cnt_r * sizeof(winraw_mouse_t));
       if (!mice_r)
-      {
-         WINRAW_ERR("calloc failed");
          goto error;
-      }
 
       if (!GetCursorPos(&crs_pos))
       {
@@ -390,10 +387,7 @@ static void *winraw_init(const char *joypad_driver)
    g_keyboard         = (winraw_keyboard_t*)calloc(1, sizeof(winraw_keyboard_t));
 
    if (!wr || !g_keyboard)
-   {
-      WINRAW_ERR("calloc failed.");
       goto error;
-   }
 
    WINRAW_LOG("Initializing input driver ...");
 
