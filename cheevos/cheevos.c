@@ -2806,6 +2806,9 @@ static int cheevos_iterate(coro_t* coro)
    };
    
    CORO_ENTER()
+
+      for (I = 0; I < 6000000; I++)
+         CORO_YIELD();
    
       SETTINGS = config_get_ptr();
 
