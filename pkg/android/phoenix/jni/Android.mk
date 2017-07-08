@@ -77,7 +77,7 @@ endif
 DEFINES += -DHAVE_7ZIP
 DEFINES += -DHAVE_CHEEVOS
 DEFINES += -DHAVE_SL
-DEFINES += -DHAVE_TINYALSA
+#DEFINES += -DHAVE_TINYALSA
 
 LOCAL_CFLAGS   += -Wall -std=gnu99 -pthread -Wno-unused-function -fno-stack-protector -funroll-loops $(DEFINES)
 LOCAL_CPPFLAGS := -fexceptions -fpermissive -std=gnu++11 -fno-rtti -Wno-reorder $(DEFINES)
