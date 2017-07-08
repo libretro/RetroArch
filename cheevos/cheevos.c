@@ -170,6 +170,9 @@ enum
    CHEEVOS_COND_TYPE_STANDARD = 0,
    CHEEVOS_COND_TYPE_PAUSE_IF,
    CHEEVOS_COND_TYPE_RESET_IF,
+   CHEEVOS_COND_TYPE_ADD_SOURCE,
+   CHEEVOS_COND_TYPE_SUB_SOURCE,
+   CHEEVOS_COND_TYPE_ADD_HITS,
 
    CHEEVOS_COND_TYPE_LAST
 }; /* cheevos_cond_t.type */
@@ -321,6 +324,9 @@ typedef struct
 {
    int  console_id;
    bool core_supports;
+   bool addrs_patched;
+   int  add_buffer;
+   int  add_hits;
 
    cheevoset_t core;
    cheevoset_t unofficial;
@@ -336,6 +342,9 @@ static cheevos_locals_t cheevos_locals =
 {
    /* console_id          */ 0,
    /* core_supports       */ true,
+   /* addrs_patched       */ false,
+   /* add_buffer          */ 0,
+   /* add_hits            */ 0,
    /* core                */ {NULL, 0},
    /* unofficial          */ {NULL, 0},
    /* leaderboards        */ NULL,
@@ -502,9 +511,12 @@ static void cheevos_log_cond(const cheevos_cond_t* cond)
 {
    RARCH_LOG("CHEEVOS     condition %p\n", cond);
    RARCH_LOG("CHEEVOS       type:     %s\n",
-      cond->type == CHEEVOS_COND_TYPE_STANDARD ? "standard" :
-      cond->type == CHEEVOS_COND_TYPE_PAUSE_IF ? "pause" :
-      cond->type == CHEEVOS_COND_TYPE_RESET_IF ? "reset" :
+      cond->type == CHEEVOS_COND_TYPE_STANDARD   ? "standard" :
+      cond->type == CHEEVOS_COND_TYPE_PAUSE_IF   ? "pause" :
+      cond->type == CHEEVOS_COND_TYPE_RESET_IF   ? "reset" :
+      cond->type == CHEEVOS_COND_TYPE_ADD_SOURCE ? "add source" :
+      cond->type == CHEEVOS_COND_TYPE_SUB_SOURCE ? "sub source" :
+      cond->type == CHEEVOS_COND_TYPE_ADD_HITS   ? "add hits" :
       "?"
    );
    RARCH_LOG("CHEEVOS       req_hits: %u\n", cond->req_hits);
@@ -628,6 +640,12 @@ static void cheevos_build_memaddr(const cheevos_condition_t* condition,
             cheevos_add_string(&aux, &left, "R:");
          else if (cond->type == CHEEVOS_COND_TYPE_PAUSE_IF)
             cheevos_add_string(&aux, &left, "P:");
+         else if (cond->type == CHEEVOS_COND_TYPE_ADD_SOURCE)
+            cheevos_add_string(&aux, &left, "A:");
+         else if (cond->type == CHEEVOS_COND_TYPE_SUB_SOURCE)
+            cheevos_add_string(&aux, &left, "B:");
+         else if (cond->type == CHEEVOS_COND_TYPE_ADD_HITS)
+            cheevos_add_string(&aux, &left, "C:");
 
          cheevos_add_var(&cond->source, &aux, &left);
 
@@ -1151,37 +1169,41 @@ static void cheevos_parse_var(cheevos_var_t *var, const char **memaddr)
 
    var->value = (unsigned)strtol(str, &end, base);
    *memaddr   = end;
-
-   switch (var->type)
-   {
-      case CHEEVOS_VAR_TYPE_ADDRESS:
-      case CHEEVOS_VAR_TYPE_DELTA_MEM:
-         cheevos_parse_guest_addr(var, var->value);
-#ifdef CHEEVOS_DUMP_ADDRS
-         RARCH_LOG("CHEEVOS var %03d:%08X\n", var->bank_id + 1, var->value);
-#endif
-         break;
-      default:
-         break;
-   }
 }
 
 static void cheevos_parse_cond(cheevos_cond_t *cond, const char **memaddr)
 {
    const char* str = *memaddr;
+   cond->type = CHEEVOS_COND_TYPE_STANDARD;
 
-   if (*str == 'R' && str[1] == ':')
+   if (str[1] == ':')
    {
-      cond->type = CHEEVOS_COND_TYPE_RESET_IF;
-      str += 2;
+      int skip = 2;
+
+      switch (*str)
+      {
+      case 'R':
+         cond->type = CHEEVOS_COND_TYPE_RESET_IF;
+         break;
+      case 'P':
+         cond->type = CHEEVOS_COND_TYPE_PAUSE_IF;
+         break;
+      case 'A':
+         cond->type = CHEEVOS_COND_TYPE_ADD_SOURCE;
+         break;
+      case 'B':
+         cond->type = CHEEVOS_COND_TYPE_SUB_SOURCE;
+         break;
+      case 'C':
+         cond->type = CHEEVOS_COND_TYPE_ADD_HITS;
+         break;
+      default:
+         skip = 0;
+         break;
+      }
+
+      str += skip;
    }
-   else if (*str == 'P' && str[1] == ':')
-   {
-      cond->type = CHEEVOS_COND_TYPE_PAUSE_IF;
-      str += 2;
-   }
-   else
-      cond->type = CHEEVOS_COND_TYPE_STANDARD;
 
    cheevos_parse_var(&cond->source, &str);
    cond->op = cheevos_parse_operator(&str);
@@ -1836,7 +1858,7 @@ static unsigned cheevos_get_var_value(cheevos_var_t *var)
 
 static int cheevos_test_condition(cheevos_cond_t *cond)
 {
-   unsigned sval = cheevos_get_var_value(&cond->source);
+   unsigned sval = cheevos_get_var_value(&cond->source) + cheevos_locals.add_buffer;
    unsigned tval = cheevos_get_var_value(&cond->target);
 
    switch (cond->op)
@@ -1868,6 +1890,9 @@ static int cheevos_test_cond_set(const cheevos_condset_t *condset,
    const cheevos_cond_t *end = condset->conds + condset->count;
    cheevos_cond_t *cond      = NULL;
 
+   cheevos_locals.add_buffer = 0;
+   cheevos_locals.add_hits   = 0;
+
    /* Now, read all Pause conditions, and if any are true,
     * do not process further (retain old state). */
 
@@ -1895,6 +1920,32 @@ static int cheevos_test_cond_set(const cheevos_condset_t *condset,
    {
       if (cond->type != CHEEVOS_COND_TYPE_STANDARD)
          continue;
+      
+      if (cond->type == CHEEVOS_COND_TYPE_ADD_SOURCE)
+      {
+         cheevos_locals.add_buffer += cheevos_get_var_value(&cond->source);
+         set_valid = 1;
+         continue;
+      }
+
+      if (cond->type == CHEEVOS_COND_TYPE_SUB_SOURCE)
+      {
+         cheevos_locals.add_buffer -= cheevos_get_var_value(&cond->source);
+         set_valid = 1;
+         continue;
+      }
+
+      if (cond->type == CHEEVOS_COND_TYPE_ADD_HITS)
+      {
+         if (cheevos_test_condition(cond))
+         {
+            cond->curr_hits++;
+            *dirty_conds = 1;
+         }
+
+         cheevos_locals.add_hits += cond->curr_hits;
+         continue;
+      }
 
       if (cond->req_hits != 0 && cond->curr_hits >= cond->req_hits)
          continue;
@@ -1909,12 +1960,15 @@ static int cheevos_test_cond_set(const cheevos_condset_t *condset,
          /* Process this logic, if this condition is true: */
          if (cond->req_hits == 0)
             ; /* Not a hit-based requirement: ignore any additional logic! */
-         else if (cond->curr_hits < cond->req_hits)
+         else if ((cond->curr_hits + cheevos_locals.add_hits) < cond->req_hits)
             cond_valid = 0; /* Not entirely valid yet! */
 
          if (match_any)
             break;
       }
+
+      cheevos_locals.add_buffer = 0;
+      cheevos_locals.add_hits   = 0;
 
       /* Sequential or non-sequential? */
       set_valid &= cond_valid;
@@ -2587,9 +2641,63 @@ bool cheevos_toggle_hardcore_mode(void)
    return true;
 }
 
+static void cheevos_patch_addresses(cheevoset_t* set)
+{
+   cheevo_t* cheevo = set->cheevos;
+
+   for (unsigned i = set->count; i != 0; i--, cheevo++)
+   {
+      cheevos_condset_t* condset = cheevo->condition.condsets;
+
+      for (unsigned j = cheevo->condition.count; j != 0; j--, condset++)
+      {
+         cheevos_cond_t* cond = condset->conds;
+
+         for (unsigned k = condset->count; k != 0; k--, cond++)
+         {
+            switch (cond->source.type)
+            {
+            case CHEEVOS_VAR_TYPE_ADDRESS:
+            case CHEEVOS_VAR_TYPE_DELTA_MEM:
+               cheevos_parse_guest_addr(&cond->source, cond->source.value);
+            #ifdef CHEEVOS_DUMP_ADDRS
+               RARCH_LOG("CHEEVOS var %03d:%08X\n", cond->source.bank_id + 1, cond->source.value);
+            #endif
+               break;
+
+            default:
+               break;
+            }
+
+            switch (cond->target.type)
+            {
+            case CHEEVOS_VAR_TYPE_ADDRESS:
+            case CHEEVOS_VAR_TYPE_DELTA_MEM:
+               cheevos_parse_guest_addr(&cond->target, cond->target.value);
+            #ifdef CHEEVOS_DUMP_ADDRS
+               RARCH_LOG("CHEEVOS var %03d:%08X\n", cond->target.bank_id + 1, cond->target.value);
+            #endif
+               break;
+
+            default:
+               break;
+            }
+         }
+      }
+   }
+}
+
 void cheevos_test(void)
 {
    settings_t *settings = config_get_ptr();
+
+   if (!cheevos_locals.addrs_patched)
+   {
+      cheevos_patch_addresses(&cheevos_locals.core);
+      cheevos_patch_addresses(&cheevos_locals.unofficial);
+
+      cheevos_locals.addrs_patched = true;
+   }
 
    cheevos_test_cheevo_set(&cheevos_locals.core);
 
@@ -2741,6 +2849,8 @@ static int cheevos_iterate(coro_t* coro)
    };
    
    CORO_ENTER()
+
+      cheevos_locals.addrs_patched = false;
    
       SETTINGS = config_get_ptr();
 
