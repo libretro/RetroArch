@@ -231,7 +231,7 @@ static int16_t x_input_state(void *data,
          {
             int keycode = XKeysymToKeycode(x11->display,
                   rarch_keysym_lut[(enum retro_key)binds[port][id].key]);
-            ret         = x11->state[keycode >> 3] & (1 << (keycode & 7));
+            ret         = (binds[port][id].key < RETROK_LAST) && (x11->state[keycode >> 3] & (1 << (keycode & 7)));
             if (!ret)
                ret      = input_joypad_pressed(x11->joypad,
                      joypad_info, port, binds[port], id);
