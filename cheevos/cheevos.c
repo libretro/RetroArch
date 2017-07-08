@@ -2691,24 +2691,6 @@ void cheevos_test(void)
 {
    settings_t *settings = config_get_ptr();
 
-   if (cheevos_locals.console_id == CHEEVOS_CONSOLE_NINTENDO_64 && cheevos_locals.meminfo[0].data == NULL)
-   {
-      /* Lazy init the N64 system RAM pointer */
-      cheevos_locals.meminfo[0].id = RETRO_MEMORY_SYSTEM_RAM;
-      core_get_memory(&cheevos_locals.meminfo[0]);
-
-      if (cheevos_locals.meminfo[0].data != NULL)
-      {
-         RARCH_LOG("CHEEVOS system RAM: %p %u (lazy initialized)\n",
-            cheevos_locals.meminfo[0].data, cheevos_locals.meminfo[0].size);
-      }
-      else
-      {
-         /* No point testing cheevos yet */
-         return;
-      }
-   }
-
    if (!cheevos_locals.addrs_patched)
    {
       cheevos_patch_addresses(&cheevos_locals.core);
