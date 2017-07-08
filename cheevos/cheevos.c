@@ -324,6 +324,7 @@ typedef struct
 {
    int  console_id;
    bool core_supports;
+   bool addrs_patched;
    int  add_buffer;
    int  add_hits;
 
@@ -341,6 +342,7 @@ static cheevos_locals_t cheevos_locals =
 {
    /* console_id          */ 0,
    /* core_supports       */ true,
+   /* addrs_patched       */ false,
    /* add_buffer          */ 0,
    /* add_hits            */ 0,
    /* core                */ {NULL, 0},
@@ -1167,19 +1169,6 @@ static void cheevos_parse_var(cheevos_var_t *var, const char **memaddr)
 
    var->value = (unsigned)strtol(str, &end, base);
    *memaddr   = end;
-
-   switch (var->type)
-   {
-      case CHEEVOS_VAR_TYPE_ADDRESS:
-      case CHEEVOS_VAR_TYPE_DELTA_MEM:
-         cheevos_parse_guest_addr(var, var->value);
-#ifdef CHEEVOS_DUMP_ADDRS
-         RARCH_LOG("CHEEVOS var %03d:%08X\n", var->bank_id + 1, var->value);
-#endif
-         break;
-      default:
-         break;
-   }
 }
 
 static void cheevos_parse_cond(cheevos_cond_t *cond, const char **memaddr)
@@ -2652,9 +2641,81 @@ bool cheevos_toggle_hardcore_mode(void)
    return true;
 }
 
+static void cheevos_patch_addresses(cheevoset_t* set)
+{
+   cheevo_t* cheevo = set->cheevos;
+
+   for (unsigned i = set->count; i != 0; i--, cheevo++)
+   {
+      cheevos_condset_t* condset = cheevo->condition.condsets;
+
+      for (unsigned j = cheevo->condition.count; j != 0; j--, condset++)
+      {
+         cheevos_cond_t* cond = condset->conds;
+
+         for (unsigned k = condset->count; k != 0; k--, cond++)
+         {
+            switch (cond->source.type)
+            {
+            case CHEEVOS_VAR_TYPE_ADDRESS:
+            case CHEEVOS_VAR_TYPE_DELTA_MEM:
+               cheevos_parse_guest_addr(&cond->source, cond->source.value);
+            #ifdef CHEEVOS_DUMP_ADDRS
+               RARCH_LOG("CHEEVOS var %03d:%08X\n", cond->source.bank_id + 1, cond->source.value);
+            #endif
+               break;
+
+            default:
+               break;
+            }
+
+            switch (cond->target.type)
+            {
+            case CHEEVOS_VAR_TYPE_ADDRESS:
+            case CHEEVOS_VAR_TYPE_DELTA_MEM:
+               cheevos_parse_guest_addr(&cond->target, cond->target.value);
+            #ifdef CHEEVOS_DUMP_ADDRS
+               RARCH_LOG("CHEEVOS var %03d:%08X\n", cond->target.bank_id + 1, cond->target.value);
+            #endif
+               break;
+
+            default:
+               break;
+            }
+         }
+      }
+   }
+}
+
 void cheevos_test(void)
 {
    settings_t *settings = config_get_ptr();
+
+   if (cheevos_locals.console_id == CHEEVOS_CONSOLE_NINTENDO_64 && cheevos_locals.meminfo[0].data == NULL)
+   {
+      /* Lazy init the N64 system RAM pointer */
+      cheevos_locals.meminfo[0].id = RETRO_MEMORY_SYSTEM_RAM;
+      core_get_memory(&cheevos_locals.meminfo[0]);
+
+      if (cheevos_locals.meminfo[0].data != NULL)
+      {
+         RARCH_LOG("CHEEVOS system RAM: %p %u (lazy initialized)\n",
+            cheevos_locals.meminfo[0].data, cheevos_locals.meminfo[0].size);
+      }
+      else
+      {
+         /* No point testing cheevos yet */
+         return;
+      }
+   }
+
+   if (!cheevos_locals.addrs_patched)
+   {
+      cheevos_patch_addresses(&cheevos_locals.core);
+      cheevos_patch_addresses(&cheevos_locals.unofficial);
+
+      cheevos_locals.addrs_patched = true;
+   }
 
    cheevos_test_cheevo_set(&cheevos_locals.core);
 
@@ -2807,8 +2868,7 @@ static int cheevos_iterate(coro_t* coro)
    
    CORO_ENTER()
 
-      for (I = 0; I < 6000000; I++)
-         CORO_YIELD();
+      cheevos_locals.addrs_patched = false;
    
       SETTINGS = config_get_ptr();
 
