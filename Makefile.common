@@ -729,10 +729,7 @@ endif
 ifeq ($(HAVE_NUKLEAR), 1)
    OBJ += menu/drivers/nuklear/nk_common.o
    OBJ += menu/drivers/nuklear/nk_menu.o
-   OBJ += menu/drivers/nuklear/nk_wnd_main.o
-   OBJ += menu/drivers/nuklear/nk_wnd_file_picker.o
-   OBJ += menu/drivers/nuklear/nk_wnd_shader_parameters.o
-   OBJ += menu/drivers/nuklear/nk_wnd_settings.o
+   OBJ += menu/drivers/nuklear/nk_wnd_debug.o
    OBJ += menu/drivers/nuklear.o
    DEFINES += -DHAVE_NUKLEAR
 endif

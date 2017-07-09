@@ -110,7 +110,7 @@ void nk_common_device_init(struct nk_device *dev)
    dev->attrib_pos   = glGetAttribLocation(dev->prog, "Position");
    dev->attrib_uv    = glGetAttribLocation(dev->prog, "TexCoord");
    dev->attrib_col   = glGetAttribLocation(dev->prog, "Color");
-
+   
    glGenBuffers(1, &dev->vbo);
    glGenBuffers(1, &dev->ebo);
    glGenVertexArrays(1, &dev->vao);
@@ -134,7 +134,7 @@ void nk_common_device_init(struct nk_device *dev)
 #endif
 }
 
-void device_upload_atlas(struct nk_device *dev, const void *image, int width, int height)
+void nk_upload_atlas(struct nk_device *dev, const void *image, int width, int height)
 {
     glGenTextures(1, &dev->font_tex);
     glBindTexture(GL_TEXTURE_2D, dev->font_tex);
@@ -229,14 +229,19 @@ void nk_common_device_draw(struct nk_device *dev,
 #endif
 
    /* fill converting configuration */
-   memset(&config, 0, sizeof(config));
 
-   config.global_alpha         = 1.0f;
-   config.shape_AA             = AA;
-   config.line_AA              = AA;
+   NK_MEMSET(&config, 0, sizeof(config));
+   config.vertex_layout = vertex_layout;
+   config.vertex_size  = sizeof(struct nk_vertex);
+   config.vertex_alignment = NK_ALIGNOF(struct nk_vertex);
+   config.null = dev->null;
    config.circle_segment_count = 22;
-   config.vertex_layout        = vertex_layout;
-   config.vertex_size          = sizeof(struct nk_vertex);
+   config.curve_segment_count = 22;
+   config.arc_segment_count = 22;
+   config.global_alpha = 1.0f;
+   config.shape_AA = AA;
+   config.line_AA = AA;
+
 #if 0
    config.line_thickness       = 1.0f;
 #endif
@@ -262,7 +267,8 @@ void nk_common_device_draw(struct nk_device *dev,
       glBindTexture(GL_TEXTURE_2D, (GLuint)cmd->texture.id);
       glScissor((GLint)cmd->clip_rect.x,
             height - (GLint)(cmd->clip_rect.y + cmd->clip_rect.h),
-            (GLint)cmd->clip_rect.w, (GLint)cmd->clip_rect.h);
+            (GLint)cmd->clip_rect.w,
+            (GLint)cmd->clip_rect.h);
       glDrawElements(GL_TRIANGLES, (GLsizei)cmd->elem_count,
             GL_UNSIGNED_SHORT, offset);
 #endif
