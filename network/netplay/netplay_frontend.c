@@ -523,7 +523,7 @@ static int16_t netplay_input_state(netplay_t *netplay,
 
 static void netplay_announce_cb(void *task_data, void *user_data, const char *error)
 {
-   RARCH_LOG("Announcing netplay game... \n");
+   RARCH_LOG("[netplay] announcing netplay game... \n");
 
    if (task_data)
    {
@@ -568,7 +568,7 @@ static void netplay_announce_cb(void *task_data, void *user_data, const char *er
 
       if (mitm_ip && mitm_port)
       {
-         RARCH_LOG("Joining MITM server: %s:%s\n", mitm_ip, mitm_port);
+         RARCH_LOG("[netplay] joining MITM server: %s:%s\n", mitm_ip, mitm_port);
 
          ip_len   = (unsigned)strlen(mitm_ip);
          port_len = (unsigned)strlen(mitm_port);
@@ -633,8 +633,9 @@ static void netplay_announce(void)
       *settings->paths.netplay_spectate_password ? 1 : 0,
       settings->bools.netplay_use_mitm_server,
       PACKAGE_VERSION);
-
-   RARCH_LOG("%s\n", buf);
+#if 0
+   RARCH_LOG("[netplay] announcement URL: %s\n", buf);
+#endif
    task_push_http_post_transfer(url, buf, true, NULL, netplay_announce_cb, NULL);
 
    free(username);
@@ -1095,7 +1096,7 @@ static void netplay_toggle_play_spectate(netplay_t *netplay)
          snprintf(msg, sizeof(msg)-1, msg_hash_to_str(MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N), player+1);
       }
 
-      RARCH_LOG("%s\n", dmsg);
+      RARCH_LOG("[netplay] %s\n", dmsg);
       runloop_msg_queue_push(dmsg, 1, 180, false);
 
       netplay_send_raw_cmd_all(netplay, NULL, NETPLAY_CMD_MODE, payload, sizeof(payload));
@@ -1203,11 +1204,11 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
 
    if (netplay_is_client)
    {
-      RARCH_LOG("%s\n", msg_hash_to_str(MSG_CONNECTING_TO_NETPLAY_HOST));
+      RARCH_LOG("[netplay] %s\n", msg_hash_to_str(MSG_CONNECTING_TO_NETPLAY_HOST));
    }
    else
    {
-      RARCH_LOG("%s\n", msg_hash_to_str(MSG_WAITING_FOR_CLIENT));
+      RARCH_LOG("[netplay] %s\n", msg_hash_to_str(MSG_WAITING_FOR_CLIENT));
       runloop_msg_queue_push(
          msg_hash_to_str(MSG_WAITING_FOR_CLIENT),
          0, 180, false);
