@@ -97,7 +97,7 @@
 
 #define CHEEVOS_SIX_MB     ( 6 * 1024 * 1024)
 #define CHEEVOS_EIGHT_MB   ( 8 * 1024 * 1024)
-#define CHEEVOS_SIZE_LIMIT (32 * 1024 * 1024)
+#define CHEEVOS_SIZE_LIMIT (64 * 1024 * 1024)
 
 enum
 {
@@ -1051,9 +1051,18 @@ void cheevos_parse_guest_addr(cheevos_var_t *var, unsigned value)
    var->bank_id = -1;
    var->value   = value;
 
-   if (   cheevos_locals.console_id == CHEEVOS_CONSOLE_NINTENDO
-       && var->value < 0x2000)
-      var->value &= 0x07ff;
+   switch (cheevos_locals.console_id)
+   {
+      case CHEEVOS_CONSOLE_NINTENDO:
+         if (var->value < 0x2000)
+            var->value &= 0x07ff;
+         break;
+      
+      case CHEEVOS_CONSOLE_GAMEBOY_COLOR:
+         if (var->value >= 0xe000 && var->value <= 0xfdff)
+            var->value -= 0x2000;
+         break;
+   }
 
    if (system->mmaps.num_descriptors != 0)
    {
