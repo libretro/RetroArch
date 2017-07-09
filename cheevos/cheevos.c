@@ -97,7 +97,7 @@
 
 #define CHEEVOS_SIX_MB     ( 6 * 1024 * 1024)
 #define CHEEVOS_EIGHT_MB   ( 8 * 1024 * 1024)
-#define CHEEVOS_SIZE_LIMIT (32 * 1024 * 1024)
+#define CHEEVOS_SIZE_LIMIT (64 * 1024 * 1024)
 
 enum
 {
