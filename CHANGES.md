@@ -2,28 +2,28 @@
 - IOS: Fix GL regression - 32bit color format cores were no longer rendering 
 - CHEEVOS: Add support for N64 cheevos and other small fixes.
 - CHEEVOS: Add 'Achievements -> Achievements Verbose Mode'. Ability to display cheevos related messages in OSD, useful for RetroAchievements users.
-- AUDIO: Mute now no longer disables/enables audio but instead properly mutes the audio volume.
-  Mute is also independent from the audio mixer volume.
 - AUDIO: Audio mixer's volume can now be independently increased/decreased, and muted.
-- SDL2: Fix 'SDL2 driver does not see the hat on wired Xbox 360 controller"
-- SCANNING: Fix PS1 game scanning
-- SCANNING: Move content list builder into scanner task with progress, fixes menu freeze with large playlists
-- VITA: Add support for external USB if mounted
-- VITA: Add cheevos support
-- MENU: Add 'User Interface -> Views'. Ability to display/hide online updater and core updater
-options.
-- LINUX: Add a tinyalsa audio driver. Doesn't require asoundlib, should be self-contained and
-lower-level.
+- AUDIO: Mute now no longer disables/enables audio but instead properly mutes the audio volume. Mute is also independent from the audio mixer volume.
+- INPUT: Add mouse index selection; ability now to select between different mice
+- INPUT: Fix 'All Users Control Menu' setting
+- LINUX: Add a tinyalsa audio driver. Doesn't require asoundlib, should be self-contained and lower-level.
+- LOBBIES: Announce the RetroArch version too
 - LOCALIZATION: Add Traditional Chinese translation
 - LOCALIZATION: Update French translation
 - LOCALIZATION: Update Italian translation
 - LOCALIZATION: Update Japanese translation
 - LOCALIZATION: Update Russian translation
+- MENU: Add 'User Interface -> Views'. Ability to display/hide online updater and core updater options.
+
+- NETPLAY: Disconnecting one client shouldn't cause everyone to disconnect anymore
+- SCANNER: Fix PS1 game scanning
+- SCANNER: Move content list builder into scanner task with progress, fixes menu freeze with large playlists
+- SDL2: Fix 'SDL2 driver does not see the hat on wired Xbox 360 controller"
+- SETTINGS: Fix regression 'Custom Viewport is no longer overridable per-core or per-game'
+- VITA: Add cheevos support
+- VITA: Add support for external USB if mounted
 - WAYLAND: Fix menu mouse input
 - WII: Add support for single-port 'PS1/PS2 to USB controller adapter'
-- INPUT: Fix 'All Users Control Menu' setting
-- INPUT: Add mouse index selection; ability now to select between different mice
-- SETTINGS: Fix regression 'Custom Viewport is no longer overridable per-core or per-game'
 
 # 1.6.0
 - AUTOSAVE/SRAM - Fix bug #3829 / #4820 (https://github.com/libretro/RetroArch/issues/3829)
