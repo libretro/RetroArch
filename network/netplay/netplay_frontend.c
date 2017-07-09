@@ -18,6 +18,8 @@
 #include <stdlib.h>
 #include <sys/types.h>
 
+#include "version.h"
+
 #include <boolean.h>
 #include <compat/strl.h>
 #include <retro_assert.h>
@@ -615,20 +617,24 @@ static void netplay_announce(void)
 
    net_http_urlencode_full(&username, settings->paths.username);
    net_http_urlencode_full(&corename, system->info.library_name);
-   net_http_urlencode_full(&gamename, !string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))) ? path_basename(path_get(RARCH_PATH_BASENAME)) : "N/A");
+   net_http_urlencode_full(&gamename, 
+      !string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))) ? 
+      path_basename(path_get(RARCH_PATH_BASENAME)) : "N/A");
    net_http_urlencode_full(&coreversion, system->info.library_version);
 
    buf[0] = '\0';
 
    snprintf(buf, sizeof(buf), "username=%s&core_name=%s&core_version=%s&"
       "game_name=%s&game_crc=%08X&port=%d"
-      "&has_password=%d&has_spectate_password=%d&force_mitm=%d",
+      "&has_password=%d&has_spectate_password=%d&force_mitm=%d&retroarch_version=%s",
       username, corename, coreversion, gamename, content_crc,
       settings->uints.netplay_port,
       *settings->paths.netplay_password ? 1 : 0,
       *settings->paths.netplay_spectate_password ? 1 : 0,
-      settings->bools.netplay_use_mitm_server);
+      settings->bools.netplay_use_mitm_server,
+      PACKAGE_VERSION);
 
+   RARCH_LOG("%s\n", buf);
    task_push_http_post_transfer(url, buf, true, NULL, netplay_announce_cb, NULL);
 
    free(username);
