@@ -363,9 +363,9 @@ static int action_bind_sublabel_netplay_room(
       return 0;
 
    snprintf(s,len, "RetroArch: %s\nCore: %s (%s)\nGame: %s (%08x)", 
-      string_is_empty(netplay_room_list[i - 3].retroarchversion) ? "N/A" : netplay_room_list[i - 3].retroarchversion,
+      string_is_empty(netplay_room_list[i - 3].retroarchversion) ? "n/a" : netplay_room_list[i - 3].retroarchversion,
       netplay_room_list[i - 3].corename, netplay_room_list[i - 3].coreversion, 
-      netplay_room_list[i - 3].gamename, netplay_room_list[i - 3].gamecrc);
+      !string_is_equal(netplay_room_list[i - 3].gamename, "N/A") ? netplay_room_list[i - 3].gamename : "n/a", netplay_room_list[i - 3].gamecrc);
 #if 0
    strlcpy(s, netplay_room_list[i - 3].corename, len);
 #endif
