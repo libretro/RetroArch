@@ -23,6 +23,7 @@
 
 #include <file/archive_file.h>
 #include <retro_common_api.h>
+#include <queues/task_queue.h>
 
 RETRO_BEGIN_DECLS
 
@@ -125,10 +126,10 @@ database_info_list_t *database_info_list_new(const char *rdb_path,
 void database_info_list_free(database_info_list_t *list);
 
 database_info_handle_t *database_info_dir_init(const char *dir,
-      enum database_type type);
+      enum database_type type, retro_task_t *task);
 
 database_info_handle_t *database_info_file_init(const char *path,
-      enum database_type type);
+      enum database_type type, retro_task_t *task);
 
 void database_info_free(database_info_handle_t *handle);
 

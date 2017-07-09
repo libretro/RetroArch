@@ -4,6 +4,7 @@
 - AUDIO: Audio mixer's volume can now be independently increased/decreased, and muted.
 - SDL2: Fix 'SDL2 driver does not see the hat on wired Xbox 360 controller"
 - SCANNING: Fix PS1 game scanning
+- SCANNING: Move content list builder into scanner task with progress, fixes menu freeze with large playlists
 - VITA: Add support for external USB if mounted
 - VITA: Add cheevos support
 - MENU: Add 'User Interface -> Views'. Ability to display/hide online updater and core updater

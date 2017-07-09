@@ -60,6 +60,10 @@ typedef struct db_handle
    unsigned status;
    char playlist_directory[4096];
    char content_database_path[4096];
+
+   bool is_directory;
+   char fullpath[4096];
+   bool scan_started;
 } db_handle_t;
 
 int find_first_data_track(const char* cue_path,
@@ -630,6 +634,21 @@ static void task_database_handler(retro_task_t *task)
    if (!db)
       goto task_finished;
 
+   if (!db->scan_started)
+   {
+      db->scan_started = true;
+
+      if (db->is_directory)
+         db->handle = database_info_dir_init(db->fullpath, DATABASE_TYPE_ITERATE, task);
+      else
+         db->handle = database_info_file_init(db->fullpath, DATABASE_TYPE_ITERATE, task);
+
+      task_free_title(task);
+
+      if (db->handle)
+         db->handle->status = DATABASE_STATUS_ITERATE_BEGIN;
+   }
+
    dbinfo  = db->handle;
    dbstate = &db->state;
 
@@ -721,19 +740,15 @@ bool task_push_dbscan(
    t->handler        = task_database_handler;
    t->state          = db;
    t->callback       = cb;
+   t->title          = strdup(msg_hash_to_str(MSG_PREPARING_FOR_CONTENT_SCAN));
 
+   db->is_directory = directory;
+
+   strlcpy(db->fullpath, fullpath, sizeof(db->fullpath));
    strlcpy(db->playlist_directory, playlist_directory,
          sizeof(db->playlist_directory));
    strlcpy(db->content_database_path, content_database,
          sizeof(db->content_database_path));
-
-   if (directory)
-      db->handle = database_info_dir_init(fullpath, DATABASE_TYPE_ITERATE);
-   else
-      db->handle = database_info_file_init(fullpath, DATABASE_TYPE_ITERATE);
-
-   if (db->handle)
-      db->handle->status = DATABASE_STATUS_ITERATE_BEGIN;
 
    task_queue_push(t);
 

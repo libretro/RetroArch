@@ -399,7 +399,7 @@ static int database_cursor_close(libretrodb_t *db, libretrodb_cursor_t *cur)
 }
 
 database_info_handle_t *database_info_dir_init(const char *dir,
-      enum database_type type)
+      enum database_type type, retro_task_t *task)
 {
    unsigned i;
    database_info_handle_t     *db  = (database_info_handle_t*)
@@ -422,6 +422,9 @@ database_info_handle_t *database_info_dir_init(const char *dir,
       for (i = 0; i < db->list->size; i++)
       {
          const char *path = db->list->elems[i].data;
+
+         if (task)
+            task_set_progress(task, (i / (float)db->list->size) * 100);
 
          if (path_is_compressed_file(path) && !path_contains_compressed_file(path))
          {
@@ -469,7 +472,7 @@ error:
 }
 
 database_info_handle_t *database_info_file_init(const char *path,
-      enum database_type type)
+      enum database_type type, retro_task_t *task)
 {
    union string_list_elem_attr attr;
    database_info_handle_t      *db  = (database_info_handle_t*)
@@ -500,6 +503,9 @@ database_info_handle_t *database_info_file_init(const char *path,
          {
             char new_path[PATH_MAX_LENGTH];
             size_t path_len = strlen(path);
+
+            if (task)
+               task_set_progress(task, (i / (float)archive_list->size) * 100);
 
             new_path[0] = '\0';
 
