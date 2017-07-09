@@ -26,75 +26,75 @@
 - WII: Add support for single-port 'PS1/PS2 to USB controller adapter'
 
 # 1.6.0
-- AUTOSAVE/SRAM - Fix bug #3829 / #4820 (https://github.com/libretro/RetroArch/issues/3829)
-- ENDIANNESS: Fixed database scanning. Should fix scanning on PS3/WiiU/Wii, etc.
-- NET: Fix bug #4703 (https://github.com/libretro/RetroArch/issues/4703)
-- ANDROID: Runtime permission checking
+- ANDROID: Allow remotes to retain OK/Cancel position when menu_swap_ok_cancel is enabled
 - ANDROID: Improve autoconf fallback
 - ANDROID: Improve shield portable/gamepad device grouping workaround
-- ANDROID: Allow remotes to retain OK/Cancel position when menu_swap_ok_cancel is enabled
-- LOCALIZATION: Update/finish French translation
-- LOCALIZATION: Update German translation
-- LOCALIZATION: Update Japanese translation
-- LOCALIZATION/GUI: Korean font should display properly now with XMB/MaterialUI's default font
-- LOCALIZATION: Update Russian translation
-- MENU: Improved rendering for XMB ribbon; using additive blending (Vulkan/GL)
-- OSX/MACOS: Fixes serious memory leak
-- WINDOWS: Added WASAPI audio driver for low-latency audio. Both shared and exclusive mode.
-- WINDOWS: Added RawInput input driver for low-latency, low-level input.
-- WINDOWS: Core mouse input should be relative again in cores
-- MISC: Various frontend optimizations.
-- VIDEO: Fix threaded video regression; tickering of menu entries would no longer work.
-- WII: Fix crashing issues which could occur with the dummy core
-- WIIU: HID Controller support
-- WIIU: XMB/MaterialUI menu driver support
-- WIIU: Initial network/netplay support
+- ANDROID: Runtime permission checking
+- AUDIO: Audio mixer support. Mix up to 8 streams with the game's audio.
+- AUTOSAVE/SRAM - Fix bug #3829 / #4820 (https://github.com/libretro/RetroArch/issues/3829)
+- ENDIANNESS: Fixed database scanning. Should fix scanning on PS3/WiiU/Wii, etc.
 - LOBBIES: Fallback to filename based matching if no CRC matches are found (for people making playlists by hand)
 - LOBBIES: GUI refinement, show stop hosting when a host has been started, show disconnect when playing as client
 - LOBBIES: if the game is already loaded it will try to connect directly instead of re-loading content (non-fullpath cores only)
 - LOBBIES: unify both netplay menus
+- LOCALIZATION/GUI: Korean font should display properly now with XMB/MaterialUI's default font
+- LOCALIZATION: Update German translation
+- LOCALIZATION: Update Japanese translation
+- LOCALIZATION: Update Russian translation
+- LOCALIZATION: Update/finish French translation
+- MENU: Improved rendering for XMB ribbon; using additive blending (Vulkan/GL)
+- MISC: Various frontend optimizations.
+- NET: Fix bug #4703 (https://github.com/libretro/RetroArch/issues/4703)
+- OSX/MACOS: Fixes serious memory leak
 - THUMBNAILS: Thumbnails show up now in Load Content -> Collection, Information -> Database 
-- VITA: Fix slow I/O
+- VIDEO: Fix threaded video regression; tickering of menu entries would no longer work.
 - VITA: Fix 30fps menu (poke into input now instead of reading the entire input buffer which apparently is slow)
 - VITA: Fix frame throttle
-- VULKAN: Unicode font rendering support. Should fix bad character encoding for French characters, etc.
+- VITA: Fix slow I/O
 - VULKAN: Fix some crashes on loading some thumbnails
-- AUDIO: Audio mixer support. Mix up to 8 streams with the game's audio.
+- VULKAN: Unicode font rendering support. Should fix bad character encoding for French characters, etc.
+- WII: Fix crashing issues which could occur with the dummy core
+- WIIU: HID Controller support
+- WIIU: Initial network/netplay support
+- WIIU: XMB/MaterialUI menu driver support
+- WINDOWS: Added RawInput input driver for low-latency, low-level input.
+- WINDOWS: Added WASAPI audio driver for low-latency audio. Both shared and exclusive mode.
+- WINDOWS: Core mouse input should be relative again in cores
 
 # 1.5.0
-- MOBILE: Single-tap for menu entry selection
-- MOBILE: Long-tap a setting to reset to default
 - ANDROID: Autoconf fallback
 - ANDROID: Mouse support / Emulated mouse support
 - AUTOCONF: Fix partial matches for pad name
 - CHEEVOS: Fix crashes in the cheevos description menu
 - CHEEVOS: WIP leaderboards support
-- COMMON: Threading fixes
 - COMMON: 9-slice texture drawing support
+- COMMON: Threading fixes
 - CORETEXT/APPLE: Ability to load menu display font drivers and loading of custom font.
 - DOS: Add keyboard driver
 - DOS: Improve color accuracy and scaling
-- GUI: Various settings are now only visible when advanced settings is enabled
-- GUI: Allow changing icon theme on the fly
 - GUI: Add a symbol page in the OSK
+- GUI: Allow changing icon theme on the fly
 - GUI: Better dialogs for XMB
+- GUI: Various settings are now only visible when advanced settings is enabled
 - LOCALIZATION: Add/update Korean translation
 - LOCALIZATION: Rewrite German translation
 - LOCALIZATION: Update several English sublabels
 - LOCALIZATION: Update several Japanese labels
+- MOBILE: Long-tap a setting to reset to default
+- MOBILE: Single-tap for menu entry selection
 - NET: Allow manual netplay content loading
 - NET: Announcing network games to the public lobby is optional now
 - NET: Bake in miniupnpc
 - NET: Fix netplay join for contentless cores
+- NET: Fix netplay rooms being pushed on the wrong tab
 - NET: Lan games show next to lobbies with (lan) and connect via the private IP address
 - NET: Use new lobby system with MITM support
-- NET: Fix netplay rooms being pushed on the wrong tab
 - NUKLEAR: Update to current version
 - SCANNER: Always add 7z & zip to supported extensions
-- VULKAN: Find supported composite alpha in swapchain
 - VULKAN: Add snow/bokeh shader pipeline effects - at parity with GL now
+- VULKAN: Find supported composite alpha in swapchain
 - WIIU: Keyboard support
-- WINDOWS: Logging to file no longer spawns an empty window
 - WINDOWS: Fix loading of core/content via file menu
+- WINDOWS: Logging to file no longer spawns an empty window
 
 # 1.4.1
