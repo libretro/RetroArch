@@ -211,6 +211,7 @@ static int setting_uint_action_left_default(void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
    double               min = 0.0f;
+   bool                 overflowed = false;
    
    if (!setting)
       return -1;
@@ -219,16 +220,28 @@ static int setting_uint_action_left_default(void *data, bool wraparound)
 
    (void)wraparound; /* TODO/FIXME - handle this */
 
-   if (*setting->value.target.unsigned_integer != min)
-      *setting->value.target.unsigned_integer =
-         *setting->value.target.unsigned_integer - setting->step;
+
+   overflowed = setting->step > *setting->value.target.unsigned_integer;
+
+   if (!overflowed)
+      *setting->value.target.unsigned_integer = *setting->value.target.unsigned_integer - setting->step;
 
    if (setting->enforce_minrange)
    {
-      if (*setting->value.target.unsigned_integer < min)
-         *setting->value.target.unsigned_integer = min;
-   }
+      if (overflowed || *setting->value.target.unsigned_integer < min)
+      {
+         settings_t *settings = config_get_ptr();
 
+#ifdef HAVE_MENU
+      double           max = setting->max;
+
+         if (settings && settings->bools.menu_navigation_wraparound_enable)
+            *setting->value.target.unsigned_integer = max;
+         else
+#endif
+            *setting->value.target.unsigned_integer = min;
+      }
+   }
 
    return 0;
 }
