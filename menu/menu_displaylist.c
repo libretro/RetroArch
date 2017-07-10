@@ -2771,7 +2771,21 @@ static int menu_displaylist_parse_load_content_settings(
       bool show_advanced_settings    = settings->bools.menu_show_advanced_settings;
 #endif
       rarch_system_info_t *system    = runloop_get_system_info();
-
+      const struct retro_subsystem_info* subsystem = NULL;
+      subsystem = system->subsystem.data;
+      if (subsystem)
+      {
+         for (int p = 0; p < system->subsystem.size; p++, subsystem++)
+         {
+            char s[PATH_MAX_LENGTH];
+            snprintf(s, sizeof(s), "%s (%s)", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST), subsystem->desc);
+            menu_entries_append_enum(info->list,
+                  s,
+                  msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL),
+                  MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL,
+                  MENU_SETTING_ACTION, 0, 0);
+         }
+      }
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RESUME_CONTENT),
             msg_hash_to_str(MENU_ENUM_LABEL_RESUME_CONTENT),
@@ -5872,7 +5886,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_refresh = true;
          break;
       case DISPLAYLIST_LOAD_CONTENT_LIST:
+      case DISPLAYLIST_LOAD_CONTENT_SPECIAL:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         printf ("AAAAAAAAAAA %s\n", settings->paths.directory_menu_content);
+         fflush(stdout);
          if (!string_is_empty(settings->paths.directory_menu_content))
             menu_entries_append_enum(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES),
