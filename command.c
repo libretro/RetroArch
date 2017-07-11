@@ -1856,8 +1856,10 @@ bool command_event(enum event_command cmd, void *data)
             if (settings->bools.cheevos_hardcore_mode_enable)
                return false;
 #endif
-
-            if (settings->bools.rewind_enable)
+            /* Only enable state manager if netplay is not underway 
+               TODO: Add a setting for these tweaks */
+            if (settings->bools.rewind_enable 
+               && !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
                state_manager_event_init((unsigned)settings->rewind_buffer_size);
          }
          break;
@@ -2272,6 +2274,10 @@ bool command_event(enum event_command cmd, void *data)
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
                return false;
             }
+            
+            /* Disable rewind if it was enabled 
+               TODO: Add a setting for these tweaks */
+            state_manager_event_deinit();
          }
          break;
       /* init netplay via lobby when content is loaded */
@@ -2298,6 +2304,10 @@ bool command_event(enum event_command cmd, void *data)
             }
 
             string_list_free(hostname);
+
+            /* Disable rewind if it was enabled 
+               TODO: Add a setting for these tweaks */
+            state_manager_event_deinit();
          }
          break;
       /* init netplay via lobby when content is not loaded */
@@ -2324,6 +2334,10 @@ bool command_event(enum event_command cmd, void *data)
             }
 
             string_list_free(hostname);
+
+            /* Disable rewind if it was enabled 
+               TODO: Add a setting for these tweaks */
+            state_manager_event_deinit();
          }
          break;
       case CMD_EVENT_NETPLAY_FLIP_PLAYERS:
