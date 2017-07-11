@@ -1884,10 +1884,19 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_AUTOSAVE_INIT:
          command_event(CMD_EVENT_AUTOSAVE_DEINIT, NULL);
 #ifdef HAVE_THREADS
-         if (autosave_init())
-            runloop_set(RUNLOOP_ACTION_AUTOSAVE);
-         else
-            runloop_unset(RUNLOOP_ACTION_AUTOSAVE);
+#ifdef HAVE_NETWORKING
+         /* Only enable state manager if netplay is not underway 
+            TODO: Add a setting for these tweaks */
+         settings_t *settings      = config_get_ptr();
+         if (settings->uints.autosave_interval != 0
+            && !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+#endif
+         {
+            if (autosave_init())
+               runloop_set(RUNLOOP_ACTION_AUTOSAVE);
+            else
+               runloop_unset(RUNLOOP_ACTION_AUTOSAVE);
+         }
 #endif
          break;
       case CMD_EVENT_AUTOSAVE_STATE:
@@ -2277,9 +2286,10 @@ bool command_event(enum event_command cmd, void *data)
                return false;
             }
             
-            /* Disable rewind if it was enabled 
+            /* Disable rewind & sram autosave if it was enabled 
                TODO: Add a setting for these tweaks */
             state_manager_event_deinit();
+            autosave_deinit();
          }
          break;
       /* init netplay via lobby when content is loaded */
@@ -2310,6 +2320,7 @@ bool command_event(enum event_command cmd, void *data)
             /* Disable rewind if it was enabled 
                TODO: Add a setting for these tweaks */
             state_manager_event_deinit();
+            autosave_deinit();
          }
          break;
       /* init netplay via lobby when content is not loaded */
@@ -2340,6 +2351,7 @@ bool command_event(enum event_command cmd, void *data)
             /* Disable rewind if it was enabled 
                TODO: Add a setting for these tweaks */
             state_manager_event_deinit();
+            autosave_deinit();
          }
          break;
       case CMD_EVENT_NETPLAY_FLIP_PLAYERS:

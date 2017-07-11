@@ -4382,6 +4382,8 @@ static int action_ok_netplay_disconnect(const char *path,
       TODO: Add a setting for these tweaks */
    if (settings->bools.rewind_enable)
       command_event(CMD_EVENT_REWIND_INIT, NULL);
+   if (settings->uints.autosave_interval != 0)
+      command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
    return generic_action_ok_command(CMD_EVENT_RESUME);
 
 #else
