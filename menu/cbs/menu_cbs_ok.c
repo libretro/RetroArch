@@ -4373,9 +4373,15 @@ static int action_ok_netplay_enable_client(const char *path,
 static int action_ok_netplay_disconnect(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   settings_t *settings = config_get_ptr();
 #ifdef HAVE_NETWORKING
    netplay_driver_ctl(RARCH_NETPLAY_CTL_DISCONNECT, NULL);
    netplay_driver_ctl(RARCH_NETPLAY_CTL_DISABLE, NULL);
+
+   /* Re-enable rewind if it was enabled 
+      TODO: Add a setting for these tweaks */
+   if (settings->bools.rewind_enable)
+      command_event(CMD_EVENT_REWIND_INIT, NULL);
    return generic_action_ok_command(CMD_EVENT_RESUME);
 
 #else

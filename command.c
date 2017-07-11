@@ -1856,10 +1856,12 @@ bool command_event(enum event_command cmd, void *data)
             if (settings->bools.cheevos_hardcore_mode_enable)
                return false;
 #endif
+#ifdef HAVE_NETWORKING
             /* Only enable state manager if netplay is not underway 
                TODO: Add a setting for these tweaks */
-            if (settings->bools.rewind_enable 
+            if (settings->bools.rewind_enable
                && !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+#endif
                state_manager_event_init((unsigned)settings->rewind_buffer_size);
          }
          break;
