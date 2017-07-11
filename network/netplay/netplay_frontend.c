@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 
-#include "version.h"
+#include "../../version.h"
 
 #include <boolean.h>
 #include <compat/strl.h>
