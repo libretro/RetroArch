@@ -169,6 +169,30 @@ static bool driver_find_first(const char *label, char *s, size_t len)
 }
 
 /**
+ * driver_find_last:
+ * @label              : string of driver type to be found.
+ * @s                  : identifier of driver to be found.
+ * @len                : size of @s.
+ *
+ * Find last driver in driver array.
+ **/
+static bool driver_find_last(const char *label, char *s, size_t len)
+{
+   unsigned i;
+
+   for (i = 0;
+         find_driver_nonempty(label, i, s, len) != NULL; i++)
+   {}
+
+   if (i)
+      find_driver_nonempty(label, i-1, s, len);
+   else
+      driver_find_first(label, s, len);
+
+   return true;
+}
+
+/**
  * driver_find_prev:
  * @label              : string of driver type to be found.
  * @s                  : identifier of driver to be found.
@@ -474,6 +498,13 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
             if (!drv)
                return false;
             return driver_find_first(drv->label, drv->s, drv->len);
+         }
+      case RARCH_DRIVER_CTL_FIND_LAST:
+         {
+            driver_ctx_info_t *drv = (driver_ctx_info_t*)data;
+            if (!drv)
+               return false;
+            return driver_find_last(drv->label, drv->s, drv->len);
          }
       case RARCH_DRIVER_CTL_FIND_PREV:
          {

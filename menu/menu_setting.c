@@ -368,7 +368,17 @@ static int setting_string_action_left_driver(void *data,
    drv.len   = setting->size;
 
    if (!driver_ctl(RARCH_DRIVER_CTL_FIND_PREV, &drv))
-      return -1;
+   {
+      settings_t *settings = config_get_ptr();
+
+      if (settings && settings->bools.menu_navigation_wraparound_enable)
+      {
+         drv.label = setting->name;
+         drv.s     = setting->value.target.string;
+         drv.len   = setting->size;
+         driver_ctl(RARCH_DRIVER_CTL_FIND_LAST, &drv);
+      }
+   }
 
    if (setting->change_handler)
       setting->change_handler(setting);
