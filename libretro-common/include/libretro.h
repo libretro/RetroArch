@@ -714,7 +714,7 @@ enum retro_mod
                                            /* struct retro_log_callback * --
                                             * Gets an interface for logging. This is useful for 
                                             * logging in a cross-platform way
-                                            * as certain platforms cannot use use stderr for logging. 
+                                            * as certain platforms cannot use stderr for logging. 
                                             * It also allows the frontend to
                                             * show logging information in a more suitable way.
                                             * If this interface is not used, libretro cores should 
