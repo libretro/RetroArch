@@ -7,8 +7,6 @@
 /* Logging */
 typedef struct
 {
-  unsigned size;
-
   void (*vprintf)(enum retro_log_level level, const char* format, va_list args);
   void (*printf)(enum retro_log_level level, const char* format, ...);
   void (*debug)(const char* format, ...);
@@ -21,8 +19,6 @@ debugger_log_t;
 /* Information from RetroArch */
 typedef struct
 {
-  unsigned size;
-
   int (*isCoreLoaded)(void);
   int (*isGameLoaded)(void);
 }
@@ -31,8 +27,6 @@ debugger_rarch_info_t;
 /* Information from the core */
 typedef struct
 {
-  unsigned size;
-
   void                                  (*getCoreName)(char* name, size_t size);
   unsigned                              (*getApiVersion)(void);
   const struct retro_system_info*       (*getSystemInfo)(void);
@@ -51,8 +45,6 @@ debugger_core_info_t;
 
 typedef struct
 {
-  unsigned size;
-
   const debugger_log_t*        log;
   const debugger_rarch_info_t* rarchInfo;
   const debugger_core_info_t*  coreInfo;
@@ -61,12 +53,10 @@ debugger_t;
 
 typedef struct
 {
-  unsigned size;
-
   const char* name;
 
   void* (*create)(void);
-  void  (*destroy)(void* instance);
+  int   (*destroy)(void* instance, int force);
   void  (*draw)(void* instance);
 }
 debugger_plugin_t;

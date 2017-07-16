@@ -4,8 +4,7 @@
 #include "imguial_log.h"
 #include "imguial_fonts.h"
 
-#include <set>
-#include <map>
+#include <vector>
 
 #include <string/stdstring.h>
 #include "../core.h"
@@ -77,7 +76,6 @@ static void s_debugger_error(const char* format, ...)
 
 static const debugger_log_t s_debugger_log =
 {
-  sizeof(debugger_log_t),
   s_debugger_vprintf,
   s_debugger_printf,
   s_debugger_debug,
@@ -100,7 +98,6 @@ static int s_debugger_isGameLoaded()
 
 static const debugger_rarch_info_t s_debugger_rarchInfo =
 {
-  sizeof(debugger_rarch_info_t),
   s_debugger_isCoreLoaded,
   s_debugger_isGameLoaded
 };
@@ -213,7 +210,6 @@ static int s_debugger_supportsCheevos()
 
 static const debugger_core_info_t s_debugger_coreInfo =
 {
-  sizeof(debugger_core_info_t),
   s_debugger_getCoreName,
   s_debugger_getApiVersion,
   s_debugger_getSystemInfo,
@@ -232,27 +228,18 @@ static const debugger_core_info_t s_debugger_coreInfo =
 // Plugin interface
 const debugger_t s_debugger =
 {
-  sizeof(debugger_t),
   &s_debugger_log,
   &s_debugger_rarchInfo,
   &s_debugger_coreInfo
 };
 
-static std::set<const debugger_plugin_t*> s_debugger_plugins;
-static std::map<void*, const debugger_plugin_t*> s_debugger_running;
+static std::vector<const debugger_plugin_t*> s_debugger_plugins;
+static std::vector<std::pair<void*, const debugger_plugin_t*>> s_debugger_running;
 
 static void s_debugger_register_plugin(const debugger_plugin_t* plugin)
 {
-  s_debugger_plugins.insert(plugin);
-
-  void* instance = plugin->create();
-  s_debugger_running.insert(std::pair<void*, const debugger_plugin_t*>(instance, plugin));
-
-  instance = plugin->create();
-  s_debugger_running.insert(std::pair<void*, const debugger_plugin_t*>(instance, plugin));
+  s_debugger_plugins.push_back(plugin);
 }
-
-extern void init_plugin(debugger_register_plugin_t register_plugin, const debugger_t* info);
 
 void debugger_pluginman_init()
 {
@@ -275,19 +262,55 @@ void debugger_pluginman_init()
     s_debugger_logger.SetFilterLabel(ICON_FA_SEARCH " Filter (inc,-exc)");
   }
 
-  init_plugin(s_debugger_register_plugin, &s_debugger);
+  void init_info(debugger_register_plugin_t register_plugin, const debugger_t* info);
+  void init_memeditor(debugger_register_plugin_t register_plugin, const debugger_t* info);
+
+  static const debugger_init_plugins_t plugins[] =
+  {
+    init_info,
+    init_memeditor,
+  };
+
+  for (int i = 0; i < sizeof(plugins) / sizeof(plugins[0]); i++)
+  {
+    plugins[i](s_debugger_register_plugin, &s_debugger);
+  }
 }
 
 void debugger_pluginman_deinit()
 {
   for (auto it = s_debugger_running.begin(); it != s_debugger_running.end(); ++it)
   {
-    it->second->destroy(it->first);
+    it->second->destroy(it->first, 1);
   }
 }
 
 void debugger_pluginman_draw()
 {
+  if (ImGui::BeginDock(ICON_FA_PLUG " Plugins"))
+  {
+    for (auto it = s_debugger_plugins.begin(); it != s_debugger_plugins.end(); ++it)
+    {
+      char label[512];
+      snprintf(label, sizeof(label), ICON_FA_PLUS " Create##%p", *it);
+
+      if (ImGui::Button(label))
+      {
+        void* instance = (*it)->create();
+
+        if (instance != NULL)
+        {
+          s_debugger_running.push_back(std::pair<void*, const debugger_plugin_t*>(instance, *it));
+        }
+      }
+
+      ImGui::SameLine();
+      ImGui::Text("%s", (*it)->name);
+    }
+  }
+
+  ImGui::EndDock();
+
   if (ImGui::BeginDock(ICON_FA_COMMENT " Log"))
   {
     s_debugger_logger.Draw();
@@ -295,16 +318,28 @@ void debugger_pluginman_draw()
 
   ImGui::EndDock();
 
-  for (auto it = s_debugger_running.begin(); it != s_debugger_running.end(); ++it)
+  for (auto it = s_debugger_running.begin(); it != s_debugger_running.end();)
   {
+    bool keep = true;
     char label[512];
     snprintf(label, sizeof(label), "%s##%p", it->second->name, it->first);
 
-    if (ImGui::BeginDock(label))
+    if (ImGui::BeginDock(label, &keep))
     {
       it->second->draw(it->first);
     }
 
     ImGui::EndDock();
+
+    if (keep)
+    {
+      ++it;
+      continue;
+    }
+
+    if (it->second->destroy(it->first, 0))
+    {
+      it = s_debugger_running.erase(it);
+    }
   }
 }

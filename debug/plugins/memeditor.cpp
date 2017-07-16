@@ -12,26 +12,32 @@ static const debugger_t* s_info;
 
 namespace
 {
-  class MemoryWatch
+  class MemEditor
   {
   public:
     static void* s_create(void)
     {
-      auto self = new MemoryWatch();
+      auto self = new MemEditor();
       self->create();
       return self;
     }
 
-    static void s_destroy(void* instance)
+    static int s_destroy(void* instance, int force)
     {
-      auto self = (MemoryWatch*)instance;
-      self->destroy();
-      delete self;
+      auto self = (MemEditor*)instance;
+
+      if (self->destroy(force != 0))
+      {
+        delete self;
+        return 1;
+      }
+
+      return 0;
     }
 
     static void s_draw(void* instance)
     {
-      auto self = (MemoryWatch*)instance;
+      auto self = (MemEditor*)instance;
       self->draw();
     }
   
@@ -46,6 +52,7 @@ namespace
     std::vector<Region> _regions;
     int _selected;
     bool _inited;
+    MemoryEditor _editor;
 
     void initRegions()
     {
@@ -123,7 +130,11 @@ namespace
       _inited = false;
     }
 
-    void destroy() {}
+    int destroy(int force)
+    {
+      (void)force;
+      return 1;
+    }
 
     void draw()
     {
@@ -167,10 +178,8 @@ namespace
 
       if (_selected != 0)
       {
-        static MemoryEditor editor;
-
         Region* region = &_regions[_selected - 1];
-        editor.Draw(region->name.c_str(), (unsigned char*)region->data, region->size, 0);
+        _editor.Draw(region->name.c_str(), (unsigned char*)region->data, region->size, 0);
       }
     }
   };
@@ -178,16 +187,14 @@ namespace
 
 static const debugger_plugin_t plugin =
 {
-  sizeof(debugger_plugin_t),
   ICON_FA_MICROCHIP " Memory Watch",
-  MemoryWatch::s_create,
-  MemoryWatch::s_destroy,
-  MemoryWatch::s_draw
+  MemEditor::s_create,
+  MemEditor::s_destroy,
+  MemEditor::s_draw
 };
 
-void init_plugin(debugger_register_plugin_t register_plugin, const debugger_t* info)
+void init_memeditor(debugger_register_plugin_t register_plugin, const debugger_t* info)
 {
   s_info = info;
-
   register_plugin(&plugin);
 }
