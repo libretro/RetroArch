@@ -1731,7 +1731,6 @@ void general_write_handler(void *data)
          audio_set_float(AUDIO_ACTION_MIXER_VOLUME_GAIN, *setting->value.target.fraction);
          break;
       case MENU_ENUM_LABEL_AUDIO_LATENCY:
-      case MENU_ENUM_LABEL_AUDIO_DEVICE:
       case MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE:
       case MENU_ENUM_LABEL_AUDIO_WASAPI_EXCLUSIVE_MODE:
       case MENU_ENUM_LABEL_AUDIO_WASAPI_FLOAT_FORMAT:
