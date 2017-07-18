@@ -199,13 +199,18 @@ static const struct retro_memory_descriptor* s_debugger_getMemoryMap(unsigned in
   return NULL;
 }
 
-static int s_debugger_supportsCheevos()
+static int s_debugger_supportsCheevos(void)
 {
 #ifdef HAVE_CHEEVOS
   return cheevos_get_support_cheevos();
 #else
   return 0;
 #endif
+}
+
+static unsigned s_debugger_getConsoleId(void)
+{
+  return cheevos_get_console_id();
 }
 
 static const debugger_core_info_t s_debugger_coreInfo =
@@ -222,7 +227,8 @@ static const debugger_core_info_t s_debugger_coreInfo =
   s_debugger_getPixelFormat,
   s_debugger_supportsNoGame,
   s_debugger_getMemoryMap,
-  s_debugger_supportsCheevos
+  s_debugger_supportsCheevos,
+  s_debugger_getConsoleId
 };
 
 // Plugin interface
@@ -264,11 +270,13 @@ void debugger_pluginman_init()
 
   void init_info(debugger_register_plugin_t register_plugin, const debugger_t* info);
   void init_memeditor(debugger_register_plugin_t register_plugin, const debugger_t* info);
+  void init_hunter(debugger_register_plugin_t register_plugin, const debugger_t* info);
 
   static const debugger_init_plugins_t plugins[] =
   {
     init_info,
     init_memeditor,
+    init_hunter
   };
 
   for (int i = 0; i < sizeof(plugins) / sizeof(plugins[0]); i++)
