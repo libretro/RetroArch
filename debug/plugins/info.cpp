@@ -23,7 +23,7 @@ namespace
     {
       auto self = (Info*)instance;
 
-      if (self->destroy(force) || force)
+      if (self->destroy(force != 0) || force)
       {
         delete self;
         return 1;
@@ -84,10 +84,10 @@ namespace
     {
     }
 
-    int destroy(int force)
+    bool destroy(bool force)
     {
       (void)force;
-      return 1;
+      return true;
     }
 
     void draw()

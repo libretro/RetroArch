@@ -4,6 +4,25 @@
 #include <libretro.h>
 #include <stdarg.h>
 
+/* Console IDs */
+enum
+{
+   /* Don't change those, the values match the console IDs
+    * at retroachievements.org. */
+   DEBUGGER_CONSOLE_NONE             = 0,
+   DEBUGGER_CONSOLE_MEGA_DRIVE       = 1,
+   DEBUGGER_CONSOLE_NINTENDO_64      = 2,
+   DEBUGGER_CONSOLE_SUPER_NINTENDO   = 3,
+   DEBUGGER_CONSOLE_GAMEBOY          = 4,
+   DEBUGGER_CONSOLE_GAMEBOY_ADVANCE  = 5,
+   DEBUGGER_CONSOLE_GAMEBOY_COLOR    = 6,
+   DEBUGGER_CONSOLE_NINTENDO         = 7,
+   DEBUGGER_CONSOLE_PC_ENGINE        = 8,
+   DEBUGGER_CONSOLE_SEGA_CD          = 9,
+   DEBUGGER_CONSOLE_SEGA_32X         = 10,
+   DEBUGGER_CONSOLE_MASTER_SYSTEM    = 11
+};
+
 /* Logging */
 typedef struct
 {
@@ -40,6 +59,7 @@ typedef struct
   int                                   (*supportsNoGame)(void);
   const struct retro_memory_descriptor* (*getMemoryMap)(unsigned index);
   int                                   (*supportsCheevos)(void);
+  unsigned                              (*getConsoleId)(void);
 }
 debugger_core_info_t;
 
