@@ -1439,7 +1439,10 @@ ifeq ($(HAVE_NETWORKING), 1)
                 debug/main.o \
                 debug/pluginman.o \
                 debug/plugins/info.o \
-                debug/plugins/memeditor.o
+                debug/plugins/memeditor.o \
+                debug/plugins/hunter/block.o \
+                debug/plugins/hunter/set.o \
+                debug/plugins/hunter/hunter.o
       endif
    endif
 
