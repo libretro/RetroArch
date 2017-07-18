@@ -103,23 +103,6 @@
 
 enum
 {
-   /* Don't change those, the values match the console IDs
-    * at retroachievements.org. */
-   CHEEVOS_CONSOLE_MEGA_DRIVE       = 1,
-   CHEEVOS_CONSOLE_NINTENDO_64      = 2,
-   CHEEVOS_CONSOLE_SUPER_NINTENDO   = 3,
-   CHEEVOS_CONSOLE_GAMEBOY          = 4,
-   CHEEVOS_CONSOLE_GAMEBOY_ADVANCE  = 5,
-   CHEEVOS_CONSOLE_GAMEBOY_COLOR    = 6,
-   CHEEVOS_CONSOLE_NINTENDO         = 7,
-   CHEEVOS_CONSOLE_PC_ENGINE        = 8,
-   CHEEVOS_CONSOLE_SEGA_CD          = 9,
-   CHEEVOS_CONSOLE_SEGA_32X         = 10,
-   CHEEVOS_CONSOLE_MASTER_SYSTEM    = 11
-};
-
-enum
-{
    CHEEVOS_VAR_SIZE_BIT_0 = 0,
    CHEEVOS_VAR_SIZE_BIT_1,
    CHEEVOS_VAR_SIZE_BIT_2,
@@ -342,7 +325,7 @@ typedef struct
 
 static cheevos_locals_t cheevos_locals =
 {
-   /* console_id          */ 0,
+   /* console_id          */ CHEEVOS_CONSOLE_NONE,
    /* core_supports       */ true,
    /* addrs_patched       */ false,
    /* add_buffer          */ 0,
@@ -2621,6 +2604,7 @@ bool cheevos_unload(void)
    cheevos_locals.unofficial.count = 0;
 
    cheevos_loaded = 0;
+   cheevos_locals.console_id = CHEEVOS_CONSOLE_NONE;
 
    return true;
 }
@@ -3586,6 +3570,7 @@ bool cheevos_load(const void *data)
    const struct retro_game_info *info;
 
    cheevos_loaded = 0;
+   cheevos_locals.console_id = CHEEVOS_CONSOLE_NONE;
 
    if (!cheevos_locals.core_supports || !data)
       return false;
@@ -3643,4 +3628,9 @@ bool cheevos_load(const void *data)
    task_queue_push(task);
 
    return true;
+}
+
+unsigned cheevos_get_console_id(void)
+{
+   return cheevos_locals.console_id;
 }

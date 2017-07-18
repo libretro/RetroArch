@@ -26,7 +26,7 @@ namespace
     {
       auto self = (MemEditor*)instance;
 
-      if (self->destroy(force != 0))
+      if (self->destroy(force != 0) || force)
       {
         delete self;
         return 1;
@@ -130,10 +130,10 @@ namespace
       _inited = false;
     }
 
-    int destroy(int force)
+    bool destroy(bool force)
     {
       (void)force;
-      return 1;
+      return true;
     }
 
     void draw()
