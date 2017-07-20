@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2017 The RetroArch team
 *
 * ---------------------------------------------------------------------------------------
-* The following license statement only applies to this file (file_stream.h).
+* The following license statement only applies to this file (file_stream_transforms.h).
 * ---------------------------------------------------------------------------------------
 *
 * Permission is hereby granted, free of charge,
