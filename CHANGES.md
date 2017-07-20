@@ -1,4 +1,6 @@
 # 1.6.2 (future)
+- CHEEVOS: Add support for N64 cheevos and other small fixes.
+- CHEEVOS: Add 'Achievements -> Achievements Verbose Mode'. Ability to display cheevos related messages in OSD, useful for RetroAchievements users.
 - AUDIO: Mute now no longer disables/enables audio but instead properly mutes the audio volume.
   Mute is also independent from the audio mixer volume.
 - AUDIO: Audio mixer's volume can now be independently increased/decreased, and muted.
