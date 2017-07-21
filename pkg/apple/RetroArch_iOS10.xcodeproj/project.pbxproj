@@ -1076,7 +1076,6 @@
 					"-DHAVE_MFI",
 					"-DHAVE_BTSTACK",
 					"-DHAVE_AVFOUNDATION",
-					"-DTARGET_IOS_10",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS10;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1164,7 +1163,6 @@
 					"-DHAVE_MFI",
 					"-DHAVE_BTSTACK",
 					"-DHAVE_AVFOUNDATION",
-					"-DTARGET_IOS_10",
 				);
 				"OTHER_CFLAGS[arch=*]" = (
 					"-DNS_BLOCK_ASSERTIONS=1",
