@@ -298,7 +298,12 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
 #endif
          break;
       case GL_CAPS_BGRA8888:
-#ifdef HAVE_OPENGLES
+#ifdef TARGET_OS_IPHONE
+         /* In iOS, this capability is reported but is not working. */
+         /* Results in an error when glTexSubImage2D is called with this pixel format. */
+         /* Resort to doing the pixel format conversion on the cpu */
+           return false;
+#elif HAVE_OPENGLES
          /* There are both APPLE and EXT variants. */
          if (gl_query_extension("BGRA8888") && !strstr(renderer, "VideoCore"))
             return true;
