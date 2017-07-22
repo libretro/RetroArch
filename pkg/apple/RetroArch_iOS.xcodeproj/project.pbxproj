@@ -318,6 +318,7 @@
 			buildPhases = (
 				0FDA2A711BE1AFA800F2B5DA /* Sources */,
 				0FDA2A771BE1AFA800F2B5DA /* Frameworks */,
+				928F188C1F23CE9C00117C38 /* ShellScript */,
 				0FDA2A871BE1AFA800F2B5DA /* Resources */,
 			);
 			buildRules = (
@@ -373,7 +374,7 @@
 				ORGANIZATIONNAME = RetroArch;
 				TargetAttributes = {
 					0FDA2A701BE1AFA800F2B5DA = {
-						DevelopmentTeam = UK699V5ZS8;
+						DevelopmentTeam = R72X3BF4KE;
 					};
 					503700861ACA18E400A51A37 = {
 						DevelopmentTeam = UK699V5ZS8;
@@ -441,6 +442,22 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		928F188C1F23CE9C00117C38 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "./code-sign-cores.sh";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		0FDA2A711BE1AFA800F2B5DA /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -505,7 +522,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
-				DEVELOPMENT_TEAM = UK699V5ZS8;
+				DEVELOPMENT_TEAM = R72X3BF4KE;
 				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
@@ -526,7 +543,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-               "-DHAVE_STB_VORBIS",
+					"-DHAVE_STB_VORBIS",
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
@@ -588,7 +605,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
-				DEVELOPMENT_TEAM = UK699V5ZS8;
+				DEVELOPMENT_TEAM = R72X3BF4KE;
 				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
@@ -610,7 +627,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-               "-DHAVE_STB_VORBIS",
+					"-DHAVE_STB_VORBIS",
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
@@ -663,7 +680,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-               "-DHAVE_STB_VORBIS",
+					"-DHAVE_STB_VORBIS",
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
@@ -747,7 +764,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-               "-DHAVE_STB_VORBIS",
+					"-DHAVE_STB_VORBIS",
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
@@ -828,7 +845,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-               "-DHAVE_STB_VORBIS",
+					"-DHAVE_STB_VORBIS",
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
@@ -878,7 +895,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-               "-DHAVE_STB_VORBIS",
+					"-DHAVE_STB_VORBIS",
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
@@ -961,7 +978,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-               "-DHAVE_STB_VORBIS",
+					"-DHAVE_STB_VORBIS",
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
@@ -1033,7 +1050,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-               "-DHAVE_STB_VORBIS",
+					"-DHAVE_STB_VORBIS",
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
@@ -1108,7 +1125,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-               "-DHAVE_STB_VORBIS",
+					"-DHAVE_STB_VORBIS",
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
@@ -1192,7 +1209,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-               "-DHAVE_STB_VORBIS",
+					"-DHAVE_STB_VORBIS",
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
@@ -1245,7 +1262,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-               "-DHAVE_STB_VORBIS",
+					"-DHAVE_STB_VORBIS",
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
