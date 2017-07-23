@@ -90,7 +90,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
          case RARCH_OSK:
             snprintf(s, len,
-                  "顯示/隱藏屏顯鍵盤。");
+                  "顯示/隱藏營幕鍵盤。");
             break;
          case RARCH_NETPLAY_FLIP:
             snprintf(s, len,
@@ -131,9 +131,9 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
          case RARCH_DISK_EJECT_TOGGLE:
             snprintf(s, len,
-                  "切換彈出光盤。 \n"
+                  "切換彈出光碟。 \n"
                   " \n"
-                  "用於多光盤內容。 ");
+                  "用於多光碟內容。 ");
             break;
          case RARCH_DISK_NEXT:
          case RARCH_DISK_PREV:
@@ -159,7 +159,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
          case RARCH_FULLSCREEN_TOGGLE_KEY:
             snprintf(s, len,
-                  "切換到全屏模式。");
+                  "切換到全營幕模式。");
             break;
          case RARCH_QUIT_KEY:
             snprintf(s, len,
@@ -248,11 +248,11 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len, "自動加載輸入重映射文件.");
          break;
       case MENU_ENUM_LABEL_SORT_SAVESTATES_ENABLE:
-         snprintf(s, len, "Sort save states in folders \n"
+         snprintf(s, len, "排序目錄中的狀態存檔 \n"
                "named after the libretro core used.");
          break;
       case MENU_ENUM_LABEL_SORT_SAVEFILES_ENABLE:
-         snprintf(s, len, "Sort save files in folders \n"
+         snprintf(s, len, "排序目錄中的存檔 \n"
                "named after the libretro core used.");
          break;
       case MENU_ENUM_LABEL_RESUME_CONTENT:
@@ -354,17 +354,17 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_CHECK_FOR_MISSING_FIRMWARE:
          snprintf(s, len,
-               "Some cores might need \n"
-               "firmware or bios files. \n"
+               "有些模懝器核心需要 \n"
+               "firmware 或 bios 檔. \n"
                " \n"
-               "If this option is disabled, \n"
-               "it will try to load even if such \n"
-               "firmware is missing. \n"
-               "down. \n");
+               "如果這個選項取消, \n"
+               "模懝器將會嘗試執行 \n"
+               "甚至 firmware 不存在也無彷. \n"
+               ". \n");
          break;
       case MENU_ENUM_LABEL_PARENT_DIRECTORY:
          snprintf(s, len,
-               "回到上級目錄。");
+               "回到上層目錄。");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_SHADER_PRESET:
          snprintf(s, len,
@@ -563,7 +563,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_OVERLAY_OPACITY:
          snprintf(s, len,
-               "Overlay opacity.");
+               "Overlay 通透度.");
          break;
       case MENU_ENUM_LABEL_INPUT_BIND_TIMEOUT:
          snprintf(s, len,
@@ -573,7 +573,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_OVERLAY_SCALE:
          snprintf(s, len,
-               "Overlay scale.");
+               "Overlay 比例.");
          break;
       case MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE:
          snprintf(s, len,
