@@ -850,6 +850,7 @@ RETROARCH
 #include "../intl/msg_hash_ru.c"
 #include "../intl/msg_hash_vn.c"
 #include "../intl/msg_hash_chs.c"
+#include "../intl/msg_hash_cht.c"
 #endif
 
 #include "../intl/msg_hash_us.c"

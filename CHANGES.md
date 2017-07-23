@@ -13,6 +13,7 @@
 options.
 - LINUX: Add a tinyalsa audio driver. Doesn't require asoundlib, should be self-contained and
 lower-level.
+- LOCALIZATION: Add Traditional Chinese translation
 - LOCALIZATION: Update French translation
 - LOCALIZATION: Update Italian translation
 - LOCALIZATION: Update Japanese translation

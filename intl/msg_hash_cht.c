@@ -1,4 +1,4 @@
-/*  RetroArch - A frontend for libretro.
+﻿/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -30,7 +30,7 @@
 #pragma warning( disable : 4566 )
 #endif
 
-int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
+int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
    uint32_t driver_hash = 0;
    settings_t      *settings = config_get_ptr();
@@ -1865,11 +1865,11 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
    return 0;
 }
 
-const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
+const char *msg_hash_to_str_cht(enum msg_hash_enums msg)
 {
    switch (msg)
    {
-#include "msg_hash_chs.h"
+#include "msg_hash_cht.h"
 
       default:
 #if 0
