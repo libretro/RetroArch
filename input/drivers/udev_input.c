@@ -857,7 +857,7 @@ static void *udev_input_init(const char *joypad_driver)
       goto error;
 
    video_context_driver_get_ident(&ctx_ident);
-   udev->xkb_handling = string_is_equal_fast(ctx_ident.ident, "kms", 4);
+   udev->xkb_handling = string_is_equal(ctx_ident.ident, "kms");
 #endif
 
    fd = epoll_create(32);

@@ -173,16 +173,20 @@ static bool font_renderer_create_atlas(ft_font_renderer_t *handle, float font_si
    unsigned max_width          = font_size + 2;
    unsigned max_height         = font_size + 2;
 
-   handle->atlas.width         = max_width  * FT_ATLAS_COLS;
-   handle->atlas.height        = max_height * FT_ATLAS_ROWS;
+   unsigned atlas_width        = max_width  * FT_ATLAS_COLS;
 
-   handle->atlas.buffer        = (uint8_t*)
-      calloc(handle->atlas.width * handle->atlas.height, 1);
+   unsigned atlas_height       = max_height * FT_ATLAS_ROWS;
 
-   if (!handle->atlas.buffer)
+   uint8_t *atlas_buffer       = (uint8_t*)
+      calloc(atlas_width * atlas_height, 1);
+
+   if (!atlas_buffer)
       return false;
 
-   slot = handle->atlas_slots;
+   handle->atlas.buffer        = atlas_buffer;
+   handle->atlas.width         = atlas_width;
+   handle->atlas.height        = atlas_height;
+   slot                        = handle->atlas_slots;
 
    for (y = 0; y < FT_ATLAS_ROWS; y++)
    {
