@@ -210,7 +210,7 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
    switch (msg)
    {
       case MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS:
-         snprintf(s, len, "你的登陸訊息 \n"
+         snprintf(s, len, "你的登入訊息 \n"
                "Retro Achievements 帳號. \n"
                " \n"
                "訪問 retroachievements.org 並註冊 \n"
