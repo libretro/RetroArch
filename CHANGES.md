@@ -21,7 +21,6 @@ lower-level.
 - LOCALIZATION: Update Russian translation
 - WAYLAND: Fix menu mouse input
 - WII: Add support for single-port 'PS1/PS2 to USB controller adapter'
-- INPUT: Fix 'All Users Control Menu' setting
 - INPUT: Add mouse index selection; ability now to select between different mice
 - SETTINGS: Fix regression 'Custom Viewport is no longer overridable per-core or per-game'
 
