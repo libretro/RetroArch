@@ -3850,3 +3850,5 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
 	 "Exibir a opção de atualizar núcleos (e arquivos de informação de núcleo)."
 	)
+MSG_HASH(MSG_PREPARING_FOR_CONTENT_SCAN,
+    "Preparando a busca de conteúdo...")
