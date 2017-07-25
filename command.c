@@ -2289,7 +2289,9 @@ bool command_event(enum event_command cmd, void *data)
             /* Disable rewind & sram autosave if it was enabled 
                TODO: Add a setting for these tweaks */
             state_manager_event_deinit();
+#ifdef HAVE_THREADS
             autosave_deinit();
+#endif
          }
          break;
       /* init netplay via lobby when content is loaded */
@@ -2320,7 +2322,9 @@ bool command_event(enum event_command cmd, void *data)
             /* Disable rewind if it was enabled 
                TODO: Add a setting for these tweaks */
             state_manager_event_deinit();
+#ifdef HAVE_THREADS
             autosave_deinit();
+#endif
          }
          break;
       /* init netplay via lobby when content is not loaded */
@@ -2351,7 +2355,9 @@ bool command_event(enum event_command cmd, void *data)
             /* Disable rewind if it was enabled 
                TODO: Add a setting for these tweaks */
             state_manager_event_deinit();
+#ifdef HAVE_THREADS
             autosave_deinit();
+#endif
          }
          break;
       case CMD_EVENT_NETPLAY_FLIP_PLAYERS:
