@@ -397,6 +397,8 @@ static bool netplay_lan_ad_client(void)
 
          strlcpy(host->nick, ad_packet_buffer.nick, NETPLAY_HOST_STR_LEN);
          strlcpy(host->core, ad_packet_buffer.core, NETPLAY_HOST_STR_LEN);
+         strlcpy(host->retroarch_version, ad_packet_buffer.retroarch_version,
+            NETPLAY_HOST_STR_LEN);
          strlcpy(host->core_version, ad_packet_buffer.core_version,
             NETPLAY_HOST_STR_LEN);
          strlcpy(host->content, ad_packet_buffer.content,

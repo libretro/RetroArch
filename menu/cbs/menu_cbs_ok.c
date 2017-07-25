@@ -3786,6 +3786,9 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
                strlcpy(netplay_room_list[i].corename,
                      host->core,
                      sizeof(netplay_room_list[i].corename));
+               strlcpy(netplay_room_list[i].retroarchversion,
+                     host->retroarch_version,
+                     sizeof(netplay_room_list[i].retroarchversion));
                strlcpy(netplay_room_list[i].coreversion,
                      host->core_version,
                      sizeof(netplay_room_list[i].coreversion));
