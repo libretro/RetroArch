@@ -97,6 +97,9 @@ enum
 #ifdef HAVE_NETWORKING
    XMB_TEXTURE_NETPLAY,
    XMB_TEXTURE_ROOM,
+/* stub these out until we have the icons
+   XMB_TEXTURE_ROOM_LAN,
+   XMB_TEXTURE_ROOM_MITM,*/
 #endif
 #ifdef HAVE_IMAGEVIEWER
    XMB_TEXTURE_IMAGES,
@@ -2148,6 +2151,11 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
 #ifdef HAVE_NETWORKING
       case MENU_ROOM:
          return xmb->textures.list[XMB_TEXTURE_ROOM];
+      /* stub these out until we have the icons
+      case MENU_ROOM_LAN:
+         return xmb->textures.list[XMB_TEXTURE_ROOM_LAN];
+      case MENU_ROOM_MITM:
+         return xmb->textures.list[XMB_TEXTURE_ROOM_MITM]; */
 #endif
    }
 
@@ -3528,6 +3536,12 @@ static const char *xmb_texture_path(unsigned id)
          return "netplay.png";
       case XMB_TEXTURE_ROOM:
          return "room.png";
+      /* stub these out until we have the icons
+      case XMB_TEXTURE_ROOM_LAN:
+         return "room_lan.png";
+      case XMB_TEXTURE_ROOM_MITM:
+         return "room_mitm.png";
+      */
 #endif
       case XMB_TEXTURE_KEY:
          return "key.png";

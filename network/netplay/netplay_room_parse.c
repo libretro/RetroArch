@@ -279,6 +279,12 @@ static JSON_Parser_HandlerResult JSON_CALL ObjectMemberHandler(JSON_Parser parse
             pCtx->cur_field       = strdup(pValue);
             pCtx->cur_member      = &rooms->cur->host_method;
          }
+         else if (string_is_equal_fast(pValue, "retroarch_version", 17))
+         {
+            pCtx->cur_field       = strdup(pValue);
+            pCtx->cur_member      = &rooms->cur->retroarchversion;
+            pCtx->cur_member_size = sizeof(rooms->cur->retroarchversion);
+         }
       }
    }
 

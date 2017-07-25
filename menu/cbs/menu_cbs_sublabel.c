@@ -23,6 +23,9 @@
 #endif
 #include "../../verbosity.h"
 
+#include <string.h>
+#include <string/stdstring.h>
+
 #ifndef BIND_ACTION_SUBLABEL
 #define BIND_ACTION_SUBLABEL(cbs, name) \
    cbs->action_sublabel = name; \
@@ -359,13 +362,10 @@ static int action_bind_sublabel_netplay_room(
    if (i < 1)
       return 0;
 
-   snprintf(s,len, "%s (%s)\n%s (%08x)\nType: %s (%s)", 
+   snprintf(s,len, "RetroArch: %s\nCore: %s (%s)\nGame: %s (%08x)", 
+      string_is_empty(netplay_room_list[i - 3].retroarchversion) ? "n/a" : netplay_room_list[i - 3].retroarchversion,
       netplay_room_list[i - 3].corename, netplay_room_list[i - 3].coreversion, 
-      netplay_room_list[i - 3].gamename, netplay_room_list[i - 3].gamecrc,
-      netplay_room_list[i - 3].lan ? "LAN game" : 
-      (netplay_room_list[i - 3].host_method == NETPLAY_HOST_METHOD_MITM ? 
-      "MITM game" : "Lobby game"), netplay_room_list[i - 3].address);
-
+      !string_is_equal(netplay_room_list[i - 3].gamename, "N/A") ? netplay_room_list[i - 3].gamename : "n/a", netplay_room_list[i - 3].gamecrc);
 #if 0
    strlcpy(s, netplay_room_list[i - 3].corename, len);
 #endif

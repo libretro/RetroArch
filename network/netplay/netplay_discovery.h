@@ -76,6 +76,7 @@ struct netplay_room
    bool has_spectate_password;
    bool lan;
    bool fixed;
+   char retroarchversion [PATH_MAX_LENGTH];
    struct netplay_room *next;
 };
 

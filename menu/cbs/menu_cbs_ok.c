@@ -932,7 +932,7 @@ static bool menu_content_find_first_core(menu_content_ctx_defer_info_t *def_info
       core_info_get_current_core((core_info_t**)&info);
       if (info)
       {
-         RARCH_LOG("Use the current core (%s) to load this content...\n",
+         RARCH_LOG("[lobby] use the current core (%s) to load this content...\n",
                info->path);
          supported = 1;
       }
@@ -3415,7 +3415,7 @@ static int action_ok_netplay_connect_room(const char *path,
          netplay_room_list[idx - 3].port);
    }
 
-   RARCH_LOG("Connecting to: %s with game: %s/%08x\n", 
+   RARCH_LOG("[lobby] connecting to: %s with game: %s/%08x\n", 
          tmp_hostname,
          netplay_room_list[idx - 3].gamename,
          netplay_room_list[idx - 3].gamecrc);
@@ -3649,13 +3649,13 @@ void netplay_refresh_rooms_menu(file_list_t *list)
 
    if (netplay_room_count != 0)
    {
-      RARCH_LOG ("Found %d rooms...\n", netplay_room_count);
+      RARCH_LOG ("[lobby] found %d rooms...\n", netplay_room_count);
 
       for (i = 0; i < netplay_room_count; i++)
       {
          /* Uncomment this to debug mismatched room parameters*/
 #if 0
-         RARCH_LOG("Room Data: %d\n"
+         RARCH_LOG("[lobby] room Data: %d\n"
                "Nickname:         %s\n"
                "Address:          %s\n"
                "Port:             %d\n"
@@ -3674,19 +3674,14 @@ void netplay_refresh_rooms_menu(file_list_t *list)
                netplay_room_list[i].timestamp);
 #endif
          j+=8;
-         if (netplay_room_list[i].lan)
-         {
-            snprintf(s, sizeof(s),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME_LAN),
-               netplay_room_list[i].nickname);
-         }
-         else
-         {
-            snprintf(s, sizeof(s),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME),
-               netplay_room_list[i].nickname);
-         }
+         snprintf(s, sizeof(s), "%s: %s",
+            netplay_room_list[i].lan ? "Local" : 
+            (netplay_room_list[i].host_method == NETPLAY_HOST_METHOD_MITM ? 
+            "Internet (relay)" : "Internet (direct)"),
+            netplay_room_list[i].nickname);
 
+         /*int room_type = netplay_room_list[i].lan ? MENU_ROOM_LAN : 
+            (netplay_room_list[i].host_method == NETPLAY_HOST_METHOD_MITM ? MENU_ROOM_MITM : MENU_ROOM); */
          menu_entries_append_enum(list,
                s,
                msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM),
@@ -3729,7 +3724,7 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
       if (string_is_empty(data->data))
       {
          netplay_room_count = 0;
-         RARCH_LOG("Room list empty\n");
+         RARCH_LOG("[lobby] room list empty\n");
       }
       else
       {
@@ -3804,7 +3799,7 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
                netplay_room_list[i].lan = true;
 
                snprintf(s, sizeof(s),
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME_LAN),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME),
                      netplay_room_list[i].nickname);
             }
             netplay_room_count += lan_room_count;
@@ -4376,9 +4371,17 @@ static int action_ok_netplay_enable_client(const char *path,
 static int action_ok_netplay_disconnect(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   settings_t *settings = config_get_ptr();
 #ifdef HAVE_NETWORKING
    netplay_driver_ctl(RARCH_NETPLAY_CTL_DISCONNECT, NULL);
    netplay_driver_ctl(RARCH_NETPLAY_CTL_DISABLE, NULL);
+
+   /* Re-enable rewind if it was enabled 
+      TODO: Add a setting for these tweaks */
+   if (settings->bools.rewind_enable)
+      command_event(CMD_EVENT_REWIND_INIT, NULL);
+   if (settings->uints.autosave_interval != 0)
+      command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
    return generic_action_ok_command(CMD_EVENT_RESUME);
 
 #else

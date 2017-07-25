@@ -1856,8 +1856,12 @@ bool command_event(enum event_command cmd, void *data)
             if (settings->bools.cheevos_hardcore_mode_enable)
                return false;
 #endif
-
-            if (settings->bools.rewind_enable)
+#ifdef HAVE_NETWORKING
+            /* Only enable state manager if netplay is not underway 
+               TODO: Add a setting for these tweaks */
+            if (settings->bools.rewind_enable
+               && !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+#endif
                state_manager_event_init((unsigned)settings->rewind_buffer_size);
          }
          break;
@@ -1880,10 +1884,19 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_AUTOSAVE_INIT:
          command_event(CMD_EVENT_AUTOSAVE_DEINIT, NULL);
 #ifdef HAVE_THREADS
-         if (autosave_init())
-            runloop_set(RUNLOOP_ACTION_AUTOSAVE);
-         else
-            runloop_unset(RUNLOOP_ACTION_AUTOSAVE);
+#ifdef HAVE_NETWORKING
+         /* Only enable state manager if netplay is not underway 
+            TODO: Add a setting for these tweaks */
+         settings_t *settings      = config_get_ptr();
+         if (settings->uints.autosave_interval != 0
+            && !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+#endif
+         {
+            if (autosave_init())
+               runloop_set(RUNLOOP_ACTION_AUTOSAVE);
+            else
+               runloop_unset(RUNLOOP_ACTION_AUTOSAVE);
+         }
 #endif
          break;
       case CMD_EVENT_AUTOSAVE_STATE:
@@ -2272,6 +2285,11 @@ bool command_event(enum event_command cmd, void *data)
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
                return false;
             }
+            
+            /* Disable rewind & sram autosave if it was enabled 
+               TODO: Add a setting for these tweaks */
+            state_manager_event_deinit();
+            autosave_deinit();
          }
          break;
       /* init netplay via lobby when content is loaded */
@@ -2298,6 +2316,11 @@ bool command_event(enum event_command cmd, void *data)
             }
 
             string_list_free(hostname);
+
+            /* Disable rewind if it was enabled 
+               TODO: Add a setting for these tweaks */
+            state_manager_event_deinit();
+            autosave_deinit();
          }
          break;
       /* init netplay via lobby when content is not loaded */
@@ -2324,6 +2347,11 @@ bool command_event(enum event_command cmd, void *data)
             }
 
             string_list_free(hostname);
+
+            /* Disable rewind if it was enabled 
+               TODO: Add a setting for these tweaks */
+            state_manager_event_deinit();
+            autosave_deinit();
          }
          break;
       case CMD_EVENT_NETPLAY_FLIP_PLAYERS:
