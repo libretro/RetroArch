@@ -3674,21 +3674,19 @@ void netplay_refresh_rooms_menu(file_list_t *list)
                netplay_room_list[i].timestamp);
 #endif
          j+=8;
-         snprintf(s, sizeof(s),
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME),
+         snprintf(s, sizeof(s), "%s: %s",
+            netplay_room_list[i].lan ? "Local" : 
+            (netplay_room_list[i].host_method == NETPLAY_HOST_METHOD_MITM ? 
+            "Internet (relay)" : "Internet (direct)"),
             netplay_room_list[i].nickname);
 
-         /*
-         netplay_room_list[i - 3].lan ? "LAN game" : 
-         (netplay_room_list[i - 3].host_method == NETPLAY_HOST_METHOD_MITM ? 
-         "MITM game" : "Lobby game"), netplay_room_list[i - 3].address);*/
-
-         int room_type = netplay_room_list[i].lan ? MENU_ROOM_LAN : (netplay_room_list[i].host_method == NETPLAY_HOST_METHOD_MITM ? MENU_ROOM_MITM : MENU_ROOM);
+         /*int room_type = netplay_room_list[i].lan ? MENU_ROOM_LAN : 
+            (netplay_room_list[i].host_method == NETPLAY_HOST_METHOD_MITM ? MENU_ROOM_MITM : MENU_ROOM); */
          menu_entries_append_enum(list,
                s,
                msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM),
                MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM,
-               room_type, 0, 0);
+               MENU_ROOM, 0, 0);
       }
 
       netplay_rooms_free();
