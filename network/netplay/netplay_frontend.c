@@ -568,7 +568,7 @@ static void netplay_announce_cb(void *task_data, void *user_data, const char *er
 
       if (mitm_ip && mitm_port)
       {
-         RARCH_LOG("[netplay] joining MITM server: %s:%s\n", mitm_ip, mitm_port);
+         RARCH_LOG("[netplay] joining relay server: %s:%s\n", mitm_ip, mitm_port);
 
          ip_len   = (unsigned)strlen(mitm_ip);
          port_len = (unsigned)strlen(mitm_port);
