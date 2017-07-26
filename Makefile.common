@@ -342,6 +342,9 @@ ifeq ($(HAVE_SSL), 1)
 DEFINES += -DHAVE_SSL
 DEFINES += -DMBEDTLS_SSL_DEBUG_ALL
 
+# MinGW requires this for some reason, even though the include paths are relative to the source
+INCLUDE_DIRS += -Ideps/mbedtls
+
 OBJS_TLS_CRYPTO = deps/mbedtls/aes.o deps/mbedtls/aesni.o deps/mbedtls/arc4.o \
                   deps/mbedtls/asn1parse.o deps/mbedtls/asn1write.o deps/mbedtls/base64.o \
                   deps/mbedtls/bignum.o deps/mbedtls/blowfish.o deps/mbedtls/camellia.o \
