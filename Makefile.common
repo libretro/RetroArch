@@ -338,6 +338,43 @@ ifneq ($(C89_BUILD), 1)
 HAVE_LIBUI   = 0
 HAVE_GTKPLUS = 0
 
+ifeq ($(HAVE_SSL), 1)
+DEFINES += -DHAVE_SSL
+DEFINES += -DMBEDTLS_SSL_DEBUG_ALL
+
+OBJS_TLS_CRYPTO = deps/mbedtls/aes.o deps/mbedtls/aesni.o deps/mbedtls/arc4.o \
+                  deps/mbedtls/asn1parse.o deps/mbedtls/asn1write.o deps/mbedtls/base64.o \
+                  deps/mbedtls/bignum.o deps/mbedtls/blowfish.o deps/mbedtls/camellia.o \
+                  deps/mbedtls/ccm.o deps/mbedtls/cipher.o deps/mbedtls/cipher_wrap.o \
+                  deps/mbedtls/cmac.o deps/mbedtls/ctr_drbg.o deps/mbedtls/des.o \
+                  deps/mbedtls/dhm.o deps/mbedtls/ecdh.o deps/mbedtls/ecdsa.o \
+                  deps/mbedtls/ecjpake.o deps/mbedtls/ecp.o \
+                  deps/mbedtls/ecp_curves.o deps/mbedtls/entropy.o deps/mbedtls/entropy_poll.o \
+                  deps/mbedtls/error.o deps/mbedtls/gcm.o deps/mbedtls/havege.o \
+                  deps/mbedtls/hmac_drbg.o deps/mbedtls/md.o deps/mbedtls/md2.o \
+                  deps/mbedtls/md4.o deps/mbedtls/md5.o deps/mbedtls/md_wrap.o \
+                  deps/mbedtls/memory_buffer_alloc.o deps/mbedtls/oid.o \
+                  deps/mbedtls/padlock.o deps/mbedtls/pem.o deps/mbedtls/pk.o \
+                  deps/mbedtls/pk_wrap.o deps/mbedtls/pkcs12.o deps/mbedtls/pkcs5.o \
+                  deps/mbedtls/pkparse.o deps/mbedtls/pkwrite.o deps/mbedtls/platform.o \
+                  deps/mbedtls/ripemd160.o deps/mbedtls/rsa.o deps/mbedtls/sha1.o \
+                  deps/mbedtls/sha256.o deps/mbedtls/sha512.o deps/mbedtls/threading.o \
+                  deps/mbedtls/timing.o deps/mbedtls/version.o \
+                  deps/mbedtls/version_features.o deps/mbedtls/xtea.o
+
+OBJS_TLS_X509 = deps/mbedtls/certs.o deps/mbedtls/pkcs11.o deps/mbedtls/x509.o \
+                deps/mbedtls/x509_create.o deps/mbedtls/x509_crl.o deps/mbedtls/x509_crt.o \
+                deps/mbedtls/x509_csr.o deps/mbedtls/x509write_crt.o deps/mbedtls/x509write_csr.o
+
+OBJS_TLS = deps/mbedtls/debug.o deps/mbedtls/net_sockets.o \
+           deps/mbedtls/ssl_cache.o deps/mbedtls/ssl_ciphersuites.o \
+           deps/mbedtls/ssl_cli.o deps/mbedtls/ssl_cookie.o \
+           deps/mbedtls/ssl_srv.o deps/mbedtls/ssl_ticket.o \
+           deps/mbedtls/ssl_tls.o
+
+OBJ += $(OBJS_TLS_CRYPTO) $(OBJS_TLS_X509) $(OBJS_TLS)
+endif
+
 ifeq ($(HAVE_LIBUI), 1)
 ifeq ($(HAVE_GTKPLUS), 1)
 CFLAGS += -I/usr/include/gtk-3.0 -I/usr/include/pango-1.0 -I/usr/include/cairo -I/usr/include/gdk-pixbuf-2.0 -I/usr/include/atk-1.0
@@ -1340,6 +1377,10 @@ ifeq ($(HAVE_NETWORKING), 1)
 			 tasks/task_netplay_nat_traversal.o \
 			 tasks/task_wifi.o \
 			 tasks/task_netplay_find_content.o
+
+   ifeq ($(HAVE_SSL), 1)
+   OBJ += $(LIBRETRO_COMM_DIR)/net/net_socket_ssl.o
+   endif
 
    ifneq ($(HAVE_SOCKET_LEGACY),1)
    OBJ += $(LIBRETRO_COMM_DIR)/net/net_ifinfo.o
