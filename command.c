@@ -1884,6 +1884,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_AUTOSAVE_INIT:
          command_event(CMD_EVENT_AUTOSAVE_DEINIT, NULL);
 #ifdef HAVE_THREADS
+	 {
 #ifdef HAVE_NETWORKING
          /* Only enable state manager if netplay is not underway 
             TODO: Add a setting for these tweaks */
@@ -1897,6 +1898,7 @@ bool command_event(enum event_command cmd, void *data)
             else
                runloop_unset(RUNLOOP_ACTION_AUTOSAVE);
          }
+	 }
 #endif
          break;
       case CMD_EVENT_AUTOSAVE_STATE:
