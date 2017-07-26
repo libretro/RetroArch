@@ -340,6 +340,11 @@ static int deferred_push_configurations_list(menu_displaylist_info_t *info)
    return deferred_push_dlist(info, DISPLAYLIST_CONFIGURATIONS_LIST);
 }
 
+static int deferred_push_load_content_special(menu_displaylist_info_t *info)
+{
+   return deferred_push_dlist(info, DISPLAYLIST_LOAD_CONTENT_LIST);
+}
+
 static int deferred_push_load_content_list(menu_displaylist_info_t *info)
 {
    return deferred_push_dlist(info, DISPLAYLIST_LOAD_CONTENT_LIST);
