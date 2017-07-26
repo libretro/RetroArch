@@ -2770,8 +2770,8 @@ static int menu_displaylist_parse_load_content_settings(
 #ifdef HAVE_LAKKA
       bool show_advanced_settings    = settings->bools.menu_show_advanced_settings;
 #endif
-#if 0
       rarch_system_info_t *system    = runloop_get_system_info();
+#if 0
       const struct retro_subsystem_info* subsystem = system ? system->subsystem.data : NULL;
 
       if (subsystem)
@@ -2876,7 +2876,7 @@ static int menu_displaylist_parse_load_content_settings(
             MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS,
             MENU_SETTING_ACTION, 0, 0);
       if (     (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
-            && system && system->disk_control_cb.get_num_images)
+            && system->disk_control_cb.get_num_images)
          menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_OPTIONS),
                msg_hash_to_str(MENU_ENUM_LABEL_DISK_OPTIONS),
