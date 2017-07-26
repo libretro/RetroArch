@@ -1170,6 +1170,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_load_content_list);
                break;
+            case MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_load_content_special);
+               break;
             case MENU_ENUM_LABEL_INFORMATION_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_information_list);
                break;

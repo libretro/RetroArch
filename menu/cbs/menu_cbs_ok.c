@@ -4658,6 +4658,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_ONLINE_UPDATER:
          case MENU_ENUM_LABEL_NETPLAY:
          case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
+         case MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL:
          case MENU_ENUM_LABEL_ADD_CONTENT_LIST:
          case MENU_ENUM_LABEL_CONFIGURATIONS_LIST:
          case MENU_ENUM_LABEL_HELP_LIST:
