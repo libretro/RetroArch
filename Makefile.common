@@ -175,6 +175,7 @@ OBJ += frontend/frontend.o \
        $(LIBRETRO_COMM_DIR)/file/retro_dirent.o \
        $(LIBRETRO_COMM_DIR)/streams/stdin_stream.o \
        $(LIBRETRO_COMM_DIR)/streams/file_stream.o \
+       $(LIBRETRO_COMM_DIR)/streams/file_stream_transforms.o \
        $(LIBRETRO_COMM_DIR)/streams/interface_stream.o \
        $(LIBRETRO_COMM_DIR)/streams/memory_stream.o \
        $(LIBRETRO_COMM_DIR)/lists/string_list.o \
