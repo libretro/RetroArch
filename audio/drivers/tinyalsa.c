@@ -2203,12 +2203,12 @@ static void * tinyalsa_init(const char *devicestr, unsigned rate,
    {
       RARCH_WARN("[TINYALSA]: Sample rate cannot be larger than %uHz "\
                  "or smaller than %uHz.\n", max_rate, min_rate);
-      RARCH_WARN("[TINYALSA]: Trying the default rate or else max rate.\n");
-      
-      if (max_rate >= 192000)
-         rate = 192000;
-      else 
+      RARCH_WARN("[TINYALSA]: Trying to set a valid sample rate.\n");
+
+      if (rate > max_rate)
          rate = max_rate;
+      else if (rate < min_rate)
+         rate = min_rate;
    }
 
    if (orig_rate != rate)
