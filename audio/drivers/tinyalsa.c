@@ -2205,8 +2205,8 @@ static void * tinyalsa_init(const char *devicestr, unsigned rate,
                  "or smaller than %uHz.\n", max_rate, min_rate);
       RARCH_WARN("[TINYALSA]: Trying the default rate or else max rate.\n");
       
-      if (max_rate >= 48000)
-         rate = 48000;
+      if (max_rate >= 192000)
+         rate = 192000;
       else 
          rate = max_rate;
    }
