@@ -1,4 +1,6 @@
-# 1.6.2 (future)
+# 1.6.4 (future)
+
+# 1.6.3
 - IOS: Fix GL regression - 32bit color format cores were no longer rendering 
 - CHEEVOS: Add support for N64 cheevos and other small fixes.
 - CHEEVOS: Add 'Achievements -> Achievements Verbose Mode'. Ability to display cheevos related messages in OSD, useful for RetroAchievements users.
