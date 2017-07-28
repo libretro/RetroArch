@@ -132,6 +132,22 @@ static bool winraw_set_keyboard_input(HWND window)
    return true;
 }
 
+static void winraw_log_mice_info(winraw_mouse_t *mice, unsigned mouse_cnt)
+{
+   char name[256];
+   UINT name_size = sizeof(name);
+   UINT r;
+   unsigned i;
+
+   for (i = 0; i < mouse_cnt; ++i)
+   {
+      r = GetRawInputDeviceInfoA(mice[i].hnd, RIDI_DEVICENAME, name, &name_size);
+      if (r == (UINT)-1 || r == 0)
+         name[0] = '\0';
+      RARCH_LOG("[WINRAW]: Mouse #%u %s.\n", i, name);
+   }
+}
+
 static bool winraw_init_devices(winraw_mouse_t **mice, unsigned *mouse_cnt)
 {
    UINT r, i;
@@ -190,6 +206,8 @@ static bool winraw_init_devices(winraw_mouse_t **mice, unsigned *mouse_cnt)
       if (devs[i].dwType == RIM_TYPEMOUSE)
          mice_r[mouse_cnt_r++].hnd = devs[i].hDevice;
    }
+
+   winraw_log_mice_info(mice_r, mouse_cnt_r);
 
    *mice      = mice_r;
    *mouse_cnt = mouse_cnt_r;
