@@ -24,6 +24,8 @@
 #define __LIBRETRO_SDK_FILE_STREAM_TRANSFORMS_H
 
 #include <retro_common_api.h>
+
+#include <streams/file_stream.h>
 #include <string.h>
 
 RETRO_BEGIN_DECLS
