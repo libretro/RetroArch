@@ -1523,7 +1523,7 @@ static struct pcm_params *pcm_params_get(unsigned int card, unsigned int device,
    snprintf(fn, sizeof(fn), "/dev/snd/pcmC%uD%u%c", card, device,
          flags & PCM_IN ? 'c' : 'p');
 
-   fd = open(fn, O_RDWR);
+   fd = open(fn, O_RDWR|O_NONBLOCK);
    if (fd < 0)
    {
       fprintf(stderr, "cannot open device '%s'\n", fn);
