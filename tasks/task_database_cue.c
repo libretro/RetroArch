@@ -338,7 +338,7 @@ int detect_serial_ascii_game(const char *track_path, char *game_id)
    bool rv   = false;
    RFILE *fd = filestream_open(track_path, RFILE_MODE_READ, -1);
 
-   // Attempt to load the file.
+   /* Attempt to load the file. */
    if (!fd)
    {
       RARCH_LOG("%s: %s\n",
@@ -352,23 +352,24 @@ int detect_serial_ascii_game(const char *track_path, char *game_id)
       filestream_seek(fd, pos, SEEK_SET);
       if (filestream_read(fd, game_id, 10000) > 0)
       {
+         unsigned i;
          game_id[15] = '\0';
          numberOfAscii = 0;
 
-         // Loop through until we run out of ASCII characters.
-         for (int i = 0; i < 15; i++) {
-            // Is the given character ASCII? A-Z, 0-9, -
-            if (game_id[i] == 45 || (game_id[i] >= 48 && game_id[i] <= 57) || (game_id[i] >= 65 && game_id[i] <= 90)) {
+         /* Loop through until we run out of ASCII characters. */
+         for (i = 0; i < 15; i++)
+         {
+            /* Is the given character ASCII? A-Z, 0-9, - */
+            if (game_id[i] == 45 || (game_id[i] >= 48 && game_id[i] <= 57) || (game_id[i] >= 65 && game_id[i] <= 90))
                numberOfAscii++;
-            }
-            else {
+            else
                break;
-            }
          }
 
-         // If the length of the text is between 3 and 9 characters, it could be a serial.
-         if (numberOfAscii > 3 && numberOfAscii < 9) {
-            // Cut the string off, and return it as a valid serial.
+         /* If the length of the text is between 3 and 9 characters, it could be a serial. */
+         if (numberOfAscii > 3 && numberOfAscii < 9)
+         {
+            /* Cut the string off, and return it as a valid serial. */
             game_id[numberOfAscii] = '\0';
             rv = true;
             break;
