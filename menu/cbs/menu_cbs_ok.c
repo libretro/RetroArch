@@ -3653,6 +3653,15 @@ void netplay_refresh_rooms_menu(file_list_t *list)
 
       for (i = 0; i < netplay_room_count; i++)
       {
+         char country[PATH_MAX_LENGTH] = {0};
+
+         if (*netplay_room_list[i].country)
+         {
+            strlcat(country, " (", sizeof(country));
+            strlcat(country, netplay_room_list[i].country, sizeof(country));
+            strlcat(country, ")", sizeof(country));
+         }
+
          /* Uncomment this to debug mismatched room parameters*/
 #if 0
          RARCH_LOG("[lobby] room Data: %d\n"
@@ -3674,13 +3683,13 @@ void netplay_refresh_rooms_menu(file_list_t *list)
                netplay_room_list[i].timestamp);
 #endif
          j+=8;
-         snprintf(s, sizeof(s), "%s: %s",
-            netplay_room_list[i].lan ? "Local" : 
-            (netplay_room_list[i].host_method == NETPLAY_HOST_METHOD_MITM ? 
+         snprintf(s, sizeof(s), "%s: %s%s",
+            netplay_room_list[i].lan ? "Local" :
+            (netplay_room_list[i].host_method == NETPLAY_HOST_METHOD_MITM ?
             "Internet (relay)" : "Internet (direct)"),
-            netplay_room_list[i].nickname);
+            netplay_room_list[i].nickname, country);
 
-         /*int room_type = netplay_room_list[i].lan ? MENU_ROOM_LAN : 
+         /*int room_type = netplay_room_list[i].lan ? MENU_ROOM_LAN :
             (netplay_room_list[i].host_method == NETPLAY_HOST_METHOD_MITM ? MENU_ROOM_MITM : MENU_ROOM); */
          menu_entries_append_enum(list,
                s,
@@ -3771,14 +3780,14 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
                if (address->sa_family == AF_INET)
                {
                    struct sockaddr_in *sin = (struct sockaddr_in *) address;
-                   inet_ntop_compat(AF_INET, &sin->sin_addr, 
+                   inet_ntop_compat(AF_INET, &sin->sin_addr,
                       netplay_room_list[i].address, INET6_ADDRSTRLEN);
                }
 #if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY)
                else if (address->sa_family == AF_INET6)
                {
                   struct sockaddr_in6 *sin = (struct sockaddr_in6 *) address;
-                  inet_ntop_compat(AF_INET6, &sin->sin6_addr, 
+                  inet_ntop_compat(AF_INET6, &sin->sin6_addr,
                      netplay_room_list[i].address, INET6_ADDRSTRLEN);
                }
 #endif
@@ -3786,9 +3795,9 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
                strlcpy(netplay_room_list[i].corename,
                      host->core,
                      sizeof(netplay_room_list[i].corename));
-               strlcpy(netplay_room_list[i].retroarchversion,
+               strlcpy(netplay_room_list[i].retroarch_version,
                      host->retroarch_version,
-                     sizeof(netplay_room_list[i].retroarchversion));
+                     sizeof(netplay_room_list[i].retroarch_version));
                strlcpy(netplay_room_list[i].coreversion,
                      host->core_version,
                      sizeof(netplay_room_list[i].coreversion));
@@ -4658,6 +4667,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_ONLINE_UPDATER:
          case MENU_ENUM_LABEL_NETPLAY:
          case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
+         case MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL:
          case MENU_ENUM_LABEL_ADD_CONTENT_LIST:
          case MENU_ENUM_LABEL_CONFIGURATIONS_LIST:
          case MENU_ENUM_LABEL_HELP_LIST:

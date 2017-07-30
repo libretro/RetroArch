@@ -3,6 +3,8 @@ extra_flags :=
 use_neon    := 0
 build       = release
 DYLIB	      := so
+PREFIX      := /usr
+INSTALLDIR  := $(PREFIX)/lib/retroarch/filters/audio
 
 ifeq ($(platform),)
    platform = unix
@@ -89,3 +91,10 @@ clean:
 
 strip:
 	strip -s *.$(DYLIB)
+
+install:
+	mkdir -p $(DESTDIR)$(INSTALLDIR)
+	cp -t $(DESTDIR)$(INSTALLDIR) $(targets) *.dsp
+
+test-install:
+	DESTDIR=/tmp/build $(MAKE) install

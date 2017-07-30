@@ -3187,7 +3187,7 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-         menu_settings_list_current_add_range(list, list_info, 1, 32768, 1, true, false);
+         menu_settings_list_current_add_range(list, list_info, 1, 32768, 1, true, true);
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);

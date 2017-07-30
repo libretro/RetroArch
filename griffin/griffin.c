@@ -739,6 +739,7 @@ FILE
 #include "../setting_list.c"
 #include "../libretro-common/file/retro_dirent.c"
 #include "../libretro-common/streams/file_stream.c"
+#include "../libretro-common/streams/file_stream_transforms.c"
 #include "../libretro-common/streams/interface_stream.c"
 #include "../libretro-common/streams/memory_stream.c"
 #include "../list_special.c"

@@ -1,4 +1,6 @@
-# 1.6.2 (future)
+# 1.6.4 (future)
+
+# 1.6.3
 - IOS: Fix GL regression - 32bit color format cores were no longer rendering 
 - CHEEVOS: Add support for N64 cheevos and other small fixes.
 - CHEEVOS: Add 'Achievements -> Achievements Verbose Mode'. Ability to display cheevos related messages in OSD, useful for RetroAchievements users.
@@ -14,8 +16,8 @@
 - LOCALIZATION: Update Japanese translation
 - LOCALIZATION: Update Russian translation
 - MENU: Add 'User Interface -> Views'. Ability to display/hide online updater and core updater options.
-
 - NETPLAY: Disconnecting one client shouldn't cause everyone to disconnect anymore
+- NETWORK: SSL/TLS support, disabled by default
 - SCANNER: Fix PS1 game scanning
 - SCANNER: Move content list builder into scanner task with progress, fixes menu freeze with large playlists
 - SDL2: Fix 'SDL2 driver does not see the hat on wired Xbox 360 controller"

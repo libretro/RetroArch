@@ -58,8 +58,6 @@ enum netplay_host_method
    NETPLAY_HOST_METHOD_MITM
 };
 
-/* data is ordered like this on the server, I left it in this ordered
-   for reference */
 struct netplay_room
 {
    char nickname    [PATH_MAX_LENGTH];
@@ -77,7 +75,8 @@ struct netplay_room
    bool has_spectate_password;
    bool lan;
    bool fixed;
-   char retroarchversion [PATH_MAX_LENGTH];
+   char retroarch_version[PATH_MAX_LENGTH];
+   char country[PATH_MAX_LENGTH];
    struct netplay_room *next;
 };
 

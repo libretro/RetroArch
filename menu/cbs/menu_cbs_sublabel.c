@@ -138,6 +138,7 @@ default_sublabel_macro(action_bind_sublabel_cheevos_password,              MENU_
 default_sublabel_macro(action_bind_sublabel_video_post_filter_record,      MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD)
 default_sublabel_macro(action_bind_sublabel_core_list,                     MENU_ENUM_SUBLABEL_CORE_LIST)
 default_sublabel_macro(action_bind_sublabel_content_list,                  MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST)
+default_sublabel_macro(action_bind_sublabel_content_special,               MENU_ENUM_SUBLABEL_LOAD_CONTENT_SPECIAL)
 default_sublabel_macro(action_bind_sublabel_network_information,           MENU_ENUM_SUBLABEL_NETWORK_INFORMATION)
 default_sublabel_macro(action_bind_sublabel_system_information,            MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION)
 default_sublabel_macro(action_bind_sublabel_quit_retroarch,                MENU_ENUM_SUBLABEL_QUIT_RETROARCH)
@@ -362,9 +363,9 @@ static int action_bind_sublabel_netplay_room(
    if (i < 1)
       return 0;
 
-   snprintf(s,len, "RetroArch: %s\nCore: %s (%s)\nGame: %s (%08x)", 
-      string_is_empty(netplay_room_list[i - 3].retroarchversion) ? "n/a" : netplay_room_list[i - 3].retroarchversion,
-      netplay_room_list[i - 3].corename, netplay_room_list[i - 3].coreversion, 
+   snprintf(s,len, "RetroArch: %s\nCore: %s (%s)\nGame: %s (%08x)",
+      string_is_empty(netplay_room_list[i - 3].retroarch_version) ? "n/a" : netplay_room_list[i - 3].retroarch_version,
+      netplay_room_list[i - 3].corename, netplay_room_list[i - 3].coreversion,
       !string_is_equal(netplay_room_list[i - 3].gamename, "N/A") ? netplay_room_list[i - 3].gamename : "n/a", netplay_room_list[i - 3].gamecrc);
 #if 0
    strlcpy(s, netplay_room_list[i - 3].corename, len);
@@ -979,6 +980,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_list);
+            break;
+         case MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_special);
             break;
          case MENU_ENUM_LABEL_CORE_LIST:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_list);
