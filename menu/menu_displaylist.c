@@ -2771,12 +2771,14 @@ static int menu_displaylist_parse_load_content_settings(
       bool show_advanced_settings    = settings->bools.menu_show_advanced_settings;
 #endif
       rarch_system_info_t *system    = runloop_get_system_info();
+
 #if 0
       const struct retro_subsystem_info* subsystem = system ? system->subsystem.data : NULL;
 
       if (subsystem)
       {
-	 int p;
+         unsigned p;
+
          for (p = 0; p < system->subsystem.size; p++, subsystem++)
          {
             char s[PATH_MAX_LENGTH];

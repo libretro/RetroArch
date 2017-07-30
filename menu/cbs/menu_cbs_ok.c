@@ -262,6 +262,16 @@ int generic_action_ok_displaylist_push(const char *path,
          info_label         = label;
          dl_type                 = DISPLAYLIST_GENERIC;
          break;
+      case ACTION_OK_DL_FILE_BROWSER_SELECT_FILE:
+         if (path)
+            strlcpy(menu->deferred_path, path,
+                  sizeof(menu->deferred_path));
+
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_label         = label;
+         dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+         break;
       case ACTION_OK_DL_FILE_BROWSER_SELECT_DIR:
          if (path)
             strlcpy(menu->deferred_path, path,
@@ -3944,6 +3954,15 @@ int action_ok_push_filebrowser_list_dir_select(const char *path,
          entry_idx, ACTION_OK_DL_FILE_BROWSER_SELECT_DIR);
 }
 
+int action_ok_push_filebrowser_list_file_select(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   filebrowser_set_type(FILEBROWSER_SELECT_FILE);
+   strlcpy(filebrowser_label, label, sizeof(filebrowser_label));
+   return generic_action_ok_displaylist_push(path, NULL, label, type, idx,
+         entry_idx, ACTION_OK_DL_FILE_BROWSER_SELECT_DIR);
+}
+
 static int action_ok_push_default(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -4667,13 +4686,15 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_ONLINE_UPDATER:
          case MENU_ENUM_LABEL_NETPLAY:
          case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
-         case MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL:
          case MENU_ENUM_LABEL_ADD_CONTENT_LIST:
          case MENU_ENUM_LABEL_CONFIGURATIONS_LIST:
          case MENU_ENUM_LABEL_HELP_LIST:
          case MENU_ENUM_LABEL_INFORMATION_LIST:
          case MENU_ENUM_LABEL_CONTENT_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_push_default);
+            break;
+         case MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL:
+            BIND_ACTION_OK(cbs, action_ok_push_filebrowser_list_file_select);
             break;
          case MENU_ENUM_LABEL_SCAN_DIRECTORY:
             BIND_ACTION_OK(cbs, action_ok_scan_directory_list);
