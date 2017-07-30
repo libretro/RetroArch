@@ -429,34 +429,20 @@ static int menu_input_pointer_post_iterate(
       return 0;
 #endif
 
+   int16_t pointer_x         = menu_input_pointer_state(MENU_POINTER_X_AXIS);
+   int16_t pointer_y         = menu_input_pointer_state(MENU_POINTER_Y_AXIS);
+
    if (menu_input->pointer.pressed[0])
    {
       gfx_ctx_metrics_t metrics;
       float dpi;
       static float accel0       = 0.0f;
       static float accel1       = 0.0f;
-      int16_t pointer_x         = menu_input_pointer_state(MENU_POINTER_X_AXIS);
-      int16_t pointer_y         = menu_input_pointer_state(MENU_POINTER_Y_AXIS);
 
       metrics.type  = DISPLAY_METRIC_DPI;
       metrics.value = &dpi;
 
       menu_input->pointer.counter++;
-
-      if (menu_input->pointer.counter == 1 &&
-            !menu_input_ctl(MENU_INPUT_CTL_IS_POINTER_DRAGGED, NULL))
-      {
-         menu_ctx_pointer_t point;
-
-         point.x                           = pointer_x;
-         point.y                           = pointer_y;
-         point.ptr                         = menu_input->pointer.ptr;
-         point.cbs                         = cbs;
-         point.entry                       = entry;
-         point.action                      = action;
-
-         menu_driver_ctl(RARCH_MENU_CTL_POINTER_DOWN, &point);
-      }
 
       if (!pointer_oldpressed[0])
       {
@@ -522,10 +508,23 @@ static int menu_input_pointer_post_iterate(
                   size_t selection = menu_navigation_get_selection();
                   if (cbs && cbs->action_start)
                      return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_START);
-
                }
                else
                {
+                  if (!menu_input_ctl(MENU_INPUT_CTL_IS_POINTER_DRAGGED, NULL))
+                  {
+                     menu_ctx_pointer_t point;
+
+                     point.x                           = pointer_x;
+                     point.y                           = pointer_y;
+                     point.ptr                         = menu_input->pointer.ptr;
+                     point.cbs                         = cbs;
+                     point.entry                       = entry;
+                     point.action                      = action;
+
+                     menu_driver_ctl(RARCH_MENU_CTL_POINTER_DOWN, &point);
+                  }
+
                   menu_driver_ctl(RARCH_MENU_CTL_POINTER_UP, &point);
                   menu_driver_ctl(RARCH_MENU_CTL_POINTER_TAP, &point);
                   ret = point.retcode;
