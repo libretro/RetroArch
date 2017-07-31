@@ -60,6 +60,7 @@
 
 #define PARTICLES_COUNT            100
 
+/* Menu drivers */
 static const menu_ctx_driver_t *menu_ctx_drivers[] = {
 #if defined(HAVE_XUI)
    &menu_ctx_xui,
@@ -83,6 +84,7 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
    NULL
 };
 
+/* Menu display drivers */
 static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #ifdef HAVE_D3D
    &menu_display_ctx_d3d,
@@ -115,7 +117,6 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
    NULL,
 };
 
-
 uintptr_t menu_display_white_texture;
 
 static video_coord_array_t menu_disp_ca;
@@ -123,10 +124,14 @@ static video_coord_array_t menu_disp_ca;
 static enum 
 menu_toggle_reason menu_display_toggle_reason    = MENU_TOGGLE_REASON_NONE;
 
+/* Width, height and pitch of the menu framebuffer */
 static unsigned menu_display_framebuf_width      = 0;
 static unsigned menu_display_framebuf_height     = 0;
 static size_t menu_display_framebuf_pitch        = 0;
+
+/* Height of the menu display header */
 static unsigned menu_display_header_height       = 0;
+
 static bool menu_display_has_windowed            = false;
 static bool menu_display_msg_force               = false;
 static bool menu_display_font_alloc_framebuf     = false;
@@ -134,15 +139,36 @@ static bool menu_display_framebuf_dirty          = false;
 static const uint8_t *menu_display_font_framebuf = NULL;
 static menu_display_ctx_driver_t *menu_disp      = NULL;
 
+/* when enabled, on next iteration the 'Quick Menu' list will
+ * be pushed onto the stack */
 static bool menu_driver_pending_quick_menu      = false;
+
 static bool menu_driver_prevent_populate        = false;
+
+/* Is the menu driver still running? */
 static bool menu_driver_alive                   = false;
+
+/* A menu toggle has been requested; if the menu was running,
+ * it will be closed; if the menu was not running, it will be opened */
 static bool menu_driver_toggled                 = false;
+
+/* The menu driver owns the userdata */
 static bool menu_driver_data_own                = false;
+
+/* The user has requested that the menu be shut down. This will
+ * be enacted upon the next menu iteration */
 static bool menu_driver_pending_quit            = false;
+
+/* The user has requested that RetroArch be shut down. This will
+ * be enacted upon the next menu iteration */
 static bool menu_driver_pending_shutdown        = false;
+
+/* Are we binding a button inside the menu? */
 static bool menu_driver_is_binding              = false;
+
+/* The currently active playlist that we are using inside the menu */
 static playlist_t *menu_driver_playlist         = NULL;
+
 static menu_handle_t *menu_driver_data          = NULL;
 static const menu_ctx_driver_t *menu_driver_ctx = NULL;
 static void *menu_userdata                      = NULL;
@@ -164,6 +190,8 @@ void menu_display_toggle_set_reason(enum menu_toggle_reason reason)
   menu_display_toggle_reason = reason;
 }
 
+/* Check if the current menu driver is compatible 
+ * with your video driver. */
 static bool menu_display_check_compatibility(
       enum menu_display_driver_type type,
       bool video_is_threaded)
@@ -220,6 +248,9 @@ static bool menu_display_check_compatibility(
    return false;
 }
 
+/* Display the date and time - time_mode will influence how
+ * the time representation will look like.
+ * */
 void menu_display_timedate(menu_display_ctx_datetime_t *datetime)
 {
    time_t time_;
@@ -254,23 +285,29 @@ void menu_display_timedate(menu_display_ctx_datetime_t *datetime)
    }
 }
 
+/* Begin blending operation */
 void menu_display_blend_begin(void)
 {
    if (menu_disp && menu_disp->blend_begin)
       menu_disp->blend_begin();
 }
 
+/* End blending operation */
 void menu_display_blend_end(void)
 {
    if (menu_disp && menu_disp->blend_end)
       menu_disp->blend_end();
 }
 
+/* Teardown; deinitializes and frees all
+ * fonts associated to the menu driver */
 void menu_display_font_free(font_data_t *font)
 {
    font_driver_free(font);
 }
 
+/* Setup: Initializes the font associated
+ * to the menu driver */
 static font_data_t *menu_display_font_main_init(
       menu_display_ctx_font_t *font,
       bool is_threaded)
@@ -304,6 +341,8 @@ font_data_t *menu_display_font(enum application_special_type type, float font_si
    return menu_display_font_main_init(&font_info, is_threaded);
 }
 
+/* Reset the menu's coordinate array vertices. 
+ * NOTE: Not every menu driver uses this. */
 void menu_display_coords_array_reset(void)
 {
    menu_disp_ca.coords.vertices = 0;
@@ -337,6 +376,7 @@ static bool menu_display_libretro_running(
    return false;
 }
 
+/* Display the libretro core's framebuffer onscreen. */
 bool menu_display_libretro(bool is_idle, bool rarch_is_inited, bool rarch_is_dummy_core)
 {
    video_driver_set_texture_enable(true, false);
@@ -357,6 +397,7 @@ bool menu_display_libretro(bool is_idle, bool rarch_is_inited, bool rarch_is_dum
    return video_driver_cached_frame();
 }
 
+/* Get the menu framebuffer's size dimensions. */
 void menu_display_get_fb_size(unsigned *fb_width,
       unsigned *fb_height, size_t *fb_pitch)
 {
@@ -365,11 +406,13 @@ void menu_display_get_fb_size(unsigned *fb_width,
    *fb_pitch  = menu_display_framebuf_pitch;
 }
 
+/* Set the menu framebuffer's width. */
 void menu_display_set_width(unsigned width)
 {
    menu_display_framebuf_width = width;
 }
 
+/* Set the menu framebuffer's height. */
 void menu_display_set_height(unsigned height)
 {
    menu_display_framebuf_height = height;
@@ -415,6 +458,14 @@ void menu_display_set_font_data_init(bool state)
    menu_display_font_alloc_framebuf = state;
 }
 
+/* Returns true if an animation is still active or 
+ * when the menu framebuffer still is dirty and 
+ * therefore it still needs to be rendered onscreen.
+ *
+ * This function can be used for optimization purposes
+ * so that we don't have to render the menu graphics per-frame
+ * unless a change has happened.
+ * */
 bool menu_display_get_update_pending(void)
 {
    if (menu_animation_is_active() || menu_display_framebuf_dirty)
@@ -432,21 +483,29 @@ void menu_display_unset_viewport(unsigned width, unsigned height)
    video_driver_set_viewport(width, height, false, true);
 }
 
+/* Checks if the menu framebuffer has its 'dirty flag' set. This
+ * means that the current contents of the framebuffer has changed
+ * and that it has to be rendered to the screen. */
 bool menu_display_get_framebuffer_dirty_flag(void)
 {
    return menu_display_framebuf_dirty;
 }
 
+/* Set the menu framebuffer's 'dirty flag'. */
 void menu_display_set_framebuffer_dirty_flag(void)
 {
    menu_display_framebuf_dirty = true;
 }
 
+/* Unset the menu framebufer's 'dirty flag'. */
 void menu_display_unset_framebuffer_dirty_flag(void)
 {
    menu_display_framebuf_dirty = false;
 }
 
+/* Get the preferred DPI at which to render the menu.
+ * NOTE: Only MaterialUI menu driver so far uses this, neither
+ * RGUI or XMB use this. */
 float menu_display_get_dpi(void)
 {
    gfx_ctx_metrics_t metrics;
