@@ -401,6 +401,7 @@ static void mui_draw_tab_end(mui_handle_t *mui,
          &active_tab_marker_color[0]);
 }
 
+/* Compute the total height of the scrollable content */
 static float mui_content_height(void)
 {
    unsigned i;
@@ -416,6 +417,7 @@ static float mui_content_height(void)
    return sum;
 }
 
+/* Draw the scrollbar */
 static void mui_draw_scrollbar(mui_handle_t *mui,
       unsigned width, unsigned height, float *coord_color)
 {
@@ -456,6 +458,7 @@ static void mui_get_message(void *data, const char *message)
    strlcpy(mui->box_message, message, sizeof(mui->box_message));
 }
 
+/* Draw the modal */
 static void mui_render_messagebox(mui_handle_t *mui,
       video_frame_info_t *video_info,
       const char *message, float *body_bg_color, uint32_t font_color)
@@ -524,6 +527,7 @@ end:
    string_list_free(list);
 }
 
+/* Used for the sublabels */
 static unsigned mui_count_lines(const char *str)
 {
    unsigned c     = 0;
@@ -534,6 +538,7 @@ static unsigned mui_count_lines(const char *str)
    return lines;
 }
 
+/* Compute the line height for each menu entries. */
 static void mui_compute_entries_box(mui_handle_t* mui, int width)
 {
    size_t usable_width = width - (mui->margin * 2);
@@ -564,6 +569,8 @@ static void mui_compute_entries_box(mui_handle_t* mui, int width)
    }
 }
 
+/* Called on each frame. We use this callback to implement the touch scroll
+with acceleration */
 static void mui_render(void *data, bool is_idle)
 {
    menu_animation_ctx_delta_t delta;
@@ -654,6 +661,7 @@ static void mui_render(void *data, bool is_idle)
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &i);
 }
 
+/* Display an entry value on the right of the screen. */
 static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
       int i, int y, unsigned width, unsigned height,
       uint64_t index, uint32_t color, bool selected, const char *label,
@@ -904,6 +912,8 @@ static void mui_draw_bg(menu_display_ctx_draw_t *draw,
    menu_display_blend_end();
 }
 
+/* Main function of the menu driver. Takes care of drawing the header, the tabs,
+and the menu list */
 static void mui_frame(void *data, video_frame_info_t *video_info)
 {
    float black_bg[16] = {
@@ -1412,6 +1422,7 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
    menu_display_unset_viewport(video_info->width, video_info->height);
 }
 
+/* Compute the positions of the widgets */
 static void mui_layout(mui_handle_t *mui, bool video_is_threaded)
 {
    float scale_factor;
@@ -1540,6 +1551,7 @@ static void mui_context_destroy(void *data)
    mui_context_bg_destroy(mui);
 }
 
+/* Upload textures to the gpu */
 static bool mui_load_image(void *userdata, void *data, enum menu_image_type type)
 {
    mui_handle_t *mui = (mui_handle_t*)userdata;
@@ -1562,6 +1574,7 @@ static bool mui_load_image(void *userdata, void *data, enum menu_image_type type
    return true;
 }
 
+/* Compute the scroll value depending on the highlighted entry */
 static float mui_get_scroll(mui_handle_t *mui)
 {
    unsigned width, height, half = 0;
@@ -1581,6 +1594,8 @@ static float mui_get_scroll(mui_handle_t *mui)
    return ((selection + 2 - half) * mui->line_height);
 }
 
+/* The navigation pointer has been updated (for example by pressing up or down
+on the keyboard). We use this function to animate the scroll. */
 static void mui_navigation_set(void *data, bool scroll)
 {
    menu_animation_ctx_entry_t entry;
@@ -1601,11 +1616,12 @@ static void mui_navigation_set(void *data, bool scroll)
       menu_animation_push(&entry);
 }
 
-static void  mui_list_set_selection(void *data, file_list_t *list)
+static void mui_list_set_selection(void *data, file_list_t *list)
 {
    mui_navigation_set(data, true);
 }
 
+/* The navigation pointer is set back to zero */
 static void mui_navigation_clear(void *data, bool pending_push)
 {
    size_t i             = 0;
@@ -1627,6 +1643,7 @@ static void mui_navigation_alphabet(void *data, size_t *unused)
    mui_navigation_set(data, true);
 }
 
+/* A new list had been pushed. We update the scroll value */
 static void mui_populate_entries(
       void *data, const char *path,
       const char *label, unsigned i)
@@ -1904,6 +1921,7 @@ static int mui_list_push(void *data, void *userdata,
    return ret;
 }
 
+/* Returns the active tab id */
 static size_t mui_list_get_selection(void *data)
 {
    mui_handle_t *mui   = (mui_handle_t*)data;
@@ -1914,6 +1932,8 @@ static size_t mui_list_get_selection(void *data)
    return mui->categories.selection_ptr;
 }
 
+/* The pointer or the mouse is pressed down. We use this callback to
+highlight the entry that has been pressed */
 static int mui_pointer_down(void *userdata,
       unsigned x, unsigned y,
       unsigned ptr, menu_file_list_cbs_t *cbs,
@@ -1958,6 +1978,10 @@ static int mui_pointer_down(void *userdata,
    return 0;
 }
 
+/* The pointer or the left mouse button has been released.
+If we clicked on the header, we perform a cancel action.
+If we clicked on the tabs, we switch to a new list.
+If we clicked on a menu entry, we call the entry action callback. */
 static int mui_pointer_up(void *userdata,
       unsigned x, unsigned y,
       unsigned ptr, menu_file_list_cbs_t *cbs,
@@ -2022,6 +2046,9 @@ static int mui_pointer_up(void *userdata,
    return 0;
 }
 
+/* The menu system can insert menu entries on the fly. It is used in the shaders
+UI, the wifi UI, the netplay lobby, etc. This function allocates the mui_node_t
+for the new entry. */
 static void mui_list_insert(void *userdata,
       file_list_t *list,
       const char *path,
@@ -2056,6 +2083,7 @@ static void mui_list_insert(void *userdata,
    file_list_set_userdata(list, i, node);
 }
 
+/* Clearing the current menu list */
 static void mui_list_clear(file_list_t *list)
 {
    size_t i;
