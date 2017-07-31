@@ -57,12 +57,14 @@
 
 #include "../../file_path_special.h"
 
+/* This struct holds the y position and the line height for each menu entry */
 typedef struct
 {
    float line_height;
    float y;
 } mui_node_t;
 
+/* Textures used for the tabs and the switches */
 enum
 {
    MUI_TEXTURE_POINTER = 0,
@@ -77,6 +79,7 @@ enum
    MUI_TEXTURE_LAST
 };
 
+/* The menu has 3 tabs */
 enum
 {
    MUI_SYSTEM_TAB_MAIN = 0,
@@ -129,10 +132,13 @@ typedef struct mui_handle
       size_t selection_ptr;
    } categories;
 
+   /* One font for the menu entries, one font for the labels */
    font_data_t *font;
    font_data_t *font2;
    video_font_raster_block_t raster_block;
    video_font_raster_block_t raster_block2;
+
+   /* Y position of the vertical scroll */
    float scroll_y;
 } mui_handle_t;
 
@@ -1632,6 +1638,7 @@ static void mui_populate_entries(
    mui->scroll_y = mui_get_scroll(mui);
 }
 
+/* Context reset is called on launch or when a core is launched */
 static void mui_context_reset(void *data, bool is_threaded)
 {
    mui_handle_t *mui              = (mui_handle_t*)data;
@@ -1674,6 +1681,7 @@ static int mui_environ(enum menu_environ_cb type, void *data, void *userdata)
    return -1;
 }
 
+/* Called before we push the new list after clicking on a tab */
 static void mui_preswitch_tabs(mui_handle_t *mui, unsigned action)
 {
    size_t stack_size       = 0;
@@ -1712,6 +1720,8 @@ static void mui_preswitch_tabs(mui_handle_t *mui, unsigned action)
    }
 }
 
+/* This callback is not caching anything. We use it to navigate the tabs
+with the keyboard */
 static void mui_list_cache(void *data,
       enum menu_list_type type, unsigned action)
 {
@@ -1759,6 +1769,8 @@ static void mui_list_cache(void *data,
    }
 }
 
+/* A new list has been pushed. We use this callback to customize a few lists for
+this menu driver */
 static int mui_list_push(void *data, void *userdata,
       menu_displaylist_info_t *info, unsigned type)
 {
