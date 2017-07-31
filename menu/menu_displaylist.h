@@ -166,13 +166,24 @@ enum menu_displaylist_ctl_state
 
 typedef struct menu_displaylist_info
 {
+   /* should the displaylist be sorted by alphabet? */
    bool need_sort;
    bool need_refresh;
    bool need_entries_refresh;
    bool need_push;
+
+   /* should we clear the displaylist before we push
+    * entries onto it? */
    bool need_clear;
+
    bool push_builtin_cores;
+
+   /* Should a 'download core' entry be pushed onto the list?
+    * This will be set to true in case there are no currently
+    * installed cores. */
    bool download_core;
+
+   /* does the navigation index need to be cleared to 0 (first entry) ? */
    bool need_navigation_clear;
    file_list_t *list;
    file_list_t *menu_list;
