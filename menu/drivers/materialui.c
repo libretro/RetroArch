@@ -235,6 +235,7 @@ static void mui_draw_icon(
    menu_display_blend_end();
 }
 
+/* Draw a single tab */
 static void mui_draw_tab(mui_handle_t *mui,
       unsigned i,
       unsigned width, unsigned height,
@@ -274,6 +275,7 @@ static void mui_draw_tab(mui_handle_t *mui,
          &tab_color[0]);
 }
 
+/* Draw the onscreen keyboard */
 static void mui_render_keyboard(mui_handle_t *mui,
       video_frame_info_t *video_info,
       const char *grid[], unsigned id)
@@ -363,6 +365,7 @@ static int mui_osk_ptr_at_pos(void *data, int x, int y,
    return -1;
 }
 
+/* Draw the tabs background */
 static void mui_draw_tab_begin(mui_handle_t *mui,
       unsigned width, unsigned height,
       float *tabs_bg_color, float *tabs_separator_color)
@@ -384,6 +387,7 @@ static void mui_draw_tab_begin(mui_handle_t *mui,
          tabs_separator_color);
 }
 
+/* Draw the active tab */
 static void mui_draw_tab_end(mui_handle_t *mui,
       unsigned width, unsigned height,
       unsigned header_height,
