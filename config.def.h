@@ -612,9 +612,9 @@ static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/window
 #endif
 #else
 #if defined(__x86_64__)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/win-x86_64/latest/";
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows/x86_64/latest/";
 #elif defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(_M_IX86) || defined(_M_IA64)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/win-x86/latest/";
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows/x86/latest/";
 #endif
 #endif
 #elif defined(__linux__)
