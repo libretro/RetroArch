@@ -1047,6 +1047,9 @@ void menu_display_handle_savestate_thumbnail_upload(void *task_data,
    free(user_data);
 }
 
+/* Function that gets called when we want to load in a 
+ * new menu wallpaper. 
+ */
 void menu_display_handle_wallpaper_upload(void *task_data,
       void *user_data, const char *err)
 {
@@ -1078,6 +1081,9 @@ void menu_display_allocate_white_texture(void)
          TEXTURE_FILTER_NEAREST, &menu_display_white_texture);
 }
 
+/* 
+ * Draw a hardware cursor on top of the screen for the mouse.
+ */
 void menu_display_draw_cursor(
       float *color, float cursor_size, uintptr_t texture,
       float x, float y, unsigned width, unsigned height)
@@ -1236,6 +1242,8 @@ void menu_display_snow(int width, int height)
    }
 }
 
+/* Draw text on top of the screen. 
+ */
 void menu_display_draw_text(
       const font_data_t *font, const char *text,
       float x, float y, int width, int height,
@@ -1352,6 +1360,10 @@ const char *config_get_menu_driver_options(void)
 }
 
 #ifdef HAVE_COMPRESSION
+/* This function gets called at first startup on Android/iOS
+ * when we need to extract the APK contents/zip file. This
+ * file contains assets which then get extracted to the
+ * user's asset directories. */
 static void bundle_decompressed(void *task_data,
       void *user_data, const char *err)
 {
@@ -1435,6 +1447,11 @@ static bool menu_init(menu_handle_t *menu_data)
    return true;
 }
 
+/* This callback gets triggered by the keyboard whenever
+ * we press or release a keyboard key. When a keyboard
+ * key is being pressed down, 'down' will be true. If it
+ * is being released, 'down' will be false.
+ */
 static void menu_input_key_event(bool down, unsigned keycode,
       uint32_t character, uint16_t mod)
 {
@@ -1450,6 +1467,10 @@ static void menu_input_key_event(bool down, unsigned keycode,
    menu_event_kb_set(down, (enum retro_key)keycode);
 }
 
+/* Gets called when we want to toggle the menu.
+ * If the menu is already running, it will be turned off.
+ * If the menu is off, then the menu will be started.
+ */
 static void menu_driver_toggle(bool on)
 {
    retro_keyboard_event_t *key_event          = NULL;
@@ -1575,11 +1596,15 @@ bool menu_driver_render(bool is_idle, bool rarch_is_inited,
    return true;
 }
 
+/* Checks if the menu is still running */
 bool menu_driver_is_alive(void)
 {
    return menu_driver_alive;
 }
 
+/* Checks if the menu framebuffer is set. 
+ * This would usually only return true
+ * for framebuffer-based menu drivers, like RGUI. */
 bool menu_driver_is_texture_set(void)
 {
    if (menu_driver_ctx)
@@ -1587,8 +1612,13 @@ bool menu_driver_is_texture_set(void)
    return false;
 }
 
+/* Iterate the menu driver for one frame. */
 bool menu_driver_iterate(menu_ctx_iterate_t *iterate)
 {
+   /* If the user had requested that the Quick Menu
+    * be spawned during the previous frame, do this now
+    * and exit the function to go to the next frame.
+    */
    if (menu_driver_pending_quick_menu)
    {
       menu_driver_pending_quick_menu = false;
@@ -1607,12 +1637,18 @@ bool menu_driver_iterate(menu_ctx_iterate_t *iterate)
       return true;
    }
 
+   /* If the user had requested that the menu
+    * be shutdown during the previous frame, do
+    * this now. */
    if (menu_driver_pending_quit)
    {
       menu_driver_pending_quit     = false;
       return false;
    }
 
+   /* if the user had requested that RetroArch
+    * be shutdown during the previous frame, do
+    * this now. */
    if (menu_driver_pending_shutdown)
    {
       menu_driver_pending_shutdown = false;
@@ -1631,6 +1667,7 @@ bool menu_driver_iterate(menu_ctx_iterate_t *iterate)
    return true;
 }
 
+/* Clear all the menu lists. */
 bool menu_driver_list_clear(void *data)
 {
    file_list_t *list = (file_list_t*)data;
@@ -1737,6 +1774,7 @@ void menu_driver_set_thumbnail_content(char *s, size_t len)
       menu_driver_ctx->set_thumbnail_content(menu_userdata, s, len);
 }
 
+/* Teardown function for the menu driver. */
 void menu_driver_destroy(void)
 {
    menu_driver_pending_quick_menu = false;
