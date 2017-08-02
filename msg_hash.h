@@ -929,6 +929,7 @@ enum msg_hash_enums
    MENU_LABEL(NETPLAY_SETTINGS),
    MENU_LABEL(CONTENT_SETTINGS),
    MENU_LABEL(LOAD_CONTENT_LIST),
+   MENU_LABEL(LOAD_CONTENT_SPECIAL),
    MENU_LABEL(NO_SETTINGS_FOUND),
    MENU_LABEL(NO_NETWORKS_FOUND),
    MENU_LABEL(NO_PERFORMANCE_COUNTERS),
@@ -1891,6 +1892,9 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len);
 
 const char *msg_hash_to_str_chs(enum msg_hash_enums msg);
 int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len);
+
+const char *msg_hash_to_str_cht(enum msg_hash_enums msg);
+int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len);
 
 const char *msg_hash_to_str_us(enum msg_hash_enums msg);
 int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len);

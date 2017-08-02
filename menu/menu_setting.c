@@ -1731,7 +1731,6 @@ void general_write_handler(void *data)
          audio_set_float(AUDIO_ACTION_MIXER_VOLUME_GAIN, *setting->value.target.fraction);
          break;
       case MENU_ENUM_LABEL_AUDIO_LATENCY:
-      case MENU_ENUM_LABEL_AUDIO_DEVICE:
       case MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE:
       case MENU_ENUM_LABEL_AUDIO_WASAPI_EXCLUSIVE_MODE:
       case MENU_ENUM_LABEL_AUDIO_WASAPI_FLOAT_FORMAT:
@@ -3188,7 +3187,7 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-         menu_settings_list_current_add_range(list, list_info, 1, 32768, 1, true, false);
+         menu_settings_list_current_add_range(list, list_info, 1, 32768, 1, true, true);
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);

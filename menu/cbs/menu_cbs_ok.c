@@ -932,7 +932,7 @@ static bool menu_content_find_first_core(menu_content_ctx_defer_info_t *def_info
       core_info_get_current_core((core_info_t**)&info);
       if (info)
       {
-         RARCH_LOG("Use the current core (%s) to load this content...\n",
+         RARCH_LOG("[lobby] use the current core (%s) to load this content...\n",
                info->path);
          supported = 1;
       }
@@ -3415,7 +3415,7 @@ static int action_ok_netplay_connect_room(const char *path,
          netplay_room_list[idx - 3].port);
    }
 
-   RARCH_LOG("Connecting to: %s with game: %s/%08x\n", 
+   RARCH_LOG("[lobby] connecting to: %s with game: %s/%08x\n", 
          tmp_hostname,
          netplay_room_list[idx - 3].gamename,
          netplay_room_list[idx - 3].gamecrc);
@@ -3649,13 +3649,22 @@ void netplay_refresh_rooms_menu(file_list_t *list)
 
    if (netplay_room_count != 0)
    {
-      RARCH_LOG ("Found %d rooms...\n", netplay_room_count);
+      RARCH_LOG ("[lobby] found %d rooms...\n", netplay_room_count);
 
       for (i = 0; i < netplay_room_count; i++)
       {
+         char country[PATH_MAX_LENGTH] = {0};
+
+         if (*netplay_room_list[i].country)
+         {
+            strlcat(country, " (", sizeof(country));
+            strlcat(country, netplay_room_list[i].country, sizeof(country));
+            strlcat(country, ")", sizeof(country));
+         }
+
          /* Uncomment this to debug mismatched room parameters*/
 #if 0
-         RARCH_LOG("Room Data: %d\n"
+         RARCH_LOG("[lobby] room Data: %d\n"
                "Nickname:         %s\n"
                "Address:          %s\n"
                "Port:             %d\n"
@@ -3674,19 +3683,14 @@ void netplay_refresh_rooms_menu(file_list_t *list)
                netplay_room_list[i].timestamp);
 #endif
          j+=8;
-         if (netplay_room_list[i].lan)
-         {
-            snprintf(s, sizeof(s),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME_LAN),
-               netplay_room_list[i].nickname);
-         }
-         else
-         {
-            snprintf(s, sizeof(s),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME),
-               netplay_room_list[i].nickname);
-         }
+         snprintf(s, sizeof(s), "%s: %s%s",
+            netplay_room_list[i].lan ? "Local" :
+            (netplay_room_list[i].host_method == NETPLAY_HOST_METHOD_MITM ?
+            "Internet (relay)" : "Internet (direct)"),
+            netplay_room_list[i].nickname, country);
 
+         /*int room_type = netplay_room_list[i].lan ? MENU_ROOM_LAN :
+            (netplay_room_list[i].host_method == NETPLAY_HOST_METHOD_MITM ? MENU_ROOM_MITM : MENU_ROOM); */
          menu_entries_append_enum(list,
                s,
                msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM),
@@ -3729,7 +3733,7 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
       if (string_is_empty(data->data))
       {
          netplay_room_count = 0;
-         RARCH_LOG("Room list empty\n");
+         RARCH_LOG("[lobby] room list empty\n");
       }
       else
       {
@@ -3776,14 +3780,14 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
                if (address->sa_family == AF_INET)
                {
                    struct sockaddr_in *sin = (struct sockaddr_in *) address;
-                   inet_ntop_compat(AF_INET, &sin->sin_addr, 
+                   inet_ntop_compat(AF_INET, &sin->sin_addr,
                       netplay_room_list[i].address, INET6_ADDRSTRLEN);
                }
 #if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY)
                else if (address->sa_family == AF_INET6)
                {
                   struct sockaddr_in6 *sin = (struct sockaddr_in6 *) address;
-                  inet_ntop_compat(AF_INET6, &sin->sin6_addr, 
+                  inet_ntop_compat(AF_INET6, &sin->sin6_addr,
                      netplay_room_list[i].address, INET6_ADDRSTRLEN);
                }
 #endif
@@ -3791,6 +3795,9 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
                strlcpy(netplay_room_list[i].corename,
                      host->core,
                      sizeof(netplay_room_list[i].corename));
+               strlcpy(netplay_room_list[i].retroarch_version,
+                     host->retroarch_version,
+                     sizeof(netplay_room_list[i].retroarch_version));
                strlcpy(netplay_room_list[i].coreversion,
                      host->core_version,
                      sizeof(netplay_room_list[i].coreversion));
@@ -3804,7 +3811,7 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
                netplay_room_list[i].lan = true;
 
                snprintf(s, sizeof(s),
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME_LAN),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME),
                      netplay_room_list[i].nickname);
             }
             netplay_room_count += lan_room_count;
@@ -4376,9 +4383,17 @@ static int action_ok_netplay_enable_client(const char *path,
 static int action_ok_netplay_disconnect(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   settings_t *settings = config_get_ptr();
 #ifdef HAVE_NETWORKING
    netplay_driver_ctl(RARCH_NETPLAY_CTL_DISCONNECT, NULL);
    netplay_driver_ctl(RARCH_NETPLAY_CTL_DISABLE, NULL);
+
+   /* Re-enable rewind if it was enabled 
+      TODO: Add a setting for these tweaks */
+   if (settings->bools.rewind_enable)
+      command_event(CMD_EVENT_REWIND_INIT, NULL);
+   if (settings->uints.autosave_interval != 0)
+      command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
    return generic_action_ok_command(CMD_EVENT_RESUME);
 
 #else
@@ -4652,6 +4667,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_ONLINE_UPDATER:
          case MENU_ENUM_LABEL_NETPLAY:
          case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
+         case MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL:
          case MENU_ENUM_LABEL_ADD_CONTENT_LIST:
          case MENU_ENUM_LABEL_CONFIGURATIONS_LIST:
          case MENU_ENUM_LABEL_HELP_LIST:

@@ -18,6 +18,8 @@
 #include <stdlib.h>
 #include <sys/types.h>
 
+#include "../../version.h"
+
 #include <boolean.h>
 #include <compat/strl.h>
 #include <retro_assert.h>
@@ -521,7 +523,7 @@ static int16_t netplay_input_state(netplay_t *netplay,
 
 static void netplay_announce_cb(void *task_data, void *user_data, const char *error)
 {
-   RARCH_LOG("Announcing netplay game... \n");
+   RARCH_LOG("[netplay] announcing netplay game... \n");
 
    if (task_data)
    {
@@ -566,7 +568,7 @@ static void netplay_announce_cb(void *task_data, void *user_data, const char *er
 
       if (mitm_ip && mitm_port)
       {
-         RARCH_LOG("Joining MITM server: %s:%s\n", mitm_ip, mitm_port);
+         RARCH_LOG("[netplay] joining relay server: %s:%s\n", mitm_ip, mitm_port);
 
          ip_len   = (unsigned)strlen(mitm_ip);
          port_len = (unsigned)strlen(mitm_port);
@@ -615,20 +617,25 @@ static void netplay_announce(void)
 
    net_http_urlencode_full(&username, settings->paths.username);
    net_http_urlencode_full(&corename, system->info.library_name);
-   net_http_urlencode_full(&gamename, !string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))) ? path_basename(path_get(RARCH_PATH_BASENAME)) : "N/A");
+   net_http_urlencode_full(&gamename, 
+      !string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))) ? 
+      path_basename(path_get(RARCH_PATH_BASENAME)) : "N/A");
    net_http_urlencode_full(&coreversion, system->info.library_version);
 
    buf[0] = '\0';
 
    snprintf(buf, sizeof(buf), "username=%s&core_name=%s&core_version=%s&"
       "game_name=%s&game_crc=%08X&port=%d"
-      "&has_password=%d&has_spectate_password=%d&force_mitm=%d",
+      "&has_password=%d&has_spectate_password=%d&force_mitm=%d&retroarch_version=%s",
       username, corename, coreversion, gamename, content_crc,
       settings->uints.netplay_port,
       *settings->paths.netplay_password ? 1 : 0,
       *settings->paths.netplay_spectate_password ? 1 : 0,
-      settings->bools.netplay_use_mitm_server);
-
+      settings->bools.netplay_use_mitm_server,
+      PACKAGE_VERSION);
+#if 0
+   RARCH_LOG("[netplay] announcement URL: %s\n", buf);
+#endif
    task_push_http_post_transfer(url, buf, true, NULL, netplay_announce_cb, NULL);
 
    free(username);
@@ -1089,7 +1096,7 @@ static void netplay_toggle_play_spectate(netplay_t *netplay)
          snprintf(msg, sizeof(msg)-1, msg_hash_to_str(MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N), player+1);
       }
 
-      RARCH_LOG("%s\n", dmsg);
+      RARCH_LOG("[netplay] %s\n", dmsg);
       runloop_msg_queue_push(dmsg, 1, 180, false);
 
       netplay_send_raw_cmd_all(netplay, NULL, NETPLAY_CMD_MODE, payload, sizeof(payload));
@@ -1197,11 +1204,11 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
 
    if (netplay_is_client)
    {
-      RARCH_LOG("%s\n", msg_hash_to_str(MSG_CONNECTING_TO_NETPLAY_HOST));
+      RARCH_LOG("[netplay] %s\n", msg_hash_to_str(MSG_CONNECTING_TO_NETPLAY_HOST));
    }
    else
    {
-      RARCH_LOG("%s\n", msg_hash_to_str(MSG_WAITING_FOR_CLIENT));
+      RARCH_LOG("[netplay] %s\n", msg_hash_to_str(MSG_WAITING_FOR_CLIENT));
       runloop_msg_queue_push(
          msg_hash_to_str(MSG_WAITING_FOR_CLIENT),
          0, 180, false);

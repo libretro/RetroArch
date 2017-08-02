@@ -167,6 +167,10 @@ enum menu_settings_type
    MENU_SETTING_HORIZONTAL_MENU,
    MENU_WIFI,
    MENU_ROOM,
+/*
+   MENU_ROOM_LAN,
+   MENU_ROOM_MITM,
+*/
    MENU_NETPLAY_LAN_SCAN,
    MENU_INFO_MESSAGE,
    MENU_SETTINGS_SHADER_PARAMETER_0,
@@ -282,6 +286,8 @@ enum menu_toggle_reason
   MENU_TOGGLE_REASON_MESSAGE
 };
 
+typedef uintptr_t menu_texture_item;
+
 typedef struct menu_display_ctx_clearcolor
 {
    float r;
@@ -294,6 +300,26 @@ typedef struct menu_display_frame_info
 {
    bool shadows_enable;
 } menu_display_frame_info_t;
+
+typedef struct menu_display_ctx_driver
+{
+   void (*draw)(void *data);
+   void (*draw_pipeline)(void *data);
+   void (*viewport)(void *data);
+   void (*blend_begin)(void);
+   void (*blend_end)(void);
+   void (*restore_clear_color)(void);
+   void (*clear_color)(menu_display_ctx_clearcolor_t *clearcolor);
+   void *(*get_default_mvp)(void);
+   const float *(*get_default_vertices)(void);
+   const float *(*get_default_tex_coords)(void);
+   bool (*font_init_first)(
+         void **font_handle, void *video_data,
+         const char *font_path, float font_size,
+         bool is_threaded);
+   enum menu_display_driver_type type;
+   const char *ident;
+} menu_display_ctx_driver_t;
 
 
 typedef struct
@@ -558,27 +584,6 @@ size_t menu_navigation_get_selection(void);
 
 void menu_navigation_set_selection(size_t val);
 
-typedef struct menu_display_ctx_driver
-{
-   void (*draw)(void *data);
-   void (*draw_pipeline)(void *data);
-   void (*viewport)(void *data);
-   void (*blend_begin)(void);
-   void (*blend_end)(void);
-   void (*restore_clear_color)(void);
-   void (*clear_color)(menu_display_ctx_clearcolor_t *clearcolor);
-   void *(*get_default_mvp)(void);
-   const float *(*get_default_vertices)(void);
-   const float *(*get_default_tex_coords)(void);
-   bool (*font_init_first)(
-         void **font_handle, void *video_data,
-         const char *font_path, float font_size,
-         bool is_threaded);
-   enum menu_display_driver_type type;
-   const char *ident;
-} menu_display_ctx_driver_t;
-
-typedef uintptr_t menu_texture_item;
 
 enum menu_toggle_reason menu_display_toggle_get_reason(void);
 void menu_display_toggle_set_reason(enum menu_toggle_reason reason);

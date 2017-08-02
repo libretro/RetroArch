@@ -745,6 +745,7 @@ FILE
 #include "../setting_list.c"
 #include "../libretro-common/file/retro_dirent.c"
 #include "../libretro-common/streams/file_stream.c"
+#include "../libretro-common/streams/file_stream_transforms.c"
 #include "../libretro-common/streams/interface_stream.c"
 #include "../libretro-common/streams/memory_stream.c"
 #include "../list_special.c"
@@ -856,6 +857,7 @@ RETROARCH
 #include "../intl/msg_hash_ru.c"
 #include "../intl/msg_hash_vn.c"
 #include "../intl/msg_hash_chs.c"
+#include "../intl/msg_hash_cht.c"
 #endif
 
 #include "../intl/msg_hash_us.c"

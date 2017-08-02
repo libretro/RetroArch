@@ -300,7 +300,7 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
       case GL_CAPS_BGRA8888:
 #ifdef HAVE_OPENGLES
          /* There are both APPLE and EXT variants. */
-         if (gl_query_extension("BGRA8888"))
+         if (gl_query_extension("BGRA8888") && !strstr(renderer, "VideoCore"))
             return true;
 #else
          return true;
@@ -318,8 +318,13 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
 #endif
          break;
       case GL_CAPS_TEX_STORAGE_EXT:
+#ifdef TARGET_OS_IPHONE
+           /* Not working on iOS */
+           return false;
+#else
          if (gl_query_extension("EXT_texture_storage"))
             return true;
+#endif
          break;
       case GL_CAPS_NONE:
       default:

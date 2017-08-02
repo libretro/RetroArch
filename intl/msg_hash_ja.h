@@ -424,6 +424,8 @@ MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
       "チートファイルを名前を付けて保存"
       )
+MSG_HASH(MENU_ENUM_SUBLABEL_CORE_INFORMATION,
+      "コアの情報を表示する。")
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEAT_NUM_PASSES,
       "チートのパス"
@@ -2671,6 +2673,10 @@ MSG_HASH(
       "The password for connecting to the netplay host. Used only in host mode."
       )
 MSG_HASH(
+      MENU_ENUM_SUBLABEL_NETPLAY_PUBLIC_ANNOUNCE,
+      "ゲームのネットプレイを公開にアナウンスする。設定しないと、クライアントは手動で接続が必要です。"
+      )
+MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_SPECTATE_PASSWORD,
       "The password for connecting to the netplay host with only spectator privileges. Used only in host mode."
       )
@@ -2869,6 +2875,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_MUSIC,
       "メニューに音楽タブを表示する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_VIDEO,
       "メニューにビデオタブを表示する。")
+MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_NETPLAY,
+      "メニューにネットプレイタブを表示する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_SETTINGS,
       "メニューに設定タブを表示する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_HISTORY,

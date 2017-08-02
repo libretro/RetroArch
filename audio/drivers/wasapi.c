@@ -263,14 +263,12 @@ static void wasapi_set_format(WAVEFORMATEXTENSIBLE *wf,
 static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
       bool *float_fmt, unsigned *rate, unsigned latency)
 {
-   HRESULT hr;
    WAVEFORMATEXTENSIBLE wf;
    int i, j;
    IAudioClient *client = NULL;
    bool float_fmt_res   = *float_fmt;
    unsigned rate_res    = *rate;
-
-   hr = device->lpVtbl->Activate(device, &IID_IAudioClient,
+   HRESULT hr           = device->lpVtbl->Activate(device, &IID_IAudioClient,
          CLSCTX_ALL, NULL, (void**)&client);
    WASAPI_HR_CHECK(hr, "IMMDevice::Activate", return NULL);
 
@@ -331,7 +329,6 @@ error:
 static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
       bool *float_fmt, unsigned *rate, unsigned latency)
 {
-   HRESULT hr;
    WAVEFORMATEXTENSIBLE wf;
    int i, j;
    IAudioClient *client           = NULL;
@@ -340,8 +337,8 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
    REFERENCE_TIME minimum_period  = 0;
    REFERENCE_TIME buffer_duration = 0;
    UINT32 buffer_length           = 0;
-
-   hr = device->lpVtbl->Activate(device, &IID_IAudioClient,
+   HRESULT hr                     = device->lpVtbl->Activate(
+		   device, &IID_IAudioClient,
          CLSCTX_ALL, NULL, (void**)&client);
    WASAPI_HR_CHECK(hr, "IMMDevice::Activate", return NULL);
 

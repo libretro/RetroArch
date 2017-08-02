@@ -549,12 +549,30 @@ static void udev_input_poll(void *data)
       udev->joypad->poll();
 }
 
+static bool udev_pointer_is_off_window(udev_input_mouse_t *mouse)
+{
+   struct video_viewport view;
+   bool r = video_driver_get_viewport_info(&view);
+
+   if (r)
+      r = mouse->x < view.x ||
+          mouse->x >= view.x + view.width ||
+          mouse->y < view.y ||
+          mouse->y >= view.y + view.height;
+
+   return r;
+}
+
 static int16_t udev_mouse_state(udev_input_t *udev,
       unsigned port, unsigned id, bool screen)
 {
    udev_input_mouse_t *mouse = udev_get_mouse(udev, port);
 
    if (!mouse)
+      return 0;
+
+   if (id != RETRO_DEVICE_ID_MOUSE_X && id != RETRO_DEVICE_ID_MOUSE_Y &&
+         udev_pointer_is_off_window(mouse))
       return 0;
 
    switch (id)
@@ -706,8 +724,10 @@ static int16_t udev_input_state(void *data,
                   joypad_info, port, idx, id, binds[port]);
          return ret;
       case RETRO_DEVICE_KEYBOARD:
-         return id < RETROK_LAST && BIT_GET(udev_key_state,
-               rarch_keysym_lut[(enum retro_key)id]);
+         if (video_driver_cb_has_focus())
+            return id < RETROK_LAST && BIT_GET(udev_key_state,
+                  rarch_keysym_lut[(enum retro_key)id]);
+         break;
       case RETRO_DEVICE_MOUSE:
          return udev_mouse_state(udev, port, id, false);
       case RARCH_DEVICE_MOUSE_SCREEN:
@@ -837,7 +857,7 @@ static void *udev_input_init(const char *joypad_driver)
       goto error;
 
    video_context_driver_get_ident(&ctx_ident);
-   udev->xkb_handling = string_is_equal_fast(ctx_ident.ident, "kms", 4);
+   udev->xkb_handling = string_is_equal(ctx_ident.ident, "kms");
 #endif
 
    fd = epoll_create(32);
