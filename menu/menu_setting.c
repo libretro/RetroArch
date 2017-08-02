@@ -4027,7 +4027,7 @@ static bool setting_append_list(
          menu_settings_list_current_add_range(
                list,
                list_info,
-               0.01,
+               0.0,
                0.5,
                0.01,
                true,
