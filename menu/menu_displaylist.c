@@ -397,6 +397,12 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
             msg_hash_to_str(MENU_ENUM_LABEL_NO_CORE_INFORMATION_AVAILABLE),
             MENU_ENUM_LABEL_NO_CORE_INFORMATION_AVAILABLE,
             0, 0, 0);
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_DELETE),
+            msg_hash_to_str(MENU_ENUM_LABEL_CORE_DELETE),
+            MENU_ENUM_LABEL_CORE_DELETE,
+            MENU_SETTING_ACTION_CORE_DELETE, 0, 0);
+
       return 0;
    }
 
@@ -557,6 +563,12 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
                MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
       }
    }
+
+  menu_entries_append_enum(info->list,
+        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_DELETE),
+        msg_hash_to_str(MENU_ENUM_LABEL_CORE_DELETE),
+        MENU_ENUM_LABEL_CORE_DELETE,
+        MENU_SETTING_ACTION_CORE_DELETE, 0, 0);
 
    return 0;
 }

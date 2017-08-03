@@ -4421,6 +4421,21 @@ static int action_ok_netplay_disconnect(const char *path,
 #endif
 }
 
+static int action_ok_core_delete(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   char* core_path = strdup(path_get(RARCH_PATH_CORE));
+
+   generic_action_ok_command(CMD_EVENT_UNLOAD_CORE);
+   menu_entries_flush_stack(0, 0);
+
+   remove(core_path);
+
+   free(core_path);
+
+   return 0;
+}
+
 static int is_rdb_entry(enum msg_hash_enums enum_idx)
 {
    switch (enum_idx)
@@ -4867,6 +4882,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_NETPLAY_DISCONNECT:
             BIND_ACTION_OK(cbs, action_ok_netplay_disconnect);
+            break;
+         case MENU_ENUM_LABEL_CORE_DELETE:
+            BIND_ACTION_OK(cbs, action_ok_core_delete);
             break;
          default:
             return -1;
