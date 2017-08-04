@@ -6,6 +6,7 @@
 - COMMON: Allow Max Timing Skew to be set to 0.
 - LOCALIZATION: Update Russian translation
 - WINDOWS 98/ME/2K: Set default directory for MSVC 2005 RetroArch version.
+- WIIU: Exception handler rewritten.
 
 # 1.6.3
 - IOS: Fix GL regression - 32bit color format cores were no longer rendering 
