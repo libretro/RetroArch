@@ -693,11 +693,24 @@ static int general_push(menu_displaylist_info_t *info,
             if (!string_is_empty(system->valid_extensions))
                strlcpy(info->exts, system->valid_extensions, sizeof(info->exts));
          }
+         {
+            union string_list_elem_attr attr;
+            char newstring2[PATH_MAX_LENGTH];
+            struct string_list *str_list3  = string_split(info->exts, "|"); 
+
+            newstring2[0] = '\0';
+            attr.i        = 0;
+
 #ifdef HAVE_IBXM
-         strlcat(info->exts, "|s3m", sizeof(info->exts));
-         strlcat(info->exts, "|mod", sizeof(info->exts));
-         strlcat(info->exts, "|xm", sizeof(info->exts));
+            string_list_append(str_list3, "s3m", attr);
+            string_list_append(str_list3, "mod", attr);
+            string_list_append(str_list3, "xm", attr);
 #endif
+            string_list_join_concat(newstring2, sizeof(newstring2),
+                  str_list3, "|");
+            string_list_free(str_list3);
+            strlcpy(info->exts, newstring2, sizeof(info->exts));
+         }
          break;
       case PUSH_ARCHIVE_OPEN_DETECT_CORE:
       case PUSH_DETECT_CORE_LIST:
@@ -750,12 +763,24 @@ static int general_push(menu_displaylist_info_t *info,
                   str_list2, "|");
 
             strlcpy(info->exts, newstring, sizeof(info->exts));
-#ifdef HAVE_IBXM
-            strlcat(info->exts, "|s3m", sizeof(info->exts));
-            strlcat(info->exts, "|mod", sizeof(info->exts));
-            strlcat(info->exts, "|xm", sizeof(info->exts));
-#endif
+            {
+               union string_list_elem_attr attr;
+               char newstring2[PATH_MAX_LENGTH];
+               struct string_list *str_list3  = string_split(info->exts, "|"); 
 
+               newstring2[0] = '\0';
+               attr.i        = 0;
+
+#ifdef HAVE_IBXM
+               string_list_append(str_list3, "s3m", attr);
+               string_list_append(str_list3, "mod", attr);
+               string_list_append(str_list3, "xm", attr);
+#endif
+               string_list_join_concat(newstring2, sizeof(newstring2),
+                     str_list3, "|");
+               string_list_free(str_list3);
+               strlcpy(info->exts, newstring2, sizeof(info->exts));
+            }
             string_list_free(str_list2);
          }
          break;
