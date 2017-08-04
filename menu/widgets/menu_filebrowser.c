@@ -79,6 +79,8 @@ void filebrowser_parse(void *data, unsigned type_data)
             filter_ext ? info->exts : NULL,
             true, settings->bools.show_hidden_files, true, false);
 
+   RARCH_LOG("extension is: %s\n", info->exts);
+
 #ifdef HAVE_LIBRETRODB
    if (filebrowser_types == FILEBROWSER_SCAN_DIR)
       menu_entries_prepend(info->list,

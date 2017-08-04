@@ -693,6 +693,11 @@ static int general_push(menu_displaylist_info_t *info,
             if (!string_is_empty(system->valid_extensions))
                strlcpy(info->exts, system->valid_extensions, sizeof(info->exts));
          }
+#ifdef HAVE_IBXM
+         strlcat(info->exts, "|s3m", sizeof(info->exts));
+         strlcat(info->exts, "|mod", sizeof(info->exts));
+         strlcat(info->exts, "|xm", sizeof(info->exts));
+#endif
          break;
       case PUSH_ARCHIVE_OPEN_DETECT_CORE:
       case PUSH_DETECT_CORE_LIST:
@@ -745,6 +750,11 @@ static int general_push(menu_displaylist_info_t *info,
                   str_list2, "|");
 
             strlcpy(info->exts, newstring, sizeof(info->exts));
+#ifdef HAVE_IBXM
+            strlcat(info->exts, "|s3m", sizeof(info->exts));
+            strlcat(info->exts, "|mod", sizeof(info->exts));
+            strlcat(info->exts, "|xm", sizeof(info->exts));
+#endif
 
             string_list_free(str_list2);
          }
