@@ -99,14 +99,12 @@ struct audio_mixer_voice
    {
       struct
       {
-         /* wav */
          unsigned position;
       } wav;
       
 #ifdef HAVE_STB_VORBIS
       struct
       {
-         /* ogg */
          unsigned    position;
          unsigned    samples;
          unsigned    buf_samples;
@@ -121,7 +119,6 @@ struct audio_mixer_voice
 #ifdef HAVE_IBXM
       struct
       {
-         /* mod/s3m/xm */
          unsigned    		position;
          unsigned    		samples;
          unsigned    		buf_samples;
@@ -465,43 +462,51 @@ error:
 #endif
 
 #ifdef HAVE_IBXM
+#ifdef HAVE_STB_VORBIS
 static bool audio_mixer_play_mod(
       audio_mixer_sound_t* sound,
       audio_mixer_voice_t* voice,
       bool repeat, float volume,
       audio_mixer_stop_cb_t stop_cb)
 {
+   struct data data;
+   char message[64];
    int buf_samples               = 0;
    int samples                   = 0;
    void *mod_buffer              = NULL;
    struct module* module         = NULL;
    struct replay* replay         = NULL;
-   struct data data;
-   char message[64];
 
    data.buffer = (char*)sound->types.ogg.data;
    data.length = sound->types.ogg.size;
-   module = module_load(&data, message);
-   if (module==NULL) {
+   module      = module_load(&data, message);
+   if (!module)
+   {
       printf("audio_mixer_play_mod module_load() failed with error: %s\n", message);
       goto error;
    }
 
    replay = new_replay( module, s_rate, 1);
-   if (replay==NULL) {
+
+   if (!replay)
+   {
       printf("audio_mixer_play_mod new_replay() failed\n");
       goto error;
    }
 
    buf_samples = calculate_mix_buf_len(s_rate);
-   mod_buffer = memalign_alloc(16, ((buf_samples + 15) & ~15) * sizeof(int));
-   if (!mod_buffer) {
+   mod_buffer  = memalign_alloc(16, ((buf_samples + 15) & ~15) * sizeof(int));
+
+   if (!mod_buffer)
+   {
       printf("audio_mixer_play_mod cannot allocate mod_buffer !\n");
       goto error;
    }
 
    samples = replay_calculate_duration(replay);
-   if (!samples) {
+
+   if (!samples)
+   {
       printf("audio_mixer_play_mod cannot retrieve duration !\n");
       goto error;
    }
@@ -510,7 +515,7 @@ static bool audio_mixer_play_mod(
    voice->types.mod.buf_samples    = buf_samples;
    voice->types.mod.stream         = replay;
    voice->types.mod.position       = 0;
-    voice->types.mod.samples        = 0;//samples;
+    voice->types.mod.samples       = 0; /* samples; */
 
    return true;
 
@@ -521,6 +526,7 @@ error:
    return false;
 
 }
+#endif
 #endif
 
 audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound, bool repeat,
@@ -554,7 +560,9 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound, bool repeat,
             break;
          case AUDIO_MIXER_TYPE_MOD:
 #ifdef HAVE_IBXM
+#ifdef HAVE_STB_VORBIS
             res = audio_mixer_play_mod(sound, voice, repeat, volume, stop_cb);
+#endif
 #endif
             break;
          case AUDIO_MIXER_TYPE_NONE:
@@ -737,8 +745,8 @@ static void audio_mixer_mix_mod(float* buffer, size_t num_frames,
    {
 again:
       temp_samples = replay_get_audio( voice->types.mod.stream, voice->types.mod.buffer );
-       temp_samples *= 2; // stereo
-       
+      temp_samples *= 2; /* stereo */
+
       if (temp_samples == 0)
       {
          if (voice->repeat)
