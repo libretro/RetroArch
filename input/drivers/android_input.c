@@ -1073,7 +1073,9 @@ static void handle_hotplug(android_input_t *android,
    }
 
    /* Amazon Fire TV & Fire stick */
-   else if(strstr(device_model, "AFTM") || strstr(device_model, "AFTS"))
+   else if(strstr(device_model, "AFTB") || strstr(device_model, "AFTT") ||
+           strstr(device_model, "AFTS") || strstr(device_model, "AFTM") ||
+           strstr(device_model, "AFTRS"))
    {
       RARCH_LOG("Special Device Detected: %s\n", device_model);
       {
