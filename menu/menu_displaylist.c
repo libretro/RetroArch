@@ -6437,11 +6437,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 #ifdef HAVE_RTGA
             string_list_append(str_list, "tga", attr);
 #endif
-#ifdef HAVE_IBXM
-             string_list_append(str_list, "mod", attr);
-             string_list_append(str_list, "s3m", attr);
-             string_list_append(str_list, "xm", attr);
-#endif
             string_list_join_concat(info->exts, sizeof(info->exts), str_list, "|");
             string_list_free(str_list);
          }
