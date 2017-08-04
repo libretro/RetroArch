@@ -107,6 +107,15 @@ const char *file_path_str(enum file_path_enum enum_idx)
       case FILE_PATH_WAV_EXTENSION:
          str = ".wav";
          break;
+      case FILE_PATH_MOD_EXTENSION:
+         str = ".mod";
+         break;
+      case FILE_PATH_S3M_EXTENSION:
+         str = ".s3m";
+         break;
+      case FILE_PATH_XM_EXTENSION:
+         str = ".xm";
+         break;
       case FILE_PATH_JPEG_EXTENSION:
          str = ".jpeg";
          break;

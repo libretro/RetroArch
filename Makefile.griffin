@@ -133,6 +133,7 @@ endif
   HAVE_RJPEG					:= 1
   HAVE_RBMP					   := 1
   HAVE_RTGA					   := 1
+  HAVE_IBXM					   := 1
   HAVE_OVERLAY             := 1
   HAVE_ZLIB                := 1
   WANT_ZLIB						:= 1

@@ -14,6 +14,8 @@
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
+#define HAVE_IBXM 1
+
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
 #define HAVE_SHADERS
 #endif
@@ -349,6 +351,8 @@ VIDEO DRIVER
 #if defined(_WIN32) && !defined(_XBOX)
 #include "../gfx/drivers/gdi_gfx.c"
 #endif
+
+#include "../deps/ibxm/ibxm.c"
 
 /*============================================================
 FONTS
