@@ -48,7 +48,6 @@
 #include "system/dynamic.h"
 #include "system/memory.h"
 #include "system/exception_handler.h"
-#include "system/exception.h"
 #include <sys/iosupport.h>
 
 #include <wiiu/os/foreground.h>
@@ -408,11 +407,7 @@ static bool swap_is_pending(void* start_time)
 
 int main(int argc, char **argv)
 {
-#if 1
    setup_os_exceptions();
-#else
-   InstallExceptionHandler();
-#endif
    ProcUIInit(&SaveCallback);
 
 #ifdef IS_SALAMANDER
