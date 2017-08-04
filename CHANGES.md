@@ -2,6 +2,10 @@
 
 - ANDROID: Fire Stick & Fire TV remote overrides gamepad port 0 on button press and viceversa like SHIELD devices
 - INPUT: input swap override flag (for remotes) is cleared correctly
+- COMMON: Add 'Delete Core'option to Core Information menu.
+- COMMON: Allow Max Timing Skew to be set to 0.
+- LOCALIZATION: Update Russian translation
+- WINDOWS 98/ME/2K: Set default directory for MSVC 2005 RetroArch version.
 
 # 1.6.3
 - IOS: Fix GL regression - 32bit color format cores were no longer rendering 
