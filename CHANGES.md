@@ -1,5 +1,8 @@
 # 1.6.4 (future)
 
+- ANDROID: Fire Stick & Fire TV remote overrides gamepad port 0 on button press and viceversa like SHIELD devices
+- INPUT: input swap override flag (for remotes) is cleared correctly
+
 # 1.6.3
 - IOS: Fix GL regression - 32bit color format cores were no longer rendering 
 - CHEEVOS: Add support for N64 cheevos and other small fixes.
