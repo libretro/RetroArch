@@ -4,7 +4,7 @@
 #ifndef __IBXM_H__
 #define __IBXM_H__
 
-const char *IBXM_VERSION;
+extern const char *IBXM_VERSION;
 
 struct data {
 	char *buffer;
