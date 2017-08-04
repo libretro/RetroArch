@@ -127,6 +127,10 @@ enum msg_file_type
    FILE_TYPE_TGA,
    FILE_TYPE_BMP,
 
+   FILE_TYPE_MOD,
+   FILE_TYPE_S3M,
+   FILE_TYPE_XM,
+
    FILE_TYPE_CUE,
    FILE_TYPE_ISO,
    FILE_TYPE_LUTRO,

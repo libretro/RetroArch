@@ -744,6 +744,13 @@ enum rarch_content_type path_is_media_type(const char *path)
       case FILE_TYPE_BMP:
          return RARCH_CONTENT_IMAGE;
 #endif
+#ifdef HAVE_IBXM
+      case FILE_TYPE_MOD:
+      case FILE_TYPE_S3M:
+      case FILE_TYPE_XM:
+         return RARCH_CONTENT_MUSIC;
+#endif
+
       case FILE_TYPE_NONE:
       default:
          break;

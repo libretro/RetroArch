@@ -1324,6 +1324,11 @@ ifeq ($(HAVE_RBMP), 1)
    OBJ += $(LIBRETRO_COMM_DIR)/formats/bmp/rbmp.o
 endif
 
+ifeq ($(HAVE_IBXM), 1)
+   DEFINES += -DHAVE_IBXM
+   OBJ += $(DEPS_DIR)/ibxm/ibxm.o
+endif
+
 OBJ += $(LIBRETRO_COMM_DIR)/formats/bmp/rbmp_encode.o \
        $(LIBRETRO_COMM_DIR)/formats/json/jsonsax.o \
        $(LIBRETRO_COMM_DIR)/formats/json/jsonsax_full.o \

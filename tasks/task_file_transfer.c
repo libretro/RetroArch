@@ -104,6 +104,7 @@ void task_file_load_handler(retro_task_t *task)
                task_set_finished(task, true);
             break;
          case NBIO_TYPE_OGG:
+         case NBIO_TYPE_MOD:
          case NBIO_TYPE_WAV:
             if (!task_audio_mixer_load_handler(task))
                task_set_finished(task, true);
