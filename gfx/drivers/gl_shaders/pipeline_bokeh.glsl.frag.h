@@ -11,7 +11,7 @@ static const char* stock_fragment_xmb_bokeh = GLSL(
       uv.x *=  OutputSize.x / OutputSize.y;
       vec3 color = vec3(0.0);
 
-      for( int i=0; i < 8; i++ )
+      for( int i=0; i < 48; i++ )
       {
          float pha = sin(float(i) * 546.13 + 1.0) * 0.5 + 0.5;
          float siz = pow(sin(float(i) * 651.74 + 5.0) * 0.5 + 0.5, 4.0);
