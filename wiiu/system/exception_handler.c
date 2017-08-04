@@ -1,50 +1,40 @@
+/*  RetroArch - A frontend for libretro.
+ *  Copyright (C) 2017 Ash Logan (QuarkTheAwesome)
+ *
+ *  RetroArch is free software: you can redistribute it and/or modify it under the terms
+ *  of the GNU General Public License as published by the Free Software Found-
+ *  ation, either version 3 of the License, or (at your option) any later version.
+ *
+ *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ *  PURPOSE.  See the GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along with RetroArch.
+ *  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+//TODO: Program exceptions don't seem to work. Good thing they almost never happen.
+
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <wiiu/os.h>
-#include "exception_handler.h"
 #include "wiiu_dbg.h"
+#include "exception_handler.h"
 
-#define OS_EXCEPTION_MODE_GLOBAL_ALL_CORES      4
+/*	Settings */
+#define NUM_STACK_TRACE_LINES 5
 
-#define OS_EXCEPTION_DSI                        2
-#define OS_EXCEPTION_ISI                        3
-#define OS_EXCEPTION_PROGRAM                    6
+/*	Externals
+	From the linker scripts.
+*/
+extern unsigned int __code_start;
+#define TEXT_START (unsigned int)&__code_start
+extern unsigned int __code_end;
+#define TEXT_END (unsigned int)&__code_end
 
-/* Exceptions */
-typedef struct OSContext_
-{
-   /* OSContext identifier */
-   uint32_t tag1;
-   uint32_t tag2;
-
-   /* GPRs */
-   uint32_t gpr[32];
-
-   /* Special registers */
-   uint32_t cr;
-   uint32_t lr;
-   uint32_t ctr;
-   uint32_t xer;
-
-   /* Initial PC and MSR */
-   uint32_t srr0;
-   uint32_t srr1;
-
-   /* Only valid during DSI exception */
-   uint32_t exception_specific0;
-   uint32_t exception_specific1;
-
-   /* There is actually a lot more here but we don't need the rest*/
-} OSContext_;
-
-#define CPU_STACK_TRACE_DEPTH    10
-#define __stringify(rn)          #rn
-
-#define mfspr(_rn) \
-({ register uint32_t _rval = 0; \
-   asm volatile("mfspr %0," __stringify(_rn) \
-   : "=r" (_rval));\
-   _rval; \
-})
+void test_os_exceptions(void);
+void exception_print_symbol(unsigned int addr);
 
 typedef struct _framerec
 {
@@ -52,157 +42,228 @@ typedef struct _framerec
    void* lr;
 } frame_rec, *frame_rec_t;
 
-static const char* exception_names[] =
-{
-   "DSI",
-   "ISI",
-   "PROGRAM"
-};
+/*	Fill in a few gaps in thread.h
+	Dimok calls these exception_specific0 and 1;
+	though we may as well name them by their function.
+*/
+#define dsisr __unknown[0]
+#define dar __unknown[1]
 
-static const char exception_print_formats[18][45] =
-{
-   "Exception type %s occurred!\n",                       // 0
-   "GPR00 %08X GPR08 %08X GPR16 %08X GPR24 %08X\n",       // 1
-   "GPR01 %08X GPR09 %08X GPR17 %08X GPR25 %08X\n",       // 2
-   "GPR02 %08X GPR10 %08X GPR18 %08X GPR26 %08X\n",       // 3
-   "GPR03 %08X GPR11 %08X GPR19 %08X GPR27 %08X\n",       // 4
-   "GPR04 %08X GPR12 %08X GPR20 %08X GPR28 %08X\n",       // 5
-   "GPR05 %08X GPR13 %08X GPR21 %08X GPR29 %08X\n",       // 6
-   "GPR06 %08X GPR14 %08X GPR22 %08X GPR30 %08X\n",       // 7
-   "GPR07 %08X GPR15 %08X GPR23 %08X GPR31 %08X\n",       // 8
-   "LR    %08X SRR0  %08x SRR1  %08x\n",                  // 9
-   "DAR   %08X DSISR %08X\n",                             // 10
-   "STACK DUMP:",                                         // 11
-   " --> ",                                               // 12
-   " -->\n",                                             // 13
-   "\n",                                                 // 14
-   "%p",                                                 // 15
-   "\nCODE DUMP:\n",                                     // 16
-   "%p:  %08X %08X %08X %08X\n",                         // 17
-};
-void net_print_exp(const char* str);
-void wiiu_log_deinit(void);
+/*	Some bitmasks for determining DSI causes.
+	Taken from the PowerPC Programming Environments Manual (32-bit).
+*/
+//Set if the EA is unmapped.
+#define DSISR_TRANSLATION_MISS 0x40000000
+//Set if the memory accessed is protected.
+#define DSISR_TRANSLATION_PROT 0x8000000
+//Set if certain instructions are used on uncached memory (see manual)
+#define DSISR_BAD_CACHING 0x4000000
+//Set if the offending operation is a write, clear for a read.
+#define DSISR_WRITE_ATTEMPTED 0x2000000
+//Set if the memory accessed is a DABR match
+#define DSISR_DABR_MATCH 0x400000
+/*	ISI cause bitmasks, same source */
+#define SRR1_ISI_TRANSLATION_MISS 0x40000000
+#define SRR1_ISI_TRANSLATION_PROT 0x8000000
+/*	PROG cause bitmasks, guess where from */
+//Set on floating-point exceptions
+#define SRR1_PROG_IEEE_FLOAT 0x100000
+//Set on an malformed instruction (can't decode)
+#define SRR1_PROG_BAD_INSTR 0x80000
+//Set on a privileged instruction executing in userspace
+#define SRR1_PROG_PRIV_INSTR 0x40000
+//Set on a trap instruction
+#define SRR1_PROG_TRAP 0x20000
+//Clear if srr0 points to the address that caused the exception (yes, really)
+#define SRR1_PROG_SRR0_INACCURATE 0x10000
 
-static unsigned char exception_cb(void* c, unsigned char exception_type)
-{
-   char gdb_buf[512];
-   char* gdb_buf_ptr = gdb_buf;
-   char buf[4096];
-   int pos = 0;
+#define buf_add(...) pos += sprintf(exception_msgbuf + pos, __VA_ARGS__)
+size_t pos = 0;
+char* exception_msgbuf;
 
-   OSContext_ *context = (OSContext_*) c;
-   /*
-    * This part is mostly from libogc. Thanks to the devs over there.
-    */
-   pos += sprintf(buf + pos, exception_print_formats[0], exception_names[exception_type]);
-   pos += sprintf(buf + pos, exception_print_formats[1], context->gpr[0], context->gpr[8], context->gpr[16],
-                  context->gpr[24]);
-   pos += sprintf(buf + pos, exception_print_formats[2], context->gpr[1], context->gpr[9], context->gpr[17],
-                  context->gpr[25]);
-   pos += sprintf(buf + pos, exception_print_formats[3], context->gpr[2], context->gpr[10], context->gpr[18],
-                  context->gpr[26]);
-   pos += sprintf(buf + pos, exception_print_formats[4], context->gpr[3], context->gpr[11], context->gpr[19],
-                  context->gpr[27]);
-   pos += sprintf(buf + pos, exception_print_formats[5], context->gpr[4], context->gpr[12], context->gpr[20],
-                  context->gpr[28]);
-   pos += sprintf(buf + pos, exception_print_formats[6], context->gpr[5], context->gpr[13], context->gpr[21],
-                  context->gpr[29]);
-   pos += sprintf(buf + pos, exception_print_formats[7], context->gpr[6], context->gpr[14], context->gpr[22],
-                  context->gpr[30]);
-   pos += sprintf(buf + pos, exception_print_formats[8], context->gpr[7], context->gpr[15], context->gpr[23],
-                  context->gpr[31]);
-   pos += sprintf(buf + pos, exception_print_formats[9], context->lr, context->srr0, context->srr1);
+void __attribute__((__noreturn__)) exception_cb(OSContext* ctx, OSExceptionType type) {
+	if (!exception_msgbuf || !OSEffectiveToPhysical(exception_msgbuf)) {
+	/*	No message buffer available, fall back onto MEM1 */
+		exception_msgbuf = (char*)0xF4000000;
+	}
 
-   //if(exception_type == OS_EXCEPTION_DSI) {
-   pos += sprintf(buf + pos, exception_print_formats[10], context->exception_specific1,
-                  context->exception_specific0); // this freezes
-   //}
+/*	First up, the pretty header that tells you wtf just happened */
+	if (type == OS_EXCEPTION_TYPE_DSI) {
+	/*	Exception type and offending instruction location
+		Also initializes exception_msgbuf, use buf_add from now on */
+		buf_add("DSI: Instr at %08X", ctx->srr0);
+	/*	Was this a read or a write? */
+		if (ctx->dsisr & DSISR_WRITE_ATTEMPTED) {
+			buf_add(" bad write to");
+		} else {
+			buf_add(" bad read from");
+		}
+	/*	So why was it bad?
+		Other causes (DABR) don't have a message to go with them. */
+		if (ctx->dsisr & DSISR_TRANSLATION_MISS) {
+			buf_add(" unmapped memory at");
+		} else if (ctx->dsisr & DSISR_TRANSLATION_PROT) {
+			buf_add(" protected memory at");
+		} else if (ctx->dsisr & DSISR_BAD_CACHING) {
+			buf_add(" uncached memory at");
+		}
+		buf_add(" %08X\n", ctx->dar);
+	} else if (type == OS_EXCEPTION_TYPE_ISI) {
+		buf_add("ISI: Bad execute of");
+		if (ctx->srr1 & SRR1_ISI_TRANSLATION_PROT) {
+			buf_add(" protected memory at");
+		} else if (ctx->srr1 & SRR1_ISI_TRANSLATION_MISS) {
+			buf_add(" unmapped memory at");
+		}
+		buf_add(" %08X\n", ctx->srr0);
+	} else if (type == OS_EXCEPTION_TYPE_PROGRAM) {
+		buf_add("PROG:");
+		if (ctx->srr1 & SRR1_PROG_BAD_INSTR) {
+			buf_add(" Malformed instruction at");
+		} else if (ctx->srr1 & SRR1_PROG_PRIV_INSTR) {
+			buf_add(" Privileged instruction in userspace at");
+		} else if (ctx->srr1 & SRR1_PROG_IEEE_FLOAT) {
+			buf_add(" Floating-point exception at");
+		} else if (ctx->srr1 & SRR1_PROG_TRAP) {
+			buf_add(" Trap conditions met at");
+		} else {
+			buf_add(" Out-of-spec error (!) at");
+		}
+		if (ctx->srr1 & SRR1_PROG_SRR0_INACCURATE) {
+			buf_add("%08X-ish\n", ctx->srr0);
+		} else {
+			buf_add("%08X\n", ctx->srr0);
+		}
+	}
 
-   void* pc = (void*)context->srr0;
-   void* lr = (void*)context->lr;
-   void* r1 = (void*)context->gpr[1];
-   register uint32_t i = 0;
-   register frame_rec_t l, p = (frame_rec_t)lr;
+/*	Add register dump
+	There's space for two more regs at the end of the last line...
+	Any ideas for what to put there? */
+	buf_add( \
+		"r0  %08X r1  %08X r2  %08X r3  %08X r4  %08X\n" \
+		"r5  %08X r6  %08X r7  %08X r8  %08X r9  %08X\n" \
+		"r10 %08X r11 %08X r12 %08X r13 %08X r14 %08X\n" \
+		"r15 %08X r16 %08X r17 %08X r18 %08X r19 %08X\n" \
+		"r20 %08X r21 %08X r22 %08X r23 %08X r24 %08X\n" \
+		"r25 %08X r26 %08X r27 %08X r28 %08X r29 %08X\n" \
+		"r30 %08X r31 %08X lr  %08X sr1 %08X dsi %08X\n" \
+		"ctr %08X cr  %08X xer %08X\n",\
+		ctx->gpr[0],  ctx->gpr[1],  ctx->gpr[2],  ctx->gpr[3],  ctx->gpr[4],  \
+		ctx->gpr[5],  ctx->gpr[6],  ctx->gpr[7],  ctx->gpr[8],  ctx->gpr[9],  \
+		ctx->gpr[10], ctx->gpr[11], ctx->gpr[12], ctx->gpr[13], ctx->gpr[14], \
+		ctx->gpr[15], ctx->gpr[16], ctx->gpr[17], ctx->gpr[18], ctx->gpr[19], \
+		ctx->gpr[20], ctx->gpr[21], ctx->gpr[22], ctx->gpr[23], ctx->gpr[24], \
+		ctx->gpr[25], ctx->gpr[26], ctx->gpr[27], ctx->gpr[28], ctx->gpr[29], \
+		ctx->gpr[30], ctx->gpr[31], ctx->lr,      ctx->srr1,    ctx->dsisr,   \
+		ctx->ctr,     ctx->cr,      ctx->xer                                  \
+	);
 
-   l = p;
-   p = r1;
+/*	Stack trace!
+	First, let's print the PC... */
+	exception_print_symbol(ctx->srr0);
 
-   if (!p)
-      asm volatile("mr %0,%%r1" : "=r"(p));
+	if (ctx->gpr[1]) {
+	/*	Then the addresses off the stack.
+		Code borrowed from Dimok's exception handler. */
+		frame_rec_t p = (frame_rec_t)ctx->gpr[1];
+		if ((unsigned int)p->lr != ctx->lr) {
+			exception_print_symbol(ctx->lr);
+		}
+		for (int i = 0; i < NUM_STACK_TRACE_LINES && p->up; p = p->up, i++) {
+			exception_print_symbol((unsigned int)p->lr);
+		}
+	} else {
+		buf_add("Stack pointer invalid. Could not trace further.\n");
+	}
 
-   pos += sprintf(buf + pos, exception_print_formats[11]);
-
-   for (i = 0; i < CPU_STACK_TRACE_DEPTH - 1 && p->up; p = p->up, i++)
-   {
-      if (i % 4)
-         pos += sprintf(buf + pos, exception_print_formats[12]);
-      else
-      {
-         if (i > 0)
-            pos += sprintf(buf + pos, exception_print_formats[13]);
-         else
-            pos += sprintf(buf + pos, exception_print_formats[14]);
-      }
-
-      switch (i)
-      {
-      case 0:
-         if (pc)
-         {
-            pos += sprintf(buf + pos, exception_print_formats[15], pc);
-            gdb_buf_ptr += __os_snprintf(gdb_buf_ptr, &gdb_buf[sizeof(gdb_buf)] - gdb_buf_ptr, "info line *0x%08X\n", pc);
-
-         }
-
-         break;
-
-      case 1:
-         if (!l)
-            l = (frame_rec_t)mfspr(8);
-
-         pos += sprintf(buf + pos, exception_print_formats[15], (void*)l);
-         gdb_buf_ptr += __os_snprintf(gdb_buf_ptr, &gdb_buf[sizeof(gdb_buf)] - gdb_buf_ptr, "info line *0x%08X\n", l);
-         break;
-
-      default:
-         pos += sprintf(buf + pos, exception_print_formats[15], (void*)(p->up->lr));
-         gdb_buf_ptr += __os_snprintf(gdb_buf_ptr, &gdb_buf[sizeof(gdb_buf)] - gdb_buf_ptr, "info line *0x%08X\n", p->up->lr);
-         break;
-      }
-   }
-
-   //if(exception_type == OS_EXCEPTION_DSI) {
-   uint32_t* pAdd = (uint32_t*)context->srr0;
-   pos += sprintf(buf + pos, exception_print_formats[16]);
-
-   // TODO by Dimok: this was actually be 3 instead of 2 lines in libogc .... but there is just no more space anymore on the screen
-   for (i = 0; i < 8; i += 4)
-      pos += sprintf(buf + pos, exception_print_formats[17], &(pAdd[i]), pAdd[i], pAdd[i + 1], pAdd[i + 2], pAdd[i + 3]);
-
-   //}
-   net_print_exp(gdb_buf);
-//   net_print_exp(buf);
-   wiiu_log_deinit();
-   OSFatal(buf);
-   return 1;
+	OSFatal(exception_msgbuf);
+	for (;;) {}
 }
 
-static unsigned char dsi_exception_cb(void* context)
-{
-   return exception_cb(context, 0);
+BOOL __attribute__((__noreturn__)) exception_dsi_cb(OSContext* ctx) {
+	exception_cb(ctx, OS_EXCEPTION_TYPE_DSI);
 }
-static unsigned char isi_exception_cb(void* context)
-{
-   return exception_cb(context, 1);
+BOOL __attribute__((__noreturn__)) exception_isi_cb(OSContext* ctx) {
+	exception_cb(ctx, OS_EXCEPTION_TYPE_ISI);
 }
-static unsigned char program_exception_cb(void* context)
-{
-   return exception_cb(context, 2);
+BOOL __attribute__((__noreturn__)) exception_prog_cb(OSContext* ctx) {
+	exception_cb(ctx, OS_EXCEPTION_TYPE_PROGRAM);
 }
 
-void setup_os_exceptions(void)
-{
-   OSSetExceptionCallback(OS_EXCEPTION_DSI, (OSExceptionCallbackFn)&dsi_exception_cb);
-   OSSetExceptionCallback(OS_EXCEPTION_ISI, (OSExceptionCallbackFn)&isi_exception_cb);
-   OSSetExceptionCallback(OS_EXCEPTION_PROGRAM, (OSExceptionCallbackFn)&program_exception_cb);
+void exception_print_symbol(unsigned int addr) {
+/*	Check if addr is within this RPX's .text */
+	if (addr >= TEXT_START && addr < TEXT_END) {
+		char symbolName[64];
+		OSGetSymbolName(addr, symbolName, 63);
+
+		buf_add("%08X(%08X):%s\n", addr, addr - TEXT_START, symbolName);
+	}
+/*	Check if addr is within the system library area... */
+	else if ((addr >= 0x01000000 && addr < 0x01800000) ||
+/*	Or the rest of the app executable area.
+	I would have used whatever method JGeckoU uses to determine
+	the real lowest address, but *someone* didn't make it open-source :/ */
+	(addr >= 0x01800000 && addr < 0x1000000)) {
+		char symbolName[64];
+		OSGetSymbolName(addr, symbolName, 63);
+	/*	Extract RPL name and try and find its base address */
+		char* seperator = strchr(symbolName, '|');
+		if (seperator) {
+		/*	Isolate library name; should end with .rpl
+			(our main RPX was caught by another test case above) */
+			*seperator = '\0';
+		/*	Try for a base address */
+			void* libAddr;
+			OSDynLoad_Acquire(symbolName, &libAddr);
+			*seperator = '|';
+		/*	We got one! */
+			if (libAddr) {
+				buf_add("%08X(%08X):%s\n", addr, addr - (unsigned int)libAddr, symbolName);
+				OSDynLoad_Release(libAddr);
+				return;
+			}
+		}
+	/*	Ah well. We can still print the basics. */
+		buf_add("%08X(        ):%s\n", addr, symbolName);
+	}
+/*	Check if addr is in the HBL range
+	TODO there's no real reason we couldn't find the symbol here,
+	it's just laziness and arguably uneccesary bloat */
+	else if (addr >= 0x00800000 && addr < 0x01000000) {
+		buf_add("%08X(%08X):<unknown:HBL>\n", addr, addr - 0x00800000);
+	}
+/*	If all else fails, just say "unknown" */
+	else {
+		buf_add("%08X(        ):<unknown>\n", addr);
+	}
+}
+
+/*	void setup_os_exceptions(void)
+	Install and initialize the exception handler.
+*/
+void setup_os_exceptions(void) {
+	exception_msgbuf = malloc(4096);
+	OSSetExceptionCallback(OS_EXCEPTION_TYPE_DSI, exception_dsi_cb);
+	OSSetExceptionCallback(OS_EXCEPTION_TYPE_ISI, exception_isi_cb);
+	OSSetExceptionCallback(OS_EXCEPTION_TYPE_PROGRAM, exception_prog_cb);
+	test_os_exceptions();
+}
+
+/*	void test_os_exceptions(void)
+	Used for debugging. Insert code here to induce a crash.
+*/
+void test_os_exceptions(void) {
+	//Write to 0x00000000; causes DSI
+	/*__asm__ volatile (
+		"li %r3, 0 \n" \
+		"stw %r3, 0(%r3) \n"
+	);
+	DCFlushRange((void*)0, 4);*/
+	//Malformed instruction, causes PROG. Doesn't seem to work.
+	/*__asm__ volatile (
+		".int 0xDEADC0DE"
+	);*/
+	//Jump to 0; causes ISI
+	/*void (*testFunc)() = (void(*)())0;
+	testFunc();*/
 }
