@@ -506,10 +506,10 @@ static bool audio_mixer_play_mod(
    }
 
    voice->types.mod.buffer         = mod_buffer;
-   voice->types.mod.buf_samples    = samples;
+   voice->types.mod.buf_samples    = buf_samples;
    voice->types.mod.stream         = replay;
    voice->types.mod.position       = 0;
-   voice->types.mod.samples        = samples;
+    voice->types.mod.samples        = 0;//samples;
 
    return true;
 
@@ -736,7 +736,8 @@ static void audio_mixer_mix_mod(float* buffer, size_t num_frames,
    {
 again:
       temp_samples = replay_get_audio( voice->types.mod.stream, voice->types.mod.buffer );
-
+       temp_samples *= 2; // stereo
+       
       if (temp_samples == 0)
       {
          if (voice->repeat)
@@ -760,7 +761,6 @@ again:
       voice->types.mod.position = 0;
       voice->types.mod.samples  = temp_samples;
    }
-
    pcm = voice->types.mod.buffer + voice->types.mod.position;
 
    float samplef = 0.0f;
@@ -769,10 +769,6 @@ again:
    {
       for (i = voice->types.mod.samples; i != 0; i--)
       {
-         samplei = *pcm++ * volume;
-         samplef = (float)((int)samplei + 32768) / 65535.0f;
-         samplef = samplef * 2.0f - 1.0f;
-         *buffer++   = samplef;
          samplei = *pcm++ * volume;
          samplef = (float)((int)samplei + 32768) / 65535.0f;
          samplef = samplef * 2.0f - 1.0f;
