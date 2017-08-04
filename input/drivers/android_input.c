@@ -1078,7 +1078,7 @@ static void handle_hotplug(android_input_t *android,
       RARCH_LOG("Special Device Detected: %s\n", device_model);
       {
          /* always map remote to port #0 */
-         if (strstr(device_name, "Amazon Fire TV Remote")
+         if (strstr(device_name, "Amazon Fire TV Remote"))
          {
             android->pads_connected = 0;
             *port = 0;
@@ -1093,6 +1093,7 @@ static void handle_hotplug(android_input_t *android,
          }
          else
             strlcpy(name_buf, device_name, sizeof(name_buf));
+      }
    }
 
    /* Other uncommon devices
