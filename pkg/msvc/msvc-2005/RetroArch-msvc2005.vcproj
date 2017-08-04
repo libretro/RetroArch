@@ -62,7 +62,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="msimg32.lib"
+				AdditionalDependencies="msimg32.lib winmm.lib"
 				OutputFile="$(OutDir)/RetroArch-msvc2005.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="$(INETSDK)\Lib;$(DXSDK_DIR)\Lib\x86"
@@ -219,7 +219,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="msimg32.lib"
+				AdditionalDependencies="msimg32.lib winmm.lib"
 				OutputFile="$(OutDir)/RetroArch-msvc2005.exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="$(INETSDK)\Lib;$(DXSDK_DIR)\Lib\x86"
@@ -301,7 +301,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="msimg32.lib"
+				AdditionalDependencies="msimg32.lib winmm.lib"
 				OutputFile="$(OutDir)/RetroArch-msvc2005.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="$(INETSDK)\Lib;$(DXSDK_DIR)\Lib\x86"
