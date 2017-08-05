@@ -23,6 +23,9 @@
 #include "../configuration.h"
 #include "../retroarch.h"
 
+static unsigned old_analog_dpad_mode[MAX_USERS];
+static unsigned old_libretro_device[MAX_USERS];
+
 /**
  * input_remapping_load_file:
  * @data                     : Path to config file.
@@ -46,6 +49,9 @@ bool input_remapping_load_file(void *data, const char *path)
 
    for (i = 0; i < MAX_USERS; i++)
    {
+      old_analog_dpad_mode[i] = settings->uints.input_analog_dpad_mode[i];
+      old_libretro_device[i] = settings->uints.input_libretro_device[i];
+
       char buf[64];
       char key_ident[RARCH_FIRST_CUSTOM_BIND + 4][128]   = {{0}};
       char key_strings[RARCH_FIRST_CUSTOM_BIND + 4][128] =
@@ -82,6 +88,12 @@ bool input_remapping_load_file(void *data, const char *path)
             settings->uints.input_remap_ids[i][RARCH_FIRST_CUSTOM_BIND + j] =
                key_remap;
       }
+
+      snprintf(buf, sizeof(buf), "input_player%u_analog_dpad_mode", i + 1);
+      CONFIG_GET_INT_BASE(conf, settings, uints.input_analog_dpad_mode[i], buf);
+
+      snprintf(buf, sizeof(buf), "input_libretro_device_p%u", i + 1);
+      CONFIG_GET_INT_BASE(conf, settings, uints.input_libretro_device[i], buf);
    }
 
    config_file_free(conf);
@@ -180,5 +192,7 @@ void input_remapping_set_defaults(void)
       }
       for (j = 0; j < 4; j++)
          settings->uints.input_remap_ids[i][RARCH_FIRST_CUSTOM_BIND + j] = j;
+      settings->uints.input_analog_dpad_mode[i] = old_analog_dpad_mode[i];
+      settings->uints.input_libretro_device[i]  = old_libretro_device[i];
    }
 }

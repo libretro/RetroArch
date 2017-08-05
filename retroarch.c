@@ -2161,6 +2161,7 @@ bool retroarch_main_quit(void)
       command_event(CMD_EVENT_AUTOSAVE_STATE, NULL);
       command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
       command_event(CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET, NULL);
+      command_event(CMD_EVENT_RESTORE_REMAPS, NULL);
    }
 
    runloop_shutdown_initiated = true;

@@ -3,6 +3,8 @@
 - ANDROID: Fire Stick & Fire TV remote overrides gamepad port 0 on button press and viceversa like SHIELD devices
 - AUDIO: Audio mixer supports MOD/S3M/XM file types now!
 - INPUT: input swap override flag (for remotes) is cleared correctly
+- INPUT: allow specifying libretro device in remap files
+- INPUT: allow specifying analog dpad mode in remap files
 - COMMON: Add 'Delete Core'option to Core Information menu.
 - COMMON: Allow Max Timing Skew to be set to 0.
 - LOCALIZATION: Update Russian translation
