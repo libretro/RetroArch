@@ -1,11 +1,14 @@
 # 1.6.4 (future)
 
 - ANDROID: Fire Stick & Fire TV remote overrides gamepad port 0 on button press and viceversa like SHIELD devices
+- ANDROID: Provide default save / system / state / screenshot locations
 - AUDIO: Audio mixer supports MOD/S3M/XM file types now!
 - INPUT: input swap override flag (for remotes) is cleared correctly
 - COMMON: Add 'Delete Core'option to Core Information menu.
 - COMMON: Allow Max Timing Skew to be set to 0.
+- COMMON: Change the "content dir" behavior so it works on either a flag or an empty directory setting, now platform drivers can provide defaults for save / system / state / screenshot dirs and still allow the content dir functionality, these settings are under settings / saving and flagged as advanced
 - LOCALIZATION: Update Russian translation
+- WINDOWS: Provide default save / system / state / screenshot locations
 - WINDOWS 98/ME/2K: Set default directory for MSVC 2005 RetroArch version.
 - WIIU: Exception handler rewritten.
 
