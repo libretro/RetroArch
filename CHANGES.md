@@ -3,14 +3,16 @@
 - ANDROID: Fire Stick & Fire TV remote overrides gamepad port 0 on button press and viceversa like SHIELD devices
 - AUDIO: Audio mixer supports MOD/S3M/XM file types now!
 - INPUT: input swap override flag (for remotes) is cleared correctly
-- COMMON: Add 'Delete Core'option to Core Information menu.
+- COMMON: Add 'Delete Core' option to Core Information menu.
 - COMMON: Allow Max Timing Skew to be set to 0.
 - LOCALIZATION: Update Russian translation
+- LOBBIES: Show what country the host is in
+- MENU: Enable OSD text rendering for gdi and libcaca drivers
 - WINDOWS 98/ME/2K: Set default directory for MSVC 2005 RetroArch version.
 - WIIU: Exception handler rewritten.
 
 # 1.6.3
-- IOS: Fix GL regression - 32bit color format cores were no longer rendering 
+- IOS: Fix GL regression - 32bit color format cores were no longer rendering
 - CHEEVOS: Add support for N64 cheevos and other small fixes.
 - CHEEVOS: Add 'Achievements -> Achievements Verbose Mode'. Ability to display cheevos related messages in OSD, useful for RetroAchievements users.
 - AUDIO: Audio mixer's volume can now be independently increased/decreased, and muted.
