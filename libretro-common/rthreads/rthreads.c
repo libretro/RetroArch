@@ -441,8 +441,9 @@ static bool _scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds
    struct QueueEntry **ptr;
 
 #if _WIN32_WINNT >= 0x0500
-   static LARGE_INTEGER performanceCounterFrequency = { .QuadPart = 0 };
+   static LARGE_INTEGER performanceCounterFrequency;
    LARGE_INTEGER tsBegin;
+   static bool first_init  = true;
 #else
    static bool beginPeriod = false;
    DWORD tsBegin;
@@ -460,6 +461,12 @@ static bool _scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds
    /* since this library is meant for realtime game software 
     * I have no problem setting this to 1 and forgetting about it. */
 #if _WIN32_WINNT >= 0x0500
+   if (first_init)
+   {
+      performanceCounterFrequency.QuadPart = 0;
+      first_init = false;
+   }
+
    if (performanceCounterFrequency.QuadPart == 0)
    {
       QueryPerformanceFrequency(&performanceCounterFrequency);
