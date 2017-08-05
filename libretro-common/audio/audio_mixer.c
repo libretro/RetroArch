@@ -522,7 +522,8 @@ static bool audio_mixer_play_mod(
 error:
    if (mod_buffer)
       memalign_free(mod_buffer);
-   dispose_module(module);
+   if (module)
+      dispose_module(module);
    return false;
 
 }
