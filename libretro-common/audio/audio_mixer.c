@@ -462,7 +462,6 @@ error:
 #endif
 
 #ifdef HAVE_IBXM
-#ifdef HAVE_STB_VORBIS
 static bool audio_mixer_play_mod(
       audio_mixer_sound_t* sound,
       audio_mixer_voice_t* voice,
@@ -477,8 +476,8 @@ static bool audio_mixer_play_mod(
    struct module* module         = NULL;
    struct replay* replay         = NULL;
 
-   data.buffer = (char*)sound->types.ogg.data;
-   data.length = sound->types.ogg.size;
+   data.buffer = (char*)sound->types.mod.data;
+   data.length = sound->types.mod.size;
    module      = module_load(&data, message);
    if (!module)
    {
@@ -527,7 +526,6 @@ error:
 
 }
 #endif
-#endif
 
 audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound, bool repeat,
       float volume, audio_mixer_stop_cb_t stop_cb)
@@ -560,9 +558,7 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound, bool repeat,
             break;
          case AUDIO_MIXER_TYPE_MOD:
 #ifdef HAVE_IBXM
-#ifdef HAVE_STB_VORBIS
             res = audio_mixer_play_mod(sound, voice, repeat, volume, stop_cb);
-#endif
 #endif
             break;
          case AUDIO_MIXER_TYPE_NONE:
