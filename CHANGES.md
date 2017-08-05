@@ -5,6 +5,8 @@
 - INPUT: input swap override flag (for remotes) is cleared correctly
 - INPUT: allow specifying libretro device in remap files
 - INPUT: allow specifying analog dpad mode in remap files
+- INPUT: allow saving libretro device to remap files
+- INPUT: allow saving analog dpad mode to remap files
 - COMMON: Add 'Delete Core'option to Core Information menu.
 - COMMON: Allow Max Timing Skew to be set to 0.
 - LOCALIZATION: Update Russian translation

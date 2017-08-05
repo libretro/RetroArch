@@ -170,6 +170,10 @@ bool input_remapping_save_file(const char *path)
                config_unset(conf,key_ident[j]);
          }
       }
+      snprintf(buf, sizeof(buf), "input_libretro_device_p%u", i + 1);
+      config_set_int(conf, buf, input_config_get_device(i));
+      snprintf(buf, sizeof(buf), "input_player%u_analog_dpad_mode", i + 1);
+      config_set_int(conf, buf, settings->uints.input_analog_dpad_mode[i]);
    }
 
    ret = config_file_write(conf, remap_file);
