@@ -6557,13 +6557,14 @@ static bool setting_append_list(
                sizeof(settings->paths.directory_system),
                MENU_ENUM_LABEL_SYSTEM_DIRECTORY,
                MENU_ENUM_LABEL_VALUE_SYSTEM_DIRECTORY,
-               "",
+               g_defaults.dirs[DEFAULT_DIR_SYSTEM],
                MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
                &group_info,
                &subgroup_info,
                parent_group,
                general_write_handler,
                general_read_handler);
+         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
 
          CONFIG_DIR(
                list, list_info,
@@ -6601,13 +6602,14 @@ static bool setting_append_list(
                sizeof(settings->paths.directory_dynamic_wallpapers),
                MENU_ENUM_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY,
                MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY,
-               "",
+               g_defaults.dirs[DEFAULT_DIR_WALLPAPERS],
                MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
                &group_info,
                &subgroup_info,
                parent_group,
                general_write_handler,
                general_read_handler);
+         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
 
          CONFIG_DIR(
                list, list_info,
@@ -6668,6 +6670,7 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_CORE_INFO_INIT);
+         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
 
          CONFIG_DIR(
                list, list_info,
@@ -6683,6 +6686,7 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_CORE_INFO_INIT);
+         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
 
 #ifdef HAVE_LIBRETRODB
          CONFIG_DIR(
@@ -6774,6 +6778,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
+         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
 
          if (string_is_not_equal_fast(settings->arrays.record_driver, "null", 4))
          {
@@ -6821,6 +6826,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
+         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
 #endif
 
          CONFIG_DIR(
@@ -6859,13 +6865,14 @@ static bool setting_append_list(
                sizeof(settings->paths.directory_input_remapping),
                MENU_ENUM_LABEL_INPUT_REMAPPING_DIRECTORY,
                MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY,
-               "",
+               g_defaults.dirs[DEFAULT_DIR_REMAP],
                MENU_ENUM_LABEL_VALUE_DIRECTORY_NONE,
                &group_info,
                &subgroup_info,
                parent_group,
                general_write_handler,
                general_read_handler);
+            (*list)[list_info->index - 1].action_start = directory_action_start_generic;
 
          CONFIG_DIR(
                list, list_info,
@@ -6888,13 +6895,14 @@ static bool setting_append_list(
                dir_get_size(RARCH_DIR_SAVEFILE),
                MENU_ENUM_LABEL_SAVEFILE_DIRECTORY,
                MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
-               "",
+               g_defaults.dirs[DEFAULT_DIR_SRAM],
                MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
                &group_info,
                &subgroup_info,
                parent_group,
                general_write_handler,
                general_read_handler);
+         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
 
          CONFIG_DIR(
                list, list_info,
@@ -6902,13 +6910,14 @@ static bool setting_append_list(
                dir_get_size(RARCH_DIR_SAVESTATE),
                MENU_ENUM_LABEL_SAVESTATE_DIRECTORY,
                MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
-               "",
+               g_defaults.dirs[DEFAULT_DIR_SAVESTATE],
                MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
                &group_info,
                &subgroup_info,
                parent_group,
                general_write_handler,
                general_read_handler);
+         (*list)[list_info->index - 1].action_start = directory_action_start_generic;
 
          CONFIG_DIR(
                list, list_info,
