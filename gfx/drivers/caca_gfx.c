@@ -94,7 +94,7 @@ static void *caca_gfx_init(const video_info_t *video,
    }
 
    if (video->font_enable)
-      font_driver_init_osd(NULL, false, video->is_threaded,
+      font_driver_init_osd(caca, false, video->is_threaded,
             FONT_DRIVER_RENDER_CACA);
 
    return caca;
