@@ -510,7 +510,7 @@ static bool audio_mixer_play_mod(
       goto error;
    }
 
-   voice->types.mod.buffer         = mod_buffer;
+   voice->types.mod.buffer         = (int*)mod_buffer;
    voice->types.mod.buf_samples    = buf_samples;
    voice->types.mod.stream         = replay;
    voice->types.mod.position       = 0;
