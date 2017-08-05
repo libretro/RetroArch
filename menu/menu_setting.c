@@ -3048,7 +3048,7 @@ static bool setting_append_list(
       case SETTINGS_LIST_SAVING:
          {
             unsigned i;
-            struct bool_entry bool_entries[7];
+            struct bool_entry bool_entries[11];
 
             START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS), parent_group);
             parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SAVING_SETTINGS);
@@ -3097,6 +3097,30 @@ static bool setting_append_list(
             bool_entries[6].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE;
             bool_entries[6].default_value  = savestate_thumbnail_enable;
             bool_entries[6].flags          = SD_FLAG_ADVANCED;
+
+            bool_entries[7].target         = &settings->bools.savefiles_in_content_dir;
+            bool_entries[7].name_enum_idx  = MENU_ENUM_LABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE;
+            bool_entries[7].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE;
+            bool_entries[7].default_value  = default_savefiles_in_content_dir;
+            bool_entries[7].flags          = SD_FLAG_ADVANCED;
+
+            bool_entries[8].target         = &settings->bools.savestates_in_content_dir;
+            bool_entries[8].name_enum_idx  = MENU_ENUM_LABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE;
+            bool_entries[8].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE;
+            bool_entries[8].default_value  = default_savestates_in_content_dir;
+            bool_entries[8].flags          = SD_FLAG_ADVANCED;
+
+            bool_entries[9].target         = &settings->bools.systemfiles_in_content_dir;
+            bool_entries[9].name_enum_idx  = MENU_ENUM_LABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE;
+            bool_entries[9].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE;
+            bool_entries[9].default_value  = default_systemfiles_in_content_dir;
+            bool_entries[9].flags          = SD_FLAG_ADVANCED;
+
+            bool_entries[10].target         = &settings->bools.screenshots_in_content_dir;
+            bool_entries[10].name_enum_idx  = MENU_ENUM_LABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE;
+            bool_entries[10].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE;
+            bool_entries[10].default_value  = default_screenshots_in_content_dir;
+            bool_entries[10].flags          = SD_FLAG_ADVANCED;
 
             for (i = 0; i < ARRAY_SIZE(bool_entries); i++)
             {
