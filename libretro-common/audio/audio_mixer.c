@@ -476,9 +476,10 @@ static bool audio_mixer_play_mod(
    struct module* module         = NULL;
    struct replay* replay         = NULL;
 
-   data.buffer = (char*)sound->types.mod.data;
-   data.length = sound->types.mod.size;
-   module      = module_load(&data, message);
+   data.buffer                   = (char*)sound->types.mod.data;
+   data.length                   = sound->types.mod.size;
+   module                        = module_load(&data, message);
+
    if (!module)
    {
       printf("audio_mixer_play_mod module_load() failed with error: %s\n", message);
@@ -824,6 +825,7 @@ void audio_mixer_mix(float* buffer, size_t num_frames, float volume_override, bo
 #ifdef HAVE_STB_VORBIS
             audio_mixer_mix_ogg(buffer, num_frames, voice, volume);
 #endif
+            break;
          case AUDIO_MIXER_TYPE_MOD:
 #ifdef HAVE_IBXM
             audio_mixer_mix_mod(buffer, num_frames, voice, volume);
