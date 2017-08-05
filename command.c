@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2015-2017 - Andrés Suárez
  *  Copyright (C) 2016-2017 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -1227,7 +1228,7 @@ static bool command_event_init_core(enum rarch_core_type *data)
          rarch_ctl(RARCH_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
    }
 
-   /* Auto-remap: apply shader preset files */
+   /* Auto-shaders: apply shader preset files */
    if(settings->bools.auto_shaders_enable)
       config_load_shader_preset();
 

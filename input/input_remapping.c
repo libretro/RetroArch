@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2015-2017 - Andrés Suárez
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -180,6 +181,24 @@ bool input_remapping_save_file(const char *path)
    config_file_free(conf);
 
    return ret;
+}
+
+bool input_remapping_remove_file(const char *path)
+{
+   bool ret;
+   char buf[PATH_MAX_LENGTH];
+   char remap_file[PATH_MAX_LENGTH];
+   config_file_t *conf = NULL;
+   settings_t    *settings = config_get_ptr();
+
+   buf[0] = remap_file[0]            = '\0';
+
+   fill_pathname_join(buf, settings->paths.directory_input_remapping,
+         path, sizeof(buf));
+
+   fill_pathname_noext(remap_file, buf, ".rmp", sizeof(remap_file));
+
+   return remove(remap_file) == 0 ? true : false;
 }
 
 void input_remapping_set_defaults(void)
