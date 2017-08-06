@@ -1,5 +1,5 @@
 // Mini memory editor for ImGui (to embed in your game/tools)
-// v0.10
+// v0.12
 // Animated gif: https://cloud.githubusercontent.com/assets/8225057/9028162/3047ef88-392c-11e5-8270-a54f8354b208.gif
 //
 // You can adjust the keyboard repeat delay/rate in ImGuiIO.
@@ -9,34 +9,44 @@
 //   static MemoryEditor memory_editor;                                                     // save your state somewhere
 //   memory_editor.Draw("Memory Editor", mem_block, mem_block_size, (size_t)mem_block);     // run
 //
-// TODO: better resizing policy (ImGui doesn't have flexible window resizing constraints yet)
-
-#pragma once
+// Todo:
+// - better resizing policy (ImGui doesn't have flexible window resizing constraints yet)
+//
+// Changelog:
+// - v0.10: initial version
+// - v0.11: always refreshing active text input with the latest byte from source memory if it's not being edited
+// - v0.12: added RowsExtraSpacingCount to allow extra spacing every XX rows
 
 struct MemoryEditor
 {
-    bool    Open;
-    bool    AllowEdits;
-    int     Rows;
-    int     DataEditingAddr;
-    bool    DataEditingTakeFocus;
-    char    DataInput[32];
-    char    AddrInput[32];
+    bool          Open;
+    bool          AllowEdits;
+    int           Rows;
+    int           RowsExtraSpacingCount;        // Set to 0 to disable extra spacing between every XX rows
+    int           DataEditingAddr;
+    bool          DataEditingTakeFocus;
+    char          DataInput[32];
+    char          AddrInput[32];
+    unsigned char (*ReadFn)(unsigned char* data, size_t off);
+	void	      (*WriteFn)(unsigned char* data, size_t off, unsigned char d);
 
     MemoryEditor()
     {
         Open = true;
         Rows = 16;
+        RowsExtraSpacingCount = 8;
         DataEditingAddr = -1;
         DataEditingTakeFocus = false;
         strcpy(DataInput, "");
         strcpy(AddrInput, "");
         AllowEdits = true;
+        ReadFn = NULL;
+        WriteFn = NULL;
     }
 
     void Draw(const char* title, unsigned char* mem_data, int mem_size, size_t base_display_addr = 0)
     {
-        //if (ImGui::Begin(title, &Open))
+        if (ImGui::Begin(title, &Open))
         {
             ImGui::BeginChild("##scrolling", ImVec2(0, -ImGui::GetItemsLineHeightWithSpacing()));
 
@@ -78,7 +88,7 @@ struct MemoryEditor
                     ImGui::SetScrollY(ImGui::GetScrollY() + scroll_offset);
             }
 
-            bool draw_separator = true;
+            bool draw_separator_once = true;
             for (int line_i = clipper.DisplayStart; line_i < clipper.DisplayEnd; line_i++) // display only visible items
             {
                 int addr = line_i * Rows;
@@ -89,52 +99,69 @@ struct MemoryEditor
                 float line_start_x = ImGui::GetCursorPosX();
                 for (int n = 0; n < Rows && addr < mem_size; n++, addr++)
                 {
-                    ImGui::SameLine(line_start_x + cell_width * n);
+                    float byte_pos_x = line_start_x + cell_width * n;
+                    if (RowsExtraSpacingCount > 1)
+                        byte_pos_x += (n / RowsExtraSpacingCount) * cell_width * 0.25f; 
+                    ImGui::SameLine(byte_pos_x);
 
                     if (DataEditingAddr == addr)
                     {
                         // Display text input on current byte
                         ImGui::PushID(addr);
-                        struct FuncHolder
-                        {
-                            // FIXME: We should have a way to retrieve the text edit cursor position more easily in the API, this is rather tedious.
-                            static int Callback(ImGuiTextEditCallbackData* data)
-                            {
-                                int* p_cursor_pos = (int*)data->UserData;
-                                if (!data->HasSelection())
-                                    *p_cursor_pos = data->CursorPos;
-                                return 0;
-                            }
-                        };
-                        int cursor_pos = -1;
                         bool data_write = false;
                         if (DataEditingTakeFocus)
                         {
                             ImGui::SetKeyboardFocusHere();
                             sprintf(AddrInput, "%0*X", addr_digits_count, base_display_addr+addr);
-                            sprintf(DataInput, "%02X", mem_data[addr]);
+                            sprintf(DataInput, "%02X", ReadFn ? ReadFn(mem_data, addr) : mem_data[addr]);
                         }
                         ImGui::PushItemWidth(ImGui::CalcTextSize("FF").x);
+                        struct UserData
+                        {
+                            // FIXME: We should have a way to retrieve the text edit cursor position more easily in the API, this is rather tedious.
+                            static int Callback(ImGuiTextEditCallbackData* data)
+                            {
+                                UserData* user_data = (UserData*)data->UserData;
+                                if (!data->HasSelection())
+                                    user_data->CursorPos = data->CursorPos;
+                                if (data->SelectionStart == 0 && data->SelectionEnd == data->BufTextLen)
+                                {
+                                    // When not editing a byte, always rewrite its content (this is a bit tricky, since InputText technically "owns" the master copy of the buffer we edit it in there)
+                                    data->DeleteChars(0, data->BufTextLen);
+                                    data->InsertChars(0, user_data->CurrentBufOverwrite);
+                                    data->SelectionStart = 0;
+                                    data->SelectionEnd = data->CursorPos = 2;
+                                }
+                                return 0;
+                            }
+                            char   CurrentBufOverwrite[3];  // Input
+                            int    CursorPos;               // Output
+                        };
+                        UserData user_data;
+                        sprintf(user_data.CurrentBufOverwrite, "%02X", ReadFn ? ReadFn(mem_data, addr) : mem_data[addr]);
                         ImGuiInputTextFlags flags = ImGuiInputTextFlags_CharsHexadecimal|ImGuiInputTextFlags_EnterReturnsTrue|ImGuiInputTextFlags_AutoSelectAll|ImGuiInputTextFlags_NoHorizontalScroll|ImGuiInputTextFlags_AlwaysInsertMode|ImGuiInputTextFlags_CallbackAlways;
-                        if (ImGui::InputText("##data", DataInput, 32, flags, FuncHolder::Callback, &cursor_pos))
+                        if (ImGui::InputText("##data", DataInput, 32, flags, UserData::Callback, &user_data))
                             data_write = data_next = true;
                         else if (!DataEditingTakeFocus && !ImGui::IsItemActive())
                             DataEditingAddr = -1;
                         DataEditingTakeFocus = false;
                         ImGui::PopItemWidth();
-                        if (cursor_pos >= 2)
+                        if (user_data.CursorPos >= 2)
                             data_write = data_next = true;
                         if (data_write)
                         {
                             int data;
                             if (sscanf(DataInput, "%X", &data) == 1)
-                                mem_data[addr] = (unsigned char)data;
+                                if (WriteFn)
+                                    WriteFn(mem_data, addr, (unsigned char)data);
+                                else
+                                    mem_data[addr] = (unsigned char)data;
                         }
                         ImGui::PopID();
                     }
                     else
                     {
-                        ImGui::Text("%02X ", mem_data[addr]);
+                        ImGui::Text("%02X ", ReadFn ? ReadFn(mem_data, addr) : mem_data[addr]);
                         if (AllowEdits && ImGui::IsItemHovered() && ImGui::IsMouseClicked(0))
                         {
                             DataEditingTakeFocus = true;
@@ -143,13 +170,16 @@ struct MemoryEditor
                     }
                 }
 
-                ImGui::SameLine(line_start_x + cell_width * Rows + glyph_width * 2);
+                float ascii_pos_x = line_start_x + cell_width * Rows + glyph_width * 1;
+                if (RowsExtraSpacingCount > 0)
+                    ascii_pos_x += ((Rows + RowsExtraSpacingCount - 1) / RowsExtraSpacingCount) * cell_width*0.25f;
+                ImGui::SameLine(ascii_pos_x);
 
-                if (draw_separator)
+                if (draw_separator_once)
                 {
                     ImVec2 screen_pos = ImGui::GetCursorScreenPos();
-                    ImGui::GetWindowDrawList()->AddLine(ImVec2(screen_pos.x - glyph_width, screen_pos.y - 9999), ImVec2(screen_pos.x - glyph_width, screen_pos.y + 9999), ImColor(ImGui::GetStyle().Colors[ImGuiCol_Border]));
-                    draw_separator = false;
+                    ImGui::GetWindowDrawList()->AddLine(ImVec2(screen_pos.x - glyph_width, screen_pos.y - 9999), ImVec2(screen_pos.x - glyph_width, screen_pos.y + 9999), ImGui::GetColorU32(ImGuiCol_Border));
+                    draw_separator_once = false;
                 }
 
                 // Draw ASCII values
@@ -157,13 +187,13 @@ struct MemoryEditor
                 for (int n = 0; n < Rows && addr < mem_size; n++, addr++)
                 {
                     if (n > 0) ImGui::SameLine();
-                    int c = mem_data[addr];
+                    int c = ReadFn ? ReadFn(mem_data, addr) : mem_data[addr];
                     ImGui::Text("%c", (c >= 32 && c < 128) ? c : '.');
                 }
             }
             clipper.End();
             ImGui::PopStyleVar(2);
-            
+
             ImGui::EndChild();
 
             if (data_next && DataEditingAddr < mem_size)
@@ -208,6 +238,6 @@ struct MemoryEditor
             }
             ImGui::PopItemWidth();
         }
-        //ImGui::End();
+        ImGui::End();
     }
 };
