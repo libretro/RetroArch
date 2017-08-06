@@ -14,8 +14,14 @@ public:
   inline void destroy()
   {
     free((void*)_bytes);
+    _bytes = NULL;
   }
   
+  inline bool compatible(const Block* other) const
+  {
+    return _start == other->_start && _size == other->_size;
+  }
+
   inline size_t start() const
   {
     return _start;
@@ -55,62 +61,111 @@ public:
     return _bytes[addr] << 24 | _bytes[addr + 1] << 16 | _bytes[addr + 2] << 8 | _bytes[addr + 3];
   }
 
-  Set* bits(uint8_t m, uint8_t v2) const;
+  bool bits(Set* set, uint8_t m, uint8_t v2) const;
 
   template<int N>
-  Set* bit(uint8_t b) const
+  bool bit(Set* set, uint8_t b) const
   {
-    return bits(1 << N, (b & 1) << N);
+    return bits(set, 1 << N, (b & 1) << N);
   }
 
-  Set* eqlow(uint8_t v2) const;
-  Set* nelow(uint8_t v2) const;
-  Set* ltlow(uint8_t v2) const;
-  Set* lelow(uint8_t v2) const;
-  Set* gtlow(uint8_t v2) const;
-  Set* gelow(uint8_t v2) const;
+  bool eqlow(Set* set, uint8_t v2) const;
+  bool nelow(Set* set, uint8_t v2) const;
+  bool ltlow(Set* set, uint8_t v2) const;
+  bool lelow(Set* set, uint8_t v2) const;
+  bool gtlow(Set* set, uint8_t v2) const;
+  bool gelow(Set* set, uint8_t v2) const;
 
-  Set* eqhigh(uint8_t v2) const;
-  Set* nehigh(uint8_t v2) const;
-  Set* lthigh(uint8_t v2) const;
-  Set* lehigh(uint8_t v2) const;
-  Set* gthigh(uint8_t v2) const;
-  Set* gehigh(uint8_t v2) const;
+  bool eqhigh(Set* set, uint8_t v2) const;
+  bool nehigh(Set* set, uint8_t v2) const;
+  bool lthigh(Set* set, uint8_t v2) const;
+  bool lehigh(Set* set, uint8_t v2) const;
+  bool gthigh(Set* set, uint8_t v2) const;
+  bool gehigh(Set* set, uint8_t v2) const;
   
-  Set* eq8(uint8_t v2) const;
-  Set* ne8(uint8_t v2) const;
-  Set* lt8(uint8_t v2) const;
-  Set* le8(uint8_t v2) const;
-  Set* gt8(uint8_t v2) const;
-  Set* ge8(uint8_t v2) const;
+  bool eq8(Set* set, uint8_t v2) const;
+  bool ne8(Set* set, uint8_t v2) const;
+  bool lt8(Set* set, uint8_t v2) const;
+  bool le8(Set* set, uint8_t v2) const;
+  bool gt8(Set* set, uint8_t v2) const;
+  bool ge8(Set* set, uint8_t v2) const;
 
-  Set* eq16LE(uint16_t v2) const;
-  Set* ne16LE(uint16_t v2) const;
-  Set* lt16LE(uint16_t v2) const;
-  Set* le16LE(uint16_t v2) const;
-  Set* gt16LE(uint16_t v2) const;
-  Set* ge16LE(uint16_t v2) const;
+  bool eq16LE(Set* set, uint16_t v2) const;
+  bool ne16LE(Set* set, uint16_t v2) const;
+  bool lt16LE(Set* set, uint16_t v2) const;
+  bool le16LE(Set* set, uint16_t v2) const;
+  bool gt16LE(Set* set, uint16_t v2) const;
+  bool ge16LE(Set* set, uint16_t v2) const;
 
-  Set* eq16BE(uint16_t v2) const;
-  Set* ne16BE(uint16_t v2) const;
-  Set* lt16BE(uint16_t v2) const;
-  Set* le16BE(uint16_t v2) const;
-  Set* gt16BE(uint16_t v2) const;
-  Set* ge16BE(uint16_t v2) const;
+  bool eq16BE(Set* set, uint16_t v2) const;
+  bool ne16BE(Set* set, uint16_t v2) const;
+  bool lt16BE(Set* set, uint16_t v2) const;
+  bool le16BE(Set* set, uint16_t v2) const;
+  bool gt16BE(Set* set, uint16_t v2) const;
+  bool ge16BE(Set* set, uint16_t v2) const;
 
-  Set* eq32LE(uint32_t v2) const;
-  Set* ne32LE(uint32_t v2) const;
-  Set* lt32LE(uint32_t v2) const;
-  Set* le32LE(uint32_t v2) const;
-  Set* gt32LE(uint32_t v2) const;
-  Set* ge32LE(uint32_t v2) const;
+  bool eq32LE(Set* set, uint32_t v2) const;
+  bool ne32LE(Set* set, uint32_t v2) const;
+  bool lt32LE(Set* set, uint32_t v2) const;
+  bool le32LE(Set* set, uint32_t v2) const;
+  bool gt32LE(Set* set, uint32_t v2) const;
+  bool ge32LE(Set* set, uint32_t v2) const;
 
-  Set* eq32BE(uint32_t v2) const;
-  Set* ne32BE(uint32_t v2) const;
-  Set* lt32BE(uint32_t v2) const;
-  Set* le32BE(uint32_t v2) const;
-  Set* gt32BE(uint32_t v2) const;
-  Set* ge32BE(uint32_t v2) const;
+  bool eq32BE(Set* set, uint32_t v2) const;
+  bool ne32BE(Set* set, uint32_t v2) const;
+  bool lt32BE(Set* set, uint32_t v2) const;
+  bool le32BE(Set* set, uint32_t v2) const;
+  bool gt32BE(Set* set, uint32_t v2) const;
+  bool ge32BE(Set* set, uint32_t v2) const;
+
+  bool eqlow(Set* set, const Block* other) const;
+  bool nelow(Set* set, const Block* other) const;
+  bool ltlow(Set* set, const Block* other) const;
+  bool lelow(Set* set, const Block* other) const;
+  bool gtlow(Set* set, const Block* other) const;
+  bool gelow(Set* set, const Block* other) const;
+
+  bool eqhigh(Set* set, const Block* other) const;
+  bool nehigh(Set* set, const Block* other) const;
+  bool lthigh(Set* set, const Block* other) const;
+  bool lehigh(Set* set, const Block* other) const;
+  bool gthigh(Set* set, const Block* other) const;
+  bool gehigh(Set* set, const Block* other) const;
+
+  bool eq8(Set* set, const Block* other) const;
+  bool ne8(Set* set, const Block* other) const;
+  bool lt8(Set* set, const Block* other) const;
+  bool le8(Set* set, const Block* other) const;
+  bool gt8(Set* set, const Block* other) const;
+  bool ge8(Set* set, const Block* other) const;
+
+  bool eq16LE(Set* set, const Block* other) const;
+  bool ne16LE(Set* set, const Block* other) const;
+  bool lt16LE(Set* set, const Block* other) const;
+  bool le16LE(Set* set, const Block* other) const;
+  bool gt16LE(Set* set, const Block* other) const;
+  bool ge16LE(Set* set, const Block* other) const;
+
+  bool eq16BE(Set* set, const Block* other) const;
+  bool ne16BE(Set* set, const Block* other) const;
+  bool lt16BE(Set* set, const Block* other) const;
+  bool le16BE(Set* set, const Block* other) const;
+  bool gt16BE(Set* set, const Block* other) const;
+  bool ge16BE(Set* set, const Block* other) const;
+
+  bool eq32LE(Set* set, const Block* other) const;
+  bool ne32LE(Set* set, const Block* other) const;
+  bool lt32LE(Set* set, const Block* other) const;
+  bool le32LE(Set* set, const Block* other) const;
+  bool gt32LE(Set* set, const Block* other) const;
+  bool ge32LE(Set* set, const Block* other) const;
+
+  bool eq32BE(Set* set, const Block* other) const;
+  bool ne32BE(Set* set, const Block* other) const;
+  bool lt32BE(Set* set, const Block* other) const;
+  bool le32BE(Set* set, const Block* other) const;
+  bool gt32BE(Set* set, const Block* other) const;
+  bool ge32BE(Set* set, const Block* other) const;
   
 protected:
   size_t   _start;

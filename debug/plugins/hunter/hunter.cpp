@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <cinttypes>
 #include <ctype.h>
 #include <string>
 #include <vector>
@@ -13,13 +14,23 @@
 #include "block.h"
 #include "set.h"
 
+static const char* sizeNames[] = {
+  "8 bits", "16 bits LE", "16 bits BE", "32 bits LE", "32 bits BE", "Low nibble", "High nibble",
+  "Bit 0", "Bit 1", "Bit 2", "Bit 3", "Bit 4", "Bit 5", "Bit 6", "Bit 7"
+};
+
+static const char* operatorNames[] = {
+  "==", "!=", "<", "<=", ">", ">="
+};
+
 static const debugger_t* s_info;
 
 namespace
 {
   enum
   {
-    CORE_FCEUMM = 0xb00bd8c2U
+    CORE_FCEUMM    = 0xb00bd8c2U,
+    CORE_PICODRIVE = 0x0cc11b6aU
   };
 
   uint32_t djb2(const char* str)
@@ -73,25 +84,20 @@ namespace
 
     struct Snapshot
     {
-      char               name[64];
-      std::vector<Block> blocks;
+      char     name[64];
+      Block    blocks[64];
+      unsigned count;
+      size_t   sizes;
     };
 
     struct Filter
     {
-      char              name[64];
-      std::vector<Set*> sets;
-
-      ~Filter()
-      {
-        for (auto it = sets.begin(); it != sets.end(); ++it)
-        {
-          Set* set = &*it;
-          set->destroy();
-          delete set;
-        }
-      }
-    }
+      char     name[4096];
+      Set      sets[64];
+      unsigned count;
+      size_t   total;
+      size_t   sizes;
+    };
 
     bool     _inited;
     unsigned _temp;
@@ -102,11 +108,21 @@ namespace
 
     std::vector<Snapshot> _snapshots;
     int _snapsel;
+    int _snapsel1;
+    int _snapsel2;
 
     int _opsel;
     int _sizesel;
 
     char _value[64];
+
+    std::vector<Filter> _filters;
+
+    int _filter1;
+    int _filter2;
+    int _opsel2;
+    int _opsel3;
+    int _sizesel3;
 
     void initRegions()
     {
@@ -182,41 +198,58 @@ namespace
     {
       Snapshot snap;
       snprintf(snap.name, sizeof(snap.name), "Snapshot %u", _temp++);
+      snap.count = 0;
+      snap.sizes = 0;
 
       if (!cheevosMode)
       {
-        Block block;
-        block.init(0, regions[regsel].size, (uint8_t*)regions[regsel].data);
-
-        snap.blocks.push_back(block);
-        _snapshots.push_back(snap);
-        return;
-      }
-
-      uint32_t hash = djb2(s_info->coreInfo->getSystemInfo()->library_name);
-
-      switch (hash)
-      {
-      case CORE_FCEUMM:
+        if (snap.count < sizeof(snap.blocks) / sizeof(snap.blocks[0]))
         {
-          for (unsigned i = 0;; i++)
+          Block* block = &snap.blocks[snap.count++];
+          block->init(0, regions[regsel].size, (uint8_t*)regions[regsel].data);
+        }
+      }
+      else
+      {
+        uint32_t hash = djb2(s_info->coreInfo->getSystemInfo()->library_name);
+
+        switch (hash)
+        {
+        case CORE_FCEUMM:
           {
-            const struct retro_memory_descriptor* mem = s_info->coreInfo->getMemoryMap(i);
-
-            if (!mem)
+            for (unsigned i = 0;; i++)
             {
-              break;
+              const struct retro_memory_descriptor* mem = s_info->coreInfo->getMemoryMap(i);
+
+              if (!mem)
+              {
+                break;
+              }
+
+              if (mem->ptr && mem->len)
+              {
+                if (snap.count < sizeof(snap.blocks) / sizeof(snap.blocks[0]))
+                {
+                  Block* block = &snap.blocks[snap.count++];
+                  block->init(mem->start, mem->len, (uint8_t*)mem->ptr + mem->offset);
+                  snap.sizes += block->size();
+                }
+              }
             }
 
-            if (mem->ptr && mem->len)
-            {
-              Block block;
-              block.init(mem->start, mem->len, (uint8_t*)mem->ptr + mem->offset);
-              snap.blocks.push_back(block);
-            }
+            break;
           }
+        
+        case CORE_PICODRIVE:
+          {
+            void* data = s_info->coreInfo->getMemoryData(RETRO_MEMORY_SYSTEM_RAM);
+            size_t size = s_info->coreInfo->getMemorySize(RETRO_MEMORY_SYSTEM_RAM);
 
-          break;
+            Block* block = &snap.blocks[snap.count++];
+            block->init(0xff0000, size, (uint8_t*)data);
+
+            break;
+          }
         }
       }
 
@@ -270,146 +303,181 @@ namespace
           if (k >= '0' && k <= '9')
             *value += k - '0';
           else
-            *valid = false;
+            valid = false;
         }
       }
 
       switch (_sizesel)
       {
-      case 0: valid = valid && value <= 0xff; break;
+      case 0: valid = valid && *value <= 0xff; break;
       case 1: // fallthrough
-      case 2: valid = valid && value <= 0xffff; break;
+      case 2: valid = valid && *value <= 0xffff; break;
       case 3: // fallthrough
-      case 4: valid = valid && value <= 0xffffffff; break;
+      case 4: valid = valid && *value <= 0xffffffff; break;
       case 5: // fallthrough
-      case 6: valid = valid && value <= 0xf; break;
-      default: valie = valid && value <= 1; break;
+      case 6: valid = valid && *value <= 0xf; break;
+      default: valid = valid && *value <= 1; break;
       }
 
       return valid;
     }
 
-#define FILTER(n) \
-  for (auto it = snap->blocks.begin(); it != snap->blocks.end(); ++it) \
+#define FILTER_FROM_SNAP(n) \
+  for (unsigned i = 0; i < snap->count; i++) \
   { \
-    filter->sets.push_back(it->n(value)); \
+    if (filter.count < sizeof(filter.sets) / sizeof(filter.sets[0])) { \
+      Set* set = &filter.sets[filter.count++]; \
+      snap->blocks[i].n(set, value); \
+      filter.total += set->count(); \
+      filter.sizes += set->size(); \
+    } \
   } \
   break;
 
-    void createFilter(Filter* filter, uint64_t value)
+#define FILTERS_FROM_SNAP(n) \
+  case  0: FILTER_FROM_SNAP(n ## 8) \
+  case  1: FILTER_FROM_SNAP(n ## 16LE) \
+  case  2: FILTER_FROM_SNAP(n ## 16BE) \
+  case  3: FILTER_FROM_SNAP(n ## 32LE) \
+  case  4: FILTER_FROM_SNAP(n ## 32BE) \
+  case  5: FILTER_FROM_SNAP(n ## low) \
+  case  6: FILTER_FROM_SNAP(n ## high)
+
+    void createFilterFromSnapshot(uint64_t value)
     {
-      Snapshot* snap = _snapshots[_snapsel];
+      Snapshot* snap = &_snapshots[_snapsel - 1];
+
       Filter filter;
+      filter.count = 0;
+      filter.total = 0;
+      filter.sizes = 0;
 
       switch (_opsel)
       {
-      case 0: // ==
+      case 0:
         switch (_sizesel)
         {
-        case  0: FILTER(eq8)
-        case  1: FILTER(eq16LE)
-        case  2: FILTER(eq16BE)
-        case  3: FILTER(eq32LE)
-        case  4: FILTER(eq32BE)
-        case  5: FILTER(eqlow)
-        case  6: FILTER(eqhigh)
-        case  7: FILTER(bit<0>)
-        case  8: FILTER(bit<1>)
-        case  9: FILTER(bit<2>)
-        case 10: FILTER(bit<3>)
-        case 11: FILTER(bit<4>)
-        case 12: FILTER(bit<5>)
-        case 13: FILTER(bit<6>)
-        case 14: FILTER(bit<7>)
+        FILTERS_FROM_SNAP(eq)
+        case  7: FILTER_FROM_SNAP(bit<0>)
+        case  8: FILTER_FROM_SNAP(bit<1>)
+        case  9: FILTER_FROM_SNAP(bit<2>)
+        case 10: FILTER_FROM_SNAP(bit<3>)
+        case 11: FILTER_FROM_SNAP(bit<4>)
+        case 12: FILTER_FROM_SNAP(bit<5>)
+        case 13: FILTER_FROM_SNAP(bit<6>)
+        case 14: FILTER_FROM_SNAP(bit<7>)
         }
 
         break;
 
-      case 1: // !=
-        switch (_sizesel)
-        {
-        case 0: FILTER(ne8)
-        case 1: FILTER(ne16LE)
-        case 2: FILTER(ne16BE)
-        case 3: FILTER(ne32LE)
-        case 4: FILTER(ne32BE)
-        case 5: FILTER(nelow)
-        case 6: FILTER(nehigh)
-        }
-
-        break;
-
-      case 2: // <
-        switch (_sizesel)
-        {
-        case 0: FILTER(lt8)
-        case 1: FILTER(lt16LE)
-        case 2: FILTER(lt16BE)
-        case 3: FILTER(lt32LE)
-        case 4: FILTER(lt32BE)
-        case 5: FILTER(ltlow)
-        case 6: FILTER(lthigh)
-        }
-
-        break;
-
-      case 3: // <=
-        switch (_sizesel)
-        {
-        case 0: FILTER(le8)
-        case 1: FILTER(le16LE)
-        case 2: FILTER(le16BE)
-        case 3: FILTER(le32LE)
-        case 4: FILTER(le32BE)
-        case 5: FILTER(lelow)
-        case 6: FILTER(lehigh)
-        }
-
-        break;
+      case 1: switch (_sizesel) { FILTERS_FROM_SNAP(ne) } break;
+      case 2: switch (_sizesel) { FILTERS_FROM_SNAP(lt) } break;
+      case 3: switch (_sizesel) { FILTERS_FROM_SNAP(le) } break;
+      case 4: switch (_sizesel) { FILTERS_FROM_SNAP(gt) } break;
+      case 5: switch (_sizesel) { FILTERS_FROM_SNAP(ge) } break;
       }
+
+      snprintf(filter.name, sizeof(filter.name), "((%s) %s %" PRIu64 " (%s)) (%" PRIu64 " hits)", snap->name, operatorNames[_opsel], value, sizeNames[_sizesel], filter.total);
+      _filters.push_back(filter);
     }
 
-    void create()
-    {
-      _inited = false;
-      _temp = 1;
-      _cheevosMode = true;
-      _regsel = 0;
-      _snapsel = 0;
-      _opsel = 0;
-      _sizesel = 0;
-    }
+#define FILTER_FROM_SNAPS(n) \
+  for (unsigned i = 0; i < snap1->count; i++) \
+  { \
+    if (filter.count < sizeof(filter.sets) / sizeof(filter.sets[0])) { \
+      Set* set = &filter.sets[filter.count++]; \
+      snap1->blocks[i].n(set, &snap2->blocks[i]); \
+      filter.total += set->count(); \
+      filter.sizes += set->size(); \
+    } \
+  } \
+  break;
 
-    bool destroy(bool force)
-    {
-      (void)force;
-      return true;
-    }
+#define FILTERS_FROM_SNAPS(n) \
+  case  0: FILTER_FROM_SNAPS(n ## 8) \
+  case  1: FILTER_FROM_SNAPS(n ## 16LE) \
+  case  2: FILTER_FROM_SNAPS(n ## 16BE) \
+  case  3: FILTER_FROM_SNAPS(n ## 32LE) \
+  case  4: FILTER_FROM_SNAPS(n ## 32BE) \
+  case  5: FILTER_FROM_SNAPS(n ## low) \
+  case  6: FILTER_FROM_SNAPS(n ## high)
 
-    void draw()
+    void createFilterFromSnapshots()
     {
-      if (_inited)
+      Snapshot* snap1 = &_snapshots[_snapsel1 - 1];
+      Snapshot* snap2 = &_snapshots[_snapsel2 - 1];
+
+      Filter filter;
+      filter.count = 0;
+      filter.total = 0;
+      filter.sizes = 0;
+
+      switch (_opsel3)
       {
-        if (!s_info->rarchInfo->isGameLoaded())
-        {
-          _regions.clear();
-          _regsel = 0;
-          _snapshots.clear();
-          _snapsel = 0;
-          _opsel = 0;
-          _sizesel = 0;
-          _inited = false;
-        }
-      }
-      else
-      {
-        if (s_info->rarchInfo->isGameLoaded())
-        {
-          initRegions();
-          _inited = true;
-        }
+      case 0: switch (_sizesel3) { FILTERS_FROM_SNAPS(eq) } break;
+      case 1: switch (_sizesel3) { FILTERS_FROM_SNAPS(ne) } break;
+      case 2: switch (_sizesel3) { FILTERS_FROM_SNAPS(lt) } break;
+      case 3: switch (_sizesel3) { FILTERS_FROM_SNAPS(le) } break;
+      case 4: switch (_sizesel3) { FILTERS_FROM_SNAPS(gt) } break;
+      case 5: switch (_sizesel3) { FILTERS_FROM_SNAPS(ge) } break;
       }
 
+      snprintf(filter.name, sizeof(filter.name), "((%s) %s (%s) (%s)) (%" PRIu64 " hits)", snap1->name, operatorNames[_opsel3], snap2->name, sizeNames[_sizesel3], filter.total);
+      _filters.push_back(filter);
+    }
+
+#define FILTER_FROM_FILTERS(n) \
+  for (unsigned i = 0; i < filter1->count; i++) \
+  { \
+    Set* set = &filter.sets[filter.count++]; \
+    filter1->sets[i].n(set, &filter2->sets[i]); \
+    filter.total += set->count(); \
+    filter.sizes += set->size(); \
+  } \
+  break;
+
+    void createFilterFromFilters()
+    {
+      Filter* filter1 = &_filters[_filter1 - 1];
+      Filter* filter2 = _filter2 == 0 ? nullptr : &_filters[_filter2 - 1];
+
+      Filter filter;
+      filter.count = 0;
+      filter.total = 0;
+      filter.sizes = 0;
+      
+      switch (_opsel2)
+      {
+      case 0: FILTER_FROM_FILTERS(intersection);
+      case 1: FILTER_FROM_FILTERS(union_);
+      case 2: FILTER_FROM_FILTERS(difference);
+
+      case 3:
+        for (unsigned i = 0; i < filter1->count; i++)
+        {
+          Set* set = &filter.sets[filter.count++];
+          filter1->sets[i].negate(set);
+          filter.total += set->count();
+          filter.sizes += set->size();
+        }
+
+        break;
+      }
+
+      switch (_opsel2)
+      {
+      case 0: snprintf(filter.name, sizeof(filter.name), "((%s) * (%s)) (%" PRIu64 " hits)", filter1->name, filter2->name, filter.total); break;
+      case 1: snprintf(filter.name, sizeof(filter.name), "((%s) + (%s)) (%" PRIu64 " hits)", filter1->name, filter2->name, filter.total); break;
+      case 2: snprintf(filter.name, sizeof(filter.name), "((%s) - (%s)) (%" PRIu64 " hits)", filter1->name, filter2->name, filter.total); break;
+      case 3: snprintf(filter.name, sizeof(filter.name), "(~(%s)) (%" PRIu64 " hits)", filter1->name, filter.total); break;
+      }
+
+      _filters.push_back(filter);
+    }
+
+    void showSnapshotsList()
+    {
+      ImGui::PushID(__FUNCTION__);
       ImGui::SetNextTreeNodeOpen(true);
 
       if (ImGui::CollapsingHeader("Snapshots"))
@@ -442,17 +510,18 @@ namespace
         for (auto it = _snapshots.begin(); it != _snapshots.end();)
         {
           Snapshot* snap = &*it;
+          ImGui::PushID(snap);
 
-          char label[128];
-          snprintf(label, sizeof(label), "##snapname%p", snap);
-
-          ImGui::InputText(label, snap->name, sizeof(snap->name));
+          ImGui::InputText("", snap->name, sizeof(snap->name));
           ImGui::SameLine();
 
-          snprintf(label, sizeof(label), ICON_FA_MINUS " Delete##snapdelete%p", snap);
-
-          if (ImGui::Button(label))
+          if (ImGui::Button(ICON_FA_MINUS " Delete"))
           {
+            for (unsigned i = 0; i < it->count; i++)
+            {
+              it->blocks[i].destroy();
+            }
+
             it = _snapshots.erase(it);
             _snapsel = 0;
           }
@@ -460,62 +529,281 @@ namespace
           {
             ++it;
           }
+
+          ImGui::PopID();
         }
       }
+      
+      ImGui::PopID();
+    }
+
+    void showFiltersFromSnapshot()
+    {
+      ImGui::PushID(__FUNCTION__);
+
+      struct Getter
+      {
+        static bool description(void* data, int idx, const char** out_text)
+        {
+          if (idx != 0)
+          {
+            auto snapshots = (std::vector<Snapshot>*)data;
+            *out_text = (*snapshots)[idx - 1].name;
+          }
+          else
+          {
+            *out_text = "None";
+          }
+
+          return true;
+        }
+      };
+
+      ImGui::Combo("Snapshot", &_snapsel, Getter::description, (void*)&_snapshots, _snapshots.size() + 1);
+      ImGui::Combo("Operator", &_opsel, operatorNames, sizeof(operatorNames) / sizeof(operatorNames[0]));
+
+      int max = sizeof(sizeNames) / sizeof(sizeNames[0]) - 8 * (_opsel > 0);
+
+      if (_sizesel >= max)
+      {
+        _sizesel = 0;
+      }
+
+      ImGui::Combo("Operand size", &_sizesel, sizeNames, max);
+      ImGui::InputText("Value", _value, sizeof(_value));
+
+      uint64_t value;
+      bool valid = getValue(&value);
+
+      if (ImGuiAl::Button(ICON_FA_PLUS " Create filter", valid))
+      {
+        createFilterFromSnapshot(value);
+      }
+
+      ImGui::PopID();
+    }
+
+    void showFiltersFromSnapshots()
+    {
+      ImGui::PushID(__FUNCTION__);
+
+      struct Getter
+      {
+        static bool description(void* data, int idx, const char** out_text)
+        {
+          if (idx != 0)
+          {
+            auto snapshots = (std::vector<Snapshot>*)data;
+            *out_text = (*snapshots)[idx - 1].name;
+          }
+          else
+          {
+            *out_text = "None";
+          }
+
+          return true;
+        }
+      };
+      
+      ImGui::Combo("1st Snapshot", &_snapsel1, Getter::description, (void*)&_snapshots, _snapshots.size() + 1);
+      ImGui::Combo("Operator", &_opsel3, operatorNames, sizeof(operatorNames) / sizeof(operatorNames[0]));
+      ImGui::Combo("2nd Snapshot", &_snapsel2, Getter::description, (void*)&_snapshots, _snapshots.size() + 1);
+
+      bool valid = _snapsel1 != 0 && _snapsel2 != 0;
+
+      if (valid)
+      {
+        Snapshot* snap1 = &_snapshots[_snapsel1 - 1];
+        Snapshot* snap2 = &_snapshots[_snapsel2 - 1];
+
+        valid = valid && snap1->count == snap2->count;
+
+        for (unsigned i = 0; i < snap1->count; i++)
+        {
+          valid = valid && snap1->blocks[i].compatible(&snap2->blocks[i]);
+        }
+      }
+
+      if (ImGuiAl::Button(ICON_FA_PLUS " Create filter", valid))
+      {
+        createFilterFromSnapshots();
+      }
+
+      ImGui::PopID();
+    }
+
+    void showFiltersFromFilters()
+    {
+      ImGui::PushID(__FUNCTION__);
+
+      struct Getter
+      {
+        static bool description(void* data, int idx, const char** out_text)
+        {
+          if (idx != 0)
+          {
+            auto filters = (std::vector<Filter>*)data;
+            *out_text = (*filters)[idx - 1].name;
+          }
+          else
+          {
+            *out_text = "None";
+          }
+
+          return true;
+        }
+      };
+
+      ImGui::Combo("1st Filter", &_filter1, Getter::description, (void*)&_filters, _filters.size() + 1);
+
+      static const char* operators2[] = {
+        "Intersection", "Union", "Difference", "Complement"
+      };
+
+      ImGui::Combo("Operator", &_opsel2, operators2, sizeof(operators2) / sizeof(operators2[0]));
+      ImGui::Combo("2nd Filter", &_filter2, Getter::description, (void*)&_filters, _filters.size() + 1);
+
+      bool valid = _filter1 != 0;
+      valid = valid && ((_opsel2 != 3 && _filter2 != 0) || (_opsel2 == 3 && _filter2 == 0));
+
+      if (valid && _opsel2 != 3)
+      {
+        Filter* filter1 = _filter1 == 0 ? nullptr : &_filters[_filter1 - 1];
+        Filter* filter2 = _filter2 == 0 ? nullptr : &_filters[_filter2 - 1];
+
+        valid = valid && filter1->count == filter2->count;
+
+        for (unsigned i = 0; i < filter1->count; i++)
+        {
+          valid = valid && filter1->sets[i].compatible(&filter2->sets[i]);
+        }
+      }
+
+      if (ImGuiAl::Button(ICON_FA_PLUS " Create filter", valid))
+      {
+        createFilterFromFilters();
+      }
+
+      ImGui::PopID();
+    }
+
+    void showFiltersList()
+    {
+      ImGui::PushID(__FUNCTION__);
+
+      for (auto it = _filters.begin(); it != _filters.end();)
+      {
+        Filter* filter = &*it;
+        ImGui::PushID(filter);
+
+        ImGui::InputText("", filter->name, sizeof(filter->name));
+        ImGui::SameLine();
+
+        if (ImGui::Button(ICON_FA_MINUS " Delete"))
+        {
+          for (unsigned i = 0; i < it->count; i++)
+          {
+            it->sets[i].destroy();
+          }
+
+          it = _filters.erase(it);
+        }
+        else
+        {
+          ++it;
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button(ICON_FA_MINUS " Show"))
+        {
+          for (unsigned i = 0; i < filter->count; i++)
+          {
+            Set* set = &filter->sets[i];
+            size_t addr;
+
+            if (set->first(&addr))
+            {
+              do
+              {
+                s_info->log->info("%" PRIx64, addr);
+              }
+              while (set->next(&addr));
+            }
+          }
+        }
+
+        ImGui::PopID();
+      }
+
+      ImGui::PopID();
+    }
+
+    void clear()
+    {
+      _regions.clear();
+      _regsel = 0;
+      _snapshots.clear();
+      _snapsel = 0;
+      _snapsel1 = 0;
+      _snapsel2 = 0;
+      _opsel = 0;
+      _sizesel = 0;
+      _sizesel3 = 0;
+      _filter1 = 0;
+      _filter2 = 0;
+      _opsel2 = 0;
+      _opsel3 = 0;
+      _inited = false;
+    }
+
+    void create()
+    {
+      _temp = 1;
+      _cheevosMode = true;
+
+      clear();
+    }
+
+    bool destroy(bool force)
+    {
+      (void)force;
+      return true;
+    }
+
+    void draw()
+    {
+      if (_inited)
+      {
+        if (!s_info->rarchInfo->isGameLoaded())
+        {
+          clear();
+        }
+      }
+      else
+      {
+        if (s_info->rarchInfo->isGameLoaded())
+        {
+          initRegions();
+          _inited = true;
+        }
+      }
+
+      showSnapshotsList();
 
       ImGui::SetNextTreeNodeOpen(true);
 
       if (ImGui::CollapsingHeader("Filters"))
       {
-        struct Getter
-        {
-          static bool description(void* data, int idx, const char** out_text)
-          {
-            if (idx != 0)
-            {
-              auto snapshots = (std::vector<Snapshot>*)data;
-              *out_text = (*snapshots)[idx - 1].name;
-            }
-            else
-            {
-              *out_text = "None";
-            }
-
-            return true;
-          }
-        };
-
+        ImGui::Columns(3);
+        showFiltersFromSnapshot();
+        ImGui::NextColumn();
+        showFiltersFromSnapshots();
+        ImGui::NextColumn();
+        showFiltersFromFilters();
+        ImGui::Columns(1);
         ImGui::Separator();
-        ImGui::Combo("Snapshot", &_snapsel, Getter::description, (void*)&_snapshots, _snapshots.size() + 1);
-
-        static const char* operators[] = {
-          "==", "!=", "<", "<=", ">", ">="
-        };
-
-        ImGui::Combo("Operator", &_opsel, operators, sizeof(operators) / sizeof(operators[0]));
-
-        static const char* sizes[] = {
-          "8 bits", "16 bits LE", "16 bits BE", "32 bits LE", "32 bits BE", "Low nibble", "High nibble",
-          "Bit 0", "Bit 1", "Bit 2", "Bit 3", "Bit 4", "Bit 5", "Bit 6", "Bit 7"
-        };
-
-        int max = sizeof(sizes) / sizeof(sizes[0]) - 8 * (_opsel > 0);
-
-        if (_sizesel >= max)
-        {
-          _sizesel = 0;
-        }
-
-        ImGui::Combo("Operand size", &_sizesel, sizes, max);
-        ImGui::InputText("Value", _value, sizeof(_value));
-
-        uint64_t value;
-        bool valid = getValue(&value);
-
-        if (ImGuiAl::Button(ICON_FA_PLUS " Create filter", valid))
-        {
-          Set* set = createFilter(value);
-        }
+        showFiltersList();
       }
     }
   };

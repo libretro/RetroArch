@@ -19,11 +19,8 @@ bool Block::init(size_t start, size_t size, const uint8_t* bytes)
 }
 
 #define FILTER_8(cmp) \
-  Set* addrs = new Set; \
-  if (!addrs->init(_start, _size)) { \
-    delete addrs; \
-    return 0; \
-  } \
+  if (!set->init(_start, _size)) \
+    return false; \
   const uint8_t* byte = _bytes; \
   size_t size = _size; \
   size_t addr = _start; \
@@ -31,18 +28,15 @@ bool Block::init(size_t start, size_t size, const uint8_t* bytes)
     do { \
       uint8_t v1 = *byte++; \
       if (cmp) \
-        addrs->add(addr); \
+        set->add(addr); \
       addr++; \
     } \
     while (--size); \
-  return addrs;
+  return true;
 
 #define FILTER_16_LE(cmp) \
-  Set* addrs = new Set; \
-  if (!addrs->init(_start, _size)) { \
-    delete addrs; \
-    return 0; \
-  } \
+  if (!set->init(_start, _size)) \
+    return false; \
   const uint8_t* byte = _bytes; \
   size_t size = _size; \
   size_t addr = _start; \
@@ -52,19 +46,16 @@ bool Block::init(size_t start, size_t size, const uint8_t* bytes)
     do { \
       v1 = v1 >> 8 | *byte++ << 8; \
       if (cmp) \
-        addrs->add(addr); \
+        set->add(addr); \
       addr++; \
     } \
     while (--size); \
   } \
-  return addrs;
+  return true;
 
 #define FILTER_16_BE(cmp) \
-  Set* addrs = new Set; \
-  if (!addrs->init(_start, _size)) { \
-    delete addrs; \
-    return 0; \
-  } \
+  if (!set->init(_start, _size)) \
+    return false; \
   const uint8_t* byte = _bytes; \
   size_t size = _size; \
   size_t addr = _start; \
@@ -74,19 +65,16 @@ bool Block::init(size_t start, size_t size, const uint8_t* bytes)
     do { \
       v1 = v1 << 8 | *byte++; \
       if (cmp) \
-        addrs->add(addr); \
+        set->add(addr); \
       addr++; \
     } \
     while (--size); \
   } \
-  return addrs;
+  return true;
 
 #define FILTER_32_LE(cmp) \
-  Set* addrs = new Set; \
-  if (!addrs->init(_start, _size)) { \
-    delete addrs; \
-    return 0; \
-  } \
+  if (!set->init(_start, _size)) \
+    return false; \
   const uint8_t* byte = _bytes; \
   size_t size = _size; \
   size_t addr = _start; \
@@ -97,19 +85,16 @@ bool Block::init(size_t start, size_t size, const uint8_t* bytes)
     do { \
       v1 = v1 >> 8 | *byte++ << 24; \
       if (cmp) \
-        addrs->add(addr); \
+        set->add(addr); \
       addr++; \
     } \
     while (--size); \
   } \
-  return addrs;
+  return true;
 
 #define FILTER_32_BE(cmp) \
-  Set* addrs = new Set; \
-  if (!addrs->init(_start, _size)) { \
-    delete addrs; \
-    return 0; \
-  } \
+  if (!set->init(_start, _size)) \
+    return false; \
   const uint8_t* byte = _bytes; \
   size_t size = _size; \
   size_t addr = _start; \
@@ -120,60 +105,229 @@ bool Block::init(size_t start, size_t size, const uint8_t* bytes)
     do { \
       v1 = v1 << 8 | *byte++; \
       if (cmp) \
-        addrs->add(addr); \
+        set->add(addr); \
       addr++; \
     } \
     while (--size); \
   } \
-  return addrs;
+  return true;
 
-Set* Block::bits(uint8_t m, uint8_t v2) const { FILTER_8((v1 & m) == v2) }
+bool Block::bits(Set* set, uint8_t m, uint8_t v2) const { FILTER_8((v1 & m) == v2) }
 
-Set* Block::eqlow(uint8_t v2) const { FILTER_8((v1 & 15) == v2) }
-Set* Block::nelow(uint8_t v2) const { FILTER_8((v1 & 15) != v2) }
-Set* Block::ltlow(uint8_t v2) const { FILTER_8((v1 & 15) <  v2) }
-Set* Block::lelow(uint8_t v2) const { FILTER_8((v1 & 15) <= v2) }
-Set* Block::gtlow(uint8_t v2) const { FILTER_8((v1 & 15) >  v2) }
-Set* Block::gelow(uint8_t v2) const { FILTER_8((v1 & 15) >= v2) }
+bool Block::eqlow(Set* set, uint8_t v2) const { FILTER_8((v1 & 15) == v2) }
+bool Block::nelow(Set* set, uint8_t v2) const { FILTER_8((v1 & 15) != v2) }
+bool Block::ltlow(Set* set, uint8_t v2) const { FILTER_8((v1 & 15) <  v2) }
+bool Block::lelow(Set* set, uint8_t v2) const { FILTER_8((v1 & 15) <= v2) }
+bool Block::gtlow(Set* set, uint8_t v2) const { FILTER_8((v1 & 15) >  v2) }
+bool Block::gelow(Set* set, uint8_t v2) const { FILTER_8((v1 & 15) >= v2) }
 
-Set* Block::eqhigh(uint8_t v2) const { FILTER_8((v1 >> 4) == v2) }
-Set* Block::nehigh(uint8_t v2) const { FILTER_8((v1 >> 4) != v2) }
-Set* Block::lthigh(uint8_t v2) const { FILTER_8((v1 >> 4) <  v2) }
-Set* Block::lehigh(uint8_t v2) const { FILTER_8((v1 >> 4) <= v2) }
-Set* Block::gthigh(uint8_t v2) const { FILTER_8((v1 >> 4) >  v2) }
-Set* Block::gehigh(uint8_t v2) const { FILTER_8((v1 >> 4) >= v2) }
+bool Block::eqhigh(Set* set, uint8_t v2) const { FILTER_8((v1 >> 4) == v2) }
+bool Block::nehigh(Set* set, uint8_t v2) const { FILTER_8((v1 >> 4) != v2) }
+bool Block::lthigh(Set* set, uint8_t v2) const { FILTER_8((v1 >> 4) <  v2) }
+bool Block::lehigh(Set* set, uint8_t v2) const { FILTER_8((v1 >> 4) <= v2) }
+bool Block::gthigh(Set* set, uint8_t v2) const { FILTER_8((v1 >> 4) >  v2) }
+bool Block::gehigh(Set* set, uint8_t v2) const { FILTER_8((v1 >> 4) >= v2) }
 
-Set* Block::eq8(uint8_t v2) const { FILTER_8(v1 == v2) }
-Set* Block::ne8(uint8_t v2) const { FILTER_8(v1 != v2) }
-Set* Block::lt8(uint8_t v2) const { FILTER_8(v1 <  v2) }
-Set* Block::le8(uint8_t v2) const { FILTER_8(v1 <= v2) }
-Set* Block::gt8(uint8_t v2) const { FILTER_8(v1 >  v2) }
-Set* Block::ge8(uint8_t v2) const { FILTER_8(v1 >= v2) }
+bool Block::eq8(Set* set, uint8_t v2) const { FILTER_8(v1 == v2) }
+bool Block::ne8(Set* set, uint8_t v2) const { FILTER_8(v1 != v2) }
+bool Block::lt8(Set* set, uint8_t v2) const { FILTER_8(v1 <  v2) }
+bool Block::le8(Set* set, uint8_t v2) const { FILTER_8(v1 <= v2) }
+bool Block::gt8(Set* set, uint8_t v2) const { FILTER_8(v1 >  v2) }
+bool Block::ge8(Set* set, uint8_t v2) const { FILTER_8(v1 >= v2) }
 
-Set* Block::eq16LE(uint16_t v2) const { FILTER_16_LE(v1 == v2) }
-Set* Block::ne16LE(uint16_t v2) const { FILTER_16_LE(v1 != v2) }
-Set* Block::lt16LE(uint16_t v2) const { FILTER_16_LE(v1 <  v2) }
-Set* Block::le16LE(uint16_t v2) const { FILTER_16_LE(v1 <= v2) }
-Set* Block::gt16LE(uint16_t v2) const { FILTER_16_LE(v1 >  v2) }
-Set* Block::ge16LE(uint16_t v2) const { FILTER_16_LE(v1 >= v2) }
+bool Block::eq16LE(Set* set, uint16_t v2) const { FILTER_16_LE(v1 == v2) }
+bool Block::ne16LE(Set* set, uint16_t v2) const { FILTER_16_LE(v1 != v2) }
+bool Block::lt16LE(Set* set, uint16_t v2) const { FILTER_16_LE(v1 <  v2) }
+bool Block::le16LE(Set* set, uint16_t v2) const { FILTER_16_LE(v1 <= v2) }
+bool Block::gt16LE(Set* set, uint16_t v2) const { FILTER_16_LE(v1 >  v2) }
+bool Block::ge16LE(Set* set, uint16_t v2) const { FILTER_16_LE(v1 >= v2) }
 
-Set* Block::eq16BE(uint16_t v2) const { FILTER_16_BE(v1 == v2) }
-Set* Block::ne16BE(uint16_t v2) const { FILTER_16_BE(v1 != v2) }
-Set* Block::lt16BE(uint16_t v2) const { FILTER_16_BE(v1 <  v2) }
-Set* Block::le16BE(uint16_t v2) const { FILTER_16_BE(v1 <= v2) }
-Set* Block::gt16BE(uint16_t v2) const { FILTER_16_BE(v1 >  v2) }
-Set* Block::ge16BE(uint16_t v2) const { FILTER_16_BE(v1 >= v2) }
+bool Block::eq16BE(Set* set, uint16_t v2) const { FILTER_16_BE(v1 == v2) }
+bool Block::ne16BE(Set* set, uint16_t v2) const { FILTER_16_BE(v1 != v2) }
+bool Block::lt16BE(Set* set, uint16_t v2) const { FILTER_16_BE(v1 <  v2) }
+bool Block::le16BE(Set* set, uint16_t v2) const { FILTER_16_BE(v1 <= v2) }
+bool Block::gt16BE(Set* set, uint16_t v2) const { FILTER_16_BE(v1 >  v2) }
+bool Block::ge16BE(Set* set, uint16_t v2) const { FILTER_16_BE(v1 >= v2) }
 
-Set* Block::eq32LE(uint32_t v2) const { FILTER_32_LE(v1 == v2) }
-Set* Block::ne32LE(uint32_t v2) const { FILTER_32_LE(v1 != v2) }
-Set* Block::lt32LE(uint32_t v2) const { FILTER_32_LE(v1 <  v2) }
-Set* Block::le32LE(uint32_t v2) const { FILTER_32_LE(v1 <= v2) }
-Set* Block::gt32LE(uint32_t v2) const { FILTER_32_LE(v1 >  v2) }
-Set* Block::ge32LE(uint32_t v2) const { FILTER_32_LE(v1 >= v2) }
+bool Block::eq32LE(Set* set, uint32_t v2) const { FILTER_32_LE(v1 == v2) }
+bool Block::ne32LE(Set* set, uint32_t v2) const { FILTER_32_LE(v1 != v2) }
+bool Block::lt32LE(Set* set, uint32_t v2) const { FILTER_32_LE(v1 <  v2) }
+bool Block::le32LE(Set* set, uint32_t v2) const { FILTER_32_LE(v1 <= v2) }
+bool Block::gt32LE(Set* set, uint32_t v2) const { FILTER_32_LE(v1 >  v2) }
+bool Block::ge32LE(Set* set, uint32_t v2) const { FILTER_32_LE(v1 >= v2) }
 
-Set* Block::eq32BE(uint32_t v2) const { FILTER_32_BE(v1 == v2) }
-Set* Block::ne32BE(uint32_t v2) const { FILTER_32_BE(v1 != v2) }
-Set* Block::lt32BE(uint32_t v2) const { FILTER_32_BE(v1 <  v2) }
-Set* Block::le32BE(uint32_t v2) const { FILTER_32_BE(v1 <= v2) }
-Set* Block::gt32BE(uint32_t v2) const { FILTER_32_BE(v1 >  v2) }
-Set* Block::ge32BE(uint32_t v2) const { FILTER_32_BE(v1 >= v2) }
+bool Block::eq32BE(Set* set, uint32_t v2) const { FILTER_32_BE(v1 == v2) }
+bool Block::ne32BE(Set* set, uint32_t v2) const { FILTER_32_BE(v1 != v2) }
+bool Block::lt32BE(Set* set, uint32_t v2) const { FILTER_32_BE(v1 <  v2) }
+bool Block::le32BE(Set* set, uint32_t v2) const { FILTER_32_BE(v1 <= v2) }
+bool Block::gt32BE(Set* set, uint32_t v2) const { FILTER_32_BE(v1 >  v2) }
+bool Block::ge32BE(Set* set, uint32_t v2) const { FILTER_32_BE(v1 >= v2) }
+
+#define FILTER_BLOCK_8(cmp) \
+  if (!compatible(other)) \
+    return false; \
+  if (!set->init(_start, _size)) \
+    return false; \
+  const uint8_t* byte1 = _bytes; \
+  const uint8_t* byte2 = other->_bytes; \
+  size_t size = _size; \
+  size_t addr = _start; \
+  if (size) \
+    do { \
+      uint8_t v1 = *byte1++; \
+      uint8_t v2 = *byte2++; \
+      if (cmp) \
+        set->add(addr); \
+      addr++; \
+    } \
+    while (--size); \
+  return true;
+
+#define FILTER_BLOCK_16_LE(cmp) \
+  if (!compatible(other)) \
+    return false; \
+  if (!set->init(_start, _size)) \
+    return false; \
+  const uint8_t* byte1 = _bytes; \
+  const uint8_t* byte2 = other->_bytes; \
+  size_t size = _size; \
+  size_t addr = _start; \
+  if (size > 1) { \
+    uint16_t v1 = *byte1++ << 8; \
+    uint16_t v2 = *byte2++ << 8; \
+    size--; \
+    do { \
+      v1 = v1 >> 8 | *byte1++ << 8; \
+      v2 = v2 >> 8 | *byte2++ << 8; \
+      if (cmp) \
+        set->add(addr); \
+      addr++; \
+    } \
+    while (--size); \
+  } \
+  return true;
+
+#define FILTER_BLOCK_16_BE(cmp) \
+  if (!compatible(other)) \
+    return false; \
+  if (!set->init(_start, _size)) \
+    return false; \
+  const uint8_t* byte1 = _bytes; \
+  const uint8_t* byte2 = other->_bytes; \
+  size_t size = _size; \
+  size_t addr = _start; \
+  if (size > 1) { \
+    uint16_t v1 = *byte1++; \
+    uint16_t v2 = *byte2++; \
+    size--; \
+    do { \
+      v1 = v1 << 8 | *byte1++; \
+      v2 = v2 << 8 | *byte2++; \
+      if (cmp) \
+        set->add(addr); \
+      addr++; \
+    } \
+    while (--size); \
+  } \
+  return true;
+
+#define FILTER_BLOCK_32_LE(cmp) \
+  if (!compatible(other)) \
+    return false; \
+  if (!set->init(_start, _size)) \
+    return false; \
+  const uint8_t* byte1 = _bytes; \
+  const uint8_t* byte2 = other->_bytes; \
+  size_t size = _size; \
+  size_t addr = _start; \
+  if (size > 3) { \
+    uint32_t v1 = byte1[0] << 8 | byte1[1] << 16 | byte1[2] << 24; \
+    uint32_t v2 = byte2[0] << 8 | byte2[1] << 16 | byte2[2] << 24; \
+    byte1 += 3; \
+    byte2 += 3; \
+    size -= 3; \
+    do { \
+      v1 = v1 >> 8 | *byte1++ << 24; \
+      v2 = v2 >> 8 | *byte2++ << 24; \
+      if (cmp) \
+        set->add(addr); \
+      addr++; \
+    } \
+    while (--size); \
+  } \
+  return true;
+
+#define FILTER_BLOCK_32_BE(cmp) \
+  if (!compatible(other)) \
+    return false; \
+  if (!set->init(_start, _size)) \
+    return false; \
+  const uint8_t* byte1 = _bytes; \
+  const uint8_t* byte2 = other->_bytes; \
+  size_t size = _size; \
+  size_t addr = _start; \
+  if (size > 3) { \
+    uint32_t v1 = byte1[0] << 16 | byte1[1] << 8 | byte1[2]; \
+    uint32_t v2 = byte2[0] << 16 | byte2[1] << 8 | byte2[2]; \
+    byte1 += 3; \
+    byte2 += 3; \
+    size -= 3; \
+    do { \
+      v1 = v1 << 8 | *byte1++; \
+      v2 = v2 << 8 | *byte2++; \
+      if (cmp) \
+        set->add(addr); \
+      addr++; \
+    } \
+    while (--size); \
+  } \
+  return true;
+
+bool Block::eqlow(Set* set, const Block* other) const { FILTER_BLOCK_8((v1 & 15) == (v2 & 15)) }
+bool Block::nelow(Set* set, const Block* other) const { FILTER_BLOCK_8((v1 & 15) != (v2 & 15)) }
+bool Block::ltlow(Set* set, const Block* other) const { FILTER_BLOCK_8((v1 & 15) <  (v2 & 15)) }
+bool Block::lelow(Set* set, const Block* other) const { FILTER_BLOCK_8((v1 & 15) <= (v2 & 15)) }
+bool Block::gtlow(Set* set, const Block* other) const { FILTER_BLOCK_8((v1 & 15) >  (v2 & 15)) }
+bool Block::gelow(Set* set, const Block* other) const { FILTER_BLOCK_8((v1 & 15) >= (v2 & 15)) }
+
+bool Block::eqhigh(Set* set, const Block* other) const { FILTER_BLOCK_8((v1 >> 4) == (v2 >> 4)) }
+bool Block::nehigh(Set* set, const Block* other) const { FILTER_BLOCK_8((v1 >> 4) != (v2 >> 4)) }
+bool Block::lthigh(Set* set, const Block* other) const { FILTER_BLOCK_8((v1 >> 4) <  (v2 >> 4)) }
+bool Block::lehigh(Set* set, const Block* other) const { FILTER_BLOCK_8((v1 >> 4) <= (v2 >> 4)) }
+bool Block::gthigh(Set* set, const Block* other) const { FILTER_BLOCK_8((v1 >> 4) >  (v2 >> 4)) }
+bool Block::gehigh(Set* set, const Block* other) const { FILTER_BLOCK_8((v1 >> 4) >= (v2 >> 4)) }
+
+bool Block::eq8(Set* set, const Block* other) const { FILTER_BLOCK_8(v1 == v2) }
+bool Block::ne8(Set* set, const Block* other) const { FILTER_BLOCK_8(v1 != v2) }
+bool Block::lt8(Set* set, const Block* other) const { FILTER_BLOCK_8(v1 <  v2) }
+bool Block::le8(Set* set, const Block* other) const { FILTER_BLOCK_8(v1 <= v2) }
+bool Block::gt8(Set* set, const Block* other) const { FILTER_BLOCK_8(v1 >  v2) }
+bool Block::ge8(Set* set, const Block* other) const { FILTER_BLOCK_8(v1 >= v2) }
+
+bool Block::eq16LE(Set* set, const Block* other) const { FILTER_BLOCK_16_LE(v1 == v2) }
+bool Block::ne16LE(Set* set, const Block* other) const { FILTER_BLOCK_16_LE(v1 != v2) }
+bool Block::lt16LE(Set* set, const Block* other) const { FILTER_BLOCK_16_LE(v1 <  v2) }
+bool Block::le16LE(Set* set, const Block* other) const { FILTER_BLOCK_16_LE(v1 <= v2) }
+bool Block::gt16LE(Set* set, const Block* other) const { FILTER_BLOCK_16_LE(v1 >  v2) }
+bool Block::ge16LE(Set* set, const Block* other) const { FILTER_BLOCK_16_LE(v1 >= v2) }
+
+bool Block::eq16BE(Set* set, const Block* other) const { FILTER_BLOCK_16_BE(v1 == v2) }
+bool Block::ne16BE(Set* set, const Block* other) const { FILTER_BLOCK_16_BE(v1 != v2) }
+bool Block::lt16BE(Set* set, const Block* other) const { FILTER_BLOCK_16_BE(v1 <  v2) }
+bool Block::le16BE(Set* set, const Block* other) const { FILTER_BLOCK_16_BE(v1 <= v2) }
+bool Block::gt16BE(Set* set, const Block* other) const { FILTER_BLOCK_16_BE(v1 >  v2) }
+bool Block::ge16BE(Set* set, const Block* other) const { FILTER_BLOCK_16_BE(v1 >= v2) }
+
+bool Block::eq32LE(Set* set, const Block* other) const { FILTER_BLOCK_32_LE(v1 == v2) }
+bool Block::ne32LE(Set* set, const Block* other) const { FILTER_BLOCK_32_LE(v1 != v2) }
+bool Block::lt32LE(Set* set, const Block* other) const { FILTER_BLOCK_32_LE(v1 <  v2) }
+bool Block::le32LE(Set* set, const Block* other) const { FILTER_BLOCK_32_LE(v1 <= v2) }
+bool Block::gt32LE(Set* set, const Block* other) const { FILTER_BLOCK_32_LE(v1 >  v2) }
+bool Block::ge32LE(Set* set, const Block* other) const { FILTER_BLOCK_32_LE(v1 >= v2) }
+
+bool Block::eq32BE(Set* set, const Block* other) const { FILTER_BLOCK_32_BE(v1 == v2) }
+bool Block::ne32BE(Set* set, const Block* other) const { FILTER_BLOCK_32_BE(v1 != v2) }
+bool Block::lt32BE(Set* set, const Block* other) const { FILTER_BLOCK_32_BE(v1 <  v2) }
+bool Block::le32BE(Set* set, const Block* other) const { FILTER_BLOCK_32_BE(v1 <= v2) }
+bool Block::gt32BE(Set* set, const Block* other) const { FILTER_BLOCK_32_BE(v1 >  v2) }
+bool Block::ge32BE(Set* set, const Block* other) const { FILTER_BLOCK_32_BE(v1 >= v2) }
