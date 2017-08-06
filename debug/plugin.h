@@ -88,7 +88,7 @@ typedef struct
   int                                   (*supportsCheevos)(void);
   unsigned                              (*getConsoleId)(void);
   uint32_t                              (*getCoreId)(void);
-  debugger_memory_t*                    (*getMemoryRegions)(size_t* count);
+  debugger_memory_t*                    (*getMemoryRegions)(unsigned* count);
 }
 debugger_core_info_t;
 

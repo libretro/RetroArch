@@ -19,6 +19,7 @@
 
 static ImGuiAl::Log      s_debugger_logger;
 static debugger_memory_t s_debugger_memory[64];
+static unsigned          s_debugger_memory_count = 0;
 
 static void s_debugger_vprintf(enum retro_log_level level, const char* format, va_list args)
 {
@@ -228,7 +229,44 @@ static uint32_t s_debugger_getCoreId(void)
   return hash;
 }
 
-static debugger_memory_t* s_debugger_getMemoryRegionsFceumm(size_t* count)
+static debugger_memory_t* s_debugger_getMemoryRegions(unsigned* count)
+{
+  *count = s_debugger_memory_count;
+  return s_debugger_memory;
+}
+
+static const debugger_core_info_t s_debugger_coreInfo =
+{
+  s_debugger_getCoreName,
+  s_debugger_getApiVersion,
+  s_debugger_getSystemInfo,
+  s_debugger_getSystemAVInfo,
+  s_debugger_getRegion,
+  s_debugger_getMemoryData,
+  s_debugger_getMemorySize,
+  s_debugger_getRotation,
+  s_debugger_getPerformanceLevel,
+  s_debugger_getPixelFormat,
+  s_debugger_supportsNoGame,
+  s_debugger_getMemoryMap,
+  s_debugger_supportsCheevos,
+  s_debugger_getConsoleId,
+  s_debugger_getCoreId,
+  s_debugger_getMemoryRegions
+};
+
+// Plugin interface
+const debugger_t s_debugger =
+{
+  &s_debugger_log,
+  &s_debugger_rarchInfo,
+  &s_debugger_coreInfo
+};
+
+static std::vector<const debugger_plugin_t*> s_debugger_plugins;
+static std::vector<std::pair<void*, const debugger_plugin_t*>> s_debugger_running;
+
+static void s_debugger_getMemoryRegionsFceumm()
 {
   rarch_system_info_t* system = runloop_get_system_info();
   unsigned ram_ndx = 0, wram_ndx = 0;
@@ -243,7 +281,7 @@ static debugger_memory_t* s_debugger_getMemoryRegionsFceumm(size_t* count)
       // RAM
       if (ram_ndx == sizeof(s_debugger_memory[0].parts) / sizeof(s_debugger_memory[0].parts[0]))
       {
-        return NULL;
+        return;
       }
 
       s_debugger_memory[0].parts[ram_ndx].pointer = (uint8_t*)desc->ptr + desc->offset;
@@ -257,7 +295,7 @@ static debugger_memory_t* s_debugger_getMemoryRegionsFceumm(size_t* count)
       // WRAM
       if (wram_ndx == sizeof(s_debugger_memory[1].parts) / sizeof(s_debugger_memory[1].parts[0]))
       {
-        return NULL;
+        return;
       }
       
       s_debugger_memory[1].parts[wram_ndx].pointer = (uint8_t*)desc->ptr + desc->offset;
@@ -303,52 +341,18 @@ static debugger_memory_t* s_debugger_getMemoryRegionsFceumm(size_t* count)
     part[0].offset = part[-1].offset + part[-1].size;
   }
 
-  *count = 2;
-  return s_debugger_memory;
+  s_debugger_memory_count = 2;
 }
 
-static debugger_memory_t* s_debugger_getMemoryRegions(size_t* count)
+static void s_debugger_initMemoryRegions()
 {
-  *count = 0;
+  s_debugger_memory_count = 0;
 
   switch (s_debugger_getCoreId())
   {
-  case DEBUGGER_CORE_FCEUMM: return s_debugger_getMemoryRegionsFceumm(count);
+  case DEBUGGER_CORE_FCEUMM: s_debugger_getMemoryRegionsFceumm(); break;
   }
-
-  return NULL;
 }
-
-static const debugger_core_info_t s_debugger_coreInfo =
-{
-  s_debugger_getCoreName,
-  s_debugger_getApiVersion,
-  s_debugger_getSystemInfo,
-  s_debugger_getSystemAVInfo,
-  s_debugger_getRegion,
-  s_debugger_getMemoryData,
-  s_debugger_getMemorySize,
-  s_debugger_getRotation,
-  s_debugger_getPerformanceLevel,
-  s_debugger_getPixelFormat,
-  s_debugger_supportsNoGame,
-  s_debugger_getMemoryMap,
-  s_debugger_supportsCheevos,
-  s_debugger_getConsoleId,
-  s_debugger_getCoreId,
-  s_debugger_getMemoryRegions
-};
-
-// Plugin interface
-const debugger_t s_debugger =
-{
-  &s_debugger_log,
-  &s_debugger_rarchInfo,
-  &s_debugger_coreInfo
-};
-
-static std::vector<const debugger_plugin_t*> s_debugger_plugins;
-static std::vector<std::pair<void*, const debugger_plugin_t*>> s_debugger_running;
 
 static void s_debugger_register_plugin(const debugger_plugin_t* plugin)
 {
@@ -403,6 +407,21 @@ void debugger_pluginman_deinit()
 
 void debugger_pluginman_draw()
 {
+  if (s_debugger_memory_count != 0)
+  {
+    if (!s_debugger_isGameLoaded())
+    {
+      s_debugger_memory_count = 0;
+    }
+  }
+  else
+  {
+    if (s_debugger_isGameLoaded())
+    {
+      s_debugger_initMemoryRegions();
+    }
+  }
+
   if (ImGui::BeginDock(ICON_FA_PLUG " Plugins"))
   {
     for (auto it = s_debugger_plugins.begin(); it != s_debugger_plugins.end(); ++it)
