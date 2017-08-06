@@ -2599,6 +2599,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_RESTORE_REMAPS:
          command_event_restore_remaps();
+         break;
       case CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET:
          command_event_restore_default_shader_preset();
          break;
