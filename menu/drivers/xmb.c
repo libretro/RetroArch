@@ -1641,10 +1641,9 @@ static void xmb_list_switch(xmb_handle_t *xmb)
    xmb_list_switch_old(xmb, xmb->selection_buf_old,
          dir, xmb->selection_ptr_old);
 
-   // Check if we are to have horizontal animations.
-   if (settings->bools.menu_horizontal_animation) {
+   /* Check if we are to have horizontal animations. */
+   if (settings->bools.menu_horizontal_animation)
       xmb_list_switch_new(xmb, selection_buf, dir, selection);
-   }
    xmb->categories.active.idx_old = (unsigned)xmb->categories.selection_ptr;
 
    if (!string_is_equal(xmb_thumbnails_ident(),
@@ -3831,8 +3830,9 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
    if (!xmb)
       return;
 
-   // Check whether to enable the horizontal animation.
-   if (settings->bools.menu_horizontal_animation) {
+   /* Check whether to enable the horizontal animation. */
+   if (settings->bools.menu_horizontal_animation)
+   {
       xmb_list_deep_copy(selection_buf, xmb->selection_buf_old);
       xmb_list_deep_copy(menu_stack, xmb->menu_stack_old);
    }
