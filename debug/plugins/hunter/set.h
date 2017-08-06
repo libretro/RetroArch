@@ -14,6 +14,21 @@ public:
   {
     free(_bits);
   }
+
+  inline bool compatible(const Set* other) const
+  {
+    return _start == other->_start && _size == other->_size;
+  }
+
+  inline size_t start() const
+  {
+    return _start;
+  }
+  
+  inline size_t size() const
+  {
+    return _size;
+  }
   
   inline void add(size_t addr)
   {
@@ -29,11 +44,13 @@ public:
   
   bool first(size_t* addr) const;
   bool next(size_t* addr) const;
+
+  size_t count() const;
   
-  Set* union_(const Set* other) const;
-  Set* intersection(const Set* other) const;
-  Set* difference(const Set* other) const;
-  Set* negate() const;
+  bool union_(Set* res, const Set* other) const;
+  bool intersection(Set* res, const Set* other) const;
+  bool difference(Set* res, const Set* other) const;
+  bool negate(Set* res) const;
   
 protected:
   size_t    _start;
