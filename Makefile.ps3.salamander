@@ -18,7 +18,8 @@ endif
 
 STRIP			= $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-strip.exe
 
-PPU_CFLAGS		+= -I. -Ilibretro-common/include -Ideps/libz -D__CELLOS_LV2__ -DIS_SALAMANDER -DRARCH_CONSOLE -DHAVE_SYSUTILS -DHAVE_SYSMODULES -DHAVE_RARCH_EXEC
+PPU_CFLAGS	:= -I. -Ilibretro-common/include -Ideps/libz -D__CELLOS_LV2__ -DIS_SALAMANDER -DRARCH_CONSOLE -DHAVE_SYSUTILS -DHAVE_SYSMODULES -DHAVE_RARCH_EXEC
+PPU_CXXFLAGS	:= -I. -Ilibretro-common/include -Ideps/libz -D__CELLOS_LV2__ -DIS_SALAMANDER -DRARCH_CONSOLE -DHAVE_SYSUTILS -DHAVE_SYSMODULES -DHAVE_RARCH_EXEC
 PPU_SRCS		= frontend/frontend_salamander.c \
 				  frontend/frontend_driver.c \
 				  frontend/drivers/platform_ps3.c \
