@@ -17,7 +17,8 @@
 
 // Log functions for the plugins
 
-static ImGuiAl::Log s_debugger_logger;
+static ImGuiAl::Log      s_debugger_logger;
+static debugger_memory_t s_debugger_memory[64];
 
 static void s_debugger_vprintf(enum retro_log_level level, const char* format, va_list args)
 {
@@ -213,6 +214,111 @@ static unsigned s_debugger_getConsoleId(void)
   return cheevos_get_console_id();
 }
 
+static uint32_t s_debugger_getCoreId(void)
+{
+  rarch_system_info_t* system = runloop_get_system_info();
+  const char* libname = system->info.library_name;
+  uint32_t hash = 5381;
+
+  while (*libname)
+  {
+    hash = hash * 33 + (uint8_t)*libname++;
+  }
+
+  return hash;
+}
+
+static debugger_memory_t* s_debugger_getMemoryRegionsFceumm(size_t* count)
+{
+  rarch_system_info_t* system = runloop_get_system_info();
+  unsigned ram_ndx = 0, wram_ndx = 0;
+  size_t ram_size = 0, wram_size = 0;
+
+  for (unsigned i = 0; i < system->mmaps.num_descriptors; i++)
+  {
+    const struct retro_memory_descriptor* desc = &system->mmaps.descriptors[i].core;
+
+    if (desc->start >= 0x0000 && desc->start < 0x0800)
+    {
+      // RAM
+      if (ram_ndx == sizeof(s_debugger_memory[0].parts) / sizeof(s_debugger_memory[0].parts[0]))
+      {
+        return NULL;
+      }
+
+      s_debugger_memory[0].parts[ram_ndx].pointer = (uint8_t*)desc->ptr + desc->offset;
+      s_debugger_memory[0].parts[ram_ndx].size = desc->len;
+      s_debugger_memory[0].parts[ram_ndx].offset = desc->start;
+      ram_ndx++;
+      ram_size += desc->len;
+    }
+    else if (desc->start >= 0x6000 && desc->start < 0x8000)
+    {
+      // WRAM
+      if (wram_ndx == sizeof(s_debugger_memory[1].parts) / sizeof(s_debugger_memory[1].parts[0]))
+      {
+        return NULL;
+      }
+      
+      s_debugger_memory[1].parts[wram_ndx].pointer = (uint8_t*)desc->ptr + desc->offset;
+      s_debugger_memory[1].parts[wram_ndx].size = desc->len;
+      s_debugger_memory[1].parts[wram_ndx].offset = desc->start;
+      wram_ndx++;
+      wram_size += desc->len;
+    }
+  }
+
+  struct Compare
+  {
+    static int cmp(const void* e1, const void* e2)
+    {
+      auto p1 = (const debugger_memory_part_t*)e1;
+      auto p2 = (const debugger_memory_part_t*)e2;
+
+      return p1->offset < p2->offset ? -1 : p1->offset > p2->offset ? 1 : 0;
+    }
+  };
+
+  qsort(s_debugger_memory[0].parts, ram_ndx, sizeof(debugger_memory_part_t), Compare::cmp);
+  s_debugger_memory[0].name = "ram";
+  s_debugger_memory[0].size = ram_size;
+  s_debugger_memory[0].count = ram_ndx;
+  s_debugger_memory[0].parts[0].offset = 0;
+
+  for (unsigned i = 1; i < ram_ndx; i++)
+  {
+    debugger_memory_part_t* part = &s_debugger_memory[0].parts[i];
+    part[0].offset = part[-1].offset + part[-1].size;
+  }
+
+  qsort(s_debugger_memory[1].parts, wram_ndx, sizeof(debugger_memory_part_t), Compare::cmp);
+  s_debugger_memory[1].name = "wram";
+  s_debugger_memory[1].size = wram_size;
+  s_debugger_memory[1].count = wram_ndx;
+  s_debugger_memory[1].parts[0].offset = 0;
+
+  for (unsigned i = 1; i < wram_ndx; i++)
+  {
+    debugger_memory_part_t* part = &s_debugger_memory[1].parts[i];
+    part[0].offset = part[-1].offset + part[-1].size;
+  }
+
+  *count = 2;
+  return s_debugger_memory;
+}
+
+static debugger_memory_t* s_debugger_getMemoryRegions(size_t* count)
+{
+  *count = 0;
+
+  switch (s_debugger_getCoreId())
+  {
+  case DEBUGGER_CORE_FCEUMM: return s_debugger_getMemoryRegionsFceumm(count);
+  }
+
+  return NULL;
+}
+
 static const debugger_core_info_t s_debugger_coreInfo =
 {
   s_debugger_getCoreName,
@@ -228,7 +334,9 @@ static const debugger_core_info_t s_debugger_coreInfo =
   s_debugger_supportsNoGame,
   s_debugger_getMemoryMap,
   s_debugger_supportsCheevos,
-  s_debugger_getConsoleId
+  s_debugger_getConsoleId,
+  s_debugger_getCoreId,
+  s_debugger_getMemoryRegions
 };
 
 // Plugin interface
@@ -299,10 +407,9 @@ void debugger_pluginman_draw()
   {
     for (auto it = s_debugger_plugins.begin(); it != s_debugger_plugins.end(); ++it)
     {
-      char label[512];
-      snprintf(label, sizeof(label), ICON_FA_PLUS " Create##%p", *it);
+      ImGui::PushID(*it);
 
-      if (ImGui::Button(label))
+      if (ImGui::Button(ICON_FA_PLUS " Create"))
       {
         void* instance = (*it)->create();
 
@@ -314,6 +421,7 @@ void debugger_pluginman_draw()
 
       ImGui::SameLine();
       ImGui::Text("%s", (*it)->name);
+      ImGui::PopID();
     }
   }
 
@@ -329,10 +437,9 @@ void debugger_pluginman_draw()
   for (auto it = s_debugger_running.begin(); it != s_debugger_running.end();)
   {
     bool keep = true;
-    char label[512];
-    snprintf(label, sizeof(label), "%s##%p", it->second->name, it->first);
+    ImGui::PushID(it->first);
 
-    if (ImGui::BeginDock(label, &keep))
+    if (ImGui::BeginDock(it->second->name, &keep))
     {
       it->second->draw(it->first);
     }
@@ -342,12 +449,12 @@ void debugger_pluginman_draw()
     if (keep)
     {
       ++it;
-      continue;
     }
-
-    if (it->second->destroy(it->first, 0))
+    else if (it->second->destroy(it->first, 0))
     {
       it = s_debugger_running.erase(it);
     }
+
+    ImGui::PopID();
   }
 }
