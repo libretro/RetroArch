@@ -12,6 +12,7 @@
 - COMMON: Add 'Delete Core' option to Core Information menu.
 - COMMON: Allow Max Timing Skew to be set to 0.
 - COMMON: Change the "content dir" behavior so it works on either a flag or an empty directory setting, now platform drivers can provide defaults for save / system / state / screenshot dirs and still allow the content dir functionality, these settings are under settings / saving and flagged as advanced
+- LOCALIZATION: Update Traditional Chinese translation
 - LOCALIZATION: Update Italian translation
 - LOCALIZATION: Update Russian translation
 - WINDOWS: Provide default save / system / state / screenshot locations
