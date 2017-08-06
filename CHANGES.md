@@ -18,6 +18,7 @@
 - LOBBIES: Show what country the host is in
 - MENU: Enable OSD text rendering for gdi and libcaca drivers
 - WINDOWS 98/ME/2K: Set default directory for MSVC 2005 RetroArch version.
+- WII: Better V-Sync handling, backported from SuperrSonic.
 - WIIU: Exception handler rewritten.
 
 # 1.6.3
