@@ -1615,7 +1615,7 @@ static bool gx_frame(void *data, const void *frame,
    VIDEO_SetNextFramebuffer(gx->framebuf[g_current_framebuf]);
    VIDEO_Flush();
 
-   CPU_ISR_Disable(level);
+   _CPU_ISR_Disable(level);
    ++referenceRetraceCount;
    _CPU_ISR_Restore(level);
 
