@@ -42,6 +42,21 @@
 #include "../../configuration.h"
 #include "../../driver.h"
 
+#ifndef _CPU_ISR_Disable
+#define _CPU_ISR_Disable( _isr_cookie ) \
+  { register u32 _disable_mask = 0; \
+	_isr_cookie = 0; \
+    __asm__ __volatile__ ( \
+	  "mfmsr %0\n" \
+	  "rlwinm %1,%0,0,17,15\n" \
+	  "mtmsr %1\n" \
+	  "extrwi %0,%0,1,16" \
+	  : "=&r" ((_isr_cookie)), "=&r" ((_disable_mask)) \
+	  : "0" ((_isr_cookie)), "1" ((_disable_mask)) \
+	); \
+  }
+#endif
+
 extern syssram* __SYS_LockSram(void);
 extern u32 __SYS_UnlockSram(u32 write);
 
