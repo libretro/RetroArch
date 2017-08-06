@@ -735,6 +735,8 @@ static void audio_mixer_mix_mod(float* buffer, size_t num_frames,
       float volume)
 {
    int i;
+   float samplef                    = 0.0f;
+   int samplei                      = 0;
    unsigned temp_samples            = 0;
    unsigned buf_free                = num_frames * 2;
    int* pcm                         = NULL;
@@ -742,7 +744,9 @@ static void audio_mixer_mix_mod(float* buffer, size_t num_frames,
    if (voice->types.mod.position == voice->types.mod.samples)
    {
 again:
-      temp_samples = replay_get_audio( voice->types.mod.stream, voice->types.mod.buffer );
+      temp_samples = replay_get_audio(
+            voice->types.mod.stream, voice->types.mod.buffer );
+
       temp_samples *= 2; /* stereo */
 
       if (temp_samples == 0)
@@ -770,15 +774,13 @@ again:
    }
    pcm = voice->types.mod.buffer + voice->types.mod.position;
 
-   float samplef = 0.0f;
-   int samplei = 0;
    if (voice->types.mod.samples < buf_free)
    {
       for (i = voice->types.mod.samples; i != 0; i--)
       {
-         samplei = *pcm++ * volume;
-         samplef = (float)((int)samplei + 32768) / 65535.0f;
-         samplef = samplef * 2.0f - 1.0f;
+         samplei     = *pcm++ * volume;
+         samplef     = (float)((int)samplei + 32768) / 65535.0f;
+         samplef     = samplef * 2.0f - 1.0f;
          *buffer++   = samplef;
       }
 
@@ -790,9 +792,9 @@ again:
       int i;
       for (i = buf_free; i != 0; --i ) 
       {
-         samplei = *pcm++ * volume;
-         samplef = (float)((int)samplei + 32768) / 65535.0f;
-         samplef = samplef * 2.0f - 1.0f;
+         samplei     = *pcm++ * volume;
+         samplef     = (float)((int)samplei + 32768) / 65535.0f;
+         samplef     = samplef * 2.0f - 1.0f;
          *buffer++   = samplef;
       }
 
