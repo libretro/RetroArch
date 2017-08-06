@@ -3,6 +3,7 @@
 
 #include <libretro.h>
 #include <stdarg.h>
+#include <stdint.h>
 
 /* Console IDs */
 enum
@@ -22,6 +23,32 @@ enum
    DEBUGGER_CONSOLE_SEGA_32X         = 10,
    DEBUGGER_CONSOLE_MASTER_SYSTEM    = 11
 };
+
+/* Core IDs (djb2 hashes of their library_name in retro_system_info) */
+enum
+{
+  DEBUGGER_CORE_FCEUMM    = 0xb00bd8c2U,
+  DEBUGGER_CORE_PICODRIVE = 0x0cc11b6aU
+};
+
+/* Memory regions */
+typedef struct
+{
+  uint8_t* pointer;
+  size_t   size;
+  size_t   offset;
+}
+debugger_memory_part_t;
+
+typedef struct
+{
+  const char* name;
+  size_t      size;
+  unsigned    count;
+
+  debugger_memory_part_t parts[64];
+}
+debugger_memory_t;
 
 /* Logging */
 typedef struct
@@ -60,6 +87,8 @@ typedef struct
   const struct retro_memory_descriptor* (*getMemoryMap)(unsigned index);
   int                                   (*supportsCheevos)(void);
   unsigned                              (*getConsoleId)(void);
+  uint32_t                              (*getCoreId)(void);
+  debugger_memory_t*                    (*getMemoryRegions)(size_t* count);
 }
 debugger_core_info_t;
 
