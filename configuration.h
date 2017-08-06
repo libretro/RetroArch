@@ -209,6 +209,11 @@ typedef struct settings
       bool sort_savestates_enable;
       bool config_save_on_exit;
       bool show_hidden_files;
+
+      bool savefiles_in_content_dir;
+      bool savestates_in_content_dir;
+      bool screenshots_in_content_dir;
+      bool systemfiles_in_content_dir;
 #ifdef HAVE_LAKKA
       bool ssh_enable;
       bool samba_enable;

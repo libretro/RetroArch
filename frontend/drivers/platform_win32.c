@@ -278,9 +278,9 @@ static void frontend_win32_environment_get(int *argc, char *argv[],
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
       ":\\playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG],
-         ":\\records_config", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG]));
+      ":\\config\\record", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT],
-         ":\\records", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT]));
+      ":\\recordings", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
       ":\\config", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_REMAP],
@@ -303,6 +303,12 @@ static void frontend_win32_environment_get(int *argc, char *argv[],
       ":\\downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
       ":\\screenshots", sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SRAM],
+      ":\\saves", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SAVESTATE],
+      ":\\states", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
+      ":\\system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
 
 #ifdef HAVE_MENU
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)

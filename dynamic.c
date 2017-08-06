@@ -1016,7 +1016,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY:
-         if (string_is_empty(settings->paths.directory_system))
+         if (string_is_empty(settings->paths.directory_system) || settings->bools.systemfiles_in_content_dir)
          {
             const char *fullpath = path_get(RARCH_PATH_CONTENT);
             if (!string_is_empty(fullpath))
@@ -1025,8 +1025,9 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
                temp_path[0] = '\0';
 
-               RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",
-                     fullpath);
+               if (string_is_empty(settings->paths.directory_system))
+                  RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",
+                        fullpath);
                fill_pathname_basedir(temp_path, fullpath, sizeof(temp_path));
                dir_set(RARCH_DIR_SYSTEM, temp_path);
             }

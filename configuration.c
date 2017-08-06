@@ -1259,6 +1259,11 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("audio_wasapi_float_format",    &settings->bools.audio_wasapi_float_format, true, wasapi_float_format, false);
 #endif
 
+   SETTING_BOOL("savestates_in_content_dir",     &settings->bools.savestates_in_content_dir, true, default_savestates_in_content_dir, false);
+   SETTING_BOOL("savefiles_in_content_dir",      &settings->bools.savefiles_in_content_dir, true, default_savefiles_in_content_dir, false);
+   SETTING_BOOL("systemfiles_in_content_dir",    &settings->bools.systemfiles_in_content_dir, true, default_systemfiles_in_content_dir, false);
+   SETTING_BOOL("screenshots_in_content_dir",    &settings->bools.screenshots_in_content_dir, true, default_screenshots_in_content_dir, false);
+
    if (global)
    {
       SETTING_BOOL("custom_bgm_enable",         &global->console.sound.system_bgm_enable, true, false, false);

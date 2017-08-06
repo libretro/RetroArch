@@ -913,6 +913,14 @@ MSG_HASH(MENU_ENUM_LABEL_SORT_SAVEFILES_ENABLE,
       "sort_savefiles_enable")
 MSG_HASH(MENU_ENUM_LABEL_SORT_SAVESTATES_ENABLE,
       "sort_savestates_enable")
+MSG_HASH(MENU_ENUM_LABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,
+      "savefiles_in_content_dir_enable")
+MSG_HASH(MENU_ENUM_LABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,
+      "savestates_in_content_dir_enable")
+MSG_HASH(MENU_ENUM_LABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
+      "systemfiles_in_content_dir_enable")
+MSG_HASH(MENU_ENUM_LABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
+      "screenshots_in_content_dir_enable")
 MSG_HASH(MENU_ENUM_LABEL_SSH_ENABLE,
       "ssh_enable")
 MSG_HASH(MENU_ENUM_LABEL_START_CORE,
