@@ -266,43 +266,29 @@ const debugger_t s_debugger =
 static std::vector<const debugger_plugin_t*> s_debugger_plugins;
 static std::vector<std::pair<void*, const debugger_plugin_t*>> s_debugger_running;
 
-static void s_debugger_getMemoryRegionsFceumm()
+static void s_debugger_fillRegionWithRange(debugger_memory_t* mem, size_t begin, size_t end)
 {
   rarch_system_info_t* system = runloop_get_system_info();
-  unsigned ram_ndx = 0, wram_ndx = 0;
-  size_t ram_size = 0, wram_size = 0;
+  unsigned ndx = 0;
+  size_t size = 0;
 
   for (unsigned i = 0; i < system->mmaps.num_descriptors; i++)
   {
     const struct retro_memory_descriptor* desc = &system->mmaps.descriptors[i].core;
 
-    if (desc->start >= 0x0000 && desc->start < 0x0800)
+    if (desc->start >= begin && desc->start < end)
     {
       // RAM
-      if (ram_ndx == sizeof(s_debugger_memory[0].parts) / sizeof(s_debugger_memory[0].parts[0]))
+      if (ndx == sizeof(mem->parts) / sizeof(mem->parts[0]))
       {
         return;
       }
 
-      s_debugger_memory[0].parts[ram_ndx].pointer = (uint8_t*)desc->ptr + desc->offset;
-      s_debugger_memory[0].parts[ram_ndx].size = desc->len;
-      s_debugger_memory[0].parts[ram_ndx].offset = desc->start;
-      ram_ndx++;
-      ram_size += desc->len;
-    }
-    else if (desc->start >= 0x6000 && desc->start < 0x8000)
-    {
-      // WRAM
-      if (wram_ndx == sizeof(s_debugger_memory[1].parts) / sizeof(s_debugger_memory[1].parts[0]))
-      {
-        return;
-      }
-      
-      s_debugger_memory[1].parts[wram_ndx].pointer = (uint8_t*)desc->ptr + desc->offset;
-      s_debugger_memory[1].parts[wram_ndx].size = desc->len;
-      s_debugger_memory[1].parts[wram_ndx].offset = desc->start;
-      wram_ndx++;
-      wram_size += desc->len;
+      mem->parts[ndx].pointer = (uint8_t*)desc->ptr + desc->offset;
+      mem->parts[ndx].size = desc->len;
+      mem->parts[ndx].offset = desc->start;
+      ndx++;
+      size += desc->len;
     }
   }
 
@@ -317,31 +303,40 @@ static void s_debugger_getMemoryRegionsFceumm()
     }
   };
 
-  qsort(s_debugger_memory[0].parts, ram_ndx, sizeof(debugger_memory_part_t), Compare::cmp);
+  qsort(mem->parts, ndx, sizeof(debugger_memory_part_t), Compare::cmp);
+  mem->size = size;
+  mem->count = ndx;
+  mem->parts[0].offset = 0;
+
+  debugger_memory_part_t* part = &mem->parts[1];
+
+  for (unsigned i = 1; i < ndx; i++, part++)
+  {
+    part->offset = part[-1].offset + part[-1].size;
+  }
+}
+
+static void s_debugger_getMemoryRegionsFceumm()
+{
   s_debugger_memory[0].name = "ram";
-  s_debugger_memory[0].size = ram_size;
-  s_debugger_memory[0].count = ram_ndx;
-  s_debugger_memory[0].parts[0].offset = 0;
+  s_debugger_fillRegionWithRange(&s_debugger_memory[0], 0x0000, 0x0800);
 
-  for (unsigned i = 1; i < ram_ndx; i++)
-  {
-    debugger_memory_part_t* part = &s_debugger_memory[0].parts[i];
-    part[0].offset = part[-1].offset + part[-1].size;
-  }
-
-  qsort(s_debugger_memory[1].parts, wram_ndx, sizeof(debugger_memory_part_t), Compare::cmp);
   s_debugger_memory[1].name = "wram";
-  s_debugger_memory[1].size = wram_size;
-  s_debugger_memory[1].count = wram_ndx;
-  s_debugger_memory[1].parts[0].offset = 0;
-
-  for (unsigned i = 1; i < wram_ndx; i++)
-  {
-    debugger_memory_part_t* part = &s_debugger_memory[1].parts[i];
-    part[0].offset = part[-1].offset + part[-1].size;
-  }
+  s_debugger_fillRegionWithRange(&s_debugger_memory[1], 0x6000, 0x8000);
 
   s_debugger_memory_count = 2;
+}
+
+static void s_debugger_getMemoryRegionsPicoDrive()
+{
+  s_debugger_memory[0].name = "ram";
+  s_debugger_memory[0].size = s_debugger_getMemorySize(RETRO_MEMORY_SYSTEM_RAM);
+  s_debugger_memory[0].count = 1;
+  s_debugger_memory[0].parts[0].pointer = (uint8_t*)s_debugger_getMemoryData(RETRO_MEMORY_SYSTEM_RAM);
+  s_debugger_memory[0].parts[0].size = s_debugger_memory[0].size;
+  s_debugger_memory[0].parts[0].offset = 0;
+
+  s_debugger_memory_count = 1;
 }
 
 static void s_debugger_initMemoryRegions()
@@ -350,7 +345,8 @@ static void s_debugger_initMemoryRegions()
 
   switch (s_debugger_getCoreId())
   {
-  case DEBUGGER_CORE_FCEUMM: s_debugger_getMemoryRegionsFceumm(); break;
+  case DEBUGGER_CORE_FCEUMM:    s_debugger_getMemoryRegionsFceumm(); break;
+  case DEBUGGER_CORE_PICODRIVE: s_debugger_getMemoryRegionsPicoDrive(); break;
   }
 }
 
