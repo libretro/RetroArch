@@ -42,92 +42,61 @@ namespace
     }
   
   protected:
-    struct Region
-    {
-      std::string name;
-      void*       data;
-      size_t      size;
-    };
+    debugger_memory_t* _memory;
+    size_t _count;
 
-    std::vector<Region> _regions;
     int _selected;
     bool _inited;
     MemoryEditor _editor;
 
     void initRegions()
     {
-      Region region;
-
-      void*  data = s_info->coreInfo->getMemoryData(RETRO_MEMORY_SAVE_RAM);
-      size_t size = s_info->coreInfo->getMemorySize(RETRO_MEMORY_SAVE_RAM);
-
-      if (data && size)
-      {
-        region.name = "Save RAM";
-        region.data = data;
-        region.size = size;
-        _regions.push_back(region);
-      }
-
-      data = s_info->coreInfo->getMemoryData(RETRO_MEMORY_RTC);
-      size = s_info->coreInfo->getMemorySize(RETRO_MEMORY_RTC);
-
-      if (data && size)
-      {
-        region.name = "Real Time Clock";
-        region.data = data;
-        region.size = size;
-        _regions.push_back(region);
-      }
-
-      data = s_info->coreInfo->getMemoryData(RETRO_MEMORY_SYSTEM_RAM);
-      size = s_info->coreInfo->getMemorySize(RETRO_MEMORY_SYSTEM_RAM);
-
-      if (data && size)
-      {
-        region.name = "System RAM";
-        region.data = data;
-        region.size = size;
-        _regions.push_back(region);
-      }
-
-      data = s_info->coreInfo->getMemoryData(RETRO_MEMORY_VIDEO_RAM);
-      size = s_info->coreInfo->getMemorySize(RETRO_MEMORY_VIDEO_RAM);
-
-      if (data && size)
-      {
-        region.name = "Video RAM";
-        region.data = data;
-        region.size = size;
-        _regions.push_back(region);
-      }
-
-      for (unsigned i = 0;; i++)
-      {
-        const struct retro_memory_descriptor* mem = s_info->coreInfo->getMemoryMap(i);
-
-        if (!mem)
-        {
-          break;
-        }
-
-        if (mem->ptr && mem->len)
-        {
-          char name[128];
-          snprintf(name, sizeof(name), "Memory @%p", mem->start);
-
-          region.name = name;
-          region.data = (char*)mem->ptr + mem->offset;
-          region.size = mem->len;
-          _regions.push_back(region);
-        }
-      }
+      _memory = s_info->coreInfo->getMemoryRegions(&_count);
     }
 
     void create()
     {
       _selected = 0;
       _inited = false;
+
+      struct Locality
+      {
+        static unsigned char read(unsigned char* data, size_t off)
+        {
+          auto memory = (debugger_memory_t*)data;
+          auto part = memory->parts;
+          auto end = memory->parts + memory->count;
+
+          while (part < end && off >= part->size)
+          {
+            off -= part->size;
+            part++;
+          }
+
+          return part < end ? part->pointer[off] : 0;
+        }
+
+        static void write(unsigned char* data, size_t off, unsigned char d)
+        {
+          auto memory = (debugger_memory_t*)data;
+          auto part = memory->parts;
+          auto end = memory->parts + memory->count;
+
+          while (part < end && off >= part->size)
+          {
+            off -= part->size;
+            part++;
+          }
+
+          if (part < end)
+          {
+            part->pointer[off] = d;
+          }
+        }
+      };
+
+      _editor.ReadFn = Locality::read;
+      _editor.WriteFn = Locality::write;
     }
 
     bool destroy(bool force)
@@ -142,7 +111,7 @@ namespace
       {
         if (!s_info->rarchInfo->isGameLoaded())
         {
-          _regions.clear();
+          _count = 0;
           _selected = 0;
           _inited = false;
         }
@@ -156,7 +125,7 @@ namespace
         }
       }
 
-      struct Getter
+      struct Locality
       {
         static bool description(void* data, int idx, const char** out_text)
         {
@@ -166,20 +135,20 @@ namespace
           }
           else
           {
-            auto regions = (std::vector<Region>*)data;
-            *out_text = (*regions)[idx - 1].name.c_str();
+            auto memory = (const debugger_memory_t*)data;
+            *out_text = memory[idx - 1].name;
           }
 
           return true;
         }
       };
 
-      ImGui::Combo("Region", &_selected, Getter::description, (void*)&_regions, _regions.size() + 1);
+      ImGui::Combo("Region", &_selected, Locality::description, (void*)_memory, _count + 1);
 
       if (_selected != 0)
       {
-        Region* region = &_regions[_selected - 1];
-        _editor.Draw(region->name.c_str(), (unsigned char*)region->data, region->size, 0);
+        debugger_memory_t* memory = &_memory[_selected - 1];
+        _editor.Draw(memory->name, (unsigned char*)memory, memory->size);
       }
     }
   };
@@ -187,7 +156,7 @@ namespace
 
 static const debugger_plugin_t plugin =
 {
-  ICON_FA_MICROCHIP " Memory Watch",
+  ICON_FA_MICROCHIP " Memory Editor",
   MemEditor::s_create,
   MemEditor::s_destroy,
   MemEditor::s_draw
