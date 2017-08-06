@@ -92,6 +92,9 @@ static volatile bool g_draw_done = false;
 static bool              g_vsync = false;
 static uint32_t g_orientation    = 0;
 
+static uint32_t retraceCount;
+static uint32_t referenceRetraceCount;
+
 static uint8_t gx_fifo[256 * 1024] ATTRIBUTE_ALIGN(32);
 static uint8_t display_list[1024]  ATTRIBUTE_ALIGN(32);
 static size_t display_list_size;
@@ -213,9 +216,15 @@ unsigned menu_gx_resolutions[][2] = {
 
 static void retrace_callback(u32 retrace_count)
 {
+   u32 level = 0;
+
    (void)retrace_count;
+
    g_draw_done = true;
    OSSignalCond(g_video_cond);
+   _CPU_ISR_Disable(level);
+   retraceCount = retrace_count;
+   _CPU_ISR_Restore(level);
 }
 
 static bool gx_isValidXOrigin(int origin)
@@ -249,7 +258,7 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    VIDEO_SetPostRetraceCallback(NULL);
    g_draw_done = false;
    /* wait for next even field */
-   /* this prevents screen artefacts when switching 
+   /* this prevents screen artifacts when switching 
     * between interlaced & non-interlaced modes */
    do VIDEO_WaitVSync();
    while (!VIDEO_GetNextField());
@@ -293,13 +302,13 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
          max_height = VI_MAX_HEIGHT_MPAL;
          break;
       case VI_EURGB60:
-         max_width = VI_MAX_WIDTH_NTSC;
-         max_height = VI_MAX_HEIGHT_NTSC;
+         max_width = VI_MAX_WIDTH_EURGB60;
+         max_height = VI_MAX_HEIGHT_EURGB60;
          break;
       default:
          tvmode = VI_NTSC;
-         max_width = VI_MAX_WIDTH_EURGB60;
-         max_height = VI_MAX_HEIGHT_EURGB60;
+         max_width = VI_MAX_WIDTH_NTSC;
+         max_height = VI_MAX_HEIGHT_NTSC;
          break;
    }
 
@@ -575,6 +584,10 @@ static void init_vtx(void *data, const video_info_t *video)
 {
    Mtx44 m;
    gx_video_t *gx = (gx_video_t*)data;
+   u32 level      = 0;
+   _CPU_ISR_Disable(level);
+   referenceRetraceCount = retraceCount;
+   _CPU_ISR_Restore(level);
 
    GX_SetCullMode(GX_CULL_NONE);
    GX_SetClipMode(GX_CLIP_DISABLE);
@@ -1440,6 +1453,7 @@ static bool gx_frame(void *data, const void *frame,
    char fps_text_buf[128];
    gx_video_t *gx                     = (gx_video_t*)data;
    u8                       clear_efb = GX_FALSE;
+   u32 level                          = 0;
 
    fps_text_buf[0]                    = '\0';
 
@@ -1524,6 +1538,12 @@ static bool gx_frame(void *data, const void *frame,
       gx_render_overlay(gx);
 #endif
 
+   _CPU_ISR_Disable(level);
+   if (referenceRetraceCount > retraceCount)
+      VIDEO_WaitVSync();
+   referenceRetraceCount = retraceCount;
+   _CPU_ISR_Restore(level);
+
    GX_DrawDone();
 
    if (video_info->fps_show)
@@ -1563,6 +1583,10 @@ static bool gx_frame(void *data, const void *frame,
    GX_Flush();
    VIDEO_SetNextFramebuffer(gx->framebuf[g_current_framebuf]);
    VIDEO_Flush();
+
+   CPU_ISR_Disable(level);
+   ++referenceRetraceCount;
+   _CPU_ISR_Restore(level);
 
    return true;
 }
