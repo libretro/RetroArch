@@ -2328,7 +2328,7 @@ static void xmb_draw_items(
 
          label_offset      = - xmb->margins.label.top;
 
-         word_wrap(entry_sublabel, entry.sublabel, 50);
+         word_wrap(entry_sublabel, entry.sublabel, 50, true);
 
          xmb_draw_text(menu_disp_info, xmb, entry_sublabel,
                node->x + xmb->margins.screen.left +

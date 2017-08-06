@@ -24,6 +24,7 @@
 #include <ctype.h>
 
 #include <string/stdstring.h>
+#include <encodings/utf.h>
 
 char *string_to_upper(char *s)
 {
@@ -144,7 +145,7 @@ char *string_trim_whitespace(char *const s)
    return s;
 }
 
-char *word_wrap(char* buffer, const char *string, int line_width)
+char *word_wrap(char* buffer, const char *string, int line_width, bool unicode)
 {
    unsigned i   = 0;
    unsigned len = (unsigned)strlen(string);
@@ -156,20 +157,34 @@ char *word_wrap(char* buffer, const char *string, int line_width)
       /* copy string until the end of the line is reached */
       for (counter = 1; counter <= (unsigned)line_width; counter++)
       {
+         const char *character;
+         unsigned char_len;
+         unsigned j = i;
+
+         character = utf8skip(&string[i], 1);
+         char_len = character - &string[i];
+
          /* check if end of string reached */
-         if (i == strlen(string))
+         if (i == len)
          {
             buffer[i] = 0;
             return buffer;
          }
 
-         buffer[i] = string[i];
+         if (!unicode)
+            counter += char_len - 1;
+
+         do
+         {
+            buffer[i] = string[i];
+            char_len--;
+            i++;
+         } while(char_len);
 
          /* check for newlines embedded in the original input
           * and reset the index */
-         if (buffer[i] == '\n')
+         if (buffer[j] == '\n')
             counter = 1;
-         i++;
       }
 
       /* check for whitespace */
