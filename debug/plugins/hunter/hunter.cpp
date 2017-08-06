@@ -27,24 +27,6 @@ static const debugger_t* s_info;
 
 namespace
 {
-  enum
-  {
-    CORE_FCEUMM    = 0xb00bd8c2U,
-    CORE_PICODRIVE = 0x0cc11b6aU
-  };
-
-  uint32_t djb2(const char* str)
-  {
-    uint32_t hash = 5381;                
-                                        
-    while (*str)                       
-    {                                    
-      hash = hash * 33 + (uint8_t)*str++;
-    }                                    
-                                        
-    return hash;                         
-  }
-
   class Hunter
   {
   public:
@@ -75,13 +57,6 @@ namespace
     }
   
   protected:
-    struct Region
-    {
-      std::string name;
-      void*       data;
-      size_t      size;
-    };
-
     struct Snapshot
     {
       char     name[64];
@@ -103,152 +78,62 @@ namespace
     unsigned _temp;
     bool     _cheevosMode;
 
-    std::vector<Region> _regions;
-    int _regsel;
+    debugger_memory_t* _regions;
+    unsigned _regionsCount;
+    int _regionsSel;
 
     std::vector<Snapshot> _snapshots;
-    int _snapsel;
-    int _snapsel1;
-    int _snapsel2;
 
-    int _opsel;
-    int _sizesel;
+    int _snapsCmpSel1;
+    int _snapsCmpSel2;
+    int _snapsCmpOp;
+    int _snapsCmpSize;
+
+    int _snapCmpSel;
+    int _snapCmpOp;
+    int _snapCmpSize;
 
     char _value[64];
 
     std::vector<Filter> _filters;
 
-    int _filter1;
-    int _filter2;
-    int _opsel2;
-    int _opsel3;
-    int _sizesel3;
+    int _filtersCmpSel1;
+    int _filtersCmpSel2;
+    int _filtersCmpOp;
 
-    void initRegions()
-    {
-      Region region;
-
-      void*  data = s_info->coreInfo->getMemoryData(RETRO_MEMORY_SAVE_RAM);
-      size_t size = s_info->coreInfo->getMemorySize(RETRO_MEMORY_SAVE_RAM);
-
-      if (data && size)
-      {
-        region.name = "Save RAM";
-        region.data = data;
-        region.size = size;
-        _regions.push_back(region);
-      }
-
-      data = s_info->coreInfo->getMemoryData(RETRO_MEMORY_RTC);
-      size = s_info->coreInfo->getMemorySize(RETRO_MEMORY_RTC);
-
-      if (data && size)
-      {
-        region.name = "Real Time Clock";
-        region.data = data;
-        region.size = size;
-        _regions.push_back(region);
-      }
-
-      data = s_info->coreInfo->getMemoryData(RETRO_MEMORY_SYSTEM_RAM);
-      size = s_info->coreInfo->getMemorySize(RETRO_MEMORY_SYSTEM_RAM);
-
-      if (data && size)
-      {
-        region.name = "System RAM";
-        region.data = data;
-        region.size = size;
-        _regions.push_back(region);
-      }
-
-      data = s_info->coreInfo->getMemoryData(RETRO_MEMORY_VIDEO_RAM);
-      size = s_info->coreInfo->getMemorySize(RETRO_MEMORY_VIDEO_RAM);
-
-      if (data && size)
-      {
-        region.name = "Video RAM";
-        region.data = data;
-        region.size = size;
-        _regions.push_back(region);
-      }
-
-      for (unsigned i = 0;; i++)
-      {
-        const struct retro_memory_descriptor* mem = s_info->coreInfo->getMemoryMap(i);
-
-        if (!mem)
-        {
-          break;
-        }
-
-        if (mem->ptr && mem->len)
-        {
-          char name[128];
-          snprintf(name, sizeof(name), "Memory @%p", (void*)(uintptr_t)mem->start);
-
-          region.name = name;
-          region.data = (char*)mem->ptr + mem->offset;
-          region.size = mem->len;
-          _regions.push_back(region);
-        }
-      }
-    }
-
-    void createSnapshot(bool cheevosMode, const std::vector<Region>& regions, int regsel)
+    void createSnapshot()
     {
       Snapshot snap;
       snprintf(snap.name, sizeof(snap.name), "Snapshot %u", _temp++);
       snap.count = 0;
       snap.sizes = 0;
 
-      if (!cheevosMode)
+      if (!_cheevosMode)
       {
-        if (snap.count < sizeof(snap.blocks) / sizeof(snap.blocks[0]))
+        debugger_memory_part_t* part = _regions[_regionsSel].parts;
+
+        for (unsigned i = 0; i < _regions[_regionsSel].count; i++, part++)
         {
-          Block* block = &snap.blocks[snap.count++];
-          block->init(0, regions[regsel].size, (uint8_t*)regions[regsel].data);
+          if (snap.count < sizeof(snap.blocks) / sizeof(snap.blocks[0]))
+          {
+            Block* block = &snap.blocks[snap.count++];
+            block->init(0, part->size, part->pointer);
+          }
         }
       }
       else
       {
-        uint32_t hash = djb2(s_info->coreInfo->getSystemInfo()->library_name);
-
-        switch (hash)
+        for (unsigned i = 0; i < _regionsCount; i++)
         {
-        case CORE_FCEUMM:
+          debugger_memory_part_t* part = _regions[i].parts;
+
+          for (unsigned j = 0; j < _regions[i].count; j++, part++)
           {
-            for (unsigned i = 0;; i++)
+            if (snap.count < sizeof(snap.blocks) / sizeof(snap.blocks[0]))
             {
-              const struct retro_memory_descriptor* mem = s_info->coreInfo->getMemoryMap(i);
-
-              if (!mem)
-              {
-                break;
-              }
-
-              if (mem->ptr && mem->len)
-              {
-                if (snap.count < sizeof(snap.blocks) / sizeof(snap.blocks[0]))
-                {
-                  Block* block = &snap.blocks[snap.count++];
-                  block->init(mem->start, mem->len, (uint8_t*)mem->ptr + mem->offset);
-                  snap.sizes += block->size();
-                }
-              }
+              Block* block = &snap.blocks[snap.count++];
+              block->init(0, part->size, part->pointer);
             }
-
-            break;
-          }
-        
-        case CORE_PICODRIVE:
-          {
-            void* data = s_info->coreInfo->getMemoryData(RETRO_MEMORY_SYSTEM_RAM);
-            size_t size = s_info->coreInfo->getMemorySize(RETRO_MEMORY_SYSTEM_RAM);
-
-            Block* block = &snap.blocks[snap.count++];
-            block->init(0xff0000, size, (uint8_t*)data);
-
-            break;
           }
         }
       }
@@ -258,7 +143,7 @@ namespace
 
     bool getValue(uint64_t* value)
     {
-      bool valid = _snapsel != 0 && _value[0] != 0;
+      bool valid = _snapCmpSel != 0 && _value[0] != 0;
       *value = 0;
 
       if (_value[0] == '0' && _value[1] == 'b')
@@ -307,7 +192,7 @@ namespace
         }
       }
 
-      switch (_sizesel)
+      switch (_snapCmpSize)
       {
       case 0: valid = valid && *value <= 0xff; break;
       case 1: // fallthrough
@@ -345,17 +230,17 @@ namespace
 
     void createFilterFromSnapshot(uint64_t value)
     {
-      Snapshot* snap = &_snapshots[_snapsel - 1];
+      Snapshot* snap = &_snapshots[_snapCmpSel - 1];
 
       Filter filter;
       filter.count = 0;
       filter.total = 0;
       filter.sizes = 0;
 
-      switch (_opsel)
+      switch (_snapCmpOp)
       {
       case 0:
-        switch (_sizesel)
+        switch (_snapCmpSize)
         {
         FILTERS_FROM_SNAP(eq)
         case  7: FILTER_FROM_SNAP(bit<0>)
@@ -370,14 +255,14 @@ namespace
 
         break;
 
-      case 1: switch (_sizesel) { FILTERS_FROM_SNAP(ne) } break;
-      case 2: switch (_sizesel) { FILTERS_FROM_SNAP(lt) } break;
-      case 3: switch (_sizesel) { FILTERS_FROM_SNAP(le) } break;
-      case 4: switch (_sizesel) { FILTERS_FROM_SNAP(gt) } break;
-      case 5: switch (_sizesel) { FILTERS_FROM_SNAP(ge) } break;
+      case 1: switch (_snapCmpSize) { FILTERS_FROM_SNAP(ne) } break;
+      case 2: switch (_snapCmpSize) { FILTERS_FROM_SNAP(lt) } break;
+      case 3: switch (_snapCmpSize) { FILTERS_FROM_SNAP(le) } break;
+      case 4: switch (_snapCmpSize) { FILTERS_FROM_SNAP(gt) } break;
+      case 5: switch (_snapCmpSize) { FILTERS_FROM_SNAP(ge) } break;
       }
 
-      snprintf(filter.name, sizeof(filter.name), "((%s) %s %" PRIu64 " (%s)) (%" PRIu64 " hits)", snap->name, operatorNames[_opsel], value, sizeNames[_sizesel], filter.total);
+      snprintf(filter.name, sizeof(filter.name), "((%s) %s %" PRIu64 " (%s)) (%" PRIu64 " hits)", snap->name, operatorNames[_snapCmpOp], value, sizeNames[_snapCmpSize], filter.total);
       _filters.push_back(filter);
     }
 
@@ -404,25 +289,25 @@ namespace
 
     void createFilterFromSnapshots()
     {
-      Snapshot* snap1 = &_snapshots[_snapsel1 - 1];
-      Snapshot* snap2 = &_snapshots[_snapsel2 - 1];
+      Snapshot* snap1 = &_snapshots[_snapsCmpSel1 - 1];
+      Snapshot* snap2 = &_snapshots[_snapsCmpSel2 - 1];
 
       Filter filter;
       filter.count = 0;
       filter.total = 0;
       filter.sizes = 0;
 
-      switch (_opsel3)
+      switch (_snapsCmpOp)
       {
-      case 0: switch (_sizesel3) { FILTERS_FROM_SNAPS(eq) } break;
-      case 1: switch (_sizesel3) { FILTERS_FROM_SNAPS(ne) } break;
-      case 2: switch (_sizesel3) { FILTERS_FROM_SNAPS(lt) } break;
-      case 3: switch (_sizesel3) { FILTERS_FROM_SNAPS(le) } break;
-      case 4: switch (_sizesel3) { FILTERS_FROM_SNAPS(gt) } break;
-      case 5: switch (_sizesel3) { FILTERS_FROM_SNAPS(ge) } break;
+      case 0: switch (_snapsCmpSize) { FILTERS_FROM_SNAPS(eq) } break;
+      case 1: switch (_snapsCmpSize) { FILTERS_FROM_SNAPS(ne) } break;
+      case 2: switch (_snapsCmpSize) { FILTERS_FROM_SNAPS(lt) } break;
+      case 3: switch (_snapsCmpSize) { FILTERS_FROM_SNAPS(le) } break;
+      case 4: switch (_snapsCmpSize) { FILTERS_FROM_SNAPS(gt) } break;
+      case 5: switch (_snapsCmpSize) { FILTERS_FROM_SNAPS(ge) } break;
       }
 
-      snprintf(filter.name, sizeof(filter.name), "((%s) %s (%s) (%s)) (%" PRIu64 " hits)", snap1->name, operatorNames[_opsel3], snap2->name, sizeNames[_sizesel3], filter.total);
+      snprintf(filter.name, sizeof(filter.name), "((%s) %s (%s) (%s)) (%" PRIu64 " hits)", snap1->name, operatorNames[_snapsCmpOp], snap2->name, sizeNames[_snapsCmpSize], filter.total);
       _filters.push_back(filter);
     }
 
@@ -438,15 +323,15 @@ namespace
 
     void createFilterFromFilters()
     {
-      Filter* filter1 = &_filters[_filter1 - 1];
-      Filter* filter2 = _filter2 == 0 ? nullptr : &_filters[_filter2 - 1];
+      Filter* filter1 = &_filters[_filtersCmpSel1 - 1];
+      Filter* filter2 = _filtersCmpSel2 == 0 ? nullptr : &_filters[_filtersCmpSel2 - 1];
 
       Filter filter;
       filter.count = 0;
       filter.total = 0;
       filter.sizes = 0;
       
-      switch (_opsel2)
+      switch (_filtersCmpOp)
       {
       case 0: FILTER_FROM_FILTERS(intersection);
       case 1: FILTER_FROM_FILTERS(union_);
@@ -464,7 +349,7 @@ namespace
         break;
       }
 
-      switch (_opsel2)
+      switch (_filtersCmpOp)
       {
       case 0: snprintf(filter.name, sizeof(filter.name), "((%s) * (%s)) (%" PRIu64 " hits)", filter1->name, filter2->name, filter.total); break;
       case 1: snprintf(filter.name, sizeof(filter.name), "((%s) + (%s)) (%" PRIu64 " hits)", filter1->name, filter2->name, filter.total); break;
@@ -490,19 +375,19 @@ namespace
           {
             static bool description(void* data, int idx, const char** out_text)
             {
-              auto regions = (std::vector<Region>*)data;
-              *out_text = (*regions)[idx].name.c_str();
+              auto mem = (const debugger_memory_t*)data;
+              *out_text = mem[idx].name;
               return true;
             }
           };
 
           ImGui::Separator();
-          ImGui::Combo("Region", &_regsel, Getter::description, (void*)&_regions, _regions.size());
+          ImGui::Combo("Region", &_regionsSel, Getter::description, (void*)_regions, _regionsCount);
         }
 
         if (ImGui::Button(ICON_FA_PLUS " Create snapshot"))
         {
-          createSnapshot(_cheevosMode, _regions, _regsel);
+          createSnapshot();
         }
 
         ImGui::Separator();
@@ -523,7 +408,9 @@ namespace
             }
 
             it = _snapshots.erase(it);
-            _snapsel = 0;
+            _snapCmpSel = 0;
+            _snapsCmpSel1 = 0;
+            _snapsCmpSel2 = 0;
           }
           else
           {
@@ -559,17 +446,17 @@ namespace
         }
       };
 
-      ImGui::Combo("Snapshot", &_snapsel, Getter::description, (void*)&_snapshots, _snapshots.size() + 1);
-      ImGui::Combo("Operator", &_opsel, operatorNames, sizeof(operatorNames) / sizeof(operatorNames[0]));
+      ImGui::Combo("Snapshot", &_snapCmpSel, Getter::description, (void*)&_snapshots, _snapshots.size() + 1);
+      ImGui::Combo("Operator", &_snapCmpOp, operatorNames, sizeof(operatorNames) / sizeof(operatorNames[0]));
 
-      int max = sizeof(sizeNames) / sizeof(sizeNames[0]) - 8 * (_opsel > 0);
+      int max = sizeof(sizeNames) / sizeof(sizeNames[0]) - 8 * (_snapCmpOp > 0);
 
-      if (_sizesel >= max)
+      if (_snapCmpSize >= max)
       {
-        _sizesel = 0;
+        _snapCmpSize = 0;
       }
 
-      ImGui::Combo("Operand size", &_sizesel, sizeNames, max);
+      ImGui::Combo("Operand size", &_snapCmpSize, sizeNames, max);
       ImGui::InputText("Value", _value, sizeof(_value));
 
       uint64_t value;
@@ -605,16 +492,16 @@ namespace
         }
       };
       
-      ImGui::Combo("1st Snapshot", &_snapsel1, Getter::description, (void*)&_snapshots, _snapshots.size() + 1);
-      ImGui::Combo("Operator", &_opsel3, operatorNames, sizeof(operatorNames) / sizeof(operatorNames[0]));
-      ImGui::Combo("2nd Snapshot", &_snapsel2, Getter::description, (void*)&_snapshots, _snapshots.size() + 1);
+      ImGui::Combo("1st Snapshot", &_snapsCmpSel1, Getter::description, (void*)&_snapshots, _snapshots.size() + 1);
+      ImGui::Combo("Operator", &_snapsCmpOp, operatorNames, sizeof(operatorNames) / sizeof(operatorNames[0]));
+      ImGui::Combo("2nd Snapshot", &_snapsCmpSel2, Getter::description, (void*)&_snapshots, _snapshots.size() + 1);
 
-      bool valid = _snapsel1 != 0 && _snapsel2 != 0;
+      bool valid = _snapsCmpSel1 != 0 && _snapsCmpSel2 != 0;
 
       if (valid)
       {
-        Snapshot* snap1 = &_snapshots[_snapsel1 - 1];
-        Snapshot* snap2 = &_snapshots[_snapsel2 - 1];
+        Snapshot* snap1 = &_snapshots[_snapsCmpSel1 - 1];
+        Snapshot* snap2 = &_snapshots[_snapsCmpSel2 - 1];
 
         valid = valid && snap1->count == snap2->count;
 
@@ -654,22 +541,22 @@ namespace
         }
       };
 
-      ImGui::Combo("1st Filter", &_filter1, Getter::description, (void*)&_filters, _filters.size() + 1);
+      ImGui::Combo("1st Filter", &_filtersCmpSel1, Getter::description, (void*)&_filters, _filters.size() + 1);
 
       static const char* operators2[] = {
         "Intersection", "Union", "Difference", "Complement"
       };
 
-      ImGui::Combo("Operator", &_opsel2, operators2, sizeof(operators2) / sizeof(operators2[0]));
-      ImGui::Combo("2nd Filter", &_filter2, Getter::description, (void*)&_filters, _filters.size() + 1);
+      ImGui::Combo("Operator", &_filtersCmpOp, operators2, sizeof(operators2) / sizeof(operators2[0]));
+      ImGui::Combo("2nd Filter", &_filtersCmpSel2, Getter::description, (void*)&_filters, _filters.size() + 1);
 
-      bool valid = _filter1 != 0;
-      valid = valid && ((_opsel2 != 3 && _filter2 != 0) || (_opsel2 == 3 && _filter2 == 0));
+      bool valid = _filtersCmpSel1 != 0;
+      valid = valid && ((_filtersCmpOp != 3 && _filtersCmpSel2 != 0) || (_filtersCmpOp == 3 && _filtersCmpSel2 == 0));
 
-      if (valid && _opsel2 != 3)
+      if (valid && _filtersCmpOp != 3)
       {
-        Filter* filter1 = _filter1 == 0 ? nullptr : &_filters[_filter1 - 1];
-        Filter* filter2 = _filter2 == 0 ? nullptr : &_filters[_filter2 - 1];
+        Filter* filter1 = _filtersCmpSel1 == 0 ? nullptr : &_filters[_filtersCmpSel1 - 1];
+        Filter* filter2 = _filtersCmpSel2 == 0 ? nullptr : &_filters[_filtersCmpSel2 - 1];
 
         valid = valid && filter1->count == filter2->count;
 
@@ -707,6 +594,8 @@ namespace
           }
 
           it = _filters.erase(it);
+          _filtersCmpSel1 = 0;
+          _filtersCmpSel2 = 0;
         }
         else
         {
@@ -741,19 +630,19 @@ namespace
 
     void clear()
     {
-      _regions.clear();
-      _regsel = 0;
+      _regionsCount = 0;
+      _regionsSel = 0;
       _snapshots.clear();
-      _snapsel = 0;
-      _snapsel1 = 0;
-      _snapsel2 = 0;
-      _opsel = 0;
-      _sizesel = 0;
-      _sizesel3 = 0;
-      _filter1 = 0;
-      _filter2 = 0;
-      _opsel2 = 0;
-      _opsel3 = 0;
+      _snapCmpSel = 0;
+      _snapCmpOp = 0;
+      _snapCmpSize = 0;
+      _snapsCmpSel1 = 0;
+      _snapsCmpSel2 = 0;
+      _snapsCmpOp = 0;
+      _snapsCmpSize = 0;
+      _filtersCmpSel1 = 0;
+      _filtersCmpSel2 = 0;
+      _filtersCmpOp = 0;
       _inited = false;
     }
 
@@ -784,7 +673,7 @@ namespace
       {
         if (s_info->rarchInfo->isGameLoaded())
         {
-          initRegions();
+          _regions = s_info->coreInfo->getMemoryRegions(&_regionsCount);
           _inited = true;
         }
       }
