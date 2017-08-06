@@ -523,13 +523,13 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
       "Abilita cronologia")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
-      "Cronologia scheda")
+      "Cronologia")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU,
       "Menú orizzontale")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
-      "Image")
+      "Immagini")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INFORMATION,
-      "Information")
+      "Informazioni")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
       "Informazioni")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
@@ -1155,7 +1155,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SECONDS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS,
       "Settaggi")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
-      "Settaggi scheda")
+      "Impostazioni")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER,
       "Shader")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
@@ -1663,9 +1663,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY,
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_LAN_SCAN_SETTINGS,
       "Cerca e connetti all' host netplay sulla rete locale.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
-      "Visualizzare le informazioni dei core, di rete e di sistema.")
+      "Visualizza le informazioni dei core, di rete e di sistema.")
 MSG_HASH(MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
-      "Scarica i componenti aggiuntivi, i componenti e il contenuto di RetroArch.")
+      "Scarica i componenti aggiuntivi e il contenuto di RetroArch.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAMBA_ENABLE,
       "Attiva o disattiva la condivisione di rete delle cartelle.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SERVICES_SETTINGS,
@@ -1689,7 +1689,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
       "Indica al driver video di utilizzare esplicitamente una modalità di buffering specifica.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
-      "Seleziona quale schermo da utilizzare.")
+      "Seleziona lo schermo da utilizzare.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
       "La stima precisa di aggiornamento dello schermo in Hz.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
@@ -1741,7 +1741,7 @@ MSG_HASH(MSG_CONTENT_CRC32S_DIFFER,
 MSG_HASH(MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT,
       "Content loading skipped. Implementation will load it on its own.")
 MSG_HASH(MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
-      "Core does not support save states.")
+      "Il Core non supporta gli salva stati.")
 MSG_HASH(MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
       "Il file delle opzioni dei core è stato creato correttamente.")
 MSG_HASH(MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER,
@@ -1771,7 +1771,7 @@ MSG_HASH(MSG_DETECTED_VIEWPORT_OF,
 MSG_HASH(MSG_DID_NOT_FIND_A_VALID_CONTENT_PATCH,
       "Did not find a valid content patch.")
 MSG_HASH(MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
-      "Disconnect device from a valid port.")
+      "Scollegare il dispositivo da una porta valida.")
 MSG_HASH(MSG_DISK_CLOSED,
       "Chiuso")
 MSG_HASH(MSG_DISK_EJECTED,
@@ -1861,13 +1861,13 @@ MSG_HASH(MSG_FAILED_TO_SEND_NICKNAME_TO_HOST,
 MSG_HASH(MSG_FAILED_TO_SEND_SRAM_DATA_TO_CLIENT,
       "Failed to send SRAM data to client.")
 MSG_HASH(MSG_FAILED_TO_START_AUDIO_DRIVER,
-      "Failed to start audio driver. Will continue without audio.")
+      "Impossibile avviare il driver audio. Continuerà senza audio.")
 MSG_HASH(MSG_FAILED_TO_START_MOVIE_RECORD,
-      "Failed to start movie record.")
+      "Impossibile avviare una registrazione di un filmato.")
 MSG_HASH(MSG_FAILED_TO_START_RECORDING,
-      "Failed to start recording.")
+      "Impossibile avviare la registrazione.")
 MSG_HASH(MSG_FAILED_TO_TAKE_SCREENSHOT,
-      "Failed to take screenshot.")
+      "Impossibile eseguire lo screenshot.")
 MSG_HASH(MSG_FAILED_TO_UNDO_LOAD_STATE,
       "Failed to undo load state.")
 MSG_HASH(MSG_FAILED_TO_UNDO_SAVE_STATE,
@@ -1875,7 +1875,7 @@ MSG_HASH(MSG_FAILED_TO_UNDO_SAVE_STATE,
 MSG_HASH(MSG_FAILED_TO_UNMUTE_AUDIO,
       "Failed to unmute audio.")
 MSG_HASH(MSG_FATAL_ERROR_RECEIVED_IN,
-      "Fatal error received in")
+      "Errore irreversibile ricevuto su")
 MSG_HASH(MSG_FILE_NOT_FOUND,
       "File non trovato")
 MSG_HASH(MSG_FOUND_AUTO_SAVESTATE_IN,
@@ -1915,7 +1915,7 @@ MSG_HASH(MSG_INTERFACE,
 MSG_HASH(MSG_INTERNAL_STORAGE,
       "Memoria interna")
 MSG_HASH(MSG_REMOVABLE_STORAGE,
-      "Removable Storage")
+      "Dispositivi di memoria rimovibili")
 MSG_HASH(MSG_INVALID_NICKNAME_SIZE,
       "Dimensione del nickname non valido.")
 MSG_HASH(MSG_IN_BYTES,
@@ -1935,7 +1935,7 @@ MSG_HASH(MSG_LOADED_STATE_FROM_SLOT_AUTO,
 MSG_HASH(MSG_LOADING,
       "Caricamento")
 MSG_HASH(MSG_FIRMWARE,
-      "One or more firmware files are missing")
+      "Uno o più file del firmware sono mancanti")
 MSG_HASH(MSG_LOADING_CONTENT_FILE,
       "Loading content file")
 MSG_HASH(MSG_LOADING_HISTORY_FILE,
@@ -2017,7 +2017,7 @@ MSG_HASH(MSG_SAVED_STATE_TO_SLOT,
 MSG_HASH(MSG_SAVED_STATE_TO_SLOT_AUTO,
       "Saved state to slot #-1 (auto).")
 MSG_HASH(MSG_SAVED_SUCCESSFULLY_TO,
-      "Saved successfully to")
+      "Salvato con successo su")
 MSG_HASH(MSG_SAVING_RAM_TYPE,
       "Saving RAM type")
 MSG_HASH(MSG_SAVING_STATE,
@@ -2051,7 +2051,7 @@ MSG_HASH(MSG_STATE_SIZE,
 MSG_HASH(MSG_STATE_SLOT,
       "State slot")
 MSG_HASH(MSG_TAKING_SCREENSHOT,
-      "Taking screenshot.")
+      "Cattura screenshot.")
 MSG_HASH(MSG_TO,
       "to")
 MSG_HASH(MSG_UNDID_LOAD_STATE,
@@ -2065,7 +2065,7 @@ MSG_HASH(MSG_UNPAUSED,
 MSG_HASH(MSG_UNRECOGNIZED_COMMAND,
       "Unrecognized command")
 MSG_HASH(MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
-      "Using core name for new config.")
+      "Utilizzo del core di base per la nuova configurazione.")
 MSG_HASH(MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED,
       "Using libretro dummy core. Skipping recording.")
 MSG_HASH(MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT,
@@ -2184,11 +2184,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DEVELOPER,
-   "Database - Filter : Developer"
+   "Database - Filtro : Developer"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_PUBLISHER,
-   "Database - Filter : Publisher"
+   "Database - Filtro : Publisher"
    )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISABLED,
       "Disattivato")
@@ -2295,19 +2295,25 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
-      "Audio Mixer Volume Level (dB)"
+      "Audio Mixer Livello del Volume (dB)"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
-      "Audio Mixer Mute"
+      "Audio Mixer Muto"
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
-      "Mute/unmute mixer audio.")
+      "Muto/disattiva muto sul mixer audio.")
 MSG_HASH(MENU_ENUM_LABEL_MENU_SHOW_ONLINE_UPDATER,
-      "Show Online Updater")
+      "Visualizza Online Updater")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
-      "Show/hide the 'Online Updater' option.")
+      "Visualizza/Nascondi l'opzione 'Online Updater'.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
-      "Show Core Updater")
+      "Visualizza Core Updater")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
-      "Show/hide the ability to update cores (and core info files).")
+      "Visualizza/Nascondi l'abilità di aggiornare i core (e i file di informazione dei core).")
+MSG_HASH(MENU_ENUM_SUBLABEL_CORE_LIST,
+         "Seleziona quale core utilizzare.")
+   MSG_HASH(MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
+      "Seleziona quale contenuto avviare.")
+   MSG_HASH(MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
+      "Permette di uscire dal programma.")
