@@ -1683,19 +1683,19 @@ static void frontend_unix_get_env(int *argc,
                case INTERNAL_STORAGE_WRITABLE:
 
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SRAM],
-                        internal_storage_path, "saves",
+                        internal_storage_path, "RetroArch/saves",
                         sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE],
-                        internal_storage_path, "states",
+                        internal_storage_path, "RetroArch/states",
                         sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
-                        internal_storage_path, "system",
+                        internal_storage_path, "RetroArch/system",
                         sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
-                        internal_storage_path, "screenshots",
+                        internal_storage_path, "RetroArch/screenshots",
                         sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS],
-                        internal_storage_path, "downloads",
+                        internal_storage_path, "RetroArch/downloads",
                         sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
 
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
