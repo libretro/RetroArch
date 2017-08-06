@@ -159,7 +159,7 @@ MSG_HASH(
       "Password"
       )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
-      "Obiettivi dell'account")
+      "Accounts Cheevos")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME,
       "Nome utente")
 MSG_HASH(
@@ -181,7 +181,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
       "Carica Configurazione")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TAB,
-      "Aggiungi scheda")
+      "Scansione/Aggiungi directory")
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
       "Stanze Netplay "
@@ -462,7 +462,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DONT_CARE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
       "Scarica sulle directories")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
-      "Download Core...")
+      "Scarica Core...")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
       "Scarica contenuto")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_ENABLE,
@@ -1119,9 +1119,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
       "Cataloga automaticamente gli stati di salvataggio")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-      "Carica automaticamente gli stati di salvataggio")
+      "Carica automaticamente i salvataggi")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
-      "Salva stato automaticamente")
+      "Salva stato automatico")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
       "Directory degli stati di salvataggio")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
@@ -1139,11 +1139,11 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_STATE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
       "Salvataggi")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY,
-      "Scansiona directory")
+      "Scansione delle directory")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SCAN_FILE,
       "Scansione dei file")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY,
-      "<Scansiona questa directory>")
+      "<Effettua la scansione di questa directory>")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
       "Directory delle screenshot")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
@@ -2313,7 +2313,39 @@ MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
       "Visualizza/Nascondi l'abilità di aggiornare i core (e i file di informazione dei core).")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_LIST,
          "Seleziona quale core utilizzare.")
-   MSG_HASH(MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
+MSG_HASH(MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
       "Seleziona quale contenuto avviare.")
-   MSG_HASH(MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
+MSG_HASH(MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
       "Permette di uscire dal programma.")
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_DRIVER,
+      "Driver di input da utilizzare. A seconda del driver video, potrebbe forzare un diverso driver di input.")
+MSG_HASH(MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
+      "I driver del Joypad da utilizzare")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
+      "I driver video da utilizzare.")
+MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
+      "I driver audio da utilizzare.")
+MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
+      "I driver di riprogrammazione audio da utilizzare.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
+      "I driver della fotocamera da utilizzare.")
+MSG_HASH(MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
+      "Posizione dei driver da utilizzare.")
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_DRIVER,
+      "I driver del menu da utilizzare.")
+MSG_HASH(MENU_ENUM_SUBLABEL_RECORD_DRIVER,
+      "I driver per la registrazione da utilizzare.")
+MSG_HASH(MENU_ENUM_SUBLABEL_WIFI_DRIVER,
+      "I driver WiFi da utilizzare.")
+MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
+      "Effettua la scansione di una directory per i file compatibili e li aggiunge alla raccolta.")
+MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_FILE,
+      "Esegue la scansione di un file compatibile e li aggiunge alla raccolta.")
+   MSG_HASH(MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
+      "Mostra le interfacce di rete e gli indirizzi IP associati.")
+MSG_HASH(MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
+      "Mostra le informazioni specifiche del dispositivo.")
+MSG_HASH(MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
+      "Visualizza i database.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
+      "Visualizza le ricerche precedenti")
