@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2014-2017 - Jean-André Santoni
+ *  Copyright (C) 2015-2017 - Andrés Suárez
  *  Copyright (C) 2016-2017 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -3371,6 +3372,24 @@ static int menu_displaylist_parse_options_remappings(
          msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME),
          MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME,
          MENU_SETTING_ACTION, 0, 0);
+
+   if (rarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL))
+   {
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE),
+            msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CORE),
+            MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CORE,
+            MENU_SETTING_ACTION, 0, 0);
+   }
+
+   if (rarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
+   {
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME),
+            msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME),
+            MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME,
+            MENU_SETTING_ACTION, 0, 0);
+   }
 
    system    = runloop_get_system_info();
 

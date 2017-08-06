@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2015-2017 - Andrés Suárez
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -22,6 +23,9 @@
 #include "input_remapping.h"
 #include "../configuration.h"
 #include "../retroarch.h"
+
+static unsigned old_analog_dpad_mode[MAX_USERS];
+static unsigned old_libretro_device[MAX_USERS];
 
 /**
  * input_remapping_load_file:
@@ -46,6 +50,9 @@ bool input_remapping_load_file(void *data, const char *path)
 
    for (i = 0; i < MAX_USERS; i++)
    {
+      old_analog_dpad_mode[i] = settings->uints.input_analog_dpad_mode[i];
+      old_libretro_device[i] = settings->uints.input_libretro_device[i];
+
       char buf[64];
       char key_ident[RARCH_FIRST_CUSTOM_BIND + 4][128]   = {{0}};
       char key_strings[RARCH_FIRST_CUSTOM_BIND + 4][128] =
@@ -82,6 +89,12 @@ bool input_remapping_load_file(void *data, const char *path)
             settings->uints.input_remap_ids[i][RARCH_FIRST_CUSTOM_BIND + j] =
                key_remap;
       }
+
+      snprintf(buf, sizeof(buf), "input_player%u_analog_dpad_mode", i + 1);
+      CONFIG_GET_INT_BASE(conf, settings, uints.input_analog_dpad_mode[i], buf);
+
+      snprintf(buf, sizeof(buf), "input_libretro_device_p%u", i + 1);
+      CONFIG_GET_INT_BASE(conf, settings, uints.input_libretro_device[i], buf);
    }
 
    config_file_free(conf);
@@ -158,12 +171,34 @@ bool input_remapping_save_file(const char *path)
                config_unset(conf,key_ident[j]);
          }
       }
+      snprintf(buf, sizeof(buf), "input_libretro_device_p%u", i + 1);
+      config_set_int(conf, buf, input_config_get_device(i));
+      snprintf(buf, sizeof(buf), "input_player%u_analog_dpad_mode", i + 1);
+      config_set_int(conf, buf, settings->uints.input_analog_dpad_mode[i]);
    }
 
    ret = config_file_write(conf, remap_file);
    config_file_free(conf);
 
    return ret;
+}
+
+bool input_remapping_remove_file(const char *path)
+{
+   bool ret;
+   char buf[PATH_MAX_LENGTH];
+   char remap_file[PATH_MAX_LENGTH];
+   config_file_t *conf = NULL;
+   settings_t    *settings = config_get_ptr();
+
+   buf[0] = remap_file[0]            = '\0';
+
+   fill_pathname_join(buf, settings->paths.directory_input_remapping,
+         path, sizeof(buf));
+
+   fill_pathname_noext(remap_file, buf, ".rmp", sizeof(remap_file));
+
+   return remove(remap_file) == 0 ? true : false;
 }
 
 void input_remapping_set_defaults(void)
@@ -180,5 +215,7 @@ void input_remapping_set_defaults(void)
       }
       for (j = 0; j < 4; j++)
          settings->uints.input_remap_ids[i][RARCH_FIRST_CUSTOM_BIND + j] = j;
+      settings->uints.input_analog_dpad_mode[i] = old_analog_dpad_mode[i];
+      settings->uints.input_libretro_device[i]  = old_libretro_device[i];
    }
 }

@@ -4,6 +4,11 @@
 - ANDROID: Provide default save / system / state / screenshot locations
 - AUDIO: Audio mixer supports MOD/S3M/XM file types now!
 - INPUT: input swap override flag (for remotes) is cleared correctly
+- INPUT: allow specifying libretro device in remap files
+- INPUT: allow specifying analog dpad mode in remap files
+- INPUT: allow saving libretro device to remap files
+- INPUT: allow saving analog dpad mode to remap files
+- INPUT: allow removing core and game remap files from the menu
 - COMMON: Add 'Delete Core' option to Core Information menu.
 - COMMON: Allow Max Timing Skew to be set to 0.
 - COMMON: Change the "content dir" behavior so it works on either a flag or an empty directory setting, now platform drivers can provide defaults for save / system / state / screenshot dirs and still allow the content dir functionality, these settings are under settings / saving and flagged as advanced

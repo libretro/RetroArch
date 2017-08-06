@@ -2,6 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2014-2017 - Jean-André Santoni
+ *  Copyright (C) 2015-2017 - Andrés Suárez
  *  Copyright (C) 2016-2017 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -2930,6 +2931,7 @@ bool config_load_remap(void)
       if (input_remapping_load_file(new_conf, game_path))
       {
          runloop_msg_queue_push("Game remap file loaded.", 1, 100, true);
+         rarch_ctl(RARCH_CTL_SET_REMAPS_GAME_ACTIVE, NULL);
          return true;
       }
    }
@@ -2949,6 +2951,7 @@ bool config_load_remap(void)
       if (input_remapping_load_file(new_conf, core_path))
       {
          runloop_msg_queue_push("Core remap file loaded.", 1, 100, true);
+         rarch_ctl(RARCH_CTL_SET_REMAPS_CORE_ACTIVE, NULL);
          return true;
       }
    }

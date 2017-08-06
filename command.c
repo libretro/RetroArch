@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2015-2017 - Andrés Suárez
  *  Copyright (C) 2016-2017 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -1053,6 +1054,7 @@ static void command_event_deinit_core(bool reinit)
 
    command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
    command_event(CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET, NULL);
+   command_event(CMD_EVENT_RESTORE_REMAPS, NULL);
 }
 
 static void command_event_init_cheats(void)
@@ -1226,7 +1228,7 @@ static bool command_event_init_core(enum rarch_core_type *data)
          rarch_ctl(RARCH_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
    }
 
-   /* Auto-remap: apply shader preset files */
+   /* Auto-shaders: apply shader preset files */
    if(settings->bools.auto_shaders_enable)
       config_load_shader_preset();
 
@@ -1285,6 +1287,11 @@ static void command_event_restore_default_shader_preset(void)
    }
 
    path_clear(RARCH_PATH_DEFAULT_SHADER_PRESET);
+}
+
+static void command_event_restore_remaps(void)
+{
+   input_remapping_set_defaults();
 }
 
 static bool command_event_save_auto_state(void)
@@ -1797,6 +1804,7 @@ bool command_event(enum event_command cmd, void *data)
             command_event(CMD_EVENT_AUTOSAVE_STATE, NULL);
             command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
             command_event(CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET, NULL);
+            command_event(CMD_EVENT_RESTORE_REMAPS, NULL);
 
             if (is_inited)
                if (!task_push_start_dummy_core(&content_info))
@@ -2589,6 +2597,8 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_DISABLE_OVERRIDES:
          command_event_disable_overrides();
          break;
+      case CMD_EVENT_RESTORE_REMAPS:
+         command_event_restore_remaps();
       case CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET:
          command_event_restore_default_shader_preset();
          break;
