@@ -42,22 +42,12 @@ namespace
     }
   
   protected:
-    debugger_memory_t* _memory;
-    size_t _count;
-
     int _selected;
-    bool _inited;
     MemoryEditor _editor;
-
-    void initRegions()
-    {
-      _memory = s_info->coreInfo->getMemoryRegions(&_count);
-    }
 
     void create()
     {
       _selected = 0;
-      _inited = false;
 
       struct Locality
       {
@@ -107,24 +97,6 @@ namespace
 
     void draw()
     {
-      if (_inited)
-      {
-        if (!s_info->rarchInfo->isGameLoaded())
-        {
-          _count = 0;
-          _selected = 0;
-          _inited = false;
-        }
-      }
-      else
-      {
-        if (s_info->rarchInfo->isGameLoaded())
-        {
-          initRegions();
-          _inited = true;
-        }
-      }
-
       struct Locality
       {
         static bool description(void* data, int idx, const char** out_text)
@@ -143,12 +115,20 @@ namespace
         }
       };
 
-      ImGui::Combo("Region", &_selected, Locality::description, (void*)_memory, _count + 1);
+      unsigned count;
+      debugger_memory_t* memory = s_info->coreInfo->getMemoryRegions(&count);
+
+      if (_selected > (int)count)
+      {
+        _selected = 0;
+      }
+
+      ImGui::Combo("Region", &_selected, Locality::description, (void*)memory, count + 1);
 
       if (_selected != 0)
       {
-        debugger_memory_t* memory = &_memory[_selected - 1];
-        _editor.Draw(memory->name, (unsigned char*)memory, memory->size);
+        debugger_memory_t* mem = &memory[_selected - 1];
+        _editor.Draw(memory->name, (unsigned char*)mem, mem->size);
       }
     }
   };
