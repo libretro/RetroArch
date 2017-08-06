@@ -185,10 +185,8 @@ bool input_remapping_save_file(const char *path)
 
 bool input_remapping_remove_file(const char *path)
 {
-   bool ret;
    char buf[PATH_MAX_LENGTH];
    char remap_file[PATH_MAX_LENGTH];
-   config_file_t *conf = NULL;
    settings_t    *settings = config_get_ptr();
 
    buf[0] = remap_file[0]            = '\0';

@@ -4055,7 +4055,9 @@ static void wifi_scan_callback(void *task_data,
 bool menu_displaylist_process(menu_displaylist_info_t *info)
 {
    size_t idx   = 0;
+#if defined(HAVE_NETWORKING) && !defined(HAVE_LAKKA)
    settings_t *settings         = config_get_ptr();
+#endif
 
    if (info->need_navigation_clear)
    {
@@ -5038,12 +5040,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_MENU_VIEWS_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
+#if defined(HAVE_NETWORKING) && !defined(HAVE_LAKKA)
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_MENU_SHOW_ONLINE_UPDATER,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_MENU_SHOW_CORE_UPDATER,
                PARSE_ONLY_BOOL, false);
+#endif
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_XMB_SHOW_SETTINGS,
                PARSE_ONLY_BOOL, false);

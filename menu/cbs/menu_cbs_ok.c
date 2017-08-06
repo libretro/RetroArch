@@ -4449,8 +4449,9 @@ static int action_ok_netplay_enable_client(const char *path,
 static int action_ok_netplay_disconnect(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   settings_t *settings = config_get_ptr();
 #ifdef HAVE_NETWORKING
+   settings_t *settings = config_get_ptr();
+
    netplay_driver_ctl(RARCH_NETPLAY_CTL_DISCONNECT, NULL);
    netplay_driver_ctl(RARCH_NETPLAY_CTL_DISABLE, NULL);
 
