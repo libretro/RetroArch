@@ -295,6 +295,11 @@ static bool default_auto_shaders_enable = true;
 static bool default_sort_savefiles_enable = false;
 static bool default_sort_savestates_enable = false;
 
+static bool default_savestates_in_content_dir = false;
+static bool default_savefiles_in_content_dir = false;
+static bool default_systemfiles_in_content_dir = false;
+static bool default_screenshots_in_content_dir = false;
+
 #if defined(__CELLOS_LV2__) || defined(_XBOX1) || defined(_XBOX360)
 static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_L3_R3;
 #elif defined(VITA)
