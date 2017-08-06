@@ -2311,3 +2311,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
       "Visualizza Core Updater")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
       "Visualizza/Nascondi l'abilità di aggiornare i core (e i file di informazione dei core).")
+MSG_HASH(MENU_ENUM_SUBLABEL_CORE_LIST,
+         "Seleziona quale core utilizzare.")
+   MSG_HASH(MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
+      "Seleziona quale contenuto avviare.")
+   MSG_HASH(MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
+      "Permette di uscire dal programma.")
