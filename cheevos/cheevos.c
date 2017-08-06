@@ -1372,9 +1372,7 @@ static void cheevos_free_condition(cheevos_condition_t* condition)
    if (condition->condsets)
    {
       for (i = 0; i < condition->count; i++)
-      {
          free((void*)condition->condsets[i].conds);
-      }
 
       free((void*)condition->condsets);
    }
@@ -2652,44 +2650,45 @@ bool cheevos_toggle_hardcore_mode(void)
 
 static void cheevos_patch_addresses(cheevoset_t* set)
 {
+   unsigned i, j, k;
    cheevo_t* cheevo = set->cheevos;
 
-   for (unsigned i = set->count; i != 0; i--, cheevo++)
+   for (i = set->count; i != 0; i--, cheevo++)
    {
       cheevos_condset_t* condset = cheevo->condition.condsets;
 
-      for (unsigned j = cheevo->condition.count; j != 0; j--, condset++)
+      for (j = cheevo->condition.count; j != 0; j--, condset++)
       {
          cheevos_cond_t* cond = condset->conds;
 
-         for (unsigned k = condset->count; k != 0; k--, cond++)
+         for (k = condset->count; k != 0; k--, cond++)
          {
             switch (cond->source.type)
             {
-            case CHEEVOS_VAR_TYPE_ADDRESS:
-            case CHEEVOS_VAR_TYPE_DELTA_MEM:
-               cheevos_parse_guest_addr(&cond->source, cond->source.value);
-            #ifdef CHEEVOS_DUMP_ADDRS
-               RARCH_LOG("CHEEVOS var %03d:%08X\n", cond->source.bank_id + 1, cond->source.value);
-            #endif
-               break;
+               case CHEEVOS_VAR_TYPE_ADDRESS:
+               case CHEEVOS_VAR_TYPE_DELTA_MEM:
+                  cheevos_parse_guest_addr(&cond->source, cond->source.value);
+#ifdef CHEEVOS_DUMP_ADDRS
+                  RARCH_LOG("CHEEVOS var %03d:%08X\n", cond->source.bank_id + 1, cond->source.value);
+#endif
+                  break;
 
-            default:
-               break;
+               default:
+                  break;
             }
 
             switch (cond->target.type)
             {
-            case CHEEVOS_VAR_TYPE_ADDRESS:
-            case CHEEVOS_VAR_TYPE_DELTA_MEM:
-               cheevos_parse_guest_addr(&cond->target, cond->target.value);
-            #ifdef CHEEVOS_DUMP_ADDRS
-               RARCH_LOG("CHEEVOS var %03d:%08X\n", cond->target.bank_id + 1, cond->target.value);
-            #endif
-               break;
+               case CHEEVOS_VAR_TYPE_ADDRESS:
+               case CHEEVOS_VAR_TYPE_DELTA_MEM:
+                  cheevos_parse_guest_addr(&cond->target, cond->target.value);
+#ifdef CHEEVOS_DUMP_ADDRS
+                  RARCH_LOG("CHEEVOS var %03d:%08X\n", cond->target.bank_id + 1, cond->target.value);
+#endif
+                  break;
 
-            default:
-               break;
+               default:
+                  break;
             }
          }
       }
