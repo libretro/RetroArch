@@ -50,9 +50,6 @@ bool input_remapping_load_file(void *data, const char *path)
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      old_analog_dpad_mode[i] = settings->uints.input_analog_dpad_mode[i];
-      old_libretro_device[i] = settings->uints.input_libretro_device[i];
-
       char buf[64];
       char key_ident[RARCH_FIRST_CUSTOM_BIND + 4][128]   = {{0}};
       char key_strings[RARCH_FIRST_CUSTOM_BIND + 4][128] =
@@ -60,6 +57,9 @@ bool input_remapping_load_file(void *data, const char *path)
          "up", "down", "left", "right",
          "a", "x", "l", "r", "l2", "r2",
          "l3", "r3", "l_x", "l_y", "r_x", "r_y" };
+
+      old_analog_dpad_mode[i] = settings->uints.input_analog_dpad_mode[i];
+      old_libretro_device[i] = settings->uints.input_libretro_device[i];
 
       snprintf(buf, sizeof(buf), "input_player%u", i + 1);
 
