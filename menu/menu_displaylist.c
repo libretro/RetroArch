@@ -298,7 +298,7 @@ static void print_buf_lines(file_list_t *list, char *buf,
                         sizeof(core_path));
 
                   if (
-                           path_file_exists(core_path) 
+                           path_file_exists(core_path)
                         && core_info_get_display_name(
                            core_path, display_name, sizeof(display_name)))
                      menu_entries_set_alt_at_offset(list, j, display_name);
@@ -1856,7 +1856,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
          strlcpy(thumbnail_content, db_info_entry->name, sizeof(thumbnail_content));
 
       if (!string_is_empty(thumbnail_content))
-         menu_driver_set_thumbnail_content(thumbnail_content, sizeof(thumbnail_content)); 
+         menu_driver_set_thumbnail_content(thumbnail_content, sizeof(thumbnail_content));
 
       menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
       menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);
@@ -2977,7 +2977,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
    else
    {
       const char *ext = NULL;
-      
+
       if (!string_is_empty(entry_path))
          ext = path_get_extension(entry_path);
 
@@ -2995,8 +2995,8 @@ static int menu_displaylist_parse_horizontal_content_actions(
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RUN),
             msg_hash_to_str(MENU_ENUM_LABEL_RUN),
             MENU_ENUM_LABEL_RUN, FILE_TYPE_PLAYLIST_ENTRY, 0, idx);
-      
-	  if (settings->bools.playlist_entry_remove)	  
+
+	  if (settings->bools.playlist_entry_remove)
 	  menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DELETE_ENTRY),
             msg_hash_to_str(MENU_ENUM_LABEL_DELETE_ENTRY),
@@ -4085,7 +4085,7 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
                MENU_SETTING_ACTION, 0, 0);
       }
 #endif
-   
+
    if (info->push_builtin_cores)
    {
 #if defined(HAVE_VIDEO_PROCESSOR)
@@ -4799,7 +4799,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                PARSE_ONLY_UINT, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_PLAYLIST_ENTRY_REMOVE,
-               PARSE_ONLY_BOOL, false);			   
+               PARSE_ONLY_BOOL, false);
 
          menu_displaylist_parse_playlist_associations(info);
          info->need_push    = true;
@@ -5113,6 +5113,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_MENU_LINEAR_FILTER,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_MENU_HORIZONTAL_ANIMATION,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_NAVIGATION_WRAPAROUND,

@@ -53,7 +53,7 @@
 /* All config related settings go here. */
 
 struct config_bool_setting
-{ 
+{
    const char *ident;
    bool *ptr;
    bool def_enable;
@@ -62,7 +62,7 @@ struct config_bool_setting
 };
 
 struct config_int_setting
-{ 
+{
    const char *ident;
    int *ptr;
    bool def_enable;
@@ -71,7 +71,7 @@ struct config_int_setting
 };
 
 struct config_uint_setting
-{ 
+{
    const char *ident;
    unsigned *ptr;
    bool def_enable;
@@ -80,7 +80,7 @@ struct config_uint_setting
 };
 
 struct config_float_setting
-{ 
+{
    const char *ident;
    float *ptr;
    bool def_enable;
@@ -89,7 +89,7 @@ struct config_float_setting
 };
 
 struct config_array_setting
-{ 
+{
    const char *ident;
    char *ptr;
    bool def_enable;
@@ -98,7 +98,7 @@ struct config_array_setting
 };
 
 struct config_path_setting
-{ 
+{
    const char *ident;
    char *ptr;
    bool def_enable;
@@ -486,7 +486,7 @@ static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_NULL;
       tmp[count].def     = default_setting; \
    tmp[count].handle   = handle_setting; \
    count++; \
-} 
+}
 
 #define SETTING_BOOL(key, configval, default_enable, default_setting, handle_setting) \
    GENERAL_SETTING(key, configval, default_enable, default_setting, struct config_bool_setting, handle_setting)
@@ -1015,7 +1015,7 @@ static struct config_path_setting *populate_settings_path(settings_t *settings, 
    SETTING_PATH("cheat_database_path",
          settings->paths.path_cheat_database, false, NULL, true);
 #ifdef HAVE_MENU
-   SETTING_PATH("menu_wallpaper", 
+   SETTING_PATH("menu_wallpaper",
          settings->paths.path_menu_wallpaper, false, NULL, true);
 #endif
    SETTING_PATH("content_history_path",
@@ -1034,7 +1034,7 @@ static struct config_path_setting *populate_settings_path(settings_t *settings, 
          settings->paths.path_font, false, NULL, true);
    SETTING_PATH("cursor_directory",
          settings->paths.directory_cursor, false, NULL, true);
-   SETTING_PATH("content_history_dir", 
+   SETTING_PATH("content_history_dir",
          settings->paths.directory_content_history, false, NULL, true);
    SETTING_PATH("screenshot_directory",
          settings->paths.directory_screenshot, true, NULL, true);
@@ -1064,7 +1064,7 @@ static struct config_path_setting *populate_settings_path(settings_t *settings, 
          settings->paths.directory_autoconfig, false, NULL, true);
    SETTING_PATH("audio_filter_dir",
          settings->paths.directory_audio_filter, true, NULL, true);
-   SETTING_PATH("savefile_directory", 
+   SETTING_PATH("savefile_directory",
          dir_get_ptr(RARCH_DIR_SAVEFILE), true, NULL, false);
    SETTING_PATH("savestate_directory",
          dir_get_ptr(RARCH_DIR_SAVESTATE), true, NULL, false);
@@ -1079,11 +1079,11 @@ static struct config_path_setting *populate_settings_path(settings_t *settings, 
          settings->paths.directory_overlay, true, NULL, true);
 #endif
 #ifndef HAVE_DYNAMIC
-   SETTING_PATH("libretro_path", 
+   SETTING_PATH("libretro_path",
          path_get_ptr(RARCH_PATH_CORE), false, NULL, false);
 #endif
    SETTING_PATH(
-         "screenshot_directory", 
+         "screenshot_directory",
          settings->paths.directory_screenshot, true, NULL, false);
 
    if (global)
@@ -1181,6 +1181,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
 #endif
    SETTING_BOOL("menu_throttle_framerate",       &settings->bools.menu_throttle_framerate, true, true, false);
    SETTING_BOOL("menu_linear_filter",            &settings->bools.menu_linear_filter, true, true, false);
+   SETTING_BOOL("menu_horizontal_animation",     &settings->bools.menu_horizontal_animation, true, true, false);
    SETTING_BOOL("dpi_override_enable",           &settings->bools.menu_dpi_override_enable, true, menu_dpi_override_enable, false);
    SETTING_BOOL("menu_pause_libretro",           &settings->bools.menu_pause_libretro, true, true, false);
    SETTING_BOOL("menu_mouse_enable",             &settings->bools.menu_mouse_enable, true, def_mouse_enable, false);
@@ -1205,14 +1206,14 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("xmb_show_netplay",              &settings->bools.menu_xmb_show_netplay, true, xmb_show_netplay, false);
 #endif
    SETTING_BOOL("xmb_show_history",              &settings->bools.menu_xmb_show_history, true, xmb_show_history, false);
-#ifdef HAVE_LIBRETRODB 
+#ifdef HAVE_LIBRETRODB
    SETTING_BOOL("xmb_show_add",                  &settings->bools.menu_xmb_show_add, true, xmb_show_add, false);
 #endif
 #endif
    SETTING_BOOL("filter_by_current_core",        &settings->bools.filter_by_current_core, false, false /* TODO */, false);
    SETTING_BOOL("rgui_show_start_screen",        &settings->bools.menu_show_start_screen, false, false /* TODO */, false);
    SETTING_BOOL("menu_navigation_wraparound_enable", &settings->bools.menu_navigation_wraparound_enable, true, true, false);
-   SETTING_BOOL("menu_navigation_browser_filter_supported_extensions_enable", 
+   SETTING_BOOL("menu_navigation_browser_filter_supported_extensions_enable",
          &settings->bools.menu_navigation_browser_filter_supported_extensions_enable, true, true, false);
    SETTING_BOOL("menu_show_advanced_settings",  &settings->bools.menu_show_advanced_settings, true, show_advanced_settings, false);
 #endif
@@ -1929,7 +1930,7 @@ static config_file_t *open_default_config_file(void)
       RARCH_WARN("Created new config file in: \"%s\".\n", conf_path);
    }
 #elif !defined(RARCH_CONSOLE)
-   bool has_application_data = 
+   bool has_application_data =
       fill_pathname_application_data(application_data,
             sizeof(application_data));
 
@@ -2105,7 +2106,7 @@ static bool check_shader_compatibility(enum file_path_enum enum_idx)
       return true;
    }
 
-   if (string_is_equal_fast(settings->arrays.video_driver, "gl", 2) || 
+   if (string_is_equal_fast(settings->arrays.video_driver, "gl", 2) ||
        string_is_equal_fast(settings->arrays.video_driver, "d3d", 3)
       )
    {
@@ -2176,7 +2177,7 @@ static void config_get_hex_base(config_file_t *conf,
  * Loads a config file and reads all the values into memory.
  *
  */
-static bool config_load_file(const char *path, bool set_defaults, 
+static bool config_load_file(const char *path, bool set_defaults,
    settings_t *settings)
 {
    unsigned i;
@@ -2712,10 +2713,10 @@ end:
  * This function only has an effect if a game-specific or core-specific
  * configuration file exists at respective locations.
  *
- * core-specific: $CONFIG_DIR/$CORE_NAME/$CORE_NAME.cfg 
+ * core-specific: $CONFIG_DIR/$CORE_NAME/$CORE_NAME.cfg
  * fallback:      $CURRENT_CFG_LOCATION/$CORE_NAME/$CORE_NAME.cfg
  *
- * game-specific: $CONFIG_DIR/$CORE_NAME/$ROM_NAME.cfg 
+ * game-specific: $CONFIG_DIR/$CORE_NAME/$ROM_NAME.cfg
  * fallback:      $CURRENT_CFG_LOCATION/$CORE_NAME/$GAME_NAME.cfg
  *
  * Returns: false if there was an error or no action was performed.
@@ -2811,7 +2812,7 @@ bool config_load_override(void)
    /* Re-load the configuration with any overrides that might have been found */
    buf[0] = '\0';
 
-   /* Store the libretro_path we're using since it will be 
+   /* Store the libretro_path we're using since it will be
     * overwritten by the override when reloading. */
    strlcpy(buf, path_get(RARCH_PATH_CORE), sizeof(buf));
 
@@ -3260,7 +3261,7 @@ static void save_keybinds_user(config_file_t *conf, unsigned user)
  */
 void config_load(void)
 {
-   /* Flush out some states that could have been 
+   /* Flush out some states that could have been
     * set by core environment variables */
    core_unset_input_descriptors();
 
@@ -3450,7 +3451,7 @@ bool config_save_file(const char *path)
 
 #ifdef HAVE_MENU
    config_set_path(conf, "xmb_font",
-         !string_is_empty(settings->paths.path_menu_xmb_font) 
+         !string_is_empty(settings->paths.path_menu_xmb_font)
          ? settings->paths.path_menu_xmb_font : "");
 #endif
 
@@ -3641,7 +3642,7 @@ bool config_save_overrides(int override_type)
    fill_pathname_application_special(config_directory, sizeof(config_directory),
          APPLICATION_SPECIAL_DIRECTORY_CONFIG);
 
-   fill_pathname_join(override_directory, config_directory, core_name, 
+   fill_pathname_join(override_directory, config_directory, core_name,
       sizeof(override_directory));
 
    if(!path_file_exists(override_directory))
@@ -3698,9 +3699,9 @@ bool config_save_overrides(int override_type)
       {
          if ((*bool_settings[i].ptr) != (*bool_overrides[i].ptr))
          {
-            RARCH_LOG("   original: %s=%d\n", 
+            RARCH_LOG("   original: %s=%d\n",
                   bool_settings[i].ident, (*bool_settings[i].ptr));
-            RARCH_LOG("   override: %s=%d\n", 
+            RARCH_LOG("   override: %s=%d\n",
                   bool_overrides[i].ident, (*bool_overrides[i].ptr));
             config_set_bool(conf, bool_overrides[i].ident,
                   (*bool_overrides[i].ptr));
@@ -3710,9 +3711,9 @@ bool config_save_overrides(int override_type)
       {
          if ((*int_settings[i].ptr) != (*int_overrides[i].ptr))
          {
-            RARCH_LOG("   original: %s=%d\n", 
+            RARCH_LOG("   original: %s=%d\n",
                   int_settings[i].ident, (*int_settings[i].ptr));
-            RARCH_LOG("   override: %s=%d\n", 
+            RARCH_LOG("   override: %s=%d\n",
                   int_overrides[i].ident, (*int_overrides[i].ptr));
             config_set_int(conf, int_overrides[i].ident,
                   (*int_overrides[i].ptr));
@@ -3722,9 +3723,9 @@ bool config_save_overrides(int override_type)
       {
          if ((*uint_settings[i].ptr) != (*uint_overrides[i].ptr))
          {
-            RARCH_LOG("   original: %s=%d\n", 
+            RARCH_LOG("   original: %s=%d\n",
                   uint_settings[i].ident, (*uint_settings[i].ptr));
-            RARCH_LOG("   override: %s=%d\n", 
+            RARCH_LOG("   override: %s=%d\n",
                   uint_overrides[i].ident, (*uint_overrides[i].ptr));
             config_set_int(conf, uint_overrides[i].ident,
                   (*uint_overrides[i].ptr));
@@ -3734,9 +3735,9 @@ bool config_save_overrides(int override_type)
       {
          if ((*float_settings[i].ptr) != (*float_overrides[i].ptr))
          {
-            RARCH_LOG("   original: %s=%f\n", 
+            RARCH_LOG("   original: %s=%f\n",
                   float_settings[i].ident, *float_settings[i].ptr);
-            RARCH_LOG("   override: %s=%f\n", 
+            RARCH_LOG("   override: %s=%f\n",
                   float_overrides[i].ident, *float_overrides[i].ptr);
             config_set_float(conf, float_overrides[i].ident,
                   *float_overrides[i].ptr);
@@ -3747,9 +3748,9 @@ bool config_save_overrides(int override_type)
       {
          if (!string_is_equal(array_settings[i].ptr, array_overrides[i].ptr))
          {
-            RARCH_LOG("   original: %s=%s\n", 
+            RARCH_LOG("   original: %s=%s\n",
                   array_settings[i].ident, array_settings[i].ptr);
-            RARCH_LOG("   override: %s=%s\n", 
+            RARCH_LOG("   override: %s=%s\n",
                   array_overrides[i].ident, array_overrides[i].ptr);
             config_set_string(conf, array_overrides[i].ident,
                   array_overrides[i].ptr);
@@ -3760,9 +3761,9 @@ bool config_save_overrides(int override_type)
       {
          if (!string_is_equal(path_settings[i].ptr, path_overrides[i].ptr))
          {
-            RARCH_LOG("   original: %s=%s\n", 
+            RARCH_LOG("   original: %s=%s\n",
                   path_settings[i].ident, path_settings[i].ptr);
-            RARCH_LOG("   override: %s=%s\n", 
+            RARCH_LOG("   override: %s=%s\n",
                   path_overrides[i].ident, path_overrides[i].ptr);
             config_set_path(conf, path_overrides[i].ident,
                   path_overrides[i].ptr);

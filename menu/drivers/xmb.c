@@ -613,7 +613,7 @@ static void xmb_draw_icon(
 static void xmb_draw_thumbnail(
       menu_display_frame_info_t menu_disp_info,
       xmb_handle_t *xmb, float *color,
-      unsigned width, unsigned height, 
+      unsigned width, unsigned height,
       float x, float y,
       float w, float h, uintptr_t texture)
 {
@@ -829,7 +829,7 @@ static void xmb_render_messagebox_internal(
    {
       const char *msg = list->elems[i].data;
       int len         = (int)utf8len(msg);
-       
+
       if (len > longest)
       {
          longest = len;
@@ -1615,6 +1615,7 @@ static void xmb_list_switch(xmb_handle_t *xmb)
    int dir                    = -1;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    size_t selection           = menu_navigation_get_selection();
+   settings_t *settings = config_get_ptr();
 
    if (xmb->categories.selection_ptr > xmb->categories.selection_ptr_old)
       dir = 1;
@@ -1639,7 +1640,11 @@ static void xmb_list_switch(xmb_handle_t *xmb)
 
    xmb_list_switch_old(xmb, xmb->selection_buf_old,
          dir, xmb->selection_ptr_old);
-   xmb_list_switch_new(xmb, selection_buf, dir, selection);
+
+   // Check if we are to have horizontal animations.
+   if (settings->bools.menu_horizontal_animation) {
+      xmb_list_switch_new(xmb, selection_buf, dir, selection);
+   }
    xmb->categories.active.idx_old = (unsigned)xmb->categories.selection_ptr;
 
    if (!string_is_equal(xmb_thumbnails_ident(),
@@ -3821,12 +3826,17 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
    file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    size_t selection           = menu_navigation_get_selection();
+   settings_t *settings       = config_get_ptr();
 
    if (!xmb)
       return;
 
-   xmb_list_deep_copy(selection_buf, xmb->selection_buf_old);
-   xmb_list_deep_copy(menu_stack, xmb->menu_stack_old);
+   // Check whether to enable the horizontal animation.
+   if (settings->bools.menu_horizontal_animation) {
+      xmb_list_deep_copy(selection_buf, xmb->selection_buf_old);
+      xmb_list_deep_copy(menu_stack, xmb->menu_stack_old);
+   }
+
    xmb->selection_ptr_old = selection;
 
    list_size = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL)
