@@ -409,7 +409,10 @@ void debugger_pluginman_draw()
     {
       ImGui::PushID(*it);
 
-      if (ImGui::Button(ICON_FA_PLUS " Create"))
+      char label[1024];
+      snprintf(label, sizeof(label), ICON_FA_PLUS " Create##%p", *it);
+
+      if (ImGui::Button(label))
       {
         void* instance = (*it)->create();
 
@@ -436,10 +439,14 @@ void debugger_pluginman_draw()
 
   for (auto it = s_debugger_running.begin(); it != s_debugger_running.end();)
   {
-    bool keep = true;
     ImGui::PushID(it->first);
 
-    if (ImGui::BeginDock(it->second->name, &keep))
+    char label[1024];
+    snprintf(label, sizeof(label), "%s##%p", it->second->name, it->first);
+
+    bool keep = true;
+
+    if (ImGui::BeginDock(label, &keep))
     {
       it->second->draw(it->first);
     }
