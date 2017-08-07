@@ -213,7 +213,10 @@ void input_remapping_set_defaults(void)
       }
       for (j = 0; j < 4; j++)
          settings->uints.input_remap_ids[i][RARCH_FIRST_CUSTOM_BIND + j] = j;
-      settings->uints.input_analog_dpad_mode[i] = old_analog_dpad_mode[i];
-      settings->uints.input_libretro_device[i]  = old_libretro_device[i];
+
+      if (old_analog_dpad_mode[i])
+         settings->uints.input_analog_dpad_mode[i] = old_analog_dpad_mode[i];
+      if (old_libretro_device[i])
+         settings->uints.input_libretro_device[i]  = old_libretro_device[i];
    }
 }
