@@ -1,4 +1,6 @@
-# 1.6.4 (future)
+# 1.6.5 (future)
+
+# 1.6.4
 
 - ANDROID: Fire Stick & Fire TV remote overrides gamepad port 0 on button press and viceversa like SHIELD devices
 - ANDROID: Provide default save / system / state / screenshot locations
