@@ -128,7 +128,7 @@ namespace
       if (_selected != 0)
       {
         debugger_memory_t* mem = &memory[_selected - 1];
-        _editor.Draw(memory->name, (unsigned char*)mem, mem->size);
+        _editor.DrawContents((unsigned char*)mem, mem->size);
       }
     }
   };
