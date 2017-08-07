@@ -9,6 +9,7 @@
 - INPUT: allow saving libretro device to remap files
 - INPUT: allow saving analog dpad mode to remap files
 - INPUT: allow removing core and game remap files from the menu
+- COMMON: Cores can now request to set a 'shared context'. You no longer need to explicitly enable 'Shared Hardware Context' for Citra/OpenLara/Dolphin.
 - COMMON: Add 'Delete Core' option to Core Information menu.
 - COMMON: Allow Max Timing Skew to be set to 0.
 - COMMON: Change the "content dir" behavior so it works on either a flag or an empty directory setting, now platform drivers can provide defaults for save / system / state / screenshot dirs and still allow the content dir functionality, these settings are under settings / saving and flagged as advanced
