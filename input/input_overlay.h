@@ -248,10 +248,10 @@ void input_state_overlay(input_overlay_t *ol,
  * input_overlay_add_inputs:
  * @ol : pointer to overlay
  * 
- * Adds inputs from current_input to the overlay, so it's displayed 
+ * Adds inputs from current_input to the overlay, so it's displayed
+ * returns true if an input that is pressed will change the overlay 
  */
-void input_overlay_add_inputs(input_overlay_t *ol, rarch_joypad_info_t *joy_info, const struct retro_keybind **keybinds, 
-      unsigned port, unsigned device, unsigned analog_dpad_mode);
+bool input_overlay_add_inputs(input_overlay_t *ol, unsigned port, unsigned analog_dpad_mode);
 
 bool input_overlay_key_pressed(input_overlay_t *ol, int key);
 

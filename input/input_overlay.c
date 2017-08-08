@@ -575,6 +575,7 @@ void input_poll_overlay(input_overlay_t *ol, float opacity, unsigned analog_dpad
    settings_t *settings            = config_get_ptr();
    uint16_t key_mod                = 0;
    bool polled                     = false;
+   bool button_pressed             = false;
    input_overlay_state_t *ol_state = &ol->overlay_state;
 
    if (!ol_state)
@@ -703,7 +704,8 @@ void input_poll_overlay(input_overlay_t *ol, float opacity, unsigned analog_dpad
          break;
    }
    
-   if (polled)
+   button_pressed = input_overlay_add_inputs(ol, 0, analog_dpad_mode);
+   if (button_pressed || polled)
       input_overlay_post_poll(ol, opacity);
    else
       input_overlay_poll_clear(ol, opacity);
@@ -746,43 +748,46 @@ void input_state_overlay(input_overlay_t *ol, int16_t *ret,
    }
 }
 
-void input_overlay_add_inputs(input_overlay_t *ol, rarch_joypad_info_t *joy_info, const struct retro_keybind **keybinds,
-      unsigned port, unsigned device, unsigned analog_dpad_mode)
+bool input_overlay_add_inputs(input_overlay_t *ol,
+      unsigned port, unsigned analog_dpad_mode)
 {     
       int i;
       uint64_t mask;
       int id;
-      //Only do joypad stuff for now
-      if(device == RETRO_DEVICE_JOYPAD){
-            input_overlay_state_t *ol_state = &ol->overlay_state;
-            for(i = 0; i < ol->active->size; i++)
+      bool button_pressed = false;
+
+      input_overlay_state_t *ol_state = &ol->overlay_state;
+      if(!ol_state)
+            return false;
+      
+      for(i = 0; i < ol->active->size; i++)
+      {
+            overlay_desc_t *desc = &(ol->active->descs[i]);
+            switch(desc->type)
             {
-                  overlay_desc_t *desc = &(ol->active->descs[i]);
-                  switch(desc->type)
-                  {
-                        case OVERLAY_TYPE_BUTTONS:
-                              //Get the button ID
-                              mask = desc->key_mask;
-                              id = RETRO_DEVICE_ID_JOYPAD_B-1;
-                              while(mask > 0){
-                                    id+=1;
-                                    mask = mask >> 1;
-                              } 
-                              if(input_state(port, device, 0, id)){
-                                    desc->updated = true;
-                              }
-                              break;
-                        case OVERLAY_TYPE_ANALOG_LEFT:
-                              break;
-                        case OVERLAY_TYPE_ANALOG_RIGHT:
-                              break;
-                        case OVERLAY_TYPE_KEYBOARD:
-                              break;
-                        default:
-                              break;
-                  }
+                  case OVERLAY_TYPE_BUTTONS:
+                        //Get the button ID
+                        mask = desc->key_mask;
+                        id = RETRO_DEVICE_ID_JOYPAD_B-1;
+                        while(mask > 0){
+                              id+=1;
+                              mask = mask >> 1;
+                        }
+                        //light up the button if pressed
+                        if(input_state(port, RETRO_DEVICE_JOYPAD, 0, id)){
+                              desc->updated = true;
+                              button_pressed = true;
+                        }
+                        break;
+                  case OVERLAY_TYPE_ANALOG_LEFT:
+                  case OVERLAY_TYPE_ANALOG_RIGHT:
+                        break;
+                  case OVERLAY_TYPE_KEYBOARD:
+                        break;
+                  default:
+                        break;
             }
       }
-      settings_t *settings           = config_get_ptr();
-      input_overlay_post_poll(ol, settings->floats.input_overlay_opacity);
+
+      return button_pressed;
 }
