@@ -413,17 +413,12 @@ void input_poll(void)
       return;
 
 #ifdef HAVE_OVERLAY
-   if (overlay_ptr && input_overlay_is_alive(overlay_ptr)){
+   if (overlay_ptr && input_overlay_is_alive(overlay_ptr))
       input_poll_overlay(
             overlay_ptr,
             settings->floats.input_overlay_opacity,
             settings->uints.input_analog_dpad_mode[0],
             input_driver_axis_threshold);
-      //TODO: Make this work for an arbitrary joypad, set up in the settings
-      /*input_overlay_add_inputs(overlay_ptr,  0, 
-            settings->uints.input_analog_dpad_mode[0]);
-      */
-   }
 #endif
 
 #ifdef HAVE_COMMAND
