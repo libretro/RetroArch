@@ -790,6 +790,22 @@ static bool input_overlay_add_inputs(input_overlay_t *ol,
                         break;
                   case OVERLAY_TYPE_ANALOG_LEFT:
                   case OVERLAY_TYPE_ANALOG_RIGHT:
+                  {
+                        float analog_x, analog_y;
+                        float dx, dy;
+                        unsigned int index = (desc->type == OVERLAY_TYPE_ANALOG_RIGHT) ? 
+                              RETRO_DEVICE_INDEX_ANALOG_RIGHT : RETRO_DEVICE_INDEX_ANALOG_LEFT;
+                        
+                        analog_x = input_state(port, RETRO_DEVICE_ANALOG, index, RETRO_DEVICE_ID_ANALOG_X);
+                        analog_y = input_state(port, RETRO_DEVICE_ANALOG, index, RETRO_DEVICE_ID_ANALOG_Y);
+                        dx = (analog_x/0x8000)*(desc->range_x/2);
+                        dy = (analog_y/0x8000)*(desc->range_y/2);
+                        
+                        desc->delta_x = dx;
+                        desc->delta_y = dy;
+                        
+                        button_pressed = true;
+                  }
                         break;
                   case OVERLAY_TYPE_KEYBOARD:
                         break;
