@@ -768,10 +768,7 @@ void input_overlay_add_inputs(input_overlay_t *ol, rarch_joypad_info_t *joy_info
                                     id+=1;
                                     mask = mask >> 1;
                               } 
-                              if(current_input->input_state(current_input_data, *joy_info,
-                              keybinds,
-                              port, device, joy_info->joy_idx, id)){
-                                    RARCH_LOG_OUTPUT("pressed button %d\n", id);
+                              if(input_state(port, device, 0, id)){
                                     desc->updated = true;
                               }
                               break;
