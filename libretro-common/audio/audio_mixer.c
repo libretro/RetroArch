@@ -781,7 +781,7 @@ again:
          samplei     = *pcm++ * volume;
          samplef     = (float)((int)samplei + 32768) / 65535.0f;
          samplef     = samplef * 2.0f - 1.0f;
-         *buffer++   = samplef;
+         *buffer++  += samplef;
       }
 
       buf_free -= voice->types.mod.samples;
@@ -795,7 +795,7 @@ again:
          samplei     = *pcm++ * volume;
          samplef     = (float)((int)samplei + 32768) / 65535.0f;
          samplef     = samplef * 2.0f - 1.0f;
-         *buffer++   = samplef;
+         *buffer++  += samplef;
       }
 
       voice->types.mod.position += buf_free;
