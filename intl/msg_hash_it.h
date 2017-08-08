@@ -2150,10 +2150,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
    "Check if all the required firmware is present before attempting to load content."
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Vertical refresh rate of your screen. Used to calculate a suitable audio input rate. NOTE: This will be ignored if 'Threaded Video' is enabled."
-   )
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
+   "Frequenza di aggiornamento verticale dello schermo. Utilizzato per calcolare un'adeguata frequenza di ingresso audio. NOTA: questa verrà ignorata se è abilitato "Threaded Video".")
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
    "Abilita audio output."
@@ -2341,7 +2339,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
       "Effettua la scansione di una directory per i file compatibili e li aggiunge alla raccolta.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_FILE,
       "Esegue la scansione di un file compatibile e li aggiunge alla raccolta.")
-   MSG_HASH(MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
+MSG_HASH(MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
       "Mostra le interfacce di rete e gli indirizzi IP associati.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
       "Mostra le informazioni specifiche del dispositivo.")
@@ -2349,3 +2347,17 @@ MSG_HASH(MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
       "Visualizza i database.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
       "Visualizza le ricerche precedenti")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
+      "Avvia a schermo intero. Può essere modificato in fase di runtime.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+      "Se è a schermo intero e si preferisce utilizzare una modalità a schermo intero a finestre.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
+      "Offset di visualizzazione personalizzata utilizzata per definire la posizione dell'asse X di visualizzazione. Queste vengono ignorate se è abilitata l'opzione 'Integer Scale' e sarà centrata automaticamente.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
+      "Offset di visualizzazione personalizzata utilizzata per definire la posizione dell'asse Y di visualizzazione. Queste vengono ignorate se è abilitata l'opzione 'Integer Scale' e sarà centrata automaticamente.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
+      "Altezza di visualizzazione personalizzata utilizzata se l'Aspect Ratio è impostato su 'Custom'.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
+      "Larghezza di visualizzazione personalizzata utilizzata se l'Aspect Ratio è impostato su 'Custom'.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
+      "Permette di scalare solo il video in intero. La dimensione base dipende dalla geometria e dall' Aspect Ratio riportati dal sistema. Se non è impostata l'opzione Force Aspect, X / Y sarà scalato indipendentemente.")
