@@ -1,4 +1,8 @@
 # 1.6.5 (future)
+- AUDIO: MOD/S3M/XM sound should now be properly mixed in with the core's sound.
+- LOCALIZATION: Update Italian translation
+- INPUT: Overlay controller response - when we press buttons on the gamepad or keyboard, the corresponding buttons on the overlay will be highlighted as well.
+- NETBSD: Silence some compilation warnings.
 
 # 1.6.4
 
