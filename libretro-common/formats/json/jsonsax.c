@@ -54,13 +54,13 @@ state_t;
 
 static INLINE void skip_spaces( state_t* state )
 {
-  while ( isspace( *state->json ) )
+  while ( isspace( (unsigned char)*state->json ) )
     state->json++;
 }
 
 static INLINE void skip_digits( state_t* state )
 {
-  while ( isdigit( *state->json ) )
+  while ( isdigit( (unsigned char)*state->json ) )
     state->json++;
 }
 
@@ -218,7 +218,7 @@ static void jsonx_parse_number(state_t* state)
    if ( *state->json == '-' )
       state->json++;
 
-   if ( !isdigit( *state->json ) )
+   if ( !isdigit( (unsigned char)*state->json ) )
       longjmp( state->env, JSONSAX_INVALID_VALUE );
 
    skip_digits( state );
@@ -227,7 +227,7 @@ static void jsonx_parse_number(state_t* state)
    {
       state->json++;
 
-      if ( !isdigit( *state->json ) )
+      if ( !isdigit( (unsigned char)*state->json ) )
          longjmp( state->env, JSONSAX_INVALID_VALUE );
 
       skip_digits( state );
@@ -240,7 +240,7 @@ static void jsonx_parse_number(state_t* state)
       if ( *state->json == '-' || *state->json == '+' )
          state->json++;
 
-      if ( !isdigit( *state->json ) )
+      if ( !isdigit( (unsigned char)*state->json ) )
          longjmp( state->env, JSONSAX_INVALID_VALUE );
 
       skip_digits( state );
