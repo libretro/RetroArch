@@ -413,12 +413,22 @@ void input_poll(void)
       return;
 
 #ifdef HAVE_OVERLAY
-   if (overlay_ptr && input_overlay_is_alive(overlay_ptr))
+   if (overlay_ptr && input_overlay_is_alive(overlay_ptr)){
       input_poll_overlay(
             overlay_ptr,
             settings->floats.input_overlay_opacity,
             settings->uints.input_analog_dpad_mode[0],
             input_driver_axis_threshold);
+      
+      rarch_joypad_info_t joypad_info;
+      //TODO: Make this work for an arbitrary joypad, set up in the settings
+      joypad_info.axis_threshold = input_driver_axis_threshold;
+      joypad_info.joy_idx        = settings->uints.input_joypad_map[0];
+      joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
+      input_overlay_add_inputs(overlay_ptr, &joypad_info, libretro_input_binds, 0, 
+            RETRO_DEVICE_JOYPAD, settings->uints.input_analog_dpad_mode[0]);
+      
+   }
 #endif
 
 #ifdef HAVE_COMMAND

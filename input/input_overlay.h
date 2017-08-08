@@ -24,6 +24,8 @@
 #include <retro_miscellaneous.h>
 #include <formats/image.h>
 
+#include "input_driver.h"
+
 RETRO_BEGIN_DECLS
 
 #define BOX_RADIAL       0x18df06d2U
@@ -242,6 +244,14 @@ void input_poll_overlay(input_overlay_t *ol, float opacity, unsigned analog_dpad
 void input_state_overlay(input_overlay_t *ol,
       int16_t *ret, unsigned port, unsigned device, unsigned idx,
       unsigned id);
+/**
+ * input_overlay_add_inputs:
+ * @ol : pointer to overlay
+ * 
+ * Adds inputs from current_input to the overlay, so it's displayed 
+ */
+void input_overlay_add_inputs(input_overlay_t *ol, rarch_joypad_info_t *joy_info, const struct retro_keybind **keybinds, 
+      unsigned port, unsigned device, unsigned analog_dpad_mode);
 
 bool input_overlay_key_pressed(input_overlay_t *ol, int key);
 
