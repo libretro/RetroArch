@@ -765,7 +765,7 @@ static bool input_overlay_add_inputs(input_overlay_t *ol,
       uint64_t mask;
       int id;
       bool button_pressed = false;
-
+      bool current_button_pressed;
       input_overlay_state_t *ol_state = &ol->overlay_state;
       if(!ol_state)
             return false;
@@ -776,18 +776,31 @@ static bool input_overlay_add_inputs(input_overlay_t *ol,
             switch(desc->type)
             {
                   case OVERLAY_TYPE_BUTTONS:
-                        //Get the button ID
                         mask = desc->key_mask;
-                        id = RETRO_DEVICE_ID_JOYPAD_B-1;
-                        while(mask > 0){
-                              id+=1;
-                              mask = mask >> 1;
+                        id = RETRO_DEVICE_ID_JOYPAD_B;
+                        //Need to check all bits in the mask, multiple ones can be pressed
+                        current_button_pressed = false;
+                        while(mask){
+                              //Get the next button ID
+                              while(mask && (mask & 1) == 0){
+                                    id+=1;
+                                    mask = mask >> 1;
+                              }
+                              //light up the button if pressed
+                              if(input_state(port, RETRO_DEVICE_JOYPAD, 0, id)){
+                                    current_button_pressed = true;
+                                    desc->updated = true;
+
+                                    id+=1;
+                                    mask = mask >> 1;
+                              }else{
+                                    //One of the buttons not pressed
+                                    current_button_pressed = false;
+                                    desc->updated = false;
+                                    break;
+                              }
                         }
-                        //light up the button if pressed
-                        if(input_state(port, RETRO_DEVICE_JOYPAD, 0, id)){
-                              button_pressed = true;
-                              desc->updated = true;
-                        }
+                        button_pressed = button_pressed || current_button_pressed;
                         break;
                   case OVERLAY_TYPE_ANALOG_LEFT:
                   case OVERLAY_TYPE_ANALOG_RIGHT:
