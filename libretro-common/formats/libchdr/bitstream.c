@@ -10,7 +10,6 @@
 
 #include "bitstream.h"
 #include <stdlib.h>
-#include <retro_inline.h>
 
 //**************************************************************************
 //  INLINE FUNCTIONS
