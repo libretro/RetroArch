@@ -2151,7 +2151,7 @@ MSG_HASH(
    "Check if all the required firmware is present before attempting to load content."
    )
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Frequenza di aggiornamento verticale dello schermo. Utilizzato per calcolare un'adeguata frequenza di ingresso audio. NOTA: questa verrà ignorata se è abilitato "Threaded Video".")
+   "Frequenza di aggiornamento verticale dello schermo. Utilizzato per calcolare un'adeguata frequenza di ingresso audio. NOTA: questa verrà ignorata se è abilitato 'Threaded Video'.")
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
    "Abilita audio output."
