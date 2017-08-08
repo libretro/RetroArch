@@ -784,8 +784,8 @@ static bool input_overlay_add_inputs(input_overlay_t *ol,
                         }
                         //light up the button if pressed
                         if(input_state(port, RETRO_DEVICE_JOYPAD, 0, id)){
-                              desc->updated = true;
                               button_pressed = true;
+                              desc->updated = true;
                         }
                         break;
                   case OVERLAY_TYPE_ANALOG_LEFT:
@@ -803,11 +803,19 @@ static bool input_overlay_add_inputs(input_overlay_t *ol,
                         
                         desc->delta_x = dx;
                         desc->delta_y = dy;
-                        
-                        button_pressed = true;
+                        /*Maybe use some option here instead orf 0, only display
+                          changes greater than some magnitude.
+                        */
+                        if((dx*dx) > 0 || (dy*dy) > 0)
+                              button_pressed = true;
                   }
                         break;
                   case OVERLAY_TYPE_KEYBOARD:
+                        if(input_state(port, RETRO_DEVICE_KEYBOARD, 0, desc->key_mask)){
+                              desc->updated = true;
+                              button_pressed = true;
+                        }
+
                         break;
                   default:
                         break;
