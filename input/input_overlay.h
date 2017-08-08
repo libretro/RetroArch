@@ -244,14 +244,6 @@ void input_poll_overlay(input_overlay_t *ol, float opacity, unsigned analog_dpad
 void input_state_overlay(input_overlay_t *ol,
       int16_t *ret, unsigned port, unsigned device, unsigned idx,
       unsigned id);
-/**
- * input_overlay_add_inputs:
- * @ol : pointer to overlay
- * 
- * Adds inputs from current_input to the overlay, so it's displayed
- * returns true if an input that is pressed will change the overlay 
- */
-bool input_overlay_add_inputs(input_overlay_t *ol, unsigned port, unsigned analog_dpad_mode);
 
 bool input_overlay_key_pressed(input_overlay_t *ol, int key);
 

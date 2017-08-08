@@ -68,6 +68,8 @@ struct input_overlay
 
 input_overlay_t *overlay_ptr = NULL;
 
+static bool input_overlay_add_inputs(input_overlay_t *ol,
+      unsigned port, unsigned analog_dpad_mode);
 /**
  * input_overlay_scale:
  * @ol                    : Overlay handle.
@@ -747,8 +749,15 @@ void input_state_overlay(input_overlay_t *ol, int16_t *ret,
          break;
    }
 }
-
-bool input_overlay_add_inputs(input_overlay_t *ol,
+/**
+ * input_overlay_add_inputs:
+ * @ol : pointer to overlay
+ * @port : the user to show the inputs of
+ *
+ * Adds inputs from current_input to the overlay, so it's displayed
+ * returns true if an input that is pressed will change the overlay 
+ */
+static bool input_overlay_add_inputs(input_overlay_t *ol,
       unsigned port, unsigned analog_dpad_mode)
 {     
       int i;
