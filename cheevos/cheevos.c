@@ -921,7 +921,7 @@ static unsigned cheevos_prefix_to_comp_size(char prefix)
 {
    /* Careful not to use ABCDEF here, this denotes part of an actual variable! */
 
-   switch( toupper( prefix ) )
+   switch( toupper( (unsigned char)prefix ) )
    {
       case 'M':
          return CHEEVOS_VAR_SIZE_BIT_0;
@@ -1141,13 +1141,13 @@ static void cheevos_parse_var(cheevos_var_t *var, const char **memaddr)
    const char *str = *memaddr;
    unsigned base   = 16;
 
-   if (toupper(*str) == 'D' && str[1] == '0' && toupper(str[2]) == 'X')
+   if (toupper((unsigned char)*str) == 'D' && str[1] == '0' && toupper((unsigned char)str[2]) == 'X')
    {
       /* d0x + 4 hex digits */
       str += 3;
       var->type = CHEEVOS_VAR_TYPE_DELTA_MEM;
    }
-   else if (*str == '0' && toupper(str[1]) == 'X')
+   else if (*str == '0' && toupper((unsigned char)str[1]) == 'X')
    {
       /* 0x + 4 hex digits */
       str += 2;
@@ -1157,11 +1157,11 @@ static void cheevos_parse_var(cheevos_var_t *var, const char **memaddr)
    {
       var->type = CHEEVOS_VAR_TYPE_VALUE_COMP;
 
-      if (toupper(*str) == 'H')
+      if (toupper((unsigned char)*str) == 'H')
          str++;
       else
       {
-         if (toupper(*str) == 'V')
+         if (toupper((unsigned char)*str) == 'V')
             str++;
          
          base = 10;
@@ -2072,7 +2072,7 @@ static void cheevos_url_encode(const char *str, char *encoded, size_t len)
 {
    while (*str)
    {
-      if (     isalnum(*str) || *str == '-'
+      if (     isalnum((unsigned char)*str) || *str == '-'
             || *str == '_' || *str == '.'
             || *str == '~')
       {

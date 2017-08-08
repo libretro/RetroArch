@@ -860,7 +860,7 @@ static bool menu_content_playlist_load(menu_content_ctx_playlist_info_t *info)
       char *path_tolower  = strdup(path);
 
       for (i = 0; i < strlen(path_tolower); ++i)
-         path_tolower[i] = tolower(path_tolower[i]);
+         path_tolower[i] = tolower((unsigned char)path_tolower[i]);
 
       if (strstr(path_tolower, file_path_str(FILE_PATH_ZIP_EXTENSION)))
          strstr(path_tolower, file_path_str(FILE_PATH_ZIP_EXTENSION))[4] = '\0';

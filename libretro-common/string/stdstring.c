@@ -30,7 +30,7 @@ char *string_to_upper(char *s)
 {
    char *cs = (char *)s;
    for ( ; *cs != '\0'; cs++)
-      *cs = toupper(*cs);
+      *cs = toupper((unsigned char)*cs);
    return s;
 }
 
@@ -38,7 +38,7 @@ char *string_to_lower(char *s)
 {
    char *cs = (char *)s;
    for ( ; *cs != '\0'; cs++)
-      *cs = tolower(*cs);
+      *cs = tolower((unsigned char)*cs);
    return s;
 }
 
@@ -48,10 +48,10 @@ char *string_ucwords(char *s)
    for ( ; *cs != '\0'; cs++)
    {
       if (*cs == ' ')
-         *(cs+1) = toupper(*(cs+1));
+         *(cs+1) = toupper((unsigned char)*(cs+1));
    }
 
-   s[0] = toupper(s[0]);
+   s[0] = toupper((unsigned char)s[0]);
    return s;
 }
 
@@ -108,7 +108,7 @@ char *string_trim_whitespace_left(char *const s)
       size_t len = strlen(s);
       char *cur  = s;
 
-      while(*cur && isspace(*cur))
+      while(*cur && isspace((unsigned char)*cur))
          ++cur, --len;
 
       if(s != cur)
@@ -127,10 +127,10 @@ char *string_trim_whitespace_right(char *const s)
       size_t len = strlen(s);
       char  *cur = s + len - 1;
 
-      while(cur != s && isspace(*cur))
+      while(cur != s && isspace((unsigned char)*cur))
          --cur, --len;
 
-      cur[isspace(*cur) ? 0 : 1] = '\0';
+      cur[isspace((unsigned char)*cur) ? 0 : 1] = '\0';
    }
 
    return s;
