@@ -706,7 +706,7 @@ void input_poll_overlay(input_overlay_t *ol, float opacity, unsigned analog_dpad
          break;
    }
    if(settings->bools.input_overlay_show_physical_inputs){
-      button_pressed = input_overlay_add_inputs(ol, 0, analog_dpad_mode);
+      button_pressed = input_overlay_add_inputs(ol, settings->uints.input_overlay_show_physical_inputs_port, analog_dpad_mode);
    }
    if (button_pressed || polled)
       input_overlay_post_poll(ol, opacity);

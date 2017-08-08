@@ -329,6 +329,8 @@ typedef struct settings
 
       unsigned camera_width;
       unsigned camera_height;
+
+      unsigned input_overlay_show_physical_inputs_port;
    } uints;
 
    struct

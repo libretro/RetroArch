@@ -1374,6 +1374,7 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
 #endif
    SETTING_UINT("bundle_assets_extract_version_current", &settings->uints.bundle_assets_extract_version_current, true, 0, false);
    SETTING_UINT("bundle_assets_extract_last_version",    &settings->uints.bundle_assets_extract_last_version, true, 0, false);
+   SETTING_UINT("input_overlay_show_physical_inputs_port", &settings->uints.input_overlay_show_physical_inputs_port, true, 0, false);
 
    *size = count;
 
