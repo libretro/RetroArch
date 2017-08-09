@@ -97,7 +97,7 @@ FONT 8, "Ms Shell Dlg"
 // Icon resources
 //
 LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
-1                  ICON           "icon_light.ico"
+1                  ICON           "retroarch.ico"
 
 
 
