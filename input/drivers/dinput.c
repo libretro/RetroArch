@@ -51,7 +51,6 @@
 #include "../../gfx/video_driver.h"
 
 #include "../../verbosity.h"
-#include "../../tasks/tasks_internal.h"
 
 /* Keep track of which pad indexes are 360 controllers.
  * Not static, will be read in xinput_joypad.c
@@ -102,23 +101,20 @@ void dinput_destroy_context(void)
 
 bool dinput_init_context(void)
 {
-   bool context_initialized = false;
    if (g_dinput_ctx)
       return true;
 
    CoInitialize(NULL);
 
    /* Who said we shouldn't have same call signature in a COM API? <_< */
-   context_initialized = (SUCCEEDED(DirectInput8Create(
+   if (!(SUCCEEDED(DirectInput8Create(
                GetModuleHandle(NULL), DIRECTINPUT_VERSION,
 #ifdef __cplusplus
                IID_IDirectInput8,
 #else
                &IID_IDirectInput8,
 #endif
-               (void**)&g_dinput_ctx, NULL)));
-
-   if (!context_initialized)
+               (void**)&g_dinput_ctx, NULL))))
       goto error;
 
    return true;
