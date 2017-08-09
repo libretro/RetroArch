@@ -50,20 +50,12 @@
 #include "../../menu/menu_driver.h"
 #endif
 
-#ifndef _MSC_VER
-extern "C" {
-#endif
-
 #include <encodings/utf.h>
 
-LRESULT win32_menu_loop(HWND owner, WPARAM wparam);
-
-#ifndef _MSC_VER
-}
-#endif
+extern LRESULT win32_menu_loop(HWND owner, WPARAM wparam);
 
 #ifdef HAVE_D3D9
-extern "C" bool dinput_handle_message(void *dinput, UINT message,
+extern bool dinput_handle_message(void *dinput, UINT message,
       WPARAM wParam, LPARAM lParam);
 extern void *dinput_gdi;
 extern void *dinput_wgl;
@@ -128,18 +120,15 @@ static HMONITOR win32_monitor_last;
 static HMONITOR win32_monitor_all[MAX_MONITORS];
 static unsigned win32_monitor_count              = 0;
 
-extern "C"
+bool doubleclick_on_titlebar_pressed(void)
 {
-   bool doubleclick_on_titlebar_pressed(void)
-   {
-      return doubleclick_on_titlebar;
-   }
+   return doubleclick_on_titlebar;
+}
 
-   void unset_doubleclick_on_titlebar(void)
-   {
-      doubleclick_on_titlebar = false;
-   }
-};
+void unset_doubleclick_on_titlebar(void)
+{
+   doubleclick_on_titlebar = false;
+}
 
 INT_PTR CALLBACK PickCoreProc(HWND hDlg, UINT message, 
         WPARAM wParam, LPARAM lParam)
@@ -232,7 +221,7 @@ void win32_monitor_get_info(void)
    memset(&current_mon, 0, sizeof(current_mon));
    current_mon.cbSize = sizeof(MONITORINFOEX);
 
-   GetMonitorInfo(win32_monitor_last, (MONITORINFOEX*)&current_mon);
+   GetMonitorInfo(win32_monitor_last, (LPMONITORINFO)&current_mon);
    ChangeDisplaySettingsEx(current_mon.szDevice, NULL, NULL, 0, NULL);
 }
 
@@ -270,7 +259,7 @@ void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id)
 
    memset(mon, 0, sizeof(*mon));
    mon->cbSize = sizeof(MONITORINFOEX);
-   GetMonitorInfo(*hm_to_use, (MONITORINFOEX*)mon);
+   GetMonitorInfo(*hm_to_use, (LPMONITORINFO)mon);
 }
 
 /* Get the count of the files dropped */
@@ -498,7 +487,10 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
    return 0;
 }
 
-extern void ui_window_win32_set_droppable(void *data, bool droppable);
+static void win32_set_droppable(ui_window_win32_t *window, bool droppable)
+{
+   DragAcceptFiles(window->hwnd, droppable);
+}
 
 #ifdef HAVE_D3D9
 LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
@@ -536,7 +528,7 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
             
             win32_window.hwnd     = hwnd;
 
-            ui_window_win32_set_droppable(&win32_window, true);
+            win32_set_droppable(&win32_window, true);
          }
          return 0;
    }
@@ -584,7 +576,7 @@ LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
 
             create_graphics_context(hwnd, &g_quit);
 
-            ui_window_win32_set_droppable(&win32_window, true);
+            win32_set_droppable(&win32_window, true);
          }
          return 0;
    }
@@ -670,7 +662,7 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
 
             create_gdi_context(hwnd, &g_quit);
 
-            ui_window_win32_set_droppable(&win32_window, true);
+            win32_set_droppable(&win32_window, true);
          }
          return 0;
    }
@@ -895,7 +887,7 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
           {}
 
          /* Display settings might have changed, get new coordinates. */
-         GetMonitorInfo(*hm_to_use, (MONITORINFOEX*)current_mon);
+         GetMonitorInfo(*hm_to_use, (LPMONITORINFO)current_mon);
          *mon_rect = current_mon->rcMonitor;
       }
    }

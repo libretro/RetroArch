@@ -154,6 +154,13 @@ CHEATS
 #include "../libretro-common/hash/rhash.c"
 
 /*============================================================
+UI COMMON CONTEXT
+============================================================ */
+#if defined(_WIN32) && !defined(_XBOX)
+#include "../gfx/common/win32_common.c"
+#endif
+
+/*============================================================
 VIDEO CONTEXT
 ============================================================ */
 #include "../gfx/drivers_context/gfx_null_ctx.c"
