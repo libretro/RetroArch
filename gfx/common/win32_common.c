@@ -487,9 +487,12 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
    return 0;
 }
 
+extern VOID (WINAPI *DragAcceptFiles_func)(HWND, BOOL);
+
 static void win32_set_droppable(ui_window_win32_t *window, bool droppable)
 {
-   DragAcceptFiles(window->hwnd, droppable);
+   if (DragAcceptFiles_func != NULL)
+      DragAcceptFiles_func(window->hwnd, droppable);
 }
 
 #ifdef HAVE_D3D9

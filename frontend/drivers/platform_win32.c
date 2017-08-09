@@ -46,6 +46,9 @@
  */
 
 static dylib_t dwmlib;
+static dylib_t shell32lib;
+
+VOID (WINAPI *DragAcceptFiles_func)(HWND, BOOL);
 
 static bool dwm_composition_disabled;
 
@@ -55,7 +58,10 @@ static void gfx_dwm_shutdown(void)
 {
    if (dwmlib)
       dylib_close(dwmlib);
-   dwmlib = NULL;
+   if (shell32lib)
+      dylib_close(shell32lib);
+   dwmlib     = NULL;
+   shell32lib = NULL;
 }
 
 static bool gfx_init_dwm(void)
@@ -65,13 +71,23 @@ static bool gfx_init_dwm(void)
    if (inited)
       return true;
 
+   atexit(gfx_dwm_shutdown);
+
+   shell32lib = dylib_load("shell32.dll");
+   if (!shell32lib)
+   {
+      RARCH_WARN("Did not find shell32.dll.\n");
+   }
+
    dwmlib = dylib_load("dwmapi.dll");
    if (!dwmlib)
    {
-      RARCH_LOG("Did not find dwmapi.dll.\n");
+      RARCH_WARN("Did not find dwmapi.dll.\n");
       return false;
    }
-   atexit(gfx_dwm_shutdown);
+
+   DragAcceptFiles_func = 
+      (VOID (WINAPI*)(HWND, BOOL))dylib_proc(shell32lib, "DragAcceptFiles");
 
    HRESULT (WINAPI *mmcss)(BOOL) = 
       (HRESULT (WINAPI*)(BOOL))dylib_proc(dwmlib, "DwmEnableMMCSS");
