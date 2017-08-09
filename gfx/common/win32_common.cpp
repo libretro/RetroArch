@@ -1054,8 +1054,39 @@ void win32_destroy_window(void)
    main_window.hwnd = NULL;
 }
 
-void win32_get_video_output_size(void *data,
+void win32_get_video_output_prev(
       unsigned *width, unsigned *height)
+{
+   DEVMODE dm;
+   int iModeNum;
+   unsigned prev_width  = 0;
+   unsigned prev_height = 0;
+   unsigned curr_width  = 0;
+   unsigned curr_height = 0;
+
+   memset(&dm, 0, sizeof(dm));
+   dm.dmSize = sizeof(dm);
+
+   win32_get_video_output_size(&curr_width, &curr_height);
+
+   for (iModeNum = 0; EnumDisplaySettings(NULL, iModeNum, &dm) != 0; iModeNum++)
+   {
+      if (dm.dmPelsWidth == curr_width && dm.dmPelsHeight == curr_height)
+      {
+         if (prev_width != curr_width && prev_height != curr_height)
+         {
+            *width       = dm.dmPelsWidth; 
+            *height      = dm.dmPelsHeight; 
+            break;
+         }
+      }
+
+      prev_width     = dm.dmPelsWidth;
+      prev_height    = dm.dmPelsHeight;
+   }
+}
+
+void win32_get_video_output_size(unsigned *width, unsigned *height)
 {
    DEVMODE dm;
    memset(&dm, 0, sizeof(dm));
