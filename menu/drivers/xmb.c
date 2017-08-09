@@ -1394,7 +1394,7 @@ static xmb_node_t* xmb_get_userdata_from_horizontal_list(
       menu_entries_get_actiondata_at_offset(xmb->horizontal_list, i);
 }
 
-static void xmb_push_animations(xmb_node_t *node, float ia, float ix)
+static void xmb_push_animations(xmb_node_t *node, uintptr_t tag, float ia, float ix)
 {
    menu_animation_ctx_entry_t entry;
 
@@ -1402,7 +1402,7 @@ static void xmb_push_animations(xmb_node_t *node, float ia, float ix)
    entry.target_value = ia;
    entry.subject      = &node->alpha;
    entry.easing_enum  = EASING_OUT_QUAD;
-   entry.tag          = -1;
+   entry.tag          = tag;
    entry.cb           = NULL;
 
    if (entry.subject)
@@ -1435,7 +1435,7 @@ static void xmb_list_switch_old(xmb_handle_t *xmb,
       if (!node)
          continue;
 
-      xmb_push_animations(node, ia, -xmb->icon.spacing.horizontal * dir);
+      xmb_push_animations(node, (uintptr_t)list, ia, -xmb->icon.spacing.horizontal * dir);
    }
 }
 
@@ -1501,7 +1501,7 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
       if (i == current)
          ia = xmb->items.active.alpha;
 
-      xmb_push_animations(node, ia, 0);
+      xmb_push_animations(node, (uintptr_t)list, ia, 0);
    }
 }
 
@@ -3736,27 +3736,17 @@ static void xmb_list_clear(file_list_t *list)
 {
    size_t i;
    size_t size = list->size;
+   menu_animation_ctx_tag_t tag = { (uintptr_t)list };
+
+   menu_animation_ctl(MENU_ANIMATION_CTL_KILL_BY_TAG, &tag);
 
    for (i = 0; i < size; ++i)
    {
-      menu_animation_ctx_subject_t subject;
-      float *subjects[5];
       xmb_node_t *node = (xmb_node_t*)
          menu_entries_get_userdata_at_offset(list, i);
 
       if (!node)
          continue;
-
-      subjects[0] = &node->alpha;
-      subjects[1] = &node->label_alpha;
-      subjects[2] = &node->zoom;
-      subjects[3] = &node->x;
-      subjects[4] = &node->y;
-
-      subject.count = 5;
-      subject.data  = subjects;
-
-      menu_animation_ctl(MENU_ANIMATION_CTL_KILL_BY_SUBJECT, &subject);
 
       file_list_free_userdata(list, i);
    }
@@ -3766,29 +3756,12 @@ static void xmb_list_deep_copy(const file_list_t *src, file_list_t *dst)
 {
    size_t i;
    size_t size = dst->size;
+   menu_animation_ctx_tag_t tag = { (uintptr_t)dst };
+
+   menu_animation_ctl(MENU_ANIMATION_CTL_KILL_BY_TAG, &tag);
 
    for (i = 0; i < size; ++i)
    {
-      xmb_node_t *node = (xmb_node_t*)
-         menu_entries_get_userdata_at_offset(dst, i);
-
-      if (node)
-      {
-         menu_animation_ctx_subject_t subject;
-         float *subjects[5];
-
-         subjects[0]   = &node->alpha;
-         subjects[1]   = &node->label_alpha;
-         subjects[2]   = &node->zoom;
-         subjects[3]   = &node->x;
-         subjects[4]   = &node->y;
-
-         subject.count = 5;
-         subject.data  = subjects;
-
-         menu_animation_ctl(MENU_ANIMATION_CTL_KILL_BY_SUBJECT, &subject);
-      }
-
       file_list_free_userdata(dst, i);
       file_list_free_actiondata(dst, i); /* this one was allocated by us */
    }

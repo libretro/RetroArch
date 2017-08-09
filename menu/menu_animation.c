@@ -36,7 +36,7 @@ struct tween
    float       initial_value;
    float       target_value;
    float       *subject;
-   int         tag;
+   uintptr_t   tag;
    easing_cb   easing;
    tween_cb    cb;
 };
@@ -624,7 +624,7 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
             unsigned i;
             menu_animation_ctx_tag_t *tag = (menu_animation_ctx_tag_t*)data;
 
-            if (!tag || tag->id == -1)
+            if (!tag || tag->id == (uintptr_t)-1)
                return false;
 
             for (i = 0; i < anim.size; ++i)
