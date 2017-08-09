@@ -109,15 +109,14 @@ bool dinput_init_context(void)
    CoInitialize(NULL);
 
    /* Who said we shouldn't have same call signature in a COM API? <_< */
+   context_initialized = (SUCCEEDED(DirectInput8Create(
+               GetModuleHandle(NULL), DIRECTINPUT_VERSION,
 #ifdef __cplusplus
-   context_initialized = (SUCCEEDED(DirectInput8Create(
-      GetModuleHandle(NULL), DIRECTINPUT_VERSION, IID_IDirectInput8,
-      (void**)&g_dinput_ctx, NULL)));
+               IID_IDirectInput8,
 #else
-   context_initialized = (SUCCEEDED(DirectInput8Create(
-      GetModuleHandle(NULL), DIRECTINPUT_VERSION, &IID_IDirectInput8,
-      (void**)&g_dinput_ctx, NULL)));
+               &IID_IDirectInput8,
 #endif
+               (void**)&g_dinput_ctx, NULL)));
 
    if (!context_initialized)
       goto error;
@@ -148,30 +147,29 @@ static void *dinput_init(const char *joypad_driver)
    if (!string_is_empty(joypad_driver))
       di->joypad_driver_name = strdup(joypad_driver);
 
+   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx,
 #ifdef __cplusplus
-   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx, GUID_SysKeyboard, &di->keyboard, NULL)))
+               GUID_SysKeyboard,
+#else
+               &GUID_SysKeyboard,
+#endif
+               &di->keyboard, NULL)))
    {
       RARCH_ERR("[DINPUT]: Failed to create keyboard device.\n");
       di->keyboard = NULL;
    }
 
-   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx, GUID_SysMouse, &di->mouse, NULL)))
-   {
-      RARCH_ERR("[DINPUT]: Failed to create mouse device.\n");
-      di->mouse = NULL;
-   }
+   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx,
+#ifdef __cplusplus
+               GUID_SysMouse,
 #else
-   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx, &GUID_SysKeyboard, &di->keyboard, NULL)))
-   {
-      RARCH_ERR("[DINPUT]: Failed to create keyboard device.\n");
-      di->keyboard = NULL;
-   }
-   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx, &GUID_SysMouse, &di->mouse, NULL)))
+               &GUID_SysMouse,
+#endif
+               &di->mouse, NULL)))
    {
       RARCH_ERR("[DINPUT]: Failed to create mouse device.\n");
       di->mouse = NULL;
    }
-#endif
 
    if (di->keyboard)
    {
@@ -195,16 +193,8 @@ static void *dinput_init(const char *joypad_driver)
    return di;
 }
 
-#if __cplusplus
-extern "C" {
-#endif
-
 bool doubleclick_on_titlebar_pressed(void);
 void unset_doubleclick_on_titlebar(void);
-
-#if __cplusplus
-}
-#endif
 
 static void dinput_poll(void *data)
 {
@@ -601,9 +591,6 @@ static void dinput_clear_pointers(struct dinput_input *di)
    }
 }
 
-#ifdef __cplusplus
-extern "C"
-#endif
 bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lParam)
 {
    struct dinput_input *di = (struct dinput_input *)dinput;
