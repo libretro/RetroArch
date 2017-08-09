@@ -1053,3 +1053,17 @@ void win32_destroy_window(void)
 #endif
    main_window.hwnd = NULL;
 }
+
+void win32_get_video_output_size(void *data,
+      unsigned *width, unsigned *height)
+{
+   DEVMODE dm;
+   memset(&dm, 0, sizeof(dm));
+   dm.dmSize = sizeof(dm);
+
+   if (EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &dm) != 0)
+   {
+      *width  = dm.dmPelsWidth;
+      *height = dm.dmPelsHeight;
+   }
+}

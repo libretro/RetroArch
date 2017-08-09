@@ -113,6 +113,9 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
 	RECT *rect, RECT *mon_rect, DWORD *style);
 #endif
 
+void win32_get_video_output_size(void *data,
+      unsigned *width, unsigned *height);
+
 void win32_window_reset(void);
 
 void win32_destroy_window(void);
