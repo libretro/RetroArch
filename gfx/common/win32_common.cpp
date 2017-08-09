@@ -30,9 +30,6 @@
 #include "../../tasks/tasks_internal.h"
 #include "../../core_info.h"
 
-static unsigned current_window_width  = 0;
-static unsigned current_window_height = 0;
-
 #if !defined(_XBOX)
 
 #define IDI_ICON 1
@@ -755,8 +752,8 @@ static bool win32_monitor_set_fullscreen(unsigned width, unsigned height,
 
    memset(&devmode, 0, sizeof(devmode));
    devmode.dmSize             = sizeof(DEVMODE);
-   devmode.dmPelsWidth        = (current_window_width == 0) ? width : current_window_width;
-   devmode.dmPelsHeight       = (current_window_height == 0) ? height : current_window_height;
+   devmode.dmPelsWidth        = width;
+   devmode.dmPelsHeight       = height;
    devmode.dmDisplayFrequency = refresh;
    devmode.dmFields           = DM_PELSWIDTH | DM_PELSHEIGHT | DM_DISPLAYFREQUENCY;
 
@@ -1054,7 +1051,7 @@ void win32_destroy_window(void)
 #ifndef _XBOX
    UnregisterClass("RetroArch", GetModuleHandle(NULL));
 #endif
-   main_window.hwnd        = NULL;
+   main_window.hwnd = NULL;
 }
 
 void win32_get_video_output_prev(
@@ -1090,10 +1087,8 @@ void win32_get_video_output_prev(
 
    if (found)
    {
-      *width                = prev_width; 
-      *height               = prev_height; 
-      current_window_width  = prev_width;
-      current_window_height = prev_height;
+      *width       = prev_width; 
+      *height      = prev_height; 
    }
 }
 
@@ -1115,10 +1110,8 @@ void win32_get_video_output_next(
    {
       if (found)
       {
-         *width                = dm.dmPelsWidth;
-         *height               = dm.dmPelsHeight;
-         current_window_width  = *width;
-         current_window_height = *height;
+         *width     = dm.dmPelsWidth;
+         *height    = dm.dmPelsHeight;
          break;
       }
 
@@ -1133,12 +1126,7 @@ void win32_get_video_output_size(unsigned *width, unsigned *height)
    memset(&dm, 0, sizeof(dm));
    dm.dmSize = sizeof(dm);
 
-   if (current_window_width != 0 && current_window_height != 0)
-   {
-      *width  = current_window_width;
-      *height = current_window_height;
-   }
-   else if (EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &dm) != 0)
+   if (EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &dm) != 0)
    {
       *width  = dm.dmPelsWidth;
       *height = dm.dmPelsHeight;

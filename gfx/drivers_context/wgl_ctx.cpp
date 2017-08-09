@@ -710,16 +710,10 @@ static void gfx_ctx_wgl_get_video_output_size(void *data,
 
 static void gfx_ctx_wgl_get_video_output_prev(void *data)
 {
-   unsigned width  = 0;
-   unsigned height = 0;
-   win32_get_video_output_prev(&width, &height);
 }
 
 static void gfx_ctx_wgl_get_video_output_next(void *data)
 {
-   unsigned width  = 0;
-   unsigned height = 0;
-   win32_get_video_output_next(&width, &height);
 }
 
 const gfx_ctx_driver_t gfx_ctx_wgl = {
