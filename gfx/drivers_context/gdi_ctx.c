@@ -126,7 +126,8 @@ static void gfx_ctx_gdi_get_video_size(void *data,
    }
 }
 
-static void *gfx_ctx_gdi_init(video_frame_info_t *video_info, void *video_driver)
+static void *gfx_ctx_gdi_init(
+      video_frame_info_t *video_info, void *video_driver)
 {
    WNDCLASSEX wndclass = {0};
 
