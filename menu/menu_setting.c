@@ -2343,15 +2343,6 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 
-#ifdef HAVE_LAKKA
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_UPDATE_LAKKA,
-               MENU_ENUM_LABEL_VALUE_UPDATE_LAKKA,
-               &group_info,
-               &subgroup_info,
-               parent_group);
-#else
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_ONLINE_UPDATER,
@@ -2359,8 +2350,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-#endif
-
 #endif
 
          CONFIG_ACTION(

@@ -4063,10 +4063,6 @@ static int xmb_list_push(void *data, void *userdata,
             entry.enum_idx      = MENU_ENUM_LABEL_ADD_CONTENT_LIST;
             menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 #if defined(HAVE_NETWORKING)
-#ifdef HAVE_LAKKA
-            entry.enum_idx      = MENU_ENUM_LABEL_UPDATE_LAKKA;
-            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
-#else
             {
                settings_t *settings      = config_get_ptr();
                if (settings->bools.menu_show_online_updater)
@@ -4075,7 +4071,6 @@ static int xmb_list_push(void *data, void *userdata,
                   menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
                }
             }
-#endif
 #endif
             entry.enum_idx      = MENU_ENUM_LABEL_INFORMATION_LIST;
             menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);

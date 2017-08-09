@@ -3178,6 +3178,23 @@ static int menu_displaylist_parse_netplay_room_list(
 static int menu_displaylist_parse_options(
       menu_displaylist_info_t *info)
 {
+#ifdef HAVE_LAKKA
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_LAKKA),
+         msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_LAKKA),
+         MENU_ENUM_LABEL_UPDATE_LAKKA,
+         MENU_SETTING_ACTION, 0, 0);
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST),
+         msg_hash_to_str(MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST),
+         MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST,
+         MENU_SETTING_ACTION, 0, 0);
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT),
+         msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS),
+         MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS,
+         MENU_SETTING_ACTION, 0, 0);
+#else
 #ifdef HAVE_NETWORKING
    settings_t *settings         = config_get_ptr();
 
@@ -3275,6 +3292,7 @@ static int menu_displaylist_parse_options(
          msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
          MENU_ENUM_LABEL_NO_ITEMS,
          MENU_SETTING_NO_ITEM, 0, 0);
+#endif
 #endif
 
    return 0;
@@ -4055,7 +4073,7 @@ static void wifi_scan_callback(void *task_data,
 bool menu_displaylist_process(menu_displaylist_info_t *info)
 {
    size_t idx   = 0;
-#if defined(HAVE_NETWORKING) && !defined(HAVE_LAKKA)
+#if defined(HAVE_NETWORKING)
    settings_t *settings         = config_get_ptr();
 #endif
 
@@ -4074,7 +4092,7 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
    if (info->need_sort)
       file_list_sort_on_alt(info->list);
 
-#if defined(HAVE_NETWORKING) && !defined(HAVE_LAKKA)
+#if defined(HAVE_NETWORKING)
    if (settings->bools.menu_show_core_updater)
       if (info->download_core)
       {
@@ -6132,16 +6150,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   PARSE_ACTION, false);
 #endif
 #if defined(HAVE_NETWORKING)
-#ifdef HAVE_LAKKA
-            menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_UPDATE_LAKKA,
-                  PARSE_ACTION, false);
-#else
             if (settings->bools.menu_show_online_updater)
                menu_displaylist_parse_settings_enum(menu, info,
                      MENU_ENUM_LABEL_ONLINE_UPDATER,
                      PARSE_ACTION, false);
-#endif
 #endif
             menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_SETTINGS, PARSE_ACTION, false);
