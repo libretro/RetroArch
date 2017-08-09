@@ -1059,6 +1059,7 @@ void win32_get_video_output_prev(
 {
    DEVMODE dm;
    int iModeNum;
+   bool found           = false;
    unsigned prev_width  = 0;
    unsigned prev_height = 0;
    unsigned curr_width  = 0;
@@ -1075,14 +1076,19 @@ void win32_get_video_output_prev(
       {
          if (prev_width != curr_width && prev_height != curr_height)
          {
-            *width       = dm.dmPelsWidth; 
-            *height      = dm.dmPelsHeight; 
+            found        = true;
             break;
          }
       }
 
       prev_width     = dm.dmPelsWidth;
       prev_height    = dm.dmPelsHeight;
+   }
+
+   if (found)
+   {
+      *width       = prev_width; 
+      *height      = prev_height; 
    }
 }
 
