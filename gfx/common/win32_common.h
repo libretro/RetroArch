@@ -119,6 +119,9 @@ void win32_get_video_output_size(
 void win32_get_video_output_prev(
       unsigned *width, unsigned *height);
 
+void win32_get_video_output_next(
+      unsigned *width, unsigned *height);
+
 void win32_window_reset(void);
 
 void win32_destroy_window(void);

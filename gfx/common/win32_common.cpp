@@ -1092,6 +1092,34 @@ void win32_get_video_output_prev(
    }
 }
 
+void win32_get_video_output_next(
+      unsigned *width, unsigned *height)
+{
+   DEVMODE dm;
+   int iModeNum;
+   bool found           = false;
+   unsigned curr_width  = 0;
+   unsigned curr_height = 0;
+
+   memset(&dm, 0, sizeof(dm));
+   dm.dmSize = sizeof(dm);
+
+   win32_get_video_output_size(&curr_width, &curr_height);
+
+   for (iModeNum = 0; EnumDisplaySettings(NULL, iModeNum, &dm) != 0; iModeNum++)
+   {
+      if (found)
+      {
+         *width     = dm.dmPelsWidth;
+         *height    = dm.dmPelsHeight;
+         break;
+      }
+
+      if (dm.dmPelsWidth == curr_width && dm.dmPelsHeight == curr_height)
+         found = true;
+   }
+}
+
 void win32_get_video_output_size(unsigned *width, unsigned *height)
 {
    DEVMODE dm;
