@@ -1431,6 +1431,7 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
       void *group_data, void *subgroup_data, const char *parent_group)
 {
 #ifdef HAVE_MENU
+   bool has_video_output                     = false;
    rarch_setting_t **list                    = (rarch_setting_t**)list_data;
    rarch_setting_info_t *list_info           = (rarch_setting_info_t*)list_info_data;
    rarch_setting_group_info_t *group_info    = (rarch_setting_group_info_t*)group_data;
@@ -1443,15 +1444,26 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
    (void)subgroup_info;
    (void)global;
 
-#if defined(GEKKO) || defined(__CELLOS_LV2__)
-   CONFIG_ACTION(
-         list, list_info,
-         MENU_ENUM_LABEL_SCREEN_RESOLUTION,
-         MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
-         group_info,
-         subgroup_info,
-         parent_group);
-#endif
+   has_video_output                          = video_driver_poke->get_video_output_next ||
+      current_video_context.get_video_output_next;
+   if (has_video_output)
+      has_video_output                       = video_driver_poke->get_video_output_prev ||
+      current_video_context.get_video_output_prev;
+   if (has_video_output)
+      has_video_output                       = video_driver_poke->get_video_output_size ||
+         current_video_context.get_video_output_size;
+
+   if (has_video_output)
+   {
+      CONFIG_ACTION(
+            list, list_info,
+            MENU_ENUM_LABEL_SCREEN_RESOLUTION,
+            MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
+            group_info,
+            subgroup_info,
+            parent_group);
+   }
+
 #if defined(__CELLOS_LV2__)
    CONFIG_BOOL(
          list, list_info,
