@@ -462,6 +462,32 @@ bool menu_animation_push(menu_animation_ctx_entry_t *entry)
    return true;
 }
 
+static int menu_animation_defrag_cmp(const void *a, const void *b)
+{
+   const struct tween *ta = (const struct tween *)a;
+   const struct tween *tb = (const struct tween *)b;
+
+   return tb->alive - ta->alive;
+}
+
+/* defragments and shrinks the tween list when possible */
+static void menu_animation_defrag()
+{
+   size_t i;
+
+   qsort(anim.list, anim.size, sizeof(anim.list[0]), menu_animation_defrag_cmp);
+
+   for (i = anim.size-1; i > 0; i--)
+   {
+      if (anim.list[i].alive)
+         break;
+
+      anim.size--;
+   }
+
+   anim.first_dead = anim.size;
+}
+
 bool menu_animation_update(float delta_time)
 {
    unsigned i;
@@ -486,9 +512,6 @@ bool menu_animation_update(float delta_time)
          *tween->subject = tween->target_value;
          tween->alive    = false;
 
-         if (i < anim.first_dead)
-            anim.first_dead = i;
-
          if (tween->cb)
             tween->cb();
       }
@@ -497,12 +520,15 @@ bool menu_animation_update(float delta_time)
          active_tweens += 1;
    }
 
-   if (!active_tweens)
+   if (active_tweens)
+      menu_animation_defrag();
+   else
    {
       anim.size           = 0;
       anim.first_dead     = 0;
       return false;
    }
+
 
    animation_is_active = true;
 
