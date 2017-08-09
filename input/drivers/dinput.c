@@ -107,14 +107,17 @@ bool dinput_init_context(void)
    CoInitialize(NULL);
 
    /* Who said we shouldn't have same call signature in a COM API? <_< */
-   if (!(SUCCEEDED(DirectInput8Create(
-               GetModuleHandle(NULL), DIRECTINPUT_VERSION,
 #ifdef __cplusplus
-               IID_IDirectInput8,
+   if (!(SUCCEEDED(DirectInput8Create(
+                  GetModuleHandle(NULL), DIRECTINPUT_VERSION,
+                  IID_IDirectInput8,
+                  (void**)&g_dinput_ctx, NULL))))
 #else
-               &IID_IDirectInput8,
+      if (!(SUCCEEDED(DirectInput8Create(
+                     GetModuleHandle(NULL), DIRECTINPUT_VERSION,
+                     &IID_IDirectInput8,
+                     (void**)&g_dinput_ctx, NULL))))
 #endif
-               (void**)&g_dinput_ctx, NULL))))
       goto error;
 
    return true;
@@ -143,25 +146,29 @@ static void *dinput_init(const char *joypad_driver)
    if (!string_is_empty(joypad_driver))
       di->joypad_driver_name = strdup(joypad_driver);
 
-   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx,
 #ifdef __cplusplus
+   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx,
                GUID_SysKeyboard,
-#else
-               &GUID_SysKeyboard,
-#endif
                &di->keyboard, NULL)))
+#else
+   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx,
+               &GUID_SysKeyboard,
+               &di->keyboard, NULL)))
+#endif
    {
       RARCH_ERR("[DINPUT]: Failed to create keyboard device.\n");
       di->keyboard = NULL;
    }
 
-   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx,
 #ifdef __cplusplus
+   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx,
                GUID_SysMouse,
-#else
-               &GUID_SysMouse,
-#endif
                &di->mouse, NULL)))
+#else
+   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx,
+               &GUID_SysMouse,
+               &di->mouse, NULL)))
+#endif
    {
       RARCH_ERR("[DINPUT]: Failed to create mouse device.\n");
       di->mouse = NULL;
