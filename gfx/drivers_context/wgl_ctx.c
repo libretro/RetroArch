@@ -270,14 +270,21 @@ void create_graphics_context(HWND hwnd, bool *quit)
       {
 #ifdef HAVE_VULKAN
          RECT rect;
-         unsigned width = rect.right - rect.left;
-         unsigned height = rect.bottom - rect.top;
+         HINSTANCE instance;
+         unsigned width  = 0;
+         unsigned height = 0;
+
          GetClientRect(hwnd, &rect);
-         HINSTANCE instance = GetModuleHandle(NULL);
+
+         instance = GetModuleHandle(NULL);
+         width    = rect.right - rect.left;
+         height   = rect.bottom - rect.top;
+
          if (!vulkan_surface_create(&win32_vk, VULKAN_WSI_WIN32,
                   &instance, &hwnd, 
                   width, height, win32_interval))
             *quit = true;
+
          g_inited = true;
 #endif
       }

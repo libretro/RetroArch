@@ -101,9 +101,6 @@ AUDIO
 UI COMMON CONTEXT
 ============================================================ */
 #if defined(_WIN32) && !defined(_XBOX)
-#if defined(HAVE_OPENGL) || defined(HAVE_VULKAN)
-#include "../gfx/drivers_context/wgl_ctx.cpp"
-#endif
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include "../gfx/drivers_context/gdi_ctx.cpp"
