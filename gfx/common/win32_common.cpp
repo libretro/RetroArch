@@ -184,10 +184,12 @@ INT_PTR CALLBACK PickCoreProc(HWND hDlg, UINT message,
                { 
                   case LBN_SELCHANGE:
                      {
-                        int lbItem;
                         const core_info_t *info = NULL;
-                        HWND hwndList = GetDlgItem(hDlg, ID_CORELISTBOX); 
-                        lbItem = (int)SendMessage(hwndList, LB_GETCURSEL, 0, 0); 
+                        HWND hwndList           = GetDlgItem(
+                              hDlg, ID_CORELISTBOX); 
+                        int lbItem              = (int)
+                           SendMessage(hwndList, LB_GETCURSEL, 0, 0); 
+
                         core_info_get_list(&core_info_list);
                         core_info_list_get_supported_cores(core_info_list,
                               path_get(RARCH_PATH_CONTENT), &core_info, &list_size);
@@ -214,7 +216,8 @@ static BOOL CALLBACK win32_monitor_enum_proc(HMONITOR hMonitor,
 void win32_monitor_from_window(void)
 {
 #ifndef _XBOX
-   win32_monitor_last = MonitorFromWindow(main_window.hwnd, MONITOR_DEFAULTTONEAREST);
+   win32_monitor_last        = 
+      MonitorFromWindow(main_window.hwnd, MONITOR_DEFAULTTONEAREST);
    const ui_window_t *window = ui_companion_driver_get_window_ptr();
 
    if (window)
@@ -236,16 +239,16 @@ void win32_monitor_get_info(void)
 void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id)
 {
    unsigned i;
-   settings_t *settings = config_get_ptr();
-   MONITORINFOEX *mon   = (MONITORINFOEX*)data;
-   HMONITOR *hm_to_use  = (HMONITOR*)hm_data;
-   unsigned fs_monitor  = settings->uints.video_monitor_index;
+   settings_t *settings  = config_get_ptr();
+   MONITORINFOEX *mon    = (MONITORINFOEX*)data;
+   HMONITOR *hm_to_use   = (HMONITOR*)hm_data;
+   unsigned fs_monitor   = settings->uints.video_monitor_index;
 
    if (!win32_monitor_last)
       win32_monitor_last = MonitorFromWindow(GetDesktopWindow(),
             MONITOR_DEFAULTTONEAREST);
 
-   *hm_to_use    = win32_monitor_last;
+   *hm_to_use            = win32_monitor_last;
 
    if (fs_monitor && fs_monitor <= win32_monitor_count
          && win32_monitor_all[fs_monitor - 1])
@@ -480,14 +483,14 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
          {
             g_resize_width  = LOWORD(lparam);
             g_resize_height = HIWORD(lparam);
-            g_resized = true;
+            g_resized       = true;
          }
          *quit = true;
          break;
      case WM_COMMAND:
          {
             settings_t *settings     = config_get_ptr();
-            if (settings->bools.ui_menubar_enable)
+            if (settings && settings->bools.ui_menubar_enable)
                win32_menu_loop(main_window.hwnd, wparam);
          }
          break;
@@ -538,7 +541,8 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
          return 0;
    }
 
-   if (dinput && dinput_handle_message(dinput, message, wparam, lparam))
+   if (dinput && dinput_handle_message(dinput,
+            message, wparam, lparam))
       return 0;
    return DefWindowProc(hwnd, message, wparam, lparam);
 }
@@ -568,7 +572,8 @@ LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
       case WM_QUIT:
       case WM_SIZE:
       case WM_COMMAND:
-         ret = WndProcCommon(&quit, hwnd, message, wparam, lparam);
+         ret = WndProcCommon(&quit,
+               hwnd, message, wparam, lparam);
          if (quit)
             return ret;
          break;
@@ -585,7 +590,8 @@ LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
    }
 
 #ifdef HAVE_D3D9
-   if (dinput_wgl && dinput_handle_message(dinput_wgl, message, wparam, lparam))
+   if (dinput_wgl && dinput_handle_message(dinput_wgl,
+            message, wparam, lparam))
       return 0;
 #endif
    return DefWindowProc(hwnd, message, wparam, lparam);
@@ -670,7 +676,8 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
    }
 
 #ifdef HAVE_D3D9
-   if (dinput_gdi && dinput_handle_message(dinput_gdi, message, wparam, lparam))
+   if (dinput_gdi && dinput_handle_message(dinput_gdi,
+            message, wparam, lparam))
       return 0;
 #endif
    return DefWindowProc(hwnd, message, wparam, lparam);
@@ -681,7 +688,8 @@ bool win32_window_create(void *data, unsigned style,
       unsigned height, bool fullscreen)
 {
 #ifndef _XBOX
-   main_window.hwnd = CreateWindowEx(0, "RetroArch", "RetroArch",
+   main_window.hwnd = CreateWindowEx(0,
+         "RetroArch", "RetroArch",
          style,
          fullscreen ? mon_rect->left : g_pos_x,
          fullscreen ? mon_rect->top  : g_pos_y,
@@ -738,13 +746,15 @@ void win32_monitor_init(void)
 {
 #ifndef _XBOX
    win32_monitor_count = 0;
-   EnumDisplayMonitors(NULL, NULL, win32_monitor_enum_proc, 0);
+   EnumDisplayMonitors(NULL, NULL,
+         win32_monitor_enum_proc, 0);
 #endif
 
    g_quit              = false;
 }
 
-static bool win32_monitor_set_fullscreen(unsigned width, unsigned height,
+static bool win32_monitor_set_fullscreen(
+      unsigned width, unsigned height,
       unsigned refresh, char *dev_name)
 {
 #ifndef _XBOX
@@ -755,7 +765,8 @@ static bool win32_monitor_set_fullscreen(unsigned width, unsigned height,
    devmode.dmPelsWidth        = width;
    devmode.dmPelsHeight       = height;
    devmode.dmDisplayFrequency = refresh;
-   devmode.dmFields           = DM_PELSWIDTH | DM_PELSHEIGHT | DM_DISPLAYFREQUENCY;
+   devmode.dmFields           = DM_PELSWIDTH 
+      | DM_PELSHEIGHT | DM_DISPLAYFREQUENCY;
 
    RARCH_LOG("Setting fullscreen to %ux%u @ %uHz on device %s.\n",
          width, height, refresh, dev_name);
@@ -797,10 +808,7 @@ void win32_check_window(bool *quit, bool *resize,
 
 bool win32_suppress_screensaver(void *data, bool enable)
 {
-#ifdef _XBOX
-   return false;
-#else
-
+#ifndef _XBOX
    if(enable)
    {
       int major, minor;
@@ -849,9 +857,9 @@ bool win32_suppress_screensaver(void *data, bool enable)
          return true;
       }
    }
+#endif
 
    return false;
-#endif
 }
 
 /* FIXME: It should not be necessary to add the W after MONITORINFOEX, but linking fails without it. */
@@ -949,10 +957,10 @@ bool win32_set_video_mode(void *data,
    DWORD style;
    MSG msg;
    RECT mon_rect;
-   unsigned mon_id;
-   MONITORINFOEX current_mon;
-   bool windowed_full;
    RECT rect;
+   MONITORINFOEX current_mon;
+   unsigned mon_id       = 0;
+   bool windowed_full    = false;
    HMONITOR hm_to_use    = NULL;
    settings_t *settings  = config_get_ptr();
    int res               = 0;
@@ -964,23 +972,26 @@ bool win32_set_video_mode(void *data,
 
    win32_monitor_info(&current_mon, &hm_to_use, &mon_id);
 
-   mon_rect        = current_mon.rcMonitor;
-   g_resize_width  = width;
-   g_resize_height = height;
+   mon_rect              = current_mon.rcMonitor;
+   g_resize_width        = width;
+   g_resize_height       = height;
 
-   windowed_full   = settings->bools.video_windowed_fullscreen;
+   windowed_full         = settings->bools.video_windowed_fullscreen;
 
    win32_set_style(&current_mon, &hm_to_use, &width, &height,
          fullscreen, windowed_full, &rect, &mon_rect, &style);
 
-   if (!win32_window_create(data, style, &mon_rect, width, height, fullscreen))
+   if (!win32_window_create(data, style,
+            &mon_rect, width, height, fullscreen))
       return false;
    
-   win32_set_window(&width, &height, fullscreen, windowed_full, &rect);
+   win32_set_window(&width, &height,
+         fullscreen, windowed_full, &rect);
 
    /* Wait until context is created (or failed to do so ...).
     * Please don't remove the (res = ) as GetMessage can return -1. */
-   while (!g_inited && !g_quit && (res = GetMessage(&msg, main_window.hwnd, 0, 0)) != 0)
+   while (!g_inited && !g_quit 
+         && (res = GetMessage(&msg, main_window.hwnd, 0, 0)) != 0)
    {
       if (res == -1)
       {
@@ -1020,19 +1031,20 @@ BOOL IsIconic(HWND hwnd)
 
 bool win32_has_focus(void)
 {
-#ifndef _XBOX
-   const ui_window_t *window = ui_companion_driver_get_window_ptr();
-#endif
-   if (!g_inited)
-      return false;
-
+   if (g_inited)
+   {
 #ifdef _XBOX
-   return GetForegroundWindow() == main_window.hwnd;
+      if (GetForegroundWindow() == main_window.hwnd)
+         return true;
 #else
-   if (window)
-      return window->focused(&main_window);
-   return false;
+      const ui_window_t *window = 
+         ui_companion_driver_get_window_ptr();
+      if (window)
+         return window->focused(&main_window);
 #endif
+   }
+
+   return false;
 }
 
 HWND win32_get_window(void)
@@ -1066,15 +1078,20 @@ void win32_get_video_output_prev(
    unsigned curr_height = 0;
 
    memset(&dm, 0, sizeof(dm));
-   dm.dmSize = sizeof(dm);
+
+   dm.dmSize            = sizeof(dm);
 
    win32_get_video_output_size(&curr_width, &curr_height);
 
-   for (iModeNum = 0; EnumDisplaySettings(NULL, iModeNum, &dm) != 0; iModeNum++)
+   for (iModeNum = 0; 
+         EnumDisplaySettings(NULL, iModeNum, &dm) != 0; 
+         iModeNum++)
    {
-      if (dm.dmPelsWidth == curr_width && dm.dmPelsHeight == curr_height)
+      if (     dm.dmPelsWidth == curr_width 
+            && dm.dmPelsHeight == curr_height)
       {
-         if (prev_width != curr_width && prev_height != curr_height)
+         if (     prev_width  != curr_width 
+               && prev_height != curr_height)
          {
             found        = true;
             break;
@@ -1106,7 +1123,9 @@ void win32_get_video_output_next(
 
    win32_get_video_output_size(&curr_width, &curr_height);
 
-   for (iModeNum = 0; EnumDisplaySettings(NULL, iModeNum, &dm) != 0; iModeNum++)
+   for (iModeNum = 0; 
+         EnumDisplaySettings(NULL, iModeNum, &dm) != 0; 
+         iModeNum++)
    {
       if (found)
       {
@@ -1115,7 +1134,8 @@ void win32_get_video_output_next(
          break;
       }
 
-      if (dm.dmPelsWidth == curr_width && dm.dmPelsHeight == curr_height)
+      if (     dm.dmPelsWidth == curr_width 
+            && dm.dmPelsHeight == curr_height)
          found = true;
    }
 }
