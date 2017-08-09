@@ -702,6 +702,20 @@ static void gfx_ctx_wgl_set_flags(void *data, uint32_t flags)
       win32_core_hw_context_enable = true;
 }
 
+static void gfx_ctx_wgl_get_video_output_size(void *data,
+      unsigned *width, unsigned *height)
+{
+   win32_get_video_output_size(width, height);
+}
+
+static void gfx_ctx_wgl_get_video_output_prev(void *data)
+{
+}
+
+static void gfx_ctx_wgl_get_video_output_next(void *data)
+{
+}
+
 const gfx_ctx_driver_t gfx_ctx_wgl = {
    gfx_ctx_wgl_init,
    gfx_ctx_wgl_destroy,
@@ -709,9 +723,9 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
    gfx_ctx_wgl_swap_interval,
    gfx_ctx_wgl_set_video_mode,
    gfx_ctx_wgl_get_video_size,
-   NULL, /* get_video_output_size */
-   NULL, /* get_video_output_prev */
-   NULL, /* get_video_output_next */
+   gfx_ctx_wgl_get_video_output_size,
+   gfx_ctx_wgl_get_video_output_prev,
+   gfx_ctx_wgl_get_video_output_next,
    gfx_ctx_wgl_get_metrics,
    NULL,
    gfx_ctx_wgl_update_title,

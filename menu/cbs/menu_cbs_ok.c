@@ -4333,7 +4333,7 @@ static int action_ok_video_resolution(const char *path,
 
       msg[0] = '\0';
 
-#ifdef __CELLOS_LV2__
+#if defined(__CELLOS_LV2__) || defined(_WIN32)
       command_event(CMD_EVENT_REINIT, NULL);
 #endif
       video_driver_set_video_mode(width, height, true);
