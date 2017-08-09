@@ -1118,7 +1118,7 @@ static void xmb_selection_pointer_changed(
 
    video_driver_get_size(NULL, &height);
 
-   tag.id    = (int)(uintptr_t)menu_list;
+   tag.id    = (uintptr_t)selection_buf;
 
    menu_animation_ctl(MENU_ANIMATION_CTL_KILL_BY_TAG, &tag);
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &num);
