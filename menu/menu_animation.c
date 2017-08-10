@@ -648,14 +648,14 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
       case MENU_ANIMATION_CTL_KILL_BY_TAG:
          {
             unsigned i;
-            menu_animation_ctx_tag_t *tag = (menu_animation_ctx_tag_t*)data;
+            menu_animation_ctx_tag *tag = (menu_animation_ctx_tag*)data;
 
-            if (!tag || tag->id == (uintptr_t)-1)
+            if (!tag || *tag == (uintptr_t)-1)
                return false;
 
             for (i = 0; i < anim.size; ++i)
             {
-               if (anim.list[i].tag != tag->id)
+               if (anim.list[i].tag != *tag)
                   continue;
 
                anim.list[i].alive   = false;

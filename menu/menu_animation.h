@@ -91,10 +91,7 @@ typedef struct menu_animation_ctx_delta
    float ideal;
 } menu_animation_ctx_delta_t;
 
-typedef struct menu_animation_ctx_tag
-{
-   uintptr_t id;
-} menu_animation_ctx_tag_t;
+typedef uintptr_t menu_animation_ctx_tag;
 
 typedef struct menu_animation_ctx_subject
 {

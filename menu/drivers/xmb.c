@@ -1087,7 +1087,7 @@ static void xmb_selection_pointer_changed(
 {
    menu_entry_t e;
    unsigned i, end, height;
-   menu_animation_ctx_tag_t tag;
+   menu_animation_ctx_tag tag;
    size_t num                 = 0;
    int threshold              = 0;
    menu_list_t     *menu_list = NULL;
@@ -1118,7 +1118,7 @@ static void xmb_selection_pointer_changed(
 
    video_driver_get_size(NULL, &height);
 
-   tag.id    = (uintptr_t)selection_buf;
+   tag       = (uintptr_t)selection_buf;
 
    menu_animation_ctl(MENU_ANIMATION_CTL_KILL_BY_TAG, &tag);
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &num);
@@ -1190,7 +1190,7 @@ static void xmb_selection_pointer_changed(
          entry.target_value = ia;
          entry.subject      = &node->alpha;
          entry.easing_enum  = EASING_OUT_QUAD;
-         entry.tag          = tag.id;
+         entry.tag          = tag;
          entry.cb           = NULL;
 
          if (entry.subject)
@@ -3735,11 +3735,9 @@ static void xmb_list_insert(void *userdata,
 static void xmb_list_clear(file_list_t *list)
 {
    size_t i;
-   menu_animation_ctx_tag_t tag;
-   size_t size = list->size;
+   size_t size                = list->size;
+   menu_animation_ctx_tag tag = (uintptr_t)list;
    
-   tag.id      = (uintptr_t)list;
-
    menu_animation_ctl(MENU_ANIMATION_CTL_KILL_BY_TAG, &tag);
 
    for (i = 0; i < size; ++i)
@@ -3757,10 +3755,8 @@ static void xmb_list_clear(file_list_t *list)
 static void xmb_list_deep_copy(const file_list_t *src, file_list_t *dst)
 {
    size_t i;
-   menu_animation_ctx_tag_t tag;
-   size_t size = dst->size;
-
-   tag.id      = (uintptr_t)dst;
+   menu_animation_ctx_tag tag = (uintptr_t)dst;
+   size_t size                  = dst->size;
 
    menu_animation_ctl(MENU_ANIMATION_CTL_KILL_BY_TAG, &tag);
 
