@@ -322,7 +322,7 @@ static void *dsound_init(const char *device, unsigned rate, unsigned latency,
 
    RARCH_LOG("DirectSound devices:\n");
 #ifndef _XBOX
-   DirectSoundEnumerate(enumerate_cb, &dev);
+   DirectSoundEnumerate((LPDSENUMCALLBACKW)enumerate_cb, &dev);
 #endif
 
    if (DirectSoundCreate(dev.guid, &ds->ds, NULL) != DS_OK)

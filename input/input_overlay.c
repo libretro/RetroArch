@@ -761,12 +761,13 @@ void input_state_overlay(input_overlay_t *ol, int16_t *ret,
 static bool input_overlay_add_inputs(input_overlay_t *ol,
       unsigned port, unsigned analog_dpad_mode)
 {     
-      int i;
+      unsigned i;
       uint64_t mask;
       int id;
-      bool button_pressed = false;
-      bool current_button_pressed;
+      bool button_pressed             = false;
+      bool current_button_pressed     = false;
       input_overlay_state_t *ol_state = &ol->overlay_state;
+
       if(!ol_state)
             return false;
       
