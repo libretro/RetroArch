@@ -3447,7 +3447,7 @@ static int action_ok_netplay_connect_room(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
 #ifdef HAVE_NETWORKING
-   char tmp_hostname[512];
+   char tmp_hostname[4115];
 
    tmp_hostname[0] = '\0';
 
@@ -3658,7 +3658,7 @@ struct netplay_host_list *lan_hosts;
 int lan_room_count;
 void netplay_refresh_rooms_menu(file_list_t *list)
 {
-   char s[PATH_MAX_LENGTH];
+   char s[4115];
    int i                                = 0;
    int j                                = 0;
 
