@@ -75,7 +75,10 @@ static void ui_window_win32_set_title(void *data, char *buf)
    SetWindowText(window->hwnd, buf);
 }
 
-extern "C" VOID (WINAPI *DragAcceptFiles_func)(HWND, BOOL);
+extern "C"
+{
+   VOID (WINAPI *DragAcceptFiles_func)(HWND, BOOL);
+}
 
 void ui_window_win32_set_droppable(void *data, bool droppable)
 {
