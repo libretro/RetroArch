@@ -1193,25 +1193,21 @@ static void xmb_selection_pointer_changed(
          entry.tag          = tag;
          entry.cb           = NULL;
 
-         if (entry.subject)
-            menu_animation_push(&entry);
+         menu_animation_push(&entry);
 
          entry.subject      = &node->label_alpha;
 
-         if (entry.subject)
-            menu_animation_push(&entry);
+         menu_animation_push(&entry);
 
          entry.target_value = iz;
          entry.subject      = &node->zoom;
 
-         if (entry.subject)
-            menu_animation_push(&entry);
+         menu_animation_push(&entry);
 
          entry.target_value = iy;
          entry.subject      = &node->y;
 
-         if (entry.subject)
-            menu_animation_push(&entry);
+         menu_animation_push(&entry);
       }
    }
 }
@@ -1261,20 +1257,17 @@ static void xmb_list_open_old(xmb_handle_t *xmb,
          entry.tag          = -1;
          entry.cb           = NULL;
 
-         if (entry.subject)
-            menu_animation_push(&entry);
+         menu_animation_push(&entry);
 
          entry.target_value = 0;
          entry.subject      = &node->label_alpha;
 
-         if (entry.subject)
-            menu_animation_push(&entry);
+         menu_animation_push(&entry);
 
          entry.target_value = xmb->icon.size * dir * -2;
          entry.subject      = &node->x;
 
-         if (entry.subject)
-            menu_animation_push(&entry);
+         menu_animation_push(&entry);
       }
    }
 }
@@ -1334,19 +1327,16 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
          entry.tag          = -1;
          entry.cb           = NULL;
 
-         if (entry.subject)
-            menu_animation_push(&entry);
+         menu_animation_push(&entry);
 
          entry.subject      = &node->label_alpha;
 
-         if (entry.subject)
-            menu_animation_push(&entry);
+         menu_animation_push(&entry);
 
          entry.target_value = 0;
          entry.subject      = &node->x;
 
-         if (entry.subject)
-            menu_animation_push(&entry);
+         menu_animation_push(&entry);
       }
    }
 
@@ -1405,19 +1395,16 @@ static void xmb_push_animations(xmb_node_t *node, uintptr_t tag, float ia, float
    entry.tag          = tag;
    entry.cb           = NULL;
 
-   if (entry.subject)
-      menu_animation_push(&entry);
+   menu_animation_push(&entry);
 
    entry.subject      = &node->label_alpha;
 
-   if (entry.subject)
-      menu_animation_push(&entry);
+   menu_animation_push(&entry);
 
    entry.target_value = ix;
    entry.subject      = &node->x;
 
-   if (entry.subject)
-      menu_animation_push(&entry);
+   menu_animation_push(&entry);
 }
 
 static void xmb_list_switch_old(xmb_handle_t *xmb,
@@ -1597,14 +1584,12 @@ static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb)
       entry.tag          = -1;
       entry.cb           = NULL;
 
-      if (entry.subject)
-         menu_animation_push(&entry);
+      menu_animation_push(&entry);
 
       entry.target_value = iz;
       entry.subject      = &node->zoom;
 
-      if (entry.subject)
-         menu_animation_push(&entry);
+      menu_animation_push(&entry);
    }
 }
 
@@ -1966,28 +1951,23 @@ static void xmb_list_open(xmb_handle_t *xmb)
    entry.tag          = -1;
    entry.cb           = NULL;
 
-
    switch (xmb->depth)
    {
       case 1:
-         if (entry.subject)
-            menu_animation_push(&entry);
+         menu_animation_push(&entry);
 
          entry.target_value = 0;
          entry.subject      = &xmb->textures.arrow.alpha;
 
-         if (entry.subject)
-            menu_animation_push(&entry);
+         menu_animation_push(&entry);
          break;
       case 2:
-         if (entry.subject)
-            menu_animation_push(&entry);
+         menu_animation_push(&entry);
 
          entry.target_value = 1;
          entry.subject      = &xmb->textures.arrow.alpha;
 
-         if (entry.subject)
-            menu_animation_push(&entry);
+         menu_animation_push(&entry);
          break;
    }
 
@@ -3968,8 +3948,7 @@ static void xmb_toggle(void *userdata, bool menu_on)
    entry.tag          = -1;
    entry.cb           = NULL;
 
-   if (entry.subject)
-      menu_animation_push(&entry);
+   menu_animation_push(&entry);
 
    tmp = !menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL);
 
