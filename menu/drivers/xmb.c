@@ -1002,7 +1002,7 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
          || (string_is_equal_fast(entry.label, "loadstate", 9))
          || (string_is_equal_fast(entry.label, "savestate", 9))))
    {
-      char path[PATH_MAX_LENGTH];
+      char path[8204];
       global_t         *global = global_get_ptr();
 
       path[0] = '\0';
