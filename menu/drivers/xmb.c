@@ -3735,8 +3735,10 @@ static void xmb_list_insert(void *userdata,
 static void xmb_list_clear(file_list_t *list)
 {
    size_t i;
+   menu_animation_ctx_tag_t tag;
    size_t size = list->size;
-   menu_animation_ctx_tag_t tag = { (uintptr_t)list };
+   
+   tag.id      = (uintptr_t)list;
 
    menu_animation_ctl(MENU_ANIMATION_CTL_KILL_BY_TAG, &tag);
 
@@ -3755,8 +3757,10 @@ static void xmb_list_clear(file_list_t *list)
 static void xmb_list_deep_copy(const file_list_t *src, file_list_t *dst)
 {
    size_t i;
+   menu_animation_ctx_tag_t tag;
    size_t size = dst->size;
-   menu_animation_ctx_tag_t tag = { (uintptr_t)dst };
+
+   tag.id      = (uintptr_t)dst;
 
    menu_animation_ctl(MENU_ANIMATION_CTL_KILL_BY_TAG, &tag);
 
