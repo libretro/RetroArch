@@ -100,7 +100,7 @@ static void wiiu_input_poll(void *data)
 {
    wiiu_input_t *wiiu = (wiiu_input_t*)data;
 
-   if (wiiu->joypad)
+   if (wiiu && wiiu->joypad)
       wiiu->joypad->poll();      
 }
 

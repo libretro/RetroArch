@@ -74,6 +74,7 @@ enum nbio_type
    NBIO_TYPE_TGA,
    NBIO_TYPE_BMP,
    NBIO_TYPE_OGG,
+   NBIO_TYPE_MOD,
    NBIO_TYPE_WAV
 };
 

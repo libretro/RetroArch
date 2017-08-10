@@ -915,6 +915,11 @@ bool audio_driver_mixer_extension_supported(const char *ext)
 #ifdef HAVE_STB_VORBIS
    string_list_append(str_list, "ogg", attr);
 #endif
+#ifdef HAVE_IBXM
+   string_list_append(str_list, "mod", attr);
+   string_list_append(str_list, "s3m", attr);
+   string_list_append(str_list, "xm", attr);
+#endif
    string_list_append(str_list, "wav", attr);
 
    for (i = 0; i < str_list->size; i++)
@@ -1007,6 +1012,9 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
          break;
       case AUDIO_MIXER_TYPE_OGG:
          handle = audio_mixer_load_ogg(buf, (int32_t)params->bufsize);
+         break;
+      case AUDIO_MIXER_TYPE_MOD:
+         handle = audio_mixer_load_mod(buf, (int32_t)params->bufsize);
          break;
       case AUDIO_MIXER_TYPE_NONE:
          free(buf);

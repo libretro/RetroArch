@@ -31,12 +31,16 @@
 
 #ifdef _XBOX
 #include "../../defines/xdk_defines.h"
+#else
+#include "../../ui/drivers/ui_win32_resource.h"
+#include "../../ui/drivers/ui_win32.h"
+#endif
+
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 #ifndef _XBOX
-#include "../../ui/drivers/ui_win32_resource.h"
-#include "../../ui/drivers/ui_win32.h"
-
 extern unsigned g_resize_width;
 extern unsigned g_resize_height;
 extern bool g_inited;
@@ -51,13 +55,7 @@ void create_graphics_context(HWND hwnd, bool *quit);
 
 void create_gdi_context(HWND hwnd, bool *quit);
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 bool gdi_has_menu_frame(void);
-#ifdef __cplusplus
-}
-#endif
 
 bool win32_shader_dlg_init(void);
 void shader_dlg_show(HWND parent_hwnd);
@@ -91,13 +89,7 @@ bool win32_get_metrics(void *data,
 
 void win32_show_cursor(bool state);
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 HWND win32_get_window(void);
-#ifdef __cplusplus
-}
-#endif
 
 bool win32_has_focus(void);
 
@@ -112,6 +104,15 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
 	unsigned *width, unsigned *height, bool fullscreen, bool windowed_full,
 	RECT *rect, RECT *mon_rect, DWORD *style);
 #endif
+
+void win32_get_video_output_size(
+      unsigned *width, unsigned *height);
+
+void win32_get_video_output_prev(
+      unsigned *width, unsigned *height);
+
+void win32_get_video_output_next(
+      unsigned *width, unsigned *height);
 
 void win32_window_reset(void);
 
@@ -132,6 +133,10 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
 
 #ifdef _XBOX
 BOOL IsIconic(HWND hwnd);
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif

@@ -98,29 +98,6 @@ AUDIO
 #endif
 
 /*============================================================
-UI COMMON CONTEXT
-============================================================ */
-#if defined(_WIN32) && !defined(_XBOX)
-#include "../gfx/common/win32_common.cpp"
-
-#if defined(HAVE_OPENGL) || defined(HAVE_VULKAN)
-#include "../gfx/drivers_context/wgl_ctx.cpp"
-#endif
-
-#if defined(_WIN32) && !defined(_XBOX)
-#include "../gfx/drivers_context/gdi_ctx.cpp"
-#endif
-
-#if defined(HAVE_FFMPEG)
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
-#include "../cores/libretro-ffmpeg/fft/fft.cpp"
-#endif
-#endif
-
-#endif
-
-
-/*============================================================
 MENU
 ============================================================ */
 #ifdef HAVE_XUI

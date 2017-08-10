@@ -479,6 +479,10 @@ MSG_HASH(MENU_ENUM_LABEL_INPUT_OVERLAY_ENABLE,
       "input_overlay_enable")
 MSG_HASH(MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU,
       "overlay_hide_in_menu")
+MSG_HASH(MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
+      "overlay_show_physical_inputs")
+MSG_HASH(MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
+      "overlay_show_physical_inputs_port")
 MSG_HASH(MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE,
       "input_player%u_analog_dpad_mode")
 MSG_HASH(MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR,
@@ -581,6 +585,8 @@ MSG_HASH(MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS,
       "menu_file_browser_settings")
 MSG_HASH(MENU_ENUM_LABEL_MENU_LINEAR_FILTER,
       "menu_linear_filter")
+MSG_HASH(MENU_ENUM_LABEL_MENU_HORIZONTAL_ANIMATION,
+      "menu_horizontal_animation")
 MSG_HASH(MENU_ENUM_LABEL_MENU_SETTINGS,
       "menu_settings")
 MSG_HASH(MENU_ENUM_LABEL_MENU_WALLPAPER,
@@ -821,6 +827,10 @@ MSG_HASH(MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE,
       "remap_file_save_core")
 MSG_HASH(MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME,
       "remap_file_save_game")
+MSG_HASH(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CORE,
+      "remap_file_remove_core")
+MSG_HASH(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME,
+      "remap_file_remove_game")
 MSG_HASH(MENU_ENUM_LABEL_RESTART_CONTENT,
       "restart_content")
 MSG_HASH(MENU_ENUM_LABEL_RESTART_RETROARCH,
@@ -909,6 +919,14 @@ MSG_HASH(MENU_ENUM_LABEL_SORT_SAVEFILES_ENABLE,
       "sort_savefiles_enable")
 MSG_HASH(MENU_ENUM_LABEL_SORT_SAVESTATES_ENABLE,
       "sort_savestates_enable")
+MSG_HASH(MENU_ENUM_LABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,
+      "savefiles_in_content_dir_enable")
+MSG_HASH(MENU_ENUM_LABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,
+      "savestates_in_content_dir_enable")
+MSG_HASH(MENU_ENUM_LABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
+      "systemfiles_in_content_dir_enable")
+MSG_HASH(MENU_ENUM_LABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
+      "screenshots_in_content_dir_enable")
 MSG_HASH(MENU_ENUM_LABEL_SSH_ENABLE,
       "ssh_enable")
 MSG_HASH(MENU_ENUM_LABEL_START_CORE,
@@ -1249,3 +1267,5 @@ MSG_HASH(MENU_ENUM_LABEL_MENU_SHOW_ONLINE_UPDATER,
       "menu_show_online_updater")
 MSG_HASH(MENU_ENUM_LABEL_MENU_SHOW_CORE_UPDATER,
       "menu_show_core_updater")
+MSG_HASH(MENU_ENUM_LABEL_CORE_DELETE,
+      "core_delete")

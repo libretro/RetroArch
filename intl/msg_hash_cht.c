@@ -127,7 +127,7 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
          case RARCH_OVERLAY_NEXT:
             snprintf(s, len,
-                  "切換到下一個屏幕覆層。將會循環選擇。");
+                  "切換到下一個營幕覆層。將會循環選擇。");
             break;
          case RARCH_DISK_EJECT_TOGGLE:
             snprintf(s, len,
@@ -210,21 +210,21 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
    switch (msg)
    {
       case MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS:
-         snprintf(s, len, "你的登陸信息 \n"
-               "Retro Achievements 賬號. \n"
+         snprintf(s, len, "你的登入訊息 \n"
+               "Retro Achievements 帳號. \n"
                " \n"
                "訪問 retroachievements.org 並註冊 \n"
-               "以獲取一個免費賬號. \n"
+               "以獲取一個免費帳號. \n"
                " \n"
                "在你註冊以後, 你需要 \n"
                "在RetroArch輸入你的 \n"
-               "賬號以及密碼.");
+               "帳號以及密碼.");
          break;
       case MENU_ENUM_LABEL_CHEEVOS_USERNAME:
-         snprintf(s, len, "你的Retro Achievements賬號的用戶名。");
+         snprintf(s, len, "你的Retro Achievements帳號的用戶名。");
          break;
       case MENU_ENUM_LABEL_CHEEVOS_PASSWORD:
-         snprintf(s, len, "你的Retro Achievements賬號的密碼。");
+         snprintf(s, len, "你的Retro Achievements帳號的密碼。");
          break;
       case MENU_ENUM_LABEL_USER_LANGUAGE:
          snprintf(s, len, "依據選擇的語言來本地化菜單和其他屏顯消息。 \n"
@@ -242,7 +242,7 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len, "自動加載遊戲內容指定的核心選項.");
          break;
       case MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE:
-         snprintf(s, len, "自動加載覆蓋配置。");
+         snprintf(s, len, "自動加載覆蓋設定。");
          break;
       case MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE:
          snprintf(s, len, "自動加載輸入重映射文件.");
@@ -280,26 +280,26 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
                "截圖目錄之中.");
          break;
       case MENU_ENUM_LABEL_RUN:
-         snprintf(s, len, "啟動內容.");
+         snprintf(s, len, "啟動遊戲.");
          break;
       case MENU_ENUM_LABEL_INFORMATION:
-         snprintf(s, len, "顯示本內容的額外 \n"
-               "元數據信息.");
+         snprintf(s, len, "顯示本遊戲的額外 \n"
+               "元數據訊息.");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_CONFIG:
-         snprintf(s, len, "配置文件.");
+         snprintf(s, len, "設定文件.");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_COMPRESSED_ARCHIVE:
          snprintf(s, len, "壓縮歸檔文件.");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_RECORD_CONFIG:
-         snprintf(s, len, "記錄配置文件.");
+         snprintf(s, len, "錄製設定文件.");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_CURSOR:
          snprintf(s, len, "數據庫指針文件。");
          break;
       case MENU_ENUM_LABEL_FILE_CONFIG:
-         snprintf(s, len, "配置文件.");
+         snprintf(s, len, "設定文件.");
          break;
       case MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY:
          snprintf(s, len,
@@ -319,15 +319,15 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_THUMBNAILS_DIRECTORY:
          snprintf(s, len,
-               "縮略圖目錄. \n"
+               "縮圖目錄. \n"
                " \n"
                "用以存放縮略圖.");
          break;
       case MENU_ENUM_LABEL_LIBRETRO_INFO_PATH:
          snprintf(s, len,
-               "核心Core信息目錄. \n"
+               "核心Core訊息目錄. \n"
                " \n"
-               "用於搜索libretro核心信息 \n"
+               "用於搜索libretro核心訊息 \n"
                "的目錄。");
          break;
       case MENU_ENUM_LABEL_PLAYLIST_DIRECTORY:
@@ -400,9 +400,9 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_MOVIE_OPEN:
          snprintf(s, len,
-               "視頻 \n"
+               "視訊 \n"
                " \n"
-               "選擇文件並使用視頻播放器打開。");
+               "選擇文件並使用視訊播放器打開。");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_MUSIC_OPEN:
          snprintf(s, len,
@@ -476,8 +476,8 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE:
          snprintf(s, len,
-               "顯示器的視頻刷新率。 \n"
-               "可被用來計算一個合適的音頻輸入率。");
+               "顯示器的視訊刷新率。 \n"
+               "可被用來計算一個合適的聲音輸入率。");
          break;
       case MENU_ENUM_LABEL_VIDEO_FORCE_SRGB_DISABLE:
          snprintf(s, len,
@@ -488,11 +488,11 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_AUDIO_ENABLE:
          snprintf(s, len,
-               "啟用音頻輸出。");
+               "啟用聲音輸出。");
          break;
       case MENU_ENUM_LABEL_AUDIO_SYNC:
          snprintf(s, len,
-               "同步音頻（推薦）。");
+               "同步聲音（推薦）。");
          break;
       case MENU_ENUM_LABEL_AUDIO_LATENCY:
          snprintf(s, len,
@@ -514,8 +514,8 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_CONTENT_HISTORY_SIZE:
          snprintf(s, len,
-               "Number of entries that will be kept in \n"
-               "content history playlist.");
+               "可存放在歷史遊戲清單的數量 \n"
+               ".");
          break;
       case MENU_ENUM_LABEL_VIDEO_WINDOWED_FULLSCREEN:
          snprintf(s, len,
@@ -524,7 +524,7 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VIDEO_FONT_SIZE:
          snprintf(s, len,
-               "屏顯信息的字體大小.");
+               "屏顯訊息的字體大小.");
          break;
       case MENU_ENUM_LABEL_SAVESTATE_AUTO_INDEX:
          snprintf(s, len,
@@ -540,7 +540,7 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VIDEO_FONT_ENABLE:
          snprintf(s, len,
-               "顯示/隱藏屏顯信息.");
+               "顯示/隱藏屏顯訊息.");
          break;
       case MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_X:
       case MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_Y:
@@ -550,7 +550,7 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_INPUT_OVERLAY_ENABLE:
          snprintf(s, len,
-               "Enable or disable the current overlay.");
+               "啟用或取消目前的 overlay.");
          break;
       case MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU:
          snprintf(s, len,
@@ -577,7 +577,7 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE:
          snprintf(s, len,
-               "音頻輸出採樣率.");
+               "聲音輸出採樣率.");
          break;
       case MENU_ENUM_LABEL_VIDEO_SHARED_CONTEXT:
          snprintf(s, len,
@@ -752,12 +752,12 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VIDEO_DRIVER:
          snprintf(s, len,
-               "當前視頻驅動.");
+               "當前視訊驅動.");
 
          if (string_is_equal_fast(settings->arrays.video_driver, "gl", 2))
          {
             snprintf(s, len,
-                  "OpenGL視頻驅動. \n"
+                  "OpenGL視訊驅動. \n"
                   " \n"
                   "This driver allows libretro GL cores to  \n"
                   "be used in addition to software-rendered \n"
@@ -771,7 +771,7 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
          else if (string_is_equal_fast(settings->arrays.video_driver, "sdl2", 4))
          {
             snprintf(s, len,
-                  "SDL 2 視頻驅動.\n"
+                  "SDL 2 視訊驅動.\n"
                   " \n"
                   "This is an SDL 2 software-rendered video \n"
                   "driver.\n"
@@ -783,7 +783,7 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
          else if (string_is_equal_fast(settings->arrays.video_driver, "sdl1", 4))
          {
             snprintf(s, len,
-                  "SDL 視頻驅動.\n"
+                  "SDL 視訊驅動.\n"
                   " \n"
                   "This is an SDL 1.2 software-rendered video \n"
                   "driver.\n"
@@ -794,7 +794,7 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
          else if (string_is_equal_fast(settings->arrays.video_driver, "d3d", 3))
          {
             snprintf(s, len,
-                  "Direct3D 視頻驅動. \n"
+                  "Direct3D 視訊驅動. \n"
                   " \n"
                   "Performance for software-rendered cores \n"
                   "is dependent on your graphic card's \n"
@@ -803,7 +803,7 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
          else if (string_is_equal_fast(settings->arrays.video_driver, "exynos", 6))
          {
             snprintf(s, len,
-                  "Exynos-G2D 視頻驅動. \n"
+                  "Exynos-G2D 視訊驅動. \n"
                   " \n"
                   "This is a low-level Exynos video driver. \n"
                   "Uses the G2D block in Samsung Exynos SoC \n"
@@ -815,7 +815,7 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
          else if (string_is_equal_fast(settings->arrays.video_driver, "drm", 3))
          {
             snprintf(s, len,
-                  "Plain DRM 視頻驅動. \n"
+                  "Plain DRM 視訊驅動. \n"
                   " \n"
                   "This is a low-level video driver using. \n"
                   "libdrm for hardware scaling using \n"
@@ -824,7 +824,7 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
          else if (string_is_equal_fast(settings->arrays.video_driver, "sunxi", 5))
          {
             snprintf(s, len,
-                  "Sunxi-G2D 視頻驅動. \n"
+                  "Sunxi-G2D 視訊驅動. \n"
                   " \n"
                   "This is a low-level Sunxi video driver. \n"
                   "Uses the G2D block in Allwinner SoCs.");
@@ -832,7 +832,7 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN:
          snprintf(s, len,
-               "音頻DSP插件.\n"
+               "聲音DSP插件.\n"
                " Processes audio before it's sent to \n"
                "the driver."
                );
@@ -1311,7 +1311,7 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VIDEO_VSYNC:
          snprintf(s, len,
-               "視頻垂直同步.\n");
+               "視訊垂直同步.\n");
          break;
       case MENU_ENUM_LABEL_VIDEO_HARD_SYNC:
          snprintf(s, len,
@@ -1332,7 +1332,7 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_SCREENSHOT:
          snprintf(s, len,
-               "Take screenshot.");
+               "營幕快照.");
          break;
       case MENU_ENUM_LABEL_VIDEO_FRAME_DELAY:
          snprintf(s, len,
@@ -1379,7 +1379,7 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
                "'Save Configuration on Exit' is enabled.\n");
          break;
       case MENU_ENUM_LABEL_VIDEO_FULLSCREEN:
-         snprintf(s, len, "Toggles fullscreen.");
+         snprintf(s, len, "啟用全營幕.");
          break;
       case MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE:
          snprintf(s, len,
@@ -1483,7 +1483,7 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
                );
          break;
       case MENU_ENUM_LABEL_INPUT_TOUCH_ENABLE:
-         snprintf(s, len, "Enable touch support.");
+         snprintf(s, len, "啟用觸控支援.");
          break;
       case MENU_ENUM_LABEL_INPUT_PREFER_FRONT_TOUCH:
          snprintf(s, len, "Use front instead of back touch.");
@@ -1563,27 +1563,27 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_TIMEDATE_ENABLE:
          snprintf(s, len,
-               "Shows current date and/or time inside menu.");
+               "在選單內顯示當前日期或時間.");
          break;
       case MENU_ENUM_LABEL_CORE_ENABLE:
          snprintf(s, len,
-               "Shows current core inside menu.");
+               "在選單內顯示當前使用遊戲核心.");
          break;
       case MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST:
          snprintf(s, len,
-               "Enables Netplay in host (server) mode.");
+               "啟用連線遊戲模式 (主機端) .");
          break;
       case MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT:
          snprintf(s, len,
-               "Enables Netplay in client mode.");
+               "啟用連線遊戲模式 (連線端) .");
          break;
       case MENU_ENUM_LABEL_NETPLAY_DISCONNECT:
          snprintf(s, len,
-               "Disconnects an active Netplay connection.");
+               "中斷使用中的連線遊戲模式.");
          break;
       case MENU_ENUM_LABEL_NETPLAY_SETTINGS:
          snprintf(s, len,
-               "Setting related to Netplay.");
+               "連線遊戲模式相關設定.");
          break;
       case MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS:
          snprintf(s, len,
@@ -1713,11 +1713,11 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_OSK_ENABLE:
          snprintf(s, len,
-               "Enable/disable on-screen keyboard.");
+               "開啟或取消營幕的虛擬鍵盤.");
          break;
       case MENU_ENUM_LABEL_AUDIO_MUTE:
          snprintf(s, len,
-               "Mute/unmute audio.");
+               "開啟或關閉靜音.");
          break;
       case MENU_ENUM_LABEL_REWIND:
          snprintf(s, len,
@@ -1739,15 +1739,15 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_LOAD_STATE:
          snprintf(s, len,
-               "Loads state.");
+               "載入即時存檔.");
          break;
       case MENU_ENUM_LABEL_SAVE_STATE:
          snprintf(s, len,
-               "Saves state.");
+               "儲存即時存檔.");
          break;
       case MENU_ENUM_LABEL_NETPLAY_FLIP_PLAYERS:
          snprintf(s, len,
-               "Netplay flip users.");
+               "踢掉連線遊戲的使用者.");
          break;
       case MENU_ENUM_LABEL_CHEAT_INDEX_PLUS:
          snprintf(s, len,
@@ -1767,7 +1767,7 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_RESET:
          snprintf(s, len,
-               "Reset the content.\n");
+               "重設遊戲.\n");
          break;
       case MENU_ENUM_LABEL_PAUSE_TOGGLE:
          snprintf(s, len,

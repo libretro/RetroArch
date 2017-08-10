@@ -67,6 +67,7 @@ void path_set_redirect(void)
    const char *old_savefile_dir                = dir_get(RARCH_DIR_SAVEFILE);
    const char *old_savestate_dir               = dir_get(RARCH_DIR_SAVESTATE);
    rarch_system_info_t      *info              = runloop_get_system_info();
+   settings_t *settings                        = config_get_ptr();
 
    new_savefile_dir[0] = new_savestate_dir[0]  = '\0';
 
@@ -93,10 +94,8 @@ void path_set_redirect(void)
 
    if (check_library_name_hash)
    {
-      settings_t *settings = config_get_ptr();
-
       /* per-core saves: append the library_name to the save location */
-      if (      settings->bools.sort_savefiles_enable
+      if (settings->bools.sort_savefiles_enable
             && !string_is_empty(old_savefile_dir))
       {
          fill_pathname_join(
@@ -154,11 +153,19 @@ void path_set_redirect(void)
    }
 
    /* Set savefile directory if empty based on content directory */
-   if (string_is_empty(new_savefile_dir))
+   if (string_is_empty(new_savefile_dir) || settings->bools.savefiles_in_content_dir)
    {
       strlcpy(new_savefile_dir, path_main_basename,
             sizeof(new_savefile_dir));
       path_basedir(new_savefile_dir);
+   }
+
+   /* Set savestate directory if empty based on content directory */
+   if (string_is_empty(new_savestate_dir) || settings->bools.savestates_in_content_dir)
+   {
+      strlcpy(new_savestate_dir, path_main_basename,
+            sizeof(new_savestate_dir));
+      path_basedir(new_savestate_dir);
    }
 
    if (global)
@@ -744,6 +751,13 @@ enum rarch_content_type path_is_media_type(const char *path)
       case FILE_TYPE_BMP:
          return RARCH_CONTENT_IMAGE;
 #endif
+#ifdef HAVE_IBXM
+      case FILE_TYPE_MOD:
+      case FILE_TYPE_S3M:
+      case FILE_TYPE_XM:
+         return RARCH_CONTENT_MUSIC;
+#endif
+
       case FILE_TYPE_NONE:
       default:
          break;

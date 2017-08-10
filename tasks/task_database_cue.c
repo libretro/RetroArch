@@ -153,7 +153,7 @@ static int detect_ps1_game_sub(const char *track_path,
    uint8_t* boot_file;
    int skip, frame_size, is_mode1, cd_sector;
    uint8_t buffer[2048 * 2];
-   RFILE                *fp = 
+   RFILE                *fp =
       filestream_open(track_path, RFILE_MODE_READ, -1);
    if (!fp)
       return 0;
@@ -328,13 +328,66 @@ int detect_psp_game(const char *track_path, char *game_id)
    return rv;
 }
 
+/**
+ * Check for an ASCII serial in the first few bits of the ISO (Wii).
+ */
+int detect_serial_ascii_game(const char *track_path, char *game_id)
+{
+   unsigned pos;
+   int numberOfAscii = 0;
+   bool rv   = false;
+   RFILE *fd = filestream_open(track_path, RFILE_MODE_READ, -1);
+
+   /* Attempt to load the file. */
+   if (!fd)
+   {
+      RARCH_LOG("%s: %s\n",
+            msg_hash_to_str(MSG_COULD_NOT_OPEN_DATA_TRACK),
+            strerror(errno));
+      return -errno;
+   }
+
+   for (pos = 0; pos < 10000; pos++)
+   {
+      filestream_seek(fd, pos, SEEK_SET);
+      if (filestream_read(fd, game_id, 10000) > 0)
+      {
+         unsigned i;
+         game_id[15] = '\0';
+         numberOfAscii = 0;
+
+         /* Loop through until we run out of ASCII characters. */
+         for (i = 0; i < 15; i++)
+         {
+            /* Is the given character ASCII? A-Z, 0-9, - */
+            if (game_id[i] == 45 || (game_id[i] >= 48 && game_id[i] <= 57) || (game_id[i] >= 65 && game_id[i] <= 90))
+               numberOfAscii++;
+            else
+               break;
+         }
+
+         /* If the length of the text is between 3 and 9 characters, it could be a serial. */
+         if (numberOfAscii > 3 && numberOfAscii < 9)
+         {
+            /* Cut the string off, and return it as a valid serial. */
+            game_id[numberOfAscii] = '\0';
+            rv = true;
+            break;
+         }
+      }
+   }
+
+   filestream_close(fd);
+   return rv;
+}
+
 int detect_system(const char *track_path, const char **system_name)
 {
    int rv;
    char magic[MAGIC_LEN];
    int i;
    RFILE *fd = filestream_open(track_path, RFILE_MODE_READ, -1);
-   
+
    if (!fd)
    {
       RARCH_LOG("Could not open data track of file '%s': %s\n",
@@ -390,7 +443,7 @@ int find_first_data_track(const char *cue_path,
 {
    int rv;
    char tmp_token[MAX_TOKEN_LEN];
-   RFILE *fd                     = 
+   RFILE *fd                     =
       filestream_open(cue_path, RFILE_MODE_READ, -1);
 
    if (!fd)

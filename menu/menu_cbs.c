@@ -32,6 +32,30 @@ static void menu_cbs_init_log(const char *entry_label, const char *bind_label, c
 #endif
 }
 
+/* This sets up all the callback functions for a menu entry.
+ *
+ * OK     : When we press the 'OK' button on an entry.
+ * Cancel : When we press the 'Cancel' button on an entry.
+ * Scan   : When we press the 'Scan' button on an entry.
+ * Start  : When we press the 'Start' button on an entry.
+ * Select : When we press the 'Select' button on an entry.
+ * Info   : When we press the 'Info' button on an entry.
+ * Content Switch   : ??? (TODO/FIXME - Kivutar should document this)
+ * Up     : when we press 'Up' on the D-pad while this entry is selected.
+ * Down   : when we press 'Down' on the D-pad while this entry is selected.
+ * Left   : when we press 'Left' on the D-pad while this entry is selected.
+ * Right  : when we press 'Right' on the D-pad while this entry is selected.
+ * Deferred push : When pressing an entry results in spawning a new list, it waits until the next
+ * frame to push this onto the stack. This function callback will then be invoked.
+ * Refresh : What happens when the screen has to be refreshed. Does an entry have internal state
+ * that needs to be rebuild? 
+ * Get value: Each entry has associated 'text', which we call the value. This function callback
+ * lets us render that text. 
+ * Get title: Each entry can have a custom 'title'.
+ * Label: Each entry has a label name. This function callback lets us render that label text.
+ * Sublabel: each entry has a sublabel, which consists of one or more lines of additional information.
+ * This function callback lets us render that text.
+ */
 void menu_cbs_init(void *data,
       menu_file_list_cbs_t *cbs,
       const char *path, const char *label,
@@ -66,70 +90,104 @@ void menu_cbs_init(void *data,
       RARCH_LOG("\t\t\tenum_idx %d [%s]\n", cbs->enum_idx, msg_hash_to_str(cbs->enum_idx));
 #endif
 
+   /* It will try to find a corresponding callback function inside
+    * menu_cbs_ok.c, then map this callback to the entry. */
    menu_cbs_init_bind_ok(cbs, path, label, type, idx, label_hash, menu_label_hash);
 
    menu_cbs_init_log(repr_label, "OK", cbs->action_ok_ident);
 
+   /* It will try to find a corresponding callback function inside
+    * menu_cbs_cancel.c, then map this callback to the entry. */
    menu_cbs_init_bind_cancel(cbs, path, label, type, idx);
 
    menu_cbs_init_log(repr_label, "CANCEL", cbs->action_cancel_ident);
 
+   /* It will try to find a corresponding callback function inside
+    * menu_cbs_scan.c, then map this callback to the entry. */
    menu_cbs_init_bind_scan(cbs, path, label, type, idx);
 
    menu_cbs_init_log(repr_label, "SCAN", cbs->action_scan_ident);
 
+   /* It will try to find a corresponding callback function inside
+    * menu_cbs_start.c, then map this callback to the entry. */
    menu_cbs_init_bind_start(cbs, path, label, type, idx);
 
    menu_cbs_init_log(repr_label, "START", cbs->action_start_ident);
 
+   /* It will try to find a corresponding callback function inside
+    * menu_cbs_select.c, then map this callback to the entry. */
    menu_cbs_init_bind_select(cbs, path, label, type, idx);
 
    menu_cbs_init_log(repr_label, "SELECT", cbs->action_select_ident);
 
+   /* It will try to find a corresponding callback function inside
+    * menu_cbs_info.c, then map this callback to the entry. */
    menu_cbs_init_bind_info(cbs, path, label, type, idx);
 
    menu_cbs_init_log(repr_label, "INFO", cbs->action_info_ident);
 
+   /* It will try to find a corresponding callback function inside
+    * menu_cbs_bind_content_list_switch.c, then map this callback to the entry. */
    menu_cbs_init_bind_content_list_switch(cbs, path, label, type, idx);
 
    menu_cbs_init_log(repr_label, "CONTENT SWITCH", cbs->action_content_list_switch_ident);
 
+   /* It will try to find a corresponding callback function inside
+    * menu_cbs_up.c, then map this callback to the entry. */
    menu_cbs_init_bind_up(cbs, path, label, type, idx);
 
    menu_cbs_init_log(repr_label, "UP", cbs->action_up_ident);
 
+   /* It will try to find a corresponding callback function inside
+    * menu_cbs_down.c, then map this callback to the entry. */
    menu_cbs_init_bind_down(cbs, path, label, type, idx);
 
    menu_cbs_init_log(repr_label, "DOWN", cbs->action_down_ident);
 
+   /* It will try to find a corresponding callback function inside
+    * menu_cbs_left.c, then map this callback to the entry. */
    menu_cbs_init_bind_left(cbs, path, label, type, idx, menu_label, label_hash);
 
    menu_cbs_init_log(repr_label, "LEFT", cbs->action_left_ident);
 
+   /* It will try to find a corresponding callback function inside
+    * menu_cbs_right.c, then map this callback to the entry. */
    menu_cbs_init_bind_right(cbs, path, label, type, idx, menu_label, label_hash);
 
    menu_cbs_init_log(repr_label, "RIGHT", cbs->action_right_ident);
 
+   /* It will try to find a corresponding callback function inside
+    * menu_cbs_deferred_push.c, then map this callback to the entry. */
    menu_cbs_init_bind_deferred_push(cbs, path, label, type, idx, label_hash);
 
    menu_cbs_init_log(repr_label, "DEFERRED PUSH", cbs->action_deferred_push_ident);
 
+   /* It will try to find a corresponding callback function inside
+    * menu_cbs_refresh.c, then map this callback to the entry. */
    menu_cbs_init_bind_refresh(cbs, path, label, type, idx);
 
    menu_cbs_init_log(repr_label, "REFRESH", cbs->action_refresh_ident);
 
+   /* It will try to find a corresponding callback function inside
+    * menu_cbs_get_string_representation.c, then map this callback to the entry. */
    menu_cbs_init_bind_get_string_representation(cbs, path, label, type, idx);
 
    menu_cbs_init_log(repr_label, "GET VALUE", cbs->action_get_value_ident);
 
+   /* It will try to find a corresponding callback function inside
+    * menu_cbs_title.c, then map this callback to the entry. */
    menu_cbs_init_bind_title(cbs, path, label, type, idx, label_hash);
 
    menu_cbs_init_log(repr_label, "GET TITLE", cbs->action_get_title_ident);
 
+   /* It will try to find a corresponding callback function inside
+    * menu_cbs_label.c, then map this callback to the entry. */
    menu_cbs_init_bind_label(cbs, path, label, type, idx);
 
    menu_cbs_init_log(repr_label, "LABEL", cbs->action_label_ident);
 
+   /* It will try to find a corresponding callback function inside
+    * menu_cbs_sublabel.c, then map this callback to the entry. */
    menu_cbs_init_bind_sublabel(cbs, path, label, type, idx);
 
    menu_cbs_init_log(repr_label, "SUBLABEL", cbs->action_sublabel_ident);
@@ -144,6 +202,7 @@ void menu_cbs_init(void *data,
    menu_driver_ctl(RARCH_MENU_CTL_BIND_INIT, &bind_info);
 }
 
+/* Pretty much a stub function. TODO/FIXME - Might as well remove this. */
 int menu_cbs_exit(void)
 {
    return -1;
