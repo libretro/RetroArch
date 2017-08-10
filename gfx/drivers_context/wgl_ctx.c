@@ -23,7 +23,10 @@
 #define _WIN32_WINNT 0x0500 //_WIN32_WINNT_WIN2K
 #endif
 
+#if !defined(_MSC_VER) || _MSC_VER > 1400
 #define UNICODE
+#endif
+
 #include <tchar.h>
 #include <wchar.h>
 
