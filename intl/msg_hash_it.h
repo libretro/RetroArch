@@ -621,7 +621,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_X,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
       "Pulsante Y (sinistra)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_KEY,
-      "(Key: %s)")
+      "(Tasto: %s)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
       "Tipologia di mappatura gamepad tastiera")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
@@ -2104,7 +2104,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
-      "Influence how input polling is done inside RetroArch. Setting it to 'Early' or 'Late' can result in less latency, depending on your configuration."
+      "Influisce come il polling degli input che viene fatto all'interno di RetroArch. L'impostazione 'Early' o 'Late' può causare una minore latenza, a seconda della configurazione."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
@@ -2120,7 +2120,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AXIS_THRESHOLD,
-   "How far an axis must be tilted to result in a button press."
+   "Quanto deve essere inclinato un asse durante la pressione di un pulsante."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
@@ -2244,7 +2244,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_UNIFIED_MENU_CONTROLS,
       "Unified Menu Controls")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
-      "Use the same controls for both the menu and the game. Applies to the keyboard.")
+      "Utilizzare gli stessi controlli sia per il menu che per il gioco. Si applica alla tastiera.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
       "Show onscreen messages.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETWORK_USER_REMOTE_ENABLE,
@@ -2379,4 +2379,18 @@ MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
       "Sovrascrive il dispositivo audio predefinito utilizzato dal driver audio. Questo è dipendente dal driver.")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
       "Audio plugin DSP che elabora l'audio prima di essere inviato al driver.")
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
+      "Scambia i pulsanti OK / Annulla. Disabilitato è l'orientamento del pulsanti per gli utenti giapponesi, abilitato è l'orientamento occidentale.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
+      "Impostazione dei controlli per l'utente %u") 
+MSG_HASH(MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
+      "Blocca il Salvataggio della RAM alla sovrascrittura durante il caricamento degli salva stato. Potenzialmente può portare a buggare giochi.")
+MSG_HASH(MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
+      "Salva automaticamente la memoria RAM non volatile ad un intervallo regolare. Questa impostazione è disabilitata per impostazione predefinita, L'intervallo è misurato in secondi. Un valore 0 disabilita l'auto-salvataggio.")
+MSG_HASH(MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
+      "Quando si effettua un salvataggio, viene salvato automaticamente l'indice di stato di un salvataggio prima di essere salvato. Quando carichi il contenuto, l'indice sarà impostato sull'indice più alto esistente.")
+ MSG_HASH( MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
+      "Esegue automaticamente un salvataggio alla fine del runtime di RetroArch. RetroArch caricherà automaticamente questo salvataggio se è abilitato "Carica automaticamente i Salvataggi".")
+MSG_HASH(MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
+      "Carica automaticamente i salvataggi all'avvio.")  
    
