@@ -2381,8 +2381,6 @@ MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
       "Audio plugin DSP che elabora l'audio prima di essere inviato al driver.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
       "Scambia i pulsanti OK / Annulla. Disabilitato è l'orientamento del pulsanti per gli utenti giapponesi, abilitato è l'orientamento occidentale.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
-      "Impostazione dei controlli per l'utente %u") 
 MSG_HASH(MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
       "Blocca il Salvataggio della RAM alla sovrascrittura durante il caricamento degli salva stato. Potenzialmente può portare a buggare giochi.")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
@@ -2390,7 +2388,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
       "Quando si effettua un salvataggio, viene salvato automaticamente l'indice di stato di un salvataggio prima di essere salvato. Quando carichi il contenuto, l'indice sarà impostato sull'indice più alto esistente.")
  MSG_HASH( MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-      "Esegue automaticamente un salvataggio alla fine del runtime di RetroArch. RetroArch caricherà automaticamente questo salvataggio se è abilitato "Carica automaticamente i Salvataggi".")
+      "Esegue automaticamente un salvataggio alla fine del runtime di RetroArch. RetroArch caricherà automaticamente questo salvataggio se è abilitato 'Carica automaticamente i Salvataggi'.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
       "Carica automaticamente i salvataggi all'avvio.")  
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_COLLECTION_LIST,
