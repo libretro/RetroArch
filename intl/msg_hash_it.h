@@ -1719,7 +1719,7 @@ MSG_HASH(MSG_AUTOSAVE_FAILED,
 MSG_HASH(MSG_AUTO_SAVE_STATE_TO,
       "Auto save state to")
 MSG_HASH(MSG_BLOCKING_SRAM_OVERWRITE,
-      "Bloccare SRAM Overwrite")
+      "Bloccare la sovrascrittura della SRAM")
 MSG_HASH(MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
       "Bringing up command interface on port")
 MSG_HASH(MSG_BYTES,
@@ -2393,4 +2393,11 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
       "Esegue automaticamente un salvataggio alla fine del runtime di RetroArch. RetroArch caricherà automaticamente questo salvataggio se è abilitato "Carica automaticamente i Salvataggi".")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
       "Carica automaticamente i salvataggi all'avvio.")  
-   
+MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_COLLECTION_LIST,
+      "Qui vengono visualizzati i contenuti scansionati.")
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
+      "Regola le impostazioni del filebrowser.")
+MSG_HASH(MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
+      "Filtra i file visualizzati nel filebrowser con estensioni supportate.")  
+MSG_HASH(MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
+      "Filtra per core corrente")
