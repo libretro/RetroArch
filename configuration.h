@@ -88,6 +88,7 @@ typedef struct settings
       bool input_overlay_enable;
       bool input_overlay_enable_autopreferred;
       bool input_overlay_hide_in_menu;
+      bool input_overlay_show_physical_inputs;
       bool input_descriptor_label_show;
       bool input_descriptor_hide_unbound;
       bool input_all_users_control_menu;
@@ -119,6 +120,7 @@ typedef struct settings
       bool menu_show_advanced_settings;
       bool menu_throttle_framerate;
       bool menu_linear_filter;
+      bool menu_horizontal_animation;
       bool menu_show_online_updater;
       bool menu_show_core_updater;
       bool menu_xmb_shadows_enable;
@@ -209,6 +211,11 @@ typedef struct settings
       bool sort_savestates_enable;
       bool config_save_on_exit;
       bool show_hidden_files;
+
+      bool savefiles_in_content_dir;
+      bool savestates_in_content_dir;
+      bool screenshots_in_content_dir;
+      bool systemfiles_in_content_dir;
 #ifdef HAVE_LAKKA
       bool ssh_enable;
       bool samba_enable;
@@ -322,6 +329,8 @@ typedef struct settings
 
       unsigned camera_width;
       unsigned camera_height;
+
+      unsigned input_overlay_show_physical_inputs_port;
    } uints;
 
    struct

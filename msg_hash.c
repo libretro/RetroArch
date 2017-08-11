@@ -169,6 +169,9 @@ uint32_t msg_hash_calculate(const char *s)
 #define MENU_VALUE_FILE_MP3                                                    0x0b889135U
 #define MENU_VALUE_FILE_FLAC                                                   0x7c96d67bU
 #define MENU_VALUE_FILE_OGG                                                    0x0b8898c2U
+#define MENU_VALUE_FILE_MOD                                                    0x0b889145U
+#define MENU_VALUE_FILE_S3M                                                    0x0b88a318U
+#define MENU_VALUE_FILE_XM                                                     0x00597a2aU
 #define MENU_VALUE_FILE_FLV                                                    0x0b88732dU
 #define MENU_VALUE_FILE_WAV                                                    0x0b88ba13U
 #define MENU_VALUE_FILE_MOV                                                    0x0b889157U
@@ -346,6 +349,14 @@ enum msg_file_type msg_hash_to_file_type(uint32_t hash)
          return FILE_TYPE_MXF;
       case MENU_VALUE_FILE_WMA:
          return FILE_TYPE_WMA;
+#endif
+#ifdef HAVE_IBXM
+       case MENU_VALUE_FILE_MOD:
+           return FILE_TYPE_MOD;
+       case MENU_VALUE_FILE_S3M:
+           return FILE_TYPE_S3M;
+       case MENU_VALUE_FILE_XM:
+           return FILE_TYPE_XM;
 #endif
 #ifdef HAVE_IMAGEVIEWER
       case MENU_VALUE_FILE_JPG:

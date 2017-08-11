@@ -23,8 +23,9 @@
 #ifndef __LIBRETRO_SDK_FILE_STREAM_TRANSFORMS_H
 #define __LIBRETRO_SDK_FILE_STREAM_TRANSFORMS_H
 
+#include <retro_common_api.h>
+
 #include <streams/file_stream.h>
-#include <retro_inline.h>
 #include <string.h>
 
 RETRO_BEGIN_DECLS
@@ -39,52 +40,21 @@ RETRO_BEGIN_DECLS
 #define fgets rfgets
 #define fwrite rfwrite
 
-static INLINE RFILE* rfopen(const char *path, char *mode)
-{
-   unsigned int retro_mode = RFILE_MODE_READ_TEXT;
-   if (strstr(mode, "r"))
-      if (strstr(mode, "b"))
-         retro_mode = RFILE_MODE_READ;
+RFILE* rfopen(const char *path, char *mode);
 
-   if (strstr(mode, "w"))
-      retro_mode = RFILE_MODE_WRITE;
-   if (strstr(mode, "+"))
-      retro_mode = RFILE_MODE_READ_WRITE;
+int rfclose(RFILE* stream);
 
-   return filestream_open(path, retro_mode, -1);
-}
+long rftell(RFILE* stream);
 
-static INLINE int rfclose(RFILE* stream)
-{
-   return filestream_close(stream);
-}
+int rfseek(RFILE* stream, long offset, int origin);
 
-static INLINE long rftell(RFILE* stream)
-{
-   return filestream_tell(stream);
-}
+size_t rfread(void* buffer,
+   size_t elementSize, size_t elementCount, RFILE* stream);
 
-static INLINE int rfseek(RFILE* stream, long offset, int origin)
-{
-   return filestream_seek(stream, offset, origin);
-}
+char *rfgets(char *buffer, int maxCount, RFILE* stream);
 
-static INLINE size_t rfread(void* buffer,
-   size_t elementSize, size_t elementCount, RFILE* stream)
-{
-   return filestream_read(stream, buffer, elementSize*elementCount);
-}
-
-static INLINE char *rfgets(char *buffer, int maxCount, FILE* stream)
-{
-   return filestream_gets(stream, buffer, maxCount);
-}
-
-static INLINE size_t rfwrite(void const* buffer,
-   size_t elementSize, size_t elementCount, RFILE* stream)
-{
-   return filestream_write(stream, buffer, elementSize*elementCount);
-}
+size_t rfwrite(void const* buffer,
+   size_t elementSize, size_t elementCount, RFILE* stream);
 
 RETRO_END_DECLS
 

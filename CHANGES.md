@@ -1,5 +1,39 @@
-# 1.6.2 (future)
-- IOS: Fix GL regression - 32bit color format cores were no longer rendering 
+# 1.6.5 (future)
+- AUDIO: MOD/S3M/XM sound should now be properly mixed in with the core's sound.
+- LOCALIZATION: Update Italian translation
+- INPUT: Overlay controller response - when we press buttons on the gamepad or keyboard, the corresponding buttons on the overlay will be highlighted as well.
+- NETBSD: Silence some compilation warnings.
+
+# 1.6.4
+
+- ANDROID: Fire Stick & Fire TV remote overrides gamepad port 0 on button press and viceversa like SHIELD devices
+- ANDROID: Provide default save / system / state / screenshot locations
+- AUDIO: Audio mixer supports MOD/S3M/XM file types now!
+- INPUT: input swap override flag (for remotes) is cleared correctly
+- INPUT: allow specifying libretro device in remap files
+- INPUT: allow specifying analog dpad mode in remap files
+- INPUT: allow saving libretro device to remap files
+- INPUT: allow saving analog dpad mode to remap files
+- INPUT: allow removing core and game remap files from the menu
+- COMMON: Cores can now request to set a 'shared context'. You no longer need to explicitly enable 'Shared Hardware Context' for Citra/OpenLara/Dolphin.
+- COMMON: Add 'Delete Core' option to Core Information menu.
+- COMMON: Allow Max Timing Skew to be set to 0.
+- COMMON: Change the "content dir" behavior so it works on either a flag or an empty directory setting, now platform drivers can provide defaults for save / system / state / screenshot dirs and still allow the content dir functionality, these settings are under settings / saving and flagged as advanced
+- GUI: You can turn on/off 'Horizontal Animation' now for the XMB menu. Turning animations off can result in a performance boost.
+- GUI: Fix sublabel word-wrapping in XMB where multi-byte languages were cut off too soon
+- LOCALIZATION: Update Dutch translation
+- LOCALIZATION: Update Traditional Chinese translation
+- LOCALIZATION: Update Italian translation
+- LOCALIZATION: Update Russian translation
+- WINDOWS: Provide default save / system / state / screenshot locations
+- LOBBIES: Show what country the host is in
+- MENU: Enable OSD text rendering for gdi and libcaca drivers
+- WINDOWS 98/ME/2K: Set default directory for MSVC 2005 RetroArch version.
+- WII: Better V-Sync handling, backported from SuperrSonic.
+- WIIU: Exception handler rewritten.
+
+# 1.6.3
+- IOS: Fix GL regression - 32bit color format cores were no longer rendering
 - CHEEVOS: Add support for N64 cheevos and other small fixes.
 - CHEEVOS: Add 'Achievements -> Achievements Verbose Mode'. Ability to display cheevos related messages in OSD, useful for RetroAchievements users.
 - AUDIO: Audio mixer's volume can now be independently increased/decreased, and muted.
@@ -14,8 +48,8 @@
 - LOCALIZATION: Update Japanese translation
 - LOCALIZATION: Update Russian translation
 - MENU: Add 'User Interface -> Views'. Ability to display/hide online updater and core updater options.
-
 - NETPLAY: Disconnecting one client shouldn't cause everyone to disconnect anymore
+- NETWORK: SSL/TLS support, disabled by default
 - SCANNER: Fix PS1 game scanning
 - SCANNER: Move content list builder into scanner task with progress, fixes menu freeze with large playlists
 - SDL2: Fix 'SDL2 driver does not see the hat on wired Xbox 360 controller"

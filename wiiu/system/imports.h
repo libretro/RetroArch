@@ -31,6 +31,12 @@ IMPORT(OSGetSystemTick);
 IMPORT(OSGetSymbolName);
 IMPORT(OSGetSharedData);
 IMPORT(OSEffectiveToPhysical);
+IMPORT(OSInitSemaphore);
+IMPORT(OSInitSemaphoreEx);
+IMPORT(OSGetSemaphoreCount);
+IMPORT(OSSignalSemaphore);
+IMPORT(OSWaitSemaphore);
+IMPORT(OSTryWaitSemaphore);
 
 IMPORT(exit);
 IMPORT(_Exit);

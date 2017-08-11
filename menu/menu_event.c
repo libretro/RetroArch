@@ -38,6 +38,10 @@
 
 static unsigned char menu_keyboard_key_state[RETROK_LAST] = {0};
 
+/* This function gets called for handling pointer events.
+ *
+ * Pointer events are touchscreen events that are spawned
+ * by touchpad/touchscreen. */
 static int menu_event_pointer(unsigned *action)
 {
    rarch_joypad_info_t joypad_info;
@@ -83,16 +87,24 @@ static int menu_event_pointer(unsigned *action)
    return 0;
 }
 
+/* Check if a specific keyboard key has been pressed. */
 unsigned char menu_event_kb_is_set(enum retro_key key)
 {
    return menu_keyboard_key_state[key];
 }
 
+/* Set a specific keyboard key latch. */
 static void menu_event_kb_set_internal(unsigned idx, unsigned char key)
 {
    menu_keyboard_key_state[idx] = key;
 }
 
+/* Set a specific keyboard key.
+ *
+ * 'down' sets the latch (true would 
+ * mean the key is being pressed down, while 'false' would mean that
+ * the key has been released).
+ **/
 void menu_event_kb_set(bool down, enum retro_key key)
 {
    if (key == RETROK_UNKNOWN)
@@ -106,6 +118,25 @@ void menu_event_kb_set(bool down, enum retro_key key)
       menu_event_kb_set_internal(key, ((menu_event_kb_is_set(key) & 1) << 1) | down);
 }
 
+/* 
+ * This function gets called in order to process all input events
+ * for the current frame.
+ *
+ * Sends input code to menu for one frame.
+ *
+ * It uses as input the local variables' input' and 'trigger_input'.
+ *
+ * Mouse and touch input events get processed inside this function.
+ *
+ * NOTE: 'input' and 'trigger_input' is sourced from the keyboard and/or
+ * the gamepad. It does not contain input state derived from the mouse
+ * and/or touch - this gets dealt with separately within this function.
+ *
+ * TODO/FIXME - maybe needs to be overhauled so we can send multiple
+ * events per frame if we want to, and we shouldn't send the
+ * entire button state either but do a separate event per button
+ * state.
+ */
 unsigned menu_event(uint64_t input, uint64_t trigger_input)
 {
    menu_animation_ctx_delta_t delta;

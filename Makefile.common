@@ -91,7 +91,7 @@ ifeq ($(HAVE_SHADERPIPELINE), 1)
    CFLAGS += -DHAVE_SHADERPIPELINE
 endif
 
-CFLAGS += -I$(LIBRETRO_COMM_DIR)/include
+CFLAGS += -I$(LIBRETRO_COMM_DIR)/include -I$(DEPS_DIR)
 
 # Switches
 
@@ -175,6 +175,7 @@ OBJ += frontend/frontend.o \
        $(LIBRETRO_COMM_DIR)/file/retro_dirent.o \
        $(LIBRETRO_COMM_DIR)/streams/stdin_stream.o \
        $(LIBRETRO_COMM_DIR)/streams/file_stream.o \
+       $(LIBRETRO_COMM_DIR)/streams/file_stream_transforms.o \
        $(LIBRETRO_COMM_DIR)/streams/interface_stream.o \
        $(LIBRETRO_COMM_DIR)/streams/memory_stream.o \
        $(LIBRETRO_COMM_DIR)/lists/string_list.o \
@@ -1321,6 +1322,11 @@ endif
 ifeq ($(HAVE_RBMP), 1)
    DEFINES += -DHAVE_RBMP
    OBJ += $(LIBRETRO_COMM_DIR)/formats/bmp/rbmp.o
+endif
+
+ifeq ($(HAVE_IBXM), 1)
+   DEFINES += -DHAVE_IBXM
+   OBJ += $(DEPS_DIR)/ibxm/ibxm.o
 endif
 
 OBJ += $(LIBRETRO_COMM_DIR)/formats/bmp/rbmp_encode.o \

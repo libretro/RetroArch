@@ -211,7 +211,7 @@ static bool screenshot_dump(
 
    screenshot_path[0]             = '\0';
 
-   if (string_is_empty(screenshot_dir))
+   if (string_is_empty(screenshot_dir) || settings->bools.screenshots_in_content_dir)
    {
       fill_pathname_basedir(screenshot_path, name_base,
             sizeof(screenshot_path));

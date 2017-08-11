@@ -16,9 +16,20 @@ else ifneq ($(findstring MINGW,$(shell uname -a)),)
    system_platform = win
 endif
 
+ifeq ($(DEBUG), 1)
+	PPU_OPTIMIZE_LV := -O0 -g
+else
+	PPU_OPTIMIZE_LV := -O2 -DNDEBUG
+endif
+
 STRIP			= $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-strip.exe
 
-PPU_CFLAGS		+= -I. -Ilibretro-common/include -Ideps/libz -D__CELLOS_LV2__ -DIS_SALAMANDER -DRARCH_CONSOLE -DHAVE_SYSUTILS -DHAVE_SYSMODULES -DHAVE_RARCH_EXEC
+INCFLAGS    = -I. -Idefines -Ilibretro-common/include -Ideps/libz
+DEFINES     = -D__CELLOS_LV2__ -DIS_SALAMANDER -DRARCH_CONSOLE -DHAVE_SYSUTILS -DHAVE_SYSMODULES -DHAVE_RARCH_EXEC
+
+PPU_CFLAGS	:= $(PPU_OPTIMIZE_LV) $(INCFLAGS) $(DEFINES)
+PPU_CXXFLAGS := $(PPU_OPTIMIZE_LV) $(INCFLAGS) $(DEFINES)
+
 PPU_SRCS		= frontend/frontend_salamander.c \
 				  frontend/frontend_driver.c \
 				  frontend/drivers/platform_ps3.c \
@@ -29,6 +40,7 @@ PPU_SRCS		= frontend/frontend_salamander.c \
 				  libretro-common/file/retro_dirent.c \
 				  libretro-common/hash/rhash.c \
 				  libretro-common/string/stdstring.c \
+				  libretro-common/encodings/encoding_utf.c \
 				  libretro-common/compat/compat_strl.c \
 				  libretro-common/compat/compat_strcasestr.c \
 				  libretro-common/streams/file_stream.c \
@@ -59,8 +71,6 @@ else
 endif
 
 PPU_LDLIBS		+= -lm -lnet_stub -lnetctl_stub -lio_stub -lsysmodule_stub -lsysutil_stub -lsysutil_game_stub -lfs_stub -lsysutil_np_stub
-
-PPU_OPTIMIZE_LV		:= -O2
 
 MAKE_FSELF = $(CELL_SDK)/host-win32/bin/make_fself.exe
 
