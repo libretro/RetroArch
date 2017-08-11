@@ -1086,6 +1086,20 @@ static int action_ok_file_load_with_detect_core_collection(const char *path,
          path, label, type, false);
 }
 
+static int set_path_generic(const char *label, const char *action_path)
+{
+   rarch_setting_t *setting = menu_setting_find(filebrowser_label);
+
+   if (setting)
+   {
+      setting_set_with_string_representation(
+            setting, action_path);
+      return menu_setting_generic(setting, false);
+   }
+
+   return 0;
+}
+
 static int generic_action_ok(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned id, enum msg_hash_enums flush_id)
@@ -1220,68 +1234,23 @@ static int generic_action_ok(const char *path,
          break;
       case ACTION_OK_SET_DIRECTORY:
          flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DIRECTORY_SETTINGS_LIST);
-         {
-            rarch_setting_t *setting = menu_setting_find(filebrowser_label);
-
-            if (setting)
-            {
-               setting_set_with_string_representation(
-                     setting, action_path);
-               ret = menu_setting_generic(setting, false);
-            }
-         }
+         ret = set_path_generic(filebrowser_label, action_path);
          break;
       case ACTION_OK_SET_PATH_VIDEO_FILTER:
          flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_SETTINGS_LIST);
-         {
-            rarch_setting_t *setting = menu_setting_find(menu_label);
-
-            if (setting)
-            {
-               setting_set_with_string_representation(
-                     setting, action_path);
-               ret = menu_setting_generic(setting, false);
-            }
-         }
+         ret = set_path_generic(filebrowser_label, action_path);
          break;
       case ACTION_OK_SET_PATH_AUDIO_FILTER:
          flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST);
-         {
-            rarch_setting_t *setting = menu_setting_find(menu_label);
-
-            if (setting)
-            {
-               setting_set_with_string_representation(
-                     setting, action_path);
-               ret = menu_setting_generic(setting, false);
-            }
-         }
+         ret = set_path_generic(menu_label, action_path);
          break;
       case ACTION_OK_SET_PATH_OVERLAY:
          flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ONSCREEN_OVERLAY_SETTINGS_LIST);
-         {
-            rarch_setting_t *setting = menu_setting_find(menu_label);
-
-            if (setting)
-            {
-               setting_set_with_string_representation(
-                     setting, action_path);
-               ret = menu_setting_generic(setting, false);
-            }
-         }
+         ret = set_path_generic(menu_label, action_path);
          break;
       case ACTION_OK_SET_PATH:
          flush_type = MENU_SETTINGS;
-         {
-            rarch_setting_t *setting = menu_setting_find(menu_label);
-
-            if (setting)
-            {
-               setting_set_with_string_representation(
-                     setting, action_path);
-               ret = menu_setting_generic(setting, false);
-            }
-         }
+         ret = set_path_generic(menu_label, action_path);
          break;
       default:
          flush_char = msg_hash_to_str(flush_id);
