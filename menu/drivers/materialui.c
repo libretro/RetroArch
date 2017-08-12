@@ -562,7 +562,7 @@ static void mui_compute_entries_box(mui_handle_t* mui, int width)
 
       if (menu_entry_get_sublabel(i, sublabel_str, sizeof(sublabel_str)))
       {
-         word_wrap(sublabel_str, sublabel_str, (int)(usable_width / mui->glyph_width2));
+         word_wrap(sublabel_str, sublabel_str, (int)(usable_width / mui->glyph_width2), false);
          lines = mui_count_lines(sublabel_str);
       }
 
@@ -715,7 +715,7 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
 
    if (menu_entry_get_sublabel(i, sublabel_str, sizeof(sublabel_str)))
    {
-      word_wrap(sublabel_str, sublabel_str, (int)(usable_width / mui->glyph_width2));
+      word_wrap(sublabel_str, sublabel_str, (int)(usable_width / mui->glyph_width2), false);
 
       menu_display_draw_text(mui->font2, sublabel_str,
             mui->margin,

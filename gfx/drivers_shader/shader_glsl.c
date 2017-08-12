@@ -162,7 +162,7 @@ static GLint gl_glsl_get_uniform(glsl_shader_data_t *glsl,
 {
    unsigned i;
    GLint loc;
-   char buf[64];
+   char buf[80];
 
    buf[0] = '\0';
 
@@ -187,7 +187,7 @@ static GLint gl_glsl_get_attrib(glsl_shader_data_t *glsl,
 {
    unsigned i;
    GLint loc;
-   char buf[64];
+   char buf[80];
 
    buf[0] = '\0';
 

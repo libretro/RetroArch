@@ -236,12 +236,14 @@ filename_matching:
 
             for (j = 0; j < playlist_size; j++)
             {
+               char entry[PATH_MAX_LENGTH];
                const char *playlist_path     = NULL;
+               const char *buf               = NULL;
+
                playlist_get_index(playlist,
                      j, &playlist_path, NULL, NULL, NULL, NULL, NULL);
-               char entry[PATH_MAX_LENGTH];
-               const char* buf = path_basename(playlist_path);
 
+               buf         = path_basename(playlist_path);
                entry[0]    = '\0';
 
                strlcpy(entry, buf, sizeof(entry));

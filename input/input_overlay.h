@@ -24,6 +24,8 @@
 #include <retro_miscellaneous.h>
 #include <formats/image.h>
 
+#include "input_driver.h"
+
 RETRO_BEGIN_DECLS
 
 #define BOX_RADIAL       0x18df06d2U

@@ -462,7 +462,6 @@ error:
 #endif
 
 #ifdef HAVE_IBXM
-#ifdef HAVE_STB_VORBIS
 static bool audio_mixer_play_mod(
       audio_mixer_sound_t* sound,
       audio_mixer_voice_t* voice,
@@ -477,9 +476,10 @@ static bool audio_mixer_play_mod(
    struct module* module         = NULL;
    struct replay* replay         = NULL;
 
-   data.buffer = (char*)sound->types.ogg.data;
-   data.length = sound->types.ogg.size;
-   module      = module_load(&data, message);
+   data.buffer                   = (char*)sound->types.mod.data;
+   data.length                   = sound->types.mod.size;
+   module                        = module_load(&data, message);
+
    if (!module)
    {
       printf("audio_mixer_play_mod module_load() failed with error: %s\n", message);
@@ -511,7 +511,7 @@ static bool audio_mixer_play_mod(
       goto error;
    }
 
-   voice->types.mod.buffer         = mod_buffer;
+   voice->types.mod.buffer         = (int*)mod_buffer;
    voice->types.mod.buf_samples    = buf_samples;
    voice->types.mod.stream         = replay;
    voice->types.mod.position       = 0;
@@ -522,11 +522,11 @@ static bool audio_mixer_play_mod(
 error:
    if (mod_buffer)
       memalign_free(mod_buffer);
-   dispose_module(module);
+   if (module)
+      dispose_module(module);
    return false;
 
 }
-#endif
 #endif
 
 audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound, bool repeat,
@@ -560,9 +560,7 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound, bool repeat,
             break;
          case AUDIO_MIXER_TYPE_MOD:
 #ifdef HAVE_IBXM
-#ifdef HAVE_STB_VORBIS
             res = audio_mixer_play_mod(sound, voice, repeat, volume, stop_cb);
-#endif
 #endif
             break;
          case AUDIO_MIXER_TYPE_NONE:
@@ -737,6 +735,8 @@ static void audio_mixer_mix_mod(float* buffer, size_t num_frames,
       float volume)
 {
    int i;
+   float samplef                    = 0.0f;
+   int samplei                      = 0;
    unsigned temp_samples            = 0;
    unsigned buf_free                = num_frames * 2;
    int* pcm                         = NULL;
@@ -744,7 +744,9 @@ static void audio_mixer_mix_mod(float* buffer, size_t num_frames,
    if (voice->types.mod.position == voice->types.mod.samples)
    {
 again:
-      temp_samples = replay_get_audio( voice->types.mod.stream, voice->types.mod.buffer );
+      temp_samples = replay_get_audio(
+            voice->types.mod.stream, voice->types.mod.buffer );
+
       temp_samples *= 2; /* stereo */
 
       if (temp_samples == 0)
@@ -772,16 +774,14 @@ again:
    }
    pcm = voice->types.mod.buffer + voice->types.mod.position;
 
-   float samplef = 0.0f;
-   int samplei = 0;
    if (voice->types.mod.samples < buf_free)
    {
       for (i = voice->types.mod.samples; i != 0; i--)
       {
-         samplei = *pcm++ * volume;
-         samplef = (float)((int)samplei + 32768) / 65535.0f;
-         samplef = samplef * 2.0f - 1.0f;
-         *buffer++   = samplef;
+         samplei     = *pcm++ * volume;
+         samplef     = (float)((int)samplei + 32768) / 65535.0f;
+         samplef     = samplef * 2.0f - 1.0f;
+         *buffer++  += samplef;
       }
 
       buf_free -= voice->types.mod.samples;
@@ -792,10 +792,10 @@ again:
       int i;
       for (i = buf_free; i != 0; --i ) 
       {
-         samplei = *pcm++ * volume;
-         samplef = (float)((int)samplei + 32768) / 65535.0f;
-         samplef = samplef * 2.0f - 1.0f;
-         *buffer++   = samplef;
+         samplei     = *pcm++ * volume;
+         samplef     = (float)((int)samplei + 32768) / 65535.0f;
+         samplef     = samplef * 2.0f - 1.0f;
+         *buffer++  += samplef;
       }
 
       voice->types.mod.position += buf_free;
@@ -828,6 +828,7 @@ void audio_mixer_mix(float* buffer, size_t num_frames, float volume_override, bo
 #ifdef HAVE_STB_VORBIS
             audio_mixer_mix_ogg(buffer, num_frames, voice, volume);
 #endif
+            break;
          case AUDIO_MIXER_TYPE_MOD:
 #ifdef HAVE_IBXM
             audio_mixer_mix_mod(buffer, num_frames, voice, volume);

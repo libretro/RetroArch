@@ -286,7 +286,7 @@ void shader_dlg_params_reload(void)
          SendMessage(control->trackbar.label_title, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
 
          pos_y += SHADER_DLG_LABEL_HEIGHT;
-         control->trackbar.hwnd = CreateWindowEx(0, TRACKBAR_CLASS, "",
+         control->trackbar.hwnd = CreateWindowEx(0, (LPCSTR)TRACKBAR_CLASS, "",
                WS_CHILD | WS_VISIBLE | TBS_HORZ | TBS_NOTICKS,
                pos_x + SHADER_DLG_TRACKBAR_LABEL_WIDTH, pos_y,
                SHADER_DLG_TRACKBAR_WIDTH, SHADER_DLG_TRACKBAR_HEIGHT,

@@ -154,9 +154,34 @@ CHEATS
 #include "../libretro-common/hash/rhash.c"
 
 /*============================================================
+UI COMMON CONTEXT
+============================================================ */
+#if defined(_WIN32) && !defined(_XBOX)
+#include "../gfx/common/win32_common.c"
+#endif
+
+/*============================================================
 VIDEO CONTEXT
 ============================================================ */
 #include "../gfx/drivers_context/gfx_null_ctx.c"
+
+#if defined(_WIN32) && !defined(_XBOX)
+
+#if defined(HAVE_OPENGL) || defined(HAVE_VULKAN)
+#include "../gfx/drivers_context/wgl_ctx.c"
+#endif
+
+#if defined(_WIN32) && !defined(_XBOX)
+#include "../gfx/drivers_context/gdi_ctx.c"
+#endif
+
+#if defined(HAVE_FFMPEG)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
+#include "../cores/libretro-ffmpeg/ffmpeg_fft.c"
+#endif
+#endif
+
+#endif
 
 #if defined(__CELLOS_LV2__)
 #include "../gfx/drivers_context/ps3_ctx.c"
