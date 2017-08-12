@@ -2036,6 +2036,13 @@ bool command_event(enum event_command cmd, void *data)
 
             RARCH_LOG("%s: [%s].\n",
                   msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
+                  settings->paths.path_content_favorites);
+            g_defaults.content_favorites = playlist_init(
+                  settings->paths.path_content_favorites,
+                  content_history_size);
+
+            RARCH_LOG("%s: [%s].\n",
+                  msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
                   settings->paths.path_content_music_history);
             g_defaults.music_history = playlist_init(
                   settings->paths.path_content_music_history,

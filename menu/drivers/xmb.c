@@ -90,6 +90,7 @@ enum
    XMB_TEXTURE_MAIN_MENU = 0,
    XMB_TEXTURE_SETTINGS,
    XMB_TEXTURE_HISTORY,
+   XMB_TEXTURE_FAVORITES,
    XMB_TEXTURE_MUSICS,
 #ifdef HAVE_FFMPEG
    XMB_TEXTURE_MOVIES,
@@ -126,6 +127,7 @@ enum
    XMB_TEXTURE_FILE,
    XMB_TEXTURE_FOLDER,
    XMB_TEXTURE_ZIP,
+   XMB_TEXTURE_FAVORITE,
    XMB_TEXTURE_MUSIC,
    XMB_TEXTURE_IMAGE,
    XMB_TEXTURE_MOVIE,
@@ -150,6 +152,7 @@ enum
    XMB_SYSTEM_TAB_MAIN = 0,
    XMB_SYSTEM_TAB_SETTINGS,
    XMB_SYSTEM_TAB_HISTORY,
+   XMB_SYSTEM_TAB_FAVORITES,
    XMB_SYSTEM_TAB_MUSIC,
 #ifdef HAVE_FFMPEG
    XMB_SYSTEM_TAB_VIDEO,
@@ -302,6 +305,7 @@ typedef struct xmb_handle
 #endif
    xmb_node_t settings_tab_node;
    xmb_node_t history_tab_node;
+   xmb_node_t favorites_tab_node;
    xmb_node_t add_tab_node;
    xmb_node_t netplay_tab_node;
 
@@ -1540,6 +1544,8 @@ static xmb_node_t* xmb_get_node(xmb_handle_t *xmb, unsigned i)
 #endif
       case XMB_SYSTEM_TAB_HISTORY:
          return &xmb->history_tab_node;
+      case XMB_SYSTEM_TAB_FAVORITES:
+         return &xmb->favorites_tab_node;
 #ifdef HAVE_NETWORKING
       case XMB_SYSTEM_TAB_NETPLAY:
          return &xmb->netplay_tab_node;
@@ -2064,6 +2070,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
 
          switch (xmb_get_system_tab(xmb, (unsigned)xmb->categories.selection_ptr))
          {
+            case XMB_SYSTEM_TAB_FAVORITES:
+               return xmb->textures.list[XMB_TEXTURE_FAVORITE];
             case XMB_SYSTEM_TAB_MUSIC:
                return xmb->textures.list[XMB_TEXTURE_MUSIC];
 #ifdef HAVE_IMAGEVIEWER
@@ -3286,6 +3294,8 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_SETTINGS;
    if (settings->bools.menu_xmb_show_history)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_HISTORY;
+   /* TODO if (settings->bools.menu_xmb_show_favorites)*/
+      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_FAVORITES;
 #ifdef HAVE_IMAGEVIEWER
    if (settings->bools.menu_xmb_show_images)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_IMAGES;
@@ -3435,6 +3445,8 @@ static const char *xmb_texture_path(unsigned id)
          return "settings.png";
       case XMB_TEXTURE_HISTORY:
          return "history.png";
+      case XMB_TEXTURE_FAVORITES:
+         return "favorites.png";
       case XMB_TEXTURE_MUSICS:
          return "musics.png";
 #ifdef HAVE_FFMPEG
@@ -3499,6 +3511,8 @@ static const char *xmb_texture_path(unsigned id)
          return "zip.png";
       case XMB_TEXTURE_MUSIC:
          return "music.png";
+      case XMB_TEXTURE_FAVORITE:
+         return "favorites-content.png";
       case XMB_TEXTURE_IMAGE:
          return "image.png";
       case XMB_TEXTURE_MOVIE:
@@ -3560,6 +3574,10 @@ static void xmb_context_reset_textures(
    xmb->history_tab_node.icon   = xmb->textures.list[XMB_TEXTURE_HISTORY];
    xmb->history_tab_node.alpha  = xmb->categories.active.alpha;
    xmb->history_tab_node.zoom   = xmb->categories.active.zoom;
+
+   xmb->favorites_tab_node.icon   = xmb->textures.list[XMB_TEXTURE_FAVORITES];
+   xmb->favorites_tab_node.alpha  = xmb->categories.active.alpha;
+   xmb->favorites_tab_node.zoom   = xmb->categories.active.zoom;
 
    xmb->music_tab_node.icon     = xmb->textures.list[XMB_TEXTURE_MUSICS];
    xmb->music_tab_node.alpha    = xmb->categories.active.alpha;
@@ -3871,6 +3889,12 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
                   strdup(msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB));
                menu_stack->list[stack_size - 1].type =
                   MENU_HISTORY_TAB;
+               break;
+            case XMB_SYSTEM_TAB_FAVORITES:
+               menu_stack->list[stack_size - 1].label =
+                  strdup(msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES_TAB));
+               menu_stack->list[stack_size - 1].type =
+                  MENU_FAVORITES_TAB;
                break;
 #ifdef HAVE_NETWORKING
             case XMB_SYSTEM_TAB_NETPLAY:

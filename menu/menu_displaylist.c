@@ -3838,6 +3838,11 @@ static bool menu_displaylist_push_internal(
       if (menu_displaylist_ctl(DISPLAYLIST_HISTORY, info))
          return true;
    }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES_TAB)))
+   {
+      if (menu_displaylist_ctl(DISPLAYLIST_FAVORITES, info))
+         return true;
+   }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS_TAB)))
    {
       if (menu_displaylist_ctl(DISPLAYLIST_SETTINGS_ALL, info))
@@ -4365,6 +4370,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                return menu_displaylist_process(info);
             return false;
          }
+         else if (string_is_equal(info->path, file_path_str(FILE_PATH_CONTENT_FAVORITES)))
+         {
+            if (menu_displaylist_ctl(DISPLAYLIST_FAVORITES, info))
+               return menu_displaylist_process(info);
+            return false;
+         }
          else
          {
             char path_playlist[PATH_MAX_LENGTH];
@@ -4422,6 +4433,19 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             ret = 0;
          }
 
+         if (ret == 0)
+         {
+            info->need_refresh = true;
+            info->need_push    = true;
+         }
+         break;
+      case DISPLAYLIST_FAVORITES:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         menu_displaylist_parse_playlist_history(menu, info,
+               g_defaults.content_favorites,
+               "favorites",
+               settings->paths.path_content_favorites,
+               &ret);
          if (ret == 0)
          {
             info->need_refresh = true;
