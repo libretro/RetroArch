@@ -772,9 +772,12 @@ static void vulkan_check_dynamic_state(
 
    if (vk->tracker.dirty & VULKAN_DIRTY_DYNAMIC_BIT)
    {
-      const VkRect2D sci = {
-         { vk->vp.x, vk->vp.y },
-         { vk->vp.width, vk->vp.height }};
+      VkRect2D sci;
+      
+      sci.offset.x      = vk->vp.x;
+      sci.offset.y      = vk->vp.y;
+      sci.extent.width  = vk->vp.width;
+      sci.extent.height = vk->vp.height;
 
       vkCmdSetViewport(vk->cmd, 0, 1, &vk->vk_vp);
       vkCmdSetScissor (vk->cmd, 0, 1, &sci);
@@ -1144,8 +1147,15 @@ struct vk_buffer_chain vulkan_buffer_chain_init(
       VkDeviceSize alignment,
       VkBufferUsageFlags usage)
 {
-   struct vk_buffer_chain chain = { 
-      block_size, alignment, 0, usage, NULL, NULL };
+   struct vk_buffer_chain chain;
+   
+   chain.block_size = block_size;
+   chain.alignment  = alignment;
+   chain.offset     = 0;
+   chain.usage      = usage;
+   chain.head       = NULL;
+   chain.current    = NULL;
+
    return chain;
 }
 
@@ -1487,12 +1497,13 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 
       for (i = 0; i < queue_count; i++)
       {
+         VkQueueFlags required;
          VkBool32 supported = VK_FALSE;
          vkGetPhysicalDeviceSurfaceSupportKHR(
                vk->context.gpu, i,
                vk->vk_surface, &supported);
 
-         VkQueueFlags required = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;
+         required = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;
          if (supported && ((queue_properties[i].queueFlags & required) == required))
          {
             vk->context.graphics_queue_index = i;
@@ -1573,6 +1584,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
 {
    unsigned i;
    VkResult res;
+   PFN_vkGetInstanceProcAddr GetInstanceProcAddr;
    VkInstanceCreateInfo info          = { VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO };
    VkApplicationInfo app              = { VK_STRUCTURE_TYPE_APPLICATION_INFO };
 
@@ -1647,7 +1659,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
 
    RARCH_LOG("Vulkan dynamic library loaded.\n");
    
-   PFN_vkGetInstanceProcAddr GetInstanceProcAddr =
+   GetInstanceProcAddr =
       (PFN_vkGetInstanceProcAddr)dylib_proc(vulkan_library, "vkGetInstanceProcAddr");
 
    if (!GetInstanceProcAddr)
@@ -2018,10 +2030,11 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
       case VULKAN_WSI_WIN32:
 #ifdef _WIN32
          {
+            VkWin32SurfaceCreateInfoKHR surf_info;
             PFN_vkCreateWin32SurfaceKHR create;
+
             if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(vk->context.instance, "vkCreateWin32SurfaceKHR", create))
                return false;
-            VkWin32SurfaceCreateInfoKHR surf_info;
 
             memset(&surf_info, 0, sizeof(surf_info));
 

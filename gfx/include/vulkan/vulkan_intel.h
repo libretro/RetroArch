@@ -29,16 +29,16 @@
 #ifdef __cplusplus
 extern "C"
 {
-#endif // __cplusplus
+#endif /* __cplusplus */
 
 #define VK_STRUCTURE_TYPE_DMA_BUF_IMAGE_CREATE_INFO_INTEL 1024
 typedef struct VkDmaBufImageCreateInfo_
 {
-    VkStructureType                             sType;                      // Must be VK_STRUCTURE_TYPE_DMA_BUF_IMAGE_CREATE_INFO_INTEL
-    const void*                                 pNext;                      // Pointer to next structure.
+    VkStructureType                             sType;                      /* Must be VK_STRUCTURE_TYPE_DMA_BUF_IMAGE_CREATE_INFO_INTEL */
+    const void*                                 pNext;                      /* Pointer to next structure. */
     int                                         fd;
     VkFormat                                    format;
-    VkExtent3D                                  extent;         // Depth must be 1
+    VkExtent3D                                  extent;         /* Depth must be 1 */
     uint32_t                                    strideInBytes;
 } VkDmaBufImageCreateInfo;
 
@@ -56,7 +56,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDmaBufImageINTEL(
 #endif
 
 #ifdef __cplusplus
-} // extern "C"
-#endif // __cplusplus
+} /* extern "C" */
+#endif /* __cplusplus */
 
-#endif // __VULKAN_INTEL_H__
+#endif /* __VULKAN_INTEL_H__ */
