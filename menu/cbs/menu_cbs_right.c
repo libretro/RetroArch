@@ -488,7 +488,6 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
 static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
       const char *label, uint32_t label_hash, const char *menu_label)
 {
-   unsigned i;
 
    if (cbs->setting)
    {
@@ -502,21 +501,25 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
       }
    }
 
-   for (i = 0; i < MAX_USERS; i++)
+   if (strstr(label, "input_player") && strstr(label, "_joypad_index"))
    {
-      uint32_t label_setting_hash;
-      char label_setting[128];
+      unsigned i;
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         uint32_t label_setting_hash;
+         char label_setting[128];
 
-      label_setting[0] = '\0';
+         label_setting[0] = '\0';
 
-      snprintf(label_setting, sizeof(label_setting), "input_player%d_joypad_index", i + 1);
-      label_setting_hash = msg_hash_calculate(label_setting);
+         snprintf(label_setting, sizeof(label_setting), "input_player%d_joypad_index", i + 1);
+         label_setting_hash = msg_hash_calculate(label_setting);
 
-      if (label_hash != label_setting_hash)
-         continue;
+         if (label_hash != label_setting_hash)
+            continue;
 
-      BIND_ACTION_RIGHT(cbs, bind_right_generic);
-      return 0;
+         BIND_ACTION_RIGHT(cbs, bind_right_generic);
+         return 0;
+      }
    }
 
    if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)))
