@@ -2435,16 +2435,16 @@ static void xmb_render(void *data, bool is_idle)
 
    if (pointer_enable || mouse_enable)
    {
-      size_t selection = menu_navigation_get_selection();
+      size_t selection  = menu_navigation_get_selection();
+      int16_t pointer_y = menu_input_pointer_state(MENU_POINTER_Y_AXIS);
+      int16_t mouse_y   = menu_input_mouse_state(MENU_MOUSE_Y_AXIS)
+         + (xmb->cursor.size/2);
 
       for (i = 0; i < end; i++)
       {
          float item_y1     = xmb->margins.screen.top
             + xmb_item_y(xmb, (int)i, selection);
          float item_y2     = item_y1 + xmb->icon.size;
-         int16_t pointer_y = menu_input_pointer_state(MENU_POINTER_Y_AXIS);
-         int16_t mouse_y   = menu_input_mouse_state(MENU_MOUSE_Y_AXIS)
-            + (xmb->cursor.size/2);
 
          if (pointer_enable)
          {
