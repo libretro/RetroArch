@@ -121,8 +121,10 @@ int uiMenuItemChecked(uiMenuItem *item)
 
 void uiMenuItemSetChecked(uiMenuItem *item, int checked)
 {
-	/* use explicit values */
-	gboolean c = FALSE;
+	gboolean c;
+
+	// use explicit values
+	c = FALSE;
 	if (checked)
 		c = TRUE;
 	setChecked(item, c);
@@ -130,55 +132,55 @@ void uiMenuItemSetChecked(uiMenuItem *item, int checked)
 
 static uiMenuItem *newItem(uiMenu *m, int type, const char *name)
 {
-   uiMenuItem *item;
+	uiMenuItem *item;
 
-   if (menusFinalized)
-      userbug("You cannot create a new menu item after menus have been finalized.");
+	if (menusFinalized)
+		userbug("You cannot create a new menu item after menus have been finalized.");
 
-   item = uiNew(uiMenuItem);
+	item = uiNew(uiMenuItem);
 
-   g_array_append_val(m->items, item);
+	g_array_append_val(m->items, item);
 
-   item->type = type;
-   switch (item->type) {
-      case typeQuit:
-         item->name = g_strdup("Quit");
-         break;
-      case typePreferences:
-         item->name = g_strdup("Preferences...");
-         break;
-      case typeAbout:
-         item->name = g_strdup("About");
-         break;
-      case typeSeparator:
-         break;
-      default:
-         item->name = g_strdup(name);
-         break;
-   }
+	item->type = type;
+	switch (item->type) {
+	case typeQuit:
+		item->name = g_strdup("Quit");
+		break;
+	case typePreferences:
+		item->name = g_strdup("Preferences...");
+		break;
+	case typeAbout:
+		item->name = g_strdup("About");
+		break;
+	case typeSeparator:
+		break;
+	default:
+		item->name = g_strdup(name);
+		break;
+	}
 
-   if (item->type == typeQuit) {
-      // can't call uiMenuItemOnClicked() here
-      item->onClicked = onQuitClicked;
-      item->onClickedData = NULL;
-   } else
-      uiMenuItemOnClicked(item, defaultOnClicked, NULL);
+	if (item->type == typeQuit) {
+		// can't call uiMenuItemOnClicked() here
+		item->onClicked = onQuitClicked;
+		item->onClickedData = NULL;
+	} else
+		uiMenuItemOnClicked(item, defaultOnClicked, NULL);
 
-   switch (item->type) {
-      case typeCheckbox:
-         item->gtype = GTK_TYPE_CHECK_MENU_ITEM;
-         break;
-      case typeSeparator:
-         item->gtype = GTK_TYPE_SEPARATOR_MENU_ITEM;
-         break;
-      default:
-         item->gtype = GTK_TYPE_MENU_ITEM;
-         break;
-   }
+	switch (item->type) {
+	case typeCheckbox:
+		item->gtype = GTK_TYPE_CHECK_MENU_ITEM;
+		break;
+	case typeSeparator:
+		item->gtype = GTK_TYPE_SEPARATOR_MENU_ITEM;
+		break;
+	default:
+		item->gtype = GTK_TYPE_MENU_ITEM;
+		break;
+	}
 
-   item->windows = g_hash_table_new(g_direct_hash, g_direct_equal);
+	item->windows = g_hash_table_new(g_direct_hash, g_direct_equal);
 
-   return item;
+	return item;
 }
 
 uiMenuItem *uiMenuAppendItem(uiMenu *m, const char *name)

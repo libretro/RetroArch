@@ -1,27 +1,25 @@
 // 8 june 2016
 #include "uipriv_unix.h"
 
-struct formChild
-{
-   uiControl *c;
-   int stretchy;
-   GtkWidget *label;
-   gboolean oldhexpand;
-   GtkAlign oldhalign;
-   gboolean oldvexpand;
-   GtkAlign oldvalign;
-   GBinding *labelBinding;
+struct formChild {
+	uiControl *c;
+	int stretchy;
+	GtkWidget *label;
+	gboolean oldhexpand;
+	GtkAlign oldhalign;
+	gboolean oldvexpand;
+	GtkAlign oldvalign;
+	GBinding *labelBinding;
 };
 
-struct uiForm
-{
-   uiUnixControl c;
-   GtkWidget *widget;
-   GtkContainer *container;
-   GtkGrid *grid;
-   GArray *children;
-   int padded;
-   GtkSizeGroup *stretchygroup;		/* ensures all stretchy controls have the same size */
+struct uiForm {
+	uiUnixControl c;
+	GtkWidget *widget;
+	GtkContainer *container;
+	GtkGrid *grid;
+	GArray *children;
+	int padded;
+	GtkSizeGroup *stretchygroup;		// ensures all stretchy controls have the same size
 };
 
 uiUnixControlAllDefaultsExceptDestroy(uiForm)
@@ -34,19 +32,18 @@ static void uiFormDestroy(uiControl *c)
 	struct formChild *fc;
 	guint i;
 
-	/* kill the size group */
+	// kill the size group
 	g_object_unref(f->stretchygroup);
-	/* free all controls */
-	for (i = 0; i < f->children->len; i++)
-   {
-      fc = ctrl(f, i);
-      uiControlSetParent(fc->c, NULL);
-      uiUnixControlSetContainer(uiUnixControl(fc->c), f->container, TRUE);
-      uiControlDestroy(fc->c);
-      gtk_widget_destroy(fc->label);
-   }
+	// free all controls
+	for (i = 0; i < f->children->len; i++) {
+		fc = ctrl(f, i);
+		uiControlSetParent(fc->c, NULL);
+		uiUnixControlSetContainer(uiUnixControl(fc->c), f->container, TRUE);
+		uiControlDestroy(fc->c);
+		gtk_widget_destroy(fc->label);
+	}
 	g_array_free(f->children, TRUE);
-	/* and then ourselves */
+	// and then ourselves
 	g_object_unref(f->widget);
 	uiFreeControl(uiControl(f));
 }
@@ -71,7 +68,7 @@ void uiFormAppend(uiForm *f, const char *label, uiControl *c, int stretchy)
 		gtk_size_group_add_widget(f->stretchygroup, widget);
 	} else
 		gtk_widget_set_vexpand(widget, FALSE);
-	/* and make them fill horizontally */
+	// and make them fill horizontally
 	gtk_widget_set_hexpand(widget, TRUE);
 	gtk_widget_set_halign(widget, GTK_ALIGN_FILL);
 
@@ -88,7 +85,7 @@ void uiFormAppend(uiForm *f, const char *label, uiControl *c, int stretchy)
 	gtk_grid_attach(f->grid, fc.label,
 		0, row,
 		1, 1);
-	/* and make them share visibility so if the control is hidden, so is its label */
+	// and make them share visibility so if the control is hidden, so is its label
 	fc.labelBinding = g_object_bind_property(GTK_WIDGET(uiControlHandle(fc.c)), "visible",
 		fc.label, "visible",
 		G_BINDING_SYNC_CREATE);
@@ -97,7 +94,7 @@ void uiFormAppend(uiForm *f, const char *label, uiControl *c, int stretchy)
 	uiUnixControlSetContainer(uiUnixControl(fc.c), f->container, FALSE);
 	g_array_append_val(f->children, fc);
 
-	/* move the widget to the correct place */
+	// move the widget to the correct place
 	gtk_container_child_set(f->container, widget,
 		"left-attach", 1,
 		"top-attach", row,

@@ -14,31 +14,30 @@
 typedef struct dateTimePickerWidget dateTimePickerWidget;
 typedef struct dateTimePickerWidgetClass dateTimePickerWidgetClass;
 
-struct dateTimePickerWidget
-{
-   GtkToggleButton parent_instance;
+struct dateTimePickerWidget {
+	GtkToggleButton parent_instance;
 
-   gulong toggledSignal;
+	gulong toggledSignal;
 
-   gboolean hasTime;
-   gboolean hasDate;
+	gboolean hasTime;
+	gboolean hasDate;
 
-   GtkWidget *window;
-   GtkWidget *box;
-   GtkWidget *calendar;
-   GtkWidget *timebox;
-   GtkWidget *hours;
-   GtkWidget *minutes;
-   GtkWidget *seconds;
-   GtkWidget *ampm;
+	GtkWidget *window;
+	GtkWidget *box;
+	GtkWidget *calendar;
+	GtkWidget *timebox;
+	GtkWidget *hours;
+	GtkWidget *minutes;
+	GtkWidget *seconds;
+	GtkWidget *ampm;
 
-   gulong hoursBlock;
-   gulong minutesBlock;
-   gulong secondsBlock;
-   gulong ampmBlock;
+	gulong hoursBlock;
+	gulong minutesBlock;
+	gulong secondsBlock;
+	gulong ampmBlock;
 
-   GdkDevice *keyboard;
-   GdkDevice *mouse;
+	GdkDevice *keyboard;
+	GdkDevice *mouse;
 };
 
 struct dateTimePickerWidgetClass {
@@ -49,7 +48,9 @@ G_DEFINE_TYPE(dateTimePickerWidget, dateTimePickerWidget, GTK_TYPE_TOGGLE_BUTTON
 
 static int realSpinValue(GtkSpinButton *spinButton)
 {
-	GtkAdjustment *adj = gtk_spin_button_get_adjustment(spinButton);
+	GtkAdjustment *adj;
+
+	adj = gtk_spin_button_get_adjustment(spinButton);
 	return (int) gtk_adjustment_get_value(adj);
 }
 
@@ -69,14 +70,11 @@ static GDateTime *selected(dateTimePickerWidget *d)
 	guint year = 1970, month = 1, day = 1;
 	guint hour = 0, minute = 0, second = 0;
 
-	if (d->hasDate)
-   {
+	if (d->hasDate) {
 		gtk_calendar_get_date(GTK_CALENDAR(d->calendar), &year, &month, &day);
-		month++;		/* GtkCalendar/GDateTime differences */
+		month++;		// GtkCalendar/GDateTime differences
 	}
-
-	if (d->hasTime)
-   {
+	if (d->hasTime) {
 		hour = realSpinValue(GTK_SPIN_BUTTON(d->hours));
 		if (realSpinValue(GTK_SPIN_BUTTON(d->ampm)) != 0)
 			hour += 12;
@@ -88,22 +86,21 @@ static GDateTime *selected(dateTimePickerWidget *d)
 
 static void setLabel(dateTimePickerWidget *d)
 {
-	char *fmt     = NULL;
-	char *msg     = NULL;
-	GDateTime *dt = selected(d);
-	gboolean free = FALSE;
+	GDateTime *dt;
+	char *fmt;
+	char *msg;
+	gboolean free;
 
-	if (d->hasDate && d->hasTime)
-   {
-		/* don't use D_T_FMT; that's too verbose */
-		fmt  = g_strdup_printf("%s %s", nl_langinfo(D_FMT), nl_langinfo(T_FMT));
+	dt = selected(d);
+	free = FALSE;
+	if (d->hasDate && d->hasTime) {
+		// don't use D_T_FMT; that's too verbose
+		fmt = g_strdup_printf("%s %s", nl_langinfo(D_FMT), nl_langinfo(T_FMT));
 		free = TRUE;
-	}
-   else if (d->hasDate)
-      fmt = nl_langinfo(D_FMT);
+	} else if (d->hasDate)
+		fmt = nl_langinfo(D_FMT);
 	else
 		fmt = nl_langinfo(T_FMT);
-
 	msg = g_date_time_format(dt, fmt);
 	gtk_button_set_label(GTK_BUTTON(d), msg);
 	g_free(msg);
@@ -147,31 +144,32 @@ static void hidePopup(dateTimePickerWidget *d)
 // this consolidates a good chunk of what GtkComboBox does
 static gboolean startGrab(dateTimePickerWidget *d)
 {
+	GdkDevice *dev;
 	guint32 time;
-	GdkWindow *window   = NULL;
-	GdkDevice *keyboard = NULL;
-   GdkDevice *mouse    = NULL;
-	GdkDevice *dev      = gtk_get_current_event_device();
+	GdkWindow *window;
+	GdkDevice *keyboard, *mouse;
 
-	if (dev == NULL)
-   {
+	dev = gtk_get_current_event_device();
+	if (dev == NULL) {
 		// this is what GtkComboBox does
 		// since no device was set, just use the first available "master device"
-		GdkDisplay     *disp = gtk_widget_get_display(GTK_WIDGET(d));
-		GdkDeviceManager *dm = gdk_display_get_device_manager(disp);
-		GList          *list = gdk_device_manager_list_devices(dm, GDK_DEVICE_TYPE_MASTER);
+		GdkDisplay *disp;
+		GdkDeviceManager *dm;
+		GList *list;
+
+		disp = gtk_widget_get_display(GTK_WIDGET(d));
+		dm = gdk_display_get_device_manager(disp);
+		list = gdk_device_manager_list_devices(dm, GDK_DEVICE_TYPE_MASTER);
 		dev = (GdkDevice *) (list->data);
 		g_list_free(list);
 	}
 
-	time     = gtk_get_current_event_time();
+	time = gtk_get_current_event_time();
 	keyboard = dev;
-	mouse    = gdk_device_get_associated_device(dev);
-
-	if (gdk_device_get_source(dev) != GDK_SOURCE_KEYBOARD)
-   {
-		dev      = mouse;
-		mouse    = keyboard;
+	mouse = gdk_device_get_associated_device(dev);
+	if (gdk_device_get_source(dev) != GDK_SOURCE_KEYBOARD) {
+		dev = mouse;
+		mouse = keyboard;
 		keyboard = dev;
 	}
 
@@ -198,7 +196,7 @@ static gboolean startGrab(dateTimePickerWidget *d)
 	return TRUE;
 }
 
-/* based on gtk_combo_box_list_position() in the GTK+ source code */
+// based on gtk_combo_box_list_position() in the GTK+ source code
 static void allocationToScreen(dateTimePickerWidget *d, gint *x, gint *y)
 {
 	GdkWindow *window;
@@ -279,17 +277,15 @@ static gboolean grabBroken(GtkWidget *w, GdkEventGrabBroken *e, gpointer data)
 
 static gboolean buttonReleased(GtkWidget *w, GdkEventButton *e, gpointer data)
 {
+	dateTimePickerWidget *d = dateTimePickerWidget(data);
 	int winx, winy;
 	GtkAllocation wina;
 	gboolean in;
-	dateTimePickerWidget *d = dateTimePickerWidget(data);
 
 	gtk_widget_get_allocation(d->window, &wina);
 	winx = 0;
 	winy = 0;
-
-	if (!gtk_widget_get_has_window(d->window))
-   {
+	if (!gtk_widget_get_has_window(d->window)) {
 		winx = wina.x;
 		winy = wina.y;
 	}
@@ -311,9 +307,11 @@ static gboolean buttonReleased(GtkWidget *w, GdkEventButton *e, gpointer data)
 static gint hoursSpinboxInput(GtkSpinButton *sb, gpointer ptr, gpointer data)
 {
 	double *out = (double *) ptr;
-	const gchar *text = gtk_entry_get_text(GTK_ENTRY(sb));
-	int         value = (int) g_strtod(text, NULL);
+	const gchar *text;
+	int value;
 
+	text = gtk_entry_get_text(GTK_ENTRY(sb));
+	value = (int) g_strtod(text, NULL);
 	if (value < 0 || value > 12)
 		return GTK_INPUT_ERROR;
 	if (value == 12)		// 12 to the user is 0 internally
@@ -324,9 +322,10 @@ static gint hoursSpinboxInput(GtkSpinButton *sb, gpointer ptr, gpointer data)
 
 static gboolean hoursSpinboxOutput(GtkSpinButton *sb, gpointer data)
 {
-	gchar *text = NULL;
-	int value   = realSpinValue(sb);
+	gchar *text;
+	int value;
 
+	value = realSpinValue(sb);
 	if (value == 0)		// 0 internally is 12 to the user
 		value = 12;
 	text = g_strdup_printf("%d", value);
@@ -337,9 +336,11 @@ static gboolean hoursSpinboxOutput(GtkSpinButton *sb, gpointer data)
 
 static gboolean zeroPadSpinbox(GtkSpinButton *sb, gpointer data)
 {
-	int value   = realSpinValue(sb);
-	gchar *text = g_strdup_printf("%02d", value);
+	gchar *text;
+	int value;
 
+	value = realSpinValue(sb);
+	text = g_strdup_printf("%02d", value);
 	gtk_entry_set_text(GTK_ENTRY(sb), text);
 	g_free(text);
 	return TRUE;
@@ -348,20 +349,19 @@ static gboolean zeroPadSpinbox(GtkSpinButton *sb, gpointer data)
 // this is really hacky but we can't use GtkCombobox here :(
 static gint ampmSpinboxInput(GtkSpinButton *sb, gpointer ptr, gpointer data)
 {
-	double *out       = (double *) ptr;
-	const gchar *text = gtk_entry_get_text(GTK_ENTRY(sb));
-	// LONGTERM don't use ASCII here for case insensitivity
-	char firstAM      = g_ascii_tolower(nl_langinfo(AM_STR)[0]);
-	char firstPM      = g_ascii_tolower(nl_langinfo(PM_STR)[0]);
+	double *out = (double *) ptr;
+	const gchar *text;
+	char firstAM, firstPM;
 
+	text = gtk_entry_get_text(GTK_ENTRY(sb));
+	// LONGTERM don't use ASCII here for case insensitivity
+	firstAM = g_ascii_tolower(nl_langinfo(AM_STR)[0]);
+	firstPM = g_ascii_tolower(nl_langinfo(PM_STR)[0]);
 	for (; *text != '\0'; text++)
-		if (g_ascii_tolower(*text) == firstAM)
-      {
+		if (g_ascii_tolower(*text) == firstAM) {
 			*out = 0;
 			return TRUE;
-		}
-      else if (g_ascii_tolower(*text) == firstPM)
-      {
+		} else if (g_ascii_tolower(*text) == firstPM) {
 			*out = 1;
 			return TRUE;
 		}
@@ -387,21 +387,20 @@ static void spinboxChanged(GtkSpinButton *sb, gpointer data)
 	dateTimeChanged(d);
 }
 
-static GtkWidget *newSpinbox(dateTimePickerWidget *d, int min, int max,
-      gint (*input)(GtkSpinButton *, gpointer, gpointer),
-      gboolean (*output)(GtkSpinButton *, gpointer), gulong *block)
+static GtkWidget *newSpinbox(dateTimePickerWidget *d, int min, int max, gint (*input)(GtkSpinButton *, gpointer, gpointer), gboolean (*output)(GtkSpinButton *, gpointer), gulong *block)
 {
-   GtkWidget *sb = gtk_spin_button_new_with_range(min, max, 1);
+	GtkWidget *sb;
 
-   gtk_spin_button_set_digits(GTK_SPIN_BUTTON(sb), 0);
-   gtk_spin_button_set_wrap(GTK_SPIN_BUTTON(sb), TRUE);
-   gtk_orientable_set_orientation(GTK_ORIENTABLE(sb), GTK_ORIENTATION_VERTICAL);
-   *block = g_signal_connect(sb, "value-changed", G_CALLBACK(spinboxChanged), d);
-   if (input != NULL)
-      g_signal_connect(sb, "input", G_CALLBACK(input), NULL);
-   if (output != NULL)
-      g_signal_connect(sb, "output", G_CALLBACK(output), NULL);
-   return sb;
+	sb = gtk_spin_button_new_with_range(min, max, 1);
+	gtk_spin_button_set_digits(GTK_SPIN_BUTTON(sb), 0);
+	gtk_spin_button_set_wrap(GTK_SPIN_BUTTON(sb), TRUE);
+	gtk_orientable_set_orientation(GTK_ORIENTABLE(sb), GTK_ORIENTATION_VERTICAL);
+	*block = g_signal_connect(sb, "value-changed", G_CALLBACK(spinboxChanged), d);
+	if (input != NULL)
+		g_signal_connect(sb, "input", G_CALLBACK(input), NULL);
+	if (output != NULL)
+		g_signal_connect(sb, "output", G_CALLBACK(output), NULL);
+	return sb;
 }
 
 static void dateChanged(GtkCalendar *c, gpointer data)
@@ -537,14 +536,18 @@ static void dateTimePickerWidget_class_init(dateTimePickerWidgetClass *class)
 
 static GtkWidget *newDTP(void)
 {
-	GtkWidget *w = GTK_WIDGET(g_object_new(dateTimePickerWidgetType, "label", "", NULL));
+	GtkWidget *w;
+
+	w = GTK_WIDGET(g_object_new(dateTimePickerWidgetType, "label", "", NULL));
 	setLabel(dateTimePickerWidget(w));
 	return w;
 }
 
 static GtkWidget *newDP(void)
 {
-	GtkWidget *w = GTK_WIDGET(g_object_new(dateTimePickerWidgetType, "label", "", NULL));
+	GtkWidget *w;
+
+	w = GTK_WIDGET(g_object_new(dateTimePickerWidgetType, "label", "", NULL));
 	setDateOnly(dateTimePickerWidget(w));
 	setLabel(dateTimePickerWidget(w));
 	return w;
@@ -552,17 +555,18 @@ static GtkWidget *newDP(void)
 
 static GtkWidget *newTP(void)
 {
-	GtkWidget *w = GTK_WIDGET(g_object_new(dateTimePickerWidgetType, "label", "", NULL));
+	GtkWidget *w;
+
+	w = GTK_WIDGET(g_object_new(dateTimePickerWidgetType, "label", "", NULL));
 	setTimeOnly(dateTimePickerWidget(w));
 	setLabel(dateTimePickerWidget(w));
 	return w;
 }
 
-struct uiDateTimePicker
-{
-   uiUnixControl c;
-   GtkWidget *widget;
-   dateTimePickerWidget *d;
+struct uiDateTimePicker {
+	uiUnixControl c;
+	GtkWidget *widget;
+	dateTimePickerWidget *d;
 };
 
 uiUnixControlAllDefaults(uiDateTimePicker)
@@ -574,7 +578,7 @@ uiDateTimePicker *finishNewDateTimePicker(GtkWidget *(*fn)(void))
 	uiUnixNewControl(uiDateTimePicker, d);
 
 	d->widget = (*fn)();
-	d->d      = dateTimePickerWidget(d->widget);
+	d->d = dateTimePickerWidget(d->widget);
 
 	return d;
 }

@@ -15,18 +15,16 @@ uiUnixControlAllDefaultsExceptDestroy(uiTab)
 
 static void uiTabDestroy(uiControl *c)
 {
+	uiTab *t = uiTab(c);
 	guint i;
-	uiTab *t           = uiTab(c);
-	struct child *page = NULL;
+	struct child *page;
 
-	for (i = 0; i < t->pages->len; i++)
-   {
+	for (i = 0; i < t->pages->len; i++) {
 		page = g_array_index(t->pages, struct child *, i);
 		childDestroy(page);
 	}
-
 	g_array_free(t->pages, TRUE);
-	/* and free ourselves */
+	// and free ourselves
 	g_object_unref(t->widget);
 	uiFreeControl(uiControl(t));
 }
@@ -38,8 +36,10 @@ void uiTabAppend(uiTab *t, const char *name, uiControl *child)
 
 void uiTabInsertAt(uiTab *t, const char *name, int n, uiControl *child)
 {
-	/* this will create a tab, because of gtk_container_add() */
-	struct child *page = newChildWithBox(child, uiControl(t), t->container, 0);
+	struct child *page;
+
+	// this will create a tab, because of gtk_container_add()
+	page = newChildWithBox(child, uiControl(t), t->container, 0);
 
 	gtk_notebook_set_tab_label_text(t->notebook, childBox(page), name);
 	gtk_notebook_reorder_child(t->notebook, childBox(page), n);
@@ -49,10 +49,10 @@ void uiTabInsertAt(uiTab *t, const char *name, int n, uiControl *child)
 
 void uiTabDelete(uiTab *t, int n)
 {
-	struct child *page = g_array_index(t->pages, struct child *, n);
-	/* this will remove the tab, 
-    * because gtk_widget_destroy() calls gtk_container_remove() */
+	struct child *page;
 
+	page = g_array_index(t->pages, struct child *, n);
+	// this will remove the tab, because gtk_widget_destroy() calls gtk_container_remove()
 	childRemove(page);
 	g_array_remove_index(t->pages, n);
 }
@@ -64,28 +64,30 @@ int uiTabNumPages(uiTab *t)
 
 int uiTabMargined(uiTab *t, int n)
 {
-	struct child *page = g_array_index(t->pages, struct child *, n);
+	struct child *page;
 
+	page = g_array_index(t->pages, struct child *, n);
 	return childFlag(page);
 }
 
 void uiTabSetMargined(uiTab *t, int n, int margined)
 {
-	struct child *page = g_array_index(t->pages, struct child *, n);
+	struct child *page;
 
+	page = g_array_index(t->pages, struct child *, n);
 	childSetFlag(page, margined);
 	childSetMargined(page, childFlag(page));
 }
 
 uiTab *uiNewTab(void)
 {
-	uiTab *t     = NULL;;
+	uiTab *t;
 
 	uiUnixNewControl(uiTab, t);
 
-	t->widget    = gtk_notebook_new();
+	t->widget = gtk_notebook_new();
 	t->container = GTK_CONTAINER(t->widget);
-	t->notebook  = GTK_NOTEBOOK(t->widget);
+	t->notebook = GTK_NOTEBOOK(t->widget);
 
 	gtk_notebook_set_scrollable(t->notebook, TRUE);
 

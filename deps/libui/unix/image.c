@@ -52,10 +52,8 @@ void uiImageAppend(uiImage *i, void *pixels, int pixelWidth, int pixelHeight, in
 	cs = cairo_image_surface_create_for_data(buf, CAIRO_FORMAT_ARGB32,
 		pixelWidth, pixelHeight,
 		cstride);
-
-   /* TODO */
-	if (cairo_surface_status(cs) != CAIRO_STATUS_SUCCESS) { }
-
+	if (cairo_surface_status(cs) != CAIRO_STATUS_SUCCESS)
+		/* TODO */;
 	cairo_surface_flush(cs);
 	g_ptr_array_add(i->images, cs);
 }
@@ -69,7 +67,7 @@ struct matcher {
 	gboolean foundLarger;
 };
 
-/* TODO is this the right algorithm? */
+// TODO is this the right algorithm?
 static void match(gpointer surface, gpointer data)
 {
 	cairo_surface_t *cs = (cairo_surface_t *) surface;
@@ -83,11 +81,11 @@ static void match(gpointer surface, gpointer data)
 		goto writeMatch;
 
 	if (x < m->targetX && y < m->targetY)
-		if (m->foundLarger) /* always prefer larger ones */
+		if (m->foundLarger)
+			// always prefer larger ones
 			return;
-
-   /* we set foundLarger below */
 	if (x >= m->targetX && y >= m->targetY && !m->foundLarger)
+		// we set foundLarger below
 		goto writeMatch;
 
 	x2 = abs(m->targetX - x);
@@ -95,11 +93,11 @@ static void match(gpointer surface, gpointer data)
 	if (x2 < m->distX && y2 < m->distY)
 		goto writeMatch;
 
-	/* TODO weight one dimension? threshhold? */
+	// TODO weight one dimension? threshhold?
 	return;
 
 writeMatch:
-	/* must set this here too; otherwise the first image will never have ths set */
+	// must set this here too; otherwise the first image will never have ths set
 	if (x >= m->targetX && y >= m->targetY && !m->foundLarger)
 		m->foundLarger = TRUE;
 	m->best = cs;

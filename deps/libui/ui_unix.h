@@ -1,4 +1,4 @@
-/* 7 april 2015 */
+// 7 april 2015
 
 /*
 This file assumes that you have included <gtk/gtk.h> and "ui.h" beforehand. It provides API-specific functions for interfacing with foreign controls on Unix systems that use GTK+ to provide their UI (currently all except Mac OS X).
@@ -19,7 +19,7 @@ struct uiUnixControl {
 	void (*SetContainer)(uiUnixControl *, GtkContainer *, gboolean);
 };
 #define uiUnixControl(this) ((uiUnixControl *) (this))
-/* TODO document */
+// TODO document
 _UI_EXTERN void uiUnixControlSetContainer(uiUnixControl *, GtkContainer *, gboolean);
 
 #define uiUnixControlDefaultDestroy(type) \
@@ -80,7 +80,7 @@ _UI_EXTERN void uiUnixControlSetContainer(uiUnixControl *, GtkContainer *, gbool
 	{ \
 		gtk_widget_set_sensitive(type(c)->widget, FALSE); \
 	}
-/* TODO this whole addedBefore stuff is a MASSIVE HACK. */
+// TODO this whole addedBefore stuff is a MASSIVE HACK.
 #define uiUnixControlDefaultSetContainer(type) \
 	static void type ## SetContainer(uiUnixControl *c, GtkContainer *container, gboolean remove) \
 	{ \
@@ -112,7 +112,7 @@ _UI_EXTERN void uiUnixControlSetContainer(uiUnixControl *, GtkContainer *, gbool
 	uiUnixControlDefaultDestroy(type) \
 	uiUnixControlAllDefaultsExceptDestroy(type)
 
-/* TODO document */
+// TODO document
 #define uiUnixNewControl(type, var) \
 	var = type(uiUnixAllocControl(sizeof (type), type ## Signature, #type)); \
 	uiControl(var)->Destroy = type ## Destroy; \
@@ -127,10 +127,10 @@ _UI_EXTERN void uiUnixControlSetContainer(uiUnixControl *, GtkContainer *, gbool
 	uiControl(var)->Enable = type ## Enable; \
 	uiControl(var)->Disable = type ## Disable; \
 	uiUnixControl(var)->SetContainer = type ## SetContainer;
-/* TODO document */
+// TODO document
 _UI_EXTERN uiUnixControl *uiUnixAllocControl(size_t n, uint32_t typesig, const char *typenamestr);
 
-/* uiUnixStrdupText() takes the given string and produces a copy of it suitable for being freed by uiFreeText(). */
+// uiUnixStrdupText() takes the given string and produces a copy of it suitable for being freed by uiFreeText().
 _UI_EXTERN char *uiUnixStrdupText(const char *);
 
 #ifdef __cplusplus

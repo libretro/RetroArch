@@ -1,8 +1,7 @@
 // 10 june 2015
 #include "uipriv_unix.h"
 
-struct uiButton
-{
+struct uiButton {
 	uiUnixControl c;
 	GtkWidget *widget;
 	GtkButton *button;
@@ -21,7 +20,7 @@ static void onClicked(GtkButton *button, gpointer data)
 
 static void defaultOnClicked(uiButton *b, void *data)
 {
-	/* do nothing */
+	// do nothing
 }
 
 char *uiButtonText(uiButton *b)
@@ -36,7 +35,7 @@ void uiButtonSetText(uiButton *b, const char *text)
 
 void uiButtonOnClicked(uiButton *b, void (*f)(uiButton *, void *), void *data)
 {
-	b->onClicked     = f;
+	b->onClicked = f;
 	b->onClickedData = data;
 }
 
