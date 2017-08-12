@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2014-2017 - Jean-André Santoni
+ *  Copyright (C) 2015-2017 - Andrés Suárez
  *  Copyright (C) 2016-2017 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -297,7 +298,7 @@ static void print_buf_lines(file_list_t *list, char *buf,
                         sizeof(core_path));
 
                   if (
-                           path_file_exists(core_path) 
+                           path_file_exists(core_path)
                         && core_info_get_display_name(
                            core_path, display_name, sizeof(display_name)))
                      menu_entries_set_alt_at_offset(list, j, display_name);
@@ -397,6 +398,12 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
             msg_hash_to_str(MENU_ENUM_LABEL_NO_CORE_INFORMATION_AVAILABLE),
             MENU_ENUM_LABEL_NO_CORE_INFORMATION_AVAILABLE,
             0, 0, 0);
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_DELETE),
+            msg_hash_to_str(MENU_ENUM_LABEL_CORE_DELETE),
+            MENU_ENUM_LABEL_CORE_DELETE,
+            MENU_SETTING_ACTION_CORE_DELETE, 0, 0);
+
       return 0;
    }
 
@@ -557,6 +564,12 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
                MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
       }
    }
+
+  menu_entries_append_enum(info->list,
+        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_DELETE),
+        msg_hash_to_str(MENU_ENUM_LABEL_CORE_DELETE),
+        MENU_ENUM_LABEL_CORE_DELETE,
+        MENU_SETTING_ACTION_CORE_DELETE, 0, 0);
 
    return 0;
 }
@@ -1843,7 +1856,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
          strlcpy(thumbnail_content, db_info_entry->name, sizeof(thumbnail_content));
 
       if (!string_is_empty(thumbnail_content))
-         menu_driver_set_thumbnail_content(thumbnail_content, sizeof(thumbnail_content)); 
+         menu_driver_set_thumbnail_content(thumbnail_content, sizeof(thumbnail_content));
 
       menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
       menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);
@@ -2964,7 +2977,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
    else
    {
       const char *ext = NULL;
-      
+
       if (!string_is_empty(entry_path))
          ext = path_get_extension(entry_path);
 
@@ -2982,8 +2995,8 @@ static int menu_displaylist_parse_horizontal_content_actions(
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RUN),
             msg_hash_to_str(MENU_ENUM_LABEL_RUN),
             MENU_ENUM_LABEL_RUN, FILE_TYPE_PLAYLIST_ENTRY, 0, idx);
-      
-	  if (settings->bools.playlist_entry_remove)	  
+
+	  if (settings->bools.playlist_entry_remove)
 	  menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DELETE_ENTRY),
             msg_hash_to_str(MENU_ENUM_LABEL_DELETE_ENTRY),
@@ -3165,6 +3178,23 @@ static int menu_displaylist_parse_netplay_room_list(
 static int menu_displaylist_parse_options(
       menu_displaylist_info_t *info)
 {
+#ifdef HAVE_LAKKA
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_LAKKA),
+         msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_LAKKA),
+         MENU_ENUM_LABEL_UPDATE_LAKKA,
+         MENU_SETTING_ACTION, 0, 0);
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST),
+         msg_hash_to_str(MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST),
+         MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST,
+         MENU_SETTING_ACTION, 0, 0);
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT),
+         msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS),
+         MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS,
+         MENU_SETTING_ACTION, 0, 0);
+#else
 #ifdef HAVE_NETWORKING
    settings_t *settings         = config_get_ptr();
 
@@ -3263,6 +3293,7 @@ static int menu_displaylist_parse_options(
          MENU_ENUM_LABEL_NO_ITEMS,
          MENU_SETTING_NO_ITEM, 0, 0);
 #endif
+#endif
 
    return 0;
 }
@@ -3359,6 +3390,24 @@ static int menu_displaylist_parse_options_remappings(
          msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME),
          MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME,
          MENU_SETTING_ACTION, 0, 0);
+
+   if (rarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL))
+   {
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE),
+            msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CORE),
+            MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CORE,
+            MENU_SETTING_ACTION, 0, 0);
+   }
+
+   if (rarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
+   {
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME),
+            msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME),
+            MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME,
+            MENU_SETTING_ACTION, 0, 0);
+   }
 
    system    = runloop_get_system_info();
 
@@ -4024,7 +4073,9 @@ static void wifi_scan_callback(void *task_data,
 bool menu_displaylist_process(menu_displaylist_info_t *info)
 {
    size_t idx   = 0;
+#if defined(HAVE_NETWORKING)
    settings_t *settings         = config_get_ptr();
+#endif
 
    if (info->need_navigation_clear)
    {
@@ -4041,7 +4092,7 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
    if (info->need_sort)
       file_list_sort_on_alt(info->list);
 
-#if defined(HAVE_NETWORKING) && !defined(HAVE_LAKKA)
+#if defined(HAVE_NETWORKING)
    if (settings->bools.menu_show_core_updater)
       if (info->download_core)
       {
@@ -4052,7 +4103,7 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
                MENU_SETTING_ACTION, 0, 0);
       }
 #endif
-   
+
    if (info->push_builtin_cores)
    {
 #if defined(HAVE_VIDEO_PROCESSOR)
@@ -4766,7 +4817,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                PARSE_ONLY_UINT, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_PLAYLIST_ENTRY_REMOVE,
-               PARSE_ONLY_BOOL, false);			   
+               PARSE_ONLY_BOOL, false);
 
          menu_displaylist_parse_playlist_associations(info);
          info->need_push    = true;
@@ -4868,6 +4919,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_SAVESTATE_THUMBNAIL_ENABLE,
                PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
+               PARSE_ONLY_BOOL, false);
 
          info->need_refresh = true;
          info->need_push    = true;
@@ -4963,6 +5026,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
+               PARSE_ONLY_UINT, false);
+         menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_OVERLAY_PRESET,
                PARSE_ONLY_PATH, false);
          menu_displaylist_parse_settings_enum(menu, info,
@@ -4995,12 +5064,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_MENU_VIEWS_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
+#if defined(HAVE_NETWORKING) && !defined(HAVE_LAKKA)
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_MENU_SHOW_ONLINE_UPDATER,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_MENU_SHOW_CORE_UPDATER,
                PARSE_ONLY_BOOL, false);
+#endif
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_XMB_SHOW_SETTINGS,
                PARSE_ONLY_BOOL, false);
@@ -5066,6 +5137,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_MENU_LINEAR_FILTER,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_MENU_HORIZONTAL_ANIMATION,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_NAVIGATION_WRAPAROUND,
@@ -6076,16 +6150,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   PARSE_ACTION, false);
 #endif
 #if defined(HAVE_NETWORKING)
-#ifdef HAVE_LAKKA
-            menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_UPDATE_LAKKA,
-                  PARSE_ACTION, false);
-#else
             if (settings->bools.menu_show_online_updater)
                menu_displaylist_parse_settings_enum(menu, info,
                      MENU_ENUM_LABEL_ONLINE_UPDATER,
                      PARSE_ACTION, false);
-#endif
 #endif
             menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_SETTINGS, PARSE_ACTION, false);

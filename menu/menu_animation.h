@@ -91,10 +91,7 @@ typedef struct menu_animation_ctx_delta
    float ideal;
 } menu_animation_ctx_delta_t;
 
-typedef struct menu_animation_ctx_tag
-{
-   int id;
-} menu_animation_ctx_tag_t;
+typedef uintptr_t menu_animation_ctx_tag;
 
 typedef struct menu_animation_ctx_subject
 {
@@ -108,7 +105,7 @@ typedef struct menu_animation_ctx_entry
    float target_value;
    float *subject;
    enum menu_animation_easing_type easing_enum;
-   int tag;
+   uintptr_t tag;
    tween_cb cb;
 } menu_animation_ctx_entry_t;
 

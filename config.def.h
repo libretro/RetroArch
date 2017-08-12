@@ -295,6 +295,11 @@ static bool default_auto_shaders_enable = true;
 static bool default_sort_savefiles_enable = false;
 static bool default_sort_savestates_enable = false;
 
+static bool default_savestates_in_content_dir = false;
+static bool default_savefiles_in_content_dir = false;
+static bool default_systemfiles_in_content_dir = false;
+static bool default_screenshots_in_content_dir = false;
+
 #if defined(__CELLOS_LV2__) || defined(_XBOX1) || defined(_XBOX360)
 static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_L3_R3;
 #elif defined(VITA)
@@ -609,6 +614,12 @@ static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/apple/
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2010/x86_64/latest/";
 #elif defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(_M_IX86) || defined(_M_IA64)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2010/x86/latest/";
+#endif
+#elif _MSC_VER == 1400
+#if defined(__x86_64__)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2005/x86_64/latest/";
+#elif defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(_M_IX86) || defined(_M_IA64)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2005/x86/latest/";
 #endif
 #else
 #if defined(__x86_64__)

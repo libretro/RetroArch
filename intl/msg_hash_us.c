@@ -572,6 +572,16 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len) {
                      "Hide the current overlay from appearing \n"
                              "inside the menu.");
             break;
+        case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS:
+            snprintf(s, len,
+                      "Show keyboard/controller button presses on \n"
+                            "the onscreen overlay.");
+            break;
+        case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT:
+            snprintf(s, len,
+                      "Select the port to listen for controller input \n"
+                            "to display on the onscreen overlay.");
+            break;
         case MENU_ENUM_LABEL_OVERLAY_PRESET:
             snprintf(s, len,
                      "Path to input overlay.");

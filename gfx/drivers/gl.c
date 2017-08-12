@@ -43,6 +43,7 @@
 #include "../drivers_renderchain/gl_legacy_renderchain.h"
 
 #include "../../configuration.h"
+#include "../../dynamic.h"
 #include "../../record/record_driver.h"
 
 #include "../../retroarch.h"
@@ -1657,6 +1658,9 @@ static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
 
    gl_shared_context_use = settings->bools.video_shared_context
       && hwr->context_type != RETRO_HW_CONTEXT_NONE;
+
+   if (libretro_get_shared_context() && (hwr->context_type != RETRO_HW_CONTEXT_NONE))
+      gl_shared_context_use = true;
 
    return video_context_driver_init_first(gl, settings->arrays.video_context_driver,
          api, major, minor, gl_shared_context_use);

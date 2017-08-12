@@ -87,7 +87,7 @@ char *string_trim_whitespace_right(char *const s);
 /* Remove leading and trailing whitespaces */
 char *string_trim_whitespace(char *const s);
 
-char *word_wrap(char* buffer, const char *string, int line_width);
+char *word_wrap(char* buffer, const char *string, int line_width, bool unicode);
 
 RETRO_END_DECLS
 

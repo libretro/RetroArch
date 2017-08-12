@@ -71,6 +71,7 @@ HAVE_FREETYPE=auto         # FreeType support
 HAVE_STB_FONT=yes          # stb_truetype font support
 HAVE_STB_IMAGE=yes         # stb image loading support
 HAVE_STB_VORBIS=yes        # stb vorbis support
+HAVE_IBXM=yes        	   # IBXM support
 HAVE_XVIDEO=auto           # XVideo support
 HAVE_PYTHON=no             # Python 3 support for shaders
 C89_PYTHON=no

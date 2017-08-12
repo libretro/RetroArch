@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2016-2017 - Brad Parker
+ *  Copyright (C) 2015-2017 - Andrés Suárez
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -859,7 +860,7 @@ static bool menu_content_playlist_load(menu_content_ctx_playlist_info_t *info)
       char *path_tolower  = strdup(path);
 
       for (i = 0; i < strlen(path_tolower); ++i)
-         path_tolower[i] = tolower(path_tolower[i]);
+         path_tolower[i] = tolower((unsigned char)path_tolower[i]);
 
       if (strstr(path_tolower, file_path_str(FILE_PATH_ZIP_EXTENSION)))
          strstr(path_tolower, file_path_str(FILE_PATH_ZIP_EXTENSION))[4] = '\0';
@@ -1085,6 +1086,20 @@ static int action_ok_file_load_with_detect_core_collection(const char *path,
          path, label, type, false);
 }
 
+static int set_path_generic(const char *label, const char *action_path)
+{
+   rarch_setting_t *setting = menu_setting_find(filebrowser_label);
+
+   if (setting)
+   {
+      setting_set_with_string_representation(
+            setting, action_path);
+      return menu_setting_generic(setting, false);
+   }
+
+   return 0;
+}
+
 static int generic_action_ok(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned id, enum msg_hash_enums flush_id)
@@ -1219,68 +1234,23 @@ static int generic_action_ok(const char *path,
          break;
       case ACTION_OK_SET_DIRECTORY:
          flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DIRECTORY_SETTINGS_LIST);
-         {
-            rarch_setting_t *setting = menu_setting_find(filebrowser_label);
-
-            if (setting)
-            {
-               setting_set_with_string_representation(
-                     setting, action_path);
-               ret = menu_setting_generic(setting, false);
-            }
-         }
+         ret = set_path_generic(filebrowser_label, action_path);
          break;
       case ACTION_OK_SET_PATH_VIDEO_FILTER:
          flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_SETTINGS_LIST);
-         {
-            rarch_setting_t *setting = menu_setting_find(menu_label);
-
-            if (setting)
-            {
-               setting_set_with_string_representation(
-                     setting, action_path);
-               ret = menu_setting_generic(setting, false);
-            }
-         }
+         ret = set_path_generic(filebrowser_label, action_path);
          break;
       case ACTION_OK_SET_PATH_AUDIO_FILTER:
          flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST);
-         {
-            rarch_setting_t *setting = menu_setting_find(menu_label);
-
-            if (setting)
-            {
-               setting_set_with_string_representation(
-                     setting, action_path);
-               ret = menu_setting_generic(setting, false);
-            }
-         }
+         ret = set_path_generic(menu_label, action_path);
          break;
       case ACTION_OK_SET_PATH_OVERLAY:
          flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ONSCREEN_OVERLAY_SETTINGS_LIST);
-         {
-            rarch_setting_t *setting = menu_setting_find(menu_label);
-
-            if (setting)
-            {
-               setting_set_with_string_representation(
-                     setting, action_path);
-               ret = menu_setting_generic(setting, false);
-            }
-         }
+         ret = set_path_generic(menu_label, action_path);
          break;
       case ACTION_OK_SET_PATH:
          flush_type = MENU_SETTINGS;
-         {
-            rarch_setting_t *setting = menu_setting_find(menu_label);
-
-            if (setting)
-            {
-               setting_set_with_string_representation(
-                     setting, action_path);
-               ret = menu_setting_generic(setting, false);
-            }
-         }
+         ret = set_path_generic(menu_label, action_path);
          break;
       default:
          flush_char = msg_hash_to_str(flush_id);
@@ -2090,10 +2060,12 @@ static int action_ok_cheat_file_save_as(const char *path,
 enum
 {
    ACTION_OK_REMAP_FILE_SAVE_CORE = 0,
-   ACTION_OK_REMAP_FILE_SAVE_GAME
+   ACTION_OK_REMAP_FILE_SAVE_GAME,
+   ACTION_OK_REMAP_FILE_REMOVE_CORE,
+   ACTION_OK_REMAP_FILE_REMOVE_GAME
 };
 
-static int generic_action_ok_remap_file_save(const char *path,
+static int generic_action_ok_remap_file_operation(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned action_type)
 {
@@ -2118,10 +2090,12 @@ static int generic_action_ok_remap_file_save(const char *path,
    switch (action_type)
    {
       case ACTION_OK_REMAP_FILE_SAVE_CORE:
+      case ACTION_OK_REMAP_FILE_REMOVE_CORE:
          if (!string_is_empty(core_name))
             fill_pathname_join(file, core_name, core_name, sizeof(file));
          break;
       case ACTION_OK_REMAP_FILE_SAVE_GAME:
+      case ACTION_OK_REMAP_FILE_REMOVE_GAME:
          if (!string_is_empty(core_name))
             fill_pathname_join(file, core_name,
                   path_basename(path_get(RARCH_PATH_BASENAME)), sizeof(file));
@@ -2131,30 +2105,72 @@ static int generic_action_ok_remap_file_save(const char *path,
    if(!path_file_exists(directory))
        path_mkdir(directory);
 
-   if(input_remapping_save_file(file))
-      runloop_msg_queue_push(
-            msg_hash_to_str(MSG_REMAP_FILE_SAVED_SUCCESSFULLY),
-            1, 100, true);
-   else
-      runloop_msg_queue_push(
-            msg_hash_to_str(MSG_ERROR_SAVING_REMAP_FILE),
-            1, 100, true);
+   if (action_type < ACTION_OK_REMAP_FILE_REMOVE_CORE)
+   {
+      if(input_remapping_save_file(file))
+      {
+         if (action_type == ACTION_OK_REMAP_FILE_SAVE_CORE)
+            rarch_ctl(RARCH_CTL_SET_REMAPS_CORE_ACTIVE, NULL);
+         else
+            rarch_ctl(RARCH_CTL_SET_REMAPS_GAME_ACTIVE, NULL);
 
+         runloop_msg_queue_push(
+               msg_hash_to_str(MSG_REMAP_FILE_SAVED_SUCCESSFULLY),
+               1, 100, true);
+      }
+      else
+         runloop_msg_queue_push(
+               msg_hash_to_str(MSG_ERROR_SAVING_REMAP_FILE),
+               1, 100, true);
+   }
+   else
+   {
+      RARCH_LOG("removing %s", file);
+      if(input_remapping_remove_file(file))
+      {
+         if (action_type == ACTION_OK_REMAP_FILE_REMOVE_CORE)
+            rarch_ctl(RARCH_CTL_UNSET_REMAPS_CORE_ACTIVE, NULL);
+         else
+            rarch_ctl(RARCH_CTL_UNSET_REMAPS_GAME_ACTIVE, NULL);
+
+         runloop_msg_queue_push(
+               msg_hash_to_str(MSG_REMAP_FILE_REMOVED_SUCCESSFULLY),
+               1, 100, true);
+      }
+      else
+         runloop_msg_queue_push(
+               msg_hash_to_str(MSG_ERROR_REMOVING_REMAP_FILE),
+               1, 100, true);
+   }
    return 0;
 }
 
 static int action_ok_remap_file_save_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_remap_file_save(path, label, type,
+   return generic_action_ok_remap_file_operation(path, label, type,
          idx, entry_idx, ACTION_OK_REMAP_FILE_SAVE_CORE);
 }
 
 static int action_ok_remap_file_save_game(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_remap_file_save(path, label, type,
+   return generic_action_ok_remap_file_operation(path, label, type,
          idx, entry_idx, ACTION_OK_REMAP_FILE_SAVE_GAME);
+}
+
+static int action_ok_remap_file_remove_core(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_remap_file_operation(path, label, type,
+         idx, entry_idx, ACTION_OK_REMAP_FILE_REMOVE_CORE);
+}
+
+static int action_ok_remap_file_remove_game(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_remap_file_operation(path, label, type,
+         idx, entry_idx, ACTION_OK_REMAP_FILE_REMOVE_GAME);
 }
 
 int action_ok_path_use_directory(const char *path,
@@ -3400,7 +3416,7 @@ static int action_ok_netplay_connect_room(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
 #ifdef HAVE_NETWORKING
-   char tmp_hostname[512];
+   char tmp_hostname[4115];
 
    tmp_hostname[0] = '\0';
 
@@ -3611,7 +3627,7 @@ struct netplay_host_list *lan_hosts;
 int lan_room_count;
 void netplay_refresh_rooms_menu(file_list_t *list)
 {
-   char s[PATH_MAX_LENGTH];
+   char s[4115];
    int i                                = 0;
    int j                                = 0;
 
@@ -4286,7 +4302,7 @@ static int action_ok_video_resolution(const char *path,
 
       msg[0] = '\0';
 
-#ifdef __CELLOS_LV2__
+#if defined(__CELLOS_LV2__) || defined(_WIN32)
       command_event(CMD_EVENT_REINIT, NULL);
 #endif
       video_driver_set_video_mode(width, height, true);
@@ -4402,8 +4418,9 @@ static int action_ok_netplay_enable_client(const char *path,
 static int action_ok_netplay_disconnect(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   settings_t *settings = config_get_ptr();
 #ifdef HAVE_NETWORKING
+   settings_t *settings = config_get_ptr();
+
    netplay_driver_ctl(RARCH_NETPLAY_CTL_DISCONNECT, NULL);
    netplay_driver_ctl(RARCH_NETPLAY_CTL_DISABLE, NULL);
 
@@ -4419,6 +4436,21 @@ static int action_ok_netplay_disconnect(const char *path,
    return -1;
 
 #endif
+}
+
+static int action_ok_core_delete(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   char* core_path = strdup(path_get(RARCH_PATH_CORE));
+
+   generic_action_ok_command(CMD_EVENT_UNLOAD_CORE);
+   menu_entries_flush_stack(0, 0);
+
+   remove(core_path);
+
+   free(core_path);
+
+   return 0;
 }
 
 static int is_rdb_entry(enum msg_hash_enums enum_idx)
@@ -4751,6 +4783,12 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME:
             BIND_ACTION_OK(cbs, action_ok_remap_file_save_game);
             break;
+         case MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CORE:
+            BIND_ACTION_OK(cbs, action_ok_remap_file_remove_core);
+            break;
+         case MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME:
+            BIND_ACTION_OK(cbs, action_ok_remap_file_remove_game);
+            break;
          case MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST:
             BIND_ACTION_OK(cbs, action_ok_content_collection_list);
             break;
@@ -4867,6 +4905,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_NETPLAY_DISCONNECT:
             BIND_ACTION_OK(cbs, action_ok_netplay_disconnect);
+            break;
+         case MENU_ENUM_LABEL_CORE_DELETE:
+            BIND_ACTION_OK(cbs, action_ok_core_delete);
             break;
          default:
             return -1;

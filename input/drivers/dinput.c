@@ -51,7 +51,6 @@
 #include "../../gfx/video_driver.h"
 
 #include "../../verbosity.h"
-#include "../../tasks/tasks_internal.h"
 
 /* Keep track of which pad indexes are 360 controllers.
  * Not static, will be read in xinput_joypad.c
@@ -102,7 +101,6 @@ void dinput_destroy_context(void)
 
 bool dinput_init_context(void)
 {
-   bool context_initialized = false;
    if (g_dinput_ctx)
       return true;
 
@@ -110,16 +108,16 @@ bool dinput_init_context(void)
 
    /* Who said we shouldn't have same call signature in a COM API? <_< */
 #ifdef __cplusplus
-   context_initialized = (SUCCEEDED(DirectInput8Create(
-      GetModuleHandle(NULL), DIRECTINPUT_VERSION, IID_IDirectInput8,
-      (void**)&g_dinput_ctx, NULL)));
+   if (!(SUCCEEDED(DirectInput8Create(
+                  GetModuleHandle(NULL), DIRECTINPUT_VERSION,
+                  IID_IDirectInput8,
+                  (void**)&g_dinput_ctx, NULL))))
 #else
-   context_initialized = (SUCCEEDED(DirectInput8Create(
-      GetModuleHandle(NULL), DIRECTINPUT_VERSION, &IID_IDirectInput8,
-      (void**)&g_dinput_ctx, NULL)));
+      if (!(SUCCEEDED(DirectInput8Create(
+                     GetModuleHandle(NULL), DIRECTINPUT_VERSION,
+                     &IID_IDirectInput8,
+                     (void**)&g_dinput_ctx, NULL))))
 #endif
-
-   if (!context_initialized)
       goto error;
 
    return true;
@@ -149,29 +147,32 @@ static void *dinput_init(const char *joypad_driver)
       di->joypad_driver_name = strdup(joypad_driver);
 
 #ifdef __cplusplus
-   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx, GUID_SysKeyboard, &di->keyboard, NULL)))
+   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx,
+               GUID_SysKeyboard,
+               &di->keyboard, NULL)))
+#else
+   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx,
+               &GUID_SysKeyboard,
+               &di->keyboard, NULL)))
+#endif
    {
       RARCH_ERR("[DINPUT]: Failed to create keyboard device.\n");
       di->keyboard = NULL;
    }
 
-   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx, GUID_SysMouse, &di->mouse, NULL)))
-   {
-      RARCH_ERR("[DINPUT]: Failed to create mouse device.\n");
-      di->mouse = NULL;
-   }
+#ifdef __cplusplus
+   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx,
+               GUID_SysMouse,
+               &di->mouse, NULL)))
 #else
-   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx, &GUID_SysKeyboard, &di->keyboard, NULL)))
-   {
-      RARCH_ERR("[DINPUT]: Failed to create keyboard device.\n");
-      di->keyboard = NULL;
-   }
-   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx, &GUID_SysMouse, &di->mouse, NULL)))
+   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx,
+               &GUID_SysMouse,
+               &di->mouse, NULL)))
+#endif
    {
       RARCH_ERR("[DINPUT]: Failed to create mouse device.\n");
       di->mouse = NULL;
    }
-#endif
 
    if (di->keyboard)
    {
@@ -195,16 +196,8 @@ static void *dinput_init(const char *joypad_driver)
    return di;
 }
 
-#if __cplusplus
-extern "C" {
-#endif
-
 bool doubleclick_on_titlebar_pressed(void);
 void unset_doubleclick_on_titlebar(void);
-
-#if __cplusplus
-}
-#endif
 
 static void dinput_poll(void *data)
 {
@@ -601,9 +594,6 @@ static void dinput_clear_pointers(struct dinput_input *di)
    }
 }
 
-#ifdef __cplusplus
-extern "C"
-#endif
 bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lParam)
 {
    struct dinput_input *di = (struct dinput_input *)dinput;
