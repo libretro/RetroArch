@@ -127,6 +127,7 @@ enum
    XMB_TEXTURE_FILE,
    XMB_TEXTURE_FOLDER,
    XMB_TEXTURE_ZIP,
+   XMB_TEXTURE_FAVORITE,
    XMB_TEXTURE_MUSIC,
    XMB_TEXTURE_IMAGE,
    XMB_TEXTURE_MOVIE,
@@ -2069,6 +2070,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
 
          switch (xmb_get_system_tab(xmb, (unsigned)xmb->categories.selection_ptr))
          {
+            case XMB_SYSTEM_TAB_FAVORITES:
+               return xmb->textures.list[XMB_TEXTURE_FAVORITE];
             case XMB_SYSTEM_TAB_MUSIC:
                return xmb->textures.list[XMB_TEXTURE_MUSIC];
 #ifdef HAVE_IMAGEVIEWER
@@ -3508,6 +3511,8 @@ static const char *xmb_texture_path(unsigned id)
          return "zip.png";
       case XMB_TEXTURE_MUSIC:
          return "music.png";
+      case XMB_TEXTURE_FAVORITE:
+         return "favorites-content.png";
       case XMB_TEXTURE_IMAGE:
          return "image.png";
       case XMB_TEXTURE_MOVIE:
