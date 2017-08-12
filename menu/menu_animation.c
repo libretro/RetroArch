@@ -673,7 +673,7 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
                (menu_animation_ctx_subject_t*)data;
             float            **sub = (float**)subject->data;
 
-            for (i = 0; i < anim.size; ++i)
+            for (i = 0; i < anim.size && killed < subject->count; ++i)
             {
                if (!anim.list[i].alive)
                   continue;
