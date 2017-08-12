@@ -2998,8 +2998,8 @@ static int menu_displaylist_parse_horizontal_content_actions(
 
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES),
-            msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_FAVORITE),
-            MENU_ENUM_LABEL_ADD_TO_FAVORITE, FILE_TYPE_PLAYLIST_ENTRY, 0, idx);
+            msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_FAVORITES),
+            MENU_ENUM_LABEL_ADD_TO_FAVORITES, FILE_TYPE_PLAYLIST_ENTRY, 0, idx);
 
 	  if (settings->bools.playlist_entry_remove)
 	  menu_entries_append_enum(info->list,
