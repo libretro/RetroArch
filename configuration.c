@@ -1020,6 +1020,8 @@ static struct config_path_setting *populate_settings_path(settings_t *settings, 
 #endif
    SETTING_PATH("content_history_path",
          settings->paths.path_content_history, false, NULL, true);
+   SETTING_PATH("content_favorites_path",
+         settings->paths.path_content_favorites, false, NULL, true);
    SETTING_PATH("content_music_history_path",
          settings->paths.path_content_music_history, false, NULL, true);
    SETTING_PATH("content_video_history_path",
@@ -1655,6 +1657,7 @@ static void config_set_defaults(void)
 
    *settings->paths.path_core_options      = '\0';
    *settings->paths.path_content_history   = '\0';
+   *settings->paths.path_content_favorites = '\0';
    *settings->paths.path_content_music_history   = '\0';
    *settings->paths.path_content_image_history   = '\0';
    *settings->paths.path_content_video_history   = '\0';
@@ -2479,6 +2482,25 @@ static bool config_load_file(const char *path, bool set_defaults,
                settings->paths.directory_content_history,
                file_path_str(FILE_PATH_CONTENT_HISTORY),
                sizeof(settings->paths.path_content_history));
+      }
+   }
+
+   if (string_is_empty(settings->paths.path_content_favorites))
+   {
+      if (string_is_empty(settings->paths.directory_content_history))
+      {
+         fill_pathname_resolve_relative(
+               settings->paths.path_content_favorites,
+               path_get(RARCH_PATH_CONFIG),
+               file_path_str(FILE_PATH_CONTENT_FAVORITES),
+               sizeof(settings->paths.path_content_favorites));
+      }
+      else
+      {
+         fill_pathname_join(settings->paths.path_content_favorites,
+               settings->paths.directory_content_history,
+               file_path_str(FILE_PATH_CONTENT_FAVORITES),
+               sizeof(settings->paths.path_content_favorites));
       }
    }
 
