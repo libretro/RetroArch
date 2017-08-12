@@ -4492,25 +4492,22 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 
    if (cbs->enum_idx != MSG_UNKNOWN)
    {
-      unsigned i;
+      const char     *str = msg_hash_to_str(cbs->enum_idx);
 
-      for (i = 0; i < MAX_USERS; i++)
+      if (str && strstr(str, "input_binds_list"))
       {
-         unsigned first_char = 0;
-         const char     *str = msg_hash_to_str(cbs->enum_idx);
+         unsigned i;
 
-         if (!str)
-            continue;
-         if (!strstr(str, "input_binds_list"))
-            continue;
+         for (i = 0; i < MAX_USERS; i++)
+         {
+            unsigned first_char = atoi(&str[0]);
 
-         first_char = atoi(&str[0]);
+            if (first_char != ((i+1)))
+               continue;
 
-         if (first_char != ((i+1)))
-            continue;
-
-         BIND_ACTION_OK(cbs, action_ok_push_user_binds_list);
-         return 0;
+            BIND_ACTION_OK(cbs, action_ok_push_user_binds_list);
+            return 0;
+         }
       }
    }
 
