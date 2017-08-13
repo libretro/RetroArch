@@ -177,7 +177,9 @@ finish:
             state->path, sizeof(parent_dir));
       strlcat(parent_dir, file_path_str(FILE_PATH_INDEX_DIRS_URL), sizeof(parent_dir));
 
-      transf           = (menu_file_transfer_t*)calloc(1, sizeof(*transf));
+      transf           = (menu_file_transfer_t*)malloc(sizeof(*transf));
+
+      transf->enum_idx = MSG_UNKNOWN;
       strlcpy(transf->path, parent_dir, sizeof(transf->path));
 
       task_push_http_transfer(parent_dir, true, "index_dirs", cb_net_generic_subdir, transf);
