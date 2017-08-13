@@ -3295,10 +3295,10 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    xmb->tabs[xmb->system_tab_end]     = XMB_SYSTEM_TAB_MAIN;
    if (settings->bools.menu_xmb_show_settings)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_SETTINGS;
-   if (settings->bools.menu_xmb_show_history)
-      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_HISTORY;
    if (settings->bools.menu_xmb_show_favorites)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_FAVORITES;
+   if (settings->bools.menu_xmb_show_history)
+      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_HISTORY;
 #ifdef HAVE_IMAGEVIEWER
    if (settings->bools.menu_xmb_show_images)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_IMAGES;
