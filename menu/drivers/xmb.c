@@ -3297,7 +3297,7 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_SETTINGS;
    if (settings->bools.menu_xmb_show_history)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_HISTORY;
-   /* TODO if (settings->bools.menu_xmb_show_favorites)*/
+   if (settings->bools.menu_xmb_show_favorites)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_FAVORITES;
 #ifdef HAVE_IMAGEVIEWER
    if (settings->bools.menu_xmb_show_images)
@@ -3740,7 +3740,7 @@ static void xmb_list_clear(file_list_t *list)
    size_t i;
    size_t size                = list->size;
    menu_animation_ctx_tag tag = (uintptr_t)list;
-   
+
    menu_animation_ctl(MENU_ANIMATION_CTL_KILL_BY_TAG, &tag);
 
    for (i = 0; i < size; ++i)
