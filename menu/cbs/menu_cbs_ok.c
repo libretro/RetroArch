@@ -2456,8 +2456,6 @@ static int action_ok_file_load_detect_core(const char *path,
    return 0;
 }
 
-
-
 static int generic_action_ok_command(enum event_command cmd)
 {
    if (!command_event(cmd, NULL))
@@ -3034,12 +3032,6 @@ static int action_ok_update_autoconfig_profiles(const char *path,
          MENU_ENUM_LABEL_CB_UPDATE_AUTOCONFIG_PROFILES);
 }
 
-static int action_ok_disk_cycle_tray_status(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return generic_action_ok_command(CMD_EVENT_DISK_EJECT_TOGGLE);
-}
-
 /* creates folder and core options stub file for subsequent runs */
 static int action_ok_option_create(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -3078,42 +3070,20 @@ static int action_ok_option_create(const char *path,
    return 0;
 }
 
-
-static int action_ok_close_content(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return generic_action_ok_command(CMD_EVENT_UNLOAD_CORE);
+#define default_action_ok_cmd_func(func_name, cmd) \
+int (func_name)(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx) \
+{ \
+   return generic_action_ok_command(cmd); \
 }
 
-static int action_ok_quit(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return generic_action_ok_command(CMD_EVENT_QUIT);
-}
-
-static int action_ok_save_new_config(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return generic_action_ok_command(CMD_EVENT_MENU_SAVE_CONFIG);
-}
-
-static int action_ok_resume_content(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return generic_action_ok_command(CMD_EVENT_RESUME);
-}
-
-static int action_ok_restart_content(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return generic_action_ok_command(CMD_EVENT_RESET);
-}
-
-static int action_ok_screenshot(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return generic_action_ok_command(CMD_EVENT_TAKE_SCREENSHOT);
-}
+default_action_ok_cmd_func(action_ok_close_content,      CMD_EVENT_UNLOAD_CORE)
+default_action_ok_cmd_func(action_ok_quit,               CMD_EVENT_QUIT)
+default_action_ok_cmd_func(action_ok_save_new_config,    CMD_EVENT_MENU_SAVE_CONFIG)
+default_action_ok_cmd_func(action_ok_resume_content,     CMD_EVENT_RESUME)
+default_action_ok_cmd_func(action_ok_restart_content,    CMD_EVENT_RESET)
+default_action_ok_cmd_func(action_ok_screenshot,         CMD_EVENT_TAKE_SCREENSHOT)
+default_action_ok_cmd_func(action_ok_disk_cycle_tray_status, CMD_EVENT_DISK_EJECT_TOGGLE        )
+default_action_ok_cmd_func(action_ok_shader_apply_changes, CMD_EVENT_SHADERS_APPLY_CHANGES        )
 
 static int action_ok_delete_entry(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -3152,12 +3122,6 @@ static int action_ok_delete_entry(const char *path,
    menu_navigation_set_selection(new_selection_ptr);
 
    return 0;
-}
-
-static int action_ok_shader_apply_changes(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return generic_action_ok_command(CMD_EVENT_SHADERS_APPLY_CHANGES);
 }
 
 static int action_ok_rdb_entry_submenu(const char *path,
