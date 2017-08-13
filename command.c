@@ -1991,6 +1991,13 @@ bool command_event(enum event_command cmd, void *data)
          }
          g_defaults.content_history = NULL;
 
+         if (g_defaults.content_favorites)
+         {
+            playlist_write_file(g_defaults.content_favorites);
+            playlist_free(g_defaults.content_favorites);
+         }
+         g_defaults.content_favorites = NULL;
+
          if (g_defaults.music_history)
          {
             playlist_write_file(g_defaults.music_history);
