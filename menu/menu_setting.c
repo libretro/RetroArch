@@ -7144,17 +7144,19 @@ static rarch_setting_t *menu_setting_new(void)
 {
    rarch_setting_t* list           = NULL;
    rarch_setting_info_t *list_info = (rarch_setting_info_t*)
-      calloc(1, sizeof(*list_info));
+      malloc(sizeof(*list_info));
 
    if (!list_info)
       return NULL;
 
+   list_info->index = 0;
    list_info->size  = 32;
 
-   list = menu_setting_new_internal(list_info);
+   list             = menu_setting_new_internal(list_info);
 
    menu_settings_info_list_free(list_info);
-   list_info = NULL;
+
+   list_info        = NULL;
 
    return list;
 }
