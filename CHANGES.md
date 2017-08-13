@@ -1,4 +1,6 @@
-# 1.6.5 (future)
+# 1.6.6 (future)
+
+# 1.6.5
 - 3DS: Fixes serious performance regression that affected every core; rewind was always implicitly enabled.
 - AUDIO: MOD/S3M/XM sound should now be properly mixed in with the core's sound.
 - GUI: Performance optimizations for XMB menu driver.
