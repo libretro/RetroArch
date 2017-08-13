@@ -2174,7 +2174,15 @@ bool command_event(enum event_command cmd, void *data)
             ui_companion_driver_toggle();
          break;
       case CMD_EVENT_ADD_TO_FAVORITES:
-         printf("Add to favorites\n");
+         playlist_push(
+               g_defaults.content_favorites,
+               path_get(RARCH_PATH_CONTENT),
+               NULL,
+               file_path_str(FILE_PATH_DETECT),
+               file_path_str(FILE_PATH_DETECT),
+               NULL,
+               NULL
+               );
          break;
       case CMD_EVENT_RESTART_RETROARCH:
          if (!frontend_driver_set_fork(FRONTEND_FORK_RESTART))
