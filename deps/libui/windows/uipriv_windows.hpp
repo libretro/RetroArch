@@ -1,4 +1,4 @@
-/* 21 april 2016 */
+// 21 april 2016
 #include "winapi.hpp"
 #include "../ui.h"
 #include "../ui_windows.h"
@@ -6,15 +6,15 @@
 #include "resources.hpp"
 #include "compilerver.hpp"
 
-/* ui internal window messages */
+// ui internal window messages
 enum {
-	/* redirected WM_COMMAND and WM_NOTIFY */
+	// redirected WM_COMMAND and WM_NOTIFY
 	msgCOMMAND = WM_APP + 0x40,		// start offset just to be safe
 	msgNOTIFY,
 	msgHSCROLL,
 	msgQueued,
 	msgD2DScratchPaint,
-	msgD2DScratchLButtonDown
+	msgD2DScratchLButtonDown,
 };
 
 // alloc.cpp

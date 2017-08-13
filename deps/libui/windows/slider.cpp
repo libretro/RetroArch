@@ -1,10 +1,6 @@
 // 20 may 2015
 #include "uipriv_windows.hpp"
 
-#ifndef TBS_TRANSPARENTBKGND
-#define TBS_TRANSPARENTBKGND 0x1000
-#endif
-
 struct uiSlider {
 	uiWindowsControl c;
 	HWND hwnd;

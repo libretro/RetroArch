@@ -1,43 +1,40 @@
 // 11 june 2015
 #include "uipriv_unix.h"
 
-struct uiWindow
-{
-   uiUnixControl c;
+struct uiWindow {
+	uiUnixControl c;
 
-   GtkWidget *widget;
-   GtkContainer *container;
-   GtkWindow *window;
+	GtkWidget *widget;
+	GtkContainer *container;
+	GtkWindow *window;
 
-   GtkWidget *vboxWidget;
-   GtkContainer *vboxContainer;
-   GtkBox *vbox;
+	GtkWidget *vboxWidget;
+	GtkContainer *vboxContainer;
+	GtkBox *vbox;
 
-   GtkWidget *childHolderWidget;
-   GtkContainer *childHolderContainer;
+	GtkWidget *childHolderWidget;
+	GtkContainer *childHolderContainer;
 
-   GtkWidget *menubar;
+	GtkWidget *menubar;
 
-   uiControl *child;
-   int margined;
+	uiControl *child;
+	int margined;
 
-   int (*onClosing)(uiWindow *, void *);
-   void *onClosingData;
-   void (*onContentSizeChanged)(uiWindow *, void *);
-   void *onContentSizeChangedData;
-   gboolean fullscreen;
+	int (*onClosing)(uiWindow *, void *);
+	void *onClosingData;
+	void (*onContentSizeChanged)(uiWindow *, void *);
+	void *onContentSizeChangedData;
+	gboolean fullscreen;
 };
 
 static gboolean onClosing(GtkWidget *win, GdkEvent *e, gpointer data)
 {
 	uiWindow *w = uiWindow(data);
 
-	/* manually destroy the window ourselves; don't let 
-    * the delete-event handler do it */
+	// manually destroy the window ourselves; don't let the delete-event handler do it
 	if ((*(w->onClosing))(w, w->onClosingData))
 		uiControlDestroy(uiControl(w));
-	/* don't continue to the default delete-event handler; 
-    * we destroyed the window by now */
+	// don't continue to the default delete-event handler; we destroyed the window by now
 	return TRUE;
 }
 
@@ -45,7 +42,7 @@ static void onSizeAllocate(GtkWidget *widget, GdkRectangle *allocation, gpointer
 {
 	uiWindow *w = uiWindow(data);
 
-	/* TODO deal with spurious size-allocates */
+	// TODO deal with spurious size-allocates
 	(*(w->onContentSizeChanged))(w, w->onContentSizeChangedData);
 }
 
@@ -56,30 +53,28 @@ static int defaultOnClosing(uiWindow *w, void *data)
 
 static void defaultOnPositionContentSizeChanged(uiWindow *w, void *data)
 {
-	/* do nothing */
+	// do nothing
 }
 
 static void uiWindowDestroy(uiControl *c)
 {
 	uiWindow *w = uiWindow(c);
 
-	/* first hide ourselves */
+	// first hide ourselves
 	gtk_widget_hide(w->widget);
-	/* now destroy the child */
-	if (w->child != NULL)
-   {
-      uiControlSetParent(w->child, NULL);
-      uiUnixControlSetContainer(uiUnixControl(w->child), w->childHolderContainer, TRUE);
-      uiControlDestroy(w->child);
-   }
-	/* now destroy the menus, if any */
+	// now destroy the child
+	if (w->child != NULL) {
+		uiControlSetParent(w->child, NULL);
+		uiUnixControlSetContainer(uiUnixControl(w->child), w->childHolderContainer, TRUE);
+		uiControlDestroy(w->child);
+	}
+	// now destroy the menus, if any
 	if (w->menubar != NULL)
 		freeMenubar(w->menubar);
 	gtk_widget_destroy(w->childHolderWidget);
 	gtk_widget_destroy(w->vboxWidget);
-	/* and finally free ourselves
-	 * use gtk_widget_destroy() instead of g_object_unref() 
-    * because GTK+ has internal references (see #165) */
+	// and finally free ourselves
+	// use gtk_widget_destroy() instead of g_object_unref() because GTK+ has internal references (see #165)
 	gtk_widget_destroy(w->widget);
 	uiFreeControl(uiControl(w));
 }
@@ -107,11 +102,9 @@ static void uiWindowShow(uiControl *c)
 {
 	uiWindow *w = uiWindow(c);
 
-	/* don't use gtk_widget_show_all() as that 
-    * will show all children, regardless of user settings
-	 * don't use gtk_widget_show(); that doesn't bring to 
-    * front or give keyboard focus
-	 * (gtk_window_present() does call gtk_widget_show() though) */
+	// don't use gtk_widget_show_all() as that will show all children, regardless of user settings
+	// don't use gtk_widget_show(); that doesn't bring to front or give keyboard focus
+	// (gtk_window_present() does call gtk_widget_show() though)
 	gtk_window_present(w->window);
 }
 
@@ -119,8 +112,7 @@ uiUnixControlDefaultHide(uiWindow)
 uiUnixControlDefaultEnabled(uiWindow)
 uiUnixControlDefaultEnable(uiWindow)
 uiUnixControlDefaultDisable(uiWindow)
-
-/* TODO? */
+// TODO?
 uiUnixControlDefaultSetContainer(uiWindow)
 
 char *uiWindowTitle(uiWindow *w)

@@ -1868,7 +1868,7 @@ bool command_event(enum event_command cmd, void *data)
             if (settings->bools.rewind_enable)
             {
 #ifdef HAVE_NETWORKING
-               /* Only enable state manager if netplay is not underway 
+               /* Only enable state manager if netplay is not underway
 TODO: Add a setting for these tweaks */
                if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
 #endif
@@ -1899,7 +1899,7 @@ TODO: Add a setting for these tweaks */
 #ifdef HAVE_THREADS
 	 {
 #ifdef HAVE_NETWORKING
-         /* Only enable state manager if netplay is not underway 
+         /* Only enable state manager if netplay is not underway
             TODO: Add a setting for these tweaks */
          settings_t *settings      = config_get_ptr();
          if (settings->uints.autosave_interval != 0
@@ -2137,7 +2137,7 @@ TODO: Add a setting for these tweaks */
              * need to make sure to keep a copy */
             struct retro_hw_render_callback hwr_copy;
             struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
-            const struct retro_hw_render_context_negotiation_interface *iface = 
+            const struct retro_hw_render_context_negotiation_interface *iface =
                video_driver_get_context_negotiation_interface();
             memcpy(&hwr_copy, hwr, sizeof(hwr_copy));
 
@@ -2210,7 +2210,7 @@ TODO: Add a setting for these tweaks */
                RARCH_LOG("%s\n", msg_hash_to_str(MSG_PAUSED));
                command_event(CMD_EVENT_AUDIO_STOP, NULL);
 
-               runloop_msg_queue_push(msg_hash_to_str(MSG_PAUSED), 1, 
+               runloop_msg_queue_push(msg_hash_to_str(MSG_PAUSED), 1,
                      1, true);
 
                if (!is_idle)
@@ -2293,15 +2293,15 @@ TODO: Add a setting for these tweaks */
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
-            if (!init_netplay(NULL, hostname ? hostname : 
+            if (!init_netplay(NULL, hostname ? hostname :
                settings->paths.netplay_server,
                settings->uints.netplay_port))
             {
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
                return false;
             }
-            
-            /* Disable rewind & sram autosave if it was enabled 
+
+            /* Disable rewind & sram autosave if it was enabled
                TODO: Add a setting for these tweaks */
             state_manager_event_deinit();
 #ifdef HAVE_THREADS
@@ -2319,12 +2319,12 @@ TODO: Add a setting for these tweaks */
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
-            RARCH_LOG("[netplay] connecting to %s:%d\n", 
-               hostname->elems[0].data, !string_is_empty(hostname->elems[1].data) 
+            RARCH_LOG("[netplay] connecting to %s:%d\n",
+               hostname->elems[0].data, !string_is_empty(hostname->elems[1].data)
                ? atoi(hostname->elems[1].data) : 55435);
 
-            if (!init_netplay(NULL, hostname->elems[0].data, 
-               !string_is_empty(hostname->elems[1].data) 
+            if (!init_netplay(NULL, hostname->elems[0].data,
+               !string_is_empty(hostname->elems[1].data)
                ? atoi(hostname->elems[1].data) : 55435))
             {
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
@@ -2334,7 +2334,7 @@ TODO: Add a setting for these tweaks */
 
             string_list_free(hostname);
 
-            /* Disable rewind if it was enabled 
+            /* Disable rewind if it was enabled
                TODO: Add a setting for these tweaks */
             state_manager_event_deinit();
 #ifdef HAVE_THREADS
@@ -2352,12 +2352,12 @@ TODO: Add a setting for these tweaks */
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
-            RARCH_LOG("[netplay] connecting to %s:%d\n", 
-               hostname->elems[0].data, !string_is_empty(hostname->elems[1].data) 
+            RARCH_LOG("[netplay] connecting to %s:%d\n",
+               hostname->elems[0].data, !string_is_empty(hostname->elems[1].data)
                ? atoi(hostname->elems[1].data) : 55435);
 
             if (!init_netplay_deferred(hostname->elems[0].data,
-               !string_is_empty(hostname->elems[1].data) 
+               !string_is_empty(hostname->elems[1].data)
                ? atoi(hostname->elems[1].data) : 55435))
             {
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
@@ -2367,7 +2367,7 @@ TODO: Add a setting for these tweaks */
 
             string_list_free(hostname);
 
-            /* Disable rewind if it was enabled 
+            /* Disable rewind if it was enabled
                TODO: Add a setting for these tweaks */
             state_manager_event_deinit();
 #ifdef HAVE_THREADS
@@ -2544,7 +2544,7 @@ TODO: Add a setting for these tweaks */
          {
             static bool game_focus_state  = false;
             intptr_t                 mode = (intptr_t)data;
-            
+
             /* mode = -1: restores current game focus state
              * mode =  1: force set game focus, instead of toggling
              * any other: toggle
@@ -2609,7 +2609,7 @@ TODO: Add a setting for these tweaks */
          command_event_restore_default_shader_preset();
          break;
       case CMD_EVENT_LIBUI_TEST:
-#if 0
+#if HAVE_LIBUI
          libui_main();
 #endif
          break;

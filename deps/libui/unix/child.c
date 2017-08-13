@@ -28,7 +28,7 @@ struct child {
 
 struct child *newChild(uiControl *child, uiControl *parent, GtkContainer *parentContainer)
 {
-	struct child *c = NULL;
+	struct child *c;
 
 	if (child == NULL)
 		return NULL;
@@ -51,8 +51,8 @@ struct child *newChild(uiControl *child, uiControl *parent, GtkContainer *parent
 
 struct child *newChildWithBox(uiControl *child, uiControl *parent, GtkContainer *parentContainer, int margined)
 {
-	struct child *c = NULL;
-	GtkWidget *box  = NULL;
+	struct child *c;
+	GtkWidget *box;
 
 	if (child == NULL)
 		return NULL;
@@ -87,11 +87,11 @@ void childRemove(struct child *c)
 
 void childDestroy(struct child *c)
 {
-   uiControl *child = NULL;
+	uiControl *child;
 
-   child = c->c;
-   childRemove(c);
-   uiControlDestroy(child);
+	child = c->c;
+	childRemove(c);
+	uiControlDestroy(child);
 }
 
 GtkWidget *childWidget(struct child *c)

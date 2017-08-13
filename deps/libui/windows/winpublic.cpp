@@ -1,4 +1,4 @@
-/* 6 april 2015 */
+// 6 april 2015
 #include "uipriv_windows.hpp"
 
 void uiWindowsEnsureDestroyWindow(HWND hwnd)
@@ -35,30 +35,27 @@ void uiWindowsEnsureMoveWindowDuringResize(HWND hwnd, int x, int y, int width, i
 		logLastError(L"error moving window");
 }
 
-/* do these function even error out in any case 
- * other than invalid parameters?! I thought all windows had rects */
+// do these function even error out in any case other than invalid parameters?! I thought all windows had rects
 void uiWindowsEnsureGetClientRect(HWND hwnd, RECT *r)
 {
-	if (GetClientRect(hwnd, r) == 0)
-   {
-      logLastError(L"error getting window client rect");
-      /* zero out the rect on error just to be safe */
-      r->left = 0;
-      r->top = 0;
-      r->right = 0;
-      r->bottom = 0;
-   }
+	if (GetClientRect(hwnd, r) == 0) {
+		logLastError(L"error getting window client rect");
+		// zero out the rect on error just to be safe
+		r->left = 0;
+		r->top = 0;
+		r->right = 0;
+		r->bottom = 0;
+	}
 }
 
 void uiWindowsEnsureGetWindowRect(HWND hwnd, RECT *r)
 {
-	if (GetWindowRect(hwnd, r) == 0)
-   {
-      logLastError(L"error getting window rect");
-      /* zero out the rect on error just to be safe */
-      r->left = 0;
-      r->top = 0;
-      r->right = 0;
-      r->bottom = 0;
-   }
+	if (GetWindowRect(hwnd, r) == 0) {
+		logLastError(L"error getting window rect");
+		// zero out the rect on error just to be safe
+		r->left = 0;
+		r->top = 0;
+		r->right = 0;
+		r->bottom = 0;
+	}
 }

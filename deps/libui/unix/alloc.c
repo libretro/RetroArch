@@ -1,4 +1,4 @@
-/* 7 april 2015 */
+// 7 april 2015
 #include <string.h>
 #include "uipriv_unix.h"
 
@@ -20,8 +20,8 @@ void initAlloc(void)
 
 static void uninitComplain(gpointer ptr, gpointer data)
 {
-	char *str2 = NULL;
-	char **str = (char **)data;
+	char **str = (char **) data;
+	char *str2;
 
 	if (*str == NULL)
 		*str = g_strdup_printf("");
@@ -34,12 +34,10 @@ void uninitAlloc(void)
 {
 	char *str = NULL;
 
-	if (allocations->len == 0)
-   {
-      g_ptr_array_free(allocations, TRUE);
-      return;
-   }
-
+	if (allocations->len == 0) {
+		g_ptr_array_free(allocations, TRUE);
+		return;
+	}
 	g_ptr_array_foreach(allocations, uninitComplain, &str);
 	userbug("Some data was leaked; either you left a uiControl lying around or there's a bug in libui itself. Leaked data:\n%s", str);
 	g_free(str);
@@ -47,8 +45,9 @@ void uninitAlloc(void)
 
 void *uiAlloc(size_t size, const char *type)
 {
-	void *out = g_malloc0(EXTRA + size);
+	void *out;
 
+	out = g_malloc0(EXTRA + size);
 	*SIZE(out) = size;
 	*TYPE(out) = type;
 	g_ptr_array_add(allocations, out);
