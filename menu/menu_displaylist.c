@@ -2862,6 +2862,11 @@ static int menu_displaylist_parse_load_content_settings(
                MENU_SETTING_ACTION_LOADSTATE, 0, 0);
 
       menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES),
+            msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_FAVORITES),
+            MENU_ENUM_LABEL_ADD_TO_FAVORITES, FILE_TYPE_PLAYLIST_ENTRY, 0, 0);
+
+      menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTIONS),
             msg_hash_to_str(MENU_ENUM_LABEL_CORE_OPTIONS),
             MENU_ENUM_LABEL_CORE_OPTIONS,
