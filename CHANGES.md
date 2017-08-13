@@ -1,6 +1,7 @@
 # 1.6.5 (future)
 - 3DS: Fixes serious performance regression that affected every core; rewind was always implicitly enabled.
 - AUDIO: MOD/S3M/XM sound should now be properly mixed in with the core's sound.
+- GUI: Performance optimizations for XMB menu driver.
 - LOCALIZATION: Update Italian translation
 - INPUT: Overlay controller response - when we press buttons on the gamepad or keyboard, the corresponding buttons on the overlay will be highlighted as well.
 - NETBSD: Silence some compilation warnings.
