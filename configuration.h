@@ -125,6 +125,7 @@ typedef struct settings
       bool menu_show_core_updater;
       bool menu_xmb_shadows_enable;
       bool menu_xmb_show_settings;
+      bool menu_xmb_show_favorites;
       bool menu_xmb_show_images;
       bool menu_xmb_show_music;
       bool menu_xmb_show_video;
