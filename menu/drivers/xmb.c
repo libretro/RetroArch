@@ -128,6 +128,7 @@ enum
    XMB_TEXTURE_FOLDER,
    XMB_TEXTURE_ZIP,
    XMB_TEXTURE_FAVORITE,
+   XMB_TEXTURE_ADD_FAVORITE,
    XMB_TEXTURE_MUSIC,
    XMB_TEXTURE_IMAGE,
    XMB_TEXTURE_MOVIE,
@@ -2017,6 +2018,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_CORE_OPTIONS:
       case MENU_ENUM_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
          return xmb->textures.list[XMB_TEXTURE_CORE_OPTIONS];
+      case MENU_ENUM_LABEL_ADD_TO_FAVORITES:
+         return xmb->textures.list[XMB_TEXTURE_ADD_FAVORITE];
       case MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
          return xmb->textures.list[XMB_TEXTURE_INPUT_REMAPPING_OPTIONS];
       case MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS:
@@ -3447,6 +3450,8 @@ static const char *xmb_texture_path(unsigned id)
          return "history.png";
       case XMB_TEXTURE_FAVORITES:
          return "favorites.png";
+      case XMB_TEXTURE_ADD_FAVORITE:
+         return "add-favorite.png";
       case XMB_TEXTURE_MUSICS:
          return "musics.png";
 #ifdef HAVE_FFMPEG
