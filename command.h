@@ -134,6 +134,8 @@ enum event_command
    CMD_EVENT_REBOOT,
    /* Resume RetroArch when in menu. */
    CMD_EVENT_RESUME,
+   /* Add a playlist entry to favorites. */
+   CMD_EVENT_ADD_TO_FAVORITES,
    /* Toggles pause. */
    CMD_EVENT_PAUSE_TOGGLE,
    /* Pauses RetroArch. */

@@ -1991,6 +1991,13 @@ bool command_event(enum event_command cmd, void *data)
          }
          g_defaults.content_history = NULL;
 
+         if (g_defaults.content_favorites)
+         {
+            playlist_write_file(g_defaults.content_favorites);
+            playlist_free(g_defaults.content_favorites);
+         }
+         g_defaults.content_favorites = NULL;
+
          if (g_defaults.music_history)
          {
             playlist_write_file(g_defaults.music_history);
@@ -2172,6 +2179,17 @@ bool command_event(enum event_command cmd, void *data)
          rarch_menu_running_finished();
          if (ui_companion_is_on_foreground())
             ui_companion_driver_toggle();
+         break;
+      case CMD_EVENT_ADD_TO_FAVORITES:
+         playlist_push(
+               g_defaults.content_favorites,
+               path_get(RARCH_PATH_CONTENT),
+               NULL,
+               file_path_str(FILE_PATH_DETECT),
+               file_path_str(FILE_PATH_DETECT),
+               NULL,
+               NULL
+               );
          break;
       case CMD_EVENT_RESTART_RETROARCH:
          if (!frontend_driver_set_fork(FRONTEND_FORK_RESTART))
