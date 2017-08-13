@@ -1,6 +1,7 @@
-//
-// File: vk_platform.h
-//
+/*
+ * File: vk_platform.h
+ */
+
 /*
 ** Copyright (c) 2014-2015 The Khronos Group Inc.
 **
@@ -24,7 +25,7 @@
 #ifdef __cplusplus
 extern "C"
 {
-#endif // __cplusplus
+#endif /* __cplusplus */
 
 /*
 ***************************************************************************************************
@@ -47,22 +48,22 @@ extern "C"
  * Function pointer type: typedef void (VKAPI_PTR *PFN_vkCommand)(void);
  */
 #if defined(_WIN32)
-    // On Windows, Vulkan commands use the stdcall convention
+    /* On Windows, Vulkan commands use the stdcall convention */
     #define VKAPI_ATTR
     #define VKAPI_CALL __stdcall
     #define VKAPI_PTR  VKAPI_CALL
 #elif defined(__ANDROID__) && defined(__ARM_EABI__) && !defined(__ARM_ARCH_7A__)
-    // Android does not support Vulkan in native code using the "armeabi" ABI.
+    /* Android does not support Vulkan in native code using the "armeabi" ABI. */
     #error "Vulkan requires the 'armeabi-v7a' or 'armeabi-v7a-hard' ABI on 32-bit ARM CPUs"
 #elif defined(__ANDROID__) && defined(__ARM_ARCH_7A__)
-    // On Android/ARMv7a, Vulkan functions use the armeabi-v7a-hard calling
-    // convention, even if the application's native code is compiled with the
-    // armeabi-v7a calling convention.
+    /* On Android/ARMv7a, Vulkan functions use the armeabi-v7a-hard calling
+     * convention, even if the application's native code is compiled with the
+     * armeabi-v7a calling convention. */
     #define VKAPI_ATTR __attribute__((pcs("aapcs-vfp")))
     #define VKAPI_CALL
     #define VKAPI_PTR  VKAPI_ATTR
 #else
-    // On other platforms, use the default calling convention
+    /* On other platforms, use the default calling convention */
     #define VKAPI_ATTR
     #define VKAPI_CALL
     #define VKAPI_PTR
@@ -83,15 +84,15 @@ extern "C"
     #else
         #include <stdint.h>
     #endif
-#endif // !defined(VK_NO_STDINT_H)
+#endif /* !defined(VK_NO_STDINT_H) */
 
 #ifdef __cplusplus
-} // extern "C"
-#endif // __cplusplus
+} /* extern "C" */
+#endif /* __cplusplus */
 
-// Platform-specific headers required by platform window system extensions.
-// These are enabled prior to #including "vulkan.h". The same enable then
-// controls inclusion of the extension interfaces in vulkan.h.
+/* Platform-specific headers required by platform window system extensions.
+ * These are enabled prior to #including "vulkan.h". The same enable then
+ * controls inclusion of the extension interfaces in vulkan.h. */
 
 #ifdef VK_USE_PLATFORM_ANDROID_KHR
 #include <android/native_window.h>

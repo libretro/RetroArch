@@ -254,19 +254,20 @@ static void menu_display_vk_draw(void *data)
 
       default:
       {
-         const struct vk_draw_triangles call = {
-            vk->display.pipelines[
-               to_display_pipeline(draw->prim_type, vk->display.blend)],
-               texture,
-               texture->mipmap ?
-                  vk->samplers.mipmap_linear :
-                  (texture->default_smooth ? vk->samplers.linear : vk->samplers.nearest),
-               draw->matrix_data
-                  ? draw->matrix_data : menu_display_vk_get_default_mvp(),
-               sizeof(math_matrix_4x4),
-               &range,
-               draw->coords->vertices,
-         };
+         struct vk_draw_triangles call;
+         
+         call.pipeline     = vk->display.pipelines[
+               to_display_pipeline(draw->prim_type, vk->display.blend)];
+         call.texture      = texture;
+         call.sampler      = texture->mipmap ?
+            vk->samplers.mipmap_linear :
+            (texture->default_smooth ? vk->samplers.linear : vk->samplers.nearest);
+         call.uniform      = draw->matrix_data
+            ? draw->matrix_data : menu_display_vk_get_default_mvp();
+         call.uniform_size = sizeof(math_matrix_4x4);
+         call.vbo          = &range;
+         call.vertices     = draw->coords->vertices;
+
          vulkan_draw_triangles(vk, &call);
          break;
       }

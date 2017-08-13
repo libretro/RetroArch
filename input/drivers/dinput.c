@@ -222,6 +222,8 @@ static void dinput_poll(void *data)
    if (di->mouse)
    {
       DIMOUSESTATE2 mouse_state;
+      POINT point = {0};
+
       memset(&mouse_state, 0, sizeof(mouse_state));
 
       if (FAILED(IDirectInputDevice8_GetDeviceState(
@@ -237,8 +239,8 @@ static void dinput_poll(void *data)
       di->mouse_rel_y = mouse_state.lY;
 
 
-	  if (!mouse_state.rgbButtons[0])
-		  unset_doubleclick_on_titlebar();
+      if (!mouse_state.rgbButtons[0])
+         unset_doubleclick_on_titlebar();
       if (doubleclick_on_titlebar_pressed())
          di->mouse_l  = 0;
       else
@@ -248,7 +250,6 @@ static void dinput_poll(void *data)
 
       /* No simple way to get absolute coordinates
        * for RETRO_DEVICE_POINTER. Just use Win32 APIs. */
-      POINT point = {0};
       GetCursorPos(&point);
       ScreenToClient((HWND)video_driver_window_get(), &point);
       di->mouse_x = point.x;

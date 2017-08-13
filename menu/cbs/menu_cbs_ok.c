@@ -3536,14 +3536,10 @@ static int action_ok_netplay_lan_scan(const char *path,
    netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
 
    /* Enable Netplay */
-   if (!command_event(CMD_EVENT_NETPLAY_INIT_DIRECT, (void *) host))
-      return -1;
-
-   return generic_action_ok_command(CMD_EVENT_RESUME);
-
-#else
-   return -1;
+   if (command_event(CMD_EVENT_NETPLAY_INIT_DIRECT, (void *) host))
+      return generic_action_ok_command(CMD_EVENT_RESUME);
 #endif
+   return -1;
 }
 
 static int action_ok_browse_url_list(const char *path,
@@ -4226,12 +4222,10 @@ static int action_ok_load_archive_detect_core(const char *path,
          }
          return 0;
       case 0:
-         {
-            idx = menu_navigation_get_selection();
-            return generic_action_ok_displaylist_push(path, NULL,
-                  label, type,
-                  idx, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST);
-         }
+         idx = menu_navigation_get_selection();
+         return generic_action_ok_displaylist_push(path, NULL,
+               label, type,
+               idx, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST);
       default:
          break;
    }
@@ -4343,15 +4337,10 @@ static int action_ok_netplay_enable_host(const char *path,
    }
 
    /* Enable Netplay itself */
-   if (!command_event(CMD_EVENT_NETPLAY_INIT, NULL))
-      return -1;
-
-   return generic_action_ok_command(CMD_EVENT_RESUME);
-
-#else
-   return -1;
-
+   if (command_event(CMD_EVENT_NETPLAY_INIT, NULL))
+      return generic_action_ok_command(CMD_EVENT_RESUME);
 #endif
+   return -1;
 }
 
 #ifdef HAVE_NETWORKING
@@ -4406,13 +4395,10 @@ static int action_ok_netplay_enable_client(const char *path,
    line.label = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS);
    line.label_setting = "no_setting";
    line.cb = action_ok_netplay_enable_client_hostname_cb;
-   if (!menu_input_dialog_start(&line))
-      return -1;
-   return 0;
-
-#else
-   return -1;
+   if (menu_input_dialog_start(&line))
+      return 0;
 #endif
+   return -1;
 }
 
 static int action_ok_netplay_disconnect(const char *path,
@@ -4492,25 +4478,22 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 
    if (cbs->enum_idx != MSG_UNKNOWN)
    {
-      unsigned i;
+      const char     *str = msg_hash_to_str(cbs->enum_idx);
 
-      for (i = 0; i < MAX_USERS; i++)
+      if (str && strstr(str, "input_binds_list"))
       {
-         unsigned first_char = 0;
-         const char     *str = msg_hash_to_str(cbs->enum_idx);
+         unsigned i;
 
-         if (!str)
-            continue;
-         if (!strstr(str, "input_binds_list"))
-            continue;
+         for (i = 0; i < MAX_USERS; i++)
+         {
+            unsigned first_char = atoi(&str[0]);
 
-         first_char = atoi(&str[0]);
+            if (first_char != ((i+1)))
+               continue;
 
-         if (first_char != ((i+1)))
-            continue;
-
-         BIND_ACTION_OK(cbs, action_ok_push_user_binds_list);
-         return 0;
+            BIND_ACTION_OK(cbs, action_ok_push_user_binds_list);
+            return 0;
+         }
       }
    }
 

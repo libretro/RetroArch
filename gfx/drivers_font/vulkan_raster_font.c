@@ -271,15 +271,15 @@ static void vulkan_raster_font_render_message(
 
 static void vulkan_raster_font_flush(vulkan_raster_t *font)
 {
-   const struct vk_draw_triangles call = {
-      font->vk->pipelines.font,
-      &font->texture_optimal,
-      font->vk->samplers.mipmap_linear,
-      &font->vk->mvp,
-      sizeof(font->vk->mvp),
-      &font->range,
-      font->vertices,
-   };
+   struct vk_draw_triangles call;
+   
+   call.pipeline     = font->vk->pipelines.font;
+   call.texture      = &font->texture_optimal;
+   call.sampler      = font->vk->samplers.mipmap_linear;
+   call.uniform      = &font->vk->mvp;
+   call.uniform_size = sizeof(font->vk->mvp);
+   call.vbo          = &font->range;
+   call.vertices     = font->vertices;
 
    if(font->needs_update)
    {

@@ -435,8 +435,9 @@ static void gfx_ctx_wgl_update_title(void *data, void *data2)
 static void gfx_ctx_wgl_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
-   (void)data;
    HWND         window  = win32_get_window();
+
+   (void)data;
 
    if (!window)
    {

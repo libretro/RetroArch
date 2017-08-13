@@ -19,6 +19,8 @@
 #include "../config.h"
 #endif
 
+#include <retro_environment.h>
+
 #include "../tasks/tasks_internal.h"
 #include "input_config.h"
 
@@ -498,6 +500,7 @@ const char* const input_builtin_autoconfs[] =
 #if defined(_WIN32) && defined(_XBOX)
    DECL_AUTOCONF_DEVICE("XInput Controller", "xdk", XINPUT_DEFAULT_BINDS),
 #elif defined(_WIN32)
+#if !defined(__STDC_C89__) && !defined(__STDC_C89_AMENDMENT_1__)
    DECL_AUTOCONF_DEVICE("XInput Controller (User 1)", "xinput", XINPUT_DEFAULT_BINDS),
    DECL_AUTOCONF_DEVICE("XInput Controller (User 2)", "xinput", XINPUT_DEFAULT_BINDS),
    DECL_AUTOCONF_DEVICE("XInput Controller (User 3)", "xinput", XINPUT_DEFAULT_BINDS),
@@ -506,6 +509,7 @@ const char* const input_builtin_autoconfs[] =
    DECL_AUTOCONF_DEVICE("XBOX One Controller (User 2)", "xinput", XINPUT_DEFAULT_BINDS),
    DECL_AUTOCONF_DEVICE("XBOX One Controller (User 3)", "xinput", XINPUT_DEFAULT_BINDS),
    DECL_AUTOCONF_DEVICE("XBOX One Controller (User 4)", "xinput", XINPUT_DEFAULT_BINDS),
+#endif
 #endif
 #ifdef HAVE_SDL2
    DECL_AUTOCONF_DEVICE("Standard Gamepad", "sdl2", SDL2_DEFAULT_BINDS),
