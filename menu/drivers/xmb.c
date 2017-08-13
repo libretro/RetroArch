@@ -73,6 +73,8 @@
 #define XMB_DEBUG
 #endif
 
+/* NOTE: If you change this you HAVE to update
+ * xmb_alloc_node() and xmb_copy_node() */
 typedef struct
 {
    float alpha;
@@ -405,6 +407,40 @@ const char* xmb_theme_ident(void)
    }
 
    return "monochrome";
+}
+
+/* NOTE: This exists because calloc()ing xmb_node_t is expensive
+ * when you can have big lists like MAME and fba playlists */
+static xmb_node_t *xmb_alloc_node(void)
+{
+   xmb_node_t *node = (xmb_node_t*)malloc(sizeof(*node));
+
+   node->alpha = node->label_alpha  = 0;
+   node->zoom  = node->x = node->y  = 0;
+   node->icon  = node->content_icon = 0;
+   node->fullpath[0] = 0;
+
+   return node;
+}
+
+/* NOTE: This is faster than memcpy()ing xmb_node_t in most cases
+ * because most nodes have small (less than 200 bytes) fullpath */
+static xmb_node_t *xmb_copy_node(void *p)
+{
+   xmb_node_t *old_node = (xmb_node_t*)p;
+   xmb_node_t *new_node = (xmb_node_t*)malloc(sizeof(*new_node));
+
+   new_node->alpha        = old_node->alpha;
+   new_node->label_alpha  = old_node->label_alpha;
+   new_node->zoom         = old_node->zoom;
+   new_node->x            = old_node->x;
+   new_node->y            = old_node->y;
+   new_node->icon         = old_node->icon;
+   new_node->content_icon = old_node->content_icon;
+
+   strlcpy(new_node->fullpath, old_node->fullpath, sizeof(old_node->fullpath));
+
+   return new_node;
 }
 
 static const char *xmb_thumbnails_ident(void)
@@ -1354,7 +1390,7 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
 
 static xmb_node_t *xmb_node_allocate_userdata(xmb_handle_t *xmb, unsigned i)
 {
-   xmb_node_t *node = (xmb_node_t*)calloc(1, sizeof(xmb_node_t));
+   xmb_node_t *node = xmb_alloc_node();
 
    if (!node)
    {
@@ -3683,7 +3719,7 @@ static void xmb_list_insert(void *userdata,
    node = (xmb_node_t*)menu_entries_get_userdata_at_offset(list, i);
 
    if (!node)
-      node = (xmb_node_t*)calloc(1, sizeof(xmb_node_t));
+      node = xmb_alloc_node();
 
    if (!node)
    {
@@ -3756,11 +3792,7 @@ static void xmb_list_deep_copy(const file_list_t *src, file_list_t *dst)
       void *src_adata = (void*)menu_entries_get_actiondata_at_offset(src, i);
 
       if (src_udata)
-      {
-         void *data = malloc(sizeof(xmb_node_t));
-         memcpy(data, src_udata, sizeof(xmb_node_t));
-         file_list_set_userdata(dst, i, data);
-      }
+         file_list_set_userdata(dst, i, xmb_copy_node(src_udata));
 
       if (src_adata)
       {
