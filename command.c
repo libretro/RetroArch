@@ -2173,6 +2173,9 @@ bool command_event(enum event_command cmd, void *data)
          if (ui_companion_is_on_foreground())
             ui_companion_driver_toggle();
          break;
+      case CMD_EVENT_ADD_TO_FAVORITES:
+         printf("Add to favorites\n");
+         break;
       case CMD_EVENT_RESTART_RETROARCH:
          if (!frontend_driver_set_fork(FRONTEND_FORK_RESTART))
             return false;
