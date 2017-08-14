@@ -915,7 +915,7 @@ static bool menu_content_find_first_core(menu_content_ctx_defer_info_t *def_info
       size_t default_info_length    = def_info->len;
 
       if (!string_is_empty(default_info_path))
-         fill_pathname_join(def_info->s, 
+         fill_pathname_join(def_info->s,
                default_info_dir, default_info_path,
                default_info_length);
 
@@ -936,7 +936,7 @@ static bool menu_content_find_first_core(menu_content_ctx_defer_info_t *def_info
             def_info->s, &info,
             &supported);
 
-   /* We started the menu with 'Load Content', we are 
+   /* We started the menu with 'Load Content', we are
     * going to use the current core to load this. */
    if (load_content_with_current_core)
    {
@@ -1396,11 +1396,11 @@ static int action_ok_playlist_entry_collection(const char *path,
    playlist_get_index(playlist, selection_ptr,
          &entry_path, &entry_label, &core_path, &core_name, NULL, NULL);
 
-   /* If the currently loaded core's name is equal 
+   /* If the currently loaded core's name is equal
     * to the core name from the playlist entry,
     * then we directly load this game with the current core.
     */
-   if (system && 
+   if (system &&
          string_is_equal(system->library_name, core_name))
    {
       if (playlist_initialized)
@@ -1625,7 +1625,7 @@ static int action_ok_playlist_entry_start_content(const char *path,
 
       new_core_path[0] = new_display_name[0] = '\0';
 
-      found_associated_core                  = 
+      found_associated_core                  =
          menu_content_playlist_find_associated_core(
             path_base, new_core_path, sizeof(new_core_path));
 
@@ -1730,7 +1730,7 @@ static int action_ok_audio_add_to_mixer_and_collection(const char *path,
    fill_pathname_join(combined_path, menu->scratch2_buf,
          menu->scratch_buf, sizeof(combined_path));
 
-   playlist_push(g_defaults.music_history, 
+   playlist_push(g_defaults.music_history,
          combined_path,
          NULL,
          "builtin",
@@ -2538,7 +2538,7 @@ static int generic_action_ok_network(const char *path,
       default:
          break;
    }
-   
+
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
 
    command_event(CMD_EVENT_NETWORK_INIT, NULL);
@@ -3017,6 +3017,7 @@ default_action_ok_cmd_func(action_ok_restart_content,    CMD_EVENT_RESET)
 default_action_ok_cmd_func(action_ok_screenshot,         CMD_EVENT_TAKE_SCREENSHOT)
 default_action_ok_cmd_func(action_ok_disk_cycle_tray_status, CMD_EVENT_DISK_EJECT_TOGGLE        )
 default_action_ok_cmd_func(action_ok_shader_apply_changes, CMD_EVENT_SHADERS_APPLY_CHANGES        )
+default_action_ok_cmd_func(action_ok_add_to_favorites, CMD_EVENT_ADD_TO_FAVORITES)
 
 static int action_ok_delete_entry(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -3238,7 +3239,7 @@ static int action_ok_netplay_connect_room(const char *path,
          netplay_room_list[idx - 3].port);
    }
 
-   RARCH_LOG("[lobby] connecting to: %s with game: %s/%08x\n", 
+   RARCH_LOG("[lobby] connecting to: %s with game: %s/%08x\n",
          tmp_hostname,
          netplay_room_list[idx - 3].gamename,
          netplay_room_list[idx - 3].gamecrc);
@@ -3967,7 +3968,7 @@ static int action_ok_netplay_disconnect(const char *path,
    netplay_driver_ctl(RARCH_NETPLAY_CTL_DISCONNECT, NULL);
    netplay_driver_ctl(RARCH_NETPLAY_CTL_DISABLE, NULL);
 
-   /* Re-enable rewind if it was enabled 
+   /* Re-enable rewind if it was enabled
       TODO: Add a setting for these tweaks */
    if (settings->bools.rewind_enable)
       command_event(CMD_EVENT_REWIND_INIT, NULL);
@@ -4129,6 +4130,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_RESUME_CONTENT:
             BIND_ACTION_OK(cbs, action_ok_resume_content);
+            break;
+         case MENU_ENUM_LABEL_ADD_TO_FAVORITES:
+            BIND_ACTION_OK(cbs, action_ok_add_to_favorites);
             break;
          case MENU_ENUM_LABEL_RESTART_CONTENT:
             BIND_ACTION_OK(cbs, action_ok_restart_content);

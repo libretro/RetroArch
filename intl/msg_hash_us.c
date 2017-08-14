@@ -285,6 +285,9 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len) {
                     "The screenshot will be stored inside the \n"
                     "Screenshot Directory.");
             break;
+        case MENU_ENUM_LABEL_ADD_TO_FAVORITES:
+            snprintf(s, len, "Add the entry to your Favorites.");
+            break;
         case MENU_ENUM_LABEL_RUN:
             snprintf(s, len, "Start the content.");
             break;

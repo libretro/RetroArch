@@ -615,6 +615,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_FALSE,
       "False")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
       "Maximum Run Speed")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,
+      "Favorites")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FPS_SHOW,
       "Display Framerate")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_ENABLE,
@@ -1259,6 +1261,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
       "Display Start Screen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
       "Right Analog")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
+      "Add to Favorites")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN,
       "Run")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
@@ -1751,6 +1755,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_HISTORY,
       "Show History Tab")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_ADD,
       "Show Import content Tab")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_FAVORITES,
+      "Show Favorites Tab")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_IMAGES,
       "Show Image Tab")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_MUSIC,
@@ -2804,6 +2810,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_DELETE_ENTRY,
       "Remove this entry from the collection.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION,
       "View more information about the content.")
+MSG_HASH(MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES,
+      "Add the entry to your favorites.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RUN,
       "Start the content.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
@@ -2917,6 +2925,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
       "Select an animated background effect. Can be GPU-intensive depending on the effect. If performance is unsatisfactory, either turn this off or revert to a simpler effect.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_FONT,
       "Select a different main font to be used by the menu.")
+MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_FAVORITES,
+      "Show the favorites tab inside the main menu.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_IMAGES,
       "Show the image tab inside the main menu.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_MUSIC,
