@@ -76,6 +76,7 @@ enum
    MUI_TEXTURE_TAB_SETTINGS,
    MUI_TEXTURE_KEY,
    MUI_TEXTURE_KEY_HOVER,
+   MUI_TEXTURE_FOLDER,
    MUI_TEXTURE_LAST
 };
 
@@ -172,6 +173,8 @@ static const char *mui_texture_path(unsigned id)
          return "key.png";
       case MUI_TEXTURE_KEY_HOVER:
          return "key-hover.png";
+      case MUI_TEXTURE_FOLDER:
+         return "folder.png";
    }
 
    return NULL;
@@ -687,9 +690,11 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
    int value_len                   = (int)utf8len(value);
    int ticker_limit                = 0;
    uintptr_t texture_switch        = 0;
+   uintptr_t texture_switch2       = 0;
    bool do_draw_text               = false;
    size_t usable_width             = width - (mui->margin * 2);
    uint32_t sublabel_color         = 0x888888ff;
+   enum msg_file_type type         = msg_hash_to_file_type(msg_hash_calculate(value));
 
    label_str[0] = value_str[0]     = 
       sublabel_str[0]              = '\0';
@@ -712,21 +717,6 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
    ticker.str      = value;
 
    menu_animation_ticker(&ticker);
-
-   if (menu_entry_get_sublabel(i, sublabel_str, sizeof(sublabel_str)))
-   {
-      word_wrap(sublabel_str, sublabel_str, (int)(usable_width / mui->glyph_width2), false);
-
-      menu_display_draw_text(mui->font2, sublabel_str,
-            mui->margin,
-            y + (menu_display_get_dpi() / 4) + mui->font->size,
-            width, height, sublabel_color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
-   }
-
-   menu_display_draw_text(mui->font, label_str,
-         mui->margin,
-         y + (menu_display_get_dpi() / 5),
-         width, height, color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
 
    if (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) ||
          (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))))
@@ -752,8 +742,6 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
    }
    else
    {
-      enum msg_file_type type = msg_hash_to_file_type(msg_hash_calculate(value));
-
       switch (type)
       {
          case FILE_TYPE_COMPRESSED:
@@ -774,11 +762,49 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
       }
    }
 
+   switch (type)
+   {
+      case FILE_TYPE_DIRECTORY:
+         texture_switch2 = mui->textures.list[MUI_TEXTURE_FOLDER];
+         break;
+      default:
+         break;
+   }
+
+   /* Sublabel */
+   if (menu_entry_get_sublabel(i, sublabel_str, sizeof(sublabel_str)))
+   {
+      word_wrap(sublabel_str, sublabel_str, (int)(usable_width / mui->glyph_width2), false);
+
+      menu_display_draw_text(mui->font2, sublabel_str,
+            mui->margin + (texture_switch2 ? mui->icon_size : 0),
+            y + (menu_display_get_dpi() / 4) + mui->font->size,
+            width, height, sublabel_color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
+   }
+
+   menu_display_draw_text(mui->font, label_str,
+         mui->margin + (texture_switch2 ? mui->icon_size : 0),
+         y + (menu_display_get_dpi() / 5),
+         width, height, color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
+
    if (do_draw_text)
       menu_display_draw_text(mui->font, value_str,
             width - mui->margin,
             y + (menu_display_get_dpi() / 5),
             width, height, color, TEXT_ALIGN_RIGHT, 1.0f, false, 0);
+
+   if (texture_switch2)
+      mui_draw_icon(
+            mui->icon_size,
+            texture_switch2,
+            0,
+            y + (menu_display_get_dpi() / 6) - mui->icon_size/2,
+            width,
+            height,
+            0,
+            1,
+            &label_color[0]
+      );
 
    if (texture_switch)
       mui_draw_icon(
