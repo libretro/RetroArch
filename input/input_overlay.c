@@ -834,7 +834,7 @@ static bool input_overlay_add_inputs(input_overlay_t *ol,
             }
             break;
          case OVERLAY_TYPE_KEYBOARD:
-            if(input_state(port, RETRO_DEVICE_KEYBOARD, 0, desc->key_mask))
+            if(input_state(port, RETRO_DEVICE_KEYBOARD, 0, (unsigned)desc->key_mask))
             {
                desc->updated  = true;
                button_pressed = true;

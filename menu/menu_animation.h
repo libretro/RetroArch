@@ -82,7 +82,9 @@ enum menu_animation_easing_type
    EASING_IN_BOUNCE,
    EASING_OUT_BOUNCE,
    EASING_IN_OUT_BOUNCE,
-   EASING_OUT_IN_BOUNCE
+   EASING_OUT_IN_BOUNCE,
+
+   EASING_LAST
 };
 
 typedef struct menu_animation_ctx_delta
