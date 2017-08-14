@@ -3022,18 +3022,28 @@ static int action_ok_delete_entry(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    size_t new_selection_ptr;
-   playlist_t *playlist     = NULL;
-   char *conf_path          = playlist_get_conf_path(playlist);
-   char *def_conf_path      = playlist_get_conf_path(g_defaults.content_history);
-   char *def_conf_music_path= playlist_get_conf_path(g_defaults.music_history);
+   playlist_t *playlist      = NULL;
+   char *conf_path           = NULL;
+   char *def_conf_path       = NULL;
+   char *def_conf_music_path = NULL;
 #ifdef HAVE_FFMPEG
-   char *def_conf_video_path= playlist_get_conf_path(g_defaults.video_history);
+   char *def_conf_video_path = NULL;
 #endif
 #ifdef HAVE_IMAGEVIEWER
-   char *def_conf_img_path  = playlist_get_conf_path(g_defaults.image_history);
+   char *def_conf_img_path   = NULL;
 #endif
 
    menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
+
+   conf_path                 = playlist_get_conf_path(playlist);
+   def_conf_path             = playlist_get_conf_path(g_defaults.content_history);
+   def_conf_music_path       = playlist_get_conf_path(g_defaults.music_history);
+#ifdef HAVE_FFMPEG
+   def_conf_video_path       = playlist_get_conf_path(g_defaults.video_history);
+#endif
+#ifdef HAVE_IMAGEVIEWER
+   def_conf_img_path         = playlist_get_conf_path(g_defaults.image_history);
+#endif
 
    if (string_is_equal(conf_path, def_conf_path))
       playlist = g_defaults.content_history;
