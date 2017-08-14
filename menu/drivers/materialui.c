@@ -78,6 +78,8 @@ enum
    MUI_TEXTURE_KEY_HOVER,
    MUI_TEXTURE_FOLDER,
    MUI_TEXTURE_IMAGE,
+   MUI_TEXTURE_ARCHIVE,
+   MUI_TEXTURE_VIDEO,
    MUI_TEXTURE_LAST
 };
 
@@ -178,6 +180,10 @@ static const char *mui_texture_path(unsigned id)
          return "folder.png";
       case MUI_TEXTURE_IMAGE:
          return "image.png";
+      case MUI_TEXTURE_VIDEO:
+         return "video.png";
+      case MUI_TEXTURE_ARCHIVE:
+         return "archive.png";
    }
 
    return NULL;
@@ -767,8 +773,14 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
 
    switch (type)
    {
+      case FILE_TYPE_COMPRESSED:
+         texture_switch2 = mui->textures.list[MUI_TEXTURE_ARCHIVE];
+         break;
       case FILE_TYPE_IMAGE:
          texture_switch2 = mui->textures.list[MUI_TEXTURE_IMAGE];
+         break;
+      case FILE_TYPE_MOVIE:
+         texture_switch2 = mui->textures.list[MUI_TEXTURE_VIDEO];
          break;
       case FILE_TYPE_DIRECTORY:
          texture_switch2 = mui->textures.list[MUI_TEXTURE_FOLDER];
