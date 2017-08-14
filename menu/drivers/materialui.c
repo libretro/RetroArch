@@ -80,6 +80,8 @@ enum
    MUI_TEXTURE_IMAGE,
    MUI_TEXTURE_ARCHIVE,
    MUI_TEXTURE_VIDEO,
+   MUI_TEXTURE_QUIT,
+   MUI_TEXTURE_HELP,
    MUI_TEXTURE_LAST
 };
 
@@ -184,6 +186,10 @@ static const char *mui_texture_path(unsigned id)
          return "video.png";
       case MUI_TEXTURE_ARCHIVE:
          return "archive.png";
+      case MUI_TEXTURE_QUIT:
+         return "quit.png";
+      case MUI_TEXTURE_HELP:
+         return "help.png";
    }
 
    return NULL;
@@ -786,6 +792,10 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
          texture_switch2 = mui->textures.list[MUI_TEXTURE_FOLDER];
          break;
       default:
+         if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HELP)))
+            texture_switch2 = mui->textures.list[MUI_TEXTURE_HELP];
+         else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH)))
+            texture_switch2 = mui->textures.list[MUI_TEXTURE_QUIT];
          break;
    }
 
