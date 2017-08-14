@@ -5887,6 +5887,14 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE);
 
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME,
+               MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+
          END_SUB_GROUP(list, list_info, parent_group);
 
          END_GROUP(list, list_info, parent_group);

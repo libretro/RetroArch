@@ -2409,3 +2409,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
       "Quando si riavvolge un numero definito di fotogrammi, è possibile riavvolgere più fotogrammi alla volta, aumentando la velocità di riavvolgimento.")
    MSG_HASH(MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
       "La velocità massima in cui il contenuto verrà eseguito quando si utilizza l'avanzamento veloce (ad esempio, 5,0x per 60 fps = 300 fps). Se impostato a 0.0x, il rapporto dell'avanzamneto veloce è illimitato (nessun cap FPS)." )
+   MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
+         "Rename the title of the entry.")
+   MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME,
+         "Rename")

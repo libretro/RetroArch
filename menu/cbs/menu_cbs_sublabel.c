@@ -261,6 +261,7 @@ default_sublabel_macro(action_bind_sublabel_core_input_remapping_options,       
 default_sublabel_macro(action_bind_sublabel_core_options,                          MENU_ENUM_SUBLABEL_CORE_OPTIONS)
 default_sublabel_macro(action_bind_sublabel_show_advanced_settings,                MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_threaded_data_runloop_enable,          MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE)
+default_sublabel_macro(action_bind_sublabel_playlist_entry_rename,                 MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME)
 default_sublabel_macro(action_bind_sublabel_playlist_entry_remove,                 MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE)
 default_sublabel_macro(action_bind_sublabel_system_directory,                      MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY)
 default_sublabel_macro(action_bind_sublabel_rgui_browser_directory,                MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY)
@@ -622,6 +623,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_SYSTEM_DIRECTORY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_system_directory);
+            break;
+         case MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_playlist_entry_rename);
             break;
          case MENU_ENUM_LABEL_PLAYLIST_ENTRY_REMOVE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_playlist_entry_remove);

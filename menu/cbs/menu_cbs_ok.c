@@ -4140,6 +4140,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_TAKE_SCREENSHOT:
             BIND_ACTION_OK(cbs, action_ok_screenshot);
             break;
+         case MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME:
+            BIND_ACTION_OK(cbs, action_ok_delete_entry);
+            break;
          case MENU_ENUM_LABEL_DELETE_ENTRY:
             BIND_ACTION_OK(cbs, action_ok_delete_entry);
             break;

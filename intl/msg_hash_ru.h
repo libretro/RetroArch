@@ -3064,3 +3064,11 @@ MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
       "Показать/скрыть возможность обновлять ядра (и информационные файлы ядер).")
 MSG_HASH(MSG_PREPARING_FOR_CONTENT_SCAN,
       "Preparing for content scan...")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_DELETE,
+      "Delete core")
+MSG_HASH(MENU_ENUM_SUBLABEL_CORE_DELETE,
+      "Remove this core from disk.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
+      "Rename the title of the entry.")
+MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME,
+      "Rename")

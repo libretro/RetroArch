@@ -3039,3 +3039,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
       "Show Core Updater")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
       "Show/hide the ability to update cores (and core info files).")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
+      "Rename the title of the entry.")
+MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME,
+      "Rename")
