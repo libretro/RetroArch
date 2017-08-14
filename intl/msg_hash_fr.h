@@ -2053,6 +2053,8 @@ MSG_HASH(MSG_INPUT_CHEAT_FILENAME,
       "Nom du fichier de triche")
 MSG_HASH(MSG_INPUT_PRESET_FILENAME,
       "Nom du fichier de pré-réglage")
+MSG_HASH(MSG_INPUT_RENAME_ENTRY,
+      "Rename Title")
 MSG_HASH(MSG_INTERFACE,
       "Interface")
 MSG_HASH(MSG_INTERNAL_STORAGE,

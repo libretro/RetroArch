@@ -3003,12 +3003,10 @@ static int menu_displaylist_parse_horizontal_content_actions(
             msg_hash_to_str(MENU_ENUM_LABEL_RUN),
             MENU_ENUM_LABEL_RUN, FILE_TYPE_PLAYLIST_ENTRY, 0, idx);
 
-#if 0
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME),
             msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME),
             MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME, FILE_TYPE_PLAYLIST_ENTRY, 0, idx);
-#endif
 
 	  if (settings->bools.playlist_entry_remove)
 	  menu_entries_append_enum(info->list,

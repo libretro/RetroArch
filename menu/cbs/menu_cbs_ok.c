@@ -1823,6 +1823,37 @@ static int action_ok_cheat(const char *path,
    return 0;
 }
 
+static void menu_input_st_string_cb_rename_entry(void *userdata,
+      const char *str)
+{
+   if (str && *str)
+   {
+      const char        *label    = menu_input_dialog_get_buffer();
+
+      if (!string_is_empty(label))
+      {
+         playlist_t *tmp_playlist            = NULL;
+         menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
+         size_t new_selection_ptr            = menu_input_dialog_get_kb_idx();
+
+         if (tmp_playlist)
+         {
+            playlist_update(tmp_playlist,
+                  new_selection_ptr,
+                  NULL,
+                  label,
+                  NULL,
+                  NULL,
+                  NULL,
+                  NULL);
+            playlist_write_file(tmp_playlist);
+         }
+      }
+   }
+
+   menu_input_dialog_end();
+}
+
 static void menu_input_st_string_cb_save_preset(void *userdata,
       const char *str)
 {
@@ -3019,6 +3050,22 @@ default_action_ok_cmd_func(action_ok_disk_cycle_tray_status, CMD_EVENT_DISK_EJEC
 default_action_ok_cmd_func(action_ok_shader_apply_changes, CMD_EVENT_SHADERS_APPLY_CHANGES        )
 default_action_ok_cmd_func(action_ok_add_to_favorites, CMD_EVENT_ADD_TO_FAVORITES)
 
+static int action_ok_rename_entry(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   menu_input_ctx_line_t line;
+
+   line.label         = msg_hash_to_str(MSG_INPUT_RENAME_ENTRY);
+   line.label_setting = label;
+   line.type          = type;
+   line.idx           = (unsigned)entry_idx;
+   line.cb            = menu_input_st_string_cb_rename_entry;
+
+   if (!menu_input_dialog_start(&line))
+      return -1;
+   return 0;
+}
+
 static int action_ok_delete_entry(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -4141,7 +4188,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_screenshot);
             break;
          case MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME:
-            BIND_ACTION_OK(cbs, action_ok_delete_entry);
+            BIND_ACTION_OK(cbs, action_ok_rename_entry);
             break;
          case MENU_ENUM_LABEL_DELETE_ENTRY:
             BIND_ACTION_OK(cbs, action_ok_delete_entry);

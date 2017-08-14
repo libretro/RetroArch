@@ -2023,6 +2023,8 @@ MSG_HASH(MSG_INPUT_CHEAT_FILENAME,
       "Nome do Arquivo de Trapaça")
 MSG_HASH(MSG_INPUT_PRESET_FILENAME,
       "Nome de Arquivo Pré-Definido")
+MSG_HASH(MSG_INPUT_RENAME_ENTRY,
+      "Rename Title")
 MSG_HASH(MSG_INTERFACE,
       "Interface")
 MSG_HASH(MSG_INTERNAL_STORAGE,
