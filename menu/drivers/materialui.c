@@ -85,6 +85,7 @@ enum
    MUI_TEXTURE_INFO,
    MUI_TEXTURE_ADD,
    MUI_TEXTURE_SETTINGS,
+   MUI_TEXTURE_FILE,
    MUI_TEXTURE_LAST
 };
 
@@ -199,6 +200,8 @@ static const char *mui_texture_path(unsigned id)
          return "add.png";
       case MUI_TEXTURE_SETTINGS:
          return "settings.png";
+      case MUI_TEXTURE_FILE:
+         return "file.png";
    }
 
    return NULL;
@@ -788,6 +791,9 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
 
    switch (type)
    {
+      case FILE_TYPE_PLAIN:
+         texture_switch2 = mui->textures.list[MUI_TEXTURE_FILE];
+         break;
       case FILE_TYPE_COMPRESSED:
          texture_switch2 = mui->textures.list[MUI_TEXTURE_ARCHIVE];
          break;
