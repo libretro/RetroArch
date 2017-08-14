@@ -448,7 +448,11 @@ void menu_entries_append_enum(file_list_t *list, const char *path,
    file_list_set_actiondata(list, idx, cbs);
 
    cbs->enum_idx = enum_idx;
-   cbs->setting  = menu_setting_find_enum(enum_idx);
+
+   if (enum_idx != MENU_ENUM_LABEL_PLAYLIST_ENTRY
+       && enum_idx != MENU_ENUM_LABEL_PLAYLIST_COLLECTION_ENTRY) {
+      cbs->setting  = menu_setting_find_enum(enum_idx);
+   }
 
    menu_cbs_init(list, cbs, path, label, type, idx);
 }

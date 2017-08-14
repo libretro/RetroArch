@@ -530,12 +530,14 @@ static bool _scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds
       {
 #if _WIN32_WINNT >= 0x0500
          LARGE_INTEGER now;
+         LONGLONG elapsed;
+
          QueryPerformanceCounter(&now);
-         LONGLONG elapsed = now.QuadPart - tsBegin.QuadPart;
+         elapsed  = now.QuadPart - tsBegin.QuadPart;
          elapsed *= 1000;
          elapsed /= performanceCounterFrequency.QuadPart;
 #else
-         DWORD now = timeGetTime();
+         DWORD now     = timeGetTime();
          DWORD elapsed = now - tsBegin;
 #endif
 

@@ -100,10 +100,11 @@ static void scroll(uiArea *a, int which, struct scrollParams *p, WPARAM wParam, 
 
 static void wheelscroll(uiArea *a, int which, struct scrollParams *p, WPARAM wParam, LPARAM lParam)
 {
+	int delta;
 	int lines;
 	UINT scrollAmount;
-	int delta = GET_WHEEL_DELTA_WPARAM(wParam);
 
+	delta = GET_WHEEL_DELTA_WPARAM(wParam);
 	if (SystemParametersInfoW(p->wheelSPIAction, 0, &scrollAmount, 0) == 0)
 		// TODO use scrollAmount == 3 (for both v and h) instead?
 		logLastError(L"error getting area wheel scroll amount");

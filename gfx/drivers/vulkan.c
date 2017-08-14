@@ -1194,12 +1194,12 @@ error:
 
 static void vulkan_update_filter_chain(vk_t *vk)
 {
-   const struct vulkan_filter_chain_swapchain_info info = {
-      vk->vk_vp,
-      vk->context->swapchain_format,
-      vk->render_pass,
-      vk->context->num_swapchain_images,
-   };
+   struct vulkan_filter_chain_swapchain_info info;
+
+   info.viewport    = vk->vk_vp;
+   info.format      = vk->context->swapchain_format;
+   info.render_pass = vk->render_pass;
+   info.num_indices = vk->context->num_swapchain_images;
 
    if (!vulkan_filter_chain_update_swapchain_info((vulkan_filter_chain_t*)vk->filter_chain, &info))
       RARCH_ERR("Failed to update filter chain info. This will probably lead to a crash ...\n");
@@ -1346,8 +1346,9 @@ static void vulkan_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
-   (void)data;
    gfx_ctx_mode_t mode;
+
+   (void)data;
 
    mode.width      = width;
    mode.height     = height;

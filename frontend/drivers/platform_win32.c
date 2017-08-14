@@ -66,6 +66,7 @@ static void gfx_dwm_shutdown(void)
 
 static bool gfx_init_dwm(void)
 {
+   HRESULT (WINAPI *mmcss)(BOOL);
    static bool inited = false;
 
    if (inited)
@@ -89,7 +90,7 @@ static bool gfx_init_dwm(void)
    DragAcceptFiles_func = 
       (VOID (WINAPI*)(HWND, BOOL))dylib_proc(shell32lib, "DragAcceptFiles");
 
-   HRESULT (WINAPI *mmcss)(BOOL) = 
+   mmcss = 
       (HRESULT (WINAPI*)(BOOL))dylib_proc(dwmlib, "DwmEnableMMCSS");
    if (mmcss)
    {
@@ -104,6 +105,7 @@ static bool gfx_init_dwm(void)
 static void gfx_set_dwm(void)
 {
    HRESULT ret;
+   HRESULT (WINAPI *composition_enable)(UINT);
    settings_t *settings = config_get_ptr();
 
    if (!gfx_init_dwm())
@@ -112,7 +114,7 @@ static void gfx_set_dwm(void)
    if (settings->bools.video_disable_composition == dwm_composition_disabled)
       return;
 
-   HRESULT (WINAPI *composition_enable)(UINT) = 
+   composition_enable = 
       (HRESULT (WINAPI*)(UINT))dylib_proc(dwmlib, "DwmEnableComposition");
    if (!composition_enable)
    {

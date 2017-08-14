@@ -1,4 +1,4 @@
-/* 24 april 2016 */
+// 24 april 2016
 
 #define uiAreaSignature 0x41726561
 #define uiBoxSignature 0x426F784C

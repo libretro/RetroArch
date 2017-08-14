@@ -205,9 +205,12 @@ static BOOL CALLBACK win32_monitor_enum_proc(HMONITOR hMonitor,
 void win32_monitor_from_window(void)
 {
 #ifndef _XBOX
+   ui_window_t *window       = NULL;
+
    win32_monitor_last        = 
       MonitorFromWindow(main_window.hwnd, MONITOR_DEFAULTTONEAREST);
-   const ui_window_t *window = ui_companion_driver_get_window_ptr();
+
+   window = (ui_window_t*)ui_companion_driver_get_window_ptr();
 
    if (window)
       window->destroy(&main_window);

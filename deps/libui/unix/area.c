@@ -114,10 +114,10 @@ static void loadAreaSize(uiArea *a, double *width, double *height)
 
 static gboolean areaWidget_draw(GtkWidget *w, cairo_t *cr)
 {
+	areaWidget *aw = areaWidget(w);
+	uiArea *a = aw->a;
 	uiAreaDrawParams dp;
 	double clipX0, clipY0, clipX1, clipY1;
-	areaWidget *aw = areaWidget(w);
-	uiArea      *a = aw->a;
 
 	dp.Context = newContext(cr);
 
@@ -129,30 +129,25 @@ static gboolean areaWidget_draw(GtkWidget *w, cairo_t *cr)
 	dp.ClipWidth = clipX1 - clipX0;
 	dp.ClipHeight = clipY1 - clipY0;
 
-	/* no need to save or restore the graphics state 
-    * to reset transformations; GTK+ does that for us */
+	// no need to save or restore the graphics state to reset transformations; GTK+ does that for us
 	(*(a->ah->Draw))(a->ah, a, &dp);
 
 	freeContext(dp.Context);
 	return FALSE;
 }
 
-/* to do this properly for scrolling areas, we need to
- * - return the same value for min and nat
- * - call gtk_widget_queue_resize() when the size changes
- * thanks to Company in irc.gimp.net/#gtk+ */
-static void areaWidget_get_preferred_height(GtkWidget *w,
-      gint *min, gint *nat)
+// to do this properly for scrolling areas, we need to
+// - return the same value for min and nat
+// - call gtk_widget_queue_resize() when the size changes
+// thanks to Company in irc.gimp.net/#gtk+
+static void areaWidget_get_preferred_height(GtkWidget *w, gint *min, gint *nat)
 {
 	areaWidget *aw = areaWidget(w);
 	uiArea *a = aw->a;
 
 	// always chain up just in case
-	GTK_WIDGET_CLASS(areaWidget_parent_class)->
-      get_preferred_height(w, min, nat);
-
-	if (a->scrolling)
-   {
+	GTK_WIDGET_CLASS(areaWidget_parent_class)->get_preferred_height(w, min, nat);
+	if (a->scrolling) {
 		*min = a->scrollHeight;
 		*nat = a->scrollHeight;
 	}
@@ -163,54 +158,51 @@ static void areaWidget_get_preferred_width(GtkWidget *w, gint *min, gint *nat)
 	areaWidget *aw = areaWidget(w);
 	uiArea *a = aw->a;
 
-	/* always chain up just in case */
+	// always chain up just in case
 	GTK_WIDGET_CLASS(areaWidget_parent_class)->get_preferred_width(w, min, nat);
-	if (a->scrolling)
-   {
-      *min = a->scrollWidth;
-      *nat = a->scrollWidth;
-   }
+	if (a->scrolling) {
+		*min = a->scrollWidth;
+		*nat = a->scrollWidth;
+	}
 }
 
 static guint translateModifiers(guint state, GdkWindow *window)
 {
-   GdkModifierType statetype;
+	GdkModifierType statetype;
 
-   /* GDK doesn't initialize the modifier flags fully; we have to 
-    * explicitly tell it to (thanks to Daniel_S and daniels 
-    * (two different people) in irc.gimp.net/#gtk+) */
-   statetype = state;
-   gdk_keymap_add_virtual_modifiers(
-         gdk_keymap_get_for_display(gdk_window_get_display(window)),
-         &statetype);
-   return statetype;
+	// GDK doesn't initialize the modifier flags fully; we have to explicitly tell it to (thanks to Daniel_S and daniels (two different people) in irc.gimp.net/#gtk+)
+	statetype = state;
+	gdk_keymap_add_virtual_modifiers(
+		gdk_keymap_get_for_display(gdk_window_get_display(window)),
+		&statetype);
+	return statetype;
 }
 
 static uiModifiers toModifiers(guint state)
 {
-   uiModifiers m = 0;
+	uiModifiers m;
 
-   if ((state & GDK_CONTROL_MASK) != 0)
-      m |= uiModifierCtrl;
-   if ((state & GDK_META_MASK) != 0)
-      m |= uiModifierAlt;
-   /* GTK+ itself requires this to be Alt (just read through gtkaccelgroup.c) */
-   if ((state & GDK_MOD1_MASK) != 0)		
-      m |= uiModifierAlt;
-   if ((state & GDK_SHIFT_MASK) != 0)
-      m |= uiModifierShift;
-   if ((state & GDK_SUPER_MASK) != 0)
-      m |= uiModifierSuper;
-   return m;
+	m = 0;
+	if ((state & GDK_CONTROL_MASK) != 0)
+		m |= uiModifierCtrl;
+	if ((state & GDK_META_MASK) != 0)
+		m |= uiModifierAlt;
+	if ((state & GDK_MOD1_MASK) != 0)		// GTK+ itself requires this to be Alt (just read through gtkaccelgroup.c)
+		m |= uiModifierAlt;
+	if ((state & GDK_SHIFT_MASK) != 0)
+		m |= uiModifierShift;
+	if ((state & GDK_SUPER_MASK) != 0)
+		m |= uiModifierSuper;
+	return m;
 }
 
-/* capture on drag is done automatically on GTK+ */
+// capture on drag is done automatically on GTK+
 static void finishMouseEvent(uiArea *a, uiAreaMouseEvent *me, guint mb, gdouble x, gdouble y, guint state, GdkWindow *window)
 {
-	/* on GTK+, mouse buttons 4-7 are for scrolling; if we got here, that's a mistake */
+	// on GTK+, mouse buttons 4-7 are for scrolling; if we got here, that's a mistake
 	if (mb >= 4 && mb <= 7)
 		return;
-	/* if the button ID >= 8, continue counting from 4, as in the MouseEvent spec */
+	// if the button ID >= 8, continue counting from 4, as in the MouseEvent spec
 	if (me->Down >= 8)
 		me->Down -= 4;
 	if (me->Up >= 8)
@@ -219,7 +211,7 @@ static void finishMouseEvent(uiArea *a, uiAreaMouseEvent *me, guint mb, gdouble 
 	state = translateModifiers(state, window);
 	me->Modifiers = toModifiers(state);
 
-	/* the mb != # checks exclude the Up/Down button from Held */
+	// the mb != # checks exclude the Up/Down button from Held
 	me->Held1To64 = 0;
 	if (mb != 1 && (state & GDK_BUTTON1_MASK) != 0)
 		me->Held1To64 |= 1 << 0;
@@ -227,19 +219,12 @@ static void finishMouseEvent(uiArea *a, uiAreaMouseEvent *me, guint mb, gdouble 
 		me->Held1To64 |= 1 << 1;
 	if (mb != 3 && (state & GDK_BUTTON3_MASK) != 0)
 		me->Held1To64 |= 1 << 2;
+	// don't check GDK_BUTTON4_MASK or GDK_BUTTON5_MASK because those are for the scrolling buttons mentioned above
+	// GDK expressly does not support any more buttons in the GdkModifierType; see https://git.gnome.org/browse/gtk+/tree/gdk/x11/gdkdevice-xi2.c#n763 (thanks mclasen in irc.gimp.net/#gtk+)
 
-	/* don't check GDK_BUTTON4_MASK or GDK_BUTTON5_MASK because those 
-    * are for the scrolling buttons mentioned above 
-    *
-    * GDK expressly does not support any more buttons in the 
-    * GdkModifierType; see 
-    * https://git.gnome.org/browse/gtk+/tree/gdk/x11/gdkdevice-xi2.c#n763 
-    * (thanks mclasen in irc.gimp.net/#gtk+)
-    */
-
-	/* these are already in drawing space coordinates
-	 * the size of drawing space has the same value as the widget allocation
-	 * thanks to tristan in irc.gimp.net/#gtk+ */
+	// these are already in drawing space coordinates
+	// the size of drawing space has the same value as the widget allocation
+	// thanks to tristan in irc.gimp.net/#gtk+
 	me->X = x;
 	me->Y = y;
 
@@ -250,43 +235,37 @@ static void finishMouseEvent(uiArea *a, uiAreaMouseEvent *me, guint mb, gdouble 
 
 static gboolean areaWidget_button_press_event(GtkWidget *w, GdkEventButton *e)
 {
+	areaWidget *aw = areaWidget(w);
+	uiArea *a = aw->a;
 	gint maxTime, maxDistance;
+	GtkSettings *settings;
 	uiAreaMouseEvent me;
-	areaWidget *aw        = areaWidget(w);
-	uiArea      *a        = aw->a;
-	GtkSettings *settings = NULL;
 
-	/* clicking doesn't automatically transfer keyboard focus; 
-    * we must do so manually (thanks tristan in irc.gimp.net/#gtk+) */
+	// clicking doesn't automatically transfer keyboard focus; we must do so manually (thanks tristan in irc.gimp.net/#gtk+)
 	gtk_widget_grab_focus(w);
 
-	/* we handle multiple clicks ourselves here, 
-    * in the same way as we do on Windows */
-
-   /* ignore GDK's generated double-clicks and beyond */
+	// we handle multiple clicks ourselves here, in the same way as we do on Windows
 	if (e->type != GDK_BUTTON_PRESS)
+		// ignore GDK's generated double-clicks and beyond
 		return GDK_EVENT_PROPAGATE;
-
 	settings = gtk_widget_get_settings(w);
-
 	g_object_get(settings,
 		"gtk-double-click-time", &maxTime,
 		"gtk-double-click-distance", &maxDistance,
 		NULL);
-
-	/* don't unref settings; it's transfer-none (thanks gregier in irc.gimp.net/#gtk+)
-	 * e->time is guint32
-	 * e->x and e->y are floating-point; just make them 32-bit integers
-	 * maxTime and maxDistance... are gint, which *should* fit, hopefully... */
+	// don't unref settings; it's transfer-none (thanks gregier in irc.gimp.net/#gtk+)
+	// e->time is guint32
+	// e->x and e->y are floating-point; just make them 32-bit integers
+	// maxTime and maxDistance... are gint, which *should* fit, hopefully...
 	me.Count = clickCounterClick(a->cc, me.Down,
 		e->x, e->y,
 		e->time, maxTime,
 		maxDistance, maxDistance);
 
 	me.Down = e->button;
-	me.Up   = 0;
+	me.Up = 0;
 
-	/* and set things up for window drags */
+	// and set things up for window drags
 	a->dragevent = e;
 	finishMouseEvent(a, &me, e->button, e->x, e->y, e->state, e->window);
 	a->dragevent = NULL;
@@ -295,37 +274,32 @@ static gboolean areaWidget_button_press_event(GtkWidget *w, GdkEventButton *e)
 
 static gboolean areaWidget_button_release_event(GtkWidget *w, GdkEventButton *e)
 {
-   uiAreaMouseEvent me;
-   areaWidget *aw = areaWidget(w);
-   uiArea      *a = aw->a;
+	areaWidget *aw = areaWidget(w);
+	uiArea *a = aw->a;
+	uiAreaMouseEvent me;
 
-   me.Down        = 0;
-   me.Up          = e->button;
-   me.Count       = 0;
-   finishMouseEvent(a, &me, e->button, e->x, e->y, e->state, e->window);
-   return GDK_EVENT_PROPAGATE;
+	me.Down = 0;
+	me.Up = e->button;
+	me.Count = 0;
+	finishMouseEvent(a, &me, e->button, e->x, e->y, e->state, e->window);
+	return GDK_EVENT_PROPAGATE;
 }
 
 static gboolean areaWidget_motion_notify_event(GtkWidget *w, GdkEventMotion *e)
 {
-	uiAreaMouseEvent me;
 	areaWidget *aw = areaWidget(w);
-	uiArea      *a = aw->a;
+	uiArea *a = aw->a;
+	uiAreaMouseEvent me;
 
-	me.Down        = 0;
-	me.Up          = 0;
-	me.Count       = 0;
+	me.Down = 0;
+	me.Up = 0;
+	me.Count = 0;
 	finishMouseEvent(a, &me, 0, e->x, e->y, e->state, e->window);
 	return GDK_EVENT_PROPAGATE;
 }
 
-/* we want switching away from the control to reset the double-click counter, 
- * like with WM_ACTIVATE on Windows
- *
- * according to tristan in irc.gimp.net/#gtk+, doing this on both 
- * enter-notify-event and leave-notify-event is correct (and it seems to be 
- * true in my own tests; plus the events DO get sent when switching programs 
- * with the keyboard (just pointing that out)) */
+// we want switching away from the control to reset the double-click counter, like with WM_ACTIVATE on Windows
+// according to tristan in irc.gimp.net/#gtk+, doing this on both enter-notify-event and leave-notify-event is correct (and it seems to be true in my own tests; plus the events DO get sent when switching programs with the keyboard (just pointing that out))
 static gboolean onCrossing(areaWidget *aw, int left)
 {
 	uiArea *a = aw->a;
@@ -345,15 +319,11 @@ static gboolean areaWidget_leave_notify_event(GtkWidget *w, GdkEventCrossing *e)
 	return onCrossing(areaWidget(w), 1);
 }
 
-/* note: there is no equivalent to WM_CAPTURECHANGED on GTK+; there literally 
- * is no way to break a grab like that (at least not on X11 and Wayland)
- *
- * even if I invoke the task switcher and switch processes, the mouse grab will 
- * still be held until I let go of all buttons
- * therefore, no DragBroken()
- *
- * we use GDK_KEY_Print as a sentinel because libui will never support the print screen key; that key belongs to the user
- */
+// note: there is no equivalent to WM_CAPTURECHANGED on GTK+; there literally is no way to break a grab like that (at least not on X11 and Wayland)
+// even if I invoke the task switcher and switch processes, the mouse grab will still be held until I let go of all buttons
+// therefore, no DragBroken()
+
+// we use GDK_KEY_Print as a sentinel because libui will never support the print screen key; that key belongs to the user
 
 static const struct {
 	guint keyval;
@@ -382,7 +352,7 @@ static const struct {
 	{ GDK_KEY_F10, uiExtKeyF10 },
 	{ GDK_KEY_F11, uiExtKeyF11 },
 	{ GDK_KEY_F12, uiExtKeyF12 },
-	/* numpad numeric keys and . are handled in events.c */
+	// numpad numeric keys and . are handled in events.c
 	{ GDK_KEY_KP_Enter, uiExtKeyNEnter },
 	{ GDK_KEY_KP_Add, uiExtKeyNAdd },
 	{ GDK_KEY_KP_Subtract, uiExtKeyNSubtract },
@@ -424,25 +394,23 @@ static int areaKeyEvent(uiArea *a, int up, GdkEventKey *e)
 	ke.Up = up;
 
 	for (i = 0; extKeys[i].keyval != GDK_KEY_Print; i++)
-		if (extKeys[i].keyval == e->keyval)
-      {
+		if (extKeys[i].keyval == e->keyval) {
 			ke.ExtKey = extKeys[i].extkey;
 			goto keyFound;
 		}
 
 	for (i = 0; modKeys[i].keyval != GDK_KEY_Print; i++)
-		if (modKeys[i].keyval == e->keyval)
-      {
-         ke.Modifier = modKeys[i].mod;
-         /* don't include the modifier in ke.Modifiers */
-         ke.Modifiers &= ~ke.Modifier;
-         goto keyFound;
-      }
+		if (modKeys[i].keyval == e->keyval) {
+			ke.Modifier = modKeys[i].mod;
+			// don't include the modifier in ke.Modifiers
+			ke.Modifiers &= ~ke.Modifier;
+			goto keyFound;
+		}
 
 	if (fromScancode(e->hardware_keycode - 8, &ke))
 		goto keyFound;
 
-	/* no supported key found; treat as unhandled */
+	// no supported key found; treat as unhandled
 	return 0;
 
 keyFound:
@@ -452,7 +420,7 @@ keyFound:
 static gboolean areaWidget_key_press_event(GtkWidget *w, GdkEventKey *e)
 {
 	areaWidget *aw = areaWidget(w);
-	uiArea      *a = aw->a;
+	uiArea *a = aw->a;
 
 	if (areaKeyEvent(a, 0, e))
 		return GDK_EVENT_STOP;
@@ -478,16 +446,15 @@ static GParamSpec *pspecArea;
 
 static void areaWidget_set_property(GObject *obj, guint prop, const GValue *value, GParamSpec *pspec)
 {
-   areaWidget *aw = areaWidget(obj);
+	areaWidget *aw = areaWidget(obj);
 
-   switch (prop)
-   {
-      case pArea:
-         aw->a = (uiArea *) g_value_get_pointer(value);
-         aw->a->cc = &(aw->cc);
-         return;
-   }
-   G_OBJECT_WARN_INVALID_PROPERTY_ID(obj, prop, pspec);
+	switch (prop) {
+	case pArea:
+		aw->a = (uiArea *) g_value_get_pointer(value);
+		aw->a->cc = &(aw->cc);
+		return;
+	}
+	G_OBJECT_WARN_INVALID_PROPERTY_ID(obj, prop, pspec);
 }
 
 static void areaWidget_get_property(GObject *obj, guint prop, GValue *value, GParamSpec *pspec)
@@ -541,8 +508,8 @@ void uiAreaQueueRedrawAll(uiArea *a)
 
 void uiAreaScrollTo(uiArea *a, double x, double y, double width, double height)
 {
-	/* TODO
-	 * TODO adjust adjustments and find source for that */
+	// TODO
+	// TODO adjust adjustments and find source for that
 }
 
 void uiAreaBeginUserWindowMove(uiArea *a)
@@ -551,23 +518,25 @@ void uiAreaBeginUserWindowMove(uiArea *a)
 
 	if (a->dragevent == NULL)
 		userbug("cannot call uiAreaBeginUserWindowMove() outside of a Mouse() with Down != 0");
-	/* TODO don't we have a libui function for this? did I scrap it?
-	 * TODO widget or areaWidget? */
+	// TODO don't we have a libui function for this? did I scrap it?
+	// TODO widget or areaWidget?
 	toplevel = gtk_widget_get_toplevel(a->widget);
-   // TODO
-	if (toplevel == NULL)
+	if (toplevel == NULL) {
+		// TODO
 		return;
-	/* the docs say to do this */
-
-   /* TODO */
-	if (!gtk_widget_is_toplevel(toplevel))
+	}
+	// the docs say to do this
+	if (!gtk_widget_is_toplevel(toplevel)) {
+		// TODO
 		return;
-   /* TODO */
-	if (!GTK_IS_WINDOW(toplevel))
+	}
+	if (!GTK_IS_WINDOW(toplevel)) {
+		// TODO
 		return;
+	}
 	gtk_window_begin_move_drag(GTK_WINDOW(toplevel),
 		a->dragevent->button,
-		a->dragevent->x_root,		/* TODO are these correct? */
+		a->dragevent->x_root,		// TODO are these correct?
 		a->dragevent->y_root,
 		a->dragevent->time);
 }
@@ -589,25 +558,26 @@ void uiAreaBeginUserWindowResize(uiArea *a, uiWindowResizeEdge edge)
 
 	if (a->dragevent == NULL)
 		userbug("cannot call uiAreaBeginUserWindowResize() outside of a Mouse() with Down != 0");
-	/* TODO don't we have a libui function for this? did I scrap it?
-	 * TODO widget or areaWidget? */
+	// TODO don't we have a libui function for this? did I scrap it?
+	// TODO widget or areaWidget?
 	toplevel = gtk_widget_get_toplevel(a->widget);
-
-   /* TODO */
-	if (toplevel == NULL)
+	if (toplevel == NULL) {
+		// TODO
 		return;
-	/* the docs say to do this */
-
-   /* TODO */
-	if (!gtk_widget_is_toplevel(toplevel))
+	}
+	// the docs say to do this
+	if (!gtk_widget_is_toplevel(toplevel)) {
+		// TODO
 		return;
-   /* TODO */
-	if (!GTK_IS_WINDOW(toplevel))
+	}
+	if (!GTK_IS_WINDOW(toplevel)) {
+		// TODO
 		return;
+	}
 	gtk_window_begin_resize_drag(GTK_WINDOW(toplevel),
 		edges[edge],
 		a->dragevent->button,
-		a->dragevent->x_root,		/* TODO are these correct? */
+		a->dragevent->x_root,		// TODO are these correct?
 		a->dragevent->y_root,
 		a->dragevent->time);
 }
@@ -656,8 +626,7 @@ uiArea *uiNewScrollingArea(uiAreaHandler *ah, int width, int height)
 	a->widget = a->swidget;
 
 	gtk_container_add(a->scontainer, a->areaWidget);
-	/* and make the area visible; only the scrolled 
-    * window's visibility is controlled by libui */
+	// and make the area visible; only the scrolled window's visibility is controlled by libui
 	gtk_widget_show(a->areaWidget);
 
 	return a;

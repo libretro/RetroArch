@@ -1,6 +1,5 @@
 // 6 april 2015
 #include "uipriv_windows.hpp"
-#include "../../verbosity.h"
 
 HINSTANCE hInstance;
 int nCmdShow;
@@ -75,107 +74,61 @@ const char *uiInit(uiInitOptions *o)
 
 	hDefaultIcon = LoadIconW(NULL, IDI_APPLICATION);
 	if (hDefaultIcon == NULL)
-   {
-      RARCH_ERR("error loading default icon for window classes\n");
 		return ieLastErr("loading default icon for window classes");
-   }
 	hDefaultCursor = LoadCursorW(NULL, IDC_ARROW);
 	if (hDefaultCursor == NULL)
-   {
-      RARCH_ERR("error loading default cursor for window classes\n");
 		return ieLastErr("loading default cursor for window classes");
-   }
 
-   RARCH_LOG("Initializing initUtilWindow.\n");
 	ce = initUtilWindow(hDefaultIcon, hDefaultCursor);
 	if (ce != NULL)
-   {
-      RARCH_ERR("Failed initializing util window.\n");
 		return initerr(ce, L"GetLastError() ==", GetLastError());
-   }
 
 	if (registerWindowClass(hDefaultIcon, hDefaultCursor) == 0)
-   {
-      RARCH_ERR("failed registering uiWindow window class.\n");
 		return ieLastErr("registering uiWindow window class");
-   }
 
 	ZeroMemory(&ncm, sizeof (NONCLIENTMETRICSW));
 	ncm.cbSize = sizeof (NONCLIENTMETRICSW);
 	if (SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, sizeof (NONCLIENTMETRICSW), &ncm, sizeof (NONCLIENTMETRICSW)) == 0)
-   {
-      RARCH_ERR("Error getting default fonts.\n");
 		return ieLastErr("getting default fonts");
-   }
 	hMessageFont = CreateFontIndirectW(&(ncm.lfMessageFont));
 	if (hMessageFont == NULL)
-   {
-      RARCH_ERR("loading default messagebox font; this is the default UI font\n");
 		return ieLastErr("loading default messagebox font; this is the default UI font");
-   }
 
 	if (initContainer(hDefaultIcon, hDefaultCursor) == 0)
-   {
-      RARCH_ERR("initializing uiWindowsMakeContainer() window class\n");
 		return ieLastErr("initializing uiWindowsMakeContainer() window class");
-   }
 
 	hollowBrush = (HBRUSH) GetStockObject(HOLLOW_BRUSH);
 	if (hollowBrush == NULL)
-   {
-      RARCH_ERR("getting hollow brush\n");
 		return ieLastErr("getting hollow brush");
-   }
 
 	ZeroMemory(&icc, sizeof (INITCOMMONCONTROLSEX));
 	icc.dwSize = sizeof (INITCOMMONCONTROLSEX);
 	icc.dwICC = wantedICCClasses;
 	if (InitCommonControlsEx(&icc) == 0)
-   {
-      RARCH_ERR("initializing Common Controls\n");
 		return ieLastErr("initializing Common Controls");
-   }
 
 	hr = CoInitialize(NULL);
 	if (hr != S_OK && hr != S_FALSE)
-   {
-      RARCH_ERR("initializing COM\n");
 		return ieHRESULT("initializing COM", hr);
-   }
 	// LONGTERM initialize COM security
 	// LONGTERM (windows vista) turn off COM exception handling
 
 	hr = initDraw();
 	if (hr != S_OK)
-   {
-      RARCH_ERR("initializing Direct2D\n");
 		return ieHRESULT("initializing Direct2D", hr);
-   }
 
 	hr = initDrawText();
 	if (hr != S_OK)
-   {
-      RARCH_ERR("initializing DirectWrite\n");
 		return ieHRESULT("initializing DirectWrite", hr);
-   }
 
 	if (registerAreaClass(hDefaultIcon, hDefaultCursor) == 0)
-   {
-      RARCH_ERR("registering uiArea window class\n");
 		return ieLastErr("registering uiArea window class");
-   }
 
 	if (registerMessageFilter() == 0)
-   {
-      RARCH_ERR("registering libui message filter\n");
 		return ieLastErr("registering libui message filter");
-   }
 
 	if (registerD2DScratchClass(hDefaultIcon, hDefaultCursor) == 0)
-   {
-      RARCH_ERR("initializing D2D scratch window class\n");
 		return ieLastErr("initializing D2D scratch window class");
-   }
 
 	return NULL;
 }
@@ -204,4 +157,11 @@ void uiFreeInitError(const char *err)
 {
 	if (*(err - 1) == '-')
 		uiFree((void *) (err - 1));
+}
+
+BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
+{
+	if (fdwReason == DLL_PROCESS_ATTACH)
+		hInstance = hinstDLL;
+	return TRUE;
 }
