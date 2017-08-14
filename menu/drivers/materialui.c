@@ -84,6 +84,7 @@ enum
    MUI_TEXTURE_HELP,
    MUI_TEXTURE_INFO,
    MUI_TEXTURE_ADD,
+   MUI_TEXTURE_SETTINGS,
    MUI_TEXTURE_LAST
 };
 
@@ -196,6 +197,8 @@ static const char *mui_texture_path(unsigned id)
          return "information.png";
       case MUI_TEXTURE_ADD:
          return "add.png";
+      case MUI_TEXTURE_SETTINGS:
+         return "settings.png";
    }
 
    return NULL;
@@ -802,12 +805,20 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
             texture_switch2 = mui->textures.list[MUI_TEXTURE_INFO];
          else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HELP)))
             texture_switch2 = mui->textures.list[MUI_TEXTURE_HELP];
-         if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY)) || 
+         else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY)) || 
                string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_FILE))
                )
             texture_switch2 = mui->textures.list[MUI_TEXTURE_ADD];
          else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH)))
             texture_switch2 = mui->textures.list[MUI_TEXTURE_QUIT];
+         else if (
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS))
+                  )
+         {
+            texture_switch2 = mui->textures.list[MUI_TEXTURE_SETTINGS];
+         }
          break;
    }
 
