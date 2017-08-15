@@ -677,7 +677,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_RESET,
       "Resetta il gioco")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
-      "Rewind")
+      "Riavvolgi")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
       "Salva stato")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
@@ -689,9 +689,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_PREV,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION,
       "Slow motion")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS,
-      "Slot del Salva stato -")
+      "Slot di salvataggio -")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS,
-      "Slot del Salva stato +")
+      "Slot di salvataggio +")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_DOWN,
       "Volume -")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP,
@@ -827,7 +827,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS, /* TODO/FIXME - updat
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
       "Filtro lineare del menù")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
-      "Appearance")
+      "Aspetto")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER,
       "Menù sfondi")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
@@ -1601,9 +1601,9 @@ MSG_HASH(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
       "Abilita o disabilita achievements. Per maggiori informazioni, visita http://retroachievements.org")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
-      "Enable or disable unofficial achievements and/or beta features for testing purposes.")
+      "Abilita o disattiva i risultati non ufficiali e / o le funzioni beta per scopi di test.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
-      "Abilita o disabilita i salvataggi, cheats, rewind, fast-forward, pausa, e slow-motion per tutti i giochi.")
+      "Abilita o disabilita i salvataggi, trucchi, riavvolgimento, avanzamento rapido, pausa, e slow-motion per tutti i giochi.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
       "Modifica i driver per questo sistema.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
@@ -1777,7 +1777,7 @@ MSG_HASH(MSG_DISK_CLOSED,
 MSG_HASH(MSG_DISK_EJECTED,
       "Espulso")
 MSG_HASH(MSG_DOWNLOADING,
-      "Downloading")
+      "Scaricamento in corso")
 MSG_HASH(MSG_DOWNLOAD_FAILED,
       "Download fallito")
 MSG_HASH(MSG_ERROR,
@@ -2025,7 +2025,7 @@ MSG_HASH(MSG_SAVING_RAM_TYPE,
 MSG_HASH(MSG_SAVING_STATE,
       "Saving state")
 MSG_HASH(MSG_SCANNING,
-      "Scanning")
+      "Scansione in corso...")
 MSG_HASH(MSG_SCANNING_OF_DIRECTORY_FINISHED,
       "Scanning of directory finished")
 MSG_HASH(MSG_SENDING_COMMAND,
@@ -2234,7 +2234,7 @@ MSG_HASH(MSG_SCANNING_WIRELESS_NETWORKS,
 MSG_HASH(MSG_NETPLAY_LAN_SCAN_COMPLETE,
       "Scansione Netplay completa.")
 MSG_HASH(MSG_NETPLAY_LAN_SCANNING,
-      "Scanning for netplay hosts...")
+      "Scansione dell'host netplay in corso...")
 MSG_HASH(MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
       "Pause gameplay when window focus is lost.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
@@ -2242,7 +2242,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
 MSG_HASH(MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
       "Attiva o disattiva la playlist recente per i giochi, le immagini, la musica e i video.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,
-      "Limit the number of entries in recent playlist for games, images, music, and videos.")
+      "Limita il numero di voci nella playlist recente per i giochi, le immagini, la musica e i video.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_UNIFIED_MENU_CONTROLS,
       "Controlli del menu unificati")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
@@ -2409,9 +2409,13 @@ MSG_HASH(MENU_ENUM_SUBLABEL_REWIND_ENABLE,
       "Attiva il riavvolgimento.Richiederà maggiori prestazioni durante il gioco.")
 MSG_HASH(MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
       "Quando si riavvolge un numero definito di fotogrammi, è possibile riavvolgere più fotogrammi alla volta, aumentando la velocità di riavvolgimento.")
-   MSG_HASH(MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
+MSG_HASH(MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
       "La velocità massima in cui il contenuto verrà eseguito quando si utilizza l'avanzamento veloce (ad esempio, 5,0x per 60 fps = 300 fps). Se impostato a 0.0x, il rapporto dell'avanzamneto veloce è illimitato (nessun cap FPS)." )
-   MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
-         "Rename the title of the entry.")
-   MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME,
-         "Rename")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
+         "Rinomina il titolo.")
+MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME,
+         "Rinomina")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
+      "Aggiungi ai preferiti")
+MSG_HASH(MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES,
+      "Aggiungere il titolo ai tuoi preferiti.")
