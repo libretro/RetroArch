@@ -83,6 +83,7 @@ enum
    MUI_TEXTURE_KEY,
    MUI_TEXTURE_KEY_HOVER,
    MUI_TEXTURE_FOLDER,
+   MUI_TEXTURE_PARENT_DIRECTORY,
    MUI_TEXTURE_IMAGE,
    MUI_TEXTURE_ARCHIVE,
    MUI_TEXTURE_VIDEO,
@@ -191,6 +192,8 @@ static const char *mui_texture_path(unsigned id)
          return "key-hover.png";
       case MUI_TEXTURE_FOLDER:
          return "folder.png";
+      case MUI_TEXTURE_PARENT_DIRECTORY:
+         return "parent_directory.png";
       case MUI_TEXTURE_IMAGE:
          return "image.png";
       case MUI_TEXTURE_VIDEO:
@@ -783,6 +786,7 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
    {
       switch (hash_type)
       {
+         case FILE_TYPE_IN_CARCHIVE:
          case FILE_TYPE_COMPRESSED:
          case FILE_TYPE_MORE:
          case FILE_TYPE_CORE:
@@ -2179,6 +2183,11 @@ static void mui_list_insert(void *userdata,
 
    switch (type)
    {
+      case FILE_TYPE_PARENT_DIRECTORY:
+         node->texture_switch2     = mui->textures.list[MUI_TEXTURE_PARENT_DIRECTORY];
+         node->texture_switch2_set = true;
+         break;
+      case FILE_TYPE_IN_CARCHIVE:
       case FILE_TYPE_PLAIN:
          node->texture_switch2     = mui->textures.list[MUI_TEXTURE_FILE];
          node->texture_switch2_set = true;
@@ -2219,6 +2228,8 @@ static void mui_list_insert(void *userdata,
             node->texture_switch2_set = true;
          }
          else if (
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS))
+               ||
                string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DRIVER_SETTINGS))
                ||
                string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SETTINGS))
@@ -2277,6 +2288,14 @@ static void mui_list_insert(void *userdata,
                   node->texture_switch2     = mui->textures.list[MUI_TEXTURE_SETTINGS];
                   node->texture_switch2_set = true;
                }
+         else if (
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES)) ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST))
+               )
+         {
+            node->texture_switch2     = mui->textures.list[MUI_TEXTURE_FOLDER];
+            node->texture_switch2_set = true;
+         }
          break;
    }
 
