@@ -752,46 +752,30 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
    menu_animation_ticker(&ticker);
 
    /* set switch_is_on */
-   if (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) ||
-         (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))))
-   {
-      if (mui->textures.list[MUI_TEXTURE_SWITCH_OFF])
-         switch_is_on = false;
-   }
-   else if (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)) ||
-            (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))))
-   {
-      if (mui->textures.list[MUI_TEXTURE_SWITCH_ON])
-         switch_is_on = true;
-   }
-
    /* set texture_switch */
    if (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) ||
          (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))))
    {
       if (mui->textures.list[MUI_TEXTURE_SWITCH_OFF])
+      {
+         switch_is_on = false;
          texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_OFF];
+      }
+      else
+         do_draw_text = true;
    }
    else if (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)) ||
             (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))))
    {
       if (mui->textures.list[MUI_TEXTURE_SWITCH_ON])
+      {
+         switch_is_on = true;
          texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_ON];
+      }
+      else
+         do_draw_text = true;
    }
-
    /* set do_draw_text */
-   if (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) ||
-         (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))))
-   {
-      if (!mui->textures.list[MUI_TEXTURE_SWITCH_OFF])
-         do_draw_text = true;
-   }
-   else if (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)) ||
-            (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))))
-   {
-      if (!mui->textures.list[MUI_TEXTURE_SWITCH_ON])
-         do_draw_text = true;
-   }
    else
    {
       switch (hash_type)
