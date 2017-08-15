@@ -62,11 +62,12 @@ typedef struct
 {
    float line_height;
    float y;
-   intptr_t texture_switch;
-   intptr_t texture_switch2;
+   bool texture_switch_set;
+   uintptr_t texture_switch;
+   bool texture_switch2_set;
+   uintptr_t texture_switch2;
    bool switch_is_on;
    bool do_draw_text;
-   bool values_set;
 } mui_node_t;
 
 /* Textures used for the tabs and the switches */
@@ -720,8 +721,8 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
    bool switch_is_on               = true;
    int value_len                   = (int)utf8len(value);
    int ticker_limit                = 0;
-   intptr_t texture_switch         = 0;
-   intptr_t texture_switch2        = 0;
+   uintptr_t texture_switch        = 0;
+   uintptr_t texture_switch2       = 0;
    bool do_draw_text               = false;
    size_t usable_width             = width - (mui->margin * 2);
    uint32_t sublabel_color         = 0x888888ff;
@@ -814,7 +815,7 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
    }
 
    /* set texture_switch2 */
-   if (node->texture_switch2 != -1)
+   if (node->texture_switch2_set)
       texture_switch2 = node->texture_switch2;
    else
    {
@@ -2178,37 +2179,54 @@ static void mui_list_insert(void *userdata,
       return;
    }
 
-   scale_factor      = menu_display_get_dpi();
+   scale_factor              = menu_display_get_dpi();
 
-   node->line_height     = scale_factor / 3;
-   node->y               = 0;
-   node->texture_switch  = -1;
-   node->texture_switch2 = -1;
-   node->switch_is_on    = false;
-   node->do_draw_text    = false;
+   node->line_height         = scale_factor / 3;
+   node->y                   = 0;
+   node->texture_switch_set  = false;
+   node->texture_switch2_set = false;
+   node->texture_switch      = 0;
+   node->texture_switch2     = 0;
+   node->switch_is_on        = false;
+   node->do_draw_text        = false;
 
    switch (type)
    {
       case FILE_TYPE_PLAIN:
-         node->texture_switch2 = mui->textures.list[MUI_TEXTURE_FILE];
+         node->texture_switch2     = mui->textures.list[MUI_TEXTURE_FILE];
+         node->texture_switch2_set = true;
          break;
       case FILE_TYPE_MOVIE:
-         node->texture_switch2 = mui->textures.list[MUI_TEXTURE_VIDEO];
+         node->texture_switch2     = mui->textures.list[MUI_TEXTURE_VIDEO];
+         node->texture_switch2_set = true;
          break;
       case FILE_TYPE_DIRECTORY:
-         node->texture_switch2 = mui->textures.list[MUI_TEXTURE_FOLDER];
+         node->texture_switch2     = mui->textures.list[MUI_TEXTURE_FOLDER];
+         node->texture_switch2_set = true;
          break;
       default:
          if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INFORMATION_LIST)))
-            node->texture_switch2 = mui->textures.list[MUI_TEXTURE_INFO];
+         {
+            node->texture_switch2     = mui->textures.list[MUI_TEXTURE_INFO];
+            node->texture_switch2_set = true;
+         }
          else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_LIST)))
-            node->texture_switch2 = mui->textures.list[MUI_TEXTURE_HELP];
+         {
+            node->texture_switch2     = mui->textures.list[MUI_TEXTURE_HELP];
+            node->texture_switch2_set = true;
+         }
          else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY)) || 
                string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE))
                )
-            node->texture_switch2 = mui->textures.list[MUI_TEXTURE_ADD];
+         {
+            node->texture_switch2     = mui->textures.list[MUI_TEXTURE_ADD];
+            node->texture_switch2_set = true;
+         }
          else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_QUIT_RETROARCH)))
-            node->texture_switch2 = mui->textures.list[MUI_TEXTURE_QUIT];
+         {
+            node->texture_switch2     = mui->textures.list[MUI_TEXTURE_QUIT];
+            node->texture_switch2_set = true;
+         }
          else if (
                string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DRIVER_SETTINGS))
                ||
@@ -2265,7 +2283,8 @@ static void mui_list_insert(void *userdata,
                string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_REWIND_SETTINGS))
                )
                {
-                  node->texture_switch2 = mui->textures.list[MUI_TEXTURE_SETTINGS];
+                  node->texture_switch2     = mui->textures.list[MUI_TEXTURE_SETTINGS];
+                  node->texture_switch2_set = true;
                }
          break;
    }
