@@ -159,6 +159,15 @@ int generic_action_ok_displaylist_push(const char *path,
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_BROWSE_URL_START;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
+      case ACTION_OK_DL_FAVORITES_LIST:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = label;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST;
+         dl_type           = DISPLAYLIST_GENERIC;
+         break;
       case ACTION_OK_DL_USER_BINDS_LIST:
          info.type          = type;
          info.directory_ptr = idx;
@@ -3193,6 +3202,7 @@ int (func_name)(const char *path, const char *label, unsigned type, size_t idx, 
 }
 
 default_action_ok_func(action_ok_browse_url_start, ACTION_OK_DL_BROWSE_URL_START)
+default_action_ok_func(action_ok_goto_favorites, ACTION_OK_DL_FAVORITES_LIST)
 default_action_ok_func(action_ok_shader_parameters, ACTION_OK_DL_SHADER_PARAMETERS)
 default_action_ok_func(action_ok_parent_directory_push, ACTION_OK_DL_PARENT_DIRECTORY_PUSH)
 default_action_ok_func(action_ok_directory_push, ACTION_OK_DL_DIRECTORY_PUSH)
@@ -4126,6 +4136,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_VIDEO_FONT_PATH:
             BIND_ACTION_OK(cbs, action_ok_menu_font);
+            break;
+         case MENU_ENUM_LABEL_GOTO_FAVORITES:
+            BIND_ACTION_OK(cbs, action_ok_goto_favorites);
             break;
          case MENU_ENUM_LABEL_BROWSE_START:
             BIND_ACTION_OK(cbs, action_ok_browse_url_start);

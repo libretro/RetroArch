@@ -3504,6 +3504,13 @@ static int menu_displaylist_parse_playlists(
    }
 #endif
 
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
+         msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES),
+         MENU_ENUM_LABEL_GOTO_FAVORITES,
+         MENU_SETTING_ACTION, 0, 0);
+
+
    if (list_size == 0)
    {
       string_list_free(str_list);
