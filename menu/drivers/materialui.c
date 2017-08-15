@@ -187,6 +187,26 @@ typedef struct mui_handle
    float scroll_y;
 } mui_handle_t;
 
+/* All variables related to colors should be grouped here */
+typedef struct mui_theme {
+   float header_bg_color[16];
+   float highlighted_entry_color[16];
+   float footer_bg_color[16];
+   float body_bg_color[16];
+   float active_tab_marker_color[16];
+   float passive_tab_icon_color[16];
+
+   uint32_t font_normal_color;
+   uint32_t font_hover_color;
+   uint32_t font_header_color;
+
+   uint32_t sublabel_normal_color;
+   uint32_t sublabel_hover_color;
+} mui_theme_t;
+
+/* Global struct, so any function can know what colors to use  */
+mui_theme_t theme;
+
 static void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha)
 {
    rgba[0] = rgba[4] = rgba[8]  = rgba[12] = ((hex >> 16) & 0xFF) * (1.0f / 255.0f); /* r */
@@ -810,7 +830,7 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
    uintptr_t texture_switch2       = 0;
    bool do_draw_text               = false;
    size_t usable_width             = width - (mui->margin * 2);
-   uint32_t sublabel_color         = 0x888888ff;
+   uint32_t sublabel_color         = theme.sublabel_normal_color;
    enum msg_file_type hash_type    = msg_hash_to_file_type(msg_hash_calculate(value));
    float scale_factor              = menu_display_get_dpi();
 
@@ -1082,59 +1102,13 @@ static void mui_draw_bg(menu_display_ctx_draw_t *draw,
 and the menu list */
 static void mui_frame(void *data, video_frame_info_t *video_info)
 {
-   float black_bg[16] = {
-      0, 0, 0, 0.75,
-      0, 0, 0, 0.75,
-      0, 0, 0, 0.75,
-      0, 0, 0, 0.75,
-   };
-   float pure_white[16]=  {
-      1.00, 1.00, 1.00, 1.00,
-      1.00, 1.00, 1.00, 1.00,
-      1.00, 1.00, 1.00, 1.00,
-      1.00, 1.00, 1.00, 1.00,
-   };
-   float white_bg[16]=  {
-      0.98, 0.98, 0.98, 1.00,
-      0.98, 0.98, 0.98, 1.00,
-      0.98, 0.98, 0.98, 1.00,
-      0.98, 0.98, 0.98, 1.00,
-   };
-   float white_transp_bg[16]=  {
-      0.98, 0.98, 0.98, 0.90,
-      0.98, 0.98, 0.98, 0.90,
-      0.98, 0.98, 0.98, 0.90,
-      0.98, 0.98, 0.98, 0.90,
-   };
-   float grey_bg[16]=  {
-      0.78, 0.78, 0.78, 0.90,
-      0.78, 0.78, 0.78, 0.90,
-      0.78, 0.78, 0.78, 0.90,
-      0.78, 0.78, 0.78, 0.90,
-   };
-   float shadow_bg[16]=  {
-      0.00, 0.00, 0.00, 0.00,
-      0.00, 0.00, 0.00, 0.00,
-      0.00, 0.00, 0.00, 0.2,
-      0.00, 0.00, 0.00, 0.2,
-   };
-   /* TODO/FIXME - convert this over to new hex format */
-   float greyish_blue[16] = {
-      0.22, 0.28, 0.31, 1.00,
-      0.22, 0.28, 0.31, 1.00,
-      0.22, 0.28, 0.31, 1.00,
-      0.22, 0.28, 0.31, 1.00,
-   };
-   float almost_black[16] = {
-      0.13, 0.13, 0.13, 0.90,
-      0.13, 0.13, 0.13, 0.90,
-      0.13, 0.13, 0.13, 0.90,
-      0.13, 0.13, 0.13, 0.90,
-   };
-
+   mui_handle_t *mui = (mui_handle_t*)data;
+   if (!mui)
+      return;
 
    /* This controls the main background color */
    menu_display_ctx_clearcolor_t clearcolor;
+   
    menu_animation_ctx_ticker_t ticker;
    menu_display_ctx_draw_t draw;
    char msg[255];
@@ -1142,27 +1116,6 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
    char title_buf[255];
    char title_msg[255];
 
-   uint32_t black_opaque_54        = 0x0000008a;
-   uint32_t black_opaque_87        = 0x000000de;
-   uint32_t white_opaque_70        = 0xffffffb3;
-
-   /* https://material.google.com/style/color.html#color-color-palette */
-   /* Hex values converted to RGB normalized decimals, alpha set to 1 */
-   float blue_500[16]              = {0};
-   float blue_50[16]               = {0};
-   float green_500[16]             = {0};
-   float green_50[16]              = {0};
-   float red_500[16]               = {0};
-   float red_50[16]                = {0};
-   float yellow_500[16]            = {0};
-   float blue_grey_500[16]         = {0};
-   float blue_grey_50[16]          = {0};
-   float yellow_200[16]            = {0};
-   float color_nv_header[16]       = {0};
-   float color_nv_body[16]         = {0};
-   float color_nv_accent[16]       = {0};
-   float footer_bg_color_real[16]  = {0};
-   float header_bg_color_real[16]  = {0};
    file_list_t *list               = NULL;
    mui_node_t *node                = NULL;
    unsigned width                  = video_info->width;
@@ -1172,88 +1125,111 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
    unsigned header_height          = 0;
    size_t selection                = 0;
    size_t title_margin             = 0;
-   mui_handle_t *mui               = (mui_handle_t*)data;
+   
    bool background_rendered        = false;
    bool libretro_running           = video_info->libretro_running;
-
-   /* Default is blue theme */
-   float *header_bg_color          = NULL;
-   float *highlighted_entry_color  = NULL;
-   float *footer_bg_color          = NULL;
-   float *body_bg_color            = NULL;
-   float *active_tab_marker_color  = NULL;
-   float *passive_tab_icon_color   = grey_bg;
-
-   uint32_t font_normal_color      = 0;
-   uint32_t font_hover_color       = 0;
-   uint32_t font_header_color      = 0;
-
-   if (!mui)
-      return;
 
    mui->frame_count++;
 
    msg[0] = title[0] = title_buf[0] = title_msg[0] = '\0';
 
+   /* https://material.google.com/style/color.html#color-color-palette */
+   uint32_t blue_500          = 0x2196F3;
+   uint32_t blue_50           = 0xE3F2FD;
+   uint32_t blue_grey_500     = 0x607D8B;
+   uint32_t blue_grey_50      = 0xECEFF1;
+   uint32_t red_500           = 0xF44336;
+   uint32_t red_50            = 0xFFEBEE;
+   uint32_t green_500         = 0x4CAF50;
+   uint32_t green_50          = 0xE8F5E9;
+   uint32_t yellow_500        = 0xFFEB3B;
+   uint32_t yellow_50         = 0xFFFDE7;
+
+   uint32_t greyish_blue      = 0x38474F;
+   uint32_t almost_black      = 0x212121;
+   uint32_t color_nv_body     = 0x202427;
+   uint32_t color_nv_accent   = 0x77B900;
+   uint32_t color_nv_header   = 0x282F37 ;
+
+   uint32_t black_opaque_54        = 0x0000008A;
+   uint32_t black_opaque_87        = 0x000000DE;
+   uint32_t white_opaque_70        = 0xFFFFFFB3;
+
+   /* Pallete of colors needed throughout the file */
+   float black_bg[16];
+   hex32_to_rgba_normalized(0x000000, black_bg, 0.75);
+   
+   float pure_white[16];
+   hex32_to_rgba_normalized(0xFFFFFF, pure_white, 1.0);
+      
+   float white_bg[16]; 
+   hex32_to_rgba_normalized(0xFAFAFA, white_bg, 1.0);
+
+   float white_transp_bg[16];
+   hex32_to_rgba_normalized(0xFAFAFA, white_transp_bg, 0.90);
+
+   float grey_bg[16];
+   hex32_to_rgba_normalized(0xC7C7C7, grey_bg, 0.90);
+
+   float shadow_bg[16]=  {
+      0.00, 0.00, 0.00, 0.00,
+      0.00, 0.00, 0.00, 0.00,
+      0.00, 0.00, 0.00, 0.20,
+      0.00, 0.00, 0.00, 0.20,
+   };
+
+   memcpy(theme.passive_tab_icon_color, grey_bg, sizeof(grey_bg));
+
    switch (video_info->materialui_color_theme)
    {
       case MATERIALUI_THEME_BLUE:
-         hex32_to_rgba_normalized(0x2196F3, blue_500,       1.00);
-         hex32_to_rgba_normalized(0x2196F3, header_bg_color_real, 1.00);
-         hex32_to_rgba_normalized(0xE3F2FD, blue_50,        0.90);
-         hex32_to_rgba_normalized(0xFFFFFF, footer_bg_color_real, 1.00);
+         hex32_to_rgba_normalized(blue_500,  theme.header_bg_color,         1.00);
+         hex32_to_rgba_normalized(blue_50,   theme.highlighted_entry_color, 1.00);
+         hex32_to_rgba_normalized(0xFFFFFF,  theme.footer_bg_color,         1.00);
+         hex32_to_rgba_normalized(0xFAFAFA,  theme.body_bg_color,           0.90);
+         hex32_to_rgba_normalized(blue_500,  theme.active_tab_marker_color, 1.00);
 
-         header_bg_color         = header_bg_color_real;
-         highlighted_entry_color = blue_50;
-         footer_bg_color         = footer_bg_color_real;
-         body_bg_color           = white_transp_bg;
-         active_tab_marker_color = blue_500;
+         theme.font_normal_color     = black_opaque_54;
+         theme.font_hover_color      = black_opaque_87;
+         theme.font_header_color     = 0xffffffff;
+         theme.sublabel_normal_color = 0x888888ff;
+         theme.sublabel_hover_color  = 0x888888ff;
 
-         font_normal_color       = black_opaque_54;
-         font_hover_color        = black_opaque_87;
-         font_header_color       = 0xffffffff;
-
-         clearcolor.r            = 1.0f;
-         clearcolor.g            = 1.0f;
-         clearcolor.b            = 1.0f;
+         clearcolor.r            = 1.00f;
+         clearcolor.g            = 1.00f;
+         clearcolor.b            = 1.00f;
          clearcolor.a            = 0.75f;
          break;
       case MATERIALUI_THEME_BLUE_GREY:
-         hex32_to_rgba_normalized(0x607D8B, blue_grey_500,  1.00);
-         hex32_to_rgba_normalized(0x607D8B, header_bg_color_real,  1.00);
-         hex32_to_rgba_normalized(0xCFD8DC, blue_grey_50,   0.90);
-         hex32_to_rgba_normalized(0xFFFFFF, footer_bg_color_real, 1.00);
+         hex32_to_rgba_normalized(blue_grey_500,   theme.header_bg_color,         1.00);
+         hex32_to_rgba_normalized(blue_grey_50,    theme.highlighted_entry_color, 1.00);
+         hex32_to_rgba_normalized(0xFFFFFF,        theme.footer_bg_color,         1.00);
+         hex32_to_rgba_normalized(0xFAFAFA,        theme.body_bg_color,           0.90);
+         hex32_to_rgba_normalized(blue_grey_500,   theme.active_tab_marker_color, 1.00);
 
-         header_bg_color         = header_bg_color_real;
-         body_bg_color           = white_transp_bg;
-         highlighted_entry_color = blue_grey_50;
-         footer_bg_color         = footer_bg_color_real;
-         active_tab_marker_color = blue_grey_500;
+         theme.font_normal_color     = black_opaque_54;
+         theme.font_hover_color      = black_opaque_87;
+         theme.font_header_color     = 0xFFFFFFFF;
+         theme.sublabel_normal_color = 0x888888FF;
+         theme.sublabel_hover_color  = 0x888888FF;
 
-         font_normal_color       = black_opaque_54;
-         font_hover_color        = black_opaque_87;
-         font_header_color       = 0xffffffff;
-
-         clearcolor.r            = 1.0f;
-         clearcolor.g            = 1.0f;
-         clearcolor.b            = 1.0f;
+         clearcolor.g            = 1.00f;
+         clearcolor.r            = 1.00f;
+         clearcolor.b            = 1.00f;
          clearcolor.a            = 0.75f;
          break;
       case MATERIALUI_THEME_GREEN:
-         hex32_to_rgba_normalized(0x4CAF50, green_500,      1.00);
-         hex32_to_rgba_normalized(0x4CAF50, header_bg_color_real,      1.00);
-         hex32_to_rgba_normalized(0xC8E6C9, green_50,       0.90);
-         hex32_to_rgba_normalized(0xFFFFFF, footer_bg_color_real, 1.00);
+         hex32_to_rgba_normalized(green_500, theme.header_bg_color,         1.00);
+         hex32_to_rgba_normalized(green_50,  theme.highlighted_entry_color, 1.00);
+         hex32_to_rgba_normalized(0xFFFFFF,  theme.footer_bg_color,         1.00);
+         hex32_to_rgba_normalized(0xFAFAFA,  theme.body_bg_color,           0.90);
+         hex32_to_rgba_normalized(green_500, theme.active_tab_marker_color, 1.00);
 
-         header_bg_color         = header_bg_color_real;
-         body_bg_color           = white_transp_bg;
-         highlighted_entry_color = green_50;
-         footer_bg_color         = footer_bg_color_real;
-         active_tab_marker_color = green_500;
-
-         font_normal_color       = black_opaque_54;
-         font_hover_color        = black_opaque_87;
-         font_header_color       = 0xffffffff;
+         theme.font_normal_color     = black_opaque_54;
+         theme.font_hover_color      = black_opaque_87;
+         theme.font_header_color     = 0xFFFFFFFF;
+         theme.sublabel_normal_color = 0x888888FF;
+         theme.sublabel_hover_color  = 0x888888FF;
 
          clearcolor.r            = 1.0f;
          clearcolor.g            = 1.0f;
@@ -1261,20 +1237,18 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
          clearcolor.a            = 0.75f;
          break;
       case MATERIALUI_THEME_RED:
-         hex32_to_rgba_normalized(0xF44336, red_500,        1.00);
-         hex32_to_rgba_normalized(0xF44336, header_bg_color_real,        1.00);
-         hex32_to_rgba_normalized(0xFFEBEE, red_50,         0.90);
-         hex32_to_rgba_normalized(0xFFFFFF, footer_bg_color_real, 1.00);
+         hex32_to_rgba_normalized(red_500,   theme.header_bg_color,         1.00);
+         hex32_to_rgba_normalized(red_50,    theme.highlighted_entry_color, 1.00);
+         hex32_to_rgba_normalized(0xFFFFFF,  theme.footer_bg_color,         1.00);
+         hex32_to_rgba_normalized(0xFAFAFA,  theme.body_bg_color,           0.90);
+         hex32_to_rgba_normalized(red_500,   theme.active_tab_marker_color, 1.00);
 
-         header_bg_color         = header_bg_color_real;
-         body_bg_color           = white_transp_bg;
-         highlighted_entry_color = red_50;
-         footer_bg_color         = footer_bg_color_real;
-         active_tab_marker_color = red_500;
+         theme.font_normal_color     = black_opaque_54;
+         theme.font_hover_color      = black_opaque_87;
+         theme.font_header_color     = 0xFFFFFFFF;
+         theme.sublabel_normal_color = 0x888888FF;
+         theme.sublabel_hover_color  = 0x888888FF;
 
-         font_normal_color       = black_opaque_54;
-         font_hover_color        = black_opaque_87;
-         font_header_color       = 0xffffffff;
 
          clearcolor.r            = 1.0f;
          clearcolor.g            = 1.0f;
@@ -1282,20 +1256,17 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
          clearcolor.a            = 0.75f;
          break;
       case MATERIALUI_THEME_YELLOW:
-         hex32_to_rgba_normalized(0xFFEB3B, yellow_500,     1.00);
-         hex32_to_rgba_normalized(0xFFEB3B, header_bg_color_real,     1.00);
-         hex32_to_rgba_normalized(0xFFF9C4, yellow_200,     0.90);
-         hex32_to_rgba_normalized(0xFFFFFF, footer_bg_color_real, 1.00);
+         hex32_to_rgba_normalized(yellow_500, theme.header_bg_color,         1.00);
+         hex32_to_rgba_normalized(yellow_50, theme.highlighted_entry_color,  1.00);
+         hex32_to_rgba_normalized(0xFFFFFF, theme.footer_bg_color,           1.00);
+         hex32_to_rgba_normalized(0xFAFAFA, theme.body_bg_color,             0.90);
+         hex32_to_rgba_normalized(yellow_500, theme.active_tab_marker_color, 1.00);
 
-         header_bg_color         = header_bg_color_real;
-         body_bg_color           = white_transp_bg;
-         highlighted_entry_color = yellow_200;
-         footer_bg_color         = footer_bg_color_real;
-         active_tab_marker_color = yellow_500;
-
-         font_normal_color       = black_opaque_54;
-         font_hover_color        = black_opaque_87;
-         font_header_color       = black_opaque_54;
+         theme.font_normal_color     = black_opaque_54;
+         theme.font_hover_color      = black_opaque_87;
+         theme.font_header_color     = 0xBBBBBBBB;
+         theme.sublabel_normal_color = 0x888888FF;
+         theme.sublabel_hover_color  = 0x888888ff;
 
          clearcolor.r            = 1.0f;
          clearcolor.g            = 1.0f;
@@ -1303,49 +1274,46 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
          clearcolor.a            = 0.75f;
          break;
       case MATERIALUI_THEME_DARK_BLUE:
-         hex32_to_rgba_normalized(0x212121, footer_bg_color_real, 1.00);
-         memcpy(header_bg_color_real, greyish_blue, sizeof(header_bg_color_real));
-         header_bg_color         = header_bg_color_real;
-         body_bg_color           = almost_black;
-         highlighted_entry_color = grey_bg;
-         footer_bg_color         = footer_bg_color_real;
-         active_tab_marker_color = greyish_blue;
+         hex32_to_rgba_normalized(greyish_blue, theme.header_bg_color,         1.00);
+         hex32_to_rgba_normalized(0xC7C7C7,     theme.highlighted_entry_color, 1.00);
+         hex32_to_rgba_normalized(0x212121,     theme.footer_bg_color,         1.00);
+         hex32_to_rgba_normalized(0x212121,     theme.body_bg_color,           0.90);
+         hex32_to_rgba_normalized(0x38474F,     theme.active_tab_marker_color, 1.00);
 
-         font_normal_color       = white_opaque_70;
-         font_hover_color        = 0xffffffff;
-         font_header_color       = 0xffffffff;
+         theme.font_normal_color       = white_opaque_70;
+         theme.font_hover_color        = 0xFFFFFFFF;
+         theme.font_header_color       = 0xFFFFFFFF;
+         theme.sublabel_normal_color   = white_opaque_70;
+         theme.sublabel_hover_color    = white_opaque_70;
 
-         clearcolor.r            = body_bg_color[0];
-         clearcolor.g            = body_bg_color[1];
-         clearcolor.b            = body_bg_color[2];
+
+         clearcolor.r            = theme.body_bg_color[0];
+         clearcolor.g            = theme.body_bg_color[1];
+         clearcolor.b            = theme.body_bg_color[2];
          clearcolor.a            = 0.75f;
          break;
       case MATERIALUI_THEME_NVIDIA_SHIELD:
-         hex32_to_rgba_normalized(0x282F37, color_nv_header,1.00);
-         hex32_to_rgba_normalized(0x282F37, header_bg_color_real,1.00);
-         hex32_to_rgba_normalized(0x202427, color_nv_body,  0.90);
-         hex32_to_rgba_normalized(0x77B900, color_nv_accent,0.90);
-         hex32_to_rgba_normalized(0x202427, footer_bg_color_real,  1.00);
+         hex32_to_rgba_normalized(color_nv_header, theme.header_bg_color,         1.00);
+         hex32_to_rgba_normalized(color_nv_accent, theme.highlighted_entry_color, 1.00);
+         hex32_to_rgba_normalized(color_nv_body,   theme.footer_bg_color,         1.00);
+         hex32_to_rgba_normalized(color_nv_body,   theme.body_bg_color,           0.90);
+         hex32_to_rgba_normalized(color_nv_accent, theme.active_tab_marker_color, 1.00);
 
-         header_bg_color         = header_bg_color_real;
-         body_bg_color           = color_nv_body;
-         highlighted_entry_color = color_nv_accent;
-         footer_bg_color         = footer_bg_color_real;
-         active_tab_marker_color = color_nv_accent;
+         theme.font_normal_color     = white_opaque_70;
+         theme.font_hover_color      = 0xFFFFFFFF;
+         theme.font_header_color     = 0xFFFFFFFF;
+         theme.sublabel_normal_color = white_opaque_70;
+         theme.sublabel_hover_color  = white_opaque_70;
 
-         font_normal_color       = 0xbbc0c4ff;
-         font_hover_color        = 0xffffffff;
-         font_header_color       = 0xffffffff;
-
-         clearcolor.r            = color_nv_body[0];
-         clearcolor.g            = color_nv_body[1];
-         clearcolor.b            = color_nv_body[2];
+         clearcolor.r            = theme.body_bg_color[0];
+         clearcolor.g            = theme.body_bg_color[1];
+         clearcolor.b            = theme.body_bg_color[2];
          clearcolor.a            = 0.75f;
          break;
    }
 
-   menu_display_set_alpha(header_bg_color_real, video_info->menu_header_opacity);
-   menu_display_set_alpha(footer_bg_color_real, video_info->menu_footer_opacity);
+   menu_display_set_alpha(theme.header_bg_color, video_info->menu_header_opacity);
+   menu_display_set_alpha(theme.footer_bg_color, video_info->menu_footer_opacity);
 
    menu_display_set_viewport(video_info->width, video_info->height);
    header_height = menu_display_get_header_height();
@@ -1360,7 +1328,7 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
       draw.matrix_data        = NULL;
       draw.texture            = menu_display_white_texture;
       draw.prim_type          = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
-      draw.color              = &body_bg_color[0];
+      draw.color              = &theme.body_bg_color[0];
       draw.vertex             = NULL;
       draw.tex_coord          = NULL;
       draw.vertex_count       = 4;
@@ -1413,9 +1381,9 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
    selection = menu_navigation_get_selection();
 
    if (background_rendered || libretro_running)
-      menu_display_set_alpha(blue_50, 0.75);
+      menu_display_set_alpha(grey_bg, 0.75);
    else
-      menu_display_set_alpha(blue_50, 1.0);
+      menu_display_set_alpha(grey_bg, 1.0);
 
    /* highlighted entry */
    list             = menu_entries_get_selection_buf_ptr(0);
@@ -1430,7 +1398,7 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
       node->line_height,
       width,
       height,
-      &highlighted_entry_color[0]
+      &theme.highlighted_entry_color[0]
    );
 
    font_driver_bind_block(mui->font, &mui->raster_block);
@@ -1442,9 +1410,9 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
             mui,
             width,
             height,
-            font_normal_color,
-            font_hover_color,
-            &active_tab_marker_color[0]
+            theme.font_normal_color,
+            theme.font_hover_color,
+            &theme.active_tab_marker_color[0]
             );
 
    font_driver_flush(video_info->width, video_info->height, mui->font);
@@ -1463,19 +1431,19 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
       header_height,
       width,
       height,
-      &header_bg_color[0]);
+      &theme.header_bg_color[0]);
 
    mui->tabs_height = 0;
 
    /* display tabs if depth equal one, if not hide them */
    if (mui_list_get_size(mui, MENU_LIST_PLAIN) == 1)
    {
-      mui_draw_tab_begin(mui, width, height, &footer_bg_color[0], &grey_bg[0]);
+      mui_draw_tab_begin(mui, width, height, &theme.footer_bg_color[0], &grey_bg[0]);
 
       for (i = 0; i <= MUI_SYSTEM_TAB_END; i++)
-         mui_draw_tab(mui, i, width, height, &passive_tab_icon_color[0], &active_tab_marker_color[0]);
+         mui_draw_tab(mui, i, width, height, &theme.passive_tab_icon_color[0], &theme.active_tab_marker_color[0]);
 
-      mui_draw_tab_end(mui, width, height, header_height, &active_tab_marker_color[0]);
+      mui_draw_tab_end(mui, width, height, header_height, &theme.active_tab_marker_color[0]);
    }
 
    menu_display_draw_quad(
@@ -1544,7 +1512,7 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
    menu_display_draw_text(mui->font, title_buf,
          title_margin,
          header_height / 2 + mui->font->size / 3,
-         width, height, font_header_color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
+         width, height, theme.font_header_color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
 
    mui_draw_scrollbar(mui, width, height, &grey_bg[0]);
 
@@ -1552,25 +1520,21 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
    {
       const char *str          = menu_input_dialog_get_buffer();
       const char *label        = menu_input_dialog_get_label_buffer();
-      float *body_bg_color_ptr = &body_bg_color[0];
 
       menu_display_draw_quad(0, 0, width, height, width, height, &black_bg[0]);
       snprintf(msg, sizeof(msg), "%s\n%s", label, str);
-
-      if (body_bg_color_ptr)
-         mui_render_messagebox(mui, video_info,
-               msg, body_bg_color_ptr, font_hover_color);
+   
+      mui_render_messagebox(mui, video_info,
+               msg, &theme.body_bg_color[0], theme.font_hover_color);
    }
 
    if (!string_is_empty(mui->box_message))
    {
-      float *body_bg_color_ptr = &body_bg_color[0];
-
       menu_display_draw_quad(0, 0, width, height, width, height, &black_bg[0]);
 
-      if (body_bg_color_ptr)
-         mui_render_messagebox(mui, video_info,
-               mui->box_message, body_bg_color_ptr, font_hover_color);
+      mui_render_messagebox(mui, video_info,
+               mui->box_message, &theme.body_bg_color[0], theme.font_hover_color);
+      
       mui->box_message[0] = '\0';
    }
 
