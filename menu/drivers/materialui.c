@@ -90,10 +90,14 @@ enum
    MUI_TEXTURE_MUSIC,
    MUI_TEXTURE_QUIT,
    MUI_TEXTURE_HELP,
+   MUI_TEXTURE_UPDATE,
+   MUI_TEXTURE_HISTORY,
    MUI_TEXTURE_INFO,
    MUI_TEXTURE_ADD,
    MUI_TEXTURE_SETTINGS,
    MUI_TEXTURE_FILE,
+   MUI_TEXTURE_PLAYLIST,
+   MUI_TEXTURE_UPDATER,
    MUI_TEXTURE_LAST
 };
 
@@ -206,6 +210,10 @@ static const char *mui_texture_path(unsigned id)
          return "quit.png";
       case MUI_TEXTURE_HELP:
          return "help.png";
+      case MUI_TEXTURE_UPDATER:
+         return "update.png";
+      case MUI_TEXTURE_HISTORY:
+         return "history.png";
       case MUI_TEXTURE_INFO:
          return "information.png";
       case MUI_TEXTURE_ADD:
@@ -214,6 +222,8 @@ static const char *mui_texture_path(unsigned id)
          return "settings.png";
       case MUI_TEXTURE_FILE:
          return "file.png";
+      case MUI_TEXTURE_PLAYLIST:
+         return "playlist.png";
    }
 
    return NULL;
@@ -2187,6 +2197,10 @@ static void mui_list_insert(void *userdata,
          node->texture_switch2     = mui->textures.list[MUI_TEXTURE_PARENT_DIRECTORY];
          node->texture_switch2_set = true;
          break;
+      case FILE_TYPE_PLAYLIST_COLLECTION:
+         node->texture_switch2     = mui->textures.list[MUI_TEXTURE_PLAYLIST];
+         node->texture_switch2_set = true;
+         break;
       case FILE_TYPE_IN_CARCHIVE:
       case FILE_TYPE_PLAIN:
          node->texture_switch2     = mui->textures.list[MUI_TEXTURE_FILE];
@@ -2210,9 +2224,19 @@ static void mui_list_insert(void *userdata,
             node->texture_switch2     = mui->textures.list[MUI_TEXTURE_INFO];
             node->texture_switch2_set = true;
          }
+         else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY)))
+         {
+            node->texture_switch2     = mui->textures.list[MUI_TEXTURE_HISTORY];
+            node->texture_switch2_set = true;
+         }
          else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_LIST)))
          {
             node->texture_switch2     = mui->textures.list[MUI_TEXTURE_HELP];
+            node->texture_switch2_set = true;
+         }
+         else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ONLINE_UPDATER)))
+         {
+            node->texture_switch2     = mui->textures.list[MUI_TEXTURE_UPDATER];
             node->texture_switch2_set = true;
          }
          else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY)) || 
