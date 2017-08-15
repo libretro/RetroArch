@@ -1297,7 +1297,7 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
          hex32_to_rgba_normalized(color_nv_accent, theme.highlighted_entry_color, 1.00);
          hex32_to_rgba_normalized(color_nv_body,   theme.footer_bg_color,         1.00);
          hex32_to_rgba_normalized(color_nv_body,   theme.body_bg_color,           0.90);
-         hex32_to_rgba_normalized(color_nv_accent, theme.active_tab_marker_color, 1.00);
+         hex32_to_rgba_normalized(0xFFFFFF, theme.active_tab_marker_color, 0.90);
 
          theme.font_normal_color     = white_opaque_70;
          theme.font_hover_color      = 0xFFFFFFFF;
