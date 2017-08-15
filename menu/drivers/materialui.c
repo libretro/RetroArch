@@ -581,11 +581,11 @@ static void mui_compute_entries_box(mui_handle_t* mui, int width)
    file_list_t *list   = menu_entries_get_selection_buf_ptr(0);
    float sum           = 0;
    size_t entries_end  = menu_entries_get_end();
+   float scale_factor  = menu_display_get_dpi();
 
    for (i = 0; i < entries_end; i++)
    {
       char sublabel_str[255];
-      float scale_factor;
       unsigned lines   = 0;
       mui_node_t *node = (mui_node_t*)
             menu_entries_get_userdata_at_offset(list, i);
@@ -598,7 +598,6 @@ static void mui_compute_entries_box(mui_handle_t* mui, int width)
          lines = mui_count_lines(sublabel_str);
       }
 
-      scale_factor       = menu_display_get_dpi();
       node->line_height  = (scale_factor / 3) + (lines * mui->font->size);
       node->y            = sum;
       sum               += node->line_height;
@@ -722,6 +721,7 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
    size_t usable_width             = width - (mui->margin * 2);
    uint32_t sublabel_color         = 0x888888ff;
    enum msg_file_type type         = msg_hash_to_file_type(msg_hash_calculate(value));
+   float scale_factor              = menu_display_get_dpi();
 
    label_str[0] = value_str[0]     = 
       sublabel_str[0]              = '\0';
@@ -885,19 +885,19 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
 
       menu_display_draw_text(mui->font2, sublabel_str,
             mui->margin + (texture_switch2 ? mui->icon_size : 0),
-            y + (menu_display_get_dpi() / 4) + mui->font->size,
+            y + (scale_factor / 4) + mui->font->size,
             width, height, sublabel_color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
    }
 
    menu_display_draw_text(mui->font, label_str,
          mui->margin + (texture_switch2 ? mui->icon_size : 0),
-         y + (menu_display_get_dpi() / 5),
+         y + (scale_factor / 5),
          width, height, color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
 
    if (do_draw_text)
       menu_display_draw_text(mui->font, value_str,
             width - mui->margin,
-            y + (menu_display_get_dpi() / 5),
+            y + (scale_factor / 5),
             width, height, color, TEXT_ALIGN_RIGHT, 1.0f, false, 0);
 
    if (texture_switch2)
@@ -905,7 +905,7 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
             mui->icon_size,
             texture_switch2,
             0,
-            y + (menu_display_get_dpi() / 6) - mui->icon_size/2,
+            y + (scale_factor / 6) - mui->icon_size/2,
             width,
             height,
             0,
@@ -918,7 +918,7 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
             mui->icon_size,
             texture_switch,
             width - mui->margin - mui->icon_size,
-            y + (menu_display_get_dpi() / 6) - mui->icon_size/2,
+            y + (scale_factor / 6) - mui->icon_size/2,
             width,
             height,
             0,
@@ -1577,7 +1577,7 @@ static void mui_layout(mui_handle_t *mui, bool video_is_threaded)
     *
     * On desktops, we just care about readability, with every widget
     * size proportional to the display width. */
-   scale_factor = menu_display_get_dpi();
+   scale_factor         = menu_display_get_dpi();
 
    new_header_height    = scale_factor / 3;
    new_font_size        = scale_factor / 9;
@@ -2219,10 +2219,10 @@ static void mui_list_insert(void *userdata,
       return;
    }
 
-   scale_factor = menu_display_get_dpi();
+   scale_factor      = menu_display_get_dpi();
 
    node->line_height = scale_factor / 3;
-   node->y = 0;
+   node->y           = 0;
 
    file_list_set_userdata(list, i, node);
 }
