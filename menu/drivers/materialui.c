@@ -101,6 +101,13 @@ enum
    MUI_TEXTURE_QUICKMENU,
    MUI_TEXTURE_NETPLAY,
    MUI_TEXTURE_CORES,
+   MUI_TEXTURE_SHADERS,
+   MUI_TEXTURE_CONTROLS,
+   MUI_TEXTURE_CLOSE,
+   MUI_TEXTURE_CORE_OPTIONS,
+   MUI_TEXTURE_CORE_CHEAT_OPTIONS,
+   MUI_TEXTURE_RESUME,
+   MUI_TEXTURE_RESTART,
    MUI_TEXTURE_ADD_TO_FAVORITES,
    MUI_TEXTURE_RUN,
    MUI_TEXTURE_RENAME,
@@ -221,6 +228,20 @@ static const char *mui_texture_path(unsigned id)
          return "netplay.png";
       case MUI_TEXTURE_CORES:
          return "cores.png";
+      case MUI_TEXTURE_CONTROLS:
+         return "controls.png";
+      case MUI_TEXTURE_RESUME:
+         return "resume.png";
+      case MUI_TEXTURE_RESTART:
+         return "restart.png";
+      case MUI_TEXTURE_CLOSE:
+         return "close.png";
+      case MUI_TEXTURE_CORE_OPTIONS:
+         return "core_options.png";
+      case MUI_TEXTURE_CORE_CHEAT_OPTIONS:
+         return "core_cheat_options.png";
+      case MUI_TEXTURE_SHADERS:
+         return "shaders.png";
       case MUI_TEXTURE_ADD_TO_FAVORITES:
          return "add_to_favorites.png";
       case MUI_TEXTURE_RUN:
@@ -2253,6 +2274,41 @@ static void mui_list_insert(void *userdata,
          else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_LIST)))
          {
             node->texture_switch2     = mui->textures.list[MUI_TEXTURE_HELP];
+            node->texture_switch2_set = true;
+         }
+         else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RESTART_CONTENT)))
+         {
+            node->texture_switch2     = mui->textures.list[MUI_TEXTURE_RESTART];
+            node->texture_switch2_set = true;
+         }
+         else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RESUME_CONTENT)))
+         {
+            node->texture_switch2     = mui->textures.list[MUI_TEXTURE_RESUME];
+            node->texture_switch2_set = true;
+         }
+         else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CLOSE_CONTENT)))
+         {
+            node->texture_switch2     = mui->textures.list[MUI_TEXTURE_CLOSE];
+            node->texture_switch2_set = true;
+         }
+         else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_OPTIONS)))
+         {
+            node->texture_switch2     = mui->textures.list[MUI_TEXTURE_CORE_OPTIONS];
+            node->texture_switch2_set = true;
+         }
+         else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS)))
+         {
+            node->texture_switch2     = mui->textures.list[MUI_TEXTURE_CORE_CHEAT_OPTIONS];
+            node->texture_switch2_set = true;
+         }
+         else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS)))
+         {
+            node->texture_switch2     = mui->textures.list[MUI_TEXTURE_CONTROLS];
+            node->texture_switch2_set = true;
+         }
+         else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SHADER_OPTIONS)))
+         {
+            node->texture_switch2     = mui->textures.list[MUI_TEXTURE_SHADERS];
             node->texture_switch2_set = true;
          }
          else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_LIST)))
