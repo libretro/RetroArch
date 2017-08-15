@@ -101,6 +101,7 @@ enum
    MUI_TEXTURE_QUICKMENU,
    MUI_TEXTURE_NETPLAY,
    MUI_TEXTURE_CORES,
+   MUI_TEXTURE_ADD_TO_FAVORITES,
    MUI_TEXTURE_RUN,
    MUI_TEXTURE_RENAME,
    MUI_TEXTURE_REMOVE,
@@ -220,6 +221,8 @@ static const char *mui_texture_path(unsigned id)
          return "netplay.png";
       case MUI_TEXTURE_CORES:
          return "cores.png";
+      case MUI_TEXTURE_ADD_TO_FAVORITES:
+         return "add_to_favorites.png";
       case MUI_TEXTURE_RUN:
          return "run.png";
       case MUI_TEXTURE_RENAME:
@@ -2260,6 +2263,11 @@ static void mui_list_insert(void *userdata,
          else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RUN)))
          {
             node->texture_switch2     = mui->textures.list[MUI_TEXTURE_RUN];
+            node->texture_switch2_set = true;
+         }
+         else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_FAVORITES)))
+         {
+            node->texture_switch2     = mui->textures.list[MUI_TEXTURE_ADD_TO_FAVORITES];
             node->texture_switch2_set = true;
          }
          else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME)))
