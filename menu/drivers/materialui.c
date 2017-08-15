@@ -113,6 +113,8 @@ enum
    MUI_TEXTURE_RENAME,
    MUI_TEXTURE_REMOVE,
    MUI_TEXTURE_START_CORE,
+   MUI_TEXTURE_CONFIGURATIONS,
+   MUI_TEXTURE_LOAD_CONTENT,
    MUI_TEXTURE_LAST
 };
 
@@ -253,6 +255,10 @@ static const char *mui_texture_path(unsigned id)
          return "remove.png";
       case MUI_TEXTURE_START_CORE:
          return "start_core.png";
+      case MUI_TEXTURE_CONFIGURATIONS:
+         return "configurations.png";
+      case MUI_TEXTURE_LOAD_CONTENT:
+         return "load_content.png";
       case MUI_TEXTURE_UPDATER:
          return "update.png";
       case MUI_TEXTURE_QUICKMENU:
@@ -1995,12 +2001,6 @@ static int mui_list_push(void *data, void *userdata,
                menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
             }
 
-            if (system->load_no_content)
-            {
-               entry.enum_idx      = MENU_ENUM_LABEL_START_CORE;
-               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
-            }
-
 #ifndef HAVE_DYNAMIC
             if (frontend_driver_has_fork())
 #endif
@@ -2008,6 +2008,13 @@ static int mui_list_push(void *data, void *userdata,
                entry.enum_idx      = MENU_ENUM_LABEL_CORE_LIST;
                menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
             }
+
+            if (system->load_no_content)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_START_CORE;
+               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            }
+
 
             entry.enum_idx      = MENU_ENUM_LABEL_LOAD_CONTENT_LIST;
             menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
@@ -2337,6 +2344,16 @@ static void mui_list_insert(void *userdata,
          else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_START_CORE)))
          {
             node->texture_switch2     = mui->textures.list[MUI_TEXTURE_START_CORE];
+            node->texture_switch2_set = true;
+         }
+         else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONFIGURATIONS_LIST)))
+         {
+            node->texture_switch2     = mui->textures.list[MUI_TEXTURE_CONFIGURATIONS];
+            node->texture_switch2_set = true;
+         }
+         else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_LIST)))
+         {
+            node->texture_switch2     = mui->textures.list[MUI_TEXTURE_LOAD_CONTENT];
             node->texture_switch2_set = true;
          }
          else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DELETE_ENTRY)))
