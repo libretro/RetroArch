@@ -111,6 +111,8 @@ enum
    MUI_TEXTURE_ADD_TO_FAVORITES,
    MUI_TEXTURE_RUN,
    MUI_TEXTURE_RENAME,
+   MUI_TEXTURE_ADD_TO_MIXER,
+   MUI_TEXTURE_SCAN,
    MUI_TEXTURE_REMOVE,
    MUI_TEXTURE_START_CORE,
    MUI_TEXTURE_LOAD_STATE,
@@ -277,6 +279,10 @@ static const char *mui_texture_path(unsigned id)
          return "run.png";
       case MUI_TEXTURE_RENAME:
          return "rename.png";
+      case MUI_TEXTURE_ADD_TO_MIXER:
+         return "add_to_mixer.png";
+      case MUI_TEXTURE_SCAN:
+         return "scan.png";
       case MUI_TEXTURE_REMOVE:
          return "remove.png";
       case MUI_TEXTURE_START_CORE:
@@ -2266,6 +2272,11 @@ static void mui_list_insert(void *userdata,
             node->texture_switch2     = mui->textures.list[MUI_TEXTURE_INFO];
             node->texture_switch2_set = true;
          }
+         else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY)))
+         {
+            node->texture_switch2     = mui->textures.list[MUI_TEXTURE_SCAN];
+            node->texture_switch2_set = true;
+         }
          else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY)))
          {
             node->texture_switch2     = mui->textures.list[MUI_TEXTURE_HISTORY];
@@ -2331,7 +2342,20 @@ static void mui_list_insert(void *userdata,
             node->texture_switch2     = mui->textures.list[MUI_TEXTURE_RENAME];
             node->texture_switch2_set = true;
          }
-         else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_START_CORE)))
+         else if (
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_MIXER))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION))
+               )
+         {
+            node->texture_switch2     = mui->textures.list[MUI_TEXTURE_ADD_TO_MIXER];
+            node->texture_switch2_set = true;
+         }
+         else if (
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_START_CORE))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RUN_MUSIC))
+               )
          {
             node->texture_switch2     = mui->textures.list[MUI_TEXTURE_START_CORE];
             node->texture_switch2_set = true;
