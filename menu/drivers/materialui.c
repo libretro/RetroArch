@@ -86,6 +86,7 @@ enum
    MUI_TEXTURE_IMAGE,
    MUI_TEXTURE_ARCHIVE,
    MUI_TEXTURE_VIDEO,
+   MUI_TEXTURE_MUSIC,
    MUI_TEXTURE_QUIT,
    MUI_TEXTURE_HELP,
    MUI_TEXTURE_INFO,
@@ -194,6 +195,8 @@ static const char *mui_texture_path(unsigned id)
          return "image.png";
       case MUI_TEXTURE_VIDEO:
          return "video.png";
+      case MUI_TEXTURE_MUSIC:
+         return "music.png";
       case MUI_TEXTURE_ARCHIVE:
          return "archive.png";
       case MUI_TEXTURE_QUIT:
@@ -2178,6 +2181,10 @@ static void mui_list_insert(void *userdata,
    {
       case FILE_TYPE_PLAIN:
          node->texture_switch2     = mui->textures.list[MUI_TEXTURE_FILE];
+         node->texture_switch2_set = true;
+         break;
+      case FILE_TYPE_MUSIC:
+         node->texture_switch2     = mui->textures.list[MUI_TEXTURE_MUSIC];
          node->texture_switch2_set = true;
          break;
       case FILE_TYPE_MOVIE:
