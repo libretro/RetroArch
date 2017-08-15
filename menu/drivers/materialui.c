@@ -111,6 +111,7 @@ enum
    MUI_TEXTURE_ADD_TO_FAVORITES,
    MUI_TEXTURE_RUN,
    MUI_TEXTURE_RENAME,
+   MUI_TEXTURE_DATABASE,
    MUI_TEXTURE_ADD_TO_MIXER,
    MUI_TEXTURE_SCAN,
    MUI_TEXTURE_REMOVE,
@@ -279,6 +280,8 @@ static const char *mui_texture_path(unsigned id)
          return "run.png";
       case MUI_TEXTURE_RENAME:
          return "rename.png";
+      case MUI_TEXTURE_DATABASE:
+         return "database.png";
       case MUI_TEXTURE_ADD_TO_MIXER:
          return "add_to_mixer.png";
       case MUI_TEXTURE_SCAN:
@@ -2241,7 +2244,12 @@ static void mui_list_insert(void *userdata,
          node->texture_switch2     = mui->textures.list[MUI_TEXTURE_PLAYLIST];
          node->texture_switch2_set = true;
          break;
+      case FILE_TYPE_RDB:
+         node->texture_switch2     = mui->textures.list[MUI_TEXTURE_DATABASE];
+         node->texture_switch2_set = true;
+         break;
       case 32: /* TODO: Need to find out what this is */
+      case FILE_TYPE_RDB_ENTRY:
          node->texture_switch2     = mui->textures.list[MUI_TEXTURE_SETTINGS];
          node->texture_switch2_set = true;
          break;
@@ -2271,6 +2279,8 @@ static void mui_list_insert(void *userdata,
                string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS))
                ||
                string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NO_CORE_OPTIONS_AVAILABLE))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND))
                )
          {
             node->texture_switch2     = mui->textures.list[MUI_TEXTURE_INFO];
