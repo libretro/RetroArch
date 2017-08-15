@@ -112,6 +112,7 @@ enum
    MUI_TEXTURE_RUN,
    MUI_TEXTURE_RENAME,
    MUI_TEXTURE_REMOVE,
+   MUI_TEXTURE_START_CORE,
    MUI_TEXTURE_LAST
 };
 
@@ -250,6 +251,8 @@ static const char *mui_texture_path(unsigned id)
          return "rename.png";
       case MUI_TEXTURE_REMOVE:
          return "remove.png";
+      case MUI_TEXTURE_START_CORE:
+         return "start_core.png";
       case MUI_TEXTURE_UPDATER:
          return "update.png";
       case MUI_TEXTURE_QUICKMENU:
@@ -2331,6 +2334,11 @@ static void mui_list_insert(void *userdata,
             node->texture_switch2     = mui->textures.list[MUI_TEXTURE_RENAME];
             node->texture_switch2_set = true;
          }
+         else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_START_CORE)))
+         {
+            node->texture_switch2     = mui->textures.list[MUI_TEXTURE_START_CORE];
+            node->texture_switch2_set = true;
+         }
          else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DELETE_ENTRY)))
          {
             node->texture_switch2     = mui->textures.list[MUI_TEXTURE_REMOVE];
@@ -2419,6 +2427,8 @@ static void mui_list_insert(void *userdata,
                string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ACCOUNTS_LIST))
                ||
                string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_REWIND_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS))
                )
                {
                   node->texture_switch2     = mui->textures.list[MUI_TEXTURE_SETTINGS];
