@@ -1277,3 +1277,5 @@ MSG_HASH(MENU_ENUM_LABEL_CORE_DELETE,
       "core_delete")
 MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME,
       "playlist_entry_rename")
+MSG_HASH(MENU_ENUM_LABEL_MENU_FRAMEBUFFER_OPACITY,
+      "menu_framebuffer_opacity")

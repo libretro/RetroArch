@@ -1193,7 +1193,7 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
    {
       case MATERIALUI_THEME_BLUE:
          hex32_to_rgba_normalized(blue_500,  theme.header_bg_color,         1.00);
-         hex32_to_rgba_normalized(blue_50,   theme.highlighted_entry_color, 1.00);
+         hex32_to_rgba_normalized(blue_50,   theme.highlighted_entry_color, 0.90);
          hex32_to_rgba_normalized(0xFFFFFF,  theme.footer_bg_color,         1.00);
          hex32_to_rgba_normalized(0xFAFAFA,  theme.body_bg_color,           0.90);
          hex32_to_rgba_normalized(blue_500,  theme.active_tab_marker_color, 1.00);
@@ -1211,7 +1211,7 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
          break;
       case MATERIALUI_THEME_BLUE_GREY:
          hex32_to_rgba_normalized(blue_grey_500,   theme.header_bg_color,         1.00);
-         hex32_to_rgba_normalized(blue_grey_50,    theme.highlighted_entry_color, 1.00);
+         hex32_to_rgba_normalized(blue_grey_50,    theme.highlighted_entry_color, 0.90);
          hex32_to_rgba_normalized(0xFFFFFF,        theme.footer_bg_color,         1.00);
          hex32_to_rgba_normalized(0xFAFAFA,        theme.body_bg_color,           0.90);
          hex32_to_rgba_normalized(blue_grey_500,   theme.active_tab_marker_color, 1.00);
@@ -1229,7 +1229,7 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
          break;
       case MATERIALUI_THEME_GREEN:
          hex32_to_rgba_normalized(green_500, theme.header_bg_color,         1.00);
-         hex32_to_rgba_normalized(green_50,  theme.highlighted_entry_color, 1.00);
+         hex32_to_rgba_normalized(green_50,  theme.highlighted_entry_color, 0.90);
          hex32_to_rgba_normalized(0xFFFFFF,  theme.footer_bg_color,         1.00);
          hex32_to_rgba_normalized(0xFAFAFA,  theme.body_bg_color,           0.90);
          hex32_to_rgba_normalized(green_500, theme.active_tab_marker_color, 1.00);
@@ -1247,7 +1247,7 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
          break;
       case MATERIALUI_THEME_RED:
          hex32_to_rgba_normalized(red_500,   theme.header_bg_color,         1.00);
-         hex32_to_rgba_normalized(red_50,    theme.highlighted_entry_color, 1.00);
+         hex32_to_rgba_normalized(red_50,    theme.highlighted_entry_color, 0.90);
          hex32_to_rgba_normalized(0xFFFFFF,  theme.footer_bg_color,         1.00);
          hex32_to_rgba_normalized(0xFAFAFA,  theme.body_bg_color,           0.90);
          hex32_to_rgba_normalized(red_500,   theme.active_tab_marker_color, 1.00);
@@ -1266,7 +1266,7 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
          break;
       case MATERIALUI_THEME_YELLOW:
          hex32_to_rgba_normalized(yellow_500, theme.header_bg_color,         1.00);
-         hex32_to_rgba_normalized(yellow_50, theme.highlighted_entry_color,  1.00);
+         hex32_to_rgba_normalized(yellow_50, theme.highlighted_entry_color,  0.90);
          hex32_to_rgba_normalized(0xFFFFFF, theme.footer_bg_color,           1.00);
          hex32_to_rgba_normalized(0xFAFAFA, theme.body_bg_color,             0.90);
          hex32_to_rgba_normalized(yellow_500, theme.active_tab_marker_color, 1.00);
@@ -1284,7 +1284,7 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
          break;
       case MATERIALUI_THEME_DARK_BLUE:
          hex32_to_rgba_normalized(greyish_blue, theme.header_bg_color,         1.00);
-         hex32_to_rgba_normalized(0xC7C7C7,     theme.highlighted_entry_color, 1.00);
+         hex32_to_rgba_normalized(0xC7C7C7,     theme.highlighted_entry_color, 0.90);
          hex32_to_rgba_normalized(0x212121,     theme.footer_bg_color,         1.00);
          hex32_to_rgba_normalized(0x212121,     theme.body_bg_color,           0.90);
          hex32_to_rgba_normalized(0x38474F,     theme.active_tab_marker_color, 1.00);
@@ -1303,7 +1303,7 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
          break;
       case MATERIALUI_THEME_NVIDIA_SHIELD:
          hex32_to_rgba_normalized(color_nv_header, theme.header_bg_color,         1.00);
-         hex32_to_rgba_normalized(color_nv_accent, theme.highlighted_entry_color, 1.00);
+         hex32_to_rgba_normalized(color_nv_accent, theme.highlighted_entry_color, 0.90);
          hex32_to_rgba_normalized(color_nv_body,   theme.footer_bg_color,         1.00);
          hex32_to_rgba_normalized(color_nv_body,   theme.body_bg_color,           0.90);
          hex32_to_rgba_normalized(0xFFFFFF, theme.active_tab_marker_color, 0.90);

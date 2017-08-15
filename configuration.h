@@ -238,6 +238,7 @@ typedef struct settings
       float video_msg_color_b;
 
       float menu_wallpaper_opacity;
+      float menu_framebuffer_opacity;
       float menu_footer_opacity;
       float menu_header_opacity;
 

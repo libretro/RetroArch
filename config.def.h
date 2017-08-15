@@ -267,6 +267,8 @@ static bool xmb_show_add     	 = true;
 #endif
 #endif
 
+static float menu_framebuffer_opacity = 0.900;
+
 static float menu_wallpaper_opacity = 0.300;
 
 static float menu_footer_opacity = 1.000;
