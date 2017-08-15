@@ -2241,6 +2241,10 @@ static void mui_list_insert(void *userdata,
          node->texture_switch2     = mui->textures.list[MUI_TEXTURE_PLAYLIST];
          node->texture_switch2_set = true;
          break;
+      case 32: /* TODO: Need to find out what this is */
+         node->texture_switch2     = mui->textures.list[MUI_TEXTURE_SETTINGS];
+         node->texture_switch2_set = true;
+         break;
       case FILE_TYPE_IN_CARCHIVE:
       case FILE_TYPE_PLAIN:
          node->texture_switch2     = mui->textures.list[MUI_TEXTURE_FILE];
@@ -2448,6 +2452,8 @@ static void mui_list_insert(void *userdata,
                string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_SETTINGS))
                ||
                string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS))
                ||
                string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_SETTINGS))
                ||
