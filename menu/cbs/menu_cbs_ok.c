@@ -1089,7 +1089,7 @@ static int action_ok_file_load_with_detect_core_collection(const char *path,
 
 static int set_path_generic(const char *label, const char *action_path)
 {
-   rarch_setting_t *setting = menu_setting_find(filebrowser_label);
+   rarch_setting_t *setting = menu_setting_find(label);
 
    if (setting)
    {
