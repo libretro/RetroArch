@@ -2259,6 +2259,8 @@ static void mui_list_insert(void *userdata,
                string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NO_CORE_INFORMATION_AVAILABLE))
                ||
                string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NO_CORE_OPTIONS_AVAILABLE))
                )
          {
             node->texture_switch2     = mui->textures.list[MUI_TEXTURE_INFO];
