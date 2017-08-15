@@ -726,7 +726,7 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
    bool do_draw_text               = false;
    size_t usable_width             = width - (mui->margin * 2);
    uint32_t sublabel_color         = 0x888888ff;
-   enum msg_file_type type         = msg_hash_to_file_type(msg_hash_calculate(value));
+   enum msg_file_type hash_type    = msg_hash_to_file_type(msg_hash_calculate(value));
    float scale_factor              = menu_display_get_dpi();
 
    label_str[0] = value_str[0]     = 
@@ -794,7 +794,7 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
    }
    else
    {
-      switch (type)
+      switch (hash_type)
       {
          case FILE_TYPE_COMPRESSED:
          case FILE_TYPE_MORE:
@@ -819,7 +819,7 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
       texture_switch2 = node->texture_switch2;
    else
    {
-      switch (type)
+      switch (hash_type)
       {
          case FILE_TYPE_COMPRESSED:
             texture_switch2 = mui->textures.list[MUI_TEXTURE_ARCHIVE];

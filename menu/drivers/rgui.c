@@ -491,10 +491,6 @@ static void rgui_render(void *data, bool is_idle)
 
    rgui_render_background();
 
-#if 0
-   RARCH_LOG("Dir is: %s\n", label);
-#endif
-
    menu_entries_get_title(title, sizeof(title));
 
    ticker.s        = title_buf;
