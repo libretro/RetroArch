@@ -62,6 +62,11 @@ typedef struct
 {
    float line_height;
    float y;
+   intptr_t texture_switch;
+   intptr_t texture_switch2;
+   bool switch_is_on;
+   bool do_draw_text;
+   bool values_set;
 } mui_node_t;
 
 /* Textures used for the tabs and the switches */
@@ -715,8 +720,8 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
    bool switch_is_on               = true;
    int value_len                   = (int)utf8len(value);
    int ticker_limit                = 0;
-   uintptr_t texture_switch        = 0;
-   uintptr_t texture_switch2       = 0;
+   intptr_t texture_switch         = 0;
+   intptr_t texture_switch2        = 0;
    bool do_draw_text               = false;
    size_t usable_width             = width - (mui->margin * 2);
    uint32_t sublabel_color         = 0x888888ff;
@@ -745,26 +750,45 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
 
    menu_animation_ticker(&ticker);
 
+   /* set switch_is_on */
    if (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) ||
          (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))))
    {
       if (mui->textures.list[MUI_TEXTURE_SWITCH_OFF])
-      {
-         texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_OFF];
          switch_is_on = false;
-      }
-      else
-         do_draw_text = true;
    }
    else if (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)) ||
             (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))))
    {
       if (mui->textures.list[MUI_TEXTURE_SWITCH_ON])
-      {
-         texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_ON];
          switch_is_on = true;
-      }
-      else
+   }
+
+   /* set texture_switch */
+   if (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) ||
+         (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))))
+   {
+      if (mui->textures.list[MUI_TEXTURE_SWITCH_OFF])
+         texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_OFF];
+   }
+   else if (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)) ||
+            (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))))
+   {
+      if (mui->textures.list[MUI_TEXTURE_SWITCH_ON])
+         texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_ON];
+   }
+
+   /* set do_draw_text */
+   if (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) ||
+         (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))))
+   {
+      if (!mui->textures.list[MUI_TEXTURE_SWITCH_OFF])
+         do_draw_text = true;
+   }
+   else if (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)) ||
+            (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))))
+   {
+      if (!mui->textures.list[MUI_TEXTURE_SWITCH_ON])
          do_draw_text = true;
    }
    else
@@ -789,93 +813,22 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
       }
    }
 
-   switch (type)
+   /* set texture_switch2 */
+   if (node->texture_switch2 != -1)
+      texture_switch2 = node->texture_switch2;
+   else
    {
-      case FILE_TYPE_PLAIN:
-         texture_switch2 = mui->textures.list[MUI_TEXTURE_FILE];
-         break;
-      case FILE_TYPE_COMPRESSED:
-         texture_switch2 = mui->textures.list[MUI_TEXTURE_ARCHIVE];
-         break;
-      case FILE_TYPE_IMAGE:
-         texture_switch2 = mui->textures.list[MUI_TEXTURE_IMAGE];
-         break;
-      case FILE_TYPE_MOVIE:
-         texture_switch2 = mui->textures.list[MUI_TEXTURE_VIDEO];
-         break;
-      case FILE_TYPE_DIRECTORY:
-         texture_switch2 = mui->textures.list[MUI_TEXTURE_FOLDER];
-         break;
-      default:
-         if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INFORMATION)))
-            texture_switch2 = mui->textures.list[MUI_TEXTURE_INFO];
-         else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HELP)))
-            texture_switch2 = mui->textures.list[MUI_TEXTURE_HELP];
-         else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY)) || 
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_FILE))
-               )
-            texture_switch2 = mui->textures.list[MUI_TEXTURE_ADD];
-         else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH)))
-            texture_switch2 = mui->textures.list[MUI_TEXTURE_QUIT];
-         else if (
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS))
-               ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS))
-               ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS))
-               ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS))
-               ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_SETTINGS))
-               ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS))
-               ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS))
-               ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS))
-               ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS))
-               ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS))
-               ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS))
-               ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS))
-               ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS))
-               ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS))
-               ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS))
-               ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_LAN_SCAN_SETTINGS))
-               ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES))
-               ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS))
-               ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER_SETTINGS))
-               ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS))
-               ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PRIVACY_SETTINGS))
-               ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS))
-               ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_SETTINGS))
-               ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS))
-               ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS))
-               ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST))
-               ||
-               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS))
-                  )
-         {
-            texture_switch2 = mui->textures.list[MUI_TEXTURE_SETTINGS];
-         }
-         break;
+      switch (type)
+      {
+         case FILE_TYPE_COMPRESSED:
+            texture_switch2 = mui->textures.list[MUI_TEXTURE_ARCHIVE];
+            break;
+         case FILE_TYPE_IMAGE:
+            texture_switch2 = mui->textures.list[MUI_TEXTURE_IMAGE];
+            break;
+         default:
+            break;
+      }
    }
 
    /* Sublabel */
@@ -903,7 +856,7 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
    if (texture_switch2)
       mui_draw_icon(
             mui->icon_size,
-            texture_switch2,
+            (uintptr_t)texture_switch2,
             0,
             y + (scale_factor / 6) - mui->icon_size/2,
             width,
@@ -916,7 +869,7 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
    if (texture_switch)
       mui_draw_icon(
             mui->icon_size,
-            texture_switch,
+            (uintptr_t)texture_switch,
             width - mui->margin - mui->icon_size,
             y + (scale_factor / 6) - mui->icon_size/2,
             width,
@@ -2192,15 +2145,19 @@ static int mui_pointer_up(void *userdata,
    return 0;
 }
 
-/* The menu system can insert menu entries on the fly. It is used in the shaders
-UI, the wifi UI, the netplay lobby, etc. This function allocates the mui_node_t
-for the new entry. */
+/* The menu system can insert menu entries on the fly. 
+ * It is used in the shaders UI, the wifi UI, 
+ * the netplay lobby, etc. 
+ *
+ * This function allocates the mui_node_t
+ *for the new entry. */
 static void mui_list_insert(void *userdata,
       file_list_t *list,
       const char *path,
       const char *fullpath,
-      const char *unused,
-      size_t list_size)
+      const char *label,
+      size_t list_size,
+      unsigned type)
 {
    float scale_factor;
    int i                  = (int)list_size;
@@ -2223,8 +2180,95 @@ static void mui_list_insert(void *userdata,
 
    scale_factor      = menu_display_get_dpi();
 
-   node->line_height = scale_factor / 3;
-   node->y           = 0;
+   node->line_height     = scale_factor / 3;
+   node->y               = 0;
+   node->texture_switch  = -1;
+   node->texture_switch2 = -1;
+   node->switch_is_on    = false;
+   node->do_draw_text    = false;
+
+   switch (type)
+   {
+      case FILE_TYPE_PLAIN:
+         node->texture_switch2 = mui->textures.list[MUI_TEXTURE_FILE];
+         break;
+      case FILE_TYPE_MOVIE:
+         node->texture_switch2 = mui->textures.list[MUI_TEXTURE_VIDEO];
+         break;
+      case FILE_TYPE_DIRECTORY:
+         node->texture_switch2 = mui->textures.list[MUI_TEXTURE_FOLDER];
+         break;
+      default:
+         if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INFORMATION_LIST)))
+            node->texture_switch2 = mui->textures.list[MUI_TEXTURE_INFO];
+         else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_LIST)))
+            node->texture_switch2 = mui->textures.list[MUI_TEXTURE_HELP];
+         else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY)) || 
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE))
+               )
+            node->texture_switch2 = mui->textures.list[MUI_TEXTURE_ADD];
+         else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_QUIT_RETROARCH)))
+            node->texture_switch2 = mui->textures.list[MUI_TEXTURE_QUIT];
+         else if (
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DRIVER_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONFIGURATION_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVING_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOGGING_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RECORDING_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_WIFI_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LAKKA_SERVICES))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_USER_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DIRECTORY_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PRIVACY_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MENU_VIEWS_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MENU_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ACCOUNTS_LIST))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_REWIND_SETTINGS))
+               )
+               {
+                  node->texture_switch2 = mui->textures.list[MUI_TEXTURE_SETTINGS];
+               }
+         break;
+   }
 
    file_list_set_userdata(list, i, node);
 }

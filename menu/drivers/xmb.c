@@ -3728,7 +3728,8 @@ static void xmb_list_insert(void *userdata,
       const char *path,
       const char *fullpath,
       const char *unused,
-      size_t list_size)
+      size_t list_size,
+      unsigned entry_type)
 {
    int current            = 0;
    int i                  = (int)list_size;

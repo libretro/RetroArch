@@ -2044,7 +2044,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                return false;
             menu_driver_ctx->list_insert(menu_userdata,
                   list->list, list->path, list->fullpath,
-                  list->label, list->idx);
+                  list->label, list->idx, list->entry_type);
          }
          break;
       case RARCH_MENU_CTL_ENVIRONMENT:
