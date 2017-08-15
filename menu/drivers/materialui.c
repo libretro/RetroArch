@@ -98,6 +98,9 @@ enum
    MUI_TEXTURE_FILE,
    MUI_TEXTURE_PLAYLIST,
    MUI_TEXTURE_UPDATER,
+   MUI_TEXTURE_QUICKMENU,
+   MUI_TEXTURE_NETPLAY,
+   MUI_TEXTURE_CORES,
    MUI_TEXTURE_LAST
 };
 
@@ -210,8 +213,14 @@ static const char *mui_texture_path(unsigned id)
          return "quit.png";
       case MUI_TEXTURE_HELP:
          return "help.png";
+      case MUI_TEXTURE_NETPLAY:
+         return "netplay.png";
+      case MUI_TEXTURE_CORES:
+         return "cores.png";
       case MUI_TEXTURE_UPDATER:
          return "update.png";
+      case MUI_TEXTURE_QUICKMENU:
+         return "quickmenu.png";
       case MUI_TEXTURE_HISTORY:
          return "history.png";
       case MUI_TEXTURE_INFO:
@@ -2232,6 +2241,21 @@ static void mui_list_insert(void *userdata,
          else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_LIST)))
          {
             node->texture_switch2     = mui->textures.list[MUI_TEXTURE_HELP];
+            node->texture_switch2_set = true;
+         }
+         else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_LIST)))
+         {
+            node->texture_switch2     = mui->textures.list[MUI_TEXTURE_CORES];
+            node->texture_switch2_set = true;
+         }
+         else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY)))
+         {
+            node->texture_switch2     = mui->textures.list[MUI_TEXTURE_NETPLAY];
+            node->texture_switch2_set = true;
+         }
+         else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS)))
+         {
+            node->texture_switch2     = mui->textures.list[MUI_TEXTURE_QUICKMENU];
             node->texture_switch2_set = true;
          }
          else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ONLINE_UPDATER)))
