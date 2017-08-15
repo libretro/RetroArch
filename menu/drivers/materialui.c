@@ -970,6 +970,8 @@ static void mui_render_menu_list(
 
       entry_selected = selection == i;
 
+      /* Render label, value, and associated icons */
+
       mui_render_label_value(
          mui,
          node,
@@ -2081,6 +2083,7 @@ static int mui_pointer_down(void *userdata,
 {
    unsigned width, height;
    unsigned header_height;
+   size_t entries_end         = menu_entries_get_size();
    mui_handle_t *mui          = (mui_handle_t*)userdata;
 
    if (!mui)
@@ -2097,11 +2100,10 @@ static int mui_pointer_down(void *userdata,
    {
 
    }
-   else if (ptr <= (menu_entries_get_size() - 1))
+   else if (ptr <= (entries_end - 1))
    {
       size_t ii;
       file_list_t *list  = menu_entries_get_selection_buf_ptr(0);
-      size_t entries_end = menu_entries_get_size();
 
       for (ii = 0; ii < entries_end; ii++)
       {
@@ -2131,6 +2133,7 @@ static int mui_pointer_up(void *userdata,
 {
    unsigned width, height;
    unsigned header_height, i;
+   size_t entries_end         = menu_entries_get_size();
    mui_handle_t *mui          = (mui_handle_t*)userdata;
 
    if (!mui)
@@ -2166,11 +2169,10 @@ static int mui_pointer_up(void *userdata,
          }
       }
    }
-   else if (ptr <= (menu_entries_get_size() - 1))
+   else if (ptr <= (entries_end - 1))
    {
       size_t ii;
       file_list_t *list  = menu_entries_get_selection_buf_ptr(0);
-      size_t entries_end = menu_entries_get_size();
 
       for (ii = 0; ii < entries_end; ii++)
       {
