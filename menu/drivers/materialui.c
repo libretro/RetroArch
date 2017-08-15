@@ -821,6 +821,56 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
                string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS))
                ||
                string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_LAN_SCAN_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PRIVACY_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS))
                   )
          {
             texture_switch2 = mui->textures.list[MUI_TEXTURE_SETTINGS];
