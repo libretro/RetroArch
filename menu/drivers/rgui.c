@@ -77,8 +77,8 @@ static uint16_t argb32_to_rgba4444(uint32_t col)
 {
    unsigned a = ((col >> 24) & 0xff) >> 4;
    unsigned r = ((col >> 16) & 0xff) >> 4;
-   unsigned g = ((col >> 8) & 0xff)  >> 4;
-   unsigned b =  (col & 0xff)        >> 4;
+   unsigned g = ((col >> 8)  & 0xff) >> 4;
+   unsigned b = ((col & 0xff)      ) >> 4;
    return (r << 12) | (g << 8) | (b << 4) | a;
 }
 #endif
@@ -94,7 +94,7 @@ static void rgui_copy_glyph(uint8_t *glyph, const uint8_t *buf)
    {
       for (x = 0; x < FONT_WIDTH; x++)
       {
-         uint32_t col =
+         uint32_t col    =
             ((uint32_t)buf[3 * (-y * 256 + x) + 0] << 0) |
             ((uint32_t)buf[3 * (-y * 256 + x) + 1] << 8) |
             ((uint32_t)buf[3 * (-y * 256 + x) + 2] << 16);
@@ -110,11 +110,7 @@ static void rgui_copy_glyph(uint8_t *glyph, const uint8_t *buf)
 
 static uint16_t rgui_gray_filler(unsigned x, unsigned y)
 {
-   unsigned col;
-
-   x   >>= 1;
-   y   >>= 1;
-   col   = ((x + y) & 1) + 1;
+   unsigned col   = (((x >> 1) + (y >> 1)) & 1) + 1;
 
 #if defined(GEKKO) || defined(PSP)
    return (6 << 12) | (col << 8) | (col << 4) | (col << 0);
@@ -125,11 +121,7 @@ static uint16_t rgui_gray_filler(unsigned x, unsigned y)
 
 static uint16_t rgui_green_filler(unsigned x, unsigned y)
 {
-   unsigned col;
-
-   x   >>= 1;
-   y   >>= 1;
-   col   = ((x + y) & 1) + 1;
+   unsigned col   = (((x >> 1) + (y >> 1)) & 1) + 1;
 #if defined(GEKKO) || defined(PSP)
    return (6 << 12) | (col << 8) | (col << 5) | (col << 0);
 #else
@@ -186,10 +178,8 @@ static void blit_line(int x, int y,
             int offset  = (i + j * FONT_WIDTH) >> 3;
             bool col    = (font_fb[FONT_OFFSET(symbol) + offset] & rem);
 
-            if (!col)
-               continue;
-
-            rgui_framebuf_data[(y + j) * (pitch >> 1) + (x + i)] = color;
+            if (col)
+               rgui_framebuf_data[(y + j) * (pitch >> 1) + (x + i)] = color;
          }
       }
 
