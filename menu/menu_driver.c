@@ -578,7 +578,8 @@ void menu_display_draw_pipeline(menu_display_ctx_draw_t *draw)
 }
 
 void menu_display_draw_bg(menu_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info, bool add_opacity_to_wallpaper)
+      video_frame_info_t *video_info, bool add_opacity_to_wallpaper,
+      float override_opacity)
 {
    static struct video_coords coords;
    const float *new_vertex       = NULL;
@@ -606,7 +607,7 @@ void menu_display_draw_bg(menu_display_ctx_draw_t *draw,
       add_opacity_to_wallpaper = true;
 
    if (add_opacity_to_wallpaper)
-      menu_display_set_alpha(draw->color, video_info->menu_wallpaper_opacity);
+      menu_display_set_alpha(draw->color, override_opacity);
 
    if (!draw->texture)
       draw->texture     = menu_display_white_texture;
@@ -621,7 +622,8 @@ void menu_display_draw_gradient(menu_display_ctx_draw_t *draw,
    draw->x             = 0;
    draw->y             = 0;
 
-   menu_display_draw_bg(draw, video_info, false);
+   menu_display_draw_bg(draw, video_info, false,
+         video_info->menu_wallpaper_opacity);
    menu_display_draw(draw);
 }
 

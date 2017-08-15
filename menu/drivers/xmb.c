@@ -2614,8 +2614,10 @@ static void xmb_draw_bg(
          menu_display_draw_gradient(&draw, video_info);
 
       {
-         bool add_opacity = false;
-         draw.texture = texture;
+         float override_opacity = video_info->menu_wallpaper_opacity;
+         bool add_opacity       = false;
+
+         draw.texture           = texture;
          menu_display_set_alpha(draw.color, coord_white[3]);
 
          if (draw.texture)
@@ -2624,7 +2626,7 @@ static void xmb_draw_bg(
          if (running || video_info->xmb_color_theme == XMB_THEME_WALLPAPER)
             add_opacity = true;
 
-         menu_display_draw_bg(&draw, video_info, add_opacity);
+         menu_display_draw_bg(&draw, video_info, add_opacity, override_opacity);
       }
    }
 

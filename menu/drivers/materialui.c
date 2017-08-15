@@ -1095,6 +1095,9 @@ static int mui_get_core_title(char *s, size_t len)
 static void mui_draw_bg(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
+   bool add_opacity       = false;
+   float opacity_override = video_info->menu_wallpaper_opacity;
+
    menu_display_blend_begin();
 
    draw->x               = 0;
@@ -1102,7 +1105,14 @@ static void mui_draw_bg(menu_display_ctx_draw_t *draw,
    draw->pipeline.id     = 0;
    draw->pipeline.active = false;
 
-   menu_display_draw_bg(draw, video_info, false);
+   if (video_info->libretro_running)
+   {
+      add_opacity      = true;
+      opacity_override = video_info->menu_framebuffer_opacity;
+   }
+
+   menu_display_draw_bg(draw, video_info, add_opacity,
+         opacity_override);
    menu_display_draw(draw);
    menu_display_blend_end();
 }
@@ -1124,6 +1134,17 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
    char title[255];
    char title_buf[255];
    char title_msg[255];
+   float black_bg[16];
+   float pure_white[16];
+   float white_bg[16]; 
+   float white_transp_bg[16];
+   float grey_bg[16];
+   float shadow_bg[16]=  {
+      0.00, 0.00, 0.00, 0.00,
+      0.00, 0.00, 0.00, 0.00,
+      0.00, 0.00, 0.00, 0.20,
+      0.00, 0.00, 0.00, 0.20,
+   };
 
    file_list_t *list               = NULL;
    mui_node_t *node                = NULL;
@@ -1164,28 +1185,12 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
    uint32_t black_opaque_87        = 0x000000DE;
    uint32_t white_opaque_70        = 0xFFFFFFB3;
 
-   /* Pallete of colors needed throughout the file */
-   float black_bg[16];
+   /* Palette of colors needed throughout the file */
    hex32_to_rgba_normalized(0x000000, black_bg, 0.75);
-   
-   float pure_white[16];
    hex32_to_rgba_normalized(0xFFFFFF, pure_white, 1.0);
-      
-   float white_bg[16]; 
    hex32_to_rgba_normalized(0xFAFAFA, white_bg, 1.0);
-
-   float white_transp_bg[16];
    hex32_to_rgba_normalized(0xFAFAFA, white_transp_bg, 0.90);
-
-   float grey_bg[16];
    hex32_to_rgba_normalized(0xC7C7C7, grey_bg, 0.90);
-
-   float shadow_bg[16]=  {
-      0.00, 0.00, 0.00, 0.00,
-      0.00, 0.00, 0.00, 0.00,
-      0.00, 0.00, 0.00, 0.20,
-      0.00, 0.00, 0.00, 0.20,
-   };
 
    memcpy(theme.passive_tab_icon_color, grey_bg, sizeof(grey_bg));
 
