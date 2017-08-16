@@ -348,16 +348,19 @@ static bool netplay_lan_ad_client(void)
          /* And that we know how to handle it */
          if (their_addr.sa_family == AF_INET)
          {
+            struct sockaddr_in *sin = NULL;
+
             RARCH_WARN ("[lobby] using IPv4 for discovery\n");
-            struct sockaddr_in *sin = (struct sockaddr_in *) &their_addr;
+            sin           = (struct sockaddr_in *) &their_addr;
             sin->sin_port = htons(ntohl(ad_packet_buffer.port));
 
          }
 #ifdef HAVE_INET6
          else if (their_addr.sa_family == AF_INET6)
          {
+            struct sockaddr_in6 *sin6 = NULL;
             RARCH_WARN ("[lobby] using IPv6 for discovery\n");
-            struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *) &their_addr;
+            sin6            = (struct sockaddr_in6 *) &their_addr;
             sin6->sin6_port = htons(ad_packet_buffer.port);
 
          }
