@@ -4054,23 +4054,22 @@ bool menu_displaylist_push(menu_displaylist_ctx_entry_t *entry)
 static void menu_displaylist_parse_playlist_history(
       menu_handle_t *menu,
       menu_displaylist_info_t *info,
-      playlist_t *playlist,
       const char *playlist_name,
       const char *playlist_path,
       int *ret)
 {
    char path_playlist[PATH_MAX_LENGTH];
+   playlist_t *playlist = NULL;
 
    path_playlist[0] = '\0';
 
-   if (!playlist)
-      command_event(CMD_EVENT_HISTORY_INIT, NULL);
+   menu_displaylist_set_new_playlist(menu, playlist_path);
+
+   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
 
    strlcpy(path_playlist, playlist_name, sizeof(path_playlist));
    *ret = menu_displaylist_parse_playlist(info,
          playlist, path_playlist, true);
-   
-   menu_displaylist_set_new_playlist(menu, playlist_path);
 }
 
 #ifdef HAVE_NETWORKING
@@ -4449,7 +4448,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          if (settings->bools.history_list_enable)
             menu_displaylist_parse_playlist_history(menu, info,
-                  g_defaults.content_history,
                   "history",
                   settings->paths.path_content_history,
                   &ret);
@@ -4472,7 +4470,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_FAVORITES:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          menu_displaylist_parse_playlist_history(menu, info,
-               g_defaults.content_favorites,
                "favorites",
                settings->paths.path_content_favorites,
                &ret);
@@ -4485,7 +4482,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_MUSIC_HISTORY:
          if (settings->bools.history_list_enable)
             menu_displaylist_parse_playlist_history(menu, info,
-                  g_defaults.music_history,
                   "music_history",
                   settings->paths.path_content_music_history,
                   &ret);
@@ -4509,7 +4505,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 #ifdef HAVE_FFMPEG
          if (settings->bools.history_list_enable)
             menu_displaylist_parse_playlist_history(menu, info,
-                  g_defaults.video_history,
                   "video_history",
                   settings->paths.path_content_video_history,
                   &ret);
@@ -6590,7 +6585,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 #ifdef HAVE_IMAGEVIEWER
          if (settings->bools.history_list_enable)
             menu_displaylist_parse_playlist_history(menu, info,
-                  g_defaults.image_history,
                   "images_history",
                   settings->paths.path_content_image_history,
                   &ret);
