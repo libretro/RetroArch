@@ -2243,6 +2243,15 @@ static void mui_list_insert(void *userdata,
 
    switch (type)
    {
+      case FILE_TYPE_DOWNLOAD_CORE:
+      case FILE_TYPE_CORE:
+         node->texture_switch2     = mui->textures.list[MUI_TEXTURE_CORES];
+         node->texture_switch2_set = true;
+         break;
+      case FILE_TYPE_DOWNLOAD_THUMBNAIL_CONTENT:
+         node->texture_switch2     = mui->textures.list[MUI_TEXTURE_IMAGE];
+         node->texture_switch2_set = true;
+         break;
       case FILE_TYPE_PARENT_DIRECTORY:
          node->texture_switch2     = mui->textures.list[MUI_TEXTURE_PARENT_DIRECTORY];
          node->texture_switch2_set = true;
@@ -2262,6 +2271,7 @@ static void mui_list_insert(void *userdata,
          break;
       case FILE_TYPE_IN_CARCHIVE:
       case FILE_TYPE_PLAIN:
+      case FILE_TYPE_DOWNLOAD_CORE_CONTENT:
          node->texture_switch2     = mui->textures.list[MUI_TEXTURE_FILE];
          node->texture_switch2_set = true;
          break;
@@ -2274,6 +2284,7 @@ static void mui_list_insert(void *userdata,
          node->texture_switch2_set = true;
          break;
       case FILE_TYPE_DIRECTORY:
+      case FILE_TYPE_DOWNLOAD_URL:
          node->texture_switch2     = mui->textures.list[MUI_TEXTURE_FOLDER];
          node->texture_switch2_set = true;
          break;
