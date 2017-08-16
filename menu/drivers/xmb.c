@@ -1297,7 +1297,7 @@ static void xmb_list_open_old(xmb_handle_t *xmb,
          entry.target_value = ia;
          entry.subject      = &node->alpha;
          entry.easing_enum  = EASING_OUT_QUAD;
-         entry.tag          = -1;
+         entry.tag          = (uintptr_t)list;
          entry.cb           = NULL;
 
          menu_animation_push(&entry);
@@ -1367,7 +1367,7 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
          entry.target_value = ia;
          entry.subject      = &node->alpha;
          entry.easing_enum  = EASING_OUT_QUAD;
-         entry.tag          = -1;
+         entry.tag          = (uintptr_t)list;
          entry.cb           = NULL;
 
          menu_animation_push(&entry);
