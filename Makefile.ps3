@@ -1,4 +1,4 @@
-RARCH_VERSION		= "1.6.5.0"
+RARCH_VERSION		= "1.6.6.0"
 
 #which compiler to build  with - GCC or SNC
 #set to GCC for debug builds for use with debugger

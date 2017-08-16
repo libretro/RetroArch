@@ -1,6 +1,10 @@
+# 1.6.7 (future)
+
 # 1.6.6 (future)
 - 3DS: Fixes serious performance regression that affected every core; rewind was always implicitly enabled.
 - AUDIO: MOD/S3M/XM sound should now be properly mixed in with the core's sound.
+- GUI: Visual makeover of MaterialUI.
+- GUI: Added 'Music', 'Images' and 'Video' collection options to RGUI/MaterialUI.
 - GUI: Allow the user to add 'Favorites'.
 - GUI: Allow the user to rename entries.
 - GUI: Performance optimizations for XMB menu driver.
