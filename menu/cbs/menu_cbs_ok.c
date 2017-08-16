@@ -4573,9 +4573,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_LOAD_ARCHIVE:
             BIND_ACTION_OK(cbs, action_ok_load_archive);
             break;
-         case MENU_LABEL_CUSTOM_BIND_ALL:
-            BIND_ACTION_OK(cbs, action_ok_lookup_setting);
-            break;
          case MENU_LABEL_VIDEO_SHADER_PASS:
             BIND_ACTION_OK(cbs, action_ok_shader_pass);
             break;
