@@ -12,10 +12,10 @@ namespace
   class Info
   {
   public:
-    static void* s_create()
+    static void* s_create(const debugger_service_t* service)
     {
       auto self = new Info();
-      self->create();
+      self->create(service);
       return self;
     }
 
@@ -80,8 +80,9 @@ namespace
       ImGui::Separator();
     }
 
-    void create()
+    void create(const debugger_service_t* service)
     {
+      (void)service;
     }
 
     bool destroy(bool force)
@@ -259,7 +260,9 @@ namespace
 static const debugger_plugin_t plugin =
 {
   ICON_FA_INFO_CIRCLE " Information",
+  NULL,
   Info::s_create,
+  NULL,
   Info::s_destroy,
   Info::s_draw
 };

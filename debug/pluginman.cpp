@@ -5,6 +5,7 @@
 #include "imguial_fonts.h"
 
 #include <vector>
+#include <map>
 
 #include <string/stdstring.h>
 #include "../core.h"
@@ -16,10 +17,24 @@
 #include "../content.h"
 
 // Log functions for the plugins
-
 static ImGuiAl::Log      s_debugger_logger;
+
+// Memory regions
 static debugger_memory_t s_debugger_memory[64];
 static unsigned          s_debugger_memory_count = 0;
+
+// Registered plugins
+static std::vector<const debugger_plugin_t*> s_debugger_plugins;
+
+// Running services
+struct Running
+{
+  void*                    instance;
+  const debugger_plugin_t* plugin;
+  debugger_service_t       service;
+};
+
+static std::vector<Running> s_debugger_running;
 
 static void s_debugger_vprintf(enum retro_log_level level, const char* format, va_list args)
 {
@@ -255,16 +270,55 @@ static const debugger_core_info_t s_debugger_coreInfo =
   s_debugger_getMemoryRegions
 };
 
+static void s_debugger_startService(const debugger_service_t* service)
+{
+  size_t count = s_debugger_plugins.size();
+
+  for (size_t i = 0; i < count; i++)
+  {
+    auto& plugin = s_debugger_plugins[i];
+    const unsigned* type = plugin->services;
+
+    if (type != NULL)
+    {
+      for (; *type != 0; type++)
+      {
+        if (*type == service->type)
+        {
+          Running dummy;
+          s_debugger_running.push_back(dummy);
+
+          Running& running = s_debugger_running[s_debugger_running.size() - 1];
+
+          running.service = *service;
+          running.plugin = plugin;
+          running.instance = plugin->serve(&running.service);
+
+          if (running.instance == NULL)
+          {
+            s_debugger_running.pop_back();
+          }
+
+          return;
+        }
+      }
+    }    
+  }
+}
+
+static debugger_services_t s_debugger_services_ =
+{
+  s_debugger_startService
+};
+
 // Plugin interface
 const debugger_t s_debugger =
 {
   &s_debugger_log,
   &s_debugger_rarchInfo,
-  &s_debugger_coreInfo
+  &s_debugger_coreInfo,
+  &s_debugger_services_
 };
-
-static std::vector<const debugger_plugin_t*> s_debugger_plugins;
-static std::vector<std::pair<void*, const debugger_plugin_t*>> s_debugger_running;
 
 static void s_debugger_fillRegionWithRange(debugger_memory_t* mem, size_t begin, size_t end)
 {
@@ -395,10 +449,21 @@ void debugger_pluginman_init()
 
 void debugger_pluginman_deinit()
 {
-  for (auto it = s_debugger_running.begin(); it != s_debugger_running.end(); ++it)
+  size_t count = s_debugger_running.size();
+
+  for (size_t i = 0; i < count; i++)
   {
-    it->second->destroy(it->first, 1);
+    Running& running = s_debugger_running[i];
+
+    if (running.service.destroyUd != NULL)
+    {
+      running.service.destroyUd(running.service.userData);
+    }
+
+    running.plugin->destroy(running.instance, 1);
   }
+
+  s_debugger_running.clear();
 }
 
 void debugger_pluginman_draw()
@@ -420,25 +485,35 @@ void debugger_pluginman_draw()
 
   if (ImGui::BeginDock(ICON_FA_PLUG " Plugins"))
   {
-    for (auto it = s_debugger_plugins.begin(); it != s_debugger_plugins.end(); ++it)
+    size_t count = s_debugger_plugins.size();
+
+    for (size_t i = 0; i < count; i++)
     {
-      ImGui::PushID(*it);
+      const debugger_plugin_t* plugin = s_debugger_plugins[i];
+      ImGui::PushID(plugin);
 
       char label[1024];
-      snprintf(label, sizeof(label), ICON_FA_PLUS " Create##%p", *it);
+      snprintf(label, sizeof(label), ICON_FA_PLUS " Create##%p", plugin);
 
       if (ImGui::Button(label))
       {
-        void* instance = (*it)->create();
+        Running dummy;
+        s_debugger_running.push_back(dummy);
 
-        if (instance != NULL)
+        Running& running = s_debugger_running[s_debugger_running.size() - 1];
+
+        memset(&running.service, 0, sizeof(running.service));
+        running.plugin = plugin;
+        running.instance = plugin->create(&running.service);
+
+        if (running.instance == NULL)
         {
-          s_debugger_running.push_back(std::pair<void*, const debugger_plugin_t*>(instance, *it));
+          s_debugger_running.pop_back();
         }
       }
 
       ImGui::SameLine();
-      ImGui::Text("%s", (*it)->name);
+      ImGui::Text("%s", plugin->name);
       ImGui::PopID();
     }
   }
@@ -452,29 +527,32 @@ void debugger_pluginman_draw()
 
   ImGui::EndDock();
 
-  for (auto it = s_debugger_running.begin(); it != s_debugger_running.end();)
+  size_t count = s_debugger_running.size();
+
+  for (size_t i = 0; i < count;)
   {
-    ImGui::PushID(it->first);
+    Running& running = s_debugger_running[i];
+    ImGui::PushID(running.instance);
 
     char label[1024];
-    snprintf(label, sizeof(label), "%s##%p", it->second->name, it->first);
+    snprintf(label, sizeof(label), "%s##%p", running.plugin->name, running.instance);
 
     bool keep = true;
 
     if (ImGui::BeginDock(label, &keep))
     {
-      it->second->draw(it->first);
+      running.plugin->draw(running.instance);
     }
 
     ImGui::EndDock();
 
     if (keep)
     {
-      ++it;
+      i++;
     }
-    else if (it->second->destroy(it->first, 0))
+    else
     {
-      it = s_debugger_running.erase(it);
+      s_debugger_running.erase(s_debugger_running.begin() + i);
     }
 
     ImGui::PopID();

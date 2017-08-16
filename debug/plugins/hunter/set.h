@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Block.h"
+
+#include <string.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -8,13 +10,39 @@
 class Set
 {
 public:
-  bool init(size_t start, size_t size);
-  
-  inline void destroy()
+  inline Set(): _start(0), _size(0), _count(0), _bits(NULL) {}
+
+  inline Set(size_t start, size_t size)
   {
-    free(_bits);
+    init(start, size);
   }
 
+  inline Set(const Set& other)
+  {
+    init(other._start, other._size);
+    memcpy(_bits, other._bits, _count * 4);
+  }
+
+  inline Set& operator=(const Set& other)
+  {
+    if (&other != this)
+    {
+      free((void*)_bits);
+      init(other._start, other._size);
+      memcpy(_bits, other._bits, _count * 4);
+    }
+
+    return *this;
+  }
+
+  inline ~Set()
+  {
+    free((void*)_bits);
+    _bits = NULL;
+  }
+  
+  void init(size_t start, size_t size);
+  
   inline bool compatible(const Set* other) const
   {
     return _start == other->_start && _size == other->_size;
@@ -47,10 +75,10 @@ public:
 
   size_t count() const;
   
-  bool union_(Set* res, const Set* other) const;
-  bool intersection(Set* res, const Set* other) const;
-  bool difference(Set* res, const Set* other) const;
-  bool negate(Set* res) const;
+  void union_(Set* res, const Set* other) const;
+  void intersection(Set* res, const Set* other) const;
+  void difference(Set* res, const Set* other) const;
+  void negate(Set* res) const;
   
 protected:
   size_t    _start;

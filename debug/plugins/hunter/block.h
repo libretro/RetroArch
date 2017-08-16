@@ -9,13 +9,36 @@ class Set;
 class Block
 {
 public:
-  bool init(size_t start, size_t size, const uint8_t* bytes);
-  
-  inline void destroy()
+  inline Block(): _start(0), _size(0), _bytes(NULL) {}
+
+  inline Block(size_t start, size_t size, const uint8_t* bytes)
+  {
+    init(start, size, bytes);
+  }
+
+  inline Block(const Block& other)
+  {
+    init(other._start, other._size, other._bytes);
+  }
+
+  inline Block& operator=(const Block& other)
+  {
+    if (&other != this)
+    {
+      free((void*)_bytes);
+      init(other._start, other._size, other._bytes);
+    }
+
+    return *this;
+  }
+
+  inline ~Block()
   {
     free((void*)_bytes);
     _bytes = NULL;
   }
+  
+  void init(size_t start, size_t size, const uint8_t* bytes);
   
   inline bool compatible(const Block* other) const
   {
