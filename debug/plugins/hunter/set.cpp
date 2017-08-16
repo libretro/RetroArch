@@ -17,19 +17,20 @@ static inline unsigned zeroes(uint32_t v)
 
 static inline unsigned ones(uint32_t v)
 {
-  v = v - ((v >> 1) & 0x55555555U);
-  v = (v & 0x33333333U) + ((v >> 2) & 0x33333333U);
-  return ((v + (v >> 4) & 0x0f0f0f0fU) * 0x1010101U) >> 24;
+  unsigned c = v - ((v >> 1) & 0x55555555U);
+  c = ((c >> 2) & 0x33333333U) + (c & 0x33333333U);
+  c = ((c >> 4) + c) & 0x0F0F0F0FU;
+  c = ((c >> 8) + c) & 0x00FF00FFU;
+  return ((c >> 16) + c) & 0x0000FFFFU;
 }
 
-bool Set::init(size_t start, size_t size)
+void Set::init(size_t start, size_t size)
 {
   _start = start;
   _size = size;
   _count = (size + 31) / 32;
-  _bits = (uint32_t*)calloc(sizeof(uint32_t), _count);
-
-  return _bits != NULL;
+  _bits = new uint32_t[_count];
+  memset(_bits, 0, _count * 4);
 }
 
 bool Set::first(size_t* addr) const
@@ -122,17 +123,14 @@ size_t Set::count() const
   return total;
 }
 
-bool Set::union_(Set* res, const Set* other) const
+void Set::union_(Set* res, const Set* other) const
 {
   if (!compatible(other))
   {
-    return false;
+    return;
   }
   
-  if (!res->init(_start, _size))
-  {
-    return false;
-  }
+  res->init(_start, _size);
   
   const uint32_t* bits1 = _bits;
   const uint32_t* bits2 = other->_bits;
@@ -148,21 +146,16 @@ bool Set::union_(Set* res, const Set* other) const
     }
     while (--count);
   }
-  
-  return true;
 }
 
-bool Set::intersection(Set* res, const Set* other) const
+void Set::intersection(Set* res, const Set* other) const
 {
   if (!compatible(other))
   {
-    return false;
+    return;
   }
   
-  if (!res->init(_start, _size))
-  {
-    return false;
-  }
+  res->init(_start, _size);
   
   const uint32_t* bits1 = _bits;
   const uint32_t* bits2 = other->_bits;
@@ -178,22 +171,17 @@ bool Set::intersection(Set* res, const Set* other) const
     }
     while (--count);
   }
-  
-  return true;
 }
 
-bool Set::difference(Set* res, const Set* other) const
+void Set::difference(Set* res, const Set* other) const
 {
   if (!compatible(other))
   {
-    return false;
+    return;
   }
   
-  if (!res->init(_start, _size))
-  {
-    return false;
-  }
-  
+  res->init(_start, _size);
+
   const uint32_t* bits1 = _bits;
   const uint32_t* bits2 = other->_bits;
   uint32_t* bits3 = res->_bits;
@@ -208,16 +196,11 @@ bool Set::difference(Set* res, const Set* other) const
     }
     while (--count);
   }
-  
-  return true;
 }
 
-bool Set::negate(Set* res) const
+void Set::negate(Set* res) const
 {
-  if (!res->init(_start, _size))
-  {
-    return false;
-  }
+  res->init(_start, _size);
   
   const uint32_t* bits1 = _bits;
   uint32_t* bits2 = res->_bits;
@@ -232,6 +215,4 @@ bool Set::negate(Set* res) const
     }
     while (--count);
   }
-  
-  return true;
 }
