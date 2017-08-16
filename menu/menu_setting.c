@@ -4885,7 +4885,7 @@ static bool setting_append_list(
                &settings->bools.input_overlay_show_physical_inputs,
                MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
                MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
-               false,
+               show_physical_inputs,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
