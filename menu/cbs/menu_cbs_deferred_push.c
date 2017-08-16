@@ -1141,6 +1141,18 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_netplay_sublist);
    }
+   else if (strstr(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_INPUT_SETTINGS_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_settings_list);
+   }
+#ifdef HAVE_NETWORKING
+   else if (strstr(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_updater_list);
+   }
+#endif
    else
    {
       if (cbs->enum_idx != MSG_UNKNOWN)
@@ -1155,9 +1167,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
                break;
             case MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_accounts_list);
-               break;
-            case MENU_ENUM_LABEL_DEFERRED_INPUT_SETTINGS_LIST:
-               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_settings_list);
                break;
             case MENU_ENUM_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_playlist_settings_list);
@@ -1196,11 +1205,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             case MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_SUBDIR_LIST:
 #ifdef HAVE_NETWORKING
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_content_dirs_subdir_list);
-#endif
-               break;
-            case MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST:
-#ifdef HAVE_NETWORKING
-               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_updater_list);
 #endif
                break;
             case MENU_ENUM_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST:
@@ -1464,9 +1468,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             case MENU_LABEL_DEFERRED_AUDIO_SETTINGS_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_audio_settings_list);
                break;
-            case MENU_LABEL_DEFERRED_INPUT_SETTINGS_LIST:
-               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_settings_list);
-               break;
             case MENU_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_playlist_settings_list);
                break;
@@ -1494,11 +1495,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             case MENU_LABEL_DEFERRED_CORE_CONTENT_LIST:
 #ifdef HAVE_NETWORKING
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_content_list);
-#endif
-               break;
-            case MENU_LABEL_DEFERRED_CORE_UPDATER_LIST:
-#ifdef HAVE_NETWORKING
-               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_updater_list);
 #endif
                break;
             case MENU_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST:
