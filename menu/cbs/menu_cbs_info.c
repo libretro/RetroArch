@@ -17,7 +17,6 @@
 
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
-#include "../verbosity.h"
 
 #include "../widgets/menu_dialog.h"
 
