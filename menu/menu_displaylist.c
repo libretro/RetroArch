@@ -2703,6 +2703,19 @@ static int menu_displaylist_parse_settings_enum(void *data,
          );
 }
 
+static void menu_displaylist_set_new_playlist(
+      menu_handle_t *menu, const char *path)
+{
+   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_FREE, NULL);
+   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_INIT,
+         (void*)path);
+   strlcpy(
+         menu->db_playlist_file,
+         path,
+         sizeof(menu->db_playlist_file));
+}
+
+
 static int menu_displaylist_parse_horizontal_list(
       menu_displaylist_info_t *info)
 {
@@ -2738,8 +2751,6 @@ static int menu_displaylist_parse_horizontal_list(
 
    fill_pathname_base_noext(lpl_basename, item->path, sizeof(lpl_basename));
 
-   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_FREE, NULL);
-
    fill_pathname_join(
          path_playlist,
          settings->paths.directory_playlist,
@@ -2748,10 +2759,8 @@ static int menu_displaylist_parse_horizontal_list(
 
    menu_driver_set_thumbnail_system(lpl_basename, sizeof(lpl_basename));
 
-   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_INIT, (void*)path_playlist);
+   menu_displaylist_set_new_playlist(menu, path_playlist);
 
-   strlcpy(menu->db_playlist_file,
-         path_playlist, sizeof(menu->db_playlist_file));
    strlcpy(path_playlist,
          msg_hash_to_str(MENU_ENUM_LABEL_COLLECTION),
          sizeof(path_playlist));
@@ -4060,13 +4069,8 @@ static void menu_displaylist_parse_playlist_history(
    strlcpy(path_playlist, playlist_name, sizeof(path_playlist));
    *ret = menu_displaylist_parse_playlist(info,
          playlist, path_playlist, true);
-   strlcpy(
-         menu->db_playlist_file,
-         playlist_path,
-         sizeof(menu->db_playlist_file));
-   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_FREE, NULL);
-   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_INIT,
-         (void*)menu->db_playlist_file);
+   
+   menu_displaylist_set_new_playlist(menu, playlist_path);
 }
 
 #ifdef HAVE_NETWORKING
@@ -4413,7 +4417,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
             path_playlist[0] = '\0';
 
-            menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_FREE, NULL);
 
             fill_pathname_join(
                   path_playlist,
@@ -4421,11 +4424,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   info->path,
                   sizeof(path_playlist));
 
-            menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_INIT,
-                  (void*)path_playlist);
+            menu_displaylist_set_new_playlist(menu, path_playlist);
 
-            strlcpy(menu->db_playlist_file, path_playlist,
-                  sizeof(menu->db_playlist_file));
             strlcpy(path_playlist,
                   msg_hash_to_str(MENU_ENUM_LABEL_COLLECTION),
                   sizeof(path_playlist));
