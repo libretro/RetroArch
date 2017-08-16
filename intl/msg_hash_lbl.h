@@ -231,6 +231,12 @@ MSG_HASH(MENU_ENUM_LABEL_DATABASE_MANAGER_LIST,
       "database_manager_list")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST,
       "deferred_favorites_list")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST,
+      "deferred_images_list")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST,
+      "deferred_music_list")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST,
+      "deferred_video_list")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_NETPLAY,
       "deferred_netplay")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_MUSIC,
@@ -1283,3 +1289,9 @@ MSG_HASH(MENU_ENUM_LABEL_MENU_FRAMEBUFFER_OPACITY,
       "menu_framebuffer_opacity")
 MSG_HASH(MENU_ENUM_LABEL_GOTO_FAVORITES,
       "goto_favorites")
+MSG_HASH(MENU_ENUM_LABEL_GOTO_MUSIC,
+      "goto_music")
+MSG_HASH(MENU_ENUM_LABEL_GOTO_IMAGES,
+      "goto_images")
+MSG_HASH(MENU_ENUM_LABEL_GOTO_VIDEO,
+      "goto_video")

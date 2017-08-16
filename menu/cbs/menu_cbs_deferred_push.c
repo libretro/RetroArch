@@ -821,6 +821,24 @@ static int deferred_push_detect_core_list(menu_displaylist_info_t *info)
          DISPLAYLIST_CORES_DETECTED);
 }
 
+static int deferred_music_history_list(menu_displaylist_info_t *info)
+{
+   menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+   return general_push(info, PUSH_DEFAULT, DISPLAYLIST_MUSIC_HISTORY);
+}
+
+static int deferred_image_history_list(menu_displaylist_info_t *info)
+{
+   menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+   return general_push(info, PUSH_DEFAULT, DISPLAYLIST_IMAGES_HISTORY);
+}
+
+static int deferred_video_history_list(menu_displaylist_info_t *info)
+{
+   menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+   return general_push(info, PUSH_DEFAULT, DISPLAYLIST_VIDEO_HISTORY);
+}
+
 static int deferred_archive_open_detect_core(menu_displaylist_info_t *info)
 {
    return general_push(info, PUSH_ARCHIVE_OPEN_DETECT_CORE,
@@ -1085,9 +1103,28 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
 #endif
       return 0;
    }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MUSIC)))
+   else if (
+         string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MUSIC)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_music_list);
+      return 0;
+   }
+   else if (
+         string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST))) 
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_music_history_list);
+      return 0;
+   }
+   else if (
+         string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST))) 
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_image_history_list);
+      return 0;
+   }
+   else if (
+         string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST))) 
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_video_history_list);
       return 0;
    }
    else if (strstr(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL)))

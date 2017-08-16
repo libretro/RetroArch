@@ -2293,6 +2293,21 @@ static void mui_list_insert(void *userdata,
             node->texture_switch2     = mui->textures.list[MUI_TEXTURE_INFO];
             node->texture_switch2_set = true;
          }
+         else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_GOTO_IMAGES)))
+         {
+            node->texture_switch2     = mui->textures.list[MUI_TEXTURE_IMAGE];
+            node->texture_switch2_set = true;
+         }
+         else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_GOTO_MUSIC)))
+         {
+            node->texture_switch2     = mui->textures.list[MUI_TEXTURE_MUSIC];
+            node->texture_switch2_set = true;
+         }
+         else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_GOTO_VIDEO)))
+         {
+            node->texture_switch2     = mui->textures.list[MUI_TEXTURE_VIDEO];
+            node->texture_switch2_set = true;
+         }
          else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY)))
          {
             node->texture_switch2     = mui->textures.list[MUI_TEXTURE_SCAN];
