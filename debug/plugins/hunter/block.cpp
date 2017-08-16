@@ -3,24 +3,16 @@
 
 #include <string.h>
 
-bool Block::init(size_t start, size_t size, const uint8_t* bytes)
+void Block::init(size_t start, size_t size, const uint8_t* bytes)
 {
-  _bytes = (uint8_t*)malloc(size);
-
-  if (!_bytes)
-  {
-    return false;
-  }
-
   _start = start;
   _size = size;
+  _bytes = new uint8_t[size];
   memcpy(_bytes, bytes, size);
-  return true;
 }
 
 #define FILTER_8(cmp) \
-  if (!set->init(_start, _size)) \
-    return false; \
+  set->init(_start, _size); \
   const uint8_t* byte = _bytes; \
   size_t size = _size; \
   size_t addr = _start; \
@@ -35,8 +27,7 @@ bool Block::init(size_t start, size_t size, const uint8_t* bytes)
   return true;
 
 #define FILTER_16_LE(cmp) \
-  if (!set->init(_start, _size)) \
-    return false; \
+  set->init(_start, _size); \
   const uint8_t* byte = _bytes; \
   size_t size = _size; \
   size_t addr = _start; \
@@ -54,8 +45,7 @@ bool Block::init(size_t start, size_t size, const uint8_t* bytes)
   return true;
 
 #define FILTER_16_BE(cmp) \
-  if (!set->init(_start, _size)) \
-    return false; \
+  set->init(_start, _size); \
   const uint8_t* byte = _bytes; \
   size_t size = _size; \
   size_t addr = _start; \
@@ -73,8 +63,7 @@ bool Block::init(size_t start, size_t size, const uint8_t* bytes)
   return true;
 
 #define FILTER_32_LE(cmp) \
-  if (!set->init(_start, _size)) \
-    return false; \
+  set->init(_start, _size); \
   const uint8_t* byte = _bytes; \
   size_t size = _size; \
   size_t addr = _start; \
@@ -93,8 +82,7 @@ bool Block::init(size_t start, size_t size, const uint8_t* bytes)
   return true;
 
 #define FILTER_32_BE(cmp) \
-  if (!set->init(_start, _size)) \
-    return false; \
+  set->init(_start, _size); \
   const uint8_t* byte = _bytes; \
   size_t size = _size; \
   size_t addr = _start; \
@@ -166,8 +154,7 @@ bool Block::ge32BE(Set* set, uint32_t v2) const { FILTER_32_BE(v1 >= v2) }
 #define FILTER_BLOCK_8(cmp) \
   if (!compatible(other)) \
     return false; \
-  if (!set->init(_start, _size)) \
-    return false; \
+  set->init(_start, _size); \
   const uint8_t* byte1 = _bytes; \
   const uint8_t* byte2 = other->_bytes; \
   size_t size = _size; \
@@ -186,8 +173,7 @@ bool Block::ge32BE(Set* set, uint32_t v2) const { FILTER_32_BE(v1 >= v2) }
 #define FILTER_BLOCK_16_LE(cmp) \
   if (!compatible(other)) \
     return false; \
-  if (!set->init(_start, _size)) \
-    return false; \
+  set->init(_start, _size); \
   const uint8_t* byte1 = _bytes; \
   const uint8_t* byte2 = other->_bytes; \
   size_t size = _size; \
@@ -210,8 +196,7 @@ bool Block::ge32BE(Set* set, uint32_t v2) const { FILTER_32_BE(v1 >= v2) }
 #define FILTER_BLOCK_16_BE(cmp) \
   if (!compatible(other)) \
     return false; \
-  if (!set->init(_start, _size)) \
-    return false; \
+  set->init(_start, _size); \
   const uint8_t* byte1 = _bytes; \
   const uint8_t* byte2 = other->_bytes; \
   size_t size = _size; \
@@ -234,8 +219,7 @@ bool Block::ge32BE(Set* set, uint32_t v2) const { FILTER_32_BE(v1 >= v2) }
 #define FILTER_BLOCK_32_LE(cmp) \
   if (!compatible(other)) \
     return false; \
-  if (!set->init(_start, _size)) \
-    return false; \
+  set->init(_start, _size); \
   const uint8_t* byte1 = _bytes; \
   const uint8_t* byte2 = other->_bytes; \
   size_t size = _size; \
@@ -260,8 +244,7 @@ bool Block::ge32BE(Set* set, uint32_t v2) const { FILTER_32_BE(v1 >= v2) }
 #define FILTER_BLOCK_32_BE(cmp) \
   if (!compatible(other)) \
     return false; \
-  if (!set->init(_start, _size)) \
-    return false; \
+  set->init(_start, _size); \
   const uint8_t* byte1 = _bytes; \
   const uint8_t* byte2 = other->_bytes; \
   size_t size = _size; \

@@ -31,6 +31,11 @@ enum
   DEBUGGER_CORE_PICODRIVE = 0x0cc11b6aU
 };
 
+enum
+{
+  DEBUGGER_SERVICE_EDIT_MEMORY = 1,
+};
+
 /* Memory regions */
 typedef struct
 {
@@ -92,19 +97,51 @@ typedef struct
 }
 debugger_core_info_t;
 
+typedef struct debugger_service_t debugger_service_t;
+
+typedef struct
+{
+  void (*startService)(const debugger_service_t* service);
+}
+debugger_services_t;
+
 typedef struct
 {
   const debugger_log_t*        log;
   const debugger_rarch_info_t* rarchInfo;
   const debugger_core_info_t*  coreInfo;
+  const debugger_services_t*   services;
 }
 debugger_t;
 
+struct debugger_service_t
+{
+  unsigned type;
+  void*    userData;
+  void     (*destroyUd)(void* udata);
+
+  union
+  {
+    struct
+    {
+      bool   readOnly;
+      size_t size;
+
+      uint8_t (*read)(size_t address, void* udata);
+      void    (*write)(size_t address, uint8_t byte, void* udata);
+      int     (*highlight)(size_t address, void* udata);
+    }
+    editMemory;
+  };
+};
+
 typedef struct
 {
-  const char* name;
+  const char*     name;
+  const unsigned* services;
 
-  void* (*create)(void);
+  void* (*create)(debugger_service_t* service);
+  void* (*serve)(debugger_service_t* service);
   int   (*destroy)(void* instance, int force);
   void  (*draw)(void* instance);
 }

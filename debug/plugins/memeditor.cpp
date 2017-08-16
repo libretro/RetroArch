@@ -15,10 +15,17 @@ namespace
   class MemEditor
   {
   public:
-    static void* s_create(void)
+    static void* s_create(debugger_service_t* service)
     {
       auto self = new MemEditor();
-      self->create();
+      self->create(service);
+      return self;
+    }
+
+    static void* s_serve(debugger_service_t* service)
+    {
+      auto self = new MemEditor();
+      self->serve(service);
       return self;
     }
 
@@ -42,51 +49,100 @@ namespace
     }
   
   protected:
+    debugger_service_t* _service;
+    bool _showCombo;
     int _selected;
     MemoryEditor _editor;
 
-    void create()
+    void create(debugger_service_t* service)
     {
-      _selected = 0;
-
       struct Locality
       {
-        static unsigned char read(unsigned char* data, size_t off)
+        static uint8_t read(size_t address, void* udata)
         {
-          auto memory = (debugger_memory_t*)data;
+          auto memory = (debugger_memory_t*)udata;
           auto part = memory->parts;
           auto end = memory->parts + memory->count;
 
-          while (part < end && off >= part->size)
+          while (part < end && address >= part->size)
           {
-            off -= part->size;
+            address -= part->size;
             part++;
           }
 
-          return part < end ? part->pointer[off] : 0;
+          return part < end ? part->pointer[address] : 0;
         }
 
-        static void write(unsigned char* data, size_t off, unsigned char d)
+        static void write(size_t address, uint8_t byte, void* udata)
         {
-          auto memory = (debugger_memory_t*)data;
+          auto memory = (debugger_memory_t*)udata;
           auto part = memory->parts;
           auto end = memory->parts + memory->count;
 
-          while (part < end && off >= part->size)
+          while (part < end && address >= part->size)
           {
-            off -= part->size;
+            address -= part->size;
             part++;
           }
 
           if (part < end)
           {
-            part->pointer[off] = d;
+            part->pointer[address] = byte;
           }
+        }
+
+        static int highlight(size_t address, void* udata)
+        {
+          return 0;
+        }
+      };
+
+      service->destroyUd = NULL;
+      service->editMemory.readOnly = false;
+      service->editMemory.read = Locality::read;
+      service->editMemory.write = Locality::write;
+      service->editMemory.highlight = Locality::highlight;
+
+      _showCombo = true;
+      _selected = 0;
+      setup(service);
+    }
+
+    void serve(debugger_service_t* service)
+    {
+      _showCombo = false;
+      setup(service);
+    }
+
+    void setup(debugger_service_t* service)
+    {
+      _service = service;
+
+      struct Locality
+      {
+        static MemoryEditor::u8 read(MemoryEditor::u8* data, size_t off)
+        {
+          auto service = (const debugger_service_t*)data;
+          return service->editMemory.read(off, service->userData);
+        }
+
+        static void write(MemoryEditor::u8* data, size_t off, MemoryEditor::u8 d)
+        {
+          auto service = (const debugger_service_t*)data;
+          service->editMemory.write(off, d, service->userData);
+        }
+
+        static bool highlight(MemoryEditor::u8* data, size_t off)
+        {
+          auto service = (const debugger_service_t*)data;
+          return service->editMemory.highlight(off, service->userData);
         }
       };
 
       _editor.ReadFn = Locality::read;
       _editor.WriteFn = Locality::write;
+      _editor.HighlightFn = Locality::highlight;
+      _editor.HighlightColor = IM_COL32(192, 0, 255, 128);
     }
 
     bool destroy(bool force)
@@ -97,47 +153,60 @@ namespace
 
     void draw()
     {
-      struct Locality
+      if (_showCombo)
       {
-        static bool description(void* data, int idx, const char** out_text)
+        struct Locality
         {
-          if (idx == 0)
+          static bool description(void* data, int idx, const char** out_text)
           {
-            *out_text = "None";
-          }
-          else
-          {
-            auto memory = (const debugger_memory_t*)data;
-            *out_text = memory[idx - 1].name;
-          }
+            if (idx == 0)
+            {
+              *out_text = "None";
+            }
+            else
+            {
+              auto memory = (const debugger_memory_t*)data;
+              *out_text = memory[idx - 1].name;
+            }
 
-          return true;
+            return true;
+          }
+        };
+
+        unsigned count;
+        debugger_memory_t* memory = s_info->coreInfo->getMemoryRegions(&count);
+
+        if (_selected > (int)count)
+        {
+          _selected = 0;
         }
-      };
 
-      unsigned count;
-      debugger_memory_t* memory = s_info->coreInfo->getMemoryRegions(&count);
+        ImGui::Combo("Region", &_selected, Locality::description, (void*)memory, count + 1);
 
-      if (_selected > (int)count)
-      {
-        _selected = 0;
+        if (_selected != 0)
+        {
+          debugger_memory_t* mem = &memory[_selected - 1];
+          _service->userData = mem;
+          _service->editMemory.size = mem->size;
+          _editor.DrawContents((unsigned char*)_service, mem->size);
+        }
       }
-
-      ImGui::Combo("Region", &_selected, Locality::description, (void*)memory, count + 1);
-
-      if (_selected != 0)
+      else
       {
-        debugger_memory_t* mem = &memory[_selected - 1];
-        _editor.DrawContents((unsigned char*)mem, mem->size);
+        _editor.DrawContents((unsigned char*)_service, _service->editMemory.size);
       }
     }
   };
 }
 
+static const unsigned services[] = {DEBUGGER_SERVICE_EDIT_MEMORY, 0};
+
 static const debugger_plugin_t plugin =
 {
   ICON_FA_MICROCHIP " Memory Editor",
+  services,
   MemEditor::s_create,
+  MemEditor::s_serve,
   MemEditor::s_destroy,
   MemEditor::s_draw
 };

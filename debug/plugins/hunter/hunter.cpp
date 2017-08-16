@@ -14,6 +14,8 @@
 #include "block.h"
 #include "set.h"
 
+#include "debugbreak.h"
+
 static const char* sizeNames[] = {
   "8 bits", "16 bits LE", "16 bits BE", "32 bits LE", "32 bits BE", "Low nibble", "High nibble",
   "Bit 0", "Bit 1", "Bit 2", "Bit 3", "Bit 4", "Bit 5", "Bit 6", "Bit 7"
@@ -30,10 +32,10 @@ namespace
   class Hunter
   {
   public:
-    static void* s_create(void)
+    static void* s_create(const debugger_service_t* service)
     {
       auto self = new Hunter();
-      self->create();
+      self->create(service);
       return self;
     }
 
@@ -59,19 +61,19 @@ namespace
   protected:
     struct Snapshot
     {
-      char     name[64];
-      Block    blocks[64];
-      unsigned count;
-      size_t   sizes;
+      char                  name[64];
+      std::vector<Block>    blocks;
+      std::vector<unsigned> parts;
+      size_t                sizes;
     };
 
     struct Filter
     {
-      char     name[4096];
-      Set      sets[64];
-      unsigned count;
-      size_t   total;
-      size_t   sizes;
+      char                  name[4096];
+      std::vector<Set>      sets;
+      std::vector<unsigned> parts;
+      size_t                total;
+      size_t                sizes;
     };
 
     bool     _inited;
@@ -101,27 +103,22 @@ namespace
     int _filtersCmpSel2;
     int _filtersCmpOp;
 
+    int _filterSel;
+
+    struct ListboxUd
+    {
+      Filter* _filter;
+      char _addressLabel[64];
+    }
+    _listboxUd;
+
     void createSnapshot()
     {
       Snapshot snap;
       snprintf(snap.name, sizeof(snap.name), "Snapshot %u", _temp++);
-      snap.count = 0;
       snap.sizes = 0;
 
-      if (!_cheevosMode)
-      {
-        debugger_memory_part_t* part = _regions[_regionsSel].parts;
-
-        for (unsigned i = 0; i < _regions[_regionsSel].count; i++, part++)
-        {
-          if (snap.count < sizeof(snap.blocks) / sizeof(snap.blocks[0]))
-          {
-            Block* block = &snap.blocks[snap.count++];
-            block->init(0, part->size, part->pointer);
-          }
-        }
-      }
-      else
+      if (_cheevosMode)
       {
         for (unsigned i = 0; i < _regionsCount; i++)
         {
@@ -129,12 +126,21 @@ namespace
 
           for (unsigned j = 0; j < _regions[i].count; j++, part++)
           {
-            if (snap.count < sizeof(snap.blocks) / sizeof(snap.blocks[0]))
-            {
-              Block* block = &snap.blocks[snap.count++];
-              block->init(0, part->size, part->pointer);
-            }
+            Block block(0, part->size, part->pointer);
+            snap.blocks.push_back(block);
+            snap.parts.push_back(i << 16 | j);
           }
+        }
+      }
+      else
+      {
+        debugger_memory_part_t* part = _regions[_regionsSel].parts;
+
+        for (unsigned i = 0; i < _regions[_regionsSel].count; i++, part++)
+        {
+          Block block(0, part->size, part->pointer);
+          snap.blocks.push_back(block);
+          snap.parts.push_back(_regionsSel << 16 | i);
         }
       }
 
@@ -208,16 +214,19 @@ namespace
     }
 
 #define FILTER_FROM_SNAP(n) \
-  for (unsigned i = 0; i < snap->count; i++) \
   { \
-    if (filter.count < sizeof(filter.sets) / sizeof(filter.sets[0])) { \
-      Set* set = &filter.sets[filter.count++]; \
-      snap->blocks[i].n(set, value); \
-      filter.total += set->count(); \
-      filter.sizes += set->size(); \
+    size_t count = snap->blocks.size(); \
+    for (size_t i = 0; i < count; i++) \
+    { \
+      Set set; \
+      snap->blocks[i].n(&set, value); \
+      filter.total += set.count(); \
+      filter.sizes += set.size(); \
+      filter.sets.push_back(set); \
     } \
-  } \
-  break;
+    filter.parts = snap->parts; \
+    break; \
+  }
 
 #define FILTERS_FROM_SNAP(n) \
   case  0: FILTER_FROM_SNAP(n ## 8) \
@@ -233,7 +242,6 @@ namespace
       Snapshot* snap = &_snapshots[_snapCmpSel - 1];
 
       Filter filter;
-      filter.count = 0;
       filter.total = 0;
       filter.sizes = 0;
 
@@ -267,16 +275,19 @@ namespace
     }
 
 #define FILTER_FROM_SNAPS(n) \
-  for (unsigned i = 0; i < snap1->count; i++) \
   { \
-    if (filter.count < sizeof(filter.sets) / sizeof(filter.sets[0])) { \
-      Set* set = &filter.sets[filter.count++]; \
-      snap1->blocks[i].n(set, &snap2->blocks[i]); \
-      filter.total += set->count(); \
-      filter.sizes += set->size(); \
+    size_t count = snap1->blocks.size(); \
+    for (size_t i = 0; i < count; i++) \
+    { \
+      Set set; \
+      snap1->blocks[i].n(&set, &snap2->blocks[i]); \
+      filter.total += set.count(); \
+      filter.sizes += set.size(); \
+      filter.sets.push_back(set); \
     } \
-  } \
-  break;
+    filter.parts = snap1->parts; \
+    break; \
+  }
 
 #define FILTERS_FROM_SNAPS(n) \
   case  0: FILTER_FROM_SNAPS(n ## 8) \
@@ -293,7 +304,6 @@ namespace
       Snapshot* snap2 = &_snapshots[_snapsCmpSel2 - 1];
 
       Filter filter;
-      filter.count = 0;
       filter.total = 0;
       filter.sizes = 0;
 
@@ -312,14 +322,19 @@ namespace
     }
 
 #define FILTER_FROM_FILTERS(n) \
-  for (unsigned i = 0; i < filter1->count; i++) \
   { \
-    Set* set = &filter.sets[filter.count++]; \
-    filter1->sets[i].n(set, &filter2->sets[i]); \
-    filter.total += set->count(); \
-    filter.sizes += set->size(); \
-  } \
-  break;
+    size_t count = filter1->sets.size(); \
+    for (size_t i = 0; i < count; i++) \
+    { \
+      Set set; \
+      filter1->sets[i].n(&set, &filter2->sets[i]); \
+      filter.total += set.count(); \
+      filter.sizes += set.size(); \
+      filter.sets.push_back(set); \
+    } \
+    filter.parts = filter1->parts; \
+    break; \
+  }
 
     void createFilterFromFilters()
     {
@@ -327,7 +342,6 @@ namespace
       Filter* filter2 = _filtersCmpSel2 == 0 ? nullptr : &_filters[_filtersCmpSel2 - 1];
 
       Filter filter;
-      filter.count = 0;
       filter.total = 0;
       filter.sizes = 0;
       
@@ -338,15 +352,21 @@ namespace
       case 2: FILTER_FROM_FILTERS(difference);
 
       case 3:
-        for (unsigned i = 0; i < filter1->count; i++)
         {
-          Set* set = &filter.sets[filter.count++];
-          filter1->sets[i].negate(set);
-          filter.total += set->count();
-          filter.sizes += set->size();
-        }
+          size_t count = filter1->sets.size();
 
-        break;
+          for (size_t i = 0; i < count; i++)
+          {
+            Set set;
+            filter1->sets[i].negate(&set);
+            filter.total += set.count();
+            filter.sizes += set.size();
+            filter.sets.push_back(set);
+          }
+
+          filter.parts = filter1->parts;
+          break;
+        }
       }
 
       switch (_filtersCmpOp)
@@ -402,11 +422,6 @@ namespace
 
           if (ImGui::Button(ICON_FA_MINUS " Delete"))
           {
-            for (unsigned i = 0; i < it->count; i++)
-            {
-              it->blocks[i].destroy();
-            }
-
             it = _snapshots.erase(it);
             _snapCmpSel = 0;
             _snapsCmpSel1 = 0;
@@ -427,44 +442,48 @@ namespace
     void showFiltersFromSnapshot()
     {
       ImGui::PushID(__FUNCTION__);
+      ImGui::SetNextTreeNodeOpen(true);
 
-      struct Getter
+      if (ImGui::CollapsingHeader("Filter from snapshot"))
       {
-        static bool description(void* data, int idx, const char** out_text)
+        struct Getter
         {
-          if (idx != 0)
+          static bool description(void* data, int idx, const char** out_text)
           {
-            auto snapshots = (std::vector<Snapshot>*)data;
-            *out_text = (*snapshots)[idx - 1].name;
-          }
-          else
-          {
-            *out_text = "None";
-          }
+            if (idx != 0)
+            {
+              auto snapshots = (std::vector<Snapshot>*)data;
+              *out_text = (*snapshots)[idx - 1].name;
+            }
+            else
+            {
+              *out_text = "None";
+            }
 
-          return true;
+            return true;
+          }
+        };
+
+        ImGui::Combo("Snapshot", &_snapCmpSel, Getter::description, (void*)&_snapshots, _snapshots.size() + 1);
+        ImGui::Combo("Operator", &_snapCmpOp, operatorNames, sizeof(operatorNames) / sizeof(operatorNames[0]));
+
+        int max = sizeof(sizeNames) / sizeof(sizeNames[0]) - 8 * (_snapCmpOp > 0);
+
+        if (_snapCmpSize >= max)
+        {
+          _snapCmpSize = 0;
         }
-      };
 
-      ImGui::Combo("Snapshot", &_snapCmpSel, Getter::description, (void*)&_snapshots, _snapshots.size() + 1);
-      ImGui::Combo("Operator", &_snapCmpOp, operatorNames, sizeof(operatorNames) / sizeof(operatorNames[0]));
+        ImGui::Combo("Operand size", &_snapCmpSize, sizeNames, max);
+        ImGui::InputText("Value", _value, sizeof(_value));
 
-      int max = sizeof(sizeNames) / sizeof(sizeNames[0]) - 8 * (_snapCmpOp > 0);
+        uint64_t value;
+        bool valid = getValue(&value);
 
-      if (_snapCmpSize >= max)
-      {
-        _snapCmpSize = 0;
-      }
-
-      ImGui::Combo("Operand size", &_snapCmpSize, sizeNames, max);
-      ImGui::InputText("Value", _value, sizeof(_value));
-
-      uint64_t value;
-      bool valid = getValue(&value);
-
-      if (ImGuiAl::Button(ICON_FA_PLUS " Create filter", valid))
-      {
-        createFilterFromSnapshot(value);
+        if (ImGuiAl::Button(ICON_FA_PLUS " Create filter", valid))
+        {
+          createFilterFromSnapshot(value);
+        }
       }
 
       ImGui::PopID();
@@ -473,47 +492,53 @@ namespace
     void showFiltersFromSnapshots()
     {
       ImGui::PushID(__FUNCTION__);
+      ImGui::SetNextTreeNodeOpen(true);
 
-      struct Getter
+      if (ImGui::CollapsingHeader("Filter from snapshots"))
       {
-        static bool description(void* data, int idx, const char** out_text)
+        struct Getter
         {
-          if (idx != 0)
+          static bool description(void* data, int idx, const char** out_text)
           {
-            auto snapshots = (std::vector<Snapshot>*)data;
-            *out_text = (*snapshots)[idx - 1].name;
+            if (idx != 0)
+            {
+              auto snapshots = (std::vector<Snapshot>*)data;
+              *out_text = (*snapshots)[idx - 1].name;
+            }
+            else
+            {
+              *out_text = "None";
+            }
+
+            return true;
           }
-          else
-          {
-            *out_text = "None";
-          }
+        };
+        
+        ImGui::Combo("1st Snapshot", &_snapsCmpSel1, Getter::description, (void*)&_snapshots, _snapshots.size() + 1);
+        ImGui::Combo("Operator", &_snapsCmpOp, operatorNames, sizeof(operatorNames) / sizeof(operatorNames[0]));
+        ImGui::Combo("2nd Snapshot", &_snapsCmpSel2, Getter::description, (void*)&_snapshots, _snapshots.size() + 1);
 
-          return true;
-        }
-      };
-      
-      ImGui::Combo("1st Snapshot", &_snapsCmpSel1, Getter::description, (void*)&_snapshots, _snapshots.size() + 1);
-      ImGui::Combo("Operator", &_snapsCmpOp, operatorNames, sizeof(operatorNames) / sizeof(operatorNames[0]));
-      ImGui::Combo("2nd Snapshot", &_snapsCmpSel2, Getter::description, (void*)&_snapshots, _snapshots.size() + 1);
+        bool valid = _snapsCmpSel1 != 0 && _snapsCmpSel2 != 0;
 
-      bool valid = _snapsCmpSel1 != 0 && _snapsCmpSel2 != 0;
-
-      if (valid)
-      {
-        Snapshot* snap1 = &_snapshots[_snapsCmpSel1 - 1];
-        Snapshot* snap2 = &_snapshots[_snapsCmpSel2 - 1];
-
-        valid = valid && snap1->count == snap2->count;
-
-        for (unsigned i = 0; i < snap1->count; i++)
+        if (valid)
         {
-          valid = valid && snap1->blocks[i].compatible(&snap2->blocks[i]);
-        }
-      }
+          Snapshot* snap1 = &_snapshots[_snapsCmpSel1 - 1];
+          Snapshot* snap2 = &_snapshots[_snapsCmpSel2 - 1];
 
-      if (ImGuiAl::Button(ICON_FA_PLUS " Create filter", valid))
-      {
-        createFilterFromSnapshots();
+          valid = valid && snap1->blocks.size() == snap2->blocks.size();
+
+          size_t count = snap1->blocks.size();
+
+          for (size_t i = 0; i < count; i++)
+          {
+            valid = valid && snap1->blocks[i].compatible(&snap2->blocks[i]);
+          }
+        }
+
+        if (ImGuiAl::Button(ICON_FA_PLUS " Create filter", valid))
+        {
+          createFilterFromSnapshots();
+        }
       }
 
       ImGui::PopID();
@@ -522,7 +547,198 @@ namespace
     void showFiltersFromFilters()
     {
       ImGui::PushID(__FUNCTION__);
+      ImGui::SetNextTreeNodeOpen(true);
 
+      if (ImGui::CollapsingHeader("Filter from filters"))
+      {
+        struct Getter
+        {
+          static bool description(void* data, int idx, const char** out_text)
+          {
+            if (idx != 0)
+            {
+              auto filters = (std::vector<Filter>*)data;
+              *out_text = (*filters)[idx - 1].name;
+            }
+            else
+            {
+              *out_text = "None";
+            }
+
+            return true;
+          }
+        };
+
+        ImGui::Combo("1st Filter", &_filtersCmpSel1, Getter::description, (void*)&_filters, _filters.size() + 1);
+
+        static const char* operators2[] = {
+          "Intersection", "Union", "Difference", "Complement"
+        };
+
+        ImGui::Combo("Operator", &_filtersCmpOp, operators2, sizeof(operators2) / sizeof(operators2[0]));
+        ImGui::Combo("2nd Filter", &_filtersCmpSel2, Getter::description, (void*)&_filters, _filters.size() + 1);
+
+        bool valid = _filtersCmpSel1 != 0;
+        valid = valid && ((_filtersCmpOp != 3 && _filtersCmpSel2 != 0) || (_filtersCmpOp == 3 && _filtersCmpSel2 == 0));
+
+        if (valid && _filtersCmpOp != 3)
+        {
+          Filter* filter1 = _filtersCmpSel1 == 0 ? nullptr : &_filters[_filtersCmpSel1 - 1];
+          Filter* filter2 = _filtersCmpSel2 == 0 ? nullptr : &_filters[_filtersCmpSel2 - 1];
+
+          valid = valid && filter1->sets.size() == filter2->sets.size();
+
+          size_t count = filter1->sets.size();
+
+          for (size_t i = 0; i < count; i++)
+          {
+            valid = valid && filter1->sets[i].compatible(&filter2->sets[i]);
+          }
+        }
+
+        if (ImGuiAl::Button(ICON_FA_PLUS " Create filter", valid))
+        {
+          createFilterFromFilters();
+        }
+      }
+
+      ImGui::PopID();
+    }
+
+    void showFiltersList()
+    {
+      ImGui::PushID(__FUNCTION__);
+      ImGui::SetNextTreeNodeOpen(true);
+
+      if (ImGui::CollapsingHeader("Filters"))
+      {
+        for (auto it = _filters.begin(); it != _filters.end();)
+        {
+          Filter* filter = &*it;
+          ImGui::PushID(filter);
+
+          ImGui::InputText("", filter->name, sizeof(filter->name));
+          ImGui::SameLine();
+
+          if (ImGui::Button(ICON_FA_MINUS " Delete"))
+          {
+            it = _filters.erase(it);
+            _filtersCmpSel1 = 0;
+            _filtersCmpSel2 = 0;
+            _filterSel = 0;
+          }
+          else
+          {
+            ++it;
+          }
+
+          ImGui::PopID();
+        }
+      }
+
+      ImGui::PopID();
+    }
+
+    void openMemoryEditor(Filter* filter)
+    {
+      struct Service
+      {
+        static void normalize(size_t* address, debugger_memory_part_t** part, void* udata)
+        {
+          auto filter = (Filter*)udata;
+
+          unsigned mem_count;
+          debugger_memory_t* memory = s_info->coreInfo->getMemoryRegions(&mem_count);
+
+          size_t num_parts = filter->parts.size();
+          size_t i = 0;
+
+
+          while (i < num_parts)
+          {
+            unsigned j = filter->parts[i];
+            unsigned k = j & 65535;
+            j >>= 16;
+
+            if (j >= mem_count || k >= memory[j].count)
+            {
+              break;
+            }
+
+            *part = &memory[j].parts[k];
+
+            if (*address < (*part)->size)
+            {
+              return;
+            }
+
+            *address -= (*part)->size;
+            i++;
+          }
+
+          *part = NULL;
+        }
+
+        static uint8_t read(size_t address, void* udata)
+        {
+          debugger_memory_part_t* part;
+          normalize(&address, &part, udata);
+          return part ? part->pointer[address] : 0;
+        }
+
+        static void write(size_t address, uint8_t byte, void* udata)
+        {
+          debugger_memory_part_t* part;
+          normalize(&address, &part, udata);
+          
+          if (part)
+          {
+            part->pointer[address] = byte;
+          }
+        }
+
+        static int highlight(size_t address, void* udata)
+        {
+          auto filter = (Filter*)udata;
+          size_t count = filter->sets.size();
+
+          for (size_t i = 0; i < count; i++)
+          {
+            if (filter->sets[i].contains(address))
+            {
+              return true;
+            }
+
+            address -= filter->sets[i].size();
+          }
+
+          return false;
+        }
+
+        static void destroy(void* udata)
+        {
+          auto ud = (Filter*)udata;
+          delete ud;
+        }
+      };
+
+      debugger_service_t service;
+
+      service.type = DEBUGGER_SERVICE_EDIT_MEMORY;
+      service.userData = new Filter(*filter);
+      service.destroyUd = Service::destroy;
+
+      service.editMemory.readOnly = false;
+      service.editMemory.size = filter->sizes;
+      service.editMemory.read = Service::read;
+      service.editMemory.write = Service::write;
+      service.editMemory.highlight = Service::highlight;
+
+      s_info->services->startService(&service);
+    }
+
+    void showFilterAddresses()
+    {
       struct Getter
       {
         static bool description(void* data, int idx, const char** out_text)
@@ -541,88 +757,95 @@ namespace
         }
       };
 
-      ImGui::Combo("1st Filter", &_filtersCmpSel1, Getter::description, (void*)&_filters, _filters.size() + 1);
-
-      static const char* operators2[] = {
-        "Intersection", "Union", "Difference", "Complement"
-      };
-
-      ImGui::Combo("Operator", &_filtersCmpOp, operators2, sizeof(operators2) / sizeof(operators2[0]));
-      ImGui::Combo("2nd Filter", &_filtersCmpSel2, Getter::description, (void*)&_filters, _filters.size() + 1);
-
-      bool valid = _filtersCmpSel1 != 0;
-      valid = valid && ((_filtersCmpOp != 3 && _filtersCmpSel2 != 0) || (_filtersCmpOp == 3 && _filtersCmpSel2 == 0));
-
-      if (valid && _filtersCmpOp != 3)
-      {
-        Filter* filter1 = _filtersCmpSel1 == 0 ? nullptr : &_filters[_filtersCmpSel1 - 1];
-        Filter* filter2 = _filtersCmpSel2 == 0 ? nullptr : &_filters[_filtersCmpSel2 - 1];
-
-        valid = valid && filter1->count == filter2->count;
-
-        for (unsigned i = 0; i < filter1->count; i++)
-        {
-          valid = valid && filter1->sets[i].compatible(&filter2->sets[i]);
-        }
-      }
-
-      if (ImGuiAl::Button(ICON_FA_PLUS " Create filter", valid))
-      {
-        createFilterFromFilters();
-      }
-
-      ImGui::PopID();
-    }
-
-    void showFiltersList()
-    {
       ImGui::PushID(__FUNCTION__);
+      ImGui::SetNextTreeNodeOpen(true);
 
-      for (auto it = _filters.begin(); it != _filters.end();)
+      if (ImGui::CollapsingHeader("Filter inspection"))
       {
-        Filter* filter = &*it;
-        ImGui::PushID(filter);
-
-        ImGui::InputText("", filter->name, sizeof(filter->name));
+        ImGui::Combo("", &_filterSel, Getter::description, (void*)&_filters, _filters.size() + 1);
         ImGui::SameLine();
 
-        if (ImGui::Button(ICON_FA_MINUS " Delete"))
+        if (ImGuiAl::Button(ICON_FA_MICROCHIP " Show", _filterSel != 0))
         {
-          for (unsigned i = 0; i < it->count; i++)
-          {
-            it->sets[i].destroy();
-          }
-
-          it = _filters.erase(it);
-          _filtersCmpSel1 = 0;
-          _filtersCmpSel2 = 0;
-        }
-        else
-        {
-          ++it;
+          openMemoryEditor(&_filters[_filterSel - 1]);
         }
 
-        ImGui::SameLine();
-
-        if (ImGui::Button(ICON_FA_MINUS " Show"))
+        if (_filterSel != 0)
         {
-          for (unsigned i = 0; i < filter->count; i++)
+          struct Getter
           {
-            Set* set = &filter->sets[i];
-            size_t addr;
-
-            if (set->first(&addr))
+            static void normalize(size_t* address, debugger_memory_part_t** part, void* udata)
             {
-              do
-              {
-                s_info->log->info("%" PRIx64, addr);
-              }
-              while (set->next(&addr));
-            }
-          }
-        }
+              auto filter = (Filter*)udata;
 
-        ImGui::PopID();
+              unsigned mem_count;
+              debugger_memory_t* memory = s_info->coreInfo->getMemoryRegions(&mem_count);
+
+              size_t num_parts = filter->parts.size();
+              size_t i = 0;
+
+
+              while (i < num_parts)
+              {
+                unsigned j = filter->parts[i];
+                unsigned k = j & 65535;
+                j >>= 16;
+
+                if (j >= mem_count || k >= memory[j].count)
+                {
+                  break;
+                }
+
+                *part = &memory[j].parts[k];
+
+                if (*address < (*part)->size)
+                {
+                  return;
+                }
+
+                *address -= (*part)->size;
+                i++;
+              }
+
+              *part = NULL;
+            }
+
+            static bool description(void* data, int idx, const char** out_text)
+            {
+              auto ud = (ListboxUd*)data;
+              auto filter = ud->_filter;
+              size_t count = filter->sets.size();
+              size_t address;
+
+              for (size_t i = 0; i < count; i++)
+              {
+                if (filter->sets[i].first(&address))
+                {
+                  do
+                  {
+                    if (idx-- == 0)
+                    {
+                      debugger_memory_part_t* part;
+                      size_t norm = address;
+                      normalize(&norm, &part, filter);
+
+                      snprintf(ud->_addressLabel, sizeof(ud->_addressLabel), "%08X %02X", address, part ? part->pointer[norm] : 0);
+                      *out_text = ud->_addressLabel;
+                      return true;
+                    }
+                  }
+                  while (filter->sets[i].next(&address));
+                }
+              }
+
+              return false;
+            }
+          };
+
+          _listboxUd._filter = &_filters[_filterSel - 1];
+          int dummy = -1;
+          ImGui::ListBox("Hits", &dummy, Getter::description, &_listboxUd, _listboxUd._filter->total);
+        }
       }
 
       ImGui::PopID();
@@ -643,11 +866,14 @@ namespace
       _filtersCmpSel1 = 0;
       _filtersCmpSel2 = 0;
       _filtersCmpOp = 0;
+      _filterSel = 0;
       _inited = false;
     }
 
-    void create()
+    void create(const debugger_service_t* service)
     {
+      (void)service;
+
       _temp = 1;
       _cheevosMode = true;
 
@@ -680,20 +906,21 @@ namespace
 
       showSnapshotsList();
 
-      ImGui::SetNextTreeNodeOpen(true);
+      ImGui::Columns(3);
+      showFiltersFromSnapshot();
+      ImGui::NextColumn();
+      showFiltersFromSnapshots();
+      ImGui::NextColumn();
+      showFiltersFromFilters();
+      ImGui::Columns(1);
 
-      if (ImGui::CollapsingHeader("Filters"))
-      {
-        ImGui::Columns(3);
-        showFiltersFromSnapshot();
-        ImGui::NextColumn();
-        showFiltersFromSnapshots();
-        ImGui::NextColumn();
-        showFiltersFromFilters();
-        ImGui::Columns(1);
-        ImGui::Separator();
-        showFiltersList();
-      }
+      ImGui::Separator();
+
+      ImGui::Columns(2);
+      showFiltersList();
+      ImGui::NextColumn();
+      showFilterAddresses();
+      ImGui::Columns(1);
     }
   };
 }
@@ -701,7 +928,9 @@ namespace
 static const debugger_plugin_t plugin =
 {
   ICON_FA_SEARCH " Memory Hunter",
+  NULL,
   Hunter::s_create,
+  NULL,
   Hunter::s_destroy,
   Hunter::s_draw
 };
