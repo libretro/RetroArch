@@ -45,6 +45,8 @@
 
 #include "../../retroarch.h"
 #include "../../version.h"
+#include "../../verbosity.h"
+
 #include "netplay.h"
 #include "netplay_discovery.h"
 #include "netplay_private.h"
@@ -346,6 +348,7 @@ static bool netplay_lan_ad_client(void)
          /* And that we know how to handle it */
          if (their_addr.sa_family == AF_INET)
          {
+            RARCH_WARN ("[lobby] using IPv4 for discovery\n");
             struct sockaddr_in *sin = (struct sockaddr_in *) &their_addr;
             sin->sin_port = htons(ntohl(ad_packet_buffer.port));
 
@@ -353,6 +356,7 @@ static bool netplay_lan_ad_client(void)
 #ifdef HAVE_INET6
          else if (their_addr.sa_family == AF_INET6)
          {
+            RARCH_WARN ("[lobby] using IPv6 for discovery\n");
             struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *) &their_addr;
             sin6->sin6_port = htons(ad_packet_buffer.port);
 
