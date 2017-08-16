@@ -3488,9 +3488,9 @@ static int menu_displaylist_parse_playlists(
 
    list_size = str_list->size;
 
-#ifdef HAVE_LIBRETRODB
    if (!horizontal)
    {
+#ifdef HAVE_LIBRETRODB
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
             msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY),
@@ -3501,32 +3501,31 @@ static int menu_displaylist_parse_playlists(
             msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE),
             MENU_ENUM_LABEL_SCAN_FILE,
             MENU_SETTING_ACTION, 0, 0);
-   }
 #endif
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
+            msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES),
+            MENU_ENUM_LABEL_GOTO_FAVORITES,
+            MENU_SETTING_ACTION, 0, 0);
 
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
-         msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES),
-         MENU_ENUM_LABEL_GOTO_FAVORITES,
-         MENU_SETTING_ACTION, 0, 0);
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_IMAGES),
+            msg_hash_to_str(MENU_ENUM_LABEL_GOTO_IMAGES),
+            MENU_ENUM_LABEL_GOTO_IMAGES,
+            MENU_SETTING_ACTION, 0, 0);
 
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_IMAGES),
-         msg_hash_to_str(MENU_ENUM_LABEL_GOTO_IMAGES),
-         MENU_ENUM_LABEL_GOTO_IMAGES,
-         MENU_SETTING_ACTION, 0, 0);
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_MUSIC),
+            msg_hash_to_str(MENU_ENUM_LABEL_GOTO_MUSIC),
+            MENU_ENUM_LABEL_GOTO_MUSIC,
+            MENU_SETTING_ACTION, 0, 0);
 
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_MUSIC),
-         msg_hash_to_str(MENU_ENUM_LABEL_GOTO_MUSIC),
-         MENU_ENUM_LABEL_GOTO_MUSIC,
-         MENU_SETTING_ACTION, 0, 0);
-
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_VIDEO),
-         msg_hash_to_str(MENU_ENUM_LABEL_GOTO_VIDEO),
-         MENU_ENUM_LABEL_GOTO_VIDEO,
-         MENU_SETTING_ACTION, 0, 0);
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_VIDEO),
+            msg_hash_to_str(MENU_ENUM_LABEL_GOTO_VIDEO),
+            MENU_ENUM_LABEL_GOTO_VIDEO,
+            MENU_SETTING_ACTION, 0, 0);
+   }
 
    if (list_size == 0)
    {
