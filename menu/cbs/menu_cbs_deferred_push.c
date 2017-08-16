@@ -1153,6 +1153,31 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_updater_list);
    }
 #endif
+   else if (strstr(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DRIVER_SETTINGS_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_driver_settings_list);
+   }
+   else if (strstr(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_SETTINGS_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_settings_list);
+   }
+   else if (strstr(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_audio_settings_list);
+   }
+   else if (strstr(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_CORE_INFORMATION)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_information);
+   }
+   else if (strstr(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_SYSTEM_INFORMATION)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_system_information);
+   }
    else
    {
       if (cbs->enum_idx != MSG_UNKNOWN)
@@ -1333,12 +1358,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_releaseyear);
                break;
 #endif
-            case MENU_ENUM_LABEL_CORE_INFORMATION:
-               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_information);
-               break;
-            case MENU_ENUM_LABEL_SYSTEM_INFORMATION:
-               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_system_information);
-               break;
             case MENU_ENUM_LABEL_NETWORK_INFORMATION:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_network_information);
                break;
@@ -1458,15 +1477,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
                break;
             case MENU_LABEL_DEFERRED_ACCOUNTS_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_accounts_list);
-               break;
-            case MENU_LABEL_DEFERRED_DRIVER_SETTINGS_LIST:
-               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_driver_settings_list);
-               break;
-            case MENU_LABEL_DEFERRED_VIDEO_SETTINGS_LIST:
-               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_settings_list);
-               break;
-            case MENU_LABEL_DEFERRED_AUDIO_SETTINGS_LIST:
-               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_audio_settings_list);
                break;
             case MENU_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_playlist_settings_list);
@@ -1617,12 +1627,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_releaseyear);
                break;
 #endif
-            case MENU_LABEL_CORE_INFORMATION:
-               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_information);
-               break;
-            case MENU_LABEL_SYSTEM_INFORMATION:
-               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_system_information);
-               break;
             case MENU_LABEL_NETWORK_INFORMATION:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_network_information);
                break;
