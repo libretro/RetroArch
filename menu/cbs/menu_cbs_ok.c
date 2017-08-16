@@ -3413,6 +3413,7 @@ static int action_ok_push_scan_file(const char *path,
 #ifdef HAVE_NETWORKING
 struct netplay_host_list *lan_hosts;
 int lan_room_count;
+
 void netplay_refresh_rooms_menu(file_list_t *list)
 {
    char s[4115];

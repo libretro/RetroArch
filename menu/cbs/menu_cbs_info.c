@@ -70,20 +70,6 @@ static int action_info_cheevos(unsigned type, const char *label)
 }
 #endif
 
-#ifdef HAVE_NETWORKING
-static int action_info_room(unsigned type, const char *label)
-{
-   unsigned new_id        = type - MENU_SETTINGS_NETPLAY_ROOMS_START;
-#if 1
-   RARCH_LOG ("Room id: %u IP: %s Port: %u\n", new_id, 
-      netplay_room_list[new_id].address, netplay_room_list[new_id].port);
-#endif
-   /* add description here 
-      the relevant data is in netplay_room_list[new_id]*/
-   return 0;
-}
-#endif
-
 int menu_cbs_init_bind_info(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx)
 {
@@ -95,14 +81,6 @@ int menu_cbs_init_bind_info(menu_file_list_cbs_t *cbs,
       (type < MENU_SETTINGS_NETPLAY_ROOMS_START))
    {
       BIND_ACTION_INFO(cbs, action_info_cheevos);
-      return 0;
-   }
-#endif
-
-#ifdef HAVE_NETWORKING
-   if ((type >= MENU_SETTINGS_NETPLAY_ROOMS_START))
-   {
-      BIND_ACTION_INFO(cbs, action_info_room);
       return 0;
    }
 #endif
