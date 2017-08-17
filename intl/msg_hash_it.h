@@ -313,9 +313,9 @@ MSG_HASH(
       "Cheat File"
       )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
-      "Carica i trucchi")
+      "Carica cheat/trucchi")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
-      "Salva i trucchi come")
+      "Salva cheat/trucchi")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEAT_NUM_PASSES,
       "Trucchi usati")
 MSG_HASH(
@@ -1101,7 +1101,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_REWIND_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY,
       "Livello della funzione riavvolgi")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
-      "Impostazioni della funzione di riavvolgimento")
+      "Riavvolgimento")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
       "Directory di selezione file")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
@@ -1156,6 +1156,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS,
       "Settaggi")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
       "Impostazioni")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,
+      "Preferiti") 
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER,
       "Shader")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
@@ -1703,9 +1705,9 @@ MSG_HASH(MSG_APPENDED_DISK,
 MSG_HASH(MSG_APPLICATION_DIR,
       "Directory app")
 MSG_HASH(MSG_APPLYING_CHEAT,
-      "Applying cheat changes.")
+      "Applicazione dei trucchi/cheat in corso")
 MSG_HASH(MSG_APPLYING_SHADER,
-      "Applying shader")
+      "Applicazione dello shader in corso")
 MSG_HASH(MSG_AUDIO_MUTED,
       "MUTO.")
 MSG_HASH(MSG_AUDIO_UNMUTED,
@@ -2495,5 +2497,22 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS,
       "Modifica i controlli per il contenuto attualmente in esecuzione.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_OPTIONS,
       "Modifica le opzioni per il contenuto attualmente in esecuzione.")   
- MSG_HASH(MENU_ENUM_SUBLABEL_RESTART_CONTENT,
+MSG_HASH(MENU_ENUM_SUBLABEL_RESTART_CONTENT,
       "Riavvia il contenuto dall'inizio.") 
+MSG_HASH(MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE,
+      "Se viene caricato un salvataggio, il contenuto tornerà allo stato prima del caricamento.")
+MSG_HASH(MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
+      "Se un salvataggio è stato sovrascritto, si ritorna allo stato del salvataggio precedente.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CORE_CHEAT_OPTIONS,
+      "Imposta i trucchi/cheat.")  
+MSG_HASH(MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES,
+      "Le modifiche dei trucchi/cheat avranno effetto immediato.")   
+MSG_HASH(MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD,
+      "Carica un file dei trucchi/cheat.")  
+MSG_HASH(MENU_ENUM_SUBLABEL_CHEAT_FILE_SAVE_AS,
+      "Salva i trucchi correnti come file di salvataggio.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CHEAT_NUM_PASSES,
+      "Aumenta o diminuisce la quantità di trucchi/cheat.")
+MSG_HASH(MENU_ENUM_SUBLABEL_SHADER_OPTIONS,
+      "Imposta gli shader per aumentare visivamente l'immagine.")
+   
