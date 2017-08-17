@@ -2517,8 +2517,15 @@ static void xmb_render(void *data, bool is_idle)
       int16_t pointer_y = menu_input_pointer_state(MENU_POINTER_Y_AXIS);
       int16_t mouse_y   = menu_input_mouse_state(MENU_MOUSE_Y_AXIS)
          + (xmb->cursor.size/2);
+      unsigned first = 0, last = end;
+      unsigned height;
 
-      for (i = 0; i < end; i++)
+      video_driver_get_size(NULL, &height);
+
+      if (height)
+         xmb_calculate_visible_range(xmb, height, end, selection, &first, &last);
+
+      for (i = first; i <= last; i++)
       {
          float item_y1     = xmb->margins.screen.top
             + xmb_item_y(xmb, (int)i, selection);
