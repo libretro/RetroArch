@@ -1925,7 +1925,7 @@ static int cheevos_test_cond_set(const cheevos_condset_t *condset,
    /* Read all standard conditions, and process as normal: */
    for (cond = condset->conds; cond < end; cond++)
    {
-      if (cond->type != CHEEVOS_COND_TYPE_STANDARD)
+      if (cond->type == CHEEVOS_COND_TYPE_PAUSE_IF || cond->type == CHEEVOS_COND_TYPE_RESET_IF)
          continue;
       
       if (cond->type == CHEEVOS_COND_TYPE_ADD_SOURCE)
@@ -1954,7 +1954,7 @@ static int cheevos_test_cond_set(const cheevos_condset_t *condset,
          continue;
       }
 
-      if (cond->req_hits != 0 && cond->curr_hits >= cond->req_hits)
+      if (cond->req_hits != 0 && (cond->curr_hits + cheevos_locals.add_hits) >= cond->req_hits)
          continue;
 
       cond_valid = cheevos_test_condition(cond);
