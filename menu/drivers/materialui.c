@@ -940,7 +940,9 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
    /* Sublabel */
    if (menu_entry_get_sublabel(i, sublabel_str, sizeof(sublabel_str)))
    {
-      word_wrap(sublabel_str, sublabel_str, (int)(usable_width / mui->glyph_width2), false);
+      int icon_margin = texture_switch2 ? mui->icon_size : 0;
+
+      word_wrap(sublabel_str, sublabel_str, (int)((usable_width - icon_margin) / mui->glyph_width2), false);
 
       menu_display_draw_text(mui->font2, sublabel_str,
             mui->margin + (texture_switch2 ? mui->icon_size : 0),
