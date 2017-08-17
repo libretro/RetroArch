@@ -2531,3 +2531,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_FAVORITES,
       "Mostra colonna Preferiti")   
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_NETPLAY,
       "Mostra colonna stanze Netplay")  
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
+      "Menu Icons")
+MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
+      "Enable/disable the menu icons shown at the lefthand side of the menu entries.")

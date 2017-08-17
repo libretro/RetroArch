@@ -3125,3 +3125,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
       "Video")
 MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_VIDEO,
       "Videos which have been previously played will appear here.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
+      "Menu Icons")
+MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
+      "Enable/disable the menu icons shown at the lefthand side of the menu entries.")

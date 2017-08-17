@@ -1295,3 +1295,5 @@ MSG_HASH(MENU_ENUM_LABEL_GOTO_IMAGES,
       "goto_images")
 MSG_HASH(MENU_ENUM_LABEL_GOTO_VIDEO,
       "goto_video")
+MSG_HASH(MENU_ENUM_LABEL_MATERIALUI_ICONS_ENABLE,
+      "materialui_icons_enable")

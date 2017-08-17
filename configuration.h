@@ -123,6 +123,7 @@ typedef struct settings
       bool menu_horizontal_animation;
       bool menu_show_online_updater;
       bool menu_show_core_updater;
+      bool menu_materialui_icons_enable;
       bool menu_xmb_shadows_enable;
       bool menu_xmb_show_settings;
       bool menu_xmb_show_favorites;

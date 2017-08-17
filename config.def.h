@@ -58,6 +58,10 @@ static bool bundle_assets_extract_enable = true;
 static bool bundle_assets_extract_enable = false;
 #endif
 
+#ifdef HAVE_MATERIALUI
+static bool materialui_icons_enable      = true;
+#endif
+
 static const bool def_history_list_enable = true;
 static const bool def_playlist_entry_remove = true;
 

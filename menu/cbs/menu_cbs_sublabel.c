@@ -84,6 +84,7 @@ default_sublabel_macro(action_bind_sublabel_fps_show,                      MENU_
 default_sublabel_macro(action_bind_sublabel_netplay_settings,              MENU_ENUM_SUBLABEL_NETPLAY)
 default_sublabel_macro(action_bind_sublabel_user_bind_settings,            MENU_ENUM_SUBLABEL_INPUT_USER_BINDS)
 default_sublabel_macro(action_bind_sublabel_input_hotkey_settings,         MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS)
+default_sublabel_macro(action_bind_sublabel_materialui_icons_enable,       MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE)
 default_sublabel_macro(action_bind_sublabel_add_content_list,              MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST)
 default_sublabel_macro(action_bind_sublabel_video_frame_delay,             MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY)
 default_sublabel_macro(action_bind_sublabel_video_black_frame_insertion,   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION)
@@ -406,6 +407,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_MATERIALUI_ICONS_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_materialui_icons_enable);
+            break;
          case MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_viewport_custom_height);
             break;

@@ -5509,6 +5509,21 @@ static bool setting_append_list(
          /* only MaterialUI uses these values, don't show them on other drivers */
          if (string_is_equal_fast(settings->arrays.menu_driver, "glui", 4))
          {
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.menu_materialui_icons_enable,
+                  MENU_ENUM_LABEL_MATERIALUI_ICONS_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
+                  materialui_icons_enable,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_ADVANCED);
+
             CONFIG_UINT(
                   list, list_info,
                   &settings->uints.menu_materialui_color_theme,
