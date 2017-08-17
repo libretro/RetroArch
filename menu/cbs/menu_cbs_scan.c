@@ -59,8 +59,7 @@ int action_scan_file(const char *path,
 
    menu_entries_get_last_stack(&menu_path, &menu_label, NULL, &enum_idx, NULL);
 
-   if (path)
-      fill_pathname_join(fullpath, menu_path, path, sizeof(fullpath));
+   fill_pathname_join(fullpath, menu_path, path, sizeof(fullpath));
 
    task_push_dbscan(
          settings->paths.directory_playlist,
@@ -83,8 +82,10 @@ int action_scan_directory(const char *path,
 
    menu_entries_get_last_stack(&menu_path, &menu_label, NULL, &enum_idx, NULL);
 
+   strlcpy(fullpath, menu_path, sizeof(fullpath));
+
    if (path)
-      fill_pathname_join(fullpath, menu_path, path, sizeof(fullpath));
+      fill_pathname_join(fullpath, fullpath, path, sizeof(fullpath));
 
    task_push_dbscan(
          settings->paths.directory_playlist,
