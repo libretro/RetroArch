@@ -124,6 +124,8 @@ enum
    MUI_TEXTURE_TAKE_SCREENSHOT,
    MUI_TEXTURE_CONFIGURATIONS,
    MUI_TEXTURE_LOAD_CONTENT,
+   MUI_TEXTURE_DISK,
+   MUI_TEXTURE_EJECT,
    MUI_TEXTURE_LAST
 };
 
@@ -294,6 +296,10 @@ static const char *mui_texture_path(unsigned id)
          return "load_state.png";
       case MUI_TEXTURE_SAVE_STATE:
          return "save_state.png";
+      case MUI_TEXTURE_DISK:
+         return "disk.png";
+      case MUI_TEXTURE_EJECT:
+         return "eject.png";
       case MUI_TEXTURE_UNDO_LOAD_STATE:
          return "undo_load_state.png";
       case MUI_TEXTURE_UNDO_SAVE_STATE:
@@ -2415,6 +2421,22 @@ static void mui_list_insert(void *userdata,
                )
          {
             node->texture_switch2     = mui->textures.list[MUI_TEXTURE_LOAD_STATE];
+            node->texture_switch2_set = true;
+         }
+         else if (
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_CYCLE_TRAY_STATUS))
+               )
+         {
+            node->texture_switch2     = mui->textures.list[MUI_TEXTURE_EJECT];
+            node->texture_switch2_set = true;
+         }
+         else if (
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_IMAGE_APPEND))
+               ||
+               string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_OPTIONS))
+               )
+         {
+            node->texture_switch2     = mui->textures.list[MUI_TEXTURE_DISK];
             node->texture_switch2_set = true;
          }
          else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_STATE))
