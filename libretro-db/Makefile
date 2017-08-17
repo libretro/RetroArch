@@ -24,6 +24,7 @@ C_CONVERTER_C = \
 			 $(LIBRETRO_COMM_DIR)/hash/rhash.c \
 			 $(LIBRETRO_COMM_DIR)/compat/compat_fnmatch.c \
 			 $(LIBRETRO_COMM_DIR)/string/stdstring.c \
+			 $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
 			 $(LIBRETRO_COMMON_C) \
 			 $(LIBRETRO_COMM_DIR)/compat/compat_strl.c
 
@@ -38,6 +39,7 @@ RARCHDB_TOOL_C = \
 			 $(LIBRETRODB_DIR)/libretrodb.c \
 			 $(LIBRETRO_COMM_DIR)/compat/compat_fnmatch.c \
 			 $(LIBRETRO_COMM_DIR)/string/stdstring.c \
+			 $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
 			 $(LIBRETRO_COMMON_C) \
 			 $(LIBRETRO_COMM_DIR)/compat/compat_strl.c
 
