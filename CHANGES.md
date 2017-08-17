@@ -6,6 +6,7 @@
 - COMMON: Fix 'Disk Image Append' option.
 - GUI: (MaterialUI) Add disk image append icons.
 - GUI: (MaterialUI) Improve word wrapping when menu icons are enabled.
+- GUI: (MaterialUI) Add User Interface -> Appearance -> Menu Icons Enable. You can turn on/off the icons on the lefthand side of the menu entries.
 - LOCALIZATION: Update Italian translation.
 
 # 1.6.6 (future)
