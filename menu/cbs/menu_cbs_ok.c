@@ -979,8 +979,10 @@ static bool menu_content_find_first_core(menu_content_ctx_defer_info_t *def_info
       core_info_get_current_core((core_info_t**)&info);
       if (info)
       {
+#if 0
          RARCH_LOG("[lobby] use the current core (%s) to load this content...\n",
                info->path);
+#endif
          supported = 1;
       }
    }
@@ -2125,7 +2127,6 @@ static int generic_action_ok_remap_file_operation(const char *path,
    }
    else
    {
-      RARCH_LOG("removing %s", file);
       if(input_remapping_remove_file(file))
       {
          if (action_type == ACTION_OK_REMAP_FILE_REMOVE_CORE)
@@ -3326,10 +3327,12 @@ static int action_ok_netplay_connect_room(const char *path,
          netplay_room_list[idx - 3].port);
    }
 
+#if 0
    RARCH_LOG("[lobby] connecting to: %s with game: %s/%08x\n",
          tmp_hostname,
          netplay_room_list[idx - 3].gamename,
          netplay_room_list[idx - 3].gamecrc);
+#endif
 
    task_push_netplay_crc_scan(netplay_room_list[idx - 3].gamecrc,
       netplay_room_list[idx - 3].gamename,
@@ -3406,8 +3409,11 @@ static int action_ok_push_content_list(const char *path,
 static int action_ok_push_scan_file(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   filebrowser_clear_type();
-   return action_ok_push_content_list(path, label, type, idx, entry_idx);
+   settings_t            *settings   = config_get_ptr();
+   filebrowser_set_type(FILEBROWSER_SCAN_FILE);
+   return generic_action_ok_displaylist_push(path,
+         settings->paths.directory_menu_content, label, type, idx,
+         entry_idx, ACTION_OK_DL_CONTENT_LIST);
 }
 
 #ifdef HAVE_NETWORKING
@@ -3463,8 +3469,6 @@ void netplay_refresh_rooms_menu(file_list_t *list)
 
    if (netplay_room_count != 0)
    {
-      RARCH_LOG ("[lobby] found %d rooms...\n", netplay_room_count);
-
       for (i = 0; i < netplay_room_count; i++)
       {
          char country[PATH_MAX_LENGTH] = {0};
@@ -3545,7 +3549,6 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
       if (string_is_empty(data->data))
       {
          netplay_room_count = 0;
-         RARCH_LOG("[lobby] room list empty\n");
       }
       else
       {
@@ -4743,19 +4746,23 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_directory_push);
             break;
          case FILE_TYPE_CARCHIVE:
-            switch (menu_label_hash)
+            if (filebrowser_get_type() == FILEBROWSER_SCAN_FILE)
             {
-               case MENU_LABEL_FAVORITES:
-                  BIND_ACTION_OK(cbs, action_ok_compressed_archive_push_detect_core);
-                  break;
-               case MENU_LABEL_SCAN_FILE:
 #ifdef HAVE_LIBRETRODB
-                  BIND_ACTION_OK(cbs, action_ok_scan_file);
+               BIND_ACTION_OK(cbs, action_ok_scan_file);
 #endif
-                  break;
-               default:
-                  BIND_ACTION_OK(cbs, action_ok_compressed_archive_push);
-                  break;
+            }
+            else
+            {
+               switch (menu_label_hash)
+               {
+                  case MENU_LABEL_FAVORITES:
+                     BIND_ACTION_OK(cbs, action_ok_compressed_archive_push_detect_core);
+                     break;
+                  default:
+                     BIND_ACTION_OK(cbs, action_ok_compressed_archive_push);
+                     break;
+               }
             }
             break;
          case FILE_TYPE_CORE:
@@ -4853,15 +4860,16 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case FILE_TYPE_IN_CARCHIVE:
          case FILE_TYPE_PLAIN:
-            if (cbs->enum_idx != MSG_UNKNOWN)
+            if (filebrowser_get_type() == FILEBROWSER_SCAN_FILE)
+            {
+#ifdef HAVE_LIBRETRODB
+               BIND_ACTION_OK(cbs, action_ok_scan_file);
+#endif
+            }
+            else if (cbs->enum_idx != MSG_UNKNOWN)
             {
                switch (cbs->enum_idx)
                {
-#ifdef HAVE_LIBRETRODB
-                  case MENU_ENUM_LABEL_SCAN_FILE:
-                     BIND_ACTION_OK(cbs, action_ok_scan_file);
-                     break;
-#endif
                   case MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
                   case MENU_ENUM_LABEL_FAVORITES:
                   case MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE:
@@ -4888,11 +4896,6 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             {
                switch (menu_label_hash)
                {
-#ifdef HAVE_LIBRETRODB
-                  case MENU_LABEL_SCAN_FILE:
-                     BIND_ACTION_OK(cbs, action_ok_scan_file);
-                     break;
-#endif
                   case MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
                   case MENU_LABEL_FAVORITES:
                   case MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE:
