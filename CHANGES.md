@@ -1,4 +1,10 @@
+# 1.6.8 (future)
+
 # 1.6.7 (future)
+- SCANNER: Fix directory scanning
+- SCANNER: Fix file scanning
+- COMMON: Fix 'Disk Image Append' option
+- LOCALIZATION: Update Italian translation
 
 # 1.6.6 (future)
 - 3DS: Fixes serious performance regression that affected every core; rewind was always implicitly enabled.
