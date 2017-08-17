@@ -2512,7 +2512,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD,
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEAT_FILE_SAVE_AS,
       "Salva i trucchi correnti come file di salvataggio.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEAT_NUM_PASSES,
-      "Aumenta o diminuisce la quantità di trucchi/cheat."
+      "Aumenta o diminuisce la quantità di trucchi/cheat.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SHADER_OPTIONS,
       "Imposta gli shader per aumentare visivamente l'immagine.")
    
