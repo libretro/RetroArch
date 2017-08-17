@@ -947,7 +947,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS,
       "Overlay sullo schermo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
-      "Onscreen Notifications")
+      "Notifiche sullo schermo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
       "Apri archivio come cartella") /* TODO/FIXME */
 MSG_HASH(MENU_ENUM_LABEL_VALUE_OPTIONAL,
@@ -1093,7 +1093,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_RETROPAD_WITH_ANALOG,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
       "Achievements")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REWIND_ENABLE,
-      "Abilita riavvolgi")
+      "Abilita riavvolgimento")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY,
       "Livello della funzione riavvolgi")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
@@ -2442,7 +2442,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
       "Imposta le dimensioni dell'altezza personalizzata per la finestra del display. Lasciando il valore a 0 tenterà di scalare la finestra il più grande possibile.")   
 MSG_HASH(MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
-      "Quando in slow motion, il contenuto rallenterà il fattore specificato / impostato.") 
+      "In slow motion, il contenuto rallenterà il fattore specificato / impostato.") 
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD,
       "Registra l'output GPU del materiale ombreggiato se disponibile.")   
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
@@ -2496,7 +2496,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CORE_OPTIONS,
 MSG_HASH(MENU_ENUM_SUBLABEL_RESTART_CONTENT,
       "Riavvia il contenuto dall'inizio.") 
 MSG_HASH(MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE,
-      "Se viene caricato un salvataggio, il contenuto tornerà allo stato prima del caricamento.")
+      "Se viene caricato un salvataggio, il contenuto tornerà allo stato iniziale prima del caricamento.")
 MSG_HASH(MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
       "Se un salvataggio è stato sovrascritto, si ritorna allo stato del salvataggio precedente.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_CHEAT_OPTIONS,
@@ -2532,6 +2532,20 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_FAVORITES,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_NETPLAY,
       "Mostra colonna stanze Netplay")  
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
-      "Menu Icons")
+      "Icone del Menu")
 MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
-      "Enable/disable the menu icons shown at the lefthand side of the menu entries.")
+      "Abilita/disabilita le icone del menu visualizzate sul lato sinistro di ogni voce.")
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
+      "Assicurarsi che il framerate sia limitato all'interno del menu")   
+MSG_HASH(MENU_ENUM_SUBLABEL_MOUSE_ENABLE,
+      "Attiva i comandi del mouse all'interno del menu.")
+MSG_HASH(MENU_ENUM_SUBLABEL_POINTER_ENABLE,
+      "Attiva i comandi touch all'interno del menu.")
+MSG_HASH(MENU_ENUM_SUBLABEL_THUMBNAILS,
+      "Tipo di miniatura da visualizzare.")
+MSG_HASH(MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE,
+      "Mostra la data e/o l'ora attuale nel menu.")
+MSG_HASH(MENU_ENUM_SUBLABEL_BATTERY_LEVEL_ENABLE,
+      "Mostra il livello di carica della batteria all'interno del menu.")
+MSG_HASH(MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
+      "Mostra la schermata di avvio nel menu. Questo viene automaticamente impostato su off dopo l'avvio del programma per la prima volta.")   
