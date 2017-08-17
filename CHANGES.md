@@ -5,6 +5,7 @@
 - SCANNER: Fix file scanning.
 - COMMON: Fix 'Disk Image Append' option.
 - GUI: (MaterialUI) Add disk image append icons.
+- GUI: (MaterialUI) Improve word wrapping when menu icons are enabled.
 - LOCALIZATION: Update Italian translation.
 
 # 1.6.6 (future)
