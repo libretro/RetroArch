@@ -555,7 +555,7 @@ static void *xmb_list_get_entry(void *data, enum menu_list_type type, unsigned i
    return NULL;
 }
 
-static INLINE float xmb_item_y(xmb_handle_t *xmb, int i, size_t current)
+static INLINE float xmb_item_y(const xmb_handle_t *xmb, int i, size_t current)
 {
    float iy = xmb->icon.spacing.vertical;
 
@@ -2195,6 +2195,35 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
    return xmb->textures.list[XMB_TEXTURE_SUBSETTING];
 }
 
+static void xmb_calculate_visible_range(const xmb_handle_t *xmb, unsigned height, size_t list_size, unsigned current, unsigned *first, unsigned *last)
+{
+   unsigned j;
+   float    base_y = xmb->margins.screen.top;
+
+   if (current)
+   {
+      for (j = current; j-- > 0; )
+      {
+         float bottom = xmb_item_y(xmb, j, current) + base_y + xmb->icon.size;
+
+         if (bottom < 0)
+            break;
+
+         *first = j;
+      }
+   }
+
+   for (j = current+1; j < list_size; j++)
+   {
+      float top = xmb_item_y(xmb, j, current) + base_y;
+
+      if (top > height)
+         break;
+
+      *last = j;
+   }
+}
+
 static void xmb_draw_items(
       video_frame_info_t *video_info,
       menu_display_frame_info_t menu_disp_info,
@@ -2210,6 +2239,7 @@ static void xmb_draw_items(
    size_t end                  = 0;
    uint64_t frame_count        = xmb->frame_count;
    const char *thumb_ident     = xmb_thumbnails_ident();
+   unsigned first, last;
 
    if (!list || !list->size)
       return;
@@ -2234,9 +2264,14 @@ static void xmb_draw_items(
    if (list == xmb->selection_buf_old)
       i = 0;
 
+   first = i;
+   last  = end - 1;
+
+   xmb_calculate_visible_range(xmb, height, end, current, &first, &last);
+
    menu_display_blend_begin();
 
-   for (; i < end; i++)
+   for (i = first; i <= last; i++)
    {
       float icon_x, icon_y, label_offset;
       menu_animation_ctx_ticker_t ticker;
@@ -2268,12 +2303,6 @@ static void xmb_draw_items(
       ticker_str[0] = name[0] = value[0] = '\0';
 
       icon_y = xmb->margins.screen.top + node->y + half_size;
-
-      if (icon_y < half_size)
-         continue;
-
-      if (icon_y > height + xmb->icon.size)
-         break;
 
       icon_x = node->x + xmb->margins.screen.left +
          xmb->icon.spacing.horizontal - half_size;
