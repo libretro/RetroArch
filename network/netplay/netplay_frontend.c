@@ -57,6 +57,8 @@ static unsigned  server_port_deferred = 0;
 static int reannounce = 0;
 static bool is_mitm = false;
 
+bool netplay_disconnect(netplay_t *netplay);
+
 /**
  * netplay_is_alive:
  * @netplay              : pointer to netplay object
@@ -825,6 +827,13 @@ bool netplay_pre_frame(netplay_t *netplay)
 
    sync_stalled = !netplay_sync_pre_frame(netplay);
 
+   /* If we're disconnected, deinitialize */
+   if (!netplay->is_server && !netplay->connections[0].active)
+   {
+      netplay_disconnect(netplay);
+      return true;
+   }
+
    if (sync_stalled ||
        ((!netplay->is_server || netplay->connected_players) &&
         (netplay->stall || netplay->remote_paused)))
@@ -860,6 +869,10 @@ void netplay_post_frame(netplay_t *netplay)
             false))
          netplay_hangup(netplay, connection);
    }
+
+   /* If we're disconnected, deinitialize */
+   if (!netplay->is_server && !netplay->connections[0].active)
+      netplay_disconnect(netplay);
 }
 
 /**
