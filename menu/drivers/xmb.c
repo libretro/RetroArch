@@ -128,6 +128,7 @@ enum
    XMB_TEXTURE_ACHIEVEMENT_LIST,
    XMB_TEXTURE_SCREENSHOT,
    XMB_TEXTURE_RELOAD,
+   XMB_TEXTURE_RENAME,
    XMB_TEXTURE_FILE,
    XMB_TEXTURE_FOLDER,
    XMB_TEXTURE_ZIP,
@@ -2084,6 +2085,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_CLOSE];
       case MENU_ENUM_LABEL_RESTART_CONTENT:
          return xmb->textures.list[XMB_TEXTURE_RELOAD];
+      case MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME:
+         return xmb->textures.list[XMB_TEXTURE_RENAME];
       case MENU_ENUM_LABEL_RESUME_CONTENT:
          return xmb->textures.list[XMB_TEXTURE_RESUME];
       case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE:
@@ -3584,6 +3587,8 @@ static const char *xmb_texture_path(unsigned id)
          return "screenshot.png";
       case XMB_TEXTURE_RELOAD:
          return "reload.png";
+      case XMB_TEXTURE_RENAME:
+         return "rename.png";
       case XMB_TEXTURE_FILE:
          return "file.png";
       case XMB_TEXTURE_FOLDER:
