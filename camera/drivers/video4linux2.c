@@ -16,7 +16,9 @@
  */
 
 #include <stdio.h>
+#if !defined(__FreeBSD__) || __FreeBSD__ < 5
 #include <malloc.h>
+#endif
 #include <string.h>
 #include <assert.h>
 #include <stddef.h>
@@ -28,7 +30,9 @@
 #include <sys/time.h>
 #include <sys/ioctl.h>
 
+#ifndef __FreeBSD__
 #include <asm/types.h>
+#endif
 #include <linux/videodev2.h>
 
 #include <memmap.h>
