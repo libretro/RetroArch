@@ -708,6 +708,7 @@ static void mui_compute_entries_box(mui_handle_t* mui, int width)
    float sum           = 0;
    size_t entries_end  = menu_entries_get_end();
    float scale_factor  = menu_display_get_dpi();
+   uintptr_t texture_switch2 = 0;
 
    for (i = 0; i < entries_end; i++)
    {
@@ -718,9 +719,15 @@ static void mui_compute_entries_box(mui_handle_t* mui, int width)
 
       sublabel_str[0]  = '\0';
 
+      /* set texture_switch2 */
+      if (node->texture_switch2_set)
+         texture_switch2 = node->texture_switch2;
+
       if (menu_entry_get_sublabel(i, sublabel_str, sizeof(sublabel_str)))
       {
-         word_wrap(sublabel_str, sublabel_str, (int)(usable_width / mui->glyph_width2), false);
+         int icon_margin = texture_switch2 ? mui->icon_size : 0;
+
+         word_wrap(sublabel_str, sublabel_str, (int)((usable_width - icon_margin) / mui->glyph_width2), false);
          lines = mui_count_lines(sublabel_str);
       }
 
