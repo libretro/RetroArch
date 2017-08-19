@@ -1526,10 +1526,10 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {
          switch (label_hash)
          {
-            case MENU_LABEL_SETTINGS:
+            case MENU_LABEL_SETTINGS: /* TODO/FIXME */
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_settings);
                break;
-            case MENU_LABEL_DEFERRED_CONFIGURATIONS_LIST:
+            case MENU_LABEL_DEFERRED_CONFIGURATIONS_LIST: /* TODO/FIXME */
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_configurations_list);
                break;
             case MENU_LABEL_DEFERRED_USER_BINDS_LIST:
