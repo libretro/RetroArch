@@ -1235,6 +1235,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_information_list);
    }
+   else if (strstr(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_SHADER_OPTIONS)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_shader_options);
+   }
    else
    {
       if (cbs->enum_idx != MSG_UNKNOWN)
@@ -1575,9 +1580,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
                break;
             case MENU_LABEL_RECORD_CONFIG:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_record_configfile);
-               break;
-            case MENU_LABEL_SHADER_OPTIONS:
-               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_shader_options);
                break;
             case MENU_LABEL_NETPLAY:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_netplay);
