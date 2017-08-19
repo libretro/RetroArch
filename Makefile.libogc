@@ -102,6 +102,8 @@ export LIBS			:=	$(BASEDIR)/wii/libogc/libs
 
 export INCDIR		:=	$(BASEDIR)/wii/libogc/include
 
+export LIBDIR		:= $(LIBS)/$(PLATFORM)
+
 #---------------------------------------------------------------------------------
 BBALIB		:= $(LIBDIR)/libbba
 OGCLIB		:= $(LIBDIR)/libogc
