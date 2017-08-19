@@ -223,7 +223,7 @@ MSG_HASH(
       "Audio"
       )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
-      "Sincro audio")
+      "Sincronizzazione audio")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
       "Livello volume audio (dB)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
@@ -323,8 +323,7 @@ MSG_HASH(
       "Descrizione"
       )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
-      /* FIXME? Translate 'Achievements Hardcore Mode' */
-      "Modalità Hardcore")
+      "Modalità Achievements Hardcore")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ACHIEVEMENTS,
       "Obiettivi bloccati:")
 MSG_HASH(
@@ -337,8 +336,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL,
-      /* FIXME? Translate 'Test Unofficial Achievements' */
-      "Prova non ufficiali")
+      "Prova Achievements non ufficiali")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ACHIEVEMENTS,
       "Obiettivi sbloccati,")
 MSG_HASH(
@@ -375,8 +373,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
       "Download")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
       "Download")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS, /* UPDATE/FIXME */
-      "Opzione dei trucchi per il core")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
+      "Trucchi/Cheats")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_COUNTERS,
       "Contatore dei core")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_ENABLE,
@@ -438,7 +436,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DATABASE_SELECTION,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
       "Rimuovi")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FAVORITES,
-      "Seleziona il file ed intercetta il core") /* TODO/FIXME - update */
+      "Avvia da directory")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
       "<Directory contenuto>")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
@@ -455,12 +453,12 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
       "Aggiungi immagine disco")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_INDEX,
       "Indice del disco")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_OPTIONS, /* UPDATE/FIXME */
-      "Opzioni disco")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
+      "Controllo disco")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DONT_CARE,
       "Non considerare")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
-      "Scarica sulle directories")
+      "Downloads")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
       "Scarica Core...")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
@@ -774,7 +772,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LINEAR,
       "Lineare")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE,
-      "Carica archivio con il core") /* TODO/FIXME */
+      "Carica archivio")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
       "Carica Recenti")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
@@ -817,8 +815,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
       "Driver Menù")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
       "Frequenza fotogrammi del menù")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS, /* TODO/FIXME - update */
-      "Seleziona file")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
+      "Impostazioni")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
       "Filtro lineare del menù")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
@@ -948,7 +946,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
       "Notifiche sullo schermo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
-      "Apri archivio come cartella") /* TODO/FIXME */
+      "Apri archivio")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_OPTIONAL,
       "Opzionale")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_OVERLAY,
@@ -1094,7 +1092,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REWIND_ENABLE,
       "Abilita riavvolgimento")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY,
-      "Livello della funzione riavvolgi")
+      "Livello di riavvolgimento")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
       "Riavvolgimento")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
@@ -1341,8 +1339,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ZLIB_SUPPORT,
       "Supporto Zlib")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
       "Cattura Screenshot")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE, /* TODO/FIXME - update */
-      "Carica ciclo di dati nei thread")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
+      "Funzioni Threaded")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_THUMBNAILS,
       "Miniature")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
@@ -1420,7 +1418,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
       "Inserimento cornice nera")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
-      "Riduci Overscan (Riavvia)")
+      "Riduci Overscan (Ricarica)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
       "Disattiva composizione desktop")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
@@ -2115,7 +2113,7 @@ MSG_HASH(
       )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SYNC,
-   "Sincronizzare l'audio. Consigliato."
+   "Sincronizza l'audio. Consigliato."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AXIS_THRESHOLD,
@@ -2441,7 +2439,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
       "Imposta le dimensioni dell'altezza personalizzata per la finestra del display. Lasciando il valore a 0 tenterà di scalare la finestra il più grande possibile.")   
 MSG_HASH(MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
-      "In slow motion, il contenuto rallenterà il fattore specificato / impostato.") 
+      "In slow motion, il contenuto verrà rallentato dal valore specificato / impostato.") 
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD,
       "Registra l'output GPU del materiale ombreggiato se disponibile.")   
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
@@ -2530,10 +2528,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_FAVORITES,
       "Mostra colonna Preferiti")   
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_NETPLAY,
       "Mostra colonna stanze Netplay")  
-MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
-      "Icone del Menu")
-MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
-      "Abilita/disabilita le icone del menu visualizzate sul lato sinistro di ogni voce.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
       "Assicurarsi che il framerate sia limitato all'interno del menu")   
 MSG_HASH(MENU_ENUM_SUBLABEL_MOUSE_ENABLE,
@@ -2549,4 +2543,16 @@ MSG_HASH(MENU_ENUM_SUBLABEL_BATTERY_LEVEL_ENABLE,
 MSG_HASH(MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
       "Mostra la schermata di avvio nel menu. Questo viene automaticamente impostato su off dopo l'avvio del programma per la prima volta.")   
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_DELETE,
-      "Cancella core")
+      "Cancella core")   
+MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
+      "Salva un file di configurazione override che si applica a tutti i contenuti caricati con questo core. Avrà la precedenza sulla configurazione principale.")
+MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
+      "Salva un file di configurazione override che si applica solo al contenuto corrente. Avrà la precedenza sulla configurazione principale.")
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
+      "Seleziona la porta di ascolto per l'overlay se è attivata l'opzione Visualizza input nell'Overlay.") 
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
+      "Visualizza gli input della porta di ascolto ")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
+      "Icone del Menu")
+MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
+      "Abilita/disabilita le icone del menu visualizzate sul lato sinistro di ogni voce.")
