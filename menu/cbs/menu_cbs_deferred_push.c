@@ -1178,6 +1178,21 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_system_information);
    }
+   else if (strstr(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_accounts_list);
+   }
+   else if (strstr(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_CORE_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_list);
+   }
+   else if (strstr(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_history_list);
+   }
    else
    {
       if (cbs->enum_idx != MSG_UNKNOWN)
@@ -1475,9 +1490,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             case MENU_LABEL_DEFERRED_USER_BINDS_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_user_binds_list);
                break;
-            case MENU_LABEL_DEFERRED_ACCOUNTS_LIST:
-               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_accounts_list);
-               break;
             case MENU_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_playlist_settings_list);
                break;
@@ -1516,9 +1528,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
 #ifdef HAVE_NETWORKING
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_lakka_list);
 #endif
-               break;
-            case MENU_LABEL_LOAD_CONTENT_HISTORY:
-               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_history_list);
                break;
             case MENU_LABEL_DATABASE_MANAGER_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_database_manager_list);
@@ -1659,9 +1668,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
                break;
             case MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_input_remapping_options);
-               break;
-            case MENU_LABEL_CORE_LIST:
-               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_list);
                break;
             case MENU_LABEL_CONTENT_COLLECTION_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_content_collection_list);
