@@ -1,6 +1,8 @@
 # 1.6.8 (future)
 - GUI: (XMB) Skip drawing the fading list when it is already transparent. Optimization.
 - NETPLAY: Fix disconnection not fully deinitializing Netplay.
+- COMMON: Fix clear/free loop conditionals in playlists.
+- WINDOWS/WGL: Try to use wglSwapLayerBuffers instead of SwapBuffers if possible (for more optimal performance).
 - WII: Use custom, embedded libogc SDK.
 - WIIU: Initial touchscreen support for WiiU gamepad.
 
