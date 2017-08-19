@@ -1,4 +1,5 @@
 # 1.6.8 (future)
+- WIIU: Initial touchscreen support for WiiU gamepad.
 
 # 1.6.7 (future)
 - SCANNER: Fix directory scanning.
