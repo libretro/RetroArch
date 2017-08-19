@@ -111,7 +111,7 @@ if [ "$HAVE_EGL" != "no" -a "$OS" != 'Win32' ]; then
    fi
 fi
 
-if [ "HAVE_SSA" != "no" ]; then
+if [ "$HAVE_SSA" != "no" ]; then
    check_lib SSA -lass ass_library_init
 fi
 
