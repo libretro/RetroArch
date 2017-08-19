@@ -1220,6 +1220,21 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_content_list);
    }
 #endif
+   else if (strstr(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_ONLINE_UPDATER)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_options);
+   }
+   else if (strstr(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_HELP_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_help);
+   }
+   else if (strstr(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_INFORMATION_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_information_list);
+   }
    else
    {
       if (cbs->enum_idx != MSG_UNKNOWN)
@@ -1564,9 +1579,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             case MENU_LABEL_SHADER_OPTIONS:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_shader_options);
                break;
-            case MENU_LABEL_ONLINE_UPDATER:
-               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_options);
-               break;
             case MENU_LABEL_NETPLAY:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_netplay);
                break;
@@ -1579,14 +1591,8 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             case MENU_LABEL_LOAD_CONTENT_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_load_content_list);
                break;
-            case MENU_LABEL_INFORMATION_LIST:
-               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_information_list);
-               break;
             case MENU_LABEL_MANAGEMENT:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_management_options);
-               break;
-            case MENU_LABEL_HELP_LIST:
-               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_help);
                break;
             case MENU_LABEL_DEFERRED_CORE_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_list_deferred);
