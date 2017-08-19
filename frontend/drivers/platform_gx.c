@@ -309,7 +309,9 @@ static void frontend_gx_init(void *data)
    __exception_setreload(8);
 #endif
 
+#ifdef HW_RVL
    fatInitDefault();
+#endif
 
 #ifdef HAVE_LOGGER
    devoptab_list[STD_OUT] = &dotab_stdout;
