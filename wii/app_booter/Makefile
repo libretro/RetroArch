@@ -14,7 +14,7 @@ else ifneq ($(findstring MINGW,$(shell uname -a)),)
    system_platform = win
 endif
 
-EXTERNAL_LIBOGC = 1
+EXTERNAL_LIBOGC = 0
 CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
 LD = $(DEVKITPPC)/bin/powerpc-eabi-ld$(EXE_EXT)
 OBJCOPY = $(DEVKITPPC)/bin/powerpc-eabi-objcopy$(EXE_EXT)

@@ -6,7 +6,7 @@
 DEBUG			= 0
 HAVE_LOGGER		= 0
 HAVE_FILE_LOGGER	= 0
-EXTERNAL_LIBOGC = 1
+EXTERNAL_LIBOGC = 0
 
 # system platform
 system_platform = unix
@@ -43,7 +43,11 @@ endif
 MACHDEP := -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
 LDFLAGS := $(MACHDEP) -Wl,-Map,$(notdir $(ELF_TARGET)).map
-LIBS := -lfat -lwiiuse -logc -lbte
+LIBS := -lwiiuse -logc -lbte
+
+ifeq ($(EXTERNAL_LIBOGC), 1)
+LIBS += -lfat
+endif
 
 APP_BOOTER_DIR = wii/app_booter
 
@@ -66,6 +70,20 @@ OBJ = frontend/frontend_salamander.o \
 		file_path_str.o \
 		verbosity.o \
 		$(APP_BOOTER_DIR)/app_booter.binobj
+
+ifeq ($(EXTERNAL_LIBOGC), 1)
+else
+OBJ += wii/libogc/libfat/cache.o \
+		wii/libogc/libfat/directory.o \
+		wii/libogc/libfat/disc.o \
+		wii/libogc/libfat/fatdir.o \
+		wii/libogc/libfat/fatfile.o \
+		wii/libogc/libfat/file_allocation_table.o \
+		wii/libogc/libfat/filetime.o \
+		wii/libogc/libfat/libfat.o \
+		wii/libogc/libfat/lock.o \
+		wii/libogc/libfat/partition.o
+endif
 
 ifeq ($(HAVE_LOGGER), 1)
 CFLAGS		+= -DHAVE_LOGGER

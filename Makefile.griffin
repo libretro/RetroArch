@@ -82,7 +82,7 @@ else ifeq ($(platform), ps3-cobra)
 
 # NGC/Wii - libogc
 else ifeq ($(libogc_platform), 1)
-EXTERNAL_LIBOGC=1
+EXTERNAL_LIBOGC=0
   CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
   CXX = $(DEVKITPPC)/bin/powerpc-eabi-g++$(EXE_EXT)
   LD = $(DEVKITPPC)/bin/powerpc-eabi-ld$(EXE_EXT)
@@ -93,6 +93,8 @@ EXTERNAL_LIBOGC=1
   INCLUDE += -I. -I$(DEVKITPRO)/libogc/include -Ideps/libz -Iwii/libogc/include
  
 ifeq ($(EXTERNAL_LIBOGC), 1)
+	CFLAGS   += -DEXTERNAL_LIBOGC
+	CXXFLAGS += -DEXTERNAL_LIBOGC
 
 ifeq ($(platform), ngc)
 LIBDIRS += -L$(DEVKITPRO)/libogc/lib/cube
@@ -101,6 +103,8 @@ LIBDIRS += -L$(DEVKITPRO)/libogc/lib/wii
 endif
 
 else
+	CFLAGS   += -DINTERNAL_LIBOGC
+	CXXFLAGS += -DINTERNAL_LIBOGC
 
 ifeq ($(platform), ngc)
 LIBDIRS += -Lwii/libogc/libs/cube
@@ -130,7 +134,10 @@ ifeq ($(BIG_STACK), 1)
   LDFLAGS += -T bootstrap/gx/rvl.ld
 endif
 endif
-  LIBS += -lfat -logc
+  LIBS += -logc
+ifeq ($(EXTERNAL_LIBOGC), 1)
+  LIBS += -lfat
+endif
 
 ifeq ($(platform), wii)
   LIBS += -lwiiuse -lbte
