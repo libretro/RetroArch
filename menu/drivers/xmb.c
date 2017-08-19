@@ -2265,7 +2265,15 @@ static void xmb_draw_items(
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
 
    if (list == xmb->selection_buf_old)
+   {
+      xmb_node_t *node = (xmb_node_t*)
+            menu_entries_get_userdata_at_offset(list, current);
+
+      if ((uint8_t)(255 * node->alpha) == 0)
+         return;
+
       i = 0;
+   }
 
    first = i;
    last  = end - 1;
