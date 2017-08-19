@@ -424,7 +424,7 @@ void playlist_free(playlist_t *playlist)
 
    playlist->conf_path = NULL;
 
-   for (i = 0; i < playlist->cap; i++)
+   for (i = 0; i < playlist->size; i++)
    {
       struct playlist_entry *entry = &playlist->entries[i];
 
@@ -450,7 +450,7 @@ void playlist_clear(playlist_t *playlist)
    if (!playlist)
       return;
 
-   for (i = 0; i < playlist->cap; i++)
+   for (i = 0; i < playlist->size; i++)
    {
       struct playlist_entry *entry = &playlist->entries[i];
 
