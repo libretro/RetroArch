@@ -368,7 +368,8 @@ static void gfx_ctx_wgl_swap_buffers(void *data, void *data2)
    {
       case GFX_CTX_OPENGL_API:
 #ifdef HAVE_OPENGL
-         SwapBuffers(win32_hdc);
+         if (wglSwapLayerBuffers(win32_hdc, WGL_SWAP_MAIN_PLANE) == FALSE)
+            SwapBuffers(win32_hdc);
 #endif
          break;
 
