@@ -43,7 +43,7 @@ endif
 MACHDEP := -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
 LDFLAGS := $(MACHDEP) -Wl,-Map,$(notdir $(ELF_TARGET)).map
-LIBS := -logc
+LIBS := -lwiiuse -logc -lbte
 
 ifeq ($(EXTERNAL_LIBOGC), 1)
 LIBS += -lfat
