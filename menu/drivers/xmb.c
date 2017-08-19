@@ -2278,7 +2278,7 @@ static void xmb_draw_items(
    first = i;
    last  = end - 1;
 
-   xmb_calculate_visible_range(xmb, height, end, current, &first, &last);
+   /* xmb_calculate_visible_range(xmb, height, end, current, &first, &last); */
 
    menu_display_blend_begin();
 
@@ -2314,6 +2314,12 @@ static void xmb_draw_items(
       ticker_str[0] = name[0] = value[0] = '\0';
 
       icon_y = xmb->margins.screen.top + node->y + half_size;
+
+      if (icon_y < half_size)
+         continue;
+
+      if (icon_y > height + xmb->icon.size)
+         break;
 
       icon_x = node->x + xmb->margins.screen.left +
          xmb->icon.spacing.horizontal - half_size;
