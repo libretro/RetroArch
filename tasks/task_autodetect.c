@@ -189,6 +189,8 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
       {
          if (config_get_bool(conf, "input_swap_override", &tmp))
             input_autoconfigure_swap_override = tmp;
+         else
+            input_autoconfigure_swap_override = false;
       }
 
       if (!block_osd_spam)

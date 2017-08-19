@@ -45,8 +45,6 @@ static void *caca_init_font(void *data,
 
    font->caca = (caca_t*)data;
 
-   font_size = 1;
-
    if (!font_renderer_create_default((const void**)&font->caca_font_driver,
             &font->caca_font_data, font_path, font_size))
    {

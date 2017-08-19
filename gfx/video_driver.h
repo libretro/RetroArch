@@ -447,14 +447,15 @@ typedef struct video_frame_info
    unsigned custom_vp_full_height;
 
    float menu_wallpaper_opacity;
+   float menu_framebuffer_opacity;
+   float menu_header_opacity;
+   float menu_footer_opacity;
    float refresh_rate;
    float font_msg_pos_x;
    float font_msg_pos_y;
    float font_msg_color_r;
    float font_msg_color_g;
    float font_msg_color_b;
-   float menu_header_opacity;
-   float menu_footer_opacity;
    float xmb_alpha_factor;
 
    char fps_text[128];

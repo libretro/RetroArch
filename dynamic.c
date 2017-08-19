@@ -92,8 +92,9 @@ static dylib_t lib_handle;
 #define SYMBOL_VIDEOPROCESSOR(x) current_core->x = libretro_videoprocessor_##x
 #endif
 
-static bool ignore_environment_cb = false;
-static bool *load_no_content_hook = NULL;
+static bool ignore_environment_cb   = false;
+static bool core_set_shared_context = false;
+static bool *load_no_content_hook   = NULL;
 
 const struct retro_subsystem_info *libretro_find_subsystem_info(
       const struct retro_subsystem_info *info, unsigned num_info,
@@ -632,6 +633,11 @@ bool init_libretro_sym(enum rarch_core_type type, struct retro_core_t *current_c
    return true;
 }
 
+bool libretro_get_shared_context(void)
+{
+   return core_set_shared_context;
+}
+
 /**
  * uninit_libretro_sym:
  *
@@ -650,6 +656,8 @@ void uninit_libretro_sym(struct retro_core_t *current_core)
 #endif
 
    memset(current_core, 0, sizeof(struct retro_core_t));
+
+   core_set_shared_context = false;
 
    rarch_ctl(RARCH_CTL_CORE_OPTIONS_DEINIT, NULL);
    rarch_ctl(RARCH_CTL_SYSTEM_INFO_FREE, NULL);
@@ -1016,7 +1024,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY:
-         if (string_is_empty(settings->paths.directory_system))
+         if (string_is_empty(settings->paths.directory_system) || settings->bools.systemfiles_in_content_dir)
          {
             const char *fullpath = path_get(RARCH_PATH_CONTENT);
             if (!string_is_empty(fullpath))
@@ -1025,8 +1033,9 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
                temp_path[0] = '\0';
 
-               RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",
-                     fullpath);
+               if (string_is_empty(settings->paths.directory_system))
+                  RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",
+                        fullpath);
                fill_pathname_basedir(temp_path, fullpath, sizeof(temp_path));
                dir_set(RARCH_DIR_SYSTEM, temp_path);
             }
@@ -1630,6 +1639,12 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       {
          uint64_t *quirks = (uint64_t *) data;
          core_set_serialization_quirks(*quirks);
+         break;
+      }
+
+      case RETRO_ENVIRONMENT_SET_HW_SHARED_CONTEXT:
+      {
+         core_set_shared_context = true;
          break;
       }
 

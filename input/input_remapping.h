@@ -44,6 +44,8 @@ bool input_remapping_load_file(void *data, const char *path);
  **/
 bool input_remapping_save_file(const char *path);
 
+bool input_remapping_remove_file(const char *path);
+
 void input_remapping_set_defaults(void);
 
 RETRO_END_DECLS

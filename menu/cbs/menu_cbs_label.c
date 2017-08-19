@@ -35,55 +35,18 @@ static int action_bind_label_generic(
    return 0;
 }
 
-static int action_bind_label_information(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INFORMATION), len);
-   return 0;
+#define fill_label_macro(func, lbl) \
+static int (func)(file_list_t *list, unsigned type, unsigned i, const char *label, const char *path, char *s, size_t len) \
+{ \
+   strlcpy(s, msg_hash_to_str(lbl), len); \
+   return 0; \
 }
 
-static int action_bind_label_internal_memory(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   strlcpy(s, msg_hash_to_str(MSG_INTERNAL_STORAGE), len);
-   return 0;
-}
-
-static int action_bind_label_removable_storage(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   strlcpy(s, msg_hash_to_str(MSG_REMOVABLE_STORAGE), len);
-   return 0;
-}
-
-static int action_bind_label_external_application_dir(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   strlcpy(s, msg_hash_to_str(MSG_EXTERNAL_APPLICATION_DIR), len);
-   return 0;
-}
-
-static int action_bind_label_application_dir(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   strlcpy(s, msg_hash_to_str(MSG_APPLICATION_DIR), len);
-   return 0;
-}
+fill_label_macro(action_bind_label_information,              MENU_ENUM_LABEL_VALUE_INFORMATION)
+fill_label_macro(action_bind_label_internal_memory,          MSG_INTERNAL_STORAGE)
+fill_label_macro(action_bind_label_removable_storage,        MSG_REMOVABLE_STORAGE)
+fill_label_macro(action_bind_label_external_application_dir, MSG_EXTERNAL_APPLICATION_DIR)
+fill_label_macro(action_bind_label_application_dir,          MSG_APPLICATION_DIR)
 
 static int action_bind_label_playlist_collection_entry(
       file_list_t *list,

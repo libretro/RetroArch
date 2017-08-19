@@ -36,7 +36,7 @@ struct tween
    float       initial_value;
    float       target_value;
    float       *subject;
-   int         tag;
+   uintptr_t   tag;
    easing_cb   easing;
    tween_cb    cb;
 };
@@ -44,6 +44,7 @@ struct tween
 struct menu_animation
 {
    struct tween *list;
+   bool need_defrag;
 
    size_t capacity;
    size_t size;
@@ -459,7 +460,36 @@ bool menu_animation_push(menu_animation_ctx_entry_t *entry)
 
    *target = t;
 
+   anim.need_defrag = true;
+
    return true;
+}
+
+static int menu_animation_defrag_cmp(const void *a, const void *b)
+{
+   const struct tween *ta = (const struct tween *)a;
+   const struct tween *tb = (const struct tween *)b;
+
+   return tb->alive - ta->alive;
+}
+
+/* defragments and shrinks the tween list when possible */
+static void menu_animation_defrag()
+{
+   size_t i;
+
+   qsort(anim.list, anim.size, sizeof(anim.list[0]), menu_animation_defrag_cmp);
+
+   for (i = anim.size-1; i > 0; i--)
+   {
+      if (anim.list[i].alive)
+         break;
+
+      anim.size--;
+   }
+
+   anim.first_dead = anim.size;
+   anim.need_defrag = false;
 }
 
 bool menu_animation_update(float delta_time)
@@ -485,9 +515,7 @@ bool menu_animation_update(float delta_time)
       {
          *tween->subject = tween->target_value;
          tween->alive    = false;
-
-         if (i < anim.first_dead)
-            anim.first_dead = i;
+         anim.need_defrag = true;
 
          if (tween->cb)
             tween->cb();
@@ -497,12 +525,17 @@ bool menu_animation_update(float delta_time)
          active_tweens += 1;
    }
 
+   if (anim.need_defrag)
+      menu_animation_defrag();
+
    if (!active_tweens)
    {
       anim.size           = 0;
       anim.first_dead     = 0;
+      anim.need_defrag    = false;
       return false;
    }
+
 
    animation_is_active = true;
 
@@ -622,14 +655,14 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
       case MENU_ANIMATION_CTL_KILL_BY_TAG:
          {
             unsigned i;
-            menu_animation_ctx_tag_t *tag = (menu_animation_ctx_tag_t*)data;
+            menu_animation_ctx_tag *tag = (menu_animation_ctx_tag*)data;
 
-            if (!tag || tag->id == -1)
+            if (!tag || *tag == (uintptr_t)-1)
                return false;
 
             for (i = 0; i < anim.size; ++i)
             {
-               if (anim.list[i].tag != tag->id)
+               if (anim.list[i].tag != *tag)
                   continue;
 
                anim.list[i].alive   = false;
@@ -637,6 +670,8 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
 
                if (i < anim.first_dead)
                   anim.first_dead = i;
+
+               anim.need_defrag = true;
             }
          }
          break;
@@ -647,7 +682,7 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
                (menu_animation_ctx_subject_t*)data;
             float            **sub = (float**)subject->data;
 
-            for (i = 0; i < anim.size; ++i)
+            for (i = 0; i < anim.size && killed < subject->count; ++i)
             {
                if (!anim.list[i].alive)
                   continue;
@@ -664,6 +699,7 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
                      anim.first_dead = i;
 
                   killed++;
+                  anim.need_defrag = true;
                   break;
                }
             }

@@ -167,11 +167,6 @@ void menu_list_flush_stack(menu_list_t *list,
 
       menu_entries_get_last(menu_list,
             &path, &label, &type, &entry_idx);
-
-#if 0
-      RARCH_LOG("path: %s\n", path);
-      RARCH_LOG("label: %s\n", label);
-#endif
    }
 }
 

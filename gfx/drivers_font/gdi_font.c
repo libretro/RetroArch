@@ -51,8 +51,6 @@ static void *gdi_init_font(void *data,
 
    font->gdi = (gdi_t*)data;
 
-   font_size = 1;
-
    if (!font_renderer_create_default((const void**)&font->gdi_font_driver,
             &font->gdi_font_data, font_path, font_size))
    {

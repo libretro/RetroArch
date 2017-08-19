@@ -117,6 +117,8 @@ struct retro_core_t
    uint64_t serialization_quirks_v;
 };
 
+bool libretro_get_shared_context(void);
+
 /**
  * init_libretro_sym:
  * @type                        : Type of core to be loaded.

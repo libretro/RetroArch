@@ -225,8 +225,8 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 #endif
    return DIENUM_CONTINUE;
 
-   g_pads[g_joypad_cnt].joy_name = strdup(inst->tszProductName);
-   g_pads[g_joypad_cnt].joy_friendly_name = strdup(inst->tszInstanceName);
+   g_pads[g_joypad_cnt].joy_name          = strdup((const char*)inst->tszProductName);
+   g_pads[g_joypad_cnt].joy_friendly_name = strdup((const char*)inst->tszInstanceName);
 
    /* there may be more useful info in the GUID so leave this here for a while */
 #if 0
@@ -294,8 +294,8 @@ static bool dinput_joypad_init(void *data)
 
    for (i = 0; i < MAX_USERS; ++i)
    {
-      g_xinput_pad_indexes[i] = -1;
-      g_pads[i].joy_name = NULL;
+      g_xinput_pad_indexes[i]     = -1;
+      g_pads[i].joy_name          = NULL;
       g_pads[i].joy_friendly_name = NULL;
    }
 

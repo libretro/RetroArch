@@ -134,6 +134,8 @@ enum event_command
    CMD_EVENT_REBOOT,
    /* Resume RetroArch when in menu. */
    CMD_EVENT_RESUME,
+   /* Add a playlist entry to favorites. */
+   CMD_EVENT_ADD_TO_FAVORITES,
    /* Toggles pause. */
    CMD_EVENT_PAUSE_TOGGLE,
    /* Pauses RetroArch. */
@@ -218,6 +220,7 @@ enum event_command
    CMD_EVENT_MIXER_VOLUME_UP,
    CMD_EVENT_MIXER_VOLUME_DOWN,
    CMD_EVENT_DISABLE_OVERRIDES,
+   CMD_EVENT_RESTORE_REMAPS,
    CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET,
    CMD_EVENT_LIBUI_TEST
 };

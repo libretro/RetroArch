@@ -1557,18 +1557,6 @@ static void frontend_unix_get_env(int *argc,
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_WALLPAPERS],
                   app_dir, "assets/wallpapers",
                   sizeof(g_defaults.dirs[DEFAULT_DIR_WALLPAPERS]));
-            if(!string_is_empty(downloads_dir) && test_permissions(downloads_dir))
-            {
-               fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS],
-                     downloads_dir, "",
-                     sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
-            }
-            else
-            {
-               fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS],
-                     app_dir, "downloads",
-                     sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
-            }
 
             __android_log_print(ANDROID_LOG_INFO,
                "RetroArch", "[ENV]: default download folder: [%s]",
@@ -1576,8 +1564,7 @@ static void frontend_unix_get_env(int *argc,
 
             switch (perms)
             {
-               /* Set defaults for this since we can't guarantee 
-                * saving on content dir will work in this case */
+               /* only sdcard/Android/data/com.retroarch is writable */
                case INTERNAL_STORAGE_APPDIR_WRITABLE:
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SRAM],
                         internal_storage_app_path, "saves",
@@ -1605,11 +1592,11 @@ static void frontend_unix_get_env(int *argc,
                         internal_storage_app_path, "cheats",
                         sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
 
-                  if(     !string_is_empty(screenshot_dir) 
-                        && test_permissions(screenshot_dir))
+                  if(!string_is_empty(screenshot_dir) 
+                     && test_permissions(screenshot_dir))
                   {
                      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
-                           screenshot_dir, "",
+                           screenshot_dir, "RetroArch",
                            sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
                   }
                   else
@@ -1619,10 +1606,24 @@ static void frontend_unix_get_env(int *argc,
                            sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
                   }
 
+                  if(!string_is_empty(downloads_dir) 
+                     && test_permissions(downloads_dir))
+                  {
+                     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS],
+                           downloads_dir, "RetroArch",
+                           sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
+                  }
+                  else
+                  {
+                     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS],
+                           internal_storage_app_path, "downloads",
+                           sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
+                  }
+
                   break;
+                  
+               /* only the internal app dir is writable, this should never happen*/
                case INTERNAL_STORAGE_NOT_WRITABLE:
-                  /* Set defaults for this since we can't guarantee 
-                   * saving on content dir will work in this case. */
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SRAM],
                         app_dir, "saves",
                         sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
@@ -1653,7 +1654,7 @@ static void frontend_unix_get_env(int *argc,
                         &&  test_permissions(screenshot_dir))
                   {
                      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
-                           screenshot_dir, "",
+                           screenshot_dir, "RetroArch",
                            sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
                   }
                   else
@@ -1663,10 +1664,40 @@ static void frontend_unix_get_env(int *argc,
                            sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
                   }
 
+                  if(!string_is_empty(downloads_dir) 
+                     && test_permissions(downloads_dir))
+                  {
+                     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS],
+                           downloads_dir, "RetroArch",
+                           sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
+                  }
+                  else
+                  {
+                     fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS],
+                           app_dir, "downloads",
+                           sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
+                  }
+
                   break;
+               /* sdcard is writable, this should be the case most of the time*/
                case INTERNAL_STORAGE_WRITABLE:
-                  /* Don't set defaults for saves, states, system or screenshots
-                     in this case to be able to honour saving on content dir */
+
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SRAM],
+                        internal_storage_path, "RetroArch/saves",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE],
+                        internal_storage_path, "RetroArch/states",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
+                        internal_storage_path, "RetroArch/system",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
+                        internal_storage_path, "RetroArch/screenshots",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
+                  fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS],
+                        internal_storage_path, "RetroArch/downloads",
+                        sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
+
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
                         internal_storage_path, "RetroArch/config",
                         sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));

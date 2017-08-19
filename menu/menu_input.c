@@ -443,7 +443,7 @@ static int menu_input_pointer_post_iterate(
 
       menu_input->pointer.counter++;
 
-      /*if (menu_input->pointer.counter == 1 &&
+      if (menu_input->pointer.counter == 1 &&
             !menu_input_ctl(MENU_INPUT_CTL_IS_POINTER_DRAGGED, NULL))
       {
          menu_ctx_pointer_t point;
@@ -456,7 +456,7 @@ static int menu_input_pointer_post_iterate(
          point.action                      = action;
 
          menu_driver_ctl(RARCH_MENU_CTL_POINTER_DOWN, &point);
-      }*/
+      }
 
       if (!pointer_oldpressed[0])
       {
