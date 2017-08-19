@@ -20,6 +20,8 @@ include	$(DEVKITPPC)/base_rules
 
 BUILD		:=	build
 
+BUILD_LITE = 1
+
 DATESTRING	:=	$(shell date +%Y%m%d)
 VERSTRING	:=	$(LIBOGC_MAJOR).$(LIBOGC_MINOR).$(LIBOGC_PATCH)
 
@@ -119,7 +121,7 @@ OGCOBJ		:=	\
 			lwp_messages.o lwp.o lwp_handler.o lwp_stack.o lwp_mutex.o 	\
 			lwp_watchdog.o lwp_wkspace.o lwp_objmgr.o lwp_heap.o sys_state.o \
 			exception_handler.o exception.o irq.o irq_handler.o semaphore.o \
-			video_asm.o video.o pad.o dvd.o exi.o mutex.o arqueue.o	arqmgr.o	\
+			video_asm.o video.o pad.o exi.o mutex.o arqueue.o	arqmgr.o	\
 			cache_asm.o system.o system_asm.o cond.o			\
 			gx.o gu.o gu_psasm.o audio.o cache.o decrementer.o			\
 			message.o card.o aram.o depackrnc.o decrementer_handler.o	\
@@ -128,6 +130,10 @@ OGCOBJ		:=	\
 			sbrk.o malloc_lock.o kprintf.o stm.o ios.o es.o isfs.o usb.o network_common.o \
 			sdgecko_io.o sdgecko_buf.o gcsd.o argv.o network_wii.o wiisd.o conf.o usbstorage.o \
 			texconv.o wiilaunch.o
+
+ifneq ($(BUILD_LITE), 1)
+OGCOBJ += dvd.o
+endif
 
 #---------------------------------------------------------------------------------
 DBOBJ		:=	uip_ip.o uip_tcp.o uip_pbuf.o uip_netif.o uip_arp.o uip_arch.o \
