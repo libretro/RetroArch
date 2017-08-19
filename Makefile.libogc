@@ -34,7 +34,6 @@ export BTEDIR		:= $(BASEDIR)/wii/libogc/lwbt
 export WIIUSEDIR	:= $(BASEDIR)/wii/libogc/wiiuse
 export LIBWIIKEYB	:= $(BASEDIR)/wii/libogc/libwiikeyboard
 export STUBSDIR	:= $(BASEDIR)/wii/libogc/lockstubs
-export DEPS			:=	$(BASEDIR)/wii/libogc/deps
 export LIBS			:=	$(BASEDIR)/wii/libogc/libs
 
 export INCDIR		:=	$(BASEDIR)/wii/libogc/include
@@ -44,7 +43,6 @@ else
 #---------------------------------------------------------------------------------
 
 export LIBDIR		:= $(LIBS)/$(PLATFORM)
-export DEPSDIR		:=	$(DEPS)/$(PLATFORM)
 
 #---------------------------------------------------------------------------------
 endif
@@ -155,7 +153,6 @@ wii: $(BASEDIR)/wii/libogc/include/ogc/libversion.h
 #---------------------------------------------------------------------------------
 	@[ -d $(INCDIR) ] || mkdir -p $(INCDIR)
 	@[ -d $(LIBS)/wii ] || mkdir -p $(LIBS)/wii
-	@[ -d $(DEPS)/wii ] || mkdir -p $(DEPS)/wii
 	@[ -d wii ] || mkdir -p wii
 	@$(MAKE) PLATFORM=wii libs -C wii -f $(CURDIR)/Makefile.libogc
 
@@ -164,7 +161,6 @@ cube: $(BASEDIR)/wii/libogc/include/ogc/libversion.h
 #---------------------------------------------------------------------------------
 	@[ -d $(INCDIR) ] || mkdir -p $(INCDIR)
 	@[ -d $(LIBS)/cube ] || mkdir -p $(LIBS)/cube
-	@[ -d $(DEPS)/cube ] || mkdir -p $(DEPS)/cube
 	@[ -d cube ] || mkdir -p cube
 	@$(MAKE) PLATFORM=cube libs -C cube -f $(CURDIR)/Makefile.libogc
 
@@ -265,5 +261,3 @@ clean:
 docs: install-headers
 #---------------------------------------------------------------------------------
 	doxygen libogc.dox
-
--include $(DEPSDIR)/*.d
