@@ -31,13 +31,12 @@ DOL_TARGET := retroarch-salamander_wii.dol
 ELF_TARGET := retroarch-salamander_wii.elf
 
 INCLUDE := -I. -Ilibretro-common/include -Ideps/libz
-LIBDIRS := -L.
 ifeq ($(EXTERNAL_LIBOGC), 1)
 INCLUDE += -I$(DEVKITPRO)/libogc/include 
-LIBDIRS := -L$(DEVKITPRO)/libogc/lib/wii 
+LIBDIRS := -L$(DEVKITPRO)/libogc/lib/wii -L.
 else
 INCLUDE += -Iwii/libogc/include 
-LIBDIRS := -Lwii/libogc/libs/wii 
+LIBDIRS := -Lwii/libogc/libs/wii -L.
 endif
 
 MACHDEP := -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float
