@@ -1235,6 +1235,16 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_shader_options);
    }
+   else if (strstr(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_user_binds_list);
+   }
+   else if (strstr(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_hotkey_binds_list);
+   }
    else
    {
       if (cbs->enum_idx != MSG_UNKNOWN)
@@ -1532,17 +1542,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             case MENU_LABEL_DEFERRED_CONFIGURATIONS_LIST: /* TODO/FIXME */
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_configurations_list);
                break;
-            case MENU_LABEL_DEFERRED_USER_BINDS_LIST:
-               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_user_binds_list);
-               break;
             case MENU_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_playlist_settings_list);
                break;
             case MENU_LABEL_DEFERRED_RECORDING_SETTINGS_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_recording_settings_list);
-               break;
-            case MENU_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST:
-               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_hotkey_binds_list);
                break;
             case MENU_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_accounts_cheevos_list);
