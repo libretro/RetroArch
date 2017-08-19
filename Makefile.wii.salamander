@@ -6,6 +6,7 @@
 DEBUG			= 0
 HAVE_LOGGER		= 0
 HAVE_FILE_LOGGER	= 0
+EXTERNAL_LIBOGC = 1
 
 # system platform
 system_platform = unix
@@ -29,8 +30,15 @@ ELF2DOL = $(DEVKITPPC)/bin/elf2dol$(EXE_EXT)
 DOL_TARGET := retroarch-salamander_wii.dol
 ELF_TARGET := retroarch-salamander_wii.elf
 
-INCLUDE := -I. -I$(DEVKITPRO)/libogc/include -Ilibretro-common/include -Ideps/libz
-LIBDIRS := -L$(DEVKITPRO)/libogc/lib/wii -L.
+INCLUDE := -I. -Ilibretro-common/include -Ideps/libz
+LIBDIRS := -L.
+ifeq ($(EXTERNAL_LIBOGC), 1)
+INCLUDE += -I$(DEVKITPRO)/libogc/include 
+LIBDIRS := -L$(DEVKITPRO)/libogc/lib/wii 
+else
+INCLUDE += -Iwii/libogc/include 
+LIBDIRS := -Lwii/libogc/libs/wii 
+endif
 
 MACHDEP := -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
