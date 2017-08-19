@@ -1203,6 +1203,23 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_options);
    }
+   else if (strstr(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_INFORMATION)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_network_information);
+   }
+#ifdef HAVE_NETWORKING
+   else if (strstr(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_thumbnails_updater_list);
+   }
+   else if (strstr(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_content_list);
+   }
+#endif
    else
    {
       if (cbs->enum_idx != MSG_UNKNOWN)
@@ -1524,16 +1541,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             case MENU_LABEL_DEFERRED_ARCHIVE_OPEN:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_archive_open);
                break;
-            case MENU_LABEL_DEFERRED_CORE_CONTENT_LIST:
-#ifdef HAVE_NETWORKING
-               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_content_list);
-#endif
-               break;
-            case MENU_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST:
-#ifdef HAVE_NETWORKING
-               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_thumbnails_updater_list);
-#endif
-               break;
             case MENU_LABEL_DEFERRED_LAKKA_LIST:
 #ifdef HAVE_NETWORKING
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_lakka_list);
@@ -1646,9 +1653,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_rdb_entry_releaseyear);
                break;
 #endif
-            case MENU_LABEL_NETWORK_INFORMATION:
-               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_network_information);
-               break;
             case MENU_LABEL_ACHIEVEMENT_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_achievement_list);
                break;
