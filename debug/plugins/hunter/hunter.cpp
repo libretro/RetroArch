@@ -86,6 +86,8 @@ namespace
 
     std::vector<Snapshot> _snapshots;
 
+    int _snapSel;
+
     int _snapsCmpSel1;
     int _snapsCmpSel2;
     int _snapsCmpOp;
@@ -145,11 +147,12 @@ namespace
       }
 
       _snapshots.push_back(snap);
+      _snapSel = _snapshots.size() - 1;
     }
 
     bool getValue(uint64_t* value)
     {
-      bool valid = _snapCmpSel != 0 && _value[0] != 0;
+      bool valid = _snapCmpSel < _snapshots.size() && _value[0] != 0;
       *value = 0;
 
       if (_value[0] == '0' && _value[1] == 'b')
@@ -239,7 +242,7 @@ namespace
 
     void createFilterFromSnapshot(uint64_t value)
     {
-      Snapshot* snap = &_snapshots[_snapCmpSel - 1];
+      Snapshot* snap = &_snapshots[_snapCmpSel];
 
       Filter filter;
       filter.total = 0;
@@ -272,6 +275,7 @@ namespace
 
       snprintf(filter.name, sizeof(filter.name), "((%s) %s %" PRIu64 " (%s)) (%" PRIu64 " hits)", snap->name, operatorNames[_snapCmpOp], value, sizeNames[_snapCmpSize], filter.total);
       _filters.push_back(filter);
+      _filterSel = _filters.size() - 1;
     }
 
 #define FILTER_FROM_SNAPS(n) \
@@ -300,8 +304,8 @@ namespace
 
     void createFilterFromSnapshots()
     {
-      Snapshot* snap1 = &_snapshots[_snapsCmpSel1 - 1];
-      Snapshot* snap2 = &_snapshots[_snapsCmpSel2 - 1];
+      Snapshot* snap1 = &_snapshots[_snapsCmpSel1];
+      Snapshot* snap2 = &_snapshots[_snapsCmpSel2];
 
       Filter filter;
       filter.total = 0;
@@ -319,6 +323,7 @@ namespace
 
       snprintf(filter.name, sizeof(filter.name), "((%s) %s (%s) (%s)) (%" PRIu64 " hits)", snap1->name, operatorNames[_snapsCmpOp], snap2->name, sizeNames[_snapsCmpSize], filter.total);
       _filters.push_back(filter);
+      _filterSel = _filters.size() - 1;
     }
 
 #define FILTER_FROM_FILTERS(n) \
@@ -338,8 +343,8 @@ namespace
 
     void createFilterFromFilters()
     {
-      Filter* filter1 = &_filters[_filtersCmpSel1 - 1];
-      Filter* filter2 = _filtersCmpSel2 == 0 ? nullptr : &_filters[_filtersCmpSel2 - 1];
+      Filter* filter1 = &_filters[_filtersCmpSel1];
+      Filter* filter2 = _filtersCmpSel2 < _filters.size() ? &_filters[_filtersCmpSel2] : NULL;
 
       Filter filter;
       filter.total = 0;
@@ -378,6 +383,7 @@ namespace
       }
 
       _filters.push_back(filter);
+      _filterSel = _filters.size() - 1;
     }
 
     void showSnapshotsList()
@@ -401,7 +407,6 @@ namespace
             }
           };
 
-          ImGui::Separator();
           ImGui::Combo("Region", &_regionsSel, Getter::description, (void*)_regions, _regionsCount);
         }
 
@@ -410,29 +415,56 @@ namespace
           createSnapshot();
         }
 
-        ImGui::Separator();
-
-        for (auto it = _snapshots.begin(); it != _snapshots.end();)
         {
-          Snapshot* snap = &*it;
-          ImGui::PushID(snap);
+          struct Getter
+          {
+            static bool description(void* data, int idx, const char** out_text)
+            {
+              auto snapshots = (std::vector<Snapshot>*)data;
+              *out_text = (*snapshots)[idx].name;
+              return true;
+            }
+          };
 
-          ImGui::InputText("", snap->name, sizeof(snap->name));
+          ImGui::Combo("Snapshot", &_snapSel, Getter::description, (void*)&_snapshots, _snapshots.size());
+
+          if (ImGuiAl::Button(ICON_FA_PENCIL " Rename", _snapSel < _snapshots.size()))
+          {
+            ImGui::OpenPopup(ICON_FA_PENCIL " Rename snapshot");
+          }
+
+          if (ImGui::BeginPopupModal(ICON_FA_PENCIL " Rename snapshot", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+          {
+            ImGui::InputText("Name", _snapshots[_snapSel].name, sizeof(_snapshots[_snapSel].name));
+
+            bool ok = _snapshots[_snapSel].name[0] != 0;
+
+            for (int i = 0; i < _snapshots.size(); i++)
+            {
+              if (i != _snapSel && !strcmp(_snapshots[i].name, _snapshots[_snapSel].name))
+              {
+                ok = false;
+              }
+            }
+            
+            if (ImGuiAl::Button(ICON_FA_CHECK " Ok", ok))
+            {
+              ImGui::CloseCurrentPopup();
+            }
+
+            ImGui::EndPopup();
+          }
+
           ImGui::SameLine();
 
-          if (ImGui::Button(ICON_FA_MINUS " Delete"))
+          if (ImGuiAl::Button(ICON_FA_MINUS " Delete", _snapSel < _snapshots.size()))
           {
-            it = _snapshots.erase(it);
+            _snapshots.erase(_snapshots.begin() + _snapSel);
+            _snapSel = 0;
             _snapCmpSel = 0;
             _snapsCmpSel1 = 0;
             _snapsCmpSel2 = 0;
           }
-          else
-          {
-            ++it;
-          }
-
-          ImGui::PopID();
         }
       }
       
@@ -450,21 +482,13 @@ namespace
         {
           static bool description(void* data, int idx, const char** out_text)
           {
-            if (idx != 0)
-            {
-              auto snapshots = (std::vector<Snapshot>*)data;
-              *out_text = (*snapshots)[idx - 1].name;
-            }
-            else
-            {
-              *out_text = "None";
-            }
-
+            auto snapshots = (std::vector<Snapshot>*)data;
+            *out_text = (*snapshots)[idx].name;
             return true;
           }
         };
 
-        ImGui::Combo("Snapshot", &_snapCmpSel, Getter::description, (void*)&_snapshots, _snapshots.size() + 1);
+        ImGui::Combo("Snapshot", &_snapCmpSel, Getter::description, (void*)&_snapshots, _snapshots.size());
         ImGui::Combo("Operator", &_snapCmpOp, operatorNames, sizeof(operatorNames) / sizeof(operatorNames[0]));
 
         int max = sizeof(sizeNames) / sizeof(sizeNames[0]) - 8 * (_snapCmpOp > 0);
@@ -478,7 +502,7 @@ namespace
         ImGui::InputText("Value", _value, sizeof(_value));
 
         uint64_t value;
-        bool valid = getValue(&value);
+        bool valid = _snapCmpSel < _snapshots.size() && getValue(&value);
 
         if (ImGuiAl::Button(ICON_FA_PLUS " Create filter", valid))
         {
@@ -500,30 +524,22 @@ namespace
         {
           static bool description(void* data, int idx, const char** out_text)
           {
-            if (idx != 0)
-            {
-              auto snapshots = (std::vector<Snapshot>*)data;
-              *out_text = (*snapshots)[idx - 1].name;
-            }
-            else
-            {
-              *out_text = "None";
-            }
-
+            auto snapshots = (std::vector<Snapshot>*)data;
+            *out_text = (*snapshots)[idx].name;
             return true;
           }
         };
         
-        ImGui::Combo("1st Snapshot", &_snapsCmpSel1, Getter::description, (void*)&_snapshots, _snapshots.size() + 1);
+        ImGui::Combo("1st Snapshot", &_snapsCmpSel1, Getter::description, (void*)&_snapshots, _snapshots.size());
         ImGui::Combo("Operator", &_snapsCmpOp, operatorNames, sizeof(operatorNames) / sizeof(operatorNames[0]));
-        ImGui::Combo("2nd Snapshot", &_snapsCmpSel2, Getter::description, (void*)&_snapshots, _snapshots.size() + 1);
+        ImGui::Combo("2nd Snapshot", &_snapsCmpSel2, Getter::description, (void*)&_snapshots, _snapshots.size());
 
-        bool valid = _snapsCmpSel1 != 0 && _snapsCmpSel2 != 0;
+        bool valid = _snapsCmpSel1 < _snapshots.size() && _snapsCmpSel2 < _snapshots.size();
 
         if (valid)
         {
-          Snapshot* snap1 = &_snapshots[_snapsCmpSel1 - 1];
-          Snapshot* snap2 = &_snapshots[_snapsCmpSel2 - 1];
+          Snapshot* snap1 = &_snapshots[_snapsCmpSel1];
+          Snapshot* snap2 = &_snapshots[_snapsCmpSel2];
 
           valid = valid && snap1->blocks.size() == snap2->blocks.size();
 
@@ -555,38 +571,30 @@ namespace
         {
           static bool description(void* data, int idx, const char** out_text)
           {
-            if (idx != 0)
-            {
-              auto filters = (std::vector<Filter>*)data;
-              *out_text = (*filters)[idx - 1].name;
-            }
-            else
-            {
-              *out_text = "None";
-            }
-
+            auto filters = (std::vector<Filter>*)data;
+            *out_text = (*filters)[idx].name;
             return true;
           }
         };
 
-        ImGui::Combo("1st Filter", &_filtersCmpSel1, Getter::description, (void*)&_filters, _filters.size() + 1);
+        ImGui::Combo("1st Filter", &_filtersCmpSel1, Getter::description, (void*)&_filters, _filters.size());
 
         static const char* operators2[] = {
           "Intersection", "Union", "Difference", "Complement"
         };
 
         ImGui::Combo("Operator", &_filtersCmpOp, operators2, sizeof(operators2) / sizeof(operators2[0]));
-        ImGui::Combo("2nd Filter", &_filtersCmpSel2, Getter::description, (void*)&_filters, _filters.size() + 1);
+        ImGui::Combo("2nd Filter", &_filtersCmpSel2, Getter::description, (void*)&_filters, _filters.size());
 
-        bool valid = _filtersCmpSel1 != 0;
-        valid = valid && ((_filtersCmpOp != 3 && _filtersCmpSel2 != 0) || (_filtersCmpOp == 3 && _filtersCmpSel2 == 0));
+        bool valid = _filtersCmpSel1 < _filters.size();
+        valid = valid && ((_filtersCmpOp != 3 && _filtersCmpSel2 < _filters.size()) || (_filtersCmpOp == 3));
 
         if (valid && _filtersCmpOp != 3)
         {
-          Filter* filter1 = _filtersCmpSel1 == 0 ? nullptr : &_filters[_filtersCmpSel1 - 1];
-          Filter* filter2 = _filtersCmpSel2 == 0 ? nullptr : &_filters[_filtersCmpSel2 - 1];
+          Filter* filter1 = _filtersCmpSel1 < _filters.size() ? &_filters[_filtersCmpSel1] : NULL;
+          Filter* filter2 = _filtersCmpSel2 < _filters.size() ? &_filters[_filtersCmpSel2] : NULL;
 
-          valid = valid && filter1->sets.size() == filter2->sets.size();
+          valid = filter1->sets.size() == filter2->sets.size();
 
           size_t count = filter1->sets.size();
 
@@ -599,40 +607,6 @@ namespace
         if (ImGuiAl::Button(ICON_FA_PLUS " Create filter", valid))
         {
           createFilterFromFilters();
-        }
-      }
-
-      ImGui::PopID();
-    }
-
-    void showFiltersList()
-    {
-      ImGui::PushID(__FUNCTION__);
-      ImGui::SetNextTreeNodeOpen(true);
-
-      if (ImGui::CollapsingHeader("Filters"))
-      {
-        for (auto it = _filters.begin(); it != _filters.end();)
-        {
-          Filter* filter = &*it;
-          ImGui::PushID(filter);
-
-          ImGui::InputText("", filter->name, sizeof(filter->name));
-          ImGui::SameLine();
-
-          if (ImGui::Button(ICON_FA_MINUS " Delete"))
-          {
-            it = _filters.erase(it);
-            _filtersCmpSel1 = 0;
-            _filtersCmpSel2 = 0;
-            _filterSel = 0;
-          }
-          else
-          {
-            ++it;
-          }
-
-          ImGui::PopID();
         }
       }
 
@@ -737,22 +711,14 @@ namespace
       s_info->services->startService(&service);
     }
 
-    void showFilterAddresses()
+    void showFiltersList()
     {
       struct Getter
       {
         static bool description(void* data, int idx, const char** out_text)
         {
-          if (idx != 0)
-          {
-            auto filters = (std::vector<Filter>*)data;
-            *out_text = (*filters)[idx - 1].name;
-          }
-          else
-          {
-            *out_text = "None";
-          }
-
+          auto filters = (std::vector<Filter>*)data;
+          *out_text = (*filters)[idx].name;
           return true;
         }
       };
@@ -760,17 +726,53 @@ namespace
       ImGui::PushID(__FUNCTION__);
       ImGui::SetNextTreeNodeOpen(true);
 
-      if (ImGui::CollapsingHeader("Filter inspection"))
+      if (ImGui::CollapsingHeader("Filters") && _filters.size() != 0)
       {
-        ImGui::Combo("", &_filterSel, Getter::description, (void*)&_filters, _filters.size() + 1);
-        ImGui::SameLine();
+        ImGui::Combo("Filter", &_filterSel, Getter::description, (void*)&_filters, _filters.size());
 
-        if (ImGuiAl::Button(ICON_FA_MICROCHIP " Show", _filterSel != 0))
+        if (ImGuiAl::Button(ICON_FA_PENCIL " Rename", _snapSel < _snapshots.size()))
         {
-          openMemoryEditor(&_filters[_filterSel - 1]);
+          ImGui::OpenPopup(ICON_FA_PENCIL " Rename filter");
         }
 
-        if (_filterSel != 0)
+        if (ImGui::BeginPopupModal(ICON_FA_PENCIL " Rename filter", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+        {
+          ImGui::InputText("Name", _filters[_filterSel].name, sizeof(_filters[_filterSel].name));
+
+          bool ok = _filters[_filterSel].name[0] != 0;
+
+          for (int i = 0; i < _filters.size(); i++)
+          {
+            if (i != _filterSel && !strcmp(_filters[i].name, _filters[_filterSel].name))
+            {
+              ok = false;
+            }
+          }
+          
+          if (ImGuiAl::Button(ICON_FA_CHECK " Ok", ok))
+          {
+            ImGui::CloseCurrentPopup();
+          }
+
+          ImGui::EndPopup();
+        }
+
+        ImGui::SameLine();
+
+        if (ImGuiAl::Button(ICON_FA_MICROCHIP " Show", _filterSel < _filters.size()))
+        {
+          openMemoryEditor(&_filters[_filterSel]);
+        }
+
+        ImGui::SameLine();
+
+        if (ImGuiAl::Button(ICON_FA_MINUS " Delete", _filterSel < _filters.size()))
+        {
+          _filters.erase(_filters.begin() + _filterSel);
+          _filterSel = 0;
+        }
+
+        if (_filterSel < _filters.size())
         {
           struct Getter
           {
@@ -842,7 +844,7 @@ namespace
             }
           };
 
-          _listboxUd._filter = &_filters[_filterSel - 1];
+          _listboxUd._filter = &_filters[_filterSel];
           int dummy = -1;
           ImGui::ListBox("Hits", &dummy, Getter::description, &_listboxUd, _listboxUd._filter->total);
         }
@@ -856,6 +858,7 @@ namespace
       _regionsCount = 0;
       _regionsSel = 0;
       _snapshots.clear();
+      _snapSel = 0;
       _snapCmpSel = 0;
       _snapCmpOp = 0;
       _snapCmpSize = 0;
@@ -904,7 +907,13 @@ namespace
         }
       }
 
+      ImGui::Columns(2);
       showSnapshotsList();
+      ImGui::NextColumn();
+      showFiltersList();
+      ImGui::Columns(1);
+
+      ImGui::Separator();
 
       ImGui::Columns(3);
       showFiltersFromSnapshot();
@@ -912,14 +921,6 @@ namespace
       showFiltersFromSnapshots();
       ImGui::NextColumn();
       showFiltersFromFilters();
-      ImGui::Columns(1);
-
-      ImGui::Separator();
-
-      ImGui::Columns(2);
-      showFiltersList();
-      ImGui::NextColumn();
-      showFilterAddresses();
       ImGui::Columns(1);
     }
   };
