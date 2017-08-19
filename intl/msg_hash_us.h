@@ -3122,7 +3122,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_MUSIC,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
       "Image")
 MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_IMAGES,
-      "Images which has been previously viewed will appear here.")
+      "Images which have been previously viewed will appear here.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
       "Video")
 MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_VIDEO,
