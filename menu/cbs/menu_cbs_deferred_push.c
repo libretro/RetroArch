@@ -1194,11 +1194,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_history_list);
    }
    else if (strstr(label,
-            msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS)))
-   {
-      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_settings);
-   }
-   else if (strstr(label,
             msg_hash_to_str(MENU_ENUM_LABEL_CORE_OPTIONS)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_options);
@@ -1531,6 +1526,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {
          switch (label_hash)
          {
+            case MENU_LABEL_SETTINGS:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_settings);
+               break;
             case MENU_LABEL_DEFERRED_CONFIGURATIONS_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_configurations_list);
                break;
