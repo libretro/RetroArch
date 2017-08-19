@@ -1,7 +1,8 @@
 # 1.6.8 (future)
+- GUI: (XMB) Skip drawing the fading list when it is already transparent. Optimization.
 - WIIU: Initial touchscreen support for WiiU gamepad.
 
-# 1.6.7 (future)
+# 1.6.7
 - SCANNER: Fix directory scanning.
 - SCANNER: Fix file scanning.
 - COMMON: Fix 'Disk Image Append' option.
