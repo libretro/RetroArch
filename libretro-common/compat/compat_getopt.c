@@ -184,7 +184,7 @@ int getopt_long(int argc, char *argv[],
    if (optind == 0)
       optind = 1;
 
-   if (argc == 1)
+   if (argc < 2)
       return -1;
 
    short_index = find_short_index(&argv[optind]);
