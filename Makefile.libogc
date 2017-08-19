@@ -12,23 +12,85 @@ endif
 
 export PATH	:=	$(DEVKITPPC)/bin:$(PATH)
 
-export LIBOGC_MAJOR	:= 1
-export LIBOGC_MINOR	:= 8
-export LIBOGC_PATCH	:= 17
+ifeq ($(PLATFORM),)
+PLATFORM=wii
+endif
 
-include	$(DEVKITPPC)/base_rules
+#---------------------------------------------------------------------------------
+# change shell on Snow Leopard
+#---------------------------------------------------------------------------------
+UNAME_S	:=	$(shell uname -s)
+UNAME_R	:=	$(shell uname -r)
+
+ifneq (,$(findstring Darwin,$(UNAME_S)))
+	ifneq (,$(findstring 10.8.0,$(UNAME_R)))
+		export SHELL=/bin/bash
+	endif
+endif
+
+#---------------------------------------------------------------------------------
+# path to tools 
+#---------------------------------------------------------------------------------
+export PORTLIBS	:=	$(DEVKITPRO)/portlibs/ppc
+export PATH	:=	$(DEVKITPPC)/bin:$(PORTLIBS)/bin:$(PATH)
+
+#---------------------------------------------------------------------------------
+# the prefix on the compiler executables
+#---------------------------------------------------------------------------------
+PREFIX	:=	powerpc-eabi-
+
+export AS	:=	$(PREFIX)as
+export CC	:=	$(PREFIX)gcc
+export CXX	:=	$(PREFIX)g++
+export AR	:=	$(PREFIX)ar
+export OBJCOPY	:=	$(PREFIX)objcopy
+
+
+ISVC=$(or $(VCBUILDHELPER_COMMAND),$(MSBUILDEXTENSIONSPATH32),$(MSBUILDEXTENSIONSPATH))
+
+#---------------------------------------------------------------------------------
+%.a:
+#---------------------------------------------------------------------------------
+	@rm -f $@
+	$(AR) -rc $@ $^
+
+#---------------------------------------------------------------------------------
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+	
+#---------------------------------------------------------------------------------
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+#---------------------------------------------------------------------------------
+%.o: %.m
+	$(CC) $(OBJCFLAGS) -c $< -o $@
+
+#---------------------------------------------------------------------------------
+%.o: %.s
+	$(CC) -x assembler-with-cpp $(ASFLAGS) -c $< -o $@
+
+#---------------------------------------------------------------------------------
+%.o: %.S
+	$(CC) -x assembler-with-cpp $(ASFLAGS) -c $< -o $@
+
+#---------------------------------------------------------------------------------
+# canned command sequence for binary data
+#---------------------------------------------------------------------------------
+define bin2o
+	bin2s -a 32 $< | $(AS) -o $(@)
+	echo "extern const u8" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"_end[];" > `(echo $(<F) | tr . _)`.h
+	echo "extern const u8" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"[];" >> `(echo $(<F) | tr . _)`.h
+	echo "extern const u32" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`_size";" >> `(echo $(<F) | tr . _)`.h
+endef
 
 BUILD		:=	build
 
 BUILD_LITE = 1
+CURDIR   = .
 
-DATESTRING	:=	$(shell date +%Y%m%d)
-VERSTRING	:=	$(LIBOGC_MAJOR).$(LIBOGC_MINOR).$(LIBOGC_PATCH)
-
-#---------------------------------------------------------------------------------
-ifeq ($(strip $(PLATFORM)),)
-#---------------------------------------------------------------------------------
 export BASEDIR		:= $(CURDIR)
+export DEPSDIR    := $(BASEDIR)/wii/libogc/deps
 export LWIPDIR		:= $(BASEDIR)/wii/libogc/lwip
 export OGCDIR		:= $(BASEDIR)/wii/libogc/libogc
 export DBDIR		:= $(BASEDIR)/wii/libogc/libdb
@@ -39,17 +101,6 @@ export STUBSDIR	:= $(BASEDIR)/wii/libogc/lockstubs
 export LIBS			:=	$(BASEDIR)/wii/libogc/libs
 
 export INCDIR		:=	$(BASEDIR)/wii/libogc/include
-
-#---------------------------------------------------------------------------------
-else
-#---------------------------------------------------------------------------------
-
-export LIBDIR		:= $(LIBS)/$(PLATFORM)
-
-#---------------------------------------------------------------------------------
-endif
-#---------------------------------------------------------------------------------
-
 
 #---------------------------------------------------------------------------------
 BBALIB		:= $(LIBDIR)/libbba
@@ -87,7 +138,7 @@ ifeq ($(PLATFORM),cube)
 MACHDEP		+=	-DHW_DOL
 endif
 
-CFLAGS		:= -DLIBOGC_INTERNAL -g -O2 -fno-strict-aliasing -mregnames -Wall $(MACHDEP) $(INCLUDES)
+CFLAGS		:= -DLIBOGC_INTERNAL -DNDEBUG -O2 -fno-strict-aliasing -mregnames -Wall $(MACHDEP) $(INCLUDES)
 ASFLAGS		:=	$(MACHDEP) -mregnames -D_LANGUAGE_ASSEMBLY $(INCLUDES)
 
 #---------------------------------------------------------------------------------
@@ -108,86 +159,182 @@ VPATH :=	$(LWIPDIR)				\
 
 
 #---------------------------------------------------------------------------------
-LWIPOBJ		:=	network.o netio.o gcif.o	\
-			inet.o mem.o dhcp.o raw.o		\
-			memp.o netif.o pbuf.o stats.o	\
-			sys.o tcp.o tcp_in.o tcp_out.o	\
-			udp.o icmp.o ip.o ip_frag.o		\
-			ip_addr.o etharp.o loopif.o
+SOURCES_LWIP := $(LWIPDIR)/network.c \
+					 $(LWIPDIR)/netio.c \
+					 $(LWIPDIR)/arch/gc/netif/gcif.c	\
+					 $(LWIPDIR)/core/inet.c \
+					 $(LWIPDIR)/core/mem.c \
+					 $(LWIPDIR)/core/dhcp.c \
+					 $(LWIPDIR)/core/raw.c	\
+					 $(LWIPDIR)/core/memp.c \
+					 $(LWIPDIR)/core/netif.c \
+					 $(LWIPDIR)/core/pbuf.c \
+					 $(LWIPDIR)/core/stats.c \
+					 $(LWIPDIR)/core/sys.c \
+					 $(LWIPDIR)/core/tcp.c \
+					 $(LWIPDIR)/core/tcp_in.c \
+					 $(LWIPDIR)/core/tcp_out.c	\
+					 $(LWIPDIR)/core/udp.c \
+					 $(LWIPDIR)/core/ipv4/icmp.c \
+					 $(LWIPDIR)/core/ipv4/ip.c \
+					 $(LWIPDIR)/core/ipv4/ip_frag.c \
+					 $(LWIPDIR)/core/ipv4/ip_addr.c \
+					 $(LWIPDIR)/netif/etharp.c \
+					 $(LWIPDIR)/netif/loopif.c
+
+LWIPOBJ := $(SOURCES_LWIP:.c=.o)
 
 #---------------------------------------------------------------------------------
-OGCOBJ		:=	\
-			console.o  lwp_priority.o lwp_queue.o lwp_threadq.o lwp_threads.o lwp_sema.o	\
-			lwp_messages.o lwp.o lwp_handler.o lwp_stack.o lwp_mutex.o 	\
-			lwp_watchdog.o lwp_wkspace.o lwp_objmgr.o lwp_heap.o sys_state.o \
-			exception_handler.o exception.o irq.o irq_handler.o semaphore.o \
-			video_asm.o video.o pad.o exi.o mutex.o arqueue.o	arqmgr.o	\
-			cache_asm.o system.o system_asm.o cond.o			\
-			gx.o gu.o gu_psasm.o audio.o cache.o decrementer.o			\
-			message.o card.o aram.o depackrnc.o decrementer_handler.o	\
-			depackrnc1.o dsp.o si.o tpl.o ipc.o ogc_crt0.o \
-			console_font_8x16.o timesupp.o lock_supp.o newlibc.o usbgecko.o usbmouse.o \
-			sbrk.o malloc_lock.o kprintf.o stm.o ios.o es.o isfs.o usb.o network_common.o \
-			sdgecko_io.o sdgecko_buf.o gcsd.o argv.o network_wii.o wiisd.o conf.o usbstorage.o \
-			texconv.o wiilaunch.o
+SOURCES_OGC		:=	\
+					$(OGCDIR)/console.c \
+					$(OGCDIR)/lwp_priority.c \
+					$(OGCDIR)/lwp_queue.c \
+					$(OGCDIR)/lwp_threadq.c \
+					$(OGCDIR)/lwp_threads.c \
+					$(OGCDIR)/lwp_sema.c	\
+					$(OGCDIR)/lwp_messages.c \
+					$(OGCDIR)/lwp.c \
+					$(OGCDIR)/lwp_stack.c \
+					$(OGCDIR)/lwp_mutex.c 	\
+					$(OGCDIR)/lwp_watchdog.c \
+					$(OGCDIR)/lwp_wkspace.c \
+					$(OGCDIR)/lwp_objmgr.c \
+					$(OGCDIR)/lwp_heap.c \
+					$(OGCDIR)/sys_state.c \
+					$(OGCDIR)/exception.c \
+					$(OGCDIR)/irq.c \
+					$(OGCDIR)/semaphore.c \
+					$(OGCDIR)/video.c \
+					$(OGCDIR)/pad.c \
+					$(OGCDIR)/exi.c \
+					$(OGCDIR)/mutex.c \
+					$(OGCDIR)/arqueue.c \
+					$(OGCDIR)/arqmgr.c	\
+					$(OGCDIR)/system.c \
+					$(OGCDIR)/cond.c \
+					$(OGCDIR)/gx.c \
+					$(OGCDIR)/gu.c \
+					$(OGCDIR)/audio.c \
+					$(OGCDIR)/cache.c \
+					$(OGCDIR)/decrementer.c			\
+					$(OGCDIR)/message.c \
+					$(OGCDIR)/card.c \
+					$(OGCDIR)/aram.c \
+					$(OGCDIR)/depackrnc1.c \
+					$(OGCDIR)/dsp.c \
+					$(OGCDIR)/si.c \
+					$(OGCDIR)/tpl.c \
+					$(OGCDIR)/ipc.c \
+					$(OGCDIR)/console_font_8x16.c \
+					$(OGCDIR)/timesupp.c \
+					$(OGCDIR)/lock_supp.c \
+					$(OGCDIR)/newlibc.c \
+					$(OGCDIR)/usbgecko.c \
+					$(OGCDIR)/usbmouse.c \
+					$(OGCDIR)/sbrk.c \
+					$(OGCDIR)/malloc_lock.c \
+					$(OGCDIR)/kprintf.c \
+					$(OGCDIR)/stm.c \
+					$(OGCDIR)/ios.c \
+					$(OGCDIR)/es.c \
+					$(OGCDIR)/isfs.c \
+					$(OGCDIR)/usb.c \
+					$(OGCDIR)/network_common.c \
+					$(OGCDIR)/sdgecko_io.c \
+					$(OGCDIR)/sdgecko_buf.c \
+					$(OGCDIR)/gcsd.c \
+					$(OGCDIR)/argv.c \
+					$(OGCDIR)/network_wii.c \
+					$(OGCDIR)/wiisd.c \
+					$(OGCDIR)/conf.c \
+					$(OGCDIR)/usbstorage.c \
+					$(OGCDIR)/texconv.c \
+					$(OGCDIR)/wiilaunch.c
+
+SOURCES_OGC_ASM := $(OGCDIR)/cache_asm.S \
+						 $(OGCDIR)/decrementer_handler.S \
+						 $(OGCDIR)/depackrnc.S \
+						 $(OGCDIR)/exception_handler.S \
+						 $(OGCDIR)/gu_psasm.S \
+						 $(OGCDIR)/irq_handler.S \
+						 $(OGCDIR)/lwp_handler.S \
+						 $(OGCDIR)/ogc_crt0.S \
+						 $(OGCDIR)/system_asm.S \
+						 $(OGCDIR)/video_asm.S
+
 
 ifneq ($(BUILD_LITE), 1)
-OGCOBJ += dvd.o
+SOURCES_OGC += $(OGCDIR)/dvd.c
 endif
 
-#---------------------------------------------------------------------------------
-DBOBJ		:=	uip_ip.o uip_tcp.o uip_pbuf.o uip_netif.o uip_arp.o uip_arch.o \
-				uip_icmp.o memb.o memr.o bba.o tcpip.o debug.o debug_handler.o \
-				debug_supp.o geckousb.o
+OGCOBJ := $(SOURCES_OGC:.c=.o) $(SOURCES_OGC_ASM:.S=.o)
 
 #---------------------------------------------------------------------------------
-BTEOBJ		:=	bte.o hci.o l2cap.o btmemb.o btmemr.o btpbuf.o physbusif.o
+SOURCES_DB		:=	\
+				$(DBDIR)/uIP/uip_ip.c \
+				$(DBDIR)/uIP/uip_tcp.c \
+				$(DBDIR)/uIP/uip_pbuf.c \
+				$(DBDIR)/uIP/uip_netif.c \
+				$(DBDIR)/uIP/uip_arp.c \
+				$(DBDIR)/uIP/uip_arch.c \
+				$(DBDIR)/uIP/uip_icmp.c \
+				$(DBDIR)/uIP/memb.c \
+				$(DBDIR)/uIP/memr.c \
+				$(DBDIR)/uIP/bba.c \
+				$(DBDIR)/tcpip.c \
+				$(DBDIR)/debug.c \
+				$(DBDIR)/debug_handler.c \
+				$(DBDIR)/debug_supp.c \
+				$(DBDIR)/geckousb.c
+
+DBOBJ      := $(SOURCES_DB:.c=.o)
 
 #---------------------------------------------------------------------------------
-WIIUSEOBJ	:=	classic.o dynamics.o events.o io.o io_wii.o ir.o \
-				nunchuk.o wiiuse.o speaker.o wpad.o motion_plus.o
+SOURCES_BTE		:=	\
+					$(BTEDIR)/bte.c \
+					$(BTEDIR)/hci.c \
+					$(BTEDIR)/l2cap.c \
+					$(BTEDIR)/btmemb.c \
+					$(BTEDIR)/btmemr.c \
+					$(BTEDIR)/btpbuf.c \
+					$(BTEDIR)/physbusif.c
+
+BTEOBJ      := $(SOURCES_BTE:.c=.o)
 
 #---------------------------------------------------------------------------------
-WIIKEYBLIBOBJ	:=	usbkeyboard.o keyboard.o ukbdmap.o wskbdutil.o
+SOURCES_WIIUSE	:=	\
+					$(WIIUSEDIR)/classic.c \
+					$(WIIUSEDIR)/dynamics.c \
+					$(WIIUSEDIR)/events.c \
+					$(WIIUSEDIR)/io.c \
+					$(WIIUSEDIR)/io_wii.c \
+					$(WIIUSEDIR)/ir.c \
+					$(WIIUSEDIR)/nunchuk.c \
+					$(WIIUSEDIR)/wiiuse.c \
+					$(WIIUSEDIR)/speaker.c \
+					$(WIIUSEDIR)/wpad.c \
+					$(WIIUSEDIR)/motion_plus.c
 
-
-
-all: wii cube
-
-#---------------------------------------------------------------------------------
-wii: $(BASEDIR)/wii/libogc/include/ogc/libversion.h
-#---------------------------------------------------------------------------------
-	@[ -d $(INCDIR) ] || mkdir -p $(INCDIR)
-	@[ -d $(LIBS)/wii ] || mkdir -p $(LIBS)/wii
-	@[ -d wii ] || mkdir -p wii
-	@$(MAKE) PLATFORM=wii libs -C wii -f $(CURDIR)/Makefile.libogc
-
-#---------------------------------------------------------------------------------
-cube: $(BASEDIR)/wii/libogc/include/ogc/libversion.h
-#---------------------------------------------------------------------------------
-	@[ -d $(INCDIR) ] || mkdir -p $(INCDIR)
-	@[ -d $(LIBS)/cube ] || mkdir -p $(LIBS)/cube
-	@[ -d cube ] || mkdir -p cube
-	@$(MAKE) PLATFORM=cube libs -C cube -f $(CURDIR)/Makefile.libogc
-
+WIIUSEOBJ   := $(SOURCES_WIIUSE:.c=.o)
 
 #---------------------------------------------------------------------------------
-$(BASEDIR)/wii/libogc/include/ogc/libversion.h : Makefile.libogc
-#---------------------------------------------------------------------------------
-	@echo "#ifndef __LIBVERSION_H__" > $@
-	@echo "#define __LIBVERSION_H__" >> $@
-	@echo >> $@
-	@echo "#define _V_MAJOR_	$(LIBOGC_MAJOR)" >> $@
-	@echo "#define _V_MINOR_	$(LIBOGC_MINOR)" >> $@
-	@echo "#define _V_PATCH_	$(LIBOGC_PATCH)" >> $@
-	@echo >> $@
-	@echo "#define _V_DATE_			__DATE__" >> $@
-	@echo "#define _V_TIME_			__TIME__" >> $@
-	@echo >> $@
-	@echo '#define _V_STRING "libOGC Release '$(LIBOGC_MAJOR).$(LIBOGC_MINOR).$(LIBOGC_PATCH)'"' >> $@
-	@echo >> $@
-	@echo "#endif // __LIBVERSION_H__" >> $@
+SOURCES_WIIKEYB = $(LIBWIIKEYB)/usbkeyboard.c \
+						$(LIBWIIKEYB)/keyboard.c \
+						$(LIBWIIKEYB)/ukbdmap.c \
+						$(LIBWIIKEYB)/wskbdutil.c
 
+WIIKEYBLIBOBJ	:=	$(SOURCES_WIIKEYB:.c=.o)
+
+LIBRARIES	:=	$(OGCLIB).a  $(DBLIB).a
+
+ifeq ($(PLATFORM),cube)
+LIBRARIES	+=	$(BBALIB).a
+endif
+ifeq ($(PLATFORM),wii)
+LIBRARIES	+=	$(BTELIB).a $(WIIUSELIB).a $(WIIKEYBLIB).a
+endif
+
+all: $(LIBRARIES)
 #---------------------------------------------------------------------------------
 $(BBALIB).a: $(LWIPOBJ)
 #---------------------------------------------------------------------------------
@@ -202,67 +349,8 @@ $(BTELIB).a: $(BTEOBJ)
 $(WIIUSELIB).a: $(WIIUSEOBJ)
 #---------------------------------------------------------------------------------
 
-.PHONY: libs wii cube install-headers install dist docs
-
-#---------------------------------------------------------------------------------
-install-headers:
-#---------------------------------------------------------------------------------
-	@mkdir -p $(INCDIR)
-	@mkdir -p $(INCDIR)/ogc/machine
-	@mkdir -p $(INCDIR)/bte
-	@mkdir -p $(INCDIR)/wiiuse
-	@mkdir -p $(INCDIR)/modplay
-	@mkdir -p $(INCDIR)/sdcard
-	@mkdir -p $(INCDIR)/di
-	@mkdir -p $(INCDIR)/wiikeyboard
-	@cp ./gc/*.h $(INCDIR)
-	@cp ./gc/ogc/*.h $(INCDIR)/ogc
-	@cp ./gc/ogc/machine/*.h $(INCDIR)/ogc/machine
-	@cp ./gc/bte/*.h $(INCDIR)/bte
-	@cp ./gc/wiiuse/*.h $(INCDIR)/wiiuse
-	@cp ./gc/modplay/*.h $(INCDIR)/modplay
-	@cp ./gc/sdcard/*.h $(INCDIR)/sdcard
-	@cp ./gc/di/*.h $(INCDIR)/di
-	@cp ./gc/wiikeyboard/*.h $(INCDIR)/wiikeyboard
-
-#---------------------------------------------------------------------------------
-install: wii cube install-headers
-#---------------------------------------------------------------------------------
-	@mkdir -p $(DEVKITPRO)/libogc
-	@cp -frv include $(DEVKITPRO)/libogc
-	@cp -frv lib $(DEVKITPRO)/libogc
-	@cp -frv libogc_license.txt $(DEVKITPRO)/libogc
-
-
-#---------------------------------------------------------------------------------
-dist: wii cube install-headers
-#---------------------------------------------------------------------------------
-	@tar    --exclude=*CVS* --exclude=.svn --exclude=wii --exclude=cube --exclude=*deps* \
-		--exclude=*.bz2  --exclude=*include* --exclude=*lib/* --exclude=*docs/*\
-		-cvjf libogc-src-$(VERSTRING).tar.bz2 *
-	@tar -cvjf libogc-$(VERSTRING).tar.bz2 include lib libogc_license.txt
-
-
-LIBRARIES	:=	$(OGCLIB).a  $(DBLIB).a
-
-ifeq ($(PLATFORM),cube)
-LIBRARIES	+=	$(BBALIB).a
-endif
-ifeq ($(PLATFORM),wii)
-LIBRARIES	+=	$(BTELIB).a $(WIIUSELIB).a $(WIIKEYBLIB).a
-endif
-
-#---------------------------------------------------------------------------------
-libs: $(LIBRARIES)
-#---------------------------------------------------------------------------------
-
 #---------------------------------------------------------------------------------
 clean:
 #---------------------------------------------------------------------------------
-	rm -fr $(BASEDIR)/wii/*.o
+	rm -fr $(LWIPOBJ) $(OGCOBJ) $(DBOBJ) $(BTEOBJ) $(WIIUSEOBJ) $(WIIKEYBLIBOBJ)
 	rm -f *.map
-
-#---------------------------------------------------------------------------------
-docs: install-headers
-#---------------------------------------------------------------------------------
-	doxygen libogc.dox
