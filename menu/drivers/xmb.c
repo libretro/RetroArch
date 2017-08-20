@@ -2811,6 +2811,32 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    menu_display_rotate_z(&rotate_draw);
    menu_display_blend_begin();
+   
+   if (xmb->savestate_thumbnail)
+      xmb_draw_thumbnail(menu_disp_info,
+            xmb, &coord_white[0], width, height,
+            xmb->margins.screen.left + xmb->icon.spacing.horizontal +
+                  xmb->icon.spacing.horizontal*4 - xmb->icon.size / 4,
+            xmb->margins.screen.top + xmb->icon.size + xmb->savestate_thumbnail_height,
+            xmb->savestate_thumbnail_width, xmb->savestate_thumbnail_height,
+            xmb->savestate_thumbnail);
+   else if (xmb->thumbnail
+      && !string_is_equal(xmb_thumbnails_ident(),
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+   {
+#ifdef XMB_DEBUG
+      RARCH_LOG("[XMB thumbnail] width: %.2f, height: %.2f\n", xmb->thumbnail_width, xmb->thumbnail_height);
+      RARCH_LOG("[XMB thumbnail] w: %.2f, h: %.2f\n", width, height);
+#endif
+
+      xmb_draw_thumbnail(menu_disp_info,
+            xmb, &coord_white[0], width, height,
+            xmb->margins.screen.left + xmb->icon.spacing.horizontal +
+                  xmb->icon.spacing.horizontal*4 - xmb->icon.size / 4,
+            xmb->margins.screen.top + xmb->icon.size + xmb->thumbnail_height,
+            xmb->thumbnail_width, xmb->thumbnail_height,
+            xmb->thumbnail);
+   }   
 
    /* Clock image */
    menu_display_set_alpha(coord_white, MIN(xmb->alpha, 1.00f));
@@ -3022,32 +3048,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    font_driver_flush(video_info->width, video_info->height, xmb->font2);
    font_driver_bind_block(xmb->font2, NULL);
-
-   if (xmb->savestate_thumbnail)
-      xmb_draw_thumbnail(menu_disp_info,
-            xmb, &coord_white[0], width, height,
-            xmb->margins.screen.left + xmb->icon.spacing.horizontal +
-                  xmb->icon.spacing.horizontal*4 - xmb->icon.size / 4,
-            xmb->margins.screen.top + xmb->icon.size + xmb->savestate_thumbnail_height,
-            xmb->savestate_thumbnail_width, xmb->savestate_thumbnail_height,
-            xmb->savestate_thumbnail);
-   else if (xmb->thumbnail
-      && !string_is_equal(xmb_thumbnails_ident(),
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
-   {
-#ifdef XMB_DEBUG
-      RARCH_LOG("[XMB thumbnail] width: %.2f, height: %.2f\n", xmb->thumbnail_width, xmb->thumbnail_height);
-      RARCH_LOG("[XMB thumbnail] w: %.2f, h: %.2f\n", width, height);
-#endif
-
-      xmb_draw_thumbnail(menu_disp_info,
-            xmb, &coord_white[0], width, height,
-            xmb->margins.screen.left + xmb->icon.spacing.horizontal +
-                  xmb->icon.spacing.horizontal*4 - xmb->icon.size / 4,
-            xmb->margins.screen.top + xmb->icon.size + xmb->thumbnail_height,
-            xmb->thumbnail_width, xmb->thumbnail_height,
-            xmb->thumbnail);
-   }
 
    if (menu_input_dialog_get_display_kb())
    {
