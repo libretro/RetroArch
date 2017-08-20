@@ -47,7 +47,7 @@ if [ "$HAVE_VIDEOCORE" = 'yes' ]; then
    [ -d /opt/vc/include/interface/vcos/pthreads ] && add_include_dirs /opt/vc/include/interface/vcos/pthreads
    [ -d /opt/vc/include/interface/vmcs_host/linux ] && add_include_dirs /opt/vc/include/interface/vmcs_host/linux
    HAVE_OPENGLES='auto'
-   EXTRA_GL_LIBS="-lEGL -lGLESv2 -lbcm_host -lvcos -lvchiq_arm"
+   EXTRA_GL_LIBS="-lbrcmEGL -lbrcmGLESv2 -lbcm_host -lvcos -lvchiq_arm"
 fi
 
 if [ "$HAVE_NEON" = "yes" ]; then
