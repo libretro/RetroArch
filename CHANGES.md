@@ -1,6 +1,7 @@
 # 1.6.8 (future)
 - GUI: (XMB) Skip drawing the fading list when it is already transparent. Optimization.
 - GUI: (XMB) Comment out visible item calculation in xmb_draw_items().
+- GUI: (RGUI) Prevent crashes when using a non-English language reliant on UTF8.
 - LINUX/PI: Broadcom VC4: Add Videocore config option
 - NETPLAY: Fix disconnection not fully deinitializing Netplay.
 - COMMON: Fix clear/free loop conditionals in playlists.
