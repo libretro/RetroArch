@@ -170,7 +170,7 @@ static void blit_line(int x, int y,
       while (!string_is_empty(message))
       {
          unsigned i, j;
-         uint32_t symbol        = utf8_walk(&message);
+         char symbol = *message++;
 
          for (j = 0; j < FONT_HEIGHT; j++)
          {
