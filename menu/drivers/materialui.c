@@ -1367,7 +1367,7 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
          body_bg_color           = color_nv_body;
          highlighted_entry_color = color_nv_accent;
          footer_bg_color         = footer_bg_color_real;
-         active_tab_marker_color = color_nv_accent;
+         active_tab_marker_color = white_bg;
 
          font_normal_color       = 0xbbc0c4ff;
          font_hover_color        = 0xffffffff;
