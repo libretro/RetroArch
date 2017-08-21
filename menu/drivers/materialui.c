@@ -811,7 +811,8 @@ static void mui_render(void *data, bool is_idle)
 static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
       int i, int y, unsigned width, unsigned height,
       uint64_t index, uint32_t color, bool selected, const char *label,
-      const char *value, float *label_color)
+      const char *value, float *label_color,
+      uint32_t sublabel_color)
 {
    /* This will be used instead of label_color if texture_switch is 'off' icon */
    float pure_white[16]=  {
@@ -832,7 +833,6 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
    uintptr_t texture_switch2       = 0;
    bool do_draw_text               = false;
    size_t usable_width             = width - (mui->margin * 2);
-   uint32_t sublabel_color         = 0x888888ff;
    enum msg_file_type hash_type    = msg_hash_to_file_type(msg_hash_calculate(value));
    float scale_factor              = menu_display_get_dpi();
 
@@ -981,7 +981,8 @@ static void mui_render_menu_list(
       unsigned width, unsigned height,
       uint32_t font_normal_color,
       uint32_t font_hover_color,
-      float *menu_list_color)
+      float *menu_list_color,
+      uint32_t sublabel_color)
 {
    size_t i;
    float sum                               = 0;
@@ -1032,7 +1033,8 @@ static void mui_render_menu_list(
          entry_selected,
          rich_label,
          entry_value,
-         menu_list_color
+         menu_list_color,
+         sublabel_color
       );
 
       sum += node->line_height;
@@ -1220,6 +1222,7 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
    float *active_tab_marker_color  = NULL;		
    float *passive_tab_icon_color   = grey_bg;
 
+   uint32_t sublabel_color         = 0x888888ff;
    uint32_t font_normal_color      = 0;
    uint32_t font_hover_color       = 0;		
    uint32_t font_header_color      = 0;
@@ -1363,6 +1366,7 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
          hex32_to_rgba_normalized(0x77B900, color_nv_accent,0.90);
          hex32_to_rgba_normalized(0x202427, footer_bg_color_real,  1.00);
 
+         sublabel_color          = 0xffffffff;
          header_bg_color         = header_bg_color_real;
          body_bg_color           = color_nv_body;
          highlighted_entry_color = color_nv_accent;
@@ -1480,7 +1484,8 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
             height,
             font_normal_color,
             font_hover_color,
-            &active_tab_marker_color[0]
+            &active_tab_marker_color[0],
+            sublabel_color
             );
 
    font_driver_flush(video_info->width, video_info->height, mui->font);
