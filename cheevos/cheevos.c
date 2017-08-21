@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2015-2016 - Andre Leiradella
+ *  Copyright (C) 2017 - Andrés Suárez
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -48,6 +49,7 @@
 #include "../tasks/tasks_internal.h"
 
 #include "../verbosity.h"
+#include <rthreads/rthreads.h>
 
 /* Define this macro to prevent cheevos from being deactivated. */
 #undef CHEEVOS_DONT_DEACTIVATE
@@ -98,23 +100,6 @@
 #define CHEEVOS_SIX_MB     ( 6 * 1024 * 1024)
 #define CHEEVOS_EIGHT_MB   ( 8 * 1024 * 1024)
 #define CHEEVOS_SIZE_LIMIT (64 * 1024 * 1024)
-
-enum
-{
-   /* Don't change those, the values match the console IDs
-    * at retroachievements.org. */
-   CHEEVOS_CONSOLE_MEGA_DRIVE       = 1,
-   CHEEVOS_CONSOLE_NINTENDO_64      = 2,
-   CHEEVOS_CONSOLE_SUPER_NINTENDO   = 3,
-   CHEEVOS_CONSOLE_GAMEBOY          = 4,
-   CHEEVOS_CONSOLE_GAMEBOY_ADVANCE  = 5,
-   CHEEVOS_CONSOLE_GAMEBOY_COLOR    = 6,
-   CHEEVOS_CONSOLE_NINTENDO         = 7,
-   CHEEVOS_CONSOLE_PC_ENGINE        = 8,
-   CHEEVOS_CONSOLE_SEGA_CD          = 9,
-   CHEEVOS_CONSOLE_SEGA_32X         = 10,
-   CHEEVOS_CONSOLE_MASTER_SYSTEM    = 11
-};
 
 enum
 {
@@ -340,7 +325,7 @@ typedef struct
 
 static cheevos_locals_t cheevos_locals =
 {
-   /* console_id          */ 0,
+   /* console_id          */ CHEEVOS_CONSOLE_NONE,
    /* core_supports       */ true,
    /* addrs_patched       */ false,
    /* add_buffer          */ 0,
@@ -2619,6 +2604,7 @@ bool cheevos_unload(void)
    cheevos_locals.unofficial.count = 0;
 
    cheevos_loaded = 0;
+   cheevos_locals.console_id = CHEEVOS_CONSOLE_NONE;
 
    return true;
 }
@@ -3582,8 +3568,9 @@ bool cheevos_load(const void *data)
    retro_task_t *task;
    coro_t *coro;
    const struct retro_game_info *info;
-   
+
    cheevos_loaded = 0;
+   cheevos_locals.console_id = CHEEVOS_CONSOLE_NONE;
 
    if (!cheevos_locals.core_supports || !data)
       return false;
@@ -3637,7 +3624,13 @@ bool cheevos_load(const void *data)
    task->user_data = NULL;
    task->progress  = 0;
    task->title     = NULL;
-   
+
    task_queue_push(task);
+
    return true;
+}
+
+unsigned cheevos_get_console_id(void)
+{
+   return cheevos_locals.console_id;
 }

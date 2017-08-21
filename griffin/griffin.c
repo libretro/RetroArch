@@ -153,6 +153,12 @@ ACHIEVEMENTS
 #include "../libretro-common/formats/json/jsonsax.c"
 #include "../network/net_http_special.c"
 #include "../cheevos/cheevos.c"
+#include "../deps/imgui/gl3w/gl3w.c"
+#include "../deps/imgui/imgui_impl_sdl.cpp"
+#include "../deps/imgui/imgui_draw.cpp"
+#include "../deps/imgui/imgui_demo.cpp"
+#include "../deps/imgui/imgui.cpp"
+#include "../deps/imgui/main.cpp"
 #endif
 
 /*============================================================

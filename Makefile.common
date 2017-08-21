@@ -1421,7 +1421,29 @@ ifeq ($(HAVE_NETWORKING), 1)
       ifeq ($(HAVE_THREADS), 1)
          DEFINES += -DHAVE_CHEEVOS
          OBJ += cheevos/cheevos.o \
-					 $(LIBRETRO_COMM_DIR)/utils/md5.o
+                $(LIBRETRO_COMM_DIR)/utils/md5.o
+      endif
+   endif
+
+   ifeq ($(HAVE_DEBUGGER), 1)
+      ifeq ($(HAVE_THREADS), 1)
+         DEFINES += -DHAVE_DEBUGGER -DIMGUIAL_FONTS_PROGGY_TINY -DIMGUIAL_FONTS_FONT_AWESOME
+         CXXFLAGS  += -I$(DEPS_DIR)/imgui -I$(DEPS_DIR)/stb -Idebug
+         OBJ += $(DEPS_DIR)/imgui/imgui_demo.o \
+                $(DEPS_DIR)/imgui/imgui_draw.o \
+                $(DEPS_DIR)/imgui/imgui_impl_sdl.o \
+                $(DEPS_DIR)/imgui/imgui.o \
+                $(DEPS_DIR)/imgui/imguial_fonts.o \
+                $(DEPS_DIR)/imgui/imguial_log.o \
+                $(DEPS_DIR)/imgui/imguidock.o \
+                $(DEPS_DIR)/imgui/imguihelper.o \
+                debug/main.o \
+                debug/pluginman.o \
+                debug/plugins/info.o \
+                debug/plugins/memeditor.o \
+                debug/plugins/hunter/block.o \
+                debug/plugins/hunter/set.o \
+                debug/plugins/hunter/hunter.o
       endif
    endif
 
