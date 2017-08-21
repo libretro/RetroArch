@@ -1858,7 +1858,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
 MSG_HASH(MENU_ENUM_SUBLABEL_USER_LANGUAGE,
       "Imposta la lingua dell'interfaccia.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-      "Inserisce una cornice nera tra i fotogrammi. Utile per gli utenti che hanno schermi da 120 Hz e vogliono riprodurre il materiale da 60 Hz con l' eliminazione dell'effetto ghosting."")
+      "Inserisce una cornice nera tra i fotogrammi. Utile per gli utenti che hanno schermi da 120 Hz e vogliono riprodurre il materiale da 60 Hz con l' eliminazione dell'effetto ghosting.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
       "Riduce la latenza a costo di un più alto rischio di sfarfallio video. Aggiunge un ritardo dopo V-Sync (in ms).")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
