@@ -2954,28 +2954,28 @@ MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_MENU_FOOTER_OPACITY,
 MSG_HASH(MENU_ENUM_SUBLABEL_DPI_OVERRIDE_ENABLE,
       "Il menu normalmente si scala dinamicamente. Se si desidera impostare una dimensione specifica, abilitare l'opzione.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DPI_OVERRIDE_VALUE,
-      "Impostare qui la dimensione della scala personalizzata. NOTA: è necessario abilitare l'opzione "DPI Override" per questa dimensione di scala.")
+      "Impostare qui la dimensione della scala personalizzata. NOTA: è necessario abilitare l'opzione 'DPI Override' per questa dimensione di scala.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY,
       "Salva tutti i file scaricati in questa directory.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,
-      "Save all remapped controls to this directory.")
+      "Salvare tutti i controlli remappati in questa directory.")
 MSG_HASH(MENU_ENUM_SUBLABEL_LIBRETRO_DIR_PATH,
       "Directory in cui il programma cerca contenuti / core.")
 MSG_HASH(MENU_ENUM_SUBLABEL_LIBRETRO_INFO_PATH,
-      "Application/core information files are stored here.")
+      "Qui vengono memorizzati i file di informazioni dei core/applicazioni.")
 MSG_HASH(MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
-      "If a joypad is plugged in, that joypad will be autoconfigured if a config file corresponding to it is present inside this directory.")
+      "Se un joypad è collegato, il joypad verrà automaticamente configurato se all'interno di questa directory è presente un file di configurazione corrispondente.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
-      "Save all collections to this directory.")
+      "Salvare tutte le collezioni in questa directory.")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
-      "If set to a directory, content which is temporarily extracted (e.g. from archives) will be extracted to this directory."
+      "Se non viene impostata una directory, il contenuto estratto temporaneamente (ad esempio dagli archivi) verrà estratto in questa directory."
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_CURSOR_DIRECTORY,
-      "Saved queries are stored to this directory.")
+      "Le query salvate vengono memorizzate in questa directory.")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CONTENT_DATABASE_DIRECTORY,
-      "Databases are stored to this directory."
+      "I database sono memorizzati in questa directory."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
