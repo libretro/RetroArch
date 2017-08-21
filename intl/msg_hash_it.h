@@ -2789,7 +2789,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
       "Effettua la scansione di una directory per i file compatibili e li aggiunge alla raccolta.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_FILE,
-      "Esegue la scansione di un file compatibile e li aggiunge alla raccolta."")
+      "Esegue la scansione di un file compatibile e li aggiunge alla raccolta.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
       "Uses a custom swap interval for Vsync. Set this to effectively halve monitor refresh rate."
       )
