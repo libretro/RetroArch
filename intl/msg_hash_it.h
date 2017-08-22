@@ -708,7 +708,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_TYPE,
       "Tipo di dispositivo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX,
-      "Indicedel mouse")
+      "Indice del mouse")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
       "Driver di input")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
@@ -724,7 +724,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_DOWN,
       "D-pad giù")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L2,
-      "Pulsante L2(trigger)")
+      "Pulsante L2 (trigger)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L3,
       "Pulsante L3 (thumb)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L,
@@ -746,7 +746,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_START,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_UP,
       "D-pad su")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_X,
-      "Pulsante X (top)")
+      "Pulsante X (in alto)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
       "Pulsante Y (sinistro)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_KEY,
@@ -802,7 +802,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
       "Pulsante Pausa")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
-      "Esci da RetroArch")
+      "Pulsante per uscire da RetroArch")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_RESET,
       "Resetta il gioco")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
@@ -1582,11 +1582,11 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE,
       "Consenti la rotazione")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
-      "Configura Aspect Ratio")
+      "Configura Rapporto d'aspetto")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_AUTO,
-      "Aspect Ratio Automatico")
+      "Rapporto d'aspetto Automatico")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
-      "Aspect Ratio")
+      "Rapporto d'aspetto")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
       "Inserimento Frame nero")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
@@ -1608,7 +1608,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FONT_SIZE,
       "Dimensioni delle notifiche su schermo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_ASPECT,
-      "Forza aspect ratio")
+      "Forza Rapporto d'aspetto")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
       "Forza-disabilita sRGB FBO")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
@@ -1678,13 +1678,13 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
       "Deflicker")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-      "Personalizza Aspect Ratio in Altezza")
+      "Personalizza Rapporto d'aspetto in Altezza")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-      "Personalizza Aspect Ratio in Larghezza")
+      "Personalizza Rapporto d'aspetto in Larghezza")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
-      "Personalizza Aspect Ratio in una posizione X.")
+      "Personalizza Rapporto d'aspetto in una posizione X.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
-      "Personalizza Aspect Ratio in una posizione Y")
+      "Personalizza Rapporto d'aspetto in una posizione Y")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
       "Impostare la larghezza dello schermo VI")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
@@ -1892,11 +1892,11 @@ MSG_HASH(MSG_AUDIO_UNMUTED,
 MSG_HASH(MSG_AUTOCONFIG_FILE_ERROR_SAVING,
       "Errore durante il salvataggio del file autoconf.")
 MSG_HASH(MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
-      "Il file Autoconfig è stato salvato correttamente.")
+      "Il file di autoconfigurazione è stato salvato correttamente.")
 MSG_HASH(MSG_AUTOSAVE_FAILED,
       "Impossibile inizializzare il salvataggio automatico.")
 MSG_HASH(MSG_AUTO_SAVE_STATE_TO,
-      "Auto save state to")
+      "Salva stato automatico su")
 MSG_HASH(MSG_BLOCKING_SRAM_OVERWRITE,
       "Bloccare la sovrascrittura della SRAM")
 MSG_HASH(MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
@@ -2234,15 +2234,15 @@ MSG_HASH(MSG_STARTING_MOVIE_RECORD_TO,
 MSG_HASH(MSG_STATE_SIZE,
       "Dimensione dello stato")
 MSG_HASH(MSG_STATE_SLOT,
-      "State slot")
+      "Slot dello stato")
 MSG_HASH(MSG_TAKING_SCREENSHOT,
       "Effettua screenshot.")
 MSG_HASH(MSG_TO,
       "to")
 MSG_HASH(MSG_UNDID_LOAD_STATE,
-      "Annullamento del caricamento salvataggio")
+      "Annullamento del caricamento del salvataggio")
 MSG_HASH(MSG_UNDOING_SAVE_STATE,
-      "Annullamento dello stato di salvataggio")
+      "Annullamento del salvataggio")
 MSG_HASH(MSG_UNKNOWN,
       "Sconosciuto")
 MSG_HASH(MSG_UNPAUSED,
@@ -3048,9 +3048,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CORE_INFORMATION,
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
       "Floating point value for video aspect ratio (width / height), used if the Aspect Ratio is set to 'Config'.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-      "Altezza di visualizzazione personalizzata utilizzata se l'Aspect Ratio è impostato su 'Custom'.")
+      "Altezza di visualizzazione personalizzata utilizzata se il Rapporto d'aspetto è impostato su 'Custom'.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-      "Larghezza di visualizzazione personalizzata utilizzata se l'Aspect Ratio è impostato su 'Custom'.")
+      "Larghezza di visualizzazione personalizzata utilizzata se il Rapporto d'aspetto è impostato su 'Custom'.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
       "Offset di visualizzazione personalizzata utilizzata per definire la posizione dell'asse X di visualizzazione. Queste vengono ignorate se è abilitata l'opzione 'Integer Scale' e sarà centrata automaticamente.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
