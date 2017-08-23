@@ -1004,6 +1004,8 @@ static struct config_path_setting *populate_settings_path(settings_t *settings, 
 #endif
    SETTING_PATH("libretro_directory",
          settings->paths.directory_libretro, false, NULL, false);
+   SETTING_PATH("libretro_directory_user",
+         settings->paths.directory_libretro_user, false, NULL, false);
    SETTING_PATH("core_options_path",
          settings->paths.path_core_options, false, NULL, true);
    SETTING_PATH("libretro_info_path",
@@ -2428,6 +2430,8 @@ static bool config_load_file(const char *path, bool set_defaults,
    {
       if (config_get_path(conf, "libretro_directory", tmp_str, sizeof(tmp_str)))
             strlcpy(settings->paths.directory_libretro, tmp_str, sizeof(settings->paths.directory_libretro));
+      if (config_get_path(conf, "libretro_directory_user", tmp_str, sizeof(tmp_str)))
+            strlcpy(settings->paths.directory_libretro_user, tmp_str, sizeof(settings->paths.directory_libretro_user));
    }
 
 #ifndef HAVE_DYNAMIC
