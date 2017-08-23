@@ -1,10 +1,12 @@
 # 1.6.8 (future)
+- GUI: (MaterialUI) Skip querying and drawing items that are not visible; Cache content height and bbox calculation.
 - GUI: (XMB) Skip drawing the fading list when it is already transparent. Optimization.
 - GUI: (XMB) Comment out visible item calculation in xmb_draw_items().
 - GUI: (RGUI) Prevent crashes when using a non-English language reliant on UTF8.
 - LINUX/PI: Broadcom VC4: Add Videocore config option
 - NETPLAY: Fix disconnection not fully deinitializing Netplay.
 - COMMON: Fix clear/free loop conditionals in playlists.
+- WINDOWS/GDI: Fix flickering of text.
 - WINDOWS/WGL: Try to use wglSwapLayerBuffers instead of SwapBuffers if possible (for more optimal performance).
 - WII: Use custom, embedded libogc SDK.
 - WIIU: Initial touchscreen support for WiiU gamepad.
