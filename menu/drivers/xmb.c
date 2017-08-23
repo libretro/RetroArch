@@ -2278,7 +2278,7 @@ static void xmb_draw_items(
    first = i;
    last  = end - 1;
 
-   /* xmb_calculate_visible_range(xmb, height, end, current, &first, &last); */
+   xmb_calculate_visible_range(xmb, height, end, current, &first, &last);
 
    menu_display_blend_begin();
 
