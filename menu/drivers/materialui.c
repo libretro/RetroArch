@@ -190,6 +190,9 @@ typedef struct mui_handle
 
    /* Y position of the vertical scroll */
    float scroll_y;
+
+   bool need_compute;
+   float content_height;
 } mui_handle_t;
 
 static void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha)
@@ -541,39 +544,21 @@ static void mui_draw_tab_end(mui_handle_t *mui,
          &active_tab_marker_color[0]);
 }
 
-/* Compute the total height of the scrollable content */
-static float mui_content_height(void)
-{
-   unsigned i;
-   file_list_t *list  = menu_entries_get_selection_buf_ptr(0);
-   float sum          = 0;
-   size_t entries_end = menu_entries_get_end();
-
-   for (i = 0; i < entries_end; i++)
-   {
-      mui_node_t *node  = (mui_node_t*)
-         menu_entries_get_userdata_at_offset(list, i);
-      sum              += node->line_height;
-   }
-   return sum;
-}
-
 /* Draw the scrollbar */
 static void mui_draw_scrollbar(mui_handle_t *mui,
       unsigned width, unsigned height, float *coord_color)
 {
    unsigned header_height = menu_display_get_header_height();
-   float content_height   = mui_content_height();
    float total_height     = height - header_height - mui->tabs_height;
    float scrollbar_margin = mui->scrollbar_width;
-   float scrollbar_height = total_height / (content_height / total_height);
-   float y                = total_height * mui->scroll_y / content_height;
+   float scrollbar_height = total_height / (mui->content_height / total_height);
+   float y                = total_height * mui->scroll_y / mui->content_height;
 
    /* apply a margin on the top and bottom of the scrollbar for aestetic */
    scrollbar_height      -= scrollbar_margin * 2;
    y                     += scrollbar_margin;
 
-   if (content_height < total_height)
+   if (mui->content_height < total_height)
       return;
 
    /* if the scrollbar is extremely short, display it as a square */
@@ -715,6 +700,8 @@ static void mui_compute_entries_box(mui_handle_t* mui, int width)
       node->y            = sum;
       sum               += node->line_height;
    }
+
+   mui->content_height = sum;
 }
 
 /* Called on each frame. We use this callback to implement the touch scroll
@@ -734,7 +721,11 @@ static void mui_render(void *data, bool is_idle)
 
    video_driver_get_size(&width, &height);
 
-   mui_compute_entries_box(mui, width);
+   if (mui->need_compute)
+   {
+      mui_compute_entries_box(mui, width);
+      mui->need_compute = false;
+   }
 
    menu_animation_ctl(MENU_ANIMATION_CTL_DELTA_TIME, &delta_time);
 
@@ -796,11 +787,11 @@ static void mui_render(void *data, bool is_idle)
    if (mui->scroll_y < 0)
       mui->scroll_y = 0;
 
-   bottom = mui_content_height() - height + header_height + mui->tabs_height;
+   bottom = mui->content_height - height + header_height + mui->tabs_height;
    if (mui->scroll_y > bottom)
       mui->scroll_y = bottom;
 
-   if (mui_content_height()
+   if (mui->content_height
          < height - header_height - mui->tabs_height)
       mui->scroll_y = 0;
 
@@ -1014,6 +1005,14 @@ static void mui_render_menu_list(
       rich_label[0]       = 
          entry_value[0]   = '\0';
 
+      sum += node->line_height;
+
+      if (y + (int)node->line_height < 0)
+         continue;
+
+      if (y > (int)height)
+         break;
+
       menu_entry_get_value((unsigned)i, NULL, entry_value, sizeof(entry_value));
       menu_entry_get_rich_label((unsigned)i, rich_label, sizeof(rich_label));
 
@@ -1036,8 +1035,6 @@ static void mui_render_menu_list(
          menu_list_color,
          sublabel_color
       );
-
-      sum += node->line_height;
    }
 }
 
@@ -1708,6 +1705,7 @@ static void *mui_init(void **userdata, bool video_is_threaded)
    *userdata = mui;
 
    mui->cursor.size  = 64.0;
+   mui->need_compute = false;
 
    return menu;
 error:
@@ -1855,6 +1853,7 @@ static void mui_populate_entries(
    if (!mui)
       return;
 
+   mui->need_compute = true;
    mui->scroll_y = mui_get_scroll(mui);
 }
 
@@ -1951,6 +1950,7 @@ static void mui_list_cache(void *data,
    if (!mui)
       return;
 
+   mui->need_compute = true;
    list_size = MUI_SYSTEM_TAB_END;
 
    switch (type)
@@ -2279,6 +2279,7 @@ static void mui_list_insert(void *userdata,
    if (!mui || !list)
       return;
 
+   mui->need_compute = true;
    node = (mui_node_t*)menu_entries_get_userdata_at_offset(list, i);
 
    if (!node)
