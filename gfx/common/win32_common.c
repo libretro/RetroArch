@@ -21,6 +21,7 @@
 #endif
 
 #include "win32_common.h"
+#include "gdi_common.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
@@ -609,41 +610,47 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
    {
       case WM_PAINT:
       {
-         PAINTSTRUCT ps;
-         HDC hdc = BeginPaint(hwnd, &ps);
+         gdi_t *gdi = (gdi_t*)video_driver_get_ptr(false);
+
+         if (gdi && gdi->memDC)
+         {
+            gdi->bmp_old = (HBITMAP)SelectObject(gdi->memDC, gdi->bmp);
 
 #ifdef HAVE_MENU
-         if (menu_driver_is_alive() && !gdi_has_menu_frame())
-         {
-            RECT rect;
-            TRIVERTEX vertex[2];
-            GRADIENT_RECT gRect;
+            if (menu_driver_is_alive() && !gdi_has_menu_frame())
+            {
+               /* draw menu contents behind a gradient background */
+               if (gdi && gdi->memDC)
+               {
+                  RECT rect;
+                  GetClientRect(hwnd, &rect);
 
-            GetClientRect(hwnd, &rect);
+                  StretchBlt(gdi->winDC,
+                        0, 0,
+                        gdi->screen_width, gdi->screen_height,
+                        gdi->memDC, 0, 0, gdi->video_width, gdi->video_height, SRCCOPY);
 
-            vertex[0].x      = rect.left;
-            vertex[0].y      = rect.top;
-            vertex[0].Red    = 1   << 8;
-            vertex[0].Green  = 81  << 8;
-            vertex[0].Blue   = 127 << 8;
-            vertex[0].Alpha  = 0;
-
-            vertex[1].x      = rect.right;
-            vertex[1].y      = rect.bottom;
-            vertex[1].Red    = 0;
-            vertex[1].Green  = 1  << 8;
-            vertex[1].Blue   = 33 << 8;
-            vertex[1].Alpha  = 0;
-
-            gRect.LowerRight = 0;
-            gRect.UpperLeft  = 1;
-
-            GradientFill(hdc, vertex, 2, &gRect, 1, GRADIENT_FILL_RECT_V);
-         }
+                  HBRUSH brush = CreateSolidBrush(RGB(1,81,127));
+                  FillRect(gdi->memDC, &rect, brush);
+                  DeleteObject(brush);
+               }
+           }
+           else
 #endif
+           {
+              /* draw video content */
+              gdi->bmp_old = (HBITMAP)SelectObject(gdi->memDC, gdi->bmp);
 
-         EndPaint(hwnd, &ps);
-         break;
+              StretchBlt(gdi->winDC,
+                    0, 0,
+                    gdi->screen_width, gdi->screen_height,
+                    gdi->memDC, 0, 0, gdi->video_width, gdi->video_height, SRCCOPY);
+           }
+
+           SelectObject(gdi->memDC, gdi->bmp_old);
+        }
+
+        break;
       }
       case WM_DROPFILES:
       case WM_SYSCOMMAND:
