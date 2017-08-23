@@ -193,8 +193,6 @@ static int action_right_mainmenu(unsigned type, const char *label,
       menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_SIZE, &list_horiz_info);
       menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_SIZE, &list_tabs_info);
 
-      menu_navigation_set_selection(0);
-
       if ((list_info.selection != (list_horiz_info.size + list_tabs_info.size))
          || settings->bools.menu_navigation_wraparound_enable)
          return action_right_goto_tab();
