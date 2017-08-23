@@ -159,8 +159,6 @@ static int action_left_mainmenu(unsigned type, const char *label,
    {
       settings_t       *settings = config_get_ptr();
 
-      menu_navigation_set_selection(0);
-
       if ((list_info.selection != 0)
          || settings->bools.menu_navigation_wraparound_enable)
          push_list = 1;
