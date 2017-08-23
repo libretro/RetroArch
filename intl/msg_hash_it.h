@@ -692,7 +692,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_AXIS_THRESHOLD,
       "Deadzone dello stick analogico")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
-      "Menu per scambiare i pulsanti OK & Cancella ")
+      "Scambia i pulsanti OK & Annulla ")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
       "Bind All")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL,
@@ -954,7 +954,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_HEADER_OPACITY,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
       "Driver del Menu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
-      "Menu per la frequenza dei fotogrammi")
+      "Frequenza dei fotogrammi nel menu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
       "Impostazioni")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
@@ -962,7 +962,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_HORIZONTAL_ANIMATION,
       "Animazione orizzontale")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
-      "Aspetto")
+      "Impostazioni Aspetto")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER,
       "Sfondo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
@@ -2914,7 +2914,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_DISK_OPTIONS,
 MSG_HASH(MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
       "Seleziona un'immagine disco da inserire")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
-      "Assicura che il framerate sia coperto all'interno del menu.")
+      "Assicura che i fotogrammi siano attivi all'interno del menu.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_THEME,
       "Seleziona un tema diverso per l'icona. Le modifiche avranno effetto dopo il riavvio del programma.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
@@ -3088,7 +3088,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
       "Visualizza/Nasconde l'opzione 'Aggiorna Online")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
-      "Visualizza")
+      "Opzioni di visualizzazione")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS,
       "Mostra o nascondi gli elementi nella schermata del menu."
