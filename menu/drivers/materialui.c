@@ -1014,6 +1014,14 @@ static void mui_render_menu_list(
       rich_label[0]       = 
          entry_value[0]   = '\0';
 
+      sum += node->line_height;
+
+      if (y + (int)node->line_height < 0)
+         continue;
+
+      if (y > (int)height)
+         break;
+
       menu_entry_get_value((unsigned)i, NULL, entry_value, sizeof(entry_value));
       menu_entry_get_rich_label((unsigned)i, rich_label, sizeof(rich_label));
 
@@ -1036,8 +1044,6 @@ static void mui_render_menu_list(
          menu_list_color,
          sublabel_color
       );
-
-      sum += node->line_height;
    }
 }
 
