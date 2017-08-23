@@ -680,10 +680,10 @@ bool core_info_init_list(void)
       list1 = core_info_list_new(settings->paths.directory_libretro);
       if (!string_is_empty(settings->paths.directory_libretro_user))
          list2 = core_info_list_new(settings->paths.directory_libretro_user);
-
-      core_info_curr_list = core_info_list_concatenate(list1, list2);
-      free (list1);
-      free (list2);
+      if (list2)
+         core_info_curr_list = core_info_list_concatenate(list1, list2);
+      else
+          core_info_curr_list = list1;
       //core_info_curr_list = core_info_list_new(settings->paths.directory_libretro);
    }
 
