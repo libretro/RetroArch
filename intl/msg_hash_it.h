@@ -590,7 +590,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
       "Scarica Core")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
-      "Content Downloader")
+      "Downloader dei contenuti")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_ENABLE,
       "DPI Override Abilitato")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE,
@@ -624,7 +624,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
       "Riavvolgimento e Fotogrammi")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
-      "Frontend Counters")
+      "Contatori di frontend")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
       "Carica il Contenuto Specifico delle opzioni del Core Automaticamente")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE,
@@ -702,7 +702,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND,
       "Nascondi i descrittori di input di core non legati")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW,
-      "Visualizza le etichette descrittori di input")
+      "Visualizza le etichette dei descrittori di input")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
       "Indice del dispositivo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_TYPE,
@@ -736,7 +736,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R2,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R3,
       "Pulsante R3 (thumb)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R,
-      "Pulsante R(shoulder)")
+      "Pulsante R (shoulder)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_RIGHT,
       "D-pad Destro")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_SELECT,
@@ -784,7 +784,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE,
       "Pulsante Game focus ")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
-      "Carica Stato")
+      "Pulsante Carica Stato")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE,
       "Pulsante per il Menu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_MOVIE_RECORD_TOGGLE,
@@ -808,7 +808,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_RESET,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
       "Riavvolgimento")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
-      "Salva Stato")
+      "Pulsante Salva Stato")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
       "Effettua uno screenshot")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT,
@@ -872,7 +872,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_CHINESE_SIMPLIFIED,
       "Cinese (Semplificato)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_CHINESE_TRADITIONAL,
-      "Chinese (Tradizionale)")
+      "Cinese (Tradizionale)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_DUTCH,
       "Olandese")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_ENGLISH,
@@ -934,11 +934,11 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MANAGEMENT,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
       "Colore del tema di Menu ")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE,
-      "Blue")
+      "Blu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE_GREY,
-      "Blue Grigio")
+      "Blu con Grigio")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_DARK_BLUE,
-      "Blue scuro")
+      "Blu scuro")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GREEN,
       "Verde")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_NVIDIA_SHIELD,
@@ -1904,9 +1904,9 @@ MSG_HASH(MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
 MSG_HASH(MSG_BYTES,
       "bytes")
 MSG_HASH(MSG_CANNOT_INFER_NEW_CONFIG_PATH,
-      "Impossibile dedurre il nuovo percorso di configurazione. Verrà utilizzato quello corrente .")
+      "Impossibile trovare il nuovo percorso di configurazione. Verrà utilizzato quello corrente .")
 MSG_HASH(MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-      "Attivata la modalità hardcore.I salvataggi e la funzione riavvolgimento sono stati disattivati.")
+      "Abilita la modalità hardcore.I salvataggi e la funzione riavvolgimento sono stati disattivati.")
 MSG_HASH(MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
       "Confronto in corso con i numeri magici conosciuti...")
 MSG_HASH(MSG_COMPILED_AGAINST_API,
@@ -1946,9 +1946,9 @@ MSG_HASH(MSG_DECOMPRESSION_ALREADY_IN_PROGRESS,
 MSG_HASH(MSG_DECOMPRESSION_FAILED,
       "La decompressione non è riuscita.")
 MSG_HASH(MSG_DETECTED_VIEWPORT_OF,
-      "Detected viewport of")
+      "Rilevati i viewport di")
 MSG_HASH(MSG_DID_NOT_FIND_A_VALID_CONTENT_PATCH,
-      "Did not find a valid content patch.")
+      "Non è stata trovata una patch di contenuto valida.")
 MSG_HASH(MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
       "Disconnessione del dispositivo da una porta valida")
 MSG_HASH(MSG_DISK_CLOSED,
@@ -2108,7 +2108,7 @@ MSG_HASH(MSG_IN_GIGABYTES,
 MSG_HASH(MSG_IN_MEGABYTES,
       "in megabytes")
 MSG_HASH(MSG_LIBRETRO_ABI_BREAK,
-      "is compiled against a different version of libretro than this libretro implementation.")
+      "è compilato con una versione diversa di libretro di questa implementazione di libretro.")
 MSG_HASH(MSG_LIBRETRO_FRONTEND,
       "Frontend per libretro")
 MSG_HASH(MSG_LOADED_STATE_FROM_SLOT,
@@ -2146,7 +2146,7 @@ MSG_HASH(MSG_NO_STATE_HAS_BEEN_LOADED_YET,
 MSG_HASH(MSG_OVERRIDES_ERROR_SAVING,
       "Errore durante il salvataggio degli override.")
 MSG_HASH(MSG_OVERRIDES_SAVED_SUCCESSFULLY,
-      "Overrides saved successfully.")
+      "Override salvati correttamente.")
 MSG_HASH(MSG_PAUSED,
       "Pausa.")
 MSG_HASH(MSG_PROGRAM,
@@ -2190,11 +2190,11 @@ MSG_HASH(MSG_REWINDING,
 MSG_HASH(MSG_REWIND_INIT,
       "Inizializzazione del buffer di riavvolgimento con dimensione")
 MSG_HASH(MSG_REWIND_INIT_FAILED,
-      "Failed to initialize rewind buffer. Rewinding will be disabled.")
+      "Impossibile inizializzare il buffer del riavvolgimento. Il riavvolgimento sarà disabilitato.")
 MSG_HASH(MSG_REWIND_INIT_FAILED_THREADED_AUDIO,
-      "Implementation uses threaded audio. Cannot use rewind.")
+      "L'implementazione utilizza il threaded audio. Impossibile utilizzare il riavvolgimento.")
 MSG_HASH(MSG_REWIND_REACHED_END,
-      "Reached end of rewind buffer.")
+      "Raggiunto la fine del buffer di riavvolgimento.")
 MSG_HASH(MSG_SAVED_NEW_CONFIG_TO,
       "Salvata la nuova configurazione su")
 MSG_HASH(MSG_SAVED_STATE_TO_SLOT,
@@ -2317,7 +2317,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AXIS_THRESHOLD,
-   "Quanto lontano deve essere inclinato un asse per provocare una pressione del pulsante."
+   "Quanto deve essere inclinato un asse durante la pressione di un pulsante."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
@@ -2728,7 +2728,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
-      "Avvia il netplay nella modalità spettatore."
+      "Avvia il netplay in modalità spettatore."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_SLAVES,
@@ -2740,7 +2740,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_STATELESS_MODE,
-      "Whether to run netplay in a mode not requiring save states. If set to true, a very fast network is required, but no rewinding is performed, so there will be no netplay jitter."
+      "Il netplay viene avviato in una modalità che non richiede i salva stati. Se impostato su on,è necessaria una rete molto veloce, ma nessun riavvolgimento verrà eseguito, quindi non ci saranno i jitter del netplay."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES,
@@ -2748,7 +2748,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_NAT_TRAVERSAL,
-      "When hosting, attempt to listen for connections from the public Internet, using UPnP or similar technologies to escape LANs."
+      "L'hosting, tenterà di ricercare la connessione da Internet, utilizzando l' UPnP o tecnologie simili per saltare la LAN."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE,
@@ -2847,9 +2847,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_LOAD_STATE,
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_STATE,
       "Salva uno stato nello slot selezionato")
 MSG_HASH(MENU_ENUM_SUBLABEL_RESUME,
-      "Riprendi il contenuto corrente e chiude il menu rapido..")
+      "Riprendi il contenuto corrente e chiude il menu rapido.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RESUME_CONTENT,
-      "Riprende il contenuto corrente e chiude il menu rapido")
+      "Riprende il contenuto corrente e chiude il menu rapido.")
 MSG_HASH(MENU_ENUM_SUBLABEL_STATE_SLOT,
       "Modifica lo slot di salvataggio selezionato.")
 MSG_HASH(MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE,
@@ -2862,7 +2862,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_ACCOUNTS_LIST,
-      "Gestisce gli account correntemente configurati."
+      "Gestisce gli account attivi e configurati."
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
       "Gestisce le impostazioni di riavvolgimento.")
@@ -2960,7 +2960,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY,
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,
       "Salva tutti i controlli remappati in questa directory.")
 MSG_HASH(MENU_ENUM_SUBLABEL_LIBRETRO_DIR_PATH,
-      "Directory in cui il programma cerca contenuti / core.")
+      "Directory in cui il programma cerca contenuti o core.")
 MSG_HASH(MENU_ENUM_SUBLABEL_LIBRETRO_INFO_PATH,
       "Qui vengono memorizzati i file di informazioni dei core/applicazioni.")
 MSG_HASH(MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
@@ -2969,7 +2969,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
       "Salva tutte le collezioni in questa directory.")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
-      "Se non viene impostata una directory, il contenuto estratto temporaneamente (ad esempio dagli archivi) verrà estratto in questa directory."
+      "Se non viene impostata una directory, il contenuto estratto temporaneamente (ad esempio dagli archivi) si troverà in questa directory."
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_CURSOR_DIRECTORY,
       "Le query salvate vengono memorizzate in questa directory.")
