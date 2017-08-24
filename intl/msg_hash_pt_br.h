@@ -377,7 +377,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS,
 	 "Menu Rápido"
 	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
-	 "Downloads"
+	 "Recursos de Núcleo"
 	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
 	 "Downloads"
@@ -552,6 +552,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_FALSE,
 	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
 	 "Velocidade Máxima de Execução"
+	)
+MSG_HASH(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,
+     "Favoritos"
 	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FPS_SHOW,
 	 "Mostrar Taxa de Quadros"
@@ -871,6 +874,12 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
 	 "Ocultar Transparência no Menu"
 	)
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
+     "Exibir Comandos Na Transparência"
+	)
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
+     "Porta de Escuta do Exibir Comandos "
+	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
 	 "Tipo de Comportamento da Chamada Seletiva"
 	)
@@ -1010,7 +1019,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
 	 "Registro de Eventos"
 	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY,
-	 "Detalhamento do Registro de Eventos"
+	 "Verbosidade do Registro de Eventos"
 	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MAIN_MENU,
 	 "Menu Principal"
@@ -1060,8 +1069,11 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
 	 "Filtro Linear de Menu"
 	)
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_HORIZONTAL_ANIMATION,
+     "Animação Horizontal"
+	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
-	 "Appearance"
+	 "Aparência"
 	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER,
 	 "Plano de Fundo"
@@ -1456,6 +1468,12 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
 	 "Salvar Arquivo de Remapeamento de Jogo"
 	)
+MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE,
+     "Remover Arquivo de Remapeamento de Núcleo"
+	)
+MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME,
+     "Remover Arquivo de Remapeamento de Jogo"
+	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REQUIRED,
 	 "Obrigatório"
 	)
@@ -1503,6 +1521,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
 	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
 	 "Analógico Direito"
+	)
+MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
+     "Adicionar aos Favoritos"
 	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN,
 	 "Executar"
@@ -1610,10 +1631,22 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
 	 "Taxa de Câmera Lenta"
 	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
-	 "Ordenar Arquivos de Jogo-Salvo em Pastas"
+	 "Classificar Arquivos de Jogo-Salvo em Pastas"
 	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
-	 "Ordenar Arquivos de Estado de Jogo em Pastas"
+	 "Classificar Arquivos de Estado de Jogo em Pastas"
+	)
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
+     "Gravar Estados de Jogo no Diretório de Conteúdo"
+	)
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
+     "Gravar Jogos-Salvos no Diretório de Conteúdo"
+	)
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
+     "Arquivos de Sistema estão no Diretório de Conteúdo"
+	)
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
+     "Salvar Capturas de Tela no Diretório de Conteúdo"
 	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SSH_ENABLE,
 	 "Habilitar SSH"
@@ -2230,6 +2263,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_HISTORY,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_ADD,
 	 "Exibir Aba de Importação de Conteúdo"
 	)
+MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_FAVORITES,
+     "Exibir Aba de Favoritos"
+	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_IMAGES,
 	 "Exibir Aba de Imagem"
 	)
@@ -2264,8 +2300,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
 	 "Habilitar ou desabilitar Estado de Jogo, Trapaças, Voltar Atrás, Avanço Rápido, Pausa e Câmera Lenta para todos os jogos."
 	)
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
-     "Habilitar ou desabilitar detalhamento na tela das conquistas."
-     )
+     "Habilitar ou desabilitar detalhes das conquistas na tela."
+	)
 MSG_HASH(MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
 	 "Alterar os drivers utilizados pelo sistema."
 	)
@@ -2407,6 +2443,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
 MSG_HASH(MENU_ENUM_SUBLABEL_HELP_LIST,
 	 "Saiba mais sobre como o programa funciona."
 	)
+MSG_HASH(MSG_ADDED_TO_FAVORITES,
+     "Adicionado aos favoritos"
+	)
 MSG_HASH(MSG_APPENDED_DISK,
 	 "Disco anexado"
 	)
@@ -2547,6 +2586,9 @@ MSG_HASH(MSG_ERROR_SAVING_CORE_OPTIONS_FILE,
 	)
 MSG_HASH(MSG_ERROR_SAVING_REMAP_FILE,
 	 "Erro em salvar o arquivo de remapeamento."
+	)
+MSG_HASH(MSG_ERROR_REMOVING_REMAP_FILE,
+     "Erro em remover o arquivo de remapeamento."
 	)
 MSG_HASH(MSG_ERROR_SAVING_SHADER_PRESET,
 	 "Erro em salvar a predefinição de Shader."
@@ -2726,7 +2768,8 @@ MSG_HASH(MSG_INPUT_PRESET_FILENAME,
 	 "Nome de Arquivo de Predefinição"
 	)
 MSG_HASH(MSG_INPUT_RENAME_ENTRY,
-      "Rename Title")
+     "Renomear Título"
+	)
 MSG_HASH(MSG_INTERFACE,
 	 "Interface"
 	)
@@ -2837,6 +2880,9 @@ MSG_HASH(MSG_REDIRECTING_SAVESTATE_TO,
 	)
 MSG_HASH(MSG_REMAP_FILE_SAVED_SUCCESSFULLY,
 	 "Arquivo de remapeamento salvo com sucesso."
+	)
+MSG_HASH(MSG_REMAP_FILE_REMOVED_SUCCESSFULLY,
+     "Arquivo de remapeamento salvo com sucesso."
 	)
 MSG_HASH(MSG_REMOVED_DISK_FROM_TRAY,
 	 "Disco removido da bandeja."
@@ -3267,6 +3313,12 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
 	 "Ocultar a Transparência enquanto estiver dentro do menu e exibir novamente ao sair."
 	)
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
+     "Exibir comandos de teclado/controle na transparência."
+	)
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
+     "Selecione a porta para a transparência escutar se Exibir Comandos na Transparência estiver habilitado."
+	)
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_COLLECTION_LIST,
 	 "O conteúdo analisado aparecerá aqui."
 	)
@@ -3498,6 +3550,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_DELETE_ENTRY,
 MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION,
 	 "Visualizar mais informações sobre o conteúdo."
 	)
+MSG_HASH(MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES,
+     "Adicionar o item aos seus favoritos."
+	)
 MSG_HASH(MENU_ENUM_SUBLABEL_RUN,
 	 "Iniciar o conteúdo."
 	)
@@ -3647,6 +3702,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
 	)
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_FONT,
 	 "Selecionar uma fonte principal diferente para ser usada pelo menu."
+	)
+MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_FAVORITES,
+     "Exibir a aba de favoritos dentro do menu principal."
 	)
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_IMAGES,
 	 "Exibir a aba de imagem dentro do menu principal."
@@ -3853,36 +3911,53 @@ MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
 	 "Exibir a opção de atualizar núcleos (e arquivos de informação de núcleo)."
 	)
 MSG_HASH(MSG_PREPARING_FOR_CONTENT_SCAN,
-    "Preparando a busca de conteúdo...")
+     "Preparando a busca de conteúdo..."
+	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_DELETE,
-      "Delete core")
+     "Remover núcleo"
+	)
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_DELETE,
-      "Remove this core from disk.")
+     "Remover este núcleo do disco."
+	)
+MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
+     "Renomear o título do item."
+	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
-      "Rename the title of the entry.")
-MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME,
-      "Rename")
+     "Renomear"
+	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
-      "Framebuffer Opacity")
+     "Opacidade do Framebuffer"
+	)
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
-      "Modify the opacity of the framebuffer.")
+     "Modificar a opacidade do framebuffer."
+	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
-      "Favorites")
+     "Favoritos"
+	)
 MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
-      "Content which you have added to 'Favorites' will appear here.")
+     "Conteúdo adicionado aos 'Favoritos' vai aparecer aqui."
+	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
-      "Music")
+     "Músicas"
+	)
 MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_MUSIC,
-      "Music which has been previously played will appear here.")
+     "Músicas que foram reproduzidas aparecem aqui."
+	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
-      "Image")
+     "Imagens"
+	)
 MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_IMAGES,
-      "Images which have been previously viewed will appear here.")
+     "Imagens que foram exibidas aparecem aqui."
+	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
-      "Video")
+     "Vídeos"
+	)
 MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_VIDEO,
-      "Videos which have been previously played will appear here.")
+     "Vídeos que foram reproduzidos aparecem aqui."
+	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
-      "Menu Icons")
+     "Ícones do Menu"
+	)
 MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
-      "Enable/disable the menu icons shown at the lefthand side of the menu entries.")
+     "Habilitar/desabilitar os ícones exibidos do lado esquerdo dos itens de menu. "
+	)
