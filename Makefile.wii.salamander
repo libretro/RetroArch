@@ -6,6 +6,7 @@
 DEBUG			= 0
 HAVE_LOGGER		= 0
 HAVE_FILE_LOGGER	= 0
+EXTERNAL_LIBOGC = 0
 
 # system platform
 system_platform = unix
@@ -29,13 +30,23 @@ ELF2DOL = $(DEVKITPPC)/bin/elf2dol$(EXE_EXT)
 DOL_TARGET := retroarch-salamander_wii.dol
 ELF_TARGET := retroarch-salamander_wii.elf
 
-INCLUDE := -I. -I$(DEVKITPRO)/libogc/include -Ilibretro-common/include -Ideps/libz
+INCLUDE := -I. -Ilibretro-common/include -Ideps/libz
+ifeq ($(EXTERNAL_LIBOGC), 1)
+INCLUDE += -I$(DEVKITPRO)/libogc/include 
 LIBDIRS := -L$(DEVKITPRO)/libogc/lib/wii -L.
+else
+INCLUDE += -Iwii/libogc/include 
+LIBDIRS := -Lwii/libogc/libs/wii -L.
+endif
 
 MACHDEP := -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
 LDFLAGS := $(MACHDEP) -Wl,-Map,$(notdir $(ELF_TARGET)).map
-LIBS := -lfat -lwiiuse -logc -lbte
+LIBS := -lwiiuse -logc -lbte
+
+ifeq ($(EXTERNAL_LIBOGC), 1)
+LIBS += -lfat
+endif
 
 APP_BOOTER_DIR = wii/app_booter
 
@@ -51,12 +62,27 @@ OBJ = frontend/frontend_salamander.o \
 		libretro-common/lists/dir_list.o \
 		libretro-common/streams/file_stream.o \
 		libretro-common/file/retro_dirent.o \
+		libretro-common/encodings/encoding_utf.o \
 		libretro-common/compat/compat_strl.o \
 		libretro-common/compat/compat_strcasestr.o \
 		libretro-common/file/config_file.o \
 		file_path_str.o \
 		verbosity.o \
 		$(APP_BOOTER_DIR)/app_booter.binobj
+
+ifeq ($(EXTERNAL_LIBOGC), 1)
+else
+OBJ += wii/libogc/libfat/cache.o \
+		wii/libogc/libfat/directory.o \
+		wii/libogc/libfat/disc.o \
+		wii/libogc/libfat/fatdir.o \
+		wii/libogc/libfat/fatfile.o \
+		wii/libogc/libfat/file_allocation_table.o \
+		wii/libogc/libfat/filetime.o \
+		wii/libogc/libfat/libfat.o \
+		wii/libogc/libfat/lock.o \
+		wii/libogc/libfat/partition.o
+endif
 
 ifeq ($(HAVE_LOGGER), 1)
 CFLAGS		+= -DHAVE_LOGGER

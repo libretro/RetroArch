@@ -976,7 +976,9 @@ static void zarch_frame(void *data, video_frame_info_t *video_info)
    menu_display_blend_begin();
    draw.x              = 0;
    draw.y              = 0;
-   menu_display_draw_bg(&draw, video_info, false);
+
+   menu_display_draw_bg(&draw, video_info, false,
+         video_info->menu_wallpaper_opacity);
    menu_display_draw(&draw);
    menu_display_blend_end();
 

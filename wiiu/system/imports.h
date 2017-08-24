@@ -31,6 +31,12 @@ IMPORT(OSGetSystemTick);
 IMPORT(OSGetSymbolName);
 IMPORT(OSGetSharedData);
 IMPORT(OSEffectiveToPhysical);
+IMPORT(OSInitSemaphore);
+IMPORT(OSInitSemaphoreEx);
+IMPORT(OSGetSemaphoreCount);
+IMPORT(OSSignalSemaphore);
+IMPORT(OSWaitSemaphore);
+IMPORT(OSTryWaitSemaphore);
 
 IMPORT(exit);
 IMPORT(_Exit);
@@ -219,6 +225,7 @@ IMPORT_BEGIN(vpad);
 
 IMPORT(VPADRead);
 IMPORT(VPADInit);
+IMPORT(VPADGetTPCalibratedPoint);
 
 IMPORT_END();
 

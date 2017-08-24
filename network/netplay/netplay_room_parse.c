@@ -47,7 +47,6 @@ typedef struct tag_Context
    enum parse_state state;
    char *cur_field;
    void *cur_member;
-   size_t cur_member_size;
 } Context;
 
 static struct netplay_rooms *rooms;
@@ -112,7 +111,7 @@ static JSON_Parser_HandlerResult JSON_CALL StringHandler(
          {
             if (string_is_equal(pCtx->cur_field, "game_crc"))
             {
-               /* CRC comes in as a string but it is stored 
+               /* CRC comes in as a string but it is stored
                 * as an unsigned casted to int. */
                *((int*)pCtx->cur_member) = (int)strtoul(pValue, NULL, 16);
             }
@@ -213,25 +212,21 @@ static JSON_Parser_HandlerResult JSON_CALL ObjectMemberHandler(JSON_Parser parse
          {
             pCtx->cur_field       = strdup(pValue);
             pCtx->cur_member      = &rooms->cur->nickname;
-            pCtx->cur_member_size = sizeof(rooms->cur->nickname);
          }
          else if (string_is_equal_fast(pValue, "game_name", 9))
          {
             pCtx->cur_field       = strdup(pValue);
             pCtx->cur_member      = &rooms->cur->gamename;
-            pCtx->cur_member_size = sizeof(rooms->cur->gamename);
          }
          else if (string_is_equal_fast(pValue, "core_name", 9))
          {
             pCtx->cur_field       = strdup(pValue);
             pCtx->cur_member      = &rooms->cur->corename;
-            pCtx->cur_member_size = sizeof(rooms->cur->corename);
          }
          else if (string_is_equal_fast(pValue, "ip", 2))
          {
             pCtx->cur_field       = strdup(pValue);
             pCtx->cur_member      = &rooms->cur->address;
-            pCtx->cur_member_size = sizeof(rooms->cur->address);
          }
          else if (string_is_equal_fast(pValue, "port", 4))
          {
@@ -247,7 +242,6 @@ static JSON_Parser_HandlerResult JSON_CALL ObjectMemberHandler(JSON_Parser parse
          {
             pCtx->cur_field       = strdup(pValue);
             pCtx->cur_member      = &rooms->cur->coreversion;
-            pCtx->cur_member_size = sizeof(rooms->cur->coreversion);
          }
          else if (string_is_equal_fast(pValue, "has_password", 12))
          {
@@ -278,6 +272,16 @@ static JSON_Parser_HandlerResult JSON_CALL ObjectMemberHandler(JSON_Parser parse
          {
             pCtx->cur_field       = strdup(pValue);
             pCtx->cur_member      = &rooms->cur->host_method;
+         }
+         else if (string_is_equal_fast(pValue, "retroarch_version", 17))
+         {
+            pCtx->cur_field       = strdup(pValue);
+            pCtx->cur_member      = &rooms->cur->retroarch_version;
+         }
+         else if (string_is_equal_fast(pValue, "country", 7))
+         {
+            pCtx->cur_field       = strdup(pValue);
+            pCtx->cur_member      = &rooms->cur->country;
          }
       }
    }

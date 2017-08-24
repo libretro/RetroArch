@@ -21,6 +21,14 @@
 typedef struct gdi
 {
    WNDCLASSEX wndclass;
+   HDC winDC;
+   HDC memDC;
+   HBITMAP bmp;
+   HBITMAP bmp_old;
+   unsigned video_width;
+   unsigned video_height;
+   unsigned screen_width;
+   unsigned screen_height;
 } gdi_t;
 
 #endif

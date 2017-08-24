@@ -741,9 +741,9 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t size)
       for (writen = 0, ir = -1; writen < size; writen += ir)
       {
          if (w->exclusive)
-            ir = wasapi_write_ex(w, data + writen, size - writen);
+            ir = wasapi_write_ex(w, (char*)data + writen, size - writen);
          else
-            ir = wasapi_write_sh(w, data + writen, size - writen);
+            ir = wasapi_write_sh(w, (char*)data + writen, size - writen);
          if (ir == -1)
             return -1;
       }

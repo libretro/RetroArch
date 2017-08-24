@@ -51,8 +51,6 @@ static void *gdi_init_font(void *data,
 
    font->gdi = (gdi_t*)data;
 
-   font_size = 1;
-
    if (!font_renderer_create_default((const void**)&font->gdi_font_driver,
             &font->gdi_font_data, font_path, font_size))
    {
@@ -86,13 +84,11 @@ static void gdi_render_msg(
       void *data, const char *msg,
       const void *userdata)
 {
-   HDC hdc;
    float x, y, scale;
    gdi_raster_t *font = (gdi_raster_t*)data;
    unsigned newX, newY, len;
    unsigned align;
    const struct font_params *params = (const struct font_params*)userdata;
-   HWND hwnd                        = win32_get_window();
    unsigned width                   = video_info->width;
    unsigned height                  = video_info->height;
 
@@ -135,12 +131,18 @@ static void gdi_render_msg(
    }
 
    newY = height - (y * height * scale);
-   hdc  = GetDC(hwnd);
 
-   SetBkMode(hdc, TRANSPARENT);
-   SetTextColor(hdc, RGB(255,255,255));
-   TextOut(hdc, newX, newY, msg, len);
-   ReleaseDC(hwnd, hdc);
+   uint64_t frame_count = 0;
+   bool is_alive = false;
+   bool is_focused = false;
+
+   video_driver_get_status(&frame_count, &is_alive, &is_focused);
+
+   font->gdi->bmp_old = (HBITMAP)SelectObject(font->gdi->memDC, font->gdi->bmp);
+   SetBkMode(font->gdi->memDC, TRANSPARENT);
+   SetTextColor(font->gdi->memDC, RGB(255,255,255));
+   TextOut(font->gdi->memDC, newX, newY, msg, len);
+   SelectObject(font->gdi->memDC, font->gdi->bmp_old);
 }
 
 static void gdi_font_flush_block(unsigned width, unsigned height, void* data)

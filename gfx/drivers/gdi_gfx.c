@@ -140,7 +140,7 @@ static void *gdi_gfx_init(const video_info_t *video,
    video_context_driver_input_driver(&inp);
 
    if (settings->bools.video_font_enable)
-      font_driver_init_osd(NULL, false, 
+      font_driver_init_osd(gdi, false,
             video->is_threaded,
             FONT_DRIVER_RENDER_GDI);
 
@@ -160,7 +160,6 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    gfx_ctx_mode_t mode;
-   RECT rect;
    const void *frame_to_copy = frame;
    unsigned width            = 0;
    unsigned height           = 0;
@@ -207,65 +206,76 @@ static bool gdi_gfx_frame(void *data, const void *frame,
          draw = false;
    }
 
-   GetClientRect(hwnd, &rect);
+   if (hwnd && !gdi->winDC)
+   {
+      gdi->winDC = GetDC(hwnd);
+      gdi->memDC = CreateCompatibleDC(gdi->winDC);
+      gdi->video_width = width;
+      gdi->video_height = height;
+      gdi->bmp = CreateCompatibleBitmap(gdi->winDC, gdi->video_width, gdi->video_height);
+   }
+
+   gdi->bmp_old  = (HBITMAP)SelectObject(gdi->memDC, gdi->bmp);
+
+   if (gdi->video_width != width || gdi->video_height != height)
+   {
+      SelectObject(gdi->memDC, gdi->bmp_old);
+      DeleteObject(gdi->bmp);
+
+      gdi->video_width = width;
+      gdi->video_height = height;
+      gdi->bmp = CreateCompatibleBitmap(gdi->winDC, gdi->video_width, gdi->video_height);
+      gdi->bmp_old = (HBITMAP)SelectObject(gdi->memDC, gdi->bmp);
+   }
+
    video_context_driver_get_video_size(&mode);
+
+   gdi->screen_width = mode.width;
+   gdi->screen_height = mode.height;
+
+   BITMAPINFO *info = (BITMAPINFO*)calloc(1, sizeof(*info) + (3 * sizeof(RGBQUAD)));
+
+   info->bmiHeader.biBitCount  = bits;
+   info->bmiHeader.biWidth     = pitch / (bits / 8);
+   info->bmiHeader.biHeight    = -height;
+   info->bmiHeader.biPlanes    = 1;
+   info->bmiHeader.biSize      = sizeof(BITMAPINFOHEADER) + (3 * sizeof(RGBQUAD));
+   info->bmiHeader.biSizeImage = 0;
+
+   if (bits == 16)
+   {
+      unsigned *masks = (unsigned*)info->bmiColors;
+
+      info->bmiHeader.biCompression = BI_BITFIELDS;
+
+      /* default 16-bit format on Windows is XRGB1555 */
+      if (frame_to_copy == gdi_menu_frame)
+      {
+         /* map RGB444 color bits for RGUI */
+         masks[0] = 0xF000;
+         masks[1] = 0x0F00;
+         masks[2] = 0x00F0;
+      }
+      else
+      {
+         /* map RGB565 color bits for core */
+         masks[0] = 0xF800;
+         masks[1] = 0x07E0;
+         masks[2] = 0x001F;
+      }
+   }
+   else
+      info->bmiHeader.biCompression = BI_RGB;
 
    if (draw)
    {
-      HDC winDC        = GetDC(hwnd);
-      HDC memDC        = CreateCompatibleDC(winDC);
-      HBITMAP bmp      = CreateCompatibleBitmap(winDC, width, height);
-      BITMAPINFO *info = (BITMAPINFO*)calloc(1, sizeof(*info) + (3 * sizeof(RGBQUAD)));
-      HBITMAP bmp_old  = (HBITMAP)SelectObject(memDC, bmp);
-
-      info->bmiHeader.biBitCount  = bits;
-      info->bmiHeader.biWidth     = pitch / (bits / 8);
-      info->bmiHeader.biHeight    = -height;
-      info->bmiHeader.biPlanes    = 1;
-      info->bmiHeader.biSize      = sizeof(BITMAPINFOHEADER) + (3 * sizeof(RGBQUAD));
-      info->bmiHeader.biSizeImage = 0;
-
-      if (bits == 16)
-      {
-         unsigned *masks = (unsigned*)info->bmiColors;
-
-         info->bmiHeader.biCompression = BI_BITFIELDS;
-
-         /* default 16-bit format on Windows is XRGB1555 */
-         if (frame_to_copy == gdi_menu_frame)
-         {
-            /* map RGB444 color bits for RGUI */
-            masks[0] = 0xF000;
-            masks[1] = 0x0F00;
-            masks[2] = 0x00F0;
-         }
-         else
-         {
-            /* map RGB565 color bits for core */
-            masks[0] = 0xF800;
-            masks[1] = 0x07E0;
-            masks[2] = 0x001F;
-         }
-      }
-      else
-         info->bmiHeader.biCompression = BI_RGB;
-
-      StretchDIBits(memDC, 0, 0, width, height, 0, 0, width, height,
+      StretchDIBits(gdi->memDC, 0, 0, width, height, 0, 0, width, height,
             frame_to_copy, info, DIB_RGB_COLORS, SRCCOPY);
-
-      StretchBlt(winDC,
-            0, 0,
-            mode.width, mode.height,
-            memDC, 0, 0, width, height, SRCCOPY);
-
-      SelectObject(memDC, bmp_old);
-
-      DeleteObject(bmp);
-      DeleteDC(memDC);
-      ReleaseDC(hwnd, winDC);
-
-      free(info);
    }
+
+   SelectObject(gdi->memDC, gdi->bmp_old);
+
+   free(info);
 
    if (msg)
       font_driver_render_msg(video_info, NULL, msg, NULL);
@@ -330,6 +340,7 @@ static bool gdi_gfx_has_windowed(void *data)
 static void gdi_gfx_free(void *data)
 {
    gdi_t *gdi = (gdi_t*)data;
+   HWND hwnd = win32_get_window();
 
    if (gdi_menu_frame)
    {
@@ -339,6 +350,19 @@ static void gdi_gfx_free(void *data)
 
    if (!gdi)
       return;
+
+   if (gdi->memDC)
+   {
+      DeleteObject(gdi->bmp);
+      DeleteDC(gdi->memDC);
+      gdi->memDC = 0;
+   }
+
+   if (hwnd && gdi->winDC)
+   {
+      ReleaseDC(hwnd, gdi->winDC);
+      gdi->winDC = 0;
+   }
 
    font_driver_free_osd();
    video_context_driver_free();

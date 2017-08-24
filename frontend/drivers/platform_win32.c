@@ -46,6 +46,9 @@
  */
 
 static dylib_t dwmlib;
+static dylib_t shell32lib;
+
+VOID (WINAPI *DragAcceptFiles_func)(HWND, BOOL);
 
 static bool dwm_composition_disabled;
 
@@ -55,25 +58,39 @@ static void gfx_dwm_shutdown(void)
 {
    if (dwmlib)
       dylib_close(dwmlib);
-   dwmlib = NULL;
+   if (shell32lib)
+      dylib_close(shell32lib);
+   dwmlib     = NULL;
+   shell32lib = NULL;
 }
 
 static bool gfx_init_dwm(void)
 {
+   HRESULT (WINAPI *mmcss)(BOOL);
    static bool inited = false;
 
    if (inited)
       return true;
 
+   atexit(gfx_dwm_shutdown);
+
+   shell32lib = dylib_load("shell32.dll");
+   if (!shell32lib)
+   {
+      RARCH_WARN("Did not find shell32.dll.\n");
+   }
+
    dwmlib = dylib_load("dwmapi.dll");
    if (!dwmlib)
    {
-      RARCH_LOG("Did not find dwmapi.dll.\n");
+      RARCH_WARN("Did not find dwmapi.dll.\n");
       return false;
    }
-   atexit(gfx_dwm_shutdown);
 
-   HRESULT (WINAPI *mmcss)(BOOL) = 
+   DragAcceptFiles_func = 
+      (VOID (WINAPI*)(HWND, BOOL))dylib_proc(shell32lib, "DragAcceptFiles");
+
+   mmcss = 
       (HRESULT (WINAPI*)(BOOL))dylib_proc(dwmlib, "DwmEnableMMCSS");
    if (mmcss)
    {
@@ -88,6 +105,7 @@ static bool gfx_init_dwm(void)
 static void gfx_set_dwm(void)
 {
    HRESULT ret;
+   HRESULT (WINAPI *composition_enable)(UINT);
    settings_t *settings = config_get_ptr();
 
    if (!gfx_init_dwm())
@@ -96,7 +114,7 @@ static void gfx_set_dwm(void)
    if (settings->bools.video_disable_composition == dwm_composition_disabled)
       return;
 
-   HRESULT (WINAPI *composition_enable)(UINT) = 
+   composition_enable = 
       (HRESULT (WINAPI*)(UINT))dylib_proc(dwmlib, "DwmEnableComposition");
    if (!composition_enable)
    {
@@ -278,9 +296,9 @@ static void frontend_win32_environment_get(int *argc, char *argv[],
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
       ":\\playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG],
-         ":\\records_config", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG]));
+      ":\\config\\record", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT],
-         ":\\records", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT]));
+      ":\\recordings", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
       ":\\config", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_REMAP],
@@ -303,6 +321,12 @@ static void frontend_win32_environment_get(int *argc, char *argv[],
       ":\\downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
       ":\\screenshots", sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SRAM],
+      ":\\saves", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SAVESTATE],
+      ":\\states", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
+   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
+      ":\\system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
 
 #ifdef HAVE_MENU
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)

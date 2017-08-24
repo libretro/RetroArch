@@ -76,29 +76,29 @@ enum
 
 #if defined(HAVE_LOGGER) || defined(HAVE_FILE_LOGGER)
 static devoptab_t dotab_stdout = {
-   "stdout",   // device name
-   0,          // size of file structure
-   NULL,       // device open
-   NULL,       // device close
-   NULL,       // device write
-   NULL,       // device read
-   NULL,       // device seek
-   NULL,       // device fstat
-   NULL,       // device stat
-   NULL,       // device link
-   NULL,       // device unlink
-   NULL,       // device chdir
-   NULL,       // device rename
-   NULL,       // device mkdir
-   0,          // dirStateSize
-   NULL,       // device diropen_r
-   NULL,       // device dirreset_r
-   NULL,       // device dirnext_r
-   NULL,       // device dirclose_r
-   NULL,       // device statvfs_r
-   NULL,       // device ftrunctate_r
-   NULL,       // device fsync_r
-   NULL,       // deviceData;
+   "stdout",   /* device name */
+   0,          /* size of file structure */
+   NULL,       /* device open */
+   NULL,       /* device close */
+   NULL,       /* device write */
+   NULL,       /* device read */
+   NULL,       /* device seek */
+   NULL,       /* device fstat */
+   NULL,       /* device stat */
+   NULL,       /* device link */
+   NULL,       /* device unlink */
+   NULL,       /* device chdir */
+   NULL,       /* device rename */
+   NULL,       /* device mkdir */
+   0,          /* dirStateSize */
+   NULL,       /* device diropen_r */
+   NULL,       /* device dirreset_r */
+   NULL,       /* device dirnext_r */
+   NULL,       /* device dirclose_r */
+   NULL,       /* device statvfs_r */
+   NULL,       /* device ftrunctate_r */
+   NULL,       /* device fsync_r */
+   NULL,       /* deviceData; */
 };
 #endif
 
@@ -309,7 +309,9 @@ static void frontend_gx_init(void *data)
    __exception_setreload(8);
 #endif
 
+#ifdef HW_RVL
    fatInitDefault();
+#endif
 
 #ifdef HAVE_LOGGER
    devoptab_list[STD_OUT] = &dotab_stdout;

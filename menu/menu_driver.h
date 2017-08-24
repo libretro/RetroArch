@@ -139,6 +139,7 @@ enum menu_settings_type
    MENU_SETTINGS,
    MENU_SETTINGS_TAB,
    MENU_HISTORY_TAB,
+   MENU_FAVORITES_TAB,
    MENU_MUSIC_TAB,
    MENU_VIDEO_TAB,
    MENU_IMAGES_TAB,
@@ -161,12 +162,17 @@ enum menu_settings_type
    MENU_SETTING_ACTION_SCREENSHOT,
    MENU_SETTING_ACTION_DELETE_ENTRY,
    MENU_SETTING_ACTION_RESET,
+   MENU_SETTING_ACTION_CORE_DELETE,
    MENU_SETTING_STRING_OPTIONS,
    MENU_SETTING_GROUP,
    MENU_SETTING_SUBGROUP,
    MENU_SETTING_HORIZONTAL_MENU,
    MENU_WIFI,
    MENU_ROOM,
+/*
+   MENU_ROOM_LAN,
+   MENU_ROOM_MITM,
+*/
    MENU_NETPLAY_LAN_SCAN,
    MENU_INFO_MESSAGE,
    MENU_SETTINGS_SHADER_PARAMETER_0,
@@ -299,16 +305,26 @@ typedef struct menu_display_frame_info
 
 typedef struct menu_display_ctx_driver
 {
+   /* Draw graphics to the screen. */
    void (*draw)(void *data);
+   /* Draw one of the menu pipeline shaders. */
    void (*draw_pipeline)(void *data);
    void (*viewport)(void *data);
+   /* Start blending operation. */
    void (*blend_begin)(void);
+   /* Finish blending operation. */
    void (*blend_end)(void);
+   /* Set the clear color back to its default values. */
    void (*restore_clear_color)(void);
+   /* Set the color to be used when clearing the screen */
    void (*clear_color)(menu_display_ctx_clearcolor_t *clearcolor);
+   /* Get the default Model-View-Projection matrix */
    void *(*get_default_mvp)(void);
+   /* Get the default vertices matrix */
    const float *(*get_default_vertices)(void);
+   /* Get the default texture coordinates matrix */
    const float *(*get_default_tex_coords)(void);
+   /* Initialize the first compatible font driver for this menu driver. */
    bool (*font_init_first)(
          void **font_handle, void *video_data,
          const char *font_path, float font_size,
@@ -320,16 +336,22 @@ typedef struct menu_display_ctx_driver
 
 typedef struct
 {
+   /* Scratchpad variables. These are used for instance
+    * by the filebrowser when having to store intermediary
+    * paths (subdirs/previous dirs/current dir/path, etc).
+    */
    char deferred_path[PATH_MAX_LENGTH];
    char scratch_buf[PATH_MAX_LENGTH];
    char scratch2_buf[PATH_MAX_LENGTH];
 
    uint64_t state;
+
    struct
    {
       char msg[1024];
    } menu_state;
 
+   /* path to the currently loaded database playlist file. */
    char db_playlist_file[PATH_MAX_LENGTH];
 } menu_handle_t;
 
@@ -386,29 +408,49 @@ typedef struct menu_display_ctx_font
 
 typedef struct menu_ctx_driver
 {
+   /* Set a framebuffer texture. This is used for instance by RGUI. */
    void  (*set_texture)(void);
+   /* Render a messagebox to the screen. */
    void  (*render_messagebox)(void *data, const char *msg);
    int   (*iterate)(void *data, void *userdata, enum menu_action action);
    void  (*render)(void *data, bool is_idle);
    void  (*frame)(void *data, video_frame_info_t *video_info);
+   /* Initializes the menu driver. (setup) */
    void* (*init)(void**, bool);
+   /* Frees the menu driver. (teardown) */
    void  (*free)(void*);
+   /* This will be invoked when we are running a hardware context
+    * and we have just flushed the state. For instance - we have
+    * just toggled fullscreen, the GL driver did a teardown/setup -
+    * we now need to rebuild all of our textures and state for the
+    * menu driver. */
    void  (*context_reset)(void *data, bool video_is_threaded);
+   /* This will be invoked when we are running a hardware context
+    * and the context in question wants to tear itself down. All
+    * textures and related state on the menu driver will also
+    * be freed up then. */
    void  (*context_destroy)(void *data);
    void  (*populate_entries)(void *data,
          const char *path, const char *label,
          unsigned k);
    void  (*toggle)(void *userdata, bool);
+   /* This will clear the navigation position. */
    void  (*navigation_clear)(void *, bool);
+   /* This will decrement the navigation position by one. */
    void  (*navigation_decrement)(void *data);
+   /* This will increment the navigation position by one. */
    void  (*navigation_increment)(void *data);
    void  (*navigation_set)(void *data, bool);
    void  (*navigation_set_last)(void *data);
+   /* This will descend the navigation position by one alphabet letter. */
    void  (*navigation_descend_alphabet)(void *, size_t *);
+   /* This will ascend the navigation position by one alphabet letter. */
    void  (*navigation_ascend_alphabet)(void *, size_t *);
+   /* Initializes a new menu list. */
    bool  (*lists_init)(void*);
    void  (*list_insert)(void *userdata,
-         file_list_t *list, const char *, const char *, const char *, size_t);
+         file_list_t *list, const char *, const char *, const char *, size_t,
+         unsigned);
    int   (*list_prepend)(void *userdata,
          file_list_t *list, const char *, const char *, size_t);
    void  (*list_free)(file_list_t *list, size_t, size_t);
@@ -421,6 +463,7 @@ typedef struct menu_ctx_driver
    void  (*list_set_selection)(void *data, file_list_t *list);
    int   (*bind_init)(menu_file_list_cbs_t *cbs,
          const char *path, const char *label, unsigned type, size_t idx);
+   /* Load an image for use by the menu driver */
    bool  (*load_image)(void *userdata, void *data, enum menu_image_type type);
    const char *ident;
    int (*environ_cb)(enum menu_environ_cb type, void *data, void *userdata);
@@ -554,6 +597,8 @@ void menu_driver_set_binding_state(bool on);
 
 void menu_driver_frame(video_frame_info_t *video_info);
 
+/* Is a background texture set for the current menu driver?  Should
+ * return true for RGUI, for instance. */
 bool menu_driver_is_texture_set(void);
 
 bool menu_driver_is_alive(void);
@@ -624,7 +669,7 @@ void menu_display_draw_pipeline(menu_display_ctx_draw_t *draw);
 void menu_display_draw_bg(
       menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info,
-      bool add_opacity);
+      bool add_opacity, float opacity_override);
 void menu_display_draw_gradient(
       menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info);

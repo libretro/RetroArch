@@ -22,6 +22,7 @@
 #include <retro_miscellaneous.h>
 
 #include <wiiu/nsyskbd.h>
+#include <wiiu/vpad.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -96,18 +97,37 @@ void kb_key_callback(KBDKeyEvent *key)
          RETRO_DEVICE_KEYBOARD);
 }
 
+/* TODO: emulate a relative mouse. This is suprisingly
+   hard to get working nicely.
+*/
+
+static int16_t wiiu_pointer_device_state(wiiu_input_t* wiiu, unsigned id)
+{
+	switch (id)
+	{
+		case RETRO_DEVICE_ID_POINTER_PRESSED:
+			return wiiu->joypad->get_buttons(0) & VPAD_BUTTON_TOUCH;
+		case RETRO_DEVICE_ID_POINTER_X:
+			return wiiu->joypad->axis(0, 0xFFFF0004UL);
+		case RETRO_DEVICE_ID_POINTER_Y:
+			return wiiu->joypad->axis(0, 0xFFFF0005UL);
+	}
+
+	return 0;
+}
+
 static void wiiu_input_poll(void *data)
 {
    wiiu_input_t *wiiu = (wiiu_input_t*)data;
 
-   if (wiiu->joypad)
-      wiiu->joypad->poll();      
+   if (wiiu && wiiu->joypad)
+      wiiu->joypad->poll();
 }
 
 static bool wiiu_key_pressed(int key)
 {
    bool ret = false;
-   
+
    if (key >= RETROK_LAST)
       return false;
 
@@ -127,7 +147,7 @@ static int16_t wiiu_input_state(void *data,
 
    if(!wiiu || !(port < MAX_PADS) || !binds || !binds[port])
       return 0;
-   
+
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
@@ -140,6 +160,9 @@ static int16_t wiiu_input_state(void *data,
             return input_joypad_analog(wiiu->joypad,
                   joypad_info, port, idx, id, binds[port]);
          break;
+      case RETRO_DEVICE_POINTER:
+      case RARCH_DEVICE_POINTER_SCREEN:
+         return wiiu_pointer_device_state(wiiu, id);
    }
 
    return 0;
@@ -151,7 +174,7 @@ static void wiiu_input_free_input(void *data)
 
    if (wiiu && wiiu->joypad)
       wiiu->joypad->destroy();
-      
+
    KBDTeardown();
 
    free(data);
@@ -165,10 +188,10 @@ static void* wiiu_input_init(const char *joypad_driver)
 
    DEBUG_STR(joypad_driver);
    wiiu->joypad = input_joypad_init_driver(joypad_driver, wiiu);
-   
+
    KBDSetup(&kb_connection_callback,
          &kb_disconnection_callback,&kb_key_callback);
-   
+
    input_keymaps_init_keyboard_lut(rarch_key_map_wiiu);
 
    return wiiu;
@@ -186,9 +209,10 @@ static uint64_t wiiu_input_get_capabilities(void *data)
 {
    (void)data;
 
-   return (1 << RETRO_DEVICE_JOYPAD) | 
-          (1 << RETRO_DEVICE_ANALOG) |  
-          (1 << RETRO_DEVICE_KEYBOARD);
+   return (1 << RETRO_DEVICE_JOYPAD) |
+          (1 << RETRO_DEVICE_ANALOG) |
+          (1 << RETRO_DEVICE_KEYBOARD) |
+          (1 << RETRO_DEVICE_POINTER);
 }
 
 static const input_device_driver_t *wiiu_input_get_joypad_driver(void *data)

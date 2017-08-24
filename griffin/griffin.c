@@ -14,6 +14,8 @@
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
+#define HAVE_IBXM 1
+
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
 #define HAVE_SHADERS
 #endif
@@ -41,6 +43,21 @@ CONSOLE EXTENSIONS
 
 #ifdef HW_DOL
 #include "../memory/ngc/ssaram.c"
+#endif
+
+#ifdef INTERNAL_LIBOGC
+#ifdef HW_RVL
+#include "../wii/libogc/libfat/cache.c"
+#include "../wii/libogc/libfat/directory.c"
+#include "../wii/libogc/libfat/disc.c"
+#include "../wii/libogc/libfat/fatdir.c"
+#include "../wii/libogc/libfat/fatfile.c"
+#include "../wii/libogc/libfat/file_allocation_table.c"
+#include "../wii/libogc/libfat/filetime.c"
+#include "../wii/libogc/libfat/libfat.c"
+#include "../wii/libogc/libfat/lock.c"
+#include "../wii/libogc/libfat/partition.c"
+#endif
 #endif
 
 #endif
@@ -152,9 +169,34 @@ CHEATS
 #include "../libretro-common/hash/rhash.c"
 
 /*============================================================
+UI COMMON CONTEXT
+============================================================ */
+#if defined(_WIN32) && !defined(_XBOX)
+#include "../gfx/common/win32_common.c"
+#endif
+
+/*============================================================
 VIDEO CONTEXT
 ============================================================ */
 #include "../gfx/drivers_context/gfx_null_ctx.c"
+
+#if defined(_WIN32) && !defined(_XBOX)
+
+#if defined(HAVE_OPENGL) || defined(HAVE_VULKAN)
+#include "../gfx/drivers_context/wgl_ctx.c"
+#endif
+
+#if defined(_WIN32) && !defined(_XBOX)
+#include "../gfx/drivers_context/gdi_ctx.c"
+#endif
+
+#if defined(HAVE_FFMPEG)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
+#include "../cores/libretro-ffmpeg/ffmpeg_fft.c"
+#endif
+#endif
+
+#endif
 
 #if defined(__CELLOS_LV2__)
 #include "../gfx/drivers_context/ps3_ctx.c"
@@ -349,6 +391,8 @@ VIDEO DRIVER
 #if defined(_WIN32) && !defined(_XBOX)
 #include "../gfx/drivers/gdi_gfx.c"
 #endif
+
+#include "../deps/ibxm/ibxm.c"
 
 /*============================================================
 FONTS
@@ -739,6 +783,7 @@ FILE
 #include "../setting_list.c"
 #include "../libretro-common/file/retro_dirent.c"
 #include "../libretro-common/streams/file_stream.c"
+#include "../libretro-common/streams/file_stream_transforms.c"
 #include "../libretro-common/streams/interface_stream.c"
 #include "../libretro-common/streams/memory_stream.c"
 #include "../list_special.c"

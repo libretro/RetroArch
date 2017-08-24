@@ -231,6 +231,8 @@ int sthread_detach(sthread_t *thread)
  */
 void sthread_join(sthread_t *thread)
 {
+   if (!thread)
+      return;
 #ifdef USE_WIN32_THREADS
    WaitForSingleObject(thread->thread, INFINITE);
    CloseHandle(thread->thread);
@@ -437,11 +439,18 @@ void scond_free(scond_t *cond)
 #ifdef USE_WIN32_THREADS
 static bool _scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds)
 {
-   static bool beginPeriod = false;
-
    struct QueueEntry myentry;
    struct QueueEntry **ptr;
+
+#if _WIN32_WINNT >= 0x0500
+   static LARGE_INTEGER performanceCounterFrequency;
+   LARGE_INTEGER tsBegin;
+   static bool first_init  = true;
+#else
+   static bool beginPeriod = false;
    DWORD tsBegin;
+#endif
+
    DWORD waitResult;
    DWORD dwFinalTimeout = dwMilliseconds; /* Careful! in case we begin in the head, 
                                              we don't do the hot potato stuff, 
@@ -453,16 +462,33 @@ static bool _scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds
 
    /* since this library is meant for realtime game software 
     * I have no problem setting this to 1 and forgetting about it. */
+#if _WIN32_WINNT >= 0x0500
+   if (first_init)
+   {
+      performanceCounterFrequency.QuadPart = 0;
+      first_init = false;
+   }
+
+   if (performanceCounterFrequency.QuadPart == 0)
+   {
+      QueryPerformanceFrequency(&performanceCounterFrequency);
+   }
+#else
    if (!beginPeriod)
    {
       beginPeriod = true;
       timeBeginPeriod(1);
    }
+#endif
 
    /* Now we can take a good timestamp for use in faking the timeout ourselves. */
    /* But don't bother unless we need to (to save a little time) */
    if (dwMilliseconds != INFINITE)
+#if _WIN32_WINNT >= 0x0500
+      QueryPerformanceCounter(&tsBegin);
+#else
       tsBegin = timeGetTime();
+#endif
 
    /* add ourselves to a queue of waiting threads */
    ptr = &cond->head;
@@ -504,8 +530,18 @@ static bool _scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds
       /* Assess the remaining timeout time */
       if (dwMilliseconds != INFINITE)
       {
+#if _WIN32_WINNT >= 0x0500
+         LARGE_INTEGER now;
+         LONGLONG elapsed;
+
+         QueryPerformanceCounter(&now);
+         elapsed  = now.QuadPart - tsBegin.QuadPart;
+         elapsed *= 1000;
+         elapsed /= performanceCounterFrequency.QuadPart;
+#else
          DWORD now     = timeGetTime();
          DWORD elapsed = now - tsBegin;
+#endif
 
          /* Try one last time with a zero timeout (keeps the code simpler) */
          if (elapsed > dwMilliseconds)

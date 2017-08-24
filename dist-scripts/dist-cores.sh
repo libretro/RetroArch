@@ -1,6 +1,6 @@
 #!/bin/sh
 
-RARCH_VERSION=1.3.6
+RARCH_VERSION=1.6.7
 PLATFORM=$1
 SALAMANDER=no
 MAKEFILE_GRIFFIN=no
@@ -89,6 +89,8 @@ EXE_PATH=${CELL_SDK}/host-win32/bin
 SCETOOL_PATH=${PS3TOOLS_PATH}/scetool/scetool.exe
 SCETOOL_FLAGS_CORE="--sce-type=SELF --compress-data=TRUE --skip-sections=TRUE --key-revision=04 --self-auth-id=1010000001000003 --self-vendor-id=01000002 --self-type=APP --self-app-version=0001000000000000 --self-fw-version=0003004100000000 --encrypt"
 SCETOOL_FLAGS_EBOOT="--sce-type=SELF --compress-data=TRUE --skip-sections=TRUE --key-revision=04 --self-auth-id=1010000001000003 --self-vendor-id=01000002 --self-type=NPDRM --self-fw-version=0003004100000000 --np-license-type=FREE --np-content-id=UP0001-SSNE10000_00-0000000000000001 --np-app-type=EXEC --self-app-version=0001000000000000 --np-real-fname=EBOOT.BIN --encrypt"
+
+cp -rfv ${PS3TOOLS_PATH}/scetool/data .
 
 # ODE PS3
 elif [ $PLATFORM = "ode-ps3" ]; then
@@ -418,6 +420,8 @@ if [ $PLATFORM = "dex-ps3" ] ; then
 elif [ $PLATFORM = "cex-ps3" ] ; then
    $SCETOOL_PATH $SCETOOL_FLAGS_EBOOT ../retroarch-salamander_${platform}.elf ../pkg/${platform}/SSNE10000/USRDIR/EBOOT.BIN
    rm -rf ../retroarch-salamander_${platform}.elf
+   (cd ../tools/ps3/ps3py && python2 setup.py build)
+   find ../tools/ps3/ps3py/build -name '*.dll' -exec cp {} ../tools/ps3/ps3py \;
    ../tools/ps3/ps3py/pkg.py --contentid UP0001-SSNE10000_00-0000000000000001 ../pkg/${platform}/SSNE10000/ ../pkg/${platform}/RetroArch.PS3.CEX.PS3.pkg
 elif [ $PLATFORM = "ode-ps3" ] ; then
    $SCETOOL_PATH $SCETOOL_FLAGS_ODE ../retroarch-salamander_${platform}.elf ../pkg/${platform}_iso/PS3_GAME/USRDIR/EBOOT.BIN

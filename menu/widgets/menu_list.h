@@ -42,6 +42,7 @@ typedef struct menu_ctx_list
    char *fullpath;
    const char *label;
    size_t idx;
+   unsigned entry_type;
    enum menu_list_type type;
    unsigned action;
    size_t selection;

@@ -35,6 +35,8 @@
 #include "../config.h"
 #endif
 
+#include "../dynamic.h"
+
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
 #endif
@@ -2463,6 +2465,8 @@ void video_driver_build_info(video_frame_info_t *video_info)
    bool is_slowmotion                = false;
    settings_t *settings              = NULL;
    video_viewport_t *custom_vp       = NULL;
+   struct retro_hw_render_callback *hwr =
+      video_driver_get_hw_context();
 #ifdef HAVE_THREADS
    bool is_threaded                  = video_driver_is_threaded();
    video_driver_threaded_lock(is_threaded);
@@ -2483,6 +2487,10 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->fullscreen            = settings->bools.video_fullscreen;
    video_info->monitor_index         = settings->uints.video_monitor_index;
    video_info->shared_context        = settings->bools.video_shared_context;
+
+   if (libretro_get_shared_context() && hwr && hwr->context_type != RETRO_HW_CONTEXT_NONE)
+      video_info->shared_context     = true;
+   
    video_info->font_enable           = settings->bools.video_font_enable;
    video_info->font_msg_pos_x        = settings->floats.video_msg_pos_x;
    video_info->font_msg_pos_y        = settings->floats.video_msg_pos_y;
@@ -2516,7 +2524,8 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->battery_level_enable   = settings->bools.menu_battery_level_enable;
    video_info->xmb_shadows_enable     = settings->bools.menu_xmb_shadows_enable;
    video_info->xmb_alpha_factor       = settings->uints.menu_xmb_alpha_factor;
-   video_info->menu_wallpaper_opacity = settings->floats.menu_wallpaper_opacity;
+   video_info->menu_wallpaper_opacity   = settings->floats.menu_wallpaper_opacity;
+   video_info->menu_framebuffer_opacity = settings->floats.menu_framebuffer_opacity;
 
    video_info->libretro_running       = core_is_game_loaded();
 #else
@@ -2531,6 +2540,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->battery_level_enable   = false;
    video_info->xmb_shadows_enable     = false;
    video_info->xmb_alpha_factor       = 0.0f;
+   video_info->menu_framebuffer_opacity = 0.0f;
    video_info->menu_wallpaper_opacity = 0.0f;
 #endif
 

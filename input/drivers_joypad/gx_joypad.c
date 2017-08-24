@@ -324,6 +324,7 @@ static void gx_joypad_poll(void)
    if (g_quit)
    {
       rarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
+      g_quit = false;
       return;
    }
 

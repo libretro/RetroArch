@@ -41,10 +41,15 @@ enum
    ACTION_OK_DL_RDB_ENTRY_SUBMENU,
    ACTION_OK_DL_AUDIO_DSP_PLUGIN,
    ACTION_OK_DL_SHADER_PASS,
+   ACTION_OK_DL_FAVORITES_LIST,
+   ACTION_OK_DL_IMAGES_LIST,
+   ACTION_OK_DL_VIDEO_LIST,
+   ACTION_OK_DL_MUSIC_LIST,
    ACTION_OK_DL_SHADER_PARAMETERS,
    ACTION_OK_DL_SHADER_PRESET,
    ACTION_OK_DL_GENERIC,
    ACTION_OK_DL_PUSH_DEFAULT,
+   ACTION_OK_DL_FILE_BROWSER_SELECT_FILE,
    ACTION_OK_DL_FILE_BROWSER_SELECT_DIR,
    ACTION_OK_DL_INPUT_SETTINGS_LIST,
    ACTION_OK_DL_DRIVER_SETTINGS_LIST,
@@ -221,6 +226,30 @@ int action_scan_file(const char *path,
 int bind_right_generic(unsigned type, const char *label,
        bool wraparound);
 
+/* This sets up all the callback functions for a menu entry.
+ *
+ * OK     : When we press the 'OK' button on an entry.
+ * Cancel : When we press the 'Cancel' button on an entry.
+ * Scan   : When we press the 'Scan' button on an entry.
+ * Start  : When we press the 'Start' button on an entry.
+ * Select : When we press the 'Select' button on an entry.
+ * Info   : When we press the 'Info' button on an entry.
+ * Content Switch   : ??? (TODO/FIXME - Kivutar should document this)
+ * Up     : when we press 'Up' on the D-pad while this entry is selected.
+ * Down   : when we press 'Down' on the D-pad while this entry is selected.
+ * Left   : when we press 'Left' on the D-pad while this entry is selected.
+ * Right  : when we press 'Right' on the D-pad while this entry is selected.
+ * Deferred push : When pressing an entry results in spawning a new list, it waits until the next
+ * frame to push this onto the stack. This function callback will then be invoked.
+ * Refresh : What happens when the screen has to be refreshed. Does an entry have internal state
+ * that needs to be rebuild? 
+ * Get value: Each entry has associated 'text', which we call the value. This function callback
+ * lets us render that text. 
+ * Get title: Each entry can have a custom 'title'.
+ * Label: Each entry has a label name. This function callback lets us render that label text.
+ * Sublabel: each entry has a sublabel, which consists of one or more lines of additional information.
+ * This function callback lets us render that text.
+ */
 void menu_cbs_init(void *data,
       menu_file_list_cbs_t *cbs,
       const char *path, const char *label,

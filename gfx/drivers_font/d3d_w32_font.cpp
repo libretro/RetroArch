@@ -27,6 +27,8 @@
 #include "../include/d3d9/d3dx9core.h"
 #endif
 
+#include <tchar.h>
+
 typedef struct
 {
    d3d_video_t *d3d;
@@ -47,11 +49,7 @@ static void *d3dfonts_w32_init_font(void *video_data,
       OUT_TT_PRECIS,
       CLIP_DEFAULT_PRECIS,
       DEFAULT_PITCH,
-#if defined(_MSC_VER) /* MSVC needs w_char* */
-      L"Verdana" /* Hardcode FTL */
-#else
-	  "Verdana"
-#endif
+      _T("Verdana") /* Hardcode FTL */
    };
 
    d3dfonts = (d3dfonts_t*)calloc(1, sizeof(*d3dfonts));

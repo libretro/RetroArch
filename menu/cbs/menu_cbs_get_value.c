@@ -137,16 +137,13 @@ static void menu_action_setting_disp_set_label_shader_filter_pass(
       const char *path,
       char *s2, size_t len2)
 {
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
    struct video_shader_pass *shader_pass = menu_shader_manager_get_pass(
          type - MENU_SETTINGS_SHADER_PASS_FILTER_0);
-#endif
 
    *s = '\0';
    *w = 19;
    strlcpy(s2, path, len2);
 
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
    if (!shader_pass)
       return;
 
@@ -165,7 +162,6 @@ static void menu_action_setting_disp_set_label_shader_filter_pass(
               len);
         break;
   }
-#endif
 }
 
 static void menu_action_setting_disp_set_label_filter(
@@ -251,9 +247,7 @@ static void menu_action_setting_disp_set_label_shader_num_passes(
    *s = '\0';
    *w = 19;
    strlcpy(s2, path, len2);
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
    snprintf(s, len, "%u", menu_shader_manager_get_amount_passes());
-#endif
 }
 
 static void menu_action_setting_disp_set_label_shader_pass(
@@ -265,23 +259,19 @@ static void menu_action_setting_disp_set_label_shader_pass(
       const char *path,
       char *s2, size_t len2)
 {
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
    struct video_shader_pass *shader_pass = menu_shader_manager_get_pass(
          type - MENU_SETTINGS_SHADER_PASS_0);
-#endif
 
    *s = '\0';
    *w = 19;
    strlcpy(s2, path, len2);
    strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
 
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
    if (!shader_pass)
       return;
 
    if (!string_is_empty(shader_pass->source.path))
       fill_pathname_base(s, shader_pass->source.path, len);
-#endif
 }
 
 static void menu_action_setting_disp_set_label_shader_default_filter(
@@ -317,15 +307,13 @@ static void menu_action_setting_disp_set_label_shader_parameter(
       const char *path,
       char *s2, size_t len2)
 {
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
    video_shader_ctx_t shader_info;
    const struct video_shader_parameter *param = NULL;
-#endif
+
    *s = '\0';
    *w = 19;
    strlcpy(s2, path, len2);
 
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
    video_shader_driver_get_current_shader(&shader_info);
 
    if (!shader_info.data)
@@ -339,7 +327,6 @@ static void menu_action_setting_disp_set_label_shader_parameter(
 
    snprintf(s, len, "%.2f [%.2f %.2f]",
          param->current, param->minimum, param->maximum);
-#endif
 }
 
 static void menu_action_setting_disp_set_label_shader_preset_parameter(
@@ -351,20 +338,17 @@ static void menu_action_setting_disp_set_label_shader_preset_parameter(
       const char *path,
       char *s2, size_t len2)
 {
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
-   const struct video_shader_parameter *param = menu_shader_manager_get_parameters(
-         type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0);
-#endif
+   const struct video_shader_parameter *param = 
+      menu_shader_manager_get_parameters(
+            type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0);
 
    *s = '\0';
    *w = 19;
    strlcpy(s2, path, len2);
 
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
    if (param)
       snprintf(s, len, "%.2f [%.2f %.2f]",
             param->current, param->minimum, param->maximum);
-#endif
 }
 
 static void menu_action_setting_disp_set_label_shader_scale_pass(
@@ -378,10 +362,8 @@ static void menu_action_setting_disp_set_label_shader_scale_pass(
 {
    unsigned pass               = 0;
    unsigned scale_value        = 0;
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
    struct video_shader_pass *shader_pass = menu_shader_manager_get_pass(
          type - MENU_SETTINGS_SHADER_PASS_SCALE_0);
-#endif
 
    *s = '\0';
    *w = 19;
@@ -390,7 +372,6 @@ static void menu_action_setting_disp_set_label_shader_scale_pass(
    (void)pass;
    (void)scale_value;
 
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
    if (!shader_pass)
       return;
 
@@ -400,7 +381,6 @@ static void menu_action_setting_disp_set_label_shader_scale_pass(
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE), len);
    else
       snprintf(s, len, "%ux", scale_value);
-#endif
 }
 
 static void menu_action_setting_disp_set_label_menu_file_core(
@@ -1844,7 +1824,6 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
          case MENU_SETTING_ACTION_LOADSTATE:
          case 7:   /* Run */
          case MENU_SETTING_ACTION_DELETE_ENTRY:
-         case 117: /* Netplay settings */
          case MENU_SETTING_ACTION_CORE_DISK_OPTIONS:
             BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_more);

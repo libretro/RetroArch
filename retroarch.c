@@ -2,6 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
+ *  Copyright (C) 2015-2017 - Andrés Suárez
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -236,6 +237,8 @@ static bool runloop_shutdown_initiated                     = false;
 static bool runloop_core_shutdown_initiated                = false;
 static bool runloop_perfcnt_enable                         = false;
 static bool runloop_overrides_active                       = false;
+static bool runloop_remaps_core_active                     = false;
+static bool runloop_remaps_game_active                     = false;
 static bool runloop_game_options_active                    = false;
 static bool runloop_missing_bios                           = false;
 static bool runloop_autosave                               = false;
@@ -310,6 +313,8 @@ static void global_free(void)
    rarch_ups_pref                        = false;
    rarch_patch_blocked                   = false;
    runloop_overrides_active              = false;
+   runloop_remaps_core_active            = false;
+   runloop_remaps_game_active            = false;
 
    core_unset_input_descriptors();
 
@@ -1587,6 +1592,22 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          break;
       case RARCH_CTL_IS_OVERRIDES_ACTIVE:
          return runloop_overrides_active;
+      case RARCH_CTL_SET_REMAPS_CORE_ACTIVE:
+         runloop_remaps_core_active = true;
+         break;
+      case RARCH_CTL_UNSET_REMAPS_CORE_ACTIVE:
+         runloop_remaps_core_active = false;
+         break;
+      case RARCH_CTL_IS_REMAPS_CORE_ACTIVE:
+         return runloop_remaps_core_active;
+      case RARCH_CTL_SET_REMAPS_GAME_ACTIVE:
+         runloop_remaps_game_active = true;
+         break;
+      case RARCH_CTL_UNSET_REMAPS_GAME_ACTIVE:
+         runloop_remaps_game_active = false;
+         break;
+      case RARCH_CTL_IS_REMAPS_GAME_ACTIVE:
+         return runloop_remaps_game_active;
       case RARCH_CTL_SET_MISSING_BIOS:
          runloop_missing_bios = true;
          break;
@@ -2161,6 +2182,7 @@ bool retroarch_main_quit(void)
       command_event(CMD_EVENT_AUTOSAVE_STATE, NULL);
       command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
       command_event(CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET, NULL);
+      command_event(CMD_EVENT_RESTORE_REMAPS, NULL);
    }
 
    runloop_shutdown_initiated = true;
@@ -2402,10 +2424,10 @@ static enum runloop_state runloop_check_state(
             current_input, RARCH_GRAB_MOUSE_TOGGLE);
 
       if (pressed && !old_pressed)
-#if 1
-         command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
-#else
+#if HAVE_LIBUI
          command_event(CMD_EVENT_LIBUI_TEST, NULL);
+#else
+         command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
 #endif
 
       old_pressed             = pressed;

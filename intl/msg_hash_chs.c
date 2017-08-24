@@ -1,4 +1,4 @@
-﻿/*  RetroArch - A frontend for libretro.
+/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -278,6 +278,9 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                " \n"
                "截图文件将会存放在 \n"
                "截图目录之中.");
+         break;
+      case MENU_ENUM_LABEL_ADD_TO_FAVORITES:
+         snprintf(s, len, "添加到收藏夹.");
          break;
       case MENU_ENUM_LABEL_RUN:
          snprintf(s, len, "启动内容.");

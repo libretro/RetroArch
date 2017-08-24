@@ -88,6 +88,7 @@ typedef struct settings
       bool input_overlay_enable;
       bool input_overlay_enable_autopreferred;
       bool input_overlay_hide_in_menu;
+      bool input_overlay_show_physical_inputs;
       bool input_descriptor_label_show;
       bool input_descriptor_hide_unbound;
       bool input_all_users_control_menu;
@@ -119,10 +120,13 @@ typedef struct settings
       bool menu_show_advanced_settings;
       bool menu_throttle_framerate;
       bool menu_linear_filter;
+      bool menu_horizontal_animation;
       bool menu_show_online_updater;
       bool menu_show_core_updater;
+      bool menu_materialui_icons_enable;
       bool menu_xmb_shadows_enable;
       bool menu_xmb_show_settings;
+      bool menu_xmb_show_favorites;
       bool menu_xmb_show_images;
       bool menu_xmb_show_music;
       bool menu_xmb_show_video;
@@ -209,6 +213,11 @@ typedef struct settings
       bool sort_savestates_enable;
       bool config_save_on_exit;
       bool show_hidden_files;
+
+      bool savefiles_in_content_dir;
+      bool savestates_in_content_dir;
+      bool screenshots_in_content_dir;
+      bool systemfiles_in_content_dir;
 #ifdef HAVE_LAKKA
       bool ssh_enable;
       bool samba_enable;
@@ -230,6 +239,7 @@ typedef struct settings
       float video_msg_color_b;
 
       float menu_wallpaper_opacity;
+      float menu_framebuffer_opacity;
       float menu_footer_opacity;
       float menu_header_opacity;
 
@@ -322,6 +332,8 @@ typedef struct settings
 
       unsigned camera_width;
       unsigned camera_height;
+
+      unsigned input_overlay_show_physical_inputs_port;
    } uints;
 
    struct
@@ -373,6 +385,7 @@ typedef struct settings
       char path_softfilter_plugin[PATH_MAX_LENGTH];
       char path_core_options[PATH_MAX_LENGTH];
       char path_content_history[PATH_MAX_LENGTH];
+      char path_content_favorites[PATH_MAX_LENGTH];
       char path_content_music_history[PATH_MAX_LENGTH];
       char path_content_image_history[PATH_MAX_LENGTH];
       char path_content_video_history[PATH_MAX_LENGTH];
@@ -389,6 +402,7 @@ typedef struct settings
       char directory_video_filter[PATH_MAX_LENGTH];
       char directory_video_shader[PATH_MAX_LENGTH];
       char directory_content_history[PATH_MAX_LENGTH];
+      char directory_content_favorites[PATH_MAX_LENGTH];
       char directory_libretro[PATH_MAX_LENGTH];
       char directory_cursor[PATH_MAX_LENGTH];
       char directory_input_remapping[PATH_MAX_LENGTH];

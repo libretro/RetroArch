@@ -61,9 +61,11 @@ void uiControlDisable(uiControl *c)
 
 uiControl *uiAllocControl(size_t size, uint32_t OSsig, uint32_t typesig, const char *typenamestr)
 {
-	uiControl *c     = (uiControl *) uiAlloc(size, typenamestr);
-	c->Signature     = uiControlSignature;
-	c->OSSignature   = OSsig;
+	uiControl *c;
+
+	c = (uiControl *) uiAlloc(size, typenamestr);
+	c->Signature = uiControlSignature;
+	c->OSSignature = OSsig;
 	c->TypeSignature = typesig;
 	return c;
 }
@@ -90,11 +92,10 @@ void uiControlVerifySetParent(uiControl *c, uiControl *parent)
 
 int uiControlEnabledToUser(uiControl *c)
 {
-	while (c != NULL)
-   {
-      if (!uiControlEnabled(c))
-         return 0;
-      c = uiControlParent(c);
-   }
+	while (c != NULL) {
+		if (!uiControlEnabled(c))
+			return 0;
+		c = uiControlParent(c);
+	}
 	return 1;
 }

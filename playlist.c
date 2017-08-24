@@ -291,11 +291,7 @@ bool playlist_push(playlist_t *playlist,
          static char base_path[255] = {0};
          fill_pathname_base_noext(base_path, core_path, sizeof(base_path));
          core_name = base_path;
-         RARCH_LOG("core_name is now: %s\n", core_name);
       }
-
-      RARCH_LOG("core_name: %s.\n", string_is_empty(core_name) ? "N/A" : core_name);
-      RARCH_LOG("core_path: %s.\n", string_is_empty(core_path) ? "N/A" : core_path);
 
       if (string_is_empty(core_path) || string_is_empty(core_name))
       {
@@ -428,7 +424,7 @@ void playlist_free(playlist_t *playlist)
 
    playlist->conf_path = NULL;
 
-   for (i = 0; i < playlist->cap; i++)
+   for (i = 0; i < playlist->size; i++)
    {
       struct playlist_entry *entry = &playlist->entries[i];
 
@@ -454,7 +450,7 @@ void playlist_clear(playlist_t *playlist)
    if (!playlist)
       return;
 
-   for (i = 0; i < playlist->cap; i++)
+   for (i = 0; i < playlist->size; i++)
    {
       struct playlist_entry *entry = &playlist->entries[i];
 

@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2015-2017 - Andrés Suárez
  *  Copyright (C) 2016-2017 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -1053,6 +1054,7 @@ static void command_event_deinit_core(bool reinit)
 
    command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
    command_event(CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET, NULL);
+   command_event(CMD_EVENT_RESTORE_REMAPS, NULL);
 }
 
 static void command_event_init_cheats(void)
@@ -1226,7 +1228,7 @@ static bool command_event_init_core(enum rarch_core_type *data)
          rarch_ctl(RARCH_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
    }
 
-   /* Auto-remap: apply shader preset files */
+   /* Auto-shaders: apply shader preset files */
    if(settings->bools.auto_shaders_enable)
       config_load_shader_preset();
 
@@ -1285,6 +1287,12 @@ static void command_event_restore_default_shader_preset(void)
    }
 
    path_clear(RARCH_PATH_DEFAULT_SHADER_PRESET);
+}
+
+static void command_event_restore_remaps(void)
+{
+   if (rarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
+      input_remapping_set_defaults();
 }
 
 static bool command_event_save_auto_state(void)
@@ -1797,6 +1805,7 @@ bool command_event(enum event_command cmd, void *data)
             command_event(CMD_EVENT_AUTOSAVE_STATE, NULL);
             command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
             command_event(CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET, NULL);
+            command_event(CMD_EVENT_RESTORE_REMAPS, NULL);
 
             if (is_inited)
                if (!task_push_start_dummy_core(&content_info))
@@ -1856,9 +1865,17 @@ bool command_event(enum event_command cmd, void *data)
             if (settings->bools.cheevos_hardcore_mode_enable)
                return false;
 #endif
-
             if (settings->bools.rewind_enable)
-               state_manager_event_init((unsigned)settings->rewind_buffer_size);
+            {
+#ifdef HAVE_NETWORKING
+               /* Only enable state manager if netplay is not underway
+TODO: Add a setting for these tweaks */
+               if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+#endif
+               {
+                  state_manager_event_init((unsigned)settings->rewind_buffer_size);
+               }
+            }
          }
          break;
       case CMD_EVENT_REWIND_TOGGLE:
@@ -1880,10 +1897,21 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_AUTOSAVE_INIT:
          command_event(CMD_EVENT_AUTOSAVE_DEINIT, NULL);
 #ifdef HAVE_THREADS
-         if (autosave_init())
-            runloop_set(RUNLOOP_ACTION_AUTOSAVE);
-         else
-            runloop_unset(RUNLOOP_ACTION_AUTOSAVE);
+	 {
+#ifdef HAVE_NETWORKING
+         /* Only enable state manager if netplay is not underway
+            TODO: Add a setting for these tweaks */
+         settings_t *settings      = config_get_ptr();
+         if (settings->uints.autosave_interval != 0
+            && !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+#endif
+         {
+            if (autosave_init())
+               runloop_set(RUNLOOP_ACTION_AUTOSAVE);
+            else
+               runloop_unset(RUNLOOP_ACTION_AUTOSAVE);
+         }
+	 }
 #endif
          break;
       case CMD_EVENT_AUTOSAVE_STATE:
@@ -1967,6 +1995,13 @@ bool command_event(enum event_command cmd, void *data)
          }
          g_defaults.content_history = NULL;
 
+         if (g_defaults.content_favorites)
+         {
+            playlist_write_file(g_defaults.content_favorites);
+            playlist_free(g_defaults.content_favorites);
+         }
+         g_defaults.content_favorites = NULL;
+
          if (g_defaults.music_history)
          {
             playlist_write_file(g_defaults.music_history);
@@ -2008,6 +2043,13 @@ bool command_event(enum event_command cmd, void *data)
                   settings->paths.path_content_history);
             g_defaults.content_history = playlist_init(
                   settings->paths.path_content_history,
+                  content_history_size);
+
+            RARCH_LOG("%s: [%s].\n",
+                  msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
+                  settings->paths.path_content_favorites);
+            g_defaults.content_favorites = playlist_init(
+                  settings->paths.path_content_favorites,
                   content_history_size);
 
             RARCH_LOG("%s: [%s].\n",
@@ -2109,7 +2151,7 @@ bool command_event(enum event_command cmd, void *data)
              * need to make sure to keep a copy */
             struct retro_hw_render_callback hwr_copy;
             struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
-            const struct retro_hw_render_context_negotiation_interface *iface = 
+            const struct retro_hw_render_context_negotiation_interface *iface =
                video_driver_get_context_negotiation_interface();
             memcpy(&hwr_copy, hwr, sizeof(hwr_copy));
 
@@ -2141,6 +2183,19 @@ bool command_event(enum event_command cmd, void *data)
          rarch_menu_running_finished();
          if (ui_companion_is_on_foreground())
             ui_companion_driver_toggle();
+         break;
+      case CMD_EVENT_ADD_TO_FAVORITES:
+         playlist_push(
+               g_defaults.content_favorites,
+               path_get(RARCH_PATH_CONTENT),
+               NULL,
+               file_path_str(FILE_PATH_DETECT),
+               file_path_str(FILE_PATH_DETECT),
+               NULL,
+               NULL
+               );
+         playlist_write_file(g_defaults.content_favorites);
+         runloop_msg_queue_push(msg_hash_to_str(MSG_ADDED_TO_FAVORITES), 1, 180, true);
          break;
       case CMD_EVENT_RESTART_RETROARCH:
          if (!frontend_driver_set_fork(FRONTEND_FORK_RESTART))
@@ -2182,7 +2237,7 @@ bool command_event(enum event_command cmd, void *data)
                RARCH_LOG("%s\n", msg_hash_to_str(MSG_PAUSED));
                command_event(CMD_EVENT_AUDIO_STOP, NULL);
 
-               runloop_msg_queue_push(msg_hash_to_str(MSG_PAUSED), 1, 
+               runloop_msg_queue_push(msg_hash_to_str(MSG_PAUSED), 1,
                      1, true);
 
                if (!is_idle)
@@ -2265,13 +2320,20 @@ bool command_event(enum event_command cmd, void *data)
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
-            if (!init_netplay(NULL, hostname ? hostname : 
+            if (!init_netplay(NULL, hostname ? hostname :
                settings->paths.netplay_server,
                settings->uints.netplay_port))
             {
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
                return false;
             }
+
+            /* Disable rewind & sram autosave if it was enabled
+               TODO: Add a setting for these tweaks */
+            state_manager_event_deinit();
+#ifdef HAVE_THREADS
+            autosave_deinit();
+#endif
          }
          break;
       /* init netplay via lobby when content is loaded */
@@ -2284,12 +2346,12 @@ bool command_event(enum event_command cmd, void *data)
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
-            RARCH_LOG("[netplay] connecting to %s:%d\n", 
-               hostname->elems[0].data, !string_is_empty(hostname->elems[1].data) 
+            RARCH_LOG("[netplay] connecting to %s:%d\n",
+               hostname->elems[0].data, !string_is_empty(hostname->elems[1].data)
                ? atoi(hostname->elems[1].data) : 55435);
 
-            if (!init_netplay(NULL, hostname->elems[0].data, 
-               !string_is_empty(hostname->elems[1].data) 
+            if (!init_netplay(NULL, hostname->elems[0].data,
+               !string_is_empty(hostname->elems[1].data)
                ? atoi(hostname->elems[1].data) : 55435))
             {
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
@@ -2298,6 +2360,13 @@ bool command_event(enum event_command cmd, void *data)
             }
 
             string_list_free(hostname);
+
+            /* Disable rewind if it was enabled
+               TODO: Add a setting for these tweaks */
+            state_manager_event_deinit();
+#ifdef HAVE_THREADS
+            autosave_deinit();
+#endif
          }
          break;
       /* init netplay via lobby when content is not loaded */
@@ -2310,12 +2379,12 @@ bool command_event(enum event_command cmd, void *data)
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
-            RARCH_LOG("[netplay] connecting to %s:%d\n", 
-               hostname->elems[0].data, !string_is_empty(hostname->elems[1].data) 
+            RARCH_LOG("[netplay] connecting to %s:%d\n",
+               hostname->elems[0].data, !string_is_empty(hostname->elems[1].data)
                ? atoi(hostname->elems[1].data) : 55435);
 
             if (!init_netplay_deferred(hostname->elems[0].data,
-               !string_is_empty(hostname->elems[1].data) 
+               !string_is_empty(hostname->elems[1].data)
                ? atoi(hostname->elems[1].data) : 55435))
             {
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
@@ -2324,6 +2393,13 @@ bool command_event(enum event_command cmd, void *data)
             }
 
             string_list_free(hostname);
+
+            /* Disable rewind if it was enabled
+               TODO: Add a setting for these tweaks */
+            state_manager_event_deinit();
+#ifdef HAVE_THREADS
+            autosave_deinit();
+#endif
          }
          break;
       case CMD_EVENT_NETPLAY_FLIP_PLAYERS:
@@ -2495,7 +2571,7 @@ bool command_event(enum event_command cmd, void *data)
          {
             static bool game_focus_state  = false;
             intptr_t                 mode = (intptr_t)data;
-            
+
             /* mode = -1: restores current game focus state
              * mode =  1: force set game focus, instead of toggling
              * any other: toggle
@@ -2553,11 +2629,14 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_DISABLE_OVERRIDES:
          command_event_disable_overrides();
          break;
+      case CMD_EVENT_RESTORE_REMAPS:
+         command_event_restore_remaps();
+         break;
       case CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET:
          command_event_restore_default_shader_preset();
          break;
       case CMD_EVENT_LIBUI_TEST:
-#if 0
+#if HAVE_LIBUI
          libui_main();
 #endif
          break;

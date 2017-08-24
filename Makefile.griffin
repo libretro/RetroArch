@@ -82,6 +82,7 @@ else ifeq ($(platform), ps3-cobra)
 
 # NGC/Wii - libogc
 else ifeq ($(libogc_platform), 1)
+EXTERNAL_LIBOGC=0
   CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
   CXX = $(DEVKITPPC)/bin/powerpc-eabi-g++$(EXE_EXT)
   LD = $(DEVKITPPC)/bin/powerpc-eabi-ld$(EXE_EXT)
@@ -89,15 +90,36 @@ else ifeq ($(libogc_platform), 1)
   EXT_TARGET := $(TARGET_NAME)_$(platform).dol
   EXT_INTER_TARGET := $(TARGET_NAME)_$(platform).elf
 
-  INCLUDE += -I. -I$(DEVKITPRO)/libogc/include -Ideps/libz
+  INCLUDE += -I. -I$(DEVKITPRO)/libogc/include -Ideps/libz -Iwii/libogc/include
+ 
+ifeq ($(EXTERNAL_LIBOGC), 1)
+	CFLAGS   += -DEXTERNAL_LIBOGC
+	CXXFLAGS += -DEXTERNAL_LIBOGC
 
 ifeq ($(platform), ngc)
-  LIBDIRS += -L$(DEVKITPRO)/libogc/lib/cube
+LIBDIRS += -L$(DEVKITPRO)/libogc/lib/cube
+else ifeq ($(platform), wii)
+LIBDIRS += -L$(DEVKITPRO)/libogc/lib/wii
+endif
+
+else
+	CFLAGS   += -DINTERNAL_LIBOGC
+	CXXFLAGS += -DINTERNAL_LIBOGC
+
+ifeq ($(platform), ngc)
+LIBDIRS += -Lwii/libogc/libs/cube
+else ifeq ($(platform), wii)
+LIBDIRS += -Lwii/libogc/libs/wii
+endif
+
+endif
+
+ifeq ($(platform), ngc)
   MACHDEP := -DHW_DOL -mogc
 else ifeq ($(platform), wii)
-  LIBDIRS += -L$(DEVKITPRO)/libogc/lib/wii
   MACHDEP := -DHW_RVL -mrvl
 endif
+
   LIBDIRS += -L.
   MACHDEP += -DGEKKO -mcpu=750 -meabi -mhard-float -DMSB_FIRST
 
@@ -112,7 +134,10 @@ ifeq ($(BIG_STACK), 1)
   LDFLAGS += -T bootstrap/gx/rvl.ld
 endif
 endif
-  LIBS += -lfat -logc
+  LIBS += -logc
+ifeq ($(EXTERNAL_LIBOGC), 1)
+  LIBS += -lfat
+endif
 
 ifeq ($(platform), wii)
   LIBS += -lwiiuse -lbte
@@ -133,6 +158,7 @@ endif
   HAVE_RJPEG					:= 1
   HAVE_RBMP					   := 1
   HAVE_RTGA					   := 1
+  HAVE_IBXM					   := 1
   HAVE_OVERLAY             := 1
   HAVE_ZLIB                := 1
   WANT_ZLIB						:= 1

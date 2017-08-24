@@ -91,7 +91,7 @@ ifeq ($(HAVE_SHADERPIPELINE), 1)
    CFLAGS += -DHAVE_SHADERPIPELINE
 endif
 
-CFLAGS += -I$(LIBRETRO_COMM_DIR)/include
+CFLAGS += -I$(LIBRETRO_COMM_DIR)/include -I$(DEPS_DIR)
 
 # Switches
 
@@ -175,6 +175,7 @@ OBJ += frontend/frontend.o \
        $(LIBRETRO_COMM_DIR)/file/retro_dirent.o \
        $(LIBRETRO_COMM_DIR)/streams/stdin_stream.o \
        $(LIBRETRO_COMM_DIR)/streams/file_stream.o \
+       $(LIBRETRO_COMM_DIR)/streams/file_stream_transforms.o \
        $(LIBRETRO_COMM_DIR)/streams/interface_stream.o \
        $(LIBRETRO_COMM_DIR)/streams/memory_stream.o \
        $(LIBRETRO_COMM_DIR)/lists/string_list.o \
@@ -338,107 +339,103 @@ ifneq ($(C89_BUILD), 1)
 HAVE_LIBUI   = 0
 HAVE_GTKPLUS = 0
 
+ifeq ($(HAVE_SSL), 1)
+DEFINES += -DHAVE_SSL
+DEFINES += -DMBEDTLS_SSL_DEBUG_ALL
+
+# MinGW requires this for some reason, even though the include paths are relative to the source
+INCLUDE_DIRS += -Ideps/mbedtls
+
+OBJS_TLS_CRYPTO = deps/mbedtls/aes.o deps/mbedtls/aesni.o deps/mbedtls/arc4.o \
+                  deps/mbedtls/asn1parse.o deps/mbedtls/asn1write.o deps/mbedtls/base64.o \
+                  deps/mbedtls/bignum.o deps/mbedtls/blowfish.o deps/mbedtls/camellia.o \
+                  deps/mbedtls/ccm.o deps/mbedtls/cipher.o deps/mbedtls/cipher_wrap.o \
+                  deps/mbedtls/cmac.o deps/mbedtls/ctr_drbg.o deps/mbedtls/des.o \
+                  deps/mbedtls/dhm.o deps/mbedtls/ecdh.o deps/mbedtls/ecdsa.o \
+                  deps/mbedtls/ecjpake.o deps/mbedtls/ecp.o \
+                  deps/mbedtls/ecp_curves.o deps/mbedtls/entropy.o deps/mbedtls/entropy_poll.o \
+                  deps/mbedtls/error.o deps/mbedtls/gcm.o deps/mbedtls/havege.o \
+                  deps/mbedtls/hmac_drbg.o deps/mbedtls/md.o deps/mbedtls/md2.o \
+                  deps/mbedtls/md4.o deps/mbedtls/md5.o deps/mbedtls/md_wrap.o \
+                  deps/mbedtls/memory_buffer_alloc.o deps/mbedtls/oid.o \
+                  deps/mbedtls/padlock.o deps/mbedtls/pem.o deps/mbedtls/pk.o \
+                  deps/mbedtls/pk_wrap.o deps/mbedtls/pkcs12.o deps/mbedtls/pkcs5.o \
+                  deps/mbedtls/pkparse.o deps/mbedtls/pkwrite.o deps/mbedtls/platform.o \
+                  deps/mbedtls/ripemd160.o deps/mbedtls/rsa.o deps/mbedtls/sha1.o \
+                  deps/mbedtls/sha256.o deps/mbedtls/sha512.o deps/mbedtls/threading.o \
+                  deps/mbedtls/timing.o deps/mbedtls/version.o \
+                  deps/mbedtls/version_features.o deps/mbedtls/xtea.o
+
+OBJS_TLS_X509 = deps/mbedtls/certs.o deps/mbedtls/pkcs11.o deps/mbedtls/x509.o \
+                deps/mbedtls/x509_create.o deps/mbedtls/x509_crl.o deps/mbedtls/x509_crt.o \
+                deps/mbedtls/x509_csr.o deps/mbedtls/x509write_crt.o deps/mbedtls/x509write_csr.o
+
+OBJS_TLS = deps/mbedtls/debug.o deps/mbedtls/net_sockets.o \
+           deps/mbedtls/ssl_cache.o deps/mbedtls/ssl_ciphersuites.o \
+           deps/mbedtls/ssl_cli.o deps/mbedtls/ssl_cookie.o \
+           deps/mbedtls/ssl_srv.o deps/mbedtls/ssl_ticket.o \
+           deps/mbedtls/ssl_tls.o
+
+OBJ += $(OBJS_TLS_CRYPTO) $(OBJS_TLS_X509) $(OBJS_TLS)
+endif
+
 ifeq ($(HAVE_LIBUI), 1)
-ifeq ($(HAVE_GTKPLUS), 1)
-CFLAGS += -I/usr/include/gtk-3.0 -I/usr/include/pango-1.0 -I/usr/include/cairo -I/usr/include/gdk-pixbuf-2.0 -I/usr/include/atk-1.0
-LIBS += -lgtk-3 -lgdk-3 -lpangocairo-1.0 -lpango-1.0 -latk-1.0 -lcairo-gobject -lcairo -lgdk_pixbuf-2.0 -lgio-2.0  -lgobject-2.0 -lglib-2.0
-OBJ += deps/libui/gtk/alloc.o \
-		 deps/libui/gtk/area.o \
-		 deps/libui/gtk/box.o \
-		 deps/libui/gtk/button.o \
-		 deps/libui/gtk/cellrendererbutton.o \
-		 deps/libui/gtk/checkbox.o \
-		 deps/libui/gtk/child.o \
-		 deps/libui/gtk/colorbutton.o \
-		 deps/libui/gtk/combobox.o \
-		 deps/libui/gtk/control.o \
-		 deps/libui/gtk/datetimepicker.o \
-		 deps/libui/gtk/debug.o \
-		 deps/libui/gtk/draw.o \
-		 deps/libui/gtk/drawmatrix.o \
-		 deps/libui/gtk/drawpath.o \
-		 deps/libui/gtk/drawtext.o \
-		 deps/libui/gtk/editablecombo.o \
-		 deps/libui/gtk/entry.o \
-		 deps/libui/gtk/fontbutton.o \
-		 deps/libui/gtk/form.o \
-		 deps/libui/gtk/future.o \
-		 deps/libui/gtk/graphemes.o \
-		 deps/libui/gtk/grid.o \
-		 deps/libui/gtk/group.o \
-		 deps/libui/gtk/image.o \
-		 deps/libui/gtk/label.o \
-		 deps/libui/gtk/main.o \
-		 deps/libui/gtk/menu.o \
-		 deps/libui/gtk/multilineentry.o \
-		 deps/libui/gtk/progressbar.o \
-		 deps/libui/gtk/radiobuttons.o \
-		 deps/libui/gtk/separator.o \
-		 deps/libui/gtk/slider.o \
-		 deps/libui/gtk/spinbox.o \
-		 deps/libui/gtk/stddialogs.o \
-		 deps/libui/gtk/tab.o \
-		 deps/libui/gtk/text.o \
-		 deps/libui/gtk/util.o \
-		 deps/libui/gtk/window.o
-endif
-
+DEFINES += -DHAVE_LIBUI
 ifneq ($(findstring Win32,$(OS)),)
-OBJ += deps/libui/win32/alloc.o \
-		 deps/libui/win32/area.o \
-		 deps/libui/win32/areadraw.o \
-		 deps/libui/win32/areaevents.o \
-		 deps/libui/win32/areascroll.o \
-		 deps/libui/win32/areautil.o \
-		 deps/libui/win32/box.o \
-		 deps/libui/win32/button.o \
-		 deps/libui/win32/checkbox.o \
-		 deps/libui/win32/colorbutton.o \
-		 deps/libui/win32/colordialog.o \
-		 deps/libui/win32/combobox.o \
-		 deps/libui/win32/container.o \
-		 deps/libui/win32/control.o \
-		 deps/libui/win32/d2dscratch.o \
-		 deps/libui/win32/datetimepicker.o \
-		 deps/libui/win32/debug.o \
-		 deps/libui/win32/draw.o \
-		 deps/libui/win32/drawmatrix.o \
-		 deps/libui/win32/drawpath.o \
-		 deps/libui/win32/drawtext.o \
-		 deps/libui/win32/dwrite.o \
-		 deps/libui/win32/editablecombo.o \
-		 deps/libui/win32/entry.o \
-		 deps/libui/win32/events.o \
-		 deps/libui/win32/fontbutton.o \
-		 deps/libui/win32/fontdialog.o \
-		 deps/libui/win32/form.o \
-		 deps/libui/win32/graphemes.o \
-		 deps/libui/win32/grid.o \
-		 deps/libui/win32/group.o \
-		 deps/libui/win32/init.o \
-		 deps/libui/win32/label.o \
-		 deps/libui/win32/main.o \
-		 deps/libui/win32/menu.o \
-		 deps/libui/win32/multilineentry.o \
-		 deps/libui/win32/parent.o \
-		 deps/libui/win32/progressbar.o \
-		 deps/libui/win32/radiobuttons.o \
-		 deps/libui/win32/separator.o \
-		 deps/libui/win32/sizing.o \
-		 deps/libui/win32/slider.o \
-		 deps/libui/win32/spinbox.o \
-		 deps/libui/win32/stddialogs.o \
-		 deps/libui/win32/tab.o \
-		 deps/libui/win32/tabpage.o \
-		 deps/libui/win32/text.o \
-		 deps/libui/win32/utf16.o \
-		 deps/libui/win32/utilwin.o \
-		 deps/libui/win32/window.o \
-		 deps/libui/win32/winpublic.o \
-		 deps/libui/win32/winutil.o
+OBJ += deps/libui/windows/alloc.o \
+		 deps/libui/windows/area.o \
+		 deps/libui/windows/areadraw.o \
+		 deps/libui/windows/areaevents.o \
+		 deps/libui/windows/areascroll.o \
+		 deps/libui/windows/areautil.o \
+		 deps/libui/windows/box.o \
+		 deps/libui/windows/button.o \
+		 deps/libui/windows/checkbox.o \
+		 deps/libui/windows/colorbutton.o \
+		 deps/libui/windows/colordialog.o \
+		 deps/libui/windows/combobox.o \
+		 deps/libui/windows/container.o \
+		 deps/libui/windows/control.o \
+		 deps/libui/windows/d2dscratch.o \
+		 deps/libui/windows/datetimepicker.o \
+		 deps/libui/windows/debug.o \
+		 deps/libui/windows/draw.o \
+		 deps/libui/windows/drawmatrix.o \
+		 deps/libui/windows/drawpath.o \
+		 deps/libui/windows/drawtext.o \
+		 deps/libui/windows/dwrite.o \
+		 deps/libui/windows/editablecombo.o \
+		 deps/libui/windows/entry.o \
+		 deps/libui/windows/events.o \
+		 deps/libui/windows/fontbutton.o \
+		 deps/libui/windows/fontdialog.o \
+		 deps/libui/windows/form.o \
+		 deps/libui/windows/graphemes.o \
+		 deps/libui/windows/grid.o \
+		 deps/libui/windows/group.o \
+		 deps/libui/windows/init.o \
+		 deps/libui/windows/label.o \
+		 deps/libui/windows/main.o \
+		 deps/libui/windows/menu.o \
+		 deps/libui/windows/multilineentry.o \
+		 deps/libui/windows/parent.o \
+		 deps/libui/windows/progressbar.o \
+		 deps/libui/windows/radiobuttons.o \
+		 deps/libui/windows/separator.o \
+		 deps/libui/windows/sizing.o \
+		 deps/libui/windows/slider.o \
+		 deps/libui/windows/spinbox.o \
+		 deps/libui/windows/stddialogs.o \
+		 deps/libui/windows/tab.o \
+		 deps/libui/windows/tabpage.o \
+		 deps/libui/windows/text.o \
+		 deps/libui/windows/utf16.o \
+		 deps/libui/windows/utilwin.o \
+		 deps/libui/windows/window.o \
+		 deps/libui/windows/winpublic.o \
+		 deps/libui/windows/winutil.o
 LIBS += -luxtheme -ld2d1 -ldwrite -lusp10
-endif
-
+else
 ifneq ($(findstring Darwin,$(OS)),)
 OBJ += deps/libui/darwin/alloc.o \
 		 deps/libui/darwin/area.o \
@@ -478,6 +475,49 @@ OBJ += deps/libui/darwin/alloc.o \
 		 deps/libui/darwin/util.o \
 		 deps/libui/darwin/window.o \
 		 deps/libui/darwin/winmoveresize.o
+else
+CFLAGS += -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -I/usr/include/gtk-3.0 -I/usr/include/pango-1.0 -I/usr/include/cairo -I/usr/include/gdk-pixbuf-2.0 -I/usr/include/atk-1.0
+LIBS += -lgtk-3 -lgdk-3 -lpangocairo-1.0 -lpango-1.0 -latk-1.0 -lcairo-gobject -lcairo -lgdk_pixbuf-2.0 -lgio-2.0  -lgobject-2.0 -lglib-2.0
+OBJ += deps/libui/unix/alloc.o \
+		 deps/libui/unix/area.o \
+		 deps/libui/unix/box.o \
+		 deps/libui/unix/button.o \
+		 deps/libui/unix/cellrendererbutton.o \
+		 deps/libui/unix/checkbox.o \
+		 deps/libui/unix/child.o \
+		 deps/libui/unix/colorbutton.o \
+		 deps/libui/unix/combobox.o \
+		 deps/libui/unix/control.o \
+		 deps/libui/unix/datetimepicker.o \
+		 deps/libui/unix/debug.o \
+		 deps/libui/unix/draw.o \
+		 deps/libui/unix/drawmatrix.o \
+		 deps/libui/unix/drawpath.o \
+		 deps/libui/unix/drawtext.o \
+		 deps/libui/unix/editablecombo.o \
+		 deps/libui/unix/entry.o \
+		 deps/libui/unix/fontbutton.o \
+		 deps/libui/unix/form.o \
+		 deps/libui/unix/future.o \
+		 deps/libui/unix/graphemes.o \
+		 deps/libui/unix/grid.o \
+		 deps/libui/unix/group.o \
+		 deps/libui/unix/image.o \
+		 deps/libui/unix/label.o \
+		 deps/libui/unix/main.o \
+		 deps/libui/unix/menu.o \
+		 deps/libui/unix/multilineentry.o \
+		 deps/libui/unix/progressbar.o \
+		 deps/libui/unix/radiobuttons.o \
+		 deps/libui/unix/separator.o \
+		 deps/libui/unix/slider.o \
+		 deps/libui/unix/spinbox.o \
+		 deps/libui/unix/stddialogs.o \
+		 deps/libui/unix/tab.o \
+		 deps/libui/unix/text.o \
+		 deps/libui/unix/util.o \
+		 deps/libui/unix/window.o
+endif
 endif
 
 OBJ += deps/libui/common/areaevents.o \
@@ -1283,6 +1323,11 @@ ifeq ($(HAVE_RBMP), 1)
    OBJ += $(LIBRETRO_COMM_DIR)/formats/bmp/rbmp.o
 endif
 
+ifeq ($(HAVE_IBXM), 1)
+   DEFINES += -DHAVE_IBXM
+   OBJ += $(DEPS_DIR)/ibxm/ibxm.o
+endif
+
 OBJ += $(LIBRETRO_COMM_DIR)/formats/bmp/rbmp_encode.o \
        $(LIBRETRO_COMM_DIR)/formats/json/jsonsax.o \
        $(LIBRETRO_COMM_DIR)/formats/json/jsonsax_full.o \
@@ -1340,6 +1385,10 @@ ifeq ($(HAVE_NETWORKING), 1)
 			 tasks/task_netplay_nat_traversal.o \
 			 tasks/task_wifi.o \
 			 tasks/task_netplay_find_content.o
+
+   ifeq ($(HAVE_SSL), 1)
+   OBJ += $(LIBRETRO_COMM_DIR)/net/net_socket_ssl.o
+   endif
 
    ifneq ($(HAVE_SOCKET_LEGACY),1)
    OBJ += $(LIBRETRO_COMM_DIR)/net/net_ifinfo.o

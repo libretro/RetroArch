@@ -61,6 +61,7 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_HORIZONTAL,
    DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS,
    DISPLAYLIST_HISTORY,
+   DISPLAYLIST_FAVORITES,
    DISPLAYLIST_VIDEO_HISTORY,
    DISPLAYLIST_MUSIC_HISTORY,
    DISPLAYLIST_IMAGES_HISTORY,
@@ -142,6 +143,7 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_BROWSE_URL_LIST,
    DISPLAYLIST_BROWSE_URL_START,
    DISPLAYLIST_LOAD_CONTENT_LIST,
+   DISPLAYLIST_LOAD_CONTENT_SPECIAL,
    DISPLAYLIST_INFORMATION_LIST,
    DISPLAYLIST_CONTENT_SETTINGS,
    DISPLAYLIST_OPTIONS,
@@ -165,13 +167,24 @@ enum menu_displaylist_ctl_state
 
 typedef struct menu_displaylist_info
 {
+   /* should the displaylist be sorted by alphabet? */
    bool need_sort;
    bool need_refresh;
    bool need_entries_refresh;
    bool need_push;
+
+   /* should we clear the displaylist before we push
+    * entries onto it? */
    bool need_clear;
+
    bool push_builtin_cores;
+
+   /* Should a 'download core' entry be pushed onto the list?
+    * This will be set to true in case there are no currently
+    * installed cores. */
    bool download_core;
+
+   /* does the navigation index need to be cleared to 0 (first entry) ? */
    bool need_navigation_clear;
    file_list_t *list;
    file_list_t *menu_list;

@@ -29,6 +29,7 @@
 #include "../../tasks/tasks_internal.h"
 #include "../../retroarch.h"
 #include "../../command.h"
+#include "../../gfx/video_driver.h"
 #include "string.h"
 
 #include "wiiu_dbg.h"
@@ -57,7 +58,8 @@ static uint8_t pad_type[KPAD_COUNT] = {WIIUINPUT_TYPE_NONE, WIIUINPUT_TYPE_NONE,
 
 static uint8_t hid_status[HID_COUNT];
 static InputData hid_data[HID_COUNT];
-static int16_t analog_state[MAX_PADS][2][2];
+/* 3 axis - one for touch/future IR support? */
+static int16_t analog_state[MAX_PADS][3][2];
 static bool wiiu_pad_inited = false;
 
 static char hidName[HID_COUNT][255];
@@ -135,12 +137,12 @@ static int16_t wiiu_joypad_axis(unsigned port_num, uint32_t joyaxis)
    if (joyaxis == AXIS_NONE || port_num >= MAX_PADS)
       return 0;
 
-   if (AXIS_NEG_GET(joyaxis) < 4)
+   if (AXIS_NEG_GET(joyaxis) < 6)
    {
       axis = AXIS_NEG_GET(joyaxis);
       is_neg = true;
    }
-   else if (AXIS_POS_GET(joyaxis) < 4)
+   else if (AXIS_POS_GET(joyaxis) < 6)
    {
       axis = AXIS_POS_GET(joyaxis);
       is_pos = true;
@@ -163,6 +165,14 @@ static int16_t wiiu_joypad_axis(unsigned port_num, uint32_t joyaxis)
       case 3:
          val = analog_state[port_num][1][1];
          break;
+
+      case 4:
+         val = analog_state[port_num][2][0];
+         break;
+
+      case 5:
+         val = analog_state[port_num][2][1];
+         break;
    }
 
    if (is_neg && val > 0)
@@ -171,6 +181,12 @@ static int16_t wiiu_joypad_axis(unsigned port_num, uint32_t joyaxis)
       val = 0;
 
    return val;
+}
+
+static float scaleTP(float oldMin, float oldMax, float newMin, float newMax, float val) {
+   float oldRange = (oldMax - oldMin);
+   float newRange = (newMax - newMin);
+   return (((val - oldMin) * newRange) / oldRange) + newMin;
 }
 
 static void wiiu_joypad_poll(void)
@@ -183,7 +199,7 @@ static void wiiu_joypad_poll(void)
 
    if (!vpadError)
    {
-      pad_state[0] = vpad.hold & ~0x7F800000; /* clear out emulated analog sticks */
+      pad_state[0] = vpad.hold & VPAD_MASK_BUTTONS; /* buttons only */
       analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT]  [RETRO_DEVICE_ID_ANALOG_X] = vpad.leftStick.x  * 0x7FF0;
       analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT]  [RETRO_DEVICE_ID_ANALOG_Y] = vpad.leftStick.y  * 0x7FF0;
       analog_state[0][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_X] = vpad.rightStick.x * 0x7FF0;
@@ -191,8 +207,28 @@ static void wiiu_joypad_poll(void)
 
       BIT64_CLEAR(lifecycle_state, RARCH_MENU_TOGGLE);
 
-      if ((vpad.tpNormal.touched) && (vpad.tpNormal.x > 200) && (vpad.tpNormal.validity) == 0)
-         BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
+      /* You can only call VPADData once every loop, else the second one
+         won't get any data. Thus; I had to hack touch support into the existing
+         joystick API. Woo-hoo? Misplaced requests for touch axis are filtered
+         out in wiiu_input.
+      */
+      if (vpad.tpNormal.touched && vpad.tpNormal.validity == VPAD_VALID) {
+         struct video_viewport vp = {0};
+         video_driver_get_viewport_info(&vp);
+         VPADTouchData cal = {0};
+         /* Calibrates data to a 720p screen, seems to clamp outer 12px */
+         VPADGetTPCalibratedPoint(0, &cal, &(vpad.tpNormal));
+         /* Calibrate to viewport and save as axis 2 (idx 4,5) */
+         analog_state[0][2][0] = (int16_t)scaleTP(12.0f, 1268.0f, 0.0f, (float)(vp.full_width), (float)cal.x);
+         analog_state[0][2][1] = (int16_t)scaleTP(12.0f, 708.0f, 0.0f, (float)(vp.full_height), (float)cal.y);
+
+         /* Emulating a button for touch; lets people assign it to menu
+            for that traditional RetroArch Wii U feel */
+         pad_state[0] |= VPAD_BUTTON_TOUCH;
+      } else {
+         /* This is probably 0 anyway */
+         pad_state[0] &= ~VPAD_BUTTON_TOUCH;
+      }
 
       /* panic button */
       if ((vpad.hold & (VPAD_BUTTON_R | VPAD_BUTTON_L | VPAD_BUTTON_STICK_R | VPAD_BUTTON_STICK_L))

@@ -2,8 +2,8 @@
 <app version="1">
   <name>Retroarch</name>
   <coder>Libretro</coder>
-  <version>1.50</version>
-  <release_date>20170107153000</release_date>
+  <version>1.67</version>
+  <release_date>20170108133000</release_date>
   <short_description></short_description>
   <long_description>RetroArch
   </long_description>

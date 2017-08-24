@@ -75,6 +75,8 @@ int detect_ps1_game(const char *track_path, char *game_id);
 
 int detect_psp_game(const char *track_path, char *game_id);
 
+int detect_serial_ascii_game(const char *track_path, char *game_id);
+
 static void database_info_set_type(database_info_handle_t *handle, enum database_type type)
 {
    if (!handle)
@@ -139,10 +141,21 @@ static int iso_get_serial(database_state_handle_t *db_state,
       database_info_handle_t *db, const char *name, char* serial)
 {
    const char* system_name = NULL;
-   int                 rv  = detect_system(name, &system_name);
 
-   if (rv < 0)
-      return rv;
+   /* Check if the system was not auto-detected. */
+   if (detect_system(name, &system_name) < 0)
+   {
+      /* Attempt to read an ASCII serial, like Wii. */
+      if (detect_serial_ascii_game(name, serial))
+      {
+         /* ASCII serial (Wii) was detected. */
+         RARCH_LOG("%s '%s'\n", msg_hash_to_str(MSG_FOUND_DISK_LABEL), serial);
+         return 0;
+      }
+
+      /* Any other non-system specific detection methods? */
+      return 0;
+   }
 
    if (string_is_equal_fast(system_name, "psp", 3))
    {

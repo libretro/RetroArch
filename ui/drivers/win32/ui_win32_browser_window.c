@@ -25,17 +25,33 @@
 
 static bool ui_browser_window_win32_core(ui_browser_window_state_t *state, bool save)
 {
-   OPENFILENAME ofn = {};
+   OPENFILENAME ofn;
 
-   ofn.lStructSize     = sizeof(OPENFILENAME);
-   ofn.hwndOwner       = (HWND)state->window;
-   ofn.lpstrFilter     = state->filters; /* actually const */
-   ofn.lpstrFile       = state->path;
-   ofn.lpstrTitle      = state->title;
-   ofn.lpstrInitialDir = state->startdir;
-   ofn.lpstrDefExt     = "";
-   ofn.nMaxFile        = PATH_MAX;
-   ofn.Flags           = OFN_FILEMUSTEXIST | OFN_HIDEREADONLY | OFN_NOCHANGEDIR;
+   ofn.lStructSize       = sizeof(OPENFILENAME);
+   ofn.hwndOwner         = (HWND)state->window;
+   ofn.hInstance         = NULL;
+   ofn.lpstrFilter       = state->filters; /* actually const */
+   ofn.lpstrCustomFilter = NULL;
+   ofn.nMaxCustFilter    = 0;
+   ofn.nFilterIndex      = 0;
+   ofn.lpstrFile         = state->path;
+   ofn.nMaxFile          = PATH_MAX;
+   ofn.lpstrFileTitle    = NULL;
+   ofn.nMaxFileTitle     = 0;
+   ofn.lpstrInitialDir   = state->startdir;
+   ofn.lpstrTitle        = state->title;
+   ofn.Flags             = OFN_FILEMUSTEXIST | OFN_HIDEREADONLY | OFN_NOCHANGEDIR;
+   ofn.nFileOffset       = 0;
+   ofn.nFileExtension    = 0;
+   ofn.lpstrDefExt       = "";
+   ofn.lCustData         = 0;
+   ofn.lpfnHook          = NULL;
+   ofn.lpTemplateName    = NULL;
+#if (_WIN32_WINNT >= 0x0500)
+   ofn.pvReserved        = NULL;
+   ofn.dwReserved        = 0;
+   ofn.FlagsEx           = 0;
+#endif 
 
    if (!save && !GetOpenFileName(&ofn))
       return false;
