@@ -28,10 +28,7 @@
 #include "../../msg_hash.h"
 #include "../../verbosity.h"
 
-#define WORDS_PER_INPUT 3 /* Buttons, left stick, right stick */
-#define WORDS_PER_FRAME (WORDS_PER_INPUT+2) /* + frameno, playerno */
-
-#define NETPLAY_PROTOCOL_VERSION 4
+#define NETPLAY_PROTOCOL_VERSION 5
 
 #define RARCH_DEFAULT_PORT 55435
 #define RARCH_DEFAULT_NICK "Anonymous"
@@ -45,6 +42,17 @@
 #define CATCH_UP_CHECK_TIME_USEC    (500*1000)
 #define MAX_RETRIES                 16
 #define RETRY_MS                    500
+#define MAX_INPUT_DEVICES           16
+#undef MAX_USERS /* FIXME: Temporary */
+
+/* We allow only 32 clients to fit into a 32-bit bitmap */
+#define MAX_CLIENTS                 32
+typedef uint32_t client_bitmap_t;
+
+/* For now we only support the normal or analog gamepad */
+#define NETPLAY_SUPPORTED_DEVICES ( \
+   (1<<RETRO_DEVICE_JOYPAD) | \
+   (1<<RETRO_DEVICE_ANALOG))
 
 #define NETPLAY_MAX_STALL_FRAMES       60
 #define NETPLAY_FRAME_RUN_TIME_WINDOW  120
@@ -177,7 +185,7 @@ enum netplay_cmd
 
 #define NETPLAY_CMD_INPUT_BIT_SERVER   (1U<<31)
 #define NETPLAY_CMD_SYNC_BIT_PAUSED    (1U<<31)
-#define NETPLAY_CMD_PLAY_BIT_SLAVE         (1U)
+#define NETPLAY_CMD_PLAY_BIT_SLAVE     (1U<<31)
 #define NETPLAY_CMD_MODE_BIT_SLAVE     (1U<<18)
 #define NETPLAY_CMD_MODE_BIT_PLAYING   (1U<<17)
 #define NETPLAY_CMD_MODE_BIT_YOU       (1U<<16)
@@ -240,7 +248,24 @@ enum rarch_netplay_stall_reason
    NETPLAY_STALL_NO_CONNECTION
 };
 
-typedef uint32_t netplay_input_state_t[WORDS_PER_INPUT];
+/* Input state for a particular client-device pair */
+typedef struct netplay_input_state
+{
+   /* The next input state (forming a list) */
+   struct netplay_input_state *next;
+
+   /* Whose data is this? */
+   uint32_t client_num;
+
+   /* Is this real data? */
+   bool is_real;
+
+   /* How many words of input data do we have? */
+   uint32_t size;
+
+   /* The input data itself (note: should expand beyond 1 by overallocating). */
+   uint32_t data[1];
+} *netplay_input_state_t;
 
 struct delta_frame
 {
@@ -253,20 +278,26 @@ struct delta_frame
    /* The CRC-32 of the serialized state if we've calculated it, else 0 */
    uint32_t crc;
 
-   /* The real, simulated and local input. If we're playing, self_state is
-    * mirrored to the appropriate real_input_state player. */
-   netplay_input_state_t real_input_state[MAX_USERS];
-   netplay_input_state_t simulated_input_state[MAX_USERS];
-   netplay_input_state_t self_state;
+   /* The processed input, i.e., what's actually going to the core. is_real
+    * here means all input came from real players, none simulated. One list per
+    * input device. */
+   netplay_input_state_t processed_input[MAX_INPUT_DEVICES];
+
+   /* The real input */
+   netplay_input_state_t real_input[MAX_INPUT_DEVICES];
+
+   /* The simulated input. is_real here means the simulation is done, i.e.,
+    * it's a real simulation, not real input. */
+   netplay_input_state_t simulated_input[MAX_INPUT_DEVICES];
 
    /* Have we read local input? */
    bool have_local;
 
    /* Have we read the real (remote) input? */
-   bool have_real[MAX_USERS];
+   bool have_real[MAX_CLIENTS];
 
    /* Is the current state as of self_frame_count using the real (remote) data? */
-   bool used_real[MAX_USERS];
+   bool used_real[MAX_CLIENTS];
 };
 
 struct socket_buffer
@@ -309,9 +340,6 @@ struct netplay_connection
     * to wait for, or 0 if no delay is active. */
    uint32_t delay_frame;
 
-   /* Player # of connected player */
-   uint32_t player;
-
    /* What compression does this peer support? */
    uint32_t compression_supported;
 
@@ -350,8 +378,8 @@ struct netplay
    /* TCP connection for listening (server only) */
    int listen_fd;
 
-   /* Our player number */
-   uint32_t self_player;
+   /* Our client number */
+   uint32_t self_client_num;
 
    /* Our mode and status */
    enum rarch_netplay_connection_mode self_mode;
@@ -361,19 +389,28 @@ struct netplay
    size_t connections_size;
    struct netplay_connection one_connection; /* Client only */
 
-   /* Bitmap of players with controllers (low bit is player 1) */
-   uint32_t connected_players;
+   /* Bitmap of clients with input devices */
+   uint32_t connected_players1;
 
-   /* Bitmap of players playing in slave mode (should be a subset of
+   /* Bitmap of clients playing in slave mode (should be a subset of
     * connected_players) */
-   uint32_t connected_slaves;
+   uint32_t connected_slaves1;
+
+   /* For each client, the bitmap of devices they're connected to */
+   uint32_t client_devices[MAX_CLIENTS];
+
+   /* For each device, the bitmap of clients connected */
+   client_bitmap_t device_clients[MAX_INPUT_DEVICES];
+
+   /* Our own device bitmap */
+   uint32_t self_devices;
 
    /* Number of desync operations we're currently performing. If set, we don't
     * attempt to stay in sync. */
    uint32_t desync;
 
-   /* Maximum player number */
-   uint32_t player_max;
+   /* Maximum input device number */
+   uint32_t input_device_max;
 
    struct retro_callbacks cbs;
 
@@ -418,9 +455,9 @@ struct netplay
    size_t unread_ptr;
    uint32_t unread_frame_count;
 
-   /* Pointer to the next frame to read from each player */
-   size_t read_ptr[MAX_USERS];
-   uint32_t read_frame_count[MAX_USERS];
+   /* Pointer to the next frame to read from each client */
+   size_t read_ptr1[MAX_CLIENTS];
+   uint32_t read_frame_count1[MAX_CLIENTS];
 
    /* Pointer to the next frame to read from the server (as it might not be a
     * player but still synchronizes) */
@@ -457,7 +494,8 @@ struct netplay
    bool savestate_request_outstanding;
 
    /* A buffer for outgoing input packets. */
-   uint32_t input_packet_buffer[2 + WORDS_PER_FRAME];
+   size_t input_packet_buffer_size;
+   uint32_t *input_packet_buffer1;
 
    /* Our local socket info */
    struct addrinfo *addr;
@@ -607,6 +645,14 @@ bool netplay_delta_frame_ready(netplay_t *netplay, struct delta_frame *delta,
  * Get the CRC for the serialization of this frame.
  */
 uint32_t netplay_delta_frame_crc(netplay_t *netplay, struct delta_frame *delta);
+
+/**
+ * netplay_input_state_for
+ *
+ * Get an input state for a particular client
+ */
+netplay_input_state_t netplay_input_state_for(netplay_input_state_t *list,
+      uint32_t client_num, size_t size, bool mustCreate);
 
 
 /***************************************************************

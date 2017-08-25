@@ -39,7 +39,7 @@
  */
 void netplay_update_unread_ptr(netplay_t *netplay)
 {
-   if (netplay->is_server && !netplay->connected_players)
+   if (netplay->is_server && netplay->connected_players1<=1)
    {
       /* Nothing at all to read! */
       netplay->unread_ptr = netplay->self_ptr;
@@ -50,16 +50,16 @@ void netplay_update_unread_ptr(netplay_t *netplay)
    {
       size_t new_unread_ptr = 0;
       uint32_t new_unread_frame_count = (uint32_t) -1;
-      uint32_t player;
+      uint32_t client;
 
-      for (player = 0; player < MAX_USERS; player++)
+      for (client = 0; client < MAX_CLIENTS; client++)
       {
-         if (!(netplay->connected_players & (1<<player))) continue;
-         if ((netplay->connected_slaves & (1<<player))) continue;
-         if (netplay->read_frame_count[player] < new_unread_frame_count)
+         if (!(netplay->connected_players1 & (1<<client))) continue;
+         if ((netplay->connected_slaves1 & (1<<client))) continue;
+         if (netplay->read_frame_count1[client] < new_unread_frame_count)
          {
-            new_unread_ptr = netplay->read_ptr[player];
-            new_unread_frame_count = netplay->read_frame_count[player];
+            new_unread_ptr = netplay->read_ptr1[client];
+            new_unread_frame_count = netplay->read_frame_count1[client];
          }
       }
 
@@ -93,19 +93,28 @@ void netplay_update_unread_ptr(netplay_t *netplay)
  */
 void netplay_simulate_input(netplay_t *netplay, size_t sim_ptr, bool resim)
 {
-   uint32_t player;
+   uint32_t client;
    size_t prev;
    struct delta_frame *simframe, *pframe;
+   netplay_input_state_t simstate, pstate;
 
    simframe = &netplay->buffer[sim_ptr];
 
-   for (player = 0; player < MAX_USERS; player++)
+   for (client = 0; client < MAX_CLIENTS; client++)
    {
-      if (!(netplay->connected_players & (1<<player))) continue;
-      if (simframe->have_real[player]) continue;
+      if (!(netplay->connected_players1 & (1<<client))) continue;
+      // FIXME: Maybe this is the right time to do resolved data?
+      if (simframe->have_real[client]) continue;
 
-      prev = PREV_PTR(netplay->read_ptr[player]);
+      simstate = netplay_input_state_for(&simframe->simulated_input, client, 3 /* FIXME */, false);
+      if (!simstate)
+         continue;
+
+      prev = PREV_PTR(netplay->read_ptr1[client]);
       pframe = &netplay->buffer[prev];
+      pstate = netplay_input_state_for(&pframe->real_input, client, 3 /* FIXME */, false);
+      if (!pstate)
+         continue;
 
       if (resim)
       {
@@ -128,15 +137,13 @@ void netplay_simulate_input(netplay_t *netplay, size_t sim_ptr, bool resim)
                                (1U<<RETRO_DEVICE_ID_JOYPAD_DOWN) |
                                (1U<<RETRO_DEVICE_ID_JOYPAD_LEFT) |
                                (1U<<RETRO_DEVICE_ID_JOYPAD_RIGHT);
-         uint32_t sim_state = simframe->simulated_input_state[player][0] & keep;
-         sim_state |= pframe->real_input_state[player][0] & ~keep;
-         simframe->simulated_input_state[player][0] = sim_state;
+         simstate->data[0] &= keep;
+         simstate->data[0] |= pstate->data[0] & ~keep;
       }
       else
       {
-         memcpy(simframe->simulated_input_state[player],
-                pframe->real_input_state[player],
-                WORDS_PER_INPUT * sizeof(uint32_t));
+         memcpy(simstate->data, pstate->data,
+               simstate->size * sizeof(uint32_t));
       }
    }
 }
@@ -391,7 +398,7 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
    }
 
    /* Only relevant if we're connected and not in a desynching operation */
-   if ((netplay->is_server && !netplay->connected_players) ||
+   if ((netplay->is_server && (netplay->connected_players1>1)) ||
        (netplay->self_mode < NETPLAY_CONNECTION_CONNECTED) ||
        (netplay->desync))
    {

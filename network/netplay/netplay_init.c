@@ -243,7 +243,7 @@ static bool netplay_init_socket_buffers(netplay_t *netplay)
     * frames of input data, plus the headers for each of them */
    size_t i;
    size_t packet_buffer_size = netplay->zbuffer_size +
-      NETPLAY_MAX_STALL_FRAMES * WORDS_PER_FRAME + (NETPLAY_MAX_STALL_FRAMES+1)*3;
+      NETPLAY_MAX_STALL_FRAMES * 16;
    netplay->packet_buffer_size = packet_buffer_size;
 
    for (i = 0; i < netplay->connections_size; i++)
@@ -430,8 +430,7 @@ netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
    netplay->listen_fd            = -1;
    netplay->tcp_port             = port;
    netplay->cbs                  = *cb;
-   netplay->connected_players    = 0;
-   netplay->player_max           = 1;
+   netplay->input_device_max     = 1;
    netplay->is_server            = (direct_host == NULL && server == NULL);
    netplay->is_connected         = false;;
    netplay->nat_traversal        = netplay->is_server ? nat_traversal : false;

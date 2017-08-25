@@ -529,10 +529,10 @@ bool netplay_handshake_sync(netplay_t *netplay,
    /* If we're the server, now we send sync info */
    size_t i;
    int matchct;
-   uint32_t cmd[5];
+   uint32_t cmd[4];
    retro_ctx_memory_info_t mem_info;
+   uint32_t client_num        = 0;
    uint32_t device            = 0;
-   uint32_t connected_players = 0;
    size_t nicklen, nickmangle = 0;
    bool nick_matched          = false;
 
@@ -543,30 +543,43 @@ bool netplay_handshake_sync(netplay_t *netplay,
 
    /* Send basic sync info */
    cmd[0] = htonl(NETPLAY_CMD_SYNC);
-   cmd[1] = htonl(3*sizeof(uint32_t) + MAX_USERS*sizeof(uint32_t) +
-      NETPLAY_NICK_LEN + mem_info.size);
+   cmd[1] = htonl(2*sizeof(uint32_t)
+         /* Controller devices */
+         + MAX_INPUT_DEVICES*sizeof(uint32_t)
+
+         /* Device-client mapping */
+         + MAX_INPUT_DEVICES*sizeof(uint32_t)
+
+         /* Client nick */
+         + NETPLAY_NICK_LEN
+
+         /* And finally, sram */
+         + mem_info.size);
    cmd[2] = htonl(netplay->self_frame_count);
-   connected_players = netplay->connected_players;
-   if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING)
-      connected_players |= 1<<netplay->self_player;
+   client_num = connection - netplay->connections + 1;
    if (netplay->local_paused || netplay->remote_paused)
-      connected_players |= NETPLAY_CMD_SYNC_BIT_PAUSED;
-   cmd[3] = htonl(connected_players);
-   if (netplay->flip)
-      cmd[4] = htonl(netplay->flip_frame);
-   else
-      cmd[4] = htonl(0);
+      client_num |= NETPLAY_CMD_SYNC_BIT_PAUSED;
+   cmd[3] = htonl(client_num);
 
    if (!netplay_send(&connection->send_packet_buffer, connection->fd, cmd,
             sizeof(cmd)))
       return false;
 
    /* Now send the device info */
-   for (i = 0; i < MAX_USERS; i++)
+   for (i = 0; i < MAX_INPUT_DEVICES; i++)
    {
       device = htonl(input_config_get_device((unsigned)i));
       if (!netplay_send(&connection->send_packet_buffer, connection->fd,
-               &device, sizeof(device)))
+            &device, sizeof(device)))
+         return false;
+   }
+
+   /* Then the device-client mapping */
+   for (i = 0; i < MAX_INPUT_DEVICES; i++)
+   {
+      device = htonl(netplay->device_clients[i]);
+      if (!netplay_send(&connection->send_packet_buffer, connection->fd,
+            &device, sizeof(device)))
          return false;
    }
 
@@ -901,10 +914,10 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
    struct netplay_connection *connection, bool *had_input)
 {
    uint32_t cmd[2];
-   uint32_t new_frame_count, connected_players, flip_frame;
+   uint32_t new_frame_count, client_num, flip_frame;
    uint32_t device;
    uint32_t local_sram_size, remote_sram_size;
-   size_t i;
+   size_t i, j;
    ssize_t recvd;
    retro_ctx_controller_info_t pad;
    char new_nick[NETPLAY_NICK_LEN];
@@ -920,8 +933,8 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
    }
 
    /* Only expecting a sync command */
-   if (ntohl(cmd[0]) != NETPLAY_CMD_SYNC ||
-       ntohl(cmd[1]) < 3*sizeof(uint32_t) + MAX_USERS*sizeof(uint32_t) +
+   if (ntohl(cmd[0]) != NETPLAY_CMD_SYNC||
+         ntohl(cmd[1]) < (2+2*MAX_INPUT_DEVICES)*sizeof(uint32_t) +
          NETPLAY_NICK_LEN)
    {
       RARCH_ERR("%s\n",
@@ -934,30 +947,23 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
       return false;
    new_frame_count = ntohl(new_frame_count);
 
-   /* Get the connected players and pause mode */
-   RECV(&connected_players, sizeof(connected_players))
+   /* Get our client number and pause mode */
+   RECV(&client_num, sizeof(client_num))
       return false;
-   connected_players = ntohl(connected_players);
-   if (connected_players & NETPLAY_CMD_SYNC_BIT_PAUSED)
+   client_num = ntohl(client_num);
+   if (client_num & NETPLAY_CMD_SYNC_BIT_PAUSED)
    {
       netplay->remote_paused = true;
-      connected_players ^= NETPLAY_CMD_SYNC_BIT_PAUSED;
+      client_num ^= NETPLAY_CMD_SYNC_BIT_PAUSED;
    }
-   netplay->connected_players = connected_players;
-
-   /* And the flip state */
-   RECV(&flip_frame, sizeof(flip_frame))
-      return false;
-
-   flip_frame          = ntohl(flip_frame);
-   netplay->flip       = !!flip_frame;
-   netplay->flip_frame = flip_frame;
+   netplay->self_client_num = client_num;
 
    /* Set our frame counters as requested */
    netplay->self_frame_count      = netplay->run_frame_count    =
       netplay->other_frame_count  = netplay->unread_frame_count =
       netplay->server_frame_count = new_frame_count;
 
+   /* And clear out the framebuffer */
    for (i = 0; i < netplay->buffer_size; i++)
    {
       struct delta_frame *ptr = &netplay->buffer[i];
@@ -977,17 +983,14 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
 
       }
    }
-   for (i = 0; i < MAX_USERS; i++)
+   for (i = 0; i < MAX_CLIENTS; i++)
    {
-      if (connected_players & (1<<i))
-      {
-         netplay->read_ptr[i]         = netplay->self_ptr;
-         netplay->read_frame_count[i] = netplay->self_frame_count;
-      }
+      netplay->read_ptr1[i]         = netplay->self_ptr;
+      netplay->read_frame_count1[i] = netplay->self_frame_count;
    }
 
-   /* Get and set each pad */
-   for (i = 0; i < MAX_USERS; i++)
+   /* Get and set each input device */
+   for (i = 0; i < MAX_INPUT_DEVICES; i++)
    {
       RECV(&device, sizeof(device))
          return false;
@@ -996,6 +999,27 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
       pad.device = ntohl(device);
 
       core_set_controller_port_device(&pad);
+   }
+
+   /* Get the client-controller mapping */
+   netplay->connected_players1 =
+         netplay->connected_slaves1 =
+         netplay->self_devices = 0;
+   for (i = 0; i < MAX_CLIENTS; i++)
+      netplay->client_devices[i] = 0;
+   for (i = 0; i < MAX_INPUT_DEVICES; i++)
+   {
+      RECV(&device, sizeof(device))
+         return false;
+      device = ntohl(device);
+
+      netplay->device_clients[i] = device;
+      netplay->connected_players1 |= device;
+      for (j = 0; j < MAX_CLIENTS; j++)
+      {
+         if (device & (1<<j))
+            netplay->client_devices[j] |= 1<<i;
+      }
    }
 
    /* Get our nick */
@@ -1018,8 +1042,8 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
    core_get_memory(&mem_info);
 
    local_sram_size  = (unsigned)mem_info.size;
-   remote_sram_size = ntohl(cmd[1]) - 3*sizeof(uint32_t) -
-      MAX_USERS*sizeof(uint32_t) - NETPLAY_NICK_LEN;
+   remote_sram_size = ntohl(cmd[1]) -
+      (2+2*MAX_INPUT_DEVICES)*sizeof(uint32_t) - NETPLAY_NICK_LEN;
 
    if (local_sram_size != 0 && local_sram_size == remote_sram_size)
    {
