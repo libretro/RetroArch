@@ -28,7 +28,15 @@
 int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) {
     uint32_t driver_hash = 0;
     settings_t *settings = config_get_ptr();
-
+	
+	if (msg == MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM)
+    {
+       snprintf(s, len,
+             "TODO/FIXME - Fill in message here."
+             );
+       return 0;
+    }
+	
     if (msg <= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_END &&
         msg >= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN) {
         unsigned idx = msg - MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN;
@@ -293,6 +301,9 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                     "As imagens capturadas serão armazenadas dentro \n"
                     "do Diretório de Captura de Telas.");
             break;
+		case MENU_ENUM_LABEL_ADD_TO_FAVORITES:
+            snprintf(s, len, "Adicionar o item aos seus Favoritos.");
+			break;
         case MENU_ENUM_LABEL_RUN:
             snprintf(s, len, "Iniciar o conteúdo.");
             break;
@@ -587,6 +598,16 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                      "Ocultar a exibição de Transparência \n"
                              "dentro do menu.");
             break;
+		case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS:
+            snprintf(s, len,
+                      "Exibir comandos do teclado/controle na \n"
+                            "transparência.");
+            break;
+        case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT:
+            snprintf(s, len,
+                      "Seleciona a porta de escuta dos comandos do controle \n"
+                            "a serem exibidos na transparência.");
+            break;
         case MENU_ENUM_LABEL_OVERLAY_PRESET:
             snprintf(s, len,
                      "Caminho para predefinição de Transparência.");
@@ -654,15 +675,15 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                const char *t =
                   "O RetroArch utiliza uma forma única de \n"
                   "sincronização de áudio/video aonde ele \n"
-                  "precisa ser calibrado pela taxa de \n"
-                  "atualização da sua tela para um melhor \n"
-                  "resultado no desempenho. \n"
-                  " \n"
-                  "Se você experimentar qualquer estalido \n"
-                  "no áudio ou rasgo de vídeo, normalmente \n"
-                  "isto significa que você precisa calibrar \n"
-                  "as configurações. Algumas escolhas abaixo: \n"
-                  " \n";
+                   "precisa ser calibrado pela taxa de \n"
+                   "atualização da sua tela para um melhor \n"
+                   "resultado no desempenho. \n"
+                   " \n"
+                   "Se você experimentar qualquer estalido \n"
+                   "no áudio ou rasgo de vídeo, normalmente \n"
+                   "isto significa que você precisa calibrar \n"
+                   "as configurações. Algumas escolhas abaixo: \n"
+                   " \n";
                snprintf(u, sizeof(u), /* can't inline this due to the printf arguments */
                      "a) Vá para '%s' -> '%s', e habilite \n"
                      "'Video Paralelizado'. A taxa de atualização \n"
@@ -677,8 +698,8 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS),
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO));
-               strlcpy(s, t, len);
-               strlcat(s, u, len);
+            strlcpy(s, t, len);
+            strlcat(s, u, len);
             }
             break;
         case MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC:
@@ -1055,7 +1076,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                              " libretro_log, ele é ignorado.\n"
                              " \n"
                              " Registros DEBUG são sempre ignorados a menos \n"
-                             " que o modo detalhado esteja ativado (--verbose).\n"
+                             " que o modo verboso esteja ativado (--verbose).\n"
                              " \n"
                              " DEBUG = 0\n"
                              " INFO  = 1\n"
@@ -1193,30 +1214,25 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                              "implementações de núcleo Libretro.");
             break;
         case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO:
-            {
-               const char *t = 
+            snprintf(s, len,
                      "Taxa de Atualização Automática. \n"
-                     " \n"
-                     "A taxa de atualização estimada da tela (Hz). \n"
-                     "É utilizado para calcular a taxa de entrada \n"
-                     "de áudio com a fórmula: \n"
-                     " \n"
-                     "taxa de ent de áudio = taxa de ent do jogo * \n"
-                     "taxa de atlz da tela / taxa de atlz do jogo \n"
-                     " \n";
-               const char *u = 
-                     "Se a implementação não reportar nenhum \n"
-                     "valor, os padrões NTSC serão usados para \n"
-                     "garantir compatibilidade.\n"
-                     " \n"
-                     "Este valor deve ficar próximo de 60Hz para \n"
-                     "evitar mudanças drásticas no timbre do som. \n"
-                     "Se seu monitor não roda a 60Hz, ou próximo \n"
-                     "disso, desative o V-Sync, e deixe este valor \n"
-                     "no padrão.";
-               strlcpy(s, t, len);
-               strlcat(s, u, len);
-            }
+                             " \n"
+                             "A taxa de atualização estimada da tela (Hz). \n"
+                             "É utilizado para calcular a taxa de entrada \n"
+                             "de áudio com a fórmula: \n"
+                             " \n"
+                             "taxa de ent de áudio = taxa de ent do jogo * \n"
+                             "taxa de atlz da tela / taxa de atlz do jogo \n"
+                             " \n"
+                             "Se a implementação não reportar nenhum \n"
+                             "valor, os padrões NTSC serão usados para \n"
+                             "garantir compatibilidade.\n"
+                             " \n"
+                             "Este valor deve ficar próximo de 60Hz para \n"
+                             "evitar mudanças drásticas no timbre do som. \n"
+                             "Se seu monitor não roda a 60Hz, ou próximo \n"
+                             "disso, desative o V-Sync, e deixe este valor \n"
+                             "no padrão.");
             break;
         case MENU_ENUM_LABEL_VIDEO_ROTATION:
             snprintf(s, len,
@@ -1321,7 +1337,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
         case MENU_ENUM_LABEL_LOG_VERBOSITY:
             snprintf(s, len,
                      "Habilitar ou desabilitar o nível \n"
-                             "de detalhamento do frontend.");
+                             "de verbosidade do frontend.");
             break;
         case MENU_ENUM_LABEL_VOLUME_UP:
             snprintf(s, len,
@@ -1642,26 +1658,21 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                              "no Netplay.");
             break;
         case MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES:
-            {
-               const char *t = 
+            snprintf(s, len,
                      "A frequência em quadros na qual o Netplay \n"
-                     "irá verificar se o hospedeiro e o cliente \n"
-                     "estão sincronizados. \n"
-                     " \n"
-                     "Com a maioria dos núcleos, este valor não \n"
-                     "terá efeito perceptível e pode ser ignorado. \n";
-               const char *u =
-                     "Com núcleos não determinísticos, este valor \n"
-                     "define quão frequente os pares do Netplay \n"
-                     "serão colocados em sincronia. Com núcleos \n"
-                     "defeituosos, definir para qualquer valor que \n"
-                     "não zero irá causar problemas de desempenho \n"
-                     "severos. Defina como zero para desativar \n"
-                     "verificações. Este valor é usado somente \n"
-                     "no hospedeiro de Netplay.";
-               strlcpy(s, t, len);
-               strlcat(s, u, len);
-            }
+                             "irá verificar se o hospedeiro e o cliente \n"
+                             "estão sincronizados. \n"
+                             " \n"
+                             "Com a maioria dos núcleos, este valor não \n"
+                             "terá efeito perceptível e pode ser ignorado. \n"
+                             "Com núcleos não determinísticos, este valor \n"
+                             "define quão frequente os pares do Netplay \n"
+                             "serão colocados em sincronia. Com núcleos \n"
+                             "defeituosos, definir para qualquer valor que \n"
+                             "não zero irá causar problemas de desempenho \n"
+                             "severos. Defina como zero para desativar \n"
+                             "verificações. Este valor é usado somente \n"
+                             "no hospedeiro de Netplay.");
             break;
         case MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN:
             snprintf(s, len,
