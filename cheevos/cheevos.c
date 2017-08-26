@@ -1883,10 +1883,8 @@ static int cheevos_test_condition(cheevos_cond_t *cond)
       case CHEEVOS_COND_OP_NOT_EQUAL_TO:
          return sval != tval;
       default:
-         break;
+         return 1;
    }
-
-   return 0;
 }
 
 static int cheevos_test_cond_set(const cheevos_condset_t *condset,
