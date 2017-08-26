@@ -1929,14 +1929,14 @@ static int cheevos_test_cond_set(const cheevos_condset_t *condset,
       if (cond->type == CHEEVOS_COND_TYPE_ADD_SOURCE)
       {
          cheevos_locals.add_buffer += cheevos_get_var_value(&cond->source);
-         set_valid = 1;
+         set_valid &= 1;
          continue;
       }
 
       if (cond->type == CHEEVOS_COND_TYPE_SUB_SOURCE)
       {
          cheevos_locals.add_buffer -= cheevos_get_var_value(&cond->source);
-         set_valid = 1;
+         set_valid &= 1;
          continue;
       }
 
