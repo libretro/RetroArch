@@ -11,7 +11,7 @@
       "request": "launch",
       "program": "${workspaceRoot}/retroarch.exe"
       "args": [
-          "-v",
+          "-v", "-c debug.cfg"
       ],"
       "stopAtEntry": false,
       "cwd": "${workspaceRoot}",
