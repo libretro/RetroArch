@@ -267,3 +267,36 @@ struct string_list *dir_list_new(const char *dir,
    return list;
 }
 
+/**
+ * dir_list_concatenate:
+ * @list1      : pointer to the first directory listing.
+ * @list2      : pointer to the second directory listing.
+ *
+ * Concatenates a directory listing making it appear as a single dir
+ *
+ **/
+struct string_list *dir_list_concatenate(struct string_list *list1, struct string_list *list2)
+{
+   if (!list1 && !list2)
+      return NULL;
+   else if (!list1 || !list2)
+      return list1 ? list1 : list2;
+   else
+   {
+      struct string_list *out;
+      if (!(out = string_list_new()))
+         return NULL;
+      size_t size = list1->size + list2->size;
+
+      for (int i = 0; i < list1->size + list2->size; i++)
+      {
+         if (i < list1->size)
+            string_list_append(out, list1->elems[i].data, list1->elems[i].attr);
+         else
+            string_list_append(out, list2->elems[i - list1->size].data, list2->elems[i - list1->size].attr);
+      }
+
+      return out;
+   }
+
+ }

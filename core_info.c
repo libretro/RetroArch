@@ -226,8 +226,20 @@ static core_info_list_t *core_info_list_new(const char *path)
    size_t i;
    core_info_t *core_info           = NULL;
    core_info_list_t *core_info_list = NULL;
-   struct string_list *contents     = dir_list_new_special(
-                                      path, DIR_LIST_CORES, NULL);
+   struct string_list *contents     = NULL;
+
+   settings_t *settings = config_get_ptr();
+
+   if (string_is_empty(settings->paths.directory_libretro_distro))
+      contents = dir_list_new_special(path, DIR_LIST_CORES, NULL);
+   else
+   {
+      struct string_list *list1 = dir_list_new_special(path, DIR_LIST_CORES, NULL);
+      struct string_list *list2 = dir_list_new_special(settings->paths.directory_libretro_distro, DIR_LIST_CORES, NULL);
+      contents = dir_list_concatenate(list1, list2);
+      string_list_free(list1);
+      string_list_free(list2);
+   }
 
    if (!contents)
       return NULL;
@@ -603,90 +615,12 @@ void core_info_deinit_list(void)
    core_info_curr_list = NULL;
 }
 
-static core_info_list_t *core_info_list_concatenate(core_info_list_t *list1, core_info_list_t *list2)
-{
-   size_t i              = 0;
-   size_t j              = 0;
-   core_info_list_t *core_info_list, *tmp = NULL;
-   core_info_t *core_info                 = NULL;
-
-   core_info_list = (core_info_list_t*)calloc(1, sizeof(*core_info_list));
-   if (!core_info_list)
-      core_info_list_free(core_info_list);
-
-   core_info = (core_info_t*)calloc(list1->count + list2->count, sizeof(*core_info));
-   if (!core_info)
-      core_info_list_free(core_info_list);
-
-   core_info_list->list  = core_info;
-   core_info_list->count = list1->count + list2->count;
-
-   for (i = 0; i < core_info_list->count; i++)
-   {
-
-      if (i < list1->count)
-      {
-         j = i;
-         tmp = list1;
-      }
-      else
-      {
-         j = i - list1->count;
-         tmp = list2;
-      }
-
-      core_info[i].display_name = strdup(tmp->list[j].display_name);
-      core_info[i].core_name = strdup(tmp->list[j].core_name);
-      core_info[i].systemname = strdup(tmp->list[j].systemname);
-      core_info[i].system_manufacturer = strdup(tmp->list[j].system_manufacturer);
-      core_info[i].path = strdup(tmp->list[j].path);
-      core_info[i].supported_extensions = strdup(tmp->list[j].supported_extensions);
-      core_info[i].supported_extensions_list = string_split(core_info[i].supported_extensions, "|");
-      core_info[i].config_data = tmp->list[j].config_data;
-      core_info[i].authors = strdup(tmp->list[j].authors);
-      core_info[i].authors_list = string_split(core_info[i].authors, "|");
-      core_info[i].permissions = strdup(tmp->list[j].permissions);
-      core_info[i].permissions_list = string_split(core_info[i].permissions, "|");
-      core_info[i].licenses = strdup(tmp->list[j].licenses);
-      core_info[i].licenses_list = string_split(core_info[i].licenses, "|");
-      core_info[i].categories = strdup(tmp->list[j].categories);
-      core_info[i].categories_list = string_split(core_info[i].categories, "|");
-      core_info[i].databases = strdup(tmp->list[j].databases);
-      core_info[i].databases_list = string_split(core_info[i].databases, "|");
-      core_info[i].supports_no_game = tmp->list[j].supports_no_game;
-      core_info[i].firmware_count = tmp->list[j].firmware_count;
-      core_info[i].notes = strdup(tmp->list[j].notes);
-      core_info[i].note_list = string_split(core_info[i].notes, "|");
-
-      RARCH_WARN("Core: %s %s %s\n", core_info[i].path, core_info[i].display_name, core_info[i].core_name);
-   }
-
-   core_info_list_resolve_all_extensions(core_info_list);
-
-   if (core_info_list)
-      core_info_list_resolve_all_firmware(core_info_list);
-
-   return core_info_list;
-}
-
 bool core_info_init_list(void)
 {
    settings_t *settings = config_get_ptr();
-   core_info_list_t *list1 = NULL;
-   core_info_list_t *list2 = NULL;
    
    if (settings)
-   {
-      list1 = core_info_list_new(settings->paths.directory_libretro);
-      if (!string_is_empty(settings->paths.directory_libretro_user))
-         list2 = core_info_list_new(settings->paths.directory_libretro_user);
-      if (list2)
-         core_info_curr_list = core_info_list_concatenate(list1, list2);
-      else
-          core_info_curr_list = list1;
-      //core_info_curr_list = core_info_list_new(settings->paths.directory_libretro);
-   }
-
+      core_info_curr_list = core_info_list_new(settings->paths.directory_libretro);
 
    if (!core_info_curr_list)
       return false;
@@ -800,10 +734,19 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
 void core_info_get_name(const char *path, char *s, size_t len)
 {
    size_t i;
-   settings_t             *settings = config_get_ptr();
-   struct string_list *contents     = dir_list_new_special(
-         settings->paths.directory_libretro,
-         DIR_LIST_CORES, NULL);
+   settings_t *settings = config_get_ptr();
+   struct string_list* contents = NULL;
+
+   if (string_is_empty(settings->paths.directory_libretro_distro))
+      contents = dir_list_new_special(path, DIR_LIST_CORES, NULL);
+   else
+   {
+      struct string_list *list1 = dir_list_new_special(path, DIR_LIST_CORES, NULL);
+      struct string_list *list2 = dir_list_new_special(settings->paths.directory_libretro_distro, DIR_LIST_CORES, NULL);
+      contents = dir_list_concatenate(list1, list2);
+      string_list_free(list1);
+      string_list_free(list2);
+   }
 
    if (!contents)
       return;

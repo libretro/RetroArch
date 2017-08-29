@@ -65,6 +65,16 @@ void dir_list_sort(struct string_list *list, bool dir_first);
  **/
 void dir_list_free(struct string_list *list);
 
+/**
+ * dir_list_concatenate:
+ * @list1      : pointer to the first directory listing.
+ * @list2      : pointer to the second directory listing.
+ *
+ * Concatenates a directory listing making it appear as a single dir
+ *
+ **/
+struct string_list *dir_list_concatenate(struct string_list *list1, struct string_list *list2);
+
 RETRO_END_DECLS
 
 #endif

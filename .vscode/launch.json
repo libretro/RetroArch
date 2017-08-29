@@ -12,7 +12,7 @@
       "program": "${workspaceRoot}/retroarch.exe"
       "args": [
           "-v", "-c debug.cfg"
-      ],"
+      ],
       "stopAtEntry": false,
       "cwd": "${workspaceRoot}",
       "environment": [],

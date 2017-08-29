@@ -404,7 +404,7 @@ typedef struct settings
       char directory_content_history[PATH_MAX_LENGTH];
       char directory_content_favorites[PATH_MAX_LENGTH];
       char directory_libretro[PATH_MAX_LENGTH];
-      char directory_libretro_user[PATH_MAX_LENGTH];
+      char directory_libretro_distro[PATH_MAX_LENGTH];
       char directory_cursor[PATH_MAX_LENGTH];
       char directory_input_remapping[PATH_MAX_LENGTH];
       char directory_overlay[PATH_MAX_LENGTH];
