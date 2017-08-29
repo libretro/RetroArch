@@ -3621,7 +3621,7 @@ static int menu_displaylist_parse_cores(
       return 0;
    }
 
-   if (string_is_empty(settings->paths.directory_libretro_platform))
+   if (!path_is_directory(settings->paths.directory_libretro_platform))
       str_list = dir_list_new(info->path, info->exts, 
                   true, settings->bools.show_hidden_files, true, false);
    else

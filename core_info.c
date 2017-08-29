@@ -230,7 +230,7 @@ static core_info_list_t *core_info_list_new(const char *path)
 
    settings_t *settings = config_get_ptr();
 
-   if (string_is_empty(settings->paths.directory_libretro_platform))
+   if (!path_is_directory(settings->paths.directory_libretro_platform))
       contents = dir_list_new_special(path, DIR_LIST_CORES, NULL);
    else
    {
@@ -737,7 +737,7 @@ void core_info_get_name(const char *path, char *s, size_t len)
    settings_t *settings = config_get_ptr();
    struct string_list* contents = NULL;
 
-   if (string_is_empty(settings->paths.directory_libretro_platform))
+   if (!path_is_directory(settings->paths.directory_libretro_platform))
       contents = dir_list_new_special(path, DIR_LIST_CORES, NULL);
    else
    {

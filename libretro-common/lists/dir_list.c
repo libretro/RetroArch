@@ -277,13 +277,24 @@ struct string_list *dir_list_new(const char *dir,
  **/
 struct string_list *dir_list_concatenate(struct string_list *list1, struct string_list *list2)
 {
+   struct string_list *out = NULL;
+
    if (!list1 && !list2)
       return NULL;
    else if (!list1 || !list2)
-      return list1 ? list1 : list2;
+   {
+      struct string_list *tmp = NULL;
+
+      if (list1)
+         tmp = list1;
+      else
+         tmp = list2;
+
+      for (int i = 0; i < tmp->size; i++)
+         string_list_append(out, tmp->elems[i].data, tmp->elems[i].attr);
+   }
    else
    {
-      struct string_list *out;
       if (!(out = string_list_new()))
          return NULL;
       size_t size = list1->size + list2->size;
@@ -295,8 +306,8 @@ struct string_list *dir_list_concatenate(struct string_list *list1, struct strin
          else
             string_list_append(out, list2->elems[i - list1->size].data, list2->elems[i - list1->size].attr);
       }
-
-      return out;
    }
+
+   return out;
 
  }
