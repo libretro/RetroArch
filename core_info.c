@@ -230,12 +230,12 @@ static core_info_list_t *core_info_list_new(const char *path)
 
    settings_t *settings = config_get_ptr();
 
-   if (string_is_empty(settings->paths.directory_libretro_distro))
+   if (string_is_empty(settings->paths.directory_libretro_platform))
       contents = dir_list_new_special(path, DIR_LIST_CORES, NULL);
    else
    {
       struct string_list *list1 = dir_list_new_special(path, DIR_LIST_CORES, NULL);
-      struct string_list *list2 = dir_list_new_special(settings->paths.directory_libretro_distro, DIR_LIST_CORES, NULL);
+      struct string_list *list2 = dir_list_new_special(settings->paths.directory_libretro_platform, DIR_LIST_CORES, NULL);
       contents = dir_list_concatenate(list1, list2);
       string_list_free(list1);
       string_list_free(list2);
@@ -737,12 +737,12 @@ void core_info_get_name(const char *path, char *s, size_t len)
    settings_t *settings = config_get_ptr();
    struct string_list* contents = NULL;
 
-   if (string_is_empty(settings->paths.directory_libretro_distro))
+   if (string_is_empty(settings->paths.directory_libretro_platform))
       contents = dir_list_new_special(path, DIR_LIST_CORES, NULL);
    else
    {
       struct string_list *list1 = dir_list_new_special(path, DIR_LIST_CORES, NULL);
-      struct string_list *list2 = dir_list_new_special(settings->paths.directory_libretro_distro, DIR_LIST_CORES, NULL);
+      struct string_list *list2 = dir_list_new_special(settings->paths.directory_libretro_platform, DIR_LIST_CORES, NULL);
       contents = dir_list_concatenate(list1, list2);
       string_list_free(list1);
       string_list_free(list2);

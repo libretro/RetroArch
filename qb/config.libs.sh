@@ -513,6 +513,8 @@ fi
 
 # Creates config.mk and config.h.
 add_define_make GLOBAL_CONFIG_DIR "$GLOBAL_CONFIG_DIR"
+add_define_make PLATFORM_LIBRETRO_DIR "$PLATFORM_LIBRETRO_DIR"
+
 VARS=$(eval set | grep ^HAVE_ | sed s/=.*// | sed s/^HAVE_//)
 create_config_make config.mk $VARS
 create_config_header config.h $VARS
