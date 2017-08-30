@@ -58,6 +58,10 @@ static bool bundle_assets_extract_enable = true;
 static bool bundle_assets_extract_enable = false;
 #endif
 
+#ifdef HAVE_MATERIALUI
+static bool materialui_icons_enable      = true;
+#endif
+
 static const bool def_history_list_enable = true;
 static const bool def_playlist_entry_remove = true;
 
@@ -267,6 +271,8 @@ static bool xmb_show_add     	 = true;
 #endif
 #endif
 
+static float menu_framebuffer_opacity = 0.900;
+
 static float menu_wallpaper_opacity = 0.300;
 
 static float menu_footer_opacity = 1.000;
@@ -313,6 +319,8 @@ static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_NONE;
 static unsigned input_backtouch_enable       = false;
 static unsigned input_backtouch_toggle       = false;
 #endif
+
+static bool show_physical_inputs             = true;
 
 static bool all_users_control_menu = false;
 

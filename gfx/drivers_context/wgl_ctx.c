@@ -367,11 +367,8 @@ static void gfx_ctx_wgl_swap_buffers(void *data, void *data2)
    switch (win32_api)
    {
       case GFX_CTX_OPENGL_API:
-#ifdef HAVE_OPENGL
          SwapBuffers(win32_hdc);
-#endif
          break;
-
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
          vulkan_present(&win32_vk, win32_vk.context.current_swapchain_index);

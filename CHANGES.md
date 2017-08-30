@@ -1,6 +1,35 @@
+# 1.6.8 (future)
+- GUI: (MaterialUI) Skip querying and drawing items that are not visible; Cache content height and bbox calculation.
+- GUI: (XMB) Skip drawing the fading list when it is already transparent. Optimization.
+- GUI: (XMB) Comment out visible item calculation in xmb_draw_items().
+- GUI: (RGUI) Prevent crashes when using a non-English language reliant on UTF8.
+- LOCALIZATION: Update Italian translation.
+- LOCALIZATION: Update Portuguese-Brazilian translation.
+- LOCALIZATION: Update Russian translation.
+- LINUX/PI: Broadcom VC4: Add Videocore config option
+- NETPLAY: Fix disconnection not fully deinitializing Netplay.
+- COMMON: Fix clear/free loop conditionals in playlists.
+- WINDOWS/GDI: Fix flickering of text.
+- WINDOWS/WGL: Try to use wglSwapLayerBuffers instead of SwapBuffers if possible (for more optimal performance).
+- WII: Use custom, embedded libogc SDK.
+- WIIU: Initial touchscreen support for WiiU gamepad.
+
+# 1.6.7
+- SCANNER: Fix directory scanning.
+- SCANNER: Fix file scanning.
+- COMMON: Fix 'Disk Image Append' option.
+- FREEBSD: Compatibility fixes for Video4Linux2 camera driver.
+- GUI: (MaterialUI) Add disk image append icons.
+- GUI: (MaterialUI) Improve word wrapping when menu icons are enabled.
+- GUI: (MaterialUI) Add User Interface -> Appearance -> Menu Icons Enable. You can turn on/off the icons on the lefthand side of the menu entries.
+- GUI: Performance optimizations for XMB menu driver - only calculates visible items.
+- LOCALIZATION: Update Italian translation.
+
 # 1.6.6 (future)
 - 3DS: Fixes serious performance regression that affected every core; rewind was always implicitly enabled.
 - AUDIO: MOD/S3M/XM sound should now be properly mixed in with the core's sound.
+- GUI: Visual makeover of MaterialUI.
+- GUI: Added 'Music', 'Images' and 'Video' collection options to RGUI/MaterialUI.
 - GUI: Allow the user to add 'Favorites'.
 - GUI: Allow the user to rename entries.
 - GUI: Performance optimizations for XMB menu driver.
@@ -8,6 +37,8 @@
 - INPUT: Overlay controller response - when we press buttons on the gamepad or keyboard, the corresponding buttons on the overlay will be highlighted as well.
 - NETBSD: Silence some compilation warnings.
 - COMMON: Fixed bug 'Deleting an entry from a playlist would not update the list view inside XMB'.
+- COMMON: Fix inet_ntop_compat on *nix
+- LOBBY: Add skeleton to add help descriptions to lobbies
 
 # 1.6.5
 Skipped this one.

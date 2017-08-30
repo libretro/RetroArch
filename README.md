@@ -8,6 +8,12 @@ Popular examples of implementations for this API includes videogame system emula
 more generalized 3D programs.
 These programs are instantiated as dynamic libraries. We refer to these as "libretro cores".
 
+![XMB menu driver](http://i.imgur.com/BMR1xxr.png "XMB menu driver")
+
+![rgui menu driver](http://i.imgur.com/X3CbBKa.png "rgui menu driver")
+
+![glui menu driver](http://i.imgur.com/ooqv8rw.png "glui menu driver")
+
 ## libretro
 
 [libretro](http://libretro.com) is an API that exposes generic audio/video/input callbacks.

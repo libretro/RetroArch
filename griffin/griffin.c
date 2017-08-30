@@ -45,6 +45,21 @@ CONSOLE EXTENSIONS
 #include "../memory/ngc/ssaram.c"
 #endif
 
+#ifdef INTERNAL_LIBOGC
+#ifdef HW_RVL
+#include "../wii/libogc/libfat/cache.c"
+#include "../wii/libogc/libfat/directory.c"
+#include "../wii/libogc/libfat/disc.c"
+#include "../wii/libogc/libfat/fatdir.c"
+#include "../wii/libogc/libfat/fatfile.c"
+#include "../wii/libogc/libfat/file_allocation_table.c"
+#include "../wii/libogc/libfat/filetime.c"
+#include "../wii/libogc/libfat/libfat.c"
+#include "../wii/libogc/libfat/lock.c"
+#include "../wii/libogc/libfat/partition.c"
+#endif
+#endif
+
 #endif
 
 /*============================================================

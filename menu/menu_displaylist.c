@@ -2703,6 +2703,19 @@ static int menu_displaylist_parse_settings_enum(void *data,
          );
 }
 
+static void menu_displaylist_set_new_playlist(
+      menu_handle_t *menu, const char *path)
+{
+   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_FREE, NULL);
+   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_INIT,
+         (void*)path);
+   strlcpy(
+         menu->db_playlist_file,
+         path,
+         sizeof(menu->db_playlist_file));
+}
+
+
 static int menu_displaylist_parse_horizontal_list(
       menu_displaylist_info_t *info)
 {
@@ -2738,8 +2751,6 @@ static int menu_displaylist_parse_horizontal_list(
 
    fill_pathname_base_noext(lpl_basename, item->path, sizeof(lpl_basename));
 
-   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_FREE, NULL);
-
    fill_pathname_join(
          path_playlist,
          settings->paths.directory_playlist,
@@ -2748,10 +2759,8 @@ static int menu_displaylist_parse_horizontal_list(
 
    menu_driver_set_thumbnail_system(lpl_basename, sizeof(lpl_basename));
 
-   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_INIT, (void*)path_playlist);
+   menu_displaylist_set_new_playlist(menu, path_playlist);
 
-   strlcpy(menu->db_playlist_file,
-         path_playlist, sizeof(menu->db_playlist_file));
    strlcpy(path_playlist,
          msg_hash_to_str(MENU_ENUM_LABEL_COLLECTION),
          sizeof(path_playlist));
@@ -3488,9 +3497,9 @@ static int menu_displaylist_parse_playlists(
 
    list_size = str_list->size;
 
-#ifdef HAVE_LIBRETRODB
    if (!horizontal)
    {
+#ifdef HAVE_LIBRETRODB
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
             msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY),
@@ -3501,8 +3510,33 @@ static int menu_displaylist_parse_playlists(
             msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE),
             MENU_ENUM_LABEL_SCAN_FILE,
             MENU_SETTING_ACTION, 0, 0);
-   }
 #endif
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
+            msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES),
+            MENU_ENUM_LABEL_GOTO_FAVORITES,
+            MENU_SETTING_ACTION, 0, 0);
+
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_IMAGES),
+            msg_hash_to_str(MENU_ENUM_LABEL_GOTO_IMAGES),
+            MENU_ENUM_LABEL_GOTO_IMAGES,
+            MENU_SETTING_ACTION, 0, 0);
+
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_MUSIC),
+            msg_hash_to_str(MENU_ENUM_LABEL_GOTO_MUSIC),
+            MENU_ENUM_LABEL_GOTO_MUSIC,
+            MENU_SETTING_ACTION, 0, 0);
+
+#ifdef HAVE_FFMPEG
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_VIDEO),
+            msg_hash_to_str(MENU_ENUM_LABEL_GOTO_VIDEO),
+            MENU_ENUM_LABEL_GOTO_VIDEO,
+            MENU_SETTING_ACTION, 0, 0);
+#endif
+   }
 
    if (list_size == 0)
    {
@@ -4022,28 +4056,22 @@ bool menu_displaylist_push(menu_displaylist_ctx_entry_t *entry)
 static void menu_displaylist_parse_playlist_history(
       menu_handle_t *menu,
       menu_displaylist_info_t *info,
-      playlist_t *playlist,
       const char *playlist_name,
       const char *playlist_path,
       int *ret)
 {
    char path_playlist[PATH_MAX_LENGTH];
+   playlist_t *playlist = NULL;
 
    path_playlist[0] = '\0';
 
-   if (!playlist)
-      command_event(CMD_EVENT_HISTORY_INIT, NULL);
+   menu_displaylist_set_new_playlist(menu, playlist_path);
+
+   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
 
    strlcpy(path_playlist, playlist_name, sizeof(path_playlist));
    *ret = menu_displaylist_parse_playlist(info,
          playlist, path_playlist, true);
-   strlcpy(
-         menu->db_playlist_file,
-         playlist_path,
-         sizeof(menu->db_playlist_file));
-   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_FREE, NULL);
-   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_INIT,
-         (void*)menu->db_playlist_file);
 }
 
 #ifdef HAVE_NETWORKING
@@ -4390,7 +4418,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
             path_playlist[0] = '\0';
 
-            menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_FREE, NULL);
 
             fill_pathname_join(
                   path_playlist,
@@ -4398,11 +4425,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   info->path,
                   sizeof(path_playlist));
 
-            menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_INIT,
-                  (void*)path_playlist);
+            menu_displaylist_set_new_playlist(menu, path_playlist);
 
-            strlcpy(menu->db_playlist_file, path_playlist,
-                  sizeof(menu->db_playlist_file));
             strlcpy(path_playlist,
                   msg_hash_to_str(MENU_ENUM_LABEL_COLLECTION),
                   sizeof(path_playlist));
@@ -4426,7 +4450,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          if (settings->bools.history_list_enable)
             menu_displaylist_parse_playlist_history(menu, info,
-                  g_defaults.content_history,
                   "history",
                   settings->paths.path_content_history,
                   &ret);
@@ -4449,7 +4472,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_FAVORITES:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          menu_displaylist_parse_playlist_history(menu, info,
-               g_defaults.content_favorites,
                "favorites",
                settings->paths.path_content_favorites,
                &ret);
@@ -4462,7 +4484,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_MUSIC_HISTORY:
          if (settings->bools.history_list_enable)
             menu_displaylist_parse_playlist_history(menu, info,
-                  g_defaults.music_history,
                   "music_history",
                   settings->paths.path_content_music_history,
                   &ret);
@@ -4486,7 +4507,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 #ifdef HAVE_FFMPEG
          if (settings->bools.history_list_enable)
             menu_displaylist_parse_playlist_history(menu, info,
-                  g_defaults.video_history,
                   "video_history",
                   settings->paths.path_content_video_history,
                   &ret);
@@ -5171,6 +5191,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_MENU_WALLPAPER_OPACITY,
                PARSE_ONLY_FLOAT, false);
          menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_MENU_FRAMEBUFFER_OPACITY,
+               PARSE_ONLY_FLOAT, false);
+         menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_MENU_LINEAR_FILTER,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
@@ -5212,6 +5235,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_XMB_MENU_COLOR_THEME,
                PARSE_ONLY_UINT, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_MATERIALUI_ICONS_ENABLE,
+               PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME,
                PARSE_ONLY_UINT, false);
@@ -6008,6 +6034,33 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_LOAD_CONTENT_LIST:
       case DISPLAYLIST_LOAD_CONTENT_SPECIAL:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
+               msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES),
+               MENU_ENUM_LABEL_GOTO_FAVORITES,
+               MENU_SETTING_ACTION, 0, 0);
+
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_IMAGES),
+               msg_hash_to_str(MENU_ENUM_LABEL_GOTO_IMAGES),
+               MENU_ENUM_LABEL_GOTO_IMAGES,
+               MENU_SETTING_ACTION, 0, 0);
+
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_MUSIC),
+               msg_hash_to_str(MENU_ENUM_LABEL_GOTO_MUSIC),
+               MENU_ENUM_LABEL_GOTO_MUSIC,
+               MENU_SETTING_ACTION, 0, 0);
+
+#ifdef HAVE_FFMPEG
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_VIDEO),
+               msg_hash_to_str(MENU_ENUM_LABEL_GOTO_VIDEO),
+               MENU_ENUM_LABEL_GOTO_VIDEO,
+               MENU_SETTING_ACTION, 0, 0);
+#endif
+
          if (!string_is_empty(settings->paths.directory_menu_content))
             menu_entries_append_enum(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES),
@@ -6539,7 +6592,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 #ifdef HAVE_IMAGEVIEWER
          if (settings->bools.history_list_enable)
             menu_displaylist_parse_playlist_history(menu, info,
-                  g_defaults.image_history,
                   "images_history",
                   settings->paths.path_content_image_history,
                   &ret);

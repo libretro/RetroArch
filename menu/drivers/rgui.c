@@ -163,27 +163,30 @@ static void blit_line(int x, int y,
       const char *message, uint16_t color)
 {
    size_t pitch = menu_display_get_framebuffer_pitch();
+   const uint8_t *font_fb = menu_display_get_font_framebuffer();
 
-   while (!string_is_empty(message))
+   if (font_fb)
    {
-      unsigned i, j;
-      const uint8_t *font_fb = menu_display_get_font_framebuffer();
-      uint32_t symbol        = utf8_walk(&message);
-      
-      for (j = 0; j < FONT_HEIGHT; j++)
+      while (!string_is_empty(message))
       {
-         for (i = 0; i < FONT_WIDTH; i++)
+         unsigned i, j;
+         char symbol = *message++;
+
+         for (j = 0; j < FONT_HEIGHT; j++)
          {
-            uint8_t rem = 1 << ((i + j * FONT_WIDTH) & 7);
-            int offset  = (i + j * FONT_WIDTH) >> 3;
-            bool col    = (font_fb[FONT_OFFSET(symbol) + offset] & rem);
+            for (i = 0; i < FONT_WIDTH; i++)
+            {
+               uint8_t rem = 1 << ((i + j * FONT_WIDTH) & 7);
+               int offset  = (i + j * FONT_WIDTH) >> 3;
+               bool col    = (font_fb[FONT_OFFSET(symbol) + offset] & rem);
 
-            if (col)
-               rgui_framebuf_data[(y + j) * (pitch >> 1) + (x + i)] = color;
+               if (col)
+                  rgui_framebuf_data[(y + j) * (pitch >> 1) + (x + i)] = color;
+            }
          }
-      }
 
-      x += FONT_WIDTH_STRIDE;
+         x += FONT_WIDTH_STRIDE;
+      }
    }
 }
 

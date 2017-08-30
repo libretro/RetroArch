@@ -1192,6 +1192,9 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("menu_battery_level_enable",     &settings->bools.menu_battery_level_enable, true, true, false);
    SETTING_BOOL("menu_core_enable",              &settings->bools.menu_core_enable, true, true, false);
    SETTING_BOOL("menu_dynamic_wallpaper_enable", &settings->bools.menu_dynamic_wallpaper_enable, true, false, false);
+#ifdef HAVE_MATERIALUI
+   SETTING_BOOL("materialui_icons_enable",            &settings->bools.menu_materialui_icons_enable, true, materialui_icons_enable, false);
+#endif
 #ifdef HAVE_XMB
    SETTING_BOOL("xmb_shadows_enable",            &settings->bools.menu_xmb_shadows_enable, true, xmb_shadows_enable, false);
    SETTING_BOOL("xmb_show_settings",             &settings->bools.menu_xmb_show_settings, true, xmb_show_settings, false);
@@ -1297,6 +1300,7 @@ static struct config_float_setting *populate_settings_float(settings_t *settings
 #endif
 #ifdef HAVE_MENU
    SETTING_FLOAT("menu_wallpaper_opacity",   &settings->floats.menu_wallpaper_opacity, true, menu_wallpaper_opacity, false);
+   SETTING_FLOAT("menu_framebuffer_opacity",   &settings->floats.menu_framebuffer_opacity, true, menu_framebuffer_opacity, false);
    SETTING_FLOAT("menu_footer_opacity",      &settings->floats.menu_footer_opacity,    true, menu_footer_opacity, false);
    SETTING_FLOAT("menu_header_opacity",      &settings->floats.menu_header_opacity,    true, menu_header_opacity, false);
 #endif

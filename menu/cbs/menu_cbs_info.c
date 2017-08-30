@@ -26,6 +26,10 @@
    cbs->action_info_ident = #name;
 #endif
 
+#ifdef HAVE_NETWORKING
+#include "../../network/netplay/netplay_discovery.h"
+#endif
+
 static int action_info_default(unsigned type, const char *label)
 {
    menu_displaylist_info_t info = {0};
@@ -60,8 +64,8 @@ static int action_info_cheevos(unsigned type, const char *label)
    menu_dialog_set_current_id(new_id);
 
    return generic_action_ok_help(NULL, label, new_id, 0, 0,
-         MENU_ENUM_LABEL_CHEEVOS_DESCRIPTION,
-         MENU_DIALOG_HELP_CHEEVOS_DESCRIPTION);
+      MENU_ENUM_LABEL_CHEEVOS_DESCRIPTION,
+      MENU_DIALOG_HELP_CHEEVOS_DESCRIPTION);
 }
 #endif
 
@@ -72,7 +76,8 @@ int menu_cbs_init_bind_info(menu_file_list_cbs_t *cbs,
       return -1;
 
 #ifdef HAVE_CHEEVOS
-   if ((type >= MENU_SETTINGS_CHEEVOS_START))
+   if ((type >= MENU_SETTINGS_CHEEVOS_START) && 
+      (type < MENU_SETTINGS_NETPLAY_ROOMS_START))
    {
       BIND_ACTION_INFO(cbs, action_info_cheevos);
       return 0;

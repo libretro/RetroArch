@@ -669,7 +669,7 @@ void menu_display_draw_pipeline(menu_display_ctx_draw_t *draw);
 void menu_display_draw_bg(
       menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info,
-      bool add_opacity);
+      bool add_opacity, float opacity_override);
 void menu_display_draw_gradient(
       menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info);

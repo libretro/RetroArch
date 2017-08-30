@@ -2194,6 +2194,8 @@ TODO: Add a setting for these tweaks */
                NULL,
                NULL
                );
+         playlist_write_file(g_defaults.content_favorites);
+         runloop_msg_queue_push(msg_hash_to_str(MSG_ADDED_TO_FAVORITES), 1, 180, true);
          break;
       case CMD_EVENT_RESTART_RETROARCH:
          if (!frontend_driver_set_fork(FRONTEND_FORK_RESTART))

@@ -84,6 +84,7 @@ default_sublabel_macro(action_bind_sublabel_fps_show,                      MENU_
 default_sublabel_macro(action_bind_sublabel_netplay_settings,              MENU_ENUM_SUBLABEL_NETPLAY)
 default_sublabel_macro(action_bind_sublabel_user_bind_settings,            MENU_ENUM_SUBLABEL_INPUT_USER_BINDS)
 default_sublabel_macro(action_bind_sublabel_input_hotkey_settings,         MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS)
+default_sublabel_macro(action_bind_sublabel_materialui_icons_enable,       MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE)
 default_sublabel_macro(action_bind_sublabel_add_content_list,              MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST)
 default_sublabel_macro(action_bind_sublabel_video_frame_delay,             MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY)
 default_sublabel_macro(action_bind_sublabel_video_black_frame_insertion,   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION)
@@ -234,6 +235,10 @@ default_sublabel_macro(action_bind_sublabel_delete_entry,                       
 default_sublabel_macro(action_bind_sublabel_information,                           MENU_ENUM_SUBLABEL_INFORMATION)
 default_sublabel_macro(action_bind_sublabel_run,                                   MENU_ENUM_SUBLABEL_RUN)
 default_sublabel_macro(action_bind_sublabel_add_to_favorites,                      MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES)
+default_sublabel_macro(action_bind_sublabel_goto_favorites,                      MENU_ENUM_SUBLABEL_GOTO_FAVORITES)
+default_sublabel_macro(action_bind_sublabel_goto_images,                      MENU_ENUM_SUBLABEL_GOTO_IMAGES)
+default_sublabel_macro(action_bind_sublabel_goto_music,                      MENU_ENUM_SUBLABEL_GOTO_MUSIC)
+default_sublabel_macro(action_bind_sublabel_goto_video,                      MENU_ENUM_SUBLABEL_GOTO_VIDEO)
 default_sublabel_macro(action_bind_sublabel_menu_filebrowser_settings,             MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_auto_remaps_enable,                    MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE)
 default_sublabel_macro(action_bind_sublabel_auto_overrides_enable,                 MENU_ENUM_SUBLABEL_AUTO_OVERRIDES_ENABLE)
@@ -280,6 +285,7 @@ default_sublabel_macro(action_bind_sublabel_xmb_icon_theme,                     
 default_sublabel_macro(action_bind_sublabel_xmb_shadows_enable,                    MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE)
 default_sublabel_macro(action_bind_sublabel_menu_color_theme,                      MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME)
 default_sublabel_macro(action_bind_sublabel_menu_wallpaper_opacity,                MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY)
+default_sublabel_macro(action_bind_sublabel_menu_framebuffer_opacity,                MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY)
 default_sublabel_macro(action_bind_sublabel_menu_ribbon_enable,                    MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE)
 default_sublabel_macro(action_bind_sublabel_menu_font,                             MENU_ENUM_SUBLABEL_XMB_FONT)
 default_sublabel_macro(action_bind_sublabel_menu_favorites_tab,                    MENU_ENUM_SUBLABEL_XMB_SHOW_FAVORITES)
@@ -401,6 +407,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_MATERIALUI_ICONS_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_materialui_icons_enable);
+            break;
          case MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_viewport_custom_height);
             break;
@@ -545,6 +554,18 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_XMB_SHOW_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_settings_tab);
             break;
+         case MENU_ENUM_LABEL_GOTO_IMAGES:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_goto_images);
+            break;
+         case MENU_ENUM_LABEL_GOTO_MUSIC:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_goto_music);
+            break;
+         case MENU_ENUM_LABEL_GOTO_VIDEO:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_goto_video);
+            break;
+         case MENU_ENUM_LABEL_GOTO_FAVORITES:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_goto_favorites);
+            break;
          case MENU_ENUM_LABEL_XMB_SHOW_FAVORITES:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_favorites_tab);
             break;
@@ -571,6 +592,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_XMB_RIBBON_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_ribbon_enable);
+            break;
+         case MENU_ENUM_LABEL_MENU_FRAMEBUFFER_OPACITY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_framebuffer_opacity);
             break;
          case MENU_ENUM_LABEL_MENU_WALLPAPER_OPACITY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_wallpaper_opacity);

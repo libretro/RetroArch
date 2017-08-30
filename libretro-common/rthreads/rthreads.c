@@ -231,6 +231,8 @@ int sthread_detach(sthread_t *thread)
  */
 void sthread_join(sthread_t *thread)
 {
+   if (!thread)
+      return;
 #ifdef USE_WIN32_THREADS
    WaitForSingleObject(thread->thread, INFINITE);
    CloseHandle(thread->thread);

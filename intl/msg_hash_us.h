@@ -1840,7 +1840,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY,
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_LAN_SCAN_SETTINGS,
       "Search for and connect to netplay hosts on the local network.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
-      "Display core, network, and system information.")
+      "Display system information.")
 MSG_HASH(MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
       "Download add-ons, components, and content for RetroArch.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAMBA_ENABLE,
@@ -1875,6 +1875,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
       "Scans for wireless networks and establishes connection.")
 MSG_HASH(MENU_ENUM_SUBLABEL_HELP_LIST,
       "Learn more about how the program works.")
+MSG_HASH(MSG_ADDED_TO_FAVORITES,
+      "Added to favorites")
 MSG_HASH(MSG_APPENDED_DISK,
       "Appended disk")
 MSG_HASH(MSG_APPLICATION_DIR,
@@ -3105,3 +3107,27 @@ MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
       "Rename the title of the entry.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
       "Rename")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
+      "Framebuffer Opacity")
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
+      "Modify the opacity of the framebuffer.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
+      "Favorites")
+MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
+      "Content which you have added to 'Favorites' will appear here.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
+      "Music")
+MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_MUSIC,
+      "Music which has been previously played will appear here.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
+      "Image")
+MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_IMAGES,
+      "Images which have been previously viewed will appear here.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
+      "Video")
+MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_VIDEO,
+      "Videos which have been previously played will appear here.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
+      "Menu Icons")
+MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
+      "Enable/disable the menu icons shown at the lefthand side of the menu entries.")
