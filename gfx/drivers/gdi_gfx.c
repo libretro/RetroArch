@@ -239,7 +239,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
    info->bmiHeader.biWidth     = pitch / (bits / 8);
    info->bmiHeader.biHeight    = -height;
    info->bmiHeader.biPlanes    = 1;
-   info->bmiHeader.biSize      = sizeof(BITMAPINFOHEADER) + (3 * sizeof(RGBQUAD));
+   info->bmiHeader.biSize      = sizeof(BITMAPINFOHEADER);
    info->bmiHeader.biSizeImage = 0;
 
    if (bits == 16)
