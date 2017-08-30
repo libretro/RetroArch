@@ -3621,19 +3621,8 @@ static int menu_displaylist_parse_cores(
       return 0;
    }
 
-   if (!path_is_directory(settings->paths.directory_libretro_platform))
-      str_list = dir_list_new(info->path, info->exts, 
-                  true, settings->bools.show_hidden_files, true, false);
-   else
-   {
-      struct string_list *list1 = dir_list_new(info->path, info->exts, 
-                                    true, settings->bools.show_hidden_files, true, false);
-      struct string_list *list2 = dir_list_new(settings->paths.directory_libretro_platform, info->exts, 
-                                    true, settings->bools.show_hidden_files, true, false);
-      str_list = dir_list_concatenate(list1, list2);
-      string_list_free(list1);
-      string_list_free(list2);
-   }
+   str_list = dir_list_new(info->path, info->exts, 
+               true, settings->bools.show_hidden_files, true, false);
 
    {
       char out_dir[PATH_MAX_LENGTH];
