@@ -226,8 +226,20 @@ static core_info_list_t *core_info_list_new(const char *path)
    size_t i;
    core_info_t *core_info           = NULL;
    core_info_list_t *core_info_list = NULL;
-   struct string_list *contents     = dir_list_new_special(
-                                      path, DIR_LIST_CORES, NULL);
+   struct string_list *contents     = NULL;
+
+   settings_t *settings = config_get_ptr();
+
+   if (!path_is_directory(settings->paths.directory_libretro_platform))
+      contents = dir_list_new_special(path, DIR_LIST_CORES, NULL);
+   else
+   {
+      struct string_list *list1 = dir_list_new_special(path, DIR_LIST_CORES, NULL);
+      struct string_list *list2 = dir_list_new_special(settings->paths.directory_libretro_platform, DIR_LIST_CORES, NULL);
+      contents = dir_list_concatenate(list1, list2);
+      string_list_free(list1);
+      string_list_free(list2);
+   }
 
    if (!contents)
       return NULL;
@@ -606,7 +618,7 @@ void core_info_deinit_list(void)
 bool core_info_init_list(void)
 {
    settings_t *settings = config_get_ptr();
-
+   
    if (settings)
       core_info_curr_list = core_info_list_new(settings->paths.directory_libretro);
 
@@ -722,10 +734,19 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
 void core_info_get_name(const char *path, char *s, size_t len)
 {
    size_t i;
-   settings_t             *settings = config_get_ptr();
-   struct string_list *contents     = dir_list_new_special(
-         settings->paths.directory_libretro,
-         DIR_LIST_CORES, NULL);
+   settings_t *settings = config_get_ptr();
+   struct string_list* contents = NULL;
+
+   if (!path_is_directory(settings->paths.directory_libretro_platform))
+      contents = dir_list_new_special(path, DIR_LIST_CORES, NULL);
+   else
+   {
+      struct string_list *list1 = dir_list_new_special(path, DIR_LIST_CORES, NULL);
+      struct string_list *list2 = dir_list_new_special(settings->paths.directory_libretro_platform, DIR_LIST_CORES, NULL);
+      contents = dir_list_concatenate(list1, list2);
+      string_list_free(list1);
+      string_list_free(list2);
+   }
 
    if (!contents)
       return;

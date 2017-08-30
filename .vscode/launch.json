@@ -1,0 +1,31 @@
+{
+   // Debug configuration for msys2 from within VScode
+   // it assumes the default installation location.
+   // to get a terminal build with DEBUG=1
+
+   "version": "0.2.0",
+   "configurations": [
+   {
+      "name": "(gdb) Launch",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceRoot}/retroarch.exe"
+      "args": [
+          "-v", "-c debug.cfg"
+      ],
+      "stopAtEntry": false,
+      "cwd": "${workspaceRoot}",
+      "environment": [],
+      "externalConsole": true,
+      "MIMode": "gdb",
+      "miDebuggerPath": "c:\\msys64\\mingw64\\bin\\gdb.exe",
+      "setupCommands": [
+          {
+              "description": "Enable pretty-printing for gdb",
+              "text": "-enable-pretty-printing",
+              "ignoreFailures": true
+          }
+      ]
+   },
+   ]
+}

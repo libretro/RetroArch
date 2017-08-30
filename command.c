@@ -1347,10 +1347,10 @@ static bool command_event_save_config(const char *config_path,
       return false;
    }
 
-   snprintf(s, len, "[Config]: %s \"%s\".",
+   snprintf(s, len, "%s \"%s\".",
          msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
          path_get(RARCH_PATH_CONFIG));
-   RARCH_LOG("%s\n", s);
+   RARCH_LOG("[config] %s\n", s);
    return true;
 }
 

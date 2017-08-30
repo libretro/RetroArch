@@ -3017,8 +3017,8 @@ static int menu_displaylist_parse_horizontal_content_actions(
             msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME),
             MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME, FILE_TYPE_PLAYLIST_ENTRY, 0, idx);
 
-	  if (settings->bools.playlist_entry_remove)
-	  menu_entries_append_enum(info->list,
+     if (settings->bools.playlist_entry_remove)
+     menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DELETE_ENTRY),
             msg_hash_to_str(MENU_ENUM_LABEL_DELETE_ENTRY),
             MENU_ENUM_LABEL_DELETE_ENTRY,
@@ -3621,8 +3621,8 @@ static int menu_displaylist_parse_cores(
       return 0;
    }
 
-   str_list = dir_list_new(info->path, info->exts,
-         true, settings->bools.show_hidden_files, true, false);
+   str_list = dir_list_new(info->path, info->exts, 
+               true, settings->bools.show_hidden_files, true, false);
 
    {
       char out_dir[PATH_MAX_LENGTH];
@@ -3665,7 +3665,6 @@ static int menu_displaylist_parse_cores(
             MENU_SETTING_NO_ITEM, 0, 0);
 
       string_list_free(str_list);
-
       return 0;
    }
 

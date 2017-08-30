@@ -17,10 +17,15 @@ ifeq ($(GLOBAL_CONFIG_DIR),)
    GLOBAL_CONFIG_DIR = /etc
 endif
 
+ifeq  ($(PLATFORM_LIBRETRO_DIR),)
+   PLATFORM_LIBRETRO_DIR = 
+endif
+
 OBJ :=
 LIBS :=
 DEFINES := -DHAVE_CONFIG_H -DRARCH_INTERNAL -DHAVE_OVERLAY
 DEFINES += -DGLOBAL_CONFIG_DIR='"$(GLOBAL_CONFIG_DIR)"'
+DEFINES += -DPLATFORM_LIBRETRO_DIR='"$(PLATFORM_LIBRETRO_DIR)"'
 
 ifneq ($(findstring BSD,$(OS)),)
    CFLAGS += -DBSD
@@ -72,10 +77,9 @@ ifeq ($(DEBUG), 1)
    OPTIMIZE_FLAG = -O0 -g
 else
    OPTIMIZE_FLAG = -O3 -ffast-math
-endif
-
-ifneq ($(findstring Win32,$(OS)),)
-   LDFLAGS += -mwindows
+   ifneq ($(findstring Win32,$(OS)),)
+      LDFLAGS += -mwindows
+   endif
 endif
 
 CFLAGS   += -Wall $(OPTIMIZE_FLAG) $(INCLUDE_DIRS) $(DEBUG_FLAG) -I.
