@@ -279,10 +279,7 @@ static void parse_hat(struct retro_keybind *bind, const char *str)
    uint16_t hat_dir = 0;
    char        *dir = NULL;
 
-   if (!bind || !str)
-      return;
-
-   if (!isdigit((int)*str))
+   if (!bind || !str || !isdigit((int)*str))
       return;
 
    hat = strtoul(str, &dir, 0);
@@ -389,7 +386,8 @@ void input_config_parse_joy_axis(void *data, const char *prefix,
    }
 }
 
-static void input_config_get_bind_string_joykey(char *buf, const char *prefix,
+static void input_config_get_bind_string_joykey(
+      char *buf, const char *prefix,
       const struct retro_keybind *bind, size_t size)
 {
    settings_t *settings = config_get_ptr();
@@ -397,32 +395,33 @@ static void input_config_get_bind_string_joykey(char *buf, const char *prefix,
 
    if (GET_HAT_DIR(bind->joykey))
    {
-      const char *dir = "?";
-
-      switch (GET_HAT_DIR(bind->joykey))
-      {
-         case HAT_UP_MASK:
-            dir = "up";
-            break;
-         case HAT_DOWN_MASK:
-            dir = "down";
-            break;
-         case HAT_LEFT_MASK:
-            dir = "left";
-            break;
-         case HAT_RIGHT_MASK:
-            dir = "right";
-            break;
-         default:
-            break;
-      }
-
       if (!string_is_empty(bind->joykey_label) && label_show)
          snprintf(buf, size, "%s %s ", prefix, bind->joykey_label);
       else
+      {
+         const char *dir = "?";
+
+         switch (GET_HAT_DIR(bind->joykey))
+         {
+            case HAT_UP_MASK:
+               dir = "up";
+               break;
+            case HAT_DOWN_MASK:
+               dir = "down";
+               break;
+            case HAT_LEFT_MASK:
+               dir = "left";
+               break;
+            case HAT_RIGHT_MASK:
+               dir = "right";
+               break;
+            default:
+               break;
+         }
          snprintf(buf, size, "%sHat #%u %s (%s)", prefix,
                (unsigned)GET_HAT(bind->joykey), dir,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+      }
    }
    else
    {
@@ -437,26 +436,28 @@ static void input_config_get_bind_string_joykey(char *buf, const char *prefix,
 static void input_config_get_bind_string_joyaxis(char *buf, const char *prefix,
       const struct retro_keybind *bind, size_t size)
 {
-   unsigned axis        = 0;
-   char dir             = '\0';
    settings_t *settings = config_get_ptr();
-   bool label_show      = settings->bools.input_descriptor_label_show;
 
-   if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
-   {
-      dir = '-';
-      axis = AXIS_NEG_GET(bind->joyaxis);
-   }
-   else if (AXIS_POS_GET(bind->joyaxis) != AXIS_DIR_NONE)
-   {
-      dir = '+';
-      axis = AXIS_POS_GET(bind->joyaxis);
-   }
-   if (!string_is_empty(bind->joyaxis_label) && label_show)
+   if (!string_is_empty(bind->joyaxis_label) 
+         && settings->bools.input_descriptor_label_show)
       snprintf(buf, size, "%s%s (axis) ", prefix, bind->joyaxis_label);
    else
+   {
+      unsigned axis        = 0;
+      char dir             = '\0';
+      if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
+      {
+         dir = '-';
+         axis = AXIS_NEG_GET(bind->joyaxis);
+      }
+      else if (AXIS_POS_GET(bind->joyaxis) != AXIS_DIR_NONE)
+      {
+         dir = '+';
+         axis = AXIS_POS_GET(bind->joyaxis);
+      }
       snprintf(buf, size, "%s%c%u (%s) ", prefix, dir, axis,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+   }
 }
 
 void input_config_get_bind_string(char *buf, const struct retro_keybind *bind,
