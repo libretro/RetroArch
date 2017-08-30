@@ -91,7 +91,7 @@ enum rarch_input_keyboard_ctl_state
 struct retro_keybind
 {
    bool valid;
-   unsigned id;
+   uint16_t id;
    enum msg_hash_enums enum_idx;
    enum retro_key key;
 
@@ -120,7 +120,7 @@ struct retro_keybind
 
 typedef struct rarch_joypad_info
 {
-   unsigned joy_idx;
+   uint16_t joy_idx;
    const struct retro_keybind *auto_binds;
    float axis_threshold;
 } rarch_joypad_info_t;
