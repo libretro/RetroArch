@@ -86,7 +86,7 @@ typedef struct
    float y;
    uintptr_t icon;
    uintptr_t content_icon;
-   char fullpath[4096];
+   char *fullpath;
 } xmb_node_t;
 
 enum
@@ -426,9 +426,22 @@ static xmb_node_t *xmb_alloc_node(void)
    node->alpha = node->label_alpha  = 0;
    node->zoom  = node->x = node->y  = 0;
    node->icon  = node->content_icon = 0;
-   node->fullpath[0] = 0;
+   node->fullpath = NULL;
 
    return node;
+}
+
+static void xmb_free_node(xmb_node_t *node)
+{
+    if (!node)
+        return;
+
+    if (node->fullpath)
+        free(node->fullpath);
+
+    node->fullpath = NULL;
+
+    free(node);
 }
 
 /* NOTE: This is faster than memcpy()ing xmb_node_t in most cases
@@ -445,8 +458,7 @@ static xmb_node_t *xmb_copy_node(void *p)
    new_node->y            = old_node->y;
    new_node->icon         = old_node->icon;
    new_node->content_icon = old_node->content_icon;
-
-   strlcpy(new_node->fullpath, old_node->fullpath, sizeof(old_node->fullpath));
+   new_node->fullpath     = old_node->fullpath ? strdup(old_node->fullpath) : NULL;
 
    return new_node;
 }
@@ -947,7 +959,7 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
       xmb_node_t *node = (xmb_node_t*)
          menu_entries_get_userdata_at_offset(selection_buf, i);
 
-      if (node)
+      if (node && node->fullpath)
       {
          fill_pathname_join(
                xmb->thumbnail_file_path,
@@ -1399,6 +1411,7 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
 static xmb_node_t *xmb_node_allocate_userdata(xmb_handle_t *xmb, unsigned i)
 {
    xmb_node_t *node = xmb_alloc_node();
+   xmb_node_t *tmp;
 
    if (!node)
    {
@@ -1415,7 +1428,10 @@ static xmb_node_t *xmb_node_allocate_userdata(xmb_handle_t *xmb, unsigned i)
       node->zoom  = xmb->categories.active.zoom;
    }
 
-   file_list_free_actiondata(xmb->horizontal_list, i);
+   tmp = (xmb_node_t*)file_list_get_actiondata_at_offset(xmb->horizontal_list, i);
+
+   xmb_free_node(tmp);
+
    file_list_set_actiondata(xmb->horizontal_list, i, node);
 
    return node;
@@ -3813,7 +3829,12 @@ static void xmb_list_insert(void *userdata,
    current           = (int)selection;
 
    if (!string_is_empty(fullpath))
-      strlcpy(node->fullpath, fullpath, sizeof(node->fullpath));
+   {
+      if (node->fullpath)
+         free(node->fullpath);
+
+      node->fullpath = strdup(fullpath);
+   }
 
    node->alpha       = xmb->items.passive.alpha;
    node->zoom        = xmb->items.passive.zoom;
@@ -3847,7 +3868,8 @@ static void xmb_list_clear(file_list_t *list)
       if (!node)
          continue;
 
-      file_list_free_userdata(list, i);
+      xmb_free_node(node);
+      list->list[i].userdata = NULL;
    }
 }
 
@@ -3861,7 +3883,10 @@ static void xmb_list_deep_copy(const file_list_t *src, file_list_t *dst)
 
    for (i = 0; i < size; ++i)
    {
-      file_list_free_userdata(dst, i);
+      xmb_node_t *node = (xmb_node_t*)menu_entries_get_userdata_at_offset(dst, i);
+
+      xmb_free_node(node);
+      dst->list[i].userdata = NULL;
       file_list_free_actiondata(dst, i); /* this one was allocated by us */
    }
 
