@@ -3961,6 +3961,10 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
       xmb_list_deep_copy(menu_stack, xmb->menu_stack_old);
    }
 
+   /* FIXME: this shouldn't be happening at all */
+   if (selection >= xmb->selection_buf_old->size)
+      selection = xmb->selection_buf_old->size ? xmb->selection_buf_old->size - 1 : 0;
+
    xmb->selection_ptr_old = selection;
 
    list_size = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL)
