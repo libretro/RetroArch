@@ -23,7 +23,6 @@
 
 #include "wiiu/controller_patcher/ControllerPatcherWrapper.h"
 
-#include "../input_config.h"
 #include "../input_driver.h"
 
 #include "../../tasks/tasks_internal.h"

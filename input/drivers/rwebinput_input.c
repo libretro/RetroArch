@@ -20,7 +20,6 @@
 
 #include <boolean.h>
 
-#include "../input_config.h"
 #include "../input_driver.h"
 #include "../input_keymaps.h"
 

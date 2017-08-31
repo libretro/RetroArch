@@ -24,7 +24,7 @@
 #include <file/config_file.h>
 #include <string/stdstring.h>
 
-#include "../input/input_config.h"
+#include "../input/input_driver.h"
 
 #include "../configuration.h"
 #include "../file_path_special.h"

@@ -16,7 +16,7 @@
 
 #include <stdint.h>
 
-#include "../input_config.h"
+#include "../input_driver.h"
 #include "../../tasks/tasks_internal.h"
 
 static uint64_t pad_state[MAX_PADS];

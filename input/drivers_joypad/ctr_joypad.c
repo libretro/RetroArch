@@ -19,7 +19,6 @@
 #endif
 
 #include "../input_driver.h"
-#include "../input_config.h"
 
 #include "../../tasks/tasks_internal.h"
 

@@ -37,7 +37,7 @@
 
 #include "../../gfx/video_driver.h"
 
-#include "../../input/input_config.h"
+#include "../../input/input_driver.h"
 #include "../../input/input_remapping.h"
 
 #ifndef BIND_ACTION_START

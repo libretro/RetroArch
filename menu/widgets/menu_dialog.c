@@ -33,7 +33,7 @@
 #include "../../configuration.h"
 
 #include "../../tasks/tasks_internal.h"
-#include "../../input/input_config.h"
+#include "../../input/input_driver.h"
 #include "../../performance_counters.h"
 
 static bool                  menu_dialog_pending_push   = false;

@@ -32,7 +32,6 @@
 #include <compat/strl.h>
 #include <string/stdstring.h>
 
-#include "../input_config.h"
 #include "../input_driver.h"
 
 #include "../../tasks/tasks_internal.h"

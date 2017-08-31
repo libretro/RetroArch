@@ -30,7 +30,6 @@
 #include <compat/strl.h>
 #include <string/stdstring.h>
 
-#include "../input_config.h"
 #include "../input_driver.h"
 
 #include "../../verbosity.h"

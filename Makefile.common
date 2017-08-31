@@ -207,7 +207,6 @@ OBJ += frontend/frontend.o \
        gfx/drivers_font_renderer/bitmapfont.o \
        tasks/task_autodetect.o \
 		 input/input_autodetect_builtin.o \
-       input/input_config.o \
        input/input_keymaps.o \
        input/input_remapping.o \
        tasks/task_overlay.o \

@@ -37,7 +37,6 @@
 #include "content.h"
 #include "config.def.h"
 #include "config.features.h"
-#include "input/input_config.h"
 #include "input/input_keymaps.h"
 #include "input/input_remapping.h"
 #include "defaults.h"

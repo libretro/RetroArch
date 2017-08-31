@@ -58,7 +58,7 @@
 
 #include "defaults.h"
 #include "driver.h"
-#include "input/input_config.h"
+#include "input/input_driver.h"
 #include "frontend/frontend_driver.h"
 #include "audio/audio_driver.h"
 #include "record/record_driver.h"

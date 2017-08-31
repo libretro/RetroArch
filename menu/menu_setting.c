@@ -71,7 +71,7 @@
 #include "../location/location_driver.h"
 #include "../record/record_driver.h"
 #include "../audio/audio_driver.h"
-#include "../input/input_config.h"
+#include "../input/input_driver.h"
 #include "../tasks/tasks_internal.h"
 #include "../config.def.h"
 #include "../ui/ui_companion_driver.h"

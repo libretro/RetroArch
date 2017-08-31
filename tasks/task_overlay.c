@@ -28,7 +28,7 @@
 
 #include "../file_path_special.h"
 #include "../gfx/video_driver.h"
-#include "../input/input_config.h"
+#include "../input/input_driver.h"
 #include "../input/input_overlay.h"
 #include "../configuration.h"
 #include "../verbosity.h"

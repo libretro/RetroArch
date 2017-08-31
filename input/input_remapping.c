@@ -19,7 +19,7 @@
 #include <file/file_path.h>
 #include <string/stdstring.h>
 
-#include "input_config.h"
+#include "input_driver.h"
 #include "input_remapping.h"
 #include "../configuration.h"
 #include "../retroarch.h"

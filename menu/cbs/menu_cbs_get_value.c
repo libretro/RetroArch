@@ -28,7 +28,7 @@
 #include "../menu_shader.h"
 
 #include "../../tasks/tasks_internal.h"
-#include "../../input/input_config.h"
+#include "../../input/input_driver.h"
 
 #include "../../core.h"
 #include "../../core_info.h"

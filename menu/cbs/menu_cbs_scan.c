@@ -25,7 +25,7 @@
 #include "../menu_cbs.h"
 #include "../menu_setting.h"
 
-#include "../../input/input_config.h"
+#include "../../input/input_driver.h"
 
 #include "../../configuration.h"
 #include "../../tasks/tasks_internal.h"

@@ -90,7 +90,6 @@
 #include "dynamic.h"
 #include "driver.h"
 #include "input/input_driver.h"
-#include "input/input_config.h"
 #include "msg_hash.h"
 #include "movie.h"
 #include "dirs.h"
