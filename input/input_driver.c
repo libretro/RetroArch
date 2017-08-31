@@ -228,8 +228,8 @@ static const char *bind_user_prefix[MAX_USERS] = {
    "input_player16",
 };
 
-static int input_config_vid[MAX_USERS];
-static int input_config_pid[MAX_USERS];
+static uint16_t input_config_vid[MAX_USERS];
+static uint16_t input_config_pid[MAX_USERS];
 
 char input_device_names[MAX_USERS][64];
 struct retro_keybind input_config_binds[MAX_USERS][RARCH_BIND_LIST_END];
@@ -2488,22 +2488,22 @@ const struct retro_keybind *input_config_get_bind_auto(unsigned port, unsigned i
    return NULL;
 }
 
-void input_config_set_pid(unsigned port, unsigned pid)
+void input_config_set_pid(unsigned port, uint16_t pid)
 {
    input_config_pid[port] = pid;
 }
 
-int32_t input_config_get_pid(unsigned port)
+uint16_t input_config_get_pid(unsigned port)
 {
    return input_config_pid[port];
 }
 
-void input_config_set_vid(unsigned port, unsigned vid)
+void input_config_set_vid(unsigned port, uint16_t vid)
 {
    input_config_vid[port] = vid;
 }
 
-int32_t input_config_get_vid(unsigned port)
+uint16_t input_config_get_vid(unsigned port)
 {
    return input_config_vid[port];
 }
