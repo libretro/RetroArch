@@ -3566,8 +3566,11 @@ bool config_save_file(const char *path)
    }
 #endif
 
-   config_set_bool(conf, "log_verbosity",
-         verbosity_is_enabled());
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL))
+   {
+      config_set_bool(conf, "log_verbosity",
+            verbosity_is_enabled());
+   }
    config_set_bool(conf, "perfcnt_enable",
          rarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL));
 
