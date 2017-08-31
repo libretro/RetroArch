@@ -36,7 +36,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdint.h>
 
 #include <retro_common_api.h>
-#include "../input_config.h"
 
 #ifndef MAX_KEYS
 #define MAX_KEYS     256
