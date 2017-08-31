@@ -228,6 +228,22 @@ static const char *bind_user_prefix[MAX_USERS] = {
    "input_player16",
 };
 
+static const unsigned buttons[] = {
+   RETRO_DEVICE_ID_JOYPAD_R,
+   RETRO_DEVICE_ID_JOYPAD_L,
+   RETRO_DEVICE_ID_JOYPAD_X,
+   RETRO_DEVICE_ID_JOYPAD_A,
+   RETRO_DEVICE_ID_JOYPAD_RIGHT,
+   RETRO_DEVICE_ID_JOYPAD_LEFT,
+   RETRO_DEVICE_ID_JOYPAD_DOWN,
+   RETRO_DEVICE_ID_JOYPAD_UP,
+   RETRO_DEVICE_ID_JOYPAD_START,
+   RETRO_DEVICE_ID_JOYPAD_SELECT,
+   RETRO_DEVICE_ID_JOYPAD_Y,
+   RETRO_DEVICE_ID_JOYPAD_B,
+};
+
+
 static uint16_t input_config_vid[MAX_USERS];
 static uint16_t input_config_pid[MAX_USERS];
 
@@ -361,6 +377,27 @@ static unsigned input_driver_max_users            = 0;
 #ifdef HAVE_HID
 static const void *hid_data                       = NULL;
 #endif
+
+/**
+ * check_input_driver_block_hotkey:
+ *
+ * Checks if 'hotkey enable' key is pressed.
+ *
+ * If we haven't bound anything to this,
+ * always allow hotkeys.
+
+ * If we hold ENABLE_HOTKEY button, block all libretro input to allow
+ * hotkeys to be bound to same keys as RetroPad.
+ **/
+#define check_input_driver_block_hotkey(normal_bind, autoconf_bind) \
+( \
+         (((normal_bind)->key      != RETROK_UNKNOWN) \
+      || ((normal_bind)->joykey    != NO_BTN) \
+      || ((normal_bind)->joyaxis   != AXIS_NONE) \
+      || ((autoconf_bind)->key     != RETROK_UNKNOWN ) \
+      || ((autoconf_bind)->joykey  != NO_BTN) \
+      || ((autoconf_bind)->joyaxis != AXIS_NONE)) \
+)
 
 /**
  * input_driver_find_handle:
@@ -668,42 +705,6 @@ int16_t input_state(unsigned port, unsigned device,
 
    return res;
 }
-
-/**
- * check_input_driver_block_hotkey:
- *
- * Checks if 'hotkey enable' key is pressed.
- *
- * If we haven't bound anything to this,
- * always allow hotkeys.
-
- * If we hold ENABLE_HOTKEY button, block all libretro input to allow
- * hotkeys to be bound to same keys as RetroPad.
- **/
-#define check_input_driver_block_hotkey(normal_bind, autoconf_bind) \
-( \
-         (((normal_bind)->key      != RETROK_UNKNOWN) \
-      || ((normal_bind)->joykey    != NO_BTN) \
-      || ((normal_bind)->joyaxis   != AXIS_NONE) \
-      || ((autoconf_bind)->key     != RETROK_UNKNOWN ) \
-      || ((autoconf_bind)->joykey  != NO_BTN) \
-      || ((autoconf_bind)->joyaxis != AXIS_NONE)) \
-)
-
-static const unsigned buttons[] = {
-   RETRO_DEVICE_ID_JOYPAD_R,
-   RETRO_DEVICE_ID_JOYPAD_L,
-   RETRO_DEVICE_ID_JOYPAD_X,
-   RETRO_DEVICE_ID_JOYPAD_A,
-   RETRO_DEVICE_ID_JOYPAD_RIGHT,
-   RETRO_DEVICE_ID_JOYPAD_LEFT,
-   RETRO_DEVICE_ID_JOYPAD_DOWN,
-   RETRO_DEVICE_ID_JOYPAD_UP,
-   RETRO_DEVICE_ID_JOYPAD_START,
-   RETRO_DEVICE_ID_JOYPAD_SELECT,
-   RETRO_DEVICE_ID_JOYPAD_Y,
-   RETRO_DEVICE_ID_JOYPAD_B,
-};
 
 /**
  * state_tracker_update_input:
