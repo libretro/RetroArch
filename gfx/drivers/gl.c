@@ -1245,7 +1245,7 @@ static bool gl_frame(void *data, const void *frame,
    }
 #endif
 
-   if (msg)
+   if (!string_is_empty(msg))
       font_driver_render_msg(video_info, NULL, msg, NULL);
 
 #ifdef HAVE_OVERLAY
