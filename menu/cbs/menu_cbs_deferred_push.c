@@ -1759,8 +1759,8 @@ int menu_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
 
    BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_default);
 
-   if (menu_cbs_init_bind_deferred_push_compare_label(
-            cbs, label, label_hash) == 0)
+   if (cbs->enum_idx != MENU_ENUM_LABEL_PLAYLIST_ENTRY &&
+       menu_cbs_init_bind_deferred_push_compare_label(cbs, label, label_hash) == 0)
       return 0;
 
    if (menu_cbs_init_bind_deferred_push_compare_type(
