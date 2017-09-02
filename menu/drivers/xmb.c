@@ -1432,11 +1432,10 @@ static xmb_node_t *xmb_node_allocate_userdata(xmb_handle_t *xmb, unsigned i)
       node->zoom  = xmb->categories.active.zoom;
    }
 
-   tmp = (xmb_node_t*)file_list_get_actiondata_at_offset(xmb->horizontal_list, i);
-
+   tmp = (xmb_node_t*)file_list_get_userdata_at_offset(xmb->horizontal_list, i);
    xmb_free_node(tmp);
 
-   file_list_set_actiondata(xmb->horizontal_list, i, node);
+   file_list_set_userdata(xmb->horizontal_list, i, node);
 
    return node;
 }
@@ -1445,7 +1444,7 @@ static xmb_node_t* xmb_get_userdata_from_horizontal_list(
       xmb_handle_t *xmb, unsigned i)
 {
    return (xmb_node_t*)
-      menu_entries_get_actiondata_at_offset(xmb->horizontal_list, i);
+      menu_entries_get_userdata_at_offset(xmb->horizontal_list, i);
 }
 
 static void xmb_push_animations(xmb_node_t *node, uintptr_t tag, float ia, float ix)
