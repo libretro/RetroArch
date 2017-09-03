@@ -464,10 +464,7 @@ static void xmb_free_list_nodes(file_list_t *list, bool actiondata)
 
    for (i = 0; i < size; ++i)
    {
-      void *node = file_list_get_userdata_at_offset(list, i);
-
-      if (node)
-         xmb_free_node((xmb_node_t*)node);
+      xmb_free_node((xmb_node_t*)file_list_get_userdata_at_offset(list, i));
 
       /* file_list_set_userdata() doesn't accept NULL */
       list->list[i].userdata = NULL;
@@ -477,21 +474,12 @@ static void xmb_free_list_nodes(file_list_t *list, bool actiondata)
    }
 }
 
-/* NOTE: This is faster than memcpy()ing xmb_node_t in most cases
- * because most nodes have small (less than 200 bytes) fullpath */
-static xmb_node_t *xmb_copy_node(void *p)
+static xmb_node_t *xmb_copy_node(const xmb_node_t *old_node)
 {
-   xmb_node_t *old_node = (xmb_node_t*)p;
    xmb_node_t *new_node = (xmb_node_t*)malloc(sizeof(*new_node));
 
-   new_node->alpha        = old_node->alpha;
-   new_node->label_alpha  = old_node->label_alpha;
-   new_node->zoom         = old_node->zoom;
-   new_node->x            = old_node->x;
-   new_node->y            = old_node->y;
-   new_node->icon         = old_node->icon;
-   new_node->content_icon = old_node->content_icon;
-   new_node->fullpath     = old_node->fullpath ? strdup(old_node->fullpath) : NULL;
+   *new_node            = *old_node;
+   new_node->fullpath   = old_node->fullpath ? strdup(old_node->fullpath) : NULL;
 
    return new_node;
 }
@@ -3958,7 +3946,7 @@ static void xmb_list_deep_copy(const file_list_t *src, file_list_t *dst)
       void *src_adata = (void*)menu_entries_get_actiondata_at_offset(src, i);
 
       if (src_udata)
-         file_list_set_userdata(dst, i, xmb_copy_node(src_udata));
+         file_list_set_userdata(dst, i, (xmb_node_t*)xmb_copy_node(src_udata));
 
       if (src_adata)
       {
