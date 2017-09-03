@@ -174,7 +174,6 @@ enum
 
 typedef struct xmb_handle
 {
-   file_list_t *menu_stack_old;
    file_list_t *selection_buf_old;
    file_list_t *horizontal_list;
    size_t selection_ptr_old;
@@ -2297,7 +2296,7 @@ static void xmb_draw_items(
       video_frame_info_t *video_info,
       menu_display_frame_info_t menu_disp_info,
       xmb_handle_t *xmb,
-      file_list_t *list, file_list_t *stack,
+      file_list_t *list,
       size_t current, size_t cat_selection_ptr, float *color,
       unsigned width, unsigned height)
 {
@@ -2809,7 +2808,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    unsigned height                         = video_info->height;
    bool render_background                  = false;
    file_list_t *selection_buf              = NULL;
-   file_list_t *menu_stack                 = NULL;
    xmb_handle_t *xmb                       = (xmb_handle_t*)data;
 
    if (!xmb)
@@ -3086,7 +3084,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          menu_disp_info,
          xmb,
          xmb->selection_buf_old,
-         xmb->menu_stack_old,
          xmb->selection_ptr_old,
          (xmb_list_get_size(xmb, MENU_LIST_PLAIN) > 1)
          ? xmb->categories.selection_ptr : xmb->categories.selection_ptr_old,
@@ -3095,14 +3092,12 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          height);
 
    selection_buf = menu_entries_get_selection_buf_ptr(0);
-   menu_stack    = menu_entries_get_menu_stack_ptr(0);
 
    xmb_draw_items(
          video_info,
          menu_disp_info,
          xmb,
          selection_buf,
-         menu_stack,
          selection,
          xmb->categories.selection_ptr,
          &item_color[0],
@@ -3431,11 +3426,6 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
 
    *userdata = xmb;
 
-   xmb->menu_stack_old        = (file_list_t*)calloc(1, sizeof(file_list_t));
-
-   if (!xmb->menu_stack_old)
-      goto error;
-
    xmb->selection_buf_old     = (file_list_t*)calloc(1, sizeof(file_list_t));
 
    if (!xmb->selection_buf_old)
@@ -3503,9 +3493,6 @@ error:
 
    if (xmb)
    {
-      if (xmb->menu_stack_old)
-         free(xmb->menu_stack_old);
-      xmb->menu_stack_old = NULL;
       if (xmb->selection_buf_old)
          free(xmb->selection_buf_old);
       xmb->selection_buf_old = NULL;
@@ -3525,12 +3512,6 @@ static void xmb_free(void *data)
 
    if (xmb)
    {
-      if (xmb->menu_stack_old)
-      {
-         xmb_free_list_nodes(xmb->menu_stack_old, false);
-         file_list_free(xmb->menu_stack_old);
-      }
-
       if (xmb->selection_buf_old)
       {
          xmb_free_list_nodes(xmb->selection_buf_old, false);
@@ -3543,7 +3524,6 @@ static void xmb_free(void *data)
          file_list_free(xmb->horizontal_list);
       }
 
-      xmb->menu_stack_old    = NULL;
       xmb->selection_buf_old = NULL;
       xmb->horizontal_list   = NULL;
 
@@ -3931,35 +3911,47 @@ static void xmb_list_free(file_list_t *list, size_t a, size_t b)
    xmb_list_clear(list);
 }
 
-static void xmb_list_deep_copy(const file_list_t *src, file_list_t *dst)
+static void xmb_list_deep_copy(const file_list_t *src, file_list_t *dst,
+      size_t first, size_t last)
 {
-   size_t i;
+   size_t i, j = 0;
    menu_animation_ctx_tag tag = (uintptr_t)dst;
-   size_t size                  = dst->size;
 
    menu_animation_ctl(MENU_ANIMATION_CTL_KILL_BY_TAG, &tag);
 
    /* use true here because file_list_copy() doesn't free actiondata */
    xmb_free_list_nodes(dst, true);
-   file_list_copy(src, dst);
 
-   size = dst->size;
+   file_list_clear(dst);
+   file_list_reserve(dst, (last + 1) - first);
 
-   for (i = 0; i < size; ++i)
+   for (i = first; i <= last; ++i)
    {
-      void *src_udata = menu_entries_get_userdata_at_offset(src, i);
-      void *src_adata = (void*)menu_entries_get_actiondata_at_offset(src, i);
+      struct item_file *d = &dst->list[j];
+      struct item_file *s = &src->list[i];
+
+      void *src_udata = s->userdata;
+      void *src_adata = s->actiondata;
+
+      *d       = *s;
+      d->alt   = string_is_empty(d->alt)   ? NULL : strdup(d->alt);
+      d->path  = string_is_empty(d->path)  ? NULL : strdup(d->path);
+      d->label = string_is_empty(d->label) ? NULL : strdup(d->label);
 
       if (src_udata)
-         file_list_set_userdata(dst, i, (xmb_node_t*)xmb_copy_node(src_udata));
+         file_list_set_userdata(dst, j, (xmb_node_t*)xmb_copy_node(src_udata));
 
       if (src_adata)
       {
          void *data = malloc(sizeof(menu_file_list_cbs_t));
          memcpy(data, src_adata, sizeof(menu_file_list_cbs_t));
-         file_list_set_actiondata(dst, i, data);
+         file_list_set_actiondata(dst, j, data);
       }
+
+      ++j;
    }
+
+   dst->size = j;
 }
 
 static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action)
@@ -3974,18 +3966,29 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
    if (!xmb)
       return;
 
-   /* Check whether to enable the horizontal animation. */
-   if (settings->bools.menu_horizontal_animation)
-   {
-      xmb_list_deep_copy(selection_buf, xmb->selection_buf_old);
-      xmb_list_deep_copy(menu_stack, xmb->menu_stack_old);
-   }
-
    /* FIXME: this shouldn't be happening at all */
    if (selection >= xmb->selection_buf_old->size)
       selection = xmb->selection_buf_old->size ? xmb->selection_buf_old->size - 1 : 0;
 
    xmb->selection_ptr_old = selection;
+
+   /* Check whether to enable the horizontal animation. */
+   if (settings->bools.menu_horizontal_animation)
+   {
+      unsigned first = 0, last = 0;
+      unsigned height = 0;
+      video_driver_get_size(NULL, &height);
+
+      xmb_calculate_visible_range(xmb, height, selection_buf->size,
+            xmb->selection_ptr_old, &first, &last);
+
+      xmb_list_deep_copy(selection_buf, xmb->selection_buf_old, first, last);
+
+      xmb->selection_ptr_old -= first;
+      last                   -= first;
+      first                   = 0;
+   }
+
 
    list_size = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL)
       + xmb->system_tab_end;
