@@ -1550,6 +1550,9 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
       menu_driver_set_thumbnail_system(lpl_basename, sizeof(lpl_basename));
    }
 
+   /* prealocate the file list */
+   file_list_reserve(info->list, list_size);
+
    for (i = 0; i < list_size; i++)
    {
       char fill_buf[PATH_MAX_LENGTH];
