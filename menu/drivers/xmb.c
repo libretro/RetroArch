@@ -3926,6 +3926,11 @@ static void xmb_list_clear(file_list_t *list)
    xmb_free_list_nodes(list, false);
 }
 
+static void xmb_list_free(file_list_t *list, size_t a, size_t b)
+{
+   xmb_list_clear(list);
+}
+
 static void xmb_list_deep_copy(const file_list_t *src, file_list_t *dst)
 {
    size_t i;
@@ -4418,7 +4423,7 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_menu_init_list,
    xmb_list_insert,
    NULL,
-   xmb_list_clear, /* free */
+   xmb_list_free,
    xmb_list_clear,
    xmb_list_cache,
    xmb_list_push,
