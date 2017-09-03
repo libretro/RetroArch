@@ -174,7 +174,6 @@ enum
 
 typedef struct xmb_handle
 {
-   file_list_t *menu_stack_old;
    file_list_t *selection_buf_old;
    file_list_t *horizontal_list;
    size_t selection_ptr_old;
@@ -2297,7 +2296,7 @@ static void xmb_draw_items(
       video_frame_info_t *video_info,
       menu_display_frame_info_t menu_disp_info,
       xmb_handle_t *xmb,
-      file_list_t *list, file_list_t *stack,
+      file_list_t *list,
       size_t current, size_t cat_selection_ptr, float *color,
       unsigned width, unsigned height)
 {
@@ -2809,7 +2808,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    unsigned height                         = video_info->height;
    bool render_background                  = false;
    file_list_t *selection_buf              = NULL;
-   file_list_t *menu_stack                 = NULL;
    xmb_handle_t *xmb                       = (xmb_handle_t*)data;
 
    if (!xmb)
@@ -3086,7 +3084,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          menu_disp_info,
          xmb,
          xmb->selection_buf_old,
-         xmb->menu_stack_old,
          xmb->selection_ptr_old,
          (xmb_list_get_size(xmb, MENU_LIST_PLAIN) > 1)
          ? xmb->categories.selection_ptr : xmb->categories.selection_ptr_old,
@@ -3095,14 +3092,12 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          height);
 
    selection_buf = menu_entries_get_selection_buf_ptr(0);
-   menu_stack    = menu_entries_get_menu_stack_ptr(0);
 
    xmb_draw_items(
          video_info,
          menu_disp_info,
          xmb,
          selection_buf,
-         menu_stack,
          selection,
          xmb->categories.selection_ptr,
          &item_color[0],
@@ -3431,11 +3426,6 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
 
    *userdata = xmb;
 
-   xmb->menu_stack_old        = (file_list_t*)calloc(1, sizeof(file_list_t));
-
-   if (!xmb->menu_stack_old)
-      goto error;
-
    xmb->selection_buf_old     = (file_list_t*)calloc(1, sizeof(file_list_t));
 
    if (!xmb->selection_buf_old)
@@ -3503,9 +3493,6 @@ error:
 
    if (xmb)
    {
-      if (xmb->menu_stack_old)
-         free(xmb->menu_stack_old);
-      xmb->menu_stack_old = NULL;
       if (xmb->selection_buf_old)
          free(xmb->selection_buf_old);
       xmb->selection_buf_old = NULL;
@@ -3525,12 +3512,6 @@ static void xmb_free(void *data)
 
    if (xmb)
    {
-      if (xmb->menu_stack_old)
-      {
-         xmb_free_list_nodes(xmb->menu_stack_old, false);
-         file_list_free(xmb->menu_stack_old);
-      }
-
       if (xmb->selection_buf_old)
       {
          xmb_free_list_nodes(xmb->selection_buf_old, false);
@@ -3543,7 +3524,6 @@ static void xmb_free(void *data)
          file_list_free(xmb->horizontal_list);
       }
 
-      xmb->menu_stack_old    = NULL;
       xmb->selection_buf_old = NULL;
       xmb->horizontal_list   = NULL;
 
@@ -3976,10 +3956,7 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
 
    /* Check whether to enable the horizontal animation. */
    if (settings->bools.menu_horizontal_animation)
-   {
       xmb_list_deep_copy(selection_buf, xmb->selection_buf_old);
-      xmb_list_deep_copy(menu_stack, xmb->menu_stack_old);
-   }
 
    /* FIXME: this shouldn't be happening at all */
    if (selection >= xmb->selection_buf_old->size)
