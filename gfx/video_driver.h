@@ -1252,7 +1252,6 @@ extern video_driver_t video_gx;
 extern video_driver_t video_wiiu;
 extern video_driver_t video_xenon360;
 extern video_driver_t video_xvideo;
-extern video_driver_t video_xdk_d3d;
 extern video_driver_t video_sdl;
 extern video_driver_t video_sdl2;
 extern video_driver_t video_vg;
@@ -1295,8 +1294,9 @@ extern const shader_backend_t hlsl_backend;
 extern const shader_backend_t gl_cg_backend;
 extern const shader_backend_t shader_null_backend;
 
+extern renderchain_driver_t d3d8_renderchain;
 extern renderchain_driver_t cg_d3d9_renderchain;
-extern renderchain_driver_t xdk_d3d_renderchain;
+extern renderchain_driver_t hlsl_d3d9_renderchain;
 extern renderchain_driver_t null_renderchain;
 
 RETRO_END_DECLS

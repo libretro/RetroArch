@@ -395,8 +395,10 @@ static const renderchain_driver_t *renderchain_drivers[] = {
 #if defined(_WIN32) && defined(HAVE_D3D9) && defined(HAVE_CG)
    &cg_d3d9_renderchain,
 #endif
-#ifdef _XBOX
-   &xdk_d3d_renderchain,
+#if defined(_WIN32) && defined(HAVE_D3D9) && defined(HAVE_HLSL)
+   &hlsl_d3d9_renderchain,
+#if defined(_WIN32) && defined(HAVE_D3D8)
+   &d3d8_renderchain,
 #endif
    &null_renderchain,
    NULL
