@@ -102,7 +102,7 @@ void d3d_texture_free(LPDIRECT3DTEXTURE tex)
 bool d3d_vertex_declaration_new(LPDIRECT3DDEVICE dev,
       const void *vertex_data, void **decl_data)
 {
-#ifndef _XBOX1
+#ifdef HAVE_D3D9
    const D3DVERTEXELEMENT   *vertex_elements = (const D3DVERTEXELEMENT*)vertex_data;
    LPDIRECT3DVERTEXDECLARATION **vertex_decl = (LPDIRECT3DVERTEXDECLARATION**)decl_data;
 
@@ -146,19 +146,13 @@ LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(LPDIRECT3DDEVICE dev,
 void d3d_vertex_buffer_unlock(void *vertbuf_ptr)
 {
    LPDIRECT3DVERTEXBUFFER vertbuf = (LPDIRECT3DVERTEXBUFFER)vertbuf_ptr;
-   /* This is a stub on Xbox 1, see docs. */
-#ifndef _XBOX1
 
 #ifdef _XBOX360
    D3DVertexBuffer_Unlock(vertbuf);
-#if defined(HAVE_D3D9) && !defined(__cplusplus)
+#elif defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DVertexBuffer9_Unlock(vertbuf);
-#else
+#elif defined(HAVE_D3D9)
    vertbuf->Unlock();
-#endif
-
-#endif
-
 #endif
 }
 
@@ -171,7 +165,7 @@ void *d3d_vertex_buffer_lock(void *vertbuf_ptr)
    buf = (void*)D3DVertexBuffer_Lock2(vertbuf, 0);
 #elif defined(_XBOX360)
    buf = D3DVertexBuffer_Lock(vertbuf, 0, 0, 0);
-#else
+#elif defined(HAVE_D3D9)
    vertbuf->Lock(0, sizeof(buf), &buf, 0);
 #endif
 
@@ -335,12 +329,10 @@ void d3d_unlock_rectangle(LPDIRECT3DTEXTURE tex)
 {
 #ifdef _XBOX
    D3DTexture_UnlockRect(tex, 0);
-#else
-#if defined(HAVE_D3D9) && !defined(__cplusplus)
+#elif defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DSurface9_UnlockRect(tex);
 #else
    tex->UnlockRect(0);
-#endif
 #endif
 }
 
@@ -411,7 +403,7 @@ void d3d_texture_blit(unsigned pixel_size,
 {
    if (d3d_lock_rectangle(tex, 0, lr, NULL, 0, 0))
    {
-#if defined(_XBOX360) && defined(_XBOX360)
+#if defined(_XBOX360)
       D3DSURFACE_DESC desc;
       tex->GetLevelDesc(0, &desc);
       XGCopySurface(lr->pBits, lr->Pitch, width, height, desc.Format, NULL,
@@ -506,6 +498,7 @@ void d3d_set_vertex_declaration(void *data, void *vertex_data)
 #endif
    if (!dev)
       return;
+
 #ifdef _XBOX1
    d3d_set_vertex_shader(dev, D3DFVF_XYZ | D3DFVF_TEX1, NULL);
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
