@@ -238,8 +238,13 @@ static void gfx_ctx_gdi_input_driver(void *data,
    }
 #endif
 
+#ifdef HAVE_DINPUT
    dinput_gdi  = input_dinput.init(joypad_name);
    *input      = dinput_gdi ? &input_dinput : NULL;
+#else
+   dinput_gdi  = NULL;
+   *input      = NULL;
+#endif
    *input_data = dinput_gdi;
 }
 
