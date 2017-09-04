@@ -16,6 +16,7 @@
 
 #include <string.h>
 #include <retro_inline.h>
+#include <retro_math.h>
 
 #include "../drivers/d3d.h"
 #include "../common/d3d_common.h"
@@ -82,7 +83,13 @@ static bool renderchain_create_first_pass(void *data,
 
    chain->tex = d3d_texture_new(d3dr, NULL, 
          chain->tex_w, chain->tex_h, 1, 0,
-         info->rgb32 ? D3DFMT_LIN_X8R8G8B8 : D3DFMT_LIN_R5G6B5,
+         info->rgb32 
+         ? 
+#ifdef _XBOX
+         D3DFMT_LIN_X8R8G8B8 : D3DFMT_LIN_R5G6B5,
+#else
+         D3DFMT_X8R8G8B8 : D3DFMT_R5G6B5,
+#endif
          0, 0, 0, 0, NULL, NULL);
 
    if (!chain->tex)
@@ -206,8 +213,10 @@ static void d3d8_renderchain_free(void *data)
    d3d8_renderchain_deinit(chain->renderchain_data);
    d3d8_renderchain_clear(chain->renderchain_data);
 
+#if 0
    if (chain->tracker)
       state_tracker_free(chain->tracker);
+#endif
 }
 
 

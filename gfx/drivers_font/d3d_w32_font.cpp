@@ -23,8 +23,10 @@
 
 #include "../../configuration.h"
 
-#ifdef HAVE_D3D9
+#if defined(HAVE_D3D9)
 #include "../include/d3d9/d3dx9core.h"
+#elif defined(HAVE_D3D8)
+#include "../include/d3d8/d3dx8core.h"
 #endif
 
 #include <tchar.h>
@@ -43,7 +45,11 @@ static void *d3dfonts_w32_init_font(void *video_data,
    uint32_t r, g, b;
    d3dfonts_t *d3dfonts = NULL;
    settings_t *settings = config_get_ptr();
+#if defined(HAVE_D3D8)
+   D3DXPASS_DESC desc = {
+#else
    D3DXFONT_DESC desc = {
+#endif
       (int)(font_size), 0, 400, 0,
       false, DEFAULT_CHARSET,
       OUT_TT_PRECIS,

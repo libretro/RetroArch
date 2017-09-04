@@ -28,16 +28,6 @@
 #define HAVE_WINDOW
 #endif
 
-#if defined(_XBOX1)
-#ifndef HAVE_D3D8
-#define HAVE_D3D8
-#endif
-#else
-#ifndef HAVE_D3D9
-#define HAVE_D3D9
-#endif
-#endif
-
 #include "../../defines/d3d_defines.h"
 
 #ifdef _XBOX1
@@ -65,11 +55,11 @@ typedef struct
    void *vert_buf;
 } overlay_t;
 
-#ifdef _XBOX
+#if defined(_XBOX) || defined(HAVE_D3D8)
 typedef struct Vertex
 {
    float x, y;
-#if defined(_XBOX1)
+#if defined(_XBOX1) || defined(HAVE_D3D8)
    float z;
    float rhw;
 #endif

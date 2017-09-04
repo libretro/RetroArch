@@ -55,7 +55,7 @@
 
 extern LRESULT win32_menu_loop(HWND owner, WPARAM wparam);
 
-#ifdef HAVE_D3D9
+#if defined(HAVE_D3D9) || defined(HAVE_D3D8)
 extern bool dinput_handle_message(void *dinput, UINT message,
       WPARAM wParam, LPARAM lParam);
 extern void *dinput_gdi;
@@ -506,7 +506,7 @@ static void win32_set_droppable(ui_window_win32_t *window, bool droppable)
       DragAcceptFiles_func(window->hwnd, droppable);
 }
 
-#ifdef HAVE_D3D9
+#if defined(HAVE_D3D9) || defined(HAVE_D3D8)
 LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
@@ -595,7 +595,7 @@ LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
          return 0;
    }
 
-#ifdef HAVE_D3D9
+#if defined(HAVE_D3D9) || defined(HAVE_D3D8)
    if (dinput_wgl && dinput_handle_message(dinput_wgl,
             message, wparam, lparam))
       return 0;
@@ -687,7 +687,7 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
          return 0;
    }
 
-#ifdef HAVE_D3D9
+#if defined(HAVE_D3D9) || defined(HAVE_D3D8)
    if (dinput_gdi && dinput_handle_message(dinput_gdi,
             message, wparam, lparam))
       return 0;

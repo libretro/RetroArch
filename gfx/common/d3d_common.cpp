@@ -18,8 +18,10 @@
 
 #include "d3d_common.h"
 
-#ifdef HAVE_D3D9
+#if defined(HAVE_D3D9)
 #include "../include/d3d9/d3dx9tex.h"
+#elif defined(HAVE_D3D8)
+#include "../include/d3d8/d3dx8tex.h"
 #endif
 
 bool d3d_swap(void *data, LPDIRECT3DDEVICE dev)
@@ -75,7 +77,7 @@ LPDIRECT3DTEXTURE d3d_texture_new(LPDIRECT3DDEVICE dev,
    {
       hr = dev->CreateTexture(width, height, miplevels, usage,
             format, pool, &buf
-#ifndef _XBOX1
+#ifndef HAVE_D3D8
             , NULL
 #endif
             );
@@ -120,11 +122,13 @@ LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(LPDIRECT3DDEVICE dev,
    LPDIRECT3DVERTEXBUFFER buf;
 
 #ifndef _XBOX
+#ifndef HAVE_D3D8
    if (usage == 0)
    {
 	  if (dev->GetSoftwareVertexProcessing())
          usage = D3DUSAGE_SOFTWAREPROCESSING;
    }
+#endif
 #endif
 
 #if defined(HAVE_D3D8)
@@ -222,6 +226,8 @@ void d3d_set_sampler_address_u(LPDIRECT3DDEVICE dev,
    D3DDevice_SetSamplerState_AddressU_Inline(dev, sampler, value);
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DDevice9_SetSamplerState(dev, sampler, D3DSAMP_ADDRESSU, value);
+#elif defined(HAVE_D3D8)
+   /* TODO/FIXME - we need a D3D8 implementation here */
 #else
    dev->SetSamplerState(sampler, D3DSAMP_ADDRESSU, value);
 #endif
@@ -237,6 +243,8 @@ void d3d_set_sampler_address_v(LPDIRECT3DDEVICE dev,
    D3DDevice_SetSamplerState_AddressV_Inline(dev, sampler, value);
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DDevice9_SetSamplerState(dev, sampler, D3DSAMP_ADDRESSV, value);
+#elif defined(HAVE_D3D8)
+   /* TODO/FIXME - we need a D3D8 implementation here */
 #else
    dev->SetSamplerState(sampler, D3DSAMP_ADDRESSV, value);
 #endif
@@ -252,6 +260,8 @@ void d3d_set_sampler_minfilter(LPDIRECT3DDEVICE dev,
    D3DDevice_SetSamplerState_MinFilter(dev, sampler, value);
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DDevice9_SetSamplerState(dev, sampler, D3DSAMP_MINFILTER, value);
+#elif defined(HAVE_D3D8)
+   /* TODO/FIXME - we need a D3D8 implementation here */
 #else
    dev->SetSamplerState(sampler, D3DSAMP_MINFILTER, value);
 #endif
@@ -267,6 +277,8 @@ void d3d_set_sampler_magfilter(LPDIRECT3DDEVICE dev,
    D3DDevice_SetSamplerState_MagFilter(dev, sampler, value);
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DDevice9_SetSamplerState(dev, sampler, D3DSAMP_MAGFILTER, value);
+#elif defined(HAVE_D3D8)
+   /* TODO/FIXME - we need a D3D8 implementation here */
 #else
    dev->SetSamplerState(sampler, D3DSAMP_MAGFILTER, value);
 #endif
@@ -390,6 +402,8 @@ HRESULT d3d_set_vertex_shader(LPDIRECT3DDEVICE dev, unsigned index,
    LPDIRECT3DVERTEXSHADER shader = (LPDIRECT3DVERTEXSHADER)data;
    D3DDevice_SetVertexShader(dev, shader);
    return S_OK;
+#elif defined(HAVE_D3D8)
+   return E_FAIL;
 #else
    LPDIRECT3DVERTEXSHADER shader = (LPDIRECT3DVERTEXSHADER)data;
    return dev->SetVertexShader(shader);

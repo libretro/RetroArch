@@ -124,7 +124,7 @@ void win32_window_reset(void);
 
 void win32_destroy_window(void);
 
-#ifdef HAVE_D3D9
+#if defined(HAVE_D3D9) || defined(HAVE_D3D8)
 LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
 #endif

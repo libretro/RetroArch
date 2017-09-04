@@ -405,7 +405,7 @@ static void d3d_overlay_render(d3d_video_t *d3d, video_frame_info_t *video_info,
 
    d3d_enable_blend_func(d3d->dev);
 
-#ifndef _XBOX1
+#if defined(HAVE_D3D9)
    {
       LPDIRECT3DVERTEXDECLARATION vertex_decl;
       /* set vertex declaration for overlay. */
@@ -485,6 +485,12 @@ static void d3d_deinitialize(d3d_video_t *d3d)
    d3d_deinit_chain(d3d);
 }
 
+#if defined(HAVE_D3D8) && !defined(_XBOX)
+#define FS_PRESENTINTERVAL(pp) ((pp)->FullScreen_PresentationInterval)
+#else
+#define FS_PRESENTINTERVAL(pp) ((pp)->PresentationInterval)
+#endif
+
 void d3d_make_d3dpp(void *data,
       const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp)
 {
@@ -503,7 +509,7 @@ void d3d_make_d3dpp(void *data,
    d3dpp->Windowed             = settings->bools.video_windowed_fullscreen 
       || !info->fullscreen;
 #endif
-   d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
+   FS_PRESENTINTERVAL(d3dpp)   = D3DPRESENT_INTERVAL_IMMEDIATE;
 
    if (info->vsync)
    {
@@ -511,16 +517,16 @@ void d3d_make_d3dpp(void *data,
       {
          default:
          case 1:
-            d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_ONE;
+            FS_PRESENTINTERVAL(d3dpp) = D3DPRESENT_INTERVAL_ONE;
             break;
          case 2:
-            d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_TWO;
+            FS_PRESENTINTERVAL(d3dpp) = D3DPRESENT_INTERVAL_TWO;
             break;
          case 3:
-            d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_THREE;
+            FS_PRESENTINTERVAL(d3dpp) = D3DPRESENT_INTERVAL_THREE;
             break;
          case 4:
-            d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_FOUR;
+            FS_PRESENTINTERVAL(d3dpp) = D3DPRESENT_INTERVAL_FOUR;
             break;
       }
    }
@@ -988,6 +994,7 @@ static bool d3d_construct(d3d_video_t *d3d,
 #endif
 
    memset(&d3d->windowClass, 0, sizeof(d3d->windowClass));
+
 #ifdef HAVE_WINDOW
    d3d->windowClass.lpfnWndProc = WndProcD3D;
    win32_window_init(&d3d->windowClass, true, NULL);

@@ -44,6 +44,8 @@
 #elif defined(HAVE_D3D8)
 #ifdef _XBOX
 #include <xtl.h>
+#else
+#include "../gfx/include/d3d8/d3d8.h"
 #endif
 
 /* Direct3D 8 */
@@ -60,7 +62,9 @@
 
 #define D3DCREATE_CTX                  Direct3DCreate8
 
+#if !defined(D3DLOCK_NOSYSLOCK) && defined(_XBOX) 
 #define D3DLOCK_NOSYSLOCK (0)
+#endif
 #define D3DSAMP_ADDRESSU D3DTSS_ADDRESSU
 #define D3DSAMP_ADDRESSV D3DTSS_ADDRESSV
 #define D3DSAMP_MAGFILTER D3DTSS_MAGFILTER
