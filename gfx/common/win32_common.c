@@ -226,7 +226,14 @@ void win32_monitor_get_info(void)
    current_mon.cbSize = sizeof(MONITORINFOEX);
 
    GetMonitorInfo(win32_monitor_last, (LPMONITORINFO)&current_mon);
+
+#if _WIN32_WINDOWS >= 0x0410 || _WIN32_WINNT >= 0x0410
+   /* Windows 98 and later codepath */
    ChangeDisplaySettingsEx(current_mon.szDevice, NULL, NULL, 0, NULL);
+#else
+   /* Windows 95 / NT codepath */
+   ChangeDisplaySettings(NULL, 0);
+#endif
 }
 
 void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id)
@@ -776,8 +783,14 @@ static bool win32_monitor_set_fullscreen(
    RARCH_LOG("Setting fullscreen to %ux%u @ %uHz on device %s.\n",
          width, height, refresh, dev_name);
 
+#if _WIN32_WINDOWS >= 0x0410 || _WIN32_WINNT >= 0x0410
+   /* Windows 98 and later codepath */
    return ChangeDisplaySettingsEx(dev_name, &devmode,
          NULL, CDS_FULLSCREEN, NULL) == DISP_CHANGE_SUCCESSFUL;
+#else
+   /* Windows 95 / NT codepath */
+   return ChangeDisplaySettings(&devmode, CDS_FULLSCREEN);
+#endif
 #endif
 }
 
@@ -828,7 +841,7 @@ bool win32_suppress_screensaver(void *data, bool enable)
 
       if (major*100+minor >= 601)
       {
-#ifdef _WIN32_WINNT_WIN7
+#if _WIN32_WINNT >= 0x0601
          /* Windows 7, 8, 10 codepath */
          typedef HANDLE (WINAPI * PowerCreateRequestPtr)(REASON_CONTEXT *context);
          typedef BOOL   (WINAPI * PowerSetRequestPtr)(HANDLE PowerRequest,
@@ -855,12 +868,20 @@ bool win32_suppress_screensaver(void *data, bool enable)
          }
 #endif
       }
-      else
+      else if (major*100+minor >= 410)
       {
-         /* XP / Vista codepath */
+#if _WIN32_WINDOWS >= 0x0410 || _WIN32_WINNT >= 0x0410
+         /* 98 / 2K / XP / Vista codepath */
          SetThreadExecutionState(ES_DISPLAY_REQUIRED | ES_SYSTEM_REQUIRED);
          return true;
+#endif
       }
+	  else
+	  {
+         /* 95 / NT codepath */
+	     /* No way to block the screensaver. */
+         return true;
+	  }
    }
 #endif
 

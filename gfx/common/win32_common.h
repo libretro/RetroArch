@@ -22,6 +22,12 @@
 #ifndef _XBOX
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#if _WIN32_WINNT <= 0x0400
+/* Windows versions below 98 do not support multiple monitors, so fake it */
+#define COMPILE_MULTIMON_STUBS
+#include <multimon.h>
+#endif
+
 #endif
 
 #include <boolean.h>
