@@ -457,11 +457,7 @@ static void hlsl_use(void *data, void *shader_data, unsigned idx, bool set_activ
          hlsl_data->active_idx = idx;
 
       d3d_set_vertex_shader(d3dr, idx, hlsl_data->prg[idx].vprg);
-#ifdef _XBOX
-      D3DDevice_SetPixelShader(d3dr, hlsl_data->prg[idx].fprg);
-#else
       d3dr->SetPixelShader(hlsl_data->prg[idx].fprg);
-#endif
    }
 }
 
