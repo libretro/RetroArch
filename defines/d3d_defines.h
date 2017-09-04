@@ -41,8 +41,10 @@
 #define D3DCREATE_SOFTWARE_VERTEXPROCESSING 0
 #endif
 
-#elif defined(_XBOX1)
+#elif defined(HAVE_D3D8)
+#ifdef _XBOX
 #include <xtl.h>
+#endif
 
 /* Direct3D 8 */
 #define LPDIRECT3D                     LPDIRECT3D8
@@ -67,7 +69,7 @@
 
 #if defined(_XBOX360)
 #define D3DFVF_CUSTOMVERTEX 0
-#elif defined(_XBOX1)
+#elif defined(HAVE_D3D8)
 #define D3DFVF_CUSTOMVERTEX	(D3DFVF_XYZRHW | D3DFVF_TEX1)
 #endif
 
