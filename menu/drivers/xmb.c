@@ -3942,7 +3942,7 @@ static void xmb_list_deep_copy(const file_list_t *src, file_list_t *dst,
       d->label = string_is_empty(d->label) ? NULL : strdup(d->label);
 
       if (src_udata)
-         file_list_set_userdata(dst, j, (xmb_node_t*)xmb_copy_node(src_udata));
+         file_list_set_userdata(dst, j, (void*)xmb_copy_node(src_udata));
 
       if (src_adata)
       {
