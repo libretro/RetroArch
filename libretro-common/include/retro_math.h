@@ -40,7 +40,7 @@
 #include <retro_inline.h>
 
 #ifndef M_PI
-#if !defined(_MSC_VER) && !defined(USE_MATH_DEFINES)
+#if !defined(USE_MATH_DEFINES)
 #define M_PI 3.14159265358979323846264338327
 #endif
 #endif
