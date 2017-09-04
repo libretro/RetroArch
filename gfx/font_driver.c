@@ -88,9 +88,10 @@ static const font_renderer_t *d3d_font_backends[] = {
    &d3d_xdk1_font,
 #elif defined(_XBOX360)
    &d3d_xbox360_font,
-#elif defined(_WIN32)
+#elif defined(_WIN32) && defined(HAVE_D3D9)
    &d3d_win32_font,
 #endif
+   NULL
 };
 
 static bool d3d_font_init_first(

@@ -29,8 +29,10 @@
 #include "../../gfx/drivers/d3d.h"
 #include "../../gfx/common/d3d_common.h"
 
-#ifdef HAVE_D3D9
+#if defined(HAVE_D3D9)
 #include "../../gfx/include/d3d9/d3dx9math.h"
+#elif defined(HAVE_D3D8)
+#include "../../gfx/include/d3d8/d3dx8math.h"
 #endif
 
 #define BYTE_CLAMP(i) (int) ((((i) > 255) ? 255 : (((i) < 0) ? 0 : (i))))
