@@ -6,12 +6,15 @@ EndProject
 Global
 	GlobalSection(SolutionConfiguration) = preSolution
 		Debug = Debug
+		Debug NoDX = Debug NoDX
 		Release = Release
 		Release NoDX = Release NoDX
 	EndGlobalSection
 	GlobalSection(ProjectConfiguration) = postSolution
 		{1FEFA874-F6A6-4CE6-9DB4-3B291A364CE5}.Debug.ActiveCfg = Debug|Win32
 		{1FEFA874-F6A6-4CE6-9DB4-3B291A364CE5}.Debug.Build.0 = Debug|Win32
+		{1FEFA874-F6A6-4CE6-9DB4-3B291A364CE5}.Debug NoDX.ActiveCfg = Debug NoDX|Win32
+		{1FEFA874-F6A6-4CE6-9DB4-3B291A364CE5}.Debug NoDX.Build.0 = Debug NoDX|Win32
 		{1FEFA874-F6A6-4CE6-9DB4-3B291A364CE5}.Release.ActiveCfg = Release|Win32
 		{1FEFA874-F6A6-4CE6-9DB4-3B291A364CE5}.Release.Build.0 = Release|Win32
 		{1FEFA874-F6A6-4CE6-9DB4-3B291A364CE5}.Release NoDX.ActiveCfg = Release NoDX|Win32
