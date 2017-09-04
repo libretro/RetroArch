@@ -162,7 +162,7 @@ void d3d_vertex_buffer_unlock(void *vertbuf_ptr)
 
 void *d3d_vertex_buffer_lock(void *vertbuf_ptr)
 {
-   void *buf;
+   void                      *buf = NULL;
    LPDIRECT3DVERTEXBUFFER vertbuf = (LPDIRECT3DVERTEXBUFFER)vertbuf_ptr;
 
 #if defined(_XBOX1)
@@ -227,7 +227,7 @@ void d3d_set_sampler_address_u(LPDIRECT3DDEVICE dev,
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DDevice9_SetSamplerState(dev, sampler, D3DSAMP_ADDRESSU, value);
 #elif defined(HAVE_D3D8)
-   /* TODO/FIXME - we need a D3D8 implementation here */
+   dev->SetTextureStageState(sampler, D3DTSS_ADDRESSU, value);
 #else
    dev->SetSamplerState(sampler, D3DSAMP_ADDRESSU, value);
 #endif
@@ -244,7 +244,7 @@ void d3d_set_sampler_address_v(LPDIRECT3DDEVICE dev,
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DDevice9_SetSamplerState(dev, sampler, D3DSAMP_ADDRESSV, value);
 #elif defined(HAVE_D3D8)
-   /* TODO/FIXME - we need a D3D8 implementation here */
+   dev->SetTextureStageState(sampler, D3DTSS_ADDRESSV, value);
 #else
    dev->SetSamplerState(sampler, D3DSAMP_ADDRESSV, value);
 #endif
@@ -261,7 +261,7 @@ void d3d_set_sampler_minfilter(LPDIRECT3DDEVICE dev,
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DDevice9_SetSamplerState(dev, sampler, D3DSAMP_MINFILTER, value);
 #elif defined(HAVE_D3D8)
-   /* TODO/FIXME - we need a D3D8 implementation here */
+   dev->SetTextureStageState(sampler, D3DTSS_MINFILTER, value);
 #else
    dev->SetSamplerState(sampler, D3DSAMP_MINFILTER, value);
 #endif
@@ -278,7 +278,7 @@ void d3d_set_sampler_magfilter(LPDIRECT3DDEVICE dev,
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DDevice9_SetSamplerState(dev, sampler, D3DSAMP_MAGFILTER, value);
 #elif defined(HAVE_D3D8)
-   /* TODO/FIXME - we need a D3D8 implementation here */
+   dev->SetTextureStageState(sampler, D3DTSS_MAGFILTER, value);
 #else
    dev->SetSamplerState(sampler, D3DSAMP_MAGFILTER, value);
 #endif
