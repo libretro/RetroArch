@@ -324,13 +324,13 @@ static bool cg_d3d9_renderchain_init_shader_fvf(void *data, void *pass_data)
    if (param)
    {
       static const D3DVERTEXELEMENT element = 
-	  {
-		  0, 0 * sizeof(float),
-			  D3DDECLTYPE_FLOAT3,
-			  D3DDECLMETHOD_DEFAULT,
-			  D3DDECLUSAGE_POSITION,
-			  0
-	  };
+      {
+         0, 0 * sizeof(float),
+         D3DDECLTYPE_FLOAT3,
+         D3DDECLMETHOD_DEFAULT,
+         D3DDECLUSAGE_POSITION,
+         0
+      };
       stream_taken[0] = true;
       index           = cgGetParameterResourceIndex(param);
       decl[index]     = element;
@@ -383,8 +383,8 @@ static bool cg_d3d9_renderchain_init_shader_fvf(void *data, void *pass_data)
    /* Stream {0, 1, 2, 3} might be already taken. Find first vacant stream. */
    for (index = 0; index < 4; index++)
    {
-	   if (stream_taken[index] == false)
-		   break;
+      if (stream_taken[index] == false)
+         break;
    }
 
    /* Find first vacant texcoord declaration. */
@@ -627,7 +627,7 @@ static void d3d9_cg_deinit_progs(void *data)
    cg_renderchain_t *cg_data = (cg_renderchain_t*)data;
 
    if (!cg_data)
-	   return;
+      return;
 
    RARCH_LOG("CG: Destroying programs.\n");
 
@@ -795,8 +795,8 @@ static bool renderchain_create_first_pass(cg_renderchain_t *chain,
    D3DXMATRIX ident;
 
    if (!chain)
-	   return false;
-   
+      return false;
+
    D3DXMatrixIdentity(&ident);
 
    d3d_set_transform(chain->dev, D3DTS_WORLD, &ident);
@@ -820,8 +820,8 @@ static bool renderchain_create_first_pass(cg_renderchain_t *chain,
 
       chain->prev.tex[i] = d3d_texture_new(chain->dev, NULL,
             info->tex_w, info->tex_h, 1, 0,
-      (fmt == RETRO_PIXEL_FORMAT_RGB565) ? D3DFMT_R5G6B5 : D3DFMT_X8R8G8B8,
-      D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL);
+            (fmt == RETRO_PIXEL_FORMAT_RGB565) ? D3DFMT_R5G6B5 : D3DFMT_X8R8G8B8,
+            D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL);
 
       if (!chain->prev.tex[i])
          return false;
@@ -856,7 +856,7 @@ static bool cg_d3d9_renderchain_init(void *data,
    cg_renderchain_t *chain        = (cg_renderchain_t*)d3d->renderchain_data;
    const video_info_t *video_info = (const video_info_t*)_video_info;
    unsigned fmt                   = (rgb32) ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
-   
+
    if (!chain)
       return false;
    if (!cg_d3d9_renderchain_init_shader(d3d, chain))
@@ -901,7 +901,7 @@ static bool renderchain_set_pass_size(cg_renderchain_t *chain,
             D3DFMT_A32B32G32R32F : D3DFMT_A8R8G8B8,
             D3DPOOL_DEFAULT, 0, 0, 0,
             NULL, NULL);
-      
+
       if (!pass->tex)
          return false;
 
@@ -985,7 +985,7 @@ static void d3d_recompute_pass_sizes(cg_renderchain_t *chain,
    for (i = 1; i < d3d->shader.passes; i++)
    {
       cg_d3d9_renderchain_convert_geometry(chain,
-		    &link_info,
+            &link_info,
             &out_width, &out_height,
             current_width, current_height, &d3d->final_viewport);
 
@@ -1034,13 +1034,13 @@ static bool cg_d3d9_renderchain_add_pass(
    pass.last_height         = 0;
 
    d3d9_cg_load_program(chain, &pass.fPrg, 
-        &pass.vPrg, info->pass->source.path, true);
+         &pass.vPrg, info->pass->source.path, true);
 
    if (!cg_d3d9_renderchain_init_shader_fvf(chain, &pass))
       return false;
 
    pass.vertex_buf = d3d_vertex_buffer_new(chain->dev, 4 * sizeof(CGVertex),
-	   0, 0, D3DPOOL_DEFAULT, NULL);
+         0, 0, D3DPOOL_DEFAULT, NULL);
 
    if (!pass.vertex_buf)
       return false;
@@ -1077,19 +1077,19 @@ static bool cg_d3d9_renderchain_add_lut(void *data,
    cg_renderchain_t *chain = (cg_renderchain_t*)data;
    LPDIRECT3DTEXTURE lut = d3d_texture_new(
          chain->dev,
-            path,
-            D3DX_DEFAULT_NONPOW2,
-            D3DX_DEFAULT_NONPOW2,
-            0,
-            0,
-            D3DFMT_FROM_FILE,
-            D3DPOOL_MANAGED,
-            smooth ? D3DX_FILTER_LINEAR : D3DX_FILTER_POINT,
-            0,
-            0,
-            NULL,
-            NULL
-            );
+         path,
+         D3DX_DEFAULT_NONPOW2,
+         D3DX_DEFAULT_NONPOW2,
+         0,
+         0,
+         D3DFMT_FROM_FILE,
+         D3DPOOL_MANAGED,
+         smooth ? D3DX_FILTER_LINEAR : D3DX_FILTER_POINT,
+         0,
+         0,
+         NULL,
+         NULL
+         );
 
    RARCH_LOG("[D3D]: LUT texture loaded: %s.\n", path);
 
@@ -1318,7 +1318,7 @@ static void renderchain_render_pass(
 
    if (!chain)
       return;
-   
+
    renderchain_set_shaders(pass->fPrg, pass->vPrg);
 
    d3d_set_texture(chain->dev, 0, pass->tex);
@@ -1449,7 +1449,7 @@ static bool cg_d3d9_renderchain_render(
 
       d3d_set_viewports(d3dr, &viewport);
       d3d_clear(d3dr, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
-      
+
       viewport.Width  = out_width;
       viewport.Height = out_height;
       renderchain_set_viewport(chain, &viewport);
@@ -1476,10 +1476,10 @@ static bool cg_d3d9_renderchain_render(
          current_width, current_height, chain->final_viewport);
    renderchain_set_viewport(chain, chain->final_viewport);
    renderchain_set_vertices(chain, last_pass,
-            current_width, current_height,
-            out_width, out_height,
-            chain->final_viewport->Width, chain->final_viewport->Height,
-            rotation);
+         current_width, current_height,
+         out_width, out_height,
+         chain->final_viewport->Width, chain->final_viewport->Height,
+         rotation);
    renderchain_render_pass(chain, last_pass, chain->passes.size());
 
    chain->frame_count++;
