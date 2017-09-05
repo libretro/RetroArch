@@ -435,10 +435,10 @@ error:
 static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
 {
    unsigned mip_level;
-   bool fp_fbo;
    GLenum min_filter, mag_filter, wrap_enum;
    video_shader_ctx_filter_t filter_type;
    video_shader_ctx_wrap_t wrap = {0};
+   bool fp_fbo                  = false;
    bool mipmapped               = false;
    bool smooth                  = false;
    settings_t *settings         = config_get_ptr();
@@ -448,11 +448,11 @@ static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
 
    glBindTexture(GL_TEXTURE_2D, texture);
 
-   mip_level          = i + 2;
-   mipmapped          = video_shader_driver_mipmap_input(&mip_level);
-   min_filter         = mipmapped ? base_mip_filt : base_filt;
-   filter_type.index  = i + 2;
-   filter_type.smooth = &smooth;
+   mip_level                    = i + 2;
+   mipmapped                    = video_shader_driver_mipmap_input(&mip_level);
+   min_filter                   = mipmapped ? base_mip_filt : base_filt;
+   filter_type.index            = i + 2;
+   filter_type.smooth           = &smooth;
 
    if (video_shader_driver_filter_type(&filter_type))
    {
