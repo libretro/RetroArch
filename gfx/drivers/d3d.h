@@ -97,7 +97,7 @@ typedef struct d3d_video
 #if defined(HAVE_MENU)
    overlay_t *menu;
 #endif
-   const renderchain_driver_t *renderchain_driver;
+   const d3d_renderchain_driver_t *renderchain_driver;
    void *renderchain_data;
 
    /* TODO - refactor this away properly. */

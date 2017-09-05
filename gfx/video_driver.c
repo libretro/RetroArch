@@ -391,7 +391,7 @@ static const shader_backend_t *shader_ctx_drivers[] = {
    NULL
 };
 
-static const renderchain_driver_t *renderchain_drivers[] = {
+static const d3d_renderchain_driver_t *renderchain_drivers[] = {
 #if defined(_WIN32) && defined(HAVE_D3D9) && defined(HAVE_CG)
    &cg_d3d9_renderchain,
 #endif
@@ -3381,7 +3381,7 @@ bool video_shader_driver_wrap_type(video_shader_ctx_wrap_t *wrap)
    return true;
 }
 
-bool renderchain_init_first(const renderchain_driver_t **renderchain_driver,
+bool renderchain_init_first(const d3d_renderchain_driver_t **renderchain_driver,
 	void **renderchain_handle)
 {
    unsigned i;

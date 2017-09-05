@@ -1629,7 +1629,7 @@ static void d3d9_cg_renderchain_viewport_info(
    vp->full_height  = height;
 }
 
-renderchain_driver_t cg_d3d9_renderchain = {
+d3d_renderchain_driver_t cg_d3d9_renderchain = {
    d3d9_cg_renderchain_free,
    d3d9_cg_renderchain_new,
    NULL,

@@ -384,7 +384,7 @@ static void d3d8_renderchain_viewport_info(void *data, struct video_viewport *vp
    vp->full_height  = height;
 }
 
-renderchain_driver_t d3d8_d3d_renderchain = {
+d3d_renderchain_driver_t d3d8_d3d_renderchain = {
    d3d8_renderchain_free,
    d3d8_renderchain_new,
    d3d8_renderchain_reinit,
