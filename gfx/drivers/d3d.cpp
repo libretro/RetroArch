@@ -1497,7 +1497,7 @@ static bool d3d_set_shader(void *data,
          if (path)
             shader   = path;
 #ifdef HAVE_HLSL
-         d3d->shader = &hlsl_backend;
+            shader   = &hlsl_backend;
 #endif
          break;
       default:

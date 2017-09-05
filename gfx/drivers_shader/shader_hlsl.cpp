@@ -14,19 +14,26 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <retro_math.h>
+#include <compat/strl.h>
 #include <string/stdstring.h>
+#include <file/file_path.h>
+
+#include <d3dx9shader.h>
+
+#include "../../defines/d3d_defines.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
 
-#include "shader_hlsl.h"
-
 #include "../video_shader_parse.h"
 #include "../drivers/d3d.h"
 #include "../../managers/state_manager.h"
+#include "../../verbosity.h"
 
 #include "../drivers/d3d_shaders/opaque.hlsl.d3d9.h"
+#include "shader_hlsl.h"
 
 struct shader_program_hlsl_data 
 {

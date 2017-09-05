@@ -55,11 +55,11 @@ typedef struct
    void *vert_buf;
 } overlay_t;
 
-#if defined(_XBOX) || defined(HAVE_D3D8)
+#if defined(HAVE_D3D9) || defined(HAVE_D3D8)
 typedef struct Vertex
 {
    float x, y;
-#if defined(_XBOX1) || defined(HAVE_D3D8)
+#if defined(HAVE_D3D8)
    float z;
    float rhw;
 #endif
