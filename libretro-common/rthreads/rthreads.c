@@ -159,7 +159,9 @@ sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
    bool thread_created      = false;
    struct thread_data *data = NULL;
    sthread_t *thread        = (sthread_t*)calloc(1, sizeof(*thread));
-
+#if defined(_WIN32_WINNT) && _WIN32_WINNT <= 0x0410
+   uint32_t thread_id       = 0;
+#endif
    if (!thread)
       return NULL;
 
@@ -171,7 +173,11 @@ sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
    data->userdata = userdata;
 
 #ifdef USE_WIN32_THREADS
+#if defined(_WIN32_WINNT) && _WIN32_WINNT <= 0x0410
+   thread->thread = CreateThread(NULL, 0, thread_wrap, data, 0, &thread_id);
+#else
    thread->thread = CreateThread(NULL, 0, thread_wrap, data, 0, NULL);
+#endif
    thread_created = !!thread->thread;
 #else
 #if defined(VITA)
