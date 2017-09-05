@@ -51,23 +51,11 @@
 #include "../common/win32_common.h"
 #endif
 
-#include "../video_driver.h"
-
 #define set_texture_coords(coords, xamt, yamt) \
    coords[2] = xamt; \
    coords[6] = xamt; \
    coords[5] = yamt; \
    coords[7] = yamt
-
-/* Used when rendering to an FBO.
- * Texture coords have to be aligned 
- * with vertex coordinates. */
-static const GLfloat fbo_vertexes[] = {
-   0, 0,
-   1, 0,
-   0, 1,
-   1, 1
-};
 
 #ifdef IOS
 /* There is no default frame buffer on iOS. */
@@ -208,8 +196,6 @@ void gl_check_fbo_dimensions(gl_t *gl)
    }
 }
 
-static GLfloat fbo_tex_coords[8] = {0.0f};
-
 void gl_renderchain_render(gl_t *gl,
       video_frame_info_t *video_info,
       uint64_t frame_count,
@@ -221,6 +207,7 @@ void gl_renderchain_render(gl_t *gl,
    video_shader_ctx_coords_t coords;
    video_shader_ctx_params_t params;
    video_shader_ctx_info_t shader_info;
+   static GLfloat fbo_tex_coords[8]       = {0.0f};
    struct video_tex_info fbo_tex_info[GFX_MAX_SHADERS];
    struct video_tex_info *fbo_info        = NULL;
    const struct video_fbo_rect *prev_rect = NULL;
@@ -639,6 +626,16 @@ void gl_renderchain_recompute_pass_sizes(gl_t *gl,
 
 void gl_renderchain_start_render(gl_t *gl, video_frame_info_t *video_info)
 {
+   /* Used when rendering to an FBO.
+    * Texture coords have to be aligned 
+    * with vertex coordinates. */
+   static const GLfloat fbo_vertexes[] = {
+      0, 0,
+      1, 0,
+      0, 1,
+      1, 1
+   };
+
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
    glBindFramebuffer(RARCH_GL_FRAMEBUFFER, gl->fbo[0]);
 
