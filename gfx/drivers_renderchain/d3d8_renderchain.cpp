@@ -122,7 +122,7 @@ static void renderchain_set_vertices(void *data, unsigned pass,
    {
       unsigned i;
       Vertex vert[4];
-      void *verts      = NULL;
+      void *verts        = NULL;
 
       chain->last_width  = vert_width;
       chain->last_height = vert_height;
@@ -131,32 +131,31 @@ static void renderchain_set_vertices(void *data, unsigned pass,
       float tex_h        = vert_height;
 
       vert[0].x        = -1.0f;
-      vert[1].x        =  1.0f;
-      vert[2].x        = -1.0f;
-      vert[3].x        =  1.0f;
-
       vert[0].y        = -1.0f;
-      vert[1].y        = -1.0f;
-      vert[2].y        =  1.0f;
-      vert[3].y        =  1.0f;
       vert[0].z        =  1.0f;
-      vert[1].z        =  1.0f;
-      vert[2].z        =  1.0f;
-      vert[3].z        =  1.0f;
-
       vert[0].rhw      = 0.0f;
-      vert[1].rhw      = tex_w;
-      vert[2].rhw      = 0.0f;
-      vert[3].rhw      = tex_w;
-
       vert[0].u        = tex_h;
-      vert[1].u        = tex_h;
-      vert[2].u        = 0.0f;
-      vert[3].u        = 0.0f;
-
       vert[0].v        = 0.0f;
+
+      vert[1].x        =  1.0f;
+      vert[1].y        = -1.0f;
+      vert[1].z        =  1.0f;
+      vert[1].rhw      = tex_w;
+      vert[1].u        = tex_h;
       vert[1].v        = 0.0f;
+
+      vert[2].x        = -1.0f;
+      vert[2].y        =  1.0f;
+      vert[2].z        =  1.0f;
+      vert[2].rhw      = 0.0f;
+      vert[2].u        = 0.0f;
       vert[2].v        = 0.0f;
+
+      vert[3].x        =  1.0f;
+      vert[3].y        =  1.0f;
+      vert[3].z        =  1.0f;
+      vert[3].rhw      = tex_w;
+      vert[3].u        = 0.0f;
       vert[3].v        = 0.0f;
 
       /* Align texels and vertices. */
