@@ -49,7 +49,7 @@ enum
    RFILE_HINT_MMAP       = 1<<9  /* requires RFILE_MODE_READ */
 };
 
-long long int filestream_get_size(RFILE *stream);
+int64_t filestream_get_size(RFILE *stream);
 
 void filestream_set_size(RFILE *stream);
 

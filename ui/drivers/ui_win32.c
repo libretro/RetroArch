@@ -53,7 +53,10 @@
 #include "../../gfx/video_driver.h"
 #include "../../tasks/tasks_internal.h"
 
+#ifdef HAVE_OPENGL
 #include "../../gfx/common/gl_common.h"
+#endif
+
 #include "ui_win32.h"
 
 #define SHADER_DLG_WIDTH                  220
@@ -149,10 +152,12 @@ static void shader_dlg_params_refresh(void)
       {
          case SHADER_PARAM_CTRL_CHECKBOX:
             {
+			   bool checked;
+
                video_shader_ctx_t shader_info;
                video_shader_driver_get_current_shader(&shader_info);
 
-               bool checked = shader_info.data ?
+               checked = shader_info.data ?
                   (shader_info.data->parameters[i].current == 
                    shader_info.data->parameters[i].maximum) : false;
                SendMessage(control->elems.checkbox.hwnd, BM_SETCHECK, checked, 0);

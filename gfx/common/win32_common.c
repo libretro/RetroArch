@@ -36,7 +36,7 @@
 #define IDI_ICON 1
 
 #ifndef _WIN32_WINNT
-#define _WIN32_WINNT 0x0500 /*_WIN32_WINNT_WIN2K */
+#define _WIN32_WINNT 0x0500 /* _WIN32_WINNT_WIN2K */
 #endif
 
 #include <windows.h>
@@ -630,6 +630,8 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
                if (gdi && gdi->memDC)
                {
                   RECT rect;
+                  HBRUSH brush = CreateSolidBrush(RGB(1,81,127));
+
                   GetClientRect(hwnd, &rect);
 
                   StretchBlt(gdi->winDC,
@@ -637,7 +639,6 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
                         gdi->screen_width, gdi->screen_height,
                         gdi->memDC, 0, 0, gdi->video_width, gdi->video_height, SRCCOPY);
 
-                  HBRUSH brush = CreateSolidBrush(RGB(1,81,127));
                   FillRect(gdi->memDC, &rect, brush);
                   DeleteObject(brush);
                }
@@ -888,7 +889,6 @@ bool win32_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-/* FIXME: It should not be necessary to add the W after MONITORINFOEX, but linking fails without it. */
 void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
    unsigned *width, unsigned *height, bool fullscreen, bool windowed_full,
    RECT *rect, RECT *mon_rect, DWORD *style)

@@ -69,7 +69,7 @@ struct RFILE
 {
    unsigned hints;
    char *ext;
-   long long int size;
+   int64_t size;
 #if defined(PSP)
    SceUID fd;
 #else
@@ -111,7 +111,7 @@ const char *filestream_get_ext(RFILE *stream)
    return stream->ext;
 }
 
-long long int filestream_get_size(RFILE *stream)
+int64_t filestream_get_size(RFILE *stream)
 {
    if (!stream)
       return 0;

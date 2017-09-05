@@ -190,6 +190,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
    bool draw                 = true;
    gdi_t *gdi                = (gdi_t*)data;
    HWND hwnd                 = win32_get_window();
+   BITMAPINFO *info;
 
    if (!frame || !frame_width || !frame_height)
       return true;
@@ -266,7 +267,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
    gdi->screen_width = mode.width;
    gdi->screen_height = mode.height;
 
-   BITMAPINFO *info = (BITMAPINFO*)calloc(1, sizeof(*info) + (3 * sizeof(RGBQUAD)));
+   info = (BITMAPINFO*)calloc(1, sizeof(*info) + (3 * sizeof(RGBQUAD)));
 
    info->bmiHeader.biBitCount  = bits;
    info->bmiHeader.biWidth     = pitch / (bits / 8);

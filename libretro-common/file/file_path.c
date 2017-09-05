@@ -363,10 +363,12 @@ bool path_is_compressed_file(const char* path)
  */
 bool path_file_exists(const char *path)
 {
+   FILE *dummy;
+
    if (!path || !*path)
       return false;
 
-   FILE *dummy = fopen(path, "rb");
+   dummy = fopen(path, "rb");
 
    if (!dummy)
       return false;

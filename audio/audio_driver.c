@@ -212,10 +212,13 @@ static void compute_audio_buffer_statistics(void)
       accum_var += diff * diff;
    }
 
+#if defined(_MSC_VER) && _MSC_VER <= 1200
+   /* FIXME: error C2520: conversion from unsigned __int64 to double not implemented, use signed __int64 */
+#else
    stddev          = (unsigned)sqrt((double)accum_var / (samples - 2));
    avg_filled      = 1.0f - (float)avg / audio_driver_buffer_size;
    deviation       = (float)stddev / audio_driver_buffer_size;
-
+#endif
    low_water_size  = (unsigned)(audio_driver_buffer_size * 3 / 4);
    high_water_size = (unsigned)(audio_driver_buffer_size     / 4);
 

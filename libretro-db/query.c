@@ -291,11 +291,11 @@ static void query_raise_expected_number(ssize_t where, const char **error)
 #ifdef _WIN32
    snprintf(tmp_error_buff, MAX_ERROR_LEN,
          "%I64u::Expected number",
-         (unsigned long long)where);
+         (uint64_t)where);
 #else
    snprintf(tmp_error_buff, MAX_ERROR_LEN,
          "%llu::Expected number",
-         (unsigned long long)where);
+         (uint64_t)where);
 #endif
    *error = tmp_error_buff;
 }
@@ -305,11 +305,11 @@ static void query_raise_expected_string(ssize_t where, const char ** error)
 #ifdef _WIN32
    snprintf(tmp_error_buff, MAX_ERROR_LEN,
          "%I64u::Expected string",
-         (unsigned long long)where);
+         (uint64_t)where);
 #else
    snprintf(tmp_error_buff, MAX_ERROR_LEN,
          "%llu::Expected string",
-         (unsigned long long)where);
+         (uint64_t)where);
 #endif
    *error = tmp_error_buff;
 }
@@ -319,12 +319,12 @@ static void query_raise_unexpected_eof(ssize_t where, const char ** error)
 #ifdef _WIN32
    snprintf(tmp_error_buff, MAX_ERROR_LEN,
          "%I64u::Unexpected EOF",
-         (unsigned long long)where
+         (uint64_t)where
          );
 #else
    snprintf(tmp_error_buff, MAX_ERROR_LEN,
          "%llu::Unexpected EOF",
-         (unsigned long long)where
+         (uint64_t)where
          );
 #endif
    *error = tmp_error_buff;
@@ -342,12 +342,12 @@ static void query_raise_unknown_function(ssize_t where, const char *name,
 #ifdef _WIN32
    int n = snprintf(tmp_error_buff, MAX_ERROR_LEN,
          "%I64u::Unknown function '",
-         (unsigned long long)where
+         (uint64_t)where
          );
 #else
    int n = snprintf(tmp_error_buff, MAX_ERROR_LEN,
          "%llu::Unknown function '",
-         (unsigned long long)where
+         (uint64_t)where
          );
 #endif
 
@@ -364,13 +364,13 @@ static void query_raise_expected_eof(
 #ifdef _WIN32
    snprintf(tmp_error_buff, MAX_ERROR_LEN,
          "%I64u::Expected EOF found '%c'",
-         (unsigned long long)where,
+         (uint64_t)where,
          found
          );
 #else
    snprintf(tmp_error_buff, MAX_ERROR_LEN,
          "%llu::Expected EOF found '%c'",
-         (unsigned long long)where,
+         (uint64_t)where,
          found
          );
 #endif
@@ -384,11 +384,11 @@ static void query_raise_unexpected_char(
 #ifdef _WIN32
    snprintf(tmp_error_buff, MAX_ERROR_LEN,
          "%I64u::Expected '%c' found '%c'",
-         (unsigned long long)where, expected, found);
+         (uint64_t)where, expected, found);
 #else
    snprintf(tmp_error_buff, MAX_ERROR_LEN,
          "%llu::Expected '%c' found '%c'",
-         (unsigned long long)where, expected, found);
+         (uint64_t)where, expected, found);
 #endif
    *error = tmp_error_buff;
 }
@@ -420,11 +420,11 @@ static struct buffer query_parse_integer(struct buffer buff,
 #ifdef _WIN32
    test        = (sscanf(buff.data + buff.offset,
             "%I64d",
-            (signed long long*)&value->val.int_) == 0);
+            (int64_t*)&value->val.int_) == 0);
 #else
    test        = (sscanf(buff.data + buff.offset,
             "%lld",
-            (signed long long*)&value->val.int_) == 0);
+            (int64_t*)&value->val.int_) == 0);
 #endif
 
    if (test)

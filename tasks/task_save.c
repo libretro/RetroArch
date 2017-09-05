@@ -187,8 +187,11 @@ static void autosave_thread(void *data)
       slock_lock(save->cond_lock);
 
       if (!save->quit)
-         scond_wait_timeout(save->cond, save->cond_lock,
-               save->interval * 1000000LL);
+#if defined(_MSC_VER) && _MSC_VER <= 1200
+         scond_wait_timeout(save->cond, save->cond_lock, save->interval * 1000000);
+#else
+         scond_wait_timeout(save->cond, save->cond_lock, save->interval * 1000000LL);
+#endif
 
       slock_unlock(save->cond_lock);
    }

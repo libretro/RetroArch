@@ -1872,8 +1872,9 @@ static void menu_input_st_string_cb_rename_entry(void *userdata,
       if (!string_is_empty(label))
       {
          playlist_t *tmp_playlist            = NULL;
-         menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
          size_t new_selection_ptr            = menu_input_dialog_get_kb_idx();
+
+         menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
 
          if (tmp_playlist)
          {
