@@ -283,17 +283,6 @@ static void gl_set_projection(gl_t *gl,
    matrix_4x4_multiply(gl->mvp, rot, gl->mvp_no_rot);
 }
 
-static void gl_set_viewport_wrapper(void *data, unsigned viewport_width,
-      unsigned viewport_height, bool force_full, bool allow_rotate)
-{
-   video_frame_info_t video_info;
-
-   video_driver_build_info(&video_info);
-
-   gl_set_viewport(data, &video_info,
-         viewport_width, viewport_height, force_full, allow_rotate);
-}
-
 void gl_set_viewport(void *data, video_frame_info_t *video_info,
       unsigned viewport_width,
       unsigned viewport_height,
@@ -392,6 +381,16 @@ void gl_set_viewport(void *data, video_frame_info_t *video_info,
 #endif
 }
 
+static void gl_set_viewport_wrapper(void *data, unsigned viewport_width,
+      unsigned viewport_height, bool force_full, bool allow_rotate)
+{
+   video_frame_info_t video_info;
+
+   video_driver_build_info(&video_info);
+
+   gl_set_viewport(data, &video_info,
+         viewport_width, viewport_height, force_full, allow_rotate);
+}
 
 /* Shaders */
 
@@ -1093,9 +1092,10 @@ static bool gl_frame(void *data, const void *frame,
    /* Render to texture in first pass. */
    if (gl->fbo_inited)
    {
-      gl_renderchain_recompute_pass_sizes(gl, frame_width, frame_height,
+      gl2_renderchain_recompute_pass_sizes(
+            gl, frame_width, frame_height,
             gl->vp_out_width, gl->vp_out_height);
-      gl_renderchain_start_render(gl, video_info);
+      gl2_renderchain_start_render(gl, video_info);
    }
 #endif
 
@@ -1113,11 +1113,11 @@ static bool gl_frame(void *data, const void *frame,
 #ifdef HAVE_FBO
       if (gl->fbo_inited)
       {
-         gl_check_fbo_dimensions(gl);
+         gl2_renderchain_check_fbo_dimensions(gl);
 
          /* Go back to what we're supposed to do,
           * render to FBO #0. */
-         gl_renderchain_start_render(gl, video_info);
+         gl2_renderchain_start_render(gl, video_info);
       }
       else
 #endif
@@ -1228,7 +1228,7 @@ static bool gl_frame(void *data, const void *frame,
 
 #ifdef HAVE_FBO
    if (gl->fbo_inited)
-      gl_renderchain_render(gl, video_info,
+      gl2_renderchain_render(gl, video_info,
             frame_count, &gl->tex_info, &feedback_info);
 #endif
 
@@ -1407,7 +1407,7 @@ static void gl_free(void *data)
 #endif
 
 #ifdef HAVE_FBO
-   gl_renderchain_free(gl);
+   gl2_renderchain_free(gl);
 #endif
 
 #ifndef HAVE_OPENGLES
@@ -2037,10 +2037,10 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl_init_textures_data(gl);
 
 #ifdef HAVE_FBO
-   gl_renderchain_init(gl, gl->tex_w, gl->tex_h);
+   gl2_renderchain_init(gl, gl->tex_w, gl->tex_h);
 
    if (gl->hw_render_use &&
-         !gl_init_hw_render(gl, gl->tex_w, gl->tex_h))
+         !gl2_renderchain_init_hw_render(gl, gl->tex_w, gl->tex_h))
    {
       RARCH_ERR("[GL]: Hardware rendering context initialization failed.\n");
       goto error;
@@ -2210,7 +2210,7 @@ static bool gl_set_shader(void *data,
    }
 
 #ifdef HAVE_FBO
-   gl_deinit_fbo(gl);
+   gl2_renderchain_deinit_fbo(gl);
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 #endif
 
@@ -2240,7 +2240,7 @@ static bool gl_set_shader(void *data,
    if (textures > gl->textures) /* Have to reinit a bit. */
    {
 #if defined(HAVE_FBO)
-      gl_deinit_hw_render(gl);
+      gl2_renderchain_deinit_hw_render(gl);
 #endif
 
       glDeleteTextures(gl->textures, gl->texture);
@@ -2256,12 +2256,12 @@ static bool gl_set_shader(void *data,
 
 #if defined(HAVE_FBO)
       if (gl->hw_render_use)
-         gl_init_hw_render(gl, gl->tex_w, gl->tex_h);
+         gl2_renderchain_init_hw_render(gl, gl->tex_w, gl->tex_h);
 #endif
    }
 
 #ifdef HAVE_FBO
-   gl_renderchain_init(gl, gl->tex_w, gl->tex_h);
+   gl2_renderchain_init(gl, gl->tex_w, gl->tex_h);
 #endif
 
    /* Apparently need to set viewport for passes when we aren't using FBOs. */
@@ -2363,7 +2363,7 @@ bool gl_load_luts(const struct video_shader *shader,
 
    for (i = 0; i < num_luts; i++)
    {
-      if (!gl_renderchain_add_lut(shader, i, textures_lut))
+      if (!gl2_renderchain_add_lut(shader, i, textures_lut))
          return false;
    }
 

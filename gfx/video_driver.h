@@ -823,6 +823,25 @@ typedef struct d3d_renderchain_driver
    const char *ident;
 } d3d_renderchain_driver_t;
 
+typedef struct gl_renderchain_driver
+{
+   void (*init)(void *data, unsigned fbo_width, unsigned fbo_height);
+   bool (*init_hw_render)(void *data, unsigned width, unsigned height);
+   void (*free)(void *data);
+   void (*deinit_hw_render)(void *data);
+   void (*start_render)(void *data, video_frame_info_t *video_info);
+   void (*check_fbo_dimensions)(void *data);
+   void (*recompute_pass_sizes)(void *data,
+         unsigned width, unsigned height,
+         unsigned vp_width, unsigned vp_height);
+   void (*renderchain_render)(void *data,
+         video_frame_info_t *video_info,
+         uint64_t frame_count,
+         const struct video_tex_info *tex_info,
+         const struct video_tex_info *feedback_info);
+   const char *ident;
+} gl_renderchain_driver_t;
+
 extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 
 bool video_driver_has_windowed(void);

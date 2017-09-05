@@ -22,11 +22,11 @@
 
 #include "../video_driver.h"
 #include "../video_shader_parse.h"
-#include "../common/gl_common.h"
 
 RETRO_BEGIN_DECLS
 
-void gl_renderchain_convert_geometry(gl_t *gl,
+void gl2_renderchain_convert_geometry(
+      void *data,
       struct video_fbo_rect *fbo_rect,
       struct gfx_fbo_scale *fbo_scale,
       unsigned last_width, unsigned last_max_width,
@@ -37,8 +37,8 @@ void gl_renderchain_bind_prev_texture(
       void *data,
       const struct video_tex_info *tex_info);
 
-bool gl_renderchain_add_lut(const struct video_shader *shader,
-      unsigned i, GLuint *textures_lut);
+bool gl2_renderchain_add_lut(const struct video_shader *shader,
+      unsigned i, void *textures_lut);
 
 void gl_load_texture_data(
       uint32_t id_data,
@@ -48,39 +48,38 @@ void gl_load_texture_data(
       unsigned width, unsigned height,
       const void *frame, unsigned base_size);
 
-void gl_renderchain_render(gl_t *gl,
+void gl2_renderchain_render(void *data,
       video_frame_info_t *video_info,
       uint64_t frame_count,
       const struct video_tex_info *tex_info,
       const struct video_tex_info *feedback_info);
 
-void gl_renderchain_init(gl_t *gl, unsigned fbo_width, unsigned fbo_height);
+void gl2_renderchain_init(
+      void *data, unsigned fbo_width, unsigned fbo_height);
 
-void gl_set_viewport(void *data, video_frame_info_t *video_info, 
-      unsigned viewport_width,
-      unsigned viewport_height, bool force_full, bool allow_rotate);
+void gl2_renderchain_deinit_hw_render(void *data);
 
-void gl_deinit_hw_render(gl_t *gl);
-
-void gl_deinit_fbo(gl_t *gl);
-
-GLenum min_filter_to_mag(GLenum type);
-
-void gl_renderchain_recompute_pass_sizes(gl_t *gl,
+void gl2_renderchain_recompute_pass_sizes(void *data,
       unsigned width, unsigned height,
       unsigned vp_width, unsigned vp_height);
 
-void gl_renderchain_start_render(gl_t *gl, video_frame_info_t *video_info);
+void gl2_renderchain_deinit_fbo(void *data);
 
-void gl_check_fbo_dimensions(gl_t *gl);
+void gl2_renderchain_start_render(void *data,
+      video_frame_info_t *video_info);
 
-void gl_renderchain_free(gl_t *gl);
+void gl2_renderchain_check_fbo_dimensions(void *data);
 
-bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height);
+void gl2_renderchain_free(void *data);
 
-void gl_renderchain_viewport_info(void *data, struct video_viewport *vp);
+bool gl2_renderchain_init_hw_render(void *data,
+      unsigned width, unsigned height);
 
-bool gl_renderchain_read_viewport(void *data, uint8_t *buffer, bool is_idle);
+void gl_renderchain_viewport_info(
+      void *data, struct video_viewport *vp);
+
+bool gl_renderchain_read_viewport(
+      void *data, uint8_t *buffer, bool is_idle);
 
 void context_bind_hw_render(bool enable);
 
