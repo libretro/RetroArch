@@ -55,7 +55,6 @@ typedef struct
    void *vert_buf;
 } overlay_t;
 
-#if defined(HAVE_D3D9) || defined(HAVE_D3D8)
 typedef struct Vertex
 {
    float x, y;
@@ -65,7 +64,6 @@ typedef struct Vertex
 #endif
    float u, v;
 } Vertex;
-#endif
 
 typedef struct d3d_video
 {

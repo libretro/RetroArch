@@ -52,7 +52,7 @@ namespace
       bool smooth;
    };
 
-   struct Vertex
+   struct CGVertex
    {
       float x, y, z;
       float u, v;
@@ -461,7 +461,7 @@ static void renderchain_bind_orig(cg_renderchain_t *chain, void *pass_data)
 
       index = pass->attrib_map[cgGetParameterResourceIndex(param)];
 
-      d3d_set_stream_source(chain->dev, index, vert_buf, 0, sizeof(Vertex));
+      d3d_set_stream_source(chain->dev, index, vert_buf, 0, sizeof(CGVertex));
       chain->bound_vert.push_back(index);
    }
 }
@@ -536,7 +536,7 @@ static void renderchain_bind_prev(void *data, void *pass_data)
 
          index = pass->attrib_map[cgGetParameterResourceIndex(param)];
 
-         d3d_set_stream_source(chain->dev, index, vert_buf, 0, sizeof(Vertex));
+         d3d_set_stream_source(chain->dev, index, vert_buf, 0, sizeof(CGVertex));
          chain->bound_vert.push_back(index);
       }
    }
@@ -615,7 +615,7 @@ static void renderchain_bind_pass(cg_renderchain_t *chain,
          index = pass->attrib_map[cgGetParameterResourceIndex(param)];
 
          d3d_set_stream_source(chain->dev, index, chain->passes[i].vertex_buf,
-               0, sizeof(Vertex));
+               0, sizeof(CGVertex));
          chain->bound_vert.push_back(index);
       }
    }
@@ -813,7 +813,7 @@ static bool renderchain_create_first_pass(cg_renderchain_t *chain,
       chain->prev.last_width[i]  = 0;
       chain->prev.last_height[i] = 0;
       chain->prev.vertex_buf[i]  = d3d_vertex_buffer_new(
-            chain->dev, 4 * sizeof(Vertex), 0, 0, D3DPOOL_DEFAULT, NULL);
+            chain->dev, 4 * sizeof(CGVertex), 0, 0, D3DPOOL_DEFAULT, NULL);
 
       if (!chain->prev.vertex_buf[i])
          return false;
@@ -1039,7 +1039,7 @@ static bool cg_d3d9_renderchain_add_pass(
    if (!cg_d3d9_renderchain_init_shader_fvf(chain, &pass))
       return false;
 
-   pass.vertex_buf = d3d_vertex_buffer_new(chain->dev, 4 * sizeof(Vertex),
+   pass.vertex_buf = d3d_vertex_buffer_new(chain->dev, 4 * sizeof(CGVertex),
 	   0, 0, D3DPOOL_DEFAULT, NULL);
 
    if (!pass.vertex_buf)
@@ -1174,7 +1174,7 @@ static void renderchain_set_vertices(
 
    if (pass->last_width != width || pass->last_height != height)
    {
-      Vertex vert[4];
+      CGVertex vert[4];
       unsigned i;
       void *verts       = NULL;
       float _u          = float(width)  / info->tex_w;
@@ -1330,7 +1330,7 @@ static void renderchain_render_pass(
    d3d_set_vertex_declaration(chain->dev, pass->vertex_decl);
    for (i = 0; i < 4; i++)
       d3d_set_stream_source(chain->dev, i,
-            pass->vertex_buf, 0, sizeof(Vertex));
+            pass->vertex_buf, 0, sizeof(CGVertex));
 
    /* Set orig texture. */
    renderchain_bind_orig(chain, pass);
