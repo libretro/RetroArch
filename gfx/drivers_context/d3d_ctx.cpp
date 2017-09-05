@@ -88,7 +88,10 @@ static void gfx_ctx_d3d_swap_buffers(void *data, void *data2)
 static void gfx_ctx_d3d_update_title(void *data, void *data2)
 {
    video_frame_info_t *video_info = (video_frame_info_t*)data2;
-#ifdef _XBOX
+#ifndef _XBOX
+   const ui_window_t *window = ui_companion_driver_get_window_ptr();
+#endif
+
    if (video_info->fps_show)
    {
       MEMORYSTATUS stat;
@@ -101,8 +104,6 @@ static void gfx_ctx_d3d_update_title(void *data, void *data2)
             stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));
       strlcat(video_info->fps_text, mem, sizeof(video_info->fps_text));
    }
-#else
-   const ui_window_t *window = ui_companion_driver_get_window_ptr();
 
    if (window)
    {
@@ -115,8 +116,6 @@ static void gfx_ctx_d3d_update_title(void *data, void *data2)
       if (title[0])
          window->set_title(&main_window, title);
    }
-#endif
-
 }
 
 static void gfx_ctx_d3d_show_mouse(void *data, bool state)
