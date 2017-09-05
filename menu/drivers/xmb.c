@@ -1687,7 +1687,8 @@ static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb)
       entry.target_value = ia;
       entry.subject      = &node->alpha;
       entry.easing_enum  = EASING_OUT_QUAD;
-      entry.tag          = -1;
+      /* TODO/FIXME - integer conversion resulted in change of sign */
+      entry.tag          = -1; 
       entry.cb           = NULL;
 
       menu_animation_push(&entry);
@@ -1719,6 +1720,7 @@ static void xmb_list_switch(xmb_handle_t *xmb)
    entry.target_value = xmb->icon.spacing.horizontal * -(float)xmb->categories.selection_ptr;
    entry.subject      = &xmb->categories.x_pos;
    entry.easing_enum  = EASING_OUT_QUAD;
+   /* TODO/FIXME - integer conversion resulted in change of sign */
    entry.tag          = -1;
    entry.cb           = NULL;
 
@@ -1784,6 +1786,7 @@ static void xmb_list_open_horizontal_list(xmb_handle_t *xmb)
       entry.target_value = ia;
       entry.subject      = &node->alpha;
       entry.easing_enum  = EASING_OUT_QUAD;
+      /* TODO/FIXME - integer conversion resulted in change of sign */
       entry.tag          = -1;
       entry.cb           = NULL;
 
@@ -2057,6 +2060,7 @@ static void xmb_list_open(xmb_handle_t *xmb)
    entry.target_value = xmb->icon.size * -(xmb->depth*2-2);
    entry.subject      = &xmb->x;
    entry.easing_enum  = EASING_OUT_QUAD;
+   /* TODO/FIXME - integer conversion resulted in change of sign */
    entry.tag          = -1;
    entry.cb           = NULL;
 
@@ -3900,8 +3904,6 @@ static void xmb_list_insert(void *userdata,
 
 static void xmb_list_clear(file_list_t *list)
 {
-   size_t i;
-   size_t size                = list->size;
    menu_animation_ctx_tag tag = (uintptr_t)list;
 
    menu_animation_ctl(MENU_ANIMATION_CTL_KILL_BY_TAG, &tag);
@@ -4152,6 +4154,7 @@ static void xmb_toggle(void *userdata, bool menu_on)
    entry.target_value = 1.0f;
    entry.subject      = &xmb->alpha;
    entry.easing_enum  = EASING_OUT_QUAD;
+   /* TODO/FIXME - integer conversion resulted in change of sign */
    entry.tag          = -1;
    entry.cb           = NULL;
 

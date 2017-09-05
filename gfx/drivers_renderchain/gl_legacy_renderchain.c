@@ -82,8 +82,6 @@ void gl2_renderchain_convert_geometry(
       unsigned last_height, unsigned last_max_height,
       unsigned vp_width, unsigned vp_height)
 {
-   gl_t *gl = (gl_t*)data;
-
    switch (fbo_scale->type_x)
    {
       case RARCH_SCALE_INPUT:
