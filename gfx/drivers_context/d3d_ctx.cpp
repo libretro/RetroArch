@@ -88,8 +88,10 @@ static void gfx_ctx_d3d_swap_buffers(void *data, void *data2)
 static void gfx_ctx_d3d_update_title(void *data, void *data2)
 {
    video_frame_info_t *video_info = (video_frame_info_t*)data2;
-#ifndef _XBOX
-   const ui_window_t *window = ui_companion_driver_get_window_ptr();
+#ifdef _XBOX
+   const ui_window_t *window      = NULL;
+#else
+   const ui_window_t *window      = ui_companion_driver_get_window_ptr();
 #endif
 
    if (video_info->fps_show)
