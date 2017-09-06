@@ -22,8 +22,9 @@
 
 #include <streams/file_stream.h>
 #include <string.h>
+#include <stdarg.h>
 
-RFILE* rfopen(const char *path, char *mode)
+RFILE* rfopen(const char *path, const char *mode)
 {
    unsigned int retro_mode = RFILE_MODE_READ_TEXT;
    if (strstr(mode, "r"))
@@ -64,8 +65,38 @@ char *rfgets(char *buffer, int maxCount, RFILE* stream)
    return filestream_gets(stream, buffer, maxCount);
 }
 
+int rfgetc(RFILE* stream)
+{
+	return filestream_getc(stream);
+}
+
 size_t rfwrite(void const* buffer,
    size_t elementSize, size_t elementCount, RFILE* stream)
 {
    return filestream_write(stream, buffer, elementSize*elementCount);
+}
+
+int rfputc(int character, RFILE * stream)
+{
+    return filestream_putc(stream, character);
+}
+
+int rfprintf(RFILE * stream, const char * format, ...)
+{
+   int result;
+	va_list vl;
+	va_start(vl, format);
+	result = filestream_vprintf(stream, format, vl);
+	va_end(vl);
+	return result;
+}
+
+int rferror(RFILE* stream)
+{
+    return filestream_error(stream);
+}
+
+int rfeof(RFILE* stream)
+{
+    return filestream_eof(stream);
 }
