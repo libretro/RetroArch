@@ -554,7 +554,12 @@ int filestream_printf(RFILE *stream, const char* format, ...)
 
 int filestream_error(RFILE *stream)
 {
+#if defined(HAVE_BUFFERED_IO)
 	return ferror(stream->fp);
+#else
+   /* stub */
+   return 0;
+#endif
 }
 
 int filestream_close(RFILE *stream)
