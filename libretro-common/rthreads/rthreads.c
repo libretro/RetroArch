@@ -160,7 +160,7 @@ sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
    struct thread_data *data = NULL;
    sthread_t *thread        = (sthread_t*)calloc(1, sizeof(*thread));
 #if defined(_WIN32_WINNT) && _WIN32_WINNT <= 0x0410
-   uint32_t thread_id       = 0;
+   DWORD thread_id          = 0;
 #endif
    if (!thread)
       return NULL;
