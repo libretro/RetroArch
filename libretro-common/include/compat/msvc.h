@@ -86,9 +86,10 @@ typedef int ssize_t;
 #pragma warning(disable : 4723)
 #pragma warning(disable : 4996)
 
-/* roundf is available since MSVC 2013 */
+/* roundf and va_copy is available since MSVC 2013 */
 #if _MSC_VER < 1800
 #define roundf(in) (in >= 0.0f ? floorf(in + 0.5f) : ceilf(in - 0.5f))
+#define va_copy(x, y) ((x) = (y))
 #endif
 
 #if _MSC_VER <= 1200
@@ -116,9 +117,6 @@ typedef int ssize_t;
       #define _strtoui64(x, y, z) (_atoi64(x))
    #endif
 
-   #ifndef va_copy
-      #define va_copy(x, y) ((x) = (y))
-   #endif
 #endif
 
 #ifndef PATH_MAX
