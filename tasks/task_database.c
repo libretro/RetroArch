@@ -414,7 +414,7 @@ static int task_database_iterate_crc_lookup(
       unsupported_content = core_info_unsupported_content_path(name);
 
       /* don't scan files that can't be in this database */
-      if(!db_supports_content && !unsupported_content)
+      if(!db_supports_content || unsupported_content)
          return database_info_list_iterate_next(db_state);
 
       snprintf(query, sizeof(query),
