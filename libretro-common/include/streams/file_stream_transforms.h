@@ -32,6 +32,19 @@ typedef struct RFILE RFILE;
 
 #define FILE RFILE
 
+#undef fopen
+#undef fclose
+#undef ftell
+#undef fseek
+#undef fread
+#undef fgets
+#undef fgetc
+#undef fwrite
+#undef fputc
+#undef fprintf
+#undef ferror
+#undef feof
+
 #define fopen rfopen
 #define fclose rfclose
 #define ftell rftell
