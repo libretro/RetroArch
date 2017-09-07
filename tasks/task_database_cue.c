@@ -350,7 +350,8 @@ int detect_serial_ascii_game(const char *track_path, char *game_id)
    for (pos = 0; pos < 10000; pos++)
    {
       filestream_seek(fd, pos, SEEK_SET);
-      if (filestream_read(fd, game_id, 10000) > 0)
+      /* Current logic only requires 15 characters (max of 4096 per sizeof game_id). */
+      if (filestream_read(fd, game_id, 15) > 0)
       {
          unsigned i;
          game_id[15] = '\0';
