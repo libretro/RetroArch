@@ -60,7 +60,7 @@ ifeq ($(WHOLE_ARCHIVE_LINK), 1)
    WHOLE_END       := -Wl,--no-whole-archive
 endif
 
-ifeq ($(platform), windows_msvc2003_x86)
+ifneq (,$(findstring msvc,$(platform)))
    LIBS               := $(WHOLE_START) $(WHOLE_END)
 else
    LIBS               := $(WHOLE_START) -lretro_$(platform) $(WHOLE_END)
