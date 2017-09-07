@@ -117,6 +117,12 @@ typedef REASON_CONTEXT POWER_REQUEST_CONTEXT, *PPOWER_REQUEST_CONTEXT, *LPPOWER_
 #define MAX_MONITORS 9
 #endif
 
+#if defined(_MSC_VER) && _MSC_VER <= 1200
+#define INT_PTR_COMPAT int
+#else
+#define INT_PTR_COMPAT INT_PTR
+#endif
+
 static HMONITOR win32_monitor_last;
 static HMONITOR win32_monitor_all[MAX_MONITORS];
 static unsigned win32_monitor_count              = 0;
@@ -131,7 +137,7 @@ void unset_doubleclick_on_titlebar(void)
    doubleclick_on_titlebar = false;
 }
 
-BOOL CALLBACK PickCoreProc(HWND hDlg, UINT message,
+INT_PTR_COMPAT CALLBACK PickCoreProc(HWND hDlg, UINT message,
         WPARAM wParam, LPARAM lParam)
 {
    size_t list_size;
