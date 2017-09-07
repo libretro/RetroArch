@@ -294,6 +294,50 @@ else ifeq ($(platform), vita)
    HAVE_THREADS             := 1
    HAVE_LIBRETRODB          := 1
    RARCH_CONSOLE             = 1
+else ifeq ($(platform), windows_msvc6_x86)
+   HAVE_RPNG                := 1
+   HAVE_RJPEG               := 1
+   HAVE_RBMP                := 1
+   HAVE_RTGA                := 1
+   HAVE_ZLIB                := 1
+   WANT_ZLIB                := 1
+   HAVE_7ZIP                := 1
+   HAVE_NETWORKING          := 0
+   HAVE_NETWORK_CMD         := 1
+   HAVE_OVERLAY             := 1
+   HAVE_MATERIALUI          := 1
+   HAVE_XMB                 := 1
+   HAVE_STB_FONT            := 1
+   HAVE_THREADS             := 1
+   HAVE_LIBRETRODB          := 1
+   HAVE_FBO                 := 1
+   HAVE_COMMAND             := 1
+   HAVE_STDIN_CMD           := 1
+   HAVE_CMD                 := 1
+   HAVE_DYLIB               := 1
+   HAVE_DYNAMIC             := 1
+   HAVE_GRIFFIN_CPP         := 1
+
+   EXT_TARGET := $(TARGET_NAME).exe
+   EXT_INTER_TARGET := $(TARGET_NAME).exe
+   CC = cl.exe
+   CXX = cl.exe
+   LD = link.exe
+
+   PLATCFLAGS += -D_WIN32 -DWINVER=0x0400 -D_WIN32_WINNT=0x0400 -D__STDC_CONSTANT_MACROS -D_MBCS
+   LDFLAGS += shell32.lib user32.lib gdi32.lib comdlg32.lib winmm.lib ole32.lib
+
+   VCDIR := $(shell reg query "HKLM\SOFTWARE\Wow6432Node\Microsoft\DevStudio\6.0\Products\Microsoft Visual C++" -v "ProductDir" | grep -o '[A-Z]:\\.*')
+
+   PATH := $(shell IFS=$$'\n'; cygpath "$(VCDIR)/bin"):$(PATH)
+   PATH := $(PATH):$(shell IFS=$$'\n'; cygpath "$(VCDIR)/../Common/MSDev98/Bin")
+   INCLUDE := $(shell IFS=$$'\n'; cygpath "$(VCDIR)/Include")
+   LIB := $(shell IFS=$$'\n'; cygpath -w "$(VCDIR)/Lib")
+
+   WindowsSdkDir := $(INETSDK)
+
+   export INCLUDE := $(INCLUDE);$(INETSDK)/Include;libretro-common/include;libretro-common/include/compat/msvc
+   export LIB := $(LIB);$(WindowsSdkDir);$(INETSDK)/Lib
 else ifeq ($(platform), windows_msvc2003_x86)
    HAVE_RPNG                := 1
    HAVE_RJPEG               := 1
@@ -513,7 +557,11 @@ endif
 
 ifeq ($(DEBUG), 1)
    ifneq (,$(findstring msvc,$(platform)))
-      CFLAGS += -Od -Zi -D_DEBUG -MTd -Wp64 -TP
+      ifeq ($(platform), windows_msvc2003_x86)
+         CFLAGS += -Wp64
+      endif
+
+      CFLAGS += -Od -Zi -D_DEBUG -MTd -TP
    else
       CFLAGS += -O0 -g -DDEBUG
    endif
@@ -522,7 +570,11 @@ else ifeq ($(platform), psp1)
 else ifeq ($(platform), vita)
    CFLAGS += -O3
 else ifneq (,$(findstring msvc,$(platform)))
-   CFLAGS += -O2 -DNDEBUG -MT -Wp64 -TP
+   ifeq ($(platform), windows_msvc2003_x86)
+      CFLAGS += -Wp64
+   endif
+
+   CFLAGS += -O2 -DNDEBUG -MT -TP
 else
    CFLAGS += -O3
 endif

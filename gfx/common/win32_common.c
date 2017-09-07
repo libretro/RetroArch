@@ -79,7 +79,7 @@ ui_window_win32_t main_window;
 /* Power Request APIs */
 
 #if !defined(_XBOX) && (_MSC_VER == 1310)
-typedef struct _REASON_CONTEXT 
+typedef struct _REASON_CONTEXT
 {
    ULONG Version;
    DWORD Flags;
@@ -131,7 +131,7 @@ void unset_doubleclick_on_titlebar(void)
    doubleclick_on_titlebar = false;
 }
 
-INT_PTR CALLBACK PickCoreProc(HWND hDlg, UINT message, 
+BOOL CALLBACK PickCoreProc(HWND hDlg, UINT message,
         WPARAM wParam, LPARAM lParam)
 {
    size_t list_size;
@@ -150,16 +150,16 @@ INT_PTR CALLBACK PickCoreProc(HWND hDlg, UINT message,
             core_info_list_get_supported_cores(core_info_list,
                   path_get(RARCH_PATH_CONTENT), &core_info, &list_size);
 
-            hwndList = GetDlgItem(hDlg, ID_CORELISTBOX);  
+            hwndList = GetDlgItem(hDlg, ID_CORELISTBOX);
 
             for (i = 0; i < list_size; i++)
             {
                const core_info_t *info = (const core_info_t*)&core_info[i];
-               SendMessage(hwndList, LB_ADDSTRING, 0, 
-                     (LPARAM)info->display_name); 
+               SendMessage(hwndList, LB_ADDSTRING, 0,
+                     (LPARAM)info->display_name);
             }
-            SetFocus(hwndList); 
-            return TRUE;  
+            SetFocus(hwndList);
+            return TRUE;
          }
 
       case WM_COMMAND:
@@ -170,22 +170,22 @@ INT_PTR CALLBACK PickCoreProc(HWND hDlg, UINT message,
                EndDialog(hDlg, LOWORD(wParam));
                break;
             case ID_CORELISTBOX:
-               switch (HIWORD(wParam)) 
-               { 
+               switch (HIWORD(wParam))
+               {
                   case LBN_SELCHANGE:
                      {
                         const core_info_t *info = NULL;
                         HWND hwndList           = GetDlgItem(
-                              hDlg, ID_CORELISTBOX); 
+                              hDlg, ID_CORELISTBOX);
                         int lbItem              = (int)
-                           SendMessage(hwndList, LB_GETCURSEL, 0, 0); 
+                           SendMessage(hwndList, LB_GETCURSEL, 0, 0);
 
                         core_info_get_list(&core_info_list);
                         core_info_list_get_supported_cores(core_info_list,
                               path_get(RARCH_PATH_CONTENT), &core_info, &list_size);
                         info = (const core_info_t*)&core_info[lbItem];
                         rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH,info->path);
-                     } 
+                     }
                      break;
                }
                return TRUE;
@@ -208,7 +208,7 @@ void win32_monitor_from_window(void)
 #ifndef _XBOX
    ui_window_t *window       = NULL;
 
-   win32_monitor_last        = 
+   win32_monitor_last        =
       MonitorFromWindow(main_window.hwnd, MONITOR_DEFAULTTONEAREST);
 
    window = (ui_window_t*)ui_companion_driver_get_window_ptr();
@@ -347,7 +347,7 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
       {
          /* Pick one core that could be compatible, ew */
          if(DialogBoxParam(GetModuleHandle(NULL),MAKEINTRESOURCE(IDD_PICKCORE),
-                  hwnd,PickCoreProc,(LPARAM)NULL)==IDOK) 
+                  hwnd,PickCoreProc,(LPARAM)NULL)==IDOK)
          {
             task_push_load_content_with_current_core_from_companion_ui(
                   NULL,
@@ -384,7 +384,7 @@ static LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
 
    switch (message)
    {
-      /* Seems to be hard to synchronize 
+      /* Seems to be hard to synchronize
        * WM_CHAR and WM_KEYDOWN properly.
        */
       case WM_CHAR:
@@ -539,7 +539,7 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
             LPCREATESTRUCT p_cs   = (LPCREATESTRUCT)lparam;
             curD3D                = p_cs->lpCreateParams;
             g_inited              = true;
-            
+
             win32_window.hwnd     = hwnd;
 
             win32_set_droppable(&win32_window, true);
@@ -778,7 +778,7 @@ static bool win32_monitor_set_fullscreen(
    devmode.dmPelsWidth        = width;
    devmode.dmPelsHeight       = height;
    devmode.dmDisplayFrequency = refresh;
-   devmode.dmFields           = DM_PELSWIDTH 
+   devmode.dmFields           = DM_PELSWIDTH
       | DM_PELSHEIGHT | DM_DISPLAYFREQUENCY;
 
    RARCH_LOG("Setting fullscreen to %ux%u @ %uHz on device %s.\n",
@@ -809,7 +809,7 @@ void win32_check_window(bool *quit, bool *resize,
       unsigned *width, unsigned *height)
 {
 #ifndef _XBOX
-   const ui_application_t *application = 
+   const ui_application_t *application =
       ui_companion_driver_get_application_ptr();
    if (application)
       application->process_events();
@@ -896,12 +896,12 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
 #ifndef _XBOX
    settings_t *settings = config_get_ptr();
 
-   /* Windows only reports the refresh rates for modelines as 
-    * an integer, so video_refresh_rate needs to be rounded. Also, account 
+   /* Windows only reports the refresh rates for modelines as
+    * an integer, so video_refresh_rate needs to be rounded. Also, account
     * for black frame insertion using video_refresh_rate set to half
     * of the display refresh rate, as well as higher vsync swap intervals. */
    float refresh_mod    = settings->bools.video_black_frame_insertion ? 2.0f : 1.0f;
-   unsigned refresh     = roundf(settings->floats.video_refresh_rate 
+   unsigned refresh     = roundf(settings->floats.video_refresh_rate
          * refresh_mod * settings->uints.video_swap_interval);
 
    if (fullscreen)
@@ -1010,13 +1010,13 @@ bool win32_set_video_mode(void *data,
    if (!win32_window_create(data, style,
             &mon_rect, width, height, fullscreen))
       return false;
-   
+
    win32_set_window(&width, &height,
          fullscreen, windowed_full, &rect);
 
    /* Wait until context is created (or failed to do so ...).
     * Please don't remove the (res = ) as GetMessage can return -1. */
-   while (!g_inited && !g_quit 
+   while (!g_inited && !g_quit
          && (res = GetMessage(&msg, main_window.hwnd, 0, 0)) != 0)
    {
       if (res == -1)
@@ -1063,7 +1063,7 @@ bool win32_has_focus(void)
       if (GetForegroundWindow() == main_window.hwnd)
          return true;
 #else
-      const ui_window_t *window = 
+      const ui_window_t *window =
          ui_companion_driver_get_window_ptr();
       if (window)
          return window->focused(&main_window);
@@ -1109,14 +1109,14 @@ void win32_get_video_output_prev(
 
    win32_get_video_output_size(&curr_width, &curr_height);
 
-   for (iModeNum = 0; 
-         EnumDisplaySettings(NULL, iModeNum, &dm) != 0; 
+   for (iModeNum = 0;
+         EnumDisplaySettings(NULL, iModeNum, &dm) != 0;
          iModeNum++)
    {
-      if (     dm.dmPelsWidth == curr_width 
+      if (     dm.dmPelsWidth == curr_width
             && dm.dmPelsHeight == curr_height)
       {
-         if (     prev_width  != curr_width 
+         if (     prev_width  != curr_width
                && prev_height != curr_height)
          {
             found        = true;
@@ -1130,8 +1130,8 @@ void win32_get_video_output_prev(
 
    if (found)
    {
-      *width       = prev_width; 
-      *height      = prev_height; 
+      *width       = prev_width;
+      *height      = prev_height;
    }
 }
 
@@ -1149,8 +1149,8 @@ void win32_get_video_output_next(
 
    win32_get_video_output_size(&curr_width, &curr_height);
 
-   for (iModeNum = 0; 
-         EnumDisplaySettings(NULL, iModeNum, &dm) != 0; 
+   for (iModeNum = 0;
+         EnumDisplaySettings(NULL, iModeNum, &dm) != 0;
          iModeNum++)
    {
       if (found)
@@ -1160,7 +1160,7 @@ void win32_get_video_output_next(
          break;
       }
 
-      if (     dm.dmPelsWidth == curr_width 
+      if (     dm.dmPelsWidth == curr_width
             && dm.dmPelsHeight == curr_height)
          found = true;
    }

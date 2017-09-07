@@ -933,7 +933,7 @@ static bool command_event_cmd_exec(const char *data,
    content_info.environ_get = menu_content_environment_get;
 #endif
 
-   if (path_get(RARCH_PATH_CONTENT) != (void*)data)
+   if (path_get(RARCH_PATH_CONTENT) != data)
    {
       path_clear(RARCH_PATH_CONTENT);
       if (!string_is_empty(data))

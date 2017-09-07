@@ -51,6 +51,9 @@
 #include <fcntl.h>
 #include <direct.h>
 #include <windows.h>
+#if defined(_MSC_VER) && _MSC_VER <= 1200
+#define INVALID_FILE_ATTRIBUTES ((DWORD)-1)
+#endif
 #endif
 #elif defined(VITA)
 #define SCE_ERROR_ERRNO_EEXIST 0x80010011
