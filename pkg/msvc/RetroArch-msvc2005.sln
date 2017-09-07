@@ -1,0 +1,25 @@
+Microsoft Visual Studio Solution File, Format Version 9.00
+# Visual C++ Express 2005
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RetroArch-msvc2005", "msvc-2005\RetroArch-msvc2005.vcproj", "{1FEFA874-F6A6-4CE6-9DB4-3B291A364CE5}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug NoAccel|Win32 = Debug NoAccel|Win32
+		Debug|Win32 = Debug|Win32
+		Release NoAccel|Win32 = Release NoAccel|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1FEFA874-F6A6-4CE6-9DB4-3B291A364CE5}.Debug NoAccel|Win32.ActiveCfg = Debug NoAccel|Win32
+		{1FEFA874-F6A6-4CE6-9DB4-3B291A364CE5}.Debug NoAccel|Win32.Build.0 = Debug NoAccel|Win32
+		{1FEFA874-F6A6-4CE6-9DB4-3B291A364CE5}.Debug|Win32.ActiveCfg = Debug|Win32
+		{1FEFA874-F6A6-4CE6-9DB4-3B291A364CE5}.Debug|Win32.Build.0 = Debug|Win32
+		{1FEFA874-F6A6-4CE6-9DB4-3B291A364CE5}.Release NoAccel|Win32.ActiveCfg = Release NoAccel|Win32
+		{1FEFA874-F6A6-4CE6-9DB4-3B291A364CE5}.Release NoAccel|Win32.Build.0 = Release NoAccel|Win32
+		{1FEFA874-F6A6-4CE6-9DB4-3B291A364CE5}.Release|Win32.ActiveCfg = Release|Win32
+		{1FEFA874-F6A6-4CE6-9DB4-3B291A364CE5}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
