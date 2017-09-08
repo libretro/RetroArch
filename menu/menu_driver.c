@@ -175,7 +175,7 @@ static void *menu_userdata                      = NULL;
 
 /* Quick jumping indices with L/R.
  * Rebuilt when parsing directory. */
-static uint8_t scroll_index_list[SCROLL_INDEX_SIZE];
+static size_t   scroll_index_list[SCROLL_INDEX_SIZE];
 static unsigned scroll_index_size               = 0;
 static unsigned scroll_acceleration             = 0;
 static size_t menu_driver_selection_ptr         = 0;
@@ -2305,14 +2305,14 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case MENU_NAVIGATION_CTL_ADD_SCROLL_INDEX:
          {
-            size_t *sel      = (size_t*)data;
+            size_t *sel        = (size_t*)data;
             if (!sel)
                return false;
 
-            if ((scroll_index_size + 1) >= SCROLL_INDEX_SIZE)
-               scroll_index_list[scroll_index_size]   = (uint8_t)*sel;
-            else
-               scroll_index_list[scroll_index_size++] = (uint8_t)*sel;
+            scroll_index_list[scroll_index_size]   = *sel;
+
+            if (!((scroll_index_size + 1) >= SCROLL_INDEX_SIZE))
+               scroll_index_size++;
          }
          break;
       case MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL:
