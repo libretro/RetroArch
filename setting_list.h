@@ -106,8 +106,8 @@ struct rarch_setting
    const char           *parent_group;
    const char           *values;
 
-   uint32_t             index;
-   unsigned             index_offset;
+   uint8_t              index;
+   uint8_t              index_offset;
 
    double               min;
    double               max;

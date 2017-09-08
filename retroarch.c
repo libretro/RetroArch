@@ -185,48 +185,36 @@ static sthread_tls_t rarch_tls;
 const void *MAGIC_POINTER                               = (void*)0xB16B00B5;
 #endif
 
-
 static retro_bits_t has_set_libretro_device;
-static bool has_set_core                                = false;
-static bool has_set_username                            = false;
-static bool rarch_is_inited                             = false;
-static bool rarch_error_on_init                         = false;
-static bool rarch_block_config_read                     = false;
-static bool rarch_force_fullscreen                      = false;
-static bool has_set_verbosity                           = false;
-static bool has_set_libretro                            = false;
-static bool has_set_libretro_directory                  = false;
-static bool has_set_save_path                           = false;
-static bool has_set_state_path                          = false;
-static bool has_set_netplay_mode                        = false;
-static bool has_set_netplay_ip_address                  = false;
-static bool has_set_netplay_ip_port                     = false;
-static bool has_set_netplay_stateless_mode              = false;
-static bool has_set_netplay_check_frames                = false;
-static bool has_set_ups_pref                            = false;
-static bool has_set_bps_pref                            = false;
-static bool has_set_ips_pref                            = false;
 
-static bool rarch_is_sram_load_disabled                 = false;
-static bool rarch_is_sram_save_disabled                 = false;
-static bool rarch_use_sram                              = false;
-static bool rarch_ups_pref                              = false;
-static bool rarch_bps_pref                              = false;
-static bool rarch_ips_pref                              = false;
-static bool rarch_patch_blocked                         = false;
+static bool has_set_core                                   = false;
+static bool has_set_username                               = false;
+static bool rarch_is_inited                                = false;
+static bool rarch_error_on_init                            = false;
+static bool rarch_block_config_read                        = false;
+static bool rarch_force_fullscreen                         = false;
+static bool has_set_verbosity                              = false;
+static bool has_set_libretro                               = false;
+static bool has_set_libretro_directory                     = false;
+static bool has_set_save_path                              = false;
+static bool has_set_state_path                             = false;
+static bool has_set_netplay_mode                           = false;
+static bool has_set_netplay_ip_address                     = false;
+static bool has_set_netplay_ip_port                        = false;
+static bool has_set_netplay_stateless_mode                 = false;
+static bool has_set_netplay_check_frames                   = false;
+static bool has_set_ups_pref                               = false;
+static bool has_set_bps_pref                               = false;
+static bool has_set_ips_pref                               = false;
 
-static rarch_system_info_t runloop_system;
-static struct retro_frame_time_callback runloop_frame_time;
-static retro_keyboard_event_t runloop_key_event            = NULL;
-static retro_keyboard_event_t runloop_frontend_key_event   = NULL;
-static core_option_manager_t *runloop_core_options         = NULL;
-#ifdef HAVE_THREADS
-static slock_t *_runloop_msg_queue_lock                    = NULL;
-#endif
-static msg_queue_t *runloop_msg_queue                      = NULL;
-static unsigned runloop_pending_windowed_scale             = 0;
-static retro_usec_t runloop_frame_time_last                = 0;
-static unsigned runloop_max_frames                         = 0;
+static bool rarch_is_sram_load_disabled                    = false;
+static bool rarch_is_sram_save_disabled                    = false;
+static bool rarch_use_sram                                 = false;
+static bool rarch_ups_pref                                 = false;
+static bool rarch_bps_pref                                 = false;
+static bool rarch_ips_pref                                 = false;
+static bool rarch_patch_blocked                            = false;
+
 static bool runloop_force_nonblock                         = false;
 static bool runloop_paused                                 = false;
 static bool runloop_idle                                   = false;
@@ -241,6 +229,21 @@ static bool runloop_remaps_game_active                     = false;
 static bool runloop_game_options_active                    = false;
 static bool runloop_missing_bios                           = false;
 static bool runloop_autosave                               = false;
+
+static rarch_system_info_t runloop_system;
+static struct retro_frame_time_callback runloop_frame_time;
+static retro_keyboard_event_t runloop_key_event            = NULL;
+static retro_keyboard_event_t runloop_frontend_key_event   = NULL;
+static core_option_manager_t *runloop_core_options         = NULL;
+#ifdef HAVE_THREADS
+static slock_t *_runloop_msg_queue_lock                    = NULL;
+#endif
+static msg_queue_t *runloop_msg_queue                      = NULL;
+
+static unsigned runloop_pending_windowed_scale             = 0;
+static unsigned runloop_max_frames                         = 0;
+
+static retro_usec_t runloop_frame_time_last                = 0;
 static retro_time_t frame_limit_minimum_time               = 0.0;
 static retro_time_t frame_limit_last_time                  = 0.0;
 
