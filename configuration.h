@@ -199,6 +199,7 @@ typedef struct settings
       bool savestate_thumbnail_enable;
       bool network_cmd_enable;
       bool stdin_cmd_enable;
+      bool keyboard_mapper_enable;
       bool network_remote_enable;
       bool network_remote_enable_user[MAX_USERS];
       bool load_dummy_on_core_shutdown;
@@ -303,6 +304,7 @@ typedef struct settings
       unsigned autosave_interval;
       unsigned network_cmd_port;
       unsigned network_remote_base_port;
+      unsigned keyboard_mapper_port;
       unsigned video_window_x;
       unsigned video_window_y;
       unsigned video_monitor_index;

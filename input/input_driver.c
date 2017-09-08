@@ -34,6 +34,10 @@
 #include "input_remote.h"
 #endif
 
+#ifdef HAVE_KEYMAPPER
+#include "input_mapper.h"
+#endif
+
 #include "input_driver.h"
 #include "input_keymaps.h"
 #include "input_remapping.h"
@@ -345,6 +349,9 @@ static command_t *input_driver_command            = NULL;
 #endif
 #ifdef HAVE_NETWORKGAMEPAD
 static input_remote_t *input_driver_remote        = NULL;
+#endif
+#ifdef HAVE_KEYMAPPER
+static input_mapper_t *input_driver_mapper        = NULL;
 #endif
 const input_driver_t *current_input               = NULL;
 void *current_input_data                          = NULL;
@@ -1327,6 +1334,15 @@ void input_driver_deinit_remote(void)
 #endif
 }
 
+void input_driver_deinit_mapper(void)
+{
+#ifdef HAVE_NETWORKGAMEPAD
+   if (input_driver_mapper)
+      input_mapper_free(input_driver_mapper);
+   input_driver_mapper = NULL;
+#endif
+}
+
 bool input_driver_init_remote(void)
 {
 #ifdef HAVE_NETWORKGAMEPAD
@@ -1346,6 +1362,26 @@ bool input_driver_init_remote(void)
 #endif
    return false;
 }
+
+bool input_driver_init_mapper(void)
+{
+#ifdef HAVE_KEYMAPPER
+   settings_t *settings = config_get_ptr();
+
+   if (!settings->bools.keyboard_mapper_enable)
+      return false;
+
+   input_driver_mapper = input_mapper_new(
+         settings->uints.keyboard_mapper_port);
+
+   if (input_driver_mapper)
+      return true;
+
+   RARCH_ERR("Failed to initialize input mapper.\n");
+#endif
+   return false;
+}
+
 
 bool input_driver_grab_mouse(void)
 {

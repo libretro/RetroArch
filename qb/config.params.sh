@@ -28,6 +28,7 @@ HAVE_SSA=auto              # SSA/ASS for FFmpeg subtitle support
 HAVE_DYLIB=auto            # Dynamic loading support
 HAVE_NETWORKING=auto       # Networking features (recommended)
 HAVE_NETWORKGAMEPAD=auto   # Networked game pad (plus baked-in core)
+HAVE_KEYMAPPER=yes   # Networked game pad (plus baked-in core)
 C89_NETWORKGAMEPAD=no
 HAVE_MINIUPNPC=auto        # Mini UPnP client library (for NAT traversal)
 HAVE_BUILTINMINIUPNPC=yes  # Bake in Mini UPnP client library (for NAT traversal)

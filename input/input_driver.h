@@ -397,6 +397,10 @@ void input_driver_deinit_remote(void);
 
 bool input_driver_init_remote(void);
 
+void input_driver_deinit_mapper(void);
+
+bool input_driver_init_mapper(void);
+
 bool input_driver_grab_mouse(void);
 
 bool input_driver_ungrab_mouse(void);
