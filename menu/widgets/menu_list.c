@@ -23,10 +23,10 @@
 
 struct menu_list
 {
-   file_list_t **menu_stack;
    size_t menu_stack_size;
-   file_list_t **selection_buf;
    size_t selection_buf_size;
+   file_list_t **menu_stack;
+   file_list_t **selection_buf;
 };
 
 void menu_list_free_list(file_list_t *list)
@@ -79,17 +79,20 @@ void menu_list_free(menu_list_t *menu_list)
 menu_list_t *menu_list_new(void)
 {
    unsigned i;
-   menu_list_t           *list = (menu_list_t*)calloc(1, sizeof(*list));
+   menu_list_t           *list = (menu_list_t*)calloc(1,
+         sizeof(*list));
 
    if (!list)
       return NULL;
 
-   list->menu_stack          = (file_list_t**)calloc(1, sizeof(*list->menu_stack));
+   list->menu_stack          = (file_list_t**)calloc(1,
+         sizeof(*list->menu_stack));
 
    if (!list->menu_stack)
       goto error;
 
-   list->selection_buf       = (file_list_t**)calloc(1, sizeof(*list->selection_buf));
+   list->selection_buf       = (file_list_t**)calloc(1,
+         sizeof(*list->selection_buf));
 
    if (!list->selection_buf)
       goto error;
@@ -98,10 +101,12 @@ menu_list_t *menu_list_new(void)
    list->selection_buf_size   = 1;
 
    for (i = 0; i < list->menu_stack_size; i++)
-      list->menu_stack[i]    = (file_list_t*)calloc(1, sizeof(*list->menu_stack[i]));
+      list->menu_stack[i]    = (file_list_t*)calloc(1,
+            sizeof(*list->menu_stack[i]));
 
    for (i = 0; i < list->selection_buf_size; i++)
-      list->selection_buf[i] = (file_list_t*)calloc(1, sizeof(*list->selection_buf[i]));
+      list->selection_buf[i] = (file_list_t*)calloc(1,
+            sizeof(*list->selection_buf[i]));
 
    return list;
 

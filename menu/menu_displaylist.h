@@ -172,44 +172,42 @@ typedef struct menu_displaylist_info
    bool need_refresh;
    bool need_entries_refresh;
    bool need_push;
-
    /* should we clear the displaylist before we push
     * entries onto it? */
    bool need_clear;
-
    bool push_builtin_cores;
-
    /* Should a 'download core' entry be pushed onto the list?
     * This will be set to true in case there are no currently
     * installed cores. */
    bool download_core;
-
    /* does the navigation index need to be cleared to 0 (first entry) ? */
    bool need_navigation_clear;
-   file_list_t *list;
-   file_list_t *menu_list;
+   enum msg_hash_enums enum_idx;
+
    char path[PATH_MAX_LENGTH];
    char path_b[PATH_MAX_LENGTH];
    char path_c[PATH_MAX_LENGTH];
-   char label[255];
-   uint32_t label_hash;
    char exts[PATH_MAX_LENGTH];
+   char label[255];
+
+   size_t directory_ptr;
+   uint32_t label_hash;
    unsigned type;
    unsigned type_default;
-   size_t directory_ptr;
    unsigned flags;
-   enum msg_hash_enums enum_idx;
    rarch_setting_t *setting;
+   file_list_t *list;
+   file_list_t *menu_list;
 } menu_displaylist_info_t;
 
 typedef struct menu_displaylist_ctx_parse_entry
 {
-   void *data;
-   menu_displaylist_info_t *info;
-   const char *info_label;
    enum msg_hash_enums enum_idx;
    enum menu_displaylist_parse_type parse_type;
    bool add_empty_entry;
+   menu_displaylist_info_t *info;
+   const char *info_label;
+   void *data;
 } menu_displaylist_ctx_parse_entry_t;
 
 typedef struct menu_displaylist_ctx_entry

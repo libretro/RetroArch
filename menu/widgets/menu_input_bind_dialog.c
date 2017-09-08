@@ -49,16 +49,14 @@ struct menu_bind_axis_state
 
 struct menu_bind_state
 {
-   struct retro_keybind *target;
-   /* For keyboard binding. */
-
-   rarch_timer_t timer;
+   bool skip;
    unsigned begin;
    unsigned last;
    unsigned user;
+   rarch_timer_t timer;
+   struct retro_keybind *target;
    struct menu_bind_state_port state[MAX_USERS];
    struct menu_bind_axis_state axis_state[MAX_USERS];
-   bool skip;
 };
 
 static unsigned               menu_bind_port   = 0;
@@ -73,7 +71,8 @@ static bool menu_input_key_bind_custom_bind_keyboard_cb(
    menu_input_binds.begin++;
    menu_input_binds.target++;
    
-   rarch_timer_begin_new_time(&menu_input_binds.timer, settings->uints.input_bind_timeout);
+   rarch_timer_begin_new_time(&menu_input_binds.timer,
+         settings->uints.input_bind_timeout);
 
    return (menu_input_binds.begin <= menu_input_binds.last);
 }
@@ -170,33 +169,33 @@ static void menu_input_key_bind_poll_bind_state_internal(
       unsigned port,
       bool timed_out)
 {
-   unsigned b, a, h;
-    if (!joypad)
-        return;
+   uint8_t b, a, h;
+   if (!joypad)
+      return;
 
-    if (joypad->poll)
-        joypad->poll();
+   if (joypad->poll)
+      joypad->poll();
 
-    /* poll only the relevant port */
-    for (b = 0; b < MENU_MAX_BUTTONS; b++)
-        state->state[port].buttons[b] =
-           input_joypad_button_raw(joypad, port, b);
+   /* poll only the relevant port */
+   for (b = 0; b < MENU_MAX_BUTTONS; b++)
+      state->state[port].buttons[b] =
+         input_joypad_button_raw(joypad, port, b);
 
-    for (a = 0; a < MENU_MAX_AXES; a++)
-        state->state[port].axes[a] =
-           input_joypad_axis_raw(joypad, port, a);
+   for (a = 0; a < MENU_MAX_AXES; a++)
+      state->state[port].axes[a] =
+         input_joypad_axis_raw(joypad, port, a);
 
-    for (h = 0; h < MENU_MAX_HATS; h++)
-    {
-        if (input_joypad_hat_raw(joypad, port, HAT_UP_MASK, h))
-            state->state[port].hats[h] |= HAT_UP_MASK;
-        if (input_joypad_hat_raw(joypad, port, HAT_DOWN_MASK, h))
-            state->state[port].hats[h] |= HAT_DOWN_MASK;
-        if (input_joypad_hat_raw(joypad, port, HAT_LEFT_MASK, h))
-            state->state[port].hats[h] |= HAT_LEFT_MASK;
-        if (input_joypad_hat_raw(joypad, port, HAT_RIGHT_MASK, h))
-            state->state[port].hats[h] |= HAT_RIGHT_MASK;
-    }
+   for (h = 0; h < MENU_MAX_HATS; h++)
+   {
+      if (input_joypad_hat_raw(joypad, port, HAT_UP_MASK, h))
+         state->state[port].hats[h] |= HAT_UP_MASK;
+      if (input_joypad_hat_raw(joypad, port, HAT_DOWN_MASK, h))
+         state->state[port].hats[h] |= HAT_DOWN_MASK;
+      if (input_joypad_hat_raw(joypad, port, HAT_LEFT_MASK, h))
+         state->state[port].hats[h] |= HAT_LEFT_MASK;
+      if (input_joypad_hat_raw(joypad, port, HAT_RIGHT_MASK, h))
+         state->state[port].hats[h] |= HAT_RIGHT_MASK;
+   }
 }
 
 static void menu_input_key_bind_poll_bind_state(
@@ -269,10 +268,12 @@ static bool menu_input_key_bind_poll_find_trigger_pad(
       struct menu_bind_state *new_state,
       unsigned p)
 {
-   unsigned a, b, h;
-   const struct menu_bind_state_port *n = (const struct menu_bind_state_port*)
+   uint8_t a, b, h;
+   const struct menu_bind_state_port *n = 
+      (const struct menu_bind_state_port*)
       &new_state->state[p];
-   const struct menu_bind_state_port *o = (const struct menu_bind_state_port*)
+   const struct menu_bind_state_port *o = 
+      (const struct menu_bind_state_port*)
       &state->state[p];
 
    for (b = 0; b < MENU_MAX_BUTTONS; b++)
@@ -345,8 +346,9 @@ static bool menu_input_key_bind_poll_find_trigger(
       struct menu_bind_state *state,
       struct menu_bind_state *new_state)
 {
-   unsigned i;
-   unsigned max_users   = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+   uint8_t i;
+   unsigned max_users   = *(input_driver_get_uint(
+            INPUT_ACTION_MAX_USERS));
 
    if (!state || !new_state)
       return false;
@@ -391,7 +393,8 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind)
 
       menu_input_binds.begin++;
       menu_input_binds.target++;
-      rarch_timer_begin_new_time(&menu_input_binds.timer, settings->uints.input_bind_timeout);
+      rarch_timer_begin_new_time(&menu_input_binds.timer,
+            settings->uints.input_bind_timeout);
       timed_out = true;
    }
 
@@ -410,7 +413,8 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind)
 
       /* We won't be getting any key events, so just cancel early. */
       if (timed_out)
-         input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_CANCEL_WAIT_KEYS, NULL);
+         input_keyboard_ctl(
+               RARCH_INPUT_KEYBOARD_CTL_CANCEL_WAIT_KEYS, NULL);
 
       return true;
    }
@@ -432,12 +436,14 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind)
 
       if (binds.begin > binds.last)
       {
-         input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_CANCEL_WAIT_KEYS, NULL);
+         input_keyboard_ctl(
+               RARCH_INPUT_KEYBOARD_CTL_CANCEL_WAIT_KEYS, NULL);
          return true;
       }
 
       binds.target++;
-      rarch_timer_begin_new_time(&binds.timer, settings->uints.input_bind_timeout);
+      rarch_timer_begin_new_time(&binds.timer,
+            settings->uints.input_bind_timeout);
    }
    menu_input_binds = binds;
 
