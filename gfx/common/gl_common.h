@@ -90,14 +90,9 @@ typedef struct gl
    int version_minor;
    int fbo_pass;
 
-   GLuint texture[GFX_MAX_TEXTURES];
    GLuint tex_mag_filter;
    GLuint tex_min_filter;
 #ifdef HAVE_FBO
-   GLuint fbo[GFX_MAX_SHADERS];
-   GLuint fbo_texture[GFX_MAX_SHADERS];
-   GLuint hw_render_fbo[GFX_MAX_TEXTURES];
-   GLuint hw_render_depth[GFX_MAX_TEXTURES];
    GLuint fbo_feedback;
    GLuint fbo_feedback_texture;
 #endif
@@ -105,13 +100,20 @@ typedef struct gl
 #ifdef HAVE_OVERLAY
    GLuint *overlay_tex;
 #endif
-#ifdef HAVE_GL_ASYNC_READBACK
-   GLuint pbo_readback[4];
-#endif
 #if defined(HAVE_MENU)
    GLuint menu_texture;
 #endif
    GLuint vao;
+#ifdef HAVE_GL_ASYNC_READBACK
+   GLuint pbo_readback[4];
+#endif
+   GLuint texture[GFX_MAX_TEXTURES];
+#ifdef HAVE_FBO
+   GLuint fbo[GFX_MAX_SHADERS];
+   GLuint fbo_texture[GFX_MAX_SHADERS];
+   GLuint hw_render_fbo[GFX_MAX_TEXTURES];
+   GLuint hw_render_depth[GFX_MAX_TEXTURES];
+#endif
 
    unsigned tex_index; /* For use with PREV. */
    unsigned textures;
@@ -123,8 +125,6 @@ typedef struct gl
    unsigned vp_out_height;
    unsigned tex_w;
    unsigned tex_h;
-   unsigned last_width[GFX_MAX_TEXTURES];
-   unsigned last_height[GFX_MAX_TEXTURES];
    unsigned base_size; /* 2 or 4 */
 #ifdef HAVE_OVERLAY
    unsigned overlays;
@@ -135,6 +135,8 @@ typedef struct gl
 #ifdef HAVE_GL_SYNC
    unsigned fence_count;
 #endif
+   unsigned last_width[GFX_MAX_TEXTURES];
+   unsigned last_height[GFX_MAX_TEXTURES];
 
 #if defined(HAVE_MENU)
    float menu_texture_alpha;
@@ -152,11 +154,6 @@ typedef struct gl
 #endif
 
    struct video_tex_info tex_info;
-   struct video_tex_info prev_info[GFX_MAX_TEXTURES];
-#ifdef HAVE_FBO
-   struct video_fbo_rect fbo_rect[GFX_MAX_SHADERS];
-   struct gfx_fbo_scale fbo_scale[GFX_MAX_SHADERS];
-#endif
 #ifdef HAVE_GL_ASYNC_READBACK
    struct scaler_ctx pbo_readback_scaler;
 #endif
@@ -165,6 +162,11 @@ typedef struct gl
    struct video_coords coords;
    struct scaler_ctx scaler;
    video_info_t video_info;
+   struct video_tex_info prev_info[GFX_MAX_TEXTURES];
+#ifdef HAVE_FBO
+   struct video_fbo_rect fbo_rect[GFX_MAX_SHADERS];
+   struct gfx_fbo_scale fbo_scale[GFX_MAX_SHADERS];
+#endif
 
 #ifdef HAVE_GL_SYNC
    GLsync fences[MAX_FENCES];
