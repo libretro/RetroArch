@@ -45,13 +45,13 @@ enum menu_entry_type
 
 typedef struct menu_entry
 {
-   enum msg_hash_enums enum_idx;
    char  path[255];
    char label[255];
    char sublabel[255];
    char rich_label[255];
    char value[255];
    size_t entry_idx;
+   enum msg_hash_enums enum_idx;
    unsigned idx;
    unsigned type;
    unsigned spacing;

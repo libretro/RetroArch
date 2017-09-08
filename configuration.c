@@ -63,36 +63,36 @@ struct config_bool_setting
 struct config_int_setting
 {
    const char *ident;
-   bool def_enable;
-   bool handle;
    int *ptr;
+   bool def_enable;
    int def;
+   bool handle;
 };
 
 struct config_uint_setting
 {
    const char *ident;
-   bool def_enable;
-   bool handle;
    unsigned *ptr;
+   bool def_enable;
    unsigned def;
+   bool handle;
 };
 
 struct config_float_setting
 {
    const char *ident;
-   bool def_enable;
-   bool handle;
    float *ptr;
+   bool def_enable;
    float def;
+   bool handle;
 };
 
 struct config_array_setting
 {
    const char *ident;
    char *ptr;
-   const char *def;
    bool def_enable;
+   const char *def;
    bool handle;
 };
 
@@ -100,8 +100,8 @@ struct config_path_setting
 {
    const char *ident;
    char *ptr;
-   char *def;
    bool def_enable;
+   char *def;
    bool handle;
 };
 

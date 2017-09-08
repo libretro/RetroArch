@@ -992,8 +992,7 @@ static int setting_action_start_bind_device(void *data)
       return -1;
 
    configuration_set_uint(settings,
-         settings->uints.input_joypad_map[setting->index_offset],
-         setting->index_offset);
+         settings->uints.input_joypad_map[index_offset], setting->index_offset);
    return 0;
 }
 
