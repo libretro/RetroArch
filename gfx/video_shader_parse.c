@@ -683,14 +683,15 @@ static bool video_shader_parse_imports(config_file_t *conf,
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool video_shader_read_conf_cgp(config_file_t *conf, struct video_shader *shader)
+bool video_shader_read_conf_cgp(config_file_t *conf,
+      struct video_shader *shader)
 {
-   unsigned shaders, i;
+   unsigned i;
+   unsigned shaders = 0;
 
    memset(shader, 0, sizeof(*shader));
    shader->type = RARCH_SHADER_CG;
 
-   shaders = 0;
    if (!config_get_uint(conf, "shaders", &shaders))
    {
       RARCH_ERR("Cannot find \"shaders\" param.\n");
@@ -1018,7 +1019,8 @@ enum rarch_shader_type video_shader_parse_type(const char *path,
    if (!path)
       return fallback;
 
-   switch (msg_hash_to_file_type(msg_hash_calculate(path_get_extension(path))))
+   switch (msg_hash_to_file_type(
+            msg_hash_calculate(path_get_extension(path))))
    {
       case FILE_TYPE_SHADER_CG:
       case FILE_TYPE_SHADER_PRESET_CGP:

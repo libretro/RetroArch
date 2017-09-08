@@ -661,28 +661,16 @@ static void video_driver_filter_free(void)
    video_driver_state_out_rgb32 = false;
 }
 
-static void video_driver_init_filter(enum retro_pixel_format colfmt)
+static void video_driver_init_filter(enum retro_pixel_format colfmt,
+      struct retro_game_geometry *geom)
 {
-   unsigned width, height, pow2_x, pow2_y, maxsize;
+   unsigned pow2_x, pow2_y, maxsize;
    void *buf                            = NULL;
-   struct retro_game_geometry *geom     = NULL;
    settings_t *settings                 = config_get_ptr();
-   struct retro_system_av_info *av_info = &video_driver_av_info;
+   unsigned width                       = geom->max_width;
+   unsigned height                      = geom->max_height;
 
-   /* Deprecated format. Gets pre-converted. */
-   if (colfmt == RETRO_PIXEL_FORMAT_0RGB1555)
-      colfmt = RETRO_PIXEL_FORMAT_RGB565;
-
-   if (av_info)
-      geom = (struct retro_game_geometry*)&av_info->geometry;
-
-   if (!geom)
-      return;
-
-   width                     = geom->max_width;
-   height                    = geom->max_height;
-
-   video_driver_state_filter = rarch_softfilter_new(
+   video_driver_state_filter            = rarch_softfilter_new(
          settings->paths.path_softfilter_plugin,
          RARCH_SOFTFILTER_THREADS_AUTO, colfmt, width, height);
 
@@ -901,13 +889,18 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    unsigned max_dim, scale, width, height;
    video_viewport_t *custom_vp            = NULL;
    const input_driver_t *tmp              = NULL;
-   const struct retro_game_geometry *geom = NULL;
    rarch_system_info_t *system            = NULL;
    static uint16_t dummy_pixels[32]       = {0};
    settings_t *settings                   = config_get_ptr();
    struct retro_system_av_info *av_info   = &video_driver_av_info;
+   struct retro_game_geometry *geom       = (av_info) ?
+      &av_info->geometry : NULL;
 
-   video_driver_filter_free();
+   if (!geom)
+   {
+      RARCH_ERR("[Video]: AV geometry not initialized, cannot initialize video driver.\n");
+      goto error;
+   }
 
    if (!string_is_empty(settings->paths.path_softfilter_plugin))
    {
@@ -916,19 +909,18 @@ static bool video_driver_init_internal(bool *video_is_threaded)
          RARCH_WARN("Cannot use CPU filters when hardware rendering is used.\n");
       }
       else
-         video_driver_init_filter(video_driver_pix_fmt);
+      {
+         /* Deprecated format. Gets pre-converted. */
+         enum retro_pixel_format colfmt = 
+            (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555) ?
+            RETRO_PIXEL_FORMAT_RGB565 : video_driver_pix_fmt;
+
+         if (av_info && geom)
+            video_driver_init_filter(colfmt, geom);
+      }
    }
 
    command_event(CMD_EVENT_SHADER_DIR_INIT, NULL);
-
-   if (av_info)
-      geom      = (const struct retro_game_geometry*)&av_info->geometry;
-
-   if (!geom)
-   {
-      RARCH_ERR("[Video]: AV geometry not initialized, cannot initialize video driver.\n");
-      goto error;
-   }
 
    max_dim   = MAX(geom->max_width, geom->max_height);
    scale     = next_pow2(max_dim) / RARCH_SCALE_BASE;
@@ -1750,6 +1742,7 @@ bool video_driver_get_prev_video_out(void)
 bool video_driver_init(bool *video_is_threaded)
 {
    video_driver_lock_new();
+   video_driver_filter_free();
    return video_driver_init_internal(video_is_threaded);
 }
 
