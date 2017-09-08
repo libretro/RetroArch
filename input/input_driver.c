@@ -202,11 +202,11 @@ struct input_bind_map
     * 1 = Common hotkey.
     * 2 = Uncommon/obscure hotkey.
     */
-   unsigned meta;
+   uint8_t meta;
 
    const char *base;
    enum msg_hash_enums desc;
-   unsigned retro_key;
+   uint8_t retro_key;
 };
 
 static const char *bind_user_prefix[MAX_USERS] = {
