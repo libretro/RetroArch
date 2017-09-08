@@ -281,12 +281,12 @@ static void retroarch_msg_queue_init(void)
 
 static void retroarch_override_setting_free_state(void)
 {
-   uint8_t i;
+   unsigned i;
    for (i = 0; i < RARCH_OVERRIDE_SETTING_LAST; i++)
    {
       if (i == RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE)
       {
-         uint8_t j;
+         unsigned j;
          for (j = 0; j < MAX_USERS; j++)
             retroarch_override_setting_unset((enum rarch_override_setting)(i), &j);
       }
@@ -1476,7 +1476,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 #endif
          retroarch_init_state();
          {
-            uint8_t i;
+            unsigned i;
             for (i = 0; i < MAX_USERS; i++)
                input_config_set_device(i, RETRO_DEVICE_JOYPAD);
          }

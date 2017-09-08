@@ -187,8 +187,7 @@ static void *audio_driver_context_audio_data             = NULL;
  **/
 static void compute_audio_buffer_statistics(void)
 {
-   uint8_t i;
-   unsigned low_water_size, high_water_size, avg, stddev;
+   unsigned i, low_water_size, high_water_size, avg, stddev;
    float avg_filled              = 0.0f;
    float deviation               = 0.0f;
    uint64_t accum                = 0;
@@ -811,7 +810,7 @@ void audio_driver_monitor_adjust_system_rates(void)
 
 void audio_driver_setup_rewind(void)
 {
-   uint8_t i;
+   unsigned i;
 
    /* Push audio ready to be played. */
    audio_driver_rewind_ptr = audio_driver_rewind_size;
@@ -845,7 +844,7 @@ bool audio_driver_find_driver(void)
       current_audio = (const audio_driver_t*)audio_driver_find_handle(i);
    else
    {
-      uint8_t d;
+      unsigned d;
       RARCH_ERR("Couldn't find any audio driver named \"%s\"\n",
             settings->arrays.audio_driver);
       RARCH_LOG_OUTPUT("Available audio drivers are:\n");
@@ -910,7 +909,7 @@ bool audio_driver_get_devices_list(void **data)
 bool audio_driver_mixer_extension_supported(const char *ext)
 {
    union string_list_elem_attr attr;
-   uint8_t i;
+   unsigned i;
    bool ret                      = false;
    struct string_list *str_list  = string_list_new();
 
@@ -943,7 +942,7 @@ bool audio_driver_mixer_extension_supported(const char *ext)
 
 static int audio_mixer_find_index(audio_mixer_sound_t *sound)
 {
-   uint8_t i;
+   unsigned i;
 
    for (i = 0; i < AUDIO_MIXER_MAX_STREAMS; i++)
    {
@@ -1092,7 +1091,7 @@ static void audio_driver_mixer_remove_stream(unsigned i)
 
 static void audio_driver_mixer_deinit(void)
 {
-   uint8_t i;
+   unsigned i;
 
    audio_set_bool(AUDIO_ACTION_MIXER, false);
 

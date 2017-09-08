@@ -1278,7 +1278,7 @@ void video_monitor_set_refresh_rate(float hz)
 bool video_monitor_fps_statistics(double *refresh_rate,
       double *deviation, unsigned *sample_points)
 {
-   uint8_t i;
+   unsigned i;
    retro_time_t accum   = 0, avg, accum_var = 0;
    unsigned samples      = MIN(MEASURE_FRAME_TIME_SAMPLES_COUNT,
          (unsigned)video_driver_frame_time_count);
