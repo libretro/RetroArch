@@ -273,7 +273,7 @@ typedef struct settings
       unsigned audio_out_rate;
       unsigned audio_block_frames;
       unsigned audio_latency;
-      unsigned input_remap_ids[MAX_USERS][RARCH_BIND_LIST_END];
+      unsigned input_remap_ids[MAX_USERS][RARCH_CUSTOM_BIND_LIST_END];
 
       /* Set by autoconfiguration in joypad_autoconfig_dir.
        * Does not override main binds. */
