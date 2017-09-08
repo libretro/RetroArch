@@ -953,7 +953,8 @@ static int audio_mixer_find_index(audio_mixer_sound_t *sound)
    return -1;
 }
 
-static void audio_mixer_play_stop_cb(audio_mixer_sound_t *sound, unsigned reason)
+static void audio_mixer_play_stop_cb(
+      audio_mixer_sound_t *sound, unsigned reason)
 {
    int idx = audio_mixer_find_index(sound);
 

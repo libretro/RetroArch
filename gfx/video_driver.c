@@ -124,8 +124,10 @@ typedef struct video_pixel_scaler
    void *scaler_out;
 } video_pixel_scaler_t;
 
-static void (*video_driver_cb_shader_use)(void *data, void *shader_data, unsigned index, bool set_active);
-static bool (*video_driver_cb_shader_set_mvp)(void *data, void *shader_data, const math_matrix_4x4 *mat);
+static void (*video_driver_cb_shader_use)(void *data,
+      void *shader_data, unsigned index, bool set_active);
+static bool (*video_driver_cb_shader_set_mvp)(void *data,
+      void *shader_data, const math_matrix_4x4 *mat);
 bool (*video_driver_cb_has_focus)(void);
 
 /* Opaque handles to currently running window.

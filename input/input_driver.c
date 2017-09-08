@@ -228,7 +228,7 @@ static const char *bind_user_prefix[MAX_USERS] = {
    "input_player16",
 };
 
-static const unsigned buttons[] = {
+static const uint8_t buttons[] = {
    RETRO_DEVICE_ID_JOYPAD_R,
    RETRO_DEVICE_ID_JOYPAD_L,
    RETRO_DEVICE_ID_JOYPAD_X,
@@ -545,7 +545,7 @@ void input_poll(void)
 {
    size_t i;
    settings_t *settings           = config_get_ptr();
-   unsigned max_users             = input_driver_max_users;
+   uint8_t max_users              = (uint8_t)input_driver_max_users;
    
    current_input->poll(current_input_data);
 
@@ -716,7 +716,7 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
    unsigned i;
    const struct retro_keybind *binds[MAX_USERS];
    settings_t *settings = config_get_ptr();
-   unsigned max_users   = input_driver_max_users;
+   uint8_t max_users    = (uint8_t)input_driver_max_users;
 
    for (i = 0; i < max_users; i++)
    {
@@ -786,16 +786,15 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
  */
 uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
 {
-   unsigned i;
+   unsigned i, port;
    rarch_joypad_info_t joypad_info;
    uint64_t             ret                     = 0;
    const struct retro_keybind *binds[MAX_USERS] = {NULL};
    settings_t     *settings                     = (settings_t*)data;
    const struct retro_keybind *binds_norm       = NULL;
    const struct retro_keybind *binds_auto       = NULL;
-   unsigned max_users                           = input_driver_max_users;
-   unsigned port;
-   unsigned port_max                  = 
+   uint8_t max_users                            = (uint8_t)input_driver_max_users;
+   uint8_t port_max                             = 
             settings->bools.input_all_users_control_menu 
             ? max_users : 1;
 
@@ -2044,7 +2043,6 @@ void input_keyboard_event(bool down, unsigned code,
 
 bool input_keyboard_ctl(enum rarch_input_keyboard_ctl_state state, void *data)
 {
-
    switch (state)
    {
       case RARCH_INPUT_KEYBOARD_CTL_LINE_FREE:
@@ -2210,14 +2208,9 @@ unsigned input_config_translate_str_to_bind_id(const char *str)
 
 static void parse_hat(struct retro_keybind *bind, const char *str)
 {
-   uint16_t     hat;
    uint16_t hat_dir = 0;
    char        *dir = NULL;
-
-   if (!bind || !str || !isdigit((int)*str))
-      return;
-
-   hat = strtoul(str, &dir, 0);
+   uint16_t     hat = strtoul(str, &dir, 0);
 
    if (!dir)
    {
@@ -2265,7 +2258,11 @@ void input_config_parse_joy_button(void *data, const char *prefix,
       else
       {
          if (*btn == 'h')
-            parse_hat(bind, btn + 1);
+         {
+            const char *str = btn + 1;
+            if (bind && str && isdigit((int)*str))
+               parse_hat(bind, str);
+         }
          else
             bind->joykey = strtoull(tmp, NULL, 0);
       }
