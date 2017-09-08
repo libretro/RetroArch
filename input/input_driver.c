@@ -209,24 +209,6 @@ struct input_bind_map
    uint8_t retro_key;
 };
 
-static const char *bind_user_prefix[MAX_USERS] = {
-   "input_player1",
-   "input_player2",
-   "input_player3",
-   "input_player4",
-   "input_player5",
-   "input_player6",
-   "input_player7",
-   "input_player8",
-   "input_player9",
-   "input_player10",
-   "input_player11",
-   "input_player12",
-   "input_player13",
-   "input_player14",
-   "input_player15",
-   "input_player16",
-};
 
 static const uint8_t buttons[] = {
    RETRO_DEVICE_ID_JOYPAD_R,
@@ -2147,11 +2129,31 @@ void input_config_parse_key(void *data,
 
 const char *input_config_get_prefix(unsigned user, bool meta)
 {
-   if (user == 0)
-      return meta ? "input" : bind_user_prefix[user];
+   static const char *bind_user_prefix[MAX_USERS] = {
+      "input_player1",
+      "input_player2",
+      "input_player3",
+      "input_player4",
+      "input_player5",
+      "input_player6",
+      "input_player7",
+      "input_player8",
+      "input_player9",
+      "input_player10",
+      "input_player11",
+      "input_player12",
+      "input_player13",
+      "input_player14",
+      "input_player15",
+      "input_player16",
+   };
+   const char *prefix = bind_user_prefix[user];
 
-   if (user != 0 && !meta)
-      return bind_user_prefix[user];
+   if (user == 0)
+      return meta ? "input" : prefix; 
+
+   if (!meta)
+      return prefix;
 
    /* Don't bother with meta bind for anyone else than first user. */
    return NULL;
