@@ -321,8 +321,8 @@ typedef struct xmb_handle
    video_font_raster_block_t raster_block;
    video_font_raster_block_t raster_block2;
 
-   unsigned tabs[8];
-   unsigned system_tab_end;
+   uint8_t tabs[8];
+   uint8_t system_tab_end;
 } xmb_handle_t;
 
 float gradient_dark_purple[16] = {
