@@ -139,21 +139,21 @@ enum shader_program_type
 
 struct shader_program_info
 {
-   void *data;
+   bool is_file;
    const char *vertex;
    const char *fragment;
    const char *combined;
    unsigned idx;
-   bool is_file;
+   void *data;
 };
 
 struct uniform_info
 {
-   unsigned type; /* shader uniform type */
    bool enabled;
 
    int32_t location;
    int32_t count;
+   unsigned type; /* shader uniform type */
 
    struct
    {
@@ -252,18 +252,17 @@ typedef struct shader_backend
 typedef struct video_shader_ctx_init
 {
    enum rarch_shader_type shader_type;
+   const char *path;
    const shader_backend_t *shader;
+   void *data;
    struct
    {
       bool core_context_enabled;
    } gl;
-   void *data;
-   const char *path;
 } video_shader_ctx_init_t;
 
 typedef struct video_shader_ctx_params
 {
-   void *data;
    unsigned width;
    unsigned height;
    unsigned tex_width;
@@ -271,11 +270,12 @@ typedef struct video_shader_ctx_params
    unsigned out_width;
    unsigned out_height;
    unsigned frame_counter;
+   unsigned fbo_info_cnt;
+   void *data;
    const void *info;
    const void *prev_info;
    const void *feedback_info;
    const void *fbo_info;
-   unsigned fbo_info_cnt;
 } video_shader_ctx_params_t;
 
 typedef struct video_shader_ctx_coords
@@ -335,6 +335,18 @@ typedef void (*gfx_ctx_proc_t)(void);
 
 typedef struct video_info
 {
+   /* Launch in fullscreen mode instead of windowed mode. */
+   bool fullscreen;
+
+   /* Start with V-Sync enabled. */
+   bool vsync;
+
+   /* If true, the output image should have the aspect ratio 
+    * as set in aspect_ratio. */
+   bool force_aspect;
+
+   bool font_enable;
+
    /* Width of window. 
     * If fullscreen mode is requested, 
     * a width of 0 means the resolution of the 
@@ -347,19 +359,27 @@ typedef struct video_info
     */
    unsigned height;
 
-   /* Launch in fullscreen mode instead of windowed mode. */
-   bool fullscreen;
-
-   /* Start with V-Sync enabled. */
-   bool vsync;
-
-   /* If true, the output image should have the aspect ratio 
-    * as set in aspect_ratio. */
-   bool force_aspect;
-
    unsigned swap_interval;
 
-   bool font_enable;
+#ifdef GEKKO
+   bool vfilter;
+#endif
+
+   /* If true, applies bilinear filtering to the image,
+    * otherwise nearest filtering. */
+   bool smooth;
+
+   bool is_threaded;
+
+   /* Use 32bit RGBA rather than native RGB565/XBGR1555. 
+    *
+    * XRGB1555 format is 16-bit and has byte ordering: 0RRRRRGGGGGBBBBB,
+    * in native endian.
+    *
+    * ARGB8888 is AAAAAAAARRRRRRRRGGGGGGGGBBBBBBBB, native endian.
+    * Alpha channel should be disregarded.
+    * */
+   bool rgb32;
 
 #ifdef GEKKO
    /* TODO - we can't really have driver system-specific
@@ -370,14 +390,7 @@ typedef struct video_info
 
    /* Wii-specific settings. Ignored for everything else. */
    unsigned viwidth;
-   bool vfilter;
 #endif
-
-   /* If true, applies bilinear filtering to the image,
-    * otherwise nearest filtering. */
-   bool smooth;
-
-   bool is_threaded;
 
    /* 
     * input_scale defines the maximum size of the picture that will
@@ -389,16 +402,6 @@ typedef struct video_info
     * Maximum input size: RARCH_SCALE_BASE * input_scale 
     */
    unsigned input_scale;
-
-   /* Use 32bit RGBA rather than native RGB565/XBGR1555. 
-    *
-    * XRGB1555 format is 16-bit and has byte ordering: 0RRRRRGGGGGBBBBB,
-    * in native endian.
-    *
-    * ARGB8888 is AAAAAAAARRRRRRRRGGGGGGGGBBBBBBBB, native endian.
-    * Alpha channel should be disregarded.
-    * */
-   bool rgb32;
    
 #ifndef RARCH_INTERNAL
    uintptr_t parent;

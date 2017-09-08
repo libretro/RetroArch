@@ -118,13 +118,13 @@ enum settings_list_type
 
 struct bool_entry
 {
+   bool default_value;
+   bool *target;
+   uint32_t flags;
    enum msg_hash_enums name_enum_idx;
    enum msg_hash_enums SHORT_enum_idx;
    enum msg_hash_enums off_enum_idx;
    enum msg_hash_enums on_enum_idx;
-   bool *target;
-   bool default_value;
-   uint32_t flags;
 };
 
 struct string_options_entry

@@ -23,10 +23,10 @@
 
 struct menu_list
 {
-   file_list_t **menu_stack;
    size_t menu_stack_size;
-   file_list_t **selection_buf;
    size_t selection_buf_size;
+   file_list_t **menu_stack;
+   file_list_t **selection_buf;
 };
 
 void menu_list_free_list(file_list_t *list)

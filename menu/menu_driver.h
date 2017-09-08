@@ -357,7 +357,6 @@ typedef struct
 
 typedef struct menu_display_ctx_draw
 {
-   enum menu_display_prim_type prim_type;
    float x;
    float y;
    float *color;
@@ -369,6 +368,7 @@ typedef struct menu_display_ctx_draw
    size_t vertex_count;
    struct video_coords *coords;
    void *matrix_data;
+   enum menu_display_prim_type prim_type;
    struct
    {
       unsigned id;

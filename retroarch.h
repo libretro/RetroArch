@@ -195,7 +195,6 @@ enum runloop_action
 
 struct rarch_main_wrap
 {
-   int argc;
    char **argv;
    const char *content_path;
    const char *sram_path;
@@ -204,8 +203,8 @@ struct rarch_main_wrap
    const char *libretro_path;
    bool verbose;
    bool no_content;
-
    bool touched;
+   int argc;
 };
 
 typedef struct rarch_resolution
