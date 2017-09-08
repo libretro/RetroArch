@@ -325,7 +325,9 @@ static font_data_t *menu_display_font_main_init(
    return font_data;
 }
 
-font_data_t *menu_display_font(enum application_special_type type, float font_size,
+font_data_t *menu_display_font(
+      enum application_special_type type,
+      float font_size,
       bool is_threaded)
 {
    menu_display_ctx_font_t font_info;
@@ -333,7 +335,8 @@ font_data_t *menu_display_font(enum application_special_type type, float font_si
 
    fontpath[0] = '\0';
 
-   fill_pathname_application_special(fontpath, sizeof(fontpath), type);
+   fill_pathname_application_special(
+         fontpath, sizeof(fontpath), type);
 
    font_info.path = fontpath;
    font_info.size = font_size;
@@ -1195,10 +1198,12 @@ void menu_display_snow(int width, int height)
 
       if (p->alive)
       {
-         int16_t mouse_x  = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
+         int16_t mouse_x  = menu_input_mouse_state(
+               MENU_MOUSE_X_AXIS);
 
          p->y            += p->yspeed;
-         p->x            += menu_display_scalef(mouse_x, 0, width, -0.3, 0.3);
+         p->x            += menu_display_scalef(
+               mouse_x, 0, width, -0.3, 0.3);
          p->x            += p->xspeed;
 
          p->alive         = p->y >= 0 && p->y < height
@@ -1231,7 +1236,8 @@ void menu_display_snow(int width, int height)
       if (!p->alive)
          continue;
 
-      alpha = menu_display_randf(0, 100) > 90 ? p->alpha/2 : p->alpha;
+      alpha = menu_display_randf(0, 100) > 90 ? 
+         p->alpha/2 : p->alpha;
 
       for (j = 0; j < 16; j++)
       {
@@ -1258,8 +1264,9 @@ void menu_display_draw_text(
    struct font_params params;
 
    /* Don't draw outside of the screen */
-   if (x < -64 || x > width + 64
-         || y < -64 || y > height + 64)
+   if (     (x < -64 || x > width  + 64)
+         || (y < -64 || y > height + 64)
+      )
       return;
 
    params.x           = x / width;
@@ -1701,24 +1708,20 @@ static bool menu_driver_init_internal(bool video_is_threaded)
       menu_driver_ctx->init(&menu_userdata, video_is_threaded);
 
    if (!menu_driver_data || !menu_init(menu_driver_data))
-   {
-      retroarch_fail(1, "init_menu()");
-      return false;
-   }
+      goto error;
 
    strlcpy(settings->arrays.menu_driver, menu_driver_ctx->ident,
          sizeof(settings->arrays.menu_driver));
 
    if (menu_driver_ctx->lists_init)
-   {
       if (!menu_driver_ctx->lists_init(menu_driver_data))
-      {
-         retroarch_fail(1, "init_menu()");
-         return false;
-      }
-   }
+         goto error;
 
    return true;
+
+error:
+   retroarch_fail(1, "init_menu()");
+   return false;
 }
 
 static bool menu_driver_context_reset(bool video_is_threaded)
