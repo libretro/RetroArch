@@ -219,7 +219,7 @@ static void gl_overlay_tex_geom(void *data,
 static void gl_render_overlay(gl_t *gl, video_frame_info_t *video_info)
 {
    video_shader_ctx_coords_t coords;
-   unsigned i;
+   uint8_t i;
    unsigned width                      = video_info->width;
    unsigned height                     = video_info->height;
 
@@ -563,7 +563,7 @@ static void gl_update_input_size(gl_t *gl, unsigned width,
 
 static void gl_init_textures_data(gl_t *gl)
 {
-   unsigned i;
+   uint8_t i;
 
    for (i = 0; i < gl->textures; i++)
    {
@@ -610,7 +610,7 @@ static void gl_init_textures_reference(gl_t *gl, unsigned i,
 
 static void gl_init_textures(gl_t *gl, const video_info_t *video)
 {
-   unsigned i;
+   uint8_t i;
    GLenum internal_fmt, texture_type = 0, texture_fmt = 0;
 
    (void)texture_type;
@@ -682,8 +682,7 @@ static INLINE void gl_copy_frame(gl_t *gl,
       size_t buffer_stride      = gl->tex_w * gl->base_size;
       const uint8_t *frame_copy = frame;
       size_t frame_copy_size    = width * gl->base_size;
-
-      uint8_t *buffer = (uint8_t*)glMapBuffer(
+      uint8_t *buffer           = (uint8_t*)glMapBuffer(
             GL_TEXTURE_REFERENCE_BUFFER_SCE, GL_READ_WRITE) + buffer_addr;
       for (h = 0; h < height; h++, buffer += buffer_stride, frame_copy += pitch)
          memcpy(buffer, frame_copy, frame_copy_size);
@@ -706,7 +705,8 @@ static INLINE void gl_copy_frame(gl_t *gl,
       img_info.rgb32  = (gl->base_size == 4);
       img_info.handle = &img;
 
-      new_egl = video_context_driver_write_to_image_buffer(&img_info);
+      new_egl         = 
+         video_context_driver_write_to_image_buffer(&img_info);
 
       if (img == EGL_NO_IMAGE_KHR)
       {
@@ -1036,7 +1036,8 @@ static INLINE void gl_draw_texture(gl_t *gl, video_frame_info_t *video_info)
 
    video_shader_driver_set_coords(coords);
 
-   video_info->cb_shader_set_mvp(gl, video_info->shader_data, &gl->mvp_no_rot);
+   video_info->cb_shader_set_mvp(gl,
+         video_info->shader_data, &gl->mvp_no_rot);
 
    glEnable(GL_BLEND);
 
@@ -1108,7 +1109,8 @@ static bool gl_frame(void *data, const void *frame,
       mode.width        = width;
       mode.height       = height;
 
-      video_info->cb_set_resize(video_info->context_data, mode.width, mode.height);
+      video_info->cb_set_resize(video_info->context_data,
+            mode.width, mode.height);
 
 #ifdef HAVE_FBO
       if (gl->fbo_inited)
@@ -1136,8 +1138,10 @@ static bool gl_frame(void *data, const void *frame,
       if (!gl->hw_render_fbo_init)
 #endif
       {
-         gl_update_input_size(gl, frame_width, frame_height, pitch, true);
-         gl_copy_frame(gl, video_info, frame, frame_width, frame_height, pitch);
+         gl_update_input_size(gl, frame_width,
+               frame_height, pitch, true);
+         gl_copy_frame(gl, video_info, frame,
+               frame_width, frame_height, pitch);
       }
 
       /* No point regenerating mipmaps
@@ -1184,7 +1188,8 @@ static bool gl_frame(void *data, const void *frame,
 #ifdef HAVE_FBO
    if (gl->fbo_feedback_enable)
    {
-      const struct video_fbo_rect *rect = &gl->fbo_rect[gl->fbo_feedback_pass];
+      const struct video_fbo_rect 
+         *rect                        = &gl->fbo_rect[gl->fbo_feedback_pass];
       GLfloat xamt                    = (GLfloat)rect->img_width / rect->width;
       GLfloat yamt                    = (GLfloat)rect->img_height / rect->height;
 
@@ -1361,7 +1366,7 @@ static void gl_free(void *data)
 #ifdef HAVE_GL_SYNC
    if (gl->have_sync)
    {
-      unsigned i;
+      uint8_t i;
 
       for (i = 0; i < gl->fence_count; i++)
       {
@@ -1576,7 +1581,7 @@ static INLINE void gl_set_texture_fmts(gl_t *gl, bool rgb32)
 #ifdef HAVE_GL_ASYNC_READBACK
 static void gl_init_pbo_readback(gl_t *gl)
 {
-   unsigned i;
+   uint8_t i;
    settings_t *settings      = config_get_ptr();
    bool *recording_enabled   = recording_is_enabled();
 #ifndef HAVE_OPENGLES3

@@ -145,7 +145,7 @@ static const void *find_driver_nonempty(const char *label, int i,
  **/
 static int driver_find_index(const char * label, const char *drv)
 {
-   unsigned i;
+   uint8_t i;
    char str[256];
 
    str[0] = '\0';
@@ -178,7 +178,7 @@ static bool driver_find_first(const char *label, char *s, size_t len)
  **/
 static bool driver_find_last(const char *label, char *s, size_t len)
 {
-   unsigned i;
+   uint8_t i;
 
    for (i = 0;
          find_driver_nonempty(label, i, s, len) != NULL; i++)
@@ -290,9 +290,11 @@ void driver_set_nonblock_state(void)
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-static bool driver_update_system_av_info(const struct retro_system_av_info *info)
+static bool driver_update_system_av_info(
+      const struct retro_system_av_info *info)
 {
-   struct retro_system_av_info *av_info    = video_viewport_get_system_av_info();
+   struct retro_system_av_info *av_info    = 
+      video_viewport_get_system_av_info();
 
    memcpy(av_info, info, sizeof(*av_info));
    command_event(CMD_EVENT_REINIT, NULL);
@@ -302,7 +304,8 @@ static bool driver_update_system_av_info(const struct retro_system_av_info *info
    if (recording_driver_get_data_ptr())
    {
       runloop_msg_queue_push(
-            msg_hash_to_str(MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT),
+            msg_hash_to_str(
+               MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT),
             2, 180, false);
       command_event(CMD_EVENT_RECORD_DEINIT, NULL);
       command_event(CMD_EVENT_RECORD_INIT, NULL);
@@ -365,11 +368,13 @@ void drivers_init(int flags)
    }
 
    /* Only initialize camera driver if we're ever going to use it. */
-   if ((flags & DRIVER_CAMERA_MASK) && camera_driver_ctl(RARCH_CAMERA_CTL_IS_ACTIVE, NULL))
+   if ((flags & DRIVER_CAMERA_MASK) && 
+         camera_driver_ctl(RARCH_CAMERA_CTL_IS_ACTIVE, NULL))
       camera_driver_ctl(RARCH_CAMERA_CTL_INIT, NULL);
 
    /* Only initialize location driver if we're ever going to use it. */
-   if ((flags & DRIVER_LOCATION_MASK) && location_driver_ctl(RARCH_LOCATION_CTL_IS_ACTIVE, NULL))
+   if ((flags & DRIVER_LOCATION_MASK) && 
+         location_driver_ctl(RARCH_LOCATION_CTL_IS_ACTIVE, NULL))
       init_location();
 
    core_info_init_current_core();
@@ -402,7 +407,8 @@ void drivers_init(int flags)
  **/
 
 /**
- * Driver ownership - set this to true if the platform in question needs to 'own' 
+ * Driver ownership - set this to true if the platform in 
+ * question needs to 'own' 
  * the respective handle and therefore skip regular RetroArch 
  * driver teardown/reiniting procedure.
  *
@@ -425,13 +431,16 @@ void driver_uninit(int flags)
       menu_driver_ctl(RARCH_MENU_CTL_DEINIT, NULL);
 #endif
 
-   if ((flags & DRIVER_LOCATION_MASK) && !location_driver_ctl(RARCH_LOCATION_CTL_OWNS_DRIVER, NULL))
+   if ((flags & DRIVER_LOCATION_MASK) && 
+         !location_driver_ctl(RARCH_LOCATION_CTL_OWNS_DRIVER, NULL))
       location_driver_ctl(RARCH_LOCATION_CTL_DEINIT, NULL);
 
-   if ((flags & DRIVER_CAMERA_MASK) && !camera_driver_ctl(RARCH_CAMERA_CTL_OWNS_DRIVER, NULL))
+   if ((flags & DRIVER_CAMERA_MASK) && 
+         !camera_driver_ctl(RARCH_CAMERA_CTL_OWNS_DRIVER, NULL))
       camera_driver_ctl(RARCH_CAMERA_CTL_DEINIT, NULL);
 
-   if ((flags & DRIVER_WIFI_MASK) && !wifi_driver_ctl(RARCH_WIFI_CTL_OWNS_DRIVER, NULL))
+   if ((flags & DRIVER_WIFI_MASK) && 
+         !wifi_driver_ctl(RARCH_WIFI_CTL_OWNS_DRIVER, NULL))
       wifi_driver_ctl(RARCH_WIFI_CTL_DEINIT, NULL);
 
    if (flags & DRIVERS_VIDEO_INPUT)
@@ -487,7 +496,8 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
          break;
       case RARCH_DRIVER_CTL_UPDATE_SYSTEM_AV_INFO:
          {
-            const struct retro_system_av_info **info = (const struct retro_system_av_info**)data;
+            const struct retro_system_av_info **info 
+               = (const struct retro_system_av_info**)data;
             if (info)
                return driver_update_system_av_info(*info);
          }
