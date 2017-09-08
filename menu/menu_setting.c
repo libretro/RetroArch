@@ -82,25 +82,59 @@
 
 #include "../tasks/tasks_internal.h"
 
+enum settings_list_type
+{
+   SETTINGS_LIST_NONE = 0,
+   SETTINGS_LIST_MAIN_MENU,
+   SETTINGS_LIST_DRIVERS,
+   SETTINGS_LIST_CORE,
+   SETTINGS_LIST_CONFIGURATION,
+   SETTINGS_LIST_LOGGING,
+   SETTINGS_LIST_SAVING,
+   SETTINGS_LIST_REWIND,
+   SETTINGS_LIST_VIDEO,
+   SETTINGS_LIST_AUDIO,
+   SETTINGS_LIST_INPUT,
+   SETTINGS_LIST_INPUT_HOTKEY,
+   SETTINGS_LIST_RECORDING,
+   SETTINGS_LIST_FRAME_THROTTLING,
+   SETTINGS_LIST_FONT,
+   SETTINGS_LIST_OVERLAY,
+   SETTINGS_LIST_MENU,
+   SETTINGS_LIST_MENU_FILE_BROWSER,
+   SETTINGS_LIST_MULTIMEDIA,
+   SETTINGS_LIST_USER_INTERFACE,
+   SETTINGS_LIST_PLAYLIST,
+   SETTINGS_LIST_CHEEVOS,
+   SETTINGS_LIST_CORE_UPDATER,
+   SETTINGS_LIST_NETPLAY,
+   SETTINGS_LIST_LAKKA_SERVICES,
+   SETTINGS_LIST_USER,
+   SETTINGS_LIST_USER_ACCOUNTS,
+   SETTINGS_LIST_USER_ACCOUNTS_CHEEVOS,
+   SETTINGS_LIST_DIRECTORY,
+   SETTINGS_LIST_PRIVACY
+};
+
 struct bool_entry
 {
-   bool *target;
    enum msg_hash_enums name_enum_idx;
    enum msg_hash_enums SHORT_enum_idx;
-   bool default_value;
    enum msg_hash_enums off_enum_idx;
    enum msg_hash_enums on_enum_idx;
+   bool *target;
+   bool default_value;
    uint32_t flags;
 };
 
 struct string_options_entry
 {
-   char *target;
-   size_t len;
    enum msg_hash_enums name_enum_idx;
    enum msg_hash_enums SHORT_enum_idx;
    const char *default_value;
    const char *values;
+   char *target;
+   size_t len;
 };
 
 #ifdef HAVE_CHEEVOS
@@ -597,7 +631,7 @@ void menu_settings_list_current_add_range(
       float min, float max, float step,
       bool enforce_minrange_enable, bool enforce_maxrange_enable)
 {
-   unsigned idx = list_info->index - 1;
+   unsigned idx                   = list_info->index - 1;
 
    (*list)[idx].min               = min;
    (*list)[idx].step              = step;
@@ -951,16 +985,14 @@ void setting_get_string_representation(void *data, char *s, size_t len)
  **/
 static int setting_action_start_bind_device(void *data)
 {
-   uint32_t index_offset;
    rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
 
    if (!setting || !settings)
       return -1;
 
-   index_offset = setting->index_offset;
-
-   configuration_set_uint(settings, settings->uints.input_joypad_map[index_offset], index_offset);
+   configuration_set_uint(settings,
+         settings->uints.input_joypad_map[index_offset], setting->index_offset);
    return 0;
 }
 
@@ -1410,8 +1442,9 @@ static int setting_action_ok_bind_defaults(void *data, bool wraparound)
    return 0;
 }
 
-static void setting_get_string_representation_st_float_video_refresh_rate_auto(void *data,
-      char *s, size_t len)
+static void 
+setting_get_string_representation_st_float_video_refresh_rate_auto(
+      void *data, char *s, size_t len)
 {
    double video_refresh_rate = 0.0;
    double deviation          = 0.0;
@@ -1811,7 +1844,7 @@ static void overlay_enable_toggle_change_handler(void *data)
 #ifdef HAVE_LAKKA
 static void systemd_service_toggle(const char *path, char *unit, bool enable)
 {
-   int pid = fork();
+   int      pid = fork();
    char* args[] = {(char*)"systemctl", NULL, NULL, NULL};
 
    if (enable)
@@ -1835,6 +1868,7 @@ static void ssh_enable_toggle_change_handler(void *data)
 {
    bool enable           = false;
    settings_t *settings  = config_get_ptr();
+
    if (settings && settings->bools.ssh_enable)
       enable = true;
 
@@ -1846,6 +1880,7 @@ static void samba_enable_toggle_change_handler(void *data)
 {
    bool enable           = false;
    settings_t *settings  = config_get_ptr();
+
    if (settings && settings->bools.samba_enable)
       enable = true;
 
@@ -1857,6 +1892,7 @@ static void bluetooth_enable_toggle_change_handler(void *data)
 {
    bool enable           = false;
    settings_t *settings  = config_get_ptr();
+
    if (settings && settings->bools.bluetooth_enable)
       enable = true;
 
@@ -1864,40 +1900,6 @@ static void bluetooth_enable_toggle_change_handler(void *data)
          enable);
 }
 #endif
-
-enum settings_list_type
-{
-   SETTINGS_LIST_NONE = 0,
-   SETTINGS_LIST_MAIN_MENU,
-   SETTINGS_LIST_DRIVERS,
-   SETTINGS_LIST_CORE,
-   SETTINGS_LIST_CONFIGURATION,
-   SETTINGS_LIST_LOGGING,
-   SETTINGS_LIST_SAVING,
-   SETTINGS_LIST_REWIND,
-   SETTINGS_LIST_VIDEO,
-   SETTINGS_LIST_AUDIO,
-   SETTINGS_LIST_INPUT,
-   SETTINGS_LIST_INPUT_HOTKEY,
-   SETTINGS_LIST_RECORDING,
-   SETTINGS_LIST_FRAME_THROTTLING,
-   SETTINGS_LIST_FONT,
-   SETTINGS_LIST_OVERLAY,
-   SETTINGS_LIST_MENU,
-   SETTINGS_LIST_MENU_FILE_BROWSER,
-   SETTINGS_LIST_MULTIMEDIA,
-   SETTINGS_LIST_USER_INTERFACE,
-   SETTINGS_LIST_PLAYLIST,
-   SETTINGS_LIST_CHEEVOS,
-   SETTINGS_LIST_CORE_UPDATER,
-   SETTINGS_LIST_NETPLAY,
-   SETTINGS_LIST_LAKKA_SERVICES,
-   SETTINGS_LIST_USER,
-   SETTINGS_LIST_USER_ACCOUNTS,
-   SETTINGS_LIST_USER_ACCOUNTS_CHEEVOS,
-   SETTINGS_LIST_DIRECTORY,
-   SETTINGS_LIST_PRIVACY
-};
 
 static bool setting_append_list_input_player_options(
       rarch_setting_t **list,
@@ -2025,7 +2027,8 @@ static bool setting_append_list_input_player_options(
       (*list)[list_info->index - 1].action_start  = &setting_action_start_libretro_device_type;
       (*list)[list_info->index - 1].get_string_representation =
          &setting_get_string_representation_uint_libretro_device;
-      menu_settings_list_current_add_enum_idx(list, list_info, (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE + user));
+      menu_settings_list_current_add_enum_idx(list, list_info,
+            (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE + user));
 
       CONFIG_UINT_ALT(
             list, list_info,
@@ -2046,7 +2049,8 @@ static bool setting_append_list_input_player_options(
       (*list)[list_info->index - 1].action_start = &setting_action_start_analog_dpad_mode;
       (*list)[list_info->index - 1].get_string_representation =
          &setting_get_string_representation_uint_analog_dpad_mode;
-      menu_settings_list_current_add_enum_idx(list, list_info, (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE + user));
+      menu_settings_list_current_add_enum_idx(list, list_info,
+            (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE + user));
 
       CONFIG_ACTION_ALT(
             list, list_info,
@@ -2891,7 +2895,7 @@ static bool setting_append_list(
          break;
       case SETTINGS_LIST_CONFIGURATION:
          {
-            unsigned i;
+            uint8_t i;
             struct bool_entry bool_entries[6];
             START_GROUP(list, list_info, &group_info,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS), parent_group);
@@ -3028,7 +3032,7 @@ static bool setting_append_list(
          break;
       case SETTINGS_LIST_SAVING:
          {
-            unsigned i;
+            uint8_t i;
             struct bool_entry bool_entries[11];
 
             START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS), parent_group);
@@ -7083,20 +7087,20 @@ bool menu_setting_free(void *data)
          if (values & 1)
             switch (1 << n)
             {
-            case SD_FREE_FLAG_VALUES:
-               free((void*)setting->values);
-               setting->values = NULL;
-               break;
-            case SD_FREE_FLAG_NAME:
-               free((void*)setting->name);
-               setting->name = NULL;
-               break;
-            case SD_FREE_FLAG_SHORT:
-               free((void*)setting->short_description);
-               setting->short_description = NULL;
-               break;
-            default:
-               break;
+               case SD_FREE_FLAG_VALUES:
+                  free((void*)setting->values);
+                  setting->values = NULL;
+                  break;
+               case SD_FREE_FLAG_NAME:
+                  free((void*)setting->name);
+                  setting->name = NULL;
+                  break;
+               case SD_FREE_FLAG_SHORT:
+                  free((void*)setting->short_description);
+                  setting->short_description = NULL;
+                  break;
+               default:
+                  break;
             }
 
    free(data);

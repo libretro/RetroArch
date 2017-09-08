@@ -227,7 +227,8 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
          selection = MAX(MIN(selection, (menu_entries_get_size() - 1)), 0);
 
          menu_entry_get(&entry, 0, selection, NULL, false);
-         ret = menu_entry_action(&entry, (unsigned)selection, (enum menu_action)action);
+         ret = menu_entry_action(&entry,
+               (unsigned)selection, (enum menu_action)action);
 
          if (ret)
             goto end;
