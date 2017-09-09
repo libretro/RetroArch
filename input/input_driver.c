@@ -579,6 +579,11 @@ void input_poll(void)
    if (input_driver_remote)
       input_remote_poll(input_driver_remote, max_users);
 #endif
+
+#ifdef HAVE_KEYMAPPER
+   if (input_driver_mapper)
+      input_mapper_poll(input_driver_mapper);
+#endif
 }
 
 /**
@@ -660,6 +665,11 @@ int16_t input_state(unsigned port, unsigned device,
 #ifdef HAVE_NETWORKGAMEPAD
       if (input_driver_remote)
          input_remote_state(&res, port, device, idx, id);
+#endif
+
+#ifdef HAVE_KEYMAPPER
+      if (input_driver_mapper)
+         input_mapper_state(&res, port, device, idx, id);
 #endif
 
       /* Don't allow turbo for D-pad. */

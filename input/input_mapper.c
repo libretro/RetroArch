@@ -28,11 +28,8 @@
 
 #include <compat/strl.h>
 #include <compat/posix_string.h>
-#include <file/file_path.h>
 #include <retro_miscellaneous.h>
 #include <libretro.h>
-#include <net/net_compat.h>
-#include <net/net_socket.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -44,45 +41,82 @@
 #include "../msg_hash.h"
 #include "../verbosity.h"
 
+#define MAPPER_GET_KEY(state, key) (((state)->keys[(key) / 32] >> ((key) % 32)) & 1)
+#define MAPPER_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
 
 struct input_mapper
 {
-
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
-   int net_fd[MAX_USERS];
-#endif
-
-   bool state[RARCH_BIND_LIST_END];
-};
-
-typedef struct input_mapper_state
-{
+   /* The controller port that will be polled*/
+   uint8_t port;
    /* This is a bitmask of (1 << key_bind_id). */
    uint64_t buttons;
    /* Left X, Left Y, Right X, Right Y */
-   int16_t analog[4]; 
+   int16_t analog[4];
    /* the whole keyboard state */
    uint32_t keys[RETROK_LAST / 32 + 1];
-} input_mapper_state_t;
+};
+
+static input_mapper_t *mapper_ptr;
 
 input_mapper_t *input_mapper_new(uint16_t port)
 {
-   return NULL;
+   settings_t *settings = config_get_ptr();
+   input_mapper_t* handle = (input_mapper_t*)
+      calloc(1, sizeof(*handle));
+
+   if (!handle)
+      return NULL;
+
+   /* testing values*/
+   settings->uints.input_keymapper_ids[0] = RETROK_n;
+   settings->uints.input_keymapper_ids[1] = RETROK_SPACE;
+   settings->uints.input_keymapper_ids[2] = RETROK_F1;
+   settings->uints.input_keymapper_ids[3] = RETROK_RETURN;
+   settings->uints.input_keymapper_ids[4] = RETROK_UP;
+   settings->uints.input_keymapper_ids[5] = RETROK_DOWN;
+   settings->uints.input_keymapper_ids[6] = RETROK_LEFT;
+   settings->uints.input_keymapper_ids[7] = RETROK_RIGHT;
+   settings->uints.input_keymapper_ids[8] = RETROK_F1;
+   settings->uints.input_keymapper_ids[9] = RETROK_F2;
+   settings->uints.input_keymapper_ids[10] = RETROK_F3;
+   settings->uints.input_keymapper_ids[11] = RETROK_F4;
+   settings->uints.input_keymapper_ids[12] = RETROK_F5;
+   settings->uints.input_keymapper_ids[13] = RETROK_F6;
+   settings->uints.input_keymapper_ids[14] = RETROK_F7;
+   settings->uints.input_keymapper_ids[15] = RETROK_F8;
+
+   
+   handle->port = port;
+   mapper_ptr = handle;
+   return handle;
 }
 
 void input_mapper_free(input_mapper_t *handle)
 {
-   return;
+   free (handle);
 }
 
-void input_mapper_poll(input_mapper_t *handle, unsigned max_users)
+void input_mapper_poll(input_mapper_t *handle)
 {
-   return;
-}
+   settings_t *settings = config_get_ptr();
+   unsigned device = settings->uints.input_libretro_device[handle->port];
+   device &= RETRO_DEVICE_MASK;
 
-bool input_mapper_key_pressed(int key, unsigned port)
-{
-   return false;
+   /* for now we only handle keyboard inputs */
+   if (device == RETRO_DEVICE_KEYBOARD)
+   {
+      memset(handle->keys, 0, sizeof(handle->keys));
+
+      for (int i = 0; i < RARCH_CUSTOM_BIND_LIST_END; i++)
+      {
+         if(i < RETROK_LAST)
+         {
+            if (input_state(0, RETRO_DEVICE_JOYPAD, handle->port, i))
+               MAPPER_SET_KEY (handle, settings->uints.input_keymapper_ids[i]);
+         }
+      }
+   }
+   return;
 }
 
 void input_mapper_state(
@@ -92,5 +126,25 @@ void input_mapper_state(
       unsigned idx,
       unsigned id)
 {
+
+   switch (device)
+   {
+      case RETRO_DEVICE_KEYBOARD:
+         if (id < RETROK_LAST)
+         {
+            /*
+            RARCH_LOG("State: UDLR %u %u %u %u\n", 
+               MAPPER_GET_KEY(mapper_ptr, RETROK_UP), 
+               MAPPER_GET_KEY(mapper_ptr, RETROK_DOWN), 
+               MAPPER_GET_KEY(mapper_ptr, RETROK_LEFT),
+               MAPPER_GET_KEY(mapper_ptr, RETROK_RIGHT)
+            );*/
+
+            if (MAPPER_GET_KEY(mapper_ptr, id))
+               *ret |= 1;
+         }
+         break;
+   }
+   
    return;
 }

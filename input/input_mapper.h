@@ -35,9 +35,9 @@ input_mapper_t *input_mapper_new(uint16_t port);
 
 void input_mapper_free(input_mapper_t *handle);
 
-void input_mapper_poll(input_mapper_t *handle, unsigned max_users);
+void input_mapper_poll(input_mapper_t *handle);
 
-bool input_mapper_key_pressed(int key, unsigned port);
+bool input_mapper_key_pressed(int key);
 
 void input_mapper_state(
       int16_t *ret,
