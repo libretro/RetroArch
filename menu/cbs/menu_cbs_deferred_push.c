@@ -695,7 +695,8 @@ static int general_push(menu_displaylist_info_t *info,
          }
          {
             union string_list_elem_attr attr;
-            char newstring2[PATH_MAX_LENGTH];
+            size_t path_size               = PATH_MAX_LENGTH * sizeof(char);
+            char *newstring2               = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
             struct string_list *str_list3  = string_split(info->exts, "|"); 
 
             newstring2[0] = '\0';
@@ -706,17 +707,19 @@ static int general_push(menu_displaylist_info_t *info,
             string_list_append(str_list3, "mod", attr);
             string_list_append(str_list3, "xm", attr);
 #endif
-            string_list_join_concat(newstring2, sizeof(newstring2),
+            string_list_join_concat(newstring2, path_size,
                   str_list3, "|");
             string_list_free(str_list3);
             strlcpy(info->exts, newstring2, sizeof(info->exts));
+            free(newstring2);
          }
          break;
       case PUSH_ARCHIVE_OPEN_DETECT_CORE:
       case PUSH_DETECT_CORE_LIST:
          {
-            char newstring[PATH_MAX_LENGTH];
             union string_list_elem_attr attr;
+            size_t path_size                 = PATH_MAX_LENGTH * sizeof(char);
+            char *newstring                  = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
             struct string_list *str_list2    = string_list_new();
 
             newstring[0] = '\0';
@@ -759,28 +762,31 @@ static int general_push(menu_displaylist_info_t *info,
                }
             }
 
-            string_list_join_concat(newstring, sizeof(newstring),
+            string_list_join_concat(newstring, path_size,
                   str_list2, "|");
 
             strlcpy(info->exts, newstring, sizeof(info->exts));
+
             {
                union string_list_elem_attr attr;
-               char newstring2[PATH_MAX_LENGTH];
+               char *newstring2               = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
                struct string_list *str_list3  = string_split(info->exts, "|"); 
 
-               newstring2[0] = '\0';
-               attr.i        = 0;
+               newstring2[0]                  = '\0';
+               attr.i                         = 0;
 
 #ifdef HAVE_IBXM
                string_list_append(str_list3, "s3m", attr);
                string_list_append(str_list3, "mod", attr);
                string_list_append(str_list3, "xm", attr);
 #endif
-               string_list_join_concat(newstring2, sizeof(newstring2),
+               string_list_join_concat(newstring2, path_size,
                      str_list3, "|");
                string_list_free(str_list3);
                strlcpy(info->exts, newstring2, sizeof(info->exts));
+               free(newstring2);
             }
+            free(newstring);
             string_list_free(str_list2);
          }
          break;
