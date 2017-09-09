@@ -418,8 +418,6 @@ void settings_data_list_current_add_free_flags(
 
 #define setting_get_type(setting) ((setting) ? setting->type : ST_NONE)
 
-rarch_setting_t setting_terminator_setting(void);
-
 RETRO_END_DECLS
 
 #endif

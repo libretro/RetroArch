@@ -36,59 +36,6 @@
 #include "config.def.h"
 #include "setting_list.h"
 
-rarch_setting_t setting_terminator_setting(void)
-{
-   rarch_setting_t result;
-
-   result.enum_idx                  = MSG_UNKNOWN;
-   result.type                      = ST_NONE;
-  
-   result.size                      = 0;
-
-   result.name                      = NULL;
-   result.name_hash                 = 0;
-   result.short_description         = NULL;
-   result.group                     = NULL;
-   result.subgroup                  = NULL;
-   result.parent_group              = NULL;
-   result.values                    = NULL;
-
-   result.index                     = 0;
-   result.index_offset              = 0;
-
-   result.min                       = 0.0;
-   result.max                       = 0.0;
-
-   result.flags                     = 0;
-   result.free_flags                = 0;
-
-   result.change_handler            = NULL;
-   result.read_handler              = NULL;
-   result.action_start              = NULL;
-   result.action_left               = NULL;
-   result.action_right              = NULL;
-   result.action_up                 = NULL;
-   result.action_down               = NULL;
-   result.action_cancel             = NULL;
-   result.action_ok                 = NULL;
-   result.action_select             = NULL;
-   result.get_string_representation = NULL;
-
-   result.bind_type                 = 0;
-   result.browser_selection_type    = ST_NONE;
-   result.step                      = 0.0f;
-   result.rounding_fraction         = NULL;
-   result.enforce_minrange          = false;
-   result.enforce_maxrange          = false;
-
-   result.cmd_trigger.idx           = CMD_EVENT_NONE;
-   result.cmd_trigger.triggered     = false;
-
-   result.dont_use_enum_idx_representation = false;
-
-   return result;
-}
-
 bool settings_list_append(rarch_setting_t **list,
       rarch_setting_info_t *list_info)
 {

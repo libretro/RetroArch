@@ -7108,6 +7108,46 @@ bool menu_setting_free(void *data)
    return true;
 }
 
+static void menu_setting_terminate_last(rarch_setting_t *list, unsigned pos)
+{
+   (*&list)[pos].enum_idx           = MSG_UNKNOWN;
+   (*&list)[pos].type               = ST_NONE;
+   (*&list)[pos].size               = 0;
+   (*&list)[pos].name               = NULL;
+   (*&list)[pos].name_hash          = 0;
+   (*&list)[pos].short_description  = NULL;
+   (*&list)[pos].group              = NULL;
+   (*&list)[pos].subgroup           = NULL;
+   (*&list)[pos].parent_group       = NULL;
+   (*&list)[pos].values             = NULL;
+   (*&list)[pos].index              = 0;
+   (*&list)[pos].index_offset       = 0;
+   (*&list)[pos].min                = 0.0;
+   (*&list)[pos].max                = 0.0;
+   (*&list)[pos].flags              = 0;
+   (*&list)[pos].free_flags         = 0;
+   (*&list)[pos].change_handler     = NULL;
+   (*&list)[pos].read_handler       = NULL;
+   (*&list)[pos].action_start       = NULL;
+   (*&list)[pos].action_left        = NULL;
+   (*&list)[pos].action_right       = NULL;
+   (*&list)[pos].action_up          = NULL;
+   (*&list)[pos].action_down        = NULL;
+   (*&list)[pos].action_cancel      = NULL;
+   (*&list)[pos].action_ok          = NULL;
+   (*&list)[pos].action_select      = NULL;
+   (*&list)[pos].get_string_representation = NULL;
+   (*&list)[pos].bind_type          = 0;
+   (*&list)[pos].browser_selection_type = ST_NONE;
+   (*&list)[pos].step               = 0.0f;
+   (*&list)[pos].rounding_fraction  = NULL;
+   (*&list)[pos].enforce_minrange   = false;
+   (*&list)[pos].enforce_maxrange   = false;
+   (*&list)[pos].cmd_trigger.idx    = CMD_EVENT_NONE;
+   (*&list)[pos].cmd_trigger.triggered = false;
+   (*&list)[pos].dont_use_enum_idx_representation = false;
+}
+
 static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_info)
 {
    unsigned i;
@@ -7144,7 +7184,6 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       SETTINGS_LIST_DIRECTORY,
       SETTINGS_LIST_PRIVACY
    };
-   rarch_setting_t terminator           = setting_terminator_setting();
    const char *root                     = msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU);
    rarch_setting_t *list                = (rarch_setting_t*)calloc(
          list_info->size, sizeof(*list));
@@ -7160,9 +7199,8 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
 
    if (!(settings_list_append(&list, list_info)))
       goto error;
-   if (terminator.name)
-      terminator.name_hash = msg_hash_calculate(terminator.name);
-   (*&list)[list_info->index++] = terminator;
+   menu_setting_terminate_last(list, list_info->index);
+   list_info->index++;
 
    /* flatten this array to save ourselves some kilobytes. */
    resized_list = (rarch_setting_t*)realloc(list,
