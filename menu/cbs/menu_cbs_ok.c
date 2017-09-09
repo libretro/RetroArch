@@ -3819,17 +3819,22 @@ static int action_ok_load_archive_detect_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_content_ctx_defer_info_t def_info;
-   char new_core_path[PATH_MAX_LENGTH];
    int ret                             = 0;
    core_info_list_t *list              = NULL;
    menu_handle_t *menu                 = NULL;
    const char *menu_path               = NULL;
    const char *content_path            = NULL;
+   size_t path_size                    = PATH_MAX_LENGTH * sizeof(char);
+   char *new_core_path                 = (char*)
+      malloc(PATH_MAX_LENGTH * sizeof(char));
 
    new_core_path[0]                    = '\0';
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+   {
+      free(new_core_path);
       return menu_cbs_exit();
+   }
 
    menu_path           = menu->scratch2_buf;
    content_path        = menu->scratch_buf;
@@ -3844,7 +3849,7 @@ static int action_ok_load_archive_detect_core(const char *path,
    def_info.len        = sizeof(menu->deferred_path);
 
    if (menu_content_find_first_core(&def_info, false,
-            new_core_path, sizeof(new_core_path)))
+            new_core_path, path_size))
       ret = -1;
 
    fill_pathname_join(detect_content_path, menu_path, content_path,
@@ -3866,18 +3871,24 @@ static int action_ok_load_archive_detect_core(const char *path,
                      &content_info,
                      CORE_TYPE_PLAIN,
                      NULL, NULL))
+            {
+               free(new_core_path);
                return -1;
+            }
          }
-         return 0;
+         ret = 0;
+         break;
       case 0:
          idx = menu_navigation_get_selection();
-         return generic_action_ok_displaylist_push(path, NULL,
+         ret = generic_action_ok_displaylist_push(path, NULL,
                label, type,
                idx, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST);
+         break;
       default:
          break;
    }
 
+   free(new_core_path);
    return ret;
 }
 
