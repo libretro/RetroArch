@@ -115,7 +115,8 @@ bool input_remapping_save_file(const char *path)
    bool ret;
    unsigned i, j;
    char buf[PATH_MAX_LENGTH];
-   char remap_file[PATH_MAX_LENGTH];
+   size_t path_size                  = PATH_MAX_LENGTH * sizeof(char);
+   char *remap_file                  = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    config_file_t               *conf = NULL;
    unsigned max_users                = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
    settings_t              *settings = config_get_ptr();
@@ -125,7 +126,7 @@ bool input_remapping_save_file(const char *path)
    fill_pathname_join(buf, settings->paths.directory_input_remapping,
          path, sizeof(buf));
 
-   fill_pathname_noext(remap_file, buf, ".rmp", sizeof(remap_file));
+   fill_pathname_noext(remap_file, buf, ".rmp", path_size);
 
    conf = config_file_new(remap_file);
 
@@ -133,7 +134,10 @@ bool input_remapping_save_file(const char *path)
    {
       conf = config_file_new(NULL);
       if (!conf)
+      {
+         free(remap_file);
          return false;
+      }
    }
 
    for (i = 0; i < max_users; i++)
@@ -180,23 +184,29 @@ bool input_remapping_save_file(const char *path)
    ret = config_file_write(conf, remap_file);
    config_file_free(conf);
 
+   free(remap_file);
    return ret;
 }
 
 bool input_remapping_remove_file(const char *path)
 {
-   char buf[PATH_MAX_LENGTH];
-   char remap_file[PATH_MAX_LENGTH];
+   bool ret                = false;
+   size_t path_size        = PATH_MAX_LENGTH * sizeof(char);
+   char *buf               = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char *remap_file        = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    settings_t    *settings = config_get_ptr();
 
    buf[0] = remap_file[0]            = '\0';
 
    fill_pathname_join(buf, settings->paths.directory_input_remapping,
-         path, sizeof(buf));
+         path, path_size);
 
-   fill_pathname_noext(remap_file, buf, ".rmp", sizeof(remap_file));
+   fill_pathname_noext(remap_file, buf, ".rmp", path_size);
 
-   return remove(remap_file) == 0 ? true : false;
+   ret = remove(remap_file) == 0 ? true : false;;
+   free(buf);
+   free(remap_file);
+   return ret; 
 }
 
 void input_remapping_set_defaults(void)
