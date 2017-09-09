@@ -661,12 +661,12 @@ static void video_driver_filter_free(void)
    video_driver_state_out_rgb32 = false;
 }
 
-static void video_driver_init_filter(enum retro_pixel_format colfmt,
-      struct retro_game_geometry *geom)
+static void video_driver_init_filter(enum retro_pixel_format colfmt)
 {
    unsigned pow2_x, pow2_y, maxsize;
    void *buf                            = NULL;
    settings_t *settings                 = config_get_ptr();
+   struct retro_game_geometry *geom     = &video_driver_av_info.geometry;
    unsigned width                       = geom->max_width;
    unsigned height                      = geom->max_height;
 
@@ -892,15 +892,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    rarch_system_info_t *system            = NULL;
    static uint16_t dummy_pixels[32]       = {0};
    settings_t *settings                   = config_get_ptr();
-   struct retro_system_av_info *av_info   = &video_driver_av_info;
-   struct retro_game_geometry *geom       = (av_info) ?
-      &av_info->geometry : NULL;
-
-   if (!geom)
-   {
-      RARCH_ERR("[Video]: AV geometry not initialized, cannot initialize video driver.\n");
-      goto error;
-   }
+   struct retro_game_geometry *geom       = &video_driver_av_info.geometry;
 
    if (!string_is_empty(settings->paths.path_softfilter_plugin))
    {
@@ -915,8 +907,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
             (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555) ?
             RETRO_PIXEL_FORMAT_RGB565 : video_driver_pix_fmt;
 
-         if (av_info && geom)
-            video_driver_init_filter(colfmt, geom);
+         video_driver_init_filter(colfmt);
       }
    }
 
@@ -1394,10 +1385,9 @@ bool video_driver_cached_frame(void)
 void video_driver_monitor_adjust_system_rates(void)
 {
    float timing_skew;
-   struct retro_system_av_info *av_info   = &video_driver_av_info;
    settings_t *settings                   = config_get_ptr();
    float video_refresh_rate               = settings->floats.video_refresh_rate;
-   const struct retro_system_timing *info = (const struct retro_system_timing*)&av_info->timing;
+   const struct retro_system_timing *info = (const struct retro_system_timing*)&video_driver_av_info.timing;
 
    rarch_ctl(RARCH_CTL_UNSET_NONBLOCK_FORCED, NULL);
 
@@ -1597,14 +1587,10 @@ bool video_driver_supports_read_frame_raw(void)
 void video_driver_set_viewport_config(void)
 {
    settings_t *settings                   = config_get_ptr();
-   struct retro_system_av_info *av_info   = &video_driver_av_info;
 
    if (settings->floats.video_aspect_ratio < 0.0f)
    {
-      struct retro_game_geometry *geom = &av_info->geometry;
-
-      if (!geom)
-         return;
+      struct retro_game_geometry *geom = &video_driver_av_info.geometry;
 
       if (geom->aspect_ratio > 0.0f && settings->bools.video_aspect_ratio_auto)
          aspectratio_lut[ASPECT_RATIO_CONFIG].value = geom->aspect_ratio;
@@ -1632,15 +1618,9 @@ void video_driver_set_viewport_config(void)
 void video_driver_set_viewport_square_pixel(void)
 {
    unsigned len, highest, i, aspect_x, aspect_y;
-   unsigned width, height;
-   struct retro_system_av_info *av_info = &video_driver_av_info;
-   struct retro_game_geometry *geom     = &av_info->geometry;
-
-   if (!geom)
-      return;
-
-   width  = geom->base_width;
-   height = geom->base_height;
+   struct retro_game_geometry *geom  = &video_driver_av_info.geometry;
+   unsigned width                    = geom->base_width;
+   unsigned height                   = geom->base_height;
 
    if (width == 0 || height == 0)
       return;
@@ -1666,22 +1646,17 @@ void video_driver_set_viewport_square_pixel(void)
 
 void video_driver_set_viewport_core(void)
 {
-   struct retro_system_av_info *av_info = &video_driver_av_info;
-   struct retro_game_geometry *geom     = &av_info->geometry;
+   struct retro_game_geometry *geom     = &video_driver_av_info.geometry;
 
    if (!geom || geom->base_width <= 0.0f || geom->base_height <= 0.0f)
       return;
 
    /* Fallback to 1:1 pixel ratio if none provided */
    if (geom->aspect_ratio > 0.0f)
-   {
       aspectratio_lut[ASPECT_RATIO_CORE].value = geom->aspect_ratio;
-   }
    else
-   {
       aspectratio_lut[ASPECT_RATIO_CORE].value = 
          (float)geom->base_width / geom->base_height;
-   }
 }
 
 void video_driver_reset_custom_viewport(void)
@@ -2163,8 +2138,7 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
       unsigned base_width;
       /* Use system reported sizes as these define the 
        * geometry for the "normal" case. */
-      struct retro_system_av_info *av_info = &video_driver_av_info;
-      unsigned base_height                 = av_info->geometry.base_height;
+      unsigned base_height                 = video_driver_av_info.geometry.base_height;
 
       if (base_height == 0)
          base_height = 1;
