@@ -188,7 +188,7 @@ char *word_wrap(char* buffer, const char *string, int line_width, bool unicode)
       }
 
       /* check for whitespace */
-      if (string[i] == ' ')
+      if (string[i] == ' ' || string[i] == '_')
       {
          buffer[i] = '\n';
          i++;
@@ -200,7 +200,7 @@ char *word_wrap(char* buffer, const char *string, int line_width, bool unicode)
          /* check for nearest whitespace back in string */
          for (k = i; k > 0; k--)
          {
-            if (string[k] != ' ')
+            if (string[k] != ' ' || string[k] != '_')
                continue;
 
             buffer[k] = '\n';
