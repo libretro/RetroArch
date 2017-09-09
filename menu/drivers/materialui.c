@@ -60,14 +60,14 @@
 /* This struct holds the y position and the line height for each menu entry */
 typedef struct
 {
-   float line_height;
-   float y;
-   bool texture_switch_set;
-   uintptr_t texture_switch;
-   bool texture_switch2_set;
-   uintptr_t texture_switch2;
    bool switch_is_on;
    bool do_draw_text;
+   bool texture_switch_set;
+   bool texture_switch2_set;
+   uintptr_t texture_switch;
+   uintptr_t texture_switch2;
+   float line_height;
+   float y;
 } mui_node_t;
 
 /* Textures used for the tabs and the switches */
@@ -141,6 +141,9 @@ enum
 
 typedef struct mui_handle
 {
+   char box_message[1024];
+   bool need_compute;
+   bool mouse_show;
    unsigned tabs_height;
    unsigned line_height;
    unsigned shadow_height;
@@ -149,8 +152,9 @@ typedef struct mui_handle
    unsigned margin;
    unsigned glyph_width;
    unsigned glyph_width2;
-   char box_message[1024];
-   bool mouse_show;
+   /* Y position of the vertical scroll */
+   float scroll_y;
+   float content_height;
    uint64_t frame_count;
 
    struct
@@ -188,11 +192,6 @@ typedef struct mui_handle
    video_font_raster_block_t raster_block;
    video_font_raster_block_t raster_block2;
 
-   /* Y position of the vertical scroll */
-   float scroll_y;
-
-   bool need_compute;
-   float content_height;
 } mui_handle_t;
 
 static void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha)
