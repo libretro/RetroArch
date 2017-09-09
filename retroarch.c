@@ -1360,22 +1360,28 @@ void rarch_menu_running_finished(void)
  **/
 static bool rarch_game_specific_options(char **output)
 {
-   char game_path[8192];
+   char *game_path       = (char*)malloc(8192 * sizeof(char));
+   size_t game_path_size = 8192 * sizeof(char);
 
    game_path[0] ='\0';
 
    if (!retroarch_validate_game_options(game_path,
-            sizeof(game_path), false))
-         return false;
+            game_path_size, false))
+      goto error; 
 
    if (!config_file_exists(game_path))
-      return false;
+      goto error; 
 
    RARCH_LOG("%s %s\n",
          msg_hash_to_str(MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT),
          game_path);
    *output = strdup(game_path);
+   free(game_path);
    return true;
+
+error:
+   free(game_path);
+   return false;
 }
 
 bool rarch_ctl(enum rarch_ctl_state state, void *data)
@@ -1483,7 +1489,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 #endif
          retroarch_init_state();
          {
-            unsigned i;
+            uint8_t i;
             for (i = 0; i < MAX_USERS; i++)
                input_config_set_device(i, RETRO_DEVICE_JOYPAD);
          }
