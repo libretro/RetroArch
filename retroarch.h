@@ -231,47 +231,47 @@ typedef struct global
    /* Recording. */
    struct
    {
+      bool use_output_dir;
       char path[8192];
       char config[8192];
+      char output_dir[8192];
+      char config_dir[8192];
       unsigned width;
       unsigned height;
 
       size_t gpu_width;
       size_t gpu_height;
-      char output_dir[8192];
-      char config_dir[8192];
-      bool use_output_dir;
    } record;
 
    /* Settings and/or global state that is specific to 
     * a console-style implementation. */
    struct
    {
+      bool flickerfilter_enable;
+      bool softfilter_enable;
+
       struct
       {
-         struct
-         {
-            rarch_resolution_t current;
-            rarch_resolution_t initial;
-            uint32_t *list;
-            unsigned count;
-            bool check;
-         } resolutions;
-
-         unsigned gamma_correction;
-         unsigned int flicker_filter_index;
-         unsigned char soft_filter_index;
          bool pal_enable;
          bool pal60_enable;
+         unsigned char soft_filter_index;
+         unsigned      gamma_correction;
+         unsigned int  flicker_filter_index;
+
+         struct
+         {
+            bool check;
+            unsigned count;
+            uint32_t *list;
+            rarch_resolution_t current;
+            rarch_resolution_t initial;
+         } resolutions;
       } screen;
 
       struct
       {
          bool system_bgm_enable;
       } sound;
-
-      bool flickerfilter_enable;
-      bool softfilter_enable;
    } console;
 } global_t;
 
