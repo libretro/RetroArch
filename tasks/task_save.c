@@ -581,7 +581,7 @@ static void task_save_handler(retro_task_t *task)
 
    if (task_get_cancelled(task) || written != remaining)
    {
-      char err[PATH_MAX_LENGTH];
+      char err[256];
 
       err[0] = '\0';
 
