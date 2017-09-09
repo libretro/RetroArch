@@ -2894,12 +2894,11 @@ static int menu_displaylist_parse_load_content_settings(
             MENU_SETTING_ACTION, 0, 0);
 #endif
 
-      if (core_has_set_input_descriptor())
-         menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS),
-               msg_hash_to_str(MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS),
-               MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS,
-               MENU_SETTING_ACTION, 0, 0);
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS),
+            msg_hash_to_str(MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS),
+            MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS,
+            MENU_SETTING_ACTION, 0, 0);
 
 #ifdef HAVE_LAKKA
       if (show_advanced_settings)
