@@ -3,6 +3,8 @@ DEPS_DIR          := $(ROOT_DIR)/deps
 LIBRETRO_COMM_DIR := $(ROOT_DIR)/libretro-common
 WANT_WGL           = 0
 
+#CFLAGS += -fstack-usage
+
 ifeq ($(HAVE_GL_CONTEXT),)
    HAVE_GL_CONTEXT=0
 

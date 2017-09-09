@@ -753,12 +753,10 @@ void audio_driver_dsp_filter_free(void)
 
 void audio_driver_dsp_filter_init(const char *device)
 {
-#if defined(HAVE_DYLIB) && !defined(HAVE_FILTERS_BUILTIN)
-   char basedir[PATH_MAX_LENGTH];
-   char ext_name[PATH_MAX_LENGTH];
-#endif
    struct string_list *plugs     = NULL;
 #if defined(HAVE_DYLIB) && !defined(HAVE_FILTERS_BUILTIN)
+   char *basedir  = (char*)calloc(PATH_MAX_LENGTH, sizeof(*basedir));
+   char *ext_name = (char*)calloc(PATH_MAX_LENGTH, sizeof(*ext_name));
    fill_pathname_basedir(basedir, device, sizeof(basedir));
 
    if (!frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
@@ -773,9 +771,18 @@ void audio_driver_dsp_filter_init(const char *device)
    if (!audio_driver_dsp)
       goto error;
 
+#if defined(HAVE_DYLIB) && !defined(HAVE_FILTERS_BUILTIN)
+   free(basedir);
+   free(ext_name);
+#endif
+
    return;
 
 error:
+#if defined(HAVE_DYLIB) && !defined(HAVE_FILTERS_BUILTIN)
+   free(basedir);
+   free(ext_name);
+#endif
    if (!audio_driver_dsp)
       RARCH_ERR("[DSP]: Failed to initialize DSP filter \"%s\".\n", device);
 }
