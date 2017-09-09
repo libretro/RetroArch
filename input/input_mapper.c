@@ -97,10 +97,7 @@ void input_mapper_poll(input_mapper_t *handle)
                input_keyboard_event(true, settings->uints.input_keymapper_ids[i], 0, 0, RETRO_DEVICE_KEYBOARD);
             }
             else
-            {
-               input_keyboard_event(false, settings->uints.input_keymapper_ids[i], 0, 0, RETRO_DEVICE_KEYBOARD);
-            }
-               
+               input_keyboard_event(false, settings->uints.input_keymapper_ids[i], 0, 0, RETRO_DEVICE_KEYBOARD);            
          }
       }
    }
