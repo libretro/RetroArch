@@ -325,6 +325,39 @@ typedef struct xmb_handle
    uint8_t system_tab_end;
 } xmb_handle_t;
 
+static float coord_shadow[] = {
+   0, 0, 0,
+   0, 0, 0,
+   0, 0, 0,
+   0, 0, 0,
+   0, 0, 0, 0
+};
+
+static float coord_black[] = {
+   0, 0, 0,
+   0, 0, 0,
+   0, 0, 0,
+   0, 0, 0,
+   0, 0, 0, 0
+};
+
+static float coord_white[] = {
+   1, 1, 1,
+   1, 1, 1,
+   1, 1, 1,
+   1, 1, 1,
+   1, 1, 1, 1
+};
+
+static float item_color[] = {
+   1, 1, 1,
+   1, 1, 1,
+   1, 1, 1,
+   1, 1, 1,
+   1, 1, 1, 1
+};
+
+
 float gradient_dark_purple[16] = {
     20/255.0,  13/255.0,  20/255.0, 1.0,
     20/255.0,  13/255.0,  20/255.0, 1.0,
@@ -623,7 +656,6 @@ static void xmb_draw_icon(
 {
    menu_display_ctx_draw_t draw;
    struct video_coords coords;
-   float shadow[16];
    unsigned i;
 
    if (
@@ -653,12 +685,9 @@ static void xmb_draw_icon(
 
    if (menu_disp_info.shadows_enable)
    {
-      for (i = 0; i < 16; i++)
-         shadow[i]      = 0;
+      menu_display_set_alpha(coord_shadow, color[3] * 0.35f);
 
-      menu_display_set_alpha(shadow, color[3] * 0.35f);
-
-      coords.color      = shadow;
+      coords.color      = coord_shadow;
       draw.x            = x + shadow_offset;
       draw.y            = height - y - shadow_offset;
 
@@ -698,7 +727,6 @@ static void xmb_draw_thumbnail(
    menu_display_ctx_draw_t draw;
    struct video_coords coords;
    math_matrix_4x4 mymat;
-   float shadow[16];
 
    rotate_draw.matrix       = &mymat;
    rotate_draw.rotation     = 0;
@@ -724,12 +752,9 @@ static void xmb_draw_thumbnail(
 
    if (menu_disp_info.shadows_enable)
    {
-      for (i = 0; i < 16; i++)
-         shadow[i]      = 0;
+      menu_display_set_alpha(coord_shadow, color[3] * 0.35f);
 
-      menu_display_set_alpha(shadow, color[3] * 0.35f);
-
-      coords.color          = shadow;
+      coords.color          = coord_shadow;
       draw.x                = x + xmb->shadow_offset;
       draw.y                = height - y - xmb->shadow_offset;
 
@@ -2797,30 +2822,6 @@ static void xmb_draw_dark_layer(
    menu_display_draw(&draw);
    menu_display_blend_end();
 }
-
-static float coord_black[] = {
-   0, 0, 0,
-   0, 0, 0,
-   0, 0, 0,
-   0, 0, 0,
-   0, 0, 0, 0
-};
-
-static float coord_white[] = {
-   1, 1, 1,
-   1, 1, 1,
-   1, 1, 1,
-   1, 1, 1,
-   1, 1, 1, 1
-};
-
-static float item_color[] = {
-   1, 1, 1,
-   1, 1, 1,
-   1, 1, 1,
-   1, 1, 1,
-   1, 1, 1, 1
-};
 
 static void xmb_frame(void *data, video_frame_info_t *video_info)
 {
