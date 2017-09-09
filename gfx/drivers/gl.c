@@ -223,9 +223,6 @@ static void gl_render_overlay(gl_t *gl, video_frame_info_t *video_info)
    unsigned width                      = video_info->width;
    unsigned height                     = video_info->height;
 
-   if (!gl || !gl->overlay_enable)
-      return;
-
    glEnable(GL_BLEND);
 
    if (gl->overlay_full_screen)
@@ -245,7 +242,8 @@ static void gl_render_overlay(gl_t *gl, video_frame_info_t *video_info)
 
    video_shader_driver_set_coords(coords);
 
-   video_info->cb_shader_set_mvp(gl, video_info->shader_data, &gl->mvp_no_rot);
+   video_info->cb_shader_set_mvp(gl,
+         video_info->shader_data, &gl->mvp_no_rot);
 
    for (i = 0; i < gl->overlays; i++)
    {
@@ -509,7 +507,6 @@ static void gl_set_video_mode(void *data, unsigned width, unsigned height,
 
    video_context_driver_set_video_mode(&mode);
 }
-
 
 static void gl_update_input_size(gl_t *gl, unsigned width,
       unsigned height, unsigned pitch, bool clear)
@@ -1249,7 +1246,8 @@ static bool gl_frame(void *data, const void *frame,
       font_driver_render_msg(video_info, NULL, msg, NULL);
 
 #ifdef HAVE_OVERLAY
-   gl_render_overlay(gl, video_info);
+   if (gl && gl->overlay_enable)
+      gl_render_overlay(gl, video_info);
 #endif
 
    video_info->cb_update_window_title(
