@@ -661,7 +661,7 @@ static void video_driver_filter_free(void)
    video_driver_state_out_rgb32 = false;
 }
 
-static void video_driver_init_filter(enum retro_pixel_format colfmt)
+static void video_driver_init_filter(enum retro_pixel_format colfmt_int)
 {
    unsigned pow2_x, pow2_y, maxsize;
    void *buf                            = NULL;
@@ -669,6 +669,16 @@ static void video_driver_init_filter(enum retro_pixel_format colfmt)
    struct retro_game_geometry *geom     = &video_driver_av_info.geometry;
    unsigned width                       = geom->max_width;
    unsigned height                      = geom->max_height;
+   /* Deprecated format. Gets pre-converted. */
+   enum retro_pixel_format colfmt       = 
+      (colfmt_int == RETRO_PIXEL_FORMAT_0RGB1555) ?
+      RETRO_PIXEL_FORMAT_RGB565 : colfmt_int;
+
+   if (video_driver_is_hw_context())
+   {
+      RARCH_WARN("Cannot use CPU filters when hardware rendering is used.\n");
+      return;
+   }
 
    video_driver_state_filter            = rarch_softfilter_new(
          settings->paths.path_softfilter_plugin,
@@ -895,21 +905,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    struct retro_game_geometry *geom       = &video_driver_av_info.geometry;
 
    if (!string_is_empty(settings->paths.path_softfilter_plugin))
-   {
-      if (video_driver_is_hw_context())
-      {
-         RARCH_WARN("Cannot use CPU filters when hardware rendering is used.\n");
-      }
-      else
-      {
-         /* Deprecated format. Gets pre-converted. */
-         enum retro_pixel_format colfmt = 
-            (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555) ?
-            RETRO_PIXEL_FORMAT_RGB565 : video_driver_pix_fmt;
-
-         video_driver_init_filter(colfmt);
-      }
-   }
+      video_driver_init_filter(video_driver_pix_fmt);
 
    command_event(CMD_EVENT_SHADER_DIR_INIT, NULL);
 
