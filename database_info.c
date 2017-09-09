@@ -437,24 +437,28 @@ database_info_handle_t *database_info_dir_init(const char *dir,
 
                for (i = 0; i < archive_list->size; i++)
                {
-                  char new_path[PATH_MAX_LENGTH];
-                  size_t path_len = strlen(path);
+                  char *new_path   = (char*)malloc(
+                        PATH_MAX_LENGTH * sizeof(char));
+                  size_t path_size = PATH_MAX_LENGTH * sizeof(char);
+                  size_t path_len  = strlen(path);
 
                   new_path[0] = '\0';
 
-                  strlcpy(new_path, path, sizeof(new_path));
+                  strlcpy(new_path, path, path_size);
 
                   if (path_len + strlen(archive_list->elems[i].data)
                          + 1 < PATH_MAX_LENGTH)
                   {
                      new_path[path_len] = '#';
                      strlcpy(new_path + path_len + 1,
-                                archive_list->elems[i].data,
-                                sizeof(new_path) - path_len);
+                           archive_list->elems[i].data,
+                           path_size - path_len);
                   }
 
                   string_list_append(db->list, new_path,
-                                        archive_list->elems[i].attr);
+                        archive_list->elems[i].attr);
+
+                  free(new_path);
                }
 
                string_list_free(archive_list);
@@ -501,27 +505,30 @@ database_info_handle_t *database_info_file_init(const char *path,
 
          for (i = 0; i < archive_list->size; i++)
          {
-            char new_path[PATH_MAX_LENGTH];
-            size_t path_len = strlen(path);
+            char *new_path   = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+            size_t path_size = PATH_MAX_LENGTH * sizeof(char);
+            size_t path_len  = strlen(path);
 
             if (task)
-               task_set_progress(task, (i / (float)archive_list->size) * 100);
+               task_set_progress(task,
+                     (i / (float)archive_list->size) * 100);
 
             new_path[0] = '\0';
 
-            strlcpy(new_path, path, sizeof(new_path));
+            strlcpy(new_path, path, path_size);
 
             if (path_len + strlen(archive_list->elems[i].data)
                    + 1 < PATH_MAX_LENGTH)
             {
                new_path[path_len] = '#';
                strlcpy(new_path + path_len + 1,
-                          archive_list->elems[i].data,
-                          sizeof(new_path) - path_len);
+                     archive_list->elems[i].data,
+                     path_size - path_len);
             }
 
             string_list_append(db->list, new_path,
                                   archive_list->elems[i].attr);
+            free(new_path);
          }
 
          string_list_free(archive_list);
