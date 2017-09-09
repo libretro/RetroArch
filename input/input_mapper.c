@@ -66,37 +66,6 @@ input_mapper_t *input_mapper_new(uint16_t port)
 
    if (!handle)
       return NULL;
-
-   /* testing values for mgs */
-   
-   settings->uints.input_keymapper_ids[0] = RETROK_n;
-   settings->uints.input_keymapper_ids[1] = RETROK_SPACE;
-   settings->uints.input_keymapper_ids[2] = RETROK_F1;
-   settings->uints.input_keymapper_ids[3] = RETROK_RETURN;
-   settings->uints.input_keymapper_ids[4] = RETROK_UP;
-   settings->uints.input_keymapper_ids[5] = RETROK_DOWN;
-   settings->uints.input_keymapper_ids[6] = RETROK_LEFT;
-   settings->uints.input_keymapper_ids[7] = RETROK_RIGHT;
-   settings->uints.input_keymapper_ids[8] = RETROK_F1;
-   settings->uints.input_keymapper_ids[9] = RETROK_F2;
-   settings->uints.input_keymapper_ids[10] = RETROK_F3;
-   settings->uints.input_keymapper_ids[11] = RETROK_F4;
-   settings->uints.input_keymapper_ids[12] = RETROK_F5;
-   settings->uints.input_keymapper_ids[13] = RETROK_F6;
-   settings->uints.input_keymapper_ids[14] = RETROK_F7;
-   settings->uints.input_keymapper_ids[15] = RETROK_F8;
-   
-   /* testing values for keen5 */
-   /*settings->uints.input_keymapper_ids[0] = RETROK_LCTRL;
-   settings->uints.input_keymapper_ids[1] = RETROK_SPACE;
-   settings->uints.input_keymapper_ids[2] = RETROK_ESCAPE;
-   settings->uints.input_keymapper_ids[3] = RETROK_RETURN;
-   settings->uints.input_keymapper_ids[4] = RETROK_UP;
-   settings->uints.input_keymapper_ids[5] = RETROK_DOWN;
-   settings->uints.input_keymapper_ids[6] = RETROK_LEFT;
-   settings->uints.input_keymapper_ids[7] = RETROK_RIGHT;
-   settings->uints.input_keymapper_ids[8] = RETROK_F1;
-   */
    handle->port = port;
    mapper_ptr = handle;
    return handle;
