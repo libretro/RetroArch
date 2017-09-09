@@ -67,7 +67,8 @@ input_mapper_t *input_mapper_new(uint16_t port)
    if (!handle)
       return NULL;
 
-   /* testing values*/
+   /* testing values for mgs */
+   
    settings->uints.input_keymapper_ids[0] = RETROK_n;
    settings->uints.input_keymapper_ids[1] = RETROK_SPACE;
    settings->uints.input_keymapper_ids[2] = RETROK_F1;
@@ -84,8 +85,18 @@ input_mapper_t *input_mapper_new(uint16_t port)
    settings->uints.input_keymapper_ids[13] = RETROK_F6;
    settings->uints.input_keymapper_ids[14] = RETROK_F7;
    settings->uints.input_keymapper_ids[15] = RETROK_F8;
-
    
+   /* testing values for keen5 */
+   /*settings->uints.input_keymapper_ids[0] = RETROK_LCTRL;
+   settings->uints.input_keymapper_ids[1] = RETROK_SPACE;
+   settings->uints.input_keymapper_ids[2] = RETROK_ESCAPE;
+   settings->uints.input_keymapper_ids[3] = RETROK_RETURN;
+   settings->uints.input_keymapper_ids[4] = RETROK_UP;
+   settings->uints.input_keymapper_ids[5] = RETROK_DOWN;
+   settings->uints.input_keymapper_ids[6] = RETROK_LEFT;
+   settings->uints.input_keymapper_ids[7] = RETROK_RIGHT;
+   settings->uints.input_keymapper_ids[8] = RETROK_F1;
+   */
    handle->port = port;
    mapper_ptr = handle;
    return handle;
@@ -112,7 +123,15 @@ void input_mapper_poll(input_mapper_t *handle)
          if(i < RETROK_LAST)
          {
             if (input_state(0, RETRO_DEVICE_JOYPAD, handle->port, i))
+            {
                MAPPER_SET_KEY (handle, settings->uints.input_keymapper_ids[i]);
+               input_keyboard_event(true, settings->uints.input_keymapper_ids[i], 0, 0, RETRO_DEVICE_KEYBOARD);
+            }
+            else
+            {
+               input_keyboard_event(false, settings->uints.input_keymapper_ids[i], 0, 0, RETRO_DEVICE_KEYBOARD);
+            }
+               
          }
       }
    }
@@ -127,6 +146,7 @@ void input_mapper_state(
       unsigned id)
 {
 
+   settings_t *settings = config_get_ptr();
    switch (device)
    {
       case RETRO_DEVICE_KEYBOARD:
