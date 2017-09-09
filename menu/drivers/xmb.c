@@ -2798,13 +2798,36 @@ static void xmb_draw_dark_layer(
    menu_display_blend_end();
 }
 
+static float coord_black[] = {
+   0, 0, 0,
+   0, 0, 0,
+   0, 0, 0,
+   0, 0, 0,
+   0, 0, 0, 0
+};
+
+static float coord_white[] = {
+   1, 1, 1,
+   1, 1, 1,
+   1, 1, 1,
+   1, 1, 1,
+   1, 1, 1, 1
+};
+
+static float item_color[] = {
+   1, 1, 1,
+   1, 1, 1,
+   1, 1, 1,
+   1, 1, 1,
+   1, 1, 1, 1
+};
+
 static void xmb_frame(void *data, video_frame_info_t *video_info)
 {
    size_t selection;
    size_t percent_width = 0;
    math_matrix_4x4 mymat;
    unsigned i;
-   float item_color[16], coord_black[16], coord_white[16];
    menu_display_ctx_rotate_draw_t rotate_draw;
    char msg[1024];
    char title_msg[255];
@@ -2833,13 +2856,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    xmb->raster_block.carr.coords.vertices = 0;
    xmb->raster_block2.carr.coords.vertices = 0;
-
-   for (i = 0; i < 16; i++)
-   {
-      coord_black[i]  = 0;
-      coord_white[i] = 1.0f;
-      item_color[i]   = 1.0f;
-   }
 
    menu_display_set_alpha(coord_black, MIN(
          (float)video_info->xmb_alpha_factor/100, xmb->alpha));
