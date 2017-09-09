@@ -1933,7 +1933,7 @@ static void xmb_context_reset_horizontal_list(
    for (i = 0; i < list_size; i++)
    {
       char iconpath[PATH_MAX_LENGTH];
-      char sysname[PATH_MAX_LENGTH];
+      char sysname[256];
       char texturepath[PATH_MAX_LENGTH];
       char content_texturepath[PATH_MAX_LENGTH];
       struct texture_image ti;
