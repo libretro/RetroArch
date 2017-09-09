@@ -2264,8 +2264,6 @@ static bool config_load_file(const char *path, bool set_defaults,
             path_size);
       extra_path = strtok_r(tmp_append_path, "|", &save);
 
-      free(tmp_append_path);
-
       while (extra_path)
       {
          bool ret = config_append_file(conf, extra_path);
@@ -2276,6 +2274,8 @@ static bool config_load_file(const char *path, bool set_defaults,
             RARCH_ERR("Config: failed to append config \"%s\"\n", extra_path);
          extra_path = strtok_r(NULL, "|", &save);
       }
+
+      free(tmp_append_path);
    }
 
 #if 0
