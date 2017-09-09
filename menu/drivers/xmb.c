@@ -656,7 +656,6 @@ static void xmb_draw_icon(
 {
    menu_display_ctx_draw_t draw;
    struct video_coords coords;
-   unsigned i;
 
    if (
          (x < (-icon_size / 2.0f)) ||
@@ -722,7 +721,6 @@ static void xmb_draw_thumbnail(
       float x, float y,
       float w, float h, uintptr_t texture)
 {
-   unsigned i;
    menu_display_ctx_rotate_draw_t rotate_draw;
    menu_display_ctx_draw_t draw;
    struct video_coords coords;
