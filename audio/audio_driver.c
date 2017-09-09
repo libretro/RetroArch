@@ -755,11 +755,12 @@ void audio_driver_dsp_filter_init(const char *device)
 {
    struct string_list *plugs     = NULL;
 #if defined(HAVE_DYLIB) && !defined(HAVE_FILTERS_BUILTIN)
-   char *basedir  = (char*)calloc(PATH_MAX_LENGTH, sizeof(*basedir));
-   char *ext_name = (char*)calloc(PATH_MAX_LENGTH, sizeof(*ext_name));
-   fill_pathname_basedir(basedir, device, sizeof(basedir));
+   char *basedir   = (char*)calloc(PATH_MAX_LENGTH, sizeof(*basedir));
+   char *ext_name  = (char*)calloc(PATH_MAX_LENGTH, sizeof(*ext_name));
+   size_t str_size = PATH_MAX_LENGTH * sizeof(char);
+   fill_pathname_basedir(basedir, device, str_size);
 
-   if (!frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
+   if (!frontend_driver_get_core_extension(ext_name, str_size))
       goto error;
 
    plugs = dir_list_new(basedir, ext_name, false, true, false, false);
