@@ -57,7 +57,7 @@ if [ "$HAVE_NEON" = "yes" ]; then
 fi
 
 if [ "$HAVE_7ZIP" = "yes" ]; then
-   add_include_dirs ./decompress/7zip/
+   add_include_dirs ./deps/7zip/
 fi
 
 if [ "$HAVE_PRESERVE_DYLIB" = "yes" ]; then
