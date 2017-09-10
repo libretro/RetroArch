@@ -506,7 +506,7 @@ static void menu_action_setting_disp_set_label_input_desc_kbd(
    if (!settings)
       return;
 
-   for (key_id = 0; key_id < MENU_SETTINGS_INPUT_DESC_KBD_END - 1; key_id++)
+   for (key_id = 0; key_id < MENU_SETTINGS_INPUT_DESC_KBD_END - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN; key_id++)
    {
       if(remap_id == key_descriptors[key_id].key)
          break;
