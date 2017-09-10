@@ -4227,8 +4227,34 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
    return true;
 }
 
+void menu_displaylist_info_free(menu_displaylist_info_t *info)
+{
+   if (!info)
+      return;
+#if 0
+   if (info->path)
+      free(info->path);
+   if (info->path_b)
+      free(info->path_b);
+   if (info->path_c)
+      free(info->path_c);
+   if (info->exts)
+      free(info->exts);
+   if (info->label)
+      free(info->label);
+   info->path   = NULL;
+   info->path_b = NULL;
+   info->path_c = NULL;
+   info->exts   = NULL;
+   info->label  = NULL;
+#endif
+}
+
 void menu_displaylist_info_init(menu_displaylist_info_t *info)
 {
+   if (!info)
+      return;
+
    info->enum_idx                 = MSG_UNKNOWN;
    info->need_sort                = false;
    info->need_refresh             = false;

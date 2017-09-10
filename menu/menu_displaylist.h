@@ -219,6 +219,8 @@ bool menu_displaylist_process(menu_displaylist_info_t *info);
 
 bool menu_displaylist_push(menu_displaylist_ctx_entry_t *entry);
 
+void menu_displaylist_info_free(menu_displaylist_info_t *info);
+
 void menu_displaylist_info_init(menu_displaylist_info_t *info);
 
 bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data);
