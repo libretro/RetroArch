@@ -120,11 +120,8 @@ int generic_action_ok_displaylist_push(const char *path,
       unsigned action_type)
 {
    menu_displaylist_info_t      info;
-   char new_path_tmp[PATH_MAX_LENGTH];
    char tmp[PATH_MAX_LENGTH];
    char parent_dir[PATH_MAX_LENGTH];
-   char action_path[PATH_MAX_LENGTH];
-   char lpl_basename[PATH_MAX_LENGTH];
    enum menu_displaylist_ctl_state dl_type = DISPLAYLIST_NONE;
    const char           *menu_label        = NULL;
    const char            *menu_path        = NULL;
@@ -138,24 +135,21 @@ int generic_action_ok_displaylist_push(const char *path,
 
    menu_displaylist_info_init(&info);
 
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      return menu_cbs_exit();
+   info.list                               = menu_stack;
 
-   new_path_tmp[0] = tmp[0] = parent_dir[0] = action_path[0] = lpl_basename[0] = '\0';
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      goto end;
+
+   tmp[0] = parent_dir[0] = '\0';
 
    menu_entries_get_last_stack(&menu_path, &menu_label, NULL, &enum_idx, NULL);
-
-   if (path && menu_path)
-      fill_pathname_join(action_path, menu_path, path, sizeof(action_path));
-
-   info.list          = menu_stack;
 
    switch (action_type)
    {
       case ACTION_OK_DL_BROWSE_URL_START:
          info.type          = type;
          info.directory_ptr = idx;
-         info_path          = new_path_tmp;
+         info_path          = NULL;
          info_label         = msg_hash_to_str(
                MENU_ENUM_LABEL_DEFERRED_BROWSE_URL_START);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_BROWSE_URL_START;
@@ -474,39 +468,59 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type                 = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_PARENT_DIRECTORY_PUSH:
-         fill_pathname_parent_dir(parent_dir,
-               action_path, sizeof(parent_dir));
-         fill_pathname_parent_dir(parent_dir,
-               parent_dir, sizeof(parent_dir));
+         {
+            char action_path[PATH_MAX_LENGTH];
+            action_path[0] = '\0';
+            if (path && menu_path)
+               fill_pathname_join(action_path,
+                     menu_path, path, sizeof(action_path));
 
-         info.type          = type;
-         info.directory_ptr = idx;
-         info_path          = parent_dir;
-         info_label         = menu_label;
-         dl_type            = DISPLAYLIST_GENERIC;
+            fill_pathname_parent_dir(parent_dir,
+                  action_path, sizeof(parent_dir));
+            fill_pathname_parent_dir(parent_dir,
+                  parent_dir, sizeof(parent_dir));
+
+            info.type          = type;
+            info.directory_ptr = idx;
+            info_path          = parent_dir;
+            info_label         = menu_label;
+            dl_type            = DISPLAYLIST_GENERIC;
+         }
          break;
       case ACTION_OK_DL_DIRECTORY_PUSH:
-         info.type          = type;
-         info.directory_ptr = idx;
-         info_path          = action_path;
-         info_label         = menu_label;
-         dl_type            = DISPLAYLIST_GENERIC;
+         {
+            char action_path[PATH_MAX_LENGTH];
+            action_path[0] = '\0';
+            if (path && menu_path)
+               fill_pathname_join(action_path,
+                     menu_path, path, sizeof(action_path));
+
+            info.type          = type;
+            info.directory_ptr = idx;
+            info_path          = action_path;
+            info_label         = menu_label;
+            dl_type            = DISPLAYLIST_GENERIC;
+         }
          break;
       case ACTION_OK_DL_DATABASE_MANAGER_LIST:
-         filebrowser_clear_type();
-         fill_pathname_join(tmp,
-               settings->paths.path_content_database,
-               path, sizeof(tmp));
+         {
+            char lpl_basename[PATH_MAX_LENGTH];
+            lpl_basename[0] = '\0';
+            filebrowser_clear_type();
+            fill_pathname_join(tmp,
+                  settings->paths.path_content_database,
+                  path, sizeof(tmp));
 
-         fill_pathname_base_noext(lpl_basename, path, sizeof(lpl_basename));
-         menu_driver_set_thumbnail_system(lpl_basename, sizeof(lpl_basename));
+            fill_pathname_base_noext(lpl_basename, path, sizeof(lpl_basename));
+            menu_driver_set_thumbnail_system(lpl_basename, sizeof(lpl_basename));
 
-         info.directory_ptr = idx;
-         info_path          = tmp;
-         info_label         = msg_hash_to_str(
-               MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST);
-         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST;
-         dl_type                 = DISPLAYLIST_GENERIC;
+            info.directory_ptr = idx;
+            info_path          = tmp;
+            info_label         = msg_hash_to_str(
+                  MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST);
+            info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST;
+            dl_type                 = DISPLAYLIST_GENERIC;
+         }
          break;
       case ACTION_OK_DL_CURSOR_MANAGER_LIST:
          filebrowser_clear_type();
@@ -539,15 +553,19 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type            = DISPLAYLIST_PENDING_CLEAR;
          break;
       case ACTION_OK_DL_CORE_CONTENT_DIRS_SUBDIR_LIST:
-         fill_pathname_join_delim(new_path_tmp, path, label, ';',
-               sizeof(new_path_tmp));
-         info.type          = type;
-         info.directory_ptr = idx;
-         info_path          = new_path_tmp;
-         info_label         = msg_hash_to_str(
-               MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_SUBDIR_LIST);
-         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_SUBDIR_LIST;
-         dl_type            = DISPLAYLIST_GENERIC;
+         {
+            char new_path_tmp[PATH_MAX_LENGTH];
+            new_path_tmp[0] = '\0';
+            fill_pathname_join_delim(new_path_tmp, path, label, ';',
+                  sizeof(new_path_tmp));
+            info.type          = type;
+            info.directory_ptr = idx;
+            info_path          = new_path_tmp;
+            info_label         = msg_hash_to_str(
+                  MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_SUBDIR_LIST);
+            info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_SUBDIR_LIST;
+            dl_type            = DISPLAYLIST_GENERIC;
+         }
          break;
       case ACTION_OK_DL_CORE_CONTENT_DIRS_LIST:
          info.type          = type;
@@ -865,9 +883,16 @@ int generic_action_ok_displaylist_push(const char *path,
       strlcpy(info.path, info_path, sizeof(info.path));
 
    if (menu_displaylist_ctl(dl_type, &info))
+   {
       if (menu_displaylist_process(&info))
+      {
+         menu_displaylist_info_free(&info);
          return 0;
+      }
+   }
 
+end:
+   menu_displaylist_info_free(&info);
    return menu_cbs_exit();
 }
 
