@@ -762,17 +762,33 @@ int menu_action_handle_setting(rarch_setting_t *setting,
       case ST_PATH:
          if (action == MENU_ACTION_OK)
          {
-            menu_displaylist_info_t  info = {0};
+            menu_displaylist_info_t  info;
             file_list_t       *menu_stack = menu_entries_get_menu_stack_ptr(0);
             const char      *name         = setting->name;
             size_t selection              = menu_navigation_get_selection();
 
-            info.list           = menu_stack;
-            info.directory_ptr  = selection;
-            info.type           = type;
-            info.enum_idx       = MSG_UNKNOWN;
+            info.enum_idx                 = MSG_UNKNOWN;
+            info.need_sort                = false;
+            info.need_refresh             = false;
+            info.need_entries_refresh     = false;
+            info.need_push                = false;
+            info.need_clear               = false;
+            info.push_builtin_cores       = false;
+            info.download_core            = false;
+            info.need_navigation_clear    = false;
             strlcpy(info.path,  setting->default_value.string, sizeof(info.path));
+            info.path_b[0]                = '\0';
+            info.path_c[0]                = '\0';
+            info.exts[0]                  = '\0';
             strlcpy(info.label, name, sizeof(info.label));
+            info.type                     = type;
+            info.type_default             = 0;
+            info.flags                    = 0;
+            info.label_hash               = 0;
+            info.directory_ptr            = selection;
+            info.list                     = menu_stack;
+            info.menu_list                = NULL;
+            info.setting                  = NULL;
 
             if (menu_displaylist_ctl(DISPLAYLIST_GENERIC, &info))
                menu_displaylist_process(&info);
