@@ -164,7 +164,10 @@ static bool get_self_input_state(netplay_t *netplay)
       }
    }
 
+   ptr->have_real[netplay->self_client_num] = true;
    ptr->have_local = true;
+   netplay->read_ptr1[netplay->self_client_num] = NEXT_PTR(netplay->self_ptr);
+   netplay->read_frame_count1[netplay->self_client_num] = netplay->self_frame_count + 1;
 
    /* And send this input to our peers */
    for (i = 0; i < netplay->connections_size; i++)
@@ -1174,6 +1177,8 @@ static void netplay_toggle_play_spectate(netplay_t *netplay)
          netplay->connected_players1 |= 1;
          netplay->client_devices[0] = netplay->self_devices = (1<<device);
          netplay->device_clients[device] = 1;
+         netplay->read_ptr1[0] = netplay->self_ptr;
+         netplay->read_frame_count1[0] = netplay->self_frame_count;
 
          dmsg = msg;
          msg[sizeof(msg)-1] = '\0';

@@ -416,7 +416,7 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
    }
 
    /* Only relevant if we're connected and not in a desynching operation */
-   if ((netplay->is_server && (netplay->connected_players1>1)) ||
+   if ((netplay->is_server && (netplay->connected_players1<=1)) ||
        (netplay->self_mode < NETPLAY_CONNECTION_CONNECTED) ||
        (netplay->desync))
    {
@@ -440,6 +440,7 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
    }
 
 #ifndef DEBUG_NONDETERMINISTIC_CORES
+#if 0 /* FIXME: netplay_resolve_input is broken */
    if (!netplay->force_rewind)
    {
       /* Skip ahead if we predicted correctly.
@@ -459,6 +460,7 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
          netplay->other_frame_count++;
       }
    }
+#endif
 #endif
 
    /* Now replay the real input if we've gotten ahead of it */

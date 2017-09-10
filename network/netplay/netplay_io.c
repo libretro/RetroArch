@@ -48,7 +48,6 @@ static void print_state(netplay_t *netplay)
       if ((netplay->connected_players1 & (1<<client)))
          APPEND((M, " %u:%u", client, netplay->read_frame_count1[client]));
    }
-   APPEND((M, "\n"));
    msg[sizeof(msg)-1] = '\0';
 
    RARCH_LOG("%s\n", msg);
@@ -241,6 +240,7 @@ static bool send_input_frame(netplay_t *netplay, struct delta_frame *dframe,
 
 #ifdef DEBUG_NETPLAY_STEPS
    RARCH_LOG("Sending input for client %u\n", (unsigned) client_num);
+   print_state(netplay);
 #endif
 
    if (only)
@@ -288,10 +288,10 @@ bool netplay_send_cur_input(netplay_t *netplay,
    size_t i;
    netplay_input_state_t istate;
 
-   to_client = connection - netplay->connections + 1;
-
    if (netplay->is_server)
    {
+      to_client = connection - netplay->connections + 1;
+
       /* Send the other players' input data (FIXME: This involves an
        * unacceptable amount of recalculating) */
       for (from_client = 1; from_client < MAX_CLIENTS; from_client++)
@@ -358,6 +358,8 @@ bool netplay_send_raw_cmd(netplay_t *netplay,
    if (size > 0)
       if (!netplay_send(&connection->send_packet_buffer, connection->fd, data, size))
          return false;
+
+   netplay_send_flush(&connection->send_packet_buffer, connection->fd, true);
 
    return true;
 }
@@ -659,8 +661,8 @@ static bool netplay_get_cmd(netplay_t *netplay,
             /* If this was server data, advance our server pointer too */
             if (!netplay->is_server && client_num == 0)
             {
-               netplay->server_ptr = netplay->read_ptr1[client_num];
-               netplay->server_frame_count = netplay->read_frame_count1[client_num];
+               netplay->server_ptr = netplay->read_ptr1[0];
+               netplay->server_frame_count = netplay->read_frame_count1[0];
             }
 
 #ifdef DEBUG_NETPLAY_STEPS
@@ -702,6 +704,10 @@ static bool netplay_get_cmd(netplay_t *netplay,
 
             netplay->server_ptr = NEXT_PTR(netplay->server_ptr);
             netplay->server_frame_count++;
+#ifdef DEBUG_NETPLAY_STEPS
+            RARCH_LOG("Received server noinput\n");
+            print_state(netplay);
+#endif
             break;
          }
 
@@ -989,19 +995,22 @@ static bool netplay_get_cmd(netplay_t *netplay,
                /* Fix up current frame info */
                if (frame <= netplay->self_frame_count)
                {
-                  /* FIXME: Must generate frames with 0 data */
-#if 0
                   /* It wanted past frames, better send 'em! */
                   START(netplay->server_ptr);
                   while (dframe->used && dframe->frame <= netplay->self_frame_count)
                   {
-                     memcpy(dframe->real_input_state[player], dframe->self_state, sizeof(dframe->self_state));
-                     dframe->have_real[player] = true;
-                     send_input_frame(netplay, connection, NULL, dframe->frame, player, dframe->self_state);
+                     for (device = 0; device < MAX_INPUT_DEVICES; device++)
+                     {
+                        if (!(devices & (1<<device))) continue;
+                        netplay_input_state_t istate = netplay_input_state_for(&dframe->real_input[device], client_num, 3 /* FIXME */, true);
+                        memset(istate->data, 0, istate->size*sizeof(uint32_t));
+                     }
+                     dframe->have_local = true;
+                     dframe->have_real[client_num] = true;
+                     send_input_frame(netplay, dframe, connection, NULL, client_num);
                      if (dframe->frame == netplay->self_frame_count) break;
                      NEXT();
                   }
-#endif
 
                }
                else
