@@ -102,6 +102,7 @@ int action_right_cheat(unsigned type, const char *label,
          wraparound);
 }
 
+#ifdef HAVE_KEYMAPPER
 int action_right_input_desc_kbd(unsigned type, const char *label,
       bool wraparound)
 {
@@ -130,6 +131,7 @@ int action_right_input_desc_kbd(unsigned type, const char *label,
 
    return 0;
 }
+#endif
 
 int action_right_input_desc(unsigned type, const char *label,
    bool wraparound)

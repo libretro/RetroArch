@@ -113,6 +113,7 @@ static int action_left_input_desc(unsigned type, const char *label,
    return 0;
 }
 
+#ifdef HAVE_KEYMAPPER
 static int action_left_input_desc_kbd(unsigned type, const char *label,
    bool wraparound)
 {
@@ -141,6 +142,7 @@ static int action_left_input_desc_kbd(unsigned type, const char *label,
 
    return 0;
 }
+#endif
 
 static int action_left_scroll(unsigned type, const char *label,
       bool wraparound)

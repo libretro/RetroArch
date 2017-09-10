@@ -488,6 +488,7 @@ static void menu_action_setting_disp_set_label_input_desc(
 
 }
 
+#ifdef HAVE_KEYMAPPER
 static void menu_action_setting_disp_set_label_input_desc_kbd(
    file_list_t* list,
    unsigned *w, unsigned type, unsigned i,
@@ -517,7 +518,7 @@ static void menu_action_setting_disp_set_label_input_desc_kbd(
    *w = 19;
    strlcpy(s2, path, len2);
 }
-
+#endif
 
 static void menu_action_setting_disp_set_label_cheat(
       file_list_t* list,

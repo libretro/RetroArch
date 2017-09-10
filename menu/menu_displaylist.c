@@ -3504,25 +3504,34 @@ static int menu_displaylist_parse_options_remappings(
          }
       }
    }
+   #ifdef HAVE_KEYMAPPER
    if (system)
    {     
       settings_t *settings = config_get_ptr();
-      for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
+
+      unsigned device = settings->uints.input_libretro_device[settings->uints.keymapper_port];
+      device &= RETRO_DEVICE_MASK;
+
+      if (device == RETRO_DEVICE_KEYBOARD)
       {
-         char desc_label[64];
-         unsigned user           = settings->uints.keymapper_port + 1;
-         unsigned desc_offset    = retro_id;
-         const char *description = NULL;
+         for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
+         {
+            char desc_label[64];
+            unsigned user           = settings->uints.keymapper_port + 1;
+            unsigned desc_offset    = retro_id;
+            const char *description = NULL;
 
-         desc_label[0]           = '\0';
+            desc_label[0]           = '\0';
 
-         snprintf(desc_label, sizeof(desc_label),
-               "%s: ", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B + retro_id));
-         menu_entries_append_enum(info->list, desc_label, "",
-               MSG_UNKNOWN,
-               MENU_SETTINGS_INPUT_DESC_KBD_BEGIN  +  retro_id, 0, 0);
+            snprintf(desc_label, sizeof(desc_label),
+                  "%s: ", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B + retro_id));
+            menu_entries_append_enum(info->list, desc_label, "",
+                  MSG_UNKNOWN,
+                  MENU_SETTINGS_INPUT_DESC_KBD_BEGIN  +  retro_id, 0, 0);
+         }
       }
    }
+   #endif
 
    return 0;
 }
