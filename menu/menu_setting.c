@@ -777,6 +777,8 @@ int menu_action_handle_setting(rarch_setting_t *setting,
 
             if (menu_displaylist_ctl(DISPLAYLIST_GENERIC, &info))
                menu_displaylist_process(&info);
+
+            menu_displaylist_info_free(&info);
          }
          /* fall-through. */
       case ST_BOOL:
@@ -1679,6 +1681,7 @@ void general_write_handler(void *data)
 
             if (menu_displaylist_ctl(DISPLAYLIST_GENERIC, &info))
                menu_displaylist_process(&info);
+            menu_displaylist_info_free(&info);
             setting_set_with_string_representation(setting, "false");
          }
          break;

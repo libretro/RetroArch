@@ -1124,16 +1124,19 @@ static int zarch_iterate(void *data, void *userdata, enum menu_action action)
 
 static bool zarch_menu_init_list(void *data)
 {
-   menu_displaylist_info_t info = {0};
+   menu_displaylist_info_t info;
    file_list_t *menu_stack      = menu_entries_get_menu_stack_ptr(0);
    file_list_t *selection_buf   = menu_entries_get_selection_buf_ptr(0);
+
+   menu_displaylist_info_free(&info);
 
    strlcpy(info.label,
          msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB), sizeof(info.label));
    info.enum_idx = MENU_ENUM_LABEL_HISTORY_TAB;
 
    menu_entries_append_enum(menu_stack,
-         info.path, info.label, MENU_ENUM_LABEL_HISTORY_TAB, info.type, info.flags, 0);
+         info.path, info.label,
+         MENU_ENUM_LABEL_HISTORY_TAB, info.type, info.flags, 0);
 
    command_event(CMD_EVENT_HISTORY_INIT, NULL);
 
@@ -1141,9 +1144,14 @@ static bool zarch_menu_init_list(void *data)
 
    if (menu_displaylist_ctl(DISPLAYLIST_HISTORY, &info))
    {
+      bool ret = false;
       info.need_push = true;
-      return menu_displaylist_process(&info);
+      ret = menu_displaylist_process(&info);
+      menu_displaylist_info_free(&info);
+      return ret;
    }
+
+   menu_displaylist_info_free(&info);
 
    return false;
 }

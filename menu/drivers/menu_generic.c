@@ -280,5 +280,7 @@ bool generic_menu_init_list(void *data)
    if (menu_displaylist_ctl(DISPLAYLIST_MAIN_MENU, &info))
       menu_displaylist_process(&info);
 
+   menu_displaylist_info_free(&info);
+
    return true;
 }

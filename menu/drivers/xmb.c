@@ -1881,6 +1881,7 @@ static void xmb_init_horizontal_list(xmb_handle_t *xmb)
          for (i=0; i < xmb->horizontal_list->size; i++)
             xmb_node_allocate_userdata(xmb, (unsigned)i);
          menu_displaylist_process(&info);
+         menu_displaylist_info_free(&info);
       }
    }
 }
@@ -4191,6 +4192,7 @@ static int deferred_push_content_actions(menu_displaylist_info_t *info)
          DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS, info))
       return -1;
    menu_displaylist_process(info);
+   menu_displaylist_info_free(info);
    return 0;
 }
 
@@ -4357,30 +4359,14 @@ static bool xmb_menu_init_list(void *data)
    file_list_t *menu_stack      = menu_entries_get_menu_stack_ptr(0);
    file_list_t *selection_buf   = menu_entries_get_selection_buf_ptr(0);
 
-   info.need_sort               = false;
-   info.need_refresh            = false;
-   info.need_entries_refresh    = false;
-   info.need_push               = false;
-   info.push_builtin_cores      = false;
-   info.download_core           = false;
-   info.need_clear              = false;
-   info.need_navigation_clear   = false;
-   info.list                    = NULL;
-   info.menu_list               = NULL;
-   info.path[0]                 = '\0';
-   info.path_b[0]               = '\0';
-   info.path_c[0]               = '\0';
+   menu_displaylist_info_init(&info);
+
    strlcpy(info.label,
          msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU), sizeof(info.label));
-   info.label_hash              = 0;
    strlcpy(info.exts,
          file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT), sizeof(info.exts));
-   info.type                    = 0;
    info.type_default            = FILE_TYPE_PLAIN;
-   info.directory_ptr           = 0;
-   info.flags                   = 0;
    info.enum_idx                = MENU_ENUM_LABEL_MAIN_MENU;
-   info.setting                 = NULL;
 
    menu_entries_append_enum(menu_stack, info.path,
          info.label,
@@ -4390,14 +4376,19 @@ static bool xmb_menu_init_list(void *data)
    info.list  = selection_buf;
 
    if (!menu_displaylist_ctl(DISPLAYLIST_MAIN_MENU, &info))
-      return false;
+      goto error;
 
    info.need_push = true;
 
    if (!menu_displaylist_process(&info))
-      return false;
+      goto error;
 
+   menu_displaylist_info_free(&info);
    return true;
+
+error:
+   menu_displaylist_info_free(&info);
+   return false;
 }
 
 static int xmb_pointer_tap(void *userdata,

@@ -55,6 +55,7 @@ static int deferred_push_dlist(menu_displaylist_info_t *info, enum menu_displayl
    if (!menu_displaylist_ctl(state, info))
       return menu_cbs_exit();
    menu_displaylist_process(info);
+   menu_displaylist_info_free(info);
    return 0;
 }
 

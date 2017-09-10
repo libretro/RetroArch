@@ -112,9 +112,9 @@ static int menu_input_key_bind_set_mode_common(
          info.enum_idx            = MENU_ENUM_LABEL_CUSTOM_BIND;
          strlcpy(info.label,
                msg_hash_to_str(MENU_ENUM_LABEL_CUSTOM_BIND), sizeof(info.label));
-
          if (menu_displaylist_ctl(DISPLAYLIST_INFO, &info))
             menu_displaylist_process(&info);
+         menu_displaylist_info_free(&info);
          break;
       case MENU_INPUT_BINDS_CTL_BIND_ALL:
          menu_input_binds.target  = &input_config_binds[index_offset][0];
@@ -131,6 +131,7 @@ static int menu_input_key_bind_set_mode_common(
 
          if (menu_displaylist_ctl(DISPLAYLIST_INFO, &info))
             menu_displaylist_process(&info);
+         menu_displaylist_info_free(&info);
          break;
       default:
       case MENU_INPUT_BINDS_CTL_BIND_NONE:

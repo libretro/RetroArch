@@ -458,9 +458,11 @@ static void nk_menu_context_destroy(void *data)
    in the menu driver so I didn't touch them */
 static bool nk_menu_init_list(void *data)
 {
-   menu_displaylist_info_t info = {0};
+   menu_displaylist_info_t info;
    file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+
+   menu_displaylist_info_init(&info);
 
    strlcpy(info.label,
          msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB), sizeof(info.label));
@@ -476,10 +478,14 @@ static bool nk_menu_init_list(void *data)
 
    if (menu_displaylist_ctl(DISPLAYLIST_HISTORY, &info))
    {
+      bool ret = false;
       info.need_push = true;
-      return menu_displaylist_process(&info);
+      ret = menu_displaylist_process(&info);
+      menu_displaylist_info_free(&info);
+      return ret;
    }
 
+   menu_displaylist_info_free(&info);
    return false;
 }
 
