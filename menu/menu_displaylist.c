@@ -1787,7 +1787,7 @@ static int create_string_list_rdb_entry_int(
    struct string_list *str_list     = string_list_new();
 
    if (!str_list)
-      return -1;
+      goto error;
 
    attr.i = 0;
    tmp[0] = str[0] = '\0';
@@ -1805,12 +1805,7 @@ static int create_string_list_rdb_entry_int(
    output_label = (char*)calloc(str_len, sizeof(char));
 
    if (!output_label)
-   {
-      string_list_free(str_list);
-      free(tmp);
-      free(str);
-      return -1;
-   }
+      goto error;
 
    string_list_join_concat(output_label, str_len, str_list, "|");
 
@@ -1821,12 +1816,19 @@ static int create_string_list_rdb_entry_int(
 
    if (output_label)
       free(output_label);
-   string_list_free(str_list);
    str_list = NULL;
 
+   string_list_free(str_list);
    free(tmp);
    free(str);
    return 0;
+
+error:
+   if (str_list)
+      string_list_free(str_list);
+   free(tmp);
+   free(str);
+   return -1;
 }
 
 static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
