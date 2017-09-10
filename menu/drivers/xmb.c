@@ -1847,38 +1847,24 @@ static void xmb_init_horizontal_list(xmb_handle_t *xmb)
    menu_displaylist_info_t info;
    settings_t *settings         = config_get_ptr();
 
-   info.need_sort               = false;
-   info.need_refresh            = false;
-   info.need_entries_refresh    = false;
-   info.need_push               = false;
-   info.push_builtin_cores      = false;
-   info.download_core           = false;
-   info.need_clear              = false;
-   info.need_navigation_clear   = false;
+   menu_displaylist_info_init(&info);
+
    info.list                    = xmb->horizontal_list;
-   info.menu_list               = NULL;
    strlcpy(info.path, settings->paths.directory_playlist, sizeof(info.path));
-   info.path_b[0]               = '\0';
-   info.path_c[0]               = '\0';
    strlcpy(info.label,
          msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
          sizeof(info.label));
-   info.label_hash              = 0;
    strlcpy(info.exts,
          file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT), sizeof(info.exts));
-   info.type                    = 0;
    info.type_default            = FILE_TYPE_PLAIN;
-   info.directory_ptr           = 0;
-   info.flags                   = 0;
    info.enum_idx                = MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST;
-   info.setting                 = NULL;
 
    if (!string_is_empty(info.path))
    {
       if (menu_displaylist_ctl(DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL, &info))
       {
          size_t i;
-         for (i=0; i < xmb->horizontal_list->size; i++)
+         for (i = 0; i < xmb->horizontal_list->size; i++)
             xmb_node_allocate_userdata(xmb, (unsigned)i);
          menu_displaylist_process(&info);
          menu_displaylist_info_free(&info);
