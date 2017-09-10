@@ -168,21 +168,26 @@ finish:
 
    if (!err && !strstr(state->path, file_path_str(FILE_PATH_INDEX_DIRS_URL)))
    {
-      char parent_dir[PATH_MAX_LENGTH];
+      char *parent_dir                 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
       menu_file_transfer_t *transf     = NULL;
 
       parent_dir[0] = '\0';
 
       fill_pathname_parent_dir(parent_dir,
-            state->path, sizeof(parent_dir));
-      strlcat(parent_dir, file_path_str(FILE_PATH_INDEX_DIRS_URL), sizeof(parent_dir));
+            state->path, PATH_MAX_LENGTH * sizeof(char));
+      strlcat(parent_dir,
+            file_path_str(FILE_PATH_INDEX_DIRS_URL),
+            PATH_MAX_LENGTH * sizeof(char));
 
       transf           = (menu_file_transfer_t*)malloc(sizeof(*transf));
 
       transf->enum_idx = MSG_UNKNOWN;
       strlcpy(transf->path, parent_dir, sizeof(transf->path));
 
-      task_push_http_transfer(parent_dir, true, "index_dirs", cb_net_generic_subdir, transf);
+      task_push_http_transfer(parent_dir, true,
+            "index_dirs", cb_net_generic_subdir, transf);
+
+      free(parent_dir);
    }
 
    if (state)
@@ -3051,19 +3056,27 @@ static int menu_displaylist_parse_horizontal_content_actions(
 
    if (!string_is_empty(db_name))
    {
-      char db_path[PATH_MAX_LENGTH];
+      char *db_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
-      db_path[0] = '\0';
+      db_path[0]    = '\0';
 
-      fill_pathname_join_noext(db_path, settings->paths.path_content_database,
-            db_name, sizeof(db_path));
-      strlcat(db_path, file_path_str(FILE_PATH_RDB_EXTENSION),
-            sizeof(db_path));
+      fill_pathname_join_noext(db_path,
+            settings->paths.path_content_database,
+            db_name,
+            PATH_MAX_LENGTH * sizeof(char));
+      strlcat(db_path,
+            file_path_str(FILE_PATH_RDB_EXTENSION),
+            PATH_MAX_LENGTH * sizeof(char));
 
       if (path_file_exists(db_path))
-      menu_entries_append_enum(info->list, label,
-            db_path,
-            MENU_ENUM_LABEL_INFORMATION, FILE_TYPE_RDB_ENTRY, 0, idx);
+         menu_entries_append_enum(
+               info->list,
+               label,
+               db_path,
+               MENU_ENUM_LABEL_INFORMATION,
+               FILE_TYPE_RDB_ENTRY, 0, idx);
+
+      free(db_path);
    }
 
    return 0;
@@ -3649,11 +3662,12 @@ static int menu_displaylist_parse_cores(
          true, settings->bools.show_hidden_files, true, false);
 
    {
-      char out_dir[PATH_MAX_LENGTH];
+      char *out_dir = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
       out_dir[0] = '\0';
 
-      fill_pathname_parent_dir(out_dir, info->path, sizeof(out_dir));
+      fill_pathname_parent_dir(out_dir, info->path,
+            PATH_MAX_LENGTH * sizeof(char));
 
       if (string_is_empty(out_dir))
       {
@@ -3663,6 +3677,8 @@ static int menu_displaylist_parse_cores(
                MENU_ENUM_LABEL_PARENT_DIRECTORY,
                FILE_TYPE_PARENT_DIRECTORY, 0, 0);
       }
+
+      free(out_dir);
    }
 
    if (!str_list)
@@ -3696,7 +3712,7 @@ static int menu_displaylist_parse_cores(
    for (i = 0; i < list_size; i++)
    {
       bool is_dir;
-      char label[PATH_MAX_LENGTH];
+      char label[64];
       const char *path              = NULL;
       enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
       enum msg_file_type file_type  = FILE_TYPE_NONE;
@@ -3794,25 +3810,33 @@ static int menu_displaylist_parse_cores(
 
       for (i = 0; i < list_size; i++)
       {
-         char core_path[PATH_MAX_LENGTH];
-         char display_name[PATH_MAX_LENGTH];
          unsigned type                      = 0;
          const char *path                   = NULL;
-
-         core_path[0] = display_name[0]     = '\0';
 
          menu_entries_get_at_offset(info->list,
                i, &path, NULL, &type, NULL,
                NULL);
 
-         if (type != FILE_TYPE_CORE)
-            continue;
+         if (type == FILE_TYPE_CORE)
+         {
+            char *core_path    = (char*)
+               malloc(PATH_MAX_LENGTH * sizeof(char));
+            char *display_name = (char*)
+               malloc(PATH_MAX_LENGTH * sizeof(char));
+            core_path[0]       = 
+            display_name[0]    = '\0';
 
-         fill_pathname_join(core_path, dir, path, sizeof(core_path));
+            fill_pathname_join(core_path, dir, path,
+                  PATH_MAX_LENGTH * sizeof(char));
 
-         if (core_info_list_get_display_name(list,
-                  core_path, display_name, sizeof(display_name)))
-            menu_entries_set_alt_at_offset(info->list, i, display_name);
+            if (core_info_list_get_display_name(list,
+                     core_path, display_name,
+                     PATH_MAX_LENGTH * sizeof(char)))
+               menu_entries_set_alt_at_offset(info->list, i, display_name);
+
+            free(core_path);
+            free(display_name);
+         }
       }
       info->need_sort = true;
    }
@@ -3882,9 +3906,11 @@ static void menu_displaylist_parse_playlist_associations(
             sizeof(new_playlist_cores), stcores, ";");
 
       strlcpy(settings->arrays.playlist_names,
-            new_playlist_names, sizeof(settings->arrays.playlist_names));
+            new_playlist_names,
+            sizeof(settings->arrays.playlist_names));
       strlcpy(settings->arrays.playlist_cores,
-            new_playlist_cores, sizeof(settings->arrays.playlist_cores));
+            new_playlist_cores,
+            sizeof(settings->arrays.playlist_cores));
 
       string_list_free(stnames);
       string_list_free(stcores);
