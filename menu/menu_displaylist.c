@@ -1584,9 +1584,8 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
 
       if (!is_history && i == selection)
       {
-         char *content_basename = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-         strlcpy(content_basename, label, path_size);
-         menu_driver_set_thumbnail_content(content_basename, PATH_MAX_LENGTH);
+         char *content_basename = strdup(label);
+         menu_driver_set_thumbnail_content(content_basename, strlen(content_basename) + 1);
          menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
          menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);
          free(content_basename);
@@ -4113,18 +4112,17 @@ static void menu_displaylist_parse_playlist_history(
       int *ret)
 {
    playlist_t *playlist = NULL;
-   size_t path_size     = PATH_MAX_LENGTH * sizeof(char);
-   char *path_playlist  = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-
-   path_playlist[0] = '\0';
-
+   char *path_playlist  = NULL;
+   
    menu_displaylist_set_new_playlist(menu, playlist_path);
 
    menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
 
-   strlcpy(path_playlist, playlist_name, path_size);
+   path_playlist = strdup(playlist_name);
+
    *ret = menu_displaylist_parse_playlist(info,
          playlist, path_playlist, true);
+
    free(path_playlist);
 }
 
