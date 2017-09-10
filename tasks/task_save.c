@@ -764,14 +764,17 @@ static void task_load_handler(retro_task_t *task)
    {
       if (state->autoload)
       {
-         char msg[1024];
+         char *msg = (char*)malloc(1024 * sizeof(char));
 
          msg[0] = '\0';
 
-         snprintf(msg, sizeof(msg), "%s \"%s\" %s.",
+         snprintf(msg,
+               1024 * sizeof(char),
+               "%s \"%s\" %s.",
                msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
                state->path,
                msg_hash_to_str(MSG_FAILED));
+         free(msg);
          task_set_error(task, strdup(msg));
       }
       else
@@ -785,7 +788,7 @@ static void task_load_handler(retro_task_t *task)
 
    if (state->bytes_read == state->size)
    {
-      char msg[1024];
+      char *msg = (char*)malloc(1024 * sizeof(char));
 
       msg[0] = '\0';
 
@@ -793,7 +796,9 @@ static void task_load_handler(retro_task_t *task)
 
       if (state->autoload)
       {
-         snprintf(msg, sizeof(msg), "%s \"%s\" %s.",
+         snprintf(msg,
+               1024 * sizeof(char),
+               "%s \"%s\" %s.",
                msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
                state->path,
                msg_hash_to_str(MSG_SUCCEEDED));
@@ -801,9 +806,13 @@ static void task_load_handler(retro_task_t *task)
       else
       {
          if (state->state_slot < 0)
-            strlcpy(msg, msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT_AUTO), sizeof(msg));
+            strlcpy(msg, msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT_AUTO),
+                  1024 * sizeof(char)
+                  );
          else
-            snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT),
+            snprintf(msg,
+                  1024 * sizeof(char),
+                  msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT),
                   state->state_slot);
 
       }
@@ -811,6 +820,7 @@ static void task_load_handler(retro_task_t *task)
       if (!task_get_mute(task))
          task_set_title(task, strdup(msg));
 
+      free(msg);
       task_load_handler_finished(task, state);
 
       return;
@@ -1366,29 +1376,44 @@ static bool dump_to_file_desperate(const void *data,
       size_t size, unsigned type)
 {
    time_t time_;
-   char timebuf[256];
-   char application_data[PATH_MAX_LENGTH];
-   char path[PATH_MAX_LENGTH];
+   char *path             = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char *timebuf          = (char*)malloc(256 * sizeof(char));
+   char *application_data = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
    timebuf[0] = application_data[0] = path[0] = '\0';
 
    if (!fill_pathname_application_data(application_data,
-            sizeof(application_data)))
-      return false;
+            PATH_MAX_LENGTH * sizeof(char)))
+      goto error;
 
-   snprintf(path, sizeof(path), "%s/RetroArch-recovery-%u",
-      application_data, type);
+   snprintf(path,
+         PATH_MAX_LENGTH * sizeof(char),
+         "%s/RetroArch-recovery-%u",
+         application_data, type);
 
    time(&time_);
 
-   strftime(timebuf, sizeof(timebuf), "%Y-%m-%d-%H-%M-%S", localtime(&time_));
-   strlcat(path, timebuf, sizeof(path));
+   strftime(timebuf,
+         256 * sizeof(char),
+         "%Y-%m-%d-%H-%M-%S", localtime(&time_));
+   strlcat(path, timebuf,
+         PATH_MAX_LENGTH * sizeof(char)
+         );
 
    if (!filestream_write_file(path, data, size))
-      return false;
+      goto error;
 
+   free(application_data);
+   free(timebuf);
    RARCH_WARN("Succeeded in saving RAM data to \"%s\".\n", path);
+   free(path);
    return true;
+
+error:
+   free(application_data);
+   free(timebuf);
+   free(path);
+   return false;
 }
 
 /**
@@ -1413,7 +1438,8 @@ bool content_save_ram_file(unsigned slot)
          msg_hash_to_str(MSG_TO),
          ram.path);
 
-   if (!filestream_write_file(ram.path, mem_info.data, mem_info.size))
+   if (!filestream_write_file(
+            ram.path, mem_info.data, mem_info.size))
    {
       RARCH_ERR("%s.\n",
             msg_hash_to_str(MSG_FAILED_TO_SAVE_SRAM));
@@ -1422,7 +1448,8 @@ bool content_save_ram_file(unsigned slot)
       /* In case the file could not be written to,
        * the fallback function 'dump_to_file_desperate'
        * will be called. */
-      if (!dump_to_file_desperate(mem_info.data, mem_info.size, ram.type))
+      if (!dump_to_file_desperate(
+               mem_info.data, mem_info.size, ram.type))
       {
          RARCH_WARN("Failed ... Cannot recover save file.\n");
       }
@@ -1440,7 +1467,8 @@ bool event_save_files(void)
 {
    unsigned i;
 
-   if (!task_save_files || !rarch_ctl(RARCH_CTL_IS_SRAM_USED, NULL))
+   if (!task_save_files || 
+         !rarch_ctl(RARCH_CTL_IS_SRAM_USED, NULL))
       return false;
 
    for (i = 0; i < task_save_files->size; i++)
@@ -1453,7 +1481,8 @@ bool event_load_save_files(void)
 {
    unsigned i;
 
-   if (!task_save_files || rarch_ctl(RARCH_CTL_IS_SRAM_LOAD_DISABLED, NULL))
+   if (!task_save_files || 
+         rarch_ctl(RARCH_CTL_IS_SRAM_LOAD_DISABLED, NULL))
       return false;
 
    for (i = 0; i < task_save_files->size; i++)
@@ -1465,7 +1494,8 @@ bool event_load_save_files(void)
 void path_init_savefile_rtc(const char *savefile_path)
 {
    union string_list_elem_attr attr;
-   char savefile_name_rtc[PATH_MAX_LENGTH];
+   char *savefile_name_rtc = (char*)
+      malloc(PATH_MAX_LENGTH * sizeof(char));
 
    savefile_name_rtc[0] = '\0';
 
@@ -1477,8 +1507,9 @@ void path_init_savefile_rtc(const char *savefile_path)
    fill_pathname(savefile_name_rtc,
          savefile_path,
          file_path_str(FILE_PATH_RTC_EXTENSION),
-         sizeof(savefile_name_rtc));
+         PATH_MAX_LENGTH * sizeof(char));
    string_list_append(task_save_files, savefile_name_rtc, attr);
+   free(savefile_name_rtc);
 }
 
 void path_deinit_savefile(void)
