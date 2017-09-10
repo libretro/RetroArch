@@ -161,6 +161,9 @@ int core_setting_right(unsigned type, const char *label,
 int action_right_input_desc(unsigned type, const char *label,
       bool wraparound);
 
+int action_right_input_desc_kbd(unsigned type, const char *label,
+      bool wraparound);
+
 int action_right_cheat(unsigned type, const char *label,
       bool wraparound);
 

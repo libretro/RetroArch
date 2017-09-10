@@ -1346,7 +1346,7 @@ void input_driver_deinit_remote(void)
 
 void input_driver_deinit_mapper(void)
 {
-#ifdef HAVE_NETWORKGAMEPAD
+#ifdef HAVE_KEYMAPPER
    if (input_driver_mapper)
       input_mapper_free(input_driver_mapper);
    input_driver_mapper = NULL;
