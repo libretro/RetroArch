@@ -79,15 +79,18 @@ void fill_pathname_expand_special(char *out_path,
             )
    {
       size_t src_size;
-      char application_dir[PATH_MAX_LENGTH];
+      char *application_dir = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
-      application_dir[0] = '\0';
+      application_dir[0]    = '\0';
 
-      fill_pathname_application_path(application_dir, sizeof(application_dir));
+      fill_pathname_application_path(application_dir,
+            PATH_MAX_LENGTH * sizeof(char));
       path_basedir_wrapper(application_dir);
 
       src_size   = strlcpy(out_path, application_dir, size);
       retro_assert(src_size < size);
+
+      free(application_dir);
 
       out_path  += src_size;
       size      -= src_size;
@@ -106,8 +109,8 @@ void fill_pathname_abbreviate_special(char *out_path,
    unsigned i;
    const char *candidates[3];
    const char *notations[3];
-   char application_dir[PATH_MAX_LENGTH];
-   const char                      *home = getenv("HOME");
+   char *application_dir     = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   const char *home          = getenv("HOME");
 
    application_dir[0] = '\0';
 
@@ -116,7 +119,8 @@ void fill_pathname_abbreviate_special(char *out_path,
     * Keep application dir in front of home, moving app dir to a
     * new location inside home would break otherwise. */
 
-   /* ugly hack - use application_dir pointer before filling it in. C89 reasons */
+   /* ugly hack - use application_dir pointer 
+    * before filling it in. C89 reasons */
    candidates[0] = application_dir;
    candidates[1] = home;
    candidates[2] = NULL;
@@ -125,12 +129,14 @@ void fill_pathname_abbreviate_special(char *out_path,
    notations [1] = "~";
    notations [2] = NULL;
 
-   fill_pathname_application_path(application_dir, sizeof(application_dir));
+   fill_pathname_application_path(application_dir, 
+         PATH_MAX_LENGTH * sizeof(char));
    path_basedir_wrapper(application_dir);
    
    for (i = 0; candidates[i]; i++)
    {
-      if (!string_is_empty(candidates[i]) && strstr(in_path, candidates[i]) == in_path)
+      if (!string_is_empty(candidates[i]) && 
+            strstr(in_path, candidates[i]) == in_path)
       {
          size_t src_size  = strlcpy(out_path, notations[i], size);
 
@@ -142,7 +148,8 @@ void fill_pathname_abbreviate_special(char *out_path,
       
          if (!path_char_is_slash(*in_path))
          {
-            retro_assert(strlcpy(out_path, path_default_slash(), size) < size);
+            retro_assert(strlcpy(out_path,
+                     path_default_slash(), size) < size);
             out_path++;
             size--;
          }
@@ -150,6 +157,8 @@ void fill_pathname_abbreviate_special(char *out_path,
          break; /* Don't allow more abbrevs to take place. */
       }
    }
+
+   free(application_dir);
 #endif
 
    retro_assert(strlcpy(out_path, in_path, size) < size);
@@ -288,7 +297,8 @@ void fill_pathname_application_path(char *s, size_t len)
 const char* xmb_theme_ident(void);
 #endif
 
-void fill_pathname_application_special(char *s, size_t len, enum application_special_type type)
+void fill_pathname_application_special(char *s,
+      size_t len, enum application_special_type type)
 {
    switch (type)
    {
@@ -322,13 +332,16 @@ void fill_pathname_application_special(char *s, size_t len, enum application_spe
       case APPLICATION_SPECIAL_DIRECTORY_ASSETS_ZARCH_FONT:
 #ifdef HAVE_ZARCH
          {
-            char s1[PATH_MAX_LENGTH];
-            s1[0] = '\0';
+            char *s1 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+            s1[0]    = '\0';
 
-            fill_pathname_application_special(s1, sizeof(s1),
+            fill_pathname_application_special(s1, 
+                  PATH_MAX_LENGTH * sizeof(char),
                   APPLICATION_SPECIAL_DIRECTORY_ASSETS_ZARCH);
             fill_pathname_join(s,
                   s1, "Roboto-Condensed.ttf", len);
+
+            free(s1);
          }
 #endif
          break;
@@ -346,17 +359,23 @@ void fill_pathname_application_special(char *s, size_t len, enum application_spe
       case APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS:
 #ifdef HAVE_XMB
          {
-            char s1[PATH_MAX_LENGTH];
-            char s2[PATH_MAX_LENGTH];
+            char *s1 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+            char *s2 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
             s1[0] = s2[0] = '\0';
 
-            fill_pathname_application_special(s1, sizeof(s1),
+            fill_pathname_application_special(s1,
+                  PATH_MAX_LENGTH * sizeof(char),
                   APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB);
             fill_pathname_join(s2, s1, "png",
-                  sizeof(s2));
-            fill_pathname_slash(s2, sizeof(s2));
+                  PATH_MAX_LENGTH * sizeof(char)
+                  );
+            fill_pathname_slash(s2,
+                  PATH_MAX_LENGTH * sizeof(char)
+                  );
             strlcpy(s, s2, len);
+            free(s1);
+            free(s2);
          }
 #endif
          break;
@@ -369,15 +388,17 @@ void fill_pathname_application_special(char *s, size_t len, enum application_spe
                strlcpy(s, settings->paths.path_menu_wallpaper, len);
             else
             {
-               char s1[PATH_MAX_LENGTH];
+               char *s1 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
                s1[0] = '\0';
 
-               fill_pathname_application_special(s1, sizeof(s1),
+               fill_pathname_application_special(s1,
+                     PATH_MAX_LENGTH * sizeof(char),
                      APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
                fill_pathname_join(s, s1,
                      file_path_str(FILE_PATH_BACKGROUND_IMAGE),
                      len);
+               free(s1);
             }
          }
 #endif
@@ -385,8 +406,8 @@ void fill_pathname_application_special(char *s, size_t len, enum application_spe
       case APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB:
 #ifdef HAVE_XMB
          {
-            char s1[PATH_MAX_LENGTH];
-            char s2[PATH_MAX_LENGTH];
+            char *s1 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+            char *s2 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
             settings_t *settings     = config_get_ptr();
 
             s1[0] = s2[0] = '\0';
@@ -395,10 +416,15 @@ void fill_pathname_application_special(char *s, size_t len, enum application_spe
                   s1,
                   settings->paths.directory_assets,
                   "xmb",
-                  sizeof(s1));
+                  PATH_MAX_LENGTH * sizeof(char)
+                  );
             fill_pathname_join(s2,
-                  s1, xmb_theme_ident(), sizeof(s2));
+                  s1, xmb_theme_ident(),
+                  PATH_MAX_LENGTH * sizeof(char)
+                  );
             strlcpy(s, s2, len);
+            free(s1);
+            free(s2);
          }
 #endif
          break;
@@ -418,27 +444,35 @@ void fill_pathname_application_special(char *s, size_t len, enum application_spe
       case APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_ICONS:
 #ifdef HAVE_MATERIALUI
          {
-            char s1[PATH_MAX_LENGTH];
+            char *s1 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
             s1[0] = '\0';
 
             fill_pathname_application_special(s1,
-                  sizeof(s1), APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI);
-            fill_pathname_slash(s1, sizeof(s1));
+                  PATH_MAX_LENGTH * sizeof(char),
+                  APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI);
+            fill_pathname_slash(s1,
+                  PATH_MAX_LENGTH * sizeof(char)
+                  );
             strlcpy(s, s1, len);
+
+            free(s1);
          }
 #endif
          break;
       case APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_FONT:
 #ifdef HAVE_MATERIALUI
          {
-            char s1[PATH_MAX_LENGTH];
+            char *s1 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
             s1[0] = '\0';
 
-            fill_pathname_application_special(s1, sizeof(s1),
+            fill_pathname_application_special(s1,
+                  PATH_MAX_LENGTH * sizeof(char),
                   APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI);
             fill_pathname_join(s, s1, "font.ttf", len);
+
+            free(s1);
          }
 #endif
          break;
@@ -451,15 +485,18 @@ void fill_pathname_application_special(char *s, size_t len, enum application_spe
                strlcpy(s, settings->paths.path_menu_xmb_font, len);
             else
             {
-               char s1[PATH_MAX_LENGTH];
+               char *s1 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
                s1[0] = '\0';
 
-               fill_pathname_application_special(s1, sizeof(s1),
+               fill_pathname_application_special(s1,
+                     PATH_MAX_LENGTH * sizeof(char),
                      APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB);
                fill_pathname_join(s, s1,
                      file_path_str(FILE_PATH_TTF_FONT),
                      len);
+
+               free(s1);
             }
          }
 #endif
@@ -488,15 +525,16 @@ void fill_pathname_application_special(char *s, size_t len, enum application_spe
 void fill_short_pathname_representation_wrapper(char* out_rep,
       const char *in_path, size_t size)
 {
-   char path_short[PATH_MAX_LENGTH];
+   char *path_short = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 #ifdef HAVE_COMPRESSION
-   char *last_slash                  = NULL;
+   char *last_slash = NULL;
 #endif
 
    path_short[0] = '\0';
 
    fill_pathname(path_short, path_basename(in_path), "",
-            sizeof(path_short));
+         PATH_MAX_LENGTH * sizeof(char)
+         );
 
 #ifdef HAVE_COMPRESSION
    last_slash  = find_last_slash(path_short);
@@ -511,11 +549,13 @@ void fill_short_pathname_representation_wrapper(char* out_rep,
        */
       retro_assert(strlen(last_slash) > 1);
       strlcpy(out_rep, last_slash + 1, size);
+      free(path_short);
       return;
    }
 #endif
 
    fill_short_pathname_representation(out_rep, in_path, size);
+   free(path_short);
 }
 
 /**
