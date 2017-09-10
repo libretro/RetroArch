@@ -91,7 +91,7 @@ void input_mapper_poll(input_mapper_t *handle)
       {
          if(i < RETROK_LAST)
          {
-            if (input_state(0, RETRO_DEVICE_JOYPAD, handle->port, i))
+            if (input_state(handle->port, RETRO_DEVICE_JOYPAD, 0, i))
             {
                MAPPER_SET_KEY (handle, settings->uints.input_keymapper_ids[i]);
                input_keyboard_event(true, settings->uints.input_keymapper_ids[i], 0, 0, RETRO_DEVICE_KEYBOARD);

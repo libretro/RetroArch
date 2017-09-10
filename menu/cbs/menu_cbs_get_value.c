@@ -48,7 +48,7 @@
    cbs->action_get_value_ident = #name;
 #endif
 
-extern struct key_desc key_descriptors[192];
+extern struct key_desc key_descriptors[MENU_SETTINGS_INPUT_DESC_KBD_END];
 
 static void menu_action_setting_disp_set_label_cheat_num_passes(
       file_list_t* list,
@@ -497,74 +497,22 @@ static void menu_action_setting_disp_set_label_input_desc_kbd(
    const char *path,
    char *s2, size_t len2)
 {
-   RARCH_LOG("%d %s\n", key_descriptors[10].id, key_descriptors[10].desc);
-   char descriptor[255];
-   const struct retro_keybind *auto_bind = NULL;
-   const struct retro_keybind *keybind   = NULL;
-   settings_t *settings                  = config_get_ptr();
-   unsigned inp_desc_index_offset        =
-      type - MENU_SETTINGS_INPUT_DESC_BEGIN;
-   unsigned inp_desc_user                = inp_desc_index_offset /
-      (RARCH_FIRST_CUSTOM_BIND + 4);
-   unsigned inp_desc_button_index_offset = inp_desc_index_offset -
-      (inp_desc_user * (RARCH_FIRST_CUSTOM_BIND + 4));
-   unsigned remap_id                     = 0;
+   settings_t *settings = config_get_ptr();
+   unsigned key_id;
+   unsigned remap_id = 
+      settings->uints.input_keymapper_ids[type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN];
+   char desc[PATH_MAX_LENGTH];
 
    if (!settings)
       return;
 
-   descriptor[0] = '\0';
-
-   remap_id = settings->uints.input_remap_ids
-      [inp_desc_user][inp_desc_button_index_offset];
-
-   keybind   = &input_config_binds[inp_desc_user][remap_id];
-   auto_bind = (const struct retro_keybind*)
-      input_config_get_bind_auto(inp_desc_user, remap_id);
-
-   input_config_get_bind_string(descriptor,
-      keybind, auto_bind, sizeof(descriptor));
-
-   if (inp_desc_button_index_offset < RARCH_FIRST_CUSTOM_BIND)
+   for (key_id = 0; key_id < MENU_SETTINGS_INPUT_DESC_KBD_END - 1; key_id++)
    {
-      if(strstr(descriptor, "Auto") && !strstr(descriptor,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)))
-         strlcpy(s,
-            descriptor,
-            len);
-      else
-      {
-         const struct retro_keybind *keyptr = &input_config_binds[inp_desc_user]
-               [remap_id];
-
-         strlcpy(s, msg_hash_to_str(keyptr->enum_idx), len);
-      }
+      if(remap_id == key_descriptors[key_id].key)
+         break;
    }
-
-
-
-   else
-   {
-      const char *str = NULL;
-      switch (remap_id)
-      {
-         case 0:
-            str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X);
-            break;
-         case 1:
-            str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y);
-            break;
-         case 2:
-            str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X);
-            break;
-         case 3:
-            str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y);
-            break;
-      }
-
-      if (!string_is_empty(str))
-         strlcpy(s, str, len);
-   }
+   snprintf(desc, sizeof(desc), "Keyboard %s", key_descriptors[key_id].desc);
+   strlcpy(s, desc, len);
 
    *w = 19;
    strlcpy(s2, path, len2);

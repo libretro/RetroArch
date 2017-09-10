@@ -37,6 +37,7 @@
 #include "../../managers/cheat_manager.h"
 #include "../../file_path_special.h"
 #include "../../retroarch.h"
+#include "../../verbosity.h"
 #include "../../ui/ui_companion_driver.h"
 
 #ifndef BIND_ACTION_RIGHT
@@ -46,6 +47,8 @@
       cbs->action_right_ident = #name; \
    } while(0)
 #endif
+
+extern struct key_desc key_descriptors[MENU_SETTINGS_INPUT_DESC_KBD_END];
 
 #ifdef HAVE_SHADER_MANAGER
 static int generic_shader_action_parameter_right(struct video_shader_parameter *param,
@@ -99,26 +102,55 @@ int action_right_cheat(unsigned type, const char *label,
          wraparound);
 }
 
-int action_right_input_desc(unsigned type, const char *label,
+int action_right_input_desc_kbd(unsigned type, const char *label,
       bool wraparound)
 {
-   unsigned inp_desc_index_offset = type - MENU_SETTINGS_INPUT_DESC_BEGIN;
-   unsigned inp_desc_user         = inp_desc_index_offset / (RARCH_FIRST_CUSTOM_BIND + 4);
-   unsigned inp_desc_button_index_offset = inp_desc_index_offset - (inp_desc_user * (RARCH_FIRST_CUSTOM_BIND + 4));
    settings_t *settings = config_get_ptr();
+   unsigned key_id;
+   unsigned offset = type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN;
+   unsigned remap_id = 
+      settings->uints.input_keymapper_ids[offset];
+   char desc[PATH_MAX_LENGTH];
 
-   if (inp_desc_button_index_offset < RARCH_FIRST_CUSTOM_BIND)
+   if (!settings)
+      return 0;
+
+   for (key_id = 0; key_id < MENU_SETTINGS_INPUT_DESC_KBD_END - 1; key_id++)
    {
-      if (settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset] < RARCH_FIRST_CUSTOM_BIND - 1)
-         settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset]++;
+      if(remap_id == key_descriptors[key_id].key)
+         break;
    }
+
+   if (key_id < MENU_SETTINGS_INPUT_DESC_KBD_END - 1)
+      key_id++;
    else
-   {
-      if (settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset] < 4 - 1)
-         settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset]++;
-   }
+      key_id = 0;
+
+   settings->uints.input_keymapper_ids[offset] = key_descriptors[key_id].key;
 
    return 0;
+}
+
+int action_right_input_desc(unsigned type, const char *label,
+   bool wraparound)
+{
+unsigned inp_desc_index_offset = type - MENU_SETTINGS_INPUT_DESC_BEGIN;
+unsigned inp_desc_user         = inp_desc_index_offset / (RARCH_FIRST_CUSTOM_BIND + 4);
+unsigned inp_desc_button_index_offset = inp_desc_index_offset - (inp_desc_user * (RARCH_FIRST_CUSTOM_BIND + 4));
+settings_t *settings = config_get_ptr();
+
+if (inp_desc_button_index_offset < RARCH_FIRST_CUSTOM_BIND)
+{
+   if (settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset] < RARCH_FIRST_CUSTOM_BIND - 1)
+      settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset]++;
+}
+else
+{
+   if (settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset] < 4 - 1)
+      settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset]++;
+}
+
+return 0;
 }
 
 static int action_right_scroll(unsigned type, const char *label,
@@ -405,6 +437,11 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
          && type <= MENU_SETTINGS_INPUT_DESC_END)
    {
       BIND_ACTION_RIGHT(cbs, action_right_input_desc);
+   }
+   else if (type >= MENU_SETTINGS_INPUT_DESC_KBD_BEGIN
+      && type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
+   {
+      BIND_ACTION_RIGHT(cbs, action_right_input_desc_kbd);
    }
    else if ((type >= MENU_SETTINGS_PLAYLIST_ASSOCIATION_START))
    {

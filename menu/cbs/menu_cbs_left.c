@@ -46,6 +46,8 @@
    } while(0)
 #endif
 
+extern struct key_desc key_descriptors[MENU_SETTINGS_INPUT_DESC_KBD_END];
+
 #ifdef HAVE_SHADER_MANAGER
 static int generic_shader_action_parameter_left(
       struct video_shader_parameter *param,
@@ -107,6 +109,35 @@ static int action_left_input_desc(unsigned type, const char *label,
 
    if (settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset] > 0)
       settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset]--;
+
+   return 0;
+}
+
+static int action_left_input_desc_kbd(unsigned type, const char *label,
+   bool wraparound)
+{
+   settings_t *settings = config_get_ptr();
+   unsigned key_id;
+   unsigned offset = type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN;
+   unsigned remap_id = 
+      settings->uints.input_keymapper_ids[offset];
+   char desc[PATH_MAX_LENGTH];
+
+   if (!settings)
+      return 0;
+
+   for (key_id = 0; key_id < MENU_SETTINGS_INPUT_DESC_KBD_END - 1; key_id++)
+   {
+      if(remap_id == key_descriptors[key_id].key)
+         break;
+   }
+
+   if (key_id > 1)
+      key_id--;
+   else
+      key_id = MENU_SETTINGS_INPUT_DESC_KBD_END - 1;
+
+   settings->uints.input_keymapper_ids[offset] = key_descriptors[key_id].key;
 
    return 0;
 }
@@ -537,6 +568,11 @@ static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
          && type <= MENU_SETTINGS_INPUT_DESC_END)
    {
       BIND_ACTION_LEFT(cbs, action_left_input_desc);
+   }
+   else if (type >= MENU_SETTINGS_INPUT_DESC_KBD_BEGIN
+      && type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
+   {
+      BIND_ACTION_LEFT(cbs, action_left_input_desc_kbd);
    }
    else if ((type >= MENU_SETTINGS_PLAYLIST_ASSOCIATION_START))
    {
