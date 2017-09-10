@@ -167,7 +167,7 @@ static void udev_handle_keyboard(void *data,
    {
       case EV_KEY:
          keysym = input_unify_ev_key_code(event->code);
-         if (event->value)
+         if (event->value && video_driver_cb_has_focus())
             BIT_SET(udev_key_state, keysym);
          else
             BIT_CLEAR(udev_key_state, keysym);
@@ -723,10 +723,8 @@ static int16_t udev_input_state(void *data,
                   joypad_info, port, idx, id, binds[port]);
          return ret;
       case RETRO_DEVICE_KEYBOARD:
-         if (video_driver_cb_has_focus())
-            return id < RETROK_LAST && BIT_GET(udev_key_state,
-                  rarch_keysym_lut[(enum retro_key)id]);
-         break;
+         return id < RETROK_LAST && BIT_GET(udev_key_state,
+               rarch_keysym_lut[(enum retro_key)id]);
       case RETRO_DEVICE_MOUSE:
          return udev_mouse_state(udev, port, id, false);
       case RARCH_DEVICE_MOUSE_SCREEN:
