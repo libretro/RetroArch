@@ -451,13 +451,8 @@ static bool content_file_init_extract(
 
    for (i = 0; i < content->size; i++)
    {
-      char temp_content[PATH_MAX_LENGTH];
-      char new_path[PATH_MAX_LENGTH];
       bool block_extract                 = content->elems[i].attr.i & 1;
       const char *path                   = content->elems[i].data;
-      const char *valid_ext              = special ?
-                                           special->roms[i].valid_extensions :
-                                           content_ctx->valid_extensions;
       bool contains_compressed           = path_contains_compressed_file(path);
 
       /* Block extract check. */
@@ -468,36 +463,60 @@ static bool content_file_init_extract(
       if (!contains_compressed && !path_is_compressed_file(path))
          continue;
 
-      temp_content[0] = new_path[0] = '\0';
-
-      strlcpy(temp_content, path, sizeof(temp_content));
-
-      if (!valid_ext || !file_archive_extract_file(
-               temp_content,
-               sizeof(temp_content),
-               valid_ext,
-               !string_is_empty(content_ctx->directory_cache) ?
-               content_ctx->directory_cache : NULL,
-               new_path,
-               sizeof(new_path)))
       {
-         char str[1024];
+         char *temp_content = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+         char *new_path     = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+         const char *valid_ext              = special ?
+            special->roms[i].valid_extensions :
+            content_ctx->valid_extensions;
 
-         snprintf(str, sizeof(str), "%s: %s.\n",
-               msg_hash_to_str(
-                  MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE),
-               temp_content);
-         return false;
+         temp_content[0] = new_path[0] = '\0';
+
+         strlcpy(temp_content, path, 
+               PATH_MAX_LENGTH * sizeof(char));
+
+         if (!valid_ext || !file_archive_extract_file(
+                  temp_content,
+                  PATH_MAX_LENGTH * sizeof(char),
+                  valid_ext,
+                  !string_is_empty(content_ctx->directory_cache) ?
+                  content_ctx->directory_cache : NULL,
+                  new_path,
+                  PATH_MAX_LENGTH * sizeof(char)
+                  ))
+         {
+            char *str = (char*)malloc(1024 * sizeof(char));
+
+            snprintf(str, 1024 * sizeof(char),
+                  "%s: %s.\n",
+                  msg_hash_to_str(
+                     MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE),
+                  temp_content);
+            free(new_path);
+            free(temp_content);
+            free(str);
+            goto error;
+         }
+
+         string_list_set(content, i, new_path);
+
+         free(temp_content);
+
+         if (!string_list_append(content_ctx->temporary_content,
+                  new_path, *attr))
+         {
+            free(new_path);
+            goto error;
+         }
+
+         free(new_path);
       }
-
-      string_list_set(content, i, new_path);
-
-      if (!string_list_append(content_ctx->temporary_content,
-               new_path, *attr))
-         return false;
    }
 
    return true;
+
+error:
+   return false;
 }
 #endif
 
@@ -838,20 +857,22 @@ static bool task_load_content(content_ctx_info_t *content_info,
       bool launched_from_cli,
       char **error_string)
 {
-   char name[255];
-   char msg[255];
    bool contentless = false;
    bool is_inited   = false;
 
-   name[0] = msg[0] = '\0';
-
    if (!content_load(content_info))
    {
+      char *name = (char*)malloc(255 * sizeof(char));
+      char *msg  = (char*)malloc(255 * sizeof(char));
+
+      name[0] = msg[0] = '\0';
+
       if (launched_from_menu)
       {
          if (!path_is_empty(RARCH_PATH_CONTENT) && !string_is_empty(name))
          {
-            snprintf(msg, sizeof(msg), "%s %s.\n",
+            snprintf(msg, 
+                  255 * sizeof(char), "%s %s.\n",
                   msg_hash_to_str(MSG_FAILED_TO_LOAD),
                   name);
             *error_string = strdup(msg);
@@ -859,6 +880,8 @@ static bool task_load_content(content_ctx_info_t *content_info,
       }
       if (string_is_empty(name))
          *error_string = strdup("This core requires a content file.\n");
+      free(name);
+      free(msg);
       return false;
    }
 
@@ -867,7 +890,7 @@ static bool task_load_content(content_ctx_info_t *content_info,
    /* Push entry to top of history playlist */
    if (is_inited || contentless)
    {
-      char tmp[PATH_MAX_LENGTH];
+      char *tmp                      = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
       struct retro_system_info *info = NULL;
       rarch_system_info_t *sys_info  = runloop_get_system_info();
 
@@ -876,14 +899,16 @@ static bool task_load_content(content_ctx_info_t *content_info,
       if (sys_info)
          info = &sys_info->info;
 
-      strlcpy(tmp, path_get(RARCH_PATH_CONTENT), sizeof(tmp));
+      strlcpy(tmp, path_get(RARCH_PATH_CONTENT),
+            PATH_MAX_LENGTH * sizeof(char));
 
       if (!launched_from_menu)
       {
          /* Path can be relative here.
           * Ensure we're pushing absolute path. */
          if (!string_is_empty(tmp))
-            path_resolve_realpath(tmp, sizeof(tmp));
+            path_resolve_realpath(tmp,
+                  PATH_MAX_LENGTH * sizeof(char));
       }
 
       if (info && !string_is_empty(tmp))
@@ -939,6 +964,8 @@ static bool task_load_content(content_ctx_info_t *content_info,
                )
             playlist_write_file(playlist_tmp);
       }
+
+      free(tmp);
    }
 
    return true;
