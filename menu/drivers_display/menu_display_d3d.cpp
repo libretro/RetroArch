@@ -185,9 +185,9 @@ static void menu_display_d3d_draw_pipeline(void *data)
    menu_display_ctx_draw_t *draw     = (menu_display_ctx_draw_t*)data;
    struct uniform_info uniform_param = {0};
    static float t                    = 0;
-   video_coord_array_t *ca           = NULL;
+   video_coord_array_t *ca           = menu_display_get_coords_array();
 
-   ca = menu_display_get_coords_array();
+   (void)uniform_param;
 
    draw->x           = 0;
    draw->y           = 0;
