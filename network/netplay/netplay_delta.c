@@ -59,9 +59,9 @@ bool netplay_delta_frame_ready(netplay_t *netplay, struct delta_frame *delta,
    delta->crc = 0;
    for (i = 0; i < MAX_INPUT_DEVICES; i++)
    {
-      clear_input(delta->resolved_input[i]);
-      clear_input(delta->real_input[i]);
-      clear_input(delta->simulated_input[i]);
+      clear_input(delta->resolved_input1[i]);
+      clear_input(delta->real_input1[i]);
+      clear_input(delta->simulated_input1[i]);
    }
    delta->have_local = false;
    for (i = 0; i < MAX_CLIENTS; i++)
@@ -117,9 +117,9 @@ void netplay_delta_frame_free(struct delta_frame *delta)
 
    for (i = 0; i < MAX_INPUT_DEVICES; i++)
    {
-      free_input_state(&delta->resolved_input[i]);
-      free_input_state(&delta->real_input[i]);
-      free_input_state(&delta->simulated_input[i]);
+      free_input_state(&delta->resolved_input1[i]);
+      free_input_state(&delta->real_input1[i]);
+      free_input_state(&delta->simulated_input1[i]);
    }
 }
 
@@ -129,13 +129,13 @@ void netplay_delta_frame_free(struct delta_frame *delta)
  * Get an input state for a particular client
  */
 netplay_input_state_t netplay_input_state_for(netplay_input_state_t *list,
-      uint32_t client_num, size_t size, bool must_create)
+      uint32_t client_num, size_t size, bool must_create, bool must_not_create)
 {
    netplay_input_state_t ret;
    while (*list)
    {
       ret = *list;
-      if (!ret->used && ret->size == size)
+      if (!ret->used && !must_not_create && ret->size == size)
       {
          ret->client_num = client_num;
          ret->used = true;
@@ -150,6 +150,9 @@ netplay_input_state_t netplay_input_state_for(netplay_input_state_t *list,
       }
       list = &(ret->next);
    }
+
+   if (must_not_create)
+      return NULL;
 
    /* Couldn't find a slot, allocate a fresh one */
    ret = calloc(1, sizeof(struct netplay_input_state) + (size-1) * sizeof(uint32_t));

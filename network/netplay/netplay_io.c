@@ -225,7 +225,7 @@ static bool send_input_frame(netplay_t *netplay, struct delta_frame *dframe,
       netplay_input_state_t istate;
       if (!(devices & (1<<device)))
          continue;
-      istate = dframe->real_input[device];
+      istate = dframe->real_input1[device];
       while (istate && istate->client_num != client_num)
          istate = istate->next;
       if (!istate)
@@ -633,8 +633,13 @@ static bool netplay_get_cmd(netplay_t *netplay,
                   continue;
 
                dsize = netplay_expected_input_size(1 << device);
-               istate = netplay_input_state_for(&dframe->real_input[device],
-                  client_num, dsize, true);
+               istate = netplay_input_state_for(&dframe->real_input1[device],
+                  client_num, dsize, true, false);
+               if (!istate)
+               {
+                  /* Catastrophe! */
+                  return netplay_cmd_nak(netplay, connection);
+               }
                RECV(istate->data, dsize*sizeof(uint32_t))
                   return false;
                for (di = 0; di < dsize; di++)
@@ -1002,7 +1007,9 @@ static bool netplay_get_cmd(netplay_t *netplay,
                      for (device = 0; device < MAX_INPUT_DEVICES; device++)
                      {
                         if (!(devices & (1<<device))) continue;
-                        netplay_input_state_t istate = netplay_input_state_for(&dframe->real_input[device], client_num, 3 /* FIXME */, true);
+                        netplay_input_state_t istate = netplay_input_state_for(
+                              &dframe->real_input1[device], client_num,
+                              3 /* FIXME */, true, false);
                         memset(istate->data, 0, istate->size*sizeof(uint32_t));
                      }
                      dframe->have_local = true;
@@ -1653,13 +1660,13 @@ void netplay_handle_slaves(netplay_t *netplay)
                netplay_input_state_t istate_out, istate_in;
                if (!(devices & (1<<device)))
                   continue;
-               istate_in = oframe->real_input[device];
+               istate_in = oframe->real_input1[device];
                while (istate_in && istate_in->client_num != client_num)
                   istate_in = istate_in->next;
                if (!istate_in)
                   continue;
-               istate_out = netplay_input_state_for(&frame->real_input[device],
-                     client_num, istate_in->size, true);
+               istate_out = netplay_input_state_for(&frame->real_input1[device],
+                     client_num, istate_in->size, true, false);
                memcpy(istate_out->data, istate_in->data,
                      istate_in->size * sizeof(uint32_t));
             }

@@ -278,14 +278,14 @@ struct delta_frame
 
    /* The resolved input, i.e., what's actually going to the core. One input
     * per device. */
-   netplay_input_state_t resolved_input[MAX_INPUT_DEVICES];
+   netplay_input_state_t resolved_input1[MAX_INPUT_DEVICES];
 
    /* The real input */
-   netplay_input_state_t real_input[MAX_INPUT_DEVICES];
+   netplay_input_state_t real_input1[MAX_INPUT_DEVICES];
 
    /* The simulated input. is_real here means the simulation is done, i.e.,
     * it's a real simulation, not real input. */
-   netplay_input_state_t simulated_input[MAX_INPUT_DEVICES];
+   netplay_input_state_t simulated_input1[MAX_INPUT_DEVICES];
 
    /* Have we read local input? */
    bool have_local;
@@ -656,7 +656,7 @@ void netplay_delta_frame_free(struct delta_frame *delta);
  * Get an input state for a particular client
  */
 netplay_input_state_t netplay_input_state_for(netplay_input_state_t *list,
-      uint32_t client_num, size_t size, bool must_create);
+      uint32_t client_num, size_t size, bool must_create, bool must_not_create);
 
 /**
  * netplay_expected_input_size

@@ -135,8 +135,8 @@ static bool get_self_input_state(netplay_t *netplay)
       if (!(devices & (1<<devi)))
          continue;
 
-      istate = netplay_input_state_for(&ptr->real_input[devi],
-            netplay->self_client_num, 3 /* FIXME */, true);
+      istate = netplay_input_state_for(&ptr->real_input1[devi],
+            netplay->self_client_num, 3 /* FIXME */, true, false);
       if (!istate)
          continue; /* FIXME: More severe? */
 
@@ -501,11 +501,9 @@ static int16_t netplay_input_state(netplay_t *netplay,
 
    /* FIXME: Mixing */
    delta = &netplay->buffer[ptr];
-   istate = delta->real_input[port];
+   istate = delta->resolved_input1[port];
    if (istate && istate->used)
       delta->used_real[port] = true;
-   else
-      istate = delta->simulated_input[port];
    if (!istate)
       return 0;
 

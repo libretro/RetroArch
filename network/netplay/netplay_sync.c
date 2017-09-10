@@ -98,68 +98,79 @@ bool netplay_resolve_input(netplay_t *netplay, size_t sim_ptr, bool resim)
    uint32_t client;
    size_t prev;
    struct delta_frame *simframe, *pframe;
-   netplay_input_state_t simstate, pstate;
+   netplay_input_state_t simstate, resstate, pstate;
    uint32_t devices, device;
-   bool ret = false;
+   bool ret = false, simulated;
 
    simframe = &netplay->buffer[sim_ptr];
 
    for (client = 0; client < MAX_CLIENTS; client++)
    {
       if (!(netplay->connected_players1 & (1<<client))) continue;
-      // FIXME: Maybe this is the right time to do resolved data?
-      if (simframe->have_real[client]) continue;
 
       devices = netplay->client_devices[client];
 
       for (device = 0; device < MAX_INPUT_DEVICES; device++)
       {
-         if (!(devices & device)) continue;
+         if (!(devices & (1<<device)))
+            continue;
 
-         simstate = netplay_input_state_for(&simframe->simulated_input[device], client, 3 /* FIXME */, false);
+         simulated = false;
+         simstate = netplay_input_state_for(&simframe->real_input1[device], client, 3 /* FIXME */, false, true);
          if (!simstate)
-            continue;
-
-         prev = PREV_PTR(netplay->read_ptr1[client]);
-         pframe = &netplay->buffer[prev];
-         pstate = netplay_input_state_for(&pframe->real_input[device], client, 3 /* FIXME */, false);
-         if (!pstate)
-            continue;
-
-         if (resim)
          {
-            /* In resimulation mode, we only copy the buttons. The reason for this
-             * is nonobvious:
-             *
-             * If we resimulated nothing, then the /duration/ with which any input
-             * was pressed would be approximately correct, since the original
-             * simulation came in as the input came in, but the /number of times/
-             * the input was pressed would be wrong, as there would be an
-             * advancing wavefront of real data overtaking the simulated data
-             * (which is really just real data offset by some frames).
-             *
-             * That's acceptable for arrows in most situations, since the amount
-             * you move is tied to the duration, but unacceptable for buttons,
-             * which will seem to jerkily be pressed numerous times with those
-             * wavefronts.
-             */
-            const uint32_t keep = (1U<<RETRO_DEVICE_ID_JOYPAD_UP) |
-                                  (1U<<RETRO_DEVICE_ID_JOYPAD_DOWN) |
-                                  (1U<<RETRO_DEVICE_ID_JOYPAD_LEFT) |
-                                  (1U<<RETRO_DEVICE_ID_JOYPAD_RIGHT);
-            uint32_t prev = simstate->data[0];
-            simstate->data[0] &= keep;
-            simstate->data[0] |= pstate->data[0] & ~keep;
-            if (prev != simstate->data[0])
-               ret = true;
+            /* Don't already have this input, so must simulate */
+            simulated = true;
+            simstate = netplay_input_state_for(&simframe->simulated_input1[device], client, 3 /* FIXME */, false, false);
+            if (!simstate)
+               continue;
+
+            prev = PREV_PTR(netplay->read_ptr1[client]);
+            pframe = &netplay->buffer[prev];
+            pstate = netplay_input_state_for(&pframe->real_input1[device], client, 3 /* FIXME */, false, true);
+            if (!pstate)
+               continue;
+
+            if (resim)
+            {
+               /* In resimulation mode, we only copy the buttons. The reason for this
+                * is nonobvious:
+                *
+                * If we resimulated nothing, then the /duration/ with which any input
+                * was pressed would be approximately correct, since the original
+                * simulation came in as the input came in, but the /number of times/
+                * the input was pressed would be wrong, as there would be an
+                * advancing wavefront of real data overtaking the simulated data
+                * (which is really just real data offset by some frames).
+                *
+                * That's acceptable for arrows in most situations, since the amount
+                * you move is tied to the duration, but unacceptable for buttons,
+                * which will seem to jerkily be pressed numerous times with those
+                * wavefronts.
+                */
+               const uint32_t keep = (1U<<RETRO_DEVICE_ID_JOYPAD_UP) |
+                                     (1U<<RETRO_DEVICE_ID_JOYPAD_DOWN) |
+                                     (1U<<RETRO_DEVICE_ID_JOYPAD_LEFT) |
+                                     (1U<<RETRO_DEVICE_ID_JOYPAD_RIGHT);
+               uint32_t prev = simstate->data[0];
+               simstate->data[0] &= keep;
+               simstate->data[0] |= pstate->data[0] & ~keep;
+            }
+            else
+            {
+               memcpy(simstate->data, pstate->data,
+                     simstate->size * sizeof(uint32_t));
+            }
          }
-         else
-         {
-            if (memcmp(simstate->data, pstate->data, simstate->size * sizeof(uint32_t)))
-               ret = true;
-            memcpy(simstate->data, pstate->data,
-                  simstate->size * sizeof(uint32_t));
-         }
+
+         /* Now we copy the state, whether real or simulated, out into the resolved state (FIXME: Merging) */
+         resstate = netplay_input_state_for(&simframe->resolved_input1[device], 0, 3 /* FIXME */, false, false);
+         if (!resstate)
+            continue;
+         resstate->used = !simulated; /* We reuse "used" to mean "real" */
+         if (memcmp(resstate->data, simstate->data, resstate->size * sizeof(uint32_t)))
+            ret = true;
+         memcpy(resstate->data, simstate->data, resstate->size * sizeof(uint32_t));
       }
    }
 
@@ -440,7 +451,6 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
    }
 
 #ifndef DEBUG_NONDETERMINISTIC_CORES
-#if 0 /* FIXME: netplay_resolve_input is broken */
    if (!netplay->force_rewind)
    {
       /* Skip ahead if we predicted correctly.
@@ -460,7 +470,6 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
          netplay->other_frame_count++;
       }
    }
-#endif
 #endif
 
    /* Now replay the real input if we've gotten ahead of it */
