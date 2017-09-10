@@ -335,7 +335,7 @@ else ifeq ($(platform), windows_msvc6_x86)
    LIB := $(shell IFS=$$'\n'; cygpath -w "$(VCDIR)/Lib")
 
    export INCLUDE := $(INCLUDE);$(INETSDK)\Include;libretro-common\include;libretro-common\include\compat\msvc
-   export LIB := $(LIB);$(INETSDK)/Lib
+   export LIB := $(LIB);$(INETSDK)\Lib
    export INETSDK := $(INETSDK)
 else ifeq ($(platform), windows_msvc2003_x86)
    HAVE_RPNG                := 1
@@ -367,19 +367,75 @@ else ifeq ($(platform), windows_msvc2003_x86)
    CXX = cl.exe
    LD = link.exe
 
-   PLATCFLAGS += -D_WIN32 -DWINVER=0x0400 -D_WIN32_WINNT=0x0400 -DHAVE_DINPUT -DHAVE_DSOUND -D__STDC_CONSTANT_MACROS -D_MBCS -D_VC80_UPGRADE=0x0710
+   PLATCFLAGS += -D_WIN32 -DWINVER=0x0400 -D_WIN32_WINNT=0x0400 -D__STDC_CONSTANT_MACROS -D_MBCS -D_VC80_UPGRADE=0x0710
    LDFLAGS += shell32.lib user32.lib gdi32.lib comdlg32.lib winmm.lib ole32.lib
-
+   
    PATH := $(shell IFS=$$'\n'; cygpath "$(VS71COMNTOOLS)../../Vc7/bin"):$(PATH)
    PATH := $(PATH):$(shell IFS=$$'\n'; cygpath "$(VS71COMNTOOLS)../IDE")
-   INCLUDE := $(shell IFS=$$'\n'; cygpath "$(VS71COMNTOOLS)../../Vc7/include")
+   INCLUDE := $(shell IFS=$$'\n'; cygpath -w "$(VS71COMNTOOLS)../../Vc7/include")
    LIB := $(shell IFS=$$'\n'; cygpath -w "$(VS71COMNTOOLS)../../Vc7/lib")
-   BIN := $(shell IFS=$$'\n'; cygpath "$(VS71COMNTOOLS)../../Vc7/bin")
 
-   WindowsSdkDir := $(INETSDK)
+   export INETSDK := $(INETSDK)
 
-   export INCLUDE := $(INCLUDE);$(INETSDK)/Include;$(DXSDK_DIR)/Include;libretro-common/include;libretro-common/include/compat/msvc
-   export LIB := $(LIB);$(WindowsSdkDir);$(INETSDK)/Lib;$(DXSDK_DIR)/Lib/x86
+   ifeq ($(HAVE_DIRECTX), 1)
+      PLATCFLAGS += -DHAVE_DINPUT -DHAVE_DSOUND
+      export DXSDK_DIR := $(DXSDK_DIR)
+      export INCLUDE := $(INCLUDE);$(INETSDK)\Include;$(DXSDK_DIR)\Include;libretro-common\include;libretro-common\include\compat\msvc
+      export LIB := $(LIB);$(INETSDK)\Lib;$(DXSDK_DIR)\Lib\x86
+   else
+      export INCLUDE := $(INCLUDE);$(INETSDK)\Include;libretro-common\include;libretro-common\include\compat\msvc
+      export LIB := $(LIB);$(INETSDK)\Lib
+   endif
+else ifeq ($(platform), windows_msvc2005_x86)
+   HAVE_RPNG                := 1
+   HAVE_RJPEG               := 1
+   HAVE_RBMP                := 1
+   HAVE_RTGA                := 1
+   HAVE_ZLIB                := 1
+   WANT_ZLIB                := 1
+   HAVE_7ZIP                := 1
+   HAVE_NETWORKING          := 1
+   HAVE_NETWORK_CMD         := 1
+   HAVE_OVERLAY             := 1
+   HAVE_MATERIALUI          := 1
+   HAVE_XMB                 := 1
+   HAVE_STB_FONT            := 1
+   HAVE_THREADS             := 1
+   HAVE_LIBRETRODB          := 1
+   HAVE_FBO                 := 1
+   HAVE_COMMAND             := 1
+   HAVE_STDIN_CMD           := 1
+   HAVE_CMD                 := 1
+   HAVE_DYLIB               := 1
+   HAVE_DYNAMIC             := 1
+   HAVE_GRIFFIN_CPP         := 1
+   HAVE_DIRECTX             ?= 1
+
+   EXT_TARGET := $(TARGET_NAME).exe
+   EXT_INTER_TARGET := $(TARGET_NAME).exe
+   CC = cl.exe
+   CXX = cl.exe
+   LD = link.exe
+
+   PLATCFLAGS += -D_WIN32 -DWINVER=0x0400 -D_WIN32_WINNT=0x0400 -D__STDC_CONSTANT_MACROS -D_MBCS
+   LDFLAGS += shell32.lib user32.lib gdi32.lib comdlg32.lib winmm.lib ole32.lib
+   
+   PATH := $(shell IFS=$$'\n'; cygpath "$(VS80COMNTOOLS)../../VC/bin"):$(PATH)
+   PATH := $(PATH):$(shell IFS=$$'\n'; cygpath "$(VS80COMNTOOLS)../IDE")
+   INCLUDE := $(shell IFS=$$'\n'; cygpath -w "$(VS80COMNTOOLS)../../VC/include")
+   LIB := $(shell IFS=$$'\n'; cygpath -w "$(VS80COMNTOOLS)../../VC/lib")
+
+   export INETSDK := $(INETSDK)
+
+   ifeq ($(HAVE_DIRECTX), 1)
+      PLATCFLAGS += -DHAVE_DINPUT -DHAVE_DSOUND
+      export DXSDK_DIR := $(DXSDK_DIR)
+      export INCLUDE := $(INCLUDE);$(INETSDK)\Include;$(DXSDK_DIR)\Include;libretro-common\include;libretro-common\include\compat\msvc
+      export LIB := $(LIB);$(INETSDK)\Lib;$(DXSDK_DIR)\Lib\x86
+   else
+      export INCLUDE := $(INCLUDE);$(INETSDK)\Include;libretro-common\include;libretro-common\include\compat\msvc
+      export LIB := $(LIB);$(INETSDK)\Lib
+   endif
 endif
 
 ifneq (,$(findstring msvc,$(platform)))
