@@ -875,11 +875,7 @@ bool core_info_database_supports_content_path(const char *database_path, const c
    database                 = strdup(new_path);
 
    if (string_is_empty(database))
-   {
-      if (database)
-         free(database);
-      return false;
-   }
+      goto error;
 
    path_remove_extension(database);
 
@@ -907,8 +903,7 @@ bool core_info_database_supports_content_path(const char *database_path, const c
                      && !string_list_find_elem(info->supported_extensions_list, "7z"))
                   continue;
 
-               free(database);
-               return false;
+               goto error;
             }
          }
       }
@@ -929,7 +924,9 @@ bool core_info_database_supports_content_path(const char *database_path, const c
       }
    }
 
-   free(database);
+error:
+   if (database)
+      free(database);
    return false;
 }
 
