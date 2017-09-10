@@ -84,7 +84,7 @@ bool input_remapping_load_file(void *data, const char *path)
 
          key_remap = -1;
 
-         if (settings->uints.keyboard_mapper_port == i)
+         if (settings->uints.keymapper_port == i)
          {
             if (config_get_int(conf, keymapper_ident[j], &key_remap))
             {
@@ -200,7 +200,7 @@ bool input_remapping_save_file(const char *path)
             else
                config_unset(conf,key_ident[j]);
 
-            if (settings->uints.keyboard_mapper_port == i &&
+            if (settings->uints.keymapper_port == i &&
                 settings->uints.input_keymapper_ids[j] != RETROK_UNKNOWN)
                config_set_int(conf, keymapper_ident[j], settings->uints.input_keymapper_ids[j]);
          }

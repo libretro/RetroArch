@@ -3510,7 +3510,7 @@ static int menu_displaylist_parse_options_remappings(
       for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
       {
          char desc_label[64];
-         unsigned user           = settings->uints.keyboard_mapper_port + 1;
+         unsigned user           = settings->uints.keymapper_port + 1;
          unsigned desc_offset    = retro_id;
          const char *description = NULL;
 

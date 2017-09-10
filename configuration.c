@@ -1242,7 +1242,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("network_remote_enable",        &settings->bools.network_remote_enable, false, false /* TODO */, false);
 #endif
 #ifdef HAVE_KEYMAPPER
-   SETTING_BOOL("keyboard_mapper_enable",       &settings->bools.keyboard_mapper_enable, false, false /* TODO */, false);
+   SETTING_BOOL("keymapper_enable",       &settings->bools.keymapper_enable, true, true /* TODO */, false);
 #endif
 #ifdef HAVE_NETWORKING
    SETTING_BOOL("netplay_nat_traversal",        &settings->bools.netplay_nat_traversal, true, true, false);
@@ -1347,7 +1347,7 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("network_remote_base_port",     &settings->uints.network_remote_base_port, true, network_remote_base_port, false);
 #endif
 #ifdef HAVE_KEYMAPPER
-   SETTING_UINT("keyboard_mapper_port",         &settings->uints.keyboard_mapper_port, true, network_remote_base_port, false);
+   SETTING_UINT("keymapper_port",         &settings->uints.keymapper_port, true, 0, false);
 #endif
 #ifdef GEKKO
    SETTING_UINT("video_viwidth",                &settings->uints.video_viwidth, true, video_viwidth, false);

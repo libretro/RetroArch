@@ -1378,11 +1378,11 @@ bool input_driver_init_mapper(void)
 #ifdef HAVE_KEYMAPPER
    settings_t *settings = config_get_ptr();
 
-   if (!settings->bools.keyboard_mapper_enable)
+   if (!settings->bools.keymapper_enable)
       return false;
 
    input_driver_mapper = input_mapper_new(
-         settings->uints.keyboard_mapper_port);
+         settings->uints.keymapper_port);
 
    if (input_driver_mapper)
       return true;
