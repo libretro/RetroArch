@@ -27,6 +27,16 @@
 
 RETRO_BEGIN_DECLS
 
+typedef struct key_desc
+{
+   /* key id */
+   unsigned id;
+   /* libretro key id */
+   unsigned key;
+   /* description */
+   char     desc[32];
+} key_desc_t;
+
 enum
 {
    ACTION_OK_DL_DEFAULT = 0,

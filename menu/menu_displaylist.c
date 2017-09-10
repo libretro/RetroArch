@@ -62,6 +62,7 @@
 #include "../configuration.h"
 #include "../file_path_special.h"
 #include "../defaults.h"
+#include "../verbosity.h"
 #include "../managers/cheat_manager.h"
 #include "../managers/core_option_manager.h"
 #include "../paths.h"
@@ -3501,6 +3502,25 @@ static int menu_displaylist_parse_options_remappings(
                   MENU_SETTINGS_INPUT_DESC_BEGIN +
                   (p * (RARCH_FIRST_CUSTOM_BIND + 4)) +  retro_id, 0, 0);
          }
+      }
+   }
+   if (system)
+   {     
+      settings_t *settings = config_get_ptr();
+      for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
+      {
+         char desc_label[64];
+         unsigned user           = settings->uints.keyboard_mapper_port + 1;
+         unsigned desc_offset    = retro_id;
+         const char *description = NULL;
+
+         desc_label[0]           = '\0';
+
+         snprintf(desc_label, sizeof(desc_label),
+               "%s: ", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B + retro_id));
+         menu_entries_append_enum(info->list, desc_label, "",
+               MSG_UNKNOWN,
+               MENU_SETTINGS_INPUT_DESC_KBD_BEGIN  +  retro_id, 0, 0);
       }
    }
 
