@@ -426,7 +426,6 @@ netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
    netplay->listen_fd            = -1;
    netplay->tcp_port             = port;
    netplay->cbs                  = *cb;
-   netplay->input_device_max     = 1;
    netplay->is_server            = (direct_host == NULL && server == NULL);
    netplay->is_connected         = false;;
    netplay->nat_traversal        = netplay->is_server ? nat_traversal : false;

@@ -28,7 +28,7 @@
 #include "../../retroarch.h"
 #include "../../tasks/tasks_internal.h"
 
-#if 1
+#if 0
 #define DEBUG_NETPLAY_STEPS 1
 
 static void print_state(netplay_t *netplay)
@@ -185,10 +185,11 @@ void netplay_delayed_state_change(netplay_t *netplay)
           connection->delay_frame <= netplay->self_frame_count)
       {
          /* Something was delayed! Prepare the MODE command */
-         uint32_t payload[3];
+         uint32_t payload[7];
          payload[0] = htonl(connection->delay_frame);
          payload[1] = htonl(client_num);
          payload[2] = htonl(0);
+         memcpy(payload + 3, netplay->device_share_modes, sizeof(netplay->device_share_modes));
 
          /* Remove the connection entirely if relevant */
          if (connection->mode == NETPLAY_CONNECTION_DELAYED_DISCONNECT)
@@ -468,7 +469,7 @@ bool netplay_cmd_mode(netplay_t *netplay,
    enum rarch_netplay_connection_mode mode)
 {
    uint32_t cmd;
-   uint32_t payloadBuf, *payload = NULL;
+   uint32_t payloadBuf = 0, *payload = NULL;
    switch (mode)
    {
       case NETPLAY_CONNECTION_SPECTATING:
@@ -476,11 +477,13 @@ bool netplay_cmd_mode(netplay_t *netplay,
          break;
 
       case NETPLAY_CONNECTION_SLAVE:
-         payload = &payloadBuf;
-         payloadBuf = htonl(NETPLAY_CMD_PLAY_BIT_SLAVE);
+         payloadBuf = NETPLAY_CMD_PLAY_BIT_SLAVE;
          /* no break */
 
       case NETPLAY_CONNECTION_PLAYING:
+         payload = &payloadBuf;
+         payloadBuf |= NETPLAY_SHARE_NO_PREFERENCE<<16;
+         payloadBuf = htonl(payloadBuf);
          cmd = NETPLAY_CMD_PLAY;
          break;
 
@@ -533,6 +536,10 @@ static bool netplay_get_cmd(netplay_t *netplay,
       return false;
 
    cmd_size = ntohl(cmd_size);
+
+#ifdef DEBUG_NETPLAY_STEPS
+   RARCH_LOG("Received netplay command %X (%X)\n", cmd, cmd_size);
+#endif
 
    netplay->timeout_cnt = 0;
 
@@ -760,7 +767,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
 
       case NETPLAY_CMD_SPECTATE:
       {
-         uint32_t payload[3];
+         uint32_t payload[7];
          uint32_t client_num;
          size_t i;
 
@@ -772,64 +779,65 @@ static bool netplay_get_cmd(netplay_t *netplay,
 
          client_num = connection - netplay->connections + 1;
 
-         if (connection->mode == NETPLAY_CONNECTION_PLAYING ||
-             connection->mode == NETPLAY_CONNECTION_SLAVE)
+         if (connection->mode != NETPLAY_CONNECTION_PLAYING &&
+             connection->mode != NETPLAY_CONNECTION_SLAVE)
          {
-            /* The frame we haven't received is their end frame */
-            connection->delay_frame = netplay->read_frame_count1[client_num];
-
-            /* Mark them as not playing anymore */
-            connection->mode = NETPLAY_CONNECTION_SPECTATING;
-            netplay->connected_players &= ~(1<<client_num);
-            netplay->connected_slaves  &= ~(1<<client_num);
-            netplay->client_devices[client_num] = 0;
-            for (i = 0; i < MAX_INPUT_DEVICES; i++)
-               netplay->device_clients[client_num] &= ~(1<<client_num);
-
-            /* Announce it */
-            msg[sizeof(msg)-1] = '\0';
-            snprintf(msg, sizeof(msg)-1, "Player %d has left", client_num+1);
-            RARCH_LOG("%s\n", msg);
-            runloop_msg_queue_push(msg, 1, 180, false);
-         }
-         else
-         {
-            payload[0] = htonl(0);
+            /* They were confused */
+            return netplay_cmd_nak(netplay, connection);
          }
 
-         /* Tell the player even if they were confused */
+         /* The frame we haven't received is their end frame */
+         connection->delay_frame = netplay->read_frame_count1[client_num];
+
+         /* Mark them as not playing anymore */
+         connection->mode = NETPLAY_CONNECTION_SPECTATING;
+         netplay->connected_players &= ~(1 << client_num);
+         netplay->connected_slaves &= ~(1 << client_num);
+         netplay->client_devices[client_num] = 0;
+         for (i = 0; i < MAX_INPUT_DEVICES; i++)
+            netplay->device_clients[client_num] &= ~(1 << client_num);
+
+         /* Tell the player */
+         payload[0] = htonl(connection->delay_frame);
          payload[1] = htonl(NETPLAY_CMD_MODE_BIT_YOU | client_num);
          payload[2] = htonl(0);
+         memcpy(payload + 3, netplay->device_share_modes, sizeof(netplay->device_share_modes));
          netplay_send_raw_cmd(netplay, connection, NETPLAY_CMD_MODE, payload, sizeof(payload));
+
+         /* Announce it */
+         msg[sizeof(msg) - 1] = '\0';
+         snprintf(msg, sizeof(msg) - 1, "Player %d has left", client_num + 1);
+         RARCH_LOG("%s\n", msg);
+         runloop_msg_queue_push(msg, 1, 180, false);
          break;
       }
 
       case NETPLAY_CMD_PLAY:
       {
-         uint32_t devices = 0, device, client_num;
-         uint32_t payload[3];
+         uint32_t mode, devices = 0, device, client_num;
+         uint8_t share_mode;
+         uint32_t payload[7];
          bool slave = false;
          settings_t *settings = config_get_ptr();
 
-         /* Check if they requested slave mode */
-         if (cmd_size == sizeof(uint32_t))
+         if (cmd_size != sizeof(uint32_t))
          {
-            RECV(&devices, sizeof(devices))
-            {
-               RARCH_ERR("Failed to receive NETPLAY_CMD_PLAY payload.\n");
-               return netplay_cmd_nak(netplay, connection);
-            }
-
-            devices = ntohl(devices);
-            if (devices & NETPLAY_CMD_PLAY_BIT_SLAVE)
-               slave = true;
-            devices &= ~(NETPLAY_CMD_PLAY_BIT_SLAVE);
-         }
-         else if (cmd_size != 0)
-         {
-            RARCH_ERR("Invalid payload size for NETPLAY_CMD_PLAY.\n");
+            RARCH_ERR("Incorrect NETPLAY_CMD_PLAY payload size.\n");
             return netplay_cmd_nak(netplay, connection);
          }
+         RECV(&mode, sizeof(uint32_t))
+         {
+            RARCH_ERR("Failed to receive NETPLAY_CMD_PLAY payload.\n");
+            return netplay_cmd_nak(netplay, connection);
+         }
+         mode = ntohl(mode);
+
+         /* Check the requested mode */
+         slave = (mode&NETPLAY_CMD_PLAY_BIT_SLAVE)?true:false;
+         share_mode = (mode>>16)&0xFF;
+
+         /* And the requested devices */
+         devices = mode&0xFFFF;
 
          /* Check if their slave mode request corresponds with what we allow */
          if (settings->bools.netplay_require_slaves)
@@ -837,6 +845,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
          else if (!settings->bools.netplay_allow_slaves)
             slave = false;
 
+         /* Start forming our response */
          payload[0] = htonl(netplay->self_frame_count + 1);
 
          if (!netplay->is_server)
@@ -862,13 +871,38 @@ static bool netplay_get_cmd(netplay_t *netplay,
             break;
          }
 
-         /* Find an available device (FIXME: Honor device request) */
-         for (device = 0; device <= netplay->input_device_max; device++)
+         if (connection->mode == NETPLAY_CONNECTION_PLAYING
+               || connection->mode == NETPLAY_CONNECTION_SLAVE)
          {
+            /* They were obviously confused */
+            return netplay_cmd_nak(netplay, connection);
+         }
+
+         /* Find an available device (FIXME: Honor device request) */
+         (void) devices;
+         for (device = 0; device < MAX_INPUT_DEVICES; device++)
+         {
+            if (input_config_get_device(device) == RETRO_DEVICE_NONE)
+            {
+               device = MAX_INPUT_DEVICES;
+               break;
+            }
             if (!netplay->device_clients[device])
                break;
          }
-         if (device > netplay->input_device_max)
+         if (device >= MAX_INPUT_DEVICES && share_mode)
+         {
+            /* No device was totally free, maybe one is shareable? */
+            for (device = 0; device < MAX_INPUT_DEVICES; device++)
+            {
+               if (netplay->device_clients[device] && netplay->device_share_modes[device])
+               {
+                  share_mode = netplay->device_share_modes[device];
+                  break;
+               }
+            }
+         }
+         if (device >= MAX_INPUT_DEVICES)
          {
             /* No slots free! */
             payload[0] = htonl(NETPLAY_CMD_MODE_REFUSED_REASON_NO_SLOTS);
@@ -877,40 +911,48 @@ static bool netplay_get_cmd(netplay_t *netplay,
          }
          payload[2] = htonl(1<<device);
 
-         if (connection->mode != NETPLAY_CONNECTION_PLAYING &&
-             connection->mode != NETPLAY_CONNECTION_SLAVE)
+         /* Fix our share mode */
+         if (share_mode)
          {
-            /* Mark them as playing */
-            connection->mode = slave ? NETPLAY_CONNECTION_SLAVE :
-                                       NETPLAY_CONNECTION_PLAYING;
-
-            netplay->connected_players |= 1<<client_num;
-            if (slave)
-               netplay->connected_slaves |= 1<<client_num;
-            netplay->client_devices[client_num] |= 1<<device;
-            netplay->device_clients[device] |= 1<<client_num;
-
-            /* Tell everyone */
-            payload[1] = htonl(NETPLAY_CMD_MODE_BIT_PLAYING |
-                               (slave?NETPLAY_CMD_MODE_BIT_SLAVE:0) |
-                               client_num);
-            netplay_send_raw_cmd_all(netplay, connection, NETPLAY_CMD_MODE, payload, sizeof(payload));
-
-            /* Announce it */
-            msg[sizeof(msg)-1] = '\0';
-            snprintf(msg, sizeof(msg)-1, "Player %d has joined", client_num+1);
-            RARCH_LOG("%s\n", msg);
-            runloop_msg_queue_push(msg, 1, 180, false);
-
+            if ((share_mode & NETPLAY_SHARE_DIGITAL_BITS) == 0)
+               share_mode |= NETPLAY_SHARE_DIGITAL_OR;
+            if ((share_mode & NETPLAY_SHARE_ANALOG_BITS) == 0)
+               share_mode |= NETPLAY_SHARE_ANALOG_MAX;
+            share_mode &= ~NETPLAY_SHARE_NO_PREFERENCE;
          }
 
-         /* Tell the player even if they were confused */
+
+         /* Mark them as playing */
+         connection->mode =
+               slave ? NETPLAY_CONNECTION_SLAVE : NETPLAY_CONNECTION_PLAYING;
+
+         netplay->connected_players |= 1 << client_num;
+         if (slave)
+            netplay->connected_slaves |= 1 << client_num;
+         netplay->client_devices[client_num] |= 1 << device;
+         netplay->device_clients[device] |= 1 << client_num;
+         netplay->device_share_modes[device] = share_mode;
+
+         /* Tell everyone */
+         payload[1] = htonl(
+               NETPLAY_CMD_MODE_BIT_PLAYING
+                     | (slave ? NETPLAY_CMD_MODE_BIT_SLAVE : 0) | client_num);
+         memcpy(payload + 3, netplay->device_share_modes, sizeof(netplay->device_share_modes));
+         netplay_send_raw_cmd_all(netplay, connection, NETPLAY_CMD_MODE,
+               payload, sizeof(payload));
+
+         /* Announce it */
+         msg[sizeof(msg) - 1] = '\0';
+         snprintf(msg, sizeof(msg) - 1, "Player %d has joined", client_num + 1);
+         RARCH_LOG("%s\n", msg);
+         runloop_msg_queue_push(msg, 1, 180, false);
+
+         /* Tell the player */
          payload[1] = htonl(NETPLAY_CMD_MODE_BIT_PLAYING |
                             ((connection->mode == NETPLAY_CONNECTION_SLAVE)?
                              NETPLAY_CMD_MODE_BIT_SLAVE:0) |
                             NETPLAY_CMD_MODE_BIT_YOU |
                             client_num);
-         payload[2] = htonl(1<<device);
          netplay_send_raw_cmd(netplay, connection, NETPLAY_CMD_MODE, payload, sizeof(payload));
 
          /* And expect their data */
@@ -921,7 +963,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
 
       case NETPLAY_CMD_MODE:
       {
-         uint32_t payload[3];
+         uint32_t payload[7];
          uint32_t frame, mode, client_num, devices, device;
          size_t ptr;
          struct delta_frame *dframe;
@@ -937,8 +979,13 @@ static bool netplay_get_cmd(netplay_t *netplay,
             dframe = &netplay->buffer[ptr]; \
          } while(0)
 
-         if (cmd_size != sizeof(payload) ||
-             netplay->is_server)
+         if (netplay->is_server)
+         {
+            RARCH_ERR("NETPLAY_CMD_MODE from client.\n");
+            return netplay_cmd_nak(netplay, connection);
+         }
+
+         if (cmd_size != sizeof(payload))
          {
             RARCH_ERR("Invalid payload size for NETPLAY_CMD_MODE.\n");
             return netplay_cmd_nak(netplay, connection);
@@ -965,6 +1012,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
          }
 
          devices = ntohl(payload[2]);
+         memcpy(netplay->device_share_modes, payload + 3, sizeof(netplay->device_share_modes));
 
          if (mode & NETPLAY_CMD_MODE_BIT_YOU)
          {

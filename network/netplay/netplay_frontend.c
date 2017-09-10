@@ -496,9 +496,6 @@ static int16_t netplay_input_state(netplay_t *netplay,
       return 0;
    }
 
-   if (port > netplay->input_device_max)
-      netplay->input_device_max = port;
-
    /* FIXME: Mixing */
    delta = &netplay->buffer[ptr];
    istate = delta->resolved_input[port];
@@ -1161,12 +1158,32 @@ static void netplay_toggle_play_spectate(netplay_t *netplay)
       else if (netplay->self_mode == NETPLAY_CONNECTION_SPECTATING)
       {
          uint32_t device;
+         uint8_t share_mode = NETPLAY_SHARE_DIGITAL_OR|NETPLAY_SHARE_ANALOG_MAX;
 
          /* Take an input device */
          for (device = 0; device < MAX_INPUT_DEVICES; device++)
-            if (!(netplay->device_clients[device]))
+         {
+            if (input_config_get_device(device) == RETRO_DEVICE_NONE)
+            {
+               device = MAX_INPUT_DEVICES;
                break;
-         if (device == MAX_INPUT_DEVICES)
+            }
+            if (!netplay->device_clients[device])
+               break;
+         }
+         if (device >= MAX_INPUT_DEVICES)
+         {
+            /* Share one */
+            for (device = 0; device < MAX_INPUT_DEVICES; device++)
+            {
+               if (netplay->device_clients[device] && netplay->device_share_modes[device])
+               {
+                  share_mode = netplay->device_share_modes[device];
+                  break;
+               }
+            }
+         }
+         if (device >= MAX_INPUT_DEVICES)
             return; /* Failure! */
 
          payload[1] = htonl(NETPLAY_CMD_MODE_BIT_PLAYING | device);
@@ -1175,6 +1192,7 @@ static void netplay_toggle_play_spectate(netplay_t *netplay)
          netplay->connected_players |= 1;
          netplay->client_devices[0] = netplay->self_devices = (1<<device);
          netplay->device_clients[device] = 1;
+         netplay->device_share_modes[device] = share_mode;
          netplay->read_ptr1[0] = netplay->self_ptr;
          netplay->read_frame_count1[0] = netplay->self_frame_count;
 
@@ -1320,13 +1338,7 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
    if (netplay_data)
    {
       if (netplay_data->is_server && !settings->bools.netplay_start_as_spectator)
-      {
-         netplay_data->self_mode = NETPLAY_CONNECTION_PLAYING;
-         netplay_data->self_devices = 1;
-         netplay_data->client_devices[0] = 1;
-         netplay_data->device_clients[0] = 1;
-         netplay_data->connected_players = 1;
-      }
+         netplay_toggle_play_spectate(netplay_data);
       return true;
    }
 

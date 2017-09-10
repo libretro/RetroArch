@@ -547,6 +547,9 @@ bool netplay_handshake_sync(netplay_t *netplay,
          /* Controller devices */
          + MAX_INPUT_DEVICES*sizeof(uint32_t)
 
+         /* Share modes */
+         + MAX_INPUT_DEVICES*sizeof(uint8_t)
+
          /* Device-client mapping */
          + MAX_INPUT_DEVICES*sizeof(uint32_t)
 
@@ -573,6 +576,11 @@ bool netplay_handshake_sync(netplay_t *netplay,
             &device, sizeof(device)))
          return false;
    }
+
+   /* Then the share mode */
+   if (!netplay_send(&connection->send_packet_buffer, connection->fd,
+         netplay->device_share_modes, sizeof(netplay->device_share_modes)))
+      return false;
 
    /* Then the device-client mapping */
    for (i = 0; i < MAX_INPUT_DEVICES; i++)
@@ -933,8 +941,8 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
    }
 
    /* Only expecting a sync command */
-   if (ntohl(cmd[0]) != NETPLAY_CMD_SYNC||
-         ntohl(cmd[1]) < (2+2*MAX_INPUT_DEVICES)*sizeof(uint32_t) +
+   if (ntohl(cmd[0]) != NETPLAY_CMD_SYNC ||
+         ntohl(cmd[1]) < (2+2*MAX_INPUT_DEVICES)*sizeof(uint32_t) + (MAX_INPUT_DEVICES)*sizeof(uint8_t) +
          NETPLAY_NICK_LEN)
    {
       RARCH_ERR("%s\n",
@@ -1001,6 +1009,10 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
       core_set_controller_port_device(&pad);
    }
 
+   /* Get the share modes */
+   RECV(netplay->device_share_modes, sizeof(netplay->device_share_modes))
+      return false;
+
    /* Get the client-controller mapping */
    netplay->connected_players =
          netplay->connected_slaves =
@@ -1012,7 +1024,6 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
       RECV(&device, sizeof(device))
          return false;
       device = ntohl(device);
-      fprintf(stderr, "Device %d: %d\n", (int) i, (int) device);
 
       netplay->device_clients[i] = device;
       netplay->connected_players |= device;
@@ -1044,7 +1055,7 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
 
    local_sram_size  = (unsigned)mem_info.size;
    remote_sram_size = ntohl(cmd[1]) -
-      (2+2*MAX_INPUT_DEVICES)*sizeof(uint32_t) - NETPLAY_NICK_LEN;
+         (2+2*MAX_INPUT_DEVICES)*sizeof(uint32_t) - (MAX_INPUT_DEVICES)*sizeof(uint8_t) - NETPLAY_NICK_LEN;
 
    if (local_sram_size != 0 && local_sram_size == remote_sram_size)
    {

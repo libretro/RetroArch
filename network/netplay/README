@@ -160,15 +160,15 @@ Payload:
     {
        frame number: uint32
        client number: 32 bits
-       joypad input: uint32
-       analog 1 input: uint32
-       analog 2 input: uint32
+       input data: variable
     }
 Description:
     Input state for each frame. Netplay must send an INPUT command for every
     frame in order to function at all. When sent from the server (client 0),
     INPUT is a synchronization point: No synchronization events from the given
-    frame may arrive after the server's input for the frame.
+    frame may arrive after the server's input for the frame. The actual size of
+    the input data is variable, but must match the expected size for each of
+    the devices the given client controls.
 
 Command: NOINPUT
 Payload:
@@ -217,6 +217,7 @@ Payload:
        paused?: 1 bit
        client number: 31 bits
        controller devices: uint32[16]
+       share modes: uint8[16]
        controller-client mapping: uint32[16]
        client nick: char[32]
        sram: variable
@@ -239,7 +240,8 @@ Command: PLAY
 Payload:
     {
        as slave?: 1 bit
-       reserved: 15 bits
+       reserved: 7 bits
+       preferred share mode: 8 bits
        requested device(s): 16 bits
     }
 Description:
@@ -247,18 +249,20 @@ Description:
     before sending input. Server may refuse or force slave connections, so the
     request is not necessarily honored. If no devices are explicitly requested,
     the server may choose how to assign; the default is to assign the first
-    unassigned device. Payload may be elided if zero.
+    unassigned device, and share the first device if all devices are assigned
+    and the first device is shareable.
 
 Command: MODE
 Payload:
     {
        frame number: uint32
-       reserved: 13 bits
-       slave: 1 bit
-       playing: 1 bit
        you: 1 bit
+       playing: 1 bit
+       slave: 1 bit
+       reserved: 13 bits
        client number: uint16
        device bitmap: uint32
+       share modes: uint8[16]
     }
 Description:
     Inform of a connection mode change (possibly of the receiving client). Only

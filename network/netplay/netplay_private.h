@@ -184,9 +184,9 @@ enum netplay_cmd
 
 #define NETPLAY_CMD_SYNC_BIT_PAUSED    (1U<<31)
 #define NETPLAY_CMD_PLAY_BIT_SLAVE     (1U<<31)
-#define NETPLAY_CMD_MODE_BIT_SLAVE     (1U<<18)
-#define NETPLAY_CMD_MODE_BIT_PLAYING   (1U<<17)
-#define NETPLAY_CMD_MODE_BIT_YOU       (1U<<16)
+#define NETPLAY_CMD_MODE_BIT_YOU       (1U<<31)
+#define NETPLAY_CMD_MODE_BIT_PLAYING   (1U<<30)
+#define NETPLAY_CMD_MODE_BIT_SLAVE     (1U<<29)
 
 /* These are the reasons given for mode changes to be rejected */
 enum netplay_cmd_mode_reasons
@@ -201,9 +201,35 @@ enum netplay_cmd_mode_reasons
    NETPLAY_CMD_MODE_REFUSED_REASON_NO_SLOTS,
 
    /* You're changing modes too fast */
-   NETPLAY_CMD_MODE_REFUSED_REASON_TOO_FAST
+   NETPLAY_CMD_MODE_REFUSED_REASON_TOO_FAST,
+
+   /* You requested a particular port but it's not available */
+   NETPLAY_CMD_MODE_REFUSED_REASON_NOT_AVAILABLE
 };
 
+/* Preferences for sharing devices */
+enum rarch_netplay_share_preference
+{
+   /* Prefer not to share, shouldn't be set as a sharing mode for an shared device */
+   NETPLAY_SHARE_NO_SHARING = 0x0,
+
+   /* No preference. Only for requests. Set if sharing is requested but either
+    * digital or analog doesn't have a preference. */
+   NETPLAY_SHARE_NO_PREFERENCE = 0x1,
+
+   /* For digital devices */
+   NETPLAY_SHARE_DIGITAL_BITS = 0x1C,
+   NETPLAY_SHARE_DIGITAL_OR = 0x4,
+   NETPLAY_SHARE_DIGITAL_XOR = 0x8,
+   NETPLAY_SHARE_DIGITAL_VOTE = 0xC,
+
+   /* For analog devices */
+   NETPLAY_SHARE_ANALOG_BITS = 0xE0,
+   NETPLAY_SHARE_ANALOG_MAX = 0x20,
+   NETPLAY_SHARE_ANALOG_AVERAGE = 0x40
+};
+
+/* The current status of a connection */
 enum rarch_netplay_connection_mode
 {
    NETPLAY_CONNECTION_NONE = 0,
@@ -399,15 +425,15 @@ struct netplay
    /* For each device, the bitmap of clients connected */
    client_bitmap_t device_clients[MAX_INPUT_DEVICES];
 
+   /* The sharing mode for each device */
+   uint8_t device_share_modes[MAX_INPUT_DEVICES];
+
    /* Our own device bitmap */
    uint32_t self_devices;
 
    /* Number of desync operations we're currently performing. If set, we don't
     * attempt to stay in sync. */
    uint32_t desync;
-
-   /* Maximum input device number */
-   uint32_t input_device_max;
 
    struct retro_callbacks cbs;
 
