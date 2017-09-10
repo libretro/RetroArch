@@ -183,12 +183,8 @@ static bool init_tcp_socket(netplay_t *netplay, void *direct_host,
 
    while (tmp_info)
    {
-      struct sockaddr_storage sad;
-      int fd;
-
-      memset(&sad, 0, sizeof(sad));
-
-      fd = init_tcp_connection(
+      struct sockaddr_storage sad = {0};
+      int fd = init_tcp_connection(
             tmp_info,
             direct_host || server,
             (struct sockaddr*)&sad,
@@ -538,8 +534,7 @@ void netplay_free(netplay_t *netplay)
    if (netplay->buffer)
    {
       for (i = 0; i < netplay->buffer_size; i++)
-         if (netplay->buffer[i].state)
-            free(netplay->buffer[i].state);
+         netplay_delta_frame_free(&netplay->buffer[i]);
 
       free(netplay->buffer);
    }

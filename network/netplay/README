@@ -159,18 +159,16 @@ Command: INPUT
 Payload:
     {
        frame number: uint32
-       is server data: 1 bit
-       client number: 31 bits
+       client number: 32 bits
        joypad input: uint32
        analog 1 input: uint32
        analog 2 input: uint32
     }
 Description:
     Input state for each frame. Netplay must send an INPUT command for every
-    frame in order to function at all. Client's player value is ignored. Server
-    indicates which frames are its own input data because INPUT is a
-    synchronization point: No synchronization events from the given frame may
-    arrive after the server's input for the frame.
+    frame in order to function at all. When sent from the server (client 0),
+    INPUT is a synchronization point: No synchronization events from the given
+    frame may arrive after the server's input for the frame.
 
 Command: NOINPUT
 Payload:

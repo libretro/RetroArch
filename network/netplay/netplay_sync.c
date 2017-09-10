@@ -83,20 +83,24 @@ void netplay_update_unread_ptr(netplay_t *netplay)
 }
 
 /**
- * netplay_simulate_input
+ * netplay_resolve_input
  * @netplay             : pointer to netplay object
- * @sim_ptr             : frame index for which to simulate input
+ * @sim_ptr             : frame pointer for which to resolve input
  * @resim               : are we resimulating, or simulating this frame for the
  *                        first time?
  *
  * "Simulate" input by assuming it hasn't changed since the last read input.
+ * Returns true if the resolved input changed from the last time it was
+ * resolved.
  */
-void netplay_simulate_input(netplay_t *netplay, size_t sim_ptr, bool resim)
+bool netplay_resolve_input(netplay_t *netplay, size_t sim_ptr, bool resim)
 {
    uint32_t client;
    size_t prev;
    struct delta_frame *simframe, *pframe;
    netplay_input_state_t simstate, pstate;
+   uint32_t devices, device;
+   bool ret = false;
 
    simframe = &netplay->buffer[sim_ptr];
 
@@ -106,46 +110,60 @@ void netplay_simulate_input(netplay_t *netplay, size_t sim_ptr, bool resim)
       // FIXME: Maybe this is the right time to do resolved data?
       if (simframe->have_real[client]) continue;
 
-      simstate = netplay_input_state_for(&simframe->simulated_input, client, 3 /* FIXME */, false);
-      if (!simstate)
-         continue;
+      devices = netplay->client_devices[client];
 
-      prev = PREV_PTR(netplay->read_ptr1[client]);
-      pframe = &netplay->buffer[prev];
-      pstate = netplay_input_state_for(&pframe->real_input, client, 3 /* FIXME */, false);
-      if (!pstate)
-         continue;
+      for (device = 0; device < MAX_INPUT_DEVICES; device++)
+      {
+         if (!(devices & device)) continue;
 
-      if (resim)
-      {
-         /* In resimulation mode, we only copy the buttons. The reason for this
-          * is nonobvious:
-          *
-          * If we resimulated nothing, then the /duration/ with which any input
-          * was pressed would be approximately correct, since the original
-          * simulation came in as the input came in, but the /number of times/
-          * the input was pressed would be wrong, as there would be an
-          * advancing wavefront of real data overtaking the simulated data
-          * (which is really just real data offset by some frames).
-          *
-          * That's acceptable for arrows in most situations, since the amount
-          * you move is tied to the duration, but unacceptable for buttons,
-          * which will seem to jerkily be pressed numerous times with those
-          * wavefronts.
-          */
-         const uint32_t keep = (1U<<RETRO_DEVICE_ID_JOYPAD_UP) |
-                               (1U<<RETRO_DEVICE_ID_JOYPAD_DOWN) |
-                               (1U<<RETRO_DEVICE_ID_JOYPAD_LEFT) |
-                               (1U<<RETRO_DEVICE_ID_JOYPAD_RIGHT);
-         simstate->data[0] &= keep;
-         simstate->data[0] |= pstate->data[0] & ~keep;
-      }
-      else
-      {
-         memcpy(simstate->data, pstate->data,
-               simstate->size * sizeof(uint32_t));
+         simstate = netplay_input_state_for(&simframe->simulated_input[device], client, 3 /* FIXME */, false);
+         if (!simstate)
+            continue;
+
+         prev = PREV_PTR(netplay->read_ptr1[client]);
+         pframe = &netplay->buffer[prev];
+         pstate = netplay_input_state_for(&pframe->real_input[device], client, 3 /* FIXME */, false);
+         if (!pstate)
+            continue;
+
+         if (resim)
+         {
+            /* In resimulation mode, we only copy the buttons. The reason for this
+             * is nonobvious:
+             *
+             * If we resimulated nothing, then the /duration/ with which any input
+             * was pressed would be approximately correct, since the original
+             * simulation came in as the input came in, but the /number of times/
+             * the input was pressed would be wrong, as there would be an
+             * advancing wavefront of real data overtaking the simulated data
+             * (which is really just real data offset by some frames).
+             *
+             * That's acceptable for arrows in most situations, since the amount
+             * you move is tied to the duration, but unacceptable for buttons,
+             * which will seem to jerkily be pressed numerous times with those
+             * wavefronts.
+             */
+            const uint32_t keep = (1U<<RETRO_DEVICE_ID_JOYPAD_UP) |
+                                  (1U<<RETRO_DEVICE_ID_JOYPAD_DOWN) |
+                                  (1U<<RETRO_DEVICE_ID_JOYPAD_LEFT) |
+                                  (1U<<RETRO_DEVICE_ID_JOYPAD_RIGHT);
+            uint32_t prev = simstate->data[0];
+            simstate->data[0] &= keep;
+            simstate->data[0] |= pstate->data[0] & ~keep;
+            if (prev != simstate->data[0])
+               ret = true;
+         }
+         else
+         {
+            if (memcmp(simstate->data, pstate->data, simstate->size * sizeof(uint32_t)))
+               ret = true;
+            memcpy(simstate->data, pstate->data,
+                  simstate->size * sizeof(uint32_t));
+         }
       }
    }
+
+   return ret;
 }
 
 static void netplay_handle_frame_hash(netplay_t *netplay, struct delta_frame *delta)
@@ -432,14 +450,10 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
          struct delta_frame *ptr = &netplay->buffer[netplay->other_ptr];
          size_t i;
 
-         for (i = 0; i < MAX_USERS; i++)
-         {
-            if (memcmp(ptr->simulated_input_state[i], ptr->real_input_state[i],
-                     sizeof(ptr->real_input_state[i])) != 0
-                  && !ptr->used_real[i])
-               break;
-         }
-         if (i != MAX_USERS) break;
+         /* If resolving the input changes it, we used bad input */
+         if (netplay_resolve_input(netplay, netplay->other_ptr, true))
+            break;
+
          netplay_handle_frame_hash(netplay, ptr);
          netplay->other_ptr = NEXT_PTR(netplay->other_ptr);
          netplay->other_frame_count++;
@@ -490,7 +504,7 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
             netplay_handle_frame_hash(netplay, ptr);
 
          /* Re-simulate this frame's input */
-         netplay_simulate_input(netplay, netplay->replay_ptr, true);
+         netplay_resolve_input(netplay, netplay->replay_ptr, true);
 
          autosave_lock();
          core_run();
@@ -543,16 +557,16 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
 
    if (netplay->is_server)
    {
-      uint32_t player;
+      uint32_t client;
 
       lo_frame_count = hi_frame_count = netplay->unread_frame_count;
 
       /* Look for players that are ahead of us */
-      for (player = 0; player < MAX_USERS; player++)
+      for (client = 0; client < MAX_CLIENTS; client++)
       {
-         if (!(netplay->connected_players & (1<<player))) continue;
-         if (netplay->read_frame_count[player] > hi_frame_count)
-            hi_frame_count = netplay->read_frame_count[player];
+         if (!(netplay->connected_players1 & (1<<client))) continue;
+         if (netplay->read_frame_count1[client] > hi_frame_count)
+            hi_frame_count = netplay->read_frame_count1[client];
       }
    }
    else
@@ -618,14 +632,14 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
          for (i = 0; i < netplay->connections_size; i++)
          {
             struct netplay_connection *connection = &netplay->connections[i];
-            int player;
+            uint32_t client_num;
             if (!connection->active ||
                 connection->mode != NETPLAY_CONNECTION_PLAYING)
                continue;
-            player = connection->player;
+            client_num = i + 1;
 
             /* Are they ahead? */
-            if (netplay->self_frame_count + 3 < netplay->read_frame_count[player])
+            if (netplay->self_frame_count + 3 < netplay->read_frame_count1[client_num])
             {
                /* Tell them to stall */
                if (connection->stall_frame + NETPLAY_MAX_REQ_STALL_FREQUENCY <
@@ -633,7 +647,7 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
                {
                   connection->stall_frame = netplay->self_frame_count;
                   netplay_cmd_stall(netplay, connection,
-                     netplay->read_frame_count[player] -
+                     netplay->read_frame_count1[client_num] -
                      netplay->self_frame_count + 1);
                }
             }

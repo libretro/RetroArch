@@ -1012,6 +1012,7 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
       RECV(&device, sizeof(device))
          return false;
       device = ntohl(device);
+      fprintf(stderr, "Device %d: %d\n", (int) i, (int) device);
 
       netplay->device_clients[i] = device;
       netplay->connected_players1 |= device;

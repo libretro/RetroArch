@@ -28,14 +28,14 @@
 #include "../../retroarch.h"
 #include "../../tasks/tasks_internal.h"
 
-#if 0
+#if 1
 #define DEBUG_NETPLAY_STEPS 1
 
 static void print_state(netplay_t *netplay)
 {
    char msg[512];
    size_t cur = 0;
-   uint32_t player;
+   uint32_t client;
 
 #define APPEND(out) cur += snprintf out
 #define M msg + cur, sizeof(msg) - cur
@@ -43,10 +43,10 @@ static void print_state(netplay_t *netplay)
    APPEND((M, "NETPLAY: S:%u U:%u O:%u", netplay->self_frame_count, netplay->unread_frame_count, netplay->other_frame_count));
    if (!netplay->is_server)
       APPEND((M, " H:%u", netplay->server_frame_count));
-   for (player = 0; player < MAX_USERS; player++)
+   for (client = 0; client < MAX_USERS; client++)
    {
-      if ((netplay->connected_players & (1<<player)))
-         APPEND((M, " %u:%u", player, netplay->read_frame_count[player]));
+      if ((netplay->connected_players1 & (1<<client)))
+         APPEND((M, " %u:%u", client, netplay->read_frame_count1[client]));
    }
    APPEND((M, "\n"));
    msg[sizeof(msg)-1] = '\0';
@@ -239,6 +239,10 @@ static bool send_input_frame(netplay_t *netplay, struct delta_frame *dframe,
    }
    buffer[1] = htonl((bufused-2) * sizeof(uint32_t));
 
+#ifdef DEBUG_NETPLAY_STEPS
+   RARCH_LOG("Sending input for client %u\n", (unsigned) client_num);
+#endif
+
    if (only)
    {
       if (!netplay_send(&only->send_packet_buffer, only->fd, buffer, bufused*sizeof(uint32_t)))
@@ -279,12 +283,8 @@ static bool send_input_frame(netplay_t *netplay, struct delta_frame *dframe,
 bool netplay_send_cur_input(netplay_t *netplay,
    struct netplay_connection *connection)
 {
-#define BUFSZ 16
-   uint32_t buffer[BUFSZ];
-   size_t bufused;
    struct delta_frame *dframe = &netplay->buffer[netplay->self_ptr];
    uint32_t from_client, to_client;
-   uint32_t devices, device;
    size_t i;
    netplay_input_state_t istate;
 
@@ -302,27 +302,7 @@ bool netplay_send_cur_input(netplay_t *netplay,
          {
             if (dframe->have_real[from_client])
             {
-               bufused = 0;
-               devices = netplay->client_devices[from_client];
-               for (device = 0; device < MAX_INPUT_DEVICES; device++)
-               {
-                  if (!(devices & (1<<device)))
-                     continue;
-
-                  // Add this device's input
-                  istate = dframe->real_input[device];
-                  while (istate && istate->client_num != from_client)
-                     istate = istate->next;
-                  if (!istate)
-                     continue;
-                  if (bufused + istate->size >= BUFSZ)
-                     continue;
-                  for (i = 0; i < istate->size; i++)
-                     buffer[bufused+i] = istate->data[i];
-                  bufused += istate->size;
-               }
-               if (!send_input_frame(netplay, connection, NULL,
-                     netplay->self_frame_count, from_client, bufused, buffer))
+               if (!send_input_frame(netplay, dframe, connection, NULL, from_client))
                   return false;
             }
          }
@@ -343,32 +323,10 @@ bool netplay_send_cur_input(netplay_t *netplay,
    if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING ||
        netplay->self_mode == NETPLAY_CONNECTION_SLAVE)
    {
-      devices = netplay->self_devices;
-      bufused = 0;
-      for (device = 0; device < MAX_INPUT_DEVICES; device++)
-      {
-         if (!(devices & (1<<device)))
-            continue;
-
-         // Add this device's input (FIXME: refactor)
-         istate = dframe->real_input[device];
-         while (istate && istate->client_num != netplay->self_client_num)
-            istate = istate->next;
-         if (!istate)
-            continue;
-         if (bufused + istate->size >= BUFSZ)
-            continue;
-         for (i = 0; i < istate->size; i++)
-            buffer[bufused+i] = istate->data[i];
-         bufused += istate->size;
-      }
-      if (!send_input_frame(netplay, connection, NULL,
-            netplay->self_frame_count,
-            (netplay->is_server ? NETPLAY_CMD_INPUT_BIT_SERVER : 0) | netplay->self_client_num,
-            bufused, buffer))
+      if (!send_input_frame(netplay, dframe, connection, NULL,
+            netplay->self_client_num))
          return false;
    }
-#undef BUFSZ
 
    if (!netplay_send_flush(&connection->send_packet_buffer, connection->fd,
          false))
@@ -589,7 +547,6 @@ static bool netplay_get_cmd(netplay_t *netplay,
       case NETPLAY_CMD_INPUT:
          {
             uint32_t frame_num, client_num, input_size, devices, device;
-            bool is_server;
             unsigned i;
             struct delta_frame *dframe;
 
@@ -603,9 +560,8 @@ static bool netplay_get_cmd(netplay_t *netplay,
                return false;
             RECV(&client_num, sizeof(client_num))
                return false;
-            frame_num = nhtohl(frame_num);
+            frame_num = ntohl(frame_num);
             client_num = ntohl(client_num);
-            is_server = (client_num & NETPLAY_CMD_INPUT_BIT_SERVER)?true:false;
             client_num &= 0xFFFF;
 
             if (netplay->is_server)
@@ -617,13 +573,12 @@ static bool netplay_get_cmd(netplay_t *netplay,
                   RARCH_ERR("Netplay input from non-participating player.\n");
                   return netplay_cmd_nak(netplay, connection);
                }
-               is_server = false;
                client_num = connection - netplay->connections + 1;
             }
 
             if (client_num > MAX_CLIENTS)
             {
-               RARCH_ERROR("NETPLAY_CMD_INPUT received data for an unsupported client.\n");
+               RARCH_ERR("NETPLAY_CMD_INPUT received data for an unsupported client.\n");
                return netplay_cmd_nak(netplay, connection);
             }
 
@@ -682,7 +637,6 @@ static bool netplay_get_cmd(netplay_t *netplay,
                   return false;
                for (di = 0; di < dsize; di++)
                   istate->data[di] = ntohl(istate->data[di]);
-               istate->is_real = true;
             }
             dframe->have_real[client_num] = true;
 
@@ -703,7 +657,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
             }
 
             /* If this was server data, advance our server pointer too */
-            if (is_server)
+            if (!netplay->is_server && client_num == 0)
             {
                netplay->server_ptr = netplay->read_ptr1[client_num];
                netplay->server_frame_count = netplay->read_frame_count1[client_num];
@@ -957,7 +911,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
       case NETPLAY_CMD_MODE:
       {
          uint32_t payload[3];
-         uint32_t frame, mode, client_num, devices;
+         uint32_t frame, mode, client_num, devices, device;
          size_t ptr;
          struct delta_frame *dframe;
 
@@ -1089,7 +1043,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
                runloop_msg_queue_push(msg, 1, 180, false);
 
 #ifdef DEBUG_NETPLAY_STEPS
-               RARCH_LOG("Received mode change self->%u\n", player);
+               RARCH_LOG("Received mode change self->%X\n", devices);
                print_state(netplay);
 #endif
 
@@ -1115,7 +1069,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
                runloop_msg_queue_push(msg, 1, 180, false);
 
 #ifdef DEBUG_NETPLAY_STEPS
-               RARCH_LOG("Received mode change %u self->spectating\n", netplay->self_player);
+               RARCH_LOG("Received mode change self->spectating\n");
                print_state(netplay);
 #endif
 
@@ -1149,7 +1103,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
                runloop_msg_queue_push(msg, 1, 180, false);
 
 #ifdef DEBUG_NETPLAY_STEPS
-               RARCH_LOG("Received mode change spectator->%u\n", player);
+               RARCH_LOG("Received mode change %u->%u\n", client_num, devices);
                print_state(netplay);
 #endif
 
@@ -1168,7 +1122,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
                runloop_msg_queue_push(msg, 1, 180, false);
 
 #ifdef DEBUG_NETPLAY_STEPS
-               RARCH_LOG("Received mode change %u->spectator\n", player);
+               RARCH_LOG("Received mode change %u->spectator\n", client_num);
                print_state(netplay);
 #endif
 
@@ -1308,8 +1262,10 @@ static bool netplay_get_cmd(netplay_t *netplay,
             uint32_t frame;
             uint32_t isize;
             uint32_t rd, wn;
-            uint32_t player;
+            uint32_t client, client_num;
             struct compression_transcoder *ctrans;
+
+            client_num = connection - netplay->connections + 1;
 
             /* Make sure we're ready for it */
             if (netplay->quirks & NETPLAY_QUIRK_INITIALIZATION)
@@ -1371,14 +1327,14 @@ static bool netplay_get_cmd(netplay_t *netplay,
             }
             frame = ntohl(frame);
 
-            if ((netplay->is_server && frame != netplay->read_frame_count[connection->player]) ||
+            if ((netplay->is_server && frame != netplay->read_frame_count1[client_num]) ||
                 (!netplay->is_server && frame != netplay->server_frame_count))
             {
                RARCH_ERR("CMD_LOAD_SAVESTATE loading a state out of order!\n");
                return netplay_cmd_nak(netplay, connection);
             }
 
-            if (!netplay_delta_frame_ready(netplay, &netplay->buffer[netplay->read_ptr[connection->player]], frame))
+            if (!netplay_delta_frame_ready(netplay, &netplay->buffer[netplay->read_ptr1[client_num]], frame))
             {
                /* Hopefully it will be after another round of input */
                goto shrt;
@@ -1418,7 +1374,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
                ctrans->decompression_backend->set_in(ctrans->decompression_stream,
                   netplay->zbuffer, cmd_size - 2*sizeof(uint32_t));
                ctrans->decompression_backend->set_out(ctrans->decompression_stream,
-                  (uint8_t*)netplay->buffer[netplay->read_ptr[connection->player]].state,
+                  (uint8_t*)netplay->buffer[netplay->read_ptr1[client_num]].state,
                   (unsigned)netplay->state_size);
                ctrans->decompression_backend->trans(ctrans->decompression_stream,
                   true, &rd, &wn, NULL);
@@ -1442,7 +1398,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
                 * load into. If we refer directly to read_ptr, then we'll end
                 * up never reading the input for read_frame_count itself, which
                 * will make the other side unhappy. */
-               netplay->run_ptr           = PREV_PTR(netplay->read_ptr[connection->player]);
+               netplay->run_ptr           = PREV_PTR(netplay->read_ptr1[client_num]);
                netplay->run_frame_count   = frame - 1;
                if (frame > netplay->self_frame_count)
                {
@@ -1452,19 +1408,19 @@ static bool netplay_get_cmd(netplay_t *netplay,
             }
 
             /* Don't expect earlier data from other clients */
-            for (player = 0; player < MAX_USERS; player++)
+            for (client = 0; client < MAX_CLIENTS; client++)
             {
-               if (!(netplay->connected_players & (1<<player))) continue;
-               if (frame > netplay->read_frame_count[player])
+               if (!(netplay->connected_players1 & (1<<client))) continue;
+               if (frame > netplay->read_frame_count1[client])
                {
-                  netplay->read_ptr[player] = netplay->read_ptr[connection->player];
-                  netplay->read_frame_count[player] = frame;
+                  netplay->read_ptr1[client] = netplay->read_ptr1[client_num];
+                  netplay->read_frame_count1[client] = frame;
                }
             }
 
             /* Make sure our states are correct */
             netplay->savestate_request_outstanding = false;
-            netplay->other_ptr                     = netplay->read_ptr[connection->player];
+            netplay->other_ptr                     = netplay->read_ptr1[client_num];
             netplay->other_frame_count             = frame;
 
 #ifdef DEBUG_NETPLAY_STEPS
@@ -1660,7 +1616,7 @@ int netplay_poll_net_input(netplay_t *netplay, bool block)
  */
 void netplay_handle_slaves(netplay_t *netplay)
 {
-   struct delta_frame *frame = &netplay->buffer[netplay->self_ptr];
+   struct delta_frame *oframe, *frame = &netplay->buffer[netplay->self_ptr];
    size_t i;
    for (i = 0; i < netplay->connections_size; i++)
    {
@@ -1668,30 +1624,45 @@ void netplay_handle_slaves(netplay_t *netplay)
       if (connection->active &&
           connection->mode == NETPLAY_CONNECTION_SLAVE)
       {
-         int player = connection->player;
+         uint32_t client_num = i + 1;
+         uint32_t devices, device;
 
          /* This is a slave connection. First, should we do anything at all? If
           * we've already "read" this data, then we can just ignore it */
-         if (netplay->read_frame_count[player] > netplay->self_frame_count)
+         if (netplay->read_frame_count1[client_num] > netplay->self_frame_count)
             continue;
 
          /* Alright, we have to send something. Do we need to generate it first? */
-         if (!frame->have_real[player])
+         if (!frame->have_real[client_num])
          {
+            devices = netplay->client_devices[client_num];
+
             /* Copy the previous frame's data */
-            memcpy(frame->real_input_state[player],
-                   netplay->buffer[PREV_PTR(netplay->self_ptr)].real_input_state[player],
-                   WORDS_PER_INPUT*sizeof(uint32_t));
-            frame->have_real[player] = true;
+            oframe = &netplay->buffer[PREV_PTR(netplay->self_ptr)];
+            for (device = 0; device < MAX_INPUT_DEVICES; device++)
+            {
+               netplay_input_state_t istate_out, istate_in;
+               if (!(devices & (1<<device)))
+                  continue;
+               istate_in = oframe->real_input[device];
+               while (istate_in && istate_in->client_num != client_num)
+                  istate_in = istate_in->next;
+               if (!istate_in)
+                  continue;
+               istate_out = netplay_input_state_for(&frame->real_input[device],
+                     client_num, istate_in->size, true);
+               memcpy(istate_out->data, istate_in->data,
+                     istate_in->size * sizeof(uint32_t));
+            }
+            frame->have_real[client_num] = true;
          }
 
          /* Send it along */
-         send_input_frame(netplay, NULL, NULL, netplay->self_frame_count,
-            player, frame->real_input_state[player]);
+         send_input_frame(netplay, frame, NULL, connection, client_num);
 
          /* And mark it as "read" */
-         netplay->read_ptr[player] = NEXT_PTR(netplay->self_ptr);
-         netplay->read_frame_count[player] = netplay->self_frame_count + 1;
+         netplay->read_ptr1[client_num] = NEXT_PTR(netplay->self_ptr);
+         netplay->read_frame_count1[client_num] = netplay->self_frame_count + 1;
       }
    }
 }

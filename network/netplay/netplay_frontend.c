@@ -71,7 +71,7 @@ static bool netplay_is_alive(void)
 {
    if (!netplay_data)
       return false;
-   return (netplay_data->is_server && (netplay_data->connected_players1>1)) ||
+   return (netplay_data->is_server) ||
           (!netplay_data->is_server && netplay_data->self_mode >= NETPLAY_CONNECTION_CONNECTED);
 }
 
@@ -232,8 +232,8 @@ static bool netplay_poll(void)
    if (res == -1)
       goto catastrophe;
 
-   /* Simulate the input if we don't have real input */
-   netplay_simulate_input(netplay_data, netplay_data->run_ptr, false);
+   /* Resolve and/or simulate the input if we don't have real input */
+   netplay_resolve_input(netplay_data, netplay_data->run_ptr, false);
 
    /* Handle any slaves */
    if (netplay_data->is_server && netplay_data->connected_slaves1)
@@ -499,7 +499,7 @@ static int16_t netplay_input_state(netplay_t *netplay,
    /* FIXME: Mixing */
    delta = &netplay->buffer[ptr];
    istate = delta->real_input[port];
-   if (istate && istate->is_real)
+   if (istate && istate->used)
       delta->used_real[port] = true;
    else
       istate = delta->simulated_input[port];
@@ -1172,8 +1172,8 @@ static void netplay_toggle_play_spectate(netplay_t *netplay)
          payload[2] = htonl(1<<device);
          netplay->self_mode = NETPLAY_CONNECTION_PLAYING;
          netplay->connected_players1 |= 1;
-         netplay->client_devices[0] = (1<<device);
-         netplay->device_clients[device] = netplay->self_devices = 1;
+         netplay->client_devices[0] = netplay->self_devices = (1<<device);
+         netplay->device_clients[device] = 1;
 
          dmsg = msg;
          msg[sizeof(msg)-1] = '\0';
@@ -1317,7 +1317,13 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
    if (netplay_data)
    {
       if (netplay_data->is_server && !settings->bools.netplay_start_as_spectator)
+      {
          netplay_data->self_mode = NETPLAY_CONNECTION_PLAYING;
+         netplay_data->self_devices = 1;
+         netplay_data->client_devices[0] = 1;
+         netplay_data->device_clients[0] = 1;
+         netplay_data->connected_players1 = 1;
+      }
       return true;
    }
 

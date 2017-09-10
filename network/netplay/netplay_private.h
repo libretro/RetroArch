@@ -183,7 +183,6 @@ enum netplay_cmd
    NETPLAY_CMD_CFG_ACK        = 0x0062
 };
 
-#define NETPLAY_CMD_INPUT_BIT_SERVER   (1U<<31)
 #define NETPLAY_CMD_SYNC_BIT_PAUSED    (1U<<31)
 #define NETPLAY_CMD_PLAY_BIT_SLAVE     (1U<<31)
 #define NETPLAY_CMD_MODE_BIT_SLAVE     (1U<<18)
@@ -254,11 +253,11 @@ typedef struct netplay_input_state
    /* The next input state (forming a list) */
    struct netplay_input_state *next;
 
+   /* Is this a buffer with real data? */
+   bool used;
+
    /* Whose data is this? */
    uint32_t client_num;
-
-   /* Is this real data? */
-   bool is_real;
 
    /* How many words of input data do we have? */
    uint32_t size;
@@ -278,10 +277,9 @@ struct delta_frame
    /* The CRC-32 of the serialized state if we've calculated it, else 0 */
    uint32_t crc;
 
-   /* The processed input, i.e., what's actually going to the core. is_real
-    * here means all input came from real players, none simulated. One list per
-    * input device. */
-   netplay_input_state_t processed_input[MAX_INPUT_DEVICES];
+   /* The resolved input, i.e., what's actually going to the core. One input
+    * per device. */
+   netplay_input_state_t resolved_input[MAX_INPUT_DEVICES];
 
    /* The real input */
    netplay_input_state_t real_input[MAX_INPUT_DEVICES];
@@ -647,12 +645,26 @@ bool netplay_delta_frame_ready(netplay_t *netplay, struct delta_frame *delta,
 uint32_t netplay_delta_frame_crc(netplay_t *netplay, struct delta_frame *delta);
 
 /**
+ * netplay_delta_frame_free
+ *
+ * Free a delta frame's dependencies
+ */
+void netplay_delta_frame_free(struct delta_frame *delta);
+
+/**
  * netplay_input_state_for
  *
  * Get an input state for a particular client
  */
 netplay_input_state_t netplay_input_state_for(netplay_input_state_t *list,
-      uint32_t client_num, size_t size, bool mustCreate);
+      uint32_t client_num, size_t size, bool must_create);
+
+/**
+ * netplay_expected_input_size
+ *
+ * Size in words for a given set of devices.
+ */
+uint32_t netplay_expected_input_size(uint32_t devices);
 
 
 /***************************************************************
@@ -897,15 +909,17 @@ void netplay_init_nat_traversal(netplay_t *netplay);
 void netplay_update_unread_ptr(netplay_t *netplay);
 
 /**
- * netplay_simulate_input
+ * netplay_resolve_input
  * @netplay             : pointer to netplay object
- * @sim_ptr             : frame index for which to simulate input
+ * @sim_ptr             : frame pointer for which to resolve input
  * @resim               : are we resimulating, or simulating this frame for the
  *                        first time?
  *
  * "Simulate" input by assuming it hasn't changed since the last read input.
+ * Returns true if the resolved input changed from the last time it was
+ * resolved.
  */
-void netplay_simulate_input(netplay_t *netplay, size_t sim_ptr, bool resim);
+bool netplay_resolve_input(netplay_t *netplay, size_t sim_ptr, bool resim);
 
 /**
  * netplay_sync_pre_frame
