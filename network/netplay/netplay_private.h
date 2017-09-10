@@ -43,7 +43,6 @@
 #define MAX_RETRIES                 16
 #define RETRY_MS                    500
 #define MAX_INPUT_DEVICES           16
-#undef MAX_USERS /* FIXME: Temporary */
 
 /* We allow only 32 clients to fit into a 32-bit bitmap */
 #define MAX_CLIENTS                 32
