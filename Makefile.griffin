@@ -327,17 +327,16 @@ else ifeq ($(platform), windows_msvc6_x86)
    PLATCFLAGS += -D_WIN32 -DWINVER=0x0400 -D_WIN32_WINNT=0x0400 -D__STDC_CONSTANT_MACROS -D_MBCS
    LDFLAGS += shell32.lib user32.lib gdi32.lib comdlg32.lib winmm.lib ole32.lib
 
-   VCDIR := $(shell reg query "HKLM\SOFTWARE\Wow6432Node\Microsoft\DevStudio\6.0\Products\Microsoft Visual C++" -v "ProductDir" | grep -o '[A-Z]:\\.*')
+   VCDIR ?= $(shell reg query "HKLM\SOFTWARE\Wow6432Node\Microsoft\DevStudio\6.0\Products\Microsoft Visual C++" -v "ProductDir" | grep -o '[A-Z]:\\.*')
 
    PATH := $(shell IFS=$$'\n'; cygpath "$(VCDIR)/bin"):$(PATH)
    PATH := $(PATH):$(shell IFS=$$'\n'; cygpath "$(VCDIR)/../Common/MSDev98/Bin")
-   INCLUDE := $(shell IFS=$$'\n'; cygpath "$(VCDIR)/Include")
+   INCLUDE := $(shell IFS=$$'\n'; cygpath -w "$(VCDIR)/Include")
    LIB := $(shell IFS=$$'\n'; cygpath -w "$(VCDIR)/Lib")
 
-   WindowsSdkDir := $(INETSDK)
-
-   export INCLUDE := $(INCLUDE);$(INETSDK)/Include;libretro-common/include;libretro-common/include/compat/msvc
-   export LIB := $(LIB);$(WindowsSdkDir);$(INETSDK)/Lib
+   export INCLUDE := $(INCLUDE);$(INETSDK)\Include;libretro-common\include;libretro-common\include\compat\msvc
+   export LIB := $(LIB);$(INETSDK)/Lib
+   export INETSDK := $(INETSDK)
 else ifeq ($(platform), windows_msvc2003_x86)
    HAVE_RPNG                := 1
    HAVE_RJPEG               := 1
