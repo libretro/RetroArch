@@ -372,15 +372,22 @@ static int action_bind_sublabel_netplay_room(
       const char *label, const char *path,
       char *s, size_t len)
 {
+   unsigned offset        = i - 3;
+   const char *ra_version = netplay_room_list[offset].retroarch_version;
+   const char *corename   = netplay_room_list[offset].corename;
+   const char *gamename   = netplay_room_list[offset].gamename;
+   const char *core_ver   = netplay_room_list[offset].coreversion;
+   uint32_t     gamecrc   = netplay_room_list[offset].gamecrc;
    if (i < 1)
       return 0;
 
    snprintf(s,len, "RetroArch: %s\nCore: %s (%s)\nGame: %s (%08x)",
-      string_is_empty(netplay_room_list[i - 3].retroarch_version) ? "n/a" : netplay_room_list[i - 3].retroarch_version,
-      netplay_room_list[i - 3].corename, netplay_room_list[i - 3].coreversion,
-      !string_is_equal(netplay_room_list[i - 3].gamename, "N/A") ? netplay_room_list[i - 3].gamename : "n/a", netplay_room_list[i - 3].gamecrc);
+      string_is_empty(ra_version) ? "n/a" : ra_version,
+      corename, core_ver,
+      !string_is_equal(gamename, "N/A") ? gamename : "n/a",
+      gamecrc);
 #if 0
-   strlcpy(s, netplay_room_list[i - 3].corename, len);
+   strlcpy(s, corename, len);
 #endif
    return 0;
 }
