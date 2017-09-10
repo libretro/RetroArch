@@ -82,12 +82,14 @@ static int menu_input_key_bind_set_mode_common(
       enum menu_input_binds_ctl_state state,
       rarch_setting_t  *setting)
 {
+   menu_displaylist_info_t info;
    unsigned bind_type            = 0;
-   menu_displaylist_info_t info  = {0};
    struct retro_keybind *keybind = NULL;
    unsigned         index_offset = setting->index_offset;
    file_list_t *menu_stack       = menu_entries_get_menu_stack_ptr(0);
    size_t selection              = menu_navigation_get_selection();
+
+   menu_displaylist_info_init(&info);
 
    switch (state)
    {

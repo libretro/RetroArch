@@ -767,28 +767,13 @@ int menu_action_handle_setting(rarch_setting_t *setting,
             const char      *name         = setting->name;
             size_t selection              = menu_navigation_get_selection();
 
-            info.enum_idx                 = MSG_UNKNOWN;
-            info.need_sort                = false;
-            info.need_refresh             = false;
-            info.need_entries_refresh     = false;
-            info.need_push                = false;
-            info.need_clear               = false;
-            info.push_builtin_cores       = false;
-            info.download_core            = false;
-            info.need_navigation_clear    = false;
+            menu_displaylist_info_init(&info);
+
             strlcpy(info.path,  setting->default_value.string, sizeof(info.path));
-            info.path_b[0]                = '\0';
-            info.path_c[0]                = '\0';
-            info.exts[0]                  = '\0';
             strlcpy(info.label, name, sizeof(info.label));
             info.type                     = type;
-            info.type_default             = 0;
-            info.flags                    = 0;
-            info.label_hash               = 0;
             info.directory_ptr            = selection;
             info.list                     = menu_stack;
-            info.menu_list                = NULL;
-            info.setting                  = NULL;
 
             if (menu_displaylist_ctl(DISPLAYLIST_GENERIC, &info))
                menu_displaylist_process(&info);
@@ -1684,31 +1669,13 @@ void general_write_handler(void *data)
             menu_displaylist_info_t info;
             file_list_t *menu_stack      = menu_entries_get_menu_stack_ptr(0);
 
-            info.enum_idx                 = MENU_ENUM_LABEL_HELP;
-            info.need_sort                = false;
-            info.need_refresh             = false;
-            info.need_entries_refresh     = false;
-            info.need_push                = false;
-            info.need_clear               = false;
-            info.push_builtin_cores       = false;
-            info.download_core            = false;
-            info.need_navigation_clear    = false;
-            info.path[0]                  = '\0';
-            info.path_b[0]                = '\0';
-            info.path_c[0]                = '\0';
-            info.exts[0]                  = '\0';
+            menu_displaylist_info_init(&info);
+
+            info.enum_idx                = MENU_ENUM_LABEL_HELP;
             strlcpy(info.label,
                   msg_hash_to_str(MENU_ENUM_LABEL_HELP),
                   sizeof(info.label));
-            info.type                     = 0;
-            info.type_default             = 0;
-            info.flags                    = 0;
-            info.label_hash               = 0;
-            info.directory_ptr            = 0;
-            info.list                     = menu_stack;
-            info.menu_list                = NULL;
-            info.setting                  = NULL;
-
+            info.list                    = menu_stack;
 
             if (menu_displaylist_ctl(DISPLAYLIST_GENERIC, &info))
                menu_displaylist_process(&info);

@@ -119,13 +119,13 @@ int generic_action_ok_displaylist_push(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned action_type)
 {
+   menu_displaylist_info_t      info;
    char new_path_tmp[PATH_MAX_LENGTH];
    char tmp[PATH_MAX_LENGTH];
    char parent_dir[PATH_MAX_LENGTH];
    char action_path[PATH_MAX_LENGTH];
    char lpl_basename[PATH_MAX_LENGTH];
    enum menu_displaylist_ctl_state dl_type = DISPLAYLIST_NONE;
-   menu_displaylist_info_t      info       = {0};
    const char           *menu_label        = NULL;
    const char            *menu_path        = NULL;
    const char          *content_path       = NULL;
@@ -135,6 +135,8 @@ int generic_action_ok_displaylist_push(const char *path,
    enum msg_hash_enums enum_idx            = MSG_UNKNOWN;
    settings_t            *settings         = config_get_ptr();
    file_list_t           *menu_stack       = menu_entries_get_menu_stack_ptr(0);
+
+   menu_displaylist_info_init(&info);
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();

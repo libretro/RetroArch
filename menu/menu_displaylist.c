@@ -4037,15 +4037,17 @@ static bool menu_displaylist_push_internal(
 
 bool menu_displaylist_push(menu_displaylist_ctx_entry_t *entry)
 {
+   menu_displaylist_info_t info;
    menu_file_list_cbs_t *cbs      = NULL;
    const char *path               = NULL;
    const char *label              = NULL;
    unsigned type                  = 0;
    enum msg_hash_enums enum_idx   = MSG_UNKNOWN;
-   menu_displaylist_info_t info   = {0};
 
    if (!entry)
       return false;
+
+   menu_displaylist_info_init(&info);
 
    menu_entries_get_last_stack(&path, &label, &type, &enum_idx, NULL);
 
@@ -4223,6 +4225,32 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
       ui_companion_driver_notify_list_loaded(info->list, info->menu_list);
    }
    return true;
+}
+
+void menu_displaylist_info_init(menu_displaylist_info_t *info)
+{
+   info->enum_idx                 = MSG_UNKNOWN;
+   info->need_sort                = false;
+   info->need_refresh             = false;
+   info->need_entries_refresh     = false;
+   info->need_push                = false;
+   info->need_clear               = false;
+   info->push_builtin_cores       = false;
+   info->download_core            = false;
+   info->need_navigation_clear    = false;
+   info->path[0]                  = '\0';
+   info->path_b[0]                = '\0';
+   info->path_c[0]                = '\0';
+   info->exts[0]                  = '\0';
+   info->label[0]                 = '\0';
+   info->type                     = 0;
+   info->type_default             = 0;
+   info->flags                    = 0;
+   info->label_hash               = 0;
+   info->directory_ptr            = 0;
+   info->list                     = NULL;
+   info->menu_list                = NULL;
+   info->setting                  = NULL;
 }
 
 bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
