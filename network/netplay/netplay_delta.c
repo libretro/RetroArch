@@ -59,9 +59,9 @@ bool netplay_delta_frame_ready(netplay_t *netplay, struct delta_frame *delta,
    delta->crc = 0;
    for (i = 0; i < MAX_INPUT_DEVICES; i++)
    {
-      clear_input(delta->resolved_input1[i]);
-      clear_input(delta->real_input1[i]);
-      clear_input(delta->simulated_input1[i]);
+      clear_input(delta->resolved_input[i]);
+      clear_input(delta->real_input[i]);
+      clear_input(delta->simlated_input[i]);
    }
    delta->have_local = false;
    for (i = 0; i < MAX_CLIENTS; i++)
@@ -117,9 +117,9 @@ void netplay_delta_frame_free(struct delta_frame *delta)
 
    for (i = 0; i < MAX_INPUT_DEVICES; i++)
    {
-      free_input_state(&delta->resolved_input1[i]);
-      free_input_state(&delta->real_input1[i]);
-      free_input_state(&delta->simulated_input1[i]);
+      free_input_state(&delta->resolved_input[i]);
+      free_input_state(&delta->real_input[i]);
+      free_input_state(&delta->simlated_input[i]);
    }
 }
 

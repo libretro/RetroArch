@@ -45,7 +45,7 @@ static void print_state(netplay_t *netplay)
       APPEND((M, " H:%u", netplay->server_frame_count));
    for (client = 0; client < MAX_USERS; client++)
    {
-      if ((netplay->connected_players1 & (1<<client)))
+      if ((netplay->connected_players & (1<<client)))
          APPEND((M, " %u:%u", client, netplay->read_frame_count1[client]));
    }
    msg[sizeof(msg)-1] = '\0';
@@ -124,7 +124,7 @@ void netplay_hangup(netplay_t *netplay, struct netplay_connection *connection)
    if (!netplay->is_server)
    {
       netplay->self_mode = NETPLAY_CONNECTION_NONE;
-      netplay->connected_players1 &= (1L<<netplay->self_client_num);
+      netplay->connected_players &= (1L<<netplay->self_client_num);
       for (i = 0; i < MAX_CLIENTS; i++)
       {
          if (i == netplay->self_client_num)
@@ -150,8 +150,8 @@ void netplay_hangup(netplay_t *netplay, struct netplay_connection *connection)
          connection->delay_frame = netplay->read_frame_count1[client_num];
 
          /* Mark them as not playing anymore */
-         netplay->connected_players1 &= ~(1L<<client_num);
-         netplay->connected_slaves1  &= ~(1L<<client_num);
+         netplay->connected_players &= ~(1L<<client_num);
+         netplay->connected_slaves  &= ~(1L<<client_num);
          netplay->client_devices[client_num] = 0;
          for (i = 0; i < MAX_INPUT_DEVICES; i++)
             netplay->device_clients[i] &= ~(1L<<client_num);
@@ -225,7 +225,7 @@ static bool send_input_frame(netplay_t *netplay, struct delta_frame *dframe,
       netplay_input_state_t istate;
       if (!(devices & (1<<device)))
          continue;
-      istate = dframe->real_input1[device];
+      istate = dframe->real_input[device];
       while (istate && istate->client_num != client_num)
          istate = istate->next;
       if (!istate)
@@ -298,7 +298,7 @@ bool netplay_send_cur_input(netplay_t *netplay,
       {
          if (from_client == to_client)
             continue;
-         if ((netplay->connected_players1 & (1<<from_client)))
+         if ((netplay->connected_players & (1<<from_client)))
          {
             if (dframe->have_real[from_client])
             {
@@ -594,7 +594,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
                return netplay_cmd_nak(netplay, connection);
             }
 
-            if (client_num >= MAX_CLIENTS || !(netplay->connected_players1 & (1<<client_num)))
+            if (client_num >= MAX_CLIENTS || !(netplay->connected_players & (1<<client_num)))
             {
                RARCH_ERR("Invalid NETPLAY_CMD_INPUT player number.\n");
                return netplay_cmd_nak(netplay, connection);
@@ -633,7 +633,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
                   continue;
 
                dsize = netplay_expected_input_size(1 << device);
-               istate = netplay_input_state_for(&dframe->real_input1[device],
+               istate = netplay_input_state_for(&dframe->real_input[device],
                   client_num, dsize, true, false);
                if (!istate)
                {
@@ -780,8 +780,8 @@ static bool netplay_get_cmd(netplay_t *netplay,
 
             /* Mark them as not playing anymore */
             connection->mode = NETPLAY_CONNECTION_SPECTATING;
-            netplay->connected_players1 &= ~(1<<client_num);
-            netplay->connected_slaves1  &= ~(1<<client_num);
+            netplay->connected_players &= ~(1<<client_num);
+            netplay->connected_slaves  &= ~(1<<client_num);
             netplay->client_devices[client_num] = 0;
             for (i = 0; i < MAX_INPUT_DEVICES; i++)
                netplay->device_clients[client_num] &= ~(1<<client_num);
@@ -884,9 +884,9 @@ static bool netplay_get_cmd(netplay_t *netplay,
             connection->mode = slave ? NETPLAY_CONNECTION_SLAVE :
                                        NETPLAY_CONNECTION_PLAYING;
 
-            netplay->connected_players1 |= 1<<client_num;
+            netplay->connected_players |= 1<<client_num;
             if (slave)
-               netplay->connected_slaves1 |= 1<<client_num;
+               netplay->connected_slaves |= 1<<client_num;
             netplay->client_devices[client_num] |= 1<<device;
             netplay->device_clients[device] |= 1<<client_num;
 
@@ -990,7 +990,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
                else
                   netplay->self_mode = NETPLAY_CONNECTION_PLAYING;
 
-               netplay->connected_players1 |= (1<<client_num);
+               netplay->connected_players |= (1<<client_num);
                netplay->client_devices[client_num] = devices;
                for (device = 0; device < MAX_INPUT_DEVICES; device++)
                   if (devices & (1<<device))
@@ -1008,7 +1008,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
                      {
                         if (!(devices & (1<<device))) continue;
                         netplay_input_state_t istate = netplay_input_state_for(
-                              &dframe->real_input1[device], client_num,
+                              &dframe->real_input[device], client_num,
                               3 /* FIXME */, true, false);
                         memset(istate->data, 0, istate->size*sizeof(uint32_t));
                      }
@@ -1074,7 +1074,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
                }
 
                /* Unmark ourself, in case we were in slave mode */
-               netplay->connected_players1 &= ~(1<<client_num);
+               netplay->connected_players &= ~(1<<client_num);
                netplay->client_devices[client_num] = 0;
                for (device = 0; device < MAX_INPUT_DEVICES; device++)
                   netplay->device_clients[device] &= ~(1<<client_num);
@@ -1103,7 +1103,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
                   return netplay_cmd_nak(netplay, connection);
                }
 
-               netplay->connected_players1 |= (1<<client_num);
+               netplay->connected_players |= (1<<client_num);
                netplay->client_devices[client_num] = devices;
                for (device = 0; device < MAX_INPUT_DEVICES; device++)
                   if (devices & (1<<device))
@@ -1126,7 +1126,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
             }
             else
             {
-               netplay->connected_players1 &= ~(1<<client_num);
+               netplay->connected_players &= ~(1<<client_num);
                netplay->client_devices[client_num] = 0;
                for (device = 0; device < MAX_INPUT_DEVICES; device++)
                   netplay->device_clients[device] &= ~(1<<client_num);
@@ -1426,7 +1426,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
             /* Don't expect earlier data from other clients */
             for (client = 0; client < MAX_CLIENTS; client++)
             {
-               if (!(netplay->connected_players1 & (1<<client))) continue;
+               if (!(netplay->connected_players & (1<<client))) continue;
                if (frame > netplay->read_frame_count1[client])
                {
                   netplay->read_ptr1[client] = netplay->read_ptr1[client_num];
@@ -1660,12 +1660,12 @@ void netplay_handle_slaves(netplay_t *netplay)
                netplay_input_state_t istate_out, istate_in;
                if (!(devices & (1<<device)))
                   continue;
-               istate_in = oframe->real_input1[device];
+               istate_in = oframe->real_input[device];
                while (istate_in && istate_in->client_num != client_num)
                   istate_in = istate_in->next;
                if (!istate_in)
                   continue;
-               istate_out = netplay_input_state_for(&frame->real_input1[device],
+               istate_out = netplay_input_state_for(&frame->real_input[device],
                      client_num, istate_in->size, true, false);
                memcpy(istate_out->data, istate_in->data,
                      istate_in->size * sizeof(uint32_t));

@@ -39,7 +39,7 @@
  */
 void netplay_update_unread_ptr(netplay_t *netplay)
 {
-   if (netplay->is_server && netplay->connected_players1<=1)
+   if (netplay->is_server && netplay->connected_players<=1)
    {
       /* Nothing at all to read! */
       netplay->unread_ptr = netplay->self_ptr;
@@ -54,8 +54,8 @@ void netplay_update_unread_ptr(netplay_t *netplay)
 
       for (client = 0; client < MAX_CLIENTS; client++)
       {
-         if (!(netplay->connected_players1 & (1<<client))) continue;
-         if ((netplay->connected_slaves1 & (1<<client))) continue;
+         if (!(netplay->connected_players & (1<<client))) continue;
+         if ((netplay->connected_slaves & (1<<client))) continue;
          if (netplay->read_frame_count1[client] < new_unread_frame_count)
          {
             new_unread_ptr = netplay->read_ptr1[client];
@@ -106,7 +106,7 @@ bool netplay_resolve_input(netplay_t *netplay, size_t sim_ptr, bool resim)
 
    for (client = 0; client < MAX_CLIENTS; client++)
    {
-      if (!(netplay->connected_players1 & (1<<client))) continue;
+      if (!(netplay->connected_players & (1<<client))) continue;
 
       devices = netplay->client_devices[client];
 
@@ -116,18 +116,18 @@ bool netplay_resolve_input(netplay_t *netplay, size_t sim_ptr, bool resim)
             continue;
 
          simulated = false;
-         simstate = netplay_input_state_for(&simframe->real_input1[device], client, 3 /* FIXME */, false, true);
+         simstate = netplay_input_state_for(&simframe->real_input[device], client, 3 /* FIXME */, false, true);
          if (!simstate)
          {
             /* Don't already have this input, so must simulate */
             simulated = true;
-            simstate = netplay_input_state_for(&simframe->simulated_input1[device], client, 3 /* FIXME */, false, false);
+            simstate = netplay_input_state_for(&simframe->simlated_input[device], client, 3 /* FIXME */, false, false);
             if (!simstate)
                continue;
 
             prev = PREV_PTR(netplay->read_ptr1[client]);
             pframe = &netplay->buffer[prev];
-            pstate = netplay_input_state_for(&pframe->real_input1[device], client, 3 /* FIXME */, false, true);
+            pstate = netplay_input_state_for(&pframe->real_input[device], client, 3 /* FIXME */, false, true);
             if (!pstate)
                continue;
 
@@ -164,7 +164,7 @@ bool netplay_resolve_input(netplay_t *netplay, size_t sim_ptr, bool resim)
          }
 
          /* Now we copy the state, whether real or simulated, out into the resolved state (FIXME: Merging) */
-         resstate = netplay_input_state_for(&simframe->resolved_input1[device], 0, 3 /* FIXME */, false, false);
+         resstate = netplay_input_state_for(&simframe->resolved_input[device], 0, 3 /* FIXME */, false, false);
          if (!resstate)
             continue;
          resstate->used = !simulated; /* We reuse "used" to mean "real" */
@@ -427,7 +427,7 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
    }
 
    /* Only relevant if we're connected and not in a desynching operation */
-   if ((netplay->is_server && (netplay->connected_players1<=1)) ||
+   if ((netplay->is_server && (netplay->connected_players<=1)) ||
        (netplay->self_mode < NETPLAY_CONNECTION_CONNECTED) ||
        (netplay->desync))
    {
@@ -575,7 +575,7 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
       /* Look for players that are ahead of us */
       for (client = 0; client < MAX_CLIENTS; client++)
       {
-         if (!(netplay->connected_players1 & (1<<client))) continue;
+         if (!(netplay->connected_players & (1<<client))) continue;
          if (netplay->read_frame_count1[client] > hi_frame_count)
             hi_frame_count = netplay->read_frame_count1[client];
       }

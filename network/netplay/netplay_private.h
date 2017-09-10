@@ -278,14 +278,14 @@ struct delta_frame
 
    /* The resolved input, i.e., what's actually going to the core. One input
     * per device. */
-   netplay_input_state_t resolved_input1[MAX_INPUT_DEVICES];
+   netplay_input_state_t resolved_input[MAX_INPUT_DEVICES];
 
    /* The real input */
-   netplay_input_state_t real_input1[MAX_INPUT_DEVICES];
+   netplay_input_state_t real_input[MAX_INPUT_DEVICES];
 
    /* The simulated input. is_real here means the simulation is done, i.e.,
     * it's a real simulation, not real input. */
-   netplay_input_state_t simulated_input1[MAX_INPUT_DEVICES];
+   netplay_input_state_t simlated_input[MAX_INPUT_DEVICES];
 
    /* Have we read local input? */
    bool have_local;
@@ -387,11 +387,11 @@ struct netplay
    struct netplay_connection one_connection; /* Client only */
 
    /* Bitmap of clients with input devices */
-   uint32_t connected_players1;
+   uint32_t connected_players;
 
    /* Bitmap of clients playing in slave mode (should be a subset of
     * connected_players) */
-   uint32_t connected_slaves1;
+   uint32_t connected_slaves;
 
    /* For each client, the bitmap of devices they're connected to */
    uint32_t client_devices[MAX_CLIENTS];
@@ -489,10 +489,6 @@ struct netplay
 
    /* Have we requested a savestate as a sync point? */
    bool savestate_request_outstanding;
-
-   /* A buffer for outgoing input packets. */
-   size_t input_packet_buffer_size;
-   uint32_t *input_packet_buffer1;
 
    /* Our local socket info */
    struct addrinfo *addr;

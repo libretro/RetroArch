@@ -135,7 +135,7 @@ static bool get_self_input_state(netplay_t *netplay)
       if (!(devices & (1<<devi)))
          continue;
 
-      istate = netplay_input_state_for(&ptr->real_input1[devi],
+      istate = netplay_input_state_for(&ptr->real_input[devi],
             netplay->self_client_num, 3 /* FIXME */, true, false);
       if (!istate)
          continue; /* FIXME: More severe? */
@@ -227,7 +227,7 @@ static bool netplay_poll(void)
     * frame */
    netplay_update_unread_ptr(netplay_data);
    if (netplay_data->stateless_mode &&
-       (netplay_data->connected_players1>1) &&
+       (netplay_data->connected_players>1) &&
        netplay_data->unread_frame_count <= netplay_data->run_frame_count)
       res = netplay_poll_net_input(netplay_data, true);
    else
@@ -239,7 +239,7 @@ static bool netplay_poll(void)
    netplay_resolve_input(netplay_data, netplay_data->run_ptr, false);
 
    /* Handle any slaves */
-   if (netplay_data->is_server && netplay_data->connected_slaves1)
+   if (netplay_data->is_server && netplay_data->connected_slaves)
       netplay_handle_slaves(netplay_data);
 
    netplay_update_unread_ptr(netplay_data);
@@ -360,7 +360,7 @@ static bool netplay_poll(void)
    {
       /* Have we not read enough latency frames? */
       if (netplay_data->self_mode == NETPLAY_CONNECTION_PLAYING &&
-          netplay_data->connected_players1 &&
+          netplay_data->connected_players &&
           netplay_data->run_frame_count + netplay_data->input_latency_frames > netplay_data->self_frame_count)
       {
          netplay_data->stall = NETPLAY_STALL_INPUT_LATENCY;
@@ -380,7 +380,7 @@ static bool netplay_poll(void)
             for (client = 1; client < MAX_CLIENTS; client++)
             {
                struct netplay_connection *connection;
-               if (!(netplay_data->connected_players1 & (1<<client)))
+               if (!(netplay_data->connected_players & (1<<client)))
                   continue;
                if (netplay_data->read_frame_count1[client] > netplay_data->unread_frame_count)
                   continue;
@@ -501,7 +501,7 @@ static int16_t netplay_input_state(netplay_t *netplay,
 
    /* FIXME: Mixing */
    delta = &netplay->buffer[ptr];
-   istate = delta->resolved_input1[port];
+   istate = delta->resolved_input[port];
    if (istate && istate->used)
       delta->used_real[port] = true;
    if (!istate)
@@ -891,7 +891,7 @@ bool netplay_pre_frame(netplay_t *netplay)
    }
 
    if (sync_stalled ||
-       ((!netplay->is_server || (netplay->connected_players1>1)) &&
+       ((!netplay->is_server || (netplay->connected_players>1)) &&
         (netplay->stall || netplay->remote_paused)))
    {
       /* We may have received data even if we're stalled, so run post-frame
@@ -953,7 +953,7 @@ static void netplay_force_future(netplay_t *netplay)
       uint32_t client;
       for (client = 0; client < MAX_CLIENTS; client++)
       {
-         if (!(netplay->connected_players1 & (1<<client))) continue;
+         if (!(netplay->connected_players & (1<<client))) continue;
          if (netplay->read_frame_count1[client] < netplay->run_frame_count)
          {
             netplay->read_ptr1[client] = netplay->run_ptr;
@@ -1148,8 +1148,8 @@ static void netplay_toggle_play_spectate(netplay_t *netplay)
          payload[1] = htonl(netplay->self_client_num);
          payload[2] = htonl(0);
          netplay->self_mode = NETPLAY_CONNECTION_SPECTATING;
-         netplay->connected_players1 |= ~(1L);
-         netplay->connected_slaves1 |= ~(1L);
+         netplay->connected_players |= ~(1L);
+         netplay->connected_slaves |= ~(1L);
          netplay->client_devices[0] = 0;
          for (i = 0; i < MAX_INPUT_DEVICES; i++)
             netplay->device_clients[i] |= ~(1L);
@@ -1172,7 +1172,7 @@ static void netplay_toggle_play_spectate(netplay_t *netplay)
          payload[1] = htonl(NETPLAY_CMD_MODE_BIT_PLAYING | device);
          payload[2] = htonl(1<<device);
          netplay->self_mode = NETPLAY_CONNECTION_PLAYING;
-         netplay->connected_players1 |= 1;
+         netplay->connected_players |= 1;
          netplay->client_devices[0] = netplay->self_devices = (1<<device);
          netplay->device_clients[device] = 1;
          netplay->read_ptr1[0] = netplay->self_ptr;
@@ -1325,7 +1325,7 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
          netplay_data->self_devices = 1;
          netplay_data->client_devices[0] = 1;
          netplay_data->device_clients[0] = 1;
-         netplay_data->connected_players1 = 1;
+         netplay_data->connected_players = 1;
       }
       return true;
    }

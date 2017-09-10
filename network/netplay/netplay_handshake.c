@@ -1002,8 +1002,8 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
    }
 
    /* Get the client-controller mapping */
-   netplay->connected_players1 =
-         netplay->connected_slaves1 =
+   netplay->connected_players =
+         netplay->connected_slaves =
          netplay->self_devices = 0;
    for (i = 0; i < MAX_CLIENTS; i++)
       netplay->client_devices[i] = 0;
@@ -1015,7 +1015,7 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
       fprintf(stderr, "Device %d: %d\n", (int) i, (int) device);
 
       netplay->device_clients[i] = device;
-      netplay->connected_players1 |= device;
+      netplay->connected_players |= device;
       for (j = 0; j < MAX_CLIENTS; j++)
       {
          if (device & (1<<j))
