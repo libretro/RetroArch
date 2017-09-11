@@ -318,9 +318,6 @@ struct delta_frame
 
    /* Have we read the real (remote) input? */
    bool have_real[MAX_CLIENTS];
-
-   /* Is the current state as of self_frame_count using the real (remote) data? */
-   bool used_real[MAX_CLIENTS];
 };
 
 struct socket_buffer

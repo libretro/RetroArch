@@ -496,11 +496,8 @@ static int16_t netplay_input_state(netplay_t *netplay,
       return 0;
    }
 
-   /* FIXME: Mixing */
    delta = &netplay->buffer[ptr];
    istate = delta->resolved_input[port];
-   if (istate && istate->used)
-      delta->used_real[port] = true;
    if (!istate)
       return 0;
 
@@ -1253,23 +1250,23 @@ static void netplay_toggle_play_spectate(netplay_t *netplay)
    }
    else
    {
-      uint32_t cmd;
+      enum rarch_netplay_connection_mode mode;
 
       if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING ||
           netplay->self_mode == NETPLAY_CONNECTION_SLAVE)
       {
          /* Switch to spectator mode immediately */
          netplay->self_mode = NETPLAY_CONNECTION_SPECTATING;
-         cmd = NETPLAY_CMD_SPECTATE;
+         mode = NETPLAY_CONNECTION_SPECTATING;
       }
       else if (netplay->self_mode == NETPLAY_CONNECTION_SPECTATING)
       {
          /* Switch only after getting permission */
-         cmd = NETPLAY_CMD_PLAY;
+         mode = NETPLAY_CONNECTION_PLAYING;
       }
       else return;
 
-      netplay_send_raw_cmd_all(netplay, NULL, cmd, NULL, 0);
+      netplay_cmd_mode(netplay, &netplay->one_connection, mode);
    }
 }
 

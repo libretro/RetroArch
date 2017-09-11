@@ -65,10 +65,7 @@ bool netplay_delta_frame_ready(netplay_t *netplay, struct delta_frame *delta,
    }
    delta->have_local = false;
    for (i = 0; i < MAX_CLIENTS; i++)
-   {
       delta->have_real[i] = false;
-      delta->used_real[i] = false;
-   }
    return true;
 }
 
