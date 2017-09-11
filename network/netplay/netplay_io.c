@@ -46,7 +46,7 @@ static void print_state(netplay_t *netplay)
    for (client = 0; client < MAX_USERS; client++)
    {
       if ((netplay->connected_players & (1<<client)))
-         APPEND((M, " %u:%u", client, netplay->read_frame_count1[client]));
+         APPEND((M, " %u:%u", client, netplay->read_frame_count[client]));
    }
    msg[sizeof(msg)-1] = '\0';
 
@@ -147,7 +147,7 @@ void netplay_hangup(netplay_t *netplay, struct netplay_connection *connection)
          /* This special mode keeps the connection object alive long enough to
           * send the disconnection message at the correct time */
          connection->mode = NETPLAY_CONNECTION_DELAYED_DISCONNECT;
-         connection->delay_frame = netplay->read_frame_count1[client_num];
+         connection->delay_frame = netplay->read_frame_count[client_num];
 
          /* Mark them as not playing anymore */
          netplay->connected_players &= ~(1L<<client_num);
@@ -624,7 +624,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
             /* Check the frame number only if they're not in slave mode */
             if (connection->mode == NETPLAY_CONNECTION_PLAYING)
             {
-               if (frame_num < netplay->read_frame_count1[client_num])
+               if (frame_num < netplay->read_frame_count[client_num])
                {
                   uint32_t buf;
                   /* We already had this, so ignore the new transmission */
@@ -635,7 +635,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
                   }
                   break;
                }
-               else if (frame_num > netplay->read_frame_count1[client_num])
+               else if (frame_num > netplay->read_frame_count[client_num])
                {
                   /* Out of order = out of luck */
                   RARCH_ERR("Netplay input out of order.\n");
@@ -644,8 +644,8 @@ static bool netplay_get_cmd(netplay_t *netplay,
             }
 
             /* The data's good! */
-            dframe = &netplay->buffer[netplay->read_ptr1[client_num]];
-            if (!netplay_delta_frame_ready(netplay, dframe, netplay->read_frame_count1[client_num]))
+            dframe = &netplay->buffer[netplay->read_ptr[client_num]];
+            if (!netplay_delta_frame_ready(netplay, dframe, netplay->read_frame_count[client_num]))
             {
                /* Hopefully we'll be ready after another round of input */
                goto shrt;
@@ -679,8 +679,8 @@ static bool netplay_get_cmd(netplay_t *netplay,
              * handling all network data this frame */
             if (connection->mode == NETPLAY_CONNECTION_PLAYING)
             {
-               netplay->read_ptr1[client_num] = NEXT_PTR(netplay->read_ptr1[client_num]);
-               netplay->read_frame_count1[client_num]++;
+               netplay->read_ptr[client_num] = NEXT_PTR(netplay->read_ptr[client_num]);
+               netplay->read_frame_count[client_num]++;
 
                if (netplay->is_server)
                {
@@ -693,8 +693,8 @@ static bool netplay_get_cmd(netplay_t *netplay,
             /* If this was server data, advance our server pointer too */
             if (!netplay->is_server && client_num == 0)
             {
-               netplay->server_ptr = netplay->read_ptr1[0];
-               netplay->server_frame_count = netplay->read_frame_count1[0];
+               netplay->server_ptr = netplay->read_ptr[0];
+               netplay->server_frame_count = netplay->read_frame_count[0];
             }
 
 #ifdef DEBUG_NETPLAY_STEPS
@@ -807,7 +807,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
          }
 
          /* The frame we haven't received is their end frame */
-         connection->delay_frame = netplay->read_frame_count1[client_num];
+         connection->delay_frame = netplay->read_frame_count[client_num];
 
          /* Mark them as not playing anymore */
          connection->mode = NETPLAY_CONNECTION_SPECTATING;
@@ -1012,8 +1012,8 @@ static bool netplay_get_cmd(netplay_t *netplay,
          netplay_send_raw_cmd(netplay, connection, NETPLAY_CMD_MODE, payload, sizeof(payload));
 
          /* And expect their data */
-         netplay->read_ptr1[client_num] = NEXT_PTR(netplay->self_ptr);
-         netplay->read_frame_count1[client_num] = netplay->self_frame_count + 1;
+         netplay->read_ptr[client_num] = NEXT_PTR(netplay->self_ptr);
+         netplay->read_frame_count[client_num] = netplay->self_frame_count + 1;
          break;
       }
 
@@ -1213,8 +1213,8 @@ static bool netplay_get_cmd(netplay_t *netplay,
                   if (devices & (1<<device))
                      netplay->device_clients[device] |= (1<<client_num);
 
-               netplay->read_ptr1[client_num] = netplay->server_ptr;
-               netplay->read_frame_count1[client_num] = netplay->server_frame_count;
+               netplay->read_ptr[client_num] = netplay->server_ptr;
+               netplay->read_frame_count[client_num] = netplay->server_frame_count;
 
                /* Announce it */
                msg[sizeof(msg)-1] = '\0';
@@ -1451,8 +1451,8 @@ static bool netplay_get_cmd(netplay_t *netplay,
 
             if (netplay->is_server)
             {
-               load_ptr = netplay->read_ptr1[client_num];
-               load_frame_count = netplay->read_frame_count1[client_num];
+               load_ptr = netplay->read_ptr[client_num];
+               load_frame_count = netplay->read_frame_count[client_num];
             }
             else
             {
@@ -1543,10 +1543,10 @@ static bool netplay_get_cmd(netplay_t *netplay,
             for (client = 0; client < MAX_CLIENTS; client++)
             {
                if (!(netplay->connected_players & (1<<client))) continue;
-               if (frame > netplay->read_frame_count1[client])
+               if (frame > netplay->read_frame_count[client])
                {
-                  netplay->read_ptr1[client] = load_ptr;
-                  netplay->read_frame_count1[client] = load_frame_count;
+                  netplay->read_ptr[client] = load_ptr;
+                  netplay->read_frame_count[client] = load_frame_count;
                }
             }
 
@@ -1761,7 +1761,7 @@ void netplay_handle_slaves(netplay_t *netplay)
 
          /* This is a slave connection. First, should we do anything at all? If
           * we've already "read" this data, then we can just ignore it */
-         if (netplay->read_frame_count1[client_num] > netplay->self_frame_count)
+         if (netplay->read_frame_count[client_num] > netplay->self_frame_count)
             continue;
 
          /* Alright, we have to send something. Do we need to generate it first? */
@@ -1793,8 +1793,8 @@ void netplay_handle_slaves(netplay_t *netplay)
          send_input_frame(netplay, frame, NULL, connection, client_num);
 
          /* And mark it as "read" */
-         netplay->read_ptr1[client_num] = NEXT_PTR(netplay->self_ptr);
-         netplay->read_frame_count1[client_num] = netplay->self_frame_count + 1;
+         netplay->read_ptr[client_num] = NEXT_PTR(netplay->self_ptr);
+         netplay->read_frame_count[client_num] = netplay->self_frame_count + 1;
       }
    }
 }

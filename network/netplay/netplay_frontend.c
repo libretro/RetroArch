@@ -178,8 +178,8 @@ static bool get_self_input_state(netplay_t *netplay)
 
    ptr->have_real[netplay->self_client_num] = true;
    ptr->have_local = true;
-   netplay->read_ptr1[netplay->self_client_num] = NEXT_PTR(netplay->self_ptr);
-   netplay->read_frame_count1[netplay->self_client_num] = netplay->self_frame_count + 1;
+   netplay->read_ptr[netplay->self_client_num] = NEXT_PTR(netplay->self_ptr);
+   netplay->read_frame_count[netplay->self_client_num] = netplay->self_frame_count + 1;
 
    /* And send this input to our peers */
    for (i = 0; i < netplay->connections_size; i++)
@@ -394,7 +394,7 @@ static bool netplay_poll(void)
                struct netplay_connection *connection;
                if (!(netplay_data->connected_players & (1<<client)))
                   continue;
-               if (netplay_data->read_frame_count1[client] > netplay_data->unread_frame_count)
+               if (netplay_data->read_frame_count[client] > netplay_data->unread_frame_count)
                   continue;
                connection = &netplay_data->connections[client-1];
                if (connection->active &&
@@ -960,10 +960,10 @@ static void netplay_force_future(netplay_t *netplay)
       for (client = 0; client < MAX_CLIENTS; client++)
       {
          if (!(netplay->connected_players & (1<<client))) continue;
-         if (netplay->read_frame_count1[client] < netplay->run_frame_count)
+         if (netplay->read_frame_count[client] < netplay->run_frame_count)
          {
-            netplay->read_ptr1[client] = netplay->run_ptr;
-            netplay->read_frame_count1[client] = netplay->run_frame_count;
+            netplay->read_ptr[client] = netplay->run_ptr;
+            netplay->read_frame_count[client] = netplay->run_frame_count;
          }
       }
       if (netplay->server_frame_count < netplay->run_frame_count)
@@ -1246,8 +1246,8 @@ static void netplay_toggle_play_spectate(netplay_t *netplay)
          netplay->client_devices[0] = netplay->self_devices = (1<<device);
          netplay->device_clients[device] = 1;
          netplay->device_share_modes[device] = share_mode;
-         netplay->read_ptr1[0] = netplay->self_ptr;
-         netplay->read_frame_count1[0] = netplay->self_frame_count;
+         netplay->read_ptr[0] = netplay->self_ptr;
+         netplay->read_frame_count[0] = netplay->self_frame_count;
 
          dmsg = msg;
          msg[sizeof(msg)-1] = '\0';

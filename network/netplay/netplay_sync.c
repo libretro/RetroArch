@@ -56,10 +56,10 @@ void netplay_update_unread_ptr(netplay_t *netplay)
       {
          if (!(netplay->connected_players & (1<<client))) continue;
          if ((netplay->connected_slaves & (1<<client))) continue;
-         if (netplay->read_frame_count1[client] < new_unread_frame_count)
+         if (netplay->read_frame_count[client] < new_unread_frame_count)
          {
-            new_unread_ptr = netplay->read_ptr1[client];
-            new_unread_frame_count = netplay->read_frame_count1[client];
+            new_unread_ptr = netplay->read_ptr[client];
+            new_unread_frame_count = netplay->read_frame_count[client];
          }
       }
 
@@ -101,7 +101,7 @@ netplay_input_state_t netplay_device_client_state(netplay_t *netplay,
          &simframe->real_input[device], client, 3 /* FIXME */, false, true);
    if (!simstate)
    {
-      if (netplay->read_frame_count1[client] > simframe->frame)
+      if (netplay->read_frame_count[client] > simframe->frame)
          return NULL;
       simstate = netplay_input_state_for(&simframe->simlated_input[device],
             client, 3 /* FIXME */, false, true);
@@ -322,13 +322,13 @@ bool netplay_resolve_input(netplay_t *netplay, size_t sim_ptr, bool resim)
          if (!simstate)
          {
             /* Don't already have this input, so must simulate if we're supposed to have it at all */
-            if (netplay->read_frame_count1[client] > simframe->frame)
+            if (netplay->read_frame_count[client] > simframe->frame)
                continue;
             simstate = netplay_input_state_for(&simframe->simlated_input[device], client, 3 /* FIXME */, false, false);
             if (!simstate)
                continue;
 
-            prev = PREV_PTR(netplay->read_ptr1[client]);
+            prev = PREV_PTR(netplay->read_ptr[client]);
             pframe = &netplay->buffer[prev];
             pstate = netplay_input_state_for(&pframe->real_input[device], client, 3 /* FIXME */, false, true);
             if (!pstate)
@@ -815,8 +815,8 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
       for (client = 0; client < MAX_CLIENTS; client++)
       {
          if (!(netplay->connected_players & (1<<client))) continue;
-         if (netplay->read_frame_count1[client] > hi_frame_count)
-            hi_frame_count = netplay->read_frame_count1[client];
+         if (netplay->read_frame_count[client] > hi_frame_count)
+            hi_frame_count = netplay->read_frame_count[client];
       }
    }
    else
@@ -889,7 +889,7 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
             client_num = i + 1;
 
             /* Are they ahead? */
-            if (netplay->self_frame_count + 3 < netplay->read_frame_count1[client_num])
+            if (netplay->self_frame_count + 3 < netplay->read_frame_count[client_num])
             {
                /* Tell them to stall */
                if (connection->stall_frame + NETPLAY_MAX_REQ_STALL_FREQUENCY <
@@ -897,7 +897,7 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
                {
                   connection->stall_frame = netplay->self_frame_count;
                   netplay_cmd_stall(netplay, connection,
-                     netplay->read_frame_count1[client_num] -
+                     netplay->read_frame_count[client_num] -
                      netplay->self_frame_count + 1);
                }
             }

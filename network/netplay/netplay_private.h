@@ -476,8 +476,8 @@ struct netplay
    uint32_t unread_frame_count;
 
    /* Pointer to the next frame to read from each client */
-   size_t read_ptr1[MAX_CLIENTS];
-   uint32_t read_frame_count1[MAX_CLIENTS];
+   size_t read_ptr[MAX_CLIENTS];
+   uint32_t read_frame_count[MAX_CLIENTS];
 
    /* Pointer to the next frame to read from the server (as it might not be a
     * player but still synchronizes) */

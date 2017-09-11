@@ -1012,8 +1012,8 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
    }
    for (i = 0; i < MAX_CLIENTS; i++)
    {
-      netplay->read_ptr1[i]         = netplay->self_ptr;
-      netplay->read_frame_count1[i] = netplay->self_frame_count;
+      netplay->read_ptr[i]         = netplay->self_ptr;
+      netplay->read_frame_count[i] = netplay->self_frame_count;
    }
 
    /* Get and set each input device */
