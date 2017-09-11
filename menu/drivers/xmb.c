@@ -1101,7 +1101,8 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
          || (string_is_equal_fast(entry.label, "loadstate", 9))
          || (string_is_equal_fast(entry.label, "savestate", 9))))
    {
-      char path[8204];
+      size_t path_size         = 8024 * sizeof(char);
+      char             *path   = (char*)malloc(8204 * sizeof(char));
       global_t         *global = global_get_ptr();
 
       path[0] = '\0';
@@ -1109,22 +1110,24 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
       if (global)
       {
          if (settings->ints.state_slot > 0)
-            snprintf(path, sizeof(path), "%s%d",
+            snprintf(path, path_size, "%s%d",
                   global->name.savestate, settings->ints.state_slot);
          else if (settings->ints.state_slot < 0)
             fill_pathname_join_delim(path,
-                  global->name.savestate, "auto", '.', sizeof(path));
+                  global->name.savestate, "auto", '.', path_size);
          else
-            strlcpy(path, global->name.savestate, sizeof(path));
+            strlcpy(path, global->name.savestate, path_size);
       }
 
-      strlcat(path, file_path_str(FILE_PATH_PNG_EXTENSION), sizeof(path));
+      strlcat(path, file_path_str(FILE_PATH_PNG_EXTENSION), path_size);
 
       if (path_file_exists(path))
       {
          strlcpy(xmb->savestate_thumbnail_file_path, path,
                sizeof(xmb->savestate_thumbnail_file_path));
       }
+
+      free(path);
    }
 }
 
@@ -1550,10 +1553,11 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
 
    if (settings->bools.menu_dynamic_wallpaper_enable)
    {
-      char path[PATH_MAX_LENGTH];
-      char *tmp = string_replace_substring(xmb->title_name, "/", " ");
+      size_t path_size = PATH_MAX_LENGTH * sizeof(char);
+      char       *path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      char       *tmp  = string_replace_substring(xmb->title_name, "/", " ");
 
-      path[0] = '\0';
+      path[0]          = '\0';
 
       if (tmp)
       {
@@ -1561,16 +1565,16 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
                path,
                settings->paths.directory_dynamic_wallpapers,
                tmp,
-               sizeof(path));
+               path_size);
          free(tmp);
       }
 
       strlcat(path,
             file_path_str(FILE_PATH_PNG_EXTENSION),
-            sizeof(path));
+            path_size);
 
       if (!path_file_exists(path))
-         fill_pathname_application_special(path, sizeof(path),
+         fill_pathname_application_special(path, path_size,
                APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG);
 
        if(!string_is_equal(path, xmb->background_file_path))
@@ -1583,6 +1587,8 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
                     path, sizeof(xmb->background_file_path));
            }
        }
+
+       free(path);
    }
 
    end = file_list_get_size(list);
@@ -1903,13 +1909,8 @@ static void xmb_context_reset_horizontal_list(
 {
    unsigned i;
    int depth; /* keep this integer */
-   char themepath[PATH_MAX_LENGTH];
-   size_t list_size                = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL);
-
-   themepath[0] = '\0';
-
-   fill_pathname_application_special(themepath, sizeof(themepath),
-         APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB);
+   size_t list_size                = 
+      xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL);
 
    xmb->categories.x_pos = xmb->icon.spacing.horizontal *
       -(float)xmb->categories.selection_ptr;
