@@ -159,7 +159,7 @@ Command: INPUT
 Payload:
     {
        frame number: uint32
-       client number: 32 bits
+       client number: uint32
        input data: variable
     }
 Description:

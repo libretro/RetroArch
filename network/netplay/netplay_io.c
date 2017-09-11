@@ -551,7 +551,8 @@ static bool netplay_get_cmd(netplay_t *netplay,
    cmd_size = ntohl(cmd_size);
 
 #ifdef DEBUG_NETPLAY_STEPS
-   RARCH_LOG("Received netplay command %X (%X)\n", cmd, cmd_size);
+   RARCH_LOG("Received netplay command %X (%u) from %u\n", cmd, cmd_size,
+         (unsigned) (connection - netplay->connections));
 #endif
 
    netplay->timeout_cnt = 0;
@@ -625,7 +626,13 @@ static bool netplay_get_cmd(netplay_t *netplay,
             {
                if (frame_num < netplay->read_frame_count1[client_num])
                {
+                  uint32_t buf;
                   /* We already had this, so ignore the new transmission */
+                  for (; input_size; input_size--)
+                  {
+                     RECV(&buf, sizeof(uint32_t))
+                        return netplay_cmd_nak(netplay, connection);
+                  }
                   break;
                }
                else if (frame_num > netplay->read_frame_count1[client_num])
@@ -1376,6 +1383,8 @@ static bool netplay_get_cmd(netplay_t *netplay,
             uint32_t isize;
             uint32_t rd, wn;
             uint32_t client, client_num;
+            uint32_t load_frame_count;
+            size_t load_ptr;
             struct compression_transcoder *ctrans;
 
             client_num = connection - netplay->connections + 1;
@@ -1440,14 +1449,24 @@ static bool netplay_get_cmd(netplay_t *netplay,
             }
             frame = ntohl(frame);
 
-            if ((netplay->is_server && frame != netplay->read_frame_count1[client_num]) ||
-                (!netplay->is_server && frame != netplay->server_frame_count))
+            if (netplay->is_server)
+            {
+               load_ptr = netplay->read_ptr1[client_num];
+               load_frame_count = netplay->read_frame_count1[client_num];
+            }
+            else
+            {
+               load_ptr = netplay->server_ptr;
+               load_frame_count = netplay->server_frame_count;
+            }
+
+            if (frame != load_frame_count)
             {
                RARCH_ERR("CMD_LOAD_SAVESTATE loading a state out of order!\n");
                return netplay_cmd_nak(netplay, connection);
             }
 
-            if (!netplay_delta_frame_ready(netplay, &netplay->buffer[netplay->read_ptr1[client_num]], frame))
+            if (!netplay_delta_frame_ready(netplay, &netplay->buffer[load_ptr], load_frame_count))
             {
                /* Hopefully it will be after another round of input */
                goto shrt;
@@ -1487,7 +1506,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
                ctrans->decompression_backend->set_in(ctrans->decompression_stream,
                   netplay->zbuffer, cmd_size - 2*sizeof(uint32_t));
                ctrans->decompression_backend->set_out(ctrans->decompression_stream,
-                  (uint8_t*)netplay->buffer[netplay->read_ptr1[client_num]].state,
+                  (uint8_t*)netplay->buffer[load_ptr].state,
                   (unsigned)netplay->state_size);
                ctrans->decompression_backend->trans(ctrans->decompression_stream,
                   true, &rd, &wn, NULL);
@@ -1503,7 +1522,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
             }
 
             /* Skip ahead if it's past where we are */
-            if (frame > netplay->run_frame_count ||
+            if (load_frame_count > netplay->run_frame_count ||
                 cmd == NETPLAY_CMD_RESET)
             {
                /* This is squirrely: We need to assure that when we advance the
@@ -1511,8 +1530,8 @@ static bool netplay_get_cmd(netplay_t *netplay,
                 * load into. If we refer directly to read_ptr, then we'll end
                 * up never reading the input for read_frame_count itself, which
                 * will make the other side unhappy. */
-               netplay->run_ptr           = PREV_PTR(netplay->read_ptr1[client_num]);
-               netplay->run_frame_count   = frame - 1;
+               netplay->run_ptr           = PREV_PTR(load_ptr);
+               netplay->run_frame_count   = load_frame_count - 1;
                if (frame > netplay->self_frame_count)
                {
                   netplay->self_ptr         = netplay->run_ptr;
@@ -1526,18 +1545,18 @@ static bool netplay_get_cmd(netplay_t *netplay,
                if (!(netplay->connected_players & (1<<client))) continue;
                if (frame > netplay->read_frame_count1[client])
                {
-                  netplay->read_ptr1[client] = netplay->read_ptr1[client_num];
-                  netplay->read_frame_count1[client] = frame;
+                  netplay->read_ptr1[client] = load_ptr;
+                  netplay->read_frame_count1[client] = load_frame_count;
                }
             }
 
             /* Make sure our states are correct */
             netplay->savestate_request_outstanding = false;
-            netplay->other_ptr                     = netplay->read_ptr1[client_num];
-            netplay->other_frame_count             = frame;
+            netplay->other_ptr                     = load_ptr;
+            netplay->other_frame_count             = load_frame_count;
 
 #ifdef DEBUG_NETPLAY_STEPS
-            RARCH_LOG("Loading state at %u\n", frame);
+            RARCH_LOG("Loading state at %u\n", load_frame_count);
             print_state(netplay);
 #endif
 
