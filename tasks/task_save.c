@@ -774,8 +774,8 @@ static void task_load_handler(retro_task_t *task)
                msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
                state->path,
                msg_hash_to_str(MSG_FAILED));
-         free(msg);
          task_set_error(task, strdup(msg));
+         free(msg);
       }
       else
          task_set_error(task, strdup(msg_hash_to_str(MSG_FAILED_TO_LOAD_STATE)));

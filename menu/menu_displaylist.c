@@ -1816,9 +1816,9 @@ static int create_string_list_rdb_entry_int(
 
    if (output_label)
       free(output_label);
-   str_list = NULL;
 
    string_list_free(str_list);
+   str_list = NULL;
    free(tmp);
    free(str);
    return 0;
@@ -1826,6 +1826,7 @@ static int create_string_list_rdb_entry_int(
 error:
    if (str_list)
       string_list_free(str_list);
+   str_list = NULL;
    free(tmp);
    free(str);
    return -1;
