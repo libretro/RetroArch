@@ -67,7 +67,7 @@ static void gdi_gfx_create(void)
 
    ctx->get_os(os, sizeof(os), &gdi_win_major, &gdi_win_minor);
 
-   // Are we running on Windows 98 or below?
+   /* Are we running on Windows 98 or below? */
    if (gdi_win_major < 4 || (gdi_win_major == 4 && gdi_win_minor <= 10))
    {
       RARCH_LOG("[GDI] Win98 or lower detected, using slow frame conversion method for RGB444.\n");

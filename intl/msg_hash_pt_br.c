@@ -1214,25 +1214,31 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                              "implementações de núcleo Libretro.");
             break;
         case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO:
-            snprintf(s, len,
-                     "Taxa de Atualização Automática. \n"
-                             " \n"
-                             "A taxa de atualização estimada da tela (Hz). \n"
-                             "É utilizado para calcular a taxa de entrada \n"
-                             "de áudio com a fórmula: \n"
-                             " \n"
-                             "taxa de ent de áudio = taxa de ent do jogo * \n"
-                             "taxa de atlz da tela / taxa de atlz do jogo \n"
-                             " \n"
-                             "Se a implementação não reportar nenhum \n"
-                             "valor, os padrões NTSC serão usados para \n"
-                             "garantir compatibilidade.\n"
-                             " \n"
-                             "Este valor deve ficar próximo de 60Hz para \n"
-                             "evitar mudanças drásticas no timbre do som. \n"
-                             "Se seu monitor não roda a 60Hz, ou próximo \n"
-                             "disso, desative o V-Sync, e deixe este valor \n"
-                             "no padrão.");
+            {
+               /* Work around C89 limitations */
+               const char *t =
+                  "Taxa de Atualização Automática. \n"
+                  " \n"
+                  "A taxa de atualização estimada da tela (Hz). \n"
+                  "É utilizado para calcular a taxa de entrada \n"
+                  "de áudio com a fórmula: \n"
+                  " \n"
+                  "taxa de ent de áudio = taxa de ent do jogo * \n"
+                  "taxa de atlz da tela / taxa de atlz do jogo \n"
+                  " \n";
+               const char *u =
+                  "Se a implementação não reportar nenhum \n"
+                  "valor, os padrões NTSC serão usados para \n"
+                  "garantir compatibilidade.\n"
+                  " \n"
+                  "Este valor deve ficar próximo de 60Hz para \n"
+                  "evitar mudanças drásticas no timbre do som. \n"
+                  "Se seu monitor não roda a 60Hz, ou próximo \n"
+                  "disso, desative o V-Sync, e deixe este valor \n"
+                  "no padrão.";
+               strlcpy(s, t, len);
+               strlcat(s, u, len);
+            }
             break;
         case MENU_ENUM_LABEL_VIDEO_ROTATION:
             snprintf(s, len,
@@ -1658,21 +1664,27 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                              "no Netplay.");
             break;
         case MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES:
-            snprintf(s, len,
-                     "A frequência em quadros na qual o Netplay \n"
-                             "irá verificar se o hospedeiro e o cliente \n"
-                             "estão sincronizados. \n"
-                             " \n"
-                             "Com a maioria dos núcleos, este valor não \n"
-                             "terá efeito perceptível e pode ser ignorado. \n"
-                             "Com núcleos não determinísticos, este valor \n"
-                             "define quão frequente os pares do Netplay \n"
-                             "serão colocados em sincronia. Com núcleos \n"
-                             "defeituosos, definir para qualquer valor que \n"
-                             "não zero irá causar problemas de desempenho \n"
-                             "severos. Defina como zero para desativar \n"
-                             "verificações. Este valor é usado somente \n"
-                             "no hospedeiro de Netplay.");
+            {
+               /* Work around C89 limitations */
+               const char *t =
+                  "A frequência em quadros na qual o Netplay \n"
+                  "irá verificar se o hospedeiro e o cliente \n"
+                  "estão sincronizados. \n"
+                  " \n"
+                  "Com a maioria dos núcleos, este valor não \n"
+                  "terá efeito perceptível e pode ser ignorado. \n"
+                  "Com núcleos não determinísticos, este valor \n";
+               const char *u =
+                  "define quão frequente os pares do Netplay \n"
+                  "serão colocados em sincronia. Com núcleos \n"
+                  "defeituosos, definir para qualquer valor que \n"
+                  "não zero irá causar problemas de desempenho \n"
+                  "severos. Defina como zero para desativar \n"
+                  "verificações. Este valor é usado somente \n"
+                  "no hospedeiro de Netplay.";
+               strlcpy(s, t, len);
+               strlcat(s, u, len);
+            }
             break;
         case MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN:
             snprintf(s, len,
