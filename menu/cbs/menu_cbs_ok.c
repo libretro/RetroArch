@@ -1034,8 +1034,8 @@ static int file_load_with_detect_core_wrapper(
       unsigned type, bool is_carchive)
 {
    menu_content_ctx_defer_info_t def_info;
-   char new_core_path[PATH_MAX_LENGTH];
    char menu_path_new[PATH_MAX_LENGTH];
+   char *new_core_path                 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    int ret                             = 0;
    const char *menu_path               = NULL;
    const char *menu_label              = NULL;
@@ -1071,8 +1071,10 @@ static int file_load_with_detect_core_wrapper(
    def_info.len        = sizeof(menu->deferred_path);
 
    if (menu_content_find_first_core(&def_info, false, new_core_path,
-            sizeof(new_core_path)))
+            PATH_MAX_LENGTH * sizeof(char)))
       ret = -1;
+
+   free(new_core_path);
 
    if (     !is_carchive && !string_is_empty(path)
          && !string_is_empty(menu_path_new))
