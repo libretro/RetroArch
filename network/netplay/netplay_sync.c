@@ -124,8 +124,8 @@ static void netplay_merge_digital(netplay_t *netplay,
 {
    netplay_input_state_t simstate;
    uint32_t word, bit, client;
-   uint8_t share_mode = netplay->device_share_modes[device] & NETPLAY_SHARE_DIGITAL_BITS;
-   if (share_mode == NETPLAY_SHARE_DIGITAL_VOTE)
+   uint8_t share_mode = netplay->device_share_modes[device] & RARCH_NETPLAY_SHARE_DIGITAL_BITS;
+   if (share_mode == RARCH_NETPLAY_SHARE_DIGITAL_VOTE)
    {
       /* Vote mode requires counting all the bits */
       uint32_t client_count = 0;
@@ -178,8 +178,8 @@ static void netplay_merge_digital(netplay_t *netplay,
                /* Combine the whole word */
                switch (share_mode)
                {
-                  case NETPLAY_SHARE_DIGITAL_XOR: resstate->data[word] ^= part; break;
-                  default:                        resstate->data[word] |= part;
+                  case RARCH_NETPLAY_SHARE_DIGITAL_XOR: resstate->data[word] ^= part; break;
+                  default:                              resstate->data[word] |= part;
                }
 
             }
@@ -190,8 +190,8 @@ static void netplay_merge_digital(netplay_t *netplay,
                   if (!(digital[word] & (1<<bit))) continue;
                   switch (share_mode)
                   {
-                     case NETPLAY_SHARE_DIGITAL_XOR: resstate->data[word] ^= part & (1<<bit); break;
-                     default:                        resstate->data[word] |= part & (1<<bit);
+                     case RARCH_NETPLAY_SHARE_DIGITAL_XOR: resstate->data[word] ^= part & (1<<bit); break;
+                     default:                              resstate->data[word] |= part & (1<<bit);
                   }
                }
             }
@@ -217,7 +217,7 @@ static void merge_analog_part(netplay_t *netplay,
 {
    netplay_input_state_t simstate;
    uint32_t client, client_count = 0;;
-   uint8_t share_mode = netplay->device_share_modes[device] & NETPLAY_SHARE_ANALOG_BITS;
+   uint8_t share_mode = netplay->device_share_modes[device] & RARCH_NETPLAY_SHARE_ANALOG_BITS;
    int32_t value = 0, new_value;
 
    for (client = 0; client < MAX_CLIENTS; client++)
@@ -229,7 +229,7 @@ static void merge_analog_part(netplay_t *netplay,
       new_value = (int16_t) ((simstate->data[word]>>bit) & 0xFFFF);
       switch (share_mode)
       {
-         case NETPLAY_SHARE_ANALOG_AVERAGE:
+         case RARCH_NETPLAY_SHARE_ANALOG_AVERAGE:
             value += (int32_t) new_value;
             break;
          default:
@@ -239,7 +239,7 @@ static void merge_analog_part(netplay_t *netplay,
       }
    }
 
-   if (share_mode == NETPLAY_SHARE_ANALOG_AVERAGE)
+   if (share_mode == RARCH_NETPLAY_SHARE_ANALOG_AVERAGE)
       value /= client_count;
 
    resstate->data[word] |= ((uint32_t) (uint16_t) value) << bit;

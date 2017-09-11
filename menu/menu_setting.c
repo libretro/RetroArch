@@ -6694,9 +6694,10 @@ static bool setting_append_list(
 
          {
 #if defined(HAVE_NETWORKING)
-#if defined(HAVE_NETWORK_CMD)
             unsigned user;
-#endif
+            char dev_req_label[64];
+            char dev_req_value[64];
+
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.netplay_public_announce,
@@ -6919,6 +6920,30 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+
+            for (user = 0; user < MAX_USERS; user++)
+            {
+               snprintf(dev_req_label, sizeof(dev_req_label),
+                     msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_REQUEST_DEVICE_I), user + 1);
+               snprintf(dev_req_value, sizeof(dev_req_value),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_REQUEST_DEVICE_I), user + 1);
+               CONFIG_BOOL_ALT(
+                     list, list_info,
+                     &settings->bools.netplay_request_devices[user],
+                     strdup(dev_req_label),
+                     strdup(dev_req_value),
+                     false,
+                     MENU_ENUM_LABEL_VALUE_NO,
+                     MENU_ENUM_LABEL_VALUE_YES,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler,
+                     SD_FLAG_ADVANCED);
+               settings_data_list_current_add_free_flags(list, list_info, SD_FREE_FLAG_NAME | SD_FREE_FLAG_SHORT);
+               menu_settings_list_current_add_enum_idx(list, list_info, (enum msg_hash_enums)(MENU_ENUM_LABEL_NETPLAY_REQUEST_DEVICE_1 + user));
+            }
 
             END_SUB_GROUP(list, list_info, parent_group);
 

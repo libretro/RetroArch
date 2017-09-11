@@ -1158,7 +1158,7 @@ static void netplay_toggle_play_spectate(netplay_t *netplay)
       else if (netplay->self_mode == NETPLAY_CONNECTION_SPECTATING)
       {
          uint32_t device;
-         uint8_t share_mode = NETPLAY_SHARE_DIGITAL_OR|NETPLAY_SHARE_ANALOG_MAX;
+         uint8_t share_mode = RARCH_NETPLAY_SHARE_DIGITAL_OR|RARCH_NETPLAY_SHARE_ANALOG_MAX;
 
          /* Take an input device */
          for (device = 0; device < MAX_INPUT_DEVICES; device++)

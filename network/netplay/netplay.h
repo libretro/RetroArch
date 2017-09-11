@@ -53,6 +53,28 @@ enum rarch_netplay_ctl_state
    RARCH_NETPLAY_CTL_DESYNC_POP
 };
 
+/* Preferences for sharing devices */
+enum rarch_netplay_share_preference
+{
+   /* Prefer not to share, shouldn't be set as a sharing mode for an shared device */
+   RARCH_NETPLAY_SHARE_NO_SHARING = 0x0,
+
+   /* No preference. Only for requests. Set if sharing is requested but either
+    * digital or analog doesn't have a preference. */
+   RARCH_NETPLAY_SHARE_NO_PREFERENCE = 0x1,
+
+   /* For digital devices */
+   RARCH_NETPLAY_SHARE_DIGITAL_BITS = 0x1C,
+   RARCH_NETPLAY_SHARE_DIGITAL_OR = 0x4,
+   RARCH_NETPLAY_SHARE_DIGITAL_XOR = 0x8,
+   RARCH_NETPLAY_SHARE_DIGITAL_VOTE = 0xC,
+
+   /* For analog devices */
+   RARCH_NETPLAY_SHARE_ANALOG_BITS = 0xE0,
+   RARCH_NETPLAY_SHARE_ANALOG_MAX = 0x20,
+   RARCH_NETPLAY_SHARE_ANALOG_AVERAGE = 0x40
+};
+
 int16_t input_state_net(unsigned port, unsigned device,
       unsigned idx, unsigned id);
 

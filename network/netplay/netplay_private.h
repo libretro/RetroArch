@@ -207,28 +207,6 @@ enum netplay_cmd_mode_reasons
    NETPLAY_CMD_MODE_REFUSED_REASON_NOT_AVAILABLE
 };
 
-/* Preferences for sharing devices */
-enum rarch_netplay_share_preference
-{
-   /* Prefer not to share, shouldn't be set as a sharing mode for an shared device */
-   NETPLAY_SHARE_NO_SHARING = 0x0,
-
-   /* No preference. Only for requests. Set if sharing is requested but either
-    * digital or analog doesn't have a preference. */
-   NETPLAY_SHARE_NO_PREFERENCE = 0x1,
-
-   /* For digital devices */
-   NETPLAY_SHARE_DIGITAL_BITS = 0x1C,
-   NETPLAY_SHARE_DIGITAL_OR = 0x4,
-   NETPLAY_SHARE_DIGITAL_XOR = 0x8,
-   NETPLAY_SHARE_DIGITAL_VOTE = 0xC,
-
-   /* For analog devices */
-   NETPLAY_SHARE_ANALOG_BITS = 0xE0,
-   NETPLAY_SHARE_ANALOG_MAX = 0x20,
-   NETPLAY_SHARE_ANALOG_AVERAGE = 0x40
-};
-
 /* The current status of a connection */
 enum rarch_netplay_connection_mode
 {

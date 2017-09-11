@@ -177,6 +177,7 @@ typedef struct settings
       bool netplay_swap_input;
       bool netplay_nat_traversal;
       bool netplay_use_mitm_server;
+      bool netplay_request_devices[MAX_USERS];
 
       /* Network */
       bool network_buildbot_auto_extract_archive;
@@ -315,6 +316,8 @@ typedef struct settings
       unsigned netplay_port;
       unsigned netplay_input_latency_frames_min;
       unsigned netplay_input_latency_frames_range;
+      unsigned netplay_share_digital;
+      unsigned netplay_share_analog;
       unsigned bundle_assets_extract_version_current;
       unsigned bundle_assets_extract_last_version;
       unsigned content_history_size;
