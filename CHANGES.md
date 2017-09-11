@@ -7,6 +7,7 @@
 - LOCALIZATION: Update Portuguese-Brazilian translation.
 - LOCALIZATION: Update Russian translation.
 - LINUX/PI: Broadcom VC4: Add Videocore config option
+- LINUX/UDEV: Fix - RetroArch reads keyboard input when not focused with the udev input driver.
 - NETPLAY: Fix disconnection not fully deinitializing Netplay.
 - COMMON: Fix clear/free loop conditionals in playlists.
 - WINDOWS/GDI: Fix flickering of text.
