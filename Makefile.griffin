@@ -324,7 +324,7 @@ else ifeq ($(platform), windows_msvc6_x86)
    CXX = cl.exe
    LD = link.exe
 
-   PLATCFLAGS += -D_WIN32 -DWINVER=0x0400 -D_WIN32_WINNT=0x0400 -D__STDC_CONSTANT_MACROS -D_MBCS
+   PLATCFLAGS += -D_WIN32 -D_WIN32_WINNT=0x0351 -D__STDC_CONSTANT_MACROS -D_MBCS
    LDFLAGS += shell32.lib user32.lib gdi32.lib comdlg32.lib winmm.lib ole32.lib
 
    VCDIR ?= $(shell reg query "HKLM\SOFTWARE\Wow6432Node\Microsoft\DevStudio\6.0\Products\Microsoft Visual C++" -v "ProductDir" | grep -o '[A-Z]:\\.*')
@@ -417,7 +417,7 @@ else ifeq ($(platform), windows_msvc2005_x86)
    CXX = cl.exe
    LD = link.exe
 
-   PLATCFLAGS += -D_WIN32 -DWINVER=0x0400 -D_WIN32_WINNT=0x0400 -D__STDC_CONSTANT_MACROS -D_MBCS
+   PLATCFLAGS += -D_WIN32 -D_WIN32_WINNT=0x0410 -D__STDC_CONSTANT_MACROS -D_MBCS
    LDFLAGS += shell32.lib user32.lib gdi32.lib comdlg32.lib winmm.lib ole32.lib
    
    PATH := $(shell IFS=$$'\n'; cygpath "$(VS80COMNTOOLS)../../VC/bin"):$(PATH)
@@ -434,6 +434,57 @@ else ifeq ($(platform), windows_msvc2005_x86)
       export LIB := $(LIB);$(INETSDK)\Lib;$(DXSDK_DIR)\Lib\x86
    else
       export INCLUDE := $(INCLUDE);$(INETSDK)\Include;libretro-common\include;libretro-common\include\compat\msvc
+      export LIB := $(LIB);$(INETSDK)\Lib
+   endif
+else ifeq ($(platform), windows_msvc2010_x86)
+   HAVE_RPNG                := 1
+   HAVE_RJPEG               := 1
+   HAVE_RBMP                := 1
+   HAVE_RTGA                := 1
+   HAVE_ZLIB                := 1
+   WANT_ZLIB                := 1
+   HAVE_7ZIP                := 1
+   HAVE_NETWORKING          := 1
+   HAVE_NETWORK_CMD         := 1
+   HAVE_OVERLAY             := 1
+   HAVE_MATERIALUI          := 1
+   HAVE_XMB                 := 1
+   HAVE_STB_FONT            := 1
+   HAVE_THREADS             := 1
+   HAVE_LIBRETRODB          := 1
+   HAVE_FBO                 := 1
+   HAVE_COMMAND             := 1
+   HAVE_STDIN_CMD           := 1
+   HAVE_CMD                 := 1
+   HAVE_DYLIB               := 1
+   HAVE_DYNAMIC             := 1
+   HAVE_GRIFFIN_CPP         := 1
+   HAVE_DIRECTX             ?= 1
+
+   EXT_TARGET := $(TARGET_NAME).exe
+   EXT_INTER_TARGET := $(TARGET_NAME).exe
+   CC = cl.exe
+   CXX = cl.exe
+   LD = link.exe
+
+   PLATCFLAGS += -D_WIN32 -D__STDC_CONSTANT_MACROS -D_MBCS
+   PLATCFLAGS += -D__i686__ -D__SSE__ -D_CRT_NONSTDC_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS -D_WINDOWS -DHAVE_CC_RESAMPLER -DHAVE_GL_SYNC -DHAVE_GLSL -DHAVE_IMAGEVIEWER -DHAVE_LANGEXTRA -DHAVE_OPENGL -DHAVE_SHADERPIPELINE -DHAVE_UPDATE_ASSETS -DWIN32
+   LDFLAGS += shell32.lib user32.lib gdi32.lib comdlg32.lib winmm.lib ole32.lib iphlpapi.lib
+
+   PATH := $(shell IFS=$$'\n'; cygpath "$(VS100COMNTOOLS)../../VC/bin"):$(PATH)
+   PATH := $(PATH):$(shell IFS=$$'\n'; cygpath "$(VS100COMNTOOLS)../IDE")
+   INCLUDE := $(shell IFS=$$'\n'; cygpath -w "$(VS100COMNTOOLS)../../VC/include")
+   LIB := $(shell IFS=$$'\n'; cygpath -w "$(VS100COMNTOOLS)../../VC/lib")
+
+   export INETSDK := $(INETSDK)
+
+   ifeq ($(HAVE_DIRECTX), 1)
+      PLATCFLAGS += -DHAVE_DINPUT -DHAVE_DSOUND -DHAVE_D3D -DHAVE_D3D9 -DHAVE_XAUDIO -DHAVE_XINPUT
+      export DXSDK_DIR := $(DXSDK_DIR)
+      export INCLUDE := $(INCLUDE);$(INETSDK)\Include;$(DXSDK_DIR)\Include;libretro-common\include;libretro-common\include\compat\msvc;gfx\include
+      export LIB := $(LIB);$(INETSDK)\Lib;$(DXSDK_DIR)\Lib\x86
+   else
+      export INCLUDE := $(INCLUDE);$(INETSDK)\Include;libretro-common\include;libretro-common\include\compat\msvc;gfx\include
       export LIB := $(LIB);$(INETSDK)\Lib
    endif
 endif
