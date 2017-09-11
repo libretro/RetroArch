@@ -1441,6 +1441,10 @@ ifeq ($(HAVE_NETWORKING), 1)
       endif
    endif
 
+   ifeq ($(HAVE_KEYMAPPER), 1)
+      OBJ += input/input_mapper.o
+   endif
+
    ifeq ($(HAVE_NETWORKGAMEPAD), 1)
       OBJ += input/input_remote.o \
              cores/libretro-net-retropad/net_retropad_core.o

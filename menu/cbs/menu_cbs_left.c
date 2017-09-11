@@ -46,6 +46,8 @@
    } while(0)
 #endif
 
+extern struct key_desc key_descriptors[MENU_SETTINGS_INPUT_DESC_KBD_END];
+
 #ifdef HAVE_SHADER_MANAGER
 static int generic_shader_action_parameter_left(
       struct video_shader_parameter *param,
@@ -110,6 +112,37 @@ static int action_left_input_desc(unsigned type, const char *label,
 
    return 0;
 }
+
+#ifdef HAVE_KEYMAPPER
+static int action_left_input_desc_kbd(unsigned type, const char *label,
+   bool wraparound)
+{
+   settings_t *settings = config_get_ptr();
+   unsigned key_id;
+   unsigned offset = type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN;
+   unsigned remap_id = 
+      settings->uints.input_keymapper_ids[offset];
+   char desc[PATH_MAX_LENGTH];
+
+   if (!settings)
+      return 0;
+
+   for (key_id = 0; key_id < MENU_SETTINGS_INPUT_DESC_KBD_END - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN; key_id++)
+   {
+      if(remap_id == key_descriptors[key_id].key)
+         break;
+   }
+
+   if (key_id > 0)
+      key_id--;
+   else
+      key_id = MENU_SETTINGS_INPUT_DESC_KBD_END - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN;
+
+   settings->uints.input_keymapper_ids[offset] = key_descriptors[key_id].key;
+
+   return 0;
+}
+#endif
 
 static int action_left_scroll(unsigned type, const char *label,
       bool wraparound)
@@ -538,6 +571,13 @@ static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
    {
       BIND_ACTION_LEFT(cbs, action_left_input_desc);
    }
+#ifdef HAVE_KEYMAPPER
+   else if (type >= MENU_SETTINGS_INPUT_DESC_KBD_BEGIN
+      && type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
+   {
+      BIND_ACTION_LEFT(cbs, action_left_input_desc_kbd);
+   }
+#endif
    else if ((type >= MENU_SETTINGS_PLAYLIST_ASSOCIATION_START))
    {
       BIND_ACTION_LEFT(cbs, playlist_association_left);

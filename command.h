@@ -193,6 +193,10 @@ enum event_command
    CMD_EVENT_REMOTE_INIT,
    /* Deinitializes remote gamepad interface. */
    CMD_EVENT_REMOTE_DEINIT,
+   /* Initializes keyboard to gamepad mapper interface. */
+   CMD_EVENT_MAPPER_INIT,
+   /* Deinitializes keyboard to gamepad mapper interface. */
+   CMD_EVENT_MAPPER_DEINIT,
    /* Reinitializes audio driver. */
    CMD_EVENT_AUDIO_REINIT,
    /* Resizes windowed scale. Will reinitialize video driver. */

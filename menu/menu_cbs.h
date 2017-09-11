@@ -27,6 +27,15 @@
 
 RETRO_BEGIN_DECLS
 
+typedef struct key_desc
+{
+   /* libretro key id */
+   unsigned key;
+
+   /* description */
+   char desc[32];
+} key_desc_t;
+
 enum
 {
    ACTION_OK_DL_DEFAULT = 0,
@@ -150,6 +159,9 @@ int core_setting_right(unsigned type, const char *label,
       bool wraparound);
 
 int action_right_input_desc(unsigned type, const char *label,
+      bool wraparound);
+
+int action_right_input_desc_kbd(unsigned type, const char *label,
       bool wraparound);
 
 int action_right_cheat(unsigned type, const char *label,

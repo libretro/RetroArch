@@ -145,6 +145,12 @@ static int action_select_input_desc(const char *path, const char *label, unsigne
    return action_right_input_desc(type, label, true);
 }
 
+static int action_select_input_desc_kbd(const char *path, const char *label, unsigned type,
+   size_t idx)
+{
+   return action_right_input_desc_kbd(type, label, true);
+}
+
 static int menu_cbs_init_bind_select_compare_type(
       menu_file_list_cbs_t *cbs, unsigned type)
 {
@@ -170,6 +176,13 @@ static int menu_cbs_init_bind_select_compare_type(
    {
       BIND_ACTION_SELECT(cbs, action_select_input_desc);
    }
+#ifdef HAVE_KEYMAPPER
+   else if (type >= MENU_SETTINGS_INPUT_DESC_KBD_BEGIN
+         && type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
+   {
+      BIND_ACTION_SELECT(cbs, action_select_input_desc_kbd);
+   }
+#endif
    else
    {
       switch (type)

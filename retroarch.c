@@ -1289,6 +1289,7 @@ bool retroarch_main_init(int argc, char *argv[])
    drivers_init(DRIVERS_CMD_ALL);
    command_event(CMD_EVENT_COMMAND_INIT, NULL);
    command_event(CMD_EVENT_REMOTE_INIT, NULL);
+   command_event(CMD_EVENT_MAPPER_INIT, NULL);
    command_event(CMD_EVENT_REWIND_INIT, NULL);
    command_event(CMD_EVENT_CONTROLLERS_INIT, NULL);
    command_event(CMD_EVENT_RECORD_INIT, NULL);
@@ -1455,6 +1456,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
          command_event(CMD_EVENT_COMMAND_DEINIT, NULL);
          command_event(CMD_EVENT_REMOTE_DEINIT, NULL);
+         command_event(CMD_EVENT_MAPPER_DEINIT, NULL);
 
          command_event(CMD_EVENT_AUTOSAVE_DEINIT, NULL);
 

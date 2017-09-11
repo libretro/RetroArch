@@ -1097,6 +1097,10 @@ MENU
 #include "../cores/libretro-net-retropad/net_retropad_core.c"
 #endif
 
+#ifdef HAVE_KEYMAPPER
+#include "../input/input_mapper.c"
+#endif
+
 #include "../command.c"
 
 #ifdef __cplusplus

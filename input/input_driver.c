@@ -34,6 +34,10 @@
 #include "input_remote.h"
 #endif
 
+#ifdef HAVE_KEYMAPPER
+#include "input_mapper.h"
+#endif
+
 #include "input_driver.h"
 #include "input_keymaps.h"
 #include "input_remapping.h"
@@ -346,6 +350,9 @@ static command_t *input_driver_command            = NULL;
 #ifdef HAVE_NETWORKGAMEPAD
 static input_remote_t *input_driver_remote        = NULL;
 #endif
+#ifdef HAVE_KEYMAPPER
+static input_mapper_t *input_driver_mapper        = NULL;
+#endif
 const input_driver_t *current_input               = NULL;
 void *current_input_data                          = NULL;
 static bool input_driver_block_hotkey             = false;
@@ -572,6 +579,11 @@ void input_poll(void)
    if (input_driver_remote)
       input_remote_poll(input_driver_remote, max_users);
 #endif
+
+#ifdef HAVE_KEYMAPPER
+   if (input_driver_mapper)
+      input_mapper_poll(input_driver_mapper);
+#endif
 }
 
 /**
@@ -653,6 +665,11 @@ int16_t input_state(unsigned port, unsigned device,
 #ifdef HAVE_NETWORKGAMEPAD
       if (input_driver_remote)
          input_remote_state(&res, port, device, idx, id);
+#endif
+
+#ifdef HAVE_KEYMAPPER
+      if (input_driver_mapper)
+         input_mapper_state(&res, port, device, idx, id);
 #endif
 
       /* Don't allow turbo for D-pad. */
@@ -1327,6 +1344,15 @@ void input_driver_deinit_remote(void)
 #endif
 }
 
+void input_driver_deinit_mapper(void)
+{
+#ifdef HAVE_KEYMAPPER
+   if (input_driver_mapper)
+      input_mapper_free(input_driver_mapper);
+   input_driver_mapper = NULL;
+#endif
+}
+
 bool input_driver_init_remote(void)
 {
 #ifdef HAVE_NETWORKGAMEPAD
@@ -1346,6 +1372,26 @@ bool input_driver_init_remote(void)
 #endif
    return false;
 }
+
+bool input_driver_init_mapper(void)
+{
+#ifdef HAVE_KEYMAPPER
+   settings_t *settings = config_get_ptr();
+
+   if (!settings->bools.keymapper_enable)
+      return false;
+
+   input_driver_mapper = input_mapper_new(
+         settings->uints.keymapper_port);
+
+   if (input_driver_mapper)
+      return true;
+
+   RARCH_ERR("Failed to initialize input mapper.\n");
+#endif
+   return false;
+}
+
 
 bool input_driver_grab_mouse(void)
 {

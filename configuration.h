@@ -199,6 +199,7 @@ typedef struct settings
       bool savestate_thumbnail_enable;
       bool network_cmd_enable;
       bool stdin_cmd_enable;
+      bool keymapper_enable;
       bool network_remote_enable;
       bool network_remote_enable_user[MAX_USERS];
       bool load_dummy_on_core_shutdown;
@@ -274,6 +275,7 @@ typedef struct settings
       unsigned audio_block_frames;
       unsigned audio_latency;
       unsigned input_remap_ids[MAX_USERS][RARCH_CUSTOM_BIND_LIST_END];
+      unsigned input_keymapper_ids[RARCH_CUSTOM_BIND_LIST_END];
 
       /* Set by autoconfiguration in joypad_autoconfig_dir.
        * Does not override main binds. */
@@ -303,6 +305,7 @@ typedef struct settings
       unsigned autosave_interval;
       unsigned network_cmd_port;
       unsigned network_remote_base_port;
+      unsigned keymapper_port;
       unsigned video_window_x;
       unsigned video_window_y;
       unsigned video_monitor_index;
