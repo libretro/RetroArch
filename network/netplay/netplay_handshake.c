@@ -41,6 +41,8 @@
 #include "../../menu/widgets/menu_input_dialog.h"
 #endif
 
+const uint32_t netplay_magic = 0x52414E50; /* RANP */
+
 /* TODO/FIXME - replace netplay_log_connection with calls
  * to inet_ntop_compat and move runloop message queue pushing
  * outside */
@@ -203,13 +205,15 @@ static uint32_t simple_rand_uint32(void)
 bool netplay_handshake_init_send(netplay_t *netplay,
    struct netplay_connection *connection)
 {
-   uint32_t header[4];
+   uint32_t header[6];
    settings_t *settings = config_get_ptr();
 
-   header[0] = htonl(netplay_impl_magic());
+   header[0] = htonl(netplay_magic);
    header[1] = htonl(netplay_platform_magic());
    header[2] = htonl(NETPLAY_COMPRESSION_SUPPORTED);
    header[3] = 0;
+   header[4] = htonl(NETPLAY_PROTOCOL_VERSION);
+   header[5] = htonl(netplay_impl_magic());
 
    if (netplay->is_server &&
        (settings->paths.netplay_password[0] ||
@@ -303,28 +307,49 @@ bool netplay_handshake_init(netplay_t *netplay,
 {
    ssize_t recvd;
    struct nick_buf_s nick_buf;
-   uint32_t header[4];
+   uint32_t header[6];
    uint32_t local_pmagic                 = 0;
    uint32_t remote_pmagic                = 0;
+   uint32_t remote_version               = 0;
    uint32_t compression                  = 0;
    struct compression_transcoder *ctrans = NULL;
    const char *dmsg                      = NULL;
 
-   header[0] = 0;
-   header[1] = 0;
-   header[2] = 0;
-   header[3] = 0;
+   memset(header, 0, sizeof(header));
 
-   RECV(header, sizeof(header))
+   RECV(header, sizeof(uint32_t))
    {
       dmsg = msg_hash_to_str(MSG_FAILED_TO_RECEIVE_HEADER_FROM_CLIENT);
       goto error;
    }
 
-   if (netplay_impl_magic() != ntohl(header[0]))
+   if (ntohl(header[0]) != netplay_magic)
    {
       dmsg = msg_hash_to_str(MSG_NETPLAY_IMPLEMENTATIONS_DIFFER);
       goto error;
+   }
+
+   RECV(header + 1, sizeof(header) - sizeof(uint32_t))
+   {
+      dmsg = msg_hash_to_str(MSG_FAILED_TO_RECEIVE_HEADER_FROM_CLIENT);
+      goto error;
+   }
+
+   remote_version = ntohl(header[4]);
+   if (remote_version < NETPLAY_PROTOCOL_VERSION)
+   {
+      /* FIXME: More precise information */
+      dmsg = msg_hash_to_str(MSG_NETPLAY_IMPLEMENTATIONS_DIFFER);
+      goto error;
+   }
+
+   if (ntohl(header[5]) != netplay_impl_magic())
+   {
+      /* We allow the connection but warn that this could cause issues. */
+      /* FIXME: More precise information */
+      dmsg = msg_hash_to_str(MSG_NETPLAY_IMPLEMENTATIONS_DIFFER);
+      RARCH_WARN("%s\n", dmsg);
+      runloop_msg_queue_push(dmsg, 1, 180, false);
    }
 
    /* We only care about platform magic if our core is quirky */
@@ -855,13 +880,22 @@ bool netplay_handshake_pre_info(netplay_t *netplay,
 
    if (core_info)
    {
+      /* FIXME: More precise messages */
+      dmsg = msg_hash_to_str(MSG_NETPLAY_IMPLEMENTATIONS_DIFFER);
       if (strncmp(info_buf.core_name,
-               core_info->info.library_name, sizeof(info_buf.core_name)) ||
-          strncmp(info_buf.core_version,
+               core_info->info.library_name, sizeof(info_buf.core_name)))
+      {
+         /* Wrong core! */
+         RARCH_ERR("%s\n", dmsg);
+         runloop_msg_queue_push(dmsg, 1, 180, false);
+         /* FIXME: Should still send INFO, so the other side knows what's what */
+         return false;
+      }
+      if (strncmp(info_buf.core_version,
              core_info->info.library_version, sizeof(info_buf.core_version)))
       {
-         dmsg = msg_hash_to_str(MSG_NETPLAY_IMPLEMENTATIONS_DIFFER);
-         goto error;
+         RARCH_WARN("%s\n", dmsg);
+         runloop_msg_queue_push(dmsg, 1, 180, false);
       }
    }
 
@@ -873,7 +907,8 @@ bool netplay_handshake_pre_info(netplay_t *netplay,
       if (ntohl(info_buf.content_crc) != content_crc)
       {
          dmsg = msg_hash_to_str(MSG_CONTENT_CRC32S_DIFFER);
-         goto error;
+         RARCH_WARN("%s\n", dmsg);
+         runloop_msg_queue_push(dmsg, 1, 180, false);
       }
    }
 
@@ -894,24 +929,8 @@ bool netplay_handshake_pre_info(netplay_t *netplay,
    *had_input = true;
    netplay_recv_flush(&connection->recv_packet_buffer);
    return true;
-
-error:
-   if (dmsg)
-   {
-      RARCH_ERR("%s\n", dmsg);
-      runloop_msg_queue_push(dmsg, 1, 180, false);
-   }
-
-   if (!netplay->is_server)
-   {
-      /* Counter-intuitively, we still want to send our info. This is simply so
-       * that the server knows why we disconnected. */
-      if (!netplay_handshake_info(netplay, connection))
-         return false;
-   }
-
-   return false;
 }
+
 /**
  * netplay_handshake_pre_sync
  *
