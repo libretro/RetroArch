@@ -73,6 +73,14 @@ enum
    ACTION_OK_SET_DIRECTORY
 };
 
+enum
+{
+   ACTION_OK_REMAP_FILE_SAVE_CORE = 0,
+   ACTION_OK_REMAP_FILE_SAVE_GAME,
+   ACTION_OK_REMAP_FILE_REMOVE_CORE,
+   ACTION_OK_REMAP_FILE_REMOVE_GAME
+};
+
 #ifndef BIND_ACTION_OK
 #define BIND_ACTION_OK(cbs, name) \
    do { \
@@ -1578,13 +1586,13 @@ static int action_ok_playlist_entry(const char *path,
    {
       core_info_ctx_find_t core_info;
       char new_core_path[PATH_MAX_LENGTH];
-      char new_display_name[PATH_MAX_LENGTH];
+      char *new_display_name                 = NULL;
       const char *entry_path                 = NULL;
       const char *path_base                  =
          path_basename(menu->db_playlist_file);
       bool        found_associated_core      = false;
 
-      new_core_path[0] = new_display_name[0] = '\0';
+      new_core_path[0] = '\0';
 
       found_associated_core                  =
          menu_content_playlist_find_associated_core(
@@ -1604,8 +1612,8 @@ static int action_ok_playlist_entry(const char *path,
 
       menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
 
-      strlcpy(new_display_name,
-            core_info.inf->display_name, sizeof(new_display_name));
+      new_display_name = strdup(core_info.inf->display_name);
+
       playlist_update(tmp_playlist,
             selection_ptr,
             NULL,
@@ -1614,6 +1622,8 @@ static int action_ok_playlist_entry(const char *path,
             new_display_name,
             NULL,
             NULL);
+
+      free(new_display_name);
       playlist_write_file(tmp_playlist);
    }
 
@@ -1622,12 +1632,15 @@ static int action_ok_playlist_entry(const char *path,
 
    if (!menu_content_playlist_load(&playlist_info))
    {
-      runloop_msg_queue_push("File could not be loaded from playlist.\n", 1, 100, true);
+      runloop_msg_queue_push(
+            "File could not be loaded from playlist.\n",
+            1, 100, true);
       return menu_cbs_exit();
    }
 
    playlist_get_index(playlist,
-         playlist_info.idx, &path, NULL, NULL, NULL, NULL, NULL);
+         playlist_info.idx, &path, NULL, NULL, NULL,
+         NULL, NULL);
 
    if (!task_push_load_content_from_playlist_from_menu(
             core_path, path,
@@ -2087,14 +2100,6 @@ static int action_ok_cheat_file_save_as(const char *path,
       return -1;
    return 0;
 }
-
-enum
-{
-   ACTION_OK_REMAP_FILE_SAVE_CORE = 0,
-   ACTION_OK_REMAP_FILE_SAVE_GAME,
-   ACTION_OK_REMAP_FILE_REMOVE_CORE,
-   ACTION_OK_REMAP_FILE_REMOVE_GAME
-};
 
 static int generic_action_ok_remap_file_operation(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
@@ -4033,27 +4038,31 @@ static int action_ok_netplay_enable_host(const char *path,
 static void action_ok_netplay_enable_client_hostname_cb(
    void *ignore, const char *hostname)
 {
-   char tmp_hostname[512];
-   bool contentless = false;
-   bool is_inited   = false;
-
-   content_get_status(&contentless, &is_inited);
 
    if (hostname && hostname[0])
    {
-      strlcpy(tmp_hostname, hostname, sizeof(tmp_hostname));
+      bool contentless   = false;
+      bool is_inited     = false;
+      char *tmp_hostname = strdup(hostname);
+
+      content_get_status(&contentless, &is_inited);
+
       if (!is_inited)
       {
-         command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, (void *) tmp_hostname);
+         command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED,
+               (void*)tmp_hostname);
          runloop_msg_queue_push(
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),
             1, 480, true);
       }
       else
       {
-         command_event(CMD_EVENT_NETPLAY_INIT_DIRECT, (void *) tmp_hostname);
+         command_event(CMD_EVENT_NETPLAY_INIT_DIRECT,
+               (void*)tmp_hostname);
          generic_action_ok_command(CMD_EVENT_RESUME);
       }
+
+      free(tmp_hostname);
    }
    else
    {
