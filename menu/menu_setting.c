@@ -86,6 +86,10 @@
 
 #include "../tasks/tasks_internal.h"
 
+#ifdef HAVE_NETWORKING
+#include "../network/netplay/netplay.h"
+#endif
+
 enum settings_list_type
 {
    SETTINGS_LIST_NONE = 0,
@@ -6920,6 +6924,32 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.netplay_share_digital,
+                  MENU_ENUM_LABEL_NETPLAY_SHARE_DIGITAL,
+                  MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL,
+                  0,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0, RARCH_NETPLAY_SHARE_DIGITAL_LAST-1, 1, true, true);
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.netplay_share_analog,
+                  MENU_ENUM_LABEL_NETPLAY_SHARE_ANALOG,
+                  MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG,
+                  0,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0, RARCH_NETPLAY_SHARE_ANALOG_LAST-1, 1, true, true);
 
             for (user = 0; user < MAX_USERS; user++)
             {

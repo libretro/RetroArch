@@ -1122,6 +1122,49 @@ static void netplay_core_reset(netplay_t *netplay)
 }
 
 /**
+ * netplay_settings_share_mode
+ *
+ * Get the preferred share mode
+ */
+uint8_t netplay_settings_share_mode(void)
+{
+   settings_t *settings = config_get_ptr();
+   uint8_t share_mode = 0;
+
+   if (settings->uints.netplay_share_digital
+         || settings->uints.netplay_share_analog)
+   {
+      switch (settings->uints.netplay_share_digital)
+      {
+         case RARCH_NETPLAY_SHARE_DIGITAL_OR:
+            share_mode |= NETPLAY_SHARE_DIGITAL_OR;
+            break;
+         case RARCH_NETPLAY_SHARE_DIGITAL_XOR:
+            share_mode |= NETPLAY_SHARE_DIGITAL_XOR;
+            break;
+         case RARCH_NETPLAY_SHARE_DIGITAL_VOTE:
+            share_mode |= NETPLAY_SHARE_DIGITAL_VOTE;
+            break;
+         default:
+            share_mode |= NETPLAY_SHARE_NO_PREFERENCE;
+      }
+      switch (settings->uints.netplay_share_analog)
+      {
+         case RARCH_NETPLAY_SHARE_ANALOG_MAX:
+            share_mode |= NETPLAY_SHARE_ANALOG_MAX;
+            break;
+         case RARCH_NETPLAY_SHARE_ANALOG_AVERAGE:
+            share_mode |= NETPLAY_SHARE_ANALOG_AVERAGE;
+            break;
+         default:
+            share_mode |= NETPLAY_SHARE_NO_PREFERENCE;
+      }
+   }
+
+   return share_mode;
+}
+
+/**
  * netplay_toggle_play_spectate
  *
  * Toggle between play mode and spectate mode
@@ -1157,8 +1200,9 @@ static void netplay_toggle_play_spectate(netplay_t *netplay)
       }
       else if (netplay->self_mode == NETPLAY_CONNECTION_SPECTATING)
       {
+         /* FIXME: Own device request */
          uint32_t device;
-         uint8_t share_mode = RARCH_NETPLAY_SHARE_DIGITAL_OR|RARCH_NETPLAY_SHARE_ANALOG_MAX;
+         uint8_t share_mode = netplay_settings_share_mode();
 
          /* Take an input device */
          for (device = 0; device < MAX_INPUT_DEVICES; device++)
@@ -1171,7 +1215,7 @@ static void netplay_toggle_play_spectate(netplay_t *netplay)
             if (!netplay->device_clients[device])
                break;
          }
-         if (device >= MAX_INPUT_DEVICES)
+         if (device >= MAX_INPUT_DEVICES && share_mode)
          {
             /* Share one */
             for (device = 0; device < MAX_INPUT_DEVICES; device++)

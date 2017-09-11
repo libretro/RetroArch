@@ -470,6 +470,7 @@ bool netplay_cmd_mode(netplay_t *netplay,
 {
    uint32_t cmd, device;
    uint32_t payloadBuf = 0, *payload = NULL;
+   uint8_t share_mode;
    settings_t *settings = config_get_ptr();
    switch (mode)
    {
@@ -483,7 +484,10 @@ bool netplay_cmd_mode(netplay_t *netplay,
 
       case NETPLAY_CONNECTION_PLAYING:
          payload = &payloadBuf;
-         payloadBuf |= RARCH_NETPLAY_SHARE_NO_PREFERENCE<<16;
+
+         /* Add a share mode if requested */
+         share_mode = netplay_settings_share_mode();
+         payloadBuf |= ((uint32_t) share_mode) << 16;
 
          /* Request devices */
          for (device = 0; device < MAX_INPUT_DEVICES; device++)
@@ -956,11 +960,11 @@ static bool netplay_get_cmd(netplay_t *netplay,
          /* Fix our share mode */
          if (share_mode)
          {
-            if ((share_mode & RARCH_NETPLAY_SHARE_DIGITAL_BITS) == 0)
-               share_mode |= RARCH_NETPLAY_SHARE_DIGITAL_OR;
-            if ((share_mode & RARCH_NETPLAY_SHARE_ANALOG_BITS) == 0)
-               share_mode |= RARCH_NETPLAY_SHARE_ANALOG_MAX;
-            share_mode &= ~RARCH_NETPLAY_SHARE_NO_PREFERENCE;
+            if ((share_mode & NETPLAY_SHARE_DIGITAL_BITS) == 0)
+               share_mode |= NETPLAY_SHARE_DIGITAL_OR;
+            if ((share_mode & NETPLAY_SHARE_ANALOG_BITS) == 0)
+               share_mode |= NETPLAY_SHARE_ANALOG_MAX;
+            share_mode &= ~NETPLAY_SHARE_NO_PREFERENCE;
          }
 
 

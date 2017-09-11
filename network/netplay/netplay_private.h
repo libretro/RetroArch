@@ -207,6 +207,28 @@ enum netplay_cmd_mode_reasons
    NETPLAY_CMD_MODE_REFUSED_REASON_NOT_AVAILABLE
 };
 
+/* Real preferences for sharing devices */
+enum rarch_netplay_share_preference
+{
+   /* Prefer not to share, shouldn't be set as a sharing mode for an shared device */
+   NETPLAY_SHARE_NO_SHARING = 0x0,
+
+   /* No preference. Only for requests. Set if sharing is requested but either
+    * digital or analog doesn't have a preference. */
+   NETPLAY_SHARE_NO_PREFERENCE = 0x1,
+
+   /* For digital devices */
+   NETPLAY_SHARE_DIGITAL_BITS = 0x1C,
+   NETPLAY_SHARE_DIGITAL_OR = 0x4,
+   NETPLAY_SHARE_DIGITAL_XOR = 0x8,
+   NETPLAY_SHARE_DIGITAL_VOTE = 0xC,
+
+   /* For analog devices */
+   NETPLAY_SHARE_ANALOG_BITS = 0xE0,
+   NETPLAY_SHARE_ANALOG_MAX = 0x20,
+   NETPLAY_SHARE_ANALOG_AVERAGE = 0x40
+};
+
 /* The current status of a connection */
 enum rarch_netplay_connection_mode
 {
@@ -694,6 +716,13 @@ bool netplay_lan_ad_server(netplay_t *netplay);
  **/
 void netplay_load_savestate(netplay_t *netplay,
       retro_ctx_serialize_info_t *serial_info, bool save);
+
+/**
+ * netplay_settings_share_mode
+ *
+ * Get the preferred share mode
+ */
+uint8_t netplay_settings_share_mode(void);
 
 /**
  * input_poll_net
