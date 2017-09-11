@@ -689,39 +689,58 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
       netplay->force_reset = false;
    }
 
+   netplay->replay_ptr = netplay->other_ptr;
+   netplay->replay_frame_count = netplay->other_frame_count;
+
 #ifndef DEBUG_NONDETERMINISTIC_CORES
    if (!netplay->force_rewind)
    {
+      bool cont = true;
+
       /* Skip ahead if we predicted correctly.
        * Skip until our simulation failed. */
       while (netplay->other_frame_count < netplay->unread_frame_count &&
              netplay->other_frame_count < netplay->run_frame_count)
       {
          struct delta_frame *ptr = &netplay->buffer[netplay->other_ptr];
-         size_t i;
 
          /* If resolving the input changes it, we used bad input */
          if (netplay_resolve_input(netplay, netplay->other_ptr, true))
+         {
+            cont = false;
             break;
+         }
 
          netplay_handle_frame_hash(netplay, ptr);
          netplay->other_ptr = NEXT_PTR(netplay->other_ptr);
          netplay->other_frame_count++;
+      }
+      netplay->replay_ptr = netplay->other_ptr;
+      netplay->replay_frame_count = netplay->other_frame_count;
+
+      if (cont)
+      {
+         while (netplay->replay_frame_count < netplay->run_frame_count)
+         {
+            struct delta_frame *ptr = &netplay->buffer[netplay->replay_ptr];
+            if (netplay_resolve_input(netplay, netplay->replay_ptr, true))
+               break;
+            netplay->replay_ptr = NEXT_PTR(netplay->replay_ptr);
+            netplay->replay_frame_count++;
+         }
       }
    }
 #endif
 
    /* Now replay the real input if we've gotten ahead of it */
    if (netplay->force_rewind ||
-       (netplay->other_frame_count < netplay->unread_frame_count &&
-        netplay->other_frame_count < netplay->run_frame_count))
+       (netplay->replay_frame_count < netplay->unread_frame_count &&
+        netplay->replay_frame_count < netplay->run_frame_count))
    {
       retro_ctx_serialize_info_t serial_info;
 
       /* Replay frames. */
       netplay->is_replay = true;
-      netplay->replay_ptr = netplay->other_ptr;
-      netplay->replay_frame_count = netplay->other_frame_count;
 
       if (netplay->quirks & NETPLAY_QUIRK_INITIALIZATION)
          /* Make sure we're initialized before we start loading things */
