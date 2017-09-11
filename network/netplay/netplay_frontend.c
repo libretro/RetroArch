@@ -510,7 +510,7 @@ static int16_t netplay_input_state(netplay_t *netplay,
 
    delta = &netplay->buffer[ptr];
    istate = delta->resolved_input[port];
-   if (!istate)
+   if (!istate || !istate->used)
       return 0;
 
    curr_input_state = istate->data;

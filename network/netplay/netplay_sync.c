@@ -355,7 +355,6 @@ bool netplay_resolve_input(netplay_t *netplay, size_t sim_ptr, bool resim)
                                      (1U<<RETRO_DEVICE_ID_JOYPAD_DOWN) |
                                      (1U<<RETRO_DEVICE_ID_JOYPAD_LEFT) |
                                      (1U<<RETRO_DEVICE_ID_JOYPAD_RIGHT);
-               uint32_t prev = simstate->data[0];
                simstate->data[0] &= keep;
                simstate->data[0] |= pstate->data[0] & ~keep;
             }
