@@ -98,11 +98,10 @@ size_t                     hack_shader_pass      = 0;
 
 #ifdef HAVE_NETWORKING
 #ifdef HAVE_LAKKA
-static char lakka_project[128];
-
 static char *lakka_get_project(void)
 {
    size_t len;
+   static char lakka_project[128];
    FILE *command_file = popen("cat /etc/release | cut -d - -f 1", "r");
 
    fgets(lakka_project, sizeof(lakka_project), command_file);
