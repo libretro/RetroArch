@@ -117,7 +117,7 @@ static bool get_self_input_state(netplay_t *netplay)
 {
    struct delta_frame *ptr = &netplay->buffer[netplay->self_ptr];
    netplay_input_state_t istate = NULL;
-   uint32_t devices, devi;
+   uint32_t devices, used_devices = 0, devi, dev_type, local_device;
    size_t i;
 
    if (!netplay_delta_frame_ready(netplay, ptr, netplay->self_frame_count))
@@ -130,10 +130,22 @@ static bool get_self_input_state(netplay_t *netplay)
    }
 
    devices = netplay->self_devices;
+   used_devices = 0;
    for (devi = 0; devi < MAX_INPUT_DEVICES; devi++)
    {
       if (!(devices & (1<<devi)))
          continue;
+
+      /* Find an appropriate local device */
+      dev_type = input_config_get_device(devi)&RETRO_DEVICE_MASK;
+      for (local_device = 0; local_device < MAX_INPUT_DEVICES; local_device++)
+      {
+         if (used_devices & (1<<local_device)) continue;
+         if ((input_config_get_device(local_device)&RETRO_DEVICE_MASK) == dev_type) break;
+      }
+      if (local_device == MAX_INPUT_DEVICES)
+         local_device = 0;
+      used_devices |= (1<<local_device);
 
       istate = netplay_input_state_for(&ptr->real_input[devi],
             netplay->self_client_num, 3 /* FIXME */, true, false);
@@ -148,16 +160,16 @@ static bool get_self_input_state(netplay_t *netplay)
          retro_input_state_t cb = netplay->cbs.state_cb;
          for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
          {
-            int16_t tmp = cb(0,
+            int16_t tmp = cb(local_device,
                   RETRO_DEVICE_JOYPAD, 0, (unsigned)i);
             state[0] |= tmp ? 1 << i : 0;
          }
 
          for (i = 0; i < 2; i++)
          {
-            int16_t tmp_x = cb(0,
+            int16_t tmp_x = cb(local_device,
                   RETRO_DEVICE_ANALOG, (unsigned)i, 0);
-            int16_t tmp_y = cb(0,
+            int16_t tmp_y = cb(local_device,
                   RETRO_DEVICE_ANALOG, (unsigned)i, 1);
             state[1 + i] = (uint16_t)tmp_x | (((uint16_t)tmp_y) << 16);
          }
