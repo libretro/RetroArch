@@ -563,19 +563,15 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type            = DISPLAYLIST_PENDING_CLEAR;
          break;
       case ACTION_OK_DL_CORE_CONTENT_DIRS_SUBDIR_LIST:
-         {
-            char new_path_tmp[PATH_MAX_LENGTH];
-            new_path_tmp[0] = '\0';
-            fill_pathname_join_delim(new_path_tmp, path, label, ';',
-                  sizeof(new_path_tmp));
-            info.type          = type;
-            info.directory_ptr = idx;
-            info_path          = new_path_tmp;
-            info_label         = msg_hash_to_str(
-                  MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_SUBDIR_LIST);
-            info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_SUBDIR_LIST;
-            dl_type            = DISPLAYLIST_GENERIC;
-         }
+         fill_pathname_join_delim(tmp, path, label, ';',
+               sizeof(tmp));
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = tmp;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_SUBDIR_LIST);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_SUBDIR_LIST;
+         dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_CORE_CONTENT_DIRS_LIST:
          info.type          = type;
