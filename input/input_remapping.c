@@ -50,7 +50,7 @@ bool input_remapping_load_file(void *data, const char *path)
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      char buf[64];
+      char buf_tmp[64];
       char key_ident[RARCH_FIRST_CUSTOM_BIND + 4][128]   = {{0}};
       char key_strings[RARCH_FIRST_CUSTOM_BIND + 4][128] =
       { "b", "y", "select", "start",
@@ -61,13 +61,13 @@ bool input_remapping_load_file(void *data, const char *path)
       old_analog_dpad_mode[i] = settings->uints.input_analog_dpad_mode[i];
       old_libretro_device[i] = settings->uints.input_libretro_device[i];
 
-      snprintf(buf, sizeof(buf), "input_player%u", i + 1);
+      snprintf(buf_tmp, sizeof(buf_tmp), "input_player%u", i + 1);
 
       for (j = 0; j < RARCH_FIRST_CUSTOM_BIND + 4; j++)
       {
          int key_remap = -1;
 
-         fill_pathname_join_delim(key_ident[j], buf,
+         fill_pathname_join_delim(key_ident[j], buf_tmp,
                key_strings[j], '_', sizeof(key_ident[j]));
          if (config_get_int(conf, key_ident[j], &key_remap)
                && key_remap < RARCH_FIRST_CUSTOM_BIND)
@@ -81,7 +81,7 @@ bool input_remapping_load_file(void *data, const char *path)
          snprintf(key_ident[RARCH_FIRST_CUSTOM_BIND + j],
                sizeof(key_ident[RARCH_FIRST_CUSTOM_BIND + j]),
                "%s_%s",
-               buf,
+               buf_tmp,
                key_strings[RARCH_FIRST_CUSTOM_BIND + j]);
 
          if (config_get_int(conf, key_ident[RARCH_FIRST_CUSTOM_BIND + j],
@@ -90,11 +90,11 @@ bool input_remapping_load_file(void *data, const char *path)
                key_remap;
       }
 
-      snprintf(buf, sizeof(buf), "input_player%u_analog_dpad_mode", i + 1);
-      CONFIG_GET_INT_BASE(conf, settings, uints.input_analog_dpad_mode[i], buf);
+      snprintf(buf_tmp, sizeof(buf_tmp), "input_player%u_analog_dpad_mode", i + 1);
+      CONFIG_GET_INT_BASE(conf, settings, uints.input_analog_dpad_mode[i], buf_tmp);
 
-      snprintf(buf, sizeof(buf), "input_libretro_device_p%u", i + 1);
-      CONFIG_GET_INT_BASE(conf, settings, uints.input_libretro_device[i], buf);
+      snprintf(buf_tmp, sizeof(buf_tmp), "input_libretro_device_p%u", i + 1);
+      CONFIG_GET_INT_BASE(conf, settings, uints.input_libretro_device[i], buf_tmp);
    }
 
    config_file_free(conf);
@@ -114,8 +114,8 @@ bool input_remapping_save_file(const char *path)
 {
    bool ret;
    unsigned i, j;
-   char buf[PATH_MAX_LENGTH];
    size_t path_size                  = PATH_MAX_LENGTH * sizeof(char);
+   char *buf                         = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    char *remap_file                  = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    config_file_t               *conf = NULL;
    unsigned max_users                = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
@@ -124,9 +124,11 @@ bool input_remapping_save_file(const char *path)
    buf[0] = remap_file[0]            = '\0';
 
    fill_pathname_join(buf, settings->paths.directory_input_remapping,
-         path, sizeof(buf));
+         path, path_size);
 
    fill_pathname_noext(remap_file, buf, ".rmp", path_size);
+
+   free(buf);
 
    conf = config_file_new(remap_file);
 
@@ -142,7 +144,7 @@ bool input_remapping_save_file(const char *path)
 
    for (i = 0; i < max_users; i++)
    {
-      char buf[64];
+      char buf_tmp[64];
       char key_ident[RARCH_FIRST_CUSTOM_BIND + 4][128]   = {{0}};
       char key_strings[RARCH_FIRST_CUSTOM_BIND + 4][128] = {
          "b", "y", "select", "start",
@@ -150,13 +152,13 @@ bool input_remapping_save_file(const char *path)
          "a", "x", "l", "r", "l2", "r2",
          "l3", "r3", "l_x", "l_y", "r_x", "r_y" };
 
-      buf[0] = '\0';
+      buf_tmp[0] = '\0';
 
-      snprintf(buf, sizeof(buf), "input_player%u", i + 1);
+      snprintf(buf_tmp, sizeof(buf_tmp), "input_player%u", i + 1);
 
       for (j = 0; j < RARCH_FIRST_CUSTOM_BIND + 4; j++)
       {
-         fill_pathname_join_delim(key_ident[j], buf,
+         fill_pathname_join_delim(key_ident[j], buf_tmp,
                key_strings[j], '_', sizeof(key_ident[j]));
 
          /* only save values that have been modified */
@@ -175,10 +177,10 @@ bool input_remapping_save_file(const char *path)
                config_unset(conf,key_ident[j]);
          }
       }
-      snprintf(buf, sizeof(buf), "input_libretro_device_p%u", i + 1);
-      config_set_int(conf, buf, input_config_get_device(i));
-      snprintf(buf, sizeof(buf), "input_player%u_analog_dpad_mode", i + 1);
-      config_set_int(conf, buf, settings->uints.input_analog_dpad_mode[i]);
+      snprintf(buf_tmp, sizeof(buf_tmp), "input_libretro_device_p%u", i + 1);
+      config_set_int(conf, buf_tmp, input_config_get_device(i));
+      snprintf(buf_tmp, sizeof(buf_tmp), "input_player%u_analog_dpad_mode", i + 1);
+      config_set_int(conf, buf_tmp, settings->uints.input_analog_dpad_mode[i]);
    }
 
    ret = config_file_write(conf, remap_file);
