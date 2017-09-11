@@ -571,11 +571,13 @@ static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
    {
       BIND_ACTION_LEFT(cbs, action_left_input_desc);
    }
+#ifdef HAVE_KEYMAPPER
    else if (type >= MENU_SETTINGS_INPUT_DESC_KBD_BEGIN
       && type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
    {
       BIND_ACTION_LEFT(cbs, action_left_input_desc_kbd);
    }
+#endif
    else if ((type >= MENU_SETTINGS_PLAYLIST_ASSOCIATION_START))
    {
       BIND_ACTION_LEFT(cbs, playlist_association_left);

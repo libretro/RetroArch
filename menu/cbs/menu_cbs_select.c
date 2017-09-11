@@ -176,11 +176,13 @@ static int menu_cbs_init_bind_select_compare_type(
    {
       BIND_ACTION_SELECT(cbs, action_select_input_desc);
    }
+#ifdef HAVE_KEYMAPPER
    else if (type >= MENU_SETTINGS_INPUT_DESC_KBD_BEGIN
          && type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
    {
       BIND_ACTION_SELECT(cbs, action_select_input_desc_kbd);
    }
+#endif
    else
    {
       switch (type)
