@@ -476,17 +476,15 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_PARENT_DIRECTORY_PUSH:
          {
             char parent_dir[PATH_MAX_LENGTH];
-            char action_path[PATH_MAX_LENGTH];
 
             parent_dir[0]  = '\0';
-            action_path[0] = '\0';
 
             if (path && menu_path)
-               fill_pathname_join(action_path,
-                     menu_path, path, sizeof(action_path));
+               fill_pathname_join(tmp,
+                     menu_path, path, sizeof(tmp));
 
             fill_pathname_parent_dir(parent_dir,
-                  action_path, sizeof(parent_dir));
+                  tmp, sizeof(parent_dir));
             fill_pathname_parent_dir(parent_dir,
                   parent_dir, sizeof(parent_dir));
 
@@ -498,19 +496,15 @@ int generic_action_ok_displaylist_push(const char *path,
          }
          break;
       case ACTION_OK_DL_DIRECTORY_PUSH:
-         {
-            char action_path[PATH_MAX_LENGTH];
-            action_path[0] = '\0';
-            if (path && menu_path)
-               fill_pathname_join(action_path,
-                     menu_path, path, sizeof(action_path));
+         if (path && menu_path)
+            fill_pathname_join(tmp,
+                  menu_path, path, sizeof(tmp));
 
-            info.type          = type;
-            info.directory_ptr = idx;
-            info_path          = action_path;
-            info_label         = menu_label;
-            dl_type            = DISPLAYLIST_GENERIC;
-         }
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = tmp;
+         info_label         = menu_label;
+         dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_DATABASE_MANAGER_LIST:
          {
