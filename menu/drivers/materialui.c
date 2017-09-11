@@ -318,15 +318,17 @@ static const char *mui_texture_path(unsigned id)
 static void mui_context_reset_textures(mui_handle_t *mui)
 {
    unsigned i;
-   char iconpath[PATH_MAX_LENGTH];
+   char *iconpath = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
-   iconpath[0] = '\0';
+   iconpath[0]    = '\0';
 
-   fill_pathname_application_special(iconpath, sizeof(iconpath),
+   fill_pathname_application_special(iconpath,
+         PATH_MAX_LENGTH * sizeof(char),
          APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_ICONS);
 
    for (i = 0; i < MUI_TEXTURE_LAST; i++)
       menu_display_reset_textures_list(mui_texture_path(i), iconpath, &mui->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR);
+   free(iconpath);
 }
 
 static void mui_draw_icon(

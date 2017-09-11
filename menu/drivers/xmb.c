@@ -972,16 +972,17 @@ end:
 static void xmb_update_thumbnail_path(void *data, unsigned i)
 {
    menu_entry_t entry;
-   char tmp_new[PATH_MAX_LENGTH];
-   char             *tmp    = NULL;
    char *scrub_char_pointer = NULL;
    settings_t     *settings = config_get_ptr();
    xmb_handle_t     *xmb    = (xmb_handle_t*)data;
    playlist_t     *playlist = NULL;
    const char    *core_name = NULL;
+   char             *tmp    = NULL;
+   char            *tmp_new = (char*)
+      malloc(PATH_MAX_LENGTH * sizeof(char));
 
    if (!xmb)
-      return;
+      goto end;
 
    entry.path[0]       = '\0';
    entry.label[0]      = '\0';
@@ -1010,14 +1011,14 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
                entry.path,
                sizeof(xmb->thumbnail_file_path));
 
-         return;
+         goto end;
       }
    }
    else if (filebrowser_get_type() != FILEBROWSER_NONE)
    {
       xmb->thumbnail_file_path[0] = '\0';
       xmb->thumbnail = 0;
-      return;
+      goto end;
    }
 
    menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
@@ -1031,7 +1032,7 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
       {
          strlcpy(xmb->thumbnail_file_path, entry.label,
                sizeof(xmb->thumbnail_file_path));
-         return;
+         goto end;
       }
    }
 
@@ -1059,7 +1060,7 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
 
    fill_pathname_join(tmp_new,
          xmb->thumbnail_file_path,
-         tmp, sizeof(tmp_new));
+         tmp, PATH_MAX_LENGTH * sizeof(char));
    strlcpy(xmb->thumbnail_file_path,
          tmp_new, sizeof(xmb->thumbnail_file_path));
    free(tmp);
@@ -1067,6 +1068,9 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
    strlcat(xmb->thumbnail_file_path,
          file_path_str(FILE_PATH_PNG_EXTENSION),
          sizeof(xmb->thumbnail_file_path));
+
+end:
+   free(tmp_new);
 }
 
 static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
@@ -3777,25 +3781,28 @@ static void xmb_context_reset_textures(
 
 static void xmb_context_reset_background(const char *iconpath)
 {
-   char path[PATH_MAX_LENGTH];
+   char *path                  = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    settings_t *settings        = config_get_ptr();
 
    path[0] = '\0';
 
-   fill_pathname_join(path, iconpath, "bg.png", sizeof(path));
+   fill_pathname_join(path, iconpath, "bg.png",
+         PATH_MAX_LENGTH * sizeof(char));
 
    if (!string_is_empty(settings->paths.path_menu_wallpaper))
-      strlcpy(path, settings->paths.path_menu_wallpaper, sizeof(path));
-
+      strlcpy(path, settings->paths.path_menu_wallpaper, 
+            PATH_MAX_LENGTH * sizeof(char));
 
    if (path_file_exists(path))
       task_push_image_load(path,
             menu_display_handle_wallpaper_upload, NULL);
+
+   free(path);
 }
 
 static void xmb_context_reset(void *data, bool is_threaded)
 {
-   char iconpath[PATH_MAX_LENGTH];
+   char *iconpath                  = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    xmb_handle_t *xmb               = (xmb_handle_t*)data;
    if (!xmb)
       return;
@@ -3806,7 +3813,8 @@ static void xmb_context_reset(void *data, bool is_threaded)
          sizeof(xmb->background_file_path),
          APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG);
 
-   fill_pathname_application_special(iconpath, sizeof(iconpath),
+   fill_pathname_application_special(iconpath,
+         PATH_MAX_LENGTH * sizeof(char),
          APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
 
    xmb_layout(xmb);
@@ -3824,6 +3832,8 @@ static void xmb_context_reset(void *data, bool is_threaded)
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
       xmb_update_thumbnail_image(xmb);
    xmb_update_savestate_thumbnail_image(xmb);
+
+   free(iconpath);
 }
 
 static void xmb_navigation_clear(void *data, bool pending_push)
