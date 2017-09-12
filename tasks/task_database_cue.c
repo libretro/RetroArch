@@ -443,7 +443,7 @@ int find_first_data_track(const char *cue_path,
       int32_t *offset, char *track_path, size_t max_len)
 {
    int rv;
-   char tmp_token[MAX_TOKEN_LEN];
+   char * tmp_token              = (char*)(MAX_TOKEN_LEN * sizeof(char));
    RFILE *fd                     =
       filestream_open(cue_path, RFILE_MODE_READ, -1);
 
@@ -451,7 +451,7 @@ int find_first_data_track(const char *cue_path,
    {
       RARCH_LOG("Could not open CUE file '%s': %s\n", cue_path,
             strerror(errno));
-      return -errno;
+      goto error;
    }
 
    RARCH_LOG("Parsing CUE file '%s'...\n", cue_path);
@@ -462,15 +462,16 @@ int find_first_data_track(const char *cue_path,
    {
       if (string_is_equal(tmp_token, "FILE"))
       {
-         char cue_dir[PATH_MAX_LENGTH];
+         char *cue_dir = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
-         cue_dir[0] = '\0';
+         cue_dir[0]    = '\0';
 
-         fill_pathname_basedir(cue_dir, cue_path, sizeof(cue_dir));
+         fill_pathname_basedir(cue_dir, cue_path, PATH_MAX_LENGTH * sizeof(char));
 
          get_token(fd, tmp_token, MAX_TOKEN_LEN);
          fill_pathname_join(track_path, cue_dir, tmp_token, max_len);
 
+         free(cue_dir);
       }
       else if (string_is_equal(tmp_token, "TRACK"))
       {
@@ -488,8 +489,7 @@ int find_first_data_track(const char *cue_path,
          if (sscanf(tmp_token, "%02d:%02d:%02d", &m, &s, &f) < 3)
          {
             RARCH_LOG("Error parsing time stamp '%s'\n", tmp_token);
-            filestream_close(fd);
-            return -errno;
+            goto error;
          }
 
          *offset = ((m * 60) * (s * 75) * f) * 25;
@@ -506,6 +506,13 @@ int find_first_data_track(const char *cue_path,
    rv = -EINVAL;
 
 clean:
+   free(tmp_token);
    filestream_close(fd);
    return rv;
+
+error:
+   free(tmp_token);
+   if (fd)
+      filestream_close(fd);
+   return -errno;
 }
