@@ -617,7 +617,7 @@ static void announce_play_spectate(netplay_t *netplay,
                         sizeof(device_str) - 1 - device_str_len, ", ");
                device_str_len += snprintf(device_str + device_str_len,
                      sizeof(device_str) - 1 - device_str_len, "%u",
-                     (unsigned) device);
+                     (unsigned) (device+1));
             }
 
             /* Then we make the final string */
