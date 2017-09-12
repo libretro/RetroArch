@@ -1075,7 +1075,6 @@ static int file_load_with_detect_core_wrapper(
                PATH_MAX_LENGTH * sizeof(char)))
          ret = -1;
 
-      free(new_core_path);
 
       if (     !is_carchive && !string_is_empty(path)
             && !string_is_empty(menu_path_new))
@@ -1105,14 +1104,20 @@ static int file_load_with_detect_core_wrapper(
                         &content_info,
                         CORE_TYPE_PLAIN,
                         NULL, NULL))
+               {
+                  free(new_core_path);
                   return -1;
+               }
 
+               free(new_core_path);
                return 0;
             }
          case 0:
+            free(new_core_path);
             return generic_action_ok_displaylist_push(path, NULL, label, type,
                   idx, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST);
          default:
+            free(new_core_path);
             break;
       }
    }
