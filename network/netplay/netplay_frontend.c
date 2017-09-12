@@ -744,36 +744,7 @@ bool netplay_command(netplay_t* netplay, struct netplay_connection *connection,
 }
 
 /**
- * netplay_flip_users:
- * @netplay              : pointer to netplay object
- *
- * Flip who controls user 1 and 2.
- */
-static void netplay_flip_users(netplay_t *netplay)
-{
-   /* Must be in the future because we may have
-    * already sent this frame's data */
-   uint32_t     flip_frame = netplay->self_frame_count + 1;
-   uint32_t flip_frame_net = htonl(flip_frame);
-   size_t i;
-
-   for (i = 0; i < netplay->connections_size; i++)
-   {
-      struct netplay_connection *connection = &netplay->connections[i];
-      if (connection->active && connection->mode >= NETPLAY_CONNECTION_CONNECTED)
-      {
-         netplay_command(netplay, connection, NETPLAY_CMD_FLIP_PLAYERS,
-            &flip_frame_net, sizeof flip_frame_net, "flip users",
-            "Successfully flipped users.\n");
-      }
-   }
-
-   netplay->flip       ^= true;
-   netplay->flip_frame  = flip_frame;
-}
-
-/**
- * netplay_frontend_paused
+* netplay_frontend_paused
  * @netplay              : pointer to netplay object
  * @paused               : true if frontend is paused
  *
@@ -1397,10 +1368,6 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
       case RARCH_NETPLAY_CTL_PRE_FRAME:
          ret = netplay_pre_frame(netplay_data);
          goto done;
-      case RARCH_NETPLAY_CTL_FLIP_PLAYERS:
-         if (netplay_data->is_server)
-            netplay_flip_users(netplay_data);
-         break;
       case RARCH_NETPLAY_CTL_GAME_WATCH:
          netplay_toggle_play_spectate(netplay_data);
          break;

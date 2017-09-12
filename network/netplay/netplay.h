@@ -32,7 +32,6 @@ typedef struct netplay netplay_t;
 enum rarch_netplay_ctl_state
 {
    RARCH_NETPLAY_CTL_NONE = 0,
-   RARCH_NETPLAY_CTL_FLIP_PLAYERS,
    RARCH_NETPLAY_CTL_GAME_WATCH,
    RARCH_NETPLAY_CTL_POST_FRAME,
    RARCH_NETPLAY_CTL_PRE_FRAME,

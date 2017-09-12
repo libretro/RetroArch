@@ -176,9 +176,6 @@ enum netplay_cmd
 
    /* Misc. commands */
 
-   /* Swap inputs between player 1 and player 2 */
-   NETPLAY_CMD_FLIP_PLAYERS   = 0x0060,
-
    /* Sends multiple config requests over,
     * See enum netplay_cmd_cfg */
    NETPLAY_CMD_CFG            = 0x0061,
@@ -505,7 +502,7 @@ struct netplay
    bool can_poll;
 
    /* Force a rewind to other_frame_count/other_ptr. This is for synchronized
-    * events, such as player flipping or savestate loading. */
+    * events, such as restarting or savestate loading. */
    bool force_rewind;
 
    /* Force a reset */
@@ -525,12 +522,6 @@ struct netplay
 
    /* Counter for timeouts */
    unsigned timeout_cnt;
-
-   /* User flipping
-    * Flipping state. If frame >= flip_frame, we apply the flip.
-    * If not, we apply the opposite, effectively creating a trigger point. */
-   bool flip;
-   uint32_t flip_frame;
 
    /* Netplay pausing */
    bool local_paused;
@@ -905,13 +896,6 @@ int netplay_poll_net_input(netplay_t *netplay, bool block);
  * Handle any slave connections
  */
 void netplay_handle_slaves(netplay_t *netplay);
-
-/**
- * netplay_flip_port
- *
- * Should we flip ports 0 and 1?
- */
-bool netplay_flip_port(netplay_t *netplay);
 
 /**
  * netplay_announce_nat_traversal

@@ -2559,9 +2559,6 @@ TODO: Add a setting for these tweaks */
 #endif
          }
          break;
-      case CMD_EVENT_NETPLAY_FLIP_PLAYERS:
-         netplay_driver_ctl(RARCH_NETPLAY_CTL_FLIP_PLAYERS, NULL);
-         break;
       case CMD_EVENT_NETPLAY_GAME_WATCH:
          netplay_driver_ctl(RARCH_NETPLAY_CTL_GAME_WATCH, NULL);
          break;

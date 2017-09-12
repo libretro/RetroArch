@@ -827,8 +827,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_MOVIE_RECORD_TOGGLE,
       "Pulsante registratore Film")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE,
       "Pulsante per disattivare l'audio ")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FLIP,
-      "Netplay flip users")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH,
       "Pulsante Netplay per la modalità giocatore/spettatore")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,

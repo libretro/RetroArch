@@ -827,8 +827,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_MOVIE_RECORD_TOGGLE,
       "Videoaufzeichnung starten/beenden")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE,
       "Audio stumm-/lautschalten")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FLIP,
-      "Netplay-Benutzer vertauschen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH,
       "Zwischen Spieler- und Beobachter-Modus wechseln")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,

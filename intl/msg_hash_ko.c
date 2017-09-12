@@ -1838,10 +1838,6 @@ int menu_hash_get_help_ko_enum(enum msg_hash_enums msg, char *s, size_t len) {
             snprintf(s, len,
                      "Saves state.");
             break;
-        case MENU_ENUM_LABEL_NETPLAY_FLIP_PLAYERS:
-            snprintf(s, len,
-                     "Netplay flip users.");
-            break;
         case MENU_ENUM_LABEL_NETPLAY_GAME_WATCH:
             snprintf(s, len,
                      "Netplay toggle play/spectate mode.");

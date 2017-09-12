@@ -1121,48 +1121,6 @@ static bool netplay_get_cmd(netplay_t *netplay,
             break;
          }
 
-      case NETPLAY_CMD_FLIP_PLAYERS:
-         if (cmd_size != sizeof(uint32_t))
-         {
-            RARCH_ERR("CMD_FLIP_PLAYERS received an unexpected command size.\n");
-            return netplay_cmd_nak(netplay, connection);
-         }
-
-         RECV(&flip_frame, sizeof(flip_frame))
-         {
-            RARCH_ERR("Failed to receive CMD_FLIP_PLAYERS argument.\n");
-            return netplay_cmd_nak(netplay, connection);
-         }
-
-         if (netplay->is_server)
-         {
-            RARCH_ERR("NETPLAY_CMD_FLIP_PLAYERS from a client.\n");
-            return netplay_cmd_nak(netplay, connection);
-         }
-
-         flip_frame = ntohl(flip_frame);
-
-         if (flip_frame < netplay->server_frame_count)
-         {
-            RARCH_ERR("Host asked us to flip users in the past. Not possible ...\n");
-            return netplay_cmd_nak(netplay, connection);
-         }
-
-         netplay->flip ^= true;
-         netplay->flip_frame = flip_frame;
-
-         /* Force a rewind to assure the flip happens: This just prevents us
-          * from skipping other past the flip because our prediction was
-          * correct */
-         if (flip_frame < netplay->self_frame_count)
-            netplay->force_rewind = true;
-
-         RARCH_LOG("%s.\n", msg_hash_to_str(MSG_NETPLAY_USERS_HAS_FLIPPED));
-         runloop_msg_queue_push(
-               msg_hash_to_str(MSG_NETPLAY_USERS_HAS_FLIPPED), 1, 180, false);
-
-         break;
-
       case NETPLAY_CMD_SPECTATE:
       {
          uint32_t client_num;
@@ -2019,24 +1977,6 @@ void netplay_handle_slaves(netplay_t *netplay)
          netplay->read_frame_count[client_num] = netplay->self_frame_count + 1;
       }
    }
-}
-
-/**
- * netplay_flip_port
- *
- * Should we flip ports 0 and 1?
- */
-bool netplay_flip_port(netplay_t *netplay)
-{
-   size_t frame = netplay->self_frame_count;
-
-   if (netplay->flip_frame == 0)
-      return false;
-
-   if (netplay->is_replay)
-      frame = netplay->replay_frame_count;
-
-   return netplay->flip ^ (frame < netplay->flip_frame);
 }
 
 /**

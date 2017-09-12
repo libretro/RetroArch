@@ -2692,20 +2692,13 @@ static enum runloop_state runloop_check_state(
 #ifdef HAVE_NETWORKING
    /* Check Netplay */
    {
-      static bool old_netplay_flip  = false;
       static bool old_netplay_watch = false;
-      bool netplay_flip             = BIT256_GET(
-            current_input, RARCH_NETPLAY_FLIP);
       bool netplay_watch            = BIT256_GET(
             current_input, RARCH_NETPLAY_GAME_WATCH);
-
-      if (netplay_flip && !old_netplay_flip)
-         netplay_driver_ctl(RARCH_NETPLAY_CTL_FLIP_PLAYERS, NULL);
 
       if (netplay_watch && !old_netplay_watch)
          netplay_driver_ctl(RARCH_NETPLAY_CTL_GAME_WATCH, NULL);
 
-      old_netplay_flip              = netplay_flip;
       old_netplay_watch             = netplay_watch;
    }
 #endif
