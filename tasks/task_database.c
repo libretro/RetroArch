@@ -176,14 +176,15 @@ static int iso_get_serial(database_state_handle_t *db_state,
 static int cue_get_serial(database_state_handle_t *db_state,
       database_info_handle_t *db, const char *name, char* serial)
 {
-   char *track_path                 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char *track_path                 = (char*)malloc(PATH_MAX_LENGTH 
+         * sizeof(char));
    int ret                          = 0;
    int32_t offset                   = 0;
    int rv                           = 0;
 
    track_path[0]                    = '\0';
 
-   rv = find_first_data_track(name,
+   rv                               = find_first_data_track(name,
          &offset, track_path, PATH_MAX_LENGTH);
 
    if (rv < 0)
@@ -191,6 +192,7 @@ static int cue_get_serial(database_state_handle_t *db_state,
       RARCH_LOG("%s: %s\n",
             msg_hash_to_str(MSG_COULD_NOT_FIND_VALID_DATA_TRACK),
             strerror(-rv));
+      free(track_path);
       return rv;
    }
 
