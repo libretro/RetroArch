@@ -1924,11 +1924,6 @@ static void xmb_context_reset_horizontal_list(
 
    for (i = 0; i < list_size; i++)
    {
-      char iconpath[PATH_MAX_LENGTH];
-      char sysname[256];
-      char texturepath[PATH_MAX_LENGTH];
-      char content_texturepath[PATH_MAX_LENGTH];
-      struct texture_image ti;
       const char *path                          = NULL;
       xmb_node_t *node                          =
          xmb_get_userdata_from_horizontal_list(xmb, i);
@@ -1940,8 +1935,6 @@ static void xmb_context_reset_horizontal_list(
             continue;
       }
 
-      iconpath[0] = sysname[0] = texturepath[0] =
-         content_texturepath[0] = '\0';
 
       file_list_get_at_offset(xmb->horizontal_list, i,
             &path, NULL, NULL, NULL);
@@ -1952,47 +1945,63 @@ static void xmb_context_reset_horizontal_list(
       if (!strstr(path, file_path_str(FILE_PATH_LPL_EXTENSION)))
          continue;
 
-      fill_pathname_base_noext(sysname, path, sizeof(sysname));
-
-      fill_pathname_application_special(iconpath, sizeof(iconpath),
-            APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
-
-      fill_pathname_join_concat(texturepath, iconpath, sysname,
-            file_path_str(FILE_PATH_PNG_EXTENSION),
-            sizeof(texturepath));
-
-      ti.width         = 0;
-      ti.height        = 0;
-      ti.pixels        = NULL;
-      ti.supports_rgba = video_driver_supports_rgba();
-
-      if (image_texture_load(&ti, texturepath))
       {
-         if(ti.pixels)
+         struct texture_image ti;
+         char sysname[256];
+         char *iconpath            = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+         char *texturepath         = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+         char *content_texturepath = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+
+         iconpath[0]    = sysname[0] =
+         texturepath[0] = content_texturepath[0] = '\0';
+
+         fill_pathname_base_noext(sysname, path, sizeof(sysname));
+
+         fill_pathname_application_special(iconpath,
+               PATH_MAX_LENGTH * sizeof(char),
+               APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
+
+         fill_pathname_join_concat(texturepath, iconpath, sysname,
+               file_path_str(FILE_PATH_PNG_EXTENSION),
+               PATH_MAX_LENGTH * sizeof(char));
+
+         ti.width         = 0;
+         ti.height        = 0;
+         ti.pixels        = NULL;
+         ti.supports_rgba = video_driver_supports_rgba();
+
+         if (image_texture_load(&ti, texturepath))
          {
-            video_driver_texture_unload(&node->icon);
-            video_driver_texture_load(&ti,
-                  TEXTURE_FILTER_MIPMAP_LINEAR, &node->icon);
+            if(ti.pixels)
+            {
+               video_driver_texture_unload(&node->icon);
+               video_driver_texture_load(&ti,
+                     TEXTURE_FILTER_MIPMAP_LINEAR, &node->icon);
+            }
+
+            image_texture_free(&ti);
          }
 
-         image_texture_free(&ti);
-      }
+         strlcat(iconpath, sysname, PATH_MAX_LENGTH * sizeof(char));
+         fill_pathname_join_delim(content_texturepath, iconpath,
+               file_path_str(FILE_PATH_CONTENT_BASENAME), '-',
+               PATH_MAX_LENGTH * sizeof(char));
 
-      strlcat(iconpath, sysname, sizeof(iconpath));
-      fill_pathname_join_delim(content_texturepath, iconpath,
-            file_path_str(FILE_PATH_CONTENT_BASENAME), '-',
-            sizeof(content_texturepath));
-
-      if (image_texture_load(&ti, content_texturepath))
-      {
-         if(ti.pixels)
+         if (image_texture_load(&ti, content_texturepath))
          {
-            video_driver_texture_unload(&node->content_icon);
-            video_driver_texture_load(&ti,
-                  TEXTURE_FILTER_MIPMAP_LINEAR, &node->content_icon);
+            if(ti.pixels)
+            {
+               video_driver_texture_unload(&node->content_icon);
+               video_driver_texture_load(&ti,
+                     TEXTURE_FILTER_MIPMAP_LINEAR, &node->content_icon);
+            }
+
+            image_texture_free(&ti);
          }
 
-         image_texture_free(&ti);
+         free(iconpath);
+         free(texturepath);
+         free(content_texturepath);
       }
    }
 
@@ -2323,13 +2332,13 @@ static void xmb_draw_items(
       unsigned width, unsigned height)
 {
    size_t i;
+   unsigned first, last;
    math_matrix_4x4 mymat;
    menu_display_ctx_rotate_draw_t rotate_draw;
    xmb_node_t *core_node       = NULL;
    size_t end                  = 0;
    uint64_t frame_count        = xmb->frame_count;
    const char *thumb_ident     = xmb_thumbnails_ident();
-   unsigned first, last;
 
    if (!list || !list->size)
       return;
