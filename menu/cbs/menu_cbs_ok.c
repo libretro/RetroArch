@@ -1034,8 +1034,6 @@ static int file_load_with_detect_core_wrapper(
       unsigned type, bool is_carchive)
 {
    menu_content_ctx_defer_info_t def_info;
-   char menu_path_new[PATH_MAX_LENGTH];
-   char *new_core_path                 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    int ret                             = 0;
    const char *menu_path               = NULL;
    const char *menu_label              = NULL;
@@ -1045,71 +1043,78 @@ static int file_load_with_detect_core_wrapper(
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
-   new_core_path[0] = menu_path_new[0] = '\0';
-
-   menu_entries_get_last_stack(&menu_path, &menu_label, NULL, &enum_idx, NULL);
-
-   if (!string_is_empty(menu_path))
-      strlcpy(menu_path_new, menu_path, sizeof(menu_path_new));
-
-   if (string_is_equal(menu_label,
-            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE)))
-      fill_pathname_join(menu_path_new, menu->scratch2_buf, menu->scratch_buf,
-            sizeof(menu_path_new));
-   else if (string_is_equal(menu_label,
-            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN)))
-      fill_pathname_join(menu_path_new, menu->scratch2_buf, menu->scratch_buf,
-            sizeof(menu_path_new));
-
-   core_info_get_list(&list);
-
-   def_info.data       = list;
-   def_info.dir        = menu_path_new;
-   def_info.path       = path;
-   def_info.menu_label = menu_label;
-   def_info.s          = menu->deferred_path;
-   def_info.len        = sizeof(menu->deferred_path);
-
-   if (menu_content_find_first_core(&def_info, false, new_core_path,
-            PATH_MAX_LENGTH * sizeof(char)))
-      ret = -1;
-
-   free(new_core_path);
-
-   if (     !is_carchive && !string_is_empty(path)
-         && !string_is_empty(menu_path_new))
-      fill_pathname_join(detect_content_path, menu_path_new, path,
-            sizeof(detect_content_path));
-
-   if (enum_label_idx == MENU_ENUM_LABEL_COLLECTION)
-      return generic_action_ok_displaylist_push(path, NULL,
-            NULL, 0, idx, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST_SET);
-
-   switch (ret)
    {
-      case -1:
-         {
-            content_ctx_info_t content_info;
+      char *menu_path_new = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      char *new_core_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      new_core_path[0]    = menu_path_new[0] = '\0';
 
-            content_info.argc        = 0;
-            content_info.argv        = NULL;
-            content_info.args        = NULL;
-            content_info.environ_get = NULL;
+      menu_entries_get_last_stack(&menu_path, &menu_label, NULL, &enum_idx, NULL);
 
-            if (!task_push_load_content_with_new_core_from_menu(
-                     new_core_path, def_info.s,
-                     &content_info,
-                     CORE_TYPE_PLAIN,
-                     NULL, NULL))
-               return -1;
+      if (!string_is_empty(menu_path))
+         strlcpy(menu_path_new, menu_path, PATH_MAX_LENGTH * sizeof(char));
 
-            return 0;
-         }
-      case 0:
-         return generic_action_ok_displaylist_push(path, NULL, label, type,
-               idx, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST);
-      default:
-         break;
+      if (string_is_equal(menu_label,
+               msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE)))
+         fill_pathname_join(menu_path_new, menu->scratch2_buf, menu->scratch_buf,
+               PATH_MAX_LENGTH * sizeof(char));
+      else if (string_is_equal(menu_label,
+               msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN)))
+         fill_pathname_join(menu_path_new, menu->scratch2_buf, menu->scratch_buf,
+               PATH_MAX_LENGTH * sizeof(char));
+
+      core_info_get_list(&list);
+
+      def_info.data       = list;
+      def_info.dir        = menu_path_new;
+      def_info.path       = path;
+      def_info.menu_label = menu_label;
+      def_info.s          = menu->deferred_path;
+      def_info.len        = sizeof(menu->deferred_path);
+
+      if (menu_content_find_first_core(&def_info, false, new_core_path,
+               PATH_MAX_LENGTH * sizeof(char)))
+         ret = -1;
+
+      free(new_core_path);
+
+      if (     !is_carchive && !string_is_empty(path)
+            && !string_is_empty(menu_path_new))
+         fill_pathname_join(detect_content_path,
+               menu_path_new, path,
+               sizeof(detect_content_path));
+
+      free(menu_path_new);
+
+      if (enum_label_idx == MENU_ENUM_LABEL_COLLECTION)
+         return generic_action_ok_displaylist_push(path, NULL,
+               NULL, 0, idx, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST_SET);
+
+      switch (ret)
+      {
+         case -1:
+            {
+               content_ctx_info_t content_info;
+
+               content_info.argc        = 0;
+               content_info.argv        = NULL;
+               content_info.args        = NULL;
+               content_info.environ_get = NULL;
+
+               if (!task_push_load_content_with_new_core_from_menu(
+                        new_core_path, def_info.s,
+                        &content_info,
+                        CORE_TYPE_PLAIN,
+                        NULL, NULL))
+                  return -1;
+
+               return 0;
+            }
+         case 0:
+            return generic_action_ok_displaylist_push(path, NULL, label, type,
+                  idx, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST);
+         default:
+            break;
+      }
    }
 
    return ret;
