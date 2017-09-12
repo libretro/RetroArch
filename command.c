@@ -1015,6 +1015,7 @@ static void command_event_init_controllers(void)
             RARCH_LOG("%s %u.\n",
                   msg_hash_to_str(MSG_VALUE_DISCONNECTING_DEVICE_FROM_PORT),
                   i + 1);
+            set_controller = true;
             break;
          case RETRO_DEVICE_JOYPAD:
             break;
@@ -1023,14 +1024,18 @@ static void command_event_init_controllers(void)
              * This is broken behavior of course, but avoid breaking
              * cores needlessly. */
             RARCH_LOG("%s %u: %s (ID: %u).\n",
-                  msg_hash_to_str(MSG_CONNECTING_TO_PORT),
-                  device, ident, i+1);
+                    msg_hash_to_str(MSG_CONNECTING_TO_PORT),
+                    device, ident, i+1);
+            set_controller = true;
             break;
       }
 
-      pad.device     = device;
-      pad.port       = i;
-      core_set_controller_port_device(&pad);
+      if (set_controller)
+      {
+         pad.device     = device;
+         pad.port       = i;
+         core_set_controller_port_device(&pad);
+      }
    }
 }
 
@@ -1305,7 +1310,7 @@ static void command_event_restore_default_shader_preset(void)
 static void command_event_restore_remaps(void)
 {
    if (rarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
-      input_remapping_set_defaults();
+      input_remapping_set_defaults(true);
 }
 
 static bool command_event_save_auto_state(void)

@@ -48,13 +48,7 @@
 
 static int action_start_remap_file_load(unsigned type, const char *label)
 {
-   global_t *global = global_get_ptr();
-
-   if (!global)
-      return -1;
-
-   global->name.remapfile[0] = '\0';
-   input_remapping_set_defaults();
+   input_remapping_set_defaults(true);
    return 0;
 }
 
