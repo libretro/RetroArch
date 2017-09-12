@@ -263,6 +263,7 @@ Payload:
        client number: uint16
        device bitmap: uint32
        share modes: uint8[16]
+       nick: char[32]
     }
 Description:
     Inform of a connection mode change (possibly of the receiving client). Only
