@@ -96,6 +96,13 @@ typedef uint32_t client_bitmap_t;
 #define NETPLAY_COMPRESSION_SUPPORTED 0
 #endif
 
+/* Positional snprintf */
+#ifdef _MSC_VER
+#define snprintf_p _snprintf_p
+#else /* sensible systems */
+#define snprintf_p snprintf
+#endif
+
 enum netplay_cmd
 {
    /* Basic commands */
@@ -870,10 +877,10 @@ bool netplay_cmd_request_savestate(netplay_t *netplay);
 /**
  * netplay_cmd_mode
  *
- * Send a mode request command to either play or spectate.
+ * Send a mode change request. As a server, the request is to ourself, and so
+ * honored instantly.
  */
 bool netplay_cmd_mode(netplay_t *netplay,
-   struct netplay_connection *connection,
    enum rarch_netplay_connection_mode mode);
 
 /**

@@ -1181,107 +1181,23 @@ uint8_t netplay_settings_share_mode(void)
 static void netplay_toggle_play_spectate(netplay_t *netplay)
 {
    size_t i;
+   enum rarch_netplay_connection_mode mode;
 
-   if (netplay->is_server)
+   if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING ||
+       netplay->self_mode == NETPLAY_CONNECTION_SLAVE)
    {
-      /* FIXME: Duplication */
-      uint32_t payload[7];
-      char msg[512];
-      const char *dmsg = NULL;
-      payload[0] = htonl(netplay->self_frame_count);
-      if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING ||
-          netplay->self_mode == NETPLAY_CONNECTION_SLAVE)
-      {
-         /* Mark us as no longer playing */
-         /* FIXME: Refactor this */
-         payload[1] = htonl(netplay->self_client_num);
-         payload[2] = htonl(0);
-         netplay->self_mode = NETPLAY_CONNECTION_SPECTATING;
-         netplay->connected_players &= ~(1L);
-         netplay->connected_slaves &= ~(1L);
-         netplay->client_devices[0] = 0;
-         for (i = 0; i < MAX_INPUT_DEVICES; i++)
-            netplay->device_clients[i] &= ~(1L);
-         netplay->self_devices = 0;
-
-         dmsg = msg_hash_to_str(MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME);
-
-      }
-      else if (netplay->self_mode == NETPLAY_CONNECTION_SPECTATING)
-      {
-         /* FIXME: Own device request */
-         uint32_t device;
-         uint8_t share_mode = netplay_settings_share_mode();
-
-         /* Take an input device */
-         for (device = 0; device < MAX_INPUT_DEVICES; device++)
-         {
-            if (input_config_get_device(device) == RETRO_DEVICE_NONE)
-            {
-               device = MAX_INPUT_DEVICES;
-               break;
-            }
-            if (!netplay->device_clients[device])
-               break;
-         }
-         if (device == MAX_INPUT_DEVICES && share_mode)
-         {
-            /* Share one */
-            for (device = 0; device < MAX_INPUT_DEVICES; device++)
-            {
-               if (netplay->device_clients[device] && netplay->device_share_modes[device])
-               {
-                  share_mode = netplay->device_share_modes[device];
-                  break;
-               }
-            }
-         }
-         if (device >= MAX_INPUT_DEVICES)
-            return; /* Failure! */
-
-         payload[1] = htonl(NETPLAY_CMD_MODE_BIT_PLAYING);
-         payload[2] = htonl(1<<device);
-         netplay->self_mode = NETPLAY_CONNECTION_PLAYING;
-         netplay->connected_players |= 1;
-         netplay->client_devices[0] = netplay->self_devices = (1<<device);
-         netplay->device_clients[device] |= 1;
-         netplay->device_share_modes[device] = share_mode;
-         netplay->read_ptr[0] = netplay->self_ptr;
-         netplay->read_frame_count[0] = netplay->self_frame_count;
-
-         dmsg = msg;
-         msg[sizeof(msg)-1] = '\0';
-         snprintf(msg, sizeof(msg)-1, msg_hash_to_str(MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N), device+1);
-      }
-
-      memcpy(payload + 3, netplay->device_share_modes, sizeof(netplay->device_share_modes));
-
-      RARCH_LOG("[netplay] %s\n", dmsg);
-      runloop_msg_queue_push(dmsg, 1, 180, false);
-
-      netplay_send_raw_cmd_all(netplay, NULL, NETPLAY_CMD_MODE, payload, sizeof(payload));
-
+      /* Switch to spectator mode immediately */
+      netplay->self_mode = NETPLAY_CONNECTION_SPECTATING;
+      mode = NETPLAY_CONNECTION_SPECTATING;
    }
-   else
+   else if (netplay->self_mode == NETPLAY_CONNECTION_SPECTATING)
    {
-      enum rarch_netplay_connection_mode mode;
-
-      if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING ||
-          netplay->self_mode == NETPLAY_CONNECTION_SLAVE)
-      {
-         /* Switch to spectator mode immediately */
-         netplay->self_mode = NETPLAY_CONNECTION_SPECTATING;
-         mode = NETPLAY_CONNECTION_SPECTATING;
-      }
-      else if (netplay->self_mode == NETPLAY_CONNECTION_SPECTATING)
-      {
-         /* Switch only after getting permission */
-         mode = NETPLAY_CONNECTION_PLAYING;
-      }
-      else return;
-
-      netplay_cmd_mode(netplay, &netplay->one_connection, mode);
+      /* Switch only after getting permission */
+      mode = NETPLAY_CONNECTION_PLAYING;
    }
+   else return;
+
+   netplay_cmd_mode(netplay, mode);
 }
 
 /**

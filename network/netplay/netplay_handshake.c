@@ -1118,7 +1118,7 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
 
    /* Ask to switch to playing mode if we should */
    if (!settings->bools.netplay_start_as_spectator)
-      return netplay_cmd_mode(netplay, connection, NETPLAY_CONNECTION_PLAYING);
+      return netplay_cmd_mode(netplay, NETPLAY_CONNECTION_PLAYING);
 
    return true;
 }
