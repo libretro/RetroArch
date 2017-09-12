@@ -1586,7 +1586,7 @@ static void config_set_defaults(void)
 #endif
 
    input_config_reset();
-   input_remapping_set_defaults();
+   input_remapping_set_defaults(true);
    input_autoconfigure_reset();
 
    /* Verify that binds are in proper order. */
@@ -3009,7 +3009,7 @@ bool config_load_remap(void)
    else
    {
       RARCH_LOG("Remaps: no game-specific remap found at %s.\n", game_path);
-      input_remapping_set_defaults();
+      input_remapping_set_defaults(false);
    }
 
    /* Create a new config file from core_path */
@@ -3029,7 +3029,7 @@ bool config_load_remap(void)
    else
    {
       RARCH_LOG("Remaps: no core-specific remap found at %s.\n", core_path);
-      input_remapping_set_defaults();
+      input_remapping_set_defaults(false);
    }
 
    new_conf = NULL;
