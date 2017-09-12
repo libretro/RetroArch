@@ -252,10 +252,15 @@ void input_remapping_set_defaults(bool deinit)
    settings_t *settings = config_get_ptr();
    global_t *global = global_get_ptr();
    
-      if (!global)
-         return;
+   if (!global)
+      return;
 
-   global->name.remapfile[0] = '\0';
+   if (deinit)
+   {
+      global->name.remapfile[0] = '\0';
+      rarch_ctl(RARCH_CTL_UNSET_REMAPS_CORE_ACTIVE, NULL);
+      rarch_ctl(RARCH_CTL_UNSET_REMAPS_GAME_ACTIVE, NULL);
+   }
 
    for (i = 0; i < MAX_USERS; i++)
    {
