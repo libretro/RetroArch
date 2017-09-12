@@ -35,10 +35,6 @@ MSG_HASH(
       "Es wurden keine Argumente übergeben, außerdem ist kein Menü vorhanden - zeige Hilfe an..."
       )
 MSG_HASH(
-      MSG_NETPLAY_USERS_HAS_FLIPPED,
-      "Netplay-Benutzer wurden vertauscht"
-      )
-MSG_HASH(
       MSG_SETTING_DISK_IN_TRAY,
       "Lege Datenträger in Laufwerksschublade ein"
       )

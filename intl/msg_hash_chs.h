@@ -35,10 +35,6 @@ MSG_HASH(
       "未提供参数也没有内建菜单，显示帮助..."
       )
 MSG_HASH(
-      MSG_NETPLAY_USERS_HAS_FLIPPED,
-      "联机游戏用户已被踢出"
-      )
-MSG_HASH(
       MSG_SETTING_DISK_IN_TRAY,
       "Setting disk in tray"
       )

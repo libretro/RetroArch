@@ -85,10 +85,6 @@ int menu_hash_get_help_ko_enum(enum msg_hash_enums msg, char *s, size_t len) {
                 snprintf(s, len,
                          "온스크린 키보드 전환.");
                 break;
-            case RARCH_NETPLAY_FLIP:
-                snprintf(s, len,
-                         "넷플레이 사용자 넘김.");
-                break;
             case RARCH_NETPLAY_GAME_WATCH:
                 snprintf(s, len,
                          "넷플레이 플레이/관전 모드 전환.");

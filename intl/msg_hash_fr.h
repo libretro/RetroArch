@@ -35,10 +35,6 @@ MSG_HASH(
       "Aucun paramètre fourni et pas de menu intégré, affichage de l'aide..."
       )
 MSG_HASH(
-      MSG_NETPLAY_USERS_HAS_FLIPPED,
-      "Utilisateurs réseau intervertis"
-      )
-MSG_HASH(
       MSG_SETTING_DISK_IN_TRAY,
       "Disque inséré dans le lecteur"
       )

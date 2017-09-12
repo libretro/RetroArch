@@ -25,9 +25,6 @@ MSG_HASH(MSG_PUBLIC_ADDRESS,
 MSG_HASH(MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
 	 "Nenhum argumento fornecido e nenhum menu interno, exibindo ajuda..."
 	)
-MSG_HASH(MSG_NETPLAY_USERS_HAS_FLIPPED,
-	 "Usuários do Netplay foram invertidos"
-	)
 MSG_HASH(MSG_SETTING_DISK_IN_TRAY,
 	 "Definindo disco na bandeja"
 	)

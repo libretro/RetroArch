@@ -92,10 +92,6 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                   "显示/隐藏屏显键盘。");
             break;
-         case RARCH_NETPLAY_FLIP:
-            snprintf(s, len,
-                  "Netplay flip users.");
-            break;
          case RARCH_SLOWMOTION:
             snprintf(s, len,
                   "按住并以慢动作运行。");

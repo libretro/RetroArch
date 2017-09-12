@@ -40,10 +40,6 @@ MSG_HASH(
       "Нет аргументов и встроенного меню, отображается справка..."
       )
 MSG_HASH(
-      MSG_NETPLAY_USERS_HAS_FLIPPED,
-      "Пользователи Netplay отключились"
-      )
-MSG_HASH(
       MSG_SETTING_DISK_IN_TRAY,
       "Установка диска в привод"
       )

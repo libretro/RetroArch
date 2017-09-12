@@ -93,10 +93,6 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                 snprintf(s, len,
                          "Alternar o teclado virtual.");
                 break;
-            case RARCH_NETPLAY_FLIP:
-                snprintf(s, len,
-                         "Inverter usuários do Netplay.");
-                break;
             case RARCH_NETPLAY_GAME_WATCH:
                 snprintf(s, len,
                          "Alternar modo jogador/espectador do Netplay.");

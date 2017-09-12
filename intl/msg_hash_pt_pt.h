@@ -35,10 +35,6 @@ MSG_HASH(
       "Não foi fornecido qualquer argumento e nenhum menu está contido, mostrando ajuda..."
       )
 MSG_HASH(
-      MSG_NETPLAY_USERS_HAS_FLIPPED,
-      "Utilizadores do Netplay devolveram"
-      )
-MSG_HASH(
       MSG_SETTING_DISK_IN_TRAY,
       "Definindo disco na bandeja"
       )

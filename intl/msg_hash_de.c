@@ -87,10 +87,6 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                   "Bildschirmtastatur ein-/ausschalten.");
             break;
-         case RARCH_NETPLAY_FLIP:
-            snprintf(s, len,
-                  "Netplay-Spieler tauschen.");
-            break;
          case RARCH_NETPLAY_GAME_WATCH:
                 snprintf(s, len,
                   "Im Netplay zwischen Spiel- und Beobachter-Modus wechseln.");

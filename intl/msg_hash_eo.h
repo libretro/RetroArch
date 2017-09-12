@@ -31,10 +31,6 @@ MSG_HASH(
       "No arguments supplied and no menu builtin, displaying help..."
       )
 MSG_HASH(
-      MSG_NETPLAY_USERS_HAS_FLIPPED,
-      "Netplay users has flipped"
-      )
-MSG_HASH(
       MSG_SETTING_DISK_IN_TRAY,
       "Setting disk in tray"
       )

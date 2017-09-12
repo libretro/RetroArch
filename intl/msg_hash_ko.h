@@ -35,10 +35,6 @@ MSG_HASH(
       "제공되는 인수 및 메뉴, 도움말이 없습니다..."
       )
 MSG_HASH(
-      MSG_NETPLAY_USERS_HAS_FLIPPED,
-      "넷플레이 사용자가 변경되었습니다"
-      )
-MSG_HASH(
       MSG_SETTING_DISK_IN_TRAY,
       "디스크 트레이 설정"
       )

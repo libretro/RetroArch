@@ -159,7 +159,6 @@ static const struct cmd_map map[] = {
    { "SCREENSHOT",             RARCH_SCREENSHOT },
    { "MUTE",                   RARCH_MUTE },
    { "OSK",                    RARCH_OSK },
-   { "NETPLAY_FLIP",           RARCH_NETPLAY_FLIP },
    { "NETPLAY_GAME_WATCH",     RARCH_NETPLAY_GAME_WATCH },
    { "SLOWMOTION",             RARCH_SLOWMOTION },
    { "VOLUME_UP",              RARCH_VOLUME_UP },
@@ -2569,7 +2568,6 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_NETPLAY_INIT:
       case CMD_EVENT_NETPLAY_INIT_DIRECT:
       case CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED:
-      case CMD_EVENT_NETPLAY_FLIP_PLAYERS:
       case CMD_EVENT_NETPLAY_GAME_WATCH:
          return false;
 #endif

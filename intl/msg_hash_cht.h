@@ -35,10 +35,6 @@ MSG_HASH(
       "未提供參數也沒有內建選單，顯示幫助..."
       )
 MSG_HASH(
-      MSG_NETPLAY_USERS_HAS_FLIPPED,
-      "連線遊戲用戶已被踢出"
-      )
-MSG_HASH(
       MSG_SETTING_DISK_IN_TRAY,
       "設定光碟機裡光碟"
       )

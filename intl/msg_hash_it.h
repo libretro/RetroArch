@@ -35,10 +35,6 @@ MSG_HASH(
       "Nessun argomento fornito e nessun menu incorporato, visualizzazione della guida..."
       )
 MSG_HASH(
-      MSG_NETPLAY_USERS_HAS_FLIPPED,
-      "Gli utenti del Netplay hanno flippato"
-      )
-MSG_HASH(
       MSG_SETTING_DISK_IN_TRAY,
       "impostazioni del disco nel cassetto"
       )
