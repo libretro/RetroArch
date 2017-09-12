@@ -56,6 +56,9 @@ typedef struct
 static winraw_keyboard_t *g_keyboard = NULL;
 static winraw_mouse_t *g_mice        = NULL;
 static unsigned g_mouse_cnt          = 0;
+static bool g_mouse_xy_mapping_ready = false;
+static double g_view_abs_ratio_x     = 0.0;
+static double g_view_abs_ratio_y     = 0.0;
 
 static HWND winraw_create_window(WNDPROC wnd_proc)
 {
@@ -304,14 +307,48 @@ static int16_t winraw_joypad_state(winraw_input_t *wr,
    return input_joypad_pressed(wr->joypad, joypad_info, port, binds, id);
 }
 
+static void winraw_init_mouse_xy_mapping()
+{
+   struct video_viewport viewport;
+   int center_x;
+   int center_y;
+   unsigned i;
+
+   if (video_driver_get_viewport_info(&viewport))
+   {
+      center_x = viewport.x + viewport.width / 2;
+      center_y = viewport.y + viewport.height / 2;
+
+      for (i = 0; i < g_mouse_cnt; ++i)
+      {
+         g_mice[i].x = center_x;
+         g_mice[i].y = center_y;
+      }
+
+      g_view_abs_ratio_x = (double)viewport.full_width / 65535.0;
+      g_view_abs_ratio_y = (double)viewport.full_height / 65535.0;
+
+      g_mouse_xy_mapping_ready = true;
+   }
+}
+
 static void winraw_update_mouse_state(winraw_mouse_t *mouse, RAWMOUSE *state)
 {
    POINT crs_pos;
 
    if (state->usFlags & MOUSE_MOVE_ABSOLUTE)
    {
-      mouse->x = state->lLastX;
-      mouse->y = state->lLastY;
+      if (g_mouse_xy_mapping_ready)
+      {
+         state->lLastX = (LONG)(g_view_abs_ratio_x * state->lLastX);
+         state->lLastY = (LONG)(g_view_abs_ratio_y * state->lLastY);
+         InterlockedExchangeAdd(&mouse->dlt_x, state->lLastX - mouse->x);
+         InterlockedExchangeAdd(&mouse->dlt_y, state->lLastY - mouse->y);
+         mouse->x = state->lLastX;
+         mouse->y = state->lLastY;
+      }
+      else
+         winraw_init_mouse_xy_mapping();
    }
    else if (state->lLastX || state->lLastY)
    {
@@ -557,6 +594,8 @@ static void winraw_free(void *d)
    free(g_keyboard);
    free(wr->mice);
    free(wr);
+
+   g_mouse_xy_mapping_ready = false;
 
    WINRAW_LOG("Input driver deinitialized.");
 }
