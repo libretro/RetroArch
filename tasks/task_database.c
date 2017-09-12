@@ -176,7 +176,8 @@ static int iso_get_serial(database_state_handle_t *db_state,
 static int cue_get_serial(database_state_handle_t *db_state,
       database_info_handle_t *db, const char *name, char* serial)
 {
-   char track_path[PATH_MAX_LENGTH];
+   char *track_path                 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   int ret                          = 0;
    int32_t offset                   = 0;
    int rv                           = 0;
 
@@ -195,7 +196,10 @@ static int cue_get_serial(database_state_handle_t *db_state,
 
    RARCH_LOG("%s\n", msg_hash_to_str(MSG_READING_FIRST_DATA_TRACK));
 
-   return iso_get_serial(db_state, db, track_path, serial);
+   ret = iso_get_serial(db_state, db, track_path, serial);
+   free(track_path);
+
+   return ret;
 }
 
 static bool file_get_crc(database_state_handle_t *db_state,
@@ -217,12 +221,6 @@ static int task_database_iterate_playlist(
       database_state_handle_t *db_state,
       database_info_handle_t *db, const char *name)
 {
-   char parent_dir[PATH_MAX_LENGTH];
-
-   parent_dir[0] = '\0';
-
-   path_parent_dir(parent_dir);
-
    switch (msg_hash_to_file_type(msg_hash_calculate(path_get_extension(name))))
    {
       case FILE_TYPE_COMPRESSED:
@@ -302,16 +300,16 @@ static int database_info_list_iterate_found_match(
       const char *archive_name
       )
 {
-   char db_crc[PATH_MAX_LENGTH];
-   char db_playlist_path[PATH_MAX_LENGTH];
-   char  db_playlist_base_str[PATH_MAX_LENGTH];
-   char entry_path_str[PATH_MAX_LENGTH];
-   playlist_t   *playlist                      = NULL;
-   const char         *db_path                 =
+   char *db_crc                   = (char*)malloc(128 * sizeof(char));
+   char *db_playlist_base_str     = (char*)malloc(128 * sizeof(char));
+   char *db_playlist_path         = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char *entry_path_str           = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   playlist_t   *playlist         = NULL;
+   const char         *db_path    =
       database_info_get_current_name(db_state);
-   const char         *entry_path              =
+   const char         *entry_path =
       database_info_get_current_element_name(db);
-   database_info_t *db_info_entry              =
+   database_info_t *db_info_entry =
       &db_state->info->list[db_state->entry_index];
 
    db_crc[0] = '\0';
@@ -320,25 +318,26 @@ static int database_info_list_iterate_found_match(
    entry_path_str[0] = '\0';
 
    fill_short_pathname_representation_noext(db_playlist_base_str,
-         db_path, sizeof(db_playlist_base_str));
+         db_path, 128 * sizeof(char));
 
    strlcat(db_playlist_base_str,
          file_path_str(FILE_PATH_LPL_EXTENSION),
-         sizeof(db_playlist_base_str));
+         128 * sizeof(char));
    fill_pathname_join(db_playlist_path, _db->playlist_directory,
-         db_playlist_base_str, sizeof(db_playlist_path));
+         db_playlist_base_str, PATH_MAX_LENGTH * sizeof(char));
 
    playlist = playlist_init(db_playlist_path, COLLECTION_SIZE);
 
-
-   snprintf(db_crc, sizeof(db_crc), "%08X|crc", db_info_entry->crc32);
+   snprintf(db_crc, 128 * sizeof(char),
+         "%08X|crc", db_info_entry->crc32);
 
    if (entry_path)
-      strlcpy(entry_path_str, entry_path, sizeof(entry_path_str));
+      strlcpy(entry_path_str, entry_path, 128 * sizeof(char));
 
    if (!string_is_empty(archive_name))
-      fill_pathname_join_delim(entry_path_str, entry_path_str, archive_name,
-            '#', sizeof(entry_path_str));
+      fill_pathname_join_delim(entry_path_str,
+            entry_path_str, archive_name,
+            '#', 128 * sizeof(char));
 
 #if 0
    RARCH_LOG("Found match in database !\n");
@@ -369,6 +368,11 @@ static int database_info_list_iterate_found_match(
 
    db_state->info = NULL;
    db_state->crc  = 0;
+
+   free(entry_path_str);
+   free(db_playlist_path);
+   free(db_playlist_base_str);
+   free(db_crc);
 
    return 0;
 }
@@ -489,26 +493,29 @@ static int task_database_iterate_playlist_lutro(
       database_info_handle_t *db,
       const char *path)
 {
-   char db_playlist_path[PATH_MAX_LENGTH];
-   playlist_t   *playlist                  = NULL;
+   char *db_playlist_path  = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   playlist_t   *playlist  = NULL;
 
-   db_playlist_path[0]                     = '\0';
+   db_playlist_path[0]     = '\0';
 
    fill_pathname_join(db_playlist_path,
          _db->playlist_directory,
          file_path_str(FILE_PATH_LUTRO_PLAYLIST),
-         sizeof(db_playlist_path));
+         PATH_MAX_LENGTH * sizeof(char));
 
    playlist = playlist_init(db_playlist_path, COLLECTION_SIZE);
 
-   if(!playlist_entry_exists(playlist, path, file_path_str(FILE_PATH_DETECT)))
+   free(db_playlist_path);
+
+   if(!playlist_entry_exists(playlist,
+            path, file_path_str(FILE_PATH_DETECT)))
    {
-      char game_title[PATH_MAX_LENGTH];
+      char *game_title = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
       game_title[0] = '\0';
 
       fill_short_pathname_representation_noext(game_title,
-            path, sizeof(game_title));
+            path, PATH_MAX_LENGTH * sizeof(char));
 
       playlist_push(playlist, path,
             game_title,
@@ -516,6 +523,8 @@ static int task_database_iterate_playlist_lutro(
             file_path_str(FILE_PATH_DETECT),
             file_path_str(FILE_PATH_DETECT),
             file_path_str(FILE_PATH_LUTRO_PLAYLIST));
+
+      free(game_title);
    }
 
    playlist_write_file(playlist);
