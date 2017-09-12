@@ -347,6 +347,14 @@ uint16_t inet_htons(uint16_t hostshort)
 #endif
 }
 
+#ifdef _XBOX
+static int inet_aton(const char *cp, struct in_addr *addr)
+{
+  addr->s_addr = inet_addr(cp);
+  return (addr->s_addr == INADDR_NONE) ? 0 : 1;
+}
+#endif
+
 int inet_ptrton(int af, const char *src, void *dst)
 {
 #if defined(VITA) || defined(__ORBIS__)
