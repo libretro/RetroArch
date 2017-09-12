@@ -3811,38 +3811,39 @@ static void xmb_context_reset_background(const char *iconpath)
 
 static void xmb_context_reset(void *data, bool is_threaded)
 {
-   char *iconpath                  = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   xmb_handle_t *xmb               = (xmb_handle_t*)data;
-   if (!xmb)
-      return;
+   xmb_handle_t *xmb = (xmb_handle_t*)data;
 
-   iconpath[0] = '\0';
+   if (xmb)
+   {
+      char *iconpath = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      iconpath[0]    = '\0';
 
-   fill_pathname_application_special(xmb->background_file_path,
-         sizeof(xmb->background_file_path),
-         APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG);
+      fill_pathname_application_special(xmb->background_file_path,
+            sizeof(xmb->background_file_path),
+            APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG);
 
-   fill_pathname_application_special(iconpath,
-         PATH_MAX_LENGTH * sizeof(char),
-         APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
+      fill_pathname_application_special(iconpath,
+            PATH_MAX_LENGTH * sizeof(char),
+            APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
 
-   xmb_layout(xmb);
-   xmb->font = menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT,
-         xmb->font_size,
-         is_threaded);
-   xmb->font2 = menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT,
-         xmb->font2_size,
-         is_threaded);
-   xmb_context_reset_textures(xmb, iconpath);
-   xmb_context_reset_background(iconpath);
-   xmb_context_reset_horizontal_list(xmb);
+      xmb_layout(xmb);
+      xmb->font = menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT,
+            xmb->font_size,
+            is_threaded);
+      xmb->font2 = menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT,
+            xmb->font2_size,
+            is_threaded);
+      xmb_context_reset_textures(xmb, iconpath);
+      xmb_context_reset_background(iconpath);
+      xmb_context_reset_horizontal_list(xmb);
 
-   if (!string_is_equal(xmb_thumbnails_ident(),
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
-      xmb_update_thumbnail_image(xmb);
-   xmb_update_savestate_thumbnail_image(xmb);
+      if (!string_is_equal(xmb_thumbnails_ident(),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+         xmb_update_thumbnail_image(xmb);
+      xmb_update_savestate_thumbnail_image(xmb);
 
-   free(iconpath);
+      free(iconpath);
+   }
 }
 
 static void xmb_navigation_clear(void *data, bool pending_push)
