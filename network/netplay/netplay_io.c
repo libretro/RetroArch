@@ -1508,6 +1508,10 @@ static bool netplay_get_cmd(netplay_t *netplay,
                   dmsg = msg_hash_to_str(MSG_NETPLAY_CANNOT_PLAY_NO_SLOTS);
                   break;
 
+               case NETPLAY_CMD_MODE_REFUSED_REASON_NOT_AVAILABLE:
+                  dmsg = msg_hash_to_str(MSG_NETPLAY_CANNOT_PLAY_NOT_AVAILABLE);
+                  break;
+
                default:
                   dmsg = msg_hash_to_str(MSG_NETPLAY_CANNOT_PLAY);
             }

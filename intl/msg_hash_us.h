@@ -127,6 +127,10 @@ MSG_HASH(
       "There are no free player slots"
       )
 MSG_HASH(
+      MSG_NETPLAY_CANNOT_PLAY_NOT_AVAILABLE,
+      "The input devices requested are not available"
+      )
+MSG_HASH(
       MSG_NETPLAY_CANNOT_PLAY,
       "Cannot switch to play mode"
       )
