@@ -1828,11 +1828,6 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                              "o RetroArch. \n"
                              "Será utilizado para jogos online.");
             break;
-        case MENU_ENUM_LABEL_NETPLAY_CLIENT_SWAP_INPUT:
-            snprintf(s, len,
-                     "Ao ser o cliente de Netplay, use os \n"
-                             "vínculos de teclas do jogador 1.");
-            break;
         case MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT:
             snprintf(s, len,
                      "A porta do endereço de IP do hospedeiro. \n"

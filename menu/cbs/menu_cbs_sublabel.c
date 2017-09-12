@@ -229,7 +229,6 @@ default_sublabel_macro(action_bind_sublabel_scan_directory,                MENU_
 default_sublabel_macro(action_bind_sublabel_video_swap_interval,           MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL)
 default_sublabel_macro(action_bind_sublabel_sort_savefiles_enable,         MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE)
 default_sublabel_macro(action_bind_sublabel_sort_savestates_enable,        MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE)
-default_sublabel_macro(action_bind_sublabel_netplay_client_swap_input,     MENU_ENUM_SUBLABEL_NETPLAY_CLIENT_SWAP_INPUT)
 default_sublabel_macro(action_bind_sublabel_core_updater_buildbot_url,     MENU_ENUM_SUBLABEL_CORE_UPDATER_BUILDBOT_URL)
 default_sublabel_macro(action_bind_sublabel_input_overlay_show_physical_inputs,    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS)
 default_sublabel_macro(action_bind_sublabel_input_overlay_show_physical_inputs_port,    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT)
@@ -885,9 +884,6 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_BUILDBOT_ASSETS_URL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_updater_buildbot_assets_url);
-            break;
-         case MENU_ENUM_LABEL_NETPLAY_CLIENT_SWAP_INPUT:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_client_swap_input);
             break;
          case MENU_ENUM_LABEL_SORT_SAVEFILES_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_sort_savefiles_enable);

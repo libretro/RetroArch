@@ -1772,11 +1772,6 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Der Benutzername der Person, die RetroArch verwendet. \n"
                "Wird in Online-Spielen verwendet.");
          break;
-      case MENU_ENUM_LABEL_NETPLAY_CLIENT_SWAP_INPUT:
-         snprintf(s, len,
-               "Verwendet Tastenbelegung für Spieler 1, \n"
-               "wenn du Teilnehmer an einem Netplay-Spiel bist.");
-         break;
       case MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT:
          snprintf(s, len,
                "Der Port der Host-IP-Adresse. \n"

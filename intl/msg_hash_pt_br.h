@@ -1160,9 +1160,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
 	 "Faixa de Quadros de Latência de Entrada"
 	)
-MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT,
-	 "J2 do Netplay Usa C1"
-	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES,
 	 "Atraso de Quadros do Netplay"
 	)
@@ -3580,9 +3577,6 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
 	)
 MSG_HASH(MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
 	 "Ordenar os Estados de Jogo em pastas com o nome do núcleo utilizado."
-	)
-MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_CLIENT_SWAP_INPUT,
-	 "Ao se tornar cliente do Netplay, use os vínculos de teclas para o Jogador 1."
 	)
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_UPDATER_BUILDBOT_URL,
 	 "URL para o diretório de atualização de núcleos no buildbot do Libreto."

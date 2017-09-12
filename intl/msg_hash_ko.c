@@ -1723,11 +1723,6 @@ int menu_hash_get_help_ko_enum(enum msg_hash_enums msg, char *s, size_t len) {
                      "The username of the person running RetroArch. \n"
                              "This will be used for playing online games.");
             break;
-        case MENU_ENUM_LABEL_NETPLAY_CLIENT_SWAP_INPUT:
-            snprintf(s, len,
-                     "When being client over netplay, use \n"
-                             "keybinds for player 1.");
-            break;
         case MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT:
             snprintf(s, len,
                      "The port of the host IP address. \n"

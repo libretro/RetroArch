@@ -1587,10 +1587,6 @@ MSG_HASH(
 	"Rango de latencia en frames"
 	)
 MSG_HASH(
-	MENU_ENUM_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT,
-	"Juego en red: P2 Usa Control 1"
-	)
-MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES,
 	"Juego en red: retrasar frames"
 	)
@@ -4825,10 +4821,6 @@ MSG_HASH(
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
 	"Ordenar guardados rápidos en carpetas nombradas por núcleo"
-	)
-MSG_HASH(
-	MENU_ENUM_SUBLABEL_NETPLAY_CLIENT_SWAP_INPUT,
-	"Al ser cliente de juego en red, usar controles de jugador 1"
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_CORE_UPDATER_BUILDBOT_URL,
