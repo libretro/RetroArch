@@ -55,10 +55,6 @@ MSG_HASH(
       "Sei entrato come giocatore %d"
       )
 MSG_HASH(
-      MSG_NETPLAY_IMPLEMENTATIONS_DIFFER,
-      "Le implementazioni differiscono. Assicurati di utilizzare le stesse versioni di RetroArch e del core."
-      )
-MSG_HASH(
       MSG_NETPLAY_ENDIAN_DEPENDENT,
       "Questo core non supporta la rete di inter-architettura tra questi sistemi"
       )

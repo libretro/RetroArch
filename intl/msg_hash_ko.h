@@ -55,10 +55,6 @@ MSG_HASH(
       "Y%d 플레이어로 입장했습니다"
       )
 MSG_HASH(
-      MSG_NETPLAY_IMPLEMENTATIONS_DIFFER,
-      "구현 방법에 차이가 있습니다. 동일한 버전의 RetroArch와 코어인지 확인하십시오."
-      )
-MSG_HASH(
       MSG_NETPLAY_ENDIAN_DEPENDENT,
       "현재 코어는 해당 시스템 사이에서 구조 간 넷플레이를 지원하지 않습니다"
       )

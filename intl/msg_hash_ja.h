@@ -60,10 +60,6 @@ MSG_HASH(
       "「プレイヤー%d」で接続しました"
       )
 MSG_HASH(
-      MSG_NETPLAY_IMPLEMENTATIONS_DIFFER,
-      "実装が異なります。相手のRetroArchとコアのバージョンが同じに確認してください。"
-      )
-MSG_HASH(
       MSG_NETPLAY_ENDIAN_DEPENDENT,
       "This core does not support inter-architecture netplay between these systems"
       )

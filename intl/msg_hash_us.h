@@ -71,8 +71,24 @@ MSG_HASH(
       "%2$.*1$s has joined with input devices %4$.*3$s"
       )
 MSG_HASH(
-      MSG_NETPLAY_IMPLEMENTATIONS_DIFFER,
-      "Implementations differ. Make sure you're using the exact same versions of RetroArch and the core."
+      MSG_NETPLAY_NOT_RETROARCH,
+      "A netplay connection attempt failed because the peer is not running RetroArch, or is running an old version of RetroArch."
+      )
+MSG_HASH(
+      MSG_NETPLAY_OUT_OF_DATE,
+      "The netplay peer is running an old version of RetroArch. Cannot connect."
+      )
+MSG_HASH(
+      MSG_NETPLAY_DIFFERENT_VERSIONS,
+      "WARNING: A netplay peer is running a different version of RetroArch. If problems occur, use the same version."
+      )
+MSG_HASH(
+      MSG_NETPLAY_DIFFERENT_CORES,
+      "A netplay peer is running a different core. Cannot connect."
+      )
+MSG_HASH(
+      MSG_NETPLAY_DIFFERENT_CORE_VERSIONS,
+      "WARNING: A netlpay peer is running a different version of the core. If problems occur, use the same version."
       )
 MSG_HASH(
       MSG_NETPLAY_ENDIAN_DEPENDENT,

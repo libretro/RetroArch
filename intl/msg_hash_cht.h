@@ -55,10 +55,6 @@ MSG_HASH(
       "你已作為玩家 %d 加入"
       )
 MSG_HASH(
-      MSG_NETPLAY_IMPLEMENTATIONS_DIFFER,
-      "執行時錯誤發生。請確保雙方的所使用的RetroArch跟核心是同版本的。"
-      )
-MSG_HASH(
       MSG_NETPLAY_ENDIAN_DEPENDENT,
       "This core does not support inter-architecture netplay between these systems"
       )

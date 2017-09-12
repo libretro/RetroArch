@@ -40,9 +40,6 @@ MSG_HASH(MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
 MSG_HASH(MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N,
 	 "Você se juntou como jogador %d"
 	)
-MSG_HASH(MSG_NETPLAY_IMPLEMENTATIONS_DIFFER,
-	 "As implementações são diferentes. Certifique-se de que está usando exatamente as mesmas versões do RetroArch e do núcleo."
-	)
 MSG_HASH(MSG_NETPLAY_ENDIAN_DEPENDENT,
 	 "Este núcleo não suporta Netplay inter-arquitetura entre estes sistemas"
 	)

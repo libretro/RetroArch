@@ -60,10 +60,6 @@ MSG_HASH(
       "Вы присоединились под именем %d"
       )
 MSG_HASH(
-      MSG_NETPLAY_IMPLEMENTATIONS_DIFFER,
-      "Реализации различаются. Убедитесь, что вы используете одинаковые версии RetroArch и выбранного ядра."
-      )
-MSG_HASH(
       MSG_NETPLAY_ENDIAN_DEPENDENT,
       "Выбранное ядро не поддерживает архитектуру netplay между этими системами"
       )

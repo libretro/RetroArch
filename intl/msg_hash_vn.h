@@ -55,10 +55,6 @@ MSG_HASH(
       "You have joined as player %d"
       )
 MSG_HASH(
-      MSG_NETPLAY_IMPLEMENTATIONS_DIFFER,
-      "Implementations differ. Make sure you're using the exact same versions of RetroArch and the core."
-      )
-MSG_HASH(
       MSG_NETPLAY_ENDIAN_DEPENDENT,
       "This core does not support inter-architecture netplay between these systems"
       )

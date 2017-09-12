@@ -325,7 +325,7 @@ bool netplay_handshake_init(netplay_t *netplay,
 
    if (ntohl(header[0]) != netplay_magic)
    {
-      dmsg = msg_hash_to_str(MSG_NETPLAY_IMPLEMENTATIONS_DIFFER);
+      dmsg = msg_hash_to_str(MSG_NETPLAY_NOT_RETROARCH);
       goto error;
    }
 
@@ -338,16 +338,14 @@ bool netplay_handshake_init(netplay_t *netplay,
    remote_version = ntohl(header[4]);
    if (remote_version < NETPLAY_PROTOCOL_VERSION)
    {
-      /* FIXME: More precise information */
-      dmsg = msg_hash_to_str(MSG_NETPLAY_IMPLEMENTATIONS_DIFFER);
+      dmsg = msg_hash_to_str(MSG_NETPLAY_OUT_OF_DATE);
       goto error;
    }
 
    if (ntohl(header[5]) != netplay_impl_magic())
    {
       /* We allow the connection but warn that this could cause issues. */
-      /* FIXME: More precise information */
-      dmsg = msg_hash_to_str(MSG_NETPLAY_IMPLEMENTATIONS_DIFFER);
+      dmsg = msg_hash_to_str(MSG_NETPLAY_DIFFERENT_VERSIONS);
       RARCH_WARN("%s\n", dmsg);
       runloop_msg_queue_push(dmsg, 1, 180, false);
    }
@@ -880,12 +878,11 @@ bool netplay_handshake_pre_info(netplay_t *netplay,
 
    if (core_info)
    {
-      /* FIXME: More precise messages */
-      dmsg = msg_hash_to_str(MSG_NETPLAY_IMPLEMENTATIONS_DIFFER);
       if (strncmp(info_buf.core_name,
                core_info->info.library_name, sizeof(info_buf.core_name)))
       {
          /* Wrong core! */
+         dmsg = msg_hash_to_str(MSG_NETPLAY_DIFFERENT_CORES);
          RARCH_ERR("%s\n", dmsg);
          runloop_msg_queue_push(dmsg, 1, 180, false);
          /* FIXME: Should still send INFO, so the other side knows what's what */
@@ -894,6 +891,7 @@ bool netplay_handshake_pre_info(netplay_t *netplay,
       if (strncmp(info_buf.core_version,
              core_info->info.library_version, sizeof(info_buf.core_version)))
       {
+         dmsg = msg_hash_to_str(MSG_NETPLAY_DIFFERENT_CORE_VERSIONS);
          RARCH_WARN("%s\n", dmsg);
          runloop_msg_queue_push(dmsg, 1, 180, false);
       }
