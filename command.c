@@ -1305,7 +1305,7 @@ static void command_event_restore_default_shader_preset(void)
 static void command_event_restore_remaps(void)
 {
    if (rarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
-      input_remapping_set_defaults();
+      input_remapping_set_defaults(true);
 }
 
 static bool command_event_save_auto_state(void)

@@ -2141,7 +2141,7 @@ static int generic_action_ok_remap_file_operation(const char *path,
       {
          if (action_type == ACTION_OK_REMAP_FILE_SAVE_CORE)
             rarch_ctl(RARCH_CTL_SET_REMAPS_CORE_ACTIVE, NULL);
-         else
+         else if (action_type == ACTION_OK_REMAP_FILE_SAVE_GAME)
             rarch_ctl(RARCH_CTL_SET_REMAPS_GAME_ACTIVE, NULL);
 
          runloop_msg_queue_push(
@@ -2157,10 +2157,19 @@ static int generic_action_ok_remap_file_operation(const char *path,
    {
       if(input_remapping_remove_file(file))
       {
-         if (action_type == ACTION_OK_REMAP_FILE_REMOVE_CORE)
+         if (action_type == ACTION_OK_REMAP_FILE_REMOVE_CORE && 
+               rarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL))
+         {
             rarch_ctl(RARCH_CTL_UNSET_REMAPS_CORE_ACTIVE, NULL);
-         else
+            input_remapping_set_defaults(true);
+         }
+
+         else if (action_type == ACTION_OK_REMAP_FILE_REMOVE_GAME &&
+               rarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
+         {
             rarch_ctl(RARCH_CTL_UNSET_REMAPS_GAME_ACTIVE, NULL);
+            input_remapping_set_defaults(true);
+         }
 
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_REMAP_FILE_REMOVED_SUCCESSFULLY),
