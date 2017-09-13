@@ -106,6 +106,7 @@ static void gfx_ctx_d3d_update_title(void *data, void *data2)
       strlcat(video_info->fps_text, mem, sizeof(video_info->fps_text));
    }
 
+#ifndef _XBOX
    if (window)
    {
       char title[128];
@@ -117,6 +118,7 @@ static void gfx_ctx_d3d_update_title(void *data, void *data2)
       if (title[0])
          window->set_title(&main_window, title);
    }
+#endif
 }
 
 static void gfx_ctx_d3d_show_mouse(void *data, bool state)
