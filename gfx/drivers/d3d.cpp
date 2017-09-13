@@ -1494,6 +1494,7 @@ static bool d3d_set_shader(void *data,
    switch (type)
    {
       case RARCH_SHADER_CG:
+      case RARCH_SHADER_HLSL:
          if (path)
             shader   = path;
          break;
