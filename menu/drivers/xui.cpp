@@ -437,6 +437,8 @@ static void xui_frame(void *data, video_frame_info_t *video_info)
 
    XuiRenderSetViewTransform( app.GetDC(), &matOrigView );
 
+#if 0
+   /* TODO/FIXME - update this code */
    rarch_ctl(RARCH_CTL_MSG_QUEUE_PULL, &message);
 
    if (message)
@@ -448,6 +450,7 @@ static void xui_frame(void *data, video_frame_info_t *video_info)
       if (message)
          xui_render_message(message);
    }
+#endif
 
    XuiRenderEnd( app.GetDC() );
 
@@ -560,11 +563,18 @@ static void xui_render(void *data, bool is_idle)
 
    if (XuiHandleIsValid(m_menutitle))
    {
+      menu_animation_ctx_ticker_t ticker;
       menu_entries_get_title(title, sizeof(title));
       mbstowcs(strw_buffer, title, sizeof(strw_buffer) / sizeof(wchar_t));
       XuiTextElementSetText(m_menutitle, strw_buffer);
-      menu_animation_ticker_str(title, RXUI_TERM_WIDTH(fb_width) - 3,
-            (unsigned int)frame_count / 15, title, true);
+
+	  ticker.s        = title;
+	  ticker.len      = RXUI_TERM_WIDTH(fb_width) - 3;
+	  ticker.idx      = (unsigned int)frame_count / 15;
+	  ticker.str      = title;
+	  ticker.selected = true;
+
+      menu_animation_ticker(&ticker);
    }
 
    if (XuiHandleIsValid(m_menutitle))

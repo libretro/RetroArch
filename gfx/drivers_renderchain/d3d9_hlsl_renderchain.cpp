@@ -51,7 +51,7 @@ static void renderchain_set_mvp(void *data, unsigned vp_width,
    d3d_video_t      *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
 
-   hlsl_set_proj_matrix(XMMatrixRotationZ(rotation * (M_PI / 2.0)), rotation);
+   hlsl_set_proj_matrix((void*)&d3d->shader, XMMatrixRotationZ(rotation * (M_PI / 2.0)));
 
    mvp.data   = d3d;
    mvp.matrix = NULL;
