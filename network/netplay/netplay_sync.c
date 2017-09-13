@@ -96,15 +96,17 @@ struct vote_count {
 netplay_input_state_t netplay_device_client_state(netplay_t *netplay,
       struct delta_frame *simframe, uint32_t device, uint32_t client)
 {
+   uint32_t dsize = netplay_expected_input_size(netplay, 1 << device);
    netplay_input_state_t simstate =
       netplay_input_state_for(
-         &simframe->real_input[device], client, 3 /* FIXME */, false, true);
+         &simframe->real_input[device], client,
+         dsize, false, true);
    if (!simstate)
    {
       if (netplay->read_frame_count[client] > simframe->frame)
          return NULL;
       simstate = netplay_input_state_for(&simframe->simlated_input[device],
-            client, 3 /* FIXME */, false, true);
+            client, dsize, false, true);
    }
    return simstate;
 }
@@ -129,7 +131,7 @@ static void netplay_merge_digital(netplay_t *netplay,
    /* Make sure all real clients are accounted for */
    for (simstate = simframe->real_input[device]; simstate; simstate = simstate->next)
    {
-      if (!simstate->used || simstate->size != 3 /* FIXME */) continue;
+      if (!simstate->used || simstate->size != resstate->size) continue;
       clients |= 1<<simstate->client_num;
    }
 
@@ -137,6 +139,8 @@ static void netplay_merge_digital(netplay_t *netplay,
    {
       /* Vote mode requires counting all the bits */
       uint32_t client_count = 0;
+
+      /* This just assumes we have no more than three words, will need to be adjusted for new devices */
       struct vote_count votes[3] = {0};
       for (client = 0; client < MAX_CLIENTS; client++)
       {
@@ -145,7 +149,7 @@ static void netplay_merge_digital(netplay_t *netplay,
          if (!simstate) continue;
          client_count++;
 
-         for (word = 0; word < 3 /* FIXME */; word++)
+         for (word = 0; word < resstate->size; word++)
          {
             if (!digital[word]) continue;
             for (bit = 0; bit < 32; bit++)
@@ -159,7 +163,7 @@ static void netplay_merge_digital(netplay_t *netplay,
 
       /* Now count all the bits */
       client_count /= 2;
-      for (word = 0; word < 3 /* FIXME */; word++)
+      for (word = 0; word < resstate->size; word++)
       {
          for (bit = 0; bit < 32; bit++)
          {
@@ -176,7 +180,7 @@ static void netplay_merge_digital(netplay_t *netplay,
          if (!(clients & (1<<client))) continue;
          simstate = netplay_device_client_state(netplay, simframe, device, client);
          if (!simstate) continue;
-         for (word = 0; word < 3 /* FIXME */; word++)
+         for (word = 0; word < resstate->size; word++)
          {
             uint32_t part;
             if (!digital[word]) continue;
@@ -231,7 +235,7 @@ static void merge_analog_part(netplay_t *netplay,
    /* Make sure all real clients are accounted for */
    for (simstate = simframe->real_input[device]; simstate; simstate = simstate->next)
    {
-      if (!simstate->used || simstate->size != 3 /* FIXME */) continue;
+      if (!simstate->used || simstate->size != resstate->size) continue;
       clients |= 1<<simstate->client_num;
    }
 
@@ -267,16 +271,23 @@ static void merge_analog_part(netplay_t *netplay,
  * @simframe            : frame in which merging is being performed
  * @device              : device being merged
  * @clients             : bitmap of clients being merged
+ * @dtype               : device type
  */
 static void netplay_merge_analog(netplay_t *netplay,
       netplay_input_state_t resstate, struct delta_frame *simframe,
-      uint32_t device, uint32_t clients)
+      uint32_t device, uint32_t clients, unsigned dtype)
 {
-   /* FIXME: Assumes 3-byte gamepad */
+   if (dtype == RETRO_DEVICE_JOYPAD)
+      return;
+   /* All other devices have analog */
+
    merge_analog_part(netplay, resstate, simframe, device, clients, 1, 0);
    merge_analog_part(netplay, resstate, simframe, device, clients, 1, 16);
-   merge_analog_part(netplay, resstate, simframe, device, clients, 2, 0);
-   merge_analog_part(netplay, resstate, simframe, device, clients, 2, 16);
+   if (dtype == RETRO_DEVICE_ANALOG)
+   {
+      merge_analog_part(netplay, resstate, simframe, device, clients, 2, 0);
+      merge_analog_part(netplay, resstate, simframe, device, clients, 2, 16);
+   }
 }
 
 /**
@@ -303,13 +314,15 @@ bool netplay_resolve_input(netplay_t *netplay, size_t sim_ptr, bool resim)
 
    for (device = 0; device < MAX_INPUT_DEVICES; device++)
    {
+      unsigned dtype = netplay->config_devices[device]&RETRO_DEVICE_MASK;
+      uint32_t dsize = netplay_expected_input_size(netplay, 1 << device);
       clients = netplay->device_clients[device];
       client_count = 0;
 
       /* Make sure all real clients are accounted for */
       for (simstate = simframe->real_input[device]; simstate; simstate = simstate->next)
       {
-         if (!simstate->used || simstate->size != 3 /* FIXME */) continue;
+         if (!simstate->used || simstate->size != dsize) continue;
          clients |= 1<<simstate->client_num;
       }
 
@@ -318,19 +331,19 @@ bool netplay_resolve_input(netplay_t *netplay, size_t sim_ptr, bool resim)
          if (!(clients & (1<<client))) continue;
 
          /* Resolve this client-device */
-         simstate = netplay_input_state_for(&simframe->real_input[device], client, 3 /* FIXME */, false, true);
+         simstate = netplay_input_state_for(&simframe->real_input[device], client, dsize, false, true);
          if (!simstate)
          {
             /* Don't already have this input, so must simulate if we're supposed to have it at all */
             if (netplay->read_frame_count[client] > simframe->frame)
                continue;
-            simstate = netplay_input_state_for(&simframe->simlated_input[device], client, 3 /* FIXME */, false, false);
+            simstate = netplay_input_state_for(&simframe->simlated_input[device], client, dsize, false, false);
             if (!simstate)
                continue;
 
             prev = PREV_PTR(netplay->read_ptr[client]);
             pframe = &netplay->buffer[prev];
-            pstate = netplay_input_state_for(&pframe->real_input[device], client, 3 /* FIXME */, false, true);
+            pstate = netplay_input_state_for(&pframe->real_input[device], client, dsize, false, true);
             if (!pstate)
                continue;
 
@@ -351,17 +364,28 @@ bool netplay_resolve_input(netplay_t *netplay, size_t sim_ptr, bool resim)
                 * which will seem to jerkily be pressed numerous times with those
                 * wavefronts.
                 */
-               const uint32_t keep = (1U<<RETRO_DEVICE_ID_JOYPAD_UP) |
-                                     (1U<<RETRO_DEVICE_ID_JOYPAD_DOWN) |
-                                     (1U<<RETRO_DEVICE_ID_JOYPAD_LEFT) |
-                                     (1U<<RETRO_DEVICE_ID_JOYPAD_RIGHT);
+               const uint32_t keep_joypad =
+                     (1U<<RETRO_DEVICE_ID_JOYPAD_UP) |
+                     (1U<<RETRO_DEVICE_ID_JOYPAD_DOWN) |
+                     (1U<<RETRO_DEVICE_ID_JOYPAD_LEFT) |
+                     (1U<<RETRO_DEVICE_ID_JOYPAD_RIGHT);
+               uint32_t keep;
+               switch (dtype)
+               {
+                  case RETRO_DEVICE_JOYPAD:
+                  case RETRO_DEVICE_ANALOG:
+                     keep = keep_joypad;
+                     break;
+                  default:
+                     keep = 0;
+               }
                simstate->data[0] &= keep;
                simstate->data[0] |= pstate->data[0] & ~keep;
             }
             else
             {
                memcpy(simstate->data, pstate->data,
-                     simstate->size * sizeof(uint32_t));
+                     dsize * sizeof(uint32_t));
             }
          }
 
@@ -369,23 +393,35 @@ bool netplay_resolve_input(netplay_t *netplay, size_t sim_ptr, bool resim)
          client_count++;
       }
 
+      /* The frontend always uses the first resolved input, so make sure it's right */
+      while (simframe->resolved_input[device]
+            && (simframe->resolved_input[device]->size != dsize
+                  || simframe->resolved_input[device]->client_num != 0))
+      {
+         /* The default resolved input is of the wrong size! */
+         netplay_input_state_t nextistate = simframe->resolved_input[device]->next;
+         free(simframe->resolved_input[device]);
+         simframe->resolved_input[device] = nextistate;
+      }
+
       /* Now we copy the state, whether real or simulated, out into the resolved state */
-      resstate = netplay_input_state_for(&simframe->resolved_input[device], 0, 3 /* FIXME */, false, false);
+      resstate = netplay_input_state_for(&simframe->resolved_input[device], 0,
+            dsize, false, false);
       if (!resstate)
          continue;
 
       if (client_count == 1)
       {
          /* Trivial in the common 1-client case */
-         if (memcmp(resstate->data, client_state->data, resstate->size * sizeof(uint32_t)))
+         if (memcmp(resstate->data, client_state->data, dsize * sizeof(uint32_t)))
             ret = true;
-         memcpy(resstate->data, client_state->data, resstate->size * sizeof(uint32_t));
+         memcpy(resstate->data, client_state->data, dsize * sizeof(uint32_t));
 
       }
       else if (client_count == 0)
       {
          uint32_t word;
-         for (word = 0; word < resstate->size; word++)
+         for (word = 0; word < dsize; word++)
          {
             if (resstate->data[word])
                ret = true;
@@ -396,17 +432,20 @@ bool netplay_resolve_input(netplay_t *netplay, size_t sim_ptr, bool resim)
       else
       {
          /* Merge them */
+         /* NOTE: As it happens, all of our devices keep the digital data in
+          * the first word, so this is fine, but it'll have to change when
+          * other devices are supported. */
          static const uint32_t digital[3] = {-1, 0, 0};
-         oldresstate = netplay_input_state_for(&simframe->resolved_input[device], 1, 3 /* FIXME */, false, false);
+         oldresstate = netplay_input_state_for(&simframe->resolved_input[device], 1, dsize, false, false);
          if (!oldresstate)
             continue;
-         memcpy(oldresstate->data, resstate->data, oldresstate->size * sizeof(uint32_t));
-         memset(resstate->data, 0, resstate->size * sizeof(uint32_t));
+         memcpy(oldresstate->data, resstate->data, dsize * sizeof(uint32_t));
+         memset(resstate->data, 0, dsize * sizeof(uint32_t));
 
          netplay_merge_digital(netplay, resstate, simframe, device, clients, digital);
-         netplay_merge_analog(netplay, resstate, simframe, device, clients);
+         netplay_merge_analog(netplay, resstate, simframe, device, clients, dtype);
 
-         if (memcmp(resstate->data, oldresstate->data, resstate->size * sizeof(uint32_t)))
+         if (memcmp(resstate->data, oldresstate->data, dsize * sizeof(uint32_t)))
             ret = true;
 
       }

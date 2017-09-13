@@ -35,7 +35,6 @@
 #include "../../content.h"
 #include "../../retroarch.h"
 #include "../../version.h"
-#include "../../input/input_driver.h"
 
 #ifdef HAVE_MENU
 #include "../../menu/widgets/menu_input_dialog.h"
@@ -594,7 +593,7 @@ bool netplay_handshake_sync(netplay_t *netplay,
    /* Now send the device info */
    for (i = 0; i < MAX_INPUT_DEVICES; i++)
    {
-      device = htonl(input_config_get_device((unsigned)i));
+      device = htonl(netplay->config_devices[i]);
       if (!netplay_send(&connection->send_packet_buffer, connection->fd,
             &device, sizeof(device)))
          return false;
@@ -1022,6 +1021,7 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
 
       pad.port   = (unsigned)i;
       pad.device = ntohl(device);
+      netplay->config_devices[i] = pad.device;
 
       core_set_controller_port_device(&pad);
    }

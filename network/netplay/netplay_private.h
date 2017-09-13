@@ -436,6 +436,10 @@ struct netplay
     * attempt to stay in sync. */
    uint32_t desync;
 
+   /* The device types for every connected device. We store them and ignore any
+    * menu changes, as netplay needs fixed devices. */
+   uint32_t config_devices[MAX_INPUT_DEVICES];
+
    struct retro_callbacks cbs;
 
    /* TCP port (only set if serving) */
@@ -680,7 +684,7 @@ netplay_input_state_t netplay_input_state_for(netplay_input_state_t *list,
  *
  * Size in words for a given set of devices.
  */
-uint32_t netplay_expected_input_size(uint32_t devices);
+uint32_t netplay_expected_input_size(netplay_t *netplay, uint32_t devices);
 
 
 /***************************************************************

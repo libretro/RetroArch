@@ -32,6 +32,7 @@
 
 #include "../../autosave.h"
 #include "../../retroarch.h"
+#include "../../input/input_driver.h"
 
 #if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY)
 #define HAVE_INET6 1
@@ -466,8 +467,21 @@ netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
       return NULL;
    }
 
-   if (!netplay->is_server)
+   if (netplay->is_server)
    {
+      /* Clients get device info from the server */
+      unsigned i;
+      for (i = 0; i < MAX_INPUT_DEVICES; i++)
+      {
+         uint32_t dtype = input_config_get_device(i);
+         netplay->config_devices[i] = dtype;
+         if (dtype != RETRO_DEVICE_NONE && !netplay_expected_input_size(netplay, 1<<i))
+            RARCH_WARN("Netplay does not support input device %u\n", i+1);
+      }
+   }
+   else
+   {
+      /* Start our handshake */
       netplay_handshake_init_send(netplay, &netplay->connections[0]);
 
       netplay->connections[0].mode = NETPLAY_CONNECTION_INIT;

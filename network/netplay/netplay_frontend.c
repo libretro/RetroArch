@@ -137,41 +137,70 @@ static bool get_self_input_state(netplay_t *netplay)
          continue;
 
       /* Find an appropriate local device */
-      dev_type = input_config_get_device(devi)&RETRO_DEVICE_MASK;
+      dev_type = netplay->config_devices[devi]&RETRO_DEVICE_MASK;
       for (local_device = 0; local_device < MAX_INPUT_DEVICES; local_device++)
       {
          if (used_devices & (1<<local_device)) continue;
-         if ((input_config_get_device(local_device)&RETRO_DEVICE_MASK) == dev_type) break;
+         if ((netplay->config_devices[local_device]&RETRO_DEVICE_MASK) == dev_type) break;
       }
       if (local_device == MAX_INPUT_DEVICES)
          local_device = 0;
       used_devices |= (1<<local_device);
 
       istate = netplay_input_state_for(&ptr->real_input[devi],
-            netplay->self_client_num, 3 /* FIXME */, true, false);
+            netplay->self_client_num, netplay_expected_input_size(netplay, 1 << devi),
+            true, false);
       if (!istate)
          continue; /* FIXME: More severe? */
 
+      /* First frame we always give zero input since relying on
+       * input from first frame screws up when we use -F 0. */
       if (!input_driver_is_libretro_input_blocked() && netplay->self_frame_count > 0)
       {
-         /* First frame we always give zero input since relying on
-          * input from first frame screws up when we use -F 0. */
          uint32_t *state = istate->data;
          retro_input_state_t cb = netplay->cbs.state_cb;
-         for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-         {
-            int16_t tmp = cb(local_device,
-                  RETRO_DEVICE_JOYPAD, 0, (unsigned)i);
-            state[0] |= tmp ? 1 << i : 0;
-         }
+         unsigned dtype = netplay->config_devices[devi]&RETRO_DEVICE_MASK;
 
-         for (i = 0; i < 2; i++)
+         switch (dtype)
          {
-            int16_t tmp_x = cb(local_device,
-                  RETRO_DEVICE_ANALOG, (unsigned)i, 0);
-            int16_t tmp_y = cb(local_device,
-                  RETRO_DEVICE_ANALOG, (unsigned)i, 1);
-            state[1 + i] = (uint16_t)tmp_x | (((uint16_t)tmp_y) << 16);
+            case RETRO_DEVICE_ANALOG:
+               for (i = 0; i < 2; i++)
+               {
+                  int16_t tmp_x = cb(local_device,
+                        RETRO_DEVICE_ANALOG, (unsigned)i, 0);
+                  int16_t tmp_y = cb(local_device,
+                        RETRO_DEVICE_ANALOG, (unsigned)i, 1);
+                  state[1 + i] = (uint16_t)tmp_x | (((uint16_t)tmp_y) << 16);
+               }
+               /* no break */
+
+            case RETRO_DEVICE_JOYPAD:
+               for (i = 0; i <= RETRO_DEVICE_ID_JOYPAD_R3; i++)
+               {
+                  int16_t tmp = cb(local_device,
+                        RETRO_DEVICE_JOYPAD, 0, (unsigned)i);
+                  state[0] |= tmp ? 1 << i : 0;
+               }
+               break;
+
+            case RETRO_DEVICE_MOUSE:
+            case RETRO_DEVICE_LIGHTGUN:
+            {
+               int16_t tmp_x = cb(local_device, dtype, 0, 0);
+               int16_t tmp_y = cb(local_device, dtype, 0, 1);
+               state[1] = (uint16_t)tmp_x | (((uint16_t)tmp_y) << 16);
+               for (i = 2;
+                     i <= ((dtype == RETRO_DEVICE_MOUSE) ?
+                           RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN :
+                           RETRO_DEVICE_ID_LIGHTGUN_START);
+                     i++)
+               {
+                  int16_t tmp = cb(local_device, dtype, 0,
+                        (unsigned) i);
+                  state[0] |= tmp ? 1 << i : 0;
+               }
+               break;
+            }
          }
       }
    }
@@ -504,8 +533,20 @@ static int16_t netplay_input_state(netplay_t *netplay,
    const uint32_t *curr_input_state = NULL;
 
    if (port >= MAX_INPUT_DEVICES)
-   {
       return 0;
+
+   /* If the port doesn't seem to correspond to the device, "correct" it. This
+    * is common with e.g. zappers. */
+   if (device != RETRO_DEVICE_JOYPAD &&
+       (netplay->config_devices[port]&RETRO_DEVICE_MASK) != device)
+   {
+      for (port = 0; port < MAX_INPUT_DEVICES; port++)
+      {
+         if ((netplay->config_devices[port]&RETRO_DEVICE_MASK) == device)
+            break;
+      }
+      if (port == MAX_INPUT_DEVICES)
+         return 0;
    }
 
    delta = &netplay->buffer[ptr];
@@ -513,6 +554,8 @@ static int16_t netplay_input_state(netplay_t *netplay,
    if (!istate || !istate->used)
       return 0;
 
+   if (istate->size == 0)
+      return 0;
    curr_input_state = istate->data;
 
    switch (device)
@@ -522,8 +565,21 @@ static int16_t netplay_input_state(netplay_t *netplay,
 
       case RETRO_DEVICE_ANALOG:
       {
-         uint32_t state = curr_input_state[1 + idx];
+         uint32_t state;
+         if (istate->size != 3)
+            return 0;
+         state = curr_input_state[1 + idx];
          return (int16_t)(uint16_t)(state >> (id * 16));
+      }
+
+      case RETRO_DEVICE_MOUSE:
+      case RETRO_DEVICE_LIGHTGUN:
+      {
+         if (istate->size != 2)
+            return 0;
+         if (id <= RETRO_DEVICE_ID_MOUSE_Y)
+            return (int16_t)(uint16_t)(curr_input_state[1] >> (id * 16));
+         return ((1 << id) & curr_input_state[0]) ? 1 : 0;
       }
 
       default:

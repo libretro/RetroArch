@@ -357,3 +357,40 @@ Unused
 
 Command: CFG_ACK
 Unused
+
+
+Input types
+
+Each input device uses a number of words fixed by the type of device. When
+buttons are listed, they are listed from lowest bit to highest bit, i.e.,
+reverse order. When insufficient buttons are present to represent to represent
+a full 32-bit word, the remainder are reserved and unused.
+
+JOYPAD
+    {
+       B, Y, Select, Start, Up, Down, Left, Right, A, X, L, R, L2, R2, L3, R3
+    }
+
+MOUSE
+    {
+       unused, unused, Left, Right, Wheel up, Wheel down, Middle, Horizontal
+       wheel up, Horizontal wheel down
+       Y: int16
+       X: int16
+    }
+
+LIGHTGUN
+   {
+      unused, unused, Trigger, Cursor, Turbo, Pause, Start
+      Y: int16
+      X: int16
+   }
+
+ANALOG
+    {
+       buttons: uint32, as JOYPAD
+       Left analog Y: int16
+       Left analog X: int16
+       Right analog Y: int16
+       Right analog X: int16
+    }

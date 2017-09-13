@@ -167,14 +167,22 @@ netplay_input_state_t netplay_input_state_for(netplay_input_state_t *list,
  *
  * Size in words for a given set of devices.
  */
-uint32_t netplay_expected_input_size(uint32_t devices)
+uint32_t netplay_expected_input_size(netplay_t *netplay, uint32_t devices)
 {
-   /* FIXME: For now, we assume all devices are three words, because in the implementation, they are. */
-   uint32_t ret = 0;
-   while (devices)
+   uint32_t ret = 0, device;
+   for (device = 0; device < MAX_INPUT_DEVICES; device++)
    {
-      if (devices & 1) ret += 3;
-      devices >>= 1;
+      if (!(devices & (1<<device))) continue;
+      switch (netplay->config_devices[device]&RETRO_DEVICE_MASK)
+      {
+         /* These are all essentially magic numbers, but each device has a
+          * fixed size, documented in network/netplay/README */
+         case RETRO_DEVICE_JOYPAD:      ret += 1; break;
+         case RETRO_DEVICE_MOUSE:       ret += 2; break;
+         case RETRO_DEVICE_LIGHTGUN:    ret += 2; break;
+         case RETRO_DEVICE_ANALOG:      ret += 3; break;
+         default: break; /* Unsupported */
+      }
    }
    return ret;
 }

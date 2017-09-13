@@ -232,7 +232,7 @@ static bool send_input_frame(netplay_t *netplay, struct delta_frame *dframe,
       if (!(devices & (1<<device)))
          continue;
       istate = dframe->real_input[device];
-      while (istate && istate->client_num != client_num)
+      while (istate && (!istate->used || istate->client_num != client_num))
          istate = istate->next;
       if (!istate)
          continue;
@@ -810,7 +810,7 @@ static void handle_play_spectate(netplay_t *netplay, uint32_t client_num,
             /* Find an available device */
             for (device = 0; device < MAX_INPUT_DEVICES; device++)
             {
-               if (input_config_get_device(device) == RETRO_DEVICE_NONE)
+               if (netplay->config_devices[device] == RETRO_DEVICE_NONE)
                {
                   device = MAX_INPUT_DEVICES;
                   break;
@@ -985,7 +985,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
 
             /* Figure out how much input is expected */
             devices = netplay->client_devices[client_num];
-            input_size = netplay_expected_input_size(devices);
+            input_size = netplay_expected_input_size(netplay, devices);
 
             if (cmd_size != (2+input_size) * sizeof(uint32_t))
             {
@@ -1037,7 +1037,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
                if (!(devices & (1<<device)))
                   continue;
 
-               dsize = netplay_expected_input_size(1 << device);
+               dsize = netplay_expected_input_size(netplay, 1 << device);
                istate = netplay_input_state_for(&dframe->real_input[device],
                   client_num, dsize, true, false);
                if (!istate)
@@ -1297,12 +1297,15 @@ static bool netplay_get_cmd(netplay_t *netplay,
                   {
                      for (device = 0; device < MAX_INPUT_DEVICES; device++)
                      {
+                        uint32_t dsize;
+                        netplay_input_state_t istate;
                         if (!(devices & (1<<device))) continue;
-                        netplay_input_state_t istate = netplay_input_state_for(
-                              &dframe->real_input[device], client_num,
-                              3 /* FIXME */, false, false);
+                        dsize = netplay_expected_input_size(netplay, 1 << device);
+                        istate = netplay_input_state_for(
+                              &dframe->real_input[device], client_num, dsize,
+                              false, false);
                         if (!istate) continue;
-                        memset(istate->data, 0, istate->size*sizeof(uint32_t));
+                        memset(istate->data, 0, dsize*sizeof(uint32_t));
                      }
                      dframe->have_local = true;
                      dframe->have_real[client_num] = true;
