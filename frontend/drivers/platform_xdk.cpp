@@ -1250,11 +1250,13 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
 #endif
 
 #ifndef IS_SALAMANDER
+#ifdef _XBOX1
 exit:
    if (original_verbose)
       verbosity_enable();
    else
       verbosity_disable();
+#endif
 #endif
 }
 
