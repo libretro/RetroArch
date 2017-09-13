@@ -1300,7 +1300,8 @@ static bool netplay_get_cmd(netplay_t *netplay,
                         if (!(devices & (1<<device))) continue;
                         netplay_input_state_t istate = netplay_input_state_for(
                               &dframe->real_input[device], client_num,
-                              3 /* FIXME */, true, false);
+                              3 /* FIXME */, false, false);
+                        if (!istate) continue;
                         memset(istate->data, 0, istate->size*sizeof(uint32_t));
                      }
                      dframe->have_local = true;
