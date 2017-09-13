@@ -1496,9 +1496,6 @@ static bool d3d_set_shader(void *data,
       case RARCH_SHADER_CG:
          if (path)
             shader   = path;
-#ifdef HAVE_HLSL
-            shader   = &hlsl_backend;
-#endif
          break;
       default:
          break;

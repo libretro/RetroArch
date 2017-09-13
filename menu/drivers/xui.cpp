@@ -268,7 +268,7 @@ cleanup:
    return hr;
 }
 
-static void* xui_init(void **userdata)
+static void* xui_init(void **userdata, bool video_is_threaded)
 {
    HRESULT hr;
    d3d_video_t *d3d            = NULL;
@@ -637,7 +637,9 @@ static void xui_list_insert(void *data,
       file_list_t *list,
       const char *path,
       const char *fullpath,
-      const char *, size_t list_size)
+      const char *unused,
+	  size_t list_size,
+	  unsigned entry_type)
 {
    wchar_t buf[PATH_MAX_LENGTH] = {0};
 
@@ -654,9 +656,9 @@ static void xui_list_free(
 
    (void)idx;
 
-   if( list_size > x)
+   if (list_size > (unsigned)x)
       list_size = x;
-   if( list_size > 0)
+   if (list_size > 0)
       XuiListDeleteItems(m_menulist, 0, list_size);
 }
 

@@ -41,6 +41,9 @@ typedef struct hlsl_d3d9_renderchain
    uint64_t frame_count;
 } hlsl_d3d9_renderchain_t;
 
+/* TODO/FIXME - this forward declaration should not be necesary */
+void hlsl_set_proj_matrix(void *data, XMMATRIX rotation_value);
+
 static void renderchain_set_mvp(void *data, unsigned vp_width,
       unsigned vp_height, unsigned rotation)
 {
@@ -48,7 +51,7 @@ static void renderchain_set_mvp(void *data, unsigned vp_width,
    d3d_video_t      *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
 
-   hlsl_set_proj_matrix(XMMatrixRotationZ(rotation * (M_PI / 2.0)));
+   hlsl_set_proj_matrix(XMMatrixRotationZ(rotation * (M_PI / 2.0)), rotation);
 
    mvp.data   = d3d;
    mvp.matrix = NULL;
@@ -299,19 +302,25 @@ void *hlsl_d3d9_renderchain_new(void)
 static bool hlsl_d3d9_renderchain_init_shader(void *data, 
       void *renderchain_data)
 {
-   d3d_video_t        *d3d = (d3d_video_t*)data;
-   const char *shader_path = NULL;
-   settings_t *settings    = config_get_ptr();
+   video_shader_ctx_init_t init;
+   bool ret                       = false;
+   d3d_video_t        *d3d        = (d3d_video_t*)data;
+   settings_t *settings           = config_get_ptr();
    (void)renderchain_data;
 
    if (!d3d)
       return false;
 
-   RARCH_LOG("D3D]: Using HLSL shader backend.\n");
-   shader_path = settings->path.shader;
-   const shader_backend_t *shader = &hlsl_backend;
+   init.shader_type               = RARCH_SHADER_HLSL;
+   init.data                      = data;
+   init.path                      = settings->paths.path_shader;
+   init.shader                    = &hlsl_backend;
 
-   return video_shader_driver_init(hlsl_backend, d3d, shader_path); 
+   RARCH_LOG("D3D]: Using HLSL shader backend.\n");
+
+   ret = video_shader_driver_init(&init);
+
+   return ret;
 }
 
 static bool hlsl_d3d9_renderchain_init(void *data,
