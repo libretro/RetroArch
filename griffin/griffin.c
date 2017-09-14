@@ -28,6 +28,7 @@
 
 #if _MSC_VER
 #include "../libretro-common/compat/compat_snprintf.c"
+#include "../libretro-common/compat/compat_strcasestr.c"
 #endif
 
 #include "../verbosity.c"

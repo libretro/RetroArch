@@ -16,28 +16,18 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\griffin\griffin.c">
+    <ClCompile Include="..\..\..\griffin\griffin.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\griffin\griffin_cpp.cpp">
+    <ClCompile Include="..\..\..\griffin\griffin_cpp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\media\360\Arial_12.rdf">
-      <Filter>Source Files\media</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\media\360\sd\rarch_main.xui">
-      <Filter>Source Files\media\sd</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\media\360\hd\rarch_main.xui">
-      <Filter>Source Files\media\hd</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\media\360\rarch.ttf">
-      <Filter>Source Files\media</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\..\media\360\rarch_scene_skin.xui">
-      <Filter>Source Files\media</Filter>
-    </CustomBuild>
+    <CustomBuild Include="..\..\360\rarch.ttf" />
+    <CustomBuild Include="..\..\360\rarch_scene_skin.xui" />
+    <CustomBuild Include="..\..\360\sd\rarch_main.xui" />
+    <CustomBuild Include="..\..\360\Arial_12.rdf" />
+    <CustomBuild Include="..\..\360\hd\rarch_main.xui" />
   </ItemGroup>
 </Project>
