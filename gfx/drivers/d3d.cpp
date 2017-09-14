@@ -632,6 +632,15 @@ static bool d3d_init_base(void *data, const video_info_t *info)
    d3d->cur_mon_id = 0;
 #endif
 
+#ifdef _XBOX
+      if (FAILED(d3d->d3d_err = g_pD3D->CreateDevice(
+            d3d->cur_mon_id,
+            D3DDEVTYPE_HAL,
+            NULL,
+            D3DCREATE_HARDWARE_VERTEXPROCESSING,
+            &d3dpp,
+            &d3d->dev)))
+#else
    if (FAILED(d3d->d3d_err = g_pD3D->CreateDevice(
             d3d->cur_mon_id,
             D3DDEVTYPE_HAL,
@@ -639,10 +648,20 @@ static bool d3d_init_base(void *data, const video_info_t *info)
             D3DCREATE_HARDWARE_VERTEXPROCESSING,
             &d3dpp,
             &d3d->dev)))
+#endif
    {
       RARCH_WARN("[D3D]: Failed to init device with hardware vertex processing (code: 0x%x). Trying to fall back to software vertex processing.\n",
                  (unsigned)d3d->d3d_err);
 
+#ifdef _XBOX
+      if (FAILED(d3d->d3d_err = g_pD3D->CreateDevice(
+                  d3d->cur_mon_id,
+                  D3DDEVTYPE_HAL,
+                  NULL,
+                  D3DCREATE_SOFTWARE_VERTEXPROCESSING,
+                  &d3dpp,
+                  &d3d->dev)))
+#else
       if (FAILED(d3d->d3d_err = g_pD3D->CreateDevice(
                   d3d->cur_mon_id,
                   D3DDEVTYPE_HAL,
@@ -650,6 +669,7 @@ static bool d3d_init_base(void *data, const video_info_t *info)
                   D3DCREATE_SOFTWARE_VERTEXPROCESSING,
                   &d3dpp,
                   &d3d->dev)))
+#endif
       {
          RARCH_ERR("[D3D]: Failed to initialize device.\n");
          return false;
@@ -1225,12 +1245,16 @@ static void d3d_free(void *data)
    d3d->dev = NULL;
    g_pD3D   = NULL;
 
+#ifndef _XBOX
    win32_monitor_from_window();
+#endif
 
    if (d3d)
       delete d3d;
 
+#ifndef _XBOX
    win32_destroy_window();
+#endif
 }
 
 #ifdef HAVE_OVERLAY
@@ -1379,7 +1403,9 @@ static bool d3d_frame(void *data, const void *frame,
 {
    unsigned i                          = 0;
    d3d_video_t *d3d                    = (d3d_video_t*)data;
+#ifndef _XBOX
    HWND window                         = win32_get_window();
+#endif
    unsigned width                      = video_info->width;
    unsigned height                     = video_info->height;
 
@@ -1391,8 +1417,10 @@ static bool d3d_frame(void *data, const void *frame,
    /* We cannot recover in fullscreen. */
    if (d3d->needs_restore)
    {
+#ifndef _XBOX
       if (IsIconic(window))
          return true;
+#endif
 
       if (!d3d_restore(d3d))
       {
