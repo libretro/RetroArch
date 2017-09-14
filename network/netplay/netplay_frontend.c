@@ -201,6 +201,26 @@ static bool get_self_input_state(netplay_t *netplay)
                }
                break;
             }
+
+            case RETRO_DEVICE_KEYBOARD:
+            {
+               unsigned key, word = 0, bit = 1;
+               for (key = 1; key < NETPLAY_KEY_LAST; key++)
+               {
+                  state[word] |=
+                        cb(local_device, RETRO_DEVICE_KEYBOARD, 0, netplay_key_ntoh(key)) ?
+                              (1U << bit) : 0;
+                  bit++;
+                  if (bit >= 32)
+                  {
+                     bit = 0;
+                     word++;
+                     if (word >= istate->size)
+                        break;
+                  }
+               }
+               break;
+            }
          }
       }
    }
@@ -536,7 +556,8 @@ static int16_t netplay_input_state(netplay_t *netplay,
       return 0;
 
    /* If the port doesn't seem to correspond to the device, "correct" it. This
-    * is common with e.g. zappers. */
+    * is common with devices that typically only have one instance, such as
+    * keyboards, mice and lightguns. */
    if (device != RETRO_DEVICE_JOYPAD &&
        (netplay->config_devices[port]&RETRO_DEVICE_MASK) != device)
    {
@@ -580,6 +601,19 @@ static int16_t netplay_input_state(netplay_t *netplay,
          if (id <= RETRO_DEVICE_ID_MOUSE_Y)
             return (int16_t)(uint16_t)(curr_input_state[1] >> (id * 16));
          return ((1 << id) & curr_input_state[0]) ? 1 : 0;
+      }
+
+      case RETRO_DEVICE_KEYBOARD:
+      {
+         unsigned key, word, bit;
+         key = netplay_key_hton(id);
+         if (key == NETPLAY_KEY_UNKNOWN)
+            return 0;
+         word = key/32;
+         bit = key%32;
+         if (word <= istate->size)
+            return ((1U<<bit) & curr_input_state[word]) ? 1 : 0;
+         return 0;
       }
 
       default:

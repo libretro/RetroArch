@@ -179,6 +179,7 @@ uint32_t netplay_expected_input_size(netplay_t *netplay, uint32_t devices)
           * fixed size, documented in network/netplay/README */
          case RETRO_DEVICE_JOYPAD:      ret += 1; break;
          case RETRO_DEVICE_MOUSE:       ret += 2; break;
+         case RETRO_DEVICE_KEYBOARD:    ret += 5; break;
          case RETRO_DEVICE_LIGHTGUN:    ret += 2; break;
          case RETRO_DEVICE_ANALOG:      ret += 3; break;
          default: break; /* Unsupported */

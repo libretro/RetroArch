@@ -379,6 +379,9 @@ MOUSE
        X: int16
     }
 
+KEYBOARD
+   (5 words, see netplay_keys.h)
+
 LIGHTGUN
    {
       unused, unused, Trigger, Cursor, Turbo, Pause, Start

@@ -48,10 +48,9 @@
 #define MAX_CLIENTS                 32
 typedef uint32_t client_bitmap_t;
 
-/* For now we only support the normal or analog gamepad */
-#define NETPLAY_SUPPORTED_DEVICES ( \
-   (1<<RETRO_DEVICE_JOYPAD) | \
-   (1<<RETRO_DEVICE_ANALOG))
+/* Because the callback keyboard reverses some assumptions, when the keyboard
+ * callbacks are in use, we assign a pseudodevice for it */
+#define RETRO_DEVICE_NETPLAY_KEYBOARD RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_KEYBOARD, 65535)
 
 #define NETPLAY_MAX_STALL_FRAMES       60
 #define NETPLAY_FRAME_RUN_TIME_WINDOW  120
@@ -914,6 +913,33 @@ void netplay_announce_nat_traversal(netplay_t *netplay);
  * Initialize the NAT traversal library and try to open a port
  */
 void netplay_init_nat_traversal(netplay_t *netplay);
+
+
+/***************************************************************
+ * NETPLAY-KEYBOARD.C
+ **************************************************************/
+
+/* The keys supported by netplay */
+enum netplay_keys {
+   NETPLAY_KEY_UNKNOWN = 0,
+#define K(k) NETPLAY_KEY_ ## k,
+#define KL(k,l) K(k)
+#include "netplay_keys.h"
+#undef KL
+#undef K
+   NETPLAY_KEY_LAST
+};
+
+/* The mapping of keys from netplay (network) to libretro (host) */
+extern const uint16_t netplay_key_ntoh_mapping[];
+#define netplay_key_ntoh(k) (netplay_key_ntoh_mapping[k])
+
+/* The mapping of keys from libretro (host) to netplay (network) */
+uint32_t netplay_key_hton(unsigned key);
+
+/* Because the hton keymapping has to be generated, call this before using
+ * netplay_key_hton */
+void netplay_key_hton_init(void);
 
 
 /***************************************************************

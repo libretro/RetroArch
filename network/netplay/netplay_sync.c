@@ -277,12 +277,15 @@ static void netplay_merge_analog(netplay_t *netplay,
       netplay_input_state_t resstate, struct delta_frame *simframe,
       uint32_t device, uint32_t clients, unsigned dtype)
 {
-   if (dtype == RETRO_DEVICE_JOYPAD)
+   /* Devices with no analog parts */
+   if (dtype == RETRO_DEVICE_JOYPAD || dtype == RETRO_DEVICE_KEYBOARD)
       return;
-   /* All other devices have analog */
 
+   /* All other devices have at least one analog word */
    merge_analog_part(netplay, resstate, simframe, device, clients, 1, 0);
    merge_analog_part(netplay, resstate, simframe, device, clients, 1, 16);
+
+   /* And the ANALOG device has two (two sticks) */
    if (dtype == RETRO_DEVICE_ANALOG)
    {
       merge_analog_part(netplay, resstate, simframe, device, clients, 2, 0);
@@ -432,10 +435,14 @@ bool netplay_resolve_input(netplay_t *netplay, size_t sim_ptr, bool resim)
       else
       {
          /* Merge them */
-         /* NOTE: As it happens, all of our devices keep the digital data in
-          * the first word, so this is fine, but it'll have to change when
-          * other devices are supported. */
-         static const uint32_t digital[3] = {-1, 0, 0};
+         /* Most devices have all the digital parts in the first word. */
+         static const uint32_t digital_common[3] = {-1, 0, 0};
+         static const uint32_t digital_keyboard[5] = {-1, -1, -1, -1, -1};
+         const uint32_t *digital;
+         if (dtype == RETRO_DEVICE_KEYBOARD)
+            digital = digital_keyboard;
+         else
+            digital = digital_common;
          oldresstate = netplay_input_state_for(&simframe->resolved_input[device], 1, dsize, false, false);
          if (!oldresstate)
             continue;

@@ -1022,6 +1022,8 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
       pad.port   = (unsigned)i;
       pad.device = ntohl(device);
       netplay->config_devices[i] = pad.device;
+      if ((pad.device&RETRO_DEVICE_MASK) == RETRO_DEVICE_KEYBOARD)
+         netplay_key_hton_init();
 
       core_set_controller_port_device(&pad);
    }
