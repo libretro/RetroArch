@@ -24,11 +24,8 @@
 #define HAVE_COMPRESSION
 #endif
 
-#include <compat/posix_string.h>
-
 #if _MSC_VER
 #include "../libretro-common/compat/compat_snprintf.c"
-#include "../libretro-common/compat/compat_strcasestr.c"
 #endif
 
 #include "../verbosity.c"
@@ -36,6 +33,32 @@
 #if defined(HAVE_LOGGER) && !defined(ANDROID)
 #include "../network/net_logger.c"
 #endif
+
+/*============================================================
+COMPATIBILITY
+============================================================ */
+#ifndef HAVE_GETOPT_LONG
+#include "../compat/compat_getopt.c"
+#endif
+
+#ifndef HAVE_STRCASESTR
+#include "../compat/compat_strcasestr.c"
+#endif
+
+#ifndef HAVE_STRL
+#include "../compat/compat_strl.c"
+#endif
+
+#if defined(_WIN32)
+#include "../compat/compat_posix_string.c"
+#endif
+
+#if defined(WANT_IFADDRS)
+#include "../compat/compat_ifaddrs.c"
+#endif
+
+#include "../libretro-common/compat/compat_fnmatch.c"
+#include "../libretro-common/memmap/memalign.c"
 
 /*============================================================
 CONSOLE EXTENSIONS
@@ -102,32 +125,6 @@ PERFORMANCE
 ============================================================ */
 #include "../libretro-common/features/features_cpu.c"
 #include "../performance_counters.c"
-
-/*============================================================
-COMPATIBILITY
-============================================================ */
-#ifndef HAVE_GETOPT_LONG
-#include "../compat/compat_getopt.c"
-#endif
-
-#ifndef HAVE_STRCASESTR
-#include "../compat/compat_strcasestr.c"
-#endif
-
-#ifndef HAVE_STRL
-#include "../compat/compat_strl.c"
-#endif
-
-#if defined(_WIN32) && !defined(_XBOX)
-#include "../compat/compat_posix_string.c"
-#endif
-
-#if defined(WANT_IFADDRS)
-#include "../compat/compat_ifaddrs.c"
-#endif
-
-#include "../libretro-common/compat/compat_fnmatch.c"
-#include "../libretro-common/memmap/memalign.c"
 
 /*============================================================
 CONFIG FILE
