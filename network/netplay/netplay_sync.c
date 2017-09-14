@@ -787,6 +787,20 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
       /* Replay frames. */
       netplay->is_replay = true;
 
+      /* If we have a keyboard device, we replay the previous frame's input
+       * just to assert that the keydown/keyup events work if the core
+       * translates them in that way */
+      if (netplay->have_updown_device)
+      {
+         netplay->replay_ptr = PREV_PTR(netplay->replay_ptr);
+         netplay->replay_frame_count--;
+         autosave_lock();
+         core_run();
+         autosave_unlock();
+         netplay->replay_ptr = NEXT_PTR(netplay->replay_ptr);
+         netplay->replay_frame_count++;
+      }
+
       if (netplay->quirks & NETPLAY_QUIRK_INITIALIZATION)
          /* Make sure we're initialized before we start loading things */
          netplay_wait_and_init_serialization(netplay);

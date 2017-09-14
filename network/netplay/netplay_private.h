@@ -439,6 +439,13 @@ struct netplay
     * menu changes, as netplay needs fixed devices. */
    uint32_t config_devices[MAX_INPUT_DEVICES];
 
+   /* Set to true if we have a device that most cores translate to "up/down"
+    * actions, typically a keyboard. We need to keep track of this because with
+    * such a device, we need to "fix" the input state to the frame BEFORE a
+    * state load, then perform the state load, and the up/down states will
+    * proceed as expected */
+   bool have_updown_device;
+
    struct retro_callbacks cbs;
 
    /* TCP port (only set if serving) */

@@ -476,7 +476,10 @@ netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
          uint32_t dtype = input_config_get_device(i);
          netplay->config_devices[i] = dtype;
          if ((dtype&RETRO_DEVICE_MASK) == RETRO_DEVICE_KEYBOARD)
+         {
+            netplay->have_updown_device = true;
             netplay_key_hton_init();
+         }
          if (dtype != RETRO_DEVICE_NONE && !netplay_expected_input_size(netplay, 1<<i))
             RARCH_WARN("Netplay does not support input device %u\n", i+1);
       }
