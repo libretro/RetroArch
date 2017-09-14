@@ -350,7 +350,7 @@ bool netplay_resolve_input(netplay_t *netplay, size_t sim_ptr, bool resim)
             if (!pstate)
                continue;
 
-            if (resim)
+            if (resim && (dtype == RETRO_DEVICE_JOYPAD || dtype == RETRO_DEVICE_ANALOG))
             {
                /* In resimulation mode, we only copy the buttons. The reason for this
                 * is nonobvious:
@@ -367,21 +367,11 @@ bool netplay_resolve_input(netplay_t *netplay, size_t sim_ptr, bool resim)
                 * which will seem to jerkily be pressed numerous times with those
                 * wavefronts.
                 */
-               const uint32_t keep_joypad =
+               const uint32_t keep =
                      (1U<<RETRO_DEVICE_ID_JOYPAD_UP) |
                      (1U<<RETRO_DEVICE_ID_JOYPAD_DOWN) |
                      (1U<<RETRO_DEVICE_ID_JOYPAD_LEFT) |
                      (1U<<RETRO_DEVICE_ID_JOYPAD_RIGHT);
-               uint32_t keep;
-               switch (dtype)
-               {
-                  case RETRO_DEVICE_JOYPAD:
-                  case RETRO_DEVICE_ANALOG:
-                     keep = keep_joypad;
-                     break;
-                  default:
-                     keep = 0;
-               }
                simstate->data[0] &= keep;
                simstate->data[0] |= pstate->data[0] & ~keep;
             }
