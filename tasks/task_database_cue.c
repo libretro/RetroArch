@@ -415,8 +415,7 @@ int find_first_data_track(const char *cue_path,
    fd = intfstream_init(&info);
    if (!fd)
    {
-      free(tmp_token);
-      return -errno;
+      goto error;
    }
 
    if (!intfstream_open(fd, cue_path, RFILE_MODE_READ, -1))
