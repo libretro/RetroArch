@@ -1289,12 +1289,14 @@ OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file.o \
 ifeq ($(HAVE_7ZIP),1)
    CFLAGS  += -I$(DEPS_DIR)/7zip
    HAVE_COMPRESSION = 1
-   DEFINES += -DHAVE_7ZIP
+   DEFINES += -DHAVE_7ZIP -D_7ZIP_ST
    7ZOBJ = $(DEPS_DIR)/7zip/7zIn.o \
            $(DEPS_DIR)/7zip/Bra86.o \
            $(DEPS_DIR)/7zip/7zFile.o \
            $(DEPS_DIR)/7zip/7zStream.o \
+           $(DEPS_DIR)/7zip/LzFind.o \
            $(DEPS_DIR)/7zip/LzmaDec.o \
+           $(DEPS_DIR)/7zip/LzmaEnc.o \
            $(DEPS_DIR)/7zip/7zCrcOpt.o \
            $(DEPS_DIR)/7zip/Bra.o \
            $(DEPS_DIR)/7zip/7zDec.o \
