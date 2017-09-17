@@ -310,9 +310,9 @@ struct _chd_header
 	UINT64		unitcount;					/* TODO V5 */	
     UINT32      hunkcount;                  /* TODO V5 */
 
-    // map information
-    UINT32      mapentrybytes;              // length of each entry in a map (V5)
-    UINT8*      rawmap;                     // raw map data
+    /* map information */
+    UINT32      mapentrybytes;              /* length of each entry in a map (V5) */
+    UINT8*      rawmap;                     /* raw map data */
 
 	UINT32		obsolete_cylinders;			/* obsolete field -- do not use! */
 	UINT32		obsolete_sectors;			/* obsolete field -- do not use! */
@@ -341,12 +341,13 @@ struct _chd_verify_result
 /* ----- CHD file management ----- */
 
 /* create a new CHD file fitting the given description */
-// chd_error chd_create(const char *filename, UINT64 logicalbytes, UINT32 hunkbytes, UINT32 compression, chd_file *parent);
+/* chd_error chd_create(const char *filename, UINT64 logicalbytes, UINT32 hunkbytes, UINT32 compression, chd_file *parent); */
 
 /* same as chd_create(), but accepts an already-opened core_file object */
-// chd_error chd_create_file(core_file *file, UINT64 logicalbytes, UINT32 hunkbytes, UINT32 compression, chd_file *parent);
+/* chd_error chd_create_file(core_file *file, UINT64 logicalbytes, UINT32 hunkbytes, UINT32 compression, chd_file *parent); */
 
 /* open an existing CHD file */
+chd_error chd_open_file(core_file *file, int mode, chd_file *parent, chd_file **chd);
 chd_error chd_open(const char *filename, int mode, chd_file *parent, chd_file **chd);
 
 
