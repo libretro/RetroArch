@@ -103,8 +103,19 @@ chdstream_get_meta(chd_file *chd, int idx, metadata_t *md)
                           sizeof(meta), &meta_size, NULL, NULL);
    if (err == CHDERR_NONE)
    {
-      sscanf(meta, CDROM_TRACK_METADATA_FORMAT,
-            &md->track, md->type, md->subtype, &md->frames);
+      sscanf(meta, CDROM_TRACK_METADATA_FORMAT, &md->track, md->type,
+             md->subtype, &md->frames);
+      md->extra = padding_frames(md->frames);
+      return true;
+   }
+
+   err = chd_get_metadata(chd, GDROM_TRACK_METADATA_TAG, idx, meta,
+                          sizeof(meta), &meta_size, NULL, NULL);
+   if (err == CHDERR_NONE)
+   {
+      sscanf(meta, GDROM_TRACK_METADATA_FORMAT, &md->track, md->type,
+             md->subtype, &md->frames, &md->pad, &md->pregap, md->pgtype,
+             md->pgsub, &md->postgap);
       md->extra = padding_frames(md->frames);
       return true;
    }
