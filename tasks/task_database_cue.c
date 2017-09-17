@@ -124,29 +124,6 @@ static ssize_t get_token(intfstream_t *fd, char *token, size_t max_len)
    }
 }
 
-static int find_token(intfstream_t *fd, const char *token)
-{
-   int     tmp_len = (int)strlen(token);
-   char *tmp_token = (char*)calloc(tmp_len+1, 1);
-
-   if (!tmp_token)
-      return -1;
-
-   while (strncmp(tmp_token, token, tmp_len) != 0)
-   {
-      if (get_token(fd, tmp_token, tmp_len) <= 0)
-      {
-         free(tmp_token);
-         return -1;
-      }
-   }
-
-   free(tmp_token);
-
-   return 0;
-}
-
-
 static int detect_ps1_game_sub(intfstream_t *fp,
       char *game_id, int sub_channel_mixed)
 {
@@ -402,13 +379,51 @@ clean:
    return rv;
 }
 
-int find_first_data_track(const char *cue_path,
-      int32_t *offset, char *track_path, size_t max_len)
+static ssize_t get_file_size(const char *path)
+{
+   ssize_t rv;
+   RFILE *fd = filestream_open(path, RFILE_MODE_READ, -1);
+   if (fd == NULL) {
+      return -1;
+   }
+   rv = filestream_get_size(fd);
+   filestream_close(fd);
+   return rv;
+}
+
+static bool update_cand(ssize_t *cand_index, ssize_t *last_index,
+                        size_t *largest, char *last_file, size_t *offset,
+                        size_t *size, char *track_path, size_t max_len)
+{
+  if (*cand_index != -1) {
+    if (*last_index - *cand_index > *largest) {
+      *largest = *last_index - *cand_index;
+      strlcpy(track_path, last_file, max_len);
+      *offset = *cand_index;
+      *size = *largest;
+      *cand_index = -1;
+      return true;
+    }
+    *cand_index = -1;
+  }
+  return false;
+}
+
+int find_track(const char *cue_path, bool first,
+      size_t *offset, size_t *size, char *track_path, size_t max_len)
 {
    int rv;
+   char *tmp_token = malloc(MAX_TOKEN_LEN);
+   char *last_file = malloc(PATH_MAX_LENGTH + 1);
    intfstream_info_t info;
    intfstream_t *fd = NULL;
-   char * tmp_token = malloc(MAX_TOKEN_LEN * sizeof(char));
+   ssize_t last_index = -1;
+   ssize_t cand_index = -1;
+   int32_t cand_track = -1;
+   int32_t track = 0;
+   size_t largest = 0;
+   ssize_t volatile file_size = -1;
+   bool is_data = false;
 
    info.type        = INTFSTREAM_FILE;
 
@@ -429,31 +444,48 @@ int find_first_data_track(const char *cue_path,
 
    tmp_token[0] = '\0';
 
+   rv = -EINVAL;
+
    while (get_token(fd, tmp_token, MAX_TOKEN_LEN) > 0)
    {
       if (string_is_equal(tmp_token, "FILE"))
       {
-         char *cue_dir = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-
+         char *cue_dir = (char*)malloc(PATH_MAX_LENGTH);
          cue_dir[0]    = '\0';
 
-         fill_pathname_basedir(cue_dir, cue_path, PATH_MAX_LENGTH * sizeof(char));
+         /* Set last index to last EOF */
+         if (file_size != -1) {
+            last_index = file_size;
+         }
+
+         /* We're changing files since the candidate, update it */
+         if (update_cand(&cand_index, &last_index, &largest, last_file, offset,
+                         size, track_path, max_len)) {
+            rv = 0;
+            if (first) {
+               goto clean;
+            }
+         }
+
+         fill_pathname_basedir(cue_dir, cue_path, PATH_MAX_LENGTH);
 
          get_token(fd, tmp_token, MAX_TOKEN_LEN);
-         fill_pathname_join(track_path, cue_dir, tmp_token, max_len);
+         fill_pathname_join(last_file, cue_dir, tmp_token, PATH_MAX_LENGTH);
+
+         file_size = get_file_size(last_file);
 
          free(cue_dir);
+         get_token(fd, tmp_token, MAX_TOKEN_LEN);
+
       }
       else if (string_is_equal(tmp_token, "TRACK"))
       {
+         get_token(fd, tmp_token, MAX_TOKEN_LEN);
+         get_token(fd, tmp_token, MAX_TOKEN_LEN);
+         is_data = !string_is_equal(tmp_token, "AUDIO");
+         ++track;
+      } else if (string_is_equal(tmp_token, "INDEX")) {
          int m, s, f;
-         get_token(fd, tmp_token, MAX_TOKEN_LEN);
-         get_token(fd, tmp_token, MAX_TOKEN_LEN);
-
-         if (string_is_equal(tmp_token, "AUDIO"))
-            continue;
-
-         find_token(fd, "INDEX");
          get_token(fd, tmp_token, MAX_TOKEN_LEN);
          get_token(fd, tmp_token, MAX_TOKEN_LEN);
 
@@ -463,22 +495,43 @@ int find_first_data_track(const char *cue_path,
             goto error;
          }
 
-         *offset = ((m * 60) * (s * 75) * f) * 25;
+         last_index = (size_t) (((m * 60 + s) * 75) + f) * 2352;
 
-         rv = 0;
-         goto clean;
+         /* If we've changed tracks since the candidate, update it */
+         if (cand_track != -1 && track != cand_track &&
+             update_cand(&cand_index, &last_index, &largest, last_file, offset,
+                         size, track_path, max_len)) {
+            rv = 0;
+            if (first) {
+               goto clean;
+            }
+         }
+
+         if (!is_data) {
+            continue;
+         }
+
+         if (cand_index == -1) {
+            cand_index = last_index;
+            cand_track = track;
+         }
       }
    }
 
-   rv = -EINVAL;
+   if (update_cand(&cand_index, &last_index, &largest, last_file, offset,
+                   size, track_path, max_len)) {
+      rv = 0;
+   }
 
 clean:
    free(tmp_token);
+   free(last_file);
    intfstream_close(fd);
    return rv;
 
 error:
    free(tmp_token);
+   free(last_file);
    if (fd)
       intfstream_close(fd);
    return -errno;
