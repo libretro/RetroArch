@@ -1,5 +1,6 @@
-// license:BSD-3-Clause
-// copyright-holders:Aaron Giles
+/* license:BSD-3-Clause
+ * copyright-holders:Aaron Giles 
+ */
 /***************************************************************************
 
     bitstream.c
@@ -11,15 +12,17 @@
 #include "bitstream.h"
 #include <stdlib.h>
 
-//**************************************************************************
-//  INLINE FUNCTIONS
-//**************************************************************************
+/***************************************************************************
+ *  INLINE FUNCTIONS
+ ***************************************************************************
+ */
 
 int bitstream_overflow(struct bitstream* bitstream) { return ((bitstream->doffset - bitstream->bits / 8) > bitstream->dlength); }
 
-//-------------------------------------------------
-//  create_bitstream - constructor
-//-------------------------------------------------
+/*-------------------------------------------------
+ *  create_bitstream - constructor
+ *-------------------------------------------------
+ */
 
 struct bitstream* create_bitstream(const void *src, uint32_t srclength)
 {
@@ -33,17 +36,18 @@ struct bitstream* create_bitstream(const void *src, uint32_t srclength)
 }
 
 
-//-----------------------------------------------------
-//  bitstream_peek - fetch the requested number of bits
-//  but don't advance the input pointer
-//-----------------------------------------------------
+/*-----------------------------------------------------
+ *  bitstream_peek - fetch the requested number of bits
+ *  but don't advance the input pointer
+ *-----------------------------------------------------
+ */
 
 uint32_t bitstream_peek(struct bitstream* bitstream, int numbits)
 {
 	if (numbits == 0)
 		return 0;
 
-	// fetch data if we need more
+	/* fetch data if we need more */
 	if (numbits > bitstream->bits)
 	{
 		while (bitstream->bits <= 24)
@@ -55,15 +59,16 @@ uint32_t bitstream_peek(struct bitstream* bitstream, int numbits)
 		}
 	}
 
-	// return the data
+	/* return the data */
 	return bitstream->buffer >> (32 - numbits);
 }
 
 
-//-----------------------------------------------------
-//  bitstream_remove - advance the input pointer by the
-//  specified number of bits
-//-----------------------------------------------------
+/*-----------------------------------------------------
+ *  bitstream_remove - advance the input pointer by the
+ *  specified number of bits
+ *-----------------------------------------------------
+ */
 
 void bitstream_remove(struct bitstream* bitstream, int numbits)
 {
@@ -72,9 +77,10 @@ void bitstream_remove(struct bitstream* bitstream, int numbits)
 }
 
 
-//-----------------------------------------------------
-//  bitstream_read - fetch the requested number of bits
-//-----------------------------------------------------
+/*-----------------------------------------------------
+ *  bitstream_read - fetch the requested number of bits
+ *-----------------------------------------------------
+ */
 
 uint32_t bitstream_read(struct bitstream* bitstream, int numbits)
 {
@@ -84,9 +90,10 @@ uint32_t bitstream_read(struct bitstream* bitstream, int numbits)
 }
 
 
-//-------------------------------------------------
-//  read_offset - return the current read offset
-//-------------------------------------------------
+/*-------------------------------------------------
+ *  read_offset - return the current read offset
+ *-------------------------------------------------
+ */
 
 uint32_t bitstream_read_offset(struct bitstream* bitstream)
 {

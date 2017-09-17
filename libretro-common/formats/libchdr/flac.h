@@ -14,7 +14,8 @@
 #define __FLAC_H__
 
 #include <stdint.h>
-#include "FLAC/all.h"
+#include "FLAC/ordinals.h"
+#include "FLAC/stream_decoder.h"
 
 //**************************************************************************
 //  TYPE DEFINITIONS

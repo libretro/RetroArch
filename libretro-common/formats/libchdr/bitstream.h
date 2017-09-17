@@ -1,6 +1,6 @@
-// license:BSD-3-Clause
-// copyright-holders:Aaron Giles
-/***************************************************************************
+/* license:BSD-3-Clause
+ * copyright-holders:Aaron Giles
+ ***************************************************************************
 
     bitstream.h
 
@@ -15,18 +15,19 @@
 
 #include <stdint.h>
 
-//**************************************************************************
-//  TYPE DEFINITIONS
-//**************************************************************************
+/***************************************************************************
+ *  TYPE DEFINITIONS
+ ***************************************************************************
+ */
 
-// helper class for reading from a bit buffer
+/* helper class for reading from a bit buffer */
 struct bitstream
 {
-	uint32_t          buffer;       // current bit accumulator
-	int               bits;         // number of bits in the accumulator
-	const uint8_t *   read;         // read pointer
-	uint32_t          doffset;      // byte offset within the data
-	uint32_t          dlength;      // length of the data
+	uint32_t          buffer;       /* current bit accumulator */
+	int               bits;         /* number of bits in the accumulator */
+	const uint8_t *   read;         /* read pointer */
+	uint32_t          doffset;      /* byte offset within the data */
+	uint32_t          dlength;      /* length of the data */
 };
 
 struct bitstream* 	create_bitstream(const void *src, uint32_t srclength);

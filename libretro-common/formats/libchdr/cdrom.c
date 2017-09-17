@@ -15,6 +15,7 @@
     schemes will differ after track 1!
 
 ***************************************************************************/
+#ifdef WANT_RAW_DATA_SECTOR
 
 #include <assert.h>
 #include <string.h>
@@ -307,7 +308,7 @@ static const uint16_t qoffsets[ECC_Q_NUM_BYTES][ECC_Q_COMP] =
 //  particular to a mode
 //-------------------------------------------------
 
-static uint8_t ecc_source_byte(const uint8_t *sector, uint32_t offset)
+static inline uint8_t ecc_source_byte(const uint8_t *sector, uint32_t offset)
 {
 	// in mode 2 always treat these as 0 bytes
 	return (sector[MODE_OFFSET] == 2 && offset < 4) ? 0x00 : sector[SYNC_OFFSET + SYNC_NUM_BYTES + offset];
@@ -329,9 +330,8 @@ static uint8_t ecc_source_byte(const uint8_t *sector, uint32_t offset)
 
 void ecc_compute_bytes(const uint8_t *sector, const uint16_t *row, int rowlen, uint8_t *val1, uint8_t *val2)
 {
-   int component;
 	*val1 = *val2 = 0;
-	for (component = 0; component < rowlen; component++)
+	for (int component = 0; component < rowlen; component++)
 	{
 		*val1 ^= ecc_source_byte(sector, row[component]);
 		*val2 ^= ecc_source_byte(sector, row[component]);
@@ -355,10 +355,8 @@ void ecc_compute_bytes(const uint8_t *sector, const uint16_t *row, int rowlen, u
 
 int ecc_verify(const uint8_t *sector)
 {
-   int byte;
-   
 	// first verify P bytes
-	for (byte = 0; byte < ECC_P_NUM_BYTES; byte++)
+	for (int byte = 0; byte < ECC_P_NUM_BYTES; byte++)
 	{
 		uint8_t val1, val2;
 		ecc_compute_bytes(sector, poffsets[byte], ECC_P_COMP, &val1, &val2);
@@ -367,7 +365,7 @@ int ecc_verify(const uint8_t *sector)
 	}
 
 	// then verify Q bytes
-	for (byte = 0; byte < ECC_Q_NUM_BYTES; byte++)
+	for (int byte = 0; byte < ECC_Q_NUM_BYTES; byte++)
 	{
 		uint8_t val1, val2;
 		ecc_compute_bytes(sector, qoffsets[byte], ECC_Q_COMP, &val1, &val2);
@@ -390,13 +388,12 @@ int ecc_verify(const uint8_t *sector)
 
 void ecc_generate(uint8_t *sector)
 {
-   int byte;
 	// first verify P bytes
-	for (byte = 0; byte < ECC_P_NUM_BYTES; byte++)
+	for (int byte = 0; byte < ECC_P_NUM_BYTES; byte++)
 		ecc_compute_bytes(sector, poffsets[byte], ECC_P_COMP, &sector[ECC_P_OFFSET + byte], &sector[ECC_P_OFFSET + ECC_P_NUM_BYTES + byte]);
 
 	// then verify Q bytes
-	for (byte = 0; byte < ECC_Q_NUM_BYTES; byte++)
+	for (int byte = 0; byte < ECC_Q_NUM_BYTES; byte++)
 		ecc_compute_bytes(sector, qoffsets[byte], ECC_Q_COMP, &sector[ECC_Q_OFFSET + byte], &sector[ECC_Q_OFFSET + ECC_Q_NUM_BYTES + byte]);
 }
 
@@ -415,3 +412,5 @@ void ecc_clear(uint8_t *sector)
 	memset(&sector[ECC_P_OFFSET], 0, 2 * ECC_P_NUM_BYTES);
 	memset(&sector[ECC_Q_OFFSET], 0, 2 * ECC_Q_NUM_BYTES);
 }
+
+#endif /* WANT_RAW_DATA_SECTOR */

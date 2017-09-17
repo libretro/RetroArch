@@ -24,6 +24,8 @@
 #include <file/file_path.h>
 #include <encodings/crc32.h>
 #include <streams/file_stream.h>
+#include <streams/chd_stream.h>
+#include <streams/interface_stream.h>
 #include "tasks_internal.h"
 
 #include "../database_info.h"
@@ -69,13 +71,60 @@ typedef struct db_handle
 int find_first_data_track(const char* cue_path,
       int32_t* offset, char* track_path, size_t max_len);
 
-int detect_system(const char* track_path, const char** system_name);
+int detect_system(intfstream_t *fd, const char** system_name);
 
-int detect_ps1_game(const char *track_path, char *game_id);
+int detect_ps1_game(intfstream_t *fd, char *game_id);
 
-int detect_psp_game(const char *track_path, char *game_id);
+int detect_psp_game(intfstream_t *fd, char *game_id);
 
-int detect_serial_ascii_game(const char *track_path, char *game_id);
+int detect_serial_ascii_game(intfstream_t *fd, char *game_id);
+
+static intfstream_t*
+open_file(const char *path)
+{
+   intfstream_info_t info;
+   intfstream_t *fd = NULL;
+
+   info.type = INTFSTREAM_FILE;
+
+   fd = intfstream_init(&info);
+   if (!fd)
+   {
+      return NULL;
+   }
+
+   if (!intfstream_open(fd, path, RFILE_MODE_READ, -1))
+   {
+      intfstream_close(fd);
+      return NULL;
+   }
+
+   return fd;
+}
+
+static intfstream_t*
+open_chd_track(const char *path, int32_t track)
+{
+   intfstream_info_t info;
+   intfstream_t *fd = NULL;
+
+   info.type = INTFSTREAM_CHD;
+   info.chd.track = track;
+
+   fd = intfstream_init(&info);
+   if (!fd)
+   {
+      return NULL;
+   }
+
+   if (!intfstream_open(fd, path, RFILE_MODE_READ, -1))
+   {
+      intfstream_close(fd);
+      return NULL;
+   }
+
+   return fd;
+}
 
 static void database_info_set_type(database_info_handle_t *handle, enum database_type type)
 {
@@ -137,16 +186,16 @@ static int task_database_iterate_start(database_info_handle_t *db,
    return 0;
 }
 
-static int iso_get_serial(database_state_handle_t *db_state,
-      database_info_handle_t *db, const char *name, char* serial)
+static int stream_get_serial(database_state_handle_t *db_state,
+      database_info_handle_t *db, intfstream_t *fd, char* serial)
 {
    const char* system_name = NULL;
 
    /* Check if the system was not auto-detected. */
-   if (detect_system(name, &system_name) < 0)
+   if (detect_system(fd, &system_name) < 0)
    {
       /* Attempt to read an ASCII serial, like Wii. */
-      if (detect_serial_ascii_game(name, serial))
+      if (detect_serial_ascii_game(fd, serial))
       {
          /* ASCII serial (Wii) was detected. */
          RARCH_LOG("%s '%s'\n", msg_hash_to_str(MSG_FOUND_DISK_LABEL), serial);
@@ -159,18 +208,38 @@ static int iso_get_serial(database_state_handle_t *db_state,
 
    if (string_is_equal_fast(system_name, "psp", 3))
    {
-      if (detect_psp_game(name, serial) == 0)
+      if (detect_psp_game(fd, serial) == 0)
          return 0;
       RARCH_LOG("%s '%s'\n", msg_hash_to_str(MSG_FOUND_DISK_LABEL), serial);
    }
    else if (string_is_equal_fast(system_name, "ps1", 3))
    {
-      if (detect_ps1_game(name, serial) == 0)
+      if (detect_ps1_game(fd, serial) == 0)
          return 0;
       RARCH_LOG("%s '%s'\n", msg_hash_to_str(MSG_FOUND_DISK_LABEL), serial);
    }
+   else
+   {
+      return 0;
+   }
 
-   return 0;
+   return 1;
+}
+
+static int iso_get_serial(database_state_handle_t *db_state,
+      database_info_handle_t *db, const char *name, char* serial)
+{
+   intfstream_t *fd = open_file(name);
+   int rv;
+
+   if (!fd)
+   {
+      return 0;
+   }
+
+   rv = stream_get_serial(db_state, db, fd, serial);
+   intfstream_close(fd);
+   return rv;
 }
 
 static int cue_get_serial(database_state_handle_t *db_state,
@@ -193,7 +262,7 @@ static int cue_get_serial(database_state_handle_t *db_state,
             msg_hash_to_str(MSG_COULD_NOT_FIND_VALID_DATA_TRACK),
             strerror(-rv));
       free(track_path);
-      return rv;
+      return 0;
    }
 
    RARCH_LOG("%s\n", msg_hash_to_str(MSG_READING_FIRST_DATA_TRACK));
@@ -202,6 +271,23 @@ static int cue_get_serial(database_state_handle_t *db_state,
    free(track_path);
 
    return ret;
+}
+
+static int chd_get_serial(database_state_handle_t *db_state,
+      database_info_handle_t *db, const char *name, char* serial)
+{
+   intfstream_t *fd = NULL;
+   int result;
+
+   fd = open_chd_track(name, CHDSTREAM_TRACK_FIRST_DATA);
+   if (!fd)
+   {
+      return 0;
+   }
+
+   result = stream_get_serial(db_state, db, fd, serial);
+   intfstream_close(fd);
+   return result;
 }
 
 static bool file_get_crc(database_state_handle_t *db_state,
@@ -215,6 +301,37 @@ static bool file_get_crc(database_state_handle_t *db_state,
       return 0;
 
    *crc = encoding_crc32(0, db_state->buf, ret);
+
+   return 1;
+}
+
+static bool chd_get_crc(database_state_handle_t *db_state,
+      const char *name, uint32_t *crc)
+{
+   intfstream_t *fd = NULL;
+   int result;
+   uint32_t acc = 0;
+   uint8_t buffer[4096];
+   ssize_t size;
+
+   fd = open_chd_track(name, CHDSTREAM_TRACK_FIRST_DATA);
+   if (!fd)
+   {
+      return 0;
+   }
+
+   while ((size = intfstream_read(fd, buffer, sizeof(buffer))) > 0)
+   {
+      acc = encoding_crc32(acc, buffer, size);
+   }
+   if (size < 0)
+   {
+      return 0;
+   }
+
+   RARCH_LOG("CHD '%s' crc: %x\n", name, acc);
+
+   *crc = acc;
 
    return 1;
 }
@@ -235,13 +352,32 @@ static int task_database_iterate_playlist(
 #endif
       case FILE_TYPE_CUE:
          db_state->serial[0] = '\0';
-         cue_get_serial(db_state, db, name, db_state->serial);
-         database_info_set_type(db, DATABASE_TYPE_SERIAL_LOOKUP);
+         if (cue_get_serial(db_state, db, name, db_state->serial))
+         {
+            database_info_set_type(db, DATABASE_TYPE_SERIAL_LOOKUP);
+         }
+         else
+         {
+            database_info_set_type(db, DATABASE_TYPE_CRC_LOOKUP);
+            return file_get_crc(db_state, name, &db_state->crc);
+         }
          break;
       case FILE_TYPE_ISO:
          db_state->serial[0] = '\0';
          iso_get_serial(db_state, db, name, db_state->serial);
          database_info_set_type(db, DATABASE_TYPE_SERIAL_LOOKUP);
+         break;
+      case FILE_TYPE_CHD:
+         db_state->serial[0] = '\0';
+         if (chd_get_serial(db_state, db, name, db_state->serial))
+         {
+            database_info_set_type(db, DATABASE_TYPE_SERIAL_LOOKUP);
+         }
+         else
+         {
+            database_info_set_type(db, DATABASE_TYPE_CRC_LOOKUP);
+            return chd_get_crc(db_state, name, &db_state->crc);
+         }
          break;
       case FILE_TYPE_LUTRO:
          database_info_set_type(db, DATABASE_TYPE_ITERATE_LUTRO);
