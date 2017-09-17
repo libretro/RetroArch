@@ -1306,6 +1306,27 @@ ifeq ($(HAVE_7ZIP),1)
 			  $(7ZOBJ)
 endif
 
+ifeq ($(HAVE_FLAC),1)
+   CFLAGS  += -I$(DEPS_DIR)/libFLAC/include
+   DEFINES += -DHAVE_FLAC -DHAVE_STDINT_H -DHAVE_LROUND -DFLAC__HAS_OGG=0 \
+              -DPACKAGE_VERSION="\"retroarch\""
+   FLACOBJ = $(DEPS_DIR)/libFLAC/bitmath.o \
+             $(DEPS_DIR)/libFLAC/bitreader.o \
+             $(DEPS_DIR)/libFLAC/cpu.o \
+             $(DEPS_DIR)/libFLAC/crc.o \
+             $(DEPS_DIR)/libFLAC/fixed.o \
+             $(DEPS_DIR)/libFLAC/float.o \
+             $(DEPS_DIR)/libFLAC/format.o \
+             $(DEPS_DIR)/libFLAC/lpc.o \
+             $(DEPS_DIR)/libFLAC/lpc_intrin_avx2.o \
+             $(DEPS_DIR)/libFLAC/lpc_intrin_sse2.o \
+             $(DEPS_DIR)/libFLAC/lpc_intrin_sse41.o \
+             $(DEPS_DIR)/libFLAC/lpc_intrin_sse.o \
+             $(DEPS_DIR)/libFLAC/md5.o \
+             $(DEPS_DIR)/libFLAC/memory.o \
+             $(DEPS_DIR)/libFLAC/stream_decoder.o
+   OBJ += $(FLACOBJ)
+endif
 
 ifeq ($(HAVE_ZLIB), 1)
    OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file_zlib.o \
