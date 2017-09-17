@@ -22,6 +22,8 @@
 #include <assert.h>
 #include <string.h>
 
+#include <retro_inline.h>
+
 #include "cdrom.h"
 
 /***************************************************************************
