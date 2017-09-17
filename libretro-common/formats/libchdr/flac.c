@@ -1,5 +1,6 @@
-// license:BSD-3-Clause
-// copyright-holders:Aaron Giles
+/* license:BSD-3-Clause
+ * copyright-holders:Aaron Giles
+ */
 /***************************************************************************
 
     flac.c
@@ -12,9 +13,10 @@
 #include <string.h>
 #include "flac.h"
 
-//**************************************************************************
-//  FLAC DECODER
-//**************************************************************************
+/***************************************************************************
+ *  FLAC DECODER
+ ***************************************************************************
+ */
 
 static FLAC__StreamDecoderReadStatus flac_decoder_read_callback_static(const FLAC__StreamDecoder *decoder, FLAC__byte buffer[], size_t *bytes, void *client_data);
 FLAC__StreamDecoderReadStatus flac_decoder_read_callback(void* client_data, FLAC__byte buffer[], size_t *bytes);

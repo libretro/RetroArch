@@ -453,7 +453,7 @@ int huffman_build_tree(struct huffman_decoder* decoder, uint32_t totaldata, uint
 		node->numbits = 0;
 		node->bits = 0;
 
-		// if we have a non-zero weight, compute the number of bits
+		/* if we have a non-zero weight, compute the number of bits */
 		if (node->weight > 0)
 		{
 			/* determine the number of bits for this node */

@@ -1,5 +1,7 @@
-// license:BSD-3-Clause
-// copyright-holders:Aaron Giles
+/* license:BSD-3-Clause
+ *
+ * copyright-holders:Aaron Giles
+ */
 /***************************************************************************
 
     cdrom.c
@@ -302,15 +304,16 @@ static const uint16_t qoffsets[ECC_Q_NUM_BYTES][ECC_Q_COMP] =
 };
 
 
-//-------------------------------------------------
-//  ecc_source_byte - return data from the sector
-//  at the given offset, masking anything
-//  particular to a mode
-//-------------------------------------------------
+/*-------------------------------------------------
+ *  ecc_source_byte - return data from the sector
+ *  at the given offset, masking anything
+ *  particular to a mode
+ *-------------------------------------------------
+ */
 
-static inline uint8_t ecc_source_byte(const uint8_t *sector, uint32_t offset)
+static INLINE uint8_t ecc_source_byte(const uint8_t *sector, uint32_t offset)
 {
-	// in mode 2 always treat these as 0 bytes
+	/* in mode 2 always treat these as 0 bytes */
 	return (sector[MODE_OFFSET] == 2 && offset < 4) ? 0x00 : sector[SYNC_OFFSET + SYNC_NUM_BYTES + offset];
 }
 
@@ -330,8 +333,9 @@ static inline uint8_t ecc_source_byte(const uint8_t *sector, uint32_t offset)
 
 void ecc_compute_bytes(const uint8_t *sector, const uint16_t *row, int rowlen, uint8_t *val1, uint8_t *val2)
 {
+   int component;
 	*val1 = *val2 = 0;
-	for (int component = 0; component < rowlen; component++)
+	for (component = 0; component < rowlen; component++)
 	{
 		*val1 ^= ecc_source_byte(sector, row[component]);
 		*val2 ^= ecc_source_byte(sector, row[component]);
@@ -355,8 +359,9 @@ void ecc_compute_bytes(const uint8_t *sector, const uint16_t *row, int rowlen, u
 
 int ecc_verify(const uint8_t *sector)
 {
-	// first verify P bytes
-	for (int byte = 0; byte < ECC_P_NUM_BYTES; byte++)
+   int byte;
+	/* first verify P bytes */
+	for (byte = 0; byte < ECC_P_NUM_BYTES; byte++)
 	{
 		uint8_t val1, val2;
 		ecc_compute_bytes(sector, poffsets[byte], ECC_P_COMP, &val1, &val2);
@@ -364,8 +369,8 @@ int ecc_verify(const uint8_t *sector)
 			return 0;
 	}
 
-	// then verify Q bytes
-	for (int byte = 0; byte < ECC_Q_NUM_BYTES; byte++)
+	/* then verify Q bytes */
+	for (byte = 0; byte < ECC_Q_NUM_BYTES; byte++)
 	{
 		uint8_t val1, val2;
 		ecc_compute_bytes(sector, qoffsets[byte], ECC_Q_COMP, &val1, &val2);
@@ -388,12 +393,13 @@ int ecc_verify(const uint8_t *sector)
 
 void ecc_generate(uint8_t *sector)
 {
-	// first verify P bytes
-	for (int byte = 0; byte < ECC_P_NUM_BYTES; byte++)
+   int byte;
+	/* first verify P bytes */
+	for (byte = 0; byte < ECC_P_NUM_BYTES; byte++)
 		ecc_compute_bytes(sector, poffsets[byte], ECC_P_COMP, &sector[ECC_P_OFFSET + byte], &sector[ECC_P_OFFSET + ECC_P_NUM_BYTES + byte]);
 
-	// then verify Q bytes
-	for (int byte = 0; byte < ECC_Q_NUM_BYTES; byte++)
+	/* then verify Q bytes */
+	for (byte = 0; byte < ECC_Q_NUM_BYTES; byte++)
 		ecc_compute_bytes(sector, qoffsets[byte], ECC_Q_COMP, &sector[ECC_Q_OFFSET + byte], &sector[ECC_Q_OFFSET + ECC_Q_NUM_BYTES + byte]);
 }
 

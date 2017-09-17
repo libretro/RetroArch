@@ -53,8 +53,8 @@ enum
 	CD_SUB_NONE                 /* no subcode data stored */
 };
 
-#define CD_FLAG_GDROM   0x00000001  // disc is a GD-ROM, all tracks should be stored with GD-ROM metadata
-#define CD_FLAG_GDROMLE 0x00000002  // legacy GD-ROM, with little-endian CDDA data
+#define CD_FLAG_GDROM   0x00000001  /* disc is a GD-ROM, all tracks should be stored with GD-ROM metadata */
+#define CD_FLAG_GDROMLE 0x00000002  /* legacy GD-ROM, with little-endian CDDA data */
 
 /***************************************************************************
     FUNCTION PROTOTYPES
