@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2017 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (memory_stream.c).
+ * The following license statement only applies to this file (chd_stream.c).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -36,25 +36,25 @@
 struct chdstream
 {
    chd_file *chd;
-   // Should we swap bytes?
+   /* Should we swap bytes? */
    bool swab;
-   // Size of frame taken from each hunk
+   /* Size of frame taken from each hunk */
    uint32_t frame_size;
-   // Offset of data within frame
+   /* Offset of data within frame */
    uint32_t frame_offset;
-   // Number of frames per hunk
+   /* Number of frames per hunk */
    uint32_t frames_per_hunk;
-   // First frame of track in chd
+   /* First frame of track in chd */
    uint32_t track_frame;
-   // Byte offset where track data starts (after pregap)
+   /* Byte offset where track data starts (after pregap) */
    size_t track_start;
-   // Byte offset where track data ends
+   /* Byte offset where track data ends */
    size_t track_end;
-   // Byte offset of read cursor
+   /* Byte offset of read cursor */
    size_t offset;
-   // Loaded hunk number
+   /* Loaded hunk number */
    int32_t hunknum;
-   // Loaded hunk
+   /* Loaded hunk */
    uint8_t *hunkmem;
 };
 
@@ -72,8 +72,7 @@ typedef struct metadata {
    uint32_t track;
 } metadata_t;
 
-static uint32_t
-padding_frames(uint32_t frames)
+static uint32_t padding_frames(uint32_t frames)
 {
    return ((frames + TRACK_PAD - 1) & ~(TRACK_PAD - 1)) - frames;
 }
@@ -81,17 +80,19 @@ padding_frames(uint32_t frames)
 static bool
 chdstream_get_meta(chd_file *chd, int idx, metadata_t *md)
 {
-   chd_error err;
    char meta[256];
    uint32_t meta_size = 0;
+   chd_error err      = chd_get_metadata(
+         chd, CDROM_TRACK_METADATA2_TAG, idx, meta,
+         sizeof(meta), &meta_size, NULL, NULL);
 
-   err = chd_get_metadata(chd, CDROM_TRACK_METADATA2_TAG, idx, meta,
-                          sizeof(meta), &meta_size, NULL, NULL);
    if (err == CHDERR_NONE)
    {
-      sscanf(meta, CDROM_TRACK_METADATA2_FORMAT, &md->track, md->type,
-             md->subtype, &md->frames, &md->pregap, md->pgtype, md->pgsub,
-             &md->postgap);
+      sscanf(meta, CDROM_TRACK_METADATA2_FORMAT,
+            &md->track, md->type,
+            md->subtype, &md->frames, &md->pregap,
+            md->pgtype, md->pgsub,
+            &md->postgap);
       md->extra = padding_frames(md->frames);
       return true;
    }
@@ -100,7 +101,8 @@ chdstream_get_meta(chd_file *chd, int idx, metadata_t *md)
                           sizeof(meta), &meta_size, NULL, NULL);
    if (err == CHDERR_NONE)
    {
-      sscanf(meta, CDROM_TRACK_METADATA_FORMAT, &md->track, md->type, md->subtype, &md->frames);
+      sscanf(meta, CDROM_TRACK_METADATA_FORMAT,
+            &md->track, md->type, md->subtype, &md->frames);
       md->extra = padding_frames(md->frames);
       return true;
    }
@@ -119,23 +121,17 @@ chdstream_find_track(chd_file *fd, int32_t track, metadata_t *meta)
    {
       if (!chdstream_get_meta(fd, i, meta))
       {
-         if (track == CHDSTREAM_TRACK_LAST)
-         {
-            meta->frame_offset -= meta->frames + meta->extra;
-            return true;
-         }
-         else
-         {
+         if (track != CHDSTREAM_TRACK_LAST)
             return false;
-         }
+
+         meta->frame_offset -= meta->frames + meta->extra;
+         return true;
       }
 
       if ((track == CHDSTREAM_TRACK_FIRST_DATA &&
            strcmp(meta->type, "AUDIO")) ||
           (track > 0 && track == meta->track))
-      {
          return true;
-      }
 
       meta->frame_offset += meta->frames + meta->extra;
    }
@@ -143,36 +139,27 @@ chdstream_find_track(chd_file *fd, int32_t track, metadata_t *meta)
 
 chdstream_t *chdstream_open(const char *path, int32_t track)
 {
-   chdstream_t *stream = NULL;
-   chd_file *chd = NULL;
    metadata_t meta;
-   chd_error err;
-   const chd_header *hd;
-   uint32_t pregap;
+   uint32_t pregap      = 0;
+   const chd_header *hd = NULL;
+   chdstream_t *stream  = NULL;
+   chd_file *chd        = NULL;
+   chd_error err        = chd_open(path, CHD_OPEN_READ, NULL, &chd);
 
-   err = chd_open(path, CHD_OPEN_READ, NULL, &chd);
    if (err != CHDERR_NONE)
-   {
       goto error;
-   }
 
    if (!chdstream_find_track(chd, track, &meta))
-   {
       goto error;
-   }
 
-   stream = calloc(1, sizeof(*stream));
+   stream = (chdstream_t*)calloc(1, sizeof(*stream));
    if (!stream)
-   {
       goto error;
-   }
 
-   hd = chd_get_header(chd);
-   stream->hunkmem = malloc(hd->hunkbytes);
+   hd              = chd_get_header(chd);
+   stream->hunkmem = (uint8_t*)malloc(hd->hunkbytes);
    if (!stream->hunkmem)
-   {
       goto error;
-   }
 
    if (!strcmp(meta.type, "MODE1_RAW"))
    {
@@ -198,22 +185,19 @@ chdstream_t *chdstream_open(const char *path, int32_t track)
 
    /* Only include pregap data if it was in the track file */
    if (!strcmp(meta.type, meta.pgtype))
-   {
       pregap = meta.pregap;
-   }
    else
-   {
       pregap = 0;
-   }
 
 
-   stream->chd = chd;
+   stream->chd             = chd;
    stream->frames_per_hunk = hd->hunkbytes / hd->unitbytes;
-   stream->track_frame = meta.frame_offset;
-   stream->track_start = (size_t) pregap * stream->frame_size;
-   stream->track_end = stream->track_start + (size_t) meta.frames * stream->frame_size;
-   stream->offset = 0;
-   stream->hunknum = -1;
+   stream->track_frame     = meta.frame_offset;
+   stream->track_start     = (size_t) pregap * stream->frame_size;
+   stream->track_end       = stream->track_start + 
+      (size_t) meta.frames * stream->frame_size;
+   stream->offset          = 0;
+   stream->hunknum         = -1;
 
    return stream;
 
@@ -222,9 +206,7 @@ error:
    chdstream_close(stream);
 
    if (chd)
-   {
       chd_close(chd);
-   }
 
    return NULL;
 }
@@ -234,13 +216,9 @@ void chdstream_close(chdstream_t *stream)
    if (stream)
    {
       if (stream->hunkmem)
-      {
          free(stream->hunkmem);
-      }
       if (stream->chd)
-      {
          chd_close(stream->chd);
-      }
       free(stream);
    }
 }
@@ -254,24 +232,18 @@ chdstream_load_hunk(chdstream_t *stream, uint32_t hunknum)
    uint32_t count;
 
    if (hunknum == stream->hunknum)
-   {
       return true;
-   }
 
    err = chd_read(stream->chd, hunknum, stream->hunkmem);
    if (err != CHDERR_NONE)
-   {
       return false;
-   }
 
    if (stream->swab)
    {
       count = chd_get_header(stream->chd)->hunkbytes / 2;
       array = (uint16_t*) stream->hunkmem;
       for (i = 0; i < count; ++i)
-      {
          array[i] = SWAP16(array[i]);
-      }
    }
 
    stream->hunknum = hunknum;
@@ -286,28 +258,24 @@ ssize_t chdstream_read(chdstream_t *stream, void *data, size_t bytes)
    uint32_t chd_frame;
    uint32_t hunk;
    uint32_t amount;
-   size_t data_offset = 0;
+   size_t data_offset   = 0;
    const chd_header *hd = chd_get_header(stream->chd);
-   uint8_t *out = data;
+   uint8_t         *out = data;
 
    if (stream->track_end - stream->offset < bytes)
-   {
       bytes = stream->track_end - stream->offset;
-   }
 
    end = stream->offset + bytes;
    while (stream->offset < end)
    {
       frame_offset = stream->offset % stream->frame_size;
       amount = stream->frame_size - frame_offset;
-      if (amount > end - stream->offset) {
+      if (amount > end - stream->offset)
          amount = end - stream->offset;
-      }
+
+      /* In pregap */
       if (stream->offset < stream->track_start)
-      {
-         // In pregap
          memset(out + data_offset, 0, amount);
-      }
       else
       {
          chd_frame = stream->track_frame +
@@ -321,10 +289,11 @@ ssize_t chdstream_read(chdstream_t *stream, void *data, size_t bytes)
             return -1;
          }
          memcpy(out + data_offset,
-                stream->hunkmem + frame_offset + hunk_offset + stream->frame_offset, amount);
+                stream->hunkmem + frame_offset 
+                + hunk_offset + stream->frame_offset, amount);
       }
 
-      data_offset += amount;
+      data_offset    += amount;
       stream->offset += amount;
    }
 
@@ -336,9 +305,7 @@ int chdstream_getc(chdstream_t *stream)
    char c = 0;
 
    if (chdstream_read(stream, &c, sizeof(c) != sizeof(c)))
-   {
       return EOF;
-   }
 
    return c;
 }
@@ -350,14 +317,10 @@ char *chdstream_gets(chdstream_t *stream, char *buffer, size_t len)
    size_t offset = 0;
 
    while (offset < len && (c = chdstream_getc(stream)) != EOF)
-   {
       buffer[offset++] = c;
-   }
 
    if (offset < len)
-   {
       buffer[offset] = '\0';
-   }
 
    return buffer;
 }
@@ -392,14 +355,10 @@ int chdstream_seek(chdstream_t *stream, ssize_t offset, int whence)
    }
 
    if (new_offset < 0)
-   {
       return -1;
-   }
 
    if (new_offset > stream->track_end)
-   {
       new_offset = stream->track_end;
-   }
 
    stream->offset = new_offset;
    return 0;
