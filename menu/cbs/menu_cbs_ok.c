@@ -128,6 +128,7 @@ int generic_action_ok_displaylist_push(const char *path,
 {
    menu_displaylist_info_t      info;
    char tmp[PATH_MAX_LENGTH];
+   char parent_dir[PATH_MAX_LENGTH];
    enum menu_displaylist_ctl_state dl_type = DISPLAYLIST_NONE;
    const char           *menu_label        = NULL;
    const char            *menu_path        = NULL;
@@ -474,26 +475,22 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type                 = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_PARENT_DIRECTORY_PUSH:
-         {
-            char parent_dir[PATH_MAX_LENGTH];
+         parent_dir[0]  = '\0';
 
-            parent_dir[0]  = '\0';
+         if (path && menu_path)
+            fill_pathname_join(tmp,
+                  menu_path, path, sizeof(tmp));
 
-            if (path && menu_path)
-               fill_pathname_join(tmp,
-                     menu_path, path, sizeof(tmp));
+         fill_pathname_parent_dir(parent_dir,
+               tmp, sizeof(parent_dir));
+         fill_pathname_parent_dir(parent_dir,
+               parent_dir, sizeof(parent_dir));
 
-            fill_pathname_parent_dir(parent_dir,
-                  tmp, sizeof(parent_dir));
-            fill_pathname_parent_dir(parent_dir,
-                  parent_dir, sizeof(parent_dir));
-
-            info.type          = type;
-            info.directory_ptr = idx;
-            info_path          = parent_dir;
-            info_label         = menu_label;
-            dl_type            = DISPLAYLIST_GENERIC;
-         }
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = parent_dir;
+         info_label         = menu_label;
+         dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_DIRECTORY_PUSH:
          if (path && menu_path)
