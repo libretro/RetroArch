@@ -1095,7 +1095,6 @@ enum rarch_shader_type video_shader_parse_type(const char *path,
    switch (msg_hash_to_file_type(
             msg_hash_calculate(path_get_extension(path))))
    {
-      
       case FILE_TYPE_SHADER_CG:
       case FILE_TYPE_SHADER_PRESET_CGP:
          shader_type = RARCH_SHADER_CG;
@@ -1119,20 +1118,25 @@ enum rarch_shader_type video_shader_parse_type(const char *path,
          if (shader_type == RARCH_SHADER_GLSL 
             || (cg_supported && shader_type == RARCH_SHADER_CG))
             return shader_type;
+         break;
       case GFX_CTX_DIRECT3D9_API:
          if (cg_supported && shader_type == RARCH_SHADER_CG)
             return shader_type;
+         break;
       case GFX_CTX_VULKAN_API:
          if (shader_type == RARCH_SHADER_SLANG)
-            return fallback;
+            return shader_type;
+         break;
       case GFX_CTX_GDI_API:
       case GFX_CTX_OPENVG_API:
       case GFX_CTX_DIRECT3D8_API:
       case GFX_CTX_NONE:
       default:
-         RARCH_WARN("Current video context is incompatible with file: %s", path);
-         return fallback;
+         break;
    }
+
+   RARCH_WARN("Current video context is incompatible with file: %s", path);
+   return fallback;
 }
 
 /**
