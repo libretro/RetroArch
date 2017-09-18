@@ -72,7 +72,7 @@ bool intfstream_resize(intfstream_internal_t *intf, intfstream_info_t *info)
       case INTFSTREAM_CHD:
 #ifdef HAVE_CHD
 #endif
-	 break;
+         break;
    }
 
    return true;
@@ -126,7 +126,7 @@ int intfstream_close(intfstream_internal_t *intf)
 #ifdef HAVE_CHD
          chdstream_close(intf->chd.fp);
 #endif
-	 return 0;
+         return 0;
    }
 
    return -1;
@@ -186,7 +186,7 @@ int intfstream_seek(intfstream_internal_t *intf, int offset, int whence)
 #ifdef HAVE_CHD
          return (int)chdstream_seek(intf->chd.fp, offset, whence);
 #else
-	 break;
+         break;
 #endif
    }
 
@@ -208,7 +208,7 @@ ssize_t intfstream_read(intfstream_internal_t *intf, void *s, size_t len)
 #ifdef HAVE_CHD
          return chdstream_read(intf->chd.fp, s, len);
 #else
-	 break;
+         break;
 #endif
    }
 
@@ -250,7 +250,7 @@ char *intfstream_gets(intfstream_internal_t *intf,
 #ifdef HAVE_CHD
          return chdstream_gets(intf->chd.fp, buffer, len);
 #else
-	 break;
+         break;
 #endif
    }
 
