@@ -541,6 +541,34 @@ error:
    return -errno;
 }
 
+bool cue_next_file(intfstream_t *fd, const char *cue_path, char *path, size_t max_len)
+{
+   bool rv = false;
+   char *tmp_token = malloc(MAX_TOKEN_LEN);
+   ssize_t volatile file_size = -1;
+   char *cue_dir = (char*)malloc(PATH_MAX_LENGTH);
+   cue_dir[0]    = '\0';
+
+   fill_pathname_basedir(cue_dir, cue_path, PATH_MAX_LENGTH);
+
+   tmp_token[0] = '\0';
+
+   while (get_token(fd, tmp_token, MAX_TOKEN_LEN) > 0)
+   {
+      if (string_is_equal(tmp_token, "FILE"))
+      {
+         get_token(fd, tmp_token, MAX_TOKEN_LEN);
+         fill_pathname_join(path, cue_dir, tmp_token, max_len);
+         rv = true;
+         break;
+      }
+   }
+
+   free(cue_dir);
+   free(tmp_token);
+   return rv;
+}
+
 int gdi_find_track(const char *gdi_path, bool first, char *track_path, size_t max_len)
 {
    int rv;
@@ -658,4 +686,45 @@ error:
    if (fd)
       intfstream_close(fd);
    return -errno;
+}
+
+bool gdi_next_file(intfstream_t *fd, const char *gdi_path, char *path, size_t max_len)
+{
+   bool rv = false;
+   char *tmp_token = malloc(MAX_TOKEN_LEN);
+   ssize_t offset = -1;
+   char *gdi_dir = (char*)malloc(PATH_MAX_LENGTH);
+
+   gdi_dir[0]    = '\0';
+   tmp_token[0] = '\0';
+
+   fill_pathname_basedir(gdi_dir, gdi_path, PATH_MAX_LENGTH);
+
+   /* Skip initial track count */
+   offset = intfstream_tell(fd);
+   if (offset == 0)
+   {
+      get_token(fd, tmp_token, MAX_TOKEN_LEN);
+   }
+
+   /* Track number */
+   get_token(fd, tmp_token, MAX_TOKEN_LEN);
+   /* Offset */
+   get_token(fd, tmp_token, MAX_TOKEN_LEN);
+   /* Mode */
+   get_token(fd, tmp_token, MAX_TOKEN_LEN);
+   /* Sector size */
+   get_token(fd, tmp_token, MAX_TOKEN_LEN);
+   /* File name */
+   if (get_token(fd, tmp_token, MAX_TOKEN_LEN) > 0)
+   {
+      fill_pathname_join(path, gdi_dir, tmp_token, max_len);
+      rv = true;
+      /* Disc offset */
+      get_token(fd, tmp_token, MAX_TOKEN_LEN);
+   }
+
+   free(gdi_dir);
+   free(tmp_token);
+   return rv;
 }

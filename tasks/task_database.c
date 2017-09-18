@@ -71,7 +71,11 @@ typedef struct db_handle
 int cue_find_track(const char *cue_path, bool first, size_t *offset, size_t *size,
                char *track_path, size_t max_len);
 
+bool cue_next_file(intfstream_t *fd, const char *cue_path, char *path, size_t max_len);
+
 int gdi_find_track(const char *gdi_path, bool first, char *track_path, size_t max_len);
+
+bool gdi_next_file(intfstream_t *fd, const char *gdi_path, char *path, size_t max_len);
 
 int detect_system(intfstream_t *fd, const char** system_name);
 
@@ -180,6 +184,12 @@ static const char *database_info_get_current_element_name(
 {
    if (!handle || !handle->list)
       return NULL;
+   /* Skip pruned entries */
+   while (handle->list->elems[handle->list_ptr].data == NULL)
+   {
+      if (++handle->list_ptr >= handle->list->size)
+         return NULL;
+   }
    return handle->list->elems[handle->list_ptr].data;
 }
 
@@ -514,6 +524,58 @@ static bool chd_get_crc(const char *name, uint32_t *crc)
    return rv;
 }
 
+static void cue_prune(database_info_handle_t *db, const char *name)
+{
+   char *path = (char *)malloc(PATH_MAX_LENGTH + 1);
+   intfstream_t *fd = open_file(name);
+   size_t i;
+
+   if (!fd)
+   {
+      free(path);
+      return;
+   }
+
+   while (cue_next_file(fd, name, path, PATH_MAX_LENGTH))
+   {
+      for (i = db->list_ptr; i < db->list->size; ++i)
+      {
+         if (db->list->elems[i].data && !strcmp(path, db->list->elems[i].data))
+         {
+            RARCH_LOG("Pruning file referenced by cue: %s\n", path);
+            free(db->list->elems[i].data);
+            db->list->elems[i].data = NULL;
+         }
+      }
+   }
+}
+
+static void gdi_prune(database_info_handle_t *db, const char *name)
+{
+   char *path = (char *)malloc(PATH_MAX_LENGTH + 1);
+   intfstream_t *fd = open_file(name);
+   size_t i;
+
+   if (!fd)
+   {
+      free(path);
+      return;
+   }
+
+   while (gdi_next_file(fd, name, path, PATH_MAX_LENGTH))
+   {
+      for (i = db->list_ptr; i < db->list->size; ++i)
+      {
+         if (db->list->elems[i].data && !strcmp(path, db->list->elems[i].data))
+         {
+            RARCH_LOG("Pruning file referenced by gdi: %s\n", path);
+            free(db->list->elems[i].data);
+            db->list->elems[i].data = NULL;
+         }
+      }
+   }
+}
+
 static int task_database_iterate_playlist(
       database_state_handle_t *db_state,
       database_info_handle_t *db, const char *name)
@@ -529,6 +591,7 @@ static int task_database_iterate_playlist(
          break;
 #endif
       case FILE_TYPE_CUE:
+         cue_prune(db, name);
          db_state->serial[0] = '\0';
          if (cue_get_serial(name, db_state->serial))
          {
@@ -541,6 +604,7 @@ static int task_database_iterate_playlist(
          }
          break;
       case FILE_TYPE_GDI:
+         gdi_prune(db, name);
          db_state->serial[0] = '\0';
          if (gdi_get_serial(name, db_state->serial))
          {
