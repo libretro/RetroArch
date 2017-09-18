@@ -606,7 +606,9 @@ static int task_database_iterate_playlist(
       case FILE_TYPE_GDI:
          gdi_prune(db, name);
          db_state->serial[0] = '\0';
-         if (gdi_get_serial(name, db_state->serial))
+         /* There are no serial databases, so don't bother with
+            serials at the moment */
+         if (0 && gdi_get_serial(name, db_state->serial))
          {
             database_info_set_type(db, DATABASE_TYPE_SERIAL_LOOKUP);
          }
@@ -623,9 +625,7 @@ static int task_database_iterate_playlist(
          break;
       case FILE_TYPE_CHD:
          db_state->serial[0] = '\0';
-         /* There are no serial databases, so don't bother with
-            serials at the moment */
-         if (0 && chd_get_serial(name, db_state->serial))
+         if (chd_get_serial(name, db_state->serial))
          {
             database_info_set_type(db, DATABASE_TYPE_SERIAL_LOOKUP);
          }
