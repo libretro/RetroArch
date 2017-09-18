@@ -231,6 +231,8 @@ uint32_t msg_hash_calculate(const char *s)
 #define HASH_EXTENSION_ZIP_UPP                                                 0x0b883b78U
 #define HASH_EXTENSION_CUE                                                     0x0b886782U
 #define HASH_EXTENSION_CUE_UPPERCASE                                           0x0b87db22U
+#define HASH_EXTENSION_GDI                                                     0x00b887659
+#define HASH_EXTENSION_GDI_UPPERCASE                                           0x00b87e9f9
 #define HASH_EXTENSION_ISO                                                     0x0b8880d0U
 #define HASH_EXTENSION_ISO_UPPERCASE                                           0x0b87f470U
 #define HASH_EXTENSION_LUTRO                                                   0x0fe37b7bU
@@ -376,6 +378,9 @@ enum msg_file_type msg_hash_to_file_type(uint32_t hash)
       case HASH_EXTENSION_CUE:
       case HASH_EXTENSION_CUE_UPPERCASE:
          return FILE_TYPE_CUE;
+      case HASH_EXTENSION_GDI:
+      case HASH_EXTENSION_GDI_UPPERCASE:
+         return FILE_TYPE_GDI;
       case HASH_EXTENSION_ISO:
       case HASH_EXTENSION_ISO_UPPERCASE:
          return FILE_TYPE_ISO;
