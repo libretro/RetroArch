@@ -1035,6 +1035,7 @@ static int file_load_with_detect_core_wrapper(
 {
    menu_content_ctx_defer_info_t def_info;
    int ret                             = 0;
+   char *new_core_path                 = NULL;
    const char *menu_path               = NULL;
    const char *menu_label              = NULL;
    menu_handle_t *menu                 = NULL;
@@ -1045,7 +1046,7 @@ static int file_load_with_detect_core_wrapper(
 
    {
       char *menu_path_new = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-      char *new_core_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      new_core_path       = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
       new_core_path[0]    = menu_path_new[0] = '\0';
 
       menu_entries_get_last_stack(&menu_path, &menu_label, NULL, &enum_idx, NULL);
