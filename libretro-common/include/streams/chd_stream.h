@@ -30,8 +30,6 @@
 
 RETRO_BEGIN_DECLS
 
-typedef struct _chd_file chd_file;
-
 typedef struct chdstream chdstream_t;
 
 #define CHDSTREAM_TRACK_FIRST_DATA (-1)

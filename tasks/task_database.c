@@ -309,7 +309,6 @@ static bool chd_get_crc(database_state_handle_t *db_state,
       const char *name, uint32_t *crc)
 {
    intfstream_t *fd = NULL;
-   int result;
    uint32_t acc = 0;
    uint8_t buffer[4096];
    ssize_t size;
