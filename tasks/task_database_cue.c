@@ -424,6 +424,10 @@ int cue_find_track(const char *cue_path, bool first,
    size_t largest = 0;
    ssize_t volatile file_size = -1;
    bool is_data = false;
+   char *cue_dir = (char*)malloc(PATH_MAX_LENGTH);
+   cue_dir[0]    = '\0';
+
+   fill_pathname_basedir(cue_dir, cue_path, PATH_MAX_LENGTH);
 
    info.type        = INTFSTREAM_FILE;
 
@@ -450,9 +454,6 @@ int cue_find_track(const char *cue_path, bool first,
    {
       if (string_is_equal(tmp_token, "FILE"))
       {
-         char *cue_dir = (char*)malloc(PATH_MAX_LENGTH);
-         cue_dir[0]    = '\0';
-
          /* Set last index to last EOF */
          if (file_size != -1) {
             last_index = file_size;
@@ -467,14 +468,11 @@ int cue_find_track(const char *cue_path, bool first,
             }
          }
 
-         fill_pathname_basedir(cue_dir, cue_path, PATH_MAX_LENGTH);
-
          get_token(fd, tmp_token, MAX_TOKEN_LEN);
          fill_pathname_join(last_file, cue_dir, tmp_token, PATH_MAX_LENGTH);
 
          file_size = get_file_size(last_file);
 
-         free(cue_dir);
          get_token(fd, tmp_token, MAX_TOKEN_LEN);
 
       }
@@ -524,12 +522,14 @@ int cue_find_track(const char *cue_path, bool first,
    }
 
 clean:
+   free(cue_dir);
    free(tmp_token);
    free(last_file);
    intfstream_close(fd);
    return rv;
 
 error:
+   free(cue_dir);
    free(tmp_token);
    free(last_file);
    if (fd)
