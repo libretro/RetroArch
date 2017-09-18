@@ -68,8 +68,10 @@ typedef struct db_handle
    bool scan_started;
 } db_handle_t;
 
-int find_track(const char *cue_path, bool first, size_t *offset, size_t *size,
+int cue_find_track(const char *cue_path, bool first, size_t *offset, size_t *size,
                char *track_path, size_t max_len);
+
+int gdi_find_track(const char *gdi_path, bool first, char *track_path, size_t max_len);
 
 int detect_system(intfstream_t *fd, const char** system_name);
 
@@ -304,7 +306,7 @@ static int cue_get_serial(const char *name, char* serial)
 
    track_path[0]                    = '\0';
 
-   rv = find_track(name, true, &offset, &size, track_path, PATH_MAX_LENGTH);
+   rv = cue_find_track(name, true, &offset, &size, track_path, PATH_MAX_LENGTH);
 
    if (rv < 0)
    {
@@ -318,6 +320,34 @@ static int cue_get_serial(const char *name, char* serial)
    RARCH_LOG("%s\n", msg_hash_to_str(MSG_READING_FIRST_DATA_TRACK));
 
    ret = file_get_serial(track_path, offset, size, serial);
+   free(track_path);
+
+   return ret;
+}
+
+static int gdi_get_serial(const char *name, char* serial)
+{
+   char *track_path                 = (char*)malloc(PATH_MAX_LENGTH
+         * sizeof(char));
+   int ret                          = 0;
+   int rv                           = 0;
+
+   track_path[0]                    = '\0';
+
+   rv = gdi_find_track(name, true, track_path, PATH_MAX_LENGTH);
+
+   if (rv < 0)
+   {
+      RARCH_LOG("%s: %s\n",
+            msg_hash_to_str(MSG_COULD_NOT_FIND_VALID_DATA_TRACK),
+            strerror(-rv));
+      free(track_path);
+      return 0;
+   }
+
+   RARCH_LOG("%s\n", msg_hash_to_str(MSG_READING_FIRST_DATA_TRACK));
+
+   ret = file_get_serial(track_path, 0, SIZE_MAX, serial);
    free(track_path);
 
    return ret;
@@ -412,7 +442,7 @@ static int cue_get_crc(const char *name, uint32_t *crc)
 
    track_path[0] = '\0';
 
-   rv = find_track(name, false, &offset, &size, track_path, PATH_MAX_LENGTH);
+   rv = cue_find_track(name, false, &offset, &size, track_path, PATH_MAX_LENGTH);
 
    if (rv < 0) {
       RARCH_LOG("%s: %s\n", msg_hash_to_str(MSG_COULD_NOT_FIND_VALID_DATA_TRACK),
@@ -428,6 +458,35 @@ static int cue_get_crc(const char *name, uint32_t *crc)
    rv = file_get_crc(track_path, offset, size, crc);
    if (rv == 1) {
       RARCH_LOG("CUE '%s' crc: %x\n", name, *crc);
+   }
+   free(track_path);
+   return rv;
+}
+
+static int gdi_get_crc(const char *name, uint32_t *crc)
+{
+   char *track_path = (char *)malloc(PATH_MAX_LENGTH);
+   int ret = 0;
+   int rv = 0;
+
+   track_path[0] = '\0';
+
+   rv = gdi_find_track(name, false, track_path, PATH_MAX_LENGTH);
+
+   if (rv < 0) {
+      RARCH_LOG("%s: %s\n", msg_hash_to_str(MSG_COULD_NOT_FIND_VALID_DATA_TRACK),
+                strerror(-rv));
+      free(track_path);
+      return 0;
+   }
+
+   RARCH_LOG("GDI '%s' primary track: %s\n", name, track_path);
+
+   RARCH_LOG("%s\n", msg_hash_to_str(MSG_READING_FIRST_DATA_TRACK));
+
+   rv = file_get_crc(track_path, 0, SIZE_MAX, crc);
+   if (rv == 1) {
+      RARCH_LOG("GDI '%s' crc: %x\n", name, *crc);
    }
    free(track_path);
    return rv;
@@ -481,6 +540,18 @@ static int task_database_iterate_playlist(
             return cue_get_crc(name, &db_state->crc);
          }
          break;
+      case FILE_TYPE_GDI:
+         db_state->serial[0] = '\0';
+         if (gdi_get_serial(name, db_state->serial))
+         {
+            database_info_set_type(db, DATABASE_TYPE_SERIAL_LOOKUP);
+         }
+         else
+         {
+            database_info_set_type(db, DATABASE_TYPE_CRC_LOOKUP);
+            return gdi_get_crc(name, &db_state->crc);
+         }
+         break;
       case FILE_TYPE_ISO:
          db_state->serial[0] = '\0';
          file_get_serial(name, 0, SIZE_MAX, db_state->serial);
@@ -488,7 +559,9 @@ static int task_database_iterate_playlist(
          break;
       case FILE_TYPE_CHD:
          db_state->serial[0] = '\0';
-         if (chd_get_serial(name, db_state->serial))
+         /* There are no serial databases, so don't bother with
+            serials at the moment */
+         if (0 && chd_get_serial(name, db_state->serial))
          {
             database_info_set_type(db, DATABASE_TYPE_SERIAL_LOOKUP);
          }

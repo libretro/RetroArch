@@ -409,7 +409,7 @@ static bool update_cand(ssize_t *cand_index, ssize_t *last_index,
   return false;
 }
 
-int find_track(const char *cue_path, bool first,
+int cue_find_track(const char *cue_path, bool first,
       size_t *offset, size_t *size, char *track_path, size_t max_len)
 {
    int rv;
@@ -530,6 +530,125 @@ clean:
    return rv;
 
 error:
+   free(tmp_token);
+   free(last_file);
+   if (fd)
+      intfstream_close(fd);
+   return -errno;
+}
+
+int gdi_find_track(const char *gdi_path, bool first, char *track_path, size_t max_len)
+{
+   int rv;
+   char *tmp_token = malloc(MAX_TOKEN_LEN);
+   char *last_file = malloc(PATH_MAX_LENGTH + 1);
+   intfstream_info_t info;
+   intfstream_t *fd = NULL;
+   int32_t track = 0;
+   size_t largest = 0;
+   int size = -1;
+   int mode = -1;
+   ssize_t file_size = -1;
+   char *gdi_dir = (char*)malloc(PATH_MAX_LENGTH);
+   gdi_dir[0]    = '\0';
+
+   fill_pathname_basedir(gdi_dir, gdi_path, PATH_MAX_LENGTH);
+
+   info.type = INTFSTREAM_FILE;
+
+   fd = intfstream_init(&info);
+   if (!fd)
+   {
+      goto error;
+   }
+
+   if (!intfstream_open(fd, gdi_path, RFILE_MODE_READ, -1))
+   {
+      RARCH_LOG("Could not open GDI file '%s': %s\n", gdi_path,
+            strerror(errno));
+      goto error;
+   }
+
+   RARCH_LOG("Parsing GDI file '%s'...\n", gdi_path);
+
+   tmp_token[0] = '\0';
+
+   rv = -EINVAL;
+
+   /* Skip track count */
+   get_token(fd, tmp_token, MAX_TOKEN_LEN);
+
+   /* Track number */
+   while (get_token(fd, tmp_token, MAX_TOKEN_LEN) > 0)
+   {
+      /* Offset */
+      if (get_token(fd, tmp_token, MAX_TOKEN_LEN) <= 0)
+      {
+         errno = EINVAL;
+         goto error;
+      }
+
+      /* Mode */
+      if (get_token(fd, tmp_token, MAX_TOKEN_LEN) <= 0)
+      {
+         errno = EINVAL;
+         goto error;
+      }
+      mode = atoi(tmp_token);
+
+      /* Sector size */
+      if (get_token(fd, tmp_token, MAX_TOKEN_LEN) <= 0)
+      {
+         errno = EINVAL;
+         goto error;
+      }
+      size = atoi(tmp_token);
+
+      /* File name */
+      if (get_token(fd, tmp_token, MAX_TOKEN_LEN) <= 0)
+      {
+         errno = EINVAL;
+         goto error;
+      }
+
+      /* Check for data track */
+      if (!(mode == 0 && size == 2352))
+      {
+         fill_pathname_join(last_file, gdi_dir, tmp_token, PATH_MAX_LENGTH);
+         file_size = get_file_size(last_file);
+         if (file_size < 0)
+         {
+            goto error;
+         }
+         if (file_size > largest)
+         {
+            strlcpy(track_path, last_file, max_len);
+            rv = 0;
+            largest = file_size;
+            if (first)
+            {
+               goto clean;
+            }
+         }
+      }
+
+      /* Disc offset (not used?) */
+      if (get_token(fd, tmp_token, MAX_TOKEN_LEN) <= 0)
+      {
+         errno = EINVAL;
+         goto error;
+      }
+   }
+
+clean:
+   free(gdi_dir);
+   free(tmp_token);
+   free(last_file);
+   intfstream_close(fd);
+   return rv;
+
+error:
+   free(gdi_dir);
    free(tmp_token);
    free(last_file);
    if (fd)
