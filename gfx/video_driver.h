@@ -1208,6 +1208,8 @@ bool video_context_driver_translate_aspect(gfx_ctx_aspect_t *aspect);
 
 bool video_context_driver_input_driver(gfx_ctx_input_t *inp);
 
+enum gfx_ctx_api video_context_driver_get_api(void);
+
 void video_context_driver_free(void);
 
 bool video_shader_driver_get_prev_textures(video_shader_ctx_texture_t *texture);

@@ -212,6 +212,8 @@ static gfx_ctx_driver_t current_video_context;
 
 static void *video_context_data                          = NULL;
 
+static enum gfx_ctx_api current_video_context_api        = GFX_CTX_NONE;
+
 shader_backend_t *current_shader                         = NULL;
 void *shader_data                                        = NULL;
 
@@ -2718,6 +2720,9 @@ static const gfx_ctx_driver_t *video_context_driver_init(
                video_info.shared_context && hw_render_ctx);
 
       video_context_driver_set_data(ctx_data);
+
+      current_video_context_api = api;
+
       return ctx;
    }
 
@@ -3010,6 +3015,11 @@ bool video_context_driver_set_flags(gfx_ctx_flags_t *flags)
       return false;
    current_video_context.set_flags(video_context_data, flags->flags);
    return true;
+}
+
+enum gfx_ctx_api video_context_driver_get_api(void)
+{
+   return current_video_context_api;
 }
 
 bool video_driver_has_windowed(void)

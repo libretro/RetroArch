@@ -1083,23 +1083,51 @@ enum rarch_shader_type video_shader_parse_type(const char *path,
    if (!path)
       return fallback;
 
+   enum rarch_shader_type shader_type = RARCH_SHADER_NONE;
    switch (msg_hash_to_file_type(
             msg_hash_calculate(path_get_extension(path))))
    {
+      
       case FILE_TYPE_SHADER_CG:
       case FILE_TYPE_SHADER_PRESET_CGP:
-         return RARCH_SHADER_CG;
+         shader_type = RARCH_SHADER_CG;
+         break;
       case FILE_TYPE_SHADER_GLSL:
       case FILE_TYPE_SHADER_PRESET_GLSLP:
-         return RARCH_SHADER_GLSL;
+         shader_type = RARCH_SHADER_GLSL;
+         break;
       case FILE_TYPE_SHADER_SLANG:
       case FILE_TYPE_SHADER_PRESET_SLANGP:
-         return RARCH_SHADER_SLANG;
+         shader_type = RARCH_SHADER_SLANG;
+         break;
       default:
          break;
    }
 
-   return fallback;
+   enum gfx_ctx_api api = video_context_driver_get_api();
+
+
+   switch (api)
+   {
+      case GFX_CTX_OPENGL_API:
+         if (shader_type == RARCH_SHADER_GLSL || shader_type == RARCH_SHADER_CG)
+            return shader_type;
+      case GFX_CTX_OPENGL_ES_API:
+         if (shader_type == RARCH_SHADER_GLSL)
+            return shader_type;
+      case GFX_CTX_DIRECT3D9_API:
+         if (shader_type == RARCH_SHADER_CG)
+            return shader_type;
+      case GFX_CTX_VULKAN_API:
+         if (shader_type == RARCH_SHADER_SLANG)
+            return fallback;
+      case GFX_CTX_NONE:
+      case GFX_CTX_GDI_API:
+      case GFX_CTX_OPENVG_API:
+      case GFX_CTX_DIRECT3D8_API:
+      default:
+         return fallback;
+   }
 }
 
 /**
