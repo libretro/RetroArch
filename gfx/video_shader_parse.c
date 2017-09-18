@@ -1135,7 +1135,7 @@ enum rarch_shader_type video_shader_parse_type(const char *path,
          break;
    }
 
-   RARCH_WARN("Current video context is incompatible with file: %s", path);
+   RARCH_WARN("Rendering context is incompatible with shader type: %s\n", path);
    return fallback;
 }
 
