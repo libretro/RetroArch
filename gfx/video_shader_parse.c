@@ -1080,10 +1080,11 @@ void video_shader_write_conf_cgp(config_file_t *conf,
 enum rarch_shader_type video_shader_parse_type(const char *path,
       enum rarch_shader_type fallback)
 {
+   enum rarch_shader_type shader_type = RARCH_SHADER_NONE;   
+
    if (!path)
       return fallback;
 
-   enum rarch_shader_type shader_type = RARCH_SHADER_NONE;
    switch (msg_hash_to_file_type(
             msg_hash_calculate(path_get_extension(path))))
    {
@@ -1105,7 +1106,6 @@ enum rarch_shader_type video_shader_parse_type(const char *path,
    }
 
    enum gfx_ctx_api api = video_context_driver_get_api();
-
 
    switch (api)
    {
