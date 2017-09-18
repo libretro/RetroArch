@@ -1912,7 +1912,10 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
                   NULL, NULL, NULL, NULL,
                   NULL, &crc32);
 
-            tmp_str_list                     = string_split(crc32, "|");
+            if (crc32)
+            {
+                tmp_str_list = string_split(crc32, "|");
+            }
 
             if (!tmp_str_list)
                continue;
