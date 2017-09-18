@@ -388,9 +388,13 @@ int huffman_build_tree(struct huffman_decoder* decoder, uint32_t totaldata, uint
    int nextalloc;
 	int maxbits = 0;
 	/* make a list of all non-zero nodes */
-	struct node_t** list = (struct node_t**)malloc(sizeof(struct node_t*) * decoder->numcodes * 2);
+	struct node_t** list   = (struct node_t**)
+      malloc(sizeof(struct node_t*) * decoder->numcodes * 2);
 	int curcode, listitems = 0;
-	memset(decoder->huffnode, 0, decoder->numcodes * sizeof(decoder->huffnode[0]));
+
+	memset(decoder->huffnode, 0,
+         decoder->numcodes * sizeof(decoder->huffnode[0]));
+
 	for (curcode = 0; curcode < decoder->numcodes; curcode++)
 		if (decoder->datahisto[curcode] != 0)
 		{
@@ -403,21 +407,28 @@ int huffman_build_tree(struct huffman_decoder* decoder, uint32_t totaldata, uint
 			if (decoder->huffnode[curcode].weight == 0)
 				decoder->huffnode[curcode].weight = 1;
 		}
-/*
-        fprintf(stderr, "Pre-sort:\n");
-        for (int i = 0; i < listitems; i++) {
-            fprintf(stderr, "weight: %d code: %d\n", list[i]->m_weight, list[i]->m_bits);
-        }
-*/
-	/* sort the list by weight, largest weight first */
+
+#if 0
+   {
+      unsigned i;
+      fprintf(stderr, "Pre-sort:\n");
+      for (i = 0; i < listitems; i++)
+         fprintf(stderr, "weight: %d code: %d\n",
+               list[i]->m_weight, list[i]->m_bits);
+      */ sort the list by weight, largest weight first */
+   }
+#endif
+
 	qsort(&list[0], listitems, sizeof(list[0]), huffman_tree_node_compare);
-/*
-        fprintf(stderr, "Post-sort:\n");
-        for (int i = 0; i < listitems; i++) {
-            fprintf(stderr, "weight: %d code: %d\n", list[i]->m_weight, list[i]->m_bits);
-        }
-        fprintf(stderr, "===================\n");
-*/
+
+#if 0
+   fprintf(stderr, "Post-sort:\n");
+   for (int i = 0; i < listitems; i++) {
+      fprintf(stderr, "weight: %d code: %d\n", list[i]->m_weight, list[i]->m_bits);
+   }
+   fprintf(stderr, "===================\n");
+#endif
+
 	/* now build the tree */
 	nextalloc = decoder->numcodes;
 
@@ -425,27 +436,32 @@ int huffman_build_tree(struct huffman_decoder* decoder, uint32_t totaldata, uint
 	{
 		int curitem;
 		/* remove lowest two items */
-		struct node_t* node1 = &(*list[--listitems]);
-		struct node_t* node0 = &(*list[--listitems]);
+		struct node_t* node1   = &(*list[--listitems]);
+		struct node_t* node0   = &(*list[--listitems]);
 
 		/* create new node */
 		struct node_t* newnode = &decoder->huffnode[nextalloc++];
-		newnode->parent = NULL;
-		node0->parent = node1->parent = newnode;
-		newnode->weight = node0->weight + node1->weight;
+		newnode->parent        = NULL;
+		node0->parent          = 
+         node1->parent       = newnode;
+		newnode->weight        = 
+         node0->weight + node1->weight;
 
 		/* insert into list at appropriate location */
 		for (curitem = 0; curitem < listitems; curitem++)
 			if (newnode->weight > list[curitem]->weight)
 			{
-				memmove(&list[curitem+1], &list[curitem], (listitems - curitem) * sizeof(list[0]));
+				memmove(&list[curitem+1],
+                  &list[curitem],
+                  (listitems - curitem) * sizeof(list[0]));
 				break;
 			}
 		list[curitem] = newnode;
 		listitems++;
 	}
 
-	/* compute the number of bits in each code, and fill in another histogram */
+	/* compute the number of bits in each code,
+    * and fill in another histogram */
 	for (curcode = 0; curcode < decoder->numcodes; curcode++)
 	{
 		struct node_t *curnode;
@@ -457,7 +473,8 @@ int huffman_build_tree(struct huffman_decoder* decoder, uint32_t totaldata, uint
 		if (node->weight > 0)
 		{
 			/* determine the number of bits for this node */
-			for (curnode = node; curnode->parent != NULL; curnode = curnode->parent)
+			for (curnode = node; 
+               curnode->parent != NULL; curnode = curnode->parent)
 				node->numbits++;
 			if (node->numbits == 0)
 				node->numbits = 1;
@@ -466,6 +483,7 @@ int huffman_build_tree(struct huffman_decoder* decoder, uint32_t totaldata, uint
 			maxbits = MAX(maxbits, ((int)node->numbits));
 		}
 	}
+   free(list);
 	return maxbits;
 }
 

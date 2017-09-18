@@ -79,19 +79,16 @@ int detect_psp_game(intfstream_t *fd, char *game_id);
 
 int detect_serial_ascii_game(intfstream_t *fd, char *game_id);
 
-static intfstream_t*
-open_file(const char *path)
+static intfstream_t* open_file(const char *path)
 {
    intfstream_info_t info;
    intfstream_t *fd = NULL;
 
-   info.type = INTFSTREAM_FILE;
+   info.type        = INTFSTREAM_FILE;
+   fd               = intfstream_init(&info);
 
-   fd = intfstream_init(&info);
    if (!fd)
-   {
       return NULL;
-   }
 
    if (!intfstream_open(fd, path, RFILE_MODE_READ, -1))
    {
@@ -102,20 +99,18 @@ open_file(const char *path)
    return fd;
 }
 
-static intfstream_t*
-open_chd_track(const char *path, int32_t track)
+static intfstream_t *open_chd_track(const char *path, int32_t track)
 {
    intfstream_info_t info;
    intfstream_t *fd = NULL;
 
-   info.type = INTFSTREAM_CHD;
-   info.chd.track = track;
+   info.type        = INTFSTREAM_CHD;
+   info.chd.track   = track;
 
-   fd = intfstream_init(&info);
+   fd               = intfstream_init(&info);
+
    if (!fd)
-   {
       return NULL;
-   }
 
    if (!intfstream_open(fd, path, RFILE_MODE_READ, -1))
    {
@@ -126,28 +121,33 @@ open_chd_track(const char *path, int32_t track)
    return fd;
 }
 
-static void database_info_set_type(database_info_handle_t *handle, enum database_type type)
+static void database_info_set_type(
+      database_info_handle_t *handle,
+      enum database_type type)
 {
    if (!handle)
       return;
    handle->type = type;
 }
 
-static enum database_type database_info_get_type(database_info_handle_t *handle)
+static enum database_type database_info_get_type(
+      database_info_handle_t *handle)
 {
    if (!handle)
       return DATABASE_TYPE_NONE;
    return handle->type;
 }
 
-static const char *database_info_get_current_name(database_state_handle_t *handle)
+static const char *database_info_get_current_name(
+      database_state_handle_t *handle)
 {
    if (!handle || !handle->list)
       return NULL;
    return handle->list->elems[handle->list_index].data;
 }
 
-static const char *database_info_get_current_element_name(database_info_handle_t *handle)
+static const char *database_info_get_current_element_name(
+      database_info_handle_t *handle)
 {
    if (!handle || !handle->list)
       return NULL;
@@ -198,7 +198,8 @@ static int stream_get_serial(database_state_handle_t *db_state,
       if (detect_serial_ascii_game(fd, serial))
       {
          /* ASCII serial (Wii) was detected. */
-         RARCH_LOG("%s '%s'\n", msg_hash_to_str(MSG_FOUND_DISK_LABEL), serial);
+         RARCH_LOG("%s '%s'\n",
+               msg_hash_to_str(MSG_FOUND_DISK_LABEL), serial);
          return 0;
       }
 
@@ -233,12 +234,11 @@ static int iso_get_serial(database_state_handle_t *db_state,
    int rv;
 
    if (!fd)
-   {
       return 0;
-   }
 
    rv = stream_get_serial(db_state, db, fd, serial);
    intfstream_close(fd);
+   free(fd);
    return rv;
 }
 

@@ -406,15 +406,16 @@ int find_first_data_track(const char *cue_path,
       int32_t *offset, char *track_path, size_t max_len)
 {
    int rv;
-   char * tmp_token = malloc(MAX_TOKEN_LEN * sizeof(char));
    intfstream_info_t info;
    intfstream_t *fd = NULL;
+   char * tmp_token = malloc(MAX_TOKEN_LEN * sizeof(char));
 
-   info.type = INTFSTREAM_FILE;
+   info.type        = INTFSTREAM_FILE;
 
    fd = intfstream_init(&info);
    if (!fd)
    {
+      free(tmp_token);
       return -errno;
    }
 

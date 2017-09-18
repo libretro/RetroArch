@@ -1085,8 +1085,11 @@ static int file_load_with_detect_core_wrapper(
       free(menu_path_new);
 
       if (enum_label_idx == MENU_ENUM_LABEL_COLLECTION)
+      {
+         free(new_core_path);
          return generic_action_ok_displaylist_push(path, NULL,
                NULL, 0, idx, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST_SET);
+      }
 
       switch (ret)
       {
@@ -1109,19 +1112,19 @@ static int file_load_with_detect_core_wrapper(
                   return -1;
                }
 
-               free(new_core_path);
-               return 0;
+               ret = 0;
+               break;
             }
          case 0:
-            free(new_core_path);
-            return generic_action_ok_displaylist_push(path, NULL, label, type,
+            ret = generic_action_ok_displaylist_push(path, NULL, label, type,
                   idx, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST);
+            break;
          default:
-            free(new_core_path);
             break;
       }
    }
 
+   free(new_core_path);
    return ret;
 }
 
