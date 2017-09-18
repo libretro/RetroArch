@@ -516,6 +516,10 @@ int cue_find_track(const char *cue_path, bool first,
       }
    }
 
+   if (file_size != -1) {
+      last_index = file_size;
+   }
+
    if (update_cand(&cand_index, &last_index, &largest, last_file, offset,
                    size, track_path, max_len)) {
       rv = 0;
