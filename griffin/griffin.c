@@ -1129,6 +1129,34 @@ DEPENDENCIES
 #include "../deps/libz/zutil.c"
 #endif
 
+#ifdef HAVE_FLAC
+#include "../deps/libFLAC/bitmath.c"
+#include "../deps/libFLAC/bitreader.c"
+#include "../deps/libFLAC/cpu.c"
+#include "../deps/libFLAC/crc.c"
+#include "../deps/libFLAC/fixed.c"
+#include "../deps/libFLAC/float.c"
+#include "../deps/libFLAC/format.c"
+#include "../deps/libFLAC/lpc.c"
+#include "../deps/libFLAC/lpc_intrin_avx2.c"
+#include "../deps/libFLAC/lpc_intrin_sse2.c"
+#include "../deps/libFLAC/lpc_intrin_sse41.c"
+#include "../deps/libFLAC/lpc_intrin_sse.c"
+#include "../deps/libFLAC/md5.c"
+#include "../deps/libFLAC/memory.c"
+#include "../deps/libFLAC/stream_decoder.c"
+#endif
+
+#ifdef HAVE_CHD
+#include "../deps/libchdr/bitstream.c"
+#include "../deps/libchdr/cdrom.c"
+#include "../deps/libchdr/chd.c"
+#include "../deps/libchdr/flac.c"
+#include "../deps/libchdr/huffman.c"
+
+#include "../libretro-common/streams/chd_stream.c"
+#endif
+
 #ifdef HAVE_7ZIP
 #include "../deps/7zip/7zIn.c"
 #include "../deps/7zip/Bra86.c"
