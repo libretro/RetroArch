@@ -1311,7 +1311,7 @@ endif
 ifeq ($(HAVE_FLAC),1)
    CFLAGS  += -I$(DEPS_DIR)/libFLAC/include
    DEFINES += -DHAVE_FLAC -DHAVE_STDINT_H -DHAVE_LROUND -DFLAC__HAS_OGG=0 \
-              -DPACKAGE_VERSION="\"retroarch\""
+              -DFLAC_PACKAGE_VERSION="\"retroarch\""
    ifneq ($(findstring Win32,$(OS)),)
       DEFINES += -DHAVE_FSEEKO
    endif
