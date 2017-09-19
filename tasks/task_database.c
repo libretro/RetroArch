@@ -91,7 +91,7 @@ static intfstream_t* open_file(const char *path)
    intfstream_t *fd = NULL;
 
    info.type        = INTFSTREAM_FILE;
-   fd               = intfstream_init(&info);
+   fd               = (intfstream_t*)intfstream_init(&info);
 
    if (!fd)
       return NULL;
@@ -105,22 +105,20 @@ static intfstream_t* open_file(const char *path)
    return fd;
 }
 
-static intfstream_t*
-open_memory(void *data, size_t size)
+static intfstream_t *open_memory(void *data, size_t size)
 {
    intfstream_info_t info;
-   intfstream_t *fd = NULL;
+   intfstream_t *fd     = NULL;
 
-   info.type = INTFSTREAM_MEMORY;
-   info.memory.buf.data = data;
+   info.type            = INTFSTREAM_MEMORY;
+   info.memory.buf.data = (uint8_t*)data;
    info.memory.buf.size = size;
    info.memory.writable = false;
 
-   fd = intfstream_init(&info);
+   fd                   = (intfstream_t*)intfstream_init(&info);
+   
    if (!fd)
-   {
       return NULL;
-   }
 
    if (!intfstream_open(fd, NULL, RFILE_MODE_READ, -1))
    {
@@ -140,7 +138,7 @@ open_chd_track(const char *path, int32_t track)
    info.type        = INTFSTREAM_CHD;
    info.chd.track   = track;
 
-   fd               = intfstream_init(&info);
+   fd               = (intfstream_t*)intfstream_init(&info);
 
    if (!fd)
       return NULL;
@@ -283,7 +281,7 @@ static bool file_get_serial(const char *name, size_t offset, size_t size, char *
 
    if (offset != 0 || size < (size_t) file_size)
    {
-      data = malloc(size);
+      data = (uint8_t*)malloc(size);
       intfstream_seek(fd, offset, SEEK_SET);
       if (intfstream_read(fd, data, size) != (ssize_t) size)
       {
@@ -402,35 +400,40 @@ static int stream_get_crc(intfstream_t *fd, uint32_t *crc)
 
 static bool file_get_crc(const char *name, size_t offset, size_t size, uint32_t *crc)
 {
-   intfstream_t *fd = open_file(name);
    int rv;
-   uint8_t *data = NULL;
+   intfstream_t *fd  = open_file(name);
+   uint8_t *data     = NULL;
    ssize_t file_size = -1;
 
    if (!fd)
-   {
       return 0;
-   }
 
    intfstream_seek(fd, 0, SEEK_END);
    file_size = intfstream_tell(fd);
    intfstream_seek(fd, 0, SEEK_SET);
-   if (file_size < 0) {
+
+   if (file_size < 0)
+   {
       intfstream_close(fd);
       return 0;
    }
 
-   if (offset != 0 || size < (size_t) file_size) {
-      data = malloc(size);
+   if (offset != 0 || size < (size_t) file_size)
+   {
+      data = (uint8_t*)malloc(size);
       intfstream_seek(fd, offset, SEEK_SET);
-      if (intfstream_read(fd, data, size) != (ssize_t) size) {
+
+      if (intfstream_read(fd, data, size) != (ssize_t) size)
+	  {
          intfstream_close(fd);
          free(data);
          return 0;
       }
       intfstream_close(fd);
       fd = open_memory(data, size);
-      if (!fd) {
+
+      if (!fd) 
+	  {
          free(data);
          return 0;
       }
@@ -504,20 +507,15 @@ static int gdi_get_crc(const char *name, uint32_t *crc)
 
 static bool chd_get_crc(const char *name, uint32_t *crc)
 {
-   intfstream_t *fd = NULL;
    int rv;
-   uint32_t acc = 0;
-   uint8_t buffer[4096];
-   ssize_t size;
-
-   fd = open_chd_track(name, CHDSTREAM_TRACK_PRIMARY);
+   uint32_t     acc = 0;
+   intfstream_t *fd = open_chd_track(name, CHDSTREAM_TRACK_PRIMARY);
    if (!fd)
-   {
       return 0;
-   }
 
    rv = stream_get_crc(fd, crc);
-   if (rv == 1) {
+   if (rv == 1)
+   {
       RARCH_LOG("CHD '%s' crc: %x\n", name, *crc);
    }
    intfstream_close(fd);
@@ -847,14 +845,12 @@ static int task_database_iterate_crc_lookup(
 
    if (db_state->entry_index == 0)
    {
-      bool db_supports_content;
-      bool unsupported_content;
       char query[50];
 
       query[0] = '\0';
 
       /* don't scan files that can't be in this database */
-      if(!core_info_database_supports_content_path(
+      if (!core_info_database_supports_content_path(
          db_state->list->elems[db_state->list_index].data, name))
          return database_info_list_iterate_next(db_state);
 

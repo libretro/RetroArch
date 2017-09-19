@@ -395,8 +395,10 @@ static bool update_cand(ssize_t *cand_index, ssize_t *last_index,
                         size_t *largest, char *last_file, size_t *offset,
                         size_t *size, char *track_path, size_t max_len)
 {
-  if (*cand_index != -1) {
-    if (*last_index - *cand_index > *largest) {
+  if (*cand_index != -1)
+  {
+    if ((unsigned)(*last_index - *cand_index) > *largest)
+	{
       *largest = *last_index - *cand_index;
       strlcpy(track_path, last_file, max_len);
       *offset = *cand_index;
@@ -413,29 +415,27 @@ int cue_find_track(const char *cue_path, bool first,
       size_t *offset, size_t *size, char *track_path, size_t max_len)
 {
    int rv;
-   char *tmp_token = malloc(MAX_TOKEN_LEN);
-   char *last_file = malloc(PATH_MAX_LENGTH + 1);
    intfstream_info_t info;
-   intfstream_t *fd = NULL;
-   ssize_t last_index = -1;
-   ssize_t cand_index = -1;
-   int32_t cand_track = -1;
-   int32_t track = 0;
-   size_t largest = 0;
+   char *tmp_token            = (char*)malloc(MAX_TOKEN_LEN);
+   char *last_file            = (char*)malloc(PATH_MAX_LENGTH + 1);
+   intfstream_t *fd           = NULL;
+   ssize_t last_index         = -1;
+   ssize_t cand_index         = -1;
+   int32_t cand_track         = -1;
+   int32_t track              = 0;
+   size_t largest             = 0;
    ssize_t volatile file_size = -1;
-   bool is_data = false;
-   char *cue_dir = (char*)malloc(PATH_MAX_LENGTH);
-   cue_dir[0]    = '\0';
+   bool is_data               = false;
+   char *cue_dir              = (char*)malloc(PATH_MAX_LENGTH);
+   cue_dir[0]                 = '\0';
 
    fill_pathname_basedir(cue_dir, cue_path, PATH_MAX_LENGTH);
 
    info.type        = INTFSTREAM_FILE;
+   fd               = (intfstream_t*)intfstream_init(&info);
 
-   fd = intfstream_init(&info);
    if (!fd)
-   {
       goto error;
-   }
 
    if (!intfstream_open(fd, cue_path, RFILE_MODE_READ, -1))
    {
@@ -543,11 +543,11 @@ error:
 
 bool cue_next_file(intfstream_t *fd, const char *cue_path, char *path, size_t max_len)
 {
-   bool rv = false;
-   char *tmp_token = malloc(MAX_TOKEN_LEN);
+   bool rv                    = false;
+   char *tmp_token            = (char*)malloc(MAX_TOKEN_LEN);
    ssize_t volatile file_size = -1;
-   char *cue_dir = (char*)malloc(PATH_MAX_LENGTH);
-   cue_dir[0]    = '\0';
+   char *cue_dir              = (char*)malloc(PATH_MAX_LENGTH);
+   cue_dir[0]                 = '\0';
 
    fill_pathname_basedir(cue_dir, cue_path, PATH_MAX_LENGTH);
 
@@ -572,27 +572,27 @@ bool cue_next_file(intfstream_t *fd, const char *cue_path, char *path, size_t ma
 int gdi_find_track(const char *gdi_path, bool first, char *track_path, size_t max_len)
 {
    int rv;
-   char *tmp_token = malloc(MAX_TOKEN_LEN);
-   char *last_file = malloc(PATH_MAX_LENGTH + 1);
    intfstream_info_t info;
-   intfstream_t *fd = NULL;
-   int32_t track = 0;
-   size_t largest = 0;
-   int size = -1;
-   int mode = -1;
+   char *tmp_token   = (char*)malloc(MAX_TOKEN_LEN);
+   char *last_file   = (char*)malloc(PATH_MAX_LENGTH + 1);
+   intfstream_t *fd  = NULL;
+   int32_t track     = 0;
+   size_t largest    = 0;
+   int size          = -1;
+   int mode          = -1;
    ssize_t file_size = -1;
-   char *gdi_dir = (char*)malloc(PATH_MAX_LENGTH);
-   gdi_dir[0]    = '\0';
+   char *gdi_dir     = (char*)malloc(PATH_MAX_LENGTH);
+
+   gdi_dir[0]        = '\0';
 
    fill_pathname_basedir(gdi_dir, gdi_path, PATH_MAX_LENGTH);
 
-   info.type = INTFSTREAM_FILE;
+   info.type         = INTFSTREAM_FILE;
 
-   fd = intfstream_init(&info);
+   fd                = (intfstream_t*)intfstream_init(&info);
+
    if (!fd)
-   {
       goto error;
-   }
 
    if (!intfstream_open(fd, gdi_path, RFILE_MODE_READ, -1))
    {
@@ -649,18 +649,15 @@ int gdi_find_track(const char *gdi_path, bool first, char *track_path, size_t ma
          fill_pathname_join(last_file, gdi_dir, tmp_token, PATH_MAX_LENGTH);
          file_size = get_file_size(last_file);
          if (file_size < 0)
-         {
             goto error;
-         }
-         if (file_size > largest)
+
+         if ((unsigned)file_size > largest)
          {
             strlcpy(track_path, last_file, max_len);
             rv = 0;
             largest = file_size;
             if (first)
-            {
                goto clean;
-            }
          }
       }
 
@@ -690,22 +687,20 @@ error:
 
 bool gdi_next_file(intfstream_t *fd, const char *gdi_path, char *path, size_t max_len)
 {
-   bool rv = false;
-   char *tmp_token = malloc(MAX_TOKEN_LEN);
-   ssize_t offset = -1;
-   char *gdi_dir = (char*)malloc(PATH_MAX_LENGTH);
+   bool rv         = false;
+   char *tmp_token = (char*)malloc(MAX_TOKEN_LEN);
+   ssize_t offset  = -1;
+   char *gdi_dir   = (char*)malloc(PATH_MAX_LENGTH);
 
-   gdi_dir[0]    = '\0';
-   tmp_token[0] = '\0';
+   gdi_dir[0]      = '\0';
+   tmp_token[0]    = '\0';
 
    fill_pathname_basedir(gdi_dir, gdi_path, PATH_MAX_LENGTH);
 
    /* Skip initial track count */
    offset = intfstream_tell(fd);
    if (offset == 0)
-   {
       get_token(fd, tmp_token, MAX_TOKEN_LEN);
-   }
 
    /* Track number */
    get_token(fd, tmp_token, MAX_TOKEN_LEN);

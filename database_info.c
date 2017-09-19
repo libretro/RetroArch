@@ -410,10 +410,10 @@ static enum msg_file_type file_type(const char *path)
 
 static int dir_entry_compare(const void *left, const void *right)
 {
-   const struct string_list_elem *le = left;
-   const struct string_list_elem *re = right;
-   bool l = type_is_prioritized(file_type(le->data));
-   bool r = type_is_prioritized(file_type(re->data));
+   const struct string_list_elem *le = (const struct string_list_elem*)left;
+   const struct string_list_elem *re = (const struct string_list_elem*)right;
+   bool                            l = type_is_prioritized(file_type(le->data));
+   bool                            r = type_is_prioritized(file_type(re->data));
 
    return (int) r - (int) l;
 }
@@ -426,7 +426,6 @@ static void dir_list_prioritize(struct string_list *list)
 database_info_handle_t *database_info_dir_init(const char *dir,
       enum database_type type, retro_task_t *task)
 {
-   unsigned i;
    database_info_handle_t     *db  = (database_info_handle_t*)
       calloc(1, sizeof(*db));
 
