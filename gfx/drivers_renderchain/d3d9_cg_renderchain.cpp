@@ -43,6 +43,12 @@
 
 #define D3D_PI 3.14159265358979323846264338327
 
+#define set_cg_param(prog, param, val) do { \
+   CGparameter cgp = cgGetNamedParameter(prog, param); \
+   if (cgp) \
+      cgD3D9SetUniform(cgp, &val); \
+} while(0)
+
 namespace
 {
    struct lut_info
@@ -216,12 +222,6 @@ error:
    return false;
 }
 
-static INLINE void d3d9_cg_renderchain_set_shaders(CGprogram frag, CGprogram vert)
-{
-   cgD3D9BindProgram(frag);
-   cgD3D9BindProgram(vert);
-}
-
 static void d3d9_cg_renderchain_set_shader_mvp(cg_renderchain_t *chain, void *shader_data, void *matrix_data)
 {
    CGprogram              *vPrg = (CGprogram*)shader_data;
@@ -230,12 +230,6 @@ static void d3d9_cg_renderchain_set_shader_mvp(cg_renderchain_t *chain, void *sh
    if (cgpModelViewProj)
       cgD3D9SetUniformMatrix(cgpModelViewProj, matrix);
 }
-
-#define set_cg_param(prog, param, val) do { \
-   CGparameter cgp = cgGetNamedParameter(prog, param); \
-   if (cgp) \
-      cgD3D9SetUniform(cgp, &val); \
-} while(0)
 
 static void d3d9_cg_renderchain_set_shader_params(
       cg_renderchain_t *chain,
@@ -882,7 +876,8 @@ static bool d3d9_cg_renderchain_init(void *data,
    if (!d3d9_cg_load_program(chain, &chain->fStock, &chain->vStock, NULL, false))
       return false;
 
-   d3d9_cg_renderchain_set_shaders(chain->fStock, chain->vStock);
+   cgD3D9BindProgram(chain->fStock);
+   cgD3D9BindProgram(chain->vStock);
 
    return true;
 }
@@ -1313,7 +1308,8 @@ static void cg_d3d9_renderchain_render_pass(
 {
    unsigned i, index;
 
-   d3d9_cg_renderchain_set_shaders(pass->fPrg, pass->vPrg);
+   cgD3D9BindProgram(pass->fPrg);
+   cgD3D9BindProgram(pass->vPrg);
 
    d3d_set_texture(chain->dev, 0, pass->tex);
    d3d_set_sampler_minfilter(chain->dev, 0,
@@ -1494,7 +1490,8 @@ static bool d3d9_cg_renderchain_render(
    if (chain)
    {
       d3d9_cg_renderchain_end_render(chain);
-      d3d9_cg_renderchain_set_shaders(chain->fStock, chain->vStock);
+      cgD3D9BindProgram(chain->fStock);
+      cgD3D9BindProgram(chain->vStock);
       d3d9_cg_renderchain_set_mvp(
             chain, chain->vStock, chain->final_viewport->Width,
             chain->final_viewport->Height, 0);
