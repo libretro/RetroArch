@@ -386,7 +386,7 @@ static int stream_get_crc(intfstream_t *fd, uint32_t *crc)
    while ((read = intfstream_read(fd, buffer, sizeof(buffer))) > 0)
       acc = encoding_crc32(acc, buffer, read);
 
-   if ( sread < 0)
+   if (read < 0)
       return 0;
 
    *crc = acc;
