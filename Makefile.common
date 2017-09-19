@@ -1004,7 +1004,7 @@ OBJ += \
 ifeq ($(HAVE_GL_CONTEXT), 1)
    DEFINES += -DHAVE_OPENGL -DHAVE_GLSL
    OBJ += gfx/drivers/gl.o \
-			 gfx/drivers_renderchain/gl_legacy_renderchain.o \
+			 gfx/drivers_renderchain/gl2_renderchain.o \
 			 $(LIBRETRO_COMM_DIR)/gfx/gl_capabilities.o \
           gfx/common/gl_common.o \
           gfx/drivers_font/gl_raster_font.o \

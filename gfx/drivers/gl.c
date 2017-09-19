@@ -40,7 +40,7 @@
 #include <gfx/gl_capabilities.h>
 #include <gfx/video_frame.h>
 
-#include "../drivers_renderchain/gl_legacy_renderchain.h"
+#include "../drivers_renderchain/gl2_renderchain.h"
 
 #include "../../configuration.h"
 #include "../../dynamic.h"
