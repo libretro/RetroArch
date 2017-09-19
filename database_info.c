@@ -398,6 +398,31 @@ static int database_cursor_close(libretrodb_t *db, libretrodb_cursor_t *cur)
    return 0;
 }
 
+static bool type_is_prioritized(enum msg_file_type type)
+{
+   return (type == FILE_TYPE_CUE || type == FILE_TYPE_GDI);
+}
+
+static enum msg_file_type file_type(const char *path)
+{
+   return msg_hash_to_file_type(msg_hash_calculate(path_get_extension(path)));
+}
+
+static int dir_entry_compare(const void *left, const void *right)
+{
+   const struct string_list_elem *le = left;
+   const struct string_list_elem *re = right;
+   bool l = type_is_prioritized(file_type(le->data));
+   bool r = type_is_prioritized(file_type(re->data));
+
+   return (int) r - (int) l;
+}
+
+static void dir_list_prioritize(struct string_list *list)
+{
+   qsort(list->elems, list->size, sizeof(*list->elems), dir_entry_compare);
+}
+
 database_info_handle_t *database_info_dir_init(const char *dir,
       enum database_type type, retro_task_t *task)
 {
@@ -412,6 +437,8 @@ database_info_handle_t *database_info_dir_init(const char *dir,
 
    if (!db->list)
       goto error;
+
+   dir_list_prioritize(db->list);
 
    db->list_ptr       = 0;
    db->status         = DATABASE_STATUS_ITERATE;

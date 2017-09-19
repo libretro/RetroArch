@@ -32,8 +32,12 @@ RETRO_BEGIN_DECLS
 
 typedef struct chdstream chdstream_t;
 
+// First data track
 #define CHDSTREAM_TRACK_FIRST_DATA (-1)
+// Last track
 #define CHDSTREAM_TRACK_LAST (-2)
+// Primary (largest) data track, used for CRC identification purposes
+#define CHDSTREAM_TRACK_PRIMARY (-3)
 
 chdstream_t *chdstream_open(const char *path, int32_t track);
 

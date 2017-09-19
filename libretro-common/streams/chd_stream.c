@@ -82,10 +82,12 @@ chdstream_get_meta(chd_file *chd, int idx, metadata_t *md)
 {
    char meta[256];
    uint32_t meta_size = 0;
-   chd_error err      = chd_get_metadata(
-         chd, CDROM_TRACK_METADATA2_TAG, idx, meta,
-         sizeof(meta), &meta_size, NULL, NULL);
+   chd_error err;
 
+   memset(md, 0, sizeof(*md));
+
+   err = chd_get_metadata(chd, CDROM_TRACK_METADATA2_TAG, idx, meta,
+                          sizeof(meta), &meta_size, NULL, NULL);
    if (err == CHDERR_NONE)
    {
       sscanf(meta, CDROM_TRACK_METADATA2_FORMAT,
@@ -101,8 +103,19 @@ chdstream_get_meta(chd_file *chd, int idx, metadata_t *md)
                           sizeof(meta), &meta_size, NULL, NULL);
    if (err == CHDERR_NONE)
    {
-      sscanf(meta, CDROM_TRACK_METADATA_FORMAT,
-            &md->track, md->type, md->subtype, &md->frames);
+      sscanf(meta, CDROM_TRACK_METADATA_FORMAT, &md->track, md->type,
+             md->subtype, &md->frames);
+      md->extra = padding_frames(md->frames);
+      return true;
+   }
+
+   err = chd_get_metadata(chd, GDROM_TRACK_METADATA_TAG, idx, meta,
+                          sizeof(meta), &meta_size, NULL, NULL);
+   if (err == CHDERR_NONE)
+   {
+      sscanf(meta, GDROM_TRACK_METADATA_FORMAT, &md->track, md->type,
+             md->subtype, &md->frames, &md->pad, &md->pregap, md->pgtype,
+             md->pgsub, &md->postgap);
       md->extra = padding_frames(md->frames);
       return true;
    }
@@ -111,40 +124,84 @@ chdstream_get_meta(chd_file *chd, int idx, metadata_t *md)
 }
 
 static bool
-chdstream_find_track(chd_file *fd, int32_t track, metadata_t *meta)
+chdstream_find_track_number(chd_file *fd, int32_t track, metadata_t *meta)
 {
    uint32_t i;
-
-   memset(meta, 0, sizeof(*meta));
+   uint32_t frame_offset = 0;
 
    for (i = 0; true; ++i)
    {
       if (!chdstream_get_meta(fd, i, meta))
       {
-         if (track != CHDSTREAM_TRACK_LAST)
-            return false;
+         return false;
+      }
 
-         meta->frame_offset -= meta->frames + meta->extra;
+      if (track == meta->track)
+      {
+         meta->frame_offset = frame_offset;
          return true;
       }
 
-      if ((track == CHDSTREAM_TRACK_FIRST_DATA &&
-           strcmp(meta->type, "AUDIO")) ||
-          (track > 0 && track == meta->track))
-         return true;
+      frame_offset += meta->frames + meta->extra;
+   }
+}
 
-      meta->frame_offset += meta->frames + meta->extra;
+static bool
+chdstream_find_special_track(chd_file *fd, int32_t track, metadata_t *meta)
+{
+   int32_t i;
+   metadata_t iter;
+   int32_t largest_track = 0;
+   uint32_t largest_size = 0;
+
+   for (i = 1; true; ++i)
+   {
+      if (!chdstream_find_track_number(fd, i, &iter)) {
+         if (track == CHDSTREAM_TRACK_LAST && i > 1) {
+            *meta = iter;
+            return true;
+         } else if (track == CHDSTREAM_TRACK_PRIMARY && largest_track != 0) {
+            return chdstream_find_track_number(fd, largest_track, meta);
+         }
+      }
+
+      switch (track) {
+         case CHDSTREAM_TRACK_FIRST_DATA:
+            if (strcmp(iter.type, "AUDIO")) {
+               *meta = iter;
+               return true;
+            }
+            break;
+         case CHDSTREAM_TRACK_PRIMARY:
+            if (strcmp(iter.type, "AUDIO") && iter.frames > largest_size) {
+               largest_size = iter.frames;
+               largest_track = iter.track;
+            }
+            break;
+         default:
+            break;
+      }
+   }
+}
+
+static bool
+chdstream_find_track(chd_file *fd, int32_t track, metadata_t *meta)
+{
+   if (track < 0) {
+      return chdstream_find_special_track(fd, track, meta);
+   } else {
+      return chdstream_find_track_number(fd, track, meta);
    }
 }
 
 chdstream_t *chdstream_open(const char *path, int32_t track)
 {
-   metadata_t meta;
    uint32_t pregap      = 0;
    const chd_header *hd = NULL;
    chdstream_t *stream  = NULL;
    chd_file *chd        = NULL;
    chd_error err        = chd_open(path, CHD_OPEN_READ, NULL, &chd);
+   metadata_t meta;
 
    if (err != CHDERR_NONE)
       goto error;
