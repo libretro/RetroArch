@@ -132,7 +132,8 @@ static void renderchain_set_vertices(void *data, unsigned pass,
    video_shader_ctx_info_t shader_info;
    unsigned width, height;
    d3d_video_t *d3d         = (d3d_video_t*)data;
-   hlsl_d3d9_renderchain_t *chain = d3d ? (hlsl_d3d9_renderchain_t*)d3d->renderchain_data : NULL;
+   hlsl_d3d9_renderchain_t *chain = d3d ? 
+      (hlsl_d3d9_renderchain_t*)d3d->renderchain_data : NULL;
 
    video_driver_get_size(&width, &height);
 
@@ -303,13 +304,16 @@ static bool hlsl_d3d9_renderchain_init(void *data,
       )
 {
    unsigned width, height;
-   d3d_video_t *d3d             = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr        = (LPDIRECT3DDEVICE)d3d->dev;
-   const video_info_t *video_info  = (const video_info_t*)_video_info;
-   const LinkInfo *link_info    = (const LinkInfo*)info_data;
-   hlsl_d3d9_renderchain_t *chain     = (hlsl_d3d9_renderchain_t*)d3d->renderchain_data;
-   unsigned fmt                 = (rgb32) ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
-   struct video_viewport *custom_vp = video_viewport_get_custom();
+   d3d_video_t *d3d                   = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr              = (LPDIRECT3DDEVICE)d3d->dev;
+   const video_info_t *video_info     = (const video_info_t*)_video_info;
+   const LinkInfo *link_info          = (const LinkInfo*)info_data;
+   hlsl_d3d9_renderchain_t *chain     = (hlsl_d3d9_renderchain_t*)
+      d3d->renderchain_data;
+   unsigned fmt                       = (rgb32) 
+      ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
+   struct video_viewport *custom_vp   = video_viewport_get_custom();
+
    (void)final_viewport_data;
    
    if (!hlsl_d3d9_renderchain_init_shader(d3d, NULL))
@@ -317,11 +321,10 @@ static bool hlsl_d3d9_renderchain_init(void *data,
 
    video_driver_get_size(&width, &height);
 
-   chain->dev                   = (LPDIRECT3DDEVICE)dev_data;
-   //chain->video_info            = video_info;
-   chain->pixel_size            = (fmt == RETRO_PIXEL_FORMAT_RGB565) ? 2 : 4;
-   chain->tex_w                 = link_info->tex_w;
-   chain->tex_h                 = link_info->tex_h;
+   chain->dev                         = (LPDIRECT3DDEVICE)dev_data;
+   chain->pixel_size                  = (fmt == RETRO_PIXEL_FORMAT_RGB565) ? 2 : 4;
+   chain->tex_w                       = link_info->tex_w;
+   chain->tex_h                       = link_info->tex_h;
 
    if (!renderchain_create_first_pass(d3d, video_info))
       return false;
@@ -352,10 +355,11 @@ static bool hlsl_d3d9_renderchain_render(void *data, const void *frame,
 {
    unsigned i;
    unsigned width, height;
-   d3d_video_t      *d3d    = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr    = (LPDIRECT3DDEVICE)d3d->dev;
-   settings_t *settings     = config_get_ptr();
+   d3d_video_t      *d3d          = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr          = (LPDIRECT3DDEVICE)d3d->dev;
+   settings_t *settings           = config_get_ptr();
    hlsl_d3d9_renderchain_t *chain = (hlsl_d3d9_renderchain_t*)d3d->renderchain_data;
+   bool video_smooth              = settings->bools.video_smooth;
 
    chain->frame_count++;
 
@@ -366,10 +370,10 @@ static bool hlsl_d3d9_renderchain_render(void *data, const void *frame,
 
    d3d_set_texture(d3dr, 0, chain->tex);
    d3d_set_viewports(chain->dev, &d3d->final_viewport);
-   d3d_set_sampler_minfilter(d3dr, 0, settings->bools.video_smooth ?
-         D3DTEXF_LINEAR : D3DTEXF_POINT);
-   d3d_set_sampler_magfilter(d3dr, 0, settings->bools.video_smooth ?
-         D3DTEXF_LINEAR : D3DTEXF_POINT);
+   d3d_set_sampler_minfilter(d3dr, 0,
+         video_smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+   d3d_set_sampler_magfilter(d3dr, 0,
+         video_smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
 
    d3d_set_vertex_declaration(d3dr, chain->vertex_decl);
    for (i = 0; i < 4; i++)
@@ -418,15 +422,17 @@ static void hlsl_d3d9_renderchain_convert_geometry(
 static bool hlsl_d3d9_renderchain_reinit(void *data,
       const void *video_data)
 {
-   d3d_video_t *d3d          = (d3d_video_t*)data;
-   const video_info_t *video = (const video_info_t*)video_data;
+   d3d_video_t *d3d                = (d3d_video_t*)data;
+   const video_info_t *video       = (const video_info_t*)video_data;
    hlsl_d3d9_renderchain_t *chain  = (hlsl_d3d9_renderchain_t*)d3d->renderchain_data;
 
    if (!d3d)
       return false;
 
    chain->pixel_size         = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
-   chain->tex_w = chain->tex_h = RARCH_SCALE_BASE * video->input_scale; 
+   chain->tex_w              = RARCH_SCALE_BASE * video->input_scale;
+   chain->tex_h              = RARCH_SCALE_BASE * video->input_scale; 
+
    RARCH_LOG(
          "Reinitializing renderchain - and textures (%u x %u @ %u bpp)\n",
          chain->tex_w, chain->tex_h, chain->pixel_size * CHAR_BIT);
