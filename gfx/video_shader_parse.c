@@ -21,6 +21,7 @@
 #include <compat/msvc.h>
 #include <compat/strl.h>
 #include <file/file_path.h>
+#include <gfx/video_driver.h> /* video_context_driver_get_api */
 #include <rhash.h>
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
