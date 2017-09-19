@@ -384,14 +384,10 @@ static int stream_get_crc(intfstream_t *fd, uint32_t *crc)
    uint8_t buffer[4096];
 
    while ((read = intfstream_read(fd, buffer, sizeof(buffer))) > 0)
-   {
       acc = encoding_crc32(acc, buffer, read);
-   }
 
-   if (read < 0)
-   {
+   if ( sread < 0)
       return 0;
-   }
 
    *crc = acc;
 
@@ -448,12 +444,11 @@ static bool file_get_crc(const char *name, size_t offset, size_t size, uint32_t 
 static int cue_get_crc(const char *name, uint32_t *crc)
 {
    char *track_path = (char *)malloc(PATH_MAX_LENGTH);
-   int ret = 0;
-   size_t offset = 0;
-   size_t size = 0;
-   int rv = 0;
+   size_t offset    = 0;
+   size_t size      = 0;
+   int rv           = 0;
 
-   track_path[0] = '\0';
+   track_path[0]    = '\0';
 
    rv = cue_find_track(name, false, &offset, &size, track_path, PATH_MAX_LENGTH);
 
@@ -469,7 +464,8 @@ static int cue_get_crc(const char *name, uint32_t *crc)
    RARCH_LOG("%s\n", msg_hash_to_str(MSG_READING_FIRST_DATA_TRACK));
 
    rv = file_get_crc(track_path, offset, size, crc);
-   if (rv == 1) {
+   if (rv == 1)
+   {
       RARCH_LOG("CUE '%s' crc: %x\n", name, *crc);
    }
    free(track_path);
@@ -479,14 +475,14 @@ static int cue_get_crc(const char *name, uint32_t *crc)
 static int gdi_get_crc(const char *name, uint32_t *crc)
 {
    char *track_path = (char *)malloc(PATH_MAX_LENGTH);
-   int ret = 0;
-   int rv = 0;
+   int rv           = 0;
 
    track_path[0] = '\0';
 
    rv = gdi_find_track(name, false, track_path, PATH_MAX_LENGTH);
 
-   if (rv < 0) {
+   if (rv < 0)
+   {
       RARCH_LOG("%s: %s\n", msg_hash_to_str(MSG_COULD_NOT_FIND_VALID_DATA_TRACK),
                 strerror(-rv));
       free(track_path);
@@ -498,7 +494,8 @@ static int gdi_get_crc(const char *name, uint32_t *crc)
    RARCH_LOG("%s\n", msg_hash_to_str(MSG_READING_FIRST_DATA_TRACK));
 
    rv = file_get_crc(track_path, 0, SIZE_MAX, crc);
-   if (rv == 1) {
+   if (rv == 1)
+   {
       RARCH_LOG("GDI '%s' crc: %x\n", name, *crc);
    }
    free(track_path);
@@ -508,7 +505,6 @@ static int gdi_get_crc(const char *name, uint32_t *crc)
 static bool chd_get_crc(const char *name, uint32_t *crc)
 {
    int rv;
-   uint32_t     acc = 0;
    intfstream_t *fd = open_chd_track(name, CHDSTREAM_TRACK_PRIMARY);
    if (!fd)
       return 0;

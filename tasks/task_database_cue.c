@@ -545,7 +545,6 @@ bool cue_next_file(intfstream_t *fd, const char *cue_path, char *path, size_t ma
 {
    bool rv                    = false;
    char *tmp_token            = (char*)malloc(MAX_TOKEN_LEN);
-   ssize_t volatile file_size = -1;
    char *cue_dir              = (char*)malloc(PATH_MAX_LENGTH);
    cue_dir[0]                 = '\0';
 
@@ -576,7 +575,6 @@ int gdi_find_track(const char *gdi_path, bool first, char *track_path, size_t ma
    char *tmp_token   = (char*)malloc(MAX_TOKEN_LEN);
    char *last_file   = (char*)malloc(PATH_MAX_LENGTH + 1);
    intfstream_t *fd  = NULL;
-   int32_t track     = 0;
    size_t largest    = 0;
    int size          = -1;
    int mode          = -1;
