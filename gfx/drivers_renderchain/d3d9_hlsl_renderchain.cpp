@@ -69,6 +69,12 @@ static void hlsl_d3d9_renderchain_clear(void *data)
 
 static bool hlsl_d3d9_renderchain_init_shader_fvf(void *data, void *pass_data)
 {
+   static const D3DVERTEXELEMENT VertexElements[] =
+   {
+      { 0, 0 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
+      { 0, 2 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
+      D3DDECL_END()
+   };
    d3d_video_t *d3d         = (d3d_video_t*)data;
    d3d_video_t *pass        = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr    = (LPDIRECT3DDEVICE)d3d->dev;
@@ -76,17 +82,8 @@ static bool hlsl_d3d9_renderchain_init_shader_fvf(void *data, void *pass_data)
 
    (void)pass_data;
 
-#if defined(_XBOX360)
-   static const D3DVERTEXELEMENT VertexElements[] =
-   {
-      { 0, 0 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
-      { 0, 2 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
-      D3DDECL_END()
-   };
-
    if (FAILED(d3dr->CreateVertexDeclaration(VertexElements, &chain->vertex_decl)))
       return false;
-#endif
 
    return true;
 }
@@ -119,9 +116,6 @@ static bool renderchain_create_first_pass(void *data,
 
    d3d_set_sampler_address_u(d3dr, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
    d3d_set_sampler_address_v(d3dr, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
-#ifdef _XBOX1
-   d3d_set_render_state(d3dr, D3DRS_LIGHTING, 0);
-#endif
    d3d_set_render_state(d3dr, D3DRS_CULLMODE, D3DCULL_NONE);
    d3d_set_render_state(d3dr, D3DRS_ZENABLE, FALSE);
 
@@ -156,57 +150,34 @@ static void renderchain_set_vertices(void *data, unsigned pass,
 
       float tex_w        = vert_width;
       float tex_h        = vert_height;
-#ifdef _XBOX360
       tex_w             /= ((float)chain->tex_w);
       tex_h             /= ((float)chain->tex_h);
-#endif
 
-      vert[0].x        = -1.0f;
-      vert[1].x        =  1.0f;
-      vert[2].x        = -1.0f;
-      vert[3].x        =  1.0f;
+      vert[0].x          = -1.0f;
+      vert[0].y          = -1.0f;
+      vert[0].u          = 0.0f;
+      vert[0].v          = tex_h;
 
-      vert[0].y        = -1.0f;
-      vert[1].y        = -1.0f;
-      vert[2].y        =  1.0f;
-      vert[3].y        =  1.0f;
-#if defined(_XBOX1)
-      vert[0].z        =  1.0f;
-      vert[1].z        =  1.0f;
-      vert[2].z        =  1.0f;
-      vert[3].z        =  1.0f;
+      vert[1].x          =  1.0f;
+      vert[1].y          = -1.0f;
+      vert[1].u          = tex_w;
+      vert[1].v          = tex_h;
 
-      vert[0].rhw      = 0.0f;
-      vert[1].rhw      = tex_w;
-      vert[2].rhw      = 0.0f;
-      vert[3].rhw      = tex_w;
+      vert[2].x          = -1.0f;
+      vert[2].y          =  1.0f;
+      vert[2].u          = 0.0f;
+      vert[2].v          = 0.0f;
 
-      vert[0].u        = tex_h;
-      vert[1].u        = tex_h;
-      vert[2].u        = 0.0f;
-      vert[3].u        = 0.0f;
-
-      vert[0].v        = 0.0f;
-      vert[1].v        = 0.0f;
-      vert[2].v        = 0.0f;
-      vert[3].v        = 0.0f;
-#elif defined(_XBOX360)
-      vert[0].u        = 0.0f;
-      vert[1].u        = tex_w;
-      vert[2].u        = 0.0f;
-      vert[3].u        = tex_w;
-
-      vert[0].v        = tex_h;
-      vert[1].v        = tex_h;
-      vert[2].v        = 0.0f;
-      vert[3].v        = 0.0f;
-#endif
+      vert[3].x          =  1.0f;
+      vert[3].y          =  1.0f;
+      vert[3].u          = tex_w;
+      vert[3].v          = 0.0f;
 
       /* Align texels and vertices. */
       for (i = 0; i < 4; i++)
       {
-         vert[i].x    -= 0.5f / ((float)chain->tex_w);
-         vert[i].y    += 0.5f / ((float)chain->tex_h);
+         vert[i].x      -= 0.5f / ((float)chain->tex_w);
+         vert[i].y      += 0.5f / ((float)chain->tex_h);
       }
 
       verts = d3d_vertex_buffer_lock(chain->vertex_buf);
