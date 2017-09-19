@@ -390,10 +390,55 @@ static int task_database_iterate_playlist(
 }
 
 static int database_info_list_iterate_end_no_match(
-      database_state_handle_t *db_state)
+      database_info_handle_t *db,
+      database_state_handle_t *db_state,
+      const char *path)
 {
    /* Reached end of database list,
     * CRC match probably didn't succeed. */
+
+   /* If this was a compressed file and no match in the database
+    * list was found then expand the search list to include the
+    * archive's contents. */
+   if (path_is_compressed_file(path) && !path_contains_compressed_file(path))
+   {
+      struct string_list *archive_list =
+         file_archive_get_file_list(path, NULL);
+
+      if (archive_list && archive_list->size > 0)
+      {
+         unsigned i;
+
+         for (i = 0; i < archive_list->size; i++)
+         {
+            char *new_path   = (char*)malloc(
+               PATH_MAX_LENGTH * sizeof(char));
+            size_t path_size = PATH_MAX_LENGTH * sizeof(char);
+            size_t path_len  = strlen(path);
+
+            new_path[0] = '\0';
+
+            strlcpy(new_path, path, path_size);
+
+            if (path_len + strlen(archive_list->elems[i].data)
+                     + 1 < PATH_MAX_LENGTH)
+            {
+               new_path[path_len] = '#';
+               strlcpy(new_path + path_len + 1,
+                  archive_list->elems[i].data,
+                  path_size - path_len);
+            }
+
+            string_list_append(db->list, new_path,
+               archive_list->elems[i].attr);
+
+            free(new_path);
+         }
+
+         string_list_free(archive_list);
+      }
+   }
+
    db_state->list_index  = 0;
    db_state->entry_index = 0;
 
@@ -539,8 +584,9 @@ static int task_database_iterate_crc_lookup(
 {
 
    if (!db_state->list ||
-         (unsigned)db_state->list_index == (unsigned)db_state->list->size)
-      return database_info_list_iterate_end_no_match(db_state);
+         (unsigned)db_state->list_index == (unsigned)db_state->list->size) {
+      return database_info_list_iterate_end_no_match(db, db_state, name);
+   }
 
    if (db_state->entry_index == 0)
    {
@@ -550,12 +596,9 @@ static int task_database_iterate_crc_lookup(
 
       query[0] = '\0';
 
-      db_supports_content = core_info_database_supports_content_path(
-            db_state->list->elems[db_state->list_index].data, name);
-      unsupported_content = core_info_unsupported_content_path(name);
-
       /* don't scan files that can't be in this database */
-      if(!db_supports_content || unsupported_content)
+      if(!core_info_database_supports_content_path(
+         db_state->list->elems[db_state->list_index].data, name))
          return database_info_list_iterate_next(db_state);
 
       snprintf(query, sizeof(query),
@@ -677,8 +720,9 @@ static int task_database_iterate_serial_lookup(
       database_info_handle_t *db, const char *name)
 {
    if (!db_state->list ||
-         (unsigned)db_state->list_index == (unsigned)db_state->list->size)
-      return database_info_list_iterate_end_no_match(db_state);
+         (unsigned)db_state->list_index == (unsigned)db_state->list->size) {
+      return database_info_list_iterate_end_no_match(db, db_state, name);
+   }
 
    if (db_state->entry_index == 0)
    {
