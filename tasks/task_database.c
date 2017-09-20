@@ -525,16 +525,14 @@ static void cue_prune(database_info_handle_t *db, const char *name)
    size_t i;
 
    if (!fd)
-   {
-      free(path);
-      return;
-   }
+      goto end;
 
    while (cue_next_file(fd, name, path, PATH_MAX_LENGTH))
    {
       for (i = db->list_ptr; i < db->list->size; ++i)
       {
-         if (db->list->elems[i].data && !strcmp(path, db->list->elems[i].data))
+         if (db->list->elems[i].data 
+               && !strcmp(path, db->list->elems[i].data))
          {
             RARCH_LOG("Pruning file referenced by cue: %s\n", path);
             free(db->list->elems[i].data);
@@ -542,6 +540,9 @@ static void cue_prune(database_info_handle_t *db, const char *name)
          }
       }
    }
+
+end:
+   free(path);
 }
 
 static void gdi_prune(database_info_handle_t *db, const char *name)
