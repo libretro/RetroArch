@@ -90,6 +90,7 @@ LOCAL_C_INCLUDES := \
 							$(LOCAL_PATH)/$(RARCH_DIR)/libretro-common/include/ \
 							$(LOCAL_PATH)/$(RARCH_DIR)/deps
 
+LOCAL_CPPFLAGS   += -I$(LOCAL_PATH)/$(DEPS_DIR)/libFLAC/include
 
 ifeq ($(HAVE_VULKAN),1)
 INCFLAGS         += $(LOCAL_PATH)/$(RARCH_DIR)/gfx/include
