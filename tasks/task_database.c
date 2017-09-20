@@ -546,15 +546,12 @@ static void cue_prune(database_info_handle_t *db, const char *name)
 
 static void gdi_prune(database_info_handle_t *db, const char *name)
 {
-   char *path = (char *)malloc(PATH_MAX_LENGTH + 1);
-   intfstream_t *fd = open_file(name);
    size_t i;
+   char       *path = (char *)malloc(PATH_MAX_LENGTH + 1);
+   intfstream_t *fd = open_file(name);
 
    if (!fd)
-   {
-      free(path);
-      return;
-   }
+      goto end;
 
    while (gdi_next_file(fd, name, path, PATH_MAX_LENGTH))
    {
@@ -568,6 +565,9 @@ static void gdi_prune(database_info_handle_t *db, const char *name)
          }
       }
    }
+
+end:
+   free(path);
 }
 
 static int task_database_iterate_playlist(
