@@ -742,8 +742,8 @@ static int database_info_list_iterate_found_match(
       const char *archive_name
       )
 {
-   char *db_crc                   = (char*)malloc(128 * sizeof(char));
-   char *db_playlist_base_str     = (char*)malloc(128 * sizeof(char));
+   char *db_crc                   = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char *db_playlist_base_str     = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    char *db_playlist_path         = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    char *entry_path_str           = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    playlist_t   *playlist         = NULL;
@@ -760,26 +760,26 @@ static int database_info_list_iterate_found_match(
    entry_path_str[0] = '\0';
 
    fill_short_pathname_representation_noext(db_playlist_base_str,
-         db_path, 128 * sizeof(char));
+         db_path, PATH_MAX_LENGTH * sizeof(char));
 
    strlcat(db_playlist_base_str,
          file_path_str(FILE_PATH_LPL_EXTENSION),
-         128 * sizeof(char));
+         PATH_MAX_LENGTH * sizeof(char));
    fill_pathname_join(db_playlist_path, _db->playlist_directory,
          db_playlist_base_str, PATH_MAX_LENGTH * sizeof(char));
 
    playlist = playlist_init(db_playlist_path, COLLECTION_SIZE);
 
-   snprintf(db_crc, 128 * sizeof(char),
+   snprintf(db_crc, PATH_MAX_LENGTH * sizeof(char),
          "%08X|crc", db_info_entry->crc32);
 
    if (entry_path)
-      strlcpy(entry_path_str, entry_path, 128 * sizeof(char));
+      strlcpy(entry_path_str, entry_path, PATH_MAX_LENGTH * sizeof(char));
 
    if (!string_is_empty(archive_name))
       fill_pathname_join_delim(entry_path_str,
             entry_path_str, archive_name,
-            '#', 128 * sizeof(char));
+            '#', PATH_MAX_LENGTH * sizeof(char));
 
 #if 0
    RARCH_LOG("Found match in database !\n");
