@@ -683,12 +683,16 @@ int gdi_find_track(const char *gdi_path, bool first,
 clean:
    free(tmp_token);
    intfstream_close(fd);
+   free(fd);
    return rv;
 
 error:
    free(tmp_token);
    if (fd)
+   {
       intfstream_close(fd);
+      free(fd);
+   }
    return -errno;
 }
 

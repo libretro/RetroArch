@@ -99,6 +99,7 @@ static intfstream_t* open_file(const char *path)
    if (!intfstream_open(fd, path, RFILE_MODE_READ, -1))
    {
       intfstream_close(fd);
+      free(fd);
       return NULL;
    }
 
@@ -263,10 +264,10 @@ static int stream_get_serial(intfstream_t *fd, char *serial)
 
 static bool file_get_serial(const char *name, size_t offset, size_t size, char *serial)
 {
-   intfstream_t *fd = open_file(name);
    int rv;
-   uint8_t *data = NULL;
+   uint8_t *data     = NULL;
    ssize_t file_size = -1;
+   intfstream_t *fd  = open_file(name);
 
    if (!fd)
       return 0;
@@ -274,7 +275,9 @@ static bool file_get_serial(const char *name, size_t offset, size_t size, char *
    intfstream_seek(fd, 0, SEEK_END);
    file_size = intfstream_tell(fd);
    intfstream_seek(fd, 0, SEEK_SET);
-   if (file_size < 0) {
+
+   if (file_size < 0)
+   {
       intfstream_close(fd);
       return 0;
    }
@@ -289,9 +292,11 @@ static bool file_get_serial(const char *name, size_t offset, size_t size, char *
          free(data);
          return 0;
       }
+
       intfstream_close(fd);
       fd = open_memory(data, size);
-      if (!fd) {
+      if (!fd)
+      {
          free(data);
          return 0;
       }
@@ -300,6 +305,7 @@ static bool file_get_serial(const char *name, size_t offset, size_t size, char *
    rv = stream_get_serial(fd, serial);
    intfstream_close(fd);
    free(data);
+   free(fd);
    return rv;
 }
 
@@ -437,6 +443,7 @@ static bool file_get_crc(const char *name, size_t offset, size_t size, uint32_t 
 
    rv = stream_get_crc(fd, crc);
    intfstream_close(fd);
+   free(fd);
    free(data);
    return rv;
 }
@@ -568,6 +575,7 @@ static void gdi_prune(database_info_handle_t *db, const char *name)
    }
 
 end:
+   free(fd);
    free(path);
 }
 
