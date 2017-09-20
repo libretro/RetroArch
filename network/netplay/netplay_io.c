@@ -212,7 +212,7 @@ void netplay_delayed_state_change(netplay_t *netplay)
 /* Send the specified input data */
 static bool send_input_frame(netplay_t *netplay, struct delta_frame *dframe,
       struct netplay_connection *only, struct netplay_connection *except,
-      uint32_t client_num)
+      uint32_t client_num, bool slave)
 {
 #define BUFSZ 16 /* FIXME: Arbitrary restriction */
    uint32_t buffer[BUFSZ], devices, device;
@@ -232,7 +232,7 @@ static bool send_input_frame(netplay_t *netplay, struct delta_frame *dframe,
       if (!(devices & (1<<device)))
          continue;
       istate = dframe->real_input[device];
-      while (istate && (!istate->used || istate->client_num != client_num))
+      while (istate && (!istate->used || istate->client_num != (slave?MAX_CLIENTS:client_num)))
          istate = istate->next;
       if (!istate)
          continue;
@@ -308,7 +308,7 @@ bool netplay_send_cur_input(netplay_t *netplay,
          {
             if (dframe->have_real[from_client])
             {
-               if (!send_input_frame(netplay, dframe, connection, NULL, from_client))
+               if (!send_input_frame(netplay, dframe, connection, NULL, from_client, false))
                   return false;
             }
          }
@@ -326,11 +326,12 @@ bool netplay_send_cur_input(netplay_t *netplay,
    }
 
    /* Send our own data */
-   if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING ||
-       netplay->self_mode == NETPLAY_CONNECTION_SLAVE)
+   if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING
+         || netplay->self_mode == NETPLAY_CONNECTION_SLAVE)
    {
       if (!send_input_frame(netplay, dframe, connection, NULL,
-            netplay->self_client_num))
+            netplay->self_client_num,
+            netplay->self_mode == NETPLAY_CONNECTION_SLAVE))
          return false;
    }
 
@@ -1039,7 +1040,9 @@ static bool netplay_get_cmd(netplay_t *netplay,
 
                dsize = netplay_expected_input_size(netplay, 1 << device);
                istate = netplay_input_state_for(&dframe->real_input[device],
-                  client_num, dsize, true, false);
+                     client_num, dsize,
+                     false /* Must be false because of slave-mode clients */,
+                     false);
                if (!istate)
                {
                   /* Catastrophe! */
@@ -1064,7 +1067,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
                {
                   /* Forward it on if it's past data */
                   if (dframe->frame <= netplay->self_frame_count)
-                     send_input_frame(netplay, dframe, NULL, connection, client_num);
+                     send_input_frame(netplay, dframe, NULL, connection, client_num, false);
                }
             }
 
@@ -1288,8 +1291,11 @@ static bool netplay_get_cmd(netplay_t *netplay,
                      netplay->device_clients[device] |= (1<<client_num);
                netplay->self_devices = devices;
 
+               netplay->read_ptr[client_num] = netplay->server_ptr;
+               netplay->read_frame_count[client_num] = netplay->server_frame_count;
+
                /* Fix up current frame info */
-               if (frame <= netplay->self_frame_count)
+               if (!(mode & NETPLAY_CMD_MODE_BIT_SLAVE) && frame <= netplay->self_frame_count)
                {
                   /* It wanted past frames, better send 'em! */
                   START(netplay->server_ptr);
@@ -1309,7 +1315,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
                      }
                      dframe->have_local = true;
                      dframe->have_real[client_num] = true;
-                     send_input_frame(netplay, dframe, connection, NULL, client_num);
+                     send_input_frame(netplay, dframe, connection, NULL, client_num, false);
                      if (dframe->frame == netplay->self_frame_count) break;
                      NEXT();
                   }
@@ -1964,17 +1970,28 @@ void netplay_handle_slaves(netplay_t *netplay)
                while (istate_in && istate_in->client_num != client_num)
                   istate_in = istate_in->next;
                if (!istate_in)
-                  continue;
-               istate_out = netplay_input_state_for(&frame->real_input[device],
-                     client_num, istate_in->size, true, false);
-               memcpy(istate_out->data, istate_in->data,
-                     istate_in->size * sizeof(uint32_t));
+               {
+                  /* Start with blank input */
+                  netplay_input_state_for(&frame->real_input[device],
+                        client_num,
+                        netplay_expected_input_size(netplay, 1 << device), true,
+                        false);
+
+               }
+               else
+               {
+                  /* Copy the previous input */
+                  istate_out = netplay_input_state_for(&frame->real_input[device],
+                        client_num, istate_in->size, true, false);
+                  memcpy(istate_out->data, istate_in->data,
+                        istate_in->size * sizeof(uint32_t));
+               }
             }
             frame->have_real[client_num] = true;
          }
 
          /* Send it along */
-         send_input_frame(netplay, frame, NULL, connection, client_num);
+         send_input_frame(netplay, frame, NULL, NULL, client_num, false);
 
          /* And mark it as "read" */
          netplay->read_ptr[client_num] = NEXT_PTR(netplay->self_ptr);

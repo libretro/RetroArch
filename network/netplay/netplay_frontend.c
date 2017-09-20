@@ -148,7 +148,9 @@ static bool get_self_input_state(netplay_t *netplay)
       used_devices |= (1<<local_device);
 
       istate = netplay_input_state_for(&ptr->real_input[devi],
-            netplay->self_client_num, netplay_expected_input_size(netplay, 1 << devi),
+            /* If we're a slave, we write our own input to MAX_CLIENTS to keep it separate */
+            (netplay->self_mode==NETPLAY_CONNECTION_SLAVE)?MAX_CLIENTS:netplay->self_client_num,
+            netplay_expected_input_size(netplay, 1 << devi),
             true, false);
       if (!istate)
          continue; /* FIXME: More severe? */
@@ -225,10 +227,13 @@ static bool get_self_input_state(netplay_t *netplay)
       }
    }
 
-   ptr->have_real[netplay->self_client_num] = true;
    ptr->have_local = true;
-   netplay->read_ptr[netplay->self_client_num] = NEXT_PTR(netplay->self_ptr);
-   netplay->read_frame_count[netplay->self_client_num] = netplay->self_frame_count + 1;
+   if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING)
+   {
+      ptr->have_real[netplay->self_client_num] = true;
+      netplay->read_ptr[netplay->self_client_num] = NEXT_PTR(netplay->self_ptr);
+      netplay->read_frame_count[netplay->self_client_num] = netplay->self_frame_count + 1;
+   }
 
    /* And send this input to our peers */
    for (i = 0; i < netplay->connections_size; i++)
