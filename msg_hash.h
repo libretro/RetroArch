@@ -132,8 +132,10 @@ enum msg_file_type
    FILE_TYPE_XM,
 
    FILE_TYPE_CUE,
+   FILE_TYPE_GDI,
    FILE_TYPE_ISO,
    FILE_TYPE_LUTRO,
+   FILE_TYPE_CHD,
 
    FILE_TYPE_DIRECT_LOAD,
 

@@ -1256,8 +1256,9 @@ bool video_shader_driver_compile_program(struct shader_program_info *program_inf
 
 bool video_shader_driver_wrap_type(video_shader_ctx_wrap_t *wrap);
 
-bool renderchain_init_first(const d3d_renderchain_driver_t **renderchain_driver,
-	void **renderchain_handle);
+bool renderchain_d3d_init_first(
+      const d3d_renderchain_driver_t **renderchain_driver,
+      void **renderchain_handle);
 
 extern bool (*video_driver_cb_has_focus)(void);
 

@@ -1,8 +1,16 @@
 # 1.6.8 (future)
+- Audio: Fix the Audio DSP picker
 - GUI: (MaterialUI) Skip querying and drawing items that are not visible; Cache content height and bbox calculation.
 - GUI: (XMB) Skip drawing the fading list when it is already transparent. Optimization.
 - GUI: (XMB) Comment out visible item calculation in xmb_draw_items().
 - GUI: (RGUI) Prevent crashes when using a non-English language reliant on UTF8.
+- INPUT: Always show the controls menu even if descriptors are not set
+- INPUT: Fix input descriptors not being set on cores that don't implement the controllers interface
+- INPUT: Apply descriptors only for the amount of cores the core supports
+- INPUT: Implement keyboard to gamepad input remapping (limited to one gamepad device for now)
+- INPUT: Fix absolute mouse move handling on the winraw driver
+- INPUT: Ignore keyboard input if window is not active on udev driver
+- LOBBIES: Fix crash on navigating left / right from the lobby menu
 - LOCALIZATION: Update Italian translation.
 - LOCALIZATION: Update Portuguese-Brazilian translation.
 - LOCALIZATION: Update Russian translation.
@@ -14,6 +22,7 @@
 - WINDOWS/WGL: Try to use wglSwapLayerBuffers instead of SwapBuffers if possible (for more optimal performance).
 - WII: Use custom, embedded libogc SDK.
 - WIIU: Initial touchscreen support for WiiU gamepad.
+- SCANNER: Fix archive scanning.
 
 # 1.6.7
 - SCANNER: Fix directory scanning.

@@ -24,8 +24,6 @@
 #define HAVE_COMPRESSION
 #endif
 
-#include <compat/posix_string.h>
-
 #if _MSC_VER
 #include "../libretro-common/compat/compat_snprintf.c"
 #endif
@@ -35,6 +33,32 @@
 #if defined(HAVE_LOGGER) && !defined(ANDROID)
 #include "../network/net_logger.c"
 #endif
+
+/*============================================================
+COMPATIBILITY
+============================================================ */
+#ifndef HAVE_GETOPT_LONG
+#include "../compat/compat_getopt.c"
+#endif
+
+#ifndef HAVE_STRCASESTR
+#include "../compat/compat_strcasestr.c"
+#endif
+
+#ifndef HAVE_STRL
+#include "../compat/compat_strl.c"
+#endif
+
+#if defined(_WIN32)
+#include "../compat/compat_posix_string.c"
+#endif
+
+#if defined(WANT_IFADDRS)
+#include "../compat/compat_ifaddrs.c"
+#endif
+
+#include "../libretro-common/compat/compat_fnmatch.c"
+#include "../libretro-common/memmap/memalign.c"
 
 /*============================================================
 CONSOLE EXTENSIONS
@@ -101,32 +125,6 @@ PERFORMANCE
 ============================================================ */
 #include "../libretro-common/features/features_cpu.c"
 #include "../performance_counters.c"
-
-/*============================================================
-COMPATIBILITY
-============================================================ */
-#ifndef HAVE_GETOPT_LONG
-#include "../compat/compat_getopt.c"
-#endif
-
-#ifndef HAVE_STRCASESTR
-#include "../compat/compat_strcasestr.c"
-#endif
-
-#ifndef HAVE_STRL
-#include "../compat/compat_strl.c"
-#endif
-
-#if defined(_WIN32) && !defined(_XBOX)
-#include "../compat/compat_posix_string.c"
-#endif
-
-#if defined(WANT_IFADDRS)
-#include "../compat/compat_ifaddrs.c"
-#endif
-
-#include "../libretro-common/compat/compat_fnmatch.c"
-#include "../libretro-common/memmap/memalign.c"
 
 /*============================================================
 CONFIG FILE
@@ -345,7 +343,7 @@ VIDEO DRIVER
 #include "../gfx/common/gl_common.c"
 #include "../gfx/drivers/gl.c"
 #include "../libretro-common/gfx/gl_capabilities.c"
-#include "../gfx/drivers_renderchain/gl_legacy_renderchain.c"
+#include "../gfx/drivers_renderchain/gl2_renderchain.c"
 
 #ifndef HAVE_PSGL
 #include "../libretro-common/glsym/rglgen.c"
@@ -1129,6 +1127,34 @@ DEPENDENCIES
 #include "../deps/libz/trees.c"
 #include "../deps/libz/uncompr.c"
 #include "../deps/libz/zutil.c"
+#endif
+
+#ifdef HAVE_FLAC
+#include "../deps/libFLAC/bitmath.c"
+#include "../deps/libFLAC/bitreader.c"
+#include "../deps/libFLAC/cpu.c"
+#include "../deps/libFLAC/crc.c"
+#include "../deps/libFLAC/fixed.c"
+#include "../deps/libFLAC/float.c"
+#include "../deps/libFLAC/format.c"
+#include "../deps/libFLAC/lpc.c"
+#include "../deps/libFLAC/lpc_intrin_avx2.c"
+#include "../deps/libFLAC/lpc_intrin_sse2.c"
+#include "../deps/libFLAC/lpc_intrin_sse41.c"
+#include "../deps/libFLAC/lpc_intrin_sse.c"
+#include "../deps/libFLAC/md5.c"
+#include "../deps/libFLAC/memory.c"
+#include "../deps/libFLAC/stream_decoder.c"
+#endif
+
+#ifdef HAVE_CHD
+#include "../deps/libchdr/bitstream.c"
+#include "../deps/libchdr/cdrom.c"
+#include "../deps/libchdr/chd.c"
+#include "../deps/libchdr/flac.c"
+#include "../deps/libchdr/huffman.c"
+
+#include "../libretro-common/streams/chd_stream.c"
 #endif
 
 #ifdef HAVE_7ZIP

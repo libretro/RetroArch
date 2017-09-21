@@ -85,11 +85,12 @@ void input_mapper_poll(input_mapper_t *handle)
    /* for now we only handle keyboard inputs */
    if (device == RETRO_DEVICE_KEYBOARD)
    {
+      int i;
       memset(handle->keys, 0, sizeof(handle->keys));
 
-      for (int i = 0; i < RARCH_CUSTOM_BIND_LIST_END; i++)
+      for (i = 0; i < RARCH_CUSTOM_BIND_LIST_END; i++)
       {
-         if(i < RETROK_LAST)
+         if (i < RETROK_LAST)
          {
             if (input_state(handle->port, RETRO_DEVICE_JOYPAD, 0, i))
             {
@@ -97,7 +98,7 @@ void input_mapper_poll(input_mapper_t *handle)
                input_keyboard_event(true, settings->uints.input_keymapper_ids[i], 0, 0, RETRO_DEVICE_KEYBOARD);
             }
             else
-               input_keyboard_event(false, settings->uints.input_keymapper_ids[i], 0, 0, RETRO_DEVICE_KEYBOARD);            
+               input_keyboard_event(false, settings->uints.input_keymapper_ids[i], 0, 0, RETRO_DEVICE_KEYBOARD);
          }
       }
    }

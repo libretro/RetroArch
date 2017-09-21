@@ -398,10 +398,34 @@ static int database_cursor_close(libretrodb_t *db, libretrodb_cursor_t *cur)
    return 0;
 }
 
+static bool type_is_prioritized(enum msg_file_type type)
+{
+   return (type == FILE_TYPE_CUE || type == FILE_TYPE_GDI);
+}
+
+static enum msg_file_type file_type(const char *path)
+{
+   return msg_hash_to_file_type(msg_hash_calculate(path_get_extension(path)));
+}
+
+static int dir_entry_compare(const void *left, const void *right)
+{
+   const struct string_list_elem *le = (const struct string_list_elem*)left;
+   const struct string_list_elem *re = (const struct string_list_elem*)right;
+   bool                            l = type_is_prioritized(file_type(le->data));
+   bool                            r = type_is_prioritized(file_type(re->data));
+
+   return (int) r - (int) l;
+}
+
+static void dir_list_prioritize(struct string_list *list)
+{
+   qsort(list->elems, list->size, sizeof(*list->elems), dir_entry_compare);
+}
+
 database_info_handle_t *database_info_dir_init(const char *dir,
       enum database_type type, retro_task_t *task)
 {
-   unsigned i;
    database_info_handle_t     *db  = (database_info_handle_t*)
       calloc(1, sizeof(*db));
 
@@ -413,59 +437,11 @@ database_info_handle_t *database_info_dir_init(const char *dir,
    if (!db->list)
       goto error;
 
+   dir_list_prioritize(db->list);
+
    db->list_ptr       = 0;
    db->status         = DATABASE_STATUS_ITERATE;
    db->type           = type;
-
-   if (db->list->size > 0)
-   {
-      for (i = 0; i < db->list->size; i++)
-      {
-         const char *path = db->list->elems[i].data;
-
-         if (task)
-            task_set_progress(task, (i / (float)db->list->size) * 100);
-
-         if (path_is_compressed_file(path) && !path_contains_compressed_file(path))
-         {
-            struct string_list *archive_list = path_is_compressed_file(path) ?
-                  file_archive_get_file_list(path, NULL) : NULL;
-
-            if (archive_list && archive_list->size > 0)
-            {
-               unsigned i;
-
-               for (i = 0; i < archive_list->size; i++)
-               {
-                  char *new_path   = (char*)malloc(
-                        PATH_MAX_LENGTH * sizeof(char));
-                  size_t path_size = PATH_MAX_LENGTH * sizeof(char);
-                  size_t path_len  = strlen(path);
-
-                  new_path[0] = '\0';
-
-                  strlcpy(new_path, path, path_size);
-
-                  if (path_len + strlen(archive_list->elems[i].data)
-                         + 1 < PATH_MAX_LENGTH)
-                  {
-                     new_path[path_len] = '#';
-                     strlcpy(new_path + path_len + 1,
-                           archive_list->elems[i].data,
-                           path_size - path_len);
-                  }
-
-                  string_list_append(db->list, new_path,
-                        archive_list->elems[i].attr);
-
-                  free(new_path);
-               }
-
-               string_list_free(archive_list);
-            }
-         }
-      }
-   }
 
    return db;
 
@@ -493,47 +469,6 @@ database_info_handle_t *database_info_file_init(const char *path,
       goto error;
 
    string_list_append(db->list, path, attr);
-
-   if (path_is_compressed_file(path))
-   {
-      struct string_list *archive_list =path_is_compressed_file(path) ?
-            file_archive_get_file_list(path, NULL) : NULL;
-
-      if (archive_list && archive_list->size > 0)
-      {
-         unsigned i;
-
-         for (i = 0; i < archive_list->size; i++)
-         {
-            char *new_path   = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-            size_t path_size = PATH_MAX_LENGTH * sizeof(char);
-            size_t path_len  = strlen(path);
-
-            if (task)
-               task_set_progress(task,
-                     (i / (float)archive_list->size) * 100);
-
-            new_path[0] = '\0';
-
-            strlcpy(new_path, path, path_size);
-
-            if (path_len + strlen(archive_list->elems[i].data)
-                   + 1 < PATH_MAX_LENGTH)
-            {
-               new_path[path_len] = '#';
-               strlcpy(new_path + path_len + 1,
-                     archive_list->elems[i].data,
-                     path_size - path_len);
-            }
-
-            string_list_append(db->list, new_path,
-                                  archive_list->elems[i].attr);
-            free(new_path);
-         }
-
-         string_list_free(archive_list);
-      }
-   }
 
    db->list_ptr       = 0;
    db->status         = DATABASE_STATUS_ITERATE;

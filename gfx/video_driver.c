@@ -3346,7 +3346,7 @@ bool video_shader_driver_wrap_type(video_shader_ctx_wrap_t *wrap)
    return true;
 }
 
-bool renderchain_init_first(const d3d_renderchain_driver_t **renderchain_driver,
+bool renderchain_d3d_init_first(const d3d_renderchain_driver_t **renderchain_driver,
 	void **renderchain_handle)
 {
    unsigned i;

@@ -128,6 +128,7 @@ int generic_action_ok_displaylist_push(const char *path,
 {
    menu_displaylist_info_t      info;
    char tmp[PATH_MAX_LENGTH];
+   char parent_dir[PATH_MAX_LENGTH];
    enum menu_displaylist_ctl_state dl_type = DISPLAYLIST_NONE;
    const char           *menu_label        = NULL;
    const char            *menu_path        = NULL;
@@ -474,26 +475,22 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type                 = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_PARENT_DIRECTORY_PUSH:
-         {
-            char parent_dir[PATH_MAX_LENGTH];
+         parent_dir[0]  = '\0';
 
-            parent_dir[0]  = '\0';
+         if (path && menu_path)
+            fill_pathname_join(tmp,
+                  menu_path, path, sizeof(tmp));
 
-            if (path && menu_path)
-               fill_pathname_join(tmp,
-                     menu_path, path, sizeof(tmp));
+         fill_pathname_parent_dir(parent_dir,
+               tmp, sizeof(parent_dir));
+         fill_pathname_parent_dir(parent_dir,
+               parent_dir, sizeof(parent_dir));
 
-            fill_pathname_parent_dir(parent_dir,
-                  tmp, sizeof(parent_dir));
-            fill_pathname_parent_dir(parent_dir,
-                  parent_dir, sizeof(parent_dir));
-
-            info.type          = type;
-            info.directory_ptr = idx;
-            info_path          = parent_dir;
-            info_label         = menu_label;
-            dl_type            = DISPLAYLIST_GENERIC;
-         }
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = parent_dir;
+         info_label         = menu_label;
+         dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_DIRECTORY_PUSH:
          if (path && menu_path)
@@ -1035,6 +1032,7 @@ static int file_load_with_detect_core_wrapper(
 {
    menu_content_ctx_defer_info_t def_info;
    int ret                             = 0;
+   char *new_core_path                 = NULL;
    const char *menu_path               = NULL;
    const char *menu_label              = NULL;
    menu_handle_t *menu                 = NULL;
@@ -1045,7 +1043,7 @@ static int file_load_with_detect_core_wrapper(
 
    {
       char *menu_path_new = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-      char *new_core_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      new_core_path       = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
       new_core_path[0]    = menu_path_new[0] = '\0';
 
       menu_entries_get_last_stack(&menu_path, &menu_label, NULL, &enum_idx, NULL);
@@ -1085,8 +1083,11 @@ static int file_load_with_detect_core_wrapper(
       free(menu_path_new);
 
       if (enum_label_idx == MENU_ENUM_LABEL_COLLECTION)
+      {
+         free(new_core_path);
          return generic_action_ok_displaylist_push(path, NULL,
                NULL, 0, idx, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST_SET);
+      }
 
       switch (ret)
       {
@@ -1109,19 +1110,19 @@ static int file_load_with_detect_core_wrapper(
                   return -1;
                }
 
-               free(new_core_path);
-               return 0;
+               ret = 0;
+               break;
             }
          case 0:
-            free(new_core_path);
-            return generic_action_ok_displaylist_push(path, NULL, label, type,
+            ret = generic_action_ok_displaylist_push(path, NULL, label, type,
                   idx, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST);
+            break;
          default:
-            free(new_core_path);
             break;
       }
    }
 
+   free(new_core_path);
    return ret;
 }
 

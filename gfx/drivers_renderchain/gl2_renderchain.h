@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __GL_RENDER_CHAIN_H
-#define __GL_RENDER_CHAIN_H
+#ifndef __GL2_RENDER_CHAIN_H
+#define __GL2_RENDER_CHAIN_H
 
 #include <retro_common_api.h>
 #include <libretro.h>

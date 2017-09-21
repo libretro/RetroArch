@@ -448,7 +448,7 @@ static bool _scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds
    struct QueueEntry myentry;
    struct QueueEntry **ptr;
 
-#if _WIN32_WINNT >= 0x0500
+#if _WIN32_WINNT >= 0x0500 || defined(_XBOX)
    static LARGE_INTEGER performanceCounterFrequency;
    LARGE_INTEGER tsBegin;
    static bool first_init  = true;
@@ -468,7 +468,7 @@ static bool _scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds
 
    /* since this library is meant for realtime game software 
     * I have no problem setting this to 1 and forgetting about it. */
-#if _WIN32_WINNT >= 0x0500
+#if _WIN32_WINNT >= 0x0500 || defined(_XBOX)
    if (first_init)
    {
       performanceCounterFrequency.QuadPart = 0;
@@ -490,7 +490,7 @@ static bool _scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds
    /* Now we can take a good timestamp for use in faking the timeout ourselves. */
    /* But don't bother unless we need to (to save a little time) */
    if (dwMilliseconds != INFINITE)
-#if _WIN32_WINNT >= 0x0500
+#if _WIN32_WINNT >= 0x0500 || defined(_XBOX)
       QueryPerformanceCounter(&tsBegin);
 #else
       tsBegin = timeGetTime();
@@ -536,7 +536,7 @@ static bool _scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds
       /* Assess the remaining timeout time */
       if (dwMilliseconds != INFINITE)
       {
-#if _WIN32_WINNT >= 0x0500
+#if _WIN32_WINNT >= 0x0500 || defined(_XBOX)
          LARGE_INTEGER now;
          LONGLONG elapsed;
 

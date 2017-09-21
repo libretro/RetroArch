@@ -106,15 +106,16 @@ int action_right_cheat(unsigned type, const char *label,
 int action_right_input_desc_kbd(unsigned type, const char *label,
       bool wraparound)
 {
-   settings_t *settings = config_get_ptr();
    unsigned key_id;
-   unsigned offset = type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN;
-   unsigned remap_id = 
-      settings->uints.input_keymapper_ids[offset];
+   unsigned remap_id;
    char desc[PATH_MAX_LENGTH];
+   unsigned offset      = type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN;
+   settings_t *settings = config_get_ptr();
 
    if (!settings)
       return 0;
+
+   remap_id = settings->uints.input_keymapper_ids[offset];
 
    for (key_id = 0; key_id < MENU_SETTINGS_INPUT_DESC_KBD_END - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN; key_id++)
    {

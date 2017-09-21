@@ -1,5 +1,7 @@
-// license:BSD-3-Clause
-// copyright-holders:Aaron Giles
+/* license:BSD-3-Clause
+ *
+ * copyright-holders:Aaron Giles
+ */
 /***************************************************************************
 
     cdrom.c
@@ -15,9 +17,12 @@
     schemes will differ after track 1!
 
 ***************************************************************************/
+#ifdef WANT_RAW_DATA_SECTOR
 
 #include <assert.h>
 #include <string.h>
+
+#include <retro_inline.h>
 
 #include "cdrom.h"
 
@@ -301,15 +306,16 @@ static const uint16_t qoffsets[ECC_Q_NUM_BYTES][ECC_Q_COMP] =
 };
 
 
-//-------------------------------------------------
-//  ecc_source_byte - return data from the sector
-//  at the given offset, masking anything
-//  particular to a mode
-//-------------------------------------------------
+/*-------------------------------------------------
+ *  ecc_source_byte - return data from the sector
+ *  at the given offset, masking anything
+ *  particular to a mode
+ *-------------------------------------------------
+ */
 
-static uint8_t ecc_source_byte(const uint8_t *sector, uint32_t offset)
+static INLINE uint8_t ecc_source_byte(const uint8_t *sector, uint32_t offset)
 {
-	// in mode 2 always treat these as 0 bytes
+	/* in mode 2 always treat these as 0 bytes */
 	return (sector[MODE_OFFSET] == 2 && offset < 4) ? 0x00 : sector[SYNC_OFFSET + SYNC_NUM_BYTES + offset];
 }
 
@@ -356,8 +362,7 @@ void ecc_compute_bytes(const uint8_t *sector, const uint16_t *row, int rowlen, u
 int ecc_verify(const uint8_t *sector)
 {
    int byte;
-   
-	// first verify P bytes
+	/* first verify P bytes */
 	for (byte = 0; byte < ECC_P_NUM_BYTES; byte++)
 	{
 		uint8_t val1, val2;
@@ -366,7 +371,7 @@ int ecc_verify(const uint8_t *sector)
 			return 0;
 	}
 
-	// then verify Q bytes
+	/* then verify Q bytes */
 	for (byte = 0; byte < ECC_Q_NUM_BYTES; byte++)
 	{
 		uint8_t val1, val2;
@@ -391,11 +396,11 @@ int ecc_verify(const uint8_t *sector)
 void ecc_generate(uint8_t *sector)
 {
    int byte;
-	// first verify P bytes
+	/* first verify P bytes */
 	for (byte = 0; byte < ECC_P_NUM_BYTES; byte++)
 		ecc_compute_bytes(sector, poffsets[byte], ECC_P_COMP, &sector[ECC_P_OFFSET + byte], &sector[ECC_P_OFFSET + ECC_P_NUM_BYTES + byte]);
 
-	// then verify Q bytes
+	/* then verify Q bytes */
 	for (byte = 0; byte < ECC_Q_NUM_BYTES; byte++)
 		ecc_compute_bytes(sector, qoffsets[byte], ECC_Q_COMP, &sector[ECC_Q_OFFSET + byte], &sector[ECC_Q_OFFSET + ECC_Q_NUM_BYTES + byte]);
 }
@@ -415,3 +420,5 @@ void ecc_clear(uint8_t *sector)
 	memset(&sector[ECC_P_OFFSET], 0, 2 * ECC_P_NUM_BYTES);
 	memset(&sector[ECC_Q_OFFSET], 0, 2 * ECC_Q_NUM_BYTES);
 }
+
+#endif /* WANT_RAW_DATA_SECTOR */

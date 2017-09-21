@@ -29,6 +29,8 @@
 #include <compat/strl.h>
 #include <retro_inline.h>
 
+#include <encodings/utf.h>
+
 static INLINE unsigned leading_ones(uint8_t c)
 {
    unsigned ones = 0;

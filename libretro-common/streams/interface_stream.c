@@ -25,6 +25,7 @@
 #include <streams/interface_stream.h>
 #include <streams/file_stream.h>
 #include <streams/memory_stream.h>
+#include <streams/chd_stream.h>
 
 struct intfstream_internal
 {
@@ -45,6 +46,11 @@ struct intfstream_internal
       memstream_t *fp;
       bool writable;
    } memory;
+   struct
+   {
+      int32_t track;
+      chdstream_t *fp;
+   } chd;
 };
 
 bool intfstream_resize(intfstream_internal_t *intf, intfstream_info_t *info)
@@ -62,6 +68,10 @@ bool intfstream_resize(intfstream_internal_t *intf, intfstream_info_t *info)
 
          memstream_set_buffer(intf->memory.buf.data,
                intf->memory.buf.size);
+         break;
+      case INTFSTREAM_CHD:
+#ifdef HAVE_CHD
+#endif
          break;
    }
 
@@ -86,6 +96,15 @@ bool intfstream_open(intfstream_internal_t *intf, const char *path,
          if (!intf->memory.fp)
             return false;
          break;
+      case INTFSTREAM_CHD:
+#ifdef HAVE_CHD
+         intf->chd.fp = chdstream_open(path, intf->chd.track);
+         if (!intf->chd.fp)
+            return false;
+#else
+         return false;
+#endif
+         break;
    }
 
    return true;
@@ -102,6 +121,11 @@ int intfstream_close(intfstream_internal_t *intf)
          return filestream_close(intf->file.fp);
       case INTFSTREAM_MEMORY:
          memstream_close(intf->memory.fp);
+         return 0;
+      case INTFSTREAM_CHD:
+#ifdef HAVE_CHD
+         chdstream_close(intf->chd.fp);
+#endif
          return 0;
    }
 
@@ -130,6 +154,13 @@ void *intfstream_init(intfstream_info_t *info)
          if (!intfstream_resize(intf, info))
             goto error;
          break;
+      case INTFSTREAM_CHD:
+#ifdef HAVE_CHD
+         intf->chd.track = info->chd.track;
+         break;
+#else
+         goto error;
+#endif
    }
 
    return intf;
@@ -151,6 +182,12 @@ int intfstream_seek(intfstream_internal_t *intf, int offset, int whence)
          return (int)filestream_seek(intf->file.fp, (int)offset, whence);
       case INTFSTREAM_MEMORY:
          return (int)memstream_seek(intf->memory.fp, offset, whence);
+      case INTFSTREAM_CHD:
+#ifdef HAVE_CHD
+         return (int)chdstream_seek(intf->chd.fp, offset, whence);
+#else
+         break;
+#endif
    }
 
    return -1;
@@ -167,9 +204,15 @@ ssize_t intfstream_read(intfstream_internal_t *intf, void *s, size_t len)
          return filestream_read(intf->file.fp, s, len);
       case INTFSTREAM_MEMORY:
          return memstream_read(intf->memory.fp, s, len);
+      case INTFSTREAM_CHD:
+#ifdef HAVE_CHD
+         return chdstream_read(intf->chd.fp, s, len);
+#else
+         break;
+#endif
    }
 
-   return 0;
+   return -1;
 }
 
 ssize_t intfstream_write(intfstream_internal_t *intf,
@@ -184,6 +227,8 @@ ssize_t intfstream_write(intfstream_internal_t *intf,
          return filestream_write(intf->file.fp, s, len);
       case INTFSTREAM_MEMORY:
          return memstream_write(intf->memory.fp, s, len);
+      case INTFSTREAM_CHD:
+         return -1;
    }
 
    return 0;
@@ -201,6 +246,12 @@ char *intfstream_gets(intfstream_internal_t *intf,
          return filestream_gets(intf->file.fp, buffer, len);
       case INTFSTREAM_MEMORY:
          return memstream_gets(intf->memory.fp, buffer, len);
+      case INTFSTREAM_CHD:
+#ifdef HAVE_CHD
+         return chdstream_gets(intf->chd.fp, buffer, len);
+#else
+         break;
+#endif
    }
 
    return NULL;
@@ -209,7 +260,7 @@ char *intfstream_gets(intfstream_internal_t *intf,
 int intfstream_getc(intfstream_internal_t *intf)
 {
    if (!intf)
-      return 0;
+      return -1;
 
    switch (intf->type)
    {
@@ -217,9 +268,15 @@ int intfstream_getc(intfstream_internal_t *intf)
          return filestream_getc(intf->file.fp);
       case INTFSTREAM_MEMORY:
          return memstream_getc(intf->memory.fp);
+      case INTFSTREAM_CHD:
+#ifdef HAVE_CHD
+         return chdstream_getc(intf->chd.fp);
+#else
+         return -1;
+#endif
    }
 
-   return 0;
+   return -1;
 }
 
 int intfstream_tell(intfstream_internal_t *intf)
@@ -233,6 +290,12 @@ int intfstream_tell(intfstream_internal_t *intf)
          return (int)filestream_tell(intf->file.fp);
       case INTFSTREAM_MEMORY:
          return (int)memstream_pos(intf->memory.fp);
+      case INTFSTREAM_CHD:
+#ifdef HAVE_CHD
+         return (int)chdstream_tell(intf->chd.fp);
+#else
+         return -1;
+#endif
    }
 
    return -1;
@@ -247,6 +310,11 @@ void intfstream_rewind(intfstream_internal_t *intf)
          break;
       case INTFSTREAM_MEMORY:
          memstream_rewind(intf->memory.fp);
+         break;
+      case INTFSTREAM_CHD:
+#ifdef HAVE_CHD
+         chdstream_rewind(intf->chd.fp);
+#endif
          break;
    }
 }
@@ -263,6 +331,8 @@ void intfstream_putc(intfstream_internal_t *intf, int c)
          break;
       case INTFSTREAM_MEMORY:
          memstream_putc(intf->memory.fp, c);
+         break;
+      case INTFSTREAM_CHD:
          break;
    }
 }

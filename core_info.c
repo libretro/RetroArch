@@ -825,45 +825,6 @@ size_t core_info_list_num_info_files(core_info_list_t *core_info_list)
    return num;
 }
 
-bool core_info_unsupported_content_path(const char *path)
-{
-   size_t i;
-   const char *archive_path = NULL;
-   const char *delim        = path_get_archive_delim(path);
-
-   if (delim)
-      archive_path = delim - 1;
-
-   if (!core_info_curr_list)
-      return false;
-
-   /* if the path contains a compressed file and the core supports archives,
-    * we don't want to look at this file */
-   if (archive_path)
-   {
-      for (i = 0; i < core_info_curr_list->count; i++)
-      {
-         const core_info_t *info = &core_info_curr_list->list[i];
-
-         if (     !string_list_find_elem(info->supported_extensions_list, "zip")
-               && !string_list_find_elem(info->supported_extensions_list, "7z"))
-            continue;
-
-         return false;
-      }
-   }
-
-   for (i = 0; i < core_info_curr_list->count; i++)
-   {
-      const core_info_t *info = &core_info_curr_list->list[i];
-
-      if (string_list_find_elem(info->supported_extensions_list, path_get_extension(path)))
-         return false;
-   }
-
-   return true;
-}
-
 bool core_info_database_supports_content_path(const char *database_path, const char *path)
 {
    char *database           = NULL;
@@ -882,31 +843,6 @@ bool core_info_database_supports_content_path(const char *database_path, const c
    if (core_info_curr_list)
    {
       size_t i;
-      const char *delim           = path_get_archive_delim(path);
-
-      if (delim)
-      {
-         const char *archive_path = delim - 1;
-
-         /* if the path contains a compressed file and the core supports archives,
-          * we don't want to look at this file */
-         if (archive_path)
-         {
-            for (i = 0; i < core_info_curr_list->count; i++)
-            {
-               const core_info_t *info = &core_info_curr_list->list[i];
-
-               if (!string_list_find_elem(info->databases_list, database))
-                  continue;
-
-               if (     !string_list_find_elem(info->supported_extensions_list, "zip")
-                     && !string_list_find_elem(info->supported_extensions_list, "7z"))
-                  continue;
-
-               goto error;
-            }
-         }
-      }
 
       for (i = 0; i < core_info_curr_list->count; i++)
       {
