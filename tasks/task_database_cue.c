@@ -535,6 +535,7 @@ clean:
    free(tmp_token);
    free(last_file);
    intfstream_close(fd);
+   free(fd);
    return rv;
 
 error:
