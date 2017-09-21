@@ -101,8 +101,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "huffman.h"
-#include "minmax.h"
+#include <libchdr/huffman.h>
+#include <libchdr/minmax.h>
 
 /***************************************************************************
  *  MACROS

@@ -27,7 +27,7 @@
 
 #include <streams/chd_stream.h>
 #include <retro_endianness.h>
-#include <chd.h>
+#include <libchdr/chd.h>
 
 #define SECTOR_SIZE 2352
 #define SUBCODE_SIZE 96
