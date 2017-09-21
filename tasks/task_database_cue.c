@@ -337,19 +337,24 @@ int detect_system(intfstream_t *fd, const char **system_name)
    int rv;
    char magic[MAGIC_LEN];
    int i;
+   ssize_t read;
 
    RARCH_LOG("%s\n", msg_hash_to_str(MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS));
    for (i = 0; MAGIC_NUMBERS[i].system_name != NULL; i++)
    {
       intfstream_seek(fd, MAGIC_NUMBERS[i].offset, SEEK_SET);
 
-      if (intfstream_read(fd, magic, MAGIC_LEN) < MAGIC_LEN)
+      read = intfstream_read(fd, magic, MAGIC_LEN);
+      if (read < 0)
       {
          RARCH_LOG("Could not read data at offset %d: %s\n",
                MAGIC_NUMBERS[i].offset, strerror(errno));
          rv = -errno;
          goto clean;
       }
+
+      if (read < MAGIC_LEN)
+         continue;
 
       if (string_is_equal_fast(MAGIC_NUMBERS[i].magic, magic, MAGIC_LEN))
       {
