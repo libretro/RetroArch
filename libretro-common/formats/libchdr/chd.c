@@ -49,12 +49,10 @@
 #include "LzmaEnc.h"
 #include "LzmaDec.h"
 #include "retro_inline.h"
+#include "minmax.h"
 
 #define TRUE 1
 #define FALSE 0
-
-#define MAX(x, y) (((x) > (y)) ? (x) : (y))
-#define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
 #define CHD_MAKE_TAG(a,b,c,d)       (((a) << 24) | ((b) << 16) | ((c) << 8) | (d))
 
