@@ -1163,12 +1163,14 @@ DEPENDENCIES
 #include "../deps/7zip/7zFile.c"
 #include "../deps/7zip/7zStream.c"
 #include "../deps/7zip/LzmaDec.c"
+#include "../deps/7zip/LzmaEnc.c"
 #include "../deps/7zip/7zCrcOpt.c"
 #include "../deps/7zip/Bra.c"
 #include "../deps/7zip/7zDec.c"
 #include "../deps/7zip/Bcj2.c"
 #include "../deps/7zip/7zCrc.c"
 #include "../deps/7zip/Lzma2Dec.c"
+#include "../deps/7zip/LzFind.c"
 #include "../deps/7zip/7zBuf.c"
 #endif
 
