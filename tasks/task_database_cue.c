@@ -542,7 +542,10 @@ error:
    free(tmp_token);
    free(last_file);
    if (fd)
+   {
       intfstream_close(fd);
+      free(fd);
+   }
    return -errno;
 }
 

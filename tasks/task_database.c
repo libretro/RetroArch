@@ -97,13 +97,14 @@ static intfstream_t* intfstream_open_file(const char *path)
       return NULL;
 
    if (!intfstream_open(fd, path, RFILE_MODE_READ, -1))
-   {
-      intfstream_close(fd);
-      free(fd);
-      return NULL;
-   }
+      goto error;
 
    return fd;
+
+error:
+   intfstream_close(fd);
+   free(fd);
+   return NULL;
 }
 
 static intfstream_t *open_memory(void *data, size_t size)
@@ -122,12 +123,14 @@ static intfstream_t *open_memory(void *data, size_t size)
       return NULL;
 
    if (!intfstream_open(fd, NULL, RFILE_MODE_READ, -1))
-   {
-      intfstream_close(fd);
-      return NULL;
-   }
+      goto error;
 
    return fd;
+
+error:
+   intfstream_close(fd);
+   free(fd);
+   return NULL;
 }
 
 static intfstream_t*
@@ -145,12 +148,14 @@ open_chd_track(const char *path, int32_t track)
       return NULL;
 
    if (!intfstream_open(fd, path, RFILE_MODE_READ, -1))
-   {
-      intfstream_close(fd);
-      return NULL;
-   }
+      goto error;
 
    return fd;
+
+error:
+   intfstream_close(fd);
+   free(fd);
+   return NULL;
 }
 
 static void database_info_set_type(
@@ -277,11 +282,7 @@ static bool intfstream_file_get_serial(const char *name, size_t offset, size_t s
    intfstream_seek(fd, 0, SEEK_SET);
 
    if (file_size < 0)
-   {
-      intfstream_close(fd);
-      free(fd);
-      return 0;
-   }
+      goto error;
 
    if (offset != 0 || size < (size_t) file_size)
    {
@@ -289,10 +290,8 @@ static bool intfstream_file_get_serial(const char *name, size_t offset, size_t s
       intfstream_seek(fd, offset, SEEK_SET);
       if (intfstream_read(fd, data, size) != (ssize_t) size)
       {
-         intfstream_close(fd);
-         free(fd);
          free(data);
-         return 0;
+         goto error;
       }
 
       intfstream_close(fd);
@@ -310,6 +309,11 @@ static bool intfstream_file_get_serial(const char *name, size_t offset, size_t s
    free(data);
    free(fd);
    return rv;
+
+error:
+   intfstream_close(fd);
+   free(fd);
+   return 0;
 }
 
 static int task_database_cue_get_serial(const char *name, char* serial)
