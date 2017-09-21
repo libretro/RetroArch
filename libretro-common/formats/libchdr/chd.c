@@ -483,7 +483,7 @@ chd_error lzma_codec_init(void* codec, uint32_t hunkbytes)
    CLzmaEncHandle enc;
 	Byte decoder_props[LZMA_PROPS_SIZE];
    lzma_allocator* alloc;
-   SizeT props_size;
+   size_t props_size;
 	lzma_codec_data* lzma_codec = (lzma_codec_data*) codec;
 
 	/* construct the decoder */
@@ -554,7 +554,7 @@ chd_error lzma_codec_decompress(void* codec, const uint8_t *src, uint32_t comple
 {
 	ELzmaStatus status;
    SRes res;
-   SizeT consumedlen, decodedlen;
+   size_t consumedlen, decodedlen;
 	/* initialize */
 	lzma_codec_data* lzma_codec = (lzma_codec_data*) codec;
 	LzmaDec_Init(&lzma_codec->decoder);

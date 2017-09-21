@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "Types.h"
+#include "7zTypes.h"
 
 SRes SeqInStream_Readuint8_t(ISeqInStream *stream, uint8_t *buf);
 
