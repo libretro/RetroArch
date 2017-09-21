@@ -4,7 +4,7 @@
 #ifndef __BCJ2_H
 #define __BCJ2_H
 
-#include "Types.h"
+#include "7zTypes.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -385,7 +385,7 @@ static int chd_get_serial(const char *name, char* serial)
 
 static int stream_get_crc(intfstream_t *fd, uint32_t *crc)
 {
-   size_t read = 0;
+   ssize_t read = 0;
    uint32_t acc = 0;
    uint8_t buffer[4096];
 

@@ -14,7 +14,7 @@
 #include <stdio.h>
 #endif
 
-#include "Types.h"
+#include "7zTypes.h"
 
 #ifdef __cplusplus
 extern "C" {
