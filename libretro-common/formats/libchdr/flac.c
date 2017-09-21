@@ -11,8 +11,8 @@
 
 #include <assert.h>
 #include <string.h>
-#include "flac.h"
-#include "minmax.h"
+#include <libchdr/flac.h>
+#include <libchdr/minmax.h>
 
 /***************************************************************************
  *  FLAC DECODER

@@ -24,7 +24,7 @@
 
 #include <retro_inline.h>
 
-#include "cdrom.h"
+#include <libchdr/cdrom.h>
 
 /***************************************************************************
     DEBUGGING
