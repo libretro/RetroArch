@@ -85,7 +85,7 @@ int detect_psp_game(intfstream_t *fd, char *game_id);
 
 int detect_serial_ascii_game(intfstream_t *fd, char *game_id);
 
-static intfstream_t* open_file(const char *path)
+static intfstream_t* intfstream_open_file(const char *path)
 {
    intfstream_info_t info;
    intfstream_t *fd = NULL;
@@ -224,7 +224,7 @@ static int task_database_iterate_start(database_info_handle_t *db,
    return 0;
 }
 
-static int stream_get_serial(intfstream_t *fd, char *serial)
+static int intfstream_get_serial(intfstream_t *fd, char *serial)
 {
   const char *system_name = NULL;
 
@@ -262,12 +262,12 @@ static int stream_get_serial(intfstream_t *fd, char *serial)
   return 1;
 }
 
-static bool file_get_serial(const char *name, size_t offset, size_t size, char *serial)
+static bool intfstream_file_get_serial(const char *name, size_t offset, size_t size, char *serial)
 {
    int rv;
    uint8_t *data     = NULL;
    ssize_t file_size = -1;
-   intfstream_t *fd  = open_file(name);
+   intfstream_t *fd  = intfstream_open_file(name);
 
    if (!fd)
       return 0;
@@ -302,14 +302,14 @@ static bool file_get_serial(const char *name, size_t offset, size_t size, char *
       }
    }
 
-   rv = stream_get_serial(fd, serial);
+   rv = intfstream_get_serial(fd, serial);
    intfstream_close(fd);
    free(data);
    free(fd);
    return rv;
 }
 
-static int cue_get_serial(const char *name, char* serial)
+static int task_database_cue_get_serial(const char *name, char* serial)
 {
    char *track_path                 = (char*)malloc(PATH_MAX_LENGTH 
          * sizeof(char));
@@ -333,13 +333,13 @@ static int cue_get_serial(const char *name, char* serial)
 
    RARCH_LOG("%s\n", msg_hash_to_str(MSG_READING_FIRST_DATA_TRACK));
 
-   ret = file_get_serial(track_path, offset, size, serial);
+   ret = intfstream_file_get_serial(track_path, offset, size, serial);
    free(track_path);
 
    return ret;
 }
 
-static int gdi_get_serial(const char *name, char* serial)
+static int task_database_gdi_get_serial(const char *name, char* serial)
 {
    char *track_path                 = (char*)malloc(PATH_MAX_LENGTH
          * sizeof(char));
@@ -361,29 +361,25 @@ static int gdi_get_serial(const char *name, char* serial)
 
    RARCH_LOG("%s\n", msg_hash_to_str(MSG_READING_FIRST_DATA_TRACK));
 
-   ret = file_get_serial(track_path, 0, SIZE_MAX, serial);
+   ret = intfstream_file_get_serial(track_path, 0, SIZE_MAX, serial);
    free(track_path);
 
    return ret;
 }
 
-static int chd_get_serial(const char *name, char* serial)
+static int task_database_chd_get_serial(const char *name, char* serial)
 {
-   intfstream_t *fd = NULL;
    int result;
-
-   fd = open_chd_track(name, CHDSTREAM_TRACK_FIRST_DATA);
+   intfstream_t *fd = open_chd_track(name, CHDSTREAM_TRACK_FIRST_DATA);
    if (!fd)
-   {
       return 0;
-   }
 
-   result = stream_get_serial(fd, serial);
+   result = intfstream_get_serial(fd, serial);
    intfstream_close(fd);
    return result;
 }
 
-static int stream_get_crc(intfstream_t *fd, uint32_t *crc)
+static int intfstream_get_crc(intfstream_t *fd, uint32_t *crc)
 {
    ssize_t read = 0;
    uint32_t acc = 0;
@@ -400,10 +396,11 @@ static int stream_get_crc(intfstream_t *fd, uint32_t *crc)
    return 1;
 }
 
-static bool file_get_crc(const char *name, size_t offset, size_t size, uint32_t *crc)
+static bool intfstream_file_get_crc(const char *name,
+      size_t offset, size_t size, uint32_t *crc)
 {
    int rv;
-   intfstream_t *fd  = open_file(name);
+   intfstream_t *fd  = intfstream_open_file(name);
    uint8_t *data     = NULL;
    ssize_t file_size = -1;
 
@@ -441,14 +438,14 @@ static bool file_get_crc(const char *name, size_t offset, size_t size, uint32_t 
       }
    }
 
-   rv = stream_get_crc(fd, crc);
+   rv = intfstream_get_crc(fd, crc);
    intfstream_close(fd);
    free(fd);
    free(data);
    return rv;
 }
 
-static int cue_get_crc(const char *name, uint32_t *crc)
+static int task_database_cue_get_crc(const char *name, uint32_t *crc)
 {
    char *track_path = (char *)malloc(PATH_MAX_LENGTH);
    size_t offset    = 0;
@@ -457,11 +454,14 @@ static int cue_get_crc(const char *name, uint32_t *crc)
 
    track_path[0]    = '\0';
 
-   rv = cue_find_track(name, false, &offset, &size, track_path, PATH_MAX_LENGTH);
+   rv = cue_find_track(name, false, &offset, &size,
+         track_path, PATH_MAX_LENGTH);
 
-   if (rv < 0) {
-      RARCH_LOG("%s: %s\n", msg_hash_to_str(MSG_COULD_NOT_FIND_VALID_DATA_TRACK),
-                strerror(-rv));
+   if (rv < 0)
+   {
+      RARCH_LOG("%s: %s\n",
+            msg_hash_to_str(MSG_COULD_NOT_FIND_VALID_DATA_TRACK),
+            strerror(-rv));
       free(track_path);
       return 0;
    }
@@ -470,7 +470,7 @@ static int cue_get_crc(const char *name, uint32_t *crc)
 
    RARCH_LOG("%s\n", msg_hash_to_str(MSG_READING_FIRST_DATA_TRACK));
 
-   rv = file_get_crc(track_path, offset, size, crc);
+   rv = intfstream_file_get_crc(track_path, offset, size, crc);
    if (rv == 1)
    {
       RARCH_LOG("CUE '%s' crc: %x\n", name, *crc);
@@ -479,7 +479,7 @@ static int cue_get_crc(const char *name, uint32_t *crc)
    return rv;
 }
 
-static int gdi_get_crc(const char *name, uint32_t *crc)
+static int task_database_gdi_get_crc(const char *name, uint32_t *crc)
 {
    char *track_path = (char *)malloc(PATH_MAX_LENGTH);
    int rv           = 0;
@@ -500,7 +500,7 @@ static int gdi_get_crc(const char *name, uint32_t *crc)
 
    RARCH_LOG("%s\n", msg_hash_to_str(MSG_READING_FIRST_DATA_TRACK));
 
-   rv = file_get_crc(track_path, 0, SIZE_MAX, crc);
+   rv = intfstream_file_get_crc(track_path, 0, SIZE_MAX, crc);
    if (rv == 1)
    {
       RARCH_LOG("GDI '%s' crc: %x\n", name, *crc);
@@ -509,14 +509,14 @@ static int gdi_get_crc(const char *name, uint32_t *crc)
    return rv;
 }
 
-static bool chd_get_crc(const char *name, uint32_t *crc)
+static bool task_database_chd_get_crc(const char *name, uint32_t *crc)
 {
    int rv;
    intfstream_t *fd = open_chd_track(name, CHDSTREAM_TRACK_PRIMARY);
    if (!fd)
       return 0;
 
-   rv = stream_get_crc(fd, crc);
+   rv = intfstream_get_crc(fd, crc);
    if (rv == 1)
    {
       RARCH_LOG("CHD '%s' crc: %x\n", name, *crc);
@@ -525,11 +525,12 @@ static bool chd_get_crc(const char *name, uint32_t *crc)
    return rv;
 }
 
-static void cue_prune(database_info_handle_t *db, const char *name)
+static void task_database_cue_prune(database_info_handle_t *db,
+      const char *name)
 {
-   char *path = (char *)malloc(PATH_MAX_LENGTH + 1);
-   intfstream_t *fd = open_file(name);
    size_t i;
+   char       *path = (char *)malloc(PATH_MAX_LENGTH + 1);
+   intfstream_t *fd = intfstream_open_file(name);
 
    if (!fd)
       goto end;
@@ -556,7 +557,7 @@ static void gdi_prune(database_info_handle_t *db, const char *name)
 {
    size_t i;
    char       *path = (char *)malloc(PATH_MAX_LENGTH + 1);
-   intfstream_t *fd = open_file(name);
+   intfstream_t *fd = intfstream_open_file(name);
 
    if (!fd)
       goto end;
@@ -589,21 +590,20 @@ static int task_database_iterate_playlist(
 #ifdef HAVE_COMPRESSION
          database_info_set_type(db, DATABASE_TYPE_CRC_LOOKUP);
          /* first check crc of archive itself */
-         return file_get_crc(name, 0, SIZE_MAX, &db_state->archive_crc);
+         return intfstream_file_get_crc(name,
+               0, SIZE_MAX, &db_state->archive_crc);
 #else
          break;
 #endif
       case FILE_TYPE_CUE:
-         cue_prune(db, name);
+         task_database_cue_prune(db, name);
          db_state->serial[0] = '\0';
-         if (cue_get_serial(name, db_state->serial))
-         {
+         if (task_database_cue_get_serial(name, db_state->serial))
             database_info_set_type(db, DATABASE_TYPE_SERIAL_LOOKUP);
-         }
          else
          {
             database_info_set_type(db, DATABASE_TYPE_CRC_LOOKUP);
-            return cue_get_crc(name, &db_state->crc);
+            return task_database_cue_get_crc(name, &db_state->crc);
          }
          break;
       case FILE_TYPE_GDI:
@@ -611,31 +611,27 @@ static int task_database_iterate_playlist(
          db_state->serial[0] = '\0';
          /* There are no serial databases, so don't bother with
             serials at the moment */
-         if (0 && gdi_get_serial(name, db_state->serial))
-         {
+         if (0 && task_database_gdi_get_serial(name, db_state->serial))
             database_info_set_type(db, DATABASE_TYPE_SERIAL_LOOKUP);
-         }
          else
          {
             database_info_set_type(db, DATABASE_TYPE_CRC_LOOKUP);
-            return gdi_get_crc(name, &db_state->crc);
+            return task_database_gdi_get_crc(name, &db_state->crc);
          }
          break;
       case FILE_TYPE_ISO:
          db_state->serial[0] = '\0';
-         file_get_serial(name, 0, SIZE_MAX, db_state->serial);
+         intfstream_file_get_serial(name, 0, SIZE_MAX, db_state->serial);
          database_info_set_type(db, DATABASE_TYPE_SERIAL_LOOKUP);
          break;
       case FILE_TYPE_CHD:
          db_state->serial[0] = '\0';
-         if (chd_get_serial(name, db_state->serial))
-         {
+         if (task_database_chd_get_serial(name, db_state->serial))
             database_info_set_type(db, DATABASE_TYPE_SERIAL_LOOKUP);
-         }
          else
          {
             database_info_set_type(db, DATABASE_TYPE_CRC_LOOKUP);
-            return chd_get_crc(name, &db_state->crc);
+            return task_database_chd_get_crc(name, &db_state->crc);
          }
          break;
       case FILE_TYPE_LUTRO:
@@ -643,7 +639,7 @@ static int task_database_iterate_playlist(
          break;
       default:
          database_info_set_type(db, DATABASE_TYPE_CRC_LOOKUP);
-         return file_get_crc(name, 0, SIZE_MAX, &db_state->crc);
+         return intfstream_file_get_crc(name, 0, SIZE_MAX, &db_state->crc);
    }
 
    return 1;
@@ -844,9 +840,8 @@ static int task_database_iterate_crc_lookup(
 {
 
    if (!db_state->list ||
-         (unsigned)db_state->list_index == (unsigned)db_state->list->size) {
+         (unsigned)db_state->list_index == (unsigned)db_state->list->size)
       return database_info_list_iterate_end_no_match(db, db_state, name);
-   }
 
    if (db_state->entry_index == 0)
    {
@@ -978,9 +973,8 @@ static int task_database_iterate_serial_lookup(
       database_info_handle_t *db, const char *name)
 {
    if (!db_state->list ||
-         (unsigned)db_state->list_index == (unsigned)db_state->list->size) {
+         (unsigned)db_state->list_index == (unsigned)db_state->list->size)
       return database_info_list_iterate_end_no_match(db, db_state, name);
-   }
 
    if (db_state->entry_index == 0)
    {
