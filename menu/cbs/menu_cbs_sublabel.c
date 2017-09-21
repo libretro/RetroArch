@@ -372,6 +372,7 @@ static int action_bind_sublabel_netplay_room(
       const char *label, const char *path,
       char *s, size_t len)
 {
+   /* This offset may cause issues if any entries are added to this menu */
    unsigned offset        = i - 3;
 
    if (i < 1 || offset > (unsigned)netplay_room_count)
