@@ -78,6 +78,7 @@ DEFINES += -DHAVE_7ZIP
 DEFINES += -DHAVE_CHEEVOS
 DEFINES += -DHAVE_SL
 #DEFINES += -DHAVE_TINYALSA
+DEFINES += -DFLAC_PACKAGE_VERSION="\"retroarch\"" -DHAVE_LROUND -DFLAC__HAS_OGG=0
 
 LOCAL_CFLAGS   += -Wall -std=gnu99 -pthread -Wno-unused-function -fno-stack-protector -funroll-loops $(DEFINES)
 LOCAL_CPPFLAGS := -fexceptions -fpermissive -std=gnu++11 -fno-rtti -Wno-reorder $(DEFINES)
@@ -90,6 +91,10 @@ LOCAL_C_INCLUDES := \
 							$(LOCAL_PATH)/$(RARCH_DIR)/libretro-common/include/ \
 							$(LOCAL_PATH)/$(RARCH_DIR)/deps
 
+
+LOCAL_CFLAGS     += -I$(LOCAL_PATH)/$(DEPS_DIR)/7zip/
+LOCAL_CXXFLAGS     += -I$(LOCAL_PATH)/$(DEPS_DIR)/7zip/
+LOCAL_CFLAGS     += -I$(LOCAL_PATH)/$(DEPS_DIR)/libFLAC/include
 LOCAL_CPPFLAGS   += -I$(LOCAL_PATH)/$(DEPS_DIR)/libFLAC/include
 
 ifeq ($(HAVE_VULKAN),1)
