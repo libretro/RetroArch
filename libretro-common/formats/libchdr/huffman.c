@@ -102,8 +102,7 @@
 #include <string.h>
 
 #include "huffman.h"
-
-#define MAX(x,y) ((x) > (y) ? (x) : (y))
+#include "minmax.h"
 
 /***************************************************************************
  *  MACROS
