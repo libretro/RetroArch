@@ -19,6 +19,10 @@
 
 EXTERN_C_BEGIN
 
+#ifndef _7ZIP_ST
+#define _7ZIP_ST
+#endif
+
 #define SZ_OK 0
 
 #define SZ_ERROR_DATA 1

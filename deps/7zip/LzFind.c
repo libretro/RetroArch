@@ -12,7 +12,7 @@
 #define kMaxValForNormalize ((uint32_t)0xFFFFFFFF)
 #define kNormalizeStepMin (1 << 10) /* it must be power of 2 */
 #define kNormalizeMask (~(uint32_t)(kNormalizeStepMin - 1))
-#define kMaxHistorySize ((uint32_t)7 << 29)
+#define LzFindkMaxHistorySize ((uint32_t)7 << 29)
 
 #define kStartMaxLen 3
 
@@ -180,7 +180,7 @@ int MatchFinder_Create(CMatchFinder *p, uint32_t historySize,
 {
   uint32_t sizeReserv;
   
-  if (historySize > kMaxHistorySize)
+  if (historySize > LzFindkMaxHistorySize)
   {
     MatchFinder_Free(p, alloc);
     return 0;

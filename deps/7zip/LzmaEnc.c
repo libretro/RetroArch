@@ -9,14 +9,11 @@
 
 #include "LzFind.h"
 
-#define _7ZIP_ST 
-
 #ifndef _7ZIP_ST
 #include "LzFindMt.h"
 #endif
 
-#define kMaxHistorySize ((uint32_t)3 << 29)
-/* #define kMaxHistorySize ((uint32_t)7 << 29) */
+#define LzmaEnckMaxHistorySize ((uint32_t)3 << 29)
 
 #define kBlockSizeMax ((1 << LZMA_NUM_BLOCK_SIZE_BITS) - 1)
 
@@ -392,7 +389,7 @@ SRes LzmaEnc_SetProps(CLzmaEncHandle pp, const CLzmaEncProps *props2)
       || props.lp > LZMA_LP_MAX
       || props.pb > LZMA_PB_MAX
       || props.dictSize > ((uint64_t)1 << kDicLogSizeMaxCompress)
-      || props.dictSize > kMaxHistorySize)
+      || props.dictSize > LzmaEnckMaxHistorySize)
     return SZ_ERROR_PARAM;
 
   p->dictSize = props.dictSize;
