@@ -279,6 +279,7 @@ static bool intfstream_file_get_serial(const char *name, size_t offset, size_t s
    if (file_size < 0)
    {
       intfstream_close(fd);
+      free(fd);
       return 0;
    }
 
@@ -289,11 +290,13 @@ static bool intfstream_file_get_serial(const char *name, size_t offset, size_t s
       if (intfstream_read(fd, data, size) != (ssize_t) size)
       {
          intfstream_close(fd);
+         free(fd);
          free(data);
          return 0;
       }
 
       intfstream_close(fd);
+      free(fd);
       fd = open_memory(data, size);
       if (!fd)
       {
@@ -376,6 +379,7 @@ static int task_database_chd_get_serial(const char *name, char* serial)
 
    result = intfstream_get_serial(fd, serial);
    intfstream_close(fd);
+   free(fd);
    return result;
 }
 
@@ -414,6 +418,7 @@ static bool intfstream_file_get_crc(const char *name,
    if (file_size < 0)
    {
       intfstream_close(fd);
+      free(fd);
       return 0;
    }
 
@@ -423,16 +428,18 @@ static bool intfstream_file_get_crc(const char *name,
       intfstream_seek(fd, offset, SEEK_SET);
 
       if (intfstream_read(fd, data, size) != (ssize_t) size)
-	  {
+      {
          intfstream_close(fd);
+         free(fd);
          free(data);
          return 0;
       }
       intfstream_close(fd);
+      free(fd);
       fd = open_memory(data, size);
 
       if (!fd) 
-	  {
+      {
          free(data);
          return 0;
       }
@@ -522,6 +529,7 @@ static bool task_database_chd_get_crc(const char *name, uint32_t *crc)
       RARCH_LOG("CHD '%s' crc: %x\n", name, *crc);
    }
    intfstream_close(fd);
+   free(fd);
    return rv;
 }
 
@@ -550,6 +558,8 @@ static void task_database_cue_prune(database_info_handle_t *db,
    }
 
 end:
+   if (fd)
+      free(fd);
    free(path);
 }
 
