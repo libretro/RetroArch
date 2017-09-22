@@ -1,6 +1,7 @@
 // Menu resources (Japanese)
 //
 // The encoding for this file is CP932.
+#pragma code_page(932)
 
 LANGUAGE LANG_JAPANESE, SUBLANG_NEUTRAL
 IDR_MENU MENU
