@@ -30,9 +30,9 @@
 #include <retro_common_api.h>
 #include <boolean.h>
 
-RETRO_BEGIN_DECLS
+#include <libchdr/chd.h>
 
-typedef struct _chd_file chd_file;
+RETRO_BEGIN_DECLS
 
 enum intfstream_type
 {
