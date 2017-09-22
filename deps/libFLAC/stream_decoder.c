@@ -245,18 +245,18 @@ FLAC_API FLAC__StreamDecoder *FLAC__stream_decoder_new(void)
 
 	FLAC__ASSERT(sizeof(int) >= 4); /* we want to die right away if this is not true */
 
-	decoder = calloc(1, sizeof(FLAC__StreamDecoder));
+	decoder = (FLAC__StreamDecoder*)calloc(1, sizeof(FLAC__StreamDecoder));
 	if(decoder == 0) {
 		return 0;
 	}
 
-	decoder->protected_ = calloc(1, sizeof(FLAC__StreamDecoderProtected));
+	decoder->protected_ = (FLAC__StreamDecoderProtected*)calloc(1, sizeof(FLAC__StreamDecoderProtected));
 	if(decoder->protected_ == 0) {
 		free(decoder);
 		return 0;
 	}
 
-	decoder->private_ = calloc(1, sizeof(FLAC__StreamDecoderPrivate));
+	decoder->private_ = (FLAC__StreamDecoderPrivate*)calloc(1, sizeof(FLAC__StreamDecoderPrivate));
 	if(decoder->private_ == 0) {
 		free(decoder->protected_);
 		free(decoder);
@@ -272,7 +272,7 @@ FLAC_API FLAC__StreamDecoder *FLAC__stream_decoder_new(void)
 	}
 
 	decoder->private_->metadata_filter_ids_capacity = 16;
-	if(0 == (decoder->private_->metadata_filter_ids = malloc((FLAC__STREAM_METADATA_APPLICATION_ID_LEN/8) * decoder->private_->metadata_filter_ids_capacity))) {
+	if(0 == (decoder->private_->metadata_filter_ids = (FLAC__byte*)malloc((FLAC__STREAM_METADATA_APPLICATION_ID_LEN/8) * decoder->private_->metadata_filter_ids_capacity))) {
 		FLAC__bitreader_delete(decoder->private_->input);
 		free(decoder->private_);
 		free(decoder->protected_);
@@ -750,7 +750,7 @@ FLAC_API FLAC__bool FLAC__stream_decoder_set_metadata_respond_application(FLAC__
 	FLAC__ASSERT(0 != decoder->private_->metadata_filter_ids);
 
 	if(decoder->private_->metadata_filter_ids_count == decoder->private_->metadata_filter_ids_capacity) {
-		if(0 == (decoder->private_->metadata_filter_ids = safe_realloc_mul_2op_(decoder->private_->metadata_filter_ids, decoder->private_->metadata_filter_ids_capacity, /*times*/2))) {
+		if(0 == (decoder->private_->metadata_filter_ids = (FLAC__byte*)safe_realloc_mul_2op_(decoder->private_->metadata_filter_ids, decoder->private_->metadata_filter_ids_capacity, /*times*/2))) {
 			decoder->protected_->state = FLAC__STREAM_DECODER_MEMORY_ALLOCATION_ERROR;
 			return false;
 		}
@@ -809,7 +809,7 @@ FLAC_API FLAC__bool FLAC__stream_decoder_set_metadata_ignore_application(FLAC__S
 	FLAC__ASSERT(0 != decoder->private_->metadata_filter_ids);
 
 	if(decoder->private_->metadata_filter_ids_count == decoder->private_->metadata_filter_ids_capacity) {
-		if(0 == (decoder->private_->metadata_filter_ids = safe_realloc_mul_2op_(decoder->private_->metadata_filter_ids, decoder->private_->metadata_filter_ids_capacity, /*times*/2))) {
+		if(0 == (decoder->private_->metadata_filter_ids = (FLAC__byte*)safe_realloc_mul_2op_(decoder->private_->metadata_filter_ids, decoder->private_->metadata_filter_ids_capacity, /*times*/2))) {
 			decoder->protected_->state = FLAC__STREAM_DECODER_MEMORY_ALLOCATION_ERROR;
 			return false;
 		}
