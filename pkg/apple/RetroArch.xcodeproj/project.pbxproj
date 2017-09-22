@@ -377,6 +377,8 @@
 					"$(SRCROOT)/../..",
 					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
+					"$(SRCROOT)/../../deps/libFLAC/include",
+					"$(SRCROOT)/../../deps/7zip",
 					"$(SRCROOT)/../../deps",
 				);
 				INFOPLIST_FILE = OSX/Info.plist;
@@ -407,6 +409,8 @@
 					"$(SRCROOT)/../..",
 					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
+					"$(SRCROOT)/../../deps/libFLAC/include",
+					"$(SRCROOT)/../../deps/7zip",
 					"$(SRCROOT)/../../deps",
 				);
 				INFOPLIST_FILE = OSX/Info.plist;
@@ -439,6 +443,8 @@
 					"$(SRCROOT)/../..",
 					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
+					"$(SRCROOT)/../../deps/libFLAC/include",
+					"$(SRCROOT)/../../deps/7zip",
 					"$(SRCROOT)/../../deps",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/OSX/Info.plist";
@@ -465,6 +471,8 @@
 					"$(SRCROOT)/../..",
 					"$(SRCROOT)/../../gfx/include",
 					"$(SRCROOT)/../../libretro-common/include",
+					"$(SRCROOT)/../../deps/libFLAC/include",
+					"$(SRCROOT)/../../deps/7zip",
 					"$(SRCROOT)/../../deps",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/OSX/Info.plist";
@@ -486,7 +494,11 @@
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
 					"-DHAVE_GRIFFIN",
-               "-DHAVE_STB_VORBIS",
+					"-DHAVE_FLAC",
+					"-DHAVE_LROUND",
+					"-DFLAC__HAS_OGG=0",
+					"-DHAVE_CHD",
+                                        "-DHAVE_STB_VORBIS",
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
@@ -544,7 +556,11 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				OTHER_CFLAGS = (
 					"-DHAVE_GRIFFIN",
-               "-DHAVE_STB_VORBIS",
+					"-DHAVE_FLAC",
+					"-DHAVE_LROUND",
+					"-DFLAC__HAS_OGG=0",
+					"-DHAVE_CHD",
+                                        "-DHAVE_STB_VORBIS",
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",

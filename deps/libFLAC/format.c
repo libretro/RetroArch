@@ -45,9 +45,15 @@
 #include "private/macros.h"
 
 /* FLAC_PACKAGE_VERSION should come from configure */
+#if defined(__LIBRETRO__) || defined(RARCH_INTERNAL)
+FLAC_API const char *FLAC__VERSION_STRING = "";
+
+FLAC_API const char *FLAC__VENDOR_STRING = "reference libFLAC 20170101";
+#else
 FLAC_API const char *FLAC__VERSION_STRING = FLAC_PACKAGE_VERSION;
 
 FLAC_API const char *FLAC__VENDOR_STRING = "reference libFLAC " FLAC_PACKAGE_VERSION " 20170101";
+#endif
 
 FLAC_API const FLAC__byte FLAC__STREAM_SYNC_STRING[4] = { 'f','L','a','C' };
 FLAC_API const unsigned FLAC__STREAM_SYNC = 0x664C6143;

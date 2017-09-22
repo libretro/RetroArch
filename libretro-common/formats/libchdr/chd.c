@@ -1404,6 +1404,7 @@ chd_error chd_open_file(core_file *file, int mode, chd_file *parent, chd_file **
 	else 
 	{
 		err = decompress_v5_map(newchd, &(newchd->header));
+        (void)err;
 	}
 
 #ifdef NEED_CACHE_HUNK
@@ -1435,7 +1436,10 @@ chd_error chd_open_file(core_file *file, int mode, chd_file *parent, chd_file **
 
 		/* initialize the codec */
 		if (newchd->codecintf[0]->init != NULL)
+        {
 			err = (*newchd->codecintf[0]->init)(&newchd->zlib_codec_data, newchd->header.hunkbytes);
+            (void)err;
+        }
 	}
 	else
 	{
@@ -1449,7 +1453,10 @@ chd_error chd_open_file(core_file *file, int mode, chd_file *parent, chd_file **
 				{
 					newchd->codecintf[decompnum] = &codec_interfaces[i];
 					if (newchd->codecintf[decompnum] == NULL && newchd->header.compression[decompnum] != 0)
+                    {
 						err = CHDERR_UNSUPPORTED_FORMAT;
+                        (void)err;
+                    }
 
 					/* initialize the codec */
 					if (newchd->codecintf[decompnum]->init != NULL) 
@@ -1470,7 +1477,10 @@ chd_error chd_open_file(core_file *file, int mode, chd_file *parent, chd_file **
 								break;
 						}
 						if (codec != NULL)
+                        {
 							err = (*newchd->codecintf[decompnum]->init)(codec, newchd->header.hunkbytes);
+                            (void)err;
+                        }
 					}
 					
 				}
@@ -2438,6 +2448,7 @@ static chd_error zlib_codec_decompress(void *codec, const uint8_t *src, uint32_t
 
 	/* do it */
 	zerr = inflate(&data->inflater, Z_FINISH);
+    (void)zerr;
 	if (data->inflater.total_out != destlen)
 		return CHDERR_DECOMPRESSION_ERROR;
 
