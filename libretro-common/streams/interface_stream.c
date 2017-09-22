@@ -25,7 +25,9 @@
 #include <streams/interface_stream.h>
 #include <streams/file_stream.h>
 #include <streams/memory_stream.h>
+#ifdef HAVE_CHD
 #include <streams/chd_stream.h>
+#endif
 
 struct intfstream_internal
 {
@@ -46,11 +48,13 @@ struct intfstream_internal
       memstream_t *fp;
       bool writable;
    } memory;
+#ifdef HAVE_CHD
    struct
    {
       int32_t track;
       chdstream_t *fp;
    } chd;
+#endif
 };
 
 bool intfstream_resize(intfstream_internal_t *intf, intfstream_info_t *info)

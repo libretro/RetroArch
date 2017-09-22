@@ -30,8 +30,6 @@
 #include <retro_common_api.h>
 #include <boolean.h>
 
-#include <libchdr/chd.h>
-
 RETRO_BEGIN_DECLS
 
 enum intfstream_type
@@ -56,7 +54,7 @@ typedef struct intfstream_info
    } memory;
    struct
    {
-      chd_file *handle;
+      void *handle;
       int32_t track;
    } chd;
    enum intfstream_type type;
