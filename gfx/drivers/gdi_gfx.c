@@ -30,6 +30,7 @@
 #include "../../driver.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
+#include "../../frontend/frontend_driver.h"
 #include "../common/gdi_common.h"
 
 #if defined(_WIN32) && !defined(_XBOX)
@@ -47,9 +48,31 @@ static unsigned gdi_video_bits       = 0;
 static unsigned gdi_menu_bits        = 0;
 static bool gdi_rgb32                = false;
 static bool gdi_menu_rgb32           = false;
+static int gdi_win_major             = 0;
+static int gdi_win_minor             = 0;
+static bool gdi_lte_win98            = false;
+static unsigned short *gdi_temp_buf  = NULL;
 
 static void gdi_gfx_create(void)
 {
+   char os[64] = {0};
+
+   frontend_ctx_driver_t *ctx = frontend_get_ptr();
+
+   if (!ctx || !ctx->get_os)
+   {
+      RARCH_ERR("[GDI] No frontend driver found.\n");
+      return;
+   }
+
+   ctx->get_os(os, sizeof(os), &gdi_win_major, &gdi_win_minor);
+
+   /* Are we running on Windows 98 or below? */
+   if (gdi_win_major < 4 || (gdi_win_major == 4 && gdi_win_minor <= 10))
+   {
+      RARCH_LOG("[GDI] Win98 or lower detected, using slow frame conversion method for RGB444.\n");
+      gdi_lte_win98 = true;
+   }
 }
 
 static void *gdi_gfx_init(const video_info_t *video,
@@ -167,6 +190,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
    bool draw                 = true;
    gdi_t *gdi                = (gdi_t*)data;
    HWND hwnd                 = win32_get_window();
+   BITMAPINFO *info;
 
    if (!frame || !frame_width || !frame_height)
       return true;
@@ -226,6 +250,16 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       gdi->video_height = height;
       gdi->bmp = CreateCompatibleBitmap(gdi->winDC, gdi->video_width, gdi->video_height);
       gdi->bmp_old = (HBITMAP)SelectObject(gdi->memDC, gdi->bmp);
+
+      if (gdi_lte_win98)
+      {
+         if (gdi_temp_buf)
+         {
+            free(gdi_temp_buf);
+         }
+
+         gdi_temp_buf = (unsigned short*)malloc(width * height * sizeof(unsigned short));
+      }
    }
 
    video_context_driver_get_video_size(&mode);
@@ -233,7 +267,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
    gdi->screen_width = mode.width;
    gdi->screen_height = mode.height;
 
-   BITMAPINFO *info = (BITMAPINFO*)calloc(1, sizeof(*info) + (3 * sizeof(RGBQUAD)));
+   info = (BITMAPINFO*)calloc(1, sizeof(*info) + (3 * sizeof(RGBQUAD)));
 
    info->bmiHeader.biBitCount  = bits;
    info->bmiHeader.biWidth     = pitch / (bits / 8);
@@ -244,24 +278,45 @@ static bool gdi_gfx_frame(void *data, const void *frame,
 
    if (bits == 16)
    {
-      unsigned *masks = (unsigned*)info->bmiColors;
-
-      info->bmiHeader.biCompression = BI_BITFIELDS;
-
-      /* default 16-bit format on Windows is XRGB1555 */
-      if (frame_to_copy == gdi_menu_frame)
+      if (gdi_lte_win98 && gdi_temp_buf)
       {
-         /* map RGB444 color bits for RGUI */
-         masks[0] = 0xF000;
-         masks[1] = 0x0F00;
-         masks[2] = 0x00F0;
+         /* Win98 and below cannot use BI_BITFIELDS with RGB444,
+          * so convert it to RGB555 first. */
+         unsigned x, y;
+
+         for (y = 0; y < height; y++)
+         {
+            for (x = 0; x < width; x++)
+            {
+               unsigned short pixel = ((unsigned short*)frame_to_copy)[width * y + x];
+               gdi_temp_buf[width * y + x] = (pixel & 0xF000) >> 1 | (pixel & 0x0F00) >> 2 | (pixel & 0x00F0) >> 3;
+            }
+         }
+
+         frame_to_copy = gdi_temp_buf;
+         info->bmiHeader.biCompression = BI_RGB;
       }
       else
       {
-         /* map RGB565 color bits for core */
-         masks[0] = 0xF800;
-         masks[1] = 0x07E0;
-         masks[2] = 0x001F;
+         unsigned *masks = (unsigned*)info->bmiColors;
+
+         info->bmiHeader.biCompression = BI_BITFIELDS;
+
+         /* default 16-bit format on Windows is XRGB1555 */
+         if (frame_to_copy == gdi_menu_frame)
+         {
+            /* map RGB444 color bits for RGUI */
+            masks[0] = 0xF000;
+            masks[1] = 0x0F00;
+            masks[2] = 0x00F0;
+         }
+         else
+         {
+            /* map RGB565 color bits for core */
+            masks[0] = 0xF800;
+            masks[1] = 0x07E0;
+            masks[2] = 0x001F;
+         }
       }
    }
    else
@@ -346,6 +401,12 @@ static void gdi_gfx_free(void *data)
    {
       free(gdi_menu_frame);
       gdi_menu_frame = NULL;
+   }
+
+   if (gdi_temp_buf)
+   {
+      free(gdi_temp_buf);
+      gdi_temp_buf = NULL;
    }
 
    if (!gdi)

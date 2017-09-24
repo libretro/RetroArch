@@ -23,8 +23,10 @@
 
 #include "../../configuration.h"
 
-#ifdef HAVE_D3D9
+#if defined(HAVE_D3D9)
 #include "../include/d3d9/d3dx9core.h"
+#elif defined(HAVE_D3D8)
+#include "../include/d3d8/d3dx8core.h"
 #endif
 
 #include <tchar.h>

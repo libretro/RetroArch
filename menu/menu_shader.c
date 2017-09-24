@@ -306,13 +306,13 @@ bool menu_shader_manager_save_preset(
       const char *basename, bool apply, bool fullpath)
 {
 #ifdef HAVE_SHADER_MANAGER
+   bool ret                               = false;
    char buffer[PATH_MAX_LENGTH];
    char config_directory[PATH_MAX_LENGTH];
    char preset_path[PATH_MAX_LENGTH];
    unsigned d, type                       = RARCH_SHADER_NONE;
    const char *dirs[3]                    = {0};
    config_file_t *conf                    = NULL;
-   bool ret                               = false;
    struct video_shader *shader            = menu_shader_get();
 
    buffer[0] = config_directory[0]        = '\0';
@@ -469,13 +469,15 @@ int menu_shader_manager_clear_num_passes(void)
 int menu_shader_manager_clear_parameter(unsigned i)
 {
 #ifdef HAVE_SHADER_MANAGER
-   struct video_shader_parameter *param = menu_shader_manager_get_parameters(i);
+   struct video_shader_parameter *param = 
+      menu_shader_manager_get_parameters(i);
 
    if (!param)
       return 0;
 
    param->current = param->initial;
-   param->current = MIN(MAX(param->minimum, param->current), param->maximum);
+   param->current = MIN(MAX(param->minimum, 
+            param->current), param->maximum);
 #endif
 
    return 0;
@@ -484,7 +486,8 @@ int menu_shader_manager_clear_parameter(unsigned i)
 int menu_shader_manager_clear_pass_filter(unsigned i)
 {
 #ifdef HAVE_SHADER_MANAGER
-   struct video_shader_pass *shader_pass = menu_shader_manager_get_pass(i);
+   struct video_shader_pass *shader_pass = 
+      menu_shader_manager_get_pass(i);
 
    if (!shader_pass)
       return -1;
@@ -500,7 +503,8 @@ int menu_shader_manager_clear_pass_filter(unsigned i)
 void menu_shader_manager_clear_pass_scale(unsigned i)
 {
 #ifdef HAVE_SHADER_MANAGER
-   struct video_shader_pass *shader_pass = menu_shader_manager_get_pass(i);
+   struct video_shader_pass *shader_pass = 
+      menu_shader_manager_get_pass(i);
 
    if (!shader_pass)
       return;
@@ -514,7 +518,8 @@ void menu_shader_manager_clear_pass_scale(unsigned i)
 void menu_shader_manager_clear_pass_path(unsigned i)
 {
 #ifdef HAVE_SHADER_MANAGER
-   struct video_shader_pass *shader_pass = menu_shader_manager_get_pass(i);
+   struct video_shader_pass *shader_pass = 
+      menu_shader_manager_get_pass(i);
 
    if (shader_pass)
       *shader_pass->source.path = '\0';
@@ -535,7 +540,7 @@ unsigned menu_shader_manager_get_type(const void *data)
 #ifdef HAVE_SHADER_MANAGER
    const struct video_shader *shader = (const struct video_shader*)data;
    /* All shader types must be the same, or we cannot use it. */
-   unsigned i                        = 0;
+   uint8_t i                         = 0;
 
    if (!shader)
       return RARCH_SHADER_NONE;

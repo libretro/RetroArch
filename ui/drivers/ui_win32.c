@@ -53,7 +53,6 @@
 #include "../../gfx/video_driver.h"
 #include "../../tasks/tasks_internal.h"
 
-#include "../../gfx/common/gl_common.h"
 #include "ui_win32.h"
 
 #define SHADER_DLG_WIDTH                  220
@@ -149,10 +148,12 @@ static void shader_dlg_params_refresh(void)
       {
          case SHADER_PARAM_CTRL_CHECKBOX:
             {
+			   bool checked;
+
                video_shader_ctx_t shader_info;
                video_shader_driver_get_current_shader(&shader_info);
 
-               bool checked = shader_info.data ?
+               checked = shader_info.data ?
                   (shader_info.data->parameters[i].current == 
                    shader_info.data->parameters[i].maximum) : false;
                SendMessage(control->elems.checkbox.hwnd, BM_SETCHECK, checked, 0);
@@ -364,7 +365,7 @@ void shader_dlg_show(HWND parent_hwnd)
    window->set_focused(&g_shader_dlg.window);
 }
 
-#if defined(HAVE_OPENGL) || defined(HAVE_VULKAN)
+#if 0
 static LRESULT CALLBACK ShaderDlgWndProc(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
@@ -441,43 +442,9 @@ static LRESULT CALLBACK ShaderDlgWndProc(HWND hwnd, UINT message,
 
    return DefWindowProc(hwnd, message, wparam, lparam);
 }
-#endif
-
-bool win32_window_init(WNDCLASSEX *wndclass,
-      bool fullscreen, const char *class_name)
-{
-   wndclass->cbSize        = sizeof(WNDCLASSEX);
-   wndclass->style         = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
-   wndclass->hInstance     = GetModuleHandle(NULL);
-   wndclass->hCursor       = LoadCursor(NULL, IDC_ARROW);
-   wndclass->lpszClassName = (class_name != NULL) ? class_name : "RetroArch";
-   wndclass->hIcon         = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON));
-   wndclass->hIconSm       = (HICON)LoadImage(GetModuleHandle(NULL),
-         MAKEINTRESOURCE(IDI_ICON), IMAGE_ICON, 16, 16, 0);
-   if (!fullscreen)
-      wndclass->hbrBackground = (HBRUSH)COLOR_WINDOW;
-
-   if (class_name != NULL)
-      wndclass->style         |= CS_CLASSDC;
-
-   if (!RegisterClassEx(wndclass))
-      return false;
-
-   /* This is non-NULL when we want a window for shader dialogs, 
-    * therefore early return here */
-   /* TODO/FIXME - this is ugly. Find a better way */
-   if (class_name != NULL) 
-      return true;
-
-   /* Shader dialog is disabled for now, until video_threaded issues are fixed.
-   if (!win32_shader_dlg_init())
-      RARCH_ERR("[WGL]: wgl_shader_dlg_init() failed.\n");*/
-   return true;
-}
 
 bool win32_shader_dlg_init(void)
 {
-#if defined(HAVE_OPENGL) || defined(HAVE_VULKAN)
    static bool inited = false;
    int pos_y;
    HFONT hFont;
@@ -525,9 +492,43 @@ bool win32_shader_dlg_init(void)
    pos_y +=  SHADER_DLG_SEPARATOR_HEIGHT + SHADER_DLG_CTRL_MARGIN;
 
    g_shader_dlg.parameters_start_y = pos_y;
-#endif
    return true;
 }
+#endif
+
+bool win32_window_init(WNDCLASSEX *wndclass,
+      bool fullscreen, const char *class_name)
+{
+   wndclass->cbSize        = sizeof(WNDCLASSEX);
+   wndclass->style         = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+   wndclass->hInstance     = GetModuleHandle(NULL);
+   wndclass->hCursor       = LoadCursor(NULL, IDC_ARROW);
+   wndclass->lpszClassName = (class_name != NULL) ? class_name : "RetroArch";
+   wndclass->hIcon         = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON));
+   wndclass->hIconSm       = (HICON)LoadImage(GetModuleHandle(NULL),
+         MAKEINTRESOURCE(IDI_ICON), IMAGE_ICON, 16, 16, 0);
+   if (!fullscreen)
+      wndclass->hbrBackground = (HBRUSH)COLOR_WINDOW;
+
+   if (class_name != NULL)
+      wndclass->style         |= CS_CLASSDC;
+
+   if (!RegisterClassEx(wndclass))
+      return false;
+
+   /* This is non-NULL when we want a window for shader dialogs, 
+    * therefore early return here */
+   /* TODO/FIXME - this is ugly. Find a better way */
+   if (class_name != NULL) 
+      return true;
+
+   /* Shader dialog is disabled for now, until 
+    * video_threaded issues are fixed.
+   if (!win32_shader_dlg_init())
+      RARCH_ERR("[WGL]: wgl_shader_dlg_init() failed.\n");*/
+   return true;
+}
+
 
 static bool win32_browser(
       HWND owner,
@@ -545,8 +546,10 @@ static bool win32_browser(
    {
       ui_browser_window_state_t browser_state;
 
-      /* These need to be big enough to hold the path/name of any file the user may select.
-       * FIXME: We should really handle the error case when this isn't big enough. */
+      /* These need to be big enough to hold the 
+       * path/name of any file the user may select.
+       * FIXME: We should really handle the 
+       * error case when this isn't big enough. */
       char new_title[TITLE_MAX];
       char new_file[FULLPATH_MAX];
 
@@ -559,7 +562,8 @@ static bool win32_browser(
       if (filename && *filename)
          strlcpy(new_file, filename, sizeof(new_file));
 
-      /* OPENFILENAME.lpstrFilters is actually const, so this cast should be safe */
+      /* OPENFILENAME.lpstrFilters is actually const, 
+       * so this cast should be safe */
       browser_state.filters  = (char*)extensions;
       browser_state.title    = new_title;
       browser_state.startdir = strdup("");
@@ -599,7 +603,9 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
 
             switch (mode)
             {
-               /* OPENFILENAME.lpstrFilter requires a null separated list of name/ext pairs terminated by a second null at the end. */
+               /* OPENFILENAME.lpstrFilter requires 
+                * a NULL-separated list of name/ext 
+                * pairs terminated by a second null at the end. */
                case ID_M_LOAD_CORE:
                   extensions  = "Libretro core (.dll)\0*.dll\0All Files\0*.*\0\0";
                   title       = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_LIST);
@@ -613,10 +619,15 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
                   break;
             }
 
-            /* Convert UTF8 to UTF16, then back to the local code page.
-             * This is needed for proper multi-byte string display until Unicode is fully supported.
+            /* Convert UTF8 to UTF16, then back to the 
+             * local code page.
+             * This is needed for proper multi-byte 
+             * string display until Unicode is 
+             * fully supported.
              */
-            MultiByteToWideChar(CP_UTF8, 0, title, -1, title_wide, sizeof(title_wide) / sizeof(title_wide[0]));
+            MultiByteToWideChar(CP_UTF8, 0, title, -1,
+                  title_wide,
+                  sizeof(title_wide) / sizeof(title_wide[0]));
             wcstombs(title_cp, title_wide, sizeof(title_cp) - 1);
 
             if (!win32_browser(owner, win32_file, sizeof(win32_file),
@@ -700,13 +711,15 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
          else if (mode == ID_M_STATE_INDEX_AUTO)
          {
             signed idx = -1;
-            configuration_set_int(settings, settings->ints.state_slot, idx);
+            configuration_set_int(
+                  settings, settings->ints.state_slot, idx);
          }
          else if (mode >= (ID_M_STATE_INDEX_AUTO+1) 
                && mode <= (ID_M_STATE_INDEX_AUTO+10))
          {
             signed idx = (mode - (ID_M_STATE_INDEX_AUTO+1));
-            configuration_set_int(settings, settings->ints.state_slot, idx);
+            configuration_set_int(
+                  settings, settings->ints.state_slot, idx);
          }
          break;
    }

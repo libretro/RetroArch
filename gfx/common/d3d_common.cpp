@@ -18,8 +18,10 @@
 
 #include "d3d_common.h"
 
-#ifdef HAVE_D3D9
+#if defined(HAVE_D3D9)
 #include "../include/d3d9/d3dx9tex.h"
+#elif defined(HAVE_D3D8)
+#include "../include/d3d8/d3dx8tex.h"
 #endif
 
 bool d3d_swap(void *data, LPDIRECT3DDEVICE dev)
@@ -75,7 +77,7 @@ LPDIRECT3DTEXTURE d3d_texture_new(LPDIRECT3DDEVICE dev,
    {
       hr = dev->CreateTexture(width, height, miplevels, usage,
             format, pool, &buf
-#ifndef _XBOX1
+#ifndef HAVE_D3D8
             , NULL
 #endif
             );
@@ -102,7 +104,7 @@ void d3d_texture_free(LPDIRECT3DTEXTURE tex)
 bool d3d_vertex_declaration_new(LPDIRECT3DDEVICE dev,
       const void *vertex_data, void **decl_data)
 {
-#ifndef _XBOX1
+#ifdef HAVE_D3D9
    const D3DVERTEXELEMENT   *vertex_elements = (const D3DVERTEXELEMENT*)vertex_data;
    LPDIRECT3DVERTEXDECLARATION **vertex_decl = (LPDIRECT3DVERTEXDECLARATION**)decl_data;
 
@@ -120,11 +122,13 @@ LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(LPDIRECT3DDEVICE dev,
    LPDIRECT3DVERTEXBUFFER buf;
 
 #ifndef _XBOX
+#ifndef HAVE_D3D8
    if (usage == 0)
    {
 	  if (dev->GetSoftwareVertexProcessing())
          usage = D3DUSAGE_SOFTWAREPROCESSING;
    }
+#endif
 #endif
 
 #if defined(HAVE_D3D8)
@@ -146,32 +150,26 @@ LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(LPDIRECT3DDEVICE dev,
 void d3d_vertex_buffer_unlock(void *vertbuf_ptr)
 {
    LPDIRECT3DVERTEXBUFFER vertbuf = (LPDIRECT3DVERTEXBUFFER)vertbuf_ptr;
-   /* This is a stub on Xbox 1, see docs. */
-#ifndef _XBOX1
 
 #ifdef _XBOX360
    D3DVertexBuffer_Unlock(vertbuf);
-#if defined(HAVE_D3D9) && !defined(__cplusplus)
+#elif defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DVertexBuffer9_Unlock(vertbuf);
-#else
+#elif defined(HAVE_D3D9)
    vertbuf->Unlock();
-#endif
-
-#endif
-
 #endif
 }
 
 void *d3d_vertex_buffer_lock(void *vertbuf_ptr)
 {
-   void *buf;
+   void                      *buf = NULL;
    LPDIRECT3DVERTEXBUFFER vertbuf = (LPDIRECT3DVERTEXBUFFER)vertbuf_ptr;
 
 #if defined(_XBOX1)
    buf = (void*)D3DVertexBuffer_Lock2(vertbuf, 0);
 #elif defined(_XBOX360)
    buf = D3DVertexBuffer_Lock(vertbuf, 0, 0, 0);
-#else
+#elif defined(HAVE_D3D9)
    vertbuf->Lock(0, sizeof(buf), &buf, 0);
 #endif
 
@@ -228,6 +226,8 @@ void d3d_set_sampler_address_u(LPDIRECT3DDEVICE dev,
    D3DDevice_SetSamplerState_AddressU_Inline(dev, sampler, value);
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DDevice9_SetSamplerState(dev, sampler, D3DSAMP_ADDRESSU, value);
+#elif defined(HAVE_D3D8)
+   dev->SetTextureStageState(sampler, D3DTSS_ADDRESSU, value);
 #else
    dev->SetSamplerState(sampler, D3DSAMP_ADDRESSU, value);
 #endif
@@ -243,6 +243,8 @@ void d3d_set_sampler_address_v(LPDIRECT3DDEVICE dev,
    D3DDevice_SetSamplerState_AddressV_Inline(dev, sampler, value);
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DDevice9_SetSamplerState(dev, sampler, D3DSAMP_ADDRESSV, value);
+#elif defined(HAVE_D3D8)
+   dev->SetTextureStageState(sampler, D3DTSS_ADDRESSV, value);
 #else
    dev->SetSamplerState(sampler, D3DSAMP_ADDRESSV, value);
 #endif
@@ -258,6 +260,8 @@ void d3d_set_sampler_minfilter(LPDIRECT3DDEVICE dev,
    D3DDevice_SetSamplerState_MinFilter(dev, sampler, value);
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DDevice9_SetSamplerState(dev, sampler, D3DSAMP_MINFILTER, value);
+#elif defined(HAVE_D3D8)
+   dev->SetTextureStageState(sampler, D3DTSS_MINFILTER, value);
 #else
    dev->SetSamplerState(sampler, D3DSAMP_MINFILTER, value);
 #endif
@@ -273,6 +277,8 @@ void d3d_set_sampler_magfilter(LPDIRECT3DDEVICE dev,
    D3DDevice_SetSamplerState_MagFilter(dev, sampler, value);
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DDevice9_SetSamplerState(dev, sampler, D3DSAMP_MAGFILTER, value);
+#elif defined(HAVE_D3D8)
+   dev->SetTextureStageState(sampler, D3DTSS_MAGFILTER, value);
 #else
    dev->SetSamplerState(sampler, D3DSAMP_MAGFILTER, value);
 #endif
@@ -335,12 +341,10 @@ void d3d_unlock_rectangle(LPDIRECT3DTEXTURE tex)
 {
 #ifdef _XBOX
    D3DTexture_UnlockRect(tex, 0);
-#else
-#if defined(HAVE_D3D9) && !defined(__cplusplus)
+#elif defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DSurface9_UnlockRect(tex);
 #else
    tex->UnlockRect(0);
-#endif
 #endif
 }
 
@@ -398,6 +402,8 @@ HRESULT d3d_set_vertex_shader(LPDIRECT3DDEVICE dev, unsigned index,
    LPDIRECT3DVERTEXSHADER shader = (LPDIRECT3DVERTEXSHADER)data;
    D3DDevice_SetVertexShader(dev, shader);
    return S_OK;
+#elif defined(HAVE_D3D8)
+   return E_FAIL;
 #else
    LPDIRECT3DVERTEXSHADER shader = (LPDIRECT3DVERTEXSHADER)data;
    return dev->SetVertexShader(shader);
@@ -411,7 +417,7 @@ void d3d_texture_blit(unsigned pixel_size,
 {
    if (d3d_lock_rectangle(tex, 0, lr, NULL, 0, 0))
    {
-#if defined(_XBOX360) && defined(_XBOX360)
+#if defined(_XBOX360)
       D3DSURFACE_DESC desc;
       tex->GetLevelDesc(0, &desc);
       XGCopySurface(lr->pBits, lr->Pitch, width, height, desc.Format, NULL,
@@ -506,6 +512,7 @@ void d3d_set_vertex_declaration(void *data, void *vertex_data)
 #endif
    if (!dev)
       return;
+
 #ifdef _XBOX1
    d3d_set_vertex_shader(dev, D3DFVF_XYZ | D3DFVF_TEX1, NULL);
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)

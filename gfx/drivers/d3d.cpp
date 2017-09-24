@@ -152,7 +152,7 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
    link_info.tex_w = link_info.tex_h =
       video_info->input_scale * RARCH_SCALE_BASE;
 
-   if (!renderchain_init_first(&d3d->renderchain_driver,
+   if (!renderchain_d3d_init_first(&d3d->renderchain_driver,
 	   &d3d->renderchain_data))
    {
 	   RARCH_ERR("[D3D]: Renderchain could not be initialized.\n");
@@ -405,7 +405,7 @@ static void d3d_overlay_render(d3d_video_t *d3d, video_frame_info_t *video_info,
 
    d3d_enable_blend_func(d3d->dev);
 
-#ifndef _XBOX1
+#if defined(HAVE_D3D9)
    {
       LPDIRECT3DVERTEXDECLARATION vertex_decl;
       /* set vertex declaration for overlay. */
@@ -485,6 +485,12 @@ static void d3d_deinitialize(d3d_video_t *d3d)
    d3d_deinit_chain(d3d);
 }
 
+#if defined(HAVE_D3D8) && !defined(_XBOX)
+#define FS_PRESENTINTERVAL(pp) ((pp)->FullScreen_PresentationInterval)
+#else
+#define FS_PRESENTINTERVAL(pp) ((pp)->PresentationInterval)
+#endif
+
 void d3d_make_d3dpp(void *data,
       const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp)
 {
@@ -503,7 +509,7 @@ void d3d_make_d3dpp(void *data,
    d3dpp->Windowed             = settings->bools.video_windowed_fullscreen 
       || !info->fullscreen;
 #endif
-   d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
+   FS_PRESENTINTERVAL(d3dpp)   = D3DPRESENT_INTERVAL_IMMEDIATE;
 
    if (info->vsync)
    {
@@ -511,16 +517,16 @@ void d3d_make_d3dpp(void *data,
       {
          default:
          case 1:
-            d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_ONE;
+            FS_PRESENTINTERVAL(d3dpp) = D3DPRESENT_INTERVAL_ONE;
             break;
          case 2:
-            d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_TWO;
+            FS_PRESENTINTERVAL(d3dpp) = D3DPRESENT_INTERVAL_TWO;
             break;
          case 3:
-            d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_THREE;
+            FS_PRESENTINTERVAL(d3dpp) = D3DPRESENT_INTERVAL_THREE;
             break;
          case 4:
-            d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_FOUR;
+            FS_PRESENTINTERVAL(d3dpp) = D3DPRESENT_INTERVAL_FOUR;
             break;
       }
    }
@@ -626,6 +632,15 @@ static bool d3d_init_base(void *data, const video_info_t *info)
    d3d->cur_mon_id = 0;
 #endif
 
+#ifdef _XBOX
+      if (FAILED(d3d->d3d_err = g_pD3D->CreateDevice(
+            d3d->cur_mon_id,
+            D3DDEVTYPE_HAL,
+            NULL,
+            D3DCREATE_HARDWARE_VERTEXPROCESSING,
+            &d3dpp,
+            &d3d->dev)))
+#else
    if (FAILED(d3d->d3d_err = g_pD3D->CreateDevice(
             d3d->cur_mon_id,
             D3DDEVTYPE_HAL,
@@ -633,10 +648,20 @@ static bool d3d_init_base(void *data, const video_info_t *info)
             D3DCREATE_HARDWARE_VERTEXPROCESSING,
             &d3dpp,
             &d3d->dev)))
+#endif
    {
       RARCH_WARN("[D3D]: Failed to init device with hardware vertex processing (code: 0x%x). Trying to fall back to software vertex processing.\n",
                  (unsigned)d3d->d3d_err);
 
+#ifdef _XBOX
+      if (FAILED(d3d->d3d_err = g_pD3D->CreateDevice(
+                  d3d->cur_mon_id,
+                  D3DDEVTYPE_HAL,
+                  NULL,
+                  D3DCREATE_SOFTWARE_VERTEXPROCESSING,
+                  &d3dpp,
+                  &d3d->dev)))
+#else
       if (FAILED(d3d->d3d_err = g_pD3D->CreateDevice(
                   d3d->cur_mon_id,
                   D3DDEVTYPE_HAL,
@@ -644,6 +669,7 @@ static bool d3d_init_base(void *data, const video_info_t *info)
                   D3DCREATE_SOFTWARE_VERTEXPROCESSING,
                   &d3dpp,
                   &d3d->dev)))
+#endif
       {
          RARCH_ERR("[D3D]: Failed to initialize device.\n");
          return false;
@@ -988,6 +1014,7 @@ static bool d3d_construct(d3d_video_t *d3d,
 #endif
 
    memset(&d3d->windowClass, 0, sizeof(d3d->windowClass));
+
 #ifdef HAVE_WINDOW
    d3d->windowClass.lpfnWndProc = WndProcD3D;
    win32_window_init(&d3d->windowClass, true, NULL);
@@ -1218,12 +1245,16 @@ static void d3d_free(void *data)
    d3d->dev = NULL;
    g_pD3D   = NULL;
 
+#ifndef _XBOX
    win32_monitor_from_window();
+#endif
 
    if (d3d)
       delete d3d;
 
+#ifndef _XBOX
    win32_destroy_window();
+#endif
 }
 
 #ifdef HAVE_OVERLAY
@@ -1372,7 +1403,9 @@ static bool d3d_frame(void *data, const void *frame,
 {
    unsigned i                          = 0;
    d3d_video_t *d3d                    = (d3d_video_t*)data;
+#ifndef _XBOX
    HWND window                         = win32_get_window();
+#endif
    unsigned width                      = video_info->width;
    unsigned height                     = video_info->height;
 
@@ -1384,8 +1417,10 @@ static bool d3d_frame(void *data, const void *frame,
    /* We cannot recover in fullscreen. */
    if (d3d->needs_restore)
    {
+#ifndef _XBOX
       if (IsIconic(window))
          return true;
+#endif
 
       if (!d3d_restore(d3d))
       {
@@ -1487,11 +1522,9 @@ static bool d3d_set_shader(void *data,
    switch (type)
    {
       case RARCH_SHADER_CG:
+      case RARCH_SHADER_HLSL:
          if (path)
             shader   = path;
-#ifdef HAVE_HLSL
-         d3d->shader = &hlsl_backend;
-#endif
          break;
       default:
          break;

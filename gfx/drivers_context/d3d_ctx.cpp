@@ -15,7 +15,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #ifdef _XBOX
 #include <xtl.h>
 #endif
@@ -89,6 +88,11 @@ static void gfx_ctx_d3d_update_title(void *data, void *data2)
 {
    video_frame_info_t *video_info = (video_frame_info_t*)data2;
 #ifdef _XBOX
+   const ui_window_t *window      = NULL;
+#else
+   const ui_window_t *window      = ui_companion_driver_get_window_ptr();
+#endif
+
    if (video_info->fps_show)
    {
       MEMORYSTATUS stat;
@@ -101,9 +105,8 @@ static void gfx_ctx_d3d_update_title(void *data, void *data2)
             stat.dwAvailPhys/(1024.0f*1024.0f), stat.dwTotalPhys/(1024.0f*1024.0f));
       strlcat(video_info->fps_text, mem, sizeof(video_info->fps_text));
    }
-#else
-   const ui_window_t *window = ui_companion_driver_get_window_ptr();
 
+#ifndef _XBOX
    if (window)
    {
       char title[128];
@@ -116,41 +119,54 @@ static void gfx_ctx_d3d_update_title(void *data, void *data2)
          window->set_title(&main_window, title);
    }
 #endif
-
 }
 
 static void gfx_ctx_d3d_show_mouse(void *data, bool state)
 {
    (void)data;
 
+#ifndef _XBOX
    win32_show_cursor(state);
+#endif
 }
 
 static void gfx_ctx_d3d_check_window(void *data, bool *quit,
       bool *resize, unsigned *width,
       unsigned *height, bool is_shutdown)
 {
+#ifndef _XBOX
    win32_check_window(quit, resize, width, height);
+#endif
 }
 
 static bool gfx_ctx_d3d_has_focus(void *data)
 {
+#ifdef _XBOX
+   return true;
+#else
    return win32_has_focus();
+#endif
 }
 
 static bool gfx_ctx_d3d_suppress_screensaver(void *data, bool enable)
 {
+#ifdef _XBOX
+   return true;
+#else
    return win32_suppress_screensaver(data, enable);
+#endif
 }
 
-#ifndef _XBOX
 static bool gfx_ctx_d3d_has_windowed(void *data)
 {
    (void)data;
 
+#ifdef _XBOX
+   return false;
+#else
    return true;
-}
 #endif
+}
 
 static bool gfx_ctx_d3d_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
@@ -170,7 +186,9 @@ static bool gfx_ctx_d3d_bind_api(void *data,
 
 static void *gfx_ctx_d3d_init(video_frame_info_t *video_info, void *video_driver)
 {
+#ifndef _XBOX
    win32_monitor_init();
+#endif
 
    return video_driver;
 }
@@ -217,7 +235,9 @@ static bool gfx_ctx_d3d_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
+#ifndef _XBOX
    win32_show_cursor(!fullscreen);
+#endif
 
    return true;
 }
@@ -330,7 +350,11 @@ static void gfx_ctx_d3d_swap_interval(void *data, unsigned interval)
 static bool gfx_ctx_d3d_get_metrics(void *data,
 	enum display_metric_types type, float *value)
 {
+#ifdef _XBOX
+   return false;
+#else
    return win32_get_metrics(data, type, value);
+#endif
 }
 
 static uint32_t gfx_ctx_d3d_get_flags(void *data)
@@ -363,11 +387,7 @@ const gfx_ctx_driver_t gfx_ctx_d3d = {
    gfx_ctx_d3d_set_resize,
    gfx_ctx_d3d_has_focus,
    gfx_ctx_d3d_suppress_screensaver,
-#ifdef _XBOX
-   NULL,
-#else
    gfx_ctx_d3d_has_windowed,
-#endif
    gfx_ctx_d3d_swap_buffers,
    gfx_ctx_d3d_input_driver,
    NULL,

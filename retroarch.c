@@ -90,7 +90,6 @@
 #include "dynamic.h"
 #include "driver.h"
 #include "input/input_driver.h"
-#include "input/input_config.h"
 #include "msg_hash.h"
 #include "movie.h"
 #include "dirs.h"
@@ -186,48 +185,36 @@ static sthread_tls_t rarch_tls;
 const void *MAGIC_POINTER                               = (void*)0xB16B00B5;
 #endif
 
-
 static retro_bits_t has_set_libretro_device;
-static bool has_set_core                                = false;
-static bool has_set_username                            = false;
-static bool rarch_is_inited                             = false;
-static bool rarch_error_on_init                         = false;
-static bool rarch_block_config_read                     = false;
-static bool rarch_force_fullscreen                      = false;
-static bool has_set_verbosity                           = false;
-static bool has_set_libretro                            = false;
-static bool has_set_libretro_directory                  = false;
-static bool has_set_save_path                           = false;
-static bool has_set_state_path                          = false;
-static bool has_set_netplay_mode                        = false;
-static bool has_set_netplay_ip_address                  = false;
-static bool has_set_netplay_ip_port                     = false;
-static bool has_set_netplay_stateless_mode              = false;
-static bool has_set_netplay_check_frames                = false;
-static bool has_set_ups_pref                            = false;
-static bool has_set_bps_pref                            = false;
-static bool has_set_ips_pref                            = false;
 
-static bool rarch_is_sram_load_disabled                 = false;
-static bool rarch_is_sram_save_disabled                 = false;
-static bool rarch_use_sram                              = false;
-static bool rarch_ups_pref                              = false;
-static bool rarch_bps_pref                              = false;
-static bool rarch_ips_pref                              = false;
-static bool rarch_patch_blocked                         = false;
+static bool has_set_core                                   = false;
+static bool has_set_username                               = false;
+static bool rarch_is_inited                                = false;
+static bool rarch_error_on_init                            = false;
+static bool rarch_block_config_read                        = false;
+static bool rarch_force_fullscreen                         = false;
+static bool has_set_verbosity                              = false;
+static bool has_set_libretro                               = false;
+static bool has_set_libretro_directory                     = false;
+static bool has_set_save_path                              = false;
+static bool has_set_state_path                             = false;
+static bool has_set_netplay_mode                           = false;
+static bool has_set_netplay_ip_address                     = false;
+static bool has_set_netplay_ip_port                        = false;
+static bool has_set_netplay_stateless_mode                 = false;
+static bool has_set_netplay_check_frames                   = false;
+static bool has_set_ups_pref                               = false;
+static bool has_set_bps_pref                               = false;
+static bool has_set_ips_pref                               = false;
 
-static rarch_system_info_t runloop_system;
-static struct retro_frame_time_callback runloop_frame_time;
-static retro_keyboard_event_t runloop_key_event            = NULL;
-static retro_keyboard_event_t runloop_frontend_key_event   = NULL;
-static core_option_manager_t *runloop_core_options         = NULL;
-#ifdef HAVE_THREADS
-static slock_t *_runloop_msg_queue_lock                    = NULL;
-#endif
-static msg_queue_t *runloop_msg_queue                      = NULL;
-static unsigned runloop_pending_windowed_scale             = 0;
-static retro_usec_t runloop_frame_time_last                = 0;
-static unsigned runloop_max_frames                         = 0;
+static bool rarch_is_sram_load_disabled                    = false;
+static bool rarch_is_sram_save_disabled                    = false;
+static bool rarch_use_sram                                 = false;
+static bool rarch_ups_pref                                 = false;
+static bool rarch_bps_pref                                 = false;
+static bool rarch_ips_pref                                 = false;
+static bool rarch_patch_blocked                            = false;
+
 static bool runloop_force_nonblock                         = false;
 static bool runloop_paused                                 = false;
 static bool runloop_idle                                   = false;
@@ -242,6 +229,21 @@ static bool runloop_remaps_game_active                     = false;
 static bool runloop_game_options_active                    = false;
 static bool runloop_missing_bios                           = false;
 static bool runloop_autosave                               = false;
+
+static rarch_system_info_t runloop_system;
+static struct retro_frame_time_callback runloop_frame_time;
+static retro_keyboard_event_t runloop_key_event            = NULL;
+static retro_keyboard_event_t runloop_frontend_key_event   = NULL;
+static core_option_manager_t *runloop_core_options         = NULL;
+#ifdef HAVE_THREADS
+static slock_t *_runloop_msg_queue_lock                    = NULL;
+#endif
+static msg_queue_t *runloop_msg_queue                      = NULL;
+
+static unsigned runloop_pending_windowed_scale             = 0;
+static unsigned runloop_max_frames                         = 0;
+
+static retro_usec_t runloop_frame_time_last                = 0;
 static retro_time_t frame_limit_minimum_time               = 0.0;
 static retro_time_t frame_limit_last_time                  = 0.0;
 
@@ -1097,19 +1099,19 @@ static bool retroarch_init_state(void)
 
 bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
 {
-   char core_path[PATH_MAX_LENGTH];
-   char config_directory[PATH_MAX_LENGTH];
+   char *core_path                        = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char *config_directory                 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   size_t str_size                        = PATH_MAX_LENGTH * sizeof(char);
    const char *core_name                  = runloop_system.info.library_name;
    const char *game_name                  = path_basename(path_get(RARCH_PATH_BASENAME));
 
    if (string_is_empty(core_name) || string_is_empty(game_name))
-      return false;
+      goto error;
 
    config_directory[0] = core_path[0]     = '\0';
 
    fill_pathname_application_special(config_directory,
-         sizeof(config_directory),
-         APPLICATION_SPECIAL_DIRECTORY_CONFIG);
+         str_size, APPLICATION_SPECIAL_DIRECTORY_CONFIG);
 
    /* Concatenate strings into full paths for game_path */
    fill_pathname_join_special_ext(s,
@@ -1118,12 +1120,19 @@ bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
          len);
 
    fill_pathname_join(core_path,
-         config_directory, core_name, sizeof(core_path));
+         config_directory, core_name, str_size);
 
    if (!path_is_directory(core_path) && mkdir)
       path_mkdir(core_path);
 
+   free(core_path);
+   free(config_directory);
    return true;
+
+error:
+   free(core_path);
+   free(config_directory);
+   return false;
 }
 
 /* Validates CPU features for given processor architecture.
@@ -1223,7 +1232,7 @@ bool retroarch_main_init(int argc, char *argv[])
 
    if (verbosity_is_enabled())
    {
-      char str[255];
+      char str[128];
 
       str[0] = '\0';
 
@@ -1280,6 +1289,7 @@ bool retroarch_main_init(int argc, char *argv[])
    drivers_init(DRIVERS_CMD_ALL);
    command_event(CMD_EVENT_COMMAND_INIT, NULL);
    command_event(CMD_EVENT_REMOTE_INIT, NULL);
+   command_event(CMD_EVENT_MAPPER_INIT, NULL);
    command_event(CMD_EVENT_REWIND_INIT, NULL);
    command_event(CMD_EVENT_CONTROLLERS_INIT, NULL);
    command_event(CMD_EVENT_RECORD_INIT, NULL);
@@ -1351,22 +1361,28 @@ void rarch_menu_running_finished(void)
  **/
 static bool rarch_game_specific_options(char **output)
 {
-   char game_path[8192];
+   char *game_path       = (char*)malloc(8192 * sizeof(char));
+   size_t game_path_size = 8192 * sizeof(char);
 
    game_path[0] ='\0';
 
    if (!retroarch_validate_game_options(game_path,
-            sizeof(game_path), false))
-         return false;
+            game_path_size, false))
+      goto error; 
 
    if (!config_file_exists(game_path))
-      return false;
+      goto error; 
 
    RARCH_LOG("%s %s\n",
          msg_hash_to_str(MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT),
          game_path);
    *output = strdup(game_path);
+   free(game_path);
    return true;
+
+error:
+   free(game_path);
+   return false;
 }
 
 bool rarch_ctl(enum rarch_ctl_state state, void *data)
@@ -1440,6 +1456,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
          command_event(CMD_EVENT_COMMAND_DEINIT, NULL);
          command_event(CMD_EVENT_REMOTE_DEINIT, NULL);
+         command_event(CMD_EVENT_MAPPER_DEINIT, NULL);
 
          command_event(CMD_EVENT_AUTOSAVE_DEINIT, NULL);
 
@@ -1474,7 +1491,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 #endif
          retroarch_init_state();
          {
-            unsigned i;
+            uint8_t i;
             for (i = 0; i < MAX_USERS; i++)
                input_config_set_device(i, RETRO_DEVICE_JOYPAD);
          }

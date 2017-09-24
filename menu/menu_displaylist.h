@@ -167,49 +167,46 @@ enum menu_displaylist_ctl_state
 
 typedef struct menu_displaylist_info
 {
+   enum msg_hash_enums enum_idx;
    /* should the displaylist be sorted by alphabet? */
    bool need_sort;
    bool need_refresh;
    bool need_entries_refresh;
    bool need_push;
-
    /* should we clear the displaylist before we push
     * entries onto it? */
    bool need_clear;
-
    bool push_builtin_cores;
-
    /* Should a 'download core' entry be pushed onto the list?
     * This will be set to true in case there are no currently
     * installed cores. */
    bool download_core;
-
    /* does the navigation index need to be cleared to 0 (first entry) ? */
    bool need_navigation_clear;
-   file_list_t *list;
-   file_list_t *menu_list;
+
    char path[PATH_MAX_LENGTH];
    char path_b[PATH_MAX_LENGTH];
    char path_c[PATH_MAX_LENGTH];
-   char label[255];
-   uint32_t label_hash;
    char exts[PATH_MAX_LENGTH];
+   char label[255];
    unsigned type;
    unsigned type_default;
-   size_t directory_ptr;
    unsigned flags;
-   enum msg_hash_enums enum_idx;
+   uint32_t label_hash;
+   size_t directory_ptr;
+   file_list_t *list;
+   file_list_t *menu_list;
    rarch_setting_t *setting;
 } menu_displaylist_info_t;
 
 typedef struct menu_displaylist_ctx_parse_entry
 {
-   void *data;
-   menu_displaylist_info_t *info;
-   const char *info_label;
    enum msg_hash_enums enum_idx;
    enum menu_displaylist_parse_type parse_type;
    bool add_empty_entry;
+   const char *info_label;
+   void *data;
+   menu_displaylist_info_t *info;
 } menu_displaylist_ctx_parse_entry_t;
 
 typedef struct menu_displaylist_ctx_entry
@@ -221,6 +218,10 @@ typedef struct menu_displaylist_ctx_entry
 bool menu_displaylist_process(menu_displaylist_info_t *info);
 
 bool menu_displaylist_push(menu_displaylist_ctx_entry_t *entry);
+
+void menu_displaylist_info_free(menu_displaylist_info_t *info);
+
+void menu_displaylist_info_init(menu_displaylist_info_t *info);
 
 bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data);
 #ifdef HAVE_NETWORKING

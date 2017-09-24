@@ -124,8 +124,10 @@ typedef struct video_pixel_scaler
    void *scaler_out;
 } video_pixel_scaler_t;
 
-static void (*video_driver_cb_shader_use)(void *data, void *shader_data, unsigned index, bool set_active);
-static bool (*video_driver_cb_shader_set_mvp)(void *data, void *shader_data, const math_matrix_4x4 *mat);
+static void (*video_driver_cb_shader_use)(void *data,
+      void *shader_data, unsigned index, bool set_active);
+static bool (*video_driver_cb_shader_set_mvp)(void *data,
+      void *shader_data, const math_matrix_4x4 *mat);
 bool (*video_driver_cb_has_focus)(void);
 
 /* Opaque handles to currently running window.
@@ -391,12 +393,15 @@ static const shader_backend_t *shader_ctx_drivers[] = {
    NULL
 };
 
-static const renderchain_driver_t *renderchain_drivers[] = {
+static const d3d_renderchain_driver_t *renderchain_drivers[] = {
 #if defined(_WIN32) && defined(HAVE_D3D9) && defined(HAVE_CG)
    &cg_d3d9_renderchain,
 #endif
-#ifdef _XBOX
-   &xdk_d3d_renderchain,
+#if defined(_WIN32) && defined(HAVE_D3D9) && defined(HAVE_HLSL)
+   &hlsl_d3d9_renderchain,
+#endif
+#if defined(_WIN32) && defined(HAVE_D3D8)
+   &d3d8_renderchain,
 #endif
    &null_renderchain,
    NULL
@@ -656,28 +661,26 @@ static void video_driver_filter_free(void)
    video_driver_state_out_rgb32 = false;
 }
 
-static void video_driver_init_filter(enum retro_pixel_format colfmt)
+static void video_driver_init_filter(enum retro_pixel_format colfmt_int)
 {
-   unsigned width, height, pow2_x, pow2_y, maxsize;
+   unsigned pow2_x, pow2_y, maxsize;
    void *buf                            = NULL;
-   struct retro_game_geometry *geom     = NULL;
    settings_t *settings                 = config_get_ptr();
-   struct retro_system_av_info *av_info = &video_driver_av_info;
-
+   struct retro_game_geometry *geom     = &video_driver_av_info.geometry;
+   unsigned width                       = geom->max_width;
+   unsigned height                      = geom->max_height;
    /* Deprecated format. Gets pre-converted. */
-   if (colfmt == RETRO_PIXEL_FORMAT_0RGB1555)
-      colfmt = RETRO_PIXEL_FORMAT_RGB565;
+   enum retro_pixel_format colfmt       = 
+      (colfmt_int == RETRO_PIXEL_FORMAT_0RGB1555) ?
+      RETRO_PIXEL_FORMAT_RGB565 : colfmt_int;
 
-   if (av_info)
-      geom = (struct retro_game_geometry*)&av_info->geometry;
-
-   if (!geom)
+   if (video_driver_is_hw_context())
+   {
+      RARCH_WARN("Cannot use CPU filters when hardware rendering is used.\n");
       return;
+   }
 
-   width                     = geom->max_width;
-   height                    = geom->max_height;
-
-   video_driver_state_filter = rarch_softfilter_new(
+   video_driver_state_filter            = rarch_softfilter_new(
          settings->paths.path_softfilter_plugin,
          RARCH_SOFTFILTER_THREADS_AUTO, colfmt, width, height);
 
@@ -896,34 +899,15 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    unsigned max_dim, scale, width, height;
    video_viewport_t *custom_vp            = NULL;
    const input_driver_t *tmp              = NULL;
-   const struct retro_game_geometry *geom = NULL;
    rarch_system_info_t *system            = NULL;
    static uint16_t dummy_pixels[32]       = {0};
    settings_t *settings                   = config_get_ptr();
-   struct retro_system_av_info *av_info   = &video_driver_av_info;
-
-   video_driver_filter_free();
+   struct retro_game_geometry *geom       = &video_driver_av_info.geometry;
 
    if (!string_is_empty(settings->paths.path_softfilter_plugin))
-   {
-      if (video_driver_is_hw_context())
-      {
-         RARCH_WARN("Cannot use CPU filters when hardware rendering is used.\n");
-      }
-      else
-         video_driver_init_filter(video_driver_pix_fmt);
-   }
+      video_driver_init_filter(video_driver_pix_fmt);
 
    command_event(CMD_EVENT_SHADER_DIR_INIT, NULL);
-
-   if (av_info)
-      geom      = (const struct retro_game_geometry*)&av_info->geometry;
-
-   if (!geom)
-   {
-      RARCH_ERR("[Video]: AV geometry not initialized, cannot initialize video driver.\n");
-      goto error;
-   }
 
    max_dim   = MAX(geom->max_width, geom->max_height);
    scale     = next_pow2(max_dim) / RARCH_SCALE_BASE;
@@ -1397,10 +1381,9 @@ bool video_driver_cached_frame(void)
 void video_driver_monitor_adjust_system_rates(void)
 {
    float timing_skew;
-   struct retro_system_av_info *av_info   = &video_driver_av_info;
    settings_t *settings                   = config_get_ptr();
    float video_refresh_rate               = settings->floats.video_refresh_rate;
-   const struct retro_system_timing *info = (const struct retro_system_timing*)&av_info->timing;
+   const struct retro_system_timing *info = (const struct retro_system_timing*)&video_driver_av_info.timing;
 
    rarch_ctl(RARCH_CTL_UNSET_NONBLOCK_FORCED, NULL);
 
@@ -1600,14 +1583,10 @@ bool video_driver_supports_read_frame_raw(void)
 void video_driver_set_viewport_config(void)
 {
    settings_t *settings                   = config_get_ptr();
-   struct retro_system_av_info *av_info   = &video_driver_av_info;
 
    if (settings->floats.video_aspect_ratio < 0.0f)
    {
-      struct retro_game_geometry *geom = &av_info->geometry;
-
-      if (!geom)
-         return;
+      struct retro_game_geometry *geom = &video_driver_av_info.geometry;
 
       if (geom->aspect_ratio > 0.0f && settings->bools.video_aspect_ratio_auto)
          aspectratio_lut[ASPECT_RATIO_CONFIG].value = geom->aspect_ratio;
@@ -1635,15 +1614,9 @@ void video_driver_set_viewport_config(void)
 void video_driver_set_viewport_square_pixel(void)
 {
    unsigned len, highest, i, aspect_x, aspect_y;
-   unsigned width, height;
-   struct retro_system_av_info *av_info = &video_driver_av_info;
-   struct retro_game_geometry *geom     = &av_info->geometry;
-
-   if (!geom)
-      return;
-
-   width  = geom->base_width;
-   height = geom->base_height;
+   struct retro_game_geometry *geom  = &video_driver_av_info.geometry;
+   unsigned width                    = geom->base_width;
+   unsigned height                   = geom->base_height;
 
    if (width == 0 || height == 0)
       return;
@@ -1669,22 +1642,17 @@ void video_driver_set_viewport_square_pixel(void)
 
 void video_driver_set_viewport_core(void)
 {
-   struct retro_system_av_info *av_info = &video_driver_av_info;
-   struct retro_game_geometry *geom     = &av_info->geometry;
+   struct retro_game_geometry *geom     = &video_driver_av_info.geometry;
 
    if (!geom || geom->base_width <= 0.0f || geom->base_height <= 0.0f)
       return;
 
    /* Fallback to 1:1 pixel ratio if none provided */
    if (geom->aspect_ratio > 0.0f)
-   {
       aspectratio_lut[ASPECT_RATIO_CORE].value = geom->aspect_ratio;
-   }
    else
-   {
       aspectratio_lut[ASPECT_RATIO_CORE].value = 
          (float)geom->base_width / geom->base_height;
-   }
 }
 
 void video_driver_reset_custom_viewport(void)
@@ -1745,6 +1713,7 @@ bool video_driver_get_prev_video_out(void)
 bool video_driver_init(bool *video_is_threaded)
 {
    video_driver_lock_new();
+   video_driver_filter_free();
    return video_driver_init_internal(video_is_threaded);
 }
 
@@ -2165,8 +2134,7 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
       unsigned base_width;
       /* Use system reported sizes as these define the 
        * geometry for the "normal" case. */
-      struct retro_system_av_info *av_info = &video_driver_av_info;
-      unsigned base_height                 = av_info->geometry.base_height;
+      unsigned base_height                 = video_driver_av_info.geometry.base_height;
 
       if (base_height == 0)
          base_height = 1;
@@ -2318,7 +2286,7 @@ void video_driver_frame(const void *data, unsigned width,
          snprintf(frames_text,
                sizeof(frames_text),
                STRING_REP_UINT64,
-               (unsigned long long)video_driver_frame_count);
+               (uint64_t)video_driver_frame_count);
 
          strlcat(video_driver_window_title,
                frames_text,
@@ -2334,7 +2302,7 @@ void video_driver_frame(const void *data, unsigned width,
                "FPS: %6.1f || %s: " STRING_REP_UINT64,
                last_fps,
                msg_hash_to_str(MSG_FRAMES),
-               (unsigned long long)video_driver_frame_count);
+               (uint64_t)video_driver_frame_count);
    }
    else
    {
@@ -3378,7 +3346,7 @@ bool video_shader_driver_wrap_type(video_shader_ctx_wrap_t *wrap)
    return true;
 }
 
-bool renderchain_init_first(const renderchain_driver_t **renderchain_driver,
+bool renderchain_d3d_init_first(const d3d_renderchain_driver_t **renderchain_driver,
 	void **renderchain_handle)
 {
    unsigned i;

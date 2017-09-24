@@ -4,7 +4,7 @@
 #ifndef __7Z_BUF_H
 #define __7Z_BUF_H
 
-#include "Types.h"
+#include "7zTypes.h"
 
 #ifdef __cplusplus
 extern "C" {

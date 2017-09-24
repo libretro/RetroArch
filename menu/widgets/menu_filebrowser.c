@@ -119,7 +119,7 @@ void filebrowser_parse(void *data, unsigned type_data)
    {
       for (i = 0; i < list_size; i++)
       {
-         char label[PATH_MAX_LENGTH];
+         char label[64];
          bool is_dir                   = false;
          enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
          enum msg_file_type file_type  = FILE_TYPE_NONE;

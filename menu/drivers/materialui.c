@@ -60,14 +60,14 @@
 /* This struct holds the y position and the line height for each menu entry */
 typedef struct
 {
-   float line_height;
-   float y;
-   bool texture_switch_set;
-   uintptr_t texture_switch;
-   bool texture_switch2_set;
-   uintptr_t texture_switch2;
    bool switch_is_on;
    bool do_draw_text;
+   bool texture_switch_set;
+   bool texture_switch2_set;
+   uintptr_t texture_switch;
+   uintptr_t texture_switch2;
+   float line_height;
+   float y;
 } mui_node_t;
 
 /* Textures used for the tabs and the switches */
@@ -141,6 +141,9 @@ enum
 
 typedef struct mui_handle
 {
+   char box_message[1024];
+   bool need_compute;
+   bool mouse_show;
    unsigned tabs_height;
    unsigned line_height;
    unsigned shadow_height;
@@ -149,8 +152,9 @@ typedef struct mui_handle
    unsigned margin;
    unsigned glyph_width;
    unsigned glyph_width2;
-   char box_message[1024];
-   bool mouse_show;
+   /* Y position of the vertical scroll */
+   float scroll_y;
+   float content_height;
    uint64_t frame_count;
 
    struct
@@ -188,11 +192,6 @@ typedef struct mui_handle
    video_font_raster_block_t raster_block;
    video_font_raster_block_t raster_block2;
 
-   /* Y position of the vertical scroll */
-   float scroll_y;
-
-   bool need_compute;
-   float content_height;
 } mui_handle_t;
 
 static void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha)
@@ -319,15 +318,17 @@ static const char *mui_texture_path(unsigned id)
 static void mui_context_reset_textures(mui_handle_t *mui)
 {
    unsigned i;
-   char iconpath[PATH_MAX_LENGTH];
+   char *iconpath = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
-   iconpath[0] = '\0';
+   iconpath[0]    = '\0';
 
-   fill_pathname_application_special(iconpath, sizeof(iconpath),
+   fill_pathname_application_special(iconpath,
+         PATH_MAX_LENGTH * sizeof(char),
          APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_ICONS);
 
    for (i = 0; i < MUI_TEXTURE_LAST; i++)
       menu_display_reset_textures_list(mui_texture_path(i), iconpath, &mui->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR);
+   free(iconpath);
 }
 
 static void mui_draw_icon(
@@ -1810,6 +1811,7 @@ static void mui_navigation_set(void *data, bool scroll)
    entry.target_value = scroll_pos;
    entry.subject      = &mui->scroll_y;
    entry.easing_enum  = EASING_IN_OUT_QUAD;
+   /* TODO/FIXME - integer conversion resulted in change of sign */
    entry.tag          = -1;
    entry.cb           = NULL;
 

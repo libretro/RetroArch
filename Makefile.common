@@ -3,6 +3,10 @@ DEPS_DIR          := $(ROOT_DIR)/deps
 LIBRETRO_COMM_DIR := $(ROOT_DIR)/libretro-common
 WANT_WGL           = 0
 
+ifeq ($(HAVE_STACK_USAGE), 1)
+CFLAGS += -fstack-usage
+endif
+
 ifeq ($(HAVE_GL_CONTEXT),)
    HAVE_GL_CONTEXT=0
 
@@ -207,7 +211,6 @@ OBJ += frontend/frontend.o \
        gfx/drivers_font_renderer/bitmapfont.o \
        tasks/task_autodetect.o \
 		 input/input_autodetect_builtin.o \
-       input/input_config.o \
        input/input_keymaps.o \
        input/input_remapping.o \
        tasks/task_overlay.o \
@@ -629,7 +632,6 @@ ifeq ($(HAVE_RSOUND), 1)
 endif
 
 ifeq ($(HAVE_DSOUND), 1)
-   HAVE_DIRECTX=1
    OBJ += audio/drivers/dsound.o
    DEFINES += -DHAVE_DSOUND
    LIBS += -ldxguid -ldsound
@@ -856,7 +858,6 @@ endif
 
 ifeq ($(HAVE_DINPUT), 1)
    LIBS += -ldinput8 -ldxguid -lole32
-   HAVE_DIRECTX=1
    DEFINES += -DHAVE_DINPUT
    OBJ += input/drivers/dinput.o \
           input/drivers_joypad/dinput_joypad.o
@@ -1003,7 +1004,7 @@ OBJ += \
 ifeq ($(HAVE_GL_CONTEXT), 1)
    DEFINES += -DHAVE_OPENGL -DHAVE_GLSL
    OBJ += gfx/drivers/gl.o \
-			 gfx/drivers_renderchain/gl_legacy_renderchain.o \
+			 gfx/drivers_renderchain/gl2_renderchain.o \
 			 $(LIBRETRO_COMM_DIR)/gfx/gl_capabilities.o \
           gfx/common/gl_common.o \
           gfx/drivers_font/gl_raster_font.o \
@@ -1237,21 +1238,38 @@ ifeq ($(HAVE_CG), 1)
 endif
 
 ifeq ($(HAVE_D3D9), 1)
-   OBJ += gfx/drivers/d3d.o \
-          gfx/common/d3d_common.o \
-          gfx/drivers_font/d3d_w32_font.o \
-          gfx/drivers_context/d3d_ctx.o
-   HAVE_DIRECTX=1
-   DEFINES += -DHAVE_D3D -DHAVE_D3D9
+	HAVE_D3D_COMMON = 1
+   DEFINES += -DHAVE_D3D9
    LIBS += -ld3d9 -ld3dx9 -ldxguid
-
-   ifeq ($(HAVE_MENU_COMMON), 1)
-      OBJ += menu/drivers_display/menu_display_d3d.o
-   endif
-
+   OBJ  += gfx/drivers_font/d3d_w32_font.o
    ifeq ($(HAVE_CG), 1)
       LIBS += -lcgD3D9
       OBJ  += gfx/drivers_renderchain/d3d9_cg_renderchain.o
+   endif
+
+   ifeq ($(HAVE_HLSL), 1)
+      LIBS += -lcgD3D9
+      OBJ  += gfx/drivers_renderchain/d3d9_hlsl_renderchain.o \
+				  gfx/drivers_shader/shader_hlsl.o
+   endif
+endif
+
+ifeq ($(HAVE_D3D8), 1)
+	HAVE_D3D_COMMON = 1
+   DEFINES += -DHAVE_D3D8
+   LIBS += -ld3d8 -ld3dx8 -ldxguid
+
+   OBJ += gfx/drivers_renderchain/d3d8_renderchain.o
+endif
+
+ifeq ($(HAVE_D3D_COMMON), 1)
+	DEFINES += -DHAVE_D3D
+   OBJ += gfx/drivers/d3d.o \
+          gfx/common/d3d_common.o \
+          gfx/drivers_context/d3d_ctx.o
+
+   ifeq ($(HAVE_MENU_COMMON), 1)
+      OBJ += menu/drivers_display/menu_display_d3d.o
    endif
 endif
 
@@ -1271,12 +1289,14 @@ OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file.o \
 ifeq ($(HAVE_7ZIP),1)
    CFLAGS  += -I$(DEPS_DIR)/7zip
    HAVE_COMPRESSION = 1
-   DEFINES += -DHAVE_7ZIP
+   DEFINES += -DHAVE_7ZIP -D_7ZIP_ST
    7ZOBJ = $(DEPS_DIR)/7zip/7zIn.o \
            $(DEPS_DIR)/7zip/Bra86.o \
            $(DEPS_DIR)/7zip/7zFile.o \
            $(DEPS_DIR)/7zip/7zStream.o \
+           $(DEPS_DIR)/7zip/LzFind.o \
            $(DEPS_DIR)/7zip/LzmaDec.o \
+           $(DEPS_DIR)/7zip/LzmaEnc.o \
            $(DEPS_DIR)/7zip/7zCrcOpt.o \
            $(DEPS_DIR)/7zip/Bra.o \
            $(DEPS_DIR)/7zip/7zDec.o \
@@ -1288,6 +1308,30 @@ ifeq ($(HAVE_7ZIP),1)
 			  $(7ZOBJ)
 endif
 
+ifeq ($(HAVE_FLAC),1)
+   CFLAGS  += -I$(DEPS_DIR)/libFLAC/include
+   DEFINES += -DHAVE_FLAC -DHAVE_STDINT_H -DHAVE_LROUND -DFLAC__HAS_OGG=0 \
+              -DFLAC_PACKAGE_VERSION="\"retroarch\""
+   ifneq ($(findstring Win32,$(OS)),)
+      DEFINES += -DHAVE_FSEEKO
+   endif
+   FLACOBJ = $(DEPS_DIR)/libFLAC/bitmath.o \
+             $(DEPS_DIR)/libFLAC/bitreader.o \
+             $(DEPS_DIR)/libFLAC/cpu.o \
+             $(DEPS_DIR)/libFLAC/crc.o \
+             $(DEPS_DIR)/libFLAC/fixed.o \
+             $(DEPS_DIR)/libFLAC/float.o \
+             $(DEPS_DIR)/libFLAC/format.o \
+             $(DEPS_DIR)/libFLAC/lpc.o \
+             $(DEPS_DIR)/libFLAC/lpc_intrin_avx2.o \
+             $(DEPS_DIR)/libFLAC/lpc_intrin_sse2.o \
+             $(DEPS_DIR)/libFLAC/lpc_intrin_sse41.o \
+             $(DEPS_DIR)/libFLAC/lpc_intrin_sse.o \
+             $(DEPS_DIR)/libFLAC/md5.o \
+             $(DEPS_DIR)/libFLAC/memory.o \
+             $(DEPS_DIR)/libFLAC/stream_decoder.o
+   OBJ += $(FLACOBJ)
+endif
 
 ifeq ($(HAVE_ZLIB), 1)
    OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file_zlib.o \
@@ -1358,6 +1402,19 @@ OBJ += $(ZLIB_OBJS)
 endif
 endif
 
+ifeq ($(HAVE_7ZIP),1)
+ifeq ($(HAVE_FLAC),1)
+     DEFINES += -DHAVE_CHD -DWANT_SUBCODE -DWANT_RAW_DATA_SECTOR
+     CFLAGS += -I$(LIBRETRO_COMM_DIR)/formats/libchdr
+     OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/bitstream.o \
+            $(LIBRETRO_COMM_DIR)/formats/libchdr/cdrom.o \
+            $(LIBRETRO_COMM_DIR)/formats/libchdr/chd.o \
+            $(LIBRETRO_COMM_DIR)/formats/libchdr/flac.o \
+            $(LIBRETRO_COMM_DIR)/formats/libchdr/huffman.o \
+            $(LIBRETRO_COMM_DIR)/streams/chd_stream.o
+endif
+endif
+
 # Video4Linux 2
 
 ifeq ($(HAVE_V4L2),1)
@@ -1423,6 +1480,10 @@ ifeq ($(HAVE_NETWORKING), 1)
          OBJ += cheevos/cheevos.o \
 					 $(LIBRETRO_COMM_DIR)/utils/md5.o
       endif
+   endif
+
+   ifeq ($(HAVE_KEYMAPPER), 1)
+      OBJ += input/input_mapper.o
    endif
 
    ifeq ($(HAVE_NETWORKGAMEPAD), 1)
@@ -1493,10 +1554,6 @@ ifeq ($(HAVE_COMPRESSION), 1)
    DEFINES += -DHAVE_COMPRESSION
    OBJ     += tasks/task_decompress.o
 endif
-
-#ifeq ($(HAVE_DIRECTX), 1)
-   #$DEFINES += -I"$(DXSDK_DIR)/Include"
-#endif
 
 ifeq ($(HAVE_COCOA),1)
    DEFINES += -DHAVE_MAIN

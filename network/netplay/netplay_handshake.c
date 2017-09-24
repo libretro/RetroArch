@@ -35,7 +35,7 @@
 #include "../../content.h"
 #include "../../retroarch.h"
 #include "../../version.h"
-#include "../../input/input_config.h"
+#include "../../input/input_driver.h"
 
 #ifdef HAVE_MENU
 #include "../../menu/widgets/menu_input_dialog.h"

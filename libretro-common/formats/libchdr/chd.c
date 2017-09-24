@@ -36,36 +36,23 @@
     POSSIBILITY OF SUCH DAMAGE.
 
 ***************************************************************************/
-#define DONT_SET_BYTE
-typedef unsigned char Byte;
 
-#include "chd.h"
-#include "cdrom.h"
-#include "huffman.h"
-#include "flac.h"
-
-#include "md5.h"
-#include "sha1.h"
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <libchdr/chd.h>
+#include <libchdr/minmax.h>
+#include <libchdr/cdrom.h>
+#include <libchdr/flac.h>
+#include <libchdr/huffman.h>
+#include "zlib.h"
 #include "LzmaEnc.h"
 #include "LzmaDec.h"
-
-#include <string.h>
-#include <zlib.h>
-
-#include <time.h>
-#include <stddef.h>
-#include <stdlib.h>
-#include <stdio.h>
-
 #include <retro_inline.h>
 
 #define TRUE 1
 #define FALSE 0
-
-#define MAX(x, y) (((x) > (y)) ? (x) : (y))
-#define MIN(x, y) (((x) < (y)) ? (x) : (y))
-
-#define SHA1_DIGEST_SIZE 20
 
 #define CHD_MAKE_TAG(a,b,c,d)       (((a) << 24) | ((b) << 16) | ((c) << 8) | (d))
 
@@ -85,7 +72,6 @@ typedef unsigned char Byte;
 #define MAP_ENTRY_SIZE				16			/* V3 and later */
 #define OLD_MAP_ENTRY_SIZE			8			/* V1-V2 */
 #define METADATA_HEADER_SIZE		16			/* metadata header size */
-#define CRCMAP_HASH_SIZE			4095		/* number of CRC hashtable entries */
 
 #define MAP_ENTRY_FLAG_TYPE_MASK	0x0f		/* what type of hunk */
 #define MAP_ENTRY_FLAG_NO_CRC		0x10		/* no CRC is present */
@@ -99,53 +85,55 @@ typedef unsigned char Byte;
 
 #define NO_MATCH					(~0)
 
+#ifdef WANT_RAW_DATA_SECTOR
 static const uint8_t s_cd_sync_header[12] = { 0x00,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0x00 };
+#endif
 
-// V3-V4 entry types
+/* V3-V4 entry types */
 enum
 {
-	V34_MAP_ENTRY_TYPE_INVALID = 0,             // invalid type
-	V34_MAP_ENTRY_TYPE_COMPRESSED = 1,          // standard compression
-	V34_MAP_ENTRY_TYPE_UNCOMPRESSED = 2,        // uncompressed data
-	V34_MAP_ENTRY_TYPE_MINI = 3,                // mini: use offset as raw data
-	V34_MAP_ENTRY_TYPE_SELF_HUNK = 4,           // same as another hunk in this file
-	V34_MAP_ENTRY_TYPE_PARENT_HUNK = 5,         // same as a hunk in the parent file
-	V34_MAP_ENTRY_TYPE_2ND_COMPRESSED = 6       // compressed with secondary algorithm (usually FLAC CDDA)
+	V34_MAP_ENTRY_TYPE_INVALID = 0,             /* invalid type */
+	V34_MAP_ENTRY_TYPE_COMPRESSED = 1,          /* standard compression */
+	V34_MAP_ENTRY_TYPE_UNCOMPRESSED = 2,        /* uncompressed data */
+	V34_MAP_ENTRY_TYPE_MINI = 3,                /* mini: use offset as raw data */
+	V34_MAP_ENTRY_TYPE_SELF_HUNK = 4,           /* same as another hunk in this file */
+	V34_MAP_ENTRY_TYPE_PARENT_HUNK = 5,         /* same as a hunk in the parent file */
+	V34_MAP_ENTRY_TYPE_2ND_COMPRESSED = 6       /* compressed with secondary algorithm (usually FLAC CDDA) */
 };
 
-// V5 compression types
+/* V5 compression types */
 enum
 {
-	///< codec #0
-	// these types are live when running
+	/* codec #0
+	 * these types are live when running */
 	COMPRESSION_TYPE_0 = 0,
-	///< codec #1
+	/* codec #1 */
 	COMPRESSION_TYPE_1 = 1,
-	///< codec #2
+	/* codec #2 */
 	COMPRESSION_TYPE_2 = 2,
-	///< codec #3
+	/* codec #3 */
 	COMPRESSION_TYPE_3 = 3,
-	///< no compression; implicit length = hunkbytes
+	/* no compression; implicit length = hunkbytes */
 	COMPRESSION_NONE = 4,
-	///< same as another block in this chd
+	/* same as another block in this chd */
 	COMPRESSION_SELF = 5,
-	///< same as a hunk's worth of units in the parent chd
+	/* same as a hunk's worth of units in the parent chd */
 	COMPRESSION_PARENT = 6,
 
-	///< start of small RLE run (4-bit length)
-	// these additional pseudo-types are used for compressed encodings:
+	/* start of small RLE run (4-bit length)
+	 * these additional pseudo-types are used for compressed encodings: */
 	COMPRESSION_RLE_SMALL,
-	///< start of large RLE run (8-bit length)
+	/* start of large RLE run (8-bit length) */
 	COMPRESSION_RLE_LARGE,
-	///< same as the last COMPRESSION_SELF block
+	/* same as the last COMPRESSION_SELF block */
 	COMPRESSION_SELF_0,
-	///< same as the last COMPRESSION_SELF block + 1
+	/* same as the last COMPRESSION_SELF block + 1 */
 	COMPRESSION_SELF_1,
-	///< same block in the parent
+	/* same block in the parent */
 	COMPRESSION_PARENT_SELF,
-	///< same as the last COMPRESSION_PARENT block
+	/* same as the last COMPRESSION_PARENT block */
 	COMPRESSION_PARENT_0,
-	///< same as the last COMPRESSION_PARENT block + 1
+	/* same as the last COMPRESSION_PARENT block + 1 */
 	COMPRESSION_PARENT_1
 };
 
@@ -184,15 +172,6 @@ struct _map_entry
 	UINT32					crc;			/* 32-bit CRC of the data */
 	UINT32					length;			/* length of the data */
 	UINT8					flags;			/* misc flags */
-};
-
-
-/* simple linked-list of hunks used for our CRC map */
-typedef struct _crcmap_entry crcmap_entry;
-struct _crcmap_entry
-{
-	UINT32					hunknum;		/* hunk number */
-	crcmap_entry *			next;			/* next entry in list */
 };
 
 
@@ -245,29 +224,34 @@ struct _lzma_codec_data
 /* codec-private data for the CDZL codec */
 typedef struct _cdzl_codec_data cdzl_codec_data;
 struct _cdzl_codec_data {
-	// internal state
+	/* internal state */
 	zlib_codec_data		base_decompressor;
+#ifdef WANT_SUBCODE
 	zlib_codec_data		subcode_decompressor;
+#endif
 	uint8_t*			buffer;
 };
 
 /* codec-private data for the CDLZ codec */
 typedef struct _cdlz_codec_data cdlz_codec_data;
 struct _cdlz_codec_data {
-	// internal state
+	/* internal state */
 	lzma_codec_data		base_decompressor;
+#ifdef WANT_SUBCODE
 	zlib_codec_data		subcode_decompressor;
+#endif
 	uint8_t*			buffer;
 };
 
 /* codec-private data for the CDFL codec */
 typedef struct _cdfl_codec_data cdfl_codec_data;
 struct _cdfl_codec_data {
-	// internal state
+	/* internal state */
 	int		swap_endian;
 	flac_decoder	decoder;
-	z_stream	inflater;
-	zlib_allocator	allocator;
+#ifdef WANT_SUBCODE
+	zlib_codec_data		subcode_decompressor;
+#endif
 	uint8_t*	buffer;
 };
 
@@ -284,11 +268,13 @@ struct _chd_file
 
 	map_entry *				map;			/* array of map entries */
 
+#ifdef NEED_CACHE_HUNK
 	UINT8 *					cache;			/* hunk cache pointer */
 	UINT32					cachehunk;		/* index of currently cached hunk */
 
 	UINT8 *					compare;		/* hunk compare pointer */
 	UINT32					comparehunk;	/* index of current compare data */
+#endif
 
 	UINT8 *					compressed;		/* pointer to buffer for compressed data */
 	const codec_interface *	codecintf[4];	/* interface to the codec */
@@ -298,35 +284,10 @@ struct _chd_file
 	cdlz_codec_data			cdlz_codec_data;		/* cdlz codec data */
 	cdfl_codec_data			cdfl_codec_data;		/* cdfl codec data */
 
-	crcmap_entry *			crcmap;			/* CRC map entries */
-	crcmap_entry *			crcfree;		/* free list CRC entries */
-	crcmap_entry **			crctable;		/* table of CRC entries */
-
+#ifdef NEED_CACHE_HUNK
 	UINT32					maxhunk;		/* maximum hunk accessed */
-
-	UINT8					compressing;	/* are we compressing? */
-	MD5_CTX					compmd5;		/* running MD5 during compression */
-	SHA1_CTX				compsha1;		/* running SHA1 during compression */
-	UINT32					comphunk;		/* next hunk we will compress */
-
-	UINT8					verifying;		/* are we verifying? */
-	MD5_CTX					vermd5; 		/* running MD5 during verification */
-	SHA1_CTX				versha1;		/* running SHA1 during verification */
-	UINT32					verhunk;		/* next hunk we will verify */
-
-	UINT32					async_hunknum;	/* hunk index for asynchronous operations */
-	void *					async_buffer;	/* buffer pointer for asynchronous operations */
+#endif
 };
-
-
-/* a single metadata hash entry */
-typedef struct _metadata_hash metadata_hash;
-struct _metadata_hash
-{
-	UINT8					tag[4];			/* tag of the metadata in big-endian */
-	UINT8					sha1[CHD_SHA1_BYTES]; /* hash */
-};
-
 
 
 /***************************************************************************
@@ -348,7 +309,9 @@ static chd_error header_read(core_file *file, chd_header *header);
 
 
 /* internal hunk read/write */
+#ifdef NEED_CACHE_HUNK
 static chd_error hunk_read_into_cache(chd_file *chd, UINT32 hunknum);
+#endif
 static chd_error hunk_read_into_memory(chd_file *chd, UINT32 hunknum, UINT8 *dest);
 
 /* internal map access */
@@ -385,37 +348,40 @@ static chd_error cdfl_codec_init(void* codec, uint32_t hunkbytes);
 static void cdfl_codec_free(void* codec);
 static chd_error cdfl_codec_decompress(void *codec, const uint8_t *src, uint32_t complen, uint8_t *dest, uint32_t destlen);
 
-//**************************************************************************
-//  LZMA ALLOCATOR HELPER
-//**************************************************************************
+/***************************************************************************
+ *  LZMA ALLOCATOR HELPER
+ ***************************************************************************
+ */
 
 void *lzma_fast_alloc(void *p, size_t size);
 void lzma_fast_free(void *p, void *address);
 
-//-------------------------------------------------
-//  lzma_allocator_init
-//-------------------------------------------------
+/*-------------------------------------------------
+ *  lzma_allocator_init
+ *-------------------------------------------------
+ */
 
 void lzma_allocator_init(void* p)
 {
 	lzma_allocator *codec = (lzma_allocator *)(p);
 
-	// reset pointer list
+	/* reset pointer list */
 	memset(codec->allocptr, 0, sizeof(codec->allocptr));
 	codec->Alloc = lzma_fast_alloc;
 	codec->Free = lzma_fast_free;
 }
 
-//-------------------------------------------------
-//  lzma_allocator_free
-//-------------------------------------------------
+/*-------------------------------------------------
+ *  lzma_allocator_free
+ *-------------------------------------------------
+ */
 
 void lzma_allocator_free(void* p )
 {
-   int i;
 	lzma_allocator *codec = (lzma_allocator *)(p);
 
-	// free our memory
+	/* free our memory */
+	int i;
 	for (i = 0 ; i < MAX_LZMA_ALLOCS ; i++)
 	{
 		if (codec->allocptr[i] != NULL)
@@ -423,33 +389,34 @@ void lzma_allocator_free(void* p )
 	}
 }
 
-//-------------------------------------------------
-//  lzma_fast_alloc - fast malloc for lzma, which
-//  allocates and frees memory frequently
-//-------------------------------------------------
+/*-------------------------------------------------
+ *  lzma_fast_alloc - fast malloc for lzma, which
+ *  allocates and frees memory frequently
+ *-------------------------------------------------
+ */
 
 void *lzma_fast_alloc(void *p, size_t size)
 {
-   int scan;
-   uint32_t *addr        = NULL;
+	int scan;
+   uint32_t *addr;
 	lzma_allocator *codec = (lzma_allocator *)(p);
 
-	// compute the size, rounding to the nearest 1k
+	/* compute the size, rounding to the nearest 1k */
 	size = (size + 0x3ff) & ~0x3ff;
 
-	// reuse a hunk if we can
+	/* reuse a hunk if we can */
 	for (scan = 0; scan < MAX_LZMA_ALLOCS; scan++)
 	{
 		uint32_t *ptr = codec->allocptr[scan];
 		if (ptr != NULL && size == *ptr)
 		{
-			// set the low bit of the size so we don't match next time
+			/* set the low bit of the size so we don't match next time */
 			*ptr |= 1;
 			return ptr + 1;
 		}
 	}
 
-	// alloc a new one and put it into the list
+	/* alloc a new one and put it into the list */
 	addr = (uint32_t *)malloc(sizeof(uint8_t) * (size + sizeof(uint32_t)));
 	if (addr==NULL)
 		return NULL;
@@ -462,20 +429,21 @@ void *lzma_fast_alloc(void *p, size_t size)
 		}
 	}
 
-	// set the low bit of the size so we don't match next time
+	/* set the low bit of the size so we don't match next time */
 	*addr = size | 1;
 	return addr + 1;
 }
 
 
-//-------------------------------------------------
-//  lzma_fast_free - fast free for lzma, which
-//  allocates and frees memory frequently
-//-------------------------------------------------
+/*-------------------------------------------------
+ *  lzma_fast_free - fast free for lzma, which
+ *  allocates and frees memory frequently
+ *-------------------------------------------------
+ */
 
 void lzma_fast_free(void *p, void *address)
 {
-   int scan;
+	int scan;
    uint32_t *ptr;
    lzma_allocator *codec;
 	if (address == NULL)
@@ -483,52 +451,54 @@ void lzma_fast_free(void *p, void *address)
 
 	codec = (lzma_allocator *)(p);
 
-	// find the hunk
+	/* find the hunk */
 	ptr = (uint32_t *)(address) - 1;
 	for (scan = 0; scan < MAX_LZMA_ALLOCS; scan++)
 	{
 		if (ptr == codec->allocptr[scan])
 		{
-			// clear the low bit of the size to allow matches
+			/* clear the low bit of the size to allow matches */
 			*ptr &= ~1;
 			return;
 		}
 	}
 }
 
-//**************************************************************************
-//  LZMA DECOMPRESSOR
-//**************************************************************************
+/***************************************************************************
+ *  LZMA DECOMPRESSOR
+ ***************************************************************************
+ */
 
 
-//-------------------------------------------------
-//  lzma_codec_init - constructor
-//-------------------------------------------------
+/*-------------------------------------------------
+ *  lzma_codec_init - constructor
+ *-------------------------------------------------
+ */
 
 chd_error lzma_codec_init(void* codec, uint32_t hunkbytes)
 {
-   CLzmaEncHandle enc;
 	CLzmaEncProps encoder_props;
+   CLzmaEncHandle enc;
 	Byte decoder_props[LZMA_PROPS_SIZE];
-   SizeT props_size;
    lzma_allocator* alloc;
+   size_t props_size;
 	lzma_codec_data* lzma_codec = (lzma_codec_data*) codec;
 
-	// construct the decoder
+	/* construct the decoder */
 	LzmaDec_Construct(&lzma_codec->decoder);
 
-	// FIXME: this code is written in a way that makes it impossible to safely upgrade the LZMA SDK
-	// This code assumes that the current version of the encoder imposes the same requirements on the
-	// decoder as the encoder used to produce the file.  This is not necessarily true.  The format
-	// needs to be changed so the encoder properties are written to the file.
+	/* FIXME: this code is written in a way that makes it impossible to safely upgrade the LZMA SDK
+	 * This code assumes that the current version of the encoder imposes the same requirements on the
+	 * decoder as the encoder used to produce the file.  This is not necessarily true.  The format
+	 * needs to be changed so the encoder properties are written to the file.
 
-	// configure the properties like the compressor did
+	 * configure the properties like the compressor did */
 	LzmaEncProps_Init(&encoder_props);
 	encoder_props.level = 9;
 	encoder_props.reduceSize = hunkbytes;
 	LzmaEncProps_Normalize(&encoder_props);
 
-	// convert to decoder properties
+	/* convert to decoder properties */
 	alloc = &lzma_codec->allocator;
 	lzma_allocator_init(alloc);
 	enc = LzmaEnc_Create((ISzAlloc*)alloc);
@@ -547,43 +517,47 @@ chd_error lzma_codec_init(void* codec, uint32_t hunkbytes)
 	}
 	LzmaEnc_Destroy(enc, (ISzAlloc*)alloc, (ISzAlloc*)alloc);
 
-	// do memory allocations
+	/* do memory allocations */
 	if (LzmaDec_Allocate(&lzma_codec->decoder, decoder_props, LZMA_PROPS_SIZE, (ISzAlloc*)alloc) != SZ_OK)
 		return CHDERR_DECOMPRESSION_ERROR;
 	
-	// Okay
+	/* Okay */
 	return CHDERR_NONE;
 }
 
 
-//-------------------------------------------------
-//  lzma_codec_free
-//-------------------------------------------------
+/*-------------------------------------------------
+ *  lzma_codec_free
+ *-------------------------------------------------
+ */
 
 void lzma_codec_free(void* codec)
 {
 	lzma_codec_data* lzma_codec = (lzma_codec_data*) codec;
+	lzma_allocator* alloc = &lzma_codec->allocator;
 
-	// free memory
+	/* free memory */
+	lzma_allocator_free(alloc);
 	LzmaDec_Free(&lzma_codec->decoder, (ISzAlloc*)&lzma_codec->allocator);
 }
 
 
-//-------------------------------------------------
-//  decompress - decompress data using the LZMA
-//  codec
-//-------------------------------------------------
+/*-------------------------------------------------
+ *  decompress - decompress data using the LZMA
+ *  codec
+ *-------------------------------------------------
+ */
 
 chd_error lzma_codec_decompress(void* codec, const uint8_t *src, uint32_t complen, uint8_t *dest, uint32_t destlen)
 {
 	ELzmaStatus status;
    SRes res;
-   SizeT consumedlen, decodedlen;
-	// initialize
+   size_t consumedlen, decodedlen;
+	/* initialize */
 	lzma_codec_data* lzma_codec = (lzma_codec_data*) codec;
 	LzmaDec_Init(&lzma_codec->decoder);
 
-	// decode
+	/* decode */
 	consumedlen = complen;
 	decodedlen = destlen;
 	res = LzmaDec_DecodeToBuf(&lzma_codec->decoder, dest, &decodedlen, src, &consumedlen, LZMA_FINISH_END, &status);
@@ -592,143 +566,185 @@ chd_error lzma_codec_decompress(void* codec, const uint8_t *src, uint32_t comple
 	return CHDERR_NONE;
 }
 
-// cdlz
+/* cdlz */
 chd_error cdlz_codec_init(void* codec, uint32_t hunkbytes)
 {
+	chd_error ret;
 	cdlz_codec_data* cdlz = (cdlz_codec_data*) codec;
 
-	// allocate buffer
+	/* allocate buffer */
 	cdlz->buffer = (uint8_t*)malloc(sizeof(uint8_t) * hunkbytes);
+	if (cdlz->buffer == NULL)
+		return CHDERR_OUT_OF_MEMORY;
 	
-	// make sure the CHD's hunk size is an even multiple of the frame size
-	lzma_codec_init(&cdlz->base_decompressor, (hunkbytes / CD_FRAME_SIZE) * CD_MAX_SECTOR_DATA);
-	zlib_codec_init(&cdlz->subcode_decompressor, (hunkbytes / CD_FRAME_SIZE) * CD_MAX_SUBCODE_DATA);
+	ret = lzma_codec_init(&cdlz->base_decompressor, (hunkbytes / CD_FRAME_SIZE) * CD_MAX_SECTOR_DATA);
+	if (ret != CHDERR_NONE)
+		return ret;
 
-	if (hunkbytes % CD_FRAME_SIZE != 0)
-		return CHDERR_CODEC_ERROR;
+#ifdef WANT_SUBCODE
+	ret = zlib_codec_init(&cdlz->subcode_decompressor, (hunkbytes / CD_FRAME_SIZE) * CD_MAX_SECTOR_DATA);
+	if (ret != CHDERR_NONE)
+		return ret;
+#endif
 
 	return CHDERR_NONE;
 }
 
 void cdlz_codec_free(void* codec)
 {
-	// TODO
+	cdlz_codec_data* cdlz = (cdlz_codec_data*) codec;
+
+	lzma_codec_free(&cdlz->base_decompressor);
+#ifdef WANT_SUBCODE
+	zlib_codec_free(&cdlz->subcode_decompressor);
+#endif
+	if (cdlz->buffer)
+		free(cdlz->buffer);
 }
 
 chd_error cdlz_codec_decompress(void *codec, const uint8_t *src, uint32_t complen, uint8_t *dest, uint32_t destlen)
 {
-   uint32_t framenum;
+	uint32_t framenum;
 	cdlz_codec_data* cdlz = (cdlz_codec_data*)codec;
 
-	// determine header bytes
+	/* determine header bytes */
 	uint32_t frames = destlen / CD_FRAME_SIZE;
 	uint32_t complen_bytes = (destlen < 65536) ? 2 : 3;
 	uint32_t ecc_bytes = (frames + 7) / 8;
 	uint32_t header_bytes = ecc_bytes + complen_bytes;
 
-	// extract compressed length of base
+	/* extract compressed length of base */
 	uint32_t complen_base = (src[ecc_bytes + 0] << 8) | src[ecc_bytes + 1];
 	if (complen_bytes > 2)
 		complen_base = (complen_base << 8) | src[ecc_bytes + 2];
 
-	// reset and decode
+	/* reset and decode */
 	lzma_codec_decompress(&cdlz->base_decompressor, &src[header_bytes], complen_base, &cdlz->buffer[0], frames * CD_MAX_SECTOR_DATA);
+#ifdef WANT_SUBCODE
 	zlib_codec_decompress(&cdlz->subcode_decompressor, &src[header_bytes + complen_base], complen - complen_base - header_bytes, &cdlz->buffer[frames * CD_MAX_SECTOR_DATA], frames * CD_MAX_SUBCODE_DATA);
+#endif
 
-	// reassemble the data
+	/* reassemble the data */
 	for (framenum = 0; framenum < frames; framenum++)
 	{
-      uint8_t *sector;
-
 		memcpy(&dest[framenum * CD_FRAME_SIZE], &cdlz->buffer[framenum * CD_MAX_SECTOR_DATA], CD_MAX_SECTOR_DATA);
+#ifdef WANT_SUBCODE
 		memcpy(&dest[framenum * CD_FRAME_SIZE + CD_MAX_SECTOR_DATA], &cdlz->buffer[frames * CD_MAX_SECTOR_DATA + framenum * CD_MAX_SUBCODE_DATA], CD_MAX_SUBCODE_DATA);
+#endif
 
-		// reconstitute the ECC data and sync header
-		sector = &dest[framenum * CD_FRAME_SIZE];
+#ifdef WANT_RAW_DATA_SECTOR
+		/* reconstitute the ECC data and sync header */
+		uint8_t *sector = &dest[framenum * CD_FRAME_SIZE];
 		if ((src[framenum / 8] & (1 << (framenum % 8))) != 0)
 		{
 			memcpy(sector, s_cd_sync_header, sizeof(s_cd_sync_header));
 			ecc_generate(sector);
 		}
+#endif
 	}
 	return CHDERR_NONE;
 }
 
 
-// cdzl
+/* cdzl */
 
 chd_error cdzl_codec_init(void *codec, uint32_t hunkbytes)
 {
+	chd_error ret;
 	cdzl_codec_data* cdzl = (cdzl_codec_data*)codec;
 
-	// make sure the CHD's hunk size is an even multiple of the frame size
-	zlib_codec_init(&cdzl->base_decompressor, (hunkbytes / CD_FRAME_SIZE) * CD_MAX_SECTOR_DATA);
-	zlib_codec_init(&cdzl->subcode_decompressor, (hunkbytes / CD_FRAME_SIZE) * CD_MAX_SUBCODE_DATA);
-
-	cdzl->buffer = (uint8_t*)malloc(sizeof(uint8_t) * hunkbytes);
+	/* make sure the CHD's hunk size is an even multiple of the frame size */
 	if (hunkbytes % CD_FRAME_SIZE != 0)
 		return CHDERR_CODEC_ERROR;
+
+	cdzl->buffer = (uint8_t*)malloc(sizeof(uint8_t) * hunkbytes);
+	if (cdzl->buffer == NULL)
+		return CHDERR_OUT_OF_MEMORY;
+
+	ret = zlib_codec_init(&cdzl->base_decompressor, (hunkbytes / CD_FRAME_SIZE) * CD_MAX_SECTOR_DATA);
+	if (ret != CHDERR_NONE)
+		return ret;
+
+#ifdef WANT_SUBCODE
+	ret = zlib_codec_init(&cdzl->subcode_decompressor, (hunkbytes / CD_FRAME_SIZE) * CD_MAX_SECTOR_DATA);
+	if (ret != CHDERR_NONE)
+		return ret;
+#endif
 
 	return CHDERR_NONE;
 }
 
 void cdzl_codec_free(void *codec)
 {
-	// TODO
+	cdzl_codec_data* cdzl = (cdzl_codec_data*)codec;
+
+	zlib_codec_free(&cdzl->base_decompressor);
+#ifdef WANT_SUBCODE
+	zlib_codec_free(&cdzl->subcode_decompressor);
+#endif
+	if (cdzl->buffer)
+		free(cdzl->buffer);
 }
 
 chd_error cdzl_codec_decompress(void *codec, const uint8_t *src, uint32_t complen, uint8_t *dest, uint32_t destlen)
 {
-   uint32_t framenum;
+	uint32_t framenum;
 	cdzl_codec_data* cdzl = (cdzl_codec_data*)codec;
-	
-	// determine header bytes
+
+	/* determine header bytes */
 	uint32_t frames = destlen / CD_FRAME_SIZE;
 	uint32_t complen_bytes = (destlen < 65536) ? 2 : 3;
 	uint32_t ecc_bytes = (frames + 7) / 8;
 	uint32_t header_bytes = ecc_bytes + complen_bytes;
 
-	// extract compressed length of base
+	/* extract compressed length of base */
 	uint32_t complen_base = (src[ecc_bytes + 0] << 8) | src[ecc_bytes + 1];
 	if (complen_bytes > 2)
 		complen_base = (complen_base << 8) | src[ecc_bytes + 2];
 
-	// reset and decode
+	/* reset and decode */
 	zlib_codec_decompress(&cdzl->base_decompressor, &src[header_bytes], complen_base, &cdzl->buffer[0], frames * CD_MAX_SECTOR_DATA);
+#ifdef WANT_SUBCODE
 	zlib_codec_decompress(&cdzl->subcode_decompressor, &src[header_bytes + complen_base], complen - complen_base - header_bytes, &cdzl->buffer[frames * CD_MAX_SECTOR_DATA], frames * CD_MAX_SUBCODE_DATA);
+#endif
 
-	// reassemble the data
+	/* reassemble the data */
 	for (framenum = 0; framenum < frames; framenum++)
 	{
-      uint8_t *sector;
 		memcpy(&dest[framenum * CD_FRAME_SIZE], &cdzl->buffer[framenum * CD_MAX_SECTOR_DATA], CD_MAX_SECTOR_DATA);
+#ifdef WANT_SUBCODE
 		memcpy(&dest[framenum * CD_FRAME_SIZE + CD_MAX_SECTOR_DATA], &cdzl->buffer[frames * CD_MAX_SECTOR_DATA + framenum * CD_MAX_SUBCODE_DATA], CD_MAX_SUBCODE_DATA);
+#endif
 
-		// reconstitute the ECC data and sync header
-		sector = &dest[framenum * CD_FRAME_SIZE];
+#ifdef WANT_RAW_DATA_SECTOR
+		/* reconstitute the ECC data and sync header */
+		uint8_t *sector = &dest[framenum * CD_FRAME_SIZE];
 		if ((src[framenum / 8] & (1 << (framenum % 8))) != 0)
 		{
 			memcpy(sector, s_cd_sync_header, sizeof(s_cd_sync_header));
 			ecc_generate(sector);
 		}
+#endif
 	}
 	return CHDERR_NONE;
 }
 
-//**************************************************************************
-//  CD FLAC DECOMPRESSOR
-//**************************************************************************
+/***************************************************************************
+ *  CD FLAC DECOMPRESSOR
+ ***************************************************************************
+ */
 
 
 
-//------------------------------------------------------
-//  cdfl_codec_blocksize - return the optimal block size
-//------------------------------------------------------
+/*------------------------------------------------------
+ *  cdfl_codec_blocksize - return the optimal block size
+ *------------------------------------------------------
+ */
 
 static uint32_t cdfl_codec_blocksize(uint32_t bytes)
 {
-	// determine FLAC block size, which must be 16-65535
-	// clamp to 2k since that's supposed to be the sweet spot
+	/* determine FLAC block size, which must be 16-65535
+	 * clamp to 2k since that's supposed to be the sweet spot */
 	uint32_t hunkbytes = bytes / 4;
 	while (hunkbytes > 2048)
 		hunkbytes /= 2;
@@ -737,37 +753,35 @@ static uint32_t cdfl_codec_blocksize(uint32_t bytes)
 
 chd_error cdfl_codec_init(void *codec, uint32_t hunkbytes)
 {
-   int zerr;
-	uint16_t native_endian = 0;
+#ifdef WANT_SUBCODE
+   chd_error ret;
+#endif
+   uint16_t native_endian = 0;
 	cdfl_codec_data *cdfl = (cdfl_codec_data*)codec;
 
-	cdfl->buffer = (uint8_t*)malloc(sizeof(uint8_t) * hunkbytes);
-
-	// make sure the CHD's hunk size is an even multiple of the frame size
+	/* make sure the CHD's hunk size is an even multiple of the frame size */
 	if (hunkbytes % CD_FRAME_SIZE != 0)
 		return CHDERR_CODEC_ERROR;
 
-	// determine whether we want native or swapped samples
+	cdfl->buffer = (uint8_t*)malloc(sizeof(uint8_t) * hunkbytes);
+	if (cdfl->buffer == NULL)
+		return CHDERR_OUT_OF_MEMORY;
+
+	/* determine whether we want native or swapped samples */
 	*(uint8_t *)(&native_endian) = 1;
 	cdfl->swap_endian = (native_endian & 1);
 
-	// init the inflater
-	cdfl->inflater.next_in = (Bytef *)cdfl; // bogus, but that's ok
-	cdfl->inflater.avail_in = 0;
-    //cdfl->allocator.install(cdfl->inflater);
-	cdfl->inflater.zalloc = zlib_fast_alloc;
-	cdfl->inflater.zfree = zlib_fast_free;
-	cdfl->inflater.opaque = &cdfl->allocator;
-	zerr = inflateInit2(&cdfl->inflater, -MAX_WBITS);
+#ifdef WANT_SUBCODE
+	/* init zlib inflater */
+	ret = zlib_codec_init(&cdfl->subcode_decompressor, (hunkbytes / CD_FRAME_SIZE) * CD_MAX_SECTOR_DATA);
+	if (ret != CHDERR_NONE)
+		return ret;
+#endif
 
-	// convert errors
-	if (zerr == Z_MEM_ERROR)
-		return CHDERR_OUT_OF_MEMORY;
-	else if (zerr != Z_OK)
-		return CHDERR_CODEC_ERROR;
-
-	// init flac decoder
+	/* flac decoder init */
 	flac_decoder_init(&cdfl->decoder);
+	if (cdfl->decoder.decoder == NULL)
+		return CHDERR_OUT_OF_MEMORY;
 
 	return CHDERR_NONE;
 }
@@ -775,48 +789,50 @@ chd_error cdfl_codec_init(void *codec, uint32_t hunkbytes)
 void cdfl_codec_free(void *codec)
 {
 	cdfl_codec_data *cdfl = (cdfl_codec_data*)codec;
-	inflateEnd(&cdfl->inflater);
+	flac_decoder_free(&cdfl->decoder);
+#ifdef WANT_SUBCODE
+	zlib_codec_free(&cdfl->subcode_decompressor);
+#endif
+	if (cdfl->buffer)
+		free(cdfl->buffer);
 }
 
 chd_error cdfl_codec_decompress(void *codec, const uint8_t *src, uint32_t complen, uint8_t *dest, uint32_t destlen)
 {
-   int zerr;
+	uint32_t framenum;
    uint8_t *buffer;
-   uint32_t framenum, offset;
+#ifdef WANT_SUBCODE
+   uint32_t offset;
+   chd_error ret;
+#endif
 	cdfl_codec_data *cdfl = (cdfl_codec_data*)codec;
 
-	// reset and decode
+	/* reset and decode */
 	uint32_t frames = destlen / CD_FRAME_SIZE;
+
 	if (!flac_decoder_reset(&cdfl->decoder, 44100, 2, cdfl_codec_blocksize(frames * CD_MAX_SECTOR_DATA), src, complen))
 		return CHDERR_DECOMPRESSION_ERROR;
 	buffer = &cdfl->buffer[0];
 	if (!flac_decoder_decode_interleaved(&cdfl->decoder, (int16_t *)(buffer), frames * CD_MAX_SECTOR_DATA/4, cdfl->swap_endian))
 		return CHDERR_DECOMPRESSION_ERROR;
 
-	// inflate the subcode data
+#ifdef WANT_SUBCODE
+	/* inflate the subcode data */
 	offset = flac_decoder_finish(&cdfl->decoder);
-	cdfl->inflater.next_in = (Bytef *)(src + offset);
-	cdfl->inflater.avail_in = complen - offset;
-	cdfl->inflater.total_in = 0;
-	cdfl->inflater.next_out = &cdfl->buffer[frames * CD_MAX_SECTOR_DATA];
-	cdfl->inflater.avail_out = frames * CD_MAX_SUBCODE_DATA;
-	cdfl->inflater.total_out = 0;
-	zerr = inflateReset(&cdfl->inflater);
-	if (zerr != Z_OK)
-		return CHDERR_DECOMPRESSION_ERROR;
+	ret = zlib_codec_decompress(&cdfl->subcode_decompressor, src + offset, complen - offset, &cdfl->buffer[frames * CD_MAX_SECTOR_DATA], frames * CD_MAX_SUBCODE_DATA);
+	if (ret != CHDERR_NONE)
+		return ret;
+#else
+	flac_decoder_finish(&cdfl->decoder);
+#endif
 
-	// do it
-	zerr = inflate(&cdfl->inflater, Z_FINISH);
-	if (zerr != Z_STREAM_END)
-		return CHDERR_DECOMPRESSION_ERROR;
-	if (cdfl->inflater.total_out != frames * CD_MAX_SUBCODE_DATA)
-		return CHDERR_DECOMPRESSION_ERROR;
-
-	// reassemble the data
+	/* reassemble the data */
 	for (framenum = 0; framenum < frames; framenum++)
 	{
 		memcpy(&dest[framenum * CD_FRAME_SIZE], &cdfl->buffer[framenum * CD_MAX_SECTOR_DATA], CD_MAX_SECTOR_DATA);
+#ifdef WANT_SUBCODE
 		memcpy(&dest[framenum * CD_FRAME_SIZE + CD_MAX_SECTOR_DATA], &cdfl->buffer[frames * CD_MAX_SECTOR_DATA + framenum * CD_MAX_SUBCODE_DATA], CD_MAX_SUBCODE_DATA);
+#endif
 	}
 
 	return CHDERR_NONE;
@@ -827,7 +843,7 @@ chd_error cdfl_codec_decompress(void *codec, const uint8_t *src, uint32_t comple
 
 #define CHD_MAKE_TAG(a,b,c,d)       (((a) << 24) | ((b) << 16) | ((c) << 8) | (d))
 
-// general codecs with CD frontend
+/* general codecs with CD frontend */
 #define CHD_CODEC_CD_ZLIB CHD_MAKE_TAG('c','d','z','l')
 #define CHD_CODEC_CD_LZMA CHD_MAKE_TAG('c','d','l','z')
 #define CHD_CODEC_CD_FLAC CHD_MAKE_TAG('c','d','f','l')
@@ -1113,7 +1129,7 @@ uint16_t crc16(const void *data, uint32_t length)
 
 	const uint8_t *src = (uint8_t*)data;
 
-	// fetch the current value into a local and rip through the source data
+	/* fetch the current value into a local and rip through the source data */
 	while (length-- != 0)
 		crc = (crc << 8) ^ s_table[(crc >> 8) ^ *src++];
 	return crc;
@@ -1125,31 +1141,29 @@ uint16_t crc16(const void *data, uint32_t length)
 
 static chd_error decompress_v5_map(chd_file* chd, chd_header* header)
 {
-   int hunknum;
-	uint8_t lastcomp = 0;
-	int repcount = 0;
-	uint32_t last_self = 0;
-	uint64_t last_parent = 0;
-   struct bitstream* bitbuf;
+	uint8_t rawbuf[16];
+   uint16_t mapcrc;
    uint32_t mapbytes;
    uint64_t firstoffs;
-   uint16_t mapcrc;
-   uint8_t lengthbits;
-   uint8_t selfbits;
-   uint8_t parentbits;
-   uint8_t *compressed;
-	uint8_t rawbuf[16];
-   struct huffman_decoder* decoder;
+	uint32_t last_self = 0;
+	uint64_t last_parent = 0;
+	uint8_t lastcomp = 0;
+	int hunknum, repcount = 0;
    enum huffman_error err;
+   uint8_t lengthbits, selfbits, parentbits;
+   uint8_t* compressed;
+   struct bitstream* bitbuf;
+   struct huffman_decoder* decoder;
    uint64_t curoffset;
-
 	if (header->mapoffset == 0)
 	{
-		//memset(header->rawmap, 0xff,map_size_v5(header));
+#if 0
+		memset(header->rawmap, 0xff,map_size_v5(header));
+#endif
 		return CHDERR_READ_ERROR;
 	}
 
-	// read the reader
+	/* read the reader */
 	core_fseek(chd->file, header->mapoffset, SEEK_SET);
 	core_fread(chd->file, rawbuf, sizeof(rawbuf));
 	mapbytes = get_bigendian_uint32(&rawbuf[0]);
@@ -1159,18 +1173,46 @@ static chd_error decompress_v5_map(chd_file* chd, chd_header* header)
 	selfbits = rawbuf[13];
 	parentbits = rawbuf[14];
 
-	// now read the map
+	/* now read the map */
 	compressed = (uint8_t*)malloc(sizeof(uint8_t) * mapbytes);
+	if (compressed == NULL)
+		return CHDERR_OUT_OF_MEMORY;
+
 	core_fseek(chd->file, header->mapoffset + 16, SEEK_SET);
 	core_fread(chd->file, compressed, mapbytes);
 	bitbuf = create_bitstream(compressed, sizeof(uint8_t) * mapbytes);
-	header->rawmap = (uint8_t*)malloc(sizeof(uint8_t) * map_size_v5(header));
+	if (bitbuf == NULL)
+	{
+		free(compressed);
+		return CHDERR_OUT_OF_MEMORY;
+	}
 
-	// first decode the compression types
+	header->rawmap = (uint8_t*)malloc(sizeof(uint8_t) * map_size_v5(header));
+	if (header->rawmap == NULL)
+	{
+		free(compressed);
+		free(bitbuf);
+		return CHDERR_OUT_OF_MEMORY;
+	}
+
+	/* first decode the compression types */
 	decoder = create_huffman_decoder(16, 8);
+	if (decoder == NULL)
+	{
+		free(compressed);
+		free(bitbuf);
+		return CHDERR_OUT_OF_MEMORY;
+	}
+
 	err = huffman_import_tree_rle(decoder, bitbuf);
 	if (err != HUFFERR_NONE)
+	{
+		free(compressed);
+		free(bitbuf);
+		delete_huffman_decoder(decoder);
 		return CHDERR_DECOMPRESSION_ERROR;
+	}
+
 	for (hunknum = 0; hunknum < header->hunkcount; hunknum++)
 	{
 		uint8_t *rawmap = header->rawmap + (hunknum * 12);
@@ -1188,7 +1230,7 @@ static chd_error decompress_v5_map(chd_file* chd, chd_header* header)
 		}
 	}
 
-	// then iterate through the hunks and extract the needed data
+	/* then iterate through the hunks and extract the needed data */
 	curoffset = firstoffs;
 	for (hunknum = 0; hunknum < header->hunkcount; hunknum++)
 	{
@@ -1198,7 +1240,7 @@ static chd_error decompress_v5_map(chd_file* chd, chd_header* header)
 		uint16_t crc = 0;
 		switch (rawmap[0])
 		{
-			// base types
+			/* base types */
 			case COMPRESSION_TYPE_0:
 			case COMPRESSION_TYPE_1:
 			case COMPRESSION_TYPE_2:
@@ -1221,7 +1263,7 @@ static chd_error decompress_v5_map(chd_file* chd, chd_header* header)
 				last_parent = offset;
 				break;
 
-			// pseudo-types; convert into base types
+			/* pseudo-types; convert into base types */
 			case COMPRESSION_SELF_1:
 				last_self++;
 			case COMPRESSION_SELF_0:
@@ -1241,17 +1283,22 @@ static chd_error decompress_v5_map(chd_file* chd, chd_header* header)
 				offset = last_parent;
 				break;
 		}
-		// UINT24 length
+		/* UINT24 length */
 		put_bigendian_uint24(&rawmap[1], length);
 
-		// UINT48 offset
+		/* UINT48 offset */
 		put_bigendian_uint48(&rawmap[4], offset);
 
-		// crc16
+		/* crc16 */
 		put_bigendian_uint16(&rawmap[10], crc);
 	}
 
-	// verify the final CRC
+	/* free memory */
+	free(compressed);
+	free(bitbuf);
+	delete_huffman_decoder(decoder);
+
+	/* verify the final CRC */
 	if (crc16(&header->rawmap[0], header->hunkcount * 12) != mapcrc)
 		return CHDERR_DECOMPRESSION_ERROR;
 
@@ -1301,10 +1348,10 @@ chd_error chd_open_file(core_file *file, int mode, chd_file *parent, chd_file **
 		EARLY_EXIT(err = CHDERR_INVALID_PARAMETER);
 
 	/* allocate memory for the final result */
-	newchd = (chd_file *)malloc(sizeof(chd_file));
+	newchd = (chd_file *)malloc(sizeof(**chd));
 	if (newchd == NULL)
 		EARLY_EXIT(err = CHDERR_OUT_OF_MEMORY);
-	memset(newchd, 0, sizeof(chd_file));
+	memset(newchd, 0, sizeof(*newchd));
 	newchd->cookie = COOKIE_VALUE;
 	newchd->parent = parent;
 	newchd->file = file;
@@ -1357,15 +1404,18 @@ chd_error chd_open_file(core_file *file, int mode, chd_file *parent, chd_file **
 	else 
 	{
 		err = decompress_v5_map(newchd, &(newchd->header));
+        (void)err;
 	}
 
-	/* allocate and init the hunk cache */
+#ifdef NEED_CACHE_HUNK
+  /* allocate and init the hunk cache */
 	newchd->cache = (UINT8 *)malloc(newchd->header.hunkbytes);
 	newchd->compare = (UINT8 *)malloc(newchd->header.hunkbytes);
 	if (newchd->cache == NULL || newchd->compare == NULL)
 		EARLY_EXIT(err = CHDERR_OUT_OF_MEMORY);
 	newchd->cachehunk = ~0;
 	newchd->comparehunk = ~0;
+#endif
 
 	/* allocate the temporary compressed buffer */
 	newchd->compressed = (UINT8 *)malloc(newchd->header.hunkbytes);
@@ -1386,23 +1436,27 @@ chd_error chd_open_file(core_file *file, int mode, chd_file *parent, chd_file **
 
 		/* initialize the codec */
 		if (newchd->codecintf[0]->init != NULL)
+        {
 			err = (*newchd->codecintf[0]->init)(&newchd->zlib_codec_data, newchd->header.hunkbytes);
+            (void)err;
+        }
 	}
 	else
 	{
-      int decompnum;
-
-		// verify the compression types and initialize the codecs
+		int i, decompnum;
+		/* verify the compression types and initialize the codecs */
 		for (decompnum = 0; decompnum < ARRAY_LENGTH(newchd->header.compression); decompnum++)
 		{
-         int i;
 			for (i = 0 ; i < ARRAY_LENGTH(codec_interfaces) ; i++)
 			{
 				if (codec_interfaces[i].compression == newchd->header.compression[decompnum])
 				{
 					newchd->codecintf[decompnum] = &codec_interfaces[i];
 					if (newchd->codecintf[decompnum] == NULL && newchd->header.compression[decompnum] != 0)
+                    {
 						err = CHDERR_UNSUPPORTED_FORMAT;
+                        (void)err;
+                    }
 
 					/* initialize the codec */
 					if (newchd->codecintf[decompnum]->init != NULL) 
@@ -1423,18 +1477,22 @@ chd_error chd_open_file(core_file *file, int mode, chd_file *parent, chd_file **
 								break;
 						}
 						if (codec != NULL)
-						{
+                        {
 							err = (*newchd->codecintf[decompnum]->init)(codec, newchd->header.hunkbytes);
-						}
+                            (void)err;
+                        }
 					}
+					
 				}
 			}
 		}
 	}
 
-	// HACK
-	//if (err != CHDERR_NONE)
-	//	EARLY_EXIT(err);
+#if 0
+	/* HACK */
+	if (err != CHDERR_NONE)
+		EARLY_EXIT(err);
+#endif
 
 	/* all done */
 	*chd = newchd;
@@ -1455,7 +1513,6 @@ chd_error chd_open(const char *filename, int mode, chd_file *parent, chd_file **
 {
 	chd_error err;
 	core_file *file = NULL;
-	UINT32 openflags;
 
 	/* choose the proper mode */
 	switch(mode)
@@ -1504,13 +1561,13 @@ void chd_close(chd_file *chd)
 	/* deinit the codec */
 	if (chd->header.version < 5)
 	{
-	if (chd->codecintf[0] != NULL && chd->codecintf[0]->free != NULL)
-		(*chd->codecintf[0]->free)(&chd->zlib_codec_data);
+		if (chd->codecintf[0] != NULL && chd->codecintf[0]->free != NULL)
+			(*chd->codecintf[0]->free)(&chd->zlib_codec_data);
 	}
 	else
 	{
-      int i;
-		// Free the codecs
+		int i;
+		/* Free the codecs */
 		for (i = 0 ; i < 4 ; i++)
 		{
 			void* codec = NULL;
@@ -1527,14 +1584,14 @@ void chd_close(chd_file *chd)
 				case CHD_CODEC_CD_FLAC:
 					codec = &chd->cdfl_codec_data;
 					break;
-			}		
+			}
 			if (codec)
 			{
 				(*chd->codecintf[i]->free)(codec);
 			}
 		}
 
-		// Free the raw map
+		/* Free the raw map */
 		if (chd->header.rawmap != NULL)
 			free(chd->header.rawmap);
 	}
@@ -1543,29 +1600,25 @@ void chd_close(chd_file *chd)
 	if (chd->compressed != NULL)
 		free(chd->compressed);
 
+#ifdef NEED_CACHE_HUNK
 	/* free the hunk cache and compare data */
 	if (chd->compare != NULL)
 		free(chd->compare);
 	if (chd->cache != NULL)
 		free(chd->cache);
+#endif
 
 	/* free the hunk map */
 	if (chd->map != NULL)
 		free(chd->map);
 
-	/* free the CRC table */
-	if (chd->crctable != NULL)
-		free(chd->crctable);
-
-	/* free the CRC map */
-	if (chd->crcmap != NULL)
-		free(chd->crcmap);
-
 	/* close the file */
 	if (chd->owns_file && chd->file != NULL)
 		core_fclose(chd->file);
 
+#ifdef NEED_CACHE_HUNK
 	if (PRINTF_MAX_HUNK) printf("Max hunk = %d/%d\n", chd->maxhunk, chd->header.totalhunks);
+#endif
 
 	/* free our memory */
 	free(chd);
@@ -1661,10 +1714,6 @@ chd_error chd_read(chd_file *chd, UINT32 hunknum, void *buffer)
 	if (chd == NULL || chd->cookie != COOKIE_VALUE)
 		return CHDERR_INVALID_PARAMETER;
 
-	/* if we're past the end, fail */
-	if (hunknum >= chd->header.totalhunks)
-		return CHDERR_HUNK_OUT_OF_RANGE;
-
 	/* perform the read */
 	return hunk_read_into_memory(chd, hunknum, (UINT8 *)buffer);
 }
@@ -1745,7 +1794,6 @@ chd_error chd_get_metadata(chd_file *chd, UINT32 searchtag, UINT32 searchindex, 
 
 chd_error chd_codec_config(chd_file *chd, int param, void *config)
 {
-
 	return CHDERR_INVALID_PARAMETER;
 }
 
@@ -1773,11 +1821,11 @@ const char *chd_get_codec_name(UINT32 codec)
 static chd_error header_validate(const chd_header *header)
 {
 	int intfnum;
-  
+
 	/* require a valid version */
 	if (header->version == 0 || header->version > CHD_HEADER_VERSION)
 		return CHDERR_UNSUPPORTED_VERSION;
-  
+
 	/* require a valid length */
 	if ((header->version == 1 && header->length != CHD_V1_HEADER_SIZE) ||
 		(header->version == 2 && header->length != CHD_V2_HEADER_SIZE) ||
@@ -1785,7 +1833,7 @@ static chd_error header_validate(const chd_header *header)
 		(header->version == 4 && header->length != CHD_V4_HEADER_SIZE) ||
 		(header->version == 5 && header->length != CHD_V5_HEADER_SIZE))
 		return CHDERR_INVALID_PARAMETER;
-  
+
 	/* Do not validate v5 header */
 	if (header->version <= 4)
 	{
@@ -1873,7 +1921,7 @@ static chd_error header_read(core_file *file, chd_header *header)
 		(header->version == 3 && header->length != CHD_V3_HEADER_SIZE) ||
 		(header->version == 4 && header->length != CHD_V4_HEADER_SIZE) ||
 		(header->version == 5 && header->length != CHD_V5_HEADER_SIZE))
-		
+
 		return CHDERR_INVALID_DATA;
 
 	/* extract the common data */
@@ -1940,10 +1988,10 @@ static chd_error header_read(core_file *file, chd_header *header)
 		memcpy(header->parentsha1, &rawheader[104], CHD_SHA1_BYTES);
 		memcpy(header->rawsha1, &rawheader[64], CHD_SHA1_BYTES);
 
-		// determine properties of map entries
-		header->mapentrybytes = 12; //TODO compressed() ? 12 : 4;
+		/* determine properties of map entries */
+		header->mapentrybytes = 12; /*TODO compressed() ? 12 : 4; */
 
-		// hack
+		/* hack */
 		header->totalhunks 		= header->hunkcount;
 	}
 
@@ -1962,6 +2010,7 @@ static chd_error header_read(core_file *file, chd_header *header)
     INTERNAL HUNK READ/WRITE
 ***************************************************************************/
 
+#ifdef NEED_CACHE_HUNK
 /*-------------------------------------------------
     hunk_read_into_cache - read a hunk into
     the CHD's hunk cache
@@ -1989,7 +2038,7 @@ static chd_error hunk_read_into_cache(chd_file *chd, UINT32 hunknum)
 	chd->cachehunk = hunknum;
 	return CHDERR_NONE;
 }
-
+#endif
 
 /*-------------------------------------------------
     hunk_read_into_memory - read a hunk into
@@ -2000,7 +2049,7 @@ static chd_error hunk_read_into_memory(chd_file *chd, UINT32 hunknum, UINT8 *des
 {
 	chd_error err;
 
-	// punt if no file
+	/* punt if no file */
 	if (chd->file == NULL)
 		return CHDERR_INVALID_FILE;
 
@@ -2008,8 +2057,12 @@ static chd_error hunk_read_into_memory(chd_file *chd, UINT32 hunknum, UINT8 *des
 	if (hunknum >= chd->header.totalhunks)
 		return CHDERR_HUNK_OUT_OF_RANGE;
 
+	if (dest == NULL)
+		return CHDERR_INVALID_PARAMETER;
+
 	if (chd->header.version < 5)
 	{
+      void* codec;
 		map_entry *entry = &chd->map[hunknum];
 		UINT32 bytes;
 
@@ -2018,22 +2071,20 @@ static chd_error hunk_read_into_memory(chd_file *chd, UINT32 hunknum, UINT8 *des
 		{
 			/* compressed data */
 			case V34_MAP_ENTRY_TYPE_COMPRESSED:
-            {
-               void* codec;
-                  /* read it into the decompression buffer */
-                  core_fseek(chd->file, entry->offset, SEEK_SET);
-               bytes = core_fread(chd->file, chd->compressed, entry->length);
-               if (bytes != entry->length)
-                  return CHDERR_READ_ERROR;
 
-               /* now decompress using the codec */
-               err   = CHDERR_NONE;
-               codec = &chd->zlib_codec_data;
-               if (chd->codecintf[0]->decompress != NULL)
-                  err = (*chd->codecintf[0]->decompress)(codec, chd->compressed, entry->length, dest, chd->header.hunkbytes);
-               if (err != CHDERR_NONE)
-                  return err;
-            }
+				/* read it into the decompression buffer */
+				core_fseek(chd->file, entry->offset, SEEK_SET);
+				bytes = core_fread(chd->file, chd->compressed, entry->length);
+				if (bytes != entry->length)
+					return CHDERR_READ_ERROR;
+
+				/* now decompress using the codec */
+				err   = CHDERR_NONE;
+				codec = &chd->zlib_codec_data;
+				if (chd->codecintf[0]->decompress != NULL)
+					err = (*chd->codecintf[0]->decompress)(codec, chd->compressed, entry->length, dest, chd->header.hunkbytes);
+				if (err != CHDERR_NONE)
+					return err;
 				break;
 
 			/* uncompressed data */
@@ -2053,8 +2104,10 @@ static chd_error hunk_read_into_memory(chd_file *chd, UINT32 hunknum, UINT8 *des
 
 			/* self-referenced data */
 			case V34_MAP_ENTRY_TYPE_SELF_HUNK:
+#ifdef NEED_CACHE_HUNK
 				if (chd->cachehunk == entry->offset && dest == chd->cache)
 					break;
+#endif
 				return hunk_read_into_memory(chd, entry->offset, dest);
 
 			/* parent-referenced data */
@@ -2068,15 +2121,16 @@ static chd_error hunk_read_into_memory(chd_file *chd, UINT32 hunknum, UINT8 *des
 	}
 	else
 	{
-
-		// get a pointer to the map entry
+		void* codec = NULL;
+		/* get a pointer to the map entry */
 		uint64_t blockoffs;
 		uint32_t blocklen;
+#ifdef VERIFY_BLOCK_CRC
 		uint16_t blockcrc;
-      void* codec = NULL;
+#endif
 		uint8_t *rawmap = &chd->header.rawmap[chd->header.mapentrybytes * hunknum];
 
-		// uncompressed case
+		/* uncompressed case */
 		/* TODO
 		if (!compressed())
 		{
@@ -2092,10 +2146,12 @@ static chd_error hunk_read_into_memory(chd_file *chd, UINT32 hunknum, UINT8 *des
 			return CHDERR_NONE;
 		}*/
 
-		// compressed case
+		/* compressed case */
 		blocklen = get_bigendian_uint24(&rawmap[1]);
 		blockoffs = get_bigendian_uint48(&rawmap[4]);
+#ifdef VERIFY_BLOCK_CRC
 		blockcrc = get_bigendian_uint16(&rawmap[10]);
+#endif
 		switch (rawmap[0])
 		{
 			case COMPRESSION_TYPE_0:
@@ -2119,33 +2175,41 @@ static chd_error hunk_read_into_memory(chd_file *chd, UINT32 hunknum, UINT8 *des
 						break;
 				}
 				if (codec==NULL)
+					return CHDERR_CODEC_ERROR;
+				err = (*chd->codecintf[rawmap[0]]->decompress)(codec, chd->compressed, blocklen, dest, chd->header.hunkbytes);
+				if (err != CHDERR_NONE)
+					return err;
+#ifdef VERIFY_BLOCK_CRC
+				if (crc16(dest, chd->header.hunkbytes) != blockcrc)
 					return CHDERR_DECOMPRESSION_ERROR;
-				chd->codecintf[rawmap[0]]->decompress(codec, chd->compressed, blocklen, dest, chd->header.hunkbytes);
-				if (dest != NULL && crc16(dest, chd->header.hunkbytes) != blockcrc)
-					return CHDERR_DECOMPRESSION_ERROR;
+#endif
 				return CHDERR_NONE;
 
 			case COMPRESSION_NONE:
 				core_fseek(chd->file, blockoffs, SEEK_SET);
 				core_fread(chd->file, dest, chd->header.hunkbytes);
+#ifdef VERIFY_BLOCK_CRC
 				if (crc16(dest, chd->header.hunkbytes) != blockcrc)
 					return CHDERR_DECOMPRESSION_ERROR;
+#endif
 				return CHDERR_NONE;
 
 			case COMPRESSION_SELF:
 				return hunk_read_into_memory(chd, blockoffs, dest);
 
 			case COMPRESSION_PARENT:
-				// TODO
-				//if (m_parent_missing)
-				//	return CHDERR_REQUIRES_PARENT;
-				//return m_parent->read_bytes(uint64_t(blockoffs) * uint64_t(m_parent->unit_bytes()), dest, m_hunkbytes);
+				/* TODO */
+#if 0
+            if (m_parent_missing)
+               return CHDERR_REQUIRES_PARENT;
+            return m_parent->read_bytes(uint64_t(blockoffs) * uint64_t(m_parent->unit_bytes()), dest, m_hunkbytes);
+#endif
 				return CHDERR_DECOMPRESSION_ERROR;
 		}
 		return CHDERR_NONE;
 	}
 
-	// We should not reach this code
+	/* We should not reach this code */
 	return CHDERR_DECOMPRESSION_ERROR;
 }
 
@@ -2153,6 +2217,15 @@ static chd_error hunk_read_into_memory(chd_file *chd, UINT32 hunknum, UINT8 *des
 /***************************************************************************
     INTERNAL MAP ACCESS
 ***************************************************************************/
+
+static size_t core_fsize(core_file *f)
+{
+	long rv,p = ftell(f);
+	fseek(f, 0, SEEK_END);
+	rv = ftell(f);
+	fseek(f, p, SEEK_SET);
+	return rv;
+}
 
 /*-------------------------------------------------
     map_read - read the initial sector map
@@ -2299,9 +2372,9 @@ static chd_error metadata_find_entry(chd_file *chd, UINT32 metatag, UINT32 metai
 
 static chd_error zlib_codec_init(void *codec, uint32_t hunkbytes)
 {
-	zlib_codec_data *data = (zlib_codec_data*)codec;
-	chd_error err;
 	int zerr;
+	chd_error err;
+	zlib_codec_data *data = (zlib_codec_data*)codec;
 
 	/* clear the buffers */
 	memset(data, 0, sizeof(zlib_codec_data));
@@ -2321,10 +2394,6 @@ static chd_error zlib_codec_init(void *codec, uint32_t hunkbytes)
 		err = CHDERR_CODEC_ERROR;
 	else
 		err = CHDERR_NONE;
-
-	/* handle an error */
-	if (err != CHDERR_NONE)
-		free(data);
 
 	return err;
 }
@@ -2379,6 +2448,7 @@ static chd_error zlib_codec_decompress(void *codec, const uint8_t *src, uint32_t
 
 	/* do it */
 	zerr = inflate(&data->inflater, Z_FINISH);
+    (void)zerr;
 	if (data->inflater.total_out != destlen)
 		return CHDERR_DECOMPRESSION_ERROR;
 

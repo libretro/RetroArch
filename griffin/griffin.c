@@ -24,8 +24,6 @@
 #define HAVE_COMPRESSION
 #endif
 
-#include <compat/posix_string.h>
-
 #if _MSC_VER
 #include "../libretro-common/compat/compat_snprintf.c"
 #endif
@@ -35,6 +33,32 @@
 #if defined(HAVE_LOGGER) && !defined(ANDROID)
 #include "../network/net_logger.c"
 #endif
+
+/*============================================================
+COMPATIBILITY
+============================================================ */
+#ifndef HAVE_GETOPT_LONG
+#include "../compat/compat_getopt.c"
+#endif
+
+#ifndef HAVE_STRCASESTR
+#include "../compat/compat_strcasestr.c"
+#endif
+
+#ifndef HAVE_STRL
+#include "../compat/compat_strl.c"
+#endif
+
+#if defined(_WIN32)
+#include "../compat/compat_posix_string.c"
+#endif
+
+#if defined(WANT_IFADDRS)
+#include "../compat/compat_ifaddrs.c"
+#endif
+
+#include "../libretro-common/compat/compat_fnmatch.c"
+#include "../libretro-common/memmap/memalign.c"
 
 /*============================================================
 CONSOLE EXTENSIONS
@@ -101,32 +125,6 @@ PERFORMANCE
 ============================================================ */
 #include "../libretro-common/features/features_cpu.c"
 #include "../performance_counters.c"
-
-/*============================================================
-COMPATIBILITY
-============================================================ */
-#ifndef HAVE_GETOPT_LONG
-#include "../compat/compat_getopt.c"
-#endif
-
-#ifndef HAVE_STRCASESTR
-#include "../compat/compat_strcasestr.c"
-#endif
-
-#ifndef HAVE_STRL
-#include "../compat/compat_strl.c"
-#endif
-
-#if defined(_WIN32) && !defined(_XBOX)
-#include "../compat/compat_posix_string.c"
-#endif
-
-#if defined(WANT_IFADDRS)
-#include "../compat/compat_ifaddrs.c"
-#endif
-
-#include "../libretro-common/compat/compat_fnmatch.c"
-#include "../libretro-common/memmap/memalign.c"
 
 /*============================================================
 CONFIG FILE
@@ -275,10 +273,6 @@ VIDEO SHADERS
 #endif
 #endif
 
-#ifdef HAVE_HLSL
-#include "../gfx/drivers_shader/shader_hlsl.c"
-#endif
-
 #ifdef HAVE_GLSL
 #include "../gfx/drivers_shader/shader_glsl.c"
 #endif
@@ -349,7 +343,7 @@ VIDEO DRIVER
 #include "../gfx/common/gl_common.c"
 #include "../gfx/drivers/gl.c"
 #include "../libretro-common/gfx/gl_capabilities.c"
-#include "../gfx/drivers_renderchain/gl_legacy_renderchain.c"
+#include "../gfx/drivers_renderchain/gl2_renderchain.c"
 
 #ifndef HAVE_PSGL
 #include "../libretro-common/glsym/rglgen.c"
@@ -459,7 +453,6 @@ INPUT
 ============================================================ */
 #include "../tasks/task_autodetect.c"
 #include "../tasks/task_audio_mixer.c"
-#include "../input/input_config.c"
 #include "../input/input_keymaps.c"
 #include "../input/input_remapping.c"
 
@@ -1102,6 +1095,10 @@ MENU
 #include "../cores/libretro-net-retropad/net_retropad_core.c"
 #endif
 
+#ifdef HAVE_KEYMAPPER
+#include "../input/input_mapper.c"
+#endif
+
 #include "../command.c"
 
 #ifdef __cplusplus
@@ -1132,18 +1129,48 @@ DEPENDENCIES
 #include "../deps/libz/zutil.c"
 #endif
 
+#ifdef HAVE_FLAC
+#include "../deps/libFLAC/bitmath.c"
+#include "../deps/libFLAC/bitreader.c"
+#include "../deps/libFLAC/cpu.c"
+#include "../deps/libFLAC/crc.c"
+#include "../deps/libFLAC/fixed.c"
+#include "../deps/libFLAC/float.c"
+#include "../deps/libFLAC/format.c"
+#include "../deps/libFLAC/lpc.c"
+#include "../deps/libFLAC/lpc_intrin_avx2.c"
+#include "../deps/libFLAC/lpc_intrin_sse2.c"
+#include "../deps/libFLAC/lpc_intrin_sse41.c"
+#include "../deps/libFLAC/lpc_intrin_sse.c"
+#include "../deps/libFLAC/md5.c"
+#include "../deps/libFLAC/memory.c"
+#include "../deps/libFLAC/stream_decoder.c"
+#endif
+
+#ifdef HAVE_CHD
+#include "../libretro-common/formats/libchdr/bitstream.c"
+#include "../libretro-common/formats/libchdr/cdrom.c"
+#include "../libretro-common/formats/libchdr/chd.c"
+#include "../libretro-common/formats/libchdr/flac.c"
+#include "../libretro-common/formats/libchdr/huffman.c"
+
+#include "../libretro-common/streams/chd_stream.c"
+#endif
+
 #ifdef HAVE_7ZIP
 #include "../deps/7zip/7zIn.c"
 #include "../deps/7zip/Bra86.c"
 #include "../deps/7zip/7zFile.c"
 #include "../deps/7zip/7zStream.c"
 #include "../deps/7zip/LzmaDec.c"
+#include "../deps/7zip/LzmaEnc.c"
 #include "../deps/7zip/7zCrcOpt.c"
 #include "../deps/7zip/Bra.c"
 #include "../deps/7zip/7zDec.c"
 #include "../deps/7zip/Bcj2.c"
 #include "../deps/7zip/7zCrc.c"
 #include "../deps/7zip/Lzma2Dec.c"
+#include "../deps/7zip/LzFind.c"
 #include "../deps/7zip/7zBuf.c"
 #endif
 

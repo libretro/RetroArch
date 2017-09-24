@@ -56,7 +56,7 @@ bool dir_init_shader(void)
    struct rarch_dir_list *dir_list = (struct rarch_dir_list*)&dir_shader_list;
    settings_t           *settings  = config_get_ptr();
 
-   if (!*settings->paths.directory_video_shader)
+   if (!settings || !*settings->paths.directory_video_shader)
       return false;
 
    dir_list->list = dir_list_new_special(
@@ -284,14 +284,19 @@ void dir_set(enum rarch_dir_type type, const char *path)
 
 static void check_defaults_dir_create_dir(const char *path)
 {
-   char new_path[PATH_MAX_LENGTH];
+   char *new_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    new_path[0] = '\0';
    fill_pathname_expand_special(new_path,
-         path, sizeof(new_path));
+         path,
+         PATH_MAX_LENGTH * sizeof(char));
 
    if (path_is_directory(new_path))
+   {
+      free(new_path);
       return;
+   }
    path_mkdir(new_path);
+   free(new_path);
 }
 
 void dir_check_defaults(void)

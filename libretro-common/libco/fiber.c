@@ -26,7 +26,11 @@ cothread_t co_active(void)
 {
    if(!co_active_)
    {
+#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
+      ConvertThreadToFiberEx(0, FIBER_FLAG_FLOAT_SWITCH);
+#else
       ConvertThreadToFiber(0);
+#endif
       co_active_ = GetCurrentFiber();
    }
    return co_active_;
@@ -36,10 +40,19 @@ cothread_t co_create(unsigned int heapsize, void (*coentry)(void))
 {
    if(!co_active_)
    {
+#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
+      ConvertThreadToFiberEx(0, FIBER_FLAG_FLOAT_SWITCH);
+#else
       ConvertThreadToFiber(0);
+#endif
       co_active_ = GetCurrentFiber();
    }
+
+#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
+   return (cothread_t)CreateFiberEx(heapsize, heapsize, FIBER_FLAG_FLOAT_SWITCH, co_thunk, (void*)coentry);
+#else
    return (cothread_t)CreateFiber(heapsize, co_thunk, (void*)coentry);
+#endif
 }
 
 void co_delete(cothread_t cothread)

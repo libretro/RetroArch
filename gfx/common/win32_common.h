@@ -22,6 +22,12 @@
 #ifndef _XBOX
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#if _WIN32_WINNT <= 0x0400
+/* Windows versions below 98 do not support multiple monitors, so fake it */
+#define COMPILE_MULTIMON_STUBS
+#include <multimon.h>
+#endif
+
 #endif
 
 #include <boolean.h>
@@ -118,7 +124,7 @@ void win32_window_reset(void);
 
 void win32_destroy_window(void);
 
-#ifdef HAVE_D3D9
+#if defined(HAVE_D3D9) || defined(HAVE_D3D8)
 LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
 #endif

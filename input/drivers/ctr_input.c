@@ -25,7 +25,6 @@
 #include "../../config.h"
 #endif
 
-#include "../input_config.h"
 #include "../input_driver.h"
 
 #define MAX_PADS 1

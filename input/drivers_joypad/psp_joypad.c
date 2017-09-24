@@ -17,7 +17,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "../input_config.h"
+#include "../input_driver.h"
 
 #include "../../tasks/tasks_internal.h"
 

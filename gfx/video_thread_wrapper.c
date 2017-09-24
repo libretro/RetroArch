@@ -121,7 +121,7 @@ struct thread_packet
 
       struct
       {
-         char msg[255];
+         char msg[128];
          struct font_params params;
       } osd_message;
 

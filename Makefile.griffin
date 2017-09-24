@@ -1,37 +1,47 @@
-ROOT_DIR			:= .
-DEPS_DIR			:= $(ROOT_DIR)/deps
-DEBUG			 	= 0
-HAVE_LOGGER			= 0
-HAVE_FILE_LOGGER		= 0
-HAVE_CC_RESAMPLER		= 1
-WHOLE_ARCHIVE_LINK		= 0
-BIG_STACK   			= 1
-PC_DEVELOPMENT_IP_ADDRESS	= 255.255.255.255
-PC_DEVELOPMENT_UDP_PORT		= 3490
-RARCH_CONSOLE			= 0
-USBGECKO			= 0
+ROOT_DIR       := .
+DEPS_DIR       := $(ROOT_DIR)/deps
+DEBUG          = 0
+HAVE_LOGGER       = 0
+HAVE_FILE_LOGGER     = 0
+HAVE_CC_RESAMPLER    = 1
+WHOLE_ARCHIVE_LINK      = 0
+BIG_STACK            = 1
+PC_DEVELOPMENT_IP_ADDRESS  = 255.255.255.255
+PC_DEVELOPMENT_UDP_PORT    = 3490
+RARCH_CONSOLE        = 0
+USBGECKO       = 0
+
+UNAME_ARCH = $(shell uname -m)
+
+ifeq ($(UNAME_ARCH),x86_64)
+   HOST_ARCH = x64
+else
+   HOST_ARCH = x86
+endif
 
 ifneq ($(EMSCRIPTEN),)
    platform = emscripten
 endif
 
 ifeq ($(platform),)
-platform = unix
-ifeq ($(shell uname -a),)
-   platform = win
-else ifneq ($(findstring MINGW,$(shell uname -a)),)
-   platform = win
-else ifneq ($(findstring Darwin,$(shell uname -a)),)
-   platform = osx
-else ifneq ($(findstring win,$(shell uname -a)),)
-   platform = win
-endif
+   platform = unix
+
+   ifeq ($(shell uname -a),)
+      platform = win
+   else ifneq ($(findstring MINGW,$(shell uname -a)),)
+      platform = win
+   else ifneq ($(findstring Darwin,$(shell uname -a)),)
+      platform = osx
+   else ifneq ($(findstring win,$(shell uname -a)),)
+      platform = win
+   endif
 endif
 
 # system platform
 system_platform = unix
+
 ifeq ($(shell uname -a),)
-EXE_EXT = .exe
+   EXE_EXT = .exe
    system_platform = win
 else ifneq ($(findstring Darwin,$(shell uname -a)),)
    system_platform = osx
@@ -49,385 +59,813 @@ SHADER_CG_DIR      := media/shaders_cg
 OVERLAY_DIR        := media/overlays
 SHADER_GLSL_DIR    := media/shaders_glsl
 
-PYTHON2		       := python2$(EXE_EXT)
-PYTHON3		       := python3$(EXE_EXT)
-GIT			       := git$(EXE_EXT)
+PYTHON2            := python2$(EXE_EXT)
+PYTHON3            := python3$(EXE_EXT)
+GIT                := git$(EXE_EXT)
 
 ifeq ($(WHOLE_ARCHIVE_LINK), 1)
    WHOLE_START     := -Wl,--whole-archive
    WHOLE_END       := -Wl,--no-whole-archive
 endif
 
-LIBS               := $(WHOLE_START) -lretro_$(platform) $(WHOLE_END)
+ifneq (,$(findstring msvc,$(platform)))
+   LIBS               := $(WHOLE_START) $(WHOLE_END)
+else
+   LIBS               := $(WHOLE_START) -lretro_$(platform) $(WHOLE_END)
+endif
 
 libogc_platform    :=
 
 ifeq ($(platform), ngc)
-libogc_platform    := 1
+   libogc_platform    := 1
 else ifeq ($(platform), wii)
-libogc_platform    := 1
+   libogc_platform    := 1
 endif
 
 # PS3
 ifeq ($(platform), ps3)
-	#TODO
-  MEDIA_SHADER_DIR := pkg/ps3/USRDIR/cores/shaders
-  RARCH_CONSOLE          = 1
+   #TODO
+   MEDIA_SHADER_DIR := pkg/ps3/USRDIR/cores/shaders
+   RARCH_CONSOLE          = 1
 
 # PS3 - Cobra
 else ifeq ($(platform), ps3-cobra)
-	#TODO
-  MEDIA_SHADER_DIR := ps3/iso/PS3_GAME/USRDIR/cores/shaders
-  RARCH_CONSOLE          = 1
+   #TODO
+   MEDIA_SHADER_DIR := ps3/iso/PS3_GAME/USRDIR/cores/shaders
+   RARCH_CONSOLE          = 1
 
 # NGC/Wii - libogc
 else ifeq ($(libogc_platform), 1)
-EXTERNAL_LIBOGC=0
-  CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
-  CXX = $(DEVKITPPC)/bin/powerpc-eabi-g++$(EXE_EXT)
-  LD = $(DEVKITPPC)/bin/powerpc-eabi-ld$(EXE_EXT)
-  ELF2DOL = $(DEVKITPPC)/bin/elf2dol$(EXE_EXT)
-  EXT_TARGET := $(TARGET_NAME)_$(platform).dol
-  EXT_INTER_TARGET := $(TARGET_NAME)_$(platform).elf
+   EXTERNAL_LIBOGC=0
+   CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
+   CXX = $(DEVKITPPC)/bin/powerpc-eabi-g++$(EXE_EXT)
+   LD = $(DEVKITPPC)/bin/powerpc-eabi-ld$(EXE_EXT)
+   ELF2DOL = $(DEVKITPPC)/bin/elf2dol$(EXE_EXT)
+   EXT_TARGET := $(TARGET_NAME)_$(platform).dol
+   EXT_INTER_TARGET := $(TARGET_NAME)_$(platform).elf
 
-  INCLUDE += -I. -I$(DEVKITPRO)/libogc/include -Ideps/libz -Iwii/libogc/include
+   INCLUDE += -I. -I$(DEVKITPRO)/libogc/include -Ideps/libz -Iwii/libogc/include
  
-ifeq ($(EXTERNAL_LIBOGC), 1)
-	CFLAGS   += -DEXTERNAL_LIBOGC
-	CXXFLAGS += -DEXTERNAL_LIBOGC
+   ifeq ($(EXTERNAL_LIBOGC), 1)
+      CFLAGS   += -DEXTERNAL_LIBOGC
+      CXXFLAGS += -DEXTERNAL_LIBOGC
 
-ifeq ($(platform), ngc)
-LIBDIRS += -L$(DEVKITPRO)/libogc/lib/cube
-else ifeq ($(platform), wii)
-LIBDIRS += -L$(DEVKITPRO)/libogc/lib/wii
-endif
+      ifeq ($(platform), ngc)
+         LIBDIRS += -L$(DEVKITPRO)/libogc/lib/cube
+      else ifeq ($(platform), wii)
+         LIBDIRS += -L$(DEVKITPRO)/libogc/lib/wii
+      endif
 
-else
-	CFLAGS   += -DINTERNAL_LIBOGC
-	CXXFLAGS += -DINTERNAL_LIBOGC
+   else
+      CFLAGS   += -DINTERNAL_LIBOGC
+      CXXFLAGS += -DINTERNAL_LIBOGC
 
-ifeq ($(platform), ngc)
-LIBDIRS += -Lwii/libogc/libs/cube
-else ifeq ($(platform), wii)
-LIBDIRS += -Lwii/libogc/libs/wii
-endif
+      ifeq ($(platform), ngc)
+         LIBDIRS += -Lwii/libogc/libs/cube
+      else ifeq ($(platform), wii)
+         LIBDIRS += -Lwii/libogc/libs/wii
+      endif
 
-endif
+   endif
 
-ifeq ($(platform), ngc)
-  MACHDEP := -DHW_DOL -mogc
-else ifeq ($(platform), wii)
-  MACHDEP := -DHW_RVL -mrvl
-endif
+   ifeq ($(platform), ngc)
+      MACHDEP := -DHW_DOL -mogc
+   else ifeq ($(platform), wii)
+      MACHDEP := -DHW_RVL -mrvl
+   endif
 
-  LIBDIRS += -L.
-  MACHDEP += -DGEKKO -mcpu=750 -meabi -mhard-float -DMSB_FIRST
+   LIBDIRS += -L.
+   MACHDEP += -DGEKKO -mcpu=750 -meabi -mhard-float -DMSB_FIRST
 
-ifeq ($(platform), ngc)
-	LDFLAGS += $(MACHDEP) -Wl,-Map,$(notdir $(EXT_INTER_TARGET)).map
-ifeq ($(BIG_STACK), 1)
-   LDFLAGS += -T bootstrap/gx/ogc.ld
-endif
-else ifeq ($(platform), wii)
-	LDFLAGS += $(MACHDEP) -Wl,-Map,$(notdir $(EXT_INTER_TARGET)).map,-wrap,malloc,-wrap,free,-wrap,memalign,-wrap,calloc,-wrap,realloc,-wrap,strdup,-wrap,strndup,-wrap,malloc_usable_size
-ifeq ($(BIG_STACK), 1)
-  LDFLAGS += -T bootstrap/gx/rvl.ld
-endif
-endif
-  LIBS += -logc
-ifeq ($(EXTERNAL_LIBOGC), 1)
-  LIBS += -lfat
-endif
+   ifeq ($(platform), ngc)
+      LDFLAGS += $(MACHDEP) -Wl,-Map,$(notdir $(EXT_INTER_TARGET)).map
 
-ifeq ($(platform), wii)
-  LIBS += -lwiiuse -lbte
-ifeq ($(USBGECKO), 1)
-  LIBS += -ldb
-endif
-else ifeq ($(platform), ngc)
-ifeq ($(HAVE_LOGGER), 1)
-  LIBS += -lbba
-endif
-endif
+      ifeq ($(BIG_STACK), 1)
+         LDFLAGS += -T bootstrap/gx/ogc.ld
+      endif
+   else ifeq ($(platform), wii)
+      LDFLAGS += $(MACHDEP) -Wl,-Map,$(notdir $(EXT_INTER_TARGET)).map,-wrap,malloc,-wrap,free,-wrap,memalign,-wrap,calloc,-wrap,realloc,-wrap,strdup,-wrap,strndup,-wrap,malloc_usable_size
 
-  CFLAGS += -DGEKKO -U__INT32_TYPE__ -U __UINT32_TYPE__ -D__INT32_TYPE__=int
+      ifeq ($(BIG_STACK), 1)
+        LDFLAGS += -T bootstrap/gx/rvl.ld
+      endif
+   endif
 
-  HAVE_FILTERS_BUILTIN     := 1
-  HAVE_THREADS             := 1
-  HAVE_RPNG						:= 1
-  HAVE_RJPEG					:= 1
-  HAVE_RBMP					   := 1
-  HAVE_RTGA					   := 1
-  HAVE_IBXM					   := 1
-  HAVE_OVERLAY             := 1
-  HAVE_ZLIB                := 1
-  WANT_ZLIB						:= 1
-  HAVE_7ZIP                := 1
-  RARCH_CONSOLE          = 1
+   LIBS += -logc
 
-ifeq ($(platform), wii)
-  HAVE_LANGEXTRA				:= 1
-  HAVE_WIIUSB_HID          := 1
-  HAVE_RARCH_EXEC          := 1
-  HAVE_RSOUND              := 1
+   ifeq ($(EXTERNAL_LIBOGC), 1)
+      LIBS += -lfat
+   endif
 
-  APP_BOOTER_DIR = wii/app_booter
-  PLATOBJS := $(APP_BOOTER_DIR)/app_booter.binobj
-ifeq ($(USBGECKO), 1)
-  CFLAGS += -DUSBGECKO
-endif
-endif
+   ifeq ($(platform), wii)
+      LIBS += -lwiiuse -lbte
+
+      ifeq ($(USBGECKO), 1)
+        LIBS += -ldb
+      endif
+   else ifeq ($(platform), ngc)
+      ifeq ($(HAVE_LOGGER), 1)
+        LIBS += -lbba
+      endif
+   endif
+
+   CFLAGS += -DGEKKO -U__INT32_TYPE__ -U __UINT32_TYPE__ -D__INT32_TYPE__=int
+
+   HAVE_FILTERS_BUILTIN     := 1
+   HAVE_THREADS             := 1
+   HAVE_RPNG                := 1
+   HAVE_RJPEG               := 1
+   HAVE_RBMP                := 1
+   HAVE_RTGA                := 1
+   HAVE_IBXM                := 1
+   HAVE_OVERLAY             := 1
+   HAVE_ZLIB                := 1
+   WANT_ZLIB                := 1
+   HAVE_7ZIP                := 1
+   RARCH_CONSOLE             = 1
+
+   ifeq ($(platform), wii)
+      HAVE_LANGEXTRA           := 1
+      HAVE_WIIUSB_HID          := 1
+      HAVE_RARCH_EXEC          := 1
+      HAVE_RSOUND              := 1
+
+      APP_BOOTER_DIR = wii/app_booter
+      PLATOBJS := $(APP_BOOTER_DIR)/app_booter.binobj
+
+      ifeq ($(USBGECKO), 1)
+         CFLAGS += -DUSBGECKO
+      endif
+   endif
 
 # Libxenon (Xbox 360)
 else ifeq ($(platform), xenon360)
-	CC = xenon-gcc$(EXE_EXT)
-	CXX = xenon-g++$(EXE_EXT)
-	OBJCOPY = xenon-objcopy$(EXE_EXT)
-	LD    = xenon-ld$(EXE_EXT)
-	STRIP = xenon-strip$(EXE_EXT)
-	INCLUDE += -I$(DEVKITXENON)/usr/include
+   CC = xenon-gcc$(EXE_EXT)
+   CXX = xenon-g++$(EXE_EXT)
+   OBJCOPY = xenon-objcopy$(EXE_EXT)
+   LD    = xenon-ld$(EXE_EXT)
+   STRIP = xenon-strip$(EXE_EXT)
+   INCLUDE += -I$(DEVKITXENON)/usr/include
 
-	EXT_TARGET := $(TARGET_NAME)_$(platform).elf32
-	EXT_INTER_TARGET := $(TARGET_NAME)_$(platform).elf
+   EXT_TARGET := $(TARGET_NAME)_$(platform).elf32
+   EXT_INTER_TARGET := $(TARGET_NAME)_$(platform).elf
 
-	LIBS                    += -lxenon -lm -lc
+   LIBS                     += -lxenon -lm -lc
 
-  LIBDIRS                  += -L. -L$(DEVKITXENON)/usr/lib -L$(DEVKITXENON)/xenon/lib/32
-  LDFLAGS                  +=  -Wl,-q -m32 -n -T$(DEVKITXENON)/app.lds
-  PLATCFLAGS               := -DHAVE_GETOPT_LONG=1
-  PLATCFLAGS               += -maltivec -mhard-float -m32 -mpowerpc64 -mcpu=cell -mtune=cell -fno-pic -g -Wall -DXENON $(INCDIRS) -Wno-char-subscripts
-  PLATCFLAGS               += -u read -u _start -u exc_base
-  HAVE_THREADS             := 1
-  HAVE_GETOPT_LONG         := 1
-  RARCH_CONSOLE          = 1
+   LIBDIRS                  += -L. -L$(DEVKITXENON)/usr/lib -L$(DEVKITXENON)/xenon/lib/32
+   LDFLAGS                  +=  -Wl,-q -m32 -n -T$(DEVKITXENON)/app.lds
+   PLATCFLAGS               := -DHAVE_GETOPT_LONG=1
+   PLATCFLAGS               += -maltivec -mhard-float -m32 -mpowerpc64 -mcpu=cell -mtune=cell -fno-pic -g -Wall -DXENON $(INCDIRS) -Wno-char-subscripts
+   PLATCFLAGS               += -u read -u _start -u exc_base
+   HAVE_THREADS             := 1
+   HAVE_GETOPT_LONG         := 1
+   RARCH_CONSOLE             = 1
 
 # PSP
 else ifeq ($(platform), psp1)
-  CC = psp-gcc$(EXE_EXT)
-  CXX = psp-g++$(EXE_EXT)
-  LD = psp-ld$(EXE_EXT)
-  INCLUDE += -I$(PSPSDK)/psp/sdk/include
-  EXT_TARGET := $(TARGET_NAME)_$(platform).elf
-  EXT_INTER_TARGET := $(TARGET_NAME)_$(platform).elf
-  PLATCFLAGS := -DPSP -D_PSP_FW_VERSION=150 -G0 \
-	  -D_MIPS_ARCH_ALLEGREX
-  LIBS +=  -lpspgu -lpspgum -lm -lpspaudio -lpspfpu -lpsppower -lpsprtc -lpspkernel
+   CC = psp-gcc$(EXE_EXT)
+   CXX = psp-g++$(EXE_EXT)
+   LD = psp-ld$(EXE_EXT)
+   INCLUDE += -I$(PSPSDK)/psp/sdk/include
+   EXT_TARGET := $(TARGET_NAME)_$(platform).elf
+   EXT_INTER_TARGET := $(TARGET_NAME)_$(platform).elf
+   PLATCFLAGS := -DPSP -D_PSP_FW_VERSION=150 -G0 \
+      -D_MIPS_ARCH_ALLEGREX
+   LIBS +=  -lpspgu -lpspgum -lm -lpspaudio -lpspfpu -lpsppower -lpsprtc -lpspkernel
 
-  LIBDIRS += -L.
-  LDFLAGS +=  -Wl,-q
+   LIBDIRS += -L.
+   LDFLAGS +=  -Wl,-q
 
-  BUILD_PRX                 = 1
-  HAVE_RPNG                := 1
-  HAVE_RJPEG					:= 1
-  HAVE_RBMP					   := 1
-  HAVE_RTGA					   := 1
-  HAVE_KERNEL_PRX          := 1
-  HAVE_LANGEXTRA				:= 1
-  RARCH_CONSOLE          = 1
+   BUILD_PRX                 = 1
+   HAVE_RPNG                := 1
+   HAVE_RJPEG               := 1
+   HAVE_RBMP                := 1
+   HAVE_RTGA                := 1
+   HAVE_KERNEL_PRX          := 1
+   HAVE_LANGEXTRA           := 1
+   RARCH_CONSOLE             = 1
 
-ifeq ($(BUILD_PRX), 1)
-	LDFLAGS += $(addprefix -L,$(PSPSDK)/lib) -specs=$(PSPSDK)/lib/prxspecs -Wl,-q,-T$(PSPSDK)/lib/linkfile.prx $(LDFLAGS)
-endif
+   ifeq ($(BUILD_PRX), 1)
+      LDFLAGS += $(addprefix -L,$(PSPSDK)/lib) -specs=$(PSPSDK)/lib/prxspecs -Wl,-q,-T$(PSPSDK)/lib/linkfile.prx $(LDFLAGS)
+   endif
 
 # Vita
 else ifeq ($(platform), vita)
-  CC = arm-vita-eabi-gcc$(EXE_EXT)
-  CXX = arm-vita-eabi-g++$(EXE_EXT)
-  LD = arm-vita-eabi-ld$(EXE_EXT)
-  EXT_TARGET := $(TARGET_NAME)_$(platform).velf
-  EXT_INTER_TARGET := $(TARGET_NAME)_$(platform).elf
-  MACHDEP := -DVITA
-  WANT_ZLIB						:= 1
-  INCLUDE += -Ideps/libvita2d/include
-  INCLUDE += -Ideps/libz
-  PLATCFLAGS := -mfloat-abi=hard -fsingle-precision-constant \
-       -mword-relocations -fno-unwind-tables -fno-asynchronous-unwind-tables -ftree-vectorize -fno-optimize-sibling-calls
-  LIBS += -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub\
-			 -lSceSysmodule_stub -lSceCtrl_stub -lSceTouch_stub -lSceAudio_stub -lSceFiber_stub\
-			 -lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lScePgf_stub \
-			 -lSceMotion_stub -lSceAppMgr_stub -lpng -lm -lc
+   CC = arm-vita-eabi-gcc$(EXE_EXT)
+   CXX = arm-vita-eabi-g++$(EXE_EXT)
+   LD = arm-vita-eabi-ld$(EXE_EXT)
+   EXT_TARGET := $(TARGET_NAME)_$(platform).velf
+   EXT_INTER_TARGET := $(TARGET_NAME)_$(platform).elf
+   MACHDEP := -DVITA
+   WANT_ZLIB                := 1
+   INCLUDE += -Ideps/libvita2d/include
+   INCLUDE += -Ideps/libz
+   PLATCFLAGS := -mfloat-abi=hard -fsingle-precision-constant \
+        -mword-relocations -fno-unwind-tables -fno-asynchronous-unwind-tables -ftree-vectorize -fno-optimize-sibling-calls
+   LIBS += -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub\
+           -lSceSysmodule_stub -lSceCtrl_stub -lSceTouch_stub -lSceAudio_stub -lSceFiber_stub\
+           -lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lScePgf_stub \
+           -lSceMotion_stub -lSceAppMgr_stub -lpng -lm -lc
 
-  PLATOBJS += $(DEPS_DIR)/libvita2d/shader/clear_v_gxp.o \
-		 $(DEPS_DIR)/libvita2d/shader/clear_f_gxp.o \
-		 $(DEPS_DIR)/libvita2d/shader/color_v_gxp.o \
-		 $(DEPS_DIR)/libvita2d/shader/color_f_gxp.o \
-		 $(DEPS_DIR)/libvita2d/shader/texture_v_gxp.o \
-		 $(DEPS_DIR)/libvita2d/shader/texture_f_gxp.o \
-		 $(DEPS_DIR)/libvita2d/shader/texture_tint_f_gxp.o
+   PLATOBJS += $(DEPS_DIR)/libvita2d/shader/clear_v_gxp.o \
+      $(DEPS_DIR)/libvita2d/shader/clear_f_gxp.o \
+      $(DEPS_DIR)/libvita2d/shader/color_v_gxp.o \
+      $(DEPS_DIR)/libvita2d/shader/color_f_gxp.o \
+      $(DEPS_DIR)/libvita2d/shader/texture_v_gxp.o \
+      $(DEPS_DIR)/libvita2d/shader/texture_f_gxp.o \
+      $(DEPS_DIR)/libvita2d/shader/texture_tint_f_gxp.o
 
-  PLATOBJS += \
-		libretro-common/audio/conversion/s16_to_float_neon.o \
-		libretro-common/audio/conversion/float_to_s16_neon.o \
-		memory/neon/memcpy-neon.o \
-		libretro-common/audio/resampler/drivers/sinc_resampler_neon.o \
-		audio/drivers_resampler/cc_resampler_neon.o
+   PLATOBJS += \
+      libretro-common/audio/conversion/s16_to_float_neon.o \
+      libretro-common/audio/conversion/float_to_s16_neon.o \
+      memory/neon/memcpy-neon.o \
+      libretro-common/audio/resampler/drivers/sinc_resampler_neon.o \
+      audio/drivers_resampler/cc_resampler_neon.o
 
-  LIBDIRS += -L.
-  LDFLAGS +=  -Wl,-q
+   LIBDIRS += -L.
+   LDFLAGS +=  -Wl,-q
 
-  HAVE_FILTERS_BUILTIN     := 1
-  HAVE_LANGEXTRA				:= 1
-  HAVE_RPNG                := 1
-  HAVE_RJPEG					:= 1
-  HAVE_RBMP					   := 1
-  HAVE_RTGA					   := 1
-  HAVE_ZLIB                := 1
-  HAVE_7ZIP                := 1
-  HAVE_VITA2D              := 1
-  HAVE_NETWORKING          := 1
-  HAVE_OVERLAY             := 1
-  HAVE_MATERIALUI				:= 1
-  HAVE_XMB						:= 1
-  HAVE_STB_FONT :=1
-  RARCH_CONSOLE          = 1
-  HAVE_THREADS     := 1
-  HAVE_LIBRETRODB := 1
+   HAVE_FILTERS_BUILTIN     := 1
+   HAVE_LANGEXTRA           := 1
+   HAVE_RPNG                := 1
+   HAVE_RJPEG               := 1
+   HAVE_RBMP                := 1
+   HAVE_RTGA                := 1
+   HAVE_ZLIB                := 1
+   HAVE_7ZIP                := 1
+   HAVE_VITA2D              := 1
+   HAVE_NETWORKING          := 1
+   HAVE_OVERLAY             := 1
+   HAVE_MATERIALUI          := 1
+   HAVE_XMB                 := 1
+   HAVE_STB_FONT            := 1
+   HAVE_THREADS             := 1
+   HAVE_LIBRETRODB          := 1
+   RARCH_CONSOLE             = 1
+else ifeq ($(platform), windows_msvc6_x86)
+   HAVE_RPNG                := 1
+   HAVE_RJPEG               := 1
+   HAVE_RBMP                := 1
+   HAVE_RTGA                := 1
+   HAVE_ZLIB                := 1
+   WANT_ZLIB                := 1
+   HAVE_7ZIP                := 1
+   HAVE_NETWORKING          := 0
+   HAVE_NETWORK_CMD         := 1
+   HAVE_OVERLAY             := 1
+   HAVE_MATERIALUI          := 1
+   HAVE_XMB                 := 1
+   HAVE_STB_FONT            := 1
+   HAVE_THREADS             := 1
+   HAVE_LIBRETRODB          := 1
+   HAVE_FBO                 := 1
+   HAVE_COMMAND             := 1
+   HAVE_STDIN_CMD           := 1
+   HAVE_CMD                 := 1
+   HAVE_DYLIB               := 1
+   HAVE_DYNAMIC             := 1
+   HAVE_GRIFFIN_CPP         := 1
+
+   EXT_TARGET := $(TARGET_NAME).exe
+   EXT_INTER_TARGET := $(TARGET_NAME).exe
+   CC = cl.exe
+   CXX = cl.exe
+   LD = link.exe
+
+   PLATCFLAGS += -D_WIN32 -D_WIN32_WINNT=0x0351 -D__STDC_CONSTANT_MACROS -D_MBCS
+   LDFLAGS += shell32.lib user32.lib gdi32.lib comdlg32.lib winmm.lib ole32.lib
+
+   VCDIR ?= $(shell reg query "HKLM\SOFTWARE\Wow6432Node\Microsoft\DevStudio\6.0\Products\Microsoft Visual C++" -v "ProductDir" | grep -o '[A-Z]:\\.*')
+
+   PATH := $(shell IFS=$$'\n'; cygpath "$(VCDIR)/bin"):$(PATH)
+   PATH := $(PATH):$(shell IFS=$$'\n'; cygpath "$(VCDIR)/../Common/MSDev98/Bin")
+   INCLUDE := $(shell IFS=$$'\n'; cygpath -w "$(VCDIR)/Include")
+   LIB := $(shell IFS=$$'\n'; cygpath -w "$(VCDIR)/Lib")
+
+   export INCLUDE := $(INCLUDE);$(INETSDK)\Include;libretro-common\include;libretro-common\include\compat\msvc
+   export LIB := $(LIB);$(INETSDK)\Lib
+else ifeq ($(platform), windows_msvc2003_x86)
+   HAVE_RPNG                := 1
+   HAVE_RJPEG               := 1
+   HAVE_RBMP                := 1
+   HAVE_RTGA                := 1
+   HAVE_ZLIB                := 1
+   WANT_ZLIB                := 1
+   HAVE_7ZIP                := 1
+   HAVE_NETWORKING          := 1
+   HAVE_NETWORK_CMD         := 1
+   HAVE_OVERLAY             := 1
+   HAVE_MATERIALUI          := 1
+   HAVE_XMB                 := 1
+   HAVE_STB_FONT            := 1
+   HAVE_THREADS             := 1
+   HAVE_LIBRETRODB          := 1
+   HAVE_FBO                 := 1
+   HAVE_COMMAND             := 1
+   HAVE_STDIN_CMD           := 1
+   HAVE_CMD                 := 1
+   HAVE_DYLIB               := 1
+   HAVE_DYNAMIC             := 1
+   HAVE_GRIFFIN_CPP         := 1
+
+   EXT_TARGET := $(TARGET_NAME).exe
+   EXT_INTER_TARGET := $(TARGET_NAME).exe
+   CC = cl.exe
+   CXX = cl.exe
+   LD = link.exe
+
+   PLATCFLAGS += -D_WIN32 -DWINVER=0x0400 -D_WIN32_WINNT=0x0400 -D__STDC_CONSTANT_MACROS -D_MBCS -D_VC80_UPGRADE=0x0710
+   LDFLAGS += shell32.lib user32.lib gdi32.lib comdlg32.lib winmm.lib ole32.lib
+   
+   PATH := $(shell IFS=$$'\n'; cygpath "$(VS71COMNTOOLS)../../Vc7/bin"):$(PATH)
+   PATH := $(PATH):$(shell IFS=$$'\n'; cygpath "$(VS71COMNTOOLS)../IDE")
+   INCLUDE := $(shell IFS=$$'\n'; cygpath -w "$(VS71COMNTOOLS)../../Vc7/include")
+   LIB := $(shell IFS=$$'\n'; cygpath -w "$(VS71COMNTOOLS)../../Vc7/lib")
+
+   ifeq ($(HAVE_DIRECTX), 1)
+      PLATCFLAGS += -DHAVE_DINPUT -DHAVE_DSOUND
+      DXSDK_DIR := $(DXSDK_DIR:\=)
+      export INCLUDE := $(INCLUDE);$(INETSDK)\Include;$(DXSDK_DIR)\Include;libretro-common\include;libretro-common\include\compat\msvc
+      export LIB := $(LIB);$(INETSDK)\Lib;$(DXSDK_DIR)\Lib\x86
+   else
+      export INCLUDE := $(INCLUDE);$(INETSDK)\Include;libretro-common\include;libretro-common\include\compat\msvc
+      export LIB := $(LIB);$(INETSDK)\Lib
+   endif
+else ifeq ($(platform), windows_msvc2005_x86)
+   HAVE_RPNG                := 1
+   HAVE_RJPEG               := 1
+   HAVE_RBMP                := 1
+   HAVE_RTGA                := 1
+   HAVE_ZLIB                := 1
+   WANT_ZLIB                := 1
+   HAVE_7ZIP                := 1
+   HAVE_NETWORKING          := 1
+   HAVE_NETWORK_CMD         := 1
+   HAVE_OVERLAY             := 1
+   HAVE_MATERIALUI          := 1
+   HAVE_XMB                 := 1
+   HAVE_STB_FONT            := 1
+   HAVE_THREADS             := 1
+   HAVE_LIBRETRODB          := 1
+   HAVE_FBO                 := 1
+   HAVE_COMMAND             := 1
+   HAVE_STDIN_CMD           := 1
+   HAVE_CMD                 := 1
+   HAVE_DYLIB               := 1
+   HAVE_DYNAMIC             := 1
+   HAVE_GRIFFIN_CPP         := 1
+   HAVE_DIRECTX             ?= 1
+
+   EXT_TARGET := $(TARGET_NAME).exe
+   EXT_INTER_TARGET := $(TARGET_NAME).exe
+   CC = cl.exe
+   CXX = cl.exe
+   LD = link.exe
+
+   PLATCFLAGS += -D_WIN32 -D_WIN32_WINNT=0x0410 -D__STDC_CONSTANT_MACROS -D_MBCS
+   LDFLAGS += shell32.lib user32.lib gdi32.lib comdlg32.lib winmm.lib ole32.lib
+   
+   PATH := $(shell IFS=$$'\n'; cygpath "$(VS80COMNTOOLS)../../VC/bin"):$(PATH)
+   PATH := $(PATH):$(shell IFS=$$'\n'; cygpath "$(VS80COMNTOOLS)../IDE")
+   INCLUDE := $(shell IFS=$$'\n'; cygpath -w "$(VS80COMNTOOLS)../../VC/include")
+   LIB := $(shell IFS=$$'\n'; cygpath -w "$(VS80COMNTOOLS)../../VC/lib")
+
+   ifeq ($(HAVE_DIRECTX), 1)
+      PLATCFLAGS += -DHAVE_DINPUT -DHAVE_DSOUND
+      DXSDK_DIR := $(DXSDK_DIR:\=)
+      export INCLUDE := $(INCLUDE);$(INETSDK)\Include;$(DXSDK_DIR)\Include;libretro-common\include;libretro-common\include\compat\msvc
+      export LIB := $(LIB);$(INETSDK)\Lib;$(DXSDK_DIR)\Lib\x86
+   else
+      export INCLUDE := $(INCLUDE);$(INETSDK)\Include;libretro-common\include;libretro-common\include\compat\msvc
+      export LIB := $(LIB);$(INETSDK)\Lib
+   endif
+else ifneq (,$(findstring windows_msvc2010,$(platform)))
+   HAVE_RPNG                := 1
+   HAVE_RJPEG               := 1
+   HAVE_RBMP                := 1
+   HAVE_RTGA                := 1
+   HAVE_ZLIB                := 1
+   WANT_ZLIB                := 1
+   HAVE_7ZIP                := 1
+   HAVE_NETWORKING          := 1
+   HAVE_NETWORK_CMD         := 1
+   HAVE_OVERLAY             := 1
+   HAVE_MATERIALUI          := 1
+   HAVE_XMB                 := 1
+   HAVE_STB_FONT            := 1
+   HAVE_THREADS             := 1
+   HAVE_LIBRETRODB          := 1
+   HAVE_FBO                 := 1
+   HAVE_COMMAND             := 1
+   HAVE_STDIN_CMD           := 1
+   HAVE_CMD                 := 1
+   HAVE_DYLIB               := 1
+   HAVE_DYNAMIC             := 1
+   HAVE_GRIFFIN_CPP         := 1
+   HAVE_DIRECTX             ?= 1
+
+   EXT_TARGET := $(TARGET_NAME).exe
+   EXT_INTER_TARGET := $(TARGET_NAME).exe
+   CC = cl.exe
+   CXX = cl.exe
+   LD = link.exe
+
+   PLATCFLAGS += -D_WIN32 -D__STDC_CONSTANT_MACROS -D_MBCS
+   PLATCFLAGS += -D__i686__ -D__SSE__ -D_CRT_NONSTDC_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS -D_WINDOWS -DHAVE_CC_RESAMPLER -DHAVE_GL_SYNC -DHAVE_GLSL -DHAVE_IMAGEVIEWER -DHAVE_LANGEXTRA -DHAVE_OPENGL -DHAVE_SHADERPIPELINE -DHAVE_UPDATE_ASSETS -DWIN32
+   LDFLAGS += shell32.lib user32.lib gdi32.lib comdlg32.lib winmm.lib ole32.lib iphlpapi.lib
+
+   PlatformSuffix = $(subst windows_msvc2010_,,$(platform))
+
+   ifneq (,$(findstring x64,$(PlatformSuffix)))
+      ifeq ($(HOST_ARCH),x86)
+         # cross-compile for x64 from x86 host
+         PATH := $(shell IFS=$$'\n'; cygpath "$(VS100COMNTOOLS)../../VC/bin/x86_amd64"):$(PATH)
+      else
+         PATH := $(shell IFS=$$'\n'; cygpath "$(VS100COMNTOOLS)../../VC/bin/amd64"):$(PATH)
+      endif
+
+      LIB := $(shell IFS=$$'\n'; cygpath -w "$(VS100COMNTOOLS)../../VC/lib/amd64")
+      WinArch = x64
+      PlatLib = Lib\x64
+   else
+      PATH := $(shell IFS=$$'\n'; cygpath "$(VS100COMNTOOLS)../../VC/bin"):$(PATH)
+      LIB := $(shell IFS=$$'\n'; cygpath -w "$(VS100COMNTOOLS)../../VC/lib")
+      WinArch = x86
+      PlatLib = Lib
+   endif
+
+   PATH := $(PATH):$(shell IFS=$$'\n'; cygpath "$(VS100COMNTOOLS)../IDE")
+   INCLUDE := $(shell IFS=$$'\n'; cygpath -w "$(VS100COMNTOOLS)../../VC/include")
+
+   WindowsSdkDir ?= $(shell reg query "HKLM\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v7.0A" -v "InstallationFolder" | grep -o '[A-Z]:\\.*')
+   WindowsSdkDir ?= $(shell reg query "HKLM\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v7.1A" -v "InstallationFolder" | grep -o '[A-Z]:\\.*')
+   WindowsSdkDir := $(WindowsSdkDir:\=)
+
+   ifeq ($(HAVE_DIRECTX), 1)
+      PLATCFLAGS += -DHAVE_DINPUT -DHAVE_DSOUND -DHAVE_D3D -DHAVE_D3D9 -DHAVE_XAUDIO -DHAVE_XINPUT
+      DXSDK_DIR := $(DXSDK_DIR:\=)
+      export INCLUDE := $(INCLUDE);$(WindowsSdkDir)\Include;$(DXSDK_DIR)\Include;libretro-common\include;libretro-common\include\compat\msvc;gfx\include
+      export LIB := $(LIB);$(WindowsSdkDir)\$(PlatLib);$(DXSDK_DIR)\Lib\$(WinArch)
+   else
+      export INCLUDE := $(INCLUDE);$(WindowsSdkDir)\Include;libretro-common\include;libretro-common\include\compat\msvc;gfx\include
+      export LIB := $(LIB);$(WindowsSdkDir)\$(PlatLib)
+   endif
+else ifneq (,$(findstring windows_msvc2012,$(platform)))
+   HAVE_RPNG                := 1
+   HAVE_RJPEG               := 1
+   HAVE_RBMP                := 1
+   HAVE_RTGA                := 1
+   HAVE_ZLIB                := 1
+   WANT_ZLIB                := 1
+   HAVE_7ZIP                := 1
+   HAVE_NETWORKING          := 1
+   HAVE_NETWORK_CMD         := 1
+   HAVE_OVERLAY             := 1
+   HAVE_MATERIALUI          := 1
+   HAVE_XMB                 := 1
+   HAVE_STB_FONT            := 1
+   HAVE_THREADS             := 1
+   HAVE_LIBRETRODB          := 1
+   HAVE_FBO                 := 1
+   HAVE_COMMAND             := 1
+   HAVE_STDIN_CMD           := 1
+   HAVE_CMD                 := 1
+   HAVE_DYLIB               := 1
+   HAVE_DYNAMIC             := 1
+   HAVE_GRIFFIN_CPP         := 1
+   HAVE_DIRECTX             ?= 1
+
+   EXT_TARGET := $(TARGET_NAME).exe
+   EXT_INTER_TARGET := $(TARGET_NAME).exe
+   CC = cl.exe
+   CXX = cl.exe
+   LD = link.exe
+
+   PLATCFLAGS += -D_WIN32 -D__STDC_CONSTANT_MACROS -D_MBCS
+   PLATCFLAGS += -D__i686__ -D__SSE__ -D_CRT_NONSTDC_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS -D_WINDOWS -DHAVE_CC_RESAMPLER -DHAVE_GL_SYNC -DHAVE_GLSL -DHAVE_IMAGEVIEWER -DHAVE_LANGEXTRA -DHAVE_OPENGL -DHAVE_SHADERPIPELINE -DHAVE_UPDATE_ASSETS -DWIN32
+   LDFLAGS += shell32.lib user32.lib gdi32.lib comdlg32.lib winmm.lib ole32.lib iphlpapi.lib
+
+   PlatformSuffix = $(subst windows_msvc2012_,,$(platform))
+
+   ifneq (,$(findstring x64,$(PlatformSuffix)))
+      ifeq ($(HOST_ARCH),x86)
+         # cross-compile for x64 from x86 host
+         PATH := $(shell IFS=$$'\n'; cygpath "$(VS110COMNTOOLS)../../VC/bin/x86_amd64"):$(PATH)
+      else
+         PATH := $(shell IFS=$$'\n'; cygpath "$(VS110COMNTOOLS)../../VC/bin/amd64"):$(PATH)
+      endif
+
+      LIB := $(shell IFS=$$'\n'; cygpath -w "$(VS110COMNTOOLS)../../VC/lib/amd64")
+      WinArch = x64
+      PlatLib = Lib\winv6.3\um\x64
+   else ifneq (,$(findstring arm,$(PlatformSuffix)))
+      PATH := $(shell IFS=$$'\n'; cygpath "$(VS110COMNTOOLS)../../VC/bin/x86_arm"):$(PATH)
+      LIB := $(shell IFS=$$'\n'; cygpath -w "$(VS110COMNTOOLS)../../VC/lib/arm")
+      HAVE_DIRECTX = 0
+      PlatLib = Lib\winv6.3\um\arm
+   else
+      PATH := $(shell IFS=$$'\n'; cygpath "$(VS110COMNTOOLS)../../VC/bin"):$(PATH)
+      LIB := $(shell IFS=$$'\n'; cygpath -w "$(VS110COMNTOOLS)../../VC/lib")
+      WinArch = x86
+      PlatLib = Lib\winv6.3\um\x86
+   endif
+
+   PATH := $(PATH):$(shell IFS=$$'\n'; cygpath "$(VS110COMNTOOLS)../IDE")
+   INCLUDE := $(shell IFS=$$'\n'; cygpath -w "$(VS110COMNTOOLS)../../VC/include")
+
+   WindowsSdkDir ?= $(shell reg query "HKLM\SOFTWARE\Microsoft\Windows Kits\Installed Roots" -v "KitsRoot81" | grep -o '[A-Z]:\\.*')
+   WindowsSdkDir := $(WindowsSdkDir:\=)
+
+   ifeq ($(HAVE_DIRECTX), 1)
+      PLATCFLAGS += -DHAVE_DINPUT -DHAVE_DSOUND -DHAVE_D3D -DHAVE_D3D9 -DHAVE_XAUDIO -DHAVE_XINPUT
+      DXSDK_DIR := $(DXSDK_DIR:\=)
+      export INCLUDE := $(INCLUDE);$(WindowsSdkDir)\Include\um;$(WindowsSdkDir)\Include\shared;$(DXSDK_DIR)\Include;libretro-common\include;libretro-common\include\compat\msvc;gfx\include
+      export LIB := $(LIB);$(WindowsSdkDir)\$(PlatLib);$(DXSDK_DIR)\Lib\$(WinArch)
+   else
+      export INCLUDE := $(INCLUDE);$(WindowsSdkDir)\Include\um;$(WindowsSdkDir)\Include\shared;libretro-common\include;libretro-common\include\compat\msvc;gfx\include
+      export LIB := $(LIB);$(WindowsSdkDir)\$(PlatLib)
+   endif
+else ifneq (,$(findstring windows_msvc2013,$(platform)))
+   HAVE_RPNG                := 1
+   HAVE_RJPEG               := 1
+   HAVE_RBMP                := 1
+   HAVE_RTGA                := 1
+   HAVE_ZLIB                := 1
+   WANT_ZLIB                := 1
+   HAVE_7ZIP                := 1
+   HAVE_NETWORKING          := 1
+   HAVE_NETWORK_CMD         := 1
+   HAVE_OVERLAY             := 1
+   HAVE_MATERIALUI          := 1
+   HAVE_XMB                 := 1
+   HAVE_STB_FONT            := 1
+   HAVE_THREADS             := 1
+   HAVE_LIBRETRODB          := 1
+   HAVE_FBO                 := 1
+   HAVE_COMMAND             := 1
+   HAVE_STDIN_CMD           := 1
+   HAVE_CMD                 := 1
+   HAVE_DYLIB               := 1
+   HAVE_DYNAMIC             := 1
+   HAVE_GRIFFIN_CPP         := 1
+   HAVE_DIRECTX             ?= 1
+
+   EXT_TARGET := $(TARGET_NAME).exe
+   EXT_INTER_TARGET := $(TARGET_NAME).exe
+   CC = cl.exe
+   CXX = cl.exe
+   LD = link.exe
+
+   PLATCFLAGS += -D_WIN32 -D__STDC_CONSTANT_MACROS -D_MBCS
+   PLATCFLAGS += -D__i686__ -D__SSE__ -D_CRT_NONSTDC_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS -D_WINDOWS -DHAVE_CC_RESAMPLER -DHAVE_GL_SYNC -DHAVE_GLSL -DHAVE_IMAGEVIEWER -DHAVE_LANGEXTRA -DHAVE_OPENGL -DHAVE_SHADERPIPELINE -DHAVE_UPDATE_ASSETS -DWIN32
+   LDFLAGS += shell32.lib user32.lib gdi32.lib comdlg32.lib winmm.lib ole32.lib iphlpapi.lib
+
+   PlatformSuffix = $(subst windows_msvc2013_,,$(platform))
+
+   ifneq (,$(findstring x64,$(PlatformSuffix)))
+      ifeq ($(HOST_ARCH),x86)
+         # cross-compile for x64 from x86 host
+         PATH := $(shell IFS=$$'\n'; cygpath "$(VS120COMNTOOLS)../../VC/bin/x86_amd64"):$(PATH)
+      else
+         PATH := $(shell IFS=$$'\n'; cygpath "$(VS120COMNTOOLS)../../VC/bin/amd64"):$(PATH)
+      endif
+
+      LIB := $(shell IFS=$$'\n'; cygpath -w "$(VS120COMNTOOLS)../../VC/lib/amd64")
+      WinArch = x64
+      PlatLib = Lib\winv6.3\um\x64
+   else ifneq (,$(findstring arm,$(PlatformSuffix)))
+      PATH := $(shell IFS=$$'\n'; cygpath "$(VS120COMNTOOLS)../../VC/bin/x86_arm"):$(PATH)
+      LIB := $(shell IFS=$$'\n'; cygpath -w "$(VS120COMNTOOLS)../../VC/lib/arm")
+      HAVE_DIRECTX = 0
+      PlatLib = Lib\winv6.3\um\arm
+   else
+      PATH := $(shell IFS=$$'\n'; cygpath "$(VS120COMNTOOLS)../../VC/bin"):$(PATH)
+      LIB := $(shell IFS=$$'\n'; cygpath -w "$(VS120COMNTOOLS)../../VC/lib")
+      WinArch = x86
+      PlatLib = Lib\winv6.3\um\x86
+   endif
+
+   PATH := $(PATH):$(shell IFS=$$'\n'; cygpath "$(VS120COMNTOOLS)../IDE")
+   INCLUDE := $(shell IFS=$$'\n'; cygpath -w "$(VS120COMNTOOLS)../../VC/include")
+
+   WindowsSdkDir ?= $(shell reg query "HKLM\SOFTWARE\Microsoft\Windows Kits\Installed Roots" -v "KitsRoot81" | grep -o '[A-Z]:\\.*')
+   WindowsSdkDir := $(WindowsSdkDir:\=)
+
+   ifeq ($(HAVE_DIRECTX), 1)
+      PLATCFLAGS += -DHAVE_DINPUT -DHAVE_DSOUND -DHAVE_D3D -DHAVE_D3D9 -DHAVE_XAUDIO -DHAVE_XINPUT
+      DXSDK_DIR := $(DXSDK_DIR:\=)
+      export INCLUDE := $(INCLUDE);$(WindowsSdkDir)\Include\um;$(WindowsSdkDir)\Include\shared;$(DXSDK_DIR)\Include;libretro-common\include;libretro-common\include\compat\msvc;gfx\include
+      export LIB := $(LIB);$(WindowsSdkDir)\$(PlatLib);$(DXSDK_DIR)\Lib\$(WinArch)
+   else
+      export INCLUDE := $(INCLUDE);$(WindowsSdkDir)\Include\um;$(WindowsSdkDir)\Include\shared;libretro-common\include;libretro-common\include\compat\msvc;gfx\include
+      export LIB := $(LIB);$(WindowsSdkDir)\$(PlatLib)
+   endif
 endif
 
-
-CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(PLATCFLAGS) $(INCLUDE)
+ifneq (,$(findstring msvc,$(platform)))
+   CFLAGS += -W2 $(MACHDEP) $(PLATCFLAGS)
+else
+   CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(PLATCFLAGS) $(INCLUDE)
+   INCLUDE += -I./libretro-common/include
+endif
 
 OBJ = griffin/griffin.o  $(PLATOBJS)
 
-INCLUDE += -I./libretro-common/include
+ifeq ($(HAVE_GRIFFIN_CPP), 1)
+   OBJ += griffin/griffin_cpp.o
+endif
 
 ifeq ($(HAVE_LOGGER), 1)
-CFLAGS		+= -DHAVE_LOGGER
-CFLAGS      += -DPC_DEVELOPMENT_IP_ADDRESS=\"$(PC_DEVELOPMENT_IP_ADDRESS)\" -DPC_DEVELOPMENT_UDP_PORT=$(PC_DEVELOPMENT_UDP_PORT)
+   CFLAGS      += -DHAVE_LOGGER
+   CFLAGS      += -DPC_DEVELOPMENT_IP_ADDRESS=\"$(PC_DEVELOPMENT_IP_ADDRESS)\" -DPC_DEVELOPMENT_UDP_PORT=$(PC_DEVELOPMENT_UDP_PORT)
 endif
 
 ifeq ($(platform), wii)
-CFLAGS      += -DHAVE_SOCKET_LEGACY
+   CFLAGS      += -DHAVE_SOCKET_LEGACY
 endif
 
 ifeq ($(platform), vita)
-CFLAGS      += -DHAVE_SOCKET_LEGACY
+   CFLAGS      += -DHAVE_SOCKET_LEGACY
 endif
 
 ifeq ($(HAVE_KERNEL_PRX), 1)
-CFLAGS      += -DHAVE_KERNEL_PRX
+   CFLAGS      += -DHAVE_KERNEL_PRX
 endif
 
 ifeq ($(HAVE_WIIUSB_HID), 1)
-CFLAGS		+= -DHAVE_WIIUSB_HID -DHAVE_HID
+   CFLAGS      += -DHAVE_WIIUSB_HID -DHAVE_HID
 endif
 
 ifeq ($(HAVE_VITA2D), 1)
-CFLAGS		+= -DHAVE_VITA2D
+   CFLAGS      += -DHAVE_VITA2D
 endif
 
 ifeq ($(HAVE_LIBRETRODB), 1)
-CFLAGS		+= -DHAVE_LIBRETRODB
+   CFLAGS      += -DHAVE_LIBRETRODB
 endif
 
 ifeq ($(BIG_STACK),1)
-CFLAGS		+= -DBIG_STACK
+   CFLAGS      += -DBIG_STACK
 endif
 
 ifeq ($(HAVE_RJPEG), 1)
-CFLAGS      += -DHAVE_RJPEG
+   CFLAGS      += -DHAVE_RJPEG
 endif
 
 ifeq ($(HAVE_FILE_LOGGER), 1)
-CFLAGS		+= -DHAVE_FILE_LOGGER
+   CFLAGS      += -DHAVE_FILE_LOGGER
 endif
 
 ifeq ($(HAVE_RARCH_EXEC), 1)
-CFLAGS      += -DHAVE_RARCH_EXEC
+   CFLAGS      += -DHAVE_RARCH_EXEC
 endif
 
 ifeq ($(HAVE_ZLIB), 1)
-CFLAGS      += -DHAVE_ZLIB
+   CFLAGS      += -DHAVE_ZLIB
 endif
 
 ifeq ($(WANT_ZLIB), 1)
-CFLAGS		+= -DWANT_ZLIB
+   CFLAGS      += -DWANT_ZLIB
 endif
 
 ifeq ($(HAVE_RPNG), 1)
-CFLAGS      += -DHAVE_RPNG
+   CFLAGS      += -DHAVE_RPNG
 endif
 
 ifeq ($(HAVE_RBMP), 1)
-CFLAGS		+= -DHAVE_RBMP
+   CFLAGS      += -DHAVE_RBMP
 endif
 
 ifeq ($(HAVE_RTGA), 1)
-CFLAGS		+=	-DHAVE_RTGA
+   CFLAGS      += -DHAVE_RTGA
 endif
 
 ifeq ($(HAVE_IMAGEVIEWER), 1)
-CFLAGS		+=	-DHAVE_IMAGEVIEWER
+   CFLAGS      += -DHAVE_IMAGEVIEWER
 endif
 
 ifeq ($(HAVE_7ZIP), 1)
-CFLAGS      += -DHAVE_7ZIP
+   CFLAGS      += -DHAVE_7ZIP
 endif
 
 ifeq ($(HAVE_OVERLAY), 1)
-CFLAGS      += -DHAVE_OVERLAY
+   CFLAGS      += -DHAVE_OVERLAY
 endif
 
 ifeq ($(HAVE_NETWORKING), 1)
-CFLAGS      += -DHAVE_NETWORKING
+   CFLAGS      += -DHAVE_NETWORKING
 endif
 
 ifeq ($(RARCH_CONSOLE), 1)
-CFLAGS += -DRARCH_CONSOLE
+   CFLAGS += -DRARCH_CONSOLE
 endif
 
 ifeq ($(RARCH_MOBILE), 1)
-CFLAGS += -DRARCH_MOBILE
+   CFLAGS += -DRARCH_MOBILE
 endif
 
-CFLAGS += -std=gnu99 -DSINC_LOWER_QUALITY -DHAVE_RGUI -DHAVE_MENU -DHAVE_GRIFFIN=1 -Wno-char-subscripts  -DRARCH_INTERNAL
+ifneq (,$(findstring msvc,$(platform)))
+   CFLAGS += -DHAVE_RGUI -DHAVE_MENU -DHAVE_GRIFFIN=1 -DRARCH_INTERNAL
+else
+   CFLAGS += -std=gnu99 -DSINC_LOWER_QUALITY -DHAVE_RGUI -DHAVE_MENU -DHAVE_GRIFFIN=1 -Wno-char-subscripts -DRARCH_INTERNAL
+endif
 
 ifeq ($(HAVE_MATERIALUI), 1)
-CFLAGS += -DHAVE_MATERIALUI
+   CFLAGS += -DHAVE_MATERIALUI
 endif
 
 ifeq ($(HAVE_XMB), 1)
-CFLAGS += -DHAVE_XMB
+   CFLAGS += -DHAVE_XMB
 endif
 
 ifeq ($(HAVE_STB_FONT), 1)
-CFLAGS += -DHAVE_STB_FONT
+   CFLAGS += -DHAVE_STB_FONT
 endif
 
 ifeq ($(HAVE_LANGEXTRA), 1)
-CFLAGS += -DHAVE_LANGEXTRA
+   CFLAGS += -DHAVE_LANGEXTRA
 endif
 
 ifeq ($(HAVE_FILTERS_BUILTIN), 1)
-CFLAGS += -DHAVE_FILTERS_BUILTIN
+   CFLAGS += -DHAVE_FILTERS_BUILTIN
 endif
 
 ifeq ($(HAVE_THREADS), 1)
-CFLAGS += -DHAVE_THREADS
-ifeq ($(platform), psp1)
-LIBS += -lpthread-psp
-endif
-ifeq ($(platform), vita)
-LIBS += -lpthread
-endif
+   CFLAGS += -DHAVE_THREADS
+
+   ifeq ($(platform), psp1)
+      LIBS += -lpthread-psp
+   endif
+
+   ifeq ($(platform), vita)
+      LIBS += -lpthread
+   endif
 endif
 
 ifeq ($(HAVE_RSOUND), 1)
-CFLAGS += -DHAVE_RSOUND
+   CFLAGS += -DHAVE_RSOUND
 endif
 
 ifeq ($(HAVE_GETOPT_LONG), 1)
-CFLAGS += -DHAVE_GETOPT_LONG=1
+   CFLAGS += -DHAVE_GETOPT_LONG=1
+endif
+
+ifeq ($(HAVE_FBO), 1)
+   CFLAGS += -DHAVE_FBO
+endif
+
+ifeq ($(HAVE_DYLIB), 1)
+   CFLAGS += -DHAVE_DYLIB
+endif
+
+ifeq ($(HAVE_NETWORK_CMD), 1)
+   CFLAGS += -DHAVE_NETWORK_CMD
+endif
+
+ifeq ($(HAVE_COMMAND), 1)
+   CFLAGS += -DHAVE_COMMAND
+endif
+
+ifeq ($(HAVE_STDIN_CMD), 1)
+   CFLAGS += -DHAVE_STDIN_CMD
+endif
+
+ifeq ($(HAVE_DYNAMIC), 1)
+   CFLAGS += -DHAVE_DYNAMIC
 endif
 
 ifeq ($(DEBUG), 1)
-   CFLAGS += -O0 -g -DDEBUG
+   ifneq (,$(findstring msvc,$(platform)))
+      ifeq ($(platform), windows_msvc2003_x86)
+         CFLAGS += -Wp64
+      endif
+
+      CFLAGS += -Od -Zi -D_DEBUG -MTd -TP
+   else
+      CFLAGS += -O0 -g -DDEBUG
+   endif
 else ifeq ($(platform), psp1)
    CFLAGS += -O2
 else ifeq ($(platform), vita)
    CFLAGS += -O3
+else ifneq (,$(findstring msvc,$(platform)))
+   ifeq ($(platform), windows_msvc2003_x86)
+      CFLAGS += -Wp64
+   endif
+
+   CFLAGS += -O2 -DNDEBUG -MT -TP
 else
    CFLAGS += -O3
+endif
+
+ifneq (,$(findstring msvc,$(platform)))
+	OBJOUT = -Fo
+	LINKOUT = -out:
+	LINK = link.exe
+else
+	OBJOUT   = -o 
+	LINKOUT  = -o 
+	LINK = $(CXX)
 endif
 
 all: $(EXT_TARGET)
@@ -453,19 +891,22 @@ ifeq ($(platform),psp1)
 endif
 
 $(EXT_INTER_TARGET): $(OBJ)
-	$(CXX) -o $@ $(LDFLAGS) $(LIBDIRS) $(OBJ) $(PLATEXTRA) $(LIBS)
+	$(LINK) $(LINKOUT)$@ $(LDFLAGS) $(LIBDIRS) $(OBJ) $(PLATEXTRA) $(LIBS)
 
 %.o: %.c
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) -c $(OBJOUT)$@ $<
+
+%.o: %.cpp
+	$(CXX) $(CFLAGS) -c $(OBJOUT)$@ $<
 
 %.o: %.S
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) -c $(OBJOUT)$@ $<
 
 %.bmpobj: %.bmp
-	$(LD) -r -b binary -o $@ $<
+	$(LD) -r -b binary $(OBJOUT)$@ $<
 
 %.binobj: %.bin
-	$(LD) -r -b binary -o $@ $<
+	$(LD) -r -b binary $(OBJOUT)$@ $<
 
 $(APP_BOOTER_DIR)/app_booter.bin:
 	$(MAKE) -C $(APP_BOOTER_DIR)
@@ -481,32 +922,32 @@ endif
 
 shaders-checkout:
 	@if test -d $(SHADER_CG_DIR); then \
-		echo "[SHADER CHECKOUT::] Git pulling common-shaders..."; \
+      echo "[SHADER CHECKOUT::] Git pulling common-shaders..."; \
       cd $(SHADER_CG_DIR); \
-		$(GIT) pull; \
-		cd ../../../../..; \
-	else \
-	echo "[SHADER CHECKOUT::] Git cloning common-shaders first..."; \
+      $(GIT) pull; \
+      cd ../../../../..; \
+   else \
+   echo "[SHADER CHECKOUT::] Git cloning common-shaders first..."; \
       $(GIT) clone git://github.com/libretro/common-shaders.git $(SHADER_CG_DIR); \
-	fi
+   fi
 
 shaders-deploy:
 ifeq ($(platform), ps3)
 	@if test -d $(MEDIA_SHADER_DIR); then \
-		cp -r $(SHADER_CG_DIR)/* $(MEDIA_SHADER_DIR); \
-	else \
-	echo "[DEPLOY PS3::] Creating PS3 shader directory first..."; \
-		mkdir -p $(MEDIA_SHADER_DIR) || bin/true; \
-	fi
-	@echo "[DEPLOY PS3::] Copied shaders to PS3 shaders directory."
+      cp -r $(SHADER_CG_DIR)/* $(MEDIA_SHADER_DIR); \
+   else \
+   echo "[DEPLOY PS3::] Creating PS3 shader directory first..."; \
+      mkdir -p $(MEDIA_SHADER_DIR) || bin/true; \
+   fi
+   @echo "[DEPLOY PS3::] Copied shaders to PS3 shaders directory."
 else ifeq ($(platform), ps3-cobra)
 	@if test -d $(MEDIA_SHADER_DIR); then \
-		cp -r $(SHADER_CG_DIR)/* $(MEDIA_SHADER_DIR); \
-	else \
-	echo "[DEPLOY PS3::] Creating PS3 shader directory first..."; \
-		mkdir -p $(MEDIA_SHADER_DIR) || bin/true; \
-	fi
-	@echo "[DEPLOY PS3::] Copied shaders to PS3 shaders directory."
+      cp -r $(SHADER_CG_DIR)/* $(MEDIA_SHADER_DIR); \
+   else \
+   echo "[DEPLOY PS3::] Creating PS3 shader directory first..."; \
+      mkdir -p $(MEDIA_SHADER_DIR) || bin/true; \
+   fi
+   @echo "[DEPLOY PS3::] Copied shaders to PS3 shaders directory."
 endif
 
 shaders-convert-glsl:
@@ -514,14 +955,14 @@ shaders-convert-glsl:
 
 overlays-checkout:
 	@if test -d $(OVERLAY_DIR); then \
-		echo "[OVERLAY CHECKOUT::] Git pulling common-overlays..."; \
+      echo "[OVERLAY CHECKOUT::] Git pulling common-overlays..."; \
       cd $(OVERLAY_DIR); \
-		$(GIT) pull; \
-		cd ../../../../..; \
-	else \
-	echo "[OVERLAY CHECKOUT::] Git cloning common-overlays first..."; \
+      $(GIT) pull; \
+      cd ../../../../..; \
+   else \
+   echo "[OVERLAY CHECKOUT::] Git cloning common-overlays first..."; \
       $(GIT) clone git://github.com/libretro/common-overlays.git $(OVERLAY_DIR); \
-	fi
+   fi
 
 
 clean:
@@ -533,3 +974,6 @@ ifeq ($(platform), wii)
 endif
 
 .PHONY: clean
+
+print-%:
+	@echo '$*=$($*)'

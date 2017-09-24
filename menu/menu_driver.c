@@ -175,7 +175,7 @@ static void *menu_userdata                      = NULL;
 
 /* Quick jumping indices with L/R.
  * Rebuilt when parsing directory. */
-static size_t scroll_index_list[SCROLL_INDEX_SIZE];
+static size_t   scroll_index_list[SCROLL_INDEX_SIZE];
 static unsigned scroll_index_size               = 0;
 static unsigned scroll_acceleration             = 0;
 static size_t menu_driver_selection_ptr         = 0;
@@ -325,7 +325,9 @@ static font_data_t *menu_display_font_main_init(
    return font_data;
 }
 
-font_data_t *menu_display_font(enum application_special_type type, float font_size,
+font_data_t *menu_display_font(
+      enum application_special_type type,
+      float font_size,
       bool is_threaded)
 {
    menu_display_ctx_font_t font_info;
@@ -333,7 +335,8 @@ font_data_t *menu_display_font(enum application_special_type type, float font_si
 
    fontpath[0] = '\0';
 
-   fill_pathname_application_special(fontpath, sizeof(fontpath), type);
+   fill_pathname_application_special(
+         fontpath, sizeof(fontpath), type);
 
    font_info.path = fontpath;
    font_info.size = font_size;
@@ -377,11 +380,13 @@ static bool menu_display_libretro_running(
 }
 
 /* Display the libretro core's framebuffer onscreen. */
-bool menu_display_libretro(bool is_idle, bool rarch_is_inited, bool rarch_is_dummy_core)
+bool menu_display_libretro(bool is_idle,
+      bool rarch_is_inited, bool rarch_is_dummy_core)
 {
    video_driver_set_texture_enable(true, false);
 
-   if (menu_display_libretro_running(rarch_is_inited, rarch_is_dummy_core))
+   if (menu_display_libretro_running(
+            rarch_is_inited, rarch_is_dummy_core))
    {
       if (!input_driver_is_libretro_input_blocked())
          input_driver_set_libretro_input_blocked();
@@ -393,7 +398,8 @@ bool menu_display_libretro(bool is_idle, bool rarch_is_inited, bool rarch_is_dum
    }
 
    if (is_idle)
-      return true; /* Maybe return false here for indication of idleness? */
+      return true; /* Maybe return false here 
+                      for indication of idleness? */
    return video_driver_cached_frame();
 }
 
@@ -1192,10 +1198,12 @@ void menu_display_snow(int width, int height)
 
       if (p->alive)
       {
-         int16_t mouse_x  = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
+         int16_t mouse_x  = menu_input_mouse_state(
+               MENU_MOUSE_X_AXIS);
 
          p->y            += p->yspeed;
-         p->x            += menu_display_scalef(mouse_x, 0, width, -0.3, 0.3);
+         p->x            += menu_display_scalef(
+               mouse_x, 0, width, -0.3, 0.3);
          p->x            += p->xspeed;
 
          p->alive         = p->y >= 0 && p->y < height
@@ -1228,7 +1236,8 @@ void menu_display_snow(int width, int height)
       if (!p->alive)
          continue;
 
-      alpha = menu_display_randf(0, 100) > 90 ? p->alpha/2 : p->alpha;
+      alpha = menu_display_randf(0, 100) > 90 ? 
+         p->alpha/2 : p->alpha;
 
       for (j = 0; j < 16; j++)
       {
@@ -1255,8 +1264,9 @@ void menu_display_draw_text(
    struct font_params params;
 
    /* Don't draw outside of the screen */
-   if (x < -64 || x > width + 64
-         || y < -64 || y > height + 64)
+   if (     (x < -64 || x > width  + 64)
+         || (y < -64 || y > height + 64)
+      )
       return;
 
    params.x           = x / width;
@@ -1284,9 +1294,10 @@ void menu_display_reset_textures_list(
       uintptr_t *item, enum texture_filter_type filter_type)
 {
    struct texture_image ti;
-   char path[PATH_MAX_LENGTH];
+   char *texpath               = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   size_t texpath_size         = PATH_MAX_LENGTH * sizeof(char);
 
-   path[0]                     = '\0';
+   texpath[0]                  = '\0';
 
    ti.width                    = 0;
    ti.height                   = 0;
@@ -1294,17 +1305,23 @@ void menu_display_reset_textures_list(
    ti.supports_rgba            = video_driver_supports_rgba();
 
    if (!string_is_empty(texture_path))
-      fill_pathname_join(path, iconpath, texture_path, sizeof(path));
+      fill_pathname_join(texpath, iconpath, texture_path, texpath_size);
 
-   if (string_is_empty(path) || !path_file_exists(path))
-      return;
+   if (string_is_empty(texpath) || !path_file_exists(texpath))
+      goto error;
 
-   if (!image_texture_load(&ti, path))
-      return;
+   if (!image_texture_load(&ti, texpath))
+      goto error;
 
    video_driver_texture_load(&ti,
          filter_type, item);
    image_texture_free(&ti);
+
+   free(texpath);
+   return;
+
+error:
+   free(texpath);
 }
 
 bool menu_driver_is_binding_state(void)
@@ -1698,24 +1715,20 @@ static bool menu_driver_init_internal(bool video_is_threaded)
       menu_driver_ctx->init(&menu_userdata, video_is_threaded);
 
    if (!menu_driver_data || !menu_init(menu_driver_data))
-   {
-      retroarch_fail(1, "init_menu()");
-      return false;
-   }
+      goto error;
 
    strlcpy(settings->arrays.menu_driver, menu_driver_ctx->ident,
          sizeof(settings->arrays.menu_driver));
 
    if (menu_driver_ctx->lists_init)
-   {
       if (!menu_driver_ctx->lists_init(menu_driver_data))
-      {
-         retroarch_fail(1, "init_menu()");
-         return false;
-      }
-   }
+         goto error;
 
    return true;
+
+error:
+   retroarch_fail(1, "init_menu()");
+   return false;
 }
 
 static bool menu_driver_context_reset(bool video_is_threaded)
@@ -2302,14 +2315,14 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case MENU_NAVIGATION_CTL_ADD_SCROLL_INDEX:
          {
-            size_t *sel      = (size_t*)data;
+            size_t *sel        = (size_t*)data;
             if (!sel)
                return false;
 
-            if ((scroll_index_size + 1) >= SCROLL_INDEX_SIZE)
-               scroll_index_list[scroll_index_size]   = *sel;
-            else
-               scroll_index_list[scroll_index_size++] = *sel;
+            scroll_index_list[scroll_index_size]   = *sel;
+
+            if (!((scroll_index_size + 1) >= SCROLL_INDEX_SIZE))
+               scroll_index_size++;
          }
          break;
       case MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL:

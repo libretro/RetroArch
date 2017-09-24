@@ -132,12 +132,6 @@ static void gdi_render_msg(
 
    newY = height - (y * height * scale);
 
-   uint64_t frame_count = 0;
-   bool is_alive = false;
-   bool is_focused = false;
-
-   video_driver_get_status(&frame_count, &is_alive, &is_focused);
-
    font->gdi->bmp_old = (HBITMAP)SelectObject(font->gdi->memDC, font->gdi->bmp);
    SetBkMode(font->gdi->memDC, TRANSPARENT);
    SetTextColor(font->gdi->memDC, RGB(255,255,255));

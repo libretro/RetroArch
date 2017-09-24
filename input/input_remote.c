@@ -169,18 +169,18 @@ void input_remote_free(input_remote_t *handle, unsigned max_users)
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
 static void input_remote_parse_packet(struct remote_message *msg, unsigned user)
 {
-   input_remote_state_t *ol_state  = input_remote_get_state_ptr();
+   input_remote_state_t *input_state  = input_remote_get_state_ptr();
 
    /* Parse message */
    switch (msg->device)
    {
       case RETRO_DEVICE_JOYPAD:
-         ol_state->buttons[user] &= ~(1 << msg->id);
+         input_state->buttons[user] &= ~(1 << msg->id);
          if (msg->state)
-            ol_state->buttons[user] |= 1 << msg->id;
+            input_state->buttons[user] |= 1 << msg->id;
          break;
       case RETRO_DEVICE_ANALOG:
-         ol_state->analog[msg->index * 2 + msg->id][user] = msg->state;
+         input_state->analog[msg->index * 2 + msg->id][user] = msg->state;
          break;
    }
 }
@@ -202,17 +202,17 @@ void input_remote_state(
       case RETRO_DEVICE_ANALOG:
          {
             unsigned base = 0;
-            input_remote_state_t *ol_state  = input_remote_get_state_ptr();
+            input_remote_state_t *input_state  = input_remote_get_state_ptr();
 
-            if (!ol_state)
+            if (!input_state)
                return;
 
             if (idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
                base = 2;
             if (id == RETRO_DEVICE_ID_ANALOG_Y)
                base += 1;
-            if (ol_state && ol_state->analog[base][port])
-               *ret = ol_state->analog[base][port];
+            if (input_state && input_state->analog[base][port])
+               *ret = input_state->analog[base][port];
          }
          break;
    }
@@ -220,19 +220,19 @@ void input_remote_state(
 
 bool input_remote_key_pressed(int key, unsigned port)
 {
-   input_remote_state_t *ol_state  = input_remote_get_state_ptr();
+   input_remote_state_t *input_state  = input_remote_get_state_ptr();
 
-   if (!ol_state)
+   if (!input_state)
       return false;
 
-   return (ol_state->buttons[port] & (UINT64_C(1) << key));
+   return (input_state->buttons[port] & (UINT64_C(1) << key));
 }
 
 void input_remote_poll(input_remote_t *handle, unsigned max_users)
 {
    unsigned user;
    settings_t *settings            = config_get_ptr();
-   input_remote_state_t *ol_state  = input_remote_get_state_ptr();
+   input_remote_state_t *input_state  = input_remote_get_state_ptr();
    
    for(user = 0; user < max_users; user++)
    {
@@ -257,11 +257,11 @@ void input_remote_poll(input_remote_t *handle, unsigned max_users)
          else if ((ret != -1) || ((errno != EAGAIN) && (errno != ENOENT)))
 #endif
          {
-            ol_state->buttons[user] = 0;
-            ol_state->analog[0][user] = 0;
-            ol_state->analog[1][user] = 0;
-            ol_state->analog[2][user] = 0;
-            ol_state->analog[3][user] = 0;
+            input_state->buttons[user] = 0;
+            input_state->analog[0][user] = 0;
+            input_state->analog[1][user] = 0;
+            input_state->analog[2][user] = 0;
+            input_state->analog[3][user] = 0;
          }
       }
    }

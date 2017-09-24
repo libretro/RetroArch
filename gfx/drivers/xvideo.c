@@ -421,6 +421,7 @@ static void *xv_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
    unsigned i;
+   int ret;
    XWindowAttributes target;
    char buf[128]                          = {0};
    char title[128]                        = {0};
@@ -445,6 +446,13 @@ static void *xv_init(const video_info_t *video,
    XInitThreads();
 
    g_x11_dpy = XOpenDisplay(NULL);
+
+   if (g_x11_dpy == NULL)
+   {
+      RARCH_ERR("[XVideo]: Cannot connect to the X server.\n");
+      RARCH_ERR("[XVideo]: Check DISPLAY variable and if X is running.\n");
+      goto error;
+   }
    
    av_info = video_viewport_get_system_av_info();
 
@@ -461,8 +469,26 @@ static void *xv_init(const video_info_t *video,
 
    /* Find an appropriate Xv port. */
    xv->port = 0;
-   XvQueryAdaptors(g_x11_dpy,
+   ret = XvQueryAdaptors(g_x11_dpy,
          DefaultRootWindow(g_x11_dpy), &adaptor_count, &adaptor_info);
+
+   if (ret != Success)
+   {
+      if (ret == XvBadExtension)
+         RARCH_ERR("[XVideo]: Xv extension not found.\n");
+      else if (ret == XvBadAlloc)
+         RARCH_ERR("[XVideo]: XvQueryAdaptors() failed to allocate memory.\n");
+      else
+         RARCH_ERR("[XVideo]: Unkown error in XvQueryAdaptors().\n");
+
+      goto error;
+   }
+
+   if (adaptor_count == 0)
+   {
+      RARCH_ERR("[XVideo]: XvQueryAdaptors() found 0 adaptors.\n");
+      goto error;
+   }
 
    for (i = 0; i < adaptor_count; i++)
    {

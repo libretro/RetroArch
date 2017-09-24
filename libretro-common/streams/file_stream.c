@@ -69,7 +69,7 @@ struct RFILE
 {
    unsigned hints;
    char *ext;
-   long long int size;
+   int64_t size;
 #if defined(PSP)
    SceUID fd;
 #else
@@ -111,7 +111,7 @@ const char *filestream_get_ext(RFILE *stream)
    return stream->ext;
 }
 
-long long int filestream_get_size(RFILE *stream)
+int64_t filestream_get_size(RFILE *stream)
 {
    if (!stream)
       return 0;
@@ -526,6 +526,39 @@ int filestream_putc(RFILE *stream, int c)
 #else
    /* unimplemented */
    return EOF;
+#endif
+}
+
+int filestream_vprintf(RFILE *stream, const char* format, va_list args)
+{
+	static char buffer[8 * 1024];
+	int numChars = vsprintf(buffer, format, args);
+
+	if (numChars < 0)
+		return -1;
+	else if (numChars == 0)
+		return 0;
+
+	return filestream_write(stream, buffer, numChars);
+}
+
+int filestream_printf(RFILE *stream, const char* format, ...)
+{
+	va_list vl;
+   int result;
+	va_start(vl, format);
+	result = filestream_vprintf(stream, format, vl);
+	va_end(vl);
+	return result;
+}
+
+int filestream_error(RFILE *stream)
+{
+#if defined(HAVE_BUFFERED_IO)
+	return ferror(stream->fp);
+#else
+   /* stub */
+   return 0;
 #endif
 }
 

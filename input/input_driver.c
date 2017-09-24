@@ -18,8 +18,13 @@
 #include <string.h>
 #include <ctype.h>
 
+#include <compat/strl.h>
+#include <file/file_path.h>
+#include <file/config_file.h>
 #include <encodings/utf.h>
 #include <string/stdstring.h>
+
+#include <retro_assert.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -29,9 +34,15 @@
 #include "input_remote.h"
 #endif
 
+#ifdef HAVE_KEYMAPPER
+#include "input_mapper.h"
+#endif
+
 #include "input_driver.h"
-#include "input_config.h"
+#include "input_keymaps.h"
 #include "input_remapping.h"
+
+#include "../config.def.keybinds.h"
 
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
@@ -39,7 +50,9 @@
 #include "../menu/widgets/menu_input_dialog.h"
 #endif
 
+#include "../msg_hash.h"
 #include "../configuration.h"
+#include "../file_path_special.h"
 #include "../driver.h"
 #include "../retroarch.h"
 #include "../movie.h"
@@ -183,6 +196,118 @@ static hid_driver_t *hid_drivers[] = {
 };
 #endif
 
+/* Input config. */
+struct input_bind_map
+{
+   bool valid;
+
+   /* Meta binds get input as prefix, not input_playerN".
+    * 0 = libretro related.
+    * 1 = Common hotkey.
+    * 2 = Uncommon/obscure hotkey.
+    */
+   uint8_t meta;
+
+   const char *base;
+   enum msg_hash_enums desc;
+   uint8_t retro_key;
+};
+
+
+static const uint8_t buttons[] = {
+   RETRO_DEVICE_ID_JOYPAD_R,
+   RETRO_DEVICE_ID_JOYPAD_L,
+   RETRO_DEVICE_ID_JOYPAD_X,
+   RETRO_DEVICE_ID_JOYPAD_A,
+   RETRO_DEVICE_ID_JOYPAD_RIGHT,
+   RETRO_DEVICE_ID_JOYPAD_LEFT,
+   RETRO_DEVICE_ID_JOYPAD_DOWN,
+   RETRO_DEVICE_ID_JOYPAD_UP,
+   RETRO_DEVICE_ID_JOYPAD_START,
+   RETRO_DEVICE_ID_JOYPAD_SELECT,
+   RETRO_DEVICE_ID_JOYPAD_Y,
+   RETRO_DEVICE_ID_JOYPAD_B,
+};
+
+
+static uint16_t input_config_vid[MAX_USERS];
+static uint16_t input_config_pid[MAX_USERS];
+
+char input_device_names[MAX_USERS][64];
+struct retro_keybind input_config_binds[MAX_USERS][RARCH_BIND_LIST_END];
+struct retro_keybind input_autoconf_binds[MAX_USERS][RARCH_BIND_LIST_END];
+const struct retro_keybind *libretro_input_binds[MAX_USERS];
+
+#define DECLARE_BIND(x, bind, desc) { true, 0, #x, desc, bind }
+#define DECLARE_META_BIND(level, x, bind, desc) { true, level, #x, desc, bind }
+
+const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
+      DECLARE_BIND(b,         RETRO_DEVICE_ID_JOYPAD_B,      MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B),
+      DECLARE_BIND(y,         RETRO_DEVICE_ID_JOYPAD_Y,      MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y),
+      DECLARE_BIND(select,    RETRO_DEVICE_ID_JOYPAD_SELECT, MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_SELECT),
+      DECLARE_BIND(start,     RETRO_DEVICE_ID_JOYPAD_START,  MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_START),
+      DECLARE_BIND(up,        RETRO_DEVICE_ID_JOYPAD_UP,     MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_UP),
+      DECLARE_BIND(down,      RETRO_DEVICE_ID_JOYPAD_DOWN,   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_DOWN),
+      DECLARE_BIND(left,      RETRO_DEVICE_ID_JOYPAD_LEFT,   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_LEFT),
+      DECLARE_BIND(right,     RETRO_DEVICE_ID_JOYPAD_RIGHT,  MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_RIGHT),
+      DECLARE_BIND(a,         RETRO_DEVICE_ID_JOYPAD_A,      MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A),
+      DECLARE_BIND(x,         RETRO_DEVICE_ID_JOYPAD_X,      MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_X),
+      DECLARE_BIND(l,         RETRO_DEVICE_ID_JOYPAD_L,      MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L),
+      DECLARE_BIND(r,         RETRO_DEVICE_ID_JOYPAD_R,      MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R),
+      DECLARE_BIND(l2,        RETRO_DEVICE_ID_JOYPAD_L2,     MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L2),
+      DECLARE_BIND(r2,        RETRO_DEVICE_ID_JOYPAD_R2,     MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R2),
+      DECLARE_BIND(l3,        RETRO_DEVICE_ID_JOYPAD_L3,     MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L3),
+      DECLARE_BIND(r3,        RETRO_DEVICE_ID_JOYPAD_R3,     MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R3),
+      DECLARE_BIND(l_x_plus,  RARCH_ANALOG_LEFT_X_PLUS,      MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS),
+      DECLARE_BIND(l_x_minus, RARCH_ANALOG_LEFT_X_MINUS,     MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_MINUS),
+      DECLARE_BIND(l_y_plus,  RARCH_ANALOG_LEFT_Y_PLUS,      MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_PLUS),
+      DECLARE_BIND(l_y_minus, RARCH_ANALOG_LEFT_Y_MINUS,     MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_MINUS),
+      DECLARE_BIND(r_x_plus,  RARCH_ANALOG_RIGHT_X_PLUS,     MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_PLUS),
+      DECLARE_BIND(r_x_minus, RARCH_ANALOG_RIGHT_X_MINUS,    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_MINUS),
+      DECLARE_BIND(r_y_plus,  RARCH_ANALOG_RIGHT_Y_PLUS,     MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS),
+      DECLARE_BIND(r_y_minus, RARCH_ANALOG_RIGHT_Y_MINUS,    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS),
+
+      DECLARE_BIND(turbo,     RARCH_TURBO_ENABLE,            MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE),
+
+      DECLARE_META_BIND(1, toggle_fast_forward,   RARCH_FAST_FORWARD_KEY,      MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_KEY),
+      DECLARE_META_BIND(2, hold_fast_forward,     RARCH_FAST_FORWARD_HOLD_KEY, MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_HOLD_KEY),
+      DECLARE_META_BIND(1, load_state,            RARCH_LOAD_STATE_KEY,        MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY),
+      DECLARE_META_BIND(1, save_state,            RARCH_SAVE_STATE_KEY,        MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY),
+      DECLARE_META_BIND(2, toggle_fullscreen,     RARCH_FULLSCREEN_TOGGLE_KEY, MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY),
+      DECLARE_META_BIND(2, exit_emulator,         RARCH_QUIT_KEY,              MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY),
+      DECLARE_META_BIND(2, state_slot_increase,   RARCH_STATE_SLOT_PLUS,       MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS),
+      DECLARE_META_BIND(2, state_slot_decrease,   RARCH_STATE_SLOT_MINUS,      MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS),
+      DECLARE_META_BIND(1, rewind,                RARCH_REWIND,                MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND),
+      DECLARE_META_BIND(2, movie_record_toggle,   RARCH_MOVIE_RECORD_TOGGLE,   MENU_ENUM_LABEL_VALUE_INPUT_META_MOVIE_RECORD_TOGGLE),
+      DECLARE_META_BIND(2, pause_toggle,          RARCH_PAUSE_TOGGLE,          MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE),
+      DECLARE_META_BIND(2, frame_advance,         RARCH_FRAMEADVANCE,          MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE),
+      DECLARE_META_BIND(2, reset,                 RARCH_RESET,                 MENU_ENUM_LABEL_VALUE_INPUT_META_RESET),
+      DECLARE_META_BIND(2, shader_next,           RARCH_SHADER_NEXT,           MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT),
+      DECLARE_META_BIND(2, shader_prev,           RARCH_SHADER_PREV,           MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_PREV),
+      DECLARE_META_BIND(2, cheat_index_plus,      RARCH_CHEAT_INDEX_PLUS,      MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_PLUS),
+      DECLARE_META_BIND(2, cheat_index_minus,     RARCH_CHEAT_INDEX_MINUS,     MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_MINUS),
+      DECLARE_META_BIND(2, cheat_toggle,          RARCH_CHEAT_TOGGLE,          MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_TOGGLE),
+      DECLARE_META_BIND(2, screenshot,            RARCH_SCREENSHOT,            MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT),
+      DECLARE_META_BIND(2, audio_mute,            RARCH_MUTE,                  MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE),
+      DECLARE_META_BIND(2, osk_toggle,            RARCH_OSK,                   MENU_ENUM_LABEL_VALUE_INPUT_META_OSK),
+      DECLARE_META_BIND(2, netplay_flip_players_1_2, RARCH_NETPLAY_FLIP,       MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FLIP),
+      DECLARE_META_BIND(2, netplay_game_watch,    RARCH_NETPLAY_GAME_WATCH,    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH),
+      DECLARE_META_BIND(2, slowmotion,            RARCH_SLOWMOTION,            MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION),
+      DECLARE_META_BIND(2, enable_hotkey,         RARCH_ENABLE_HOTKEY,         MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY),
+      DECLARE_META_BIND(2, volume_up,             RARCH_VOLUME_UP,             MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP),
+      DECLARE_META_BIND(2, volume_down,           RARCH_VOLUME_DOWN,           MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_DOWN),
+      DECLARE_META_BIND(2, overlay_next,          RARCH_OVERLAY_NEXT,          MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT),
+      DECLARE_META_BIND(2, disk_eject_toggle,     RARCH_DISK_EJECT_TOGGLE,     MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_EJECT_TOGGLE),
+      DECLARE_META_BIND(2, disk_next,             RARCH_DISK_NEXT,             MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_NEXT),
+      DECLARE_META_BIND(2, disk_prev,             RARCH_DISK_PREV,             MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV),
+      DECLARE_META_BIND(2, grab_mouse_toggle,     RARCH_GRAB_MOUSE_TOGGLE,     MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE),
+      DECLARE_META_BIND(2, game_focus_toggle,     RARCH_GAME_FOCUS_TOGGLE,     MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE),
+#ifdef HAVE_MENU
+      DECLARE_META_BIND(1, menu_toggle,           RARCH_MENU_TOGGLE,           MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE),
+#endif
+};
+
+
 typedef struct turbo_buttons turbo_buttons_t;
 
 /* Turbo support. */
@@ -225,6 +350,9 @@ static command_t *input_driver_command            = NULL;
 #ifdef HAVE_NETWORKGAMEPAD
 static input_remote_t *input_driver_remote        = NULL;
 #endif
+#ifdef HAVE_KEYMAPPER
+static input_mapper_t *input_driver_mapper        = NULL;
+#endif
 const input_driver_t *current_input               = NULL;
 void *current_input_data                          = NULL;
 static bool input_driver_block_hotkey             = false;
@@ -238,6 +366,27 @@ static unsigned input_driver_max_users            = 0;
 #ifdef HAVE_HID
 static const void *hid_data                       = NULL;
 #endif
+
+/**
+ * check_input_driver_block_hotkey:
+ *
+ * Checks if 'hotkey enable' key is pressed.
+ *
+ * If we haven't bound anything to this,
+ * always allow hotkeys.
+
+ * If we hold ENABLE_HOTKEY button, block all libretro input to allow
+ * hotkeys to be bound to same keys as RetroPad.
+ **/
+#define check_input_driver_block_hotkey(normal_bind, autoconf_bind) \
+( \
+         (((normal_bind)->key      != RETROK_UNKNOWN) \
+      || ((normal_bind)->joykey    != NO_BTN) \
+      || ((normal_bind)->joyaxis   != AXIS_NONE) \
+      || ((autoconf_bind)->key     != RETROK_UNKNOWN ) \
+      || ((autoconf_bind)->joykey  != NO_BTN) \
+      || ((autoconf_bind)->joyaxis != AXIS_NONE)) \
+)
 
 /**
  * input_driver_find_handle:
@@ -385,7 +534,7 @@ void input_poll(void)
 {
    size_t i;
    settings_t *settings           = config_get_ptr();
-   unsigned max_users             = input_driver_max_users;
+   uint8_t max_users              = (uint8_t)input_driver_max_users;
    
    current_input->poll(current_input_data);
 
@@ -429,6 +578,11 @@ void input_poll(void)
 #ifdef HAVE_NETWORKGAMEPAD
    if (input_driver_remote)
       input_remote_poll(input_driver_remote, max_users);
+#endif
+
+#ifdef HAVE_KEYMAPPER
+   if (input_driver_mapper)
+      input_mapper_poll(input_driver_mapper);
 #endif
 }
 
@@ -513,6 +667,11 @@ int16_t input_state(unsigned port, unsigned device,
          input_remote_state(&res, port, device, idx, id);
 #endif
 
+#ifdef HAVE_KEYMAPPER
+      if (input_driver_mapper)
+         input_mapper_state(&res, port, device, idx, id);
+#endif
+
       /* Don't allow turbo for D-pad. */
       if (device == RETRO_DEVICE_JOYPAD && (id < RETRO_DEVICE_ID_JOYPAD_UP ||
                id > RETRO_DEVICE_ID_JOYPAD_RIGHT))
@@ -547,42 +706,6 @@ int16_t input_state(unsigned port, unsigned device,
 }
 
 /**
- * check_input_driver_block_hotkey:
- *
- * Checks if 'hotkey enable' key is pressed.
- *
- * If we haven't bound anything to this,
- * always allow hotkeys.
-
- * If we hold ENABLE_HOTKEY button, block all libretro input to allow
- * hotkeys to be bound to same keys as RetroPad.
- **/
-#define check_input_driver_block_hotkey(normal_bind, autoconf_bind) \
-( \
-         (((normal_bind)->key      != RETROK_UNKNOWN) \
-      || ((normal_bind)->joykey    != NO_BTN) \
-      || ((normal_bind)->joyaxis   != AXIS_NONE) \
-      || ((autoconf_bind)->key     != RETROK_UNKNOWN ) \
-      || ((autoconf_bind)->joykey  != NO_BTN) \
-      || ((autoconf_bind)->joyaxis != AXIS_NONE)) \
-)
-
-static const unsigned buttons[] = {
-   RETRO_DEVICE_ID_JOYPAD_R,
-   RETRO_DEVICE_ID_JOYPAD_L,
-   RETRO_DEVICE_ID_JOYPAD_X,
-   RETRO_DEVICE_ID_JOYPAD_A,
-   RETRO_DEVICE_ID_JOYPAD_RIGHT,
-   RETRO_DEVICE_ID_JOYPAD_LEFT,
-   RETRO_DEVICE_ID_JOYPAD_DOWN,
-   RETRO_DEVICE_ID_JOYPAD_UP,
-   RETRO_DEVICE_ID_JOYPAD_START,
-   RETRO_DEVICE_ID_JOYPAD_SELECT,
-   RETRO_DEVICE_ID_JOYPAD_Y,
-   RETRO_DEVICE_ID_JOYPAD_B,
-};
-
-/**
  * state_tracker_update_input:
  *
  * Updates 16-bit input in same format as libretro API itself.
@@ -592,7 +715,7 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
    unsigned i;
    const struct retro_keybind *binds[MAX_USERS];
    settings_t *settings = config_get_ptr();
-   unsigned max_users   = input_driver_max_users;
+   uint8_t max_users    = (uint8_t)input_driver_max_users;
 
    for (i = 0; i < max_users; i++)
    {
@@ -662,16 +785,15 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
  */
 uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
 {
-   unsigned i;
+   unsigned i, port;
    rarch_joypad_info_t joypad_info;
    uint64_t             ret                     = 0;
    const struct retro_keybind *binds[MAX_USERS] = {NULL};
    settings_t     *settings                     = (settings_t*)data;
    const struct retro_keybind *binds_norm       = NULL;
    const struct retro_keybind *binds_auto       = NULL;
-   unsigned max_users                           = input_driver_max_users;
-   unsigned port;
-   unsigned port_max                  = 
+   uint8_t max_users                            = (uint8_t)input_driver_max_users;
+   uint8_t port_max                             = 
             settings->bools.input_all_users_control_menu 
             ? max_users : 1;
 
@@ -1222,6 +1344,15 @@ void input_driver_deinit_remote(void)
 #endif
 }
 
+void input_driver_deinit_mapper(void)
+{
+#ifdef HAVE_KEYMAPPER
+   if (input_driver_mapper)
+      input_mapper_free(input_driver_mapper);
+   input_driver_mapper = NULL;
+#endif
+}
+
 bool input_driver_init_remote(void)
 {
 #ifdef HAVE_NETWORKGAMEPAD
@@ -1241,6 +1372,26 @@ bool input_driver_init_remote(void)
 #endif
    return false;
 }
+
+bool input_driver_init_mapper(void)
+{
+#ifdef HAVE_KEYMAPPER
+   settings_t *settings = config_get_ptr();
+
+   if (!settings->bools.keymapper_enable)
+      return false;
+
+   input_driver_mapper = input_mapper_new(
+         settings->uints.keymapper_port);
+
+   if (input_driver_mapper)
+      return true;
+
+   RARCH_ERR("Failed to initialize input mapper.\n");
+#endif
+   return false;
+}
+
 
 bool input_driver_grab_mouse(void)
 {
@@ -1920,7 +2071,6 @@ void input_keyboard_event(bool down, unsigned code,
 
 bool input_keyboard_ctl(enum rarch_input_keyboard_ctl_state state, void *data)
 {
-
    switch (state)
    {
       case RARCH_INPUT_KEYBOARD_CTL_LINE_FREE:
@@ -1964,4 +2114,466 @@ bool input_keyboard_ctl(enum rarch_input_keyboard_ctl_state state, void *data)
    }
 
    return true;
+}
+
+static const void *input_config_bind_map_get(unsigned i)
+{
+   return (const struct input_bind_map*)&input_config_bind_map[i];
+}
+
+bool input_config_bind_map_get_valid(unsigned i)
+{
+   const struct input_bind_map *keybind = 
+      (const struct input_bind_map*)input_config_bind_map_get(i);
+   if (!keybind)
+      return false;
+   return keybind->valid;
+}
+
+unsigned input_config_bind_map_get_meta(unsigned i)
+{
+   const struct input_bind_map *keybind = 
+      (const struct input_bind_map*)input_config_bind_map_get(i);
+   if (!keybind)
+      return 0;
+   return keybind->meta;
+}
+
+const char *input_config_bind_map_get_base(unsigned i)
+{
+   const struct input_bind_map *keybind = 
+      (const struct input_bind_map*)input_config_bind_map_get(i);
+   if (!keybind)
+      return NULL;
+   return keybind->base;
+}
+
+const char *input_config_bind_map_get_desc(unsigned i)
+{
+   const struct input_bind_map *keybind = 
+      (const struct input_bind_map*)input_config_bind_map_get(i);
+   if (!keybind)
+      return NULL;
+   return msg_hash_to_str(keybind->desc);
+}
+
+void input_config_parse_key(void *data,
+      const char *prefix, const char *btn,
+      struct retro_keybind *bind)
+{
+   char tmp[64];
+   char key[64];
+   config_file_t *conf = (config_file_t*)data;
+
+   tmp[0] = key[0] = '\0';
+
+   fill_pathname_join_delim(key, prefix, btn, '_', sizeof(key));
+
+   if (config_get_array(conf, key, tmp, sizeof(tmp)))
+      bind->key = input_config_translate_str_to_rk(tmp);
+}
+
+const char *input_config_get_prefix(unsigned user, bool meta)
+{
+   static const char *bind_user_prefix[MAX_USERS] = {
+      "input_player1",
+      "input_player2",
+      "input_player3",
+      "input_player4",
+      "input_player5",
+      "input_player6",
+      "input_player7",
+      "input_player8",
+      "input_player9",
+      "input_player10",
+      "input_player11",
+      "input_player12",
+      "input_player13",
+      "input_player14",
+      "input_player15",
+      "input_player16",
+   };
+   const char *prefix = bind_user_prefix[user];
+
+   if (user == 0)
+      return meta ? "input" : prefix; 
+
+   if (!meta)
+      return prefix;
+
+   /* Don't bother with meta bind for anyone else than first user. */
+   return NULL;
+}
+
+static enum retro_key find_rk_bind(const char *str)
+{
+   size_t i;
+
+   for (i = 0; input_config_key_map[i].str; i++)
+   {
+      if (string_is_equal_noncase(input_config_key_map[i].str, str))
+         return input_config_key_map[i].key;
+   }
+
+   RARCH_WARN("Key name %s not found.\n", str);
+   return RETROK_UNKNOWN;
+}
+
+/**
+ * input_config_translate_str_to_rk:
+ * @str                            : String to translate to key ID.
+ *
+ * Translates tring representation to key identifier.
+ *
+ * Returns: key identifier.
+ **/
+enum retro_key input_config_translate_str_to_rk(const char *str)
+{
+   if (strlen(str) == 1 && isalpha((int)*str))
+      return (enum retro_key)(RETROK_a + (tolower((int)*str) - (int)'a'));
+   return find_rk_bind(str);
+}
+
+/**
+ * input_config_translate_str_to_bind_id:
+ * @str                            : String to translate to bind ID.
+ *
+ * Translate string representation to bind ID.
+ *
+ * Returns: Bind ID value on success, otherwise 
+ * RARCH_BIND_LIST_END on not found.
+ **/
+unsigned input_config_translate_str_to_bind_id(const char *str)
+{
+   unsigned i;
+
+   for (i = 0; input_config_bind_map[i].valid; i++)
+      if (string_is_equal(str, input_config_bind_map[i].base))
+         return i;
+
+   return RARCH_BIND_LIST_END;
+}
+
+static void parse_hat(struct retro_keybind *bind, const char *str)
+{
+   uint16_t hat_dir = 0;
+   char        *dir = NULL;
+   uint16_t     hat = strtoul(str, &dir, 0);
+
+   if (!dir)
+   {
+      RARCH_WARN("Found invalid hat in config!\n");
+      return;
+   }
+
+   if      (string_is_equal_fast(dir, "up", 2))
+      hat_dir = HAT_UP_MASK;
+   else if (string_is_equal_fast(dir, "down", 4))
+      hat_dir = HAT_DOWN_MASK;
+   else if (string_is_equal_fast(dir, "left", 4))
+      hat_dir = HAT_LEFT_MASK;
+   else if (string_is_equal_fast(dir, "right", 5))
+      hat_dir = HAT_RIGHT_MASK;
+
+   if (hat_dir)
+      bind->joykey = HAT_MAP(hat, hat_dir);
+}
+
+void input_config_parse_joy_button(void *data, const char *prefix,
+      const char *btn, struct retro_keybind *bind)
+{
+   char str[256];
+   char tmp[64];
+   char key[64];
+   char key_label[64];
+   char *tmp_a              = NULL;
+   config_file_t *conf      = (config_file_t*)data;
+
+   str[0] = tmp[0] = key[0] = key_label[0] = '\0';
+
+   fill_pathname_join_delim(str, prefix, btn,
+         '_', sizeof(str));
+   fill_pathname_join_delim(key, str,
+         "btn", '_', sizeof(key));
+   fill_pathname_join_delim(key_label, str,
+         "btn_label", '_', sizeof(key_label));
+
+   if (config_get_array(conf, key, tmp, sizeof(tmp)))
+   {
+      btn = tmp;
+      if (string_is_equal(btn, file_path_str(FILE_PATH_NUL)))
+         bind->joykey = NO_BTN;
+      else
+      {
+         if (*btn == 'h')
+         {
+            const char *str = btn + 1;
+            if (bind && str && isdigit((int)*str))
+               parse_hat(bind, str);
+         }
+         else
+            bind->joykey = strtoull(tmp, NULL, 0);
+      }
+   }
+
+   if (config_get_string(conf, key_label, &tmp_a))
+   {
+      strlcpy(bind->joykey_label, tmp_a, sizeof(bind->joykey_label));
+      free(tmp_a);
+   }
+}
+
+void input_config_parse_joy_axis(void *data, const char *prefix,
+      const char *axis, struct retro_keybind *bind)
+{
+   char str[256];
+   char       tmp[64];
+   char       key[64];
+   char key_label[64];
+   char        *tmp_a       = NULL;
+   config_file_t *conf      = (config_file_t*)data;
+
+   str[0] = tmp[0] = key[0] = key_label[0] = '\0';
+
+   fill_pathname_join_delim(str, prefix, axis,
+         '_', sizeof(str));
+   fill_pathname_join_delim(key, str,
+         "axis", '_', sizeof(key));
+   fill_pathname_join_delim(key_label, str,
+         "axis_label", '_', sizeof(key_label));
+
+   if (config_get_array(conf, key, tmp, sizeof(tmp)))
+   {
+      if (string_is_equal(tmp, file_path_str(FILE_PATH_NUL)))
+         bind->joyaxis = AXIS_NONE;
+      else if (strlen(tmp) >= 2 && (*tmp == '+' || *tmp == '-'))
+      {
+         int i_axis = (int)strtol(tmp + 1, NULL, 0);
+         if (*tmp == '+')
+            bind->joyaxis = AXIS_POS(i_axis);
+         else
+            bind->joyaxis = AXIS_NEG(i_axis);
+      }
+
+      /* Ensure that D-pad emulation doesn't screw this over. */
+      bind->orig_joyaxis = bind->joyaxis;
+   }
+
+   if (config_get_string(conf, key_label, &tmp_a))
+   {
+      strlcpy(bind->joyaxis_label, tmp_a, sizeof(bind->joyaxis_label));
+      free(tmp_a);
+   }
+}
+
+static void input_config_get_bind_string_joykey(
+      char *buf, const char *prefix,
+      const struct retro_keybind *bind, size_t size)
+{
+   settings_t *settings = config_get_ptr();
+   bool label_show      = settings->bools.input_descriptor_label_show;
+
+   if (GET_HAT_DIR(bind->joykey))
+   {
+      if (!string_is_empty(bind->joykey_label) && label_show)
+         snprintf(buf, size, "%s %s ", prefix, bind->joykey_label);
+      else
+      {
+         const char *dir = "?";
+
+         switch (GET_HAT_DIR(bind->joykey))
+         {
+            case HAT_UP_MASK:
+               dir = "up";
+               break;
+            case HAT_DOWN_MASK:
+               dir = "down";
+               break;
+            case HAT_LEFT_MASK:
+               dir = "left";
+               break;
+            case HAT_RIGHT_MASK:
+               dir = "right";
+               break;
+            default:
+               break;
+         }
+         snprintf(buf, size, "%sHat #%u %s (%s)", prefix,
+               (unsigned)GET_HAT(bind->joykey), dir,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+      }
+   }
+   else
+   {
+      if (!string_is_empty(bind->joykey_label) && label_show)
+         snprintf(buf, size, "%s%s (btn) ", prefix, bind->joykey_label);
+      else
+         snprintf(buf, size, "%s%u (%s) ", prefix, (unsigned)bind->joykey,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+   }
+}
+
+static void input_config_get_bind_string_joyaxis(char *buf, const char *prefix,
+      const struct retro_keybind *bind, size_t size)
+{
+   settings_t *settings = config_get_ptr();
+
+   if (!string_is_empty(bind->joyaxis_label) 
+         && settings->bools.input_descriptor_label_show)
+      snprintf(buf, size, "%s%s (axis) ", prefix, bind->joyaxis_label);
+   else
+   {
+      unsigned axis        = 0;
+      char dir             = '\0';
+      if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
+      {
+         dir = '-';
+         axis = AXIS_NEG_GET(bind->joyaxis);
+      }
+      else if (AXIS_POS_GET(bind->joyaxis) != AXIS_DIR_NONE)
+      {
+         dir = '+';
+         axis = AXIS_POS_GET(bind->joyaxis);
+      }
+      snprintf(buf, size, "%s%c%u (%s) ", prefix, dir, axis,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+   }
+}
+
+void input_config_get_bind_string(char *buf, const struct retro_keybind *bind,
+      const struct retro_keybind *auto_bind, size_t size)
+{
+#ifndef RARCH_CONSOLE
+   char key[64];
+   char keybuf[64];
+
+   key[0] = keybuf[0] = '\0';
+#endif
+
+   *buf = '\0';
+   if (bind->joykey != NO_BTN)
+      input_config_get_bind_string_joykey(buf, "", bind, size);
+   else if (bind->joyaxis != AXIS_NONE)
+      input_config_get_bind_string_joyaxis(buf, "", bind, size);
+   else if (auto_bind && auto_bind->joykey != NO_BTN)
+      input_config_get_bind_string_joykey(buf, "Auto: ", auto_bind, size);
+   else if (auto_bind && auto_bind->joyaxis != AXIS_NONE)
+      input_config_get_bind_string_joyaxis(buf, "Auto: ", auto_bind, size);
+
+#ifndef RARCH_CONSOLE
+   input_keymaps_translate_rk_to_str(bind->key, key, sizeof(key));
+   if (string_is_equal(key, file_path_str(FILE_PATH_NUL)))
+      *key = '\0';
+
+   snprintf(keybuf, sizeof(keybuf), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_KEY), key);
+   strlcat(buf, keybuf, size);
+#endif
+}
+
+const char *input_config_get_device_name(unsigned port)
+{
+   if (string_is_empty(input_device_names[port]))
+      return NULL;
+   return input_device_names[port];
+}
+
+void input_config_set_device_name(unsigned port, const char *name)
+{
+   if (!string_is_empty(name))
+   {
+      strlcpy(input_device_names[port],
+            name,
+            sizeof(input_device_names[port]));
+   }
+}
+
+void input_config_clear_device_name(unsigned port)
+{
+   input_device_names[port][0] = '\0';
+}
+
+unsigned *input_config_get_device_ptr(unsigned port)
+{
+   settings_t *settings = config_get_ptr();
+   return &settings->uints.input_libretro_device[port];
+}
+
+unsigned input_config_get_device(unsigned port)
+{
+   settings_t *settings = config_get_ptr();
+   return settings->uints.input_libretro_device[port];
+}
+
+void input_config_set_device(unsigned port, unsigned id)
+{
+   settings_t *settings = config_get_ptr();
+
+   if (settings)
+      settings->uints.input_libretro_device[port] = id;
+}
+
+bool input_config_get_bind_idx(unsigned port, unsigned *joy_idx_real)
+{
+   settings_t *settings = config_get_ptr();
+   unsigned joy_idx     = settings->uints.input_joypad_map[port];
+
+   if (joy_idx >= MAX_USERS)
+      return false;
+
+   *joy_idx_real        = joy_idx;
+   return true;
+}
+
+const struct retro_keybind *input_config_get_bind_auto(unsigned port, unsigned id)
+{
+   settings_t *settings = config_get_ptr();
+   unsigned joy_idx     = settings->uints.input_joypad_map[port];
+
+   if (joy_idx < MAX_USERS)
+      return &input_autoconf_binds[joy_idx][id];
+   return NULL;
+}
+
+void input_config_set_pid(unsigned port, uint16_t pid)
+{
+   input_config_pid[port] = pid;
+}
+
+uint16_t input_config_get_pid(unsigned port)
+{
+   return input_config_pid[port];
+}
+
+void input_config_set_vid(unsigned port, uint16_t vid)
+{
+   input_config_vid[port] = vid;
+}
+
+uint16_t input_config_get_vid(unsigned port)
+{
+   return input_config_vid[port];
+}
+
+void input_config_reset(void)
+{
+   unsigned i, j;
+
+   retro_assert(sizeof(input_config_binds[0]) >= sizeof(retro_keybinds_1));
+   retro_assert(sizeof(input_config_binds[1]) >= sizeof(retro_keybinds_rest));
+
+   memcpy(input_config_binds[0], retro_keybinds_1, sizeof(retro_keybinds_1));
+
+   for (i = 1; i < MAX_USERS; i++)
+      memcpy(input_config_binds[i], retro_keybinds_rest,
+            sizeof(retro_keybinds_rest));
+   
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      input_config_vid[i]     = 0;
+      input_config_pid[i]     = 0;
+      libretro_input_binds[i] = input_config_binds[i];
+
+      for (j = 0; j < 64; j++)
+         input_device_names[i][j] = 0;
+   }
 }

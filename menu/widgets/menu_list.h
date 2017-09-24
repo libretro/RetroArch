@@ -36,18 +36,18 @@ enum menu_list_type
 
 typedef struct menu_ctx_list
 {
-   file_list_t *list;
-   size_t list_size;
-   const char *path;
-   char *fullpath;
-   const char *label;
-   size_t idx;
-   unsigned entry_type;
    enum menu_list_type type;
+   const char *path;
+   char       *fullpath;
+   const char *label;
+   unsigned entry_type;
    unsigned action;
+   size_t idx;
    size_t selection;
    size_t size;
+   size_t list_size;
    void *entry;
+   file_list_t *list;
 } menu_ctx_list_t;
 
 typedef struct menu_list menu_list_t;

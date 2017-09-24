@@ -32,9 +32,11 @@
 
 static int action_info_default(unsigned type, const char *label)
 {
-   menu_displaylist_info_t info = {0};
+   menu_displaylist_info_t info;
    file_list_t *menu_stack      = menu_entries_get_menu_stack_ptr(0);
    size_t selection             = menu_navigation_get_selection();
+
+   menu_displaylist_info_init(&info);
 
    info.list                    = menu_stack;
    info.directory_ptr           = selection;
@@ -44,12 +46,18 @@ static int action_info_default(unsigned type, const char *label)
         sizeof(info.label));
 
    if (!menu_displaylist_ctl(DISPLAYLIST_HELP, &info))
-      return -1;
+      goto error;
 
    if (!menu_displaylist_process(&info))
-      return -1;
+      goto error;
+
+   menu_displaylist_info_free(&info);
 
    return 0;
+
+error:
+   menu_displaylist_info_free(&info);
+   return -1;
 }
 
 #ifdef HAVE_CHEEVOS

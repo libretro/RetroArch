@@ -54,12 +54,12 @@
 typedef struct
 {
    bool force_redraw;
+   bool mouse_show;
    char msgbox[4096];
    unsigned last_width;
    unsigned last_height;
+   unsigned frame_count;
    float scroll_y;
-   bool mouse_show;
-   unsigned int frame_count;
 } rgui_t;
 
 static uint16_t *rgui_framebuf_data      = NULL;
@@ -410,10 +410,7 @@ static void rgui_render(void *data, bool is_idle)
             && menu_driver_is_alive() && !msg_force)
          return;
 
-      if (is_idle)
-         return;
-
-      if (!menu_display_get_update_pending())
+      if (is_idle || !menu_display_get_update_pending())
          return;
    }
 
@@ -634,7 +631,7 @@ static void rgui_render(void *data, bool is_idle)
    if (!string_is_empty(rgui->msgbox))
    {
       rgui_render_messagebox(rgui->msgbox);
-      rgui->msgbox[0] = '\0';
+      rgui->msgbox[0]    = '\0';
       rgui->force_redraw = true;
    }
 

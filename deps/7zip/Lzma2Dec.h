@@ -4,6 +4,7 @@
 #ifndef __LZMA2_DEC_H
 #define __LZMA2_DEC_H
 
+#include <boolean.h>
 #include "LzmaDec.h"
 
 #ifdef __cplusplus
@@ -19,9 +20,9 @@ typedef struct
   uint32_t unpackSize;
   int state;
   uint8_t control;
-  Bool needInitDic;
-  Bool needInitState;
-  Bool needInitProp;
+  bool needInitDic;
+  bool needInitState;
+  bool needInitProp;
 } CLzma2Dec;
 
 #define Lzma2Dec_Construct(p) LzmaDec_Construct(&(p)->decoder)

@@ -217,7 +217,8 @@ static void menu_display_vk_draw(void *data)
    for (i = 0; i < draw->coords->vertices; i++, pv++)
    {
       pv->x       = *vertex++;
-      pv->y       = 1.0f - (*vertex++); /* Y-flip. Vulkan is top-left clip space */
+      /* Y-flip. Vulkan is top-left clip space */
+      pv->y       = 1.0f - (*vertex++); 
       pv->tex_x   = *tex_coord++;
       pv->tex_y   = *tex_coord++;
       pv->color.r = *color++;
@@ -235,16 +236,17 @@ static void menu_display_vk_draw(void *data)
       case VIDEO_SHADER_MENU_4:
       case VIDEO_SHADER_MENU_5:
       {
-         const struct vk_draw_triangles call = {
-            vk->display.pipelines[
-               to_menu_pipeline(draw->prim_type, draw->pipeline.id)],
-               NULL,
-               VK_NULL_HANDLE,
-               draw->pipeline.backend_data,
-               draw->pipeline.backend_data_size,
-               &range,
-               draw->coords->vertices,
-         };
+         struct vk_draw_triangles call;
+
+         call.pipeline     = vk->display.pipelines[
+               to_menu_pipeline(draw->prim_type, draw->pipeline.id)];
+         call.texture      = NULL;
+         call.sampler      = VK_NULL_HANDLE;
+         call.uniform      = draw->pipeline.backend_data;
+         call.uniform_size = draw->pipeline.backend_data_size;
+         call.vbo          = &range;
+         call.vertices     = draw->coords->vertices;
+
          vulkan_draw_triangles(vk, &call);
          break;
       }
@@ -261,7 +263,8 @@ static void menu_display_vk_draw(void *data)
          call.texture      = texture;
          call.sampler      = texture->mipmap ?
             vk->samplers.mipmap_linear :
-            (texture->default_smooth ? vk->samplers.linear : vk->samplers.nearest);
+            (texture->default_smooth ? vk->samplers.linear 
+             : vk->samplers.nearest);
          call.uniform      = draw->matrix_data
             ? draw->matrix_data : menu_display_vk_get_default_mvp();
          call.uniform_size = sizeof(math_matrix_4x4);
@@ -278,7 +281,8 @@ static void menu_display_vk_restore_clear_color(void)
 {
 }
 
-static void menu_display_vk_clear_color(menu_display_ctx_clearcolor_t *clearcolor)
+static void menu_display_vk_clear_color(
+      menu_display_ctx_clearcolor_t *clearcolor)
 {
    VkClearRect rect;
    VkClearAttachment attachment;
@@ -287,13 +291,14 @@ static void menu_display_vk_clear_color(menu_display_ctx_clearcolor_t *clearcolo
       return;
 
    memset(&attachment, 0, sizeof(attachment));
+   memset(&rect, 0, sizeof(rect));
+
    attachment.aspectMask                  = VK_IMAGE_ASPECT_COLOR_BIT;
    attachment.clearValue.color.float32[0] = clearcolor->r;
    attachment.clearValue.color.float32[1] = clearcolor->g;
    attachment.clearValue.color.float32[2] = clearcolor->b;
    attachment.clearValue.color.float32[3] = clearcolor->a;
 
-   memset(&rect, 0, sizeof(rect));
    rect.rect.extent.width  = vk->context->swapchain_width;
    rect.rect.extent.height = vk->context->swapchain_height;
    rect.layerCount         = 1;

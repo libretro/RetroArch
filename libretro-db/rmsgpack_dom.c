@@ -316,16 +316,16 @@ void rmsgpack_dom_value_print(struct rmsgpack_dom_value *obj)
          break;
       case RDT_INT:
 #ifdef _WIN32
-         printf("%I64d", (signed long long)obj->val.int_);
+         printf("%I64d", (int64_t)obj->val.int_);
 #else
-         printf("%lld", (signed long long)obj->val.int_);
+         printf("%lld", (int64_t)obj->val.int_);
 #endif
          break;
       case RDT_UINT:
 #ifdef _WIN32
-         printf("%I64u", (unsigned long long)obj->val.uint_);
+         printf("%I64u", (uint64_t)obj->val.uint_);
 #else
-         printf("%llu",  (unsigned long long)obj->val.uint_);
+         printf("%llu",  (uint64_t)obj->val.uint_);
 #endif
          break;
       case RDT_STRING:

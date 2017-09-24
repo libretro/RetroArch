@@ -51,6 +51,9 @@
 #include <fcntl.h>
 #include <direct.h>
 #include <windows.h>
+#if defined(_MSC_VER) && _MSC_VER <= 1200
+#define INVALID_FILE_ATTRIBUTES ((DWORD)-1)
+#endif
 #endif
 #elif defined(VITA)
 #define SCE_ERROR_ERRNO_EEXIST 0x80010011
@@ -363,7 +366,12 @@ bool path_is_compressed_file(const char* path)
  */
 bool path_file_exists(const char *path)
 {
-   FILE *dummy = fopen(path, "rb");
+   FILE *dummy;
+
+   if (!path || !*path)
+      return false;
+
+   dummy = fopen(path, "rb");
 
    if (!dummy)
       return false;

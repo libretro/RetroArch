@@ -58,7 +58,7 @@
 
 #include "defaults.h"
 #include "driver.h"
-#include "input/input_config.h"
+#include "input/input_driver.h"
 #include "frontend/frontend_driver.h"
 #include "audio/audio_driver.h"
 #include "record/record_driver.h"
@@ -1018,6 +1018,11 @@ static void command_event_init_controllers(void)
             set_controller = true;
             break;
          case RETRO_DEVICE_JOYPAD:
+            /* ideally these checks shouldn't be required but if we always
+             *  call core_set_controller_port_device input won't work on 
+             *  cores that don't set port information properly */
+            if (info->ports.size != 0 && i < info->ports.size)
+               set_controller = true;
             break;
          default:
             /* Some cores do not properly range check port argument.
@@ -1075,31 +1080,33 @@ static void command_event_init_cheats(void)
 static void command_event_load_auto_state(void)
 {
    bool ret;
-   char msg[128]                             = {0};
-   char savestate_name_auto[PATH_MAX_LENGTH] = {0};
-   settings_t *settings                      = config_get_ptr();
-   global_t   *global                        = global_get_ptr();
+   char msg[128]                   = {0};
+   char *savestate_name_auto       = (char*)calloc(PATH_MAX_LENGTH,
+         sizeof(*savestate_name_auto));
+   size_t savestate_name_auto_size = PATH_MAX_LENGTH * sizeof(char);
+   settings_t *settings            = config_get_ptr();
+   global_t   *global              = global_get_ptr();
 
 #ifdef HAVE_NETWORKING
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
-      return;
+      goto error;
 #endif
 
 #ifdef HAVE_CHEEVOS
    if (settings->bools.cheevos_hardcore_mode_enable)
-      return;
+      goto error;
 #endif
 
    if (!settings->bools.savestate_auto_load)
-      return;
+      goto error;
 
    if (global)
       fill_pathname_noext(savestate_name_auto, global->name.savestate,
             file_path_str(FILE_PATH_AUTO_EXTENSION),
-            sizeof(savestate_name_auto));
+            savestate_name_auto_size);
 
    if (!path_file_exists(savestate_name_auto))
-      return;
+      goto error;
 
    ret = content_load_state(savestate_name_auto, false, true);
 
@@ -1110,20 +1117,28 @@ static void command_event_load_auto_state(void)
          msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
          savestate_name_auto, ret ? "succeeded" : "failed");
    RARCH_LOG("%s\n", msg);
+   
+   free(savestate_name_auto);
+
+   return;
+
+error:
+   free(savestate_name_auto);
 }
 
 static void command_event_set_savestate_auto_index(void)
 {
    size_t i;
-   char state_dir[PATH_MAX_LENGTH]  = {0};
-   char state_base[PATH_MAX_LENGTH] = {0};
-   struct string_list *dir_list     = NULL;
-   unsigned max_idx                 = 0;
-   settings_t *settings             = config_get_ptr();
-   global_t   *global               = global_get_ptr();
+   char *state_dir                   = (char*)calloc(PATH_MAX_LENGTH, sizeof(*state_dir));
+   char *state_base                  = (char*)calloc(PATH_MAX_LENGTH, sizeof(*state_base));
+   size_t state_size                 = PATH_MAX_LENGTH * sizeof(char);
+   struct string_list *dir_list      = NULL;
+   unsigned max_idx                  = 0;
+   settings_t *settings              = config_get_ptr();
+   global_t   *global                = global_get_ptr();
 
    if (!settings->bools.savestate_auto_index)
-      return;
+      goto error;
 
    if (global)
    {
@@ -1134,15 +1149,15 @@ static void command_event_set_savestate_auto_index(void)
        * /foo/path/content.state%d, where %d is the largest number available.
        */
       fill_pathname_basedir(state_dir, global->name.savestate,
-            sizeof(state_dir));
+            state_size);
       fill_pathname_base(state_base, global->name.savestate,
-            sizeof(state_base));
+            state_size);
    }
 
    dir_list = dir_list_new_special(state_dir, DIR_LIST_PLAIN, NULL);
 
    if (!dir_list)
-      return;
+      goto error;
 
    for (i = 0; i < dir_list->size; i++)
    {
@@ -1172,6 +1187,14 @@ static void command_event_set_savestate_auto_index(void)
    RARCH_LOG("%s: #%d\n",
          msg_hash_to_str(MSG_FOUND_LAST_STATE_SLOT),
          max_idx);
+
+   free(state_dir);
+   free(state_base);
+   return;
+
+error:
+   free(state_dir);
+   free(state_base);
 }
 
 static bool event_init_content(void)
@@ -1292,38 +1315,41 @@ static void command_event_restore_default_shader_preset(void)
 static void command_event_restore_remaps(void)
 {
    if (rarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
-      input_remapping_set_defaults();
+      input_remapping_set_defaults(true);
 }
 
 static bool command_event_save_auto_state(void)
 {
-   char savestate_name_auto[PATH_MAX_LENGTH] = {0};
-   bool ret             = false;
-   bool contentless     = false;
-   bool is_inited       = false;
-   settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
+   bool ret                    = false;
+   bool contentless            = false;
+   bool is_inited              = false;
+   char *savestate_name_auto   = (char*)
+      calloc(PATH_MAX_LENGTH, sizeof(*savestate_name_auto));
+   size_t 
+      savestate_name_auto_size = PATH_MAX_LENGTH * sizeof(char);
+   settings_t *settings        = config_get_ptr();
+   global_t   *global          = global_get_ptr();
 
    if (!settings || !settings->bools.savestate_auto_save)
-      return false;
+      goto error;
    if (!global)
-      return false;
+      goto error;
    if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
-      return false;
+      goto error;
 
    content_get_status(&contentless, &is_inited);
 
    if (contentless)
-      return false;
+      goto error;
 
 #ifdef HAVE_CHEEVOS
    if (settings->bools.cheevos_hardcore_mode_enable)
-      return false;
+      goto error;
 #endif
 
    fill_pathname_noext(savestate_name_auto, global->name.savestate,
          file_path_str(FILE_PATH_AUTO_EXTENSION),
-         sizeof(savestate_name_auto));
+         savestate_name_auto_size);
 
    ret = content_save_state((const char*)savestate_name_auto, true, true);
    RARCH_LOG("%s \"%s\" %s.\n",
@@ -1331,7 +1357,12 @@ static bool command_event_save_auto_state(void)
          savestate_name_auto, ret ?
          "succeeded" : "failed");
 
+   free(savestate_name_auto);
    return true;
+
+error:
+   free(savestate_name_auto);
+   return false;
 }
 
 static bool command_event_save_config(const char *config_path,
@@ -1364,29 +1395,30 @@ static bool command_event_save_config(const char *config_path,
  **/
 static bool command_event_save_core_config(void)
 {
-   char config_dir[PATH_MAX_LENGTH];
-   char config_name[PATH_MAX_LENGTH];
-   char config_path[PATH_MAX_LENGTH];
    char msg[128];
-   bool ret                          = false;
-   bool found_path                   = false;
-   bool overrides_active             = false;
-   settings_t *settings              = config_get_ptr();
+   bool ret                        = false;
+   bool found_path                 = false;
+   bool overrides_active           = false;
+   char *config_dir                = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char *config_name               = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char *config_path               = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   size_t config_size              = PATH_MAX_LENGTH * sizeof(char);
+   settings_t *settings            = config_get_ptr();
 
-   config_dir[0]  = config_name[0]   =
-   config_path[0] = msg[0]           = '\0';
+   config_dir[0]  = config_name[0] =
+   config_path[0] = msg[0]         = '\0';
 
    if (!string_is_empty(settings->paths.directory_menu_config))
       strlcpy(config_dir, settings->paths.directory_menu_config,
-            sizeof(config_dir));
+            config_size);
    else if (!path_is_empty(RARCH_PATH_CONFIG)) /* Fallback */
       fill_pathname_basedir(config_dir, path_get(RARCH_PATH_CONFIG),
-            sizeof(config_dir));
+            config_size);
    else
    {
       runloop_msg_queue_push(msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET), 1, 180, true);
       RARCH_ERR("[Config]: %s\n", msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET));
-      return false;
+      goto error;
    }
 
    /* Infer file name based on libretro core. */
@@ -1403,10 +1435,10 @@ static bool command_event_save_core_config(void)
          fill_pathname_base_noext(
                config_name,
                path_get(RARCH_PATH_CORE),
-               sizeof(config_name));
+               config_size);
 
          fill_pathname_join(config_path, config_dir, config_name,
-               sizeof(config_path));
+               config_size);
 
          if (i)
             snprintf(tmp, sizeof(tmp), "-%u%s",
@@ -1417,7 +1449,7 @@ static bool command_event_save_core_config(void)
                   file_path_str(FILE_PATH_CONFIG_EXTENSION),
                   sizeof(tmp));
 
-         strlcat(config_path, tmp, sizeof(config_path));
+         strlcat(config_path, tmp, config_size);
          if (!path_file_exists(config_path))
          {
             found_path = true;
@@ -1433,9 +1465,9 @@ static bool command_event_save_core_config(void)
             msg_hash_to_str(MSG_CANNOT_INFER_NEW_CONFIG_PATH));
       fill_dated_filename(config_name,
             file_path_str(FILE_PATH_CONFIG_EXTENSION),
-            sizeof(config_name));
+            config_size);
       fill_pathname_join(config_path, config_dir, config_name,
-            sizeof(config_path));
+            config_size);
    }
 
    if (rarch_ctl(RARCH_CTL_IS_OVERRIDES_ACTIVE, NULL))
@@ -1455,7 +1487,17 @@ static bool command_event_save_core_config(void)
       rarch_ctl(RARCH_CTL_SET_OVERRIDES_ACTIVE, NULL);
    else
       rarch_ctl(RARCH_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
+
+   free(config_dir);
+   free(config_name);
+   free(config_path);
    return ret;
+
+error:
+   free(config_dir);
+   free(config_name);
+   free(config_path);
+   return false;
 }
 
 /**
@@ -1546,13 +1588,14 @@ static void command_event_undo_load_state(char *s, size_t len)
 static bool command_event_main_state(unsigned cmd)
 {
    retro_ctx_size_info_t info;
-   char path[PATH_MAX_LENGTH];
    char msg[128];
+   char *state_path           = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   size_t state_path_size     = PATH_MAX_LENGTH * sizeof(char);
    bool ret                   = false;
    global_t *global           = global_get_ptr();
    bool push_msg              = true;
 
-   path[0] = msg[0]           = '\0';
+   state_path[0] = msg[0]     = '\0';
 
    if (global)
    {
@@ -1560,13 +1603,13 @@ static bool command_event_main_state(unsigned cmd)
       int state_slot          = settings->ints.state_slot;
 
       if (state_slot > 0)
-         snprintf(path, sizeof(path), "%s%d",
+         snprintf(state_path, state_path_size, "%s%d",
                global->name.savestate, state_slot);
       else if (state_slot < 0)
-         fill_pathname_join_delim(path,
-               global->name.savestate, "auto", '.', sizeof(path));
+         fill_pathname_join_delim(state_path,
+               global->name.savestate, "auto", '.', state_path_size);
       else
-         strlcpy(path, global->name.savestate, sizeof(path));
+         strlcpy(state_path, global->name.savestate, state_path_size);
    }
 
    core_serialize_size(&info);
@@ -1576,12 +1619,12 @@ static bool command_event_main_state(unsigned cmd)
       switch (cmd)
       {
          case CMD_EVENT_SAVE_STATE:
-            content_save_state(path, true, false);
+            content_save_state(state_path, true, false);
             ret      = true;
             push_msg = false;
             break;
          case CMD_EVENT_LOAD_STATE:
-            if (content_load_state(path, false, false))
+            if (content_load_state(state_path, false, false))
             {
                ret = true;
 #ifdef HAVE_NETWORKING
@@ -1608,6 +1651,7 @@ static bool command_event_main_state(unsigned cmd)
       runloop_msg_queue_push(msg, 2, 180, true);
    RARCH_LOG("%s\n", msg);
 
+   free(state_path);
    return ret;
 }
 
@@ -2452,6 +2496,14 @@ TODO: Add a setting for these tweaks */
          command_event(CMD_EVENT_REMOTE_DEINIT, NULL);
          input_driver_init_remote();
          break;
+
+      case CMD_EVENT_MAPPER_DEINIT:
+         input_driver_deinit_mapper();
+         break;
+      case CMD_EVENT_MAPPER_INIT:
+         command_event(CMD_EVENT_MAPPER_DEINIT, NULL);
+         input_driver_init_mapper();
+      break;
       case CMD_EVENT_LOG_FILE_DEINIT:
          retro_main_log_file_deinit();
          break;

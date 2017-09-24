@@ -54,80 +54,63 @@ enum menu_entries_ctl_state
 
 typedef struct menu_file_list_cbs
 {
-   rarch_setting_t *setting;
    enum msg_hash_enums enum_idx;
+   const char *action_iterate_ident;
+   const char *action_deferred_push_ident;
+   const char *action_select_ident;
+   const char *action_get_title_ident;
+   const char *action_ok_ident;
+   const char *action_cancel_ident;
+   const char *action_scan_ident;
+   const char *action_right_ident;
+   const char *action_start_ident;
+   const char *action_info_ident;
+   const char *action_content_list_switch_ident;
+   const char *action_left_ident;
+   const char *action_refresh_ident;
+   const char *action_up_ident;
+   const char *action_label_ident;
+   const char *action_sublabel_ident;
+   const char *action_down_ident;
+   const char *action_get_value_ident;
+
+   rarch_setting_t *setting;
 
    int (*action_iterate)(const char *label, unsigned action);
-   const char *action_iterate_ident;
-
    int (*action_deferred_push)(menu_displaylist_info_t *info);
-   const char *action_deferred_push_ident;
-
    int (*action_select)(const char *path, const char *label, unsigned type,
          size_t idx);
-   const char *action_select_ident;
-
    int (*action_get_title)(const char *path, const char *label,
          unsigned type, char *s, size_t len);
-   const char *action_get_title_ident;
-
    int (*action_ok)(const char *path, const char *label, unsigned type,
          size_t idx, size_t entry_idx);
-   const char *action_ok_ident;
-
    int (*action_cancel)(const char *path, const char *label, unsigned type,
          size_t idx);
-   const char *action_cancel_ident;
-
    int (*action_scan)(const char *path, const char *label, unsigned type,
          size_t idx);
-   const char *action_scan_ident;
-
    int (*action_start)(unsigned type,  const char *label);
-   const char *action_start_ident;
-
    int (*action_info)(unsigned type,  const char *label);
-   const char *action_info_ident;
-
    int (*action_content_list_switch)(void *data, void *userdata, const char
          *path, const char *label, unsigned type);
-   const char *action_content_list_switch_ident;
-
    int (*action_left)(unsigned type, const char *label, bool wraparound);
-   const char *action_left_ident;
-
    int (*action_right)(unsigned type, const char *label, bool wraparound);
-   const char *action_right_ident;
-
    int (*action_refresh)(file_list_t *list, file_list_t *menu_list);
-   const char *action_refresh_ident;
-
    int (*action_up)(unsigned type, const char *label);
-   const char *action_up_ident;
-
    int (*action_label)(file_list_t *list,
          unsigned type, unsigned i,
          const char *label, const char *path,
          char *s, size_t len);
-   const char *action_label_ident;
-
    int (*action_sublabel)(file_list_t *list,
          unsigned type, unsigned i,
          const char *label, const char *path,
          char *s, size_t len);
-   const char *action_sublabel_ident;
-
    int (*action_down)(unsigned type, const char *label);
-   const char *action_down_ident;
-
    void (*action_get_value)(file_list_t* list,
          unsigned *w, unsigned type, unsigned i,
          const char *label, char *s, size_t len,
          const char *entry_label,
          const char *path,
          char *path_buf, size_t path_buf_size);
-   const char *action_get_value_ident;
-
 } menu_file_list_cbs_t;
 
 size_t menu_entries_get_end(void);

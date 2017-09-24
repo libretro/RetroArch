@@ -212,10 +212,13 @@ static void compute_audio_buffer_statistics(void)
       accum_var += diff * diff;
    }
 
+#if defined(_MSC_VER) && _MSC_VER <= 1200
+   /* FIXME: error C2520: conversion from unsigned __int64 to double not implemented, use signed __int64 */
+#else
    stddev          = (unsigned)sqrt((double)accum_var / (samples - 2));
    avg_filled      = 1.0f - (float)avg / audio_driver_buffer_size;
    deviation       = (float)stddev / audio_driver_buffer_size;
-
+#endif
    low_water_size  = (unsigned)(audio_driver_buffer_size * 3 / 4);
    high_water_size = (unsigned)(audio_driver_buffer_size     / 4);
 
@@ -750,15 +753,14 @@ void audio_driver_dsp_filter_free(void)
 
 void audio_driver_dsp_filter_init(const char *device)
 {
-#if defined(HAVE_DYLIB) && !defined(HAVE_FILTERS_BUILTIN)
-   char basedir[PATH_MAX_LENGTH];
-   char ext_name[PATH_MAX_LENGTH];
-#endif
    struct string_list *plugs     = NULL;
 #if defined(HAVE_DYLIB) && !defined(HAVE_FILTERS_BUILTIN)
-   fill_pathname_basedir(basedir, device, sizeof(basedir));
+   char *basedir   = (char*)calloc(PATH_MAX_LENGTH, sizeof(*basedir));
+   char *ext_name  = (char*)calloc(PATH_MAX_LENGTH, sizeof(*ext_name));
+   size_t str_size = PATH_MAX_LENGTH * sizeof(char);
+   fill_pathname_basedir(basedir, device, str_size);
 
-   if (!frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
+   if (!frontend_driver_get_core_extension(ext_name, str_size))
       goto error;
 
    plugs = dir_list_new(basedir, ext_name, false, true, false, false);
@@ -770,9 +772,18 @@ void audio_driver_dsp_filter_init(const char *device)
    if (!audio_driver_dsp)
       goto error;
 
+#if defined(HAVE_DYLIB) && !defined(HAVE_FILTERS_BUILTIN)
+   free(basedir);
+   free(ext_name);
+#endif
+
    return;
 
 error:
+#if defined(HAVE_DYLIB) && !defined(HAVE_FILTERS_BUILTIN)
+   free(basedir);
+   free(ext_name);
+#endif
    if (!audio_driver_dsp)
       RARCH_ERR("[DSP]: Failed to initialize DSP filter \"%s\".\n", device);
 }
@@ -950,7 +961,8 @@ static int audio_mixer_find_index(audio_mixer_sound_t *sound)
    return -1;
 }
 
-static void audio_mixer_play_stop_cb(audio_mixer_sound_t *sound, unsigned reason)
+static void audio_mixer_play_stop_cb(
+      audio_mixer_sound_t *sound, unsigned reason)
 {
    int idx = audio_mixer_find_index(sound);
 

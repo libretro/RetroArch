@@ -1105,7 +1105,8 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
 
    BIND_ACTION_GET_TITLE(cbs, action_get_title_default);
 
-   if (menu_cbs_init_bind_title_compare_label(cbs, label, label_hash) == 0)
+   if (cbs->enum_idx != MENU_ENUM_LABEL_PLAYLIST_ENTRY &&
+       menu_cbs_init_bind_title_compare_label(cbs, label, label_hash) == 0)
       return 0;
 
    if (menu_cbs_init_bind_title_compare_type(cbs, type) == 0)

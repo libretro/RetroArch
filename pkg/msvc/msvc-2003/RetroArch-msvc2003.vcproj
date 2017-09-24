@@ -21,7 +21,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\..\libretro-common\include&quot;;&quot;$(SolutionDir)\..\..\libretro-common\include\compat\msvc&quot;;&quot;$(SolutionDir)\..\..\gfx\include&quot;"
-				PreprocessorDefinitions="_WIN32;RARCH_INTERNAL;HAVE_CC_RESAMPLER;HAVE_D3D;HAVE_D3D9;HAVE_GLSL;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_FBO;HAVE_ZLIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;HAVE_XMB;HAVE_SHADERPIPELINE;WANT_ZLIB;HAVE_DINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_RTHREADS;HAVE_DYNAMIC;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT;__STDC_CONSTANT_MACROS"
+				PreprocessorDefinitions="_WIN32;WINVER=0x0400;_WIN32_WINNT=0x0400;RARCH_INTERNAL;HAVE_CC_RESAMPLER;HAVE_GRIFFIN;HAVE_FBO;HAVE_ZLIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;HAVE_XMB;WANT_ZLIB;HAVE_DINPUT;HAVE_DSOUND;HAVE_DYLIB;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;HAVE_OVERLAY;HAVE_RGUI;HAVE_MENU;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT;__STDC_CONSTANT_MACROS"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="5"
@@ -33,11 +33,12 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="winmm.lib"
 				OutputFile="$(OutDir)/RetroArch-msvc2003.exe"
 				LinkIncremental="2"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/RetroArch-msvc2003.pdb"
-				SubSystem="2"
+				SubSystem="1"
 				TargetMachine="1"/>
 			<Tool
 				Name="VCMIDLTool"/>
@@ -69,7 +70,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\..\libretro-common\include&quot;;&quot;$(SolutionDir)\..\..\libretro-common\include\compat\msvc&quot;;&quot;$(SolutionDir)\..\..\gfx\include&quot;"
-				PreprocessorDefinitions="_WIN32;RARCH_INTERNAL;HAVE_CC_RESAMPLER;HAVE_D3D;HAVE_D3D9;HAVE_GLSL;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_FBO;HAVE_ZLIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;HAVE_XMB;HAVE_SHADERPIPELINE;WANT_ZLIB;HAVE_DINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_RTHREADS;HAVE_DYNAMIC;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT;__STDC_CONSTANT_MACROS"
+				PreprocessorDefinitions="_WIN32;WINVER=0x0400;_WIN32_WINNT=0x0400;RARCH_INTERNAL;HAVE_CC_RESAMPLER;HAVE_GRIFFIN;HAVE_FBO;HAVE_ZLIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;HAVE_XMB;WANT_ZLIB;HAVE_DINPUT;HAVE_DSOUND;HAVE_DYLIB;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;HAVE_OVERLAY;HAVE_RGUI;HAVE_MENU;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT;__STDC_CONSTANT_MACROS"
 				RuntimeLibrary="4"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -79,12 +80,111 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="winmm.lib"
 				OutputFile="$(OutDir)/RetroArch-msvc2003.exe"
 				LinkIncremental="1"
 				GenerateDebugInformation="TRUE"
-				SubSystem="2"
+				SubSystem="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
+				TargetMachine="1"/>
+			<Tool
+				Name="VCMIDLTool"/>
+			<Tool
+				Name="VCPostBuildEventTool"/>
+			<Tool
+				Name="VCPreBuildEventTool"/>
+			<Tool
+				Name="VCPreLinkEventTool"/>
+			<Tool
+				Name="VCResourceCompilerTool"/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
+				Name="VCWebDeploymentTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+		</Configuration>
+		<Configuration
+			Name="Release NoDX|Win32"
+			OutputDirectory="$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
+			ConfigurationType="1"
+			CharacterSet="2">
+			<Tool
+				Name="VCCLCompilerTool"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\..\libretro-common\include&quot;;&quot;$(SolutionDir)\..\..\libretro-common\include\compat\msvc&quot;;&quot;$(SolutionDir)\..\..\gfx\include&quot;"
+				PreprocessorDefinitions="_WIN32;WINVER=0x0400;_WIN32_WINNT=0x0400;RARCH_INTERNAL;HAVE_CC_RESAMPLER;HAVE_GRIFFIN;HAVE_FBO;HAVE_ZLIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;HAVE_XMB;WANT_ZLIB;HAVE_DYLIB;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;HAVE_OVERLAY;HAVE_RGUI;HAVE_MENU;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT;__STDC_CONSTANT_MACROS"
+				RuntimeLibrary="4"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="TRUE"
+				DebugInformationFormat="3"/>
+			<Tool
+				Name="VCCustomBuildTool"/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="winmm.lib"
+				OutputFile="$(OutDir)/RetroArch-msvc2003.exe"
+				LinkIncremental="1"
+				GenerateDebugInformation="TRUE"
+				SubSystem="1"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				TargetMachine="1"/>
+			<Tool
+				Name="VCMIDLTool"/>
+			<Tool
+				Name="VCPostBuildEventTool"/>
+			<Tool
+				Name="VCPreBuildEventTool"/>
+			<Tool
+				Name="VCPreLinkEventTool"/>
+			<Tool
+				Name="VCResourceCompilerTool"/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
+				Name="VCWebDeploymentTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+		</Configuration>
+		<Configuration
+			Name="Debug NoDX|Win32"
+			OutputDirectory="$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
+			ConfigurationType="1"
+			CharacterSet="2">
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\..\libretro-common\include&quot;;&quot;$(SolutionDir)\..\..\libretro-common\include\compat\msvc&quot;;&quot;$(SolutionDir)\..\..\gfx\include&quot;"
+				PreprocessorDefinitions="_WIN32;WINVER=0x0400;_WIN32_WINNT=0x0400;RARCH_INTERNAL;HAVE_CC_RESAMPLER;HAVE_GRIFFIN;HAVE_FBO;HAVE_ZLIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;HAVE_XMB;WANT_ZLIB;HAVE_DYLIB;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;HAVE_OVERLAY;HAVE_RGUI;HAVE_MENU;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT;__STDC_CONSTANT_MACROS"
+				MinimalRebuild="TRUE"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="5"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="TRUE"
+				DebugInformationFormat="4"/>
+			<Tool
+				Name="VCCustomBuildTool"/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="winmm.lib"
+				OutputFile="$(OutDir)/RetroArch-msvc2003.exe"
+				LinkIncremental="2"
+				GenerateDebugInformation="TRUE"
+				ProgramDatabaseFile="$(OutDir)/RetroArch-msvc2003.pdb"
+				SubSystem="1"
 				TargetMachine="1"/>
 			<Tool
 				Name="VCMIDLTool"/>
@@ -125,6 +225,18 @@
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						CompileAs="2"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release NoDX|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						CompileAs="2"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug NoDX|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
 						CompileAs="2"/>

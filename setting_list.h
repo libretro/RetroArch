@@ -90,24 +90,26 @@ struct rarch_setting_group_info
 
 struct rarch_setting
 {
-   enum msg_hash_enums enum_idx;
-   enum msg_hash_enums enum_value_idx;
-   enum setting_type    type;
-
-   bool dont_use_enum_idx_representation;
-
-   uint32_t             size;
+   bool                 dont_use_enum_idx_representation;
+   bool                 enforce_minrange;
+   bool                 enforce_maxrange;
    
+   const char           *rounding_fraction;
    const char           *name;
-   uint32_t             name_hash;
    const char           *short_description;
    const char           *group;
    const char           *subgroup;
    const char           *parent_group;
    const char           *values;
 
-   uint32_t             index;
-   unsigned             index_offset;
+   uint8_t              index;
+   uint8_t              index_offset;
+
+   unsigned             bind_type;
+   uint32_t             size;
+   uint32_t             name_hash;
+
+   float                step;
 
    double               min;
    double               max;
@@ -130,10 +132,10 @@ struct rarch_setting
    union
    {
       bool                       boolean;
+      const char                 *string;
       int                        integer;
       unsigned int               unsigned_integer;
       float                      fraction;
-      const char                 *string;
       const struct retro_keybind *keybind;
    } default_value;
    
@@ -142,10 +144,10 @@ struct rarch_setting
       union
       {
          bool                 *boolean;
+         char                 *string;
          int                  *integer;
          unsigned int         *unsigned_integer;
          float                *fraction;
-         char                 *string;
          struct retro_keybind *keybind;
       } target;
    } value;
@@ -175,12 +177,11 @@ struct rarch_setting
       const char     *on_label;
    } boolean;
 
-   unsigned          bind_type;
-   enum setting_type browser_selection_type;
-   float             step;
-   const char        *rounding_fraction;
-   bool              enforce_minrange;
-   bool              enforce_maxrange;
+   enum setting_type    browser_selection_type;
+   enum msg_hash_enums  enum_idx;
+   enum msg_hash_enums  enum_value_idx;
+   enum setting_type    type;
+
 };
 
 struct rarch_setting_info
@@ -416,8 +417,6 @@ void settings_data_list_current_add_free_flags(
       unsigned values);
 
 #define setting_get_type(setting) ((setting) ? setting->type : ST_NONE)
-
-rarch_setting_t setting_terminator_setting(void);
 
 RETRO_END_DECLS
 

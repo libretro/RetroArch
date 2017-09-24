@@ -28,16 +28,6 @@
 #define HAVE_WINDOW
 #endif
 
-#if defined(_XBOX1)
-#ifndef HAVE_D3D8
-#define HAVE_D3D8
-#endif
-#else
-#ifndef HAVE_D3D9
-#define HAVE_D3D9
-#endif
-#endif
-
 #include "../../defines/d3d_defines.h"
 
 #ifdef _XBOX1
@@ -55,65 +45,64 @@
 
 typedef struct
 {
-   float tex_coords[4];
-   float vert_coords[4];
-   unsigned tex_w, tex_h;
    bool fullscreen;
    bool enabled;
+   unsigned tex_w, tex_h;
+   float tex_coords[4];
+   float vert_coords[4];
    float alpha_mod;
    LPDIRECT3DTEXTURE tex;
    void *vert_buf;
 } overlay_t;
 
-#ifdef _XBOX
 typedef struct Vertex
 {
    float x, y;
-#if defined(_XBOX1)
+#if defined(HAVE_D3D8)
    float z;
    float rhw;
 #endif
    float u, v;
 } Vertex;
-#endif
 
 typedef struct d3d_video
 {
    bool keep_aspect;
    bool should_resize;
    bool quitting;
-
-   struct video_viewport vp;
-   WNDCLASSEX windowClass;
-   LPDIRECT3DDEVICE dev;
-   HRESULT d3d_err;
-   unsigned cur_mon_id;
-   unsigned dev_rotation;
-   D3DVIEWPORT final_viewport;
-
-   std::string shader_path;
-
-   struct video_shader shader;
-   video_info_t video_info;
-
    bool needs_restore;
-
-   RECT font_rect;
-   RECT font_rect_shifted;
-
 #ifdef HAVE_OVERLAY
    bool overlays_enabled;
-   std::vector<overlay_t> overlays;
 #endif
+   /* TODO - refactor this away properly. */
+   bool resolution_hd_enable;
+
+   unsigned cur_mon_id;
+   unsigned dev_rotation;
+
+   HRESULT d3d_err;
 
 #if defined(HAVE_MENU)
    overlay_t *menu;
 #endif
-   const renderchain_driver_t *renderchain_driver;
+   const d3d_renderchain_driver_t *renderchain_driver;
    void *renderchain_data;
 
-   /* TODO - refactor this away properly. */
-   bool resolution_hd_enable;
+   RECT font_rect;
+   RECT font_rect_shifted;
+
+   struct video_viewport vp;
+   struct video_shader shader;
+   video_info_t video_info;
+   WNDCLASSEX windowClass;
+   LPDIRECT3DDEVICE dev;
+   D3DVIEWPORT final_viewport;
+
+   std::string shader_path;
+
+#ifdef HAVE_OVERLAY
+   std::vector<overlay_t> overlays;
+#endif
 } d3d_video_t;
 
 void d3d_make_d3dpp(void *data,

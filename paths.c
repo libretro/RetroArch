@@ -59,8 +59,9 @@ static char path_core_options_file[PATH_MAX_LENGTH]     = {0};
 
 void path_set_redirect(void)
 {
-   char new_savefile_dir[PATH_MAX_LENGTH];
-   char new_savestate_dir[PATH_MAX_LENGTH];
+   size_t path_size                            = PATH_MAX_LENGTH * sizeof(char);
+   char *new_savefile_dir                      = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char *new_savestate_dir                     = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    uint32_t library_name_hash                  = 0;
    bool check_library_name_hash                = false;
    global_t                *global             = global_get_ptr();
@@ -78,13 +79,8 @@ void path_set_redirect(void)
 
    /* Initialize current save directories
     * with the values from the config. */
-   strlcpy(new_savefile_dir,
-         old_savefile_dir,
-         sizeof(new_savefile_dir));
-
-   strlcpy(new_savestate_dir,
-         old_savestate_dir,
-         sizeof(new_savestate_dir));
+   strlcpy(new_savefile_dir,  old_savefile_dir,  path_size);
+   strlcpy(new_savestate_dir, old_savestate_dir, path_size);
 
    check_library_name_hash = (library_name_hash != 0);
 #ifdef HAVE_MENU
@@ -102,7 +98,7 @@ void path_set_redirect(void)
                new_savefile_dir,
                old_savefile_dir,
                info->info.library_name,
-               sizeof(new_savefile_dir));
+               path_size);
 
          /* If path doesn't exist, try to create it,
           * if everything fails revert to the original path. */
@@ -116,9 +112,7 @@ void path_set_redirect(void)
                      msg_hash_to_str(MSG_REVERTING_SAVEFILE_DIRECTORY_TO),
                      old_savefile_dir);
 
-               strlcpy(new_savefile_dir,
-                     old_savefile_dir,
-                     sizeof(new_savefile_dir));
+               strlcpy(new_savefile_dir, old_savefile_dir, path_size);
             }
          }
       }
@@ -131,7 +125,7 @@ void path_set_redirect(void)
                new_savestate_dir,
                old_savestate_dir,
                info->info.library_name,
-               sizeof(new_savestate_dir));
+               path_size);
 
          /* If path doesn't exist, try to create it.
           * If everything fails, revert to the original path. */
@@ -146,7 +140,7 @@ void path_set_redirect(void)
                      old_savestate_dir);
                strlcpy(new_savestate_dir,
                      old_savestate_dir,
-                     sizeof(new_savestate_dir));
+                     path_size);
             }
          }
       }
@@ -156,7 +150,7 @@ void path_set_redirect(void)
    if (string_is_empty(new_savefile_dir) || settings->bools.savefiles_in_content_dir)
    {
       strlcpy(new_savefile_dir, path_main_basename,
-            sizeof(new_savefile_dir));
+            path_size);
       path_basedir(new_savefile_dir);
    }
 
@@ -164,7 +158,7 @@ void path_set_redirect(void)
    if (string_is_empty(new_savestate_dir) || settings->bools.savestates_in_content_dir)
    {
       strlcpy(new_savestate_dir, path_main_basename,
-            sizeof(new_savestate_dir));
+            path_size);
       path_basedir(new_savestate_dir);
    }
 
@@ -215,6 +209,8 @@ void path_set_redirect(void)
 
    dir_set(RARCH_DIR_CURRENT_SAVEFILE,  new_savefile_dir);
    dir_set(RARCH_DIR_CURRENT_SAVESTATE, new_savestate_dir);
+   free(new_savefile_dir);
+   free(new_savestate_dir);
 }
 
 void path_set_basename(const char *path)
@@ -325,8 +321,10 @@ static bool path_init_subsystem(void)
          for (j = 0; j < info->roms[i].num_memory; j++)
          {
             union string_list_elem_attr attr;
-            char path[PATH_MAX_LENGTH];
             char ext[32];
+            size_t path_size = PATH_MAX_LENGTH * sizeof(char);
+            char *path       = (char*)malloc(
+                  PATH_MAX_LENGTH * sizeof(char));
             const struct retro_subsystem_memory_info *mem =
                (const struct retro_subsystem_memory_info*)
                &info->roms[i].memory[j];
@@ -339,19 +337,20 @@ static bool path_init_subsystem(void)
             {
                /* Use SRAM dir */
                /* Redirect content fullpath to save directory. */
-               strlcpy(path, dir_get(RARCH_DIR_SAVEFILE), sizeof(path));
+               strlcpy(path, dir_get(RARCH_DIR_SAVEFILE), path_size);
                fill_pathname_dir(path,
                      subsystem_fullpaths->elems[i].data, ext,
-                     sizeof(path));
+                     path_size);
             }
             else
             {
                fill_pathname(path, subsystem_fullpaths->elems[i].data,
-                     ext, sizeof(path));
+                     ext, path_size);
             }
 
             attr.i = mem->type;
             string_list_append((struct string_list*)savefile_ptr_get(), path, attr);
+            free(path);
          }
       }
    }

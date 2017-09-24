@@ -36,42 +36,20 @@
 
 RETRO_BEGIN_DECLS
 
+#define MAX_FENCES 4
+
 typedef struct gl
 {
-   int version_major;
-   int version_minor;
+   GLenum internal_fmt;
+   GLenum texture_type; /* RGB565 or ARGB */
+   GLenum texture_fmt;
+   GLenum wrap_mode;
 
    bool vsync;
-   GLuint texture[GFX_MAX_TEXTURES];
-   unsigned tex_index; /* For use with PREV. */
-   unsigned textures;
-   struct video_tex_info tex_info;
-   struct video_tex_info prev_info[GFX_MAX_TEXTURES];
-   GLuint tex_mag_filter;
-   GLuint tex_min_filter;
    bool tex_mipmap;
-
-   void *empty_buf;
-
-   void *conv_buffer;
-   struct scaler_ctx scaler;
-
 #ifdef HAVE_FBO
-   /* Render-to-texture, multipass shaders. */
-   GLuint fbo[GFX_MAX_SHADERS];
-   GLuint fbo_texture[GFX_MAX_SHADERS];
-   struct video_fbo_rect fbo_rect[GFX_MAX_SHADERS];
-   struct gfx_fbo_scale fbo_scale[GFX_MAX_SHADERS];
-   int fbo_pass;
    bool fbo_inited;
-
    bool fbo_feedback_enable;
-   unsigned fbo_feedback_pass;
-   GLuint fbo_feedback;
-   GLuint fbo_feedback_texture;
-
-   GLuint hw_render_fbo[GFX_MAX_TEXTURES];
-   GLuint hw_render_depth[GFX_MAX_TEXTURES];
    bool hw_render_fbo_init;
    bool hw_render_depth_init;
    bool has_srgb_fbo_gles3;
@@ -84,27 +62,6 @@ typedef struct gl
    bool quitting;
    bool fullscreen;
    bool keep_aspect;
-   unsigned rotation;
-
-   struct video_viewport vp;
-   unsigned vp_out_width;
-   unsigned vp_out_height;
-   unsigned last_width[GFX_MAX_TEXTURES];
-   unsigned last_height[GFX_MAX_TEXTURES];
-   unsigned tex_w, tex_h;
-   math_matrix_4x4 mvp, mvp_no_rot;
-
-   struct video_coords coords;
-   const float *vertex_ptr;
-   const float *white_color_ptr;
-
-   GLuint pbo;
-
-   GLenum internal_fmt;
-   GLenum texture_type; /* RGB565 or ARGB */
-   GLenum texture_fmt;
-   GLenum wrap_mode;
-   unsigned base_size; /* 2 or 4 */
 #ifdef HAVE_OPENGLES
    bool support_unpack_row_length;
 #else
@@ -113,43 +70,107 @@ typedef struct gl
    bool have_full_npot_support;
 
    bool egl_images;
-   video_info_t video_info;
-
 #ifdef HAVE_OVERLAY
-   unsigned overlays;
    bool overlay_enable;
    bool overlay_full_screen;
+#endif
+#ifdef HAVE_MENU
+   bool menu_texture_enable;
+   bool menu_texture_full_screen;
+#endif
+#ifdef HAVE_GL_SYNC
+   bool have_sync;
+#endif
+#ifdef HAVE_GL_ASYNC_READBACK
+   bool pbo_readback_valid[4];
+   bool pbo_readback_enable;
+#endif
+
+   int version_major;
+   int version_minor;
+   int fbo_pass;
+
+   GLuint tex_mag_filter;
+   GLuint tex_min_filter;
+#ifdef HAVE_FBO
+   GLuint fbo_feedback;
+   GLuint fbo_feedback_texture;
+#endif
+   GLuint pbo;
+#ifdef HAVE_OVERLAY
    GLuint *overlay_tex;
+#endif
+#if defined(HAVE_MENU)
+   GLuint menu_texture;
+#endif
+   GLuint vao;
+#ifdef HAVE_GL_ASYNC_READBACK
+   GLuint pbo_readback[4];
+#endif
+   GLuint texture[GFX_MAX_TEXTURES];
+#ifdef HAVE_FBO
+   GLuint fbo[GFX_MAX_SHADERS];
+   GLuint fbo_texture[GFX_MAX_SHADERS];
+   GLuint hw_render_fbo[GFX_MAX_TEXTURES];
+   GLuint hw_render_depth[GFX_MAX_TEXTURES];
+#endif
+
+   unsigned tex_index; /* For use with PREV. */
+   unsigned textures;
+#ifdef HAVE_FBO
+   unsigned fbo_feedback_pass;
+#endif
+   unsigned rotation;
+   unsigned vp_out_width;
+   unsigned vp_out_height;
+   unsigned tex_w;
+   unsigned tex_h;
+   unsigned base_size; /* 2 or 4 */
+#ifdef HAVE_OVERLAY
+   unsigned overlays;
+#endif
+#ifdef HAVE_GL_ASYNC_READBACK
+   unsigned pbo_readback_index;
+#endif
+#ifdef HAVE_GL_SYNC
+   unsigned fence_count;
+#endif
+   unsigned last_width[GFX_MAX_TEXTURES];
+   unsigned last_height[GFX_MAX_TEXTURES];
+
+#if defined(HAVE_MENU)
+   float menu_texture_alpha;
+#endif
+
+   void *empty_buf;
+   void *conv_buffer;
+   void *readback_buffer_screenshot;
+   const float *vertex_ptr;
+   const float *white_color_ptr;
+#ifdef HAVE_OVERLAY
    float *overlay_vertex_coord;
    float *overlay_tex_coord;
    float *overlay_color_coord;
 #endif
 
+   struct video_tex_info tex_info;
 #ifdef HAVE_GL_ASYNC_READBACK
-   /* PBOs used for asynchronous viewport readbacks. */
-   GLuint pbo_readback[4];
-   bool pbo_readback_valid[4];
-   bool pbo_readback_enable;
-   unsigned pbo_readback_index;
    struct scaler_ctx pbo_readback_scaler;
 #endif
-   void *readback_buffer_screenshot;
-
-#if defined(HAVE_MENU)
-   GLuint menu_texture;
-   bool menu_texture_enable;
-   bool menu_texture_full_screen;
-   float menu_texture_alpha;
+   struct video_viewport vp;
+   math_matrix_4x4 mvp, mvp_no_rot;
+   struct video_coords coords;
+   struct scaler_ctx scaler;
+   video_info_t video_info;
+   struct video_tex_info prev_info[GFX_MAX_TEXTURES];
+#ifdef HAVE_FBO
+   struct video_fbo_rect fbo_rect[GFX_MAX_SHADERS];
+   struct gfx_fbo_scale fbo_scale[GFX_MAX_SHADERS];
 #endif
 
 #ifdef HAVE_GL_SYNC
-#define MAX_FENCES 4
-   bool have_sync;
    GLsync fences[MAX_FENCES];
-   unsigned fence_count;
 #endif
-
-   GLuint vao;
 } gl_t;
 
 bool gl_load_luts(const struct video_shader *generic_shader,

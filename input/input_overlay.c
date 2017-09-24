@@ -734,6 +734,12 @@ void input_state_overlay(input_overlay_t *ol, int16_t *ret,
       case RETRO_DEVICE_KEYBOARD:
          if (id < RETROK_LAST)
          {
+            /*RARCH_LOG("UDLR %u %u %u %u\n", 
+               OVERLAY_GET_KEY(ol_state, RETROK_UP), 
+               OVERLAY_GET_KEY(ol_state, RETROK_DOWN), 
+               OVERLAY_GET_KEY(ol_state, RETROK_LEFT),
+               OVERLAY_GET_KEY(ol_state, RETROK_RIGHT)
+            );*/
             if (OVERLAY_GET_KEY(ol_state, id))
                *ret |= 1;
          }

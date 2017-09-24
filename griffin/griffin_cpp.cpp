@@ -114,6 +114,10 @@ VIDEO CONTEXT
 
 #if defined(HAVE_D3D)
 #include "../gfx/drivers_context/d3d_ctx.cpp"
+
+#ifdef HAVE_HLSL
+#include "../gfx/drivers_shader/shader_hlsl.cpp"
+#endif
 #endif
 
 /*============================================================
@@ -147,12 +151,22 @@ VIDEO DRIVER
 #if defined(HAVE_D3D)
 #include "../gfx/common/d3d_common.cpp"
 #include "../gfx/drivers/d3d.cpp"
-#ifdef _XBOX
-#include "../gfx/drivers_renderchain/xdk_renderchain.cpp"
+
+
+#if defined(HAVE_D3D8)
+#include "../gfx/drivers_renderchain/d3d8_renderchain.cpp"
+#elif defined(HAVE_D3D9)
+
+#ifdef HAVE_HLSL
+#include "../gfx/drivers_renderchain/d3d9_hlsl_renderchain.cpp"
 #endif
+
 #ifdef HAVE_CG
 #include "../gfx/drivers_renderchain/d3d9_cg_renderchain.cpp"
 #endif
+
+#endif
+
 #endif
 
 #ifdef HAVE_VULKAN

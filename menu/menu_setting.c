@@ -71,7 +71,7 @@
 #include "../location/location_driver.h"
 #include "../record/record_driver.h"
 #include "../audio/audio_driver.h"
-#include "../input/input_config.h"
+#include "../input/input_driver.h"
 #include "../tasks/tasks_internal.h"
 #include "../config.def.h"
 #include "../ui/ui_companion_driver.h"
@@ -82,25 +82,59 @@
 
 #include "../tasks/tasks_internal.h"
 
+enum settings_list_type
+{
+   SETTINGS_LIST_NONE = 0,
+   SETTINGS_LIST_MAIN_MENU,
+   SETTINGS_LIST_DRIVERS,
+   SETTINGS_LIST_CORE,
+   SETTINGS_LIST_CONFIGURATION,
+   SETTINGS_LIST_LOGGING,
+   SETTINGS_LIST_SAVING,
+   SETTINGS_LIST_REWIND,
+   SETTINGS_LIST_VIDEO,
+   SETTINGS_LIST_AUDIO,
+   SETTINGS_LIST_INPUT,
+   SETTINGS_LIST_INPUT_HOTKEY,
+   SETTINGS_LIST_RECORDING,
+   SETTINGS_LIST_FRAME_THROTTLING,
+   SETTINGS_LIST_FONT,
+   SETTINGS_LIST_OVERLAY,
+   SETTINGS_LIST_MENU,
+   SETTINGS_LIST_MENU_FILE_BROWSER,
+   SETTINGS_LIST_MULTIMEDIA,
+   SETTINGS_LIST_USER_INTERFACE,
+   SETTINGS_LIST_PLAYLIST,
+   SETTINGS_LIST_CHEEVOS,
+   SETTINGS_LIST_CORE_UPDATER,
+   SETTINGS_LIST_NETPLAY,
+   SETTINGS_LIST_LAKKA_SERVICES,
+   SETTINGS_LIST_USER,
+   SETTINGS_LIST_USER_ACCOUNTS,
+   SETTINGS_LIST_USER_ACCOUNTS_CHEEVOS,
+   SETTINGS_LIST_DIRECTORY,
+   SETTINGS_LIST_PRIVACY
+};
+
 struct bool_entry
 {
+   bool default_value;
    bool *target;
+   uint32_t flags;
    enum msg_hash_enums name_enum_idx;
    enum msg_hash_enums SHORT_enum_idx;
-   bool default_value;
    enum msg_hash_enums off_enum_idx;
    enum msg_hash_enums on_enum_idx;
-   uint32_t flags;
 };
 
 struct string_options_entry
 {
-   char *target;
-   size_t len;
    enum msg_hash_enums name_enum_idx;
    enum msg_hash_enums SHORT_enum_idx;
    const char *default_value;
    const char *values;
+   char *target;
+   size_t len;
 };
 
 #ifdef HAVE_CHEEVOS
@@ -597,7 +631,7 @@ void menu_settings_list_current_add_range(
       float min, float max, float step,
       bool enforce_minrange_enable, bool enforce_maxrange_enable)
 {
-   unsigned idx = list_info->index - 1;
+   unsigned idx                   = list_info->index - 1;
 
    (*list)[idx].min               = min;
    (*list)[idx].step              = step;
@@ -728,20 +762,23 @@ int menu_action_handle_setting(rarch_setting_t *setting,
       case ST_PATH:
          if (action == MENU_ACTION_OK)
          {
-            menu_displaylist_info_t  info = {0};
+            menu_displaylist_info_t  info;
             file_list_t       *menu_stack = menu_entries_get_menu_stack_ptr(0);
             const char      *name         = setting->name;
             size_t selection              = menu_navigation_get_selection();
 
-            info.list           = menu_stack;
-            info.directory_ptr  = selection;
-            info.type           = type;
-            info.enum_idx       = MSG_UNKNOWN;
+            menu_displaylist_info_init(&info);
+
             strlcpy(info.path,  setting->default_value.string, sizeof(info.path));
             strlcpy(info.label, name, sizeof(info.label));
+            info.type                     = type;
+            info.directory_ptr            = selection;
+            info.list                     = menu_stack;
 
             if (menu_displaylist_ctl(DISPLAYLIST_GENERIC, &info))
                menu_displaylist_process(&info);
+
+            menu_displaylist_info_free(&info);
          }
          /* fall-through. */
       case ST_BOOL:
@@ -951,16 +988,14 @@ void setting_get_string_representation(void *data, char *s, size_t len)
  **/
 static int setting_action_start_bind_device(void *data)
 {
-   uint32_t index_offset;
    rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
 
    if (!setting || !settings)
       return -1;
 
-   index_offset = setting->index_offset;
-
-   configuration_set_uint(settings, settings->uints.input_joypad_map[index_offset], index_offset);
+   configuration_set_uint(settings,
+         settings->uints.input_joypad_map[setting->index_offset], setting->index_offset);
    return 0;
 }
 
@@ -1410,8 +1445,9 @@ static int setting_action_ok_bind_defaults(void *data, bool wraparound)
    return 0;
 }
 
-static void setting_get_string_representation_st_float_video_refresh_rate_auto(void *data,
-      char *s, size_t len)
+static void 
+setting_get_string_representation_st_float_video_refresh_rate_auto(
+      void *data, char *s, size_t len)
 {
    double video_refresh_rate = 0.0;
    double deviation          = 0.0;
@@ -1632,18 +1668,20 @@ void general_write_handler(void *data)
       case MENU_ENUM_LABEL_HELP:
          if (*setting->value.target.boolean)
          {
-            menu_displaylist_info_t info = {0};
+            menu_displaylist_info_t info;
             file_list_t *menu_stack      = menu_entries_get_menu_stack_ptr(0);
 
-            info.list          = menu_stack;
-            info.type          = 0;
-            info.directory_ptr = 0;
+            menu_displaylist_info_init(&info);
+
+            info.enum_idx                = MENU_ENUM_LABEL_HELP;
             strlcpy(info.label,
-                  msg_hash_to_str(MENU_ENUM_LABEL_HELP), sizeof(info.label));
-            info.enum_idx      = MENU_ENUM_LABEL_HELP;
+                  msg_hash_to_str(MENU_ENUM_LABEL_HELP),
+                  sizeof(info.label));
+            info.list                    = menu_stack;
 
             if (menu_displaylist_ctl(DISPLAYLIST_GENERIC, &info))
                menu_displaylist_process(&info);
+            menu_displaylist_info_free(&info);
             setting_set_with_string_representation(setting, "false");
          }
          break;
@@ -1697,19 +1735,11 @@ void general_write_handler(void *data)
          settings->uints.input_joypad_map[4] = *setting->value.target.integer;
          break;
       case MENU_ENUM_LABEL_LOG_VERBOSITY:
-         if (setting
-               && setting->value.target.boolean
-               && *setting->value.target.boolean)
+         if (!verbosity_is_enabled())
             verbosity_enable();
          else
             verbosity_disable();
-
-         if (setting
-               && setting->value.target.boolean
-               && *setting->value.target.boolean)
-            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL);
-         else
-            retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL);
+         retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL);
          break;
       case MENU_ENUM_LABEL_VIDEO_SMOOTH:
          video_driver_set_filtering(1, settings->bools.video_smooth);
@@ -1819,7 +1849,7 @@ static void overlay_enable_toggle_change_handler(void *data)
 #ifdef HAVE_LAKKA
 static void systemd_service_toggle(const char *path, char *unit, bool enable)
 {
-   int pid = fork();
+   int      pid = fork();
    char* args[] = {(char*)"systemctl", NULL, NULL, NULL};
 
    if (enable)
@@ -1843,6 +1873,7 @@ static void ssh_enable_toggle_change_handler(void *data)
 {
    bool enable           = false;
    settings_t *settings  = config_get_ptr();
+
    if (settings && settings->bools.ssh_enable)
       enable = true;
 
@@ -1854,6 +1885,7 @@ static void samba_enable_toggle_change_handler(void *data)
 {
    bool enable           = false;
    settings_t *settings  = config_get_ptr();
+
    if (settings && settings->bools.samba_enable)
       enable = true;
 
@@ -1865,6 +1897,7 @@ static void bluetooth_enable_toggle_change_handler(void *data)
 {
    bool enable           = false;
    settings_t *settings  = config_get_ptr();
+
    if (settings && settings->bools.bluetooth_enable)
       enable = true;
 
@@ -1872,40 +1905,6 @@ static void bluetooth_enable_toggle_change_handler(void *data)
          enable);
 }
 #endif
-
-enum settings_list_type
-{
-   SETTINGS_LIST_NONE = 0,
-   SETTINGS_LIST_MAIN_MENU,
-   SETTINGS_LIST_DRIVERS,
-   SETTINGS_LIST_CORE,
-   SETTINGS_LIST_CONFIGURATION,
-   SETTINGS_LIST_LOGGING,
-   SETTINGS_LIST_SAVING,
-   SETTINGS_LIST_REWIND,
-   SETTINGS_LIST_VIDEO,
-   SETTINGS_LIST_AUDIO,
-   SETTINGS_LIST_INPUT,
-   SETTINGS_LIST_INPUT_HOTKEY,
-   SETTINGS_LIST_RECORDING,
-   SETTINGS_LIST_FRAME_THROTTLING,
-   SETTINGS_LIST_FONT,
-   SETTINGS_LIST_OVERLAY,
-   SETTINGS_LIST_MENU,
-   SETTINGS_LIST_MENU_FILE_BROWSER,
-   SETTINGS_LIST_MULTIMEDIA,
-   SETTINGS_LIST_USER_INTERFACE,
-   SETTINGS_LIST_PLAYLIST,
-   SETTINGS_LIST_CHEEVOS,
-   SETTINGS_LIST_CORE_UPDATER,
-   SETTINGS_LIST_NETPLAY,
-   SETTINGS_LIST_LAKKA_SERVICES,
-   SETTINGS_LIST_USER,
-   SETTINGS_LIST_USER_ACCOUNTS,
-   SETTINGS_LIST_USER_ACCOUNTS_CHEEVOS,
-   SETTINGS_LIST_DIRECTORY,
-   SETTINGS_LIST_PRIVACY
-};
 
 static bool setting_append_list_input_player_options(
       rarch_setting_t **list,
@@ -2033,7 +2032,8 @@ static bool setting_append_list_input_player_options(
       (*list)[list_info->index - 1].action_start  = &setting_action_start_libretro_device_type;
       (*list)[list_info->index - 1].get_string_representation =
          &setting_get_string_representation_uint_libretro_device;
-      menu_settings_list_current_add_enum_idx(list, list_info, (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE + user));
+      menu_settings_list_current_add_enum_idx(list, list_info,
+            (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE + user));
 
       CONFIG_UINT_ALT(
             list, list_info,
@@ -2054,7 +2054,8 @@ static bool setting_append_list_input_player_options(
       (*list)[list_info->index - 1].action_start = &setting_action_start_analog_dpad_mode;
       (*list)[list_info->index - 1].get_string_representation =
          &setting_get_string_representation_uint_analog_dpad_mode;
-      menu_settings_list_current_add_enum_idx(list, list_info, (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE + user));
+      menu_settings_list_current_add_enum_idx(list, list_info,
+            (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE + user));
 
       CONFIG_ACTION_ALT(
             list, list_info,
@@ -2899,7 +2900,7 @@ static bool setting_append_list(
          break;
       case SETTINGS_LIST_CONFIGURATION:
          {
-            unsigned i;
+            uint8_t i;
             struct bool_entry bool_entries[6];
             START_GROUP(list, list_info, &group_info,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS), parent_group);
@@ -3036,7 +3037,7 @@ static bool setting_append_list(
          break;
       case SETTINGS_LIST_SAVING:
          {
-            unsigned i;
+            uint8_t i;
             struct bool_entry bool_entries[11];
 
             START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS), parent_group);
@@ -7091,25 +7092,65 @@ bool menu_setting_free(void *data)
          if (values & 1)
             switch (1 << n)
             {
-            case SD_FREE_FLAG_VALUES:
-               free((void*)setting->values);
-               setting->values = NULL;
-               break;
-            case SD_FREE_FLAG_NAME:
-               free((void*)setting->name);
-               setting->name = NULL;
-               break;
-            case SD_FREE_FLAG_SHORT:
-               free((void*)setting->short_description);
-               setting->short_description = NULL;
-               break;
-            default:
-               break;
+               case SD_FREE_FLAG_VALUES:
+                  free((void*)setting->values);
+                  setting->values = NULL;
+                  break;
+               case SD_FREE_FLAG_NAME:
+                  free((void*)setting->name);
+                  setting->name = NULL;
+                  break;
+               case SD_FREE_FLAG_SHORT:
+                  free((void*)setting->short_description);
+                  setting->short_description = NULL;
+                  break;
+               default:
+                  break;
             }
 
    free(data);
 
    return true;
+}
+
+static void menu_setting_terminate_last(rarch_setting_t *list, unsigned pos)
+{
+   (*&list)[pos].enum_idx           = MSG_UNKNOWN;
+   (*&list)[pos].type               = ST_NONE;
+   (*&list)[pos].size               = 0;
+   (*&list)[pos].name               = NULL;
+   (*&list)[pos].name_hash          = 0;
+   (*&list)[pos].short_description  = NULL;
+   (*&list)[pos].group              = NULL;
+   (*&list)[pos].subgroup           = NULL;
+   (*&list)[pos].parent_group       = NULL;
+   (*&list)[pos].values             = NULL;
+   (*&list)[pos].index              = 0;
+   (*&list)[pos].index_offset       = 0;
+   (*&list)[pos].min                = 0.0;
+   (*&list)[pos].max                = 0.0;
+   (*&list)[pos].flags              = 0;
+   (*&list)[pos].free_flags         = 0;
+   (*&list)[pos].change_handler     = NULL;
+   (*&list)[pos].read_handler       = NULL;
+   (*&list)[pos].action_start       = NULL;
+   (*&list)[pos].action_left        = NULL;
+   (*&list)[pos].action_right       = NULL;
+   (*&list)[pos].action_up          = NULL;
+   (*&list)[pos].action_down        = NULL;
+   (*&list)[pos].action_cancel      = NULL;
+   (*&list)[pos].action_ok          = NULL;
+   (*&list)[pos].action_select      = NULL;
+   (*&list)[pos].get_string_representation = NULL;
+   (*&list)[pos].bind_type          = 0;
+   (*&list)[pos].browser_selection_type = ST_NONE;
+   (*&list)[pos].step               = 0.0f;
+   (*&list)[pos].rounding_fraction  = NULL;
+   (*&list)[pos].enforce_minrange   = false;
+   (*&list)[pos].enforce_maxrange   = false;
+   (*&list)[pos].cmd_trigger.idx    = CMD_EVENT_NONE;
+   (*&list)[pos].cmd_trigger.triggered = false;
+   (*&list)[pos].dont_use_enum_idx_representation = false;
 }
 
 static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_info)
@@ -7148,7 +7189,6 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       SETTINGS_LIST_DIRECTORY,
       SETTINGS_LIST_PRIVACY
    };
-   rarch_setting_t terminator           = setting_terminator_setting();
    const char *root                     = msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU);
    rarch_setting_t *list                = (rarch_setting_t*)calloc(
          list_info->size, sizeof(*list));
@@ -7164,9 +7204,8 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
 
    if (!(settings_list_append(&list, list_info)))
       goto error;
-   if (terminator.name)
-      terminator.name_hash = msg_hash_calculate(terminator.name);
-   (*&list)[list_info->index++] = terminator;
+   menu_setting_terminate_last(list, list_info->index);
+   list_info->index++;
 
    /* flatten this array to save ourselves some kilobytes. */
    resized_list = (rarch_setting_t*)realloc(list,

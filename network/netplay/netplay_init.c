@@ -169,7 +169,11 @@ static bool init_tcp_socket(netplay_t *netplay, void *direct_host,
    if (!direct_host && !server && res->ai_family == AF_INET6)
    {
       struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *) res->ai_addr;
+#if defined(_MSC_VER) && _MSC_VER <= 1200
+	  IN6ADDR_SETANY(sin6);
+#else
       sin6->sin6_addr           = in6addr_any;
+#endif
    }
 #endif
 

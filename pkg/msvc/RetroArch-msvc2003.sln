@@ -1,18 +1,24 @@
 Microsoft Visual Studio Solution File, Format Version 8.00
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RetroArch-msvc2003", "msvc-2003/RetroArch-msvc2003.vcproj", "{1FEFA874-F6A6-4CE6-9DB4-3B291A364CE5}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RetroArch-msvc2003", "msvc-2003\RetroArch-msvc2003.vcproj", "{1FEFA874-F6A6-4CE6-9DB4-3B291A364CE5}"
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfiguration) = preSolution
 		Debug = Debug
+		Debug NoDX = Debug NoDX
 		Release = Release
+		Release NoDX = Release NoDX
 	EndGlobalSection
 	GlobalSection(ProjectConfiguration) = postSolution
 		{1FEFA874-F6A6-4CE6-9DB4-3B291A364CE5}.Debug.ActiveCfg = Debug|Win32
 		{1FEFA874-F6A6-4CE6-9DB4-3B291A364CE5}.Debug.Build.0 = Debug|Win32
+		{1FEFA874-F6A6-4CE6-9DB4-3B291A364CE5}.Debug NoDX.ActiveCfg = Debug NoDX|Win32
+		{1FEFA874-F6A6-4CE6-9DB4-3B291A364CE5}.Debug NoDX.Build.0 = Debug NoDX|Win32
 		{1FEFA874-F6A6-4CE6-9DB4-3B291A364CE5}.Release.ActiveCfg = Release|Win32
 		{1FEFA874-F6A6-4CE6-9DB4-3B291A364CE5}.Release.Build.0 = Release|Win32
+		{1FEFA874-F6A6-4CE6-9DB4-3B291A364CE5}.Release NoDX.ActiveCfg = Release NoDX|Win32
+		{1FEFA874-F6A6-4CE6-9DB4-3B291A364CE5}.Release NoDX.Build.0 = Release NoDX|Win32
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 	EndGlobalSection

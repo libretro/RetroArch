@@ -44,24 +44,22 @@ enum state_ram_type
 
 struct state_tracker_uniform_info
 {
-   char id[64];
-   uint32_t addr;
    enum state_tracker_type type;
    enum state_ram_type ram_type;
+   char id[64];
    uint16_t mask;
    uint16_t equal;
+   uint32_t addr;
 };
 
 struct state_tracker_info
 {
-   const uint8_t *wram;
-
-   const struct state_tracker_uniform_info *info;
-   unsigned info_elem;
-
    const char *script;
    const char *script_class;
    bool script_is_file;
+   const uint8_t *wram;
+   unsigned info_elem;
+   const struct state_tracker_uniform_info *info;
 };
 
 struct state_tracker_uniform
