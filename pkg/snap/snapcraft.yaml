@@ -1,0 +1,161 @@
+name: retroarch
+version: "1.6.7"
+summary: RetroArch
+description: RetroArch is the official reference frontend for the libretro API.
+confinement: strict
+grade: stable
+
+
+apps:
+  retroarch:
+    command: usr/local/bin/retroarch.wrapper
+    plugs: [network, network-bind, x11, opengl, home, alsa, pulseaudio, bluez]
+
+parts:
+  retroarch:
+   plugin: autotools
+   source-type: tar
+   source: https://github.com/libretro/RetroArch/archive/v1.6.7.tar.gz
+   configflags:  
+     - --enable-kms
+     - --enable-xvideo
+     - --enable-ffmpeg
+     - --enable-ssa 
+     - --disable-coreaudio
+     - --disable-jack
+     - --disable-python
+     - --enable-pulse
+     - --disable-roar
+     - --disable-rsound
+     - --disable-sdl
+     - --disable-sdl2
+     - --disable-vg
+     - --disable-v4l2
+     - --disable-xinerama    
+   stage-packages:
+     - fonts-dejavu-core
+     - libasound2
+     - libavcodec-ffmpeg56
+     - libavformat-ffmpeg56
+     - libavutil-ffmpeg54
+     - libc6
+     - libdrm2
+     - libegl1-mesa
+     - libfreetype6
+     - libgbm1
+     - libgl1-mesa-dri
+     - libgl1-mesa-glx
+     - libgles2-mesa
+     - libminizip1
+     - libopenal1
+     - libpulse0
+     - libswresample-ffmpeg1
+     - libswscale-ffmpeg3
+     - libudev1
+     - libusb-1.0-0
+     - libwayland-client0
+     - libwayland-egl1-mesa
+     - libx11-6
+     - libxext6
+     - libxinerama1
+     - libxkbcommon0
+     - libxv1
+     - libxxf86vm1
+     - pulseaudio
+     - zlib1g
+   build-packages:
+     - gcc
+     - make
+     - libasound2-dev
+     - libass-dev
+     - libavcodec-dev
+     - libavdevice-dev
+     - libavformat-dev
+     - libdrm-dev
+     - libegl1-mesa-dev
+     - libfreetype6-dev 
+     - libgbm-dev
+     - libgl1-mesa-dev
+     - libpulse-dev
+     - libswscale-dev
+     - libusb-1.0-0-dev
+     - libudev-dev
+     - libxml2-dev
+     - libxv-dev
+     - mesa-common-dev
+     - xserver-xorg-input-all
+     - zlib1g-dev
+  retroarch-wrapper:
+    plugin: dump
+    source: .
+    organize:
+     retroarch.wrapper: usr/local/bin/retroarch.wrapper
+    stage:
+    - usr/local/bin/retroarch.wrapper
+  retroarch-assets:
+    plugin: dump
+    source: https://github.com/libretro/retroarch-assets/archive/master.tar.gz
+    source-type: tar
+    organize:
+     xmb: .config/assets/xmb
+     glui: .config/assets/glui
+    filesets:
+      assets: [.config/assets/xmb/*, -.config/assets/xmb/*/src, .config/assets/glui/*.png, .config/assets/glui/*.ttf]
+    stage:
+    - -configure
+    - -Makefile
+    - $assets
+    prime:
+    - $assets
+  retroarch-autoconfig:
+    plugin: dump
+    source: https://github.com/libretro/retroarch-joypad-autoconfig/archive/master.tar.gz
+    source-type: tar
+    organize:
+      udev: .config/autoconfig/udev
+      linuxraw: .config/autoconfig/linuxraw
+      hid: .config/autoconfig/hid
+      x: .config/autoconfig/x
+    filesets:
+      autoconfig: [ .config/autoconfig/udev, .config/autoconfig/linuxraw, .config/autoconfig/hid, .config/autoconfig/x]
+    stage:
+    - $autoconfig
+    prime:
+    - $autoconfig
+  retroarch-database:
+    plugin: dump
+    source: https://github.com/libretro/libretro-database/archive/master.tar.gz
+    source-type : tar
+    organize: 
+     rdb: .config/database/rdb
+     cursors: .config/database/cursors
+     cht: .config/cheats
+    stage:
+     - .config/database
+     - .config/cheats
+  retroarch-info:
+    plugin: dump
+    source: https://github.com/libretro/libretro-super/archive/master.tar.gz
+    source-type : tar
+    organize:
+     dist/info: .config/cores
+    stage:
+     - .config/cores
+  retroarch-overlays:
+    plugin: dump
+    source: https://github.com/libretro/common-overlays/archive/master.tar.gz
+    source-type : tar
+    organize:
+     "*": .config/overlay
+    stage:
+     - .config/overlay
+  retroarch-shaders:
+    plugin: dump
+    source: https://github.com/libretro/glsl-shaders/archive/master.tar.gz
+    source-type : tar
+    organize:
+     "*": .config/shaders/shaders_glsl
+    stage:
+     - -configure
+     - -Makefile
+     - .config/shaders
