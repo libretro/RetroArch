@@ -1,4 +1,4 @@
-include Makefile.version
+include version.all
 
 #which compiler to build  with - GCC or SNC
 #set to GCC for debug builds for use with debugger
