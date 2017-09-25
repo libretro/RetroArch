@@ -1,9 +1,9 @@
-<!DOCTYPE app [ <IENTITY % versionDTD SYSTEM "../../version.dtd"> %versionDTD; ]>
+<!DOCTYPE app [ <!ENTITY % versionDTD SYSTEM "../../version.dtd"> %versionDTD; ]>
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <app version="1">
   <name>Retroarch</name>
   <coder>Libretro</coder>
-  <version>"&version;"</version>
+  <version>&version;</version>
   <release_date>20170108133000</release_date>
   <short_description></short_description>
   <long_description>RetroArch

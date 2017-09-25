@@ -1,4 +1,4 @@
-<!DOCTYPE manifest [ <IENTITY % versionDTD SYSTEM "../../../version.dtd"> %versionDTD; ]>
+<!DOCTYPE manifest [ <!ENTITY % versionDTD SYSTEM "../../../version.dtd"> %versionDTD; ]>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.retroarch"
     android:versionCode="62"
