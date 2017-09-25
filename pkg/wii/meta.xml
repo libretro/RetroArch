@@ -1,5 +1,5 @@
-<!DOCTYPE app [ <!ENTITY % versionDTD SYSTEM "../../version.dtd"> %versionDTD; ]>
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!DOCTYPE app [ <!ENTITY % versionDTD SYSTEM "../../version.dtd"> %versionDTD; ]>
 <app version="1">
   <name>RetroArch</name>
   <coder>Libretro</coder>
