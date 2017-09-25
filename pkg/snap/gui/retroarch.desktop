@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Name=RetroArch
+GenericName=Libretro Frontend
+Type=Application
+Comment=Multi-Engine Platform
+Icon=${SNAP}/meta/gui/retroarch.svg
+Terminal=false
+StartupNotify=false
+Keywords=multi;engine;emulator;xmb;
+Categories=Game;Emulator;

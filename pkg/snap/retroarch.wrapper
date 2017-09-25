@@ -1,0 +1,63 @@
+#!/bin/sh
+
+set -e
+
+case "$SNAP_ARCH" in
+    "amd64") ARCH='x86_64-linux-gnu'
+    ;;
+    "i386") ARCH='i386-linux-gnu'
+    ;;
+    "armhf") ARCH='arm-linux-gnueabihf'
+    ;;
+    *)
+        echo "Unsupported architecture for this app build"
+        exit 1
+    ;;
+esac
+
+
+export LD_LIBRARY_PATH="$SNAP/usr/lib/$ARCH/dri:$SNAP/usr/lib/$ARCH/alsa-lib:$LD_LIBRARY_PATH"
+export XDG_DATA_HOME="$SNAP/usr/share"
+export FONTCONFIG_PATH="$SNAP/etc/fonts/config.d"
+export FONTCONFIG_FILE="$SNAP/etc/fonts/fonts.conf"
+export XKB_CONFIG_ROOT="$SNAP/usr/share/X11/xkb"
+
+# Mesa Libs
+export LD_LIBRARY_PATH=$SNAP/usr/lib/$ARCH/mesa:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=$SNAP/usr/lib/$ARCH/mesa-egl:$LD_LIBRARY_PATH
+
+# Tell libGL where to find the drivers
+export LIBGL_DRIVERS_PATH=$SNAP/usr/lib/$ARCH/dri
+
+# ensure that our HW/opengl libs are before the snap specific libs
+export LD_LIBRARY_PATH=$SNAP_LIBRARY_PATH:$LD_LIBRARY_PATH
+
+# Otherwise XOpenIM failed
+export XLOCALEDIR=$SNAP/usr/share/X11/locale
+
+#Create RetroArch user configuration directory if doesn't exist
+[ ! -d "$SNAP_USER_DATA/.config/retroarch" ] && mkdir -p "$SNAP_USER_DATA/.config/retroarch"
+
+#Copy assets if doesn't exist
+[ ! -d "$SNAP_USER_DATA/.config/retroarch/assets" ] && cp -R "$SNAP/.config/assets" "$SNAP_USER_DATA/.config/retroarch"
+
+#Copy joypad autoconfig files if doesn't exist 
+[ ! -d "$SNAP_USER_DATA/.config/retroarch/autoconfig" ] && cp -R "$SNAP/.config/autoconfig" "$SNAP_USER_DATA/.config/retroarch"
+
+#Copy cheats files if doesn't exist 
+[ ! -d "$SNAP_USER_DATA/.config/retroarch/cheats" ] && cp -R "$SNAP/.config/cheats" "$SNAP_USER_DATA/.config/retroarch"
+
+#Copy database files if doesn't exist 
+[ ! -d "$SNAP_USER_DATA/.config/retroarch/database" ] && cp -R "$SNAP/.config/database" "$SNAP_USER_DATA/.config/retroarch"
+
+#Copy info files if doesn't exist 
+[ ! -d "$SNAP_USER_DATA/.config/retroarch/cores" ] && cp -R "$SNAP/.config/cores" "$SNAP_USER_DATA/.config/retroarch"
+
+#Copy overlay if doesn't exist 
+[ ! -d "$SNAP_USER_DATA/.config/retroarch/overlay" ] && cp -R "$SNAP/.config/overlay" "$SNAP_USER_DATA/.config/retroarch"
+
+#Copy shaders if doesn't exist 
+[ ! -d "$SNAP_USER_DATA/.config/retroarch/shaders" ] && cp -R "$SNAP/.config/shaders" "$SNAP_USER_DATA/.config/retroarch"
+
+$SNAP/usr/local/bin/retroarch $*
+
