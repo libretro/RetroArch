@@ -1938,6 +1938,33 @@ static void menu_input_st_string_cb_rename_entry(void *userdata,
    menu_input_dialog_end();
 }
 
+static void menu_input_st_string_cb_enable_settings(void *userdata,
+      const char *str)
+{
+   if (str && *str)
+   {
+      const char *label = menu_input_dialog_get_buffer();
+      settings_t *settings = config_get_ptr();
+
+      if (string_is_equal(label, settings->paths.menu_xmb_show_settings_password))
+      {
+         settings->bools.menu_xmb_show_settings = true;
+
+         runloop_msg_queue_push(
+            msg_hash_to_str(MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK),
+            1, 100, true);
+      }
+      else
+      {
+         runloop_msg_queue_push(
+            msg_hash_to_str(MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK),
+            1, 100, true);
+      }
+   }
+
+   menu_input_dialog_end();
+}
+
 static void menu_input_st_string_cb_save_preset(void *userdata,
       const char *str)
 {
@@ -3199,6 +3226,22 @@ static int action_ok_delete_entry(const char *path,
    return 0;
 }
 
+static int action_ok_enable_settings(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   menu_input_ctx_line_t line;
+
+   line.label         = msg_hash_to_str(MSG_INPUT_ENABLE_SETTINGS_PASSWORD);
+   line.label_setting = label;
+   line.type          = type;
+   line.idx           = (unsigned)entry_idx;
+   line.cb            = menu_input_st_string_cb_enable_settings;
+
+   if (!menu_input_dialog_start(&line))
+      return -1;
+   return 0;
+}
+
 static int action_ok_rdb_entry_submenu(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -4307,6 +4350,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_DELETE_ENTRY:
             BIND_ACTION_OK(cbs, action_ok_delete_entry);
+            break;
+         case MENU_ENUM_LABEL_XMB_MAIN_MENU_ENABLE_SETTINGS:
+            BIND_ACTION_OK(cbs, action_ok_enable_settings);
             break;
          case MENU_ENUM_LABEL_QUIT_RETROARCH:
             BIND_ACTION_OK(cbs, action_ok_quit);
