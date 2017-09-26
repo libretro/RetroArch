@@ -277,17 +277,24 @@ static bool intfstream_file_get_serial(const char *name, size_t offset, size_t s
    if (!fd)
       return 0;
 
-   intfstream_seek(fd, 0, SEEK_END);
+   if (intfstream_seek(fd, 0, SEEK_END) == -1)
+      goto error;
+
    file_size = intfstream_tell(fd);
-   intfstream_seek(fd, 0, SEEK_SET);
+
+   if (intfstream_seek(fd, 0, SEEK_SET) == -1)
+      goto error;
 
    if (file_size < 0)
       goto error;
 
    if (offset != 0 || size < (size_t) file_size)
    {
+      if (intfstream_seek(fd, offset, SEEK_SET) == -1)
+         goto error;
+
       data = (uint8_t*)malloc(size);
-      intfstream_seek(fd, offset, SEEK_SET);
+         
       if (intfstream_read(fd, data, size) != (ssize_t) size)
       {
          free(data);
@@ -415,38 +422,33 @@ static bool intfstream_file_get_crc(const char *name,
    if (!fd)
       return 0;
 
-   intfstream_seek(fd, 0, SEEK_END);
+   if (intfstream_seek(fd, 0, SEEK_END) == -1)
+      goto error;
+
    file_size = intfstream_tell(fd);
-   intfstream_seek(fd, 0, SEEK_SET);
+
+   if (intfstream_seek(fd, 0, SEEK_SET) == -1)
+      goto error;
 
    if (file_size < 0)
-   {
-      intfstream_close(fd);
-      free(fd);
-      return 0;
-   }
+      goto error;
 
    if (offset != 0 || size < (size_t) file_size)
    {
+      if (intfstream_seek(fd, offset, SEEK_SET) == -1)
+         goto error;
+
       data = (uint8_t*)malloc(size);
-      intfstream_seek(fd, offset, SEEK_SET);
 
       if (intfstream_read(fd, data, size) != (ssize_t) size)
-      {
-         intfstream_close(fd);
-         free(fd);
-         free(data);
-         return 0;
-      }
+         goto error;
+
       intfstream_close(fd);
       free(fd);
       fd = open_memory(data, size);
 
       if (!fd) 
-      {
-         free(data);
-         return 0;
-      }
+         goto error;
    }
 
    rv = intfstream_get_crc(fd, crc);
@@ -454,6 +456,16 @@ static bool intfstream_file_get_crc(const char *name,
    free(fd);
    free(data);
    return rv;
+
+error:
+   if (fd)
+   {
+      intfstream_close(fd);
+      free(fd);
+   }
+   if (data)
+      free(data);
+   return 0;
 }
 
 static int task_database_cue_get_crc(const char *name, uint32_t *crc)

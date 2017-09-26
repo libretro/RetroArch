@@ -134,7 +134,9 @@ static int detect_ps1_game_sub(intfstream_t *fp,
 
    buffer[0] = '\0';
    is_mode1  = 0;
-   intfstream_seek(fp, 0, SEEK_END);
+
+   if (intfstream_seek(fp, 0, SEEK_END) == -1)
+      goto error;
 
    if (!sub_channel_mixed)
    {
@@ -142,7 +144,9 @@ static int detect_ps1_game_sub(intfstream_t *fp,
       {
          unsigned int mode_test = 0;
 
-         intfstream_seek(fp, 0, SEEK_SET);
+         if (intfstream_seek(fp, 0, SEEK_SET) == -1)
+            goto error;
+
          intfstream_read(fp, &mode_test, 4);
          if (mode_test != MODETEST_VAL)
             is_mode1 = 1;
@@ -152,11 +156,15 @@ static int detect_ps1_game_sub(intfstream_t *fp,
    skip       = is_mode1? 0: 24;
    frame_size = sub_channel_mixed? 2448: is_mode1? 2048: 2352;
 
-   intfstream_seek(fp, 156 + skip + 16 * frame_size, SEEK_SET);
+   if (intfstream_seek(fp, 156 + skip + 16 * frame_size, SEEK_SET) == -1)
+      goto error;
+
    intfstream_read(fp, buffer, 6);
 
    cd_sector = buffer[2] | (buffer[3] << 8) | (buffer[4] << 16);
-   intfstream_seek(fp, skip + cd_sector * frame_size, SEEK_SET);
+
+   if (intfstream_seek(fp, skip + cd_sector * frame_size, SEEK_SET) == -1)
+      goto error;
    intfstream_read(fp, buffer, 2048 * 2);
 
    tmp = buffer;
@@ -175,7 +183,9 @@ static int detect_ps1_game_sub(intfstream_t *fp,
       goto error;
 
    cd_sector = tmp[2] | (tmp[3] << 8) | (tmp[4] << 16);
-   intfstream_seek(fp, skip + cd_sector * frame_size, SEEK_SET);
+   if (intfstream_seek(fp, skip + cd_sector * frame_size, SEEK_SET) == -1)
+      goto error;
+
    intfstream_read(fp, buffer, 256);
    buffer[256] = '\0';
 
