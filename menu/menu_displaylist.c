@@ -3532,6 +3532,14 @@ static int menu_displaylist_parse_options_remappings(
             input_config_get_bind_string(descriptor,
                keybind, auto_bind, sizeof(descriptor));
 
+            if(!strstr(descriptor, "Auto"))
+            {
+               const struct retro_keybind *keyptr = 
+                  &input_config_binds[settings->uints.keymapper_port][retro_id];
+
+               strlcpy(descriptor, msg_hash_to_str(keyptr->enum_idx), sizeof(descriptor));
+            }
+
             menu_entries_append_enum(info->list, descriptor, "",
                   MSG_UNKNOWN,
                   MENU_SETTINGS_INPUT_DESC_KBD_BEGIN  +  retro_id, 0, 0);
