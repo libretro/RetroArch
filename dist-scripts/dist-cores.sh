@@ -1,6 +1,6 @@
 #!/bin/sh
 
-RARCH_VERSION=1.6.7
+source ../version.all
 PLATFORM=$1
 SALAMANDER=no
 MAKEFILE_GRIFFIN=no
