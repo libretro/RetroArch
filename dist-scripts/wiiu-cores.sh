@@ -5,7 +5,7 @@
 # and icons (https://github.com/libretro/retroarch-assets/tree/master/pkg/wiiu) to this directory then run
 # the script. the output will be in retroarch/pkg/wiiu
 
-RARCH_VERSION=1.3.6
+source ../version.all
 
 platform=wiiu
 EXT=a
@@ -51,7 +51,7 @@ gen_meta_xml()
       echo '<app version="1">' >> "$1"_meta.xml
       echo '  <name>'$corename'</name>' >> "$1"_meta.xml
       echo '  <coder>'$authors'</coder>' >> "$1"_meta.xml
-      echo '  <version>'$RARCH_VERSION' r'$build_hash'</version>' >> "$1"_meta.xml
+      echo '  <version>'$PACKAGE_VERSION' r'$build_hash'</version>' >> "$1"_meta.xml
       echo '  <release_date>'$date'</release_date>' >> "$1"_meta.xml
       echo '  <short_description>RetroArch</short_description>' >> "$1"_meta.xml
       echo -e '  <long_description>'$display_name'\n\nSystem: '$systemname'\nLicense: '$license'</long_description>' >> "$1"_meta.xml

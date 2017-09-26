@@ -159,20 +159,20 @@ pkg: $(PPU_TARGET)  create-shaders copy-media-files create-npdrm-salamander crea
 	$(MAKE_PACKAGE_NPDRM) pkg/ps3/package.conf pkg/ps3
 
 pkg-signed: $(PPU_TARGET)  create-shaders copy-media-files create-salamander create-core
-	$(PYTHON2) $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) pkg/ps3 retroarch-ps3-cfw-$(RARCH_VERSION).pkg
+	$(PYTHON2) $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) pkg/ps3 retroarch-ps3-cfw-$(PACKAGE_VERSION).pkg
 
 pkg-signed-standalone: $(PPU_TARGET)  create-shaders copy-media-files create-core
 	$(MAKE_SELF) $(PPU_TARGET) $(EBOOT_PATH) $(CONTENT_ID)
-	$(PYTHON2) $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) pkg/ps3 retroarch-ps3-cfw-$(RARCH_VERSION).pkg
+	$(PYTHON2) $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) pkg/ps3 retroarch-ps3-cfw-$(PACKAGE_VERSION).pkg
 
 pkg-signed-cfw: $(PPU_TARGET)  create-shaders copy-media-files create-salamander create-core
-	$(PYTHON2) $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) pkg/ps3 retroarch-ps3-cfw-$(RARCH_VERSION)-kmeaw.pkg
-	$(PKG_FINALIZE) retroarch-ps3-cfw-$(RARCH_VERSION)-kmeaw.pkg
+	$(PYTHON2) $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) pkg/ps3 retroarch-ps3-cfw-$(PACKAGE_VERSION)-kmeaw.pkg
+	$(PKG_FINALIZE) retroarch-ps3-cfw-$(PACKAGE_VERSION)-kmeaw.pkg
 
 pkg-signed-cfw-standalone: $(PPU_TARGET)  create-shaders copy-media-files create-core
 	$(MAKE_SELF) $(PPU_TARGET) $(EBOOT_PATH) $(CONTENT_ID)
-	$(PYTHON2) $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) pkg/ps3 retroarch-ps3-cfw-$(RARCH_VERSION).pkg
-	$(PKG_FINALIZE) retroarch-ps3-cfw-$(RARCH_VERSION)-kmeaw.pkg
+	$(PYTHON2) $(PKG_SCRIPT) --contentid $(CONTENT_ID_FULL) pkg/ps3 retroarch-ps3-cfw-$(PACKAGE_VERSION).pkg
+	$(PKG_FINALIZE) retroarch-ps3-cfw-$(PACKAGE_VERSION)-kmeaw.pkg
 
 clean-selfs:
 ifeq ($(EBOOT_EXISTS),1)
