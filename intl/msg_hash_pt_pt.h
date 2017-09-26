@@ -1665,8 +1665,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROACTIVE,
       "RetroActive")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_DOTART,
       "Dot-Art")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
-      "Enable Settings Tab")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
       "Cor do tema do Menu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_APPLE_GREEN,
@@ -1705,8 +1703,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_MUSIC,
       "Exibir Aba de Música")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_SETTINGS,
       "Exibir Aba de Definições")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_SETTINGS_PASSWORD,
-      "Set Password For Enabling Settings Tab")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_VIDEO,
       "Exibir Aba de Vídeo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_THEME,
@@ -2029,12 +2025,6 @@ MSG_HASH(MSG_INPUT_PRESET_FILENAME,
       "Nome de Arquivo Pré-Definido")
 MSG_HASH(MSG_INPUT_RENAME_ENTRY,
       "Rename Title")
-MSG_HASH(MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
-      "Enter Password")
-MSG_HASH(MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,
-      "Password correct.")
-MSG_HASH(MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
-      "Password incorrect.")
 MSG_HASH(MSG_INTERFACE,
       "Interface")
 MSG_HASH(MSG_INTERNAL_STORAGE,
@@ -2829,8 +2819,6 @@ MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
       "Selecionar um tema degradê de cor de fundo diferente.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY,
       "Modificar a opacidade do papel de parede.")
-MSG_HASH(MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
-      "Enables the Settings tab. A restart is required for the tab to appear.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
       "Selecionar um tema degradê de cor de fundo diferente.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
@@ -2845,8 +2833,6 @@ MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_VIDEO,
       "Mostrar a aba de vídeo dentro do menu principal.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_SETTINGS,
       "Mostrar a aba de definições dentro do menu principal.")
-MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_SETTINGS_PASSWORD,
-      "Supplying a password when hiding the settings tab makes it possible to later restore it from the menu, by going to the Main Menu tab, selecting Enable Settings Tab and entering the password.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_HISTORY,
       "Mostrar a aba de histórico recente dentro do menu principal.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_ADD,
@@ -3029,3 +3015,17 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
       "Menu Icons")
 MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
       "Enable/disable the menu icons shown at the lefthand side of the menu entries.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
+      "Enable Settings Tab")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_SETTINGS_PASSWORD,
+      "Set Password For Enabling Settings Tab")
+MSG_HASH(MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
+      "Enter Password")
+MSG_HASH(MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,
+      "Password correct.")
+MSG_HASH(MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
+      "Password incorrect.")
+MSG_HASH(MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
+      "Enables the Settings tab. A restart is required for the tab to appear.")
+MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_SETTINGS_PASSWORD,
+      "Supplying a password when hiding the settings tab makes it possible to later restore it from the menu, by going to the Main Menu tab, selecting Enable Settings Tab and entering the password.")
