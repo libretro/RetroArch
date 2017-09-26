@@ -379,6 +379,7 @@ typedef struct settings
 
 #ifdef HAVE_MENU
       char path_menu_xmb_font[PATH_MAX_LENGTH];
+      char menu_xmb_show_settings_password[PATH_MAX_LENGTH];
 #endif
       char path_cheat_database[PATH_MAX_LENGTH];
       char path_content_database[PATH_MAX_LENGTH];

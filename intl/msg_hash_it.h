@@ -3131,3 +3131,17 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
       "Icone del Menu")
 MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
       "Abilita/disabilita le icone del menu visualizzate sul lato sinistro di ogni voce.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
+      "Enable Settings Tab")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_SETTINGS_PASSWORD,
+      "Set Password For Enabling Settings Tab")
+MSG_HASH(MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
+      "Enter Password")
+MSG_HASH(MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,
+      "Password correct.")
+MSG_HASH(MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
+      "Password incorrect.")
+MSG_HASH(MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
+      "Enables the Settings tab. A restart is required for the tab to appear.")
+MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_SETTINGS_PASSWORD,
+      "Supplying a password when hiding the settings tab makes it possible to later restore it from the menu, by going to the Main Menu tab, selecting Enable Settings Tab and entering the password.")

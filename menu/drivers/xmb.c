@@ -4331,6 +4331,14 @@ static int xmb_list_push(void *data, void *userdata,
                }
             }
 #endif
+
+            settings_t *settings      = config_get_ptr();
+            if (!settings->bools.menu_xmb_show_settings && !string_is_empty(settings->paths.menu_xmb_show_settings_password))
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_XMB_MAIN_MENU_ENABLE_SETTINGS;
+               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            }
+
             entry.enum_idx      = MENU_ENUM_LABEL_INFORMATION_LIST;
             menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 #ifndef HAVE_DYNAMIC
