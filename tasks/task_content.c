@@ -448,6 +448,7 @@ static bool content_file_init_extract(
       )
 {
    unsigned i;
+   char *new_path = NULL;
 
    for (i = 0; i < content->size; i++)
    {
@@ -464,11 +465,12 @@ static bool content_file_init_extract(
          continue;
 
       {
-         char *temp_content = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-         char *new_path     = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-         const char *valid_ext              = special ?
+         char *temp_content    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+         const char *valid_ext = special ?
             special->roms[i].valid_extensions :
             content_ctx->valid_extensions;
+
+         new_path        = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
          temp_content[0] = new_path[0] = '\0';
 
