@@ -187,7 +187,7 @@ typedef struct menu_displaylist_info
    char path[PATH_MAX_LENGTH];
    char path_b[PATH_MAX_LENGTH];
    char path_c[PATH_MAX_LENGTH];
-   char exts[PATH_MAX_LENGTH];
+   char *exts;
    char label[255];
    unsigned type;
    unsigned type_default;

@@ -3989,9 +3989,12 @@ static bool menu_displaylist_push_internal(
    {
       filebrowser_clear_type();
       info->type = 42;
-      strlcpy(info->exts,
-            file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT),
-            sizeof(info->exts));
+
+      if (info->exts && !string_is_empty(info->exts))
+         free(info->exts);
+
+      info->exts = strdup(
+            file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT));
       strlcpy(info->label,
             msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
             sizeof(info->label));
@@ -4004,9 +4007,11 @@ static bool menu_displaylist_push_internal(
    {
       filebrowser_clear_type();
       info->type = 42;
-      strlcpy(info->exts,
-            file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT),
-            sizeof(info->exts));
+
+      if (info->exts && !string_is_empty(info->exts))
+         free(info->exts);
+      info->exts = strdup(
+            file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT));
       strlcpy(info->label,
             msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
             sizeof(info->label));
@@ -4019,9 +4024,11 @@ static bool menu_displaylist_push_internal(
    {
       filebrowser_clear_type();
       info->type = 42;
-      strlcpy(info->exts,
-            file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT),
-            sizeof(info->exts));
+
+      if (info->exts && !string_is_empty(info->exts))
+         free(info->exts);
+      info->exts = strdup(
+            file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT));
       strlcpy(info->label,
             msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
             sizeof(info->label));
@@ -4054,9 +4061,11 @@ static bool menu_displaylist_push_internal(
 
       filebrowser_clear_type();
       info->type = 42;
-      strlcpy(info->exts,
-            file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT),
-            sizeof(info->exts));
+
+      if (info->exts && !string_is_empty(info->exts))
+         free(info->exts);
+      info->exts = strdup(
+            file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT));
       strlcpy(info->label,
             msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
             sizeof(info->label));
@@ -4302,6 +4311,9 @@ void menu_displaylist_info_free(menu_displaylist_info_t *info)
 {
    if (!info)
       return;
+   if (info->exts)
+      free(info->exts);
+   info->exts   = NULL;
 #if 0
    if (info->path)
       free(info->path);
@@ -4309,14 +4321,11 @@ void menu_displaylist_info_free(menu_displaylist_info_t *info)
       free(info->path_b);
    if (info->path_c)
       free(info->path_c);
-   if (info->exts)
-      free(info->exts);
    if (info->label)
       free(info->label);
    info->path   = NULL;
    info->path_b = NULL;
    info->path_c = NULL;
-   info->exts   = NULL;
    info->label  = NULL;
 #endif
 }
@@ -4338,13 +4347,13 @@ void menu_displaylist_info_init(menu_displaylist_info_t *info)
    info->path[0]                  = '\0';
    info->path_b[0]                = '\0';
    info->path_c[0]                = '\0';
-   info->exts[0]                  = '\0';
    info->label[0]                 = '\0';
    info->type                     = 0;
    info->type_default             = 0;
    info->flags                    = 0;
    info->label_hash               = 0;
    info->directory_ptr            = 0;
+   info->exts                     = NULL;
    info->list                     = NULL;
    info->menu_list                = NULL;
    info->setting                  = NULL;
@@ -6627,9 +6636,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          filebrowser_clear_type();
          info->type_default = FILE_TYPE_RDB;
-         strlcpy(info->exts,
-               file_path_str(FILE_PATH_RDB_EXTENSION),
-               sizeof(info->exts));
+         if (info->exts && !string_is_empty(info->exts))
+            free(info->exts);
+         info->exts = strdup(
+               file_path_str(FILE_PATH_RDB_EXTENSION));
          info->enum_idx     = MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST;
          load_content       = false;
          use_filebrowser    = true;
@@ -6641,26 +6651,33 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->type_default = FILE_TYPE_CURSOR;
          load_content       = false;
          use_filebrowser    = true;
-         strlcpy(info->exts, "dbc", sizeof(info->exts));
+         if (info->exts && !string_is_empty(info->exts))
+            free(info->exts);
+         info->exts = strdup("dbc");
          strlcpy(info->path, settings->paths.directory_cursor, sizeof(info->path));
          break;
       case DISPLAYLIST_CONFIG_FILES:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          filebrowser_clear_type();
          info->type_default = FILE_TYPE_CONFIG;
-         strlcpy(info->exts, "cfg", sizeof(info->exts));
+         if (info->exts && !string_is_empty(info->exts))
+            free(info->exts);
+         info->exts = strdup("cfg");
          load_content       = false;
          use_filebrowser    = true;
          break;
       case DISPLAYLIST_SHADER_PRESET:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          {
+            char new_exts[PATH_MAX_LENGTH];
             struct string_list *str_list;
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_VULKAN)
             union string_list_elem_attr attr;
             attr.i = 0;
 #endif
-            str_list = string_list_new();
+
+            new_exts[0] = '\0';
+            str_list    = string_list_new();
 
             filebrowser_clear_type();
             info->type_default = FILE_TYPE_SHADER_PRESET;
@@ -6674,7 +6691,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 #ifdef HAVE_VULKAN
             string_list_append(str_list, "slangp", attr);
 #endif
-            string_list_join_concat(info->exts, sizeof(info->exts), str_list, "|");
+            string_list_join_concat(new_exts, sizeof(new_exts), str_list, "|");
+            if (info->exts && !string_is_empty(info->exts))
+               free(info->exts);
+            info->exts = strdup(new_exts);
             string_list_free(str_list);
             use_filebrowser    = true;
          }
@@ -6682,13 +6702,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_SHADER_PASS:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          {
+            char new_exts[PATH_MAX_LENGTH];
             struct string_list *str_list;
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_VULKAN)
             union string_list_elem_attr attr;
             attr.i = 0;
 #endif
 
-            str_list = string_list_new();
+            new_exts[0] = '\0';
+            str_list    = string_list_new();
 
             filebrowser_clear_type();
             info->type_default = FILE_TYPE_SHADER;
@@ -6703,7 +6725,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 #ifdef HAVE_VULKAN
             string_list_append(str_list, "slang", attr);
 #endif
-            string_list_join_concat(info->exts, sizeof(info->exts), str_list, "|");
+            string_list_join_concat(new_exts, sizeof(new_exts), str_list, "|");
+            if (info->exts && !string_is_empty(info->exts))
+               free(info->exts);
+            info->exts = strdup(new_exts);
             string_list_free(str_list);
             use_filebrowser    = true;
          }
@@ -6714,7 +6739,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->type_default = FILE_TYPE_VIDEOFILTER;
          load_content       = false;
          use_filebrowser    = true;
-         strlcpy(info->exts, "filt", sizeof(info->exts));
+         if (info->exts && !string_is_empty(info->exts))
+            free(info->exts);
+         info->exts = strdup("filt");
          break;
       case DISPLAYLIST_IMAGES:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
@@ -6723,10 +6750,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             filebrowser_clear_type();
          info->type_default = FILE_TYPE_IMAGE;
          {
+            char new_exts[PATH_MAX_LENGTH];
             union string_list_elem_attr attr;
             struct string_list *str_list     = string_list_new();
 
             attr.i = 0;
+            new_exts[0] = '\0';
 
 #ifdef HAVE_RBMP
             string_list_append(str_list, "bmp", attr);
@@ -6741,7 +6770,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 #ifdef HAVE_RTGA
             string_list_append(str_list, "tga", attr);
 #endif
-            string_list_join_concat(info->exts, sizeof(info->exts), str_list, "|");
+            string_list_join_concat(new_exts, sizeof(new_exts), str_list, "|");
+            if (info->exts && !string_is_empty(info->exts))
+               free(info->exts);
+            info->exts = strdup(new_exts);
             string_list_free(str_list);
          }
          use_filebrowser    = true;
@@ -6776,7 +6808,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->type_default = FILE_TYPE_AUDIOFILTER;
          load_content       = false;
          use_filebrowser    = true;
-         strlcpy(info->exts, "dsp", sizeof(info->exts));
+         if (info->exts && !string_is_empty(info->exts))
+            free(info->exts);
+         info->exts = strdup("dsp");
          break;
       case DISPLAYLIST_CHEAT_FILES:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
@@ -6784,14 +6818,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->type_default = FILE_TYPE_CHEAT;
          load_content       = false;
          use_filebrowser    = true;
-         strlcpy(info->exts, "cht", sizeof(info->exts));
+         if (info->exts && !string_is_empty(info->exts))
+            free(info->exts);
+         info->exts = strdup("cht");
          break;
       case DISPLAYLIST_CONTENT_HISTORY:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          filebrowser_clear_type();
          info->type_default = FILE_TYPE_PLAIN;
          use_filebrowser    = true;
-         strlcpy(info->exts, "lpl", sizeof(info->exts));
+         if (info->exts && !string_is_empty(info->exts))
+            free(info->exts);
+         info->exts = strdup("lpl");
          break;
       case DISPLAYLIST_FONTS:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
@@ -6799,7 +6837,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->type_default = FILE_TYPE_FONT;
          load_content       = false;
          use_filebrowser    = true;
-         strlcpy(info->exts, "ttf", sizeof(info->exts));
+         if (info->exts && !string_is_empty(info->exts))
+            free(info->exts);
+         info->exts = strdup("ttf");
          break;
       case DISPLAYLIST_OVERLAYS:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
@@ -6807,7 +6847,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->type_default = FILE_TYPE_OVERLAY;
          load_content       = false;
          use_filebrowser    = true;
-         strlcpy(info->exts, "cfg", sizeof(info->exts));
+         if (info->exts && !string_is_empty(info->exts))
+            free(info->exts);
+         info->exts = strdup("cfg");
          break;
       case DISPLAYLIST_RECORD_CONFIG_FILES:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
@@ -6815,7 +6857,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->type_default = FILE_TYPE_RECORD_CONFIG;
          load_content       = false;
          use_filebrowser    = true;
-         strlcpy(info->exts, "cfg", sizeof(info->exts));
+         if (info->exts && !string_is_empty(info->exts))
+            free(info->exts);
+         info->exts = strdup("cfg");
          break;
       case DISPLAYLIST_REMAP_FILES:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
@@ -6823,7 +6867,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->type_default = FILE_TYPE_REMAP;
          load_content       = false;
          use_filebrowser    = true;
-         strlcpy(info->exts, "rmp", sizeof(info->exts));
+         if (info->exts && !string_is_empty(info->exts))
+            free(info->exts);
+         info->exts = strdup("rmp");
          break;
       case DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
@@ -6851,7 +6897,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             filebrowser_clear_type();
             info->type_default = FILE_TYPE_PLAIN;
             if (frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
-               strlcpy(info->exts, ext_name, sizeof(info->exts));
+            {
+               if (info->exts && !string_is_empty(info->exts))
+                  free(info->exts);
+               info->exts = strdup(ext_name);
+            }
          }
          if (menu_displaylist_parse_cores(menu, info) == 0)
          {

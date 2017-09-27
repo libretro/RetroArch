@@ -1864,8 +1864,9 @@ static void xmb_init_horizontal_list(xmb_handle_t *xmb)
    strlcpy(info.label,
          msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
          sizeof(info.label));
-   strlcpy(info.exts,
-         file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT), sizeof(info.exts));
+
+   info.exts                    = strdup(
+         file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT));
    info.type_default            = FILE_TYPE_PLAIN;
    info.enum_idx                = MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST;
 
@@ -4378,8 +4379,8 @@ static bool xmb_menu_init_list(void *data)
 
    strlcpy(info.label,
          msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU), sizeof(info.label));
-   strlcpy(info.exts,
-         file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT), sizeof(info.exts));
+   info.exts                    = 
+      strdup(file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT));
    info.type_default            = FILE_TYPE_PLAIN;
    info.enum_idx                = MENU_ENUM_LABEL_MAIN_MENU;
 
