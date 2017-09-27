@@ -403,9 +403,7 @@ typedef struct video_info
     */
    unsigned input_scale;
    
-#ifndef RARCH_INTERNAL
    uintptr_t parent;
-#endif
 } video_info_t;
 
 typedef struct video_frame_info
