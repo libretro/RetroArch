@@ -4184,7 +4184,7 @@ static int action_ok_core_delete(const char *path,
    generic_action_ok_command(CMD_EVENT_UNLOAD_CORE);
    menu_entries_flush_stack(0, 0);
 
-   remove(core_path);
+   if (remove(core_path) != 0) { }
 
    free(core_path);
 
