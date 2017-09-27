@@ -438,8 +438,52 @@ static bool command_verify(const char *cmd)
    return false;
 }
 
+#ifdef HAVE_COMMAND
+static void command_network_poll(command_t *handle)
+{
+   fd_set fds;
+   struct timeval tmp_tv = {0};
+
+   if (handle->net_fd < 0)
+      return;
+
+   FD_ZERO(&fds);
+   FD_SET(handle->net_fd, &fds);
+
+   if (socket_select(handle->net_fd + 1, &fds, NULL, NULL, &tmp_tv) <= 0)
+      return;
+
+   if (!FD_ISSET(handle->net_fd, &fds))
+      return;
+
+   for (;;)
+   {
+      ssize_t ret;
+      char buf[1024];
+
+      buf[0] = '\0';
+
+      lastcmd_net_fd         = handle->net_fd;
+      lastcmd_net_source_len = sizeof(lastcmd_net_source);
+      ret                    = recvfrom(handle->net_fd, buf,
+            sizeof(buf) - 1, 0,
+            (struct sockaddr*)&lastcmd_net_source,
+            &lastcmd_net_source_len);
+
+      if (ret <= 0)
+         break;
+
+      buf[ret] = '\0';
+
+      command_parse_msg(handle, buf, CMD_NETWORK);
+   }
+}
+#endif
+#endif
+
 bool command_network_send(const char *cmd_)
 {
+#if defined(HAVE_COMMAND) && defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
    bool ret            = false;
    char *command       = NULL;
    char *save          = NULL;
@@ -483,49 +527,12 @@ bool command_network_send(const char *cmd_)
    free(command);
 
    return ret;
+#else
+   return false;
+#endif
 }
 
 
-#ifdef HAVE_COMMAND
-static void command_network_poll(command_t *handle)
-{
-   fd_set fds;
-   struct timeval tmp_tv = {0};
-
-   if (handle->net_fd < 0)
-      return;
-
-   FD_ZERO(&fds);
-   FD_SET(handle->net_fd, &fds);
-
-   if (socket_select(handle->net_fd + 1, &fds, NULL, NULL, &tmp_tv) <= 0)
-      return;
-
-   if (!FD_ISSET(handle->net_fd, &fds))
-      return;
-
-   for (;;)
-   {
-      ssize_t ret;
-      char buf[1024];
-
-      buf[0] = '\0';
-
-      lastcmd_net_fd = handle->net_fd;
-      lastcmd_net_source_len = sizeof(lastcmd_net_source);
-      ret = recvfrom(handle->net_fd, buf,
-            sizeof(buf) - 1, 0, (struct sockaddr*)&lastcmd_net_source, &lastcmd_net_source_len);
-
-      if (ret <= 0)
-         break;
-
-      buf[ret] = '\0';
-
-      command_parse_msg(handle, buf, CMD_NETWORK);
-   }
-}
-#endif
-#endif
 
 #ifdef HAVE_STDIN_CMD
 static bool command_stdin_init(command_t *handle)
