@@ -115,7 +115,7 @@ struct retro_keybind
    uint32_t orig_joyaxis;
 
    char     *joykey_label;
-   char     joyaxis_label[64];
+   char     *joyaxis_label;
 };
 
 typedef struct rarch_joypad_info

@@ -2364,7 +2364,10 @@ void input_config_parse_joy_axis(void *data, const char *prefix,
 
    if (config_get_string(conf, key_label, &tmp_a))
    {
-      strlcpy(bind->joyaxis_label, tmp_a, sizeof(bind->joyaxis_label));
+      if (bind->joyaxis_label &&
+            !string_is_empty(bind->joyaxis_label))
+         free(bind->joyaxis_label);
+      bind->joyaxis_label = strdup(tmp_a);
       free(tmp_a);
    }
 }
@@ -2423,7 +2426,8 @@ static void input_config_get_bind_string_joyaxis(char *buf, const char *prefix,
 {
    settings_t *settings = config_get_ptr();
 
-   if (!string_is_empty(bind->joyaxis_label) 
+   if (bind->joyaxis_label &&
+         !string_is_empty(bind->joyaxis_label) 
          && settings->bools.input_descriptor_label_show)
       snprintf(buf, size, "%s%s (axis) ", prefix, bind->joyaxis_label);
    else
