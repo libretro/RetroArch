@@ -266,17 +266,8 @@ typedef struct settings
       unsigned audio_out_rate;
       unsigned audio_block_frames;
       unsigned audio_latency;
-      unsigned input_remap_ids[MAX_USERS][RARCH_CUSTOM_BIND_LIST_END];
-      unsigned input_keymapper_ids[RARCH_CUSTOM_BIND_LIST_END];
 
-      /* Set by autoconfiguration in joypad_autoconfig_dir.
-       * Does not override main binds. */
-      unsigned input_libretro_device[MAX_USERS];
-      unsigned input_analog_dpad_mode[MAX_USERS];
 
-      unsigned input_joypad_map[MAX_USERS];
-      unsigned input_device[MAX_USERS];
-      unsigned input_mouse_index[MAX_USERS];
 
       unsigned input_turbo_period;
       unsigned input_turbo_duty_cycle;
@@ -327,22 +318,30 @@ typedef struct settings
       unsigned camera_height;
 
       unsigned input_overlay_show_physical_inputs_port;
+
+      unsigned input_joypad_map[MAX_USERS];
+      unsigned input_device[MAX_USERS];
+      unsigned input_mouse_index[MAX_USERS];
+      /* Set by autoconfiguration in joypad_autoconfig_dir.
+       * Does not override main binds. */
+      unsigned input_libretro_device[MAX_USERS];
+      unsigned input_analog_dpad_mode[MAX_USERS];
+
+      unsigned input_keymapper_ids[RARCH_CUSTOM_BIND_LIST_END];
+
+      unsigned input_remap_ids[MAX_USERS][RARCH_CUSTOM_BIND_LIST_END];
    } uints;
 
    struct
    {
       char placeholder;
 
-      char playlist_names[PATH_MAX_LENGTH];
-      char playlist_cores[PATH_MAX_LENGTH];
       char video_driver[32];
       char record_driver[32];
       char camera_driver[32];
       char wifi_driver[32];
       char location_driver[32];
       char menu_driver[32];
-      char audio_device[255];
-      char camera_device[255];
       char cheevos_username[32];
       char cheevos_password[32];
       char video_context_driver[32];
@@ -350,7 +349,14 @@ typedef struct settings
       char audio_resampler[32];
       char input_driver[32];
       char input_joypad_driver[32];
+
       char input_keyboard_layout[64];
+
+      char audio_device[255];
+      char camera_device[255];
+
+      char playlist_names[PATH_MAX_LENGTH];
+      char playlist_cores[PATH_MAX_LENGTH];
       char bundle_assets_src[PATH_MAX_LENGTH];
       char bundle_assets_dst[PATH_MAX_LENGTH];
       char bundle_assets_dst_subdir[PATH_MAX_LENGTH];
@@ -360,7 +366,12 @@ typedef struct settings
    {
       char placeholder;
 
-
+      char username[32];
+      char netplay_password[128];
+      char netplay_spectate_password[128];
+      char netplay_server[255];
+      char network_buildbot_url[255];
+      char network_buildbot_assets_url[255];
       char browse_url[4096];
 
       char path_menu_xmb_font[PATH_MAX_LENGTH];
@@ -382,8 +393,6 @@ typedef struct settings
       char path_shader[PATH_MAX_LENGTH];
       char path_font[PATH_MAX_LENGTH];
 
-      char network_buildbot_url[255];
-      char network_buildbot_assets_url[255];
 
       char directory_audio_filter[PATH_MAX_LENGTH];
       char directory_autoconfig[PATH_MAX_LENGTH];
@@ -406,10 +415,6 @@ typedef struct settings
       char directory_thumbnails[PATH_MAX_LENGTH];
       char directory_menu_config[PATH_MAX_LENGTH];
       char directory_menu_content[PATH_MAX_LENGTH];
-      char netplay_server[255];
-      char netplay_password[128];
-      char netplay_spectate_password[128];
-      char username[32];
    } paths;
 
    bool modified;
