@@ -901,7 +901,6 @@ const char *config_get_default_location(void)
    return "null";
 }
 
-#ifdef HAVE_MENU
 /**
  * config_get_default_menu:
  *
@@ -911,6 +910,7 @@ const char *config_get_default_location(void)
  **/
 const char *config_get_default_menu(void)
 {
+#ifdef HAVE_MENU
    enum menu_driver_enum default_driver = MENU_DEFAULT_DRIVER;
 
    if (!string_is_empty(g_defaults.settings.menu))
@@ -931,11 +931,10 @@ const char *config_get_default_menu(void)
       case MENU_NULL:
          break;
    }
+#endif
 
    return "null";
 }
-
-#endif
 
 bool config_overlay_enable_default(void)
 {

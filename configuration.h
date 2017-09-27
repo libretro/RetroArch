@@ -25,10 +25,6 @@
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include "gfx/video_driver.h"
 #include "input/input_defines.h"
 
@@ -53,9 +49,7 @@ typedef struct settings
       bool video_vsync;
       bool video_hard_sync;
       bool video_black_frame_insertion;
-#ifdef GEKKO
       bool video_vfilter;
-#endif
       bool video_smooth;
       bool video_force_aspect;
       bool video_crop_overscan;
@@ -77,10 +71,8 @@ typedef struct settings
       bool audio_enable;
       bool audio_sync;
       bool audio_rate_control;
-#ifdef HAVE_WASAPI
       bool audio_wasapi_exclusive_mode;
       bool audio_wasapi_float_format;
-#endif
 
       /* Input */
       bool input_remap_binds_enable;
@@ -102,7 +94,6 @@ typedef struct settings
 #endif
       bool input_keyboard_gamepad_enable;
 
-#ifdef HAVE_MENU
       /* Menu */
       bool filter_by_current_core;
       bool menu_show_start_screen;
@@ -134,9 +125,7 @@ typedef struct settings
       bool menu_xmb_show_history;
       bool menu_xmb_show_add;
       bool menu_unified_controls;
-#endif
 
-#ifdef HAVE_NETWORKING
       /* Netplay */
       bool netplay_public_announce;
       bool netplay_start_as_spectator;
@@ -146,7 +135,6 @@ typedef struct settings
       bool netplay_swap_input;
       bool netplay_nat_traversal;
       bool netplay_use_mitm_server;
-#endif
 
       /* Network */
       bool network_buildbot_auto_extract_archive;
@@ -157,13 +145,11 @@ typedef struct settings
       bool ui_companion_start_on_boot;
       bool ui_companion_enable;
 
-#ifdef HAVE_CHEEVOS
       /* Cheevos */
       bool cheevos_enable;
       bool cheevos_test_unofficial;
       bool cheevos_hardcore_mode_enable;
       bool cheevos_verbose_enable;
-#endif
 
       /* Camera */
       bool camera_allow;
@@ -183,9 +169,7 @@ typedef struct settings
       bool bundle_assets_extract_enable;
 
       /* Misc. */
-#ifdef HAVE_THREADS
       bool threaded_data_runloop_enable;
-#endif
       bool set_supports_no_game_enable;
       bool auto_screenshot_filename;
       bool history_list_enable;
@@ -219,11 +203,9 @@ typedef struct settings
       bool savestates_in_content_dir;
       bool screenshots_in_content_dir;
       bool systemfiles_in_content_dir;
-#ifdef HAVE_LAKKA
       bool ssh_enable;
       bool samba_enable;
       bool bluetooth_enable;
-#endif
    } bools;
 
    struct
@@ -262,10 +244,7 @@ typedef struct settings
       int location_update_interval_ms;
       int location_update_interval_distance;
       int state_slot;
-
-#ifdef HAVE_WASAPI
       int audio_wasapi_sh_buffer_length;
-#endif
    } ints;
 
    struct
@@ -315,9 +294,7 @@ typedef struct settings
       unsigned video_swap_interval;
       unsigned video_hard_sync_frames;
       unsigned video_frame_delay;
-#ifdef GEKKO
       unsigned video_viwidth;
-#endif
       unsigned video_aspect_ratio_idx;
       unsigned video_rotation;
 
@@ -350,15 +327,11 @@ typedef struct settings
       char camera_driver[32];
       char wifi_driver[32];
       char location_driver[32];
-#ifdef HAVE_MENU
       char menu_driver[32];
-#endif
       char audio_device[255];
       char camera_device[255];
-#ifdef HAVE_CHEEVOS
       char cheevos_username[32];
       char cheevos_password[32];
-#endif
       char video_context_driver[32];
       char audio_driver[32];
       char audio_resampler[32];
@@ -377,10 +350,8 @@ typedef struct settings
 
       char browse_url[4096];
 
-#ifdef HAVE_MENU
       char path_menu_xmb_font[PATH_MAX_LENGTH];
       char menu_xmb_show_settings_password[PATH_MAX_LENGTH];
-#endif
       char path_cheat_database[PATH_MAX_LENGTH];
       char path_content_database[PATH_MAX_LENGTH];
       char path_overlay[PATH_MAX_LENGTH];
@@ -422,11 +393,9 @@ typedef struct settings
       char directory_thumbnails[PATH_MAX_LENGTH];
       char directory_menu_config[PATH_MAX_LENGTH];
       char directory_menu_content[PATH_MAX_LENGTH];
-#ifdef HAVE_NETWORKING
       char netplay_server[255];
       char netplay_password[128];
       char netplay_spectate_password[128];
-#endif
       char username[32];
    } paths;
 
@@ -525,7 +494,6 @@ const char *config_get_default_input(void);
  **/
 const char *config_get_default_joypad(void);
 
-#ifdef HAVE_MENU
 /**
  * config_get_default_menu:
  *
@@ -534,7 +502,6 @@ const char *config_get_default_joypad(void);
  * Returns: Default menu driver.
  **/
 const char *config_get_default_menu(void);
-#endif
 
 const char *config_get_default_record(void);
 
