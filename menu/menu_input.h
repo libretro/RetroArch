@@ -88,15 +88,15 @@ typedef struct menu_input
 
    struct
    {
+      bool back;
+      bool pressed[2];
       int16_t x;
       int16_t y;
       int16_t dx;
       int16_t dy;
-      float accel;
-      bool pressed[2];
-      bool back;
       unsigned ptr;
       unsigned counter;
+      float accel;
    } pointer;
 } menu_input_t;
 
