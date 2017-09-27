@@ -492,7 +492,6 @@ static bool content_file_init_extract(
                   msg_hash_to_str(
                      MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE),
                   temp_content);
-            free(new_path);
             free(temp_content);
             free(str);
             goto error;
@@ -504,10 +503,7 @@ static bool content_file_init_extract(
 
          if (!string_list_append(content_ctx->temporary_content,
                   new_path, *attr))
-         {
-            free(new_path);
             goto error;
-         }
 
          free(new_path);
       }
@@ -516,6 +512,7 @@ static bool content_file_init_extract(
    return true;
 
 error:
+   free(new_path);
    return false;
 }
 #endif
