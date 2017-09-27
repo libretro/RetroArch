@@ -28,6 +28,23 @@
 #include "gfx/video_driver.h"
 #include "input/input_defines.h"
 
+#define configuration_set_float(settings, var, newvar) \
+   settings->modified = true; \
+   var = newvar
+
+#define configuration_set_bool(settings, var, newvar) \
+   settings->modified = true; \
+   var = newvar
+
+#define configuration_set_uint(settings, var, newvar) \
+   settings->modified = true; \
+   var = newvar
+
+#define configuration_set_int(settings, var, newvar) \
+   settings->modified = true; \
+   var = newvar
+
+
 enum override_type
 {
    OVERRIDE_NONE = 0,
@@ -85,13 +102,9 @@ typedef struct settings
       bool input_descriptor_hide_unbound;
       bool input_all_users_control_menu;
       bool input_menu_swap_ok_cancel_buttons;
-#if defined(VITA)
       bool input_backtouch_enable;
       bool input_backtouch_toggle;
-#endif
-#if TARGET_OS_IPHONE
       bool input_small_keyboard_enable;
-#endif
       bool input_keyboard_gamepad_enable;
 
       /* Menu */
@@ -405,22 +418,6 @@ typedef struct settings
 
    size_t rewind_buffer_size;
 } settings_t;
-
-#define configuration_set_float(settings, var, newvar) \
-   settings->modified = true; \
-   var = newvar
-
-#define configuration_set_bool(settings, var, newvar) \
-   settings->modified = true; \
-   var = newvar
-
-#define configuration_set_uint(settings, var, newvar) \
-   settings->modified = true; \
-   var = newvar
-
-#define configuration_set_int(settings, var, newvar) \
-   settings->modified = true; \
-   var = newvar
 
 /**
  * config_get_default_camera:
