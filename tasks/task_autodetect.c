@@ -475,7 +475,10 @@ bool input_autoconfigure_connect(
    {
       input_autoconf_binds[state->idx][i].joykey           = NO_BTN;
       input_autoconf_binds[state->idx][i].joyaxis          = AXIS_NONE;
-      input_autoconf_binds[state->idx][i].joykey_label[0]  = '\0';
+      if (input_autoconf_binds[state->idx][i].joykey_label 
+            && !string_is_empty(input_autoconf_binds[state->idx][i].joykey_label))
+         free(input_autoconf_binds[state->idx][i].joykey_label);
+      input_autoconf_binds[state->idx][i].joykey_label     = NULL;
       input_autoconf_binds[state->idx][i].joyaxis_label[0] = '\0';
    }
 
