@@ -66,7 +66,6 @@ static enum action_iterate_type action_iterate_type(uint32_t hash)
  **/
 int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
 {
-   menu_entry_t entry;
    enum action_iterate_type iterate_type;
    unsigned file_type             = 0;
    int ret                        = 0;
@@ -219,24 +218,28 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
          menu_dialog_set_active(false);
          break;
       case ITERATE_TYPE_DEFAULT:
-         /* FIXME: Crappy hack, needed for mouse controls
-          * to not be completely broken in case we press back.
-          *
-          * We need to fix this entire mess, mouse controls
-          * should not rely on a hack like this in order to work. */
-         selection = MAX(MIN(selection, (menu_entries_get_size() - 1)), 0);
+         {
+            menu_entry_t entry;
+            /* FIXME: Crappy hack, needed for mouse controls
+             * to not be completely broken in case we press back.
+             *
+             * We need to fix this entire mess, mouse controls
+             * should not rely on a hack like this in order to work. */
+            selection = MAX(MIN(selection, (menu_entries_get_size() - 1)), 0);
 
-         menu_entry_get(&entry, 0, selection, NULL, false);
-         ret = menu_entry_action(&entry,
-               (unsigned)selection, (enum menu_action)action);
+            menu_entry_init(&entry);
+            menu_entry_get(&entry, 0, selection, NULL, false);
+            ret = menu_entry_action(&entry,
+                  (unsigned)selection, (enum menu_action)action);
+            menu_entry_free(&entry);
+            if (ret)
+               goto end;
 
-         if (ret)
-            goto end;
+            BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
 
-         BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
-
-         /* Have to defer it so we let settings refresh. */
-         menu_dialog_push();
+            /* Have to defer it so we let settings refresh. */
+            menu_dialog_push();
+         }
          break;
    }
 

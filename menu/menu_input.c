@@ -571,22 +571,14 @@ void menu_input_post_iterate(int *ret, unsigned action)
    if (selection_buf)
       cbs = menu_entries_get_actiondata_at_offset(selection_buf, selection);
 
-   entry.path[0]       = '\0';
-   entry.label[0]      = '\0';
-   entry.sublabel[0]   = '\0';
-   entry.value[0]      = '\0';
-   entry.rich_label[0] = '\0';
-   entry.enum_idx      = MSG_UNKNOWN;
-   entry.entry_idx     = 0;
-   entry.idx           = 0;
-   entry.type          = 0;
-   entry.spacing       = 0;
-
+   menu_entry_init(&entry);
    menu_entry_get(&entry, 0, selection, NULL, false);
 
    *ret = menu_input_mouse_frame(cbs, &entry, action);
 
    if (settings->bools.menu_pointer_enable)
       *ret |= menu_input_pointer_post_iterate(cbs, &entry, action);
+
+   menu_entry_free(&entry);
 }
 

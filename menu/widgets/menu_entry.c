@@ -75,21 +75,29 @@ enum menu_entry_type menu_entry_get_type(uint32_t i)
    return MENU_ENTRY_ACTION;
 }
 
+void menu_entry_free(menu_entry_t *entry)
+{
+}
+
+void menu_entry_init(menu_entry_t *entry)
+{
+   entry->path[0]       = '\0';
+   entry->label[0]      = '\0';
+   entry->sublabel[0]   = '\0';
+   entry->value[0]      = '\0';
+   entry->rich_label[0] = '\0';
+   entry->enum_idx      = MSG_UNKNOWN;
+   entry->entry_idx     = 0;
+   entry->idx           = 0;
+   entry->type          = 0;
+   entry->spacing       = 0;
+}
+
 void menu_entry_get_path(uint32_t i, char *s, size_t len)
 {
    menu_entry_t entry;
 
-   entry.path[0]       = '\0';
-   entry.label[0]      = '\0';
-   entry.sublabel[0]   = '\0';
-   entry.value[0]      = '\0';
-   entry.rich_label[0] = '\0';
-   entry.enum_idx      = MSG_UNKNOWN;
-   entry.entry_idx     = 0;
-   entry.idx           = 0;
-   entry.type          = 0;
-   entry.spacing       = 0;
-
+   menu_entry_init(&entry);
    menu_entry_get(&entry, 0, i, NULL, true);
 
    strlcpy(s, entry.path, len);
@@ -99,17 +107,7 @@ void menu_entry_get_rich_label(uint32_t i, char *s, size_t len)
 {
    menu_entry_t entry;
 
-   entry.path[0]       = '\0';
-   entry.label[0]      = '\0';
-   entry.sublabel[0]   = '\0';
-   entry.value[0]      = '\0';
-   entry.rich_label[0] = '\0';
-   entry.enum_idx      = MSG_UNKNOWN;
-   entry.entry_idx     = 0;
-   entry.idx           = 0;
-   entry.type          = 0;
-   entry.spacing       = 0;
-
+   menu_entry_init(&entry);
    menu_entry_get(&entry, 0, i, NULL, true);
 
    if (!string_is_empty(entry.rich_label))
@@ -122,17 +120,7 @@ bool menu_entry_get_sublabel(uint32_t i, char *s, size_t len)
 {
    menu_entry_t entry;
 
-   entry.path[0]       = '\0';
-   entry.label[0]      = '\0';
-   entry.sublabel[0]   = '\0';
-   entry.value[0]      = '\0';
-   entry.rich_label[0] = '\0';
-   entry.enum_idx      = MSG_UNKNOWN;
-   entry.entry_idx     = 0;
-   entry.idx           = 0;
-   entry.type          = 0;
-   entry.spacing       = 0;
-
+   menu_entry_init(&entry);
    menu_entry_get(&entry, 0, i, NULL, true);
 
    if (string_is_empty(entry.sublabel))
@@ -146,17 +134,7 @@ void menu_entry_get_label(uint32_t i, char *s, size_t len)
 {
    menu_entry_t entry;
 
-   entry.path[0]       = '\0';
-   entry.label[0]      = '\0';
-   entry.sublabel[0]   = '\0';
-   entry.value[0]      = '\0';
-   entry.rich_label[0] = '\0';
-   entry.enum_idx      = MSG_UNKNOWN;
-   entry.entry_idx     = 0;
-   entry.idx           = 0;
-   entry.type          = 0;
-   entry.spacing       = 0;
-
+   menu_entry_init(&entry);
    menu_entry_get(&entry, 0, i, NULL, true);
 
    strlcpy(s, entry.label, len);
@@ -166,17 +144,7 @@ unsigned menu_entry_get_spacing(uint32_t i)
 {
    menu_entry_t entry;
 
-   entry.path[0]       = '\0';
-   entry.label[0]      = '\0';
-   entry.sublabel[0]   = '\0';
-   entry.value[0]      = '\0';
-   entry.rich_label[0] = '\0';
-   entry.enum_idx      = MSG_UNKNOWN;
-   entry.entry_idx     = 0;
-   entry.idx           = 0;
-   entry.type          = 0;
-   entry.spacing       = 0;
-
+   menu_entry_init(&entry);
    menu_entry_get(&entry, 0, i, NULL, true);
 
    return entry.spacing;
@@ -186,17 +154,7 @@ unsigned menu_entry_get_type_new(uint32_t i)
 {
    menu_entry_t entry;
 
-   entry.path[0]       = '\0';
-   entry.label[0]      = '\0';
-   entry.sublabel[0]   = '\0';
-   entry.value[0]      = '\0';
-   entry.rich_label[0] = '\0';
-   entry.enum_idx      = MSG_UNKNOWN;
-   entry.entry_idx     = 0;
-   entry.idx           = 0;
-   entry.type          = 0;
-   entry.spacing       = 0;
-
+   menu_entry_init(&entry);
    menu_entry_get(&entry, 0, i, NULL, true);
 
    return entry.type;
@@ -291,17 +249,7 @@ void menu_entry_pathdir_get_value(uint32_t i, char *s, size_t len)
 {
    menu_entry_t entry;
 
-   entry.path[0]       = '\0';
-   entry.label[0]      = '\0';
-   entry.sublabel[0]   = '\0';
-   entry.value[0]      = '\0';
-   entry.rich_label[0] = '\0';
-   entry.enum_idx      = MSG_UNKNOWN;
-   entry.entry_idx     = 0;
-   entry.idx           = 0;
-   entry.type          = 0;
-   entry.spacing       = 0;
-
+   menu_entry_init(&entry);
    menu_entry_get(&entry, 0, i, NULL, true);
    strlcpy(s, entry.value, len);
 }
@@ -321,17 +269,7 @@ void menu_entry_reset(uint32_t i)
 {
    menu_entry_t entry;
 
-   entry.path[0]       = '\0';
-   entry.label[0]      = '\0';
-   entry.sublabel[0]   = '\0';
-   entry.value[0]      = '\0';
-   entry.rich_label[0] = '\0';
-   entry.enum_idx      = MSG_UNKNOWN;
-   entry.entry_idx     = 0;
-   entry.idx           = 0;
-   entry.type          = 0;
-   entry.spacing       = 0;
-
+   menu_entry_init(&entry);
    menu_entry_get(&entry, 0, i, NULL, true);
 
    menu_entry_action(&entry, i, MENU_ACTION_START);
@@ -342,17 +280,7 @@ void menu_entry_get_value(uint32_t i, void *data, char *s, size_t len)
    menu_entry_t entry;
    file_list_t *list  = (file_list_t*)data;
 
-   entry.path[0]       = '\0';
-   entry.label[0]      = '\0';
-   entry.sublabel[0]   = '\0';
-   entry.value[0]      = '\0';
-   entry.rich_label[0] = '\0';
-   entry.enum_idx      = MSG_UNKNOWN;
-   entry.entry_idx     = 0;
-   entry.idx           = 0;
-   entry.type          = 0;
-   entry.spacing       = 0;
-
+   menu_entry_init(&entry);
    menu_entry_get(&entry, 0, i, list, true);
    strlcpy(s, entry.value, len);
 }
@@ -465,19 +393,9 @@ int menu_entry_select(uint32_t i)
 {
    menu_entry_t     entry;
 
-   entry.path[0]       = '\0';
-   entry.label[0]      = '\0';
-   entry.sublabel[0]   = '\0';
-   entry.value[0]      = '\0';
-   entry.rich_label[0] = '\0';
-   entry.enum_idx      = MSG_UNKNOWN;
-   entry.entry_idx     = 0;
-   entry.idx           = 0;
-   entry.type          = 0;
-   entry.spacing       = 0;
-    
    menu_navigation_set_selection(i);
 
+   menu_entry_init(&entry);
    menu_entry_get(&entry, 0, i, NULL, false);
 
    return menu_entry_action(&entry, i, MENU_ACTION_SELECT);

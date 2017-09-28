@@ -117,6 +117,10 @@ int menu_entry_select(uint32_t i);
 int menu_entry_action(menu_entry_t *entry,
                       unsigned i, enum menu_action action);
 
+void menu_entry_free(menu_entry_t *entry);
+
+void menu_entry_init(menu_entry_t *entry);
+
 RETRO_END_DECLS
 
 #endif

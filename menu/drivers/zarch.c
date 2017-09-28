@@ -516,10 +516,11 @@ static int zarch_zui_render_lay_root_recent(
       {
          char rich_label[PATH_MAX_LENGTH];
          char entry_value[PATH_MAX_LENGTH];
-         menu_entry_t entry                = {{0}};
+         menu_entry_t entry;
 
          rich_label[0] = entry_value[0]    = '\0';
 
+         menu_entry_init(&entry);
          menu_entry_get(&entry, 0, i, NULL, true);
          menu_entry_get_rich_label(i, rich_label, sizeof(rich_label));
          menu_entry_get_value(i, NULL, entry_value,sizeof(entry_value));
@@ -531,10 +532,14 @@ static int zarch_zui_render_lay_root_recent(
                   rich_label, i, entry_value, gamepad_index == (signed)i))
          {
             if (menu_entry_action(&entry, i, MENU_ACTION_OK))
+            {
+               menu_entry_free(&entry);
                return 1;
+            }
          }
 
          j++;
+         menu_entry_free(&entry);
       }
 
    }
@@ -1112,11 +1117,13 @@ static int zarch_iterate(void *data, void *userdata, enum menu_action action)
    if (!zui)
       return -1;
 
+   menu_entry_init(&entry);
    menu_entry_get(&entry, 0, selection, NULL, false);
 
    zui->action       = action;
 
    ret = menu_entry_action(&entry, selection, action);
+   menu_entry_free(&entry);
    if (ret)
       return -1;
    return 0;

@@ -984,17 +984,7 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
    if (!xmb)
       goto end;
 
-   entry.path[0]       = '\0';
-   entry.label[0]      = '\0';
-   entry.sublabel[0]   = '\0';
-   entry.value[0]      = '\0';
-   entry.rich_label[0] = '\0';
-   entry.enum_idx      = MSG_UNKNOWN;
-   entry.entry_idx     = 0;
-   entry.idx           = 0;
-   entry.type          = 0;
-   entry.spacing       = 0;
-
+   menu_entry_init(&entry);
    menu_entry_get(&entry, 0, i, NULL, true);
 
    if (entry.type == FILE_TYPE_IMAGEVIEWER || entry.type == FILE_TYPE_IMAGE)
@@ -1070,6 +1060,7 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
          sizeof(xmb->thumbnail_file_path));
 
 end:
+   menu_entry_free(&entry);
    free(tmp_new);
 }
 
@@ -1083,17 +1074,7 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
    if (!xmb)
       return;
 
-   entry.path[0]       = '\0';
-   entry.label[0]      = '\0';
-   entry.sublabel[0]   = '\0';
-   entry.value[0]      = '\0';
-   entry.rich_label[0] = '\0';
-   entry.enum_idx      = MSG_UNKNOWN;
-   entry.entry_idx     = 0;
-   entry.idx           = 0;
-   entry.type          = 0;
-   entry.spacing       = 0;
-
+   menu_entry_init(&entry);
    menu_entry_get(&entry, 0, i, NULL, true);
 
    menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
@@ -1133,6 +1114,8 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
 
       free(path);
    }
+
+   menu_entry_free(&entry);
 }
 
 static void xmb_update_thumbnail_image(void *data)
@@ -1191,7 +1174,7 @@ static void xmb_update_savestate_thumbnail_image(void *data)
 static void xmb_selection_pointer_changed(
       xmb_handle_t *xmb, bool allow_animations)
 {
-   menu_entry_t e;
+   menu_entry_t entry;
    unsigned i, end, height;
    menu_animation_ctx_tag tag;
    size_t num                 = 0;
@@ -1206,18 +1189,8 @@ static void xmb_selection_pointer_changed(
    if (!xmb)
       return;
 
-   e.path[0]       = '\0';
-   e.label[0]      = '\0';
-   e.sublabel[0]   = '\0';
-   e.value[0]      = '\0';
-   e.rich_label[0] = '\0';
-   e.enum_idx      = MSG_UNKNOWN;
-   e.entry_idx     = 0;
-   e.idx           = 0;
-   e.type          = 0;
-   e.spacing       = 0;
-
-   menu_entry_get(&e, 0, selection, NULL, true);
+   menu_entry_init(&entry);
+   menu_entry_get(&entry, 0, selection, NULL, true);
 
    end       = (unsigned)menu_entries_get_end();
    threshold = xmb->icon.size*10;
@@ -1257,15 +1230,15 @@ static void xmb_selection_pointer_changed(
             if ((xmb_list > XMB_SYSTEM_TAB_SETTINGS && depth == 1) ||
                 (xmb_list < XMB_SYSTEM_TAB_SETTINGS && depth == 4))
             {
-               xmb_set_thumbnail_content(xmb, e.path, sizeof(e.path));
+               xmb_set_thumbnail_content(xmb, entry.path, sizeof(entry.path));
                xmb_update_thumbnail_path(xmb, i);
                xmb_update_thumbnail_image(xmb);
             }
-            else if (((e.type == FILE_TYPE_IMAGE || e.type == FILE_TYPE_IMAGEVIEWER ||
-                        e.type == FILE_TYPE_RDB || e.type == FILE_TYPE_RDB_ENTRY)
+            else if (((entry.type == FILE_TYPE_IMAGE || entry.type == FILE_TYPE_IMAGEVIEWER ||
+                        entry.type == FILE_TYPE_RDB || entry.type == FILE_TYPE_RDB_ENTRY)
                && xmb_list <= XMB_SYSTEM_TAB_SETTINGS))
             {
-               xmb_set_thumbnail_content(xmb, e.path, sizeof(e.path));
+               xmb_set_thumbnail_content(xmb, entry.path, sizeof(entry.path));
                xmb_update_thumbnail_path(xmb, i);
                xmb_update_thumbnail_image(xmb);
             }
@@ -1316,6 +1289,8 @@ static void xmb_selection_pointer_changed(
          menu_animation_push(&entry);
       }
    }
+
+   menu_entry_free(&entry);
 }
 
 static void xmb_list_open_old(xmb_handle_t *xmb,
@@ -1354,26 +1329,26 @@ static void xmb_list_open_old(xmb_handle_t *xmb,
       }
       else
       {
-         menu_animation_ctx_entry_t entry;
+         menu_animation_ctx_entry_t anim_entry;
 
-         entry.duration     = XMB_DELAY;
-         entry.target_value = ia;
-         entry.subject      = &node->alpha;
-         entry.easing_enum  = EASING_OUT_QUAD;
-         entry.tag          = (uintptr_t)list;
-         entry.cb           = NULL;
+         anim_entry.duration     = XMB_DELAY;
+         anim_entry.target_value = ia;
+         anim_entry.subject      = &node->alpha;
+         anim_entry.easing_enum  = EASING_OUT_QUAD;
+         anim_entry.tag          = (uintptr_t)list;
+         anim_entry.cb           = NULL;
 
-         menu_animation_push(&entry);
+         menu_animation_push(&anim_entry);
 
-         entry.target_value = 0;
-         entry.subject      = &node->label_alpha;
+         anim_entry.target_value = 0;
+         anim_entry.subject      = &node->label_alpha;
 
-         menu_animation_push(&entry);
+         menu_animation_push(&anim_entry);
 
-         entry.target_value = xmb->icon.size * dir * -2;
-         entry.subject      = &node->x;
+         anim_entry.target_value = xmb->icon.size * dir * -2;
+         anim_entry.subject      = &node->x;
 
-         menu_animation_push(&entry);
+         menu_animation_push(&anim_entry);
       }
    }
 }
@@ -1424,25 +1399,25 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
       }
       else
       {
-         menu_animation_ctx_entry_t entry;
+         menu_animation_ctx_entry_t anim_entry;
 
-         entry.duration     = XMB_DELAY;
-         entry.target_value = ia;
-         entry.subject      = &node->alpha;
-         entry.easing_enum  = EASING_OUT_QUAD;
-         entry.tag          = (uintptr_t)list;
-         entry.cb           = NULL;
+         anim_entry.duration     = XMB_DELAY;
+         anim_entry.target_value = ia;
+         anim_entry.subject      = &node->alpha;
+         anim_entry.easing_enum  = EASING_OUT_QUAD;
+         anim_entry.tag          = (uintptr_t)list;
+         anim_entry.cb           = NULL;
 
-         menu_animation_push(&entry);
+         menu_animation_push(&anim_entry);
 
-         entry.subject      = &node->label_alpha;
+         anim_entry.subject      = &node->label_alpha;
 
-         menu_animation_push(&entry);
+         menu_animation_push(&anim_entry);
 
-         entry.target_value = 0;
-         entry.subject      = &node->x;
+         anim_entry.target_value = 0;
+         anim_entry.subject      = &node->x;
 
-         menu_animation_push(&entry);
+         menu_animation_push(&anim_entry);
       }
    }
 
@@ -1735,8 +1710,7 @@ static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb)
 
 static void xmb_list_switch(xmb_handle_t *xmb)
 {
-   menu_entry_t e;
-   menu_animation_ctx_entry_t entry;
+   menu_animation_ctx_entry_t anim_entry;
    int dir                    = -1;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    size_t selection           = menu_navigation_get_selection();
@@ -1749,16 +1723,16 @@ static void xmb_list_switch(xmb_handle_t *xmb)
 
    xmb_list_switch_horizontal_list(xmb);
 
-   entry.duration     = XMB_DELAY;
-   entry.target_value = xmb->icon.spacing.horizontal * -(float)xmb->categories.selection_ptr;
-   entry.subject      = &xmb->categories.x_pos;
-   entry.easing_enum  = EASING_OUT_QUAD;
+   anim_entry.duration     = XMB_DELAY;
+   anim_entry.target_value = xmb->icon.spacing.horizontal * -(float)xmb->categories.selection_ptr;
+   anim_entry.subject      = &xmb->categories.x_pos;
+   anim_entry.easing_enum  = EASING_OUT_QUAD;
    /* TODO/FIXME - integer conversion resulted in change of sign */
-   entry.tag          = -1;
-   entry.cb           = NULL;
+   anim_entry.tag          = -1;
+   anim_entry.cb           = NULL;
 
-   if (entry.subject)
-      menu_animation_push(&entry);
+   if (anim_entry.subject)
+      menu_animation_push(&anim_entry);
 
    dir = -1;
    if (xmb->categories.selection_ptr > xmb->categories.selection_ptr_old)
@@ -1775,20 +1749,14 @@ static void xmb_list_switch(xmb_handle_t *xmb)
    if (!string_is_equal(xmb_thumbnails_ident(),
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
    {
-      e.path[0]       = '\0';
-      e.label[0]      = '\0';
-      e.sublabel[0]   = '\0';
-      e.value[0]      = '\0';
-      e.rich_label[0] = '\0';
-      e.enum_idx      = MSG_UNKNOWN;
-      e.entry_idx     = 0;
-      e.idx           = 0;
-      e.type          = 0;
-      e.spacing       = 0;
+      menu_entry_t entry;
 
-      menu_entry_get(&e, 0, selection, NULL, true);
+      menu_entry_init(&entry);
+      menu_entry_get(&entry, 0, selection, NULL, true);
 
-      xmb_set_thumbnail_content(xmb, e.path, sizeof(e.path));
+      xmb_set_thumbnail_content(xmb, entry.path, sizeof(entry.path));
+
+      menu_entry_free(&entry);
 
       xmb_update_thumbnail_path(xmb, 0);
       xmb_update_thumbnail_image(xmb);
@@ -2396,18 +2364,9 @@ static void xmb_draw_items(
       if (!node)
          continue;
 
-      entry.path[0]          = '\0';
-      entry.label[0]         = '\0';
-      entry.sublabel[0]      = '\0';
-      entry.value[0]         = '\0';
-      entry.rich_label[0]    = '\0';
-      entry.enum_idx         = MSG_UNKNOWN;
-      entry.entry_idx        = 0;
-      entry.idx              = 0;
-      entry.type             = 0;
-      entry.spacing          = 0;
-
       ticker_str[0] = tmp[0] = '\0';
+
+      menu_entry_init(&entry);
 
       icon_y = xmb->margins.screen.top + node->y + half_size;
 
@@ -2600,6 +2559,8 @@ static void xmb_draw_items(
                1,
                &color[0],
                xmb->shadow_offset);
+
+      menu_entry_free(&entry);
    }
 
    menu_display_blend_end();

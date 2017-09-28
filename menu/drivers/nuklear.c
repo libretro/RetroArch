@@ -501,11 +501,13 @@ static int nk_menu_iterate(void *data, void *userdata, enum menu_action action)
    if (!nk)
       return -1;
 
+   menu_entry_init(&entry);
    menu_entry_get(&entry, 0, selection, NULL, false);
 
    nk->action       = action;
 
    ret = menu_entry_action(&entry, selection, action);
+   menu_entry_free(&entry);
    if (ret)
       return -1;
    return 0;
