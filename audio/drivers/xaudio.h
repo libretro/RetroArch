@@ -287,7 +287,17 @@ DECLARE_INTERFACE_(IXAudio2, IUnknown)
          void *pReserved X2DEFAULT(NULL)) PURE;
 };
 
-#ifndef __cplusplus
+#ifdef __cplusplus
+/* C++ hooks */
+#define IXAudio2SourceVoice_SubmitSourceBuffer(handle, a, b) handle->SubmitSourceBuffer(a, b)		
+#define IXAudio2SourceVoice_Stop(handle, a, b) handle->Stop(a, b)		
+#define IXAudio2SourceVoice_DestroyVoice(handle) handle->DestroyVoice()		
+#define IXAudio2MasteringVoice_DestroyVoice(handle) handle->DestroyVoice()		
+#define IXAudio2_Release(handle) handle->Release()		
+#define IXAudio2_CreateSourceVoice(handle, a, b, c, d, e, f, g) handle->CreateSourceVoice(a, b, c, d, e, f, g)		
+#define IXAudio2_CreateMasteringVoice(handle, a, b, c, d, e, f) handle->CreateMasteringVoice(a, b, c, d, e, f)		
+#define IXAudio2SourceVoice_Start(handle, a, b) handle->Start(a, b)		
+#else
 /* C hooks */
 #define IXAudio2_Initialize(THIS, ...) (THIS)->lpVtbl->Initialize(THIS, __VA_ARGS__)		
 #define IXAudio2_Release(THIS) (THIS)->lpVtbl->Release(THIS)		

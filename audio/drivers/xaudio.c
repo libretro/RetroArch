@@ -130,21 +130,13 @@ static void xaudio2_enumerate_devices(xaudio2_t *xa)
    (void)i;
    (void)dev_count;
 #ifndef _XBOX
-#ifdef __cplusplus
-   xa->pXAudio2->GetDeviceCount(&dev_count);
-#else
    IXAudio2_GetDeviceCount(xa->pXAudio2, &dev_count);
-#endif
    fprintf(stderr, "XAudio2 devices:\n");
 
    for (i = 0; i < dev_count; i++)
    {
       XAUDIO2_DEVICE_DETAILS dev_detail;
-#ifdef __cplusplus
-      xa->pXAudio2->GetDeviceDetails(i, &dev_detail);
-#else
       IXAudio2_GetDeviceDetails(xa->pXAudio2, i, &dev_detail);
-#endif
       fwprintf(stderr, L"\t%u: %s\n", i, dev_detail.DisplayName);
    }
 #endif
@@ -171,32 +163,19 @@ static void xaudio2_free(xaudio2_t *handle)
 
    if (handle->pSourceVoice)
    {
-#ifdef __cplusplus
-      handle->pSourceVoice->Stop(0, XAUDIO2_COMMIT_NOW);
-      handle->pSourceVoice->DestroyVoice();
-#else
       IXAudio2SourceVoice_Stop(handle->pSourceVoice,
             0, XAUDIO2_COMMIT_NOW);
       IXAudio2SourceVoice_DestroyVoice(handle->pSourceVoice);
-#endif
    }
 
    if (handle->pMasterVoice)
    {
-#ifdef __cplusplus
-      handle->pMasterVoice->DestroyVoice();
-#else
       IXAudio2MasteringVoice_DestroyVoice(handle->pMasterVoice);
-#endif
    }
 
    if (handle->pXAudio2)
    {
-#ifdef __cplusplus
-      handle->pXAudio2->Release();
-#else
       IXAudio2_Release(handle->pXAudio2);
-#endif
    }
 
    if (handle->hEvent)
@@ -241,29 +220,16 @@ static xaudio2_t *xaudio2_new(unsigned samplerate, unsigned channels,
    if (FAILED(XAudio2Create(&handle->pXAudio2, 0, XAUDIO2_DEFAULT_PROCESSOR)))
       goto error;
 
-#ifdef __cplusplus
-   if (FAILED(handle->pXAudio2->CreateMasteringVoice(&handle->pMasterVoice,
-               channels, samplerate, 0, device, NULL)))
-      goto error;
-#else
    if (FAILED(IXAudio2_CreateMasteringVoice(handle->pXAudio2, &handle->pMasterVoice, channels, samplerate, 0, device, NULL)))
       goto error;
-#endif
 
    xaudio2_set_wavefmt(&wfx, channels, samplerate);
 
-#ifdef __cplusplus
-   if (FAILED(handle->pXAudio2->CreateSourceVoice(&handle->pSourceVoice, &wfx,
-               XAUDIO2_VOICE_NOSRC, XAUDIO2_DEFAULT_FREQ_RATIO,
-               handle)))
-      goto error;
-#else
    if (FAILED(IXAudio2_CreateSourceVoice(handle->pXAudio2,		
                &handle->pSourceVoice, &wfx,		
                XAUDIO2_VOICE_NOSRC, XAUDIO2_DEFAULT_FREQ_RATIO,		
                (IXAudio2VoiceCallback*)handle, 0, 0)))
       goto error;
-#endif
 
    handle->hEvent  = CreateEvent(0, FALSE, FALSE, 0);
    if (!handle->hEvent)
@@ -274,14 +240,9 @@ static xaudio2_t *xaudio2_new(unsigned samplerate, unsigned channels,
    if (!handle->buf)
       goto error;
 
-#ifdef __cplusplus
-   if (FAILED(handle->pSourceVoice->Start(0)))
-      goto error;
-#else
    if (FAILED(IXAudio2SourceVoice_Start(handle->pSourceVoice, 0, 
                XAUDIO2_COMMIT_NOW)))
       goto error;
-#endif
 
    return handle;
 
@@ -322,13 +283,8 @@ static size_t xaudio2_write(xaudio2_t *handle, const void *buf, size_t bytes_)
          xa2buffer.AudioBytes = handle->bufsize;
          xa2buffer.pAudioData = handle->buf + handle->write_buffer * handle->bufsize;
 
-#ifdef __cplusplus
-         if (FAILED(handle->pSourceVoice->SubmitSourceBuffer(&xa2buffer, NULL)))
-            return 0;
-#else
          if (FAILED(IXAudio2SourceVoice_SubmitSourceBuffer(handle->pSourceVoice, &xa2buffer, NULL)))
             return 0;
-#endif
 
          InterlockedIncrement((LONG volatile*)&handle->buffers);
          handle->bufptr       = 0;
