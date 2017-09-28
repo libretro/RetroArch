@@ -37,12 +37,12 @@ typedef struct
 
 typedef struct
 {
-   winraw_keyboard_t keyboard;
-   winraw_mouse_t *mice;
-   const input_device_driver_t *joypad;
-   HWND window;
    bool kbd_mapp_block;
    bool mouse_grab;
+   winraw_keyboard_t keyboard;
+   HWND window;
+   winraw_mouse_t *mice;
+   const input_device_driver_t *joypad;
 } winraw_input_t;
 
 static winraw_keyboard_t *g_keyboard = NULL;
@@ -133,10 +133,10 @@ static bool winraw_set_keyboard_input(HWND window)
 
 static void winraw_log_mice_info(winraw_mouse_t *mice, unsigned mouse_cnt)
 {
-   char name[256];
-   UINT name_size = sizeof(name);
    UINT r;
    unsigned i;
+   char name[256];
+   UINT name_size = sizeof(name);
 
    for (i = 0; i < mouse_cnt; ++i)
    {
@@ -149,14 +149,15 @@ static void winraw_log_mice_info(winraw_mouse_t *mice, unsigned mouse_cnt)
 
 static bool winraw_init_devices(winraw_mouse_t **mice, unsigned *mouse_cnt)
 {
-   UINT r, i;
+   UINT i;
    POINT crs_pos;
    winraw_mouse_t *mice_r   = NULL;
    unsigned mouse_cnt_r     = 0;
    RAWINPUTDEVICELIST *devs = NULL;
    UINT dev_cnt             = 0;
+   UINT r                   = GetRawInputDeviceList(
+         NULL, &dev_cnt, sizeof(RAWINPUTDEVICELIST));
 
-   r = GetRawInputDeviceList(NULL, &dev_cnt, sizeof(RAWINPUTDEVICELIST));
    if (r == (UINT)-1)
    {
       RARCH_ERR("[WINRAW]: GetRawInputDeviceList failed with error %lu.\n", GetLastError());
@@ -395,13 +396,16 @@ static LRESULT CALLBACK winraw_callback(HWND wnd, UINT msg, WPARAM wpar, LPARAM 
    if (msg != WM_INPUT)
       return DefWindowProcA(wnd, msg, wpar, lpar);
 
-   if (GET_RAWINPUT_CODE_WPARAM(wpar) != RIM_INPUT) /* app is in the background */
+   /* app is in the background */
+   if (GET_RAWINPUT_CODE_WPARAM(wpar) != RIM_INPUT) 
       goto end;
 
-   r = GetRawInputData((HRAWINPUT)lpar, RID_INPUT, data, &size, sizeof(RAWINPUTHEADER));
+   r = GetRawInputData((HRAWINPUT)lpar, RID_INPUT,
+         data, &size, sizeof(RAWINPUTHEADER));
    if (r == (UINT)-1)
    {
-      RARCH_WARN("[WINRAW]: GetRawInputData failed with error %lu.\n", GetLastError());
+      RARCH_WARN("[WINRAW]: GetRawInputData failed with error %lu.\n",
+            GetLastError());
       goto end;
    }
 
@@ -432,8 +436,10 @@ end:
 static void *winraw_init(const char *joypad_driver)
 {
    bool r;
-   winraw_input_t *wr = (winraw_input_t *)calloc(1, sizeof(winraw_input_t));
-   g_keyboard         = (winraw_keyboard_t*)calloc(1, sizeof(winraw_keyboard_t));
+   winraw_input_t *wr = (winraw_input_t *)
+      calloc(1, sizeof(winraw_input_t));
+   g_keyboard         = (winraw_keyboard_t*)
+      calloc(1, sizeof(winraw_keyboard_t));
 
    if (!wr || !g_keyboard)
       goto error;
@@ -456,7 +462,8 @@ static void *winraw_init(const char *joypad_driver)
    }
    else
    {
-      wr->mice = (winraw_mouse_t*)malloc(g_mouse_cnt * sizeof(winraw_mouse_t));
+      wr->mice = (winraw_mouse_t*)
+         malloc(g_mouse_cnt * sizeof(winraw_mouse_t));
       if (!wr->mice)
          goto error;
 
@@ -507,8 +514,8 @@ static void winraw_poll(void *d)
 
    for (i = 0; i < g_mouse_cnt; ++i)
    {
-      wr->mice[i].x = g_mice[i].x;
-      wr->mice[i].y = g_mice[i].y;
+      wr->mice[i].x     = g_mice[i].x;
+      wr->mice[i].y     = g_mice[i].y;
       wr->mice[i].dlt_x = InterlockedExchange(&g_mice[i].dlt_x, 0);
       wr->mice[i].dlt_y = InterlockedExchange(&g_mice[i].dlt_y, 0);
       wr->mice[i].whl_u = InterlockedExchange(&g_mice[i].whl_u, 0);
@@ -585,8 +592,8 @@ static uint64_t winraw_get_capabilities(void *u)
 
 static void winraw_grab_mouse(void *d, bool grab)
 {
+   bool r             = false;
    winraw_input_t *wr = (winraw_input_t*)d;
-   bool r;
 
    if (grab == wr->mouse_grab)
       return;
