@@ -735,7 +735,7 @@ static int general_push(menu_displaylist_info_t *info,
          break;
       case PUSH_DEFAULT:
          {
-            char *new_exts = info->exts;
+            char *new_exts = NULL;
 
             if (menu_setting_get_browser_selection_type(info->setting) == ST_DIR)
             {
@@ -751,6 +751,10 @@ static int general_push(menu_displaylist_info_t *info,
                   new_exts = strdup(system->valid_extensions);
             }
 
+            if (!new_exts)
+               new_exts = info->exts;
+
+            if (new_exts && !string_is_empty(new_exts))
             {
                union string_list_elem_attr attr;
                size_t path_size               = PATH_MAX_LENGTH * sizeof(char);
