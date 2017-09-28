@@ -972,6 +972,7 @@ end:
 static void xmb_update_thumbnail_path(void *data, unsigned i)
 {
    menu_entry_t entry;
+   unsigned entry_type      = 0;
    char *scrub_char_pointer = NULL;
    settings_t     *settings = config_get_ptr();
    xmb_handle_t     *xmb    = (xmb_handle_t*)data;
@@ -987,7 +988,9 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
    menu_entry_init(&entry);
    menu_entry_get(&entry, 0, i, NULL, true);
 
-   if (entry.type == FILE_TYPE_IMAGEVIEWER || entry.type == FILE_TYPE_IMAGE)
+   entry_type = menu_entry_get_type_new(&entry);
+
+   if (entry_type == FILE_TYPE_IMAGEVIEWER || entry_type == FILE_TYPE_IMAGE)
    {
       file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
       xmb_node_t *node = (xmb_node_t*)
@@ -1218,8 +1221,9 @@ static void xmb_selection_pointer_changed(
 
       if (i == selection)
       {
-         unsigned depth  = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
-         size_t xmb_list = xmb_list_get_selection(xmb);
+         unsigned     depth  = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
+         size_t     xmb_list = xmb_list_get_selection(xmb);
+         unsigned entry_type = menu_entry_get_type_new(&entry);
 
          ia             = xmb->items.active.alpha;
          iz             = xmb->items.active.zoom;
@@ -1234,8 +1238,8 @@ static void xmb_selection_pointer_changed(
                xmb_update_thumbnail_path(xmb, i);
                xmb_update_thumbnail_image(xmb);
             }
-            else if (((entry.type == FILE_TYPE_IMAGE || entry.type == FILE_TYPE_IMAGEVIEWER ||
-                        entry.type == FILE_TYPE_RDB || entry.type == FILE_TYPE_RDB_ENTRY)
+            else if (((entry_type == FILE_TYPE_IMAGE || entry_type == FILE_TYPE_IMAGEVIEWER ||
+                        entry_type == FILE_TYPE_RDB || entry_type == FILE_TYPE_RDB_ENTRY)
                && xmb_list <= XMB_SYSTEM_TAB_SETTINGS))
             {
                xmb_set_thumbnail_content(xmb, entry.path, sizeof(entry.path));
@@ -2354,6 +2358,7 @@ static void xmb_draw_items(
       char ticker_str[PATH_MAX_LENGTH];
       char tmp[255];
       menu_entry_t entry;
+      unsigned entry_type               = 0;
       const float half_size             = xmb->icon.size / 2.0f;
       uintptr_t texture_switch          = 0;
       xmb_node_t *   node               = (xmb_node_t*)
@@ -2383,8 +2388,9 @@ static void xmb_draw_items(
          continue;
 
       menu_entry_get(&entry, 0, i, list, true);
+      entry_type = menu_entry_get_type_new(&entry);
 
-      if (entry.type == FILE_TYPE_CONTENTLIST_ENTRY)
+      if (entry_type == FILE_TYPE_CONTENTLIST_ENTRY)
          fill_short_pathname_representation(entry.path, entry.path,
                sizeof(entry.path));
 
@@ -2510,7 +2516,7 @@ static void xmb_draw_items(
          math_matrix_4x4 mymat;
          menu_display_ctx_rotate_draw_t rotate_draw;
          uintptr_t texture        = xmb_icon_get_id(xmb, core_node, node,
-                                    entry.enum_idx, entry.type, (i == current));
+                                    entry.enum_idx, entry_type, (i == current));
          float x                  = icon_x;
          float y                  = icon_y;
          float rotation           = 0;

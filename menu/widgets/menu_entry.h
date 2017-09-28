@@ -65,7 +65,7 @@ void menu_entry_get_label(menu_entry_t *entry, char *s, size_t len);
 
 unsigned menu_entry_get_spacing(menu_entry_t *entry);
 
-unsigned menu_entry_get_type_new(uint32_t i);
+unsigned menu_entry_get_type_new(menu_entry_t *entry);
 
 uint32_t menu_entry_get_bool_value(uint32_t i);
 

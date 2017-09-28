@@ -135,14 +135,11 @@ unsigned menu_entry_get_spacing(menu_entry_t *entry)
    return entry->spacing;
 }
 
-unsigned menu_entry_get_type_new(uint32_t i)
+unsigned menu_entry_get_type_new(menu_entry_t *entry)
 {
-   menu_entry_t entry;
-
-   menu_entry_init(&entry);
-   menu_entry_get(&entry, 0, i, NULL, true);
-
-   return entry.type;
+   if (!entry)
+      return 0;
+   return entry->type;
 }
 
 uint32_t menu_entry_get_bool_value(uint32_t i)
