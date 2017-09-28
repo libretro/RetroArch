@@ -64,12 +64,21 @@ DEFINE_PROPERTYKEY(PKEY_Device_FriendlyName, 0xa45c254e, 0xdf1c, 0x4efd, 0x80, 0
          wasapi_sys_err(fun_str);\
          err_exp; }
 
-#define WASAPI_RELEASE(iface)\
+#ifdef __cplusplus
+#define WASAPI_RELEASE(iface) \
+      if(iface) \
+      { \
+         iface->Release();\
+         iface = NULL; \
+      }
+#else
+#define WASAPI_RELEASE(iface) \
       if(iface) \
       { \
          iface->lpVtbl->Release(iface);\
          iface = NULL; \
-      } \
+      }
+#endif
 
 #define WASAPI_FREE(ptr)\
       if(ptr) {\

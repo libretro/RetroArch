@@ -19,6 +19,7 @@
 
 #include <compat/strl.h>
 #include <encodings/utf.h>
+#include <retro_math.h>
 #include <retro_miscellaneous.h>
 #include <features/features_cpu.h>
 
