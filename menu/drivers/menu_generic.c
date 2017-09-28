@@ -270,7 +270,8 @@ bool generic_menu_init_list(void *data)
          msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU));
    info.enum_idx = MENU_ENUM_LABEL_MAIN_MENU;
 
-   menu_entries_append_enum(menu_stack, info.path,
+   menu_entries_append_enum(menu_stack,
+         info.path,
          info.label,
          MENU_ENUM_LABEL_MAIN_MENU,
          info.type, info.flags, 0);

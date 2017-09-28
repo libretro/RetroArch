@@ -446,7 +446,8 @@ static int deferred_push_cursor_manager_list_deferred(
    char *query                    = NULL;
    char *rdb                      = NULL;
    settings_t *settings           = config_get_ptr();
-   config_file_t *conf            = config_file_new(info->path);
+   const char *path               = info->path;
+   config_file_t *conf            = path ? config_file_new(path) : NULL;
 
    if (!conf || !settings)
       goto end;
@@ -467,13 +468,14 @@ static int deferred_push_cursor_manager_list_deferred(
       free(info->path_b);
    if (info->path_c && !string_is_empty(info->path_c))
       free(info->path_c);
+   if (info->path && !string_is_empty(info->path))
+      free(info->path);
 
    info->path_b    = strdup(info->path);
    info->path_c    = strdup(query);
+   info->path      = strdup(rdb_path);
 
-   strlcpy(info->path,   rdb_path,   sizeof(info->path));
-
-   ret = deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
+   ret             = deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
 
 end:
    if (conf)
@@ -488,9 +490,13 @@ end:
 static int deferred_push_cursor_manager_list_generic(
       menu_displaylist_info_t *info, enum database_query_type type)
 {
-   int ret                       = -1;
    char query[PATH_MAX_LENGTH];
-   struct string_list *str_list  = string_split(info->path, "|"); 
+   int ret                       = -1;
+   const char *path              = info->path;
+   struct string_list *str_list  = path ? string_split(path, "|") : NULL; 
+
+   if (!str_list)
+      goto end;
 
    query[0] = '\0';
 
@@ -503,9 +509,10 @@ static int deferred_push_cursor_manager_list_generic(
       free(info->path_b);
    if (info->path_c && !string_is_empty(info->path_c))
       free(info->path_c);
+   if (info->path && !string_is_empty(info->path))
+      free(info->path);
 
-   strlcpy(info->path,   str_list->elems[1].data, sizeof(info->path));
-   
+   info->path   = strdup(str_list->elems[1].data);
    info->path_b = strdup(str_list->elems[0].data);
    info->path_c = strdup(query);
 
@@ -630,14 +637,14 @@ static int deferred_push_cursor_manager_list_deferred_query_subsearch(
    if (string_is_empty(query))
       goto end;
 
-   strlcpy(info->path,   str_list->elems[1].data, sizeof(info->path));
-
+   if (info->path && !string_is_empty(info->path))
+      free(info->path);
    if (info->path_b && !string_is_empty(info->path_b))
       free(info->path_b);
-   info->path_b = strdup(str_list->elems[0].data);
-
    if (info->path_c && !string_is_empty(info->path_c))
       free(info->path_c);
+   info->path   = strdup(str_list->elems[1].data);
+   info->path_b = strdup(str_list->elems[0].data);
    info->path_c = strdup(query);
 
    ret = deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
@@ -670,10 +677,26 @@ static int general_push(menu_displaylist_info_t *info,
       case PUSH_DETECT_CORE_LIST:
          break;
       default:
-         fill_pathname_join(info->path, menu->scratch2_buf,
-               menu->scratch_buf, sizeof(info->path));
-         fill_pathname_join(info->label, menu->scratch2_buf,
-               menu->scratch_buf, sizeof(info->label));
+         {
+            char tmp_str[PATH_MAX_LENGTH];
+            char tmp_str2[PATH_MAX_LENGTH];
+
+            tmp_str[0] = '\0';
+            tmp_str2[0] = '\0';
+
+            fill_pathname_join(tmp_str, menu->scratch2_buf,
+                  menu->scratch_buf, sizeof(tmp_str));
+            fill_pathname_join(tmp_str2, menu->scratch2_buf,
+                  menu->scratch_buf, sizeof(tmp_str2));
+
+            if (info->path && !string_is_empty(info->path))
+               free(info->path);
+            if (info->label && !string_is_empty(info->label))
+               free(info->label);
+
+            info->path  = strdup(tmp_str);
+            info->label = strdup(tmp_str2);
+         }
          break;
    }
 

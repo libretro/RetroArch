@@ -769,7 +769,7 @@ int menu_action_handle_setting(rarch_setting_t *setting,
 
             menu_displaylist_info_init(&info);
 
-            strlcpy(info.path,  setting->default_value.string, sizeof(info.path));
+            info.path                     = strdup(setting->default_value.string);
             info.label                    = strdup(name);
             info.type                     = type;
             info.directory_ptr            = selection;

@@ -1860,8 +1860,8 @@ static void xmb_init_horizontal_list(xmb_handle_t *xmb)
    menu_displaylist_info_init(&info);
 
    info.list                    = xmb->horizontal_list;
-   strlcpy(info.path, settings->paths.directory_playlist, sizeof(info.path));
-
+   info.path                    = strdup(
+         settings->paths.directory_playlist);
    info.label                   = strdup(
          msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST));
    info.exts                    = strdup(
