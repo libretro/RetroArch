@@ -21,6 +21,7 @@
 #define XAUDIO2_STRIPPED_H
 
 #include <retro_inline.h>
+#include <retro_environment.h>
 
 /* All structures defined in this file use tight field packing */
 #pragma pack(push, 1)
@@ -118,7 +119,11 @@ typedef enum XAUDIO2_XBOX_HWTHREAD_SPECIFIER
 #else
 typedef enum XAUDIO2_WINDOWS_PROCESSOR_SPECIFIER
 {
+#if defined(__STDC_C89__)
+   XAUDIO2_ANY_PROCESSOR       = 0xffff,
+#else
    XAUDIO2_ANY_PROCESSOR       = 0xffffffff,
+#endif
    XAUDIO2_DEFAULT_PROCESSOR   = XAUDIO2_ANY_PROCESSOR
 } XAUDIO2_WINDOWS_PROCESSOR_SPECIFIER, XAUDIO2_PROCESSOR;
 #endif
@@ -289,6 +294,7 @@ DECLARE_INTERFACE_(IXAudio2, IUnknown)
 
 #ifdef __cplusplus
 /* C++ hooks */
+#define IXAudio2_Initialize(handle,a,b) handle->Initialize(a, b)		
 #define IXAudio2SourceVoice_SubmitSourceBuffer(handle, a, b) handle->SubmitSourceBuffer(a, b)		
 #define IXAudio2SourceVoice_Stop(handle, a, b) handle->Stop(a, b)		
 #define IXAudio2SourceVoice_DestroyVoice(handle) handle->DestroyVoice()		
@@ -299,15 +305,15 @@ DECLARE_INTERFACE_(IXAudio2, IUnknown)
 #define IXAudio2SourceVoice_Start(handle, a, b) handle->Start(a, b)		
 #else
 /* C hooks */
-#define IXAudio2_Initialize(THIS, ...) (THIS)->lpVtbl->Initialize(THIS, __VA_ARGS__)		
+#define IXAudio2_Initialize(THIS,a,b) (THIS)->lpVtbl->Initialize(THIS, a, b)		
 #define IXAudio2_Release(THIS) (THIS)->lpVtbl->Release(THIS)		
-#define IXAudio2_CreateSourceVoice(THIS, ...) (THIS)->lpVtbl->CreateSourceVoice(THIS, __VA_ARGS__)		
-#define IXAudio2_CreateMasteringVoice(THIS, ...) (THIS)->lpVtbl->CreateMasteringVoice(THIS, __VA_ARGS__)		
-#define IXAudio2_GetDeviceCount(THIS, ...) (THIS)->lpVtbl->GetDeviceCount(THIS, __VA_ARGS__)		
-#define IXAudio2_GetDeviceDetails(THIS, ...) (THIS)->lpVtbl->GetDeviceDetails(THIS, __VA_ARGS__)		
-#define IXAudio2SourceVoice_Start(THIS, ...) (THIS)->lpVtbl->Start(THIS, __VA_ARGS__)		
-#define IXAudio2SourceVoice_Stop(THIS, ...) (THIS)->lpVtbl->Stop(THIS, __VA_ARGS__)		
-#define IXAudio2SourceVoice_SubmitSourceBuffer(THIS, ...) (THIS)->lpVtbl->SubmitSourceBuffer(THIS, __VA_ARGS__)		
+#define IXAudio2_CreateSourceVoice(THIS,ppSourceVoice,pSourceFormat,Flags,MaxFrequencyRatio,pCallback,pSendList,pEffectChain) (THIS)->lpVtbl->CreateSourceVoice(THIS, ppSourceVoice,pSourceFormat,Flags,MaxFrequencyRatio,pCallback,pSendList,pEffectChain)		
+#define IXAudio2_CreateMasteringVoice(THIS,ppMasteringVoice,InputChannels,InputSampleRate,Flags,DeviceIndex,pEffectChain) (THIS)->lpVtbl->CreateMasteringVoice(THIS, ppMasteringVoice,InputChannels,InputSampleRate,Flags,DeviceIndex,pEffectChain)		
+#define IXAudio2_GetDeviceCount(THIS, puCount) (THIS)->lpVtbl->GetDeviceCount(THIS, puCount)		
+#define IXAudio2_GetDeviceDetails(THIS, Index,pDeviceDetails) (THIS)->lpVtbl->GetDeviceDetails(THIS, Index, pDeviceDetails)		
+#define IXAudio2SourceVoice_Start(THIS, Flags, OperationSet) (THIS)->lpVtbl->Start(THIS, Flags, OperationSet)		
+#define IXAudio2SourceVoice_Stop(THIS, Flags, OperationSet) (THIS)->lpVtbl->Stop(THIS, Flags, OperationSet)		
+#define IXAudio2SourceVoice_SubmitSourceBuffer(THIS, pBuffer, pBufferWMA) (THIS)->lpVtbl->SubmitSourceBuffer(THIS, pBuffer, pBufferWMA)		
 #define IXAudio2SourceVoice_DestroyVoice(THIS) (THIS)->lpVtbl->DestroyVoice(THIS)		
 #define IXAudio2MasteringVoice_DestroyVoice(THIS) (THIS)->lpVtbl->DestroyVoice(THIS)
 #endif
@@ -318,32 +324,26 @@ STDAPI XAudio2Create(__deref_out IXAudio2** ppXAudio2, UINT32 Flags X2DEFAULT(0)
 #else
 static INLINE HRESULT XAudio2Create(IXAudio2 **ppXAudio2, UINT32 flags, XAUDIO2_PROCESSOR proc)
 {
-   IXAudio2 *pXAudio2;
+   HRESULT hr;
+   IXAudio2 *pXAudio2 = NULL;
+
    (void)flags;
    (void)proc;
 
 #ifdef __cplusplus
-   HRESULT hr = CoCreateInstance(CLSID_XAudio2, NULL, CLSCTX_INPROC_SERVER, IID_IXAudio2, (void**)&pXAudio2);
+   hr = CoCreateInstance(CLSID_XAudio2, NULL, CLSCTX_INPROC_SERVER, IID_IXAudio2, (void**)&pXAudio2);
 #else
-   HRESULT hr = CoCreateInstance(&CLSID_XAudio2, NULL, CLSCTX_INPROC_SERVER, &IID_IXAudio2, (void**)&pXAudio2);
+   hr = CoCreateInstance(&CLSID_XAudio2, NULL, CLSCTX_INPROC_SERVER, &IID_IXAudio2, (void**)&pXAudio2);
 #endif
 
    if (SUCCEEDED(hr))
    {
-#ifdef __cplusplus
-      hr = pXAudio2->Initialize(0, XAUDIO2_DEFAULT_PROCESSOR);
-#else
       hr = IXAudio2_Initialize(pXAudio2, 0, XAUDIO2_DEFAULT_PROCESSOR);
-#endif
       if (SUCCEEDED(hr))
          *ppXAudio2 = pXAudio2;
       else
       {
-#ifdef __cplusplus
-         pXAudio2->Release();
-#else
          IXAudio2_Release(pXAudio2);
-#endif
       }
    }
    return hr;

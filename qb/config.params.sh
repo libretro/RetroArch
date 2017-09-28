@@ -83,6 +83,7 @@ HAVE_FLOATHARD=no          # Force hard float ABI (for ARM)
 HAVE_FLOATSOFTFP=no        # Force soft float ABI (for ARM)
 HAVE_7ZIP=yes              # Compile in 7z support
 HAVE_FLAC=yes              # Compile in flac support
+C89_FLAC=no
 HAVE_UPDATE_ASSETS=yes     # Disable downloading assets with online updater
 HAVE_PRESERVE_DYLIB=no     # Enable dlclose() for Valgrind support
 HAVE_PARPORT=auto          # Parallel port joypad support
