@@ -141,9 +141,11 @@ enum
 
 typedef struct mui_handle
 {
-   char box_message[1024];
    bool need_compute;
    bool mouse_show;
+
+   int cursor_size;
+
    unsigned tabs_height;
    unsigned line_height;
    unsigned shadow_height;
@@ -152,39 +154,27 @@ typedef struct mui_handle
    unsigned margin;
    unsigned glyph_width;
    unsigned glyph_width2;
+   unsigned categories_active_idx;
+   unsigned categories_active_idx_old;
+
+   size_t categories_selection_ptr;
+   size_t categories_selection_ptr_old;
+
    /* Y position of the vertical scroll */
    float scroll_y;
    float content_height;
+   float textures_arrow_alpha;
+   float categories_x_pos;
+
    uint64_t frame_count;
 
-   struct
-   {
-      int size;
-   } cursor;
+   char box_message[1024];
 
    struct
    {
-      struct
-      {
-         float alpha;
-      } arrow;
-
       menu_texture_item bg;
       menu_texture_item list[MUI_TEXTURE_LAST];
    } textures;
-
-   struct
-   {
-      struct
-      {
-         unsigned idx;
-         unsigned idx_old;
-      } active;
-
-      float x_pos;
-      size_t selection_ptr_old;
-      size_t selection_ptr;
-   } categories;
 
    /* One font for the menu entries, one font for the labels */
    font_data_t *font;
@@ -388,17 +378,17 @@ static void mui_draw_tab(mui_handle_t *mui,
    {
       case MUI_SYSTEM_TAB_MAIN:
          tab_icon = MUI_TEXTURE_TAB_MAIN;
-         if (i == mui->categories.selection_ptr)
+         if (i == mui->categories_selection_ptr)
             tab_color = active_tab_color;
          break;
       case MUI_SYSTEM_TAB_PLAYLISTS:
          tab_icon = MUI_TEXTURE_TAB_PLAYLISTS;
-         if (i == mui->categories.selection_ptr)
+         if (i == mui->categories_selection_ptr)
             tab_color = active_tab_color;
          break;
       case MUI_SYSTEM_TAB_SETTINGS:
          tab_icon = MUI_TEXTURE_TAB_SETTINGS;
-         if (i == mui->categories.selection_ptr)
+         if (i == mui->categories_selection_ptr)
             tab_color = active_tab_color;
          break;
    }
@@ -537,7 +527,7 @@ static void mui_draw_tab_end(mui_handle_t *mui,
    unsigned tab_width = width / (MUI_SYSTEM_TAB_END+1);
 
    menu_display_draw_quad(
-        (int)(mui->categories.selection_ptr * tab_width),
+        (int)(mui->categories_selection_ptr * tab_width),
          height - (header_height/16),
          tab_width,
          header_height/16,
@@ -1627,7 +1617,7 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
    if (mui->mouse_show)
       menu_display_draw_cursor(
             &white_bg[0],
-            mui->cursor.size,
+            mui->cursor_size,
             mui->textures.list[MUI_TEXTURE_POINTER],
             menu_input_mouse_state(MENU_MOUSE_X_AXIS),
             menu_input_mouse_state(MENU_MOUSE_Y_AXIS),
@@ -1720,7 +1710,7 @@ static void *mui_init(void **userdata, bool video_is_threaded)
 
    *userdata = mui;
 
-   mui->cursor.size  = 64.0;
+   mui->cursor_size  = 64.0;
    mui->need_compute = false;
 
    return menu;
@@ -1933,7 +1923,7 @@ static void mui_preswitch_tabs(mui_handle_t *mui, unsigned action)
       free(menu_stack->list[stack_size - 1].label);
    menu_stack->list[stack_size - 1].label = NULL;
 
-   switch (mui->categories.selection_ptr)
+   switch (mui->categories_selection_ptr)
    {
       case MUI_SYSTEM_TAB_MAIN:
          menu_stack->list[stack_size - 1].label =
@@ -1975,27 +1965,27 @@ static void mui_list_cache(void *data,
       case MENU_LIST_PLAIN:
          break;
       case MENU_LIST_HORIZONTAL:
-         mui->categories.selection_ptr_old = mui->categories.selection_ptr;
+         mui->categories_selection_ptr_old = mui->categories_selection_ptr;
 
          switch (action)
          {
             case MENU_ACTION_LEFT:
-               if (mui->categories.selection_ptr == 0)
+               if (mui->categories_selection_ptr == 0)
                {
-                  mui->categories.selection_ptr = list_size;
-                  mui->categories.active.idx    = (unsigned)(list_size - 1);
+                  mui->categories_selection_ptr = list_size;
+                  mui->categories_active_idx    = (unsigned)(list_size - 1);
                }
                else
-                  mui->categories.selection_ptr--;
+                  mui->categories_selection_ptr--;
                break;
             default:
-               if (mui->categories.selection_ptr == list_size)
+               if (mui->categories_selection_ptr == list_size)
                {
-                  mui->categories.selection_ptr = 0;
-                  mui->categories.active.idx = 1;
+                  mui->categories_selection_ptr = 0;
+                  mui->categories_active_idx = 1;
                }
                else
-                  mui->categories.selection_ptr++;
+                  mui->categories_selection_ptr++;
                break;
          }
 
@@ -2152,7 +2142,7 @@ static size_t mui_list_get_selection(void *data)
    if (!mui)
       return 0;
 
-   return mui->categories.selection_ptr;
+   return mui->categories_selection_ptr;
 }
 
 /* The pointer or the mouse is pressed down. We use this callback to
@@ -2240,7 +2230,7 @@ static int mui_pointer_up(void *userdata,
 
          if ((x >= start) && (x < (start + tab_width)))
          {
-            mui->categories.selection_ptr = i;
+            mui->categories_selection_ptr = i;
 
             mui_preswitch_tabs(mui, action);
 
