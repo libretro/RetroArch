@@ -91,6 +91,26 @@
 
 extern int libui_main(void);
 
+enum cmd_source_t
+{
+   CMD_NONE = 0,
+   CMD_STDIN,
+   CMD_NETWORK
+};
+
+struct cmd_map
+{
+   const char *str;
+   unsigned id;
+};
+
+struct cmd_action_map
+{
+   const char *str;
+   bool (*action)(const char *arg);
+   const char *arg_desc;
+};
+
 struct command
 {
 #ifdef HAVE_STDIN_CMD
@@ -106,154 +126,8 @@ struct command
    bool state[RARCH_BIND_LIST_END];
 };
 
-enum cmd_source_t
-{
-   CMD_NONE = 0,
-   CMD_STDIN,
-   CMD_NETWORK
-};
-
-#if defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD) && defined(HAVE_NETWORKING)
-static enum cmd_source_t lastcmd_source;
-#endif
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
-static int lastcmd_net_fd;
-static struct sockaddr_storage lastcmd_net_source;
-static socklen_t lastcmd_net_source_len;
-#endif
-
-#ifdef HAVE_CHEEVOS
-#if defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD) && defined(HAVE_NETWORKING)
-static bool command_reply(const char * data, size_t len)
-{
-#ifdef HAVE_STDIN_CMD
-   if (lastcmd_source == CMD_STDIN)
-   {
-      fwrite(data, 1,len, stdout);
-      return true;
-   }
-#endif
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
-   if (lastcmd_source == CMD_NETWORK)
-   {
-      sendto(lastcmd_net_fd, data, len, 0,
-            (struct sockaddr*)&lastcmd_net_source, lastcmd_net_source_len);
-      return true;
-   }
-#endif
-   return false;
-}
-#endif
-#endif
-
-struct cmd_map
-{
-   const char *str;
-   unsigned id;
-};
-
-struct cmd_action_map
-{
-   const char *str;
-   bool (*action)(const char *arg);
-   const char *arg_desc;
-};
-
-bool command_set_shader(const char *arg)
-{
-   char msg[256];
-   enum rarch_shader_type type = RARCH_SHADER_NONE;
-
-   switch (msg_hash_to_file_type(msg_hash_calculate(path_get_extension(arg))))
-   {
-      case FILE_TYPE_SHADER_GLSL:
-      case FILE_TYPE_SHADER_PRESET_GLSLP:
-         type = RARCH_SHADER_GLSL;
-         break;
-      case FILE_TYPE_SHADER_CG:
-      case FILE_TYPE_SHADER_PRESET_CGP:
-         type = RARCH_SHADER_CG;
-         break;
-      case FILE_TYPE_SHADER_SLANG:
-      case FILE_TYPE_SHADER_PRESET_SLANGP:
-         type = RARCH_SHADER_SLANG;
-         break;
-      default:
-         return false;
-   }
-
-   snprintf(msg, sizeof(msg), "Shader: \"%s\"", arg);
-   runloop_msg_queue_push(msg, 1, 120, true);
-   RARCH_LOG("%s \"%s\".\n",
-         msg_hash_to_str(MSG_APPLYING_SHADER),
-         arg);
-
-   return video_driver_set_shader(type, arg);
-}
-
-#ifdef HAVE_COMMAND
-#ifdef HAVE_CHEEVOS
-static bool command_read_ram(const char *arg)
-{
-   cheevos_var_t var;
-   unsigned i;
-   unsigned nbytes;
-   char reply[256];
-   const uint8_t * data = NULL;
-   char *reply_at       = NULL;
-
-   reply[0]             = '\0';
-
-   strlcpy(reply, "READ_CORE_RAM ", sizeof(reply));
-   reply_at = reply + strlen("READ_CORE_RAM ");
-   strlcpy(reply_at, arg, sizeof(reply)-strlen(reply));
-
-   cheevos_parse_guest_addr(&var, strtoul(reply_at, (char**)&reply_at, 16));
-   data = cheevos_get_memory(&var);
-
-   if (data)
-   {
-      unsigned nbytes = strtol(reply_at, NULL, 10);
-
-      for (i=0;i<nbytes;i++)
-      {
-         sprintf(reply_at+3*i, " %.2X", data[i]);
-      }
-      reply_at[3*nbytes] = '\n';
-      command_reply(reply, reply_at+3*nbytes+1 - reply);
-   }
-   else
-   {
-      strlcpy(reply_at, " -1\n", sizeof(reply)-strlen(reply));
-      command_reply(reply, reply_at+strlen(" -1\n") - reply);
-   }
-
-   return true;
-}
-
-static bool command_write_ram(const char *arg)
-{
-   int i;
-   cheevos_var_t var;
-   unsigned nbytes;
-   uint8_t * data    = NULL;
-
-   cheevos_parse_guest_addr(&var, strtoul(arg, (char**)&arg, 16));
-
-   data = cheevos_get_memory(&var);
-
-   if (!data)
-      return false;
-
-   while (*arg)
-   {
-      *data = strtoul(arg, (char**)&arg, 16);
-      data++;
-   }
-
-   return true;
-}
-#endif
+static bool command_read_ram(const char *arg);
+static bool command_write_ram(const char *arg);
 
 static const struct cmd_action_map action_map[] = {
    { "SET_SHADER", command_set_shader, "<shader path>" },
@@ -305,6 +179,141 @@ static const struct cmd_map map[] = {
    { "MENU_B",                 RETRO_DEVICE_ID_JOYPAD_B },
    { "MENU_B",                 RETRO_DEVICE_ID_JOYPAD_B },
 };
+
+
+#if defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD) && defined(HAVE_NETWORKING)
+static enum cmd_source_t lastcmd_source;
+#endif
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
+static int lastcmd_net_fd;
+static struct sockaddr_storage lastcmd_net_source;
+static socklen_t lastcmd_net_source_len;
+#endif
+
+#ifdef HAVE_CHEEVOS
+#if defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD) && defined(HAVE_NETWORKING)
+static bool command_reply(const char * data, size_t len)
+{
+#ifdef HAVE_STDIN_CMD
+   if (lastcmd_source == CMD_STDIN)
+   {
+      fwrite(data, 1,len, stdout);
+      return true;
+   }
+#endif
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
+   if (lastcmd_source == CMD_NETWORK)
+   {
+      sendto(lastcmd_net_fd, data, len, 0,
+            (struct sockaddr*)&lastcmd_net_source, lastcmd_net_source_len);
+      return true;
+   }
+#endif
+   return false;
+}
+#endif
+#endif
+
+bool command_set_shader(const char *arg)
+{
+   char msg[256];
+   enum rarch_shader_type type = RARCH_SHADER_NONE;
+
+   switch (msg_hash_to_file_type(msg_hash_calculate(path_get_extension(arg))))
+   {
+      case FILE_TYPE_SHADER_GLSL:
+      case FILE_TYPE_SHADER_PRESET_GLSLP:
+         type = RARCH_SHADER_GLSL;
+         break;
+      case FILE_TYPE_SHADER_CG:
+      case FILE_TYPE_SHADER_PRESET_CGP:
+         type = RARCH_SHADER_CG;
+         break;
+      case FILE_TYPE_SHADER_SLANG:
+      case FILE_TYPE_SHADER_PRESET_SLANGP:
+         type = RARCH_SHADER_SLANG;
+         break;
+      default:
+         return false;
+   }
+
+   snprintf(msg, sizeof(msg), "Shader: \"%s\"", arg);
+   runloop_msg_queue_push(msg, 1, 120, true);
+   RARCH_LOG("%s \"%s\".\n",
+         msg_hash_to_str(MSG_APPLYING_SHADER),
+         arg);
+
+   return video_driver_set_shader(type, arg);
+}
+
+static bool command_read_ram(const char *arg)
+{
+#if defined(HAVE_COMMAND) && defined(HAVE_CHEEVOS)
+   cheevos_var_t var;
+   unsigned i;
+   unsigned nbytes;
+   char reply[256];
+   const uint8_t * data = NULL;
+   char *reply_at       = NULL;
+
+   reply[0]             = '\0';
+
+   strlcpy(reply, "READ_CORE_RAM ", sizeof(reply));
+   reply_at = reply + strlen("READ_CORE_RAM ");
+   strlcpy(reply_at, arg, sizeof(reply)-strlen(reply));
+
+   cheevos_parse_guest_addr(&var, strtoul(reply_at, (char**)&reply_at, 16));
+   data = cheevos_get_memory(&var);
+
+   if (data)
+   {
+      unsigned nbytes = strtol(reply_at, NULL, 10);
+
+      for (i=0;i<nbytes;i++)
+      {
+         sprintf(reply_at+3*i, " %.2X", data[i]);
+      }
+      reply_at[3*nbytes] = '\n';
+      command_reply(reply, reply_at+3*nbytes+1 - reply);
+   }
+   else
+   {
+      strlcpy(reply_at, " -1\n", sizeof(reply)-strlen(reply));
+      command_reply(reply, reply_at+strlen(" -1\n") - reply);
+   }
+
+   return true;
+#else
+   return false;
+#endif
+}
+
+static bool command_write_ram(const char *arg)
+{
+#if defined(HAVE_COMMAND) && defined(HAVE_CHEEVOS)
+   int i;
+   cheevos_var_t var;
+   unsigned nbytes   = 0;
+   uint8_t *data     = NULL;
+
+   cheevos_parse_guest_addr(&var, strtoul(arg, (char**)&arg, 16));
+
+   data = cheevos_get_memory(&var);
+
+   if (data)
+   {
+      while (*arg)
+      {
+         *data = strtoul(arg, (char**)&arg, 16);
+         data++;
+      }
+      return true;
+   }
+
+#endif
+
+   return false;
+}
 
 static bool command_get_arg(const char *tok,
       const char **arg, unsigned *index)
@@ -589,8 +598,6 @@ error:
 }
 
 #ifdef HAVE_STDIN_CMD
-
-
 static void command_stdin_poll(command_t *handle)
 {
    ssize_t ret;
@@ -633,14 +640,11 @@ static void command_stdin_poll(command_t *handle)
    handle->stdin_buf_ptr -= msg_len;
 }
 #endif
-#endif
 
 bool command_poll(command_t *handle)
 {
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
-#ifdef HAVE_COMMAND
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD) && defined(HAVE_COMMAND)
    command_network_poll(handle);
-#endif
 #endif
 
 #ifdef HAVE_STDIN_CMD
@@ -669,11 +673,9 @@ bool command_set(command_handle_t *handle)
 
 bool command_free(command_t *handle)
 {
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
-#ifdef HAVE_COMMAND
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD) && defined(HAVE_COMMAND)
    if (handle && handle->net_fd >= 0)
       socket_close(handle->net_fd);
-#endif
 #endif
 
    free(handle);
@@ -1025,9 +1027,9 @@ static void command_event_init_controllers(void)
             set_controller = true;
             break;
          case RETRO_DEVICE_JOYPAD:
-            /* ideally these checks shouldn't be required but if we always
-             *  call core_set_controller_port_device input won't work on 
-             *  cores that don't set port information properly */
+            /* Ideally these checks shouldn't be required but if we always
+             * call core_set_controller_port_device input won't work on 
+             * cores that don't set port information properly */
             if (info->ports.size != 0 && i < info->ports.size)
                set_controller = true;
             break;
@@ -1598,8 +1600,8 @@ static bool command_event_main_state(unsigned cmd)
    char msg[128];
    char *state_path           = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    size_t state_path_size     = PATH_MAX_LENGTH * sizeof(char);
-   bool ret                   = false;
    global_t *global           = global_get_ptr();
+   bool ret                   = false;
    bool push_msg              = true;
 
    state_path[0] = msg[0]     = '\0';
