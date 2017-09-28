@@ -59,7 +59,7 @@ typedef struct menu_entry
 
 enum menu_entry_type menu_entry_get_type(uint32_t i);
 
-void menu_entry_get_path(uint32_t i, char  *s, size_t len);
+void menu_entry_get_path(menu_entry_t *entry, char  *s, size_t len);
 
 void menu_entry_get_label(menu_entry_t *entry, char *s, size_t len);
 
@@ -86,8 +86,6 @@ void menu_entry_pathdir_selected(uint32_t i);
 bool menu_entry_pathdir_allow_empty(uint32_t i);
 
 uint32_t menu_entry_pathdir_for_directory(uint32_t i);
-
-void menu_entry_pathdir_get_value(uint32_t i, char *s, size_t len);
 
 void menu_entry_pathdir_extensions(uint32_t i, char *s, size_t len);
 

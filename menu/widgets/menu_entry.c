@@ -93,14 +93,11 @@ void menu_entry_init(menu_entry_t *entry)
    entry->spacing       = 0;
 }
 
-void menu_entry_get_path(uint32_t i, char *s, size_t len)
+void menu_entry_get_path(menu_entry_t *entry, char *s, size_t len)
 {
-   menu_entry_t entry;
-
-   menu_entry_init(&entry);
-   menu_entry_get(&entry, 0, i, NULL, true);
-
-   strlcpy(s, entry.path, len);
+   if (!entry)
+      return;
+   strlcpy(s, entry->path, len);
 }
 
 void menu_entry_get_rich_label(menu_entry_t *entry, char *s, size_t len)
@@ -231,15 +228,6 @@ uint32_t menu_entry_pathdir_for_directory(uint32_t i)
    uint64_t           flags = setting->flags;
 
    return flags & SD_FLAG_PATH_DIR;
-}
-
-void menu_entry_pathdir_get_value(uint32_t i, char *s, size_t len)
-{
-   menu_entry_t entry;
-
-   menu_entry_init(&entry);
-   menu_entry_get(&entry, 0, i, NULL, true);
-   strlcpy(s, entry.value, len);
 }
 
 void menu_entry_pathdir_extensions(uint32_t i, char *s, size_t len)

@@ -125,7 +125,7 @@ static void RunActionSheet(const char* title, const struct string_list* items,
 
   menu_entry_init(&entry);
   menu_entry_get(&entry, 0, (unsigned)self.i, NULL, true);
-  menu_entry_get_path(self.i, label, sizeof(label));
+  menu_entry_get_path(&entry, label, sizeof(label));
   menu_entry_get_value(&entry, buffer, sizeof(buffer));
 
   result.textLabel.text = BOXSTRING(label);
@@ -152,6 +152,7 @@ static void RunActionSheet(const char* title, const struct string_list* items,
 
 - (UITableViewCell*)cellForTableView:(UITableView*)tableView
 {
+   menu_entry_t entry;
    char label[PATH_MAX_LENGTH];
    static NSString* const cell_id = @"boolean_setting";
 
@@ -166,7 +167,9 @@ static void RunActionSheet(const char* title, const struct string_list* items,
       result.accessoryView = [UISwitch new];
    }
 
-   menu_entry_get_path(self.i, label, sizeof(label));
+   menu_entry_init(&entry);
+   menu_entry_get(&entry, 0, (unsigned)self.i, NULL, true);
+   menu_entry_get_path(&entry, label, sizeof(label));
 
    result.textLabel.text = BOXSTRING(label);
    [(id)result.accessoryView removeTarget:nil
@@ -176,6 +179,7 @@ static void RunActionSheet(const char* title, const struct string_list* items,
                                 action:@selector(handleBooleanSwitch:)
                       forControlEvents:UIControlEventValueChanged];
    [(id)result.accessoryView setOn:(menu_entry_get_bool_value(self.i))];
+   menu_entry_free(&entry);
    return result;
 }
 
@@ -210,11 +214,14 @@ static void RunActionSheet(const char* title, const struct string_list* items,
 - (void)wasSelectedOnTableView:(UITableView*)tableView
                   ofController:(UIViewController*)controller
 {
+   menu_entry_t entry;
    struct string_list* items;
    char label[PATH_MAX_LENGTH];
    RAMenuItemEnum __weak* weakSelf = self;
 
-   menu_entry_get_path(self.i, label, sizeof(label));
+   menu_entry_init(&entry);
+   menu_entry_get(&entry, 0, (unsigned)self.i, NULL, true);
+   menu_entry_get_path(&entry, label, sizeof(label));
    items = menu_entry_enum_values(self.i);
 
    RunActionSheet(label, items, self.parentTable,
@@ -228,6 +235,7 @@ static void RunActionSheet(const char* title, const struct string_list* items,
          [weakSelf.parentTable reloadData];
       });
    string_list_free(items);
+   menu_entry_free(&entry);
 }
 @end
 
@@ -241,9 +249,12 @@ static void RunActionSheet(const char* title, const struct string_list* items,
 - (void)wasSelectedOnTableView:(UITableView *)tableView
                   ofController:(UIViewController *)controller
 {
+   menu_entry_t entry;
    char label[PATH_MAX_LENGTH];
 
-   menu_entry_get_path(self.i, label, sizeof(label));
+   menu_entry_init(&entry);
+   menu_entry_get(&entry, 0, (unsigned)self.i, NULL, true);
+   menu_entry_get_path(&entry, label, sizeof(label));
 
    self.alert = [[UIAlertView alloc]
    initWithTitle:BOXSTRING("RetroArch")
@@ -263,6 +274,7 @@ static void RunActionSheet(const char* title, const struct string_list* items,
                             selector:@selector(checkBind:)
                             userInfo:nil
                              repeats:YES];
+   menu_entry_free(&entry);
 }
 
 - (void)finishWithClickedButton:(bool)clicked
@@ -421,7 +433,7 @@ replacementString:(NSString *)string
 
    menu_entry_init(&entry);
    menu_entry_get(&entry, 0, (unsigned)self.i, NULL, true);
-   menu_entry_get_path(self.i, label, sizeof(label));
+   menu_entry_get_path(&entry, label, sizeof(label));
 
    desc      = BOXSTRING(label);
 

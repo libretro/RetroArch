@@ -600,7 +600,7 @@ static void xui_render(void *data, bool is_idle)
       menu_entry_get(&entry, 0, i, NULL, true);
 
       menu_entry_get_value(&entry, entry_value, sizeof(entry_value));
-      menu_entry_get_path(i, entry_path, sizeof(entry_path));
+      menu_entry_get_path(&entry, entry_path, sizeof(entry_path));
 
       mbstowcs(msg_left,  entry_path,  sizeof(msg_left)  / sizeof(wchar_t));
       mbstowcs(msg_right, entry_value, sizeof(msg_right) / sizeof(wchar_t));
