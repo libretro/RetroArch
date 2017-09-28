@@ -249,8 +249,6 @@ bool command_set(command_handle_t *handle);
 
 bool command_free(command_t *handle);
 
-bool command_event_quit(void);
-
 /**
  * command_event:
  * @cmd                  : Command index.
