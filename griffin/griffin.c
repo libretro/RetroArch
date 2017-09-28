@@ -662,6 +662,10 @@ AUDIO
 #include "../audio/drivers/ctr_dsp_audio.c"
 #endif
 
+#ifdef HAVE_XAUDIO
+#include "../audio/drivers/xaudio.c"
+#endif
+
 #if defined(HAVE_SDL2)
 #include "../audio/drivers/sdl_audio.c"
 #endif

@@ -100,7 +100,7 @@ static void WINAPI voice_on_buffer_end(void *handle_, void *data)
 {		
    (void)data;		
    xaudio2_t *handle = (xaudio2_t*)handle_;		
-   InterlockedDecrement(&handle->buffers);		
+   InterlockedDecrement((__LONG32 volatile*)&handle->buffers);		
    SetEvent(handle->hEvent);		
 }		
 
@@ -118,7 +118,9 @@ const struct IXAudio2VoiceCallbackVtbl voice_vtable = {
    dummy_voidp,		
    dummy_voidp_hresult,		
 };
+#endif
 
+#if 0
 static void xaudio2_enumerate_devices(xaudio2_t *xa)
 {
    uint32_t dev_count = 0;
@@ -128,13 +130,21 @@ static void xaudio2_enumerate_devices(xaudio2_t *xa)
    (void)i;
    (void)dev_count;
 #ifndef _XBOX
+#ifdef __cplusplus
    xa->pXAudio2->GetDeviceCount(&dev_count);
+#else
+   IXAudio2_GetDeviceCount(xa->pXAudio2, &dev_count);
+#endif
    fprintf(stderr, "XAudio2 devices:\n");
 
    for (i = 0; i < dev_count; i++)
    {
       XAUDIO2_DEVICE_DETAILS dev_detail;
+#ifdef __cplusplus
       xa->pXAudio2->GetDeviceDetails(i, &dev_detail);
+#else
+      IXAudio2_GetDeviceDetails(xa->pXAudio2, i, &dev_detail);
+#endif
       fwprintf(stderr, L"\t%u: %s\n", i, dev_detail.DisplayName);
    }
 #endif
@@ -224,6 +234,10 @@ static xaudio2_t *xaudio2_new(unsigned samplerate, unsigned channels,
    if (!handle)
       goto error;
 
+#ifndef __cplusplus
+   handle->lpVtbl = &voice_vtable;
+#endif
+
    if (FAILED(XAudio2Create(&handle->pXAudio2, 0, XAUDIO2_DEFAULT_PROCESSOR)))
       goto error;
 
@@ -244,8 +258,9 @@ static xaudio2_t *xaudio2_new(unsigned samplerate, unsigned channels,
                handle)))
       goto error;
 #else
-   if (FAILED(IXAudio2_CreateSourceVoice(handle->pXAudio2->CreateSourceVoice, &wfx,
-               XAUDIO2_VOICE_NOSRC, XAUDIO2_DEFAULT_FREQ_RATIO,
+   if (FAILED(IXAudio2_CreateSourceVoice(handle->pXAudio2,		
+               &handle->pSourceVoice, &wfx,		
+               XAUDIO2_VOICE_NOSRC, XAUDIO2_DEFAULT_FREQ_RATIO,		
                (IXAudio2VoiceCallback*)handle, 0, 0)))
       goto error;
 #endif
@@ -289,7 +304,8 @@ static size_t xaudio2_write(xaudio2_t *handle, const void *buf, size_t bytes_)
    {
       unsigned need   = MIN(bytes, handle->bufsize - handle->bufptr);
 
-      memcpy(handle->buf + handle->write_buffer * handle->bufsize + handle->bufptr,
+      memcpy(handle->buf + handle->write_buffer * 
+            handle->bufsize + handle->bufptr,
             buffer, need);
 
       handle->bufptr += need;
