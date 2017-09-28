@@ -55,11 +55,11 @@ typedef struct
 {
    bool force_redraw;
    bool mouse_show;
-   char msgbox[4096];
    unsigned last_width;
    unsigned last_height;
    unsigned frame_count;
    float scroll_y;
+   char msgbox[4096];
 } rgui_t;
 
 static uint16_t *rgui_framebuf_data      = NULL;
@@ -276,18 +276,16 @@ static void rgui_set_message(void *data, const char *message)
 
 static void rgui_render_messagebox(const char *message)
 {
-   size_t i, fb_pitch;
    int x, y;
+   uint16_t color;
+   size_t i, fb_pitch;
    unsigned fb_width, fb_height;
    unsigned width, glyphs_width, height;
-   uint16_t color;
    struct string_list *list   = NULL;
    settings_t *settings       = config_get_ptr();
 
    if (!message || !*message)
       return;
-
-   (void)settings;
 
    list = string_split(message, "\n");
    if (!list)
@@ -544,7 +542,7 @@ static void rgui_render(void *data, bool is_idle)
       menu_display_ctx_datetime_t datetime;
       char timedate[255];
 
-      timedate[0] = '\0';
+      timedate[0]        = '\0';
 
       datetime.s         = timedate;
       datetime.len       = sizeof(timedate);
@@ -573,8 +571,9 @@ static void rgui_render(void *data, bool is_idle)
       char message[255];
       char entry_title_buf[255];
       char type_str_buf[255];
-      unsigned entry_spacing;
-      size_t entry_title_buf_utf8len, entry_title_buf_len;
+      unsigned entry_spacing                = 0;
+      size_t entry_title_buf_utf8len        = 0;
+      size_t entry_title_buf_len            = 0;
       bool                entry_selected    = menu_entry_is_currently_selected((unsigned)i);
       size_t selection                      = menu_navigation_get_selection();
 
