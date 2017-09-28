@@ -2348,7 +2348,7 @@ static void xmb_draw_items(
       core_node = xmb_get_userdata_from_horizontal_list(
             xmb, (unsigned)(cat_selection_ptr - (xmb->system_tab_end + 1)));
 
-   end = file_list_get_size(list);
+   end                      = file_list_get_size(list);
 
    rotate_draw.matrix       = &mymat;
    rotate_draw.rotation     = 0;
@@ -2690,10 +2690,6 @@ static void xmb_draw_bg(
       float *coord_white)
 {
    menu_display_ctx_draw_t draw;
-
-#if 0
-   RARCH_LOG("DRAW BG %d %d \n",width,height);
-#endif
 
    bool running              = video_info->libretro_running;
 
@@ -3103,30 +3099,32 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    menu_display_blend_end();
 
    /* Vertical icons */
-   xmb_draw_items(
-         video_info,
-         menu_disp_info,
-         xmb,
-         xmb->selection_buf_old,
-         xmb->selection_ptr_old,
-         (xmb_list_get_size(xmb, MENU_LIST_PLAIN) > 1)
-         ? xmb->categories.selection_ptr : xmb->categories.selection_ptr_old,
-         &item_color[0],
-         width,
-         height);
+   if (xmb)
+      xmb_draw_items(
+            video_info,
+            menu_disp_info,
+            xmb,
+            xmb->selection_buf_old,
+            xmb->selection_ptr_old,
+            (xmb_list_get_size(xmb, MENU_LIST_PLAIN) > 1)
+            ? xmb->categories.selection_ptr : xmb->categories.selection_ptr_old,
+            &item_color[0],
+            width,
+            height);
 
    selection_buf = menu_entries_get_selection_buf_ptr(0);
 
-   xmb_draw_items(
-         video_info,
-         menu_disp_info,
-         xmb,
-         selection_buf,
-         selection,
-         xmb->categories.selection_ptr,
-         &item_color[0],
-         width,
-         height);
+   if (xmb)
+      xmb_draw_items(
+            video_info,
+            menu_disp_info,
+            xmb,
+            selection_buf,
+            selection,
+            xmb->categories.selection_ptr,
+            &item_color[0],
+            width,
+            height);
 
    font_driver_flush(video_info->width, video_info->height, xmb->font);
    font_driver_bind_block(xmb->font, NULL);
