@@ -275,15 +275,23 @@ static size_t xaudio2_write(xaudio2_t *handle, const void *buf, size_t bytes_)
 
       if (handle->bufptr == handle->bufsize)
       {
-         XAUDIO2_BUFFER xa2buffer = {0};
+         XAUDIO2_BUFFER xa2buffer;
 
          while (handle->buffers == MAX_BUFFERS - 1)
             WaitForSingleObject(handle->hEvent, INFINITE);
 
+         xa2buffer.Flags      = 0;
          xa2buffer.AudioBytes = handle->bufsize;
          xa2buffer.pAudioData = handle->buf + handle->write_buffer * handle->bufsize;
+         xa2buffer.PlayBegin  = 0;
+         xa2buffer.PlayLength = 0;
+         xa2buffer.LoopBegin  = 0;
+         xa2buffer.LoopLength = 0;
+         xa2buffer.LoopCount  = 0;
+         xa2buffer.pContext   = NULL;
 
-         if (FAILED(IXAudio2SourceVoice_SubmitSourceBuffer(handle->pSourceVoice, &xa2buffer, NULL)))
+         if (FAILED(IXAudio2SourceVoice_SubmitSourceBuffer(
+                     handle->pSourceVoice, &xa2buffer, NULL)))
             return 0;
 
          InterlockedIncrement((LONG volatile*)&handle->buffers);
