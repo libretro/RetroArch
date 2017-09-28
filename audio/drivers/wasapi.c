@@ -720,7 +720,6 @@ static ssize_t wasapi_write_sh(wasapi_t *w, const void * data, size_t size)
    DWORD ir;
    HRESULT hr;
    size_t write_avail = 0;
-   bool br            = false;
    ssize_t written    = -1;
    UINT32 padding     = 0;
 
@@ -745,8 +744,7 @@ static ssize_t wasapi_write_sh(wasapi_t *w, const void * data, size_t size)
          written     = read_avail < write_avail ? read_avail : write_avail;
          if (written)
          {
-            br = wasapi_flush_buffer(w, written);
-            if (!br)
+            if (!wasapi_flush_buffer(w, written))
                return -1;
          }
       }
@@ -774,8 +772,7 @@ static ssize_t wasapi_write_sh(wasapi_t *w, const void * data, size_t size)
       written = size < write_avail ? size : write_avail;
       if (written)
       {
-         br = wasapi_flush(w, data, written);
-         if (!br)
+         if (!wasapi_flush(w, data, written))
             return -1;
       }
    }
@@ -785,7 +782,6 @@ static ssize_t wasapi_write_sh(wasapi_t *w, const void * data, size_t size)
 
 static ssize_t wasapi_write_ex(wasapi_t *w, const void * data, size_t size)
 {
-   bool br            = false;
    ssize_t writen     = 0;
    size_t write_avail = fifo_write_avail(w->buffer);
 
@@ -801,8 +797,7 @@ static ssize_t wasapi_write_ex(wasapi_t *w, const void * data, size_t size)
       if (ir != WAIT_OBJECT_0)
          return 0;
 
-      br = wasapi_flush_buffer(w, w->engine_buffer_size);
-      if (!br)
+      if (!wasapi_flush_buffer(w, w->engine_buffer_size))
          return -1;
 
       write_avail = w->engine_buffer_size;
