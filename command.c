@@ -181,9 +181,7 @@ static const struct cmd_map map[] = {
 };
 
 
-#if defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD) && defined(HAVE_NETWORKING)
 static enum cmd_source_t lastcmd_source;
-#endif
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
 static int lastcmd_net_fd;
 static struct sockaddr_storage lastcmd_net_source;
@@ -194,21 +192,27 @@ static socklen_t lastcmd_net_source_len;
 #if defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD) && defined(HAVE_NETWORKING)
 static bool command_reply(const char * data, size_t len)
 {
+   switch (lastcmd_source)
+   {
+      case CMD_NONE:
+         break;
+      case CMD_STDIN:
 #ifdef HAVE_STDIN_CMD
-   if (lastcmd_source == CMD_STDIN)
-   {
-      fwrite(data, 1,len, stdout);
-      return true;
-   }
+         fwrite(data, 1,len, stdout);
+         return true;
+#else
+         break;
 #endif
+      case CMD_NETWORK:
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
-   if (lastcmd_source == CMD_NETWORK)
-   {
-      sendto(lastcmd_net_fd, data, len, 0,
-            (struct sockaddr*)&lastcmd_net_source, lastcmd_net_source_len);
-      return true;
-   }
+         sendto(lastcmd_net_fd, data, len, 0,
+               (struct sockaddr*)&lastcmd_net_source, lastcmd_net_source_len);
+         return true;
+#else
+         break;
 #endif
+   }
+
    return false;
 }
 #endif
