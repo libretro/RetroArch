@@ -718,18 +718,19 @@ static bool wasapi_flush_buffer(wasapi_t * w, size_t size)
 static ssize_t wasapi_write_sh(wasapi_t *w, const void * data, size_t size)
 {
    DWORD ir;
-   size_t read_avail;
-   size_t write_avail;
    HRESULT hr;
-   bool br;
-   ssize_t writen = -1;
-   UINT32 padding = 0;
+   size_t write_avail = 0;
+   bool br            = false;
+   ssize_t written    = -1;
+   UINT32 padding     = 0;
 
    if (w->buffer)
    {
       write_avail = fifo_write_avail(w->buffer);
       if (!write_avail)
       {
+         size_t read_avail  = 0;
+
          if (w->blocking)
          {
             ir = WaitForSingleObject(w->write_event, INFINITE);
@@ -739,21 +740,21 @@ static ssize_t wasapi_write_sh(wasapi_t *w, const void * data, size_t size)
          hr = _IAudioClient_GetCurrentPadding(w->client, &padding);
          WASAPI_HR_CHECK(hr, "IAudioClient::GetCurrentPadding", return -1);
 
-         read_avail = fifo_read_avail(w->buffer);
+         read_avail  = fifo_read_avail(w->buffer);
          write_avail = w->engine_buffer_size - padding * w->frame_size;
-         writen = read_avail < write_avail ? read_avail : write_avail;
-         if (writen)
+         written     = read_avail < write_avail ? read_avail : write_avail;
+         if (written)
          {
-            br = wasapi_flush_buffer(w, writen);
+            br = wasapi_flush_buffer(w, written);
             if (!br)
                return -1;
          }
       }
 
       write_avail = fifo_write_avail(w->buffer);
-      writen = size < write_avail ? size : write_avail;
-      if (writen)
-         fifo_write(w->buffer, data, writen);
+      written     = size < write_avail ? size : write_avail;
+      if (written)
+         fifo_write(w->buffer, data, written);
    }
    else
    {
@@ -770,28 +771,28 @@ static ssize_t wasapi_write_sh(wasapi_t *w, const void * data, size_t size)
       if (!write_avail)
          return 0;
 
-      writen = size < write_avail ? size : write_avail;
-      if (writen)
+      written = size < write_avail ? size : write_avail;
+      if (written)
       {
-         br = wasapi_flush(w, data, writen);
+         br = wasapi_flush(w, data, written);
          if (!br)
             return -1;
       }
    }
 
-   return writen;
+   return written;
 }
 
 static ssize_t wasapi_write_ex(wasapi_t *w, const void * data, size_t size)
 {
-   DWORD ir;
    bool br            = false;
    ssize_t writen     = 0;
    size_t write_avail = fifo_write_avail(w->buffer);
 
    if (!write_avail)
    {
-      ir = WaitForSingleObject(w->write_event, w->blocking ? INFINITE : 0);
+      DWORD ir = WaitForSingleObject(
+            w->write_event, w->blocking ? INFINITE : 0);
       if (ir != WAIT_OBJECT_0 && w->blocking)
       {
          RARCH_ERR("[WASAPI]: WaitForSingleObject failed with error %d.\n", GetLastError());
@@ -815,28 +816,28 @@ static ssize_t wasapi_write_ex(wasapi_t *w, const void * data, size_t size)
 
 static ssize_t wasapi_write(void *wh, const void *data, size_t size)
 {
-   size_t writen;
-   ssize_t ir;
+   size_t written;
    wasapi_t *w = (wasapi_t*)wh;
 
    if (w->blocking)
    {
-      for (writen = 0, ir = -1; writen < size; writen += ir)
+      ssize_t ir;
+      for (written = 0, ir = -1; written < size; written += ir)
       {
          if (w->exclusive)
-            ir = wasapi_write_ex(w, (char*)data + writen, size - writen);
+            ir = wasapi_write_ex(w, (char*)data + written, size - written);
          else
-            ir = wasapi_write_sh(w, (char*)data + writen, size - writen);
+            ir = wasapi_write_sh(w, (char*)data + written, size - written);
          if (ir == -1)
             return -1;
       }
    }
    else if (w->exclusive)
-      writen = wasapi_write_ex(w, data, size);
+      written = wasapi_write_ex(w, data, size);
    else
-      writen = wasapi_write_sh(w, data, size);
+      written = wasapi_write_sh(w, data, size);
 
-   return writen;
+   return written;
 }
 
 static bool wasapi_stop(void *wh)
