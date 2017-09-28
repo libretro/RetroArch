@@ -89,8 +89,6 @@
 #define DEFAULT_NETWORK_CMD_PORT 55355
 #define STDIN_BUF_SIZE           4096
 
-extern int libui_main(void);
-
 enum cmd_source_t
 {
    CMD_NONE = 0,
@@ -113,27 +111,25 @@ struct cmd_action_map
 
 struct command
 {
-#ifdef HAVE_STDIN_CMD
    bool stdin_enable;
+   bool state[RARCH_BIND_LIST_END];
+#ifdef HAVE_STDIN_CMD
    char stdin_buf[STDIN_BUF_SIZE];
    size_t stdin_buf_ptr;
 #endif
-
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
    int net_fd;
 #endif
-
-   bool state[RARCH_BIND_LIST_END];
 };
 
 static bool command_read_ram(const char *arg);
 static bool command_write_ram(const char *arg);
 
 static const struct cmd_action_map action_map[] = {
-   { "SET_SHADER", command_set_shader, "<shader path>" },
+   { "SET_SHADER",      command_set_shader,  "<shader path>" },
 #ifdef HAVE_CHEEVOS
-   { "READ_CORE_RAM", command_read_ram, "<address> <number of bytes>" },
-   { "WRITE_CORE_RAM", command_write_ram, "<address> <byte1> <byte2> ..." },
+   { "READ_CORE_RAM",   command_read_ram,    "<address> <number of bytes>" },
+   { "WRITE_CORE_RAM",  command_write_ram,   "<address> <byte1> <byte2> ..." },
 #endif
 };
 
@@ -179,7 +175,6 @@ static const struct cmd_map map[] = {
    { "MENU_B",                 RETRO_DEVICE_ID_JOYPAD_B },
    { "MENU_B",                 RETRO_DEVICE_ID_JOYPAD_B },
 };
-
 
 static enum cmd_source_t lastcmd_source;
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
@@ -274,9 +269,7 @@ static bool command_read_ram(const char *arg)
       unsigned nbytes = strtol(reply_at, NULL, 10);
 
       for (i=0;i<nbytes;i++)
-      {
          sprintf(reply_at+3*i, " %.2X", data[i]);
-      }
       reply_at[3*nbytes] = '\n';
       command_reply(reply, reply_at+3*nbytes+1 - reply);
    }
@@ -2702,6 +2695,7 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_LIBUI_TEST:
 #if HAVE_LIBUI
+         extern int libui_main(void);
          libui_main();
 #endif
          break;
