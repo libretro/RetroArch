@@ -1877,9 +1877,10 @@ static void xmb_init_horizontal_list(xmb_handle_t *xmb)
          for (i = 0; i < xmb->horizontal_list->size; i++)
             xmb_node_allocate_userdata(xmb, (unsigned)i);
          menu_displaylist_process(&info);
-         menu_displaylist_info_free(&info);
       }
    }
+
+   menu_displaylist_info_free(&info);
 }
 
 static void xmb_toggle_horizontal_list(xmb_handle_t *xmb)
