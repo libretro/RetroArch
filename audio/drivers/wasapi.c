@@ -39,36 +39,36 @@
 DEFINE_PROPERTYKEY(PKEY_Device_FriendlyName, 0xa45c254e, 0xdf1c, 0x4efd, 0x80, 0x20, 0x67, 0xd1, 0x46, 0xa8, 0x50, 0xe0, 14); /* DEVPROP_TYPE_STRING */
 
 
-#define WASAPI_WARN(bool_exp, err_str, warn_exp)\
-      if (!(bool_exp)) {\
-         wasapi_warn(err_str);\
+#define WASAPI_WARN(bool_exp, err_str, warn_exp) \
+      if (!(bool_exp)) { \
+         RARCH_WARN("[WASAPI]: %s.\n", err_str); \
          warn_exp; }
 
-#define WASAPI_CHECK(bool_exp, err_str, err_exp)\
-      if (!(bool_exp)) {\
-         wasapi_err(err_str);\
+#define WASAPI_CHECK(bool_exp, err_str, err_exp) \
+      if (!(bool_exp)) { \
+         RARCH_ERR("[WASAPI]: %s.\n", err_str); \
          err_exp; }
 
-#define WASAPI_HR_CHECK(hr, fun_str, err_exp)\
-      if (FAILED(hr)) {\
-         wasapi_com_err(fun_str, hr);\
+#define WASAPI_HR_CHECK(hr, fun_str, err_exp) \
+      if (FAILED(hr)) { \
+         RARCH_ERR("[WASAPI]: %s failed with error 0x%.8X.\n", fun_str, hr); \
          err_exp; }
 
-#define WASAPI_HR_WARN(hr, fun_str, warn_exp)\
-      if (FAILED(hr)) {\
-         wasapi_com_warn(fun_str, hr);\
+#define WASAPI_HR_WARN(hr, fun_str, warn_exp) \
+      if (FAILED(hr)) { \
+         RARCH_WARN("[WASAPI]: %s failed with error 0x%.8X.\n", fun_str, hr); \
          warn_exp; }
 
-#define WASAPI_SR_CHECK(bool_exp, fun_str, err_exp)\
-      if (!(bool_exp)) {\
-         wasapi_sys_err(fun_str);\
+#define WASAPI_SR_CHECK(bool_exp, fun_str, err_exp) \
+      if (!(bool_exp)) { \
+         RARCH_ERR("[WASAPI]: %s failed with error %d.\n", fun_str, GetLastError()); \
          err_exp; }
 
 #ifdef __cplusplus
 #define WASAPI_RELEASE(iface) \
       if(iface) \
       { \
-         iface->Release();\
+         iface->Release(); \
          iface = NULL; \
       }
 #else
@@ -92,47 +92,17 @@ DEFINE_PROPERTYKEY(PKEY_Device_FriendlyName, 0xa45c254e, 0xdf1c, 0x4efd, 0x80, 0
 
 typedef struct
 {
-   IMMDevice *device;
-   IAudioClient *client;
-   IAudioRenderClient *renderer;
-   HANDLE write_event;
-   fifo_buffer_t *buffer; /* NULL in unbuffered shared mode */
-   size_t frame_size;     /* 4 or 8 only */
-   size_t engine_buffer_size;
    bool exclusive;
    bool blocking;
    bool running;
+   size_t frame_size;     /* 4 or 8 only */
+   size_t engine_buffer_size;
+   HANDLE write_event;
+   IMMDevice          *device;
+   IAudioClient       *client;
+   IAudioRenderClient *renderer;
+   fifo_buffer_t      *buffer; /* NULL in unbuffered shared mode */
 } wasapi_t;
-
-static void wasapi_log(const char *msg)
-{
-   RARCH_LOG("[WASAPI]: %s.\n", msg);
-}
-
-static void wasapi_warn(const char *warn)
-{
-   RARCH_WARN("[WASAPI]: %s.\n", warn);
-}
-
-static void wasapi_err(const char *err)
-{
-   RARCH_ERR("[WASAPI]: %s.\n", err);
-}
-
-static void wasapi_com_warn(const char *fun, HRESULT hr)
-{
-   RARCH_WARN("[WASAPI]: %s failed with error 0x%.8X.\n", fun, hr);
-}
-
-static void wasapi_com_err(const char *fun, HRESULT hr)
-{
-   RARCH_ERR("[WASAPI]: %s failed with error 0x%.8X.\n", fun, hr);
-}
-
-static void wasapi_sys_err(const char *fun)
-{
-   RARCH_ERR("[WASAPI]: %s failed with error %d.\n", fun, GetLastError());
-}
 
 static bool wasapi_check_device_id(IMMDevice *device, const char *id)
 {
@@ -179,9 +149,13 @@ static IMMDevice *wasapi_init_device(const char *id)
    IMMDeviceCollection *collection = NULL;
 
    if (id)
+   {
       RARCH_LOG("[WASAPI]: Initializing device %s ...\n", id);
+   }
    else
-      wasapi_log("Initializing default device ..");
+   {
+      RARCH_LOG("[WASAPI]: Initializing default device.. \n");
+   }
 
 #ifdef __cplusplus
    hr = CoCreateInstance(CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL,
@@ -245,8 +219,6 @@ static IMMDevice *wasapi_init_device(const char *id)
    WASAPI_RELEASE(collection);
    WASAPI_RELEASE(enumerator);
 
-   wasapi_log("Device initialized");
-
    return device;
 
 error:
@@ -254,9 +226,13 @@ error:
    WASAPI_RELEASE(enumerator);
 
    if (id)
-      wasapi_warn("Failed to initialize device");
+   {
+      RARCH_WARN("[WASAPI]: Failed to initialize device.\n");
+   }
    else
-      wasapi_err("Failed to initialize device");
+   {
+      RARCH_ERR("[WASAPI]: Failed to initialize device.\n");
+   }
 
    return NULL;
 }
@@ -367,7 +343,7 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
             break;
          }
 
-         wasapi_warn("Unsupported format");
+         RARCH_WARN("[WASAPI]: Unsupported format.\n");
          rate_res = wasapi_pref_rate(j);
          if (rate_res == *rate) /* requested rate is allready tested */
             rate_res = wasapi_pref_rate(++j); /* skip it */
@@ -508,7 +484,7 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
             break;
          }
 
-         wasapi_warn("Unsupported format");
+         RARCH_WARN("[WASAPI]: Unsupported format.\n");
          rate_res = wasapi_pref_rate(j);
          if (rate_res == *rate) /* requested rate is allready tested */
             rate_res = wasapi_pref_rate(++j); /* skip it */
@@ -581,7 +557,9 @@ static IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
    }
 
    if (FAILED(hr))
-      wasapi_com_warn("IAudioClient::GetDevicePeriod", hr);
+   {
+      RARCH_WARN("[WASAPI]: IAudioClient::GetDevicePeriod failed with error 0x%.8X.\n", hr);
+   }
 
    if (!*exclusive)
    {
@@ -591,7 +569,9 @@ static IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
       hr = client->lpVtbl->GetStreamLatency(client, &stream_latency);
 #endif
       if (FAILED(hr))
-         wasapi_com_warn("IAudioClient::GetStreamLatency", hr);
+      {
+         RARCH_WARN("[WASAPI]: IAudioClient::GetStreamLatency failed with error 0x%.8X.\n", hr);
+      }
    }
 
 #ifdef __cplusplus
@@ -600,7 +580,9 @@ static IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
    hr = client->lpVtbl->GetBufferSize(client, &buffer_length);
 #endif
    if (FAILED(hr))
-      wasapi_com_warn("IAudioClient::GetBufferSize", hr);
+   {
+      RARCH_WARN("[WASAPI]: IAudioClient::GetBufferSize failed with error 0x%.8X.\n", hr);
+   }
 
    if (*exclusive)
       latency_res = (double)buffer_length * 1000.0 / (*rate);
@@ -690,7 +672,9 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
             sh_buffer_length, (double)sh_buffer_length * 1000.0 / rate);
    }
    else
-      wasapi_log("Intermediate buffer is off");
+   {
+      RARCH_LOG("[WASAPI]: Intermediate buffer is off. \n");
+   }
 
    w->write_event = CreateEventA(NULL, FALSE, FALSE, NULL);
    WASAPI_SR_CHECK(w->write_event, "CreateEventA", goto error);
@@ -888,7 +872,7 @@ static ssize_t wasapi_write_ex(wasapi_t *w, const void * data, size_t size)
       ir = WaitForSingleObject(w->write_event, w->blocking ? INFINITE : 0);
       if (ir != WAIT_OBJECT_0 && w->blocking)
       {
-         wasapi_sys_err("WaitForSingleObject");
+         RARCH_ERR("[WASAPI]: WaitForSingleObject failed with error %d.\n", GetLastError());
          return -1;
       }
       if (ir != WAIT_OBJECT_0)
@@ -1007,7 +991,9 @@ static void wasapi_free(void *wh)
 
    ir = WaitForSingleObject(write_event, 20);
    if (ir == WAIT_FAILED)
-      wasapi_sys_err("WaitForSingleObject");
+   {
+      RARCH_ERR("[WASAPI]: WaitForSingleObject failed with error %d.\n", GetLastError());
+   }
 
    /* If event isn't signaled log and leak */
    WASAPI_CHECK(ir == WAIT_OBJECT_0, "Memory leak in wasapi_free", return);
@@ -1040,8 +1026,6 @@ static void *wasapi_device_list_new(void *u)
    char *dev_id_str                = NULL;
    char *dev_name_str              = NULL;
    struct string_list *sl          = string_list_new();
-
-   wasapi_log("Enumerating active devices ..");
 
    WASAPI_CHECK(sl, "string_list_new failed", return NULL);
 
@@ -1144,8 +1128,6 @@ static void *wasapi_device_list_new(void *u)
    WASAPI_RELEASE(collection);
    WASAPI_RELEASE(enumerator);
 
-   wasapi_log("Devices enumerated");
-
    return sl;
 
 error:
@@ -1161,7 +1143,7 @@ error:
    if (sl)
       string_list_free(sl);
 
-   wasapi_err("Device enumeration failed");
+   RARCH_ERR("[WASAPI]: Device enumeration failed.\n");
 
    return NULL;
 }
