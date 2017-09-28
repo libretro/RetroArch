@@ -2384,8 +2384,7 @@ static void xmb_draw_items(
       float icon_x, icon_y, label_offset;
       menu_animation_ctx_ticker_t ticker;
       char ticker_str[PATH_MAX_LENGTH];
-      char name[255];
-      char value[255];
+      char tmp[255];
       menu_entry_t entry;
       const float half_size             = xmb->icon.size / 2.0f;
       uintptr_t texture_switch          = 0;
@@ -2397,18 +2396,18 @@ static void xmb_draw_items(
       if (!node)
          continue;
 
-      entry.path[0]       = '\0';
-      entry.label[0]      = '\0';
-      entry.sublabel[0]   = '\0';
-      entry.value[0]      = '\0';
-      entry.rich_label[0] = '\0';
-      entry.enum_idx      = MSG_UNKNOWN;
-      entry.entry_idx     = 0;
-      entry.idx           = 0;
-      entry.type          = 0;
-      entry.spacing       = 0;
+      entry.path[0]          = '\0';
+      entry.label[0]         = '\0';
+      entry.sublabel[0]      = '\0';
+      entry.value[0]         = '\0';
+      entry.rich_label[0]    = '\0';
+      entry.enum_idx         = MSG_UNKNOWN;
+      entry.entry_idx        = 0;
+      entry.idx              = 0;
+      entry.type             = 0;
+      entry.spacing          = 0;
 
-      ticker_str[0] = name[0] = value[0] = '\0';
+      ticker_str[0] = tmp[0] = '\0';
 
       icon_y = xmb->margins.screen.top + node->y + half_size;
 
@@ -2486,7 +2485,7 @@ static void xmb_draw_items(
 
       menu_entry_get_rich_label((unsigned)i, ticker_str, sizeof(ticker_str));
 
-      ticker.s        = name;
+      ticker.s        = tmp;
       ticker.len      = ticker_limit;
       ticker.idx      = frame_count / 20;
       ticker.str      = ticker_str;
@@ -2514,14 +2513,16 @@ static void xmb_draw_items(
                width, height, xmb->font2);
       }
 
-      xmb_draw_text(menu_disp_info, xmb, name,
+      xmb_draw_text(menu_disp_info, xmb, tmp,
             node->x + xmb->margins.screen.left +
             xmb->icon.spacing.horizontal + xmb->margins.label.left,
             xmb->margins.screen.top + node->y + label_offset,
             1, node->label_alpha, TEXT_ALIGN_LEFT,
             width, height, xmb->font);
 
-      ticker.s        = value;
+      tmp[0] = '\0';
+
+      ticker.s        = tmp;
       ticker.len      = 35;
       ticker.idx      = frame_count / 20;
       ticker.str      = entry.value;
@@ -2530,7 +2531,7 @@ static void xmb_draw_items(
       menu_animation_ticker(&ticker);
 
       if (do_draw_text)
-         xmb_draw_text(menu_disp_info, xmb, value,
+         xmb_draw_text(menu_disp_info, xmb, tmp,
                node->x +
                + xmb->margins.screen.left
                + xmb->icon.spacing.horizontal
