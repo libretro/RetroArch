@@ -282,8 +282,13 @@ static int deferred_push_core_collection_list_deferred(
 static int deferred_push_database_manager_list_deferred(
       menu_displaylist_info_t *info)
 {
-   strlcpy(info->path_b,    info->path, sizeof(info->path_b));
-   info->path_c[0] = '\0';
+   if (info->path_b && !string_is_empty(info->path_b))
+      free(info->path_b);
+   if (info->path_c && !string_is_empty(info->path_c))
+      free(info->path_c);
+
+   info->path_b    = strdup(info->path);
+   info->path_c    = NULL;
 
    return deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
 }
@@ -458,9 +463,15 @@ static int deferred_push_cursor_manager_list_deferred(
          settings->paths.path_content_database,
          rdb, sizeof(rdb_path));
 
-   strlcpy(info->path_b, info->path, sizeof(info->path_b));
+   if (info->path_b && !string_is_empty(info->path_b))
+      free(info->path_b);
+   if (info->path_c && !string_is_empty(info->path_c))
+      free(info->path_c);
+
+   info->path_b    = strdup(info->path);
+   info->path_c    = strdup(query);
+
    strlcpy(info->path,   rdb_path,   sizeof(info->path));
-   strlcpy(info->path_c,    query,   sizeof(info->path_c));
 
    ret = deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
 
@@ -488,9 +499,15 @@ static int deferred_push_cursor_manager_list_generic(
    if (string_is_empty(query))
       goto end;
 
+   if (info->path_b && !string_is_empty(info->path_b))
+      free(info->path_b);
+   if (info->path_c && !string_is_empty(info->path_c))
+      free(info->path_c);
+
    strlcpy(info->path,   str_list->elems[1].data, sizeof(info->path));
-   strlcpy(info->path_b, str_list->elems[0].data, sizeof(info->path_b));
-   strlcpy(info->path_c, query, sizeof(info->path_c));
+   
+   info->path_b = strdup(str_list->elems[0].data);
+   info->path_c = strdup(query);
 
    ret = deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
 
@@ -614,8 +631,14 @@ static int deferred_push_cursor_manager_list_deferred_query_subsearch(
       goto end;
 
    strlcpy(info->path,   str_list->elems[1].data, sizeof(info->path));
-   strlcpy(info->path_b, str_list->elems[0].data, sizeof(info->path_b));
-   strlcpy(info->path_c, query, sizeof(info->path_c));
+
+   if (info->path_b && !string_is_empty(info->path_b))
+      free(info->path_b);
+   info->path_b = strdup(str_list->elems[0].data);
+
+   if (info->path_c && !string_is_empty(info->path_c))
+      free(info->path_c);
+   info->path_c = strdup(query);
 
    ret = deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
 

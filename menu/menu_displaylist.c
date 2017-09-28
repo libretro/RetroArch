@@ -4313,19 +4313,19 @@ void menu_displaylist_info_free(menu_displaylist_info_t *info)
       return;
    if (info->exts)
       free(info->exts);
-   info->exts   = NULL;
-#if 0
-   if (info->path)
-      free(info->path);
    if (info->path_b)
       free(info->path_b);
    if (info->path_c)
       free(info->path_c);
+   info->exts   = NULL;
+   info->path_b = NULL;
+   info->path_c = NULL;
+#if 0
+   if (info->path)
+      free(info->path);
    if (info->label)
       free(info->label);
    info->path   = NULL;
-   info->path_b = NULL;
-   info->path_c = NULL;
    info->label  = NULL;
 #endif
 }
@@ -4345,14 +4345,14 @@ void menu_displaylist_info_init(menu_displaylist_info_t *info)
    info->download_core            = false;
    info->need_navigation_clear    = false;
    info->path[0]                  = '\0';
-   info->path_b[0]                = '\0';
-   info->path_c[0]                = '\0';
    info->label[0]                 = '\0';
    info->type                     = 0;
    info->type_default             = 0;
    info->flags                    = 0;
    info->label_hash               = 0;
    info->directory_ptr            = 0;
+   info->path_b                   = NULL;
+   info->path_c                   = NULL;
    info->exts                     = NULL;
    info->list                     = NULL;
    info->menu_list                = NULL;

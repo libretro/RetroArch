@@ -185,8 +185,8 @@ typedef struct menu_displaylist_info
    bool need_navigation_clear;
 
    char path[PATH_MAX_LENGTH];
-   char path_b[PATH_MAX_LENGTH];
-   char path_c[PATH_MAX_LENGTH];
+   char *path_b;
+   char *path_c;
    char *exts;
    char label[255];
    unsigned type;
