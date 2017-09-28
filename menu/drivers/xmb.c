@@ -2357,7 +2357,6 @@ static void xmb_draw_items(
       menu_animation_ctx_ticker_t ticker;
       char ticker_str[PATH_MAX_LENGTH];
       char tmp[255];
-      menu_entry_t entry;
       unsigned entry_type               = 0;
       const float half_size             = xmb->icon.size / 2.0f;
       uintptr_t texture_switch          = 0;
@@ -2365,13 +2364,14 @@ static void xmb_draw_items(
          menu_entries_get_userdata_at_offset(list, i);
       bool do_draw_text                 = false;
       unsigned ticker_limit             = 35;
+      menu_entry_t *entry               = menu_entry_alloc();
 
       if (!node)
          continue;
 
       ticker_str[0] = tmp[0] = '\0';
 
-      menu_entry_init(&entry);
+      menu_entry_init(entry);
 
       icon_y = xmb->margins.screen.top + node->y + half_size;
 
@@ -2387,23 +2387,23 @@ static void xmb_draw_items(
       if (icon_x < -half_size || icon_x > width)
          continue;
 
-      menu_entry_get(&entry, 0, i, list, true);
-      entry_type = menu_entry_get_type_new(&entry);
+      menu_entry_get(entry, 0, i, list, true);
+      entry_type = menu_entry_get_type_new(entry);
 
       if (entry_type == FILE_TYPE_CONTENTLIST_ENTRY)
-         fill_short_pathname_representation(entry.path, entry.path,
-               sizeof(entry.path));
+         fill_short_pathname_representation(entry->path, entry->path,
+               sizeof(entry->path));
 
-      if (string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) ||
-         (string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))))
+      if (string_is_equal(entry->value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) ||
+         (string_is_equal(entry->value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))))
       {
          if (xmb->textures.list[XMB_TEXTURE_SWITCH_OFF])
             texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_OFF];
          else
             do_draw_text = true;
       }
-      else if (string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)) ||
-            (string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))))
+      else if (string_is_equal(entry->value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)) ||
+            (string_is_equal(entry->value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))))
       {
          if (xmb->textures.list[XMB_TEXTURE_SWITCH_ON])
             texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_ON];
@@ -2412,7 +2412,7 @@ static void xmb_draw_items(
       }
       else
       {
-         enum msg_file_type type = msg_hash_to_file_type(msg_hash_calculate(entry.value));
+         enum msg_file_type type = msg_hash_to_file_type(msg_hash_calculate(entry->value));
 
          switch (type)
          {
@@ -2435,7 +2435,7 @@ static void xmb_draw_items(
          }
       }
 
-      if (string_is_empty(entry.value))
+      if (string_is_empty(entry->value))
       {
          if (xmb->savestate_thumbnail ||
                (!string_is_equal
@@ -2448,7 +2448,7 @@ static void xmb_draw_items(
             ticker_limit = 70;
       }
 
-      menu_entry_get_rich_label(&entry, ticker_str, sizeof(ticker_str));
+      menu_entry_get_rich_label(entry, ticker_str, sizeof(ticker_str));
 
       ticker.s        = tmp;
       ticker.len      = ticker_limit;
@@ -2460,7 +2460,7 @@ static void xmb_draw_items(
 
       label_offset = xmb->margins.label.top;
       if (i == current && width > 320 && height > 240
-         && !string_is_empty(entry.sublabel))
+         && !string_is_empty(entry->sublabel))
       {
          char entry_sublabel[255];
 
@@ -2468,7 +2468,7 @@ static void xmb_draw_items(
 
          label_offset      = - xmb->margins.label.top;
 
-         word_wrap(entry_sublabel, entry.sublabel, 50, true);
+         word_wrap(entry_sublabel, entry->sublabel, 50, true);
 
          xmb_draw_text(menu_disp_info, xmb, entry_sublabel,
                node->x + xmb->margins.screen.left +
@@ -2490,7 +2490,7 @@ static void xmb_draw_items(
       ticker.s        = tmp;
       ticker.len      = 35;
       ticker.idx      = frame_count / 20;
-      ticker.str      = entry.value;
+      ticker.str      = entry->value;
       ticker.selected = (i == current);
 
       menu_animation_ticker(&ticker);
@@ -2516,7 +2516,7 @@ static void xmb_draw_items(
          math_matrix_4x4 mymat;
          menu_display_ctx_rotate_draw_t rotate_draw;
          uintptr_t texture        = xmb_icon_get_id(xmb, core_node, node,
-                                    entry.enum_idx, entry_type, (i == current));
+                                    entry->enum_idx, entry_type, (i == current));
          float x                  = icon_x;
          float y                  = icon_y;
          float rotation           = 0;
@@ -2566,7 +2566,8 @@ static void xmb_draw_items(
                &color[0],
                xmb->shadow_offset);
 
-      menu_entry_free(&entry);
+      menu_entry_free(entry);
+      free(entry);
    }
 
    menu_display_blend_end();

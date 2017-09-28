@@ -79,6 +79,14 @@ void menu_entry_free(menu_entry_t *entry)
 {
 }
 
+menu_entry_t *menu_entry_alloc(void)
+{
+   menu_entry_t *entry = (menu_entry_t*)malloc(sizeof(menu_entry_t));
+   if (!entry)
+      return NULL;
+   return entry;
+}
+
 void menu_entry_init(menu_entry_t *entry)
 {
    entry->path[0]       = '\0';

@@ -117,6 +117,8 @@ int menu_entry_action(menu_entry_t *entry,
 
 void menu_entry_free(menu_entry_t *entry);
 
+menu_entry_t *menu_entry_alloc(void);
+
 void menu_entry_init(menu_entry_t *entry);
 
 RETRO_END_DECLS
