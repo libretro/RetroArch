@@ -4176,6 +4176,8 @@ bool menu_displaylist_push(menu_displaylist_ctx_entry_t *entry)
    ret = true;
 
 end:
+   if (info.exts && !string_is_empty(info.exts))
+      free(info.exts);
    if (info.path && !string_is_empty(info.path))
       free(info.path);
    if (info.label && !string_is_empty(info.label))
@@ -4184,6 +4186,8 @@ end:
    return ret;
 
 error:
+   if (info.exts && !string_is_empty(info.exts))
+      free(info.exts);
    if (info.path && !string_is_empty(info.path))
       free(info.path);
    if (info.label && !string_is_empty(info.label))
