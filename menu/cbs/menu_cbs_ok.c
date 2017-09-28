@@ -1384,7 +1384,8 @@ static int action_ok_file_load(const char *path,
 
    menu_entries_get_last(menu_stack, &menu_path, &menu_label, NULL, NULL);
 
-   setting = menu_setting_find(menu_label);
+   if (menu_label && !string_is_empty(menu_label))
+      setting = menu_setting_find(menu_label);
 
    if (setting_get_type(setting) == ST_PATH)
       return action_ok_set_path(path, label, type, idx, entry_idx);
@@ -1392,20 +1393,23 @@ static int action_ok_file_load(const char *path,
    if (menu_path && !string_is_empty(menu_path))
       strlcpy(menu_path_new, menu_path, sizeof(menu_path_new));
 
-   if (
-         string_is_equal(menu_label,
-            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE)) ||
-         string_is_equal(menu_label,
-            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN))
-      )
+   if (menu_label && !string_is_empty(menu_label))
    {
-      menu_handle_t *menu                 = NULL;
-      if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-         return menu_cbs_exit();
+      if (
+            string_is_equal(menu_label,
+               msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE)) ||
+            string_is_equal(menu_label,
+               msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN))
+         )
+      {
+         menu_handle_t *menu                 = NULL;
+         if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+            return menu_cbs_exit();
 
-      fill_pathname_join(menu_path_new,
-            menu->scratch2_buf, menu->scratch_buf,
-            sizeof(menu_path_new));
+         fill_pathname_join(menu_path_new,
+               menu->scratch2_buf, menu->scratch_buf,
+               sizeof(menu_path_new));
+      }
    }
 
    switch (type)
@@ -2420,8 +2424,9 @@ static int action_ok_file_load_ffmpeg(const char *path,
    content_info.args                   = NULL;
    content_info.environ_get            = NULL;
 
-   fill_pathname_join(new_path, menu_path, path,
-         sizeof(new_path));
+   if (menu_path && !string_is_empty(menu_path))
+      fill_pathname_join(new_path, menu_path, path,
+            sizeof(new_path));
 
    if (!task_push_load_content_with_core_from_menu(
          new_path,
@@ -2480,8 +2485,9 @@ static int action_ok_file_load_imageviewer(const char *path,
    content_info.args                   = NULL;
    content_info.environ_get            = NULL;
 
-   fill_pathname_join(fullpath, menu_path, path,
-         sizeof(fullpath));
+   if (menu_path && !string_is_empty(menu_path))
+      fill_pathname_join(fullpath, menu_path, path,
+            sizeof(fullpath));
 
    if (!task_push_load_content_with_core_from_menu(
          fullpath,
@@ -3004,7 +3010,6 @@ static int action_ok_core_content_download(const char *path,
    enum msg_hash_enums enum_idx = MSG_UNKNOWN;
 
    menu_entries_get_last_stack(&menu_path, &menu_label, NULL, &enum_idx, NULL);
-
 
    return action_ok_download_generic(path, label,
          menu_path, type, idx, entry_idx,
