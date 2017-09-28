@@ -63,7 +63,7 @@ void menu_entry_get_path(uint32_t i, char  *s, size_t len);
 
 void menu_entry_get_label(menu_entry_t *entry, char *s, size_t len);
 
-unsigned menu_entry_get_spacing(uint32_t i);
+unsigned menu_entry_get_spacing(menu_entry_t *entry);
 
 unsigned menu_entry_get_type_new(uint32_t i);
 

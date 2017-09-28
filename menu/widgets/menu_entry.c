@@ -131,14 +131,11 @@ void menu_entry_get_label(menu_entry_t *entry, char *s, size_t len)
    strlcpy(s, entry->label, len);
 }
 
-unsigned menu_entry_get_spacing(uint32_t i)
+unsigned menu_entry_get_spacing(menu_entry_t *entry)
 {
-   menu_entry_t entry;
-
-   menu_entry_init(&entry);
-   menu_entry_get(&entry, 0, i, NULL, true);
-
-   return entry.spacing;
+   if (!entry)
+      return 0;
+   return entry->spacing;
 }
 
 unsigned menu_entry_get_type_new(uint32_t i)

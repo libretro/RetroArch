@@ -573,8 +573,8 @@ static void rgui_render(void *data, bool is_idle)
       char message[255];
       char entry_title_buf[255];
       char type_str_buf[255];
+      unsigned entry_spacing;
       size_t entry_title_buf_utf8len, entry_title_buf_len;
-      unsigned                entry_spacing = menu_entry_get_spacing((unsigned)i);
       bool                entry_selected    = menu_entry_is_currently_selected((unsigned)i);
       size_t selection                      = menu_navigation_get_selection();
 
@@ -590,6 +590,7 @@ static void rgui_render(void *data, bool is_idle)
       menu_entry_init(&entry);
       menu_entry_get(&entry, 0, (unsigned)i, NULL, true);
 
+      entry_spacing = menu_entry_get_spacing(&entry);
       menu_entry_get_value(&entry, entry_value, sizeof(entry_value));
       menu_entry_get_rich_label(&entry, entry_path, sizeof(entry_path));
 
