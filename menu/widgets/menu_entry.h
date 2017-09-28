@@ -61,7 +61,7 @@ enum menu_entry_type menu_entry_get_type(uint32_t i);
 
 void menu_entry_get_path(uint32_t i, char  *s, size_t len);
 
-void menu_entry_get_label(uint32_t i, char *s, size_t len);
+void menu_entry_get_label(menu_entry_t *entry, char *s, size_t len);
 
 unsigned menu_entry_get_spacing(uint32_t i);
 

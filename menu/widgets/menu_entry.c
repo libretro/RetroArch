@@ -124,14 +124,11 @@ bool menu_entry_get_sublabel(menu_entry_t *entry, char *s, size_t len)
    return true;
 }
 
-void menu_entry_get_label(uint32_t i, char *s, size_t len)
+void menu_entry_get_label(menu_entry_t *entry, char *s, size_t len)
 {
-   menu_entry_t entry;
-
-   menu_entry_init(&entry);
-   menu_entry_get(&entry, 0, i, NULL, true);
-
-   strlcpy(s, entry.label, len);
+   if (!entry)
+      return;
+   strlcpy(s, entry->label, len);
 }
 
 unsigned menu_entry_get_spacing(uint32_t i)
