@@ -1389,7 +1389,8 @@ static int action_ok_file_load(const char *path,
    if (setting_get_type(setting) == ST_PATH)
       return action_ok_set_path(path, label, type, idx, entry_idx);
 
-   strlcpy(menu_path_new, menu_path, sizeof(menu_path_new));
+   if (menu_path && !string_is_empty(menu_path))
+      strlcpy(menu_path_new, menu_path, sizeof(menu_path_new));
 
    if (
          string_is_equal(menu_label,
