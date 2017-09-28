@@ -113,17 +113,14 @@ void menu_entry_get_rich_label(menu_entry_t *entry, char *s, size_t len)
       strlcpy(s, entry->path, len);
 }
 
-bool menu_entry_get_sublabel(uint32_t i, char *s, size_t len)
+bool menu_entry_get_sublabel(menu_entry_t *entry, char *s, size_t len)
 {
-   menu_entry_t entry;
-
-   menu_entry_init(&entry);
-   menu_entry_get(&entry, 0, i, NULL, true);
-
-   if (string_is_empty(entry.sublabel))
+   if (!entry)
+      return false;
+   if (string_is_empty(entry->sublabel))
       return false;
 
-   strlcpy(s, entry.sublabel, len);
+   strlcpy(s, entry->sublabel, len);
    return true;
 }
 

@@ -678,6 +678,7 @@ static void mui_compute_entries_box(mui_handle_t* mui, int width)
 
    for (i = 0; i < entries_end; i++)
    {
+      menu_entry_t entry;
       char sublabel_str[255];
       unsigned lines   = 0;
       mui_node_t *node = (mui_node_t*)
@@ -685,11 +686,14 @@ static void mui_compute_entries_box(mui_handle_t* mui, int width)
 
       sublabel_str[0]  = '\0';
 
+      menu_entry_init(&entry);
+      menu_entry_get(&entry, 0, i, NULL, true);
+
       /* set texture_switch2 */
       if (node->texture_switch2_set)
          texture_switch2 = node->texture_switch2;
 
-      if (menu_entry_get_sublabel(i, sublabel_str, sizeof(sublabel_str)))
+      if (menu_entry_get_sublabel(&entry, sublabel_str, sizeof(sublabel_str)))
       {
          int icon_margin = texture_switch2 ? mui->icon_size : 0;
 
@@ -814,6 +818,7 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
       1.00, 1.00, 1.00, 1.00,
    };
 
+   menu_entry_t entry;
    menu_animation_ctx_ticker_t ticker;
    char label_str[255];
    char sublabel_str[255];
@@ -830,6 +835,9 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
 
    label_str[0] = value_str[0]     = 
       sublabel_str[0]              = '\0';
+
+   menu_entry_init(&entry);
+   menu_entry_get(&entry, 0, i, NULL, true);
 
    if (value_len * mui->glyph_width > usable_width / 2)
       value_len    = (int)((usable_width/2) / mui->glyph_width);
@@ -917,7 +925,7 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
    }
 
    /* Sublabel */
-   if (menu_entry_get_sublabel(i, sublabel_str, sizeof(sublabel_str)))
+   if (menu_entry_get_sublabel(&entry, sublabel_str, sizeof(sublabel_str)))
    {
       int icon_margin = texture_switch2 ? mui->icon_size : 0;
 
@@ -965,6 +973,8 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
             1,
             switch_is_on ? &label_color[0] :  &pure_white[0]
       );
+   
+   menu_entry_free(&entry);
 }
 
 static void mui_render_menu_list(
