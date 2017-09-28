@@ -996,6 +996,7 @@ static void mui_render_menu_list(
 
    for (i = 0; i < entries_end; i++)
    {
+      menu_entry_t entry;
       char rich_label[255];
       char entry_value[255];
       bool entry_selected = false;
@@ -1014,8 +1015,10 @@ static void mui_render_menu_list(
       if (y > (int)height)
          break;
 
+      menu_entry_init(&entry);
+      menu_entry_get(&entry, 0, (unsigned)i, NULL, true);
       menu_entry_get_value((unsigned)i, NULL, entry_value, sizeof(entry_value));
-      menu_entry_get_rich_label((unsigned)i, rich_label, sizeof(rich_label));
+      menu_entry_get_rich_label(&entry, rich_label, sizeof(rich_label));
 
       entry_selected = selection == i;
 
@@ -1036,6 +1039,8 @@ static void mui_render_menu_list(
          menu_list_color,
          sublabel_color
       );
+
+      menu_entry_free(&entry);
    }
 }
 

@@ -103,17 +103,14 @@ void menu_entry_get_path(uint32_t i, char *s, size_t len)
    strlcpy(s, entry.path, len);
 }
 
-void menu_entry_get_rich_label(uint32_t i, char *s, size_t len)
+void menu_entry_get_rich_label(menu_entry_t *entry, char *s, size_t len)
 {
-   menu_entry_t entry;
-
-   menu_entry_init(&entry);
-   menu_entry_get(&entry, 0, i, NULL, true);
-
-   if (!string_is_empty(entry.rich_label))
-      strlcpy(s, entry.rich_label, len);
+   if (!entry)
+      return;
+   if (!string_is_empty(entry->rich_label))
+      strlcpy(s, entry->rich_label, len);
    else
-      strlcpy(s, entry.path, len);
+      strlcpy(s, entry->path, len);
 }
 
 bool menu_entry_get_sublabel(uint32_t i, char *s, size_t len)
@@ -320,10 +317,7 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
    const char *entry_label    = NULL;
    menu_file_list_cbs_t *cbs  = NULL;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(stack_idx);
-   file_list_t *list          = selection_buf;
-
-   if (userdata)
-      list = (file_list_t*)userdata;
+   file_list_t *list          = (userdata) ? (file_list_t*)userdata : selection_buf;
 
    if (!list)
       return;
@@ -338,7 +332,7 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
       const char *label             = NULL;
       enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
 
-      entry->enum_idx    = cbs->enum_idx;
+      entry->enum_idx               = cbs->enum_idx;
 
       menu_entries_get_last_stack(NULL, &label, NULL, &enum_idx, NULL);
 

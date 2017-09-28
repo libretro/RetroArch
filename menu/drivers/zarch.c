@@ -522,7 +522,7 @@ static int zarch_zui_render_lay_root_recent(
 
          menu_entry_init(&entry);
          menu_entry_get(&entry, 0, i, NULL, true);
-         menu_entry_get_rich_label(i, rich_label, sizeof(rich_label));
+         menu_entry_get_rich_label(&entry, rich_label, sizeof(rich_label));
          menu_entry_get_value(i, NULL, entry_value,sizeof(entry_value));
 
          if (zarch_zui_list_item(

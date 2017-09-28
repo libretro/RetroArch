@@ -566,6 +566,7 @@ static void rgui_render(void *data, bool is_idle)
 
    for (; i < end; i++, y += FONT_HEIGHT_STRIDE)
    {
+      menu_entry_t entry;
       menu_animation_ctx_ticker_t ticker;
       char entry_path[255];
       char entry_value[255];
@@ -586,8 +587,11 @@ static void rgui_render(void *data, bool is_idle)
       entry_title_buf[0] = '\0';
       type_str_buf[0]    = '\0';
 
+      menu_entry_init(&entry);
+      menu_entry_get(&entry, 0, (unsigned)i, NULL, true);
+
       menu_entry_get_value((unsigned)i, NULL, entry_value, sizeof(entry_value));
-      menu_entry_get_rich_label((unsigned)i, entry_path, sizeof(entry_path));
+      menu_entry_get_rich_label(&entry, entry_path, sizeof(entry_path));
 
       ticker.s        = entry_title_buf;
       ticker.len      = RGUI_TERM_WIDTH(fb_width) - (entry_spacing + 1 + 2);
@@ -617,6 +621,8 @@ static void rgui_render(void *data, bool is_idle)
       if (rgui_framebuf_data)
          blit_line(x, y, message,
                entry_selected ? hover_color : normal_color);
+
+      menu_entry_free(&entry);
    }
 
    if (menu_input_dialog_get_display_kb())

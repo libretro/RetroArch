@@ -2442,7 +2442,7 @@ static void xmb_draw_items(
             ticker_limit = 70;
       }
 
-      menu_entry_get_rich_label((unsigned)i, ticker_str, sizeof(ticker_str));
+      menu_entry_get_rich_label(&entry, ticker_str, sizeof(ticker_str));
 
       ticker.s        = tmp;
       ticker.len      = ticker_limit;
