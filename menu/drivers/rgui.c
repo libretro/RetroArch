@@ -590,7 +590,7 @@ static void rgui_render(void *data, bool is_idle)
       menu_entry_init(&entry);
       menu_entry_get(&entry, 0, (unsigned)i, NULL, true);
 
-      menu_entry_get_value((unsigned)i, NULL, entry_value, sizeof(entry_value));
+      menu_entry_get_value(&entry, entry_value, sizeof(entry_value));
       menu_entry_get_rich_label(&entry, entry_path, sizeof(entry_path));
 
       ticker.s        = entry_title_buf;

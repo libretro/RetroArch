@@ -272,14 +272,11 @@ void menu_entry_reset(uint32_t i)
    menu_entry_action(&entry, i, MENU_ACTION_START);
 }
 
-void menu_entry_get_value(uint32_t i, void *data, char *s, size_t len)
+void menu_entry_get_value(menu_entry_t *entry, char *s, size_t len)
 {
-   menu_entry_t entry;
-   file_list_t *list  = (file_list_t*)data;
-
-   menu_entry_init(&entry);
-   menu_entry_get(&entry, 0, i, list, true);
-   strlcpy(s, entry.value, len);
+   if (!entry)
+      return;
+   strlcpy(s, entry->value, len);
 }
 
 void menu_entry_set_value(uint32_t i, const char *s)

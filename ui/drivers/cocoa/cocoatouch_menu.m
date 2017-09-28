@@ -111,6 +111,7 @@ static void RunActionSheet(const char* title, const struct string_list* items,
 
 - (UITableViewCell*)cellForTableView:(UITableView*)tableView
 {
+  menu_entry_t entry;
   char buffer[PATH_MAX_LENGTH];
   char label[PATH_MAX_LENGTH];
   static NSString* const cell_id = @"text";
@@ -122,8 +123,10 @@ static void RunActionSheet(const char* title, const struct string_list* items,
     result = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1
                                     reuseIdentifier:cell_id];
 
+  menu_entry_init(&entry);
+  menu_entry_get(&entry, 0, (unsigned)self.i, NULL, true);
   menu_entry_get_path(self.i, label, sizeof(label));
-  menu_entry_get_value(self.i, NULL, buffer, sizeof(buffer));
+  menu_entry_get_value(&entry, buffer, sizeof(buffer));
 
   result.textLabel.text = BOXSTRING(label);
 
@@ -132,6 +135,7 @@ static void RunActionSheet(const char* title, const struct string_list* items,
           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
           sizeof(buffer));
   result.detailTextLabel.text = BOXSTRING(buffer);
+  menu_entry_free(&entry);
   return result;
 }
 
@@ -408,12 +412,15 @@ replacementString:(NSString *)string
 - (void)wasSelectedOnTableView:(UITableView*)tableView
                   ofController:(UIViewController*)controller
 {
+   menu_entry_t entry;
    char buffer[PATH_MAX_LENGTH];
    char label[PATH_MAX_LENGTH];
    UIAlertView *alertView = NULL;
    UITextField     *field = NULL;
    NSString         *desc = NULL;
 
+   menu_entry_init(&entry);
+   menu_entry_get(&entry, 0, (unsigned)self.i, NULL, true);
    menu_entry_get_path(self.i, label, sizeof(label));
 
    desc      = BOXSTRING(label);
@@ -429,13 +436,15 @@ replacementString:(NSString *)string
    field          = [alertView textFieldAtIndex:0];
    field.delegate = self.formatter;
 
-   menu_entry_get_value(self.i, NULL, buffer, sizeof(buffer));
+   menu_entry_get_value(&entry, buffer, sizeof(buffer));
    if (string_is_empty(buffer))
       strlcpy(buffer,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
             sizeof(buffer));
 
    field.placeholder = BOXSTRING(buffer);
+
+   menu_entry_free(&entry);
 
    [alertView show];
 }
