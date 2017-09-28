@@ -378,21 +378,6 @@ static void command_parse_sub_msg(command_t *handle, const char *tok)
             msg_hash_to_str(MSG_RECEIVED));
 }
 
-static void command_parse_msg(command_t *handle, char *buf, enum cmd_source_t source)
-{
-   char *save      = NULL;
-   const char *tok = strtok_r(buf, "\n", &save);
-
-   lastcmd_source = source;
-
-   while (tok)
-   {
-      command_parse_sub_msg(handle, tok);
-      tok = strtok_r(NULL, "\n", &save);
-   }
-   lastcmd_source = CMD_NONE;
-}
-
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
 static bool command_network_init(command_t *handle, uint16_t port)
 {
@@ -448,6 +433,21 @@ static bool command_verify(const char *cmd)
 }
 
 #ifdef HAVE_COMMAND
+static void command_parse_msg(command_t *handle, char *buf, enum cmd_source_t source)
+{
+   char *save      = NULL;
+   const char *tok = strtok_r(buf, "\n", &save);
+
+   lastcmd_source = source;
+
+   while (tok)
+   {
+      command_parse_sub_msg(handle, tok);
+      tok = strtok_r(NULL, "\n", &save);
+   }
+   lastcmd_source = CMD_NONE;
+}
+
 static void command_network_poll(command_t *handle)
 {
    fd_set fds;
