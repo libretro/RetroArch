@@ -38,6 +38,51 @@
 
 DEFINE_PROPERTYKEY(PKEY_Device_FriendlyName, 0xa45c254e, 0xdf1c, 0x4efd, 0x80, 0x20, 0x67, 0xd1, 0x46, 0xa8, 0x50, 0xe0, 14); /* DEVPROP_TYPE_STRING */
 
+#ifdef __cplusplus
+#define _IMMDeviceCollection_Item(This,nDevice,ppdevice) (This)->Item(nDevice,ppdevice)
+#define _IAudioClient_Start(This)	( (This)->Start() ) 
+#define _IAudioClient_Stop(This)	( (This)->Stop() )
+#define _IAudioClient_GetCurrentPadding(This,pNumPaddingFrames)	\
+    ( (This)->GetCurrentPadding(pNumPaddingFrames) )
+#define _IAudioRenderClient_GetBuffer(This,NumFramesRequested,ppData)	\
+    ( (This)->GetBuffer(NumFramesRequested,ppData) )
+#define _IAudioRenderClient_ReleaseBuffer(This,NumFramesWritten,dwFlags)	\
+    ( (This)->ReleaseBuffer(NumFramesWritten,dwFlags) )
+#define _IAudioClient_GetService(This,riid,ppv) ( (This)->GetService(riid,ppv) )
+#define _IAudioClient_SetEventHandle(This,eventHandle)	( (This)->SetEventHandle(eventHandle) )
+#define _IAudioClient_GetBufferSize(This,pNumBufferFrames) ( (This)->GetBufferSize(pNumBufferFrames) )
+#define _IAudioClient_GetStreamLatency(This,phnsLatency)	( (This)->GetStreamLatency(phnsLatency) )
+#define _IAudioClient_GetDevicePeriod(This,phnsDefaultDevicePeriod,phnsMinimumDevicePeriod)	( (This)->GetDevicePeriod(phnsDefaultDevicePeriod,phnsMinimumDevicePeriod) )
+#define _IMMDevice_Activate(This,iid,dwClsCtx,pActivationParams,ppv) ((This)->Activate(iid,(dwClsCtx),pActivationParams,ppv))
+#define _IMMDeviceEnumerator_EnumAudioEndpoints(This,dataFlow,dwStateMask,ppDevices) (This)->EnumAudioEndpoints(dataFlow,dwStateMask,ppDevices)
+#define _IMMDeviceEnumerator_GetDefaultAudioEndpoint(This,dataFlow,role,ppEndpoint) (This)->GetDefaultAudioEndpoint(dataFlow,role,ppEndpoint)
+#define _IMMDevice_OpenPropertyStore(This,stgmAccess,ppProperties) (This)->OpenPropertyStore(stgmAccess,ppProperties)
+#define _IMMDevice_GetId(This,ppstrId) ((This)->GetId(ppstrId))
+#define _IPropertyStore_GetValue(This,key,pv) ( (This)->GetValue(key,pv) )
+#define _IMMDeviceCollection_GetCount(This,cProps) ( (This)->GetCount(cProps) )
+#else
+#define _IMMDeviceCollection_Item(This,nDevice,ppdevice) (This)->lpVtbl->Item(This,nDevice,ppdevice)
+#define _IAudioClient_Start(This)	( (This)->lpVtbl -> Start(This) ) 
+#define _IAudioClient_Stop(This)	( (This)->lpVtbl -> Stop(This) )
+#define _IAudioClient_GetCurrentPadding(This,pNumPaddingFrames)	\
+    ( (This)->lpVtbl -> GetCurrentPadding(This,pNumPaddingFrames) )
+#define _IAudioRenderClient_GetBuffer(This,NumFramesRequested,ppData)	\
+    ( (This)->lpVtbl -> GetBuffer(This,NumFramesRequested,ppData) )
+#define _IAudioRenderClient_ReleaseBuffer(This,NumFramesWritten,dwFlags)	\
+    ( (This)->lpVtbl -> ReleaseBuffer(This,NumFramesWritten,dwFlags) )
+#define _IAudioClient_GetService(This,riid,ppv)	( (This)->lpVtbl -> GetService(This,&(riid),ppv) )
+#define _IAudioClient_SetEventHandle(This,eventHandle)	( (This)->lpVtbl -> SetEventHandle(This,eventHandle) )
+#define _IAudioClient_GetBufferSize(This,pNumBufferFrames) ( (This)->lpVtbl -> GetBufferSize(This,pNumBufferFrames) )
+#define _IAudioClient_GetStreamLatency(This,phnsLatency)	( (This)->lpVtbl -> GetStreamLatency(This,phnsLatency) )
+#define _IAudioClient_GetDevicePeriod(This,phnsDefaultDevicePeriod,phnsMinimumDevicePeriod)	( (This)->lpVtbl -> GetDevicePeriod(This,phnsDefaultDevicePeriod,phnsMinimumDevicePeriod) )
+#define _IMMDevice_Activate(This,iid,dwClsCtx,pActivationParams,ppv) ((This)->lpVtbl->Activate(This,&(iid),dwClsCtx,pActivationParams,ppv))
+#define _IMMDeviceEnumerator_EnumAudioEndpoints(This,dataFlow,dwStateMask,ppDevices) (This)->lpVtbl->EnumAudioEndpoints(This,dataFlow,dwStateMask,ppDevices)
+#define _IMMDeviceEnumerator_GetDefaultAudioEndpoint(This,dataFlow,role,ppEndpoint) (This)->lpVtbl->GetDefaultAudioEndpoint(This,dataFlow,role,ppEndpoint)
+#define _IMMDevice_OpenPropertyStore(This,stgmAccess,ppProperties) (This)->lpVtbl->OpenPropertyStore(This,stgmAccess,ppProperties)
+#define _IMMDevice_GetId(This,ppstrId) (This)->lpVtbl->GetId(This,ppstrId)
+#define _IPropertyStore_GetValue(This,key,pv) ( (This)->lpVtbl -> GetValue(This,&(key),pv) )
+#define _IMMDeviceCollection_GetCount(This,cProps) ( (This)->lpVtbl -> GetCount(This,cProps) )
+#endif
 
 #define WASAPI_WARN(bool_exp, err_str, warn_exp) \
       if (!(bool_exp)) { \
@@ -119,11 +164,7 @@ static bool wasapi_check_device_id(IMMDevice *device, const char *id)
    id_length = MultiByteToWideChar(CP_ACP, 0, id, -1, dev_cmp_id, id_length);
    WASAPI_SR_CHECK(id_length > 0, "MultiByteToWideChar", goto error);
    
-#ifdef __cplusplus
-   hr = device->GetId(&dev_id);
-#else
-   hr = device->lpVtbl->GetId(device, &dev_id);
-#endif
+   hr = _IMMDevice_GetId(device, &dev_id);
    WASAPI_HR_CHECK(hr, "IMMDevice::GetId", goto error);
 
    result = lstrcmpW(dev_cmp_id, dev_id) == 0 ? true : false;
@@ -168,30 +209,17 @@ static IMMDevice *wasapi_init_device(const char *id)
 
    if (id)
    {
-#ifdef __cplusplus
-      hr = enumerator->EnumAudioEndpoints(
-         eRender, DEVICE_STATE_ACTIVE, &collection);
-#else
-      hr = enumerator->lpVtbl->EnumAudioEndpoints(enumerator,
-         eRender, DEVICE_STATE_ACTIVE, &collection);
-#endif
+      hr = _IMMDeviceEnumerator_EnumAudioEndpoints(enumerator,
+            eRender, DEVICE_STATE_ACTIVE, &collection);
       WASAPI_HR_CHECK(hr, "IMMDeviceEnumerator::EnumAudioEndpoints",
             goto error);
 
-#ifdef __cplusplus
-      hr = collection->GetCount(&dev_count);
-#else
-      hr = collection->lpVtbl->GetCount(collection, &dev_count);
-#endif
+      hr = _IMMDeviceCollection_GetCount(collection, &dev_count);
       WASAPI_HR_CHECK(hr, "IMMDeviceCollection::GetCount", goto error);
 
       for (i = 0; i < dev_count; ++i)
       {
-#ifdef __cplusplus
-         hr = collection->Item(i, &device);
-#else
-         hr = collection->lpVtbl->Item(collection, i, &device);
-#endif
+         hr = _IMMDeviceCollection_Item(collection, i, &device);
          WASAPI_HR_CHECK(hr, "IMMDeviceCollection::Item", continue);
 
          if (wasapi_check_device_id(device, id))
@@ -202,13 +230,8 @@ static IMMDevice *wasapi_init_device(const char *id)
    }
    else
    {
-#ifdef __cplusplus
-      hr = enumerator->GetDefaultAudioEndpoint(
-            eRender, eConsole, &device);
-#else
-      hr = enumerator->lpVtbl->GetDefaultAudioEndpoint(enumerator,
-            eRender, eConsole, &device);
-#endif
+      hr = _IMMDeviceEnumerator_GetDefaultAudioEndpoint(
+            enumerator, eRender, eConsole, &device);
       WASAPI_HR_CHECK(hr, "IMMDeviceEnumerator::GetDefaultAudioEndpoint",
             goto error);
    }
@@ -282,13 +305,9 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
    IAudioClient *client = NULL;
    bool float_fmt_res   = *float_fmt;
    unsigned rate_res    = *rate;
-#ifdef __cplusplus
-   HRESULT hr           = device->Activate(IID_IAudioClient,
+   HRESULT hr           = _IMMDevice_Activate(device,
+         IID_IAudioClient, 
          CLSCTX_ALL, NULL, (void**)&client);
-#else
-   HRESULT hr           = device->lpVtbl->Activate(device, &IID_IAudioClient,
-         CLSCTX_ALL, NULL, (void**)&client);
-#endif
    WASAPI_HR_CHECK(hr, "IMMDevice::Activate", return NULL);
 
    /* once for float, once for pcm (requested first) */
@@ -318,13 +337,9 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
          if (hr == AUDCLNT_E_ALREADY_INITIALIZED)
          {
             WASAPI_RELEASE(client);
-#ifdef __cplusplus
-            hr = device->Activate(IID_IAudioClient,
-               CLSCTX_ALL, NULL, (void**)&client);
-#else
-            hr = device->lpVtbl->Activate(device, &IID_IAudioClient,
-               CLSCTX_ALL, NULL, (void**)&client);
-#endif
+            HRESULT hr           = _IMMDevice_Activate(device,
+                  IID_IAudioClient, 
+                  CLSCTX_ALL, NULL, (void**)&client);
             WASAPI_HR_CHECK(hr, "IMMDevice::Activate", return NULL);
 
 #ifdef __cplusplus
@@ -374,22 +389,12 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
    REFERENCE_TIME minimum_period  = 0;
    REFERENCE_TIME buffer_duration = 0;
    UINT32 buffer_length           = 0;
-#ifdef __cplusplus
-   HRESULT hr                     = device->Activate(
-		   IID_IAudioClient,
+   HRESULT hr                     = _IMMDevice_Activate(device,
+         IID_IAudioClient, 
          CLSCTX_ALL, NULL, (void**)&client);
-#else
-   HRESULT hr                     = device->lpVtbl->Activate(
-		   device, &IID_IAudioClient,
-         CLSCTX_ALL, NULL, (void**)&client);
-#endif
    WASAPI_HR_CHECK(hr, "IMMDevice::Activate", return NULL);
 
-#ifdef __cplusplus
-   hr = client->GetDevicePeriod(NULL, &minimum_period);
-#else
-   hr = client->lpVtbl->GetDevicePeriod(client, NULL, &minimum_period);
-#endif
+   hr = _IAudioClient_GetDevicePeriod(client, NULL, &minimum_period);
    WASAPI_HR_CHECK(hr, "IAudioClient::GetDevicePeriod", goto error);
 
    /* buffer_duration is in 100ns units */
@@ -422,21 +427,13 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
 #endif
          if (hr == AUDCLNT_E_BUFFER_SIZE_NOT_ALIGNED)
          {
-#ifdef __cplusplus
-            hr = client->GetBufferSize(&buffer_length);
-#else
-            hr = client->lpVtbl->GetBufferSize(client, &buffer_length);
-#endif
+            hr = _IAudioClient_GetBufferSize(client, &buffer_length);
             WASAPI_HR_CHECK(hr, "IAudioClient::GetBufferSize", goto error);
 
             WASAPI_RELEASE(client);
-#ifdef __cplusplus
-            hr = device->Activate(IID_IAudioClient,
-               CLSCTX_ALL, NULL, (void**)&client);
-#else
-            hr = device->lpVtbl->Activate(device, &IID_IAudioClient,
-               CLSCTX_ALL, NULL, (void**)&client);
-#endif
+            hr                     = _IMMDevice_Activate(device,
+                  IID_IAudioClient, 
+                  CLSCTX_ALL, NULL, (void**)&client);
             WASAPI_HR_CHECK(hr, "IMMDevice::Activate", return NULL);
 
             buffer_duration = 10000.0 * 1000.0 / rate_res * buffer_length + 0.5;
@@ -453,13 +450,9 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
          if (hr == AUDCLNT_E_ALREADY_INITIALIZED)
          {
             WASAPI_RELEASE(client);
-#ifdef __cplusplus
-            hr = device->Activate(IID_IAudioClient,
-               CLSCTX_ALL, NULL, (void**)&client);
-#else
-            hr = device->lpVtbl->Activate(device, &IID_IAudioClient,
-               CLSCTX_ALL, NULL, (void**)&client);
-#endif
+            hr                     = _IMMDevice_Activate(device,
+                  IID_IAudioClient, 
+                  CLSCTX_ALL, NULL, (void**)&client);
             WASAPI_HR_CHECK(hr, "IMMDevice::Activate", return NULL);
 
 #ifdef __cplusplus
@@ -540,21 +533,9 @@ static IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
    /* next calls are allowed to fail (we losing info only) */
 
    if (*exclusive)
-   {
-#ifdef __cplusplus
-      hr = client->GetDevicePeriod(NULL, &device_period);
-#else
-      hr = client->lpVtbl->GetDevicePeriod(client, NULL, &device_period);
-#endif
-   }
+      hr = _IAudioClient_GetDevicePeriod(client, NULL, &device_period);
    else
-   {
-#ifdef __cplusplus
-      hr = client->GetDevicePeriod(&device_period, NULL);
-#else
-      hr = client->lpVtbl->GetDevicePeriod(client, &device_period, NULL);
-#endif
-   }
+      hr = _IAudioClient_GetDevicePeriod(client, &device_period, NULL);
 
    if (FAILED(hr))
    {
@@ -563,22 +544,14 @@ static IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
 
    if (!*exclusive)
    {
-#ifdef __cplusplus
-      hr = client->GetStreamLatency(&stream_latency);
-#else
-      hr = client->lpVtbl->GetStreamLatency(client, &stream_latency);
-#endif
+      hr = _IAudioClient_GetStreamLatency(client, &stream_latency);
       if (FAILED(hr))
       {
          RARCH_WARN("[WASAPI]: IAudioClient::GetStreamLatency failed with error 0x%.8X.\n", hr);
       }
    }
 
-#ifdef __cplusplus
-   hr = client->GetBufferSize(&buffer_length);
-#else
-   hr = client->lpVtbl->GetBufferSize(client, &buffer_length);
-#endif
+   hr = _IAudioClient_GetBufferSize(client, &buffer_length);
    if (FAILED(hr))
    {
       RARCH_WARN("[WASAPI]: IAudioClient::GetBufferSize failed with error 0x%.8X.\n", hr);
@@ -634,11 +607,7 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    if (!w->client)
       goto error;
 
-#ifdef __cplusplus
-   hr = w->client->GetBufferSize(&frame_count);
-#else
-   hr = w->client->lpVtbl->GetBufferSize(w->client, &frame_count);
-#endif
+   hr = _IAudioClient_GetBufferSize(w->client, &frame_count);
    WASAPI_HR_CHECK(hr, "IAudioClient::GetBufferSize", goto error);
 
    w->frame_size = float_format ? 8 : 4;
@@ -655,11 +624,7 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    {
       if (sh_buffer_length < 0)
       {
-#ifdef __cplusplus
-         hr = w->client->GetDevicePeriod(&dev_period, NULL);
-#else
-         hr = w->client->lpVtbl->GetDevicePeriod(w->client, &dev_period, NULL);
-#endif
+         hr = _IAudioClient_GetDevicePeriod(w->client, &dev_period, NULL);
          WASAPI_HR_CHECK(hr, "IAudioClient::GetDevicePeriod", goto error);
 
          sh_buffer_length = dev_period * rate / 10000000;
@@ -679,43 +644,22 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    w->write_event = CreateEventA(NULL, FALSE, FALSE, NULL);
    WASAPI_SR_CHECK(w->write_event, "CreateEventA", goto error);
 
-#ifdef __cplusplus
-   hr = w->client->SetEventHandle(w->write_event);
-#else
-   hr = w->client->lpVtbl->SetEventHandle(w->client, w->write_event);
-#endif
+   hr = _IAudioClient_SetEventHandle(w->client, w->write_event);
    WASAPI_HR_CHECK(hr, "IAudioClient::SetEventHandle", goto error);
 
-#ifdef __cplusplus
-   hr = w->client->GetService(
+   hr = _IAudioClient_GetService(w->client,
          IID_IAudioRenderClient, (void**)&w->renderer);
-#else
-   hr = w->client->lpVtbl->GetService(w->client,
-         &IID_IAudioRenderClient, (void**)&w->renderer);
-#endif
    WASAPI_HR_CHECK(hr, "IAudioClient::GetService", goto error);
 
-#ifdef __cplusplus
-   hr = w->renderer->GetBuffer(frame_count, &dest);
-#else
-   hr = w->renderer->lpVtbl->GetBuffer(w->renderer, frame_count, &dest);
-#endif
+   hr = _IAudioRenderClient_GetBuffer(w->renderer, frame_count, &dest);
    WASAPI_HR_CHECK(hr, "IAudioRenderClient::GetBuffer", goto error);
 
-#ifdef __cplusplus
-   hr = w->renderer->ReleaseBuffer(frame_count,
+   hr = _IAudioRenderClient_ReleaseBuffer(
+         w->renderer, frame_count,
          AUDCLNT_BUFFERFLAGS_SILENT);
-#else
-   hr = w->renderer->lpVtbl->ReleaseBuffer(w->renderer, frame_count,
-         AUDCLNT_BUFFERFLAGS_SILENT);
-#endif
    WASAPI_HR_CHECK(hr, "IAudioRenderClient::ReleaseBuffer", goto error);
 
-#ifdef __cplusplus
-   hr = w->client->Start();
-#else
-   hr = w->client->lpVtbl->Start(w->client);
-#endif
+   hr = _IAudioClient_Start(w->client);
    WASAPI_HR_CHECK(hr, "IAudioClient::Start", goto error);
    w->running = true;
    w->blocking = settings->bools.audio_sync;
@@ -741,21 +685,14 @@ static bool wasapi_flush(wasapi_t * w, const void * data, size_t size)
 {
    BYTE *dest         = NULL;
    UINT32 frame_count = size / w->frame_size;
-#ifdef __cplusplus
-   HRESULT hr         = w->renderer->GetBuffer(frame_count, &dest);
-#else
-   HRESULT hr         = w->renderer->lpVtbl->GetBuffer(w->renderer, frame_count, &dest);
-#endif
-
+   HRESULT hr         = _IAudioRenderClient_GetBuffer(
+         w->renderer, frame_count, &dest);
    WASAPI_HR_CHECK(hr, "IAudioRenderClient::GetBuffer", return false)
 
    memcpy(dest, data, size);
-#ifdef __cplusplus
-   hr = w->renderer->ReleaseBuffer(frame_count, 0);
-#else
-   hr = w->renderer->lpVtbl->ReleaseBuffer(w->renderer, frame_count, 0);
-#endif
-
+   hr = _IAudioRenderClient_ReleaseBuffer(
+         w->renderer, frame_count,
+         0);
    WASAPI_HR_CHECK(hr, "IAudioRenderClient::ReleaseBuffer", return false);
 
    return true;
@@ -765,21 +702,14 @@ static bool wasapi_flush_buffer(wasapi_t * w, size_t size)
 {
    BYTE *dest         = NULL;
    UINT32 frame_count = size / w->frame_size;
-#ifdef __cplusplus
-   HRESULT hr         = w->renderer->GetBuffer(frame_count, &dest);
-#else
-   HRESULT hr         = w->renderer->lpVtbl->GetBuffer(w->renderer, frame_count, &dest);
-#endif
-
+   HRESULT hr         = _IAudioRenderClient_GetBuffer(
+         w->renderer, frame_count, &dest);
    WASAPI_HR_CHECK(hr, "IAudioRenderClient::GetBuffer", return false)
 
    fifo_read(w->buffer, dest, size);
-#ifdef __cplusplus
-   hr = w->renderer->ReleaseBuffer(frame_count, 0);
-#else
-   hr = w->renderer->lpVtbl->ReleaseBuffer(w->renderer, frame_count, 0);
-#endif
-
+   hr = _IAudioRenderClient_ReleaseBuffer(
+         w->renderer, frame_count,
+         0);
    WASAPI_HR_CHECK(hr, "IAudioRenderClient::ReleaseBuffer", return false);
 
    return true;
@@ -806,11 +736,7 @@ static ssize_t wasapi_write_sh(wasapi_t *w, const void * data, size_t size)
             WASAPI_SR_CHECK(ir == WAIT_OBJECT_0, "WaitForSingleObject", return -1);
          }
 
-#ifdef __cplusplus
-         hr = w->client->GetCurrentPadding(&padding);
-#else
-         hr = w->client->lpVtbl->GetCurrentPadding(w->client, &padding);
-#endif
+         hr = _IAudioClient_GetCurrentPadding(w->client, &padding);
          WASAPI_HR_CHECK(hr, "IAudioClient::GetCurrentPadding", return -1);
 
          read_avail = fifo_read_avail(w->buffer);
@@ -837,11 +763,7 @@ static ssize_t wasapi_write_sh(wasapi_t *w, const void * data, size_t size)
          WASAPI_SR_CHECK(ir == WAIT_OBJECT_0, "WaitForSingleObject", return -1);
       }
 
-#ifdef __cplusplus
-      hr = w->client->GetCurrentPadding(&padding);
-#else
-      hr = w->client->lpVtbl->GetCurrentPadding(w->client, &padding);
-#endif
+      hr = _IAudioClient_GetCurrentPadding(w->client, &padding);
       WASAPI_HR_CHECK(hr, "IAudioClient::GetCurrentPadding", return -1);
 
       write_avail = w->engine_buffer_size - padding * w->frame_size;
@@ -920,11 +842,7 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t size)
 static bool wasapi_stop(void *wh)
 {
    wasapi_t *w = (wasapi_t*)wh;
-#ifdef __cplusplus
-   HRESULT hr  = w->client->Stop();
-#else
-   HRESULT hr  = w->client->lpVtbl->Stop(w->client);
-#endif
+   HRESULT  hr = _IAudioClient_Stop(w->client);
    WASAPI_HR_CHECK(hr, "IAudioClient::Stop", return !w->running);
 
    w->running = false;
@@ -935,11 +853,7 @@ static bool wasapi_stop(void *wh)
 static bool wasapi_start(void *wh, bool u)
 {
    wasapi_t *w = (wasapi_t*)wh;
-#ifdef __cplusplus
-   HRESULT hr  = w->client->Start();
-#else
-   HRESULT hr  = w->client->lpVtbl->Start(w->client);
-#endif
+   HRESULT  hr = _IAudioClient_Start(w->client);
 
    if (hr == AUDCLNT_E_NOT_STOPPED)
       return true;
@@ -975,13 +889,7 @@ static void wasapi_free(void *wh)
 
    WASAPI_RELEASE(w->renderer);
    if (w->client)
-   {
-#ifdef __cplusplus
-      w->client->Stop();
-#else
-      w->client->lpVtbl->Stop(w->client);
-#endif
-   }
+      _IAudioClient_Stop(w->client);
    WASAPI_RELEASE(w->client);
    WASAPI_RELEASE(w->device);
    CoUninitialize();
@@ -1039,36 +947,19 @@ static void *wasapi_device_list_new(void *u)
 #endif
    WASAPI_HR_CHECK(hr, "CoCreateInstance", goto error);
 
-#ifdef __cplusplus
-   hr = enumerator->EnumAudioEndpoints(
+   hr = _IMMDeviceEnumerator_EnumAudioEndpoints(enumerator,
          eRender, DEVICE_STATE_ACTIVE, &collection);
-#else
-   hr = enumerator->lpVtbl->EnumAudioEndpoints(enumerator,
-         eRender, DEVICE_STATE_ACTIVE, &collection);
-#endif
    WASAPI_HR_CHECK(hr, "IMMDeviceEnumerator::EnumAudioEndpoints", goto error);
 
-#ifdef __cplusplus
-   hr = collection->GetCount(&dev_count);
-#else
-   hr = collection->lpVtbl->GetCount(collection, &dev_count);
-#endif
+   hr = _IMMDeviceCollection_GetCount(collection, &dev_count);
    WASAPI_HR_CHECK(hr, "IMMDeviceCollection::GetCount", goto error);
 
    for (i = 0; i < dev_count; ++i)
    {
-#ifdef __cplusplus
-      hr = collection->Item(i, &device);
-#else
-      hr = collection->lpVtbl->Item(collection, i, &device);
-#endif
+      hr = _IMMDeviceCollection_Item(collection, i, &device);
       WASAPI_HR_CHECK(hr, "IMMDeviceCollection::Item", goto error);
 
-#ifdef __cplusplus
-      hr = device->GetId(&dev_id_wstr);
-#else
-      hr = device->lpVtbl->GetId(device, &dev_id_wstr);
-#endif
+      hr = _IMMDevice_GetId(device, &dev_id_wstr);
       WASAPI_HR_CHECK(hr, "IMMDevice::GetId", goto error);
 
       ir = WideCharToMultiByte(CP_ACP, 0, dev_id_wstr, -1,
@@ -1082,22 +973,13 @@ static void *wasapi_device_list_new(void *u)
             dev_id_str, ir, NULL, NULL);
       WASAPI_SR_CHECK(ir, "WideCharToMultiByte", goto error);
 
-#ifdef __cplusplus
-      hr = device->OpenPropertyStore(STGM_READ, &prop_store);
-#else
-      hr = device->lpVtbl->OpenPropertyStore(device, STGM_READ, &prop_store);
-#endif
+      hr = _IMMDevice_OpenPropertyStore(device, STGM_READ, &prop_store);
       WASAPI_HR_CHECK(hr, "IMMDevice::OpenPropertyStore", goto error);
 
       PropVariantInit(&prop_var);
       prop_var_init = true;
-#ifdef __cplusplus
-      hr = prop_store->GetValue(
-            PKEY_Device_FriendlyName, &prop_var);
-#else
-      hr = prop_store->lpVtbl->GetValue(prop_store,
-            &PKEY_Device_FriendlyName, &prop_var);
-#endif
+      hr = _IPropertyStore_GetValue(prop_store, PKEY_Device_FriendlyName,
+            &prop_var);
       WASAPI_HR_CHECK(hr, "IPropertyStore::GetValue", goto error);
 
       ir = WideCharToMultiByte(CP_ACP, 0, prop_var.pwszVal, -1,
@@ -1164,11 +1046,7 @@ static size_t wasapi_write_avail(void *wh)
    if (w->buffer)
       return fifo_write_avail(w->buffer);
 
-#ifdef __cplusplus
-   hr = w->client->GetCurrentPadding(&padding);
-#else
-   hr = w->client->lpVtbl->GetCurrentPadding(w->client, &padding);
-#endif
+   hr = _IAudioClient_GetCurrentPadding(w->client, &padding);
    WASAPI_HR_CHECK(hr, "IAudioClient::GetCurrentPadding", return 0);
    
    return w->engine_buffer_size - padding * w->frame_size;
