@@ -1617,6 +1617,8 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
 
                snprintf(tmp, path_size, " (%s)", core_name);
                strlcat(fill_buf, tmp, path_size);
+
+               free(tmp);
             }
          }
          
@@ -4157,7 +4159,13 @@ bool menu_displaylist_push(menu_displaylist_ctx_entry_t *entry)
       goto error;
 
    if (menu_displaylist_push_internal(label, entry, &info))
+   {
+      if (info.path && !string_is_empty(info.path))
+         free(info.path);
+      if (info.label && !string_is_empty(info.label))
+         free(info.label);
       return menu_displaylist_process(&info);
+   }
 
    cbs = menu_entries_get_last_stack_actiondata();
 
