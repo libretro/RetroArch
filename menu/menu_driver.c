@@ -1581,17 +1581,17 @@ bool menu_driver_render(bool is_idle, bool rarch_is_inited,
       menu_display_framebuf_dirty = true;
 
    if (BIT64_GET(menu_driver_data->state, MENU_STATE_RENDER_MESSAGEBOX)
-         && !string_is_empty(menu_driver_data->menu_state.msg))
+         && !string_is_empty(menu_driver_data->menu_state_msg))
    {
       if (menu_driver_ctx->render_messagebox)
          menu_driver_ctx->render_messagebox(menu_userdata,
-               menu_driver_data->menu_state.msg);
+               menu_driver_data->menu_state_msg);
 
       if (ui_companion_is_on_foreground())
       {
          const ui_companion_driver_t *ui = ui_companion_get_ptr();
          if (ui->render_messagebox)
-            ui->render_messagebox(menu_driver_data->menu_state.msg);
+            ui->render_messagebox(menu_driver_data->menu_state_msg);
       }
    }
 

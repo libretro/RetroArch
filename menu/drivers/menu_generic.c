@@ -80,7 +80,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
    if (!menu)
       return 0;
 
-   menu->menu_state.msg[0]   = '\0';
+   menu->menu_state_msg[0]   = '\0';
 
    if (!string_is_empty(label))
       hash                   = msg_hash_calculate(label);
@@ -99,7 +99,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
    {
       case ITERATE_TYPE_HELP:
          ret = menu_dialog_iterate(
-               menu->menu_state.msg, sizeof(menu->menu_state.msg), label);
+               menu->menu_state_msg, sizeof(menu->menu_state_msg), label);
          BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
          BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
          if (ret == 1 || action == MENU_ACTION_OK)
@@ -118,8 +118,8 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
          {
             menu_input_ctx_bind_t bind;
 
-            bind.s   = menu->menu_state.msg;
-            bind.len = sizeof(menu->menu_state.msg);
+            bind.s   = menu->menu_state_msg;
+            bind.len = sizeof(menu->menu_state_msg);
 
             if (menu_input_key_bind_iterate(&bind))
             {
@@ -139,7 +139,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
             if (cbs->enum_idx != MSG_UNKNOWN)
             {
                ret = menu_hash_get_help_enum(cbs->enum_idx,
-                     menu->menu_state.msg, sizeof(menu->menu_state.msg));
+                     menu->menu_state_msg, sizeof(menu->menu_state_msg));
             }
             else
             {
@@ -205,7 +205,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
 
                if (enum_idx != MSG_UNKNOWN)
                   ret = menu_hash_get_help_enum(enum_idx,
-                        menu->menu_state.msg, sizeof(menu->menu_state.msg));
+                        menu->menu_state_msg, sizeof(menu->menu_state_msg));
 
             }
          }
