@@ -4135,6 +4135,7 @@ bool menu_displaylist_push(menu_displaylist_ctx_entry_t *entry)
    const char *path               = NULL;
    const char *label              = NULL;
    unsigned type                  = 0;
+   bool ret                       = false;
    enum msg_hash_enums enum_idx   = MSG_UNKNOWN;
 
    if (!entry)
@@ -4160,11 +4161,8 @@ bool menu_displaylist_push(menu_displaylist_ctx_entry_t *entry)
 
    if (menu_displaylist_push_internal(label, entry, &info))
    {
-      if (info.path && !string_is_empty(info.path))
-         free(info.path);
-      if (info.label && !string_is_empty(info.label))
-         free(info.label);
-      return menu_displaylist_process(&info);
+      ret = menu_displaylist_process(&info);
+      goto end;
    }
 
    cbs = menu_entries_get_last_stack_actiondata();
@@ -4175,12 +4173,20 @@ bool menu_displaylist_push(menu_displaylist_ctx_entry_t *entry)
          goto error;
    }
 
-   return true;
+   ret = true;
+
+end:
+   if (info.path && !string_is_empty(info.path))
+      free(info.path);
+   if (info.label && !string_is_empty(info.label))
+      free(info.label);
+
+   return ret;
 
 error:
-   if (info.path)
+   if (info.path && !string_is_empty(info.path))
       free(info.path);
-   if (info.label)
+   if (info.label && !string_is_empty(info.label))
       free(info.label);
    return false;
 }
