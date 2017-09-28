@@ -33,6 +33,8 @@
 #ifndef FLAC__PRIVATE__BITMATH_H
 #define FLAC__PRIVATE__BITMATH_H
 
+#include <retro_inline.h>
+
 #include "FLAC/ordinals.h"
 #include "FLAC/assert.h"
 
@@ -43,7 +45,7 @@
 #endif
 
 /* Will never be emitted for MSVC, GCC, Intel compilers */
-static inline unsigned int FLAC__clz_soft_uint32(FLAC__uint32 word)
+static INLINE unsigned int FLAC__clz_soft_uint32(FLAC__uint32 word)
 {
 	static const unsigned char byte_to_unary_table[] = {
 	8, 7, 6, 6, 5, 5, 5, 5, 4, 4, 4, 4, 4, 4, 4, 4,
@@ -70,7 +72,7 @@ static inline unsigned int FLAC__clz_soft_uint32(FLAC__uint32 word)
 		byte_to_unary_table[word] + 24;
 }
 
-static inline unsigned int FLAC__clz_uint32(FLAC__uint32 v)
+static INLINE unsigned int FLAC__clz_uint32(FLAC__uint32 v)
 {
 /* Never used with input 0 */
 	FLAC__ASSERT(v > 0);
@@ -92,13 +94,13 @@ static inline unsigned int FLAC__clz_uint32(FLAC__uint32 v)
 }
 
 /* Used when 64-bit bsr/clz is unavailable; can use 32-bit bsr/clz when possible */
-static inline unsigned int FLAC__clz_soft_uint64(FLAC__uint64 word)
+static INLINE unsigned int FLAC__clz_soft_uint64(FLAC__uint64 word)
 {
 	return (FLAC__uint32)(word>>32) ? FLAC__clz_uint32((FLAC__uint32)(word>>32)) :
 		FLAC__clz_uint32((FLAC__uint32)word) + 32;
 }
 
-static inline unsigned int FLAC__clz_uint64(FLAC__uint64 v)
+static INLINE unsigned int FLAC__clz_uint64(FLAC__uint64 v)
 {
 	/* Never used with input 0 */
 	FLAC__ASSERT(v > 0);
@@ -116,14 +118,14 @@ static inline unsigned int FLAC__clz_uint64(FLAC__uint64 v)
 }
 
 /* These two functions work with input 0 */
-static inline unsigned int FLAC__clz2_uint32(FLAC__uint32 v)
+static INLINE unsigned int FLAC__clz2_uint32(FLAC__uint32 v)
 {
 	if (!v)
 		return 32;
 	return FLAC__clz_uint32(v);
 }
 
-static inline unsigned int FLAC__clz2_uint64(FLAC__uint64 v)
+static INLINE unsigned int FLAC__clz2_uint64(FLAC__uint64 v)
 {
 	if (!v)
 		return 64;
@@ -153,7 +155,7 @@ static inline unsigned int FLAC__clz2_uint64(FLAC__uint64 v)
  * ilog2(18) = 4
  */
 
-static inline unsigned FLAC__bitmath_ilog2(FLAC__uint32 v)
+static INLINE unsigned FLAC__bitmath_ilog2(FLAC__uint32 v)
 {
 	FLAC__ASSERT(v > 0);
 #if defined(__INTEL_COMPILER)
@@ -169,7 +171,7 @@ static inline unsigned FLAC__bitmath_ilog2(FLAC__uint32 v)
 #endif
 }
 
-static inline unsigned FLAC__bitmath_ilog2_wide(FLAC__uint64 v)
+static INLINE unsigned FLAC__bitmath_ilog2_wide(FLAC__uint64 v)
 {
 	FLAC__ASSERT(v > 0);
 #if defined(__GNUC__) && (__GNUC__ >= 4 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 4))
