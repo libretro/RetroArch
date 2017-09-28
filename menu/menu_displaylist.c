@@ -3992,12 +3992,13 @@ static bool menu_displaylist_push_internal(
 
       if (info->exts && !string_is_empty(info->exts))
          free(info->exts);
+      if (info->label && !string_is_empty(info->label))
+         free(info->label);
 
-      info->exts = strdup(
+      info->exts  = strdup(
             file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT));
-      strlcpy(info->label,
-            msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
-            sizeof(info->label));
+      info->label = strdup(
+            msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST));
 
       menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
       menu_displaylist_ctl(DISPLAYLIST_MUSIC_HISTORY, info);
@@ -4010,11 +4011,13 @@ static bool menu_displaylist_push_internal(
 
       if (info->exts && !string_is_empty(info->exts))
          free(info->exts);
-      info->exts = strdup(
+      if (info->label && !string_is_empty(info->label))
+         free(info->label);
+
+      info->exts  = strdup(
             file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT));
-      strlcpy(info->label,
-            msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
-            sizeof(info->label));
+      info->label = strdup(
+            msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST));
 
       menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
       menu_displaylist_ctl(DISPLAYLIST_VIDEO_HISTORY, info);
@@ -4027,11 +4030,13 @@ static bool menu_displaylist_push_internal(
 
       if (info->exts && !string_is_empty(info->exts))
          free(info->exts);
-      info->exts = strdup(
+      if (info->label && !string_is_empty(info->label))
+         free(info->label);
+
+      info->exts  = strdup(
             file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT));
-      strlcpy(info->label,
-            msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
-            sizeof(info->label));
+      info->label = strdup(
+            msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST));
 
       menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
@@ -4064,11 +4069,13 @@ static bool menu_displaylist_push_internal(
 
       if (info->exts && !string_is_empty(info->exts))
          free(info->exts);
+      if (info->label && !string_is_empty(info->label))
+         free(info->label);
+
       info->exts = strdup(
             file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT));
-      strlcpy(info->label,
-            msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
-            sizeof(info->label));
+      info->label = strdup(
+            msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST));
 
       if (string_is_empty(settings->paths.directory_playlist))
       {
@@ -4141,10 +4148,10 @@ bool menu_displaylist_push(menu_displaylist_ctx_entry_t *entry)
       strlcpy(info.path,  path,  sizeof(info.path));
 
    if (!string_is_empty(label))
-      strlcpy(info.label, label, sizeof(info.label));
+      info.label = strdup(label);
 
    if (!info.list)
-      return false;
+      goto error;
 
    if (menu_displaylist_push_internal(label, entry, &info))
       return menu_displaylist_process(&info);
@@ -4154,10 +4161,15 @@ bool menu_displaylist_push(menu_displaylist_ctx_entry_t *entry)
    if (cbs && cbs->action_deferred_push)
    {
       if (cbs->action_deferred_push(&info) != 0)
-         return -1;
+         goto error;
    }
 
    return true;
+
+error:
+   if (info.label)
+      free(info.label);
+   return false;
 }
 
 static void menu_displaylist_parse_playlist_history(
@@ -4317,16 +4329,16 @@ void menu_displaylist_info_free(menu_displaylist_info_t *info)
       free(info->path_b);
    if (info->path_c)
       free(info->path_c);
+   if (info->label)
+      free(info->label);
    info->exts   = NULL;
    info->path_b = NULL;
    info->path_c = NULL;
+   info->label  = NULL;
 #if 0
    if (info->path)
       free(info->path);
-   if (info->label)
-      free(info->label);
    info->path   = NULL;
-   info->label  = NULL;
 #endif
 }
 
@@ -4345,12 +4357,12 @@ void menu_displaylist_info_init(menu_displaylist_info_t *info)
    info->download_core            = false;
    info->need_navigation_clear    = false;
    info->path[0]                  = '\0';
-   info->label[0]                 = '\0';
    info->type                     = 0;
    info->type_default             = 0;
    info->flags                    = 0;
    info->label_hash               = 0;
    info->directory_ptr            = 0;
+   info->label                    = NULL;
    info->path_b                   = NULL;
    info->path_c                   = NULL;
    info->exts                     = NULL;
@@ -4439,8 +4451,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
             strlcpy(info->path_b,
                   str_list->elems[1].data, sizeof(info->path_b));
-            strlcpy(info->label,
-                  str_list->elems[0].data, sizeof(info->label));
+
+            if (info->label && !string_is_empty(info->label))
+               free(info->label);
+
+            info->label = strdup(str_list->elems[0].data);
 
             string_list_free(str_list);
          }

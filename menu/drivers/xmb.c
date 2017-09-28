@@ -1861,10 +1861,9 @@ static void xmb_init_horizontal_list(xmb_handle_t *xmb)
 
    info.list                    = xmb->horizontal_list;
    strlcpy(info.path, settings->paths.directory_playlist, sizeof(info.path));
-   strlcpy(info.label,
-         msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
-         sizeof(info.label));
 
+   info.label                   = strdup(
+         msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST));
    info.exts                    = strdup(
          file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT));
    info.type_default            = FILE_TYPE_PLAIN;
@@ -4377,8 +4376,8 @@ static bool xmb_menu_init_list(void *data)
 
    menu_displaylist_info_init(&info);
 
-   strlcpy(info.label,
-         msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU), sizeof(info.label));
+   info.label                   = strdup(
+         msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU));
    info.exts                    = 
       strdup(file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT));
    info.type_default            = FILE_TYPE_PLAIN;

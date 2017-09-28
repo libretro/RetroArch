@@ -770,7 +770,7 @@ int menu_action_handle_setting(rarch_setting_t *setting,
             menu_displaylist_info_init(&info);
 
             strlcpy(info.path,  setting->default_value.string, sizeof(info.path));
-            strlcpy(info.label, name, sizeof(info.label));
+            info.label                    = strdup(name);
             info.type                     = type;
             info.directory_ptr            = selection;
             info.list                     = menu_stack;
@@ -1674,9 +1674,8 @@ void general_write_handler(void *data)
             menu_displaylist_info_init(&info);
 
             info.enum_idx                = MENU_ENUM_LABEL_HELP;
-            strlcpy(info.label,
-                  msg_hash_to_str(MENU_ENUM_LABEL_HELP),
-                  sizeof(info.label));
+            info.label                   = strdup(
+                  msg_hash_to_str(MENU_ENUM_LABEL_HELP));
             info.list                    = menu_stack;
 
             if (menu_displaylist_ctl(DISPLAYLIST_GENERIC, &info))

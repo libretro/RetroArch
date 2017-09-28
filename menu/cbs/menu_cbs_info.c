@@ -41,9 +41,8 @@ static int action_info_default(unsigned type, const char *label)
    info.list                    = menu_stack;
    info.directory_ptr           = selection;
    info.enum_idx                = MENU_ENUM_LABEL_INFO_SCREEN;
-   strlcpy(info.label,
-         msg_hash_to_str(MENU_ENUM_LABEL_INFO_SCREEN),
-        sizeof(info.label));
+   info.label                   = strdup(
+         msg_hash_to_str(MENU_ENUM_LABEL_INFO_SCREEN));
 
    if (!menu_displaylist_ctl(DISPLAYLIST_HELP, &info))
       goto error;

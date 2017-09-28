@@ -1130,8 +1130,8 @@ static bool zarch_menu_init_list(void *data)
 
    menu_displaylist_info_free(&info);
 
-   strlcpy(info.label,
-         msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB), sizeof(info.label));
+   info.label    = strdup(
+         msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB));
    info.enum_idx = MENU_ENUM_LABEL_HISTORY_TAB;
 
    menu_entries_append_enum(menu_stack,

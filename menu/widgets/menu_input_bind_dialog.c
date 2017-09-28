@@ -110,8 +110,8 @@ static int menu_input_key_bind_set_mode_common(
          info.type                = MENU_SETTINGS_CUSTOM_BIND_KEYBOARD;
          info.directory_ptr       = selection;
          info.enum_idx            = MENU_ENUM_LABEL_CUSTOM_BIND;
-         strlcpy(info.label,
-               msg_hash_to_str(MENU_ENUM_LABEL_CUSTOM_BIND), sizeof(info.label));
+         info.label               = strdup(
+               msg_hash_to_str(MENU_ENUM_LABEL_CUSTOM_BIND));
          if (menu_displaylist_ctl(DISPLAYLIST_INFO, &info))
             menu_displaylist_process(&info);
          menu_displaylist_info_free(&info);
@@ -125,9 +125,8 @@ static int menu_input_key_bind_set_mode_common(
          info.type                = MENU_SETTINGS_CUSTOM_BIND_KEYBOARD;
          info.directory_ptr       = selection;
          info.enum_idx            = MENU_ENUM_LABEL_CUSTOM_BIND_ALL;
-         strlcpy(info.label,
-               msg_hash_to_str(MENU_ENUM_LABEL_CUSTOM_BIND_ALL),
-               sizeof(info.label));
+         info.label               = strdup(
+               msg_hash_to_str(MENU_ENUM_LABEL_CUSTOM_BIND_ALL));
 
          if (menu_displaylist_ctl(DISPLAYLIST_INFO, &info))
             menu_displaylist_process(&info);

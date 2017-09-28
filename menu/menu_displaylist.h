@@ -188,7 +188,7 @@ typedef struct menu_displaylist_info
    char *path_b;
    char *path_c;
    char *exts;
-   char label[255];
+   char *label;
    unsigned type;
    unsigned type_default;
    unsigned flags;

@@ -266,8 +266,8 @@ bool generic_menu_init_list(void *data)
 
    menu_displaylist_info_init(&info);
 
-   strlcpy(info.label,
-         msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU), sizeof(info.label));
+   info.label    = strdup(
+         msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU));
    info.enum_idx = MENU_ENUM_LABEL_MAIN_MENU;
 
    menu_entries_append_enum(menu_stack, info.path,

@@ -875,7 +875,7 @@ int generic_action_ok_displaylist_push(const char *path,
    }
 
    if (info_label)
-      strlcpy(info.label, info_label, sizeof(info.label));
+      info.label = strdup(info_label);
    if (info_path)
       strlcpy(info.path, info_path, sizeof(info.path));
 
