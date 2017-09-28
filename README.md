@@ -126,4 +126,4 @@ To configure joypads, use the built-in menu or the `retroarch-joyconfig` command
 
 ## Compiling and installing
 
-Instructions for compiling and installing RetroArch can be found in the [Libretro/RetroArch Documentation Center](hhttps://buildbot.libretro.com/docs).
+Instructions for compiling and installing RetroArch can be found in the [Libretro/RetroArch Documentation Center](https://buildbot.libretro.com/docs).
