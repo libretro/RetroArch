@@ -1707,14 +1707,16 @@ static void xmb_list_switch(xmb_handle_t *xmb)
    if (!string_is_equal(xmb_thumbnails_ident(),
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
    {
-      menu_entry_t entry;
+      menu_entry_t *entry = menu_entry_alloc();
 
-      menu_entry_init(&entry);
-      menu_entry_get(&entry, 0, selection, NULL, true);
+      menu_entry_init(entry);
+      menu_entry_get(entry, 0, selection, NULL, true);
 
-      xmb_set_thumbnail_content(xmb, entry.path, sizeof(entry.path));
+      xmb_set_thumbnail_content(xmb,
+            entry->path, sizeof(entry->path));
 
-      menu_entry_free(&entry);
+      menu_entry_free(entry);
+      free(entry);
 
       xmb_update_thumbnail_path(xmb, 0);
       xmb_update_thumbnail_image(xmb);
@@ -1729,7 +1731,7 @@ static void xmb_list_open_horizontal_list(xmb_handle_t *xmb)
 
    for (j = 0; j <= list_size; j++)
    {
-      menu_animation_ctx_entry_t entry;
+      menu_animation_ctx_entry_t anim_entry;
       float ia          = 0;
       xmb_node_t *node  = xmb_get_node(xmb, j);
 
@@ -1741,16 +1743,16 @@ static void xmb_list_open_horizontal_list(xmb_handle_t *xmb)
       else if (xmb->depth <= 1)
          ia = xmb->categories_passive_alpha;
 
-      entry.duration     = XMB_DELAY;
-      entry.target_value = ia;
-      entry.subject      = &node->alpha;
-      entry.easing_enum  = EASING_OUT_QUAD;
+      anim_entry.duration     = XMB_DELAY;
+      anim_entry.target_value = ia;
+      anim_entry.subject      = &node->alpha;
+      anim_entry.easing_enum  = EASING_OUT_QUAD;
       /* TODO/FIXME - integer conversion resulted in change of sign */
-      entry.tag          = -1;
-      entry.cb           = NULL;
+      anim_entry.tag          = -1;
+      anim_entry.cb           = NULL;
 
-      if (entry.subject)
-         menu_animation_push(&entry);
+      if (anim_entry.subject)
+         menu_animation_push(&anim_entry);
    }
 }
 
