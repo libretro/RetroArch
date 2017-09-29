@@ -44,15 +44,15 @@
 
 typedef struct database_state_handle
 {
-   database_info_list_t *info;
-   struct string_list *list;
-   size_t list_index;
-   size_t entry_index;
    uint32_t crc;
    uint32_t archive_crc;
+   size_t list_index;
+   size_t entry_index;
    uint8_t *buf;
    char archive_name[511];
    char serial[4096];
+   database_info_list_t *info;
+   struct string_list *list;
 } database_state_handle_t;
 
 typedef struct db_handle
@@ -67,14 +67,18 @@ typedef struct db_handle
    database_state_handle_t state;
 } db_handle_t;
 
-int cue_find_track(const char *cue_path, bool first, size_t *offset, size_t *size,
-               char *track_path, size_t max_len);
+int cue_find_track(const char *cue_path, bool first,
+      size_t *offset, size_t *size,
+      char *track_path, size_t max_len);
 
-bool cue_next_file(intfstream_t *fd, const char *cue_path, char *path, size_t max_len);
+bool cue_next_file(intfstream_t *fd, const char *cue_path,
+      char *path, size_t max_len);
 
-int gdi_find_track(const char *gdi_path, bool first, char *track_path, size_t max_len);
+int gdi_find_track(const char *gdi_path, bool first,
+      char *track_path, size_t max_len);
 
-bool gdi_next_file(intfstream_t *fd, const char *gdi_path, char *path, size_t max_len);
+bool gdi_next_file(intfstream_t *fd, const char *gdi_path,
+      char *path, size_t max_len);
 
 int detect_system(intfstream_t *fd, const char** system_name);
 
@@ -266,7 +270,8 @@ static int intfstream_get_serial(intfstream_t *fd, char *serial)
   return 1;
 }
 
-static bool intfstream_file_get_serial(const char *name, size_t offset, size_t size, char *serial)
+static bool intfstream_file_get_serial(const char *name,
+      size_t offset, size_t size, char *serial)
 {
    int rv;
    uint8_t *data     = NULL;
@@ -775,10 +780,10 @@ static int database_info_list_iterate_found_match(
    database_info_t *db_info_entry =
       &db_state->info->list[db_state->entry_index];
 
-   db_crc[0] = '\0';
-   db_playlist_path[0] = '\0';
-   db_playlist_base_str[0] = '\0';
-   entry_path_str[0] = '\0';
+   db_crc[0]                      = '\0';
+   db_playlist_path[0]            = '\0';
+   db_playlist_base_str[0]        = '\0';
+   entry_path_str[0]              = '\0';
 
    fill_short_pathname_representation_noext(db_playlist_base_str,
          db_path, PATH_MAX_LENGTH * sizeof(char));
