@@ -89,6 +89,11 @@ void menu_entry_free(menu_entry_t *entry)
       free(entry->path);
    if (entry->value && !string_is_empty(entry->value))
       free(entry->value);
+   entry->path          = NULL;
+   entry->label         = NULL;
+   entry->value         = NULL;
+   entry->sublabel      = NULL;
+   entry->rich_label    = NULL;
 }
 
 void menu_entry_init(menu_entry_t *entry)
@@ -338,14 +343,17 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
 
       if (cbs->action_label)
       {
-         entry->rich_label = (char*)malloc(255 *
-               sizeof(char));
-         entry->rich_label[0] = '\0';
+         char richlabeltmp[255];
+         richlabeltmp[0] = '\0';
+
          cbs->action_label(list,
                entry->type, (unsigned)i,
                label, path, 
-               entry->rich_label,
-               255 * sizeof(char));
+               richlabeltmp,
+               sizeof(richlabeltmp));
+
+         if (!string_is_empty(richlabeltmp))
+            entry->rich_label = strdup(richlabeltmp);
       }
 
       if (cbs->action_sublabel)
