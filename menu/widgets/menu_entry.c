@@ -77,6 +77,18 @@ enum menu_entry_type menu_entry_get_type(uint32_t i)
 
 void menu_entry_free(menu_entry_t *entry)
 {
+   if (!entry)
+      return;
+   if (entry->label && !string_is_empty(entry->label))
+      free(entry->label);
+   if (entry->rich_label && !string_is_empty(entry->rich_label))
+      free(entry->rich_label);
+   if (entry->sublabel && !string_is_empty(entry->sublabel))
+      free(entry->sublabel);
+   if (entry->path && !string_is_empty(entry->path))
+      free(entry->path);
+   if (entry->value && !string_is_empty(entry->value))
+      free(entry->value);
 }
 
 menu_entry_t *menu_entry_alloc(void)
@@ -89,11 +101,11 @@ menu_entry_t *menu_entry_alloc(void)
 
 void menu_entry_init(menu_entry_t *entry)
 {
-   entry->path[0]       = '\0';
-   entry->label[0]      = '\0';
-   entry->sublabel[0]   = '\0';
-   entry->value[0]      = '\0';
-   entry->rich_label[0] = '\0';
+   entry->path          = NULL;
+   entry->label         = NULL;
+   entry->value         = NULL;
+   entry->sublabel      = NULL;
+   entry->rich_label    = NULL;
    entry->enum_idx      = MSG_UNKNOWN;
    entry->entry_idx     = 0;
    entry->idx           = 0;
@@ -294,11 +306,14 @@ float menu_entry_num_max(uint32_t i)
 void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
       size_t i, void *userdata, bool use_representation)
 {
+   char newpath[255];
    const char *path           = NULL;
    const char *entry_label    = NULL;
    menu_file_list_cbs_t *cbs  = NULL;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(stack_idx);
    file_list_t *list          = (userdata) ? (file_list_t*)userdata : selection_buf;
+
+   newpath[0]                 = '\0';
 
    if (!list)
       return;
@@ -318,38 +333,58 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
       menu_entries_get_last_stack(NULL, &label, NULL, &enum_idx, NULL);
 
       if (cbs->action_get_value && use_representation)
+      {
+         entry->value = (char*)malloc(255 *
+               sizeof(char));
+         entry->value[0] = '\0';
          cbs->action_get_value(list,
                &entry->spacing, entry->type, (unsigned)i, label,
-               entry->value,  sizeof(entry->value), 
+               entry->value,
+               255 * sizeof(char), 
                entry_label, path,
-               entry->path, sizeof(entry->path));
+               newpath,
+               sizeof(newpath) 
+               );
+      }
 
       if (cbs->action_label)
+      {
+         entry->rich_label = (char*)malloc(255 *
+               sizeof(char));
+         entry->rich_label[0] = '\0';
          cbs->action_label(list,
                entry->type, (unsigned)i,
                label, path, 
                entry->rich_label,
-               sizeof(entry->rich_label));
+               255 * sizeof(char));
+      }
 
       if (cbs->action_sublabel)
+      {
+         entry->sublabel = (char*)malloc(255 *
+               sizeof(char));
+         entry->sublabel[0] = '\0';
          cbs->action_sublabel(list,
                entry->type, (unsigned)i,
                label, path, 
                entry->sublabel,
-               sizeof(entry->sublabel));
+               255 * sizeof(char));
+      }
    }
 
    entry->idx         = (unsigned)i;
 
    if (path && !use_representation)
-      strlcpy(entry->path,  path,        sizeof(entry->path));
-
-   if (cbs && cbs->setting && cbs->setting->enum_value_idx != MSG_UNKNOWN
+      strlcpy(newpath,  path, sizeof(newpath));
+   else if (cbs && cbs->setting && cbs->setting->enum_value_idx != MSG_UNKNOWN
          && !cbs->setting->dont_use_enum_idx_representation)
-      strlcpy(entry->path, msg_hash_to_str(cbs->setting->enum_value_idx), sizeof(entry->path));
+      strlcpy(newpath, msg_hash_to_str(cbs->setting->enum_value_idx), sizeof(newpath));
+
+   if (!string_is_empty(newpath))
+      entry->path = strdup(newpath);
 
    if (entry_label)
-      strlcpy(entry->label, entry_label, sizeof(entry->label));
+      entry->label = strdup(entry_label);
 }
 
 bool menu_entry_is_currently_selected(unsigned id)

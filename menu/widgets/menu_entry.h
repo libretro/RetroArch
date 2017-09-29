@@ -50,11 +50,11 @@ typedef struct menu_entry
    unsigned type;
    unsigned spacing;
    size_t entry_idx;
-   char path[255];
-   char label[255];
-   char sublabel[255];
-   char rich_label[255];
-   char value[255];
+   char *path;
+   char *label;
+   char *sublabel;
+   char *rich_label;
+   char *value;
 } menu_entry_t;
 
 enum menu_entry_type menu_entry_get_type(uint32_t i);
