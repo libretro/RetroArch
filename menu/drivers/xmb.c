@@ -3524,6 +3524,19 @@ static void xmb_free(void *data)
 
       video_coord_array_free(&xmb->raster_block.carr);
       video_coord_array_free(&xmb->raster_block2.carr);
+
+      if (xmb->box_message &&
+            !string_is_empty(xmb->box_message))
+         free(xmb->box_message);
+      if (xmb->thumbnail_system &&
+            !string_is_empty(xmb->thumbnail_system))
+         free(xmb->thumbnail_system);
+      if (xmb->thumbnail_content &&
+            !string_is_empty(xmb->thumbnail_content))
+         free(xmb->thumbnail_content);
+      if (xmb->savestate_thumbnail_file_path &&
+            !string_is_empty(xmb->savestate_thumbnail_file_path))
+         free(xmb->savestate_thumbnail_file_path);
    }
 
    font_driver_bind_block(NULL, NULL);
