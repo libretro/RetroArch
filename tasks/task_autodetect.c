@@ -39,19 +39,19 @@ typedef struct autoconfig_params     autoconfig_params_t;
 struct autoconfig_disconnect
 {
    unsigned idx;
-   char msg[255];
+   char *msg;
 };
 
 struct autoconfig_params
 {
-   char  name[255];
-   char  driver[255];
-   char  display_name[255];
-   char autoconfig_directory[4096];
    int32_t vid;
    int32_t pid;
    unsigned idx;
    uint32_t max_users;
+   char  *name;
+   char  *driver;
+   char  *display_name;
+   char  *autoconfig_directory;
 };
 
 static bool input_autoconfigured[MAX_USERS];
@@ -132,7 +132,9 @@ static int input_autoconfigure_joypad_try_from_conf(config_file_t *conf,
       score += 3;
 
    /* Check for name match */
-   if (string_is_equal(ident, params->name))
+   if (params->name &&
+         !string_is_empty(params->name)
+         && string_is_equal(ident, params->name))
       score += 2;
 
    return score;
@@ -146,7 +148,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
     * No reason to spam autoconfigure messages every time. */
    bool block_osd_spam                = 
       input_autoconfigured[params->idx]
-      && !string_is_empty(params->name);
+      && params->name && !string_is_empty(params->name);
 
    msg[0] = display_name[0] = device_type[0] = '\0';
 
@@ -165,7 +167,8 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
       static bool remote_is_bound        = false;
 
       snprintf(msg, sizeof(msg), "%s configured.",
-            string_is_empty(display_name) ? params->name : display_name);
+            (string_is_empty(display_name) &&
+             (params->name && !string_is_empty(params->name))) ? params->name : display_name);
 
       if(!remote_is_bound)
       {
@@ -180,7 +183,9 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
    {
       bool tmp = false;
       snprintf(msg, sizeof(msg), "%s %s #%u.",
-            string_is_empty(display_name) ? params->name : display_name,
+            (string_is_empty(display_name) &&
+             params->name && !string_is_empty(params->name)) 
+            ? params->name : display_name,
             msg_hash_to_str(MSG_DEVICE_CONFIGURED_IN_PORT),
             params->idx);
 
@@ -240,8 +245,10 @@ static bool input_autoconfigure_joypad_from_conf_dir(
    {
       if (list)
          string_list_free(list);
-      list = dir_list_new_special(params->autoconfig_directory,
-            DIR_LIST_AUTOCONFIG, "cfg");
+      if (params->autoconfig_directory &&
+            !string_is_empty(params->autoconfig_directory))
+         list = dir_list_new_special(params->autoconfig_directory,
+               DIR_LIST_AUTOCONFIG, "cfg");
    }
 
    if(!list)
@@ -306,9 +313,32 @@ static bool input_autoconfigure_joypad_from_conf_internal(
          return true;
    }
 
-   if (string_is_empty(params->autoconfig_directory))
+   if (!params->autoconfig_directory ||
+         string_is_empty(params->autoconfig_directory))
       return true;
    return false;
+}
+
+static void input_autoconfigure_params_free(autoconfig_params_t *params)
+{
+   if (!params)
+      return;
+   if (params->name 
+         && !string_is_empty(params->name))
+      free(params->name);
+   if (params->driver 
+         && !string_is_empty(params->driver))
+      free(params->name);
+   if (params->display_name 
+         && !string_is_empty(params->display_name))
+      free(params->display_name);
+   if (params->autoconfig_directory 
+         && !string_is_empty(params->autoconfig_directory))
+      free(params->autoconfig_directory);
+   params->name                 = NULL;
+   params->driver               = NULL;
+   params->display_name         = NULL;
+   params->autoconfig_directory = NULL;
 }
 
 static void input_autoconfigure_connect_handler(retro_task_t *task)
@@ -325,7 +355,8 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
 
       msg[0] = '\0';
 #ifdef ANDROID
-      strlcpy(params->name, "Android Gamepad", sizeof(params->name));
+      params->name = strdup("Android Gamepad");
+
       if(input_autoconfigure_joypad_from_conf_internal(params, task))
       {
          RARCH_LOG("[Autoconf]: no profiles found for %s (%d/%d). Using fallback\n",
@@ -348,7 +379,11 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
    }
 
 end:
-   free(params);
+   if (params)
+   {
+      input_autoconfigure_params_free(params);
+      free(params);
+   }
    task_set_finished(task, true);
 }
 
@@ -362,6 +397,8 @@ static void input_autoconfigure_disconnect_handler(retro_task_t *task)
 
    RARCH_LOG("%s: %s\n", msg_hash_to_str(MSG_AUTODETECT), params->msg);
 
+   if (params->msg && !string_is_empty(params->msg))
+      free(params->msg);
    free(params);
 }
 
@@ -369,20 +406,21 @@ bool input_autoconfigure_disconnect(unsigned i, const char *ident)
 {
    char msg[255];
    retro_task_t         *task      = (retro_task_t*)calloc(1, sizeof(*task));
-   autoconfig_disconnect_t *state  = (autoconfig_disconnect_t*)calloc(1, sizeof(*state));
+   autoconfig_disconnect_t *state  = (autoconfig_disconnect_t*)malloc(sizeof(*state));
 
    if (!state || !task)
       goto error;
 
    msg[0]      = '\0';
 
+   state->msg  = NULL;
    state->idx  = i;
 
    snprintf(msg, sizeof(msg), "%s #%u (%s).", 
          msg_hash_to_str(MSG_DEVICE_DISCONNECTED_FROM_PORT),
          i, ident);
 
-   strlcpy(state->msg, msg, sizeof(state->msg));
+   state->msg    = strdup(msg);
 
    input_config_clear_device_name(state->idx);
 
@@ -395,7 +433,11 @@ bool input_autoconfigure_disconnect(unsigned i, const char *ident)
 
 error:
    if (state)
+   {
+      if (state->msg && !string_is_empty(state->msg))
+         free(state->msg);
       free(state);
+   }
    if (task)
       free(task);
 
@@ -440,7 +482,7 @@ bool input_autoconfigure_connect(
 {
    unsigned i;
    retro_task_t         *task = (retro_task_t*)calloc(1, sizeof(*task));
-   autoconfig_params_t *state = (autoconfig_params_t*)calloc(1, sizeof(*state));
+   autoconfig_params_t *state = (autoconfig_params_t*)malloc(sizeof(*state));
    settings_t       *settings = config_get_ptr();
    const char *dir_autoconf   = settings->paths.directory_autoconfig;
 
@@ -448,19 +490,16 @@ bool input_autoconfigure_connect(
       goto error;
 
    if (!string_is_empty(display_name))
-      strlcpy(state->display_name, display_name,
-            sizeof(state->display_name));
+      state->display_name = strdup(display_name);
 
    if (!string_is_empty(name))
-      strlcpy(state->name, name, sizeof(state->name));
+      state->name         = strdup(name);
 
    if (!string_is_empty(driver))
-      strlcpy(state->driver, driver, sizeof(state->driver));
+      state->driver       = strdup(driver);
 
    if (!string_is_empty(dir_autoconf))
-      strlcpy(state->autoconfig_directory,
-            dir_autoconf,
-            sizeof(state->autoconfig_directory));
+      state->autoconfig_directory = strdup(dir_autoconf);
 
    state->idx       = idx;
    state->vid       = vid;
@@ -496,7 +535,10 @@ bool input_autoconfigure_connect(
 
 error:
    if (state)
+   {
+      input_autoconfigure_params_free(state);
       free(state);
+   }
    if (task)
       free(task);
 
