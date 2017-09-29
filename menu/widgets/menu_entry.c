@@ -264,7 +264,7 @@ void menu_entry_reset(uint32_t i)
 
 void menu_entry_get_value(menu_entry_t *entry, char *s, size_t len)
 {
-   if (!entry)
+   if (!entry || !entry->value || string_is_empty(entry->value))
       return;
    strlcpy(s, entry->value, len);
 }
@@ -333,11 +333,11 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
 
          cbs->action_get_value(list,
                &entry->spacing, entry->type, (unsigned)i, label,
-               entry->value,
-               255 * sizeof(char), 
-               entry_label, path,
                tmp,
-               sizeof(tmp) 
+               sizeof(tmp),
+               entry_label, path,
+               newpath,
+               sizeof(newpath)
                );
 
          if (!string_is_empty(tmp))

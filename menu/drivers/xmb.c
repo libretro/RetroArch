@@ -2331,7 +2331,10 @@ static int xmb_draw_item(
    }
    else
    {
-      enum msg_file_type type = msg_hash_to_file_type(msg_hash_calculate(entry->value));
+      enum msg_file_type type = FILE_TYPE_NONE;
+       
+      if (entry->value && !string_is_empty(entry->value))
+          type                = msg_hash_to_file_type(msg_hash_calculate(entry->value));
 
       switch (type)
       {
@@ -2409,10 +2412,13 @@ static int xmb_draw_item(
    ticker.s        = tmp;
    ticker.len      = 35;
    ticker.idx      = frame_count / 20;
-   ticker.str      = entry->value;
    ticker.selected = (i == current);
 
-   menu_animation_ticker(&ticker);
+   if (entry->value && !string_is_empty(entry->value))
+   {
+      ticker.str   = entry->value;
+      menu_animation_ticker(&ticker);
+   }
 
    if (do_draw_text)
       xmb_draw_text(menu_disp_info, xmb, tmp,
