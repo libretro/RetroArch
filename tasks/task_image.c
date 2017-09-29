@@ -41,17 +41,17 @@ enum image_status_enum
 struct nbio_image_handle
 {
    enum image_type_enum type;
-   struct texture_image ti;
+   enum image_status_enum status;
    bool is_blocking;
    bool is_blocking_on_processing;
    bool is_finished;
-   transfer_cb_t  cb;
-   void *handle;
-   size_t size;
+   int processing_final_state;
    unsigned processing_pos_increment;
    unsigned pos_increment;
-   int processing_final_state;
-   enum image_status_enum status;
+   size_t size;
+   void *handle;
+   transfer_cb_t  cb;
+   struct texture_image ti;
 };
 
 static int cb_image_menu_upload_generic(void *data, size_t len)
@@ -295,52 +295,67 @@ bool task_push_image_load(const char *fullpath, retro_task_callback_t cb, void *
    if (!t)
       goto error_msg;
 
-   nbio = (nbio_handle_t*)calloc(1, sizeof(*nbio));
+   nbio                = (nbio_handle_t*)malloc(sizeof(*nbio));
 
    if (!nbio)
       goto error;
 
-   nbio->path         = strdup(fullpath);
+   nbio->type          = NBIO_TYPE_NONE;
+   nbio->is_finished   = false;
+   nbio->status        = NBIO_STATUS_INIT;
+   nbio->pos_increment = 0;
+   nbio->status_flags  = 0;
+   nbio->data          = NULL;
+   nbio->path          = strdup(fullpath);
+   nbio->handle        = NULL;
+   nbio->msg_queue     = NULL;
+   nbio->cb            = &cb_nbio_image_menu_thumbnail;
 
    if (video_driver_supports_rgba())
       BIT32_SET(nbio->status_flags, NBIO_FLAG_IMAGE_SUPPORTS_RGBA);
 
-   image              = (struct nbio_image_handle*)calloc(1, sizeof(*image));   
+   image              = (struct nbio_image_handle*)malloc(sizeof(*image));   
    if (!image)
       goto error;
 
-   nbio->type         = NBIO_TYPE_NONE;
-   image->type        = IMAGE_TYPE_NONE;
+   image->type                       = IMAGE_TYPE_NONE;
+   image->status                     = IMAGE_STATUS_TRANSFER;
+   image->is_blocking                = false;
+   image->is_blocking_on_processing  = false;
+   image->processing_final_state     = 0;
+   image->processing_pos_increment   = 0;
+   image->pos_increment              = 0;
+   image->size                       = 0;
+   image->handle                     = NULL;
+
+   image->ti.width                   = 0;
+   image->ti.height                  = 0;
+   image->ti.pixels                  = NULL;
+   image->ti.supports_rgba           = false;
 
    if (strstr(fullpath, file_path_str(FILE_PATH_PNG_EXTENSION)))
    {
-      nbio->type      = NBIO_TYPE_PNG;
-      image->type     = IMAGE_TYPE_PNG;
+      nbio->type       = NBIO_TYPE_PNG;
+      image->type      = IMAGE_TYPE_PNG;
    }
    else if (strstr(fullpath, file_path_str(FILE_PATH_JPEG_EXTENSION)) 
          || strstr(fullpath, file_path_str(FILE_PATH_JPG_EXTENSION)))
    {
-      nbio->type      = NBIO_TYPE_JPEG;
-      image->type     = IMAGE_TYPE_JPEG;
+      nbio->type       = NBIO_TYPE_JPEG;
+      image->type      = IMAGE_TYPE_JPEG;
    }
    else if (strstr(fullpath, file_path_str(FILE_PATH_BMP_EXTENSION)))
    {
-      nbio->type      = NBIO_TYPE_BMP;
-      image->type     = IMAGE_TYPE_BMP;
+      nbio->type       = NBIO_TYPE_BMP;
+      image->type      = IMAGE_TYPE_BMP;
    }
    else if (strstr(fullpath, file_path_str(FILE_PATH_TGA_EXTENSION)))
    {
-      nbio->type      = NBIO_TYPE_TGA;
-      image->type     = IMAGE_TYPE_TGA;
+      nbio->type       = NBIO_TYPE_TGA;
+      image->type      = IMAGE_TYPE_TGA;
    }
 
-   image->status      = IMAGE_STATUS_TRANSFER;
-
-   nbio->data         = (struct nbio_image_handle*)image;
-   nbio->is_finished  = false;
-   nbio->cb           = &cb_nbio_image_menu_thumbnail;
-   nbio->status       = NBIO_STATUS_INIT;
-
+   nbio->data          = (struct nbio_image_handle*)image;
 
    t->state           = nbio;
    t->handler         = task_file_load_handler;
