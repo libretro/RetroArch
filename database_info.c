@@ -507,10 +507,13 @@ database_info_list_t *database_info_list_new(
       goto end;
 
    database_info_list = (database_info_list_t*)
-      calloc(1, sizeof(*database_info_list));
+      malloc(sizeof(*database_info_list));
 
    if (!database_info_list)
       goto end;
+
+   database_info_list->count  = 0;
+   database_info_list->list   = NULL;
 
    while (ret != -1)
    {
