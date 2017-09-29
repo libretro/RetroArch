@@ -375,7 +375,7 @@ static void command_parse_sub_msg(command_t *handle, const char *tok)
             msg_hash_to_str(MSG_RECEIVED));
 }
 
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD) && defined(HAVE_COMMAND)
 static bool command_network_init(command_t *handle, uint16_t port)
 {
    struct addrinfo *res  = NULL;
@@ -573,7 +573,7 @@ bool command_network_new(
    if (!handle)
       return false;
 
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD) && defined(HAVE_COMMAND)
    handle->net_fd = -1;
    if (network_enable && !command_network_init(handle, port))
       goto error;
