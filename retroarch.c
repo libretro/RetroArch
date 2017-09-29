@@ -323,6 +323,12 @@ static void global_free(void)
    global = global_get_ptr();
    path_clear_all();
    dir_clear_all();
+   if (global)
+   {
+      if (global->name.remapfile 
+            && !string_is_empty(global->name.remapfile))
+         free(global->name.remapfile);
+   }
    memset(global, 0, sizeof(struct global));
    retroarch_override_setting_free_state();
 }

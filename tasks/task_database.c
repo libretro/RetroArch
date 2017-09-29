@@ -57,15 +57,14 @@ typedef struct database_state_handle
 
 typedef struct db_handle
 {
-   database_state_handle_t state;
-   database_info_handle_t *handle;
-   unsigned status;
-   char playlist_directory[4096];
-   char content_database_path[4096];
-
    bool is_directory;
-   char fullpath[4096];
    bool scan_started;
+   unsigned status;
+   char *playlist_directory;
+   char *content_database_path;
+   char *fullpath;
+   database_info_handle_t *handle;
+   database_state_handle_t state;
 } db_handle_t;
 
 int cue_find_track(const char *cue_path, bool first, size_t *offset, size_t *size,
@@ -787,8 +786,11 @@ static int database_info_list_iterate_found_match(
    strlcat(db_playlist_base_str,
          file_path_str(FILE_PATH_LPL_EXTENSION),
          PATH_MAX_LENGTH * sizeof(char));
-   fill_pathname_join(db_playlist_path, _db->playlist_directory,
-         db_playlist_base_str, PATH_MAX_LENGTH * sizeof(char));
+
+   if (_db->playlist_directory &&
+         !string_is_empty(_db->playlist_directory))
+      fill_pathname_join(db_playlist_path, _db->playlist_directory,
+            db_playlist_base_str, PATH_MAX_LENGTH * sizeof(char));
 
    playlist = playlist_init(db_playlist_path, COLLECTION_SIZE);
 
@@ -957,10 +959,12 @@ static int task_database_iterate_playlist_lutro(
 
    db_playlist_path[0]     = '\0';
 
-   fill_pathname_join(db_playlist_path,
-         _db->playlist_directory,
-         file_path_str(FILE_PATH_LUTRO_PLAYLIST),
-         PATH_MAX_LENGTH * sizeof(char));
+   if (_db->playlist_directory &&
+         !string_is_empty(_db->playlist_directory))
+      fill_pathname_join(db_playlist_path,
+            _db->playlist_directory,
+            file_path_str(FILE_PATH_LUTRO_PLAYLIST),
+            PATH_MAX_LENGTH * sizeof(char));
 
    playlist = playlist_init(db_playlist_path, COLLECTION_SIZE);
 
@@ -1119,10 +1123,13 @@ static void task_database_handler(retro_task_t *task)
    {
       db->scan_started = true;
 
-      if (db->is_directory)
-         db->handle = database_info_dir_init(db->fullpath, DATABASE_TYPE_ITERATE, task);
-      else
-         db->handle = database_info_file_init(db->fullpath, DATABASE_TYPE_ITERATE, task);
+      if (db->fullpath && !string_is_empty(db->fullpath))
+      {
+         if (db->is_directory)
+            db->handle = database_info_dir_init(db->fullpath, DATABASE_TYPE_ITERATE, task);
+         else
+            db->handle = database_info_file_init(db->fullpath, DATABASE_TYPE_ITERATE, task);
+      }
 
       task_free_title(task);
 
@@ -1141,20 +1148,26 @@ static void task_database_handler(retro_task_t *task)
       case DATABASE_STATUS_ITERATE_BEGIN:
          if (dbstate && !dbstate->list)
          {
-            dbstate->list        = dir_list_new_special(
-                  db->content_database_path,
-                  DIR_LIST_DATABASES, NULL);
+            if (db->content_database_path &&
+                  !string_is_empty(db->content_database_path))
+               dbstate->list        = dir_list_new_special(
+                     db->content_database_path,
+                     DIR_LIST_DATABASES, NULL);
 
             /* If the scan path matches a database path exactly then
              * save time by only processing that database. */
             if (dbstate->list && db->is_directory)
             {
-	       size_t i;
-               char *dirname = find_last_slash(db->fullpath) + 1;
+               size_t i;
+               char *dirname = NULL;
+               
+               if (db->fullpath &&
+                     !string_is_empty(db->fullpath))
+                  dirname    = find_last_slash(db->fullpath) + 1;
 
                for (i = 0; i < dbstate->list->size; i++)
                {
-		  char *dbname;
+                  char *dbname;
                   char *dbpath = strdup(dbstate->list->elems[i].data);
                   path_remove_extension(dbpath);
 
@@ -1166,7 +1179,7 @@ static void task_database_handler(retro_task_t *task)
                      free(dbpath);
                      single_list = string_list_new();
                      string_list_append(single_list, dbstate->list->elems[i].data,
-                        dbstate->list->elems[i].attr);
+                           dbstate->list->elems[i].attr);
                      dir_list_free(dbstate->list);
                      dbstate->list = single_list;
                      break;
@@ -1227,6 +1240,15 @@ task_finished:
 
    if (db)
    {
+      if (db->playlist_directory &&
+            !string_is_empty(db->playlist_directory))
+         free(db->playlist_directory);
+      if (db->content_database_path &&
+            !string_is_empty(db->content_database_path))
+         free(db->content_database_path);
+      if (db->fullpath &&
+            !string_is_empty(db->fullpath))
+         free(db->fullpath);
       if (db->state.buf)
          free(db->state.buf);
 
@@ -1251,18 +1273,16 @@ bool task_push_dbscan(
    if (!t || !db)
       goto error;
 
-   t->handler        = task_database_handler;
-   t->state          = db;
-   t->callback       = cb;
-   t->title          = strdup(msg_hash_to_str(MSG_PREPARING_FOR_CONTENT_SCAN));
+   t->handler                = task_database_handler;
+   t->state                  = db;
+   t->callback               = cb;
+   t->title                  = strdup(msg_hash_to_str(MSG_PREPARING_FOR_CONTENT_SCAN));
 
-   db->is_directory = directory;
-
-   strlcpy(db->fullpath, fullpath, sizeof(db->fullpath));
-   strlcpy(db->playlist_directory, playlist_directory,
-         sizeof(db->playlist_directory));
-   strlcpy(db->content_database_path, content_database,
-         sizeof(db->content_database_path));
+   db->is_directory          = directory;
+   db->playlist_directory    = NULL;
+   db->fullpath              = strdup(fullpath);
+   db->playlist_directory    = strdup(playlist_directory);
+   db->content_database_path = strdup(content_database);
 
    task_queue_push(t);
 

@@ -34,6 +34,7 @@
 
 #include <streams/file_stream.h>
 #include <retro_endianness.h>
+#include <string/stdstring.h>
 #include <compat/strl.h>
 
 #include "libretrodb.h"
@@ -57,7 +58,7 @@ struct libretrodb
 	uint64_t root;
 	uint64_t count;
 	uint64_t first_index_offset;
-   char path[1024];
+   char *path;
 };
 
 struct libretrodb_index
@@ -205,7 +206,10 @@ void libretrodb_close(libretrodb_t *db)
 {
    if (db->fd)
       filestream_close(db->fd);
-   db->fd = NULL;
+   if (db->path && !string_is_empty(db->path))
+      free(db->path);
+   db->path = NULL;
+   db->fd   = NULL;
 }
 
 int libretrodb_open(const char *path, libretrodb_t *db)
@@ -218,8 +222,11 @@ int libretrodb_open(const char *path, libretrodb_t *db)
    if (!fd)
       return -errno;
 
-   strlcpy(db->path, path, sizeof(db->path));
-   db->root = filestream_seek(fd, 0, SEEK_CUR);
+   if (db->path && !string_is_empty(db->path))
+      free(db->path);
+
+   db->path  = strdup(path);
+   db->root  = filestream_seek(fd, 0, SEEK_CUR);
 
    if ((rv = (int)filestream_read(fd, &header, sizeof(header))) == -1)
    {
@@ -421,6 +428,9 @@ void libretrodb_cursor_close(libretrodb_cursor_t *cursor)
 int libretrodb_cursor_open(libretrodb_t *db, libretrodb_cursor_t *cursor,
       libretrodb_query_t *q)
 {
+   if (!db || !db->path || string_is_empty(db->path))
+      return -errno;
+
    cursor->fd = filestream_open(db->path, RFILE_MODE_READ | RFILE_HINT_MMAP, -1);
 
    if (!cursor->fd)
