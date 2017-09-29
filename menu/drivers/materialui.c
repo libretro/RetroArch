@@ -997,15 +997,14 @@ static void mui_render_menu_list(
    for (i = 0; i < entries_end; i++)
    {
       menu_entry_t entry;
-      char rich_label[255];
       char entry_value[255];
+      char *rich_label    = NULL;
       bool entry_selected = false;
       mui_node_t *node    = (mui_node_t*)
             menu_entries_get_userdata_at_offset(list, i);
       size_t selection    = menu_navigation_get_selection();
       int               y = header_height - mui->scroll_y + sum;
-      rich_label[0]       = 
-         entry_value[0]   = '\0';
+      entry_value[0]      = '\0';
 
       sum += node->line_height;
 
@@ -1018,7 +1017,7 @@ static void mui_render_menu_list(
       menu_entry_init(&entry);
       menu_entry_get(&entry, 0, (unsigned)i, NULL, true);
       menu_entry_get_value(&entry, entry_value, sizeof(entry_value));
-      menu_entry_get_rich_label(&entry, rich_label, sizeof(rich_label));
+      rich_label = menu_entry_get_rich_label(&entry);
 
       entry_selected = selection == i;
 
@@ -1039,6 +1038,9 @@ static void mui_render_menu_list(
          menu_list_color,
          sublabel_color
       );
+
+      if (rich_label && !string_is_empty(rich_label))
+         free(rich_label);
 
       menu_entry_free(&entry);
    }

@@ -514,15 +514,15 @@ static int zarch_zui_render_lay_root_recent(
 
       for (i = zui->recent_dlist_first; i < size; ++i)
       {
-         char rich_label[PATH_MAX_LENGTH];
          char entry_value[PATH_MAX_LENGTH];
          menu_entry_t entry;
+         char *rich_label  = NULL;
 
-         rich_label[0] = entry_value[0]    = '\0';
+         entry_value[0]    = '\0';
 
          menu_entry_init(&entry);
          menu_entry_get(&entry, 0, i, NULL, true);
-         menu_entry_get_rich_label(&entry, rich_label, sizeof(rich_label));
+         rich_label = menu_entry_get_rich_label(&entry);
          menu_entry_get_value(&entry, entry_value,sizeof(entry_value));
 
          if (zarch_zui_list_item(
@@ -534,12 +534,16 @@ static int zarch_zui_render_lay_root_recent(
             if (menu_entry_action(&entry, i, MENU_ACTION_OK))
             {
                menu_entry_free(&entry);
+               if (rich_label && !string_is_empty(rich_label))
+                  free(rich_label);
                return 1;
             }
          }
 
          j++;
          menu_entry_free(&entry);
+         if (rich_label && !string_is_empty(rich_label))
+            free(rich_label);
       }
 
    }

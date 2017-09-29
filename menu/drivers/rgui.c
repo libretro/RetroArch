@@ -566,11 +566,11 @@ static void rgui_render(void *data, bool is_idle)
    {
       menu_entry_t entry;
       menu_animation_ctx_ticker_t ticker;
-      char entry_path[255];
       char entry_value[255];
       char message[255];
       char entry_title_buf[255];
       char type_str_buf[255];
+      char *entry_path                      = NULL;
       unsigned entry_spacing                = 0;
       size_t entry_title_buf_utf8len        = 0;
       size_t entry_title_buf_len            = 0;
@@ -580,7 +580,6 @@ static void rgui_render(void *data, bool is_idle)
       if (i > (selection + 100))
          continue;
 
-      entry_path[0]      = '\0';
       entry_value[0]     = '\0';
       message[0]         = '\0';
       entry_title_buf[0] = '\0';
@@ -591,7 +590,7 @@ static void rgui_render(void *data, bool is_idle)
 
       entry_spacing = menu_entry_get_spacing(&entry);
       menu_entry_get_value(&entry, entry_value, sizeof(entry_value));
-      menu_entry_get_rich_label(&entry, entry_path, sizeof(entry_path));
+      entry_path      = menu_entry_get_rich_label(&entry);
 
       ticker.s        = entry_title_buf;
       ticker.len      = RGUI_TERM_WIDTH(fb_width) - (entry_spacing + 1 + 2);
@@ -623,6 +622,8 @@ static void rgui_render(void *data, bool is_idle)
                entry_selected ? hover_color : normal_color);
 
       menu_entry_free(&entry);
+      if (entry_path && !string_is_empty(entry_path))
+         free(entry_path);
    }
 
    if (menu_input_dialog_get_display_kb())
@@ -650,6 +651,7 @@ static void rgui_render(void *data, bool is_idle)
       if (settings->bools.menu_mouse_enable && cursor_visible)
          rgui_blit_cursor();
    }
+
 }
 
 static void rgui_framebuffer_free(void)

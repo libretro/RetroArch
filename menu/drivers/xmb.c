@@ -2272,8 +2272,8 @@ static int xmb_draw_item(
 {
    float icon_x, icon_y, label_offset;
    menu_animation_ctx_ticker_t ticker;
-   char ticker_str[PATH_MAX_LENGTH];
    char tmp[255];
+   char *ticker_str                  = NULL;
    unsigned entry_type               = 0;
    const float half_size             = xmb->icon_size / 2.0f;
    uintptr_t texture_switch          = 0;
@@ -2285,7 +2285,7 @@ static int xmb_draw_item(
    if (!node)
       goto iterate;
 
-   ticker_str[0] = tmp[0] = '\0';
+   tmp[0] = '\0';
 
    menu_entry_init(entry);
 
@@ -2364,7 +2364,7 @@ static int xmb_draw_item(
          ticker_limit = 70;
    }
 
-   menu_entry_get_rich_label(entry, ticker_str, sizeof(ticker_str));
+   ticker_str      = menu_entry_get_rich_label(entry);
 
    ticker.s        = tmp;
    ticker.len      = ticker_limit;
@@ -2483,9 +2483,13 @@ static int xmb_draw_item(
             xmb->shadow_offset);
 
 iterate:
+   if (ticker_str && !string_is_empty(ticker_str))
+      free(ticker_str);
    return 0;
 
 end:
+   if (ticker_str && !string_is_empty(ticker_str))
+      free(ticker_str);
    return -1;
 }
 
