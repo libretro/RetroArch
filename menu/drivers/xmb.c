@@ -233,12 +233,12 @@ typedef struct xmb_handle
    uint64_t frame_count;
 
    char title_name[255];
-   char box_message[1024];
-   char background_file_path[PATH_MAX_LENGTH];
-   char thumbnail_system[PATH_MAX_LENGTH];
+   char *box_message;
+   char *thumbnail_system;
    char *thumbnail_content;
+   char *savestate_thumbnail_file_path;
+   char background_file_path[PATH_MAX_LENGTH];
    char thumbnail_file_path[PATH_MAX_LENGTH];
-   char savestate_thumbnail_file_path[PATH_MAX_LENGTH];
 
    file_list_t *selection_buf_old;
    file_list_t *horizontal_list;
@@ -747,7 +747,7 @@ static void xmb_messagebox(void *data, const char *message)
    if (!xmb || string_is_empty(message))
       return;
 
-   strlcpy(xmb->box_message, message, sizeof(xmb->box_message));
+   xmb->box_message = strdup(message);
 }
 
 static void xmb_render_keyboard(xmb_handle_t *xmb,
@@ -975,6 +975,8 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
       }
    }
 
+   if (xmb->thumbnail_system &&
+         !string_is_empty(xmb->thumbnail_system))
    fill_pathname_join(
          xmb->thumbnail_file_path,
          settings->paths.directory_thumbnails,
@@ -1035,7 +1037,8 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
 
    menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
 
-   xmb->savestate_thumbnail_file_path[0] = '\0';
+   if (xmb->savestate_thumbnail_file_path)
+      free(xmb->savestate_thumbnail_file_path);
 
    if (     (settings->bools.savestate_thumbnail_enable)
          && ((string_is_equal_fast(entry.label, "state_slot", 10))
@@ -1063,10 +1066,7 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
       strlcat(path, file_path_str(FILE_PATH_PNG_EXTENSION), path_size);
 
       if (path_file_exists(path))
-      {
-         strlcpy(xmb->savestate_thumbnail_file_path, path,
-               sizeof(xmb->savestate_thumbnail_file_path));
-      }
+         xmb->savestate_thumbnail_file_path = strdup(path);
 
       free(path);
    }
@@ -1093,7 +1093,10 @@ static void xmb_set_thumbnail_system(void *data, char*s, size_t len)
    if (!xmb)
       return;
 
-   strlcpy(xmb->thumbnail_system, s, len);
+   if (xmb->thumbnail_system && 
+         !string_is_empty(xmb->thumbnail_system))
+      free(xmb->thumbnail_system);
+   xmb->thumbnail_system = strdup(s);
 }
 
 static void xmb_reset_thumbnail_content(void *data)
@@ -1121,7 +1124,9 @@ static void xmb_update_savestate_thumbnail_image(void *data)
    if (!xmb)
       return;
 
-   if (path_file_exists(xmb->savestate_thumbnail_file_path))
+   if (xmb->savestate_thumbnail_file_path 
+         && !string_is_empty(xmb->savestate_thumbnail_file_path)
+         && path_file_exists(xmb->savestate_thumbnail_file_path))
       task_push_image_load(xmb->savestate_thumbnail_file_path,
             menu_display_handle_savestate_thumbnail_upload, NULL);
    else
@@ -3107,11 +3112,13 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       render_background = true;
    }
 
-   if (!string_is_empty(xmb->box_message))
+   if (xmb->box_message && 
+         !string_is_empty(xmb->box_message))
    {
       strlcpy(msg, xmb->box_message,
             sizeof(msg));
-      xmb->box_message[0] = '\0';
+      free(xmb->box_message);
+      xmb->box_message  = NULL;
       render_background = true;
    }
 
