@@ -48,7 +48,10 @@ static void sanitize_to_string(char *s, const char *label, size_t len)
 
 static int fill_title(char *s, const char *title, const char *path, size_t len)
 {
-   fill_pathname_join_delim(s, title, path, ' ', len);
+   if (  (path && !string_is_empty(path))
+         &&
+         (title && !string_is_empty(title)))
+      fill_pathname_join_delim(s, title, path, ' ', len);
    return 0;
 }
 
