@@ -907,7 +907,11 @@ bool config_file_write(config_file_t *conf, const char *path)
       file = fopen(path, "w");
       if (!file)
          return false;
+#ifdef WIIU
+      setvbuf(file, NULL, _IONBF, 0x4000);
+#else
       setvbuf(file, NULL, _IOFBF, 0x4000);
+#endif
    }
    else
       file = stdout;
