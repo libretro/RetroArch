@@ -42,6 +42,7 @@
 
 #include "../../configuration.h"
 #include "../../retroarch.h"
+#include "../../verbosity.h"
 
 #include "../../gfx/drivers/d3d.h"
 
