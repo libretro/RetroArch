@@ -2254,6 +2254,7 @@ static void xmb_calculate_visible_range(const xmb_handle_t *xmb,
 
 static int xmb_draw_item(
       menu_display_frame_info_t menu_disp_info,
+      menu_entry_t *entry,
       math_matrix_4x4 *mymat,
       xmb_handle_t *xmb,
       xmb_node_t *core_node,
@@ -2276,7 +2277,6 @@ static int xmb_draw_item(
    uintptr_t texture_switch          = 0;
    bool do_draw_text                 = false;
    unsigned ticker_limit             = 35;
-   menu_entry_t *entry               = menu_entry_alloc();
    xmb_node_t *   node               = (xmb_node_t*)
       menu_entries_get_userdata_at_offset(list, i);
 
@@ -2481,15 +2481,9 @@ static int xmb_draw_item(
             xmb->shadow_offset);
 
 iterate:
-   menu_entry_free(entry);
-   if (entry)
-      free(entry);
    return 0;
 
 end:
-   menu_entry_free(entry);
-   if (entry)
-      free(entry);
    return -1;
 }
 
@@ -2550,13 +2544,17 @@ static void xmb_draw_items(
 
    for (i = first; i <= last; i++)
    {
-      int ret = xmb_draw_item(menu_disp_info,
+      menu_entry_t *entry = menu_entry_alloc();
+      int ret             = xmb_draw_item(menu_disp_info,
+            entry,
             &mymat,
             xmb, core_node,
             list, color, thumb_ident,
             frame_count,
             i, current,
             width, height);
+      menu_entry_free(entry);
+      free(entry);
       if (ret == -1)
          break;
    }
