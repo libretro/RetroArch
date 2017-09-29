@@ -121,15 +121,13 @@ char *menu_entry_get_rich_label(menu_entry_t *entry)
    return strdup(entry->path);
 }
 
-bool menu_entry_get_sublabel(menu_entry_t *entry, char *s, size_t len)
+char *menu_entry_get_sublabel(menu_entry_t *entry)
 {
    if (!entry)
-      return false;
+      return NULL;
    if (string_is_empty(entry->sublabel))
-      return false;
-
-   strlcpy(s, entry->sublabel, len);
-   return true;
+      return NULL;
+   return strdup(entry->sublabel);
 }
 
 void menu_entry_get_label(menu_entry_t *entry, char *s, size_t len)

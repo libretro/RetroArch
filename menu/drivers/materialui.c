@@ -669,12 +669,10 @@ static void mui_compute_entries_box(mui_handle_t* mui, int width)
    for (i = 0; i < entries_end; i++)
    {
       menu_entry_t entry;
-      char sublabel_str[255];
-      unsigned lines   = 0;
-      mui_node_t *node = (mui_node_t*)
+      char *sublabel_str = NULL;
+      unsigned lines     = 0;
+      mui_node_t *node   = (mui_node_t*)
             menu_entries_get_userdata_at_offset(list, i);
-
-      sublabel_str[0]  = '\0';
 
       menu_entry_init(&entry);
       menu_entry_get(&entry, 0, i, NULL, true);
@@ -683,12 +681,18 @@ static void mui_compute_entries_box(mui_handle_t* mui, int width)
       if (node->texture_switch2_set)
          texture_switch2 = node->texture_switch2;
 
-      if (menu_entry_get_sublabel(&entry, sublabel_str, sizeof(sublabel_str)))
-      {
-         int icon_margin = texture_switch2 ? mui->icon_size : 0;
+      sublabel_str = menu_entry_get_sublabel(&entry);
 
-         word_wrap(sublabel_str, sublabel_str, (int)((usable_width - icon_margin) / mui->glyph_width2), false);
-         lines = mui_count_lines(sublabel_str);
+      if (sublabel_str)
+      {
+         if (!string_is_empty(sublabel_str))
+         {
+            int icon_margin = texture_switch2 ? mui->icon_size : 0;
+
+            word_wrap(sublabel_str, sublabel_str, (int)((usable_width - icon_margin) / mui->glyph_width2), false);
+            lines = mui_count_lines(sublabel_str);
+         }
+         free(sublabel_str);
       }
 
       node->line_height  = (scale_factor / 3) + (lines * mui->font->size);
@@ -811,8 +815,8 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
    menu_entry_t entry;
    menu_animation_ctx_ticker_t ticker;
    char label_str[255];
-   char sublabel_str[255];
    char value_str[255];
+   char *sublabel_str              = NULL;
    bool switch_is_on               = true;
    int value_len                   = (int)utf8len(value);
    int ticker_limit                = 0;
@@ -823,8 +827,7 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
    enum msg_file_type hash_type    = msg_hash_to_file_type(msg_hash_calculate(value));
    float scale_factor              = menu_display_get_dpi();
 
-   label_str[0] = value_str[0]     = 
-      sublabel_str[0]              = '\0';
+   label_str[0] = value_str[0]     = '\0';
 
    menu_entry_init(&entry);
    menu_entry_get(&entry, 0, i, NULL, true);
@@ -914,17 +917,23 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
       }
    }
 
+   sublabel_str = menu_entry_get_sublabel(&entry);
+
    /* Sublabel */
-   if (menu_entry_get_sublabel(&entry, sublabel_str, sizeof(sublabel_str)))
+   if (sublabel_str)
    {
-      int icon_margin = texture_switch2 ? mui->icon_size : 0;
+      if (!string_is_empty(sublabel_str))
+      {
+         int icon_margin = texture_switch2 ? mui->icon_size : 0;
 
-      word_wrap(sublabel_str, sublabel_str, (int)((usable_width - icon_margin) / mui->glyph_width2), false);
+         word_wrap(sublabel_str, sublabel_str, (int)((usable_width - icon_margin) / mui->glyph_width2), false);
 
-      menu_display_draw_text(mui->font2, sublabel_str,
-            mui->margin + (texture_switch2 ? mui->icon_size : 0),
-            y + (scale_factor / 4) + mui->font->size,
-            width, height, sublabel_color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
+         menu_display_draw_text(mui->font2, sublabel_str,
+               mui->margin + (texture_switch2 ? mui->icon_size : 0),
+               y + (scale_factor / 4) + mui->font->size,
+               width, height, sublabel_color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
+      }
+      free(sublabel_str);
    }
 
    menu_display_draw_text(mui->font, label_str,
