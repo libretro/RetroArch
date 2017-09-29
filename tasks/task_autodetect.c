@@ -489,22 +489,28 @@ bool input_autoconfigure_connect(
    if (!task || !state || !settings->bools.input_autodetect_enable)
       goto error;
 
+   state->display_name            = NULL;
+   state->name                    = NULL;
+   state->driver                  = NULL;
+   state->autoconfig_directory    = NULL;
+
    if (!string_is_empty(display_name))
-      state->display_name = strdup(display_name);
+      state->display_name         = strdup(display_name);
 
    if (!string_is_empty(name))
-      state->name         = strdup(name);
+      state->name                 = strdup(name);
 
    if (!string_is_empty(driver))
-      state->driver       = strdup(driver);
+      state->driver               = strdup(driver);
 
    if (!string_is_empty(dir_autoconf))
       state->autoconfig_directory = strdup(dir_autoconf);
 
-   state->idx       = idx;
-   state->vid       = vid;
-   state->pid       = pid;
-   state->max_users = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+   state->idx                     = idx;
+   state->vid                     = vid;
+   state->pid                     = pid;
+   state->max_users               = *(
+         input_driver_get_uint(INPUT_ACTION_MAX_USERS));
 
    input_config_set_device_name(state->idx, state->name);
    input_config_set_pid(state->idx, state->pid);
