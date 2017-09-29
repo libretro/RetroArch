@@ -1114,7 +1114,8 @@ static void xmb_set_thumbnail_content(void *data, char *s, size_t len)
    xmb_handle_t *xmb = (xmb_handle_t*)data;
    if (!xmb)
       return;
-
+   if (xmb->thumbnail_content && !string_is_empty(xmb->thumbnail_content))
+      free(xmb->thumbnail_content);
    xmb->thumbnail_content = strdup(s);
 }
 
