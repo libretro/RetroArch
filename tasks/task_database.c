@@ -105,8 +105,11 @@ static intfstream_t* intfstream_open_file(const char *path)
    return fd;
 
 error:
-   intfstream_close(fd);
-   free(fd);
+   if (fd)
+   {
+      intfstream_close(fd);
+      free(fd);
+   }
    return NULL;
 }
 
@@ -131,8 +134,11 @@ static intfstream_t *open_memory(void *data, size_t size)
    return fd;
 
 error:
-   intfstream_close(fd);
-   free(fd);
+   if (fd)
+   {
+      intfstream_close(fd);
+      free(fd);
+   }
    return NULL;
 }
 
@@ -156,8 +162,11 @@ open_chd_track(const char *path, int32_t track)
    return fd;
 
 error:
-   intfstream_close(fd);
-   free(fd);
+   if (fd)
+   {
+      intfstream_close(fd);
+      free(fd);
+   }
    return NULL;
 }
 
@@ -548,8 +557,11 @@ static bool task_database_chd_get_crc(const char *name, uint32_t *crc)
    {
       RARCH_LOG("CHD '%s' crc: %x\n", name, *crc);
    }
-   intfstream_close(fd);
-   free(fd);
+   if (fd)
+   {
+      intfstream_close(fd);
+      free(fd);
+   }
    return rv;
 }
 
@@ -579,7 +591,10 @@ static void task_database_cue_prune(database_info_handle_t *db,
 
 end:
    if (fd)
+   {
+      intfstream_close(fd);
       free(fd);
+   }
    free(path);
 }
 
