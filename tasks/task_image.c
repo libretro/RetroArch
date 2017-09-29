@@ -21,6 +21,7 @@
 #include <file/nbio.h>
 #include <formats/image.h>
 #include <compat/strl.h>
+#include <string/stdstring.h>
 #include <retro_miscellaneous.h>
 
 #include "../gfx/video_driver.h"
@@ -157,9 +158,12 @@ static void task_image_cleanup(nbio_handle_t *nbio)
       image->handle                 = NULL;
       image->cb                     = NULL;
    }
+   if (nbio->path && !string_is_empty(nbio->path))
+      free(nbio->path);
    if (nbio->data)
       free(nbio->data);
    nbio_free(nbio->handle);
+   nbio->path        = NULL;
    nbio->data        = NULL;
    nbio->handle      = NULL;
 }
@@ -296,7 +300,7 @@ bool task_push_image_load(const char *fullpath, retro_task_callback_t cb, void *
    if (!nbio)
       goto error;
 
-   strlcpy(nbio->path, fullpath, sizeof(nbio->path));
+   nbio->path         = strdup(fullpath);
 
    if (video_driver_supports_rgba())
       BIT32_SET(nbio->status_flags, NBIO_FLAG_IMAGE_SUPPORTS_RGBA);
@@ -352,7 +356,12 @@ error:
    task_image_load_free(t);
    free(t);
    if (nbio)
+   {
+      if (nbio->path 
+            && !string_is_empty(nbio->path))
+         free(nbio->path);
       free(nbio);
+   }
 
 error_msg:
    RARCH_ERR("[image load] Failed to open '%s': %s.\n",

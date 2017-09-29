@@ -23,6 +23,7 @@
 #include <file/nbio.h>
 #include <audio/audio_mixer.h>
 #include <compat/strl.h>
+#include <string/stdstring.h>
 #include <retro_miscellaneous.h>
 
 #include "../audio/audio_driver.h"
@@ -52,6 +53,8 @@ static void task_audio_mixer_load_free(retro_task_t *task)
          free(image->buffer);
    }
 
+   if (nbio->path && !string_is_empty(nbio->path))
+      free(nbio->path);
    if (nbio->data)
       free(nbio->data);
    nbio_free(nbio->handle);
@@ -188,7 +191,7 @@ bool task_push_audio_mixer_load(const char *fullpath, retro_task_callback_t cb, 
    if (!nbio)
       goto error;
 
-   strlcpy(nbio->path, fullpath, sizeof(nbio->path));
+   nbio->path         = strdup(fullpath);
 
    image              = (struct audio_mixer_handle*)calloc(1, sizeof(*image));   
    if (!image)
@@ -239,6 +242,8 @@ bool task_push_audio_mixer_load(const char *fullpath, retro_task_callback_t cb, 
 error:
    if (nbio)
    {
+      if (nbio->path && !string_is_empty(nbio->path))
+         free(nbio->path);
       if (nbio->data)
          free(nbio->data);
       nbio_free(nbio->handle);
