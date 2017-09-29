@@ -119,17 +119,15 @@ struct autosave_st
 struct autosave
 {
    volatile bool quit;
-   slock_t *lock;
-
-   slock_t *cond_lock;
-   scond_t *cond;
-   sthread_t *thread;
-
+   size_t bufsize;
+   unsigned interval;
    void *buffer;
    const void *retro_buffer;
    const char *path;
-   size_t bufsize;
-   unsigned interval;
+   slock_t *lock;
+   slock_t *cond_lock;
+   scond_t *cond;
+   sthread_t *thread;
 };
 
 static struct autosave_st autosave_state;
@@ -213,15 +211,16 @@ static autosave_t *autosave_new(const char *path,
       const void *data, size_t size,
       unsigned interval)
 {
-   autosave_t *handle            = (autosave_t*)calloc(1, sizeof(*handle));
+   autosave_t *handle            = (autosave_t*)malloc(sizeof(*handle));
    if (!handle)
       goto error;
 
+   handle->quit                  = false;
    handle->bufsize               = size;
    handle->interval              = interval;
-   handle->path                  = path;
    handle->buffer                = malloc(size);
    handle->retro_buffer          = data;
+   handle->path                  = path;
 
    if (!handle->buffer)
       goto error;
@@ -231,7 +230,6 @@ static autosave_t *autosave_new(const char *path,
    handle->lock                  = slock_new();
    handle->cond_lock             = slock_new();
    handle->cond                  = scond_new();
-
    handle->thread                = sthread_create(autosave_thread, handle);
 
    return handle;
@@ -276,8 +274,10 @@ bool autosave_init(void)
    if (autosave_interval < 1 || !task_save_files)
       return false;
 
-   list = (autosave_t**)calloc(task_save_files->size,
-               sizeof(*autosave_state.list));
+   list                       = (autosave_t**)
+      calloc(task_save_files->size,
+            sizeof(*autosave_state.list));
+
    if (!list)
       return false;
 
