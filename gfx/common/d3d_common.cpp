@@ -46,14 +46,14 @@ bool d3d_swap(void *data, LPDIRECT3DDEVICE dev)
 void d3d_set_transform(LPDIRECT3DDEVICE dev,
       D3DTRANSFORMSTATETYPE state, CONST D3DMATRIX *matrix)
 {
-#ifdef _XBOX1
+#if defined(_XBOX1)
    D3DDevice_SetTransform(state, matrix);
 #elif !defined(_XBOX360)
    /* XBox 360 D3D9 does not support fixed-function pipeline. */
 
 #if defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DDevice9_SetTransform(dev, state, matrix);
-#if defined(HAVE_D3D8) && !defined(__cplusplus)
+#elif defined(HAVE_D3D8) && !defined(__cplusplus)
    IDirect3DDevice8_SetTransform(dev, state, matrix);
 #else
    dev->SetTransform(state, matrix);
@@ -105,7 +105,7 @@ void d3d_texture_free(LPDIRECT3DTEXTURE tex)
    {
 #if defined(HAVE_D3D9) && !defined(__cplusplus)
       IDirect3DTexture9_Release(tex);
-#if defined(HAVE_D3D8) && !defined(__cplusplus)
+#elif defined(HAVE_D3D8) && !defined(__cplusplus)
       IDirect3DTexture8_Release(tex);
 #else
       tex->Release();
@@ -217,7 +217,7 @@ void d3d_set_stream_source(LPDIRECT3DDEVICE dev, unsigned stream_no,
       unsigned stride)
 {
 	LPDIRECT3DVERTEXBUFFER stream_vertbuf = (LPDIRECT3DVERTEXBUFFER)stream_vertbuf_ptr;
-#elif defined(_XBOX360)
+#if defined(_XBOX360)
    D3DDevice_SetStreamSource_Inline(dev, stream_no, stream_vertbuf,
          offset_bytes, stride);
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
@@ -483,7 +483,7 @@ void d3d_set_render_state(void *data, D3DRENDERSTATETYPE state, DWORD value)
 
 #if defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DDevice9_SetRenderState(dev, state, value);
-#if defined(HAVE_D3D8) && !defined(__cplusplus)
+#elif defined(HAVE_D3D8) && !defined(__cplusplus)
    IDirect3DDevice8_SetRenderState(dev, state, value);
 #else
    dev->SetRenderState(state, value);
@@ -615,7 +615,7 @@ void d3d_device_free(LPDIRECT3DDEVICE dev, LPDIRECT3D pd3d)
    {
 #if defined(HAVE_D3D9) && !defined(__cplusplus)
       IDirect3DDevice9_Release(dev);
-#if defined(HAVE_D3D8) && !defined(__cplusplus)
+#elif defined(HAVE_D3D8) && !defined(__cplusplus)
       IDirect3DDevice8_Release(dev);
 #else
       dev->Release();
@@ -625,7 +625,7 @@ void d3d_device_free(LPDIRECT3DDEVICE dev, LPDIRECT3D pd3d)
    {
 #if defined(HAVE_D3D9) && !defined(__cplusplus)
       IDirect3D9_Release(pd3d);
-#if defined(HAVE_D3D8) && !defined(__cplusplus)
+#elif defined(HAVE_D3D8) && !defined(__cplusplus)
       IDirect3D8_Release(pd3d);
 #else
       pd3d->Release();
