@@ -120,7 +120,11 @@ bool d3d_vertex_declaration_new(LPDIRECT3DDEVICE dev,
    const D3DVERTEXELEMENT   *vertex_elements = (const D3DVERTEXELEMENT*)vertex_data;
    LPDIRECT3DVERTEXDECLARATION **vertex_decl = (LPDIRECT3DVERTEXDECLARATION**)decl_data;
 
+#if defined(__cplusplus)
    if (SUCCEEDED(dev->CreateVertexDeclaration(vertex_elements, (IDirect3DVertexDeclaration9**)vertex_decl)))
+#else
+   if (SUCCEEDED(IDirect3DDevice9_CreateVertexDeclaration(dev, vertex_elements, (IDirect3DVertexDeclaration9**)vertex_decl)))
+#endif
       return true;
 #endif
    return false;
@@ -134,13 +138,17 @@ LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(LPDIRECT3DDEVICE dev,
    LPDIRECT3DVERTEXBUFFER buf;
 
 #ifndef _XBOX
-#ifndef HAVE_D3D8
    if (usage == 0)
    {
+#if defined(HAVE_D3D9) && !defined(__cplusplus)
+	  if (IDirect3DDevice9_GetSoftwareVertexProcessing(dev))
+#elif defined(HAVE_D3D8) && !defined(__cplusplus)
+	  if (IDirect3DDevice8_GetSoftwareVertexProcessing(dev))
+#else
 	  if (dev->GetSoftwareVertexProcessing())
+#endif
          usage = D3DUSAGE_SOFTWAREPROCESSING;
    }
-#endif
 #endif
 
 #if defined(HAVE_D3D9) && !defined(__cplusplus)
@@ -183,6 +191,8 @@ void *d3d_vertex_buffer_lock(void *vertbuf_ptr)
    buf = (void*)D3DVertexBuffer_Lock2(vertbuf, 0);
 #elif defined(_XBOX360)
    buf = D3DVertexBuffer_Lock(vertbuf, 0, 0, 0);
+#elif defined(HAVE_D3D9) && !defined(__cplusplus)
+   IDirect3DVertexBuffer9_Lock(vertbuf, 0, sizeof(buf), &buf, 0);
 #else
    vertbuf->Lock(0, sizeof(buf), &buf, 0);
 #endif
@@ -198,7 +208,11 @@ void d3d_vertex_buffer_free(void *vertex_data, void *vertex_declaration)
    if (vertex_data)
    {
       LPDIRECT3DVERTEXBUFFER buf = (LPDIRECT3DVERTEXBUFFER)vertex_data;
+#if defined(HAVE_D3D9) && !defined(__cplusplus)
+      IDirect3DVertexBuffer9_Release(buf);
+#else
       buf->Release();
+#endif
       buf = NULL;
    }
 
@@ -206,7 +220,11 @@ void d3d_vertex_buffer_free(void *vertex_data, void *vertex_declaration)
    if (vertex_declaration)
    {
       LPDIRECT3DVERTEXDECLARATION vertex_decl = (LPDIRECT3DVERTEXDECLARATION)vertex_declaration;
+#if defined(HAVE_D3D9) && !defined(__cplusplus)
+      IDirect3DVertexDeclaration9_Release(vertex_decl);
+#else
       vertex_decl->Release();
+#endif
       vertex_decl = NULL;
    }
 #endif
