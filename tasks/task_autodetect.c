@@ -328,7 +328,7 @@ static void input_autoconfigure_params_free(autoconfig_params_t *params)
       free(params->name);
    if (params->driver 
          && !string_is_empty(params->driver))
-      free(params->name);
+      free(params->driver);
    if (params->display_name 
          && !string_is_empty(params->display_name))
       free(params->display_name);
