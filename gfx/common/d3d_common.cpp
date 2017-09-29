@@ -461,6 +461,9 @@ HRESULT d3d_set_vertex_shader(LPDIRECT3DDEVICE dev, unsigned index,
    return S_OK;
 #elif defined(HAVE_D3D8)
    return E_FAIL;
+#elif defined(HAVE_D3D9) && !defined(__cplusplus)
+   LPDIRECT3DVERTEXSHADER shader = (LPDIRECT3DVERTEXSHADER)data;
+   return IDirect3DDevice9_SetVertexShader(dev, shader);
 #else
    LPDIRECT3DVERTEXSHADER shader = (LPDIRECT3DVERTEXSHADER)data;
    return dev->SetVertexShader(shader);
