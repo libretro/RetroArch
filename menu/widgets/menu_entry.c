@@ -105,11 +105,11 @@ void menu_entry_init(menu_entry_t *entry)
    entry->spacing       = 0;
 }
 
-void menu_entry_get_path(menu_entry_t *entry, char *s, size_t len)
+char *menu_entry_get_path(menu_entry_t *entry)
 {
-   if (!entry)
-      return;
-   strlcpy(s, entry->path, len);
+   if (!entry || string_is_empty(entry->path))
+      return NULL;
+   return strdup(entry->path);
 }
 
 char *menu_entry_get_rich_label(menu_entry_t *entry)

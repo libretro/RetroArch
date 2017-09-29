@@ -59,7 +59,7 @@ typedef struct menu_entry
 
 enum menu_entry_type menu_entry_get_type(uint32_t i);
 
-void menu_entry_get_path(menu_entry_t *entry, char  *s, size_t len);
+char *menu_entry_get_path(menu_entry_t *entry);
 
 void menu_entry_get_label(menu_entry_t *entry, char *s, size_t len);
 

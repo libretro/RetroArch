@@ -592,7 +592,7 @@ static void xui_render(void *data, bool is_idle)
    for (i = 0; i < end; i++)
    {
       menu_entry_t entry;
-      char entry_path[PATH_MAX_LENGTH]     = {0};
+      char *entry_path                     = NULL;
       char entry_value[PATH_MAX_LENGTH]    = {0};
       wchar_t msg_right[PATH_MAX_LENGTH]   = {0};
       wchar_t msg_left[PATH_MAX_LENGTH]    = {0};
@@ -601,13 +601,15 @@ static void xui_render(void *data, bool is_idle)
       menu_entry_get(&entry, 0, i, NULL, true);
 
       menu_entry_get_value(&entry, entry_value, sizeof(entry_value));
-      menu_entry_get_path(&entry, entry_path, sizeof(entry_path));
+      entry_path = menu_entry_get_path(&entry);
 
       mbstowcs(msg_left,  entry_path,  sizeof(msg_left)  / sizeof(wchar_t));
       mbstowcs(msg_right, entry_value, sizeof(msg_right) / sizeof(wchar_t));
       xui_set_list_text(i, msg_left, msg_right);
 
       menu_entry_free(&entry);
+      if (entry_path && !string_is_empty(entry_path))
+         free(entry_path);
    }
 
    selection = menu_navigation_get_selection();
