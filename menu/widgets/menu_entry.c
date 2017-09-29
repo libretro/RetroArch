@@ -328,44 +328,50 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
 
       if (cbs->action_get_value && use_representation)
       {
-         entry->value = (char*)malloc(255 *
-               sizeof(char));
-         entry->value[0] = '\0';
+         char tmp[255];
+         tmp[0] = '\0';
+
          cbs->action_get_value(list,
                &entry->spacing, entry->type, (unsigned)i, label,
                entry->value,
                255 * sizeof(char), 
                entry_label, path,
-               newpath,
-               sizeof(newpath) 
+               tmp,
+               sizeof(tmp) 
                );
+
+         if (!string_is_empty(tmp))
+            entry->value = strdup(tmp);
       }
 
       if (cbs->action_label)
       {
-         char richlabeltmp[255];
-         richlabeltmp[0] = '\0';
+         char tmp[255];
+         tmp[0] = '\0';
 
          cbs->action_label(list,
                entry->type, (unsigned)i,
                label, path, 
-               richlabeltmp,
-               sizeof(richlabeltmp));
+               tmp,
+               sizeof(tmp));
 
-         if (!string_is_empty(richlabeltmp))
-            entry->rich_label = strdup(richlabeltmp);
+         if (!string_is_empty(tmp))
+            entry->rich_label = strdup(tmp);
       }
 
       if (cbs->action_sublabel)
       {
-         entry->sublabel = (char*)malloc(255 *
-               sizeof(char));
-         entry->sublabel[0] = '\0';
+         char tmp[255];
+         tmp[0] = '\0';
+
          cbs->action_sublabel(list,
                entry->type, (unsigned)i,
                label, path, 
-               entry->sublabel,
-               255 * sizeof(char));
+               tmp,
+               sizeof(tmp));
+
+         if (!string_is_empty(tmp))
+            entry->sublabel = strdup(tmp);
       }
    }
 
