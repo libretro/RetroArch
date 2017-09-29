@@ -2487,7 +2487,7 @@ static void xmb_draw_items(
    menu_display_ctx_rotate_draw_t rotate_draw;
    xmb_node_t *core_node       = NULL;
    size_t end                  = 0;
-   uint64_t frame_count        = xmb->frame_count;
+   uint64_t frame_count        = xmb ? xmb->frame_count : 0;
    const char *thumb_ident     = xmb_thumbnails_ident();
 
    if (!list || !list->size)
