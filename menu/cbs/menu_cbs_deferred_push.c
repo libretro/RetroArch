@@ -735,7 +735,8 @@ static int general_push(menu_displaylist_info_t *info,
          break;
       case PUSH_DEFAULT:
          {
-            char *new_exts = NULL;
+            bool new_exts_allocated = false;
+            char *new_exts          = NULL;
 
             if (menu_setting_get_browser_selection_type(info->setting) == ST_DIR)
             {
@@ -743,12 +744,18 @@ static int general_push(menu_displaylist_info_t *info,
             else if (system_menu && system_menu->valid_extensions)
             {
                if (*system_menu->valid_extensions)
-                  new_exts = strdup(system_menu->valid_extensions);
+               {
+                  new_exts           = strdup(system_menu->valid_extensions);
+                  new_exts_allocated = true;
+               }
             }
             else
             {
                if (!string_is_empty(system->valid_extensions))
-                  new_exts = strdup(system->valid_extensions);
+               {
+                  new_exts           = strdup(system->valid_extensions);
+                  new_exts_allocated = true;
+               }
             }
 
             if (!new_exts)
@@ -770,7 +777,11 @@ static int general_push(menu_displaylist_info_t *info,
                string_list_join_concat(newstring2, path_size,
                      str_list3, "|");
                string_list_free(str_list3);
+
             }
+
+            if (new_exts_allocated)
+               free(new_exts);
          }
          break;
       case PUSH_ARCHIVE_OPEN_DETECT_CORE:

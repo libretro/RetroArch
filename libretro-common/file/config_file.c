@@ -242,11 +242,9 @@ static void add_sub_conf(config_file_t *conf, char *path)
    struct config_include_list *head = conf->includes;
    struct config_include_list *node = (struct config_include_list*)malloc(sizeof(*node));
 
-   node->path                       = NULL;
-   node->next                       = NULL;
-
    if (node)
    {
+      node->next = NULL;
       /* Add include list */
       node->path = strdup(path);
 
