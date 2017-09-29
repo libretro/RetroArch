@@ -2240,6 +2240,239 @@ static void xmb_calculate_visible_range(const xmb_handle_t *xmb,
    }
 }
 
+static int xmb_draw_item(
+      menu_display_frame_info_t menu_disp_info,
+      math_matrix_4x4 *mymat,
+      xmb_handle_t *xmb,
+      xmb_node_t *core_node,
+      file_list_t *list,
+      float *color,
+      const char *thumb_ident,
+      uint64_t frame_count,
+      size_t i,
+      size_t current,
+      unsigned width,
+      unsigned height
+      )
+{
+   float icon_x, icon_y, label_offset;
+   menu_animation_ctx_ticker_t ticker;
+   char ticker_str[PATH_MAX_LENGTH];
+   char tmp[255];
+   menu_entry_t entry;
+   unsigned entry_type               = 0;
+   const float half_size             = xmb->icon_size / 2.0f;
+   uintptr_t texture_switch          = 0;
+   bool do_draw_text                 = false;
+   unsigned ticker_limit             = 35;
+   xmb_node_t *   node               = (xmb_node_t*)
+      menu_entries_get_userdata_at_offset(list, i);
+
+   if (!node)
+      return 0;
+
+   ticker_str[0] = tmp[0] = '\0';
+
+   menu_entry_init(&entry);
+
+   icon_y = xmb->margins_screen_top + node->y + half_size;
+
+   if (icon_y < half_size)
+      return 0;
+
+   if (icon_y > height + xmb->icon_size)
+      return -1;
+
+   icon_x = node->x + xmb->margins_screen_left +
+      xmb->icon_spacing_horizontal - half_size;
+
+   if (icon_x < -half_size || icon_x > width)
+      return 0;
+
+   menu_entry_get(&entry, 0, i, list, true);
+   entry_type = menu_entry_get_type_new(&entry);
+
+   if (entry_type == FILE_TYPE_CONTENTLIST_ENTRY)
+      fill_short_pathname_representation(entry.path, entry.path,
+            sizeof(entry.path));
+
+   if (string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) ||
+         (string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))))
+   {
+      if (xmb->textures.list[XMB_TEXTURE_SWITCH_OFF])
+         texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_OFF];
+      else
+         do_draw_text = true;
+   }
+   else if (string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)) ||
+         (string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))))
+   {
+      if (xmb->textures.list[XMB_TEXTURE_SWITCH_ON])
+         texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_ON];
+      else
+         do_draw_text = true;
+   }
+   else
+   {
+      enum msg_file_type type = msg_hash_to_file_type(msg_hash_calculate(entry.value));
+
+      switch (type)
+      {
+         case FILE_TYPE_IN_CARCHIVE:
+         case FILE_TYPE_COMPRESSED:
+         case FILE_TYPE_MORE:
+         case FILE_TYPE_CORE:
+         case FILE_TYPE_DIRECT_LOAD:
+         case FILE_TYPE_RDB:
+         case FILE_TYPE_CURSOR:
+         case FILE_TYPE_PLAIN:
+         case FILE_TYPE_DIRECTORY:
+         case FILE_TYPE_MUSIC:
+         case FILE_TYPE_IMAGE:
+         case FILE_TYPE_MOVIE:
+            break;
+         default:
+            do_draw_text = true;
+            break;
+      }
+   }
+
+   if (string_is_empty(entry.value))
+   {
+      if (xmb->savestate_thumbnail ||
+            (!string_is_equal
+             (thumb_ident,
+              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))
+             && xmb->thumbnail)
+         )
+         ticker_limit = 40;
+      else
+         ticker_limit = 70;
+   }
+
+   menu_entry_get_rich_label(&entry, ticker_str, sizeof(ticker_str));
+
+   ticker.s        = tmp;
+   ticker.len      = ticker_limit;
+   ticker.idx      = frame_count / 20;
+   ticker.str      = ticker_str;
+   ticker.selected = (i == current);
+
+   menu_animation_ticker(&ticker);
+
+   label_offset = xmb->margins_label_top;
+   if (i == current && width > 320 && height > 240
+         && !string_is_empty(entry.sublabel))
+   {
+      char entry_sublabel[255];
+
+      entry_sublabel[0] = '\0';
+
+      label_offset      = - xmb->margins_label_top;
+
+      word_wrap(entry_sublabel, entry.sublabel, 50, true);
+
+      xmb_draw_text(menu_disp_info, xmb, entry_sublabel,
+            node->x + xmb->margins_screen_left +
+            xmb->icon_spacing_horizontal + xmb->margins_label_left,
+            xmb->margins_screen_top + node->y + xmb->margins_label_top*3.5,
+            1, node->label_alpha, TEXT_ALIGN_LEFT,
+            width, height, xmb->font2);
+   }
+
+   xmb_draw_text(menu_disp_info, xmb, tmp,
+         node->x + xmb->margins_screen_left +
+         xmb->icon_spacing_horizontal + xmb->margins_label_left,
+         xmb->margins_screen_top + node->y + label_offset,
+         1, node->label_alpha, TEXT_ALIGN_LEFT,
+         width, height, xmb->font);
+
+   tmp[0] = '\0';
+
+   ticker.s        = tmp;
+   ticker.len      = 35;
+   ticker.idx      = frame_count / 20;
+   ticker.str      = entry.value;
+   ticker.selected = (i == current);
+
+   menu_animation_ticker(&ticker);
+
+   if (do_draw_text)
+      xmb_draw_text(menu_disp_info, xmb, tmp,
+            node->x +
+            + xmb->margins_screen_left
+            + xmb->icon_spacing_horizontal
+            + xmb->margins_label_left
+            + xmb->margins_setting_left,
+            xmb->margins_screen_top + node->y + xmb->margins_label_top,
+            1,
+            node->label_alpha,
+            TEXT_ALIGN_LEFT,
+            width, height, xmb->font);
+
+
+   menu_display_set_alpha(color, MIN(node->alpha, xmb->alpha));
+
+   if (color[3] != 0)
+   {
+      math_matrix_4x4 mymat_tmp;
+      menu_display_ctx_rotate_draw_t rotate_draw;
+      uintptr_t texture        = xmb_icon_get_id(xmb, core_node, node,
+            entry.enum_idx, entry_type, (i == current));
+      float x                  = icon_x;
+      float y                  = icon_y;
+      float rotation           = 0;
+      float scale_factor       = node->zoom;
+
+      rotate_draw.matrix       = &mymat_tmp;
+      rotate_draw.rotation     = rotation;
+      rotate_draw.scale_x      = scale_factor;
+      rotate_draw.scale_y      = scale_factor;
+      rotate_draw.scale_z      = 1;
+      rotate_draw.scale_enable = true;
+
+      menu_display_rotate_z(&rotate_draw);
+
+      xmb_draw_icon(
+            menu_disp_info,
+            xmb->icon_size,
+            &mymat_tmp,
+            texture,
+            x,
+            y,
+            width,
+            height,
+            1.0,
+            rotation,
+            scale_factor,
+            &color[0],
+            xmb->shadow_offset);
+   }
+
+   menu_display_set_alpha(color, MIN(node->alpha, xmb->alpha));
+
+   if (texture_switch != 0 && color[3] != 0)
+      xmb_draw_icon(
+            menu_disp_info,
+            xmb->icon_size,
+            mymat,
+            texture_switch,
+            node->x + xmb->margins_screen_left
+            + xmb->icon_spacing_horizontal
+            + xmb->icon_size / 2.0 + xmb->margins_setting_left,
+            xmb->margins_screen_top + node->y + xmb->icon_size / 2.0,
+            width, height,
+            node->alpha,
+            0,
+            1,
+            &color[0],
+            xmb->shadow_offset);
+
+   menu_entry_free(&entry);
+
+   return 0;
+}
+
 static void xmb_draw_items(
       video_frame_info_t *video_info,
       menu_display_frame_info_t menu_disp_info,
@@ -2297,220 +2530,15 @@ static void xmb_draw_items(
 
    for (i = first; i <= last; i++)
    {
-      float icon_x, icon_y, label_offset;
-      menu_animation_ctx_ticker_t ticker;
-      char ticker_str[PATH_MAX_LENGTH];
-      char tmp[255];
-      menu_entry_t entry;
-      unsigned entry_type               = 0;
-      const float half_size             = xmb->icon_size / 2.0f;
-      uintptr_t texture_switch          = 0;
-      bool do_draw_text                 = false;
-      unsigned ticker_limit             = 35;
-      xmb_node_t *   node               = (xmb_node_t*)
-         menu_entries_get_userdata_at_offset(list, i);
-
-      if (!node)
-         continue;
-
-      ticker_str[0] = tmp[0] = '\0';
-
-      menu_entry_init(&entry);
-
-      icon_y = xmb->margins_screen_top + node->y + half_size;
-
-      if (icon_y < half_size)
-         continue;
-
-      if (icon_y > height + xmb->icon_size)
+      int ret = xmb_draw_item(menu_disp_info,
+            &mymat,
+            xmb, core_node,
+            list, color, thumb_ident,
+            frame_count,
+            i, current,
+            width, height);
+      if (ret == -1)
          break;
-
-      icon_x = node->x + xmb->margins_screen_left +
-         xmb->icon_spacing_horizontal - half_size;
-
-      if (icon_x < -half_size || icon_x > width)
-         continue;
-
-      menu_entry_get(&entry, 0, i, list, true);
-      entry_type = menu_entry_get_type_new(&entry);
-
-      if (entry_type == FILE_TYPE_CONTENTLIST_ENTRY)
-         fill_short_pathname_representation(entry.path, entry.path,
-               sizeof(entry.path));
-
-      if (string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) ||
-         (string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))))
-      {
-         if (xmb->textures.list[XMB_TEXTURE_SWITCH_OFF])
-            texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_OFF];
-         else
-            do_draw_text = true;
-      }
-      else if (string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)) ||
-            (string_is_equal(entry.value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))))
-      {
-         if (xmb->textures.list[XMB_TEXTURE_SWITCH_ON])
-            texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_ON];
-         else
-            do_draw_text = true;
-      }
-      else
-      {
-         enum msg_file_type type = msg_hash_to_file_type(msg_hash_calculate(entry.value));
-
-         switch (type)
-         {
-            case FILE_TYPE_IN_CARCHIVE:
-            case FILE_TYPE_COMPRESSED:
-            case FILE_TYPE_MORE:
-            case FILE_TYPE_CORE:
-            case FILE_TYPE_DIRECT_LOAD:
-            case FILE_TYPE_RDB:
-            case FILE_TYPE_CURSOR:
-            case FILE_TYPE_PLAIN:
-            case FILE_TYPE_DIRECTORY:
-            case FILE_TYPE_MUSIC:
-            case FILE_TYPE_IMAGE:
-            case FILE_TYPE_MOVIE:
-               break;
-            default:
-               do_draw_text = true;
-               break;
-         }
-      }
-
-      if (string_is_empty(entry.value))
-      {
-         if (xmb->savestate_thumbnail ||
-               (!string_is_equal
-                (thumb_ident,
-                 msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))
-                && xmb->thumbnail)
-            )
-            ticker_limit = 40;
-         else
-            ticker_limit = 70;
-      }
-
-      menu_entry_get_rich_label(&entry, ticker_str, sizeof(ticker_str));
-
-      ticker.s        = tmp;
-      ticker.len      = ticker_limit;
-      ticker.idx      = frame_count / 20;
-      ticker.str      = ticker_str;
-      ticker.selected = (i == current);
-
-      menu_animation_ticker(&ticker);
-
-      label_offset = xmb->margins_label_top;
-      if (i == current && width > 320 && height > 240
-         && !string_is_empty(entry.sublabel))
-      {
-         char entry_sublabel[255];
-
-         entry_sublabel[0] = '\0';
-
-         label_offset      = - xmb->margins_label_top;
-
-         word_wrap(entry_sublabel, entry.sublabel, 50, true);
-
-         xmb_draw_text(menu_disp_info, xmb, entry_sublabel,
-               node->x + xmb->margins_screen_left +
-               xmb->icon_spacing_horizontal + xmb->margins_label_left,
-               xmb->margins_screen_top + node->y + xmb->margins_label_top*3.5,
-               1, node->label_alpha, TEXT_ALIGN_LEFT,
-               width, height, xmb->font2);
-      }
-
-      xmb_draw_text(menu_disp_info, xmb, tmp,
-            node->x + xmb->margins_screen_left +
-            xmb->icon_spacing_horizontal + xmb->margins_label_left,
-            xmb->margins_screen_top + node->y + label_offset,
-            1, node->label_alpha, TEXT_ALIGN_LEFT,
-            width, height, xmb->font);
-
-      tmp[0] = '\0';
-
-      ticker.s        = tmp;
-      ticker.len      = 35;
-      ticker.idx      = frame_count / 20;
-      ticker.str      = entry.value;
-      ticker.selected = (i == current);
-
-      menu_animation_ticker(&ticker);
-
-      if (do_draw_text)
-         xmb_draw_text(menu_disp_info, xmb, tmp,
-               node->x +
-               + xmb->margins_screen_left
-               + xmb->icon_spacing_horizontal
-               + xmb->margins_label_left
-               + xmb->margins_setting_left,
-               xmb->margins_screen_top + node->y + xmb->margins_label_top,
-               1,
-               node->label_alpha,
-               TEXT_ALIGN_LEFT,
-               width, height, xmb->font);
-
-
-      menu_display_set_alpha(color, MIN(node->alpha, xmb->alpha));
-
-      if (color[3] != 0)
-      {
-         math_matrix_4x4 mymat;
-         menu_display_ctx_rotate_draw_t rotate_draw;
-         uintptr_t texture        = xmb_icon_get_id(xmb, core_node, node,
-                                    entry.enum_idx, entry_type, (i == current));
-         float x                  = icon_x;
-         float y                  = icon_y;
-         float rotation           = 0;
-         float scale_factor       = node->zoom;
-
-         rotate_draw.matrix       = &mymat;
-         rotate_draw.rotation     = rotation;
-         rotate_draw.scale_x      = scale_factor;
-         rotate_draw.scale_y      = scale_factor;
-         rotate_draw.scale_z      = 1;
-         rotate_draw.scale_enable = true;
-
-         menu_display_rotate_z(&rotate_draw);
-
-         xmb_draw_icon(
-               menu_disp_info,
-               xmb->icon_size,
-               &mymat,
-               texture,
-               x,
-               y,
-               width,
-               height,
-               1.0,
-               rotation,
-               scale_factor,
-               &color[0],
-               xmb->shadow_offset);
-      }
-
-      menu_display_set_alpha(color, MIN(node->alpha, xmb->alpha));
-
-      if (texture_switch != 0 && color[3] != 0)
-         xmb_draw_icon(
-               menu_disp_info,
-               xmb->icon_size,
-               &mymat,
-               texture_switch,
-               node->x + xmb->margins_screen_left
-               + xmb->icon_spacing_horizontal
-               + xmb->icon_size / 2.0 + xmb->margins_setting_left,
-               xmb->margins_screen_top + node->y + xmb->icon_size / 2.0,
-               width, height,
-               node->alpha,
-               0,
-               1,
-               &color[0],
-               xmb->shadow_offset);
-
-      menu_entry_free(&entry);
    }
 
    menu_display_blend_end();
