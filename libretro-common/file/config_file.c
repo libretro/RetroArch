@@ -908,6 +908,7 @@ bool config_file_write(config_file_t *conf, const char *path)
       if (!file)
          return false;
 #ifdef WIIU
+      /* TODO: use FBF everywhere once https://i.imgur.com/muVhNeF.jpg is fixed */
       setvbuf(file, NULL, _IONBF, 0x4000);
 #else
       setvbuf(file, NULL, _IOFBF, 0x4000);
