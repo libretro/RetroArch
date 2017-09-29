@@ -168,7 +168,7 @@ typedef struct mui_handle
 
    uint64_t frame_count;
 
-   char box_message[1024];
+   char *box_message;
 
    struct
    {
@@ -572,7 +572,10 @@ static void mui_get_message(void *data, const char *message)
    if (!mui || !message || !*message)
       return;
 
-   strlcpy(mui->box_message, message, sizeof(mui->box_message));
+   if (mui->box_message && 
+         !string_is_empty(mui->box_message))
+      free(mui->box_message);
+   mui->box_message = strdup(message);
 }
 
 /* Draw the modal */
@@ -1615,14 +1618,15 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
                msg, &body_bg_color[0], font_hover_color);
    }
 
-   if (!string_is_empty(mui->box_message))
+   if (mui->box_message && !string_is_empty(mui->box_message))
    {
       menu_display_draw_quad(0, 0, width, height, width, height, &black_bg[0]);
 
       mui_render_messagebox(mui, video_info,
                mui->box_message, &body_bg_color[0], font_hover_color);
       
-      mui->box_message[0] = '\0';
+      free(mui->box_message);
+      mui->box_message    = NULL;
    }
 
    if (mui->mouse_show)
