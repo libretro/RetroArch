@@ -685,6 +685,7 @@ static void mui_compute_entries_box(mui_handle_t* mui, int width)
          texture_switch2 = node->texture_switch2;
 
       sublabel_str = menu_entry_get_sublabel(&entry);
+      menu_entry_free(&entry);
 
       if (sublabel_str)
       {
