@@ -2293,8 +2293,6 @@ static int xmb_draw_item(
 
    tmp[0] = '\0';
 
-   menu_entry_init(entry);
-
    icon_y = xmb->margins_screen_top + node->y + half_size;
 
    if (icon_y < half_size)
@@ -2309,7 +2307,6 @@ static int xmb_draw_item(
    if (icon_x < -half_size || icon_x > width)
       goto iterate;
 
-   menu_entry_get(entry, 0, i, list, true);
    entry_type = menu_entry_get_type_new(entry);
 
    if (entry_type == FILE_TYPE_CONTENTLIST_ENTRY)
@@ -2556,8 +2553,11 @@ static void xmb_draw_items(
 
    for (i = first; i <= last; i++)
    {
+      int ret;
       menu_entry_t entry;
-      int ret = xmb_draw_item(menu_disp_info,
+      menu_entry_init(&entry);
+      menu_entry_get(&entry, 0, i, list, true);
+      ret = xmb_draw_item(menu_disp_info,
             &entry,
             &mymat,
             xmb, core_node,
