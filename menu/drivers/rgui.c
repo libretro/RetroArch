@@ -59,7 +59,7 @@ typedef struct
    unsigned last_height;
    unsigned frame_count;
    float scroll_y;
-   char msgbox[4096];
+   char *msgbox;
 } rgui_t;
 
 static uint16_t *rgui_framebuf_data      = NULL;
@@ -270,7 +270,10 @@ static void rgui_set_message(void *data, const char *message)
    if (!rgui || !message || !*message)
       return;
 
-   strlcpy(rgui->msgbox, message, sizeof(rgui->msgbox));
+   if (rgui->msgbox && 
+         !string_is_empty(rgui->msgbox))
+      free(rgui->msgbox);
+   rgui->msgbox       = strdup(message);
    rgui->force_redraw = true;
 }
 
@@ -635,10 +638,11 @@ static void rgui_render(void *data, bool is_idle)
       rgui_render_messagebox(msg);
    }
 
-   if (!string_is_empty(rgui->msgbox))
+   if (rgui->msgbox && !string_is_empty(rgui->msgbox))
    {
       rgui_render_messagebox(rgui->msgbox);
-      rgui->msgbox[0]    = '\0';
+      free(rgui->msgbox);
+      rgui->msgbox       = NULL;
       rgui->force_redraw = true;
    }
 
