@@ -310,8 +310,7 @@ static bool input_autoconfigure_joypad_from_conf_internal(
          return true;
    }
 
-   if (!params->autoconfig_directory ||
-         string_is_empty(params->autoconfig_directory))
+   if (string_is_empty(params->autoconfig_directory))
       return true;
    return false;
 }
