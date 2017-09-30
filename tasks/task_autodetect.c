@@ -242,7 +242,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
    {
       if (list)
          string_list_free(list);
-      if (!string_is_empty(params->autoconfig_directory))
+      if (params && !string_is_empty(params->autoconfig_directory))
          list = dir_list_new_special(params->autoconfig_directory,
                DIR_LIST_AUTOCONFIG, "cfg");
    }
@@ -341,6 +341,8 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
 
       msg[0] = '\0';
 #ifdef ANDROID
+      if (!string_is_empty(params->name))
+         free(params->name);
       params->name = strdup("Android Gamepad");
 
       if(input_autoconfigure_joypad_from_conf_internal(params, task))
@@ -494,7 +496,8 @@ bool input_autoconfigure_connect(
    state->max_users               = *(
          input_driver_get_uint(INPUT_ACTION_MAX_USERS));
 
-   input_config_set_device_name(state->idx, state->name);
+   if (!string_is_empty(state->name))
+         input_config_set_device_name(state->idx, state->name);
    input_config_set_pid(state->idx, state->pid);
    input_config_set_vid(state->idx, state->vid);
 
