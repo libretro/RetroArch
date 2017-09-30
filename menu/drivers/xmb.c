@@ -926,10 +926,11 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
    char            *tmp_new = (char*)
       malloc(PATH_MAX_LENGTH * sizeof(char));
 
+   menu_entry_init(&entry);
+
    if (!xmb)
       goto end;
 
-   menu_entry_init(&entry);
    menu_entry_get(&entry, 0, i, NULL, true);
 
    entry_type = menu_entry_get_type_new(&entry);
