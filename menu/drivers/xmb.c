@@ -1039,35 +1039,38 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
    if (!string_is_empty(xmb->savestate_thumbnail_file_path))
       free(xmb->savestate_thumbnail_file_path);
 
-   if (     (settings->bools.savestate_thumbnail_enable)
-         && ((string_is_equal_fast(entry.label, "state_slot", 10))
-         || (string_is_equal_fast(entry.label, "loadstate", 9))
-         || (string_is_equal_fast(entry.label, "savestate", 9))))
+   if (!string_is_empty(entry.label))
    {
-      size_t path_size         = 8024 * sizeof(char);
-      char             *path   = (char*)malloc(8204 * sizeof(char));
-      global_t         *global = global_get_ptr();
-
-      path[0] = '\0';
-
-      if (global)
+      if (     (settings->bools.savestate_thumbnail_enable)
+            && ((string_is_equal_fast(entry.label, "state_slot", 10))
+               || (string_is_equal_fast(entry.label, "loadstate", 9))
+               || (string_is_equal_fast(entry.label, "savestate", 9))))
       {
-         if (settings->ints.state_slot > 0)
-            snprintf(path, path_size, "%s%d",
-                  global->name.savestate, settings->ints.state_slot);
-         else if (settings->ints.state_slot < 0)
-            fill_pathname_join_delim(path,
-                  global->name.savestate, "auto", '.', path_size);
-         else
-            strlcpy(path, global->name.savestate, path_size);
+         size_t path_size         = 8024 * sizeof(char);
+         char             *path   = (char*)malloc(8204 * sizeof(char));
+         global_t         *global = global_get_ptr();
+
+         path[0] = '\0';
+
+         if (global)
+         {
+            if (settings->ints.state_slot > 0)
+               snprintf(path, path_size, "%s%d",
+                     global->name.savestate, settings->ints.state_slot);
+            else if (settings->ints.state_slot < 0)
+               fill_pathname_join_delim(path,
+                     global->name.savestate, "auto", '.', path_size);
+            else
+               strlcpy(path, global->name.savestate, path_size);
+         }
+
+         strlcat(path, file_path_str(FILE_PATH_PNG_EXTENSION), path_size);
+
+         if (path_file_exists(path))
+            xmb->savestate_thumbnail_file_path = strdup(path);
+
+         free(path);
       }
-
-      strlcat(path, file_path_str(FILE_PATH_PNG_EXTENSION), path_size);
-
-      if (path_file_exists(path))
-         xmb->savestate_thumbnail_file_path = strdup(path);
-
-      free(path);
    }
 
    menu_entry_free(&entry);
