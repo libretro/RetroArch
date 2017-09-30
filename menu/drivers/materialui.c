@@ -572,8 +572,7 @@ static void mui_get_message(void *data, const char *message)
    if (!mui || !message || !*message)
       return;
 
-   if (mui->box_message && 
-         !string_is_empty(mui->box_message))
+   if (!string_is_empty(mui->box_message))
       free(mui->box_message);
    mui->box_message = strdup(message);
 }
@@ -1052,7 +1051,7 @@ static void mui_render_menu_list(
          sublabel_color
       );
 
-      if (rich_label && !string_is_empty(rich_label))
+      if (!string_is_empty(rich_label))
          free(rich_label);
 
       menu_entry_free(&entry);
@@ -1619,7 +1618,7 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
                msg, &body_bg_color[0], font_hover_color);
    }
 
-   if (mui->box_message && !string_is_empty(mui->box_message))
+   if (!string_is_empty(mui->box_message))
    {
       menu_display_draw_quad(0, 0, width, height, width, height, &black_bg[0]);
 
