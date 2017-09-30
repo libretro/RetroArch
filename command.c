@@ -538,8 +538,6 @@ bool command_network_send(const char *cmd_)
 #endif
 }
 
-
-
 #ifdef HAVE_STDIN_CMD
 static bool command_stdin_init(command_t *handle)
 {
@@ -597,22 +595,20 @@ error:
 #ifdef HAVE_STDIN_CMD
 static void command_stdin_poll(command_t *handle)
 {
-   ssize_t ret;
    ptrdiff_t msg_len;
    char *last_newline = NULL;
-
-   if (!handle->stdin_enable)
-      return;
-
-   ret = read_stdin(handle->stdin_buf + handle->stdin_buf_ptr,
+   ssize_t        ret = read_stdin(
+         handle->stdin_buf + handle->stdin_buf_ptr,
          STDIN_BUF_SIZE - handle->stdin_buf_ptr - 1);
+
    if (ret == 0)
       return;
 
-   handle->stdin_buf_ptr += ret;
-   handle->stdin_buf[handle->stdin_buf_ptr] = '\0';
+   handle->stdin_buf_ptr                    += ret;
+   handle->stdin_buf[handle->stdin_buf_ptr]  = '\0';
 
-   last_newline = strrchr(handle->stdin_buf, '\n');
+   last_newline                              = 
+      strrchr(handle->stdin_buf, '\n');
 
    if (!last_newline)
    {
@@ -621,14 +617,14 @@ static void command_stdin_poll(command_t *handle)
       if (handle->stdin_buf_ptr + 1 >= STDIN_BUF_SIZE)
       {
          handle->stdin_buf_ptr = 0;
-         handle->stdin_buf[0] = '\0';
+         handle->stdin_buf[0]  = '\0';
       }
 
       return;
    }
 
    *last_newline++ = '\0';
-   msg_len = last_newline - handle->stdin_buf;
+   msg_len         = last_newline - handle->stdin_buf;
 
    command_parse_msg(handle, handle->stdin_buf, CMD_STDIN);
 
@@ -645,7 +641,8 @@ bool command_poll(command_t *handle)
 #endif
 
 #ifdef HAVE_STDIN_CMD
-   command_stdin_poll(handle);
+   if (handle->stdin_enable)
+      command_stdin_poll(handle);
 #endif
 
    return true;
