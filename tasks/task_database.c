@@ -807,8 +807,7 @@ static int database_info_list_iterate_found_match(
          file_path_str(FILE_PATH_LPL_EXTENSION),
          PATH_MAX_LENGTH * sizeof(char));
 
-   if (_db->playlist_directory &&
-         !string_is_empty(_db->playlist_directory))
+   if (!string_is_empty(_db->playlist_directory))
       fill_pathname_join(db_playlist_path, _db->playlist_directory,
             db_playlist_base_str, PATH_MAX_LENGTH * sizeof(char));
 
@@ -979,8 +978,7 @@ static int task_database_iterate_playlist_lutro(
 
    db_playlist_path[0]     = '\0';
 
-   if (_db->playlist_directory &&
-         !string_is_empty(_db->playlist_directory))
+   if (!string_is_empty(_db->playlist_directory))
       fill_pathname_join(db_playlist_path,
             _db->playlist_directory,
             file_path_str(FILE_PATH_LUTRO_PLAYLIST),
@@ -1143,7 +1141,7 @@ static void task_database_handler(retro_task_t *task)
    {
       db->scan_started = true;
 
-      if (db->fullpath && !string_is_empty(db->fullpath))
+      if (!string_is_empty(db->fullpath))
       {
          if (db->is_directory)
             db->handle = database_info_dir_init(db->fullpath, DATABASE_TYPE_ITERATE, task);
@@ -1168,8 +1166,7 @@ static void task_database_handler(retro_task_t *task)
       case DATABASE_STATUS_ITERATE_BEGIN:
          if (dbstate && !dbstate->list)
          {
-            if (db->content_database_path &&
-                  !string_is_empty(db->content_database_path))
+            if (!string_is_empty(db->content_database_path))
                dbstate->list        = dir_list_new_special(
                      db->content_database_path,
                      DIR_LIST_DATABASES, NULL);
@@ -1181,8 +1178,7 @@ static void task_database_handler(retro_task_t *task)
                size_t i;
                char *dirname = NULL;
                
-               if (db->fullpath &&
-                     !string_is_empty(db->fullpath))
+               if (!string_is_empty(db->fullpath))
                   dirname    = find_last_slash(db->fullpath) + 1;
 
                for (i = 0; i < dbstate->list->size; i++)
@@ -1260,14 +1256,11 @@ task_finished:
 
    if (db)
    {
-      if (db->playlist_directory &&
-            !string_is_empty(db->playlist_directory))
+      if (!string_is_empty(db->playlist_directory))
          free(db->playlist_directory);
-      if (db->content_database_path &&
-            !string_is_empty(db->content_database_path))
+      if (!string_is_empty(db->content_database_path))
          free(db->content_database_path);
-      if (db->fullpath &&
-            !string_is_empty(db->fullpath))
+      if (!string_is_empty(db->fullpath))
          free(db->fullpath);
       if (db->state.buf)
          free(db->state.buf);
