@@ -401,14 +401,13 @@ bool input_autoconfigure_disconnect(unsigned i, const char *ident)
 {
    char msg[255];
    retro_task_t         *task      = (retro_task_t*)calloc(1, sizeof(*task));
-   autoconfig_disconnect_t *state  = (autoconfig_disconnect_t*)malloc(sizeof(*state));
+   autoconfig_disconnect_t *state  = (autoconfig_disconnect_t*)calloc(1, sizeof(*state));
 
    if (!state || !task)
       goto error;
 
    msg[0]      = '\0';
 
-   state->msg  = NULL;
    state->idx  = i;
 
    snprintf(msg, sizeof(msg), "%s #%u (%s).", 
