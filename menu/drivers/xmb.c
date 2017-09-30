@@ -1153,11 +1153,11 @@ static void xmb_selection_pointer_changed(
    const char *thumb_ident    = xmb_thumbnails_ident();
 
    menu_entries_ctl(MENU_ENTRIES_CTL_LIST_GET, &menu_list);
+   menu_entry_init(&entry);
 
    if (!xmb)
       goto end;
 
-   menu_entry_init(&entry);
    menu_entry_get(&entry, 0, selection, NULL, true);
 
    end       = (unsigned)menu_entries_get_end();
