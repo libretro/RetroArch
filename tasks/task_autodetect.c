@@ -131,6 +131,7 @@ static int input_autoconfigure_joypad_try_from_conf(config_file_t *conf,
 
    /* Check for name match */
    if (!string_is_empty(params->name)
+         && !string_is_empty(ident)
          && string_is_equal(ident, params->name))
       score += 2;
 
@@ -165,7 +166,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
 
       snprintf(msg, sizeof(msg), "%s configured.",
             (string_is_empty(display_name) &&
-             !string_is_empty(params->name)) ? params->name : display_name);
+             !string_is_empty(params->name)) ? params->name : (!string_is_empty(display_name) ? display_name : "N/A"));
 
       if(!remote_is_bound)
       {
@@ -182,7 +183,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
       snprintf(msg, sizeof(msg), "%s %s #%u.",
             (string_is_empty(display_name) &&
              !string_is_empty(params->name)) 
-            ? params->name : display_name,
+            ? params->name : (!string_is_empty(display_name) ? display_name : "N/A"),
             msg_hash_to_str(MSG_DEVICE_CONFIGURED_IN_PORT),
             params->idx);
 
