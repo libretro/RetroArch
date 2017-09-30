@@ -135,7 +135,7 @@ char *menu_entry_get_sublabel(menu_entry_t *entry)
 
 void menu_entry_get_label(menu_entry_t *entry, char *s, size_t len)
 {
-   if (!entry)
+   if (!entry || string_is_empty(entry->label))
       return;
    strlcpy(s, entry->label, len);
 }

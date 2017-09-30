@@ -1038,6 +1038,7 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
 
    if (!string_is_empty(xmb->savestate_thumbnail_file_path))
       free(xmb->savestate_thumbnail_file_path);
+   xmb->savestate_thumbnail_file_path = NULL;
 
    if (!string_is_empty(entry.label))
    {
@@ -1067,7 +1068,11 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
          strlcat(path, file_path_str(FILE_PATH_PNG_EXTENSION), path_size);
 
          if (path_file_exists(path))
+         {
+            if (!string_is_empty(xmb->savestate_thumbnail_file_path))
+               free(xmb->savestate_thumbnail_file_path);
             xmb->savestate_thumbnail_file_path = strdup(path);
+         }
 
          free(path);
       }
