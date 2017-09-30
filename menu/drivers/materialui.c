@@ -1784,6 +1784,7 @@ static bool mui_load_image(void *userdata, void *data, enum menu_image_type type
          break;
       case MENU_IMAGE_WALLPAPER:
          mui_context_bg_destroy(mui);
+         video_driver_texture_unload(&mui->textures.bg);
          video_driver_texture_load(data,
                TEXTURE_FILTER_MIPMAP_LINEAR, &mui->textures.bg);
          menu_display_allocate_white_texture();
