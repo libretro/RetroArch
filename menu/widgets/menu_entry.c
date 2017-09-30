@@ -79,15 +79,15 @@ void menu_entry_free(menu_entry_t *entry)
 {
    if (!entry)
       return;
-   if (entry->label && !string_is_empty(entry->label))
+   if (!string_is_empty(entry->label))
       free(entry->label);
-   if (entry->rich_label && !string_is_empty(entry->rich_label))
+   if (!string_is_empty(entry->rich_label))
       free(entry->rich_label);
-   if (entry->sublabel && !string_is_empty(entry->sublabel))
+   if (!string_is_empty(entry->sublabel))
       free(entry->sublabel);
-   if (entry->path && !string_is_empty(entry->path))
+   if (!string_is_empty(entry->path))
       free(entry->path);
-   if (entry->value && !string_is_empty(entry->value))
+   if (!string_is_empty(entry->value))
       free(entry->value);
    entry->path          = NULL;
    entry->label         = NULL;
@@ -128,9 +128,7 @@ char *menu_entry_get_rich_label(menu_entry_t *entry)
 
 char *menu_entry_get_sublabel(menu_entry_t *entry)
 {
-   if (!entry)
-      return NULL;
-   if (string_is_empty(entry->sublabel))
+   if (!entry || string_is_empty(entry->sublabel))
       return NULL;
    return strdup(entry->sublabel);
 }
@@ -264,7 +262,7 @@ void menu_entry_reset(uint32_t i)
 
 void menu_entry_get_value(menu_entry_t *entry, char *s, size_t len)
 {
-   if (!entry || !entry->value || string_is_empty(entry->value))
+   if (!entry || string_is_empty(entry->value))
       return;
    strlcpy(s, entry->value, len);
 }

@@ -1573,7 +1573,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
 
       fill_buf[0] = path_copy[0]      = '\0';
 
-      if (info->path && !string_is_empty(info->path))
+      if (!string_is_empty(info->path))
          strlcpy(path_copy, info->path, path_size);
 
       path                            = path_copy;
@@ -3995,9 +3995,9 @@ static bool menu_displaylist_push_internal(
       filebrowser_clear_type();
       info->type = 42;
 
-      if (info->exts && !string_is_empty(info->exts))
+      if (!string_is_empty(info->exts))
          free(info->exts);
-      if (info->label && !string_is_empty(info->label))
+      if (!string_is_empty(info->label))
          free(info->label);
 
       info->exts  = strdup(
@@ -4014,9 +4014,9 @@ static bool menu_displaylist_push_internal(
       filebrowser_clear_type();
       info->type = 42;
 
-      if (info->exts && !string_is_empty(info->exts))
+      if (!string_is_empty(info->exts))
          free(info->exts);
-      if (info->label && !string_is_empty(info->label))
+      if (!string_is_empty(info->label))
          free(info->label);
 
       info->exts  = strdup(
@@ -4033,9 +4033,9 @@ static bool menu_displaylist_push_internal(
       filebrowser_clear_type();
       info->type = 42;
 
-      if (info->exts && !string_is_empty(info->exts))
+      if (!string_is_empty(info->exts))
          free(info->exts);
-      if (info->label && !string_is_empty(info->label))
+      if (!string_is_empty(info->label))
          free(info->label);
 
       info->exts  = strdup(
@@ -4072,9 +4072,9 @@ static bool menu_displaylist_push_internal(
       filebrowser_clear_type();
       info->type = 42;
 
-      if (info->exts && !string_is_empty(info->exts))
+      if (!string_is_empty(info->exts))
          free(info->exts);
-      if (info->label && !string_is_empty(info->label))
+      if (!string_is_empty(info->label))
          free(info->label);
 
       info->exts = strdup(
@@ -4099,7 +4099,7 @@ static bool menu_displaylist_push_internal(
       }
       else
       {
-         if (info->path && !string_is_empty(info->path))
+         if (!string_is_empty(info->path))
             free(info->path);
 
          info->path = strdup(settings->paths.directory_playlist);
@@ -4460,9 +4460,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             if (!str_list)
                return false;
 
-            if (info->path_b && !string_is_empty(info->path_b))
+            if (!string_is_empty(info->path_b))
                free(info->path_b);
-            if (info->label && !string_is_empty(info->label))
+            if (!string_is_empty(info->label))
                free(info->label);
 
             info->path_b = strdup(str_list->elems[1].data);
@@ -4488,7 +4488,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 #else
          ret = 0;
 #endif
-         if (info->path && !string_is_empty(info->path))
+         if (!string_is_empty(info->path))
             free(info->path);
          info->path         = strdup(info->path_b);
 
@@ -6664,7 +6664,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          filebrowser_clear_type();
          info->type_default = FILE_TYPE_RDB;
-         if (info->exts && !string_is_empty(info->exts))
+         if (!string_is_empty(info->exts))
             free(info->exts);
          info->exts = strdup(
                file_path_str(FILE_PATH_RDB_EXTENSION));
@@ -6681,7 +6681,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->type_default = FILE_TYPE_CURSOR;
          load_content       = false;
          use_filebrowser    = true;
-         if (info->exts && !string_is_empty(info->exts))
+         if (!string_is_empty(info->exts))
             free(info->exts);
          if (info->path)
             free(info->path);
@@ -6692,7 +6692,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          filebrowser_clear_type();
          info->type_default = FILE_TYPE_CONFIG;
-         if (info->exts && !string_is_empty(info->exts))
+         if (!string_is_empty(info->exts))
             free(info->exts);
          info->exts = strdup("cfg");
          load_content       = false;
@@ -6724,7 +6724,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             string_list_append(str_list, "slangp", attr);
 #endif
             string_list_join_concat(new_exts, sizeof(new_exts), str_list, "|");
-            if (info->exts && !string_is_empty(info->exts))
+            if (!string_is_empty(info->exts))
                free(info->exts);
             info->exts = strdup(new_exts);
             string_list_free(str_list);
@@ -6758,7 +6758,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             string_list_append(str_list, "slang", attr);
 #endif
             string_list_join_concat(new_exts, sizeof(new_exts), str_list, "|");
-            if (info->exts && !string_is_empty(info->exts))
+            if (!string_is_empty(info->exts))
                free(info->exts);
             info->exts = strdup(new_exts);
             string_list_free(str_list);
@@ -6771,7 +6771,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->type_default = FILE_TYPE_VIDEOFILTER;
          load_content       = false;
          use_filebrowser    = true;
-         if (info->exts && !string_is_empty(info->exts))
+         if (!string_is_empty(info->exts))
             free(info->exts);
          info->exts = strdup("filt");
          break;
@@ -6803,7 +6803,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             string_list_append(str_list, "tga", attr);
 #endif
             string_list_join_concat(new_exts, sizeof(new_exts), str_list, "|");
-            if (info->exts && !string_is_empty(info->exts))
+            if (!string_is_empty(info->exts))
                free(info->exts);
             info->exts = strdup(new_exts);
             string_list_free(str_list);
@@ -6840,7 +6840,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->type_default = FILE_TYPE_AUDIOFILTER;
          load_content       = false;
          use_filebrowser    = true;
-         if (info->exts && !string_is_empty(info->exts))
+         if (!string_is_empty(info->exts))
             free(info->exts);
          info->exts = strdup("dsp");
          break;
@@ -6850,7 +6850,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->type_default = FILE_TYPE_CHEAT;
          load_content       = false;
          use_filebrowser    = true;
-         if (info->exts && !string_is_empty(info->exts))
+         if (!string_is_empty(info->exts))
             free(info->exts);
          info->exts = strdup("cht");
          break;
@@ -6859,7 +6859,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          filebrowser_clear_type();
          info->type_default = FILE_TYPE_PLAIN;
          use_filebrowser    = true;
-         if (info->exts && !string_is_empty(info->exts))
+         if (!string_is_empty(info->exts))
             free(info->exts);
          info->exts = strdup("lpl");
          break;
@@ -6869,7 +6869,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->type_default = FILE_TYPE_FONT;
          load_content       = false;
          use_filebrowser    = true;
-         if (info->exts && !string_is_empty(info->exts))
+         if (!string_is_empty(info->exts))
             free(info->exts);
          info->exts = strdup("ttf");
          break;
@@ -6879,7 +6879,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->type_default = FILE_TYPE_OVERLAY;
          load_content       = false;
          use_filebrowser    = true;
-         if (info->exts && !string_is_empty(info->exts))
+         if (!string_is_empty(info->exts))
             free(info->exts);
          info->exts = strdup("cfg");
          break;
@@ -6889,7 +6889,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->type_default = FILE_TYPE_RECORD_CONFIG;
          load_content       = false;
          use_filebrowser    = true;
-         if (info->exts && !string_is_empty(info->exts))
+         if (!string_is_empty(info->exts))
             free(info->exts);
          info->exts = strdup("cfg");
          break;
@@ -6899,7 +6899,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->type_default = FILE_TYPE_REMAP;
          load_content       = false;
          use_filebrowser    = true;
-         if (info->exts && !string_is_empty(info->exts))
+         if (!string_is_empty(info->exts))
             free(info->exts);
          info->exts = strdup("rmp");
          break;
@@ -6930,7 +6930,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             info->type_default = FILE_TYPE_PLAIN;
             if (frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
             {
-               if (info->exts && !string_is_empty(info->exts))
+               if (!string_is_empty(info->exts))
                   free(info->exts);
                info->exts = strdup(ext_name);
             }

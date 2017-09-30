@@ -270,8 +270,7 @@ static void rgui_set_message(void *data, const char *message)
    if (!rgui || !message || !*message)
       return;
 
-   if (rgui->msgbox && 
-         !string_is_empty(rgui->msgbox))
+   if (!string_is_empty(rgui->msgbox))
       free(rgui->msgbox);
    rgui->msgbox       = strdup(message);
    rgui->force_redraw = true;
@@ -625,7 +624,7 @@ static void rgui_render(void *data, bool is_idle)
                entry_selected ? hover_color : normal_color);
 
       menu_entry_free(&entry);
-      if (entry_path && !string_is_empty(entry_path))
+      if (!string_is_empty(entry_path))
          free(entry_path);
    }
 
@@ -638,7 +637,7 @@ static void rgui_render(void *data, bool is_idle)
       rgui_render_messagebox(msg);
    }
 
-   if (rgui->msgbox && !string_is_empty(rgui->msgbox))
+   if (!string_is_empty(rgui->msgbox))
    {
       rgui_render_messagebox(rgui->msgbox);
       free(rgui->msgbox);
