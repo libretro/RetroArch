@@ -942,7 +942,7 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
 
       if (node && node->fullpath)
       {
-         if (entry.path && !string_is_empty(entry.path))
+         if (!string_is_empty(entry.path))
             fill_pathname_join(
                   xmb->thumbnail_file_path,
                   node->fullpath,
@@ -968,20 +968,19 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
 
       if (string_is_equal(core_name, "imageviewer"))
       {
-         if (entry.label && !string_is_empty(entry.label))
+         if (!string_is_empty(entry.label))
             strlcpy(xmb->thumbnail_file_path, entry.label,
                   sizeof(xmb->thumbnail_file_path));
          goto end;
       }
    }
 
-   if (xmb->thumbnail_system &&
-         !string_is_empty(xmb->thumbnail_system))
-   fill_pathname_join(
-         xmb->thumbnail_file_path,
-         settings->paths.directory_thumbnails,
-         xmb->thumbnail_system,
-         sizeof(xmb->thumbnail_file_path));
+   if (!string_is_empty(xmb->thumbnail_system))
+      fill_pathname_join(
+            xmb->thumbnail_file_path,
+            settings->paths.directory_thumbnails,
+            xmb->thumbnail_system,
+            sizeof(xmb->thumbnail_file_path));
 
    fill_pathname_join(xmb->thumbnail_file_path, xmb->thumbnail_file_path,
          xmb_thumbnails_ident(), sizeof(xmb->thumbnail_file_path));
@@ -991,10 +990,10 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
     * http://datomatic.no-intro.org/stuff/The%20Official%20No-Intro%20Convention%20(20071030).zip
     * Replace these characters in the entry name with underscores.
     */
-   if (xmb->thumbnail_content && !string_is_empty(xmb->thumbnail_content))
+   if (!string_is_empty(xmb->thumbnail_content))
       tmp = strdup(xmb->thumbnail_content);
 
-   if (tmp && !string_is_empty(tmp))
+   if (!string_is_empty(tmp))
    {
       while((scrub_char_pointer = strpbrk(tmp, "&*/:`<>?\\|")))
          *scrub_char_pointer = '_';
@@ -1003,7 +1002,7 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
    /* Look for thumbnail file with this scrubbed filename */
    tmp_new[0] = '\0';
 
-   if (tmp && !string_is_empty(tmp))
+   if (!string_is_empty(tmp))
    {
       fill_pathname_join(tmp_new,
             xmb->thumbnail_file_path,
@@ -1037,8 +1036,7 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
 
    menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
 
-   if (xmb->savestate_thumbnail_file_path &&
-         !string_is_empty(xmb->savestate_thumbnail_file_path))
+   if (!string_is_empty(xmb->savestate_thumbnail_file_path))
       free(xmb->savestate_thumbnail_file_path);
 
    if (     (settings->bools.savestate_thumbnail_enable)
@@ -1094,8 +1092,7 @@ static void xmb_set_thumbnail_system(void *data, char*s, size_t len)
    if (!xmb)
       return;
 
-   if (xmb->thumbnail_system && 
-         !string_is_empty(xmb->thumbnail_system))
+   if (!string_is_empty(xmb->thumbnail_system))
       free(xmb->thumbnail_system);
    xmb->thumbnail_system = strdup(s);
 }
@@ -1105,7 +1102,7 @@ static void xmb_reset_thumbnail_content(void *data)
    xmb_handle_t *xmb = (xmb_handle_t*)data;
    if (!xmb)
       return;
-   if (xmb->thumbnail_content && !string_is_empty(xmb->thumbnail_content))
+   if (!string_is_empty(xmb->thumbnail_content))
       free(xmb->thumbnail_content);
    xmb->thumbnail_content = NULL;
 }
@@ -1115,7 +1112,7 @@ static void xmb_set_thumbnail_content(void *data, char *s, size_t len)
    xmb_handle_t *xmb = (xmb_handle_t*)data;
    if (!xmb)
       return;
-   if (xmb->thumbnail_content && !string_is_empty(xmb->thumbnail_content))
+   if (!string_is_empty(xmb->thumbnail_content))
       free(xmb->thumbnail_content);
    xmb->thumbnail_content = strdup(s);
 }
@@ -1126,8 +1123,7 @@ static void xmb_update_savestate_thumbnail_image(void *data)
    if (!xmb)
       return;
 
-   if (xmb->savestate_thumbnail_file_path 
-         && !string_is_empty(xmb->savestate_thumbnail_file_path)
+   if (!string_is_empty(xmb->savestate_thumbnail_file_path)
          && path_file_exists(xmb->savestate_thumbnail_file_path))
       task_push_image_load(xmb->savestate_thumbnail_file_path,
             menu_display_handle_savestate_thumbnail_upload, NULL);
@@ -1195,7 +1191,7 @@ static void xmb_selection_pointer_changed(
             if ((xmb_list > XMB_SYSTEM_TAB_SETTINGS && depth == 1) ||
                 (xmb_list < XMB_SYSTEM_TAB_SETTINGS && depth == 4))
             {
-               if (entry.path && !string_is_empty(entry.path))
+               if (!string_is_empty(entry.path))
                   xmb_set_thumbnail_content(xmb, entry.path, 0 /* will be ignored */);
                xmb_update_thumbnail_path(xmb, i);
                xmb_update_thumbnail_image(xmb);
@@ -1204,7 +1200,7 @@ static void xmb_selection_pointer_changed(
                         entry_type == FILE_TYPE_RDB || entry_type == FILE_TYPE_RDB_ENTRY)
                && xmb_list <= XMB_SYSTEM_TAB_SETTINGS))
             {
-               if (entry.path && !string_is_empty(entry.path))
+               if (!string_is_empty(entry.path))
                   xmb_set_thumbnail_content(xmb, entry.path, 0 /* will be ignored */);
                xmb_update_thumbnail_path(xmb, i);
                xmb_update_thumbnail_image(xmb);
@@ -1722,7 +1718,7 @@ static void xmb_list_switch(xmb_handle_t *xmb)
       menu_entry_init(&entry);
       menu_entry_get(&entry, 0, selection, NULL, true);
 
-      if (entry.path && !string_is_empty(entry.path))
+      if (!string_is_empty(entry.path))
          xmb_set_thumbnail_content(xmb, entry.path, 0 /* will be ignored */);
 
       menu_entry_free(&entry);
@@ -2334,7 +2330,7 @@ static int xmb_draw_item(
    {
       enum msg_file_type type = FILE_TYPE_NONE;
        
-      if (entry->value && !string_is_empty(entry->value))
+      if (!string_is_empty(entry->value))
           type                = msg_hash_to_file_type(msg_hash_calculate(entry->value));
 
       switch (type)
@@ -2415,7 +2411,7 @@ static int xmb_draw_item(
    ticker.idx      = frame_count / 20;
    ticker.selected = (i == current);
 
-   if (entry->value && !string_is_empty(entry->value))
+   if (!string_is_empty(entry->value))
    {
       ticker.str   = entry->value;
       menu_animation_ticker(&ticker);
@@ -2493,12 +2489,12 @@ static int xmb_draw_item(
             xmb->shadow_offset);
 
 iterate:
-   if (ticker_str && !string_is_empty(ticker_str))
+   if (!string_is_empty(ticker_str))
       free(ticker_str);
    return 0;
 
 end:
-   if (ticker_str && !string_is_empty(ticker_str))
+   if (!string_is_empty(ticker_str))
       free(ticker_str);
    return -1;
 }
@@ -3120,8 +3116,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       render_background = true;
    }
 
-   if (xmb->box_message && 
-         !string_is_empty(xmb->box_message))
+   if (!string_is_empty(xmb->box_message))
    {
       strlcpy(msg, xmb->box_message,
             sizeof(msg));
@@ -3533,17 +3528,13 @@ static void xmb_free(void *data)
       video_coord_array_free(&xmb->raster_block.carr);
       video_coord_array_free(&xmb->raster_block2.carr);
 
-      if (xmb->box_message &&
-            !string_is_empty(xmb->box_message))
+      if (!string_is_empty(xmb->box_message))
          free(xmb->box_message);
-      if (xmb->thumbnail_system &&
-            !string_is_empty(xmb->thumbnail_system))
+      if (!string_is_empty(xmb->thumbnail_system))
          free(xmb->thumbnail_system);
-      if (xmb->thumbnail_content &&
-            !string_is_empty(xmb->thumbnail_content))
+      if (!string_is_empty(xmb->thumbnail_content))
          free(xmb->thumbnail_content);
-      if (xmb->savestate_thumbnail_file_path &&
-            !string_is_empty(xmb->savestate_thumbnail_file_path))
+      if (!string_is_empty(xmb->savestate_thumbnail_file_path))
          free(xmb->savestate_thumbnail_file_path);
    }
 
