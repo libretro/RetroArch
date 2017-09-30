@@ -1037,7 +1037,8 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
 
    menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
 
-   if (xmb->savestate_thumbnail_file_path)
+   if (xmb->savestate_thumbnail_file_path &&
+         !string_is_empty(xmb->savestate_thumbnail_file_path))
       free(xmb->savestate_thumbnail_file_path);
 
    if (     (settings->bools.savestate_thumbnail_enable)
