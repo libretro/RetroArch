@@ -53,7 +53,7 @@ static void task_audio_mixer_load_free(retro_task_t *task)
          free(image->buffer);
    }
 
-   if (nbio->path && !string_is_empty(nbio->path))
+   if (!string_is_empty(nbio->path))
       free(nbio->path);
    if (nbio->data)
       free(nbio->data);
@@ -242,7 +242,7 @@ bool task_push_audio_mixer_load(const char *fullpath, retro_task_callback_t cb, 
 error:
    if (nbio)
    {
-      if (nbio->path && !string_is_empty(nbio->path))
+      if (!string_is_empty(nbio->path))
          free(nbio->path);
       if (nbio->data)
          free(nbio->data);
