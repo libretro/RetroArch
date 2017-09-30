@@ -251,7 +251,10 @@ static bool input_autoconfigure_joypad_from_conf_dir(
    if(!list)
       return false;
 
-   RARCH_LOG("[Autoconf]: %d profiles found.\n", list->size);
+   if (list)
+   {
+      RARCH_LOG("[Autoconf]: %d profiles found.\n", list->size);
+   }
 
    for (i = 0; i < list->size; i++)
    {
@@ -474,11 +477,12 @@ bool input_autoconfigure_connect(
 {
    unsigned i;
    retro_task_t         *task = (retro_task_t*)calloc(1, sizeof(*task));
-   autoconfig_params_t *state = (autoconfig_params_t*)malloc(sizeof(*state));
+   autoconfig_params_t *state = (autoconfig_params_t*)malloc(sizeof(autoconfig_params_t));
    settings_t       *settings = config_get_ptr();
-   const char *dir_autoconf   = settings->paths.directory_autoconfig;
+   const char *dir_autoconf   = settings ? settings->paths.directory_autoconfig : NULL;
+   bool autodetect_enable     = settings ? settings->bools.input_autodetect_enable : false;
 
-   if (!task || !state || !settings->bools.input_autodetect_enable)
+   if (!task || !state || !autodetect_enable)
       goto error;
 
    state->name                    = NULL;
@@ -517,8 +521,8 @@ bool input_autoconfigure_connect(
 
    input_autoconfigured[state->idx] = false;
 
-   task->state   = state;
-   task->handler = input_autoconfigure_connect_handler;
+   task->state                      = state;
+   task->handler                    = input_autoconfigure_connect_handler;
 
    task_queue_push(task);
 

@@ -1018,6 +1018,8 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
 
 end:
    menu_entry_free(&entry);
+   if (!string_is_empty(tmp))
+      free(tmp);
    free(tmp_new);
 }
 
@@ -2315,8 +2317,20 @@ static int xmb_draw_item(
    entry_type = menu_entry_get_type_new(entry);
 
    if (entry_type == FILE_TYPE_CONTENTLIST_ENTRY)
-      fill_short_pathname_representation(entry->path, entry->path,
-            sizeof(entry->path));
+   {
+      char entry_path[PATH_MAX_LENGTH] = {0};
+      strlcpy(entry_path, entry->path, sizeof(entry_path));
+
+      fill_short_pathname_representation(entry_path, entry_path,
+            sizeof(entry_path));
+
+      if (!string_is_empty(entry_path))
+      {
+         if (!string_is_empty(entry->path))
+            free(entry->path);
+         entry->path = strdup(entry_path);
+      }
+   }
 
    if (string_is_equal(entry->value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) ||
          (string_is_equal(entry->value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))))
@@ -2522,7 +2536,7 @@ static void xmb_draw_items(
    uint64_t frame_count        = xmb ? xmb->frame_count : 0;
    const char *thumb_ident     = xmb_thumbnails_ident();
 
-   if (!list || !list->size)
+   if (!list || !list->size || !xmb)
       return;
 
    if (cat_selection_ptr > xmb->system_tab_end)
