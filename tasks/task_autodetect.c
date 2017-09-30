@@ -346,18 +346,22 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
       if(input_autoconfigure_joypad_from_conf_internal(params, task))
       {
          RARCH_LOG("[Autoconf]: no profiles found for %s (%d/%d). Using fallback\n",
-               params->name, params->vid, params->pid);
+               !string_is_empty(params->name) ? params->name : "N/A",
+               params->vid, params->pid);
 
          snprintf(msg, sizeof(msg), "%s (%ld/%ld) %s.",
-               params->name, (long)params->vid, (long)params->pid,
+               !string_is_empty(params->name) ? params->name : "N/A",
+               (long)params->vid, (long)params->pid,
                msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED_FALLBACK));
       }
 #else
       RARCH_LOG("[Autoconf]: no profiles found for %s (%d/%d).\n",
-            params->name, params->vid, params->pid);
+            !string_is_empty(params->name) ? params->name : "N/A",
+            params->vid, params->pid);
 
       snprintf(msg, sizeof(msg), "%s (%ld/%ld) %s.",
-            params->name, (long)params->vid, (long)params->pid,
+            !string_is_empty(params->name) ? params->name : "N/A",
+            (long)params->vid, (long)params->pid,
             msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED));
 #endif
       task_free_title(task);
