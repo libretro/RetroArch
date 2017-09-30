@@ -477,16 +477,13 @@ bool input_autoconfigure_connect(
 {
    unsigned i;
    retro_task_t         *task = (retro_task_t*)calloc(1, sizeof(*task));
-   autoconfig_params_t *state = (autoconfig_params_t*)malloc(sizeof(autoconfig_params_t));
+   autoconfig_params_t *state = (autoconfig_params_t*)calloc(1, sizeof(*state));
    settings_t       *settings = config_get_ptr();
    const char *dir_autoconf   = settings ? settings->paths.directory_autoconfig : NULL;
    bool autodetect_enable     = settings ? settings->bools.input_autodetect_enable : false;
 
    if (!task || !state || !autodetect_enable)
       goto error;
-
-   state->name                    = NULL;
-   state->autoconfig_directory    = NULL;
 
    if (!string_is_empty(name))
       state->name                 = strdup(name);
