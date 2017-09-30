@@ -49,8 +49,6 @@ struct autoconfig_params
    unsigned idx;
    uint32_t max_users;
    char  *name;
-   char  *driver;
-   char  *display_name;
    char  *autoconfig_directory;
 };
 
@@ -244,8 +242,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
    {
       if (list)
          string_list_free(list);
-      if (params->autoconfig_directory &&
-            !string_is_empty(params->autoconfig_directory))
+      if (!string_is_empty(params->autoconfig_directory))
          list = dir_list_new_special(params->autoconfig_directory,
                DIR_LIST_AUTOCONFIG, "cfg");
    }
@@ -324,15 +321,9 @@ static void input_autoconfigure_params_free(autoconfig_params_t *params)
       return;
    if (!string_is_empty(params->name))
       free(params->name);
-   if (!string_is_empty(params->driver))
-      free(params->driver);
-   if (!string_is_empty(params->display_name))
-      free(params->display_name);
    if (!string_is_empty(params->autoconfig_directory))
       free(params->autoconfig_directory);
    params->name                 = NULL;
-   params->driver               = NULL;
-   params->display_name         = NULL;
    params->autoconfig_directory = NULL;
 }
 
@@ -484,19 +475,11 @@ bool input_autoconfigure_connect(
    if (!task || !state || !settings->bools.input_autodetect_enable)
       goto error;
 
-   state->display_name            = NULL;
    state->name                    = NULL;
-   state->driver                  = NULL;
    state->autoconfig_directory    = NULL;
-
-   if (!string_is_empty(display_name))
-      state->display_name         = strdup(display_name);
 
    if (!string_is_empty(name))
       state->name                 = strdup(name);
-
-   if (!string_is_empty(driver))
-      state->driver               = strdup(driver);
 
    if (!string_is_empty(dir_autoconf))
       state->autoconfig_directory = strdup(dir_autoconf);
