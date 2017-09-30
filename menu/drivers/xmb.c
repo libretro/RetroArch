@@ -1018,8 +1018,6 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
 
 end:
    menu_entry_free(&entry);
-   if (!string_is_empty(tmp))
-      free(tmp);
    free(tmp_new);
 }
 
