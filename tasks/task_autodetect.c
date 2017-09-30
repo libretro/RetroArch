@@ -242,7 +242,10 @@ static bool input_autoconfigure_joypad_from_conf_dir(
    if (!list || !list->size)
    {
       if (list)
+      {
          string_list_free(list);
+         list = NULL;
+      }
       if (!string_is_empty(params->autoconfig_directory))
          list = dir_list_new_special(params->autoconfig_directory,
                DIR_LIST_AUTOCONFIG, "cfg");
