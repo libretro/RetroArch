@@ -132,8 +132,7 @@ static int input_autoconfigure_joypad_try_from_conf(config_file_t *conf,
       score += 3;
 
    /* Check for name match */
-   if (params->name &&
-         !string_is_empty(params->name)
+   if (!string_is_empty(params->name)
          && string_is_equal(ident, params->name))
       score += 2;
 
@@ -148,7 +147,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
     * No reason to spam autoconfigure messages every time. */
    bool block_osd_spam                = 
       input_autoconfigured[params->idx]
-      && params->name && !string_is_empty(params->name);
+      && !string_is_empty(params->name);
 
    msg[0] = display_name[0] = device_type[0] = '\0';
 
@@ -168,7 +167,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
 
       snprintf(msg, sizeof(msg), "%s configured.",
             (string_is_empty(display_name) &&
-             (params->name && !string_is_empty(params->name))) ? params->name : display_name);
+             !string_is_empty(params->name)) ? params->name : display_name);
 
       if(!remote_is_bound)
       {
@@ -184,7 +183,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
       bool tmp = false;
       snprintf(msg, sizeof(msg), "%s %s #%u.",
             (string_is_empty(display_name) &&
-             params->name && !string_is_empty(params->name)) 
+             !string_is_empty(params->name)) 
             ? params->name : display_name,
             msg_hash_to_str(MSG_DEVICE_CONFIGURED_IN_PORT),
             params->idx);
@@ -323,17 +322,13 @@ static void input_autoconfigure_params_free(autoconfig_params_t *params)
 {
    if (!params)
       return;
-   if (params->name 
-         && !string_is_empty(params->name))
+   if (!string_is_empty(params->name))
       free(params->name);
-   if (params->driver 
-         && !string_is_empty(params->driver))
+   if (!string_is_empty(params->driver))
       free(params->driver);
-   if (params->display_name 
-         && !string_is_empty(params->display_name))
+   if (!string_is_empty(params->display_name))
       free(params->display_name);
-   if (params->autoconfig_directory 
-         && !string_is_empty(params->autoconfig_directory))
+   if (!string_is_empty(params->autoconfig_directory))
       free(params->autoconfig_directory);
    params->name                 = NULL;
    params->driver               = NULL;
@@ -397,7 +392,7 @@ static void input_autoconfigure_disconnect_handler(retro_task_t *task)
 
    RARCH_LOG("%s: %s\n", msg_hash_to_str(MSG_AUTODETECT), params->msg);
 
-   if (params->msg && !string_is_empty(params->msg))
+   if (!string_is_empty(params->msg))
       free(params->msg);
    free(params);
 }
@@ -434,7 +429,7 @@ bool input_autoconfigure_disconnect(unsigned i, const char *ident)
 error:
    if (state)
    {
-      if (state->msg && !string_is_empty(state->msg))
+      if (!string_is_empty(state->msg))
          free(state->msg);
       free(state);
    }
@@ -520,11 +515,11 @@ bool input_autoconfigure_connect(
    {
       input_autoconf_binds[state->idx][i].joykey           = NO_BTN;
       input_autoconf_binds[state->idx][i].joyaxis          = AXIS_NONE;
-      if (input_autoconf_binds[state->idx][i].joykey_label 
-            && !string_is_empty(input_autoconf_binds[state->idx][i].joykey_label))
+      if ( 
+          !string_is_empty(input_autoconf_binds[state->idx][i].joykey_label))
          free(input_autoconf_binds[state->idx][i].joykey_label);
-      if (input_autoconf_binds[state->idx][i].joyaxis_label 
-            && !string_is_empty(input_autoconf_binds[state->idx][i].joyaxis_label))
+      if ( 
+          !string_is_empty(input_autoconf_binds[state->idx][i].joyaxis_label))
          free(input_autoconf_binds[state->idx][i].joyaxis_label);
       input_autoconf_binds[state->idx][i].joykey_label      = NULL;
       input_autoconf_binds[state->idx][i].joyaxis_label     = NULL;
