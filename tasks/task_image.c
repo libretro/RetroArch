@@ -158,7 +158,7 @@ static void task_image_cleanup(nbio_handle_t *nbio)
       image->handle                 = NULL;
       image->cb                     = NULL;
    }
-   if (nbio->path && !string_is_empty(nbio->path))
+   if (!string_is_empty(nbio->path))
       free(nbio->path);
    if (nbio->data)
       free(nbio->data);
@@ -372,8 +372,7 @@ error:
    free(t);
    if (nbio)
    {
-      if (nbio->path 
-            && !string_is_empty(nbio->path))
+      if (!string_is_empty(nbio->path))
          free(nbio->path);
       free(nbio);
    }
