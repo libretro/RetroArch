@@ -568,7 +568,7 @@ int filestream_close(RFILE *stream)
    if (!stream)
       goto error;
 
-   if (stream->ext && !string_is_empty(stream->ext))
+   if (!string_is_empty(stream->ext))
       free(stream->ext);
 
 #if  defined(PSP)
