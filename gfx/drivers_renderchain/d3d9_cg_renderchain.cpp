@@ -1455,7 +1455,7 @@ static bool d3d9_cg_renderchain_render(
 
       current_width = out_width;
       current_height = out_height;
-      target->Release();
+      d3d_surface_free(target);
    }
 
    /* Final pass */
@@ -1482,7 +1482,7 @@ static bool d3d9_cg_renderchain_render(
 
    chain->frame_count++;
 
-   back_buffer->Release();
+   d3d_surface_free(back_buffer);
 
    if (chain)
    {
@@ -1597,9 +1597,9 @@ static bool d3d9_cg_renderchain_read_viewport(
 
 end:
    if (target)
-      target->Release();
+      d3d_surface_free(target);
    if (dest)
-      dest->Release();
+      d3d_surface_free(dest);
    return ret;
 }
 

@@ -113,6 +113,20 @@ void d3d_texture_free(LPDIRECT3DTEXTURE tex)
    }
 }
 
+void d3d_surface_free(void *data)
+{
+   LPDIRECT3DSURFACE surf = (LPDIRECT3DSURFACE)data;
+   if (!surf)
+      return;
+#if defined(HAVE_D3D9) && !defined(__cplusplus)
+   IDirect3DSurface9_Release(surf);
+#elif defined(HAVE_D3D8) && !defined(__cplusplus)
+   IDirect3DSurface8_Release(surf);
+#else
+   surf->Release();
+#endif
+}
+
 void d3d_vertex_declaration_free(void *data)
 {
    LPDIRECT3DVERTEXDECLARATION vertex_decl = (LPDIRECT3DVERTEXDECLARATION)data;
@@ -124,7 +138,6 @@ void d3d_vertex_declaration_free(void *data)
    vertex_decl->Release();
 #endif
 }
-
 
 bool d3d_vertex_declaration_new(LPDIRECT3DDEVICE dev,
       const void *vertex_data, void **decl_data)
