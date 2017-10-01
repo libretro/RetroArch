@@ -133,6 +133,10 @@ bool d3d_device_create_offscreen_plain_surface(
       void **surf_data,
       void *data);
 
+bool d3d_surface_lock_rect(void *data, void *data2);
+
+void d3d_surface_unlock_rect(void *data);
+
 bool d3d_reset(LPDIRECT3DDEVICE dev, D3DPRESENT_PARAMETERS *d3dpp);
 
 void d3d_device_free(LPDIRECT3DDEVICE dev, LPDIRECT3D pd3d);

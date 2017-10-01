@@ -113,6 +113,35 @@ void d3d_texture_free(LPDIRECT3DTEXTURE tex)
    }
 }
 
+bool d3d_surface_lock_rect(void *data, void *data2)
+{
+   LPDIRECT3DSURFACE surf = (LPDIRECT3DSURFACE)data;
+#if defined(HAVE_D3D9) && !defined(__cplusplus)
+   if (FAILED(IDirect3DSurface9_LockRect(surf, (D3DLOCKED_RECT*)data2, NULL, D3DLOCK_READONLY)))
+#elif defined(HAVE_D3D8) && !defined(__cplusplus)
+   if (FAILED(IDirect3DSurface8_LockRect(surf, (D3DLOCKED_RECT*)data2, NULL, D3DLOCK_READONLY)))
+#else
+   if (FAILED(surf->LockRect((D3DLOCKED_RECT*)data2, NULL, D3DLOCK_READONLY)))
+#endif
+      return false;
+   return true;
+}
+
+void d3d_surface_unlock_rect(void *data)
+{
+   LPDIRECT3DSURFACE surf = (LPDIRECT3DSURFACE)data;
+   if (surf)
+   {
+#if defined(HAVE_D3D9) && !defined(__cplusplus)
+      IDirect3DSurface9_UnlockRect(surf);
+#elif defined(HAVE_D3D8) && !defined(__cplusplus)
+      IDirect3DSurface8_UnlockRect(surf);
+#else
+      surf->UnlockRect();
+#endif
+   }
+}
+
 void d3d_surface_free(void *data)
 {
    LPDIRECT3DSURFACE surf = (LPDIRECT3DSURFACE)data;

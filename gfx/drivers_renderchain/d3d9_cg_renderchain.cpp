@@ -1562,7 +1562,7 @@ static bool d3d9_cg_renderchain_read_viewport(
       goto end;
    }
 
-   if (SUCCEEDED(dest->LockRect(&rect, NULL, D3DLOCK_READONLY)))
+   if (d3d_surface_lock_rect(dest, (void*)&rect))
    {
       unsigned x, y;
       unsigned pitchpix       = rect.Pitch / 4;
@@ -1582,7 +1582,7 @@ static bool d3d9_cg_renderchain_read_viewport(
          }
       }
 
-      dest->UnlockRect();
+      d3d_surface_unlock_rect((void*)dest);
    }
    else
       ret = false;
