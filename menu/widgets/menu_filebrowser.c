@@ -63,7 +63,7 @@ void filebrowser_parse(void *data, unsigned type_data)
    menu_displaylist_info_t *info        = (menu_displaylist_info_t*)data;
    enum menu_displaylist_ctl_state type = (enum menu_displaylist_ctl_state)
                                           type_data;
-   const char *path                     = info->path;
+   const char *path                     = info ? info->path : NULL;
    bool path_is_compressed              = (path && !string_is_empty(path)) 
       ? path_is_compressed_file(path) : false;
    bool filter_ext                      =
@@ -76,7 +76,7 @@ void filebrowser_parse(void *data, unsigned type_data)
 
    if (path_is_compressed)
       str_list = file_archive_get_file_list(path, info->exts);
-   else
+   else if (!string_is_empty(path))
       str_list = dir_list_new(path,
             filter_ext ? info->exts : NULL,
             true, settings->bools.show_hidden_files, true, false);
