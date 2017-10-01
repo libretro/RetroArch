@@ -61,12 +61,6 @@ static bool menu_entries_clear(file_list_t *list)
    return true;
 }
 
-void menu_entries_set_alt_at_offset(file_list_t *list, size_t idx,
-      const char *alt)
-{
-   file_list_set_alt_at_offset(list, idx, alt);
-}
-
 /**
  * menu_entries_elem_is_dir:
  * @list                     : File list handle.

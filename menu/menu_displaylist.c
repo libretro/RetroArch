@@ -309,7 +309,7 @@ static void print_buf_lines(file_list_t *list, char *buf,
                            path_file_exists(core_path)
                         && core_info_get_display_name(
                            core_path, display_name, sizeof(display_name)))
-                     menu_entries_set_alt_at_offset(list, j, display_name);
+                     file_list_set_alt_at_offset(list, j, display_name);
                }
             }
             break;
@@ -3883,7 +3883,7 @@ static int menu_displaylist_parse_cores(
             if (core_info_list_get_display_name(list,
                      core_path, display_name,
                      PATH_MAX_LENGTH * sizeof(char)))
-               menu_entries_set_alt_at_offset(info->list, i, display_name);
+               file_list_set_alt_at_offset(info->list, i, display_name);
 
             free(core_path);
             free(display_name);
@@ -4308,7 +4308,7 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
             new_lbl_entry,
             new_type,
             FILE_TYPE_CORE, 0, 0);
-      menu_entries_set_alt_at_offset(info->list, 0,
+      file_list_set_alt_at_offset(info->list, 0,
             new_entry);
 
       new_type          = MSG_UNKNOWN;
@@ -4800,7 +4800,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                         0);
 
                   if (!string_is_empty(core_name))
-                     menu_entries_set_alt_at_offset(info->list, 0,
+                     file_list_set_alt_at_offset(info->list, 0,
                            core_name);
                }
                else
@@ -4855,7 +4855,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                            MENU_ENUM_LABEL_DETECT_CORE_LIST_OK,
                            FILE_TYPE_CORE, 0, 0);
 
-                     menu_entries_set_alt_at_offset(info->list, j, core_name);
+                     file_list_set_alt_at_offset(info->list, j, core_name);
                      j++;
                   }
                }
@@ -4905,7 +4905,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                         core_name = system->library_name;
 
                      if (!string_is_empty(core_name))
-                        menu_entries_set_alt_at_offset(info->list, 0,
+                        file_list_set_alt_at_offset(info->list, 0,
                               core_name);
                   }
                }
@@ -4946,7 +4946,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                      menu_entries_append_enum(info->list, core_path, "",
                            MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
                            FILE_TYPE_CORE, 0, 0);
-                     menu_entries_set_alt_at_offset(info->list, j, core_name);
+                     file_list_set_alt_at_offset(info->list, j, core_name);
                      j++;
                   }
                }
