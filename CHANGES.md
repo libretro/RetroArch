@@ -1,5 +1,6 @@
 # 1.6.8 (future)
 - Audio: Fix the Audio DSP picker
+- GUI: (MaterialUI) Fix crash that happened on context reset with Vulkan.
 - GUI: (MaterialUI) Skip querying and drawing items that are not visible; Cache content height and bbox calculation.
 - GUI: (XMB) Skip drawing the fading list when it is already transparent. Optimization.
 - GUI: (XMB) Comment out visible item calculation in xmb_draw_items().
