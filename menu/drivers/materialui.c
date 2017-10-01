@@ -1769,6 +1769,7 @@ static void mui_context_destroy(void *data)
       video_driver_texture_unload(&mui->textures.list[i]);
 
    menu_display_font_free(mui->font);
+   menu_display_font_free(mui->font2);
 
    mui_context_bg_destroy(mui);
 }
