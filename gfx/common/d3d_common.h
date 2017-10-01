@@ -94,6 +94,8 @@ void d3d_texture_blit(unsigned pixel_size,
 bool d3d_vertex_declaration_new(LPDIRECT3DDEVICE dev,
       const void *vertex_data, void **decl_data);
 
+void d3d_vertex_declaration_free(void *data);
+
 void d3d_set_viewports(LPDIRECT3DDEVICE dev, D3DVIEWPORT *vp);
 
 void d3d_enable_blend_func(void *data);

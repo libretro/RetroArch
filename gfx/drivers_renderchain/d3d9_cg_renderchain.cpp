@@ -409,11 +409,8 @@ static bool d3d9_cg_renderchain_init_shader_fvf(void *data, void *pass_data)
       }
    }
 
-   if (FAILED(chain->dev->CreateVertexDeclaration(
-               decl, &pass->vertex_decl)))
-      return false;
-
-   return true;
+   return d3d_vertex_declaration_new(chain->dev,
+         decl, (void**)&pass->vertex_decl);
 }
 
 static void d3d9_cg_renderchain_bind_orig(cg_renderchain_t *chain,

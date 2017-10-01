@@ -418,9 +418,9 @@ static void d3d_overlay_render(d3d_video_t *d3d, video_frame_info_t *video_info,
             D3DDECLUSAGE_COLOR, 0},
          D3DDECL_END()
       };
-      d3d->dev->CreateVertexDeclaration(vElems, &vertex_decl);
+      d3d_vertex_declaration_new(d3d->dev, &vElems, (void**)&vertex_decl);
       d3d_set_vertex_declaration(d3d->dev, vertex_decl);
-      vertex_decl->Release();
+      d3d_vertex_declaration_free(vertex_decl);
    }
 #endif
 

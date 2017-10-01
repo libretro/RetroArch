@@ -113,6 +113,19 @@ void d3d_texture_free(LPDIRECT3DTEXTURE tex)
    }
 }
 
+void d3d_vertex_declaration_free(void *data)
+{
+   LPDIRECT3DVERTEXDECLARATION vertex_decl = (LPDIRECT3DVERTEXDECLARATION)data;
+   if (!vertex_decl)
+      return;
+#if defined(HAVE_D3D9) && !defined(__cplusplus)
+   IDirect3DVertexDeclaration9_Release(vertex_decl);
+#else
+   vertex_decl->Release();
+#endif
+}
+
+
 bool d3d_vertex_declaration_new(LPDIRECT3DDEVICE dev,
       const void *vertex_data, void **decl_data)
 {
@@ -220,11 +233,7 @@ void d3d_vertex_buffer_free(void *vertex_data, void *vertex_declaration)
    if (vertex_declaration)
    {
       LPDIRECT3DVERTEXDECLARATION vertex_decl = (LPDIRECT3DVERTEXDECLARATION)vertex_declaration;
-#if defined(HAVE_D3D9) && !defined(__cplusplus)
-      IDirect3DVertexDeclaration9_Release(vertex_decl);
-#else
-      vertex_decl->Release();
-#endif
+      d3d_vertex_declaration_free(vertex_decl);
       vertex_decl = NULL;
    }
 #endif
