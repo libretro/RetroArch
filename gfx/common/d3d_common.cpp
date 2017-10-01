@@ -563,6 +563,19 @@ void d3d_enable_blend_func(void *data)
    d3d_set_render_state(dev, D3DRS_ALPHABLENDENABLE, true);
 }
 
+void d3d_device_set_render_target(LPDIRECT3DDEVICE dev, unsigned idx,
+      void *data)
+{
+   LPDIRECT3DSURFACE surf = (LPDIRECT3DSURFACE)data;
+#if defined(HAVE_D3D9) && !defined(__cplusplus)
+   IDirect3DDevice9_SetRenderTarget(dev, idx, surf);
+#elif defined(HAVE_D3D8) && !defined(__cplusplus)
+   IDirect3DDevice8_SetRenderTarget(dev, idx, surf);
+#else
+   dev->SetRenderTarget(idx, surf);
+#endif
+}
+
 void d3d_enable_alpha_blend_texture_func(void *data)
 {
    LPDIRECT3DDEVICE dev = (LPDIRECT3DDEVICE)data;

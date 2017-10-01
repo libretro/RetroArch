@@ -1424,7 +1424,8 @@ static bool d3d9_cg_renderchain_render(
       Pass *to_pass   = (Pass*)&chain->passes[i + 1];
 
       to_pass->tex->GetSurfaceLevel(0, &target);
-      d3dr->SetRenderTarget(0, target);
+
+      d3d_device_set_render_target(d3dr, 0, (void*)target);
 
       d3d9_cg_renderchain_convert_geometry(chain, &from_pass->info,
             &out_width, &out_height,
@@ -1459,7 +1460,7 @@ static bool d3d9_cg_renderchain_render(
    }
 
    /* Final pass */
-   d3dr->SetRenderTarget(0, back_buffer);
+   d3d_device_set_render_target(d3dr, 0, (void*)back_buffer);
 
    last_pass = (Pass*)&chain->passes.back();
 
