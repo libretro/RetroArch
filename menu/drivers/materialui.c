@@ -1029,8 +1029,7 @@ static void mui_render_menu_list(
       menu_entry_init(&entry);
       menu_entry_get(&entry, 0, (unsigned)i, NULL, true);
       menu_entry_get_value(&entry, entry_value, sizeof(entry_value));
-      rich_label = menu_entry_get_rich_label(&entry);
-
+      rich_label     = menu_entry_get_rich_label(&entry);
       entry_selected = selection == i;
 
       /* Render label, value, and associated icons */

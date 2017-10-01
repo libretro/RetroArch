@@ -922,7 +922,6 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
    xmb_handle_t     *xmb    = (xmb_handle_t*)data;
    playlist_t     *playlist = NULL;
    const char    *core_name = NULL;
-   char             *tmp    = NULL;
    char            *tmp_new = (char*)
       malloc(PATH_MAX_LENGTH * sizeof(char));
 
@@ -986,31 +985,34 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
    fill_pathname_join(xmb->thumbnail_file_path, xmb->thumbnail_file_path,
          xmb_thumbnails_ident(), sizeof(xmb->thumbnail_file_path));
 
-   /* Scrub characters that are not cross-platform and/or violate the
-    * No-Intro filename standard:
-    * http://datomatic.no-intro.org/stuff/The%20Official%20No-Intro%20Convention%20(20071030).zip
-    * Replace these characters in the entry name with underscores.
-    */
-   if (!string_is_empty(xmb->thumbnail_content))
-      tmp = strdup(xmb->thumbnail_content);
-
-   if (!string_is_empty(tmp))
    {
-      while((scrub_char_pointer = strpbrk(tmp, "&*/:`<>?\\|")))
-         *scrub_char_pointer = '_';
-   }
+      char             *tmp    = NULL;
+      /* Scrub characters that are not cross-platform and/or violate the
+       * No-Intro filename standard:
+       * http://datomatic.no-intro.org/stuff/The%20Official%20No-Intro%20Convention%20(20071030).zip
+       * Replace these characters in the entry name with underscores.
+       */
+      if (!string_is_empty(xmb->thumbnail_content))
+         tmp = strdup(xmb->thumbnail_content);
 
-   /* Look for thumbnail file with this scrubbed filename */
-   tmp_new[0] = '\0';
+      if (!string_is_empty(tmp))
+      {
+         while((scrub_char_pointer = strpbrk(tmp, "&*/:`<>?\\|")))
+            *scrub_char_pointer = '_';
+      }
 
-   if (!string_is_empty(tmp))
-   {
-      fill_pathname_join(tmp_new,
-            xmb->thumbnail_file_path,
-            tmp, PATH_MAX_LENGTH * sizeof(char));
-      strlcpy(xmb->thumbnail_file_path,
-            tmp_new, sizeof(xmb->thumbnail_file_path));
-      free(tmp);
+      /* Look for thumbnail file with this scrubbed filename */
+      tmp_new[0] = '\0';
+
+      if (!string_is_empty(tmp))
+      {
+         fill_pathname_join(tmp_new,
+               xmb->thumbnail_file_path,
+               tmp, PATH_MAX_LENGTH * sizeof(char));
+         strlcpy(xmb->thumbnail_file_path,
+               tmp_new, sizeof(xmb->thumbnail_file_path));
+         free(tmp);
+      }
    }
 
    strlcat(xmb->thumbnail_file_path,
