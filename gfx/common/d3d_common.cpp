@@ -312,12 +312,14 @@ bool d3d_device_create_offscreen_plain_surface(
       void **surf_data,
       void *data)
 {
-   if (FAILED(dev->CreateOffscreenPlainSurface(width, height,
+#if defined(HAVE_D3D9)
+   if (SUCCEEDED(dev->CreateOffscreenPlainSurface(width, height,
          (D3DFORMAT)format, (D3DPOOL)pool,
          (LPDIRECT3DSURFACE*)surf_data,
          (HANDLE*)data)))
-      return false;
-   return true;
+      return true;
+#endif
+   return false;
 }
 
 static void d3d_set_texture_stage_state(LPDIRECT3DDEVICE dev,
