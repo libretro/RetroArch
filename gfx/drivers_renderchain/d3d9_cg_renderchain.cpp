@@ -1547,25 +1547,16 @@ static bool d3d9_cg_renderchain_read_viewport(
 
    video_driver_get_size(&width, &height);
 
+   (void)d3d;
    (void)data;
    (void)buffer;
 
-   if (!d3d_device_get_render_target(d3dr, 0, (void**)&target))
-   {
-      ret = false;
-      goto end;
-   }
-
-   if (FAILED(d3d->d3d_err = d3dr->CreateOffscreenPlainSurface(
-               width, height,
-               D3DFMT_X8R8G8B8, D3DPOOL_SYSTEMMEM,
-               &dest, NULL)))
-   {
-      ret = false;
-      goto end;
-   }
-
-   if (!d3d_device_get_render_target_data(d3dr, (void*)target, (void*)dest))
+   if (
+         !d3d_device_get_render_target(d3dr, 0, (void**)&target)     ||
+         !d3d_device_create_offscreen_plain_surface(d3dr, width, height,
+            D3DFMT_X8R8G8B8, D3DPOOL_SYSTEMMEM, (void**)&dest, NULL) ||
+         !d3d_device_get_render_target_data(d3dr, (void*)target, (void*)dest)
+         )
    {
       ret = false;
       goto end;

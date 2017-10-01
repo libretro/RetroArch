@@ -124,6 +124,15 @@ void d3d_set_render_state(void *data, D3DRENDERSTATETYPE state, DWORD value);
 void d3d_device_set_render_target(LPDIRECT3DDEVICE dev, unsigned idx,
       void *data);
 
+bool d3d_device_create_offscreen_plain_surface(
+      LPDIRECT3DDEVICE dev,
+      unsigned width,
+      unsigned height,
+      unsigned format,
+      unsigned pool,
+      void **surf_data,
+      void *data);
+
 bool d3d_reset(LPDIRECT3DDEVICE dev, D3DPRESENT_PARAMETERS *d3dpp);
 
 void d3d_device_free(LPDIRECT3DDEVICE dev, LPDIRECT3D pd3d);

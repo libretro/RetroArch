@@ -271,6 +271,23 @@ void d3d_set_stream_source(LPDIRECT3DDEVICE dev, unsigned stream_no,
 #endif
 }
 
+bool d3d_device_create_offscreen_plain_surface(
+      LPDIRECT3DDEVICE dev,
+      unsigned width,
+      unsigned height,
+      unsigned format,
+      unsigned pool,
+      void **surf_data,
+      void *data)
+{
+   if (FAILED(dev->CreateOffscreenPlainSurface(width, height,
+         (D3DFORMAT)format, (D3DPOOL)pool,
+         (LPDIRECT3DSURFACE*)surf_data,
+         (HANDLE*)data)))
+      return false;
+   return true;
+}
+
 static void d3d_set_texture_stage_state(LPDIRECT3DDEVICE dev,
       unsigned sampler, unsigned value, unsigned type)
 {
