@@ -271,6 +271,18 @@ void d3d_set_stream_source(LPDIRECT3DDEVICE dev, unsigned stream_no,
 #endif
 }
 
+static void d3d_set_texture_stage_state(LPDIRECT3DDEVICE dev,
+      unsigned sampler, unsigned value, unsigned type)
+{
+#if defined(HAVE_D3D9) && !defined(__cplusplus)
+   IDirect3DDevice9_SetTextureStageState(dev, sampler, (D3DTEXTURESTAGESTATETYPE)type, value);
+#elif defined(HAVE_D3D8) && !defined(__cplusplus)
+   IDirect3DDevice8_SetTextureStageState(dev, sampler, (D3DTEXTURESTAGESTATETYPE)type, value);
+#else
+   dev->SetTextureStageState(sampler, (D3DTEXTURESTAGESTATETYPE)type, value);
+#endif
+}
+
 void d3d_set_sampler_address_u(LPDIRECT3DDEVICE dev,
       unsigned sampler, unsigned value)
 {
@@ -281,10 +293,8 @@ void d3d_set_sampler_address_u(LPDIRECT3DDEVICE dev,
    D3DDevice_SetSamplerState_AddressU_Inline(dev, sampler, value);
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DDevice9_SetSamplerState(dev, sampler, D3DSAMP_ADDRESSU, value);
-#elif defined(HAVE_D3D8) && !defined(__cplusplus)
-   IDirect3DDevice8_SetTextureStageState(dev, sampler, D3DTSS_ADDRESSU, value);
 #elif defined(HAVE_D3D8)
-   dev->SetTextureStageState(sampler, D3DTSS_ADDRESSU, value);
+   d3d_set_texture_stage(dev, sampler, D3DTSS_ADDRESSU, value);
 #else
    dev->SetSamplerState(sampler, D3DSAMP_ADDRESSU, value);
 #endif
@@ -300,10 +310,8 @@ void d3d_set_sampler_address_v(LPDIRECT3DDEVICE dev,
    D3DDevice_SetSamplerState_AddressV_Inline(dev, sampler, value);
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DDevice9_SetSamplerState(dev, sampler, D3DSAMP_ADDRESSV, value);
-#elif defined(HAVE_D3D8) && !defined(__cplusplus)
-   IDirect3DDevice8_SetTextureStageState(dev, sampler, D3DTSS_ADDRESSV, value);
 #elif defined(HAVE_D3D8)
-   dev->SetTextureStageState(sampler, D3DTSS_ADDRESSV, value);
+   d3d_set_texture_stage(dev, sampler, D3DTSS_ADDRESSV, value);
 #else
    dev->SetSamplerState(sampler, D3DSAMP_ADDRESSV, value);
 #endif
@@ -319,10 +327,8 @@ void d3d_set_sampler_minfilter(LPDIRECT3DDEVICE dev,
    D3DDevice_SetSamplerState_MinFilter(dev, sampler, value);
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DDevice9_SetSamplerState(dev, sampler, D3DSAMP_MINFILTER, value);
-#elif defined(HAVE_D3D8) && !defined(__cplusplus)
-   IDirect3DDevice8_SetTextureStageState(dev, sampler, D3DTSS_MINFILTER, value);
 #elif defined(HAVE_D3D8)
-   dev->SetTextureStageState(sampler, D3DTSS_MINFILTER, value);
+   d3d_set_texture_stage(dev, sampler, D3DTSS_MINFILTER, value);
 #else
    dev->SetSamplerState(sampler, D3DSAMP_MINFILTER, value);
 #endif
@@ -338,10 +344,8 @@ void d3d_set_sampler_magfilter(LPDIRECT3DDEVICE dev,
    D3DDevice_SetSamplerState_MagFilter(dev, sampler, value);
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DDevice9_SetSamplerState(dev, sampler, D3DSAMP_MAGFILTER, value);
-#elif defined(HAVE_D3D8) && !defined(__cplusplus)
-   IDirect3DDevice8_SetTextureStageState(dev, sampler, D3DTSS_MAGFILTER, value);
 #elif defined(HAVE_D3D8)
-   dev->SetTextureStageState(sampler, D3DTSS_MAGFILTER, value);
+   d3d_set_texture_stage(dev, sampler, D3DTSS_MAGFILTER, value);
 #else
    dev->SetSamplerState(sampler, D3DSAMP_MAGFILTER, value);
 #endif
@@ -600,9 +604,9 @@ void d3d_enable_alpha_blend_texture_func(void *data)
 
 #ifndef _XBOX360
    /* Also blend the texture with the set alpha value. */
-   dev->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
-   dev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE);
-   dev->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_TEXTURE);
+   d3d_set_texture_stage_state(dev, 0, D3DTSS_ALPHAOP,     D3DTOP_MODULATE);
+   d3d_set_texture_stage_state(dev, 0, D3DTSS_ALPHAARG1,   D3DTA_DIFFUSE);
+   d3d_set_texture_stage_state(dev, 0, D3DTSS_ALPHAARG2,   D3DTA_TEXTURE);
 #endif
 }
 
