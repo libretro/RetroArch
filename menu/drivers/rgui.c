@@ -395,6 +395,7 @@ static void rgui_render(void *data, bool is_idle)
    char title_buf[255];
    char title_msg[64];
    char msg[255];
+   size_t entries_end             = 0;
    bool msg_force                 = false;
    settings_t *settings           = config_get_ptr();
    rgui_t *rgui                   = (rgui_t*)data;
@@ -471,13 +472,13 @@ static void rgui_render(void *data, bool is_idle)
    }
 
    /* Do not scroll if all items are visible. */
-   if (menu_entries_get_end() <= RGUI_TERM_HEIGHT(fb_width, fb_height))
+   if (menu_entries_get_size() <= RGUI_TERM_HEIGHT(fb_width, fb_height))
    {
       size_t start = 0;
       menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &start);
    }
 
-   bottom    = (int)(menu_entries_get_end() - RGUI_TERM_HEIGHT(fb_width, fb_height));
+   bottom    = (int)(menu_entries_get_size() - RGUI_TERM_HEIGHT(fb_width, fb_height));
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &old_start);
 
    if (old_start > (unsigned)bottom)
@@ -485,8 +486,10 @@ static void rgui_render(void *data, bool is_idle)
 
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &old_start);
 
-   end = ((old_start + RGUI_TERM_HEIGHT(fb_width, fb_height)) <= (menu_entries_get_end())) ?
-      old_start + RGUI_TERM_HEIGHT(fb_width, fb_height) : menu_entries_get_end();
+   entries_end = menu_entries_get_size();
+
+   end         = ((old_start + RGUI_TERM_HEIGHT(fb_width, fb_height)) <= (entries_end)) ?
+      old_start + RGUI_TERM_HEIGHT(fb_width, fb_height) : entries_end;
 
    rgui_render_background();
 
@@ -774,7 +777,7 @@ static void rgui_navigation_set(void *data, bool scroll)
    size_t start, fb_pitch;
    unsigned fb_width, fb_height;
    bool do_set_start              = false;
-   size_t end                     = menu_entries_get_end();
+   size_t end                     = menu_entries_get_size();
    size_t selection               = menu_navigation_get_selection();
 
    if (!scroll)

@@ -1161,7 +1161,7 @@ static void xmb_selection_pointer_changed(
 
    menu_entry_get(&entry, 0, selection, NULL, true);
 
-   end       = (unsigned)menu_entries_get_end();
+   end       = (unsigned)menu_entries_get_size();
    threshold = xmb->icon_size * 10;
 
    video_driver_get_size(NULL, &height);
@@ -3324,7 +3324,7 @@ static void xmb_layout(xmb_handle_t *xmb)
       xmb_layout_psp(xmb, width);
 
    current = (unsigned)selection;
-   end     = (unsigned)menu_entries_get_end();
+   end     = (unsigned)menu_entries_get_size();
 
    for (i = 0; i < end; i++)
    {

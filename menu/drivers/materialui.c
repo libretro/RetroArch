@@ -664,7 +664,7 @@ static void mui_compute_entries_box(mui_handle_t* mui, int width)
    size_t usable_width = width - (mui->margin * 2);
    file_list_t *list   = menu_entries_get_selection_buf_ptr(0);
    float sum           = 0;
-   size_t entries_end  = menu_entries_get_end();
+   size_t entries_end  = menu_entries_get_size();
    float scale_factor  = menu_display_get_dpi();
    uintptr_t texture_switch2 = 0;
 
@@ -1004,7 +1004,7 @@ static void mui_render_menu_list(
    list                                    = 
       menu_entries_get_selection_buf_ptr(0);
    
-   entries_end = menu_entries_get_end();
+   entries_end = menu_entries_get_size();
 
    for (i = 0; i < entries_end; i++)
    {

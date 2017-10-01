@@ -198,12 +198,6 @@ static bool menu_entries_refresh(void *data)
    return true;
 }
 
-/* Returns the last index (+1) of the menu entry list. */
-size_t menu_entries_get_end(void)
-{
-   return menu_entries_get_size();
-}
-
 /* Sets title to what the name of the current menu should be. */
 int menu_entries_get_title(char *s, size_t len)
 {

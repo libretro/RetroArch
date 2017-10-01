@@ -723,7 +723,7 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
    menu_entries_get_title(title, sizeof(title));
    self.title = BOXSTRING(title);
 
-   end = menu_entries_get_end();
+   end = menu_entries_get_size();
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
 
    for (; i < end; i++)

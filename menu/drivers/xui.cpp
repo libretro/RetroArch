@@ -588,7 +588,7 @@ static void xui_render(void *data, bool is_idle)
       }
    }
 
-   end = menu_entries_get_end();
+   end = menu_entries_get_size();
    for (i = 0; i < end; i++)
    {
       menu_entry_t entry;
