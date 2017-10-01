@@ -44,14 +44,6 @@ void menu_entries_get_at_offset(const file_list_t *list, size_t idx,
    file_list_get_alt_at_offset(list, idx, alt);
 }
 
-void menu_entries_get_last(const file_list_t *list,
-      const char **path, const char **label,
-      unsigned *file_type, size_t *entry_idx)
-{
-   if (list)
-      file_list_get_last(list, path, label, file_type, entry_idx);
-}
-
 menu_file_list_cbs_t *menu_entries_get_actiondata_at_offset(
       const file_list_t *list, size_t idx)
 {
@@ -477,7 +469,7 @@ void menu_entries_get_last_stack(const char **path, const char **label,
    if (!menu_list)
       return;
 
-   menu_entries_get_last(menu_list_get(menu_list, 0),
+   file_list_get_last(menu_list_get(menu_list, 0),
          path, label, file_type, entry_idx);
    cbs = menu_entries_get_last_stack_actiondata();
    if (cbs && enum_idx)

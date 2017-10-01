@@ -154,7 +154,7 @@ void menu_list_flush_stack(menu_list_t *list,
       return;
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_entries_get_last(menu_list,
+   file_list_get_last(menu_list,
          &path, &label, &type, &entry_idx);
 
    while (menu_list_flush_stack_type(
@@ -169,7 +169,7 @@ void menu_list_flush_stack(menu_list_t *list,
 
       menu_list = menu_list_get(list, (unsigned)idx);
 
-      menu_entries_get_last(menu_list,
+      file_list_get_last(menu_list,
             &path, &label, &type, &entry_idx);
    }
 }

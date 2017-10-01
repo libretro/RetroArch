@@ -1382,7 +1382,7 @@ static int action_ok_file_load(const char *path,
 
    menu_path_new[0] = full_path_new[0] = '\0';
 
-   menu_entries_get_last(menu_stack, &menu_path, &menu_label, NULL, NULL);
+   file_list_get_last(menu_stack, &menu_path, &menu_label, NULL, NULL);
 
    if (menu_label && !string_is_empty(menu_label))
       setting = menu_setting_find(menu_label);
@@ -2415,7 +2415,7 @@ static int action_ok_file_load_ffmpeg(const char *path,
 
    const char *menu_path           = NULL;
    file_list_t *menu_stack         = menu_entries_get_menu_stack_ptr(0);
-   menu_entries_get_last(menu_stack, &menu_path, NULL, NULL, NULL);
+   file_list_get_last(menu_stack, &menu_path, NULL, NULL, NULL);
 
    new_path[0] = '\0';
 
@@ -2476,7 +2476,8 @@ static int action_ok_file_load_imageviewer(const char *path,
    content_ctx_info_t content_info;
    const char *menu_path           = NULL;
    file_list_t *menu_stack         = menu_entries_get_menu_stack_ptr(0);
-   menu_entries_get_last(menu_stack, &menu_path, NULL, NULL, NULL);
+
+   file_list_get_last(menu_stack, &menu_path, NULL, NULL, NULL);
 
    fullpath[0] = '\0';
 
