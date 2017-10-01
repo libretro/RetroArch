@@ -346,7 +346,6 @@ ssize_t chdstream_read(chdstream_t *stream, void *data, size_t bytes)
 
          if (!chdstream_load_hunk(stream, hunk))
          {
-            abort();
             return -1;
          }
          memcpy(out + data_offset,
