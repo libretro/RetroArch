@@ -621,6 +621,7 @@ void d3d_make_d3dpp(void *data,
 static bool d3d_init_base(void *data, const video_info_t *info)
 {
    D3DPRESENT_PARAMETERS d3dpp;
+   HRESULT d3d_err;
    d3d_video_t *d3d = (d3d_video_t*)data;
 
    d3d_make_d3dpp(d3d, info, &d3dpp);
@@ -637,7 +638,7 @@ static bool d3d_init_base(void *data, const video_info_t *info)
 #endif
 
 #ifdef _XBOX
-      if (FAILED(d3d->d3d_err = g_pD3D->CreateDevice(
+      if (FAILED(d3d_err = g_pD3D->CreateDevice(
             d3d->cur_mon_id,
             D3DDEVTYPE_HAL,
             NULL,
@@ -645,7 +646,7 @@ static bool d3d_init_base(void *data, const video_info_t *info)
             &d3dpp,
             &d3d->dev)))
 #else
-   if (FAILED(d3d->d3d_err = g_pD3D->CreateDevice(
+   if (FAILED(d3d_err = g_pD3D->CreateDevice(
             d3d->cur_mon_id,
             D3DDEVTYPE_HAL,
             win32_get_window(),
@@ -655,10 +656,10 @@ static bool d3d_init_base(void *data, const video_info_t *info)
 #endif
    {
       RARCH_WARN("[D3D]: Failed to init device with hardware vertex processing (code: 0x%x). Trying to fall back to software vertex processing.\n",
-                 (unsigned)d3d->d3d_err);
+                 (unsigned)d3d_err);
 
 #ifdef _XBOX
-      if (FAILED(d3d->d3d_err = g_pD3D->CreateDevice(
+      if (FAILED(d3d_err = g_pD3D->CreateDevice(
                   d3d->cur_mon_id,
                   D3DDEVTYPE_HAL,
                   NULL,
@@ -666,7 +667,7 @@ static bool d3d_init_base(void *data, const video_info_t *info)
                   &d3dpp,
                   &d3d->dev)))
 #else
-      if (FAILED(d3d->d3d_err = g_pD3D->CreateDevice(
+      if (FAILED(d3d_err = g_pD3D->CreateDevice(
                   d3d->cur_mon_id,
                   D3DDEVTYPE_HAL,
                   win32_get_window(),

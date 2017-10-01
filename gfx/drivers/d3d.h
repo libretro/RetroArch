@@ -79,8 +79,6 @@ typedef struct d3d_video
    unsigned cur_mon_id;
    unsigned dev_rotation;
 
-   HRESULT d3d_err;
-
 #if defined(HAVE_MENU)
    overlay_t *menu;
 #endif
