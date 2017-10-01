@@ -52,13 +52,6 @@ void menu_entries_get_last(const file_list_t *list,
       file_list_get_last(list, path, label, file_type, entry_idx);
 }
 
-void *menu_entries_get_userdata_at_offset(const file_list_t *list, size_t idx)
-{
-   if (!list)
-      return NULL;
-   return file_list_get_userdata_at_offset(list, idx);
-}
-
 menu_file_list_cbs_t *menu_entries_get_actiondata_at_offset(
       const file_list_t *list, size_t idx)
 {

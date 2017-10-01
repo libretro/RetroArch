@@ -674,7 +674,7 @@ static void mui_compute_entries_box(mui_handle_t* mui, int width)
       char *sublabel_str = NULL;
       unsigned lines     = 0;
       mui_node_t *node   = (mui_node_t*)
-            menu_entries_get_userdata_at_offset(list, i);
+            file_list_get_userdata_at_offset(list, i);
 
       menu_entry_init(&entry);
       menu_entry_get(&entry, 0, i, NULL, true);
@@ -751,7 +751,7 @@ static void mui_render(void *data, bool is_idle)
       for (ii = 0; ii < entries_end; ii++)
       {
          mui_node_t *node = (mui_node_t*)
-               menu_entries_get_userdata_at_offset(list, ii);
+               file_list_get_userdata_at_offset(list, ii);
 
          if (pointer_y > (-mui->scroll_y + header_height + node->y)
           && pointer_y < (-mui->scroll_y + header_height + node->y + node->line_height)
@@ -777,7 +777,7 @@ static void mui_render(void *data, bool is_idle)
       for (ii = 0; ii < entries_end; ii++)
       {
          mui_node_t *node = (mui_node_t*)
-               menu_entries_get_userdata_at_offset(list, ii);
+               file_list_get_userdata_at_offset(list, ii);
 
          if (mouse_y > (-mui->scroll_y + header_height + node->y)
           && mouse_y < (-mui->scroll_y + header_height + node->y + node->line_height)
@@ -1013,7 +1013,7 @@ static void mui_render_menu_list(
       char *rich_label    = NULL;
       bool entry_selected = false;
       mui_node_t *node    = (mui_node_t*)
-            menu_entries_get_userdata_at_offset(list, i);
+            file_list_get_userdata_at_offset(list, i);
       size_t selection    = menu_navigation_get_selection();
       int               y = header_height - mui->scroll_y + sum;
       entry_value[0]      = '\0';
@@ -1476,7 +1476,7 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
 
    /* highlighted entry */
    list             = menu_entries_get_selection_buf_ptr(0);
-   node             = (mui_node_t*)menu_entries_get_userdata_at_offset(
+   node             = (mui_node_t*)file_list_get_userdata_at_offset(
          list, selection);
 
    if (node)
@@ -2196,7 +2196,7 @@ static int mui_pointer_down(void *userdata,
       for (ii = 0; ii < entries_end; ii++)
       {
          mui_node_t *node = (mui_node_t*)
-               menu_entries_get_userdata_at_offset(list, ii);
+               file_list_get_userdata_at_offset(list, ii);
 
          if (y > (-mui->scroll_y + header_height + node->y)
           && y < (-mui->scroll_y + header_height + node->y + node->line_height)
@@ -2265,7 +2265,7 @@ static int mui_pointer_up(void *userdata,
       for (ii = 0; ii < entries_end; ii++)
       {
          mui_node_t *node = (mui_node_t*)
-               menu_entries_get_userdata_at_offset(list, ii);
+               file_list_get_userdata_at_offset(list, ii);
 
          if (y > (-mui->scroll_y + header_height + node->y)
           && y < (-mui->scroll_y + header_height + node->y + node->line_height)
@@ -2304,7 +2304,7 @@ static void mui_list_insert(void *userdata,
       return;
 
    mui->need_compute = true;
-   node = (mui_node_t*)menu_entries_get_userdata_at_offset(list, i);
+   node = (mui_node_t*)file_list_get_userdata_at_offset(list, i);
 
    if (!node)
       node = (mui_node_t*)calloc(1, sizeof(mui_node_t));
@@ -2709,7 +2709,7 @@ static void mui_list_clear(file_list_t *list)
       menu_animation_ctx_subject_t subject;
       float *subjects[2];
       mui_node_t *node = (mui_node_t*)
-         menu_entries_get_userdata_at_offset(list, i);
+         file_list_get_userdata_at_offset(list, i);
 
       if (!node)
          continue;
