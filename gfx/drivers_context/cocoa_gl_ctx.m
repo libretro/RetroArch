@@ -247,7 +247,10 @@ static void *cocoagl_gfx_ctx_init(video_frame_info_t *video_info, void *video_dr
 
 static void cocoagl_gfx_ctx_destroy(void *data)
 {
-   (void)data;
+   cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
+
+   if (!cocoa_ctx)
+      return;
 
    [GLContextClass clearCurrentContext];
 
@@ -268,6 +271,8 @@ static void cocoagl_gfx_ctx_destroy(void *data)
 #endif
    [GLContextClass clearCurrentContext];
    g_context = nil;
+
+   free(cocoa_ctx);
 }
 
 static bool cocoagl_gfx_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor)
