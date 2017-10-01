@@ -98,7 +98,7 @@ typedef struct d3d_video
    LPDIRECT3DDEVICE dev;
    D3DVIEWPORT final_viewport;
 
-   std::string shader_path;
+   char *shader_path;
 
 #ifdef HAVE_OVERLAY
    std::vector<overlay_t> overlays;

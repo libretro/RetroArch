@@ -238,8 +238,10 @@ static bool d3d_init_singlepass(d3d_video_t *d3d)
    pass->fbo.type_y                      = RARCH_SCALE_VIEWPORT;
    pass->fbo.scale_x                     = pass->fbo.scale_y;
    pass->fbo.type_x                      = pass->fbo.type_y;
-   strlcpy(pass->source.path, d3d->shader_path.c_str(),
-         sizeof(pass->source.path));
+
+   if (!string_is_empty(d3d->shader_path))
+      strlcpy(pass->source.path, d3d->shader_path,
+            sizeof(pass->source.path));
 #endif
 
    return true;
@@ -251,7 +253,7 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
    unsigned i;
    bool use_extra_pass     = false;
    video_shader_pass *pass = NULL;
-   config_file_t *conf     = config_file_new(d3d->shader_path.c_str());
+   config_file_t *conf     = !string_is_empty(d3d->shader_path) ? config_file_new(d3d->shader_path) : NULL;
 
    if (!conf)
    {
@@ -270,7 +272,8 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
 #endif
    config_file_free(conf);
 #ifdef HAVE_SHADERPIPELINE
-   video_shader_resolve_relative(&d3d->shader, d3d->shader_path.c_str());
+   if (!string_is_empty(d3d->shader_path))
+      video_shader_resolve_relative(&d3d->shader, d3d->shader_path);
 #endif
    RARCH_LOG("[D3D]: Found %u shaders.\n", d3d->shader.passes);
 
@@ -314,7 +317,8 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
 static bool d3d_process_shader(d3d_video_t *d3d)
 {
 #ifdef HAVE_FBO
-   if (string_is_equal_fast(path_get_extension(d3d->shader_path.c_str()), "cgp", 3))
+   if (d3d && !string_is_empty(d3d->shader_path) &&
+         string_is_equal_fast(path_get_extension(d3d->shader_path), "cgp", 3))
       return d3d_init_multipass(d3d);
 #endif
 
@@ -1080,7 +1084,11 @@ static bool d3d_construct(d3d_video_t *d3d,
    enum rarch_shader_type type =
       video_shader_parse_type(settings->paths.path_shader, RARCH_SHADER_NONE);
    if (settings->bools.video_shader_enable && type == RARCH_SHADER_CG)
-      d3d->shader_path = settings->paths.path_shader;
+   {
+      if (!string_is_empty(d3d->shader_path))
+         free(d3d->shader_path);
+      d3d->shader_path = strdup(settings->paths.path_shader);
+   }
 
    if (!d3d_process_shader(d3d))
       return false;
@@ -1241,9 +1249,13 @@ static void d3d_free(void *data)
 #endif
 #endif
 
+   if (!string_is_empty(d3d->shader_path))
+      free(d3d->shader_path);
+
+   d3d->shader_path = NULL;
    d3d_device_free(d3d->dev, g_pD3D);
-   d3d->dev = NULL;
-   g_pD3D   = NULL;
+   d3d->dev         = NULL;
+   g_pD3D           = NULL;
 
 #ifndef _XBOX
    win32_monitor_from_window();
@@ -1516,28 +1528,33 @@ static bool d3d_set_shader(void *data,
       enum rarch_shader_type type, const char *path)
 {
    d3d_video_t *d3d       = (d3d_video_t*)data;
-   std::string old_shader = d3d ? d3d->shader_path : "";
-   std::string shader     = "";
+   char *old_shader       = (d3d && !string_is_empty(d3d->shader_path)) ? strdup(d3d->shader_path) : NULL;
+
+   if (!string_is_empty(d3d->shader_path))
+      free(d3d->shader_path);
+   d3d->shader_path = NULL;
 
    switch (type)
    {
       case RARCH_SHADER_CG:
       case RARCH_SHADER_HLSL:
-         if (path)
-            shader   = path;
+         if (!string_is_empty(path))
+            d3d->shader_path = strdup(path);
          break;
       default:
          break;
    }
 
-   d3d->shader_path       = shader;
-
    if (!d3d_process_shader(d3d) || !d3d_restore(d3d))
    {
       RARCH_ERR("[D3D]: Setting shader failed.\n");
-      d3d->shader_path = old_shader;
-      d3d_process_shader(d3d);
-      d3d_restore(d3d);
+      if (!string_is_empty(old_shader))
+      {
+         d3d->shader_path = strdup(old_shader);
+         d3d_process_shader(d3d);
+         d3d_restore(d3d);
+      }
+      free(old_shader);
       return false;
    }
 
