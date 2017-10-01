@@ -191,7 +191,7 @@ static int action_right_goto_tab(void)
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
    size_t selection           = menu_navigation_get_selection();
-   menu_file_list_cbs_t *cbs  = menu_entries_get_actiondata_at_offset(selection_buf, selection);
+   menu_file_list_cbs_t *cbs  = selection_buf ? file_list_get_actiondata_at_offset(selection_buf, selection) : NULL;
 
    list_info.type             = MENU_LIST_HORIZONTAL;
    list_info.action           = MENU_ACTION_RIGHT;

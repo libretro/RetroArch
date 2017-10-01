@@ -145,9 +145,6 @@ void menu_entries_get_at_offset(const file_list_t *list, size_t idx,
       const char **path, const char **label, unsigned *file_type,
       size_t *entry_idx, const char **alt);
 
-menu_file_list_cbs_t *menu_entries_get_actiondata_at_offset(
-      const file_list_t *list, size_t idx);
-
 void menu_entries_set_alt_at_offset(file_list_t *list, size_t idx,
       const char *alt);
 

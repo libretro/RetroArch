@@ -313,7 +313,7 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
    menu_entries_get_at_offset(list, i, &path, &entry_label, &entry->type,
          &entry->entry_idx, NULL);
 
-   cbs = menu_entries_get_actiondata_at_offset(list, i);
+   cbs = list ? file_list_get_actiondata_at_offset(list, i) : NULL;
 
    if (cbs)
    {
@@ -417,8 +417,8 @@ int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
    int ret                    = 0;
    file_list_t *selection_buf = 
       menu_entries_get_selection_buf_ptr(0);
-   menu_file_list_cbs_t *cbs  = 
-      menu_entries_get_actiondata_at_offset(selection_buf, i);
+   menu_file_list_cbs_t *cbs  = selection_buf ?
+      file_list_get_actiondata_at_offset(selection_buf, i) : NULL;
 
    switch (action)
    {
@@ -482,7 +482,7 @@ int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
          break;
    }
 
-   cbs = menu_entries_get_actiondata_at_offset(selection_buf, i);
+   cbs = selection_buf ? file_list_get_actiondata_at_offset(selection_buf, i) : NULL;
 
    if (menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL))
    {

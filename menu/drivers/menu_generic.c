@@ -133,8 +133,9 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
       case ITERATE_TYPE_INFO:
          {
             file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-            menu_file_list_cbs_t *cbs  =
-               menu_entries_get_actiondata_at_offset(selection_buf, selection);
+            menu_file_list_cbs_t *cbs  = selection_buf ?
+               file_list_get_actiondata_at_offset(selection_buf, selection) 
+               : NULL;
 
             if (cbs->enum_idx != MSG_UNKNOWN)
             {

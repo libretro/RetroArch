@@ -563,13 +563,11 @@ static int menu_input_pointer_post_iterate(
 void menu_input_post_iterate(int *ret, unsigned action)
 {
    menu_entry_t entry;
-   menu_file_list_cbs_t *cbs  = NULL;
    settings_t *settings       = config_get_ptr();
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    size_t selection           = menu_navigation_get_selection();
-
-   if (selection_buf)
-      cbs = menu_entries_get_actiondata_at_offset(selection_buf, selection);
+   menu_file_list_cbs_t *cbs  = selection_buf ? 
+      file_list_get_actiondata_at_offset(selection_buf, selection) : NULL;
 
    menu_entry_init(&entry);
    menu_entry_get(&entry, 0, selection, NULL, false);

@@ -44,15 +44,6 @@ void menu_entries_get_at_offset(const file_list_t *list, size_t idx,
    file_list_get_alt_at_offset(list, idx, alt);
 }
 
-menu_file_list_cbs_t *menu_entries_get_actiondata_at_offset(
-      const file_list_t *list, size_t idx)
-{
-   if (!list)
-      return NULL;
-   return (menu_file_list_cbs_t*)
-      file_list_get_actiondata_at_offset(list, idx);
-}
-
 static bool menu_entries_clear(file_list_t *list)
 {
    unsigned i;
@@ -509,8 +500,8 @@ size_t menu_entries_get_size(void)
 rarch_setting_t *menu_entries_get_setting(uint32_t i)
 {
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-   menu_file_list_cbs_t *cbs  = 
-      menu_entries_get_actiondata_at_offset(selection_buf, i);
+   menu_file_list_cbs_t *cbs  = selection_buf ?
+      file_list_get_actiondata_at_offset(selection_buf, i) : NULL;
 
    if (!cbs)
       return NULL;
