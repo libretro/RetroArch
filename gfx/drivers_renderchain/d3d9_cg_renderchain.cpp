@@ -1565,7 +1565,7 @@ static bool d3d9_cg_renderchain_read_viewport(
       goto end;
    }
 
-   if (FAILED(d3d->d3d_err = d3dr->GetRenderTargetData(target, dest)))
+   if (!d3d_device_get_render_target_data(d3dr, (void*)target, (void*)dest))
    {
       ret = false;
       goto end;

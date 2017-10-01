@@ -391,6 +391,21 @@ void d3d_clear(LPDIRECT3DDEVICE dev,
 #endif
 }
 
+bool d3d_device_get_render_target_data(LPDIRECT3DDEVICE dev,
+      void *_src, void *_dst)
+{
+   LPDIRECT3DSURFACE src = (LPDIRECT3DSURFACE)_src;
+   LPDIRECT3DSURFACE dst = (LPDIRECT3DSURFACE)_dst;
+#if defined(HAVE_D3D9) && !defined(__cplusplus)
+   if (SUCCEEDED(IDirect3DDevice9_GetRenderTargetData(dev, src, dst)))
+      return true;
+#else
+   if (SUCCEEDED(dev->GetRenderTargetData(src, dst)))
+      return true;
+#endif
+   return false;
+}
+
 bool d3d_device_get_render_target(LPDIRECT3DDEVICE dev,
       unsigned idx, void **data)
 {
