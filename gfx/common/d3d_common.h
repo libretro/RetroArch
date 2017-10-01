@@ -110,6 +110,9 @@ void d3d_frame_postprocess(void *data);
 
 void d3d_surface_free(void *data);
 
+bool d3d_device_get_render_target_data(LPDIRECT3DDEVICE dev,
+      void *_src, void *_dst);
+
 bool d3d_device_get_render_target(LPDIRECT3DDEVICE dev,
       unsigned idx, void **data);
 
