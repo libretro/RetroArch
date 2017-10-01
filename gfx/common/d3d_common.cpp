@@ -80,7 +80,10 @@ LPDIRECT3DTEXTURE d3d_texture_new(LPDIRECT3DDEVICE dev,
             palette, &buf);
    else
    {
-#if defined(HAVE_D3D8) && !defined(__cplusplus)
+#if defined(HAVE_D3D9) && !defined(__cplusplus)
+      hr = IDirect3DDevice9_CreateTexture(dev, width, height, miplevels, usage,
+            format, pool, &buf);
+#elif defined(HAVE_D3D8) && !defined(__cplusplus)
       hr = IDirect3DDevice8_CreateTexture(dev, width, height, miplevels, usage,
             format, pool, &buf);
 #else
