@@ -2560,7 +2560,7 @@ static void xmb_draw_items(
       xmb_node_t *node = (xmb_node_t*)
             menu_entries_get_userdata_at_offset(list, current);
 
-      if ((uint8_t)(255 * node->alpha) == 0)
+      if (node && (uint8_t)(255 * node->alpha) == 0)
          return;
 
       i = 0;
