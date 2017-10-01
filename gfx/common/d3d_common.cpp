@@ -313,11 +313,20 @@ bool d3d_device_create_offscreen_plain_surface(
       void *data)
 {
 #if defined(HAVE_D3D9)
+#ifdef __cplusplus
    if (SUCCEEDED(dev->CreateOffscreenPlainSurface(width, height,
          (D3DFORMAT)format, (D3DPOOL)pool,
          (LPDIRECT3DSURFACE*)surf_data,
          (HANDLE*)data)))
       return true;
+#else
+   if (SUCCEEDED(IDirect3DDevice9_CreateOffscreenPlainSurface(dev,
+               width, height,
+         (D3DFORMAT)format, (D3DPOOL)pool,
+         (LPDIRECT3DSURFACE*)surf_data,
+         (HANDLE*)data)))
+      return true;
+#endif
 #endif
    return false;
 }
