@@ -23,6 +23,8 @@
 - WII: Use custom, embedded libogc SDK.
 - WIIU: Initial touchscreen support for WiiU gamepad.
 - SCANNER: Fix archive scanning.
+- SCANNER: Support CHD files.
+- SCANNER: Use primary data track of disc images for CRC lookups rather than cue files.  This is slower but finds matches more reliably, and is necessary for CHD files to work at all.  Update your databases!
 
 # 1.6.7
 - SCANNER: Fix directory scanning.
