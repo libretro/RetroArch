@@ -2603,14 +2603,21 @@ static bool config_load_file(const char *path, bool set_defaults,
       }
    }
 
-   /* Safe-guard against older behavior. */
-   if (path_is_directory(path_get(RARCH_PATH_CORE)))
+#ifdef RARCH_CONSOLE
+   if (!string_is_empty(path_get(RARCH_PATH_CORE)))
    {
-      RARCH_WARN("\"libretro_path\" is a directory, using this for \"libretro_directory\" instead.\n");
-      strlcpy(settings->paths.directory_libretro, path_get(RARCH_PATH_CORE),
-            sizeof(settings->paths.directory_libretro));
-      path_clear(RARCH_PATH_CORE);
+#endif
+      /* Safe-guard against older behavior. */
+      if (path_is_directory(path_get(RARCH_PATH_CORE)))
+      {
+         RARCH_WARN("\"libretro_path\" is a directory, using this for \"libretro_directory\" instead.\n");
+         strlcpy(settings->paths.directory_libretro, path_get(RARCH_PATH_CORE),
+               sizeof(settings->paths.directory_libretro));
+         path_clear(RARCH_PATH_CORE);
+      }
+#ifdef RARCH_CONSOLE
    }
+#endif
 
    if (string_is_equal_fast(settings->paths.path_menu_wallpaper, "default", 7))
       *settings->paths.path_menu_wallpaper = '\0';
