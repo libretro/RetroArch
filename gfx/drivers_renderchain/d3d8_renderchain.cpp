@@ -74,7 +74,7 @@ static bool renderchain_create_first_pass(void *data,
    LPDIRECT3DDEVICE d3dr     = (LPDIRECT3DDEVICE)d3d->dev;
    d3d8_renderchain_t *chain = (d3d8_renderchain_t*)d3d->renderchain_data;
 
-   chain->vertex_buf     = d3d_vertex_buffer_new(d3dr, 4 * sizeof(Vertex), 
+   chain->vertex_buf         = d3d_vertex_buffer_new(d3dr, 4 * sizeof(Vertex), 
          D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, 
          NULL);
 

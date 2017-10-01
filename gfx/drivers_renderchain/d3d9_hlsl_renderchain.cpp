@@ -82,10 +82,8 @@ static bool hlsl_d3d9_renderchain_init_shader_fvf(void *data, void *pass_data)
 
    (void)pass_data;
 
-   if (FAILED(d3dr->CreateVertexDeclaration(VertexElements, &chain->vertex_decl)))
-      return false;
-
-   return true;
+   return d3d_vertex_declaration_new(d3dr,
+         VertexElements, (void**)&chain->vertex_decl);
 }
 
 static bool renderchain_create_first_pass(void *data,
