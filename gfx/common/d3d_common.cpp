@@ -411,6 +411,42 @@ void d3d_set_sampler_magfilter(LPDIRECT3DDEVICE dev,
 #endif
 }
 
+bool d3d_begin_scene(LPDIRECT3DDEVICE dev)
+{
+#if defined(HAVE_D3D9) && !defined(__cplusplus)
+   if (SUCCEEDED(IDirect3DDevice9_BeginScene(dev)))
+#elif defined(HAVE_D3D8) && !defined(__cplusplus)
+   if (SUCCEEDED(IDirect3DDevice8_BeginScene(dev)))
+#else
+   if (SUCCEEDED(dev->BeginScene()))
+#endif
+      return true;
+   return false;
+}
+
+void d3d_end_scene(LPDIRECT3DDEVICE dev)
+{
+#if defined(HAVE_D3D9) && !defined(__cplusplus)
+   IDirect3DDevice9_EndScene(dev);
+#elif defined(HAVE_D3D8) && !defined(__cplusplus)
+   IDirect3DDevice8_EndScene(dev);
+#else
+   dev->EndScene();
+#endif
+}
+
+static void d3d_draw_primitive_internal(LPDIRECT3DDEVICE dev,
+      D3DPRIMITIVETYPE type, unsigned start, unsigned count)
+{
+#if defined(HAVE_D3D9) && !defined(__cplusplus)
+   IDirect3DDevice9_DrawPrimitive(dev, type, start, count);
+#elif defined(HAVE_D3D8) && !defined(__cplusplus)
+   IDirect3DDevice8_DrawPrimitive(dev, type, start, count);
+#else
+   dev->DrawPrimitive(type, start, count);
+#endif
+}
+
 void d3d_draw_primitive(LPDIRECT3DDEVICE dev,
       D3DPRIMITIVETYPE type, unsigned start, unsigned count)
 {
@@ -418,19 +454,11 @@ void d3d_draw_primitive(LPDIRECT3DDEVICE dev,
    D3DDevice_DrawVertices(type, start, D3DVERTEXCOUNT(type, count));
 #elif defined(_XBOX360)
    D3DDevice_DrawVertices(dev, type, start, D3DVERTEXCOUNT(type, count));
-#elif defined(HAVE_D3D9) && !defined(__cplusplus)
-   IDirect3DDevice9_BeginScene(dev);
-   IDirect3DDevice9_DrawPrimitive(dev, type, start, count);
-   IDirect3DDevice9_EndScene(dev);
-#elif defined(HAVE_D3D8) && !defined(__cplusplus)
-   IDirect3DDevice8_BeginScene(dev);
-   IDirect3DDevice8_DrawPrimitive(dev, type, start, count);
-   IDirect3DDevice8_EndScene(dev);
 #else
-   if (SUCCEEDED(dev->BeginScene()))
+   if (d3d_begin_scene(dev))
    {
-      dev->DrawPrimitive(type, start, count);
-      dev->EndScene();
+      d3d_draw_primitive_internal(dev, type, start, count);
+      d3d_end_scene(dev);
    }
 #endif
 }

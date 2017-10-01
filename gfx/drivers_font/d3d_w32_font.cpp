@@ -105,7 +105,7 @@ static void d3dfonts_w32_render_msg(video_frame_info_t *video_info, void *data, 
    if (!msg)
       return;
    d3d_set_viewports(d3dfonts->d3d->dev, &d3dfonts->d3d->final_viewport);
-   if (!(SUCCEEDED(d3dfonts->d3d->dev->BeginScene())))
+   if (!d3d_begin_scene(d3dfonts->d3d->dev))
       return;
 
    d3dfonts->font->DrawTextA(NULL,
@@ -122,7 +122,7 @@ static void d3dfonts_w32_render_msg(video_frame_info_t *video_info, void *data, 
          DT_LEFT,
          d3dfonts->color | 0xff000000);
 
-   d3dfonts->d3d->dev->EndScene();
+   d3d_end_scene(d3dfonts->d3d->dev);
 }
 
 font_renderer_t d3d_win32_font = {
