@@ -391,6 +391,24 @@ void d3d_clear(LPDIRECT3DDEVICE dev,
 #endif
 }
 
+bool d3d_device_get_render_target(LPDIRECT3DDEVICE dev,
+      unsigned idx, void **data)
+{
+#if defined(HAVE_D3D9) && !defined(__cplusplus)
+   if (FAILED(IDirect3DDevice9_GetRenderTarget(dev, idx,
+               (LPDIRECT3DSURFACE*)data)))
+#elif defined(HAVE_D3D8) && !defined(__cplusplus)
+   if (FAILED(IDirect3DDevice8_GetRenderTarget(dev,
+               (LPDIRECT3DSURFACE*)data)))
+#else
+   if (FAILED(dev->GetRenderTarget(idx,
+               (LPDIRECT3DSURFACE*)data)))
+#endif
+      return false;
+   return true;
+}
+
+
 bool d3d_lock_rectangle(LPDIRECT3DTEXTURE tex,
       unsigned level, D3DLOCKED_RECT *lock_rect, RECT *rect,
       unsigned rectangle_height, unsigned flags)

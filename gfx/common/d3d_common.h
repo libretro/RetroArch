@@ -110,6 +110,9 @@ void d3d_frame_postprocess(void *data);
 
 void d3d_surface_free(void *data);
 
+bool d3d_device_get_render_target(LPDIRECT3DDEVICE dev,
+      unsigned idx, void **data);
+
 void d3d_set_render_state(void *data, D3DRENDERSTATETYPE state, DWORD value);
 
 bool d3d_reset(LPDIRECT3DDEVICE dev, D3DPRESENT_PARAMETERS *d3dpp);

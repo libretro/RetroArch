@@ -1414,7 +1414,7 @@ static bool d3d9_cg_renderchain_render(
          frame_data, width, height, pitch);
 
    /* Grab back buffer. */
-   d3dr->GetRenderTarget(0, &back_buffer);
+   d3d_device_get_render_target(d3dr, 0, (void**)&back_buffer);
 
    /* In-between render target passes. */
    for (i = 0; i < chain->passes.size() - 1; i++)
@@ -1549,7 +1549,7 @@ static bool d3d9_cg_renderchain_read_viewport(
    (void)data;
    (void)buffer;
 
-   if (FAILED(d3d->d3d_err = d3dr->GetRenderTarget(0, &target)))
+   if (!d3d_device_get_render_target(d3dr, 0, (void**)&target))
    {
       ret = false;
       goto end;
