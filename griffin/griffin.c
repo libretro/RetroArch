@@ -1036,6 +1036,10 @@ MENU
 
 #include "../menu/drivers_display/menu_display_null.c"
 
+#if defined(HAVE_D3D)
+#include "../menu/drivers_display/menu_display_d3d.c"
+#endif
+
 #ifdef HAVE_OPENGL
 #include "../menu/drivers_display/menu_display_gl.c"
 #endif
