@@ -914,7 +914,7 @@ static void *gl_glsl_init(void *data, const char *path)
       if (*glsl->shader->script_class)
          info.script_class= glsl->shader->script_class;
 #endif
-      info.script_is_file = NULL;
+      info.script_is_file = false;
 
       glsl->state_tracker = state_tracker_init(&info);
 

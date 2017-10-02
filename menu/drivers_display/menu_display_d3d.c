@@ -236,11 +236,12 @@ static bool menu_display_d3d_font_init_first(
       bool is_threaded)
 {
    font_data_t **handle = (font_data_t**)font_handle;
-   *handle = font_driver_init_first(video_data,
+   if (!(*handle = font_driver_init_first(video_data,
          font_path, font_size, true,
          is_threaded,
-         FONT_DRIVER_RENDER_DIRECT3D_API);
-   return *handle;
+         FONT_DRIVER_RENDER_DIRECT3D_API)))
+		 return false;
+   return true;
 }
 
 menu_display_ctx_driver_t menu_display_ctx_d3d = {
