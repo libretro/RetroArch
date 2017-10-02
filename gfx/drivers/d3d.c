@@ -94,7 +94,7 @@ static bool d3d_init_imports(d3d_video_t *d3d)
 {
    retro_ctx_memory_info_t    mem_info;
    state_tracker_t *state_tracker = NULL;
-   state_tracker_info tracker_info = {0};
+   struct state_tracker_info tracker_info = {0};
 
    if (!d3d->shader.variables)
       return true;
@@ -136,8 +136,8 @@ static bool d3d_init_imports(d3d_video_t *d3d)
 static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
 {
    unsigned current_width, current_height, out_width, out_height;
-   unsigned i            = 0;
-   LinkInfo link_info    = {0};
+   unsigned i                   = 0;
+   struct LinkInfo link_info    = {0};
 
    (void)i;
    (void)current_width;
@@ -222,7 +222,7 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
 static bool d3d_init_singlepass(d3d_video_t *d3d)
 {
 #ifndef _XBOX
-   video_shader_pass *pass = NULL;
+   struct video_shader_pass *pass = NULL;
 
    if (!d3d)
       return false;
@@ -230,7 +230,7 @@ static bool d3d_init_singlepass(d3d_video_t *d3d)
    memset(&d3d->shader, 0, sizeof(d3d->shader));
    d3d->shader.passes                    = 1;
 
-   pass                                  = (video_shader_pass*)
+   pass                                  = (struct video_shader_pass*)
       &d3d->shader.pass[0];
 
    pass->fbo.valid                       = true;
@@ -252,7 +252,7 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
 {
    unsigned i;
    bool use_extra_pass     = false;
-   video_shader_pass *pass = NULL;
+   struct video_shader_pass *pass = NULL;
    config_file_t *conf     = !string_is_empty(d3d->shader_path) ? config_file_new(d3d->shader_path) : NULL;
 
    if (!conf)
@@ -294,7 +294,7 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
    if (use_extra_pass)
    {
       d3d->shader.passes++;
-      pass              = (video_shader_pass*)
+      pass              = (struct video_shader_pass*)
          &d3d->shader.pass[d3d->shader.passes - 1];
 
       pass->fbo.scale_x = pass->fbo.scale_y = 1.0f;
@@ -303,7 +303,7 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
    }
    else
    {
-      pass              = (video_shader_pass*)
+      pass              = (struct video_shader_pass*)
          &d3d->shader.pass[d3d->shader.passes - 1];
 
       pass->fbo.scale_x = pass->fbo.scale_y = 1.0f;
@@ -725,15 +725,15 @@ static void d3d_calculate_rect(void *data,
          }
          else if (device_aspect > desired_aspect)
          {
-            delta       = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
-            *x           = int(roundf(*width * (0.5f - delta)));
-            *width       = unsigned(roundf(2.0f * (*width) * delta));
+            delta        = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
+            *x           = (int)(roundf(*width * (0.5f - delta)));
+            *width       = (unsigned)(roundf(2.0f * (*width) * delta));
          }
          else
          {
-            delta       = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
-            *y           = int(roundf(*height * (0.5f - delta)));
-            *height      = unsigned(roundf(2.0f * (*height) * delta));
+            delta        = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
+            *y           = (int)(roundf(*height * (0.5f - delta)));
+            *height      = (unsigned)(roundf(2.0f * (*height) * delta));
          }
       }
    }
@@ -1137,7 +1137,7 @@ static void *d3d_init(const video_info_t *info,
    }
 #endif
 
-   d3d = new d3d_video_t();
+   d3d = (d3d_video_t*)calloc(1, sizeof(*d3d));
    if (!d3d)
       goto error;
 
@@ -1178,7 +1178,7 @@ static void *d3d_init(const video_info_t *info,
 error:
    video_context_driver_destroy();
    if (d3d)
-      delete d3d;
+      free(d3d);
    return NULL;
 }
 
@@ -1237,7 +1237,7 @@ static void d3d_free(void *data)
 #endif
 
    if (d3d)
-      delete d3d;
+      free(d3d);
 
 #ifndef _XBOX
    win32_destroy_window();
