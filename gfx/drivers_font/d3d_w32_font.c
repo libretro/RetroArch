@@ -57,7 +57,11 @@ static void *d3dfonts_w32_init_font(void *video_data,
       OUT_TT_PRECIS,
       CLIP_DEFAULT_PRECIS,
       DEFAULT_PITCH,
+#ifdef UNICODE
+	  _T(L"Verdana") /* Hardcode FTL */
+#else
       _T("Verdana") /* Hardcode FTL */
+#endif
    };
    d3dfonts_t *d3dfonts = (d3dfonts_t*)calloc(1, sizeof(*d3dfonts));
    uint32_t r           = (settings->floats.video_msg_color_r * 255);
