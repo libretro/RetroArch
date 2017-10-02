@@ -831,73 +831,27 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 
          if (memory_used != 0 && memory_total != 0)
          {
-#ifdef _WIN32
             snprintf(tmp, sizeof(tmp),
-                  "%s %s: %Iu/%Iu B",
+                  "%s %s: " STRING_REP_UINT64 "/" STRING_REP_UINT64 " B",
                   msg_hash_to_str(MSG_MEMORY),
                   msg_hash_to_str(MSG_IN_BYTES),
                   memory_used,
                   memory_total
                   );
             snprintf(tmp2, sizeof(tmp2),
-                  "%s %s: %Iu/%Iu MB",
+                  "%s %s: " STRING_REP_UINT64 "/" STRING_REP_UINT64 " MB",
                   msg_hash_to_str(MSG_MEMORY),
                   msg_hash_to_str(MSG_IN_MEGABYTES),
                   bytes_to_mb(memory_used),
                   bytes_to_mb(memory_total)
                   );
             snprintf(tmp3, sizeof(tmp3),
-                  "%s %s: %Iu/%Iu GB",
+                  "%s %s: " STRING_REP_UINT64 "/" STRING_REP_UINT64 " GB",
                   msg_hash_to_str(MSG_MEMORY),
                   msg_hash_to_str(MSG_IN_GIGABYTES),
                   bytes_to_gb(memory_used),
                   bytes_to_gb(memory_total)
                   );
-#elif defined(__STDC_VERSION__) && __STDC_VERSION__>=199901L
-            snprintf(tmp, sizeof(tmp),
-                  "%s %s  : %llu/%llu B",
-                  msg_hash_to_str(MSG_MEMORY),
-                  msg_hash_to_str(MSG_IN_BYTES),
-                  (unsigned long long)memory_used,
-                  (unsigned long long)memory_total
-                  );
-            snprintf(tmp2, sizeof(tmp2),
-                  "%s %s : %llu/%llu MB",
-                  msg_hash_to_str(MSG_MEMORY),
-                  msg_hash_to_str(MSG_IN_MEGABYTES),
-                  (unsigned long long)bytes_to_mb(memory_used),
-                  (unsigned long long)bytes_to_mb(memory_total)
-                  );
-            snprintf(tmp3, sizeof(tmp3),
-                  "%s %s: %llu/%llu GB",
-                  msg_hash_to_str(MSG_MEMORY),
-                  msg_hash_to_str(MSG_IN_GIGABYTES),
-                  (unsigned long long)bytes_to_gb(memory_used),
-                  (unsigned long long)bytes_to_gb(memory_total)
-                  );
-#else
-            snprintf(tmp, sizeof(tmp),
-                  "%s %s: %lu/%lu B",
-                  msg_hash_to_str(MSG_MEMORY),
-                  msg_hash_to_str(MSG_IN_BYTES),
-                  memory_used,
-                  memory_total
-                  );
-            snprintf(tmp2, sizeof(tmp2),
-                  "%s %s : %lu/%lu MB",
-                  msg_hash_to_str(MSG_MEMORY),
-                  msg_hash_to_str(MSG_IN_MEGABYTES),
-                  bytes_to_mb(memory_used),
-                  bytes_to_mb(memory_total)
-                  );
-            snprintf(tmp3, sizeof(tmp3),
-                  "%s %s : %lu/%lu GB",
-                  msg_hash_to_str(MSG_MEMORY),
-                  msg_hash_to_str(MSG_IN_GIGABYTES),
-                  bytes_to_gb(memory_used),
-                  bytes_to_gb(memory_total)
-                  );
-#endif
             menu_entries_append_enum(info->list, tmp, "",
                   MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
                   MENU_SETTINGS_CORE_INFO_NONE, 0, 0);

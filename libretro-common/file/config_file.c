@@ -874,11 +874,7 @@ void config_set_uint64(config_file_t *conf, const char *key, uint64_t val)
    char buf[128];
 
    buf[0] = '\0';
-#ifdef _WIN32
-   snprintf(buf, sizeof(buf), "%I64u", val);
-#else
-   snprintf(buf, sizeof(buf), "%llu", (long long unsigned)val);
-#endif
+   snprintf(buf, sizeof(buf), STRING_REP_UINT64, val);
    config_set_string(conf, key, buf);
 }
 

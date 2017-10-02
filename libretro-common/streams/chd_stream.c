@@ -321,7 +321,7 @@ ssize_t chdstream_read(chdstream_t *stream, void *data, size_t bytes)
    uint32_t amount;
    size_t data_offset   = 0;
    const chd_header *hd = chd_get_header(stream->chd);
-   uint8_t         *out = data;
+   uint8_t         *out = (uint8_t*)data;
 
    if (stream->track_end - stream->offset < bytes)
       bytes = stream->track_end - stream->offset;
