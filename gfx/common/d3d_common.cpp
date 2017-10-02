@@ -82,7 +82,7 @@ LPDIRECT3DTEXTURE d3d_texture_new(LPDIRECT3DDEVICE dev,
    {
 #if defined(HAVE_D3D9) && !defined(__cplusplus)
       hr = IDirect3DDevice9_CreateTexture(dev, width, height, miplevels, usage,
-            format, pool, &buf);
+            format, pool, &buf, NULL);
 #elif defined(HAVE_D3D8) && !defined(__cplusplus)
       hr = IDirect3DDevice8_CreateTexture(dev, width, height, miplevels, usage,
             format, pool, &buf);
@@ -523,7 +523,7 @@ bool d3d_lock_rectangle(LPDIRECT3DTEXTURE tex,
 #if defined(_XBOX)
    D3DTexture_LockRect(tex, level, lock_rect, rect, flags);
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
-   if (IDirect3DSurface9_LockRect(tex, lock_rect, rect, flags) != D3D_OK)
+   if (IDirect3DSurface9_LockRect(tex, lock_rect, (D3DLOCKED_RECT*)rect, flags) != D3D_OK)
       return false;
 #elif defined(HAVE_D3D8) && !defined(__cplusplus)
    if (IDirect3DSurface8_LockRect(tex, lock_rect, rect, flags) != D3D_OK)
@@ -589,7 +589,7 @@ void d3d_set_texture(LPDIRECT3DDEVICE dev, unsigned sampler,
             + fetchConstant);
    D3DDevice_SetTexture(dev, sampler, tex, pendingMask3);
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
-   IDirect3DDevice9_SetTexture(dev, sampler, tex);
+   IDirect3DDevice9_SetTexture(dev, sampler, (IDirect3DBaseTexture9*)tex);
 #elif defined(HAVE_D3D8) && !defined(__cplusplus)
    IDirect3DDevice8_SetTexture(dev, sampler, tex);
 #else
