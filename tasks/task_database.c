@@ -217,14 +217,9 @@ static int task_database_iterate_start(database_info_handle_t *db,
    msg[0] = msg[510] = '\0';
 
    snprintf(msg, sizeof(msg),
-         STRING_REP_ULONG "/" STRING_REP_ULONG ": %s %s...\n",
-#if defined(_WIN32) || defined(__STDC_VERSION__) && __STDC_VERSION__>=199901L && !defined(VITA) &&!defined(WIIU)
-         db->list_ptr,
-         db->list->size,
-#else
-         (unsigned long)db->list_ptr,
-         (unsigned long)db->list->size,
-#endif
+         STRING_REP_USIZE "/" STRING_REP_USIZE ": %s %s...\n",
+         (size_t)db->list_ptr,
+         (size_t)db->list->size,
          msg_hash_to_str(MSG_SCANNING),
          name);
 
