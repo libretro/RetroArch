@@ -106,7 +106,6 @@ VIDEO CONTEXT
 ============================================================ */
 
 #if defined(HAVE_D3D)
-#include "../gfx/drivers_context/d3d_ctx.cpp"
 
 #ifdef HAVE_HLSL
 #include "../gfx/drivers_shader/shader_hlsl.cpp"

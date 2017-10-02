@@ -312,6 +312,7 @@ VIDEO DRIVER
 #if defined(HAVE_D3D)
 #include "../gfx/common/d3d_common.c"
 #include "../gfx/drivers/d3d.c"
+#include "../gfx/drivers_context/d3d_ctx.c"
 #endif
 
 #if defined(GEKKO)
