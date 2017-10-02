@@ -42,7 +42,7 @@ static int action_select_default(const char *path, const char *label, unsigned t
    menu_entry_init(&entry);
    menu_entry_get(&entry, 0, idx, NULL, false);
 
-   cbs = selection_buf ? file_list_get_actiondata_at_offset(selection_buf, idx) : NULL;
+   cbs = selection_buf ? (menu_file_list_cbs_t*)file_list_get_actiondata_at_offset(selection_buf, idx) : NULL;
 
    if (!cbs)
    {

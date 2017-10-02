@@ -495,7 +495,7 @@ rarch_setting_t *menu_entries_get_setting(uint32_t i)
 {
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    menu_file_list_cbs_t *cbs  = selection_buf ?
-      file_list_get_actiondata_at_offset(selection_buf, i) : NULL;
+      (menu_file_list_cbs_t*)file_list_get_actiondata_at_offset(selection_buf, i) : NULL;
 
    if (!cbs)
       return NULL;

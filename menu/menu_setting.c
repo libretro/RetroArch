@@ -917,7 +917,7 @@ int menu_setting_set(unsigned type, const char *label,
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    size_t selection           = menu_navigation_get_selection();
    menu_file_list_cbs_t *cbs  = selection_buf ? 
-      file_list_get_actiondata_at_offset(selection_buf, selection) : NULL;
+      (menu_file_list_cbs_t*)file_list_get_actiondata_at_offset(selection_buf, selection) : NULL;
 
    if (!cbs)
       return 0;
