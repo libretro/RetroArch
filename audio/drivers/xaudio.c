@@ -100,7 +100,7 @@ static void WINAPI voice_on_buffer_end(void *handle_, void *data)
 {		
    xaudio2_t *handle = (xaudio2_t*)handle_;		
    (void)data;		
-   InterlockedDecrement((__LONG32 volatile*)&handle->buffers);		
+   InterlockedDecrement((LONG volatile*)&handle->buffers);		
    SetEvent(handle->hEvent);		
 }		
 

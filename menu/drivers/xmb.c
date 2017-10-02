@@ -4291,6 +4291,7 @@ static int xmb_list_push(void *data, void *userdata,
          break;
       case DISPLAYLIST_MAIN_MENU:
          {
+            settings_t   *settings      = config_get_ptr();
             rarch_system_info_t *system = runloop_get_system_info();
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
@@ -4336,8 +4337,6 @@ static int xmb_list_push(void *data, void *userdata,
                }
             }
 #endif
-
-            settings_t *settings      = config_get_ptr();
             if (!settings->bools.menu_xmb_show_settings && !string_is_empty(settings->paths.menu_xmb_show_settings_password))
             {
                entry.enum_idx      = MENU_ENUM_LABEL_XMB_MAIN_MENU_ENABLE_SETTINGS;

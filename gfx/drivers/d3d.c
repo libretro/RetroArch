@@ -966,7 +966,23 @@ static bool d3d_construct(d3d_video_t *d3d,
       void **input_data)
 {
    gfx_ctx_input_t inp;
-   unsigned full_x, full_y;
+#ifdef HAVE_MONITOR
+   bool windowed_full;
+   RECT mon_rect;
+   MONITORINFOEX current_mon;
+   HMONITOR hm_to_use;
+#endif
+#ifdef HAVE_SHADERS
+   enum rarch_shader_type type;
+#endif
+#ifdef HAVE_WINDOW
+   DWORD style;
+   unsigned win_width        = 0;
+   unsigned win_height       = 0;
+   RECT rect                 = {0};
+#endif
+   unsigned full_x           = 0;
+   unsigned full_y           = 0;
    settings_t    *settings   = config_get_ptr();
 
    d3d->should_resize        = false;
@@ -995,11 +1011,6 @@ static bool d3d_construct(d3d_video_t *d3d,
 #endif
 
 #ifdef HAVE_MONITOR
-   bool windowed_full;
-   RECT mon_rect;
-   MONITORINFOEX current_mon;
-   HMONITOR hm_to_use;
-
    win32_monitor_info(&current_mon, &hm_to_use, &d3d->cur_mon_id);
    mon_rect = current_mon.rcMonitor;
    g_resize_width  = info->width;
@@ -1031,10 +1042,6 @@ static bool d3d_construct(d3d_video_t *d3d,
    }
 
 #ifdef HAVE_WINDOW
-   DWORD style;
-   unsigned win_width, win_height;
-   RECT rect            = {0};
-
    video_driver_get_size(&win_width, &win_height);
 
    win32_set_style(&current_mon, &hm_to_use, &win_width, &win_height,
@@ -1051,7 +1058,7 @@ static bool d3d_construct(d3d_video_t *d3d,
    /* This should only be done once here
     * to avoid set_shader() to be overridden
     * later. */
-   enum rarch_shader_type type =
+   type =
       video_shader_parse_type(settings->paths.path_shader, RARCH_SHADER_NONE);
    if (settings->bools.video_shader_enable && type == RARCH_SHADER_CG)
    {
@@ -1390,6 +1397,7 @@ static bool d3d_frame(void *data, const void *frame,
       uint64_t frame_count, unsigned pitch,
       const char *msg, video_frame_info_t *video_info)
 {
+   D3DVIEWPORT screen_vp;
    unsigned i                          = 0;
    d3d_video_t *d3d                    = (d3d_video_t*)data;
 #ifndef _XBOX
@@ -1430,7 +1438,6 @@ static bool d3d_frame(void *data, const void *frame,
 
    /* render_chain() only clears out viewport,
     * clear out everything. */
-   D3DVIEWPORT screen_vp;
    screen_vp.X      = 0;
    screen_vp.Y      = 0;
    screen_vp.MinZ   = 0;
