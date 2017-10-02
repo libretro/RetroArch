@@ -38,6 +38,10 @@
 #include "../../configuration.h"
 #include "../../verbosity.h"
 
+#define D3D_DEFAULT_NONPOW2         ((UINT)-2)
+#define D3D_FILTER_LINEAR           (3 << 0)
+#define D3D_FILTER_POINT            (2 << 0)
+
 #define d3d9_cg_set_param_1f(param, x) if (param) cgD3D9SetUniform(param, x)
 
 #define D3D_PI 3.14159265358979323846264338327
@@ -239,14 +243,16 @@ static void d3d9_cg_renderchain_set_shader_params(
       unsigned viewport_w, unsigned viewport_h)
 {
    float frame_cnt;
-   D3DXVECTOR2 video_size, texture_size, output_size;
+   float video_size[2];
+   float texture_size[2];
+   float output_size[2];
 
-   video_size.x         = video_w;
-   video_size.y         = video_h;
-   texture_size.x       = tex_w;
-   texture_size.y       = tex_h;
-   output_size.x        = viewport_w;
-   output_size.y        = viewport_h;
+   video_size[0]        = video_w;
+   video_size[1]        = video_h;
+   texture_size[0]      = tex_w;
+   texture_size[1]      = tex_h;
+   output_size[0]       = viewport_w;
+   output_size[1]       = viewport_h;
 
    set_cg_param(pass->vPrg, "IN.video_size", video_size);
    set_cg_param(pass->fPrg, "IN.video_size", video_size);
@@ -418,12 +424,13 @@ static void d3d9_cg_renderchain_bind_orig(cg_renderchain_t *chain,
 {
    unsigned index;
    CGparameter param;
-   D3DXVECTOR2 video_size, texture_size;
+   float video_size[2];
+   float texture_size[2];
    Pass           *pass = (Pass*)pass_data;
-   video_size.x         = chain->passes[0].last_width;
-   video_size.y         = chain->passes[0].last_height;
-   texture_size.x       = chain->passes[0].info.tex_w;
-   texture_size.y       = chain->passes[0].info.tex_h;
+   video_size[0]        = chain->passes[0].last_width;
+   video_size[1]        = chain->passes[0].last_height;
+   texture_size[0]      = chain->passes[0].info.tex_w;
+   texture_size[1]      = chain->passes[0].info.tex_h;
 
    set_cg_param(pass->vPrg, "ORIG.video_size", video_size);
    set_cg_param(pass->fPrg, "ORIG.video_size", video_size);
@@ -459,7 +466,7 @@ static void d3d9_cg_renderchain_bind_orig(cg_renderchain_t *chain,
 static void d3d9_cg_renderchain_bind_prev(void *data, const void *pass_data)
 {
    unsigned i, index;
-   D3DXVECTOR2 texture_size;
+   float texture_size[2];
    char attr_texture[64]    = {0};
    char attr_input_size[64] = {0};
    char attr_tex_size[64]   = {0};
@@ -476,21 +483,21 @@ static void d3d9_cg_renderchain_bind_prev(void *data, const void *pass_data)
       "PREV6",
    };
 
-   texture_size.x = chain->passes[0].info.tex_w;
-   texture_size.y = chain->passes[0].info.tex_h;
+   texture_size[0] = chain->passes[0].info.tex_w;
+   texture_size[1] = chain->passes[0].info.tex_h;
 
    for (i = 0; i < TEXTURES - 1; i++)
    {
       CGparameter param;
-      D3DXVECTOR2 video_size;
+      float video_size[2];
 
       snprintf(attr_texture,    sizeof(attr_texture),    "%s.texture",      prev_names[i]);
       snprintf(attr_input_size, sizeof(attr_input_size), "%s.video_size",   prev_names[i]);
       snprintf(attr_tex_size,   sizeof(attr_tex_size),   "%s.texture_size", prev_names[i]);
       snprintf(attr_coord,      sizeof(attr_coord),      "%s.tex_coord",    prev_names[i]);
 
-      video_size.x = chain->prev.last_width[(chain->prev.ptr - (i + 1)) & TEXTURESMASK];
-      video_size.y = chain->prev.last_height[(chain->prev.ptr - (i + 1)) & TEXTURESMASK];
+      video_size[0] = chain->prev.last_width[(chain->prev.ptr - (i + 1)) & TEXTURESMASK];
+      video_size[1] = chain->prev.last_height[(chain->prev.ptr - (i + 1)) & TEXTURESMASK];
 
       set_cg_param(pass->vPrg, attr_input_size, video_size);
       set_cg_param(pass->fPrg, attr_input_size, video_size);
@@ -562,7 +569,8 @@ static void d3d9_cg_renderchain_bind_pass(
    for (i = 1; i < pass_index - 1; i++)
    {
       CGparameter param;
-      D3DXVECTOR2 video_size, texture_size;
+      float video_size[2];
+      float texture_size[2];
       char pass_base[64]       = {0};
       char attr_texture[64]    = {0};
       char attr_input_size[64] = {0};
@@ -575,10 +583,10 @@ static void d3d9_cg_renderchain_bind_pass(
       snprintf(attr_tex_size,   sizeof(attr_tex_size),   "%s.texture_size", pass_base);
       snprintf(attr_coord,      sizeof(attr_coord),      "%s.tex_coord",    pass_base);
 
-      video_size.x   = chain->passes[i].last_width;
-      video_size.y   = chain->passes[i].last_height;
-      texture_size.x = chain->passes[i].info.tex_w;
-      texture_size.y = chain->passes[i].info.tex_h;
+      video_size[0]    = chain->passes[i].last_width;
+      video_size[1]    = chain->passes[i].last_height;
+      texture_size[0]  = chain->passes[i].info.tex_w;
+      texture_size[1]  = chain->passes[i].info.tex_h;
 
       set_cg_param(pass->vPrg, attr_input_size,   video_size);
       set_cg_param(pass->fPrg, attr_input_size,   video_size);
@@ -1075,13 +1083,13 @@ static bool d3d9_cg_renderchain_add_lut(void *data,
    LPDIRECT3DTEXTURE lut = d3d_texture_new(
          chain->dev,
          path,
-         D3DX_DEFAULT_NONPOW2,
-         D3DX_DEFAULT_NONPOW2,
+         D3D_DEFAULT_NONPOW2,
+         D3D_DEFAULT_NONPOW2,
          0,
          0,
          D3DFMT_FROM_FILE,
          D3DPOOL_MANAGED,
-         smooth ? D3DX_FILTER_LINEAR : D3DX_FILTER_POINT,
+         smooth ? D3D_FILTER_LINEAR : D3D_FILTER_POINT,
          0,
          0,
          NULL,
