@@ -16,7 +16,6 @@
 
 #include <stddef.h>
 #include <string.h>
-#include <inttypes.h>
 
 #include <compat/strl.h>
 #include <retro_common_api.h>
