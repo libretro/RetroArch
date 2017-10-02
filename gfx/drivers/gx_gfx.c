@@ -262,9 +262,9 @@ static void retrace_callback(u32 retrace_count)
 
    g_draw_done = true;
    OSSignalCond(g_video_cond);
-   _CPU_ISR_Disable((u32)level);
+   _CPU_ISR_Disable(level);
    retraceCount = retrace_count;
-   _CPU_ISR_Restore((u32)level);
+   _CPU_ISR_Restore(level);
 }
 
 static bool gx_isValidXOrigin(int origin)
@@ -627,9 +627,9 @@ static void init_vtx(void *data, const video_info_t *video)
    Mtx44 m;
    gx_video_t *gx      = (gx_video_t*)data;
    uint32_t level      = 0;
-   _CPU_ISR_Disable((u32)level);
+   _CPU_ISR_Disable(level);
    referenceRetraceCount = retraceCount;
-   _CPU_ISR_Restore((u32)level);
+   _CPU_ISR_Restore(level);
 
    GX_SetCullMode(GX_CULL_NONE);
    GX_SetClipMode(GX_CLIP_DISABLE);
@@ -1581,11 +1581,11 @@ static bool gx_frame(void *data, const void *frame,
       gx_render_overlay(gx);
 #endif
 
-   _CPU_ISR_Disable((u32)level);
+   _CPU_ISR_Disable(level);
    if (referenceRetraceCount > retraceCount)
       VIDEO_WaitVSync();
    referenceRetraceCount = retraceCount;
-   _CPU_ISR_Restore((u32)level);
+   _CPU_ISR_Restore(level);
 
    GX_DrawDone();
 
@@ -1627,9 +1627,9 @@ static bool gx_frame(void *data, const void *frame,
    VIDEO_SetNextFramebuffer(gx->framebuf[g_current_framebuf]);
    VIDEO_Flush();
 
-   _CPU_ISR_Disable((u32)level);
+   _CPU_ISR_Disable(level);
    ++referenceRetraceCount;
-   _CPU_ISR_Restore((u32)level);
+   _CPU_ISR_Restore(level);
 
    return true;
 }
