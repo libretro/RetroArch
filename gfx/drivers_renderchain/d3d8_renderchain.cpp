@@ -48,11 +48,11 @@ static void renderchain_set_mvp(void *data, unsigned vp_width,
 {
    d3d_video_t      *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
-   D3DXMATRIX p_out, p_rotate, mat;
+   D3DMATRIX p_out, p_rotate, mat;
 
-   D3DXMatrixOrthoOffCenterLH(&mat, 0, vp_width,  vp_height, 0, 0.0f, 1.0f);
-   D3DXMatrixIdentity(&p_out);
-   D3DXMatrixRotationZ(&p_rotate, rotation * (M_PI / 2.0));
+   d3d_matrix_ortho_off_center_lh(&mat, 0, vp_width,  vp_height, 0, 0.0f, 1.0f);
+   d3d_matrix_identity(&p_out);
+   d3d_matrix_rotation_z(&p_rotate, rotation * (M_PI / 2.0));
 
    d3d_set_transform(d3dr, D3DTS_WORLD, &p_rotate);
    d3d_set_transform(d3dr, D3DTS_VIEW, &p_out);

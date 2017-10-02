@@ -63,24 +63,18 @@ static const float *menu_display_d3d_get_default_tex_coords(void)
 
 static void *menu_display_d3d_get_default_mvp(void)
 {
-#ifndef _XBOX
    static math_matrix_4x4 default_mvp;
-   D3DXMATRIX ortho, mvp;
-#endif
+   D3DMATRIX ortho, mvp;
    d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(false);
 
    if (!d3d)
       return NULL;
-#ifdef _XBOX
-   return NULL; /* TODO/FIXME */
-#else
-   D3DXMatrixOrthoOffCenterLH(&ortho, 0,
+   d3d_matrix_ortho_off_center_lh(&ortho, 0,
          d3d->final_viewport.Width, 0, d3d->final_viewport.Height, 0, 1);
-   D3DXMatrixTranspose(&mvp, &ortho);
-   memcpy(default_mvp.data, (FLOAT*)mvp, sizeof(default_mvp.data));
+   d3d_matrix_transpose(&mvp, &ortho);
+   memcpy(default_mvp.data, (float*)&mvp, sizeof(default_mvp.data));
 
    return &default_mvp;
-#endif
 }
 
 static unsigned menu_display_prim_to_d3d_enum(

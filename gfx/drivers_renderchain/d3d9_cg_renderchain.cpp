@@ -225,7 +225,7 @@ error:
 static void d3d9_cg_renderchain_set_shader_mvp(cg_renderchain_t *chain, void *shader_data, void *matrix_data)
 {
    CGprogram              *vPrg = (CGprogram*)shader_data;
-   const D3DXMATRIX     *matrix = (const D3DXMATRIX*)matrix_data;
+   const D3DMATRIX     *matrix  = (const D3DMATRIX*)matrix_data;
    CGparameter cgpModelViewProj = cgGetNamedParameter(*vPrg, "modelViewProj");
    if (cgpModelViewProj)
       cgD3D9SetUniformMatrix(cgpModelViewProj, matrix);
@@ -787,12 +787,12 @@ static bool d3d9_cg_renderchain_create_first_pass(
 {
    unsigned i;
    Pass pass;
-   D3DXMATRIX ident;
+   D3DMATRIX ident;
 
    if (!chain)
       return false;
 
-   D3DXMatrixIdentity(&ident);
+   d3d_matrix_identity(&ident);
 
    d3d_set_transform(chain->dev, D3DTS_WORLD, &ident);
    d3d_set_transform(chain->dev, D3DTS_VIEW, &ident);
@@ -1137,15 +1137,15 @@ static void d3d9_cg_renderchain_set_mvp(
       unsigned vp_width, unsigned vp_height,
       unsigned rotation)
 {
-   D3DXMATRIX proj, ortho, rot, tmp;
+   D3DMATRIX proj, ortho, rot, tmp;
    CGprogram     vPrg   = (CGprogram)vertex_program;
 
-   D3DXMatrixOrthoOffCenterLH(&ortho, 0, vp_width, 0, vp_height, 0, 1);
-   D3DXMatrixIdentity(&rot);
-   D3DXMatrixRotationZ(&rot, rotation * (D3D_PI / 2.0));
+   d3d_matrix_ortho_off_center_lh(&ortho, 0, vp_width, 0, vp_height, 0, 1);
+   d3d_matrix_identity(&rot);
+   d3d_matrix_rotation_z(&rot, rotation * (D3D_PI / 2.0));
 
-   D3DXMatrixMultiply(&proj, &ortho, &rot);
-   D3DXMatrixTranspose(&tmp, &proj);
+   d3d_matrix_multiply(&proj, &ortho, &rot);
+   d3d_matrix_transpose(&tmp, &proj);
 
    d3d9_cg_renderchain_set_shader_mvp(chain, &vPrg, &tmp);
 }
