@@ -419,6 +419,8 @@ bool d3d_begin_scene(LPDIRECT3DDEVICE dev)
    if (SUCCEEDED(IDirect3DDevice9_BeginScene(dev)))
 #elif defined(HAVE_D3D8) && !defined(__cplusplus)
    if (SUCCEEDED(IDirect3DDevice8_BeginScene(dev)))
+#elif defined(_XBOX)
+   dev->BeginScene();
 #else
    if (SUCCEEDED(dev->BeginScene()))
 #endif
@@ -765,6 +767,8 @@ static HRESULT d3d_test_cooperative_level(LPDIRECT3DDEVICE dev)
    return IDirect3DDevice9_TestCooperativeLevel(dev);
 #elif defined(HAVE_D3D8) && !defined(__cplusplus)
    return IDirect3DDevice8_TestCooperativeLevel(dev);
+#elif defined(_XBOX)
+   return E_FAIL;
 #else
    return dev->TestCooperativeLevel();
 #endif

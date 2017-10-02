@@ -26,6 +26,7 @@
 
 #include <file/file_path.h>
 #include <lists/string_list.h>
+#include <string/stdstring.h>
 #include <queues/message_queue.h>
 
 #include "menu_generic.h"
