@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="shift_jis"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="8,00"
 	Name="RetroArch-msvc2005"
 	ProjectGUID="{1FEFA874-F6A6-4CE6-9DB4-3B291A364CE5}"
 	RootNamespace="RetroArch-msvc2005"
@@ -352,7 +352,7 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						CompileAs="2"
+						CompileAs="1"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -360,7 +360,7 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						CompileAs="2"
+						CompileAs="1"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -368,7 +368,7 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						CompileAs="2"
+						CompileAs="1"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -376,7 +376,7 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						CompileAs="2"
+						CompileAs="1"
 					/>
 				</FileConfiguration>
 			</File>
