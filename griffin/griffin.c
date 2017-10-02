@@ -309,6 +309,9 @@ VIDEO IMAGE
 /*============================================================
 VIDEO DRIVER
 ============================================================ */
+#if defined(HAVE_D3D)
+#include "../gfx/common/d3d_common.c"
+#endif
 
 #if defined(GEKKO)
 #ifdef HW_RVL

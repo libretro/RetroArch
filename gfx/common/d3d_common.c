@@ -31,10 +31,10 @@ bool d3d_swap(void *data, LPDIRECT3DDEVICE dev)
 #elif defined(_XBOX360)
    D3DDevice_Present(dev);
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
-   if (IDirect3DDevice9_Present(dev, NULL, NULL, NULL, NULL) == D3DERR_DEVICE_LOST)
+   if (IDirect3DDevice9_Present(dev, NULL, NULL, NULL, NULL) == D3DERR_DEVICELOST)
       return false;
 #elif defined(HAVE_D3D8) && !defined(__cplusplus)
-   if (IDirect3DDevice8_Present(dev, NULL, NULL, NULL, NULL) == D3DERR_DEVICE_LOST)
+   if (IDirect3DDevice8_Present(dev, NULL, NULL, NULL, NULL) == D3DERR_DEVICELOST)
       return false;
 #else
    if (dev->Present(NULL, NULL, NULL, NULL) != D3D_OK)
@@ -523,10 +523,10 @@ bool d3d_lock_rectangle(LPDIRECT3DTEXTURE tex,
 #if defined(_XBOX)
    D3DTexture_LockRect(tex, level, lock_rect, rect, flags);
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
-   if (IDirect3DSurface9_LockRect(tex, lock_rect, (D3DLOCKED_RECT*)rect, flags) != D3D_OK)
+   if (IDirect3DTexture9_LockRect(tex, level, lock_rect, (const RECT*)rect, flags) != D3D_OK)
       return false;
 #elif defined(HAVE_D3D8) && !defined(__cplusplus)
-   if (IDirect3DSurface8_LockRect(tex, lock_rect, rect, flags) != D3D_OK)
+   if (IDirect3DTexture8_LockRect(tex, lock_rect, rect, flags) != D3D_OK)
       return false;
 #else
    if (FAILED(tex->LockRect(level, lock_rect, rect, flags)))
@@ -540,9 +540,9 @@ void d3d_unlock_rectangle(LPDIRECT3DTEXTURE tex)
 #ifdef _XBOX
    D3DTexture_UnlockRect(tex, 0);
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
-   IDirect3DSurface9_UnlockRect(tex);
+   IDirect3DTexture9_UnlockRect(tex, 0);
 #elif defined(HAVE_D3D8) && !defined(__cplusplus)
-   IDirect3DSurface8_UnlockRect(tex);
+   IDirect3DTexture8_UnlockRect(tex);
 #else
    tex->UnlockRect(0);
 #endif
@@ -775,6 +775,23 @@ static bool d3d_create_device_internal(LPDIRECT3DDEVICE *dev,
       unsigned cur_mon_id,
       DWORD behavior_flags)
 {
+#if defined(HAVE_D3D9) && !defined(__cplusplus)
+   if (FAILED(IDirect3D9_CreateDevice(d3d,
+               cur_mon_id,
+               D3DDEVTYPE_HAL,
+               focus_window,
+               behavior_flags,
+               d3dpp,
+               dev)))
+#elif defined(HAVE_D3D8) && !defined(__cplusplus)
+   if (FAILED(IDirect3D8_CreateDevice(d3d,
+               cur_mon_id,
+               D3DDEVTYPE_HAL,
+               focus_window,
+               behavior_flags,
+               d3dpp,
+               dev)))
+#else
    if (FAILED(d3d->CreateDevice(
                cur_mon_id,
                D3DDEVTYPE_HAL,
@@ -782,6 +799,7 @@ static bool d3d_create_device_internal(LPDIRECT3DDEVICE *dev,
                behavior_flags,
                d3dpp,
                dev)))
+#endif
       return false;
    return true;
 }

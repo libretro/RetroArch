@@ -29,16 +29,16 @@
 typedef struct hlsl_d3d9_renderchain
 {
    unsigned pixel_size;
-   LPDIRECT3DDEVICE dev;
-   const video_info_t *video_info;
-   LPDIRECT3DTEXTURE tex;
-   LPDIRECT3DVERTEXBUFFER vertex_buf;
    unsigned last_width;
    unsigned last_height;
-   LPDIRECT3DVERTEXDECLARATION vertex_decl;
    unsigned tex_w;
    unsigned tex_h;
    uint64_t frame_count;
+   LPDIRECT3DDEVICE dev;
+   LPDIRECT3DTEXTURE tex;
+   LPDIRECT3DVERTEXBUFFER vertex_buf;
+   LPDIRECT3DVERTEXDECLARATION vertex_decl;
+   const video_info_t *video_info;
 } hlsl_d3d9_renderchain_t;
 
 /* TODO/FIXME - this forward declaration should not be necesary */

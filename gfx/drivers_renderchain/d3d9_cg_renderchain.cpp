@@ -79,10 +79,8 @@ namespace
 
 typedef struct cg_renderchain
 {
-   LPDIRECT3DDEVICE dev;
    unsigned pixel_size;
-   const video_info_t *video_info;
-   state_tracker_t *state_tracker;
+   unsigned frame_count;
    struct
    {
       LPDIRECT3DTEXTURE tex[TEXTURES];
@@ -91,14 +89,17 @@ typedef struct cg_renderchain
       unsigned last_width[TEXTURES];
       unsigned last_height[TEXTURES];
    } prev;
-   std::vector<Pass> passes;
-   CGprogram vStock, fStock;
-   std::vector<lut_info> luts;
+   CGprogram vStock;
+   CGprogram fStock;
+   LPDIRECT3DDEVICE dev;
+   const video_info_t *video_info;
+   state_tracker_t *state_tracker;
    D3DVIEWPORT *final_viewport;
-   unsigned frame_count;
+   CGcontext cgCtx;
+   std::vector<Pass> passes;
+   std::vector<lut_info> luts;
    std::vector<unsigned> bound_tex;
    std::vector<unsigned> bound_vert;
-   CGcontext cgCtx;
 } cg_renderchain_t;
 
 static INLINE bool d3d9_cg_validate_param_name(const char *name)

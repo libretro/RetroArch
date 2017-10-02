@@ -142,9 +142,7 @@ VIDEO DRIVER
 #endif
 
 #if defined(HAVE_D3D)
-#include "../gfx/common/d3d_common.cpp"
 #include "../gfx/drivers/d3d.cpp"
-
 
 #if defined(HAVE_D3D8)
 #include "../gfx/drivers_renderchain/d3d8_renderchain.cpp"
