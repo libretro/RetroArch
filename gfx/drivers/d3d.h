@@ -17,8 +17,6 @@
 #ifndef __D3DVIDEO_INTF_H__
 #define __D3DVIDEO_INTF_H__
 
-#include <vector>
-
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
@@ -98,7 +96,8 @@ typedef struct d3d_video
    char *shader_path;
 
 #ifdef HAVE_OVERLAY
-   std::vector<overlay_t> overlays;
+   size_t overlays_size;
+   overlay_t *overlays;
 #endif
 } d3d_video_t;
 

@@ -1190,9 +1190,11 @@ static void d3d_free_overlays(d3d_video_t *d3d)
    if (!d3d)
       return;
 
-   for (i = 0; i < d3d->overlays.size(); i++)
+   for (i = 0; i < d3d->overlays_size; i++)
       d3d_free_overlay(d3d, &d3d->overlays[i]);
-   d3d->overlays.clear();
+   free(d3d->overlays);
+   d3d->overlays      = NULL;
+   d3d->overlays_size = 0;
 }
 #endif
 
@@ -1203,21 +1205,24 @@ static void d3d_free(void *data)
    if (!d3d)
       return;
 
-   d3d_deinitialize(d3d);
 #ifdef HAVE_OVERLAY
    d3d_free_overlays(d3d);
+   if (d3d->overlays)
+      free(d3d->overlays);
+   d3d->overlays      = NULL;
+   d3d->overlays_size = 0;
 #endif
 
-   video_context_driver_free();
-
-#ifndef _XBOX
 #ifdef HAVE_MENU
    d3d_free_overlay(d3d, d3d->menu);
    if (d3d->menu)
       free(d3d->menu);
-   d3d->menu = NULL;
+   d3d->menu          = NULL;
 #endif
-#endif
+
+   d3d_deinitialize(d3d);
+
+   video_context_driver_free();
 
    if (!string_is_empty(d3d->shader_path))
       free(d3d->shader_path);
@@ -1278,7 +1283,8 @@ static bool d3d_overlay_load(void *data,
       const void *image_data, unsigned num_images)
 {
    unsigned i, y;
-   d3d_video_t *d3d = (d3d_video_t*)data;
+   overlay_t *new_overlays            = NULL;
+   d3d_video_t *d3d                   = (d3d_video_t*)data;
    const struct texture_image *images = (const struct texture_image*)
       image_data;
 
@@ -1286,7 +1292,8 @@ static bool d3d_overlay_load(void *data,
 	   return false;
 
    d3d_free_overlays(d3d);
-   d3d->overlays.resize(num_images);
+   d3d->overlays      = (overlay_t*)calloc(num_images, sizeof(*d3d->overlays));
+   d3d->overlays_size = num_images;
 
    for (i = 0; i < num_images; i++)
    {
@@ -1339,7 +1346,7 @@ static void d3d_overlay_enable(void *data, bool state)
    if (!d3d)
       return;
 
-   for (i = 0; i < d3d->overlays.size(); i++)
+   for (i = 0; i < d3d->overlays_size; i++)
       d3d->overlays_enabled = state;
 
    video_context_driver_show_mouse(&state);
@@ -1350,7 +1357,7 @@ static void d3d_overlay_full_screen(void *data, bool enable)
    unsigned i;
    d3d_video_t *d3d = (d3d_video_t*)data;
 
-   for (i = 0; i < d3d->overlays.size(); i++)
+   for (i = 0; i < d3d->overlays_size; i++)
       d3d->overlays[i].fullscreen = enable;
 }
 
@@ -1468,7 +1475,7 @@ static bool d3d_frame(void *data, const void *frame,
 #ifdef HAVE_OVERLAY
    if (d3d->overlays_enabled)
    {
-      for (i = 0; i < d3d->overlays.size(); i++)
+      for (i = 0; i < d3d->overlays_size; i++)
          d3d_overlay_render(d3d, video_info, &d3d->overlays[i]);
    }
 #endif
