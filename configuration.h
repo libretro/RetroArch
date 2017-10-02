@@ -190,6 +190,7 @@ typedef struct settings
       bool auto_screenshot_filename;
       bool history_list_enable;
       bool playlist_entry_remove;
+      bool playlist_entry_rename;
       bool rewind_enable;
       bool pause_nonactive;
       bool block_sram_overwrite;

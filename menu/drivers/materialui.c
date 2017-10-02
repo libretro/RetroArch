@@ -2453,7 +2453,7 @@ static void mui_list_insert(void *userdata,
                node->texture_switch2     = mui->textures.list[MUI_TEXTURE_ADD_TO_FAVORITES];
                node->texture_switch2_set = true;
             }
-            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME)))
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RENAME_ENTRY)))
             {
                node->texture_switch2     = mui->textures.list[MUI_TEXTURE_RENAME];
                node->texture_switch2_set = true;

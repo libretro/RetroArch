@@ -64,6 +64,7 @@ static bool materialui_icons_enable      = true;
 
 static const bool def_history_list_enable = true;
 static const bool def_playlist_entry_remove = true;
+static const bool def_playlist_entry_rename = true;
 
 static const unsigned int def_user_language = 0;
 

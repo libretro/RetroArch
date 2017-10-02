@@ -231,6 +231,7 @@ default_sublabel_macro(action_bind_sublabel_input_overlay_show_physical_inputs_p
 default_sublabel_macro(action_bind_sublabel_core_updater_buildbot_assets_url,      MENU_ENUM_SUBLABEL_BUILDBOT_ASSETS_URL)
 default_sublabel_macro(action_bind_sublabel_core_updater_auto_extract_archive,     MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE)
 default_sublabel_macro(action_bind_sublabel_netplay_refresh_rooms,                 MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS)
+default_sublabel_macro(action_bind_sublabel_rename_entry,                          MENU_ENUM_SUBLABEL_RENAME_ENTRY)
 default_sublabel_macro(action_bind_sublabel_delete_entry,                          MENU_ENUM_SUBLABEL_DELETE_ENTRY)
 default_sublabel_macro(action_bind_sublabel_information,                           MENU_ENUM_SUBLABEL_INFORMATION)
 default_sublabel_macro(action_bind_sublabel_run,                                   MENU_ENUM_SUBLABEL_RUN)
@@ -764,6 +765,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_INFORMATION:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_information);
+            break;
+         case MENU_ENUM_LABEL_RENAME_ENTRY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_rename_entry);
             break;
          case MENU_ENUM_LABEL_DELETE_ENTRY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_delete_entry);

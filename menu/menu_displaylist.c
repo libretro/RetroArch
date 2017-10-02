@@ -3044,13 +3044,15 @@ static int menu_displaylist_parse_horizontal_content_actions(
             msg_hash_to_str(MENU_ENUM_LABEL_RUN),
             MENU_ENUM_LABEL_RUN, FILE_TYPE_PLAYLIST_ENTRY, 0, idx);
 
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME),
-            msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME),
-            MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME, FILE_TYPE_PLAYLIST_ENTRY, 0, idx);
+      if (settings->bools.playlist_entry_rename)
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RENAME_ENTRY),
+               msg_hash_to_str(MENU_ENUM_LABEL_RENAME_ENTRY),
+               MENU_ENUM_LABEL_RENAME_ENTRY,
+               FILE_TYPE_PLAYLIST_ENTRY, 0, idx);
 
-	  if (settings->bools.playlist_entry_remove)
-	  menu_entries_append_enum(info->list,
+      if (settings->bools.playlist_entry_remove)
+         menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DELETE_ENTRY),
             msg_hash_to_str(MENU_ENUM_LABEL_DELETE_ENTRY),
             MENU_ENUM_LABEL_DELETE_ENTRY,
@@ -5011,6 +5013,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_CONTENT_HISTORY_SIZE,
                PARSE_ONLY_UINT, false);
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME,
+               PARSE_ONLY_BOOL, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_PLAYLIST_ENTRY_REMOVE,
                PARSE_ONLY_BOOL, false);

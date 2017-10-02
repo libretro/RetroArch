@@ -3012,9 +3012,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_DELETE,
       "Delete core")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_DELETE,
       "Remove this core from disk.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
+MSG_HASH(MENU_ENUM_LABEL_VALUE_RENAME_ENTRY,
       "Rename the title of the entry.")
-MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME,
+MSG_HASH(MENU_ENUM_LABEL_RENAME_ENTRY,
       "Rename")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
       "Framebuffer Opacity")
@@ -3054,3 +3054,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
       "Enables the Settings tab. A restart is required for the tab to appear.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_SETTINGS_PASSWORD,
       "Supplying a password when hiding the settings tab makes it possible to later restore it from the menu, by going to the Main Menu tab, selecting Enable Settings Tab and entering the password.")
+MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
+      "Allow the user to rename entries in collections.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
+      "Allow to rename entries")
