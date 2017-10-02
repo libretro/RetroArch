@@ -5921,9 +5921,24 @@ static bool setting_append_list(
 
          END_SUB_GROUP(list, list_info, parent_group);
 
-		 START_SUB_GROUP(list, list_info, "Playlist", &group_info, &subgroup_info, parent_group);
+		   START_SUB_GROUP(list, list_info, "Playlist", &group_info, &subgroup_info, parent_group);
 
-		 CONFIG_BOOL(
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.playlist_entry_rename,
+               MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME,
+               MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
+               def_playlist_entry_rename,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+		   CONFIG_BOOL(
                list, list_info,
                &settings->bools.playlist_entry_remove,
                MENU_ENUM_LABEL_PLAYLIST_ENTRY_REMOVE,
@@ -5937,14 +5952,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_NONE);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME,
-               MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
-               &group_info,
-               &subgroup_info,
-               parent_group);
 
          END_SUB_GROUP(list, list_info, parent_group);
 
