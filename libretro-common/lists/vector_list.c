@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2017 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (VECTOR_LIST_NAME_vector_list.c).
+ * The following license statement only applies to this file (vector_list.c).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
