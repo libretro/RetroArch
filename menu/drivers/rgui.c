@@ -286,6 +286,8 @@ static void rgui_render_messagebox(const char *message)
    struct string_list *list   = NULL;
    settings_t *settings       = config_get_ptr();
 
+   (void)settings;
+
    if (!message || !*message)
       return;
 
