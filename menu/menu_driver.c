@@ -1626,8 +1626,8 @@ bool menu_driver_is_alive(void)
  * for framebuffer-based menu drivers, like RGUI. */
 bool menu_driver_is_texture_set(void)
 {
-   if (menu_driver_ctx)
-      return menu_driver_ctx->set_texture;
+   if (menu_driver_ctx && menu_driver_ctx->set_texture)
+      return true;
    return false;
 }
 
@@ -2188,7 +2188,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             if (pending_push)
                if (menu_driver_ctx->navigation_clear)
                   menu_driver_ctx->navigation_clear(
-                        menu_userdata, pending_push);
+                        menu_userdata, *pending_push);
          }
          break;
       case MENU_NAVIGATION_CTL_INCREMENT:

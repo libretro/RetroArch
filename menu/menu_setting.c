@@ -7303,7 +7303,7 @@ bool menu_setting_ctl(enum menu_setting_ctl_state state, void *data)
             if (!setting->change_handler)
                return false;
 
-            cbs_bound = setting->action_right;
+            cbs_bound = (setting->action_right != NULL);
             cbs_bound = cbs_bound || setting->action_left;
             cbs_bound = cbs_bound || setting->action_select;
 

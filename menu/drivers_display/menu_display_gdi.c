@@ -86,11 +86,12 @@ static bool menu_display_gdi_font_init_first(
       bool is_threaded)
 {
    font_data_t **handle = (font_data_t**)font_handle;
-   *handle = font_driver_init_first(video_data,
+   if (!(*handle = font_driver_init_first(video_data,
          font_path, font_size, true,
          is_threaded,
-         FONT_DRIVER_RENDER_GDI);
-   return *handle;
+         FONT_DRIVER_RENDER_GDI)))
+		 return false;
+   return true;
 }
 
 static const float *menu_display_gdi_get_default_vertices(void)

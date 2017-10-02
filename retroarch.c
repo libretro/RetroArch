@@ -1557,7 +1557,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          }
          break;
       case RARCH_CTL_HAS_CORE_OPTIONS:
-         return runloop_core_options;
+         return (runloop_core_options != NULL);
       case RARCH_CTL_CORE_OPTIONS_LIST_GET:
          {
             core_option_manager_t **coreopts = (core_option_manager_t**)data;

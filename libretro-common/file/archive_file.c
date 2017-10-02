@@ -538,7 +538,7 @@ bool file_archive_extract_file(
    userdata.decomp_state.opt_file           = NULL;
    userdata.decomp_state.needle             = NULL;
    userdata.decomp_state.size               = 0;
-   userdata.decomp_state.found              = NULL;
+   userdata.decomp_state.found              = false;
 
    if (!list)
    {
@@ -602,7 +602,7 @@ struct string_list *file_archive_get_file_list(const char *path,
    userdata.decomp_state.opt_file           = NULL;
    userdata.decomp_state.needle             = NULL;
    userdata.decomp_state.size               = 0;
-   userdata.decomp_state.found              = NULL;
+   userdata.decomp_state.found              = false;
 
    if (!userdata.list)
       goto error;

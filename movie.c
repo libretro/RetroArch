@@ -415,7 +415,7 @@ bool bsv_movie_ctl(enum bsv_ctl_state state, void *data)
    switch (state)
    {
       case BSV_MOVIE_CTL_IS_INITED:
-         return bsv_movie_state_handle;
+         return (bsv_movie_state_handle != NULL);
       case BSV_MOVIE_CTL_SET_START_RECORDING:
          bsv_movie_state.movie_start_recording = true;
          break;
