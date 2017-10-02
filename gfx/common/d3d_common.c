@@ -901,3 +901,85 @@ D3DTEXTUREFILTERTYPE d3d_translate_filter(unsigned type)
 
    return D3DTEXF_POINT;
 }
+
+ 
+void *d3d_matrix_transpose(void *_pout, const void *_pm)
+{
+   unsigned i,j;
+   D3DMATRIX     *pout = (D3DMATRIX*)_pout;
+   CONST D3DMATRIX *pm = (D3DMATRIX*)_pm;
+
+   for (i = 0; i < 4; i++)
+   {
+      for (j = 0; j < 4; j++)
+         pout->m[i][j] = pm->m[j][i];
+   }
+   return pout;
+}
+
+
+void *d3d_matrix_identity(void *_pout)
+{
+   D3DMATRIX *pout = (D3DMATRIX*)_pout;
+   if ( !pout )
+      return NULL;
+
+   pout->m[0][1] = 0.0f;
+   pout->m[0][2] = 0.0f;
+   pout->m[0][3] = 0.0f;
+   pout->m[1][0] = 0.0f;
+   pout->m[1][2] = 0.0f;
+   pout->m[1][3] = 0.0f;
+   pout->m[2][0] = 0.0f;
+   pout->m[2][1] = 0.0f;
+   pout->m[2][3] = 0.0f;
+   pout->m[3][0] = 0.0f;
+   pout->m[3][1] = 0.0f;
+   pout->m[3][2] = 0.0f;
+   pout->m[0][0] = 1.0f;
+   pout->m[1][1] = 1.0f;
+   pout->m[2][2] = 1.0f;
+   pout->m[3][3] = 1.0f;
+   return pout;
+}
+
+void *d3d_matrix_ortho_off_center_lh(void *_pout, float l, float r, float b, float t, float zn, float zf)
+{
+   D3DMATRIX *pout = (D3DMATRIX*)_pout;
+
+   d3d_matrix_identity(pout);
+
+   pout->m[0][0] = 2.0f / (r - l);
+   pout->m[1][1] = 2.0f / (t - b);
+   pout->m[2][2] = 1.0f / (zf -zn);
+   pout->m[3][0] = -1.0f -2.0f *l / (r - l);
+   pout->m[3][1] = 1.0f + 2.0f * t / (b - t);
+   pout->m[3][2] = zn / (zn -zf);
+   return pout;
+}
+
+void *d3d_matrix_multiply(void *_pout, const void *_pm1, const void *_pm2)
+{
+   unsigned i,j;
+   D3DMATRIX      *pout = (D3DMATRIX*)_pout;
+   CONST D3DMATRIX *pm1 = (CONST D3DMATRIX*)_pm1;
+   CONST D3DMATRIX *pm2 = (CONST D3DMATRIX*)_pm2;
+
+   for (i=0; i<4; i++)
+   {
+      for (j=0; j<4; j++)
+         pout->m[i][j] = pm1->m[i][0] * pm2->m[0][j] + pm1->m[i][1] * pm2->m[1][j] + pm1->m[i][2] * pm2->m[2][j] + pm1->m[i][3] * pm2->m[3][j];
+   }
+   return pout;
+}
+
+void *d3d_matrix_rotation_z(void *_pout, float angle)
+{
+   D3DMATRIX *pout = (D3DMATRIX*)_pout;
+   d3d_matrix_identity(pout);
+   pout->m[0][0] = cos(angle);
+   pout->m[1][1] = cos(angle);
+   pout->m[0][1] = sin(angle);
+   pout->m[1][0] = -sin(angle);
+   return pout;
+}
