@@ -173,10 +173,9 @@ static void autosave_thread(void *data)
             else
                RARCH_LOG("SRAM changed ... autosaving ...\n");
 
-            failed |= filestream_write(file, save->buffer, save->bufsize)
-               != save->bufsize;
-            failed |= filestream_flush(file) != 0;
-            failed |= filestream_close(file) != 0;
+            failed |= ((size_t)filestream_write(file, save->buffer, save->bufsize) != save->bufsize);
+            failed |= (filestream_flush(file) != 0);
+            failed |= (filestream_close(file) != 0);
             if (failed)
                RARCH_WARN("Failed to autosave SRAM. Disk might be full.\n");
          }

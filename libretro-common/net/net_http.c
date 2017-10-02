@@ -117,8 +117,8 @@ void net_http_urlencode_full(char **dest, const char *source)
    for (; *source; source++)
    {
       /* any non-ascii character will just be encoded without question */
-      if ((int)*source < sizeof(urlencode_lut) && urlencode_lut[(int)*source])
-         snprintf(enc, len, "%c", urlencode_lut[(int)*source]);
+      if ((unsigned)*source < sizeof(urlencode_lut) && urlencode_lut[(unsigned)*source])
+         snprintf(enc, len, "%c", urlencode_lut[(unsigned)*source]);
       else
          snprintf(enc, len, "%%%02X", *source & 0xFF);
 

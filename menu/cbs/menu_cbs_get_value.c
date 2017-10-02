@@ -558,11 +558,7 @@ static void menu_action_setting_disp_set_label_perf_counters_common(
       return;
 
    snprintf(s, len,
-#ifdef _WIN32
-         "%I64u ticks, %I64u runs.",
-#else
-         "%llu ticks, %llu runs.",
-#endif
+         STRING_REP_UINT64 " ticks, " STRING_REP_UINT64 " runs.",
          ((uint64_t)counters[offset]->total /
           (uint64_t)counters[offset]->call_cnt),
          (uint64_t)counters[offset]->call_cnt);

@@ -31,13 +31,13 @@ RETRO_BEGIN_DECLS
 typedef struct
 {
    /* bits per sample */
-   int bitspersample;
+   unsigned int bitspersample;
    
    /* number of channels */
-   int numchannels;
+   unsigned int numchannels;
    
    /* sample rate */
-   int samplerate;
+   unsigned int samplerate;
 
    /* number of *samples* */
    size_t numsamples;
