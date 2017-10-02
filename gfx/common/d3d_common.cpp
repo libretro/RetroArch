@@ -744,27 +744,42 @@ void d3d_set_vertex_declaration(void *data, void *vertex_data)
 #endif
 }
 
+static bool d3d_reset_internal(LPDIRECT3DDEVICE dev,
+      D3DPRESENT_PARAMETERS *d3dpp
+      )
+{
+#if defined(HAVE_D3D9) && !defined(__cplusplus)
+   return (IDirect3DDevice9_Reset(dev, d3dpp) == D3D_OK);
+#elif defined(HAVE_D3D8) && !defined(__cplusplus)
+   return (IDirect3DDevice8_Reset(dev, d3dpp) == D3D_OK);
+#else
+   return (dev->Reset(d3dpp) == D3D_OK);
+#endif
+}
+
+static HRESULT d3d_test_cooperative_level(LPDIRECT3DDEVICE dev)
+{
+#if defined(HAVE_D3D9) && !defined(__cplusplus)
+   return IDirect3DDevice9_TestCooperativeLevel(dev);
+#elif defined(HAVE_D3D8) && !defined(__cplusplus)
+   return IDirect3DDevice8_TestCooperativeLevel(dev);
+#else
+   return dev->TestCooperativeLevel();
+#endif
+}
+
 bool d3d_reset(LPDIRECT3DDEVICE dev, D3DPRESENT_PARAMETERS *d3dpp)
 {
-#ifndef _XBOX
-   HRESULT res;
-#endif
    const char *err = NULL;
 
-   if (dev->Reset(d3dpp) == D3D_OK)
+   if (d3d_reset_internal(dev, d3dpp))
       return true;
 
-   /* Try to recreate the device completely. */
-#ifndef _XBOX
-#if defined(HAVE_D3D9) && !defined(__cplusplus)
-   res     = IDirect3DDevice9_TestCooperativeLevel(dev);
-#elif defined(HAVE_D3D8) && !defined(__cplusplus)
-   res     = IDirect3DDevice8_TestCooperativeLevel(dev);
-#else
-   res     = dev->TestCooperativeLevel();
-#endif
+   RARCH_WARN("[D3D]: Attempting to recover from dead state...\n");
 
-   switch (res)
+#ifndef _XBOX
+   /* Try to recreate the device completely. */
+   switch (d3d_test_cooperative_level(dev))
    {
       case D3DERR_DEVICELOST:
          err = "DEVICELOST";
@@ -781,10 +796,7 @@ bool d3d_reset(LPDIRECT3DDEVICE dev, D3DPRESENT_PARAMETERS *d3dpp)
       default:
          err = "Unknown";
    }
-   RARCH_WARN("[D3D]: Attempting to recover from dead state (%s).\n",
-         err);
-#else
-   RARCH_WARN("[D3D]: Attempting to recover from dead state.\n");
+   RARCH_WARN("[D3D]: recovering from dead state: (%s).\n", err);
 #endif
 
    return false;
