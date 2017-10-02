@@ -141,6 +141,12 @@ bool d3d_surface_lock_rect(void *data, void *data2);
 
 void d3d_surface_unlock_rect(void *data);
 
+bool d3d_create_device(LPDIRECT3DDEVICE *dev,
+      D3DPRESENT_PARAMETERS *d3dpp,
+      LPDIRECT3D d3d,
+      HWND focus_window,
+      unsigned cur_mon_id);
+
 bool d3d_reset(LPDIRECT3DDEVICE dev, D3DPRESENT_PARAMETERS *d3dpp);
 
 void d3d_device_free(LPDIRECT3DDEVICE dev, LPDIRECT3D pd3d);

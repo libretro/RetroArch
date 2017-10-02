@@ -621,8 +621,8 @@ void d3d_make_d3dpp(void *data,
 static bool d3d_init_base(void *data, const video_info_t *info)
 {
    D3DPRESENT_PARAMETERS d3dpp;
-   HRESULT d3d_err;
-   d3d_video_t *d3d = (d3d_video_t*)data;
+   HWND focus_window = NULL;
+   d3d_video_t *d3d  = (d3d_video_t*)data;
 
    d3d_make_d3dpp(d3d, info, &d3dpp);
 
@@ -636,49 +636,18 @@ static bool d3d_init_base(void *data, const video_info_t *info)
 #ifdef _XBOX360
    d3d->cur_mon_id = 0;
 #endif
-
-#ifdef _XBOX
-      if (FAILED(d3d_err = g_pD3D->CreateDevice(
-            d3d->cur_mon_id,
-            D3DDEVTYPE_HAL,
-            NULL,
-            D3DCREATE_HARDWARE_VERTEXPROCESSING,
-            &d3dpp,
-            &d3d->dev)))
-#else
-   if (FAILED(d3d_err = g_pD3D->CreateDevice(
-            d3d->cur_mon_id,
-            D3DDEVTYPE_HAL,
-            win32_get_window(),
-            D3DCREATE_HARDWARE_VERTEXPROCESSING,
-            &d3dpp,
-            &d3d->dev)))
+#ifndef _XBOX
+   focus_window    = win32_get_window();
 #endif
+
+   if (!d3d_create_device(&d3d->dev, &d3dpp,
+            g_pD3D, 
+            focus_window,
+            d3d->cur_mon_id)
+      )
    {
-      RARCH_WARN("[D3D]: Failed to init device with hardware vertex processing (code: 0x%x). Trying to fall back to software vertex processing.\n",
-                 (unsigned)d3d_err);
-
-#ifdef _XBOX
-      if (FAILED(d3d_err = g_pD3D->CreateDevice(
-                  d3d->cur_mon_id,
-                  D3DDEVTYPE_HAL,
-                  NULL,
-                  D3DCREATE_SOFTWARE_VERTEXPROCESSING,
-                  &d3dpp,
-                  &d3d->dev)))
-#else
-      if (FAILED(d3d_err = g_pD3D->CreateDevice(
-                  d3d->cur_mon_id,
-                  D3DDEVTYPE_HAL,
-                  win32_get_window(),
-                  D3DCREATE_SOFTWARE_VERTEXPROCESSING,
-                  &d3dpp,
-                  &d3d->dev)))
-#endif
-      {
-         RARCH_ERR("[D3D]: Failed to initialize device.\n");
-         return false;
-      }
+      RARCH_ERR("[D3D]: Failed to initialize device.\n");
+      return false;
    }
 
    return true;

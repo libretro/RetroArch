@@ -768,6 +768,44 @@ static HRESULT d3d_test_cooperative_level(LPDIRECT3DDEVICE dev)
 #endif
 }
 
+static bool d3d_create_device_internal(LPDIRECT3DDEVICE *dev,
+      D3DPRESENT_PARAMETERS *d3dpp,
+      LPDIRECT3D d3d,
+      HWND focus_window,
+      unsigned cur_mon_id,
+      DWORD behavior_flags)
+{
+   if (FAILED(d3d->CreateDevice(
+               cur_mon_id,
+               D3DDEVTYPE_HAL,
+               focus_window,
+               behavior_flags,
+               d3dpp,
+               dev)))
+      return false;
+   return true;
+}
+
+bool d3d_create_device(LPDIRECT3DDEVICE *dev,
+      D3DPRESENT_PARAMETERS *d3dpp,
+      LPDIRECT3D d3d,
+      HWND focus_window,
+      unsigned cur_mon_id)
+{
+   if (!d3d_create_device_internal(dev,
+            d3dpp,
+            d3d,
+            focus_window,
+            cur_mon_id,
+            D3DCREATE_HARDWARE_VERTEXPROCESSING))
+      if (!d3d_create_device_internal(
+               dev, d3dpp, d3d, focus_window,
+               cur_mon_id,
+               D3DCREATE_SOFTWARE_VERTEXPROCESSING))
+         return false;
+   return true;
+}
+
 bool d3d_reset(LPDIRECT3DDEVICE dev, D3DPRESENT_PARAMETERS *d3dpp)
 {
    const char *err = NULL;
