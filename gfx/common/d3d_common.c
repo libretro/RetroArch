@@ -123,6 +123,8 @@ bool d3d_surface_lock_rect(void *data, void *data2)
    if (FAILED(IDirect3DSurface9_LockRect(surf, (D3DLOCKED_RECT*)data2, NULL, D3DLOCK_READONLY)))
 #elif defined(HAVE_D3D8) && !defined(__cplusplus)
    if (FAILED(IDirect3DSurface8_LockRect(surf, (D3DLOCKED_RECT*)data2, NULL, D3DLOCK_READONLY)))
+#elif defined(_XBOX)
+   surf->LockRect((D3DLOCKED_RECT*)data2, NULL, D3DLOCK_READONLY);
 #else
    if (FAILED(surf->LockRect((D3DLOCKED_RECT*)data2, NULL, D3DLOCK_READONLY)))
 #endif
