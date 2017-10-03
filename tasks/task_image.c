@@ -322,6 +322,7 @@ bool task_push_image_load(const char *fullpath, retro_task_callback_t cb, void *
    image->status                     = IMAGE_STATUS_TRANSFER;
    image->is_blocking                = false;
    image->is_blocking_on_processing  = false;
+   image->is_finished                = false;
    image->processing_final_state     = 0;
    image->processing_pos_increment   = 0;
    image->pos_increment              = 0;
