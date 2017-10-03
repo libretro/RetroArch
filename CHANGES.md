@@ -13,6 +13,7 @@
 - INPUT: Ignore keyboard input if window is not active on udev driver
 - LOBBIES: Fix crash on navigating left / right from the lobby menu
 - LOCALIZATION: Update Italian translation.
+- LOCALIZATION: Update Japanese translation.
 - LOCALIZATION: Update Portuguese-Brazilian translation.
 - LOCALIZATION: Update Russian translation.
 - LINUX/PI: Broadcom VC4: Add Videocore config option
