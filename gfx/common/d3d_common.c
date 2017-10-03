@@ -69,7 +69,7 @@ bool d3d_texture_get_level_desc(LPDIRECT3DTEXTURE tex,
       return false;
 #if defined(HAVE_D3D9) && !defined(__cplusplus)
 #if defined(_XBOX)
-   IDirect3DTexture9_GetLevelDesc(tex, idx, (D3DSURFACE_DESC*)_ppsurface_level);
+   D3DTexture_GetLevelDesc(tex, idx, (D3DSURFACE_DESC*)_ppsurface_level);
    return true;
 #else
    if (SUCCEEDED(IDirect3DTexture9_GetLevelDesc(tex, idx, (D3DSURFACE_DESC*)_ppsurface_level)))

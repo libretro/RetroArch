@@ -629,10 +629,10 @@ static void xdk360_render_msg_post(xdk360_video_font_t * font)
    LPDIRECT3DDEVICE d3dr = font->d3d->dev;
 
    d3d_set_texture(d3dr, 0, NULL);
-   d3dr->SetVertexDeclaration(NULL);
+   d3d_set_vertex_declaration(d3dr, NULL);
    d3d_set_vertex_shader(d3dr, 0, NULL);
    D3DDevice_SetPixelShader(d3dr, NULL);
-   d3dr->SetRenderState( D3DRS_VIEWPORTENABLE, font->m_dwSavedState );
+   d3d_set_render_state(d3dr, D3DRS_VIEWPORTENABLE, font->m_dwSavedState);
 }
 
 static void xdk360_render_msg_pre(xdk360_video_font_t * font)
@@ -645,19 +645,20 @@ static void xdk360_render_msg_pre(xdk360_video_font_t * font)
    d3dr->GetRenderState( D3DRS_VIEWPORTENABLE, (DWORD*)&font->m_dwSavedState );
 
    /* Set the texture scaling factor as a vertex shader constant. */
-   D3DTexture_GetLevelDesc(font->m_pFontTexture, 0, &TextureDesc); // Get the description
+   /* Get the description */
+   d3d_texture_get_level_desc(font->m_pFontTexture, 0, &TextureDesc);
 
    /* Set render state. */
    d3d_set_texture(d3dr, 0, font->m_pFontTexture);
 
-   /* Read the TextureDesc here to ensure no load/hit/store from GetLevelDesc(). */
+   /* Read the TextureDesc here to ensure no load/hit/store from d3d_texture_get_level_desc(). */
    vTexScale[0] = 1.0f / TextureDesc.Width;		/* LHS due to int->float conversion. */
    vTexScale[1] = 1.0f / TextureDesc.Height;
    vTexScale[2] = 0.0f;
    vTexScale[3] = 0.0f;
 
-   d3dr->SetRenderState( D3DRS_VIEWPORTENABLE, FALSE );
-   d3dr->SetVertexDeclaration(font->s_FontLocals.m_pFontVertexDecl);
+   d3d_set_render_state(d3dr, D3DRS_VIEWPORTENABLE, FALSE);
+   d3d_set_vertex_declaration(d3dr, font->s_FontLocals.m_pFontVertexDecl);
    d3d_set_vertex_shader(d3dr, 0, font->s_FontLocals.m_pFontVertexShader);
    d3dr->SetPixelShader(font->s_FontLocals.m_pFontPixelShader);
 
