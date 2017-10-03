@@ -471,10 +471,7 @@ static HRESULT xdk360_video_font_create_shaders(xdk360_video_font_t * font)
          D3DDECL_END()
       };
 
-
-      hr = d3dr->CreateVertexDeclaration( decl, &font->s_FontLocals.m_pFontVertexDecl );
-
-      if (hr >= 0)
+      if (d3d_create_vertex_declaration(d3dr,decl, &font->s_FontLocals.m_pFontVertexDecl))
       {
          ID3DXBuffer* pShaderCode;
 
@@ -510,8 +507,8 @@ static HRESULT xdk360_video_font_create_shaders(xdk360_video_font_t * font)
             font->s_FontLocals.m_pFontVertexShader = NULL;
          }
 
-         font->s_FontLocals.m_pFontVertexDecl->Release();
-      }  
+         d3d_vertex_declaration_free(font->s_FontLocals.m_pFontVertexDecl);
+      }
       font->s_FontLocals.m_pFontVertexDecl = NULL;
    }while(0);
 
@@ -611,7 +608,7 @@ static void xdk360_free_font(void *data, bool is_threaded)
    if (font->s_FontLocals.m_pFontVertexShader)
       font->s_FontLocals.m_pFontVertexShader->Release();
    if (font->s_FontLocals.m_pFontVertexDecl)
-      font->s_FontLocals.m_pFontVertexDecl->Release();
+      d3d_vertex_declaration_free(font->s_FontLocals.m_pFontVertexDecl);
 
    font->s_FontLocals.m_pFontPixelShader  = NULL;
    font->s_FontLocals.m_pFontVertexShader = NULL;
