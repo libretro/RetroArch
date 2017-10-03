@@ -62,6 +62,24 @@ void d3d_set_transform(LPDIRECT3DDEVICE dev,
 #endif
 }
 
+bool d3d_texture_get_surface_level(LPDIRECT3DTEXTURE tex,
+      unsigned idx, void **_ppsurface_level)
+{
+   if (!tex)
+      return false;
+#if defined(HAVE_D3D9) && !defined(__cplusplus)
+   if (SUCCEEDED(IDirect3DTexture9_GetSurfaceLevel(tex, idx, (LPDIRECT3DSURFACE**)_ppsurface_level)))
+      return true;
+#elif defined(HAVE_D3D9) && !defined(__cplusplus)
+   if (SUCCEEDED(IDirect3DTexture9_GetSurfaceLevel(tex, idx, (LPDIRECT3DSURFACE**)_ppsurface_level)))
+      return true;
+#else
+   if (SUCCEEDED(tex->GetSurfaceLevel(level, (LPDIRECT3DSURFACE**)_ppsurface_level)))
+      return true;
+#endif
+   return false;
+}
+
 LPDIRECT3DTEXTURE d3d_texture_new(LPDIRECT3DDEVICE dev,
       const char *path, unsigned width, unsigned height,
       unsigned miplevels, unsigned usage, D3DFORMAT format,

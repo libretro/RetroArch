@@ -35,6 +35,9 @@ void d3d_vertex_buffer_unlock(void *data);
 
 void d3d_vertex_buffer_free(void *vertex_data, void *vertex_declaration);
 
+bool d3d_texture_get_surface_level(LPDIRECT3DTEXTURE tex,
+      unsigned idx, void **_ppsurface_level);
+
 LPDIRECT3DTEXTURE d3d_texture_new(LPDIRECT3DDEVICE dev,
       const char *path, unsigned width, unsigned height,
       unsigned miplevels, unsigned usage, D3DFORMAT format,
