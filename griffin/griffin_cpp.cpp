@@ -137,10 +137,6 @@ VIDEO DRIVER
 #include "../gfx/drivers_renderchain/d3d9_hlsl_renderchain.cpp"
 #endif
 
-#ifdef HAVE_CG
-#include "../gfx/drivers_renderchain/d3d9_cg_renderchain.cpp"
-#endif
-
 #endif
 
 #ifdef HAVE_VULKAN

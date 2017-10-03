@@ -317,6 +317,15 @@ VIDEO DRIVER
 #if defined(HAVE_D3D8)
 #include "../gfx/drivers_renderchain/d3d8_renderchain.c"
 #endif
+
+#if defined(HAVE_D3D9)
+
+#ifdef HAVE_CG
+#include "../gfx/drivers_renderchain/d3d9_cg_renderchain.c"
+#endif
+
+#endif
+
 #endif
 
 #if defined(GEKKO)

@@ -68,13 +68,13 @@ bool d3d_texture_get_surface_level(LPDIRECT3DTEXTURE tex,
    if (!tex)
       return false;
 #if defined(HAVE_D3D9) && !defined(__cplusplus)
-   if (SUCCEEDED(IDirect3DTexture9_GetSurfaceLevel(tex, idx, (LPDIRECT3DSURFACE**)_ppsurface_level)))
+   if (SUCCEEDED(IDirect3DTexture9_GetSurfaceLevel(tex, idx, (IDirect3DSurface9**)_ppsurface_level)))
       return true;
-#elif defined(HAVE_D3D9) && !defined(__cplusplus)
-   if (SUCCEEDED(IDirect3DTexture9_GetSurfaceLevel(tex, idx, (LPDIRECT3DSURFACE**)_ppsurface_level)))
+#elif defined(HAVE_D3D8) && !defined(__cplusplus)
+   if (SUCCEEDED(IDirect3DTexture8_GetSurfaceLevel(tex, idx, (LPDIRECT3DSURFACE**)_ppsurface_level)))
       return true;
 #else
-   if (SUCCEEDED(tex->GetSurfaceLevel(level, (LPDIRECT3DSURFACE**)_ppsurface_level)))
+   if (SUCCEEDED(tex->GetSurfaceLevel(idx, (LPDIRECT3DSURFACE**)_ppsurface_level)))
       return true;
 #endif
    return false;

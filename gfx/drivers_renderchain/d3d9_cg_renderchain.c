@@ -783,8 +783,7 @@ static bool d3d9_cg_renderchain_init_shader(void *data,
       return false;
    }
 
-   HRESULT ret = cgD3D9SetDevice((IDirect3DDevice9*)d3d->dev);
-   if (FAILED(ret))
+   if (FAILED(cgD3D9SetDevice((IDirect3DDevice9*)d3d->dev)))
       return false;
    return true;
 }
@@ -1021,14 +1020,14 @@ static void d3d_recompute_pass_sizes(cg_renderchain_t *chain,
 {
    unsigned i;
    struct LinkInfo link_info         = {0};
-   link_info.pass                    = &d3d->shader.pass[0];
-   link_info.tex_w = link_info.tex_h =
-      d3d->video_info.input_scale * RARCH_SCALE_BASE;
-
-   unsigned current_width            = link_info.tex_w;
-   unsigned current_height           = link_info.tex_h;
+   unsigned current_width            = d3d->video_info.input_scale * RARCH_SCALE_BASE;
+   unsigned current_height           = d3d->video_info.input_scale * RARCH_SCALE_BASE;
    unsigned out_width                = 0;
    unsigned out_height               = 0;
+
+   link_info.pass                    = &d3d->shader.pass[0];
+   link_info.tex_w                   = current_width;
+   link_info.tex_h                   = current_height;
 
    if (!d3d9_cg_renderchain_set_pass_size(chain, 0,
             current_width, current_height))
