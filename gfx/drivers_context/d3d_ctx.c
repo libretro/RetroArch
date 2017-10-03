@@ -246,13 +246,14 @@ static void gfx_ctx_d3d_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
 #ifdef _XBOX
+#ifdef _XBOX360
+   XVIDEO_MODE video_mode;
+#endif
    d3d_video_t *d3d = (d3d_video_t*)data;
 
    (void)width;
    (void)height;
 #if defined(_XBOX360)
-   XVIDEO_MODE video_mode;
-
    XGetVideoMode(&video_mode);
 
    *width  = video_mode.dwDisplayWidth;

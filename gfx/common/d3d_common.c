@@ -138,15 +138,21 @@ bool d3d_surface_lock_rect(void *data, void *data2)
 {
    LPDIRECT3DSURFACE surf = (LPDIRECT3DSURFACE)data;
 #if defined(HAVE_D3D9) && !defined(__cplusplus)
+#if defined(_XBOX)
+   IDirect3DSurface9_LockRect(surf, (D3DLOCKED_RECT*)data2, NULL, D3DLOCK_READONLY);
+#else
    if (FAILED(IDirect3DSurface9_LockRect(surf, (D3DLOCKED_RECT*)data2, NULL, D3DLOCK_READONLY)))
+	   return false;
+#endif
 #elif defined(HAVE_D3D8) && !defined(__cplusplus)
    if (FAILED(IDirect3DSurface8_LockRect(surf, (D3DLOCKED_RECT*)data2, NULL, D3DLOCK_READONLY)))
+	   return false;
 #elif defined(_XBOX)
    surf->LockRect((D3DLOCKED_RECT*)data2, NULL, D3DLOCK_READONLY);
 #else
    if (FAILED(surf->LockRect((D3DLOCKED_RECT*)data2, NULL, D3DLOCK_READONLY)))
+	   return false;
 #endif
-      return false;
    return true;
 }
 
@@ -332,7 +338,7 @@ bool d3d_device_create_offscreen_plain_surface(
       void **surf_data,
       void *data)
 {
-#if defined(HAVE_D3D9)
+#if defined(HAVE_D3D9) && !defined(_XBOX)
 #ifdef __cplusplus
    if (SUCCEEDED(dev->CreateOffscreenPlainSurface(width, height,
          (D3DFORMAT)format, (D3DPOOL)pool,
@@ -351,6 +357,8 @@ bool d3d_device_create_offscreen_plain_surface(
    return false;
 }
 
+#ifndef _XBOX360
+/* XBox 360 has no fixed-function pipeline. */
 static void d3d_set_texture_stage_state(LPDIRECT3DDEVICE dev,
       unsigned sampler, unsigned value, unsigned type)
 {
@@ -362,6 +370,7 @@ static void d3d_set_texture_stage_state(LPDIRECT3DDEVICE dev,
    dev->SetTextureStageState(sampler, (D3DTEXTURESTAGESTATETYPE)type, value);
 #endif
 }
+#endif
 
 void d3d_set_sampler_address_u(LPDIRECT3DDEVICE dev,
       unsigned sampler, unsigned value)
@@ -434,16 +443,23 @@ void d3d_set_sampler_magfilter(LPDIRECT3DDEVICE dev,
 bool d3d_begin_scene(LPDIRECT3DDEVICE dev)
 {
 #if defined(HAVE_D3D9) && !defined(__cplusplus)
-   if (SUCCEEDED(IDirect3DDevice9_BeginScene(dev)))
+#if defined(_XBOX)
+   IDirect3DDevice9_BeginScene(dev);
+#else
+   if (FAILED(IDirect3DDevice9_BeginScene(dev)))
+	   return false;
+#endif
 #elif defined(HAVE_D3D8) && !defined(__cplusplus)
-   if (SUCCEEDED(IDirect3DDevice8_BeginScene(dev)))
+   if (FAILED(IDirect3DDevice8_BeginScene(dev)))
+	   return false;
 #elif defined(_XBOX)
    dev->BeginScene();
 #else
-   if (SUCCEEDED(dev->BeginScene()))
+   if (FAILED(dev->BeginScene()))
+      return false;
 #endif
-      return true;
-   return false;
+
+   return true;
 }
 
 void d3d_end_scene(LPDIRECT3DDEVICE dev)
@@ -510,10 +526,10 @@ bool d3d_device_get_render_target_data(LPDIRECT3DDEVICE dev,
 {
    LPDIRECT3DSURFACE src = (LPDIRECT3DSURFACE)_src;
    LPDIRECT3DSURFACE dst = (LPDIRECT3DSURFACE)_dst;
-#if defined(HAVE_D3D9) && !defined(__cplusplus)
+#if defined(HAVE_D3D9) && !defined(__cplusplus) && !defined(_XBOX)
    if (SUCCEEDED(IDirect3DDevice9_GetRenderTargetData(dev, src, dst)))
       return true;
-#else
+#elif !defined(_XBOX)
    if (SUCCEEDED(dev->GetRenderTargetData(src, dst)))
       return true;
 #endif
@@ -609,7 +625,11 @@ void d3d_set_texture(LPDIRECT3DDEVICE dev, unsigned sampler,
       D3DTAG_MASKENCODE(D3DTAG_START(D3DTAG_FETCHCONSTANTS) 
             + fetchConstant, D3DTAG_START(D3DTAG_FETCHCONSTANTS)
             + fetchConstant);
+#if defined(__cplusplus)
    D3DDevice_SetTexture(dev, sampler, tex, pendingMask3);
+#else
+   D3DDevice_SetTexture(dev, sampler, (D3DBaseTexture*)tex, pendingMask3);
+#endif
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DDevice9_SetTexture(dev, sampler, (IDirect3DBaseTexture9*)tex);
 #elif defined(HAVE_D3D8) && !defined(__cplusplus)
@@ -782,9 +802,9 @@ static bool d3d_reset_internal(LPDIRECT3DDEVICE dev,
 
 static HRESULT d3d_test_cooperative_level(LPDIRECT3DDEVICE dev)
 {
-#if defined(HAVE_D3D9) && !defined(__cplusplus)
+#if defined(HAVE_D3D9) && !defined(__cplusplus) && !defined(_XBOX)
    return IDirect3DDevice9_TestCooperativeLevel(dev);
-#elif defined(HAVE_D3D8) && !defined(__cplusplus)
+#elif defined(HAVE_D3D8) && !defined(__cplusplus) && !defined(_XBOX)
    return IDirect3DDevice8_TestCooperativeLevel(dev);
 #elif defined(_XBOX)
    return E_FAIL;

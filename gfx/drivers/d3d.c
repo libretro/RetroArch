@@ -605,8 +605,10 @@ void d3d_make_d3dpp(void *data,
    if (widescreen_mode)
       d3dpp->Flags |= D3DPRESENTFLAG_WIDESCREEN;
 #elif defined(_XBOX360)
+#if 0
    if (!widescreen_mode)
       d3dpp->Flags |= D3DPRESENTFLAG_NO_LETTERBOX;
+#endif
 
    if (global->console.screen.gamma_correction)
       d3dpp->FrontBufferFormat       = (D3DFORMAT)
