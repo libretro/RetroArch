@@ -62,6 +62,24 @@ void d3d_set_transform(LPDIRECT3DDEVICE dev,
 #endif
 }
 
+bool d3d_texture_get_level_desc(LPDIRECT3DTEXTURE tex,
+      unsigned idx, void *_ppsurface_level)
+{
+   if (!tex)
+      return false;
+#if defined(HAVE_D3D9) && !defined(__cplusplus)
+   if (SUCCEEDED(IDirect3DTexture9_GetLevelDesc(tex, idx, (D3DSURFACE_DESC*)_ppsurface_level)))
+      return true;
+#elif defined(HAVE_D3D8) && !defined(__cplusplus)
+   if (SUCCEEDED(IDirect3DTexture8_GetLevelDesc(tex, idx, (D3DSURFACE_DESC*)_ppsurface_level)))
+      return true;
+#else
+   if (SUCCEEDED(tex->GetLevelDesc(idx, (D3DSURFACE_DESC*)_ppsurface_level)))
+      return true;
+#endif
+   return false;
+}
+
 bool d3d_texture_get_surface_level(LPDIRECT3DTEXTURE tex,
       unsigned idx, void **_ppsurface_level)
 {
@@ -669,7 +687,7 @@ void d3d_texture_blit(unsigned pixel_size,
    {
 #if defined(_XBOX360)
       D3DSURFACE_DESC desc;
-      tex->GetLevelDesc(0, &desc);
+      d3d_texture_get_level_desc(tex, 0, &desc);
       XGCopySurface(lr->pBits, lr->Pitch, width, height, desc.Format, NULL,
             frame, pitch, desc.Format, NULL, 0, 0);
 #else
