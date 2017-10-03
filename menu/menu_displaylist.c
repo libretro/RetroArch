@@ -153,7 +153,8 @@ void cb_net_generic(void *task_data, void *user_data, const char *err)
    if (!core_buf)
       goto finish;
 
-   memcpy(core_buf, data->data, data->len * sizeof(char));
+   if (!string_is_empty(data->data))
+      memcpy(core_buf, data->data, data->len * sizeof(char));
    core_buf[data->len] = '\0';
    core_len      = data->len;
 
