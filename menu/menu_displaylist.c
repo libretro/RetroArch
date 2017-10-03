@@ -4283,7 +4283,8 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
 
    if (info->need_push)
    {
-      info->label_hash = msg_hash_calculate(info->label);
+      if (!string_is_empty(info->label))
+         info->label_hash = msg_hash_calculate(info->label);
       menu_driver_populate_entries(info);
       ui_companion_driver_notify_list_loaded(info->list, info->menu_list);
    }
