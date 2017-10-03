@@ -127,16 +127,8 @@ UI
 /*============================================================
 VIDEO DRIVER
 ============================================================ */
-#ifdef _XBOX
-#include "../frontend/drivers/platform_xdk.cpp"
-#endif
-
-#if defined(HAVE_D3D) && defined(HAVE_D3D9)
-
-#ifdef HAVE_HLSL
+#if defined(HAVE_D3D) && defined(HAVE_D3D9) && defined(HAVE_HLSL)
 #include "../gfx/drivers_renderchain/d3d9_hlsl_renderchain.cpp"
-#endif
-
 #endif
 
 #ifdef HAVE_VULKAN

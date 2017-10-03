@@ -833,6 +833,11 @@ FRONTEND
 #if defined(_WIN32) && !defined(_XBOX)
 #include "../frontend/drivers/platform_win32.c"
 #endif
+
+#ifdef _XBOX
+#include "../frontend/drivers/platform_xdk.c"
+#endif
+
 #if defined(__CELLOS_LV2__)
 #include "../frontend/drivers/platform_ps3.c"
 #elif defined(GEKKO)
