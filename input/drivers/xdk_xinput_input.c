@@ -113,7 +113,9 @@ static bool xdk_input_set_rumble(void *data, unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
 #ifdef _XBOX360
+#if 0
    XINPUT_VIBRATION rumble_state;
+#endif
 #endif
    xdk_input_t *xdk = (xdk_input_t*)data;
    bool val         = false;
