@@ -410,17 +410,11 @@ static void xui_frame(void *data, video_frame_info_t *video_info)
    XUIMessage msg;
    XUIMessageRender msgRender;
    D3DXMATRIX matOrigView;
-   LPDIRECT3DDEVICE d3dr;
    const char *message   = NULL;
    D3DVIEWPORT vp_full   = {0};
    d3d_video_t *d3d      = (d3d_video_t*)video_driver_get_ptr(false);
 
    if (!d3d)
-      return;
-
-   d3dr = (LPDIRECT3DDEVICE)d3d->dev;
-
-   if (!d3dr)
       return;
 
    xui_frame_count++;
