@@ -19,6 +19,7 @@
 #include <string/stdstring.h>
 
 #include "../drivers/d3d.h"
+#include "../common/d3d_common.h"
 #include "../font_driver.h"
 
 #include "../drivers/d3d_shaders/font.hlsl.d3d9.h"
@@ -471,7 +472,7 @@ static HRESULT xdk360_video_font_create_shaders(xdk360_video_font_t * font)
          D3DDECL_END()
       };
 
-      if (d3d_create_vertex_declaration(d3dr,decl, &font->s_FontLocals.m_pFontVertexDecl))
+      if (d3d_vertex_declaration_new(d3dr,decl, (void**)&font->s_FontLocals.m_pFontVertexDecl))
       {
          ID3DXBuffer* pShaderCode;
 
