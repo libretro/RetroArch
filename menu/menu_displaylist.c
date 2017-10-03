@@ -103,7 +103,8 @@ void cb_net_generic_subdir(void *task_data, void *user_data, const char *err)
    if (!data || err)
       goto finish;
 
-   memcpy(subdir_path, data->data, data->len * sizeof(char));
+   if (!string_is_empty(data->data))
+      memcpy(subdir_path, data->data, data->len * sizeof(char));
    subdir_path[data->len] = '\0';
 
 finish:
