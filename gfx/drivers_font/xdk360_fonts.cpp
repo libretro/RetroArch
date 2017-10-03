@@ -58,18 +58,18 @@ enum
 class PackedResource
 {
    protected:
-      BYTE*       m_pSysMemData;        // Alloc'ed memory for resource headers etc.
+      BYTE*       m_pSysMemData;        /* Allocated memory for resource headers etc. */
       DWORD       m_dwSysMemDataSize;
 
-      BYTE*       m_pVidMemData;        // Alloc'ed memory for resource data, etc.
+      BYTE*       m_pVidMemData;        /* Allocated memory for resource data, etc. */
       DWORD       m_dwVidMemDataSize;
 
-      XBRESOURCE* m_pResourceTags;     // Tags to associate names with the resources
-      DWORD       m_dwNumResourceTags; // Number of resource tags
-      BOOL m_bInitialized;       // Resource is fully initialized
+      XBRESOURCE* m_pResourceTags;     /* Tags to associate names with the resources */
+      DWORD       m_dwNumResourceTags; /* Number of resource tags */
+      BOOL m_bInitialized;             /* Resource is fully initialized */
 
    public:
-      // Loads the resources out of the specified bundle
+      /* Loads the resources out of the specified bundle */
 #if defined(_XBOX1)
       HRESULT Create( const char *strFilename, DWORD dwNumResourceTags = 0L, 
             XBRESOURCE* pResourceTags = NULL );
@@ -82,19 +82,19 @@ class PackedResource
       BOOL    Initialized() const;
 
 #ifdef _XBOX360
-      // Retrieves the resource tags
+      /* Retrieves the resource tags */
       void GetResourceTags( DWORD* pdwNumResourceTags, XBRESOURCE** ppResourceTags );
 #endif
 
-      // Helper function to make sure a resource is registered
+      /* Helper function to make sure a resource is registered */
       LPDIRECT3DRESOURCE RegisterResource( LPDIRECT3DRESOURCE pResource ) const
       {
 #ifdef _XBOX1
-         // Register the resource, if it has not yet been registered. We mark
-         // a resource as registered by upping it's reference count.
+         /* Register the resource, if it has not yet been registered. We mark
+          * a resource as registered by upping it's reference count. */
          if( pResource && ( pResource->Common & D3DCOMMON_REFCOUNT_MASK ) == 1 )
          {
-            // Special case CPU-copy push buffers (which live in system memory)
+            /* Special case CPU-copy push buffers (which live in system memory) */
             if( ( pResource->Common & D3DCOMMON_TYPE_PUSHBUFFER ) &&
                   ( pResource->Common & D3DPUSHBUFFER_RUN_USING_CPU_COPY ) )
                pResource->Data += (DWORD)m_pSysMemData;
@@ -107,7 +107,7 @@ class PackedResource
          return pResource;
       }
 
-      // Functions to retrieve resources by their offset
+      /* Functions to retrieve resources by their offset */
       void *GetData( DWORD dwOffset ) const
       { return &m_pSysMemData[dwOffset]; }
 
@@ -120,7 +120,7 @@ class PackedResource
       LPDIRECT3DVERTEXBUFFER GetVertexBuffer( DWORD dwOffset ) const
       { return (LPDIRECT3DVERTEXBUFFER)GetResource( dwOffset ); }
 
-      // Functions to retrieve resources by their name
+      /* Functions to retrieve resources by their name */
       void *GetData( const char* strName ) const;
 
       LPDIRECT3DRESOURCE GetResource( const char* strName ) const
@@ -132,7 +132,7 @@ class PackedResource
       LPDIRECT3DVERTEXBUFFER GetVertexBuffer( const char* strName ) const
       { return (LPDIRECT3DVERTEXBUFFER)GetResource( strName ); }
 
-      // Constructor/destructor
+      /* Constructor/destructor */
       PackedResource();
       ~PackedResource();
 };
@@ -270,7 +270,7 @@ HRESULT PackedResource::Create(const char *strFilename)
       return E_FAIL;
    }
 
-   // Compute memory requirements
+   /* Compute memory requirements */
 #if defined(_XBOX1)
    m_dwSysMemDataSize = xprh.dwHeaderSize - sizeof(XPR_HEADER);
    m_dwVidMemDataSize = xprh.dwTotalSize - xprh.dwHeaderSize;
@@ -279,7 +279,7 @@ HRESULT PackedResource::Create(const char *strFilename)
    m_dwVidMemDataSize = xprh.dwDataSize;
 #endif
 
-   // Allocate memory
+   /* Allocate memory */
    m_pSysMemData = (BYTE*)malloc(m_dwSysMemDataSize);
    if (m_pSysMemData == NULL)
    {
@@ -304,7 +304,7 @@ HRESULT PackedResource::Create(const char *strFilename)
       return E_FAIL;
    }
 
-   // Read in the data from the file
+   /* Read in the data from the file */
    if( !ReadFile( hFile, m_pSysMemData, m_dwSysMemDataSize, &dwNumBytesRead, NULL) ||
          !ReadFile( hFile, m_pVidMemData, m_dwVidMemDataSize, &dwNumBytesRead, NULL))
    {
@@ -312,7 +312,7 @@ HRESULT PackedResource::Create(const char *strFilename)
       return E_FAIL;
    }
 
-   // Done with the file
+   /* Done with the file */
    CloseHandle( hFile);
 
 #ifdef _XBOX1
@@ -774,10 +774,10 @@ static void xdk360_draw_text(xdk360_video_font_t *font,
       pVertex[12] = m_fCursorX;
       pVertex[13] = m_fCursorY + fHeight;
 #ifdef MSB_FIRST
-      ((volatile uint32_t *)pVertex)[2]  = (tu1 << 16) | tv1;         // Merged using big endian rules
-      ((volatile uint32_t *)pVertex)[6]  = (tu2 << 16) | tv1;         // Merged using big endian rules
-      ((volatile uint32_t*)pVertex)[10] = (tu2 << 16) | tv2;        // Merged using big endian rules
-      ((volatile uint32_t*)pVertex)[14] = (tu1 << 16) | tv2;        // Merged using big endian rules
+      ((volatile uint32_t *)pVertex)[2]  = (tu1 << 16) | tv1;       /* Merged using big endian rules */
+      ((volatile uint32_t *)pVertex)[6]  = (tu2 << 16) | tv1;       /* Merged using big endian rules */
+      ((volatile uint32_t*)pVertex)[10] = (tu2 << 16) | tv2;        /* Merged using big endian rules */
+      ((volatile uint32_t*)pVertex)[14] = (tu1 << 16) | tv2;        /* Merged using big endian rules */
 #endif
       pVertex[15] = 0;
       pVertex += 16;
