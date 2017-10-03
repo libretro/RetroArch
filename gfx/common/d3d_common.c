@@ -74,7 +74,7 @@ bool d3d_texture_get_surface_level(LPDIRECT3DTEXTURE tex,
    if (SUCCEEDED(IDirect3DTexture8_GetSurfaceLevel(tex, idx, (LPDIRECT3DSURFACE**)_ppsurface_level)))
       return true;
 #else
-   if (SUCCEEDED(tex->GetSurfaceLevel(idx, (LPDIRECT3DSURFACE**)_ppsurface_level)))
+   if (SUCCEEDED(tex->GetSurfaceLevel(idx, (ID3DSURFACE**)_ppsurface_level)))
       return true;
 #endif
    return false;
