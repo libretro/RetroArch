@@ -628,8 +628,9 @@ HRESULT d3d_set_vertex_shader(LPDIRECT3DDEVICE dev, unsigned index,
    LPDIRECT3DVERTEXSHADER shader = (LPDIRECT3DVERTEXSHADER)data;
    D3DDevice_SetVertexShader(dev, shader);
    return S_OK;
-#elif defined(HAVE_D3D8)
-   return E_FAIL;
+#elif defined(HAVE_D3D8) && !defined(__cplusplus)
+   LPDIRECT3DVERTEXSHADER shader = (LPDIRECT3DVERTEXSHADER)data;
+   return IDirect3DDevice8_SetVertexShader(index);
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
    LPDIRECT3DVERTEXSHADER shader = (LPDIRECT3DVERTEXSHADER)data;
    return IDirect3DDevice9_SetVertexShader(dev, shader);
@@ -800,32 +801,34 @@ static bool d3d_create_device_internal(LPDIRECT3DDEVICE *dev,
       DWORD behavior_flags)
 {
 #if defined(HAVE_D3D9) && !defined(__cplusplus)
-   if (FAILED(IDirect3D9_CreateDevice(d3d,
+   if (SUCCEEDED(IDirect3D9_CreateDevice(d3d,
                cur_mon_id,
                D3DDEVTYPE_HAL,
                focus_window,
                behavior_flags,
                d3dpp,
                dev)))
+      return true;
 #elif defined(HAVE_D3D8) && !defined(__cplusplus)
-   if (FAILED(IDirect3D8_CreateDevice(d3d,
+   if (SUCCEEDED(IDirect3D8_CreateDevice(d3d,
                cur_mon_id,
                D3DDEVTYPE_HAL,
                focus_window,
                behavior_flags,
                d3dpp,
                dev)))
+      return true;
 #else
-   if (FAILED(d3d->CreateDevice(
+   if (SUCCEEDED(d3d->CreateDevice(
                cur_mon_id,
                D3DDEVTYPE_HAL,
                focus_window,
                behavior_flags,
                d3dpp,
                dev)))
+      return true;
 #endif
-      return false;
-   return true;
+   return false;
 }
 
 bool d3d_create_device(LPDIRECT3DDEVICE *dev,
