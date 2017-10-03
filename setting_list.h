@@ -90,17 +90,14 @@ struct rarch_setting_group_info
 
 struct rarch_setting
 {
+   enum setting_type    browser_selection_type;
+   enum msg_hash_enums  enum_idx;
+   enum msg_hash_enums  enum_value_idx;
+   enum setting_type    type;
+
    bool                 dont_use_enum_idx_representation;
    bool                 enforce_minrange;
    bool                 enforce_maxrange;
-   
-   const char           *rounding_fraction;
-   const char           *name;
-   const char           *short_description;
-   const char           *group;
-   const char           *subgroup;
-   const char           *parent_group;
-   const char           *values;
 
    uint8_t              index;
    uint8_t              index_offset;
@@ -111,11 +108,19 @@ struct rarch_setting
 
    float                step;
 
+   uint64_t             flags;
+   uint64_t             free_flags;
+
    double               min;
    double               max;
    
-   uint64_t             flags;
-   uint64_t             free_flags;
+   const char           *rounding_fraction;
+   const char           *name;
+   const char           *short_description;
+   const char           *group;
+   const char           *subgroup;
+   const char           *parent_group;
+   const char           *values;
    
    change_handler_t              change_handler;
    change_handler_t              read_handler;
@@ -176,12 +181,6 @@ struct rarch_setting
       const char     *off_label;
       const char     *on_label;
    } boolean;
-
-   enum setting_type    browser_selection_type;
-   enum msg_hash_enums  enum_idx;
-   enum msg_hash_enums  enum_value_idx;
-   enum setting_type    type;
-
 };
 
 struct rarch_setting_info

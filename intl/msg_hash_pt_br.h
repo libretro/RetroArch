@@ -857,10 +857,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION,
 	 "Câmera Lenta"
 	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS,
-	 "Box do Estado de Jogo -"
+	 "Posição do Estado de Jogo -"
 	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS,
-	 "Box do Estado de Jogo +"
+	 "Posição do Estado de Jogo +"
 	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_DOWN,
 	 "Volume -"
@@ -1661,7 +1661,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
 	 "Iniciar Processador de Vídeo"
 	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_STATE_SLOT,
-	 "Box do Estado de Jogo"
+	 "Posição do Estado de Jogo"
 	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_STATUS,
 	 "Condição"
@@ -2729,7 +2729,7 @@ MSG_HASH(MSG_FOUND_FIRST_DATA_TRACK_ON_FILE,
 	 "Encontrada primeira faixa de dados no arquivo"
 	)
 MSG_HASH(MSG_FOUND_LAST_STATE_SLOT,
-	 "Encontrado último box de Estado de Jogo"
+	 "Encontrada última posição de Estado de Jogo"
 	)
 MSG_HASH(MSG_FOUND_SHADER,
 	 "Shader encontrado"
@@ -2798,10 +2798,10 @@ MSG_HASH(MSG_LIBRETRO_FRONTEND,
 	 "Frontend para Libretro"
 	)
 MSG_HASH(MSG_LOADED_STATE_FROM_SLOT,
-	 "Estado de Jogo carregado do box #%d."
+	 "Estado de Jogo carregado da posição #%d."
 	)
 MSG_HASH(MSG_LOADED_STATE_FROM_SLOT_AUTO,
-	 "Estado de Jogo carregado do box #-1 (automático)."
+	 "Estado de Jogo carregado da posição #-1 (automático)."
 	)
 MSG_HASH(MSG_LOADING,
 	 "Carregando"
@@ -2927,10 +2927,10 @@ MSG_HASH(MSG_SAVED_NEW_CONFIG_TO,
 	 "Nova configuração salva em"
 	)
 MSG_HASH(MSG_SAVED_STATE_TO_SLOT,
-	 "Estado de Jogo salvo no box #%d."
+	 "Estado de Jogo salvo na posição #%d."
 	)
 MSG_HASH(MSG_SAVED_STATE_TO_SLOT_AUTO,
-	 "Estado de Jogo salvo no box #-1 (automático)."
+	 "Estado de Jogo salvo na posição #-1 (automático)."
 	)
 MSG_HASH(MSG_SAVED_SUCCESSFULLY_TO,
 	 "Salvo com sucesso em"
@@ -2981,7 +2981,7 @@ MSG_HASH(MSG_STATE_SIZE,
 	 "Tamanho do Estado de Jogo"
 	)
 MSG_HASH(MSG_STATE_SLOT,
-	 "Box do Estado de Jogo"
+	 "Posição do Estado de Jogo"
 	)
 MSG_HASH(MSG_TAKING_SCREENSHOT,
 	 "Fazendo captura de tela"
@@ -3584,10 +3584,10 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
 	 "Fecha o conteúdo atual. Alterações não salvas serão perdidas."
 	)
 MSG_HASH(MENU_ENUM_SUBLABEL_LOAD_STATE,
-	 "Carregar um Estado de Jogo do box selecionado atualmente."
+	 "Carregar um Estado de Jogo da posição selecionado atualmente."
 	)
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_STATE,
-	 "Salvar um Estado de Jogo no box selecionado atualmente."
+	 "Salvar um Estado de Jogo na posição selecionado atualmente."
 	)
 MSG_HASH(MENU_ENUM_SUBLABEL_RESUME,
 	 "Retomar a execução do conteúdo atual e sair do Menu Rápido."
@@ -3596,7 +3596,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_RESUME_CONTENT,
 	 "Retomar a execução do conteúdo atual e sair do Menu Rápido."
 	)
 MSG_HASH(MENU_ENUM_SUBLABEL_STATE_SLOT,
-	 "Altera o box do Estado de Jogo selecionado atualmente."
+	 "Altera a posição do Estado de Jogo selecionado atualmente."
 	)
 MSG_HASH(MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE,
 	 "Se um Estado de Jogo for carregado, o conteúdo voltará ao estado anterior ao carregamento."
@@ -3919,10 +3919,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_DELETE,
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_DELETE,
      "Remover este núcleo do disco."
 	)
-MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
+MSG_HASH(MENU_ENUM_SUBLABEL_RENAME_ENTRY,
      "Renomear o título do item."
 	)
-MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
+MSG_HASH(MENU_ENUM_LABEL_VALUE_RENAME_ENTRY,
      "Renomear"
 	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
@@ -3961,3 +3961,30 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
 MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
      "Habilitar/desabilitar os ícones exibidos do lado esquerdo dos itens de menu. "
 	)
+MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
+	 "Enable Settings Tab"
+	)
+MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_SETTINGS_PASSWORD,
+      "Set Password For Enabling Settings Tab"
+   )
+MSG_HASH(MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
+      "Enter Password"
+   )
+MSG_HASH(MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,
+      "Password correct."
+   )
+MSG_HASH(MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
+      "Password incorrect."
+   )
+MSG_HASH(MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
+	 "Enables the Settings tab. A restart is required for the tab to appear."
+	)
+MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_SETTINGS_PASSWORD,
+      "Supplying a password when hiding the settings tab makes it possible to later restore it from the menu, by going to the Main Menu tab, selecting Enable Settings Tab and entering the password."
+   )
+MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
+      "Allow the user to rename entries in collections."
+   )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
+      "Allow to rename entries"
+   )

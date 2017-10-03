@@ -64,8 +64,8 @@ typedef struct
    bool do_draw_text;
    bool texture_switch_set;
    bool texture_switch2_set;
-   uintptr_t texture_switch;
-   uintptr_t texture_switch2;
+   unsigned texture_switch_index;
+   unsigned texture_switch2_index;
    float line_height;
    float y;
 } mui_node_t;
@@ -141,9 +141,11 @@ enum
 
 typedef struct mui_handle
 {
-   char box_message[1024];
    bool need_compute;
    bool mouse_show;
+
+   int cursor_size;
+
    unsigned tabs_height;
    unsigned line_height;
    unsigned shadow_height;
@@ -152,39 +154,27 @@ typedef struct mui_handle
    unsigned margin;
    unsigned glyph_width;
    unsigned glyph_width2;
+   unsigned categories_active_idx;
+   unsigned categories_active_idx_old;
+
+   size_t categories_selection_ptr;
+   size_t categories_selection_ptr_old;
+
    /* Y position of the vertical scroll */
    float scroll_y;
    float content_height;
+   float textures_arrow_alpha;
+   float categories_x_pos;
+
    uint64_t frame_count;
 
-   struct
-   {
-      int size;
-   } cursor;
+   char *box_message;
 
    struct
    {
-      struct
-      {
-         float alpha;
-      } arrow;
-
       menu_texture_item bg;
       menu_texture_item list[MUI_TEXTURE_LAST];
    } textures;
-
-   struct
-   {
-      struct
-      {
-         unsigned idx;
-         unsigned idx_old;
-      } active;
-
-      float x_pos;
-      size_t selection_ptr_old;
-      size_t selection_ptr;
-   } categories;
 
    /* One font for the menu entries, one font for the labels */
    font_data_t *font;
@@ -388,17 +378,17 @@ static void mui_draw_tab(mui_handle_t *mui,
    {
       case MUI_SYSTEM_TAB_MAIN:
          tab_icon = MUI_TEXTURE_TAB_MAIN;
-         if (i == mui->categories.selection_ptr)
+         if (i == mui->categories_selection_ptr)
             tab_color = active_tab_color;
          break;
       case MUI_SYSTEM_TAB_PLAYLISTS:
          tab_icon = MUI_TEXTURE_TAB_PLAYLISTS;
-         if (i == mui->categories.selection_ptr)
+         if (i == mui->categories_selection_ptr)
             tab_color = active_tab_color;
          break;
       case MUI_SYSTEM_TAB_SETTINGS:
          tab_icon = MUI_TEXTURE_TAB_SETTINGS;
-         if (i == mui->categories.selection_ptr)
+         if (i == mui->categories_selection_ptr)
             tab_color = active_tab_color;
          break;
    }
@@ -537,7 +527,7 @@ static void mui_draw_tab_end(mui_handle_t *mui,
    unsigned tab_width = width / (MUI_SYSTEM_TAB_END+1);
 
    menu_display_draw_quad(
-        (int)(mui->categories.selection_ptr * tab_width),
+        (int)(mui->categories_selection_ptr * tab_width),
          height - (header_height/16),
          tab_width,
          header_height/16,
@@ -582,7 +572,9 @@ static void mui_get_message(void *data, const char *message)
    if (!mui || !message || !*message)
       return;
 
-   strlcpy(mui->box_message, message, sizeof(mui->box_message));
+   if (!string_is_empty(mui->box_message))
+      free(mui->box_message);
+   mui->box_message = strdup(message);
 }
 
 /* Draw the modal */
@@ -672,29 +664,38 @@ static void mui_compute_entries_box(mui_handle_t* mui, int width)
    size_t usable_width = width - (mui->margin * 2);
    file_list_t *list   = menu_entries_get_selection_buf_ptr(0);
    float sum           = 0;
-   size_t entries_end  = menu_entries_get_end();
+   size_t entries_end  = menu_entries_get_size();
    float scale_factor  = menu_display_get_dpi();
    uintptr_t texture_switch2 = 0;
 
    for (i = 0; i < entries_end; i++)
    {
-      char sublabel_str[255];
-      unsigned lines   = 0;
-      mui_node_t *node = (mui_node_t*)
-            menu_entries_get_userdata_at_offset(list, i);
+      menu_entry_t entry;
+      char *sublabel_str = NULL;
+      unsigned lines     = 0;
+      mui_node_t *node   = (mui_node_t*)
+            file_list_get_userdata_at_offset(list, i);
 
-      sublabel_str[0]  = '\0';
+      menu_entry_init(&entry);
+      menu_entry_get(&entry, 0, i, NULL, true);
 
       /* set texture_switch2 */
       if (node->texture_switch2_set)
-         texture_switch2 = node->texture_switch2;
+         texture_switch2 = mui->textures.list[node->texture_switch2_index];
 
-      if (menu_entry_get_sublabel(i, sublabel_str, sizeof(sublabel_str)))
+      sublabel_str = menu_entry_get_sublabel(&entry);
+      menu_entry_free(&entry);
+
+      if (sublabel_str)
       {
-         int icon_margin = texture_switch2 ? mui->icon_size : 0;
+         if (!string_is_empty(sublabel_str))
+         {
+            int icon_margin = texture_switch2 ? mui->icon_size : 0;
 
-         word_wrap(sublabel_str, sublabel_str, (int)((usable_width - icon_margin) / mui->glyph_width2), false);
-         lines = mui_count_lines(sublabel_str);
+            word_wrap(sublabel_str, sublabel_str, (int)((usable_width - icon_margin) / mui->glyph_width2), false);
+            lines = mui_count_lines(sublabel_str);
+         }
+         free(sublabel_str);
       }
 
       node->line_height  = (scale_factor / 3) + (lines * mui->font->size);
@@ -750,7 +751,7 @@ static void mui_render(void *data, bool is_idle)
       for (ii = 0; ii < entries_end; ii++)
       {
          mui_node_t *node = (mui_node_t*)
-               menu_entries_get_userdata_at_offset(list, ii);
+               file_list_get_userdata_at_offset(list, ii);
 
          if (pointer_y > (-mui->scroll_y + header_height + node->y)
           && pointer_y < (-mui->scroll_y + header_height + node->y + node->line_height)
@@ -776,7 +777,7 @@ static void mui_render(void *data, bool is_idle)
       for (ii = 0; ii < entries_end; ii++)
       {
          mui_node_t *node = (mui_node_t*)
-               menu_entries_get_userdata_at_offset(list, ii);
+               file_list_get_userdata_at_offset(list, ii);
 
          if (mouse_y > (-mui->scroll_y + header_height + node->y)
           && mouse_y < (-mui->scroll_y + header_height + node->y + node->line_height)
@@ -814,10 +815,11 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
       1.00, 1.00, 1.00, 1.00,
    };
 
+   menu_entry_t entry;
    menu_animation_ctx_ticker_t ticker;
    char label_str[255];
-   char sublabel_str[255];
    char value_str[255];
+   char *sublabel_str              = NULL;
    bool switch_is_on               = true;
    int value_len                   = (int)utf8len(value);
    int ticker_limit                = 0;
@@ -828,8 +830,10 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
    enum msg_file_type hash_type    = msg_hash_to_file_type(msg_hash_calculate(value));
    float scale_factor              = menu_display_get_dpi();
 
-   label_str[0] = value_str[0]     = 
-      sublabel_str[0]              = '\0';
+   label_str[0] = value_str[0]     = '\0';
+
+   menu_entry_init(&entry);
+   menu_entry_get(&entry, 0, i, NULL, true);
 
    if (value_len * mui->glyph_width > usable_width / 2)
       value_len    = (int)((usable_width/2) / mui->glyph_width);
@@ -900,7 +904,7 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
 
    /* set texture_switch2 */
    if (node->texture_switch2_set)
-      texture_switch2 = node->texture_switch2;
+      texture_switch2 = mui->textures.list[node->texture_switch2_index];
    else
    {
       switch (hash_type)
@@ -916,17 +920,23 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
       }
    }
 
+   sublabel_str = menu_entry_get_sublabel(&entry);
+
    /* Sublabel */
-   if (menu_entry_get_sublabel(i, sublabel_str, sizeof(sublabel_str)))
+   if (sublabel_str)
    {
-      int icon_margin = texture_switch2 ? mui->icon_size : 0;
+      if (!string_is_empty(sublabel_str))
+      {
+         int icon_margin = texture_switch2 ? mui->icon_size : 0;
 
-      word_wrap(sublabel_str, sublabel_str, (int)((usable_width - icon_margin) / mui->glyph_width2), false);
+         word_wrap(sublabel_str, sublabel_str, (int)((usable_width - icon_margin) / mui->glyph_width2), false);
 
-      menu_display_draw_text(mui->font2, sublabel_str,
-            mui->margin + (texture_switch2 ? mui->icon_size : 0),
-            y + (scale_factor / 4) + mui->font->size,
-            width, height, sublabel_color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
+         menu_display_draw_text(mui->font2, sublabel_str,
+               mui->margin + (texture_switch2 ? mui->icon_size : 0),
+               y + (scale_factor / 4) + mui->font->size,
+               width, height, sublabel_color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
+      }
+      free(sublabel_str);
    }
 
    menu_display_draw_text(mui->font, label_str,
@@ -965,6 +975,8 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
             1,
             switch_is_on ? &label_color[0] :  &pure_white[0]
       );
+   
+   menu_entry_free(&entry);
 }
 
 static void mui_render_menu_list(
@@ -992,19 +1004,19 @@ static void mui_render_menu_list(
    list                                    = 
       menu_entries_get_selection_buf_ptr(0);
    
-   entries_end = menu_entries_get_end();
+   entries_end = menu_entries_get_size();
 
    for (i = 0; i < entries_end; i++)
    {
-      char rich_label[255];
+      menu_entry_t entry;
       char entry_value[255];
+      char *rich_label    = NULL;
       bool entry_selected = false;
       mui_node_t *node    = (mui_node_t*)
-            menu_entries_get_userdata_at_offset(list, i);
+            file_list_get_userdata_at_offset(list, i);
       size_t selection    = menu_navigation_get_selection();
       int               y = header_height - mui->scroll_y + sum;
-      rich_label[0]       = 
-         entry_value[0]   = '\0';
+      entry_value[0]      = '\0';
 
       sum += node->line_height;
 
@@ -1014,9 +1026,10 @@ static void mui_render_menu_list(
       if (y > (int)height)
          break;
 
-      menu_entry_get_value((unsigned)i, NULL, entry_value, sizeof(entry_value));
-      menu_entry_get_rich_label((unsigned)i, rich_label, sizeof(rich_label));
-
+      menu_entry_init(&entry);
+      menu_entry_get(&entry, 0, (unsigned)i, NULL, true);
+      menu_entry_get_value(&entry, entry_value, sizeof(entry_value));
+      rich_label     = menu_entry_get_rich_label(&entry);
       entry_selected = selection == i;
 
       /* Render label, value, and associated icons */
@@ -1036,6 +1049,11 @@ static void mui_render_menu_list(
          menu_list_color,
          sublabel_color
       );
+
+      if (!string_is_empty(rich_label))
+         free(rich_label);
+
+      menu_entry_free(&entry);
    }
 }
 
@@ -1457,7 +1475,7 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
 
    /* highlighted entry */
    list             = menu_entries_get_selection_buf_ptr(0);
-   node             = (mui_node_t*)menu_entries_get_userdata_at_offset(
+   node             = (mui_node_t*)file_list_get_userdata_at_offset(
          list, selection);
 
    if (node)
@@ -1606,13 +1624,14 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
       mui_render_messagebox(mui, video_info,
                mui->box_message, &body_bg_color[0], font_hover_color);
       
-      mui->box_message[0] = '\0';
+      free(mui->box_message);
+      mui->box_message    = NULL;
    }
 
    if (mui->mouse_show)
       menu_display_draw_cursor(
             &white_bg[0],
-            mui->cursor.size,
+            mui->cursor_size,
             mui->textures.list[MUI_TEXTURE_POINTER],
             menu_input_mouse_state(MENU_MOUSE_X_AXIS),
             menu_input_mouse_state(MENU_MOUSE_Y_AXIS),
@@ -1705,7 +1724,7 @@ static void *mui_init(void **userdata, bool video_is_threaded)
 
    *userdata = mui;
 
-   mui->cursor.size  = 64.0;
+   mui->cursor_size  = 64.0;
    mui->need_compute = false;
 
    return menu;
@@ -1749,6 +1768,7 @@ static void mui_context_destroy(void *data)
       video_driver_texture_unload(&mui->textures.list[i]);
 
    menu_display_font_free(mui->font);
+   menu_display_font_free(mui->font2);
 
    mui_context_bg_destroy(mui);
 }
@@ -1764,6 +1784,7 @@ static bool mui_load_image(void *userdata, void *data, enum menu_image_type type
          break;
       case MENU_IMAGE_WALLPAPER:
          mui_context_bg_destroy(mui);
+         video_driver_texture_unload(&mui->textures.bg);
          video_driver_texture_load(data,
                TEXTURE_FILTER_MIPMAP_LINEAR, &mui->textures.bg);
          menu_display_allocate_white_texture();
@@ -1918,7 +1939,7 @@ static void mui_preswitch_tabs(mui_handle_t *mui, unsigned action)
       free(menu_stack->list[stack_size - 1].label);
    menu_stack->list[stack_size - 1].label = NULL;
 
-   switch (mui->categories.selection_ptr)
+   switch (mui->categories_selection_ptr)
    {
       case MUI_SYSTEM_TAB_MAIN:
          menu_stack->list[stack_size - 1].label =
@@ -1960,27 +1981,27 @@ static void mui_list_cache(void *data,
       case MENU_LIST_PLAIN:
          break;
       case MENU_LIST_HORIZONTAL:
-         mui->categories.selection_ptr_old = mui->categories.selection_ptr;
+         mui->categories_selection_ptr_old = mui->categories_selection_ptr;
 
          switch (action)
          {
             case MENU_ACTION_LEFT:
-               if (mui->categories.selection_ptr == 0)
+               if (mui->categories_selection_ptr == 0)
                {
-                  mui->categories.selection_ptr = list_size;
-                  mui->categories.active.idx    = (unsigned)(list_size - 1);
+                  mui->categories_selection_ptr = list_size;
+                  mui->categories_active_idx    = (unsigned)(list_size - 1);
                }
                else
-                  mui->categories.selection_ptr--;
+                  mui->categories_selection_ptr--;
                break;
             default:
-               if (mui->categories.selection_ptr == list_size)
+               if (mui->categories_selection_ptr == list_size)
                {
-                  mui->categories.selection_ptr = 0;
-                  mui->categories.active.idx = 1;
+                  mui->categories_selection_ptr = 0;
+                  mui->categories_active_idx = 1;
                }
                else
-                  mui->categories.selection_ptr++;
+                  mui->categories_selection_ptr++;
                break;
          }
 
@@ -2137,7 +2158,7 @@ static size_t mui_list_get_selection(void *data)
    if (!mui)
       return 0;
 
-   return mui->categories.selection_ptr;
+   return mui->categories_selection_ptr;
 }
 
 /* The pointer or the mouse is pressed down. We use this callback to
@@ -2174,7 +2195,7 @@ static int mui_pointer_down(void *userdata,
       for (ii = 0; ii < entries_end; ii++)
       {
          mui_node_t *node = (mui_node_t*)
-               menu_entries_get_userdata_at_offset(list, ii);
+               file_list_get_userdata_at_offset(list, ii);
 
          if (y > (-mui->scroll_y + header_height + node->y)
           && y < (-mui->scroll_y + header_height + node->y + node->line_height)
@@ -2225,7 +2246,7 @@ static int mui_pointer_up(void *userdata,
 
          if ((x >= start) && (x < (start + tab_width)))
          {
-            mui->categories.selection_ptr = i;
+            mui->categories_selection_ptr = i;
 
             mui_preswitch_tabs(mui, action);
 
@@ -2243,7 +2264,7 @@ static int mui_pointer_up(void *userdata,
       for (ii = 0; ii < entries_end; ii++)
       {
          mui_node_t *node = (mui_node_t*)
-               menu_entries_get_userdata_at_offset(list, ii);
+               file_list_get_userdata_at_offset(list, ii);
 
          if (y > (-mui->scroll_y + header_height + node->y)
           && y < (-mui->scroll_y + header_height + node->y + node->line_height)
@@ -2282,7 +2303,7 @@ static void mui_list_insert(void *userdata,
       return;
 
    mui->need_compute = true;
-   node = (mui_node_t*)menu_entries_get_userdata_at_offset(list, i);
+   node = (mui_node_t*)file_list_get_userdata_at_offset(list, i);
 
    if (!node)
       node = (mui_node_t*)calloc(1, sizeof(mui_node_t));
@@ -2293,16 +2314,16 @@ static void mui_list_insert(void *userdata,
       return;
    }
 
-   scale_factor              = menu_display_get_dpi();
+   scale_factor                = menu_display_get_dpi();
 
-   node->line_height         = scale_factor / 3;
-   node->y                   = 0;
-   node->texture_switch_set  = false;
-   node->texture_switch2_set = false;
-   node->texture_switch      = 0;
-   node->texture_switch2     = 0;
-   node->switch_is_on        = false;
-   node->do_draw_text        = false;
+   node->line_height           = scale_factor / 3;
+   node->y                     = 0;
+   node->texture_switch_set    = false;
+   node->texture_switch2_set   = false;
+   node->texture_switch_index  = 0;
+   node->texture_switch2_index = 0;
+   node->switch_is_on          = false;
+   node->do_draw_text          = false;
 
    if (settings->bools.menu_materialui_icons_enable)
    {
@@ -2310,47 +2331,47 @@ static void mui_list_insert(void *userdata,
       {
          case FILE_TYPE_DOWNLOAD_CORE:
          case FILE_TYPE_CORE:
-            node->texture_switch2     = mui->textures.list[MUI_TEXTURE_CORES];
-            node->texture_switch2_set = true;
+            node->texture_switch2_index = MUI_TEXTURE_CORES;
+            node->texture_switch2_set   = true;
             break;
          case FILE_TYPE_DOWNLOAD_THUMBNAIL_CONTENT:
-            node->texture_switch2     = mui->textures.list[MUI_TEXTURE_IMAGE];
-            node->texture_switch2_set = true;
+            node->texture_switch2_index = MUI_TEXTURE_IMAGE;
+            node->texture_switch2_set   = true;
             break;
          case FILE_TYPE_PARENT_DIRECTORY:
-            node->texture_switch2     = mui->textures.list[MUI_TEXTURE_PARENT_DIRECTORY];
-            node->texture_switch2_set = true;
+            node->texture_switch2_index = MUI_TEXTURE_PARENT_DIRECTORY;
+            node->texture_switch2_set   = true;
             break;
          case FILE_TYPE_PLAYLIST_COLLECTION:
-            node->texture_switch2     = mui->textures.list[MUI_TEXTURE_PLAYLIST];
-            node->texture_switch2_set = true;
+            node->texture_switch2_index = MUI_TEXTURE_PLAYLIST;
+            node->texture_switch2_set   = true;
             break;
          case FILE_TYPE_RDB:
-            node->texture_switch2     = mui->textures.list[MUI_TEXTURE_DATABASE];
-            node->texture_switch2_set = true;
+            node->texture_switch2_index = MUI_TEXTURE_DATABASE;
+            node->texture_switch2_set   = true;
             break;
          case 32: /* TODO: Need to find out what this is */
          case FILE_TYPE_RDB_ENTRY:
-            node->texture_switch2     = mui->textures.list[MUI_TEXTURE_SETTINGS];
-            node->texture_switch2_set = true;
+            node->texture_switch2_index = MUI_TEXTURE_SETTINGS;
+            node->texture_switch2_set   = true;
             break;
          case FILE_TYPE_IN_CARCHIVE:
          case FILE_TYPE_PLAIN:
          case FILE_TYPE_DOWNLOAD_CORE_CONTENT:
-            node->texture_switch2     = mui->textures.list[MUI_TEXTURE_FILE];
-            node->texture_switch2_set = true;
+            node->texture_switch2_index = MUI_TEXTURE_FILE;
+            node->texture_switch2_set   = true;
             break;
          case FILE_TYPE_MUSIC:
-            node->texture_switch2     = mui->textures.list[MUI_TEXTURE_MUSIC];
-            node->texture_switch2_set = true;
+            node->texture_switch2_index = MUI_TEXTURE_MUSIC;
+            node->texture_switch2_set   = true;
             break;
          case FILE_TYPE_MOVIE:
-            node->texture_switch2     = mui->textures.list[MUI_TEXTURE_VIDEO];
-            node->texture_switch2_set = true;
+            node->texture_switch2_index = MUI_TEXTURE_VIDEO;
+            node->texture_switch2_set   = true;
             break;
          case FILE_TYPE_DIRECTORY:
          case FILE_TYPE_DOWNLOAD_URL:
-            node->texture_switch2     = mui->textures.list[MUI_TEXTURE_FOLDER];
+            node->texture_switch2_index = MUI_TEXTURE_FOLDER;
             node->texture_switch2_set = true;
             break;
          default:
@@ -2366,83 +2387,83 @@ static void mui_list_insert(void *userdata,
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND))
                )
             {
-               node->texture_switch2     = mui->textures.list[MUI_TEXTURE_INFO];
-               node->texture_switch2_set = true;
+               node->texture_switch2_index = MUI_TEXTURE_INFO;
+               node->texture_switch2_set   = true;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_GOTO_IMAGES)))
             {
-               node->texture_switch2     = mui->textures.list[MUI_TEXTURE_IMAGE];
-               node->texture_switch2_set = true;
+               node->texture_switch2_index = MUI_TEXTURE_IMAGE;
+               node->texture_switch2_set   = true;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_GOTO_MUSIC)))
             {
-               node->texture_switch2     = mui->textures.list[MUI_TEXTURE_MUSIC];
-               node->texture_switch2_set = true;
+               node->texture_switch2_index = MUI_TEXTURE_MUSIC;
+               node->texture_switch2_set   = true;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_GOTO_VIDEO)))
             {
-               node->texture_switch2     = mui->textures.list[MUI_TEXTURE_VIDEO];
-               node->texture_switch2_set = true;
+               node->texture_switch2_index = MUI_TEXTURE_VIDEO;
+               node->texture_switch2_set   = true;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY)))
             {
-               node->texture_switch2     = mui->textures.list[MUI_TEXTURE_SCAN];
-               node->texture_switch2_set = true;
+               node->texture_switch2_index = MUI_TEXTURE_SCAN;
+               node->texture_switch2_set   = true;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY)))
             {
-               node->texture_switch2     = mui->textures.list[MUI_TEXTURE_HISTORY];
-               node->texture_switch2_set = true;
+               node->texture_switch2_index = MUI_TEXTURE_HISTORY;
+               node->texture_switch2_set   = true;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_LIST)))
             {
-               node->texture_switch2     = mui->textures.list[MUI_TEXTURE_HELP];
-               node->texture_switch2_set = true;
+               node->texture_switch2_index = MUI_TEXTURE_HELP;
+               node->texture_switch2_set   = true;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RESTART_CONTENT)))
             {
-               node->texture_switch2     = mui->textures.list[MUI_TEXTURE_RESTART];
-               node->texture_switch2_set = true;
+               node->texture_switch2_index = MUI_TEXTURE_RESTART;
+               node->texture_switch2_set   = true;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RESUME_CONTENT)))
             {
-               node->texture_switch2     = mui->textures.list[MUI_TEXTURE_RESUME];
-               node->texture_switch2_set = true;
+               node->texture_switch2_index = MUI_TEXTURE_RESUME;
+               node->texture_switch2_set   = true;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CLOSE_CONTENT)))
             {
-               node->texture_switch2     = mui->textures.list[MUI_TEXTURE_CLOSE];
-               node->texture_switch2_set = true;
+               node->texture_switch2_index = MUI_TEXTURE_CLOSE;
+               node->texture_switch2_set   = true;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_OPTIONS)))
             {
-               node->texture_switch2     = mui->textures.list[MUI_TEXTURE_CORE_OPTIONS];
-               node->texture_switch2_set = true;
+               node->texture_switch2_index = MUI_TEXTURE_CORE_OPTIONS;
+               node->texture_switch2_set   = true;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS)))
             {
-               node->texture_switch2     = mui->textures.list[MUI_TEXTURE_CORE_CHEAT_OPTIONS];
-               node->texture_switch2_set = true;
+               node->texture_switch2_index = MUI_TEXTURE_CORE_CHEAT_OPTIONS;
+               node->texture_switch2_set   = true;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS)))
             {
-               node->texture_switch2     = mui->textures.list[MUI_TEXTURE_CONTROLS];
-               node->texture_switch2_set = true;
+               node->texture_switch2_index = MUI_TEXTURE_CONTROLS;
+               node->texture_switch2_set   = true;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SHADER_OPTIONS)))
             {
-               node->texture_switch2     = mui->textures.list[MUI_TEXTURE_SHADERS];
-               node->texture_switch2_set = true;
+               node->texture_switch2_index = MUI_TEXTURE_SHADERS;
+               node->texture_switch2_set   = true;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_LIST)))
             {
-               node->texture_switch2     = mui->textures.list[MUI_TEXTURE_CORES];
-               node->texture_switch2_set = true;
+               node->texture_switch2_index = MUI_TEXTURE_CORES;
+               node->texture_switch2_set   = true;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RUN)))
             {
-               node->texture_switch2     = mui->textures.list[MUI_TEXTURE_RUN];
-               node->texture_switch2_set = true;
+               node->texture_switch2_index = MUI_TEXTURE_RUN;
+               node->texture_switch2_set   = true;
             }
             else if (
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_FAVORITES))
@@ -2450,13 +2471,13 @@ static void mui_list_insert(void *userdata,
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES))
                   )
             {
-               node->texture_switch2     = mui->textures.list[MUI_TEXTURE_ADD_TO_FAVORITES];
-               node->texture_switch2_set = true;
+               node->texture_switch2_index = MUI_TEXTURE_ADD_TO_FAVORITES;
+               node->texture_switch2_set   = true;
             }
-            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME)))
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RENAME_ENTRY)))
             {
-               node->texture_switch2     = mui->textures.list[MUI_TEXTURE_RENAME];
-               node->texture_switch2_set = true;
+               node->texture_switch2_index = MUI_TEXTURE_RENAME;
+               node->texture_switch2_set   = true;
             }
             else if (
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_MIXER))
@@ -2464,8 +2485,8 @@ static void mui_list_insert(void *userdata,
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION))
                   )
             {
-               node->texture_switch2     = mui->textures.list[MUI_TEXTURE_ADD_TO_MIXER];
-               node->texture_switch2_set = true;
+               node->texture_switch2_index = MUI_TEXTURE_ADD_TO_MIXER;
+               node->texture_switch2_set   = true;
             }
             else if (
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_START_CORE))
@@ -2473,21 +2494,21 @@ static void mui_list_insert(void *userdata,
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RUN_MUSIC))
                   )
             {
-               node->texture_switch2     = mui->textures.list[MUI_TEXTURE_START_CORE];
-               node->texture_switch2_set = true;
+               node->texture_switch2_index = MUI_TEXTURE_START_CORE;
+               node->texture_switch2_set   = true;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_STATE))
                   )
             {
-               node->texture_switch2     = mui->textures.list[MUI_TEXTURE_LOAD_STATE];
-               node->texture_switch2_set = true;
+               node->texture_switch2_index = MUI_TEXTURE_LOAD_STATE;
+               node->texture_switch2_set   = true;
             }
             else if (
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_CYCLE_TRAY_STATUS))
                   )
             {
-               node->texture_switch2     = mui->textures.list[MUI_TEXTURE_EJECT];
-               node->texture_switch2_set = true;
+               node->texture_switch2_index = MUI_TEXTURE_EJECT;
+               node->texture_switch2_set   = true;
             }
             else if (
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_IMAGE_APPEND))
@@ -2495,8 +2516,8 @@ static void mui_list_insert(void *userdata,
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_OPTIONS))
                   )
             {
-               node->texture_switch2     = mui->textures.list[MUI_TEXTURE_DISK];
-               node->texture_switch2_set = true;
+               node->texture_switch2_index = MUI_TEXTURE_DISK;
+               node->texture_switch2_set   = true;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_STATE))
                   ||
@@ -2505,53 +2526,53 @@ static void mui_list_insert(void *userdata,
                   (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME)))
                   )
             {
-               node->texture_switch2     = mui->textures.list[MUI_TEXTURE_SAVE_STATE];
-               node->texture_switch2_set = true;
+               node->texture_switch2_index = MUI_TEXTURE_SAVE_STATE;
+               node->texture_switch2_set   = true;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UNDO_LOAD_STATE)))
             {
-               node->texture_switch2     = mui->textures.list[MUI_TEXTURE_UNDO_LOAD_STATE];
-               node->texture_switch2_set = true;
+               node->texture_switch2_index = MUI_TEXTURE_UNDO_LOAD_STATE;
+               node->texture_switch2_set   = true;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UNDO_SAVE_STATE)))
             {
-               node->texture_switch2     = mui->textures.list[MUI_TEXTURE_UNDO_SAVE_STATE];
-               node->texture_switch2_set = true;
+               node->texture_switch2_index = MUI_TEXTURE_UNDO_SAVE_STATE;
+               node->texture_switch2_set   = true;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_STATE_SLOT)))
             {
-               node->texture_switch2     = mui->textures.list[MUI_TEXTURE_STATE_SLOT];
-               node->texture_switch2_set = true;
+               node->texture_switch2_index = MUI_TEXTURE_STATE_SLOT;
+               node->texture_switch2_set   = true;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_TAKE_SCREENSHOT)))
             {
-               node->texture_switch2     = mui->textures.list[MUI_TEXTURE_TAKE_SCREENSHOT];
-               node->texture_switch2_set = true;
+               node->texture_switch2_index = MUI_TEXTURE_TAKE_SCREENSHOT;
+               node->texture_switch2_set   = true;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONFIGURATIONS_LIST)))
             {
-               node->texture_switch2     = mui->textures.list[MUI_TEXTURE_CONFIGURATIONS];
-               node->texture_switch2_set = true;
+               node->texture_switch2_index = MUI_TEXTURE_CONFIGURATIONS;
+               node->texture_switch2_set   = true;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_LIST)))
             {
-               node->texture_switch2     = mui->textures.list[MUI_TEXTURE_LOAD_CONTENT];
-               node->texture_switch2_set = true;
+               node->texture_switch2_index = MUI_TEXTURE_LOAD_CONTENT;
+               node->texture_switch2_set   = true;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DELETE_ENTRY)))
             {
-               node->texture_switch2     = mui->textures.list[MUI_TEXTURE_REMOVE];
-               node->texture_switch2_set = true;
+               node->texture_switch2_index = MUI_TEXTURE_REMOVE;
+               node->texture_switch2_set   = true;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY)))
             {
-               node->texture_switch2     = mui->textures.list[MUI_TEXTURE_NETPLAY];
-               node->texture_switch2_set = true;
+               node->texture_switch2_index = MUI_TEXTURE_NETPLAY;
+               node->texture_switch2_set   = true;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS)))
             {
-               node->texture_switch2     = mui->textures.list[MUI_TEXTURE_QUICKMENU];
-               node->texture_switch2_set = true;
+               node->texture_switch2_index = MUI_TEXTURE_QUICKMENU;
+               node->texture_switch2_set   = true;
             }
             else if (
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ONLINE_UPDATER))
@@ -2575,20 +2596,20 @@ static void mui_list_insert(void *userdata,
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS))
                   )
                   {
-                     node->texture_switch2     = mui->textures.list[MUI_TEXTURE_UPDATER];
+                     node->texture_switch2_index = MUI_TEXTURE_UPDATER;
                      node->texture_switch2_set = true;
                   }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY)) || 
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE))
                   )
             {
-               node->texture_switch2     = mui->textures.list[MUI_TEXTURE_ADD];
+               node->texture_switch2_index = MUI_TEXTURE_ADD;
                node->texture_switch2_set = true;
             }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_QUIT_RETROARCH)))
             {
-               node->texture_switch2     = mui->textures.list[MUI_TEXTURE_QUIT];
-               node->texture_switch2_set = true;
+               node->texture_switch2_index = MUI_TEXTURE_QUIT;
+               node->texture_switch2_set   = true;
             }
             else if (
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS))
@@ -2658,16 +2679,16 @@ static void mui_list_insert(void *userdata,
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS))
                   )
                   {
-                     node->texture_switch2     = mui->textures.list[MUI_TEXTURE_SETTINGS];
-                     node->texture_switch2_set = true;
+                     node->texture_switch2_index = MUI_TEXTURE_SETTINGS;
+                     node->texture_switch2_set   = true;
                   }
             else if (
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST))
                   )
             {
-               node->texture_switch2     = mui->textures.list[MUI_TEXTURE_FOLDER];
-               node->texture_switch2_set = true;
+               node->texture_switch2_index = MUI_TEXTURE_FOLDER;
+               node->texture_switch2_set   = true;
             }
             break;
       }
@@ -2687,7 +2708,7 @@ static void mui_list_clear(file_list_t *list)
       menu_animation_ctx_subject_t subject;
       float *subjects[2];
       mui_node_t *node = (mui_node_t*)
-         menu_entries_get_userdata_at_offset(list, i);
+         file_list_get_userdata_at_offset(list, i);
 
       if (!node)
          continue;

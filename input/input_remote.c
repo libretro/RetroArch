@@ -48,30 +48,27 @@
 
 struct remote_message
 {
+   uint16_t state;
    int port;
    int device;
    int index;
    int id;
-   uint16_t state;
 };
 
 struct input_remote
 {
-
+   bool state[RARCH_BIND_LIST_END];
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
    int net_fd[MAX_USERS];
 #endif
-
-   bool state[RARCH_BIND_LIST_END];
 };
 
 typedef struct input_remote_state
 {
-   /* This is a bitmask of (1 << key_bind_id). */
-   uint64_t buttons[MAX_USERS];
    /* Left X, Left Y, Right X, Right Y */
    int16_t analog[4][MAX_USERS]; 
-
+   /* This is a bitmask of (1 << key_bind_id). */
+   uint64_t buttons[MAX_USERS];
 } input_remote_state_t;
 
 static input_remote_state_t remote_st_ptr;
@@ -257,7 +254,7 @@ void input_remote_poll(input_remote_t *handle, unsigned max_users)
          else if ((ret != -1) || ((errno != EAGAIN) && (errno != ENOENT)))
 #endif
          {
-            input_state->buttons[user] = 0;
+            input_state->buttons[user]   = 0;
             input_state->analog[0][user] = 0;
             input_state->analog[1][user] = 0;
             input_state->analog[2][user] = 0;

@@ -161,15 +161,15 @@ char *word_wrap(char* buffer, const char *string, int line_width, bool unicode)
          unsigned char_len;
          unsigned j = i;
 
-         character = utf8skip(&string[i], 1);
-         char_len = character - &string[i];
-
          /* check if end of string reached */
          if (i == len)
          {
             buffer[i] = 0;
             return buffer;
          }
+
+         character = utf8skip(&string[i], 1);
+         char_len = character - &string[i];
 
          if (!unicode)
             counter += char_len - 1;

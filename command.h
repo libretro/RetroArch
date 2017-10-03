@@ -231,11 +231,7 @@ enum event_command
 
 bool command_set_shader(const char *arg);
 
-#ifdef HAVE_COMMAND
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
 bool command_network_send(const char *cmd_);
-#endif
-#endif
 
 bool command_network_new(
       command_t *handle,
@@ -252,8 +248,6 @@ bool command_get(command_handle_t *handle);
 bool command_set(command_handle_t *handle);
 
 bool command_free(command_t *handle);
-
-bool command_event_quit(void);
 
 /**
  * command_event:

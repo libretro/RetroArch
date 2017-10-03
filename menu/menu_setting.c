@@ -769,8 +769,8 @@ int menu_action_handle_setting(rarch_setting_t *setting,
 
             menu_displaylist_info_init(&info);
 
-            strlcpy(info.path,  setting->default_value.string, sizeof(info.path));
-            strlcpy(info.label, name, sizeof(info.label));
+            info.path                     = strdup(setting->default_value.string);
+            info.label                    = strdup(name);
             info.type                     = type;
             info.directory_ptr            = selection;
             info.list                     = menu_stack;
@@ -916,8 +916,8 @@ int menu_setting_set(unsigned type, const char *label,
    int ret                    = 0;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    size_t selection           = menu_navigation_get_selection();
-   menu_file_list_cbs_t *cbs  = menu_entries_get_actiondata_at_offset(
-         selection_buf, selection);
+   menu_file_list_cbs_t *cbs  = selection_buf ? 
+      (menu_file_list_cbs_t*)file_list_get_actiondata_at_offset(selection_buf, selection) : NULL;
 
    if (!cbs)
       return 0;
@@ -1674,9 +1674,8 @@ void general_write_handler(void *data)
             menu_displaylist_info_init(&info);
 
             info.enum_idx                = MENU_ENUM_LABEL_HELP;
-            strlcpy(info.label,
-                  msg_hash_to_str(MENU_ENUM_LABEL_HELP),
-                  sizeof(info.label));
+            info.label                   = strdup(
+                  msg_hash_to_str(MENU_ENUM_LABEL_HELP));
             info.list                    = menu_stack;
 
             if (menu_displaylist_ctl(DISPLAYLIST_GENERIC, &info))
@@ -2276,6 +2275,14 @@ static bool setting_append_list(
                list, list_info,
                MENU_ENUM_LABEL_CONTENT_SETTINGS,
                MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
+               MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
                &group_info,
                &subgroup_info,
                parent_group);
@@ -5388,6 +5395,20 @@ static bool setting_append_list(
                   SD_FLAG_NONE);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
+            CONFIG_STRING(
+               list, list_info,
+               settings->paths.menu_xmb_show_settings_password,
+               sizeof(settings->paths.menu_xmb_show_settings_password),
+               MENU_ENUM_LABEL_XMB_SHOW_SETTINGS_PASSWORD,
+               MENU_ENUM_LABEL_VALUE_XMB_SHOW_SETTINGS_PASSWORD,
+               "",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT | SD_FLAG_LAKKA_ADVANCED);
+
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.menu_xmb_show_favorites,
@@ -5900,9 +5921,24 @@ static bool setting_append_list(
 
          END_SUB_GROUP(list, list_info, parent_group);
 
-		 START_SUB_GROUP(list, list_info, "Playlist", &group_info, &subgroup_info, parent_group);
+		   START_SUB_GROUP(list, list_info, "Playlist", &group_info, &subgroup_info, parent_group);
 
-		 CONFIG_BOOL(
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.playlist_entry_rename,
+               MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME,
+               MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
+               def_playlist_entry_rename,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+		   CONFIG_BOOL(
                list, list_info,
                &settings->bools.playlist_entry_remove,
                MENU_ENUM_LABEL_PLAYLIST_ENTRY_REMOVE,
@@ -5916,14 +5952,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_NONE);
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME,
-               MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
-               &group_info,
-               &subgroup_info,
-               parent_group);
 
          END_SUB_GROUP(list, list_info, parent_group);
 
@@ -7275,7 +7303,7 @@ bool menu_setting_ctl(enum menu_setting_ctl_state state, void *data)
             if (!setting->change_handler)
                return false;
 
-            cbs_bound = setting->action_right;
+            cbs_bound = (setting->action_right != NULL);
             cbs_bound = cbs_bound || setting->action_left;
             cbs_bound = cbs_bound || setting->action_select;
 

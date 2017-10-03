@@ -875,9 +875,9 @@ int generic_action_ok_displaylist_push(const char *path,
    }
 
    if (info_label)
-      strlcpy(info.label, info_label, sizeof(info.label));
+      info.label = strdup(info_label);
    if (info_path)
-      strlcpy(info.path, info_path, sizeof(info.path));
+      info.path  = strdup(info_path);
 
    if (menu_displaylist_ctl(dl_type, &info))
    {
@@ -1382,29 +1382,34 @@ static int action_ok_file_load(const char *path,
 
    menu_path_new[0] = full_path_new[0] = '\0';
 
-   menu_entries_get_last(menu_stack, &menu_path, &menu_label, NULL, NULL);
+   file_list_get_last(menu_stack, &menu_path, &menu_label, NULL, NULL);
 
-   setting = menu_setting_find(menu_label);
+   if (menu_label && !string_is_empty(menu_label))
+      setting = menu_setting_find(menu_label);
 
    if (setting_get_type(setting) == ST_PATH)
       return action_ok_set_path(path, label, type, idx, entry_idx);
 
-   strlcpy(menu_path_new, menu_path, sizeof(menu_path_new));
+   if (menu_path && !string_is_empty(menu_path))
+      strlcpy(menu_path_new, menu_path, sizeof(menu_path_new));
 
-   if (
-         string_is_equal(menu_label,
-            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE)) ||
-         string_is_equal(menu_label,
-            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN))
-      )
+   if (menu_label && !string_is_empty(menu_label))
    {
-      menu_handle_t *menu                 = NULL;
-      if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-         return menu_cbs_exit();
+      if (
+            string_is_equal(menu_label,
+               msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE)) ||
+            string_is_equal(menu_label,
+               msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN))
+         )
+      {
+         menu_handle_t *menu                 = NULL;
+         if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+            return menu_cbs_exit();
 
-      fill_pathname_join(menu_path_new,
-            menu->scratch2_buf, menu->scratch_buf,
-            sizeof(menu_path_new));
+         fill_pathname_join(menu_path_new,
+               menu->scratch2_buf, menu->scratch_buf,
+               sizeof(menu_path_new));
+      }
    }
 
    switch (type)
@@ -1939,6 +1944,33 @@ static void menu_input_st_string_cb_rename_entry(void *userdata,
    menu_input_dialog_end();
 }
 
+static void menu_input_st_string_cb_enable_settings(void *userdata,
+      const char *str)
+{
+   if (str && *str)
+   {
+      const char *label = menu_input_dialog_get_buffer();
+      settings_t *settings = config_get_ptr();
+
+      if (string_is_equal(label, settings->paths.menu_xmb_show_settings_password))
+      {
+         settings->bools.menu_xmb_show_settings = true;
+
+         runloop_msg_queue_push(
+            msg_hash_to_str(MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK),
+            1, 100, true);
+      }
+      else
+      {
+         runloop_msg_queue_push(
+            msg_hash_to_str(MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK),
+            1, 100, true);
+      }
+   }
+
+   menu_input_dialog_end();
+}
+
 static void menu_input_st_string_cb_save_preset(void *userdata,
       const char *str)
 {
@@ -2383,7 +2415,7 @@ static int action_ok_file_load_ffmpeg(const char *path,
 
    const char *menu_path           = NULL;
    file_list_t *menu_stack         = menu_entries_get_menu_stack_ptr(0);
-   menu_entries_get_last(menu_stack, &menu_path, NULL, NULL, NULL);
+   file_list_get_last(menu_stack, &menu_path, NULL, NULL, NULL);
 
    new_path[0] = '\0';
 
@@ -2392,8 +2424,9 @@ static int action_ok_file_load_ffmpeg(const char *path,
    content_info.args                   = NULL;
    content_info.environ_get            = NULL;
 
-   fill_pathname_join(new_path, menu_path, path,
-         sizeof(new_path));
+   if (menu_path && !string_is_empty(menu_path))
+      fill_pathname_join(new_path, menu_path, path,
+            sizeof(new_path));
 
    if (!task_push_load_content_with_core_from_menu(
          new_path,
@@ -2443,7 +2476,8 @@ static int action_ok_file_load_imageviewer(const char *path,
    content_ctx_info_t content_info;
    const char *menu_path           = NULL;
    file_list_t *menu_stack         = menu_entries_get_menu_stack_ptr(0);
-   menu_entries_get_last(menu_stack, &menu_path, NULL, NULL, NULL);
+
+   file_list_get_last(menu_stack, &menu_path, NULL, NULL, NULL);
 
    fullpath[0] = '\0';
 
@@ -2452,8 +2486,9 @@ static int action_ok_file_load_imageviewer(const char *path,
    content_info.args                   = NULL;
    content_info.environ_get            = NULL;
 
-   fill_pathname_join(fullpath, menu_path, path,
-         sizeof(fullpath));
+   if (menu_path && !string_is_empty(menu_path))
+      fill_pathname_join(fullpath, menu_path, path,
+            sizeof(fullpath));
 
    if (!task_push_load_content_with_core_from_menu(
          fullpath,
@@ -2977,7 +3012,6 @@ static int action_ok_core_content_download(const char *path,
 
    menu_entries_get_last_stack(&menu_path, &menu_label, NULL, &enum_idx, NULL);
 
-
    return action_ok_download_generic(path, label,
          menu_path, type, idx, entry_idx,
          MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD);
@@ -3197,6 +3231,22 @@ static int action_ok_delete_entry(const char *path,
    menu_entries_pop_stack(&new_selection_ptr, 0, 1);
    menu_navigation_set_selection(new_selection_ptr);
 
+   return 0;
+}
+
+static int action_ok_enable_settings(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   menu_input_ctx_line_t line;
+
+   line.label         = msg_hash_to_str(MSG_INPUT_ENABLE_SETTINGS_PASSWORD);
+   line.label_setting = label;
+   line.type          = type;
+   line.idx           = (unsigned)entry_idx;
+   line.cb            = menu_input_st_string_cb_enable_settings;
+
+   if (!menu_input_dialog_start(&line))
+      return -1;
    return 0;
 }
 
@@ -4141,7 +4191,7 @@ static int action_ok_core_delete(const char *path,
    generic_action_ok_command(CMD_EVENT_UNLOAD_CORE);
    menu_entries_flush_stack(0, 0);
 
-   remove(core_path);
+   if (remove(core_path) != 0) { }
 
    free(core_path);
 
@@ -4303,11 +4353,14 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_TAKE_SCREENSHOT:
             BIND_ACTION_OK(cbs, action_ok_screenshot);
             break;
-         case MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME:
+         case MENU_ENUM_LABEL_RENAME_ENTRY:
             BIND_ACTION_OK(cbs, action_ok_rename_entry);
             break;
          case MENU_ENUM_LABEL_DELETE_ENTRY:
             BIND_ACTION_OK(cbs, action_ok_delete_entry);
+            break;
+         case MENU_ENUM_LABEL_XMB_MAIN_MENU_ENABLE_SETTINGS:
+            BIND_ACTION_OK(cbs, action_ok_enable_settings);
             break;
          case MENU_ENUM_LABEL_QUIT_RETROARCH:
             BIND_ACTION_OK(cbs, action_ok_quit);

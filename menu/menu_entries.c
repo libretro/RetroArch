@@ -44,30 +44,6 @@ void menu_entries_get_at_offset(const file_list_t *list, size_t idx,
    file_list_get_alt_at_offset(list, idx, alt);
 }
 
-void menu_entries_get_last(const file_list_t *list,
-      const char **path, const char **label,
-      unsigned *file_type, size_t *entry_idx)
-{
-   if (list)
-      file_list_get_last(list, path, label, file_type, entry_idx);
-}
-
-void *menu_entries_get_userdata_at_offset(const file_list_t *list, size_t idx)
-{
-   if (!list)
-      return NULL;
-   return file_list_get_userdata_at_offset(list, idx);
-}
-
-menu_file_list_cbs_t *menu_entries_get_actiondata_at_offset(
-      const file_list_t *list, size_t idx)
-{
-   if (!list)
-      return NULL;
-   return (menu_file_list_cbs_t*)
-      file_list_get_actiondata_at_offset(list, idx);
-}
-
 static bool menu_entries_clear(file_list_t *list)
 {
    unsigned i;
@@ -83,12 +59,6 @@ static bool menu_entries_clear(file_list_t *list)
       file_list_clear(list);
 
    return true;
-}
-
-void menu_entries_set_alt_at_offset(file_list_t *list, size_t idx,
-      const char *alt)
-{
-   file_list_set_alt_at_offset(list, idx, alt);
 }
 
 /**
@@ -203,45 +173,6 @@ static bool menu_entries_refresh(void *data)
    }
 
    return true;
-}
-
-/* Returns the last index (+1) of the menu entry list. */
-size_t menu_entries_get_end(void)
-{
-   return menu_entries_get_size();
-}
-
-/* Get an entry from the top of the menu stack */
-void menu_entries_get(size_t i, void *entry_data)
-{
-   const char *label             = NULL;
-   const char *path              = NULL;
-   const char *entry_label       = NULL;
-   menu_file_list_cbs_t *cbs     = NULL;
-   enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
-   menu_entry_t *entry           = (menu_entry_t*)entry_data;
-   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr(0);
-
-   menu_entries_get_last_stack(NULL, &label, NULL, &enum_idx, NULL);
-
-   entry->path[0] = entry->value[0] = string_is_empty(entry->label);
-
-   menu_entries_get_at_offset(selection_buf, i,
-         &path, &entry_label, &entry->type, &entry->entry_idx, NULL);
-
-   cbs = menu_entries_get_actiondata_at_offset(selection_buf, i);
-
-   if (cbs && cbs->action_get_value)
-      cbs->action_get_value(selection_buf,
-            &entry->spacing, entry->type, (unsigned)i, label,
-            entry->value,  sizeof(entry->value),
-            entry_label, path,
-            entry->path, sizeof(entry->path));
-
-   entry->idx = (unsigned)i;
-
-   if (entry_label)
-      strlcpy(entry->label, entry_label, sizeof(entry->label));
 }
 
 /* Sets title to what the name of the current menu should be. */
@@ -523,7 +454,7 @@ void menu_entries_get_last_stack(const char **path, const char **label,
    if (!menu_list)
       return;
 
-   menu_entries_get_last(menu_list_get(menu_list, 0),
+   file_list_get_last(menu_list_get(menu_list, 0),
          path, label, file_type, entry_idx);
    cbs = menu_entries_get_last_stack_actiondata();
    if (cbs && enum_idx)
@@ -563,8 +494,8 @@ size_t menu_entries_get_size(void)
 rarch_setting_t *menu_entries_get_setting(uint32_t i)
 {
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-   menu_file_list_cbs_t *cbs  = 
-      menu_entries_get_actiondata_at_offset(selection_buf, i);
+   menu_file_list_cbs_t *cbs  = selection_buf ?
+      (menu_file_list_cbs_t*)file_list_get_actiondata_at_offset(selection_buf, i) : NULL;
 
    if (!cbs)
       return NULL;

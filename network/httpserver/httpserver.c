@@ -523,10 +523,10 @@ static int httpserver_handle_get_mmap(struct mg_connection* conn, void* cbdata)
    mg_printf(conn, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n");
    mg_printf(conn,
          "{"
-         "\"start\":" STRING_REP_ULONG ","
-         "\"length\":" STRING_REP_ULONG ","
+         "\"start\":" STRING_REP_USIZE ","
+         "\"length\":" STRING_REP_USIZE ","
          "\"compression\":\"deflate\","
-         "\"compressedLength\":" STRING_REP_ULONG ","
+         "\"compressedLength\":" STRING_REP_USIZE ","
          "\"encoding\":\"Z85\","
          "\"data\":\"%s\""
          "}",

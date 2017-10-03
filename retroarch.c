@@ -323,6 +323,12 @@ static void global_free(void)
    global = global_get_ptr();
    path_clear_all();
    dir_clear_all();
+   if (global)
+   {
+      if (global->name.remapfile 
+            && !string_is_empty(global->name.remapfile))
+         free(global->name.remapfile);
+   }
    memset(global, 0, sizeof(struct global));
    retroarch_override_setting_free_state();
 }
@@ -1551,7 +1557,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          }
          break;
       case RARCH_CTL_HAS_CORE_OPTIONS:
-         return runloop_core_options;
+         return (runloop_core_options != NULL);
       case RARCH_CTL_CORE_OPTIONS_LIST_GET:
          {
             core_option_manager_t **coreopts = (core_option_manager_t**)data;

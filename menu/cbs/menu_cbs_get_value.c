@@ -107,7 +107,8 @@ static void menu_action_setting_disp_set_label_remap_file_load(
 
    *w = 19;
    strlcpy(s2, path, len2);
-   if (global)
+   if (global && global->name.remapfile
+         && !string_is_empty(global->name.remapfile))
       fill_pathname_base(s, global->name.remapfile,
             len);
 }
@@ -557,11 +558,7 @@ static void menu_action_setting_disp_set_label_perf_counters_common(
       return;
 
    snprintf(s, len,
-#ifdef _WIN32
-         "%I64u ticks, %I64u runs.",
-#else
-         "%llu ticks, %llu runs.",
-#endif
+         STRING_REP_UINT64 " ticks, " STRING_REP_UINT64 " runs.",
          ((uint64_t)counters[offset]->total /
           (uint64_t)counters[offset]->call_cnt),
          (uint64_t)counters[offset]->call_cnt);
@@ -625,7 +622,8 @@ static void menu_action_setting_disp_set_label_menu_more(
 {
    strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MORE), len);
    *w = 19;
-   strlcpy(s2, path, len2);
+   if (path && !string_is_empty(path))
+      strlcpy(s2, path, len2);
 }
 
 static void menu_action_setting_disp_set_label_db_entry(
@@ -639,7 +637,8 @@ static void menu_action_setting_disp_set_label_db_entry(
 {
    strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MORE), len);
    *w = 10;
-   strlcpy(s2, path, len2);
+   if (path && !string_is_empty(path))
+      strlcpy(s2, path, len2);
 }
 
 static void menu_action_setting_disp_set_label_entry(

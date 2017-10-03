@@ -46,9 +46,6 @@ static void core_info_list_resolve_all_extensions(
    size_t all_ext_len    = 0;
    char *all_ext         = NULL;
 
-   if (!core_info_list)
-      return;
-
    for (i = 0; i < core_info_list->count; i++)
    {
       if (core_info_list->list[i].supported_extensions)
@@ -405,10 +402,11 @@ static core_info_list_t *core_info_list_new(const char *path)
             strdup(path_basename(core_info[i].path));
    }
 
-   core_info_list_resolve_all_extensions(core_info_list);
-
    if (core_info_list)
+   {
+      core_info_list_resolve_all_extensions(core_info_list);
       core_info_list_resolve_all_firmware(core_info_list);
+   }
 
    dir_list_free(contents);
    return core_info_list;

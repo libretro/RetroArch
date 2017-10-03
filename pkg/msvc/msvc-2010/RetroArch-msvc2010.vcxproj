@@ -356,7 +356,12 @@
     <ResourceCompile Include="..\..\..\media\rarch.rc" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\griffin\griffin.c" />
+    <ClCompile Include="..\..\..\griffin\griffin.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug Cg|Win32'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release Cg|Win32'">CompileAsC</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsC</CompileAs>
+    </ClCompile>
     <ClCompile Include="..\..\..\griffin\griffin_cpp.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

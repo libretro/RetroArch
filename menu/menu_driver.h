@@ -338,6 +338,9 @@ typedef struct menu_display_ctx_driver
 
 typedef struct
 {
+   uint64_t state;
+
+   char menu_state_msg[1024];
    /* Scratchpad variables. These are used for instance
     * by the filebrowser when having to store intermediary
     * paths (subdirs/previous dirs/current dir/path, etc).
@@ -348,13 +351,6 @@ typedef struct
 
    /* path to the currently loaded database playlist file. */
    char db_playlist_file[PATH_MAX_LENGTH];
-
-   uint64_t state;
-
-   struct
-   {
-      char msg[1024];
-   } menu_state;
 } menu_handle_t;
 
 typedef struct menu_display_ctx_draw

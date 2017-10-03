@@ -1,5 +1,6 @@
 # 1.6.8 (future)
 - Audio: Fix the Audio DSP picker
+- GUI: (MaterialUI) Fix crash that happened on context reset with Vulkan.
 - GUI: (MaterialUI) Skip querying and drawing items that are not visible; Cache content height and bbox calculation.
 - GUI: (XMB) Skip drawing the fading list when it is already transparent. Optimization.
 - GUI: (XMB) Comment out visible item calculation in xmb_draw_items().
@@ -12,6 +13,7 @@
 - INPUT: Ignore keyboard input if window is not active on udev driver
 - LOBBIES: Fix crash on navigating left / right from the lobby menu
 - LOCALIZATION: Update Italian translation.
+- LOCALIZATION: Update Japanese translation.
 - LOCALIZATION: Update Portuguese-Brazilian translation.
 - LOCALIZATION: Update Russian translation.
 - LINUX/PI: Broadcom VC4: Add Videocore config option
@@ -23,6 +25,8 @@
 - WII: Use custom, embedded libogc SDK.
 - WIIU: Initial touchscreen support for WiiU gamepad.
 - SCANNER: Fix archive scanning.
+- SCANNER: Support CHD files.
+- SCANNER: Use primary data track of disc images for CRC lookups rather than cue files.  This is slower but finds matches more reliably, and is necessary for CHD files to work at all.  Update your databases!
 
 # 1.6.7
 - SCANNER: Fix directory scanning.

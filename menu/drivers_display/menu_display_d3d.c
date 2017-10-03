@@ -29,12 +29,6 @@
 #include "../../gfx/drivers/d3d.h"
 #include "../../gfx/common/d3d_common.h"
 
-#if defined(HAVE_D3D9)
-#include "../../gfx/include/d3d9/d3dx9math.h"
-#elif defined(HAVE_D3D8)
-#include "../../gfx/include/d3d8/d3dx8math.h"
-#endif
-
 #define BYTE_CLAMP(i) (int) ((((i) > 255) ? 255 : (((i) < 0) ? 0 : (i))))
 
 static const float d3d_vertexes[] = {
@@ -63,24 +57,18 @@ static const float *menu_display_d3d_get_default_tex_coords(void)
 
 static void *menu_display_d3d_get_default_mvp(void)
 {
-#ifndef _XBOX
    static math_matrix_4x4 default_mvp;
-   D3DXMATRIX ortho, mvp;
-#endif
+   D3DMATRIX ortho, mvp;
    d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(false);
 
    if (!d3d)
       return NULL;
-#ifdef _XBOX
-   return NULL; /* TODO/FIXME */
-#else
-   D3DXMatrixOrthoOffCenterLH(&ortho, 0,
+   d3d_matrix_ortho_off_center_lh(&ortho, 0,
          d3d->final_viewport.Width, 0, d3d->final_viewport.Height, 0, 1);
-   D3DXMatrixTranspose(&mvp, &ortho);
-   memcpy(default_mvp.data, (FLOAT*)mvp, sizeof(default_mvp.data));
+   d3d_matrix_transpose(&mvp, &ortho);
+   memcpy(default_mvp.data, (float*)&mvp, sizeof(default_mvp.data));
 
    return &default_mvp;
-#endif
 }
 
 static unsigned menu_display_prim_to_d3d_enum(
@@ -248,11 +236,12 @@ static bool menu_display_d3d_font_init_first(
       bool is_threaded)
 {
    font_data_t **handle = (font_data_t**)font_handle;
-   *handle = font_driver_init_first(video_data,
+   if (!(*handle = font_driver_init_first(video_data,
          font_path, font_size, true,
          is_threaded,
-         FONT_DRIVER_RENDER_DIRECT3D_API);
-   return *handle;
+         FONT_DRIVER_RENDER_DIRECT3D_API)))
+		 return false;
+   return true;
 }
 
 menu_display_ctx_driver_t menu_display_ctx_d3d = {

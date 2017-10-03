@@ -57,7 +57,7 @@ int menu_hash_get_help_pt_pt_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "Esse driver funciona sem o X. \n"
                      " \n"
                      "Ele usa a recente API de joypads \n"
-                     "evdev para supporte a joystick. \n"
+                     "evdev para suporte a joystick. \n"
                      "Suporta Hot-Swap e force feedback \n"
                      "(se suportado pelo dispositivo). \n"
                      " \n"
@@ -490,7 +490,7 @@ int menu_hash_get_help_pt_pt_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "compatibilidade.\n"
                   " \n"
                   "Esse valor deve ficar próximo de 60Hz para \n"
-                  "evitar grande mudanças de pitch. Se o monitor \n"
+                  "evitar grandes mudanças de pitch. Se o monitor \n"
                   "não rodar a 60Hz, ou algo próximo a isso, desative\n"
                   "o VSync, e deixe-o com valores padrão.";
             strlcpy(s, u, len);
@@ -822,7 +822,7 @@ int menu_hash_get_help_pt_pt_enum(enum msg_hash_enums msg, char *s, size_t len)
       case MENU_ENUM_LABEL_LOCATION_ALLOW:
          snprintf(s, len,
                "Autorizar ou desautorizar o acesso de \n"
-               "serviços de localização pelos cores.");
+               "serviços de localização pelas cores.");
          break;
       case MENU_ENUM_LABEL_TURBO:
          snprintf(s, len,

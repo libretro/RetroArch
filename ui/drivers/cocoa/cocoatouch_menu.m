@@ -111,8 +111,9 @@ static void RunActionSheet(const char* title, const struct string_list* items,
 
 - (UITableViewCell*)cellForTableView:(UITableView*)tableView
 {
+  menu_entry_t entry;
   char buffer[PATH_MAX_LENGTH];
-  char label[PATH_MAX_LENGTH];
+  char *label                    = NULL;
   static NSString* const cell_id = @"text";
 
   self.parentTable = tableView;
@@ -122,16 +123,24 @@ static void RunActionSheet(const char* title, const struct string_list* items,
     result = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1
                                     reuseIdentifier:cell_id];
 
-  menu_entry_get_path(self.i, label, sizeof(label));
-  menu_entry_get_value(self.i, NULL, buffer, sizeof(buffer));
-
-  result.textLabel.text = BOXSTRING(label);
+  menu_entry_init(&entry);
+  menu_entry_get(&entry, 0, (unsigned)self.i, NULL, true);
+  label = menu_entry_get_path(&entry);
+  menu_entry_get_value(&entry, buffer, sizeof(buffer));
 
   if (string_is_empty(label))
     strlcpy(buffer,
           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
           sizeof(buffer));
+
+  if (label && !string_is_empty(label))
+     result.textLabel.text    = BOXSTRING(label);
   result.detailTextLabel.text = BOXSTRING(buffer);
+
+  menu_entry_free(&entry);
+  if (label && !string_is_empty(label))
+     free(label);
+
   return result;
 }
 
@@ -148,7 +157,8 @@ static void RunActionSheet(const char* title, const struct string_list* items,
 
 - (UITableViewCell*)cellForTableView:(UITableView*)tableView
 {
-   char label[PATH_MAX_LENGTH];
+   menu_entry_t entry;
+   char *label                    = NULL;
    static NSString* const cell_id = @"boolean_setting";
 
    UITableViewCell* result =
@@ -162,9 +172,14 @@ static void RunActionSheet(const char* title, const struct string_list* items,
       result.accessoryView = [UISwitch new];
    }
 
-   menu_entry_get_path(self.i, label, sizeof(label));
+   menu_entry_init(&entry);
+   menu_entry_get(&entry, 0, (unsigned)self.i, NULL, true);
 
-   result.textLabel.text = BOXSTRING(label);
+   label = menu_entry_get_path(&entry);
+
+   if (label && !string_is_empty(label))
+      result.textLabel.text = BOXSTRING(label);
+
    [(id)result.accessoryView removeTarget:nil
                                    action:NULL
                          forControlEvents:UIControlEventValueChanged];
@@ -172,6 +187,9 @@ static void RunActionSheet(const char* title, const struct string_list* items,
                                 action:@selector(handleBooleanSwitch:)
                       forControlEvents:UIControlEventValueChanged];
    [(id)result.accessoryView setOn:(menu_entry_get_bool_value(self.i))];
+   menu_entry_free(&entry);
+   if (label && !string_is_empty(label))
+      free(label);
    return result;
 }
 
@@ -206,14 +224,19 @@ static void RunActionSheet(const char* title, const struct string_list* items,
 - (void)wasSelectedOnTableView:(UITableView*)tableView
                   ofController:(UIViewController*)controller
 {
-   struct string_list* items;
-   char label[PATH_MAX_LENGTH];
+   menu_entry_t entry;
+   struct string_list* items       = NULL;
+   char *label                     = NULL;
    RAMenuItemEnum __weak* weakSelf = self;
 
-   menu_entry_get_path(self.i, label, sizeof(label));
+   menu_entry_init(&entry);
+   menu_entry_get(&entry, 0, (unsigned)self.i, NULL, true);
+   label = menu_entry_get_path(&entry);
    items = menu_entry_enum_values(self.i);
 
-   RunActionSheet(label, items, self.parentTable,
+   if (label && !string_is_empty(label))
+   {
+      RunActionSheet(label, items, self.parentTable,
       ^(UIActionSheet* actionSheet, NSInteger buttonIndex)
       {
          if (buttonIndex == actionSheet.cancelButtonIndex)
@@ -223,7 +246,11 @@ static void RunActionSheet(const char* title, const struct string_list* items,
            (self.i, [[actionSheet buttonTitleAtIndex:buttonIndex] UTF8String]);
          [weakSelf.parentTable reloadData];
       });
+   }
    string_list_free(items);
+   menu_entry_free(&entry);
+   if (label && !string_is_empty(label))
+      free(label);
 }
 @end
 
@@ -237,11 +264,15 @@ static void RunActionSheet(const char* title, const struct string_list* items,
 - (void)wasSelectedOnTableView:(UITableView *)tableView
                   ofController:(UIViewController *)controller
 {
-   char label[PATH_MAX_LENGTH];
+   menu_entry_t entry;
+   char *label = NULL;
 
-   menu_entry_get_path(self.i, label, sizeof(label));
+   menu_entry_init(&entry);
+   menu_entry_get(&entry, 0, (unsigned)self.i, NULL, true);
+   label = menu_entry_get_path(&entry);
 
    self.alert = [[UIAlertView alloc]
+
    initWithTitle:BOXSTRING("RetroArch")
          message:BOXSTRING(label)
         delegate:self
@@ -259,6 +290,9 @@ static void RunActionSheet(const char* title, const struct string_list* items,
                             selector:@selector(checkBind:)
                             userInfo:nil
                              repeats:YES];
+   menu_entry_free(&entry);
+   if (label && !string_is_empty(label))
+      free(label);
 }
 
 - (void)finishWithClickedButton:(bool)clicked
@@ -408,13 +442,16 @@ replacementString:(NSString *)string
 - (void)wasSelectedOnTableView:(UITableView*)tableView
                   ofController:(UIViewController*)controller
 {
+   menu_entry_t entry;
    char buffer[PATH_MAX_LENGTH];
-   char label[PATH_MAX_LENGTH];
+   char *label            = NULL;
    UIAlertView *alertView = NULL;
    UITextField     *field = NULL;
    NSString         *desc = NULL;
 
-   menu_entry_get_path(self.i, label, sizeof(label));
+   menu_entry_init(&entry);
+   menu_entry_get(&entry, 0, (unsigned)self.i, NULL, true);
+   label     = menu_entry_get_path(&entry);
 
    desc      = BOXSTRING(label);
 
@@ -429,13 +466,18 @@ replacementString:(NSString *)string
    field          = [alertView textFieldAtIndex:0];
    field.delegate = self.formatter;
 
-   menu_entry_get_value(self.i, NULL, buffer, sizeof(buffer));
+   menu_entry_get_value(&entry, buffer, sizeof(buffer));
    if (string_is_empty(buffer))
       strlcpy(buffer,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
             sizeof(buffer));
 
    field.placeholder = BOXSTRING(buffer);
+
+   menu_entry_free(&entry);
+
+   if (label && !string_is_empty(label))
+      free(label);
 
    [alertView show];
 }
@@ -681,7 +723,7 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
    menu_entries_get_title(title, sizeof(title));
    self.title = BOXSTRING(title);
 
-   end = menu_entries_get_end();
+   end = menu_entries_get_size();
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
 
    for (; i < end; i++)

@@ -118,23 +118,32 @@ static struct
 } menu_tex ATTRIBUTE_ALIGN(32);
 
 static OSCond g_video_cond;
-static unsigned g_current_framebuf;
-static volatile bool g_draw_done = false;
-static bool              g_vsync = false;
-static uint32_t g_orientation    = 0;
 
-static uint32_t retraceCount;
-static uint32_t referenceRetraceCount;
+static volatile bool g_draw_done       = false;
+static bool              g_vsync       = false;
 
-static uint8_t gx_fifo[256 * 1024] ATTRIBUTE_ALIGN(32);
-static uint8_t display_list[1024]  ATTRIBUTE_ALIGN(32);
-static size_t display_list_size;
-uint16_t gx_xOrigin, gx_yOrigin;
 int8_t gx_system_xOrigin, gx_used_system_xOrigin;
 int8_t gx_xOriginNeg, gx_xOriginPos;
 int8_t gx_yOriginNeg, gx_yOriginPos;
+
+static uint8_t gx_fifo[256 * 1024] ATTRIBUTE_ALIGN(32);
+static uint8_t display_list[1024]  ATTRIBUTE_ALIGN(32);
+
+static uint16_t gx_xOrigin             = 0;
+static uint16_t gx_yOrigin             = 0;
+
+static unsigned g_current_framebuf     = 0;
+static uint32_t g_orientation          = 0;
+
+static uint32_t retraceCount           = 0;
+static uint32_t referenceRetraceCount  = 0;
+
+static unsigned gx_old_width           = 0;
+static unsigned gx_old_height          = 0;
+
+static size_t display_list_size;
+
 GXRModeObj gx_mode;
-unsigned gx_old_width, gx_old_height;
 
 float verts[16] ATTRIBUTE_ALIGN(32) = {
    -1,  1, -0.5,
@@ -247,7 +256,7 @@ unsigned menu_gx_resolutions[][2] = {
 
 static void retrace_callback(u32 retrace_count)
 {
-   u32 level = 0;
+   uint32_t level = 0;
 
    (void)retrace_count;
 
@@ -276,14 +285,19 @@ static bool gx_isValidYOrigin(int origin)
 static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
       bool fullscreen)
 {
-   f32 y_scale;
+   int tmpOrigin;
    float refresh_rate;
-   u16 xfbWidth, xfbHeight;
    bool progressive;
    unsigned modetype, viHeightMultiplier, viWidth, tvmode,
             max_width, i;
-   gx_video_t *gx       = (gx_video_t*)data;
-   settings_t *settings = config_get_ptr();
+   size_t new_fb_pitch    = 0;
+   unsigned new_fb_width  = 0;
+   unsigned new_fb_height = 0;
+   float y_scale          = 0.0f;
+   uint16_t xfbWidth      = 0;
+   uint16_t xfbHeight     = 0;
+   gx_video_t *gx         = (gx_video_t*)data;
+   settings_t *settings   = config_get_ptr();
 
    /* stop vsync callback */
    VIDEO_SetPostRetraceCallback(NULL);
@@ -391,7 +405,8 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
       while(viWidth + gx_used_system_xOrigin > 720) gx_used_system_xOrigin++;
    }
 
-   int tmpOrigin = (max_width - gx_mode.viWidth) / 2;
+   tmpOrigin = (max_width - gx_mode.viWidth) / 2;
+
    if(gx_system_xOrigin > 0)
    {
       while(!gx_isValidXOrigin(tmpOrigin)) tmpOrigin--;
@@ -446,10 +461,7 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    gx->should_resize = true;
 
    /* calculate menu dimensions */
-   size_t new_fb_pitch;
-   unsigned new_fb_width;
-   unsigned new_fb_height  = (gx_mode.efbHeight / 
-         (gx->double_strike ? 1 : 2)) & ~3;
+   new_fb_height  = (gx_mode.efbHeight / (gx->double_strike ? 1 : 2)) & ~3;
 
    if (new_fb_height > 240)
       new_fb_height = 240;
@@ -466,10 +478,10 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    GX_SetViewportJitter(0, 0, gx_mode.fbWidth, gx_mode.efbHeight, 0, 1, 1);
    GX_SetDispCopySrc(0, 0, gx_mode.fbWidth, gx_mode.efbHeight);
 
-   y_scale = GX_GetYScaleFactor(gx_mode.efbHeight, gx_mode.xfbHeight);
-   xfbWidth = VIDEO_PadFramebufferWidth(gx_mode.fbWidth);
-   xfbHeight = GX_SetDispCopyYScale(y_scale);
-   GX_SetDispCopyDst(xfbWidth, xfbHeight);
+   y_scale   = GX_GetYScaleFactor(gx_mode.efbHeight, gx_mode.xfbHeight);
+   xfbWidth  = VIDEO_PadFramebufferWidth(gx_mode.fbWidth);
+   xfbHeight = GX_SetDispCopyYScale((f32)y_scale);
+   GX_SetDispCopyDst((u16)xfbWidth, (u16)xfbHeight);
 
    GX_SetCopyFilter(gx_mode.aa, gx_mode.sample_pattern,
          (gx_mode.xfbMode == VI_XFBMODE_SF) 
@@ -585,17 +597,16 @@ static void setup_video_mode(gx_video_t *gx)
 
 static void init_texture(void *data, unsigned width, unsigned height)
 {
-   unsigned g_filter;
    size_t fb_pitch;
    unsigned fb_width, fb_height;
    gx_video_t *gx       = (gx_video_t*)data;
    GXTexObj *fb_ptr   	= (GXTexObj*)&g_tex.obj;
    GXTexObj *menu_ptr 	= (GXTexObj*)&menu_tex.obj;
    settings_t *settings = config_get_ptr();
+   unsigned g_filter    = settings->bools.video_smooth ? GX_LINEAR : GX_NEAR;
 
    width               &= ~3;
    height              &= ~3;
-   g_filter             = settings->bools.video_smooth ? GX_LINEAR : GX_NEAR;
 
    menu_display_get_fb_size(&fb_width, &fb_height,
          &fb_pitch);
@@ -614,8 +625,8 @@ static void init_texture(void *data, unsigned width, unsigned height)
 static void init_vtx(void *data, const video_info_t *video)
 {
    Mtx44 m;
-   gx_video_t *gx = (gx_video_t*)data;
-   u32 level      = 0;
+   gx_video_t *gx      = (gx_video_t*)data;
+   uint32_t level      = 0;
    _CPU_ISR_Disable(level);
    referenceRetraceCount = retraceCount;
    _CPU_ISR_Restore(level);
@@ -898,6 +909,7 @@ static void convert_texture32(const uint32_t *_src, uint32_t *_dst,
 
 static void gx_resize(void *data)
 {
+   int gamma;
    unsigned degrees;
    unsigned width, height;
    Mtx44 m1, m2;
@@ -915,11 +927,11 @@ static void gx_resize(void *data)
 
 #ifdef HW_RVL
    VIDEO_SetTrapFilter(global->console.softfilter_enable);
-   int gamma = global->console.screen.gamma_correction;
+   gamma = global->console.screen.gamma_correction;
    if(gamma == 0) gamma = 10; //default 1.0 gamma value
    VIDEO_SetGamma(gamma);
 #else
-	int gamma = global->console.screen.gamma_correction;
+	gamma = global->console.screen.gamma_correction;
 	GX_SetDispCopyGamma(MAX(0,MIN(2,gamma)));
 #endif
 
@@ -1484,7 +1496,7 @@ static bool gx_frame(void *data, const void *frame,
    char fps_text_buf[128];
    gx_video_t *gx                     = (gx_video_t*)data;
    u8                       clear_efb = GX_FALSE;
-   u32 level                          = 0;
+   uint32_t level                     = 0;
 
    fps_text_buf[0]                    = '\0';
 

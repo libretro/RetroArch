@@ -514,15 +514,16 @@ static int zarch_zui_render_lay_root_recent(
 
       for (i = zui->recent_dlist_first; i < size; ++i)
       {
-         char rich_label[PATH_MAX_LENGTH];
          char entry_value[PATH_MAX_LENGTH];
-         menu_entry_t entry                = {{0}};
+         menu_entry_t entry;
+         char *rich_label  = NULL;
 
-         rich_label[0] = entry_value[0]    = '\0';
+         entry_value[0]    = '\0';
 
+         menu_entry_init(&entry);
          menu_entry_get(&entry, 0, i, NULL, true);
-         menu_entry_get_rich_label(i, rich_label, sizeof(rich_label));
-         menu_entry_get_value(i, NULL, entry_value,sizeof(entry_value));
+         rich_label = menu_entry_get_rich_label(&entry);
+         menu_entry_get_value(&entry, entry_value,sizeof(entry_value));
 
          if (zarch_zui_list_item(
                   video_info,
@@ -531,10 +532,18 @@ static int zarch_zui_render_lay_root_recent(
                   rich_label, i, entry_value, gamepad_index == (signed)i))
          {
             if (menu_entry_action(&entry, i, MENU_ACTION_OK))
+            {
+               menu_entry_free(&entry);
+               if (rich_label && !string_is_empty(rich_label))
+                  free(rich_label);
                return 1;
+            }
          }
 
          j++;
+         menu_entry_free(&entry);
+         if (rich_label && !string_is_empty(rich_label))
+            free(rich_label);
       }
 
    }
@@ -1112,11 +1121,13 @@ static int zarch_iterate(void *data, void *userdata, enum menu_action action)
    if (!zui)
       return -1;
 
+   menu_entry_init(&entry);
    menu_entry_get(&entry, 0, selection, NULL, false);
 
    zui->action       = action;
 
    ret = menu_entry_action(&entry, selection, action);
+   menu_entry_free(&entry);
    if (ret)
       return -1;
    return 0;
@@ -1130,8 +1141,8 @@ static bool zarch_menu_init_list(void *data)
 
    menu_displaylist_info_free(&info);
 
-   strlcpy(info.label,
-         msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB), sizeof(info.label));
+   info.label    = strdup(
+         msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB));
    info.enum_idx = MENU_ENUM_LABEL_HISTORY_TAB;
 
    menu_entries_append_enum(menu_stack,

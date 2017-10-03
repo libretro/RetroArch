@@ -2318,7 +2318,10 @@ void input_config_parse_joy_button(void *data, const char *prefix,
 
    if (config_get_string(conf, key_label, &tmp_a))
    {
-      strlcpy(bind->joykey_label, tmp_a, sizeof(bind->joykey_label));
+      if (!string_is_empty(bind->joykey_label))
+         free(bind->joykey_label);
+
+      bind->joykey_label = strdup(tmp_a);
       free(tmp_a);
    }
 }
@@ -2361,7 +2364,10 @@ void input_config_parse_joy_axis(void *data, const char *prefix,
 
    if (config_get_string(conf, key_label, &tmp_a))
    {
-      strlcpy(bind->joyaxis_label, tmp_a, sizeof(bind->joyaxis_label));
+      if (bind->joyaxis_label &&
+            !string_is_empty(bind->joyaxis_label))
+         free(bind->joyaxis_label);
+      bind->joyaxis_label = strdup(tmp_a);
       free(tmp_a);
    }
 }
@@ -2375,7 +2381,8 @@ static void input_config_get_bind_string_joykey(
 
    if (GET_HAT_DIR(bind->joykey))
    {
-      if (!string_is_empty(bind->joykey_label) && label_show)
+      if (bind->joykey_label &&
+            !string_is_empty(bind->joykey_label) && label_show)
          snprintf(buf, size, "%s %s ", prefix, bind->joykey_label);
       else
       {
@@ -2405,7 +2412,8 @@ static void input_config_get_bind_string_joykey(
    }
    else
    {
-      if (!string_is_empty(bind->joykey_label) && label_show)
+      if (bind->joykey_label &&
+            !string_is_empty(bind->joykey_label) && label_show)
          snprintf(buf, size, "%s%s (btn) ", prefix, bind->joykey_label);
       else
          snprintf(buf, size, "%s%u (%s) ", prefix, (unsigned)bind->joykey,
@@ -2418,7 +2426,8 @@ static void input_config_get_bind_string_joyaxis(char *buf, const char *prefix,
 {
    settings_t *settings = config_get_ptr();
 
-   if (!string_is_empty(bind->joyaxis_label) 
+   if (bind->joyaxis_label &&
+         !string_is_empty(bind->joyaxis_label) 
          && settings->bools.input_descriptor_label_show)
       snprintf(buf, size, "%s%s (axis) ", prefix, bind->joyaxis_label);
    else

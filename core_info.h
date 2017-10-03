@@ -37,6 +37,8 @@ typedef struct
 
 typedef struct
 {
+   bool supports_no_game;
+   size_t firmware_count;
    char *path;
    void *config_data;
    char *display_name;
@@ -57,10 +59,7 @@ typedef struct
    struct string_list *authors_list;
    struct string_list *permissions_list;
    struct string_list *licenses_list;
-
    core_info_firmware_t *firmware;
-   size_t firmware_count;
-   bool supports_no_game;
    void *userdata;
 } core_info_t;
 

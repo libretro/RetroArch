@@ -87,7 +87,8 @@ chdstream_get_meta(chd_file *chd, int idx, metadata_t *md)
    memset(md, 0, sizeof(*md));
 
    err = chd_get_metadata(chd, CDROM_TRACK_METADATA2_TAG, idx, meta,
-                          sizeof(meta), &meta_size, NULL, NULL);
+         sizeof(meta), &meta_size, NULL, NULL);
+
    if (err == CHDERR_NONE)
    {
       sscanf(meta, CDROM_TRACK_METADATA2_FORMAT,
@@ -100,7 +101,8 @@ chdstream_get_meta(chd_file *chd, int idx, metadata_t *md)
    }
 
    err = chd_get_metadata(chd, CDROM_TRACK_METADATA_TAG, idx, meta,
-                          sizeof(meta), &meta_size, NULL, NULL);
+         sizeof(meta), &meta_size, NULL, NULL);
+
    if (err == CHDERR_NONE)
    {
       sscanf(meta, CDROM_TRACK_METADATA_FORMAT, &md->track, md->type,
@@ -110,7 +112,8 @@ chdstream_get_meta(chd_file *chd, int idx, metadata_t *md)
    }
 
    err = chd_get_metadata(chd, GDROM_TRACK_METADATA_TAG, idx, meta,
-                          sizeof(meta), &meta_size, NULL, NULL);
+         sizeof(meta), &meta_size, NULL, NULL);
+
    if (err == CHDERR_NONE)
    {
       sscanf(meta, GDROM_TRACK_METADATA_FORMAT, &md->track, md->type,
@@ -132,9 +135,7 @@ chdstream_find_track_number(chd_file *fd, int32_t track, metadata_t *meta)
    for (i = 0; true; ++i)
    {
       if (!chdstream_get_meta(fd, i, meta))
-      {
          return false;
-      }
 
       if (track == meta->track)
       {
@@ -156,24 +157,29 @@ chdstream_find_special_track(chd_file *fd, int32_t track, metadata_t *meta)
 
    for (i = 1; true; ++i)
    {
-      if (!chdstream_find_track_number(fd, i, &iter)) {
-         if (track == CHDSTREAM_TRACK_LAST && i > 1) {
+      if (!chdstream_find_track_number(fd, i, &iter))
+      {
+         if (track == CHDSTREAM_TRACK_LAST && i > 1)
+         {
             *meta = iter;
             return true;
-         } else if (track == CHDSTREAM_TRACK_PRIMARY && largest_track != 0) {
-            return chdstream_find_track_number(fd, largest_track, meta);
          }
+         else if (track == CHDSTREAM_TRACK_PRIMARY && largest_track != 0)
+            return chdstream_find_track_number(fd, largest_track, meta);
       }
 
-      switch (track) {
+      switch (track)
+      {
          case CHDSTREAM_TRACK_FIRST_DATA:
-            if (strcmp(iter.type, "AUDIO")) {
+            if (strcmp(iter.type, "AUDIO"))
+            {
                *meta = iter;
                return true;
             }
             break;
          case CHDSTREAM_TRACK_PRIMARY:
-            if (strcmp(iter.type, "AUDIO") && iter.frames > largest_size) {
+            if (strcmp(iter.type, "AUDIO") && iter.frames > largest_size)
+            {
                largest_size = iter.frames;
                largest_track = iter.track;
             }
@@ -187,21 +193,19 @@ chdstream_find_special_track(chd_file *fd, int32_t track, metadata_t *meta)
 static bool
 chdstream_find_track(chd_file *fd, int32_t track, metadata_t *meta)
 {
-   if (track < 0) {
+   if (track < 0)
       return chdstream_find_special_track(fd, track, meta);
-   } else {
-      return chdstream_find_track_number(fd, track, meta);
-   }
+   return chdstream_find_track_number(fd, track, meta);
 }
 
 chdstream_t *chdstream_open(const char *path, int32_t track)
 {
+   metadata_t meta;
    uint32_t pregap      = 0;
    const chd_header *hd = NULL;
    chdstream_t *stream  = NULL;
    chd_file *chd        = NULL;
    chd_error err        = chd_open(path, CHD_OPEN_READ, NULL, &chd);
-   metadata_t meta;
 
    if (err != CHDERR_NONE)
       goto error;
@@ -317,7 +321,7 @@ ssize_t chdstream_read(chdstream_t *stream, void *data, size_t bytes)
    uint32_t amount;
    size_t data_offset   = 0;
    const chd_header *hd = chd_get_header(stream->chd);
-   uint8_t         *out = data;
+   uint8_t         *out = (uint8_t*)data;
 
    if (stream->track_end - stream->offset < bytes)
       bytes = stream->track_end - stream->offset;
@@ -342,7 +346,6 @@ ssize_t chdstream_read(chdstream_t *stream, void *data, size_t bytes)
 
          if (!chdstream_load_hunk(stream, hunk))
          {
-            abort();
             return -1;
          }
          memcpy(out + data_offset,

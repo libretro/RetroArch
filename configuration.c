@@ -901,7 +901,6 @@ const char *config_get_default_location(void)
    return "null";
 }
 
-#ifdef HAVE_MENU
 /**
  * config_get_default_menu:
  *
@@ -911,6 +910,7 @@ const char *config_get_default_location(void)
  **/
 const char *config_get_default_menu(void)
 {
+#ifdef HAVE_MENU
    enum menu_driver_enum default_driver = MENU_DEFAULT_DRIVER;
 
    if (!string_is_empty(g_defaults.settings.menu))
@@ -931,11 +931,10 @@ const char *config_get_default_menu(void)
       case MENU_NULL:
          break;
    }
+#endif
 
    return "null";
 }
-
-#endif
 
 bool config_overlay_enable_default(void)
 {
@@ -990,6 +989,7 @@ static struct config_path_setting *populate_settings_path(settings_t *settings, 
    /* Paths */
 #ifdef HAVE_XMB
    SETTING_PATH("xmb_font",                   settings->paths.path_menu_xmb_font, false, NULL, true);
+   SETTING_PATH("xmb_show_settings_password", settings->paths.menu_xmb_show_settings_password, false, NULL, true);
 #endif
    SETTING_PATH("netplay_nickname",           settings->paths.username, false, NULL, true);
    SETTING_PATH("video_filter",               settings->paths.path_softfilter_plugin, false, NULL, true);
@@ -1254,6 +1254,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("savestate_thumbnail_enable",   &settings->bools.savestate_thumbnail_enable, true, savestate_thumbnail_enable, false);
    SETTING_BOOL("history_list_enable",          &settings->bools.history_list_enable, true, def_history_list_enable, false);
    SETTING_BOOL("playlist_entry_remove",        &settings->bools.playlist_entry_remove, true, def_playlist_entry_remove, false);
+   SETTING_BOOL("playlist_entry_rename",        &settings->bools.playlist_entry_rename, true, def_playlist_entry_rename, false);
    SETTING_BOOL("game_specific_options",        &settings->bools.game_specific_options, true, default_game_specific_options, false);
    SETTING_BOOL("auto_overrides_enable",        &settings->bools.auto_overrides_enable, true, default_auto_overrides_enable, false);
    SETTING_BOOL("auto_remaps_enable",           &settings->bools.auto_remaps_enable, true, default_auto_remaps_enable, false);
@@ -1302,7 +1303,7 @@ static struct config_float_setting *populate_settings_float(settings_t *settings
 #endif
 #ifdef HAVE_MENU
    SETTING_FLOAT("menu_wallpaper_opacity",   &settings->floats.menu_wallpaper_opacity, true, menu_wallpaper_opacity, false);
-   SETTING_FLOAT("menu_framebuffer_opacity",   &settings->floats.menu_framebuffer_opacity, true, menu_framebuffer_opacity, false);
+   SETTING_FLOAT("menu_framebuffer_opacity", &settings->floats.menu_framebuffer_opacity, true, menu_framebuffer_opacity, false);
    SETTING_FLOAT("menu_footer_opacity",      &settings->floats.menu_footer_opacity,    true, menu_footer_opacity, false);
    SETTING_FLOAT("menu_header_opacity",      &settings->floats.menu_header_opacity,    true, menu_header_opacity, false);
 #endif
@@ -2603,14 +2604,21 @@ static bool config_load_file(const char *path, bool set_defaults,
       }
    }
 
-   /* Safe-guard against older behavior. */
-   if (path_is_directory(path_get(RARCH_PATH_CORE)))
+#ifdef RARCH_CONSOLE
+   if (!string_is_empty(path_get(RARCH_PATH_CORE)))
    {
-      RARCH_WARN("\"libretro_path\" is a directory, using this for \"libretro_directory\" instead.\n");
-      strlcpy(settings->paths.directory_libretro, path_get(RARCH_PATH_CORE),
-            sizeof(settings->paths.directory_libretro));
-      path_clear(RARCH_PATH_CORE);
+#endif
+      /* Safe-guard against older behavior. */
+      if (path_is_directory(path_get(RARCH_PATH_CORE)))
+      {
+         RARCH_WARN("\"libretro_path\" is a directory, using this for \"libretro_directory\" instead.\n");
+         strlcpy(settings->paths.directory_libretro, path_get(RARCH_PATH_CORE),
+               sizeof(settings->paths.directory_libretro));
+         path_clear(RARCH_PATH_CORE);
+      }
+#ifdef RARCH_CONSOLE
    }
+#endif
 
    if (string_is_equal_fast(settings->paths.path_menu_wallpaper, "default", 7))
       *settings->paths.path_menu_wallpaper = '\0';

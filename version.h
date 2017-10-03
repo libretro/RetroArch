@@ -17,8 +17,6 @@
 #ifndef RARCH_VERSION_H__
 #define RARCH_VERSION_H__
 
-#ifndef PACKAGE_VERSION
-#define PACKAGE_VERSION "1.6.7"
-#endif
+#include "version.all"
 
 #endif

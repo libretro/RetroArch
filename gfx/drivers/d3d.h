@@ -17,9 +17,6 @@
 #ifndef __D3DVIDEO_INTF_H__
 #define __D3DVIDEO_INTF_H__
 
-#include <string>
-#include <vector>
-
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
@@ -80,8 +77,6 @@ typedef struct d3d_video
    unsigned cur_mon_id;
    unsigned dev_rotation;
 
-   HRESULT d3d_err;
-
 #if defined(HAVE_MENU)
    overlay_t *menu;
 #endif
@@ -98,10 +93,11 @@ typedef struct d3d_video
    LPDIRECT3DDEVICE dev;
    D3DVIEWPORT final_viewport;
 
-   std::string shader_path;
+   char *shader_path;
 
 #ifdef HAVE_OVERLAY
-   std::vector<overlay_t> overlays;
+   size_t overlays_size;
+   overlay_t *overlays;
 #endif
 } d3d_video_t;
 

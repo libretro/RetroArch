@@ -39,23 +39,16 @@ static int action_select_default(const char *path, const char *label, unsigned t
    menu_file_list_cbs_t *cbs  = NULL;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
-   entry.path[0]       = '\0';
-   entry.label[0]      = '\0';
-   entry.sublabel[0]   = '\0';
-   entry.value[0]      = '\0';
-   entry.rich_label[0] = '\0';
-   entry.enum_idx      = MSG_UNKNOWN;
-   entry.entry_idx     = 0;
-   entry.idx           = 0;
-   entry.type          = 0;
-   entry.spacing       = 0;
-
+   menu_entry_init(&entry);
    menu_entry_get(&entry, 0, idx, NULL, false);
 
-   cbs = menu_entries_get_actiondata_at_offset(selection_buf, idx);
+   cbs = selection_buf ? (menu_file_list_cbs_t*)file_list_get_actiondata_at_offset(selection_buf, idx) : NULL;
 
    if (!cbs)
+   {
+      menu_entry_free(&entry);
       return -1;
+   }
     
    if (cbs->setting)
    {
@@ -95,6 +88,8 @@ static int action_select_default(const char *path, const char *label, unsigned t
     
    if (action != MENU_ACTION_NOOP)
        ret = menu_entry_action(&entry, (unsigned)idx, action);
+
+   menu_entry_free(&entry);
 
    task_queue_check();
     

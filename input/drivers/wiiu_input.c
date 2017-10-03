@@ -36,9 +36,9 @@
 #define MAX_PADS 5
 
 static unsigned char keyboardChannel = 0x00;
-static KBDModifier keyboardModifier = 0x00;
-static unsigned char keyboardCode = 0x00;
-static KEYState keyboardState[256] = { KBD_WIIU_NULL };
+static KBDModifier keyboardModifier  = 0x00;
+static unsigned char keyboardCode    = 0x00;
+static KEYState keyboardState[256]   = { KBD_WIIU_NULL };
 
 typedef struct wiiu_input
 {

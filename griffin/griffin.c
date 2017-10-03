@@ -309,6 +309,24 @@ VIDEO IMAGE
 /*============================================================
 VIDEO DRIVER
 ============================================================ */
+#if defined(HAVE_D3D)
+#include "../gfx/common/d3d_common.c"
+#include "../gfx/drivers/d3d.c"
+#include "../gfx/drivers_context/d3d_ctx.c"
+
+#if defined(HAVE_D3D8)
+#include "../gfx/drivers_renderchain/d3d8_renderchain.c"
+#endif
+
+#if defined(HAVE_D3D9)
+
+#ifdef HAVE_CG
+#include "../gfx/drivers_renderchain/d3d9_cg_renderchain.c"
+#endif
+
+#endif
+
+#endif
 
 #if defined(GEKKO)
 #ifdef HW_RVL
@@ -394,6 +412,10 @@ FONTS
 
 #include "../gfx/drivers_font_renderer/bitmapfont.c"
 #include "../gfx/font_driver.c"
+
+#if defined(HAVE_D3D9) && !defined(_XBOX)
+#include "../gfx/drivers_font/d3d_w32_font.c"
+#endif
 
 #if defined(HAVE_STB_FONT)
 #include "../gfx/drivers_font_renderer/stb_unicode.c"
@@ -662,6 +684,10 @@ AUDIO
 #include "../audio/drivers/ctr_dsp_audio.c"
 #endif
 
+#ifdef HAVE_XAUDIO
+#include "../audio/drivers/xaudio.c"
+#endif
+
 #if defined(HAVE_SDL2)
 #include "../audio/drivers/sdl_audio.c"
 #endif
@@ -807,6 +833,11 @@ FRONTEND
 #if defined(_WIN32) && !defined(_XBOX)
 #include "../frontend/drivers/platform_win32.c"
 #endif
+
+#ifdef _XBOX
+#include "../frontend/drivers/platform_xdk.c"
+#endif
+
 #if defined(__CELLOS_LV2__)
 #include "../frontend/drivers/platform_ps3.c"
 #elif defined(GEKKO)
@@ -844,6 +875,7 @@ UI
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include "../ui/drivers/ui_win32.c"
+#include "../ui/drivers/win32/ui_win32_window.c"
 #include "../ui/drivers/win32/ui_win32_browser_window.c"
 #include "../ui/drivers/win32/ui_win32_msg_window.c"
 #include "../ui/drivers/win32/ui_win32_application.c"
@@ -1025,6 +1057,10 @@ MENU
 #include "../menu/drivers/menu_generic.c"
 
 #include "../menu/drivers_display/menu_display_null.c"
+
+#if defined(HAVE_D3D)
+#include "../menu/drivers_display/menu_display_d3d.c"
+#endif
 
 #ifdef HAVE_OPENGL
 #include "../menu/drivers_display/menu_display_gl.c"

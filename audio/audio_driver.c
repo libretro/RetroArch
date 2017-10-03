@@ -1172,7 +1172,9 @@ bool audio_driver_callback(void)
 
 bool audio_driver_has_callback(void)
 {
-   return audio_callback.callback;
+   if (audio_callback.callback)
+	   return true;
+   return false;
 }
 
 bool audio_driver_toggle_mute(void)

@@ -63,7 +63,9 @@ void filebrowser_parse(void *data, unsigned type_data)
    menu_displaylist_info_t *info        = (menu_displaylist_info_t*)data;
    enum menu_displaylist_ctl_state type = (enum menu_displaylist_ctl_state)
                                           type_data;
-   bool path_is_compressed              = path_is_compressed_file(info->path);
+   const char *path                     = info ? info->path : NULL;
+   bool path_is_compressed              = (path && !string_is_empty(path)) 
+      ? path_is_compressed_file(path) : false;
    bool filter_ext                      =
       settings->bools.menu_navigation_browser_filter_supported_extensions_enable;
 
@@ -73,9 +75,9 @@ void filebrowser_parse(void *data, unsigned type_data)
       filter_ext = false;
 
    if (path_is_compressed)
-      str_list = file_archive_get_file_list(info->path, info->exts);
-   else
-      str_list = dir_list_new(info->path,
+      str_list = file_archive_get_file_list(path, info->exts);
+   else if (!string_is_empty(path))
+      str_list = dir_list_new(path,
             filter_ext ? info->exts : NULL,
             true, settings->bools.show_hidden_files, true, false);
 
@@ -171,7 +173,7 @@ void filebrowser_parse(void *data, unsigned type_data)
 
          /* Need to preserve slash first time. */
 
-         if (!string_is_empty(info->path) && !path_is_compressed)
+         if (!string_is_empty(path) && !path_is_compressed)
             path = path_basename(path);
 
          if (filebrowser_types == FILEBROWSER_SELECT_COLLECTION)
@@ -266,7 +268,7 @@ void filebrowser_parse(void *data, unsigned type_data)
 end:
    menu_entries_prepend(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY),
-         info->path,
+         path,
          MENU_ENUM_LABEL_PARENT_DIRECTORY,
          FILE_TYPE_PARENT_DIRECTORY, 0, 0);
 }

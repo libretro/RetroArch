@@ -2125,7 +2125,7 @@ static uint64_t frontend_unix_get_mem_total(void)
 
    while (fgets(line, sizeof(line), data))
    {
-      if (sscanf(line, "MemTotal: " STRING_REP_ULONG " kB", (size_t*)&total) == 1)
+      if (sscanf(line, "MemTotal: " STRING_REP_USIZE " kB", (size_t*)&total) == 1)
       {
          fclose(data);
          total *= 1024;
@@ -2150,13 +2150,13 @@ static uint64_t frontend_unix_get_mem_used(void)
 
    while (fgets(line, sizeof(line), data))
    {
-      if (sscanf(line, "MemTotal: " STRING_REP_ULONG " kB", (size_t*)&total)  == 1)
+      if (sscanf(line, "MemTotal: " STRING_REP_USIZE " kB", (size_t*)&total)  == 1)
          total   *= 1024;
-      if (sscanf(line, "MemFree: " STRING_REP_ULONG " kB", (size_t*)&freemem) == 1)
+      if (sscanf(line, "MemFree: " STRING_REP_USIZE " kB", (size_t*)&freemem) == 1)
          freemem *= 1024;
-      if (sscanf(line, "Buffers: " STRING_REP_ULONG " kB", (size_t*)&buffers) == 1)
+      if (sscanf(line, "Buffers: " STRING_REP_USIZE " kB", (size_t*)&buffers) == 1)
          buffers *= 1024;
-      if (sscanf(line, "Cached: " STRING_REP_ULONG " kB", (size_t*)&cached)   == 1)
+      if (sscanf(line, "Cached: " STRING_REP_USIZE " kB", (size_t*)&cached)   == 1)
          cached  *= 1024;
    }
 

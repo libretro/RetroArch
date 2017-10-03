@@ -44,38 +44,41 @@
 
 typedef struct database_state_handle
 {
-   database_info_list_t *info;
-   struct string_list *list;
-   size_t list_index;
-   size_t entry_index;
    uint32_t crc;
    uint32_t archive_crc;
+   size_t list_index;
+   size_t entry_index;
    uint8_t *buf;
    char archive_name[511];
    char serial[4096];
+   database_info_list_t *info;
+   struct string_list *list;
 } database_state_handle_t;
 
 typedef struct db_handle
 {
-   database_state_handle_t state;
-   database_info_handle_t *handle;
-   unsigned status;
-   char playlist_directory[4096];
-   char content_database_path[4096];
-
    bool is_directory;
-   char fullpath[4096];
    bool scan_started;
+   unsigned status;
+   char *playlist_directory;
+   char *content_database_path;
+   char *fullpath;
+   database_info_handle_t *handle;
+   database_state_handle_t state;
 } db_handle_t;
 
-int cue_find_track(const char *cue_path, bool first, size_t *offset, size_t *size,
-               char *track_path, size_t max_len);
+int cue_find_track(const char *cue_path, bool first,
+      size_t *offset, size_t *size,
+      char *track_path, size_t max_len);
 
-bool cue_next_file(intfstream_t *fd, const char *cue_path, char *path, size_t max_len);
+bool cue_next_file(intfstream_t *fd, const char *cue_path,
+      char *path, size_t max_len);
 
-int gdi_find_track(const char *gdi_path, bool first, char *track_path, size_t max_len);
+int gdi_find_track(const char *gdi_path, bool first,
+      char *track_path, size_t max_len);
 
-bool gdi_next_file(intfstream_t *fd, const char *gdi_path, char *path, size_t max_len);
+bool gdi_next_file(intfstream_t *fd, const char *gdi_path,
+      char *path, size_t max_len);
 
 int detect_system(intfstream_t *fd, const char** system_name);
 
@@ -102,8 +105,11 @@ static intfstream_t* intfstream_open_file(const char *path)
    return fd;
 
 error:
-   intfstream_close(fd);
-   free(fd);
+   if (fd)
+   {
+      intfstream_close(fd);
+      free(fd);
+   }
    return NULL;
 }
 
@@ -128,8 +134,11 @@ static intfstream_t *open_memory(void *data, size_t size)
    return fd;
 
 error:
-   intfstream_close(fd);
-   free(fd);
+   if (fd)
+   {
+      intfstream_close(fd);
+      free(fd);
+   }
    return NULL;
 }
 
@@ -153,8 +162,11 @@ open_chd_track(const char *path, int32_t track)
    return fd;
 
 error:
-   intfstream_close(fd);
-   free(fd);
+   if (fd)
+   {
+      intfstream_close(fd);
+      free(fd);
+   }
    return NULL;
 }
 
@@ -205,14 +217,9 @@ static int task_database_iterate_start(database_info_handle_t *db,
    msg[0] = msg[510] = '\0';
 
    snprintf(msg, sizeof(msg),
-         STRING_REP_ULONG "/" STRING_REP_ULONG ": %s %s...\n",
-#if defined(_WIN32) || defined(__STDC_VERSION__) && __STDC_VERSION__>=199901L && !defined(VITA) &&!defined(WIIU)
-         db->list_ptr,
-         db->list->size,
-#else
-         (unsigned long)db->list_ptr,
-         (unsigned long)db->list->size,
-#endif
+         STRING_REP_USIZE "/" STRING_REP_USIZE ": %s %s...\n",
+         (size_t)db->list_ptr,
+         (size_t)db->list->size,
          msg_hash_to_str(MSG_SCANNING),
          name);
 
@@ -267,7 +274,8 @@ static int intfstream_get_serial(intfstream_t *fd, char *serial)
   return 1;
 }
 
-static bool intfstream_file_get_serial(const char *name, size_t offset, size_t size, char *serial)
+static bool intfstream_file_get_serial(const char *name,
+      size_t offset, size_t size, char *serial)
 {
    int rv;
    uint8_t *data     = NULL;
@@ -277,17 +285,24 @@ static bool intfstream_file_get_serial(const char *name, size_t offset, size_t s
    if (!fd)
       return 0;
 
-   intfstream_seek(fd, 0, SEEK_END);
+   if (intfstream_seek(fd, 0, SEEK_END) == -1)
+      goto error;
+
    file_size = intfstream_tell(fd);
-   intfstream_seek(fd, 0, SEEK_SET);
+
+   if (intfstream_seek(fd, 0, SEEK_SET) == -1)
+      goto error;
 
    if (file_size < 0)
       goto error;
 
    if (offset != 0 || size < (size_t) file_size)
    {
+      if (intfstream_seek(fd, offset, SEEK_SET) == -1)
+         goto error;
+
       data = (uint8_t*)malloc(size);
-      intfstream_seek(fd, offset, SEEK_SET);
+         
       if (intfstream_read(fd, data, size) != (ssize_t) size)
       {
          free(data);
@@ -415,38 +430,33 @@ static bool intfstream_file_get_crc(const char *name,
    if (!fd)
       return 0;
 
-   intfstream_seek(fd, 0, SEEK_END);
+   if (intfstream_seek(fd, 0, SEEK_END) == -1)
+      goto error;
+
    file_size = intfstream_tell(fd);
-   intfstream_seek(fd, 0, SEEK_SET);
+
+   if (intfstream_seek(fd, 0, SEEK_SET) == -1)
+      goto error;
 
    if (file_size < 0)
-   {
-      intfstream_close(fd);
-      free(fd);
-      return 0;
-   }
+      goto error;
 
    if (offset != 0 || size < (size_t) file_size)
    {
+      if (intfstream_seek(fd, offset, SEEK_SET) == -1)
+         goto error;
+
       data = (uint8_t*)malloc(size);
-      intfstream_seek(fd, offset, SEEK_SET);
 
       if (intfstream_read(fd, data, size) != (ssize_t) size)
-      {
-         intfstream_close(fd);
-         free(fd);
-         free(data);
-         return 0;
-      }
+         goto error;
+
       intfstream_close(fd);
       free(fd);
       fd = open_memory(data, size);
 
       if (!fd) 
-      {
-         free(data);
-         return 0;
-      }
+         goto error;
    }
 
    rv = intfstream_get_crc(fd, crc);
@@ -454,6 +464,16 @@ static bool intfstream_file_get_crc(const char *name,
    free(fd);
    free(data);
    return rv;
+
+error:
+   if (fd)
+   {
+      intfstream_close(fd);
+      free(fd);
+   }
+   if (data)
+      free(data);
+   return 0;
 }
 
 static int task_database_cue_get_crc(const char *name, uint32_t *crc)
@@ -532,8 +552,11 @@ static bool task_database_chd_get_crc(const char *name, uint32_t *crc)
    {
       RARCH_LOG("CHD '%s' crc: %x\n", name, *crc);
    }
-   intfstream_close(fd);
-   free(fd);
+   if (fd)
+   {
+      intfstream_close(fd);
+      free(fd);
+   }
    return rv;
 }
 
@@ -563,7 +586,10 @@ static void task_database_cue_prune(database_info_handle_t *db,
 
 end:
    if (fd)
+   {
+      intfstream_close(fd);
       free(fd);
+   }
    free(path);
 }
 
@@ -764,10 +790,10 @@ static int database_info_list_iterate_found_match(
    database_info_t *db_info_entry =
       &db_state->info->list[db_state->entry_index];
 
-   db_crc[0] = '\0';
-   db_playlist_path[0] = '\0';
-   db_playlist_base_str[0] = '\0';
-   entry_path_str[0] = '\0';
+   db_crc[0]                      = '\0';
+   db_playlist_path[0]            = '\0';
+   db_playlist_base_str[0]        = '\0';
+   entry_path_str[0]              = '\0';
 
    fill_short_pathname_representation_noext(db_playlist_base_str,
          db_path, PATH_MAX_LENGTH * sizeof(char));
@@ -775,8 +801,10 @@ static int database_info_list_iterate_found_match(
    strlcat(db_playlist_base_str,
          file_path_str(FILE_PATH_LPL_EXTENSION),
          PATH_MAX_LENGTH * sizeof(char));
-   fill_pathname_join(db_playlist_path, _db->playlist_directory,
-         db_playlist_base_str, PATH_MAX_LENGTH * sizeof(char));
+
+   if (!string_is_empty(_db->playlist_directory))
+      fill_pathname_join(db_playlist_path, _db->playlist_directory,
+            db_playlist_base_str, PATH_MAX_LENGTH * sizeof(char));
 
    playlist = playlist_init(db_playlist_path, COLLECTION_SIZE);
 
@@ -945,10 +973,11 @@ static int task_database_iterate_playlist_lutro(
 
    db_playlist_path[0]     = '\0';
 
-   fill_pathname_join(db_playlist_path,
-         _db->playlist_directory,
-         file_path_str(FILE_PATH_LUTRO_PLAYLIST),
-         PATH_MAX_LENGTH * sizeof(char));
+   if (!string_is_empty(_db->playlist_directory))
+      fill_pathname_join(db_playlist_path,
+            _db->playlist_directory,
+            file_path_str(FILE_PATH_LUTRO_PLAYLIST),
+            PATH_MAX_LENGTH * sizeof(char));
 
    playlist = playlist_init(db_playlist_path, COLLECTION_SIZE);
 
@@ -1107,10 +1136,13 @@ static void task_database_handler(retro_task_t *task)
    {
       db->scan_started = true;
 
-      if (db->is_directory)
-         db->handle = database_info_dir_init(db->fullpath, DATABASE_TYPE_ITERATE, task);
-      else
-         db->handle = database_info_file_init(db->fullpath, DATABASE_TYPE_ITERATE, task);
+      if (!string_is_empty(db->fullpath))
+      {
+         if (db->is_directory)
+            db->handle = database_info_dir_init(db->fullpath, DATABASE_TYPE_ITERATE, task);
+         else
+            db->handle = database_info_file_init(db->fullpath, DATABASE_TYPE_ITERATE, task);
+      }
 
       task_free_title(task);
 
@@ -1129,20 +1161,24 @@ static void task_database_handler(retro_task_t *task)
       case DATABASE_STATUS_ITERATE_BEGIN:
          if (dbstate && !dbstate->list)
          {
-            dbstate->list        = dir_list_new_special(
-                  db->content_database_path,
-                  DIR_LIST_DATABASES, NULL);
+            if (!string_is_empty(db->content_database_path))
+               dbstate->list        = dir_list_new_special(
+                     db->content_database_path,
+                     DIR_LIST_DATABASES, NULL);
 
             /* If the scan path matches a database path exactly then
              * save time by only processing that database. */
             if (dbstate->list && db->is_directory)
             {
-	       size_t i;
-               char *dirname = find_last_slash(db->fullpath) + 1;
+               size_t i;
+               char *dirname = NULL;
+               
+               if (!string_is_empty(db->fullpath))
+                  dirname    = find_last_slash(db->fullpath) + 1;
 
                for (i = 0; i < dbstate->list->size; i++)
                {
-		  char *dbname;
+                  char *dbname;
                   char *dbpath = strdup(dbstate->list->elems[i].data);
                   path_remove_extension(dbpath);
 
@@ -1154,7 +1190,7 @@ static void task_database_handler(retro_task_t *task)
                      free(dbpath);
                      single_list = string_list_new();
                      string_list_append(single_list, dbstate->list->elems[i].data,
-                        dbstate->list->elems[i].attr);
+                           dbstate->list->elems[i].attr);
                      dir_list_free(dbstate->list);
                      dbstate->list = single_list;
                      break;
@@ -1215,6 +1251,12 @@ task_finished:
 
    if (db)
    {
+      if (!string_is_empty(db->playlist_directory))
+         free(db->playlist_directory);
+      if (!string_is_empty(db->content_database_path))
+         free(db->content_database_path);
+      if (!string_is_empty(db->fullpath))
+         free(db->fullpath);
       if (db->state.buf)
          free(db->state.buf);
 
@@ -1239,18 +1281,16 @@ bool task_push_dbscan(
    if (!t || !db)
       goto error;
 
-   t->handler        = task_database_handler;
-   t->state          = db;
-   t->callback       = cb;
-   t->title          = strdup(msg_hash_to_str(MSG_PREPARING_FOR_CONTENT_SCAN));
+   t->handler                = task_database_handler;
+   t->state                  = db;
+   t->callback               = cb;
+   t->title                  = strdup(msg_hash_to_str(MSG_PREPARING_FOR_CONTENT_SCAN));
 
-   db->is_directory = directory;
-
-   strlcpy(db->fullpath, fullpath, sizeof(db->fullpath));
-   strlcpy(db->playlist_directory, playlist_directory,
-         sizeof(db->playlist_directory));
-   strlcpy(db->content_database_path, content_database,
-         sizeof(db->content_database_path));
+   db->is_directory          = directory;
+   db->playlist_directory    = NULL;
+   db->fullpath              = strdup(fullpath);
+   db->playlist_directory    = strdup(playlist_directory);
+   db->content_database_path = strdup(content_database);
 
    task_queue_push(t);
 

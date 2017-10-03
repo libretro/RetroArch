@@ -43,12 +43,12 @@ struct playlist_entry
 
 struct content_playlist
 {
-   struct playlist_entry *entries;
+   bool modified;
    size_t size;
    size_t cap;
-   bool modified;
 
    char *conf_path;
+   struct playlist_entry *entries;
 };
 
 typedef int (playlist_sort_fun_t)(
@@ -549,7 +549,7 @@ end:
 playlist_t *playlist_init(const char *path, size_t size)
 {
    struct playlist_entry *entries = NULL;
-   playlist_t           *playlist = (playlist_t*)calloc(1, sizeof(*playlist));
+   playlist_t           *playlist = (playlist_t*)malloc(sizeof(*playlist));
    if (!playlist)
       return NULL;
 
@@ -560,12 +560,14 @@ playlist_t *playlist_init(const char *path, size_t size)
       return NULL;
    }
 
-   playlist->entries   = entries;
+   playlist->modified  = false;
+   playlist->size      = 0;
    playlist->cap       = size;
+   playlist->conf_path = strdup(path);
+   playlist->entries   = entries;
 
    playlist_read_file(playlist, path);
 
-   playlist->conf_path = strdup(path);
    return playlist;
 }
 

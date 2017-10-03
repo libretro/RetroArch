@@ -231,6 +231,7 @@ default_sublabel_macro(action_bind_sublabel_input_overlay_show_physical_inputs_p
 default_sublabel_macro(action_bind_sublabel_core_updater_buildbot_assets_url,      MENU_ENUM_SUBLABEL_BUILDBOT_ASSETS_URL)
 default_sublabel_macro(action_bind_sublabel_core_updater_auto_extract_archive,     MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE)
 default_sublabel_macro(action_bind_sublabel_netplay_refresh_rooms,                 MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS)
+default_sublabel_macro(action_bind_sublabel_rename_entry,                          MENU_ENUM_SUBLABEL_RENAME_ENTRY)
 default_sublabel_macro(action_bind_sublabel_delete_entry,                          MENU_ENUM_SUBLABEL_DELETE_ENTRY)
 default_sublabel_macro(action_bind_sublabel_information,                           MENU_ENUM_SUBLABEL_INFORMATION)
 default_sublabel_macro(action_bind_sublabel_run,                                   MENU_ENUM_SUBLABEL_RUN)
@@ -296,8 +297,10 @@ default_sublabel_macro(action_bind_sublabel_menu_music_tab,                     
 default_sublabel_macro(action_bind_sublabel_menu_video_tab,                        MENU_ENUM_SUBLABEL_XMB_SHOW_VIDEO)
 default_sublabel_macro(action_bind_sublabel_menu_netplay_tab,                      MENU_ENUM_SUBLABEL_XMB_SHOW_NETPLAY)
 default_sublabel_macro(action_bind_sublabel_menu_settings_tab,                     MENU_ENUM_SUBLABEL_XMB_SHOW_SETTINGS)
+default_sublabel_macro(action_bind_sublabel_menu_settings_tab_enable_password,     MENU_ENUM_SUBLABEL_XMB_SHOW_SETTINGS_PASSWORD)
 default_sublabel_macro(action_bind_sublabel_menu_history_tab,                      MENU_ENUM_SUBLABEL_XMB_SHOW_HISTORY)
 default_sublabel_macro(action_bind_sublabel_menu_import_content_tab,               MENU_ENUM_SUBLABEL_XMB_SHOW_ADD)
+default_sublabel_macro(action_bind_sublabel_main_menu_enable_settings,             MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_rgui_show_start_screen,                MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN)
 default_sublabel_macro(action_bind_sublabel_menu_header_opacity,                   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_HEADER_OPACITY)
 default_sublabel_macro(action_bind_sublabel_menu_footer_opacity,                   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_FOOTER_OPACITY)
@@ -372,20 +375,25 @@ static int action_bind_sublabel_netplay_room(
       const char *label, const char *path,
       char *s, size_t len)
 {
+   uint32_t gamecrc       = 0;
+   const char *ra_version = NULL;
+   const char *corename   = NULL;
+   const char *gamename   = NULL;
+   const char *core_ver   = NULL;
    /* This offset may cause issues if any entries are added to this menu */
    unsigned offset        = i - 3;
 
    if (i < 1 || offset > (unsigned)netplay_room_count)
       return 0;
 
-   const char *ra_version = netplay_room_list[offset].retroarch_version;
-   const char *corename   = netplay_room_list[offset].corename;
-   const char *gamename   = netplay_room_list[offset].gamename;
-   const char *core_ver   = netplay_room_list[offset].coreversion;
-   uint32_t     gamecrc   = netplay_room_list[offset].gamecrc;
+   ra_version = netplay_room_list[offset].retroarch_version;
+   corename   = netplay_room_list[offset].corename;
+   gamename   = netplay_room_list[offset].gamename;
+   core_ver   = netplay_room_list[offset].coreversion;
+   gamecrc   = netplay_room_list[offset].gamecrc;
 
-
-   snprintf(s,len, "RetroArch: %s\nCore: %s (%s)\nGame: %s (%08x)",
+   snprintf(s, len,
+	   "RetroArch: %s\nCore: %s (%s)\nGame: %s (%08x)",
       string_is_empty(ra_version) ? "n/a" : ra_version,
       corename, core_ver,
       !string_is_equal(gamename, "N/A") ? gamename : "n/a",
@@ -559,11 +567,17 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_XMB_SHOW_ADD:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_import_content_tab);
             break;
+         case MENU_ENUM_LABEL_XMB_MAIN_MENU_ENABLE_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_main_menu_enable_settings);
+            break;
          case MENU_ENUM_LABEL_XMB_SHOW_HISTORY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_history_tab);
             break;
          case MENU_ENUM_LABEL_XMB_SHOW_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_settings_tab);
+            break;
+         case MENU_ENUM_LABEL_XMB_SHOW_SETTINGS_PASSWORD:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_settings_tab_enable_password);
             break;
          case MENU_ENUM_LABEL_GOTO_IMAGES:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_goto_images);
@@ -757,6 +771,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_INFORMATION:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_information);
+            break;
+         case MENU_ENUM_LABEL_RENAME_ENTRY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_rename_entry);
             break;
          case MENU_ENUM_LABEL_DELETE_ENTRY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_delete_entry);

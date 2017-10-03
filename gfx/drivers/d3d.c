@@ -94,7 +94,7 @@ static bool d3d_init_imports(d3d_video_t *d3d)
 {
    retro_ctx_memory_info_t    mem_info;
    state_tracker_t *state_tracker = NULL;
-   state_tracker_info tracker_info = {0};
+   struct state_tracker_info tracker_info = {0};
 
    if (!d3d->shader.variables)
       return true;
@@ -136,8 +136,8 @@ static bool d3d_init_imports(d3d_video_t *d3d)
 static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
 {
    unsigned current_width, current_height, out_width, out_height;
-   unsigned i            = 0;
-   LinkInfo link_info    = {0};
+   unsigned i                   = 0;
+   struct LinkInfo link_info    = {0};
 
    (void)i;
    (void)current_width;
@@ -222,7 +222,7 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
 static bool d3d_init_singlepass(d3d_video_t *d3d)
 {
 #ifndef _XBOX
-   video_shader_pass *pass = NULL;
+   struct video_shader_pass *pass = NULL;
 
    if (!d3d)
       return false;
@@ -230,7 +230,7 @@ static bool d3d_init_singlepass(d3d_video_t *d3d)
    memset(&d3d->shader, 0, sizeof(d3d->shader));
    d3d->shader.passes                    = 1;
 
-   pass                                  = (video_shader_pass*)
+   pass                                  = (struct video_shader_pass*)
       &d3d->shader.pass[0];
 
    pass->fbo.valid                       = true;
@@ -238,8 +238,10 @@ static bool d3d_init_singlepass(d3d_video_t *d3d)
    pass->fbo.type_y                      = RARCH_SCALE_VIEWPORT;
    pass->fbo.scale_x                     = pass->fbo.scale_y;
    pass->fbo.type_x                      = pass->fbo.type_y;
-   strlcpy(pass->source.path, d3d->shader_path.c_str(),
-         sizeof(pass->source.path));
+
+   if (!string_is_empty(d3d->shader_path))
+      strlcpy(pass->source.path, d3d->shader_path,
+            sizeof(pass->source.path));
 #endif
 
    return true;
@@ -250,8 +252,8 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
 {
    unsigned i;
    bool use_extra_pass     = false;
-   video_shader_pass *pass = NULL;
-   config_file_t *conf     = config_file_new(d3d->shader_path.c_str());
+   struct video_shader_pass *pass = NULL;
+   config_file_t *conf     = !string_is_empty(d3d->shader_path) ? config_file_new(d3d->shader_path) : NULL;
 
    if (!conf)
    {
@@ -270,7 +272,8 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
 #endif
    config_file_free(conf);
 #ifdef HAVE_SHADERPIPELINE
-   video_shader_resolve_relative(&d3d->shader, d3d->shader_path.c_str());
+   if (!string_is_empty(d3d->shader_path))
+      video_shader_resolve_relative(&d3d->shader, d3d->shader_path);
 #endif
    RARCH_LOG("[D3D]: Found %u shaders.\n", d3d->shader.passes);
 
@@ -291,7 +294,7 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
    if (use_extra_pass)
    {
       d3d->shader.passes++;
-      pass              = (video_shader_pass*)
+      pass              = (struct video_shader_pass*)
          &d3d->shader.pass[d3d->shader.passes - 1];
 
       pass->fbo.scale_x = pass->fbo.scale_y = 1.0f;
@@ -300,7 +303,7 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
    }
    else
    {
-      pass              = (video_shader_pass*)
+      pass              = (struct video_shader_pass*)
          &d3d->shader.pass[d3d->shader.passes - 1];
 
       pass->fbo.scale_x = pass->fbo.scale_y = 1.0f;
@@ -314,7 +317,8 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
 static bool d3d_process_shader(d3d_video_t *d3d)
 {
 #ifdef HAVE_FBO
-   if (string_is_equal_fast(path_get_extension(d3d->shader_path.c_str()), "cgp", 3))
+   if (d3d && !string_is_empty(d3d->shader_path) &&
+         string_is_equal_fast(path_get_extension(d3d->shader_path), "cgp", 3))
       return d3d_init_multipass(d3d);
 #endif
 
@@ -418,9 +422,9 @@ static void d3d_overlay_render(d3d_video_t *d3d, video_frame_info_t *video_info,
             D3DDECLUSAGE_COLOR, 0},
          D3DDECL_END()
       };
-      d3d->dev->CreateVertexDeclaration(vElems, &vertex_decl);
+      d3d_vertex_declaration_new(d3d->dev, &vElems, (void**)&vertex_decl);
       d3d_set_vertex_declaration(d3d->dev, vertex_decl);
-      vertex_decl->Release();
+      d3d_vertex_declaration_free(vertex_decl);
    }
 #endif
 
@@ -601,8 +605,10 @@ void d3d_make_d3dpp(void *data,
    if (widescreen_mode)
       d3dpp->Flags |= D3DPRESENTFLAG_WIDESCREEN;
 #elif defined(_XBOX360)
+#if 0
    if (!widescreen_mode)
       d3dpp->Flags |= D3DPRESENTFLAG_NO_LETTERBOX;
+#endif
 
    if (global->console.screen.gamma_correction)
       d3dpp->FrontBufferFormat       = (D3DFORMAT)
@@ -617,7 +623,8 @@ void d3d_make_d3dpp(void *data,
 static bool d3d_init_base(void *data, const video_info_t *info)
 {
    D3DPRESENT_PARAMETERS d3dpp;
-   d3d_video_t *d3d = (d3d_video_t*)data;
+   HWND focus_window = NULL;
+   d3d_video_t *d3d  = (d3d_video_t*)data;
 
    d3d_make_d3dpp(d3d, info, &d3dpp);
 
@@ -631,49 +638,18 @@ static bool d3d_init_base(void *data, const video_info_t *info)
 #ifdef _XBOX360
    d3d->cur_mon_id = 0;
 #endif
-
-#ifdef _XBOX
-      if (FAILED(d3d->d3d_err = g_pD3D->CreateDevice(
-            d3d->cur_mon_id,
-            D3DDEVTYPE_HAL,
-            NULL,
-            D3DCREATE_HARDWARE_VERTEXPROCESSING,
-            &d3dpp,
-            &d3d->dev)))
-#else
-   if (FAILED(d3d->d3d_err = g_pD3D->CreateDevice(
-            d3d->cur_mon_id,
-            D3DDEVTYPE_HAL,
-            win32_get_window(),
-            D3DCREATE_HARDWARE_VERTEXPROCESSING,
-            &d3dpp,
-            &d3d->dev)))
+#ifndef _XBOX
+   focus_window    = win32_get_window();
 #endif
+
+   if (!d3d_create_device(&d3d->dev, &d3dpp,
+            g_pD3D, 
+            focus_window,
+            d3d->cur_mon_id)
+      )
    {
-      RARCH_WARN("[D3D]: Failed to init device with hardware vertex processing (code: 0x%x). Trying to fall back to software vertex processing.\n",
-                 (unsigned)d3d->d3d_err);
-
-#ifdef _XBOX
-      if (FAILED(d3d->d3d_err = g_pD3D->CreateDevice(
-                  d3d->cur_mon_id,
-                  D3DDEVTYPE_HAL,
-                  NULL,
-                  D3DCREATE_SOFTWARE_VERTEXPROCESSING,
-                  &d3dpp,
-                  &d3d->dev)))
-#else
-      if (FAILED(d3d->d3d_err = g_pD3D->CreateDevice(
-                  d3d->cur_mon_id,
-                  D3DDEVTYPE_HAL,
-                  win32_get_window(),
-                  D3DCREATE_SOFTWARE_VERTEXPROCESSING,
-                  &d3dpp,
-                  &d3d->dev)))
-#endif
-      {
-         RARCH_ERR("[D3D]: Failed to initialize device.\n");
-         return false;
-      }
+      RARCH_ERR("[D3D]: Failed to initialize device.\n");
+      return false;
    }
 
    return true;
@@ -751,15 +727,15 @@ static void d3d_calculate_rect(void *data,
          }
          else if (device_aspect > desired_aspect)
          {
-            delta       = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
-            *x           = int(roundf(*width * (0.5f - delta)));
-            *width       = unsigned(roundf(2.0f * (*width) * delta));
+            delta        = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
+            *x           = (int)(roundf(*width * (0.5f - delta)));
+            *width       = (unsigned)(roundf(2.0f * (*width) * delta));
          }
          else
          {
-            delta       = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
-            *y           = int(roundf(*height * (0.5f - delta)));
-            *height      = unsigned(roundf(2.0f * (*height) * delta));
+            delta        = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
+            *y           = (int)(roundf(*height * (0.5f - delta)));
+            *height      = (unsigned)(roundf(2.0f * (*height) * delta));
          }
       }
    }
@@ -992,7 +968,23 @@ static bool d3d_construct(d3d_video_t *d3d,
       void **input_data)
 {
    gfx_ctx_input_t inp;
-   unsigned full_x, full_y;
+#ifdef HAVE_MONITOR
+   bool windowed_full;
+   RECT mon_rect;
+   MONITORINFOEX current_mon;
+   HMONITOR hm_to_use;
+#endif
+#ifdef HAVE_SHADERS
+   enum rarch_shader_type type;
+#endif
+#ifdef HAVE_WINDOW
+   DWORD style;
+   unsigned win_width        = 0;
+   unsigned win_height       = 0;
+   RECT rect                 = {0};
+#endif
+   unsigned full_x           = 0;
+   unsigned full_y           = 0;
    settings_t    *settings   = config_get_ptr();
 
    d3d->should_resize        = false;
@@ -1021,11 +1013,6 @@ static bool d3d_construct(d3d_video_t *d3d,
 #endif
 
 #ifdef HAVE_MONITOR
-   bool windowed_full;
-   RECT mon_rect;
-   MONITORINFOEX current_mon;
-   HMONITOR hm_to_use;
-
    win32_monitor_info(&current_mon, &hm_to_use, &d3d->cur_mon_id);
    mon_rect = current_mon.rcMonitor;
    g_resize_width  = info->width;
@@ -1057,10 +1044,6 @@ static bool d3d_construct(d3d_video_t *d3d,
    }
 
 #ifdef HAVE_WINDOW
-   DWORD style;
-   unsigned win_width, win_height;
-   RECT rect            = {0};
-
    video_driver_get_size(&win_width, &win_height);
 
    win32_set_style(&current_mon, &hm_to_use, &win_width, &win_height,
@@ -1077,10 +1060,14 @@ static bool d3d_construct(d3d_video_t *d3d,
    /* This should only be done once here
     * to avoid set_shader() to be overridden
     * later. */
-   enum rarch_shader_type type =
+   type =
       video_shader_parse_type(settings->paths.path_shader, RARCH_SHADER_NONE);
    if (settings->bools.video_shader_enable && type == RARCH_SHADER_CG)
-      d3d->shader_path = settings->paths.path_shader;
+   {
+      if (!string_is_empty(d3d->shader_path))
+         free(d3d->shader_path);
+      d3d->shader_path = strdup(settings->paths.path_shader);
+   }
 
    if (!d3d_process_shader(d3d))
       return false;
@@ -1159,7 +1146,7 @@ static void *d3d_init(const video_info_t *info,
    }
 #endif
 
-   d3d = new d3d_video_t();
+   d3d = (d3d_video_t*)calloc(1, sizeof(*d3d));
    if (!d3d)
       goto error;
 
@@ -1200,7 +1187,7 @@ static void *d3d_init(const video_info_t *info,
 error:
    video_context_driver_destroy();
    if (d3d)
-      delete d3d;
+      free(d3d);
    return NULL;
 }
 
@@ -1212,9 +1199,11 @@ static void d3d_free_overlays(d3d_video_t *d3d)
    if (!d3d)
       return;
 
-   for (i = 0; i < d3d->overlays.size(); i++)
+   for (i = 0; i < d3d->overlays_size; i++)
       d3d_free_overlay(d3d, &d3d->overlays[i]);
-   d3d->overlays.clear();
+   free(d3d->overlays);
+   d3d->overlays      = NULL;
+   d3d->overlays_size = 0;
 }
 #endif
 
@@ -1225,32 +1214,39 @@ static void d3d_free(void *data)
    if (!d3d)
       return;
 
-   d3d_deinitialize(d3d);
 #ifdef HAVE_OVERLAY
    d3d_free_overlays(d3d);
+   if (d3d->overlays)
+      free(d3d->overlays);
+   d3d->overlays      = NULL;
+   d3d->overlays_size = 0;
 #endif
 
-   video_context_driver_free();
-
-#ifndef _XBOX
 #ifdef HAVE_MENU
    d3d_free_overlay(d3d, d3d->menu);
    if (d3d->menu)
       free(d3d->menu);
-   d3d->menu = NULL;
-#endif
+   d3d->menu          = NULL;
 #endif
 
+   d3d_deinitialize(d3d);
+
+   video_context_driver_free();
+
+   if (!string_is_empty(d3d->shader_path))
+      free(d3d->shader_path);
+
+   d3d->shader_path = NULL;
    d3d_device_free(d3d->dev, g_pD3D);
-   d3d->dev = NULL;
-   g_pD3D   = NULL;
+   d3d->dev         = NULL;
+   g_pD3D           = NULL;
 
 #ifndef _XBOX
    win32_monitor_from_window();
 #endif
 
    if (d3d)
-      delete d3d;
+      free(d3d);
 
 #ifndef _XBOX
    win32_destroy_window();
@@ -1296,7 +1292,8 @@ static bool d3d_overlay_load(void *data,
       const void *image_data, unsigned num_images)
 {
    unsigned i, y;
-   d3d_video_t *d3d = (d3d_video_t*)data;
+   overlay_t *new_overlays            = NULL;
+   d3d_video_t *d3d                   = (d3d_video_t*)data;
    const struct texture_image *images = (const struct texture_image*)
       image_data;
 
@@ -1304,7 +1301,8 @@ static bool d3d_overlay_load(void *data,
 	   return false;
 
    d3d_free_overlays(d3d);
-   d3d->overlays.resize(num_images);
+   d3d->overlays      = (overlay_t*)calloc(num_images, sizeof(*d3d->overlays));
+   d3d->overlays_size = num_images;
 
    for (i = 0; i < num_images; i++)
    {
@@ -1357,7 +1355,7 @@ static void d3d_overlay_enable(void *data, bool state)
    if (!d3d)
       return;
 
-   for (i = 0; i < d3d->overlays.size(); i++)
+   for (i = 0; i < d3d->overlays_size; i++)
       d3d->overlays_enabled = state;
 
    video_context_driver_show_mouse(&state);
@@ -1368,7 +1366,7 @@ static void d3d_overlay_full_screen(void *data, bool enable)
    unsigned i;
    d3d_video_t *d3d = (d3d_video_t*)data;
 
-   for (i = 0; i < d3d->overlays.size(); i++)
+   for (i = 0; i < d3d->overlays_size; i++)
       d3d->overlays[i].fullscreen = enable;
 }
 
@@ -1401,6 +1399,7 @@ static bool d3d_frame(void *data, const void *frame,
       uint64_t frame_count, unsigned pitch,
       const char *msg, video_frame_info_t *video_info)
 {
+   D3DVIEWPORT screen_vp;
    unsigned i                          = 0;
    d3d_video_t *d3d                    = (d3d_video_t*)data;
 #ifndef _XBOX
@@ -1441,7 +1440,6 @@ static bool d3d_frame(void *data, const void *frame,
 
    /* render_chain() only clears out viewport,
     * clear out everything. */
-   D3DVIEWPORT screen_vp;
    screen_vp.X      = 0;
    screen_vp.Y      = 0;
    screen_vp.MinZ   = 0;
@@ -1486,7 +1484,7 @@ static bool d3d_frame(void *data, const void *frame,
 #ifdef HAVE_OVERLAY
    if (d3d->overlays_enabled)
    {
-      for (i = 0; i < d3d->overlays.size(); i++)
+      for (i = 0; i < d3d->overlays_size; i++)
          d3d_overlay_render(d3d, video_info, &d3d->overlays[i]);
    }
 #endif
@@ -1516,28 +1514,33 @@ static bool d3d_set_shader(void *data,
       enum rarch_shader_type type, const char *path)
 {
    d3d_video_t *d3d       = (d3d_video_t*)data;
-   std::string old_shader = d3d ? d3d->shader_path : "";
-   std::string shader     = "";
+   char *old_shader       = (d3d && !string_is_empty(d3d->shader_path)) ? strdup(d3d->shader_path) : NULL;
+
+   if (!string_is_empty(d3d->shader_path))
+      free(d3d->shader_path);
+   d3d->shader_path = NULL;
 
    switch (type)
    {
       case RARCH_SHADER_CG:
       case RARCH_SHADER_HLSL:
-         if (path)
-            shader   = path;
+         if (!string_is_empty(path))
+            d3d->shader_path = strdup(path);
          break;
       default:
          break;
    }
 
-   d3d->shader_path       = shader;
-
    if (!d3d_process_shader(d3d) || !d3d_restore(d3d))
    {
       RARCH_ERR("[D3D]: Setting shader failed.\n");
-      d3d->shader_path = old_shader;
-      d3d_process_shader(d3d);
-      d3d_restore(d3d);
+      if (!string_is_empty(old_shader))
+      {
+         d3d->shader_path = strdup(old_shader);
+         d3d_process_shader(d3d);
+         d3d_restore(d3d);
+      }
+      free(old_shader);
       return false;
    }
 

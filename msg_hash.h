@@ -290,6 +290,9 @@ enum msg_hash_enums
    MSG_INPUT_PRESET_FILENAME,
    MSG_INPUT_CHEAT_FILENAME,
    MSG_INPUT_RENAME_ENTRY,
+   MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
+   MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,
+   MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
    MSG_REMAP_FILE_SAVED_SUCCESSFULLY,
    MSG_REMAP_FILE_REMOVED_SUCCESSFULLY,
    MSG_SHADER_PRESET_SAVED_SUCCESSFULLY,
@@ -689,9 +692,11 @@ enum msg_hash_enums
    MENU_LABEL(XMB_SCALE_FACTOR),
    MENU_LABEL(XMB_FONT),
    MENU_LABEL(XMB_THEME),
+   MENU_LABEL(XMB_MAIN_MENU_ENABLE_SETTINGS),
    MENU_LABEL(XMB_MENU_COLOR_THEME),
    MENU_LABEL(XMB_SHADOWS_ENABLE),
    MENU_LABEL(XMB_SHOW_SETTINGS),
+   MENU_LABEL(XMB_SHOW_SETTINGS_PASSWORD),
    MENU_LABEL(XMB_SHOW_FAVORITES),
    MENU_LABEL(XMB_SHOW_IMAGES),
    MENU_LABEL(XMB_SHOW_MUSIC),
@@ -1403,6 +1408,7 @@ enum msg_hash_enums
 
    MENU_LABEL(CHEAT_FILE_SAVE_AS),
    MENU_LABEL(DELETE_ENTRY),
+   MENU_LABEL(RENAME_ENTRY),
    MENU_LABEL(RESTART_RETROARCH),
 
    MENU_LABEL(TAKE_SCREENSHOT),
@@ -1641,7 +1647,6 @@ enum msg_hash_enums
 
 /* Deferred */
 
-#define MENU_LABEL_DEFERRED_BROWSE_URL_LIST                                    0x6358c2c4U
 #define MENU_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST                            0x364dfa2bU
 #define MENU_LABEL_DEFERRED_VIDEO_FILTER                                       0x966ad201U
 #define MENU_LABEL_DEFERRED_CORE_LIST_SET                                      0xa6d5fdb4U
@@ -1690,17 +1695,10 @@ enum msg_hash_enums
 
 #define MENU_LABEL_CHEEVOS_DESCRIPTION                                         0x7e00e0f5U
 
-/* Playlist settings */
-
-#define MENU_LABEL_PLAYLIST_SETTINGS_BEGIN                                     0x80a8d2cbU
-
 /* Accounts settings */
 
 #define MENU_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS                                 0xe6b7c16cU
 #define MENU_LABEL_ACCOUNTS_LIST                                               0x774c15a0U
-
-#define MENU_LABEL_VALUE_ACCOUNTS_LIST_END                                     0x3d559522U
-
 
 #define MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST                            0xb4f82700U
 
@@ -1716,8 +1714,6 @@ enum msg_hash_enums
 /* Information settings */
 
 #define MENU_LABEL_INFORMATION_LIST                                            0x225e7606U
-#define MENU_LABEL_SYSTEM_INFORMATION                                          0x206ebf0fU
-#define MENU_LABEL_NETWORK_INFORMATION                                         0x73ae3cb4U
 
 #define MENU_LABEL_CONTENT_SETTINGS                                            0xe789f7f6U
 
@@ -1730,9 +1726,6 @@ enum msg_hash_enums
 
 /* Video settings */
 #define MENU_LABEL_VIDEO_FONT_PATH                                             0xd0de729eU
-#define MENU_LABEL_VIDEO_VI_WIDTH                                              0x6e4a6d3aU
-#define MENU_LABEL_VIDEO_VFILTER                                               0x664f8397U
-#define MENU_LABEL_VIDEO_GAMMA                                                 0x08a951beU
 
 #define MENU_LABEL_VIDEO_SHADER_PRESET_SAVE_AS                                 0x3d6e5ce5U
 #define MENU_LABEL_VIDEO_SHADER_DEFAULT_FILTER                                 0x4468cb1bU
@@ -1882,9 +1875,6 @@ enum msg_hash_enums
 #define MENU_LABEL_SETTINGS                                                    0x1304dc16U
 #define MENU_LABEL_HELP                                                        0x7c97d2eeU
 #define MENU_VALUE_HORIZONTAL_MENU                                             0x35761704U
-#define MENU_LABEL_QUIT_RETROARCH                                              0x84b0bc71U
-
-#define MENU_LABEL_BROWSE_URL_LIST                                             0xa7d1a004U
 
 const char *msg_hash_to_str(enum msg_hash_enums msg);
 

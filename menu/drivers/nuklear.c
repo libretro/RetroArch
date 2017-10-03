@@ -464,8 +464,8 @@ static bool nk_menu_init_list(void *data)
 
    menu_displaylist_info_init(&info);
 
-   strlcpy(info.label,
-         msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB), sizeof(info.label));
+   info.label = strdup(
+         msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB));
    info.enum_idx = MENU_ENUM_LABEL_HISTORY_TAB;
 
    menu_entries_append_enum(menu_stack,
@@ -501,11 +501,13 @@ static int nk_menu_iterate(void *data, void *userdata, enum menu_action action)
    if (!nk)
       return -1;
 
+   menu_entry_init(&entry);
    menu_entry_get(&entry, 0, selection, NULL, false);
 
    nk->action       = action;
 
    ret = menu_entry_action(&entry, selection, action);
+   menu_entry_free(&entry);
    if (ret)
       return -1;
    return 0;

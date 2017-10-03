@@ -282,8 +282,13 @@ static int deferred_push_core_collection_list_deferred(
 static int deferred_push_database_manager_list_deferred(
       menu_displaylist_info_t *info)
 {
-   strlcpy(info->path_b,    info->path, sizeof(info->path_b));
-   info->path_c[0] = '\0';
+   if (info->path_b && !string_is_empty(info->path_b))
+      free(info->path_b);
+   if (info->path_c && !string_is_empty(info->path_c))
+      free(info->path_c);
+
+   info->path_b    = strdup(info->path);
+   info->path_c    = NULL;
 
    return deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
 }
@@ -441,7 +446,8 @@ static int deferred_push_cursor_manager_list_deferred(
    char *query                    = NULL;
    char *rdb                      = NULL;
    settings_t *settings           = config_get_ptr();
-   config_file_t *conf            = config_file_new(info->path);
+   const char *path               = info->path;
+   config_file_t *conf            = path ? config_file_new(path) : NULL;
 
    if (!conf || !settings)
       goto end;
@@ -458,11 +464,18 @@ static int deferred_push_cursor_manager_list_deferred(
          settings->paths.path_content_database,
          rdb, sizeof(rdb_path));
 
-   strlcpy(info->path_b, info->path, sizeof(info->path_b));
-   strlcpy(info->path,   rdb_path,   sizeof(info->path));
-   strlcpy(info->path_c,    query,   sizeof(info->path_c));
+   if (info->path_b && !string_is_empty(info->path_b))
+      free(info->path_b);
+   if (info->path_c && !string_is_empty(info->path_c))
+      free(info->path_c);
+   if (info->path && !string_is_empty(info->path))
+      free(info->path);
 
-   ret = deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
+   info->path_b    = strdup(info->path);
+   info->path_c    = strdup(query);
+   info->path      = strdup(rdb_path);
+
+   ret             = deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
 
 end:
    if (conf)
@@ -477,9 +490,13 @@ end:
 static int deferred_push_cursor_manager_list_generic(
       menu_displaylist_info_t *info, enum database_query_type type)
 {
-   int ret                       = -1;
    char query[PATH_MAX_LENGTH];
-   struct string_list *str_list  = string_split(info->path, "|"); 
+   int ret                       = -1;
+   const char *path              = info->path;
+   struct string_list *str_list  = path ? string_split(path, "|") : NULL; 
+
+   if (!str_list)
+      goto end;
 
    query[0] = '\0';
 
@@ -488,9 +505,16 @@ static int deferred_push_cursor_manager_list_generic(
    if (string_is_empty(query))
       goto end;
 
-   strlcpy(info->path,   str_list->elems[1].data, sizeof(info->path));
-   strlcpy(info->path_b, str_list->elems[0].data, sizeof(info->path_b));
-   strlcpy(info->path_c, query, sizeof(info->path_c));
+   if (info->path_b && !string_is_empty(info->path_b))
+      free(info->path_b);
+   if (info->path_c && !string_is_empty(info->path_c))
+      free(info->path_c);
+   if (info->path && !string_is_empty(info->path))
+      free(info->path);
+
+   info->path   = strdup(str_list->elems[1].data);
+   info->path_b = strdup(str_list->elems[0].data);
+   info->path_c = strdup(query);
 
    ret = deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
 
@@ -613,9 +637,15 @@ static int deferred_push_cursor_manager_list_deferred_query_subsearch(
    if (string_is_empty(query))
       goto end;
 
-   strlcpy(info->path,   str_list->elems[1].data, sizeof(info->path));
-   strlcpy(info->path_b, str_list->elems[0].data, sizeof(info->path_b));
-   strlcpy(info->path_c, query, sizeof(info->path_c));
+   if (info->path && !string_is_empty(info->path))
+      free(info->path);
+   if (info->path_b && !string_is_empty(info->path_b))
+      free(info->path_b);
+   if (info->path_c && !string_is_empty(info->path_c))
+      free(info->path_c);
+   info->path   = strdup(str_list->elems[1].data);
+   info->path_b = strdup(str_list->elems[0].data);
+   info->path_c = strdup(query);
 
    ret = deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
 
@@ -629,10 +659,11 @@ end:
 static int general_push(menu_displaylist_info_t *info,
       unsigned id, enum menu_displaylist_ctl_state state)
 {
-   settings_t        *settings = config_get_ptr();
-   core_info_list_t *list      = NULL;
-   menu_handle_t        *menu  = NULL;
-   rarch_system_info_t *system = runloop_get_system_info();
+   settings_t                  *settings = config_get_ptr();
+   char                      *newstring2 = NULL;
+   core_info_list_t           *list      = NULL;
+   menu_handle_t                  *menu  = NULL;
+   rarch_system_info_t           *system = runloop_get_system_info();
    struct retro_system_info *system_menu = &system->info;
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
@@ -646,10 +677,26 @@ static int general_push(menu_displaylist_info_t *info,
       case PUSH_DETECT_CORE_LIST:
          break;
       default:
-         fill_pathname_join(info->path, menu->scratch2_buf,
-               menu->scratch_buf, sizeof(info->path));
-         fill_pathname_join(info->label, menu->scratch2_buf,
-               menu->scratch_buf, sizeof(info->label));
+         {
+            char tmp_str[PATH_MAX_LENGTH];
+            char tmp_str2[PATH_MAX_LENGTH];
+
+            tmp_str[0] = '\0';
+            tmp_str2[0] = '\0';
+
+            fill_pathname_join(tmp_str, menu->scratch2_buf,
+                  menu->scratch_buf, sizeof(tmp_str));
+            fill_pathname_join(tmp_str2, menu->scratch2_buf,
+                  menu->scratch_buf, sizeof(tmp_str2));
+
+            if (info->path && !string_is_empty(info->path))
+               free(info->path);
+            if (info->label && !string_is_empty(info->label))
+               free(info->label);
+
+            info->path  = strdup(tmp_str);
+            info->label = strdup(tmp_str2);
+         }
          break;
    }
 
@@ -666,52 +713,75 @@ static int general_push(menu_displaylist_info_t *info,
          break;
    }
 
+   newstring2                     = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+
+   newstring2[0]                  = '\0';
+
    switch (id)
    {
       case PUSH_ARCHIVE_OPEN:
+
          if (system_menu && system_menu->valid_extensions)
          {
             if (*system_menu->valid_extensions)
-               strlcpy(info->exts, system_menu->valid_extensions,
-                     sizeof(info->exts));
+               strlcpy(newstring2, system_menu->valid_extensions,
+                     PATH_MAX_LENGTH * sizeof(char));
          }
          else
-            strlcpy(info->exts, system->valid_extensions, sizeof(info->exts));
+         {
+            strlcpy(newstring2, system->valid_extensions,
+                  PATH_MAX_LENGTH * sizeof(char));
+         }
          break;
       case PUSH_DEFAULT:
-         if (menu_setting_get_browser_selection_type(info->setting) == ST_DIR)
          {
-         }
-         else if (system_menu && system_menu->valid_extensions)
-         {
-            if (*system_menu->valid_extensions)
-               strlcpy(info->exts, system_menu->valid_extensions,
-                     sizeof(info->exts));
-         }
-         else
-         {
-            if (!string_is_empty(system->valid_extensions))
-               strlcpy(info->exts, system->valid_extensions, sizeof(info->exts));
-         }
-         {
-            union string_list_elem_attr attr;
-            size_t path_size               = PATH_MAX_LENGTH * sizeof(char);
-            char *newstring2               = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-            struct string_list *str_list3  = string_split(info->exts, "|"); 
+            bool new_exts_allocated = false;
+            char *new_exts          = NULL;
 
-            newstring2[0] = '\0';
-            attr.i        = 0;
+            if (menu_setting_get_browser_selection_type(info->setting) == ST_DIR)
+            {
+            }
+            else if (system_menu && system_menu->valid_extensions)
+            {
+               if (*system_menu->valid_extensions)
+               {
+                  new_exts           = strdup(system_menu->valid_extensions);
+                  new_exts_allocated = true;
+               }
+            }
+            else
+            {
+               if (!string_is_empty(system->valid_extensions))
+               {
+                  new_exts           = strdup(system->valid_extensions);
+                  new_exts_allocated = true;
+               }
+            }
+
+            if (!new_exts)
+               new_exts = info->exts;
+
+            if (new_exts && !string_is_empty(new_exts))
+            {
+               union string_list_elem_attr attr;
+               size_t path_size               = PATH_MAX_LENGTH * sizeof(char);
+               struct string_list *str_list3  = string_split(new_exts, "|"); 
+
+               attr.i                         = 0;
 
 #ifdef HAVE_IBXM
-            string_list_append(str_list3, "s3m", attr);
-            string_list_append(str_list3, "mod", attr);
-            string_list_append(str_list3, "xm", attr);
+               string_list_append(str_list3, "s3m", attr);
+               string_list_append(str_list3, "mod", attr);
+               string_list_append(str_list3, "xm", attr);
 #endif
-            string_list_join_concat(newstring2, path_size,
-                  str_list3, "|");
-            string_list_free(str_list3);
-            strlcpy(info->exts, newstring2, sizeof(info->exts));
-            free(newstring2);
+               string_list_join_concat(newstring2, path_size,
+                     str_list3, "|");
+               string_list_free(str_list3);
+
+            }
+
+            if (new_exts_allocated)
+               free(new_exts);
          }
          break;
       case PUSH_ARCHIVE_OPEN_DETECT_CORE:
@@ -722,8 +792,8 @@ static int general_push(menu_displaylist_info_t *info,
             char *newstring                  = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
             struct string_list *str_list2    = string_list_new();
 
-            newstring[0] = '\0';
-            attr.i       = 0;
+            newstring[0]                     = '\0';
+            attr.i                           = 0;
 
             if (system_menu && system_menu->valid_extensions)
             {
@@ -765,14 +835,9 @@ static int general_push(menu_displaylist_info_t *info,
             string_list_join_concat(newstring, path_size,
                   str_list2, "|");
 
-            strlcpy(info->exts, newstring, sizeof(info->exts));
-
             {
                union string_list_elem_attr attr;
-               char *newstring2               = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-               struct string_list *str_list3  = string_split(info->exts, "|"); 
-
-               newstring2[0]                  = '\0';
+               struct string_list *str_list3  = string_split(newstring, "|"); 
                attr.i                         = 0;
 
 #ifdef HAVE_IBXM
@@ -783,8 +848,6 @@ static int general_push(menu_displaylist_info_t *info,
                string_list_join_concat(newstring2, path_size,
                      str_list3, "|");
                string_list_free(str_list3);
-               strlcpy(info->exts, newstring2, sizeof(info->exts));
-               free(newstring2);
             }
             free(newstring);
             string_list_free(str_list2);
@@ -804,19 +867,30 @@ static int general_push(menu_displaylist_info_t *info,
       if (settings->bools.multimedia_builtin_mediaplayer_enable)
       {
          libretro_ffmpeg_retro_get_system_info(&sysinfo);
-         strlcat(info->exts, "|", sizeof(info->exts));
-         strlcat(info->exts, sysinfo.valid_extensions, sizeof(info->exts));
+         strlcat(newstring2, "|", PATH_MAX_LENGTH * sizeof(char));
+         strlcat(newstring2, sysinfo.valid_extensions,
+               PATH_MAX_LENGTH * sizeof(char));
       }
 #endif
 #ifdef HAVE_IMAGEVIEWER
       if (settings->bools.multimedia_builtin_imageviewer_enable)
       {
          libretro_imageviewer_retro_get_system_info(&sysinfo);
-         strlcat(info->exts, "|", sizeof(info->exts));
-         strlcat(info->exts, sysinfo.valid_extensions, sizeof(info->exts));
+         strlcat(newstring2, "|",
+               PATH_MAX_LENGTH * sizeof(char));
+         strlcat(newstring2, sysinfo.valid_extensions,
+               PATH_MAX_LENGTH * sizeof(char));
       }
 #endif
    }
+
+   if (!string_is_empty(newstring2))
+   {
+      if (info->exts && !string_is_empty(info->exts))
+         free(info->exts);
+      info->exts = strdup(newstring2);
+   }
+   free(newstring2);
 
    return deferred_push_dlist(info, state);
 }

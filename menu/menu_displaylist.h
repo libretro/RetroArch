@@ -184,11 +184,11 @@ typedef struct menu_displaylist_info
    /* does the navigation index need to be cleared to 0 (first entry) ? */
    bool need_navigation_clear;
 
-   char path[PATH_MAX_LENGTH];
-   char path_b[PATH_MAX_LENGTH];
-   char path_c[PATH_MAX_LENGTH];
-   char exts[PATH_MAX_LENGTH];
-   char label[255];
+   char *path;
+   char *path_b;
+   char *path_c;
+   char *exts;
+   char *label;
    unsigned type;
    unsigned type_default;
    unsigned flags;

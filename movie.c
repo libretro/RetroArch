@@ -55,16 +55,16 @@ struct bsv_movie
 
 struct bsv_state
 {
-   /* Movie playback/recording support. */
-   char movie_path[PATH_MAX_LENGTH];
-   bool movie_playback;
-   bool eof_exit;
-
-   /* Immediate playback/recording. */
-   char movie_start_path[PATH_MAX_LENGTH];
    bool movie_start_recording;
    bool movie_start_playback;
+   bool movie_playback;
+   bool eof_exit;
    bool movie_end;
+
+   /* Movie playback/recording support. */
+   char movie_path[PATH_MAX_LENGTH];
+   /* Immediate playback/recording. */
+   char movie_start_path[PATH_MAX_LENGTH];
 };
 
 static bsv_movie_t     *bsv_movie_state_handle = NULL;
@@ -104,12 +104,12 @@ static bool bsv_movie_init_playback(bsv_movie_t *handle, const char *path)
 
    state_size = swap_if_big32(header[STATE_SIZE_INDEX]);
 
-   #if 0
-      RARCH_ERR("----- debug %u -----\n", header[0]);
-      RARCH_ERR("----- debug %u -----\n", header[1]);
-      RARCH_ERR("----- debug %u -----\n", header[2]);
-      RARCH_ERR("----- debug %u -----\n", header[3]);
-   #endif
+#if 0
+   RARCH_ERR("----- debug %u -----\n", header[0]);
+   RARCH_ERR("----- debug %u -----\n", header[1]);
+   RARCH_ERR("----- debug %u -----\n", header[2]);
+   RARCH_ERR("----- debug %u -----\n", header[3]);
+#endif
 
    if (state_size)
    {
@@ -265,7 +265,8 @@ void bsv_movie_set_frame_end(void)
       return;
 
    bsv_movie_state_handle->frame_ptr    = 
-      (bsv_movie_state_handle->frame_ptr + 1) & bsv_movie_state_handle->frame_mask;
+      (bsv_movie_state_handle->frame_ptr + 1) 
+      & bsv_movie_state_handle->frame_mask;
 
    bsv_movie_state_handle->first_rewind = 
       !bsv_movie_state_handle->did_rewind;
@@ -293,7 +294,8 @@ static void bsv_movie_frame_rewind(bsv_movie_t *handle)
        * plus another. */
       handle->frame_ptr = (handle->frame_ptr -
             (handle->first_rewind ? 1 : 2)) & handle->frame_mask;
-      filestream_seek(handle->file, handle->frame_pos[handle->frame_ptr], SEEK_SET);
+      filestream_seek(handle->file,
+            handle->frame_pos[handle->frame_ptr], SEEK_SET);
    }
 
    if (filestream_tell(handle->file) <= (long)handle->min_file_pos)
@@ -360,7 +362,8 @@ bool bsv_movie_init(void)
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD),
                1, 180, true);
-         RARCH_ERR("%s.\n", msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD));
+         RARCH_ERR("%s.\n",
+               msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD));
          return ret;
       }
 
@@ -375,7 +378,8 @@ bool bsv_movie_init(void)
    if (set_granularity)
    {
       settings_t *settings = config_get_ptr();
-      configuration_set_uint(settings, settings->uints.rewind_granularity, 1);
+      configuration_set_uint(settings,
+            settings->uints.rewind_granularity, 1);
    }
 
    return ret;
@@ -411,7 +415,7 @@ bool bsv_movie_ctl(enum bsv_ctl_state state, void *data)
    switch (state)
    {
       case BSV_MOVIE_CTL_IS_INITED:
-         return bsv_movie_state_handle;
+         return (bsv_movie_state_handle != NULL);
       case BSV_MOVIE_CTL_SET_START_RECORDING:
          bsv_movie_state.movie_start_recording = true;
          break;

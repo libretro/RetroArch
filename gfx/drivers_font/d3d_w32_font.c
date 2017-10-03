@@ -34,16 +34,22 @@
 typedef struct
 {
    d3d_video_t *d3d;
+#ifdef __cplusplus
    LPD3DXFONT font;
+#else
+   ID3DXFont *font;
+#endif
    uint32_t color;
 } d3dfonts_t;
+
+#ifdef __cplusplus
+#else
+#endif
 
 static void *d3dfonts_w32_init_font(void *video_data,
       const char *font_path, float font_size,
       bool is_threaded)
 {
-   uint32_t r, g, b;
-   d3dfonts_t *d3dfonts = NULL;
    settings_t *settings = config_get_ptr();
    D3DXFONT_DESC desc = {
       (int)(font_size), 0, 400, 0,
@@ -51,30 +57,40 @@ static void *d3dfonts_w32_init_font(void *video_data,
       OUT_TT_PRECIS,
       CLIP_DEFAULT_PRECIS,
       DEFAULT_PITCH,
+#ifdef UNICODE
+	  _T(L"Verdana") /* Hardcode FTL */
+#else
       _T("Verdana") /* Hardcode FTL */
+#endif
    };
-
-   d3dfonts = (d3dfonts_t*)calloc(1, sizeof(*d3dfonts));
-
-   if (!d3dfonts)
-      return NULL;
-
-   (void)font_path;
-
-   r               = (settings->floats.video_msg_color_r * 255);
-   g               = (settings->floats.video_msg_color_g * 255);
-   b               = (settings->floats.video_msg_color_b * 255);
+   d3dfonts_t *d3dfonts = (d3dfonts_t*)calloc(1, sizeof(*d3dfonts));
+   uint32_t r           = (settings->floats.video_msg_color_r * 255);
+   uint32_t g           = (settings->floats.video_msg_color_g * 255);
+   uint32_t b           = (settings->floats.video_msg_color_b * 255);
    r &= 0xff;
    g &= 0xff;
    b &= 0xff;
 
+   if (!d3dfonts)
+      return NULL;
+
    d3dfonts->d3d   = (d3d_video_t*)video_data;
    d3dfonts->color = D3DCOLOR_XRGB(r, g, b);
 
-   if (SUCCEEDED(D3DXCreateFontIndirect(
+#ifdef __cplusplus
+   if (FAILED(D3DXCreateFontIndirect(
                d3dfonts->d3d->dev, &desc, &d3dfonts->font)))
-      return d3dfonts;
+      goto error;
+#else
+   if (FAILED(D3DXCreateFontIndirect(
+               d3dfonts->d3d->dev, &desc,
+               (struct ID3DXFont**)&d3dfonts->font)))
+      goto error;
+#endif
 
+   return d3dfonts;
+
+error:
    free(d3dfonts);
    return NULL;
 }
@@ -86,8 +102,13 @@ static void d3dfonts_w32_free_font(void *data, bool is_threaded)
    if (!d3dfonts)
       return;
 
+#ifdef __cplusplus
    if (d3dfonts->font)
       d3dfonts->font->Release();
+#else
+   if (d3dfonts->font)
+      d3dfonts->font->lpVtbl->Release(d3dfonts->font);
+#endif
    d3dfonts->font = NULL;
 
    free(d3dfonts);
@@ -105,9 +126,10 @@ static void d3dfonts_w32_render_msg(video_frame_info_t *video_info, void *data, 
    if (!msg)
       return;
    d3d_set_viewports(d3dfonts->d3d->dev, &d3dfonts->d3d->final_viewport);
-   if (!(SUCCEEDED(d3dfonts->d3d->dev->BeginScene())))
+   if (!d3d_begin_scene(d3dfonts->d3d->dev))
       return;
 
+#ifdef __cplusplus
    d3dfonts->font->DrawTextA(NULL,
          msg,
          -1,
@@ -121,8 +143,27 @@ static void d3dfonts_w32_render_msg(video_frame_info_t *video_info, void *data, 
          &d3dfonts->d3d->font_rect,
          DT_LEFT,
          d3dfonts->color | 0xff000000);
+#else
+   d3dfonts->font->lpVtbl->DrawTextA(
+         d3dfonts->font,
+         NULL,
+         msg,
+         -1,
+         &d3dfonts->d3d->font_rect_shifted,
+         DT_LEFT,
+         ((d3dfonts->color >> 2) & 0x3f3f3f) | 0xff000000);
 
-   d3dfonts->d3d->dev->EndScene();
+   d3dfonts->font->lpVtbl->DrawTextA(
+         d3dfonts->font,
+         NULL,
+         msg,
+         -1,
+         &d3dfonts->d3d->font_rect,
+         DT_LEFT,
+         d3dfonts->color | 0xff000000);
+#endif
+
+   d3d_end_scene(d3dfonts->d3d->dev);
 }
 
 font_renderer_t d3d_win32_font = {

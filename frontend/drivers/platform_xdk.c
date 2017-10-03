@@ -1100,11 +1100,24 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
    HRESULT ret;
-   (void)ret;
-
+#ifdef _XBOX360
+   unsigned long license_mask;
+   DWORD volume_device_type;
+#endif
+#ifndef IS_SALAMANDER
+   static char path[PATH_MAX_LENGTH] = {0};
+#if defined(_XBOX1)
+   LAUNCH_DATA ptr;
+   DWORD launch_type;
+#elif defined(_XBOX360)
+   DWORD dwLaunchDataSize;
+#endif
+#endif
 #ifndef IS_SALAMANDER
    bool original_verbose       = verbosity_is_enabled();
 #endif
+
+   (void)ret;
 
 #ifndef IS_SALAMANDER
 #if defined(HAVE_LOGGER)
@@ -1116,9 +1129,6 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
 
 #ifdef _XBOX360
    /* Detect install environment. */
-   unsigned long license_mask;
-   DWORD volume_device_type;
-
    if (XContentGetLicenseMask(&license_mask, NULL) == ERROR_SUCCESS)
    {
       XContentQueryVolumeDeviceType("GAME",&volume_device_type, NULL);
@@ -1181,11 +1191,7 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
          "info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
 
 #ifndef IS_SALAMANDER
-   static char path[PATH_MAX_LENGTH] = {0};
 #if defined(_XBOX1)
-   LAUNCH_DATA ptr;
-   DWORD launch_type;
-
    if (XGetLaunchInfo(&launch_type, &ptr) == ERROR_SUCCESS)
    {
       char *extracted_path = NULL;
@@ -1204,14 +1210,15 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
       }
    }
 #elif defined(_XBOX360)
-   DWORD dwLaunchDataSize;
    if (XGetLaunchDataSize(&dwLaunchDataSize) == ERROR_SUCCESS)
    {
-      BYTE* pLaunchData = new BYTE[dwLaunchDataSize];
-      XGetLaunchData(pLaunchData, dwLaunchDataSize);
+      char *extracted_path                 = (char*)calloc(dwLaunchDataSize, sizeof(char));
+      BYTE* pLaunchData                    = (BYTE*)calloc(dwLaunchDataSize, sizeof(BYTE));
       AURORA_LAUNCHDATA_EXECUTABLE* aurora = (AURORA_LAUNCHDATA_EXECUTABLE*)pLaunchData;
-      char* extracted_path = new char[dwLaunchDataSize];
+
+      XGetLaunchData(pLaunchData, dwLaunchDataSize);
       memset(extracted_path, 0, dwLaunchDataSize);
+
       if (aurora->ApplicationId == AURORA_LAUNCHDATA_APPID && aurora->FunctionId == AURORA_LAUNCHDATA_EXECUTABLE_FUNCID)
       {
          if (xbox_io_mount("aurora:", aurora->SystemPath) >= 0)
@@ -1219,15 +1226,14 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
                   "aurora:%s%s", aurora->RelativePath, aurora->Exectutable);
       }
       else
-         snprintf(extracted_path,
-               dwLaunchDataSize, "%s", pLaunchData);
+         strlcpy(extracted_path, pLaunchData, dwLaunchDataSize);
 
       /* Auto-start game */
       if (!string_is_empty(extracted_path))
          strlcpy(path, extracted_path, sizeof(path));
 
       if (pLaunchData)
-         delete []pLaunchData;
+         free(pLaunchData);
    }
 #endif
    if (!string_is_empty(path))
@@ -1279,6 +1285,13 @@ static void frontend_xdk_exec(const char *path, bool should_load_game)
 #ifndef IS_SALAMANDER
    bool original_verbose       = verbosity_is_enabled();
 #endif
+#if defined(_XBOX)
+#if defined(_XBOX1)
+   LAUNCH_DATA ptr;
+#elif defined(_XBOX360)
+   char game_path[1024] = {0};
+#endif
+#endif
    (void)should_load_game;
 
 #ifdef IS_SALAMANDER
@@ -1287,7 +1300,6 @@ static void frontend_xdk_exec(const char *path, bool should_load_game)
 #else
 #ifdef _XBOX
 #if defined(_XBOX1)
-   LAUNCH_DATA ptr;
    memset(&ptr, 0, sizeof(ptr));
 
    if (should_load_game && !path_is_empty(RARCH_PATH_CONTENT))
@@ -1296,8 +1308,6 @@ static void frontend_xdk_exec(const char *path, bool should_load_game)
    if (!string_is_empty(path))
       XLaunchNewImage(path, !string_is_empty((const char*)ptr.Data) ? &ptr : NULL);
 #elif defined(_XBOX360)
-   char game_path[1024] = {0};
-
    if (should_load_game && !path_is_empty(RARCH_PATH_CONTENT))
    {
       strlcpy(game_path, path_get(RARCH_PATH_CONTENT), sizeof(game_path));
@@ -1305,7 +1315,7 @@ static void frontend_xdk_exec(const char *path, bool should_load_game)
    }
 
    if (!string_is_empty(path))
-      XLaunchNewImage(path, NULL);
+      XLaunchNewImage(path, 0);
 #endif
 #endif
 #endif

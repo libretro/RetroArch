@@ -342,7 +342,7 @@ static bool video_thread_handle_packet(
       case CMD_INIT:
          thr->driver_data = thr->driver->init(&thr->info,
                thr->input, thr->input_data);
-         pkt.data.b = thr->driver_data;
+         pkt.data.b = (thr->driver_data != NULL);
          thr->driver->viewport_info(thr->driver_data, &thr->vp);
          video_thread_reply(thr, &pkt);
          break;

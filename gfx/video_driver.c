@@ -1577,7 +1577,9 @@ bool video_driver_supports_viewport_read(void)
 
 bool video_driver_supports_read_frame_raw(void)
 {
-   return current_video->read_frame_raw;
+   if (current_video->read_frame_raw)
+	   return true;
+   return false;
 }
 
 void video_driver_set_viewport_config(void)

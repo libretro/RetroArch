@@ -62,6 +62,7 @@
 #endif
 
 #include <streams/file_stream.h>
+#include <string/stdstring.h>
 #include <memmap.h>
 #include <retro_miscellaneous.h>
 
@@ -567,7 +568,7 @@ int filestream_close(RFILE *stream)
    if (!stream)
       goto error;
 
-   if (stream->ext)
+   if (!string_is_empty(stream->ext))
       free(stream->ext);
 
 #if  defined(PSP)

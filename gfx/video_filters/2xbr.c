@@ -224,11 +224,10 @@ static void *twoxbr_generic_create(const struct softfilter_config *config,
       unsigned max_width, unsigned max_height,
       unsigned threads, softfilter_simd_mask_t simd, void *userdata)
 {
+   struct filter_data *filt = (struct filter_data*)calloc(1, sizeof(*filt));
    (void)simd;
    (void)config;
    (void)userdata;
- 
-   struct filter_data *filt = (struct filter_data*)calloc(1, sizeof(*filt));
    if (!filt)
       return NULL;
    filt->workers = (struct softfilter_thread_data*)

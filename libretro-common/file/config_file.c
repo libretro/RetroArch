@@ -52,10 +52,10 @@ struct config_entry_list
    /* If we got this from an #include,
     * do not allow overwrite. */
    bool readonly;
-   char *key;
-   char *value;
    uint32_t key_hash;
 
+   char *key;
+   char *value;
    struct config_entry_list *next;
 };
 
@@ -240,10 +240,11 @@ static void add_sub_conf(config_file_t *conf, char *path)
    char real_path[PATH_MAX_LENGTH];
    config_file_t         *sub_conf  = NULL;
    struct config_include_list *head = conf->includes;
-   struct config_include_list *node = (struct config_include_list*)calloc(1, sizeof(*node));
+   struct config_include_list *node = (struct config_include_list*)malloc(sizeof(*node));
 
    if (node)
    {
+      node->next = NULL;
       /* Add include list */
       node->path = strdup(path);
 
@@ -365,10 +366,16 @@ error:
 static config_file_t *config_file_new_internal(
       const char *path, unsigned depth)
 {
-   FILE *file = NULL;
-   struct config_file *conf = (struct config_file*)calloc(1, sizeof(*conf));
+   FILE               *file = NULL;
+   struct config_file *conf = (struct config_file*)malloc(sizeof(*conf));
    if (!conf)
       return NULL;
+
+   conf->path          = NULL;
+   conf->entries       = NULL;
+   conf->tail          = NULL;
+   conf->includes      = NULL;
+   conf->include_depth = 0;
 
    if (!path || !*path)
       return conf;
@@ -376,12 +383,12 @@ static config_file_t *config_file_new_internal(
    if (path_is_directory(path))
       goto error;
 
-   conf->path = strdup(path);
+   conf->path          = strdup(path);
    if (!conf->path)
       goto error;
 
    conf->include_depth = depth;
-   file = fopen(path, "r");
+   file                = fopen(path, "r");
 
    if (!file)
    {
@@ -392,9 +399,8 @@ static config_file_t *config_file_new_internal(
 
    while (!feof(file))
    {
-      struct config_entry_list *list = (struct config_entry_list*)
-         calloc(1, sizeof(*list));
-      char *line = NULL;
+      char *line                     = NULL;
+      struct config_entry_list *list = (struct config_entry_list*)malloc(sizeof(*list));
 
       if (!list)
       {
@@ -403,7 +409,13 @@ static config_file_t *config_file_new_internal(
          return NULL;
       }
 
-      line = getaline(file);
+      list->readonly  = false;
+      list->key_hash  = 0;
+      list->key       = NULL;
+      list->value     = NULL;
+      list->next      = NULL;
+
+      line            = getaline(file);
 
       if (!line)
       {
@@ -500,14 +512,17 @@ config_file_t *config_file_new_from_string(const char *from_string)
 {
    size_t i;
    struct string_list *lines = NULL;
-   struct config_file *conf = (struct config_file*)calloc(1, sizeof(*conf));
+   struct config_file *conf = (struct config_file*)malloc(sizeof(*conf));
    if (!conf)
       return NULL;
 
    if (!from_string)
       return conf;
 
-   conf->path = NULL;
+   conf->path          = NULL;
+   conf->entries       = NULL;
+   conf->tail          = NULL;
+   conf->includes      = NULL;
    conf->include_depth = 0;
    
    lines = string_split(from_string, "\n");
@@ -516,9 +531,8 @@ config_file_t *config_file_new_from_string(const char *from_string)
 
    for (i = 0; i < lines->size; i++)
    {
-      struct config_entry_list *list = (struct config_entry_list*)
-         calloc(1, sizeof(*list));
-      char* line = lines->elems[i].data;
+      struct config_entry_list *list = (struct config_entry_list*)malloc(sizeof(*list));
+      char                    *line  = lines->elems[i].data;
 
       if (!list)
       {
@@ -526,6 +540,12 @@ config_file_t *config_file_new_from_string(const char *from_string)
          config_file_free(conf);
          return NULL;
       }
+
+      list->readonly  = false;
+      list->key_hash  = 0;
+      list->key       = NULL;
+      list->value     = NULL;
+      list->next      = NULL;
 
       if (line && conf)
       {
@@ -761,16 +781,21 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
       return;
    }
 
-   if (!val) return;
+   if (!val)
+      return;
 
-   entry = (struct config_entry_list*)calloc(1, sizeof(*entry));
-   if (!entry) return;
+   entry = (struct config_entry_list*)malloc(sizeof(*entry));
+   if (!entry)
+      return;
 
-   entry->key   = strdup(key);
-   entry->value = strdup(val);
+   entry->readonly  = false;
+   entry->key_hash  = 0;
+   entry->key       = strdup(key);
+   entry->value     = strdup(val);
+   entry->next      = NULL;
 
    if (last)
-      last->next = entry;
+      last->next    = entry;
    else
       conf->entries = entry;
 }
@@ -849,11 +874,7 @@ void config_set_uint64(config_file_t *conf, const char *key, uint64_t val)
    char buf[128];
 
    buf[0] = '\0';
-#ifdef _WIN32
-   snprintf(buf, sizeof(buf), "%I64u", val);
-#else
-   snprintf(buf, sizeof(buf), "%llu", (long long unsigned)val);
-#endif
+   snprintf(buf, sizeof(buf), STRING_REP_UINT64, val);
    config_set_string(conf, key, buf);
 }
 
@@ -875,12 +896,17 @@ bool config_file_write(config_file_t *conf, const char *path)
 {
    FILE *file;
 
-   if (path)
+   if (path && !string_is_empty(path))
    {
       file = fopen(path, "w");
       if (!file)
          return false;
+#ifdef WIIU
+      /* TODO: use FBF everywhere once https://i.imgur.com/muVhNeF.jpg is fixed */
+      setvbuf(file, NULL, _IONBF, 0x4000);
+#else
       setvbuf(file, NULL, _IOFBF, 0x4000);
+#endif
    }
    else
       file = stdout;

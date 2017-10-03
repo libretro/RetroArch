@@ -29,30 +29,34 @@
 
 struct zlib_trans_stream
 {
-   z_stream z;
-   int ex; /* window_bits or level */
    bool inited;
+   int ex; /* window_bits or level */
+   z_stream z;
 };
 
 static void *zlib_deflate_stream_new(void)
 {
    struct zlib_trans_stream *ret = (struct zlib_trans_stream*)calloc(1, sizeof(struct zlib_trans_stream));
-   if (ret)
-      ret->ex = 9;
+   if (!ret)
+      return NULL;
+   ret->ex = 9;
    return (void *) ret;
 }
 
 static void *zlib_inflate_stream_new(void)
 {
    struct zlib_trans_stream *ret = (struct zlib_trans_stream*)calloc(1, sizeof(struct zlib_trans_stream));
-   if (ret)
-      ret->ex = MAX_WBITS;
+   if (!ret)
+      return NULL;
+   ret->ex = MAX_WBITS;
    return (void *) ret;
 }
 
 static void zlib_deflate_stream_free(void *data)
 {
    struct zlib_trans_stream *z = (struct zlib_trans_stream *) data;
+   if (!z)
+      return;
    if (z->inited)
       deflateEnd(&z->z);
    free(z);
@@ -73,7 +77,8 @@ static bool zlib_deflate_define(void *data, const char *prop, uint32_t val)
    struct zlib_trans_stream *z = (struct zlib_trans_stream *) data;
    if (string_is_equal_fast(prop, "level", 5))
    {
-      z->ex = (int) val;
+      if (z)
+         z->ex = (int) val;
       return true;
    }
    return false;
@@ -84,7 +89,8 @@ static bool zlib_inflate_define(void *data, const char *prop, uint32_t val)
    struct zlib_trans_stream *z = (struct zlib_trans_stream *) data;
    if (string_is_equal_fast(prop, "window_bits", 11))
    {
-      z->ex = (int) val;
+      if (z)
+         z->ex = (int) val;
       return true;
    }
    return false;
@@ -139,11 +145,12 @@ static bool zlib_deflate_trans(
    uint32_t *rd, uint32_t *wn,
    enum trans_stream_error *error)
 {
-   int zret;
-   bool ret;
-   uint32_t pre_avail_in, pre_avail_out;
+   int zret                     = 0;
+   bool ret                     = false;
+   uint32_t pre_avail_in        = 0;
+   uint32_t pre_avail_out       = 0;
    struct zlib_trans_stream *zt = (struct zlib_trans_stream *) data;
-   z_stream *z = &zt->z;
+   z_stream                  *z = &zt->z;
 
    if (!zt->inited)
    {
@@ -151,9 +158,9 @@ static bool zlib_deflate_trans(
       zt->inited = true;
    }
 
-   pre_avail_in = z->avail_in;
+   pre_avail_in  = z->avail_in;
    pre_avail_out = z->avail_out;
-   zret = deflate(z, flush ? Z_FINISH : Z_NO_FLUSH);
+   zret          = deflate(z, flush ? Z_FINISH : Z_NO_FLUSH);
 
    if (zret == Z_OK)
    {
@@ -202,10 +209,11 @@ static bool zlib_inflate_trans(
    enum trans_stream_error *error)
 {
    int zret;
-   bool ret;
-   uint32_t pre_avail_in, pre_avail_out;
+   bool ret                     = false;
+   uint32_t pre_avail_in        = 0;
+   uint32_t pre_avail_out       = 0;
    struct zlib_trans_stream *zt = (struct zlib_trans_stream *) data;
-   z_stream *z = &zt->z;
+   z_stream                  *z = &zt->z;
 
    if (!zt->inited)
    {

@@ -113,10 +113,6 @@ typedef struct menu_file_list_cbs
          char *path_buf, size_t path_buf_size);
 } menu_file_list_cbs_t;
 
-size_t menu_entries_get_end(void);
-
-void menu_entries_get(size_t i, void *data_entry);
-
 int menu_entries_get_title(char *title, size_t title_len);
 
 bool menu_entries_current_core_is_no_core(void);
@@ -148,19 +144,6 @@ size_t menu_entries_get_size(void);
 void menu_entries_get_at_offset(const file_list_t *list, size_t idx,
       const char **path, const char **label, unsigned *file_type,
       size_t *entry_idx, const char **alt);
-
-void *menu_entries_get_userdata_at_offset(
-      const file_list_t *list, size_t idx);
-
-menu_file_list_cbs_t *menu_entries_get_actiondata_at_offset(
-      const file_list_t *list, size_t idx);
-
-void menu_entries_get_last(const file_list_t *list,
-      const char **path, const char **label,
-      unsigned *file_type, size_t *entry_idx);
-
-void menu_entries_set_alt_at_offset(file_list_t *list, size_t idx,
-      const char *alt);
 
 rarch_setting_t *menu_entries_get_setting(uint32_t i);
 

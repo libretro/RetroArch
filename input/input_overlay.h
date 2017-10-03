@@ -96,27 +96,34 @@ enum overlay_image_transfer_status
 
 struct overlay
 {
-   unsigned id;
+   bool full_screen;
+   bool block_scale;
 
-   struct overlay_desc *descs;
-   size_t size;
-   size_t pos;
+   unsigned load_images_size;
+   unsigned id;
    unsigned pos_increment;
 
-   struct texture_image image;
+   size_t size;
+   size_t pos;
 
-   bool block_scale;
    float mod_x, mod_y, mod_w, mod_h;
    float x, y, w, h;
    float scale;
    float center_x, center_y;
 
-   bool full_screen;
+   struct overlay_desc *descs;
+   struct texture_image *load_images;
+
+   struct texture_image image;
 
    char name[64];
 
    struct
    {
+      bool normalized;
+      float alpha_mod;
+      float range_mod;
+
       struct
       {
          char key[64];
@@ -140,41 +147,36 @@ struct overlay
          unsigned size;
       } descs;
 
-      bool normalized;
-      float alpha_mod;
-      float range_mod;
    } config;
 
-   struct texture_image *load_images;
-   unsigned load_images_size;
 };
 
 struct overlay_desc
 {
-   float x;
-   float y;
-
    enum overlay_hitbox hitbox;
-   float range_x, range_y;
-   float range_x_mod, range_y_mod;
-   float mod_x, mod_y, mod_w, mod_h;
-   float delta_x, delta_y;
-
    enum overlay_type type;
-   uint64_t key_mask;
-   float analog_saturate_pct;
+
+   bool updated;
+   bool movable;
 
    unsigned next_index;
-   char next_index_name[64];
-
-   struct texture_image image;
    unsigned image_index;
 
    float alpha_mod;
    float range_mod;
+   float analog_saturate_pct;
+   float range_x, range_y;
+   float range_x_mod, range_y_mod;
+   float mod_x, mod_y, mod_w, mod_h;
+   float delta_x, delta_y;
+   float x;
+   float y;
 
-   bool updated;
-   bool movable;
+   uint64_t key_mask;
+
+   char next_index_name[64];
+
+   struct texture_image image;
 };
 
 typedef struct overlay_desc overlay_desc_t;
@@ -183,13 +185,13 @@ typedef struct input_overlay input_overlay_t;
 
 typedef struct
 {
-    struct overlay *overlays;
-    struct overlay *active;
-    size_t size;
     bool hide_in_menu;
     bool overlay_enable;
+    size_t size;
     float overlay_opacity;
     float overlay_scale;
+    struct overlay *overlays;
+    struct overlay *active;
 } overlay_task_data_t;
 
 /**
