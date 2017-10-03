@@ -2415,6 +2415,7 @@ static int cheevos_deactivate__json_number(void *userdata,
             if (cheevo->id == (unsigned)id)
             {
                cheevo->active &= ~ud->mode;
+               found = 1;
                break;
             }
          }
