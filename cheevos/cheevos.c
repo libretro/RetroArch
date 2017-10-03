@@ -1883,10 +1883,8 @@ static int cheevos_test_condition(cheevos_cond_t *cond)
       case CHEEVOS_COND_OP_NOT_EQUAL_TO:
          return sval != tval;
       default:
-         break;
+         return 1;
    }
-
-   return 0;
 }
 
 static int cheevos_test_cond_set(const cheevos_condset_t *condset,
@@ -1925,20 +1923,20 @@ static int cheevos_test_cond_set(const cheevos_condset_t *condset,
    /* Read all standard conditions, and process as normal: */
    for (cond = condset->conds; cond < end; cond++)
    {
-      if (cond->type != CHEEVOS_COND_TYPE_STANDARD)
+      if (cond->type == CHEEVOS_COND_TYPE_PAUSE_IF || cond->type == CHEEVOS_COND_TYPE_RESET_IF)
          continue;
 
       if (cond->type == CHEEVOS_COND_TYPE_ADD_SOURCE)
       {
          cheevos_locals.add_buffer += cheevos_get_var_value(&cond->source);
-         set_valid = 1;
+         set_valid &= 1;
          continue;
       }
 
       if (cond->type == CHEEVOS_COND_TYPE_SUB_SOURCE)
       {
          cheevos_locals.add_buffer -= cheevos_get_var_value(&cond->source);
-         set_valid = 1;
+         set_valid &= 1;
          continue;
       }
 
@@ -1954,7 +1952,7 @@ static int cheevos_test_cond_set(const cheevos_condset_t *condset,
          continue;
       }
 
-      if (cond->req_hits != 0 && cond->curr_hits >= cond->req_hits)
+      if (cond->req_hits != 0 && (cond->curr_hits + cheevos_locals.add_hits) >= cond->req_hits)
          continue;
 
       cond_valid = cheevos_test_condition(cond);
@@ -2417,6 +2415,7 @@ static int cheevos_deactivate__json_number(void *userdata,
             if (cheevo->id == (unsigned)id)
             {
                cheevo->active &= ~ud->mode;
+               found = 1;
                break;
             }
          }

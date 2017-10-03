@@ -1472,14 +1472,12 @@ ifeq ($(HAVE_NETWORKING), 1)
 			network/netplay/netplay_buf.o \
 			network/netplay/netplay_room_parse.o
 
-   # Retro Achievements (also depends on threads)
+   # Retro Achievements
 
    ifeq ($(HAVE_CHEEVOS), 1)
-      ifeq ($(HAVE_THREADS), 1)
-         DEFINES += -DHAVE_CHEEVOS
-         OBJ += cheevos/cheevos.o \
-					 $(LIBRETRO_COMM_DIR)/utils/md5.o
-      endif
+      DEFINES += -DHAVE_CHEEVOS
+      OBJ += cheevos/cheevos.o \
+         $(LIBRETRO_COMM_DIR)/utils/md5.o
    endif
 
    ifeq ($(HAVE_KEYMAPPER), 1)

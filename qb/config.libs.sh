@@ -497,11 +497,6 @@ if [ "$HAVE_ZLIB" = 'no' ] && [ "HAVE_RPNG" != 'no' ]; then
    echo "Notice: zlib is not available, RPNG will also be disabled."
 fi
 
-if [ "$HAVE_THREADS" = 'no' ] && [ "HAVE_CHEEVOS" != 'no' ]; then
-   HAVE_CHEEVOS=no
-   echo "Notice: Threads are not available, Cheevos will also be disabled."
-fi
-
 if [ "$HAVE_THREADS" = 'no' ] && [ "HAVE_LIBUSB" != 'no' ]; then
    HAVE_LIBUSB=no
    echo "Notice: Threads are not available, libusb will also be disabled."

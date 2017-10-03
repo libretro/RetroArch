@@ -143,7 +143,7 @@ CONFIG FILE
 /*============================================================
 ACHIEVEMENTS
 ============================================================ */
-#if defined(HAVE_CHEEVOS) && defined(HAVE_THREADS)
+#if defined(HAVE_CHEEVOS)
 #if !defined(HAVE_NETWORKING)
 #include "../libretro-common/net/net_http.c"
 #endif
