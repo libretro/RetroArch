@@ -3628,8 +3628,11 @@ static int menu_displaylist_parse_playlists(
 
       file_type = FILE_TYPE_PLAYLIST_COLLECTION;
 
-      if (!string_is_empty(path))
-         path = path_basename(path);
+      if (horizontal)
+      {
+         if (!string_is_empty(path))
+            path = path_basename(path);
+      }
 
       items_found++;
       menu_entries_append_enum(info->list, path, label,
@@ -6772,6 +6775,19 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             string_list_free(str_list);
          }
          use_filebrowser    = true;
+         break;
+      case DISPLAYLIST_PLAYLIST:
+         menu_displaylist_parse_playlist_generic(menu, info,
+               path_basename(info->path),
+               info->path,
+               &ret);
+         ret = 0;
+
+         if (ret == 0)
+         {
+            info->need_refresh = true;
+            info->need_push    = true;
+         }
          break;
       case DISPLAYLIST_IMAGES_HISTORY:
 #ifdef HAVE_IMAGEVIEWER

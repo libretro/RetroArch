@@ -180,15 +180,6 @@ int generic_action_ok_displaylist_push(const char *path,
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST;
          dl_type           = DISPLAYLIST_GENERIC;
          break;
-      case ACTION_OK_DL_MUSIC_LIST:
-         info.type          = type;
-         info.directory_ptr = idx;
-         info_path          = label;
-         info_label         = msg_hash_to_str(
-               MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST);
-         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST;
-         dl_type           = DISPLAYLIST_GENERIC;
-         break;
       case ACTION_OK_DL_VIDEO_LIST:
          info.type          = type;
          info.directory_ptr = idx;
@@ -381,12 +372,22 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
          break;
       case ACTION_OK_DL_PLAYLIST_COLLECTION:
-         filebrowser_clear_type();
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = path;
-         info_label         = label;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST;
          dl_type            = DISPLAYLIST_GENERIC;
+         break;
+      case ACTION_OK_DL_MUSIC_LIST:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = label;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST;
+         dl_type           = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_CHEAT_FILE:
          filebrowser_clear_type();

@@ -901,6 +901,12 @@ static int deferred_push_detect_core_list(menu_displaylist_info_t *info)
          DISPLAYLIST_CORES_DETECTED);
 }
 
+static int deferred_playlist_list(menu_displaylist_info_t *info)
+{
+   menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+   return general_push(info, PUSH_DEFAULT, DISPLAYLIST_PLAYLIST);
+}
+
 static int deferred_music_history_list(menu_displaylist_info_t *info)
 {
    menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
@@ -1193,6 +1199,12 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
          string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST))) 
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_music_history_list);
+      return 0;
+   }
+   else if (
+         string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST))) 
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_playlist_list);
       return 0;
    }
    else if (
