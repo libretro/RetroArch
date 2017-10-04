@@ -941,6 +941,103 @@ static void gl_set_texture_enable(void *data, bool state, bool full_screen)
    gl->menu_texture_full_screen = full_screen;
 }
 
+static void gl_render_osd_background(
+      gl_t *gl, video_frame_info_t *video_info,
+      const char *msg)
+{
+   if (!gl)
+      return;
+
+   video_shader_ctx_mvp_t mvp;
+   video_shader_ctx_coords_t coords_data;
+   video_coords_t coords;
+   video_coord_array_t ca;
+   video_shader_ctx_info_t shader_info;
+   struct uniform_info uniform_param;
+   unsigned vertices_total = 6;
+   float *dummy = (float*)calloc(4 * vertices_total, sizeof(float));
+   float *colors = (float*)malloc(4 * vertices_total * sizeof(float));
+   float *verts = (float*)malloc(2 * vertices_total * sizeof(float));
+   unsigned i;
+
+   for (i = 0; i < 4 * vertices_total; i += 4)
+   {
+      colors[i+0] = 0;
+      colors[i+1] = 0;
+      colors[i+2] = 1;
+      colors[i+3] = 1;
+   }
+
+   verts[0] = -1;
+   verts[1] = -1; // BL
+
+   verts[2] = -1;
+   verts[3] = 1; // TL
+
+   verts[4] = 1;
+   verts[5] = 1; // TR
+
+   verts[6] = -1;
+   verts[7] = -1; // BL
+
+   verts[8] = 1;
+   verts[9] = 1; // TR
+
+   verts[10] = 1;
+   verts[11] = -1; // BR
+
+   coords.color         = colors;
+   coords.vertex        = verts;
+   coords.tex_coord     = dummy;
+   coords.lut_tex_coord = dummy;
+   coords.vertices      = vertices_total;
+
+   coords_data.handle_data = NULL;
+   coords_data.data        = &coords;
+
+   shader_info.data       = NULL;
+   shader_info.idx        = VIDEO_SHADER_STOCK_BLEND;
+   shader_info.set_active = true;
+
+   video_driver_set_viewport(video_info->width, video_info->height, true, false);
+
+   glDisable(GL_BLEND);
+
+   video_shader_driver_use(shader_info);
+   video_shader_driver_set_coords(coords_data);
+
+   mvp.data                = gl;
+   mvp.matrix              = &gl->mvp_no_rot;
+
+   video_shader_driver_set_mvp(mvp);
+
+   uniform_param.type              = UNIFORM_4F;
+   uniform_param.enabled           = true;
+   uniform_param.location          = 0;
+   uniform_param.count             = 0;
+
+   uniform_param.lookup.type       = SHADER_PROGRAM_FRAGMENT;
+   uniform_param.lookup.ident      = "bgcolor";
+   uniform_param.lookup.idx        = shader_info.idx;
+   uniform_param.lookup.add_prefix = true;
+   uniform_param.lookup.enable     = true;
+
+   uniform_param.result.f.v0       = colors[0];
+   uniform_param.result.f.v1       = colors[1];
+   uniform_param.result.f.v2       = colors[2];
+   uniform_param.result.f.v3       = colors[3];
+
+   video_shader_driver_set_parameter(uniform_param);
+
+   glDrawArrays(GL_TRIANGLES, 0, coords.vertices);
+
+   free(colors);
+   free(dummy);
+   free(verts);
+
+   video_driver_set_viewport(video_info->width, video_info->height, false, true);
+}
+
 static void gl_set_osd_msg(void *data,
       video_frame_info_t *video_info,
       const char *msg,
@@ -1244,7 +1341,10 @@ static bool gl_frame(void *data, const void *frame,
 #endif
 
    if (!string_is_empty(msg))
+   {
+      gl_render_osd_background(gl, video_info, msg);
       font_driver_render_msg(video_info, NULL, msg, NULL);
+   }
 
 #ifdef HAVE_OVERLAY
    if (gl && gl->overlay_enable)

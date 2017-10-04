@@ -2,9 +2,17 @@
 
 static const char *stock_fragment_modern_blend = GLSL(
    uniform sampler2D Texture;
+   uniform vec4 bgcolor;
    varying vec2 tex_coord;
    varying vec4 color;
    void main() {
-      gl_FragColor = color * texture2D(Texture, tex_coord);
+      if (bgcolor == vec4(0.0,0.0,1.0,1.0))
+      {
+         gl_FragColor = bgcolor;//color * texture2D(Texture, tex_coord);
+      }
+      else
+      {
+         gl_FragColor = color * texture2D(Texture, tex_coord);
+      }
    }
 );
