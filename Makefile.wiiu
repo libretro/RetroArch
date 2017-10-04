@@ -62,6 +62,7 @@ else
 	HAVE_LANGEXTRA = 1
 	HAVE_LIBRETRODB = 1
 	HAVE_NETWORKING = 1
+	HAVE_CHEEVOS = 1
 #	WANT_IFADDRS = 1
 
 	include Makefile.common
