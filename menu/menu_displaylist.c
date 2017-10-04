@@ -4147,7 +4147,7 @@ error:
    return false;
 }
 
-static void menu_displaylist_parse_playlist_history(
+static void menu_displaylist_parse_playlist_generic(
       menu_handle_t *menu,
       menu_displaylist_info_t *info,
       const char *playlist_name,
@@ -4600,7 +4600,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_HISTORY:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          if (settings->bools.history_list_enable)
-            menu_displaylist_parse_playlist_history(menu, info,
+            menu_displaylist_parse_playlist_generic(
+                  menu, info,
                   "history",
                   settings->paths.path_content_history,
                   &ret);
@@ -4622,7 +4623,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_FAVORITES:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         menu_displaylist_parse_playlist_history(menu, info,
+         menu_displaylist_parse_playlist_generic(menu, info,
                "favorites",
                settings->paths.path_content_favorites,
                &ret);
@@ -4634,7 +4635,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_MUSIC_HISTORY:
          if (settings->bools.history_list_enable)
-            menu_displaylist_parse_playlist_history(menu, info,
+            menu_displaylist_parse_playlist_generic(menu, info,
                   "music_history",
                   settings->paths.path_content_music_history,
                   &ret);
@@ -4657,7 +4658,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_VIDEO_HISTORY:
 #ifdef HAVE_FFMPEG
          if (settings->bools.history_list_enable)
-            menu_displaylist_parse_playlist_history(menu, info,
+            menu_displaylist_parse_playlist_generic(menu, info,
                   "video_history",
                   settings->paths.path_content_video_history,
                   &ret);
@@ -6775,7 +6776,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_IMAGES_HISTORY:
 #ifdef HAVE_IMAGEVIEWER
          if (settings->bools.history_list_enable)
-            menu_displaylist_parse_playlist_history(menu, info,
+            menu_displaylist_parse_playlist_generic(menu, info,
                   "images_history",
                   settings->paths.path_content_image_history,
                   &ret);
