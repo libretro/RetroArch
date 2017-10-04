@@ -1671,7 +1671,7 @@ static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb)
       entry.subject      = &node->alpha;
       entry.easing_enum  = EASING_OUT_QUAD;
       /* TODO/FIXME - integer conversion resulted in change of sign */
-      entry.tag          = -1; 
+      entry.tag          = -1;
       entry.cb           = NULL;
 
       menu_animation_push(&entry);
@@ -1858,7 +1858,7 @@ static void xmb_context_reset_horizontal_list(
 {
    unsigned i;
    int depth; /* keep this integer */
-   size_t list_size                = 
+   size_t list_size                =
       xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL);
 
    xmb->categories_x_pos = xmb->icon_spacing_horizontal *
@@ -2352,7 +2352,7 @@ static int xmb_draw_item(
    else
    {
       enum msg_file_type type = FILE_TYPE_NONE;
-       
+
       if (!string_is_empty(entry->value))
           type                = msg_hash_to_file_type(msg_hash_calculate(entry->value));
 
@@ -2889,11 +2889,11 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    menu_display_rotate_z(&rotate_draw);
    menu_display_blend_begin();
-   
+
    if (xmb->savestate_thumbnail)
       xmb_draw_thumbnail(menu_disp_info,
             xmb, &coord_white[0], width, height,
-            xmb->margins_screen_left 
+            xmb->margins_screen_left
             + xmb->icon_spacing_horizontal +
             xmb->icon_spacing_horizontal * 4 - xmb->icon_size / 4,
             xmb->margins_screen_top + xmb->icon_size + xmb->savestate_thumbnail_height,
@@ -2915,7 +2915,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             xmb->margins_screen_top + xmb->icon_size + xmb->thumbnail_height,
             xmb->thumbnail_width, xmb->thumbnail_height,
             xmb->thumbnail);
-   }   
+   }
 
    /* Clock image */
    menu_display_set_alpha(coord_white, MIN(xmb->alpha, 1.00f));
@@ -3482,7 +3482,7 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_NETPLAY;
 #endif
 #ifdef HAVE_LIBRETRODB
-	if (settings->bools.menu_xmb_show_add)
+   if (settings->bools.menu_xmb_show_add)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_ADD;
 #endif
 
@@ -3804,7 +3804,7 @@ static void xmb_context_reset_background(const char *iconpath)
          PATH_MAX_LENGTH * sizeof(char));
 
    if (!string_is_empty(settings->paths.path_menu_wallpaper))
-      strlcpy(path, settings->paths.path_menu_wallpaper, 
+      strlcpy(path, settings->paths.path_menu_wallpaper,
             PATH_MAX_LENGTH * sizeof(char));
 
    if (path_file_exists(path))
@@ -3999,18 +3999,18 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
    if (!xmb)
       return;
 
-   /* FIXME: this shouldn't be happening at all */
-   if (selection >= selection_buf->size)
-      selection = selection_buf->size ? selection_buf->size - 1 : 0;
-
-   xmb->selection_ptr_old = selection;
-
    /* Check whether to enable the horizontal animation. */
    if (settings->bools.menu_horizontal_animation)
    {
       unsigned first = 0, last = 0;
       unsigned height = 0;
       video_driver_get_size(NULL, &height);
+
+      /* FIXME: this shouldn't be happening at all */
+      if (selection >= selection_buf->size)
+         selection = selection_buf->size ? selection_buf->size - 1 : 0;
+
+      xmb->selection_ptr_old = selection;
 
       xmb_calculate_visible_range(xmb, height, selection_buf->size,
             xmb->selection_ptr_old, &first, &last);
@@ -4021,7 +4021,11 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
       last                   -= first;
       first                   = 0;
    }
-
+   else
+   {
+      selection = 0;
+      xmb->selection_ptr_old = 0;
+   }
 
    list_size = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL)
       + xmb->system_tab_end;
@@ -4273,7 +4277,7 @@ static int xmb_list_push(void *data, void *userdata,
 #endif
 
             if (frontend_driver_parse_drive_list(info->list, true) != 0)
-               menu_entries_append_enum(info->list, "/",          
+               menu_entries_append_enum(info->list, "/",
                      msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
                      MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
                      MENU_SETTING_ACTION, 0, 0);
@@ -4382,7 +4386,7 @@ static bool xmb_menu_init_list(void *data)
 
    info.label                   = strdup(
          msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU));
-   info.exts                    = 
+   info.exts                    =
       strdup(file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT));
    info.type_default            = FILE_TYPE_PLAIN;
    info.enum_idx                = MENU_ENUM_LABEL_MAIN_MENU;
