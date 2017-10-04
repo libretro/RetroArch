@@ -1011,8 +1011,8 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
                tmp, PATH_MAX_LENGTH * sizeof(char));
          strlcpy(xmb->thumbnail_file_path,
                tmp_new, sizeof(xmb->thumbnail_file_path));
-         free(tmp);
       }
+      free(tmp);
    }
 
    strlcat(xmb->thumbnail_file_path,

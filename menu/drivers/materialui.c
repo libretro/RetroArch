@@ -1050,10 +1050,8 @@ static void mui_render_menu_list(
          sublabel_color
       );
 
-      if (!string_is_empty(rich_label))
-         free(rich_label);
-
       menu_entry_free(&entry);
+      free(rich_label);
    }
 }
 

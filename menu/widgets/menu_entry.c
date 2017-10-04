@@ -313,7 +313,7 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
    menu_entries_get_at_offset(list, i, &path, &entry_label, &entry->type,
          &entry->entry_idx, NULL);
 
-   cbs = list ? (menu_file_list_cbs_t*)file_list_get_actiondata_at_offset(list, i) : NULL;
+   cbs = (menu_file_list_cbs_t*)file_list_get_actiondata_at_offset(list, i);
 
    if (cbs)
    {
