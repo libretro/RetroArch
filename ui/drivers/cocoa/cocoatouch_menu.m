@@ -133,12 +133,12 @@ static void RunActionSheet(const char* title, const struct string_list* items,
           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
           sizeof(buffer));
 
-  if (label && !string_is_empty(label))
+  if (!string_is_empty(label))
      result.textLabel.text    = BOXSTRING(label);
   result.detailTextLabel.text = BOXSTRING(buffer);
 
   menu_entry_free(&entry);
-  if (label && !string_is_empty(label))
+  if (!string_is_empty(label))
      free(label);
 
   return result;
@@ -177,7 +177,7 @@ static void RunActionSheet(const char* title, const struct string_list* items,
 
    label = menu_entry_get_path(&entry);
 
-   if (label && !string_is_empty(label))
+   if (!string_is_empty(label))
       result.textLabel.text = BOXSTRING(label);
 
    [(id)result.accessoryView removeTarget:nil
@@ -188,7 +188,7 @@ static void RunActionSheet(const char* title, const struct string_list* items,
                       forControlEvents:UIControlEventValueChanged];
    [(id)result.accessoryView setOn:(menu_entry_get_bool_value(self.i))];
    menu_entry_free(&entry);
-   if (label && !string_is_empty(label))
+   if (!string_is_empty(label))
       free(label);
    return result;
 }
@@ -234,7 +234,7 @@ static void RunActionSheet(const char* title, const struct string_list* items,
    label = menu_entry_get_path(&entry);
    items = menu_entry_enum_values(self.i);
 
-   if (label && !string_is_empty(label))
+   if (!string_is_empty(label))
    {
       RunActionSheet(label, items, self.parentTable,
       ^(UIActionSheet* actionSheet, NSInteger buttonIndex)
@@ -249,7 +249,7 @@ static void RunActionSheet(const char* title, const struct string_list* items,
    }
    string_list_free(items);
    menu_entry_free(&entry);
-   if (label && !string_is_empty(label))
+   if (!string_is_empty(label))
       free(label);
 }
 @end
@@ -291,7 +291,7 @@ static void RunActionSheet(const char* title, const struct string_list* items,
                             userInfo:nil
                              repeats:YES];
    menu_entry_free(&entry);
-   if (label && !string_is_empty(label))
+   if (!string_is_empty(label))
       free(label);
 }
 
@@ -476,7 +476,7 @@ replacementString:(NSString *)string
 
    menu_entry_free(&entry);
 
-   if (label && !string_is_empty(label))
+   if (!string_is_empty(label))
       free(label);
 
    [alertView show];

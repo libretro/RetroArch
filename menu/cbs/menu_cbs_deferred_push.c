@@ -282,9 +282,9 @@ static int deferred_push_core_collection_list_deferred(
 static int deferred_push_database_manager_list_deferred(
       menu_displaylist_info_t *info)
 {
-   if (info->path_b && !string_is_empty(info->path_b))
+   if (!string_is_empty(info->path_b))
       free(info->path_b);
-   if (info->path_c && !string_is_empty(info->path_c))
+   if (!string_is_empty(info->path_c))
       free(info->path_c);
 
    info->path_b    = strdup(info->path);
@@ -464,11 +464,11 @@ static int deferred_push_cursor_manager_list_deferred(
          settings->paths.path_content_database,
          rdb, sizeof(rdb_path));
 
-   if (info->path_b && !string_is_empty(info->path_b))
+   if (!string_is_empty(info->path_b))
       free(info->path_b);
-   if (info->path_c && !string_is_empty(info->path_c))
+   if (!string_is_empty(info->path_c))
       free(info->path_c);
-   if (info->path && !string_is_empty(info->path))
+   if (!string_is_empty(info->path))
       free(info->path);
 
    info->path_b    = strdup(info->path);
@@ -505,11 +505,11 @@ static int deferred_push_cursor_manager_list_generic(
    if (string_is_empty(query))
       goto end;
 
-   if (info->path_b && !string_is_empty(info->path_b))
+   if (!string_is_empty(info->path_b))
       free(info->path_b);
-   if (info->path_c && !string_is_empty(info->path_c))
+   if (!string_is_empty(info->path_c))
       free(info->path_c);
-   if (info->path && !string_is_empty(info->path))
+   if (!string_is_empty(info->path))
       free(info->path);
 
    info->path   = strdup(str_list->elems[1].data);
@@ -637,11 +637,11 @@ static int deferred_push_cursor_manager_list_deferred_query_subsearch(
    if (string_is_empty(query))
       goto end;
 
-   if (info->path && !string_is_empty(info->path))
+   if (!string_is_empty(info->path))
       free(info->path);
-   if (info->path_b && !string_is_empty(info->path_b))
+   if (!string_is_empty(info->path_b))
       free(info->path_b);
-   if (info->path_c && !string_is_empty(info->path_c))
+   if (!string_is_empty(info->path_c))
       free(info->path_c);
    info->path   = strdup(str_list->elems[1].data);
    info->path_b = strdup(str_list->elems[0].data);
@@ -689,9 +689,9 @@ static int general_push(menu_displaylist_info_t *info,
             fill_pathname_join(tmp_str2, menu->scratch2_buf,
                   menu->scratch_buf, sizeof(tmp_str2));
 
-            if (info->path && !string_is_empty(info->path))
+            if (!string_is_empty(info->path))
                free(info->path);
-            if (info->label && !string_is_empty(info->label))
+            if (!string_is_empty(info->label))
                free(info->label);
 
             info->path  = strdup(tmp_str);
@@ -761,7 +761,7 @@ static int general_push(menu_displaylist_info_t *info,
             if (!new_exts)
                new_exts = info->exts;
 
-            if (new_exts && !string_is_empty(new_exts))
+            if (!string_is_empty(new_exts))
             {
                union string_list_elem_attr attr;
                size_t path_size               = PATH_MAX_LENGTH * sizeof(char);
@@ -886,7 +886,7 @@ static int general_push(menu_displaylist_info_t *info,
 
    if (!string_is_empty(newstring2))
    {
-      if (info->exts && !string_is_empty(info->exts))
+      if (!string_is_empty(info->exts))
          free(info->exts);
       info->exts = strdup(newstring2);
    }

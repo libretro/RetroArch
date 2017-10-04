@@ -41,7 +41,7 @@ static void sanitize_to_string(char *s, const char *label, size_t len)
 
    new_label[0] = '\0';
 
-   if (label && !string_is_empty(label))
+   if (!string_is_empty(label))
       strlcpy(new_label, label, sizeof(new_label));
    if (s && !string_is_empty(new_label))
    {
@@ -52,9 +52,7 @@ static void sanitize_to_string(char *s, const char *label, size_t len)
 
 static int fill_title(char *s, const char *title, const char *path, size_t len)
 {
-   if (  (path && !string_is_empty(path))
-         &&
-         (title && !string_is_empty(title)))
+   if (!string_is_empty(path) && !string_is_empty(title))
       fill_pathname_join_delim(s, title, path, ' ', len);
    return 0;
 }

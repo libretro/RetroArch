@@ -46,8 +46,7 @@ bool input_remapping_load_file(void *data, const char *path)
    if (!conf ||  string_is_empty(path))
       return false;
 
-   if (global->name.remapfile 
-         && !string_is_empty(global->name.remapfile))
+   if (!string_is_empty(global->name.remapfile))
       free(global->name.remapfile);
    global->name.remapfile = strdup(path);
 
@@ -259,8 +258,7 @@ void input_remapping_set_defaults(bool deinit)
 
    if (deinit)
    {
-      if (global->name.remapfile 
-            && !string_is_empty(global->name.remapfile))
+      if (!string_is_empty(global->name.remapfile))
          free(global->name.remapfile);
       global->name.remapfile = NULL;
       rarch_ctl(RARCH_CTL_UNSET_REMAPS_CORE_ACTIVE, NULL);

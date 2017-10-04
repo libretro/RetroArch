@@ -64,7 +64,7 @@ void filebrowser_parse(void *data, unsigned type_data)
    enum menu_displaylist_ctl_state type = (enum menu_displaylist_ctl_state)
                                           type_data;
    const char *path                     = info ? info->path : NULL;
-   bool path_is_compressed              = (path && !string_is_empty(path)) 
+   bool path_is_compressed              = !string_is_empty(path)
       ? path_is_compressed_file(path) : false;
    bool filter_ext                      =
       settings->bools.menu_navigation_browser_filter_supported_extensions_enable;

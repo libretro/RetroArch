@@ -603,7 +603,7 @@ static void xui_render(void *data, bool is_idle)
       xui_set_list_text(i, msg_left, msg_right);
 
       menu_entry_free(&entry);
-      if (entry_path && !string_is_empty(entry_path))
+      if (!string_is_empty(entry_path))
          free(entry_path);
    }
 

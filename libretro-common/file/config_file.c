@@ -896,7 +896,7 @@ bool config_file_write(config_file_t *conf, const char *path)
 {
    FILE *file;
 
-   if (path && !string_is_empty(path))
+   if (!string_is_empty(path))
    {
       file = fopen(path, "w");
       if (!file)

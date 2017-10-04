@@ -325,8 +325,7 @@ static void global_free(void)
    dir_clear_all();
    if (global)
    {
-      if (global->name.remapfile 
-            && !string_is_empty(global->name.remapfile))
+      if (!string_is_empty(global->name.remapfile))
          free(global->name.remapfile);
    }
    memset(global, 0, sizeof(struct global));

@@ -72,8 +72,7 @@ void path_set_redirect(void)
 
    new_savefile_dir[0] = new_savestate_dir[0]  = '\0';
 
-   if (info && info->info.library_name &&
-         !string_is_empty(info->info.library_name))
+   if (info && !string_is_empty(info->info.library_name))
       library_name_hash =
          msg_hash_calculate(info->info.library_name);
 

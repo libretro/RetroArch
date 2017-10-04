@@ -1384,16 +1384,16 @@ static int action_ok_file_load(const char *path,
 
    file_list_get_last(menu_stack, &menu_path, &menu_label, NULL, NULL);
 
-   if (menu_label && !string_is_empty(menu_label))
+   if (!string_is_empty(menu_label))
       setting = menu_setting_find(menu_label);
 
    if (setting_get_type(setting) == ST_PATH)
       return action_ok_set_path(path, label, type, idx, entry_idx);
 
-   if (menu_path && !string_is_empty(menu_path))
+   if (!string_is_empty(menu_path))
       strlcpy(menu_path_new, menu_path, sizeof(menu_path_new));
 
-   if (menu_label && !string_is_empty(menu_label))
+   if (!string_is_empty(menu_label))
    {
       if (
             string_is_equal(menu_label,
@@ -2424,7 +2424,7 @@ static int action_ok_file_load_ffmpeg(const char *path,
    content_info.args                   = NULL;
    content_info.environ_get            = NULL;
 
-   if (menu_path && !string_is_empty(menu_path))
+   if (!string_is_empty(menu_path))
       fill_pathname_join(new_path, menu_path, path,
             sizeof(new_path));
 
@@ -2486,7 +2486,7 @@ static int action_ok_file_load_imageviewer(const char *path,
    content_info.args                   = NULL;
    content_info.environ_get            = NULL;
 
-   if (menu_path && !string_is_empty(menu_path))
+   if (!string_is_empty(menu_path))
       fill_pathname_join(fullpath, menu_path, path,
             sizeof(fullpath));
 
@@ -3645,9 +3645,7 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
    if (!strstr(data->data, file_path_str(FILE_PATH_NETPLAY_ROOM_LIST_URL)))
    {
       if (string_is_empty(data->data))
-      {
          netplay_room_count = 0;
-      }
       else
       {
          char s[PATH_MAX_LENGTH];

@@ -384,7 +384,7 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
    if (!string_is_empty(newpath))
       entry->path = strdup(newpath);
 
-   if (entry_label && !string_is_empty(entry_label))
+   if (!string_is_empty(entry_label))
       entry->label = strdup(entry_label);
 }
 

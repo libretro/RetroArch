@@ -534,7 +534,7 @@ static int zarch_zui_render_lay_root_recent(
             if (menu_entry_action(&entry, i, MENU_ACTION_OK))
             {
                menu_entry_free(&entry);
-               if (rich_label && !string_is_empty(rich_label))
+               if (!string_is_empty(rich_label))
                   free(rich_label);
                return 1;
             }
@@ -542,7 +542,7 @@ static int zarch_zui_render_lay_root_recent(
 
          j++;
          menu_entry_free(&entry);
-         if (rich_label && !string_is_empty(rich_label))
+         if (!string_is_empty(rich_label))
             free(rich_label);
       }
 

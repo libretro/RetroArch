@@ -107,8 +107,7 @@ static void menu_action_setting_disp_set_label_remap_file_load(
 
    *w = 19;
    strlcpy(s2, path, len2);
-   if (global && global->name.remapfile
-         && !string_is_empty(global->name.remapfile))
+   if (global && !string_is_empty(global->name.remapfile))
       fill_pathname_base(s, global->name.remapfile,
             len);
 }
@@ -622,7 +621,7 @@ static void menu_action_setting_disp_set_label_menu_more(
 {
    strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MORE), len);
    *w = 19;
-   if (path && !string_is_empty(path))
+   if (!string_is_empty(path))
       strlcpy(s2, path, len2);
 }
 
@@ -637,7 +636,7 @@ static void menu_action_setting_disp_set_label_db_entry(
 {
    strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MORE), len);
    *w = 10;
-   if (path && !string_is_empty(path))
+   if (!string_is_empty(path))
       strlcpy(s2, path, len2);
 }
 

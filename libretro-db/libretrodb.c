@@ -206,7 +206,7 @@ void libretrodb_close(libretrodb_t *db)
 {
    if (db->fd)
       filestream_close(db->fd);
-   if (db->path && !string_is_empty(db->path))
+   if (!string_is_empty(db->path))
       free(db->path);
    db->path = NULL;
    db->fd   = NULL;
@@ -222,7 +222,7 @@ int libretrodb_open(const char *path, libretrodb_t *db)
    if (!fd)
       return -errno;
 
-   if (db->path && !string_is_empty(db->path))
+   if (!string_is_empty(db->path))
       free(db->path);
 
    db->path  = strdup(path);
@@ -428,7 +428,7 @@ void libretrodb_cursor_close(libretrodb_cursor_t *cursor)
 int libretrodb_cursor_open(libretrodb_t *db, libretrodb_cursor_t *cursor,
       libretrodb_query_t *q)
 {
-   if (!db || !db->path || string_is_empty(db->path))
+   if (!db || string_is_empty(db->path))
       return -errno;
 
    cursor->fd = filestream_open(db->path, RFILE_MODE_READ | RFILE_HINT_MMAP, -1);
