@@ -24,6 +24,7 @@
 - WINDOWS/WGL: Try to use wglSwapLayerBuffers instead of SwapBuffers if possible (for more optimal performance).
 - WII: Use custom, embedded libogc SDK.
 - WIIU: Initial touchscreen support for WiiU gamepad.
+- WIIU: Add Cheevos support.
 - SCANNER: Fix archive scanning.
 - SCANNER: Support CHD files.
 - SCANNER: Use primary data track of disc images for CRC lookups rather than cue files.  This is slower but finds matches more reliably, and is necessary for CHD files to work at all.  Update your databases!
