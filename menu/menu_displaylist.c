@@ -1515,7 +1515,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
       free(lpl_basename);
    }
 
-   /* prealocate the file list */
+   /* preallocate the file list */
    file_list_reserve(info->list, list_size);
 
    for (i = 0; i < list_size; i++)
