@@ -3999,18 +3999,18 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
    if (!xmb)
       return;
 
-   /* FIXME: this shouldn't be happening at all */
-   if (selection >= selection_buf->size)
-      selection = selection_buf->size ? selection_buf->size - 1 : 0;
-
-   xmb->selection_ptr_old = selection;
-
    /* Check whether to enable the horizontal animation. */
    if (settings->bools.menu_horizontal_animation)
    {
       unsigned first = 0, last = 0;
       unsigned height = 0;
       video_driver_get_size(NULL, &height);
+
+      /* FIXME: this shouldn't be happening at all */
+      if (selection >= selection_buf->size)
+         selection = selection_buf->size ? selection_buf->size - 1 : 0;
+
+      xmb->selection_ptr_old = selection;
 
       xmb_calculate_visible_range(xmb, height, selection_buf->size,
             xmb->selection_ptr_old, &first, &last);
@@ -4021,7 +4021,11 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
       last                   -= first;
       first                   = 0;
    }
-
+   else
+   {
+      selection = 0;
+      xmb->selection_ptr_old = 0;
+   }
 
    list_size = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL)
       + xmb->system_tab_end;
