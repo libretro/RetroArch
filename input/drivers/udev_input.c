@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2015 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -82,17 +82,16 @@ static const char *g_dev_type_str[] =
 
 typedef struct
 {
-   int16_t x, y, dlt_x, dlt_y;
+   /* If device is "absolute" coords will be in device specific units
+      and axis min value will be less than max, otherwise coords will be
+      relative to full viewport and min and max values will be zero. */
+   __s32 x_abs, y_abs;
+   __s32 x_min, y_min;
+   __s32 x_max, y_max;
+   __s32 x_rel, y_rel;
    bool l, r, m;
    bool wu, wd, whu, whd;
 } udev_input_mouse_t;
-
-typedef struct
-{
-   struct input_absinfo info_x;
-   struct input_absinfo info_y;
-   udev_input_mouse_t mouse; /* touch-pad will be presented to RA/core as mouse */
-} udev_input_touchpad_t;
 
 struct udev_input_device
 {
@@ -103,11 +102,7 @@ struct udev_input_device
    char devnode[PATH_MAX_LENGTH];
    enum udev_input_dev_type type;
 
-   union
-   {
-      udev_input_mouse_t mouse;
-      udev_input_touchpad_t touchpad;
-   } state;
+   udev_input_mouse_t mouse;
 };
 
 typedef void (*device_handle_cb)(void *data,
@@ -129,6 +124,10 @@ struct udev_input
 #ifdef UDEV_XKB_HANDLING
    bool xkb_handling;
 #endif
+
+   /* OS pointer coords (zeros if we don't have X11) */
+   int pointer_x;
+   int pointer_y;
 };
 
 #ifdef UDEV_XKB_HANDLING
@@ -216,10 +215,7 @@ static udev_input_mouse_t *udev_get_mouse(struct udev_input *udev, unsigned port
 
       if (mouse_index == settings->uints.input_mouse_index[port])
       {
-         if (udev->devices[i]->type == UDEV_INPUT_MOUSE)
-            mouse = &udev->devices[i]->state.mouse;
-         else
-            mouse = &udev->devices[i]->state.touchpad.mouse;
+         mouse = &udev->devices[i]->mouse;
          break;
       }
 
@@ -229,54 +225,166 @@ static udev_input_mouse_t *udev_get_mouse(struct udev_input *udev, unsigned port
    return mouse;
 }
 
-static void udev_handle_touchpad(void *data,
-      const struct input_event *event, udev_input_device_t *dev)
+static void udev_mouse_set_x(udev_input_mouse_t *mouse, __s32 x, bool abs)
 {
-   int16_t pos;
-   unsigned width                  = 0;
-   unsigned height                 = 0;
-   udev_input_touchpad_t *touchpad = &dev->state.touchpad;
-   udev_input_mouse_t *mouse       = &dev->state.touchpad.mouse;
+   video_viewport_t vp;
 
-   switch (event->type)
+   if (abs)
    {
-      case EV_ABS:
-         video_driver_get_size(&width, &height);
-         switch (event->code)
-         {
-            case ABS_X:
-               pos = (float)(event->value - touchpad->info_x.minimum) /
-                     (touchpad->info_x.maximum - touchpad->info_x.minimum) * width;
-               mouse->dlt_x += pos - mouse->x;
-               mouse->x = pos;
-               break;
-            case ABS_Y:
-               pos = (float)(event->value - touchpad->info_y.minimum) /
-                     (touchpad->info_y.maximum - touchpad->info_y.minimum) * height;
-               mouse->dlt_y += pos - mouse->y;
-               mouse->y = pos;
-         }
-         break;
-
-      case EV_KEY:
-         switch (event->code)
-         {
-            case BTN_LEFT:
-               mouse->l = event->value;
-               break;
-            case BTN_MIDDLE:
-               mouse->m = event->value;
-               break;
-            case BTN_RIGHT:
-               mouse->r = event->value;
-         }
+      mouse->x_rel += x - mouse->x_abs;
+      mouse->x_abs = x;
    }
+   else
+   {
+      mouse->x_rel += x;
+      if (video_driver_get_viewport_info(&vp))
+      {
+         mouse->x_abs += x;
+
+         if (mouse->x_abs < vp.x)
+            mouse->x_abs = vp.x;
+         else if (mouse->x_abs >= vp.x + vp.full_width)
+            mouse->x_abs = vp.x + vp.full_width - 1;
+      }
+   }
+}
+
+static int16_t udev_mouse_get_x(const udev_input_mouse_t *mouse)
+{
+   video_viewport_t vp;
+   double src_width;
+   double x;
+
+   if (!video_driver_get_viewport_info(&vp))
+      return 0;
+
+   if (mouse->x_min < mouse->x_max) /* mouse coords are absolute */
+      src_width = mouse->x_max - mouse->x_min + 1;
+   else
+      src_width = vp.full_width;
+
+   x = (double)vp.width / src_width * mouse->x_rel;
+
+   return x + (x < 0 ? -0.5 : 0.5);
+}
+
+static void udev_mouse_set_y(udev_input_mouse_t *mouse, __s32 y, bool abs)
+{
+   video_viewport_t vp;
+
+   if (abs)
+   {
+      mouse->y_rel += y - mouse->y_abs;
+      mouse->y_abs = y;
+   }
+   else
+   {
+      mouse->y_rel += y;
+      if (video_driver_get_viewport_info(&vp))
+      {
+         mouse->y_abs += y;
+
+         if (mouse->y_abs < vp.y)
+            mouse->y_abs = vp.y;
+         else if (mouse->y_abs >= vp.y + vp.full_height)
+            mouse->y_abs = vp.y + vp.full_height - 1;
+      }
+   }
+}
+
+static int16_t udev_mouse_get_y(const udev_input_mouse_t *mouse)
+{
+   video_viewport_t vp;
+   double src_height;
+   double y;
+
+   if (!video_driver_get_viewport_info(&vp))
+      return 0;
+
+   if (mouse->y_min < mouse->y_max) /* mouse coords are absolute */
+      src_height = mouse->y_max - mouse->y_min + 1;
+   else
+      src_height = vp.full_height;
+
+   y = (double)vp.height / src_height * mouse->y_rel;
+
+   return y + (y < 0 ? -0.5 : 0.5);
+}
+
+static int16_t udev_mouse_get_pointer_x(const udev_input_mouse_t *mouse, bool screen)
+{
+   video_viewport_t vp;
+   double src_min;
+   double src_width;
+   int32_t x;
+
+   if (!video_driver_get_viewport_info(&vp))
+      return 0;
+
+   if (mouse->x_min < mouse->x_max) /* mouse coords are absolute */
+   {
+      src_min = mouse->x_min;
+      src_width = mouse->x_max - mouse->x_min + 1;
+   }
+   else /* mouse coords are viewport relative */
+   {
+      src_min = vp.x;
+      if (screen)
+         src_width = vp.full_width;
+      else
+         src_width = vp.width;
+   }
+
+   x = -32767.0 + 65535.0 / src_width * (mouse->x_abs - src_min);
+   x += (x < 0 ? -0.5 : 0.5);
+
+   if (x < -0x7fff)
+      x = -0x7fff;
+   else if(x > 0x7fff)
+      x = 0x7fff;
+
+   return x;
+}
+
+static int16_t udev_mouse_get_pointer_y(const udev_input_mouse_t *mouse, bool screen)
+{
+   video_viewport_t vp;
+   double src_min;
+   double src_height;
+   int32_t y;
+
+   if (!video_driver_get_viewport_info(&vp))
+      return 0;
+
+   if (mouse->y_min < mouse->y_max) /* mouse coords are absolute */
+   {
+      src_min = mouse->y_min;
+      src_height = mouse->y_max - mouse->y_min + 1;
+   }
+   else /* mouse coords are viewport relative */
+   {
+      src_min = vp.y;
+      if (screen)
+         src_height = vp.full_height;
+      else
+         src_height = vp.height;
+   }
+
+   y = -32767.0 + 65535.0 / src_height * (mouse->y_abs - src_min);
+   y += (y < 0 ? -0.5 : 0.5);
+
+   if (y < -0x7fff)
+      y = -0x7fff;
+   else if(y > 0x7fff)
+      y = 0x7fff;
+
+   return y;
 }
 
 static void udev_handle_mouse(void *data,
       const struct input_event *event, udev_input_device_t *dev)
 {
-   udev_input_mouse_t *mouse = &dev->state.mouse;
+   udev_input_mouse_t *mouse = &dev->mouse;
 
    switch (event->type)
    {
@@ -303,10 +411,10 @@ static void udev_handle_mouse(void *data,
          switch (event->code)
          {
             case REL_X:
-               mouse->dlt_x += event->value;
+               udev_mouse_set_x(mouse, event->value, false);
                break;
             case REL_Y:
-               mouse->dlt_y += event->value;
+               udev_mouse_set_y(mouse, event->value, false);
                break;
             case REL_WHEEL:
                if (event->value == 1)
@@ -321,6 +429,19 @@ static void udev_handle_mouse(void *data,
                   mouse->whd = 1;
                break;
          }
+         break;
+
+      case EV_ABS:
+         switch (event->code)
+         {
+            case ABS_X:
+               udev_mouse_set_x(mouse, event->value, true);
+               break;
+            case ABS_Y:
+               udev_mouse_set_y(mouse, event->value, true);
+               break;
+         }
+         break;
    }
 }
 
@@ -330,6 +451,7 @@ static bool udev_input_add_device(udev_input_t *udev,
    int fd;
    struct stat st;
    struct epoll_event event;
+   struct input_absinfo absinfo;
    udev_input_device_t **tmp;
    udev_input_device_t *device = NULL;
 
@@ -354,10 +476,38 @@ static bool udev_input_add_device(udev_input_t *udev,
    strlcpy(device->devnode, devnode, sizeof(device->devnode));
 
    /* Touchpads report in absolute coords. */
-   if (type == UDEV_INPUT_TOUCHPAD &&
-         (ioctl(fd, EVIOCGABS(ABS_X), &device->state.touchpad.info_x) < 0 ||
-          ioctl(fd, EVIOCGABS(ABS_Y), &device->state.touchpad.info_y) < 0))
-      goto error;
+   if (type == UDEV_INPUT_TOUCHPAD)
+   {
+      if (ioctl(fd, EVIOCGABS(ABS_X), &absinfo) < 0 ||
+            absinfo.minimum >= absinfo.maximum)
+         goto error;
+
+      device->mouse.x_min = absinfo.minimum;
+      device->mouse.x_max = absinfo.maximum;
+
+      if (ioctl(fd, EVIOCGABS(ABS_Y), &absinfo) < 0 ||
+          absinfo.minimum >= absinfo.maximum)
+         goto error;
+
+      device->mouse.y_min = absinfo.minimum;
+      device->mouse.y_max = absinfo.maximum;
+   }
+   /* UDEV_INPUT_MOUSE may report in absolute coords too */
+   else if (type == UDEV_INPUT_MOUSE && ioctl(fd, EVIOCGABS(ABS_X), &absinfo) >= 0)
+   {
+      if (absinfo.minimum >= absinfo.maximum)
+         goto error;
+
+      device->mouse.x_min = absinfo.minimum;
+      device->mouse.x_max = absinfo.maximum;
+
+      if (ioctl(fd, EVIOCGABS(ABS_Y), &absinfo) < 0 ||
+          absinfo.minimum >= absinfo.maximum)
+         goto error;
+
+      device->mouse.y_min = absinfo.minimum;
+      device->mouse.y_max = absinfo.maximum;
+   }
 
    tmp = ( udev_input_device_t**)realloc(udev->devices,
          (udev->num_devices + 1) * sizeof(*udev->devices));
@@ -440,7 +590,7 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
    else if (val_touchpad && string_is_equal_fast(val_touchpad, "1", 1) && devnode)
    {
       dev_type   = UDEV_INPUT_TOUCHPAD;
-      cb         = udev_handle_touchpad;
+      cb         = udev_handle_mouse;
    }
    else
       goto end;
@@ -477,11 +627,11 @@ static void udev_input_get_pointer_position(int *x, int *y)
 
 static bool udev_input_poll_hotplug_available(struct udev_monitor *dev)
 {
-   struct pollfd fds;		
+   struct pollfd fds;
 
-   fds.fd      = udev_monitor_get_fd(dev);		
-   fds.events  = POLLIN;		
-   fds.revents = 0;		
+   fds.fd      = udev_monitor_get_fd(dev);
+   fds.events  = POLLIN;
+   fds.revents = 0;
 
    return (poll(&fds, 1, 0) == 1) && (fds.revents & POLLIN);
 }
@@ -491,30 +641,22 @@ static void udev_input_poll(void *data)
    int i, ret;
    struct epoll_event events[32];
    udev_input_mouse_t *mouse = NULL;
-   int x                     = 0;
-   int y                     = 0;
    udev_input_t *udev        = (udev_input_t*)data;
 
 #ifdef HAVE_X11
    if (video_driver_display_type_get() == RARCH_DISPLAY_X11)
-      udev_input_get_pointer_position(&x, &y);
+      udev_input_get_pointer_position(&udev->pointer_x, &udev->pointer_y);
 #endif
 
    for (i = 0; i < udev->num_devices; ++i)
    {
-      if (udev->devices[i]->type == UDEV_INPUT_MOUSE)
-      {
-         mouse    = &udev->devices[i]->state.mouse;
-         mouse->x = x;
-         mouse->y = y;
-      }
-      else if (udev->devices[i]->type == UDEV_INPUT_TOUCHPAD)
-         mouse = &udev->devices[i]->state.touchpad.mouse;
-      else
+      if (udev->devices[i]->type == UDEV_INPUT_KEYBOARD)
          continue;
 
-      mouse->dlt_x = 0;
-      mouse->dlt_y = 0;
+      mouse = &udev->devices[i]->mouse;
+
+      mouse->x_rel = 0;
+      mouse->y_rel = 0;
       mouse->wu    = false;
       mouse->wd    = false;
       mouse->whu   = false;
@@ -548,18 +690,22 @@ static void udev_input_poll(void *data)
       udev->joypad->poll();
 }
 
-static bool udev_pointer_is_off_window(udev_input_mouse_t *mouse)
+static bool udev_pointer_is_off_window(const udev_input_t *udev)
 {
+#ifdef HAVE_X11
    struct video_viewport view;
    bool r = video_driver_get_viewport_info(&view);
 
    if (r)
-      r = mouse->x < view.x ||
-          mouse->x >= view.x + view.width ||
-          mouse->y < view.y ||
-          mouse->y >= view.y + view.height;
+      r = udev->pointer_x < view.x ||
+          udev->pointer_x >= view.x + view.width ||
+          udev->pointer_y < view.y ||
+          udev->pointer_y >= view.y + view.height;
 
    return r;
+#else
+   return false;
+#endif
 }
 
 static int16_t udev_mouse_state(udev_input_t *udev,
@@ -571,15 +717,15 @@ static int16_t udev_mouse_state(udev_input_t *udev,
       return 0;
 
    if (id != RETRO_DEVICE_ID_MOUSE_X && id != RETRO_DEVICE_ID_MOUSE_Y &&
-         udev_pointer_is_off_window(mouse))
+         udev_pointer_is_off_window(udev))
       return 0;
 
    switch (id)
    {
       case RETRO_DEVICE_ID_MOUSE_X:
-         return screen ? mouse->x : mouse->dlt_x;
+         return screen ? udev->pointer_x : udev_mouse_get_x(mouse);
       case RETRO_DEVICE_ID_MOUSE_Y:
-         return screen ? mouse->y : mouse->dlt_y;
+         return screen ? udev->pointer_y : udev_mouse_get_y(mouse);
       case RETRO_DEVICE_ID_MOUSE_LEFT:
          return mouse->l;
       case RETRO_DEVICE_ID_MOUSE_RIGHT:
@@ -610,9 +756,9 @@ static int16_t udev_lightgun_state(udev_input_t *udev,
    switch (id)
    {
       case RETRO_DEVICE_ID_LIGHTGUN_X:
-         return mouse->dlt_x;
+         return udev_mouse_get_x(mouse);
       case RETRO_DEVICE_ID_LIGHTGUN_Y:
-         return mouse->dlt_y;
+         return udev_mouse_get_y(mouse);
       case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
          return mouse->l;
       case RETRO_DEVICE_ID_LIGHTGUN_CURSOR:
@@ -638,11 +784,11 @@ static int16_t udev_analog_pressed(const struct retro_keybind *binds,
 
    input_conv_analog_id_to_bind_id(idx, id, &id_minus, &id_plus);
 
-   if (     binds[id_minus].valid 
+   if (     binds[id_minus].valid
          && BIT_GET(udev_key_state,
             rarch_keysym_lut[binds[id_minus].key]))
       pressed_minus = -0x7fff;
-   if (     binds[id_plus].valid 
+   if (     binds[id_plus].valid
          && BIT_GET(udev_key_state,
          rarch_keysym_lut[binds[id_plus].key]))
       pressed_plus = 0x7fff;
@@ -653,45 +799,17 @@ static int16_t udev_analog_pressed(const struct retro_keybind *binds,
 static int16_t udev_pointer_state(udev_input_t *udev,
       unsigned port, unsigned id, bool screen)
 {
-   struct video_viewport vp;
-   bool inside                 = false;
-   int16_t res_x               = 0;
-   int16_t res_y               = 0;
-   int16_t res_screen_x        = 0;
-   int16_t res_screen_y        = 0;
-   udev_input_mouse_t *mouse   = udev_get_mouse(udev, port);
-
-   vp.x                        = 0;
-   vp.y                        = 0;
-   vp.width                    = 0;
-   vp.height                   = 0;
-   vp.full_width               = 0;
-   vp.full_height              = 0;
+   udev_input_mouse_t *mouse = udev_get_mouse(udev, port);
 
    if (!mouse)
-      return 0;
-
-   if (!(video_driver_translate_coord_viewport_wrap(&vp,
-         mouse->x, mouse->y, &res_x, &res_y, &res_screen_x, &res_screen_y)))
-      return 0;
-
-   if (screen)
-   {
-      res_x = res_screen_x;
-      res_y = res_screen_y;
-   }
-
-   inside = (res_x >= -0x7fff) && (res_y >= -0x7fff);
-
-   if (!inside)
       return 0;
 
    switch (id)
    {
       case RETRO_DEVICE_ID_POINTER_X:
-         return res_x;
+         return udev_mouse_get_pointer_x(mouse, screen);
       case RETRO_DEVICE_ID_POINTER_Y:
-         return res_y;
+         return udev_mouse_get_pointer_y(mouse, screen);
       case RETRO_DEVICE_ID_POINTER_PRESSED:
          return mouse->l;
    }
@@ -878,13 +996,13 @@ static void *udev_input_init(const char *joypad_driver)
       goto error;
    }
 
-   if (!open_devices(udev, UDEV_INPUT_TOUCHPAD, udev_handle_touchpad))
+   if (!open_devices(udev, UDEV_INPUT_TOUCHPAD, udev_handle_mouse))
    {
       RARCH_ERR("Failed to open touchpads.\n");
       goto error;
    }
 
-   /* If using KMS and we forgot this, 
+   /* If using KMS and we forgot this,
     * we could lock ourselves out completely. */
    if (!udev->num_devices)
       RARCH_WARN("[udev]: Couldn't open any keyboard, mouse or touchpad. Are permissions set correctly for /dev/input/event*?\n");
