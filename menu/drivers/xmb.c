@@ -4353,8 +4353,12 @@ static int xmb_list_push(void *data, void *userdata,
                menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
             }
 
-            entry.enum_idx      = MENU_ENUM_LABEL_INFORMATION_LIST;
-            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            if (settings->bools.menu_show_information)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_INFORMATION_LIST;
+               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            }
+
 #ifndef HAVE_DYNAMIC
             entry.enum_idx      = MENU_ENUM_LABEL_RESTART_RETROARCH;
             menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);

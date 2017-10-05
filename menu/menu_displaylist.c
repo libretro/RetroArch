@@ -5294,6 +5294,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_MENU_SHOW_CORE_UPDATER,
                PARSE_ONLY_BOOL, false);
 #endif
+
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_MENU_SHOW_INFORMATION,
+               PARSE_ONLY_BOOL, false);
+
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_XMB_SHOW_SETTINGS,
                PARSE_ONLY_BOOL, false);
