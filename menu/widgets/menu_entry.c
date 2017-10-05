@@ -310,8 +310,9 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
    if (!list)
       return;
 
-   menu_entries_get_at_offset(list, i, &path, &entry_label, &entry->type,
-         &entry->entry_idx, NULL);
+   file_list_get_at_offset(list, i, &path, &entry_label, &entry->type,
+         &entry->entry_idx);
+   file_list_get_alt_at_offset(list, i, NULL);
 
    cbs = (menu_file_list_cbs_t*)file_list_get_actiondata_at_offset(list, i);
 
@@ -330,7 +331,8 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
          tmp[0] = '\0';
 
          cbs->action_get_value(list,
-               &entry->spacing, entry->type, (unsigned)i, label,
+               &entry->spacing, entry->type,
+               (unsigned)i, label,
                tmp,
                sizeof(tmp),
                entry_label, path,
