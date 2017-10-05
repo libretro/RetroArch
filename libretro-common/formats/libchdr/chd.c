@@ -621,6 +621,8 @@ chd_error cdlz_codec_decompress(void *codec, const uint8_t *src, uint32_t comple
 	/* reset and decode */
 	lzma_codec_decompress(&cdlz->base_decompressor, &src[header_bytes], complen_base, &cdlz->buffer[0], frames * CD_MAX_SECTOR_DATA);
 #ifdef WANT_SUBCODE
+	if (header_bytes + complen_base >= complen)
+		return CHDERR_DECOMPRESSION_ERROR;
 	zlib_codec_decompress(&cdlz->subcode_decompressor, &src[header_bytes + complen_base], complen - complen_base - header_bytes, &cdlz->buffer[frames * CD_MAX_SECTOR_DATA], frames * CD_MAX_SUBCODE_DATA);
 #endif
 
@@ -2073,7 +2075,8 @@ static chd_error hunk_read_into_memory(chd_file *chd, UINT32 hunknum, UINT8 *des
 			case V34_MAP_ENTRY_TYPE_COMPRESSED:
 
 				/* read it into the decompression buffer */
-				core_fseek(chd->file, entry->offset, SEEK_SET);
+				if (core_fseek(chd->file, entry->offset, SEEK_SET) != 0)
+					return CHDERR_READ_ERROR;
 				bytes = core_fread(chd->file, chd->compressed, entry->length);
 				if (bytes != entry->length)
 					return CHDERR_READ_ERROR;
@@ -2089,7 +2092,8 @@ static chd_error hunk_read_into_memory(chd_file *chd, UINT32 hunknum, UINT8 *des
 
 			/* uncompressed data */
 			case V34_MAP_ENTRY_TYPE_UNCOMPRESSED:
-				core_fseek(chd->file, entry->offset, SEEK_SET);
+				if (core_fseek(chd->file, entry->offset, SEEK_SET) != 0)
+					return CHDERR_READ_ERROR;
 				bytes = core_fread(chd->file, dest, chd->header.hunkbytes);
 				if (bytes != chd->header.hunkbytes)
 					return CHDERR_READ_ERROR;
@@ -2158,8 +2162,10 @@ static chd_error hunk_read_into_memory(chd_file *chd, UINT32 hunknum, UINT8 *des
 			case COMPRESSION_TYPE_1:
 			case COMPRESSION_TYPE_2:
 			case COMPRESSION_TYPE_3:
-				core_fseek(chd->file, blockoffs, SEEK_SET);
-				core_fread(chd->file, chd->compressed, blocklen);
+				if (core_fseek(chd->file, blockoffs, SEEK_SET) != 0);
+					return CHDERR_READ_ERROR;
+				if (core_fread(chd->file, chd->compressed, blocklen) != blocklen)
+					return CHDERR_READ_ERROR;
 				switch (chd->codecintf[rawmap[0]]->compression)
 				{
 					case CHD_CODEC_CD_LZMA:
@@ -2186,8 +2192,10 @@ static chd_error hunk_read_into_memory(chd_file *chd, UINT32 hunknum, UINT8 *des
 				return CHDERR_NONE;
 
 			case COMPRESSION_NONE:
-				core_fseek(chd->file, blockoffs, SEEK_SET);
-				core_fread(chd->file, dest, chd->header.hunkbytes);
+				if (core_fseek(chd->file, blockoffs, SEEK_SET) != 0)
+					return CHDERR_READ_ERROR;
+				if (core_fread(chd->file, dest, chd->header.hunkbytes) != chd->header.hunkbytes)
+					return CHDERR_READ_ERROR;
 #ifdef VERIFY_BLOCK_CRC
 				if (crc16(dest, chd->header.hunkbytes) != blockcrc)
 					return CHDERR_DECOMPRESSION_ERROR;

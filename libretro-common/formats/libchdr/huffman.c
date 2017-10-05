@@ -304,6 +304,7 @@ enum huffman_error huffman_import_tree_huffman(struct huffman_decoder* decoder, 
 
 	/* build the lookup table */
 	huffman_build_lookup_table(decoder);
+	delete_huffman_decoder(smallhuff);
 
 	/* determine final input length and report errors */
 	return bitstream_overflow(bitbuf) ? HUFFERR_INPUT_BUFFER_TOO_SMALL : HUFFERR_NONE;
