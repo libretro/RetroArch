@@ -4322,8 +4322,11 @@ static int xmb_list_push(void *data, void *userdata,
             if (frontend_driver_has_fork())
 #endif
             {
-               entry.enum_idx   = MENU_ENUM_LABEL_CORE_LIST;
-               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+               if (settings->bools.menu_show_load_core)
+               {
+                  entry.enum_idx   = MENU_ENUM_LABEL_CORE_LIST;
+                  menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+               }
             }
 
             entry.enum_idx      = MENU_ENUM_LABEL_LOAD_CONTENT_LIST;

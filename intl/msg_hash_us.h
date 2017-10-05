@@ -3151,3 +3151,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_RENAME_ENTRY,
       "Rename the title of the entry.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RENAME_ENTRY,
       "Rename")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
+      "Show Load Core")
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE,
+      "Show/hide the 'Load Core' option.")

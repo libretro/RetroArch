@@ -1305,3 +1305,5 @@ MSG_HASH(MENU_ENUM_LABEL_MATERIALUI_ICONS_ENABLE,
       "materialui_icons_enable")
 MSG_HASH(MENU_ENUM_LABEL_RENAME_ENTRY,
       "rename_entry")
+MSG_HASH(MENU_ENUM_LABEL_MENU_SHOW_LOAD_CORE,
+      "menu_show_load_core")
