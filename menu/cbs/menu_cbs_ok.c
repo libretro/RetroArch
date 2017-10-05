@@ -4724,10 +4724,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS:
             BIND_ACTION_OK(cbs, action_ok_push_accounts_cheevos_list);
             break;
-         case MENU_LABEL_SCAN_FILE:
-            BIND_ACTION_OK(cbs, action_ok_push_scan_file);
-            break;
-         case MENU_LABEL_SCAN_DIRECTORY:
          case MENU_LABEL_FAVORITES:
             BIND_ACTION_OK(cbs, action_ok_push_content_list);
             break;

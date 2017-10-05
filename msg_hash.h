@@ -1703,11 +1703,6 @@ enum msg_hash_enums
 
 #define MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST                            0xb4f82700U
 
-/* Scan values */
-#define MENU_LABEL_SCAN_THIS_DIRECTORY                                         0x6921b775U
-#define MENU_LABEL_SCAN_DIRECTORY                                              0x57de303eU
-#define MENU_LABEL_SCAN_FILE                                                   0xd5d1eee9U
-
 /* Online updater settings */
 
 #define MENU_LABEL_UPDATE_LAKKA                                                0x19b51eebU
