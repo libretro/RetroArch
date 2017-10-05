@@ -1307,3 +1307,5 @@ MSG_HASH(MENU_ENUM_LABEL_RENAME_ENTRY,
       "rename_entry")
 MSG_HASH(MENU_ENUM_LABEL_MENU_SHOW_LOAD_CORE,
       "menu_show_load_core")
+MSG_HASH(MENU_ENUM_LABEL_MENU_SHOW_LOAD_CONTENT,
+      "menu_show_load_content")

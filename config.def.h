@@ -238,6 +238,7 @@ static bool default_block_config_read    = true;
 
 static bool menu_show_online_updater     = true;
 static bool menu_show_load_core          = true;
+static bool menu_show_load_content       = true;
 
 #if defined(HAVE_LAKKA) || defined(VITA)
 static bool menu_show_core_updater       = false;
