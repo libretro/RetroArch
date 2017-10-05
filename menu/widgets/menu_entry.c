@@ -375,11 +375,13 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
 
    entry->idx         = (unsigned)i;
 
-   if (path && !use_representation)
+   if (!string_is_empty(path) && !use_representation)
       strlcpy(newpath,  path, sizeof(newpath));
    else if (cbs && cbs->setting && cbs->setting->enum_value_idx != MSG_UNKNOWN
          && !cbs->setting->dont_use_enum_idx_representation)
-      strlcpy(newpath, msg_hash_to_str(cbs->setting->enum_value_idx), sizeof(newpath));
+      strlcpy(newpath,
+            msg_hash_to_str(cbs->setting->enum_value_idx),
+            sizeof(newpath));
 
    if (!string_is_empty(newpath))
       entry->path = strdup(newpath);
