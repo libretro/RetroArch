@@ -85,10 +85,10 @@ typedef struct
    /* If device is "absolute" coords will be in device specific units
       and axis min value will be less than max, otherwise coords will be
       relative to full viewport and min and max values will be zero. */
-   __s32 x_abs, y_abs;
-   __s32 x_min, y_min;
-   __s32 x_max, y_max;
-   __s32 x_rel, y_rel;
+   int32_t x_abs, y_abs;
+   int32_t x_min, y_min;
+   int32_t x_max, y_max;
+   int32_t x_rel, y_rel;
    bool l, r, m;
    bool wu, wd, whu, whd;
 } udev_input_mouse_t;
@@ -225,7 +225,7 @@ static udev_input_mouse_t *udev_get_mouse(struct udev_input *udev, unsigned port
    return mouse;
 }
 
-static void udev_mouse_set_x(udev_input_mouse_t *mouse, __s32 x, bool abs)
+static void udev_mouse_set_x(udev_input_mouse_t *mouse, int32_t x, bool abs)
 {
    video_viewport_t vp;
 
@@ -268,7 +268,7 @@ static int16_t udev_mouse_get_x(const udev_input_mouse_t *mouse)
    return x + (x < 0 ? -0.5 : 0.5);
 }
 
-static void udev_mouse_set_y(udev_input_mouse_t *mouse, __s32 y, bool abs)
+static void udev_mouse_set_y(udev_input_mouse_t *mouse, int32_t y, bool abs)
 {
    video_viewport_t vp;
 
