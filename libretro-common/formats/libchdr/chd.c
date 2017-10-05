@@ -2049,176 +2049,177 @@ static chd_error hunk_read_into_cache(chd_file *chd, UINT32 hunknum)
 
 static chd_error hunk_read_into_memory(chd_file *chd, UINT32 hunknum, UINT8 *dest)
 {
-	chd_error err;
+   chd_error err;
 
-	/* punt if no file */
-	if (chd->file == NULL)
-		return CHDERR_INVALID_FILE;
+   /* punt if no file */
+   if (chd->file == NULL)
+      return CHDERR_INVALID_FILE;
 
-	/* return an error if out of range */
-	if (hunknum >= chd->header.totalhunks)
-		return CHDERR_HUNK_OUT_OF_RANGE;
+   /* return an error if out of range */
+   if (hunknum >= chd->header.totalhunks)
+	   return CHDERR_HUNK_OUT_OF_RANGE;
 
-	if (dest == NULL)
-		return CHDERR_INVALID_PARAMETER;
+   if (dest == NULL)
+	   return CHDERR_INVALID_PARAMETER;
 
-	if (chd->header.version < 5)
-	{
-      void* codec;
-		map_entry *entry = &chd->map[hunknum];
-		UINT32 bytes;
+   if (chd->header.version < 5)
+   {
+	   void* codec;
+	   map_entry *entry = &chd->map[hunknum];
+	   UINT32 bytes;
 
-		/* switch off the entry type */
-		switch (entry->flags & MAP_ENTRY_FLAG_TYPE_MASK)
-		{
-			/* compressed data */
-			case V34_MAP_ENTRY_TYPE_COMPRESSED:
+	   /* switch off the entry type */
+	   switch (entry->flags & MAP_ENTRY_FLAG_TYPE_MASK)
+	   {
+		   /* compressed data */
+		   case V34_MAP_ENTRY_TYPE_COMPRESSED:
 
-				/* read it into the decompression buffer */
-				if (core_fseek(chd->file, entry->offset, SEEK_SET) != 0)
-					return CHDERR_READ_ERROR;
-				bytes = core_fread(chd->file, chd->compressed, entry->length);
-				if (bytes != entry->length)
-					return CHDERR_READ_ERROR;
+			   /* read it into the decompression buffer */
+			   if (core_fseek(chd->file, entry->offset, SEEK_SET) != 0)
+				   return CHDERR_READ_ERROR;
+			   bytes = core_fread(chd->file, chd->compressed, entry->length);
+			   if (bytes != entry->length)
+				   return CHDERR_READ_ERROR;
 
-				/* now decompress using the codec */
-				err   = CHDERR_NONE;
-				codec = &chd->zlib_codec_data;
-				if (chd->codecintf[0]->decompress != NULL)
-					err = (*chd->codecintf[0]->decompress)(codec, chd->compressed, entry->length, dest, chd->header.hunkbytes);
-				if (err != CHDERR_NONE)
-					return err;
-				break;
+			   /* now decompress using the codec */
+			   err   = CHDERR_NONE;
+			   codec = &chd->zlib_codec_data;
+			   if (chd->codecintf[0]->decompress != NULL)
+				   err = (*chd->codecintf[0]->decompress)(codec, chd->compressed, entry->length, dest, chd->header.hunkbytes);
+			   if (err != CHDERR_NONE)
+				   return err;
+			   break;
 
-			/* uncompressed data */
-			case V34_MAP_ENTRY_TYPE_UNCOMPRESSED:
-				if (core_fseek(chd->file, entry->offset, SEEK_SET) != 0)
-					return CHDERR_READ_ERROR;
-				bytes = core_fread(chd->file, dest, chd->header.hunkbytes);
-				if (bytes != chd->header.hunkbytes)
-					return CHDERR_READ_ERROR;
-				break;
+			   /* uncompressed data */
+		   case V34_MAP_ENTRY_TYPE_UNCOMPRESSED:
+			   if (core_fseek(chd->file, entry->offset, SEEK_SET) != 0)
+				   return CHDERR_READ_ERROR;
+			   bytes = core_fread(chd->file, dest, chd->header.hunkbytes);
+			   if (bytes != chd->header.hunkbytes)
+				   return CHDERR_READ_ERROR;
+			   break;
 
-			/* mini-compressed data */
-			case V34_MAP_ENTRY_TYPE_MINI:
-				put_bigendian_uint64(&dest[0], entry->offset);
-				for (bytes = 8; bytes < chd->header.hunkbytes; bytes++)
-					dest[bytes] = dest[bytes - 8];
-				break;
+			   /* mini-compressed data */
+		   case V34_MAP_ENTRY_TYPE_MINI:
+			   put_bigendian_uint64(&dest[0], entry->offset);
+			   for (bytes = 8; bytes < chd->header.hunkbytes; bytes++)
+				   dest[bytes] = dest[bytes - 8];
+			   break;
 
-			/* self-referenced data */
-			case V34_MAP_ENTRY_TYPE_SELF_HUNK:
+			   /* self-referenced data */
+		   case V34_MAP_ENTRY_TYPE_SELF_HUNK:
 #ifdef NEED_CACHE_HUNK
-				if (chd->cachehunk == entry->offset && dest == chd->cache)
-					break;
+			   if (chd->cachehunk == entry->offset && dest == chd->cache)
+				   break;
 #endif
-				return hunk_read_into_memory(chd, entry->offset, dest);
+			   return hunk_read_into_memory(chd, entry->offset, dest);
 
-			/* parent-referenced data */
-			case V34_MAP_ENTRY_TYPE_PARENT_HUNK:
-				err = hunk_read_into_memory(chd->parent, entry->offset, dest);
-				if (err != CHDERR_NONE)
-					return err;
-				break;
-		}
-		return CHDERR_NONE;
-	}
-	else
-	{
-		void* codec = NULL;
-		/* get a pointer to the map entry */
-		uint64_t blockoffs;
-		uint32_t blocklen;
+			   /* parent-referenced data */
+		   case V34_MAP_ENTRY_TYPE_PARENT_HUNK:
+			   err = hunk_read_into_memory(chd->parent, entry->offset, dest);
+			   if (err != CHDERR_NONE)
+				   return err;
+			   break;
+	   }
+	   return CHDERR_NONE;
+   }
+   else
+   {
+	   void* codec = NULL;
+	   /* get a pointer to the map entry */
+	   uint64_t blockoffs;
+	   uint32_t blocklen;
 #ifdef VERIFY_BLOCK_CRC
-		uint16_t blockcrc;
+	   uint16_t blockcrc;
 #endif
-		uint8_t *rawmap = &chd->header.rawmap[chd->header.mapentrybytes * hunknum];
+	   uint8_t *rawmap = &chd->header.rawmap[chd->header.mapentrybytes * hunknum];
 
-		/* uncompressed case */
-		/* TODO
-		if (!compressed())
-		{
-			blockoffs = uint64_t(be_read(rawmap, 4)) * uint64_t(m_hunkbytes);
-			if (blockoffs != 0)
-				file_read(blockoffs, dest, m_hunkbytes);
-			else if (m_parent_missing)
-				throw CHDERR_REQUIRES_PARENT;
-			else if (m_parent != nullptr)
-				m_parent->read_hunk(hunknum, dest);
-			else
-				memset(dest, 0, m_hunkbytes);
-			return CHDERR_NONE;
-		}*/
+	   /* uncompressed case */
+	   /* TODO
+	      if (!compressed())
+	      {
+	      blockoffs = uint64_t(be_read(rawmap, 4)) * uint64_t(m_hunkbytes);
+	      if (blockoffs != 0)
+	      file_read(blockoffs, dest, m_hunkbytes);
+	      else if (m_parent_missing)
+	      throw CHDERR_REQUIRES_PARENT;
+	      else if (m_parent != nullptr)
+	      m_parent->read_hunk(hunknum, dest);
+	      else
+	      memset(dest, 0, m_hunkbytes);
+	      return CHDERR_NONE;
+	      }*/
 
-		/* compressed case */
-		blocklen = get_bigendian_uint24(&rawmap[1]);
-		blockoffs = get_bigendian_uint48(&rawmap[4]);
+	   /* compressed case */
+	   blocklen  = get_bigendian_uint24(&rawmap[1]);
+	   blockoffs = get_bigendian_uint48(&rawmap[4]);
 #ifdef VERIFY_BLOCK_CRC
-		blockcrc = get_bigendian_uint16(&rawmap[10]);
+	   blockcrc  = get_bigendian_uint16(&rawmap[10]);
 #endif
-		switch (rawmap[0])
-		{
-			case COMPRESSION_TYPE_0:
-			case COMPRESSION_TYPE_1:
-			case COMPRESSION_TYPE_2:
-			case COMPRESSION_TYPE_3:
-				if (core_fseek(chd->file, blockoffs, SEEK_SET) != 0);
-					return CHDERR_READ_ERROR;
-				if (core_fread(chd->file, chd->compressed, blocklen) != blocklen)
-					return CHDERR_READ_ERROR;
-				switch (chd->codecintf[rawmap[0]]->compression)
-				{
-					case CHD_CODEC_CD_LZMA:
-						codec = &chd->cdlz_codec_data;
-						break;
+	   switch (rawmap[0])
+	   {
+		   case COMPRESSION_TYPE_0:
+		   case COMPRESSION_TYPE_1:
+		   case COMPRESSION_TYPE_2:
+		   case COMPRESSION_TYPE_3:
+			   if (core_fseek(chd->file, blockoffs, SEEK_SET) != 0);
+			   return CHDERR_READ_ERROR;
+			   if (core_fread(chd->file, chd->compressed, blocklen) != blocklen)
+				   return CHDERR_READ_ERROR;
+			   switch (chd->codecintf[rawmap[0]]->compression)
+			   {
+				   case CHD_CODEC_CD_LZMA:
+					   codec = &chd->cdlz_codec_data;
+					   break;
 
-					case CHD_CODEC_CD_ZLIB:
-						codec = &chd->cdzl_codec_data;
-						break;
+				   case CHD_CODEC_CD_ZLIB:
+					   codec = &chd->cdzl_codec_data;
+					   break;
 
-					case CHD_CODEC_CD_FLAC:
-						codec = &chd->cdfl_codec_data;
-						break;
-				}
-				if (codec==NULL)
-					return CHDERR_CODEC_ERROR;
-				err = (*chd->codecintf[rawmap[0]]->decompress)(codec, chd->compressed, blocklen, dest, chd->header.hunkbytes);
-				if (err != CHDERR_NONE)
-					return err;
+				   case CHD_CODEC_CD_FLAC:
+					   codec = &chd->cdfl_codec_data;
+					   break;
+			   }
+			   if (codec==NULL)
+				   return CHDERR_CODEC_ERROR;
+			   err = (*chd->codecintf[rawmap[0]]->decompress)(codec, chd->compressed, blocklen, dest, chd->header.hunkbytes);
+			   if (err != CHDERR_NONE)
+				   return err;
 #ifdef VERIFY_BLOCK_CRC
-				if (crc16(dest, chd->header.hunkbytes) != blockcrc)
-					return CHDERR_DECOMPRESSION_ERROR;
+			   if (crc16(dest, chd->header.hunkbytes) != blockcrc)
+				   return CHDERR_DECOMPRESSION_ERROR;
 #endif
-				return CHDERR_NONE;
+			   return CHDERR_NONE;
 
-			case COMPRESSION_NONE:
-				if (core_fseek(chd->file, blockoffs, SEEK_SET) != 0)
-					return CHDERR_READ_ERROR;
-				if (core_fread(chd->file, dest, chd->header.hunkbytes) != chd->header.hunkbytes)
-					return CHDERR_READ_ERROR;
+		   case COMPRESSION_NONE:
+			   if (core_fseek(chd->file, blockoffs, SEEK_SET) != 0)
+				   return CHDERR_READ_ERROR;
+			   if (core_fread(chd->file, dest, chd->header.hunkbytes) != chd->header.hunkbytes)
+				   return CHDERR_READ_ERROR;
 #ifdef VERIFY_BLOCK_CRC
-				if (crc16(dest, chd->header.hunkbytes) != blockcrc)
-					return CHDERR_DECOMPRESSION_ERROR;
+			   if (crc16(dest, chd->header.hunkbytes) != blockcrc)
+				   return CHDERR_DECOMPRESSION_ERROR;
 #endif
-				return CHDERR_NONE;
+			   return CHDERR_NONE;
 
-			case COMPRESSION_SELF:
-				return hunk_read_into_memory(chd, blockoffs, dest);
+		   case COMPRESSION_SELF:
+			   return hunk_read_into_memory(chd, blockoffs, dest);
 
-			case COMPRESSION_PARENT:
-				/* TODO */
+		   case COMPRESSION_PARENT:
+			   /* TODO */
 #if 0
-            if (m_parent_missing)
-               return CHDERR_REQUIRES_PARENT;
-            return m_parent->read_bytes(uint64_t(blockoffs) * uint64_t(m_parent->unit_bytes()), dest, m_hunkbytes);
+			   if (m_parent_missing)
+				   return CHDERR_REQUIRES_PARENT;
+			   return m_parent->read_bytes(uint64_t(blockoffs) * uint64_t(m_parent->unit_bytes()), dest, m_hunkbytes);
 #endif
-				return CHDERR_DECOMPRESSION_ERROR;
-		}
-		return CHDERR_NONE;
-	}
+			   return CHDERR_DECOMPRESSION_ERROR;
+	   }
 
-	/* We should not reach this code */
-	return CHDERR_DECOMPRESSION_ERROR;
+	   return CHDERR_NONE;
+   }
+
+   /* We should not reach this code */
+   return CHDERR_DECOMPRESSION_ERROR;
 }
 
 
