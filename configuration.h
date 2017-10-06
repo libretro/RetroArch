@@ -132,6 +132,7 @@ typedef struct settings
       bool menu_show_information;
       bool menu_show_configurations;
       bool menu_show_help;
+      bool menu_show_quit_retroarch;
       bool menu_materialui_icons_enable;
       bool menu_xmb_shadows_enable;
       bool menu_xmb_show_settings;

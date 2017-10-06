@@ -242,6 +242,7 @@ static bool menu_show_load_content       = true;
 static bool menu_show_information        = true;
 static bool menu_show_configurations     = true;
 static bool menu_show_help               = true;
+static bool menu_show_quit_retroarch     = true;
 
 #if defined(HAVE_LAKKA) || defined(VITA)
 static bool menu_show_core_updater       = false;

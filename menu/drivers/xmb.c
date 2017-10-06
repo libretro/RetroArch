@@ -4377,8 +4377,11 @@ static int xmb_list_push(void *data, void *userdata,
             }
 
 #if !defined(IOS)
-            entry.enum_idx      = MENU_ENUM_LABEL_QUIT_RETROARCH;
-            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            if (settings->bools.menu_show_quit_retroarch)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_QUIT_RETROARCH;
+               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            }
 #endif
             entry.enum_idx      = MENU_ENUM_LABEL_REBOOT;
             menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
