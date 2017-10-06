@@ -295,6 +295,7 @@ default_sublabel_macro(action_bind_sublabel_menu_show_load_core,                
 default_sublabel_macro(action_bind_sublabel_menu_show_load_content,                MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT)
 default_sublabel_macro(action_bind_sublabel_menu_show_information,                 MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION)
 default_sublabel_macro(action_bind_sublabel_menu_show_configurations,              MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS)
+default_sublabel_macro(action_bind_sublabel_menu_show_help,                        MENU_ENUM_SUBLABEL_MENU_SHOW_HELP)
 default_sublabel_macro(action_bind_sublabel_menu_show_online_updater,              MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER)
 default_sublabel_macro(action_bind_sublabel_menu_show_core_updater,                MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER)
 default_sublabel_macro(action_bind_sublabel_menu_music_tab,                        MENU_ENUM_SUBLABEL_XMB_SHOW_MUSIC)
@@ -615,6 +616,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_MENU_SHOW_CONFIGURATIONS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_show_configurations);
+            break;
+         case MENU_ENUM_LABEL_MENU_SHOW_HELP:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_show_help);
             break;
          case MENU_ENUM_LABEL_MENU_SHOW_ONLINE_UPDATER:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_show_online_updater);

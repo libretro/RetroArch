@@ -5441,6 +5441,21 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
+                  &settings->bools.menu_show_help,
+                  MENU_ENUM_LABEL_MENU_SHOW_HELP,
+                  MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
+                  menu_show_help,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_LAKKA_ADVANCED);
+
+            CONFIG_BOOL(
+                  list, list_info,
                   &settings->bools.menu_xmb_show_settings,
                   MENU_ENUM_LABEL_XMB_SHOW_SETTINGS,
                   MENU_ENUM_LABEL_VALUE_XMB_SHOW_SETTINGS,

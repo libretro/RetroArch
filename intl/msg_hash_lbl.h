@@ -1313,3 +1313,5 @@ MSG_HASH(MENU_ENUM_LABEL_MENU_SHOW_INFORMATION,
       "menu_show_information")
 MSG_HASH(MENU_ENUM_LABEL_MENU_SHOW_CONFIGURATIONS,
       "menu_show_configurations")
+MSG_HASH(MENU_ENUM_LABEL_MENU_SHOW_HELP,
+      "menu_show_help")
