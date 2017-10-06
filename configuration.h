@@ -130,6 +130,7 @@ typedef struct settings
       bool menu_show_load_core;
       bool menu_show_load_content;
       bool menu_show_information;
+      bool menu_show_configurations;
       bool menu_materialui_icons_enable;
       bool menu_xmb_shadows_enable;
       bool menu_xmb_show_settings;
