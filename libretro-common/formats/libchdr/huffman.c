@@ -300,7 +300,10 @@ enum huffman_error huffman_import_tree_huffman(struct huffman_decoder* decoder, 
 	/* assign canonical codes for all nodes based on their code lengths */
 	error = huffman_assign_canonical_codes(decoder);
 	if (error != HUFFERR_NONE)
+   {
+      delete_huffman_decoder(smallhuff);
 		return error;
+   }
 
 	/* build the lookup table */
 	huffman_build_lookup_table(decoder);
