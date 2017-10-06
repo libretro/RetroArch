@@ -38,16 +38,28 @@ add_define_make DYLIB_LIB "$DYLIB"
 check_lib SYSTEMD -lsystemd sd_get_machine_names
 
 if [ "$HAVE_VIDEOCORE" != "no" ]; then
-   [ -d /opt/vc/lib ] && add_library_dirs /opt/vc/lib && add_library_dirs /opt/vc/lib/GL
-   check_lib VIDEOCORE -lbcm_host bcm_host_init "-lvcos -lvchiq_arm"
+   check_pkgconf VC_TEST bcm_host
+
+   # use fallback if pkgconfig is not available
+   if [ ! "$VC_TEST_LIBS" ]; then
+      [ -d /opt/vc/lib ] && add_library_dirs /opt/vc/lib && add_library_dirs /opt/vc/lib/GL
+      check_lib VIDEOCORE -lbcm_host bcm_host_init "-lvcos -lvchiq_arm"
+   else
+      HAVE_VIDEOCORE="$HAVE_VC_TEST"
+   fi
 fi
 
 if [ "$HAVE_VIDEOCORE" = 'yes' ]; then
-   [ -d /opt/vc/include ] && add_include_dirs /opt/vc/include
-   [ -d /opt/vc/include/interface/vcos/pthreads ] && add_include_dirs /opt/vc/include/interface/vcos/pthreads
-   [ -d /opt/vc/include/interface/vmcs_host/linux ] && add_include_dirs /opt/vc/include/interface/vmcs_host/linux
    HAVE_OPENGLES='auto'
-   EXTRA_GL_LIBS="-lbrcmEGL -lbrcmGLESv2 -lbcm_host -lvcos -lvchiq_arm"
+   VC_PREFIX="brcm"
+
+   # use fallback if pkgconfig is not available
+   if [ ! "$VC_TEST_LIBS" ]; then
+      [ -d /opt/vc/include ] && add_include_dirs /opt/vc/include
+      [ -d /opt/vc/include/interface/vcos/pthreads ] && add_include_dirs /opt/vc/include/interface/vcos/pthreads
+      [ -d /opt/vc/include/interface/vmcs_host/linux ] && add_include_dirs /opt/vc/include/interface/vmcs_host/linux
+      EXTRA_GL_LIBS="-lbrcmEGL -lbrcmGLESv2 -lbcm_host -lvcos -lvchiq_arm"
+   fi
 fi
 
 if [ "$HAVE_NEON" = "yes" ]; then
@@ -101,11 +113,11 @@ if [ "$HAVE_SSE" = "yes" ]; then
 fi
 
 if [ "$HAVE_EGL" != "no" -a "$OS" != 'Win32' ]; then
-   check_pkgconf EGL egl
+   check_pkgconf EGL "$VC_PREFIX"egl
    # some systems have EGL libs, but no pkgconfig
    if [ "$HAVE_EGL" = "no" ]; then
-      HAVE_EGL=auto && check_lib EGL "-lEGL $EXTRA_GL_LIBS"
-      [ "$HAVE_EGL" = "yes" ] && EGL_LIBS=-lEGL
+      HAVE_EGL=auto && check_lib EGL "-l"$VC_PREFIX"EGL $EXTRA_GL_LIBS"
+      [ "$HAVE_EGL" = "yes" ] && EGL_LIBS=-l"$VC_PREFIX"EGL
    else
       EGL_LIBS="$EGL_LIBS $EXTRA_GL_LIBS"
    fi
@@ -378,15 +390,15 @@ if [ "$HAVE_EGL" = "yes" ]; then
          add_define_make OPENGLES_LIBS "$OPENGLES_LIBS"
          add_define_make OPENGLES_CFLAGS "$OPENGLES_CFLAGS"
       else
-         HAVE_OPENGLES=auto check_pkgconf OPENGLES glesv2
-         [ "$HAVE_OPENGLES" = "no" ] && HAVE_OPENGLES=auto check_lib OPENGLES "-lGLESv2 $EXTRA_GL_LIBS" && add_define_make OPENGLES_LIBS "-lGLESv2 $EXTRA_GL_LIBS"
+         HAVE_OPENGLES=auto check_pkgconf OPENGLES "$VC_PREFIX"glesv2
+         [ "$HAVE_OPENGLES" = "no" ] && HAVE_OPENGLES=auto check_lib OPENGLES "-l"$VC_PREFIX"GLESv2 $EXTRA_GL_LIBS" && add_define_make OPENGLES_LIBS "-l"$VC_PREFIX"GLESv2 $EXTRA_GL_LIBS"
       fi
    fi
    if [ "$HAVE_VG" != "no" ]; then
-      check_pkgconf VG vg
+      check_pkgconf VG "$VC_PREFIX"vg
       if [ "$HAVE_VG" = "no" ]; then
-         HAVE_VG=auto check_lib VG "-lOpenVG $EXTRA_GL_LIBS"
-         [ "$HAVE_VG" = "yes" ] && VG_LIBS=-lOpenVG
+         HAVE_VG=auto check_lib VG "-l"$VC_PREFIX"OpenVG $EXTRA_GL_LIBS"
+         [ "$HAVE_VG" = "yes" ] && VG_LIBS=-l"$VC_PREFIX"OpenVG
       fi
    fi
 else
