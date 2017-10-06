@@ -2163,9 +2163,10 @@ static chd_error hunk_read_into_memory(chd_file *chd, UINT32 hunknum, UINT8 *des
 		   case COMPRESSION_TYPE_2:
 		   case COMPRESSION_TYPE_3:
 			   if (core_fseek(chd->file, blockoffs, SEEK_SET) != 0)
-			   return CHDERR_READ_ERROR;
+               return CHDERR_READ_ERROR;
 			   if (core_fread(chd->file, chd->compressed, blocklen) != blocklen)
-				   return CHDERR_READ_ERROR;
+               return CHDERR_READ_ERROR;
+
 			   switch (chd->codecintf[rawmap[0]]->compression)
 			   {
 				   case CHD_CODEC_CD_LZMA:
