@@ -1317,3 +1317,5 @@ MSG_HASH(MENU_ENUM_LABEL_MENU_SHOW_HELP,
       "menu_show_help")
 MSG_HASH(MENU_ENUM_LABEL_MENU_SHOW_QUIT_RETROARCH,
       "menu_show_quit_retroarch")
+MSG_HASH(MENU_ENUM_LABEL_MENU_SHOW_REBOOT,
+      "menu_show_reboot")
