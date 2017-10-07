@@ -237,6 +237,13 @@ static const bool display_keyboard_overlay = false;
 static bool default_block_config_read    = true;
 
 static bool menu_show_online_updater     = true;
+static bool menu_show_load_core          = true;
+static bool menu_show_load_content       = true;
+static bool menu_show_information        = true;
+static bool menu_show_configurations     = true;
+static bool menu_show_help               = true;
+static bool menu_show_quit_retroarch     = true;
+static bool menu_show_reboot             = true;
 
 #if defined(HAVE_LAKKA) || defined(VITA)
 static bool menu_show_core_updater       = false;

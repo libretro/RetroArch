@@ -5278,14 +5278,47 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_MENU_VIEWS_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
-#if defined(HAVE_NETWORKING) && !defined(HAVE_LAKKA)
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_MENU_SHOW_LOAD_CORE,
+               PARSE_ONLY_BOOL, false);
+
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_MENU_SHOW_LOAD_CONTENT,
+               PARSE_ONLY_BOOL, false);
+
+#if defined(HAVE_NETWORKING)
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_MENU_SHOW_ONLINE_UPDATER,
                PARSE_ONLY_BOOL, false);
+#if !defined(HAVE_LAKKA)
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_MENU_SHOW_CORE_UPDATER,
                PARSE_ONLY_BOOL, false);
 #endif
+#endif
+
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_MENU_SHOW_INFORMATION,
+               PARSE_ONLY_BOOL, false);
+
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_MENU_SHOW_CONFIGURATIONS,
+               PARSE_ONLY_BOOL, false);
+
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_MENU_SHOW_HELP,
+               PARSE_ONLY_BOOL, false);
+
+#if defined(HAVE_LAKKA)
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_MENU_SHOW_QUIT_RETROARCH,
+               PARSE_ONLY_BOOL, false);
+
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_MENU_SHOW_REBOOT,
+               PARSE_ONLY_BOOL, false);
+#endif
+
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_XMB_SHOW_SETTINGS,
                PARSE_ONLY_BOOL, false);
