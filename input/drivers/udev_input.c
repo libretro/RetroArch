@@ -903,6 +903,7 @@ static bool open_devices(udev_input_t *udev,
    struct udev_list_entry     *devs = NULL;
    struct udev_list_entry     *item = NULL;
    struct udev_enumerate *enumerate = udev_enumerate_new(udev->udev);
+   int device_index                 = 0;
 
    if (!enumerate)
       return false;
@@ -926,11 +927,13 @@ static bool open_devices(udev_input_t *udev,
 
          if (fd != -1)
          {
-            RARCH_LOG("[udev] Adding device %s as type %s.\n",
-                  devnode, type_str);
             if (!udev_input_add_device(udev, type, devnode, cb))
                RARCH_ERR("[udev] Failed to open device: %s (%s).\n",
                      devnode, strerror(errno));
+            else
+               RARCH_LOG("[udev]: %s #%d (%s).\n",
+                     type == UDEV_INPUT_KEYBOARD ? "Keyboard" : "Mouse",
+                     device_index++, devnode);
             close(fd);
          }
       }
