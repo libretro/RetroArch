@@ -2918,18 +2918,23 @@ static int menu_displaylist_parse_load_content_settings(
 #ifdef HAVE_LAKKA
       if (show_advanced_settings)
 #endif
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS),
-            msg_hash_to_str(MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS),
-            MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS,
-            MENU_SETTING_ACTION, 0, 0);
-      if (     (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+      if (settings->bools.quick_menu_show_cheats)
+      {
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS),
+               msg_hash_to_str(MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS),
+               MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS,
+               MENU_SETTING_ACTION, 0, 0);
+      }
+
+      if ((!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
             && system->disk_control_cb.get_num_images)
          menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_OPTIONS),
                msg_hash_to_str(MENU_ENUM_LABEL_DISK_OPTIONS),
                MENU_ENUM_LABEL_DISK_OPTIONS,
                MENU_SETTING_ACTION_CORE_DISK_OPTIONS, 0, 0);
+
 #ifdef HAVE_SHADER_MANAGER
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS),
@@ -5388,6 +5393,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_QUICK_MENU_SHOW_CONTROLS,
+               PARSE_ONLY_BOOL, false);
+
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_CHEATS,
                PARSE_ONLY_BOOL, false);
 
          info->need_refresh = true;

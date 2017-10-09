@@ -144,6 +144,7 @@ typedef struct settings
       bool quick_menu_show_add_to_favorites;
       bool quick_menu_show_options;
       bool quick_menu_show_controls;
+      bool quick_menu_show_cheats;
 
       /* Netplay */
       bool netplay_public_announce;
