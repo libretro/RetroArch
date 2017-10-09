@@ -145,6 +145,17 @@ typedef struct settings
       bool menu_xmb_show_history;
       bool menu_xmb_show_add;
       bool menu_unified_controls;
+      bool quick_menu_show_take_screenshot;
+      bool quick_menu_show_save_load_state;
+      bool quick_menu_show_undo_save_load_state;
+      bool quick_menu_show_add_to_favorites;
+      bool quick_menu_show_options;
+      bool quick_menu_show_controls;
+      bool quick_menu_show_cheats;
+      bool quick_menu_show_shaders;
+      bool quick_menu_show_save_core_overrides;
+      bool quick_menu_show_save_game_overrides;
+      bool quick_menu_show_information;
 
       /* Netplay */
       bool netplay_public_announce;

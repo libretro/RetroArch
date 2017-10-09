@@ -2832,55 +2832,71 @@ static int menu_displaylist_parse_load_content_settings(
             MENU_ENUM_LABEL_CLOSE_CONTENT,
             MENU_SETTING_ACTION_CLOSE, 0, 0);
 
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT),
-            msg_hash_to_str(MENU_ENUM_LABEL_TAKE_SCREENSHOT),
-            MENU_ENUM_LABEL_TAKE_SCREENSHOT,
-            MENU_SETTING_ACTION_SCREENSHOT, 0, 0);
+      if (settings->bools.quick_menu_show_take_screenshot)
+      {
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT),
+               msg_hash_to_str(MENU_ENUM_LABEL_TAKE_SCREENSHOT),
+               MENU_ENUM_LABEL_TAKE_SCREENSHOT,
+               MENU_SETTING_ACTION_SCREENSHOT, 0, 0);
+      }
 
-      menu_displaylist_parse_settings_enum(menu, info,
-            MENU_ENUM_LABEL_STATE_SLOT, PARSE_ONLY_INT, true);
+      if (settings->bools.quick_menu_show_save_load_state)
+      {
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_STATE_SLOT, PARSE_ONLY_INT, true);
 
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_STATE),
-            msg_hash_to_str(MENU_ENUM_LABEL_SAVE_STATE),
-            MENU_ENUM_LABEL_SAVE_STATE,
-            MENU_SETTING_ACTION_SAVESTATE, 0, 0);
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_STATE),
+               msg_hash_to_str(MENU_ENUM_LABEL_SAVE_STATE),
+               MENU_ENUM_LABEL_SAVE_STATE,
+               MENU_SETTING_ACTION_SAVESTATE, 0, 0);
 
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_STATE),
-            msg_hash_to_str(MENU_ENUM_LABEL_LOAD_STATE),
-            MENU_ENUM_LABEL_LOAD_STATE,
-            MENU_SETTING_ACTION_LOADSTATE, 0, 0);
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_STATE),
+               msg_hash_to_str(MENU_ENUM_LABEL_LOAD_STATE),
+               MENU_ENUM_LABEL_LOAD_STATE,
+               MENU_SETTING_ACTION_LOADSTATE, 0, 0);
+      }
+
+      if (settings->bools.quick_menu_show_save_load_state &&
+          settings->bools.quick_menu_show_undo_save_load_state)
+      {
+#ifdef HAVE_LAKKA
+         if (show_advanced_settings)
+#endif
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_UNDO_LOAD_STATE),
+                  MENU_ENUM_LABEL_UNDO_LOAD_STATE,
+                  MENU_SETTING_ACTION_LOADSTATE, 0, 0);
 
 #ifdef HAVE_LAKKA
-      if (show_advanced_settings)
+         if (show_advanced_settings)
 #endif
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_UNDO_SAVE_STATE),
+                  MENU_ENUM_LABEL_UNDO_SAVE_STATE,
+                  MENU_SETTING_ACTION_LOADSTATE, 0, 0);
+      }
+
+      if (settings->bools.quick_menu_show_add_to_favorites)
+      {
          menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE),
-               msg_hash_to_str(MENU_ENUM_LABEL_UNDO_LOAD_STATE),
-               MENU_ENUM_LABEL_UNDO_LOAD_STATE,
-               MENU_SETTING_ACTION_LOADSTATE, 0, 0);
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES),
+               msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_FAVORITES),
+               MENU_ENUM_LABEL_ADD_TO_FAVORITES, FILE_TYPE_PLAYLIST_ENTRY, 0, 0);
+      }
 
-#ifdef HAVE_LAKKA
-      if (show_advanced_settings)
-#endif
+      if (settings->bools.quick_menu_show_options)
+      {
          menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE),
-               msg_hash_to_str(MENU_ENUM_LABEL_UNDO_SAVE_STATE),
-               MENU_ENUM_LABEL_UNDO_SAVE_STATE,
-               MENU_SETTING_ACTION_LOADSTATE, 0, 0);
-
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES),
-            msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_FAVORITES),
-            MENU_ENUM_LABEL_ADD_TO_FAVORITES, FILE_TYPE_PLAYLIST_ENTRY, 0, 0);
-
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTIONS),
-            msg_hash_to_str(MENU_ENUM_LABEL_CORE_OPTIONS),
-            MENU_ENUM_LABEL_CORE_OPTIONS,
-            MENU_SETTING_ACTION, 0, 0);
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTIONS),
+               msg_hash_to_str(MENU_ENUM_LABEL_CORE_OPTIONS),
+               MENU_ENUM_LABEL_CORE_OPTIONS,
+               MENU_SETTING_ACTION, 0, 0);
+      }
 
 #if 0
       menu_entries_append_enum(info->list,
@@ -2890,52 +2906,69 @@ static int menu_displaylist_parse_load_content_settings(
             MENU_SETTING_ACTION, 0, 0);
 #endif
 
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS),
-            msg_hash_to_str(MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS),
-            MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS,
-            MENU_SETTING_ACTION, 0, 0);
+      if (settings->bools.quick_menu_show_controls)
+      {
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS),
+               msg_hash_to_str(MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS),
+               MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS,
+               MENU_SETTING_ACTION, 0, 0);
+      }
 
 #ifdef HAVE_LAKKA
       if (show_advanced_settings)
 #endif
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS),
-            msg_hash_to_str(MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS),
-            MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS,
-            MENU_SETTING_ACTION, 0, 0);
-      if (     (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+      if (settings->bools.quick_menu_show_cheats)
+      {
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS),
+               msg_hash_to_str(MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS),
+               MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS,
+               MENU_SETTING_ACTION, 0, 0);
+      }
+
+      if ((!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
             && system->disk_control_cb.get_num_images)
          menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_OPTIONS),
                msg_hash_to_str(MENU_ENUM_LABEL_DISK_OPTIONS),
                MENU_ENUM_LABEL_DISK_OPTIONS,
                MENU_SETTING_ACTION_CORE_DISK_OPTIONS, 0, 0);
+
 #ifdef HAVE_SHADER_MANAGER
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS),
-            msg_hash_to_str(MENU_ENUM_LABEL_SHADER_OPTIONS),
-            MENU_ENUM_LABEL_SHADER_OPTIONS,
-            MENU_SETTING_ACTION, 0, 0);
+      if (settings->bools.quick_menu_show_shaders)
+      {
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS),
+               msg_hash_to_str(MENU_ENUM_LABEL_SHADER_OPTIONS),
+               MENU_ENUM_LABEL_SHADER_OPTIONS,
+               MENU_SETTING_ACTION, 0, 0);
+      }
 #endif
 
 #ifdef HAVE_LAKKA
       if (show_advanced_settings)
 #endif
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE),
-            msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE),
-            MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
-            MENU_SETTING_ACTION, 0, 0);
+      if (settings->bools.quick_menu_show_save_core_overrides)
+      {
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE),
+               msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE),
+               MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
+               MENU_SETTING_ACTION, 0, 0);
+      }
 
 #ifdef HAVE_LAKKA
       if (show_advanced_settings)
 #endif
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME),
-            msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME),
-            MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
-            MENU_SETTING_ACTION, 0, 0);
+      if (settings->bools.quick_menu_show_save_game_overrides)
+      {
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME),
+               msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME),
+               MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
+               MENU_SETTING_ACTION, 0, 0);
+      }
 
 #ifdef HAVE_CHEEVOS
       if(settings->bools.cheevos_enable)
@@ -2985,8 +3018,10 @@ static int menu_displaylist_parse_horizontal_content_actions(
    playlist_get_index(playlist, idx,
          &entry_path, &label, &core_path, &core_name, NULL, &db_name);
 
-   if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
-         && string_is_equal(menu->deferred_path, fullpath))
+   bool content_loaded = !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
+         && string_is_equal(menu->deferred_path, fullpath);
+
+   if (content_loaded)
       menu_displaylist_parse_load_content_settings(info);
    else
    {
@@ -3025,7 +3060,8 @@ static int menu_displaylist_parse_horizontal_content_actions(
             MENU_SETTING_ACTION_DELETE_ENTRY, 0, 0);
    }
 
-   if (!string_is_empty(db_name))
+   if (!string_is_empty(db_name) && (!content_loaded ||
+      (content_loaded && settings->bools.quick_menu_show_information)))
    {
       char *db_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
@@ -5279,6 +5315,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
          menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_QUICK_MENU_VIEWS_SETTINGS,
+               PARSE_ACTION, false);
+
+         menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_MENU_SHOW_LOAD_CORE,
                PARSE_ONLY_BOOL, false);
 
@@ -5368,6 +5408,56 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN,
+               PARSE_ONLY_BOOL, false);
+
+         info->need_refresh = true;
+         info->need_push    = true;
+         break;
+      case DISPLAYLIST_QUICK_MENU_VIEWS_SETTINGS_LIST:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
+               PARSE_ONLY_BOOL, false);
+
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
+               PARSE_ONLY_BOOL, false);
+
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
+               PARSE_ONLY_BOOL, false);
+
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
+               PARSE_ONLY_BOOL, false);
+
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_OPTIONS,
+               PARSE_ONLY_BOOL, false);
+
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_CONTROLS,
+               PARSE_ONLY_BOOL, false);
+
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_CHEATS,
+               PARSE_ONLY_BOOL, false);
+#ifdef HAVE_SHADER_MANAGER
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_SHADERS,
+               PARSE_ONLY_BOOL, false);
+#endif
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
+               PARSE_ONLY_BOOL, false);
+
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
+               PARSE_ONLY_BOOL, false);
+
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_INFORMATION,
                PARSE_ONLY_BOOL, false);
 
          info->need_refresh = true;

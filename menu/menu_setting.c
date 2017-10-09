@@ -2627,6 +2627,14 @@ static bool setting_append_list(
 
          CONFIG_ACTION(
                list, list_info,
+               MENU_ENUM_LABEL_QUICK_MENU_VIEWS_SETTINGS,
+               MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+
+         CONFIG_ACTION(
+               list, list_info,
                MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS,
                MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
                &group_info,
@@ -5924,6 +5932,173 @@ static bool setting_append_list(
                MENU_ENUM_LABEL_MENU_SHOW_CORE_UPDATER,
                MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
                menu_show_online_updater,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.quick_menu_show_take_screenshot,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
+               MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
+               quick_menu_show_take_screenshot,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.quick_menu_show_save_load_state,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
+               MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
+               quick_menu_show_save_load_state,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.quick_menu_show_undo_save_load_state,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
+               MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
+               quick_menu_show_undo_save_load_state,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_LAKKA_ADVANCED);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.quick_menu_show_add_to_favorites,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
+               MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
+               quick_menu_show_add_to_favorites,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.quick_menu_show_options,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_OPTIONS,
+               MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
+               quick_menu_show_options,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.quick_menu_show_controls,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_CONTROLS,
+               MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CONTROLS,
+               quick_menu_show_controls,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.quick_menu_show_cheats,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_CHEATS,
+               MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,
+               quick_menu_show_cheats,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_LAKKA_ADVANCED);
+
+#ifdef HAVE_SHADER_MANAGER
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.quick_menu_show_shaders,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_SHADERS,
+               MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
+               quick_menu_show_shaders,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+#endif
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.quick_menu_show_save_core_overrides,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
+               MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
+               quick_menu_show_save_core_overrides,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_LAKKA_ADVANCED);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.quick_menu_show_save_game_overrides,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
+               MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
+               quick_menu_show_save_game_overrides,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_LAKKA_ADVANCED);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.quick_menu_show_information,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_INFORMATION,
+               MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
+               quick_menu_show_information,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,

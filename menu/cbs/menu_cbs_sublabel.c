@@ -64,6 +64,7 @@ default_sublabel_macro(action_bind_sublabel_cheevos_test_unofficial,       MENU_
 default_sublabel_macro(action_bind_sublabel_cheevos_hardcore_mode_enable,  MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE)
 default_sublabel_macro(action_bind_sublabel_cheevos_verbose_enable,        MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE)
 default_sublabel_macro(action_bind_sublabel_menu_views_settings_list,      MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS)
+default_sublabel_macro(action_bind_sublabel_quick_menu_views_settings_list, MENU_ENUM_SUBLABEL_QUICK_MENU_VIEWS_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_menu_settings_list,            MENU_ENUM_SUBLABEL_MENU_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_video_settings_list,           MENU_ENUM_SUBLABEL_VIDEO_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_suspend_screensaver_enable,    MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE)
@@ -289,6 +290,17 @@ default_sublabel_macro(action_bind_sublabel_menu_wallpaper_opacity,             
 default_sublabel_macro(action_bind_sublabel_menu_framebuffer_opacity,              MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY)
 default_sublabel_macro(action_bind_sublabel_menu_ribbon_enable,                    MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE)
 default_sublabel_macro(action_bind_sublabel_menu_font,                             MENU_ENUM_SUBLABEL_XMB_FONT)
+default_sublabel_macro(action_bind_sublabel_quick_menu_show_take_screenshot,       MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT)
+default_sublabel_macro(action_bind_sublabel_quick_menu_show_save_load_state,       MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE)
+default_sublabel_macro(action_bind_sublabel_quick_menu_show_undo_save_load_state,  MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE)
+default_sublabel_macro(action_bind_sublabel_quick_menu_show_add_to_favorites,      MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES)
+default_sublabel_macro(action_bind_sublabel_quick_menu_show_options,               MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_OPTIONS)
+default_sublabel_macro(action_bind_sublabel_quick_menu_show_controls,              MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CONTROLS)
+default_sublabel_macro(action_bind_sublabel_quick_menu_show_cheats,                MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CHEATS)
+default_sublabel_macro(action_bind_sublabel_quick_menu_show_shaders,               MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS)
+default_sublabel_macro(action_bind_sublabel_quick_menu_show_save_core_overrides,   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES)
+default_sublabel_macro(action_bind_sublabel_quick_menu_show_save_game_overrides,   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES)
+default_sublabel_macro(action_bind_sublabel_quick_menu_show_information,           MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_INFORMATION)
 default_sublabel_macro(action_bind_sublabel_menu_favorites_tab,                    MENU_ENUM_SUBLABEL_XMB_SHOW_FAVORITES)
 default_sublabel_macro(action_bind_sublabel_menu_images_tab,                       MENU_ENUM_SUBLABEL_XMB_SHOW_IMAGES)
 default_sublabel_macro(action_bind_sublabel_menu_show_load_core,                   MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE)
@@ -597,6 +609,39 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_GOTO_FAVORITES:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_goto_favorites);
+            break;
+         case MENU_ENUM_LABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_show_take_screenshot);
+            break;
+         case MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_show_save_load_state);
+            break;
+         case MENU_ENUM_LABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_show_undo_save_load_state);
+            break;
+         case MENU_ENUM_LABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_show_add_to_favorites);
+            break;
+         case MENU_ENUM_LABEL_QUICK_MENU_SHOW_OPTIONS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_show_options);
+            break;
+         case MENU_ENUM_LABEL_QUICK_MENU_SHOW_CONTROLS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_show_controls);
+            break;
+         case MENU_ENUM_LABEL_QUICK_MENU_SHOW_CHEATS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_show_cheats);
+            break;
+         case MENU_ENUM_LABEL_QUICK_MENU_SHOW_SHADERS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_show_shaders);
+            break;
+         case MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_show_save_core_overrides);
+            break;
+         case MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_show_save_game_overrides);
+            break;
+         case MENU_ENUM_LABEL_QUICK_MENU_SHOW_INFORMATION:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_show_information);
             break;
          case MENU_ENUM_LABEL_XMB_SHOW_FAVORITES:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_favorites_tab);
@@ -1291,6 +1336,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_MENU_VIEWS_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_views_settings_list);
+            break;
+         case MENU_ENUM_LABEL_QUICK_MENU_VIEWS_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_views_settings_list);
             break;
          case MENU_ENUM_LABEL_MENU_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_settings_list);

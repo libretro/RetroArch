@@ -303,6 +303,8 @@ MSG_HASH(MENU_ENUM_LABEL_DEFERRED_MENU_SETTINGS_LIST,
       "deferred_menu_settings_list")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_MENU_VIEWS_SETTINGS_LIST,
       "deferred_menu_views_settings_list")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_QUICK_MENU_VIEWS_SETTINGS_LIST,
+      "deferred_quick_menu_views_settings_list")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_NETWORK_SETTINGS_LIST,
       "deferred_network_settings_list")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_ONSCREEN_DISPLAY_SETTINGS_LIST,
@@ -1319,3 +1321,25 @@ MSG_HASH(MENU_ENUM_LABEL_MENU_SHOW_QUIT_RETROARCH,
       "menu_show_quit_retroarch")
 MSG_HASH(MENU_ENUM_LABEL_MENU_SHOW_REBOOT,
       "menu_show_reboot")
+MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
+      "quick_menu_show_take_screenshot")
+MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
+      "quick_menu_show_save_load_state")
+MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
+      "quick_menu_show_undo_save_load_state")
+MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
+      "quick_menu_show_add_to_favorites")
+MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_OPTIONS,
+      "quick_menu_show_options")
+MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_CONTROLS,
+      "quick_menu_show_controls")
+MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_CHEATS,
+      "quick_menu_show_cheats")
+MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_SHADERS,
+      "quick_menu_show_shaders")
+MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
+      "quick_menu_show_save_core_overrides")
+MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
+      "quick_menu_show_save_game_overrides")
+MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_INFORMATION,
+      "quick_menu_show_information")

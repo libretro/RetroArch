@@ -236,6 +236,18 @@ static const bool display_keyboard_overlay = false;
 
 static bool default_block_config_read    = true;
 
+static bool quick_menu_show_take_screenshot      = true;
+static bool quick_menu_show_save_load_state      = true;
+static bool quick_menu_show_undo_save_load_state = true;
+static bool quick_menu_show_add_to_favorites     = true;
+static bool quick_menu_show_options              = true;
+static bool quick_menu_show_controls             = true;
+static bool quick_menu_show_cheats               = true;
+static bool quick_menu_show_shaders              = true;
+static bool quick_menu_show_save_core_overrides  = true;
+static bool quick_menu_show_save_game_overrides  = true;
+static bool quick_menu_show_information          = true;
+
 static bool menu_show_online_updater     = true;
 static bool menu_show_load_core          = true;
 static bool menu_show_load_content       = true;
