@@ -672,6 +672,13 @@ enum msg_hash_enums
 
 
    /* Menu settings */
+   MENU_LABEL(MENU_SHOW_LOAD_CORE),
+   MENU_LABEL(MENU_SHOW_LOAD_CONTENT),
+   MENU_LABEL(MENU_SHOW_INFORMATION),
+   MENU_LABEL(MENU_SHOW_CONFIGURATIONS),
+   MENU_LABEL(MENU_SHOW_HELP),
+   MENU_LABEL(MENU_SHOW_QUIT_RETROARCH),
+   MENU_LABEL(MENU_SHOW_REBOOT),
    MENU_LABEL(MENU_SHOW_ONLINE_UPDATER),
    MENU_LABEL(MENU_SHOW_CORE_UPDATER),
    MENU_LABEL(RUN_MUSIC),
@@ -1715,11 +1722,6 @@ enum msg_hash_enums
 #define MENU_LABEL_ACCOUNTS_LIST                                               0x774c15a0U
 
 #define MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST                            0xb4f82700U
-
-/* Scan values */
-#define MENU_LABEL_SCAN_THIS_DIRECTORY                                         0x6921b775U
-#define MENU_LABEL_SCAN_DIRECTORY                                              0x57de303eU
-#define MENU_LABEL_SCAN_FILE                                                   0xd5d1eee9U
 
 /* Online updater settings */
 

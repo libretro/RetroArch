@@ -310,8 +310,8 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
    if (!list)
       return;
 
-   menu_entries_get_at_offset(list, i, &path, &entry_label, &entry->type,
-         &entry->entry_idx, NULL);
+   file_list_get_at_offset(list, i, &path, &entry_label, &entry->type,
+         &entry->entry_idx);
 
    cbs = (menu_file_list_cbs_t*)file_list_get_actiondata_at_offset(list, i);
 
@@ -330,7 +330,8 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
          tmp[0] = '\0';
 
          cbs->action_get_value(list,
-               &entry->spacing, entry->type, (unsigned)i, label,
+               &entry->spacing, entry->type,
+               (unsigned)i, label,
                tmp,
                sizeof(tmp),
                entry_label, path,
@@ -375,11 +376,13 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
 
    entry->idx         = (unsigned)i;
 
-   if (path && !use_representation)
+   if (!string_is_empty(path) && !use_representation)
       strlcpy(newpath,  path, sizeof(newpath));
    else if (cbs && cbs->setting && cbs->setting->enum_value_idx != MSG_UNKNOWN
          && !cbs->setting->dont_use_enum_idx_representation)
-      strlcpy(newpath, msg_hash_to_str(cbs->setting->enum_value_idx), sizeof(newpath));
+      strlcpy(newpath,
+            msg_hash_to_str(cbs->setting->enum_value_idx),
+            sizeof(newpath));
 
    if (!string_is_empty(newpath))
       entry->path = strdup(newpath);

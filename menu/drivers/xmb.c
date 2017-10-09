@@ -4322,12 +4322,18 @@ static int xmb_list_push(void *data, void *userdata,
             if (frontend_driver_has_fork())
 #endif
             {
-               entry.enum_idx   = MENU_ENUM_LABEL_CORE_LIST;
-               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+               if (settings->bools.menu_show_load_core)
+               {
+                  entry.enum_idx   = MENU_ENUM_LABEL_CORE_LIST;
+                  menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+               }
             }
 
-            entry.enum_idx      = MENU_ENUM_LABEL_LOAD_CONTENT_LIST;
-            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            if (settings->bools.menu_show_load_content)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_LOAD_CONTENT_LIST;
+               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            }
 
             entry.enum_idx      = MENU_ENUM_LABEL_ADD_CONTENT_LIST;
             menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
@@ -4347,23 +4353,42 @@ static int xmb_list_push(void *data, void *userdata,
                menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
             }
 
-            entry.enum_idx      = MENU_ENUM_LABEL_INFORMATION_LIST;
-            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            if (settings->bools.menu_show_information)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_INFORMATION_LIST;
+               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            }
+
 #ifndef HAVE_DYNAMIC
             entry.enum_idx      = MENU_ENUM_LABEL_RESTART_RETROARCH;
             menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 #endif
-            entry.enum_idx      = MENU_ENUM_LABEL_CONFIGURATIONS_LIST;
-            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 
-            entry.enum_idx      = MENU_ENUM_LABEL_HELP_LIST;
-            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            if (settings->bools.menu_show_configurations)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_CONFIGURATIONS_LIST;
+               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            }
+
+            if (settings->bools.menu_show_help)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_HELP_LIST;
+               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            }
+
 #if !defined(IOS)
-            entry.enum_idx      = MENU_ENUM_LABEL_QUIT_RETROARCH;
-            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            if (settings->bools.menu_show_quit_retroarch)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_QUIT_RETROARCH;
+               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            }
 #endif
-            entry.enum_idx      = MENU_ENUM_LABEL_REBOOT;
-            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+
+            if (settings->bools.menu_show_reboot)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_REBOOT;
+               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            }
 
             entry.enum_idx      = MENU_ENUM_LABEL_SHUTDOWN;
             menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);

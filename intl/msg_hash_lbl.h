@@ -1307,6 +1307,20 @@ MSG_HASH(MENU_ENUM_LABEL_MATERIALUI_ICONS_ENABLE,
       "materialui_icons_enable")
 MSG_HASH(MENU_ENUM_LABEL_RENAME_ENTRY,
       "rename_entry")
+MSG_HASH(MENU_ENUM_LABEL_MENU_SHOW_LOAD_CORE,
+      "menu_show_load_core")
+MSG_HASH(MENU_ENUM_LABEL_MENU_SHOW_LOAD_CONTENT,
+      "menu_show_load_content")
+MSG_HASH(MENU_ENUM_LABEL_MENU_SHOW_INFORMATION,
+      "menu_show_information")
+MSG_HASH(MENU_ENUM_LABEL_MENU_SHOW_CONFIGURATIONS,
+      "menu_show_configurations")
+MSG_HASH(MENU_ENUM_LABEL_MENU_SHOW_HELP,
+      "menu_show_help")
+MSG_HASH(MENU_ENUM_LABEL_MENU_SHOW_QUIT_RETROARCH,
+      "menu_show_quit_retroarch")
+MSG_HASH(MENU_ENUM_LABEL_MENU_SHOW_REBOOT,
+      "menu_show_reboot")
 MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
       "quick_menu_show_take_screenshot")
 MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
