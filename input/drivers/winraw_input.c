@@ -323,6 +323,49 @@ static void winraw_init_mouse_xy_mapping()
    }
 }
 
+static int16_t winraw_lightgun_state(winraw_input_t *wr,
+      unsigned port, unsigned id)
+{
+   unsigned i;
+   settings_t *settings  = config_get_ptr();
+   winraw_mouse_t *mouse = NULL;
+
+   if (port >= MAX_USERS)
+      return 0;
+
+   for (i = 0; i < g_mouse_cnt; ++i)
+   {
+      if (i == settings->uints.input_mouse_index[port])
+      {
+         mouse = &wr->mice[i];
+         break;
+      }
+   }
+
+   if (!mouse)
+      return 0;
+
+   switch (id)
+   {
+      case RETRO_DEVICE_ID_LIGHTGUN_X:
+         return mouse->dlt_x;
+      case RETRO_DEVICE_ID_LIGHTGUN_Y:
+         return mouse->dlt_y;
+      case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
+         return mouse->btn_l ? 1 : 0;
+      case RETRO_DEVICE_ID_LIGHTGUN_CURSOR:
+         return mouse->btn_m ? 1 : 0;
+      case RETRO_DEVICE_ID_LIGHTGUN_TURBO:
+         return mouse->btn_r ? 1 : 0;
+      case RETRO_DEVICE_ID_LIGHTGUN_START:
+         return (mouse->btn_m && mouse->btn_r) ? 1 : 0;
+      case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
+         return mouse->btn_m && mouse->btn_l ? 1 : 0;
+   }
+
+   return 0;
+}
+
 static void winraw_update_mouse_state(winraw_mouse_t *mouse, RAWMOUSE *state)
 {
    POINT crs_pos;
@@ -555,6 +598,9 @@ static int16_t winraw_input_state(void *d,
          if (binds[port])
             return input_joypad_analog(wr->joypad, joypad_info,
                   port, index, id, binds[port]);
+         break;
+      case RETRO_DEVICE_LIGHTGUN:
+         return winraw_lightgun_state(wr, port, id);
    }
 
    return 0;
@@ -587,7 +633,8 @@ static uint64_t winraw_get_capabilities(void *u)
    return (1 << RETRO_DEVICE_KEYBOARD) |
           (1 << RETRO_DEVICE_MOUSE) |
           (1 << RETRO_DEVICE_JOYPAD) |
-          (1 << RETRO_DEVICE_ANALOG);
+          (1 << RETRO_DEVICE_ANALOG) |
+          (1 << RETRO_DEVICE_LIGHTGUN);
 }
 
 static void winraw_grab_mouse(void *d, bool grab)
