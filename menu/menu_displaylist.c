@@ -2949,11 +2949,14 @@ static int menu_displaylist_parse_load_content_settings(
 #ifdef HAVE_LAKKA
       if (show_advanced_settings)
 #endif
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE),
-            msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE),
-            MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
-            MENU_SETTING_ACTION, 0, 0);
+      if (settings->bools.quick_menu_show_save_core_overrides)
+      {
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE),
+               msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE),
+               MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
+               MENU_SETTING_ACTION, 0, 0);
+      }
 
 #ifdef HAVE_LAKKA
       if (show_advanced_settings)
@@ -5406,6 +5409,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_QUICK_MENU_SHOW_SHADERS,
                PARSE_ONLY_BOOL, false);
 #endif
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
+               PARSE_ONLY_BOOL, false);
 
          info->need_refresh = true;
          info->need_push    = true;

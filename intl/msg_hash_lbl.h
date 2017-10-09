@@ -1323,3 +1323,5 @@ MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_CHEATS,
       "quick_menu_show_cheats")
 MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_SHADERS,
       "quick_menu_show_shaders")
+MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
+      "quick_menu_show_save_core_overrides")
