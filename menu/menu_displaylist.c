@@ -3018,8 +3018,10 @@ static int menu_displaylist_parse_horizontal_content_actions(
    playlist_get_index(playlist, idx,
          &entry_path, &label, &core_path, &core_name, NULL, &db_name);
 
-   if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
-         && string_is_equal(menu->deferred_path, fullpath))
+   bool content_loaded = !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
+         && string_is_equal(menu->deferred_path, fullpath);
+
+   if (content_loaded)
       menu_displaylist_parse_load_content_settings(info);
    else
    {
@@ -3058,7 +3060,8 @@ static int menu_displaylist_parse_horizontal_content_actions(
             MENU_SETTING_ACTION_DELETE_ENTRY, 0, 0);
    }
 
-   if (settings->bools.quick_menu_show_information && !string_is_empty(db_name))
+   if (!string_is_empty(db_name) && (!content_loaded ||
+      (content_loaded && settings->bools.quick_menu_show_information)))
    {
       char *db_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
