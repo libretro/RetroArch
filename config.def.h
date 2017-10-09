@@ -241,6 +241,7 @@ static bool quick_menu_show_save_load_state      = true;
 static bool quick_menu_show_undo_save_load_state = true;
 static bool quick_menu_show_add_to_favorites     = true;
 static bool quick_menu_show_options              = true;
+static bool quick_menu_show_controls             = true;
 
 static bool menu_show_online_updater     = true;
 

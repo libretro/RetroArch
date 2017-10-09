@@ -1317,3 +1317,5 @@ MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
       "quick_menu_show_add_to_favorites")
 MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_OPTIONS,
       "quick_menu_show_options")
+MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_CONTROLS,
+      "quick_menu_show_controls")

@@ -143,6 +143,7 @@ typedef struct settings
       bool quick_menu_show_undo_save_load_state;
       bool quick_menu_show_add_to_favorites;
       bool quick_menu_show_options;
+      bool quick_menu_show_controls;
 
       /* Netplay */
       bool netplay_public_announce;
