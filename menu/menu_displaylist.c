@@ -2961,11 +2961,14 @@ static int menu_displaylist_parse_load_content_settings(
 #ifdef HAVE_LAKKA
       if (show_advanced_settings)
 #endif
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME),
-            msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME),
-            MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
-            MENU_SETTING_ACTION, 0, 0);
+      if (settings->bools.quick_menu_show_save_game_overrides)
+      {
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME),
+               msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME),
+               MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
+               MENU_SETTING_ACTION, 0, 0);
+      }
 
 #ifdef HAVE_CHEEVOS
       if(settings->bools.cheevos_enable)
@@ -5411,6 +5414,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 #endif
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
+               PARSE_ONLY_BOOL, false);
+
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
                PARSE_ONLY_BOOL, false);
 
          info->need_refresh = true;

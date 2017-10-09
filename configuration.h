@@ -147,6 +147,7 @@ typedef struct settings
       bool quick_menu_show_cheats;
       bool quick_menu_show_shaders;
       bool quick_menu_show_save_core_overrides;
+      bool quick_menu_show_save_game_overrides;
 
       /* Netplay */
       bool netplay_public_announce;
