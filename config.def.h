@@ -238,6 +238,7 @@ static bool default_block_config_read    = true;
 
 static bool quick_menu_show_take_screenshot = true;
 static bool quick_menu_show_save_load_state = true;
+static bool quick_menu_show_undo_save_load_state = true;
 
 static bool menu_show_online_updater     = true;
 
