@@ -2832,11 +2832,14 @@ static int menu_displaylist_parse_load_content_settings(
             MENU_ENUM_LABEL_CLOSE_CONTENT,
             MENU_SETTING_ACTION_CLOSE, 0, 0);
 
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT),
-            msg_hash_to_str(MENU_ENUM_LABEL_TAKE_SCREENSHOT),
-            MENU_ENUM_LABEL_TAKE_SCREENSHOT,
-            MENU_SETTING_ACTION_SCREENSHOT, 0, 0);
+      if (settings->bools.quick_menu_show_take_screenshot)
+      {
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT),
+               msg_hash_to_str(MENU_ENUM_LABEL_TAKE_SCREENSHOT),
+               MENU_ENUM_LABEL_TAKE_SCREENSHOT,
+               MENU_SETTING_ACTION_SCREENSHOT, 0, 0);
+      }
 
       menu_displaylist_parse_settings_enum(menu, info,
             MENU_ENUM_LABEL_STATE_SLOT, PARSE_ONLY_INT, true);
@@ -5278,6 +5281,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_MENU_VIEWS_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_QUICK_MENU_VIEWS_SETTINGS,
+               PARSE_ACTION, false);
+
 #if defined(HAVE_NETWORKING) && !defined(HAVE_LAKKA)
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_MENU_SHOW_ONLINE_UPDATER,
@@ -5335,6 +5342,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN,
+               PARSE_ONLY_BOOL, false);
+
+         info->need_refresh = true;
+         info->need_push    = true;
+         break;
+      case DISPLAYLIST_QUICK_MENU_VIEWS_SETTINGS_LIST:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
                PARSE_ONLY_BOOL, false);
 
          info->need_refresh = true;

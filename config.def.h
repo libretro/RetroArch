@@ -236,6 +236,8 @@ static const bool display_keyboard_overlay = false;
 
 static bool default_block_config_read    = true;
 
+static bool quick_menu_show_take_screenshot = true;
+
 static bool menu_show_online_updater     = true;
 
 #if defined(HAVE_LAKKA) || defined(VITA)

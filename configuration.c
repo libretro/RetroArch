@@ -1191,6 +1191,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("menu_battery_level_enable",     &settings->bools.menu_battery_level_enable, true, true, false);
    SETTING_BOOL("menu_core_enable",              &settings->bools.menu_core_enable, true, true, false);
    SETTING_BOOL("menu_dynamic_wallpaper_enable", &settings->bools.menu_dynamic_wallpaper_enable, true, false, false);
+   SETTING_BOOL("quick_menu_show_take_screenshot", &settings->bools.quick_menu_show_take_screenshot, true, quick_menu_show_take_screenshot, false);
 #ifdef HAVE_MATERIALUI
    SETTING_BOOL("materialui_icons_enable",            &settings->bools.menu_materialui_icons_enable, true, materialui_icons_enable, false);
 #endif

@@ -138,6 +138,7 @@ typedef struct settings
       bool menu_xmb_show_history;
       bool menu_xmb_show_add;
       bool menu_unified_controls;
+      bool quick_menu_show_take_screenshot;
 
       /* Netplay */
       bool netplay_public_announce;
