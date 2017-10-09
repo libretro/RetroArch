@@ -2881,10 +2881,13 @@ static int menu_displaylist_parse_load_content_settings(
                   MENU_SETTING_ACTION_LOADSTATE, 0, 0);
       }
 
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES),
-            msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_FAVORITES),
-            MENU_ENUM_LABEL_ADD_TO_FAVORITES, FILE_TYPE_PLAYLIST_ENTRY, 0, 0);
+      if (settings->bools.quick_menu_show_add_to_favorites)
+      {
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES),
+               msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_FAVORITES),
+               MENU_ENUM_LABEL_ADD_TO_FAVORITES, FILE_TYPE_PLAYLIST_ENTRY, 0, 0);
+      }
 
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTIONS),
@@ -5367,6 +5370,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
+               PARSE_ONLY_BOOL, false);
+
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
                PARSE_ONLY_BOOL, false);
 
          info->need_refresh = true;
