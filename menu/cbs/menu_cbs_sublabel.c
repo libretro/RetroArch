@@ -294,6 +294,7 @@ default_sublabel_macro(action_bind_sublabel_quick_menu_show_take_screenshot,    
 default_sublabel_macro(action_bind_sublabel_quick_menu_show_save_load_state,       MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE)
 default_sublabel_macro(action_bind_sublabel_quick_menu_show_undo_save_load_state,  MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE)
 default_sublabel_macro(action_bind_sublabel_quick_menu_show_add_to_favorites,      MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES)
+default_sublabel_macro(action_bind_sublabel_quick_menu_show_options,               MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_OPTIONS)
 default_sublabel_macro(action_bind_sublabel_menu_favorites_tab,                    MENU_ENUM_SUBLABEL_XMB_SHOW_FAVORITES)
 default_sublabel_macro(action_bind_sublabel_menu_images_tab,                       MENU_ENUM_SUBLABEL_XMB_SHOW_IMAGES)
 default_sublabel_macro(action_bind_sublabel_menu_show_online_updater,              MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER)
@@ -607,6 +608,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_show_add_to_favorites);
+            break;
+         case MENU_ENUM_LABEL_QUICK_MENU_SHOW_OPTIONS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_show_options);
             break;
          case MENU_ENUM_LABEL_XMB_SHOW_FAVORITES:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_favorites_tab);
