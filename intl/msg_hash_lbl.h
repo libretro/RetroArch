@@ -1309,3 +1309,5 @@ MSG_HASH(MENU_ENUM_LABEL_RENAME_ENTRY,
       "rename_entry")
 MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
       "quick_menu_show_take_screenshot")
+MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
+      "quick_menu_show_save_load_state")

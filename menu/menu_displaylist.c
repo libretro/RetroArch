@@ -2841,38 +2841,44 @@ static int menu_displaylist_parse_load_content_settings(
                MENU_SETTING_ACTION_SCREENSHOT, 0, 0);
       }
 
-      menu_displaylist_parse_settings_enum(menu, info,
-            MENU_ENUM_LABEL_STATE_SLOT, PARSE_ONLY_INT, true);
+      if (settings->bools.quick_menu_show_save_load_state)
+      {
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_STATE_SLOT, PARSE_ONLY_INT, true);
 
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_STATE),
-            msg_hash_to_str(MENU_ENUM_LABEL_SAVE_STATE),
-            MENU_ENUM_LABEL_SAVE_STATE,
-            MENU_SETTING_ACTION_SAVESTATE, 0, 0);
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_STATE),
+               msg_hash_to_str(MENU_ENUM_LABEL_SAVE_STATE),
+               MENU_ENUM_LABEL_SAVE_STATE,
+               MENU_SETTING_ACTION_SAVESTATE, 0, 0);
 
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_STATE),
-            msg_hash_to_str(MENU_ENUM_LABEL_LOAD_STATE),
-            MENU_ENUM_LABEL_LOAD_STATE,
-            MENU_SETTING_ACTION_LOADSTATE, 0, 0);
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_STATE),
+               msg_hash_to_str(MENU_ENUM_LABEL_LOAD_STATE),
+               MENU_ENUM_LABEL_LOAD_STATE,
+               MENU_SETTING_ACTION_LOADSTATE, 0, 0);
+      }
+
+      if (settings->bools.quick_menu_show_save_load_state)
+      {
+#ifdef HAVE_LAKKA
+         if (show_advanced_settings)
+#endif
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_UNDO_LOAD_STATE),
+                  MENU_ENUM_LABEL_UNDO_LOAD_STATE,
+                  MENU_SETTING_ACTION_LOADSTATE, 0, 0);
 
 #ifdef HAVE_LAKKA
-      if (show_advanced_settings)
+         if (show_advanced_settings)
 #endif
-         menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE),
-               msg_hash_to_str(MENU_ENUM_LABEL_UNDO_LOAD_STATE),
-               MENU_ENUM_LABEL_UNDO_LOAD_STATE,
-               MENU_SETTING_ACTION_LOADSTATE, 0, 0);
-
-#ifdef HAVE_LAKKA
-      if (show_advanced_settings)
-#endif
-         menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE),
-               msg_hash_to_str(MENU_ENUM_LABEL_UNDO_SAVE_STATE),
-               MENU_ENUM_LABEL_UNDO_SAVE_STATE,
-               MENU_SETTING_ACTION_LOADSTATE, 0, 0);
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_UNDO_SAVE_STATE),
+                  MENU_ENUM_LABEL_UNDO_SAVE_STATE,
+                  MENU_SETTING_ACTION_LOADSTATE, 0, 0);
+      }
 
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES),
@@ -5352,6 +5358,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
+               PARSE_ONLY_BOOL, false);
+
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
                PARSE_ONLY_BOOL, false);
 
          info->need_refresh = true;
