@@ -1327,3 +1327,5 @@ MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
       "quick_menu_show_save_core_overrides")
 MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
       "quick_menu_show_save_game_overrides")
+MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_INFORMATION,
+      "quick_menu_show_information")

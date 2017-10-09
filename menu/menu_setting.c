@@ -5988,6 +5988,21 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_LAKKA_ADVANCED);
 
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.quick_menu_show_information,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_INFORMATION,
+               MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
+               quick_menu_show_information,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
          if (string_is_not_equal_fast(ui_companion_driver_get_ident(), "null", 4))
          {
             CONFIG_BOOL(

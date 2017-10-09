@@ -246,6 +246,7 @@ static bool quick_menu_show_cheats               = true;
 static bool quick_menu_show_shaders              = true;
 static bool quick_menu_show_save_core_overrides  = true;
 static bool quick_menu_show_save_game_overrides  = true;
+static bool quick_menu_show_information          = true;
 
 static bool menu_show_online_updater     = true;
 

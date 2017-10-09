@@ -3058,7 +3058,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
             MENU_SETTING_ACTION_DELETE_ENTRY, 0, 0);
    }
 
-   if (!string_is_empty(db_name))
+   if (settings->bools.quick_menu_show_information && !string_is_empty(db_name))
    {
       char *db_path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
@@ -5418,6 +5418,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
+               PARSE_ONLY_BOOL, false);
+
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_QUICK_MENU_SHOW_INFORMATION,
                PARSE_ONLY_BOOL, false);
 
          info->need_refresh = true;
