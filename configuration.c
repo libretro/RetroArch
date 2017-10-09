@@ -1198,6 +1198,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("quick_menu_show_options",       &settings->bools.quick_menu_show_options, true, quick_menu_show_options, false);
    SETTING_BOOL("quick_menu_show_controls",      &settings->bools.quick_menu_show_controls, true, quick_menu_show_controls, false);
    SETTING_BOOL("quick_menu_show_cheats",        &settings->bools.quick_menu_show_cheats, true, quick_menu_show_cheats, false);
+   SETTING_BOOL("quick_menu_show_shaders",       &settings->bools.quick_menu_show_shaders, true, quick_menu_show_shaders, false);
 #ifdef HAVE_MATERIALUI
    SETTING_BOOL("materialui_icons_enable",            &settings->bools.menu_materialui_icons_enable, true, materialui_icons_enable, false);
 #endif

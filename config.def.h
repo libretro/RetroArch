@@ -243,6 +243,7 @@ static bool quick_menu_show_add_to_favorites     = true;
 static bool quick_menu_show_options              = true;
 static bool quick_menu_show_controls             = true;
 static bool quick_menu_show_cheats               = true;
+static bool quick_menu_show_shaders              = true;
 
 static bool menu_show_online_updater     = true;
 
