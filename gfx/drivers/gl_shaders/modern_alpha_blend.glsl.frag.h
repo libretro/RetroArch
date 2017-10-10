@@ -6,13 +6,9 @@ static const char *stock_fragment_modern_blend = GLSL(
    varying vec2 tex_coord;
    varying vec4 color;
    void main() {
-      if (bgcolor == vec4(0.0,0.0,1.0,1.0))
-      {
+      if (bgcolor.a > 0.0)
          gl_FragColor = bgcolor;
-      }
       else
-      {
          gl_FragColor = color * texture2D(Texture, tex_coord);
-      }
    }
 );

@@ -956,28 +956,32 @@ static void gl_render_osd_background(
    struct uniform_info uniform_param;
    unsigned vertices_total = 6;
    float *dummy = (float*)calloc(4 * vertices_total, sizeof(float));
-   float *colors = (float*)malloc(4 * vertices_total * sizeof(float));
+   float colors[4];
    float *verts = (float*)malloc(2 * vertices_total * sizeof(float));
-   unsigned i;
    int msg_width;
-   float x, y, width, height;
+   float x, x2, y, y2, width, height;
    settings_t *settings = config_get_ptr();
-
-   x = video_info->font_msg_pos_x;
-   y = video_info->font_msg_pos_y;
-
-   for (i = 0; i < 4 * vertices_total; i += 4)
-   {
-      colors[i+0] = 0;
-      colors[i+1] = 0;
-      colors[i+2] = 1;
-      colors[i+3] = 1;
-   }
 
    msg_width = font_driver_get_message_width(NULL, msg, strlen(msg), 1.0f);
 
+   /* shader driver expects vertex coords as 0..1 */
+   x = video_info->font_msg_pos_x;
+   y = video_info->font_msg_pos_y;
    width = msg_width / (float)video_info->width;
    height = settings->floats.video_font_size / (float)video_info->height;
+
+   x2 = x * 0.10f; /* extend background around text */
+   y2 = y * 0.15f;
+
+   x -= x2;
+   y -= y2;
+   width += x2;
+   height += y2;
+
+   colors[0] = 0.0f;
+   colors[1] = 0.0f;
+   colors[2] = 1.0f;
+   colors[3] = 0.5f;
 
    verts[0] = x;
    verts[1] = y; // BL
@@ -997,7 +1001,7 @@ static void gl_render_osd_background(
    verts[10] = x + width;
    verts[11] = y; // BR
 
-   coords.color         = colors;
+   coords.color         = dummy;
    coords.vertex        = verts;
    coords.tex_coord     = dummy;
    coords.lut_tex_coord = dummy;
@@ -1015,7 +1019,9 @@ static void gl_render_osd_background(
    video_shader_driver_use(shader_info);
    video_shader_driver_set_coords(coords_data);
 
-   glDisable(GL_BLEND);
+   glEnable(GL_BLEND);
+   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+   glBlendEquation(GL_FUNC_ADD);
 
    mvp.data                = gl;
    mvp.matrix              = &gl->mvp_no_rot;
@@ -1042,14 +1048,13 @@ static void gl_render_osd_background(
 
    glDrawArrays(GL_TRIANGLES, 0, coords.vertices);
 
-   uniform_param.result.f.v0       = 1.0f;
-   uniform_param.result.f.v1       = 1.0f;
-   uniform_param.result.f.v2       = 1.0f;
-   uniform_param.result.f.v3       = 1.0f;
+   uniform_param.result.f.v0       = 0.0f;
+   uniform_param.result.f.v1       = 0.0f;
+   uniform_param.result.f.v2       = 0.0f;
+   uniform_param.result.f.v3       = 0.0f;
 
    video_shader_driver_set_parameter(uniform_param);
 
-   free(colors);
    free(dummy);
    free(verts);
 
