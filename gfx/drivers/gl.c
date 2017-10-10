@@ -970,8 +970,8 @@ static void gl_render_osd_background(
    width = msg_width / (float)video_info->width;
    height = settings->floats.video_font_size / (float)video_info->height;
 
-   x2 = x * 0.10f; /* extend background around text */
-   y2 = y * 0.15f;
+   x2 = 0.005f; /* extend background around text */
+   y2 = 0.005f;
 
    x -= x2;
    y -= y2;
