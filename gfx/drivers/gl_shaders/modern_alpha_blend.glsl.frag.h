@@ -8,7 +8,7 @@ static const char *stock_fragment_modern_blend = GLSL(
    void main() {
       if (bgcolor == vec4(0.0,0.0,1.0,1.0))
       {
-         gl_FragColor = bgcolor;//color * texture2D(Texture, tex_coord);
+         gl_FragColor = bgcolor;
       }
       else
       {

@@ -959,6 +959,12 @@ static void gl_render_osd_background(
    float *colors = (float*)malloc(4 * vertices_total * sizeof(float));
    float *verts = (float*)malloc(2 * vertices_total * sizeof(float));
    unsigned i;
+   int msg_width;
+   float x, y, width, height;
+   settings_t *settings = config_get_ptr();
+
+   x = video_info->font_msg_pos_x;
+   y = video_info->font_msg_pos_y;
 
    for (i = 0; i < 4 * vertices_total; i += 4)
    {
@@ -968,23 +974,28 @@ static void gl_render_osd_background(
       colors[i+3] = 1;
    }
 
-   verts[0] = -1;
-   verts[1] = -1; // BL
+   msg_width = font_driver_get_message_width(NULL, msg, strlen(msg), 1.0f);
 
-   verts[2] = -1;
-   verts[3] = 1; // TL
+   width = msg_width / (float)video_info->width;
+   height = settings->floats.video_font_size / (float)video_info->height;
 
-   verts[4] = 1;
-   verts[5] = 1; // TR
+   verts[0] = x;
+   verts[1] = y; // BL
 
-   verts[6] = -1;
-   verts[7] = -1; // BL
+   verts[2] = x;
+   verts[3] = y + height; // TL
 
-   verts[8] = 1;
-   verts[9] = 1; // TR
+   verts[4] = x + width;
+   verts[5] = y + height; // TR
 
-   verts[10] = 1;
-   verts[11] = -1; // BR
+   verts[6] = x;
+   verts[7] = y; // BL
+
+   verts[8] = x + width;
+   verts[9] = y + height; // TR
+
+   verts[10] = x + width;
+   verts[11] = y; // BR
 
    coords.color         = colors;
    coords.vertex        = verts;
@@ -1001,10 +1012,10 @@ static void gl_render_osd_background(
 
    video_driver_set_viewport(video_info->width, video_info->height, true, false);
 
-   glDisable(GL_BLEND);
-
    video_shader_driver_use(shader_info);
    video_shader_driver_set_coords(coords_data);
+
+   glDisable(GL_BLEND);
 
    mvp.data                = gl;
    mvp.matrix              = &gl->mvp_no_rot;
@@ -1030,6 +1041,13 @@ static void gl_render_osd_background(
    video_shader_driver_set_parameter(uniform_param);
 
    glDrawArrays(GL_TRIANGLES, 0, coords.vertices);
+
+   uniform_param.result.f.v0       = 1.0f;
+   uniform_param.result.f.v1       = 1.0f;
+   uniform_param.result.f.v2       = 1.0f;
+   uniform_param.result.f.v3       = 1.0f;
+
+   video_shader_driver_set_parameter(uniform_param);
 
    free(colors);
    free(dummy);
