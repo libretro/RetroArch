@@ -983,23 +983,25 @@ static void gl_render_osd_background(
    colors[2] = settings->uints.video_msg_bgcolor_blue / 255.0f;
    colors[3] = settings->floats.video_msg_bgcolor_opacity;
 
+   /* triangle 1 */
    verts[0] = x;
-   verts[1] = y; // BL
+   verts[1] = y; /* bottom-left */
 
    verts[2] = x;
-   verts[3] = y + height; // TL
+   verts[3] = y + height; /* top-left */
 
    verts[4] = x + width;
-   verts[5] = y + height; // TR
+   verts[5] = y + height; /* top-right */
 
+   /* triangle 2 */
    verts[6] = x;
-   verts[7] = y; // BL
+   verts[7] = y; /* bottom-left */
 
    verts[8] = x + width;
-   verts[9] = y + height; // TR
+   verts[9] = y + height; /* top-right */
 
    verts[10] = x + width;
-   verts[11] = y; // BR
+   verts[11] = y; /* bottom-right */
 
    coords.color         = dummy;
    coords.vertex        = verts;
@@ -1048,6 +1050,7 @@ static void gl_render_osd_background(
 
    glDrawArrays(GL_TRIANGLES, 0, coords.vertices);
 end:
+   /* reset uniform back to zero so it is not used for anything else */
    uniform_param.result.f.v0       = 0.0f;
    uniform_param.result.f.v1       = 0.0f;
    uniform_param.result.f.v2       = 0.0f;
