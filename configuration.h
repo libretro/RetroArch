@@ -83,6 +83,7 @@ typedef struct settings
       bool video_shared_context;
       bool video_force_srgb_disable;
       bool video_fps_show;
+      bool video_msg_bgcolor_enable;
 
       /* Audio */
       bool audio_enable;
@@ -252,6 +253,7 @@ typedef struct settings
       float video_msg_color_r;
       float video_msg_color_g;
       float video_msg_color_b;
+      float video_msg_bgcolor_opacity;
 
       float menu_wallpaper_opacity;
       float menu_framebuffer_opacity;
@@ -320,6 +322,9 @@ typedef struct settings
       unsigned video_viwidth;
       unsigned video_aspect_ratio_idx;
       unsigned video_rotation;
+      unsigned video_msg_bgcolor_red;
+      unsigned video_msg_bgcolor_green;
+      unsigned video_msg_bgcolor_blue;
 
       unsigned menu_thumbnails;
       unsigned menu_dpi_override_value;

@@ -941,6 +941,129 @@ static void gl_set_texture_enable(void *data, bool state, bool full_screen)
    gl->menu_texture_full_screen = full_screen;
 }
 
+static void gl_render_osd_background(
+      gl_t *gl, video_frame_info_t *video_info,
+      const char *msg)
+{
+   video_shader_ctx_mvp_t mvp;
+   video_shader_ctx_coords_t coords_data;
+   video_coords_t coords;
+   video_coord_array_t ca;
+   video_shader_ctx_info_t shader_info;
+   struct uniform_info uniform_param;
+   const unsigned vertices_total = 6;
+   float colors[4];
+   float *dummy = (float*)calloc(4 * vertices_total, sizeof(float));
+   float *verts = (float*)malloc(2 * vertices_total * sizeof(float));
+   int msg_width;
+   float x, x2, y, y2, width, height;
+   settings_t *settings = config_get_ptr();
+
+   if (!gl || !settings)
+      goto end;
+
+   msg_width = font_driver_get_message_width(NULL, msg, strlen(msg), 1.0f);
+
+   /* shader driver expects vertex coords as 0..1 */
+   x = video_info->font_msg_pos_x;
+   y = video_info->font_msg_pos_y;
+   width = msg_width / (float)video_info->width;
+   height = settings->floats.video_font_size / (float)video_info->height;
+
+   x2 = 0.005f; /* extend background around text */
+   y2 = 0.005f;
+
+   x -= x2;
+   y -= y2;
+   width += x2;
+   height += y2;
+
+   colors[0] = settings->uints.video_msg_bgcolor_red / 255.0f;
+   colors[1] = settings->uints.video_msg_bgcolor_green / 255.0f;
+   colors[2] = settings->uints.video_msg_bgcolor_blue / 255.0f;
+   colors[3] = settings->floats.video_msg_bgcolor_opacity;
+
+   /* triangle 1 */
+   verts[0] = x;
+   verts[1] = y; /* bottom-left */
+
+   verts[2] = x;
+   verts[3] = y + height; /* top-left */
+
+   verts[4] = x + width;
+   verts[5] = y + height; /* top-right */
+
+   /* triangle 2 */
+   verts[6] = x;
+   verts[7] = y; /* bottom-left */
+
+   verts[8] = x + width;
+   verts[9] = y + height; /* top-right */
+
+   verts[10] = x + width;
+   verts[11] = y; /* bottom-right */
+
+   coords.color         = dummy;
+   coords.vertex        = verts;
+   coords.tex_coord     = dummy;
+   coords.lut_tex_coord = dummy;
+   coords.vertices      = vertices_total;
+
+   coords_data.handle_data = NULL;
+   coords_data.data        = &coords;
+
+   shader_info.data       = NULL;
+   shader_info.idx        = VIDEO_SHADER_STOCK_BLEND;
+   shader_info.set_active = true;
+
+   video_driver_set_viewport(video_info->width, video_info->height, true, false);
+
+   video_shader_driver_use(shader_info);
+   video_shader_driver_set_coords(coords_data);
+
+   glEnable(GL_BLEND);
+   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+   glBlendEquation(GL_FUNC_ADD);
+
+   mvp.data                = gl;
+   mvp.matrix              = &gl->mvp_no_rot;
+
+   video_shader_driver_set_mvp(mvp);
+
+   uniform_param.type              = UNIFORM_4F;
+   uniform_param.enabled           = true;
+   uniform_param.location          = 0;
+   uniform_param.count             = 0;
+
+   uniform_param.lookup.type       = SHADER_PROGRAM_FRAGMENT;
+   uniform_param.lookup.ident      = "bgcolor";
+   uniform_param.lookup.idx        = shader_info.idx;
+   uniform_param.lookup.add_prefix = true;
+   uniform_param.lookup.enable     = true;
+
+   uniform_param.result.f.v0       = colors[0];
+   uniform_param.result.f.v1       = colors[1];
+   uniform_param.result.f.v2       = colors[2];
+   uniform_param.result.f.v3       = colors[3];
+
+   video_shader_driver_set_parameter(uniform_param);
+
+   glDrawArrays(GL_TRIANGLES, 0, coords.vertices);
+end:
+   /* reset uniform back to zero so it is not used for anything else */
+   uniform_param.result.f.v0       = 0.0f;
+   uniform_param.result.f.v1       = 0.0f;
+   uniform_param.result.f.v2       = 0.0f;
+   uniform_param.result.f.v3       = 0.0f;
+
+   video_shader_driver_set_parameter(uniform_param);
+
+   free(dummy);
+   free(verts);
+
+   video_driver_set_viewport(video_info->width, video_info->height, false, true);
+}
+
 static void gl_set_osd_msg(void *data,
       video_frame_info_t *video_info,
       const char *msg,
@@ -1068,8 +1191,9 @@ static bool gl_frame(void *data, const void *frame,
    gl_t                            *gl = (gl_t*)data;
    unsigned width                      = video_info->width;
    unsigned height                     = video_info->height;
+   settings_t *settings = config_get_ptr();
 
-   if (!gl)
+   if (!gl || !settings)
       return false;
 
    context_bind_hw_render(false);
@@ -1244,7 +1368,11 @@ static bool gl_frame(void *data, const void *frame,
 #endif
 
    if (!string_is_empty(msg))
+   {
+      if (settings->bools.video_msg_bgcolor_enable)
+         gl_render_osd_background(gl, video_info, msg);
       font_driver_render_msg(video_info, NULL, msg, NULL);
+   }
 
 #ifdef HAVE_OVERLAY
    if (gl && gl->overlay_enable)

@@ -5,6 +5,7 @@
 - GUI: (XMB) Skip drawing the fading list when it is already transparent. Optimization.
 - GUI: (XMB) Comment out visible item calculation in xmb_draw_items().
 - GUI: (RGUI) Prevent crashes when using a non-English language reliant on UTF8.
+- GUI: Add option for OSD background color.
 - INPUT: Always show the controls menu even if descriptors are not set
 - INPUT: Fix input descriptors not being set on cores that don't implement the controllers interface
 - INPUT: Apply descriptors only for the amount of cores the core supports
