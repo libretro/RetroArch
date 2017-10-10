@@ -1293,6 +1293,8 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("systemfiles_in_content_dir",    &settings->bools.systemfiles_in_content_dir, true, default_systemfiles_in_content_dir, false);
    SETTING_BOOL("screenshots_in_content_dir",    &settings->bools.screenshots_in_content_dir, true, default_screenshots_in_content_dir, false);
 
+   SETTING_BOOL("video_msg_bgcolor_enable",      &settings->bools.video_msg_bgcolor_enable, true, message_bgcolor_enable, false);
+
    if (global)
    {
       SETTING_BOOL("custom_bgm_enable",         &global->console.sound.system_bgm_enable, true, false, false);
@@ -1331,6 +1333,7 @@ static struct config_float_setting *populate_settings_float(settings_t *settings
    SETTING_FLOAT("fastforward_ratio",        &settings->floats.fastforward_ratio,    true, fastforward_ratio, false);
    SETTING_FLOAT("slowmotion_ratio",         &settings->floats.slowmotion_ratio,     true, slowmotion_ratio, false);
    SETTING_FLOAT("input_axis_threshold",     input_driver_get_float(INPUT_ACTION_AXIS_THRESHOLD), true, axis_threshold, false);
+   SETTING_FLOAT("video_msg_bgcolor_opacity", &settings->floats.video_msg_bgcolor_opacity, true, message_bgcolor_opacity, false);
 
    *size = count;
 
@@ -1406,6 +1409,9 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("bundle_assets_extract_version_current", &settings->uints.bundle_assets_extract_version_current, true, 0, false);
    SETTING_UINT("bundle_assets_extract_last_version",    &settings->uints.bundle_assets_extract_last_version, true, 0, false);
    SETTING_UINT("input_overlay_show_physical_inputs_port", &settings->uints.input_overlay_show_physical_inputs_port, true, 0, false);
+   SETTING_UINT("video_msg_bgcolor_red",        &settings->uints.video_msg_bgcolor_red, true, message_bgcolor_red, false);
+   SETTING_UINT("video_msg_bgcolor_green",        &settings->uints.video_msg_bgcolor_green, true, message_bgcolor_green, false);
+   SETTING_UINT("video_msg_bgcolor_blue",        &settings->uints.video_msg_bgcolor_blue, true, message_bgcolor_blue, false);
 
    *size = count;
 

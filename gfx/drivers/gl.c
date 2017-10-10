@@ -945,22 +945,22 @@ static void gl_render_osd_background(
       gl_t *gl, video_frame_info_t *video_info,
       const char *msg)
 {
-   if (!gl)
-      return;
-
    video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords_data;
    video_coords_t coords;
    video_coord_array_t ca;
    video_shader_ctx_info_t shader_info;
    struct uniform_info uniform_param;
-   unsigned vertices_total = 6;
-   float *dummy = (float*)calloc(4 * vertices_total, sizeof(float));
+   const unsigned vertices_total = 6;
    float colors[4];
+   float *dummy = (float*)calloc(4 * vertices_total, sizeof(float));
    float *verts = (float*)malloc(2 * vertices_total * sizeof(float));
    int msg_width;
    float x, x2, y, y2, width, height;
    settings_t *settings = config_get_ptr();
+
+   if (!gl || !settings)
+      goto end;
 
    msg_width = font_driver_get_message_width(NULL, msg, strlen(msg), 1.0f);
 
@@ -978,10 +978,10 @@ static void gl_render_osd_background(
    width += x2;
    height += y2;
 
-   colors[0] = 0.0f;
-   colors[1] = 0.0f;
-   colors[2] = 1.0f;
-   colors[3] = 0.5f;
+   colors[0] = settings->uints.video_msg_bgcolor_red / 255.0f;
+   colors[1] = settings->uints.video_msg_bgcolor_green / 255.0f;
+   colors[2] = settings->uints.video_msg_bgcolor_blue / 255.0f;
+   colors[3] = settings->floats.video_msg_bgcolor_opacity;
 
    verts[0] = x;
    verts[1] = y; // BL
@@ -1047,7 +1047,7 @@ static void gl_render_osd_background(
    video_shader_driver_set_parameter(uniform_param);
 
    glDrawArrays(GL_TRIANGLES, 0, coords.vertices);
-
+end:
    uniform_param.result.f.v0       = 0.0f;
    uniform_param.result.f.v1       = 0.0f;
    uniform_param.result.f.v2       = 0.0f;
@@ -1188,8 +1188,9 @@ static bool gl_frame(void *data, const void *frame,
    gl_t                            *gl = (gl_t*)data;
    unsigned width                      = video_info->width;
    unsigned height                     = video_info->height;
+   settings_t *settings = config_get_ptr();
 
-   if (!gl)
+   if (!gl || !settings)
       return false;
 
    context_bind_hw_render(false);
@@ -1365,7 +1366,8 @@ static bool gl_frame(void *data, const void *frame,
 
    if (!string_is_empty(msg))
    {
-      gl_render_osd_background(gl, video_info, msg);
+      if (settings->bools.video_msg_bgcolor_enable)
+         gl_render_osd_background(gl, video_info, msg);
       font_driver_render_msg(video_info, NULL, msg, NULL);
    }
 

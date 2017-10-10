@@ -373,6 +373,12 @@ static const float message_pos_offset_y = 0.05;
  * RGB hex value. */
 static const uint32_t message_color = 0xffff00;
 
+static const bool message_bgcolor_enable = false;
+static const uint32_t message_bgcolor_red = 0;
+static const uint32_t message_bgcolor_green = 0;
+static const uint32_t message_bgcolor_blue = 0;
+static const float message_bgcolor_opacity = 1.0f;
+
 /* Record post-filtered (CPU filter) video,
  * rather than raw game output. */
 static const bool post_filter_record = false;
