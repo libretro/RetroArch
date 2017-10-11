@@ -2889,7 +2889,7 @@ static int menu_displaylist_parse_load_content_settings(
                MENU_ENUM_LABEL_ADD_TO_FAVORITES, FILE_TYPE_PLAYLIST_ENTRY, 0, 0);
       }
 
-      if (settings->bools.quick_menu_show_options)
+      if (settings->bools.quick_menu_show_options && !settings->bools.kiosk_mode_enable)
       {
          menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTIONS),
@@ -2906,7 +2906,7 @@ static int menu_displaylist_parse_load_content_settings(
             MENU_SETTING_ACTION, 0, 0);
 #endif
 
-      if (settings->bools.quick_menu_show_controls)
+      if (settings->bools.quick_menu_show_controls && !settings->bools.kiosk_mode_enable)
       {
          menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS),
@@ -2936,7 +2936,7 @@ static int menu_displaylist_parse_load_content_settings(
                MENU_SETTING_ACTION_CORE_DISK_OPTIONS, 0, 0);
 
 #ifdef HAVE_SHADER_MANAGER
-      if (settings->bools.quick_menu_show_shaders)
+      if (settings->bools.quick_menu_show_shaders && !settings->bools.kiosk_mode_enable)
       {
          menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS),
@@ -2949,7 +2949,7 @@ static int menu_displaylist_parse_load_content_settings(
 #ifdef HAVE_LAKKA
       if (show_advanced_settings)
 #endif
-      if (settings->bools.quick_menu_show_save_core_overrides)
+      if (settings->bools.quick_menu_show_save_core_overrides && !settings->bools.kiosk_mode_enable)
       {
          menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE),
@@ -2961,7 +2961,7 @@ static int menu_displaylist_parse_load_content_settings(
 #ifdef HAVE_LAKKA
       if (show_advanced_settings)
 #endif
-      if (settings->bools.quick_menu_show_save_game_overrides)
+      if (settings->bools.quick_menu_show_save_game_overrides && !settings->bools.kiosk_mode_enable)
       {
          menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME),
@@ -3045,14 +3045,14 @@ static int menu_displaylist_parse_horizontal_content_actions(
             msg_hash_to_str(MENU_ENUM_LABEL_RUN),
             MENU_ENUM_LABEL_RUN, FILE_TYPE_PLAYLIST_ENTRY, 0, idx);
 
-      if (settings->bools.playlist_entry_rename)
+      if (settings->bools.playlist_entry_rename && !settings->bools.kiosk_mode_enable)
          menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RENAME_ENTRY),
                msg_hash_to_str(MENU_ENUM_LABEL_RENAME_ENTRY),
                MENU_ENUM_LABEL_RENAME_ENTRY,
                FILE_TYPE_PLAYLIST_ENTRY, 0, idx);
 
-      if (settings->bools.playlist_entry_remove)
+      if (settings->bools.playlist_entry_remove && !settings->bools.kiosk_mode_enable)
          menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DELETE_ENTRY),
             msg_hash_to_str(MENU_ENUM_LABEL_DELETE_ENTRY),
@@ -4272,7 +4272,7 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
       file_list_sort_on_alt(info->list);
 
 #if defined(HAVE_NETWORKING)
-   if (settings->bools.menu_show_core_updater)
+   if (settings->bools.menu_show_core_updater && !settings->bools.kiosk_mode_enable)
       if (info->download_core)
       {
          menu_entries_append_enum(info->list,
@@ -5549,6 +5549,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_SHOW_ADVANCED_SETTINGS,
                PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_MENU_ENABLE_KIOSK_MODE,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_MENU_KIOSK_MODE_PASSWORD,
+               PARSE_ONLY_STRING, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_NAVIGATION_WRAPAROUND,
                PARSE_ONLY_BOOL, false);

@@ -156,6 +156,7 @@ typedef struct settings
       bool quick_menu_show_save_core_overrides;
       bool quick_menu_show_save_game_overrides;
       bool quick_menu_show_information;
+      bool kiosk_mode_enable;
 
       /* Netplay */
       bool netplay_public_announce;
@@ -395,6 +396,7 @@ typedef struct settings
 
       char path_menu_xmb_font[PATH_MAX_LENGTH];
       char menu_xmb_show_settings_password[PATH_MAX_LENGTH];
+      char kiosk_mode_password[PATH_MAX_LENGTH];
       char path_cheat_database[PATH_MAX_LENGTH];
       char path_content_database[PATH_MAX_LENGTH];
       char path_overlay[PATH_MAX_LENGTH];
