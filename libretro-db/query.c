@@ -716,8 +716,8 @@ static struct buffer query_parse_method_call(struct buffer buff,
       goto clean;
 
    invocation->argc = argi;
-   invocation->argv = (struct argument*)
-      malloc(sizeof(struct argument) * argi);
+   invocation->argv = (argi > 0) ? (struct argument*)
+      malloc(sizeof(struct argument) * argi) : NULL;
 
    if (!invocation->argv)
    {

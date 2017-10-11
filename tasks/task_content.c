@@ -1304,7 +1304,7 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
 
    /* Load content */
    if (firmware_update_status(&content_ctx))
-      return true;
+      goto end;
 
    if (!task_load_content(content_info, &content_ctx,
             true, false, &error_string))
@@ -1433,7 +1433,7 @@ bool task_push_load_content_with_new_core_from_menu(
       content_info->environ_get = menu_content_environment_get;
 
    if (firmware_update_status(&content_ctx))
-      return true;
+      goto end;
 
    if (!task_load_content(content_info, &content_ctx,
             true, false, &error_string))
@@ -1528,10 +1528,11 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
 #endif
 
    if (firmware_update_status(&content_ctx))
-      return true;
+      goto end;
 
    ret = task_load_content(content_info, &content_ctx, true, loading_from_cli, &error_string);
 
+end:
    if (content_ctx.name_ips)
       free(content_ctx.name_ips);
    if (content_ctx.name_bps)

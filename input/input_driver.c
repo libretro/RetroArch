@@ -748,6 +748,7 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
                      binds,
                      0, RETRO_DEVICE_JOYPAD, 0, id) ? 1 : 0) << i;
          }
+
          if (binds[1][id].valid)
          {
             joypad_info.joy_idx        = settings->uints.input_joypad_map[1];
@@ -2316,7 +2317,7 @@ void input_config_parse_joy_button(void *data, const char *prefix,
       }
    }
 
-   if (config_get_string(conf, key_label, &tmp_a))
+   if (bind && config_get_string(conf, key_label, &tmp_a))
    {
       if (!string_is_empty(bind->joykey_label))
          free(bind->joykey_label);

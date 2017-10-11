@@ -175,7 +175,7 @@ void path_set_redirect(void)
       {
          fill_pathname_dir(global->name.savefile, 
                !string_is_empty(path_main_basename) ? path_main_basename : 
-                  info->info.library_name,
+                  info ? info->info.library_name : NULL,
                file_path_str(FILE_PATH_SRM_EXTENSION),
                sizeof(global->name.savefile));
          RARCH_LOG("%s \"%s\".\n",
@@ -187,7 +187,7 @@ void path_set_redirect(void)
       {
          fill_pathname_dir(global->name.savestate, 
                !string_is_empty(path_main_basename) ? path_main_basename : 
-                  info->info.library_name,
+                  info ? info->info.library_name : NULL,
                file_path_str(FILE_PATH_STATE_EXTENSION),
                sizeof(global->name.savestate));
          RARCH_LOG("%s \"%s\".\n",

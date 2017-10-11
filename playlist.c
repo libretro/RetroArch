@@ -344,27 +344,30 @@ bool playlist_push(playlist_t *playlist,
       playlist->size--;
    }
 
-   memmove(playlist->entries + 1, playlist->entries,
-         (playlist->cap - 1) * sizeof(struct playlist_entry));
+   if (playlist->entries)
+   {
+      memmove(playlist->entries + 1, playlist->entries,
+            (playlist->cap - 1) * sizeof(struct playlist_entry));
 
-   playlist->entries[0].path         = NULL;
-   playlist->entries[0].label        = NULL;
-   playlist->entries[0].core_path    = NULL;
-   playlist->entries[0].core_name    = NULL;
-   playlist->entries[0].db_name      = NULL;
-   playlist->entries[0].crc32        = NULL;
-   if (!string_is_empty(path))
-      playlist->entries[0].path      = strdup(path);
-   if (!string_is_empty(label))
-      playlist->entries[0].label     = strdup(label);
-   if (!string_is_empty(core_path))
-      playlist->entries[0].core_path = strdup(core_path);
-   if (!string_is_empty(core_name))
-      playlist->entries[0].core_name = strdup(core_name);
-   if (!string_is_empty(db_name))
-      playlist->entries[0].db_name   = strdup(db_name);
-   if (!string_is_empty(crc32))
-      playlist->entries[0].crc32     = strdup(crc32);
+      playlist->entries[0].path         = NULL;
+      playlist->entries[0].label        = NULL;
+      playlist->entries[0].core_path    = NULL;
+      playlist->entries[0].core_name    = NULL;
+      playlist->entries[0].db_name      = NULL;
+      playlist->entries[0].crc32        = NULL;
+      if (!string_is_empty(path))
+         playlist->entries[0].path      = strdup(path);
+      if (!string_is_empty(label))
+         playlist->entries[0].label     = strdup(label);
+      if (!string_is_empty(core_path))
+         playlist->entries[0].core_path = strdup(core_path);
+      if (!string_is_empty(core_name))
+         playlist->entries[0].core_name = strdup(core_name);
+      if (!string_is_empty(db_name))
+         playlist->entries[0].db_name   = strdup(db_name);
+      if (!string_is_empty(crc32))
+         playlist->entries[0].crc32     = strdup(crc32);
+   }
 
    playlist->size++;
 
