@@ -21,6 +21,7 @@
 #include <compat/msvc.h>
 #include <compat/strl.h>
 #include <file/file_path.h>
+#include <gfx/video_driver.h> /* video_context_driver_get_api */
 #include <rhash.h>
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
@@ -1080,6 +1081,15 @@ void video_shader_write_conf_cgp(config_file_t *conf,
 enum rarch_shader_type video_shader_parse_type(const char *path,
       enum rarch_shader_type fallback)
 {
+   enum rarch_shader_type shader_type = RARCH_SHADER_NONE;
+   enum gfx_ctx_api api = video_context_driver_get_api();
+
+   #ifdef HAVE_CG
+   bool cg_supported = true;
+   #else
+   bool cg_supported = false;
+   #endif
+
    if (!path)
       return fallback;
 
@@ -1088,17 +1098,45 @@ enum rarch_shader_type video_shader_parse_type(const char *path,
    {
       case FILE_TYPE_SHADER_CG:
       case FILE_TYPE_SHADER_PRESET_CGP:
-         return RARCH_SHADER_CG;
+         shader_type = RARCH_SHADER_CG;
+         break;
       case FILE_TYPE_SHADER_GLSL:
       case FILE_TYPE_SHADER_PRESET_GLSLP:
-         return RARCH_SHADER_GLSL;
+         shader_type = RARCH_SHADER_GLSL;
+         break;
       case FILE_TYPE_SHADER_SLANG:
       case FILE_TYPE_SHADER_PRESET_SLANGP:
-         return RARCH_SHADER_SLANG;
+         shader_type = RARCH_SHADER_SLANG;
+         break;
       default:
          break;
    }
 
+   switch (api)
+   {
+      case GFX_CTX_OPENGL_API:
+      case GFX_CTX_OPENGL_ES_API:
+         if (shader_type == RARCH_SHADER_GLSL 
+            || (cg_supported && shader_type == RARCH_SHADER_CG))
+            return shader_type;
+         break;
+      case GFX_CTX_DIRECT3D9_API:
+         if (cg_supported && shader_type == RARCH_SHADER_CG)
+            return shader_type;
+         break;
+      case GFX_CTX_VULKAN_API:
+         if (shader_type == RARCH_SHADER_SLANG)
+            return shader_type;
+         break;
+      case GFX_CTX_GDI_API:
+      case GFX_CTX_OPENVG_API:
+      case GFX_CTX_DIRECT3D8_API:
+      case GFX_CTX_NONE:
+      default:
+         break;
+   }
+
+   RARCH_WARN("Rendering context is incompatible with shader type: %s\n", path);
    return fallback;
 }
 
