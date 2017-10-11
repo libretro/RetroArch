@@ -28,19 +28,41 @@
 
 #include "../../menu_driver.h"
 
-void nk_wnd_settings(nk_menu_handle_t *nk)
+#include "../../../gfx/common/gl_common.h"
+#include "../../../core_info.h"
+#include "../../../configuration.h"
+#include "../../../retroarch.h"
+
+void nk_wnd_debug(nk_menu_handle_t *nk)
 {
    unsigned i;
    video_shader_ctx_t shader_info;
    struct nk_panel layout;
    struct nk_context *ctx = &nk->ctx;
-   const int id           = NK_WND_SETTINGS;
+   const int id           = NK_WND_DEBUG;
 
-   if (nk_begin(ctx, "Settings", nk_rect(240, 10, 300, 400),
+   if (nk_begin(ctx, "Debug", nk_rect(10, 10, 400, 500),
          NK_WINDOW_CLOSABLE|NK_WINDOW_MINIMIZABLE|NK_WINDOW_MOVABLE|
-         NK_WINDOW_SCALABLE|NK_WINDOW_BORDER))
+         NK_WINDOW_BORDER))
    {
       nk_layout_row_dynamic(ctx, 30, 1);
+
+      video_shader_driver_get_current_shader(&shader_info);
+
+      if (shader_info.data)
+      {
+         for (i = 0; i < GFX_MAX_PARAMETERS; i++)
+         {
+            if (!string_is_empty(shader_info.data->parameters[i].desc))
+            {
+                  nk_property_float(ctx, shader_info.data->parameters[i].desc,
+                        shader_info.data->parameters[i].minimum,
+                        &(shader_info.data->parameters[i].current),
+                        shader_info.data->parameters[i].maximum,
+                        shader_info.data->parameters[i].step, 1);
+            }
+         }
+      }
    }
 
    /* save position and size to restore after context reset */

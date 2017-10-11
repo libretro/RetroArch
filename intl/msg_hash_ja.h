@@ -610,9 +610,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
       "コンテンツをダウンロード")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_ENABLE,
-      "DPI Override Enable")
+      "DPI優先を有効")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE,
-      "DPI Override")
+      "DPI優先")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
       "ドライバ")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN,
@@ -964,9 +964,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_RED,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_YELLOW,
       "黄色")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_FOOTER_OPACITY,
-      "Footer Opacity")
+      "フッター不透明性")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_HEADER_OPACITY,
-      "Header Opacity")
+      "ヘッダー不透明性")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
       "メニューのドライバ")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
@@ -3016,11 +3016,11 @@ MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
 MSG_HASH(MSG_PREPARING_FOR_CONTENT_SCAN,
       "コンテンツをスキャンするための準備中")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_DELETE,
-      "Delete core")
+      "コアを削除")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_DELETE,
-      "Remove this core from disk.")
+      "コアをハードディスクから削除する。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RENAME_ENTRY,
-      "Rename the title of the entry.")
+      "エントリーの名前を変更する")
 MSG_HASH(MENU_ENUM_LABEL_RENAME_ENTRY,
       "Rename")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
@@ -3028,23 +3028,23 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
       "Modify the opacity of the framebuffer.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
-      "Favorites")
+      "お気に入り")
 MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
       "Content which you have added to 'Favorites' will appear here.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
-      "Music")
+      "音楽")
 MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_MUSIC,
       "Music which has been previously played will appear here.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
-      "Image")
+      "画像")
 MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_IMAGES,
       "Images which have been previously viewed will appear here.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
-      "Video")
+      "ビデオ")
 MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_VIDEO,
       "Videos which have been previously played will appear here.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
-      "Menu Icons")
+      "メニューのアイコン")
 MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
       "Enable/disable the menu icons shown at the lefthand side of the menu entries.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
@@ -3066,81 +3066,93 @@ MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
       "エントリーの名前変更を許す")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
-      "Show Load Core")
+      "「コアをロード」を表示")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE,
       "Show/hide the 'Load Core' option.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT,
-      "Show Load Content")
+      "「コンテンツをロード」を表示")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT,
       "Show/hide the 'Load Content' option.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
-      "Show Information")
+      "「情報」を表示")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
       "Show/hide the 'Information' option.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
-      "Show Configurations")
+      "「設定ファイル」を表示")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
       "Show/hide the 'Configurations' option.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
-      "Show Help")
+      "「ヘルプ」を表示")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
       "Show/hide the 'Help' option.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
-      "Show Quit RetroArch")
+      "「終了」を表示")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
       "Show/hide the 'Quit RetroArch' option.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
-      "Show Reboot")
+      "「再起動」を表示")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT,
       "Show/hide the 'Reboot' option.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
-      "Quick Menu")
+      "クイックメニュー")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_VIEWS_SETTINGS,
       "Show or hide elements on the Quick Menu screen.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
-      "Show Take Screenshot")
+      "「スクリーンショットを撮る」を表示")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
       "Show/hide the 'Take Screenshot' option.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
-      "Show Save/Load State")
+      "「状態保存」と「保存状態をロード」を表示")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
       "Show/hide the options for saving/loading state.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-      "Show Undo Save/Load State")
+      "「保存状態のロードを前に戻す」と「状態の保存を前に戻す」を表示")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
       "Show/hide the options for undoing save/load state.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
-      "Show Add to Favorites")
+      "「お気に入りに追加」を表示")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
       "Show/hide the 'Add to Favorites' option.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
-      "Show Options")
+      "「オプション」を表示")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_OPTIONS,
       "Show/hide the 'Options' option.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CONTROLS,
-      "Show Controls")
+      "「コントロール」を表示")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CONTROLS,
       "Show/hide the 'Controls' option.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,
-      "Show Cheats")
+      "「チート」を表示")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CHEATS,
       "Show/hide the 'Cheats' option.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
-      "Show Shaders")
+      "「シェーダー」を表示")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
       "Show/hide the 'Shaders' option.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
-      "Show Save Core Overrides")
+      "「コアの優先を保存」を表示")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
       "Show/hide the 'Save Core Overrides' option.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
-      "Show Save Game Overrides")
+      "「ゲームの優先を保存」を表示")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
       "Show/hide the 'Save Game Overrides' option.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
-      "Show Information")
+      "「情報」を表示")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_INFORMATION,
       "Show/hide the 'Information' option.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE,
+      "OSDメッセージ背景を有効")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_RED,
+      "OSDメッセージ背景の赤色値")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_GREEN,
+      "OSDメッセージ背景の緑色値")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_BLUE,
+      "OSDメッセージ背景の青色値")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_OPACITY,
+      "OSDメッセージ背景の不透明性")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
+      "お気に入りに追加")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
       "Disable Kiosk Mode")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
@@ -3159,3 +3171,4 @@ MSG_HASH(MSG_INPUT_KIOSK_MODE_PASSWORD_OK,
       "Password correct.")
 MSG_HASH(MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
       "Password incorrect.")
+  

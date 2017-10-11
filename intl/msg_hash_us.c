@@ -1991,6 +1991,26 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU)
             );
             break;
+        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE:
+            snprintf(s, len,
+                     "Enables a background color for the OSD.");
+            break;
+        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_RED:
+            snprintf(s, len,
+                     "Sets the red value of the OSD background color. Valid values are between 0 and 255.");
+            break;
+        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_GREEN:
+            snprintf(s, len,
+                     "Sets the green value of the OSD background color. Valid values are between 0 and 255.");
+            break;
+        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_BLUE:
+            snprintf(s, len,
+                     "Sets the blue value of the OSD background color. Valid values are between 0 and 255.");
+            break;
+        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_OPACITY:
+            snprintf(s, len,
+                     "Sets the opacity of the OSD background color. Valid values are between 0.0 and 1.0.");
+            break;
         default:
             if (string_is_empty(s))
                 strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);

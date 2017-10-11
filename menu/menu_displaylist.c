@@ -5258,6 +5258,21 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_Y,
                PARSE_ONLY_FLOAT, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_ENABLE,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_RED,
+               PARSE_ONLY_UINT, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_GREEN,
+               PARSE_ONLY_UINT, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_BLUE,
+               PARSE_ONLY_UINT, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_OPACITY,
+               PARSE_ONLY_FLOAT, false);
 
          info->need_refresh = true;
          info->need_push    = true;

@@ -1349,3 +1349,14 @@ MSG_HASH(MENU_ENUM_LABEL_MENU_DISABLE_KIOSK_MODE,
       "menu_disable_kiosk_mode")
 MSG_HASH(MENU_ENUM_LABEL_MENU_KIOSK_MODE_PASSWORD,
       "menu_disable_kiosk_mode_password")
+MSG_HASH(MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_ENABLE,
+      "video_msg_bgcolor_enable")
+MSG_HASH(MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_RED,
+      "video_msg_bgcolor_red")
+MSG_HASH(MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_GREEN,
+      "video_msg_bgcolor_green")
+MSG_HASH(MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_BLUE,
+      "video_msg_bgcolor_blue")
+MSG_HASH(MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_OPACITY,
+      "video_msg_bgcolor_opacity")
+  

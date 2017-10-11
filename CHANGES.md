@@ -5,6 +5,7 @@
 - GUI: (XMB) Skip drawing the fading list when it is already transparent. Optimization.
 - GUI: (XMB) Comment out visible item calculation in xmb_draw_items().
 - GUI: (RGUI) Prevent crashes when using a non-English language reliant on UTF8.
+- GUI: Add option for OSD background color.
 - INPUT: Always show the controls menu even if descriptors are not set
 - INPUT: Fix input descriptors not being set on cores that don't implement the controllers interface
 - INPUT: Apply descriptors only for the amount of cores the core supports
@@ -111,7 +112,7 @@ Skipped this one.
 - VITA: Add cheevos support
 - VITA: Add support for external USB if mounted
 - WAYLAND: Fix menu mouse input
-- WII: Add support for single-port 'PS1/PS2 to USB controller adapter'
+- WII: Add support for single-port 'PS1/PS2 to USB controller adapter
 
 # 1.6.0
 - ANDROID: Allow remotes to retain OK/Cancel position when menu_swap_ok_cancel is enabled

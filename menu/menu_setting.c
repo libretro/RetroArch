@@ -4840,6 +4840,75 @@ static bool setting_append_list(
                general_read_handler);
          menu_settings_list_current_add_range(list, list_info, 0, 1, 0.01, true, true);
 
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.video_msg_bgcolor_enable,
+               MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_ENABLE,
+               MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE,
+               message_bgcolor_enable,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.video_msg_bgcolor_red,
+               MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_RED,
+               MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_RED,
+               message_bgcolor_red,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         menu_settings_list_current_add_range(list, list_info, 0, 255, 1, true, true);
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.video_msg_bgcolor_green,
+               MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_GREEN,
+               MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_GREEN,
+               message_bgcolor_green,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         menu_settings_list_current_add_range(list, list_info, 0, 255, 1, true, true);
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.video_msg_bgcolor_blue,
+               MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_BLUE,
+               MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_BLUE,
+               message_bgcolor_blue,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         menu_settings_list_current_add_range(list, list_info, 0, 255, 1, true, true);
+
+         CONFIG_FLOAT(
+               list, list_info,
+               &settings->floats.video_msg_bgcolor_opacity,
+               MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_OPACITY,
+               MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_OPACITY,
+               message_bgcolor_opacity,
+               "%.2f",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         menu_settings_list_current_add_range(list, list_info, 0, 1, 0.01, true, true);
+
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
          break;
