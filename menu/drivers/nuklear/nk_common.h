@@ -15,17 +15,25 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/*  This file is intended for backend code. */
+
 #ifndef _NK_COMMON_H
 #define _NK_COMMON_H
 
- /*  This file is intended for backend code. */
-
 #define NK_INCLUDE_FIXED_TYPES
 #define NK_INCLUDE_STANDARD_IO
+#define NK_INCLUDE_STANDARD_VARARGS
 #define NK_INCLUDE_DEFAULT_ALLOCATOR
 #define NK_INCLUDE_VERTEX_BUFFER_OUTPUT
 #define NK_INCLUDE_FONT_BAKING
 #define NK_INCLUDE_DEFAULT_FONT
+
+#define UNUSED(a) (void)a
+#define MIN(a,b) ((a) < (b) ? (a) : (b))
+#define MAX(a,b) ((a) < (b) ? (b) : (a))
+#define LEN(a) (sizeof(a)/sizeof(a)[0])
+
+#define MAX_SIZE 256
 
 #include <string.h>
 #include "../../../deps/nuklear/nuklear.h"
@@ -60,13 +68,12 @@
 #endif
 };
 
+/* generic nuklear members*/
 extern struct nk_font *font;
 extern struct nk_font_atlas atlas;
 extern struct nk_user_font usrfnt;
 extern struct nk_allocator nk_alloc;
 extern struct nk_device device;
-
-enum theme {THEME_BLACK, THEME_WHITE, THEME_RED, THEME_BLUE, THEME_DARK};
 
 struct nk_image nk_common_image_load(const char *filename);
 
@@ -84,6 +91,8 @@ void* nk_common_mem_alloc(nk_handle a, void *old, nk_size b);
 
 void nk_common_mem_free(nk_handle unused, void *ptr);
 
-void device_upload_atlas(struct nk_device *dev, const void *image, int width, int height);
+void nk_upload_atlas(struct nk_device *dev, const void *image, int width, int height);
+
+struct nk_image color_bars, test_entry, test_entry2;
 
 #endif

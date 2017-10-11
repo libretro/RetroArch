@@ -52,8 +52,8 @@ static void nk_menu_init_device(nk_menu_handle_t *nk)
    int w, h;
    char buf[PATH_MAX_LENGTH] = {0};
 
-   fill_pathname_join(buf, nk->assets_directory,
-         "DroidSans.ttf", sizeof(buf));
+   fill_pathname_join(buf, "assets/nuklear",
+         "font.ttf", sizeof(buf));
 
    nk_alloc.userdata.ptr = NULL;
    nk_alloc.alloc = nk_common_mem_alloc;
@@ -61,91 +61,26 @@ static void nk_menu_init_device(nk_menu_handle_t *nk)
    nk_buffer_init(&device.cmds, &nk_alloc, 1024);
    nk_font_atlas_init_default(&atlas);
    nk_font_atlas_begin(&atlas);
-   font  = nk_font_atlas_add_default(&atlas, 13.0f, NULL);
+
+   struct nk_font *font;
+
+   font = nk_font_atlas_add_from_file(&atlas, buf, 16, 0);
    image = nk_font_atlas_bake(&atlas, &w, &h, NK_FONT_ATLAS_RGBA32);
-   device_upload_atlas(&device, image, w, h);
+   nk_upload_atlas(&device, image, w, h);
    nk_font_atlas_end(&atlas, nk_handle_id((int)device.font_tex), &device.null);
    nk_init_default(&nk->ctx, &font->handle);
 
    nk_common_device_init(&device);
 
-   fill_pathname_join(buf, nk->assets_directory, "folder.png", sizeof(buf));
-   nk->icons.folder = nk_common_image_load(buf);
-   fill_pathname_join(buf, nk->assets_directory, "speaker.png", sizeof(buf));
-   nk->icons.speaker = nk_common_image_load(buf);
-   fill_pathname_join(buf, nk->assets_directory, "gamepad.png", sizeof(buf));
-   nk->icons.gamepad = nk_common_image_load(buf);
-   fill_pathname_join(buf, nk->assets_directory, "monitor.png", sizeof(buf));
-   nk->icons.monitor = nk_common_image_load(buf);
-   fill_pathname_join(buf, nk->assets_directory, "settings.png", sizeof(buf));
-   nk->icons.settings = nk_common_image_load(buf);
-   fill_pathname_join(buf, nk->assets_directory, "invader.png", sizeof(buf));
-   nk->icons.invader = nk_common_image_load(buf);
-   fill_pathname_join(buf, nk->assets_directory, "page_on.png", sizeof(buf));
-   nk->icons.page_on = nk_common_image_load(buf);
-   fill_pathname_join(buf, nk->assets_directory, "page_off.png", sizeof(buf));
-   nk->icons.page_off = nk_common_image_load(buf);
-
    nk->size_changed = true;
-   nk_common_set_style(&nk->ctx, THEME_BLUE);
-}
-
-
-#define XMB_RIBBON_ROWS 64
-#define XMB_RIBBON_COLS 64
-#define XMB_RIBBON_VERTICES 2*XMB_RIBBON_COLS*XMB_RIBBON_ROWS-2*XMB_RIBBON_COLS
-
-static void xmb_ribbon_set_vertex(float *ribbon_verts, unsigned idx, unsigned row, unsigned col)
-{
-   ribbon_verts[idx++] = ((float)col) / (XMB_RIBBON_COLS-1) * 2.0f - 1.0f;
-   ribbon_verts[idx++] = ((float)row) / (XMB_RIBBON_ROWS-1) * 2.0f - 1.0f;
-}
-
-static void xmb_init_ribbon(nk_menu_handle_t * xmb)
-{
-   video_coords_t coords;
-   unsigned vertices_total;
-   unsigned r, c, col;
-   unsigned i                = 0;
-   float *ribbon_verts       = NULL;
-   float *dummy              = NULL;
-   video_coord_array_t *ca   = menu_display_get_coords_array();
-
-   vertices_total = XMB_RIBBON_VERTICES;
-
-   dummy          = (float*)calloc(4 * vertices_total, sizeof(float));
-   ribbon_verts   = (float*)calloc(2 * vertices_total, sizeof(float));
-
-
-   /* Set up vertices */
-   for (r = 0; r < XMB_RIBBON_ROWS - 1; r++)
-   {
-      for (c = 0; c < XMB_RIBBON_COLS; c++)
-      {
-         col = r % 2 ? XMB_RIBBON_COLS - c - 1 : c;
-         xmb_ribbon_set_vertex(ribbon_verts, i,     r,     col);
-         xmb_ribbon_set_vertex(ribbon_verts, i + 2, r + 1, col);
-         i  += 4;
-      }
-   }
-
-   coords.color         = dummy;
-   coords.vertex        = ribbon_verts;
-   coords.tex_coord     = dummy;
-   coords.lut_tex_coord = dummy;
-   coords.vertices      = vertices_total;
-
-   video_coord_array_append(ca, &coords, coords.vertices);
-
-   free(dummy);
-   free(ribbon_verts);
+   nk_common_set_style(&nk->ctx);
 }
 
 static void *nk_menu_init(void **userdata, bool video_is_threaded)
 {
-#if 1
+
    unsigned i;
-#endif
+
    settings_t *settings = config_get_ptr();
    nk_menu_handle_t   *nk = NULL;
    menu_handle_t *menu = (menu_handle_t*)
@@ -170,14 +105,8 @@ static void *nk_menu_init(void **userdata, bool video_is_threaded)
          "nuklear", sizeof(nk->assets_directory));
    nk_menu_init_device(nk);
 
-   /* for demo purposes only, opens all windows */ 
-#if 1
-      for (i = 0; i < NK_WND_LAST; i++)
+   for (i = 0; i < NK_WND_LAST; i++)
          nk->window[i].open = true;
-#else
-      nk->window[NK_WND_MAIN].open = true;
-#endif
-   xmb_init_ribbon(nk);
 
    return menu;
 error:
@@ -219,8 +148,9 @@ static void nk_menu_input_mouse_movement(struct nk_context *ctx)
    int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
 
    nk_input_motion(ctx, mouse_x, mouse_y);
-   nk_input_scroll(ctx, menu_input_mouse_state(MENU_MOUSE_WHEEL_UP) -
-      menu_input_mouse_state(MENU_MOUSE_WHEEL_DOWN));
+   struct nk_vec2 scroll =  {0 ,menu_input_mouse_state(MENU_MOUSE_WHEEL_UP) -
+      menu_input_mouse_state(MENU_MOUSE_WHEEL_DOWN)};
+   nk_input_scroll(ctx, scroll);
 }
 
 static void nk_menu_input_mouse_button(struct nk_context *ctx)
@@ -251,42 +181,6 @@ static void nk_menu_get_message(void *data, const char *message)
    strlcpy(nk->box_message, message, sizeof(nk->box_message));
 }
 
-static void nk_draw_bg(
-      nk_menu_handle_t *nk,
-      video_frame_info_t *video_info,
-      unsigned width,
-      unsigned height,
-      float alpha,
-      uintptr_t texture_id,
-      float *coord_black,
-      float *coord_white)
-{
-   menu_display_ctx_draw_t draw;
-   settings_t *settings = config_get_ptr();
-
-   draw.x                    = 0;
-   draw.y                    = 0;
-   draw.texture              = texture_id;
-   draw.width                = width;
-   draw.height               = height;
-   draw.color                = &coord_black[0];
-   draw.vertex               = NULL;
-   draw.tex_coord            = NULL;
-   draw.vertex_count         = 4;
-   draw.prim_type            = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
-   draw.pipeline.id          = 0;
-
-   menu_display_blend_begin();
-   menu_display_set_viewport(video_info->width, video_info->height);
-
-   draw.pipeline.id          = VIDEO_SHADER_MENU_5;
-   draw.pipeline.active      = false; 
-
-   menu_display_draw_pipeline(&draw);
-   menu_display_draw(&draw);
-   menu_display_blend_end();
-}
-
 /* this is the main control function, it opens and closes windows and will 
    control the logic of the whole menu driver */
 static void nk_menu_main(nk_menu_handle_t *nk)
@@ -294,13 +188,8 @@ static void nk_menu_main(nk_menu_handle_t *nk)
 
    struct nk_context *ctx = &nk->ctx;
 
-   if (nk->window[NK_WND_SETTINGS].open)
-      nk_wnd_settings(nk);
-
-   if (nk->window[NK_WND_SHADER_PARAMETERS].open)
-      nk_wnd_shader_parameters(nk);
-   if (nk->window[NK_WND_MAIN].open)
-      nk_wnd_main(nk, "Demo");
+   if (nk->window[NK_WND_DEBUG].open)
+      nk_wnd_debug(nk);
 
    nk_buffer_info(&nk->status, &nk->ctx.memory);
 }
@@ -352,7 +241,6 @@ static void nk_menu_frame(void *data, video_frame_info_t *video_info)
 
    nk_input_end(&nk->ctx);
    nk_menu_main(nk);
-   nk_draw_bg(nk, video_info, width, height, 0.5, nk->textures.bg, coord_black, coord_white);
    nk_common_device_draw(&device, &nk->ctx, width, height, NK_ANTI_ALIASING_ON);
 
    menu_display_draw_cursor(
@@ -404,7 +292,7 @@ static void nk_menu_context_load_textures(nk_menu_handle_t *nk,
    {
       image_texture_load(&ti, path);
       video_driver_texture_load(&ti,
-            TEXTURE_FILTER_MIPMAP_LINEAR, &nk->textures.pointer);
+            TEXTURE_FILTER_MIPMAP_NEAREST, &nk->textures.pointer);
    }
 
    fill_pathname_join(path, iconpath,
@@ -413,7 +301,7 @@ static void nk_menu_context_load_textures(nk_menu_handle_t *nk,
    {
       image_texture_load(&ti, path);
       video_driver_texture_load(&ti,
-            TEXTURE_FILTER_MIPMAP_LINEAR, &nk->textures.bg);
+            TEXTURE_FILTER_MIPMAP_NEAREST, &nk->textures.bg);
    }
 }
 

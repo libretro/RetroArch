@@ -112,7 +112,7 @@ Skipped this one.
 - VITA: Add cheevos support
 - VITA: Add support for external USB if mounted
 - WAYLAND: Fix menu mouse input
-- WII: Add support for single-port 'PS1/PS2 to USB controller adapter'
+- WII: Add support for single-port 'PS1/PS2 to USB controller adapter
 
 # 1.6.0
 - ANDROID: Allow remotes to retain OK/Cancel position when menu_swap_ok_cancel is enabled
