@@ -3461,7 +3461,7 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
 
    xmb->system_tab_end                = 0;
    xmb->tabs[xmb->system_tab_end]     = XMB_SYSTEM_TAB_MAIN;
-   if (settings->bools.menu_xmb_show_settings)
+   if (settings->bools.menu_xmb_show_settings && !settings->bools.kiosk_mode_enable)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_SETTINGS;
    if (settings->bools.menu_xmb_show_favorites)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_FAVORITES;
@@ -3482,7 +3482,7 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_NETPLAY;
 #endif
 #ifdef HAVE_LIBRETRODB
-   if (settings->bools.menu_xmb_show_add)
+   if (settings->bools.menu_xmb_show_add && !settings->bools.kiosk_mode_enable)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_ADD;
 #endif
 
@@ -4282,11 +4282,15 @@ static int xmb_list_push(void *data, void *userdata,
                      MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
                      MENU_SETTING_ACTION, 0, 0);
 
-            menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS),
-                  msg_hash_to_str(MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS),
-                  MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS,
-                  MENU_SETTING_ACTION, 0, 0);
+            settings_t *settings = config_get_ptr();
+            if (!settings->bools.kiosk_mode_enable)
+            {
+               menu_entries_append_enum(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS),
+                     msg_hash_to_str(MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS),
+                     MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS,
+                     MENU_SETTING_ACTION, 0, 0);
+            }
 
             info->need_push    = true;
             info->need_refresh = true;
@@ -4340,7 +4344,7 @@ static int xmb_list_push(void *data, void *userdata,
 #if defined(HAVE_NETWORKING)
             {
                settings_t *settings      = config_get_ptr();
-               if (settings->bools.menu_show_online_updater)
+               if (settings->bools.menu_show_online_updater && !settings->bools.kiosk_mode_enable)
                {
                   entry.enum_idx      = MENU_ENUM_LABEL_ONLINE_UPDATER;
                   menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
@@ -4350,6 +4354,12 @@ static int xmb_list_push(void *data, void *userdata,
             if (!settings->bools.menu_xmb_show_settings && !string_is_empty(settings->paths.menu_xmb_show_settings_password))
             {
                entry.enum_idx      = MENU_ENUM_LABEL_XMB_MAIN_MENU_ENABLE_SETTINGS;
+               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            }
+
+            if (settings->bools.kiosk_mode_enable && !string_is_empty(settings->paths.kiosk_mode_password))
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_MENU_DISABLE_KIOSK_MODE;
                menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
             }
 
@@ -4364,7 +4374,7 @@ static int xmb_list_push(void *data, void *userdata,
             menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 #endif
 
-            if (settings->bools.menu_show_configurations)
+            if (settings->bools.menu_show_configurations && !settings->bools.kiosk_mode_enable)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_CONFIGURATIONS_LIST;
                menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);

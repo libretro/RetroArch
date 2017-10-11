@@ -1343,6 +1343,12 @@ MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
       "quick_menu_show_save_game_overrides")
 MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_INFORMATION,
       "quick_menu_show_information")
+MSG_HASH(MENU_ENUM_LABEL_MENU_ENABLE_KIOSK_MODE,
+      "menu_enable_kiosk_mode")
+MSG_HASH(MENU_ENUM_LABEL_MENU_DISABLE_KIOSK_MODE,
+      "menu_disable_kiosk_mode")
+MSG_HASH(MENU_ENUM_LABEL_MENU_KIOSK_MODE_PASSWORD,
+      "menu_disable_kiosk_mode_password")
 MSG_HASH(MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_ENABLE,
       "video_msg_bgcolor_enable")
 MSG_HASH(MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_RED,
@@ -1353,3 +1359,4 @@ MSG_HASH(MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_BLUE,
       "video_msg_bgcolor_blue")
 MSG_HASH(MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_OPACITY,
       "video_msg_bgcolor_opacity")
+  
