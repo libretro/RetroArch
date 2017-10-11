@@ -1024,7 +1024,7 @@ static void command_event_init_controllers(void)
             /* Ideally these checks shouldn't be required but if we always
              * call core_set_controller_port_device input won't work on 
              * cores that don't set port information properly */
-            if (info->ports.size != 0 && i < info->ports.size)
+            if (info && info->ports.size != 0 && i < info->ports.size)
                set_controller = true;
             break;
          default:
