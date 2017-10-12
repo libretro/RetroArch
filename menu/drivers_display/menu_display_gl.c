@@ -83,7 +83,6 @@ static void menu_display_gl_blend_begin(void)
 
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-   glEnable(GL_SCISSOR_TEST);
 
    shader_info.data       = NULL;
    shader_info.idx        = VIDEO_SHADER_STOCK_BLEND;
@@ -95,7 +94,6 @@ static void menu_display_gl_blend_begin(void)
 static void menu_display_gl_blend_end(void)
 {
    glDisable(GL_BLEND);
-   glDisable(GL_SCISSOR_TEST);
 }
 
 static void menu_display_gl_viewport(void *data)
