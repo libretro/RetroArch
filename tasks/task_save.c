@@ -623,7 +623,10 @@ static void task_save_handler(retro_task_t *task)
       }
 
       if (!task_get_mute(task) && msg)
+      {
          task_set_title(task, msg);
+         msg = NULL;
+      }
 
       task_save_handler_finished(task, state);
 
