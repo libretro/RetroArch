@@ -587,7 +587,7 @@ bool video_context_driver_set(const gfx_ctx_driver_t *data)
 {
    if (!data)
       return false;
-   current_video_context                     = *data;
+   current_video_context = *data;
    video_context_driver_reset();
    return true;
 }
