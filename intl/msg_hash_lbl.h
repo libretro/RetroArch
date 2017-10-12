@@ -1359,4 +1359,9 @@ MSG_HASH(MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_BLUE,
       "video_msg_bgcolor_blue")
 MSG_HASH(MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_OPACITY,
       "video_msg_bgcolor_opacity")
-  
+MSG_HASH(MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_RED,
+      "video_msg_color_red")
+MSG_HASH(MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_GREEN,
+      "video_msg_color_green")
+MSG_HASH(MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_BLUE,
+      "video_msg_color_blue")

@@ -4840,6 +4840,48 @@ static bool setting_append_list(
                general_read_handler);
          menu_settings_list_current_add_range(list, list_info, 0, 1, 0.01, true, true);
 
+         CONFIG_FLOAT(
+               list, list_info,
+               &settings->floats.video_msg_color_r,
+               MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_RED,
+               MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED,
+               ((message_color >> 16) & 0xff) / 255.0f,
+               "%.3f",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         menu_settings_list_current_add_range(list, list_info, 0, 1, 1.0f/255.0f, true, true);
+
+         CONFIG_FLOAT(
+               list, list_info,
+               &settings->floats.video_msg_color_g,
+               MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_GREEN,
+               MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_GREEN,
+               ((message_color >> 8) & 0xff) / 255.0f,
+               "%.3f",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         menu_settings_list_current_add_range(list, list_info, 0, 1, 1.0f/255.0f, true, true);
+
+         CONFIG_FLOAT(
+               list, list_info,
+               &settings->floats.video_msg_color_b,
+               MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_BLUE,
+               MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE,
+               ((message_color >> 0) & 0xff) / 255.0f,
+               "%.3f",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         menu_settings_list_current_add_range(list, list_info, 0, 1, 1.0f/255.0f, true, true);
+
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.video_msg_bgcolor_enable,

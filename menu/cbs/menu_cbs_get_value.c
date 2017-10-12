@@ -1517,6 +1517,25 @@ static void menu_action_setting_disp_set_label_no_items(
    strlcpy(s2, path, len2);
 }
 
+static void menu_action_setting_disp_set_label_video_msg_color(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   rarch_setting_t *setting = menu_setting_find(list->list[i].label);
+
+   if (!setting)
+      return;
+
+   *w = 19;
+
+   snprintf(s, len, "%d", (int)(*setting->value.target.fraction * 255.0f));
+}
+
 static void menu_action_setting_disp_set_label(file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
       const char *label,
@@ -1721,6 +1740,12 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          case MENU_ENUM_LABEL_LOAD_STATE:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_menu_more);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_RED:
+         case MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_GREEN:
+         case MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_BLUE:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_video_msg_color);
             break;
          default:
             return - 1;
