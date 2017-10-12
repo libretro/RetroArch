@@ -1142,6 +1142,15 @@ static void xmb_update_savestate_thumbnail_image(void *data)
       xmb->savestate_thumbnail = 0;
 }
 
+static unsigned xmb_get_system_tab(xmb_handle_t *xmb, unsigned i)
+{
+   if (i <= xmb->system_tab_end)
+   {
+      return xmb->tabs[i];
+   }
+   return UINT_MAX;
+}
+
 static void xmb_selection_pointer_changed(
       xmb_handle_t *xmb, bool allow_animations)
 {
@@ -1189,9 +1198,9 @@ static void xmb_selection_pointer_changed(
 
       if (i == selection)
       {
-         unsigned     depth  = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
-         size_t     xmb_list = xmb_list_get_selection(xmb);
-         unsigned entry_type = menu_entry_get_type_new(&entry);
+         unsigned     depth      = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
+         unsigned xmb_system_tab = xmb_get_system_tab(xmb, (unsigned)xmb->categories_selection_ptr);
+         unsigned entry_type     = menu_entry_get_type_new(&entry);
 
          ia             = xmb->items_active_alpha;
          iz             = xmb->items_active_zoom;
@@ -1199,8 +1208,8 @@ static void xmb_selection_pointer_changed(
          if (!string_is_equal(thumb_ident,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
          {
-            if ((xmb_list > XMB_SYSTEM_TAB_SETTINGS && depth == 1) ||
-                (xmb_list < XMB_SYSTEM_TAB_SETTINGS && depth == 4))
+            if ((xmb_system_tab > XMB_SYSTEM_TAB_SETTINGS && depth == 1) ||
+                (xmb_system_tab < XMB_SYSTEM_TAB_SETTINGS && depth == 4))
             {
                if (!string_is_empty(entry.path))
                   xmb_set_thumbnail_content(xmb, entry.path, 0 /* will be ignored */);
@@ -1209,7 +1218,7 @@ static void xmb_selection_pointer_changed(
             }
             else if (((entry_type == FILE_TYPE_IMAGE || entry_type == FILE_TYPE_IMAGEVIEWER ||
                         entry_type == FILE_TYPE_RDB || entry_type == FILE_TYPE_RDB_ENTRY)
-               && xmb_list <= XMB_SYSTEM_TAB_SETTINGS))
+               && xmb_system_tab <= XMB_SYSTEM_TAB_SETTINGS))
             {
                if (!string_is_empty(entry.path))
                   xmb_set_thumbnail_content(xmb, entry.path, 0 /* will be ignored */);
@@ -1399,7 +1408,9 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
    xmb->old_depth = xmb->depth;
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &skip);
 
-   if (xmb_list_get_selection(xmb) <= XMB_SYSTEM_TAB_SETTINGS)
+   unsigned xmb_system_tab = xmb_get_system_tab(xmb, (unsigned)xmb->categories_selection_ptr);
+
+   if (xmb_system_tab <= XMB_SYSTEM_TAB_SETTINGS)
    {
       if (xmb->depth < 4)
          xmb_reset_thumbnail_content(xmb);
@@ -1598,15 +1609,6 @@ static void xmb_set_title(xmb_handle_t *xmb)
 
       fill_pathname_base_noext(xmb->title_name, path, sizeof(xmb->title_name));
    }
-}
-
-static unsigned xmb_get_system_tab(xmb_handle_t *xmb, unsigned i)
-{
-   if (i <= xmb->system_tab_end)
-   {
-      return xmb->tabs[i];
-   }
-   return UINT_MAX;
 }
 
 static xmb_node_t* xmb_get_node(xmb_handle_t *xmb, unsigned i)
