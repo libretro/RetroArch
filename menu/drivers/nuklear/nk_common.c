@@ -196,9 +196,11 @@ void nk_common_device_draw(struct nk_device *dev,
    glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &last_vao);
    glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING, &last_ebo);
    glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &last_vbo);
+   glEnable(GL_SCISSOR_TEST);
 #endif
 
    menu_display_blend_begin();
+
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    glActiveTexture(GL_TEXTURE0);
@@ -288,6 +290,7 @@ void nk_common_device_draw(struct nk_device *dev,
    glBindBuffer(GL_ARRAY_BUFFER, (GLuint)last_vbo);
    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, (GLuint)last_ebo);
    glBindVertexArray((GLuint)last_vao);
+   glDisable(GL_SCISSOR_TEST);
 #endif
 
    menu_display_blend_end();
