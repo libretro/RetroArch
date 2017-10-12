@@ -3255,3 +3255,9 @@ MSG_HASH(MSG_INPUT_KIOSK_MODE_PASSWORD_OK,
       "Password correct.")
 MSG_HASH(MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
       "Password incorrect.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED,
+      "Onscreen Notification Red Color")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_GREEN,
+      "Onscreen Notification Green Color")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE,
+      "Onscreen Notification Blue Color")
