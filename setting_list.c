@@ -166,7 +166,6 @@ static int setting_uint_action_left_default(void *data, bool wraparound)
 
    (void)wraparound; /* TODO/FIXME - handle this */
 
-
    overflowed = setting->step > *setting->value.target.unsigned_integer;
 
    if (!overflowed)
@@ -203,7 +202,6 @@ static int setting_uint_action_right_default(void *data, bool wraparound)
    max = setting->max;
 
    (void)wraparound; /* TODO/FIXME - handle this */
-
 
    *setting->value.target.unsigned_integer =
       *setting->value.target.unsigned_integer + setting->step;
@@ -355,20 +353,36 @@ static int setting_fraction_action_left_default(
       void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
+   double               min = 0.0f;
+   bool                 overflowed = false;
    
    if (!setting)
       return -1;
 
+   min = setting->min;
+
    (void)wraparound; /* TODO/FIXME - handle this */
 
-   *setting->value.target.fraction =
-      *setting->value.target.fraction - setting->step;
+   overflowed = setting->step > *setting->value.target.fraction;
+
+   if (!overflowed)
+      *setting->value.target.fraction = *setting->value.target.fraction - setting->step;
 
    if (setting->enforce_minrange)
    {
-      double min = setting->min;
-      if (*setting->value.target.fraction < min)
-         *setting->value.target.fraction = min;
+      if (overflowed || *setting->value.target.fraction < min)
+      {
+         settings_t *settings = config_get_ptr();
+
+#ifdef HAVE_MENU
+      double           max = setting->max;
+
+         if (settings && settings->bools.menu_navigation_wraparound_enable)
+            *setting->value.target.fraction = max;
+         else
+#endif
+            *setting->value.target.fraction = min;
+      }
    }
 
    return 0;
@@ -1027,26 +1041,38 @@ static rarch_setting_t setting_bind_setting(const char* name,
 
 static int setting_int_action_left_default(void *data, bool wraparound)
 {
-   double min               = 0.0f;
    rarch_setting_t *setting = (rarch_setting_t*)data;
+   double               min = 0.0f;
+   bool                 overflowed = false;
 
    if (!setting)
       return -1;
 
-   min               = setting->min;
+   min = setting->min;
 
    (void)wraparound; /* TODO/FIXME - handle this */
 
-   if (*setting->value.target.integer != min)
-      *setting->value.target.integer =
-         *setting->value.target.integer - setting->step;
+   overflowed = setting->step > *setting->value.target.integer;
+
+   if (!overflowed)
+      *setting->value.target.integer = *setting->value.target.integer - setting->step;
 
    if (setting->enforce_minrange)
    {
-      if (*setting->value.target.integer < min)
-         *setting->value.target.integer = min;
-   }
+      if (overflowed || *setting->value.target.integer < min)
+      {
+         settings_t *settings = config_get_ptr();
 
+#ifdef HAVE_MENU
+      double           max = setting->max;
+
+         if (settings && settings->bools.menu_navigation_wraparound_enable)
+            *setting->value.target.integer = max;
+         else
+#endif
+            *setting->value.target.integer = min;
+      }
+   }
 
    return 0;
 }
