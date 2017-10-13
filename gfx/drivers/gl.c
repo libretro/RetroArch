@@ -1577,10 +1577,19 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
    struct retro_hw_render_callback *hwr =
       video_driver_get_hw_context();
 
-   gl_query_core_context_set(hwr->context_type == RETRO_HW_CONTEXT_OPENGL_CORE);
-
-   if (gl_query_core_context_in_use())
+   if (hwr->context_type == RETRO_HW_CONTEXT_OPENGL_CORE)
    {
+      gl_query_core_context_set(true);
+
+      /**
+       * Ensure that the rest of the frontend knows we have a core context
+       */
+      gfx_ctx_flags_t flags;
+      flags.flags = 0;
+      BIT32_SET(flags.flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
+
+      video_context_driver_set_flags(&flags);
+
       RARCH_LOG("[GL]: Using Core GL context.\n");
       if (!gl_check_capability(GL_CAPS_VAO))
       {
@@ -2838,4 +2847,3 @@ video_driver_t video_gl = {
    gl_get_poke_interface,
    gl_wrap_type_to_enum,
 };
-
