@@ -212,6 +212,18 @@ static gfx_ctx_driver_t current_video_context;
 
 static void *video_context_data                          = NULL;
 
+/**
+ * dynamic.c:dynamic_request_hw_context will try to set flag data when the context
+ * is in the middle of being rebuilt; in these cases we will save flag
+ * data and set this to true. 
+ * When the context is reinit, it checks this, reads from
+ * deferred_flag_data and cleans it.
+ *
+ * TODO - Dirty hack, fix it better
+ */
+static bool deferred_video_context_driver_set_flags      = false;
+static gfx_ctx_flags_t deferred_flag_data                = {0};
+
 static enum gfx_ctx_api current_video_context_api        = GFX_CTX_NONE;
 
 shader_backend_t *current_shader                         = NULL;
@@ -3005,6 +3017,14 @@ bool video_context_driver_get_flags(gfx_ctx_flags_t *flags)
       return false;
    if (!current_video_context.get_flags)
       return false;
+
+   if (deferred_video_context_driver_set_flags)
+   {
+      flags->flags = deferred_flag_data.flags;
+      deferred_video_context_driver_set_flags = false;
+      return true;
+   }
+
    flags->flags = current_video_context.get_flags(video_context_data);
    return true;
 }
@@ -3013,8 +3033,13 @@ bool video_context_driver_set_flags(gfx_ctx_flags_t *flags)
 {
    if (!flags)
       return false;
-   if (!current_video_context.set_flags)
+   if (!current_video_context.set_flags) 
+   {
+      deferred_flag_data.flags = flags->flags;
+      deferred_video_context_driver_set_flags = true;
       return false;
+   } 
+
    current_video_context.set_flags(video_context_data, flags->flags);
    return true;
 }
