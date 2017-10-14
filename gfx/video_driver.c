@@ -2287,7 +2287,7 @@ void video_driver_frame(const void *data, unsigned width,
             last_fps = TIME_TO_FPS(curr_time, new_time, FPS_UPDATE_INTERVAL);
             snprintf(video_info.fps_text,
                   sizeof(video_info.fps_text),
-                  " FPS: %6.1f || ", last_fps);
+                  " FPS: %6.1f", last_fps);
             strlcat(video_driver_window_title,
                   video_info.fps_text,
                   sizeof(video_driver_window_title));
@@ -2295,30 +2295,46 @@ void video_driver_frame(const void *data, unsigned width,
 
          curr_time = new_time;
 
-         strlcat(video_driver_window_title,
-               "Frames: ",
-               sizeof(video_driver_window_title));
+         if (video_info.framecount_show)
+         {
+            strlcat(video_driver_window_title,
+                  " || Frames: ",
+                  sizeof(video_driver_window_title));
 
-         snprintf(frames_text,
-               sizeof(frames_text),
-               STRING_REP_UINT64,
-               (uint64_t)video_driver_frame_count);
+            snprintf(frames_text,
+                  sizeof(frames_text),
+                  STRING_REP_UINT64,
+                  (uint64_t)video_driver_frame_count);
 
-         strlcat(video_driver_window_title,
-               frames_text,
-               sizeof(video_driver_window_title));
+            strlcat(video_driver_window_title,
+                  frames_text,
+                  sizeof(video_driver_window_title));
+         }
 
          video_driver_window_title_update = true;
       }
 
       if (video_info.fps_show)
-         snprintf(
-               video_info.fps_text,
-               sizeof(video_info.fps_text),
-               "FPS: %6.1f || %s: " STRING_REP_UINT64,
-               last_fps,
-               msg_hash_to_str(MSG_FRAMES),
-               (uint64_t)video_driver_frame_count);
+      {
+         if (video_info.framecount_show)
+         {
+            snprintf(
+                  video_info.fps_text,
+                  sizeof(video_info.fps_text),
+                  "FPS: %6.1f || %s: " STRING_REP_UINT64,
+                  last_fps,
+                  msg_hash_to_str(MSG_FRAMES),
+                  (uint64_t)video_driver_frame_count);
+         }
+         else
+         {
+            snprintf(
+                  video_info.fps_text,
+                  sizeof(video_info.fps_text),
+                  "FPS: %6.1f",
+                  last_fps);
+         }
+      }
    }
    else
    {
@@ -2463,6 +2479,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->hard_sync             = settings->bools.video_hard_sync;
    video_info->hard_sync_frames      = settings->uints.video_hard_sync_frames;
    video_info->fps_show              = settings->bools.video_fps_show;
+   video_info->framecount_show       = settings->bools.video_framecount_show;
    video_info->scale_integer         = settings->bools.video_scale_integer;
    video_info->aspect_ratio_idx      = settings->uints.video_aspect_ratio_idx;
    video_info->post_filter_record    = settings->bools.video_post_filter_record;
