@@ -413,6 +413,7 @@ typedef struct video_frame_info
    bool black_frame_insertion;
    bool hard_sync;
    bool fps_show;
+   bool framecount_show;
    bool scale_integer;
    bool post_filter_record;
    bool windowed_fullscreen;

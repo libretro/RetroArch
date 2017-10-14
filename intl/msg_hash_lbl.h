@@ -1365,3 +1365,5 @@ MSG_HASH(MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_GREEN,
       "video_msg_color_green")
 MSG_HASH(MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_BLUE,
       "video_msg_color_blue")
+MSG_HASH(MENU_ENUM_LABEL_FRAMECOUNT_SHOW,
+      "framecount_show")
