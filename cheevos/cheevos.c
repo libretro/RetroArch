@@ -3455,8 +3455,6 @@ static int cheevos_iterate(coro_t* coro)
 
       for (K = 0; K < 5; K++)
       {
-         RARCH_LOG("[CHEEVOS]: Making HTTP request, try %u of 5\n", K + 1);
-
          JSON = NULL;
          CONN = net_http_connection_new(URL, "GET", NULL);
 
@@ -3512,8 +3510,12 @@ static int cheevos_iterate(coro_t* coro)
 
          net_http_delete(HTTP);
          net_http_connection_free(CONN);
+
+         if (K < 4)
+            RARCH_LOG("[CHEEVOS]: Retrying HTTP request: %u of 5\n", K + 2);
       }
 
+      RARCH_LOG("[CHEEVOS]: Couldn't connect to server after 5 tries\n");
       CORO_RET();
 
    /**************************************************************************
