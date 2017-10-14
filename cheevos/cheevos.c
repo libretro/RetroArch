@@ -18,6 +18,7 @@
 
 #include <formats/jsonsax.h>
 #include <streams/file_stream.h>
+#include <features/features_cpu.h>
 #include <compat/strl.h>
 #include <rhash.h>
 #include <retro_miscellaneous.h>
@@ -2751,6 +2752,7 @@ typedef struct
    struct retro_system_info sysinfo; \
    unsigned i; \
    unsigned j; \
+   unsigned k; \
    const char *ext; \
    MD5_CTX md5; \
    unsigned char hash[16]; \
@@ -2766,7 +2768,8 @@ typedef struct
    size_t size; \
    char url[256]; \
    struct http_connection_t *conn; \
-   struct http_t *http;
+   struct http_t *http; \
+   retro_time_t t0;
 
 #include "coro.h"
 
@@ -2778,6 +2781,7 @@ typedef struct
 #define SYSINFO  CORO_VAR(sysinfo)
 #define I        CORO_VAR(i)
 #define J        CORO_VAR(j)
+#define K        CORO_VAR(k)
 #define EXT      CORO_VAR(ext)
 #define MD5      CORO_VAR(md5)
 #define HASH     CORO_VAR(hash)
@@ -2795,6 +2799,7 @@ typedef struct
 #define URL      CORO_VAR(url)
 #define CONN     CORO_VAR(conn)
 #define HTTP     CORO_VAR(http)
+#define T0       CORO_VAR(t0)
 
 static int cheevos_iterate(coro_t* coro)
 {
@@ -2816,7 +2821,8 @@ static int cheevos_iterate(coro_t* coro)
       LOGIN       = -9,
       HTTP_GET    = -10,
       DEACTIVATE  = -11,
-      PLAYING     = -12
+      PLAYING     = -12,
+      DELAY       = -13,
    };
 
    static const uint32_t genesis_exts[] =
@@ -3422,59 +3428,92 @@ static int cheevos_iterate(coro_t* coro)
       CORO_STOP();
 
    /**************************************************************************
+    * Info    Pauses execution for five seconds
+    *************************************************************************/
+   CORO_SUB(DELAY)
+
+      {
+         retro_time_t t1;
+         T0 = cpu_features_get_time_usec();
+
+         do
+         {
+            CORO_YIELD();
+            t1 = cpu_features_get_time_usec();
+         }
+         while ((t1 - T0) < 3000000);
+      }
+
+      CORO_RET();
+
+   /**************************************************************************
     * Info    Makes a HTTP GET request
     * Inputs  URL
     * Outputs JSON
     *************************************************************************/
-   CORO_SUB(HTTP_GET)
+    CORO_SUB(HTTP_GET)
 
-      JSON = NULL;
-      CONN = net_http_connection_new(URL, "GET", NULL);
-
-      if (!CONN)
-         CORO_RET();
-
-      /* Don't bother with timeouts here, it's just a string scan. */
-      while (!net_http_connection_iterate(CONN)) {}
-
-      /* Error finishing the connection descriptor. */
-      if (!net_http_connection_done(CONN))
+      for (K = 0; K < 5; K++)
       {
-         net_http_connection_free(CONN);
-         CORO_RET();
-      }
+         RARCH_LOG("[CHEEVOS]: Making HTTP request, try %u of 5\n", K + 1);
 
-      HTTP = net_http_new(CONN);
+         JSON = NULL;
+         CONN = net_http_connection_new(URL, "GET", NULL);
 
-      /* Error connecting to the endpoint. */
-      if (!HTTP)
-      {
-         net_http_connection_free(CONN);
-         CORO_RET();
-      }
-
-      while (!net_http_update(HTTP, NULL, NULL))
-         CORO_YIELD();
-
-      {
-         size_t length;
-         uint8_t *data = net_http_data(HTTP, &length, false);
-
-         if (data)
+         if (!CONN)
          {
-            JSON = (char*)malloc(length + 1);
+            CORO_GOSUB(DELAY);
+            continue;
+         }
 
-            if (JSON)
+         /* Don't bother with timeouts here, it's just a string scan. */
+         while (!net_http_connection_iterate(CONN)) {}
+
+         /* Error finishing the connection descriptor. */
+         if (!net_http_connection_done(CONN))
+         {
+            net_http_connection_free(CONN);
+            continue;
+         }
+
+         HTTP = net_http_new(CONN);
+
+         /* Error connecting to the endpoint. */
+         if (!HTTP)
+         {
+            net_http_connection_free(CONN);
+            CORO_GOSUB(DELAY);
+            continue;
+         }
+
+         while (!net_http_update(HTTP, NULL, NULL))
+            CORO_YIELD();
+
+         {
+            size_t length;
+            uint8_t *data = net_http_data(HTTP, &length, false);
+
+            if (data)
             {
-               memcpy((void*)JSON, (void*)data, length);
-               free(data);
-               JSON[length] = 0;
+               JSON = (char*)malloc(length + 1);
+
+               if (JSON)
+               {
+                  memcpy((void*)JSON, (void*)data, length);
+                  free(data);
+                  JSON[length] = 0;
+               }
+
+               net_http_delete(HTTP);
+               net_http_connection_free(CONN);
+               CORO_RET();
             }
          }
+
+         net_http_delete(HTTP);
+         net_http_connection_free(CONN);
       }
 
-      net_http_delete(HTTP);
-      net_http_connection_free(CONN);
       CORO_RET();
 
    /**************************************************************************
