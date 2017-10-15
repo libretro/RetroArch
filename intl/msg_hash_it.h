@@ -3091,14 +3091,14 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
       "Opzioni di visualizzazione")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS,
-      "Mostra o nascondi gli elementi nella schermata del menu."
+      "Mostra o nasconde gli elementi nella schermata del menu."
       )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
-      "Visualizza Carica Core")
+      "Visualizza Aggiorna Core")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
       "Mostra / nasconde la possibilità di aggiornare i core (e i file di informazioni principali).")
 MSG_HASH(MSG_PREPARING_FOR_CONTENT_SCAN,
-      "Preparing for content scan...")
+      "Preparazione per la scansione dei contenuti in corso...")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_DELETE,
       "Cancella core")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_DELETE,
@@ -3236,7 +3236,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_KIOSK_MODE_PASSWORD,
       "Imposta una Password per disattivare la modalità Kiosk")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_KIOSK_MODE_PASSWORD,
-      "E' possibile fornire una password quando è attiva la modalità Kiosk ed è possibile disabilitarla successivamente dal menu, andare al Menu principale, selezionare Disattiva modalità Kiosk e inserere la password.")
+      "E' possibile fornire una password quando è attiva la modalità Kiosk ed è possibile disabilitarla successivamente dal menu, andare al 'Menu principale', selezionare 'Disattiva modalità Kiosk' e inserere la password.")
 MSG_HASH(MSG_INPUT_KIOSK_MODE_PASSWORD,
       "Inserisci Password")
 MSG_HASH(MSG_INPUT_KIOSK_MODE_PASSWORD_OK,
