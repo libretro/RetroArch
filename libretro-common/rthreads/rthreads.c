@@ -819,6 +819,12 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
 
    now.tv_sec  += seconds;
    now.tv_nsec += remainder * INT64_C(1000);
+   
+   if (now.tv_nsec > 1000000000)
+   {
+      now.tv_nsec -= 1000000000;
+      now.tv_sec += 1;
+   }
 
    ret = pthread_cond_timedwait(&cond->cond, &lock->lock, &now);
    return (ret == 0);
