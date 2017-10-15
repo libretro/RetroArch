@@ -37,6 +37,7 @@
 #endif
 #include <compat/strcasestr.h>
 #include <retro_miscellaneous.h>
+#include <encodings/utf.h>
 
 #if defined(_WIN32)
 #ifdef _MSC_VER
@@ -115,9 +116,18 @@ static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
        return false;
 #elif defined(_WIN32)
    struct _stat buf;
-   DWORD file_info = GetFileAttributes(path);
 
-   _stat(path, &buf);
+   if (!path || !*path)
+      return false;
+
+   char *path_local = utf8_to_local_string_alloc(path);
+
+   DWORD file_info = GetFileAttributes(path_local);
+
+   _stat(path_local, &buf);
+
+   if (path_local)
+     free(path_local);
 
    if (file_info == INVALID_FILE_ATTRIBUTES)
       return false;
@@ -883,4 +893,25 @@ void fill_short_pathname_representation_noext(char* out_rep,
 {
    fill_short_pathname_representation(out_rep, in_path, size);
    path_remove_extension(out_rep);
+}
+
+int path_file_remove(const char *path)
+{
+   if (!path || !*path)
+      return false;
+#if defined(_WIN32) && !defined(_XBOX)
+   char *path_local = utf8_to_local_string_alloc(path);
+
+   if (path_local)
+   {
+      bool ret = remove(path_local);
+      free(path_local);
+
+      return ret;
+   }
+#else
+   return remove(path);
+#endif
+
+   return -1;
 }

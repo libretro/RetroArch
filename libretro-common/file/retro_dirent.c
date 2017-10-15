@@ -28,6 +28,8 @@
 
 #include <boolean.h>
 #include <retro_dirent.h>
+#include <encodings/utf.h>
+#include <compat/strl.h>
 
 #if defined(_WIN32)
 #  ifdef _MSC_VER
@@ -89,6 +91,7 @@ struct RDIR *retro_opendir(const char *name)
 {
 #if defined(_WIN32)
    char path_buf[1024];
+   char *path_local = NULL;
 #endif
    struct RDIR *rdir = (struct RDIR*)calloc(1, sizeof(*rdir));
 
@@ -98,7 +101,11 @@ struct RDIR *retro_opendir(const char *name)
 #if defined(_WIN32)
    path_buf[0] = '\0';
    snprintf(path_buf, sizeof(path_buf), "%s\\*", name);
-   rdir->directory = FindFirstFile(path_buf, &rdir->entry);
+   path_local = utf8_to_local_string_alloc(path_buf);
+   rdir->directory = FindFirstFile(path_local, &rdir->entry);
+
+   if (path_local)
+      free(path_local);
 #elif defined(VITA) || defined(PSP)
    rdir->directory = sceIoDopen(name);
 #elif defined(_3DS)
@@ -149,6 +156,12 @@ int retro_readdir(struct RDIR *rdir)
 const char *retro_dirent_get_name(struct RDIR *rdir)
 {
 #if defined(_WIN32)
+   char *name_local = local_to_utf8_string_alloc(rdir->entry.cFileName);
+   memset(rdir->entry.cFileName, 0, sizeof(rdir->entry.cFileName));
+   strlcpy(rdir->entry.cFileName, name_local, sizeof(rdir->entry.cFileName));
+
+   if (name_local)
+      free(name_local);
    return rdir->entry.cFileName;
 #elif defined(VITA) || defined(PSP) || defined(__CELLOS_LV2__)
    return rdir->entry.d_name;

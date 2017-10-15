@@ -65,6 +65,7 @@
 #include <string/stdstring.h>
 #include <memmap.h>
 #include <retro_miscellaneous.h>
+#include <encodings/utf.h>
 
 struct RFILE
 {
@@ -140,6 +141,9 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
    const char *mode_str = NULL;
 #endif
    RFILE        *stream = (RFILE*)calloc(1, sizeof(*stream));
+#if defined(_WIN32) && !defined(_XBOX)
+   char       *path_local = NULL;
+#endif
 
    if (!stream)
       return NULL;
@@ -228,7 +232,14 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
 #if defined(HAVE_BUFFERED_IO)
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0 && mode_str)
    {
+#if defined(_WIN32) && !defined(_XBOX)
+      path_local = utf8_to_local_string_alloc(path);
+      stream->fp = fopen(path_local, mode_str);
+      if (path_local)
+         free(path_local);
+#else
       stream->fp = fopen(path, mode_str);
+#endif
       if (!stream->fp)
          goto error;
    }
@@ -236,7 +247,14 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
 #endif
    {
       /* FIXME: HAVE_BUFFERED_IO is always 1, but if it is ever changed, open() needs to be changed to _wopen() for WIndows. */
+#if defined(_WIN32) && !defined(_XBOX)
+      path_local = utf8_to_local_string_alloc(path);
+      stream->fd = open(path_local, flags, mode_int);
+      if (path_local)
+         free(path_local);
+#else
       stream->fd = open(path, flags, mode_int);
+#endif
       if (stream->fd == -1)
          goto error;
 #ifdef HAVE_MMAP

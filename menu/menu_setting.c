@@ -1860,7 +1860,7 @@ static void systemd_service_toggle(const char *path, char *unit, bool enable)
    if (enable)
       fclose(fopen(path, "w"));
    else
-      remove(path);
+      path_file_remove(path);
 
    if (pid == 0)
       execvp(args[0], args);

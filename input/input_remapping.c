@@ -241,7 +241,7 @@ bool input_remapping_remove_file(const char *path)
 
    fill_pathname_noext(remap_file, buf, ".rmp", path_size);
 
-   ret = remove(remap_file) == 0 ? true : false;;
+   ret = path_file_remove(remap_file) == 0 ? true : false;;
    free(buf);
    free(remap_file);
    return ret; 
