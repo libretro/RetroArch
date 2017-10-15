@@ -673,7 +673,7 @@ static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/window
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/linux/x86_64/latest/";
 #elif defined(__i386__) || defined(__i486__) || defined(__i686__)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/linux/x86/latest/";
-#elif defined(__arm__) && __ARM_ARCH == 7 && defined(__VFP_FP__)
+#elif defined(__arm__) && __ARM_ARCH == 7 && defined(__ARM_PCS_VFP)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/linux/armhf/latest/";
 #else
 static char buildbot_server_url[] = "";
