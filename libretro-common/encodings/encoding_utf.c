@@ -20,7 +20,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stddef.h>
@@ -350,3 +349,68 @@ char* local_to_utf8_string_alloc(const char *str)
    return mb_to_mb_string_alloc(str, CODEPAGE_LOCAL, CODEPAGE_UTF8);
 }
 
+/* Returned pointer MUST be freed by the caller if non-NULL. */
+wchar_t* utf8_to_utf16_string_alloc(const char *str)
+{
+   size_t len, out_len;
+   wchar_t *buf;
+
+   if (!str || !*str)
+      return NULL;
+
+#ifdef _WIN32
+   len = MultiByteToWideChar(CP_UTF8, 0, str, -1, NULL, 0);
+
+   buf = (wchar_t*)calloc(len, sizeof(wchar_t));
+
+   out_len = MultiByteToWideChar(CP_UTF8, 0, str, -1, buf, len);
+#else
+   /* NOTE: For now, assume non-Windows platforms' locale is already UTF-8. */
+   len = mbstowcs(NULL, str, 0) + 1;
+
+   buf = (wchar_t*)calloc(len, sizeof(wchar_t));
+
+   out_len = mbstowcs(buf, str, len);
+#endif
+
+   if (out_len < 0)
+   {
+      free(buf);
+      return NULL;
+   }
+
+   return buf;
+}
+
+/* Returned pointer MUST be freed by the caller if non-NULL. */
+char* utf16_to_utf8_string_alloc(const wchar_t *str)
+{
+   size_t len, out_len;
+   char *buf;
+
+   if (!str || !*str)
+      return NULL;
+
+#ifdef _WIN32
+   len = WideCharToMultiByte(CP_UTF8, 0, str, -1, NULL, 0, NULL, NULL);
+
+   buf = (char*)calloc(len, sizeof(char));
+
+   out_len = WideCharToMultiByte(CP_UTF8, 0, str, -1, buf, len, NULL, NULL);
+#else
+   /* NOTE: For now, assume non-Windows platforms' locale is already UTF-8. */
+   len = wcstombs(NULL, str, 0) + 1;
+
+   buf = (char*)calloc(len, sizeof(char));
+
+   out_len = wcstombs(buf, str, len);
+#endif
+
+   if (out_len < 0)
+   {
+      free(buf);
+      return NULL;
+   }
+
+   return buf;
+}

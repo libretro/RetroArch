@@ -58,6 +58,10 @@ char* utf8_to_local_string_alloc(const char *str);
 
 char* local_to_utf8_string_alloc(const char *str);
 
+wchar_t* utf8_to_utf16_string_alloc(const char *str);
+
+char* utf16_to_utf8_string_alloc(const wchar_t *str);
+
 RETRO_END_DECLS
 
 #endif

@@ -70,7 +70,11 @@
 struct RDIR
 {
 #if defined(_WIN32)
+#if defined(_MSC_VER) && _MSC_VER < 1400
    WIN32_FIND_DATA entry;
+#else
+   WIN32_FIND_DATAW entry;
+#endif
    HANDLE directory;
    bool next;
    char path[PATH_MAX_LENGTH];
@@ -92,6 +96,7 @@ struct RDIR *retro_opendir(const char *name)
 #if defined(_WIN32)
    char path_buf[1024];
    char *path_local = NULL;
+   wchar_t *path_wide = NULL;
 #endif
    struct RDIR *rdir = (struct RDIR*)calloc(1, sizeof(*rdir));
 
@@ -101,11 +106,23 @@ struct RDIR *retro_opendir(const char *name)
 #if defined(_WIN32)
    path_buf[0] = '\0';
    snprintf(path_buf, sizeof(path_buf), "%s\\*", name);
+#if defined(_MSC_VER) && _MSC_VER < 1400
+   (void)path_wide;
+
    path_local = utf8_to_local_string_alloc(path_buf);
    rdir->directory = FindFirstFile(path_local, &rdir->entry);
 
    if (path_local)
       free(path_local);
+#else
+   (void)path_local;
+
+   path_wide = utf8_to_utf16_string_alloc(path_buf);
+   rdir->directory = FindFirstFileW(path_wide, &rdir->entry);
+
+   if (path_wide)
+      free(path_wide);
+#endif
 #elif defined(VITA) || defined(PSP)
    rdir->directory = sceIoDopen(name);
 #elif defined(_3DS)
@@ -138,7 +155,11 @@ int retro_readdir(struct RDIR *rdir)
 {
 #if defined(_WIN32)
    if(rdir->next)
+#if defined(_MSC_VER) && _MSC_VER < 1400
       return (FindNextFile(rdir->directory, &rdir->entry) != 0);
+#else
+      return (FindNextFileW(rdir->directory, &rdir->entry) != 0);
+#endif
 
    rdir->next = true;
    return (rdir->directory != INVALID_HANDLE_VALUE);
@@ -156,13 +177,22 @@ int retro_readdir(struct RDIR *rdir)
 const char *retro_dirent_get_name(struct RDIR *rdir)
 {
 #if defined(_WIN32)
+#if defined(_MSC_VER) && _MSC_VER < 1400
    char *name_local = local_to_utf8_string_alloc(rdir->entry.cFileName);
    memset(rdir->entry.cFileName, 0, sizeof(rdir->entry.cFileName));
    strlcpy(rdir->entry.cFileName, name_local, sizeof(rdir->entry.cFileName));
 
    if (name_local)
       free(name_local);
-   return rdir->entry.cFileName;
+#else
+   char *name = utf16_to_utf8_string_alloc(rdir->entry.cFileName);
+   memset(rdir->entry.cFileName, 0, sizeof(rdir->entry.cFileName));
+   strlcpy((char*)rdir->entry.cFileName, name, sizeof(rdir->entry.cFileName));
+
+   if (name)
+      free(name);
+#endif
+   return (char*)rdir->entry.cFileName;
 #elif defined(VITA) || defined(PSP) || defined(__CELLOS_LV2__)
    return rdir->entry.d_name;
 #else
