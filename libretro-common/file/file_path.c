@@ -87,6 +87,15 @@
 #include <unistd.h> /* stat() is defined here */
 #endif
 
+/* Assume W-functions do not work below VC2005 and Xbox platforms */
+#if defined(_MSC_VER) && _MSC_VER < 1400 || defined(_XBOX)
+
+#ifndef LEGACY_WIN32
+#define LEGACY_WIN32
+#endif
+
+#endif
+
 enum stat_mode
 {
    IS_DIRECTORY = 0,
@@ -127,8 +136,7 @@ static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
    (void)path_local;
    (void)file_info;
 
-#if defined(_MSC_VER) && _MSC_VER < 1400 || defined(_XBOX)
-   /* assume W-functions do not work below VC2005 */
+#if defined(LEGACY_WIN32)
    path_local = utf8_to_local_string_alloc(path);
    file_info  = GetFileAttributes(path_local);
 

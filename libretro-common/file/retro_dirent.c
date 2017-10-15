@@ -67,10 +67,16 @@
 #include <unistd.h> /* stat() is defined here */
 #endif
 
+#if defined(_MSC_VER) && _MSC_VER < 1400 || defined(_XBOX)
+#ifndef LEGACY_WIN32
+#define LEGACY_WIN32
+#endif
+#endif
+
 struct RDIR
 {
 #if defined(_WIN32)
-#if defined(_MSC_VER) && _MSC_VER < 1400 || defined(_XBOX)
+#if defined(LEGACY_WIN32)
    WIN32_FIND_DATA entry;
 #else
    WIN32_FIND_DATAW entry;
@@ -104,19 +110,18 @@ struct RDIR *retro_opendir(const char *name)
       return NULL;
 
 #if defined(_WIN32)
+   (void)path_wide;
+   (void)path_local;
+
    path_buf[0] = '\0';
    snprintf(path_buf, sizeof(path_buf), "%s\\*", name);
-#if defined(_MSC_VER) && _MSC_VER < 1400 || defined(_XBOX)
-   (void)path_wide;
-
+#if defined(LEGACY_WIN32)
    path_local      = utf8_to_local_string_alloc(path_buf);
    rdir->directory = FindFirstFile(path_local, &rdir->entry);
 
    if (path_local)
       free(path_local);
 #else
-   (void)path_local;
-
    path_wide       = utf8_to_utf16_string_alloc(path_buf);
    rdir->directory = FindFirstFileW(path_wide, &rdir->entry);
 
@@ -155,7 +160,7 @@ int retro_readdir(struct RDIR *rdir)
 {
 #if defined(_WIN32)
    if(rdir->next)
-#if defined(_MSC_VER) && _MSC_VER < 1400 || defined(_XBOX)
+#if defined(LEGACY_WIN32)
       return (FindNextFile(rdir->directory, &rdir->entry) != 0);
 #else
       return (FindNextFileW(rdir->directory, &rdir->entry) != 0);
@@ -177,7 +182,7 @@ int retro_readdir(struct RDIR *rdir)
 const char *retro_dirent_get_name(struct RDIR *rdir)
 {
 #if defined(_WIN32)
-#if defined(_MSC_VER) && _MSC_VER < 1400 || defined(_XBOX)
+#if defined(LEGACY_WIN32)
    char *name_local = local_to_utf8_string_alloc(rdir->entry.cFileName);
    memset(rdir->entry.cFileName, 0, sizeof(rdir->entry.cFileName));
    strlcpy(rdir->entry.cFileName, name_local, sizeof(rdir->entry.cFileName));
