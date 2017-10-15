@@ -20,6 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stddef.h>
@@ -30,6 +31,15 @@
 #include <retro_inline.h>
 
 #include <encodings/utf.h>
+
+#if defined(_WIN32) && !defined(_XBOX)
+#include <windows.h>
+
+/* Starting with Windows 8: MultiByteToWideChar is declared in stringapiset.h. Before Windows 8, it was declared in winnls.h (which windows.h includes for us). */
+#ifndef MultiByteToWideChar
+#include <stringapiset.h>
+#endif
+#endif
 
 static INLINE unsigned leading_ones(uint8_t c)
 {
@@ -267,3 +277,81 @@ bool utf16_to_char_string(const uint16_t *in, char *s, size_t len)
 
    return ret;
 }
+
+/* Returned pointer MUST be freed by the caller if non-NULL. */
+static char* mb_to_mb_string_alloc(const char *str, enum CodePage cp_in, enum CodePage cp_out)
+{
+   char *path_buf = NULL;
+   wchar_t *path_buf_wide = NULL;
+   int path_buf_len = 0;
+   int path_buf_wide_len = 0;
+
+   if (!str || !*str)
+      return NULL;
+
+#if !defined(_WIN32) || defined(_XBOX)
+   /* assume string needs no modification if not on Windows */
+   return strdup(str);
+#else
+#ifdef UNICODE
+   /* TODO/FIXME: Not implemented. */
+   return strdup(str);
+#else
+
+   path_buf_wide_len = MultiByteToWideChar(cp_in, 0, str, -1, NULL, 0);
+
+   if (path_buf_wide_len)
+   {
+      path_buf_wide = (wchar_t*)calloc(path_buf_wide_len + sizeof(wchar_t), sizeof(wchar_t));
+
+      if (path_buf_wide)
+      {
+         MultiByteToWideChar(cp_in, 0, str, -1, path_buf_wide, path_buf_wide_len);
+
+         if (*path_buf_wide)
+         {
+            path_buf_len = WideCharToMultiByte(cp_out, 0, path_buf_wide, -1, NULL, 0, NULL, NULL);
+
+            if (path_buf_len)
+            {
+               path_buf = (char*)calloc(path_buf_len + sizeof(char), sizeof(char));
+
+               if (path_buf)
+               {
+                  WideCharToMultiByte(cp_out, 0, path_buf_wide, -1, path_buf, path_buf_len, NULL, NULL);
+
+                  free(path_buf_wide);
+
+                  if (*path_buf)
+                     return path_buf;
+                  else
+                  {
+                     free(path_buf);
+                     return NULL;
+                  }
+               }
+            }
+         }
+      }
+   }
+#endif
+#endif
+
+   if (path_buf_wide)
+      free(path_buf_wide);
+
+   return NULL;
+}
+
+/* Returned pointer MUST be freed by the caller if non-NULL. */
+char* utf8_to_local_string_alloc(const char *str)
+{
+   return mb_to_mb_string_alloc(str, CODEPAGE_UTF8, CODEPAGE_LOCAL);
+}
+
+/* Returned pointer MUST be freed by the caller if non-NULL. */
+char* local_to_utf8_string_alloc(const char *str)
+{
+   return mb_to_mb_string_alloc(str, CODEPAGE_LOCAL, CODEPAGE_UTF8);
+}
+

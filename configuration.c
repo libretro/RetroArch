@@ -3701,15 +3701,15 @@ bool config_save_file(const char *path)
    if (settings->bools.ssh_enable)
       fclose(fopen(LAKKA_SSH_PATH, "w"));
    else
-      remove(LAKKA_SSH_PATH);
+      path_file_remove(LAKKA_SSH_PATH);
    if (settings->bools.samba_enable)
       fclose(fopen(LAKKA_SAMBA_PATH, "w"));
    else
-      remove(LAKKA_SAMBA_PATH);
+      path_file_remove(LAKKA_SAMBA_PATH);
    if (settings->bools.bluetooth_enable)
       fclose(fopen(LAKKA_BLUETOOTH_PATH, "w"));
    else
-      remove(LAKKA_BLUETOOTH_PATH);
+      path_file_remove(LAKKA_BLUETOOTH_PATH);
 #endif
 
    for (i = 0; i < MAX_USERS; i++)
