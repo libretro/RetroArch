@@ -154,6 +154,9 @@ size_t utf8cpy(char *d, size_t d_len, const char *s, size_t chars)
    const uint8_t *sb     = (const uint8_t*)s;
    const uint8_t *sb_org = sb;
 
+   if (!s)
+      return 0;
+
    while (*sb && chars-- > 0)
    {
       sb++;
@@ -189,6 +192,10 @@ const char *utf8skip(const char *str, size_t chars)
 size_t utf8len(const char *string)
 {
    size_t ret = 0;
+
+   if (!string)
+      return 0;
+
    while (*string)
    {
       if ((*string & 0xC0) != 0x80)

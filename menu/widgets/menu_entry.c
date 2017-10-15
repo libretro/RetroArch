@@ -123,7 +123,9 @@ char *menu_entry_get_rich_label(menu_entry_t *entry)
       return NULL;
    if (!string_is_empty(entry->rich_label))
       return strdup(entry->rich_label);
-   return strdup(entry->path);
+   if (!string_is_empty(entry->path))
+      return strdup(entry->path);
+   return NULL;
 }
 
 char *menu_entry_get_sublabel(menu_entry_t *entry)

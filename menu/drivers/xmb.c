@@ -2392,7 +2392,8 @@ static int xmb_draw_item(
          ticker_limit = 70;
    }
 
-   ticker_str      = menu_entry_get_rich_label(entry);
+   if (!string_is_empty(entry->path))
+      ticker_str      = menu_entry_get_rich_label(entry);
 
    ticker.s        = tmp;
    ticker.len      = ticker_limit;
@@ -2400,7 +2401,8 @@ static int xmb_draw_item(
    ticker.str      = ticker_str;
    ticker.selected = (i == current);
 
-   menu_animation_ticker(&ticker);
+   if (ticker.str)
+      menu_animation_ticker(&ticker);
 
    label_offset = xmb->margins_label_top;
    if (i == current && width > 320 && height > 240
