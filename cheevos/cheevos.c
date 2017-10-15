@@ -2204,7 +2204,15 @@ static void cheevos_test_cheevo_set(const cheevoset_t *set)
       {
          valid = cheevos_test_cheevo(cheevo);
 
-         if (valid && !cheevo->last)
+         if (cheevo->last)
+         {
+            cheevos_condset_t* condset   = cheevo->condition.condsets;
+            const cheevos_condset_t* end = cheevo->condition.condsets + cheevo->condition.count;
+
+            for (; condset < end; condset++)
+               cheevos_reset_cond_set(condset, 0);
+         }
+         else if (valid)
          {
             char url[256];
             url[0] = '\0';
