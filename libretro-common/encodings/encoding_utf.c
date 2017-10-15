@@ -34,11 +34,6 @@
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include <windows.h>
-
-/* Starting with Windows 8: MultiByteToWideChar is declared in stringapiset.h. Before Windows 8, it was declared in winnls.h (which windows.h includes for us). */
-#ifndef MultiByteToWideChar
-#include <stringapiset.h>
-#endif
 #endif
 
 static INLINE unsigned leading_ones(uint8_t c)
