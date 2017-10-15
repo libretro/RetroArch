@@ -1055,14 +1055,24 @@ void cheevos_parse_guest_addr(cheevos_var_t *var, unsigned value)
    switch (cheevos_locals.console_id)
    {
       case CHEEVOS_CONSOLE_NINTENDO:
-         if (var->value < 0x2000)
+         if (var->value >= 0x0800 && var->value < 0x2000)
+         {
+#ifdef CHEEVOS_VERBOSE
+            RARCH_LOG("[CHEEVOS]: NES memory address in mirrorred RAM %X, adjusted to %X\n", var->value, var->value & 0x07ff);
+#endif
             var->value &= 0x07ff;
+         }
          break;
 
       case CHEEVOS_CONSOLE_GAMEBOY_COLOR:
          if (var->value >= 0xe000 && var->value <= 0xfdff)
+         {
+#ifdef CHEEVOS_VERBOSE
+            RARCH_LOG("[CHEEVOS]: GBC memory address in echo RAM %X, adjusted to %X\n", var->value, var->value - 0x2000);
+#endif
             var->value -= 0x2000;
-         break;
+         }
+      break;
    }
 
    if (system->mmaps.num_descriptors != 0)
@@ -1075,22 +1085,45 @@ void cheevos_parse_guest_addr(cheevos_var_t *var, unsigned value)
          /* Patch the address to correctly map it to the mmaps */
          case CHEEVOS_CONSOLE_GAMEBOY_ADVANCE:
             if (var->value < 0x8000) /* Internal RAM */
-               var->value += 0x3000000;
-            else                     /* Work RAM */
-               var->value += 0x2000000 - 0x8000;
-            break;
-         case CHEEVOS_CONSOLE_PC_ENGINE:
-            var->value += 0x1f0000;
-            break;
-         case CHEEVOS_CONSOLE_SUPER_NINTENDO:
-            if (var->value < 0x020000) /* Work RAM */
-               var->value += 0x7e0000;
-            else                       /* Save RAM */
             {
-               var->value -= 0x020000;
-               var->value += 0x006000;
+#ifdef CHEEVOS_VERBOSE
+               RARCH_LOG("[CHEEVOS]: GBA memory address %X adjusted to %X\n", var->value, var->value + 0x3000000);
+#endif
+               var->value += 0x3000000;
+            }
+            else /* Work RAM */
+            {
+#ifdef CHEEVOS_VERBOSE
+               RARCH_LOG("[CHEEVOS]: GBA memory address %X adjusted to %X\n", var->value, var->value + 0x2000000 - 0x8000);
+#endif
+               var->value += 0x2000000 - 0x8000;
             }
             break;
+
+         case CHEEVOS_CONSOLE_PC_ENGINE:
+#ifdef CHEEVOS_VERBOSE
+            RARCH_LOG("[CHEEVOS]: PCE memory address %X adjusted to %X\n", var->value, var->value + 0x1f0000);
+#endif
+            var->value += 0x1f0000;
+            break;
+
+         case CHEEVOS_CONSOLE_SUPER_NINTENDO:
+            if (var->value < 0x020000) /* Work RAM */
+            {
+#ifdef CHEEVOS_VERBOSE
+               RARCH_LOG("[CHEEVOS]: SNES memory address %X adjusted to %X\n", var->value, var->value + 0x7e0000);
+#endif
+               var->value += 0x7e0000;
+            }
+            else /* Save RAM */
+            {
+#ifdef CHEEVOS_VERBOSE
+               RARCH_LOG("[CHEEVOS]: SNES memory address %X adjusted to %X\n", var->value, var->value + 0x006000 - 0x020000);
+#endif
+               var->value += 0x006000 - 0x020000;
+            }
+            break;
+
          default:
             break;
       }
@@ -1102,15 +1135,20 @@ void cheevos_parse_guest_addr(cheevos_var_t *var, unsigned value)
       {
          if (((desc->core.start ^ var->value) & desc->core.select) == 0)
          {
-            var->bank_id = (int)(desc - system->mmaps.descriptors);
-            var->value   = (unsigned)cheevos_reduce(
+            unsigned addr = var->value;
+            var->bank_id  = (int)(desc - system->mmaps.descriptors);
+            var->value    = (unsigned)cheevos_reduce(
                (var->value - desc->core.start) & desc->disconnect_mask,
                desc->core.disconnect);
 
-   			if (var->value >= desc->core.len)
+            if (var->value >= desc->core.len)
                var->value -= cheevos_highest_bit(var->value);
 
-   			var->value += desc->core.offset;
+            var->value += desc->core.offset;
+
+#ifdef CHEEVOS_VERBOSE
+            RARCH_LOG("[CHEEVOS]: Address %X set to descriptor %d at offset %X\n", addr, var->bank_id + 1, var->value);
+#endif
             break;
          }
       }
@@ -1327,15 +1365,16 @@ static int cheevos_parse_condition(cheevos_condition_t *condition, const char* m
    {
       unsigned set                 = 0;
       cheevos_condset_t *condset   = NULL;
-      cheevos_condset_t *conds     = (cheevos_condset_t*)
-         calloc(condition->count, sizeof(cheevos_condset_t));
+      cheevos_condset_t *conds     = NULL;
       const cheevos_condset_t* end;
 
-      if (!conds)
+      condition->condsets = (cheevos_condset_t*)
+         calloc(condition->count, sizeof(cheevos_condset_t));
+
+      if (!condition->condsets)
          return -1;
 
-      condition->condsets = conds;
-      end                 = condition->condsets + condition->count;
+      end = condition->condsets + condition->count;
 
       for (condset = condition->condsets; condset < end; condset++, set++)
       {
@@ -1354,7 +1393,14 @@ static int cheevos_parse_condition(cheevos_condition_t *condition, const char* m
                calloc(condset->count, sizeof(cheevos_cond_t));
 
             if (!conds)
+            {
+               while (--condset >= condition->condsets)
+               {
+                  free((void*)condset->conds);
+               }
+            
                return -1;
+            }
 
             condset->conds = conds;
             cheevos_parse_memaddr(condset->conds, memaddr, set);
@@ -2158,7 +2204,15 @@ static void cheevos_test_cheevo_set(const cheevoset_t *set)
       {
          valid = cheevos_test_cheevo(cheevo);
 
-         if (valid && !cheevo->last)
+         if (cheevo->last)
+         {
+            cheevos_condset_t* condset   = cheevo->condition.condsets;
+            const cheevos_condset_t* end = cheevo->condition.condsets + cheevo->condition.count;
+
+            for (; condset < end; condset++)
+               cheevos_reset_cond_set(condset, 0);
+         }
+         else if (valid)
          {
             char url[256];
             url[0] = '\0';
@@ -3544,10 +3598,17 @@ static int cheevos_iterate(coro_t* coro)
 
       CORO_GOSUB(HTTP_GET);
 
-      if (!cheevos_deactivate_unlocks(CHEEVOS_VAR_JSON, CHEEVOS_ACTIVE_SOFTCORE))
-         RARCH_LOG("[CHEEVOS]: deactivated unlocked achievements in softcore mode.\n");
+      if (CHEEVOS_VAR_JSON)
+      {
+         if (!cheevos_deactivate_unlocks(CHEEVOS_VAR_JSON, CHEEVOS_ACTIVE_SOFTCORE))
+            RARCH_LOG("[CHEEVOS]: deactivated unlocked achievements in softcore mode.\n");
+         else
+            RARCH_ERR("[CHEEVOS]: error deactivating unlocked achievements in softcore mode.\n");
+      
+         free((void*)CHEEVOS_VAR_JSON);
+      }
       else
-         RARCH_ERR("[CHEEVOS]: error deactivating unlocked achievements in softcore mode.\n");
+         RARCH_ERR("[CHEEVOS]: error retrieving list of unlocked achievements in softcore mode.\n");
 
       /* Deactivate achievements in hardcore mode. */
       snprintf(
@@ -3565,10 +3626,17 @@ static int cheevos_iterate(coro_t* coro)
 
       CORO_GOSUB(HTTP_GET);
 
-      if (!cheevos_deactivate_unlocks(CHEEVOS_VAR_JSON, CHEEVOS_ACTIVE_HARDCORE))
-         RARCH_LOG("[CHEEVOS]: deactivated unlocked achievements in hardcore mode.\n");
+      if (CHEEVOS_VAR_JSON)
+      {
+         if (!cheevos_deactivate_unlocks(CHEEVOS_VAR_JSON, CHEEVOS_ACTIVE_HARDCORE))
+            RARCH_LOG("[CHEEVOS]: deactivated unlocked achievements in hardcore mode.\n");
+         else
+            RARCH_ERR("[CHEEVOS]: error deactivating unlocked achievements in hardcore mode.\n");
+      
+         free((void*)CHEEVOS_VAR_JSON);
+      }
       else
-         RARCH_ERR("[CHEEVOS]: error deactivating unlocked achievements in hardcore mode.\n");
+         RARCH_ERR("[CHEEVOS]: error retrieving list of unlocked achievements in hardcore mode.\n");
 
 #endif
       CORO_RET();
@@ -3595,8 +3663,13 @@ static int cheevos_iterate(coro_t* coro)
 
       CORO_GOSUB(HTTP_GET);
 
-      if (!CHEEVOS_VAR_JSON)
-         CORO_GOTO(PLAYING);
+      if (CHEEVOS_VAR_JSON)
+      {
+          RARCH_LOG("[CHEEVOS]: posted playing activity.\n");
+          free((void*)CHEEVOS_VAR_JSON);
+      }
+      else
+         RARCH_ERR("[CHEEVOS]: error posting playing activity.\n");
 
       RARCH_LOG("[CHEEVOS]: posted playing activity.\n");
       CORO_RET();
