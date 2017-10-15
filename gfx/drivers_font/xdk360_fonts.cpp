@@ -14,7 +14,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef _XBOX
 #include <xtl.h>
+#include <xgraphics.h>
+#endif
 
 #include <string/stdstring.h>
 

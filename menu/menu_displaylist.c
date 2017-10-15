@@ -2997,6 +2997,7 @@ static int menu_displaylist_parse_load_content_settings(
 static int menu_displaylist_parse_horizontal_content_actions(
       menu_displaylist_info_t *info)
 {
+   bool content_loaded             = false;
    unsigned idx                    = rpl_entry_selection_ptr;
    menu_handle_t *menu             = NULL;
    const char *label               = NULL;
@@ -3016,7 +3017,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
    playlist_get_index(playlist, idx,
          &entry_path, &label, &core_path, &core_name, NULL, &db_name);
 
-   bool content_loaded = !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
+   content_loaded = !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
          && string_is_equal(menu->deferred_path, fullpath);
 
    if (content_loaded)

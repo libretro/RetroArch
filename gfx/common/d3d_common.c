@@ -24,6 +24,10 @@
 #include "../include/d3d8/d3dx8tex.h"
 #endif
 
+#ifdef _XBOX
+#include <xgraphics.h>
+#endif
+
 bool d3d_swap(void *data, LPDIRECT3DDEVICE dev)
 {
 #if defined(_XBOX1)

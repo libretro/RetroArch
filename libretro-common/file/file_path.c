@@ -118,28 +118,27 @@ static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
    struct _stat buf;
    char *path_local;
    wchar_t *path_wide;
+   DWORD file_info;
 
    if (!path || !*path)
       return false;
 
-#if defined(_MSC_VER) && _MSC_VER < 1400
    (void)path_wide;
+   (void)path_local;
+   (void)file_info;
 
+#if defined(_MSC_VER) && _MSC_VER < 1400 || defined(_XBOX)
    /* assume W-functions do not work below VC2005 */
    path_local = utf8_to_local_string_alloc(path);
-
-   DWORD file_info = GetFileAttributes(path_local);
+   file_info  = GetFileAttributes(path_local);
 
    _stat(path_local, &buf);
 
    if (path_local)
      free(path_local);
 #else
-   (void)path_local;
-
    path_wide = utf8_to_utf16_string_alloc(path);
-
-   DWORD file_info = GetFileAttributesW(path_wide);
+   file_info = GetFileAttributesW(path_wide);
 
    _wstat(path_wide, &buf);
 
@@ -915,15 +914,17 @@ void fill_short_pathname_representation_noext(char* out_rep,
 
 int path_file_remove(const char *path)
 {
-   char *path_local;
-   wchar_t *path_wide;
+   char *path_local    = NULL;
+   wchar_t *path_wide  = NULL;
 
    if (!path || !*path)
       return false;
-#if defined(_WIN32) && !defined(_XBOX)
-#if defined(_MSC_VER) && _MSC_VER < 1400
+
+   (void)path_local;
    (void)path_wide;
 
+#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_MSC_VER) && _MSC_VER < 1400
    path_local = utf8_to_local_string_alloc(path);
 
    if (path_local)
@@ -934,8 +935,6 @@ int path_file_remove(const char *path)
       return ret;
    }
 #else
-   (void)path_local;
-
    path_wide = utf8_to_utf16_string_alloc(path);
 
    if (path_wide)
