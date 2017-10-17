@@ -246,6 +246,12 @@ typedef struct _my_cb_user{
 	DeviceVIDPIDInfo vidpid; /**< The VID/PID of the device */
 }my_cb_user;
 
+
+typedef struct _ConnectionHelper{
+    my_cb_user* usr;
+    u8 pad_slot;
+}ConnectionHelper;
+
 /**
  *  @brief Stores data for the mouse
  */
@@ -366,6 +372,7 @@ typedef struct _InputStickData{
 typedef struct _InputData{
     DeviceInfo device_info; /**< Infos about the device where the data is coming from */
     u8 status;
+    u8 pad;
     InputButtonData button_data;
     InputStickData stick_data;
 }InputData;

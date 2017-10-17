@@ -93,7 +93,7 @@ static const char* wiiu_joypad_name(unsigned pad)
    if (pad < MAX_PADS)
    {
       s32 hid_index = pad-HID_OFFSET;
-      sprintf(hidName[hid_index],"HID %04X/%04X",hid_data[hid_index].device_info.vidpid.vid,hid_data[hid_index].device_info.vidpid.pid);
+      sprintf(hidName[hid_index],"HID %04X/%04X(%02X)",hid_data[hid_index].device_info.vidpid.vid,hid_data[hid_index].device_info.vidpid.pid,hid_data[hid_index].pad);
       return hidName[hid_index];
    }
 
