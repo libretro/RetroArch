@@ -53,6 +53,21 @@
 
 #include <encodings/utf.h>
 
+/* Assume W-functions do not work below VC2005 and Xbox platforms */
+#if defined(_MSC_VER) && _MSC_VER < 1400 || defined(_XBOX)
+
+#ifndef LEGACY_WIN32
+#define LEGACY_WIN32
+#endif
+
+#endif
+
+#ifdef LEGACY_WIN32
+#define DragQueryFileR DragQueryFile
+#else
+#define DragQueryFileR DragQueryFileW
+#endif
+
 extern LRESULT win32_menu_loop(HWND owner, WPARAM wparam);
 
 #if defined(HAVE_D3D9) || defined(HAVE_D3D8)
@@ -282,19 +297,29 @@ void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id)
 /* Get the count of the files dropped */
 static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
 {
+#ifdef LEGACY_WIN32
    char szFilename[1024];
-
    szFilename[0] = '\0';
+#else
+   char *szFilename = NULL;
+   wchar_t wszFilename[1024];
+   wszFilename[0] = L'\0';
+#endif
 
-   if (DragQueryFile((HDROP)wparam, 0xFFFFFFFF, NULL, 0))
+   if (DragQueryFileR((HDROP)wparam, 0xFFFFFFFF, NULL, 0))
    {
-      /*poll list of current cores */
+      /* poll list of current cores */
       size_t list_size;
       content_ctx_info_t content_info  = {0};
       core_info_list_t *core_info_list = NULL;
       const core_info_t *core_info     = NULL;
 
-      DragQueryFile((HDROP)wparam, 0, szFilename, sizeof(szFilename));
+#ifdef LEGACY_WIN32
+      DragQueryFileR((HDROP)wparam, 0, szFilename, sizeof(szFilename));
+#else
+      DragQueryFileR((HDROP)wparam, 0, wszFilename, sizeof(wszFilename));
+      szFilename = utf16_to_utf8_string_alloc(wszFilename);
+#endif
 
       core_info_get_list(&core_info_list);
 
@@ -305,9 +330,20 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
             (const char*)szFilename, &core_info, &list_size);
 
       if (!list_size)
+      {
+#ifndef LEGACY_WIN32
+         if (szFilename)
+            free(szFilename);
+#endif
          return 0;
+      }
 
       path_set(RARCH_PATH_CONTENT, szFilename);
+
+#ifndef LEGACY_WIN32
+      if (szFilename)
+         free(szFilename);
+#endif
 
       if (!path_is_empty(RARCH_PATH_CONTENT))
       {
