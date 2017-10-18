@@ -223,12 +223,15 @@ s32 ControllerPatcherHID::AttachDetachCallback(HIDClient *p_client, HIDDevice *p
 
             for(s32 j = 0;j < pads_per_device; j++){
                 for(s32 i = 0;i < gHIDMaxDevices; i++){
-                    if(connectionOrderHelper[i] == NULL){
-                        connectionOrderHelper[i] = usr;
+                    if(connectionOrderHelper[i].usr == NULL){
+                        connectionOrderHelper[i].usr = usr;
+                        connectionOrderHelper[i].pad_slot = pad_slot+j;
                         break;
                     }
                 }
             }
+            DCFlushRange(connectionOrderHelper,sizeof(connectionOrderHelper));
+            DCInvalidateRange(connectionOrderHelper,sizeof(connectionOrderHelper));
 
             if(HID_DEBUG){ printf("ControllerPatcherHID::AttachDetachCallback(line %d): Device successfully attached\n",__LINE__); }
 
@@ -311,12 +314,15 @@ s32 ControllerPatcherHID::AttachDetachCallback(HIDClient *p_client, HIDDevice *p
             if(user_data){
                 for(s32 j = 0;j < user_data->pads_per_device; j++){
                     for(s32 i = 0;i < gHIDMaxDevices; i++){
-                        if(connectionOrderHelper[i] == user_data){
-                            connectionOrderHelper[i] = NULL;
+                        if(connectionOrderHelper[i].usr == user_data){
+                            connectionOrderHelper[i].usr = NULL;
+                            connectionOrderHelper[i].pad_slot = 0;
                             break;
                         }
                     }
                 }
+                DCFlushRange(connectionOrderHelper,sizeof(connectionOrderHelper));
+                DCInvalidateRange(connectionOrderHelper,sizeof(connectionOrderHelper));
 
                 config_controller[slotdata->deviceslot][CONTRPS_CONNECTED_PADS][1] &= ~ (1 << user_data->pad_slot);
                 DCFlushRange(&config_controller[slotdata->deviceslot][CONTRPS_CONNECTED_PADS][1],sizeof(config_controller[slotdata->deviceslot][CONTRPS_CONNECTED_PADS][1]));
