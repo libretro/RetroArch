@@ -2,6 +2,16 @@
 #include <stdlib.h>
 
 #include <file/nbio.h>
+#include <encodings/utf.h>
+
+/* Assume W-functions do not work below VC2005 and Xbox platforms */
+#if defined(_MSC_VER) && _MSC_VER < 1400 || defined(_XBOX)
+
+#ifndef LEGACY_WIN32
+#define LEGACY_WIN32
+#endif
+
+#endif
 
 struct nbio_t
 {
@@ -19,14 +29,26 @@ struct nbio_t
    signed char mode;
 };
 
+#if !defined(_WIN32) || defined(LEGACY_WIN32)
 static const char * modes[]={ "rb", "wb", "r+b", "rb", "wb", "r+b" };
+#else
+static const wchar_t * modes[]={ L"rb", L"wb", L"r+b", L"rb", L"wb", L"r+b" };
+#endif
 
 struct nbio_t* nbio_open(const char * filename, unsigned mode)
 {
    void *buf             = NULL;
    struct nbio_t* handle = NULL;
    size_t len            = 0;
+#if !defined(_WIN32) || defined(LEGACY_WIN32)
    FILE* f               = fopen(filename, modes[mode]);
+#else
+   wchar_t *filename_wide = utf8_to_utf16_string_alloc(filename);
+   FILE* f               = _wfopen(filename_wide, modes[mode]);
+
+   if (filename_wide)
+      free(filename_wide);
+#endif
    if (!f)
       return NULL;
 
