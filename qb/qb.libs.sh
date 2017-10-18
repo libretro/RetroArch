@@ -26,7 +26,7 @@ check_lib()	#$1 = HAVE_$1	$2 = lib	$3 = function in lib	$4 = extralibs $5 = head
 	if [ "$3" ]; then
 		ECHOBUF="Checking function $3 in ${2% }"
 		if [ "$5" ]; then
-			printf "$5\nint main(void) { void *p = (void*)$3; return 0; }" > $TEMP_C
+			printf %s\\n "$5" "int main(void) { void *p = (void*)$3; return 0; }" > $TEMP_C
 		else
 			echo "void $3(void); int main(void) { $3(); return 0; }" > $TEMP_C
 		fi
