@@ -504,17 +504,17 @@ check_macro NEON __ARM_NEON__
 
 add_define_make OS "$OS"
 
-if [ "$HAVE_ZLIB" = 'no' ] && [ "HAVE_RPNG" != 'no' ]; then
+if [ "$HAVE_ZLIB" = 'no' ] && [ "$HAVE_RPNG" != 'no' ]; then
    HAVE_RPNG=no
    echo "Notice: zlib is not available, RPNG will also be disabled."
 fi
 
-if [ "$HAVE_THREADS" = 'no' ] && [ "HAVE_LIBUSB" != 'no' ]; then
+if [ "$HAVE_THREADS" = 'no' ] && [ "$HAVE_LIBUSB" != 'no' ]; then
    HAVE_LIBUSB=no
    echo "Notice: Threads are not available, libusb will also be disabled."
 fi
 
-if [ "$HAVE_V4L2" != 'no' ] && [ "HAVE_VIDEOPROCESSOR" != 'no' ]; then
+if [ "$HAVE_V4L2" != 'no' ] && [ "$HAVE_VIDEOPROCESSOR" != 'no' ]; then
    HAVE_VIDEO_PROCESSOR=yes
 fi
 
