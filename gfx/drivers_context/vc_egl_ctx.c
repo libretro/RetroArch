@@ -311,6 +311,15 @@ static bool gfx_ctx_vc_set_video_mode(void *data,
    frontend_driver_install_signal_handler();
    gfx_ctx_vc_set_swap_interval(&vc->egl, vc->egl.interval);
 
+   /* If we set this env variable, Broadcom's EGL implementation will block
+    * on vsync with a double buffer when we call eglSwapBuffers. Less input lag!  */
+   if (video_info->max_swapchain_images <= 2)
+      setenv("V3D_DOUBLE_BUFFER", "1", 1);
+   else
+      setenv("V3D_DOUBLE_BUFFER", "0", 1);
+
+   gfx_ctx_vc_set_swap_interval(&vc->egl, vc->egl.interval);
+
    g_egl_inited = true;
 #endif
 
