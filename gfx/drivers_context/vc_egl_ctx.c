@@ -196,6 +196,14 @@ static void *gfx_ctx_vc_init(video_frame_info_t *video_info, void *video_driver)
    if (!vc)
        return NULL;
 
+   /* If we set this env variable, Broadcom's EGL implementation will block
+    * on vsync with a double buffer when we call eglSwapBuffers. Less input lag!
+    * Has to be done before any EGL call. */
+   /*if (video_info->max_swapchain_images <= 2)
+      setenv("V3D_DOUBLE_BUFFER", "1", 1);
+   else
+      setenv("V3D_DOUBLE_BUFFER", "0", 1);*/
+
    bcm_host_init();
 
 #ifdef HAVE_EGL
@@ -336,13 +344,6 @@ static bool gfx_ctx_vc_set_video_mode(void *data,
       return false;
 
    frontend_driver_install_signal_handler();
-
-   /* If we set this env variable, Broadcom's EGL implementation will block
-    * on vsync with a double buffer when we call eglSwapBuffers. Less input lag!  */
-   /*if (video_info->max_swapchain_images <= 2)
-      setenv("V3D_DOUBLE_BUFFER", "1", 1);
-   else
-      setenv("V3D_DOUBLE_BUFFER", "0", 1);*/
 
    gfx_ctx_vc_set_swap_interval(&vc->egl, vc->egl.interval);
 
