@@ -210,4 +210,11 @@ else ifeq ($(LIBRETRO), dosbox)
 	APP_ICON            = ctr/assets/dosbox.png
 	APP_BANNER          = ctr/assets/dosbox_banner.png
 
+else ifeq ($(LIBRETRO), fuse)
+	APP_TITLE           = Fuse
+	APP_PRODUCT_CODE    = RARCH-FUSE
+	APP_UNIQUE_ID       = 0xBAC1C
+	APP_ICON            = ctr/assets/fuse.png
+	APP_BANNER          = ctr/assets/fuse_banner.png
+
 endif
