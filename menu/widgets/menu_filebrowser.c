@@ -110,8 +110,9 @@ void filebrowser_parse(void *data, unsigned type_data)
          ? msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE)
          : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND);
 
-      menu_entries_append_enum(info->list, str, "",
-            MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND, 0, 0, 0);
+      if (info)
+         menu_entries_append_enum(info->list, str, "",
+               MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND, 0, 0, 0);
       goto end;
    }
 
