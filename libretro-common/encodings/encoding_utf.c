@@ -352,8 +352,14 @@ char* local_to_utf8_string_alloc(const char *str)
 /* Returned pointer MUST be freed by the caller if non-NULL. */
 wchar_t* utf8_to_utf16_string_alloc(const char *str)
 {
-   size_t len, out_len;
-   wchar_t *buf;
+#ifdef _WIN32
+   int len = 0;
+   int out_len = 0;
+#else
+   size_t len = 0;
+   size_t out_len = 0;
+#endif
+   wchar_t *buf = NULL;
 
    if (!str || !*str)
       return NULL;
@@ -361,23 +367,41 @@ wchar_t* utf8_to_utf16_string_alloc(const char *str)
 #ifdef _WIN32
    len = MultiByteToWideChar(CP_UTF8, 0, str, -1, NULL, 0);
 
-   buf = (wchar_t*)calloc(len, sizeof(wchar_t));
+   if (len)
+   {
+      buf = (wchar_t*)calloc(len, sizeof(wchar_t));
+      
+      if (!buf)
+         return NULL;
 
-   out_len = MultiByteToWideChar(CP_UTF8, 0, str, -1, buf, len);
-#else
-   /* NOTE: For now, assume non-Windows platforms' locale is already UTF-8. */
-   len = mbstowcs(NULL, str, 0) + 1;
-
-   buf = (wchar_t*)calloc(len, sizeof(wchar_t));
-
-   out_len = mbstowcs(buf, str, len);
-#endif
+      out_len = MultiByteToWideChar(CP_UTF8, 0, str, -1, buf, len);
+   }
 
    if (out_len < 0)
    {
       free(buf);
       return NULL;
    }
+#else
+   /* NOTE: For now, assume non-Windows platforms' locale is already UTF-8. */
+   len = mbstowcs(NULL, str, 0) + 1;
+
+   if (len)
+   {
+      buf = (wchar_t*)calloc(len, sizeof(wchar_t));
+      
+      if (!buf)
+         return NULL;
+
+      out_len = mbstowcs(buf, str, len);
+   }
+
+   if (out_len == (size_t)-1)
+   {
+      free(buf);
+      return NULL;
+   }
+#endif
 
    return buf;
 }
@@ -385,8 +409,14 @@ wchar_t* utf8_to_utf16_string_alloc(const char *str)
 /* Returned pointer MUST be freed by the caller if non-NULL. */
 char* utf16_to_utf8_string_alloc(const wchar_t *str)
 {
-   size_t len, out_len;
-   char *buf;
+#ifdef _WIN32
+   int len = 0;
+   int out_len = 0;
+#else
+   size_t len = 0;
+   size_t out_len = 0;
+#endif
+   char *buf = NULL;
 
    if (!str || !*str)
       return NULL;
@@ -394,23 +424,41 @@ char* utf16_to_utf8_string_alloc(const wchar_t *str)
 #ifdef _WIN32
    len = WideCharToMultiByte(CP_UTF8, 0, str, -1, NULL, 0, NULL, NULL);
 
-   buf = (char*)calloc(len, sizeof(char));
+   if (len)
+   {
+      buf = (char*)calloc(len, sizeof(char));
 
-   out_len = WideCharToMultiByte(CP_UTF8, 0, str, -1, buf, len, NULL, NULL);
-#else
-   /* NOTE: For now, assume non-Windows platforms' locale is already UTF-8. */
-   len = wcstombs(NULL, str, 0) + 1;
+      if (!buf)
+         return NULL;
 
-   buf = (char*)calloc(len, sizeof(char));
-
-   out_len = wcstombs(buf, str, len);
-#endif
+      out_len = WideCharToMultiByte(CP_UTF8, 0, str, -1, buf, len, NULL, NULL);
+   }
 
    if (out_len < 0)
    {
       free(buf);
       return NULL;
    }
+#else
+   /* NOTE: For now, assume non-Windows platforms' locale is already UTF-8. */
+   len = wcstombs(NULL, str, 0) + 1;
+
+   if (len)
+   {
+      buf = (char*)calloc(len, sizeof(char));
+
+      if (!buf)
+         return NULL;
+
+      out_len = wcstombs(buf, str, len);
+   }
+
+   if (out_len == (size_t)-1)
+   {
+      free(buf);
+      return NULL;
+   }
+#endif
 
    return buf;
 }
