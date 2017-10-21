@@ -3189,13 +3189,19 @@ static int action_ok_option_create(const char *path,
    return 0;
 }
 
+int action_ok_close_content(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   /* This line resets the navigation pointer so the active entry will be "Run" */
+   menu_navigation_set_selection(0);
+   return generic_action_ok_command(CMD_EVENT_UNLOAD_CORE);
+}
+
 #define default_action_ok_cmd_func(func_name, cmd) \
 int (func_name)(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx) \
 { \
    return generic_action_ok_command(cmd); \
 }
 
-default_action_ok_cmd_func(action_ok_close_content,      CMD_EVENT_UNLOAD_CORE)
 default_action_ok_cmd_func(action_ok_quit,               CMD_EVENT_QUIT)
 default_action_ok_cmd_func(action_ok_save_new_config,    CMD_EVENT_MENU_SAVE_CONFIG)
 default_action_ok_cmd_func(action_ok_resume_content,     CMD_EVENT_RESUME)
