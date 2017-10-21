@@ -14,10 +14,14 @@ add_define_make()
 { echo "$1=$2" >> "$MAKEFILE_DEFINES";}
 
 add_include_dirs()
-{	while [ "$1" ]; do INCLUDE_DIRS="$INCLUDE_DIRS -I$1"; shift; done;}
+{	while [ "$1" ]; do INCLUDE_DIRS="$INCLUDE_DIRS -I$1"; shift; done
+	INCLUDE_DIRS="${INCLUDE_DIRS#* }"
+}
 
 add_library_dirs()
-{	while [ "$1" ]; do LIBRARY_DIRS="$LIBRARY_DIRS -L$1"; shift; done;}
+{	while [ "$1" ]; do LIBRARY_DIRS="$LIBRARY_DIRS -L$1"; shift; done
+	LIBRARY_DIRS="${LIBRARY_DIRS#* }"
+}
 
 check_lib()	#$1 = HAVE_$1	$2 = lib	$3 = function in lib	$4 = extralibs $5 = headers
 {	tmpval="$(eval echo \$HAVE_$1)"
