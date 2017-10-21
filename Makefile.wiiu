@@ -64,11 +64,12 @@ else
 	HAVE_NETWORKING = 1
 	HAVE_CHEEVOS = 1
 #	WANT_IFADDRS = 1
+	HAVE_OVERLAY = 1
 
 	include Makefile.common
 	BLACKLIST :=
-	BLACKLIST += input/input_overlay.o
-	BLACKLIST += tasks/task_overlay.o
+#	BLACKLIST += input/input_overlay.o
+#	BLACKLIST += tasks/task_overlay.o
 	BLACKLIST += $(LIBRETRO_COMM_DIR)/net/net_ifinfo.o
 	OBJ := $(filter-out $(BLACKLIST),$(OBJ))
 

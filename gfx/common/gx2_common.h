@@ -43,6 +43,14 @@ typedef struct
    float v;
 }tex_coord_t;
 
+struct gx2_overlay_data
+{
+   GX2Texture tex;
+   float tex_coord[8];
+   float vertex_coord[8];
+   float alpha_mod;
+};
+
 typedef struct
 {
    tex_shader_t* shader;
@@ -55,6 +63,13 @@ typedef struct
       position_t* position;
       tex_coord_t* tex_coord;
    } menu;
+
+#ifdef HAVE_OVERLAY
+   struct gx2_overlay_data *overlay;
+   unsigned overlays;
+   bool overlay_enable;
+   bool overlay_full_screen;
+#endif
 
    GX2Sampler sampler_nearest;
    GX2Sampler sampler_linear;
