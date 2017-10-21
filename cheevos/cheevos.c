@@ -2157,14 +2157,14 @@ void cheevos_populate_menu(void *data, bool hardcore)
          {
             menu_entries_append_enum(info->list, cheevo->title,
                   cheevo->description, MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY,
-                  MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
+                  MENU_SETTINGS_CHEEVOS_START + i, 0, atoi(cheevo->badge));
             items_found++;
          }
          else
          {
             menu_entries_append_enum(info->list, cheevo->title,
                   cheevo->description, MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY,
-                  MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
+                  MENU_SETTINGS_CHEEVOS_START + i, 0, atoi(cheevo->badge));
             items_found++;
          }
       }
@@ -3337,8 +3337,12 @@ static int cheevos_iterate(coro_t* coro)
          else
             RARCH_ERR("[CHEEVOS]: error deactivating unlocked achievements in softcore mode.\n");
 
+<<<<<<< HEAD
          if ((void*)CHEEVOS_VAR_JSON)
             free((void*)CHEEVOS_VAR_JSON);
+=======
+         free((void*)CHEEVOS_VAR_JSON);
+>>>>>>> Initial test for badge icon
       }
       else
          RARCH_ERR("[CHEEVOS]: error retrieving list of unlocked achievements in softcore mode.\n");
@@ -3366,8 +3370,12 @@ static int cheevos_iterate(coro_t* coro)
          else
             RARCH_ERR("[CHEEVOS]: error deactivating unlocked achievements in hardcore mode.\n");
 
+<<<<<<< HEAD
          if ((void*)CHEEVOS_VAR_JSON)
             free((void*)CHEEVOS_VAR_JSON);
+=======
+         free((void*)CHEEVOS_VAR_JSON);
+>>>>>>> Initial test for badge icon
       }
       else
          RARCH_ERR("[CHEEVOS]: error retrieving list of unlocked achievements in hardcore mode.\n");
