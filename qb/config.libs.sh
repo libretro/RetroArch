@@ -520,6 +520,6 @@ fi
 
 # Creates config.mk and config.h.
 add_define_make GLOBAL_CONFIG_DIR "$GLOBAL_CONFIG_DIR"
-VARS=$(eval set | grep ^HAVE_ | sed s/=.*// | sed s/^HAVE_//)
-create_config_make config.mk $VARS
-create_config_header config.h $VARS
+VARS=$(eval set | grep ^HAVE_ | sed 's/=.*//' | sed 's/^HAVE_//')
+create_config_make config.mk $(printf %s "$VARS")
+create_config_header config.h $(printf %s "$VARS")
