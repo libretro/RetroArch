@@ -78,9 +78,9 @@ fi
 [ -n "$PKG_CONF_PATH" ] || {
 	PKG_CONF_PATH="none"
 
-	for path in $(which "${CROSS_COMPILE}pkg-config" 2>/dev/null) ''; do
-		[ -n "$path" ] && {
-			PKG_CONF_PATH=$path;
+	for p in $(which "${CROSS_COMPILE}pkg-config" 2>/dev/null) ''; do
+		[ -n "$p" ] && {
+			PKG_CONF_PATH=$p;
 			break;
 		}
 	done
