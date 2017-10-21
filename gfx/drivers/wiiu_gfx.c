@@ -441,7 +441,11 @@ static void wiiu_gfx_free(void* data)
 
    if (!wiiu)
       return;
-
+   
+#ifdef HAVE_OVERLAY
+   gx2_free_overlay(wiiu);
+#endif
+   
    /* clear leftover image */
    GX2ClearColor(&wiiu->color_buffer, 0.0f, 0.0f, 0.0f, 1.0f);
    GX2CopyColorBufferToScanBuffer(&wiiu->color_buffer, GX2_SCAN_TARGET_DRC);
