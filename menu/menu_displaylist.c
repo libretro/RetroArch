@@ -2839,7 +2839,8 @@ static int menu_displaylist_parse_load_content_settings(
                MENU_SETTING_ACTION_SCREENSHOT, 0, 0);
       }
 
-      if (settings->bools.quick_menu_show_save_load_state)
+      if (settings->bools.quick_menu_show_save_load_state &&
+          ! settings->bools.cheevos_hardcore_mode_enable)
       {
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_STATE_SLOT, PARSE_ONLY_INT, true);
@@ -2858,7 +2859,8 @@ static int menu_displaylist_parse_load_content_settings(
       }
 
       if (settings->bools.quick_menu_show_save_load_state &&
-          settings->bools.quick_menu_show_undo_save_load_state)
+          settings->bools.quick_menu_show_undo_save_load_state &&
+          ! settings->bools.cheevos_hardcore_mode_enable)
       {
 #ifdef HAVE_LAKKA
          if (show_advanced_settings)
