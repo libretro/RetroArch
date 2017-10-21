@@ -2866,17 +2866,18 @@ static int cheevos_iterate(coro_t* coro)
       /* Negative values because CORO_SUB generates positive values */
       SNES_MD5    = -1,
       GENESIS_MD5 = -2,
-      NES_MD5     = -3,
-      GENERIC_MD5 = -4,
-      EVAL_MD5    = -5,
-      FILL_MD5    = -6,
-      GET_GAMEID  = -7,
-      GET_CHEEVOS = -8,
-      LOGIN       = -9,
-      HTTP_GET    = -10,
-      DEACTIVATE  = -11,
-      PLAYING     = -12,
-      DELAY       = -13,
+      LYNX_MD5    = -3,
+      NES_MD5     = -4,
+      GENERIC_MD5 = -5,
+      EVAL_MD5    = -6,
+      FILL_MD5    = -7,
+      GET_GAMEID  = -8,
+      GET_CHEEVOS = -9,
+      LOGIN       = -10,
+      HTTP_GET    = -11,
+      DEACTIVATE  = -12,
+      PLAYING     = -13,
+      DELAY       = -14,
    };
 
    static const uint32_t genesis_exts[] =
@@ -2907,12 +2908,19 @@ static int cheevos_iterate(coro_t* coro)
       0
    };
 
+   static const uint32_t lynx_exts[] =
+   {
+      0x0b888cf7U, /* lnx */
+      0
+   };
+
    static cheevos_finder_t finders[] =
    {
-      {SNES_MD5,    "SNES (8Mb padding)",      snes_exts},
-      {GENESIS_MD5, "Genesis (6Mb padding)",   genesis_exts},
-      {NES_MD5,     "NES (discards VROM)",     NULL},
-      {GENERIC_MD5, "Generic (plain content)", NULL},
+      {SNES_MD5,    "SNES (8Mb padding)",                snes_exts},
+      {GENESIS_MD5, "Genesis (6Mb padding)",             genesis_exts},
+      {LYNX_MD5,    "Atari Lynx (only first 512 bytes)", lynx_exts},
+      {NES_MD5,     "NES (discards VROM)",               NULL},
+      {GENERIC_MD5, "Generic (plain content)",           NULL},
    };
 
    CORO_ENTER()
@@ -3204,6 +3212,28 @@ static int cheevos_iterate(coro_t* coro)
          CHEEVOS_VAR_COUNT = CHEEVOS_SIX_MB - CHEEVOS_VAR_COUNT;
          CORO_GOSUB(FILL_MD5);
       }
+
+      MD5_Final(CHEEVOS_VAR_HASH, &CHEEVOS_VAR_MD5);
+      CORO_GOTO(GET_GAMEID);
+
+   /**************************************************************************
+    * Info   Tries to identify an Atari Lynx game
+    * Input  CHEEVOS_VAR_INFO the content info
+    * Output CHEEVOS_VAR_GAMEID the Retro Achievements game ID, or 0 if not found
+    *************************************************************************/
+   CORO_SUB(LYNX_MD5)
+   
+      if (CHEEVOS_VAR_LEN < 0x0240)
+      {
+         CHEEVOS_VAR_GAMEID = 0;
+         CORO_RET();
+      }
+
+      MD5_Init(&CHEEVOS_VAR_MD5);
+
+      CHEEVOS_VAR_OFFSET = 0x0040;
+      CHEEVOS_VAR_COUNT  = 0x0200;
+      CORO_GOSUB(EVAL_MD5);
 
       MD5_Final(CHEEVOS_VAR_HASH, &CHEEVOS_VAR_MD5);
       CORO_GOTO(GET_GAMEID);
