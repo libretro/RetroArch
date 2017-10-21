@@ -266,8 +266,10 @@ create_config_make()
 			
 			case "$PKG_CONF_USED" in
 				*$1*)
-					echo "$1_CFLAGS = $(eval echo \$$1_CFLAGS)"
-					echo "$1_LIBS = $(eval echo \$$1_LIBS)"
+					FLAGS="$(eval echo \$$1_CFLAGS)"
+					LIBS="$(eval echo \$$1_LIBS)"
+					echo "$1_CFLAGS = ${FLAGS%"${FLAGS##*[! ]}"}"
+					echo "$1_LIBS = ${LIBS%"${LIBS##*[! ]}"}"
 				;;
 			esac
 			shift
