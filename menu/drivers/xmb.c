@@ -61,6 +61,8 @@
 
 #include "../../tasks/tasks_internal.h"
 
+#include "../../cheevos/badges.h"
+
 #define XMB_RIBBON_ROWS 64
 #define XMB_RIBBON_COLS 64
 #define XMB_RIBBON_VERTICES 2*XMB_RIBBON_COLS*XMB_RIBBON_ROWS-2*XMB_RIBBON_COLS
@@ -251,15 +253,6 @@ typedef struct xmb_handle
       menu_texture_item bg;
       menu_texture_item list[XMB_TEXTURE_LAST];
    } textures;
-
-#ifdef HAVE_CHEEVOS
-  struct
-  {
-    size_t current_badge;
-    menu_texture_item test;
-    menu_texture_item list[XMB_TEXTURE_LAST];
-  } badges;
-#endif
 
    xmb_node_t main_menu_node;
 #ifdef HAVE_IMAGEVIEWER
@@ -2252,13 +2245,9 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
   if ((type >= MENU_SETTINGS_CHEEVOS_START) &&
     (type < MENU_SETTINGS_NETPLAY_ROOMS_START))
     {
-      unsigned new_id        = type - MENU_SETTINGS_CHEEVOS_START;
-      int bufferSize = 16;
-      char new_str[bufferSize];
-      snprintf(new_str, bufferSize, "%05d", (int)xmb->badges.current_badge);
-      strcat(new_str, ".png");
-      menu_display_reset_textures_list(new_str, "badges", &xmb->badges.list[new_id], TEXTURE_FILTER_MIPMAP_LINEAR);
-      return xmb->badges.list[new_id];
+      //return badges_ctx.menu_texture_list[type - MENU_SETTINGS_CHEEVOS_START];
+      int new_id = type - MENU_SETTINGS_CHEEVOS_START;
+      return get_badge_texture( new_id );
     }
 #endif
 
@@ -2489,10 +2478,6 @@ static int xmb_draw_item(
 
    if (color[3] != 0)
    {
-#ifdef HAVE_CHEEVOS
-  xmb->badges.current_badge = entry->entry_idx;
-#endif
-
       math_matrix_4x4 mymat_tmp;
       menu_display_ctx_rotate_draw_t rotate_draw;
       uintptr_t texture        = xmb_icon_get_id(xmb, core_node, node,

@@ -35,6 +35,7 @@
 #include "../menu/menu_entries.h"
 #endif
 
+#include "badges.h"
 #include "cheevos.h"
 #include "var.h"
 #include "cond.h"
@@ -2157,16 +2158,17 @@ void cheevos_populate_menu(void *data, bool hardcore)
          {
             menu_entries_append_enum(info->list, cheevo->title,
                   cheevo->description, MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY,
-                  MENU_SETTINGS_CHEEVOS_START + i, 0, atoi(cheevo->badge));
+                  MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
             items_found++;
          }
          else
          {
             menu_entries_append_enum(info->list, cheevo->title,
                   cheevo->description, MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY,
-                  MENU_SETTINGS_CHEEVOS_START + i, 0, atoi(cheevo->badge));
+                  MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
             items_found++;
          }
+         set_badge_info(&badges_ctx, i, cheevo->badge, (cheevo->active & CHEEVOS_ACTIVE_SOFTCORE));
       }
       else
       {
@@ -2184,6 +2186,7 @@ void cheevos_populate_menu(void *data, bool hardcore)
                   MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
             items_found++;
          }
+         set_badge_info(&badges_ctx, i, cheevo->badge, (cheevo->active & CHEEVOS_ACTIVE_HARDCORE));
       }
    }
 
