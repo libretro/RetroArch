@@ -2861,6 +2861,7 @@ static int cheevos_iterate(coro_t* coro)
    size_t to_read   = 4096;
    uint8_t *buffer  = NULL;
    const char *end  = NULL;
+   
    enum
    {
       /* Negative values because CORO_SUB generates positive values */
@@ -2877,7 +2878,7 @@ static int cheevos_iterate(coro_t* coro)
       HTTP_GET    = -11,
       DEACTIVATE  = -12,
       PLAYING     = -13,
-      DELAY       = -14,
+      DELAY       = -14
    };
 
    static const uint32_t genesis_exts[] =
@@ -2920,7 +2921,7 @@ static int cheevos_iterate(coro_t* coro)
       {GENESIS_MD5, "Genesis (6Mb padding)",             genesis_exts},
       {LYNX_MD5,    "Atari Lynx (only first 512 bytes)", lynx_exts},
       {NES_MD5,     "NES (discards VROM)",               NULL},
-      {GENERIC_MD5, "Generic (plain content)",           NULL},
+      {GENERIC_MD5, "Generic (plain content)",           NULL}
    };
 
    CORO_ENTER()
