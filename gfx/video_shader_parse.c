@@ -538,7 +538,8 @@ bool video_shader_resolve_parameters(config_file_t *conf,
       /* If that doesn't work, fallback to the old path.
        * Ideally, we'd get rid of this path sooner or later. */
 #endif
-      file = filestream_open(path, RFILE_MODE_READ_TEXT, -1);
+	  if (!string_is_empty(path))
+         file = filestream_open(path, RFILE_MODE_READ_TEXT, -1);
 
       if (!file)
       {
