@@ -148,23 +148,14 @@ fi
    add_define_make libretro "$LIBRETRO"
 }
 
-if [ "$ASSETS_DIR" ]; then
-   add_define_make ASSETS_DIR "$ASSETS_DIR"
-else
-   add_define_make ASSETS_DIR "${PREFIX}/share"
-fi
+[ -z "$ASSETS_DIR" ] && ASSETS_DIR="${PREFIX}/share"
+add_define_make ASSETS_DIR "$ASSETS_DIR"
 
-if [ "$BIN_DIR" ]; then
-   add_define_make BIN_DIR "$BIN_DIR"
-else
-   add_define_make BIN_DIR "${PREFIX}/bin"
-fi
+[ -z "$BIN_DIR" ] && BIN_DIR="${PREFIX}/bin"
+add_define_make BIN_DIR "$BIN_DIR"
 
-if [ "$MAN_DIR" ]; then
-   add_define_make MAN_DIR "$MAN_DIR"
-else
-   add_define_make MAN_DIR "${PREFIX}/share/man"
-fi
+[ -z "$MAN_DIR" ] && MAN_DIR="${PREFIX}/share/man"
+add_define_make MAN_DIR "$MAN_DIR"
 
 if [ "$OS" = 'DOS' ]; then
    HAVE_SHADERPIPELINE=no
