@@ -41,7 +41,6 @@ fi
 
 add_define_make DYLIB_LIB "$DYLIB"
 
-[ "$OS" = 'Darwin' ] && HAVE_X11=no # X11 breaks on recent OSXes even if present.
 check_lib SYSTEMD -lsystemd sd_get_machine_names
 
 if [ "$HAVE_VIDEOCORE" != "no" ]; then
@@ -155,23 +154,14 @@ fi
    add_define_make libretro "$LIBRETRO"
 }
 
-if [ "$ASSETS_DIR" ]; then
-   add_define_make ASSETS_DIR "$ASSETS_DIR"
-else
-   add_define_make ASSETS_DIR "${PREFIX}/share"
-fi
+[ -z "$ASSETS_DIR" ] && ASSETS_DIR="${PREFIX}/share"
+add_define_make ASSETS_DIR "$ASSETS_DIR"
 
-if [ "$BIN_DIR" ]; then
-   add_define_make BIN_DIR "$BIN_DIR"
-else
-   add_define_make BIN_DIR "${PREFIX}/bin"
-fi
+[ -z "$BIN_DIR" ] && BIN_DIR="${PREFIX}/bin"
+add_define_make BIN_DIR "$BIN_DIR"
 
-if [ "$MAN_DIR" ]; then
-   add_define_make MAN_DIR "$MAN_DIR"
-else
-   add_define_make MAN_DIR "${PREFIX}/share/man"
-fi
+[ -z "$MAN_DIR" ] && MAN_DIR="${PREFIX}/share/man"
+add_define_make MAN_DIR "$MAN_DIR"
 
 if [ "$OS" = 'DOS' ]; then
    HAVE_SHADERPIPELINE=no
@@ -207,7 +197,7 @@ if [ "$HAVE_NETWORKING" = 'yes' ]; then
       check_lib GETADDRINFO "$SOCKETLIB" getaddrinfo
       if [ "$HAVE_GETADDRINFO" != 'yes' ]; then
          HAVE_SOCKET_LEGACY=yes
-		 echo "Notice: RetroArch will use legacy socket support"
+         echo "Notice: RetroArch will use legacy socket support"
       fi
    fi
    HAVE_NETWORK_CMD=yes
@@ -254,7 +244,14 @@ if [ "$OS" = 'Linux' ]; then
 fi
 
 if [ "$OS" = 'Darwin' ]; then
+   check_lib COREAUDIO "-framework AudioUnit" AudioUnitInitialize
+   check_lib CORETEXT "-framework CoreText" CTFontCreateWithName
+   check_lib COCOA "-framework AppKit" NSApplicationMain
+   check_lib AVFOUNDATION "-framework AVFoundation"
+   check_lib CORELOCATION "-framework CoreLocation"
+   check_lib IOHIDMANAGER "-framework IOKit" IOHIDManagerCreate
    check_lib AL "-framework OpenAL" alcOpenDevice
+   HAVE_X11=no # X11 breaks on recent OSXes even if present.
    HAVE_SDL=no
 else
    check_lib AL -lopenal alcOpenDevice
@@ -264,18 +261,6 @@ check_pkgconf RSOUND rsound 1.1
 check_pkgconf ROAR libroar
 check_pkgconf JACK jack 0.120.1
 check_pkgconf PULSE libpulse
-
-if [ "$OS" = 'Darwin' ]; then
-check_lib COREAUDIO "-framework AudioUnit" AudioUnitInitialize
-
-check_lib CORETEXT "-framework CoreText" CTFontCreateWithName
-
-check_lib COCOA "-framework AppKit" NSApplicationMain
-check_lib AVFOUNDATION "-framework AVFoundation"
-check_lib CORELOCATION "-framework CoreLocation"
-check_lib IOHIDMANAGER "-framework IOKit" IOHIDManagerCreate
-fi
-
 check_pkgconf SDL sdl 1.2.10
 check_pkgconf SDL2 sdl2 2.0.0
 
@@ -506,7 +491,6 @@ if [ "$HAVE_MATERIALUI" != 'no' ] || [ "$HAVE_XMB" != 'no' ] || [ "$HAVE_ZARCH" 
     fi
 	fi
 fi
-
 
 check_macro NEON __ARM_NEON__
 
