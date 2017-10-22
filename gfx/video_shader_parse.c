@@ -525,21 +525,27 @@ bool video_shader_resolve_parameters(config_file_t *conf,
       char *line       = (char*)malloc(4096 * sizeof(char));
       const char *path = shader->pass[i].source.path;
 
+	  if (string_is_empty(path))
+	  {
+		  free(line);
+		  continue;
+	  }
+
 #ifdef HAVE_SLANG
       /* First try to use the more robust slang implementation to support #includes. */
       /* FIXME: The check for slang can be removed if it's sufficiently tested for
        * GLSL/Cg as well, it should be the same implementation. */
-      if (!string_is_empty(path) && (string_is_equal_fast(path_get_extension(path), "slang", 5)) &&
+      if (string_is_equal_fast(path_get_extension(path), "slang", 5) &&
             slang_preprocess_parse_parameters(shader->pass[i].source.path, shader))
       {
          free(line);
          continue;
       }
+
       /* If that doesn't work, fallback to the old path.
        * Ideally, we'd get rid of this path sooner or later. */
 #endif
-	  if (!string_is_empty(path))
-         file = filestream_open(path, RFILE_MODE_READ_TEXT, -1);
+      file = filestream_open(path, RFILE_MODE_READ_TEXT, -1);
 
       if (!file)
       {
