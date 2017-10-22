@@ -36,6 +36,7 @@
 #endif
 
 #include "cheevos.h"
+#include "var.h"
 
 #include "../command.h"
 #include "../dynamic.h"
@@ -61,9 +62,6 @@
 
 /* Define this macro to remove HTTP timeouts. */
 #undef CHEEVOS_NO_TIMEOUT
-
-/* Define this macro to get extra-verbose log for cheevos. */
-#undef CHEEVOS_VERBOSE
 
 /* Define this macro to load a JSON file from disk instead of downloading
  * from retroachievements.org. */
@@ -99,60 +97,6 @@
 #define CHEEVOS_SIX_MB     ( 6 * 1024 * 1024)
 #define CHEEVOS_EIGHT_MB   ( 8 * 1024 * 1024)
 #define CHEEVOS_SIZE_LIMIT (64 * 1024 * 1024)
-
-enum
-{
-   /* Don't change those, the values match the console IDs
-    * at retroachievements.org. */
-   CHEEVOS_CONSOLE_MEGA_DRIVE       = 1,
-   CHEEVOS_CONSOLE_NINTENDO_64      = 2,
-   CHEEVOS_CONSOLE_SUPER_NINTENDO   = 3,
-   CHEEVOS_CONSOLE_GAMEBOY          = 4,
-   CHEEVOS_CONSOLE_GAMEBOY_ADVANCE  = 5,
-   CHEEVOS_CONSOLE_GAMEBOY_COLOR    = 6,
-   CHEEVOS_CONSOLE_NINTENDO         = 7,
-   CHEEVOS_CONSOLE_PC_ENGINE        = 8,
-   CHEEVOS_CONSOLE_SEGA_CD          = 9,
-   CHEEVOS_CONSOLE_SEGA_32X         = 10,
-   CHEEVOS_CONSOLE_MASTER_SYSTEM    = 11
-};
-
-enum
-{
-   CHEEVOS_VAR_SIZE_BIT_0 = 0,
-   CHEEVOS_VAR_SIZE_BIT_1,
-   CHEEVOS_VAR_SIZE_BIT_2,
-   CHEEVOS_VAR_SIZE_BIT_3,
-   CHEEVOS_VAR_SIZE_BIT_4,
-   CHEEVOS_VAR_SIZE_BIT_5,
-   CHEEVOS_VAR_SIZE_BIT_6,
-   CHEEVOS_VAR_SIZE_BIT_7,
-   CHEEVOS_VAR_SIZE_NIBBLE_LOWER,
-   CHEEVOS_VAR_SIZE_NIBBLE_UPPER,
-   /* Byte, */
-   CHEEVOS_VAR_SIZE_EIGHT_BITS, /* =Byte, */
-   CHEEVOS_VAR_SIZE_SIXTEEN_BITS,
-   CHEEVOS_VAR_SIZE_THIRTYTWO_BITS,
-
-   CHEEVOS_VAR_SIZE_LAST
-}; /* cheevos_var_t.size */
-
-enum
-{
-   /* compare to the value of a live address in RAM */
-   CHEEVOS_VAR_TYPE_ADDRESS = 0,
-
-   /* a number. assume 32 bit */
-   CHEEVOS_VAR_TYPE_VALUE_COMP,
-
-   /* the value last known at this address. */
-   CHEEVOS_VAR_TYPE_DELTA_MEM,
-
-   /* a custom user-set variable */
-   CHEEVOS_VAR_TYPE_DYNAMIC_VAR,
-
-   CHEEVOS_VAR_TYPE_LAST
-}; /* cheevos_var_t.type */
 
 enum
 {
@@ -918,44 +862,6 @@ static int cheevos_count_cheevos(const char *json,
 Parse the MemAddr field.
 *****************************************************************************/
 
-static unsigned cheevos_prefix_to_comp_size(char prefix)
-{
-   /* Careful not to use ABCDEF here, this denotes part of an actual variable! */
-
-   switch( toupper( (unsigned char)prefix ) )
-   {
-      case 'M':
-         return CHEEVOS_VAR_SIZE_BIT_0;
-      case 'N':
-         return CHEEVOS_VAR_SIZE_BIT_1;
-      case 'O':
-         return CHEEVOS_VAR_SIZE_BIT_2;
-      case 'P':
-         return CHEEVOS_VAR_SIZE_BIT_3;
-      case 'Q':
-         return CHEEVOS_VAR_SIZE_BIT_4;
-      case 'R':
-         return CHEEVOS_VAR_SIZE_BIT_5;
-      case 'S':
-         return CHEEVOS_VAR_SIZE_BIT_6;
-      case 'T':
-         return CHEEVOS_VAR_SIZE_BIT_7;
-      case 'L':
-         return CHEEVOS_VAR_SIZE_NIBBLE_LOWER;
-      case 'U':
-         return CHEEVOS_VAR_SIZE_NIBBLE_UPPER;
-      case 'H':
-         return CHEEVOS_VAR_SIZE_EIGHT_BITS;
-      case 'X':
-         return CHEEVOS_VAR_SIZE_THIRTYTWO_BITS;
-      default:
-      case ' ':
-         break;
-   }
-
-   return CHEEVOS_VAR_SIZE_SIXTEEN_BITS;
-}
-
 static unsigned cheevos_read_hits(const char **memaddr)
 {
    char *end         = NULL;
@@ -1022,203 +928,6 @@ static unsigned cheevos_parse_operator(const char **memaddr)
    return op;
 }
 
-static size_t cheevos_reduce(size_t addr, size_t mask)
-{
-   while (mask)
-   {
-      size_t tmp = (mask - 1) & ~mask;
-      addr = (addr & tmp) | ((addr >> 1) & ~tmp);
-      mask = (mask & (mask - 1)) >> 1;
-   }
-
-   return addr;
-}
-
-static size_t cheevos_highest_bit(size_t n)
-{
-   n |= n >>  1;
-   n |= n >>  2;
-   n |= n >>  4;
-   n |= n >>  8;
-   n |= n >> 16;
-
-   return n ^ (n >> 1);
-}
-
-void cheevos_parse_guest_addr(cheevos_var_t *var, unsigned value)
-{
-   rarch_system_info_t *system = runloop_get_system_info();
-
-   var->bank_id = -1;
-   var->value   = value;
-
-   switch (cheevos_locals.console_id)
-   {
-      case CHEEVOS_CONSOLE_NINTENDO:
-         if (var->value >= 0x0800 && var->value < 0x2000)
-         {
-#ifdef CHEEVOS_VERBOSE
-            RARCH_LOG("[CHEEVOS]: NES memory address in mirrorred RAM %X, adjusted to %X\n", var->value, var->value & 0x07ff);
-#endif
-            var->value &= 0x07ff;
-         }
-         break;
-
-      case CHEEVOS_CONSOLE_GAMEBOY_COLOR:
-         if (var->value >= 0xe000 && var->value <= 0xfdff)
-         {
-#ifdef CHEEVOS_VERBOSE
-            RARCH_LOG("[CHEEVOS]: GBC memory address in echo RAM %X, adjusted to %X\n", var->value, var->value - 0x2000);
-#endif
-            var->value -= 0x2000;
-         }
-      break;
-   }
-
-   if (system->mmaps.num_descriptors != 0)
-   {
-      const rarch_memory_descriptor_t *desc = NULL;
-      const rarch_memory_descriptor_t *end  = NULL;
-
-      switch (cheevos_locals.console_id)
-      {
-         /* Patch the address to correctly map it to the mmaps */
-         case CHEEVOS_CONSOLE_GAMEBOY_ADVANCE:
-            if (var->value < 0x8000) /* Internal RAM */
-            {
-#ifdef CHEEVOS_VERBOSE
-               RARCH_LOG("[CHEEVOS]: GBA memory address %X adjusted to %X\n", var->value, var->value + 0x3000000);
-#endif
-               var->value += 0x3000000;
-            }
-            else /* Work RAM */
-            {
-#ifdef CHEEVOS_VERBOSE
-               RARCH_LOG("[CHEEVOS]: GBA memory address %X adjusted to %X\n", var->value, var->value + 0x2000000 - 0x8000);
-#endif
-               var->value += 0x2000000 - 0x8000;
-            }
-            break;
-
-         case CHEEVOS_CONSOLE_PC_ENGINE:
-#ifdef CHEEVOS_VERBOSE
-            RARCH_LOG("[CHEEVOS]: PCE memory address %X adjusted to %X\n", var->value, var->value + 0x1f0000);
-#endif
-            var->value += 0x1f0000;
-            break;
-
-         case CHEEVOS_CONSOLE_SUPER_NINTENDO:
-            if (var->value < 0x020000) /* Work RAM */
-            {
-#ifdef CHEEVOS_VERBOSE
-               RARCH_LOG("[CHEEVOS]: SNES memory address %X adjusted to %X\n", var->value, var->value + 0x7e0000);
-#endif
-               var->value += 0x7e0000;
-            }
-            else /* Save RAM */
-            {
-#ifdef CHEEVOS_VERBOSE
-               RARCH_LOG("[CHEEVOS]: SNES memory address %X adjusted to %X\n", var->value, var->value + 0x006000 - 0x020000);
-#endif
-               var->value += 0x006000 - 0x020000;
-            }
-            break;
-
-         default:
-            break;
-      }
-
-      desc = system->mmaps.descriptors;
-      end  = desc + system->mmaps.num_descriptors;
-
-      for (; desc < end; desc++)
-      {
-         if (((desc->core.start ^ var->value) & desc->core.select) == 0)
-         {
-            unsigned addr = var->value;
-            var->bank_id  = (int)(desc - system->mmaps.descriptors);
-            var->value    = (unsigned)cheevos_reduce(
-               (var->value - desc->core.start) & desc->disconnect_mask,
-               desc->core.disconnect);
-
-            if (var->value >= desc->core.len)
-               var->value -= cheevos_highest_bit(var->value);
-
-            var->value += desc->core.offset;
-
-#ifdef CHEEVOS_VERBOSE
-            RARCH_LOG("[CHEEVOS]: Address %X set to descriptor %d at offset %X\n", addr, var->bank_id + 1, var->value);
-#endif
-            break;
-         }
-      }
-   }
-   else
-   {
-      unsigned i;
-
-      for (i = 0; i < ARRAY_SIZE(cheevos_locals.meminfo); i++)
-      {
-         if (var->value < cheevos_locals.meminfo[i].size)
-         {
-            var->bank_id = i;
-            break;
-         }
-
-         /* HACK subtract the correct amount of bytes to reach the save RAM */
-         if (i == 0 && cheevos_locals.console_id == CHEEVOS_CONSOLE_NINTENDO)
-            var->value -= 0x6000;
-         else
-            var->value -= cheevos_locals.meminfo[i].size;
-      }
-   }
-}
-
-static void cheevos_parse_var(cheevos_var_t *var, const char **memaddr)
-{
-   char *end       = NULL;
-   const char *str = *memaddr;
-   unsigned base   = 16;
-
-   if (toupper((unsigned char)*str) == 'D' && str[1] == '0' && toupper((unsigned char)str[2]) == 'X')
-   {
-      /* d0x + 4 hex digits */
-      str += 3;
-      var->type = CHEEVOS_VAR_TYPE_DELTA_MEM;
-   }
-   else if (*str == '0' && toupper((unsigned char)str[1]) == 'X')
-   {
-      /* 0x + 4 hex digits */
-      str += 2;
-      var->type = CHEEVOS_VAR_TYPE_ADDRESS;
-   }
-   else
-   {
-      var->type = CHEEVOS_VAR_TYPE_VALUE_COMP;
-
-      if (toupper((unsigned char)*str) == 'H')
-         str++;
-      else
-      {
-         if (toupper((unsigned char)*str) == 'V')
-            str++;
-
-         base = 10;
-      }
-   }
-
-   if (var->type != CHEEVOS_VAR_TYPE_VALUE_COMP)
-   {
-      var->size = cheevos_prefix_to_comp_size(*str);
-
-      if (var->size != CHEEVOS_VAR_SIZE_SIXTEEN_BITS)
-         str++;
-   }
-
-   var->value = (unsigned)strtol(str, &end, base);
-   *memaddr   = end;
-}
-
 static void cheevos_parse_cond(cheevos_cond_t *cond, const char **memaddr)
 {
    const char* str = *memaddr;
@@ -1253,9 +962,9 @@ static void cheevos_parse_cond(cheevos_cond_t *cond, const char **memaddr)
       str += skip;
    }
 
-   cheevos_parse_var(&cond->source, &str);
+   cheevos_var_parse(&cond->source, &str);
    cond->op = cheevos_parse_operator(&str);
-   cheevos_parse_var(&cond->target, &str);
+   cheevos_var_parse(&cond->target, &str);
    cond->curr_hits = 0;
    cond->req_hits = cheevos_read_hits(&str);
 
@@ -1450,7 +1159,7 @@ static int cheevos_parse_expression(cheevos_expr_t *expr, const char* mem)
 
    for (i = 0, aux = mem; i < expr->count; i++)
    {
-      cheevos_parse_var(&expr->terms[i].var, &aux);
+      cheevos_var_parse(&expr->terms[i].var, &aux);
 
       if (*aux != '*')
       {
@@ -1816,104 +1525,10 @@ error:
 Test all the achievements (call once per frame).
 *****************************************************************************/
 
-uint8_t *cheevos_get_memory(const cheevos_var_t *var)
-{
-   uint8_t *memory = NULL;
-
-   if (var->bank_id >= 0)
-   {
-      rarch_system_info_t *system = runloop_get_system_info();
-
-      if (system->mmaps.num_descriptors != 0)
-         memory = (uint8_t *)system->mmaps.descriptors[var->bank_id].core.ptr;
-      else
-         memory = (uint8_t *)cheevos_locals.meminfo[var->bank_id].data;
-
-      if (memory)
-         memory += var->value;
-   }
-
-   return memory;
-}
-
-static unsigned cheevos_get_var_value(cheevos_var_t *var)
-{
-   if (var->type == CHEEVOS_VAR_TYPE_VALUE_COMP)
-      return var->value;
-
-   if (     var->type == CHEEVOS_VAR_TYPE_ADDRESS
-         || var->type == CHEEVOS_VAR_TYPE_DELTA_MEM)
-   {
-      const uint8_t *memory = cheevos_get_memory(var);
-      unsigned live_val     = 0;
-
-      if (memory)
-      {
-         live_val = memory[0];
-
-         switch (var->size)
-         {
-            case CHEEVOS_VAR_SIZE_BIT_0:
-               live_val &= 1;
-               break;
-            case CHEEVOS_VAR_SIZE_BIT_1:
-               live_val = (live_val >> 1) & 1;
-               break;
-            case CHEEVOS_VAR_SIZE_BIT_2:
-               live_val = (live_val >> 2) & 1;
-               break;
-            case CHEEVOS_VAR_SIZE_BIT_3:
-               live_val = (live_val >> 3) & 1;
-               break;
-            case CHEEVOS_VAR_SIZE_BIT_4:
-               live_val = (live_val >> 4) & 1;
-               break;
-            case CHEEVOS_VAR_SIZE_BIT_5:
-               live_val = (live_val >> 5) & 1;
-               break;
-            case CHEEVOS_VAR_SIZE_BIT_6:
-               live_val = (live_val >> 6) & 1;
-               break;
-            case CHEEVOS_VAR_SIZE_BIT_7:
-               live_val = (live_val >> 7) & 1;
-               break;
-            case CHEEVOS_VAR_SIZE_NIBBLE_LOWER:
-               live_val &= 0x0f;
-               break;
-            case CHEEVOS_VAR_SIZE_NIBBLE_UPPER:
-               live_val = (live_val >> 4) & 0x0f;
-               break;
-            case CHEEVOS_VAR_SIZE_EIGHT_BITS:
-               break;
-            case CHEEVOS_VAR_SIZE_SIXTEEN_BITS:
-               live_val |= memory[1] << 8;
-               break;
-            case CHEEVOS_VAR_SIZE_THIRTYTWO_BITS:
-               live_val |= memory[1] << 8;
-               live_val |= memory[2] << 16;
-               live_val |= memory[3] << 24;
-               break;
-         }
-      }
-
-      if (var->type == CHEEVOS_VAR_TYPE_DELTA_MEM)
-      {
-         unsigned previous = var->previous;
-         var->previous     = live_val;
-         return previous;
-      }
-
-      return live_val;
-   }
-
-   /* We shouldn't get here... */
-   return 0;
-}
-
 static int cheevos_test_condition(cheevos_cond_t *cond)
 {
-   unsigned sval = cheevos_get_var_value(&cond->source) + cheevos_locals.add_buffer;
-   unsigned tval = cheevos_get_var_value(&cond->target);
+   unsigned sval = cheevos_var_get_value(&cond->source) + cheevos_locals.add_buffer;
+   unsigned tval = cheevos_var_get_value(&cond->target);
 
    switch (cond->op)
    {
@@ -1975,14 +1590,14 @@ static int cheevos_test_cond_set(const cheevos_condset_t *condset,
 
       if (cond->type == CHEEVOS_COND_TYPE_ADD_SOURCE)
       {
-         cheevos_locals.add_buffer += cheevos_get_var_value(&cond->source);
+         cheevos_locals.add_buffer += cheevos_var_get_value(&cond->source);
          set_valid &= 1;
          continue;
       }
 
       if (cond->type == CHEEVOS_COND_TYPE_SUB_SOURCE)
       {
-         cheevos_locals.add_buffer -= cheevos_get_var_value(&cond->source);
+         cheevos_locals.add_buffer -= cheevos_var_get_value(&cond->source);
          set_valid &= 1;
          continue;
       }
@@ -2276,7 +1891,7 @@ static int cheevos_expr_value(cheevos_expr_t* expr)
 
    for (i = expr->count; i != 0; i--, term++)
    {
-      value += cheevos_get_var_value(&term->var) * term->multiplier;
+      value += cheevos_var_get_value(&term->var) * term->multiplier;
    }
 
    return value;
@@ -2721,7 +2336,7 @@ static void cheevos_patch_addresses(cheevoset_t* set)
             {
                case CHEEVOS_VAR_TYPE_ADDRESS:
                case CHEEVOS_VAR_TYPE_DELTA_MEM:
-                  cheevos_parse_guest_addr(&cond->source, cond->source.value);
+                  cheevos_var_patch_addr(&cond->source, cheevos_locals.console_id);
 #ifdef CHEEVOS_DUMP_ADDRS
                   RARCH_LOG("[CHEEVOS]: var %03d:%08X\n", cond->source.bank_id + 1, cond->source.value);
 #endif
@@ -2735,7 +2350,7 @@ static void cheevos_patch_addresses(cheevoset_t* set)
             {
                case CHEEVOS_VAR_TYPE_ADDRESS:
                case CHEEVOS_VAR_TYPE_DELTA_MEM:
-                  cheevos_parse_guest_addr(&cond->target, cond->target.value);
+                  cheevos_var_patch_addr(&cond->target, cheevos_locals.console_id);
 #ifdef CHEEVOS_DUMP_ADDRS
                   RARCH_LOG("[CHEEVOS]: var %03d:%08X\n", cond->target.bank_id + 1, cond->target.value);
 #endif
@@ -2786,6 +2401,11 @@ void cheevos_set_support_cheevos(bool state)
 bool cheevos_get_support_cheevos(void)
 {
   return cheevos_locals.core_supports;
+}
+
+cheevos_console_t cheevos_get_console(void)
+{
+   return cheevos_locals.console_id;
 }
 
 typedef struct
@@ -2861,7 +2481,7 @@ static int cheevos_iterate(coro_t* coro)
    size_t to_read   = 4096;
    uint8_t *buffer  = NULL;
    const char *end  = NULL;
-   
+
    enum
    {
       /* Negative values because CORO_SUB generates positive values */

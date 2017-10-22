@@ -23,6 +23,19 @@
 
 RETRO_BEGIN_DECLS
 
+/*****************************************************************************
+Setup - mainly for debugging
+*****************************************************************************/
+
+/* Define this macro to get extra-verbose log for cheevos. */
+#undef CHEEVOS_VERBOSE
+
+/*****************************************************************************
+End of setup
+*****************************************************************************/
+
+#define CHEEVOS_TAG "[CHEEVOS]: "
+
 typedef struct cheevos_ctx_desc
 {
    unsigned idx;
@@ -30,14 +43,24 @@ typedef struct cheevos_ctx_desc
    size_t len;
 } cheevos_ctx_desc_t;
 
-typedef struct
+typedef enum
 {
-   unsigned size;
-   unsigned type;
-   int      bank_id;
-   unsigned value;
-   unsigned previous;
-} cheevos_var_t;
+   /* Don't change those, the values match the console IDs
+    * at retroachievements.org. */
+   CHEEVOS_CONSOLE_MEGA_DRIVE      = 1,
+   CHEEVOS_CONSOLE_NINTENDO_64     = 2,
+   CHEEVOS_CONSOLE_SUPER_NINTENDO  = 3,
+   CHEEVOS_CONSOLE_GAMEBOY         = 4,
+   CHEEVOS_CONSOLE_GAMEBOY_ADVANCE = 5,
+   CHEEVOS_CONSOLE_GAMEBOY_COLOR   = 6,
+   CHEEVOS_CONSOLE_NINTENDO        = 7,
+   CHEEVOS_CONSOLE_PC_ENGINE       = 8,
+   CHEEVOS_CONSOLE_SEGA_CD         = 9,
+   CHEEVOS_CONSOLE_SEGA_32X        = 10,
+   CHEEVOS_CONSOLE_MASTER_SYSTEM   = 11,
+   CHEEVOS_CONSOLE_XBOX_360        = 12,
+   CHEEVOS_CONSOLE_ATARI_LYNX      = 13
+} cheevos_console_t;
 
 bool cheevos_load(const void *data);
 
@@ -61,9 +84,7 @@ void cheevos_set_support_cheevos(bool state);
 
 bool cheevos_get_support_cheevos(void);
 
-void cheevos_parse_guest_addr(cheevos_var_t *var, unsigned value);
-
-uint8_t *cheevos_get_memory(const cheevos_var_t *var);
+cheevos_console_t cheevos_get_console(void);
 
 extern bool cheevos_loaded;
 extern int cheats_are_enabled;
