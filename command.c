@@ -1804,7 +1804,7 @@ bool command_event(enum event_command cmd, void *data)
 #if HAVE_NETWORKING
          netplay_driver_ctl(RARCH_NETPLAY_CTL_RESET, NULL);
 #endif
-         break;
+         return command_event_main_state(cmd);
       case CMD_EVENT_SAVE_STATE:
          {
             settings_t *settings      = config_get_ptr();
