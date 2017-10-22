@@ -37,6 +37,7 @@
 
 #include "cheevos.h"
 #include "var.h"
+#include "cond.h"
 
 #include "../command.h"
 #include "../dynamic.h"
@@ -100,30 +101,6 @@
 
 enum
 {
-   CHEEVOS_COND_OP_EQUALS = 0,
-   CHEEVOS_COND_OP_LESS_THAN,
-   CHEEVOS_COND_OP_LESS_THAN_OR_EQUAL,
-   CHEEVOS_COND_OP_GREATER_THAN,
-   CHEEVOS_COND_OP_GREATER_THAN_OR_EQUAL,
-   CHEEVOS_COND_OP_NOT_EQUAL_TO,
-
-   CHEEVOS_COND_OP_LAST
-}; /* cheevos_cond_t.op */
-
-enum
-{
-   CHEEVOS_COND_TYPE_STANDARD = 0,
-   CHEEVOS_COND_TYPE_PAUSE_IF,
-   CHEEVOS_COND_TYPE_RESET_IF,
-   CHEEVOS_COND_TYPE_ADD_SOURCE,
-   CHEEVOS_COND_TYPE_SUB_SOURCE,
-   CHEEVOS_COND_TYPE_ADD_HITS,
-
-   CHEEVOS_COND_TYPE_LAST
-}; /* cheevos_cond_t.type */
-
-enum
-{
    CHEEVOS_DIRTY_TITLE       = 1 << 0,
    CHEEVOS_DIRTY_DESC        = 1 << 1,
    CHEEVOS_DIRTY_POINTS      = 1 << 2,
@@ -142,17 +119,6 @@ enum
    CHEEVOS_ACTIVE_SOFTCORE = 1 << 0,
    CHEEVOS_ACTIVE_HARDCORE = 1 << 1
 };
-
-typedef struct
-{
-   unsigned type;
-   unsigned req_hits;
-   unsigned curr_hits;
-
-   cheevos_var_t source;
-   unsigned      op;
-   cheevos_var_t target;
-} cheevos_cond_t;
 
 typedef struct
 {
@@ -862,115 +828,6 @@ static int cheevos_count_cheevos(const char *json,
 Parse the MemAddr field.
 *****************************************************************************/
 
-static unsigned cheevos_read_hits(const char **memaddr)
-{
-   char *end         = NULL;
-   const char *str   = *memaddr;
-   unsigned num_hits = 0;
-
-   if (*str == '(' || *str == '.')
-   {
-      num_hits = (unsigned)strtol(str + 1, &end, 10);
-      str      = end + 1;
-   }
-
-   *memaddr = str;
-   return num_hits;
-}
-
-static unsigned cheevos_parse_operator(const char **memaddr)
-{
-   unsigned char op;
-   const char *str = *memaddr;
-
-   if (*str == '=' && str[1] == '=')
-   {
-      op = CHEEVOS_COND_OP_EQUALS;
-      str += 2;
-   }
-   else if (*str == '=')
-   {
-      op = CHEEVOS_COND_OP_EQUALS;
-      str++;
-   }
-   else if (*str == '!' && str[1] == '=')
-   {
-      op = CHEEVOS_COND_OP_NOT_EQUAL_TO;
-      str += 2;
-   }
-   else if (*str == '<' && str[1] == '=')
-   {
-      op = CHEEVOS_COND_OP_LESS_THAN_OR_EQUAL;
-      str += 2;
-   }
-   else if (*str == '<')
-   {
-      op = CHEEVOS_COND_OP_LESS_THAN;
-      str++;
-   }
-   else if (*str == '>' && str[1] == '=')
-   {
-      op = CHEEVOS_COND_OP_GREATER_THAN_OR_EQUAL;
-      str += 2;
-   }
-   else if (*str == '>')
-   {
-      op = CHEEVOS_COND_OP_GREATER_THAN;
-      str++;
-   }
-   else
-   {
-      RARCH_ERR("[CHEEVOS]: Unknown operator %c\n.", *str);
-      op = CHEEVOS_COND_OP_EQUALS;
-   }
-
-   *memaddr = str;
-   return op;
-}
-
-static void cheevos_parse_cond(cheevos_cond_t *cond, const char **memaddr)
-{
-   const char* str = *memaddr;
-   cond->type = CHEEVOS_COND_TYPE_STANDARD;
-
-   if (str[1] == ':')
-   {
-      int skip = 2;
-
-      switch (*str)
-      {
-      case 'R':
-         cond->type = CHEEVOS_COND_TYPE_RESET_IF;
-         break;
-      case 'P':
-         cond->type = CHEEVOS_COND_TYPE_PAUSE_IF;
-         break;
-      case 'A':
-         cond->type = CHEEVOS_COND_TYPE_ADD_SOURCE;
-         break;
-      case 'B':
-         cond->type = CHEEVOS_COND_TYPE_SUB_SOURCE;
-         break;
-      case 'C':
-         cond->type = CHEEVOS_COND_TYPE_ADD_HITS;
-         break;
-      default:
-         skip = 0;
-         break;
-      }
-
-      str += skip;
-   }
-
-   cheevos_var_parse(&cond->source, &str);
-   cond->op = cheevos_parse_operator(&str);
-   cheevos_var_parse(&cond->target, &str);
-   cond->curr_hits = 0;
-   cond->req_hits = cheevos_read_hits(&str);
-
-   *memaddr = str;
-}
-
 static unsigned cheevos_count_cond_sets(const char *memaddr)
 {
    cheevos_cond_t cond;
@@ -982,7 +839,7 @@ static unsigned cheevos_count_cond_sets(const char *memaddr)
 
       for (;;)
       {
-         cheevos_parse_cond(&cond, &memaddr);
+         cheevos_cond_parse(&cond, &memaddr);
 
          if (*memaddr != '_')
             break;
@@ -997,73 +854,6 @@ static unsigned cheevos_count_cond_sets(const char *memaddr)
    }
 
    return count;
-}
-
-static unsigned cheevos_count_conds_in_set(const char *memaddr, unsigned set)
-{
-   cheevos_cond_t cond;
-   unsigned index = 0;
-   unsigned count = 0;
-
-   for (;;)
-   {
-      for (;;)
-      {
-         cheevos_parse_cond(&cond, &memaddr);
-
-         if (index == set)
-            count++;
-
-         if (*memaddr != '_')
-            break;
-
-         memaddr++;
-      }
-
-      index++;
-
-      if (*memaddr != 'S')
-         break;
-
-      memaddr++;
-   }
-
-   return count;
-}
-
-static void cheevos_parse_memaddr(cheevos_cond_t *cond, const char *memaddr, unsigned set)
-{
-   cheevos_cond_t dummy;
-   unsigned index = 0;
-
-   for (;;)
-   {
-      for (;;)
-      {
-         if (index == set)
-         {
-            cheevos_parse_cond(cond, &memaddr);
-#ifdef CHEEVOS_VERBOSE
-            cheevos_log_cond(cond);
-#endif
-            cond++;
-         }
-         else
-            cheevos_parse_cond(&dummy, &memaddr);
-
-         if (*memaddr != '_')
-            break;
-
-         memaddr++;
-      }
-
-      index++;
-
-      if (*memaddr != 'S')
-         break;
-
-      memaddr++;
-   }
 }
 
 static int cheevos_parse_condition(cheevos_condition_t *condition, const char* memaddr)
@@ -1088,7 +878,7 @@ static int cheevos_parse_condition(cheevos_condition_t *condition, const char* m
       for (condset = condition->condsets; condset < end; condset++, set++)
       {
          condset->count =
-            cheevos_count_conds_in_set(memaddr, set);
+            cheevos_cond_count_in_set(memaddr, set);
          condset->conds = NULL;
 
 #ifdef CHEEVOS_VERBOSE
@@ -1112,7 +902,7 @@ static int cheevos_parse_condition(cheevos_condition_t *condition, const char* m
             }
 
             condset->conds = conds;
-            cheevos_parse_memaddr(condset->conds, memaddr, set);
+            cheevos_cond_parse_in_set(condset->conds, memaddr, set);
          }
       }
    }
