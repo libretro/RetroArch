@@ -1,3 +1,14 @@
+die() # $1 = exit code, use : to not exit when printing warnings $@ = exit or warning messages
+{
+	ret="$1"
+	shift 1
+	printf %s\\n "$@" >&2
+	case "$ret" in
+		: ) return 0 ;;
+		* ) exit "$ret" ;;
+	esac
+}
+
 print_help_option() # $1 = option $@ = description
 {
 	_opt="$1"
@@ -54,7 +65,7 @@ opt_exists() # $opt is returned if exists in OPTS
 	err="$2"
 	eval "set -- $OPTS"
 	for OPT do [ "$opt" = "$OPT" ] && return; done
-	echo "Unknown option $err"; exit 1
+	die 1 "Unknown option $err"
 }
 
 parse_input() # Parse stuff :V
@@ -83,7 +94,7 @@ parse_input() # Parse stuff :V
 				eval "$opt=\"$val\""
 			;;
 			-h|--help) print_help; exit 0;;
-			*) echo "Unknown option $1"; exit 1;;
+			*) die 1 "Unknown option $1";;
 		esac
 		shift
 	done
@@ -91,4 +102,4 @@ parse_input() # Parse stuff :V
 
 . qb/config.params.sh
 
-parse_input "$@" 
+parse_input "$@"
