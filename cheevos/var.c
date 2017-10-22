@@ -296,7 +296,7 @@ uint8_t* cheevos_var_get_memory(const cheevos_var_t* var)
          memory = (uint8_t*)system->mmaps.descriptors[var->bank_id].core.ptr;
       else
       {
-         retro_ctx_memory_info_t meminfo;
+         retro_ctx_memory_info_t meminfo = {NULL, 0, 0};
 
          switch (var->bank_id)
          {
