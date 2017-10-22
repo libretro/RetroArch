@@ -910,6 +910,11 @@ static bool task_load_content(content_ctx_info_t *content_info,
                   PATH_MAX_LENGTH * sizeof(char));
       }
 
+#ifdef HAVE_MENU
+      /* Push quick menu onto menu stack */
+      menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
+#endif
+
       if (info && !string_is_empty(tmp))
       {
          const char *core_path      = NULL;
@@ -945,7 +950,7 @@ static bool task_load_content(content_ctx_info_t *content_info,
 
          if (launched_from_cli)
          {
-            settings_t *settings                       = config_get_ptr();
+            settings_t *settings             = config_get_ptr();
             content_ctx->history_list_enable = settings->bools.history_list_enable;
          }
 
@@ -1577,8 +1582,8 @@ bool task_push_load_content_with_new_core_from_companion_ui(
    if (!task_load_content_callback(content_info, true, false))
       return false;
 
-   /* Push quick menu onto menu stack */
 #ifdef HAVE_MENU
+   /* Push quick menu onto menu stack */
    menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
 #endif
 
