@@ -151,6 +151,7 @@ ACHIEVEMENTS
 #include "../libretro-common/formats/json/jsonsax.c"
 #include "../network/net_http_special.c"
 #include "../cheevos/cheevos.c"
+#include "../cheevos/var.c"
 #endif
 
 /*============================================================
