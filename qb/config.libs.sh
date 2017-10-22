@@ -469,27 +469,25 @@ fi
 check_pkgconf PYTHON python3
 
 if [ "$HAVE_MATERIALUI" != 'no' ] || [ "$HAVE_XMB" != 'no' ] || [ "$HAVE_ZARCH" != 'no' ]; then
-	if [ "$HAVE_RGUI" = 'no' ]; then
-		HAVE_MATERIALUI=no
-		HAVE_XMB=no
-    HAVE_ZARCH=no
-		echo "Notice: RGUI not available, MaterialUI, XMB and ZARCH will also be disabled."
-	elif [ "$HAVE_OPENGL" = 'no' ] && [ "$HAVE_OPENGLES" = 'no' ] && [ "$HAVE_VULKAN" = 'no' ]; then
-    if [ "$OS" = 'Win32' ]; then
-      HAVE_SHADERPIPELINE=no
-      HAVE_VULKAN=no
-		  echo "Notice: Hardware rendering context not available."
-    else
-      if [ "$HAVE_CACA" = 'yes' ]; then
-		    echo "Notice: Hardware rendering context not available."
+   if [ "$HAVE_RGUI" = 'no' ]; then
+      HAVE_MATERIALUI=no
+      HAVE_XMB=no
+      HAVE_ZARCH=no
+      echo "Notice: RGUI not available, MaterialUI, XMB and ZARCH will also be disabled."
+   elif [ "$HAVE_OPENGL" = 'no' ] && [ "$HAVE_OPENGLES" = 'no' ] && [ "$HAVE_VULKAN" = 'no' ]; then
+      if [ "$OS" = 'Win32' ]; then
+         HAVE_SHADERPIPELINE=no
+         HAVE_VULKAN=no
+         echo "Notice: Hardware rendering context not available."
+      elif [ "$HAVE_CACA" = 'yes' ]; then
+         echo "Notice: Hardware rendering context not available."
       else
-    		HAVE_MATERIALUI=no
-	    	HAVE_XMB=no
-        HAVE_ZARCH=no
-		    echo "Notice: Hardware rendering context not available, XMB, MaterialUI and ZARCH will also be disabled."
+         HAVE_MATERIALUI=no
+         HAVE_XMB=no
+         HAVE_ZARCH=no
+         echo "Notice: Hardware rendering context not available, XMB, MaterialUI and ZARCH will also be disabled."
       fi
-    fi
-	fi
+   fi
 fi
 
 check_macro NEON __ARM_NEON__
