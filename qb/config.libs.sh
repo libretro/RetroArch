@@ -10,6 +10,13 @@ add_define_make NOUNUSED_VARIABLE "$HAVE_NOUNUSED_VARIABLE"
 
 [ -z "$CROSS_COMPILE" ] && [ -d /opt/local/lib ] && add_library_dirs /opt/local/lib
 
+[ "$GLOBAL_CONFIG_DIR" ] || \
+{	case "$PREFIX" in
+		/usr*) GLOBAL_CONFIG_DIR=/etc ;;
+		*) GLOBAL_CONFIG_DIR="$PREFIX"/etc ;;
+	esac
+}
+
 DYLIB=-ldl;
 CLIB=-lc
 PTHREADLIB=-lpthread

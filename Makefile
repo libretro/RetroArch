@@ -13,10 +13,6 @@ TARGET = retroarch
 
 OBJDIR := obj-unix
 
-ifeq ($(GLOBAL_CONFIG_DIR),)
-   GLOBAL_CONFIG_DIR = /etc
-endif
-
 OBJ :=
 LIBS :=
 DEFINES := -DHAVE_CONFIG_H -DRARCH_INTERNAL -DHAVE_OVERLAY
