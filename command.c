@@ -40,6 +40,7 @@
 
 #ifdef HAVE_CHEEVOS
 #include "cheevos/cheevos.h"
+#include "cheevos/var.h"
 #endif
 
 #ifdef HAVE_MENU
@@ -261,8 +262,9 @@ static bool command_read_ram(const char *arg)
    reply_at = reply + strlen("READ_CORE_RAM ");
    strlcpy(reply_at, arg, sizeof(reply)-strlen(reply));
 
-   cheevos_parse_guest_addr(&var, strtoul(reply_at, (char**)&reply_at, 16));
-   data = cheevos_get_memory(&var);
+   var.value = strtoul(reply_at, (char**)&reply_at, 16);
+   cheevos_var_patch_addr(&var, cheevos_get_console());
+   data = cheevos_var_get_memory(&var);
 
    if (data)
    {
@@ -293,9 +295,10 @@ static bool command_write_ram(const char *arg)
    unsigned nbytes   = 0;
    uint8_t *data     = NULL;
 
-   cheevos_parse_guest_addr(&var, strtoul(arg, (char**)&arg, 16));
+   var.value = strtoul(arg, (char**)&arg, 16);
+   cheevos_var_patch_addr(&var, cheevos_get_console());
 
-   data = cheevos_get_memory(&var);
+   data = cheevos_var_get_memory(&var);
 
    if (data)
    {
