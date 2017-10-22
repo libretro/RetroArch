@@ -14,7 +14,7 @@ cc_works=0
 if [ "$CC" ]; then
 	"$CC" -o "$TEMP_EXE" "$TEMP_C" >/dev/null 2>&1 && cc_works=1
 else
-	for CC in ${CC:=$(which ${CROSS_COMPILE}gcc ${CROSS_COMPILE}cc ${CROSS_COMPILE}clang 2>/dev/null)} ''; do
+	for CC in $(printf %s "${CC:=$(which ${CROSS_COMPILE}gcc ${CROSS_COMPILE}cc ${CROSS_COMPILE}clang 2>/dev/null)}") ''; do
 		"$CC" -o "$TEMP_EXE" "$TEMP_C" >/dev/null 2>&1 && cc_works=1 && break
 	done
 fi
@@ -45,7 +45,7 @@ cxx_works=0
 if [ "$CXX" ]; then
 	"$CXX" -o "$TEMP_EXE" "$TEMP_CXX" >/dev/null 2>&1 && cxx_works=1
 else
-	for CXX in ${CXX:=$(which ${CROSS_COMPILE}g++ ${CROSS_COMPILE}c++ ${CROSS_COMPILE}clang++ 2>/dev/null)} ''; do
+	for CXX in $(printf %s "${CXX:=$(which ${CROSS_COMPILE}g++ ${CROSS_COMPILE}c++ ${CROSS_COMPILE}clang++ 2>/dev/null)}") ''; do
 		"$CXX" -o "$TEMP_EXE" "$TEMP_CXX" >/dev/null 2>&1 && cxx_works=1 && break
 	done
 fi
@@ -78,9 +78,9 @@ fi
 [ -n "$PKG_CONF_PATH" ] || {
 	PKG_CONF_PATH="none"
 
-	for path in $(which "${CROSS_COMPILE}pkg-config" 2>/dev/null) ''; do
-		[ -n "$path" ] && {
-			PKG_CONF_PATH=$path;
+	for p in $(which "${CROSS_COMPILE}pkg-config" 2>/dev/null) ''; do
+		[ -n "$p" ] && {
+			PKG_CONF_PATH=$p;
 			break;
 		}
 	done

@@ -14,10 +14,14 @@ add_define_make()
 { echo "$1=$2" >> "$MAKEFILE_DEFINES";}
 
 add_include_dirs()
-{	while [ "$1" ]; do INCLUDE_DIRS="$INCLUDE_DIRS -I$1"; shift; done;}
+{	while [ "$1" ]; do INCLUDE_DIRS="$INCLUDE_DIRS -I$1"; shift; done
+	INCLUDE_DIRS="${INCLUDE_DIRS#* }"
+}
 
 add_library_dirs()
-{	while [ "$1" ]; do LIBRARY_DIRS="$LIBRARY_DIRS -L$1"; shift; done;}
+{	while [ "$1" ]; do LIBRARY_DIRS="$LIBRARY_DIRS -L$1"; shift; done
+	LIBRARY_DIRS="${LIBRARY_DIRS#* }"
+}
 
 check_lib()	#$1 = HAVE_$1	$2 = lib	$3 = function in lib	$4 = extralibs $5 = headers
 {	tmpval="$(eval echo \$HAVE_$1)"
@@ -36,7 +40,15 @@ check_lib()	#$1 = HAVE_$1	$2 = lib	$3 = function in lib	$4 = extralibs $5 = head
 	fi
 	answer='no'
 #	echo -n "$ECHOBUF"
-	"$CC" -o "$TEMP_EXE" "$TEMP_C" $INCLUDE_DIRS $LIBRARY_DIRS $4 $CFLAGS $LDFLAGS $2 >>config.log 2>&1 && answer='yes'
+	"$CC" -o \
+		"$TEMP_EXE" \
+		"$TEMP_C" \
+		$INCLUDE_DIRS \
+		$LIBRARY_DIRS \
+		$(printf %s "$4") \
+		$CFLAGS \
+		$LDFLAGS \
+		$(printf %s "$2") >>config.log 2>&1 && answer='yes'
 	eval HAVE_$1="$answer"; echo "$ECHOBUF ... $answer"
 	rm "$TEMP_C" "$TEMP_EXE" >/dev/null 2>&1
 	
@@ -61,7 +73,15 @@ check_lib_cxx()	#$1 = HAVE_$1	$2 = lib	$3 = function in lib	$4 = extralibs	$5 = 
 	fi
 	answer='no'
 #	echo -n "$ECHOBUF"
-	"$CXX" -o "$TEMP_EXE" "$TEMP_CXX" $INCLUDE_DIRS $LIBRARY_DIRS $4 $CFLAGS $LDFLAGS $2 >>config.log 2>&1 && answer='yes'
+	"$CXX" -o \
+		"$TEMP_EXE" \
+		"$TEMP_CXX" \
+		$INCLUDE_DIRS \
+		$LIBRARY_DIRS \
+		$(printf %s "$4") \
+		$CFLAGS \
+		$LDFLAGS \
+		$(printf %s "$2") >>config.log 2>&1 && answer='yes'
 	eval HAVE_$1="$answer"; echo "$ECHOBUF ... $answer"
 	rm "$TEMP_CXX" "$TEMP_EXE" >/dev/null 2>&1
 	[ "$answer" = 'no' ] && {
@@ -262,8 +282,10 @@ create_config_make()
 			
 			case "$PKG_CONF_USED" in
 				*$1*)
-					echo "$1_CFLAGS = $(eval echo \$$1_CFLAGS)"
-					echo "$1_LIBS = $(eval echo \$$1_LIBS)"
+					FLAGS="$(eval echo \$$1_CFLAGS)"
+					LIBS="$(eval echo \$$1_LIBS)"
+					echo "$1_CFLAGS = ${FLAGS%"${FLAGS##*[! ]}"}"
+					echo "$1_LIBS = ${LIBS%"${LIBS##*[! ]}"}"
 				;;
 			esac
 			shift
