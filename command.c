@@ -626,7 +626,9 @@ static void command_stdin_poll(command_t *handle)
    *last_newline++ = '\0';
    msg_len         = last_newline - handle->stdin_buf;
 
+#if defined(HAVE_NETWORKING)
    command_parse_msg(handle, handle->stdin_buf, CMD_STDIN);
+#endif
 
    memmove(handle->stdin_buf, last_newline,
          handle->stdin_buf_ptr - msg_len);
