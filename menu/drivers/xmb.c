@@ -1341,9 +1341,10 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
       file_list_t *list, int dir, size_t current)
 {
    unsigned i, height;
-   size_t skip          = 0;
-   int        threshold = xmb->icon_size * 10;
-   size_t           end = file_list_get_size(list);
+   unsigned xmb_system_tab = 0;
+   size_t skip             = 0;
+   int        threshold    = xmb->icon_size * 10;
+   size_t           end    = file_list_get_size(list);
 
    video_driver_get_size(NULL, &height);
 
@@ -1408,7 +1409,7 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
    xmb->old_depth = xmb->depth;
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &skip);
 
-   unsigned xmb_system_tab = xmb_get_system_tab(xmb, (unsigned)xmb->categories_selection_ptr);
+   xmb_system_tab = xmb_get_system_tab(xmb, (unsigned)xmb->categories_selection_ptr);
 
    if (xmb_system_tab <= XMB_SYSTEM_TAB_SETTINGS)
    {
@@ -4254,6 +4255,8 @@ static int xmb_list_push(void *data, void *userdata,
    {
       case DISPLAYLIST_LOAD_CONTENT_LIST:
          {
+            settings_t *settings = config_get_ptr();
+
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
             menu_entries_append_enum(info->list,
@@ -4286,7 +4289,6 @@ static int xmb_list_push(void *data, void *userdata,
                      MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
                      MENU_SETTING_ACTION, 0, 0);
 
-            settings_t *settings = config_get_ptr();
             if (!settings->bools.kiosk_mode_enable)
             {
                menu_entries_append_enum(info->list,

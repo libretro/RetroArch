@@ -948,7 +948,6 @@ static void gl_render_osd_background(
    video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords_data;
    video_coords_t coords;
-   video_coord_array_t ca;
    video_shader_ctx_info_t shader_info;
    struct uniform_info uniform_param;
    const unsigned vertices_total = 6;
@@ -1579,12 +1578,13 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
 
    if (hwr->context_type == RETRO_HW_CONTEXT_OPENGL_CORE)
    {
+      gfx_ctx_flags_t flags;
+
       gl_query_core_context_set(true);
 
       /**
        * Ensure that the rest of the frontend knows we have a core context
        */
-      gfx_ctx_flags_t flags;
       flags.flags = 0;
       BIT32_SET(flags.flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
 
