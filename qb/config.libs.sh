@@ -215,6 +215,7 @@ if [ "$HAVE_NETWORKING" = 'yes' ]; then
    fi
 else
    echo "Warning: All networking features have been disabled."
+   HAVE_KEYMAPPER='no'
    HAVE_NETWORK_CMD='no'
    HAVE_NETWORKGAMEPAD='no'
    HAVE_CHEEVOS='no'
