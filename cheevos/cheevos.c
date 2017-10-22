@@ -2573,11 +2573,12 @@ static int cheevos_iterate(coro_t* coro)
       FILL_MD5    = -7,
       GET_GAMEID  = -8,
       GET_CHEEVOS = -9,
-      LOGIN       = -10,
-      HTTP_GET    = -11,
-      DEACTIVATE  = -12,
-      PLAYING     = -13,
-      DELAY       = -14
+      GET_BADGES  = -10,
+      LOGIN       = -11,
+      HTTP_GET    = -12,
+      DEACTIVATE  = -13,
+      PLAYING     = -14,
+      DELAY       = -15
    };
 
    static const uint32_t genesis_exts[] =
@@ -2817,6 +2818,7 @@ static int cheevos_iterate(coro_t* coro)
 
       if ((void*)CHEEVOS_VAR_JSON)
          free((void*)CHEEVOS_VAR_JSON);
+
       cheevos_loaded = true;
 
       /*
@@ -3153,6 +3155,33 @@ static int cheevos_iterate(coro_t* coro)
       RARCH_LOG("[CHEEVOS]: got achievements for game id %u.\n", CHEEVOS_VAR_GAMEID);
       CORO_RET();
 
+    /**************************************************************************
+    * Info    Gets the achievements from Retro Achievements
+    * Inputs  CHEEVOS_VAR_GAMEID
+    * Outputs CHEEVOS_VAR_JSON
+    *************************************************************************/
+    CORO_SUB(GET_BADGES)
+
+    char badge_filename[16];
+    cheevo_t *cheevo = cheevos_locals.core.cheevos;
+    const cheevo_t *end           = cheevos_locals.core.cheevos +
+                                    cheevos_locals.core.count;
+
+    for (unsigned i = 0; cheevo < end ; cheevo++)
+    {
+      strcpy(badge_filename, cheevo->badge);
+      strcat(badge_filename, ".png");
+      if (!download_badge(badge_filename))
+        break;
+
+      strcpy(badge_filename, cheevo->badge);
+      strcat(badge_filename, "_lock.png");
+      if (!download_badge(badge_filename))
+        break;
+    }
+
+         CORO_RET();
+
    /**************************************************************************
     * Info Logs in the user at Retro Achievements
     *************************************************************************/
@@ -3340,12 +3369,8 @@ static int cheevos_iterate(coro_t* coro)
          else
             RARCH_ERR("[CHEEVOS]: error deactivating unlocked achievements in softcore mode.\n");
 
-<<<<<<< HEAD
          if ((void*)CHEEVOS_VAR_JSON)
             free((void*)CHEEVOS_VAR_JSON);
-=======
-         free((void*)CHEEVOS_VAR_JSON);
->>>>>>> Initial test for badge icon
       }
       else
          RARCH_ERR("[CHEEVOS]: error retrieving list of unlocked achievements in softcore mode.\n");
@@ -3373,12 +3398,8 @@ static int cheevos_iterate(coro_t* coro)
          else
             RARCH_ERR("[CHEEVOS]: error deactivating unlocked achievements in hardcore mode.\n");
 
-<<<<<<< HEAD
          if ((void*)CHEEVOS_VAR_JSON)
             free((void*)CHEEVOS_VAR_JSON);
-=======
-         free((void*)CHEEVOS_VAR_JSON);
->>>>>>> Initial test for badge icon
       }
       else
          RARCH_ERR("[CHEEVOS]: error retrieving list of unlocked achievements in hardcore mode.\n");

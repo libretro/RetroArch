@@ -19,6 +19,7 @@ typedef struct
 void set_badge_menu_texture(badges_ctx_t * badges, int i);
 extern void set_badge_info (badges_ctx_t *badge_struct, int id, const char *badge_id, bool active);
 extern menu_texture_item get_badge_texture(int id);
+extern bool download_badge(const char* filename);
 
 extern badges_ctx_t badges_ctx;
 
