@@ -912,7 +912,8 @@ static bool task_load_content(content_ctx_info_t *content_info,
 
 #ifdef HAVE_MENU
       /* Push quick menu onto menu stack */
-      menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
+      if (launched_from_cli)
+         menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
 #endif
 
       if (info && !string_is_empty(tmp))
