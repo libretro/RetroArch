@@ -8,7 +8,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_DEVICE_DISCONNECTED_FROM_PORT,
-      "Apparaat ontkoppeld van poprt"
+      "Apparaat ontkoppeld van port"
       )
 MSG_HASH(
       MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED,
