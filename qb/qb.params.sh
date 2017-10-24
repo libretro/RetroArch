@@ -30,7 +30,7 @@ EOF
 	echo "Custom options:"
 
 	while IFS='=#' read VAR VAL COMMENT; do
-		VAR=$(echo "${VAR##HAVE_}" | tr '[A-Z]' '[a-z]')
+		VAR=$(echo "${VAR##HAVE_}" | tr '[:upper:]' '[:lower:]')
 		case "$VAR" in
 			'c89_'*) true;;
 			*)
@@ -50,7 +50,7 @@ EOF
 }
 
 opt_exists() # $opt is returned if exists in OPTS
-{	opt=$(echo "$1" | tr '[a-z]' '[A-Z]')
+{	opt=$(echo "$1" | tr '[:lower:]' '[:upper:]')
 	for OPT in $OPTS; do [ "$opt" = "$OPT" ] && return; done
 	echo "Unknown option $2"; exit 1
 }
