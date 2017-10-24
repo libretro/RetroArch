@@ -127,6 +127,7 @@ static void gdi_render_msg(
          newX = (x * width * scale) - (len / 2);
          break;
       default:
+         newX = 0;
          break;
    }
 
