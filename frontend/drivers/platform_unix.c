@@ -2087,7 +2087,7 @@ static void frontend_unix_exec(const char *path, bool should_load_game)
    char *newargv[]    = { NULL, NULL };
    size_t len         = strlen(path);
 
-   newargv[0] = malloc(len);
+   newargv[0] = (char*)malloc(len);
 
    strlcpy(newargv[0], path, len);
 
