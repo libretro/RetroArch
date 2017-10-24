@@ -1337,6 +1337,7 @@ ifeq ($(HAVE_ZLIB), 1)
    DEFINES += -DHAVE_ZLIB
    HAVE_COMPRESSION = 1
    ifeq ($(HAVE_BUILTINZLIB), 1)
+      INCLUDE_DIRS += -I$(LIBRETRO_COMM_DIR)/include/compat
       DEFINES += -DWANT_ZLIB
    else
       LIBS += -lz

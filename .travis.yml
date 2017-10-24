@@ -3,6 +3,22 @@ language: generic
 
 matrix:
   include:
+    - compiler: mingw-x86
+      addons:
+        apt:
+          packages:
+            - g++-mingw-w64-i686
+            - mingw-w64-x86-64-dev
+      script:
+        - CROSS_COMPILE=i686-w64-mingw32- ./configure --disable-d3d9 && make HAVE_ZLIB=1 HAVE_BUILTINZLIB=1 HAVE_RPNG=1
+    - compiler: mingw-x64
+      addons:
+        apt:
+          packages:
+            - g++-mingw-w64-x86-64
+            - mingw-w64-x86-64-dev
+      script:
+        - CROSS_COMPILE=x86_64-w64-mingw32- ./configure --disable-d3d9 && make HAVE_ZLIB=1 HAVE_BUILTINZLIB=1 HAVE_RPNG=1
     - compiler: gcc
     - compiler: clang
       addons:
