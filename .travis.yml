@@ -8,7 +8,7 @@ matrix:
         apt:
           packages:
             - g++-mingw-w64-i686
-            - mingw-w64-x86-64-dev
+            - mingw-w64-i686-dev
       script:
         - CROSS_COMPILE=i686-w64-mingw32- ./configure --disable-d3d9 && make HAVE_ZLIB=1 HAVE_BUILTINZLIB=1 HAVE_RPNG=1
     - compiler: mingw-x64
