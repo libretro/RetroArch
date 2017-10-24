@@ -2,7 +2,7 @@ print_help_option() # $1 = option $@ = description
 {
 	_opt="$1"
 	shift 1
-	printf "  %-25s  %s\n" "$_opt" "$@"
+	printf '  %-26s  %s\n' "$_opt" "$@"
 }
 
 print_help()
@@ -38,12 +38,12 @@ EOF
 				'yes'*)
 					print_help_option "--disable-$VAR" "Disable $COMMENT";;
 				'no'*)
-					print_help_option "--enable-$VAR" "Enable $COMMENT";;
+					print_help_option "--enable-$VAR" "Enable  $COMMENT";;
 				'auto'*)
-					print_help_option "--enable-$VAR" "Enable $COMMENT"
+					print_help_option "--enable-$VAR" "Enable  $COMMENT"
 					print_help_option "--disable-$VAR" "Disable $COMMENT";;
 				*)
-					print_help_option "--with-$VAR" "Config $COMMENT";;
+					print_help_option "--with-$VAR" "Config  $COMMENT";;
 			esac
 		esac
 	done < 'qb/config.params.sh'
