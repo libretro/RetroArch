@@ -118,7 +118,7 @@ if [ "$HAVE_SSE" = "yes" ]; then
    CXXFLAGS="$CXXFLAGS -msse -msse2"
 fi
 
-if [ "$HAVE_EGL" != "no" -a "$OS" != 'Win32' ]; then
+if [ "$HAVE_EGL" != "no" ] && [ "$OS" != 'Win32' ]; then
    check_pkgconf EGL "$VC_PREFIX"egl
    # some systems have EGL libs, but no pkgconfig
    if [ "$HAVE_EGL" = "no" ]; then
