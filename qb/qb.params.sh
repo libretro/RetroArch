@@ -32,7 +32,7 @@ EOF
 	while IFS='=#' read VAR VAL COMMENT; do
 		VAR=$(echo "${VAR##HAVE_}" | tr '[:upper:]' '[:lower:]')
 		case "$VAR" in
-			'c89_'*) true;;
+			'c89_'*) continue;;
 			*)
 			case "$VAL" in
 				'yes'*)

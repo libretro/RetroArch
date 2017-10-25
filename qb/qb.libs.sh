@@ -57,7 +57,7 @@ check_lib()	#$1 = HAVE_$1	$2 = lib	$3 = function in lib	$4 = extralibs $5 = head
 		exit 1
 	}
 
-	true
+	return 0
 }
 
 check_lib_cxx()	#$1 = HAVE_$1	$2 = lib	$3 = function in lib	$4 = extralibs	$5 = critical error message [checked only if non-empty]
@@ -93,7 +93,7 @@ check_lib_cxx()	#$1 = HAVE_$1	$2 = lib	$3 = function in lib	$4 = extralibs	$5 = 
 	
 	}
 
-	true
+	return 0
 }
 
 check_code_c()
