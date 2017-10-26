@@ -6150,7 +6150,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler,
-               SD_FLAG_LAKKA_ADVANCED);
+               SD_FLAG_NONE);
 
          CONFIG_BOOL(
                list, list_info,
@@ -6210,7 +6210,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler,
-               SD_FLAG_LAKKA_ADVANCED);
+               SD_FLAG_NONE);
 
 #ifdef HAVE_SHADER_MANAGER
          CONFIG_BOOL(
@@ -6242,7 +6242,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler,
-               SD_FLAG_LAKKA_ADVANCED);
+               SD_FLAG_NONE);
 
          CONFIG_BOOL(
                list, list_info,
@@ -6257,7 +6257,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler,
-               SD_FLAG_LAKKA_ADVANCED);
+               SD_FLAG_NONE);
 
          CONFIG_BOOL(
                list, list_info,
