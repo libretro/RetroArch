@@ -2862,23 +2862,17 @@ static int menu_displaylist_parse_load_content_settings(
           settings->bools.quick_menu_show_undo_save_load_state &&
           ! settings->bools.cheevos_hardcore_mode_enable)
       {
-#ifdef HAVE_LAKKA
-         if (show_advanced_settings)
-#endif
-            menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE),
-                  msg_hash_to_str(MENU_ENUM_LABEL_UNDO_LOAD_STATE),
-                  MENU_ENUM_LABEL_UNDO_LOAD_STATE,
-                  MENU_SETTING_ACTION_LOADSTATE, 0, 0);
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE),
+               msg_hash_to_str(MENU_ENUM_LABEL_UNDO_LOAD_STATE),
+               MENU_ENUM_LABEL_UNDO_LOAD_STATE,
+               MENU_SETTING_ACTION_LOADSTATE, 0, 0);
 
-#ifdef HAVE_LAKKA
-         if (show_advanced_settings)
-#endif
-            menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE),
-                  msg_hash_to_str(MENU_ENUM_LABEL_UNDO_SAVE_STATE),
-                  MENU_ENUM_LABEL_UNDO_SAVE_STATE,
-                  MENU_SETTING_ACTION_LOADSTATE, 0, 0);
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE),
+               msg_hash_to_str(MENU_ENUM_LABEL_UNDO_SAVE_STATE),
+               MENU_ENUM_LABEL_UNDO_SAVE_STATE,
+               MENU_SETTING_ACTION_LOADSTATE, 0, 0);
       }
 
       if (settings->bools.quick_menu_show_add_to_favorites)
@@ -2915,9 +2909,6 @@ static int menu_displaylist_parse_load_content_settings(
                MENU_SETTING_ACTION, 0, 0);
       }
 
-#ifdef HAVE_LAKKA
-      if (show_advanced_settings)
-#endif
       if (settings->bools.quick_menu_show_cheats)
       {
          menu_entries_append_enum(info->list,
@@ -2946,9 +2937,6 @@ static int menu_displaylist_parse_load_content_settings(
       }
 #endif
 
-#ifdef HAVE_LAKKA
-      if (show_advanced_settings)
-#endif
       if (settings->bools.quick_menu_show_save_core_overrides && !settings->bools.kiosk_mode_enable)
       {
          menu_entries_append_enum(info->list,
@@ -2958,9 +2946,6 @@ static int menu_displaylist_parse_load_content_settings(
                MENU_SETTING_ACTION, 0, 0);
       }
 
-#ifdef HAVE_LAKKA
-      if (show_advanced_settings)
-#endif
       if (settings->bools.quick_menu_show_save_game_overrides && !settings->bools.kiosk_mode_enable)
       {
          menu_entries_append_enum(info->list,
