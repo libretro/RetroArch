@@ -122,7 +122,7 @@ if [ "$HAVE_EGL" != "no" ] && [ "$OS" != 'Win32' ]; then
    check_pkgconf EGL "$VC_PREFIX"egl
    # some systems have EGL libs, but no pkgconfig
    if [ "$HAVE_EGL" = "no" ]; then
-      HAVE_EGL=auto; check_lib EGL "-l"$VC_PREFIX"EGL $EXTRA_GL_LIBS"
+      HAVE_EGL=auto; check_lib EGL "-l${VC_PREFIX}EGL $EXTRA_GL_LIBS"
       [ "$HAVE_EGL" = "yes" ] && EGL_LIBS=-l"$VC_PREFIX"EGL
    else
       EGL_LIBS="$EGL_LIBS $EXTRA_GL_LIBS"
@@ -385,15 +385,15 @@ if [ "$HAVE_EGL" = "yes" ]; then
       else
          HAVE_OPENGLES=auto; check_pkgconf OPENGLES "$VC_PREFIX"glesv2
          if [ "$HAVE_OPENGLES" = "no" ]; then
-            HAVE_OPENGLES=auto; check_lib OPENGLES "-l"$VC_PREFIX"GLESv2 $EXTRA_GL_LIBS"
-            add_define_make OPENGLES_LIBS "-l"$VC_PREFIX"GLESv2 $EXTRA_GL_LIBS"
+            HAVE_OPENGLES=auto; check_lib OPENGLES "-l${VC_PREFIX}GLESv2 $EXTRA_GL_LIBS"
+            add_define_make OPENGLES_LIBS "-l${VC_PREFIX}GLESv2 $EXTRA_GL_LIBS"
          fi
       fi
    fi
    if [ "$HAVE_VG" != "no" ]; then
       check_pkgconf VG "$VC_PREFIX"vg
       if [ "$HAVE_VG" = "no" ]; then
-         HAVE_VG=auto; check_lib VG "-l"$VC_PREFIX"OpenVG $EXTRA_GL_LIBS"
+         HAVE_VG=auto; check_lib VG "-l${VC_PREFIX}OpenVG $EXTRA_GL_LIBS"
          [ "$HAVE_VG" = "yes" ] && VG_LIBS=-l"$VC_PREFIX"OpenVG
       fi
    fi
