@@ -518,7 +518,8 @@ while [ $# -gt 0 ]; do
    tmpvar="${1%=*}"
    shift 1
    var="${tmpvar#HAVE_}"
-   VARS="${VARS} $var"
+   vars="${vars} $var"
 done
+VARS="$(printf %s "$vars" | tr ' ' '\n' | sort)"
 create_config_make config.mk $(printf %s "$VARS")
 create_config_header config.h $(printf %s "$VARS")
