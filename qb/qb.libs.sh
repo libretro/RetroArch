@@ -23,74 +23,52 @@ add_library_dirs()
 	LIBRARY_DIRS="${LIBRARY_DIRS#* }"
 }
 
-check_lib()	#$1 = HAVE_$1	$2 = lib	$3 = function in lib	$4 = extralibs $5 = headers
-{	tmpval="$(eval echo \$HAVE_$1)"
+check_lib() # $1 = language  $2 = HAVE_$2  $3 = lib  $4 = function in lib  $5 = extralibs $6 = headers $7 = critical error message [checked only if non-empty]
+{	tmpval="$(eval echo \$HAVE_$2)"
 	[ "$tmpval" = 'no' ] && return 0
 
-	if [ "$3" ]; then
-		ECHOBUF="Checking function $3 in ${2% }"
-		if [ "$5" ]; then
-			printf %s\\n "$5" "int main(void) { void *p = (void*)$3; return 0; }" > $TEMP_C
+	if [ "$1" = cxx ]; then
+		COMPILER="$CXX"
+		TEMP_CODE="$TEMP_CXX"
+		TEST_C="extern \"C\" { void $4(void); } int main() { $4(); }"
+	else
+		COMPILER="$CC"
+		TEMP_CODE="$TEMP_C"
+		TEST_C="void $4(void); int main(void) { $4(); return 0; }"
+	fi
+
+	if [ "$4" ]; then
+		ECHOBUF="Checking function $4 in ${3% }"
+		if [ "$6" ]; then
+			printf %s\\n "$6" "int main(void) { void *p = (void*)$4; return 0; }" > "$TEMP_CODE"
 		else
-			echo "void $3(void); int main(void) { $3(); return 0; }" > $TEMP_C
+			echo "$TEST_C" > "$TEMP_CODE"
 		fi
 	else
-		ECHOBUF="Checking existence of ${2% }"
-		echo "int main(void) { return 0; }" > $TEMP_C
+		ECHOBUF="Checking existence of ${3% }"
+		echo "int main(void) { return 0; }" > "$TEMP_CODE"
 	fi
 	answer='no'
 #	echo -n "$ECHOBUF"
-	"$CC" -o \
+	"$COMPILER" -o \
 		"$TEMP_EXE" \
-		"$TEMP_C" \
+		"$TEMP_CODE" \
 		$INCLUDE_DIRS \
 		$LIBRARY_DIRS \
-		$(printf %s "$4") \
+		$(printf %s "$5") \
 		$CFLAGS \
 		$LDFLAGS \
-		$(printf %s "$2") >>config.log 2>&1 && answer='yes'
-	eval HAVE_$1="$answer"; echo "$ECHOBUF ... $answer"
-	rm "$TEMP_C" "$TEMP_EXE" >/dev/null 2>&1
-	
-	[ "$tmpval" = 'yes' ] && [ "$answer" = 'no' ] && {
-		echo "Forced to build with library $2, but cannot locate. Exiting ..."
-		exit 1
-	}
+		$(printf %s "$3") >>config.log 2>&1 && answer='yes'
+	eval HAVE_$2="$answer"; echo "$ECHOBUF ... $answer"
+	rm "$TEMP_CODE" "$TEMP_EXE" >/dev/null 2>&1
 
-	return 0
-}
-
-check_lib_cxx()	#$1 = HAVE_$1	$2 = lib	$3 = function in lib	$4 = extralibs	$5 = critical error message [checked only if non-empty]
-{	tmpval="$(eval echo \$HAVE_$1)"
-	[ "$tmpval" = 'no' ] && return 0
-
-	if [ "$3" ]; then
-		ECHOBUF="Checking function $3 in ${2% }"
-		echo "extern \"C\" { void $3(void); } int main() { $3(); }" > $TEMP_CXX
-	else
-		ECHOBUF="Checking existence of ${2% }"
-		echo "int main() { return 0; }" > $TEMP_CXX
-	fi
-	answer='no'
-#	echo -n "$ECHOBUF"
-	"$CXX" -o \
-		"$TEMP_EXE" \
-		"$TEMP_CXX" \
-		$INCLUDE_DIRS \
-		$LIBRARY_DIRS \
-		$(printf %s "$4") \
-		$CFLAGS \
-		$LDFLAGS \
-		$(printf %s "$2") >>config.log 2>&1 && answer='yes'
-	eval HAVE_$1="$answer"; echo "$ECHOBUF ... $answer"
-	rm "$TEMP_CXX" "$TEMP_EXE" >/dev/null 2>&1
 	[ "$answer" = 'no' ] && {
-		[ "$5" ] && { echo "$5"; exit 1;}
+		[ "$7" ] && { echo "$7"; exit 1;}
 		[ "$tmpval" = 'yes' ] && {
-			echo "Forced to build with library $2, but cannot locate. Exiting ..."
+			echo "Forced to build with library $3, but cannot locate. Exiting ..."
 			exit 1
 		}
-	
+
 	}
 
 	return 0
