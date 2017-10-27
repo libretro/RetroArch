@@ -1031,7 +1031,7 @@ static int task_database_iterate_serial_lookup(
    {
       char query[50];
       char *serial_buf =
-         bin_to_hex_alloc((uint8_t*)db_state->serial, 10 * sizeof(uint8_t));
+         bin_to_hex_alloc((uint8_t*)db_state->serial, strlen(db_state->serial) * sizeof(uint8_t));
 
       if (!serial_buf)
          return 1;
