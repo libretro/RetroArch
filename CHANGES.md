@@ -15,6 +15,7 @@ consoles.
 - INPUT: Fix absolute mouse move handling on the winraw driver
 - INPUT: Ignore keyboard input if window is not active on udev driver
 - LOBBIES: Fix crash on navigating left / right from the lobby menu
+- LOCALIZATION: Update Dutch translation
 - LOCALIZATION: Update Italian translation.
 - LOCALIZATION: Update Japanese translation.
 - LOCALIZATION: Update Portuguese-Brazilian translation.
