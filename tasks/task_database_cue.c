@@ -301,6 +301,21 @@ int detect_psp_game(intfstream_t *fd, char *game_id)
    return rv;
 }
 
+int detect_gc_game(intfstream_t *fd, char *game_id)
+{
+   bool rv   = false;
+
+   intfstream_seek(fd, 0, SEEK_SET);
+
+   if (intfstream_read(fd, game_id, 6) > 0)
+   {
+      game_id[6] = '\0';
+      rv = true;
+   }
+
+   return rv;
+}
+
 /**
  * Check for an ASCII serial in the first few bits of the ISO (Wii).
  */
