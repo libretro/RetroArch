@@ -1,6 +1,7 @@
 # 1.6.8 (future)
-- Test
 - Audio: Fix the Audio DSP picker
+- AUTOSAVE/SRAM - Enable by default for PCs and mobile, saves at 10 second intervals. Leave it disabled for 
+consoles.
 - GUI: (MaterialUI) Fix crash that happened on context reset with Vulkan.
 - GUI: (MaterialUI) Skip querying and drawing items that are not visible; Cache content height and bbox calculation.
 - GUI: (XMB) Skip drawing the fading list when it is already transparent. Optimization.
@@ -29,6 +30,7 @@
 - WIIU: Add Cheevos support.
 - SCANNER: Fix archive scanning.
 - SCANNER: Support CHD files.
+- SCANNER: Support Gamecube ISO scanning.
 - SCANNER: Use primary data track of disc images for CRC lookups rather than cue files.  This is slower but finds matches more reliably, and is necessary for CHD files to work at all.  Update your databases!
 
 # 1.6.7
