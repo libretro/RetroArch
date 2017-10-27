@@ -503,11 +503,7 @@ static const bool pause_nonactive = true;
 
 /* Saves non-volatile SRAM at a regular interval.
  * It is measured in seconds. A value of 0 disables autosave. */
-#if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
-static const unsigned autosave_interval = 10;
-#else
 static const unsigned autosave_interval = 0;
-#endif
 
 /* Publicly announce netplay */
 static const bool netplay_public_announce = true;
