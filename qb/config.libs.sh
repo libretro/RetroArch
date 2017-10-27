@@ -450,7 +450,7 @@ check_header XSHM X11/Xlib.h X11/extensions/XShm.h
 check_header PARPORT linux/parport.h
 check_header PARPORT linux/ppdev.h
 
-if [ "$OS" != 'Win32' ]; then
+if [ "$OS" != 'Win32' ] && [ "$OS" != 'Linux' ]; then
    check_lib STRL "$CLIB" strlcpy
 fi
 check_lib STRCASESTR "$CLIB" strcasestr
