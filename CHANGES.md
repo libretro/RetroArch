@@ -56,7 +56,7 @@ consoles.
 - INPUT: Overlay controller response - when we press buttons on the gamepad or keyboard, the corresponding buttons on the overlay will be highlighted as well.
 - NETBSD: Silence some compilation warnings.
 - COMMON: Fixed bug 'Deleting an entry from a playlist would not update the list view inside XMB'.
-- COMMON: Fix inet_ntop_compat on *nix
+- COMMON: Fix inet_ntop_compat on Unix
 - LOBBY: Add skeleton to add help descriptions to lobbies
 
 # 1.6.5
