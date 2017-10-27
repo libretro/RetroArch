@@ -2,10 +2,14 @@
 - Audio: Fix the Audio DSP picker
 - GUI: (MaterialUI) Fix crash that happened on context reset with Vulkan.
 - GUI: (MaterialUI) Skip querying and drawing items that are not visible; Cache content height and bbox calculation.
+- GUI: (MaterialUI) Fix entry box highlight calculation.
 - GUI: (XMB) Skip drawing the fading list when it is already transparent. Optimization.
 - GUI: (XMB) Comment out visible item calculation in xmb_draw_items().
 - GUI: (RGUI) Prevent crashes when using a non-English language reliant on UTF8.
-- GUI: Add option for OSD background color.
+- GUI: Add menu option for OSD background color.
+- GUI: Add menu option for OSD text color.
+- GUI: Add menu option to remove frame count from OSD.
+- GUI: Allow wraparound of int/float settings when pressing the left key
 - INPUT: Always show the controls menu even if descriptors are not set
 - INPUT: Fix input descriptors not being set on cores that don't implement the controllers interface
 - INPUT: Apply descriptors only for the amount of cores the core supports
@@ -18,12 +22,19 @@
 - LOCALIZATION: Update Japanese translation.
 - LOCALIZATION: Update Portuguese-Brazilian translation.
 - LOCALIZATION: Update Russian translation.
+- LINUX/ARMHF: Set buildbot updater URL to armhf location instead of blank string
 - LINUX/PI: Broadcom VC4: Add Videocore config option
 - LINUX/UDEV: Fix - RetroArch reads keyboard input when not focused with the udev input driver.
 - NETPLAY: Fix disconnection not fully deinitializing Netplay.
 - COMMON: Fix clear/free loop conditionals in playlists.
 - WINDOWS/GDI: Fix flickering of text.
+- WINDOWS/GDI: Fix graphics corruption on Windows 98
+- WINDOWS/GDI: Allow compiling without DirectInput8 for NT support
 - WINDOWS/WGL: Try to use wglSwapLayerBuffers instead of SwapBuffers if possible (for more optimal performance).
+- WINDOWS: Fix menubar text corruption on Japanese locale systems
+- WINDOWS: Support Unicode file I/O (can now display CJK characters in file browser for example).
+- WINDOWS: Support Windows 95, NT3.51, NT4
+- WINDOWS: add Makefile.griffin targets for msvc6,2003,2005,2010,2012,2013
 - WII: Use custom, embedded libogc SDK.
 - WIIU: Initial touchscreen support for WiiU gamepad.
 - WIIU: Add Cheevos support.
