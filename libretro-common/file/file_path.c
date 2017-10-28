@@ -30,6 +30,7 @@
 
 #include <boolean.h>
 #include <file/file_path.h>
+#include <streams/file_stream.h>
 
 #ifndef __MACH__
 #include <compat/strl.h>
@@ -401,17 +402,17 @@ bool path_is_compressed_file(const char* path)
  */
 bool path_file_exists(const char *path)
 {
-   FILE *dummy;
+   RFILE *dummy;
 
    if (!path || !*path)
       return false;
 
-   dummy = fopen(path, "rb");
+   dummy = filestream_open(path, RFILE_MODE_READ, -1);
 
    if (!dummy)
       return false;
 
-   fclose(dummy);
+   filestream_close(dummy);
    return true;
 }
 
