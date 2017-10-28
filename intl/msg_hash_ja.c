@@ -631,7 +631,7 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_WELCOME_TO_RETROARCH:
          snprintf(s, len,
-               "Welcome to RetroArch\n"
+               "RetroArchにようこそ\n"
                );
          break;
       case MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING_DESC:
