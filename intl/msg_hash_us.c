@@ -379,8 +379,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                              " \n"
                              "If this option is disabled, \n"
                              "it will try to load even if such \n"
-                             "firmware is missing. \n"
-                             "down. \n");
+                             "firmware is missing. \n");
             break;
         case MENU_ENUM_LABEL_PARENT_DIRECTORY:
             snprintf(s, len,
