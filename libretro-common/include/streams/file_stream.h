@@ -23,6 +23,7 @@
 #ifndef __LIBRETRO_SDK_FILE_STREAM_H
 #define __LIBRETRO_SDK_FILE_STREAM_H
 
+#include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
 
@@ -44,7 +45,7 @@ enum
    RFILE_MODE_WRITE,
    RFILE_MODE_READ_WRITE,
 
-   /* There is no garantee these requests will be attended. */
+   /* There is no guarantee these requests will be attended. */
    RFILE_HINT_UNBUFFERED = 1<<8,
    RFILE_HINT_MMAP       = 1<<9  /* requires RFILE_MODE_READ */
 };
@@ -90,6 +91,8 @@ int filestream_printf(RFILE *stream, const char* format, ...);
 int filestream_error(RFILE *stream);
 
 int filestream_get_fd(RFILE *stream);
+
+FILE* filestream_get_fp(RFILE *stream);
 
 int filestream_flush(RFILE *stream);
 

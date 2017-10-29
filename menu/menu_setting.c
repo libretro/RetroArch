@@ -1858,7 +1858,7 @@ static void systemd_service_toggle(const char *path, char *unit, bool enable)
    args[2] = unit;
 
    if (enable)
-      fclose(fopen(path, "w"));
+      filestream_close(filestream_open(path, RFILE_MODE_WRITE, -1));
    else
       path_file_remove(path);
 

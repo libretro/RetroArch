@@ -25,6 +25,7 @@
 #include <compat/posix_string.h>
 #include <retro_assert.h>
 #include <string/stdstring.h>
+#include <streams/file_stream.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -3699,15 +3700,15 @@ bool config_save_file(const char *path)
 
 #ifdef HAVE_LAKKA
    if (settings->bools.ssh_enable)
-      fclose(fopen(LAKKA_SSH_PATH, "w"));
+      filestream_close(filestream_open(LAKKA_SSH_PATH, RFILE_MODE_WRITE, -1));
    else
       path_file_remove(LAKKA_SSH_PATH);
    if (settings->bools.samba_enable)
-      fclose(fopen(LAKKA_SAMBA_PATH, "w"));
+      filestream_close(filestream_open(LAKKA_SAMBA_PATH, RFILE_MODE_WRITE, -1));
    else
       path_file_remove(LAKKA_SAMBA_PATH);
    if (settings->bools.bluetooth_enable)
-      fclose(fopen(LAKKA_BLUETOOTH_PATH, "w"));
+      filestream_close(filestream_open(LAKKA_BLUETOOTH_PATH, RFILE_MODE_WRITE, -1));
    else
       path_file_remove(LAKKA_BLUETOOTH_PATH);
 #endif

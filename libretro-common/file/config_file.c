@@ -44,6 +44,7 @@
 #include <lists/string_list.h>
 #include <string/stdstring.h>
 #include <rhash.h>
+#include <streams/file_stream.h>
 
 #define MAX_INCLUDE_DEPTH 16
 
@@ -78,13 +79,13 @@ struct config_file
 static config_file_t *config_file_new_internal(
       const char *path, unsigned depth);
 
-static char *getaline(FILE *file)
+static char *getaline(RFILE *file)
 {
    char* newline     = (char*)malloc(9);
    char* newline_tmp = NULL;
    size_t cur_size   = 8;
    size_t idx        = 0;
-   int in            = getc(file);
+   int in            = filestream_getc(file);
 
    if (!newline)
       return NULL;
@@ -106,10 +107,10 @@ static char *getaline(FILE *file)
       }
 
       newline[idx++] = in;
-      in = getc(file);
+      in = filestream_getc(file);
    }
    newline[idx] = '\0';
-   return newline; 
+   return newline;
 }
 
 static char *strip_comment(char *str)
@@ -366,7 +367,7 @@ error:
 static config_file_t *config_file_new_internal(
       const char *path, unsigned depth)
 {
-   FILE               *file = NULL;
+   RFILE              *file = NULL;
    struct config_file *conf = (struct config_file*)malloc(sizeof(*conf));
    if (!conf)
       return NULL;
@@ -388,16 +389,16 @@ static config_file_t *config_file_new_internal(
       goto error;
 
    conf->include_depth = depth;
-   file                = fopen(path, "r");
+   file                = filestream_open(path, RFILE_MODE_READ_TEXT, -1);
 
    if (!file)
    {
       free(conf->path);
       goto error;
    }
-   setvbuf(file, NULL, _IOFBF, 0x4000);
+   setvbuf(filestream_get_fp(file), NULL, _IOFBF, 0x4000);
 
-   while (!feof(file))
+   while (!filestream_eof(file))
    {
       char *line                     = NULL;
       struct config_entry_list *list = (struct config_entry_list*)malloc(sizeof(*list));
@@ -405,7 +406,7 @@ static config_file_t *config_file_new_internal(
       if (!list)
       {
          config_file_free(conf);
-         fclose(file);
+         filestream_close(file);
          return NULL;
       }
 
@@ -439,7 +440,7 @@ static config_file_t *config_file_new_internal(
          free(list);
    }
 
-   fclose(file);
+   filestream_close(file);
 
    return conf;
 
@@ -894,27 +895,28 @@ void config_set_bool(config_file_t *conf, const char *key, bool val)
 
 bool config_file_write(config_file_t *conf, const char *path)
 {
-   FILE *file;
+   RFILE *file = NULL;
 
    if (!string_is_empty(path))
    {
-      file = fopen(path, "w");
+      file = filestream_open(path, RFILE_MODE_WRITE, -1);
       if (!file)
          return false;
 #ifdef WIIU
       /* TODO: use FBF everywhere once https://i.imgur.com/muVhNeF.jpg is fixed */
-      setvbuf(file, NULL, _IONBF, 0x4000);
+      setvbuf(filestream_get_fp(file), NULL, _IONBF, 0x4000);
 #else
-      setvbuf(file, NULL, _IOFBF, 0x4000);
+      setvbuf(filestream_get_fp(file), NULL, _IOFBF, 0x4000);
 #endif
+      config_file_dump(conf, filestream_get_fp(file));
    }
    else
-      file = stdout;
+   {
+      config_file_dump(conf, stdout);
+   }
 
-   config_file_dump(conf, file);
-
-   if (path)
-      fclose(file);
+   if (file)
+      filestream_close(file);
 
    return true;
 }

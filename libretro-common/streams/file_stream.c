@@ -111,6 +111,13 @@ struct RFILE
 #endif
 };
 
+FILE* filestream_get_fp(RFILE *stream)
+{
+   if (!stream)
+      return NULL;
+   return stream->fp;
+}
+
 int filestream_get_fd(RFILE *stream)
 {
    if (!stream)
@@ -369,7 +376,7 @@ char *filestream_getline(RFILE *stream)
    }
 
    newline[idx] = '\0';
-   return newline; 
+   return newline;
 }
 
 char *filestream_gets(RFILE *stream, char *s, size_t len)
@@ -420,7 +427,7 @@ ssize_t filestream_seek(RFILE *stream, ssize_t offset, int whence)
 #endif
 
 #ifdef HAVE_MMAP
-   /* Need to check stream->mapped because this function is 
+   /* Need to check stream->mapped because this function is
     * called in filestream_open() */
    if (stream->mapped && stream->hints & RFILE_HINT_MMAP)
    {
@@ -493,7 +500,7 @@ ssize_t filestream_tell(RFILE *stream)
       return ftell(stream->fp);
 #endif
 #ifdef HAVE_MMAP
-   /* Need to check stream->mapped because this function 
+   /* Need to check stream->mapped because this function
     * is called in filestream_open() */
    if (stream->mapped && stream->hints & RFILE_HINT_MMAP)
       return stream->mappos;

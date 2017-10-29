@@ -960,3 +960,69 @@ int path_file_remove(const char *path)
 
    return -1;
 }
+
+int path_file_rename(const char *old_path, const char *new_path)
+{
+   char *old_path_local    = NULL;
+   char *new_path_local    = NULL;
+   wchar_t *old_path_wide  = NULL;
+   wchar_t *new_path_wide  = NULL;
+
+   if (!old_path || !*old_path || !new_path || !*new_path)
+      return false;
+
+   (void)old_path_local;
+   (void)new_path_local;
+   (void)old_path_wide;
+   (void)new_path_wide;
+
+#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_MSC_VER) && _MSC_VER < 1400
+   old_path_local = utf8_to_local_string_alloc(old_path);
+   new_path_local = utf8_to_local_string_alloc(new_path);
+
+   if (old_path_local)
+   {
+      bool ret;
+
+      if (new_path_local)
+      {
+         ret = rename(old_path_local, new_path_local);
+         free(old_path_local);
+         free(new_path_local);
+         return ret;
+      }
+
+      free(old_path_local);
+   }
+
+   if (new_path_local)
+      free(new_path_local);
+#else
+   old_path_wide = utf8_to_utf16_string_alloc(old_path);
+   new_path_wide = utf8_to_utf16_string_alloc(new_path);
+
+   if (old_path_wide)
+   {
+      bool ret;
+
+      if (new_path_wide)
+      {
+         ret = _wrename(old_path_wide, new_path_wide);
+         free(old_path_wide);
+         free(new_path_wide);
+         return ret;
+      }
+
+      free(old_path_wide);
+   }
+
+   if (new_path_wide)
+      free(new_path_wide);
+#endif
+#else
+   return rename(old_path, new_path);
+#endif
+
+   return -1;
+}
