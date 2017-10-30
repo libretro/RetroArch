@@ -2380,9 +2380,18 @@ void video_driver_frame(const void *data, unsigned width,
    video_driver_msg[0] = '\0';
 
    if (     video_info.font_enable
-         && runloop_msg_queue_pull((const char**)&msg) 
+         && runloop_msg_queue_pull((const char**)&msg)
          && msg)
+   {
+#ifdef HAVE_THREADS
+      /* the msg pointer may point to data modified by another thread */
+      runloop_msg_queue_lock();
+#endif
       strlcpy(video_driver_msg, msg, sizeof(video_driver_msg));
+#ifdef HAVE_THREADS
+      runloop_msg_queue_unlock();
+#endif
+   }
 
    video_driver_active = current_video->frame(
          video_driver_data, data, width, height,

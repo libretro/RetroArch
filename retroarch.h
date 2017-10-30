@@ -22,6 +22,7 @@
 #include <stdlib.h>
 
 #include <retro_common_api.h>
+#include <retro_inline.h>
 #include <boolean.h>
 
 #include "core_type.h"
@@ -348,6 +349,12 @@ void rarch_menu_running_finished(void);
 bool retroarch_is_on_main_thread(void);
 
 rarch_system_info_t *runloop_get_system_info(void);
+
+#ifdef HAVE_THREADS
+void runloop_msg_queue_lock(void);
+
+void runloop_msg_queue_unlock(void);
+#endif
 
 RETRO_END_DECLS
 

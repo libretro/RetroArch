@@ -48,7 +48,6 @@
 #include <retro_miscellaneous.h>
 #include <queues/message_queue.h>
 #include <queues/task_queue.h>
-#include <rthreads/rthreads.h>
 #include <features/features_cpu.h>
 
 #ifdef HAVE_CONFIG_H
@@ -249,19 +248,31 @@ static retro_time_t frame_limit_last_time                  = 0.0;
 
 extern bool input_driver_flushing_input;
 
+#ifdef HAVE_THREADS
+void runloop_msg_queue_lock(void)
+{
+   slock_lock(_runloop_msg_queue_lock);
+}
+
+void runloop_msg_queue_unlock(void)
+{
+   slock_unlock(_runloop_msg_queue_lock);
+}
+#endif
+
 static void retroarch_msg_queue_deinit(void)
 {
+#ifdef HAVE_THREADS
+   runloop_msg_queue_lock();
+#endif
+
    if (!runloop_msg_queue)
       return;
-
-#ifdef HAVE_THREADS
-   slock_lock(_runloop_msg_queue_lock);
-#endif
 
    msg_queue_free(runloop_msg_queue);
 
 #ifdef HAVE_THREADS
-   slock_unlock(_runloop_msg_queue_lock);
+   runloop_msg_queue_unlock();
    slock_free(_runloop_msg_queue_lock);
    _runloop_msg_queue_lock = NULL;
 #endif
@@ -2227,7 +2238,7 @@ void runloop_msg_queue_push(const char *msg,
    runloop_ctx_msg_info_t msg_info;
 
 #ifdef HAVE_THREADS
-   slock_lock(_runloop_msg_queue_lock);
+   runloop_msg_queue_lock();
 #endif
 
    if (flush)
@@ -2253,7 +2264,7 @@ void runloop_msg_queue_push(const char *msg,
    }
 
 #ifdef HAVE_THREADS
-   slock_unlock(_runloop_msg_queue_lock);
+   runloop_msg_queue_unlock();
 #endif
 }
 
@@ -2269,14 +2280,14 @@ void runloop_get_status(bool *is_paused, bool *is_idle,
 
 bool runloop_msg_queue_pull(const char **ret)
 {
+#ifdef HAVE_THREADS
+   runloop_msg_queue_lock();
+#endif
    if (!ret)
       return false;
-#ifdef HAVE_THREADS
-   slock_lock(_runloop_msg_queue_lock);
-#endif
    *ret = msg_queue_pull(runloop_msg_queue);
 #ifdef HAVE_THREADS
-   slock_unlock(_runloop_msg_queue_lock);
+   runloop_msg_queue_unlock();
 #endif
    return true;
 }
