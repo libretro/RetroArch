@@ -61,8 +61,11 @@ RetroArch also emphasizes on being easy to integrate into various launcher front
 
 ## Platforms
 
-RetroArch has been ported to the following platforms besides the PC:
+RetroArch has been ported to the following platforms:
 
+   - Windows
+   - Linux
+   - MacOS
    - PlayStation 3
    - PlayStation Portable
    - Original Xbox
