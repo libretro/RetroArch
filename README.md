@@ -36,7 +36,7 @@ or visit our IRC channel: #retroarch @ irc.freenode.org.
 
 ## Documentation
 
-See our [Documentation Center](https://buildbot.libretro.com/docs). On Unix, man-pages are provided.
+See our [Documentation Center](https://docs.libretro.com/). On Unix, man-pages are provided.
 More developer-centric stuff is found [here](https://github.com/libretro/libretro.github.com/wiki/Documentation-devs).
 
 ## Related projects
@@ -45,7 +45,7 @@ More developer-centric stuff is found [here](https://github.com/libretro/libretr
    - slang shaders: [slang-shaders](https://github.com/libretro/slang-shaders)
    - GLSL shaders: [glsl-shaders](https://github.com/libretro/glsl-shaders)
    - Helper scripts to build libretro implementations: [libretro-super](https://github.com/libretro/libretro-super)
-   - GitHub mirrors of projects, useful for generating diff files [libretro-mirrors](https://github.com/libretro-mirrors/)
+   - GitHub mirrors of projects, useful for generating diff files: [libretro-mirrors](https://github.com/libretro-mirrors/)
 
 ## Philosophy
 
@@ -131,4 +131,4 @@ To configure joypads, use the built-in menu or the `retroarch-joyconfig` command
 
 ## Compiling and installing
 
-Instructions for compiling and installing RetroArch can be found in the [Libretro/RetroArch Documentation Center](https://buildbot.libretro.com/docs).
+Instructions for compiling and installing RetroArch can be found in the [Libretro/RetroArch Documentation Center](https://docs.libretro.com/).
