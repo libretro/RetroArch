@@ -22,7 +22,6 @@
 #include <stdlib.h>
 
 #include <retro_common_api.h>
-#include <retro_inline.h>
 #include <boolean.h>
 
 #include "core_type.h"
