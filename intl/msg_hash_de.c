@@ -1137,8 +1137,8 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "Andere Tastenkürzel aktivieren. \n"
                   " \n"
                   "Wenn dieses Tastenkürzel entweder einer\n"
-                  "Tastatur, einem Joypad-Taste oder \n"
-                  "Joypad-Achse zugeordnet ist, werden alle \n"
+                  "Tastatur, einer Controller-Taste oder \n"
+                  "Controller-Achse zugeordnet ist, werden alle \n"
                   "anderen Tastenkürzel nur aktiviert, wenn dieses \n"
                   "Tastenkürzel zur gleichen Zeit gehalten wird. \n"
                   " \n"
@@ -1789,7 +1789,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO:
          snprintf(s, len,
-               "Gamepad-Tastenkombination, um Menü aufzurufen. \n"
+               "Controller-Tastenkombination, um Menü aufzurufen. \n"
                " \n"
                "0 - Keine \n"
                "1 - Drücke L + R + Y + D-Pad nach unten \n"
@@ -1806,7 +1806,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Aktiviert automatische Eingabe-Erkennung.\n"
                " \n"
-               "Wird versuchen, Joypads automatisch zu konfigurieren. \n"
+               "Wird versuchen, Controller automatisch zu konfigurieren. \n"
                "(Plug-and-Play).");
          break;
       case MENU_ENUM_LABEL_CAMERA_ALLOW:
@@ -1964,13 +1964,13 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD_DESC:
          snprintf(s, len,
-               "Du kannst das virtuelle Gamepad-Overlay ändern, indem du \n"
+               "Du kannst das virtuelle Controller-Overlay ändern, indem du \n"
                "zu '%s' -> '%s' gehst."
                " \n"
                "Hier kannst du das Overlay ändern,\n"
                "die Größe und Transparenz der Tasten verändern, etc.\n"
                " \n"
-               "HINWEIS: Standardmäßig werden virtuelle Gamepad-Overlays \n"
+               "HINWEIS: Standardmäßig werden virtuelle Controller-Overlays \n"
                "versteckt, wenn du dich im Menü befindest.\n"
                "Wenn du dieses Verhalten ändern möchtest,\n"
                "kannst du '%s' auf 'aus' setzen.",
