@@ -354,7 +354,6 @@ static int setting_fraction_action_left_default(
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
    double               min = 0.0f;
-   bool                 overflowed = false;
    
    if (!setting)
       return -1;
@@ -363,14 +362,11 @@ static int setting_fraction_action_left_default(
 
    (void)wraparound; /* TODO/FIXME - handle this */
 
-   overflowed = setting->step > *setting->value.target.fraction;
-
-   if (!overflowed)
-      *setting->value.target.fraction = *setting->value.target.fraction - setting->step;
+   *setting->value.target.fraction = *setting->value.target.fraction - setting->step;
 
    if (setting->enforce_minrange)
    {
-      if (overflowed || *setting->value.target.fraction < min)
+      if (*setting->value.target.fraction < min)
       {
          settings_t *settings = config_get_ptr();
 
@@ -1043,7 +1039,6 @@ static int setting_int_action_left_default(void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
    double               min = 0.0f;
-   bool                 overflowed = false;
 
    if (!setting)
       return -1;
@@ -1052,14 +1047,11 @@ static int setting_int_action_left_default(void *data, bool wraparound)
 
    (void)wraparound; /* TODO/FIXME - handle this */
 
-   overflowed = setting->step > *setting->value.target.integer;
-
-   if (!overflowed)
-      *setting->value.target.integer = *setting->value.target.integer - setting->step;
+   *setting->value.target.integer = *setting->value.target.integer - setting->step;
 
    if (setting->enforce_minrange)
    {
-      if (overflowed || *setting->value.target.integer < min)
+      if (*setting->value.target.integer < min)
       {
          settings_t *settings = config_get_ptr();
 
