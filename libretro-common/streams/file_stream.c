@@ -81,6 +81,7 @@ struct RFILE
    unsigned hints;
    char *ext;
    int64_t size;
+   FILE *fp;
 #if defined(PSP)
    SceUID fd;
 #else
@@ -99,9 +100,6 @@ struct RFILE
 #define MODE_STR_WRITE_PLUS L"w+"
 #endif
 
-#if defined(HAVE_BUFFERED_IO)
-   FILE *fp;
-#endif
 #if defined(HAVE_MMAP)
    uint8_t *mapped;
    uint64_t mappos;
