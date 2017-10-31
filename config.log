@@ -1,0 +1,22 @@
+/usr/bin/ld: cannot find -lsystemd
+collect2: error: ld returned 1 exit status
+/usr/bin/ld: cannot find -lvcos
+/usr/bin/ld: cannot find -lvchiq_arm
+/usr/bin/ld: cannot find -lbcm_host
+collect2: error: ld returned 1 exit status
+/usr/bin/ld: cannot find -lass
+collect2: error: ld returned 1 exit status
+/usr/bin/ld: cannot find -lminiupnpc
+collect2: error: ld returned 1 exit status
+.tmp.c:1:23: fatal error: soundcard.h: No such file or directory
+ #include <soundcard.h>
+                       ^
+compilation terminated.
+/usr/bin/ld: cannot find -lossaudio
+collect2: error: ld returned 1 exit status
+/usr/bin/ld: cannot find -lopenal
+collect2: error: ld returned 1 exit status
+/usr/bin/ld: cannot find -lOpenVG
+collect2: error: ld returned 1 exit status
+/usr/bin/ld: cannot find -lvulkan
+collect2: error: ld returned 1 exit status
