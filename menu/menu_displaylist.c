@@ -5611,10 +5611,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_CHEEVOS_PASSWORD,
                PARSE_ONLY_STRING, false);
          menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_CHEEVOS_TEST_UNOFFICIAL,
+               MENU_ENUM_LABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
+               MENU_ENUM_LABEL_CHEEVOS_LEADERBOARDS_ENABLE,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_CHEEVOS_RPS_ENABLE,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_CHEEVOS_TEST_UNOFFICIAL,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_CHEEVOS_VERBOSE_ENABLE,
