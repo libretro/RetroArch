@@ -65,6 +65,7 @@ RetroArch has been ported to the following platforms:
 
    - Windows
    - Linux
+   - FreeBSD
    - MacOS
    - PlayStation 3
    - PlayStation Portable
