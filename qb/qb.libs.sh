@@ -15,12 +15,12 @@ add_define_make()
 
 add_include_dirs()
 {	while [ "$1" ]; do INCLUDE_DIRS="$INCLUDE_DIRS -I$1"; shift; done
-	INCLUDE_DIRS="${INCLUDE_DIRS#* }"
+	INCLUDE_DIRS="${INCLUDE_DIRS# }"
 }
 
 add_library_dirs()
 {	while [ "$1" ]; do LIBRARY_DIRS="$LIBRARY_DIRS -L$1"; shift; done
-	LIBRARY_DIRS="${LIBRARY_DIRS#* }"
+	LIBRARY_DIRS="${LIBRARY_DIRS# }"
 }
 
 check_lib() # $1 = language  $2 = HAVE_$2  $3 = lib  $4 = function in lib  $5 = extralibs $6 = headers $7 = critical error message [checked only if non-empty]
