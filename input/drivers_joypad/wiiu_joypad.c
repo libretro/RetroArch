@@ -212,13 +212,33 @@ static void wiiu_joypad_poll(void)
          VPADTouchData cal = {0};
          /* Calibrates data to a 720p screen, seems to clamp outer 12px */
          VPADGetTPCalibratedPoint(0, &cal, &(vpad.tpNormal));
+         /* Clamp to actual game image */
+         bool touchClamped = false;
+         if (cal.x < vp.x) {
+            cal.x = vp.x;
+            touchClamped = true;
+         } else if (cal.x > vp.x + vp.width) {
+            cal.x = vp.x + vp.width;
+            touchClamped = true;
+         }
+         if (cal.y < vp.y) {
+            cal.y = vp.y;
+            touchClamped = true;
+         } else if (cal.y > vp.y + vp.height) {
+            cal.y = vp.y + vp.height;
+            touchClamped = true;
+         }
          /* Calibrate to libretro spec and save as axis 2 (idx 4,5) */
-         analog_state[0][2][0] = scaleTP(12, 1268, -0x7fff, 0x7fff, cal.x);
-         analog_state[0][2][1] = scaleTP(12, 708, -0x7fff, 0x7fff, cal.y);
+         analog_state[0][2][0] = scaleTP(vp.x, vp.x + vp.width, -0x7fff, 0x7fff, cal.x);
+         analog_state[0][2][1] = scaleTP(vp.y, vp.y + vp.height, -0x7fff, 0x7fff, cal.y);
 
          /* Emulating a button (#19) for touch; lets people assign it to menu
             for that traditional RetroArch Wii U feel */
-         pad_state[0] |= VPAD_BUTTON_TOUCH;
+         if (!touchClamped) {
+            pad_state[0] |= VPAD_BUTTON_TOUCH;
+         } else {
+            pad_state[0] &= ~VPAD_BUTTON_TOUCH;
+         }
       } else {
          /* This is probably 0 anyway */
          pad_state[0] &= ~VPAD_BUTTON_TOUCH;
