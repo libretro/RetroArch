@@ -1109,6 +1109,7 @@ error:
    return false;
 }
 
+#ifdef HAVE_FBO
 gl_renderchain_driver_t gl2_renderchain = {
    gl2_renderchain_init,
    gl2_renderchain_init_hw_render,
@@ -1120,3 +1121,4 @@ gl_renderchain_driver_t gl2_renderchain = {
    gl2_renderchain_render,
    "gl2",
 };
+#endif
