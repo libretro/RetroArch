@@ -105,7 +105,7 @@ static int16_t wiiu_pointer_device_state(wiiu_input_t* wiiu, unsigned id)
 	switch (id)
 	{
 		case RETRO_DEVICE_ID_POINTER_PRESSED:
-			return wiiu->joypad->get_buttons(0) & VPAD_BUTTON_TOUCH;
+			return (wiiu->joypad->get_buttons(0) & VPAD_BUTTON_TOUCH) ? 1 : 0;
 		case RETRO_DEVICE_ID_POINTER_X:
 			return wiiu->joypad->axis(0, 0xFFFF0004UL);
 		case RETRO_DEVICE_ID_POINTER_Y:

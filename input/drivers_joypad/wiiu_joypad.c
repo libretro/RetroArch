@@ -50,8 +50,6 @@
 #define KPAD_OFFSET     (GAMEPAD_OFFSET + GAMEPAD_COUNT)
 #define HID_OFFSET      (KPAD_OFFSET + KPAD_COUNT)
 
-extern uint64_t lifecycle_state;
-
 static uint64_t pad_state[MAX_PADS];
 static uint8_t pad_type[KPAD_COUNT] = {WIIUINPUT_TYPE_NONE, WIIUINPUT_TYPE_NONE, WIIUINPUT_TYPE_NONE, WIIUINPUT_TYPE_NONE};
 
@@ -165,13 +163,12 @@ static int16_t wiiu_joypad_axis(unsigned port_num, uint32_t joyaxis)
          val = analog_state[port_num][1][1];
          break;
 
+      //For position data; just return the unmodified value
       case 4:
-         val = analog_state[port_num][2][0];
-         break;
+         return analog_state[port_num][2][0];
 
       case 5:
-         val = analog_state[port_num][2][1];
-         break;
+         return analog_state[port_num][2][1];
    }
 
    if (is_neg && val > 0)
@@ -182,9 +179,9 @@ static int16_t wiiu_joypad_axis(unsigned port_num, uint32_t joyaxis)
    return val;
 }
 
-static float scaleTP(float oldMin, float oldMax, float newMin, float newMax, float val) {
-   float oldRange = (oldMax - oldMin);
-   float newRange = (newMax - newMin);
+static int16_t scaleTP(int16_t oldMin, int16_t oldMax, int16_t newMin, int16_t newMax, int16_t val) {
+   int32_t oldRange = oldMax - oldMin;
+   int32_t newRange = newMax - newMin;
    return (((val - oldMin) * newRange) / oldRange) + newMin;
 }
 
@@ -204,8 +201,6 @@ static void wiiu_joypad_poll(void)
       analog_state[0][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_X] = vpad.rightStick.x * 0x7FF0;
       analog_state[0][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_Y] = vpad.rightStick.y * 0x7FF0;
 
-      BIT64_CLEAR(lifecycle_state, RARCH_MENU_TOGGLE);
-
       /* You can only call VPADData once every loop, else the second one
          won't get any data. Thus; I had to hack touch support into the existing
          joystick API. Woo-hoo? Misplaced requests for touch axis are filtered
@@ -217,11 +212,11 @@ static void wiiu_joypad_poll(void)
          VPADTouchData cal = {0};
          /* Calibrates data to a 720p screen, seems to clamp outer 12px */
          VPADGetTPCalibratedPoint(0, &cal, &(vpad.tpNormal));
-         /* Calibrate to viewport and save as axis 2 (idx 4,5) */
-         analog_state[0][2][0] = (int16_t)scaleTP(12.0f, 1268.0f, 0.0f, (float)(vp.full_width), (float)cal.x);
-         analog_state[0][2][1] = (int16_t)scaleTP(12.0f, 708.0f, 0.0f, (float)(vp.full_height), (float)cal.y);
+         /* Calibrate to libretro spec and save as axis 2 (idx 4,5) */
+         analog_state[0][2][0] = scaleTP(12, 1268, -0x7fff, 0x7fff, cal.x);
+         analog_state[0][2][1] = scaleTP(12, 708, -0x7fff, 0x7fff, cal.y);
 
-         /* Emulating a button for touch; lets people assign it to menu
+         /* Emulating a button (#19) for touch; lets people assign it to menu
             for that traditional RetroArch Wii U feel */
          pad_state[0] |= VPAD_BUTTON_TOUCH;
       } else {
