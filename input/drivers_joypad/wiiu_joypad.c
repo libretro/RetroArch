@@ -228,6 +228,11 @@ static void wiiu_joypad_poll(void)
             cal.y = vp.y + vp.height;
             touchClamped = true;
          }
+         /* Account for 12px clamp on VPADGetTPCalibratedPoint */
+         if (vp.x < 12) vp.x = 12;
+         if (vp.y < 12) vp.y = 12;
+         if (vp.x + vp.width > 1268) vp.width = 1268 - vp.x;
+         if (vp.y + vp.height > 708) vp.height = 708 - vp.y;
          /* Calibrate to libretro spec and save as axis 2 (idx 4,5) */
          analog_state[0][2][0] = scaleTP(vp.x, vp.x + vp.width, -0x7fff, 0x7fff, cal.x);
          analog_state[0][2][1] = scaleTP(vp.y, vp.y + vp.height, -0x7fff, 0x7fff, cal.y);
