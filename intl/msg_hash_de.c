@@ -286,7 +286,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                " \n"
                "Das Bildschirmfoto wird im Bildschirmfoto-Verzeichnis \n"
                "gespeichert.");
-     	 break;
+         break;
       case MENU_ENUM_LABEL_ADD_TO_FAVORITES:
             snprintf(s, len, "Fügt den Eintrag zu deinen Favoriten hinzu.");
          break;
@@ -333,7 +333,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Verzeichnis für Vorschaubilder. \n"
                " \n"
                "Verzeichnis, in welchem die Vorschaubilder \n"
-			   "gespeichert werden.");
+               "gespeichert werden.");
          break;
       case MENU_ENUM_LABEL_LIBRETRO_INFO_PATH:
          snprintf(s, len,
@@ -484,7 +484,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Diese Option auf 'Früh' oder 'Spät' zu setzen kann \n"
                "eine verringerte Latenz bewirken, \n"
                "abhängig von deiner Konfiguration.\n\n"
-			   "Diese Einstellung wird ignoriert, wenn Netplay verwendet wird."
+               "Diese Einstellung wird ignoriert, wenn Netplay verwendet wird."
                );
          break;
       case MENU_ENUM_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND:
@@ -1282,7 +1282,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Wechselt zum nächsten Overlay.\n"
                " \n"
                "Wenn das letzte Overlay erreicht ist, wird \n"
-			   "wieder beim ersten Overlay begonnen."
+               "wieder beim ersten Overlay begonnen."
                );
          break;
       case MENU_ENUM_LABEL_LOG_VERBOSITY:
