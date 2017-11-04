@@ -3950,7 +3950,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler,
-               SD_FLAG_NONE
+               SD_FLAG_LAKKA_ADVANCED
                );
 
          CONFIG_FLOAT(
@@ -3980,6 +3980,7 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          menu_settings_list_current_add_range(list, list_info, -80, 12, 1.0, true, true);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
 #ifdef __CELLOS_LV2__
          CONFIG_BOOL(
