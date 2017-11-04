@@ -193,11 +193,11 @@ static bool ax_audio_start(void* data, bool is_shutdown)
 
 static ssize_t ax_audio_write(void* data, const void* buf, size_t size)
 {
-   int i;
+   uint32_t i;
    size_t countAvail   = 0;
    ax_audio_t* ax      = (ax_audio_t*)data;
    const uint16_t* src = buf;
-   int count           = size >> 2;
+   size_t count        = size >> 2;
 
    if(!size || (size & 0x3))
       return 0;
@@ -330,8 +330,8 @@ audio_driver_t audio_ax =
    ax_audio_free,
    ax_audio_use_float,
    "AX",
-   NULL,
-   NULL,
-/*   ax_audio_write_avail, */
-/*   ax_audio_buffer_size */
+   NULL, /* device_list_new */
+   NULL, /* device_list_free */
+   NULL, /* write_avail */
+   NULL, /* buffer_size */
 };

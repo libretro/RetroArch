@@ -308,6 +308,7 @@ frontend_ctx_driver_t frontend_ctx_wiiu =
    NULL,                         /* attach_console */
    NULL,                         /* detach_console */
    "wiiu",
+   NULL,                         /* get_video_driver */
 };
 
 static int wiiu_log_socket = -1;
@@ -379,6 +380,7 @@ void net_print_exp(const char *str)
    send(wiiu_log_socket, str, strlen(str), 0);
 }
 
+#if defined(PC_DEVELOPMENT_IP_ADDRESS) && defined(PC_DEVELOPMENT_TCP_PORT)
 static devoptab_t dotab_stdout =
 {
    "stdout_net", // device name
@@ -389,6 +391,7 @@ static devoptab_t dotab_stdout =
    NULL,
    /* ... */
 };
+#endif
 
 void SaveCallback()
 {
@@ -642,7 +645,7 @@ void _start(int argc, char **argv)
    __init();
    fsdev_init();
 
-   int ret = main(argc, argv);
+   main(argc, argv);
 
    fsdev_exit();
 //   __fini();
