@@ -32,9 +32,9 @@
 #include <lists/string_list.h>
 #include <file/file_path.h>
 #include <compat/strl.h>
-#include "../../deps/7zip/7z.h"
-#include "../../deps/7zip/7zCrc.h"
-#include "../../deps/7zip/7zFile.h"
+#include "7z.h"
+#include "7zCrc.h"
+#include "7zFile.h"
 
 #define SEVENZIP_MAGIC "7z\xBC\xAF\x27\x1C"
 #define SEVENZIP_MAGIC_LEN 6
