@@ -63,17 +63,16 @@ static char hidName[HID_COUNT][255];
 
 static const char* wiiu_joypad_name(unsigned pad)
 {
-   if (pad == 0)
+   if (pad > MAX_PADS) return "N/A";
+
+   if (pad == GAMEPAD_OFFSET)
       return "WIIU Gamepad";
 
-   if (pad < MAX_PADS && pad < (HID_OFFSET) && pad > GAMEPAD_OFFSET)
+   if (pad >= KPAD_OFFSET && pad < KPAD_OFFSET + KPAD_COUNT)
    {
       int i = pad - KPAD_OFFSET;
       switch (pad_type[i])
       {
-         case WIIUINPUT_TYPE_NONE:
-            return "N/A";
-
          case WIIUINPUT_TYPE_PRO_CONTROLLER:
             return "WIIU Pro Controller";
 
@@ -85,13 +84,17 @@ static const char* wiiu_joypad_name(unsigned pad)
 
          case WIIUINPUT_TYPE_CLASSIC_CONTROLLER:
             return "Classic Controller";
+
+         case WIIUINPUT_TYPE_NONE:
+         default:
+            return "N/A";
       }
    }
 
-   if (pad < MAX_PADS)
+   if (pad >= HID_OFFSET && pad < HID_OFFSET + HID_COUNT)
    {
-      s32 hid_index = pad-HID_OFFSET;
-      sprintf(hidName[hid_index],"HID %04X/%04X(%02X)",hid_data[hid_index].device_info.vidpid.vid,hid_data[hid_index].device_info.vidpid.pid,hid_data[hid_index].pad);
+      s32 hid_index = pad - HID_OFFSET;
+      sprintf(hidName[hid_index], "HID %04X/%04X(%02X)", hid_data[hid_index].device_info.vidpid.vid, hid_data[hid_index].device_info.vidpid.pid, hid_data[hid_index].pad);
       return hidName[hid_index];
    }
 

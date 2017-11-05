@@ -40,7 +40,7 @@ typedef struct
 static void* wiiu_font_init_font(void* data, const char* font_path,
       float font_size, bool is_threaded)
 {
-   int i;
+   uint32_t i;
    wiiu_font_t* font = (wiiu_font_t*)calloc(1, sizeof(*font));
 
    if (!font)
