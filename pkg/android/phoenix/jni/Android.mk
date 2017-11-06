@@ -89,10 +89,14 @@ LOCAL_CFLAGS := $(subst -O3,-O2,$(LOCAL_CFLAGS))
 LOCAL_LDLIBS	:= -L$(SYSROOT)/usr/lib -landroid -lEGL $(GLES_LIB) $(LOGGER_LDLIBS) -ldl 
 LOCAL_C_INCLUDES := \
 							$(LOCAL_PATH)/$(RARCH_DIR)/libretro-common/include/ \
-							$(LOCAL_PATH)/$(RARCH_DIR)/deps
+							$(LOCAL_PATH)/$(RARCH_DIR)/deps \
+							$(LOCAL_PATH)/$(RARCH_DIR)/deps/stb \
+							$(LOCAL_PATH)/$(RARCH_DIR)/deps/7zip
 
 
+LOCAL_CFLAGS     += -I$(LOCAL_PATH)/$(DEPS_DIR)/stb/
 LOCAL_CFLAGS     += -I$(LOCAL_PATH)/$(DEPS_DIR)/7zip/
+LOCAL_CXXFLAGS     += -I$(LOCAL_PATH)/$(DEPS_DIR)/stb/
 LOCAL_CXXFLAGS     += -I$(LOCAL_PATH)/$(DEPS_DIR)/7zip/
 LOCAL_CFLAGS     += -I$(LOCAL_PATH)/$(DEPS_DIR)/libFLAC/include
 LOCAL_CPPFLAGS   += -I$(LOCAL_PATH)/$(DEPS_DIR)/libFLAC/include
