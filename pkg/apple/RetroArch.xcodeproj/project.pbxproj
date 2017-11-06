@@ -379,6 +379,7 @@
 					"$(SRCROOT)/../../libretro-common/include",
 					"$(SRCROOT)/../../deps/libFLAC/include",
 					"$(SRCROOT)/../../deps/7zip",
+					"$(SRCROOT)/../../deps/stb",
 					"$(SRCROOT)/../../deps",
 				);
 				INFOPLIST_FILE = OSX/Info.plist;
@@ -411,6 +412,7 @@
 					"$(SRCROOT)/../../libretro-common/include",
 					"$(SRCROOT)/../../deps/libFLAC/include",
 					"$(SRCROOT)/../../deps/7zip",
+					"$(SRCROOT)/../../deps/stb",
 					"$(SRCROOT)/../../deps",
 				);
 				INFOPLIST_FILE = OSX/Info.plist;
@@ -445,6 +447,7 @@
 					"$(SRCROOT)/../../libretro-common/include",
 					"$(SRCROOT)/../../deps/libFLAC/include",
 					"$(SRCROOT)/../../deps/7zip",
+					"$(SRCROOT)/../../deps/stb",
 					"$(SRCROOT)/../../deps",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/OSX/Info.plist";
@@ -473,6 +476,7 @@
 					"$(SRCROOT)/../../libretro-common/include",
 					"$(SRCROOT)/../../deps/libFLAC/include",
 					"$(SRCROOT)/../../deps/7zip",
+					"$(SRCROOT)/../../deps/stb",
 					"$(SRCROOT)/../../deps",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/OSX/Info.plist";

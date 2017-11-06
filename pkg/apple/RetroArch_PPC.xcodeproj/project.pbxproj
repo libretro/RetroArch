@@ -233,6 +233,8 @@
 				HEADER_SEARCH_PATHS = (
 					"$(SRCROOT)/../../libretro-common/include",
 					"$(SRCROOT)/../../deps",
+					"$(SRCROOT)/../../deps/stb",
+					"$(SRCROOT)/../../deps/libz",
 					"$(SRCROOT)",
 				);
 				ONLY_ACTIVE_ARCH_PRE_XCODE_3_1 = "$(NATIVE_ARCH)";
@@ -247,6 +249,8 @@
 				HEADER_SEARCH_PATHS = (
 					"$(SRCROOT)/../../libretro-common/include",
 					"$(SRCROOT)/../../deps",
+					"$(SRCROOT)/../../deps/stb",
+					"$(SRCROOT)/../../deps/libz",
 					"$(SRCROOT)",
 				);
 			};
