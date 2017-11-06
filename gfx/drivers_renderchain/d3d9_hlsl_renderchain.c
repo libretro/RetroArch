@@ -75,10 +75,11 @@ static bool hlsl_d3d9_renderchain_init_shader_fvf(void *data, void *pass_data)
       { 0, 2 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
       D3DDECL_END()
    };
-   d3d_video_t *d3d         = (d3d_video_t*)data;
-   d3d_video_t *pass        = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr    = (LPDIRECT3DDEVICE)d3d->dev;
-   hlsl_d3d9_renderchain_t *chain = (hlsl_d3d9_renderchain_t*)d3d->renderchain_data;
+   d3d_video_t *d3d               = (d3d_video_t*)data;
+   d3d_video_t *pass              = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr          = (LPDIRECT3DDEVICE)d3d->dev;
+   hlsl_d3d9_renderchain_t *chain = (hlsl_d3d9_renderchain_t*)
+      d3d->renderchain_data;
 
    (void)pass_data;
 
@@ -91,9 +92,11 @@ static bool renderchain_create_first_pass(void *data,
 {
    d3d_video_t *d3d         = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr    = (LPDIRECT3DDEVICE)d3d->dev;
-   hlsl_d3d9_renderchain_t *chain = (hlsl_d3d9_renderchain_t*)d3d->renderchain_data;
+   hlsl_d3d9_renderchain_t *chain = (hlsl_d3d9_renderchain_t*)
+      d3d->renderchain_data;
 
-   chain->vertex_buf     = d3d_vertex_buffer_new(d3dr, 4 * sizeof(Vertex), 
+   chain->vertex_buf        = d3d_vertex_buffer_new(
+         d3dr, 4 * sizeof(Vertex), 
          D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, 
          NULL);
 
