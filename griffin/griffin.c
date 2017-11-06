@@ -279,6 +279,13 @@ VIDEO SHADERS
 #include "../gfx/drivers_shader/shader_glsl.c"
 #endif
 
+#if defined(HAVE_D3D)
+
+#ifdef HAVE_HLSL
+#include "../gfx/drivers_shader/shader_hlsl.c"
+#endif
+#endif
+
 /*============================================================
 VIDEO IMAGE
 ============================================================ */
