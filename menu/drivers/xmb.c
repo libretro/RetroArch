@@ -177,7 +177,7 @@ typedef struct xmb_handle
    bool mouse_show;
 
    uint8_t system_tab_end;
-   uint8_t tabs[8];
+   uint8_t tabs[16];
 
    int depth;
    int old_depth;
