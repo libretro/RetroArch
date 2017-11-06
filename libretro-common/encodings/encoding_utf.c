@@ -164,13 +164,13 @@ size_t utf8cpy(char *d, size_t d_len, const char *s, size_t chars)
    while (*sb && chars-- > 0)
    {
       sb++;
-      while ((*sb&0xC0) == 0x80) sb++;
+      while ((*sb & 0xC0) == 0x80) sb++;
    }
 
    if ((size_t)(sb - sb_org) > d_len-1 /* NUL */)
    {
       sb = sb_org + d_len-1;
-      while ((*sb&0xC0) == 0x80) sb--;
+      while ((*sb & 0xC0) == 0x80) sb--;
    }
 
    memcpy(d, sb_org, sb-sb_org);
@@ -187,7 +187,7 @@ const char *utf8skip(const char *str, size_t chars)
    do
    {
       strb++;
-      while ((*strb&0xC0)==0x80) strb++;
+      while ((*strb & 0xC0)==0x80) strb++;
       chars--;
    } while(chars);
    return (const char*)strb;
@@ -218,23 +218,22 @@ static INLINE uint8_t utf8_walkbyte(const char **string)
 uint32_t utf8_walk(const char **string)
 {
    uint8_t first = utf8_walkbyte(string);
-   uint32_t ret;
+   uint32_t ret  = 0;
 
-   if (first<128)
+   if (first < 128)
       return first;
 
-   ret = 0;
-   ret = (ret<<6) | (utf8_walkbyte(string)    & 0x3F);
+   ret    = (ret << 6) | (utf8_walkbyte(string) & 0x3F);
    if (first >= 0xE0)
-      ret = (ret<<6) | (utf8_walkbyte(string) & 0x3F);
+      ret = (ret << 6) | (utf8_walkbyte(string) & 0x3F);
    if (first >= 0xF0)
-      ret = (ret<<6) | (utf8_walkbyte(string) & 0x3F);
+      ret = (ret << 6) | (utf8_walkbyte(string) & 0x3F);
 
    if (first >= 0xF0)
-      return ret | (first&7)<<18;
+      return ret | (first & 7) << 18;
    if (first >= 0xE0)
-      return ret | (first&15)<<12;
-   return ret | (first&31)<<6;
+      return ret | (first & 15) << 12;
+   return ret | (first & 31) << 6;
 }
 
 static bool utf16_to_char(uint8_t **utf_data,
@@ -273,17 +272,19 @@ bool utf16_to_char_string(const uint16_t *in, char *s, size_t len)
 }
 
 /* Returned pointer MUST be freed by the caller if non-NULL. */
-static char* mb_to_mb_string_alloc(const char *str, enum CodePage cp_in, enum CodePage cp_out)
+static char* mb_to_mb_string_alloc(const char *str,
+      enum CodePage cp_in, enum CodePage cp_out)
 {
-   char *path_buf = NULL;
+   char *path_buf         = NULL;
    wchar_t *path_buf_wide = NULL;
-   int path_buf_len = 0;
-   int path_buf_wide_len = 0;
+   int path_buf_len       = 0;
+   int path_buf_wide_len  = 0;
 
    if (!str || !*str)
       return NULL;
     
    (void)path_buf;
+   (void)path_buf_wide;
    (void)path_buf_len;
    (void)path_buf_wide_len;
 
@@ -300,45 +301,49 @@ static char* mb_to_mb_string_alloc(const char *str, enum CodePage cp_in, enum Co
 
    if (path_buf_wide_len)
    {
-      path_buf_wide = (wchar_t*)calloc(path_buf_wide_len + sizeof(wchar_t), sizeof(wchar_t));
+      path_buf_wide = (wchar_t*)
+         calloc(path_buf_wide_len + sizeof(wchar_t), sizeof(wchar_t));
 
       if (path_buf_wide)
       {
-         MultiByteToWideChar(cp_in, 0, str, -1, path_buf_wide, path_buf_wide_len);
+         MultiByteToWideChar(cp_in, 0,
+               str, -1, path_buf_wide, path_buf_wide_len);
 
          if (*path_buf_wide)
          {
-            path_buf_len = WideCharToMultiByte(cp_out, 0, path_buf_wide, -1, NULL, 0, NULL, NULL);
+            path_buf_len = WideCharToMultiByte(cp_out, 0,
+                  path_buf_wide, -1, NULL, 0, NULL, NULL);
 
             if (path_buf_len)
             {
-               path_buf = (char*)calloc(path_buf_len + sizeof(char), sizeof(char));
+               path_buf = (char*)
+                  calloc(path_buf_len + sizeof(char), sizeof(char));
 
                if (path_buf)
                {
-                  WideCharToMultiByte(cp_out, 0, path_buf_wide, -1, path_buf, path_buf_len, NULL, NULL);
+                  WideCharToMultiByte(cp_out, 0,
+                        path_buf_wide, -1, path_buf,
+                        path_buf_len, NULL, NULL);
 
                   free(path_buf_wide);
 
                   if (*path_buf)
                      return path_buf;
-                  else
-                  {
-                     free(path_buf);
-                     return NULL;
-                  }
+
+                  free(path_buf);
+                  return NULL;
                }
             }
          }
       }
    }
-#endif
-#endif
 
    if (path_buf_wide)
       free(path_buf_wide);
 
    return NULL;
+#endif
+#endif
 }
 
 /* Returned pointer MUST be freed by the caller if non-NULL. */

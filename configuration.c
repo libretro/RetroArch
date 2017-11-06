@@ -1891,6 +1891,8 @@ static config_file_t *open_default_config_file(void)
 
    application_data[0] = conf_path[0] = app_path[0] = '\0';
 
+   (void)path_size;
+
 #if defined(_WIN32) && !defined(_XBOX)
    fill_pathname_application_path(app_path, path_size);
    fill_pathname_resolve_relative(conf_path, app_path,

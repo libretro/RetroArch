@@ -921,7 +921,7 @@ void fill_short_pathname_representation_noext(char* out_rep,
    path_remove_extension(out_rep);
 }
 
-int path_file_remove(const char *path)
+bool path_file_remove(const char *path)
 {
    char *path_local    = NULL;
    wchar_t *path_wide  = NULL;
@@ -938,27 +938,29 @@ int path_file_remove(const char *path)
 
    if (path_local)
    {
-      bool ret = remove(path_local);
+      int ret = remove(path_local);
       free(path_local);
 
-      return ret;
+      if (ret == 0)
+         return true;
    }
 #else
    path_wide = utf8_to_utf16_string_alloc(path);
 
    if (path_wide)
    {
-      bool ret = _wremove(path_wide);
+      int ret = _wremove(path_wide);
       free(path_wide);
 
-      return ret;
+      if (ret == 0)
+         return true;
    }
 #endif
 #else
-   return remove(path);
+   if (remove(path) == 0)
+      return true;
 #endif
-
-   return -1;
+   return false;
 }
 
 int path_file_rename(const char *old_path, const char *new_path)
@@ -983,11 +985,9 @@ int path_file_rename(const char *old_path, const char *new_path)
 
    if (old_path_local)
    {
-      bool ret;
-
       if (new_path_local)
       {
-         ret = rename(old_path_local, new_path_local);
+         int ret = rename(old_path_local, new_path_local);
          free(old_path_local);
          free(new_path_local);
          return ret;
@@ -1004,11 +1004,9 @@ int path_file_rename(const char *old_path, const char *new_path)
 
    if (old_path_wide)
    {
-      bool ret;
-
       if (new_path_wide)
       {
-         ret = _wrename(old_path_wide, new_path_wide);
+         int ret = _wrename(old_path_wide, new_path_wide);
          free(old_path_wide);
          free(new_path_wide);
          return ret;
@@ -1019,10 +1017,10 @@ int path_file_rename(const char *old_path, const char *new_path)
 
    if (new_path_wide)
       free(new_path_wide);
+
+   return -1;
 #endif
 #else
    return rename(old_path, new_path);
 #endif
-
-   return -1;
 }
