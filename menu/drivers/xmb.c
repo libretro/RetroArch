@@ -169,7 +169,10 @@ enum
 #ifdef HAVE_NETWORKING
    XMB_SYSTEM_TAB_NETPLAY,
 #endif
-   XMB_SYSTEM_TAB_ADD
+   XMB_SYSTEM_TAB_ADD,
+
+   /* End of this enum - use the last one to determine num of possible tabs */
+   XMB_SYSTEM_TAB_MAX_LENGTH
 };
 
 typedef struct xmb_handle
@@ -177,7 +180,7 @@ typedef struct xmb_handle
    bool mouse_show;
 
    uint8_t system_tab_end;
-   uint8_t tabs[16];
+   uint8_t tabs[XMB_SYSTEM_TAB_MAX_LENGTH];
 
    int depth;
    int old_depth;
