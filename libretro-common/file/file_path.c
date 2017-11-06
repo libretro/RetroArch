@@ -963,7 +963,7 @@ bool path_file_remove(const char *path)
    return false;
 }
 
-int path_file_rename(const char *old_path, const char *new_path)
+bool path_file_rename(const char *old_path, const char *new_path)
 {
    char *old_path_local    = NULL;
    char *new_path_local    = NULL;
@@ -1017,10 +1017,10 @@ int path_file_rename(const char *old_path, const char *new_path)
 
    if (new_path_wide)
       free(new_path_wide);
-
-   return -1;
 #endif
 #else
-   return rename(old_path, new_path);
+   if (rename(old_path, new_path) == 0)
+      return true;
 #endif
+   return false;
 }
