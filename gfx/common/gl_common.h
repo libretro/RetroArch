@@ -171,6 +171,8 @@ typedef struct gl
 #ifdef HAVE_GL_SYNC
    GLsync fences[MAX_FENCES];
 #endif
+   const gl_renderchain_driver_t *renderchain_driver;
+   void *renderchain_data;
 } gl_t;
 
 bool gl_load_luts(const struct video_shader *generic_shader,
