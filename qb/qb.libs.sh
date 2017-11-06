@@ -1,5 +1,3 @@
-#<maister> echo -n is broken on recent OSX btw
-
 MAKEFILE_DEFINES='.MAKEFILE_DEFINES'
 CONFIG_DEFINES='.CONFIG_DEFINES'
 cat /dev/null > "$MAKEFILE_DEFINES" > "$CONFIG_DEFINES"
@@ -49,7 +47,6 @@ check_lib() # $1 = language  $2 = HAVE_$2  $3 = lib  $4 = function in lib  $5 = 
 		echo "int main(void) { return 0; }" > "$TEMP_CODE"
 	fi
 	answer='no'
-#	echo -n "$ECHOBUF"
 	"$COMPILER" -o \
 		"$TEMP_EXE" \
 		"$TEMP_CODE" \
@@ -79,7 +76,6 @@ check_code_c()
 	[ "$tmpval" = 'no' ] && return 0
 
 	ECHOBUF="Checking C code snippet \"$3\""
-#	echo -n "Checking C code snippet \"$3\""
 	answer='no'
 	"$CC" -o "$TEMP_EXE" "$TEMP_C" $INCLUDE_DIRS $LIBRARY_DIRS $2 $CFLAGS $LDFLAGS >>config.log 2>&1 && answer='yes'
 	eval HAVE_$1="$answer"; echo "$ECHOBUF ... $answer"
@@ -91,7 +87,6 @@ check_code_cxx()
 	[ "$tmpval" = 'no' ] && return 0
 
 	ECHOBUF="Checking C++ code snippet \"$3\""
-#	echo -n "Checking C++ code snippet \"$3\""
 	answer='no'
 	"$CXX" -o "$TEMP_EXE" "$TEMP_CXX" $INCLUDE_DIRS $LIBRARY_DIRS $2 $CXXFLAGS $LDFLAGS >>config.log 2>&1 && answer='yes'
 	eval HAVE_$1="$answer"; echo "$ECHOBUF ... $answer"
@@ -136,7 +131,6 @@ check_header()	#$1 = HAVE_$1	$2..$5 = header files
 {	tmpval="$(eval echo \$HAVE_$1)"
 	[ "$tmpval" = 'no' ] && return 0
 	CHECKHEADER="$2"
-#	echo -n "Checking presence of header file $2"
 	echo "#include <$2>" > "$TEMP_C"
 	[ "$3" != "" ] && CHECKHEADER="$3" && echo "#include <$3>" >> "$TEMP_C"
 	[ "$4" != "" ] && CHECKHEADER="$4" && echo "#include <$4>" >> "$TEMP_C"
@@ -156,7 +150,6 @@ check_macro()	#$1 = HAVE_$1	$2 = macro name
 {	tmpval="$(eval echo \$HAVE_$1)"
 	[ "$tmpval" = 'no' ] && return 0
 	ECHOBUF="Checking presence of predefined macro $2"
-#	echo -n "Checking presence of predefined macro $2"
 	cat << EOF > "$TEMP_C"
 #ifndef $2
 #error $2 is not defined
@@ -175,7 +168,6 @@ EOF
 
 check_switch_c()	#$1 = HAVE_$1	$2 = switch	$3 = critical error message [checked only if non-empty]
 {	ECHOBUF="Checking for availability of switch $2 in $CC"
-#	echo -n "Checking for availability of switch $2 in $CC "
 	echo "int main(void) { return 0; }" > $TEMP_C
 	answer='no'
 	"$CC" -o "$TEMP_EXE" "$TEMP_C" $2 >>config.log 2>&1 && answer='yes'
@@ -188,7 +180,6 @@ check_switch_c()	#$1 = HAVE_$1	$2 = switch	$3 = critical error message [checked 
 
 check_switch_cxx()	#$1 = HAVE_$1	$2 = switch	$3 = critical error message [checked only if non-empty]
 {	ECHOBUF="Checking for availability of switch $2 in $CXX"
-#	echo -n "Checking for availability of switch $2 in $CXX"
 	echo "int main() { return 0; }" > $TEMP_CXX
 	answer='no'
 	"$CXX" -o "$TEMP_EXE" "$TEMP_CXX" "$2" >>config.log 2>&1 && answer='yes'
