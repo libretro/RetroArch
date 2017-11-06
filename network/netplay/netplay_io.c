@@ -226,7 +226,7 @@ static bool send_input_frame(netplay_t *netplay, struct delta_frame *dframe,
 
    /* Add the device data */
    devices = netplay->client_devices[client_num];
-   for (device = 0; device < devices; device++)
+   for (device = 0; device < MAX_INPUT_DEVICES; device++)
    {
       netplay_input_state_t istate;
       if (!(devices & (1<<device)))
