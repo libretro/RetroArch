@@ -669,6 +669,8 @@ else
    INCLUDE += -I./libretro-common/include
 endif
 
+INCLUDE += -Ideps -Ideps/stb 
+
 OBJ = griffin/griffin.o  $(PLATOBJS)
 
 ifeq ($(HAVE_GRIFFIN_CPP), 1)

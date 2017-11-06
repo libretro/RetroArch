@@ -142,7 +142,7 @@ ifeq ($(WHOLE_ARCHIVE_LINK), 1)
    WHOLE_END := -Wl,--no-whole-archive
 endif
 
-CFLAGS += -I. -Ideps/libz -Ideps/7zip -Ilibretro-common/include
+CFLAGS += -I. -Ideps -Ideps/libz -Ideps/7zip -Ideps/stb -Ilibretro-common/include
 
 CFLAGS += -DRARCH_INTERNAL -DRARCH_CONSOLE -DSINC_LOWEST_QUALITY
 CFLAGS += -DHAVE_FILTERS_BUILTIN $(DEFINES)

@@ -134,7 +134,7 @@ else
 endif
 
 
-INCDIRS := -I. -Ideps/libz -Ideps/7zip -Ilibretro-common/include -Iwiiu -Iwiiu/include -I$(DEVKITPRO)/portlibs/ppc/include
+INCDIRS := -I. -Ideps -Ideps/stb -Ideps/libz -Ideps/7zip -Ilibretro-common/include -Iwiiu -Iwiiu/include -I$(DEVKITPRO)/portlibs/ppc/include
 LIBDIRS := -L. -L$(DEVKITPRO)/portlibs/ppc/lib
 
 CFLAGS  := -mwup -mcpu=750 -meabi -mhard-float

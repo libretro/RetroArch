@@ -72,7 +72,7 @@ OBJ += libretro-common/audio/dsp_filters/phaser.o
 OBJ += libretro-common/audio/dsp_filters/reverb.o
 OBJ += libretro-common/audio/dsp_filters/wahwah.o
 
-CFLAGS += -Ideps/libz/
+CFLAGS += -Ideps/libz -Ideps -Ideps/stb
 libretro = libretro_emscripten.bc
 
 ifneq ($(V), 1)

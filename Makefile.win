@@ -122,8 +122,8 @@ else
    CXXFLAGS += -O3 -ffast-math
 endif
 
-CFLAGS += -Wall -Wno-unused-result -Wno-unused-variable -I.
-CXXFLAGS += -Wall -Wno-unused-result -Wno-unused-variable -I. -std=c++98 -D__STDC_CONSTANT_MACROS
+CFLAGS += -Wall -Wno-unused-result -Wno-unused-variable -I. -Ideps 
+CXXFLAGS += -Wall -Wno-unused-result -Wno-unused-variable -I. -Ideps -std=c++98 -D__STDC_CONSTANT_MACROS
 ifeq ($(CXX_BUILD), 1)
    CFLAGS += -std=c++98 -xc++ -D__STDC_CONSTANT_MACROS
 else

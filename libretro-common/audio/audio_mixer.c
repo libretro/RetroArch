@@ -44,11 +44,11 @@
 #define STB_VORBIS_NO_STDIO
 #define STB_VORBIS_NO_CRT
 
-#include "stb/stb_vorbis.h"
+#include <stb_vorbis.h>
 #endif
 
 #ifdef HAVE_IBXM
-#include "ibxm/ibxm.h"
+#include <ibxm/ibxm.h>
 #endif
 
 #define AUDIO_MIXER_MAX_VOICES      8
