@@ -4027,10 +4027,7 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
       first                   = 0;
    }
    else
-   {
-      selection = 0;
       xmb->selection_ptr_old = 0;
-   }
 
    list_size = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL)
       + xmb->system_tab_end;

@@ -282,6 +282,10 @@ static char* mb_to_mb_string_alloc(const char *str, enum CodePage cp_in, enum Co
 
    if (!str || !*str)
       return NULL;
+    
+   (void)path_buf;
+   (void)path_buf_len;
+   (void)path_buf_wide_len;
 
 #if !defined(_WIN32) || defined(_XBOX)
    /* assume string needs no modification if not on Windows */

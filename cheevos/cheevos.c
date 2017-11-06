@@ -865,7 +865,9 @@ static int cheevos_parse_condition(cheevos_condition_t *condition, const char* m
       unsigned set                 = 0;
       cheevos_condset_t *condset   = NULL;
       cheevos_condset_t *conds     = NULL;
-      const cheevos_condset_t* end;
+      const cheevos_condset_t* end = NULL;
+       
+      (void)conds;
 
       condition->condsets = (cheevos_condset_t*)
          calloc(condition->count, sizeof(cheevos_condset_t));
