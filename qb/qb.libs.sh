@@ -57,7 +57,7 @@ check_lib() # $1 = language  $2 = HAVE_$2  $3 = lib  $4 = function in lib  $5 = 
 		$LDFLAGS \
 		$(printf %s "$3") >>config.log 2>&1 && answer='yes'
 	eval HAVE_$2="$answer"; echo "$ECHOBUF ... $answer"
-	rm "$TEMP_CODE" "$TEMP_EXE" >/dev/null 2>&1
+	rm -f -- "$TEMP_CODE" "$TEMP_EXE"
 
 	[ "$answer" = 'no' ] && {
 		[ "$7" ] && { echo "$7"; exit 1;}
@@ -79,7 +79,7 @@ check_code_c()
 	answer='no'
 	"$CC" -o "$TEMP_EXE" "$TEMP_C" $INCLUDE_DIRS $LIBRARY_DIRS $2 $CFLAGS $LDFLAGS >>config.log 2>&1 && answer='yes'
 	eval HAVE_$1="$answer"; echo "$ECHOBUF ... $answer"
-	rm "$TEMP_C" "$TEMP_EXE" >/dev/null 2>&1
+	rm -f -- "$TEMP_C" "$TEMP_EXE"
 }
 
 check_code_cxx()
@@ -90,7 +90,7 @@ check_code_cxx()
 	answer='no'
 	"$CXX" -o "$TEMP_EXE" "$TEMP_CXX" $INCLUDE_DIRS $LIBRARY_DIRS $2 $CXXFLAGS $LDFLAGS >>config.log 2>&1 && answer='yes'
 	eval HAVE_$1="$answer"; echo "$ECHOBUF ... $answer"
-	rm "$TEMP_CXX" "$TEMP_EXE" >/dev/null 2>&1
+	rm -f -- "$TEMP_CXX" "$TEMP_EXE"
 }
 
 check_pkgconf()	#$1 = HAVE_$1	$2 = package	$3 = version	$4 = critical error message [checked only if non-empty]
@@ -139,7 +139,7 @@ check_header()	#$1 = HAVE_$1	$2..$5 = header files
 	answer='no'
 	"$CC" -o "$TEMP_EXE" "$TEMP_C" $INCLUDE_DIRS >>config.log 2>&1 && answer='yes'
 	eval HAVE_$1="$answer"; echo "Checking presence of header file $CHECKHEADER ... $answer"
-	rm "$TEMP_C" "$TEMP_EXE" >/dev/null 2>&1
+	rm -f -- "$TEMP_C" "$TEMP_EXE"
 	[ "$tmpval" = 'yes' ] && [ "$answer" = 'no' ] && {
 		echo "Build assumed that $2 exists, but cannot locate. Exiting ..."
 		exit 1
@@ -159,7 +159,7 @@ EOF
 	answer='no'
 	"$CC" -o "$TEMP_EXE" "$TEMP_C" $CFLAGS $INCLUDE_DIRS >>config.log 2>&1 && answer='yes'
 	eval HAVE_$1="$answer"; echo "$ECHOBUF ... $answer"
-	rm "$TEMP_C" "$TEMP_EXE" >/dev/null 2>&1
+	rm -f -- "$TEMP_C" "$TEMP_EXE"
 	[ "$tmpval" = 'yes' ] && [ "$answer" = 'no' ] && {
 		echo "Build assumed that $2 is defined, but it's not. Exiting ..."
 		exit 1
@@ -172,7 +172,7 @@ check_switch_c()	#$1 = HAVE_$1	$2 = switch	$3 = critical error message [checked 
 	answer='no'
 	"$CC" -o "$TEMP_EXE" "$TEMP_C" $2 >>config.log 2>&1 && answer='yes'
 	eval HAVE_$1="$answer"; echo "$ECHOBUF ... $answer"
-	rm "$TEMP_C" "$TEMP_EXE" >/dev/null 2>&1
+	rm -f -- "$TEMP_C" "$TEMP_EXE"
 	[ "$answer" = 'no' ] && {
 		[ "$3" ] && { echo "$3"; exit 1;}
 	}
@@ -184,7 +184,7 @@ check_switch_cxx()	#$1 = HAVE_$1	$2 = switch	$3 = critical error message [checke
 	answer='no'
 	"$CXX" -o "$TEMP_EXE" "$TEMP_CXX" "$2" >>config.log 2>&1 && answer='yes'
 	eval HAVE_$1="$answer"; echo "$ECHOBUF ... $answer"
-	rm "$TEMP_CXX" "$TEMP_EXE" >/dev/null 2>&1
+	rm -f -- "$TEMP_CXX" "$TEMP_EXE"
 	[ "$answer" = 'no' ] && {
 		[ "$3" ] && { echo "$3"; exit 1;}
 	}
@@ -266,4 +266,4 @@ create_config_make()
 
 . qb/config.libs.sh
 
-rm "$MAKEFILE_DEFINES" "$CONFIG_DEFINES"
+rm -f -- "$MAKEFILE_DEFINES" "$CONFIG_DEFINES"
