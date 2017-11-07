@@ -294,7 +294,7 @@ static void gl2_renderchain_render(
       mip_level = i + 1;
 
       if (video_shader_driver_mipmap_input(&mip_level)
-            && gl_check_capability(GL_CAPS_MIPMAP))
+            && gl->have_mipmap)
          glGenerateMipmap(GL_TEXTURE_2D);
 
       glClear(GL_COLOR_BUFFER_BIT);
@@ -371,7 +371,7 @@ static void gl2_renderchain_render(
    mip_level = gl->fbo_pass + 1;
 
    if (video_shader_driver_mipmap_input(&mip_level)
-         && gl_check_capability(GL_CAPS_MIPMAP))
+         && gl->have_mipmap)
       glGenerateMipmap(GL_TEXTURE_2D);
 
    glClear(GL_COLOR_BUFFER_BIT);

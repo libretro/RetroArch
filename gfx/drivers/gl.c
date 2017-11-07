@@ -827,12 +827,13 @@ void gl_load_texture_data(
    bool rgb32       = (base_size == (sizeof(uint32_t)));
    GLenum wrap      = gl_wrap_type_to_enum(wrap_type);
    GLuint id        = (GLuint)id_data;
+   bool have_mipmap = gl_check_capability(GL_CAPS_MIPMAP);
 
    glBindTexture(GL_TEXTURE_2D, id);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap);
 
-   if (!gl_check_capability(GL_CAPS_MIPMAP))
+   if (!have_mipmap)
    {
       /* Assume no mipmapping support. */
       switch (filter_type)
@@ -882,7 +883,7 @@ void gl_load_texture_data(
          (use_rgba || !rgb32) ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32,
          (rgb32) ? RARCH_GL_FORMAT32 : GL_UNSIGNED_SHORT_4_4_4_4, frame);
 
-   if (want_mipmap && gl_check_capability(GL_CAPS_MIPMAP))
+   if (want_mipmap && have_mipmap)
       glGenerateMipmap(GL_TEXTURE_2D);
 }
 
@@ -1249,7 +1250,7 @@ static bool gl_frame(void *data, const void *frame,
 
       /* No point regenerating mipmaps
        * if there are no new frames. */
-      if (gl->tex_mipmap && gl_check_capability(GL_CAPS_MIPMAP))
+      if (gl->tex_mipmap && gl->have_mipmap)
          glGenerateMipmap(GL_TEXTURE_2D);
    }
 
@@ -1591,6 +1592,7 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
     */
    gl->have_full_npot_support = gl_check_capability(GL_CAPS_FULL_NPOT_SUPPORT);
 #endif
+   gl->have_mipmap            = gl_check_capability(GL_CAPS_MIPMAP);
    gl->have_es2_compat        = gl_check_capability(GL_CAPS_ES2_COMPAT);
    gl->have_sync              = gl_check_capability(GL_CAPS_SYNC);
 

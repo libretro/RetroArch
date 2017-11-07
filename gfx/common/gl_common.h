@@ -63,6 +63,7 @@ typedef struct gl
    bool support_unpack_row_length;
    bool have_es2_compat;
    bool have_full_npot_support;
+   bool have_mipmap;
 
    bool egl_images;
 #ifdef HAVE_OVERLAY
