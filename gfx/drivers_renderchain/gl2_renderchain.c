@@ -137,7 +137,6 @@ static void gl2_renderchain_convert_geometry(
    }
 }
 
-#ifdef HAVE_FBO
 static bool gl_recreate_fbo(
       struct video_fbo_rect *fbo_rect,
       GLuint fbo,
@@ -939,8 +938,6 @@ static bool gl2_renderchain_init_hw_render(
    return true;
 }
 
-#endif
-
 static void gl2_renderchain_bind_prev_texture(
       void *data,
       const struct video_tex_info *tex_info)
@@ -952,7 +949,6 @@ static void gl2_renderchain_bind_prev_texture(
    memcpy(&gl->prev_info[0], tex_info,
          sizeof(*tex_info));
 
-#ifdef HAVE_FBO
    /* Implement feedback by swapping out FBO/textures 
     * for FBO pass #N and feedbacks. */
    if (gl->fbo_feedback_enable)
@@ -964,7 +960,6 @@ static void gl2_renderchain_bind_prev_texture(
       gl->fbo[gl->fbo_feedback_pass] = tmp_fbo;
       gl->fbo_texture[gl->fbo_feedback_pass] = tmp_tex;
    }
-#endif
 }
 
 static void gl2_renderchain_viewport_info(
@@ -1107,7 +1102,6 @@ static void *gl2_renderchain_new(void)
    return renderchain;
 }
 
-#ifdef HAVE_FBO
 gl_renderchain_driver_t gl2_renderchain = {
    gl2_renderchain_deinit_fbo,
    gl2_renderchain_viewport_info,
@@ -1125,4 +1119,3 @@ gl_renderchain_driver_t gl2_renderchain = {
    gl2_renderchain_render,
    "gl2",
 };
-#endif
