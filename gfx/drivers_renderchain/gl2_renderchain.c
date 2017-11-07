@@ -28,6 +28,9 @@
 #include "config.h"
 #endif
 
+#include <retro_common_api.h>
+#include <libretro.h>
+
 #include <compat/strl.h>
 #include <gfx/scaler/scaler.h>
 #include <formats/image.h>
@@ -39,8 +42,8 @@
 #include <gfx/gl_capabilities.h>
 #include <gfx/video_frame.h>
 
-#include "gl2_renderchain.h"
 #include "../video_driver.h"
+#include "../video_shader_parse.h"
 #include "../common/gl_common.h"
 
 #include "../../driver.h"
@@ -57,6 +60,12 @@
    coords[5] = yamt; \
    coords[7] = yamt
 
+typedef struct gl2_renderchain
+{
+   void *empty;
+} gl2_renderchain_t;
+
+/* Prototypes */
 #ifdef IOS
 /* There is no default frame buffer on iOS. */
 void cocoagl_bind_game_view_fbo(void);
@@ -65,12 +74,8 @@ void cocoagl_bind_game_view_fbo(void);
 #define gl_bind_backbuffer() glBindFramebuffer(RARCH_GL_FRAMEBUFFER, 0)
 #endif
 
-typedef struct gl2_renderchain
-{
-   void *empty;
-} gl2_renderchain_t;
+void context_bind_hw_render(bool enable);
 
-/* Prototypes */
 GLenum min_filter_to_mag(GLenum type);
 
 void gl_load_texture_data(
@@ -402,7 +407,7 @@ static void gl2_renderchain_render(
    gl->coords.tex_coord = gl->tex_info.coord;
 }
 
-void gl2_renderchain_deinit_fbo(void *data)
+static void gl2_renderchain_deinit_fbo(void *data)
 {
    gl_t *gl = (gl_t*)data;
    if (!gl->fbo_inited)
@@ -1104,6 +1109,7 @@ static void *gl2_renderchain_new(void)
 
 #ifdef HAVE_FBO
 gl_renderchain_driver_t gl2_renderchain = {
+   gl2_renderchain_deinit_fbo,
    gl2_renderchain_viewport_info,
    gl2_renderchain_read_viewport,
    gl2_renderchain_bind_prev_texture,

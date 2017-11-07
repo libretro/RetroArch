@@ -827,6 +827,7 @@ typedef struct d3d_renderchain_driver
 
 typedef struct gl_renderchain_driver
 {
+   void (*deinit_fbo)(void *data);
    void (*viewport_info)(
          void *data, struct video_viewport *vp);
    bool (*read_viewport)(

@@ -41,8 +41,6 @@
 #include <gfx/gl_capabilities.h>
 #include <gfx/video_frame.h>
 
-#include "../drivers_renderchain/gl2_renderchain.h"
-
 #include "../../configuration.h"
 #include "../../dynamic.h"
 #include "../../record/record_driver.h"
@@ -2375,7 +2373,8 @@ static bool gl_set_shader(void *data,
    }
 
 #ifdef HAVE_FBO
-   gl2_renderchain_deinit_fbo(gl);
+   if (gl->renderchain_driver->deinit_fbo)
+      gl->renderchain_driver->deinit_fbo(gl);
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 #endif
 
