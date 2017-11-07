@@ -1081,7 +1081,6 @@ static struct video_shader *gl_get_current_shader(void *data)
    return shader_info.data;
 }
 
-#if defined(HAVE_GL_ASYNC_READBACK)
 static void gl_pbo_async_readback(gl_t *gl)
 {
    glBindBuffer(GL_PIXEL_PACK_BUFFER,
@@ -1109,7 +1108,6 @@ static void gl_pbo_async_readback(gl_t *gl)
 
    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 }
-#endif
 
 static INLINE void gl_draw_texture(gl_t *gl, video_frame_info_t *video_info)
 {
@@ -1395,12 +1393,10 @@ static bool gl_frame(void *data, const void *frame,
             gl->vp.width, gl->vp.height,
             GL_RGBA, GL_UNSIGNED_BYTE, gl->readback_buffer_screenshot);
    }
-#ifdef HAVE_GL_ASYNC_READBACK
 #ifdef HAVE_MENU
    /* Don't readback if we're in menu mode. */
    else if (gl->pbo_readback_enable && !gl->menu_texture_enable)
       gl_pbo_async_readback(gl);
-#endif
 #endif
 #endif
 
@@ -1520,13 +1516,11 @@ static void gl_free(void *data)
 
    scaler_ctx_gen_reset(&gl->scaler);
 
-#ifdef HAVE_GL_ASYNC_READBACK
    if (gl->pbo_readback_enable)
    {
       glDeleteBuffers(4, gl->pbo_readback);
       scaler_ctx_gen_reset(&gl->pbo_readback_scaler);
    }
-#endif
 
    if (gl->renderchain_driver->free)
       gl->renderchain_driver->free(gl);
@@ -1707,11 +1701,8 @@ static INLINE void gl_set_texture_fmts(gl_t *gl, bool rgb32)
 static void gl_init_pbo_readback(gl_t *gl)
 {
    unsigned i;
-   settings_t *settings      = config_get_ptr();
    bool *recording_enabled   = recording_is_enabled();
-#ifndef HAVE_OPENGLES3
-   struct scaler_ctx *scaler = NULL;
-#endif
+   settings_t *settings      = config_get_ptr();
 
    /* Only bother with this if we're doing GPU recording.
     * Check recording_is_enabled() and not
@@ -1737,22 +1728,24 @@ static void gl_init_pbo_readback(gl_t *gl)
    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 
 #ifndef HAVE_OPENGLES3
-   scaler              = &gl->pbo_readback_scaler;
-   scaler->in_width    = gl->vp.width;
-   scaler->in_height   = gl->vp.height;
-   scaler->out_width   = gl->vp.width;
-   scaler->out_height  = gl->vp.height;
-   scaler->in_stride   = gl->vp.width * sizeof(uint32_t);
-   scaler->out_stride  = gl->vp.width * 3;
-   scaler->in_fmt      = SCALER_FMT_ARGB8888;
-   scaler->out_fmt     = SCALER_FMT_BGR24;
-   scaler->scaler_type = SCALER_TYPE_POINT;
-
-   if (!scaler_ctx_gen_filter(scaler))
    {
-      gl->pbo_readback_enable = false;
-      RARCH_ERR("[GL]: Failed to initialize pixel conversion for PBO.\n");
-      glDeleteBuffers(4, gl->pbo_readback);
+      struct scaler_ctx *scaler = &gl->pbo_readback_scaler;
+      scaler->in_width          = gl->vp.width;
+      scaler->in_height         = gl->vp.height;
+      scaler->out_width         = gl->vp.width;
+      scaler->out_height        = gl->vp.height;
+      scaler->in_stride         = gl->vp.width * sizeof(uint32_t);
+      scaler->out_stride        = gl->vp.width * 3;
+      scaler->in_fmt            = SCALER_FMT_ARGB8888;
+      scaler->out_fmt           = SCALER_FMT_BGR24;
+      scaler->scaler_type       = SCALER_TYPE_POINT;
+
+      if (!scaler_ctx_gen_filter(scaler))
+      {
+         gl->pbo_readback_enable = false;
+         RARCH_ERR("[GL]: Failed to initialize pixel conversion for PBO.\n");
+         glDeleteBuffers(4, gl->pbo_readback);
+      }
    }
 #endif
 }

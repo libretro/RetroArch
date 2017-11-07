@@ -1001,7 +1001,6 @@ static bool gl2_renderchain_read_viewport(
 
    num_pixels = gl->vp.width * gl->vp.height;
 
-#ifdef HAVE_GL_ASYNC_READBACK
    if (gl->pbo_readback_enable)
    {
       const uint8_t *ptr  = NULL;
@@ -1049,10 +1048,11 @@ static bool gl2_renderchain_read_viewport(
       glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
       glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
    }
-   else /* Use slow synchronous readbacks. Use this with plain screenshots
-           as we don't really care about performance in this case. */
-#endif
+   else 
    {
+      /* Use slow synchronous readbacks. Use this with plain screenshots
+         as we don't really care about performance in this case. */
+
       /* GLES2 only guarantees GL_RGBA/GL_UNSIGNED_BYTE
        * readbacks so do just that.
        * GLES2 also doesn't support reading back data

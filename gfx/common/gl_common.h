@@ -77,10 +77,8 @@ typedef struct gl
    bool menu_texture_full_screen;
 #endif
    bool have_sync;
-#ifdef HAVE_GL_ASYNC_READBACK
    bool pbo_readback_valid[4];
    bool pbo_readback_enable;
-#endif
 
    int version_major;
    int version_minor;
@@ -98,9 +96,7 @@ typedef struct gl
    GLuint menu_texture;
 #endif
    GLuint vao;
-#ifdef HAVE_GL_ASYNC_READBACK
    GLuint pbo_readback[4];
-#endif
    GLuint texture[GFX_MAX_TEXTURES];
    GLuint fbo[GFX_MAX_SHADERS];
    GLuint fbo_texture[GFX_MAX_SHADERS];
@@ -119,9 +115,7 @@ typedef struct gl
 #ifdef HAVE_OVERLAY
    unsigned overlays;
 #endif
-#ifdef HAVE_GL_ASYNC_READBACK
    unsigned pbo_readback_index;
-#endif
    unsigned fence_count;
    unsigned last_width[GFX_MAX_TEXTURES];
    unsigned last_height[GFX_MAX_TEXTURES];
@@ -142,9 +136,7 @@ typedef struct gl
 #endif
 
    struct video_tex_info tex_info;
-#ifdef HAVE_GL_ASYNC_READBACK
    struct scaler_ctx pbo_readback_scaler;
-#endif
    struct video_viewport vp;
    math_matrix_4x4 mvp, mvp_no_rot;
    struct video_coords coords;
