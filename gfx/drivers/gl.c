@@ -71,10 +71,6 @@
 #include "../../menu/menu_driver.h"
 #endif
 
-#if defined(_WIN32) && !defined(_XBOX)
-#include "../common/win32_common.h"
-#endif
-
 #ifndef GL_SYNC_GPU_COMMANDS_COMPLETE
 #define GL_SYNC_GPU_COMMANDS_COMPLETE     0x9117
 #endif
@@ -143,9 +139,6 @@ void context_bind_hw_render(bool enable)
 #ifdef HAVE_OVERLAY
 static void gl_free_overlay(gl_t *gl)
 {
-   if (!gl)
-      return;
-
    glDeleteTextures(gl->overlays, gl->overlay_tex);
 
    free(gl->overlay_tex);
@@ -2495,7 +2488,8 @@ static bool gl_overlay_load(void *data,
    context_bind_hw_render(false);
 
    gl_free_overlay(gl);
-   gl->overlay_tex = (GLuint*)calloc(num_images, sizeof(*gl->overlay_tex));
+   gl->overlay_tex = (GLuint*)
+      calloc(num_images, sizeof(*gl->overlay_tex));
 
    if (!gl->overlay_tex)
    {
