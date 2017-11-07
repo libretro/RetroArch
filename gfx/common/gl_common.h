@@ -76,9 +76,7 @@ typedef struct gl
    bool menu_texture_enable;
    bool menu_texture_full_screen;
 #endif
-#ifdef HAVE_GL_SYNC
    bool have_sync;
-#endif
 #ifdef HAVE_GL_ASYNC_READBACK
    bool pbo_readback_valid[4];
    bool pbo_readback_enable;
@@ -124,9 +122,7 @@ typedef struct gl
 #ifdef HAVE_GL_ASYNC_READBACK
    unsigned pbo_readback_index;
 #endif
-#ifdef HAVE_GL_SYNC
    unsigned fence_count;
-#endif
    unsigned last_width[GFX_MAX_TEXTURES];
    unsigned last_height[GFX_MAX_TEXTURES];
 
@@ -158,9 +154,7 @@ typedef struct gl
    struct video_fbo_rect fbo_rect[GFX_MAX_SHADERS];
    struct gfx_fbo_scale fbo_scale[GFX_MAX_SHADERS];
 
-#ifdef HAVE_GL_SYNC
    GLsync fences[MAX_FENCES];
-#endif
    const gl_renderchain_driver_t *renderchain_driver;
    void *renderchain_data;
 } gl_t;

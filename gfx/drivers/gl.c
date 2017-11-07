@@ -1418,7 +1418,6 @@ static bool gl_frame(void *data, const void *frame,
 
    video_info->cb_swap_buffers(video_info->context_data, video_info);
 
-#ifdef HAVE_GL_SYNC
    if (video_info->hard_sync && gl->have_sync)
    {
       glClear(GL_COLOR_BUFFER_BIT);
@@ -1436,7 +1435,6 @@ static bool gl_frame(void *data, const void *frame,
                gl->fence_count * sizeof(GLsync));
       }
    }
-#endif
 
 #ifndef HAVE_OPENGLES
    if (gl_query_core_context_in_use())
@@ -1484,7 +1482,6 @@ static void gl_free(void *data)
 
    context_bind_hw_render(false);
 
-#ifdef HAVE_GL_SYNC
    if (gl->have_sync)
    {
       unsigned i;
@@ -1497,7 +1494,6 @@ static void gl_free(void *data)
       }
       gl->fence_count = 0;
    }
-#endif
 
    font_driver_free_osd();
    video_shader_driver_deinit();
@@ -1610,11 +1606,9 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
    gl->have_full_npot_support = gl_check_capability(GL_CAPS_FULL_NPOT_SUPPORT);
 #endif
 
-#ifdef HAVE_GL_SYNC
    gl->have_sync = gl_check_capability(GL_CAPS_SYNC);
    if (gl->have_sync && settings->bools.video_hard_sync)
       RARCH_LOG("[GL]: Using ARB_sync to reduce latency.\n");
-#endif
 
    video_driver_unset_rgba();
 #if defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
