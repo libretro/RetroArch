@@ -1075,6 +1075,7 @@ static struct video_shader *gl_get_current_shader(void *data)
    return shader_info.data;
 }
 
+#ifdef HAVE_GL_ASYNC_READBACK
 static void gl_pbo_async_readback(gl_t *gl)
 {
    glBindBuffer(GL_PIXEL_PACK_BUFFER,
@@ -1102,6 +1103,7 @@ static void gl_pbo_async_readback(gl_t *gl)
 
    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 }
+#endif
 
 static INLINE void gl_draw_texture(gl_t *gl, video_frame_info_t *video_info)
 {
@@ -1388,9 +1390,11 @@ static bool gl_frame(void *data, const void *frame,
             GL_RGBA, GL_UNSIGNED_BYTE, gl->readback_buffer_screenshot);
    }
 #ifdef HAVE_MENU
+#ifdef HAVE_GL_ASYNC_READBACK
    /* Don't readback if we're in menu mode. */
    else if (gl->pbo_readback_enable && !gl->menu_texture_enable)
       gl_pbo_async_readback(gl);
+#endif
 #endif
 #endif
 
