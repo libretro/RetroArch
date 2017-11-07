@@ -407,7 +407,7 @@ static const shader_backend_t *shader_ctx_drivers[] = {
    NULL
 };
 
-static const d3d_renderchain_driver_t *renderchain_drivers[] = {
+static const d3d_renderchain_driver_t *renderchain_d3d_drivers[] = {
 #if defined(_WIN32) && defined(HAVE_D3D9) && defined(HAVE_CG)
    &cg_d3d9_renderchain,
 #endif
@@ -418,6 +418,13 @@ static const d3d_renderchain_driver_t *renderchain_drivers[] = {
    &d3d8_renderchain,
 #endif
    &null_renderchain,
+   NULL
+};
+
+static const gl_renderchain_driver_t *renderchain_gl_drivers[] = {
+#if defined(HAVE_OPENGL)
+   &gl2_renderchain,
+#endif
    NULL
 };
 
@@ -3414,14 +3421,39 @@ bool renderchain_d3d_init_first(const d3d_renderchain_driver_t **renderchain_dri
 {
    unsigned i;
 
-   for (i = 0; renderchain_drivers[i]; i++)
+   for (i = 0; renderchain_d3d_drivers[i]; i++)
    {
-      void *data = renderchain_drivers[i]->chain_new();
+      void *data = renderchain_d3d_drivers[i]->chain_new();
 
       if (!data)
          continue;
 
-      *renderchain_driver = renderchain_drivers[i];
+      *renderchain_driver = renderchain_d3d_drivers[i];
+      *renderchain_handle = data;
+      return true;
+   }
+
+   return false;
+}
+
+bool renderchain_gl_init_first(
+      const gl_renderchain_driver_t **renderchain_driver,
+      void **renderchain_handle)
+{
+   unsigned i;
+
+   for (i = 0; renderchain_gl_drivers[i]; i++)
+   {
+#if 0
+      void *data = renderchain_gl_drivers[i]->chain_new();
+#else
+      void *data = NULL;
+#endif
+
+      if (!data)
+         continue;
+
+      *renderchain_driver = renderchain_gl_drivers[i];
       *renderchain_handle = data;
       return true;
    }

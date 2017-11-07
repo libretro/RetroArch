@@ -1261,6 +1261,10 @@ bool renderchain_d3d_init_first(
       const d3d_renderchain_driver_t **renderchain_driver,
       void **renderchain_handle);
 
+bool renderchain_gl_init_first(
+      const gl_renderchain_driver_t **renderchain_driver,
+      void **renderchain_handle);
+
 extern bool (*video_driver_cb_has_focus)(void);
 
 extern shader_backend_t *current_shader;
@@ -1322,6 +1326,8 @@ extern d3d_renderchain_driver_t d3d8_renderchain;
 extern d3d_renderchain_driver_t cg_d3d9_renderchain;
 extern d3d_renderchain_driver_t hlsl_d3d9_renderchain;
 extern d3d_renderchain_driver_t null_renderchain;
+
+extern gl_renderchain_driver_t gl2_renderchain;
 
 RETRO_END_DECLS
 
