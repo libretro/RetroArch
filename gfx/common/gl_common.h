@@ -47,13 +47,11 @@ typedef struct gl
 
    bool vsync;
    bool tex_mipmap;
-#ifdef HAVE_FBO
    bool fbo_inited;
    bool fbo_feedback_enable;
    bool hw_render_fbo_init;
    bool hw_render_depth_init;
    bool has_srgb_fbo_gles3;
-#endif
    bool has_fp_fbo;
    bool has_srgb_fbo;
    bool hw_render_use;
@@ -92,10 +90,8 @@ typedef struct gl
 
    GLuint tex_mag_filter;
    GLuint tex_min_filter;
-#ifdef HAVE_FBO
    GLuint fbo_feedback;
    GLuint fbo_feedback_texture;
-#endif
    GLuint pbo;
 #ifdef HAVE_OVERLAY
    GLuint *overlay_tex;
@@ -108,18 +104,14 @@ typedef struct gl
    GLuint pbo_readback[4];
 #endif
    GLuint texture[GFX_MAX_TEXTURES];
-#ifdef HAVE_FBO
    GLuint fbo[GFX_MAX_SHADERS];
    GLuint fbo_texture[GFX_MAX_SHADERS];
    GLuint hw_render_fbo[GFX_MAX_TEXTURES];
    GLuint hw_render_depth[GFX_MAX_TEXTURES];
-#endif
 
    unsigned tex_index; /* For use with PREV. */
    unsigned textures;
-#ifdef HAVE_FBO
    unsigned fbo_feedback_pass;
-#endif
    unsigned rotation;
    unsigned vp_out_width;
    unsigned vp_out_height;
@@ -163,10 +155,8 @@ typedef struct gl
    struct scaler_ctx scaler;
    video_info_t video_info;
    struct video_tex_info prev_info[GFX_MAX_TEXTURES];
-#ifdef HAVE_FBO
    struct video_fbo_rect fbo_rect[GFX_MAX_SHADERS];
    struct gfx_fbo_scale fbo_scale[GFX_MAX_SHADERS];
-#endif
 
 #ifdef HAVE_GL_SYNC
    GLsync fences[MAX_FENCES];

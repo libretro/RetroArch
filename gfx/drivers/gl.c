@@ -476,13 +476,11 @@ GLenum min_filter_to_mag(GLenum type)
    return type;
 }
 
-#ifdef HAVE_FBO
 static uintptr_t gl_get_current_framebuffer(void *data)
 {
    gl_t *gl = (gl_t*)data;
    return gl->hw_render_fbo[(gl->tex_index + 1) % gl->textures];
 }
-#endif
 
 static void gl_set_rotation(void *data, unsigned rotation)
 {
@@ -1207,7 +1205,6 @@ static bool gl_frame(void *data, const void *frame,
    gl_set_viewport(gl, video_info, width, height, false, true);
 #endif
 
-#ifdef HAVE_FBO
    /* Render to texture in first pass. */
    if (gl->fbo_inited)
    {
@@ -1219,7 +1216,6 @@ static bool gl_frame(void *data, const void *frame,
       if (gl->renderchain_driver->start_render)
          gl->renderchain_driver->start_render(gl, video_info);
    }
-#endif
 
    if (gl->should_resize)
    {
@@ -1232,7 +1228,6 @@ static bool gl_frame(void *data, const void *frame,
 
       video_info->cb_set_resize(video_info->context_data, mode.width, mode.height);
 
-#ifdef HAVE_FBO
       if (gl->fbo_inited)
       {
          if (gl->renderchain_driver->check_fbo_dimensions)
@@ -1244,7 +1239,6 @@ static bool gl_frame(void *data, const void *frame,
             gl->renderchain_driver->start_render(gl, video_info);
       }
       else
-#endif
          gl_set_viewport(gl, video_info, width, height, false, true);
    }
 
@@ -1256,9 +1250,7 @@ static bool gl_frame(void *data, const void *frame,
    /* Can be NULL for frame dupe / NULL render. */
    if (frame) 
    {
-#ifdef HAVE_FBO
       if (!gl->hw_render_fbo_init)
-#endif
       {
          gl_update_input_size(gl, frame_width, frame_height, pitch, true);
          gl_copy_frame(gl, video_info, frame, frame_width, frame_height, pitch);
@@ -1272,7 +1264,6 @@ static bool gl_frame(void *data, const void *frame,
 
    /* Have to reset rendering state which libretro core
     * could easily have overridden. */
-#ifdef HAVE_FBO
    if (gl->hw_render_fbo_init)
    {
       gl_update_input_size(gl, frame_width, frame_height, pitch, false);
@@ -1295,7 +1286,6 @@ static bool gl_frame(void *data, const void *frame,
       glBlendEquation(GL_FUNC_ADD);
       glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
    }
-#endif
 
    gl->tex_info.tex           = gl->texture[gl->tex_index];
    gl->tex_info.input_size[0] = frame_width;
@@ -1305,7 +1295,6 @@ static bool gl_frame(void *data, const void *frame,
 
    feedback_info              = gl->tex_info;
 
-#ifdef HAVE_FBO
    if (gl->fbo_feedback_enable)
    {
       const struct video_fbo_rect *rect = &gl->fbo_rect[gl->fbo_feedback_pass];
@@ -1320,7 +1309,6 @@ static bool gl_frame(void *data, const void *frame,
 
       set_texture_coords(feedback_info.coord, xamt, yamt);
    }
-#endif
 
    glClear(GL_COLOR_BUFFER_BIT);
 
@@ -1350,11 +1338,9 @@ static bool gl_frame(void *data, const void *frame,
 
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-#ifdef HAVE_FBO
-   if (gl->fbo_inited && gl->renderchain_driver)
+   if (gl->fbo_inited && gl->renderchain_driver->renderchain_render)
       gl->renderchain_driver->renderchain_render(gl, video_info,
             frame_count, &gl->tex_info, &feedback_info);
-#endif
 
    /* Set prev textures. */
    if (gl->renderchain_driver->bind_prev_texture)
@@ -1385,7 +1371,6 @@ static bool gl_frame(void *data, const void *frame,
    video_info->cb_update_window_title(
          video_info->context_data, video_info);
 
-#ifdef HAVE_FBO
    /* Reset state which could easily mess up libretro core. */
    if (gl->hw_render_fbo_init)
    {
@@ -1396,7 +1381,6 @@ static bool gl_frame(void *data, const void *frame,
       gl_disable_client_arrays();
 #endif
    }
-#endif
 
 #ifndef NO_GL_READ_PIXELS
    /* Screenshots. */
@@ -1548,11 +1532,9 @@ static void gl_free(void *data)
    }
 #endif
 
-#ifdef HAVE_FBO
    if (gl->renderchain_driver->free)
       gl->renderchain_driver->free(gl);
    gl_deinit_chain(gl);
-#endif
 
 #ifndef HAVE_OPENGLES
    if (gl_query_core_context_in_use())
@@ -2072,6 +2054,9 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl->textures      = 4;
 #ifdef HAVE_FBO
    gl->hw_render_use = hwr->context_type != RETRO_HW_CONTEXT_NONE;
+#else
+   gl->hw_render_use = false;
+#endif
 
    if (gl->hw_render_use)
    {
@@ -2084,7 +2069,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       context_bind_hw_render(false);
 #endif
    }
-#endif
+
    gl->white_color_ptr = white_color;
 
 #ifdef HAVE_GLSL
@@ -2190,7 +2175,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl_init_textures(gl, video);
    gl_init_textures_data(gl);
 
-#ifdef HAVE_FBO
    if (!renderchain_gl_init_first(&gl->renderchain_driver,
 	   &gl->renderchain_data))
    {
@@ -2208,7 +2192,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       RARCH_ERR("[GL]: Hardware rendering context initialization failed.\n");
       goto error;
    }
-#endif
 
    inp.input      = input;
    inp.input_data = input_data;
@@ -2372,9 +2355,9 @@ static bool gl_set_shader(void *data,
          goto error;
    }
 
-#ifdef HAVE_FBO
    if (gl->renderchain_driver->deinit_fbo)
       gl->renderchain_driver->deinit_fbo(gl);
+#ifdef HAVE_FBO
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 #endif
 
@@ -2403,10 +2386,9 @@ static bool gl_set_shader(void *data,
 
    if (textures > gl->textures) /* Have to reinit a bit. */
    {
-#if defined(HAVE_FBO)
-      if (gl->renderchain_driver->deinit_hw_render)
+      if (gl->hw_render_use &&
+            gl->renderchain_driver->deinit_hw_render)
          gl->renderchain_driver->deinit_hw_render(gl);
-#endif
 
       glDeleteTextures(gl->textures, gl->texture);
 #if defined(HAVE_PSGL)
@@ -2419,16 +2401,12 @@ static bool gl_set_shader(void *data,
       gl_init_textures(gl, &gl->video_info);
       gl_init_textures_data(gl);
 
-#if defined(HAVE_FBO)
       if (gl->hw_render_use && gl->renderchain_driver->init_hw_render)
          gl->renderchain_driver->init_hw_render(gl, gl->tex_w, gl->tex_h);
-#endif
    }
 
-#ifdef HAVE_FBO
-   if (gl->renderchain_driver)
+   if (gl->renderchain_driver->init)
       gl->renderchain_driver->init(gl, gl->tex_w, gl->tex_h);
-#endif
 
    /* Apparently need to set viewport for passes when we aren't using FBOs. */
    gl_set_shader_viewports(gl);
@@ -2478,14 +2456,12 @@ unsigned *height_p, size_t *pitch_p)
    void* buffer         = NULL;
    void* buffer_texture = NULL;
 
-#ifdef HAVE_FBO
    if (gl->hw_render_use)
    {
       buffer = malloc(pitch * height);
       if (!buffer)
          return NULL;
    }
-#endif
 
    buffer_texture = malloc(pitch * gl->tex_h);
 
@@ -2504,7 +2480,6 @@ unsigned *height_p, size_t *pitch_p)
    *height_p = height;
    *pitch_p  = pitch;
 
-#ifdef HAVE_FBO
    if (gl->hw_render_use)
    {
       unsigned i;
@@ -2516,7 +2491,7 @@ unsigned *height_p, size_t *pitch_p)
       free(buffer_texture);
       return buffer;
    }
-#endif
+
    return buffer_texture;
 }
 #endif

@@ -92,7 +92,6 @@ void gl_set_viewport(
       unsigned viewport_height,
       bool force_full, bool allow_rotate);
 
-#ifdef HAVE_FBO
 static void gl2_renderchain_convert_geometry(
       void *data,
       struct video_fbo_rect *fbo_rect,
@@ -138,6 +137,7 @@ static void gl2_renderchain_convert_geometry(
    }
 }
 
+#ifdef HAVE_FBO
 static bool gl_recreate_fbo(
       struct video_fbo_rect *fbo_rect,
       GLuint fbo,
