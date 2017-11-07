@@ -962,50 +962,6 @@ static void gl2_renderchain_bind_prev_texture(
 #endif
 }
 
-bool gl2_renderchain_add_lut(
-      const struct video_shader *shader,
-      unsigned i, void *textures_data)
-{
-   struct texture_image img;
-   GLuint *textures_lut                 = (GLuint*)textures_data;
-   enum texture_filter_type filter_type = TEXTURE_FILTER_LINEAR;
-
-   img.width         = 0;
-   img.height        = 0;
-   img.pixels        = NULL;
-   img.supports_rgba = video_driver_supports_rgba();
-
-   if (!image_texture_load(&img, shader->lut[i].path))
-   {
-      RARCH_ERR("[GL]: Failed to load texture image from: \"%s\"\n",
-            shader->lut[i].path);
-      return false;
-   }
-
-   RARCH_LOG("[GL]: Loaded texture image from: \"%s\" ...\n",
-         shader->lut[i].path);
-
-   if (shader->lut[i].filter == RARCH_FILTER_NEAREST)
-      filter_type = TEXTURE_FILTER_NEAREST;
-
-   if (shader->lut[i].mipmap)
-   {
-      if (filter_type == TEXTURE_FILTER_NEAREST)
-         filter_type = TEXTURE_FILTER_MIPMAP_NEAREST;
-      else
-         filter_type = TEXTURE_FILTER_MIPMAP_LINEAR;
-   }
-
-   gl_load_texture_data(textures_lut[i],
-         shader->lut[i].wrap,
-         filter_type, 4,
-         img.width, img.height,
-         img.pixels, sizeof(uint32_t));
-   image_texture_free(&img);
-
-   return true;
-}
-
 static void gl2_renderchain_viewport_info(
       void *data, struct video_viewport *vp)
 {

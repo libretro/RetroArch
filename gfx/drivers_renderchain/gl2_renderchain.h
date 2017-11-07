@@ -25,9 +25,6 @@
 
 RETRO_BEGIN_DECLS
 
-bool gl2_renderchain_add_lut(const struct video_shader *shader,
-      unsigned i, void *textures_lut);
-
 void gl2_renderchain_deinit_fbo(void *data);
 
 void context_bind_hw_render(bool enable);

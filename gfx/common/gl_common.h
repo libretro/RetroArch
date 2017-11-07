@@ -175,9 +175,6 @@ typedef struct gl
    void *renderchain_data;
 } gl_t;
 
-bool gl_load_luts(const struct video_shader *generic_shader,
-      GLuint *lut_textures);
-
 #ifdef NO_GL_FF_VERTEX
 #define gl_ff_vertex(coords) ((void)0)
 #else
@@ -245,6 +242,14 @@ void gl_load_texture_image(GLenum target,
       GLenum format,
       GLenum type,
       const GLvoid * data);
+
+void gl_load_texture_data(
+      uint32_t id_data,
+      enum gfx_wrap_type wrap_type,
+      enum texture_filter_type filter_type,
+      unsigned alignment,
+      unsigned width, unsigned height,
+      const void *frame, unsigned base_size);
 
 RETRO_END_DECLS
 

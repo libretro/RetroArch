@@ -2522,28 +2522,6 @@ unsigned *height_p, size_t *pitch_p)
 }
 #endif
 
-
-bool gl_load_luts(const struct video_shader *shader,
-      GLuint *textures_lut)
-{
-   unsigned i;
-   unsigned num_luts = MIN(shader->luts, GFX_MAX_TEXTURES);
-
-   if (!shader->luts)
-      return true;
-
-   glGenTextures(num_luts, textures_lut);
-
-   for (i = 0; i < num_luts; i++)
-   {
-      if (!gl2_renderchain_add_lut(shader, i, textures_lut))
-         return false;
-   }
-
-   glBindTexture(GL_TEXTURE_2D, 0);
-   return true;
-}
-
 #ifdef HAVE_OVERLAY
 static bool gl_overlay_load(void *data,
       const void *image_data, unsigned num_images)
