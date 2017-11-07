@@ -1213,10 +1213,13 @@ static bool gl_frame(void *data, const void *frame,
    /* Render to texture in first pass. */
    if (gl->fbo_inited)
    {
-      gl2_renderchain_recompute_pass_sizes(
-            gl, frame_width, frame_height,
-            gl->vp_out_width, gl->vp_out_height);
-      gl2_renderchain_start_render(gl, video_info);
+      if (gl->renderchain_driver->recompute_pass_sizes)
+         gl->renderchain_driver->recompute_pass_sizes(
+               gl, frame_width, frame_height,
+               gl->vp_out_width, gl->vp_out_height);
+
+      if (gl->renderchain_driver->start_render)
+         gl->renderchain_driver->start_render(gl, video_info);
    }
 #endif
 
@@ -1234,11 +1237,13 @@ static bool gl_frame(void *data, const void *frame,
 #ifdef HAVE_FBO
       if (gl->fbo_inited)
       {
-         gl2_renderchain_check_fbo_dimensions(gl);
+         if (gl->renderchain_driver->check_fbo_dimensions)
+            gl->renderchain_driver->check_fbo_dimensions(gl);
 
          /* Go back to what we're supposed to do,
           * render to FBO #0. */
-         gl2_renderchain_start_render(gl, video_info);
+         if (gl->renderchain_driver->start_render)
+            gl->renderchain_driver->start_render(gl, video_info);
       }
       else
 #endif
@@ -1348,8 +1353,8 @@ static bool gl_frame(void *data, const void *frame,
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
 #ifdef HAVE_FBO
-   if (gl->fbo_inited)
-      gl2_renderchain_render(gl, video_info,
+   if (gl->fbo_inited && gl->renderchain_driver)
+      gl->renderchain_driver->renderchain_render(gl, video_info,
             frame_count, &gl->tex_info, &feedback_info);
 #endif
 
@@ -1476,6 +1481,18 @@ static void gl_destroy_resources(gl_t *gl)
    gl_query_core_context_unset();
 }
 
+static void gl_deinit_chain(gl_t *gl)
+{
+   if (!gl || !gl->renderchain_driver)
+      return;
+
+   if (gl->renderchain_driver->chain_free)
+      gl->renderchain_driver->chain_free(gl->renderchain_data);
+
+   gl->renderchain_driver = NULL;
+   gl->renderchain_data   = NULL;
+}
+
 static void gl_free(void *data)
 {
    gl_t *gl = (gl_t*)data;
@@ -1533,7 +1550,9 @@ static void gl_free(void *data)
 #endif
 
 #ifdef HAVE_FBO
-   gl2_renderchain_free(gl);
+   if (gl->renderchain_driver->free)
+      gl->renderchain_driver->free(gl);
+   gl_deinit_chain(gl);
 #endif
 
 #ifndef HAVE_OPENGLES
@@ -2173,10 +2192,19 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl_init_textures_data(gl);
 
 #ifdef HAVE_FBO
-   gl2_renderchain_init(gl, gl->tex_w, gl->tex_h);
+   if (!renderchain_gl_init_first(&gl->renderchain_driver,
+	   &gl->renderchain_data))
+   {
+	   RARCH_ERR("[GL]: Renderchain could not be initialized.\n");
+	   return false;
+   }
+
+   if (gl->renderchain_driver->init)
+      gl->renderchain_driver->init(gl, gl->tex_w, gl->tex_h);
 
    if (gl->hw_render_use &&
-         !gl2_renderchain_init_hw_render(gl, gl->tex_w, gl->tex_h))
+         gl->renderchain_driver->init_hw_render &&
+         !gl->renderchain_driver->init_hw_render(gl, gl->tex_w, gl->tex_h))
    {
       RARCH_ERR("[GL]: Hardware rendering context initialization failed.\n");
       goto error;
@@ -2376,7 +2404,8 @@ static bool gl_set_shader(void *data,
    if (textures > gl->textures) /* Have to reinit a bit. */
    {
 #if defined(HAVE_FBO)
-      gl2_renderchain_deinit_hw_render(gl);
+      if (gl->renderchain_driver->deinit_hw_render)
+         gl->renderchain_driver->deinit_hw_render(gl);
 #endif
 
       glDeleteTextures(gl->textures, gl->texture);
@@ -2391,13 +2420,14 @@ static bool gl_set_shader(void *data,
       gl_init_textures_data(gl);
 
 #if defined(HAVE_FBO)
-      if (gl->hw_render_use)
-         gl2_renderchain_init_hw_render(gl, gl->tex_w, gl->tex_h);
+      if (gl->hw_render_use && gl->renderchain_driver->init_hw_render)
+         gl->renderchain_driver->init_hw_render(gl, gl->tex_w, gl->tex_h);
 #endif
    }
 
 #ifdef HAVE_FBO
-   gl2_renderchain_init(gl, gl->tex_w, gl->tex_h);
+   if (gl->renderchain_driver)
+      gl->renderchain_driver->init(gl, gl->tex_w, gl->tex_h);
 #endif
 
    /* Apparently need to set viewport for passes when we aren't using FBOs. */

@@ -190,7 +190,7 @@ static void gl_check_fbo_dimension(gl_t *gl, unsigned i,
 /* On resize, we might have to recreate our FBOs 
  * due to "Viewport" scale, and set a new viewport. */
 
-void gl2_renderchain_check_fbo_dimensions(void *data)
+static void gl2_renderchain_check_fbo_dimensions(void *data)
 {
    int i;
    gl_t *gl = (gl_t*)data;
@@ -211,7 +211,7 @@ void gl2_renderchain_check_fbo_dimensions(void *data)
    }
 }
 
-void gl2_renderchain_render(
+static void gl2_renderchain_render(
       void *data,
       video_frame_info_t *video_info,
       uint64_t frame_count,
@@ -417,7 +417,7 @@ void gl2_renderchain_deinit_fbo(void *data)
    gl->fbo_feedback         = 0;
 }
 
-void gl2_renderchain_deinit_hw_render(void *data)
+static void gl2_renderchain_deinit_hw_render(void *data)
 {
    gl_t *gl = (gl_t*)data;
    if (!gl)
@@ -624,7 +624,7 @@ static void gl_create_fbo_textures(gl_t *gl)
  * When width/height changes or window sizes change, 
  * we have to recalculate geometry of our FBO. */
 
-void gl2_renderchain_recompute_pass_sizes(
+static void gl2_renderchain_recompute_pass_sizes(
       void *data,
       unsigned width, unsigned height,
       unsigned vp_width, unsigned vp_height)
@@ -687,7 +687,8 @@ void gl2_renderchain_recompute_pass_sizes(
    }
 }
 
-void gl2_renderchain_start_render(void *data, video_frame_info_t *video_info)
+static void gl2_renderchain_start_render(void *data,
+      video_frame_info_t *video_info)
 {
    /* Used when rendering to an FBO.
     * Texture coords have to be aligned 
@@ -827,7 +828,8 @@ void gl2_renderchain_init(
    gl->fbo_inited = true;
 }
 
-bool gl2_renderchain_init_hw_render(void *data,
+static bool gl2_renderchain_init_hw_render(
+      void *data,
       unsigned width, unsigned height)
 {
    GLenum status;
