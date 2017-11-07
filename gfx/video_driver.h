@@ -827,6 +827,13 @@ typedef struct d3d_renderchain_driver
 
 typedef struct gl_renderchain_driver
 {
+   void (*viewport_info)(
+         void *data, struct video_viewport *vp);
+   bool (*read_viewport)(
+         void *data, uint8_t *buffer, bool is_idle);
+   void (*bind_prev_texture)(
+         void *data,
+         const struct video_tex_info *tex_info);
    void (*chain_free)(void *data);
    void *(*chain_new)(void);
    void (*init)(void *data, unsigned fbo_width, unsigned fbo_height);

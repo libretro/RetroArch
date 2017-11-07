@@ -72,6 +72,15 @@ typedef struct gl2_renderchain
 
 /* Prototypes */
 GLenum min_filter_to_mag(GLenum type);
+
+void gl_load_texture_data(
+      uint32_t id_data,
+      enum gfx_wrap_type wrap_type,
+      enum texture_filter_type filter_type,
+      unsigned alignment,
+      unsigned width, unsigned height,
+      const void *frame, unsigned base_size);
+
 void gl_set_viewport(
       void *data, video_frame_info_t *video_info, 
       unsigned viewport_width,
@@ -927,7 +936,7 @@ static bool gl2_renderchain_init_hw_render(
 
 #endif
 
-void gl2_renderchain_bind_prev_texture(
+static void gl2_renderchain_bind_prev_texture(
       void *data,
       const struct video_tex_info *tex_info)
 {
@@ -997,7 +1006,8 @@ bool gl2_renderchain_add_lut(
    return true;
 }
 
-void gl_renderchain_viewport_info(void *data, struct video_viewport *vp)
+static void gl2_renderchain_viewport_info(
+      void *data, struct video_viewport *vp)
 {
    unsigned width, height;
    unsigned top_y, top_dist;
@@ -1015,7 +1025,8 @@ void gl_renderchain_viewport_info(void *data, struct video_viewport *vp)
    vp->y           = top_dist;
 }
 
-bool gl_renderchain_read_viewport(void *data, uint8_t *buffer, bool is_idle)
+static bool gl2_renderchain_read_viewport(
+      void *data, uint8_t *buffer, bool is_idle)
 {
 #ifndef NO_GL_READ_PIXELS
    unsigned                     num_pixels = 0;
@@ -1137,6 +1148,9 @@ static void *gl2_renderchain_new(void)
 
 #ifdef HAVE_FBO
 gl_renderchain_driver_t gl2_renderchain = {
+   gl2_renderchain_viewport_info,
+   gl2_renderchain_read_viewport,
+   gl2_renderchain_bind_prev_texture,
    gl2_renderchain_free_internal,
    gl2_renderchain_new,
    gl2_renderchain_init,

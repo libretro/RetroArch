@@ -1359,7 +1359,8 @@ static bool gl_frame(void *data, const void *frame,
 #endif
 
    /* Set prev textures. */
-   gl2_renderchain_bind_prev_texture(gl, &gl->tex_info);
+   if (gl->renderchain_driver->bind_prev_texture)
+      gl->renderchain_driver->bind_prev_texture(gl, &gl->tex_info);
 
 #if defined(HAVE_MENU)
    if (gl->menu_texture_enable)
@@ -2449,12 +2450,18 @@ error:
 
 static void gl_viewport_info(void *data, struct video_viewport *vp)
 {
-   gl_renderchain_viewport_info(data, vp);
+   gl_t *gl             = (gl_t*)data;
+   if (!gl->renderchain_driver || !gl->renderchain_driver->viewport_info)
+      return;
+   gl->renderchain_driver->viewport_info(data, vp);
 }
 
 static bool gl_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
-   return gl_renderchain_read_viewport(data, buffer, is_idle);
+   gl_t *gl             = (gl_t*)data;
+   if (!gl->renderchain_driver || !gl->renderchain_driver->read_viewport)
+      return false;
+   return gl->renderchain_driver->read_viewport(data, buffer, is_idle);
 }
 
 #if 0

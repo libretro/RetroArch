@@ -25,28 +25,10 @@
 
 RETRO_BEGIN_DECLS
 
-void gl2_renderchain_bind_prev_texture(
-      void *data,
-      const struct video_tex_info *tex_info);
-
 bool gl2_renderchain_add_lut(const struct video_shader *shader,
       unsigned i, void *textures_lut);
 
-void gl_load_texture_data(
-      uint32_t id_data,
-      enum gfx_wrap_type wrap_type,
-      enum texture_filter_type filter_type,
-      unsigned alignment,
-      unsigned width, unsigned height,
-      const void *frame, unsigned base_size);
-
 void gl2_renderchain_deinit_fbo(void *data);
-
-void gl_renderchain_viewport_info(
-      void *data, struct video_viewport *vp);
-
-bool gl_renderchain_read_viewport(
-      void *data, uint8_t *buffer, bool is_idle);
 
 void context_bind_hw_render(bool enable);
 
