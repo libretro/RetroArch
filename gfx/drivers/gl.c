@@ -1596,11 +1596,11 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
     * The speed gain from using GL_RGB565 is worth
     * adding some workarounds for.
     */
-   gl->have_es2_compat        = gl_check_capability(GL_CAPS_ES2_COMPAT);
    gl->have_full_npot_support = gl_check_capability(GL_CAPS_FULL_NPOT_SUPPORT);
 #endif
+   gl->have_es2_compat        = gl_check_capability(GL_CAPS_ES2_COMPAT);
+   gl->have_sync              = gl_check_capability(GL_CAPS_SYNC);
 
-   gl->have_sync = gl_check_capability(GL_CAPS_SYNC);
    if (gl->have_sync && settings->bools.video_hard_sync)
       RARCH_LOG("[GL]: Using ARB_sync to reduce latency.\n");
 
@@ -1616,13 +1616,12 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
    }
 
    /* GLES3 has unpack_subimage and sRGB in core. */
-   gl->support_unpack_row_length = gl_check_capability(GL_CAPS_UNPACK_ROW_LENGTH);
    gl->has_srgb_fbo_gles3        = gl_check_capability(GL_CAPS_SRGB_FBO_ES3);
-
    /* TODO/FIXME - No extensions for float FBO currently. */
 #endif
 
-   gl->has_fp_fbo      = gl_check_capability(GL_CAPS_FP_FBO);
+   gl->support_unpack_row_length = gl_check_capability(GL_CAPS_UNPACK_ROW_LENGTH);
+   gl->has_fp_fbo                = gl_check_capability(GL_CAPS_FP_FBO);
    if (settings->bools.video_force_srgb_disable)
       gl->has_srgb_fbo = false;
    else
@@ -1686,7 +1685,6 @@ static INLINE void gl_set_texture_fmts(gl_t *gl, bool rgb32)
          gl->texture_type = GL_RGBA;
       }
    }
-#ifndef HAVE_OPENGLES
    else if (gl->have_es2_compat)
    {
       RARCH_LOG("[GL]: Using GL_RGB565 for texture uploads.\n");
@@ -1694,7 +1692,6 @@ static INLINE void gl_set_texture_fmts(gl_t *gl, bool rgb32)
       gl->texture_type = RARCH_GL_TEXTURE_TYPE16_565;
       gl->texture_fmt  = RARCH_GL_FORMAT16_565;
    }
-#endif
 }
 
 #ifdef HAVE_GL_ASYNC_READBACK

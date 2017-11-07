@@ -60,11 +60,8 @@ typedef struct gl
    bool quitting;
    bool fullscreen;
    bool keep_aspect;
-#ifdef HAVE_OPENGLES
    bool support_unpack_row_length;
-#else
    bool have_es2_compat;
-#endif
    bool have_full_npot_support;
 
    bool egl_images;
