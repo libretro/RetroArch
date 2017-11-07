@@ -65,6 +65,11 @@ void cocoagl_bind_game_view_fbo(void);
 #define gl_bind_backbuffer() glBindFramebuffer(RARCH_GL_FRAMEBUFFER, 0)
 #endif
 
+typedef struct gl2_renderchain
+{
+   void *empty;
+} gl2_renderchain_t;
+
 /* Prototypes */
 GLenum min_filter_to_mag(GLenum type);
 void gl_set_viewport(
@@ -1109,8 +1114,29 @@ error:
    return false;
 }
 
+void gl2_renderchain_free_internal(void *data)
+{
+   gl2_renderchain_t *cg_data = (gl2_renderchain_t*)data;
+
+   if (!cg_data)
+      return;
+
+   free(cg_data);
+}
+
+static void *gl2_renderchain_new(void)
+{
+   gl2_renderchain_t *renderchain = (gl2_renderchain_t*)calloc(1, sizeof(*renderchain));
+   if (!renderchain)
+      return NULL;
+
+   return renderchain;
+}
+
 #ifdef HAVE_FBO
 gl_renderchain_driver_t gl2_renderchain = {
+   gl2_renderchain_free_internal,
+   gl2_renderchain_new,
    gl2_renderchain_init,
    gl2_renderchain_init_hw_render,
    gl2_renderchain_free,

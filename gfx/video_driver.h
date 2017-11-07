@@ -827,6 +827,8 @@ typedef struct d3d_renderchain_driver
 
 typedef struct gl_renderchain_driver
 {
+   void (*chain_free)(void *data);
+   void *(*chain_new)(void);
    void (*init)(void *data, unsigned fbo_width, unsigned fbo_height);
    bool (*init_hw_render)(void *data, unsigned width, unsigned height);
    void (*free)(void *data);

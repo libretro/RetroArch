@@ -3444,11 +3444,7 @@ bool renderchain_gl_init_first(
 
    for (i = 0; renderchain_gl_drivers[i]; i++)
    {
-#if 0
       void *data = renderchain_gl_drivers[i]->chain_new();
-#else
-      void *data = NULL;
-#endif
 
       if (!data)
          continue;
