@@ -66,13 +66,19 @@ typedef struct gl2_renderchain
 } gl2_renderchain_t;
 
 /* Prototypes */
+
+#define gl_bind_fb(id) glBindFramebuffer(RARCH_GL_FRAMEBUFFER, id)
+
+static INLINE void gl_bind_backbuffer(void)
+{
 #ifdef IOS
-/* There is no default frame buffer on iOS. */
-void cocoagl_bind_game_view_fbo(void);
-#define gl_bind_backbuffer() cocoagl_bind_game_view_fbo()
+   /* There is no default frame buffer on iOS. */
+   void cocoagl_bind_game_view_fbo(void);
+   cocoagl_bind_game_view_fbo();
 #else
-#define gl_bind_backbuffer() glBindFramebuffer(RARCH_GL_FRAMEBUFFER, 0)
+   gl_bind_fb(0);
 #endif
+}
 
 void context_bind_hw_render(bool enable);
 
@@ -143,7 +149,7 @@ static bool gl_recreate_fbo(
       GLuint* texture
       )
 {
-   glBindFramebuffer(RARCH_GL_FRAMEBUFFER, fbo);
+   gl_bind_fb(fbo);
    glDeleteTextures(1, texture);
    glGenTextures(1, texture);
    glBindTexture(GL_TEXTURE_2D, *texture);
@@ -276,7 +282,7 @@ static void gl2_renderchain_render(
       memcpy(fbo_info->coord, fbo_tex_coords, sizeof(fbo_tex_coords));
       fbo_tex_info_cnt++;
 
-      glBindFramebuffer(RARCH_GL_FRAMEBUFFER, gl->fbo[i]);
+      gl_bind_fb(gl->fbo[i]);
 
       shader_info.data       = gl;
       shader_info.idx        = i + 1;
@@ -466,7 +472,7 @@ static bool gl_create_fbo_targets(gl_t *gl)
    {
       GLenum status;
 
-      glBindFramebuffer(RARCH_GL_FRAMEBUFFER, gl->fbo[i]);
+      gl_bind_fb(gl->fbo[i]);
       glFramebufferTexture2D(RARCH_GL_FRAMEBUFFER,
             RARCH_GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->fbo_texture[i], 0);
 
@@ -480,7 +486,7 @@ static bool gl_create_fbo_targets(gl_t *gl)
       GLenum status;
 
       glGenFramebuffers(1, &gl->fbo_feedback);
-      glBindFramebuffer(RARCH_GL_FRAMEBUFFER, gl->fbo_feedback);
+      gl_bind_fb(gl->fbo_feedback);
       glFramebufferTexture2D(RARCH_GL_FRAMEBUFFER,
             RARCH_GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
             gl->fbo_feedback_texture, 0);
@@ -715,7 +721,7 @@ static void gl2_renderchain_start_render(void *data,
    gl_t *gl = (gl_t*)data;
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-   glBindFramebuffer(RARCH_GL_FRAMEBUFFER, gl->fbo[0]);
+   gl_bind_fb(gl->fbo[0]);
 
    gl_set_viewport(gl,
          video_info, gl->fbo_rect[0].img_width,
@@ -884,7 +890,7 @@ static bool gl2_renderchain_init_hw_render(
 
    for (i = 0; i < gl->textures; i++)
    {
-      glBindFramebuffer(RARCH_GL_FRAMEBUFFER, gl->hw_render_fbo[i]);
+      gl_bind_fb(gl->hw_render_fbo[i]);
       glFramebufferTexture2D(RARCH_GL_FRAMEBUFFER,
             RARCH_GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->texture[i], 0);
 
