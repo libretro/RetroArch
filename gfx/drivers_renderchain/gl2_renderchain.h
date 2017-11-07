@@ -25,15 +25,7 @@
 
 RETRO_BEGIN_DECLS
 
-void gl2_renderchain_convert_geometry(
-      void *data,
-      struct video_fbo_rect *fbo_rect,
-      struct gfx_fbo_scale *fbo_scale,
-      unsigned last_width, unsigned last_max_width,
-      unsigned last_height, unsigned last_max_height,
-      unsigned vp_width, unsigned vp_height);
-
-void gl_renderchain_bind_prev_texture(
+void gl2_renderchain_bind_prev_texture(
       void *data,
       const struct video_tex_info *tex_info);
 

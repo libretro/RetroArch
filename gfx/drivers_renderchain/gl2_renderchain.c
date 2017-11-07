@@ -79,7 +79,7 @@ void gl_set_viewport(
       bool force_full, bool allow_rotate);
 
 #ifdef HAVE_FBO
-void gl2_renderchain_convert_geometry(
+static void gl2_renderchain_convert_geometry(
       void *data,
       struct video_fbo_rect *fbo_rect,
       struct gfx_fbo_scale *fbo_scale,
@@ -927,7 +927,7 @@ static bool gl2_renderchain_init_hw_render(
 
 #endif
 
-void gl_renderchain_bind_prev_texture(
+void gl2_renderchain_bind_prev_texture(
       void *data,
       const struct video_tex_info *tex_info)
 {

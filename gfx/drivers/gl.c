@@ -1359,7 +1359,7 @@ static bool gl_frame(void *data, const void *frame,
 #endif
 
    /* Set prev textures. */
-   gl_renderchain_bind_prev_texture(gl, &gl->tex_info);
+   gl2_renderchain_bind_prev_texture(gl, &gl->tex_info);
 
 #if defined(HAVE_MENU)
    if (gl->menu_texture_enable)
