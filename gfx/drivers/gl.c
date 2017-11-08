@@ -919,8 +919,14 @@ static struct video_shader *gl_get_current_shader(void *data)
 #ifdef HAVE_GL_ASYNC_READBACK
 static void gl_pbo_async_readback(gl_t *gl)
 {
-   GLenum type;
-   GLenum fmt;
+#ifdef HAVE_OPENGLES3
+   GLenum fmt  = GL_RGBA;
+   GLenum type = GL_UNSIGNED_BYTE;
+#else
+   GLenum fmt  = GL_BGRA;
+   GLenum type = GL_UNSIGNED_INT_8_8_8_8_REV;
+#endif
+
    glBindBuffer(GL_PIXEL_PACK_BUFFER,
          gl->pbo_readback[gl->pbo_readback_index++]);
    gl->pbo_readback_index &= 3;
@@ -928,19 +934,10 @@ static void gl_pbo_async_readback(gl_t *gl)
    /* 4 frames back, we can readback. */
    gl->pbo_readback_valid[gl->pbo_readback_index] = true;
 
-   glPixelStorei(GL_PACK_ROW_LENGTH, 0);
    glPixelStorei(GL_PACK_ALIGNMENT,
          video_pixel_get_alignment(gl->vp.width * sizeof(uint32_t)));
-
-   /* Read asynchronously into PBO buffer. */
+   glPixelStorei(GL_PACK_ROW_LENGTH, 0);
    glReadBuffer(GL_BACK);
-#ifdef HAVE_OPENGLES3
-   fmt  = GL_RGBA;
-   type = GL_UNSIGNED_BYTE;
-#else
-   fmt  = GL_BGRA;
-   type = GL_UNSIGNED_INT_8_8_8_8_REV;
-#endif
 
    glReadPixels(gl->vp.x, gl->vp.y,
          gl->vp.width, gl->vp.height,
