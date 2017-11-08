@@ -54,21 +54,26 @@
 #include "../common/win32_common.h"
 #endif
 
+typedef struct gl2_renderchain
+{
+   void *empty;
+} gl2_renderchain_t;
+
+#if (!defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3))
+#ifdef GL_PIXEL_PACK_BUFFER
+#define HAVE_GL_ASYNC_READBACK
+#endif
+#endif
+
 #define set_texture_coords(coords, xamt, yamt) \
    coords[2] = xamt; \
    coords[6] = xamt; \
    coords[5] = yamt; \
    coords[7] = yamt
 
-typedef struct gl2_renderchain
-{
-   void *empty;
-} gl2_renderchain_t;
-
-/* Prototypes */
-
 #define gl2_bind_fb(id) glBindFramebuffer(RARCH_GL_FRAMEBUFFER, id)
 
+/* Prototypes */
 static void gl2_renderchain_bind_backbuffer(void)
 {
 #ifdef IOS

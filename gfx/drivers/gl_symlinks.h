@@ -40,12 +40,6 @@
 #define glDeleteRenderbuffers glDeleteRenderbuffersOES
 #endif
 
-#if (!defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3))
-#ifdef GL_PIXEL_PACK_BUFFER
-#define HAVE_GL_ASYNC_READBACK
-#endif
-#endif
-
 #if defined(HAVE_PSGL)
 #define RARCH_GL_FRAMEBUFFER GL_FRAMEBUFFER_OES
 #define RARCH_GL_FRAMEBUFFER_COMPLETE GL_FRAMEBUFFER_COMPLETE_OES
