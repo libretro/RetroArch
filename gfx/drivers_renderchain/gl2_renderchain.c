@@ -1365,7 +1365,26 @@ static void gl2_renderchain_init_pbo(unsigned size,
 #endif
 }
 
+static void gl2_renderchain_readback(void *data,
+      unsigned alignment,
+      unsigned fmt, unsigned type,
+      void *src)
+{
+   gl_t *gl = (gl_t*)data;
+
+   glPixelStorei(GL_PACK_ALIGNMENT, alignment);
+#ifndef HAVE_OPENGLES
+   glPixelStorei(GL_PACK_ROW_LENGTH, 0);
+   glReadBuffer(GL_BACK);
+#endif
+
+   glReadPixels(gl->vp.x, gl->vp.y,
+         gl->vp.width, gl->vp.height,
+         (GLenum)fmt, (GLenum)type, (GLvoid*)src);
+}
+
 gl_renderchain_driver_t gl2_renderchain = {
+   gl2_renderchain_readback,
    gl2_renderchain_init_pbo,
    gl2_renderchain_bind_pbo,
    gl2_renderchain_unbind_pbo,

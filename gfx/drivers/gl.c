@@ -919,7 +919,6 @@ static struct video_shader *gl_get_current_shader(void *data)
    return shader_info.data;
 }
 
-#ifdef HAVE_GL_ASYNC_READBACK
 static void gl_pbo_async_readback(gl_t *gl)
 {
 #ifdef HAVE_OPENGLES3
@@ -938,18 +937,13 @@ static void gl_pbo_async_readback(gl_t *gl)
    /* 4 frames back, we can readback. */
    gl->pbo_readback_valid[gl->pbo_readback_index] = true;
 
-   glPixelStorei(GL_PACK_ALIGNMENT,
-         video_pixel_get_alignment(gl->vp.width * sizeof(uint32_t)));
-   glPixelStorei(GL_PACK_ROW_LENGTH, 0);
-   glReadBuffer(GL_BACK);
-
-   glReadPixels(gl->vp.x, gl->vp.y,
-         gl->vp.width, gl->vp.height,
-         fmt, type, NULL);
+   if (gl->renderchain_driver->readback)
+      gl->renderchain_driver->readback(gl,
+            video_pixel_get_alignment(gl->vp.width * sizeof(uint32_t)),
+            fmt, type, NULL);
    if (gl->renderchain_driver->unbind_pbo)
       gl->renderchain_driver->unbind_pbo();
 }
-#endif
 
 static INLINE void gl_draw_texture(gl_t *gl, video_frame_info_t *video_info)
 {
@@ -1226,17 +1220,12 @@ static bool gl_frame(void *data, const void *frame,
    /* Screenshots. */
    if (gl->readback_buffer_screenshot)
    {
-      glPixelStorei(GL_PACK_ALIGNMENT, 4);
-#ifndef HAVE_OPENGLES
-      glPixelStorei(GL_PACK_ROW_LENGTH, 0);
-      glReadBuffer(GL_BACK);
-#endif
-      glReadPixels(gl->vp.x, gl->vp.y,
-            gl->vp.width, gl->vp.height,
-            GL_RGBA, GL_UNSIGNED_BYTE, gl->readback_buffer_screenshot);
+      if (gl->renderchain_driver->readback)
+         gl->renderchain_driver->readback(gl,
+               4, GL_RGBA, GL_UNSIGNED_BYTE,
+               gl->readback_buffer_screenshot);
    }
 
-#ifdef HAVE_GL_ASYNC_READBACK
    /* Don't readback if we're in menu mode. */
    else if (gl->pbo_readback_enable)
 #ifdef HAVE_MENU
@@ -1244,7 +1233,6 @@ static bool gl_frame(void *data, const void *frame,
          if (!gl->menu_texture_enable)
 #endif
             gl_pbo_async_readback(gl);
-#endif
 
    /* Disable BFI during fast forward, slow-motion,
     * and pause to prevent flicker. */
@@ -1543,7 +1531,6 @@ static INLINE void gl_set_texture_fmts(gl_t *gl, bool rgb32)
 #endif
 }
 
-#ifdef HAVE_GL_ASYNC_READBACK
 static bool gl_init_pbo_readback(gl_t *gl)
 {
    unsigned i;
@@ -1585,7 +1572,6 @@ static bool gl_init_pbo_readback(gl_t *gl)
 
    return true;
 }
-#endif
 
 static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
 {
