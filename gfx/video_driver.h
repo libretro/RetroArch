@@ -827,6 +827,8 @@ typedef struct d3d_renderchain_driver
 
 typedef struct gl_renderchain_driver
 {
+   void (*fence_iterate)(void *data, unsigned hard_sync_frames);
+   void (*fence_free)(void *data);
    void (*readback)(void *data,
          unsigned alignment,
          unsigned fmt, unsigned type,

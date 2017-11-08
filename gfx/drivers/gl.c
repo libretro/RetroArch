@@ -75,14 +75,6 @@
 #define GL_UNSIGNED_INT_8_8_8_8_REV       0x8367
 #endif
 
-#ifndef GL_SYNC_GPU_COMMANDS_COMPLETE
-#define GL_SYNC_GPU_COMMANDS_COMPLETE     0x9117
-#endif
-
-#ifndef GL_SYNC_FLUSH_COMMANDS_BIT
-#define GL_SYNC_FLUSH_COMMANDS_BIT        0x00000001
-#endif
-
 #define set_texture_coords(coords, xamt, yamt) \
    coords[2] = xamt; \
    coords[6] = xamt; \
@@ -1255,19 +1247,10 @@ static bool gl_frame(void *data, const void *frame,
    if (video_info->hard_sync && gl->have_sync)
    {
       glClear(GL_COLOR_BUFFER_BIT);
-      gl->fences[gl->fence_count++] =
-         glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 
-      while (gl->fence_count > video_info->hard_sync_frames)
-      {
-         glClientWaitSync(gl->fences[0],
-               GL_SYNC_FLUSH_COMMANDS_BIT, 1000000000);
-         glDeleteSync(gl->fences[0]);
-
-         gl->fence_count--;
-         memmove(gl->fences, gl->fences + 1,
-               gl->fence_count * sizeof(GLsync));
-      }
+      if (gl->renderchain_driver->fence_iterate)
+         gl->renderchain_driver->fence_iterate(gl,
+               video_info->hard_sync_frames);
    }
 
    if (gl->core_context_in_use &&
@@ -1318,15 +1301,8 @@ static void gl_free(void *data)
 
    if (gl->have_sync)
    {
-      unsigned i;
-
-      for (i = 0; i < gl->fence_count; i++)
-      {
-         glClientWaitSync(gl->fences[i],
-               GL_SYNC_FLUSH_COMMANDS_BIT, 1000000000);
-         glDeleteSync(gl->fences[i]);
-      }
-      gl->fence_count = 0;
+      if (gl->renderchain_driver->fence_free)
+         gl->renderchain_driver->fence_free(gl);
    }
 
    font_driver_free_osd();

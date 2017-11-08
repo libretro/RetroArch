@@ -73,6 +73,14 @@ typedef struct gl2_renderchain
 
 #define gl2_bind_fb(id) glBindFramebuffer(RARCH_GL_FRAMEBUFFER, id)
 
+#ifndef GL_SYNC_GPU_COMMANDS_COMPLETE
+#define GL_SYNC_GPU_COMMANDS_COMPLETE     0x9117
+#endif
+
+#ifndef GL_SYNC_FLUSH_COMMANDS_BIT
+#define GL_SYNC_FLUSH_COMMANDS_BIT        0x00000001
+#endif
+
 /* Prototypes */
 static void gl2_renderchain_bind_backbuffer(void)
 {
@@ -1388,7 +1396,50 @@ static void gl2_renderchain_readback(void *data,
          (GLenum)fmt, (GLenum)type, (GLvoid*)src);
 }
 
+#ifndef HAVE_OPENGLES
+static void gl2_renderchain_fence_iterate(void *data, unsigned
+      hard_sync_frames)
+{
+   gl_t *gl = (gl_t*)data;
+
+   gl->fences[gl->fence_count++] =
+      glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+
+   while (gl->fence_count > hard_sync_frames)
+   {
+      glClientWaitSync(gl->fences[0],
+            GL_SYNC_FLUSH_COMMANDS_BIT, 1000000000);
+      glDeleteSync(gl->fences[0]);
+
+      gl->fence_count--;
+      memmove(gl->fences, gl->fences + 1,
+            gl->fence_count * sizeof(GLsync));
+   }
+}
+
+static void gl2_renderchain_fence_free(void *data)
+{
+   unsigned i;
+   gl_t *gl = (gl_t*)data;
+
+   for (i = 0; i < gl->fence_count; i++)
+   {
+      glClientWaitSync(gl->fences[i],
+            GL_SYNC_FLUSH_COMMANDS_BIT, 1000000000);
+      glDeleteSync(gl->fences[i]);
+   }
+   gl->fence_count = 0;
+}
+#endif
+
 gl_renderchain_driver_t gl2_renderchain = {
+#ifdef HAVE_OPENGLES
+   NULL,
+   NULL,
+#else
+   gl2_renderchain_fence_iterate,
+   gl2_renderchain_fence_free,
+#endif
    gl2_renderchain_readback,
    gl2_renderchain_init_pbo,
    gl2_renderchain_bind_pbo,
