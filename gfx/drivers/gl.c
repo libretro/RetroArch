@@ -1535,7 +1535,16 @@ static bool gl_init_pbo_readback(gl_t *gl)
 {
    unsigned i;
 
+   /* If none of these are bound, we have to assume
+    * we are not going to use PBOs */
+   if (  !gl->renderchain_driver->bind_pbo   &&
+         !gl->renderchain_driver->unbind_pbo &&
+         !gl->renderchain_driver->init_pbo
+      )
+      return false;
+
    glGenBuffers(4, gl->pbo_readback);
+
    for (i = 0; i < 4; i++)
    {
       if (gl->renderchain_driver->bind_pbo)
@@ -2011,12 +2020,10 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl->pbo_readback_enable = settings->bools.video_gpu_record
       && recording_is_enabled();
 
-#ifdef HAVE_GL_ASYNC_READBACK
    if (gl->pbo_readback_enable && gl_init_pbo_readback(gl))
    {
       RARCH_LOG("[GL]: Async PBO readback enabled.\n");
    }
-#endif
 
    if (!gl_check_error(&error_string))
    {
