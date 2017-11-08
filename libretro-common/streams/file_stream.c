@@ -330,9 +330,8 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
 
    {
       const char *ld = (const char*)strrchr(path, '.');
-      if (ld) {
+      if (ld)
          stream->ext = strdup(ld + 1);
-      }
    }
 
    filestream_set_size(stream);
