@@ -152,11 +152,6 @@
 #define RARCH_GL_FORMAT16_565 GL_UNSIGNED_SHORT_5_6_5
 #endif
 
-/* Platform specific workarounds/hacks. */
-#if defined(__CELLOS_LV2__)
-#define NO_GL_READ_PIXELS
-#endif
-
 #if defined(HAVE_OPENGL_MODERN) || defined(HAVE_OPENGLES2) || defined(HAVE_OPENGLES3) || defined(HAVE_OPENGLES_3_1) || defined(HAVE_OPENGLES_3_2) || defined(HAVE_PSGL)
 
 #ifndef NO_GL_FF_VERTEX

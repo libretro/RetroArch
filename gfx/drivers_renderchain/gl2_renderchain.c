@@ -990,7 +990,6 @@ static void gl2_renderchain_viewport_info(
 static bool gl2_renderchain_read_viewport(
       void *data, uint8_t *buffer, bool is_idle)
 {
-#ifndef NO_GL_READ_PIXELS
    unsigned                     num_pixels = 0;
    gl_t                                *gl = (gl_t*)data;
 
@@ -1086,7 +1085,6 @@ static bool gl2_renderchain_read_viewport(
 
 error:
    context_bind_hw_render(true);
-#endif
 
    return false;
 }

@@ -1217,8 +1217,6 @@ static bool gl_frame(void *data, const void *frame,
          gl->renderchain_driver->disable_client_arrays();
    }
 
-#ifndef NO_GL_READ_PIXELS
-
    /* Screenshots. */
    if (gl->readback_buffer_screenshot)
    {
@@ -1240,8 +1238,6 @@ static bool gl_frame(void *data, const void *frame,
          if (!gl->menu_texture_enable)
 #endif
             gl_pbo_async_readback(gl);
-#endif
-
 #endif
 
    /* Disable BFI during fast forward, slow-motion,
