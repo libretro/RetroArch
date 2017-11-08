@@ -376,7 +376,9 @@ static void gl_set_viewport_wrapper(void *data, unsigned viewport_width,
 
 /* Shaders */
 
-static bool gl_shader_init(gl_t *gl)
+static bool gl_shader_init(gl_t *gl, const gfx_ctx_driver_t *ctx_driver,
+      struct retro_hw_render_callback *hwr
+      )
 {
    video_shader_ctx_init_t init_data;
    enum rarch_shader_type type;
@@ -405,6 +407,9 @@ static bool gl_shader_init(gl_t *gl)
 
 #ifdef HAVE_GLSL
       case RARCH_SHADER_GLSL:
+         gl_glsl_set_get_proc_address(ctx_driver->get_proc_address);
+         gl_glsl_set_context_type(gl->core_context_in_use,
+               hwr->version_major, hwr->version_minor);
          break;
 #endif
 
@@ -1889,12 +1894,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    gl->white_color_ptr = white_color;
 
-#ifdef HAVE_GLSL
-   gl_glsl_set_get_proc_address(ctx_driver->get_proc_address);
-   gl_glsl_set_context_type(gl->core_context_in_use,
-         hwr->version_major, hwr->version_minor);
-#endif
-
    if (!video_shader_driver_init_first())
    {
       RARCH_ERR("[GL:]: Shader driver initialization failed.\n");
@@ -1905,7 +1904,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    RARCH_LOG("[GL]: Default shader backend found: %s.\n", ident_info.ident);
 
-   if (!gl_shader_init(gl))
+   if (!gl_shader_init(gl, ctx_driver, hwr))
    {
       RARCH_ERR("[GL]: Shader initialization failed.\n");
       goto error;
