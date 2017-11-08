@@ -87,14 +87,6 @@
 
 static struct video_ortho default_ortho = {0, 1, 0, 1, -1, 1};
 
-#ifdef IOS
-/* There is no default frame buffer on iOS. */
-void cocoagl_bind_game_view_fbo(void);
-#define gl_bind_backbuffer() cocoagl_bind_game_view_fbo()
-#else
-#define gl_bind_backbuffer() glBindFramebuffer(RARCH_GL_FRAMEBUFFER, 0)
-#endif
-
 /* Used for the last pass when rendering to the back buffer. */
 static const GLfloat vertexes_flipped[] = {
    0, 1,
@@ -1263,7 +1255,8 @@ static bool gl_frame(void *data, const void *frame,
       gl_update_input_size(gl, frame_width, frame_height, pitch, false);
       if (!gl->fbo_inited)
       {
-         gl_bind_backbuffer();
+         if (gl->renderchain_driver->bind_backbuffer)
+            gl->renderchain_driver->bind_backbuffer();
          gl_set_viewport(gl, video_info, width, height, false, true);
       }
 

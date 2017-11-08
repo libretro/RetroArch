@@ -69,7 +69,7 @@ typedef struct gl2_renderchain
 
 #define gl2_bind_fb(id) glBindFramebuffer(RARCH_GL_FRAMEBUFFER, id)
 
-static INLINE void gl2_bind_backbuffer(void)
+static void gl2_renderchain_bind_backbuffer(void)
 {
 #ifdef IOS
    /* There is no default frame buffer on iOS. */
@@ -358,7 +358,7 @@ static void gl2_renderchain_render(
    fbo_tex_info_cnt++;
 
    /* Render our FBO texture to back buffer. */
-   gl2_bind_backbuffer();
+   gl2_renderchain_bind_backbuffer();
 
    shader_info.data       = gl;
    shader_info.idx        = gl->fbo_pass + 1;
@@ -937,7 +937,7 @@ static bool gl2_renderchain_init_hw_render(
       }
    }
 
-   gl2_bind_backbuffer();
+   gl2_renderchain_bind_backbuffer();
    gl->hw_render_fbo_init = true;
 
    context_bind_hw_render(false);
@@ -1111,6 +1111,7 @@ static void *gl2_renderchain_new(void)
 }
 
 gl_renderchain_driver_t gl2_renderchain = {
+   gl2_renderchain_bind_backbuffer,
    gl2_renderchain_deinit_fbo,
    gl2_renderchain_viewport_info,
    gl2_renderchain_read_viewport,
