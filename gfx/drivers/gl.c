@@ -1424,25 +1424,32 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
          gl->renderchain_driver->new_vao(gl);
    }
 
-   /* ES2 Compat - GL_RGB565 internal format support.
+   /* have_es2_compat - GL_RGB565 internal format support.
     * Even though ES2 support is claimed, the format
     * is not supported on older ATI catalyst drivers.
     *
     * The speed gain from using GL_RGB565 is worth
     * adding some workarounds for.
+    *
+    * have_sync       - Use ARB_sync to reduce latency.
     */
-   gl->have_full_npot_support = gl_check_capability(GL_CAPS_FULL_NPOT_SUPPORT);
-   gl->have_mipmap            = gl_check_capability(GL_CAPS_MIPMAP);
-   gl->have_es2_compat        = gl_check_capability(GL_CAPS_ES2_COMPAT);
-   gl->have_sync              = gl_check_capability(GL_CAPS_SYNC);
+   gl->has_srgb_fbo              = false;
+   gl->have_full_npot_support    = gl_check_capability(GL_CAPS_FULL_NPOT_SUPPORT);
+   gl->have_mipmap               = gl_check_capability(GL_CAPS_MIPMAP);
+   gl->have_es2_compat           = gl_check_capability(GL_CAPS_ES2_COMPAT);
+   gl->has_fp_fbo                = gl_check_capability(GL_CAPS_FP_FBO);
+   gl->support_unpack_row_length = gl_check_capability(GL_CAPS_UNPACK_ROW_LENGTH);
+   gl->have_sync                 = gl_check_capability(GL_CAPS_SYNC);
+
+   if (!settings->bools.video_force_srgb_disable)
+      gl->has_srgb_fbo           = gl_check_capability(GL_CAPS_SRGB_FBO);
 
    if (gl->have_sync && settings->bools.video_hard_sync)
       RARCH_LOG("[GL]: Using ARB_sync to reduce latency.\n");
 
    video_driver_unset_rgba();
-#if defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
-   gl->have_full_npot_support = gl_check_capability(GL_CAPS_FULL_NPOT_SUPPORT);
 
+#if defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
    if (!gl_check_capability(GL_CAPS_BGRA8888))
    {
       video_driver_set_rgba();
@@ -1454,12 +1461,6 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
    gl->has_srgb_fbo_gles3        = gl_check_capability(GL_CAPS_SRGB_FBO_ES3);
    /* TODO/FIXME - No extensions for float FBO currently. */
 #endif
-
-   gl->support_unpack_row_length = gl_check_capability(GL_CAPS_UNPACK_ROW_LENGTH);
-   gl->has_fp_fbo                = gl_check_capability(GL_CAPS_FP_FBO);
-   gl->has_srgb_fbo              = false;
-   if (!settings->bools.video_force_srgb_disable)
-      gl->has_srgb_fbo           = gl_check_capability(GL_CAPS_SRGB_FBO);
 
 #ifdef GL_DEBUG
    /* Useful for debugging, but kinda obnoxious otherwise. */
@@ -1531,24 +1532,9 @@ static INLINE void gl_set_texture_fmts(gl_t *gl, bool rgb32)
 }
 
 #ifdef HAVE_GL_ASYNC_READBACK
-static void gl_init_pbo_readback(gl_t *gl)
+static bool gl_init_pbo_readback(gl_t *gl)
 {
    unsigned i;
-   bool *recording_enabled   = recording_is_enabled();
-   settings_t *settings      = config_get_ptr();
-
-   /* Only bother with this if we're doing GPU recording.
-    * Check recording_is_enabled() and not
-    * driver.recording_data, because recording is
-    * not initialized yet.
-    */
-   gl->pbo_readback_enable = settings->bools.video_gpu_record
-      && *recording_enabled;
-
-   if (!gl->pbo_readback_enable)
-      return;
-
-   RARCH_LOG("[GL]: Async PBO readback enabled.\n");
 
    glGenBuffers(4, gl->pbo_readback);
    for (i = 0; i < 4; i++)
@@ -1578,9 +1564,12 @@ static void gl_init_pbo_readback(gl_t *gl)
          gl->pbo_readback_enable = false;
          RARCH_ERR("[GL]: Failed to initialize pixel conversion for PBO.\n");
          glDeleteBuffers(4, gl->pbo_readback);
+         return false;
       }
    }
 #endif
+
+   return true;
 }
 #endif
 
@@ -1764,6 +1753,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    video_shader_ctx_filter_t shader_filter;
    video_shader_ctx_info_t shader_info;
    video_shader_ctx_ident_t ident_info;
+   settings_t *settings                 = config_get_ptr();
    video_shader_ctx_wrap_t wrap_info    = {0};
    unsigned win_width                   = 0;
    unsigned win_height                  = 0;
@@ -1782,7 +1772,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
 
-   gl->video_info        = *video;
+   gl->video_info                       = *video;
 
    RARCH_LOG("[GL]: Found GL context: %s\n", ctx_driver->ident);
 
@@ -2017,8 +2007,19 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
             video->is_threaded,
             FONT_DRIVER_RENDER_OPENGL_API);
 
+   /* Only bother with PBO readback if we're doing GPU recording.
+    * Check recording_is_enabled() and not
+    * driver.recording_data, because recording is
+    * not initialized yet.
+    */
+   gl->pbo_readback_enable = settings->bools.video_gpu_record
+      && recording_is_enabled();
+
 #ifdef HAVE_GL_ASYNC_READBACK
-   gl_init_pbo_readback(gl);
+   if (gl->pbo_readback_enable && gl_init_pbo_readback(gl))
+   {
+      RARCH_LOG("[GL]: Async PBO readback enabled.\n");
+   }
 #endif
 
    if (!gl_check_error(&error_string))
