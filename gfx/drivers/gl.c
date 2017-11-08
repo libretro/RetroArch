@@ -576,9 +576,6 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
    unsigned i;
    GLenum internal_fmt, texture_type = 0, texture_fmt = 0;
 
-   (void)texture_type;
-   (void)texture_fmt;
-
    /* Use regular textures if we use HW render. */
    gl->egl_images = !gl->hw_render_use && gl_check_capability(GL_CAPS_EGLIMAGE) &&
       video_context_driver_init_image_buffer((void*)video);
@@ -594,10 +591,8 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
 #endif
 
    internal_fmt = gl->internal_fmt;
-#ifndef HAVE_PSGL
    texture_type = gl->texture_type;
    texture_fmt  = gl->texture_fmt;
-#endif
 
 #if defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
    /* GLES is picky about which format we use here.
