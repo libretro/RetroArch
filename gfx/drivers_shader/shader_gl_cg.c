@@ -110,12 +110,8 @@ typedef struct cg_shader_data
    struct video_shader *shader;
    char alias_define[GFX_MAX_SHADERS][128];
    unsigned active_idx;
-   struct
-   {
-      CGparameter elems[32 * PREV_TEXTURES + 2 + 4 + GFX_MAX_SHADERS];
-      unsigned index;
-   } attribs;
-
+   unsigned attribs_index;
+   CGparameter attribs_elems[32 * PREV_TEXTURES + 2 + 4 + GFX_MAX_SHADERS];
    CGprofile cgVProf;
    CGprofile cgFProf;
    struct shader_program_cg prg[GFX_MAX_SHADERS];
@@ -133,7 +129,7 @@ struct uniform_cg
 { \
    cgGLSetParameterPointer(param, len, GL_FLOAT, 0, ptr); \
    cgGLEnableClientState(param); \
-   cg->attribs.elems[cg->attribs.index++] = param; \
+   cg->attribs_elems[cg->attribs_index++] = param; \
 }
 
 #define cg_gl_set_texture_parameter(param, texture) \
@@ -250,11 +246,11 @@ static void gl_cg_reset_attrib(void *data)
    cg_shader_data_t *cg = (cg_shader_data_t*)data;
 
    /* Add sanity check that we did not overflow. */
-   retro_assert(cg->attribs.index <= ARRAY_SIZE(cg->attribs.elems));
+   retro_assert(cg->attribs_index <= ARRAY_SIZE(cg->attribs_elems));
 
-   for (i = 0; i < cg->attribs.index; i++)
-      cgGLDisableClientState(cg->attribs.elems[i]);
-   cg->attribs.index = 0;
+   for (i = 0; i < cg->attribs_index; i++)
+      cgGLDisableClientState(cg->attribs_elems[i]);
+   cg->attribs_index = 0;
 }
 
 static bool gl_cg_set_mvp(void *data, void *shader_data, const math_matrix_4x4 *mat)

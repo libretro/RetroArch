@@ -43,12 +43,11 @@
 struct cache_vbo
 {
    GLuint vbo_primary;
-   GLfloat *buffer_primary;
-   size_t size_primary;
-
    GLuint vbo_secondary;
-   GLfloat *buffer_secondary;
+   size_t size_primary;
    size_t size_secondary;
+   GLfloat *buffer_primary;
+   GLfloat *buffer_secondary;
 };
 
 struct shader_program_glsl_data
@@ -89,10 +88,10 @@ struct shader_uniforms
    int texture_size;
 
    int frame_count;
-   unsigned frame_count_mod;
    int frame_direction;
 
    int lut_texture[GFX_MAX_TEXTURES];
+   unsigned frame_count_mod;
 
    struct shader_uniforms_frame orig;
    struct shader_uniforms_frame feedback;
@@ -134,19 +133,15 @@ static const char *glsl_prefixes[] = {
 
 typedef struct glsl_shader_data
 {
-   struct video_shader *shader;
+   char alias_define[1024];
+   GLint attribs_elems[32 * PREV_TEXTURES + 2 + 4 + GFX_MAX_SHADERS];
+   unsigned attribs_index;
+   unsigned active_idx;
+   GLuint lut_textures[GFX_MAX_TEXTURES];
    struct shader_uniforms uniforms[GFX_MAX_SHADERS];
    struct cache_vbo vbo[GFX_MAX_SHADERS];
-   char alias_define[1024];
-   unsigned active_idx;
-   struct
-   {
-      GLint elems[32 * PREV_TEXTURES + 2 + 4 + GFX_MAX_SHADERS];
-      unsigned index;
-   } attribs;
-
    struct shader_program_glsl_data prg[GFX_MAX_SHADERS];
-   GLuint lut_textures[GFX_MAX_TEXTURES];
+   struct video_shader *shader;
    state_tracker_t *state_tracker;
 } glsl_shader_data_t;
 
@@ -563,11 +558,11 @@ static void gl_glsl_reset_attrib(glsl_shader_data_t *glsl)
    unsigned i;
 
    /* Add sanity check that we did not overflow. */
-   retro_assert(glsl->attribs.index <= ARRAY_SIZE(glsl->attribs.elems));
+   retro_assert(glsl->attribs_index <= ARRAY_SIZE(glsl->attribs_elems));
 
-   for (i = 0; i < glsl->attribs.index; i++)
-      glDisableVertexAttribArray(glsl->attribs.elems[i]);
-   glsl->attribs.index = 0;
+   for (i = 0; i < glsl->attribs_index; i++)
+      glDisableVertexAttribArray(glsl->attribs_elems[i]);
+   glsl->attribs_index = 0;
 }
 
 static void gl_glsl_set_vbo(GLfloat **buffer, size_t *buffer_elems,
@@ -603,14 +598,14 @@ static INLINE void gl_glsl_set_attribs(glsl_shader_data_t *glsl,
 
    for (i = 0; i < num_attrs; i++)
    {
-      if (glsl->attribs.index < ARRAY_SIZE(glsl->attribs.elems))
+      if (glsl->attribs_index < ARRAY_SIZE(glsl->attribs_elems))
       {
          GLint loc = attrs[i].loc;
 
          glEnableVertexAttribArray(loc);
          glVertexAttribPointer(loc, attrs[i].size, GL_FLOAT, GL_FALSE, 0,
                (const GLvoid*)(uintptr_t)attrs[i].offset);
-         glsl->attribs.elems[glsl->attribs.index++] = loc;
+         glsl->attribs_elems[glsl->attribs_index++] = loc;
       }
       else
          RARCH_WARN("Attrib array buffer was overflown!\n");
