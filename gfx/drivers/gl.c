@@ -1341,7 +1341,7 @@ static bool gl_frame(void *data, const void *frame,
    }
 
 #ifdef HAVE_OVERLAY
-   if (gl && gl->overlay_enable)
+   if (gl->overlay_enable)
       gl_render_overlay(gl, video_info);
 #endif
 
@@ -1569,8 +1569,8 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
       }
       glGenVertexArrays(1, &gl->vao);
    }
-
-   /* GL_RGB565 internal format support.
+#endif
+   /* ES2 Compat - GL_RGB565 internal format support.
     * Even though ES2 support is claimed, the format
     * is not supported on older ATI catalyst drivers.
     *
@@ -1578,7 +1578,6 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
     * adding some workarounds for.
     */
    gl->have_full_npot_support = gl_check_capability(GL_CAPS_FULL_NPOT_SUPPORT);
-#endif
    gl->have_mipmap            = gl_check_capability(GL_CAPS_MIPMAP);
    gl->have_es2_compat        = gl_check_capability(GL_CAPS_ES2_COMPAT);
    gl->have_sync              = gl_check_capability(GL_CAPS_SYNC);
@@ -1604,10 +1603,9 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
 
    gl->support_unpack_row_length = gl_check_capability(GL_CAPS_UNPACK_ROW_LENGTH);
    gl->has_fp_fbo                = gl_check_capability(GL_CAPS_FP_FBO);
-   if (settings->bools.video_force_srgb_disable)
-      gl->has_srgb_fbo = false;
-   else
-      gl->has_srgb_fbo = gl_check_capability(GL_CAPS_SRGB_FBO);
+   gl->has_srgb_fbo              = false;
+   if (!settings->bools.video_force_srgb_disable)
+      gl->has_srgb_fbo           = gl_check_capability(GL_CAPS_SRGB_FBO);
 
 #ifdef GL_DEBUG
    /* Useful for debugging, but kinda obnoxious otherwise. */
@@ -1763,10 +1761,12 @@ static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
    gl_shared_context_use = settings->bools.video_shared_context
       && hwr->context_type != RETRO_HW_CONTEXT_NONE;
 
-   if (libretro_get_shared_context() && (hwr->context_type != RETRO_HW_CONTEXT_NONE))
+   if (     (libretro_get_shared_context())
+         && (hwr->context_type != RETRO_HW_CONTEXT_NONE))
       gl_shared_context_use = true;
 
-   return video_context_driver_init_first(gl, settings->arrays.video_context_driver,
+   return video_context_driver_init_first(gl,
+         settings->arrays.video_context_driver,
          api, major, minor, gl_shared_context_use);
 }
 
@@ -2012,18 +2012,18 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    hwr = video_driver_get_hw_context();
 
-   gl->vertex_ptr    = hwr->bottom_left_origin
+   gl->vertex_ptr        = hwr->bottom_left_origin
       ? vertexes : vertexes_flipped;
 
    /* Better pipelining with GPU due to synchronous glSubTexImage.
     * Multiple async PBOs would be an alternative,
     * but still need multiple textures with PREV.
     */
-   gl->textures      = 4;
+   gl->textures         = 4;
+   gl->hw_render_use    = false;
 #ifdef HAVE_FBO
-   gl->hw_render_use = hwr->context_type != RETRO_HW_CONTEXT_NONE;
-#else
-   gl->hw_render_use = false;
+   if (hwr->context_type != RETRO_HW_CONTEXT_NONE)
+      gl->hw_render_use = true;
 #endif
 
    if (gl->hw_render_use)
