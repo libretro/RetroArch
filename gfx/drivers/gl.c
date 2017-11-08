@@ -774,75 +774,78 @@ static void gl_render_osd_background(
       gl_t *gl, video_frame_info_t *video_info,
       const char *msg)
 {
+   int msg_width;
    video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords_data;
    video_coords_t coords;
    video_shader_ctx_info_t shader_info;
    struct uniform_info uniform_param;
-   const unsigned vertices_total = 6;
    float colors[4];
-   float *dummy = (float*)calloc(4 * vertices_total, sizeof(float));
-   float *verts = (float*)malloc(2 * vertices_total * sizeof(float));
-   int msg_width;
    float x, x2, y, y2, width, height;
-   settings_t *settings = config_get_ptr();
+   const unsigned 
+      vertices_total       = 6;
+   float *dummy            = (float*)calloc(4 * vertices_total, sizeof(float));
+   float *verts            = (float*)malloc(2 * vertices_total * sizeof(float));
+   settings_t *settings    = config_get_ptr();
 
    if (!gl || !settings)
       goto end;
 
-   msg_width = font_driver_get_message_width(NULL, msg, strlen(msg), 1.0f);
+   msg_width               = 
+      font_driver_get_message_width(NULL, msg, strlen(msg), 1.0f);
 
    /* shader driver expects vertex coords as 0..1 */
-   x = video_info->font_msg_pos_x;
-   y = video_info->font_msg_pos_y;
-   width = msg_width / (float)video_info->width;
-   height = settings->floats.video_font_size / (float)video_info->height;
+   x                       = video_info->font_msg_pos_x;
+   y                       = video_info->font_msg_pos_y;
+   width                   = msg_width / (float)video_info->width;
+   height                  = 
+      settings->floats.video_font_size / (float)video_info->height;
 
-   x2 = 0.005f; /* extend background around text */
-   y2 = 0.005f;
+   x2                      = 0.005f; /* extend background around text */
+   y2                      = 0.005f;
 
-   x -= x2;
-   y -= y2;
-   width += x2;
-   height += y2;
+   x                      -= x2;
+   y                      -= y2;
+   width                  += x2;
+   height                 += y2;
 
-   colors[0] = settings->uints.video_msg_bgcolor_red / 255.0f;
-   colors[1] = settings->uints.video_msg_bgcolor_green / 255.0f;
-   colors[2] = settings->uints.video_msg_bgcolor_blue / 255.0f;
-   colors[3] = settings->floats.video_msg_bgcolor_opacity;
+   colors[0]               = settings->uints.video_msg_bgcolor_red / 255.0f;
+   colors[1]               = settings->uints.video_msg_bgcolor_green / 255.0f;
+   colors[2]               = settings->uints.video_msg_bgcolor_blue / 255.0f;
+   colors[3]               = settings->floats.video_msg_bgcolor_opacity;
 
    /* triangle 1 */
-   verts[0] = x;
-   verts[1] = y; /* bottom-left */
+   verts[0]                = x;
+   verts[1]                = y; /* bottom-left */
 
-   verts[2] = x;
-   verts[3] = y + height; /* top-left */
+   verts[2]                = x;
+   verts[3]                = y + height; /* top-left */
 
-   verts[4] = x + width;
-   verts[5] = y + height; /* top-right */
+   verts[4]                = x + width;
+   verts[5]                = y + height; /* top-right */
 
    /* triangle 2 */
-   verts[6] = x;
-   verts[7] = y; /* bottom-left */
+   verts[6]                = x;
+   verts[7]                = y; /* bottom-left */
 
-   verts[8] = x + width;
-   verts[9] = y + height; /* top-right */
+   verts[8]                = x + width;
+   verts[9]                = y + height; /* top-right */
 
-   verts[10] = x + width;
-   verts[11] = y; /* bottom-right */
+   verts[10]               = x + width;
+   verts[11]               = y; /* bottom-right */
 
-   coords.color         = dummy;
-   coords.vertex        = verts;
-   coords.tex_coord     = dummy;
-   coords.lut_tex_coord = dummy;
-   coords.vertices      = vertices_total;
+   coords.color            = dummy;
+   coords.vertex           = verts;
+   coords.tex_coord        = dummy;
+   coords.lut_tex_coord    = dummy;
+   coords.vertices         = vertices_total;
 
    coords_data.handle_data = NULL;
    coords_data.data        = &coords;
-
-   shader_info.data       = NULL;
-   shader_info.idx        = VIDEO_SHADER_STOCK_BLEND;
-   shader_info.set_active = true;
+ 
+   shader_info.data        = NULL;
+   shader_info.idx         = VIDEO_SHADER_STOCK_BLEND;
+   shader_info.set_active  = true;
 
    video_driver_set_viewport(video_info->width,
          video_info->height, true, false);
@@ -975,9 +978,9 @@ static INLINE void gl_draw_texture(gl_t *gl, video_frame_info_t *video_info)
    if (!gl->menu_texture)
       return;
 
-   gl->coords.vertex    = vertexes_flipped;
-   gl->coords.tex_coord = tex_coords;
-   gl->coords.color     = color;
+   gl->coords.vertex      = vertexes_flipped;
+   gl->coords.tex_coord   = tex_coords;
+   gl->coords.color       = color;
    glBindTexture(GL_TEXTURE_2D, gl->menu_texture);
 
    video_info->cb_shader_use(gl,
@@ -1092,7 +1095,8 @@ static bool gl_frame(void *data, const void *frame,
          gl_update_input_size(gl, frame_width, frame_height, pitch, true);
 
          if (gl->renderchain_driver->copy_frame)
-            gl->renderchain_driver->copy_frame(gl, video_info, frame, frame_width, frame_height, pitch);
+            gl->renderchain_driver->copy_frame(gl,
+                  video_info, frame, frame_width, frame_height, pitch);
       }
 
       /* No point regenerating mipmaps
@@ -1133,7 +1137,8 @@ static bool gl_frame(void *data, const void *frame,
 
    if (gl->fbo_feedback_enable)
    {
-      const struct video_fbo_rect *rect = &gl->fbo_rect[gl->fbo_feedback_pass];
+      const struct video_fbo_rect 
+         *rect                        = &gl->fbo_rect[gl->fbo_feedback_pass];
       GLfloat xamt                    = (GLfloat)rect->img_width / rect->width;
       GLfloat yamt                    = (GLfloat)rect->img_height / rect->height;
 
@@ -1164,7 +1169,7 @@ static bool gl_frame(void *data, const void *frame,
 
    video_shader_driver_set_parameters(params);
 
-   gl->coords.vertices = 4;
+   gl->coords.vertices  = 4;
    coords.handle_data   = NULL;
    coords.data          = &gl->coords;
 
@@ -1787,19 +1792,21 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    video_context_driver_get_video_size(&mode);
 
-   full_x  = mode.width;
-   full_y  = mode.height;
+   full_x      = mode.width;
+   full_y      = mode.height;
    mode.width  = 0;
    mode.height = 0;
+   interval    = 0;
 
    RARCH_LOG("[GL]: Detecting screen resolution %ux%u.\n", full_x, full_y);
 
-   interval = video->vsync ? video->swap_interval : 0;
+   if (video->vsync)
+      interval = video->swap_interval;
 
    video_context_driver_swap_interval(&interval);
 
-   win_width  = video->width;
-   win_height = video->height;
+   win_width   = video->width;
+   win_height  = video->height;
 
    if (video->fullscreen && (win_width == 0) && (win_height == 0))
    {
