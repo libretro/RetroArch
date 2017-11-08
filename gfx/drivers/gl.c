@@ -625,142 +625,6 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 }
 
-static INLINE void gl_copy_frame(gl_t *gl, 
-      video_frame_info_t *video_info,
-      const void *frame,
-      unsigned width, unsigned height, unsigned pitch)
-{
-#if defined(HAVE_PSGL)
-   {
-      unsigned h;
-      size_t buffer_addr        = gl->tex_w * gl->tex_h *
-         gl->tex_index * gl->base_size;
-      size_t buffer_stride      = gl->tex_w * gl->base_size;
-      const uint8_t *frame_copy = frame;
-      size_t frame_copy_size    = width * gl->base_size;
-
-      uint8_t *buffer = (uint8_t*)glMapBuffer(
-            GL_TEXTURE_REFERENCE_BUFFER_SCE, GL_READ_WRITE) + buffer_addr;
-      for (h = 0; h < height; h++, buffer += buffer_stride, frame_copy += pitch)
-         memcpy(buffer, frame_copy, frame_copy_size);
-
-      glUnmapBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE);
-   }
-#elif defined(HAVE_OPENGLES)
-#if defined(HAVE_EGL)
-   if (gl->egl_images)
-   {
-      gfx_ctx_image_t img_info;
-      bool new_egl    = false;
-      EGLImageKHR img = 0;
-
-      img_info.frame  = frame;
-      img_info.width  = width;
-      img_info.height = height;
-      img_info.pitch  = pitch;
-      img_info.index  = gl->tex_index;
-      img_info.rgb32  = (gl->base_size == 4);
-      img_info.handle = &img;
-
-      new_egl         = 
-         video_context_driver_write_to_image_buffer(&img_info);
-
-      if (img == EGL_NO_IMAGE_KHR)
-      {
-         RARCH_ERR("[GL]: Failed to create EGL image.\n");
-         return;
-      }
-
-      if (new_egl)
-         glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, (GLeglImageOES)img);
-   }
-   else
-#endif
-   {
-      glPixelStorei(GL_UNPACK_ALIGNMENT,
-            video_pixel_get_alignment(width * gl->base_size));
-
-      /* Fallback for GLES devices without GL_BGRA_EXT. */
-      if (gl->base_size == 4 && video_info->use_rgba)
-      {
-         video_frame_convert_argb8888_to_abgr8888(
-               &gl->scaler,
-               gl->conv_buffer,
-               frame, width, height, pitch);
-         glTexSubImage2D(GL_TEXTURE_2D,
-               0, 0, 0, width, height, gl->texture_type,
-               gl->texture_fmt, gl->conv_buffer);
-      }
-      else if (gl->support_unpack_row_length)
-      {
-         glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / gl->base_size);
-         glTexSubImage2D(GL_TEXTURE_2D,
-               0, 0, 0, width, height, gl->texture_type,
-               gl->texture_fmt, frame);
-
-         glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-      }
-      else
-      {
-         /* No GL_UNPACK_ROW_LENGTH. */
-
-         const GLvoid *data_buf = frame;
-         unsigned pitch_width   = pitch / gl->base_size;
-
-         if (width != pitch_width)
-         {
-            /* Slow path - conv_buffer is preallocated
-             * just in case we hit this path. */
-
-            unsigned h;
-            const unsigned line_bytes = width * gl->base_size;
-            uint8_t *dst              = (uint8_t*)gl->conv_buffer;
-            const uint8_t *src        = (const uint8_t*)frame;
-
-            for (h = 0; h < height; h++, src += pitch, dst += line_bytes)
-               memcpy(dst, src, line_bytes);
-
-            data_buf                  = gl->conv_buffer;
-         }
-
-         glTexSubImage2D(GL_TEXTURE_2D,
-               0, 0, 0, width, height, gl->texture_type,
-               gl->texture_fmt, data_buf);
-      }
-   }
-#else
-   {
-      const GLvoid *data_buf = frame;
-      glPixelStorei(GL_UNPACK_ALIGNMENT, video_pixel_get_alignment(pitch));
-
-      if (gl->base_size == 2 && !gl->have_es2_compat)
-      {
-         /* Convert to 32-bit textures on desktop GL.
-          *
-          * It is *much* faster (order of magnitude on my setup)
-          * to use a custom SIMD-optimized conversion routine
-          * than letting GL do it. */
-         video_frame_convert_rgb16_to_rgb32(
-               &gl->scaler,
-               gl->conv_buffer,
-               frame,
-               width,
-               height,
-               pitch);
-         data_buf = gl->conv_buffer;
-      }
-      else
-         glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / gl->base_size);
-
-      glTexSubImage2D(GL_TEXTURE_2D,
-            0, 0, 0, width, height, gl->texture_type,
-            gl->texture_fmt, data_buf);
-
-      glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-   }
-#endif
-}
-
 static INLINE void gl_set_shader_viewports(gl_t *gl)
 {
    unsigned width, height;
@@ -1220,7 +1084,9 @@ static bool gl_frame(void *data, const void *frame,
       if (!gl->hw_render_fbo_init)
       {
          gl_update_input_size(gl, frame_width, frame_height, pitch, true);
-         gl_copy_frame(gl, video_info, frame, frame_width, frame_height, pitch);
+
+         if (gl->renderchain_driver->copy_frame)
+            gl->renderchain_driver->copy_frame(gl, video_info, frame, frame_width, frame_height, pitch);
       }
 
       /* No point regenerating mipmaps

@@ -827,6 +827,11 @@ typedef struct d3d_renderchain_driver
 
 typedef struct gl_renderchain_driver
 {
+   void (*copy_frame)(
+      void *data, 
+      video_frame_info_t *video_info,
+      const void *frame,
+      unsigned width, unsigned height, unsigned pitch);
    void (*restore_default_state)(void *data);
    void (*new_vao)(void *data);
    void (*free_vao)(void *data);
