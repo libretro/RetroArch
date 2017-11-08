@@ -1962,6 +1962,13 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    gl_set_texture_fmts(gl, video->rgb32);
 
+   if (!renderchain_gl_init_first(&gl->renderchain_driver,
+	   &gl->renderchain_data))
+   {
+	   RARCH_ERR("[GL]: Renderchain could not be initialized.\n");
+	   return false;
+   }
+
    if (gl->renderchain_driver->restore_default_state)
       gl->renderchain_driver->restore_default_state(gl);
 
@@ -1983,13 +1990,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    gl_init_textures(gl, video);
    gl_init_textures_data(gl);
-
-   if (!renderchain_gl_init_first(&gl->renderchain_driver,
-	   &gl->renderchain_data))
-   {
-	   RARCH_ERR("[GL]: Renderchain could not be initialized.\n");
-	   return false;
-   }
 
    if (gl->renderchain_driver->init)
       gl->renderchain_driver->init(gl, gl->tex_w, gl->tex_h);
