@@ -1110,7 +1110,50 @@ static void *gl2_renderchain_new(void)
    return renderchain;
 }
 
+#ifndef NO_GL_FF_VERTEX
+static void gl2_renderchain_ff_vertex(const void *data)
+{
+   const struct video_coords *coords = (const struct video_coords*)data;
+   /* Fall back to fixed function-style if needed and possible. */
+   glClientActiveTexture(GL_TEXTURE1);
+   glTexCoordPointer(2, GL_FLOAT, 0, coords->lut_tex_coord);
+   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+   glClientActiveTexture(GL_TEXTURE0);
+   glVertexPointer(2, GL_FLOAT, 0, coords->vertex);
+   glEnableClientState(GL_VERTEX_ARRAY);
+   glColorPointer(4, GL_FLOAT, 0, coords->color);
+   glEnableClientState(GL_COLOR_ARRAY);
+   glTexCoordPointer(2, GL_FLOAT, 0, coords->tex_coord);
+   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+}
+#endif
+
+#ifndef NO_GL_FF_MATRIX
+static void gl2_renderchain_ff_matrix(const void *data)
+{
+   math_matrix_4x4 ident;
+   const math_matrix_4x4 *mat = (const math_matrix_4x4*)data;
+
+   /* Fall back to fixed function-style if needed and possible. */
+   glMatrixMode(GL_PROJECTION);
+   glLoadMatrixf(mat->data);
+   glMatrixMode(GL_MODELVIEW);
+   matrix_4x4_identity(ident);
+   glLoadMatrixf(ident.data);
+}
+#endif
+
 gl_renderchain_driver_t gl2_renderchain = {
+#ifdef NO_GL_FF_VERTEX
+   NULL,
+#else
+   gl2_renderchain_ff_vertex,
+#endif
+#ifdef NO_GL_FF_MATRIX
+   NULL,
+#else
+   gl2_renderchain_ff_matrix,
+#endif
    gl2_renderchain_bind_backbuffer,
    gl2_renderchain_deinit_fbo,
    gl2_renderchain_viewport_info,
