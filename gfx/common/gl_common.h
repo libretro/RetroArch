@@ -55,6 +55,7 @@ typedef struct gl
    bool has_fp_fbo;
    bool has_srgb_fbo;
    bool hw_render_use;
+   bool core_context_in_use;
 
    bool should_resize;
    bool quitting;
@@ -205,8 +206,8 @@ static INLINE unsigned gl_wrap_type_to_enum(enum gfx_wrap_type type)
    return 0;
 }
 
-
 bool gl_query_core_context_in_use(void);
+
 void gl_load_texture_image(GLenum target,
       GLint level,
       GLint internalFormat,
