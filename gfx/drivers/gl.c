@@ -553,13 +553,6 @@ static void gl_init_textures_data(gl_t *gl)
 static void gl_init_textures_reference(gl_t *gl, unsigned i,
       GLenum internal_fmt, GLenum texture_fmt, GLenum texture_type)
 {
-   glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
-
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl->wrap_mode);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl->wrap_mode);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_mag_filter);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_min_filter);
-
 #ifdef HAVE_PSGL
    glTextureReferenceSCE(GL_TEXTURE_2D, 1,
          gl->tex_w, gl->tex_h, 0,
@@ -624,8 +617,16 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
    glGenTextures(gl->textures, gl->texture);
 
    for (i = 0; i < gl->textures; i++)
+   {
+      glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl->wrap_mode);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl->wrap_mode);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_mag_filter);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_min_filter);
+
       gl_init_textures_reference(gl, i, internal_fmt,
             texture_fmt, texture_type);
+   }
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 }
@@ -668,10 +669,6 @@ void gl_load_texture_data(
    GLuint id        = (GLuint)id_data;
    bool have_mipmap = gl_check_capability(GL_CAPS_MIPMAP);
 
-   glBindTexture(GL_TEXTURE_2D, id);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap);
-
    if (!have_mipmap)
    {
       /* Assume no mipmapping support. */
@@ -711,6 +708,9 @@ void gl_load_texture_data(
          break;
    }
 
+   glBindTexture(GL_TEXTURE_2D, id);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
 
