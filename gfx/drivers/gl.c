@@ -1213,6 +1213,7 @@ static bool gl_frame(void *data, const void *frame,
    }
 
 #ifndef NO_GL_READ_PIXELS
+
    /* Screenshots. */
    if (gl->readback_buffer_screenshot)
    {
@@ -1225,13 +1226,17 @@ static bool gl_frame(void *data, const void *frame,
             gl->vp.width, gl->vp.height,
             GL_RGBA, GL_UNSIGNED_BYTE, gl->readback_buffer_screenshot);
    }
-#ifdef HAVE_MENU
+
 #ifdef HAVE_GL_ASYNC_READBACK
    /* Don't readback if we're in menu mode. */
-   else if (gl->pbo_readback_enable && !gl->menu_texture_enable)
-      gl_pbo_async_readback(gl);
+   else if (gl->pbo_readback_enable)
+#ifdef HAVE_MENU
+         /* Don't readback if we're in menu mode. */
+         if (!gl->menu_texture_enable)
 #endif
+            gl_pbo_async_readback(gl);
 #endif
+
 #endif
 
    /* Disable BFI during fast forward, slow-motion,
