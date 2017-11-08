@@ -981,7 +981,8 @@ static void gl_render_osd_background(
    shader_info.idx        = VIDEO_SHADER_STOCK_BLEND;
    shader_info.set_active = true;
 
-   video_driver_set_viewport(video_info->width, video_info->height, true, false);
+   video_driver_set_viewport(video_info->width,
+         video_info->height, true, false);
 
    video_shader_driver_use(shader_info);
    video_shader_driver_set_coords(coords_data);
@@ -1026,7 +1027,8 @@ end:
    free(dummy);
    free(verts);
 
-   video_driver_set_viewport(video_info->width, video_info->height, false, true);
+   video_driver_set_viewport(video_info->width,
+         video_info->height, false, true);
 }
 
 static void gl_set_osd_msg(void *data,
@@ -1054,6 +1056,8 @@ static struct video_shader *gl_get_current_shader(void *data)
 #ifdef HAVE_GL_ASYNC_READBACK
 static void gl_pbo_async_readback(gl_t *gl)
 {
+   GLenum type;
+   GLenum fmt;
    glBindBuffer(GL_PIXEL_PACK_BUFFER,
          gl->pbo_readback[gl->pbo_readback_index++]);
    gl->pbo_readback_index &= 3;
@@ -1068,15 +1072,16 @@ static void gl_pbo_async_readback(gl_t *gl)
    /* Read asynchronously into PBO buffer. */
    glReadBuffer(GL_BACK);
 #ifdef HAVE_OPENGLES3
-   glReadPixels(gl->vp.x, gl->vp.y,
-         gl->vp.width, gl->vp.height,
-         GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+   fmt  = GL_RGBA;
+   type = GL_UNSIGNED_BYTE;
 #else
-   glReadPixels(gl->vp.x, gl->vp.y,
-         gl->vp.width, gl->vp.height,
-         GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+   fmt  = GL_BGRA;
+   type = GL_UNSIGNED_INT_8_8_8_8_REV;
 #endif
 
+   glReadPixels(gl->vp.x, gl->vp.y,
+         gl->vp.width, gl->vp.height,
+         fmt, type, NULL);
    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 }
 #endif
