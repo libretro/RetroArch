@@ -67,14 +67,10 @@ typedef struct gl
    bool have_mipmap;
 
    bool egl_images;
-#ifdef HAVE_OVERLAY
    bool overlay_enable;
    bool overlay_full_screen;
-#endif
-#ifdef HAVE_MENU
    bool menu_texture_enable;
    bool menu_texture_full_screen;
-#endif
    bool have_sync;
    bool pbo_readback_valid[4];
    bool pbo_readback_enable;
@@ -88,12 +84,8 @@ typedef struct gl
    GLuint fbo_feedback;
    GLuint fbo_feedback_texture;
    GLuint pbo;
-#ifdef HAVE_OVERLAY
    GLuint *overlay_tex;
-#endif
-#if defined(HAVE_MENU)
    GLuint menu_texture;
-#endif
    GLuint vao;
    GLuint pbo_readback[4];
    GLuint texture[GFX_MAX_TEXTURES];
@@ -111,28 +103,22 @@ typedef struct gl
    unsigned tex_w;
    unsigned tex_h;
    unsigned base_size; /* 2 or 4 */
-#ifdef HAVE_OVERLAY
    unsigned overlays;
-#endif
    unsigned pbo_readback_index;
    unsigned fence_count;
    unsigned last_width[GFX_MAX_TEXTURES];
    unsigned last_height[GFX_MAX_TEXTURES];
 
-#if defined(HAVE_MENU)
    float menu_texture_alpha;
-#endif
 
    void *empty_buf;
    void *conv_buffer;
    void *readback_buffer_screenshot;
    const float *vertex_ptr;
    const float *white_color_ptr;
-#ifdef HAVE_OVERLAY
    float *overlay_vertex_coord;
    float *overlay_tex_coord;
    float *overlay_color_coord;
-#endif
 
    struct video_tex_info tex_info;
    struct scaler_ctx pbo_readback_scaler;
