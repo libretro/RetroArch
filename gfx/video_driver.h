@@ -827,6 +827,7 @@ typedef struct d3d_renderchain_driver
 
 typedef struct gl_renderchain_driver
 {
+   void (*disable_client_arrays)(void);
    void (*ff_vertex)(const void *data);
    void (*ff_matrix)(const void *data);
    void (*bind_backbuffer)(void);

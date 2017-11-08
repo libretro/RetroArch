@@ -430,22 +430,6 @@ static bool gl_shader_init(gl_t *gl)
    return video_shader_driver_init(&init_data);
 }
 
-#ifndef NO_GL_FF_VERTEX
-static void gl_disable_client_arrays(void)
-{
-   if (gl_query_core_context_in_use())
-      return;
-
-   glClientActiveTexture(GL_TEXTURE1);
-   glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-   glClientActiveTexture(GL_TEXTURE0);
-   glDisableClientState(GL_VERTEX_ARRAY);
-   glDisableClientState(GL_COLOR_ARRAY);
-   glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-}
-#endif
-
-
 GLenum min_filter_to_mag(GLenum type)
 {
    switch (type)
@@ -1364,9 +1348,8 @@ static bool gl_frame(void *data, const void *frame,
       video_info->cb_shader_use(gl, video_info->shader_data, 0, true);
 
       glBindTexture(GL_TEXTURE_2D, 0);
-#ifndef NO_GL_FF_VERTEX
-      gl_disable_client_arrays();
-#endif
+      if (gl->renderchain_driver->disable_client_arrays)
+         gl->renderchain_driver->disable_client_arrays();
    }
 
 #ifndef NO_GL_READ_PIXELS
@@ -1485,9 +1468,8 @@ static void gl_free(void *data)
    font_driver_free_osd();
    video_shader_driver_deinit();
 
-#ifndef NO_GL_FF_VERTEX
-   gl_disable_client_arrays();
-#endif
+   if (gl->renderchain_driver->disable_client_arrays)
+      gl->renderchain_driver->disable_client_arrays();
 
    glDeleteTextures(gl->textures, gl->texture);
 

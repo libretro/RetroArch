@@ -1143,10 +1143,27 @@ static void gl2_renderchain_ff_matrix(const void *data)
 }
 #endif
 
+#ifndef NO_GL_FF_VERTEX
+static void gl2_renderchain_disable_client_arrays(void)
+{
+   if (gl_query_core_context_in_use())
+      return;
+
+   glClientActiveTexture(GL_TEXTURE1);
+   glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+   glClientActiveTexture(GL_TEXTURE0);
+   glDisableClientState(GL_VERTEX_ARRAY);
+   glDisableClientState(GL_COLOR_ARRAY);
+   glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+}
+#endif
+
 gl_renderchain_driver_t gl2_renderchain = {
 #ifdef NO_GL_FF_VERTEX
    NULL,
+   NULL,
 #else
+   gl2_renderchain_disable_client_arrays,
    gl2_renderchain_ff_vertex,
 #endif
 #ifdef NO_GL_FF_MATRIX
