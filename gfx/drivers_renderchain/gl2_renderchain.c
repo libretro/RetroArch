@@ -1432,7 +1432,34 @@ static void gl2_renderchain_fence_free(void *data)
 }
 #endif
 
+static void gl2_renderchain_init_textures_reference(
+      void *data, unsigned i,
+      unsigned internal_fmt, unsigned texture_fmt,
+      unsigned texture_type)
+{
+   gl_t *gl = (gl_t*)data;
+#ifdef HAVE_PSGL
+   glTextureReferenceSCE(GL_TEXTURE_2D, 1,
+         gl->tex_w, gl->tex_h, 0,
+         (GLenum)internal_fmt,
+         gl->tex_w * gl->base_size,
+         gl->tex_w * gl->tex_h * i * gl->base_size);
+#else
+   if (gl->egl_images)
+      return;
+
+   gl_load_texture_image(GL_TEXTURE_2D,
+      0,
+      (GLenum)internal_fmt,
+      gl->tex_w, gl->tex_h, 0,
+      (GLenum)texture_type,
+      (GLenum)texture_fmt,
+      gl->empty_buf ? gl->empty_buf : NULL);
+#endif
+}
+
 gl_renderchain_driver_t gl2_renderchain = {
+   gl2_renderchain_init_textures_reference,
 #ifdef HAVE_OPENGLES
    NULL,
    NULL,

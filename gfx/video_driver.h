@@ -827,6 +827,10 @@ typedef struct d3d_renderchain_driver
 
 typedef struct gl_renderchain_driver
 {
+   void (*init_texture_reference)(
+         void *data, unsigned i,
+         unsigned internal_fmt, unsigned texture_fmt,
+         unsigned texture_type);
    void (*fence_iterate)(void *data, unsigned hard_sync_frames);
    void (*fence_free)(void *data);
    void (*readback)(void *data,

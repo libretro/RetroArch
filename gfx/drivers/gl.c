@@ -546,25 +546,6 @@ static void gl_init_textures_data(gl_t *gl)
    }
 }
 
-static void gl_init_textures_reference(gl_t *gl, unsigned i,
-      GLenum internal_fmt, GLenum texture_fmt, GLenum texture_type)
-{
-#ifdef HAVE_PSGL
-   glTextureReferenceSCE(GL_TEXTURE_2D, 1,
-         gl->tex_w, gl->tex_h, 0,
-         internal_fmt,
-         gl->tex_w * gl->base_size,
-         gl->tex_w * gl->tex_h * i * gl->base_size);
-#else
-   if (gl->egl_images)
-      return;
-
-   gl_load_texture_image(GL_TEXTURE_2D,
-      0, internal_fmt, gl->tex_w, gl->tex_h, 0, texture_type,
-      texture_fmt, gl->empty_buf ? gl->empty_buf : NULL);
-#endif
-}
-
 static void gl_init_textures(gl_t *gl, const video_info_t *video)
 {
    unsigned i;
@@ -620,8 +601,10 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_mag_filter);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_min_filter);
 
-      gl_init_textures_reference(gl, i, internal_fmt,
-            texture_fmt, texture_type);
+      if (gl->renderchain_driver->init_texture_reference)
+         gl->renderchain_driver->init_texture_reference(
+               gl, i, internal_fmt,
+               texture_fmt, texture_type);
    }
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
