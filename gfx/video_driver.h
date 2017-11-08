@@ -827,6 +827,9 @@ typedef struct d3d_renderchain_driver
 
 typedef struct gl_renderchain_driver
 {
+   void (*init_pbo)(unsigned size, const void *data);
+   void (*bind_pbo)(unsigned idx);
+   void (*unbind_pbo)(void);
    void (*copy_frame)(
       void *data, 
       video_frame_info_t *video_info,

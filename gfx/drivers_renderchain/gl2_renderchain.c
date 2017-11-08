@@ -1342,7 +1342,33 @@ static void gl2_renderchain_copy_frame(
 #endif
 }
 
+static void gl2_renderchain_bind_pbo(unsigned idx)
+{
+#ifndef HAVE_OPENGLES2
+   glBindBuffer(GL_PIXEL_PACK_BUFFER, (GLuint)idx);
+#endif
+}
+
+static void gl2_renderchain_unbind_pbo(void)
+{
+#ifndef HAVE_OPENGLES2
+   glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+#endif
+}
+
+static void gl2_renderchain_init_pbo(unsigned size,
+      const void *data)
+{
+#ifndef HAVE_OPENGLES2
+   glBufferData(GL_PIXEL_PACK_BUFFER, size,
+         (const GLvoid*)data, GL_STREAM_READ);
+#endif
+}
+
 gl_renderchain_driver_t gl2_renderchain = {
+   gl2_renderchain_init_pbo,
+   gl2_renderchain_bind_pbo,
+   gl2_renderchain_unbind_pbo,
    gl2_renderchain_copy_frame,
    gl2_renderchain_restore_default_state,
 #ifdef HAVE_OPENGLES

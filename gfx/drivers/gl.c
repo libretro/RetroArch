@@ -927,7 +927,8 @@ static void gl_pbo_async_readback(gl_t *gl)
    GLenum type = GL_UNSIGNED_INT_8_8_8_8_REV;
 #endif
 
-   glBindBuffer(GL_PIXEL_PACK_BUFFER,
+   if (gl->renderchain_driver->bind_pbo)
+      gl->renderchain_driver->bind_pbo(
          gl->pbo_readback[gl->pbo_readback_index++]);
    gl->pbo_readback_index &= 3;
 
@@ -942,7 +943,8 @@ static void gl_pbo_async_readback(gl_t *gl)
    glReadPixels(gl->vp.x, gl->vp.y,
          gl->vp.width, gl->vp.height,
          fmt, type, NULL);
-   glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+   if (gl->renderchain_driver->unbind_pbo)
+      gl->renderchain_driver->unbind_pbo();
 }
 #endif
 
@@ -953,22 +955,22 @@ static INLINE void gl_draw_texture(gl_t *gl, video_frame_info_t *video_info)
    unsigned width         = video_info->width;
    unsigned height        = video_info->height;
 
-   color[ 0] = 1.0f;
-   color[ 1] = 1.0f;
-   color[ 2] = 1.0f;
-   color[ 3] = gl->menu_texture_alpha;
-   color[ 4] = 1.0f;
-   color[ 5] = 1.0f;
-   color[ 6] = 1.0f;
-   color[ 7] = gl->menu_texture_alpha;
-   color[ 8] = 1.0f;
-   color[ 9] = 1.0f;
-   color[10] = 1.0f;
-   color[11] = gl->menu_texture_alpha;
-   color[12] = 1.0f;
-   color[13] = 1.0f;
-   color[14] = 1.0f;
-   color[15] = gl->menu_texture_alpha;
+   color[ 0]              = 1.0f;
+   color[ 1]              = 1.0f;
+   color[ 2]              = 1.0f;
+   color[ 3]              = gl->menu_texture_alpha;
+   color[ 4]              = 1.0f;
+   color[ 5]              = 1.0f;
+   color[ 6]              = 1.0f;
+   color[ 7]              = gl->menu_texture_alpha;
+   color[ 8]              = 1.0f;
+   color[ 9]              = 1.0f;
+   color[10]              = 1.0f;
+   color[11]              = gl->menu_texture_alpha;
+   color[12]              = 1.0f;
+   color[13]              = 1.0f;
+   color[14]              = 1.0f;
+   color[15]              = gl->menu_texture_alpha;
 
    if (!gl->menu_texture)
       return;
@@ -978,7 +980,8 @@ static INLINE void gl_draw_texture(gl_t *gl, video_frame_info_t *video_info)
    gl->coords.color     = color;
    glBindTexture(GL_TEXTURE_2D, gl->menu_texture);
 
-   video_info->cb_shader_use(gl, video_info->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
+   video_info->cb_shader_use(gl,
+         video_info->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
 
    gl->coords.vertices  = 4;
 
@@ -987,7 +990,8 @@ static INLINE void gl_draw_texture(gl_t *gl, video_frame_info_t *video_info)
 
    video_shader_driver_set_coords(coords);
 
-   video_info->cb_shader_set_mvp(gl, video_info->shader_data, &gl->mvp_no_rot);
+   video_info->cb_shader_set_mvp(gl,
+         video_info->shader_data, &gl->mvp_no_rot);
 
    glEnable(GL_BLEND);
 
@@ -1542,12 +1546,14 @@ static bool gl_init_pbo_readback(gl_t *gl)
    glGenBuffers(4, gl->pbo_readback);
    for (i = 0; i < 4; i++)
    {
-      glBindBuffer(GL_PIXEL_PACK_BUFFER, gl->pbo_readback[i]);
-      glBufferData(GL_PIXEL_PACK_BUFFER, gl->vp.width *
-            gl->vp.height * sizeof(uint32_t),
-            NULL, GL_STREAM_READ);
+      if (gl->renderchain_driver->bind_pbo)
+         gl->renderchain_driver->bind_pbo(gl->pbo_readback[i]);
+      if (gl->renderchain_driver->init_pbo)
+         gl->renderchain_driver->init_pbo(gl->vp.width *
+               gl->vp.height * sizeof(uint32_t), NULL);
    }
-   glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+   if (gl->renderchain_driver->unbind_pbo)
+      gl->renderchain_driver->unbind_pbo();
 
 #ifndef HAVE_OPENGLES3
    {
