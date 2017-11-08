@@ -1161,9 +1161,8 @@ static bool gl_frame(void *data, const void *frame,
    gl_t                            *gl = (gl_t*)data;
    unsigned width                      = video_info->width;
    unsigned height                     = video_info->height;
-   settings_t *settings = config_get_ptr();
 
-   if (!gl || !settings)
+   if (!gl)
       return false;
 
    context_bind_hw_render(false);
@@ -1201,7 +1200,8 @@ static bool gl_frame(void *data, const void *frame,
       mode.width        = width;
       mode.height       = height;
 
-      video_info->cb_set_resize(video_info->context_data, mode.width, mode.height);
+      video_info->cb_set_resize(video_info->context_data,
+            mode.width, mode.height);
 
       if (gl->fbo_inited)
       {
@@ -1334,7 +1334,8 @@ static bool gl_frame(void *data, const void *frame,
 
    if (!string_is_empty(msg))
    {
-      if (settings->bools.video_msg_bgcolor_enable)
+      settings_t *settings = config_get_ptr();
+      if (settings && settings->bools.video_msg_bgcolor_enable)
          gl_render_osd_background(gl, video_info, msg);
       font_driver_render_msg(video_info, NULL, msg, NULL);
    }
