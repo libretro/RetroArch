@@ -1246,14 +1246,10 @@ static bool gl_frame(void *data, const void *frame,
          gl_set_viewport(gl, video_info, width, height, false, true);
       }
 
-#ifndef HAVE_OPENGLES
-      if (!gl->core_context_in_use)
-         glEnable(GL_TEXTURE_2D);
-#endif
-      glDisable(GL_DEPTH_TEST);
+      if (gl->renderchain_driver->restore_default_state)
+         gl->renderchain_driver->restore_default_state(gl);
+
       glDisable(GL_STENCIL_TEST);
-      glDisable(GL_CULL_FACE);
-      glDisable(GL_DITHER);
       glDisable(GL_BLEND);
       glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
       glBlendEquation(GL_FUNC_ADD);
@@ -1538,7 +1534,6 @@ static void gl_set_nonblock_state(void *data, bool state)
 static bool resolve_extensions(gl_t *gl, const char *context_ident)
 {
    settings_t *settings = config_get_ptr();
-#ifndef HAVE_OPENGLES
    struct retro_hw_render_callback *hwr =
       video_driver_get_hw_context();
 
@@ -1567,7 +1562,7 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
       if (gl->renderchain_driver->new_vao)
          gl->renderchain_driver->new_vao(gl);
    }
-#endif
+
    /* ES2 Compat - GL_RGB565 internal format support.
     * Even though ES2 support is claimed, the format
     * is not supported on older ATI catalyst drivers.
@@ -2111,14 +2106,8 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    gl_set_texture_fmts(gl, video->rgb32);
 
-#ifndef HAVE_OPENGLES
-   if (!gl->core_context_in_use)
-      glEnable(GL_TEXTURE_2D);
-#endif
-
-   glDisable(GL_DEPTH_TEST);
-   glDisable(GL_CULL_FACE);
-   glDisable(GL_DITHER);
+   if (gl->renderchain_driver->restore_default_state)
+      gl->renderchain_driver->restore_default_state(gl);
 
    memcpy(gl->tex_info.coord, tex_coords, sizeof(gl->tex_info.coord));
    gl->coords.vertex         = gl->vertex_ptr;

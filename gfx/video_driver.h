@@ -827,6 +827,7 @@ typedef struct d3d_renderchain_driver
 
 typedef struct gl_renderchain_driver
 {
+   void (*restore_default_state)(void *data);
    void (*new_vao)(void *data);
    void (*free_vao)(void *data);
    void (*bind_vao)(void *data);

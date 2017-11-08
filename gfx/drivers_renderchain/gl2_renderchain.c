@@ -1192,7 +1192,22 @@ static void gl2_renderchain_free_vao(void *data)
 }
 #endif
 
+static void gl2_renderchain_restore_default_state(void *data)
+{
+   gl_t *gl = (gl_t*)data;
+   if (!gl)
+      return;
+#ifndef HAVE_OPENGLES
+   if (!gl->core_context_in_use)
+      glEnable(GL_TEXTURE_2D);
+#endif
+   glDisable(GL_DEPTH_TEST);
+   glDisable(GL_CULL_FACE);
+   glDisable(GL_DITHER);
+}
+
 gl_renderchain_driver_t gl2_renderchain = {
+   gl2_renderchain_restore_default_state,
 #ifdef HAVE_OPENGLES
    NULL,
    NULL,
