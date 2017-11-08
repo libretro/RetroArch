@@ -1434,7 +1434,6 @@ static void gl_destroy_resources(gl_t *gl)
    }
 
    gl_shared_context_use   = false;
-   gl->core_context_in_use = false;
 
    gl_query_core_context_unset();
 }
