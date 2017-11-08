@@ -1158,7 +1158,52 @@ static void gl2_renderchain_disable_client_arrays(void)
 }
 #endif
 
+#ifndef HAVE_OPENGLES
+static void gl2_renderchain_bind_vao(void *data)
+{
+   gl_t *gl = (gl_t*)data;
+   if (!gl)
+      return;
+   glBindVertexArray(gl->vao);
+}
+
+static void gl2_renderchain_unbind_vao(void *data)
+{
+   gl_t *gl = (gl_t*)data;
+   if (!gl)
+      return;
+   glBindVertexArray(0);
+}
+
+static void gl2_renderchain_new_vao(void *data)
+{
+   gl_t *gl = (gl_t*)data;
+   if (!gl)
+      return;
+   glGenVertexArrays(1, &gl->vao);
+}
+
+static void gl2_renderchain_free_vao(void *data)
+{
+   gl_t *gl = (gl_t*)data;
+   if (!gl)
+      return;
+   glDeleteVertexArrays(1, &gl->vao);
+}
+#endif
+
 gl_renderchain_driver_t gl2_renderchain = {
+#ifdef HAVE_OPENGLES
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+#else
+   gl2_renderchain_new_vao,
+   gl2_renderchain_free_vao,
+   gl2_renderchain_bind_vao,
+   gl2_renderchain_unbind_vao,
+#endif
 #ifdef NO_GL_FF_VERTEX
    NULL,
    NULL,

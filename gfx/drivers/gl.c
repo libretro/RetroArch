@@ -579,11 +579,9 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
    (void)texture_type;
    (void)texture_fmt;
 
-#if defined(HAVE_EGL) && defined(HAVE_OPENGLES)
    /* Use regular textures if we use HW render. */
    gl->egl_images = !gl->hw_render_use && gl_check_capability(GL_CAPS_EGLIMAGE) &&
       video_context_driver_init_image_buffer((void*)video);
-#endif
 
 #ifdef HAVE_PSGL
    if (!gl->pbo)
@@ -669,7 +667,8 @@ static INLINE void gl_copy_frame(gl_t *gl,
       img_info.rgb32  = (gl->base_size == 4);
       img_info.handle = &img;
 
-      new_egl = video_context_driver_write_to_image_buffer(&img_info);
+      new_egl         = 
+         video_context_driver_write_to_image_buffer(&img_info);
 
       if (img == EGL_NO_IMAGE_KHR)
       {
@@ -1167,10 +1166,8 @@ static bool gl_frame(void *data, const void *frame,
 
    context_bind_hw_render(false);
 
-#ifndef HAVE_OPENGLES
-   if (gl->core_context_in_use)
-      glBindVertexArray(gl->vao);
-#endif
+   if (gl->core_context_in_use && gl->renderchain_driver->bind_vao)
+      gl->renderchain_driver->bind_vao(gl);
 
    video_info->cb_shader_use(gl, video_info->shader_data, 1, true);
 
@@ -1412,10 +1409,9 @@ static bool gl_frame(void *data, const void *frame,
       }
    }
 
-#ifndef HAVE_OPENGLES
-   if (gl->core_context_in_use)
-      glBindVertexArray(0);
-#endif
+   if (gl->core_context_in_use &&
+         gl->renderchain_driver->unbind_vao)
+      gl->renderchain_driver->unbind_vao(gl);
 
    context_bind_hw_render(true);
 
@@ -1506,13 +1502,13 @@ static void gl_free(void *data)
       gl->renderchain_driver->free(gl);
    gl_deinit_chain(gl);
 
-#ifndef HAVE_OPENGLES
    if (gl->core_context_in_use)
    {
-      glBindVertexArray(0);
-      glDeleteVertexArrays(1, &gl->vao);
+      if (gl->renderchain_driver->unbind_vao)
+         gl->renderchain_driver->unbind_vao(gl);
+      if (gl->renderchain_driver->free_vao)
+         gl->renderchain_driver->free_vao(gl);
    }
-#endif
 
    video_context_driver_free();
 
@@ -1550,6 +1546,12 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
    {
       gfx_ctx_flags_t flags;
 
+      if (!gl_check_capability(GL_CAPS_VAO))
+      {
+         RARCH_ERR("[GL]: Failed to initialize VAOs.\n");
+         return false;
+      }
+
       gl_query_core_context_set(true);
       gl->core_context_in_use = true;
 
@@ -1561,13 +1563,9 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
 
       video_context_driver_set_flags(&flags);
 
-      RARCH_LOG("[GL]: Using Core GL context.\n");
-      if (!gl_check_capability(GL_CAPS_VAO))
-      {
-         RARCH_ERR("[GL]: Failed to initialize VAOs.\n");
-         return false;
-      }
-      glGenVertexArrays(1, &gl->vao);
+      RARCH_LOG("[GL]: Using Core GL context, setting up VAO...\n");
+      if (gl->renderchain_driver->new_vao)
+         gl->renderchain_driver->new_vao(gl);
    }
 #endif
    /* ES2 Compat - GL_RGB565 internal format support.
