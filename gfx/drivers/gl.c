@@ -1981,12 +1981,10 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
     * the texture with on res change. */
    gl->empty_buf             = calloc(sizeof(uint32_t), gl->tex_w * gl->tex_h);
 
-#if !defined(HAVE_PSGL)
    gl->conv_buffer           = calloc(sizeof(uint32_t), gl->tex_w * gl->tex_h);
 
    if (!gl->conv_buffer)
       goto error;
-#endif
 
    gl_init_textures(gl, video);
    gl_init_textures_data(gl);
