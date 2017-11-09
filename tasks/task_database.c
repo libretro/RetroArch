@@ -797,6 +797,7 @@ static int database_info_list_iterate_found_match(
       database_info_get_current_element_name(db);
    database_info_t *db_info_entry =
       &db_state->info->list[db_state->entry_index];
+   char *hash;
 
    db_crc[0]                      = '\0';
    db_playlist_path[0]            = '\0';
@@ -826,6 +827,11 @@ static int database_info_list_iterate_found_match(
       fill_pathname_join_delim(entry_path_str,
             entry_path_str, archive_name,
             '#', PATH_MAX_LENGTH * sizeof(char));
+
+   if (core_info_database_match_archive_member(
+         db_state->list->elems[db_state->list_index].data) &&
+       (hash = strchr(entry_path_str, '#')))
+       *hash = '\0';
 
 #if 0
    RARCH_LOG("Found match in database !\n");
@@ -900,7 +906,10 @@ static int task_database_iterate_crc_lookup(
       query[0] = '\0';
 
       /* don't scan files that can't be in this database */
-      if (!core_info_database_supports_content_path(
+      if (!(path_contains_compressed_file(name) &&
+         core_info_database_match_archive_member(
+         db_state->list->elems[db_state->list_index].data)) &&
+          !core_info_database_supports_content_path(
          db_state->list->elems[db_state->list_index].data, name))
          return database_info_list_iterate_next(db_state);
 
