@@ -2612,7 +2612,7 @@ static int cheevos_iterate(coro_t* coro)
 
          CORO_YIELD();
          CHEEVOS_VAR_LEN = 0;
-         CHEEVOS_VAR_COUNT = filestream_get_size(CHEEVOS_VAR_STREAM);
+         CHEEVOS_VAR_COUNT = filestream_size(CHEEVOS_VAR_STREAM);
 
          if (CHEEVOS_VAR_COUNT > CHEEVOS_SIZE_LIMIT)
             CHEEVOS_VAR_COUNT = CHEEVOS_SIZE_LIMIT;
