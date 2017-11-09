@@ -20,6 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <stdio.h>
 #include <stdlib.h>
 
 #include <streams/interface_stream.h>
@@ -83,7 +84,7 @@ bool intfstream_resize(intfstream_internal_t *intf, intfstream_info_t *info)
 }
 
 bool intfstream_open(intfstream_internal_t *intf, const char *path,
-      unsigned mode, ssize_t len)
+      uint64_t mode)
 {
    if (!intf)
       return false;
@@ -91,7 +92,7 @@ bool intfstream_open(intfstream_internal_t *intf, const char *path,
    switch (intf->type)
    {
       case INTFSTREAM_FILE:
-         intf->file.fp = filestream_open(path, mode, len);
+         intf->file.fp = filestream_open(path, mode);
          if (!intf->file.fp)
             return false;
          break;
@@ -183,7 +184,28 @@ int intfstream_seek(intfstream_internal_t *intf, int offset, int whence)
    switch (intf->type)
    {
       case INTFSTREAM_FILE:
-         return (int)filestream_seek(intf->file.fp, (int)offset, whence);
+      {
+            switch (whence)
+            {
+               case SEEK_SET:
+                  break;
+               case SEEK_CUR:
+               {
+                  int64_t current = filestream_tell(intf->file.fp);
+                  offset = current + offset;
+                  break;
+               }
+               case SEEK_END:
+               {
+                  int64_t size = filestream_size(intf->file.fp);
+                  offset = size - offset;
+                  break;
+               }
+               default:
+                  return -1;
+            }
+            return (int)filestream_seek(intf->file.fp, (int64_t)offset);            
+      }
       case INTFSTREAM_MEMORY:
          return (int)memstream_seek(intf->memory.fp, offset, whence);
       case INTFSTREAM_CHD:

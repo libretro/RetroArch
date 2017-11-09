@@ -66,7 +66,7 @@ bool intfstream_resize(intfstream_internal_t *intf,
       intfstream_info_t *info);
 
 bool intfstream_open(intfstream_internal_t *intf,
-      const char *path, unsigned mode, ssize_t len);
+      const char *path, uint64_t mode);
 
 ssize_t intfstream_read(intfstream_internal_t *intf,
       void *s, size_t len);
