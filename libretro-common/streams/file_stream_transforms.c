@@ -20,23 +20,38 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#include <streams/file_stream.h>
 #include <string.h>
 #include <stdarg.h>
 
+#include <libretro.h>
+#include <stdio.h>
+
+#include <streams/file_stream_transforms.h>
+#include <streams/file_stream.h>
+
 RFILE* rfopen(const char *path, const char *mode)
 {
-   unsigned int retro_mode = RFILE_MODE_READ_TEXT;
+   unsigned int retro_mode = RETRO_VFS_FILE_ACCESS_READ;
+
    if (strstr(mode, "r"))
-      if (strstr(mode, "b"))
-         retro_mode = RFILE_MODE_READ;
+   {
+	   retro_mode = RETRO_VFS_FILE_ACCESS_READ;
+	   if (strstr(mode, "+"))
+	   {
+		   retro_mode = RETRO_VFS_FILE_ACCESS_READ_WRITE | RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING;
+	   }
+   }
 
-   if (strstr(mode, "w"))
-      retro_mode = RFILE_MODE_WRITE;
-   if (strstr(mode, "+"))
-      retro_mode = RFILE_MODE_READ_WRITE;
+   if (strstr(mode, "w") || strstr(mode, "a"))
+   {
+	   retro_mode = RETRO_VFS_FILE_ACCESS_WRITE;
+	   if (strstr(mode, "+"))
+	   {
+		   retro_mode = RETRO_VFS_FILE_ACCESS_READ_WRITE | RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING;
+	   }
+   }
 
-   return filestream_open(path, retro_mode, -1);
+   return filestream_open(path, retro_mode);
 }
 
 int rfclose(RFILE* stream)
@@ -46,18 +61,34 @@ int rfclose(RFILE* stream)
 
 long rftell(RFILE* stream)
 {
-   return filestream_tell(stream);
+   return (long)filestream_tell(stream);
 }
 
 int rfseek(RFILE* stream, long offset, int origin)
 {
-   return filestream_seek(stream, offset, origin);
+
+	switch (origin)
+	{
+	case SEEK_CUR:
+	{
+		long position = (long)filestream_tell(stream);
+		offset += position;
+		break;
+	}
+	case SEEK_END:
+	{
+		long size = (long)filestream_size(stream);
+		offset = size - offset;
+	}
+	}
+
+	return (int)filestream_seek(stream, offset);
 }
 
 size_t rfread(void* buffer,
    size_t elementSize, size_t elementCount, RFILE* stream)
 {
-   return filestream_read(stream, buffer, elementSize*elementCount);
+   return (size_t)filestream_read(stream, buffer, elementSize*elementCount);
 }
 
 char *rfgets(char *buffer, int maxCount, RFILE* stream)
@@ -73,7 +104,7 @@ int rfgetc(RFILE* stream)
 size_t rfwrite(void const* buffer,
    size_t elementSize, size_t elementCount, RFILE* stream)
 {
-   return filestream_write(stream, buffer, elementSize*elementCount);
+   return (size_t)filestream_write(stream, buffer, elementSize*elementCount);
 }
 
 int rfputc(int character, RFILE * stream)
@@ -83,12 +114,12 @@ int rfputc(int character, RFILE * stream)
 
 int rfprintf(RFILE * stream, const char * format, ...)
 {
-   int result;
+	uint64_t result;
 	va_list vl;
 	va_start(vl, format);
 	result = filestream_vprintf(stream, format, vl);
 	va_end(vl);
-	return result;
+	return (int)result;
 }
 
 int rferror(RFILE* stream)
