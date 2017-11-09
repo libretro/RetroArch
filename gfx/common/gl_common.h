@@ -38,6 +38,10 @@ RETRO_BEGIN_DECLS
 
 #define MAX_FENCES 4
 
+#ifndef ARB_sync
+typedef struct __GLsync *GLsync;
+#endif
+
 typedef struct gl
 {
    GLenum internal_fmt;
