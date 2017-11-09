@@ -551,7 +551,7 @@ static bool try_bps_patch(bool allow_bps, const char *name_bps,
    if (allow_bps && !string_is_empty(name_bps))
       if (path_is_valid(name_bps) && path_file_exists(name_bps))
       {
-         ssize_t patch_size;
+         uint64_t patch_size;
          bool ret                 = false;
          void *patch_data         = NULL;
 
@@ -578,7 +578,7 @@ static bool try_ups_patch(bool allow_ups, const char *name_ups,
    if (allow_ups && !string_is_empty(name_ups))
       if (path_is_valid(name_ups) && path_file_exists(name_ups))
       {
-         ssize_t patch_size;
+         uint64_t patch_size;
          bool ret                 = false;
          void *patch_data         = NULL;
 
@@ -605,7 +605,7 @@ static bool try_ips_patch(bool allow_ips,
    if (allow_ips && !string_is_empty(name_ips))
       if (path_is_valid(name_ips) && path_file_exists(name_ips))
       {
-         ssize_t patch_size;
+         uint64_t patch_size;
          bool ret                 = false;
          void *patch_data         = NULL;
 
