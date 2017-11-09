@@ -50,7 +50,6 @@
 /* If this is non-NULL. RARCH_LOG and friends
  * will write to this file. */
 static RFILE *log_file           = NULL;
-static FILE *log_file_fp         = NULL;
 static bool main_verbosity       = false;
 static bool log_file_initialized = false;
 
@@ -82,31 +81,23 @@ bool *verbosity_get_ptr(void)
    return &main_verbosity;
 }
 
-void *retro_main_log_file(void)
-{
-   return log_file_fp;
-}
-
 void retro_main_log_file_init(const char *path)
 {
    if (log_file_initialized)
       return;
 
-   log_file_fp          = stderr;
    if (path == NULL)
       return;
 
-   log_file             = filestream_open(path, RFILE_MODE_WRITE, -1);
-   log_file_fp          = filestream_get_fp(log_file);
+   log_file             = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ_WRITE);
    log_file_initialized = true;
 }
 
 void retro_main_log_file_deinit(void)
 {
-   if (log_file && log_file_fp != stderr)
+   if (log_file)
       filestream_close(log_file);
    log_file = NULL;
-   log_file_fp = NULL;
 }
 
 #if !defined(HAVE_LOGGER)
