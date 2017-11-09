@@ -407,7 +407,7 @@ bool path_file_exists(const char *path)
    if (!path || !*path)
       return false;
 
-   dummy = filestream_open(path, RFILE_MODE_READ, -1);
+   dummy = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ);
 
    if (!dummy)
       return false;
