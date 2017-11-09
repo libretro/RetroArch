@@ -150,7 +150,9 @@ static int content_file_read(const char *path, void **buf, ssize_t *length)
          return 1;
    }
 #endif
-   return filestream_read_file(path, buf, length);
+   uint64_t fileSize;
+   *length = (ssize_t)fileSize;
+   return filestream_read_file(path, buf, &fileSize);
 }
 
 /**
