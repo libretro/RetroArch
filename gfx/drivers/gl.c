@@ -900,7 +900,7 @@ static struct video_shader *gl_get_current_shader(void *data)
 
 static void gl_pbo_async_readback(gl_t *gl)
 {
-#ifdef HAVE_OPENGLES3
+#ifdef HAVE_OPENGLES
    GLenum fmt  = GL_RGBA;
    GLenum type = GL_UNSIGNED_BYTE;
 #else
