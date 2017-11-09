@@ -868,6 +868,17 @@ static int database_info_list_iterate_found_match(
    free(db_playlist_base_str);
    free(db_crc);
 
+   /* Move database to start since we are likely to match against it
+      again */
+   if (db_state->list_index != 0)
+   {
+      struct string_list_elem entry = db_state->list->elems[db_state->list_index];
+      memmove(&db_state->list->elems[1],
+              &db_state->list->elems[0],
+              sizeof(entry) * db_state->list_index);
+      db_state->list->elems[0] = entry;
+   }
+
    return 0;
 }
 
