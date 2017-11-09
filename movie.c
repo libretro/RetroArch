@@ -75,7 +75,7 @@ static bool bsv_movie_init_playback(bsv_movie_t *handle, const char *path)
    uint32_t state_size       = 0;
    uint32_t content_crc      = 0;
    uint32_t header[4]        = {0};
-   RFILE *file               = filestream_open(path, RFILE_MODE_READ, -1);
+   RFILE *file               = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ);
 
    if (!file)
    {
@@ -152,7 +152,7 @@ static bool bsv_movie_init_record(bsv_movie_t *handle, const char *path)
    uint32_t state_size       = 0;
    uint32_t content_crc      = 0;
    uint32_t header[4]        = {0};
-   RFILE *file               = filestream_open(path, RFILE_MODE_WRITE, -1);
+   RFILE *file               = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ_WRITE);
 
    if (!file)
    {
@@ -282,7 +282,7 @@ static void bsv_movie_frame_rewind(bsv_movie_t *handle)
    {
       /* If we're at the beginning... */
       handle->frame_ptr = 0;
-      filestream_seek(handle->file, handle->min_file_pos, SEEK_SET);
+      filestream_seek(handle->file, handle->min_file_pos);
    }
    else
    {
@@ -295,7 +295,7 @@ static void bsv_movie_frame_rewind(bsv_movie_t *handle)
       handle->frame_ptr = (handle->frame_ptr -
             (handle->first_rewind ? 1 : 2)) & handle->frame_mask;
       filestream_seek(handle->file,
-            handle->frame_pos[handle->frame_ptr], SEEK_SET);
+            handle->frame_pos[handle->frame_ptr]);
    }
 
    if (filestream_tell(handle->file) <= (long)handle->min_file_pos)
@@ -309,7 +309,7 @@ static void bsv_movie_frame_rewind(bsv_movie_t *handle)
          /* If recording, we simply reset
           * the starting point. Nice and easy. */
 
-         filestream_seek(handle->file, 4 * sizeof(uint32_t), SEEK_SET);
+         filestream_seek(handle->file, 4 * sizeof(uint32_t));
 
          serial_info.data = handle->state;
          serial_info.size = handle->state_size;
@@ -319,7 +319,7 @@ static void bsv_movie_frame_rewind(bsv_movie_t *handle)
          filestream_write(handle->file, handle->state, handle->state_size);
       }
       else
-         filestream_seek(handle->file, handle->min_file_pos, SEEK_SET);
+         filestream_seek(handle->file, handle->min_file_pos);
    }
 }
 
