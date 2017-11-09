@@ -389,14 +389,13 @@ static config_file_t *config_file_new_internal(
       goto error;
 
    conf->include_depth = depth;
-   file                = filestream_open(path, RFILE_MODE_READ_TEXT, -1);
+   file                = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ);
 
    if (!file)
    {
       free(conf->path);
       goto error;
    }
-   setvbuf(filestream_get_fp(file), NULL, _IOFBF, 0x4000);
 
    while (!filestream_eof(file))
    {
@@ -917,16 +916,11 @@ bool config_file_write(config_file_t *conf, const char *path)
 
    if (!string_is_empty(path))
    {
-      file = filestream_open(path, RFILE_MODE_WRITE, -1);
+      file = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ_WRITE);
       if (!file)
          return false;
-#ifdef WIIU
-      /* TODO: use FBF everywhere once https://i.imgur.com/muVhNeF.jpg is fixed */
-      setvbuf(filestream_get_fp(file), NULL, _IONBF, 0x4000);
-#else
-      setvbuf(filestream_get_fp(file), NULL, _IOFBF, 0x4000);
-#endif
-      config_file_dump(conf, filestream_get_fp(file));
+
+      config_file_dump_vfs(conf, file);
    }
    else
       config_file_dump(conf, stdout);
@@ -935,6 +929,27 @@ bool config_file_write(config_file_t *conf, const char *path)
       filestream_close(file);
 
    return true;
+}
+
+void config_file_dump_vfs(config_file_t *conf, RFILE *file)
+{
+   struct config_entry_list       *list = NULL;
+   struct config_include_list *includes = conf->includes;
+
+   while (includes)
+   {
+      filestream_printf(file, "#include \"%s\"\n", includes->path);
+      includes = includes->next;
+   }
+
+   list = (struct config_entry_list*)conf->entries;
+
+   while (list)
+   {
+      if (!list->readonly && list->key)
+         filestream_printf(file, "%s = \"%s\"\n", list->key, list->value);
+      list = list->next;
+   }
 }
 
 void config_file_dump(config_file_t *conf, FILE *file)
