@@ -61,7 +61,7 @@
 #undef CHEEVOS_LOG_URLS
 
 /* Define this macro to dump all cheevos' addresses. */
-#define CHEEVOS_DUMP_ADDRS
+#undef CHEEVOS_DUMP_ADDRS
 
 /* Define this macro to remove HTTP timeouts. */
 #undef CHEEVOS_NO_TIMEOUT
@@ -1745,8 +1745,11 @@ static void cheevos_test_cheevo_set(const cheevoset_t *set)
             RARCH_LOG("[CHEEVOS]: awarding cheevo %u: %s (%s).\n",
                   cheevo->id, cheevo->title, cheevo->description);
 
-            runloop_msg_queue_push(cheevo->title, 0, 3 * 60, false);
-            runloop_msg_queue_push(cheevo->description, 0, 5 * 60, false);
+            char msg[256];
+            snprintf(msg, sizeof(msg), "Achievement Unlocked: %s", cheevo->title);
+            msg[sizeof(msg) - 1] = 0;
+            runloop_msg_queue_push(msg, 0, 2 * 60, false);
+            runloop_msg_queue_push(cheevo->description, 0, 3 * 60, false);
 
             cheevos_make_unlock_url(cheevo, url, sizeof(url));
             task_push_http_transfer(url, true, NULL, cheevos_unlocked, cheevo);
@@ -1900,12 +1903,6 @@ static void cheevos_test_leaderboards(void)
 #endif
             lboard->last_value = value;
          }
-
-         char msg[256];
-            snprintf(msg, sizeof(msg), "Value: %u", value);
-            msg[sizeof(msg) - 1] = 0;
-            runloop_msg_queue_push(msg, 0, 1, false);
-
 
          if (cheevos_test_lboard_condition(&lboard->submit))
          {
@@ -2416,11 +2413,11 @@ void cheevos_test(void)
 
    cheevos_test_cheevo_set(&cheevos_locals.core);
 
-   //if (settings->bools.cheevos_test_unofficial)
+   if (settings->bools.cheevos_test_unofficial)
       cheevos_test_cheevo_set(&cheevos_locals.unofficial);
 
 #ifdef CHEEVOS_ENABLE_LBOARDS
-   //if (settings->bools.cheevos_hardcore_mode_enable && settings->bools.cheevos_leaderboards_enable)
+   if (settings->bools.cheevos_hardcore_mode_enable && settings->bools.cheevos_leaderboards_enable)
       cheevos_test_leaderboards();
 #endif
 }
