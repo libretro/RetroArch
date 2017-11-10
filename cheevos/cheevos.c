@@ -189,7 +189,7 @@ typedef struct
 typedef struct
 {
    cheevos_var_t var;
-   int           multiplier;
+   double        multiplier;
    bool          compare_next;
 } cheevos_term_t;
 
@@ -995,11 +995,15 @@ static int cheevos_parse_expression(cheevos_expr_t *expr, const char* mem)
             return 0;
 
          // invalid character in expression
-         else return 1;
+         else
+         {
+            free((void*)expr->terms);
+            return -1;
+         }
       }
       else
       {
-         expr->terms[i].multiplier = (int)strtol(aux + 1, &end, 10);
+         expr->terms[i].multiplier = strtod(aux + 1, &end);
          aux = end;
 
          if(*aux == '$')
