@@ -74,7 +74,7 @@ enum libretro_file_hints
 	RFILE_HINT_UNBUFFERED = 1 << 9
 };
 
-#ifdef VFS_TARGET_IS_FRONTEND
+#ifdef VFS_FRONTEND
 struct retro_vfs_file_handle
 #else
 struct libretro_vfs_implementation_file
