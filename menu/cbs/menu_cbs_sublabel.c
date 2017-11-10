@@ -1266,9 +1266,6 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CHEEVOS_LEADERBOARDS_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_leaderboards_enable);
             break;
-         case MENU_ENUM_LABEL_CHEEVOS_RPS_ENABLE:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_rps_enable);
-            break;
          case MENU_ENUM_LABEL_CHEEVOS_VERBOSE_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_verbose_enable);
             break;
