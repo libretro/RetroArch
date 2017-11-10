@@ -526,23 +526,19 @@ error:
 
 static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
 {
-   unsigned mip_level;
-   GLenum min_filter, mag_filter, wrap_enum;
+   GLenum mag_filter, wrap_enum;
    video_shader_ctx_filter_t filter_type;
    video_shader_ctx_wrap_t wrap = {0};
    bool fp_fbo                  = false;
-   bool mipmapped               = false;
    bool smooth                  = false;
    settings_t *settings         = config_get_ptr();
    GLuint base_filt             = settings->bools.video_smooth ? GL_LINEAR : GL_NEAREST;
    GLuint base_mip_filt         = settings->bools.video_smooth ? 
       GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST;
+   unsigned mip_level           = i + 2;
+   bool mipmapped               = video_shader_driver_mipmap_input(&mip_level);
+   GLenum min_filter            = mipmapped ? base_mip_filt : base_filt;
 
-   glBindTexture(GL_TEXTURE_2D, texture);
-
-   mip_level                    = i + 2;
-   mipmapped                    = video_shader_driver_mipmap_input(&mip_level);
-   min_filter                   = mipmapped ? base_mip_filt : base_filt;
    filter_type.index            = i + 2;
    filter_type.smooth           = &smooth;
 
@@ -560,10 +556,7 @@ static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
 
    wrap_enum  = gl_wrap_type_to_enum(wrap.type);
 
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_enum);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_enum);
+   gl_bind_texture(texture, wrap_enum, mag_filter, min_filter);
 
    fp_fbo   = gl->fbo_scale[i].fp_fbo;
 
