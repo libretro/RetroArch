@@ -553,7 +553,7 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
 
    /* Use regular textures if we use HW render. */
    gl->egl_images = !gl->hw_render_use && gl_check_capability(GL_CAPS_EGLIMAGE) &&
-      video_context_driver_init_image_buffer((void*)video);
+      video_context_driver_init_image_buffer(video);
 
 #ifdef HAVE_PSGL
    if (!gl->pbo)
