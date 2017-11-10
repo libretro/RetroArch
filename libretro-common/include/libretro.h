@@ -1113,7 +1113,7 @@ struct retro_vfs_interface_info
 
    /* Frontend writes interface pointer here. The frontend also sets the actual
     * version, must be at least required_interface_version.
-	* Introduced in VFS API v1 */
+    * Introduced in VFS API v1 */
    struct retro_vfs_interface *iface;
 };
 
