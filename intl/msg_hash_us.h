@@ -443,10 +443,6 @@ MSG_HASH(
       "Locked"
       )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_CHEEVOS_RPS_ENABLE,
-      "Rich Presence Script"
-      )
-MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS,
       "RetroAchievements"
       )
