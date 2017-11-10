@@ -1787,8 +1787,6 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
       "Enable or disable savestates, cheats, rewind, fast-forward, pause, and slow-motion for all games.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE,
       "Enable or disable in-game leaderboards. Has no effect if Hardcore Mode is disabled.")
-MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_RPS_ENABLE,
-      "Enable or disable posting of current game activity to the RetroAchievements website.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
       "Enable or disable OSD verbosity for achievements.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
