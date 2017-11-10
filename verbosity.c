@@ -159,14 +159,15 @@ static aslclient asl_client;
 #else
 
 #ifdef HAVE_FILE_LOGGER
-   fp = (FILE*)retro_main_log_file();
+   filestream_printf(log_file, "%s ", tag ? tag : file_path_str(FILE_PATH_LOG_INFO));
+   filestream_vprintf(log_file, fmt, ap);
+   filestream_flush(log_file);
 #else
-   fp = stderr;
+   fprintf(stderr, "%s ", tag ? tag : file_path_str(FILE_PATH_LOG_INFO));
+   vfprintf(stderr, fmt, ap);
+   fflush(stderr);
 #endif
-   fprintf(fp, "%s ",
-         tag ? tag : file_path_str(FILE_PATH_LOG_INFO));
-   vfprintf(fp, fmt, ap);
-   fflush(fp);
+   
 #endif
 }
 

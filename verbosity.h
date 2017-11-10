@@ -35,8 +35,6 @@ void verbosity_disable(void);
 
 bool *verbosity_get_ptr(void);
 
-void *retro_main_log_file(void);
-
 void retro_main_log_file_deinit(void);
 
 void retro_main_log_file_init(const char *path);
