@@ -226,7 +226,7 @@ void cheevos_var_patch_addr(cheevos_var_t* var, cheevos_console_t console)
             unsigned addr = var->value;
             var->bank_id  = (int)(desc - system->mmaps.descriptors);
             var->value    = (unsigned)cheevos_var_reduce(
-               (addr - desc->core.start) & desc->disconnect_mask,
+               (var->value - desc->core.start) & desc->disconnect_mask,
                desc->core.disconnect);
 
             if (var->value >= desc->core.len)
