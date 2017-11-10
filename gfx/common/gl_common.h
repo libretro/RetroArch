@@ -175,6 +175,16 @@ static INLINE void gl_ff_matrix(const math_matrix_4x4 *mat)
 }
 #endif
 
+static INLINE void gl_bind_texture(GLuint id, GLint wrap_mode, GLint mag_filter,
+      GLint min_filter)
+{
+   glBindTexture(GL_TEXTURE_2D, id);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_mode);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_mode);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
+}
+
 static INLINE unsigned gl_wrap_type_to_enum(enum gfx_wrap_type type)
 {
    switch (type)

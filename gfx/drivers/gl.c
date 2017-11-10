@@ -595,11 +595,8 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
 
    for (i = 0; i < gl->textures; i++)
    {
-      glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl->wrap_mode);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl->wrap_mode);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_mag_filter);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_min_filter);
+      gl_bind_texture(gl->texture[i], gl->wrap_mode, gl->tex_mag_filter,
+            gl->tex_min_filter);
 
       if (gl->renderchain_driver->init_texture_reference)
          gl->renderchain_driver->init_texture_reference(
@@ -687,11 +684,7 @@ void gl_load_texture_data(
          break;
    }
 
-   glBindTexture(GL_TEXTURE_2D, id);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
+   gl_bind_texture(id, wrap, mag_filter, min_filter);
 
    glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
    glTexImage2D(GL_TEXTURE_2D,
@@ -2089,11 +2082,8 @@ static void gl_update_tex_filter_frame(gl_t *gl)
       if (!gl->texture[i])
          continue;
 
-      glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl->wrap_mode);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl->wrap_mode);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_mag_filter);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_min_filter);
+      gl_bind_texture(gl->texture[i], gl->wrap_mode, gl->tex_mag_filter,
+            gl->tex_min_filter);
    }
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);

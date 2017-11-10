@@ -302,11 +302,8 @@ static void event_process_camera_frame(void *pbuf_ptr)
     }
     
     outputTexture = RCVOpenGLTextureGetName(renderTexture);
-    glBindTexture(GL_TEXTURE_2D, outputTexture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    gl_bind_texture(outputTexture, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR);
     
     CVPixelBufferUnlockBaseAddress(pixelBuffer, 0);
     [[NSNotificationCenter defaultCenter] postNotificationName:@"NewCameraTextureReady" object:nil];
