@@ -206,7 +206,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uin
 		{
 			stream->mappos = 0;
 			stream->mapped = NULL;
-			stream->mapsize = filestream_seek(stream, 0, SEEK_END);
+			stream->mapsize = filestream_size(stream);
 
 			if (stream->mapsize == (uint64_t)-1)
 				goto error;
@@ -288,11 +288,18 @@ int retro_vfs_file_error_impl(libretro_vfs_implementation_file *stream)
 
 int64_t retro_vfs_file_size_impl(libretro_vfs_implementation_file *stream)
 {
+	int64_t initial_pos = retro_vfs_file_tell_impl(stream);
+
 	int64_t ret = retro_vfs_file_seek_internal(stream, 0, SEEK_END);
 	if (ret == -1)
 		return -1;
 
-	return retro_vfs_file_tell_impl(stream);
+	int64_t output = retro_vfs_file_tell_impl(stream);
+	ret = retro_vfs_file_seek_internal(stream, initial_pos, SEEK_SET);
+	if (ret == -1)
+		return -1;
+	
+	return output;
 }
 
 int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream)
