@@ -422,7 +422,7 @@ static const d3d_renderchain_driver_t *renderchain_d3d_drivers[] = {
 };
 
 static const gl_renderchain_driver_t *renderchain_gl_drivers[] = {
-#if defined(HAVE_OPENGL)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    &gl2_renderchain,
 #endif
    NULL
