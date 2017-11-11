@@ -79,7 +79,7 @@ typedef enum
    CHEEVOS_CONSOLE_VIRTUAL_BOY     = 28,
    CHEEVOS_CONSOLE_MSX             = 29,
    CHEEVOS_CONSOLE_COMMODORE_64    = 30,
-   CHEEVOS_CONSOLE_ZX81_SPECTRUM   = 31
+   CHEEVOS_CONSOLE_ZX81            = 31
 } cheevos_console_t;
 
 enum

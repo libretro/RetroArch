@@ -52,8 +52,6 @@
 
 #include "../verbosity.h"
 
-#define CHEEVOS_ENABLE_LBOARDS
-
 /* Define this macro to prevent cheevos from being deactivated. */
 #undef CHEEVOS_DONT_DEACTIVATE
 
@@ -932,7 +930,6 @@ static int cheevos_parse_condition(cheevos_condition_t *condition, const char* m
    return 0;
 }
 
-#ifdef CHEEVOS_ENABLE_LBOARDS
 static void cheevos_free_condition(cheevos_condition_t* condition)
 {
    unsigned i;
@@ -945,13 +942,11 @@ static void cheevos_free_condition(cheevos_condition_t* condition)
       free((void*)condition->condsets);
    }
 }
-#endif
 
 /*****************************************************************************
 Parse the Mem field of leaderboards.
 *****************************************************************************/
 
-#ifdef CHEEVOS_ENABLE_LBOARDS
 static int cheevos_parse_expression(cheevos_expr_t *expr, const char* mem)
 {
    const char* aux;
@@ -981,8 +976,11 @@ static int cheevos_parse_expression(cheevos_expr_t *expr, const char* mem)
       if (*aux != '*')
       {
          // expression has no multiplier
-         if (*aux == '_') 
+         if (*aux == '_')
+         {
             aux++;
+            i++;
+         }
          else if (*aux == '$')
          {
             expr->terms[i].compare_next = true;
@@ -990,6 +988,7 @@ static int cheevos_parse_expression(cheevos_expr_t *expr, const char* mem)
             aux++;
             i++;
          }
+
          // no multiplier at end of string
          else if (*aux == '\0' || *aux == '"' || *aux == ',') 
             return 0;
@@ -1020,9 +1019,7 @@ static int cheevos_parse_expression(cheevos_expr_t *expr, const char* mem)
    }
    return 0;
 }
-#endif
 
-#ifdef CHEEVOS_ENABLE_LBOARDS
 static int cheevos_parse_mem(cheevos_leaderboard_t *lb, const char* mem)
 {
    lb->start.condsets = NULL;
@@ -1074,7 +1071,6 @@ error:
    free((void*)lb->value.terms);
    return -1;
 }
-#endif
 
 /*****************************************************************************
 Load achievements from a JSON string.
@@ -1141,70 +1137,77 @@ error:
 Helper functions for displaying leaderboard values.
 *****************************************************************************/
 
-static INLINE const char *cheevos_print_frames(const unsigned value)
+static void cheevos_format_value(const unsigned value, const unsigned type,
+   char* formatted_value, size_t formatted_size)
 {
    unsigned mins, secs, millis;
-   char *string = (char*)malloc(16);
 
-   mins   = value / 3600;
-   secs   = (value % 3600) / 60;
-   millis = (int) (value % 60) * (10.00 / 6.00);
+   switch(type)
+   {
+      case CHEEVOS_FORMAT_VALUE:
+         snprintf(formatted_value, formatted_size, "%u", value);
+         break;
 
-   snprintf(string, 16, "%02u:%02u.%02u", mins, secs, millis);
+      case CHEEVOS_FORMAT_SCORE:
+         snprintf(formatted_value, formatted_size, "%06upts", value);
+         break;
 
-   return string;
+      case CHEEVOS_FORMAT_FRAMES:
+         mins   = value / 3600;
+         secs   = (value % 3600) / 60;
+         millis = (int) (value % 60) * (10.00 / 6.00);
+         snprintf(formatted_value, formatted_size, "%02u:%02u.%02u", mins, secs, millis);
+         break;
+
+      case CHEEVOS_FORMAT_MILLIS:
+         mins   = value / 6000;
+         secs   = (value % 6000) / 100;
+         millis = (int) (value % 100);
+         snprintf(formatted_value, formatted_size, "%02u:%02u.%02u", mins, secs, millis);
+         break;
+
+      case CHEEVOS_FORMAT_SECS:
+         mins   = value / 60;
+         secs   = value % 60;
+         snprintf(formatted_value, formatted_size, "%02u:%02u", mins, secs);
+         break;
+
+      default:
+         snprintf(formatted_value, formatted_size, "%u (?)", value);
+   }
 }
 
-static INLINE const char *cheevos_print_millis(const unsigned value)
+unsigned cheevos_parse_format(cheevos_field_t* format)
 {
-   unsigned mins, secs, millis;
-   char *string = (char*)malloc(16);
-
-   mins   = value / 6000;
-   secs   = (value % 6000) / 100;
-   millis = (int) (value % 100);
-
-   snprintf(string, 16, "%02u:%02u.%02u", mins, secs, millis);
-
-   return string;
-}
-
-static INLINE const char *cheevos_print_secs(const unsigned value)
-{
-   unsigned mins, secs;
-   char *string = (char*)malloc(16);
-
-   mins   = value / 60;
-   secs   = value % 60;
-
-   snprintf(string, 16, "%02u:%02u", mins, secs);
-
-   return string;
-}
-
-unsigned cheevos_parse_format(const char* format)
-{
-   if (strcmp(format, "VALUE") == 0)
+   //Most likely
+   if (strncmp(format->string, "VALUE", format->length) == 0)
       return CHEEVOS_FORMAT_VALUE;
-   else if (strcmp(format, "TIME") == 0)
+   else if (strncmp(format->string, "TIME", format->length) == 0)
       return CHEEVOS_FORMAT_FRAMES;
-   else if (strcmp(format, "TIMESECS") == 0)
-      return CHEEVOS_FORMAT_SECS;
-   else if (strcmp(format, "MILLISECS") == 0)
-      return CHEEVOS_FORMAT_MILLIS;
-   else if (strcmp(format, "SCORE") == 0)
+   else if (strncmp(format->string, "SCORE", format->length) == 0)
       return CHEEVOS_FORMAT_SCORE;
+
+   //Less likely
+   else if (strncmp(format->string, "MILLISECS", format->length) == 0)
+      return CHEEVOS_FORMAT_MILLIS;
+   else if (strncmp(format->string, "TIMESECS", format->length) == 0)
+      return CHEEVOS_FORMAT_SECS;
+
+   //Rare (RPS only)
+   else if (strncmp(format->string, "POINTS", format->length) == 0)
+      return CHEEVOS_FORMAT_SCORE;
+   else if (strncmp(format->string, "FRAMES", format->length) == 0)
+      return CHEEVOS_FORMAT_FRAMES;
    else
       return CHEEVOS_FORMAT_OTHER;
 }
 
-#ifdef CHEEVOS_ENABLE_LBOARDS
 static int cheevos_new_lboard(cheevos_readud_t *ud)
 {
    cheevos_leaderboard_t *lboard = cheevos_locals.leaderboards + ud->lboard_count++;
 
    lboard->id          = strtol(ud->id.string, NULL, 10);
-   lboard->format      = cheevos_parse_format(cheevos_dupstr(&ud->format));
+   lboard->format      = cheevos_parse_format(&ud->format);
    lboard->title       = cheevos_dupstr(&ud->title);
    lboard->description = cheevos_dupstr(&ud->desc);
 
@@ -1225,7 +1228,6 @@ error:
    free((void*)lboard->description);
    return -1;
 }
-#endif
 
 static int cheevos_read__json_key( void *userdata,
       const char *name, size_t length)
@@ -1341,10 +1343,8 @@ static int cheevos_read__json_end_object(void *userdata)
 
    if (ud->in_cheevos)
       return cheevos_new_cheevo(ud);
-#ifdef CHEEVOS_ENABLE_LBOARDS
    else if (ud->in_lboards)
       return cheevos_new_lboard(ud);
-#endif
 
    return 0;
 }
@@ -1764,7 +1764,6 @@ static void cheevos_test_cheevo_set(const cheevoset_t *set)
    }
 }
 
-#ifdef CHEEVOS_ENABLE_LBOARDS
 static int cheevos_test_lboard_condition(const cheevos_condition_t* condition)
 {
    int dirty_conds              = 0;
@@ -1861,9 +1860,7 @@ static void cheevos_make_lboard_url(const cheevos_leaderboard_t *lboard,
    cheevos_log_url("[CHEEVOS]: url to submit the leaderboard: %s\n", url);
 #endif
 }
-#endif
 
-#ifdef CHEEVOS_ENABLE_LBOARDS
 static void cheevos_lboard_submit(void *task_data, void *user_data, const char *error)
 {
    cheevos_leaderboard_t *lboard = (cheevos_leaderboard_t *)user_data;
@@ -1886,9 +1883,7 @@ static void cheevos_lboard_submit(void *task_data, void *user_data, const char *
    }
 #endif
 }
-#endif
 
-#ifdef CHEEVOS_ENABLE_LBOARDS
 static void cheevos_test_leaderboards(void)
 {
    cheevos_leaderboard_t* lboard = cheevos_locals.leaderboards;
@@ -1910,38 +1905,27 @@ static void cheevos_test_leaderboards(void)
 
          if (cheevos_test_lboard_condition(&lboard->submit))
          {
-            char url[256];
-
-            cheevos_make_lboard_url(lboard, url, sizeof(url));
-            task_push_http_transfer(url, true, NULL, cheevos_lboard_submit, lboard);
-
-            RARCH_LOG("[CHEEVOS]: submit lboard %s\n", lboard->title);
             lboard->active = 0;
 
-            char msg[256];
-            switch(lboard->format)
+            if (value == 0) //failsafe for improper LBs
             {
-               case CHEEVOS_FORMAT_VALUE:
-                  snprintf(msg, sizeof(msg), "Submitted %u for %s", value, lboard->title);
-                  break;
-               case CHEEVOS_FORMAT_SCORE:
-                  snprintf(msg, sizeof(msg), "Submitted %06upts for %s", value, lboard->title);
-                  break;
-               case CHEEVOS_FORMAT_FRAMES:
-                  snprintf(msg, sizeof(msg), "Submitted %s for %s", cheevos_print_frames(value), lboard->title);
-                  break;
-               case CHEEVOS_FORMAT_SECS:
-                  snprintf(msg, sizeof(msg), "Submitted %s for %s", cheevos_print_secs(value), lboard->title);
-                  break;
-               case CHEEVOS_FORMAT_MILLIS:
-                  snprintf(msg, sizeof(msg), "Submitted %s for %s", cheevos_print_millis(value), lboard->title);
-                  break;
-               default:
-                  snprintf(msg, sizeof(msg), "Tried to submit %u for %s", value, lboard->title);
+               RARCH_LOG("[CHEEVOS]: error: lboard %s tried to submit 0\n", lboard->title);
+               runloop_msg_queue_push("Leaderboard attempt cancelled!", 0, 2 * 60, false);
             }
-            
-            msg[sizeof(msg) - 1] = 0;
-            runloop_msg_queue_push(msg, 0, 2 * 60, false);
+            else
+            {
+               char url[256];
+               cheevos_make_lboard_url(lboard, url, sizeof(url));
+               task_push_http_transfer(url, true, NULL, cheevos_lboard_submit, lboard);
+               RARCH_LOG("[CHEEVOS]: submit lboard %s\n", lboard->title);
+
+               char msg[256];
+               char formatted_value[16];
+               cheevos_format_value(value, lboard->format, formatted_value, sizeof(formatted_value));
+               snprintf(msg, sizeof(msg), "Submitted %s for %s", formatted_value, lboard->title);
+               msg[sizeof(msg) - 1] = 0;
+               runloop_msg_queue_push(msg, 0, 2 * 60, false);
+            } 
          }
 
          if (cheevos_test_lboard_condition(&lboard->cancel))
@@ -1968,7 +1952,6 @@ static void cheevos_test_leaderboards(void)
       }
    }
 }
-#endif
 
 /*****************************************************************************
 Free the loaded achievements.
@@ -2420,10 +2403,8 @@ void cheevos_test(void)
    if (settings->bools.cheevos_test_unofficial)
       cheevos_test_cheevo_set(&cheevos_locals.unofficial);
 
-#ifdef CHEEVOS_ENABLE_LBOARDS
    if (settings->bools.cheevos_hardcore_mode_enable && settings->bools.cheevos_leaderboards_enable)
       cheevos_test_leaderboards();
-#endif
 }
 
 bool cheevos_set_cheats(void)

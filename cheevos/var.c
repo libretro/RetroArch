@@ -177,6 +177,14 @@ void cheevos_var_patch_addr(cheevos_var_t* var, cheevos_console_t console)
          var->value -= 0x2000;
       }
    }
+   else if (console == CHEEVOS_CONSOLE_ATARI_2600)
+   {
+      if (var->value >= 0x0080 && var->value <= 0x00ff)
+      {
+         CHEEVOS_LOG(CHEEVOS_TAG "Adjusted physical 2600 address %X, to RAM offset %X\n", var->value, var->value - 0x80);
+         var->value -= 0x80;
+      }
+   }
 
    if (system->mmaps.num_descriptors != 0)
    {
