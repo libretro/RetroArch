@@ -26,8 +26,8 @@
 #include <libretro.h>
 #include <stdio.h>
 
-#include <streams/file_stream_transforms.h>
 #include <streams/file_stream.h>
+#include <streams/file_stream_transforms.h>
 
 RFILE* rfopen(const char *path, const char *mode)
 {
