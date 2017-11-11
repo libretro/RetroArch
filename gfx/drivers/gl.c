@@ -1351,34 +1351,6 @@ static void gl_set_nonblock_state(void *data, bool state)
 static bool resolve_extensions(gl_t *gl, const char *context_ident)
 {
    settings_t *settings = config_get_ptr();
-   struct retro_hw_render_callback *hwr =
-      video_driver_get_hw_context();
-
-   if (hwr->context_type == RETRO_HW_CONTEXT_OPENGL_CORE)
-   {
-      gfx_ctx_flags_t flags;
-
-      if (!gl_check_capability(GL_CAPS_VAO))
-      {
-         RARCH_ERR("[GL]: Failed to initialize VAOs.\n");
-         return false;
-      }
-
-      gl_query_core_context_set(true);
-      gl->core_context_in_use = true;
-
-      /**
-       * Ensure that the rest of the frontend knows we have a core context
-       */
-      flags.flags = 0;
-      BIT32_SET(flags.flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
-
-      video_context_driver_set_flags(&flags);
-
-      RARCH_LOG("[GL]: Using Core GL context, setting up VAO...\n");
-      if (gl->renderchain_driver->new_vao)
-         gl->renderchain_driver->new_vao(gl);
-   }
 
    /* have_es2_compat - GL_RGB565 internal format support.
     * Even though ES2 support is claimed, the format
@@ -1789,6 +1761,45 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    rglgen_resolve_symbols(ctx_driver->get_proc_address);
 #endif
 
+   hwr = video_driver_get_hw_context();
+
+   if (hwr->context_type == RETRO_HW_CONTEXT_OPENGL_CORE)
+   {
+      gfx_ctx_flags_t flags;
+
+      gl_query_core_context_set(true);
+      gl->core_context_in_use = true;
+
+      /**
+       * Ensure that the rest of the frontend knows we have a core context
+       */
+      flags.flags = 0;
+      BIT32_SET(flags.flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
+
+      video_context_driver_set_flags(&flags);
+
+      RARCH_LOG("[GL]: Using Core GL context, setting up VAO...\n");
+      if (!gl_check_capability(GL_CAPS_VAO))
+      {
+         RARCH_ERR("[GL]: Failed to initialize VAOs.\n");
+         return false;
+      }
+   }
+
+   if (!renderchain_gl_init_first(&gl->renderchain_driver,
+	   &gl->renderchain_data))
+   {
+	   RARCH_ERR("[GL]: Renderchain could not be initialized.\n");
+	   return false;
+   }
+
+   if (gl->renderchain_driver->restore_default_state)
+      gl->renderchain_driver->restore_default_state(gl);
+
+   if (hwr->context_type == RETRO_HW_CONTEXT_OPENGL_CORE)
+      if (gl->renderchain_driver->new_vao)
+         gl->renderchain_driver->new_vao(gl);
+
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
    glBlendEquation(GL_FUNC_ADD);
 
@@ -1820,8 +1831,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    video_driver_get_size(&temp_width, &temp_height);
 
    RARCH_LOG("[GL]: Using resolution %ux%u\n", temp_width, temp_height);
-
-   hwr = video_driver_get_hw_context();
 
    gl->vertex_ptr        = hwr->bottom_left_origin
       ? vertexes : vertexes_flipped;
@@ -1917,16 +1926,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl->wrap_mode      = gl_wrap_type_to_enum(wrap_info.type);
 
    gl_set_texture_fmts(gl, video->rgb32);
-
-   if (!renderchain_gl_init_first(&gl->renderchain_driver,
-	   &gl->renderchain_data))
-   {
-	   RARCH_ERR("[GL]: Renderchain could not be initialized.\n");
-	   return false;
-   }
-
-   if (gl->renderchain_driver->restore_default_state)
-      gl->renderchain_driver->restore_default_state(gl);
 
    memcpy(gl->tex_info.coord, tex_coords, sizeof(gl->tex_info.coord));
    gl->coords.vertex         = gl->vertex_ptr;
