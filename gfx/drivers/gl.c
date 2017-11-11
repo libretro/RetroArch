@@ -1311,10 +1311,6 @@ static void gl_free(void *data)
       scaler_ctx_gen_reset(&gl->pbo_readback_scaler);
    }
 
-   if (gl->renderchain_driver->free)
-      gl->renderchain_driver->free(gl);
-   gl_deinit_chain(gl);
-
    if (gl->core_context_in_use)
    {
       if (gl->renderchain_driver->unbind_vao)
@@ -1322,6 +1318,10 @@ static void gl_free(void *data)
       if (gl->renderchain_driver->free_vao)
          gl->renderchain_driver->free_vao(gl);
    }
+
+   if (gl->renderchain_driver->free)
+      gl->renderchain_driver->free(gl);
+   gl_deinit_chain(gl);
 
    video_context_driver_free();
 
