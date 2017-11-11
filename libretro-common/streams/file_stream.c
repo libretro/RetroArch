@@ -53,6 +53,8 @@ retro_vfs_file_delete_t filestream_delete_cb = NULL;
 
 void filestream_vfs_init(const struct retro_vfs_interface_info* vfs_info)
 {
+	const struct retro_vfs_interface* vfs_iface;
+
 	filestream_get_path_cb = NULL;
 	filestream_open_cb = NULL;
 	filestream_close_cb = NULL;
@@ -64,7 +66,7 @@ void filestream_vfs_init(const struct retro_vfs_interface_info* vfs_info)
 	filestream_flush_cb = NULL;
 	filestream_delete_cb = NULL;
 
-	const struct retro_vfs_interface* vfs_iface = vfs_info->iface;
+	vfs_iface = vfs_info->iface;
 	if (vfs_info->required_interface_version < FILESTREAM_REQUIRED_VFS_VERSION || vfs_iface == NULL)
 	{
 		return;
@@ -87,6 +89,7 @@ void filestream_vfs_init(const struct retro_vfs_interface_info* vfs_info)
 RFILE *filestream_open(const char *path, uint64_t flags)
 {
 	struct retro_vfs_file_handle* fp;
+	RFILE* output;
 
 	if (filestream_open_cb != NULL)
 		fp = filestream_open_cb(path, flags);
@@ -96,7 +99,7 @@ RFILE *filestream_open(const char *path, uint64_t flags)
 	if (fp == NULL)
 		return NULL;
 
-	RFILE* output = malloc(sizeof(RFILE));
+	output = malloc(sizeof(RFILE));
 	output->error_flag = false;
 	output->hfile = fp;
 	return output;
@@ -372,6 +375,7 @@ int filestream_read_file(const char *path, void **buf, uint64_t *len)
 {
    int64_t ret              = 0;
    int64_t content_buf_size = 0;
+   int64_t size             = 0;
    void *content_buf        = NULL;
    RFILE *file              = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ);
 
@@ -381,7 +385,7 @@ int filestream_read_file(const char *path, void **buf, uint64_t *len)
       goto error;
    }
 
-   int64_t size = filestream_size(file);
+   size = filestream_size(file);
    if (filestream_seek(file, size) != 0)
       goto error;
 
