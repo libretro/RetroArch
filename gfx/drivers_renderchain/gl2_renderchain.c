@@ -50,10 +50,6 @@
 #include "../../configuration.h"
 #include "../../verbosity.h"
 
-#if defined(_WIN32) && !defined(_XBOX)
-#include "../common/win32_common.h"
-#endif
-
 typedef struct gl2_renderchain
 {
    void *empty;
