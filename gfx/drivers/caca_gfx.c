@@ -312,11 +312,7 @@ static const video_poke_interface_t caca_poke_interface = {
    NULL,
    NULL,
    NULL,
-#ifdef HAVE_FBO
    NULL,
-#else
-   NULL,
-#endif
    NULL,
    NULL,
    NULL,

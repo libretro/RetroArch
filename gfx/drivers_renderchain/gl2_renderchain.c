@@ -428,8 +428,6 @@ static void gl2_renderchain_render(
 static void gl2_renderchain_deinit_fbo(void *data)
 {
    gl_t *gl = (gl_t*)data;
-   if (!gl->fbo_inited)
-      return;
 
    glDeleteTextures(gl->fbo_pass, gl->fbo_texture);
    glDeleteFramebuffers(gl->fbo_pass, gl->fbo);
@@ -749,6 +747,7 @@ static void gl2_renderchain_start_render(void *data,
 void gl2_renderchain_init(
       void *data, unsigned fbo_width, unsigned fbo_height)
 {
+#ifdef HAVE_FBO
    int i;
    unsigned width, height;
    video_shader_ctx_scale_t scaler;
@@ -851,6 +850,7 @@ void gl2_renderchain_init(
    }
 
    gl->fbo_inited = true;
+#endif
 }
 
 static bool gl2_renderchain_init_hw_render(

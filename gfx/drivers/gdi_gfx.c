@@ -538,11 +538,7 @@ static const video_poke_interface_t gdi_poke_interface = {
    gdi_get_video_output_size,
    gdi_get_video_output_prev,
    gdi_get_video_output_next,
-#ifdef HAVE_FBO
    NULL,
-#else
-   NULL,
-#endif
    NULL,
    NULL,
    NULL,

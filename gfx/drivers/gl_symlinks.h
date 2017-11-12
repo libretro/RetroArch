@@ -27,7 +27,7 @@
 #include "config.h"
 #endif
 
-#if defined(HAVE_FBO) && defined(HAVE_PSGL)
+#if defined(HAVE_PSGL)
 #define glGenFramebuffers glGenFramebuffersOES
 #define glBindFramebuffer glBindFramebufferOES
 #define glFramebufferTexture2D glFramebufferTexture2DOES

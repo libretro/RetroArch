@@ -449,6 +449,8 @@ GLenum min_filter_to_mag(GLenum type)
 static uintptr_t gl_get_current_framebuffer(void *data)
 {
    gl_t *gl = (gl_t*)data;
+   if (!gl->fbo_inited)
+      return NULL;
    return gl->hw_render_fbo[(gl->tex_index + 1) % gl->textures];
 }
 
@@ -1841,10 +1843,9 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
     */
    gl->textures         = 4;
    gl->hw_render_use    = false;
-#ifdef HAVE_FBO
-   if (hwr->context_type != RETRO_HW_CONTEXT_NONE)
+
+   if (gl->fbo_inited && hwr->context_type != RETRO_HW_CONTEXT_NONE)
       gl->hw_render_use = true;
-#endif
 
    if (gl->hw_render_use)
    {
@@ -1949,12 +1950,15 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    if (gl->renderchain_driver->init)
       gl->renderchain_driver->init(gl, gl->tex_w, gl->tex_h);
 
-   if (gl->hw_render_use &&
-         gl->renderchain_driver->init_hw_render &&
-         !gl->renderchain_driver->init_hw_render(gl, gl->tex_w, gl->tex_h))
+   if (gl->fbo_inited)
    {
-      RARCH_ERR("[GL]: Hardware rendering context initialization failed.\n");
-      goto error;
+      if (gl->hw_render_use &&
+            gl->renderchain_driver->init_hw_render &&
+            !gl->renderchain_driver->init_hw_render(gl, gl->tex_w, gl->tex_h))
+      {
+         RARCH_ERR("[GL]: Hardware rendering context initialization failed.\n");
+         goto error;
+      }
    }
 
    inp.input      = input;
@@ -2125,11 +2129,13 @@ static bool gl_set_shader(void *data,
          goto error;
    }
 
-   if (gl->renderchain_driver->deinit_fbo)
-      gl->renderchain_driver->deinit_fbo(gl);
-#ifdef HAVE_FBO
-   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-#endif
+   if (gl->fbo_inited)
+   {
+      if (gl->renderchain_driver->deinit_fbo)
+         gl->renderchain_driver->deinit_fbo(gl);
+
+      glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+   }
 
    init_data.shader_type = type;
    init_data.shader      = NULL;
@@ -2542,11 +2548,7 @@ static const video_poke_interface_t gl_poke_interface = {
    gl_get_video_output_size,
    gl_get_video_output_prev,
    gl_get_video_output_next,
-#ifdef HAVE_FBO
    gl_get_current_framebuffer,
-#else
-   NULL,
-#endif
    gl_get_proc_address,
    gl_set_aspect_ratio,
    gl_apply_state_changes,
