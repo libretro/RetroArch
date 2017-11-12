@@ -48,12 +48,12 @@ struct input_mapper
 {
    /* The controller port that will be polled*/
    uint8_t port;
-   /* This is a bitmask of (1 << key_bind_id). */
-   uint64_t buttons;
    /* Left X, Left Y, Right X, Right Y */
    int16_t analog[4];
    /* the whole keyboard state */
    uint32_t keys[RETROK_LAST / 32 + 1];
+   /* This is a bitmask of (1 << key_bind_id). */
+   uint64_t buttons;
 };
 
 static input_mapper_t *mapper_ptr;
@@ -63,11 +63,11 @@ input_mapper_t *input_mapper_new(uint16_t port)
    settings_t *settings = config_get_ptr();
    input_mapper_t* handle = (input_mapper_t*)
       calloc(1, sizeof(*handle));
-
    if (!handle)
       return NULL;
+
    handle->port = port;
-   mapper_ptr = handle;
+   mapper_ptr   = handle;
    return handle;
 }
 
