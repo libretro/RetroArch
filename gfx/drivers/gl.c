@@ -2162,7 +2162,7 @@ static bool gl_set_shader(void *data,
 
    if (textures > gl->textures) /* Have to reinit a bit. */
    {
-      if (gl->hw_render_use &&
+      if (gl->hw_render_use && gl->fbo_inited &&
             gl->renderchain_driver->deinit_hw_render)
          gl->renderchain_driver->deinit_hw_render(gl);
 
