@@ -450,7 +450,7 @@ static uintptr_t gl_get_current_framebuffer(void *data)
 {
    gl_t *gl = (gl_t*)data;
    if (!gl || !gl->fbo_inited)
-      return NULL;
+      return 0;
    return gl->hw_render_fbo[(gl->tex_index + 1) % gl->textures];
 }
 
