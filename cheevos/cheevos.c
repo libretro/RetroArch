@@ -975,7 +975,7 @@ static int cheevos_parse_expression(cheevos_expr_t *expr, const char* mem)
 
       if (*aux != '*')
       {
-         // expression has no multiplier
+         /* expression has no multiplier */
          if (*aux == '_')
          {
             aux++;
@@ -989,11 +989,11 @@ static int cheevos_parse_expression(cheevos_expr_t *expr, const char* mem)
             i++;
          }
 
-         // no multiplier at end of string
+         /* no multiplier at end of string */
          else if (*aux == '\0' || *aux == '"' || *aux == ',') 
             return 0;
 
-         // invalid character in expression
+         /* invalid character in expression */
          else
          {
             free((void*)expr->terms);
@@ -1183,7 +1183,7 @@ static void cheevos_format_value(const unsigned value, const unsigned type,
 
 unsigned cheevos_parse_format(cheevos_field_t* format)
 {
-   //Most likely
+   /* Most likely */
    if (strncmp(format->string, "VALUE", format->length) == 0)
       return CHEEVOS_FORMAT_VALUE;
    else if (strncmp(format->string, "TIME", format->length) == 0)
@@ -1191,13 +1191,13 @@ unsigned cheevos_parse_format(cheevos_field_t* format)
    else if (strncmp(format->string, "SCORE", format->length) == 0)
       return CHEEVOS_FORMAT_SCORE;
 
-   //Less likely
+   /* Less likely */
    else if (strncmp(format->string, "MILLISECS", format->length) == 0)
       return CHEEVOS_FORMAT_MILLIS;
    else if (strncmp(format->string, "TIMESECS", format->length) == 0)
       return CHEEVOS_FORMAT_SECS;
 
-   //Rare (RPS only)
+   /* Rare (RPS only) */
    else if (strncmp(format->string, "POINTS", format->length) == 0)
       return CHEEVOS_FORMAT_SCORE;
    else if (strncmp(format->string, "FRAMES", format->length) == 0)
@@ -1803,7 +1803,7 @@ static int cheevos_expr_value(cheevos_expr_t* expr)
    cheevos_term_t* term = expr->terms;
    unsigned i;
 
-   //Separate possible values with '$' operator, submit the largest
+   /* Separate possible values with '$' operator, submit the largest */
    unsigned current_value = 0;
    int values[expr->compare_count];
    memset(values, 0, sizeof values);
@@ -1911,7 +1911,8 @@ static void cheevos_test_leaderboards(void)
          {
             lboard->active = 0;
 
-            if (value == 0) //failsafe for improper LBs
+            /* failsafe for improper LBs */
+            if (value == 0)
             {
                RARCH_LOG("[CHEEVOS]: error: lboard %s tried to submit 0\n", lboard->title);
                runloop_msg_queue_push("Leaderboard attempt cancelled!", 0, 2 * 60, false);
