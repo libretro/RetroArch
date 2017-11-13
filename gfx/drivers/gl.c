@@ -1371,6 +1371,8 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
    gl->has_fp_fbo                = gl_check_capability(GL_CAPS_FP_FBO);
    gl->support_unpack_row_length = gl_check_capability(GL_CAPS_UNPACK_ROW_LENGTH);
    gl->have_sync                 = gl_check_capability(GL_CAPS_SYNC);
+   /* GLES3 has unpack_subimage and sRGB in core. */
+   gl->has_srgb_fbo_gles3        = gl_check_capability(GL_CAPS_SRGB_FBO_ES3);
 
    if (!settings->bools.video_force_srgb_disable)
       gl->has_srgb_fbo           = gl_check_capability(GL_CAPS_SRGB_FBO);
@@ -1387,9 +1389,6 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
       RARCH_WARN("[GL]: GLES implementation does not have BGRA8888 extension.\n"
                  "32-bit path will require conversion.\n");
    }
-
-   /* GLES3 has unpack_subimage and sRGB in core. */
-   gl->has_srgb_fbo_gles3        = gl_check_capability(GL_CAPS_SRGB_FBO_ES3);
    /* TODO/FIXME - No extensions for float FBO currently. */
 #endif
 
