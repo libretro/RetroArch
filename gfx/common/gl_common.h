@@ -141,25 +141,6 @@ typedef struct gl
    void *renderchain_data;
 } gl_t;
 
-#ifdef NO_GL_FF_VERTEX
-#define gl_ff_vertex(coords) ((void)0)
-#else
-static INLINE void gl_ff_vertex(const struct video_coords *coords)
-{
-   /* Fall back to fixed function-style if needed and possible. */
-   glClientActiveTexture(GL_TEXTURE1);
-   glTexCoordPointer(2, GL_FLOAT, 0, coords->lut_tex_coord);
-   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-   glClientActiveTexture(GL_TEXTURE0);
-   glVertexPointer(2, GL_FLOAT, 0, coords->vertex);
-   glEnableClientState(GL_VERTEX_ARRAY);
-   glColorPointer(4, GL_FLOAT, 0, coords->color);
-   glEnableClientState(GL_COLOR_ARRAY);
-   glTexCoordPointer(2, GL_FLOAT, 0, coords->tex_coord);
-   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-}
-#endif
-
 static INLINE void gl_bind_texture(GLuint id, GLint wrap_mode, GLint mag_filter,
       GLint min_filter)
 {

@@ -2473,6 +2473,7 @@ static void video_shader_driver_use_null(void *data,
    (void)set_active;
 }
 
+#if 0
 static bool video_driver_cb_set_coords(void *handle_data,
       void *shader_data, const struct video_coords *coords)
 {
@@ -2480,16 +2481,34 @@ static bool video_driver_cb_set_coords(void *handle_data,
          coords);
    return true;
 }
+#endif
 
-#if 0
-static bool video_driver_cb_set_coords_fallback(void *handle_data,
+bool video_driver_set_coords_fallback(void *handle_data,
       void *shader_data, const struct video_coords *coords)
 {
-   current_shader->set_coords_fallback(handle_data, shader_data,
-         coords);
-   return true;
-}
+#ifdef HAVE_OPENGL
+#ifndef NO_GL_FF_VERTEX
+   const char *video_ident = (current_video) ? current_video->ident : NULL;
+   if (string_is_equal_fast(video_ident, "gl", 2))
+   {
+      /* Fall back to fixed function-style if needed and possible. */
+      glClientActiveTexture(GL_TEXTURE1);
+      glTexCoordPointer(2, GL_FLOAT, 0, coords->lut_tex_coord);
+      glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+      glClientActiveTexture(GL_TEXTURE0);
+      glVertexPointer(2, GL_FLOAT, 0, coords->vertex);
+      glEnableClientState(GL_VERTEX_ARRAY);
+      glColorPointer(4, GL_FLOAT, 0, coords->color);
+      glEnableClientState(GL_COLOR_ARRAY);
+      glTexCoordPointer(2, GL_FLOAT, 0, coords->tex_coord);
+      glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+      return true;
+   }
 #endif
+#endif
+
+   return false;
+}
 
 void video_driver_build_info(video_frame_info_t *video_info)
 {
@@ -2599,7 +2618,9 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->cb_shader_use          = video_driver_cb_shader_use;
    video_info->cb_shader_set_mvp      = video_driver_cb_shader_set_mvp;
 
+#if 0
    video_info->cb_set_coords          = video_driver_cb_set_coords;
+#endif
 
 #ifdef HAVE_THREADS
    video_driver_threaded_unlock(is_threaded);
@@ -3239,23 +3260,6 @@ static bool video_shader_driver_set_mvp_null_gl(void *data,
 #endif
 #endif
 
-static bool video_shader_driver_set_coords_null(void *handle_data,
-      void *shader_data, const struct video_coords *coords)
-{
-   return false;
-}
-
-#ifdef HAVE_OPENGL
-#ifndef NO_GL_FF_VERTEX
-static bool video_shader_driver_set_coords_null_gl(void *handle_data,
-      void *shader_data, const struct video_coords *coords)
-{
-   gl_ff_vertex(coords);
-   return false;
-}
-#endif
-#endif
-
 static struct video_shader *video_shader_driver_get_current_shader_null(void *data)
 {
    return NULL;
@@ -3329,16 +3333,8 @@ static void video_shader_driver_reset_to_defaults(void)
       }
    }
    if (!current_shader->set_coords)
-   {
-#ifdef HAVE_OPENGL
-#ifndef NO_GL_FF_VERTEX
-      if (string_is_equal_fast(video_driver_get_ident(), "gl", 2))
-         current_shader->set_coords        = video_shader_driver_set_coords_null_gl;
-      else
-#endif
-#endif
-         current_shader->set_coords        = video_shader_driver_set_coords_null;
-   }
+      current_shader->set_coords        = video_driver_set_coords_fallback;
+
    if (current_shader->use)
       video_driver_cb_shader_use        = current_shader->use;
    else 

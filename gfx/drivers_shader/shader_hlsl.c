@@ -542,7 +542,6 @@ const shader_backend_t hlsl_backend = {
    NULL,              /* hlsl_wrap_type  */
    hlsl_shader_scale,
    NULL,              /* hlsl_set_coords */
-   NULL,              /* hlsl_set_coords_fallback */
    hlsl_set_mvp,
    NULL,              /* hlsl_get_prev_textures */
    hlsl_get_feedback_pass,

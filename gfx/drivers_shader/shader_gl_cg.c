@@ -289,12 +289,6 @@ static bool gl_cg_set_coords(void *handle_data, void *shader_data, const struct 
    return true;
 }
 
-static bool gl_cg_set_coords_fallback(void *handle_data, void *shader_data, const struct video_coords *coords)
-{
-   gl_ff_vertex(coords);
-   return true;
-}
-
 static void gl_cg_set_texture_info(
       cg_shader_data_t *cg, 
       const struct cg_fbo_params *params,
@@ -1292,7 +1286,6 @@ const shader_backend_t gl_cg_backend = {
    gl_cg_wrap_type,
    gl_cg_shader_scale,
    gl_cg_set_coords,
-   gl_cg_set_coords_fallback,
    gl_cg_set_mvp,
    gl_cg_get_prev_textures,
    gl_cg_get_feedback_pass,

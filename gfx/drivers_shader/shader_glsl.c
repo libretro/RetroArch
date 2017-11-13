@@ -1549,13 +1549,6 @@ static bool gl_glsl_set_coords(void *handle_data, void *shader_data,
    return true;
 }
 
-static bool gl_glsl_set_coords_fallback(void *handle_data, void *shader_data,
-      const struct video_coords *coords)
-{
-   gl_ff_vertex(coords);
-   return true;
-}
-
 static void gl_glsl_use(void *data, void *shader_data, unsigned idx, bool set_active)
 {
    GLuint id;
@@ -1682,7 +1675,6 @@ const shader_backend_t gl_glsl_backend = {
    gl_glsl_wrap_type,
    gl_glsl_shader_scale,
    gl_glsl_set_coords,
-   gl_glsl_set_coords_fallback,
    gl_glsl_set_mvp,
    gl_glsl_get_prev_textures,
    gl_glsl_get_feedback_pass,
