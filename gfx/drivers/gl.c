@@ -1784,7 +1784,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       if (!gl_check_capability(GL_CAPS_VAO))
       {
          RARCH_ERR("[GL]: Failed to initialize VAOs.\n");
-         return false;
+         goto error;
       }
    }
 
@@ -1792,7 +1792,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 	   &gl->renderchain_data))
    {
 	   RARCH_ERR("[GL]: Renderchain could not be initialized.\n");
-	   return false;
+      goto error;
    }
 
    if (gl->renderchain_driver->restore_default_state)
