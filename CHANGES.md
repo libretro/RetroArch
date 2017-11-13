@@ -16,6 +16,7 @@
 - INPUT: Implement keyboard to gamepad input remapping (limited to one gamepad device for now)
 - INPUT: Fix absolute mouse move handling on the winraw driver
 - INPUT: Ignore keyboard input if window is not active on udev driver
+- INPUT: Sanitize the filenames of autoconfig profiles before saving
 - LOBBIES: Fix crash on navigating left / right from the lobby menu
 - LOCALIZATION: Update Dutch translation
 - LOCALIZATION: Update Italian translation.
