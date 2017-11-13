@@ -3263,3 +3263,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE,
       "Onscreen Notification Blue Color")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FRAMECOUNT_SHOW,
       "Show frame count on FPS display")
+MSG_HASH(MSG_CONFIG_OVERRIDE_LOADED,
+      "Configuration override loaded.")
+MSG_HASH(MSG_GAME_REMAP_FILE_LOADED,
+      "Game remap file loaded.")
+MSG_HASH(MSG_CORE_REMAP_FILE_LOADED,
+      "Core remap file loaded.")

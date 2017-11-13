@@ -2160,7 +2160,7 @@ MSG_HASH(MSG_NO_STATE_HAS_BEEN_LOADED_YET,
 MSG_HASH(MSG_OVERRIDES_ERROR_SAVING,
       "Error saving overrides.")
 MSG_HASH(MSG_OVERRIDES_SAVED_SUCCESSFULLY,
-      "Overrides saved successfully.")
+      "優先ファイルを保存しました。")
 MSG_HASH(MSG_PAUSED,
       "一時停止。")
 MSG_HASH(MSG_PROGRAM,
@@ -2180,7 +2180,9 @@ MSG_HASH(MSG_REDIRECTING_SAVEFILE_TO,
 MSG_HASH(MSG_REDIRECTING_SAVESTATE_TO,
       "Redirecting savestate to")
 MSG_HASH(MSG_REMAP_FILE_SAVED_SUCCESSFULLY,
-      "Remap file saved successfully.")
+      "リマップファイルを保存しました。")
+MSG_HASH(MSG_REMAP_FILE_REMOVED_SUCCESSFULLY,
+      "リマップファイルを削除しました。")
 MSG_HASH(MSG_REMOVED_DISK_FROM_TRAY,
       "Removed disk from tray.")
 MSG_HASH(MSG_REMOVING_TEMPORARY_CONTENT_FILE,
@@ -3189,3 +3191,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE,
       "OSDメッセージの青色値")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FRAMECOUNT_SHOW,
       "フレームレート表示でフレーム数を表示")
+MSG_HASH(MSG_CONFIG_OVERRIDE_LOADED,
+      "優先ファイルをロードしました。")
+MSG_HASH(MSG_GAME_REMAP_FILE_LOADED,
+      "ゲームの優先ファイルをロードしました。")
+MSG_HASH(MSG_CORE_REMAP_FILE_LOADED,
+      "コアの優先ファイルをロードしました。")
