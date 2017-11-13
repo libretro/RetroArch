@@ -160,22 +160,6 @@ static INLINE void gl_ff_vertex(const struct video_coords *coords)
 }
 #endif
 
-#ifdef NO_GL_FF_MATRIX
-#define gl_ff_matrix(mat) ((void)0)
-#else
-static INLINE void gl_ff_matrix(const math_matrix_4x4 *mat)
-{
-   math_matrix_4x4 ident;
-
-   /* Fall back to fixed function-style if needed and possible. */
-   glMatrixMode(GL_PROJECTION);
-   glLoadMatrixf(mat->data);
-   glMatrixMode(GL_MODELVIEW);
-   matrix_4x4_identity(ident);
-   glLoadMatrixf(ident.data);
-}
-#endif
-
 static INLINE void gl_bind_texture(GLuint id, GLint wrap_mode, GLint mag_filter,
       GLint min_filter)
 {

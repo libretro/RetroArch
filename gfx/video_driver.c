@@ -3226,8 +3226,15 @@ static bool video_shader_driver_set_mvp_null(void *data,
 static bool video_shader_driver_set_mvp_null_gl(void *data,
       void *shader_data, const math_matrix_4x4 *mat)
 {
-   gl_ff_matrix(mat);
-   return false;
+   math_matrix_4x4 ident;
+
+   /* Fall back to fixed function-style if needed and possible. */
+   glMatrixMode(GL_PROJECTION);
+   glLoadMatrixf(mat->data);
+   glMatrixMode(GL_MODELVIEW);
+   matrix_4x4_identity(ident);
+   glLoadMatrixf(ident.data);
+   return true;
 }
 #endif
 #endif
