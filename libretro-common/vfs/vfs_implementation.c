@@ -25,8 +25,6 @@
 #include <string.h>
 #include <errno.h>
 
-#include <vfs/vfs_implementation.h>
-
 #if defined(_WIN32)
 #  ifdef _MSC_VER
 #    define setmode _setmode
@@ -63,8 +61,20 @@
 #include <fcntl.h>
 #endif
 
+/* Assume W-functions do not work below VC2005 and Xbox platforms */
+#if defined(_MSC_VER) && _MSC_VER < 1400 || defined(_XBOX)
+
+#ifndef LEGACY_WIN32
+#define LEGACY_WIN32
+#endif
+
+#endif
+
+#include <vfs/vfs_implementation.h>
+#include <string/stdstring.h>
 #include <memmap.h>
 #include <retro_miscellaneous.h>
+#include <encodings/utf.h>
 
 const unsigned HINTS_ACCESS_MASK = 0xff;
 
@@ -82,20 +92,26 @@ struct libretro_vfs_implementation_file
 {
 	uint64_t hints;
 	char *path;
-	long long int size;
+	int64_t size;
+	FILE *fp;
 #if defined(PSP)
 	SceUID fd;
 #else
 
 #define HAVE_BUFFERED_IO 1
 
+#if !defined(_WIN32) || defined(LEGACY_WIN32)
+#define MODE_STR_READ "r"
 #define MODE_STR_READ_UNBUF "rb"
 #define MODE_STR_WRITE_UNBUF "wb"
 #define MODE_STR_WRITE_PLUS "w+"
-
-#if defined(HAVE_BUFFERED_IO)
-	FILE *fp;
+#else
+#define MODE_STR_READ L"r"
+#define MODE_STR_READ_UNBUF L"rb"
+#define MODE_STR_WRITE_UNBUF L"wb"
+#define MODE_STR_WRITE_PLUS L"w+"
 #endif
+
 #if defined(HAVE_MMAP)
 	uint8_t *mapped;
 	uint64_t mappos;
@@ -112,9 +128,17 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uin
 	int            flags = 0;
 	int         mode_int = 0;
 #if defined(HAVE_BUFFERED_IO)
+#if !defined(_WIN32) || defined(LEGACY_WIN32)
 	const char *mode_str = NULL;
+#else
+	const wchar_t *mode_str = NULL;
+#endif
 #endif
 	libretro_vfs_implementation_file *stream = (libretro_vfs_implementation_file*)calloc(1, sizeof(*stream));
+#if defined(_WIN32) && !defined(_XBOX)
+	char       *path_local = NULL;
+	wchar_t    *path_wide = NULL;
+#endif
 
 	if (!stream)
 		return NULL;
@@ -190,7 +214,23 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uin
 #if defined(HAVE_BUFFERED_IO)
 	if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0 && mode_str)
 	{
+#if defined(_WIN32) && !defined(_XBOX)
+		(void)path_local;
+		(void)path_wide;
+#if defined(LEGACY_WIN32)
+		path_local = utf8_to_local_string_alloc(path);
+		stream->fp = fopen(path_local, mode_str);
+		if (path_local)
+			free(path_local);
+#else
+		path_wide = utf8_to_utf16_string_alloc(path);
+		stream->fp = _wfopen(path_wide, mode_str);
+		if (path_wide)
+			free(path_wide);
+#endif
+#else
 		stream->fp = fopen(path, mode_str);
+#endif
 		if (!stream->fp)
 			goto error;
 	}
@@ -198,7 +238,23 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uin
 #endif
 	{
 		/* FIXME: HAVE_BUFFERED_IO is always 1, but if it is ever changed, open() needs to be changed to _wopen() for WIndows. */
+#if defined(_WIN32) && !defined(_XBOX)
+#if defined(LEGACY_WIN32)
+		(void)path_wide;
+		path_local = utf8_to_local_string_alloc(path);
+		stream->fd = open(path_local, flags, mode_int);
+		if (path_local)
+			free(path_local);
+#else
+		(void)path_local;
+		path_wide = utf8_to_utf16_string_alloc(path);
+		stream->fd = _wopen(path_wide, flags, mode_int);
+		if (path_wide)
+			free(path_wide);
+#endif
+#else
 		stream->fd = open(path, flags, mode_int);
+#endif
 		if (stream->fd == -1)
 			goto error;
 #ifdef HAVE_MMAP
@@ -247,6 +303,9 @@ int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream)
 {
 	if (!stream)
 		goto error;
+
+	if (!string_is_empty(stream->path))
+		free(stream->path);
 
 #if  defined(PSP)
 	if (stream->fd > 0)
@@ -393,14 +452,12 @@ error:
 int retro_vfs_file_flush_impl(libretro_vfs_implementation_file *stream)
 {
 #if defined(HAVE_BUFFERED_IO)
-	if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
-		return fflush(stream->fp);
-#endif
-
+	return fflush(stream->fp);
+#else
 	return 0;
+#endif
 }
 
-/* No idea how it is supposed to work on PSP/PS3 etc. Should not be affected by buffered IO */
 int retro_vfs_file_delete_impl(const char *path)
 {
 	return remove(path) == 0;
