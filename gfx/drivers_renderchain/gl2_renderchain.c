@@ -247,7 +247,6 @@ static void gl2_renderchain_render(
       const struct video_tex_info *feedback_info)
 {
    int i;
-   video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords;
    video_shader_ctx_params_t params;
    video_shader_ctx_info_t shader_info;
@@ -270,7 +269,6 @@ static void gl2_renderchain_render(
     * and render all passes from FBOs, to another FBO. */
    for (i = 1; i < gl->fbo_pass; i++)
    {
-      video_shader_ctx_mvp_t mvp;
       video_shader_ctx_coords_t coords;
       video_shader_ctx_params_t params;
       const struct video_fbo_rect *rect = &gl->fbo_rect[i];
@@ -335,10 +333,8 @@ static void gl2_renderchain_render(
 
       video_shader_driver_set_coords(coords);
 
-      mvp.data = gl;
-      mvp.matrix = &gl->mvp;
-
-      video_shader_driver_set_mvp(mvp);
+      video_info->cb_shader_set_mvp(gl,
+            video_info->shader_data, &gl->mvp);
 
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
    }
@@ -412,10 +408,9 @@ static void gl2_renderchain_render(
 
    video_shader_driver_set_coords(coords);
 
-   mvp.data             = gl;
-   mvp.matrix           = &gl->mvp;
+   video_info->cb_shader_set_mvp(gl,
+         video_info->shader_data, &gl->mvp);
 
-   video_shader_driver_set_mvp(mvp);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
    gl->coords.tex_coord = gl->tex_info.coord;
