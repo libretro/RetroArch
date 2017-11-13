@@ -3130,10 +3130,12 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             width,
             height);
 
-   font_driver_flush(video_info->width, video_info->height, xmb->font);
+   font_driver_flush(video_info->width, video_info->height, xmb->font,
+         video_info);
    font_driver_bind_block(xmb->font, NULL);
 
-   font_driver_flush(video_info->width, video_info->height, xmb->font2);
+   font_driver_flush(video_info->width, video_info->height, xmb->font2,
+         video_info);
    font_driver_bind_block(xmb->font2, NULL);
 
    if (menu_input_dialog_get_display_kb())
