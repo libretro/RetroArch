@@ -137,7 +137,10 @@ typedef struct glsl_shader_data
    GLint attribs_elems[32 * PREV_TEXTURES + 2 + 4 + GFX_MAX_SHADERS];
    unsigned attribs_index;
    unsigned active_idx;
+   unsigned current_idx;
    GLuint lut_textures[GFX_MAX_TEXTURES];
+   float  current_mat_data[GFX_MAX_SHADERS];
+   float* current_mat_data_pointer[GFX_MAX_SHADERS];
    struct shader_uniforms uniforms[GFX_MAX_SHADERS];
    struct cache_vbo vbo[GFX_MAX_SHADERS];
    struct shader_program_glsl_data prg[GFX_MAX_SHADERS];
@@ -148,9 +151,6 @@ typedef struct glsl_shader_data
 static bool glsl_core;
 static unsigned glsl_major;
 static unsigned glsl_minor;
-static float* current_mat_data_pointer[GFX_MAX_SHADERS];
-static float current_mat_data[GFX_MAX_SHADERS];
-static unsigned current_idx;
 
 static bool gl_glsl_add_lut(
       const struct video_shader *shader,
@@ -735,8 +735,10 @@ static void gl_glsl_destroy_resources(glsl_shader_data_t *glsl)
    if (!glsl)
       return;
 
-   current_idx = 0;
+   glsl->current_idx = 0;
+   
    glUseProgram(0);
+
    for (i = 0; i < GFX_MAX_SHADERS; i++)
    {
       if (glsl->prg[i].id == 0 || (i && glsl->prg[i].id == glsl->prg[0].id))
@@ -1448,14 +1450,14 @@ static bool gl_glsl_set_mvp(void *data, void *shader_data, const math_matrix_4x4
    loc = glsl->uniforms[glsl->active_idx].mvp;
    if (loc >= 0)
    {
-      if (  (current_idx != glsl->active_idx) || 
-            (mat->data != current_mat_data_pointer[glsl->active_idx]) || 
-            (*mat->data != current_mat_data[glsl->active_idx]))
+      if (  (glsl->current_idx != glsl->active_idx) || 
+            (mat->data  != glsl->current_mat_data_pointer[glsl->active_idx]) || 
+            (*mat->data != glsl->current_mat_data[glsl->active_idx]))
       {
          glUniformMatrix4fv(loc, 1, GL_FALSE, mat->data);
-         current_idx                                = glsl->active_idx;
-         current_mat_data_pointer[glsl->active_idx] = (float*)mat->data;
-         current_mat_data[glsl->active_idx]         = *mat->data;
+         glsl->current_idx                                = glsl->active_idx;
+         glsl->current_mat_data_pointer[glsl->active_idx] = (float*)mat->data;
+         glsl->current_mat_data[glsl->active_idx]         = *mat->data;
       }
    }
 
