@@ -257,10 +257,7 @@ static bool gl_cg_set_mvp(void *data, void *shader_data, const math_matrix_4x4 *
 {
    cg_shader_data_t *cg = (cg_shader_data_t*)shader_data;
    if (!cg || !cg->prg[cg->active_idx].mvp)
-   {
-      gl_ff_matrix(mat);
       return false;
-   }
 
    cgGLSetMatrixParameterfc(cg->prg[cg->active_idx].mvp, mat->data);
    return true;
