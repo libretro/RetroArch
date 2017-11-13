@@ -1442,10 +1442,7 @@ static bool gl_glsl_set_mvp(void *data, void *shader_data, const math_matrix_4x4
    (void)data;
 
    if (!glsl || !glsl->shader->modern)
-   {
-      gl_ff_matrix(mat);
       return false;
-   }
 
    loc = glsl->uniforms[glsl->active_idx].mvp;
    if (loc >= 0)
