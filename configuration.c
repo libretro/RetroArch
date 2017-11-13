@@ -50,6 +50,12 @@
 
 #include "tasks/tasks_internal.h"
 
+static const char* invalid_filename_chars[] = {
+   /* https://support.microsoft.com/en-us/help/905231/information-about-the-characters-that-you-cannot-use-in-site-names--fo */
+   "~", "#", "%", "&", "*", "{", "}", "\\", ":", "[", "]", "?", "/", "|", "\'", "\"",
+   NULL
+};
+
 /* All config related settings go here. */
 
 struct config_bool_setting
@@ -3443,6 +3449,7 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
    unsigned i;
    char *buf                            = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    char *autoconf_file                  = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char *path_new                       = NULL;
    size_t path_size                     = PATH_MAX_LENGTH * sizeof(char);
    int32_t pid_user                     = 0;
    int32_t vid_user                     = 0;
@@ -3453,6 +3460,26 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
    const char *joypad_ident             = settings->arrays.input_joypad_driver;
 
    buf[0] = autoconf_file[0]            = '\0';
+
+   if (string_is_empty(path))
+      goto error;
+
+   path_new = strdup(path);
+
+   for (i = 0; invalid_filename_chars[i]; i++)
+   {
+      while (1)
+      {
+         char *tmp = strstr(path_new, invalid_filename_chars[i]);
+
+         if (tmp)
+            *tmp = '_';
+         else
+            break;
+      }
+   }
+
+   path = path_new;
 
    fill_pathname_join(buf, autoconf_dir, joypad_ident, path_size);
 
@@ -3479,7 +3506,7 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
             path_size);
    }
 
-   conf  = config_file_new(autoconf_file);
+   conf = config_file_new(autoconf_file);
 
    if (!conf)
    {
@@ -3515,11 +3542,15 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
    config_file_free(conf);
    free(buf);
    free(autoconf_file);
+   if (path_new)
+      free(path_new);
    return ret;
 
 error:
    free(buf);
    free(autoconf_file);
+   if (path_new)
+      free(path_new);
    return false;
 }
 
