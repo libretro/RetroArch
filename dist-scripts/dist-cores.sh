@@ -259,33 +259,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
    elif [ $PLATFORM = "vita" ] ; then
       COUNTER=$((COUNTER + 1))
       COUNTER_ID=`printf  "%05d" ${COUNTER}`
-      mkdir -p ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/
-      mkdir -p ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/livearea
-      mkdir -p ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/livearea/contents
-      mkdir -p ../pkg/${platform}/${name}_libretro.vpk/vpk/assets/
-      mkdir -p ../pkg/${platform}/${name}_libretro.vpk/vpk/database/rdb
-      mkdir -p ../pkg/${platform}/${name}_libretro.vpk/vpk/database/cursors
-      mkdir -p ../pkg/${platform}/${name}_libretro.vpk/vpk/info
-      cp ../retroarch_${platform}.self ../pkg/${platform}/${name}_libretro.vpk/vpk/eboot.bin
-      cp ../pkg/${platform}/${name}_libretro.vpk/vpk/eboot.bin ../pkg/${platform}/retroarch.vpk/vpk/${name}_libretro.self
-      vita-mksfoex -s TITLE_ID=RETR${COUNTER_ID} "RetroArch ${name}" ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/param.sfo
-      cp ../pkg/${platform}/assets/ICON0.PNG ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/icon0.png
-      cp ../pkg/${platform}/assets/livearea/contents/bg.png ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/livearea/contents/bg.png
-      cp ../pkg/${platform}/assets/livearea/contents/startup.png ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/livearea/contents/startup.png
-      cp ../pkg/${platform}/assets/livearea/contents/website.png ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/livearea/contents/website.png
-      cp ../pkg/${platform}/assets/livearea/contents/template.xml ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/livearea/contents/template.xml
-      mkdir -p ../pkg/${platform}/${name}_libretro.vpk/vpk/assets
-         if [ -d ../media/assets/glui ]; then
-            cp -r ../media/assets/glui ../pkg/${platform}/${name}_libretro.vpk/vpk/assets
-         fi
-         if [ -d ../media/assets/xmb ]; then
-            cp -r ../media/assets/xmb ../pkg/${platform}/${name}_libretro.vpk/vpk/assets
-            # Strip source SVG files
-            rm -rf ../pkg/${platform}/${name}_libretro.vpk/vpk/assets/xmb/flatui/src
-            rm -rf ../pkg/${platform}/${name}_libretro.vpk/vpk/assets/xmb/monochrome/src
-            rm -rf ../pkg/${platform}/${name}_libretro.vpk/vpk/assets/xmb/retroactive/src
-            rm -rf ../pkg/${platform}/${name}_libretro.vpk/vpk/assets/xmb/retroactive_marked/src
-         fi
+      cp ../retroarch_${platform}.self ../pkg/${platform}/retroarch.vpk/vpk/${name}_libretro.self
          if [ -d ../media/libretrodb/rdb ]; then
             mkdir -p ../pkg/${platform}/retroarch.vpk/vpk/database/rdb
             cp -r ../media/libretrodb/rdb/* ../pkg/${platform}/${name}_libretro.vpk/vpk/database/rdb
