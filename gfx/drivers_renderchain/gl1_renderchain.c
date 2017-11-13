@@ -55,16 +55,6 @@ typedef struct gl1_renderchain
    void *empty;
 } gl1_renderchain_t;
 
-#define gl1_bind_fb(id) glBindFramebuffer(RARCH_GL_FRAMEBUFFER, id)
-
-/* Prototypes */
-static void gl1_renderchain_bind_backbuffer(void)
-{
-   gl1_bind_fb(0);
-}
-
-void context_bind_hw_render(bool enable);
-
 GLenum min_filter_to_mag(GLenum type);
 
 void gl1_renderchain_free(void *data)
@@ -113,47 +103,37 @@ static bool gl1_renderchain_read_viewport(
    if (!gl)
       return false;
 
-   context_bind_hw_render(false);
-
    num_pixels = gl->vp.width * gl->vp.height;
 
-   {
-      /* Use slow synchronous readbacks. Use this with plain screenshots
-         as we don't really care about performance in this case. */
+   /* Use slow synchronous readbacks. Use this with plain screenshots
+      as we don't really care about performance in this case. */
 
-      /* GLES2 only guarantees GL_RGBA/GL_UNSIGNED_BYTE
-       * readbacks so do just that.
-       * GLES2 also doesn't support reading back data
-       * from front buffer, so render a cached frame
-       * and have gl_frame() do the readback while it's
-       * in the back buffer.
-       *
-       * Keep codepath similar for GLES and desktop GL.
-       */
-      gl->readback_buffer_screenshot = malloc(num_pixels * sizeof(uint32_t));
+   /* GLES2 only guarantees GL_RGBA/GL_UNSIGNED_BYTE
+    * readbacks so do just that.
+    * GLES2 also doesn't support reading back data
+    * from front buffer, so render a cached frame
+    * and have gl_frame() do the readback while it's
+    * in the back buffer.
+    *
+    * Keep codepath similar for GLES and desktop GL.
+    */
+   gl->readback_buffer_screenshot = malloc(num_pixels * sizeof(uint32_t));
 
-      if (!gl->readback_buffer_screenshot)
-         goto error;
+   if (!gl->readback_buffer_screenshot)
+      return false;
 
-      if (!is_idle)
-         video_driver_cached_frame();
+   if (!is_idle)
+      video_driver_cached_frame();
 
-      video_frame_convert_rgba_to_bgr(
-            (const void*)gl->readback_buffer_screenshot,
-            buffer,
-            num_pixels);
+   video_frame_convert_rgba_to_bgr(
+         (const void*)gl->readback_buffer_screenshot,
+         buffer,
+         num_pixels);
 
-      free(gl->readback_buffer_screenshot);
-      gl->readback_buffer_screenshot = NULL;
-   }
+   free(gl->readback_buffer_screenshot);
+   gl->readback_buffer_screenshot = NULL;
 
-   context_bind_hw_render(true);
    return true;
-
-error:
-   context_bind_hw_render(true);
-
-   return false;
 }
 
 void gl1_renderchain_free_internal(void *data)
@@ -168,7 +148,8 @@ void gl1_renderchain_free_internal(void *data)
 
 static void *gl1_renderchain_new(void)
 {
-   gl1_renderchain_t *renderchain = (gl1_renderchain_t*)calloc(1, sizeof(*renderchain));
+   gl1_renderchain_t *renderchain = (gl1_renderchain_t*)
+      calloc(1, sizeof(*renderchain));
    if (!renderchain)
       return NULL;
 
@@ -234,7 +215,7 @@ static void gl1_renderchain_copy_frame(
       const void *frame,
       unsigned width, unsigned height, unsigned pitch)
 {
-   gl_t *gl = (gl_t*)data;
+   gl_t               *gl = (gl_t*)data;
    const GLvoid *data_buf = frame;
    glPixelStorei(GL_UNPACK_ALIGNMENT, video_pixel_get_alignment(pitch));
 
@@ -297,7 +278,7 @@ gl_renderchain_driver_t gl2_renderchain = {
    gl1_renderchain_disable_client_arrays, /* disable_client_arrays */
    gl1_renderchain_ff_vertex,             /* ff_vertex */
    gl1_renderchain_ff_matrix,
-   gl1_renderchain_bind_backbuffer,
+   NULL,                                  /* bind_backbuffer */
    NULL,                                  /* deinit_fbo */
    gl1_renderchain_viewport_info,
    gl1_renderchain_read_viewport,
