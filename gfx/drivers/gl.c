@@ -449,7 +449,7 @@ GLenum min_filter_to_mag(GLenum type)
 static uintptr_t gl_get_current_framebuffer(void *data)
 {
    gl_t *gl = (gl_t*)data;
-   if (!gl || !gl->fbo_inited)
+   if (!gl || !gl->has_fbo)
       return 0;
    return gl->hw_render_fbo[(gl->tex_index + 1) % gl->textures];
 }
@@ -1364,6 +1364,7 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
     * have_sync       - Use ARB_sync to reduce latency.
     */
    gl->has_srgb_fbo              = false;
+   gl->has_fbo                   = gl_check_capability(GL_CAPS_FBO);
    gl->have_full_npot_support    = gl_check_capability(GL_CAPS_FULL_NPOT_SUPPORT);
    gl->have_mipmap               = gl_check_capability(GL_CAPS_MIPMAP);
    gl->have_es2_compat           = gl_check_capability(GL_CAPS_ES2_COMPAT);
@@ -1844,7 +1845,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl->textures         = 4;
    gl->hw_render_use    = false;
 
-   if (gl->fbo_inited && hwr->context_type != RETRO_HW_CONTEXT_NONE)
+   if (gl->has_fbo && hwr->context_type != RETRO_HW_CONTEXT_NONE)
       gl->hw_render_use = true;
 
    if (gl->hw_render_use)
@@ -1950,7 +1951,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    if (gl->renderchain_driver->init)
       gl->renderchain_driver->init(gl, gl->tex_w, gl->tex_h);
 
-   if (gl->fbo_inited)
+   if (gl->has_fbo)
    {
       if (gl->hw_render_use &&
             gl->renderchain_driver->init_hw_render &&

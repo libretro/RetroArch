@@ -773,7 +773,7 @@ void gl2_renderchain_init(
    if (shader_info.num == 1 && !scale.valid)
       return;
 
-   if (!gl_check_capability(GL_CAPS_FBO))
+   if (!gl->has_fbo)
    {
       RARCH_ERR("[GL]: Failed to locate FBO functions. Won't be able to use render-to-texture.\n");
       return;
@@ -873,7 +873,7 @@ static bool gl2_renderchain_init_hw_render(
    RARCH_LOG("[GL]: Max texture size: %d px, renderbuffer size: %d px.\n",
          max_fbo_size, max_renderbuffer_size);
 
-   if (!gl_check_capability(GL_CAPS_FBO))
+   if (!gl->has_fbo)
       return false;
 
    RARCH_LOG("[GL]: Supports FBO (render-to-texture).\n");
