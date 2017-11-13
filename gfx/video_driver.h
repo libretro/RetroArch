@@ -468,6 +468,8 @@ typedef struct video_frame_info
    bool (*cb_set_resize)(void*, unsigned, unsigned);
 
    void (*cb_shader_use)(void *data, void *shader_data, unsigned index, bool set_active);
+   bool (*cb_set_coords)(void *handle_data,
+         void *shader_data, const struct video_coords *coords);
    bool (*cb_shader_set_mvp)(void *data, void *shader_data,
          const math_matrix_4x4 *mat);
 

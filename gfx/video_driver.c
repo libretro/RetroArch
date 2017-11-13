@@ -2473,6 +2473,24 @@ static void video_shader_driver_use_null(void *data,
    (void)set_active;
 }
 
+static bool video_driver_cb_set_coords(void *handle_data,
+      void *shader_data, const struct video_coords *coords)
+{
+   current_shader->set_coords(handle_data, shader_data,
+         coords);
+   return true;
+}
+
+#if 0
+static bool video_driver_cb_set_coords_fallback(void *handle_data,
+      void *shader_data, const struct video_coords *coords)
+{
+   current_shader->set_coords_fallback(handle_data, shader_data,
+         coords);
+   return true;
+}
+#endif
+
 void video_driver_build_info(video_frame_info_t *video_info)
 {
    bool is_perfcnt_enable            = false;
@@ -2580,6 +2598,8 @@ void video_driver_build_info(video_frame_info_t *video_info)
 
    video_info->cb_shader_use          = video_driver_cb_shader_use;
    video_info->cb_shader_set_mvp      = video_driver_cb_shader_set_mvp;
+
+   video_info->cb_set_coords          = video_driver_cb_set_coords;
 
 #ifdef HAVE_THREADS
    video_driver_threaded_unlock(is_threaded);
