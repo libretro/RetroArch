@@ -25,6 +25,7 @@
 
 #include <retro_common_api.h>
 #include <string.h>
+#include <streams/file_stream.h>
 
 RETRO_BEGIN_DECLS
 
