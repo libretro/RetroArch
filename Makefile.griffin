@@ -318,7 +318,6 @@ else ifeq ($(platform), windows_msvc6_x86)
    HAVE_STB_FONT            := 1
    HAVE_THREADS             := 1
    HAVE_LIBRETRODB          := 1
-   HAVE_FBO                 := 1
    HAVE_COMMAND             := 1
    HAVE_STDIN_CMD           := 1
    HAVE_CMD                 := 1
@@ -360,7 +359,6 @@ else ifeq ($(platform), windows_msvc2003_x86)
    HAVE_STB_FONT            := 1
    HAVE_THREADS             := 1
    HAVE_LIBRETRODB          := 1
-   HAVE_FBO                 := 1
    HAVE_COMMAND             := 1
    HAVE_STDIN_CMD           := 1
    HAVE_CMD                 := 1
@@ -407,7 +405,6 @@ else ifeq ($(platform), windows_msvc2005_x86)
    HAVE_STB_FONT            := 1
    HAVE_THREADS             := 1
    HAVE_LIBRETRODB          := 1
-   HAVE_FBO                 := 1
    HAVE_COMMAND             := 1
    HAVE_STDIN_CMD           := 1
    HAVE_CMD                 := 1
@@ -455,7 +452,6 @@ else ifneq (,$(findstring windows_msvc2010,$(platform)))
    HAVE_STB_FONT            := 1
    HAVE_THREADS             := 1
    HAVE_LIBRETRODB          := 1
-   HAVE_FBO                 := 1
    HAVE_COMMAND             := 1
    HAVE_STDIN_CMD           := 1
    HAVE_CMD                 := 1
@@ -526,7 +522,6 @@ else ifneq (,$(findstring windows_msvc2012,$(platform)))
    HAVE_STB_FONT            := 1
    HAVE_THREADS             := 1
    HAVE_LIBRETRODB          := 1
-   HAVE_FBO                 := 1
    HAVE_COMMAND             := 1
    HAVE_STDIN_CMD           := 1
    HAVE_CMD                 := 1
@@ -601,7 +596,6 @@ else ifneq (,$(findstring windows_msvc2013,$(platform)))
    HAVE_STB_FONT            := 1
    HAVE_THREADS             := 1
    HAVE_LIBRETRODB          := 1
-   HAVE_FBO                 := 1
    HAVE_COMMAND             := 1
    HAVE_STDIN_CMD           := 1
    HAVE_CMD                 := 1
@@ -810,10 +804,6 @@ endif
 
 ifeq ($(HAVE_GETOPT_LONG), 1)
    CFLAGS += -DHAVE_GETOPT_LONG=1
-endif
-
-ifeq ($(HAVE_FBO), 1)
-   CFLAGS += -DHAVE_FBO
 endif
 
 ifeq ($(HAVE_DYLIB), 1)

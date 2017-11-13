@@ -66,6 +66,13 @@
 #endif
 #endif
 
+#ifdef _XBOX
+#ifndef HAVE_FBO
+#define HAVE_FBO
+#endif
+
+#endif
+
 static LPDIRECT3D g_pD3D;
 
 static bool d3d_init_imports(d3d_video_t *d3d)

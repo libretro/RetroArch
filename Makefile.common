@@ -52,10 +52,6 @@ ifeq ($(HAVE_VITA2D), 1)
 	DEFINES += -DHAVE_VITA2D
 endif
 
-ifeq ($(HAVE_FBO), 1)
-   DEFINES += -DHAVE_FBO
-endif
-
 ifeq ($(HAVE_DYLIB), 1)
    DEFINES += -DHAVE_DYLIB
 endif

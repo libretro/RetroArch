@@ -403,19 +403,6 @@ else
 fi
 
 check_pkgconf V4L2 libv4l2
-
-if [ "$OS" = 'Darwin' ]; then
-   check_lib '' FBO "-framework OpenGL" glFramebufferTexture2D
-elif [ "$OS" = 'Win32' ]; then
-   HAVE_FBO=yes
-else
-   if [ "$HAVE_OPENGLES" = "yes" ]; then
-      [ $HAVE_FBO != "no" ] && HAVE_FBO=yes
-   else
-      check_lib '' FBO -lGL glFramebufferTexture2D
-   fi
-fi
-
 check_pkgconf FREETYPE freetype2
 check_pkgconf X11 x11
 check_pkgconf XCB xcb
