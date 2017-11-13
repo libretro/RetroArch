@@ -3420,14 +3420,19 @@ bool video_shader_driver_info(video_shader_ctx_info_t *shader_info)
 
 bool video_shader_driver_filter_type(video_shader_ctx_filter_t *filter)
 {
-   return (filter) ? current_shader->filter_type(shader_data, 
-         filter->index, filter->smooth) : false;
+   if (filter)
+      return current_shader->filter_type(shader_data, 
+            filter->index, filter->smooth);
+   return false;
 }
 
-bool video_shader_driver_compile_program(struct shader_program_info *program_info)
+bool video_shader_driver_compile_program(
+      struct shader_program_info *program_info)
 {
-   return (program_info) ? current_shader->compile_program(program_info->data,
-         program_info->idx, NULL, program_info) : false;
+   if (program_info)
+      return current_shader->compile_program(program_info->data,
+            program_info->idx, NULL, program_info);
+   return false;
 }
 
 bool video_shader_driver_wrap_type(video_shader_ctx_wrap_t *wrap)
@@ -3436,8 +3441,9 @@ bool video_shader_driver_wrap_type(video_shader_ctx_wrap_t *wrap)
    return true;
 }
 
-bool renderchain_d3d_init_first(const d3d_renderchain_driver_t **renderchain_driver,
-	void **renderchain_handle)
+bool renderchain_d3d_init_first(
+      const d3d_renderchain_driver_t **renderchain_driver,
+      void **renderchain_handle)
 {
    unsigned i;
 
