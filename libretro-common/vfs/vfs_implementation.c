@@ -347,13 +347,14 @@ int retro_vfs_file_error_impl(libretro_vfs_implementation_file *stream)
 
 int64_t retro_vfs_file_size_impl(libretro_vfs_implementation_file *stream)
 {
+	int64_t output = 0;
 	int64_t initial_pos = retro_vfs_file_tell_impl(stream);
 
 	int64_t ret = retro_vfs_file_seek_internal(stream, 0, SEEK_END);
 	if (ret == -1)
 		return -1;
 
-	int64_t output = retro_vfs_file_tell_impl(stream);
+	output = retro_vfs_file_tell_impl(stream);
 	ret = retro_vfs_file_seek_internal(stream, initial_pos, SEEK_SET);
 	if (ret == -1)
 		return -1;
