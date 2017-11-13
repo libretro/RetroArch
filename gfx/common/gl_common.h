@@ -156,7 +156,7 @@ static INLINE unsigned gl_wrap_type_to_enum(enum gfx_wrap_type type)
    switch (type)
    {
 #ifndef HAVE_OPENGLES
-      case RARCH_WRAP_BORDER:
+      case RARCH_WRAP_BORDER: /* GL_CLAMP_TO_BORDER: Available since GL 1.3 */
          return GL_CLAMP_TO_BORDER;
 #else
       case RARCH_WRAP_BORDER:
