@@ -92,12 +92,8 @@
 #define glGenerateMipmap glGenerateMipmapOES
 #endif
 
-#ifdef HAVE_FBO
-
 #if defined(__APPLE__) || defined(HAVE_PSGL)
 #define GL_RGBA32F GL_RGBA32F_ARB
-#endif
-
 #endif
 
 #if defined(HAVE_PSGL)

@@ -1796,21 +1796,21 @@ bool video_driver_find_driver(void)
 
       current_video                        = NULL;
 
+#if defined(HAVE_VULKAN)
       if (hwr && hw_render_context_is_vulkan(hwr->context_type))
       {
-#if defined(HAVE_VULKAN)
          RARCH_LOG("[Video]: Using HW render, Vulkan driver forced.\n");
          current_video = &video_vulkan;
-#endif
       }
+#endif
 
+#if defined(HAVE_OPENGL)
       if (hwr && hw_render_context_is_gl(hwr->context_type))
       {
-#if defined(HAVE_OPENGL) && defined(HAVE_FBO)
          RARCH_LOG("[Video]: Using HW render, OpenGL driver forced.\n");
          current_video = &video_gl;
-#endif
       }
+#endif
 
       if (current_video)
          return true;
