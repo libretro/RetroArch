@@ -17,6 +17,8 @@
 #include <unistd.h>
 
 #include <sys/ioctl.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 /* Includes and defines for framebuffer size retrieval */
 #include <linux/fb.h>
