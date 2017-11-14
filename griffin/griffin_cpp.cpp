@@ -91,39 +91,15 @@
 #endif
 
 /*============================================================
-AUDIO
-============================================================ */
-#ifdef HAVE_XAUDIO
-#include "../audio/drivers/xaudio.cpp"
-#endif
-
-/*============================================================
 MENU
 ============================================================ */
 #ifdef HAVE_XUI
 #include "../menu/drivers/xui.cpp"
 #endif
 
-#if defined(HAVE_D3D)
-#include "../menu/drivers_display/menu_display_d3d.cpp"
-#endif
-
-/*============================================================
-VIDEO CONTEXT
-============================================================ */
-
-#if defined(HAVE_D3D)
-#include "../gfx/drivers_context/d3d_ctx.cpp"
-#endif
-
 /*============================================================
 UI
 ============================================================ */
-
-#if defined(_WIN32) && !defined(_XBOX)
-#include "../ui/drivers/win32/ui_win32_window.cpp"
-#endif
-
 #if defined(HAVE_QT)
 #include "../ui/drivers/ui_qt.cpp"
 
@@ -140,21 +116,6 @@ UI
 /*============================================================
 VIDEO DRIVER
 ============================================================ */
-#ifdef _XBOX
-#include "../frontend/drivers/platform_xdk.cpp"
-#endif
-
-#if defined(HAVE_D3D)
-#include "../gfx/common/d3d_common.cpp"
-#include "../gfx/drivers/d3d.cpp"
-#ifdef _XBOX
-#include "../gfx/drivers_renderchain/xdk_renderchain.cpp"
-#endif
-#ifdef HAVE_CG
-#include "../gfx/drivers_renderchain/d3d9_cg_renderchain.cpp"
-#endif
-#endif
-
 #ifdef HAVE_VULKAN
 #include "../gfx/drivers_shader/shader_vulkan.cpp"
 #include "../gfx/drivers_shader/glslang_util.cpp"
@@ -166,11 +127,6 @@ VIDEO DRIVER
 /*============================================================
 FONTS
 ============================================================ */
-
-#if defined(HAVE_D3D9) && !defined(_XBOX)
-#include "../gfx/drivers_font/d3d_w32_font.cpp"
-#endif
-
 #if defined(_XBOX360)
 #include "../gfx/drivers_font/xdk360_fonts.cpp"
 #endif

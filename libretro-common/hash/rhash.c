@@ -201,7 +201,7 @@ void sha256_hash(char *s, const uint8_t *in, size_t size)
 
 #ifndef HAVE_ZLIB
 /* Zlib CRC32. */
-static const uint32_t crc32_table[256] = {
+static const uint32_t crc32_hash_table[256] = {
     0x00000000, 0x77073096, 0xee0e612c, 0x990951ba, 0x076dc419, 0x706af48f,
     0xe963a535, 0x9e6495a3, 0x0edb8832, 0x79dcb8a4, 0xe0d5e91e, 0x97d2d988,
     0x09b64c2b, 0x7eb17cbd, 0xe7b82d07, 0x90bf1d91, 0x1db71064, 0x6ab020f2,
@@ -249,7 +249,7 @@ static const uint32_t crc32_table[256] = {
 
 uint32_t crc32_adjust(uint32_t checksum, uint8_t input)
 {
-   return ((checksum >> 8) & 0x00ffffff) ^ crc32_table[(checksum ^ input) & 0xff];
+   return ((checksum >> 8) & 0x00ffffff) ^ crc32_hash_table[(checksum ^ input) & 0xff];
 }
 
 uint32_t crc32_calculate(const uint8_t *data, size_t length)

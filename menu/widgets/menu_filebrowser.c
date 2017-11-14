@@ -63,37 +63,46 @@ void filebrowser_parse(void *data, unsigned type_data)
    menu_displaylist_info_t *info        = (menu_displaylist_info_t*)data;
    enum menu_displaylist_ctl_state type = (enum menu_displaylist_ctl_state)
                                           type_data;
-   bool path_is_compressed              = path_is_compressed_file(info->path);
+   const char *path                     = info ? info->path : NULL;
+   bool path_is_compressed              = !string_is_empty(path)
+      ? path_is_compressed_file(path) : false;
    bool filter_ext                      =
       settings->bools.menu_navigation_browser_filter_supported_extensions_enable;
 
-
-   if (string_is_equal(info->label,
+   if (info && string_is_equal(info->label,
             msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE)))
       filter_ext = false;
 
-   if (path_is_compressed)
-      str_list = file_archive_get_file_list(info->path, info->exts);
-   else
-      str_list = dir_list_new(info->path,
-            filter_ext ? info->exts : NULL,
+   if (info && path_is_compressed)
+      str_list = file_archive_get_file_list(path, info->exts);
+   else if (!string_is_empty(path))
+      str_list = dir_list_new(path,
+            (filter_ext && info) ? info->exts : NULL,
             true, settings->bools.show_hidden_files, true, false);
 
+   switch (filebrowser_types)
+   {
+      case FILEBROWSER_SCAN_DIR:
 #ifdef HAVE_LIBRETRODB
-   if (filebrowser_types == FILEBROWSER_SCAN_DIR)
-      menu_entries_prepend(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY),
-            msg_hash_to_str(MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY),
-            MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY,
-            FILE_TYPE_SCAN_DIRECTORY, 0 ,0);
+         if (info)
+            menu_entries_prepend(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY),
+                  MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY,
+                  FILE_TYPE_SCAN_DIRECTORY, 0 ,0);
 #endif
-
-   if (filebrowser_types == FILEBROWSER_SELECT_DIR)
-      menu_entries_prepend(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY),
-            msg_hash_to_str(MENU_ENUM_LABEL_USE_THIS_DIRECTORY),
-            MENU_ENUM_LABEL_USE_THIS_DIRECTORY,
-            FILE_TYPE_USE_DIRECTORY, 0 ,0);
+         break;
+      case FILEBROWSER_SELECT_DIR:
+         if (info)
+            menu_entries_prepend(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_USE_THIS_DIRECTORY),
+                  MENU_ENUM_LABEL_USE_THIS_DIRECTORY,
+                  FILE_TYPE_USE_DIRECTORY, 0 ,0);
+         break;
+      default:
+         break;
+   }
 
    if (!str_list)
    {
@@ -101,8 +110,9 @@ void filebrowser_parse(void *data, unsigned type_data)
          ? msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE)
          : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND);
 
-      menu_entries_append_enum(info->list, str, "",
-            MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND, 0, 0, 0);
+      if (info)
+         menu_entries_append_enum(info->list, str, "",
+               MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND, 0, 0, 0);
       goto end;
    }
 
@@ -119,7 +129,7 @@ void filebrowser_parse(void *data, unsigned type_data)
    {
       for (i = 0; i < list_size; i++)
       {
-         char label[PATH_MAX_LENGTH];
+         char label[64];
          bool is_dir                   = false;
          enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
          enum msg_file_type file_type  = FILE_TYPE_NONE;
@@ -171,7 +181,7 @@ void filebrowser_parse(void *data, unsigned type_data)
 
          /* Need to preserve slash first time. */
 
-         if (!string_is_empty(info->path) && !path_is_compressed)
+         if (!string_is_empty(path) && !path_is_compressed)
             path = path_basename(path);
 
          if (filebrowser_types == FILEBROWSER_SELECT_COLLECTION)
@@ -266,7 +276,7 @@ void filebrowser_parse(void *data, unsigned type_data)
 end:
    menu_entries_prepend(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY),
-         info->path,
+         path,
          MENU_ENUM_LABEL_PARENT_DIRECTORY,
          FILE_TYPE_PARENT_DIRECTORY, 0, 0);
 }

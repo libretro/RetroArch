@@ -19,6 +19,7 @@
 
 #include <compat/strl.h>
 #include <encodings/utf.h>
+#include <retro_math.h>
 #include <retro_miscellaneous.h>
 #include <features/features_cpu.h>
 
@@ -44,6 +45,7 @@ struct tween
 struct menu_animation
 {
    struct tween *list;
+   bool need_defrag;
 
    size_t capacity;
    size_t size;
@@ -459,6 +461,8 @@ bool menu_animation_push(menu_animation_ctx_entry_t *entry)
 
    *target = t;
 
+   anim.need_defrag = true;
+
    return true;
 }
 
@@ -486,6 +490,7 @@ static void menu_animation_defrag()
    }
 
    anim.first_dead = anim.size;
+   anim.need_defrag = false;
 }
 
 bool menu_animation_update(float delta_time)
@@ -511,6 +516,7 @@ bool menu_animation_update(float delta_time)
       {
          *tween->subject = tween->target_value;
          tween->alive    = false;
+         anim.need_defrag = true;
 
          if (tween->cb)
             tween->cb();
@@ -520,12 +526,14 @@ bool menu_animation_update(float delta_time)
          active_tweens += 1;
    }
 
-   if (active_tweens)
+   if (anim.need_defrag)
       menu_animation_defrag();
-   else
+
+   if (!active_tweens)
    {
       anim.size           = 0;
       anim.first_dead     = 0;
+      anim.need_defrag    = false;
       return false;
    }
 
@@ -663,6 +671,8 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
 
                if (i < anim.first_dead)
                   anim.first_dead = i;
+
+               anim.need_defrag = true;
             }
          }
          break;
@@ -673,7 +683,7 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
                (menu_animation_ctx_subject_t*)data;
             float            **sub = (float**)subject->data;
 
-            for (i = 0; i < anim.size; ++i)
+            for (i = 0; i < anim.size && killed < subject->count; ++i)
             {
                if (!anim.list[i].alive)
                   continue;
@@ -690,6 +700,7 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
                      anim.first_dead = i;
 
                   killed++;
+                  anim.need_defrag = true;
                   break;
                }
             }

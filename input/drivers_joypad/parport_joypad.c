@@ -26,7 +26,6 @@
 
 #include <compat/strl.h>
 
-#include "../input_config.h"
 #include "../input_driver.h"
 
 #include "../../configuration.h"

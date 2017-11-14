@@ -25,7 +25,6 @@
 #include "../../config.h"
 #endif
 
-#include "../input_config.h"
 #include "../input_driver.h"
 
 #define MAX_PADS 1
@@ -60,10 +59,12 @@ static int16_t ctr_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return input_joypad_pressed(ctr->joypad, joypad_info, port, binds[port], id);
+         return input_joypad_pressed(ctr->joypad,
+               joypad_info, port, binds[port], id);
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
-            return input_joypad_analog(ctr->joypad, joypad_info, port, idx, id, binds[port]);
+            return input_joypad_analog(ctr->joypad,
+                  joypad_info, port, idx, id, binds[port]);
          break;
    }
 

@@ -34,61 +34,7 @@
 
 #include "configuration.h"
 #include "config.def.h"
-#include "input/input_config.h"
 #include "setting_list.h"
-
-rarch_setting_t setting_terminator_setting(void)
-{
-   rarch_setting_t result;
-
-   result.enum_idx                  = MSG_UNKNOWN;
-   result.type                      = ST_NONE;
-  
-   result.size                      = 0;
-
-   result.name                      = NULL;
-   result.name_hash                 = 0;
-   result.short_description         = NULL;
-   result.group                     = NULL;
-   result.subgroup                  = NULL;
-   result.parent_group              = NULL;
-   result.values                    = NULL;
-
-   result.index                     = 0;
-   result.index_offset              = 0;
-
-   result.min                       = 0.0;
-   result.max                       = 0.0;
-
-   result.flags                     = 0;
-   result.free_flags                = 0;
-
-   result.change_handler            = NULL;
-   result.read_handler              = NULL;
-   result.action_start              = NULL;
-   result.action_left               = NULL;
-   result.action_right              = NULL;
-   result.action_up                 = NULL;
-   result.action_down               = NULL;
-   result.action_cancel             = NULL;
-   result.action_ok                 = NULL;
-   result.action_select             = NULL;
-   result.get_string_representation = NULL;
-
-   result.bind_type                 = 0;
-   result.browser_selection_type    = ST_NONE;
-   result.step                      = 0.0f;
-   result.rounding_fraction         = NULL;
-   result.enforce_minrange          = false;
-   result.enforce_maxrange          = false;
-
-   result.cmd_trigger.idx           = CMD_EVENT_NONE;
-   result.cmd_trigger.triggered     = false;
-
-   result.dont_use_enum_idx_representation = false;
-
-   return result;
-}
 
 bool settings_list_append(rarch_setting_t **list,
       rarch_setting_info_t *list_info)
@@ -220,7 +166,6 @@ static int setting_uint_action_left_default(void *data, bool wraparound)
 
    (void)wraparound; /* TODO/FIXME - handle this */
 
-
    overflowed = setting->step > *setting->value.target.unsigned_integer;
 
    if (!overflowed)
@@ -257,7 +202,6 @@ static int setting_uint_action_right_default(void *data, bool wraparound)
    max = setting->max;
 
    (void)wraparound; /* TODO/FIXME - handle this */
-
 
    *setting->value.target.unsigned_integer =
       *setting->value.target.unsigned_integer + setting->step;
@@ -409,20 +353,32 @@ static int setting_fraction_action_left_default(
       void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
+   double               min = 0.0f;
    
    if (!setting)
       return -1;
 
+   min = setting->min;
+
    (void)wraparound; /* TODO/FIXME - handle this */
 
-   *setting->value.target.fraction =
-      *setting->value.target.fraction - setting->step;
+   *setting->value.target.fraction = *setting->value.target.fraction - setting->step;
 
    if (setting->enforce_minrange)
    {
-      double min = setting->min;
       if (*setting->value.target.fraction < min)
-         *setting->value.target.fraction = min;
+      {
+         settings_t *settings = config_get_ptr();
+
+#ifdef HAVE_MENU
+      double           max = setting->max;
+
+         if (settings && settings->bools.menu_navigation_wraparound_enable)
+            *setting->value.target.fraction = max;
+         else
+#endif
+            *setting->value.target.fraction = min;
+      }
    }
 
    return 0;
@@ -1081,26 +1037,34 @@ static rarch_setting_t setting_bind_setting(const char* name,
 
 static int setting_int_action_left_default(void *data, bool wraparound)
 {
-   double min               = 0.0f;
    rarch_setting_t *setting = (rarch_setting_t*)data;
+   double               min = 0.0f;
 
    if (!setting)
       return -1;
 
-   min               = setting->min;
+   min = setting->min;
 
    (void)wraparound; /* TODO/FIXME - handle this */
 
-   if (*setting->value.target.integer != min)
-      *setting->value.target.integer =
-         *setting->value.target.integer - setting->step;
+   *setting->value.target.integer = *setting->value.target.integer - setting->step;
 
    if (setting->enforce_minrange)
    {
       if (*setting->value.target.integer < min)
-         *setting->value.target.integer = min;
-   }
+      {
+         settings_t *settings = config_get_ptr();
 
+#ifdef HAVE_MENU
+      double           max = setting->max;
+
+         if (settings && settings->bools.menu_navigation_wraparound_enable)
+            *setting->value.target.integer = max;
+         else
+#endif
+            *setting->value.target.integer = min;
+      }
+   }
 
    return 0;
 }

@@ -773,16 +773,18 @@ CONTROLLER_PATCHER_RESULT_OR_ERROR ControllerPatcher::gettingInputAllDevices(Inp
     for(s32 i = 0;i < gHIDMaxDevices;i++){
         u8 * status = &output[result].status;
         *status = 0;
-        if(connectionOrderHelper[i] != NULL){
+        if(connectionOrderHelper[i].usr != NULL){
             *status = 1;
 
-            my_cb_user *  usr = connectionOrderHelper[i];
+            my_cb_user *  usr = connectionOrderHelper[i].usr;
             pad_count[usr] = pad_count[usr] +1;
             s32 hid = usr->slotdata.hidmask;
-            //printf("result[%d] usr: %08X\n",result,usr);
 
-            s32 realpad = pad_count[usr] - 1;
+            s32 realpad = connectionOrderHelper[i].pad_slot;
 
+            //printf("result[%d] usr: %08X hid: %08X realpad: %08X\n",result,usr,hid,realpad);
+
+            output[result].pad = realpad;
             output[result].device_info.pad_count = usr->pads_per_device;
             output[result].device_info.slotdata = usr->slotdata;
             output[result].device_info.vidpid = usr->vidpid;

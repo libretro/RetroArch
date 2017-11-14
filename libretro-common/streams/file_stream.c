@@ -61,29 +61,45 @@
 #include <fcntl.h>
 #endif
 
+/* Assume W-functions do not work below VC2005 and Xbox platforms */
+#if defined(_MSC_VER) && _MSC_VER < 1400 || defined(_XBOX)
+
+#ifndef LEGACY_WIN32
+#define LEGACY_WIN32
+#endif
+
+#endif
+
 #include <streams/file_stream.h>
+#include <string/stdstring.h>
 #include <memmap.h>
 #include <retro_miscellaneous.h>
+#include <encodings/utf.h>
 
 struct RFILE
 {
    unsigned hints;
    char *ext;
-   long long int size;
+   int64_t size;
+   FILE *fp;
 #if defined(PSP)
    SceUID fd;
 #else
 
 #define HAVE_BUFFERED_IO 1
 
+#if !defined(_WIN32) || defined(LEGACY_WIN32)
 #define MODE_STR_READ "r"
 #define MODE_STR_READ_UNBUF "rb"
 #define MODE_STR_WRITE_UNBUF "wb"
 #define MODE_STR_WRITE_PLUS "w+"
-
-#if defined(HAVE_BUFFERED_IO)
-   FILE *fp;
+#else
+#define MODE_STR_READ L"r"
+#define MODE_STR_READ_UNBUF L"rb"
+#define MODE_STR_WRITE_UNBUF L"wb"
+#define MODE_STR_WRITE_PLUS L"w+"
 #endif
+
 #if defined(HAVE_MMAP)
    uint8_t *mapped;
    uint64_t mappos;
@@ -92,6 +108,13 @@ struct RFILE
    int fd;
 #endif
 };
+
+FILE* filestream_get_fp(RFILE *stream)
+{
+   if (!stream)
+      return NULL;
+   return stream->fp;
+}
 
 int filestream_get_fd(RFILE *stream)
 {
@@ -111,7 +134,7 @@ const char *filestream_get_ext(RFILE *stream)
    return stream->ext;
 }
 
-long long int filestream_get_size(RFILE *stream)
+int64_t filestream_get_size(RFILE *stream)
 {
    if (!stream)
       return 0;
@@ -136,9 +159,17 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
    int            flags = 0;
    int         mode_int = 0;
 #if defined(HAVE_BUFFERED_IO)
+#if !defined(_WIN32) || defined(LEGACY_WIN32)
    const char *mode_str = NULL;
+#else
+   const wchar_t *mode_str = NULL;
+#endif
 #endif
    RFILE        *stream = (RFILE*)calloc(1, sizeof(*stream));
+#if defined(_WIN32) && !defined(_XBOX)
+   char       *path_local = NULL;
+   wchar_t    *path_wide = NULL;
+#endif
 
    if (!stream)
       return NULL;
@@ -227,7 +258,23 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
 #if defined(HAVE_BUFFERED_IO)
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0 && mode_str)
    {
+#if defined(_WIN32) && !defined(_XBOX)
+      (void)path_local;
+      (void)path_wide;
+#if defined(LEGACY_WIN32)
+      path_local = utf8_to_local_string_alloc(path);
+      stream->fp = fopen(path_local, mode_str);
+      if (path_local)
+         free(path_local);
+#else
+      path_wide = utf8_to_utf16_string_alloc(path);
+      stream->fp = _wfopen(path_wide, mode_str);
+      if (path_wide)
+         free(path_wide);
+#endif
+#else
       stream->fp = fopen(path, mode_str);
+#endif
       if (!stream->fp)
          goto error;
    }
@@ -235,7 +282,23 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
 #endif
    {
       /* FIXME: HAVE_BUFFERED_IO is always 1, but if it is ever changed, open() needs to be changed to _wopen() for WIndows. */
+#if defined(_WIN32) && !defined(_XBOX)
+#if defined(LEGACY_WIN32)
+      (void)path_wide;
+      path_local = utf8_to_local_string_alloc(path);
+      stream->fd = open(path_local, flags, mode_int);
+      if (path_local)
+         free(path_local);
+#else
+      (void)path_local;
+      path_wide = utf8_to_utf16_string_alloc(path);
+      stream->fd = _wopen(path_wide, flags, mode_int);
+      if (path_wide)
+         free(path_wide);
+#endif
+#else
       stream->fd = open(path, flags, mode_int);
+#endif
       if (stream->fd == -1)
          goto error;
 #ifdef HAVE_MMAP
@@ -267,7 +330,8 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
 
    {
       const char *ld = (const char*)strrchr(path, '.');
-      stream->ext    = strdup(ld ? ld + 1 : "");
+      if (ld)
+         stream->ext = strdup(ld + 1);
    }
 
    filestream_set_size(stream);
@@ -311,7 +375,7 @@ char *filestream_getline(RFILE *stream)
    }
 
    newline[idx] = '\0';
-   return newline; 
+   return newline;
 }
 
 char *filestream_gets(RFILE *stream, char *s, size_t len)
@@ -362,7 +426,7 @@ ssize_t filestream_seek(RFILE *stream, ssize_t offset, int whence)
 #endif
 
 #ifdef HAVE_MMAP
-   /* Need to check stream->mapped because this function is 
+   /* Need to check stream->mapped because this function is
     * called in filestream_open() */
    if (stream->mapped && stream->hints & RFILE_HINT_MMAP)
    {
@@ -409,14 +473,26 @@ error:
 
 int filestream_eof(RFILE *stream)
 {
+   return feof(stream->fp);
+
+   /* TODO: FIXME: I can't figure out why this breaks on Windows.
+      The while loop in config_file_new_internal just never exits.
+      The current position seems to jump backwards a few lines,
+      but it doesn't start until somewhere in the middle of the file.
+    */
+   /*
    size_t current_position = filestream_tell(stream);
-   size_t end_position     = filestream_seek(stream, 0, SEEK_END);
+   size_t end_position;
+
+   filestream_seek(stream, 0, SEEK_END);
+   end_position = filestream_tell(stream);
 
    filestream_seek(stream, current_position, SEEK_SET);
 
    if (current_position >= end_position)
       return 1;
    return 0;
+   */
 }
 
 ssize_t filestream_tell(RFILE *stream)
@@ -432,7 +508,7 @@ ssize_t filestream_tell(RFILE *stream)
       return ftell(stream->fp);
 #endif
 #ifdef HAVE_MMAP
-   /* Need to check stream->mapped because this function 
+   /* Need to check stream->mapped because this function
     * is called in filestream_open() */
    if (stream->mapped && stream->hints & RFILE_HINT_MMAP)
       return stream->mappos;
@@ -529,12 +605,45 @@ int filestream_putc(RFILE *stream, int c)
 #endif
 }
 
+int filestream_vprintf(RFILE *stream, const char* format, va_list args)
+{
+	static char buffer[8 * 1024];
+	int numChars = vsprintf(buffer, format, args);
+
+	if (numChars < 0)
+		return -1;
+	else if (numChars == 0)
+		return 0;
+
+	return filestream_write(stream, buffer, numChars);
+}
+
+int filestream_printf(RFILE *stream, const char* format, ...)
+{
+	va_list vl;
+   int result;
+	va_start(vl, format);
+	result = filestream_vprintf(stream, format, vl);
+	va_end(vl);
+	return result;
+}
+
+int filestream_error(RFILE *stream)
+{
+#if defined(HAVE_BUFFERED_IO)
+	return ferror(stream->fp);
+#else
+   /* stub */
+   return 0;
+#endif
+}
+
 int filestream_close(RFILE *stream)
 {
    if (!stream)
       goto error;
 
-   if (stream->ext)
+   if (!string_is_empty(stream->ext))
       free(stream->ext);
 
 #if  defined(PSP)

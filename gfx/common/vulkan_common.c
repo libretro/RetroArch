@@ -772,9 +772,12 @@ static void vulkan_check_dynamic_state(
 
    if (vk->tracker.dirty & VULKAN_DIRTY_DYNAMIC_BIT)
    {
-      const VkRect2D sci = {
-         { vk->vp.x, vk->vp.y },
-         { vk->vp.width, vk->vp.height }};
+      VkRect2D sci;
+      
+      sci.offset.x      = vk->vp.x;
+      sci.offset.y      = vk->vp.y;
+      sci.extent.width  = vk->vp.width;
+      sci.extent.height = vk->vp.height;
 
       vkCmdSetViewport(vk->cmd, 0, 1, &vk->vk_vp);
       vkCmdSetScissor (vk->cmd, 0, 1, &sci);
@@ -1144,8 +1147,15 @@ struct vk_buffer_chain vulkan_buffer_chain_init(
       VkDeviceSize alignment,
       VkBufferUsageFlags usage)
 {
-   struct vk_buffer_chain chain = { 
-      block_size, alignment, 0, usage, NULL, NULL };
+   struct vk_buffer_chain chain;
+   
+   chain.block_size = block_size;
+   chain.alignment  = alignment;
+   chain.offset     = 0;
+   chain.usage      = usage;
+   chain.head       = NULL;
+   chain.current    = NULL;
+
    return chain;
 }
 
@@ -1298,11 +1308,15 @@ end:
    return ret;
 }
 
-static bool vulkan_find_device_extensions(VkPhysicalDevice gpu, const char **exts, unsigned num_exts)
+static bool vulkan_find_device_extensions(VkPhysicalDevice gpu,
+      const char **enabled, unsigned *enabled_count,
+      const char **exts, unsigned num_exts,
+      const char **optional_exts, unsigned num_optional_exts)
 {
    bool ret = true;
    VkExtensionProperties *properties = NULL;
    uint32_t property_count;
+   unsigned i;
 
    if (vkEnumerateDeviceExtensionProperties(gpu, NULL, &property_count, NULL) != VK_SUCCESS)
       return false;
@@ -1322,10 +1336,17 @@ static bool vulkan_find_device_extensions(VkPhysicalDevice gpu, const char **ext
 
    if (!vulkan_find_extensions(exts, num_exts, properties, property_count))
    {
-      RARCH_ERR("[Vulkan]: Could not find device extensions. Will attempt without them.\n");
+      RARCH_ERR("[Vulkan]: Could not find device extension. Will attempt without it.\n");
       ret = false;
       goto end;
    }
+
+   memcpy(enabled, exts, num_exts * sizeof(*exts));
+   *enabled_count = num_exts;
+
+   for (i = 0; i < num_optional_exts; i++)
+      if (vulkan_find_extensions(&optional_exts[i], 1, properties, property_count))
+         enabled[(*enabled_count)++] = optional_exts[i];
 
 end:
    free(properties);
@@ -1386,8 +1407,15 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
    VkDeviceQueueCreateInfo queue_info = { VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO };
    VkDeviceCreateInfo device_info     = { VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO };
 
+   const char *enabled_device_extensions[8];
+   unsigned enabled_device_extension_count = 0;
+
    static const char *device_extensions[] = {
       "VK_KHR_swapchain",
+   };
+
+   static const char *optional_device_extensions[] = {
+      "VK_KHR_sampler_mirror_clamp_to_edge",
    };
 
 #ifdef VULKAN_DEBUG
@@ -1487,12 +1515,13 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 
       for (i = 0; i < queue_count; i++)
       {
+         VkQueueFlags required;
          VkBool32 supported = VK_FALSE;
          vkGetPhysicalDeviceSurfaceSupportKHR(
                vk->context.gpu, i,
                vk->vk_surface, &supported);
 
-         VkQueueFlags required = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;
+         required = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;
          if (supported && ((queue_properties[i].queueFlags & required) == required))
          {
             vk->context.graphics_queue_index = i;
@@ -1512,7 +1541,15 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       }
 
       use_device_ext = vulkan_find_device_extensions(vk->context.gpu,
-            device_extensions, ARRAY_SIZE(device_extensions));
+              enabled_device_extensions, &enabled_device_extension_count,
+              device_extensions, ARRAY_SIZE(device_extensions),
+              optional_device_extensions, ARRAY_SIZE(optional_device_extensions));
+
+      if (!use_device_ext)
+      {
+          RARCH_ERR("[Vulkan]: Could not find required device extensions.\n");
+          return false;
+      }
 
       queue_info.queueFamilyIndex         = vk->context.graphics_queue_index;
       queue_info.queueCount               = 1;
@@ -1520,8 +1557,8 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 
       device_info.queueCreateInfoCount    = 1;
       device_info.pQueueCreateInfos       = &queue_info;
-      device_info.enabledExtensionCount   = use_device_ext ? ARRAY_SIZE(device_extensions) : 0;
-      device_info.ppEnabledExtensionNames = use_device_ext ? device_extensions : NULL;
+      device_info.enabledExtensionCount   = enabled_device_extension_count;
+      device_info.ppEnabledExtensionNames = enabled_device_extension_count ? enabled_device_extensions : NULL;
       device_info.pEnabledFeatures        = &features;
 #ifdef VULKAN_DEBUG
       device_info.enabledLayerCount       = ARRAY_SIZE(device_layers);
@@ -1573,6 +1610,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
 {
    unsigned i;
    VkResult res;
+   PFN_vkGetInstanceProcAddr GetInstanceProcAddr;
    VkInstanceCreateInfo info          = { VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO };
    VkApplicationInfo app              = { VK_STRUCTURE_TYPE_APPLICATION_INFO };
 
@@ -1647,7 +1685,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
 
    RARCH_LOG("Vulkan dynamic library loaded.\n");
    
-   PFN_vkGetInstanceProcAddr GetInstanceProcAddr =
+   GetInstanceProcAddr =
       (PFN_vkGetInstanceProcAddr)dylib_proc(vulkan_library, "vkGetInstanceProcAddr");
 
    if (!GetInstanceProcAddr)
@@ -2018,10 +2056,11 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
       case VULKAN_WSI_WIN32:
 #ifdef _WIN32
          {
+            VkWin32SurfaceCreateInfoKHR surf_info;
             PFN_vkCreateWin32SurfaceKHR create;
+
             if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(vk->context.instance, "vkCreateWin32SurfaceKHR", create))
                return false;
-            VkWin32SurfaceCreateInfoKHR surf_info;
 
             memset(&surf_info, 0, sizeof(surf_info));
 

@@ -60,13 +60,13 @@ typedef struct file_archive_file_data file_archive_file_data_t;
 
 typedef struct file_archive_transfer
 {
+   enum file_archive_transfer_type type;
+   int32_t archive_size;
    file_archive_file_data_t *handle;
    void *stream;
    const uint8_t *footer;
    const uint8_t *directory;
    const uint8_t *data;
-   int32_t archive_size;
-   enum file_archive_transfer_type type;
    const struct file_archive_file_backend *backend;
 } file_archive_transfer_t;
 

@@ -1,5 +1,3 @@
-#<maister> echo -n is broken on recent OSX btw
-
 MAKEFILE_DEFINES='.MAKEFILE_DEFINES'
 CONFIG_DEFINES='.CONFIG_DEFINES'
 cat /dev/null > "$MAKEFILE_DEFINES" > "$CONFIG_DEFINES"
@@ -14,66 +12,63 @@ add_define_make()
 { echo "$1=$2" >> "$MAKEFILE_DEFINES";}
 
 add_include_dirs()
-{	while [ "$1" ]; do INCLUDE_DIRS="$INCLUDE_DIRS -I$1"; shift; done;}
-
-add_library_dirs()
-{	while [ "$1" ]; do LIBRARY_DIRS="$LIBRARY_DIRS -L$1"; shift; done;}
-
-check_lib()	#$1 = HAVE_$1	$2 = lib	$3 = function in lib	$4 = extralibs $5 = headers
-{	tmpval="$(eval echo \$HAVE_$1)"
-	[ "$tmpval" = 'no' ] && return 0
-
-	if [ "$3" ]; then
-		ECHOBUF="Checking function $3 in ${2% }"
-		if [ "$5" ]; then
-			printf "$5\nint main(void) { void *p = (void*)$3; return 0; }" > $TEMP_C
-		else
-			echo "void $3(void); int main(void) { $3(); return 0; }" > $TEMP_C
-		fi
-	else
-		ECHOBUF="Checking existence of ${2% }"
-		echo "int main(void) { return 0; }" > $TEMP_C
-	fi
-	answer='no'
-#	echo -n "$ECHOBUF"
-	"$CC" -o "$TEMP_EXE" "$TEMP_C" $INCLUDE_DIRS $LIBRARY_DIRS $4 $CFLAGS $LDFLAGS $2 >>config.log 2>&1 && answer='yes'
-	eval HAVE_$1="$answer"; echo "$ECHOBUF ... $answer"
-	rm "$TEMP_C" "$TEMP_EXE" >/dev/null 2>&1
-	
-	[ "$tmpval" = 'yes' ] && [ "$answer" = 'no' ] && {
-		echo "Forced to build with library $2, but cannot locate. Exiting ..."
-		exit 1
-	}
-
-	true
+{	while [ "$1" ]; do INCLUDE_DIRS="$INCLUDE_DIRS -I$1"; shift; done
+	INCLUDE_DIRS="${INCLUDE_DIRS# }"
 }
 
-check_lib_cxx()	#$1 = HAVE_$1	$2 = lib	$3 = function in lib	$4 = extralibs	$5 = critical error message [checked only if non-empty]
-{	tmpval="$(eval echo \$HAVE_$1)"
+add_library_dirs()
+{	while [ "$1" ]; do LIBRARY_DIRS="$LIBRARY_DIRS -L$1"; shift; done
+	LIBRARY_DIRS="${LIBRARY_DIRS# }"
+}
+
+check_lib() # $1 = language  $2 = HAVE_$2  $3 = lib  $4 = function in lib  $5 = extralibs $6 = headers $7 = critical error message [checked only if non-empty]
+{	tmpval="$(eval echo \$HAVE_$2)"
 	[ "$tmpval" = 'no' ] && return 0
 
-	if [ "$3" ]; then
-		ECHOBUF="Checking function $3 in ${2% }"
-		echo "extern \"C\" { void $3(void); } int main() { $3(); }" > $TEMP_CXX
+	if [ "$1" = cxx ]; then
+		COMPILER="$CXX"
+		TEMP_CODE="$TEMP_CXX"
+		TEST_C="extern \"C\" { void $4(void); } int main() { $4(); }"
 	else
-		ECHOBUF="Checking existence of ${2% }"
-		echo "int main() { return 0; }" > $TEMP_CXX
+		COMPILER="$CC"
+		TEMP_CODE="$TEMP_C"
+		TEST_C="void $4(void); int main(void) { $4(); return 0; }"
+	fi
+
+	if [ "$4" ]; then
+		ECHOBUF="Checking function $4 in ${3% }"
+		if [ "$6" ]; then
+			printf %s\\n "$6" "int main(void) { void *p = (void*)$4; return 0; }" > "$TEMP_CODE"
+		else
+			echo "$TEST_C" > "$TEMP_CODE"
+		fi
+	else
+		ECHOBUF="Checking existence of ${3% }"
+		echo "int main(void) { return 0; }" > "$TEMP_CODE"
 	fi
 	answer='no'
-#	echo -n "$ECHOBUF"
-	"$CXX" -o "$TEMP_EXE" "$TEMP_CXX" $INCLUDE_DIRS $LIBRARY_DIRS $4 $CFLAGS $LDFLAGS $2 >>config.log 2>&1 && answer='yes'
-	eval HAVE_$1="$answer"; echo "$ECHOBUF ... $answer"
-	rm "$TEMP_CXX" "$TEMP_EXE" >/dev/null 2>&1
+	"$COMPILER" -o \
+		"$TEMP_EXE" \
+		"$TEMP_CODE" \
+		$INCLUDE_DIRS \
+		$LIBRARY_DIRS \
+		$(printf %s "$5") \
+		$CFLAGS \
+		$LDFLAGS \
+		$(printf %s "$3") >>config.log 2>&1 && answer='yes'
+	eval HAVE_$2="$answer"; echo "$ECHOBUF ... $answer"
+	rm -f -- "$TEMP_CODE" "$TEMP_EXE"
+
 	[ "$answer" = 'no' ] && {
-		[ "$5" ] && { echo "$5"; exit 1;}
+		[ "$7" ] && { echo "$7"; exit 1;}
 		[ "$tmpval" = 'yes' ] && {
-			echo "Forced to build with library $2, but cannot locate. Exiting ..."
+			echo "Forced to build with library $3, but cannot locate. Exiting ..."
 			exit 1
 		}
-	
+
 	}
 
-	true
+	return 0
 }
 
 check_code_c()
@@ -81,11 +76,10 @@ check_code_c()
 	[ "$tmpval" = 'no' ] && return 0
 
 	ECHOBUF="Checking C code snippet \"$3\""
-#	echo -n "Checking C code snippet \"$3\""
 	answer='no'
 	"$CC" -o "$TEMP_EXE" "$TEMP_C" $INCLUDE_DIRS $LIBRARY_DIRS $2 $CFLAGS $LDFLAGS >>config.log 2>&1 && answer='yes'
 	eval HAVE_$1="$answer"; echo "$ECHOBUF ... $answer"
-	rm "$TEMP_C" "$TEMP_EXE" >/dev/null 2>&1
+	rm -f -- "$TEMP_C" "$TEMP_EXE"
 }
 
 check_code_cxx()
@@ -93,11 +87,10 @@ check_code_cxx()
 	[ "$tmpval" = 'no' ] && return 0
 
 	ECHOBUF="Checking C++ code snippet \"$3\""
-#	echo -n "Checking C++ code snippet \"$3\""
 	answer='no'
 	"$CXX" -o "$TEMP_EXE" "$TEMP_CXX" $INCLUDE_DIRS $LIBRARY_DIRS $2 $CXXFLAGS $LDFLAGS >>config.log 2>&1 && answer='yes'
 	eval HAVE_$1="$answer"; echo "$ECHOBUF ... $answer"
-	rm "$TEMP_CXX" "$TEMP_EXE" >/dev/null 2>&1
+	rm -f -- "$TEMP_CXX" "$TEMP_EXE"
 }
 
 check_pkgconf()	#$1 = HAVE_$1	$2 = package	$3 = version	$4 = critical error message [checked only if non-empty]
@@ -138,7 +131,6 @@ check_header()	#$1 = HAVE_$1	$2..$5 = header files
 {	tmpval="$(eval echo \$HAVE_$1)"
 	[ "$tmpval" = 'no' ] && return 0
 	CHECKHEADER="$2"
-#	echo -n "Checking presence of header file $2"
 	echo "#include <$2>" > "$TEMP_C"
 	[ "$3" != "" ] && CHECKHEADER="$3" && echo "#include <$3>" >> "$TEMP_C"
 	[ "$4" != "" ] && CHECKHEADER="$4" && echo "#include <$4>" >> "$TEMP_C"
@@ -147,7 +139,7 @@ check_header()	#$1 = HAVE_$1	$2..$5 = header files
 	answer='no'
 	"$CC" -o "$TEMP_EXE" "$TEMP_C" $INCLUDE_DIRS >>config.log 2>&1 && answer='yes'
 	eval HAVE_$1="$answer"; echo "Checking presence of header file $CHECKHEADER ... $answer"
-	rm "$TEMP_C" "$TEMP_EXE" >/dev/null 2>&1
+	rm -f -- "$TEMP_C" "$TEMP_EXE"
 	[ "$tmpval" = 'yes' ] && [ "$answer" = 'no' ] && {
 		echo "Build assumed that $2 exists, but cannot locate. Exiting ..."
 		exit 1
@@ -158,7 +150,6 @@ check_macro()	#$1 = HAVE_$1	$2 = macro name
 {	tmpval="$(eval echo \$HAVE_$1)"
 	[ "$tmpval" = 'no' ] && return 0
 	ECHOBUF="Checking presence of predefined macro $2"
-#	echo -n "Checking presence of predefined macro $2"
 	cat << EOF > "$TEMP_C"
 #ifndef $2
 #error $2 is not defined
@@ -168,7 +159,7 @@ EOF
 	answer='no'
 	"$CC" -o "$TEMP_EXE" "$TEMP_C" $CFLAGS $INCLUDE_DIRS >>config.log 2>&1 && answer='yes'
 	eval HAVE_$1="$answer"; echo "$ECHOBUF ... $answer"
-	rm "$TEMP_C" "$TEMP_EXE" >/dev/null 2>&1
+	rm -f -- "$TEMP_C" "$TEMP_EXE"
 	[ "$tmpval" = 'yes' ] && [ "$answer" = 'no' ] && {
 		echo "Build assumed that $2 is defined, but it's not. Exiting ..."
 		exit 1
@@ -177,12 +168,11 @@ EOF
 
 check_switch_c()	#$1 = HAVE_$1	$2 = switch	$3 = critical error message [checked only if non-empty]
 {	ECHOBUF="Checking for availability of switch $2 in $CC"
-#	echo -n "Checking for availability of switch $2 in $CC "
 	echo "int main(void) { return 0; }" > $TEMP_C
 	answer='no'
 	"$CC" -o "$TEMP_EXE" "$TEMP_C" $2 >>config.log 2>&1 && answer='yes'
 	eval HAVE_$1="$answer"; echo "$ECHOBUF ... $answer"
-	rm "$TEMP_C" "$TEMP_EXE" >/dev/null 2>&1
+	rm -f -- "$TEMP_C" "$TEMP_EXE"
 	[ "$answer" = 'no' ] && {
 		[ "$3" ] && { echo "$3"; exit 1;}
 	}
@@ -190,12 +180,11 @@ check_switch_c()	#$1 = HAVE_$1	$2 = switch	$3 = critical error message [checked 
 
 check_switch_cxx()	#$1 = HAVE_$1	$2 = switch	$3 = critical error message [checked only if non-empty]
 {	ECHOBUF="Checking for availability of switch $2 in $CXX"
-#	echo -n "Checking for availability of switch $2 in $CXX"
 	echo "int main() { return 0; }" > $TEMP_CXX
 	answer='no'
 	"$CXX" -o "$TEMP_EXE" "$TEMP_CXX" "$2" >>config.log 2>&1 && answer='yes'
 	eval HAVE_$1="$answer"; echo "$ECHOBUF ... $answer"
-	rm "$TEMP_CXX" "$TEMP_EXE" >/dev/null 2>&1
+	rm -f -- "$TEMP_CXX" "$TEMP_EXE"
 	[ "$answer" = 'no' ] && {
 		[ "$3" ] && { echo "$3"; exit 1;}
 	}
@@ -262,8 +251,10 @@ create_config_make()
 			
 			case "$PKG_CONF_USED" in
 				*$1*)
-					echo "$1_CFLAGS = $(eval echo \$$1_CFLAGS)"
-					echo "$1_LIBS = $(eval echo \$$1_LIBS)"
+					FLAGS="$(eval echo \$$1_CFLAGS)"
+					LIBS="$(eval echo \$$1_LIBS)"
+					echo "$1_CFLAGS = ${FLAGS%"${FLAGS##*[! ]}"}"
+					echo "$1_LIBS = ${LIBS%"${LIBS##*[! ]}"}"
 				;;
 			esac
 			shift
@@ -275,4 +266,4 @@ create_config_make()
 
 . qb/config.libs.sh
 
-rm "$MAKEFILE_DEFINES" "$CONFIG_DEFINES"
+rm -f -- "$MAKEFILE_DEFINES" "$CONFIG_DEFINES"

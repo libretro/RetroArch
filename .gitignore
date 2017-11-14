@@ -110,3 +110,5 @@ obj-unix/
 /pkg/msvc/msvc-2010/Release Cg/*.obj
 /pkg/msvc/msvc-2010/Release Cg/*.res
 /pkg/msvc/msvc-2010/Release Cg/*.pdb
+
+retroarch.cfg

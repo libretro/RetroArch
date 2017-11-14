@@ -28,7 +28,7 @@
 #include "../menu_shader.h"
 
 #include "../../tasks/tasks_internal.h"
-#include "../../input/input_config.h"
+#include "../../input/input_driver.h"
 
 #include "../../core.h"
 #include "../../core_info.h"
@@ -39,6 +39,7 @@
 #include "../../performance_counters.h"
 #include "../../paths.h"
 #include "../../retroarch.h"
+#include "../../verbosity.h"
 #include "../../wifi/wifi_driver.h"
 
 #ifndef BIND_ACTION_GET_VALUE
@@ -46,6 +47,8 @@
    cbs->action_get_value = name; \
    cbs->action_get_value_ident = #name;
 #endif
+
+extern struct key_desc key_descriptors[MENU_SETTINGS_INPUT_DESC_KBD_END];
 
 static void menu_action_setting_disp_set_label_cheat_num_passes(
       file_list_t* list,
@@ -104,7 +107,7 @@ static void menu_action_setting_disp_set_label_remap_file_load(
 
    *w = 19;
    strlcpy(s2, path, len2);
-   if (global)
+   if (global && !string_is_empty(global->name.remapfile))
       fill_pathname_base(s, global->name.remapfile,
             len);
 }
@@ -485,6 +488,40 @@ static void menu_action_setting_disp_set_label_input_desc(
 
 }
 
+#ifdef HAVE_KEYMAPPER
+static void menu_action_setting_disp_set_label_input_desc_kbd(
+   file_list_t* list,
+   unsigned *w, unsigned type, unsigned i,
+   const char *label,
+   char *s, size_t len,
+   const char *entry_label,
+   const char *path,
+   char *s2, size_t len2)
+{
+   char desc[PATH_MAX_LENGTH];
+   unsigned key_id;
+   unsigned remap_id;
+   settings_t *settings = config_get_ptr();
+
+   if (!settings)
+      return;
+
+   remap_id = 
+      settings->uints.input_keymapper_ids[type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN];
+
+   for (key_id = 0; key_id < MENU_SETTINGS_INPUT_DESC_KBD_END - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN; key_id++)
+   {
+      if(remap_id == key_descriptors[key_id].key)
+         break;
+   }
+   snprintf(desc, sizeof(desc), "Keyboard %s", key_descriptors[key_id].desc);
+   strlcpy(s, desc, len);
+
+   *w = 19;
+   strlcpy(s2, path, len2);
+}
+#endif
+
 static void menu_action_setting_disp_set_label_cheat(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -520,14 +557,10 @@ static void menu_action_setting_disp_set_label_perf_counters_common(
       return;
 
    snprintf(s, len,
-#ifdef _WIN32
-         "%I64u ticks, %I64u runs.",
-#else
-         "%llu ticks, %llu runs.",
-#endif
-         ((unsigned long long)counters[offset]->total /
-          (unsigned long long)counters[offset]->call_cnt),
-         (unsigned long long)counters[offset]->call_cnt);
+         STRING_REP_UINT64 " ticks, " STRING_REP_UINT64 " runs.",
+         ((uint64_t)counters[offset]->total /
+          (uint64_t)counters[offset]->call_cnt),
+         (uint64_t)counters[offset]->call_cnt);
 }
 
 static void general_disp_set_label_perf_counters(
@@ -588,7 +621,8 @@ static void menu_action_setting_disp_set_label_menu_more(
 {
    strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MORE), len);
    *w = 19;
-   strlcpy(s2, path, len2);
+   if (!string_is_empty(path))
+      strlcpy(s2, path, len2);
 }
 
 static void menu_action_setting_disp_set_label_db_entry(
@@ -602,7 +636,8 @@ static void menu_action_setting_disp_set_label_db_entry(
 {
    strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MORE), len);
    *w = 10;
-   strlcpy(s2, path, len2);
+   if (!string_is_empty(path))
+      strlcpy(s2, path, len2);
 }
 
 static void menu_action_setting_disp_set_label_entry(
@@ -1482,6 +1517,25 @@ static void menu_action_setting_disp_set_label_no_items(
    strlcpy(s2, path, len2);
 }
 
+static void menu_action_setting_disp_set_label_video_msg_color(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   rarch_setting_t *setting = menu_setting_find(list->list[i].label);
+
+   if (!setting)
+      return;
+
+   *w = 19;
+
+   snprintf(s, len, "%d", (int)(*setting->value.target.fraction * 255.0f));
+}
+
 static void menu_action_setting_disp_set_label(file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
       const char *label,
@@ -1687,6 +1741,12 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_menu_more);
             break;
+         case MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_RED:
+         case MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_GREEN:
+         case MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_BLUE:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_video_msg_color);
+            break;
          default:
             return - 1;
       }
@@ -1726,6 +1786,14 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
       BIND_ACTION_GET_VALUE(cbs,
          menu_action_setting_disp_set_label_libretro_perf_counters);
    }
+#ifdef HAVE_KEYMAPPER
+   else if (type >= MENU_SETTINGS_INPUT_DESC_KBD_BEGIN
+      && type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
+   {
+      BIND_ACTION_GET_VALUE(cbs,
+         menu_action_setting_disp_set_label_input_desc_kbd);
+   }
+#endif
    else
    {
       switch (type)

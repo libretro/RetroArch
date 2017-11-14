@@ -5,6 +5,10 @@ DEBUG                = 0
 GRIFFIN_BUILD        = 0
 WHOLE_ARCHIVE_LINK   = 0
 
+ifneq ($(V), 1)
+   Q := @
+endif
+
 PC_DEVELOPMENT_IP_ADDRESS  ?=
 PC_DEVELOPMENT_TCP_PORT	   ?=
 
@@ -52,6 +56,7 @@ else
 	HAVE_ZLIB = 1
 	HAVE_7ZIP = 1
 	HAVE_BUILTINZLIB = 1
+	HAVE_KEYMAPPER = 1
 	HAVE_LIBRETRODB = 1
 	HAVE_ZARCH = 0
 	HAVE_MATERIALUI = 1
@@ -61,6 +66,7 @@ else
 	HAVE_LANGEXTRA = 1
 	HAVE_LIBRETRODB = 1
 	HAVE_NETWORKING = 1
+	HAVE_CHEEVOS = 1
 #	WANT_IFADDRS = 1
 
 	include Makefile.common
@@ -97,6 +103,7 @@ else
 	OBJ += libretro-common/audio/dsp_filters/wahwah.o
 endif
 
+DEFINES += -DHAVE_KEYMAPPER
 
 ifeq ($(strip $(DEVKITPPC)),)
 $(error "Please set DEVKITPPC in your environment. export DEVKITPPC=<path to>devkitPPC")
@@ -127,7 +134,7 @@ else
 endif
 
 
-INCDIRS := -I. -Ideps/libz -Ideps/7zip -Ilibretro-common/include -Iwiiu -Iwiiu/include -I$(DEVKITPRO)/portlibs/ppc/include
+INCDIRS := -I. -Ideps -Ideps/stb -Ideps/libz -Ideps/7zip -Ilibretro-common/include -Iwiiu -Iwiiu/include -I$(DEVKITPRO)/portlibs/ppc/include
 LIBDIRS := -L. -L$(DEVKITPRO)/portlibs/ppc/lib
 
 CFLAGS  := -mwup -mcpu=750 -meabi -mhard-float
@@ -199,41 +206,50 @@ all: $(TARGETS)
 
 %.o: %.cpp
 %.o: %.cpp %.depend
-	$(CXX) -c -o $@ $< $(CXXFLAGS) $(INCDIRS) $(DEPFLAGS)
-	$(POSTCOMPILE)
+	@$(if $(Q), echo CXX $<,)
+	$(Q)$(CXX) -c -o $@ $< $(CXXFLAGS) $(INCDIRS) $(DEPFLAGS)
+	$(Q)$(POSTCOMPILE)
 
 %.o: %.c
 %.o: %.c %.depend
-	$(CC) -c -o $@ $< $(CFLAGS) $(INCDIRS) $(DEPFLAGS)
-	$(POSTCOMPILE)
+	@$(if $(Q), echo CC $<,)
+	$(Q)$(CC) -c -o $@ $< $(CFLAGS) $(INCDIRS) $(DEPFLAGS)
+	$(Q)$(POSTCOMPILE)
 
 
 %.o: %.S
 %.o: %.S %.depend
-	$(CC) -c -o $@ $< $(ASFLAGS) $(INCDIRS) $(DEPFLAGS)
-	$(POSTCOMPILE)
+	@$(if $(Q), echo AS $<,)
+	$(Q)$(CC) -c -o $@ $< $(ASFLAGS) $(INCDIRS) $(DEPFLAGS)
+	$(Q)$(POSTCOMPILE)
 
 %.o: %.s
 %.o: %.s %.depend
-	$(CC) -c -o $@ $< $(ASFLAGS) $(INCDIRS) $(DEPFLAGS)
-	$(POSTCOMPILE)
+	@$(if $(Q), echo AS $<,)
+	$(Q)$(CC) -c -o $@ $< $(ASFLAGS) $(INCDIRS) $(DEPFLAGS)
+	$(Q)$(POSTCOMPILE)
 %.a:
-	$(AR) -rc $@ $^
+	@$(if $(Q), echo AR $<,)
+	$(Q)$(AR) -rc $@ $^
 
 %.depend: ;
 
 
 $(ELF2RPL):
-	$(MAKE) -C wiiu/wut/elf2rpl/
+	@$(if $(Q), echo MAKE $@,)
+	$(Q)$(MAKE) -C wiiu/wut/elf2rpl/
 
 $(TARGET).elf: $(OBJ) $(HBL_ELF_OBJ) libretro_wiiu.a wiiu/link_elf.ld
-	$(LD) $(OBJ) $(HBL_ELF_OBJ) $(LDFLAGS) $(HBL_ELF_LDFLAGS) $(LIBDIRS) $(LIBS) -o $@
+	@$(if $(Q), echo LD $@,)
+	$(Q)$(LD) $(OBJ) $(HBL_ELF_OBJ) $(LDFLAGS) $(HBL_ELF_LDFLAGS) $(LIBDIRS) $(LIBS) -o $@
 
 $(TARGET).rpx.elf: $(OBJ) $(RPX_OBJ) libretro_wiiu.a wiiu/link_elf.ld
-	$(LD) $(OBJ) $(RPX_OBJ) $(LDFLAGS) $(RPX_LDFLAGS) $(LIBDIRS)  $(LIBS) -o $@
+	@$(if $(Q), echo LD $@,)
+	$(Q)$(LD) $(OBJ) $(RPX_OBJ) $(LDFLAGS) $(RPX_LDFLAGS) $(LIBDIRS)  $(LIBS) -o $@
 
 $(TARGET).rpx: $(TARGET).rpx.elf $(ELF2RPL)
-	-$(ELF2RPL) $(TARGET).rpx.elf $@
+	@$(if $(Q), echo ELF2RPL $@,)
+	$(Q)-$(ELF2RPL) $(TARGET).rpx.elf $@
 
 clean:
 	rm -f $(OBJ) $(RPX_OBJ) $(HBL_ELF_OBJ) $(TARGET).elf $(TARGET).rpx.elf $(TARGET).rpx

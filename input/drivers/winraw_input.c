@@ -22,14 +22,6 @@
 #include "../../gfx/video_driver.h"
 #include "../../verbosity.h"
 
-#define WINRAW_LOG(msg) RARCH_LOG("[WINRAW]: "msg"\n")
-#define WINRAW_ERR(err) RARCH_ERR("[WINRAW]: "err"\n")
-
-#define WINRAW_SYS_WRN(fun)\
-      RARCH_WARN("[WINRAW]: "fun" failed with error %lu.\n", GetLastError())
-#define WINRAW_SYS_ERR(fun)\
-      RARCH_ERR("[WINRAW]: "fun" failed with error %lu.\n", GetLastError())
-
 typedef struct
 {
    uint8_t keys[256];
@@ -45,17 +37,20 @@ typedef struct
 
 typedef struct
 {
-   winraw_keyboard_t keyboard;
-   winraw_mouse_t *mice;
-   const input_device_driver_t *joypad;
-   HWND window;
    bool kbd_mapp_block;
    bool mouse_grab;
+   winraw_keyboard_t keyboard;
+   HWND window;
+   winraw_mouse_t *mice;
+   const input_device_driver_t *joypad;
 } winraw_input_t;
 
 static winraw_keyboard_t *g_keyboard = NULL;
 static winraw_mouse_t *g_mice        = NULL;
 static unsigned g_mouse_cnt          = 0;
+static bool g_mouse_xy_mapping_ready = false;
+static double g_view_abs_ratio_x     = 0.0;
+static double g_view_abs_ratio_y     = 0.0;
 
 static HWND winraw_create_window(WNDPROC wnd_proc)
 {
@@ -66,7 +61,7 @@ static HWND winraw_create_window(WNDPROC wnd_proc)
 
    if (!wc.hInstance)
    {
-      WINRAW_SYS_ERR("GetModuleHandleA");
+      RARCH_ERR("[WINRAW]: GetModuleHandleA failed with error %lu.\n", GetLastError());
       return NULL;
    }
 
@@ -74,7 +69,7 @@ static HWND winraw_create_window(WNDPROC wnd_proc)
    wc.lpszClassName = "winraw-input";
    if (!RegisterClassA(&wc) && GetLastError() != ERROR_CLASS_ALREADY_EXISTS)
    {
-      WINRAW_SYS_ERR("RegisterClassA");
+      RARCH_ERR("[WINRAW]: RegisterClassA failed with error %lu.\n", GetLastError());
       return NULL;
    }
 
@@ -82,7 +77,7 @@ static HWND winraw_create_window(WNDPROC wnd_proc)
          HWND_MESSAGE, NULL, NULL, NULL);
    if (!wnd)
    {
-      WINRAW_SYS_ERR("CreateWindowExA");
+      RARCH_ERR("[WINRAW]: CreateWindowExA failed with error %lu.\n", GetLastError());
       goto error;
    }
 
@@ -103,12 +98,16 @@ static void winraw_destroy_window(HWND wnd)
    r = DestroyWindow(wnd);
 
    if (!r)
-      WINRAW_SYS_WRN("DestroyWindow");
+   {
+      RARCH_WARN("[WINRAW]: DestroyWindow failed with error %lu.\n", GetLastError());
+   }
 
    r = UnregisterClassA("winraw-input", NULL);
 
    if (!r)
-      WINRAW_SYS_WRN("UnregisterClassA");
+   {
+      RARCH_WARN("[WINRAW]: UnregisterClassA failed with error %lu.\n", GetLastError());
+   }
 }
 
 static bool winraw_set_keyboard_input(HWND window)
@@ -125,7 +124,7 @@ static bool winraw_set_keyboard_input(HWND window)
 
    if (!r)
    {
-      WINRAW_SYS_ERR("RegisterRawInputDevices");
+      RARCH_ERR("[WINRAW]: RegisterRawInputDevices failed with error %lu.\n", GetLastError());
       return false;
    }
 
@@ -134,10 +133,10 @@ static bool winraw_set_keyboard_input(HWND window)
 
 static void winraw_log_mice_info(winraw_mouse_t *mice, unsigned mouse_cnt)
 {
-   char name[256];
-   UINT name_size = sizeof(name);
    UINT r;
    unsigned i;
+   char name[256];
+   UINT name_size = sizeof(name);
 
    for (i = 0; i < mouse_cnt; ++i)
    {
@@ -150,31 +149,29 @@ static void winraw_log_mice_info(winraw_mouse_t *mice, unsigned mouse_cnt)
 
 static bool winraw_init_devices(winraw_mouse_t **mice, unsigned *mouse_cnt)
 {
-   UINT r, i;
+   UINT i;
    POINT crs_pos;
    winraw_mouse_t *mice_r   = NULL;
    unsigned mouse_cnt_r     = 0;
    RAWINPUTDEVICELIST *devs = NULL;
    UINT dev_cnt             = 0;
+   UINT r                   = GetRawInputDeviceList(
+         NULL, &dev_cnt, sizeof(RAWINPUTDEVICELIST));
 
-   r = GetRawInputDeviceList(NULL, &dev_cnt, sizeof(RAWINPUTDEVICELIST));
    if (r == (UINT)-1)
    {
-      WINRAW_SYS_ERR("GetRawInputDeviceList");
+      RARCH_ERR("[WINRAW]: GetRawInputDeviceList failed with error %lu.\n", GetLastError());
       goto error;
    }
 
    devs = (RAWINPUTDEVICELIST*)malloc(dev_cnt * sizeof(RAWINPUTDEVICELIST));
    if (!devs)
-   {
-      WINRAW_ERR("malloc failed");
       goto error;
-   }
 
    dev_cnt = GetRawInputDeviceList(devs, &dev_cnt, sizeof(RAWINPUTDEVICELIST));
    if (dev_cnt == (UINT)-1)
    {
-      WINRAW_SYS_ERR("GetRawInputDeviceList");
+      RARCH_ERR("[WINRAW]: GetRawInputDeviceList failed with error %lu.\n", GetLastError());
       goto error;
    }
 
@@ -188,10 +185,7 @@ static bool winraw_init_devices(winraw_mouse_t **mice, unsigned *mouse_cnt)
          goto error;
 
       if (!GetCursorPos(&crs_pos))
-      {
-         WINRAW_SYS_WRN("GetCursorPos");
          goto error;
-      }
 
       for (i = 0; i < mouse_cnt_r; ++i)
       {
@@ -240,7 +234,7 @@ static bool winraw_set_mouse_input(HWND window, bool grab)
 
    if (!r)
    {
-      WINRAW_SYS_ERR("RegisterRawInputDevices");
+      RARCH_ERR("[WINRAW]: RegisterRawInputDevice failed with error %lu.\n", GetLastError());
       return false;
    }
 
@@ -304,14 +298,91 @@ static int16_t winraw_joypad_state(winraw_input_t *wr,
    return input_joypad_pressed(wr->joypad, joypad_info, port, binds, id);
 }
 
+static void winraw_init_mouse_xy_mapping()
+{
+   struct video_viewport viewport;
+   int center_x;
+   int center_y;
+   unsigned i;
+
+   if (video_driver_get_viewport_info(&viewport))
+   {
+      center_x = viewport.x + viewport.width / 2;
+      center_y = viewport.y + viewport.height / 2;
+
+      for (i = 0; i < g_mouse_cnt; ++i)
+      {
+         g_mice[i].x = center_x;
+         g_mice[i].y = center_y;
+      }
+
+      g_view_abs_ratio_x = (double)viewport.full_width / 65535.0;
+      g_view_abs_ratio_y = (double)viewport.full_height / 65535.0;
+
+      g_mouse_xy_mapping_ready = true;
+   }
+}
+
+static int16_t winraw_lightgun_state(winraw_input_t *wr,
+      unsigned port, unsigned id)
+{
+   unsigned i;
+   settings_t *settings  = config_get_ptr();
+   winraw_mouse_t *mouse = NULL;
+
+   if (port >= MAX_USERS)
+      return 0;
+
+   for (i = 0; i < g_mouse_cnt; ++i)
+   {
+      if (i == settings->uints.input_mouse_index[port])
+      {
+         mouse = &wr->mice[i];
+         break;
+      }
+   }
+
+   if (!mouse)
+      return 0;
+
+   switch (id)
+   {
+      case RETRO_DEVICE_ID_LIGHTGUN_X:
+         return mouse->dlt_x;
+      case RETRO_DEVICE_ID_LIGHTGUN_Y:
+         return mouse->dlt_y;
+      case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
+         return mouse->btn_l ? 1 : 0;
+      case RETRO_DEVICE_ID_LIGHTGUN_CURSOR:
+         return mouse->btn_m ? 1 : 0;
+      case RETRO_DEVICE_ID_LIGHTGUN_TURBO:
+         return mouse->btn_r ? 1 : 0;
+      case RETRO_DEVICE_ID_LIGHTGUN_START:
+         return (mouse->btn_m && mouse->btn_r) ? 1 : 0;
+      case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
+         return mouse->btn_m && mouse->btn_l ? 1 : 0;
+   }
+
+   return 0;
+}
+
 static void winraw_update_mouse_state(winraw_mouse_t *mouse, RAWMOUSE *state)
 {
    POINT crs_pos;
 
    if (state->usFlags & MOUSE_MOVE_ABSOLUTE)
    {
-      mouse->x = state->lLastX;
-      mouse->y = state->lLastY;
+      if (g_mouse_xy_mapping_ready)
+      {
+         state->lLastX = (LONG)(g_view_abs_ratio_x * state->lLastX);
+         state->lLastY = (LONG)(g_view_abs_ratio_y * state->lLastY);
+         InterlockedExchangeAdd(&mouse->dlt_x, state->lLastX - mouse->x);
+         InterlockedExchangeAdd(&mouse->dlt_y, state->lLastY - mouse->y);
+         mouse->x = state->lLastX;
+         mouse->y = state->lLastY;
+      }
+      else
+         winraw_init_mouse_xy_mapping();
    }
    else if (state->lLastX || state->lLastY)
    {
@@ -319,9 +390,13 @@ static void winraw_update_mouse_state(winraw_mouse_t *mouse, RAWMOUSE *state)
       InterlockedExchangeAdd(&mouse->dlt_y, state->lLastY);
 
       if (!GetCursorPos(&crs_pos))
-         WINRAW_SYS_WRN("GetCursorPos");
+      {
+         RARCH_WARN("[WINRAW]: GetCursorPos failed with error %lu.\n", GetLastError());
+      }
       else if (!ScreenToClient((HWND)video_driver_window_get(), &crs_pos))
-         WINRAW_SYS_WRN("ScreenToClient");
+      {
+         RARCH_WARN("[WINRAW]: ScreenToClient failed with error %lu.\n", GetLastError());
+      }
       else
       {
          mouse->x = crs_pos.x;
@@ -364,13 +439,16 @@ static LRESULT CALLBACK winraw_callback(HWND wnd, UINT msg, WPARAM wpar, LPARAM 
    if (msg != WM_INPUT)
       return DefWindowProcA(wnd, msg, wpar, lpar);
 
-   if (GET_RAWINPUT_CODE_WPARAM(wpar) != RIM_INPUT) /* app is in the background */
+   /* app is in the background */
+   if (GET_RAWINPUT_CODE_WPARAM(wpar) != RIM_INPUT) 
       goto end;
 
-   r = GetRawInputData((HRAWINPUT)lpar, RID_INPUT, data, &size, sizeof(RAWINPUTHEADER));
+   r = GetRawInputData((HRAWINPUT)lpar, RID_INPUT,
+         data, &size, sizeof(RAWINPUTHEADER));
    if (r == (UINT)-1)
    {
-      WINRAW_SYS_WRN("GetRawInputData");
+      RARCH_WARN("[WINRAW]: GetRawInputData failed with error %lu.\n",
+            GetLastError());
       goto end;
    }
 
@@ -401,61 +479,50 @@ end:
 static void *winraw_init(const char *joypad_driver)
 {
    bool r;
-   winraw_input_t *wr = (winraw_input_t *)calloc(1, sizeof(winraw_input_t));
-   g_keyboard         = (winraw_keyboard_t*)calloc(1, sizeof(winraw_keyboard_t));
+   winraw_input_t *wr = (winraw_input_t *)
+      calloc(1, sizeof(winraw_input_t));
+   g_keyboard         = (winraw_keyboard_t*)
+      calloc(1, sizeof(winraw_keyboard_t));
 
    if (!wr || !g_keyboard)
       goto error;
 
-   WINRAW_LOG("Initializing input driver ...");
+   RARCH_LOG("[WINRAW]: Initializing input driver... \n");
 
    input_keymaps_init_keyboard_lut(rarch_key_map_winraw);
 
    wr->window = winraw_create_window(winraw_callback);
    if (!wr->window)
-   {
-      WINRAW_ERR("winraw_create_window failed.");
       goto error;
-   }
 
    r = winraw_init_devices(&g_mice, &g_mouse_cnt);
    if (!r)
-   {
-      WINRAW_ERR("winraw_init_devices failed.");
       goto error;
-   }
 
    if (!g_mouse_cnt)
-      WINRAW_LOG("Mouse unavailable.");
+   {
+      RARCH_LOG("[WINRAW]: Mouse unavailable.\n");
+   }
    else
    {
-      wr->mice = (winraw_mouse_t*)malloc(g_mouse_cnt * sizeof(winraw_mouse_t));
+      wr->mice = (winraw_mouse_t*)
+         malloc(g_mouse_cnt * sizeof(winraw_mouse_t));
       if (!wr->mice)
-      {
-         WINRAW_ERR("malloc failed.");
          goto error;
-      }
 
       memcpy(wr->mice, g_mice, g_mouse_cnt * sizeof(winraw_mouse_t));
    }
 
    r = winraw_set_keyboard_input(wr->window);
    if (!r)
-   {
-      WINRAW_ERR("winraw_set_keyboard_input failed.");
       goto error;
-   }
 
    r = winraw_set_mouse_input(wr->window, false);
    if (!r)
-   {
-      WINRAW_ERR("winraw_set_mouse_input failed.");
       goto error;
-   }
 
    wr->joypad = input_joypad_init_driver(joypad_driver, wr);
 
-   WINRAW_LOG("Input driver initialized.");
    return wr;
 
 error:
@@ -470,7 +537,6 @@ error:
    if (wr)
       free(wr->mice);
    free(wr);
-   WINRAW_ERR("Input driver initialization failed.");
    return NULL;
 }
 
@@ -491,8 +557,8 @@ static void winraw_poll(void *d)
 
    for (i = 0; i < g_mouse_cnt; ++i)
    {
-      wr->mice[i].x = g_mice[i].x;
-      wr->mice[i].y = g_mice[i].y;
+      wr->mice[i].x     = g_mice[i].x;
+      wr->mice[i].y     = g_mice[i].y;
       wr->mice[i].dlt_x = InterlockedExchange(&g_mice[i].dlt_x, 0);
       wr->mice[i].dlt_y = InterlockedExchange(&g_mice[i].dlt_y, 0);
       wr->mice[i].whl_u = InterlockedExchange(&g_mice[i].whl_u, 0);
@@ -532,6 +598,9 @@ static int16_t winraw_input_state(void *d,
          if (binds[port])
             return input_joypad_analog(wr->joypad, joypad_info,
                   port, index, id, binds[port]);
+         break;
+      case RETRO_DEVICE_LIGHTGUN:
+         return winraw_lightgun_state(wr, port, id);
    }
 
    return 0;
@@ -546,8 +615,6 @@ static void winraw_free(void *d)
 {
    winraw_input_t *wr = (winraw_input_t*)d;
 
-   WINRAW_LOG("Deinitializing input driver ...");
-
    if (wr->joypad)
       wr->joypad->destroy();
    winraw_set_mouse_input(NULL, false);
@@ -558,7 +625,7 @@ static void winraw_free(void *d)
    free(wr->mice);
    free(wr);
 
-   WINRAW_LOG("Input driver deinitialized.");
+   g_mouse_xy_mapping_ready = false;
 }
 
 static uint64_t winraw_get_capabilities(void *u)
@@ -566,23 +633,21 @@ static uint64_t winraw_get_capabilities(void *u)
    return (1 << RETRO_DEVICE_KEYBOARD) |
           (1 << RETRO_DEVICE_MOUSE) |
           (1 << RETRO_DEVICE_JOYPAD) |
-          (1 << RETRO_DEVICE_ANALOG);
+          (1 << RETRO_DEVICE_ANALOG) |
+          (1 << RETRO_DEVICE_LIGHTGUN);
 }
 
 static void winraw_grab_mouse(void *d, bool grab)
 {
+   bool r             = false;
    winraw_input_t *wr = (winraw_input_t*)d;
-   bool r;
 
    if (grab == wr->mouse_grab)
       return;
 
    r = winraw_set_mouse_input(wr->window, grab);
    if (!r)
-   {
-      WINRAW_ERR("Mouse grab failed.");
       return;
-   }
 
    wr->mouse_grab = grab;
 }

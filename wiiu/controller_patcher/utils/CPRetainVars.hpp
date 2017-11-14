@@ -68,7 +68,7 @@ extern wpad_sampling_callback_t gSamplingCallback;
 extern u8 gCallbackCooldown;
 extern u8 gGlobalRumbleActivated;
 
-extern my_cb_user * connectionOrderHelper[gHIDMaxDevices];
+extern ConnectionHelper connectionOrderHelper[gHIDMaxDevices];
 
 extern u32 gUDPClientip;
 extern ControllerMappingPADInfo* gProPadInfo[4];

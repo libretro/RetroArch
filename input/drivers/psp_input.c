@@ -41,7 +41,6 @@
 
 #include "../../defines/psp_defines.h"
 
-#include "../input_config.h"
 #include "../input_driver.h"
 
 typedef struct psp_input

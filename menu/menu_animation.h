@@ -82,7 +82,9 @@ enum menu_animation_easing_type
    EASING_IN_BOUNCE,
    EASING_OUT_BOUNCE,
    EASING_IN_OUT_BOUNCE,
-   EASING_OUT_IN_BOUNCE
+   EASING_OUT_IN_BOUNCE,
+
+   EASING_LAST
 };
 
 typedef struct menu_animation_ctx_delta
@@ -101,21 +103,21 @@ typedef struct menu_animation_ctx_subject
 
 typedef struct menu_animation_ctx_entry
 {
+   enum menu_animation_easing_type easing_enum;
+   uintptr_t tag;
    float duration;
    float target_value;
    float *subject;
-   enum menu_animation_easing_type easing_enum;
-   uintptr_t tag;
    tween_cb cb;
 } menu_animation_ctx_entry_t;
 
 typedef struct menu_animation_ctx_ticker
 {
-   char *s;
+   bool selected;
    size_t len;
    uint64_t idx;
+   char *s;
    const char *str;
-   bool selected;
 } menu_animation_ctx_ticker_t;
 
 bool menu_animation_update(float delta_time);

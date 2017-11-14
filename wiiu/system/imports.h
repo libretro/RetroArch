@@ -225,6 +225,7 @@ IMPORT_BEGIN(vpad);
 
 IMPORT(VPADRead);
 IMPORT(VPADInit);
+IMPORT(VPADGetTPCalibratedPoint);
 
 IMPORT_END();
 

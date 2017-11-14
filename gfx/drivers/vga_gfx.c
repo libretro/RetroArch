@@ -399,11 +399,7 @@ static const video_poke_interface_t vga_poke_interface = {
    NULL,
    NULL,
    NULL,
-#ifdef HAVE_FBO
    NULL,
-#else
-   NULL,
-#endif
    NULL,
    NULL,
    NULL,

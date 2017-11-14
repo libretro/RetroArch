@@ -37,6 +37,7 @@
 #include "../../managers/cheat_manager.h"
 #include "../../file_path_special.h"
 #include "../../retroarch.h"
+#include "../../verbosity.h"
 #include "../../ui/ui_companion_driver.h"
 
 #ifndef BIND_ACTION_RIGHT
@@ -46,6 +47,8 @@
       cbs->action_right_ident = #name; \
    } while(0)
 #endif
+
+extern struct key_desc key_descriptors[MENU_SETTINGS_INPUT_DESC_KBD_END];
 
 #ifdef HAVE_SHADER_MANAGER
 static int generic_shader_action_parameter_right(struct video_shader_parameter *param,
@@ -99,26 +102,58 @@ int action_right_cheat(unsigned type, const char *label,
          wraparound);
 }
 
-int action_right_input_desc(unsigned type, const char *label,
+#ifdef HAVE_KEYMAPPER
+int action_right_input_desc_kbd(unsigned type, const char *label,
       bool wraparound)
 {
-   unsigned inp_desc_index_offset = type - MENU_SETTINGS_INPUT_DESC_BEGIN;
-   unsigned inp_desc_user         = inp_desc_index_offset / (RARCH_FIRST_CUSTOM_BIND + 4);
-   unsigned inp_desc_button_index_offset = inp_desc_index_offset - (inp_desc_user * (RARCH_FIRST_CUSTOM_BIND + 4));
+   unsigned key_id;
+   unsigned remap_id;
+   char desc[PATH_MAX_LENGTH];
+   unsigned offset      = type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN;
    settings_t *settings = config_get_ptr();
 
-   if (inp_desc_button_index_offset < RARCH_FIRST_CUSTOM_BIND)
+   if (!settings)
+      return 0;
+
+   remap_id = settings->uints.input_keymapper_ids[offset];
+
+   for (key_id = 0; key_id < MENU_SETTINGS_INPUT_DESC_KBD_END - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN; key_id++)
    {
-      if (settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset] < RARCH_FIRST_CUSTOM_BIND - 1)
-         settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset]++;
-   }
-   else
-   {
-      if (settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset] < 4 - 1)
-         settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset]++;
+      if(remap_id == key_descriptors[key_id].key)
+         break;
    }
 
+   if (key_id < MENU_SETTINGS_INPUT_DESC_KBD_END - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN)
+      key_id++;
+   else
+      key_id = 0;
+
+   settings->uints.input_keymapper_ids[offset] = key_descriptors[key_id].key;
+
    return 0;
+}
+#endif
+
+int action_right_input_desc(unsigned type, const char *label,
+   bool wraparound)
+{
+unsigned inp_desc_index_offset = type - MENU_SETTINGS_INPUT_DESC_BEGIN;
+unsigned inp_desc_user         = inp_desc_index_offset / (RARCH_FIRST_CUSTOM_BIND + 4);
+unsigned inp_desc_button_index_offset = inp_desc_index_offset - (inp_desc_user * (RARCH_FIRST_CUSTOM_BIND + 4));
+settings_t *settings = config_get_ptr();
+
+if (inp_desc_button_index_offset < RARCH_FIRST_CUSTOM_BIND)
+{
+   if (settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset] < RARCH_FIRST_CUSTOM_BIND - 1)
+      settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset]++;
+}
+else
+{
+   if (settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset] < 4 - 1)
+      settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset]++;
+}
+
+return 0;
 }
 
 static int action_right_scroll(unsigned type, const char *label,
@@ -156,7 +191,8 @@ static int action_right_goto_tab(void)
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
    size_t selection           = menu_navigation_get_selection();
-   menu_file_list_cbs_t *cbs  = menu_entries_get_actiondata_at_offset(selection_buf, selection);
+   menu_file_list_cbs_t *cbs  = selection_buf ? (menu_file_list_cbs_t*)
+	   file_list_get_actiondata_at_offset(selection_buf, selection) : NULL;
 
    list_info.type             = MENU_LIST_HORIZONTAL;
    list_info.action           = MENU_ACTION_RIGHT;
@@ -192,8 +228,6 @@ static int action_right_mainmenu(unsigned type, const char *label,
 
       menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_SIZE, &list_horiz_info);
       menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_SIZE, &list_tabs_info);
-
-      menu_navigation_set_selection(0);
 
       if ((list_info.selection != (list_horiz_info.size + list_tabs_info.size))
          || settings->bools.menu_navigation_wraparound_enable)
@@ -408,6 +442,13 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
    {
       BIND_ACTION_RIGHT(cbs, action_right_input_desc);
    }
+#ifdef HAVE_KEYMAPPER
+   else if (type >= MENU_SETTINGS_INPUT_DESC_KBD_BEGIN
+      && type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
+   {
+      BIND_ACTION_RIGHT(cbs, action_right_input_desc_kbd);
+   }
+#endif
    else if ((type >= MENU_SETTINGS_PLAYLIST_ASSOCIATION_START))
    {
       BIND_ACTION_RIGHT(cbs, playlist_association_right);
@@ -458,6 +499,7 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_SETTING_GROUP:
          case MENU_SETTINGS_CORE_INFO_NONE:
             if (  string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB))   ||
+                  string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES_TAB)) ||
                   string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)) ||
                   string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TAB)) ||
                   string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TAB)) ||
@@ -488,7 +530,6 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
 static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
       const char *label, uint32_t label_hash, const char *menu_label)
 {
-   unsigned i;
 
    if (cbs->setting)
    {
@@ -502,21 +543,25 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
       }
    }
 
-   for (i = 0; i < MAX_USERS; i++)
+   if (strstr(label, "input_player") && strstr(label, "_joypad_index"))
    {
-      uint32_t label_setting_hash;
-      char label_setting[128];
+      unsigned i;
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         uint32_t label_setting_hash;
+         char label_setting[128];
 
-      label_setting[0] = '\0';
+         label_setting[0] = '\0';
 
-      snprintf(label_setting, sizeof(label_setting), "input_player%d_joypad_index", i + 1);
-      label_setting_hash = msg_hash_calculate(label_setting);
+         snprintf(label_setting, sizeof(label_setting), "input_player%d_joypad_index", i + 1);
+         label_setting_hash = msg_hash_calculate(label_setting);
 
-      if (label_hash != label_setting_hash)
-         continue;
+         if (label_hash != label_setting_hash)
+            continue;
 
-      BIND_ACTION_RIGHT(cbs, bind_right_generic);
-      return 0;
+         BIND_ACTION_RIGHT(cbs, bind_right_generic);
+         return 0;
+      }
    }
 
    if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)))
@@ -564,6 +609,7 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
             case MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE:
                if (  
                      string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB))   ||
+                     string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES_TAB)) ||
                      string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU))       ||
                      string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB))   ||
                      string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_MUSIC_TAB)) ||
@@ -582,6 +628,7 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
             case MENU_ENUM_LABEL_START_VIDEO_PROCESSOR:
             case MENU_ENUM_LABEL_TAKE_SCREENSHOT:
                if (  string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB))   ||
+                     string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES_TAB)) ||
                      string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)) ||
                      string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TAB)) ||
                      string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TAB)) ||
@@ -621,6 +668,7 @@ int menu_cbs_init_bind_right(menu_file_list_cbs_t *cbs,
    if (type == MENU_SETTING_NO_ITEM)
    {
       if (  string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB))   ||
+            string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES_TAB)) ||
             string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)) ||
             string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TAB)) ||
             string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TAB)) ||

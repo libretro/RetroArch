@@ -17,7 +17,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "../input_config.h"
+#include "../input_driver.h"
 
 #include "../../tasks/tasks_internal.h"
 
@@ -257,7 +257,6 @@ static void psp_joypad_poll(void)
 #endif
 #if defined(VITA)
       if (psp2_model == SCE_KERNEL_MODEL_VITA 
-         && !menu_driver_is_alive()
          && settings->bools.input_backtouch_enable)
       {
          unsigned i;

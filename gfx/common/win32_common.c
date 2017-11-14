@@ -21,6 +21,7 @@
 #endif
 
 #include "win32_common.h"
+#include "gdi_common.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
@@ -35,7 +36,7 @@
 #define IDI_ICON 1
 
 #ifndef _WIN32_WINNT
-#define _WIN32_WINNT 0x0500 /*_WIN32_WINNT_WIN2K */
+#define _WIN32_WINNT 0x0500 /* _WIN32_WINNT_WIN2K */
 #endif
 
 #include <windows.h>
@@ -52,9 +53,24 @@
 
 #include <encodings/utf.h>
 
+/* Assume W-functions do not work below VC2005 and Xbox platforms */
+#if defined(_MSC_VER) && _MSC_VER < 1400 || defined(_XBOX)
+
+#ifndef LEGACY_WIN32
+#define LEGACY_WIN32
+#endif
+
+#endif
+
+#ifdef LEGACY_WIN32
+#define DragQueryFileR DragQueryFile
+#else
+#define DragQueryFileR DragQueryFileW
+#endif
+
 extern LRESULT win32_menu_loop(HWND owner, WPARAM wparam);
 
-#ifdef HAVE_D3D9
+#if defined(HAVE_D3D9) || defined(HAVE_D3D8)
 extern bool dinput_handle_message(void *dinput, UINT message,
       WPARAM wParam, LPARAM lParam);
 extern void *dinput_gdi;
@@ -78,7 +94,7 @@ ui_window_win32_t main_window;
 /* Power Request APIs */
 
 #if !defined(_XBOX) && (_MSC_VER == 1310)
-typedef struct _REASON_CONTEXT 
+typedef struct _REASON_CONTEXT
 {
    ULONG Version;
    DWORD Flags;
@@ -116,6 +132,12 @@ typedef REASON_CONTEXT POWER_REQUEST_CONTEXT, *PPOWER_REQUEST_CONTEXT, *LPPOWER_
 #define MAX_MONITORS 9
 #endif
 
+#if defined(_MSC_VER) && _MSC_VER <= 1200
+#define INT_PTR_COMPAT int
+#else
+#define INT_PTR_COMPAT INT_PTR
+#endif
+
 static HMONITOR win32_monitor_last;
 static HMONITOR win32_monitor_all[MAX_MONITORS];
 static unsigned win32_monitor_count              = 0;
@@ -130,7 +152,7 @@ void unset_doubleclick_on_titlebar(void)
    doubleclick_on_titlebar = false;
 }
 
-INT_PTR CALLBACK PickCoreProc(HWND hDlg, UINT message, 
+INT_PTR_COMPAT CALLBACK PickCoreProc(HWND hDlg, UINT message,
         WPARAM wParam, LPARAM lParam)
 {
    size_t list_size;
@@ -149,16 +171,16 @@ INT_PTR CALLBACK PickCoreProc(HWND hDlg, UINT message,
             core_info_list_get_supported_cores(core_info_list,
                   path_get(RARCH_PATH_CONTENT), &core_info, &list_size);
 
-            hwndList = GetDlgItem(hDlg, ID_CORELISTBOX);  
+            hwndList = GetDlgItem(hDlg, ID_CORELISTBOX);
 
             for (i = 0; i < list_size; i++)
             {
                const core_info_t *info = (const core_info_t*)&core_info[i];
-               SendMessage(hwndList, LB_ADDSTRING, 0, 
-                     (LPARAM)info->display_name); 
+               SendMessage(hwndList, LB_ADDSTRING, 0,
+                     (LPARAM)info->display_name);
             }
-            SetFocus(hwndList); 
-            return TRUE;  
+            SetFocus(hwndList);
+            return TRUE;
          }
 
       case WM_COMMAND:
@@ -169,22 +191,22 @@ INT_PTR CALLBACK PickCoreProc(HWND hDlg, UINT message,
                EndDialog(hDlg, LOWORD(wParam));
                break;
             case ID_CORELISTBOX:
-               switch (HIWORD(wParam)) 
-               { 
+               switch (HIWORD(wParam))
+               {
                   case LBN_SELCHANGE:
                      {
                         const core_info_t *info = NULL;
                         HWND hwndList           = GetDlgItem(
-                              hDlg, ID_CORELISTBOX); 
+                              hDlg, ID_CORELISTBOX);
                         int lbItem              = (int)
-                           SendMessage(hwndList, LB_GETCURSEL, 0, 0); 
+                           SendMessage(hwndList, LB_GETCURSEL, 0, 0);
 
                         core_info_get_list(&core_info_list);
                         core_info_list_get_supported_cores(core_info_list,
                               path_get(RARCH_PATH_CONTENT), &core_info, &list_size);
                         info = (const core_info_t*)&core_info[lbItem];
                         rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH,info->path);
-                     } 
+                     }
                      break;
                }
                return TRUE;
@@ -205,9 +227,12 @@ static BOOL CALLBACK win32_monitor_enum_proc(HMONITOR hMonitor,
 void win32_monitor_from_window(void)
 {
 #ifndef _XBOX
-   win32_monitor_last        = 
+   ui_window_t *window       = NULL;
+
+   win32_monitor_last        =
       MonitorFromWindow(main_window.hwnd, MONITOR_DEFAULTTONEAREST);
-   const ui_window_t *window = ui_companion_driver_get_window_ptr();
+
+   window = (ui_window_t*)ui_companion_driver_get_window_ptr();
 
    if (window)
       window->destroy(&main_window);
@@ -222,7 +247,14 @@ void win32_monitor_get_info(void)
    current_mon.cbSize = sizeof(MONITORINFOEX);
 
    GetMonitorInfo(win32_monitor_last, (LPMONITORINFO)&current_mon);
+
+#if _WIN32_WINDOWS >= 0x0410 || _WIN32_WINNT >= 0x0410
+   /* Windows 98 and later codepath */
    ChangeDisplaySettingsEx(current_mon.szDevice, NULL, NULL, 0, NULL);
+#else
+   /* Windows 95 / NT codepath */
+   ChangeDisplaySettings(NULL, 0);
+#endif
 }
 
 void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id)
@@ -265,19 +297,29 @@ void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id)
 /* Get the count of the files dropped */
 static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
 {
+#ifdef LEGACY_WIN32
    char szFilename[1024];
-
    szFilename[0] = '\0';
+#else
+   char *szFilename = NULL;
+   wchar_t wszFilename[1024];
+   wszFilename[0] = L'\0';
+#endif
 
-   if (DragQueryFile((HDROP)wparam, 0xFFFFFFFF, NULL, 0))
+   if (DragQueryFileR((HDROP)wparam, 0xFFFFFFFF, NULL, 0))
    {
-      /*poll list of current cores */
+      /* poll list of current cores */
       size_t list_size;
       content_ctx_info_t content_info  = {0};
       core_info_list_t *core_info_list = NULL;
       const core_info_t *core_info     = NULL;
 
-      DragQueryFile((HDROP)wparam, 0, szFilename, sizeof(szFilename));
+#ifdef LEGACY_WIN32
+      DragQueryFileR((HDROP)wparam, 0, szFilename, sizeof(szFilename));
+#else
+      DragQueryFileR((HDROP)wparam, 0, wszFilename, sizeof(wszFilename));
+      szFilename = utf16_to_utf8_string_alloc(wszFilename);
+#endif
 
       core_info_get_list(&core_info_list);
 
@@ -288,9 +330,20 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
             (const char*)szFilename, &core_info, &list_size);
 
       if (!list_size)
+      {
+#ifndef LEGACY_WIN32
+         if (szFilename)
+            free(szFilename);
+#endif
          return 0;
+      }
 
       path_set(RARCH_PATH_CONTENT, szFilename);
+
+#ifndef LEGACY_WIN32
+      if (szFilename)
+         free(szFilename);
+#endif
 
       if (!path_is_empty(RARCH_PATH_CONTENT))
       {
@@ -336,7 +389,7 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
       {
          /* Pick one core that could be compatible, ew */
          if(DialogBoxParam(GetModuleHandle(NULL),MAKEINTRESOURCE(IDD_PICKCORE),
-                  hwnd,PickCoreProc,(LPARAM)NULL)==IDOK) 
+                  hwnd,PickCoreProc,(LPARAM)NULL)==IDOK)
          {
             task_push_load_content_with_current_core_from_companion_ui(
                   NULL,
@@ -373,7 +426,7 @@ static LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
 
    switch (message)
    {
-      /* Seems to be hard to synchronize 
+      /* Seems to be hard to synchronize
        * WM_CHAR and WM_KEYDOWN properly.
        */
       case WM_CHAR:
@@ -495,7 +548,7 @@ static void win32_set_droppable(ui_window_win32_t *window, bool droppable)
       DragAcceptFiles_func(window->hwnd, droppable);
 }
 
-#ifdef HAVE_D3D9
+#if defined(HAVE_D3D9) || defined(HAVE_D3D8)
 LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
@@ -528,7 +581,7 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
             LPCREATESTRUCT p_cs   = (LPCREATESTRUCT)lparam;
             curD3D                = p_cs->lpCreateParams;
             g_inited              = true;
-            
+
             win32_window.hwnd     = hwnd;
 
             win32_set_droppable(&win32_window, true);
@@ -584,7 +637,7 @@ LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
          return 0;
    }
 
-#ifdef HAVE_D3D9
+#if defined(HAVE_D3D9) || defined(HAVE_D3D8)
    if (dinput_wgl && dinput_handle_message(dinput_wgl,
             message, wparam, lparam))
       return 0;
@@ -606,41 +659,48 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
    {
       case WM_PAINT:
       {
-         PAINTSTRUCT ps;
-         HDC hdc = BeginPaint(hwnd, &ps);
+         gdi_t *gdi = (gdi_t*)video_driver_get_ptr(false);
+
+         if (gdi && gdi->memDC)
+         {
+            gdi->bmp_old = (HBITMAP)SelectObject(gdi->memDC, gdi->bmp);
 
 #ifdef HAVE_MENU
-         if (menu_driver_is_alive() && !gdi_has_menu_frame())
-         {
-            RECT rect;
-            TRIVERTEX vertex[2];
-            GRADIENT_RECT gRect;
+            if (menu_driver_is_alive() && !gdi_has_menu_frame())
+            {
+               /* draw menu contents behind a gradient background */
+               if (gdi && gdi->memDC)
+               {
+                  RECT rect;
+                  HBRUSH brush = CreateSolidBrush(RGB(1,81,127));
 
-            GetClientRect(hwnd, &rect);
+                  GetClientRect(hwnd, &rect);
 
-            vertex[0].x      = rect.left;
-            vertex[0].y      = rect.top;
-            vertex[0].Red    = 1   << 8;
-            vertex[0].Green  = 81  << 8;
-            vertex[0].Blue   = 127 << 8;
-            vertex[0].Alpha  = 0;
+                  StretchBlt(gdi->winDC,
+                        0, 0,
+                        gdi->screen_width, gdi->screen_height,
+                        gdi->memDC, 0, 0, gdi->video_width, gdi->video_height, SRCCOPY);
 
-            vertex[1].x      = rect.right;
-            vertex[1].y      = rect.bottom;
-            vertex[1].Red    = 0;
-            vertex[1].Green  = 1  << 8;
-            vertex[1].Blue   = 33 << 8;
-            vertex[1].Alpha  = 0;
-
-            gRect.LowerRight = 0;
-            gRect.UpperLeft  = 1;
-
-            GradientFill(hdc, vertex, 2, &gRect, 1, GRADIENT_FILL_RECT_V);
-         }
+                  FillRect(gdi->memDC, &rect, brush);
+                  DeleteObject(brush);
+               }
+           }
+           else
 #endif
+           {
+              /* draw video content */
+              gdi->bmp_old = (HBITMAP)SelectObject(gdi->memDC, gdi->bmp);
 
-         EndPaint(hwnd, &ps);
-         break;
+              StretchBlt(gdi->winDC,
+                    0, 0,
+                    gdi->screen_width, gdi->screen_height,
+                    gdi->memDC, 0, 0, gdi->video_width, gdi->video_height, SRCCOPY);
+           }
+
+           SelectObject(gdi->memDC, gdi->bmp_old);
+        }
+
+        break;
       }
       case WM_DROPFILES:
       case WM_SYSCOMMAND:
@@ -670,7 +730,7 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
          return 0;
    }
 
-#ifdef HAVE_D3D9
+#if defined(HAVE_D3D9) || defined(HAVE_D3D8)
    if (dinput_gdi && dinput_handle_message(dinput_gdi,
             message, wparam, lparam))
       return 0;
@@ -760,14 +820,20 @@ static bool win32_monitor_set_fullscreen(
    devmode.dmPelsWidth        = width;
    devmode.dmPelsHeight       = height;
    devmode.dmDisplayFrequency = refresh;
-   devmode.dmFields           = DM_PELSWIDTH 
+   devmode.dmFields           = DM_PELSWIDTH
       | DM_PELSHEIGHT | DM_DISPLAYFREQUENCY;
 
    RARCH_LOG("Setting fullscreen to %ux%u @ %uHz on device %s.\n",
          width, height, refresh, dev_name);
 
+#if _WIN32_WINDOWS >= 0x0410 || _WIN32_WINNT >= 0x0410
+   /* Windows 98 and later codepath */
    return ChangeDisplaySettingsEx(dev_name, &devmode,
          NULL, CDS_FULLSCREEN, NULL) == DISP_CHANGE_SUCCESSFUL;
+#else
+   /* Windows 95 / NT codepath */
+   return ChangeDisplaySettings(&devmode, CDS_FULLSCREEN);
+#endif
 #endif
 }
 
@@ -785,7 +851,7 @@ void win32_check_window(bool *quit, bool *resize,
       unsigned *width, unsigned *height)
 {
 #ifndef _XBOX
-   const ui_application_t *application = 
+   const ui_application_t *application =
       ui_companion_driver_get_application_ptr();
    if (application)
       application->process_events();
@@ -818,7 +884,7 @@ bool win32_suppress_screensaver(void *data, bool enable)
 
       if (major*100+minor >= 601)
       {
-#ifdef _WIN32_WINNT_WIN7
+#if _WIN32_WINNT >= 0x0601
          /* Windows 7, 8, 10 codepath */
          typedef HANDLE (WINAPI * PowerCreateRequestPtr)(REASON_CONTEXT *context);
          typedef BOOL   (WINAPI * PowerSetRequestPtr)(HANDLE PowerRequest,
@@ -845,19 +911,26 @@ bool win32_suppress_screensaver(void *data, bool enable)
          }
 #endif
       }
-      else
+      else if (major*100+minor >= 410)
       {
-         /* XP / Vista codepath */
+#if _WIN32_WINDOWS >= 0x0410 || _WIN32_WINNT >= 0x0410
+         /* 98 / 2K / XP / Vista codepath */
          SetThreadExecutionState(ES_DISPLAY_REQUIRED | ES_SYSTEM_REQUIRED);
          return true;
+#endif
       }
+	  else
+	  {
+         /* 95 / NT codepath */
+	     /* No way to block the screensaver. */
+         return true;
+	  }
    }
 #endif
 
    return false;
 }
 
-/* FIXME: It should not be necessary to add the W after MONITORINFOEX, but linking fails without it. */
 void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
    unsigned *width, unsigned *height, bool fullscreen, bool windowed_full,
    RECT *rect, RECT *mon_rect, DWORD *style)
@@ -865,12 +938,12 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
 #ifndef _XBOX
    settings_t *settings = config_get_ptr();
 
-   /* Windows only reports the refresh rates for modelines as 
-    * an integer, so video_refresh_rate needs to be rounded. Also, account 
+   /* Windows only reports the refresh rates for modelines as
+    * an integer, so video_refresh_rate needs to be rounded. Also, account
     * for black frame insertion using video_refresh_rate set to half
     * of the display refresh rate, as well as higher vsync swap intervals. */
    float refresh_mod    = settings->bools.video_black_frame_insertion ? 2.0f : 1.0f;
-   unsigned refresh     = roundf(settings->floats.video_refresh_rate 
+   unsigned refresh     = roundf(settings->floats.video_refresh_rate
          * refresh_mod * settings->uints.video_swap_interval);
 
    if (fullscreen)
@@ -979,13 +1052,13 @@ bool win32_set_video_mode(void *data,
    if (!win32_window_create(data, style,
             &mon_rect, width, height, fullscreen))
       return false;
-   
+
    win32_set_window(&width, &height,
          fullscreen, windowed_full, &rect);
 
    /* Wait until context is created (or failed to do so ...).
     * Please don't remove the (res = ) as GetMessage can return -1. */
-   while (!g_inited && !g_quit 
+   while (!g_inited && !g_quit
          && (res = GetMessage(&msg, main_window.hwnd, 0, 0)) != 0)
    {
       if (res == -1)
@@ -1032,7 +1105,7 @@ bool win32_has_focus(void)
       if (GetForegroundWindow() == main_window.hwnd)
          return true;
 #else
-      const ui_window_t *window = 
+      const ui_window_t *window =
          ui_companion_driver_get_window_ptr();
       if (window)
          return window->focused(&main_window);
@@ -1078,14 +1151,14 @@ void win32_get_video_output_prev(
 
    win32_get_video_output_size(&curr_width, &curr_height);
 
-   for (iModeNum = 0; 
-         EnumDisplaySettings(NULL, iModeNum, &dm) != 0; 
+   for (iModeNum = 0;
+         EnumDisplaySettings(NULL, iModeNum, &dm) != 0;
          iModeNum++)
    {
-      if (     dm.dmPelsWidth == curr_width 
+      if (     dm.dmPelsWidth == curr_width
             && dm.dmPelsHeight == curr_height)
       {
-         if (     prev_width  != curr_width 
+         if (     prev_width  != curr_width
                && prev_height != curr_height)
          {
             found        = true;
@@ -1099,8 +1172,8 @@ void win32_get_video_output_prev(
 
    if (found)
    {
-      *width       = prev_width; 
-      *height      = prev_height; 
+      *width       = prev_width;
+      *height      = prev_height;
    }
 }
 
@@ -1118,8 +1191,8 @@ void win32_get_video_output_next(
 
    win32_get_video_output_size(&curr_width, &curr_height);
 
-   for (iModeNum = 0; 
-         EnumDisplaySettings(NULL, iModeNum, &dm) != 0; 
+   for (iModeNum = 0;
+         EnumDisplaySettings(NULL, iModeNum, &dm) != 0;
          iModeNum++)
    {
       if (found)
@@ -1129,7 +1202,7 @@ void win32_get_video_output_next(
          break;
       }
 
-      if (     dm.dmPelsWidth == curr_width 
+      if (     dm.dmPelsWidth == curr_width
             && dm.dmPelsHeight == curr_height)
          found = true;
    }

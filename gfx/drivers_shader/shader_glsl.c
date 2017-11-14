@@ -43,12 +43,11 @@
 struct cache_vbo
 {
    GLuint vbo_primary;
-   GLfloat *buffer_primary;
-   size_t size_primary;
-
    GLuint vbo_secondary;
-   GLfloat *buffer_secondary;
+   size_t size_primary;
    size_t size_secondary;
+   GLfloat *buffer_primary;
+   GLfloat *buffer_secondary;
 };
 
 struct shader_program_glsl_data
@@ -89,10 +88,10 @@ struct shader_uniforms
    int texture_size;
 
    int frame_count;
-   unsigned frame_count_mod;
    int frame_direction;
 
    int lut_texture[GFX_MAX_TEXTURES];
+   unsigned frame_count_mod;
 
    struct shader_uniforms_frame orig;
    struct shader_uniforms_frame feedback;
@@ -134,28 +133,90 @@ static const char *glsl_prefixes[] = {
 
 typedef struct glsl_shader_data
 {
-   struct video_shader *shader;
+   char alias_define[1024];
+   GLint attribs_elems[32 * PREV_TEXTURES + 2 + 4 + GFX_MAX_SHADERS];
+   unsigned attribs_index;
+   unsigned active_idx;
+   unsigned current_idx;
+   GLuint lut_textures[GFX_MAX_TEXTURES];
+   float  current_mat_data[GFX_MAX_SHADERS];
+   float* current_mat_data_pointer[GFX_MAX_SHADERS];
    struct shader_uniforms uniforms[GFX_MAX_SHADERS];
    struct cache_vbo vbo[GFX_MAX_SHADERS];
-   char alias_define[1024];
-   unsigned active_idx;
-   struct
-   {
-      GLint elems[32 * PREV_TEXTURES + 2 + 4 + GFX_MAX_SHADERS];
-      unsigned index;
-   } attribs;
-
    struct shader_program_glsl_data prg[GFX_MAX_SHADERS];
-   GLuint lut_textures[GFX_MAX_TEXTURES];
+   struct video_shader *shader;
    state_tracker_t *state_tracker;
 } glsl_shader_data_t;
 
 static bool glsl_core;
 static unsigned glsl_major;
 static unsigned glsl_minor;
-static float* current_mat_data_pointer[GFX_MAX_SHADERS];
-static float current_mat_data[GFX_MAX_SHADERS];
-static unsigned current_idx;
+
+static bool gl_glsl_add_lut(
+      const struct video_shader *shader,
+      unsigned i, void *textures_data)
+{
+   struct texture_image img;
+   GLuint *textures_lut                 = (GLuint*)textures_data;
+   enum texture_filter_type filter_type = TEXTURE_FILTER_LINEAR;
+
+   img.width         = 0;
+   img.height        = 0;
+   img.pixels        = NULL;
+   img.supports_rgba = video_driver_supports_rgba();
+
+   if (!image_texture_load(&img, shader->lut[i].path))
+   {
+      RARCH_ERR("[GL]: Failed to load texture image from: \"%s\"\n",
+            shader->lut[i].path);
+      return false;
+   }
+
+   RARCH_LOG("[GL]: Loaded texture image from: \"%s\" ...\n",
+         shader->lut[i].path);
+
+   if (shader->lut[i].filter == RARCH_FILTER_NEAREST)
+      filter_type = TEXTURE_FILTER_NEAREST;
+
+   if (shader->lut[i].mipmap)
+   {
+      if (filter_type == TEXTURE_FILTER_NEAREST)
+         filter_type = TEXTURE_FILTER_MIPMAP_NEAREST;
+      else
+         filter_type = TEXTURE_FILTER_MIPMAP_LINEAR;
+   }
+
+   gl_load_texture_data(textures_lut[i],
+         shader->lut[i].wrap,
+         filter_type, 4,
+         img.width, img.height,
+         img.pixels, sizeof(uint32_t));
+   image_texture_free(&img);
+
+   return true;
+}
+
+static bool gl_glsl_load_luts(
+      const struct video_shader *shader,
+      GLuint *textures_lut)
+{
+   unsigned i;
+   unsigned num_luts = MIN(shader->luts, GFX_MAX_TEXTURES);
+
+   if (!shader->luts)
+      return true;
+
+   glGenTextures(num_luts, textures_lut);
+
+   for (i = 0; i < num_luts; i++)
+   {
+      if (!gl_glsl_add_lut(shader, i, textures_lut))
+         return false;
+   }
+
+   glBindTexture(GL_TEXTURE_2D, 0);
+   return true;
+}
 
 static GLint gl_glsl_get_uniform(glsl_shader_data_t *glsl,
       GLuint prog, const char *base)
@@ -497,11 +558,11 @@ static void gl_glsl_reset_attrib(glsl_shader_data_t *glsl)
    unsigned i;
 
    /* Add sanity check that we did not overflow. */
-   retro_assert(glsl->attribs.index <= ARRAY_SIZE(glsl->attribs.elems));
+   retro_assert(glsl->attribs_index <= ARRAY_SIZE(glsl->attribs_elems));
 
-   for (i = 0; i < glsl->attribs.index; i++)
-      glDisableVertexAttribArray(glsl->attribs.elems[i]);
-   glsl->attribs.index = 0;
+   for (i = 0; i < glsl->attribs_index; i++)
+      glDisableVertexAttribArray(glsl->attribs_elems[i]);
+   glsl->attribs_index = 0;
 }
 
 static void gl_glsl_set_vbo(GLfloat **buffer, size_t *buffer_elems,
@@ -537,14 +598,14 @@ static INLINE void gl_glsl_set_attribs(glsl_shader_data_t *glsl,
 
    for (i = 0; i < num_attrs; i++)
    {
-      if (glsl->attribs.index < ARRAY_SIZE(glsl->attribs.elems))
+      if (glsl->attribs_index < ARRAY_SIZE(glsl->attribs_elems))
       {
          GLint loc = attrs[i].loc;
 
          glEnableVertexAttribArray(loc);
          glVertexAttribPointer(loc, attrs[i].size, GL_FLOAT, GL_FALSE, 0,
                (const GLvoid*)(uintptr_t)attrs[i].offset);
-         glsl->attribs.elems[glsl->attribs.index++] = loc;
+         glsl->attribs_elems[glsl->attribs_index++] = loc;
       }
       else
          RARCH_WARN("Attrib array buffer was overflown!\n");
@@ -674,8 +735,10 @@ static void gl_glsl_destroy_resources(glsl_shader_data_t *glsl)
    if (!glsl)
       return;
 
-   current_idx = 0;
+   glsl->current_idx = 0;
+   
    glUseProgram(0);
+
    for (i = 0; i < GFX_MAX_SHADERS; i++)
    {
       if (glsl->prg[i].id == 0 || (i && glsl->prg[i].id == glsl->prg[0].id))
@@ -876,7 +939,7 @@ static void *gl_glsl_init(void *data, const char *path)
    if (!gl_glsl_compile_programs(glsl, &glsl->prg[1]))
       goto error;
 
-   if (!gl_load_luts(glsl->shader, glsl->lut_textures))
+   if (!gl_glsl_load_luts(glsl->shader, glsl->lut_textures))
    {
       RARCH_ERR("[GL]: Failed to load LUTs.\n");
       goto error;
@@ -914,7 +977,7 @@ static void *gl_glsl_init(void *data, const char *path)
       if (*glsl->shader->script_class)
          info.script_class= glsl->shader->script_class;
 #endif
-      info.script_is_file = NULL;
+      info.script_is_file = false;
 
       glsl->state_tracker = state_tracker_init(&info);
 
@@ -1379,22 +1442,19 @@ static bool gl_glsl_set_mvp(void *data, void *shader_data, const math_matrix_4x4
    (void)data;
 
    if (!glsl || !glsl->shader->modern)
-   {
-      gl_ff_matrix(mat);
       return false;
-   }
 
    loc = glsl->uniforms[glsl->active_idx].mvp;
    if (loc >= 0)
    {
-      if (  (current_idx != glsl->active_idx) || 
-            (mat->data != current_mat_data_pointer[glsl->active_idx]) || 
-            (*mat->data != current_mat_data[glsl->active_idx]))
+      if (  (glsl->current_idx != glsl->active_idx) || 
+            (mat->data  != glsl->current_mat_data_pointer[glsl->active_idx]) || 
+            (*mat->data != glsl->current_mat_data[glsl->active_idx]))
       {
          glUniformMatrix4fv(loc, 1, GL_FALSE, mat->data);
-         current_idx                                = glsl->active_idx;
-         current_mat_data_pointer[glsl->active_idx] = (float*)mat->data;
-         current_mat_data[glsl->active_idx]         = *mat->data;
+         glsl->current_idx                                = glsl->active_idx;
+         glsl->current_mat_data_pointer[glsl->active_idx] = (float*)mat->data;
+         glsl->current_mat_data[glsl->active_idx]         = *mat->data;
       }
    }
 
@@ -1486,13 +1546,6 @@ static bool gl_glsl_set_coords(void *handle_data, void *shader_data,
    if (buffer != short_buffer)
       free(buffer);
 
-   return true;
-}
-
-static bool gl_glsl_set_coords_fallback(void *handle_data, void *shader_data,
-      const struct video_coords *coords)
-{
-   gl_ff_vertex(coords);
    return true;
 }
 
@@ -1622,7 +1675,6 @@ const shader_backend_t gl_glsl_backend = {
    gl_glsl_wrap_type,
    gl_glsl_shader_scale,
    gl_glsl_set_coords,
-   gl_glsl_set_coords_fallback,
    gl_glsl_set_mvp,
    gl_glsl_get_prev_textures,
    gl_glsl_get_feedback_pass,

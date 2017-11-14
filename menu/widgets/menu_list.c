@@ -23,10 +23,10 @@
 
 struct menu_list
 {
-   file_list_t **menu_stack;
    size_t menu_stack_size;
-   file_list_t **selection_buf;
    size_t selection_buf_size;
+   file_list_t **menu_stack;
+   file_list_t **selection_buf;
 };
 
 void menu_list_free_list(file_list_t *list)
@@ -79,29 +79,33 @@ void menu_list_free(menu_list_t *menu_list)
 menu_list_t *menu_list_new(void)
 {
    unsigned i;
-   menu_list_t           *list = (menu_list_t*)calloc(1, sizeof(*list));
+   menu_list_t           *list = (menu_list_t*)malloc(sizeof(*list));
 
    if (!list)
       return NULL;
 
-   list->menu_stack          = (file_list_t**)calloc(1, sizeof(*list->menu_stack));
+   list->menu_stack_size       = 1;
+   list->selection_buf_size    = 1;
+   list->selection_buf         = NULL;
+   list->menu_stack            = (file_list_t**)
+      calloc(list->menu_stack_size, sizeof(*list->menu_stack));
 
    if (!list->menu_stack)
       goto error;
 
-   list->selection_buf       = (file_list_t**)calloc(1, sizeof(*list->selection_buf));
+   list->selection_buf         = (file_list_t**)
+      calloc(list->selection_buf_size, sizeof(*list->selection_buf));
 
    if (!list->selection_buf)
       goto error;
 
-   list->menu_stack_size      = 1;
-   list->selection_buf_size   = 1;
-
    for (i = 0; i < list->menu_stack_size; i++)
-      list->menu_stack[i]    = (file_list_t*)calloc(1, sizeof(*list->menu_stack[i]));
+      list->menu_stack[i]      = (file_list_t*)
+         calloc(1, sizeof(*list->menu_stack[i]));
 
    for (i = 0; i < list->selection_buf_size; i++)
-      list->selection_buf[i] = (file_list_t*)calloc(1, sizeof(*list->selection_buf[i]));
+      list->selection_buf[i]   = (file_list_t*)
+         calloc(1, sizeof(*list->selection_buf[i]));
 
    return list;
 
@@ -150,7 +154,7 @@ void menu_list_flush_stack(menu_list_t *list,
       return;
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-   menu_entries_get_last(menu_list,
+   file_list_get_last(menu_list,
          &path, &label, &type, &entry_idx);
 
    while (menu_list_flush_stack_type(
@@ -165,13 +169,8 @@ void menu_list_flush_stack(menu_list_t *list,
 
       menu_list = menu_list_get(list, (unsigned)idx);
 
-      menu_entries_get_last(menu_list,
+      file_list_get_last(menu_list,
             &path, &label, &type, &entry_idx);
-
-#if 0
-      RARCH_LOG("path: %s\n", path);
-      RARCH_LOG("label: %s\n", label);
-#endif
    }
 }
 

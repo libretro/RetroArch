@@ -24,8 +24,9 @@ ConfigParser::ConfigParser(std::string configData){
     this->content = configData;
     this->contentLines = CPStringTools::StringSplit(content, "\n");
 
-    if(contentLines.empty())
+    if(contentLines.empty()){
 		return;
+    }
 
     //remove the comments and make everything uppercase
     for(u32 i = 0; i < contentLines.size(); i++){
@@ -70,11 +71,15 @@ void ConfigParser::setSlot(u16 newSlot){
 
 bool ConfigParser::Init(){
     if(contentLines.size() == 0){
-        printf("ConfigParser::Init(line %d): Files seems to be empty. Make sure to have a proper header\n",__LINE__);
+        printf("ConfigParser::Init(line %d): File seems to be empty. Make sure to have a proper header\n",__LINE__);
         return false;
     }
     const char * line = contentLines[0].c_str();
     s32 len = strlen(line);
+    if(len <= 4){
+        printf("ConfigParser::Init(line %d): Header is too short.\n",__LINE__);
+        return false;
+     }
     std::string identify;
     if(line[0] == '[' && line[len-1] == ']'){
         identify = contentLines[0].substr(1,len-2);
@@ -116,6 +121,7 @@ bool ConfigParser::Init(){
 }
 
 void ConfigParser::parseSingleLine(std::string line){
+    if(line.empty()){printf("ConfigParser::parseSingleLine(line %d): Can't parse line. it's empty\n",__LINE__); return;}
     std::vector<std::string> cur_values = CPStringTools::StringSplit(line,"=");
     if(cur_values.size() != 2){
         if(HID_DEBUG || cur_values.size() > 2){ printf("ConfigParser::parseSingleLine(line %d): Not a valid key=pair line %s\n",__LINE__,line.c_str()); }
@@ -218,7 +224,7 @@ void ConfigParser::parseSingleLine(std::string line){
 
 bool ConfigParser::resetConfig(){
     s32 slot = getSlot();
-    if(slot >= gHIDMaxDevices) return false;
+    if((slot == HID_INVALID_SLOT) || (slot >= gHIDMaxDevices)) return false;
     for(s32 j = (CONTRPS_PID+1);j< CONTRPS_MAX_VALUE;j++){
         config_controller[slot][j][0] = CONTROLLER_PATCHER_INVALIDVALUE;
         config_controller[slot][j][1] = CONTROLLER_PATCHER_INVALIDVALUE;
@@ -300,11 +306,17 @@ s32  ConfigParser::getSlotController(std::string identify){
 bool ConfigParser::parseIni(){
     if(getSlot() == HID_INVALID_SLOT){
         printf("ConfigParser::parseIni(line %d): Couldn't parse file. Not a valid slot. Probably broken config. Or you tried to have more than %d devices\n",__LINE__,getType(),gHIDMaxDevices);
+        return false;
     }
 
     if(HID_DEBUG){ printf("ConfigParser::parseIni(line %d): Parsing content, type %d\n",__LINE__,getType()); }
 
     s32 start = 1;
+    if(contentLines.size() <= 1){
+        printf("ConfigParser::parseIni(line %d): File only contains a header.\n",__LINE__);
+        return false;
+    }
+
     if(contentLines[1].compare("[IGNOREDEFAULT]") == 0){
         resetConfig();
         printf("ConfigParser::parseIni(line %d): Ignoring existing settings of this device\n",__LINE__);

@@ -134,6 +134,8 @@ enum event_command
    CMD_EVENT_REBOOT,
    /* Resume RetroArch when in menu. */
    CMD_EVENT_RESUME,
+   /* Add a playlist entry to favorites. */
+   CMD_EVENT_ADD_TO_FAVORITES,
    /* Toggles pause. */
    CMD_EVENT_PAUSE_TOGGLE,
    /* Pauses RetroArch. */
@@ -191,6 +193,10 @@ enum event_command
    CMD_EVENT_REMOTE_INIT,
    /* Deinitializes remote gamepad interface. */
    CMD_EVENT_REMOTE_DEINIT,
+   /* Initializes keyboard to gamepad mapper interface. */
+   CMD_EVENT_MAPPER_INIT,
+   /* Deinitializes keyboard to gamepad mapper interface. */
+   CMD_EVENT_MAPPER_DEINIT,
    /* Reinitializes audio driver. */
    CMD_EVENT_AUDIO_REINIT,
    /* Resizes windowed scale. Will reinitialize video driver. */
@@ -225,11 +231,7 @@ enum event_command
 
 bool command_set_shader(const char *arg);
 
-#ifdef HAVE_COMMAND
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
 bool command_network_send(const char *cmd_);
-#endif
-#endif
 
 bool command_network_new(
       command_t *handle,
@@ -246,8 +248,6 @@ bool command_get(command_handle_t *handle);
 bool command_set(command_handle_t *handle);
 
 bool command_free(command_t *handle);
-
-bool command_event_quit(void);
 
 /**
  * command_event:

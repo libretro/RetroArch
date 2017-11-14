@@ -88,9 +88,10 @@ static const font_renderer_t *d3d_font_backends[] = {
    &d3d_xdk1_font,
 #elif defined(_XBOX360)
    &d3d_xbox360_font,
-#elif defined(_WIN32)
+#elif defined(_WIN32) && defined(HAVE_D3D9)
    &d3d_win32_font,
 #endif
+   NULL
 };
 
 static bool d3d_font_init_first(
@@ -451,12 +452,14 @@ void font_driver_bind_block(void *font_data, void *block)
       font->renderer->bind_block(font->renderer_data, block);
 }
 
-void font_driver_flush(unsigned width, unsigned height, void *font_data)
+void font_driver_flush(unsigned width, unsigned height, void *font_data,
+      video_frame_info_t *video_info)
 {
    font_data_t *font = (font_data_t*)(font_data ? font_data : video_font_driver);
    if (font && font->renderer && font->renderer->flush)
-      font->renderer->flush(width, height, font->renderer_data);
+      font->renderer->flush(width, height, font->renderer_data, video_info);
 }
+
 
 int font_driver_get_message_width(void *font_data,
       const char *msg, unsigned len, float scale)

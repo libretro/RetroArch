@@ -28,13 +28,13 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <fcntl.h>
 #include <sys/poll.h>
 
 #include <libdrm/drm.h>
 #include <gbm.h>
 
 #include <lists/dir_list.h>
-#include <streams/file_stream.h>
 #include <string/stdstring.h>
 
 #include "../../configuration.h"
@@ -80,7 +80,7 @@ typedef struct gfx_ctx_drm_data
 #ifdef HAVE_EGL
    egl_ctx_data_t egl;
 #endif
-   RFILE *drm;
+   int fd;
    unsigned interval;
    unsigned fb_width;
    unsigned fb_height;
@@ -294,12 +294,14 @@ static void free_drm_resources(gfx_ctx_drm_data_t *drm)
 
    drm_free();
 
-   if (drm->drm)
+   if (drm->fd >= 0)
+   {
       if (g_drm_fd >= 0)
       {
          drmDropMaster(g_drm_fd);
-         filestream_close(drm->drm);
+         close(drm->fd);
       }
+   }
 
    g_gbm_surface      = NULL;
    g_gbm_dev          = NULL;
@@ -353,6 +355,7 @@ static void *gfx_ctx_drm_init(video_frame_info_t *video_info, void *video_driver
 
    if (!drm)
       return NULL;
+   drm->fd = -1;
 
    gpu_descriptors = dir_list_new("/dev/dri", NULL, false, true, false, false);
 
@@ -366,14 +369,14 @@ nextgpu:
    }
    gpu = gpu_descriptors->elems[gpu_index++].data;
 
-   drm->drm    = filestream_open(gpu, RFILE_MODE_READ_WRITE, -1);
-   if (!drm->drm)
+   drm->fd    = open(gpu, O_RDWR);
+   if (drm->fd < 0)
    {
       RARCH_WARN("[KMS]: Couldn't open DRM device.\n");
       goto nextgpu;
    }
 
-   fd = filestream_get_fd(drm->drm);
+   fd = drm->fd;
 
    if (!drm_get_resources(fd))
       goto nextgpu;

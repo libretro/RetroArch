@@ -15,20 +15,29 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// Kinda stripped down. Only contains the bare essentials used in RetroArch.
+/* Kinda stripped down. Only contains the bare essentials used in RetroArch. */
 
 #ifndef XAUDIO2_STRIPPED_H
 #define XAUDIO2_STRIPPED_H
 
 #include <retro_inline.h>
+#include <retro_environment.h>
 
-// All structures defined in this file use tight field packing
+/* All structures defined in this file use tight field packing */
 #pragma pack(push, 1)
+
+#ifdef __cplusplus
 #define X2DEFAULT(x) = (x)
+#else
+#define X2DEFAULT(x)
+#endif
 
 #ifdef _XBOX
 #include <xtl.h>
 
+#ifndef __cplusplus
+#define OPAQUE interface
+#endif
 #define DEFINE_CLSID(className, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
 	DEFINE_GUID(CLSID_##className, 0x##l, 0x##w1, 0x##w2, 0x##b1, 0x##b2, 0x##b3, 0x##b4, 0x##b5, 0x##b6, 0x##b7, 0x##b8)
 #define DEFINE_IID(interfaceName, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
@@ -38,7 +47,7 @@ DEFINE_CLSID(XAudio2, 3eda9b49, 2085, 498b, 9b, b2, 39, a6, 77, 84, 93, de);
 DEFINE_CLSID(XAudio2_Debug, 47199894, 7cc2, 444d, 98, 73, ce, d2, 56, 2c, c6, 0e);
 DEFINE_IID(IXAudio2, 8bcf1f58, 9fe7, 4583, 8a, c6, e2, ad, c4, 65, c8, bb);
 
-#include <audiodefs.h>      // Basic audio data types and constants
+#include <audiodefs.h>      /* Basic audio data types and constants */
 
 #else
 
@@ -48,6 +57,11 @@ DEFINE_IID(IXAudio2, 8bcf1f58, 9fe7, 4583, 8a, c6, e2, ad, c4, 65, c8, bb);
 #include <objbase.h>
 #include <mmreg.h>
 
+#ifndef __cplusplus
+#undef OPAQUE		
+#define OPAQUE struct
+#endif
+
 #define DEFINE_GUID_X(n, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
    static const GUID n = { l, w1, w2, { b1, b2, b3, b4, b5, b6, b7, b8 } }
 #define DEFINE_CLSID_X(className, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
@@ -55,7 +69,13 @@ DEFINE_IID(IXAudio2, 8bcf1f58, 9fe7, 4583, 8a, c6, e2, ad, c4, 65, c8, bb);
 #define DEFINE_IID_X(interfaceName, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
    DEFINE_GUID_X(IID_##interfaceName, 0x##l, 0x##w1, 0x##w2, 0x##b1, 0x##b2, 0x##b3, 0x##b4, 0x##b5, 0x##b6, 0x##b7, 0x##b8)
 
-DEFINE_CLSID_X(XAudio2, 5a508685, a254, 4fba, 9b, 82, 9a, 24, b0, 03, 06, af); // 2.7
+#ifndef __cplusplus
+#ifndef INTERFACE
+#define INTERFACE void
+#endif
+#endif
+
+DEFINE_CLSID_X(XAudio2, 5a508685, a254, 4fba, 9b, 82, 9a, 24, b0, 03, 06, af); /* 2.7 */
 DEFINE_IID_X(IXAudio2, 8bcf1f58, 9fe7, 4583, 8a, c6, e2, ad, c4, 65, c8, bb);
 
 #endif
@@ -99,7 +119,11 @@ typedef enum XAUDIO2_XBOX_HWTHREAD_SPECIFIER
 #else
 typedef enum XAUDIO2_WINDOWS_PROCESSOR_SPECIFIER
 {
+#if defined(__STDC_C89__)
+   XAUDIO2_ANY_PROCESSOR       = 0xffff,
+#else
    XAUDIO2_ANY_PROCESSOR       = 0xffffffff,
+#endif
    XAUDIO2_DEFAULT_PROCESSOR   = XAUDIO2_ANY_PROCESSOR
 } XAUDIO2_WINDOWS_PROCESSOR_SPECIFIER, XAUDIO2_PROCESSOR;
 #endif
@@ -118,7 +142,8 @@ typedef struct XAUDIO2_DEVICE_DETAILS
    WAVEFORMATEXTENSIBLE OutputFormat;
 } XAUDIO2_DEVICE_DETAILS;
 
-// Forward declarations.
+/* Forward declarations. */
+#ifdef __cplusplus
 struct XAUDIO2_VOICE_DETAILS;
 struct XAUDIO2_VOICE_SENDS;
 struct XAUDIO2_EFFECT_DESCRIPTOR;
@@ -130,6 +155,20 @@ struct XAUDIO2_PERFORMANCE_DATA;
 struct XAUDIO2_DEBUG_CONFIGURATION;
 struct IXAudio2EngineCallback;
 struct IXAudio2SubmixVoice;
+#else
+typedef OPAQUE XAUDIO2_VOICE_DETAILS XAUDIO2_VOICE_DETAILS;
+typedef OPAQUE XAUDIO2_VOICE_SENDS XAUDIO2_VOICE_SENDS;
+typedef OPAQUE XAUDIO2_EFFECT_DESCRIPTOR XAUDIO2_EFFECT_DESCRIPTOR;
+typedef OPAQUE XAUDIO2_EFFECT_CHAIN XAUDIO2_EFFECT_CHAIN;
+typedef OPAQUE XAUDIO2_FILTER_PARAMETERS XAUDIO2_FILTER_PARAMETERS;
+typedef OPAQUE XAUDIO2_BUFFER_WMA XAUDIO2_BUFFER_WMA;
+typedef OPAQUE XAUDIO2_VOICE_STATE XAUDIO2_VOICE_STATE;
+typedef OPAQUE XAUDIO2_PERFORMANCE_DATA XAUDIO2_PERFORMANCE_DATA;
+typedef OPAQUE XAUDIO2_DEBUG_CONFIGURATION XAUDIO2_DEBUG_CONFIGURATION;
+typedef OPAQUE IXAudio2EngineCallback IXAudio2EngineCallback;
+typedef OPAQUE IXAudio2SubmixVoice IXAudio2SubmixVoice;
+#endif
+
 
 typedef struct XAUDIO2_BUFFER
 {
@@ -253,31 +292,65 @@ DECLARE_INTERFACE_(IXAudio2, IUnknown)
          void *pReserved X2DEFAULT(NULL)) PURE;
 };
 
+#ifdef __cplusplus
+/* C++ hooks */
+#define IXAudio2_Initialize(handle,a,b) handle->Initialize(a, b)		
+#define IXAudio2SourceVoice_SubmitSourceBuffer(handle, a, b) handle->SubmitSourceBuffer(a, b)		
+#define IXAudio2SourceVoice_Stop(handle, a, b) handle->Stop(a, b)		
+#define IXAudio2SourceVoice_DestroyVoice(handle) handle->DestroyVoice()		
+#define IXAudio2MasteringVoice_DestroyVoice(handle) handle->DestroyVoice()		
+#define IXAudio2_Release(handle) handle->Release()		
+#define IXAudio2_CreateSourceVoice(handle, a, b, c, d, e, f, g) handle->CreateSourceVoice(a, b, c, d, e, f, g)		
+#define IXAudio2_CreateMasteringVoice(handle, a, b, c, d, e, f) handle->CreateMasteringVoice(a, b, c, d, e, f)		
+#define IXAudio2SourceVoice_Start(handle, a, b) handle->Start(a, b)		
+#else
+/* C hooks */
+#define IXAudio2_Initialize(THIS,a,b) (THIS)->lpVtbl->Initialize(THIS, a, b)		
+#define IXAudio2_Release(THIS) (THIS)->lpVtbl->Release(THIS)		
+#define IXAudio2_CreateSourceVoice(THIS,ppSourceVoice,pSourceFormat,Flags,MaxFrequencyRatio,pCallback,pSendList,pEffectChain) (THIS)->lpVtbl->CreateSourceVoice(THIS, ppSourceVoice,pSourceFormat,Flags,MaxFrequencyRatio,pCallback,pSendList,pEffectChain)		
+#define IXAudio2_CreateMasteringVoice(THIS,ppMasteringVoice,InputChannels,InputSampleRate,Flags,DeviceIndex,pEffectChain) (THIS)->lpVtbl->CreateMasteringVoice(THIS, ppMasteringVoice,InputChannels,InputSampleRate,Flags,DeviceIndex,pEffectChain)		
+#define IXAudio2_GetDeviceCount(THIS, puCount) (THIS)->lpVtbl->GetDeviceCount(THIS, puCount)		
+#define IXAudio2_GetDeviceDetails(THIS, Index,pDeviceDetails) (THIS)->lpVtbl->GetDeviceDetails(THIS, Index, pDeviceDetails)		
+#define IXAudio2SourceVoice_Start(THIS, Flags, OperationSet) (THIS)->lpVtbl->Start(THIS, Flags, OperationSet)		
+#define IXAudio2SourceVoice_Stop(THIS, Flags, OperationSet) (THIS)->lpVtbl->Stop(THIS, Flags, OperationSet)		
+#define IXAudio2SourceVoice_SubmitSourceBuffer(THIS, pBuffer, pBufferWMA) (THIS)->lpVtbl->SubmitSourceBuffer(THIS, pBuffer, pBufferWMA)		
+#define IXAudio2SourceVoice_DestroyVoice(THIS) (THIS)->lpVtbl->DestroyVoice(THIS)		
+#define IXAudio2MasteringVoice_DestroyVoice(THIS) (THIS)->lpVtbl->DestroyVoice(THIS)
+#endif
+
 #ifdef _XBOX
 STDAPI XAudio2Create(__deref_out IXAudio2** ppXAudio2, UINT32 Flags X2DEFAULT(0),
 		XAUDIO2_PROCESSOR XAudio2Processor X2DEFAULT(XAUDIO2_DEFAULT_PROCESSOR));
 #else
-static INLINE HRESULT XAudio2Create(IXAudio2 **ppXAudio2, UINT32, XAUDIO2_PROCESSOR)
+static INLINE HRESULT XAudio2Create(IXAudio2 **ppXAudio2, UINT32 flags, XAUDIO2_PROCESSOR proc)
 {
-   IXAudio2 *pXAudio2;
+   HRESULT hr;
+   IXAudio2 *pXAudio2 = NULL;
 
-   HRESULT hr = CoCreateInstance(CLSID_XAudio2, NULL, CLSCTX_INPROC_SERVER, IID_IXAudio2, (void**)&pXAudio2);
+   (void)flags;
+   (void)proc;
+
+#ifdef __cplusplus
+   hr = CoCreateInstance(CLSID_XAudio2, NULL, CLSCTX_INPROC_SERVER, IID_IXAudio2, (void**)&pXAudio2);
+#else
+   hr = CoCreateInstance(&CLSID_XAudio2, NULL, CLSCTX_INPROC_SERVER, &IID_IXAudio2, (void**)&pXAudio2);
+#endif
 
    if (SUCCEEDED(hr))
    {
-      //hr = IXAudio2_Initialize(pXAudio2, 0, XAUDIO2_DEFAULT_PROCESSOR);
-      hr = pXAudio2->Initialize(0, XAUDIO2_DEFAULT_PROCESSOR);
+      hr = IXAudio2_Initialize(pXAudio2, 0, XAUDIO2_DEFAULT_PROCESSOR);
       if (SUCCEEDED(hr))
          *ppXAudio2 = pXAudio2;
       else
-         //IXAudio2_Release(pXAudio2);
-         pXAudio2->Release();
+      {
+         IXAudio2_Release(pXAudio2);
+      }
    }
    return hr;
 }
 #endif
 
-// Undo the #pragma pack(push, 1) directive at the top of this file
+/* Undo the #pragma pack(push, 1) directive at the top of this file */
 #pragma pack(pop)
 
 #endif

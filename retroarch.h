@@ -195,7 +195,6 @@ enum runloop_action
 
 struct rarch_main_wrap
 {
-   int argc;
    char **argv;
    const char *content_path;
    const char *sram_path;
@@ -204,8 +203,8 @@ struct rarch_main_wrap
    const char *libretro_path;
    bool verbose;
    bool no_content;
-
    bool touched;
+   int argc;
 };
 
 typedef struct rarch_resolution
@@ -226,53 +225,53 @@ typedef struct global
       char ups[8192];
       char bps[8192];
       char ips[8192];
-      char remapfile[8192];
+      char *remapfile;
    } name;
 
    /* Recording. */
    struct
    {
+      bool use_output_dir;
       char path[8192];
       char config[8192];
+      char output_dir[8192];
+      char config_dir[8192];
       unsigned width;
       unsigned height;
 
       size_t gpu_width;
       size_t gpu_height;
-      char output_dir[8192];
-      char config_dir[8192];
-      bool use_output_dir;
    } record;
 
    /* Settings and/or global state that is specific to 
     * a console-style implementation. */
    struct
    {
+      bool flickerfilter_enable;
+      bool softfilter_enable;
+
       struct
       {
-         struct
-         {
-            rarch_resolution_t current;
-            rarch_resolution_t initial;
-            uint32_t *list;
-            unsigned count;
-            bool check;
-         } resolutions;
-
-         unsigned gamma_correction;
-         unsigned int flicker_filter_index;
-         unsigned char soft_filter_index;
          bool pal_enable;
          bool pal60_enable;
+         unsigned char soft_filter_index;
+         unsigned      gamma_correction;
+         unsigned int  flicker_filter_index;
+
+         struct
+         {
+            bool check;
+            unsigned count;
+            uint32_t *list;
+            rarch_resolution_t current;
+            rarch_resolution_t initial;
+         } resolutions;
       } screen;
 
       struct
       {
          bool system_bgm_enable;
       } sound;
-
-      bool flickerfilter_enable;
-      bool softfilter_enable;
    } console;
 } global_t;
 
@@ -349,6 +348,12 @@ void rarch_menu_running_finished(void);
 bool retroarch_is_on_main_thread(void);
 
 rarch_system_info_t *runloop_get_system_info(void);
+
+#ifdef HAVE_THREADS
+void runloop_msg_queue_lock(void);
+
+void runloop_msg_queue_unlock(void);
+#endif
 
 RETRO_END_DECLS
 

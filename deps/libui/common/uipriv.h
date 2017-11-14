@@ -1,4 +1,4 @@
-/* 6 april 2015 */
+// 6 april 2015
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -13,7 +13,7 @@ extern void *uiAlloc(size_t, const char *);
 extern void *uiRealloc(void *, size_t, const char *);
 extern void uiFree(void *);
 
-/* ugh, this was only introduced in MSVC 2015... */
+// ugh, this was only introduced in MSVC 2015...
 #ifdef _MSC_VER
 #define __func__ __FUNCTION__
 #endif
@@ -25,17 +25,16 @@ extern void _implbug(const char *file, const char *line, const char *func, const
 extern void _userbug(const char *file, const char *line, const char *func, const char *format, ...);
 #define userbug(...) _userbug(__FILE__, _ns(__LINE__), __func__, __VA_ARGS__)
 
-/* control.c */
+// control.c
 extern uiControl *newControl(size_t size, uint32_t OSsig, uint32_t typesig, const char *typenamestr);
 
-/* shouldquit.c */
+// shouldquit.c
 extern int shouldQuit(void);
 
-/* areaevents.c */
+// areaevents.c
 typedef struct clickCounter clickCounter;
-
-/* you should call Reset() to zero-initialize a new instance
- * it doesn't matter that all the non-count fields are zero: the first click will fail the curButton test straightaway, so it'll return 1 and set the rest of the structure accordingly */
+// you should call Reset() to zero-initialize a new instance
+// it doesn't matter that all the non-count fields are zero: the first click will fail the curButton test straightaway, so it'll return 1 and set the rest of the structure accordingly
 struct clickCounter {
 	int curButton;
 	int rectX0;
@@ -49,7 +48,7 @@ int clickCounterClick(clickCounter *c, int button, int x, int y, uintptr_t time,
 extern void clickCounterReset(clickCounter *);
 extern int fromScancode(uintptr_t, uiAreaKeyEvent *);
 
-/* matrix.c */
+// matrix.c
 extern void fallbackSkew(uiDrawMatrix *, double, double, double, double);
 extern void scaleCenter(double, double, double *, double *);
 extern void fallbackTransformSize(uiDrawMatrix *, double *, double *);

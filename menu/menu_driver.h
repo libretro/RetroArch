@@ -139,6 +139,7 @@ enum menu_settings_type
    MENU_SETTINGS,
    MENU_SETTINGS_TAB,
    MENU_HISTORY_TAB,
+   MENU_FAVORITES_TAB,
    MENU_MUSIC_TAB,
    MENU_VIDEO_TAB,
    MENU_IMAGES_TAB,
@@ -205,6 +206,8 @@ enum menu_settings_type
    MENU_SETTINGS_CHEAT_END = MENU_SETTINGS_CHEAT_BEGIN + (MAX_CHEAT_COUNTERS - 1),
    MENU_SETTINGS_INPUT_DESC_BEGIN,
    MENU_SETTINGS_INPUT_DESC_END = MENU_SETTINGS_INPUT_DESC_BEGIN + (MAX_USERS * (RARCH_FIRST_CUSTOM_BIND + 4)),
+   MENU_SETTINGS_INPUT_DESC_KBD_BEGIN,
+   MENU_SETTINGS_INPUT_DESC_KBD_END = MENU_SETTINGS_INPUT_DESC_KBD_BEGIN + 135,
    MENU_SETTINGS_LAST
 };
 
@@ -335,6 +338,9 @@ typedef struct menu_display_ctx_driver
 
 typedef struct
 {
+   uint64_t state;
+
+   char menu_state_msg[1024];
    /* Scratchpad variables. These are used for instance
     * by the filebrowser when having to store intermediary
     * paths (subdirs/previous dirs/current dir/path, etc).
@@ -342,13 +348,6 @@ typedef struct
    char deferred_path[PATH_MAX_LENGTH];
    char scratch_buf[PATH_MAX_LENGTH];
    char scratch2_buf[PATH_MAX_LENGTH];
-
-   uint64_t state;
-
-   struct
-   {
-      char msg[1024];
-   } menu_state;
 
    /* path to the currently loaded database playlist file. */
    char db_playlist_file[PATH_MAX_LENGTH];
@@ -358,16 +357,16 @@ typedef struct menu_display_ctx_draw
 {
    float x;
    float y;
-   unsigned width;
-   unsigned height;
-   struct video_coords *coords;
-   void *matrix_data;
-   uintptr_t texture;
-   enum menu_display_prim_type prim_type;
    float *color;
    const float *vertex;
    const float *tex_coord;
+   unsigned width;
+   unsigned height;
+   uintptr_t texture;
    size_t vertex_count;
+   struct video_coords *coords;
+   void *matrix_data;
+   enum menu_display_prim_type prim_type;
    struct
    {
       unsigned id;
@@ -379,12 +378,12 @@ typedef struct menu_display_ctx_draw
 
 typedef struct menu_display_ctx_rotate_draw
 {
-   math_matrix_4x4 *matrix;
+   bool scale_enable;
    float rotation;
    float scale_x;
    float scale_y;
    float scale_z;
-   bool scale_enable;
+   math_matrix_4x4 *matrix;
 } menu_display_ctx_rotate_draw_t;
 
 typedef struct menu_display_ctx_coord_draw
@@ -448,7 +447,8 @@ typedef struct menu_ctx_driver
    /* Initializes a new menu list. */
    bool  (*lists_init)(void*);
    void  (*list_insert)(void *userdata,
-         file_list_t *list, const char *, const char *, const char *, size_t);
+         file_list_t *list, const char *, const char *, const char *, size_t,
+         unsigned);
    int   (*list_prepend)(void *userdata,
          file_list_t *list, const char *, const char *, size_t);
    void  (*list_free)(file_list_t *list, size_t, size_t);
@@ -534,21 +534,21 @@ typedef struct menu_ctx_pointer
    unsigned x;
    unsigned y;
    unsigned ptr;
-   menu_file_list_cbs_t *cbs;
-   menu_entry_t *entry;
    unsigned action;
    int retcode;
+   menu_file_list_cbs_t *cbs;
+   menu_entry_t *entry;
 } menu_ctx_pointer_t;
 
 typedef struct menu_ctx_bind
 {
-   menu_file_list_cbs_t *cbs;
    const char *path;
    const char *label;
    unsigned type;
-   size_t idx;
    uint32_t label_hash;
+   size_t idx;
    int retcode;
+   menu_file_list_cbs_t *cbs;
 } menu_ctx_bind_t;
 
 /**
@@ -667,7 +667,7 @@ void menu_display_draw_pipeline(menu_display_ctx_draw_t *draw);
 void menu_display_draw_bg(
       menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info,
-      bool add_opacity);
+      bool add_opacity, float opacity_override);
 void menu_display_draw_gradient(
       menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info);

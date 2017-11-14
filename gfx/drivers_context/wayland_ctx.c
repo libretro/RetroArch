@@ -480,22 +480,22 @@ static void registry_handle_global(void *data, struct wl_registry *reg,
 
    (void)version;
 
-   if (string_is_equal_fast(interface, "wl_compositor", 13))
+   if (string_is_equal(interface, "wl_compositor"))
       wl->compositor = (struct wl_compositor*)wl_registry_bind(reg,
             id, &wl_compositor_interface, 3);
-   else if (string_is_equal_fast(interface, "wl_output", 9))
+   else if (string_is_equal(interface, "wl_output"))
    {
       output = (struct wl_output*)wl_registry_bind(reg,
             id, &wl_output_interface, 2);
       wl_output_add_listener(output, &output_listener, wl);
       wl_display_roundtrip(wl->input.dpy);
    }
-   else if (string_is_equal_fast(interface, "wl_shell", 8))
+   else if (string_is_equal(interface, "wl_shell"))
       wl->shell = (struct wl_shell*)
          wl_registry_bind(reg, id, &wl_shell_interface, 1);
-   else if (string_is_equal_fast(interface, "wl_shm", 6))
+   else if (string_is_equal(interface, "wl_shm"))
       wl->shm = (struct wl_shm*)wl_registry_bind(reg, id, &wl_shm_interface, 1);
-   else if (string_is_equal_fast(interface, "wl_seat", 7))
+   else if (string_is_equal(interface, "wl_seat"))
    {
       wl->seat = (struct wl_seat*)wl_registry_bind(reg, id, &wl_seat_interface, 4);
       wl_seat_add_listener(wl->seat, &seat_listener, wl);

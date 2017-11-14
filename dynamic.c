@@ -1029,15 +1029,17 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             const char *fullpath = path_get(RARCH_PATH_CONTENT);
             if (!string_is_empty(fullpath))
             {
-               char temp_path[PATH_MAX_LENGTH];
+               size_t path_size = PATH_MAX_LENGTH * sizeof(char);
+               char *temp_path  = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
                temp_path[0] = '\0';
 
                if (string_is_empty(settings->paths.directory_system))
                   RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",
                         fullpath);
-               fill_pathname_basedir(temp_path, fullpath, sizeof(temp_path));
+               fill_pathname_basedir(temp_path, fullpath, path_size);
                dir_set(RARCH_DIR_SYSTEM, temp_path);
+               free(temp_path);
             }
 
             *(const char**)data = dir_get_ptr(RARCH_DIR_SYSTEM);

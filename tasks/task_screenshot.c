@@ -62,24 +62,24 @@ typedef struct screenshot_task_state screenshot_task_state_t;
 
 struct screenshot_task_state
 {
-#ifdef _XBOX1
-   D3DSurface *surf;
-#endif
-   char filename[PATH_MAX_LENGTH];
-   char shotname[256];
-   uint8_t *out_buffer;
-   struct scaler_ctx scaler;
-   const void *frame;
-   unsigned width;
-   unsigned height;
-   int pitch;
    bool bgr24;
    bool silence;
-   void *userbuf;
    bool is_idle;
    bool is_paused;
    bool history_list_enable;
+   int pitch;
+   unsigned width;
+   unsigned height;
    unsigned pixel_format_type;
+   uint8_t *out_buffer;
+   const void *frame;
+   char filename[PATH_MAX_LENGTH];
+   char shotname[256];
+#ifdef _XBOX1
+   D3DSurface *surf;
+#endif
+   void *userbuf;
+   struct scaler_ctx scaler;
 };
 
 /**

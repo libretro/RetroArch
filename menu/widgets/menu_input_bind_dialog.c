@@ -23,7 +23,6 @@
 #include "../menu_driver.h"
 
 #include "../../input/input_driver.h"
-#include "../../input/input_config.h"
 
 #include "../../configuration.h"
 #include "../../performance_counters.h"
@@ -83,12 +82,14 @@ static int menu_input_key_bind_set_mode_common(
       enum menu_input_binds_ctl_state state,
       rarch_setting_t  *setting)
 {
+   menu_displaylist_info_t info;
    unsigned bind_type            = 0;
-   menu_displaylist_info_t info  = {0};
    struct retro_keybind *keybind = NULL;
    unsigned         index_offset = setting->index_offset;
    file_list_t *menu_stack       = menu_entries_get_menu_stack_ptr(0);
    size_t selection              = menu_navigation_get_selection();
+
+   menu_displaylist_info_init(&info);
 
    switch (state)
    {
@@ -109,11 +110,11 @@ static int menu_input_key_bind_set_mode_common(
          info.type                = MENU_SETTINGS_CUSTOM_BIND_KEYBOARD;
          info.directory_ptr       = selection;
          info.enum_idx            = MENU_ENUM_LABEL_CUSTOM_BIND;
-         strlcpy(info.label,
-               msg_hash_to_str(MENU_ENUM_LABEL_CUSTOM_BIND), sizeof(info.label));
-
+         info.label               = strdup(
+               msg_hash_to_str(MENU_ENUM_LABEL_CUSTOM_BIND));
          if (menu_displaylist_ctl(DISPLAYLIST_INFO, &info))
             menu_displaylist_process(&info);
+         menu_displaylist_info_free(&info);
          break;
       case MENU_INPUT_BINDS_CTL_BIND_ALL:
          menu_input_binds.target  = &input_config_binds[index_offset][0];
@@ -124,12 +125,12 @@ static int menu_input_key_bind_set_mode_common(
          info.type                = MENU_SETTINGS_CUSTOM_BIND_KEYBOARD;
          info.directory_ptr       = selection;
          info.enum_idx            = MENU_ENUM_LABEL_CUSTOM_BIND_ALL;
-         strlcpy(info.label,
-               msg_hash_to_str(MENU_ENUM_LABEL_CUSTOM_BIND_ALL),
-               sizeof(info.label));
+         info.label               = strdup(
+               msg_hash_to_str(MENU_ENUM_LABEL_CUSTOM_BIND_ALL));
 
          if (menu_displaylist_ctl(DISPLAYLIST_INFO, &info))
             menu_displaylist_process(&info);
+         menu_displaylist_info_free(&info);
          break;
       default:
       case MENU_INPUT_BINDS_CTL_BIND_NONE:

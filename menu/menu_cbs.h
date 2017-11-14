@@ -27,6 +27,15 @@
 
 RETRO_BEGIN_DECLS
 
+typedef struct key_desc
+{
+   /* libretro key id */
+   unsigned key;
+
+   /* description */
+   char desc[32];
+} key_desc_t;
+
 enum
 {
    ACTION_OK_DL_DEFAULT = 0,
@@ -41,6 +50,10 @@ enum
    ACTION_OK_DL_RDB_ENTRY_SUBMENU,
    ACTION_OK_DL_AUDIO_DSP_PLUGIN,
    ACTION_OK_DL_SHADER_PASS,
+   ACTION_OK_DL_FAVORITES_LIST,
+   ACTION_OK_DL_IMAGES_LIST,
+   ACTION_OK_DL_VIDEO_LIST,
+   ACTION_OK_DL_MUSIC_LIST,
    ACTION_OK_DL_SHADER_PARAMETERS,
    ACTION_OK_DL_SHADER_PRESET,
    ACTION_OK_DL_GENERIC,
@@ -91,6 +104,7 @@ enum
    ACTION_OK_DL_ONSCREEN_OVERLAY_SETTINGS_LIST,
    ACTION_OK_DL_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST,
    ACTION_OK_DL_MENU_VIEWS_SETTINGS_LIST,
+   ACTION_OK_DL_QUICK_MENU_VIEWS_SETTINGS_LIST,
    ACTION_OK_DL_MENU_SETTINGS_LIST,
    ACTION_OK_DL_USER_INTERFACE_SETTINGS_LIST,
    ACTION_OK_DL_MENU_FILE_BROWSER_SETTINGS_LIST,
@@ -146,6 +160,9 @@ int core_setting_right(unsigned type, const char *label,
       bool wraparound);
 
 int action_right_input_desc(unsigned type, const char *label,
+      bool wraparound);
+
+int action_right_input_desc_kbd(unsigned type, const char *label,
       bool wraparound);
 
 int action_right_cheat(unsigned type, const char *label,

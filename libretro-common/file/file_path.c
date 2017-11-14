@@ -30,6 +30,7 @@
 
 #include <boolean.h>
 #include <file/file_path.h>
+#include <streams/file_stream.h>
 
 #ifndef __MACH__
 #include <compat/strl.h>
@@ -37,6 +38,7 @@
 #endif
 #include <compat/strcasestr.h>
 #include <retro_miscellaneous.h>
+#include <encodings/utf.h>
 
 #if defined(_WIN32)
 #ifdef _MSC_VER
@@ -51,6 +53,9 @@
 #include <fcntl.h>
 #include <direct.h>
 #include <windows.h>
+#if defined(_MSC_VER) && _MSC_VER <= 1200
+#define INVALID_FILE_ATTRIBUTES ((DWORD)-1)
+#endif
 #endif
 #elif defined(VITA)
 #define SCE_ERROR_ERRNO_EEXIST 0x80010011
@@ -83,6 +88,15 @@
 #include <unistd.h> /* stat() is defined here */
 #endif
 
+/* Assume W-functions do not work below VC2005 and Xbox platforms */
+#if defined(_MSC_VER) && _MSC_VER < 1400 || defined(_XBOX)
+
+#ifndef LEGACY_WIN32
+#define LEGACY_WIN32
+#endif
+
+#endif
+
 enum stat_mode
 {
    IS_DIRECTORY = 0,
@@ -112,9 +126,34 @@ static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
        return false;
 #elif defined(_WIN32)
    struct _stat buf;
-   DWORD file_info = GetFileAttributes(path);
+   char *path_local;
+   wchar_t *path_wide;
+   DWORD file_info;
 
-   _stat(path, &buf);
+   if (!path || !*path)
+      return false;
+
+   (void)path_wide;
+   (void)path_local;
+   (void)file_info;
+
+#if defined(LEGACY_WIN32)
+   path_local = utf8_to_local_string_alloc(path);
+   file_info  = GetFileAttributes(path_local);
+
+   _stat(path_local, &buf);
+
+   if (path_local)
+     free(path_local);
+#else
+   path_wide = utf8_to_utf16_string_alloc(path);
+   file_info = GetFileAttributesW(path_wide);
+
+   _wstat(path_wide, &buf);
+
+   if (path_wide)
+      free(path_wide);
+#endif
 
    if (file_info == INVALID_FILE_ATTRIBUTES)
       return false;
@@ -363,12 +402,17 @@ bool path_is_compressed_file(const char* path)
  */
 bool path_file_exists(const char *path)
 {
-   FILE *dummy = fopen(path, "rb");
+   RFILE *dummy;
+
+   if (!path || !*path)
+      return false;
+
+   dummy = filestream_open(path, RFILE_MODE_READ, -1);
 
    if (!dummy)
       return false;
 
-   fclose(dummy);
+   filestream_close(dummy);
    return true;
 }
 
@@ -875,4 +919,108 @@ void fill_short_pathname_representation_noext(char* out_rep,
 {
    fill_short_pathname_representation(out_rep, in_path, size);
    path_remove_extension(out_rep);
+}
+
+bool path_file_remove(const char *path)
+{
+   char *path_local    = NULL;
+   wchar_t *path_wide  = NULL;
+
+   if (!path || !*path)
+      return false;
+
+   (void)path_local;
+   (void)path_wide;
+
+#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_MSC_VER) && _MSC_VER < 1400
+   path_local = utf8_to_local_string_alloc(path);
+
+   if (path_local)
+   {
+      int ret = remove(path_local);
+      free(path_local);
+
+      if (ret == 0)
+         return true;
+   }
+#else
+   path_wide = utf8_to_utf16_string_alloc(path);
+
+   if (path_wide)
+   {
+      int ret = _wremove(path_wide);
+      free(path_wide);
+
+      if (ret == 0)
+         return true;
+   }
+#endif
+#else
+   if (remove(path) == 0)
+      return true;
+#endif
+   return false;
+}
+
+bool path_file_rename(const char *old_path, const char *new_path)
+{
+   char *old_path_local    = NULL;
+   char *new_path_local    = NULL;
+   wchar_t *old_path_wide  = NULL;
+   wchar_t *new_path_wide  = NULL;
+
+   if (!old_path || !*old_path || !new_path || !*new_path)
+      return false;
+
+   (void)old_path_local;
+   (void)new_path_local;
+   (void)old_path_wide;
+   (void)new_path_wide;
+
+#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_MSC_VER) && _MSC_VER < 1400
+   old_path_local = utf8_to_local_string_alloc(old_path);
+   new_path_local = utf8_to_local_string_alloc(new_path);
+
+   if (old_path_local)
+   {
+      if (new_path_local)
+      {
+         int ret = rename(old_path_local, new_path_local);
+         free(old_path_local);
+         free(new_path_local);
+         return ret;
+      }
+
+      free(old_path_local);
+   }
+
+   if (new_path_local)
+      free(new_path_local);
+#else
+   old_path_wide = utf8_to_utf16_string_alloc(old_path);
+   new_path_wide = utf8_to_utf16_string_alloc(new_path);
+
+   if (old_path_wide)
+   {
+      if (new_path_wide)
+      {
+         int ret = _wrename(old_path_wide, new_path_wide);
+         free(old_path_wide);
+         free(new_path_wide);
+         return ret;
+      }
+
+      free(old_path_wide);
+   }
+
+   if (new_path_wide)
+      free(new_path_wide);
+#endif
+#else
+   if (rename(old_path, new_path) == 0)
+      return true;
+#endif
+   return false;
 }

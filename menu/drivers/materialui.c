@@ -60,6 +60,12 @@
 /* This struct holds the y position and the line height for each menu entry */
 typedef struct
 {
+   bool switch_is_on;
+   bool do_draw_text;
+   bool texture_switch_set;
+   bool texture_switch2_set;
+   unsigned texture_switch_index;
+   unsigned texture_switch2_index;
    float line_height;
    float y;
 } mui_node_t;
@@ -76,6 +82,50 @@ enum
    MUI_TEXTURE_TAB_SETTINGS,
    MUI_TEXTURE_KEY,
    MUI_TEXTURE_KEY_HOVER,
+   MUI_TEXTURE_FOLDER,
+   MUI_TEXTURE_PARENT_DIRECTORY,
+   MUI_TEXTURE_IMAGE,
+   MUI_TEXTURE_ARCHIVE,
+   MUI_TEXTURE_VIDEO,
+   MUI_TEXTURE_MUSIC,
+   MUI_TEXTURE_QUIT,
+   MUI_TEXTURE_HELP,
+   MUI_TEXTURE_UPDATE,
+   MUI_TEXTURE_HISTORY,
+   MUI_TEXTURE_INFO,
+   MUI_TEXTURE_ADD,
+   MUI_TEXTURE_SETTINGS,
+   MUI_TEXTURE_FILE,
+   MUI_TEXTURE_PLAYLIST,
+   MUI_TEXTURE_UPDATER,
+   MUI_TEXTURE_QUICKMENU,
+   MUI_TEXTURE_NETPLAY,
+   MUI_TEXTURE_CORES,
+   MUI_TEXTURE_SHADERS,
+   MUI_TEXTURE_CONTROLS,
+   MUI_TEXTURE_CLOSE,
+   MUI_TEXTURE_CORE_OPTIONS,
+   MUI_TEXTURE_CORE_CHEAT_OPTIONS,
+   MUI_TEXTURE_RESUME,
+   MUI_TEXTURE_RESTART,
+   MUI_TEXTURE_ADD_TO_FAVORITES,
+   MUI_TEXTURE_RUN,
+   MUI_TEXTURE_RENAME,
+   MUI_TEXTURE_DATABASE,
+   MUI_TEXTURE_ADD_TO_MIXER,
+   MUI_TEXTURE_SCAN,
+   MUI_TEXTURE_REMOVE,
+   MUI_TEXTURE_START_CORE,
+   MUI_TEXTURE_LOAD_STATE,
+   MUI_TEXTURE_SAVE_STATE,
+   MUI_TEXTURE_UNDO_LOAD_STATE,
+   MUI_TEXTURE_UNDO_SAVE_STATE,
+   MUI_TEXTURE_STATE_SLOT,
+   MUI_TEXTURE_TAKE_SCREENSHOT,
+   MUI_TEXTURE_CONFIGURATIONS,
+   MUI_TEXTURE_LOAD_CONTENT,
+   MUI_TEXTURE_DISK,
+   MUI_TEXTURE_EJECT,
    MUI_TEXTURE_LAST
 };
 
@@ -91,6 +141,11 @@ enum
 
 typedef struct mui_handle
 {
+   bool need_compute;
+   bool mouse_show;
+
+   int cursor_size;
+
    unsigned tabs_height;
    unsigned line_height;
    unsigned shadow_height;
@@ -99,38 +154,27 @@ typedef struct mui_handle
    unsigned margin;
    unsigned glyph_width;
    unsigned glyph_width2;
-   char box_message[1024];
-   bool mouse_show;
+   unsigned categories_active_idx;
+   unsigned categories_active_idx_old;
+
+   size_t categories_selection_ptr;
+   size_t categories_selection_ptr_old;
+
+   /* Y position of the vertical scroll */
+   float scroll_y;
+   float content_height;
+   float textures_arrow_alpha;
+   float categories_x_pos;
+
    uint64_t frame_count;
 
-   struct
-   {
-      int size;
-   } cursor;
+   char *box_message;
 
    struct
    {
-      struct
-      {
-         float alpha;
-      } arrow;
-
       menu_texture_item bg;
       menu_texture_item list[MUI_TEXTURE_LAST];
    } textures;
-
-   struct
-   {
-      struct
-      {
-         unsigned idx;
-         unsigned idx_old;
-      } active;
-
-      float x_pos;
-      size_t selection_ptr_old;
-      size_t selection_ptr;
-   } categories;
 
    /* One font for the menu entries, one font for the labels */
    font_data_t *font;
@@ -138,8 +182,6 @@ typedef struct mui_handle
    video_font_raster_block_t raster_block;
    video_font_raster_block_t raster_block2;
 
-   /* Y position of the vertical scroll */
-   float scroll_y;
 } mui_handle_t;
 
 static void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha)
@@ -172,6 +214,92 @@ static const char *mui_texture_path(unsigned id)
          return "key.png";
       case MUI_TEXTURE_KEY_HOVER:
          return "key-hover.png";
+      case MUI_TEXTURE_FOLDER:
+         return "folder.png";
+      case MUI_TEXTURE_PARENT_DIRECTORY:
+         return "parent_directory.png";
+      case MUI_TEXTURE_IMAGE:
+         return "image.png";
+      case MUI_TEXTURE_VIDEO:
+         return "video.png";
+      case MUI_TEXTURE_MUSIC:
+         return "music.png";
+      case MUI_TEXTURE_ARCHIVE:
+         return "archive.png";
+      case MUI_TEXTURE_QUIT:
+         return "quit.png";
+      case MUI_TEXTURE_HELP:
+         return "help.png";
+      case MUI_TEXTURE_NETPLAY:
+         return "netplay.png";
+      case MUI_TEXTURE_CORES:
+         return "cores.png";
+      case MUI_TEXTURE_CONTROLS:
+         return "controls.png";
+      case MUI_TEXTURE_RESUME:
+         return "resume.png";
+      case MUI_TEXTURE_RESTART:
+         return "restart.png";
+      case MUI_TEXTURE_CLOSE:
+         return "close.png";
+      case MUI_TEXTURE_CORE_OPTIONS:
+         return "core_options.png";
+      case MUI_TEXTURE_CORE_CHEAT_OPTIONS:
+         return "core_cheat_options.png";
+      case MUI_TEXTURE_SHADERS:
+         return "shaders.png";
+      case MUI_TEXTURE_ADD_TO_FAVORITES:
+         return "add_to_favorites.png";
+      case MUI_TEXTURE_RUN:
+         return "run.png";
+      case MUI_TEXTURE_RENAME:
+         return "rename.png";
+      case MUI_TEXTURE_DATABASE:
+         return "database.png";
+      case MUI_TEXTURE_ADD_TO_MIXER:
+         return "add_to_mixer.png";
+      case MUI_TEXTURE_SCAN:
+         return "scan.png";
+      case MUI_TEXTURE_REMOVE:
+         return "remove.png";
+      case MUI_TEXTURE_START_CORE:
+         return "start_core.png";
+      case MUI_TEXTURE_LOAD_STATE:
+         return "load_state.png";
+      case MUI_TEXTURE_SAVE_STATE:
+         return "save_state.png";
+      case MUI_TEXTURE_DISK:
+         return "disk.png";
+      case MUI_TEXTURE_EJECT:
+         return "eject.png";
+      case MUI_TEXTURE_UNDO_LOAD_STATE:
+         return "undo_load_state.png";
+      case MUI_TEXTURE_UNDO_SAVE_STATE:
+         return "undo_save_state.png";
+      case MUI_TEXTURE_STATE_SLOT:
+         return "state_slot.png";
+      case MUI_TEXTURE_TAKE_SCREENSHOT:
+         return "take_screenshot.png";
+      case MUI_TEXTURE_CONFIGURATIONS:
+         return "configurations.png";
+      case MUI_TEXTURE_LOAD_CONTENT:
+         return "load_content.png";
+      case MUI_TEXTURE_UPDATER:
+         return "update.png";
+      case MUI_TEXTURE_QUICKMENU:
+         return "quickmenu.png";
+      case MUI_TEXTURE_HISTORY:
+         return "history.png";
+      case MUI_TEXTURE_INFO:
+         return "information.png";
+      case MUI_TEXTURE_ADD:
+         return "add.png";
+      case MUI_TEXTURE_SETTINGS:
+         return "settings.png";
+      case MUI_TEXTURE_FILE:
+         return "file.png";
+      case MUI_TEXTURE_PLAYLIST:
+         return "playlist.png";
    }
 
    return NULL;
@@ -180,15 +308,17 @@ static const char *mui_texture_path(unsigned id)
 static void mui_context_reset_textures(mui_handle_t *mui)
 {
    unsigned i;
-   char iconpath[PATH_MAX_LENGTH];
+   char *iconpath = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
-   iconpath[0] = '\0';
+   iconpath[0]    = '\0';
 
-   fill_pathname_application_special(iconpath, sizeof(iconpath),
+   fill_pathname_application_special(iconpath,
+         PATH_MAX_LENGTH * sizeof(char),
          APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_ICONS);
 
    for (i = 0; i < MUI_TEXTURE_LAST; i++)
       menu_display_reset_textures_list(mui_texture_path(i), iconpath, &mui->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR);
+   free(iconpath);
 }
 
 static void mui_draw_icon(
@@ -248,17 +378,17 @@ static void mui_draw_tab(mui_handle_t *mui,
    {
       case MUI_SYSTEM_TAB_MAIN:
          tab_icon = MUI_TEXTURE_TAB_MAIN;
-         if (i == mui->categories.selection_ptr)
+         if (i == mui->categories_selection_ptr)
             tab_color = active_tab_color;
          break;
       case MUI_SYSTEM_TAB_PLAYLISTS:
          tab_icon = MUI_TEXTURE_TAB_PLAYLISTS;
-         if (i == mui->categories.selection_ptr)
+         if (i == mui->categories_selection_ptr)
             tab_color = active_tab_color;
          break;
       case MUI_SYSTEM_TAB_SETTINGS:
          tab_icon = MUI_TEXTURE_TAB_SETTINGS;
-         if (i == mui->categories.selection_ptr)
+         if (i == mui->categories_selection_ptr)
             tab_color = active_tab_color;
          break;
    }
@@ -397,7 +527,7 @@ static void mui_draw_tab_end(mui_handle_t *mui,
    unsigned tab_width = width / (MUI_SYSTEM_TAB_END+1);
 
    menu_display_draw_quad(
-        (int)(mui->categories.selection_ptr * tab_width),
+        (int)(mui->categories_selection_ptr * tab_width),
          height - (header_height/16),
          tab_width,
          header_height/16,
@@ -405,38 +535,21 @@ static void mui_draw_tab_end(mui_handle_t *mui,
          &active_tab_marker_color[0]);
 }
 
-/* Compute the total height of the scrollable content */
-static float mui_content_height(void)
-{
-   unsigned i;
-   file_list_t *list = menu_entries_get_selection_buf_ptr(0);
-   float sum         = 0;
-
-   for (i = 0; i < menu_entries_get_end(); i++)
-   {
-      mui_node_t *node  = (mui_node_t*)
-         menu_entries_get_userdata_at_offset(list, i);
-      sum              += node->line_height;
-   }
-   return sum;
-}
-
 /* Draw the scrollbar */
 static void mui_draw_scrollbar(mui_handle_t *mui,
       unsigned width, unsigned height, float *coord_color)
 {
    unsigned header_height = menu_display_get_header_height();
-   float content_height   = mui_content_height();
    float total_height     = height - header_height - mui->tabs_height;
    float scrollbar_margin = mui->scrollbar_width;
-   float scrollbar_height = total_height / (content_height / total_height);
-   float y                = total_height * mui->scroll_y / content_height;
+   float scrollbar_height = total_height / (mui->content_height / total_height);
+   float y                = total_height * mui->scroll_y / mui->content_height;
 
    /* apply a margin on the top and bottom of the scrollbar for aestetic */
    scrollbar_height      -= scrollbar_margin * 2;
    y                     += scrollbar_margin;
 
-   if (content_height < total_height)
+   if (mui->content_height < total_height)
       return;
 
    /* if the scrollbar is extremely short, display it as a square */
@@ -459,7 +572,9 @@ static void mui_get_message(void *data, const char *message)
    if (!mui || !message || !*message)
       return;
 
-   strlcpy(mui->box_message, message, sizeof(mui->box_message));
+   if (!string_is_empty(mui->box_message))
+      free(mui->box_message);
+   mui->box_message = strdup(message);
 }
 
 /* Draw the modal */
@@ -545,32 +660,50 @@ static unsigned mui_count_lines(const char *str)
 /* Compute the line height for each menu entries. */
 static void mui_compute_entries_box(mui_handle_t* mui, int width)
 {
+   unsigned i;
    size_t usable_width = width - (mui->margin * 2);
    file_list_t *list   = menu_entries_get_selection_buf_ptr(0);
    float sum           = 0;
-   unsigned i          = 0;
+   size_t entries_end  = menu_entries_get_size();
+   float scale_factor  = menu_display_get_dpi();
+   uintptr_t texture_switch2 = 0;
 
-   for (; i < menu_entries_get_end(); i++)
+   for (i = 0; i < entries_end; i++)
    {
-      char sublabel_str[255];
-      float scale_factor;
-      unsigned lines   = 0;
-      mui_node_t *node = (mui_node_t*)
-            menu_entries_get_userdata_at_offset(list, i);
+      menu_entry_t entry;
+      char *sublabel_str = NULL;
+      unsigned lines     = 0;
+      mui_node_t *node   = (mui_node_t*)
+            file_list_get_userdata_at_offset(list, i);
 
-      sublabel_str[0]  = '\0';
+      menu_entry_init(&entry);
+      menu_entry_get(&entry, 0, i, NULL, true);
 
-      if (menu_entry_get_sublabel(i, sublabel_str, sizeof(sublabel_str)))
+      /* set texture_switch2 */
+      if (node->texture_switch2_set)
+         texture_switch2 = mui->textures.list[node->texture_switch2_index];
+
+      sublabel_str = menu_entry_get_sublabel(&entry);
+      menu_entry_free(&entry);
+
+      if (sublabel_str)
       {
-         word_wrap(sublabel_str, sublabel_str, (int)(usable_width / mui->glyph_width2), false);
-         lines = mui_count_lines(sublabel_str);
+         if (!string_is_empty(sublabel_str))
+         {
+            int icon_margin = texture_switch2 ? mui->icon_size : 0;
+
+            word_wrap(sublabel_str, sublabel_str, (int)((usable_width - icon_margin) / mui->glyph_width2), false);
+            lines = mui_count_lines(sublabel_str);
+         }
+         free(sublabel_str);
       }
 
-      scale_factor       = menu_display_get_dpi();
       node->line_height  = (scale_factor / 3) + (lines * mui->font->size);
       node->y            = sum;
       sum               += node->line_height;
    }
+
+   mui->content_height = sum;
 }
 
 /* Called on each frame. We use this callback to implement the touch scroll
@@ -590,7 +723,11 @@ static void mui_render(void *data, bool is_idle)
 
    video_driver_get_size(&width, &height);
 
-   mui_compute_entries_box(mui, width);
+   if (mui->need_compute)
+   {
+      mui_compute_entries_box(mui, width);
+      mui->need_compute = false;
+   }
 
    menu_animation_ctl(MENU_ANIMATION_CTL_DELTA_TIME, &delta_time);
 
@@ -605,15 +742,16 @@ static void mui_render(void *data, bool is_idle)
 
    if (settings->bools.menu_pointer_enable)
    {
+      size_t ii;
       int16_t        pointer_y = menu_input_pointer_state(MENU_POINTER_Y_AXIS);
       float    old_accel_val   = 0.0f;
       float new_accel_val      = 0.0f;
+      size_t entries_end       = menu_entries_get_size();
 
-      size_t ii = 0;
-      for (ii = 0; ii < menu_entries_get_size(); ii++)
+      for (ii = 0; ii < entries_end; ii++)
       {
          mui_node_t *node = (mui_node_t*)
-               menu_entries_get_userdata_at_offset(list, ii);
+               file_list_get_userdata_at_offset(list, ii);
 
          if (pointer_y > (-mui->scroll_y + header_height + node->y)
           && pointer_y < (-mui->scroll_y + header_height + node->y + node->line_height)
@@ -632,13 +770,14 @@ static void mui_render(void *data, bool is_idle)
 
    if (settings->bools.menu_mouse_enable)
    {
+      size_t ii;
       int16_t mouse_y          = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
+      size_t entries_end       = menu_entries_get_size();
 
-      size_t ii = 0;
-      for (ii = 0; ii < menu_entries_get_size(); ii++)
+      for (ii = 0; ii < entries_end; ii++)
       {
          mui_node_t *node = (mui_node_t*)
-               menu_entries_get_userdata_at_offset(list, ii);
+               file_list_get_userdata_at_offset(list, ii);
 
          if (mouse_y > (-mui->scroll_y + header_height + node->y)
           && mouse_y < (-mui->scroll_y + header_height + node->y + node->line_height)
@@ -650,17 +789,13 @@ static void mui_render(void *data, bool is_idle)
    if (mui->scroll_y < 0)
       mui->scroll_y = 0;
 
-   bottom = mui_content_height() - height + header_height + mui->tabs_height;
+   bottom = mui->content_height - height + header_height + mui->tabs_height;
    if (mui->scroll_y > bottom)
       mui->scroll_y = bottom;
 
-   if (mui_content_height()
+   if (mui->content_height
          < height - header_height - mui->tabs_height)
       mui->scroll_y = 0;
-
-   /*if (menu_entries_get_end() < height / mui->line_height) { }
-   else
-      i = mui->scroll_y / mui->line_height;*/
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &i);
 }
@@ -669,7 +804,8 @@ static void mui_render(void *data, bool is_idle)
 static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
       int i, int y, unsigned width, unsigned height,
       uint64_t index, uint32_t color, bool selected, const char *label,
-      const char *value, float *label_color)
+      const char *value, float *label_color,
+      uint32_t sublabel_color)
 {
    /* This will be used instead of label_color if texture_switch is 'off' icon */
    float pure_white[16]=  {
@@ -679,20 +815,25 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
       1.00, 1.00, 1.00, 1.00,
    };
 
+   menu_entry_t entry;
    menu_animation_ctx_ticker_t ticker;
    char label_str[255];
-   char sublabel_str[255];
    char value_str[255];
+   char *sublabel_str              = NULL;
    bool switch_is_on               = true;
    int value_len                   = (int)utf8len(value);
    int ticker_limit                = 0;
    uintptr_t texture_switch        = 0;
+   uintptr_t texture_switch2       = 0;
    bool do_draw_text               = false;
    size_t usable_width             = width - (mui->margin * 2);
-   uint32_t sublabel_color         = 0x888888ff;
+   enum msg_file_type hash_type    = msg_hash_to_file_type(msg_hash_calculate(value));
+   float scale_factor              = menu_display_get_dpi();
 
-   label_str[0] = value_str[0]     = 
-      sublabel_str[0]              = '\0';
+   label_str[0] = value_str[0]     = '\0';
+
+   menu_entry_init(&entry);
+   menu_entry_get(&entry, 0, i, NULL, true);
 
    if (value_len * mui->glyph_width > usable_width / 2)
       value_len    = (int)((usable_width/2) / mui->glyph_width);
@@ -713,28 +854,15 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
 
    menu_animation_ticker(&ticker);
 
-   if (menu_entry_get_sublabel(i, sublabel_str, sizeof(sublabel_str)))
-   {
-      word_wrap(sublabel_str, sublabel_str, (int)(usable_width / mui->glyph_width2), false);
-
-      menu_display_draw_text(mui->font2, sublabel_str,
-            mui->margin,
-            y + (menu_display_get_dpi() / 4) + mui->font->size,
-            width, height, sublabel_color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
-   }
-
-   menu_display_draw_text(mui->font, label_str,
-         mui->margin,
-         y + (menu_display_get_dpi() / 5),
-         width, height, color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
-
+   /* set switch_is_on */
+   /* set texture_switch */
    if (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) ||
          (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))))
    {
       if (mui->textures.list[MUI_TEXTURE_SWITCH_OFF])
       {
-         texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_OFF];
          switch_is_on = false;
+         texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_OFF];
       }
       else
          do_draw_text = true;
@@ -744,18 +872,18 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
    {
       if (mui->textures.list[MUI_TEXTURE_SWITCH_ON])
       {
-         texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_ON];
          switch_is_on = true;
+         texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_ON];
       }
       else
          do_draw_text = true;
    }
+   /* set do_draw_text */
    else
    {
-      enum msg_file_type type = msg_hash_to_file_type(msg_hash_calculate(value));
-
-      switch (type)
+      switch (hash_type)
       {
+         case FILE_TYPE_IN_CARCHIVE:
          case FILE_TYPE_COMPRESSED:
          case FILE_TYPE_MORE:
          case FILE_TYPE_CORE:
@@ -774,24 +902,81 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
       }
    }
 
+   /* set texture_switch2 */
+   if (node->texture_switch2_set)
+      texture_switch2 = mui->textures.list[node->texture_switch2_index];
+   else
+   {
+      switch (hash_type)
+      {
+         case FILE_TYPE_COMPRESSED:
+            texture_switch2 = mui->textures.list[MUI_TEXTURE_ARCHIVE];
+            break;
+         case FILE_TYPE_IMAGE:
+            texture_switch2 = mui->textures.list[MUI_TEXTURE_IMAGE];
+            break;
+         default:
+            break;
+      }
+   }
+
+   sublabel_str = menu_entry_get_sublabel(&entry);
+
+   /* Sublabel */
+   if (sublabel_str)
+   {
+      if (!string_is_empty(sublabel_str))
+      {
+         int icon_margin = texture_switch2 ? mui->icon_size : 0;
+
+         word_wrap(sublabel_str, sublabel_str, (int)((usable_width - icon_margin) / mui->glyph_width2), false);
+
+         menu_display_draw_text(mui->font2, sublabel_str,
+               mui->margin + (texture_switch2 ? mui->icon_size : 0),
+               y + (scale_factor / 4) + mui->font->size,
+               width, height, sublabel_color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
+      }
+      free(sublabel_str);
+   }
+
+   menu_display_draw_text(mui->font, label_str,
+         mui->margin + (texture_switch2 ? mui->icon_size : 0),
+         y + (scale_factor / 5),
+         width, height, color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
+
    if (do_draw_text)
       menu_display_draw_text(mui->font, value_str,
             width - mui->margin,
-            y + (menu_display_get_dpi() / 5),
+            y + (scale_factor / 5),
             width, height, color, TEXT_ALIGN_RIGHT, 1.0f, false, 0);
+
+   if (texture_switch2)
+      mui_draw_icon(
+            mui->icon_size,
+            (uintptr_t)texture_switch2,
+            0,
+            y + (scale_factor / 6) - mui->icon_size/2,
+            width,
+            height,
+            0,
+            1,
+            &label_color[0]
+      );
 
    if (texture_switch)
       mui_draw_icon(
             mui->icon_size,
-            texture_switch,
+            (uintptr_t)texture_switch,
             width - mui->margin - mui->icon_size,
-            y + (menu_display_get_dpi() / 6) - mui->icon_size/2,
+            y + (scale_factor / 6) - mui->icon_size/2,
             width,
             height,
             0,
             1,
             switch_is_on ? &label_color[0] :  &pure_white[0]
       );
+   
+   menu_entry_free(&entry);
 }
 
 static void mui_render_menu_list(
@@ -800,10 +985,12 @@ static void mui_render_menu_list(
       unsigned width, unsigned height,
       uint32_t font_normal_color,
       uint32_t font_hover_color,
-      float *menu_list_color)
+      float *menu_list_color,
+      uint32_t sublabel_color)
 {
+   size_t i;
    float sum                               = 0;
-   size_t i                                = 0;
+   size_t entries_end                      = 0;
    file_list_t *list                       = NULL;
    uint64_t frame_count                    = mui->frame_count;
    unsigned header_height                  = 
@@ -816,23 +1003,36 @@ static void mui_render_menu_list(
 
    list                                    = 
       menu_entries_get_selection_buf_ptr(0);
+   
+   entries_end = menu_entries_get_size();
 
-   for (; i < menu_entries_get_end(); i++)
+   for (i = 0; i < entries_end; i++)
    {
-      char rich_label[255];
+      menu_entry_t entry;
       char entry_value[255];
+      char *rich_label    = NULL;
       bool entry_selected = false;
       mui_node_t *node    = (mui_node_t*)
-            menu_entries_get_userdata_at_offset(list, i);
+            file_list_get_userdata_at_offset(list, i);
       size_t selection    = menu_navigation_get_selection();
       int               y = header_height - mui->scroll_y + sum;
-      rich_label[0]       = 
-         entry_value[0]   = '\0';
+      entry_value[0]      = '\0';
 
-      menu_entry_get_value((unsigned)i, NULL, entry_value, sizeof(entry_value));
-      menu_entry_get_rich_label((unsigned)i, rich_label, sizeof(rich_label));
+      sum += node->line_height;
 
+      if (y + (int)node->line_height < 0)
+         continue;
+
+      if (y > (int)height)
+         break;
+
+      menu_entry_init(&entry);
+      menu_entry_get(&entry, 0, (unsigned)i, NULL, true);
+      menu_entry_get_value(&entry, entry_value, sizeof(entry_value));
+      rich_label     = menu_entry_get_rich_label(&entry);
       entry_selected = selection == i;
+
+      /* Render label, value, and associated icons */
 
       mui_render_label_value(
          mui,
@@ -846,10 +1046,12 @@ static void mui_render_menu_list(
          entry_selected,
          rich_label,
          entry_value,
-         menu_list_color
+         menu_list_color,
+         sublabel_color
       );
 
-      sum += node->line_height;
+      menu_entry_free(&entry);
+      free(rich_label);
    }
 }
 
@@ -904,6 +1106,9 @@ static int mui_get_core_title(char *s, size_t len)
 static void mui_draw_bg(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
+   bool add_opacity       = false;
+   float opacity_override = video_info->menu_wallpaper_opacity;
+
    menu_display_blend_begin();
 
    draw->x               = 0;
@@ -911,7 +1116,14 @@ static void mui_draw_bg(menu_display_ctx_draw_t *draw,
    draw->pipeline.id     = 0;
    draw->pipeline.active = false;
 
-   menu_display_draw_bg(draw, video_info, false);
+   if (video_info->libretro_running)
+   {
+      add_opacity      = true;
+      opacity_override = video_info->menu_framebuffer_opacity;
+   }
+
+   menu_display_draw_bg(draw, video_info, add_opacity,
+         opacity_override);
    menu_display_draw(draw);
    menu_display_blend_end();
 }
@@ -920,87 +1132,89 @@ static void mui_draw_bg(menu_display_ctx_draw_t *draw,
 and the menu list */
 static void mui_frame(void *data, video_frame_info_t *video_info)
 {
-   float black_bg[16] = {
-      0, 0, 0, 0.75,
-      0, 0, 0, 0.75,
-      0, 0, 0, 0.75,
-      0, 0, 0, 0.75,
-   };
-   float pure_white[16]=  {
-      1.00, 1.00, 1.00, 1.00,
-      1.00, 1.00, 1.00, 1.00,
-      1.00, 1.00, 1.00, 1.00,
-      1.00, 1.00, 1.00, 1.00,
-   };
-   float white_bg[16]=  {
-      0.98, 0.98, 0.98, 1.00,
-      0.98, 0.98, 0.98, 1.00,
-      0.98, 0.98, 0.98, 1.00,
-      0.98, 0.98, 0.98, 1.00,
-   };
-   float white_transp_bg[16]=  {
-      0.98, 0.98, 0.98, 0.90,
-      0.98, 0.98, 0.98, 0.90,
-      0.98, 0.98, 0.98, 0.90,
-      0.98, 0.98, 0.98, 0.90,
-   };
-   float grey_bg[16]=  {
-      0.78, 0.78, 0.78, 0.90,
-      0.78, 0.78, 0.78, 0.90,
-      0.78, 0.78, 0.78, 0.90,
-      0.78, 0.78, 0.78, 0.90,
-   };
-   float shadow_bg[16]=  {
-      0.00, 0.00, 0.00, 0.00,
-      0.00, 0.00, 0.00, 0.00,
-      0.00, 0.00, 0.00, 0.2,
-      0.00, 0.00, 0.00, 0.2,
-   };
-   /* TODO/FIXME - convert this over to new hex format */
-   float greyish_blue[16] = {
-      0.22, 0.28, 0.31, 1.00,
-      0.22, 0.28, 0.31, 1.00,
-      0.22, 0.28, 0.31, 1.00,
-      0.22, 0.28, 0.31, 1.00,
-   };
-   float almost_black[16] = {
-      0.13, 0.13, 0.13, 0.90,
-      0.13, 0.13, 0.13, 0.90,
-      0.13, 0.13, 0.13, 0.90,
-      0.13, 0.13, 0.13, 0.90,
-   };
-
-
    /* This controls the main background color */
    menu_display_ctx_clearcolor_t clearcolor;
+   
    menu_animation_ctx_ticker_t ticker;
    menu_display_ctx_draw_t draw;
    char msg[255];
    char title[255];
    char title_buf[255];
    char title_msg[255];
+   float black_bg[16] = {
+      0, 0, 0, 0.75,		
+      0, 0, 0, 0.75,	
+      0, 0, 0, 0.75,		
+      0, 0, 0, 0.75,		
+   };
 
-   uint32_t black_opaque_54        = 0x0000008a;
-   uint32_t black_opaque_87        = 0x000000de;
-   uint32_t white_opaque_70        = 0xffffffb3;
+   float pure_white[16]=  {		
+      1.00, 1.00, 1.00, 1.00,		
+      1.00, 1.00, 1.00, 1.00,		
+      1.00, 1.00, 1.00, 1.00,		
+      1.00, 1.00, 1.00, 1.00,		
+   };		
+   float white_bg[16]=  {		
+      0.98, 0.98, 0.98, 1.00,		
+      0.98, 0.98, 0.98, 1.00,		
+      0.98, 0.98, 0.98, 1.00,		
+      0.98, 0.98, 0.98, 1.00,		
+   };		
+   float white_transp_bg[16]=  {		
+      0.98, 0.98, 0.98, 0.90,		
+      0.98, 0.98, 0.98, 0.90,		
+      0.98, 0.98, 0.98, 0.90,		
+      0.98, 0.98, 0.98, 0.90,		
+   };		
+   float grey_bg[16]=  {		
+      0.78, 0.78, 0.78, 0.90,		
+      0.78, 0.78, 0.78, 0.90,		
+      0.78, 0.78, 0.78, 0.90,		
+      0.78, 0.78, 0.78, 0.90,		
+   };		
+   /* TODO/FIXME  convert this over to new hex format */		
+   float greyish_blue[16] = {		
+      0.22, 0.28, 0.31, 1.00,		
+      0.22, 0.28, 0.31, 1.00,		
+      0.22, 0.28, 0.31, 1.00,		
+      0.22, 0.28, 0.31, 1.00,		
+   };		
+   float almost_black[16] = {		
+      0.13, 0.13, 0.13, 0.90,		
+      0.13, 0.13, 0.13, 0.90,		
+      0.13, 0.13, 0.13, 0.90,		
+      0.13, 0.13, 0.13, 0.90,		
+   };		
 
-   /* https://material.google.com/style/color.html#color-color-palette */
-   /* Hex values converted to RGB normalized decimals, alpha set to 1 */
-   float blue_500[16]              = {0};
-   float blue_50[16]               = {0};
-   float green_500[16]             = {0};
-   float green_50[16]              = {0};
-   float red_500[16]               = {0};
-   float red_50[16]                = {0};
-   float yellow_500[16]            = {0};
-   float blue_grey_500[16]         = {0};
-   float blue_grey_50[16]          = {0};
-   float yellow_200[16]            = {0};
-   float color_nv_header[16]       = {0};
-   float color_nv_body[16]         = {0};
-   float color_nv_accent[16]       = {0};
-   float footer_bg_color_real[16]  = {0};
+   float shadow_bg[16]=  {
+      0.00, 0.00, 0.00, 0.00,
+      0.00, 0.00, 0.00, 0.00,
+      0.00, 0.00, 0.00, 0.20,
+      0.00, 0.00, 0.00, 0.20,
+   };
+
+   uint32_t black_opaque_54        = 0x0000008a;		
+   uint32_t black_opaque_87        = 0x000000de;		
+   uint32_t white_opaque_70        = 0xffffffb3;		
+
+   /* https://material.google.com/style/color.html#color-color-palette */		
+   /* Hex values converted to RGB normalized decimals, alpha set to 1 */		
+   float blue_500[16]              = {0};		
+   float blue_50[16]               = {0};		
+   float green_500[16]             = {0};		
+   float green_50[16]              = {0};		
+   float red_500[16]               = {0};		
+   float red_50[16]                = {0};		
+   float yellow_500[16]            = {0};		
+   float blue_grey_500[16]         = {0};		
+   float blue_grey_50[16]          = {0};		
+   float yellow_200[16]            = {0};		
+   float color_nv_header[16]       = {0};		
+   float color_nv_body[16]         = {0};		
+   float color_nv_accent[16]       = {0};		
+   float footer_bg_color_real[16]  = {0};		
    float header_bg_color_real[16]  = {0};
+
    file_list_t *list               = NULL;
    mui_node_t *node                = NULL;
    unsigned width                  = video_info->width;
@@ -1015,15 +1229,16 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
    bool libretro_running           = video_info->libretro_running;
 
    /* Default is blue theme */
-   float *header_bg_color          = NULL;
-   float *highlighted_entry_color  = NULL;
-   float *footer_bg_color          = NULL;
-   float *body_bg_color            = NULL;
-   float *active_tab_marker_color  = NULL;
+   float *header_bg_color          = NULL;		
+   float *highlighted_entry_color  = NULL;		
+   float *footer_bg_color          = NULL;		
+   float *body_bg_color            = NULL;		
+   float *active_tab_marker_color  = NULL;		
    float *passive_tab_icon_color   = grey_bg;
 
+   uint32_t sublabel_color         = 0x888888ff;
    uint32_t font_normal_color      = 0;
-   uint32_t font_hover_color       = 0;
+   uint32_t font_hover_color       = 0;		
    uint32_t font_header_color      = 0;
 
    if (!mui)
@@ -1078,7 +1293,7 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
          clearcolor.a            = 0.75f;
          break;
       case MATERIALUI_THEME_GREEN:
-         hex32_to_rgba_normalized(0x4CAF50, green_500,      1.00);
+          hex32_to_rgba_normalized(0x4CAF50, green_500,      1.00);
          hex32_to_rgba_normalized(0x4CAF50, header_bg_color_real,      1.00);
          hex32_to_rgba_normalized(0xC8E6C9, green_50,       0.90);
          hex32_to_rgba_normalized(0xFFFFFF, footer_bg_color_real, 1.00);
@@ -1165,11 +1380,12 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
          hex32_to_rgba_normalized(0x77B900, color_nv_accent,0.90);
          hex32_to_rgba_normalized(0x202427, footer_bg_color_real,  1.00);
 
+         sublabel_color          = 0xffffffff;
          header_bg_color         = header_bg_color_real;
          body_bg_color           = color_nv_body;
          highlighted_entry_color = color_nv_accent;
          footer_bg_color         = footer_bg_color_real;
-         active_tab_marker_color = color_nv_accent;
+         active_tab_marker_color = white_bg;
 
          font_normal_color       = 0xbbc0c4ff;
          font_hover_color        = 0xffffffff;
@@ -1257,7 +1473,7 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
 
    /* highlighted entry */
    list             = menu_entries_get_selection_buf_ptr(0);
-   node             = (mui_node_t*)menu_entries_get_userdata_at_offset(
+   node             = (mui_node_t*)file_list_get_userdata_at_offset(
          list, selection);
 
    if (node)
@@ -1282,13 +1498,16 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
             height,
             font_normal_color,
             font_hover_color,
-            &active_tab_marker_color[0]
+            &active_tab_marker_color[0],
+            sublabel_color
             );
 
-   font_driver_flush(video_info->width, video_info->height, mui->font);
+   font_driver_flush(video_info->width, video_info->height, mui->font,
+         video_info);
    font_driver_bind_block(mui->font, NULL);
 
-   font_driver_flush(video_info->width, video_info->height, mui->font2);
+   font_driver_flush(video_info->width, video_info->height, mui->font2,
+         video_info);
    font_driver_bind_block(mui->font2, NULL);
 
    menu_animation_ctl(MENU_ANIMATION_CTL_SET_ACTIVE, NULL);
@@ -1390,32 +1609,29 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
    {
       const char *str          = menu_input_dialog_get_buffer();
       const char *label        = menu_input_dialog_get_label_buffer();
-      float *body_bg_color_ptr = &body_bg_color[0];
 
       menu_display_draw_quad(0, 0, width, height, width, height, &black_bg[0]);
       snprintf(msg, sizeof(msg), "%s\n%s", label, str);
-
-      if (body_bg_color_ptr)
-         mui_render_messagebox(mui, video_info,
-               msg, body_bg_color_ptr, font_hover_color);
+   
+      mui_render_messagebox(mui, video_info,
+               msg, &body_bg_color[0], font_hover_color);
    }
 
    if (!string_is_empty(mui->box_message))
    {
-      float *body_bg_color_ptr = &body_bg_color[0];
-
       menu_display_draw_quad(0, 0, width, height, width, height, &black_bg[0]);
 
-      if (body_bg_color_ptr)
-         mui_render_messagebox(mui, video_info,
-               mui->box_message, body_bg_color_ptr, font_hover_color);
-      mui->box_message[0] = '\0';
+      mui_render_messagebox(mui, video_info,
+               mui->box_message, &body_bg_color[0], font_hover_color);
+      
+      free(mui->box_message);
+      mui->box_message    = NULL;
    }
 
    if (mui->mouse_show)
       menu_display_draw_cursor(
             &white_bg[0],
-            mui->cursor.size,
+            mui->cursor_size,
             mui->textures.list[MUI_TEXTURE_POINTER],
             menu_input_mouse_state(MENU_MOUSE_X_AXIS),
             menu_input_mouse_state(MENU_MOUSE_Y_AXIS),
@@ -1441,7 +1657,7 @@ static void mui_layout(mui_handle_t *mui, bool video_is_threaded)
     *
     * On desktops, we just care about readability, with every widget
     * size proportional to the display width. */
-   scale_factor = menu_display_get_dpi();
+   scale_factor         = menu_display_get_dpi();
 
    new_header_height    = scale_factor / 3;
    new_font_size        = scale_factor / 9;
@@ -1508,7 +1724,8 @@ static void *mui_init(void **userdata, bool video_is_threaded)
 
    *userdata = mui;
 
-   mui->cursor.size  = 64.0;
+   mui->cursor_size  = 64.0;
+   mui->need_compute = false;
 
    return menu;
 error:
@@ -1551,6 +1768,7 @@ static void mui_context_destroy(void *data)
       video_driver_texture_unload(&mui->textures.list[i]);
 
    menu_display_font_free(mui->font);
+   menu_display_font_free(mui->font2);
 
    mui_context_bg_destroy(mui);
 }
@@ -1566,6 +1784,7 @@ static bool mui_load_image(void *userdata, void *data, enum menu_image_type type
          break;
       case MENU_IMAGE_WALLPAPER:
          mui_context_bg_destroy(mui);
+         video_driver_texture_unload(&mui->textures.bg);
          video_driver_texture_load(data,
                TEXTURE_FILTER_MIPMAP_LINEAR, &mui->textures.bg);
          menu_display_allocate_white_texture();
@@ -1613,6 +1832,7 @@ static void mui_navigation_set(void *data, bool scroll)
    entry.target_value = scroll_pos;
    entry.subject      = &mui->scroll_y;
    entry.easing_enum  = EASING_IN_OUT_QUAD;
+   /* TODO/FIXME - integer conversion resulted in change of sign */
    entry.tag          = -1;
    entry.cb           = NULL;
 
@@ -1656,6 +1876,7 @@ static void mui_populate_entries(
    if (!mui)
       return;
 
+   mui->need_compute = true;
    mui->scroll_y = mui_get_scroll(mui);
 }
 
@@ -1718,7 +1939,7 @@ static void mui_preswitch_tabs(mui_handle_t *mui, unsigned action)
       free(menu_stack->list[stack_size - 1].label);
    menu_stack->list[stack_size - 1].label = NULL;
 
-   switch (mui->categories.selection_ptr)
+   switch (mui->categories_selection_ptr)
    {
       case MUI_SYSTEM_TAB_MAIN:
          menu_stack->list[stack_size - 1].label =
@@ -1752,6 +1973,7 @@ static void mui_list_cache(void *data,
    if (!mui)
       return;
 
+   mui->need_compute = true;
    list_size = MUI_SYSTEM_TAB_END;
 
    switch (type)
@@ -1759,27 +1981,27 @@ static void mui_list_cache(void *data,
       case MENU_LIST_PLAIN:
          break;
       case MENU_LIST_HORIZONTAL:
-         mui->categories.selection_ptr_old = mui->categories.selection_ptr;
+         mui->categories_selection_ptr_old = mui->categories_selection_ptr;
 
          switch (action)
          {
             case MENU_ACTION_LEFT:
-               if (mui->categories.selection_ptr == 0)
+               if (mui->categories_selection_ptr == 0)
                {
-                  mui->categories.selection_ptr = list_size;
-                  mui->categories.active.idx    = (unsigned)(list_size - 1);
+                  mui->categories_selection_ptr = list_size;
+                  mui->categories_active_idx    = (unsigned)(list_size - 1);
                }
                else
-                  mui->categories.selection_ptr--;
+                  mui->categories_selection_ptr--;
                break;
             default:
-               if (mui->categories.selection_ptr == list_size)
+               if (mui->categories_selection_ptr == list_size)
                {
-                  mui->categories.selection_ptr = 0;
-                  mui->categories.active.idx = 1;
+                  mui->categories_selection_ptr = 0;
+                  mui->categories_active_idx = 1;
                }
                else
-                  mui->categories.selection_ptr++;
+                  mui->categories_selection_ptr++;
                break;
          }
 
@@ -1805,39 +2027,41 @@ static int mui_list_push(void *data, void *userdata,
    switch (type)
    {
       case DISPLAYLIST_LOAD_CONTENT_LIST:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-
-         menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES),
-               msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
-               MENU_ENUM_LABEL_FAVORITES,
-               MENU_SETTING_ACTION, 0, 0);
-
-         core_info_get_list(&list);
-         if (core_info_list_num_info_files(list))
          {
+            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+
             menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST),
-                  msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST),
-                  MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES),
+                  msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
+                  MENU_ENUM_LABEL_FAVORITES,
                   MENU_SETTING_ACTION, 0, 0);
+
+            core_info_get_list(&list);
+            if (core_info_list_num_info_files(list))
+            {
+               menu_entries_append_enum(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST),
+                     msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST),
+                     MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST,
+                     MENU_SETTING_ACTION, 0, 0);
+            }
+
+            if (frontend_driver_parse_drive_list(info->list, true) != 0)
+               menu_entries_append_enum(info->list, "/",          
+                     msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+                     MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+                     MENU_SETTING_ACTION, 0, 0);
+
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS),
+                  msg_hash_to_str(MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS),
+                  MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS,
+                  MENU_SETTING_ACTION, 0, 0);
+
+            info->need_push    = true;
+            info->need_refresh = true;
+            ret = 0;
          }
-
-         if (frontend_driver_parse_drive_list(info->list, true) != 0)
-            menu_entries_append_enum(info->list, "/",          
-                  msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-                  MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
-                  MENU_SETTING_ACTION, 0, 0);
-
-         menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS),
-               msg_hash_to_str(MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS),
-               MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS,
-               MENU_SETTING_ACTION, 0, 0);
-
-         info->need_push    = true;
-         info->need_refresh = true;
-         ret = 0;
          break;
       case DISPLAYLIST_MAIN_MENU:
          {
@@ -1857,12 +2081,6 @@ static int mui_list_push(void *data, void *userdata,
                menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
             }
 
-            if (system->load_no_content)
-            {
-               entry.enum_idx      = MENU_ENUM_LABEL_START_CORE;
-               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
-            }
-
 #ifndef HAVE_DYNAMIC
             if (frontend_driver_has_fork())
 #endif
@@ -1870,6 +2088,13 @@ static int mui_list_push(void *data, void *userdata,
                entry.enum_idx      = MENU_ENUM_LABEL_CORE_LIST;
                menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
             }
+
+            if (system->load_no_content)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_START_CORE;
+               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            }
+
 
             entry.enum_idx      = MENU_ENUM_LABEL_LOAD_CONTENT_LIST;
             menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
@@ -1933,7 +2158,7 @@ static size_t mui_list_get_selection(void *data)
    if (!mui)
       return 0;
 
-   return mui->categories.selection_ptr;
+   return mui->categories_selection_ptr;
 }
 
 /* The pointer or the mouse is pressed down. We use this callback to
@@ -1945,6 +2170,7 @@ static int mui_pointer_down(void *userdata,
 {
    unsigned width, height;
    unsigned header_height;
+   size_t entries_end         = menu_entries_get_size();
    mui_handle_t *mui          = (mui_handle_t*)userdata;
 
    if (!mui)
@@ -1961,14 +2187,15 @@ static int mui_pointer_down(void *userdata,
    {
 
    }
-   else if (ptr <= (menu_entries_get_size() - 1))
+   else if (ptr <= (entries_end - 1))
    {
-      size_t ii = 0;
-      file_list_t *list = menu_entries_get_selection_buf_ptr(0);
-      for (ii = 0; ii < menu_entries_get_size(); ii++)
+      size_t ii;
+      file_list_t *list  = menu_entries_get_selection_buf_ptr(0);
+
+      for (ii = 0; ii < entries_end; ii++)
       {
          mui_node_t *node = (mui_node_t*)
-               menu_entries_get_userdata_at_offset(list, ii);
+               file_list_get_userdata_at_offset(list, ii);
 
          if (y > (-mui->scroll_y + header_height + node->y)
           && y < (-mui->scroll_y + header_height + node->y + node->line_height)
@@ -1993,6 +2220,7 @@ static int mui_pointer_up(void *userdata,
 {
    unsigned width, height;
    unsigned header_height, i;
+   size_t entries_end         = menu_entries_get_size();
    mui_handle_t *mui          = (mui_handle_t*)userdata;
 
    if (!mui)
@@ -2018,7 +2246,7 @@ static int mui_pointer_up(void *userdata,
 
          if ((x >= start) && (x < (start + tab_width)))
          {
-            mui->categories.selection_ptr = i;
+            mui->categories_selection_ptr = i;
 
             mui_preswitch_tabs(mui, action);
 
@@ -2028,14 +2256,15 @@ static int mui_pointer_up(void *userdata,
          }
       }
    }
-   else if (ptr <= (menu_entries_get_size() - 1))
+   else if (ptr <= (entries_end - 1))
    {
-      size_t ii = 0;
-      file_list_t *list = menu_entries_get_selection_buf_ptr(0);
-      for (ii = 0; ii < menu_entries_get_size(); ii++)
+      size_t ii;
+      file_list_t *list  = menu_entries_get_selection_buf_ptr(0);
+
+      for (ii = 0; ii < entries_end; ii++)
       {
          mui_node_t *node = (mui_node_t*)
-               menu_entries_get_userdata_at_offset(list, ii);
+               file_list_get_userdata_at_offset(list, ii);
 
          if (y > (-mui->scroll_y + header_height + node->y)
           && y < (-mui->scroll_y + header_height + node->y + node->line_height)
@@ -2050,25 +2279,31 @@ static int mui_pointer_up(void *userdata,
    return 0;
 }
 
-/* The menu system can insert menu entries on the fly. It is used in the shaders
-UI, the wifi UI, the netplay lobby, etc. This function allocates the mui_node_t
-for the new entry. */
+/* The menu system can insert menu entries on the fly. 
+ * It is used in the shaders UI, the wifi UI, 
+ * the netplay lobby, etc. 
+ *
+ * This function allocates the mui_node_t
+ *for the new entry. */
 static void mui_list_insert(void *userdata,
       file_list_t *list,
       const char *path,
       const char *fullpath,
-      const char *unused,
-      size_t list_size)
+      const char *label,
+      size_t list_size,
+      unsigned type)
 {
    float scale_factor;
    int i                  = (int)list_size;
    mui_node_t *node       = NULL;
+   settings_t *settings   = config_get_ptr();
    mui_handle_t *mui      = (mui_handle_t*)userdata;
 
    if (!mui || !list)
       return;
 
-   node = (mui_node_t*)menu_entries_get_userdata_at_offset(list, i);
+   mui->need_compute = true;
+   node = (mui_node_t*)file_list_get_userdata_at_offset(list, i);
 
    if (!node)
       node = (mui_node_t*)calloc(1, sizeof(mui_node_t));
@@ -2079,10 +2314,387 @@ static void mui_list_insert(void *userdata,
       return;
    }
 
-   scale_factor = menu_display_get_dpi();
+   scale_factor                = menu_display_get_dpi();
 
-   node->line_height = scale_factor / 3;
-   node->y = 0;
+   node->line_height           = scale_factor / 3;
+   node->y                     = 0;
+   node->texture_switch_set    = false;
+   node->texture_switch2_set   = false;
+   node->texture_switch_index  = 0;
+   node->texture_switch2_index = 0;
+   node->switch_is_on          = false;
+   node->do_draw_text          = false;
+
+   if (settings->bools.menu_materialui_icons_enable)
+   {
+      switch (type)
+      {
+         case FILE_TYPE_DOWNLOAD_CORE:
+         case FILE_TYPE_CORE:
+            node->texture_switch2_index = MUI_TEXTURE_CORES;
+            node->texture_switch2_set   = true;
+            break;
+         case FILE_TYPE_DOWNLOAD_THUMBNAIL_CONTENT:
+            node->texture_switch2_index = MUI_TEXTURE_IMAGE;
+            node->texture_switch2_set   = true;
+            break;
+         case FILE_TYPE_PARENT_DIRECTORY:
+            node->texture_switch2_index = MUI_TEXTURE_PARENT_DIRECTORY;
+            node->texture_switch2_set   = true;
+            break;
+         case FILE_TYPE_PLAYLIST_COLLECTION:
+            node->texture_switch2_index = MUI_TEXTURE_PLAYLIST;
+            node->texture_switch2_set   = true;
+            break;
+         case FILE_TYPE_RDB:
+            node->texture_switch2_index = MUI_TEXTURE_DATABASE;
+            node->texture_switch2_set   = true;
+            break;
+         case 32: /* TODO: Need to find out what this is */
+         case FILE_TYPE_RDB_ENTRY:
+            node->texture_switch2_index = MUI_TEXTURE_SETTINGS;
+            node->texture_switch2_set   = true;
+            break;
+         case FILE_TYPE_IN_CARCHIVE:
+         case FILE_TYPE_PLAIN:
+         case FILE_TYPE_DOWNLOAD_CORE_CONTENT:
+            node->texture_switch2_index = MUI_TEXTURE_FILE;
+            node->texture_switch2_set   = true;
+            break;
+         case FILE_TYPE_MUSIC:
+            node->texture_switch2_index = MUI_TEXTURE_MUSIC;
+            node->texture_switch2_set   = true;
+            break;
+         case FILE_TYPE_MOVIE:
+            node->texture_switch2_index = MUI_TEXTURE_VIDEO;
+            node->texture_switch2_set   = true;
+            break;
+         case FILE_TYPE_DIRECTORY:
+         case FILE_TYPE_DOWNLOAD_URL:
+            node->texture_switch2_index = MUI_TEXTURE_FOLDER;
+            node->texture_switch2_set = true;
+            break;
+         default:
+            if (
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INFORMATION_LIST))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NO_CORE_INFORMATION_AVAILABLE))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NO_CORE_OPTIONS_AVAILABLE))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND))
+               )
+            {
+               node->texture_switch2_index = MUI_TEXTURE_INFO;
+               node->texture_switch2_set   = true;
+            }
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_GOTO_IMAGES)))
+            {
+               node->texture_switch2_index = MUI_TEXTURE_IMAGE;
+               node->texture_switch2_set   = true;
+            }
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_GOTO_MUSIC)))
+            {
+               node->texture_switch2_index = MUI_TEXTURE_MUSIC;
+               node->texture_switch2_set   = true;
+            }
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_GOTO_VIDEO)))
+            {
+               node->texture_switch2_index = MUI_TEXTURE_VIDEO;
+               node->texture_switch2_set   = true;
+            }
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY)))
+            {
+               node->texture_switch2_index = MUI_TEXTURE_SCAN;
+               node->texture_switch2_set   = true;
+            }
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY)))
+            {
+               node->texture_switch2_index = MUI_TEXTURE_HISTORY;
+               node->texture_switch2_set   = true;
+            }
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_LIST)))
+            {
+               node->texture_switch2_index = MUI_TEXTURE_HELP;
+               node->texture_switch2_set   = true;
+            }
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RESTART_CONTENT)))
+            {
+               node->texture_switch2_index = MUI_TEXTURE_RESTART;
+               node->texture_switch2_set   = true;
+            }
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RESUME_CONTENT)))
+            {
+               node->texture_switch2_index = MUI_TEXTURE_RESUME;
+               node->texture_switch2_set   = true;
+            }
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CLOSE_CONTENT)))
+            {
+               node->texture_switch2_index = MUI_TEXTURE_CLOSE;
+               node->texture_switch2_set   = true;
+            }
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_OPTIONS)))
+            {
+               node->texture_switch2_index = MUI_TEXTURE_CORE_OPTIONS;
+               node->texture_switch2_set   = true;
+            }
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS)))
+            {
+               node->texture_switch2_index = MUI_TEXTURE_CORE_CHEAT_OPTIONS;
+               node->texture_switch2_set   = true;
+            }
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS)))
+            {
+               node->texture_switch2_index = MUI_TEXTURE_CONTROLS;
+               node->texture_switch2_set   = true;
+            }
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SHADER_OPTIONS)))
+            {
+               node->texture_switch2_index = MUI_TEXTURE_SHADERS;
+               node->texture_switch2_set   = true;
+            }
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_LIST)))
+            {
+               node->texture_switch2_index = MUI_TEXTURE_CORES;
+               node->texture_switch2_set   = true;
+            }
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RUN)))
+            {
+               node->texture_switch2_index = MUI_TEXTURE_RUN;
+               node->texture_switch2_set   = true;
+            }
+            else if (
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_FAVORITES))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES))
+                  )
+            {
+               node->texture_switch2_index = MUI_TEXTURE_ADD_TO_FAVORITES;
+               node->texture_switch2_set   = true;
+            }
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RENAME_ENTRY)))
+            {
+               node->texture_switch2_index = MUI_TEXTURE_RENAME;
+               node->texture_switch2_set   = true;
+            }
+            else if (
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_MIXER))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION))
+                  )
+            {
+               node->texture_switch2_index = MUI_TEXTURE_ADD_TO_MIXER;
+               node->texture_switch2_set   = true;
+            }
+            else if (
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_START_CORE))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RUN_MUSIC))
+                  )
+            {
+               node->texture_switch2_index = MUI_TEXTURE_START_CORE;
+               node->texture_switch2_set   = true;
+            }
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_STATE))
+                  )
+            {
+               node->texture_switch2_index = MUI_TEXTURE_LOAD_STATE;
+               node->texture_switch2_set   = true;
+            }
+            else if (
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_CYCLE_TRAY_STATUS))
+                  )
+            {
+               node->texture_switch2_index = MUI_TEXTURE_EJECT;
+               node->texture_switch2_set   = true;
+            }
+            else if (
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_IMAGE_APPEND))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_OPTIONS))
+                  )
+            {
+               node->texture_switch2_index = MUI_TEXTURE_DISK;
+               node->texture_switch2_set   = true;
+            }
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_STATE))
+                  ||
+                  (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE)))
+                  ||
+                  (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME)))
+                  )
+            {
+               node->texture_switch2_index = MUI_TEXTURE_SAVE_STATE;
+               node->texture_switch2_set   = true;
+            }
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UNDO_LOAD_STATE)))
+            {
+               node->texture_switch2_index = MUI_TEXTURE_UNDO_LOAD_STATE;
+               node->texture_switch2_set   = true;
+            }
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UNDO_SAVE_STATE)))
+            {
+               node->texture_switch2_index = MUI_TEXTURE_UNDO_SAVE_STATE;
+               node->texture_switch2_set   = true;
+            }
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_STATE_SLOT)))
+            {
+               node->texture_switch2_index = MUI_TEXTURE_STATE_SLOT;
+               node->texture_switch2_set   = true;
+            }
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_TAKE_SCREENSHOT)))
+            {
+               node->texture_switch2_index = MUI_TEXTURE_TAKE_SCREENSHOT;
+               node->texture_switch2_set   = true;
+            }
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONFIGURATIONS_LIST)))
+            {
+               node->texture_switch2_index = MUI_TEXTURE_CONFIGURATIONS;
+               node->texture_switch2_set   = true;
+            }
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_LIST)))
+            {
+               node->texture_switch2_index = MUI_TEXTURE_LOAD_CONTENT;
+               node->texture_switch2_set   = true;
+            }
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DELETE_ENTRY)))
+            {
+               node->texture_switch2_index = MUI_TEXTURE_REMOVE;
+               node->texture_switch2_set   = true;
+            }
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY)))
+            {
+               node->texture_switch2_index = MUI_TEXTURE_NETPLAY;
+               node->texture_switch2_set   = true;
+            }
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS)))
+            {
+               node->texture_switch2_index = MUI_TEXTURE_QUICKMENU;
+               node->texture_switch2_set   = true;
+            }
+            else if (
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ONLINE_UPDATER))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_CORE_INFO_FILES))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_AUTOCONFIG_PROFILES))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_ASSETS))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_CHEATS))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_DATABASES))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_OVERLAYS))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_CG_SHADERS))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS))
+                  )
+                  {
+                     node->texture_switch2_index = MUI_TEXTURE_UPDATER;
+                     node->texture_switch2_set = true;
+                  }
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY)) || 
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE))
+                  )
+            {
+               node->texture_switch2_index = MUI_TEXTURE_ADD;
+               node->texture_switch2_set = true;
+            }
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_QUIT_RETROARCH)))
+            {
+               node->texture_switch2_index = MUI_TEXTURE_QUIT;
+               node->texture_switch2_set   = true;
+            }
+            else if (
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DRIVER_SETTINGS))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SETTINGS))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_SETTINGS))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SETTINGS))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_SETTINGS))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONFIGURATION_SETTINGS))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVING_SETTINGS))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOGGING_SETTINGS))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RECORDING_SETTINGS))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_WIFI_SETTINGS))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_SETTINGS))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LAKKA_SERVICES))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_SETTINGS))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_USER_SETTINGS))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DIRECTORY_SETTINGS))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PRIVACY_SETTINGS))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MENU_VIEWS_SETTINGS))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_VIEWS_SETTINGS))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MENU_SETTINGS))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ACCOUNTS_LIST))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_REWIND_SETTINGS))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_UPDATER_LIST))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST))
+                  ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS))
+                  )
+                  {
+                     node->texture_switch2_index = MUI_TEXTURE_SETTINGS;
+                     node->texture_switch2_set   = true;
+                  }
+            else if (
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST))
+                  )
+            {
+               node->texture_switch2_index = MUI_TEXTURE_FOLDER;
+               node->texture_switch2_set   = true;
+            }
+            break;
+      }
+   }
 
    file_list_set_userdata(list, i, node);
 }
@@ -2098,7 +2710,7 @@ static void mui_list_clear(file_list_t *list)
       menu_animation_ctx_subject_t subject;
       float *subjects[2];
       mui_node_t *node = (mui_node_t*)
-         menu_entries_get_userdata_at_offset(list, i);
+         file_list_get_userdata_at_offset(list, i);
 
       if (!node)
          continue;

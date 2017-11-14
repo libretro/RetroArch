@@ -33,7 +33,6 @@
 #include "../../menu/menu_driver.h"
 #endif
 
-#include "../input_config.h"
 #include "../input_driver.h"
 
 #include "../../frontend/drivers/platform_unix.h"

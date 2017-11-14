@@ -19,7 +19,6 @@
 #include <gccore.h>
 #include <rthreads/rthreads.h>
 
-#include "../input_config.h"
 #include "../input_defines.h"
 #include "../input_driver.h"
 
@@ -44,7 +43,7 @@ typedef struct wiiusb_hid
    /* helps on knowing if a new device has been inserted */
    bool device_detected;
    /* helps on detecting that a device has just been removed */
-   bool removal_cb;      
+   bool removal_cb;
 
    bool manual_removal;
 } wiiusb_hid_t;

@@ -124,9 +124,8 @@ static void *blargg_ntsc_snes_generic_create(const struct softfilter_config *con
       unsigned max_width, unsigned max_height,
       unsigned threads, softfilter_simd_mask_t simd, void *userdata)
 {
-   (void)simd;
-
    struct filter_data *filt = (struct filter_data*)calloc(1, sizeof(*filt));
+   (void)simd;
    if (!filt)
       return NULL;
    filt->workers = (struct softfilter_thread_data*)

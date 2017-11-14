@@ -441,11 +441,6 @@ static const struct font_glyph* ctr_font_get_glyph(
    return font->font_driver->get_glyph((void*)font->font_driver, code);
 }
 
-static void ctr_font_flush_block(unsigned width, unsigned height, void* data)
-{
-   (void)data;
-}
-
 static void ctr_font_bind_block(void* data, void* userdata)
 {
    (void)data;
@@ -460,6 +455,6 @@ font_renderer_t ctr_font =
    "ctrfont",
    ctr_font_get_glyph,
    ctr_font_bind_block,
-   ctr_font_flush_block,
+   NULL,                         /* flush_block */
    ctr_font_get_message_width,
 };

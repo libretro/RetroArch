@@ -98,9 +98,9 @@ static void log_counters(struct retro_perf_counter **counters, unsigned num)
       {
          RARCH_LOG(PERF_LOG_FMT,
                counters[i]->ident,
-               (unsigned long long)counters[i]->total /
-               (unsigned long long)counters[i]->call_cnt,
-               (unsigned long long)counters[i]->call_cnt);
+               (uint64_t)counters[i]->total /
+               (uint64_t)counters[i]->call_cnt,
+               (uint64_t)counters[i]->call_cnt);
       }
    }
 }

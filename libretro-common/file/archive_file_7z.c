@@ -22,6 +22,7 @@
 
 #include <stdlib.h>
 
+#include <boolean.h>
 #include <file/archive_file.h>
 #include <streams/file_stream.h>
 #include <retro_miscellaneous.h>
@@ -31,9 +32,9 @@
 #include <lists/string_list.h>
 #include <file/file_path.h>
 #include <compat/strl.h>
-#include "../../deps/7zip/7z.h"
-#include "../../deps/7zip/7zCrc.h"
-#include "../../deps/7zip/7zFile.h"
+#include <7zip/7z.h>
+#include <7zip/7zCrc.h>
+#include <7zip/7zFile.h>
 
 #define SEVENZIP_MAGIC "7z\xBC\xAF\x27\x1C"
 #define SEVENZIP_MAGIC_LEN 6
@@ -139,7 +140,7 @@ static int sevenzip_file_read(
       return -1;
 
    FileInStream_CreateVTable(&archiveStream);
-   LookToRead_CreateVTable(&lookStream, False);
+   LookToRead_CreateVTable(&lookStream, false);
    lookStream.realStream = &archiveStream.s;
    LookToRead_Init(&lookStream);
    CrcGenerateTable();
@@ -338,7 +339,7 @@ static int sevenzip_parse_file_init(file_archive_transfer_t *state,
       goto error;
 
    FileInStream_CreateVTable(&sevenzip_context->archiveStream);
-   LookToRead_CreateVTable(&sevenzip_context->lookStream, False);
+   LookToRead_CreateVTable(&sevenzip_context->lookStream, false);
    sevenzip_context->lookStream.realStream = &sevenzip_context->archiveStream.s;
    LookToRead_Init(&sevenzip_context->lookStream);
    CrcGenerateTable();

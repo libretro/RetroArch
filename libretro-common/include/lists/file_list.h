@@ -59,7 +59,29 @@ void *file_list_get_userdata_at_offset(const file_list_t *list,
 void *file_list_get_actiondata_at_offset(const file_list_t *list, 
       size_t index);
 
+/**
+ * @brief frees the list
+ *
+ * NOTE: This function will also free() the entries actiondata
+ * and userdata fields if they are non-null. If you store complex
+ * or non-contiguous data there, make sure you free it's fields
+ * before calling this function or you might get a memory leak.
+ *
+ * @param list
+ */
 void file_list_free(file_list_t *list);
+
+/**
+ * @brief makes the list big enough to contain at least nitems
+ *
+ * This function will not change the capacity if nitems is smaller
+ * than the current capacity.
+ *
+ * @param list
+ * @param nitems
+ * @return whether or not the operation succeeded
+ */
+bool file_list_reserve(file_list_t *list, size_t nitems);
 
 bool file_list_append(file_list_t *userdata, const char *path,
       const char *label, unsigned type, size_t current_directory_ptr,

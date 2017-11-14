@@ -37,10 +37,6 @@ static int action_cancel_pop_default(const char *path,
 
    menu_entries_get_last_stack(NULL, &menu_label, NULL, NULL, NULL);
 
-#if 0
-   RARCH_LOG("menu_label: %s\n", menu_label);
-#endif
-
    if (!string_is_empty(menu_label))
    {
       if (

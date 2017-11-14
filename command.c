@@ -40,6 +40,7 @@
 
 #ifdef HAVE_CHEEVOS
 #include "cheevos/cheevos.h"
+#include "cheevos/var.h"
 #endif
 
 #ifdef HAVE_MENU
@@ -58,7 +59,7 @@
 
 #include "defaults.h"
 #include "driver.h"
-#include "input/input_config.h"
+#include "input/input_driver.h"
 #include "frontend/frontend_driver.h"
 #include "audio/audio_driver.h"
 #include "record/record_driver.h"
@@ -89,62 +90,12 @@
 #define DEFAULT_NETWORK_CMD_PORT 55355
 #define STDIN_BUF_SIZE           4096
 
-extern int libui_main(void);
-
-struct command
-{
-#ifdef HAVE_STDIN_CMD
-   bool stdin_enable;
-   char stdin_buf[STDIN_BUF_SIZE];
-   size_t stdin_buf_ptr;
-#endif
-
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
-   int net_fd;
-#endif
-
-   bool state[RARCH_BIND_LIST_END];
-};
-
 enum cmd_source_t
 {
    CMD_NONE = 0,
    CMD_STDIN,
    CMD_NETWORK
 };
-
-#if defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD) && defined(HAVE_NETWORKING)
-static enum cmd_source_t lastcmd_source;
-#endif
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
-static int lastcmd_net_fd;
-static struct sockaddr_storage lastcmd_net_source;
-static socklen_t lastcmd_net_source_len;
-#endif
-
-#ifdef HAVE_CHEEVOS
-#if defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD) && defined(HAVE_NETWORKING)
-static bool command_reply(const char * data, size_t len)
-{
-#ifdef HAVE_STDIN_CMD
-   if (lastcmd_source == CMD_STDIN)
-   {
-      fwrite(data, 1,len, stdout);
-      return true;
-   }
-#endif
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
-   if (lastcmd_source == CMD_NETWORK)
-   {
-      sendto(lastcmd_net_fd, data, len, 0,
-            (struct sockaddr*)&lastcmd_net_source, lastcmd_net_source_len);
-      return true;
-   }
-#endif
-   return false;
-}
-#endif
-#endif
 
 struct cmd_map
 {
@@ -159,107 +110,27 @@ struct cmd_action_map
    const char *arg_desc;
 };
 
-bool command_set_shader(const char *arg)
+struct command
 {
-   char msg[256];
-   enum rarch_shader_type type = RARCH_SHADER_NONE;
-
-   switch (msg_hash_to_file_type(msg_hash_calculate(path_get_extension(arg))))
-   {
-      case FILE_TYPE_SHADER_GLSL:
-      case FILE_TYPE_SHADER_PRESET_GLSLP:
-         type = RARCH_SHADER_GLSL;
-         break;
-      case FILE_TYPE_SHADER_CG:
-      case FILE_TYPE_SHADER_PRESET_CGP:
-         type = RARCH_SHADER_CG;
-         break;
-      case FILE_TYPE_SHADER_SLANG:
-      case FILE_TYPE_SHADER_PRESET_SLANGP:
-         type = RARCH_SHADER_SLANG;
-         break;
-      default:
-         return false;
-   }
-
-   snprintf(msg, sizeof(msg), "Shader: \"%s\"", arg);
-   runloop_msg_queue_push(msg, 1, 120, true);
-   RARCH_LOG("%s \"%s\".\n",
-         msg_hash_to_str(MSG_APPLYING_SHADER),
-         arg);
-
-   return video_driver_set_shader(type, arg);
-}
-
-#ifdef HAVE_COMMAND
-#ifdef HAVE_CHEEVOS
-static bool command_read_ram(const char *arg)
-{
-   cheevos_var_t var;
-   unsigned i;
-   unsigned nbytes;
-   char reply[256];
-   const uint8_t * data = NULL;
-   char *reply_at       = NULL;
-
-   reply[0]             = '\0';
-
-   strlcpy(reply, "READ_CORE_RAM ", sizeof(reply));
-   reply_at = reply + strlen("READ_CORE_RAM ");
-   strlcpy(reply_at, arg, sizeof(reply)-strlen(reply));
-
-   cheevos_parse_guest_addr(&var, strtoul(reply_at, (char**)&reply_at, 16));
-   data = cheevos_get_memory(&var);
-
-   if (data)
-   {
-      unsigned nbytes = strtol(reply_at, NULL, 10);
-
-      for (i=0;i<nbytes;i++)
-      {
-         sprintf(reply_at+3*i, " %.2X", data[i]);
-      }
-      reply_at[3*nbytes] = '\n';
-      command_reply(reply, reply_at+3*nbytes+1 - reply);
-   }
-   else
-   {
-      strlcpy(reply_at, " -1\n", sizeof(reply)-strlen(reply));
-      command_reply(reply, reply_at+strlen(" -1\n") - reply);
-   }
-
-   return true;
-}
-
-static bool command_write_ram(const char *arg)
-{
-   int i;
-   cheevos_var_t var;
-   unsigned nbytes;
-   uint8_t * data    = NULL;
-
-   cheevos_parse_guest_addr(&var, strtoul(arg, (char**)&arg, 16));
-
-   data = cheevos_get_memory(&var);
-
-   if (!data)
-      return false;
-
-   while (*arg)
-   {
-      *data = strtoul(arg, (char**)&arg, 16);
-      data++;
-   }
-
-   return true;
-}
+   bool stdin_enable;
+   bool state[RARCH_BIND_LIST_END];
+#ifdef HAVE_STDIN_CMD
+   char stdin_buf[STDIN_BUF_SIZE];
+   size_t stdin_buf_ptr;
 #endif
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
+   int net_fd;
+#endif
+};
+
+static bool command_read_ram(const char *arg);
+static bool command_write_ram(const char *arg);
 
 static const struct cmd_action_map action_map[] = {
-   { "SET_SHADER", command_set_shader, "<shader path>" },
+   { "SET_SHADER",      command_set_shader,  "<shader path>" },
 #ifdef HAVE_CHEEVOS
-   { "READ_CORE_RAM", command_read_ram, "<address> <number of bytes>" },
-   { "WRITE_CORE_RAM", command_write_ram, "<address> <byte1> <byte2> ..." },
+   { "READ_CORE_RAM",   command_read_ram,    "<address> <number of bytes>" },
+   { "WRITE_CORE_RAM",  command_write_ram,   "<address> <byte1> <byte2> ..." },
 #endif
 };
 
@@ -305,6 +176,144 @@ static const struct cmd_map map[] = {
    { "MENU_B",                 RETRO_DEVICE_ID_JOYPAD_B },
    { "MENU_B",                 RETRO_DEVICE_ID_JOYPAD_B },
 };
+
+static enum cmd_source_t lastcmd_source;
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
+static int lastcmd_net_fd;
+static struct sockaddr_storage lastcmd_net_source;
+static socklen_t lastcmd_net_source_len;
+#endif
+
+#ifdef HAVE_CHEEVOS
+#if defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD) && defined(HAVE_NETWORKING)
+static bool command_reply(const char * data, size_t len)
+{
+   switch (lastcmd_source)
+   {
+      case CMD_NONE:
+         break;
+      case CMD_STDIN:
+#ifdef HAVE_STDIN_CMD
+         fwrite(data, 1,len, stdout);
+         return true;
+#else
+         break;
+#endif
+      case CMD_NETWORK:
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
+         sendto(lastcmd_net_fd, data, len, 0,
+               (struct sockaddr*)&lastcmd_net_source, lastcmd_net_source_len);
+         return true;
+#else
+         break;
+#endif
+   }
+
+   return false;
+}
+#endif
+#endif
+
+bool command_set_shader(const char *arg)
+{
+   char msg[256];
+   enum rarch_shader_type type = RARCH_SHADER_NONE;
+
+   switch (msg_hash_to_file_type(msg_hash_calculate(path_get_extension(arg))))
+   {
+      case FILE_TYPE_SHADER_GLSL:
+      case FILE_TYPE_SHADER_PRESET_GLSLP:
+         type = RARCH_SHADER_GLSL;
+         break;
+      case FILE_TYPE_SHADER_CG:
+      case FILE_TYPE_SHADER_PRESET_CGP:
+         type = RARCH_SHADER_CG;
+         break;
+      case FILE_TYPE_SHADER_SLANG:
+      case FILE_TYPE_SHADER_PRESET_SLANGP:
+         type = RARCH_SHADER_SLANG;
+         break;
+      default:
+         return false;
+   }
+
+   snprintf(msg, sizeof(msg), "Shader: \"%s\"", arg);
+   runloop_msg_queue_push(msg, 1, 120, true);
+   RARCH_LOG("%s \"%s\".\n",
+         msg_hash_to_str(MSG_APPLYING_SHADER),
+         arg);
+
+   return video_driver_set_shader(type, arg);
+}
+
+static bool command_read_ram(const char *arg)
+{
+#if defined(HAVE_COMMAND) && defined(HAVE_CHEEVOS)
+   cheevos_var_t var;
+   unsigned i;
+   unsigned nbytes;
+   char reply[256];
+   const uint8_t * data = NULL;
+   char *reply_at       = NULL;
+
+   reply[0]             = '\0';
+
+   strlcpy(reply, "READ_CORE_RAM ", sizeof(reply));
+   reply_at = reply + strlen("READ_CORE_RAM ");
+   strlcpy(reply_at, arg, sizeof(reply)-strlen(reply));
+
+   var.value = strtoul(reply_at, (char**)&reply_at, 16);
+   cheevos_var_patch_addr(&var, cheevos_get_console());
+   data = cheevos_var_get_memory(&var);
+
+   if (data)
+   {
+      unsigned nbytes = strtol(reply_at, NULL, 10);
+
+      for (i=0;i<nbytes;i++)
+         sprintf(reply_at+3*i, " %.2X", data[i]);
+      reply_at[3*nbytes] = '\n';
+      command_reply(reply, reply_at+3*nbytes+1 - reply);
+   }
+   else
+   {
+      strlcpy(reply_at, " -1\n", sizeof(reply)-strlen(reply));
+      command_reply(reply, reply_at+strlen(" -1\n") - reply);
+   }
+
+   return true;
+#else
+   return false;
+#endif
+}
+
+static bool command_write_ram(const char *arg)
+{
+#if defined(HAVE_COMMAND) && defined(HAVE_CHEEVOS)
+   int i;
+   cheevos_var_t var;
+   unsigned nbytes   = 0;
+   uint8_t *data     = NULL;
+
+   var.value = strtoul(arg, (char**)&arg, 16);
+   cheevos_var_patch_addr(&var, cheevos_get_console());
+
+   data = cheevos_var_get_memory(&var);
+
+   if (data)
+   {
+      while (*arg)
+      {
+         *data = strtoul(arg, (char**)&arg, 16);
+         data++;
+      }
+      return true;
+   }
+
+#endif
+
+   return false;
+}
 
 static bool command_get_arg(const char *tok,
       const char **arg, unsigned *index)
@@ -369,22 +378,7 @@ static void command_parse_sub_msg(command_t *handle, const char *tok)
             msg_hash_to_str(MSG_RECEIVED));
 }
 
-static void command_parse_msg(command_t *handle, char *buf, enum cmd_source_t source)
-{
-   char *save      = NULL;
-   const char *tok = strtok_r(buf, "\n", &save);
-
-   lastcmd_source = source;
-
-   while (tok)
-   {
-      command_parse_sub_msg(handle, tok);
-      tok = strtok_r(NULL, "\n", &save);
-   }
-   lastcmd_source = CMD_NONE;
-}
-
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD) && defined(HAVE_COMMAND)
 static bool command_network_init(command_t *handle, uint16_t port)
 {
    struct addrinfo *res  = NULL;
@@ -438,8 +432,67 @@ static bool command_verify(const char *cmd)
    return false;
 }
 
+#ifdef HAVE_COMMAND
+static void command_parse_msg(command_t *handle, char *buf, enum cmd_source_t source)
+{
+   char *save      = NULL;
+   const char *tok = strtok_r(buf, "\n", &save);
+
+   lastcmd_source = source;
+
+   while (tok)
+   {
+      command_parse_sub_msg(handle, tok);
+      tok = strtok_r(NULL, "\n", &save);
+   }
+   lastcmd_source = CMD_NONE;
+}
+
+static void command_network_poll(command_t *handle)
+{
+   fd_set fds;
+   struct timeval tmp_tv = {0};
+
+   if (handle->net_fd < 0)
+      return;
+
+   FD_ZERO(&fds);
+   FD_SET(handle->net_fd, &fds);
+
+   if (socket_select(handle->net_fd + 1, &fds, NULL, NULL, &tmp_tv) <= 0)
+      return;
+
+   if (!FD_ISSET(handle->net_fd, &fds))
+      return;
+
+   for (;;)
+   {
+      ssize_t ret;
+      char buf[1024];
+
+      buf[0] = '\0';
+
+      lastcmd_net_fd         = handle->net_fd;
+      lastcmd_net_source_len = sizeof(lastcmd_net_source);
+      ret                    = recvfrom(handle->net_fd, buf,
+            sizeof(buf) - 1, 0,
+            (struct sockaddr*)&lastcmd_net_source,
+            &lastcmd_net_source_len);
+
+      if (ret <= 0)
+         break;
+
+      buf[ret] = '\0';
+
+      command_parse_msg(handle, buf, CMD_NETWORK);
+   }
+}
+#endif
+#endif
+
 bool command_network_send(const char *cmd_)
 {
+#if defined(HAVE_COMMAND) && defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
    bool ret            = false;
    char *command       = NULL;
    char *save          = NULL;
@@ -483,49 +536,10 @@ bool command_network_send(const char *cmd_)
    free(command);
 
    return ret;
-}
-
-
-#ifdef HAVE_COMMAND
-static void command_network_poll(command_t *handle)
-{
-   fd_set fds;
-   struct timeval tmp_tv = {0};
-
-   if (handle->net_fd < 0)
-      return;
-
-   FD_ZERO(&fds);
-   FD_SET(handle->net_fd, &fds);
-
-   if (socket_select(handle->net_fd + 1, &fds, NULL, NULL, &tmp_tv) <= 0)
-      return;
-
-   if (!FD_ISSET(handle->net_fd, &fds))
-      return;
-
-   for (;;)
-   {
-      ssize_t ret;
-      char buf[1024];
-
-      buf[0] = '\0';
-
-      lastcmd_net_fd = handle->net_fd;
-      lastcmd_net_source_len = sizeof(lastcmd_net_source);
-      ret = recvfrom(handle->net_fd, buf,
-            sizeof(buf) - 1, 0, (struct sockaddr*)&lastcmd_net_source, &lastcmd_net_source_len);
-
-      if (ret <= 0)
-         break;
-
-      buf[ret] = '\0';
-
-      command_parse_msg(handle, buf, CMD_NETWORK);
-   }
-}
+#else
+   return false;
 #endif
-#endif
+}
 
 #ifdef HAVE_STDIN_CMD
 static bool command_stdin_init(command_t *handle)
@@ -560,7 +574,7 @@ bool command_network_new(
    if (!handle)
       return false;
 
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD) && defined(HAVE_COMMAND)
    handle->net_fd = -1;
    if (network_enable && !command_network_init(handle, port))
       goto error;
@@ -582,26 +596,22 @@ error:
 }
 
 #ifdef HAVE_STDIN_CMD
-
-
 static void command_stdin_poll(command_t *handle)
 {
-   ssize_t ret;
    ptrdiff_t msg_len;
    char *last_newline = NULL;
-
-   if (!handle->stdin_enable)
-      return;
-
-   ret = read_stdin(handle->stdin_buf + handle->stdin_buf_ptr,
+   ssize_t        ret = read_stdin(
+         handle->stdin_buf + handle->stdin_buf_ptr,
          STDIN_BUF_SIZE - handle->stdin_buf_ptr - 1);
+
    if (ret == 0)
       return;
 
-   handle->stdin_buf_ptr += ret;
-   handle->stdin_buf[handle->stdin_buf_ptr] = '\0';
+   handle->stdin_buf_ptr                    += ret;
+   handle->stdin_buf[handle->stdin_buf_ptr]  = '\0';
 
-   last_newline = strrchr(handle->stdin_buf, '\n');
+   last_newline                              = 
+      strrchr(handle->stdin_buf, '\n');
 
    if (!last_newline)
    {
@@ -610,34 +620,34 @@ static void command_stdin_poll(command_t *handle)
       if (handle->stdin_buf_ptr + 1 >= STDIN_BUF_SIZE)
       {
          handle->stdin_buf_ptr = 0;
-         handle->stdin_buf[0] = '\0';
+         handle->stdin_buf[0]  = '\0';
       }
 
       return;
    }
 
    *last_newline++ = '\0';
-   msg_len = last_newline - handle->stdin_buf;
+   msg_len         = last_newline - handle->stdin_buf;
 
+#if defined(HAVE_NETWORKING)
    command_parse_msg(handle, handle->stdin_buf, CMD_STDIN);
+#endif
 
    memmove(handle->stdin_buf, last_newline,
          handle->stdin_buf_ptr - msg_len);
    handle->stdin_buf_ptr -= msg_len;
 }
 #endif
-#endif
 
 bool command_poll(command_t *handle)
 {
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
-#ifdef HAVE_COMMAND
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD) && defined(HAVE_COMMAND)
    command_network_poll(handle);
-#endif
 #endif
 
 #ifdef HAVE_STDIN_CMD
-   command_stdin_poll(handle);
+   if (handle->stdin_enable)
+      command_stdin_poll(handle);
 #endif
 
    return true;
@@ -662,11 +672,9 @@ bool command_set(command_handle_t *handle)
 
 bool command_free(command_t *handle)
 {
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
-#ifdef HAVE_COMMAND
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD) && defined(HAVE_COMMAND)
    if (handle && handle->net_fd >= 0)
       socket_close(handle->net_fd);
-#endif
 #endif
 
    free(handle);
@@ -1018,6 +1026,11 @@ static void command_event_init_controllers(void)
             set_controller = true;
             break;
          case RETRO_DEVICE_JOYPAD:
+            /* Ideally these checks shouldn't be required but if we always
+             * call core_set_controller_port_device input won't work on 
+             * cores that don't set port information properly */
+            if (info && info->ports.size != 0 && i < info->ports.size)
+               set_controller = true;
             break;
          default:
             /* Some cores do not properly range check port argument.
@@ -1075,31 +1088,33 @@ static void command_event_init_cheats(void)
 static void command_event_load_auto_state(void)
 {
    bool ret;
-   char msg[128]                             = {0};
-   char savestate_name_auto[PATH_MAX_LENGTH] = {0};
-   settings_t *settings                      = config_get_ptr();
-   global_t   *global                        = global_get_ptr();
+   char msg[128]                   = {0};
+   char *savestate_name_auto       = (char*)calloc(PATH_MAX_LENGTH,
+         sizeof(*savestate_name_auto));
+   size_t savestate_name_auto_size = PATH_MAX_LENGTH * sizeof(char);
+   settings_t *settings            = config_get_ptr();
+   global_t   *global              = global_get_ptr();
 
 #ifdef HAVE_NETWORKING
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
-      return;
+      goto error;
 #endif
 
 #ifdef HAVE_CHEEVOS
    if (settings->bools.cheevos_hardcore_mode_enable)
-      return;
+      goto error;
 #endif
 
    if (!settings->bools.savestate_auto_load)
-      return;
+      goto error;
 
    if (global)
       fill_pathname_noext(savestate_name_auto, global->name.savestate,
             file_path_str(FILE_PATH_AUTO_EXTENSION),
-            sizeof(savestate_name_auto));
+            savestate_name_auto_size);
 
    if (!path_file_exists(savestate_name_auto))
-      return;
+      goto error;
 
    ret = content_load_state(savestate_name_auto, false, true);
 
@@ -1110,20 +1125,28 @@ static void command_event_load_auto_state(void)
          msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
          savestate_name_auto, ret ? "succeeded" : "failed");
    RARCH_LOG("%s\n", msg);
+   
+   free(savestate_name_auto);
+
+   return;
+
+error:
+   free(savestate_name_auto);
 }
 
 static void command_event_set_savestate_auto_index(void)
 {
    size_t i;
-   char state_dir[PATH_MAX_LENGTH]  = {0};
-   char state_base[PATH_MAX_LENGTH] = {0};
-   struct string_list *dir_list     = NULL;
-   unsigned max_idx                 = 0;
-   settings_t *settings             = config_get_ptr();
-   global_t   *global               = global_get_ptr();
+   char *state_dir                   = (char*)calloc(PATH_MAX_LENGTH, sizeof(*state_dir));
+   char *state_base                  = (char*)calloc(PATH_MAX_LENGTH, sizeof(*state_base));
+   size_t state_size                 = PATH_MAX_LENGTH * sizeof(char);
+   struct string_list *dir_list      = NULL;
+   unsigned max_idx                  = 0;
+   settings_t *settings              = config_get_ptr();
+   global_t   *global                = global_get_ptr();
 
    if (!settings->bools.savestate_auto_index)
-      return;
+      goto error;
 
    if (global)
    {
@@ -1134,15 +1157,15 @@ static void command_event_set_savestate_auto_index(void)
        * /foo/path/content.state%d, where %d is the largest number available.
        */
       fill_pathname_basedir(state_dir, global->name.savestate,
-            sizeof(state_dir));
+            state_size);
       fill_pathname_base(state_base, global->name.savestate,
-            sizeof(state_base));
+            state_size);
    }
 
    dir_list = dir_list_new_special(state_dir, DIR_LIST_PLAIN, NULL);
 
    if (!dir_list)
-      return;
+      goto error;
 
    for (i = 0; i < dir_list->size; i++)
    {
@@ -1172,6 +1195,14 @@ static void command_event_set_savestate_auto_index(void)
    RARCH_LOG("%s: #%d\n",
          msg_hash_to_str(MSG_FOUND_LAST_STATE_SLOT),
          max_idx);
+
+   free(state_dir);
+   free(state_base);
+   return;
+
+error:
+   free(state_dir);
+   free(state_base);
 }
 
 static bool event_init_content(void)
@@ -1292,38 +1323,41 @@ static void command_event_restore_default_shader_preset(void)
 static void command_event_restore_remaps(void)
 {
    if (rarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
-      input_remapping_set_defaults();
+      input_remapping_set_defaults(true);
 }
 
 static bool command_event_save_auto_state(void)
 {
-   char savestate_name_auto[PATH_MAX_LENGTH] = {0};
-   bool ret             = false;
-   bool contentless     = false;
-   bool is_inited       = false;
-   settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
+   bool ret                    = false;
+   bool contentless            = false;
+   bool is_inited              = false;
+   char *savestate_name_auto   = (char*)
+      calloc(PATH_MAX_LENGTH, sizeof(*savestate_name_auto));
+   size_t 
+      savestate_name_auto_size = PATH_MAX_LENGTH * sizeof(char);
+   settings_t *settings        = config_get_ptr();
+   global_t   *global          = global_get_ptr();
 
    if (!settings || !settings->bools.savestate_auto_save)
-      return false;
+      goto error;
    if (!global)
-      return false;
+      goto error;
    if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
-      return false;
+      goto error;
 
    content_get_status(&contentless, &is_inited);
 
    if (contentless)
-      return false;
+      goto error;
 
 #ifdef HAVE_CHEEVOS
    if (settings->bools.cheevos_hardcore_mode_enable)
-      return false;
+      goto error;
 #endif
 
    fill_pathname_noext(savestate_name_auto, global->name.savestate,
          file_path_str(FILE_PATH_AUTO_EXTENSION),
-         sizeof(savestate_name_auto));
+         savestate_name_auto_size);
 
    ret = content_save_state((const char*)savestate_name_auto, true, true);
    RARCH_LOG("%s \"%s\" %s.\n",
@@ -1331,7 +1365,12 @@ static bool command_event_save_auto_state(void)
          savestate_name_auto, ret ?
          "succeeded" : "failed");
 
+   free(savestate_name_auto);
    return true;
+
+error:
+   free(savestate_name_auto);
+   return false;
 }
 
 static bool command_event_save_config(const char *config_path,
@@ -1364,29 +1403,30 @@ static bool command_event_save_config(const char *config_path,
  **/
 static bool command_event_save_core_config(void)
 {
-   char config_dir[PATH_MAX_LENGTH];
-   char config_name[PATH_MAX_LENGTH];
-   char config_path[PATH_MAX_LENGTH];
    char msg[128];
-   bool ret                          = false;
-   bool found_path                   = false;
-   bool overrides_active             = false;
-   settings_t *settings              = config_get_ptr();
+   bool ret                        = false;
+   bool found_path                 = false;
+   bool overrides_active           = false;
+   char *config_dir                = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char *config_name               = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char *config_path               = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   size_t config_size              = PATH_MAX_LENGTH * sizeof(char);
+   settings_t *settings            = config_get_ptr();
 
-   config_dir[0]  = config_name[0]   =
-   config_path[0] = msg[0]           = '\0';
+   config_dir[0]  = config_name[0] =
+   config_path[0] = msg[0]         = '\0';
 
    if (!string_is_empty(settings->paths.directory_menu_config))
       strlcpy(config_dir, settings->paths.directory_menu_config,
-            sizeof(config_dir));
+            config_size);
    else if (!path_is_empty(RARCH_PATH_CONFIG)) /* Fallback */
       fill_pathname_basedir(config_dir, path_get(RARCH_PATH_CONFIG),
-            sizeof(config_dir));
+            config_size);
    else
    {
       runloop_msg_queue_push(msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET), 1, 180, true);
       RARCH_ERR("[Config]: %s\n", msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET));
-      return false;
+      goto error;
    }
 
    /* Infer file name based on libretro core. */
@@ -1403,10 +1443,10 @@ static bool command_event_save_core_config(void)
          fill_pathname_base_noext(
                config_name,
                path_get(RARCH_PATH_CORE),
-               sizeof(config_name));
+               config_size);
 
          fill_pathname_join(config_path, config_dir, config_name,
-               sizeof(config_path));
+               config_size);
 
          if (i)
             snprintf(tmp, sizeof(tmp), "-%u%s",
@@ -1417,7 +1457,7 @@ static bool command_event_save_core_config(void)
                   file_path_str(FILE_PATH_CONFIG_EXTENSION),
                   sizeof(tmp));
 
-         strlcat(config_path, tmp, sizeof(config_path));
+         strlcat(config_path, tmp, config_size);
          if (!path_file_exists(config_path))
          {
             found_path = true;
@@ -1433,9 +1473,9 @@ static bool command_event_save_core_config(void)
             msg_hash_to_str(MSG_CANNOT_INFER_NEW_CONFIG_PATH));
       fill_dated_filename(config_name,
             file_path_str(FILE_PATH_CONFIG_EXTENSION),
-            sizeof(config_name));
+            config_size);
       fill_pathname_join(config_path, config_dir, config_name,
-            sizeof(config_path));
+            config_size);
    }
 
    if (rarch_ctl(RARCH_CTL_IS_OVERRIDES_ACTIVE, NULL))
@@ -1455,7 +1495,17 @@ static bool command_event_save_core_config(void)
       rarch_ctl(RARCH_CTL_SET_OVERRIDES_ACTIVE, NULL);
    else
       rarch_ctl(RARCH_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
+
+   free(config_dir);
+   free(config_name);
+   free(config_path);
    return ret;
+
+error:
+   free(config_dir);
+   free(config_name);
+   free(config_path);
+   return false;
 }
 
 /**
@@ -1546,13 +1596,14 @@ static void command_event_undo_load_state(char *s, size_t len)
 static bool command_event_main_state(unsigned cmd)
 {
    retro_ctx_size_info_t info;
-   char path[PATH_MAX_LENGTH];
    char msg[128];
-   bool ret                   = false;
+   char *state_path           = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   size_t state_path_size     = PATH_MAX_LENGTH * sizeof(char);
    global_t *global           = global_get_ptr();
+   bool ret                   = false;
    bool push_msg              = true;
 
-   path[0] = msg[0]           = '\0';
+   state_path[0] = msg[0]     = '\0';
 
    if (global)
    {
@@ -1560,13 +1611,13 @@ static bool command_event_main_state(unsigned cmd)
       int state_slot          = settings->ints.state_slot;
 
       if (state_slot > 0)
-         snprintf(path, sizeof(path), "%s%d",
+         snprintf(state_path, state_path_size, "%s%d",
                global->name.savestate, state_slot);
       else if (state_slot < 0)
-         fill_pathname_join_delim(path,
-               global->name.savestate, "auto", '.', sizeof(path));
+         fill_pathname_join_delim(state_path,
+               global->name.savestate, "auto", '.', state_path_size);
       else
-         strlcpy(path, global->name.savestate, sizeof(path));
+         strlcpy(state_path, global->name.savestate, state_path_size);
    }
 
    core_serialize_size(&info);
@@ -1576,12 +1627,12 @@ static bool command_event_main_state(unsigned cmd)
       switch (cmd)
       {
          case CMD_EVENT_SAVE_STATE:
-            content_save_state(path, true, false);
+            content_save_state(state_path, true, false);
             ret      = true;
             push_msg = false;
             break;
          case CMD_EVENT_LOAD_STATE:
-            if (content_load_state(path, false, false))
+            if (content_load_state(state_path, false, false))
             {
                ret = true;
 #ifdef HAVE_NETWORKING
@@ -1608,6 +1659,7 @@ static bool command_event_main_state(unsigned cmd)
       runloop_msg_queue_push(msg, 2, 180, true);
    RARCH_LOG("%s\n", msg);
 
+   free(state_path);
    return ret;
 }
 
@@ -1755,7 +1807,7 @@ bool command_event(enum event_command cmd, void *data)
 #if HAVE_NETWORKING
          netplay_driver_ctl(RARCH_NETPLAY_CTL_RESET, NULL);
 #endif
-         break;
+         return command_event_main_state(cmd);
       case CMD_EVENT_SAVE_STATE:
          {
             settings_t *settings      = config_get_ptr();
@@ -1865,17 +1917,17 @@ bool command_event(enum event_command cmd, void *data)
             if (settings->bools.cheevos_hardcore_mode_enable)
                return false;
 #endif
-           if (settings->bools.rewind_enable)
-           {
-#ifdef HAVE_NETWORKING
-            /* Only enable state manager if netplay is not underway 
-               TODO: Add a setting for these tweaks */
-            if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
-#endif
+            if (settings->bools.rewind_enable)
             {
-               state_manager_event_init((unsigned)settings->rewind_buffer_size);
+#ifdef HAVE_NETWORKING
+               /* Only enable state manager if netplay is not underway
+TODO: Add a setting for these tweaks */
+               if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+#endif
+               {
+                  state_manager_event_init((unsigned)settings->rewind_buffer_size);
+               }
             }
-           }
          }
          break;
       case CMD_EVENT_REWIND_TOGGLE:
@@ -1899,7 +1951,7 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_THREADS
 	 {
 #ifdef HAVE_NETWORKING
-         /* Only enable state manager if netplay is not underway 
+         /* Only enable state manager if netplay is not underway
             TODO: Add a setting for these tweaks */
          settings_t *settings      = config_get_ptr();
          if (settings->uints.autosave_interval != 0
@@ -1995,6 +2047,13 @@ bool command_event(enum event_command cmd, void *data)
          }
          g_defaults.content_history = NULL;
 
+         if (g_defaults.content_favorites)
+         {
+            playlist_write_file(g_defaults.content_favorites);
+            playlist_free(g_defaults.content_favorites);
+         }
+         g_defaults.content_favorites = NULL;
+
          if (g_defaults.music_history)
          {
             playlist_write_file(g_defaults.music_history);
@@ -2036,6 +2095,13 @@ bool command_event(enum event_command cmd, void *data)
                   settings->paths.path_content_history);
             g_defaults.content_history = playlist_init(
                   settings->paths.path_content_history,
+                  content_history_size);
+
+            RARCH_LOG("%s: [%s].\n",
+                  msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
+                  settings->paths.path_content_favorites);
+            g_defaults.content_favorites = playlist_init(
+                  settings->paths.path_content_favorites,
                   content_history_size);
 
             RARCH_LOG("%s: [%s].\n",
@@ -2137,7 +2203,7 @@ bool command_event(enum event_command cmd, void *data)
              * need to make sure to keep a copy */
             struct retro_hw_render_callback hwr_copy;
             struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
-            const struct retro_hw_render_context_negotiation_interface *iface = 
+            const struct retro_hw_render_context_negotiation_interface *iface =
                video_driver_get_context_negotiation_interface();
             memcpy(&hwr_copy, hwr, sizeof(hwr_copy));
 
@@ -2169,6 +2235,19 @@ bool command_event(enum event_command cmd, void *data)
          rarch_menu_running_finished();
          if (ui_companion_is_on_foreground())
             ui_companion_driver_toggle();
+         break;
+      case CMD_EVENT_ADD_TO_FAVORITES:
+         playlist_push(
+               g_defaults.content_favorites,
+               path_get(RARCH_PATH_CONTENT),
+               NULL,
+               file_path_str(FILE_PATH_DETECT),
+               file_path_str(FILE_PATH_DETECT),
+               NULL,
+               NULL
+               );
+         playlist_write_file(g_defaults.content_favorites);
+         runloop_msg_queue_push(msg_hash_to_str(MSG_ADDED_TO_FAVORITES), 1, 180, true);
          break;
       case CMD_EVENT_RESTART_RETROARCH:
          if (!frontend_driver_set_fork(FRONTEND_FORK_RESTART))
@@ -2210,7 +2289,7 @@ bool command_event(enum event_command cmd, void *data)
                RARCH_LOG("%s\n", msg_hash_to_str(MSG_PAUSED));
                command_event(CMD_EVENT_AUDIO_STOP, NULL);
 
-               runloop_msg_queue_push(msg_hash_to_str(MSG_PAUSED), 1, 
+               runloop_msg_queue_push(msg_hash_to_str(MSG_PAUSED), 1,
                      1, true);
 
                if (!is_idle)
@@ -2293,15 +2372,15 @@ bool command_event(enum event_command cmd, void *data)
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
-            if (!init_netplay(NULL, hostname ? hostname : 
+            if (!init_netplay(NULL, hostname ? hostname :
                settings->paths.netplay_server,
                settings->uints.netplay_port))
             {
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
                return false;
             }
-            
-            /* Disable rewind & sram autosave if it was enabled 
+
+            /* Disable rewind & sram autosave if it was enabled
                TODO: Add a setting for these tweaks */
             state_manager_event_deinit();
 #ifdef HAVE_THREADS
@@ -2319,12 +2398,12 @@ bool command_event(enum event_command cmd, void *data)
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
-            RARCH_LOG("[netplay] connecting to %s:%d\n", 
-               hostname->elems[0].data, !string_is_empty(hostname->elems[1].data) 
+            RARCH_LOG("[netplay] connecting to %s:%d\n",
+               hostname->elems[0].data, !string_is_empty(hostname->elems[1].data)
                ? atoi(hostname->elems[1].data) : 55435);
 
-            if (!init_netplay(NULL, hostname->elems[0].data, 
-               !string_is_empty(hostname->elems[1].data) 
+            if (!init_netplay(NULL, hostname->elems[0].data,
+               !string_is_empty(hostname->elems[1].data)
                ? atoi(hostname->elems[1].data) : 55435))
             {
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
@@ -2334,7 +2413,7 @@ bool command_event(enum event_command cmd, void *data)
 
             string_list_free(hostname);
 
-            /* Disable rewind if it was enabled 
+            /* Disable rewind if it was enabled
                TODO: Add a setting for these tweaks */
             state_manager_event_deinit();
 #ifdef HAVE_THREADS
@@ -2352,12 +2431,12 @@ bool command_event(enum event_command cmd, void *data)
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
-            RARCH_LOG("[netplay] connecting to %s:%d\n", 
-               hostname->elems[0].data, !string_is_empty(hostname->elems[1].data) 
+            RARCH_LOG("[netplay] connecting to %s:%d\n",
+               hostname->elems[0].data, !string_is_empty(hostname->elems[1].data)
                ? atoi(hostname->elems[1].data) : 55435);
 
             if (!init_netplay_deferred(hostname->elems[0].data,
-               !string_is_empty(hostname->elems[1].data) 
+               !string_is_empty(hostname->elems[1].data)
                ? atoi(hostname->elems[1].data) : 55435))
             {
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
@@ -2367,7 +2446,7 @@ bool command_event(enum event_command cmd, void *data)
 
             string_list_free(hostname);
 
-            /* Disable rewind if it was enabled 
+            /* Disable rewind if it was enabled
                TODO: Add a setting for these tweaks */
             state_manager_event_deinit();
 #ifdef HAVE_THREADS
@@ -2425,6 +2504,14 @@ bool command_event(enum event_command cmd, void *data)
          command_event(CMD_EVENT_REMOTE_DEINIT, NULL);
          input_driver_init_remote();
          break;
+
+      case CMD_EVENT_MAPPER_DEINIT:
+         input_driver_deinit_mapper();
+         break;
+      case CMD_EVENT_MAPPER_INIT:
+         command_event(CMD_EVENT_MAPPER_DEINIT, NULL);
+         input_driver_init_mapper();
+      break;
       case CMD_EVENT_LOG_FILE_DEINIT:
          retro_main_log_file_deinit();
          break;
@@ -2544,7 +2631,7 @@ bool command_event(enum event_command cmd, void *data)
          {
             static bool game_focus_state  = false;
             intptr_t                 mode = (intptr_t)data;
-            
+
             /* mode = -1: restores current game focus state
              * mode =  1: force set game focus, instead of toggling
              * any other: toggle
@@ -2609,7 +2696,8 @@ bool command_event(enum event_command cmd, void *data)
          command_event_restore_default_shader_preset();
          break;
       case CMD_EVENT_LIBUI_TEST:
-#if 0
+#if HAVE_LIBUI
+         extern int libui_main(void);
          libui_main();
 #endif
          break;

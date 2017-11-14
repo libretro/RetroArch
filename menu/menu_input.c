@@ -563,30 +563,20 @@ static int menu_input_pointer_post_iterate(
 void menu_input_post_iterate(int *ret, unsigned action)
 {
    menu_entry_t entry;
-   menu_file_list_cbs_t *cbs  = NULL;
    settings_t *settings       = config_get_ptr();
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    size_t selection           = menu_navigation_get_selection();
+   menu_file_list_cbs_t *cbs  = selection_buf ? 
+      (menu_file_list_cbs_t*)file_list_get_actiondata_at_offset(selection_buf, selection) : NULL;
 
-   if (selection_buf)
-      cbs = menu_entries_get_actiondata_at_offset(selection_buf, selection);
-
-   entry.path[0]       = '\0';
-   entry.label[0]      = '\0';
-   entry.sublabel[0]   = '\0';
-   entry.value[0]      = '\0';
-   entry.rich_label[0] = '\0';
-   entry.enum_idx      = MSG_UNKNOWN;
-   entry.entry_idx     = 0;
-   entry.idx           = 0;
-   entry.type          = 0;
-   entry.spacing       = 0;
-
+   menu_entry_init(&entry);
    menu_entry_get(&entry, 0, selection, NULL, false);
 
    *ret = menu_input_mouse_frame(cbs, &entry, action);
 
    if (settings->bools.menu_pointer_enable)
       *ret |= menu_input_pointer_post_iterate(cbs, &entry, action);
+
+   menu_entry_free(&entry);
 }
 

@@ -81,22 +81,22 @@ enum nbio_type
 typedef struct nbio_handle
 {
    enum nbio_type type;
-   void *data;
    bool is_finished;
-   transfer_cb_t  cb;
-   struct nbio_t *handle;
-   unsigned pos_increment;
-   msg_queue_t *msg_queue;
    unsigned status;
+   unsigned pos_increment;
    uint32_t status_flags;
-   char path[4096];
+   void *data;
+   char *path;
+   struct nbio_t *handle;
+   msg_queue_t *msg_queue;
+   transfer_cb_t  cb;
 } nbio_handle_t;
 
 #ifdef HAVE_NETWORKING
 typedef struct
 {
-    char *data;
-    size_t len;
+   char *data;
+   size_t len;
 } http_transfer_data_t;
 
 void *task_push_http_transfer(const char *url, bool mute, const char *type,

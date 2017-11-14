@@ -29,7 +29,7 @@
 
 #include "video_state_tracker.h"
 
-#include "../input/input_config.h"
+#include "../input/input_driver.h"
 
 #include "../verbosity.h"
 

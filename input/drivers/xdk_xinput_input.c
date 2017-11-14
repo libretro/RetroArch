@@ -112,15 +112,18 @@ static uint64_t xdk_input_get_capabilities(void *data)
 static bool xdk_input_set_rumble(void *data, unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
+#ifdef _XBOX360
+#if 0
+   XINPUT_VIBRATION rumble_state;
+#endif
+#endif
    xdk_input_t *xdk = (xdk_input_t*)data;
+   bool val         = false;
+   
    (void)xdk;
-   bool val = false;
-
   
 #if 0
 #if defined(_XBOX360)
-   XINPUT_VIBRATION rumble_state;
-
    if (effect == RETRO_RUMBLE_STRONG)
       rumble_state.wLeftMotorSpeed = strength;
    else if (effect == RETRO_RUMBLE_WEAK)

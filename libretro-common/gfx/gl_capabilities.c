@@ -173,8 +173,9 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
       case GL_CAPS_FBO:
 #if defined(HAVE_PSGL) || defined(HAVE_OPENGLES2) || defined(HAVE_OPENGLES3) || defined(HAVE_OPENGLES_3_1) || defined(HAVE_OPENGLES_3_2)
          return true;
-#elif defined(HAVE_FBO)
-         if (!gl_query_core_context_in_use() && !gl_query_extension("ARB_framebuffer_object")
+#else
+         if (     !gl_query_core_context_in_use() 
+               && !gl_query_extension("ARB_framebuffer_object")
                && !gl_query_extension("EXT_framebuffer_object"))
             return false;
 
@@ -189,8 +190,6 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
                && glRenderbufferStorage
                && glDeleteRenderbuffers)
             return true;
-         break;
-#else
          break;
 #endif
       case GL_CAPS_ARGB8:
@@ -280,21 +279,25 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
 #if defined(HAVE_OPENGLES)
          if (major >= 3 || gl_query_extension("EXT_sRGB"))
             return true;
-#elif defined(HAVE_FBO)
-         if (gl_query_core_context_in_use() ||
-               (gl_query_extension("EXT_texture_sRGB")
-                && gl_query_extension("ARB_framebuffer_sRGB")))
-            return true;
 #endif
+         if (gl_check_capability(GL_CAPS_FBO))
+         {
+            if (   gl_query_core_context_in_use() ||
+                  (gl_query_extension("EXT_texture_sRGB")
+                   && gl_query_extension("ARB_framebuffer_sRGB"))
+               )
+               return true;
+         }
          break;
       case GL_CAPS_FP_FBO:
          /* GLES - No extensions for float FBO currently. */
 #ifndef HAVE_OPENGLES
-#ifdef HAVE_FBO
-         /* Float FBO is core in 3.2. */
-         if (gl_query_core_context_in_use() || gl_query_extension("ARB_texture_float"))
-            return true;
-#endif
+         if (gl_check_capability(GL_CAPS_FBO))
+         {
+            /* Float FBO is core in 3.2. */
+            if (gl_query_core_context_in_use() || gl_query_extension("ARB_texture_float"))
+               return true;
+         }
 #endif
          break;
       case GL_CAPS_BGRA8888:

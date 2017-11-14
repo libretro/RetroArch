@@ -27,7 +27,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) && _MSC_VER > 1200
 #define SWAP16 _byteswap_ushort
 #define SWAP32 _byteswap_ulong
 #else
@@ -43,6 +43,17 @@
          ))
 #endif
 
+#if defined(_MSC_VER) && _MSC_VER <= 1200
+#define SWAP64(val)                                             \
+	((((uint64_t)(val) & 0x00000000000000ff) << 56)      \
+	 | (((uint64_t)(val) & 0x000000000000ff00) << 40)    \
+	 | (((uint64_t)(val) & 0x0000000000ff0000) << 24)    \
+	 | (((uint64_t)(val) & 0x00000000ff000000) << 8)     \
+	 | (((uint64_t)(val) & 0x000000ff00000000) >> 8)     \
+	 | (((uint64_t)(val) & 0x0000ff0000000000) >> 24)    \
+	 | (((uint64_t)(val) & 0x00ff000000000000) >> 40)    \
+	 | (((uint64_t)(val) & 0xff00000000000000) >> 56))
+#else
 #define SWAP64(val)                                             \
 	((((uint64_t)(val) & 0x00000000000000ffULL) << 56)      \
 	 | (((uint64_t)(val) & 0x000000000000ff00ULL) << 40)    \
@@ -52,6 +63,7 @@
 	 | (((uint64_t)(val) & 0x0000ff0000000000ULL) >> 24)    \
 	 | (((uint64_t)(val) & 0x00ff000000000000ULL) >> 40)    \
 	 | (((uint64_t)(val) & 0xff00000000000000ULL) >> 56))
+#endif
 
 /**
  * is_little_endian:

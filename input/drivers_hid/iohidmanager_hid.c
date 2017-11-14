@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2013-2014 - Jason Fetters
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -23,7 +23,6 @@
 
 #include <retro_miscellaneous.h>
 
-#include "../input_config.h"
 #include "../input_defines.h"
 #include "../input_driver.h"
 
@@ -120,7 +119,7 @@ static uint64_t iohidmanager_hid_joypad_get_buttons(void *data, unsigned port)
 static bool iohidmanager_hid_joypad_button(void *data,
       unsigned port, uint16_t joykey)
 {
-   uint64_t buttons          = 
+   uint64_t buttons          =
       iohidmanager_hid_joypad_get_buttons(data, port);
    iohidmanager_hid_t *hid   = (iohidmanager_hid_t*)data;
    unsigned hat_dir = GET_HAT_DIR(joykey);
@@ -149,7 +148,7 @@ static bool iohidmanager_hid_joypad_button(void *data,
 
    /* Check the button. */
    if ((port < MAX_USERS) && (joykey < 32))
-      return ((buttons & (1 << joykey)) != 0) 
+      return ((buttons & (1 << joykey)) != 0)
          || ((hid->buttons[port] & (1 << joykey)) != 0);
    return false;
 }
@@ -197,7 +196,7 @@ static int16_t iohidmanager_hid_joypad_axis(void *data,
 static void iohidmanager_hid_device_send_control(void *data,
       uint8_t* data_buf, size_t size)
 {
-   struct iohidmanager_hid_adapter *adapter = 
+   struct iohidmanager_hid_adapter *adapter =
       (struct iohidmanager_hid_adapter*)data;
 
    if (adapter)
@@ -210,7 +209,7 @@ static void iohidmanager_hid_device_report(void *data,
       IOHIDReportType type, uint32_t reportID, uint8_t *report,
       CFIndex reportLength)
 {
-   struct iohidmanager_hid_adapter *adapter = 
+   struct iohidmanager_hid_adapter *adapter =
       (struct iohidmanager_hid_adapter*)data;
    iohidmanager_hid_t *hid = (iohidmanager_hid_t*)hid_driver_get_data();
 
@@ -227,7 +226,7 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
 {
    iohidmanager_hid_t *hid                  = (iohidmanager_hid_t*)
       hid_driver_get_data();
-   struct iohidmanager_hid_adapter *adapter = 
+   struct iohidmanager_hid_adapter *adapter =
       (struct iohidmanager_hid_adapter*)data;
    IOHIDElementRef element                  = IOHIDValueGetElement(value);
    uint32_t type                            = (uint32_t)IOHIDElementGetType(element);
@@ -366,7 +365,7 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
 static void iohidmanager_hid_device_remove(void *data,
       IOReturn result, void* sender)
 {
-   struct iohidmanager_hid_adapter *adapter = 
+   struct iohidmanager_hid_adapter *adapter =
       (struct iohidmanager_hid_adapter*)data;
    iohidmanager_hid_t *hid = (iohidmanager_hid_t*)
       hid_driver_get_data();
@@ -380,7 +379,7 @@ static void iohidmanager_hid_device_remove(void *data,
 
       pad_connection_pad_deinit(&hid->slots[adapter->slot], adapter->slot);
    }
-    
+
    if (adapter)
    {
       apple_input_rec_t* tmp = NULL;
@@ -490,7 +489,7 @@ static void iohidmanager_hid_device_add(void *data, IOReturn result,
    /* Move the device's run loop to this thread. */
    IOHIDDeviceScheduleWithRunLoop(device, CFRunLoopGetCurrent(),
          kCFRunLoopCommonModes);
-   IOHIDDeviceRegisterRemovalCallback(device, 
+   IOHIDDeviceRegisterRemovalCallback(device,
          iohidmanager_hid_device_remove, adapter);
 
 #ifndef IOS
@@ -502,7 +501,7 @@ static void iohidmanager_hid_device_add(void *data, IOReturn result,
    dev_pid = iohidmanager_hid_device_get_product_id (device);
 
    adapter->slot = pad_connection_pad_init(hid->slots,
-         adapter->name, dev_vid, dev_pid, adapter, 
+         adapter->name, dev_vid, dev_pid, adapter,
          &iohidmanager_hid_device_send_control);
 
    if (adapter->slot == -1)

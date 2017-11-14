@@ -19,7 +19,7 @@
 
 /* necessary for mingw32 multimon defines: */
 #ifndef _WIN32_WINNT
-#define _WIN32_WINNT 0x0500 //_WIN32_WINNT_WIN2K
+#define _WIN32_WINNT 0x0500 /*_WIN32_WINNT_WIN2K */
 #endif
 
 #include <string.h>
@@ -104,8 +104,9 @@ static void gfx_ctx_gdi_update_window_title(void *data, void *data2)
 static void gfx_ctx_gdi_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
-   (void)data;
    HWND         window  = win32_get_window();
+
+   (void)data;
 
    if (!window)
    {
@@ -219,8 +220,9 @@ static void gfx_ctx_gdi_input_driver(void *data,
       const char *joypad_name,
       const input_driver_t **input, void **input_data)
 {
-   (void)data;
    settings_t *settings = config_get_ptr();
+
+   (void)data;
 
 #if _WIN32_WINNT >= 0x0501
    /* winraw only available since XP */
@@ -236,8 +238,13 @@ static void gfx_ctx_gdi_input_driver(void *data,
    }
 #endif
 
+#ifdef HAVE_DINPUT
    dinput_gdi  = input_dinput.init(joypad_name);
    *input      = dinput_gdi ? &input_dinput : NULL;
+#else
+   dinput_gdi  = NULL;
+   *input      = NULL;
+#endif
    *input_data = dinput_gdi;
 }
 

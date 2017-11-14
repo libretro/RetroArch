@@ -100,7 +100,7 @@ static void menu_display_gl_viewport(void *data)
 {
    gl_t             *gl          = (gl_t*)video_driver_get_ptr(false);
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
-   
+
    if (!gl || !draw)
       return;
    glViewport(draw->x, draw->y, draw->width, draw->height);
@@ -109,7 +109,7 @@ static void menu_display_gl_viewport(void *data)
 static void menu_display_gl_bind_texture(void *data)
 {
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
-   
+
    if (!draw)
       return;
 
@@ -122,7 +122,7 @@ static void menu_display_gl_draw(void *data)
    video_shader_ctx_coords_t coords;
    gl_t             *gl          = (gl_t*)video_driver_get_ptr(false);
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
-   
+
    if (!gl || !draw)
       return;
 
@@ -138,11 +138,11 @@ static void menu_display_gl_draw(void *data)
 
    coords.handle_data = gl;
    coords.data        = draw->coords;
-   
+
    video_shader_driver_set_coords(coords);
 
    mvp.data   = gl;
-   mvp.matrix = draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data 
+   mvp.matrix = draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data
       : (math_matrix_4x4*)menu_display_gl_get_default_mvp();
 
    video_shader_driver_set_mvp(mvp);
@@ -206,7 +206,7 @@ static void menu_display_gl_draw_pipeline(void *data)
 
          uniform_param.result.f.v0       = t;
 
-         video_shader_driver_set_parameter(uniform_param);            
+         video_shader_driver_set_parameter(uniform_param);
          break;
    }
 
@@ -249,12 +249,12 @@ static bool menu_display_gl_font_init_first(
       bool is_threaded)
 {
    font_data_t **handle = (font_data_t**)font_handle;
-   *handle = font_driver_init_first(video_data,
-         font_path, font_size, true, 
+   if (!(*handle = font_driver_init_first(video_data,
+         font_path, font_size, true,
          is_threaded,
-         FONT_DRIVER_RENDER_OPENGL_API);
-
-   return *handle;
+         FONT_DRIVER_RENDER_OPENGL_API)))
+		 return false;
+   return true;
 }
 
 menu_display_ctx_driver_t menu_display_ctx_gl = {

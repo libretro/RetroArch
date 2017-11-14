@@ -129,12 +129,6 @@ static void vga_render_msg(video_frame_info_t *video_info,
    }
 }
 
-static void vga_font_flush_block(unsigned width, unsigned height,
-      void* data)
-{
-   (void)data;
-}
-
 static void vga_font_bind_block(void* data, void* userdata)
 {
    (void)data;
@@ -147,6 +141,6 @@ font_renderer_t vga_font = {
    "vga font",
    vga_font_get_glyph,       /* get_glyph */
    vga_font_bind_block,      /* bind_block */
-   vga_font_flush_block,     /* flush */
+   NULL,                     /* flush */
    vga_get_message_width     /* get_message_width */
 };
