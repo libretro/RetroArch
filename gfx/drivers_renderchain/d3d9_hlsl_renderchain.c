@@ -56,7 +56,7 @@ static void renderchain_set_mvp(void *data, unsigned vp_width,
    mvp.data   = d3d;
    mvp.matrix = NULL;
 
-   video_shader_driver_set_mvp(mvp);
+   video_driver_set_mvp(&mvp);
 }
 
 static void hlsl_d3d9_renderchain_clear(void *data)

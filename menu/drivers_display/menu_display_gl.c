@@ -145,7 +145,7 @@ static void menu_display_gl_draw(void *data)
    mvp.matrix = draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data
       : (math_matrix_4x4*)menu_display_gl_get_default_mvp();
 
-   video_shader_driver_set_mvp(mvp);
+   video_driver_set_mvp(&mvp);
 
    glDrawArrays(menu_display_prim_to_gl_enum(
             draw->prim_type), 0, draw->coords->vertices);

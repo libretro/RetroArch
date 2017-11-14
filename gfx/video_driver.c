@@ -3444,6 +3444,12 @@ bool video_shader_driver_wrap_type(video_shader_ctx_wrap_t *wrap)
    return true;
 }
 
+void video_driver_set_mvp(video_shader_ctx_mvp_t *mvp)
+{
+   if (mvp->matrix && current_shader && current_shader->set_mvp)
+      current_shader->set_mvp(mvp->data, shader_data, mvp->matrix);
+}
+
 bool renderchain_d3d_init_first(
       const d3d_renderchain_driver_t **renderchain_driver,
       void **renderchain_handle)

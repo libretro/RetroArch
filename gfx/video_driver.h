@@ -1283,9 +1283,7 @@ bool video_shader_driver_scale(video_shader_ctx_scale_t *scaler);
 
 bool video_shader_driver_info(video_shader_ctx_info_t *shader_info);
 
-#define video_shader_driver_set_mvp(mvp) \
-   if (mvp.matrix) \
-      current_shader->set_mvp(mvp.data, shader_data, mvp.matrix) \
+void video_driver_set_mvp(video_shader_ctx_mvp_t *mvp);
 
 bool video_shader_driver_filter_type(video_shader_ctx_filter_t *filter);
 
