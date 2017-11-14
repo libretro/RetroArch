@@ -134,32 +134,7 @@ if [ $SALAMANDER = "yes" ]; then
      vita-mksfoex -s TITLE_ID=RETROVITA "RetroArch" ../pkg/${platform}/retroarch.vpk/vpk/sce_sys/param.sfo
      cp ../pkg/${platform}/assets/ICON0.PNG ../pkg/${platform}/retroarch.vpk/vpk/sce_sys/icon0.png
      cp -R ../pkg/${platform}/assets/livearea ../pkg/${platform}/retroarch.vpk/vpk/sce_sys/
-     mkdir -p ../pkg/${platform}/retroarch.vpk/vpk/assets
-      if [ -d ../media/assets/glui ]; then
-         cp -r ../media/assets/glui ../pkg/${platform}/retroarch.vpk/vpk/assets
-      fi
-      if [ -d ../media/assets/xmb ]; then
-         cp -r ../media/assets/xmb ../pkg/${platform}/retroarch.vpk/vpk/assets
-         # Strip source SVG files
-         rm -rf ../pkg/${platform}/retroarch.vpk/vpk/assets/xmb/flatui/src
-         rm -rf ../pkg/${platform}/retroarch.vpk/vpk/assets/xmb/monochrome/src
-         rm -rf ../pkg/${platform}/retroarch.vpk/vpk/assets/xmb/retroactive/src
-         rm -rf ../pkg/${platform}/retroarch.vpk/vpk/assets/xmb/retroactive_marked/src
-         rm -rf ../pkg/${platform}/retroarch.vpk/vpk/assets/xmb/dot-art/src
-      fi
-      if [ -d ../media/libretrodb/rdb ]; then
-         mkdir -p ../pkg/${platform}/retroarch.vpk/vpk/database/rdb
-         cp -r ../media/libretrodb/rdb/* ../pkg/${platform}/retroarch.vpk/vpk/database/rdb
-      fi
-      if [ -d ../media/libretrodb/cursors ]; then
-         mkdir -p ../pkg/${platform}/retroarch.vpk/vpk/database/cursors
-         cp -r ../media/libretrodb/cursors/* ../pkg/${platform}/retroarch.vpk/vpk/database/cursors
-      fi
-      if [ -d ../../dist/info ]; then
-         mkdir -p ../pkg/${platform}/retroarch.vpk/vpk/info
-         cp -fv ../../dist/info/*.info ../pkg/${platform}/retroarch.vpk/vpk/info/
-      fi
-      make -C ../ -f Makefile.${platform}.salamander clean || exit 1
+     make -C ../ -f Makefile.${platform}.salamander clean || exit 1
    fi
    if [ $PLATFORM = "ctr" ] ; then
    mv -f ../retroarch_3ds_salamander.cia ../pkg/3ds/cia/retroarch_3ds.cia
