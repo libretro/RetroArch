@@ -235,17 +235,9 @@ for f in `ls -v *_${platform}.${EXT}`; do
       COUNTER=$((COUNTER + 1))
       COUNTER_ID=`printf  "%05d" ${COUNTER}`
       cp ../retroarch_${platform}.self ../pkg/${platform}/retroarch.vpk/vpk/${name}_libretro.self
-         if [ -d ../media/libretrodb/rdb ]; then
-            mkdir -p ../pkg/${platform}/retroarch.vpk/vpk/database/rdb
-            cp -r ../media/libretrodb/rdb/* ../pkg/${platform}/${name}_libretro.vpk/vpk/database/rdb
-         fi
-         if [ -d ../media/libretrodb/cursors ]; then
-            mkdir -p ../pkg/${platform}/retroarch.vpk/vpk/database/cursors
-            cp -r ../media/libretrodb/cursors/* ../pkg/${platform}/${name}_libretro.vpk/vpk/database/cursors
-         fi
          if [ -d ../../dist/info ]; then
             mkdir -p ../pkg/${platform}/retroarch.vpk/vpk/info
-            cp -fv ../../dist/info/"${name}_libretro.info" ../pkg/${platform}/${name}_libretro.vpk/vpk/info/"${name}_libretro.info"
+            cp -fv ../../dist/info/"${name}_libretro.info" ../pkg/${platform}/retroarch.vpk/vpk/info/"${name}_libretro.info"
          fi
    elif [ $PLATFORM = "ctr" ] ; then
       mv -f ../retroarch_3ds.cia ../pkg/3ds/cia/${name}_libretro.cia
