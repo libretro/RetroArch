@@ -531,6 +531,8 @@ static void gdi_set_video_mode(void *data, unsigned width, unsigned height,
 }
 
 static const video_poke_interface_t gdi_poke_interface = {
+   NULL,                      /* set_coords */
+   NULL,                      /* set_mvp */
    NULL,
    NULL,
    gdi_set_video_mode,

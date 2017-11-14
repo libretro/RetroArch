@@ -1711,6 +1711,8 @@ static void d3d_unload_texture(void *data, uintptr_t id)
 }
 
 static const video_poke_interface_t d3d_poke_interface = {
+   NULL,                            /* set_coords */
+   NULL,                            /* set_mvp    */
    d3d_load_texture,
    d3d_unload_texture,
    NULL,

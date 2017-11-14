@@ -1257,6 +1257,8 @@ static struct video_shader *thread_get_current_shader(void *data)
 }
 
 static const video_poke_interface_t thread_poke = {
+   NULL,                            /* set_coords */
+   NULL,                            /* set_mvp */
    thread_load_texture,
    thread_unload_texture,
    thread_set_video_mode,

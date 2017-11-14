@@ -673,6 +673,10 @@ struct aspect_ratio_elem
 
 typedef struct video_poke_interface
 {
+   void (*set_coords)(void *handle_data, void *shader_data,
+         const struct video_coords *coords);
+   void (*set_mvp)(void *data, void *shader_data,
+         const void *mat_data);
    uintptr_t (*load_texture)(void *video_data, void *data,
          bool threaded, enum texture_filter_type filter_type);
    void (*unload_texture)(void *data, uintptr_t id);
