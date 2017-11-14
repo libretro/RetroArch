@@ -139,7 +139,7 @@ static void menu_display_gl_draw(void *data)
    coords.handle_data = gl;
    coords.data        = draw->coords;
 
-   video_shader_driver_set_coords(coords);
+   video_driver_set_coords(&coords);
 
    mvp.data   = gl;
    mvp.matrix = draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data

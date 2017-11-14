@@ -3444,6 +3444,12 @@ bool video_shader_driver_wrap_type(video_shader_ctx_wrap_t *wrap)
    return true;
 }
 
+void video_driver_set_coords(video_shader_ctx_coords_t *coords)
+{
+   if (!current_shader || !current_shader->set_coords || !current_shader->set_coords(coords->handle_data, shader_data, (const struct video_coords*)coords->data)) 
+      video_driver_set_coords_fallback(coords->handle_data, shader_data, (const struct video_coords*)coords->data);
+}
+
 void video_driver_set_mvp(video_shader_ctx_mvp_t *mvp)
 {
    if (mvp->matrix && current_shader && current_shader->set_mvp)

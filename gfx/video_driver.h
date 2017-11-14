@@ -1279,9 +1279,7 @@ bool video_shader_driver_get_feedback_pass(unsigned *data);
 
 bool video_shader_driver_mipmap_input(unsigned *index);
 
-#define video_shader_driver_set_coords(coords) \
-   if (!current_shader->set_coords(coords.handle_data, shader_data, (const struct video_coords*)coords.data)) \
-      video_driver_set_coords_fallback(coords.handle_data, shader_data, (const struct video_coords*)coords.data)
+void video_driver_set_coords(video_shader_ctx_coords_t *coords);
 
 bool video_shader_driver_scale(video_shader_ctx_scale_t *scaler);
 

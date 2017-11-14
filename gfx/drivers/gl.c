@@ -220,7 +220,7 @@ static void gl_render_overlay(gl_t *gl, video_frame_info_t *video_info)
    coords.handle_data   = NULL;
    coords.data          = &gl->coords;
 
-   video_shader_driver_set_coords(coords);
+   video_driver_set_coords(&coords);
 
    video_info->cb_shader_set_mvp(gl,
          video_info->shader_data, &gl->mvp_no_rot);
@@ -815,7 +815,7 @@ static void gl_render_osd_background(
    video_info->cb_shader_use(gl,
          video_info->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
 
-   video_shader_driver_set_coords(coords_data);
+   video_driver_set_coords(&coords_data);
 
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -947,7 +947,7 @@ static INLINE void gl_draw_texture(gl_t *gl, video_frame_info_t *video_info)
    coords.handle_data   = NULL;
    coords.data          = &gl->coords;
 
-   video_shader_driver_set_coords(coords);
+   video_driver_set_coords(&coords);
 
    video_info->cb_shader_set_mvp(gl,
          video_info->shader_data, &gl->mvp_no_rot);
@@ -1129,7 +1129,7 @@ static bool gl_frame(void *data, const void *frame,
    coords.handle_data   = NULL;
    coords.data          = &gl->coords;
 
-   video_shader_driver_set_coords(coords);
+   video_driver_set_coords(&coords);
 
    video_info->cb_shader_set_mvp(gl, video_info->shader_data, &gl->mvp);
 

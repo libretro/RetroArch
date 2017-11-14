@@ -331,7 +331,7 @@ static void gl2_renderchain_render(
       coords.handle_data  = NULL;
       coords.data         = &gl->coords;
 
-      video_shader_driver_set_coords(coords);
+      video_driver_set_coords(&coords);
 
       video_info->cb_shader_set_mvp(gl,
             video_info->shader_data, &gl->mvp);
@@ -406,7 +406,7 @@ static void gl2_renderchain_render(
    coords.handle_data   = NULL;
    coords.data          = &gl->coords;
 
-   video_shader_driver_set_coords(coords);
+   video_driver_set_coords(&coords);
 
    video_info->cb_shader_set_mvp(gl,
          video_info->shader_data, &gl->mvp);
