@@ -86,10 +86,10 @@ static void hidpad_nesusb_packet_handler(void *data, uint8_t *packet, uint16_t s
    uint32_t i, pressed_keys;
    static const uint32_t button_mapping[17] =
    {
-      NO_BTN,
-      NO_BTN,
-      NO_BTN,
-      NO_BTN,
+      RETRO_DEVICE_ID_JOYPAD_L2,
+      RETRO_DEVICE_ID_JOYPAD_R2,
+      RETRO_DEVICE_ID_JOYPAD_L,
+      RETRO_DEVICE_ID_JOYPAD_R,
       RETRO_DEVICE_ID_JOYPAD_SELECT,
       RETRO_DEVICE_ID_JOYPAD_START,
       NO_BTN,
@@ -100,8 +100,8 @@ static void hidpad_nesusb_packet_handler(void *data, uint8_t *packet, uint16_t s
       NO_BTN,
       RETRO_DEVICE_ID_JOYPAD_B,
       RETRO_DEVICE_ID_JOYPAD_A,
-      NO_BTN,
-      NO_BTN,
+      RETRO_DEVICE_ID_JOYPAD_Y,
+      RETRO_DEVICE_ID_JOYPAD_X,
       16, /* HOME BUTTON when pressing SELECT+START */
    };
    struct hidpad_nesusb_data *device = (struct hidpad_nesusb_data*)data;
