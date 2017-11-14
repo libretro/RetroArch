@@ -2529,6 +2529,8 @@ static void gl_unload_texture(void *data, uintptr_t id)
 }
 
 static const video_poke_interface_t gl_poke_interface = {
+   NULL,                         /* set_coords */
+   NULL,                         /* set_mvp */
    gl_load_texture,
    gl_unload_texture,
    gl_set_video_mode,

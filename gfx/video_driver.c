@@ -2483,7 +2483,7 @@ static bool video_driver_cb_set_coords(void *handle_data,
 }
 #endif
 
-bool video_driver_set_coords_fallback(void *handle_data,
+static bool video_driver_set_coords_fallback(void *handle_data,
       void *shader_data, const struct video_coords *coords)
 {
 #ifdef HAVE_OPENGL

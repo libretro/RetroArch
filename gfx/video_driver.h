@@ -1304,9 +1304,6 @@ bool renderchain_gl_init_first(
       const gl_renderchain_driver_t **renderchain_driver,
       void **renderchain_handle);
 
-bool video_driver_set_coords_fallback(void *handle_data,
-      void *shader_data, const struct video_coords *coords);
-
 extern bool (*video_driver_cb_has_focus)(void);
 
 extern shader_backend_t *current_shader;
