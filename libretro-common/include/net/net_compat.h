@@ -158,6 +158,8 @@ static INLINE bool isagain(int bytes)
    return true;
 #elif defined(VITA)
 	 return (bytes<0 && (bytes == SCE_NET_ERROR_EAGAIN || bytes == SCE_NET_ERROR_EWOULDBLOCK));
+#elif defined(WIIU)
+   return (bytes == -1) && ((socketlasterr() == SO_SUCCESS) || (socketlasterr() == SO_EWOULDBLOCK));
 #else
    return (bytes < 0 && (errno == EAGAIN || errno == EWOULDBLOCK));
 #endif
@@ -237,5 +239,9 @@ bool network_init(void);
  * Deinitialize platform specific socket libraries.
  **/
 void network_deinit(void);
+
+const char *inet_ntop_compat(int af, const void *src, char *dst, socklen_t cnt);
+
+bool udp_send_packet(const char *host, uint16_t port, const char *msg);
 
 #endif

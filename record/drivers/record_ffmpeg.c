@@ -336,7 +336,7 @@ static bool ffmpeg_init_audio(ffmpeg_t *handle)
 
       retro_resampler_realloc(&audio->resampler_data,
             &audio->resampler,
-            settings->audio.resampler,
+            settings->arrays.audio_resampler,
             audio->ratio);
    }
    else

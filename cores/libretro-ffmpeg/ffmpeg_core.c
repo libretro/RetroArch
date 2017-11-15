@@ -1,4 +1,3 @@
-/*  Copyright (C) 2016 - Brad Parker */
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -36,7 +35,7 @@ extern "C" {
 #endif
 
 #ifdef HAVE_GL_FFT
-#include "fft/fft.h"
+#include "ffmpeg_fft.h"
 #endif
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
@@ -45,6 +44,7 @@ extern "C" {
 
 #include <rthreads/rthreads.h>
 #include <queues/fifo_queue.h>
+#include <string/stdstring.h>
 
 #include <libretro.h>
 #ifdef RARCH_INTERNAL
@@ -115,7 +115,7 @@ static struct attachment *attachments;
 static size_t attachments_size;
 
 #ifdef HAVE_GL_FFT
-static glfft_t *fft;
+static fft_t *fft;
 unsigned fft_width;
 unsigned fft_height;
 unsigned fft_multisample;
@@ -274,8 +274,8 @@ void CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
       { "ffmpeg_temporal_interp", "Temporal Interpolation; enabled|disabled" },
 #ifdef HAVE_GL_FFT
-      { "ffmpeg_fft_resolution", "GLFFT Resolution; 1280x720|1920x1080|640x360|320x180" },
-      { "ffmpeg_fft_multisample", "GLFFT Multisample; 1x|2x|4x" },
+      { "ffmpeg_fft_resolution", "FFT Resolution; 1280x720|1920x1080|2560x1440|3840x2160|640x360|320x180" },
+      { "ffmpeg_fft_multisample", "FFT Multisample; 1x|2x|4x" },
 #endif
 #endif
       { "ffmpeg_color_space", "Colorspace; auto|BT.709|BT.601|FCC|SMPTE240M" },
@@ -339,9 +339,9 @@ static void check_variables(void)
 
    if (CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
-      if (!strcmp(var.value, "enabled"))
+      if (memcmp(var.value, "enabled", 7) == 0)
          temporal_interpolation = true;
-      else if (!strcmp(var.value, "disabled"))
+      else if (memcmp(var.value, "disabled", 8) == 0)
          temporal_interpolation = false;
    }
 
@@ -373,13 +373,13 @@ static void check_variables(void)
    if (CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &color_var) && color_var.value)
    {
       slock_lock(decode_thread_lock);
-      if (!strcmp(color_var.value, "BT.709"))
+      if (string_is_equal(color_var.value, "BT.709"))
          colorspace = AVCOL_SPC_BT709;
-      else if (!strcmp(color_var.value, "BT.601"))
+      else if (string_is_equal(color_var.value, "BT.601"))
          colorspace = AVCOL_SPC_BT470BG;
-      else if (!strcmp(color_var.value, "FCC"))
+      else if (memcmp(color_var.value, "FCC", 3) == 0)
          colorspace = AVCOL_SPC_FCC;
-      else if (!strcmp(color_var.value, "SMPTE240M"))
+      else if (string_is_equal(color_var.value, "SMPTE240M"))
          colorspace = AVCOL_SPC_SMPTE240M;
       else
          colorspace = AVCOL_SPC_UNSPECIFIED;
@@ -462,7 +462,7 @@ void CORE_PREFIX(retro_run)(void)
    }
 
    if (fft && (old_fft_multisample != fft_multisample))
-      glfft_init_multisample(fft, fft_width, fft_height, fft_multisample);
+      fft_init_multisample(fft, fft_width, fft_height, fft_multisample);
 #endif
 
    CORE_PREFIX(input_poll_cb)();
@@ -737,11 +737,11 @@ void CORE_PREFIX(retro_run)(void)
          if (to_read > (1 << 11)) 
             to_read = 1 << 11;
 
-         glfft_step_fft(fft, buffer, to_read);
+         fft_step_fft(fft, buffer, to_read);
          buffer += to_read * 2;
          frames -= to_read;
       }
-      glfft_render(fft, hw_render.get_current_framebuffer(), fft_width, fft_height);
+      fft_render(fft, hw_render.get_current_framebuffer(), fft_width, fft_height);
       CORE_PREFIX(video_cb)(RETRO_HW_FRAME_BUFFER_VALID,
             fft_width, fft_height, fft_width * sizeof(uint32_t));
    }
@@ -1369,7 +1369,7 @@ static void context_destroy(void)
 #ifdef HAVE_GL_FFT
    if (fft)
    {
-      glfft_free(fft);
+      fft_free(fft);
       fft = NULL;
    }
 #endif
@@ -1400,9 +1400,9 @@ static void context_reset(void)
 #ifdef HAVE_GL_FFT
    if (audio_streams_num > 0 && video_stream < 0)
    {
-      fft = glfft_new(11, hw_render.get_proc_address);
+      fft = fft_new(11, hw_render.get_proc_address);
       if (fft)
-         glfft_init_multisample(fft, fft_width, fft_height, fft_multisample);
+         fft_init_multisample(fft, fft_width, fft_height, fft_multisample);
    }
 
    /* Already inits symbols. */
@@ -1555,7 +1555,7 @@ void CORE_PREFIX(retro_unload_game)(void)
 
 bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 {
-   bool is_glfft = false;
+   bool is_fft = false;
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_XRGB8888;
    struct retro_input_descriptor desc[] = {
       { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT,  "Seek -10 seconds" },
@@ -1606,21 +1606,21 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
    }
 
 #ifdef HAVE_GL_FFT
-   is_glfft = video_stream < 0 && audio_streams_num > 0;
+   is_fft = video_stream < 0 && audio_streams_num > 0;
 #endif
 
-   if (video_stream >= 0 || is_glfft)
+   if (video_stream >= 0 || is_fft)
    {
       video_decode_fifo = fifo_new(media.width 
             * media.height * sizeof(uint32_t) * 32);
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
       use_gl = true;
-      hw_render.context_reset = context_reset;
-      hw_render.context_destroy = context_destroy;
-      hw_render.bottom_left_origin = is_glfft;
-      hw_render.depth = is_glfft;
-      hw_render.stencil = is_glfft;
+      hw_render.context_reset      = context_reset;
+      hw_render.context_destroy    = context_destroy;
+      hw_render.bottom_left_origin = is_fft;
+      hw_render.depth              = is_fft;
+      hw_render.stencil            = is_fft;
 #if defined(HAVE_OPENGLES)
       hw_render.context_type = RETRO_HW_CONTEXT_OPENGLES2;
 #else

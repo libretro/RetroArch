@@ -20,25 +20,208 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <stdio.h>
 #include <stdlib.h>
-#include <boolean.h>
 #include <string.h>
 #include <time.h>
 #include <errno.h>
 
 #include <sys/stat.h>
 
+#include <boolean.h>
 #include <file/file_path.h>
+#include <streams/file_stream.h>
 
 #ifndef __MACH__
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #endif
 #include <compat/strcasestr.h>
-#include <retro_assert.h>
-#include <retro_stat.h>
 #include <retro_miscellaneous.h>
-#include <string/stdstring.h>
+#include <encodings/utf.h>
+
+#if defined(_WIN32)
+#ifdef _MSC_VER
+#define setmode _setmode
+#endif
+#include <sys/stat.h>
+#ifdef _XBOX
+#include <xtl.h>
+#define INVALID_FILE_ATTRIBUTES -1
+#else
+#include <io.h>
+#include <fcntl.h>
+#include <direct.h>
+#include <windows.h>
+#if defined(_MSC_VER) && _MSC_VER <= 1200
+#define INVALID_FILE_ATTRIBUTES ((DWORD)-1)
+#endif
+#endif
+#elif defined(VITA)
+#define SCE_ERROR_ERRNO_EEXIST 0x80010011
+#include <psp2/io/fcntl.h>
+#include <psp2/io/dirent.h>
+#include <psp2/io/stat.h>
+#else
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#endif
+
+#if defined(PSP)
+#include <pspkernel.h>
+#endif
+
+#ifdef __HAIKU__
+#include <kernel/image.h>
+#endif
+
+#if defined(__CELLOS_LV2__)
+#include <cell/cell_fs.h>
+#endif
+
+#if defined(VITA)
+#define FIO_S_ISDIR SCE_S_ISDIR
+#endif
+
+#if (defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)) || defined(__QNX__) || defined(PSP)
+#include <unistd.h> /* stat() is defined here */
+#endif
+
+/* Assume W-functions do not work below VC2005 and Xbox platforms */
+#if defined(_MSC_VER) && _MSC_VER < 1400 || defined(_XBOX)
+
+#ifndef LEGACY_WIN32
+#define LEGACY_WIN32
+#endif
+
+#endif
+
+enum stat_mode
+{
+   IS_DIRECTORY = 0,
+   IS_CHARACTER_SPECIAL,
+   IS_VALID
+};
+
+static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
+{
+#if defined(VITA) || defined(PSP)
+   SceIoStat buf;
+   char *tmp  = strdup(path);
+   size_t len = strlen(tmp);
+   if (tmp[len-1] == '/')
+      tmp[len-1]='\0';
+
+   if (sceIoGetstat(tmp, &buf) < 0)
+   {
+      free(tmp);
+      return false;
+   }
+   free(tmp);
+
+#elif defined(__CELLOS_LV2__)
+    CellFsStat buf;
+    if (cellFsStat(path, &buf) < 0)
+       return false;
+#elif defined(_WIN32)
+   struct _stat buf;
+   char *path_local;
+   wchar_t *path_wide;
+   DWORD file_info;
+
+   if (!path || !*path)
+      return false;
+
+   (void)path_wide;
+   (void)path_local;
+   (void)file_info;
+
+#if defined(LEGACY_WIN32)
+   path_local = utf8_to_local_string_alloc(path);
+   file_info  = GetFileAttributes(path_local);
+
+   _stat(path_local, &buf);
+
+   if (path_local)
+     free(path_local);
+#else
+   path_wide = utf8_to_utf16_string_alloc(path);
+   file_info = GetFileAttributesW(path_wide);
+
+   _wstat(path_wide, &buf);
+
+   if (path_wide)
+      free(path_wide);
+#endif
+
+   if (file_info == INVALID_FILE_ATTRIBUTES)
+      return false;
+#else
+   struct stat buf;
+   if (stat(path, &buf) < 0)
+      return false;
+#endif
+
+   if (size)
+      *size = (int32_t)buf.st_size;
+
+   switch (mode)
+   {
+      case IS_DIRECTORY:
+#if defined(VITA) || defined(PSP)
+         return FIO_S_ISDIR(buf.st_mode);
+#elif defined(__CELLOS_LV2__)
+         return ((buf.st_mode & S_IFMT) == S_IFDIR);
+#elif defined(_WIN32)
+         return (file_info & FILE_ATTRIBUTE_DIRECTORY);
+#else
+         return S_ISDIR(buf.st_mode);
+#endif
+      case IS_CHARACTER_SPECIAL:
+#if defined(VITA) || defined(PSP) || defined(__CELLOS_LV2__) || defined(_WIN32)
+         return false;
+#else
+         return S_ISCHR(buf.st_mode);
+#endif
+      case IS_VALID:
+         return true;
+   }
+
+   return false;
+}
+
+/**
+ * path_is_directory:
+ * @path               : path
+ *
+ * Checks if path is a directory.
+ *
+ * Returns: true (1) if path is a directory, otherwise false (0).
+ */
+bool path_is_directory(const char *path)
+{
+   return path_stat(path, IS_DIRECTORY, NULL);
+}
+
+bool path_is_character_special(const char *path)
+{
+   return path_stat(path, IS_CHARACTER_SPECIAL, NULL);
+}
+
+bool path_is_valid(const char *path)
+{
+   return path_stat(path, IS_VALID, NULL);
+}
+
+int32_t path_get_size(const char *path)
+{
+   int32_t filesize = 0;
+   if (path_stat(path, IS_VALID, &filesize))
+      return filesize;
+
+   return -1;
+}
 
 /**
  * path_mkdir:
@@ -50,10 +233,11 @@
  **/
 bool path_mkdir(const char *dir)
 {
-   const char *target = NULL;
    /* Use heap. Real chance of stack overflow if we recurse too hard. */
-   char     *basedir = strdup(dir);
-   bool          ret = false;
+   char     *basedir  = strdup(dir);
+   const char *target = NULL;
+   bool         sret  = false;
+   bool norecurse     = false;
 
    if (!basedir)
       return false;
@@ -64,26 +248,56 @@ bool path_mkdir(const char *dir)
 
    if (path_is_directory(basedir))
    {
-      target = dir;
-      ret    = mkdir_norecurse(dir);
+      target    = dir;
+      norecurse = true;
    }
    else
    {
       target = basedir;
-      ret    = path_mkdir(basedir);
+      sret   = path_mkdir(basedir);
 
-      if (ret)
+      if (sret)
       {
-         target = dir;
-         ret    = mkdir_norecurse(dir);
+         target    = dir;
+         norecurse = true;
       }
    }
 
+   if (norecurse)
+   {
+#if defined(_WIN32)
+      int ret = _mkdir(dir);
+#elif defined(IOS)
+      int ret = mkdir(dir, 0755);
+#elif defined(VITA) || defined(PSP)
+      int ret = sceIoMkdir(dir, 0777);
+#elif defined(__QNX__)
+      int ret = mkdir(dir, 0777);
+#else
+      int ret = mkdir(dir, 0750);
+#endif
+
+      /* Don't treat this as an error. */
+#if defined(VITA)
+      if ((ret == SCE_ERROR_ERRNO_EEXIST) && path_is_directory(dir))
+         ret = 0;
+#elif defined(PSP) || defined(_3DS) || defined(WIIU)
+      if ((ret == -1) && path_is_directory(dir))
+         ret = 0;
+#else 
+      if (ret < 0 && errno == EEXIST && path_is_directory(dir))
+         ret = 0;
+#endif
+      if (ret < 0)
+         printf("mkdir(%s) error: %s.\n", dir, strerror(errno));
+      sret = (ret == 0);
+   }
+
 end:
-   if (target && !ret)
+   if (target && !sret)
       printf("Failed to create directory: \"%s\".\n", target);
    free(basedir);
-   return ret;
+   return sret;
 }
 
 /**
@@ -98,7 +312,7 @@ end:
  */
 const char *path_get_archive_delim(const char *path)
 {
-   const char *last = find_last_slash(path);
+   const char *last  = find_last_slash(path);
    const char *delim = NULL;
 
    if (last)
@@ -170,9 +384,9 @@ bool path_is_compressed_file(const char* path)
 {
    const char *ext = path_get_extension(path);
 
-   if (     string_is_equal_noncase(ext, "zip") 
-         || string_is_equal_noncase(ext, "apk")
-         || string_is_equal_noncase(ext, "7z"))
+   if (     strcasestr(ext, "zip") 
+         || strcasestr(ext, "apk")
+         || strcasestr(ext, "7z"))
       return true;
 
    return false;
@@ -188,12 +402,17 @@ bool path_is_compressed_file(const char* path)
  */
 bool path_file_exists(const char *path)
 {
-   FILE *dummy = fopen(path, "rb");
+   RFILE *dummy;
+
+   if (!path || !*path)
+      return false;
+
+   dummy = filestream_open(path, RFILE_MODE_READ, -1);
 
    if (!dummy)
       return false;
 
-   fclose(dummy);
+   filestream_close(dummy);
    return true;
 }
 
@@ -226,8 +445,7 @@ void fill_pathname(char *out_path, const char *in_path,
 
    tmp_path[0] = '\0';
 
-   retro_assert(strlcpy(tmp_path, in_path,
-            sizeof(tmp_path)) < sizeof(tmp_path));
+   strlcpy(tmp_path, in_path, sizeof(tmp_path));
    if ((tok = (char*)strrchr(path_basename(tmp_path), '.')))
       *tok = '\0';
 
@@ -251,8 +469,8 @@ void fill_pathname(char *out_path, const char *in_path,
 void fill_pathname_noext(char *out_path, const char *in_path,
       const char *replace, size_t size)
 {
-   retro_assert(strlcpy(out_path, in_path, size) < size);
-   retro_assert(strlcat(out_path, replace, size) < size);
+   strlcpy(out_path, in_path, size);
+   strlcat(out_path, replace, size);
 }
 
 char *find_last_slash(const char *str)
@@ -289,10 +507,10 @@ void fill_pathname_slash(char *path, size_t size)
       join_str[0] = '\0';
 
       strlcpy(join_str, last_slash, sizeof(join_str));
-      retro_assert(strlcat(path, join_str, size) < size);
+      strlcat(path, join_str, size);
    }
    else if (!last_slash)
-      retro_assert(strlcat(path, path_default_slash(), size) < size);
+      strlcat(path, path_default_slash(), size);
 }
 
 /**
@@ -319,8 +537,8 @@ void fill_pathname_dir(char *in_dir, const char *in_basename,
 
    fill_pathname_slash(in_dir, size);
    base = path_basename(in_basename);
-   retro_assert(strlcat(in_dir, base, size) < size);
-   retro_assert(strlcat(in_dir, replace, size) < size);
+   strlcat(in_dir, base, size);
+   strlcat(in_dir, replace, size);
 }
 
 /**
@@ -338,7 +556,7 @@ void fill_pathname_base(char *out, const char *in_path, size_t size)
    if (!ptr)
       ptr = in_path;
 
-   retro_assert(strlcpy(out, ptr, size) < size);
+   strlcpy(out, ptr, size);
 }
 
 void fill_pathname_base_noext(char *out, const char *in_path, size_t size)
@@ -368,7 +586,7 @@ void fill_pathname_basedir(char *out_dir,
       const char *in_path, size_t size)
 {
    if (out_dir != in_path)
-      retro_assert(strlcpy(out_dir, in_path, size) < size);
+      strlcpy(out_dir, in_path, size);
    path_basedir(out_dir);
 }
 
@@ -392,7 +610,7 @@ void fill_pathname_parent_dir(char *out_dir,
       const char *in_dir, size_t size)
 {
    if (out_dir != in_dir)
-      retro_assert(strlcpy(out_dir, in_dir, size) < size);
+      strlcpy(out_dir, in_dir, size);
    path_parent_dir(out_dir);
 }
 
@@ -549,7 +767,6 @@ void path_resolve_realpath(char *buf, size_t size)
    if (!_fullpath(buf, tmp, size))
       strlcpy(buf, tmp, size);
 #else
-   retro_assert(size >= PATH_MAX_LENGTH);
 
    /* NOTE: realpath() expects at least PATH_MAX_LENGTH bytes in buf.
     * Technically, PATH_MAX_LENGTH needn't be defined, but we rely on it anyways.
@@ -578,12 +795,12 @@ void fill_pathname_resolve_relative(char *out_path,
 {
    if (path_is_absolute(in_path))
    {
-      retro_assert(strlcpy(out_path, in_path, size) < size);
+      strlcpy(out_path, in_path, size);
       return;
    }
 
    fill_pathname_basedir(out_path, in_refpath, size);
-   retro_assert(strlcat(out_path, in_path, size) < size);
+   strlcat(out_path, in_path, size);
 }
 
 /**
@@ -601,21 +818,12 @@ void fill_pathname_join(char *out_path,
       const char *dir, const char *path, size_t size)
 {
    if (out_path != dir)
-      retro_assert(strlcpy(out_path, dir, size) < size);
+      strlcpy(out_path, dir, size);
 
    if (*out_path)
       fill_pathname_slash(out_path, size);
 
-   retro_assert(strlcat(out_path, path, size) < size);
-}
-
-static void fill_string_join(char *out_path,
-      const char *append, size_t size)
-{
-   if (*out_path)
-      fill_pathname_slash(out_path, size);
-
-   retro_assert(strlcat(out_path, append, size) < size);
+   strlcat(out_path, path, size);
 }
 
 void fill_pathname_join_special_ext(char *out_path,
@@ -624,7 +832,10 @@ void fill_pathname_join_special_ext(char *out_path,
       size_t size)
 {
    fill_pathname_join(out_path, dir, path, size);
-   fill_string_join(out_path, last, size);
+   if (*out_path)
+      fill_pathname_slash(out_path, size);
+
+   strlcat(out_path, last, size);
    strlcat(out_path, ext, size);
 }
 
@@ -659,13 +870,12 @@ void fill_pathname_join_noext(char *out_path,
 void fill_pathname_join_delim(char *out_path, const char *dir,
       const char *path, const char delim, size_t size)
 {
-   size_t copied = strlcpy(out_path, dir, size);
-   retro_assert(copied < size+1);
+   size_t copied      = strlcpy(out_path, dir, size);
 
    out_path[copied]   = delim;
    out_path[copied+1] = '\0';
 
-   retro_assert(strlcat(out_path, path, size) < size);
+   strlcat(out_path, path, size);
 }
 
 void fill_pathname_join_delim_concat(char *out_path, const char *dir,
@@ -709,4 +919,108 @@ void fill_short_pathname_representation_noext(char* out_rep,
 {
    fill_short_pathname_representation(out_rep, in_path, size);
    path_remove_extension(out_rep);
+}
+
+bool path_file_remove(const char *path)
+{
+   char *path_local    = NULL;
+   wchar_t *path_wide  = NULL;
+
+   if (!path || !*path)
+      return false;
+
+   (void)path_local;
+   (void)path_wide;
+
+#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_MSC_VER) && _MSC_VER < 1400
+   path_local = utf8_to_local_string_alloc(path);
+
+   if (path_local)
+   {
+      int ret = remove(path_local);
+      free(path_local);
+
+      if (ret == 0)
+         return true;
+   }
+#else
+   path_wide = utf8_to_utf16_string_alloc(path);
+
+   if (path_wide)
+   {
+      int ret = _wremove(path_wide);
+      free(path_wide);
+
+      if (ret == 0)
+         return true;
+   }
+#endif
+#else
+   if (remove(path) == 0)
+      return true;
+#endif
+   return false;
+}
+
+bool path_file_rename(const char *old_path, const char *new_path)
+{
+   char *old_path_local    = NULL;
+   char *new_path_local    = NULL;
+   wchar_t *old_path_wide  = NULL;
+   wchar_t *new_path_wide  = NULL;
+
+   if (!old_path || !*old_path || !new_path || !*new_path)
+      return false;
+
+   (void)old_path_local;
+   (void)new_path_local;
+   (void)old_path_wide;
+   (void)new_path_wide;
+
+#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_MSC_VER) && _MSC_VER < 1400
+   old_path_local = utf8_to_local_string_alloc(old_path);
+   new_path_local = utf8_to_local_string_alloc(new_path);
+
+   if (old_path_local)
+   {
+      if (new_path_local)
+      {
+         int ret = rename(old_path_local, new_path_local);
+         free(old_path_local);
+         free(new_path_local);
+         return ret;
+      }
+
+      free(old_path_local);
+   }
+
+   if (new_path_local)
+      free(new_path_local);
+#else
+   old_path_wide = utf8_to_utf16_string_alloc(old_path);
+   new_path_wide = utf8_to_utf16_string_alloc(new_path);
+
+   if (old_path_wide)
+   {
+      if (new_path_wide)
+      {
+         int ret = _wrename(old_path_wide, new_path_wide);
+         free(old_path_wide);
+         free(new_path_wide);
+         return ret;
+      }
+
+      free(old_path_wide);
+   }
+
+   if (new_path_wide)
+      free(new_path_wide);
+#endif
+#else
+   if (rename(old_path, new_path) == 0)
+      return true;
+#endif
+   return false;
 }

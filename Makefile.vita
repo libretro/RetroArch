@@ -45,6 +45,7 @@ else
 	HAVE_THREADS		:= 1
 	HAVE_LIBRETRODB		:= 1
 	HAVE_CC_RESAMPLER	:= 1
+	HAVE_CHEEVOS		:= 1
 	RARCH_CONSOLE		:= 1
 
 	ifeq ($(DEBUG), 1)
@@ -97,7 +98,7 @@ STRIP   := $(PREFIX)strip
 NM      := $(PREFIX)nm
 LD      := $(CXX)
 
-INCDIRS := -I. -Ideps/libz -Ideps/7zip -Ilibretro-common/include
+INCDIRS := -I. -Ideps/libz -Ideps/7zip -Ilibretro-common/include -Ideps/stb
 LIBDIRS := -L.
 
 ARCHFLAGS := -march=armv7-a -mfpu=neon -mfloat-abi=hard -DVITA

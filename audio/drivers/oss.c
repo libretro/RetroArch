@@ -97,8 +97,7 @@ error:
    return NULL;
 }
 
-static ssize_t oss_write(void *data, const void *buf, size_t size,
-      bool is_perfcnt_enable)
+static ssize_t oss_write(void *data, const void *buf, size_t size)
 {
    ssize_t ret;
    int *fd = (int*)data;
@@ -121,7 +120,9 @@ static bool oss_stop(void *data)
 {
    int *fd = (int*)data;
 
-   ioctl(*fd, SNDCTL_DSP_RESET, 0);
+   if (ioctl(*fd, SNDCTL_DSP_RESET, 0) < 0)
+      return false;
+
    oss_is_paused = true;
    return true;
 }
@@ -156,7 +157,9 @@ static void oss_free(void *data)
 {
    int *fd = (int*)data;
 
-   ioctl(*fd, SNDCTL_DSP_RESET, 0);
+   if (ioctl(*fd, SNDCTL_DSP_RESET, 0) < 0)
+      return;
+
    close(*fd);
    free(fd);
 }

@@ -76,7 +76,7 @@ typedef struct frontend_ctx_driver
    void (*content_loaded)(void);
    enum frontend_architecture (*get_architecture)(void);
    enum frontend_powerstate (*get_powerstate)(int *seconds, int *percent);
-   int  (*parse_drive_list)(void*);
+   int  (*parse_drive_list)(void*, bool);
    uint64_t (*get_total_mem)(void);
    uint64_t (*get_used_mem)(void);
    void (*install_signal_handler)(void);
@@ -85,6 +85,9 @@ typedef struct frontend_ctx_driver
    void (*destroy_signal_handler_state)(void);
    void (*attach_console)(void);
    void (*detach_console)(void);
+#ifdef HAVE_LAKKA
+   void (*get_lakka_version)(char *, size_t);
+#endif
 
    const char *ident;
 
@@ -97,8 +100,7 @@ extern frontend_ctx_driver_t frontend_ctx_ps3;
 extern frontend_ctx_driver_t frontend_ctx_xdk;
 extern frontend_ctx_driver_t frontend_ctx_qnx;
 extern frontend_ctx_driver_t frontend_ctx_darwin;
-extern frontend_ctx_driver_t frontend_ctx_linux;
-extern frontend_ctx_driver_t frontend_ctx_bsd;
+extern frontend_ctx_driver_t frontend_ctx_unix;
 extern frontend_ctx_driver_t frontend_ctx_psp;
 extern frontend_ctx_driver_t frontend_ctx_ctr;
 extern frontend_ctx_driver_t frontend_ctx_win32;
@@ -128,7 +130,7 @@ frontend_ctx_driver_t *frontend_get_ptr(void);
  **/
 frontend_ctx_driver_t *frontend_ctx_init_first(void);
 
-int frontend_driver_parse_drive_list(void *data);
+int frontend_driver_parse_drive_list(void *data, bool load_content);
 
 void frontend_driver_content_loaded(void);
 

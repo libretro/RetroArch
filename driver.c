@@ -29,6 +29,7 @@
 #endif
 
 #include "command.h"
+#include "dynamic.h"
 #include "msg_hash.h"
 
 #include "audio/audio_driver.h"
@@ -40,7 +41,7 @@
 #include "core.h"
 #include "core_info.h"
 #include "driver.h"
-#include "runloop.h"
+#include "retroarch.h"
 #include "verbosity.h"
 
 #define HASH_LOCATION_DRIVER           0x09189689U
@@ -168,6 +169,30 @@ static bool driver_find_first(const char *label, char *s, size_t len)
 }
 
 /**
+ * driver_find_last:
+ * @label              : string of driver type to be found.
+ * @s                  : identifier of driver to be found.
+ * @len                : size of @s.
+ *
+ * Find last driver in driver array.
+ **/
+static bool driver_find_last(const char *label, char *s, size_t len)
+{
+   unsigned i;
+
+   for (i = 0;
+         find_driver_nonempty(label, i, s, len) != NULL; i++)
+   {}
+
+   if (i)
+      find_driver_nonempty(label, i-1, s, len);
+   else
+      driver_find_first(label, s, len);
+
+   return true;
+}
+
+/**
  * driver_find_prev:
  * @label              : string of driver type to be found.
  * @s                  : identifier of driver to be found.
@@ -202,7 +227,7 @@ bool driver_find_next(const char *label, char *s, size_t len)
 {
    int i = driver_find_index(label, s);
 
-   if (i >= 0 && !string_is_equal(s, "null"))
+   if (i >= 0 && string_is_not_equal_fast(s, "null", 4))
    {
       find_driver_nonempty(label, i + 1, s, len);
       return true;
@@ -222,7 +247,7 @@ static void driver_adjust_system_rates(void)
    if (!video_driver_get_ptr(false))
       return;
 
-   if (runloop_ctl(RUNLOOP_CTL_IS_NONBLOCK_FORCED, NULL))
+   if (rarch_ctl(RARCH_CTL_IS_NONBLOCK_FORCED, NULL))
       command_event(CMD_EVENT_VIDEO_SET_NONBLOCKING_STATE, NULL);
    else
       driver_set_nonblock_state();
@@ -246,8 +271,8 @@ void driver_set_nonblock_state(void)
       settings_t *settings = config_get_ptr();
       bool video_nonblock  = enable;
 
-      if (     !settings->video.vsync 
-            || runloop_ctl(RUNLOOP_CTL_IS_NONBLOCK_FORCED, NULL))
+      if (     !settings->bools.video_vsync 
+            || rarch_ctl(RARCH_CTL_IS_NONBLOCK_FORCED, NULL))
          video_nonblock = true;
       video_driver_set_nonblock_state(video_nonblock);
    }
@@ -295,6 +320,7 @@ static bool driver_update_system_av_info(const struct retro_system_av_info *info
  **/
 void drivers_init(int flags)
 {
+   bool video_is_threaded = false;
    if (flags & DRIVER_VIDEO_MASK)
       video_driver_unset_own_driver();
    if (flags & DRIVER_AUDIO_MASK)
@@ -322,14 +348,14 @@ void drivers_init(int flags)
          video_driver_get_hw_context();
 
       video_driver_monitor_reset();
-      video_driver_init();
+      video_driver_init(&video_is_threaded);
 
       if (!video_driver_is_video_cache_context_ack()
             && hwr->context_reset)
          hwr->context_reset();
       video_driver_unset_video_cache_context_ack();
 
-      runloop_ctl(RUNLOOP_CTL_SET_FRAME_TIME_LAST, NULL);
+      rarch_ctl(RARCH_CTL_SET_FRAME_TIME_LAST, NULL);
    }
 
    if (flags & DRIVER_AUDIO_MASK)
@@ -349,10 +375,10 @@ void drivers_init(int flags)
    core_info_init_current_core();
 
 #ifdef HAVE_MENU
-   if (flags & DRIVER_MENU_MASK)
+   if (flags & DRIVER_VIDEO_MASK)
    {
-      menu_driver_ctl(RARCH_MENU_CTL_INIT, NULL);
-      menu_driver_ctl(RARCH_MENU_CTL_CONTEXT_RESET, NULL);
+      if (flags & DRIVER_MENU_MASK)
+         menu_driver_init(video_is_threaded);
    }
 #endif
 
@@ -389,7 +415,7 @@ void drivers_init(int flags)
  * Typically, if a driver intends to make use of this, it should 
  * set this to true at the end of its 'init' function.
  **/
-static void uninit_drivers(int flags)
+void driver_uninit(int flags)
 {
    core_info_deinit_list();
    core_info_free_current_core();
@@ -405,14 +431,14 @@ static void uninit_drivers(int flags)
    if ((flags & DRIVER_CAMERA_MASK) && !camera_driver_ctl(RARCH_CAMERA_CTL_OWNS_DRIVER, NULL))
       camera_driver_ctl(RARCH_CAMERA_CTL_DEINIT, NULL);
 
-   if (flags & DRIVER_AUDIO_MASK)
-      audio_driver_deinit();
-
    if ((flags & DRIVER_WIFI_MASK) && !wifi_driver_ctl(RARCH_WIFI_CTL_OWNS_DRIVER, NULL))
       wifi_driver_ctl(RARCH_WIFI_CTL_DEINIT, NULL);
 
    if (flags & DRIVERS_VIDEO_INPUT)
       video_driver_free();
+
+   if (flags & DRIVER_AUDIO_MASK)
+      audio_driver_deinit();
 
    if ((flags & DRIVER_VIDEO_MASK) && !video_driver_owns_driver())
       video_driver_destroy_data();
@@ -433,26 +459,13 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
          audio_driver_destroy();
          input_driver_destroy();
 #ifdef HAVE_MENU
-         menu_driver_ctl(RARCH_MENU_CTL_DESTROY, NULL);
+         menu_driver_destroy();
 #endif
          location_driver_ctl(RARCH_LOCATION_CTL_DESTROY, NULL);
          camera_driver_ctl(RARCH_CAMERA_CTL_DESTROY, NULL);
          wifi_driver_ctl(RARCH_WIFI_CTL_DESTROY, NULL);
          core_uninit_libretro_callbacks();
          break;
-      case RARCH_DRIVER_CTL_UNINIT:
-         {
-            int *flags = (int*)data;
-            if (!flags)
-               return false;
-            uninit_drivers(*flags);
-         }
-         break;
-      case RARCH_DRIVER_CTL_UNINIT_ALL:
-         {
-            int flags = DRIVERS_CMD_ALL;
-            return driver_ctl(RARCH_DRIVER_CTL_UNINIT, &flags);
-         }
       case RARCH_DRIVER_CTL_INIT_PRE:
          audio_driver_find_driver();
          video_driver_find_driver();
@@ -485,6 +498,13 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
             if (!drv)
                return false;
             return driver_find_first(drv->label, drv->s, drv->len);
+         }
+      case RARCH_DRIVER_CTL_FIND_LAST:
+         {
+            driver_ctx_info_t *drv = (driver_ctx_info_t*)data;
+            if (!drv)
+               return false;
+            return driver_find_last(drv->label, drv->s, drv->len);
          }
       case RARCH_DRIVER_CTL_FIND_PREV:
          {

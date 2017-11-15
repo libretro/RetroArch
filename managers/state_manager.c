@@ -31,6 +31,10 @@
 #include "../verbosity.h"
 #include "../audio/audio_driver.h"
 
+#ifdef HAVE_NETWORKING
+#include "../network/netplay/netplay.h"
+#endif
+
 /* This makes Valgrind throw errors if a core overflows its savestate size. */
 /* Keep it off unless you're chasing a core bug, it slows things down. */
 #define STRICT_BUF_SIZE 0
@@ -659,11 +663,6 @@ bool state_manager_frame_is_reversed(void)
    return frame_is_reversed;
 }
 
-static void state_manager_set_frame_is_reversed(bool value)
-{
-   frame_is_reversed = value;
-}
-
 void state_manager_event_deinit(void)
 {
    if (rewind_state.state)
@@ -687,11 +686,17 @@ bool state_manager_check_rewind(bool pressed,
 {
    bool ret             = false;
    static bool first    = true;
+#ifdef HAVE_NETWORKING
+   bool was_reversed    = false;
+#endif
 
-   if (state_manager_frame_is_reversed())
+   if (frame_is_reversed)
    {
+#ifdef HAVE_NETWORKING
+      was_reversed = true;
+#endif
       audio_driver_frame_is_reverse();
-      state_manager_set_frame_is_reversed(false);
+      frame_is_reversed = false;
    }
 
    if (first)
@@ -711,7 +716,13 @@ bool state_manager_check_rewind(bool pressed,
       {
          retro_ctx_serialize_info_t serial_info;
 
-         state_manager_set_frame_is_reversed(true);
+#ifdef HAVE_NETWORKING
+         /* Make sure netplay isn't confused */
+         if (!was_reversed)
+            netplay_driver_ctl(RARCH_NETPLAY_CTL_DESYNC_PUSH, NULL);
+#endif
+
+         frame_is_reversed = true;
 
          audio_driver_setup_rewind();
 
@@ -735,6 +746,12 @@ bool state_manager_check_rewind(bool pressed,
          serial_info.size       = rewind_state.size;
          core_unserialize(&serial_info);
 
+#ifdef HAVE_NETWORKING
+         /* Tell netplay we're done */
+         if (was_reversed)
+            netplay_driver_ctl(RARCH_NETPLAY_CTL_DESYNC_POP, NULL);
+#endif
+
          strlcpy(s, 
                msg_hash_to_str(MSG_REWIND_REACHED_END),
                len);
@@ -746,6 +763,12 @@ bool state_manager_check_rewind(bool pressed,
    else
    {
       static unsigned cnt      = 0;
+
+#ifdef HAVE_NETWORKING
+      /* Tell netplay we're done */
+      if (was_reversed)
+         netplay_driver_ctl(RARCH_NETPLAY_CTL_DESYNC_POP, NULL);
+#endif
 
       cnt = (cnt + 1) % (rewind_granularity ?
             rewind_granularity : 1); /* Avoid possible SIGFPE. */

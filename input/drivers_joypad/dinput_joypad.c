@@ -23,16 +23,16 @@
 
 #include <boolean.h>
 #include <compat/strl.h>
+#include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
 
 #include "../../tasks/tasks_internal.h"
-#include "../input_config.h"
-#include "../input_joypad_driver.h"
+#include "../../gfx/video_driver.h"
+#include "../input_driver.h"
 #include "../input_keymaps.h"
-#include "../../configuration.h"
 #include "../../verbosity.h"
 
 struct dinput_joypad
@@ -66,7 +66,6 @@ extern LPDIRECTINPUT8 g_dinput_ctx;
 static void dinput_joypad_destroy(void)
 {
    unsigned i;
-   settings_t *settings = config_get_ptr();
 
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -80,7 +79,8 @@ static void dinput_joypad_destroy(void)
       g_pads[i].joy_name = NULL;
       free(g_pads[i].joy_friendly_name);
       g_pads[i].joy_friendly_name = NULL;
-      *settings->input.device_names[i] = '\0';
+
+      input_config_clear_device_name(i);
    }
 
    g_joypad_cnt = 0;
@@ -123,7 +123,7 @@ static bool guid_is_xinput_device(const GUID* product_guid)
 
    for (i = 0; i < ARRAY_SIZE(common_xinput_guids); ++i)
    {
-      if (memcmp(product_guid, &common_xinput_guids[i], sizeof(GUID)) == 0)
+      if (string_is_equal_fast(product_guid, &common_xinput_guids[i], sizeof(GUID)))
          return true;
    }
 
@@ -224,8 +224,8 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 #endif
    return DIENUM_CONTINUE;
 
-   g_pads[g_joypad_cnt].joy_name = strdup(inst->tszProductName);
-   g_pads[g_joypad_cnt].joy_friendly_name = strdup(inst->tszInstanceName);
+   g_pads[g_joypad_cnt].joy_name          = strdup((const char*)inst->tszProductName);
+   g_pads[g_joypad_cnt].joy_friendly_name = strdup((const char*)inst->tszInstanceName);
 
    /* there may be more useful info in the GUID so leave this here for a while */
 #if 0
@@ -238,7 +238,7 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
    g_pads[g_joypad_cnt].vid = inst->guidProduct.Data1 % 0x10000;
    g_pads[g_joypad_cnt].pid = inst->guidProduct.Data1 / 0x10000;
 
-   RARCH_LOG("Device #%u PID: {%04lX} VID:{%04lX}\n", g_joypad_cnt, g_pads[g_joypad_cnt].pid, g_pads[g_joypad_cnt].vid);
+   RARCH_LOG("[DINPUT]: Device #%u PID: {%04lX} VID:{%04lX}\n", g_joypad_cnt, g_pads[g_joypad_cnt].pid, g_pads[g_joypad_cnt].vid);
 
 #ifdef HAVE_XINPUT
    is_xinput_pad = g_xinput_block_pads
@@ -293,15 +293,15 @@ static bool dinput_joypad_init(void *data)
 
    for (i = 0; i < MAX_USERS; ++i)
    {
-      g_xinput_pad_indexes[i] = -1;
-      g_pads[i].joy_name = NULL;
+      g_xinput_pad_indexes[i]     = -1;
+      g_pads[i].joy_name          = NULL;
       g_pads[i].joy_friendly_name = NULL;
    }
 
-   RARCH_LOG("Enumerating DInput joypads ...\n");
+   RARCH_LOG("[DINPUT]: Enumerating joypads ...\n");
    IDirectInput8_EnumDevices(g_dinput_ctx, DI8DEVCLASS_GAMECTRL,
          enum_joypad_cb, NULL, DIEDFL_ATTACHEDONLY);
-   RARCH_LOG("Done enumerating DInput joypads ...\n");
+   RARCH_LOG("[DINPUT]: Done enumerating joypads ...\n");
    return true;
 }
 

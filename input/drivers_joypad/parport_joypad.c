@@ -26,7 +26,6 @@
 
 #include <compat/strl.h>
 
-#include "../input_config.h"
 #include "../input_driver.h"
 
 #include "../../configuration.h"
@@ -90,8 +89,10 @@ static void parport_poll_pad(struct parport_joypad *pad)
    char data;
    char status;
 
-   ioctl(pad->fd, PPRDATA, &data);
-   ioctl(pad->fd, PPRSTATUS, &status);
+   if (ioctl(pad->fd, PPRDATA, &data) < 0)
+      return;
+   if (ioctl(pad->fd, PPRSTATUS, &status) < 0)
+      return;
 
    for (i = 0; i < 8; i++)
    {
@@ -134,8 +135,6 @@ static bool parport_joypad_init_pad(const char *path, struct parport_joypad *pad
 
    if (pad->fd >= 0)
    {
-      settings_t *settings = config_get_ptr();
-
       RARCH_LOG("[Joypad]: Found parallel port: %s\n", path);
 
       /* Parport driver does not log failures with RARCH_ERR because they could be
@@ -188,7 +187,7 @@ static bool parport_joypad_init_pad(const char *path, struct parport_joypad *pad
       if (!set_control)
          RARCH_WARN("[Joypad]: Failed to clear nStrobe and nIRQ bits on %s\n", path);
 
-      strlcpy(pad->ident, path, sizeof(settings->input.device_names[0]));
+      strlcpy(pad->ident, path, sizeof(input_device_names[0]));
 
       for (i = 0; i < PARPORT_NUM_BUTTONS; i++)
          pad->button_enable[i] = true;
@@ -240,7 +239,6 @@ static bool parport_joypad_init(void *data)
    bool found_disabled_button            = false;
    char buf[PARPORT_NUM_BUTTONS * 3 + 1] = {0};
    char pin[3 + 1]                       = {0};
-   settings_t *settings                  = config_get_ptr();
 
    (void)data;
 
@@ -252,7 +250,7 @@ static bool parport_joypad_init(void *data)
       struct parport_joypad *pad = &parport_pads[i];
 
       pad->fd    = -1;
-      pad->ident = settings->input.device_names[i];
+      pad->ident = input_device_names[i];
 
       snprintf(path, sizeof(path), "/dev/parport%u", i);
 

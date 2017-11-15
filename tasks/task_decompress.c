@@ -20,7 +20,6 @@
 #include <file/file_path.h>
 #include <file/archive_file.h>
 #include <retro_miscellaneous.h>
-#include <retro_stat.h>
 #include <compat/strl.h>
 
 #include "tasks_internal.h"
@@ -247,7 +246,7 @@ bool task_check_decompress(const char *source_file)
    find_data.userdata = (void *)source_file;
 
    /* Return whether decompressing is in progress or not */
-   return task_queue_ctl(TASK_QUEUE_CTL_FIND, &find_data);
+   return task_queue_find(&find_data);
 }
 
 bool task_push_decompress(
@@ -332,7 +331,7 @@ bool task_push_decompress(
 
    t->title       = strdup(tmp);
 
-   task_queue_ctl(TASK_QUEUE_CTL_PUSH, t);
+   task_queue_push(t);
 
    return true;
 

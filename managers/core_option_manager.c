@@ -27,6 +27,8 @@
 
 #include "core_option_manager.h"
 
+#include "../verbosity.h"
+
 static bool core_option_manager_parse_variable(
       core_option_manager_t *opt, size_t idx,
       const struct retro_variable *var)
@@ -239,6 +241,7 @@ bool core_option_manager_flush(core_option_manager_t *opt)
                core_option_manager_get_val(opt, i));
    }
 
+   RARCH_LOG("Saved core options file to \"%s\"\n", opt->conf_path);
    return config_file_write(opt->conf, opt->conf_path);
 }
 

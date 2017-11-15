@@ -131,7 +131,7 @@ static void *gfx_ctx_qnx_init(video_frame_info_t *video_info, void *video_driver
 
 
 #ifdef HAVE_EGL
-   if (!egl_init_context(&qnx->egl, EGL_DEFAULT_DISPLAY, &major, &minor,
+   if (!egl_init_context(&qnx->egl, EGL_NONE, EGL_DEFAULT_DISPLAY, &major, &minor,
             &n, attribs))
    {
       egl_report_error();
@@ -413,7 +413,7 @@ static void gfx_ctx_qnx_set_swap_interval(void *data, unsigned swap_interval)
 #endif
 }
 
-static void gfx_ctx_qnx_swap_buffers(void *data, video_frame_info_t *video_info)
+static void gfx_ctx_qnx_swap_buffers(void *data, void *data2)
 {
    qnx_ctx_data_t *qnx = (qnx_ctx_data_t*)data;
 

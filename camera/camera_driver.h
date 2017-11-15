@@ -37,7 +37,6 @@ enum rarch_camera_ctl_state
    RARCH_CAMERA_CTL_UNSET_ACTIVE,
    RARCH_CAMERA_CTL_IS_ACTIVE,
    RARCH_CAMERA_CTL_FIND_DRIVER,
-   RARCH_CAMERA_CTL_POLL,
    RARCH_CAMERA_CTL_SET_CB,
    RARCH_CAMERA_CTL_STOP,
    RARCH_CAMERA_CTL_START,
@@ -104,6 +103,8 @@ const char *camera_driver_find_ident(int index);
 void driver_camera_stop(void);
 
 bool driver_camera_start(void);
+
+void camera_driver_poll(void);
 
 bool camera_driver_ctl(enum rarch_camera_ctl_state state, void *data);
 

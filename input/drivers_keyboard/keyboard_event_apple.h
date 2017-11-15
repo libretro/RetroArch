@@ -36,7 +36,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdint.h>
 
 #include <retro_common_api.h>
-#include "../input_config.h"
 
 #ifndef MAX_KEYS
 #define MAX_KEYS     256
@@ -170,14 +169,9 @@ RETRO_BEGIN_DECLS
 void apple_input_keyboard_event(bool down,
       unsigned code, uint32_t character, uint32_t mod, unsigned device);
 
-int16_t apple_input_is_pressed(unsigned port_num,
-   const struct retro_keybind *binds, unsigned id);
-
-int16_t apple_keyboard_state(unsigned id);
-
 int32_t apple_keyboard_find_any_key(void);
 
-void apple_keyboard_free(void);
+extern uint32_t apple_key_state[MAX_KEYS];
 
 RETRO_END_DECLS
 

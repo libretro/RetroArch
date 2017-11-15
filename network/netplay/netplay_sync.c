@@ -298,7 +298,8 @@ bool netplay_sync_pre_frame(netplay_t *netplay)
 
          /* Allocate a connection */
          for (connection_num = 0; connection_num < netplay->connections_size; connection_num++)
-            if (!netplay->connections[connection_num].active) break;
+            if (!netplay->connections[connection_num].active &&
+                netplay->connections[connection_num].mode != NETPLAY_CONNECTION_DELAYED_DISCONNECT) break;
          if (connection_num == netplay->connections_size)
          {
             if (connection_num == 0)
@@ -389,9 +390,10 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
       netplay->self_frame_count++;
    }
 
-   /* Only relevant if we're connected */
+   /* Only relevant if we're connected and not in a desynching operation */
    if ((netplay->is_server && !netplay->connected_players) ||
-       (netplay->self_mode < NETPLAY_CONNECTION_CONNECTED))
+       (netplay->self_mode < NETPLAY_CONNECTION_CONNECTED) ||
+       (netplay->desync))
    {
       netplay->other_frame_count = netplay->self_frame_count;
       netplay->other_ptr = netplay->self_ptr;

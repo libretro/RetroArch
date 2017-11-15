@@ -94,7 +94,8 @@ static void *caca_gfx_init(const video_info_t *video,
    }
 
    if (video->font_enable)
-      font_driver_init_osd(NULL, false, FONT_DRIVER_RENDER_CACA);
+      font_driver_init_osd(caca, false, video->is_threaded,
+            FONT_DRIVER_RENDER_CACA);
 
    return caca;
 }
@@ -295,15 +296,17 @@ static void caca_set_texture_frame(void *data,
       memcpy(caca_menu_frame, frame, pitch * height);
 }
 
-static void caca_set_osd_msg(void *data, const char *msg,
+static void caca_set_osd_msg(void *data,
+      video_frame_info_t *video_info,
+      const char *msg,
       const void *params, void *font)
 {
-   video_frame_info_t video_info;
-   video_driver_build_info(&video_info);
-   font_driver_render_msg(&video_info, font, msg, params);
+   font_driver_render_msg(video_info, font, msg, params);
 }
 
 static const video_poke_interface_t caca_poke_interface = {
+   NULL,                                  /* set_coords */
+   NULL,                                  /* set_mvp    */
    NULL,
    NULL,
    NULL,
@@ -311,11 +314,7 @@ static const video_poke_interface_t caca_poke_interface = {
    NULL,
    NULL,
    NULL,
-#ifdef HAVE_FBO
    NULL,
-#else
-   NULL,
-#endif
    NULL,
    NULL,
    NULL,

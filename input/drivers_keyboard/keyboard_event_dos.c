@@ -29,7 +29,7 @@ bool dos_keyboard_port_input_pressed(const struct retro_keybind *binds, unsigned
    if (id < RARCH_BIND_LIST_END)
    {
       const struct retro_keybind *bind = &binds[id];
-      unsigned key = input_keymaps_translate_rk_to_keysym(bind->key);
+      unsigned key = rarch_keysym_lut[bind->key];
       return dos_key_state[DOS_KEYBOARD_PORT][key];
    }
    return false;
@@ -37,7 +37,7 @@ bool dos_keyboard_port_input_pressed(const struct retro_keybind *binds, unsigned
 
 bool dos_keyboard_input_pressed(unsigned key)
 {
-   unsigned keysym = input_keymaps_translate_rk_to_keysym(key);
+   unsigned keysym = rarch_keysym_lut[key];
    return dos_key_state[DOS_KEYBOARD_PORT][keysym];
 }
 

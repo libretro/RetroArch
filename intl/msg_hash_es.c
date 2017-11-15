@@ -12,10 +12,11 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#include <stdio.h>
 #include <stdint.h>
 #include <string.h>
 
-#include <retro_assert.h>
 #include <compat/strl.h>
 #include <string/stdstring.h>
 
@@ -132,7 +133,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_INPUT_DRIVER:
          if (settings)
-            driver_hash = msg_hash_calculate(settings->input.driver);
+            driver_hash = msg_hash_calculate(settings->arrays.input_driver);
 
          switch (driver_hash)
          {
@@ -232,7 +233,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Controlador de vídeo actual.");
 
-         if (string_is_equal(settings->video.driver, "gl"))
+         if (string_is_equal_fast(settings->arrays.video_driver, "gl", 2))
          {
             snprintf(s, len,
                   "Controlador de vídeo OpenGL. \n"
@@ -247,7 +248,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "del controlador GL que tenga tu \n"
                   "tarjeta gráfica.");
          }
-         else if (string_is_equal(settings->video.driver, "sdl2"))
+         else if (string_is_equal_fast(settings->arrays.video_driver, "sdl2", 4))
          {
             snprintf(s, len,
                   "Controlador de vídeo SDL 2.\n"
@@ -259,7 +260,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "libretro por software depende de la \n"
                   "implementación SDL de tu plataforma.");
          }
-         else if (string_is_equal(settings->video.driver, "sdl1"))
+         else if (string_is_equal_fast(settings->arrays.video_driver, "sdl1", 4))
          {
             snprintf(s, len,
                   "Controlador de vídeo SDL.\n"
@@ -271,7 +272,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "a lo óptimo. Utilízalo únicamente como \n"
                   "último recurso.");
          }
-         else if (string_is_equal(settings->video.driver, "d3d"))
+         else if (string_is_equal_fast(settings->arrays.video_driver, "d3d", 3))
          {
             snprintf(s, len,
                   "Controlador de vídeo Direct3D. \n"
@@ -281,7 +282,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "del controlador D3D de tu tarjeta \n"
                   "gráfica.");
          }
-         else if (string_is_equal(settings->video.driver, "exynos"))
+         else if (string_is_equal_fast(settings->arrays.video_driver, "exynos", 6))
          {
             snprintf(s, len,
                   "Controlador de vídeo Exynos-G2D. \n"
@@ -295,7 +296,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "renderizados por software debería \n"
                   "ser óptimo.");
          }
-         else if (string_is_equal(settings->video.driver, "drm"))
+         else if (string_is_equal_fast(settings->arrays.video_driver, "drm", 3))
          {
             snprintf(s, len,
                   "Controlador de vídeo de DRM simple. \n"
@@ -306,7 +307,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                   " \n"
                   "El blitting se hace por software.");
          }
-         else if (string_is_equal(settings->video.driver, "sunxi"))
+         else if (string_is_equal_fast(settings->arrays.video_driver, "sunxi", 5))
          {
             snprintf(s, len,
                   "Controlador de vídeo Sunxi-G2D. \n"
@@ -325,7 +326,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER:
          if (settings)
-            driver_hash = msg_hash_calculate(settings->audio.resampler);
+            driver_hash = msg_hash_calculate(settings->arrays.audio_resampler);
 
          switch (driver_hash)
          {
@@ -1511,8 +1512,6 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
 #endif
       case MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST:
          return "Lista de logros";
-      case MENU_ENUM_LABEL_VALUE_ARCHIVE_MODE:
-         return "Acción para asociar tipos de archivo";
       case MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY:
          return "Carpeta de recursos";
       case MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES:
@@ -1534,7 +1533,7 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_AUDIO_MUTE:
          return "Silenciar sonido";
       case MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE:
-         return "Frecuencia de sonido (KHz)";
+         return "Frecuencia de sonido (Hz)";
       case MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA:
          return "Delta de control de frecuencia de sonido";
       case MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER:
@@ -1766,8 +1765,10 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
          return "Japonés";
       case MENU_ENUM_LABEL_VALUE_LANG_KOREAN:
          return "Coreano";
-      case MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE:
-         return "Portugués";
+      case MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_BRAZIL:
+         return "Portugués (Brazil)";
+      case MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_PORTUGAL:
+         return "Portugués (Portugal)";
       case MENU_ENUM_LABEL_VALUE_LANG_RUSSIAN:
          return "Ruso";
       case MENU_ENUM_LABEL_VALUE_LANG_SPANISH:
@@ -2064,6 +2065,8 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
          return "Mostrar ancho métrico (mm)";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT:
          return "Soporte de DirectSound";
+      case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WASAPI_SUPPORT:
+         return "Soporte de WASAPI";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT:
          return "Soporte de librerías dinámicas";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYNAMIC_SUPPORT:

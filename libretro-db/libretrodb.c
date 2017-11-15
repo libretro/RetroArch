@@ -34,6 +34,7 @@
 
 #include <streams/file_stream.h>
 #include <retro_endianness.h>
+#include <string/stdstring.h>
 #include <compat/strl.h>
 
 #include "libretrodb.h"
@@ -57,7 +58,7 @@ struct libretrodb
 	uint64_t root;
 	uint64_t count;
 	uint64_t first_index_offset;
-   char path[1024];
+   char *path;
 };
 
 struct libretrodb_index
@@ -205,7 +206,10 @@ void libretrodb_close(libretrodb_t *db)
 {
    if (db->fd)
       filestream_close(db->fd);
-   db->fd = NULL;
+   if (!string_is_empty(db->path))
+      free(db->path);
+   db->path = NULL;
+   db->fd   = NULL;
 }
 
 int libretrodb_open(const char *path, libretrodb_t *db)
@@ -218,8 +222,11 @@ int libretrodb_open(const char *path, libretrodb_t *db)
    if (!fd)
       return -errno;
 
-   strlcpy(db->path, path, sizeof(db->path));
-   db->root = filestream_seek(fd, 0, SEEK_CUR);
+   if (!string_is_empty(db->path))
+      free(db->path);
+
+   db->path  = strdup(path);
+   db->root  = filestream_seek(fd, 0, SEEK_CUR);
 
    if ((rv = (int)filestream_read(fd, &header, sizeof(header))) == -1)
    {
@@ -273,18 +280,13 @@ static int libretrodb_find_index(libretrodb_t *db, const char *index_name,
    return -1;
 }
 
-static int node_compare(const void *a, const void *b, void *ctx)
-{
-   return memcmp(a, b, *(uint8_t *)ctx);
-}
-
 static int binsearch(const void *buff, const void *item,
       uint64_t count, uint8_t field_size, uint64_t *offset)
 {
    int mid            = (int)(count / 2);
    int item_size      = field_size + sizeof(uint64_t);
    uint64_t *current  = (uint64_t *)buff + (mid * item_size);
-   int rv             = node_compare(current, item, &field_size);
+   int rv             = memcmp(current, item, field_size);
 
    if (rv == 0)
    {
@@ -426,6 +428,9 @@ void libretrodb_cursor_close(libretrodb_cursor_t *cursor)
 int libretrodb_cursor_open(libretrodb_t *db, libretrodb_cursor_t *cursor,
       libretrodb_query_t *q)
 {
+   if (!db || string_is_empty(db->path))
+      return -errno;
+
    cursor->fd = filestream_open(db->path, RFILE_MODE_READ | RFILE_HINT_MMAP, -1);
 
    if (!cursor->fd)
@@ -456,6 +461,11 @@ static int node_iter(void *value, void *ctx)
 static uint64_t libretrodb_tell(libretrodb_t *db)
 {
    return filestream_seek(db->fd, 0, SEEK_CUR);
+}
+
+static int node_compare(const void *a, const void *b, void *ctx)
+{
+   return memcmp(a, b, *(uint8_t *)ctx);
 }
 
 int libretrodb_create_index(libretrodb_t *db,

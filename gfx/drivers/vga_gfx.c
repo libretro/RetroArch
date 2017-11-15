@@ -139,7 +139,8 @@ static void *vga_gfx_init(const video_info_t *video,
    vga_gfx_create();
 
    if (video->font_enable)
-      font_driver_init_osd(NULL, false, FONT_DRIVER_RENDER_VGA);
+      font_driver_init_osd(NULL, false, 
+            video->is_threaded, FONT_DRIVER_RENDER_VGA);
 
    return vga;
 }
@@ -243,7 +244,8 @@ static bool vga_gfx_frame(void *data, const void *frame,
    if (msg)
       font_driver_render_msg(video_info, NULL, msg, NULL);
 
-   video_context_driver_update_window_title(video_info);
+   video_info->cb_update_window_title(
+         video_info->context_data, video_info);
 
    return true;
 }
@@ -272,12 +274,6 @@ static bool vga_gfx_suppress_screensaver(void *data, bool enable)
    (void)data;
    (void)enable;
    return false;
-}
-
-static bool vga_gfx_has_windowed(void *data)
-{
-   (void)data;
-   return true;
 }
 
 static void vga_gfx_free(void *data)
@@ -387,15 +383,17 @@ static void vga_set_texture_frame(void *data,
    }
 }
 
-static void vga_set_osd_msg(void *data, const char *msg,
+static void vga_set_osd_msg(void *data,
+      video_frame_info_t *video_info,
+      const char *msg,
       const void *params, void *font)
 {
-   video_frame_info_t video_info;
-   video_driver_build_info(&video_info);
-   font_driver_render_msg(&video_info, font, msg, params);
+   font_driver_render_msg(video_info, font, msg, params);
 }
 
 static const video_poke_interface_t vga_poke_interface = {
+   NULL,       /* set_coords */
+   NULL,       /* set_mvp */
    NULL,
    NULL,
    NULL,
@@ -403,11 +401,7 @@ static const video_poke_interface_t vga_poke_interface = {
    NULL,
    NULL,
    NULL,
-#ifdef HAVE_FBO
    NULL,
-#else
-   NULL,
-#endif
    NULL,
    NULL,
    NULL,
@@ -448,7 +442,7 @@ video_driver_t video_vga = {
    vga_gfx_alive,
    vga_gfx_focus,
    vga_gfx_suppress_screensaver,
-   vga_gfx_has_windowed,
+   NULL, /* has_windowed */
    vga_gfx_set_shader,
    vga_gfx_free,
    "vga",

@@ -36,7 +36,7 @@
 #include "cheat_manager.h"
 
 #include "../msg_hash.h"
-#include "../runloop.h"
+#include "../retroarch.h"
 #include "../dynamic.h"
 #include "../core.h"
 #include "../verbosity.h"
@@ -97,7 +97,8 @@ void cheat_manager_apply_cheats(void)
          cheat_info.enabled = true;
          cheat_info.code    = handle->cheats[i].code;
 
-         core_set_cheat(&cheat_info);
+         if (!string_is_empty(cheat_info.code))
+            core_set_cheat(&cheat_info);
       }
    }
     runloop_msg_queue_push(msg_hash_to_str(MSG_APPLYING_CHEAT), 1, 180, true);
@@ -363,8 +364,10 @@ void cheat_manager_toggle_index(unsigned i)
    cheat_manager_update(handle, i);
 }
 
-void cheat_manager_toggle(cheat_manager_t *handle)
+void cheat_manager_toggle(void)
 {
+   cheat_manager_t *handle = cheat_manager_state;
+
    if (!handle)
       return;
 
@@ -373,8 +376,10 @@ void cheat_manager_toggle(cheat_manager_t *handle)
    cheat_manager_update(handle, handle->ptr);
 }
 
-void cheat_manager_index_next(cheat_manager_t *handle)
+void cheat_manager_index_next(void)
 {
+   cheat_manager_t *handle = cheat_manager_state;
+
    if (!handle)
       return;
 
@@ -382,8 +387,10 @@ void cheat_manager_index_next(cheat_manager_t *handle)
    cheat_manager_update(handle, handle->ptr);
 }
 
-void cheat_manager_index_prev(cheat_manager_t *handle)
+void cheat_manager_index_prev(void)
 {
+   cheat_manager_t *handle = cheat_manager_state;
+
    if (!handle)
       return;
 
@@ -417,22 +424,6 @@ bool cheat_manager_get_code_state(unsigned i)
    if (!handle)
       return false;
    return handle->cheats[i].state;
-}
-
-void cheat_manager_state_checks(
-      bool cheat_index_plus_pressed,
-      bool cheat_index_minus_pressed,
-      bool cheat_toggle_pressed)
-{
-   cheat_manager_t *handle = cheat_manager_state;
-   if (!handle)
-      return;
-   if (cheat_index_plus_pressed)
-      cheat_manager_index_next(handle);
-   else if (cheat_index_minus_pressed)
-      cheat_manager_index_prev(handle);
-   else if (cheat_toggle_pressed)
-      cheat_manager_toggle(handle);
 }
 
 void cheat_manager_state_free(void)

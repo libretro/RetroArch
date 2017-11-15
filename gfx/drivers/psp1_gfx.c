@@ -23,6 +23,7 @@
 
 #include <retro_assert.h>
 #include <retro_inline.h>
+#include <retro_math.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -454,7 +455,7 @@ static void *psp_init(const video_info_t *video,
    if (input && input_data)
    {
       settings_t *settings = config_get_ptr();
-      pspinput             = input_psp.init(settings->input.joypad_driver);
+      pspinput             = input_psp.init(settings->arrays.input_joypad_driver);
       *input               = pspinput ? &input_psp : NULL;
       *input_data          = pspinput;
    }
@@ -484,7 +485,6 @@ static bool psp_frame(void *data, const void *frame,
    static int frames;
    static float fps                        = 0.0;
 #endif
-   static struct retro_perf_counter psp_frame_run = {0};
    psp1_video_t *psp                       = (psp1_video_t*)data;
 
    if (!width || !height)
@@ -534,9 +534,6 @@ static bool psp_frame(void *data, const void *frame,
 
    psp->draw_buffer = FROM_GU_POINTER(sceGuSwapBuffers());
 
-   performance_counter_init(psp_frame_run, "psp_frame_run");
-   performance_counter_start_plus(video_info->is_perfcnt_enable, psp_frame_run);
-
    if (psp->should_resize)
       psp_update_viewport(psp, video_info);
 
@@ -567,8 +564,6 @@ static bool psp_frame(void *data, const void *frame,
    }
 
    sceGuFinish();
-
-   performance_counter_stop_plus(video_info->is_perfcnt_enable, psp_frame_run);
 
 #ifdef HAVE_MENU
    menu_driver_frame(video_info);
@@ -607,12 +602,6 @@ static bool psp_suppress_screensaver(void *data, bool enable)
 {
    (void)data;
    (void)enable;
-   return false;
-}
-
-static bool psp_has_windowed(void *data)
-{
-   (void)data;
    return false;
 }
 
@@ -710,7 +699,7 @@ static void psp_update_viewport(psp1_video_t* psp,
    float height         = SCEGU_SCR_HEIGHT;
    settings_t *settings = config_get_ptr();
 
-   if (settings->video.scale_integer)
+   if (settings->bools.video_scale_integer)
    {
       video_viewport_get_scaled_integer(&psp->vp, SCEGU_SCR_WIDTH,
             SCEGU_SCR_HEIGHT, video_driver_get_aspect_ratio(), psp->keep_aspect);
@@ -719,19 +708,13 @@ static void psp_update_viewport(psp1_video_t* psp,
    }
    else if (psp->keep_aspect)
    {
-
 #if defined(HAVE_MENU)
-      if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
-         struct video_viewport *custom = video_viewport_get_custom();
-
-         if (custom)
-         {
-            x      = custom->x;
-            y      = custom->y;
-            width  = custom->width;
-            height = custom->height;
-         }
+         x      = video_info->custom_vp_x;
+         y      = video_info->custom_vp_y;
+         width  = video_info->custom_vp_width;
+         height = video_info->custom_vp_height;
       }
       else
 #endif
@@ -848,6 +831,8 @@ static void psp_viewport_info(void *data, struct video_viewport *vp)
 }
 
 static const video_poke_interface_t psp_poke_interface = {
+   NULL,          /* set_coords */
+   NULL,          /* set_mvp */
    NULL,
    NULL,
    NULL,
@@ -976,7 +961,7 @@ video_driver_t video_psp1 = {
    psp_alive,
    psp_focus,
    psp_suppress_screensaver,
-   psp_has_windowed,
+   NULL, /* has_windowed */
    psp_set_shader,
    psp_free,
    "psp1",

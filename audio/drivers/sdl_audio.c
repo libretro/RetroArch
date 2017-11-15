@@ -26,6 +26,7 @@
 #include <rthreads/rthreads.h>
 #include <queues/fifo_queue.h>
 #include <retro_inline.h>
+#include <retro_math.h>
 
 #include "../audio_driver.h"
 #include "../../verbosity.h"
@@ -140,10 +141,9 @@ error:
    return NULL;
 }
 
-static ssize_t sdl_audio_write(void *data, const void *buf, size_t size,
-      bool is_perfcnt_enable)
+static ssize_t sdl_audio_write(void *data, const void *buf, size_t size)
 {
-   ssize_t ret = 0;
+   ssize_t ret      = 0;
    sdl_audio_t *sdl = (sdl_audio_t*)data;
 
    if (sdl->nonblock)

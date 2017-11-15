@@ -18,7 +18,8 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <boolean.h>
-#include "../input_joypad_driver.h"
+
+#include "../input_driver.h"
 
 static const char *null_joypad_name(unsigned pad)
 {

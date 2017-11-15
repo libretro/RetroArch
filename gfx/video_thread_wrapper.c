@@ -21,13 +21,12 @@
 #include <compat/strl.h>
 #include <features/features_cpu.h>
 #include <rthreads/rthreads.h>
+#include <string/stdstring.h>
 
 #include "video_thread_wrapper.h"
 #include "font_driver.h"
-#include "video_shader_driver.h"
 
-#include "../performance_counters.h"
-#include "../runloop.h"
+#include "../retroarch.h"
 #include "../verbosity.h"
 
 enum thread_cmd
@@ -122,7 +121,7 @@ struct thread_packet
 
       struct
       {
-         char msg[255];
+         char msg[128];
          struct font_params params;
       } osd_message;
 
@@ -343,7 +342,7 @@ static bool video_thread_handle_packet(
       case CMD_INIT:
          thr->driver_data = thr->driver->init(&thr->info,
                thr->input, thr->input_data);
-         pkt.data.b = thr->driver_data;
+         pkt.data.b = (thr->driver_data != NULL);
          thr->driver->viewport_info(thr->driver_data, &thr->vp);
          video_thread_reply(thr, &pkt);
          break;
@@ -377,7 +376,7 @@ static bool video_thread_handle_packet(
 
          thr->driver->viewport_info(thr->driver_data, &vp);
 
-         if (memcmp(&vp, &thr->read_vp, sizeof(vp)) == 0)
+         if (string_is_equal_fast(&vp, &thr->read_vp, sizeof(vp)))
          {
             /* We can read safely
              *
@@ -530,10 +529,15 @@ static bool video_thread_handle_packet(
          break;
 
       case CMD_POKE_SET_OSD_MSG:
-         if (thr->poke && thr->poke->set_osd_msg)
-            thr->poke->set_osd_msg(thr->driver_data,
-                  pkt.data.osd_message.msg,
-                  &pkt.data.osd_message.params, NULL);
+         {
+            video_frame_info_t video_info;
+            video_driver_build_info(&video_info);
+            if (thr->poke && thr->poke->set_osd_msg)
+               thr->poke->set_osd_msg(thr->driver_data,
+                     &video_info,
+                     pkt.data.osd_message.msg,
+                     &pkt.data.osd_message.params, NULL);
+         }
          video_thread_reply(thr, &pkt);
          break;
 
@@ -657,7 +661,7 @@ static bool video_thread_alive(void *data)
    bool ret;
    thread_video_t *thr = (thread_video_t*)data;
 
-   if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
+   if (rarch_ctl(RARCH_CTL_IS_PAUSED, NULL))
    {
       thread_packet_t pkt = { CMD_ALIVE };
 
@@ -713,7 +717,6 @@ static bool video_thread_frame(void *data, const void *frame_,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    unsigned copy_stride;
-   static struct retro_perf_counter thr_frame = {0};
    const uint8_t *src                  = NULL;
    uint8_t *dst                        = NULL;
    thread_video_t *thr                 = (thread_video_t*)data;
@@ -729,9 +732,6 @@ static bool video_thread_frame(void *data, const void *frame_,
                width, height, frame_count, pitch, msg, video_info);
       return false;
    }
-
-   performance_counter_init(thr_frame, "thr_frame");
-   performance_counter_start_plus(video_info->is_perfcnt_enable, thr_frame);
 
    copy_stride = width * (thr->info.rgb32 
          ? sizeof(uint32_t) : sizeof(uint16_t));
@@ -799,8 +799,6 @@ static bool video_thread_frame(void *data, const void *frame_,
       thr->miss_count++;
 
    slock_unlock(thr->lock);
-
-   performance_counter_stop_plus(video_info->is_perfcnt_enable, thr_frame);
 
    thr->last_time = cpu_features_get_time_usec();
    return true;
@@ -1197,7 +1195,9 @@ static void thread_set_texture_enable(void *data, bool state, bool full_screen)
    slock_unlock(thr->frame.lock);
 }
 
-static void thread_set_osd_msg(void *data, const char *msg,
+static void thread_set_osd_msg(void *data,
+      video_frame_info_t *video_info,
+      const char *msg,
       const void *params, void *font)
 {
    thread_video_t *thr = (thread_video_t*)data;
@@ -1208,7 +1208,7 @@ static void thread_set_osd_msg(void *data, const char *msg,
    /* TODO : find a way to determine if the calling
     * thread is the driver thread or not. */
    if (thr->poke && thr->poke->set_osd_msg)
-      thr->poke->set_osd_msg(thr->driver_data, msg, params, font);
+      thr->poke->set_osd_msg(thr->driver_data, video_info, msg, params, font);
 }
 #endif
 
@@ -1257,6 +1257,8 @@ static struct video_shader *thread_get_current_shader(void *data)
 }
 
 static const video_poke_interface_t thread_poke = {
+   NULL,                            /* set_coords */
+   NULL,                            /* set_mvp */
    thread_load_texture,
    thread_unload_texture,
    thread_set_video_mode,

@@ -323,7 +323,8 @@ static void gx_joypad_poll(void)
 #ifdef HW_RVL
    if (g_quit)
    {
-      runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
+      rarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
+      g_quit = false;
       return;
    }
 

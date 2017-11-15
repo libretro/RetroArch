@@ -159,7 +159,9 @@ sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
    bool thread_created      = false;
    struct thread_data *data = NULL;
    sthread_t *thread        = (sthread_t*)calloc(1, sizeof(*thread));
-
+#if defined(_WIN32_WINNT) && _WIN32_WINNT <= 0x0410
+   DWORD thread_id          = 0;
+#endif
    if (!thread)
       return NULL;
 
@@ -171,7 +173,11 @@ sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
    data->userdata = userdata;
 
 #ifdef USE_WIN32_THREADS
+#if defined(_WIN32_WINNT) && _WIN32_WINNT <= 0x0410
+   thread->thread = CreateThread(NULL, 0, thread_wrap, data, 0, &thread_id);
+#else
    thread->thread = CreateThread(NULL, 0, thread_wrap, data, 0, NULL);
+#endif
    thread_created = !!thread->thread;
 #else
 #if defined(VITA)
@@ -231,6 +237,8 @@ int sthread_detach(sthread_t *thread)
  */
 void sthread_join(sthread_t *thread)
 {
+   if (!thread)
+      return;
 #ifdef USE_WIN32_THREADS
    WaitForSingleObject(thread->thread, INFINITE);
    CloseHandle(thread->thread);
@@ -437,11 +445,18 @@ void scond_free(scond_t *cond)
 #ifdef USE_WIN32_THREADS
 static bool _scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds)
 {
-   static bool beginPeriod = false;
-
    struct QueueEntry myentry;
    struct QueueEntry **ptr;
+
+#if _WIN32_WINNT >= 0x0500 || defined(_XBOX)
+   static LARGE_INTEGER performanceCounterFrequency;
+   LARGE_INTEGER tsBegin;
+   static bool first_init  = true;
+#else
+   static bool beginPeriod = false;
    DWORD tsBegin;
+#endif
+
    DWORD waitResult;
    DWORD dwFinalTimeout = dwMilliseconds; /* Careful! in case we begin in the head, 
                                              we don't do the hot potato stuff, 
@@ -453,16 +468,33 @@ static bool _scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds
 
    /* since this library is meant for realtime game software 
     * I have no problem setting this to 1 and forgetting about it. */
+#if _WIN32_WINNT >= 0x0500 || defined(_XBOX)
+   if (first_init)
+   {
+      performanceCounterFrequency.QuadPart = 0;
+      first_init = false;
+   }
+
+   if (performanceCounterFrequency.QuadPart == 0)
+   {
+      QueryPerformanceFrequency(&performanceCounterFrequency);
+   }
+#else
    if (!beginPeriod)
    {
       beginPeriod = true;
       timeBeginPeriod(1);
    }
+#endif
 
    /* Now we can take a good timestamp for use in faking the timeout ourselves. */
    /* But don't bother unless we need to (to save a little time) */
    if (dwMilliseconds != INFINITE)
+#if _WIN32_WINNT >= 0x0500 || defined(_XBOX)
+      QueryPerformanceCounter(&tsBegin);
+#else
       tsBegin = timeGetTime();
+#endif
 
    /* add ourselves to a queue of waiting threads */
    ptr = &cond->head;
@@ -504,8 +536,18 @@ static bool _scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds
       /* Assess the remaining timeout time */
       if (dwMilliseconds != INFINITE)
       {
+#if _WIN32_WINNT >= 0x0500 || defined(_XBOX)
+         LARGE_INTEGER now;
+         LONGLONG elapsed;
+
+         QueryPerformanceCounter(&now);
+         elapsed  = now.QuadPart - tsBegin.QuadPart;
+         elapsed *= 1000;
+         elapsed /= performanceCounterFrequency.QuadPart;
+#else
          DWORD now     = timeGetTime();
          DWORD elapsed = now - tsBegin;
+#endif
 
          /* Try one last time with a zero timeout (keeps the code simpler) */
          if (elapsed > dwMilliseconds)
@@ -777,6 +819,12 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
 
    now.tv_sec  += seconds;
    now.tv_nsec += remainder * INT64_C(1000);
+   
+   if (now.tv_nsec > 1000000000)
+   {
+      now.tv_nsec -= 1000000000;
+      now.tv_sec += 1;
+   }
 
    ret = pthread_cond_timedwait(&cond->cond, &lock->lock, &now);
    return (ret == 0);

@@ -33,6 +33,7 @@
 #include <streams/file_stream.h>
 #include <libretro.h>
 #include <features/features_cpu.h>
+#include <retro_timers.h>
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include <windows.h>
@@ -54,6 +55,7 @@
 #endif
 
 #if defined(PSP)
+#include <pspkernel.h>
 #include <sys/time.h>
 #include <psprtc.h>
 #endif
@@ -135,7 +137,11 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
    retro_perf_tick_t time_ticks = 0;
 #if defined(_WIN32)
    long tv_sec, tv_usec;
+#if defined(_MSC_VER) && _MSC_VER <= 1200
+   static const unsigned __int64 epoch = 11644473600000000;
+#else
    static const unsigned __int64 epoch = 11644473600000000ULL;
+#endif
    FILETIME file_time;
    SYSTEMTIME system_time;
    ULARGE_INTEGER ularge;

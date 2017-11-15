@@ -21,11 +21,12 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 
 #include <file/archive_file.h>
 #include <streams/file_stream.h>
 #include <streams/trans_stream.h>
-#include <string.h>
+#include <retro_inline.h>
 #include <retro_miscellaneous.h>
 #include <encodings/crc32.h>
 
@@ -39,6 +40,18 @@
 #ifndef END_OF_CENTRAL_DIR_SIGNATURE
 #define END_OF_CENTRAL_DIR_SIGNATURE 0x06054b50
 #endif
+
+static INLINE uint32_t read_le(const uint8_t *data, unsigned size)
+{
+   unsigned i;
+   uint32_t val = 0;
+
+   size *= 8;
+   for (i = 0; i < size; i += 8)
+      val |= (uint32_t)*data++ << i;
+
+   return val;
+}
 
 static void *zlib_stream_new(void)
 {

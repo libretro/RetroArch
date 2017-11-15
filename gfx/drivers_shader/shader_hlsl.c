@@ -14,19 +14,26 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <retro_math.h>
+#include <compat/strl.h>
 #include <string/stdstring.h>
+#include <file/file_path.h>
+
+#include <d3dx9shader.h>
+
+#include "../../defines/d3d_defines.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
 
-#include "shader_hlsl.h"
-
 #include "../video_shader_parse.h"
 #include "../drivers/d3d.h"
 #include "../../managers/state_manager.h"
+#include "../../verbosity.h"
 
 #include "../drivers/d3d_shaders/opaque.hlsl.d3d9.h"
+#include "shader_hlsl.h"
 
 struct shader_program_hlsl_data 
 {
@@ -112,9 +119,9 @@ static void hlsl_set_uniform_parameter(
 }
 
 #define set_param_2f(param, xy, constanttable) \
-   if (param) constanttable->SetFloatArray(d3d_device_ptr, param, xy, 2)
+   if (param) constanttable->SetFloatArray(d3dr, param, xy, 2)
 #define set_param_1f(param, x, constanttable) \
-   if (param) constanttable->SetFloat(d3d_device_ptr, param, x)
+   if (param) constanttable->SetFloat(d3dr, param, x)
 
 static void hlsl_set_params(void *data, void *shader_data,
       unsigned width, unsigned height,
@@ -127,7 +134,7 @@ static void hlsl_set_params(void *data, void *shader_data,
       const void *_fbo_info, unsigned fbo_info_cnt)
 {
    d3d_video_t *d3d                       = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3d_device_ptr        = (LPDIRECT3DDEVICE)d3d->dev;
+   LPDIRECT3DDEVICE d3dr                  = (LPDIRECT3DDEVICE)d3d->dev;
    const struct video_tex_info *info      = (const struct video_tex_info*)_info;
    const struct video_tex_info *prev_info = (const struct video_tex_info*)_prev_info;
    const struct video_tex_info *fbo_info  = (const struct video_tex_info*)_fbo_info;
@@ -141,8 +148,8 @@ static void hlsl_set_params(void *data, void *shader_data,
    const float out_size[2] = { (float)out_width, (float)out_height };
    float frame_cnt = frame_counter;
 
-   hlsl->prg[hlsl->active_idx].f_ctable->SetDefaults(d3d_device_ptr);
-   hlsl->prg[hlsl->active_idx].v_ctable->SetDefaults(d3d_device_ptr);
+   hlsl->prg[hlsl->active_idx].f_ctable->SetDefaults(d3dr);
+   hlsl->prg[hlsl->active_idx].v_ctable->SetDefaults(d3dr);
 
    set_param_2f(hlsl->prg[hlsl->active_idx].vid_size_f, ori_size, hlsl->prg[hlsl->active_idx].f_ctable);
    set_param_2f(hlsl->prg[hlsl->active_idx].tex_size_f, tex_size, hlsl->prg[hlsl->active_idx].f_ctable);
@@ -169,7 +176,7 @@ static bool hlsl_compile_program(
    hlsl_shader_data_t *hlsl                  = (hlsl_shader_data_t*)data;
    d3d_video_t *d3d                          = (d3d_video_t*)hlsl->d3d;
    struct shader_program_hlsl_data *program  = (struct shader_program_hlsl_data*)program_data;
-   LPDIRECT3DDEVICE d3d_device_ptr           = (LPDIRECT3DDEVICE)d3d->dev;
+   LPDIRECT3DDEVICE d3dr                     = (LPDIRECT3DDEVICE)d3d->dev;
    ID3DXBuffer *listing_f                    = NULL;
    ID3DXBuffer *listing_v                    = NULL;
    ID3DXBuffer *code_f                       = NULL;
@@ -206,8 +213,8 @@ static bool hlsl_compile_program(
       goto end;
    }
 
-   d3d_device_ptr->CreatePixelShader((const DWORD*)code_f->GetBufferPointer(),  &program->fprg);
-   d3d_device_ptr->CreateVertexShader((const DWORD*)code_v->GetBufferPointer(), &program->vprg);
+   d3dr->CreatePixelShader((const DWORD*)code_f->GetBufferPointer(),  &program->fprg);
+   d3dr->CreateVertexShader((const DWORD*)code_v->GetBufferPointer(), &program->vprg);
    code_f->Release();
    code_v->Release();
 
@@ -410,7 +417,7 @@ static void *hlsl_init(void *data, const char *path)
    if (!hlsl_data)
 	   return NULL;
 
-   if (path && string_is_equal(path_get_extension(path), ".cgp"))
+   if (path && (string_is_equal_fast(path_get_extension(path), ".cgp", 4)))
    {
       if (!hlsl_load_preset(hlsl_data, d3d, path))
          goto error;
@@ -457,11 +464,7 @@ static void hlsl_use(void *data, void *shader_data, unsigned idx, bool set_activ
          hlsl_data->active_idx = idx;
 
       d3d_set_vertex_shader(d3dr, idx, hlsl_data->prg[idx].vprg);
-#ifdef _XBOX
-      D3DDevice_SetPixelShader(d3dr, hlsl_data->prg[idx].fprg);
-#else
       d3dr->SetPixelShader(hlsl_data->prg[idx].fprg);
-#endif
    }
 }
 
@@ -494,15 +497,16 @@ static void hlsl_shader_scale(void *data, unsigned idx, struct gfx_fbo_scale *sc
       scale->valid = false;
 }
 
-static bool hlsl_set_mvp(void *data, void *shader_data, const math_matrix_4x4 *mat)
+static bool hlsl_set_mvp(void *data, void *shader_data, const void *mat_data)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3d_device_ptr = (LPDIRECT3DDEVICE)d3d->dev;
-   hlsl_shader_data_t *hlsl_data = (hlsl_shader_data_t*)shader_data;
+   d3d_video_t *d3d                = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr           = (LPDIRECT3DDEVICE)d3d->dev;
+   hlsl_shader_data_t *hlsl_data   = (hlsl_shader_data_t*)shader_data;
+   const math_matrix_4x4 *mat      = (const math_matrix_4x4*)mat_data;
 
    if(hlsl_data && hlsl_data->prg[hlsl_data->active_idx].mvp)
    {
-      hlsl_data->prg[hlsl_data->active_idx].v_ctable->SetMatrix(d3d_device_ptr,
+      hlsl_data->prg[hlsl_data->active_idx].v_ctable->SetMatrix(d3dr,
 		  hlsl_data->prg[hlsl_data->active_idx].mvp,
 		  (D3DXMATRIX*)&hlsl_data->prg[hlsl_data->active_idx].mvp_val);
       return true;
@@ -539,7 +543,6 @@ const shader_backend_t hlsl_backend = {
    NULL,              /* hlsl_wrap_type  */
    hlsl_shader_scale,
    NULL,              /* hlsl_set_coords */
-   NULL,              /* hlsl_set_coords_fallback */
    hlsl_set_mvp,
    NULL,              /* hlsl_get_prev_textures */
    hlsl_get_feedback_pass,

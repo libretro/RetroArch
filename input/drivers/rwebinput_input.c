@@ -20,11 +20,8 @@
 
 #include <boolean.h>
 
-#include "../input_config.h"
-#include "../input_keyboard.h"
-#include "../input_keymaps.h"
 #include "../input_driver.h"
-#include "../input_joypad_driver.h"
+#include "../input_keymaps.h"
 
 #include "../../tasks/tasks_internal.h"
 #include "../../configuration.h"
@@ -69,7 +66,7 @@ error:
    return NULL;
 }
 
-static bool rwebinput_key_pressed__(void *data, int key)
+static bool rwebinput_key_pressed_internal(void *data, int key)
 {
    unsigned sym;
    bool ret;
@@ -78,7 +75,7 @@ static bool rwebinput_key_pressed__(void *data, int key)
    if (key >= RETROK_LAST)
       return false;
 
-   sym = input_keymaps_translate_rk_to_keysym((enum retro_key)key);
+   sym = rarch_keysym_lut[(enum retro_key)key];
    ret = rwebinput->state.keys[sym >> 3] & (1 << (sym & 7));
 
    return ret;
@@ -97,7 +94,9 @@ static bool rwebinput_is_pressed(rwebinput_input_t *rwebinput,
    if (id < RARCH_BIND_LIST_END)
    {
       const struct retro_keybind *bind = &binds[id];
-      return bind->valid && rwebinput_key_pressed__(rwebinput, binds[id].key);
+      int key                          = binds[id].key;
+      return bind->valid && (key < RETROK_LAST) 
+         && rwebinput_key_pressed_internal(rwebinput, key);
    }
 
    return false;
@@ -106,8 +105,7 @@ static bool rwebinput_is_pressed(rwebinput_input_t *rwebinput,
 static bool rwebinput_key_pressed(void *data, int key)
 {
    rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
-   settings_t         *settings = config_get_ptr();
-   return rwebinput_is_pressed(rwebinput, settings->input.binds[0], key);
+   return rwebinput_is_pressed(rwebinput, input_config_binds[0], key);
 }
 
 static int16_t rwebinput_mouse_state(rwebinput_input_t *rwebinput, unsigned id)

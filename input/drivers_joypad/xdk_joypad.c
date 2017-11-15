@@ -16,7 +16,7 @@
 
 #include <stdint.h>
 
-#include "../../configuration.h"
+#include "../input_driver.h"
 #include "../../tasks/tasks_internal.h"
 
 static uint64_t pad_state[MAX_PADS];
@@ -38,8 +38,7 @@ static const char* const XBOX_CONTROLLER_NAMES[4] =
 
 static const char *xdk_joypad_name(unsigned pad)
 {
-   settings_t *settings = config_get_ptr();
-   return settings ? settings->input.device_names[pad] : NULL;
+   return input_config_get_device_name(pad);
 }
 
 static void xdk_joypad_autodetect_add(unsigned autoconf_pad)
@@ -143,6 +142,9 @@ static void xdk_joypad_poll(void)
 
    for (port = 0; port < MAX_PADS; port++)
    {
+	  unsigned i, j;
+      XINPUT_STATE state_tmp;
+      uint64_t *state_cur    = NULL;
 #ifdef _XBOX1
       XINPUT_CAPABILITIES caps[MAX_PADS];
       (void)caps;
@@ -188,8 +190,6 @@ static void xdk_joypad_poll(void)
        * the device handle will be NULL. */
 #endif
 
-      XINPUT_STATE state_tmp;
-
 #if defined(_XBOX1)
       if (XInputPoll(gamepads[port]) != ERROR_SUCCESS)
          continue;
@@ -201,7 +201,7 @@ static void xdk_joypad_poll(void)
          continue;
 #endif
 
-      uint64_t *state_cur = &pad_state[port];
+      state_cur = &pad_state[port];
 
       *state_cur = 0;
       *state_cur |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0);
@@ -238,8 +238,8 @@ static void xdk_joypad_poll(void)
       analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = state_tmp.Gamepad.sThumbRX;
       analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = state_tmp.Gamepad.sThumbRY;
 
-      for (int i = 0; i < 2; i++)
-         for (int j = 0; j < 2; j++)
+      for (i = 0; i < 2; i++)
+         for (j = 0; j < 2; j++)
             if (analog_state[port][i][j] == -0x8000)
                analog_state[port][i][j] = -0x7fff;
    }

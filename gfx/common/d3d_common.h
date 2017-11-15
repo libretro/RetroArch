@@ -35,6 +35,12 @@ void d3d_vertex_buffer_unlock(void *data);
 
 void d3d_vertex_buffer_free(void *vertex_data, void *vertex_declaration);
 
+bool d3d_texture_get_level_desc(LPDIRECT3DTEXTURE tex,
+      unsigned idx, void *_ppsurface_level);
+
+bool d3d_texture_get_surface_level(LPDIRECT3DTEXTURE tex,
+      unsigned idx, void **_ppsurface_level);
+
 LPDIRECT3DTEXTURE d3d_texture_new(LPDIRECT3DDEVICE dev,
       const char *path, unsigned width, unsigned height,
       unsigned miplevels, unsigned usage, D3DFORMAT format,
@@ -62,6 +68,10 @@ void d3d_set_sampler_minfilter(LPDIRECT3DDEVICE dev,
 
 void d3d_set_sampler_magfilter(LPDIRECT3DDEVICE dev,
       unsigned sampler, unsigned value);
+
+bool d3d_begin_scene(LPDIRECT3DDEVICE dev);
+
+void d3d_end_scene(LPDIRECT3DDEVICE dev);
 
 void d3d_draw_primitive(LPDIRECT3DDEVICE dev,
       D3DPRIMITIVETYPE type, unsigned start, unsigned count);
@@ -94,6 +104,8 @@ void d3d_texture_blit(unsigned pixel_size,
 bool d3d_vertex_declaration_new(LPDIRECT3DDEVICE dev,
       const void *vertex_data, void **decl_data);
 
+void d3d_vertex_declaration_free(void *data);
+
 void d3d_set_viewports(LPDIRECT3DDEVICE dev, D3DVIEWPORT *vp);
 
 void d3d_enable_blend_func(void *data);
@@ -106,7 +118,52 @@ void d3d_enable_alpha_blend_texture_func(void *data);
 
 void d3d_frame_postprocess(void *data);
 
+void d3d_surface_free(void *data);
+
+bool d3d_device_get_render_target_data(LPDIRECT3DDEVICE dev,
+      void *_src, void *_dst);
+
+bool d3d_device_get_render_target(LPDIRECT3DDEVICE dev,
+      unsigned idx, void **data);
+
+void d3d_device_set_render_target(LPDIRECT3DDEVICE dev, unsigned idx,
+      void *data);
+
 void d3d_set_render_state(void *data, D3DRENDERSTATETYPE state, DWORD value);
+
+void d3d_device_set_render_target(LPDIRECT3DDEVICE dev, unsigned idx,
+      void *data);
+
+bool d3d_device_create_offscreen_plain_surface(
+      LPDIRECT3DDEVICE dev,
+      unsigned width,
+      unsigned height,
+      unsigned format,
+      unsigned pool,
+      void **surf_data,
+      void *data);
+
+bool d3d_surface_lock_rect(void *data, void *data2);
+
+void d3d_surface_unlock_rect(void *data);
+
+void *d3d_matrix_transpose(void *_pout, const void *_pm);
+
+void *d3d_matrix_multiply(void *_pout,
+      const void *_pm1, const void *_pm2);
+
+void *d3d_matrix_ortho_off_center_lh(void *_pout,
+      float l, float r, float b, float t, float zn, float zf);
+
+void * d3d_matrix_identity(void *_pout);
+
+void *d3d_matrix_rotation_z(void *_pout, float angle);
+
+bool d3d_create_device(LPDIRECT3DDEVICE *dev,
+      D3DPRESENT_PARAMETERS *d3dpp,
+      LPDIRECT3D d3d,
+      HWND focus_window,
+      unsigned cur_mon_id);
 
 bool d3d_reset(LPDIRECT3DDEVICE dev, D3DPRESENT_PARAMETERS *d3dpp);
 

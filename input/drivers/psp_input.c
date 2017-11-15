@@ -41,9 +41,7 @@
 
 #include "../../defines/psp_defines.h"
 
-#include "../input_config.h"
 #include "../input_driver.h"
-#include "../input_joypad_driver.h"
 
 typedef struct psp_input
 {
@@ -57,7 +55,7 @@ static void psp_input_poll(void *data)
 {
    psp_input_t *psp = (psp_input_t*)data;
 
-   if (psp->joypad)
+   if (psp && psp->joypad)
       psp->joypad->poll();
 }
 

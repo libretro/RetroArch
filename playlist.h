@@ -26,25 +26,6 @@ RETRO_BEGIN_DECLS
 
 typedef struct content_playlist       playlist_t;
 
-struct playlist_entry
-{
-   char *path;
-   char *label;
-   char *core_path;
-   char *core_name;
-   char *db_name;
-   char *crc32;
-};
-
-struct content_playlist
-{
-   struct playlist_entry *entries;
-   size_t size;
-   size_t cap;
-
-   char *conf_path;
-};
-
 /**
  * playlist_init:
  * @path            	   : Path to playlist contents file.
@@ -139,6 +120,10 @@ void playlist_get_index_by_path(playlist_t *playlist,
 bool playlist_entry_exists(playlist_t *playlist,
       const char *path,
       const char *crc32);
+
+char *playlist_get_conf_path(playlist_t *playlist);
+
+uint32_t playlist_get_size(playlist_t *playlist);
 
 void playlist_write_file(playlist_t *playlist);
 

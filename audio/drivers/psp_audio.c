@@ -184,14 +184,12 @@ static void psp_audio_free(void *data)
    free(psp);
 }
 
-static ssize_t psp_audio_write(void *data, const void *buf, size_t size,
-       bool is_perfcnt_enable)
+static ssize_t psp_audio_write(void *data, const void *buf, size_t size)
 {
    psp_audio_t* psp     = (psp_audio_t*)data;
    uint16_t write_pos   = psp->write_pos;
    uint16_t sampleCount = size / sizeof(uint32_t);
 
-#ifdef VITA
    if (psp->nonblocking)
    {
       if (AUDIO_BUFFER_SIZE - ((uint16_t)
@@ -199,12 +197,13 @@ static ssize_t psp_audio_write(void *data, const void *buf, size_t size,
          return 0;
    }
 
+#ifdef VITA
    while (AUDIO_BUFFER_SIZE - ((uint16_t)
-         (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK) < size){
+         (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK) < size)
       sceKernelWaitLwCond((struct SceKernelLwCondWork*)&psp->cond, 0);
-   }
 
    sceKernelLockLwMutex((struct SceKernelLwMutexWork*)&psp->lock, 1, 0);
+#endif
 
    if((write_pos + sampleCount) > AUDIO_BUFFER_SIZE)
    {
@@ -220,36 +219,13 @@ static ssize_t psp_audio_write(void *data, const void *buf, size_t size,
    write_pos      += sampleCount;
    write_pos      &= AUDIO_BUFFER_SIZE_MASK;
    psp->write_pos  = write_pos;
+
+#ifdef VITA
    sceKernelUnlockLwMutex((struct SceKernelLwMutexWork*)&psp->lock, 1);
 
   return size;
 #else
-
-
-
-#if 0
-   if (psp->nonblocking)
-   {
-      /* TODO */
-   }
-#endif
-
-   if((write_pos + sampleCount) > AUDIO_BUFFER_SIZE)
-   {
-      memcpy(psp->buffer + write_pos, buf,
-            (AUDIO_BUFFER_SIZE - write_pos) * sizeof(uint32_t));
-      memcpy(psp->buffer, (uint32_t*) buf +
-            (AUDIO_BUFFER_SIZE - write_pos),
-            (write_pos + sampleCount - AUDIO_BUFFER_SIZE) * sizeof(uint32_t));
-   }
-   else
-      memcpy(psp->buffer + write_pos, buf, size);
-
-   write_pos  += sampleCount;
-   write_pos  &= AUDIO_BUFFER_SIZE_MASK;
-   psp->write_pos = write_pos;
-
-   return sampleCount;
+  return sampleCount;
 #endif
 }
 
@@ -268,6 +244,9 @@ static bool psp_audio_stop(void *data)
    SceUInt timeout   = 100000;
    psp_audio_t* psp = (psp_audio_t*)data;
 
+   if(psp && !psp->running)  
+      return true;
+   
    info.size = sizeof(SceKernelThreadInfo);
 
    if (sceKernelGetThreadInfo(
@@ -290,6 +269,9 @@ static bool psp_audio_start(void *data, bool is_shutdown)
 {
    SceKernelThreadInfo info;
    psp_audio_t* psp = (psp_audio_t*)data;
+   
+   if(psp && psp->running)  
+      return true;
 
    info.size = sizeof(SceKernelThreadInfo);
 
@@ -322,20 +304,21 @@ static bool psp_audio_use_float(void *data)
 
 static size_t psp_write_avail(void *data)
 {
-   psp_audio_t* psp = (psp_audio_t*)data;
-#ifdef VITA
    size_t val;
+   psp_audio_t* psp = (psp_audio_t*)data;
 
+#ifdef VITA
    sceKernelLockLwMutex((struct SceKernelLwMutexWork*)&psp->lock, 1, 0);
+#endif
+
    val = AUDIO_BUFFER_SIZE - ((uint16_t)
          (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK);
+
+#ifdef VITA
    sceKernelUnlockLwMutex((struct SceKernelLwMutexWork*)&psp->lock, 1);
-   return val;
-#else
-   /* TODO */
-   return AUDIO_BUFFER_SIZE - ((uint16_t)
-         (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK);
 #endif
+
+   return val;
 }
 
 static size_t psp_buffer_size(void *data)

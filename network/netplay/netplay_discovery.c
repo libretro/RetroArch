@@ -43,8 +43,10 @@
 #include <compat/strl.h>
 #include <net/net_compat.h>
 
-#include "../../runloop.h"
+#include "../../retroarch.h"
 #include "../../version.h"
+#include "../../verbosity.h"
+
 #include "netplay.h"
 #include "netplay_discovery.h"
 #include "netplay_private.h"
@@ -62,7 +64,7 @@ struct ad_packet
    char nick[NETPLAY_HOST_STR_LEN];
    char core[NETPLAY_HOST_STR_LEN];
    char core_version[NETPLAY_HOST_STR_LEN];
-   char content[NETPLAY_HOST_STR_LEN];
+   char content[NETPLAY_HOST_LONGSTR_LEN];
    char content_crc[NETPLAY_HOST_STR_LEN];
 };
 
@@ -231,12 +233,13 @@ bool netplay_lan_ad_server(netplay_t *netplay)
 
       /* Somebody queried, so check that it's valid */
       addr_size = sizeof(their_addr);
+
       if (recvfrom(lan_ad_server_fd, (char*)&ad_packet_buffer,
             sizeof(struct ad_packet), 0, &their_addr, &addr_size) >=
             (ssize_t) (2*sizeof(uint32_t)))
       {
          char s[NETPLAY_HOST_STR_LEN];
-         uint32_t *content_crc_ptr     = NULL;
+         uint32_t content_crc         = 0;
 
          /* Make sure it's a valid query */
          if (memcmp((void *) &ad_packet_buffer, "RANQ", 4))
@@ -247,10 +250,10 @@ bool netplay_lan_ad_server(netplay_t *netplay)
                NETPLAY_PROTOCOL_VERSION)
             continue;
 
-         runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
+         info              = runloop_get_system_info();
 
          /* Now build our response */
-         content_get_crc(&content_crc_ptr);
+         content_crc = content_get_crc();
 
          memset(&ad_packet_buffer, 0, sizeof(struct ad_packet));
          memcpy(&ad_packet_buffer, "RANS", 4);
@@ -263,8 +266,9 @@ bool netplay_lan_ad_server(netplay_t *netplay)
          strlcpy(ad_packet_buffer.content, !string_is_empty(
                   path_basename(path_get(RARCH_PATH_BASENAME))) 
                ? path_basename(path_get(RARCH_PATH_BASENAME)) : "N/A",
-               NETPLAY_HOST_STR_LEN);
+               NETPLAY_HOST_LONGSTR_LEN);
          strlcpy(ad_packet_buffer.nick, netplay->nick, NETPLAY_HOST_STR_LEN);
+
          if (info)
          {
             strlcpy(ad_packet_buffer.core, info->info.library_name,
@@ -272,7 +276,8 @@ bool netplay_lan_ad_server(netplay_t *netplay)
             strlcpy(ad_packet_buffer.core_version, info->info.library_version,
                NETPLAY_HOST_STR_LEN);
          }
-         snprintf(s, sizeof(s), "%d", *content_crc_ptr);
+
+         snprintf(s, sizeof(s), "%d", content_crc);
          strlcpy(ad_packet_buffer.content_crc, s,
             NETPLAY_HOST_STR_LEN);
 
@@ -343,14 +348,19 @@ static bool netplay_lan_ad_client(void)
          /* And that we know how to handle it */
          if (their_addr.sa_family == AF_INET)
          {
-            struct sockaddr_in *sin = (struct sockaddr_in *) &their_addr;
+            struct sockaddr_in *sin = NULL;
+
+            RARCH_WARN ("[lobby] using IPv4 for discovery\n");
+            sin           = (struct sockaddr_in *) &their_addr;
             sin->sin_port = htons(ntohl(ad_packet_buffer.port));
 
          }
 #ifdef HAVE_INET6
          else if (their_addr.sa_family == AF_INET6)
          {
-            struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *) &their_addr;
+            struct sockaddr_in6 *sin6 = NULL;
+            RARCH_WARN ("[lobby] using IPv6 for discovery\n");
+            sin6            = (struct sockaddr_in6 *) &their_addr;
             sin6->sin6_port = htons(ad_packet_buffer.port);
 
          }
@@ -394,17 +404,19 @@ static bool netplay_lan_ad_client(void)
 
          strlcpy(host->nick, ad_packet_buffer.nick, NETPLAY_HOST_STR_LEN);
          strlcpy(host->core, ad_packet_buffer.core, NETPLAY_HOST_STR_LEN);
+         strlcpy(host->retroarch_version, ad_packet_buffer.retroarch_version,
+            NETPLAY_HOST_STR_LEN);
          strlcpy(host->core_version, ad_packet_buffer.core_version,
             NETPLAY_HOST_STR_LEN);
          strlcpy(host->content, ad_packet_buffer.content,
-            NETPLAY_HOST_STR_LEN);
+            NETPLAY_HOST_LONGSTR_LEN);
 
          host->content_crc                  = 
             atoi(ad_packet_buffer.content_crc);
          host->nick[NETPLAY_HOST_STR_LEN-1] =
             host->core[NETPLAY_HOST_STR_LEN-1] =
             host->core_version[NETPLAY_HOST_STR_LEN-1] =
-            host->content[NETPLAY_HOST_STR_LEN-1] = '\0';
+            host->content[NETPLAY_HOST_LONGSTR_LEN-1] = '\0';
       }
    }
 

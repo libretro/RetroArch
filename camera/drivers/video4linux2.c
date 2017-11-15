@@ -16,7 +16,9 @@
  */
 
 #include <stdio.h>
+#if !defined(__FreeBSD__) || __FreeBSD__ < 5
 #include <malloc.h>
+#endif
 #include <string.h>
 #include <assert.h>
 #include <stddef.h>
@@ -28,7 +30,9 @@
 #include <sys/time.h>
 #include <sys/ioctl.h>
 
+#ifndef __FreeBSD__
 #include <asm/types.h>
+#endif
 #include <linux/videodev2.h>
 
 #include <memmap.h>
@@ -36,7 +40,8 @@
 #include <retro_assert.h>
 #include <retro_miscellaneous.h>
 #include <gfx/scaler/scaler.h>
-#include <retro_stat.h>
+#include <gfx/video_frame.h>
+#include <file/file_path.h>
 
 #include <compat/strl.h>
 
@@ -352,6 +357,7 @@ error:
 
 static bool preprocess_image(void *data)
 {
+   struct scaler_ctx *ctx = NULL;
    video4linux_t     *v4l = (video4linux_t*)data;
    struct v4l2_buffer buf = {0};
 
@@ -374,7 +380,9 @@ static bool preprocess_image(void *data)
 
    retro_assert(buf.index < v4l->n_buffers);
 
-   scaler_ctx_scale(&v4l->scaler, v4l->buffer_output, (const uint8_t*)v4l->buffers[buf.index].start);
+   ctx = &v4l->scaler;
+
+   scaler_ctx_scale_direct(ctx, v4l->buffer_output, (const uint8_t*)v4l->buffers[buf.index].start);
 
    if (xioctl(v4l->fd, (uint8_t)VIDIOC_QBUF, &buf) == -1)
       RARCH_ERR("[V4L2]: VIDIOC_QBUF\n");

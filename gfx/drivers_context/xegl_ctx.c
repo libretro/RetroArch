@@ -28,10 +28,17 @@
 #include "../common/egl_common.h"
 #include "../common/gl_common.h"
 #include "../common/x11_common.h"
+
+#ifdef HAVE_XINERAMA
 #include "../common/xinerama_common.h"
+#endif
 
 #ifndef EGL_OPENGL_ES3_BIT_KHR
 #define EGL_OPENGL_ES3_BIT_KHR 0x0040
+#endif
+
+#ifndef EGL_PLATFORM_X11_KHR
+#define EGL_PLATFORM_X11_KHR 0x31D5
 #endif
 
 typedef struct
@@ -163,8 +170,8 @@ static void *gfx_ctx_xegl_init(video_frame_info_t *video_info, void *video_drive
       goto error;
 
 #ifdef HAVE_EGL
-   if (!egl_init_context(&xegl->egl, (EGLNativeDisplayType)g_x11_dpy,
-            &major, &minor, &n, attrib_ptr))
+   if (!egl_init_context(&xegl->egl, EGL_PLATFORM_X11_KHR,
+            (EGLNativeDisplayType)g_x11_dpy, &major, &minor, &n, attrib_ptr))
    {
       egl_report_error();
       goto error;
@@ -483,7 +490,7 @@ static void gfx_ctx_xegl_show_mouse(void *data, bool state)
    x11_show_mouse(g_x11_dpy, g_x11_win, state);
 }
 
-static void gfx_ctx_xegl_swap_buffers(void *data, video_frame_info_t *video_info)
+static void gfx_ctx_xegl_swap_buffers(void *data, void *data2)
 {
    xegl_ctx_data_t *xegl = (xegl_ctx_data_t*)data;
 

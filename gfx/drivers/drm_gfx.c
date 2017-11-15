@@ -37,8 +37,8 @@
 #endif
 
 #include "../font_driver.h"
-#include "../video_context_driver.h"
 #include "../../retroarch.h"
+#include "../../verbosity.h"
 
 #include "drm_pixformats.h"
 
@@ -415,7 +415,7 @@ static uint64_t drm_plane_type(drmModePlane *plane)
    for (j = 0; j < props->count_props; j++)
    {
       /* found the type property */
-      if (string_is_equal(drmModeGetProperty(drm.fd, props->props[j])->name, "type"))
+      if (string_is_equal_fast(drmModeGetProperty(drm.fd, props->props[j])->name, "type", 4))
          return (props->prop_values[j]);
    }
    return (0);
@@ -916,13 +916,6 @@ static bool drm_gfx_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static bool drm_gfx_has_windowed(void *data)
-{
-   (void)data;
-
-   return false;
-}
-
 static bool drm_gfx_set_shader(void *data,
       enum rarch_shader_type type, const char *path)
 {
@@ -966,6 +959,8 @@ static void drm_set_aspect_ratio (void *data, unsigned aspect_ratio_idx)
 }
 
 static const video_poke_interface_t drm_poke_interface = {
+   NULL, /* set_coords */
+   NULL, /* set_mvp    */
    NULL,
    NULL,
    NULL, /* set_video_mode */
@@ -1019,7 +1014,7 @@ video_driver_t video_drm = {
    drm_gfx_alive,
    drm_gfx_focus,
    drm_gfx_suppress_screensaver,
-   drm_gfx_has_windowed,
+   NULL, /* has_windowed */
    drm_gfx_set_shader,
    drm_gfx_free,
    "drm",

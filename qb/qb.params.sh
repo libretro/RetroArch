@@ -2,7 +2,7 @@ print_help_option() # $1 = option $@ = description
 {
 	_opt="$1"
 	shift 1
-	printf "  %-25s  %s\n" "$_opt" "$@"
+	printf '  %-26s  %s\n' "$_opt" "$@"
 }
 
 print_help()
@@ -30,27 +30,27 @@ EOF
 	echo "Custom options:"
 
 	while IFS='=#' read VAR VAL COMMENT; do
-		VAR=$(echo "${VAR##HAVE_}" | tr '[A-Z]' '[a-z]')
+		VAR=$(echo "${VAR##HAVE_}" | tr '[:upper:]' '[:lower:]')
 		case "$VAR" in
-			'c89_'*) true;;
+			'c89_'*) continue;;
 			*)
 			case "$VAL" in
 				'yes'*)
 					print_help_option "--disable-$VAR" "Disable $COMMENT";;
 				'no'*)
-					print_help_option "--enable-$VAR" "Enable $COMMENT";;
+					print_help_option "--enable-$VAR" "Enable  $COMMENT";;
 				'auto'*)
-					print_help_option "--enable-$VAR" "Enable $COMMENT"
+					print_help_option "--enable-$VAR" "Enable  $COMMENT"
 					print_help_option "--disable-$VAR" "Disable $COMMENT";;
 				*)
-					print_help_option "--with-$VAR" "Config $COMMENT";;
+					print_help_option "--with-$VAR" "Config  $COMMENT";;
 			esac
 		esac
 	done < 'qb/config.params.sh'
 }
 
 opt_exists() # $opt is returned if exists in OPTS
-{	opt=$(echo "$1" | tr '[a-z]' '[A-Z]')
+{	opt=$(echo "$1" | tr '[:lower:]' '[:upper:]')
 	for OPT in $OPTS; do [ "$opt" = "$OPT" ] && return; done
 	echo "Unknown option $2"; exit 1
 }

@@ -60,6 +60,8 @@ typedef struct socket_target
 
 int socket_init(void **address, uint16_t port, const char *server, enum socket_type type);
 
+int socket_next(void **address);
+
 int socket_close(int fd);
 
 bool socket_nonblock(int fd);

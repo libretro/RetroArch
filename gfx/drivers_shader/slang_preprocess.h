@@ -18,7 +18,7 @@
 
 #include <boolean.h>
 #include <retro_common_api.h>
-#include "../video_shader_driver.h"
+#include "../video_driver.h"
 
 RETRO_BEGIN_DECLS
 

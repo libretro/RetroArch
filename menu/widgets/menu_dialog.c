@@ -27,14 +27,13 @@
 
 #include "menu_dialog.h"
 
-#include "../menu_display.h"
 #include "../menu_driver.h"
 
 #include "../../retroarch.h"
 #include "../../configuration.h"
 
 #include "../../tasks/tasks_internal.h"
-#include "../../input/input_config.h"
+#include "../../input/input_driver.h"
 #include "../../performance_counters.h"
 
 static bool                  menu_dialog_pending_push   = false;
@@ -96,9 +95,7 @@ int menu_dialog_iterate(char *s, size_t len, const char *label)
 
             for (i = 0; i < ARRAY_SIZE(binds); i++)
             {
-               const struct retro_keybind *keybind =
-                  (const struct retro_keybind*)
-                  &settings->input.binds[0][binds[i]];
+               const struct retro_keybind *keybind = &input_config_binds[0][binds[i]];
                const struct retro_keybind *auto_bind =
                   (const struct retro_keybind*)
                   input_config_get_bind_auto(0, binds[i]);
@@ -210,10 +207,10 @@ int menu_dialog_iterate(char *s, size_t len, const char *label)
          menu_hash_get_help_enum(MENU_ENUM_LABEL_VALUE_EXTRACTING_PLEASE_WAIT,
                s, len);
 
-         if (settings->bundle_finished)
+         if (settings->bools.bundle_finished)
          {
-            settings->bundle_finished = false;
-            do_exit                   = true;
+            settings->bools.bundle_finished = false;
+            do_exit                         = true;
          }
          break;
       case MENU_DIALOG_QUIT_CONFIRM:
@@ -262,30 +259,12 @@ void menu_dialog_push(void)
    if (!menu_dialog_is_push_pending())
       return;
 
-   info.need_sort            = false;
-   info.need_refresh         = false;
-   info.need_entries_refresh = false;
-   info.need_push            = false;
-   info.need_clear           = false;
-   info.need_navigation_clear= false;
-   info.list                 = menu_entries_get_menu_stack_ptr(0);
-   info.menu_list            = NULL;
-   info.path[0]              = '\0';
-   info.path_b[0]            = '\0';
-   info.path_c[0]            = '\0';
-   info.label[0]             = '\0';
-   info.label_hash           = 0;
-   info.exts[0]              = '\0';
-   info.type                 = 0;
-   info.type_default         = 0;
-   info.directory_ptr        = 0;
-   info.flags                = 0;
-   info.enum_idx             = MENU_ENUM_LABEL_HELP;
-   info.setting              = NULL;
+   menu_displaylist_info_init(&info);
 
-   strlcpy(info.label,
-         msg_hash_to_str(MENU_ENUM_LABEL_HELP),
-         sizeof(info.label));
+   info.list                 = menu_entries_get_menu_stack_ptr(0);
+   info.enum_idx             = MENU_ENUM_LABEL_HELP;
+   info.label                = strdup(
+         msg_hash_to_str(MENU_ENUM_LABEL_HELP));
 
    menu_displaylist_ctl(DISPLAYLIST_HELP, &info);
 }

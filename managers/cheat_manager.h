@@ -44,11 +44,11 @@ void cheat_manager_set_code(unsigned index, const char *str);
 
 void cheat_manager_free(void);
 
-void cheat_manager_index_next(cheat_manager_t *handle);
+void cheat_manager_index_next(void);
 
-void cheat_manager_index_prev(cheat_manager_t *handle);
+void cheat_manager_index_prev(void);
 
-void cheat_manager_toggle(cheat_manager_t *handle);
+void cheat_manager_toggle(void);
 
 void cheat_manager_apply_cheats(void);
 
@@ -63,11 +63,6 @@ const char *cheat_manager_get_desc(unsigned i);
 const char *cheat_manager_get_code(unsigned i);
 
 bool cheat_manager_get_code_state(unsigned i);
-
-void cheat_manager_state_checks(
-      bool cheat_index_plus_pressed,
-      bool cheat_index_minus_pressed,
-      bool cheat_toggle_pressed);
 
 void cheat_manager_state_free(void);
 

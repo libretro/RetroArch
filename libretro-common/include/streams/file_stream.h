@@ -23,6 +23,7 @@
 #ifndef __LIBRETRO_SDK_FILE_STREAM_H
 #define __LIBRETRO_SDK_FILE_STREAM_H
 
+#include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
 
@@ -30,6 +31,8 @@
 
 #include <retro_common_api.h>
 #include <boolean.h>
+
+#include <stdarg.h>
 
 RETRO_BEGIN_DECLS
 
@@ -42,12 +45,12 @@ enum
    RFILE_MODE_WRITE,
    RFILE_MODE_READ_WRITE,
 
-   /* There is no garantee these requests will be attended. */
+   /* There is no guarantee these requests will be attended. */
    RFILE_HINT_UNBUFFERED = 1<<8,
    RFILE_HINT_MMAP       = 1<<9  /* requires RFILE_MODE_READ */
 };
 
-long long int filestream_get_size(RFILE *stream);
+int64_t filestream_get_size(RFILE *stream);
 
 void filestream_set_size(RFILE *stream);
 
@@ -81,7 +84,15 @@ bool filestream_write_file(const char *path, const void *data, ssize_t size);
 
 int filestream_putc(RFILE *stream, int c);
 
+int filestream_vprintf(RFILE *stream, const char* format, va_list args);
+
+int filestream_printf(RFILE *stream, const char* format, ...);
+
+int filestream_error(RFILE *stream);
+
 int filestream_get_fd(RFILE *stream);
+
+FILE* filestream_get_fp(RFILE *stream);
 
 int filestream_flush(RFILE *stream);
 

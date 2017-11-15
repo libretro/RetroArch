@@ -233,6 +233,8 @@
 				HEADER_SEARCH_PATHS = (
 					"$(SRCROOT)/../../libretro-common/include",
 					"$(SRCROOT)/../../deps",
+					"$(SRCROOT)/../../deps/stb",
+					"$(SRCROOT)/../../deps/libz",
 					"$(SRCROOT)",
 				);
 				ONLY_ACTIVE_ARCH_PRE_XCODE_3_1 = "$(NATIVE_ARCH)";
@@ -247,6 +249,8 @@
 				HEADER_SEARCH_PATHS = (
 					"$(SRCROOT)/../../libretro-common/include",
 					"$(SRCROOT)/../../deps",
+					"$(SRCROOT)/../../deps/stb",
+					"$(SRCROOT)/../../deps/libz",
 					"$(SRCROOT)",
 				);
 			};
@@ -283,6 +287,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.4;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = (
+					"-DMSB_FIRST",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_BUILTINMINIUPNPC",
@@ -294,7 +299,6 @@
 					"-DHAVE_MENU",
 					"-DOSX",
 					"-DHAVE_OPENGL",
-					"-DHAVE_FBO",
 					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
@@ -358,6 +362,7 @@
 				OTHER_CFLAGS = (
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
+					"-DMSB_FIRST",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_BUILTINMINIUPNPC",
@@ -369,7 +374,6 @@
 					"-DHAVE_MENU",
 					"-DOSX",
 					"-DHAVE_OPENGL",
-					"-DHAVE_FBO",
 					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",

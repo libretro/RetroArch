@@ -25,8 +25,6 @@
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 
-#include <retro_assert.h>
-
 /* Implementation of strlcpy()/strlcat() based on OpenBSD. */
 
 #ifndef __MACH__

@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <malloc.h>
 #include <string.h>
+#include <inttypes.h>
 #include <wiiu/os.h>
 
 #include "hbl.h"
@@ -236,7 +237,7 @@ int HBL_loadToMemory(const char *filepath, u32 args_size)
    if (bytesRead != fileSize)
    {
       free(buffer);
-      printf("File loading not finished for file %s, finished %i of %i bytes\n", filepath, bytesRead,
+      printf("File loading not finished for file %s, finished %" PRIi32 " of %" PRIi32 " bytes\n", filepath, bytesRead,
              fileSize);
       printf("File read failure");
       return -1;

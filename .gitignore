@@ -63,6 +63,11 @@ menu/driverspzarch.c
 /media/shaders_glsl/
 /obj-w32/
 
+# Wii U
+*.depend
+*.rpx
+wiiu/wut/elf2rpl/elf2rpl
+
 # Ctags
 /tags
 
@@ -105,3 +110,5 @@ obj-unix/
 /pkg/msvc/msvc-2010/Release Cg/*.obj
 /pkg/msvc/msvc-2010/Release Cg/*.res
 /pkg/msvc/msvc-2010/Release Cg/*.pdb
+
+retroarch.cfg

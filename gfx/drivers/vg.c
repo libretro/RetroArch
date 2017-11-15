@@ -37,11 +37,9 @@
 #endif
 
 #include "../font_driver.h"
-#include "../video_context_driver.h"
 
 #include "../../retroarch.h"
 #include "../../driver.h"
-#include "../../performance_counters.h"
 #include "../../content.h"
 #include "../../verbosity.h"
 #include "../../configuration.h"
@@ -106,7 +104,7 @@ static void *vg_init(const video_info_t *video,
    settings_t        *settings = config_get_ptr();
    vg_t                    *vg = (vg_t*)calloc(1, sizeof(vg_t));
    const gfx_ctx_driver_t *ctx = video_context_driver_init_first(
-         vg, settings->video.context_driver,
+         vg, settings->arrays.video_context_driver,
          GFX_CTX_OPENVG_API, 0, 0, false);
 
    if (!vg || !ctx)
@@ -197,7 +195,7 @@ static void *vg_init(const video_info_t *video,
 
    if (     video->font_enable
          && font_renderer_create_default((const void**)&vg->font_driver, &vg->mFontRenderer,
-            *settings->path.font ? settings->path.font : NULL, settings->video.font_size))
+            *settings->paths.path_font ? settings->paths.path_font : NULL, settings->floats.video_font_size))
    {
       vg->mFont            = vgCreateFont(0);
 
@@ -207,18 +205,18 @@ static void *vg_init(const video_info_t *video,
          VGfloat paintBg[4];
 
          vg->mFontsOn      = true;
-         vg->mFontHeight   = settings->video.font_size;
+         vg->mFontHeight   = settings->floats.video_font_size;
          vg->mPaintFg      = vgCreatePaint();
          vg->mPaintBg      = vgCreatePaint();
 
-         paintFg[0] = settings->video.msg_color_r;
-         paintFg[1] = settings->video.msg_color_g;
-         paintFg[2] = settings->video.msg_color_b;
+         paintFg[0] = settings->floats.video_msg_color_r;
+         paintFg[1] = settings->floats.video_msg_color_g;
+         paintFg[2] = settings->floats.video_msg_color_b;
          paintFg[3] = 1.0f;
 
-         paintBg[0] = settings->video.msg_color_r / 2.0f;
-         paintBg[1] = settings->video.msg_color_g / 2.0f;
-         paintBg[2] = settings->video.msg_color_b / 2.0f;
+         paintBg[0] = settings->floats.video_msg_color_r / 2.0f;
+         paintBg[1] = settings->floats.video_msg_color_g / 2.0f;
+         paintBg[2] = settings->floats.video_msg_color_b / 2.0f;
          paintBg[3] = 0.5f;
 
          vgSetParameteri(vg->mPaintFg, VG_PAINT_TYPE, VG_PAINT_TYPE_COLOR);
@@ -234,7 +232,8 @@ static void *vg_init(const video_info_t *video,
    {
       gfx_ctx_proc_address_t proc_address;
 
-      proc_address.sym = "vgCreateEGLImageTargetKHR";
+      proc_address.addr = NULL;
+      proc_address.sym  = "vgCreateEGLImageTargetKHR";
 
       video_context_driver_get_proc_address(&proc_address);
 
@@ -385,13 +384,8 @@ static bool vg_frame(void *data, const void *frame,
       video_frame_info_t *video_info)
 {
    vg_t                           *vg = (vg_t*)data;
-   static struct retro_perf_counter    vg_fr = {0};
-   static struct retro_perf_counter vg_image = {0};
    unsigned width                            = video_info->width;
    unsigned height                           = video_info->height;
-
-   performance_counter_init(vg_fr, "vg_fr");
-   performance_counter_start_plus(video_info->is_perfcnt_enable, vg_fr);
 
    if (     frame_width != vg->mRenderWidth
          || frame_height != vg->mRenderHeight
@@ -415,10 +409,7 @@ static bool vg_frame(void *data, const void *frame,
    vgClear(0, 0, width, height);
    vgSeti(VG_SCISSORING, VG_TRUE);
 
-   performance_counter_init(vg_image, "vg_image");
-   performance_counter_start_plus(video_info->is_perfcnt_enable, vg_image);
    vg_copy_frame(vg, frame, frame_width, frame_height, pitch);
-   performance_counter_stop_plus(video_info->is_perfcnt_enable, vg_image);
 
 #ifdef HAVE_MENU
    menu_driver_frame(video_info);
@@ -431,11 +422,10 @@ static bool vg_frame(void *data, const void *frame,
       vg_draw_message(vg, msg);
 #endif
 
-   video_context_driver_update_window_title(video_info);
-
-   performance_counter_stop_plus(video_info->is_perfcnt_enable, vg_fr);
-
-   video_context_driver_swap_buffers(video_info);
+   video_info->cb_update_window_title(
+         video_info->context_data, video_info);
+   video_info->cb_swap_buffers(
+         video_info->context_data, video_info);
 
    return true;
 }
@@ -461,20 +451,10 @@ static bool vg_alive(void *data)
    return !quit;
 }
 
-static bool vg_focus(void *data)
-{
-   return video_context_driver_focus();
-}
-
 static bool vg_suppress_screensaver(void *data, bool enable)
 {
    bool enabled = enable;
    return video_context_driver_suppress_screensaver(&enabled);
-}
-
-static bool vg_has_windowed(void *data)
-{
-   return video_context_driver_has_windowed();
 }
 
 static bool vg_set_shader(void *data,
@@ -520,19 +500,19 @@ video_driver_t video_vg = {
    vg_frame,
    vg_set_nonblock_state,
    vg_alive,
-   vg_focus,
+   NULL,                      /* focused */
    vg_suppress_screensaver,
-   vg_has_windowed,
+   NULL,                      /* has_windowed */
    vg_set_shader,
    vg_free,
    "vg",
-   NULL, /* set_viewport */
+   NULL,                      /* set_viewport */
    vg_set_rotation,
    vg_viewport_info,
    vg_read_viewport,
-   NULL, /* read_frame_raw */
+   NULL,                      /* read_frame_raw */
 #ifdef HAVE_OVERLAY
-  NULL, /* overlay_interface */
+  NULL,                       /* overlay_interface */
 #endif
   vg_get_poke_interface
 };

@@ -36,7 +36,7 @@
 #include "../common/vulkan_common.h"
 #endif
 
-#include "../../frontend/drivers/platform_linux.h"
+#include "../../frontend/drivers/platform_unix.h"
 
 static enum gfx_ctx_api android_api           = GFX_CTX_NONE;
 
@@ -107,13 +107,6 @@ static void *android_gfx_ctx_init(video_frame_info_t *video_info, void *video_dr
    struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
    bool debug = hwr->debug_context;
 #endif
-   EGLint context_attributes[] = {
-      EGL_CONTEXT_CLIENT_VERSION, g_es3 ? 3 : 2,
-#if 0
-      EGL_CONTEXT_FLAGS_KHR, debug ? EGL_CONTEXT_OPENGL_DEBUG_BIT_KHR : 0,
-#endif
-      EGL_NONE
-   };
    EGLint attribs[] = {
       EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
       EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
@@ -143,7 +136,7 @@ static void *android_gfx_ctx_init(video_frame_info_t *video_info, void *video_dr
 #ifdef HAVE_EGL
          RARCH_LOG("Android EGL: GLES version = %d.\n", g_es3 ? 3 : 2);
 
-         if (!egl_init_context(&and->egl, EGL_DEFAULT_DISPLAY,
+         if (!egl_init_context(&and->egl, EGL_NONE, EGL_DEFAULT_DISPLAY,
                   &major, &minor, &n, attribs))
          {
             egl_report_error();
@@ -175,16 +168,6 @@ static void *android_gfx_ctx_init(video_frame_info_t *video_info, void *video_dr
       case GFX_CTX_OPENGL_ES_API:
          ANativeWindow_setBuffersGeometry(android_app->window, 0, 0, format);
 
-#ifdef HAVE_EGL
-         if (!egl_create_context(&and->egl, context_attributes))
-         {
-            egl_report_error();
-            goto unlock_error;
-         }
-
-         if (!egl_create_surface(&and->egl, android_app->window))
-            goto unlock_error;
-#endif
          break;
       case GFX_CTX_NONE:
       default:
@@ -320,6 +303,15 @@ static bool android_gfx_ctx_set_video_mode(void *data,
    struct android_app *android_app = (struct android_app*)g_android;
    android_ctx_data_t *and = (android_ctx_data_t*)data;
 #endif
+#if defined(HAVE_OPENGLES) && defined(HAVE_EGL)
+   EGLint context_attributes[] = {
+      EGL_CONTEXT_CLIENT_VERSION, g_es3 ? 3 : 2,
+#if 0
+      EGL_CONTEXT_FLAGS_KHR, debug ? EGL_CONTEXT_OPENGL_DEBUG_BIT_KHR : 0,
+#endif
+      EGL_NONE
+   };
+#endif
 
    (void)width;
    (void)height;
@@ -327,6 +319,20 @@ static bool android_gfx_ctx_set_video_mode(void *data,
 
    switch (android_api)
    {
+      case GFX_CTX_OPENGL_API:
+         break;
+      case GFX_CTX_OPENGL_ES_API:
+#if defined(HAVE_OPENGLES) && defined(HAVE_EGL)
+         if (!egl_create_context(&and->egl, context_attributes))
+         {
+            egl_report_error();
+            return false;
+         }
+
+         if (!egl_create_surface(&and->egl, android_app->window))
+            return false;
+#endif
+         break;
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
          and->width  = ANativeWindow_getWidth(android_app->window);
@@ -471,7 +477,7 @@ dpi_fallback:
    return true;
 }
 
-static void android_gfx_ctx_swap_buffers(void *data, video_frame_info_t *video_info)
+static void android_gfx_ctx_swap_buffers(void *data, void *data2)
 {
    android_ctx_data_t *and  = (android_ctx_data_t*)data;
 

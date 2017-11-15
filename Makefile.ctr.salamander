@@ -25,6 +25,7 @@ OBJ := ctr/ctr_system.o \
 		 frontend/frontend_driver.o \
 		 frontend/drivers/platform_ctr.o \
 		 frontend/drivers/platform_null.o \
+		 libretro-common/encodings/encoding_utf.o \
 		 libretro-common/compat/compat_strcasestr.o \
 		 libretro-common/file/file_path.o \
 		 libretro-common/string/stdstring.o \
@@ -34,7 +35,6 @@ OBJ := ctr/ctr_system.o \
 		 libretro-common/compat/compat_strl.o \
 		 libretro-common/file/config_file.o \
 		 libretro-common/streams/file_stream.o \
-		 libretro-common/file/retro_stat.o \
 		 libretro-common/hash/rhash.o \
 		 file_path_str.o \
 		 verbosity.o
@@ -74,7 +74,7 @@ else
    CFLAGS	+= -O3
 endif
 
-CFLAGS += -I. -Ideps/libz -Ideps/7zip -Ilibretro-common/include
+CFLAGS += -I. -Ideps/libz -Ideps/7zip -Ideps/stb -Ilibretro-common/include
 
 #CFLAGS += -DRARCH_INTERNAL
 CFLAGS += -DRARCH_CONSOLE -DIS_SALAMANDER

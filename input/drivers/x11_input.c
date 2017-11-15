@@ -22,9 +22,9 @@
 
 #include <boolean.h>
 #include <compat/strl.h>
+#include <retro_inline.h>
 
-#include "../input_config.h"
-#include "../input_joypad_driver.h"
+#include "../input_driver.h"
 #include "../input_keymaps.h"
 
 #include "../../gfx/video_driver.h"
@@ -47,7 +47,6 @@ typedef struct x11_input
 
    bool grab_mouse;
 } x11_input_t;
-
 
 static void *x_input_init(const char *joypad_driver)
 {
@@ -73,46 +72,35 @@ static void *x_input_init(const char *joypad_driver)
    return x11;
 }
 
-static bool x_key_pressed(x11_input_t *x11, int key)
-{
-   unsigned sym;
-   int keycode;
-   bool ret;
-
-   if (key >= RETROK_LAST)
-      return false;
-
-   sym     = input_keymaps_translate_rk_to_keysym((enum retro_key)key);
-   keycode = XKeysymToKeycode(x11->display, sym);
-   ret     = x11->state[keycode >> 3] & (1 << (keycode & 7));
-
-   return ret;
-}
-
-static bool x_is_pressed(x11_input_t *x11,
-      const struct retro_keybind *binds, unsigned id)
-{
-   if (id < RARCH_BIND_LIST_END)
-   {
-      const struct retro_keybind *bind = &binds[id];
-      return x_key_pressed(x11, binds[id].key);
-   }
-
-   return false;
-}
-
 static int16_t x_pressed_analog(x11_input_t *x11,
       const struct retro_keybind *binds, unsigned idx, unsigned id)
 {
-   int16_t pressed_minus = 0, pressed_plus = 0;
-   unsigned id_minus = 0;
-   unsigned id_plus  = 0;
-
+   int16_t pressed_minus = 0;
+   int16_t pressed_plus  = 0;
+   unsigned id_minus     = 0;
+   unsigned id_plus      = 0;
+   int id_minus_key      = 0;
+   int id_plus_key       = 0;
+   unsigned sym          = 0;
+   int keycode           = 0;
+   
    input_conv_analog_id_to_bind_id(idx, id, &id_minus, &id_plus);
 
-   if (binds && binds[id_minus].valid && x_is_pressed(x11, binds, id_minus))
+   id_minus_key          = binds[id_minus].key;
+   id_plus_key           = binds[id_plus].key;
+
+   sym                   = rarch_keysym_lut[(enum retro_key)id_minus_key];
+   keycode               = XKeysymToKeycode(x11->display, sym);
+   if (      binds[id_minus].valid 
+         && (id_minus_key < RETROK_LAST)
+         && (x11->state[keycode >> 3] & (1 << (keycode & 7))))
       pressed_minus = -0x7fff;
-   if (binds && binds[id_plus].valid && x_is_pressed(x11, binds, id_plus))
+
+   sym                   = rarch_keysym_lut[(enum retro_key)id_plus_key];
+   keycode               = XKeysymToKeycode(x11->display, sym);
+   if (      binds[id_plus].valid 
+         && (id_plus_key < RETROK_LAST) 
+         && (x11->state[keycode >> 3] & (1 << (keycode & 7))))
       pressed_plus  =  0x7fff;
 
    return pressed_plus + pressed_minus;
@@ -163,9 +151,19 @@ static int16_t x_mouse_state_screen(x11_input_t *x11, unsigned id)
 static int16_t x_pointer_state(x11_input_t *x11,
       unsigned idx, unsigned id, bool screen)
 {
-   bool inside;
-   struct video_viewport vp = {0};
-   int16_t res_x = 0, res_y = 0, res_screen_x = 0, res_screen_y = 0;
+   struct video_viewport vp;
+   bool inside                 = false;
+   int16_t res_x               = 0;
+   int16_t res_y               = 0;
+   int16_t res_screen_x        = 0;
+   int16_t res_screen_y        = 0;
+
+   vp.x                        = 0;
+   vp.y                        = 0;
+   vp.width                    = 0;
+   vp.height                   = 0;
+   vp.full_width               = 0;
+   vp.full_height              = 0;
 
    if (!(video_driver_translate_coord_viewport_wrap(&vp, x11->mouse_x, x11->mouse_y,
          &res_x, &res_y, &res_screen_x, &res_screen_y)))
@@ -229,19 +227,30 @@ static int16_t x_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return x_is_pressed(x11, binds[port], id) ||
-            input_joypad_pressed(x11->joypad, joypad_info, port, binds[port], id);
+         {
+            int keycode = XKeysymToKeycode(x11->display,
+                  rarch_keysym_lut[(enum retro_key)binds[port][id].key]);
+            ret         = (binds[port][id].key < RETROK_LAST) && (x11->state[keycode >> 3] & (1 << (keycode & 7)));
+            if (!ret)
+               ret      = input_joypad_pressed(x11->joypad,
+                     joypad_info, port, binds[port], id);
+         }
+         return ret;
       case RETRO_DEVICE_KEYBOARD:
-         return x_key_pressed(x11, id);
+         if (id < RETROK_LAST)
+         {
+            int keycode       = XKeysymToKeycode(x11->display,
+                  rarch_keysym_lut[(enum retro_key)id]);
+            ret = x11->state[keycode >> 3] & (1 << (keycode & 7));
+         }
+         return ret;
       case RETRO_DEVICE_ANALOG:
-         if (binds[port])
-            ret = x_pressed_analog(x11, binds[port], idx, id);
+         ret = x_pressed_analog(x11, binds[port], idx, id);
          if (!ret && binds[port])
             ret = input_joypad_analog(x11->joypad, joypad_info,
                   port, idx,
                   id, binds[port]);
          return ret;
-
       case RETRO_DEVICE_MOUSE:
          return x_mouse_state(x11, id);
       case RARCH_DEVICE_MOUSE_SCREEN:
@@ -300,10 +309,17 @@ static void x_input_poll_mouse(x11_input_t *x11)
       x11->mouse_r  = mask & Button3Mask; 
 
       /* Somewhat hacky, but seem to do the job. */
-      if (x11->grab_mouse && video_driver_is_focused())
+      if (x11->grab_mouse && video_driver_cb_has_focus())
       {
          int mid_w, mid_h;
-         struct video_viewport vp = {0};
+         struct video_viewport vp;
+
+         vp.x                        = 0;
+         vp.y                        = 0;
+         vp.width                    = 0;
+         vp.height                   = 0;
+         vp.full_width               = 0;
+         vp.full_height              = 0;
 
          video_driver_get_viewport_info(&vp);
 
@@ -328,7 +344,7 @@ static void x_input_poll(void *data)
 {
    x11_input_t *x11 = (x11_input_t*)data;
 
-   if (video_driver_is_focused())
+   if (video_driver_cb_has_focus())
       XQueryKeymap(x11->display, x11->state);
    else
       memset(x11->state, 0, sizeof(x11->state));

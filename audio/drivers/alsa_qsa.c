@@ -17,6 +17,7 @@
 #define ALSA_PCM_NEW_HW_PARAMS_API
 #define ALSA_PCM_NEW_SW_PARAMS_API
 #include <sys/asoundlib.h>
+#include <retro_math.h>
 
 #include "../audio_driver.h"
 
@@ -219,8 +220,7 @@ static int check_pcm_status(void *data, int channel_type)
 }
 
 
-static ssize_t alsa_qsa_write(void *data, const void *buf, size_t size,
-      bool is_perfcnt_enable)
+static ssize_t alsa_qsa_write(void *data, const void *buf, size_t size)
 {
    alsa_t              *alsa = (alsa_t*)data;
    snd_pcm_sframes_t written = 0;

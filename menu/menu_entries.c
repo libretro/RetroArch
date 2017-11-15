@@ -22,14 +22,19 @@
 
 #include "menu_driver.h"
 #include "menu_cbs.h"
-#include "menu_navigation.h"
 
 #include "widgets/menu_list.h"
 
 #include "../core.h"
-#include "../configuration.h"
-#include "../runloop.h"
+#include "../retroarch.h"
 #include "../version.h"
+
+/* Flagged when menu entries need to be refreshed */
+static bool menu_entries_need_refresh              = false;
+static bool menu_entries_nonblocking_refresh       = false;
+static size_t menu_entries_begin                   = 0;
+static rarch_setting_t *menu_entries_list_settings = NULL;
+static menu_list_t *menu_entries_list              = NULL;
 
 void menu_entries_get_at_offset(const file_list_t *list, size_t idx,
       const char **path, const char **label, unsigned *file_type,
@@ -39,37 +44,13 @@ void menu_entries_get_at_offset(const file_list_t *list, size_t idx,
    file_list_get_alt_at_offset(list, idx, alt);
 }
 
-void menu_entries_get_last(const file_list_t *list,
-      const char **path, const char **label,
-      unsigned *file_type, size_t *entry_idx)
-{
-   if (list)
-      file_list_get_last(list, path, label, file_type, entry_idx);
-}
-
-void *menu_entries_get_userdata_at_offset(const file_list_t *list, size_t idx)
-{
-   if (!list)
-      return NULL;
-   return file_list_get_userdata_at_offset(list, idx);
-}
-
-menu_file_list_cbs_t *menu_entries_get_actiondata_at_offset(
-      const file_list_t *list, size_t idx)
-{
-   if (!list)
-      return NULL;
-   return (menu_file_list_cbs_t*)
-      file_list_get_actiondata_at_offset(list, idx);
-}
-
 static bool menu_entries_clear(file_list_t *list)
 {
    unsigned i;
    if (!list)
       return false;
 
-   menu_driver_ctl(RARCH_MENU_CTL_LIST_CLEAR, list);
+   menu_driver_list_clear(list);
 
    for (i = 0; i < list->size; i++)
       file_list_free_actiondata(list, i);
@@ -78,12 +59,6 @@ static bool menu_entries_clear(file_list_t *list)
       file_list_clear(list);
 
    return true;
-}
-
-void menu_entries_set_alt_at_offset(file_list_t *list, size_t idx,
-      const char *alt)
-{
-   file_list_set_alt_at_offset(list, idx, alt);
 }
 
 /**
@@ -145,8 +120,8 @@ static void menu_entries_build_scroll_indices(file_list_t *list)
    if (!list || !list->size)
       return;
 
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR_SCROLL_INDICES, NULL);
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_ADD_SCROLL_INDEX, &scroll_value);
+   menu_driver_ctl(MENU_NAVIGATION_CTL_CLEAR_SCROLL_INDICES, NULL);
+   menu_driver_ctl(MENU_NAVIGATION_CTL_ADD_SCROLL_INDEX, &scroll_value);
 
    current        = menu_entries_elem_get_first_char(list, 0);
    current_is_dir = menu_entries_elem_is_dir(list, 0);
@@ -157,7 +132,7 @@ static void menu_entries_build_scroll_indices(file_list_t *list)
       bool is_dir = menu_entries_elem_is_dir(list, (unsigned)i);
 
       if ((current_is_dir && !is_dir) || (first > current))
-         menu_navigation_ctl(MENU_NAVIGATION_CTL_ADD_SCROLL_INDEX, &i);
+         menu_driver_ctl(MENU_NAVIGATION_CTL_ADD_SCROLL_INDEX, &i);
 
       current        = first;
       current_is_dir = is_dir;
@@ -165,7 +140,7 @@ static void menu_entries_build_scroll_indices(file_list_t *list)
 
 
    scroll_value = list->size - 1;
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_ADD_SCROLL_INDEX, &scroll_value);
+   menu_driver_ctl(MENU_NAVIGATION_CTL_ADD_SCROLL_INDEX, &scroll_value);
 }
 
 /**
@@ -177,13 +152,9 @@ static void menu_entries_build_scroll_indices(file_list_t *list)
  **/
 static bool menu_entries_refresh(void *data)
 {
-   size_t list_size, selection;
+   size_t list_size;
    file_list_t *list = (file_list_t*)data;
-
-   if (!list)
-      return false;
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-      return false;
+   size_t selection  = menu_navigation_get_selection();
 
    menu_entries_build_scroll_indices(list);
 
@@ -192,56 +163,16 @@ static bool menu_entries_refresh(void *data)
    if ((selection >= list_size) && list_size)
    {
       size_t idx  = list_size - 1;
-      bool scroll = true;
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
+      menu_navigation_set_selection(idx);
+      menu_driver_navigation_set(true);
    }
    else if (!list_size)
    {
       bool pending_push = true;
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
+      menu_driver_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
    }
 
    return true;
-}
-
-/* Returns the last index (+1) of the menu entry list. */
-size_t menu_entries_get_end(void)
-{
-   return menu_entries_get_size();
-}
-
-/* Get an entry from the top of the menu stack */
-void menu_entries_get(size_t i, void *entry_data)
-{
-   const char *label             = NULL;
-   const char *path              = NULL;
-   const char *entry_label       = NULL;
-   menu_file_list_cbs_t *cbs     = NULL;
-   enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
-   menu_entry_t *entry           = (menu_entry_t*)entry_data;
-   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr(0);
-
-   menu_entries_get_last_stack(NULL, &label, NULL, &enum_idx, NULL);
-
-   entry->path[0] = entry->value[0] = string_is_empty(entry->label);
-
-   menu_entries_get_at_offset(selection_buf, i,
-         &path, &entry_label, &entry->type, &entry->entry_idx, NULL);
-
-   cbs = menu_entries_get_actiondata_at_offset(selection_buf, i);
-
-   if (cbs && cbs->action_get_value)
-      cbs->action_get_value(selection_buf,
-            &entry->spacing, entry->type, (unsigned)i, label,
-            entry->value,  sizeof(entry->value),
-            entry_label, path,
-            entry->path, sizeof(entry->path));
-
-   entry->idx = (unsigned)i;
-
-   if (entry_label)
-      strlcpy(entry->label, entry_label, sizeof(entry->label));
 }
 
 /* Sets title to what the name of the current menu should be. */
@@ -263,27 +194,53 @@ int menu_entries_get_title(char *s, size_t len)
    return 0;
 }
 
+int menu_entries_get_core_name(char *s, size_t len)
+{
+   rarch_system_info_t      *info      = runloop_get_system_info();
+   struct retro_system_info    *system = &info->info;
+   const char *core_name               = NULL;
+
+   if (system)
+      core_name    = system->library_name;
+
+   if (string_is_empty(core_name) && info)
+      core_name = info->info.library_name;
+   if (string_is_empty(core_name))
+      core_name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
+
+   snprintf(s, len, "%s", core_name);
+
+   return 0;
+}
+
+bool menu_entries_current_core_is_no_core(void)
+{
+   char corename[255];
+   const char *no_core_str = NULL;
+
+   corename[0] = '\0';
+
+   menu_entries_get_core_name(corename, sizeof(corename));
+
+   no_core_str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
+
+   return string_is_equal(corename, no_core_str);
+}
 
 /* Sets 's' to the name of the current core 
  * (shown at the top of the UI). */
 int menu_entries_get_core_title(char *s, size_t len)
 {
-   struct retro_system_info    *system = NULL;
-   rarch_system_info_t      *info = NULL;
-   settings_t *settings           = config_get_ptr();
    const char *core_name          = NULL;
    const char *core_version       = NULL;
+   rarch_system_info_t      *info      = runloop_get_system_info();
+   struct retro_system_info    *system = &info->info;
 
-   menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET,
-         &system);
-   
-   core_name    = system->library_name;
-   core_version = system->library_version;
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
-
-   if (!settings || !settings->menu.core_enable)
-      return -1; 
+   if (system)
+   {
+      core_name    = system->library_name;
+      core_version = system->library_version;
+   }
 
    if (string_is_empty(core_name) && info)
       core_name = info->info.library_name;
@@ -303,8 +260,7 @@ int menu_entries_get_core_title(char *s, size_t len)
 
 file_list_t *menu_entries_get_menu_stack_ptr(size_t idx)
 {
-   menu_list_t *menu_list         = NULL;
-   menu_entries_ctl(MENU_ENTRIES_CTL_LIST_GET, &menu_list);
+   menu_list_t *menu_list         = menu_entries_list;
    if (!menu_list)
       return NULL;
    return menu_list_get(menu_list, (unsigned)idx);
@@ -312,8 +268,7 @@ file_list_t *menu_entries_get_menu_stack_ptr(size_t idx)
 
 file_list_t *menu_entries_get_selection_buf_ptr(size_t idx)
 {
-   menu_list_t *menu_list         = NULL;
-   menu_entries_ctl(MENU_ENTRIES_CTL_LIST_GET, &menu_list);
+   menu_list_t *menu_list         = menu_entries_list;
    if (!menu_list)
       return NULL;
    return menu_list_get_selection(menu_list, (unsigned)idx);
@@ -359,8 +314,9 @@ void menu_entries_append(file_list_t *list, const char *path, const char *label,
    if (!string_is_empty(menu_path))
       list_info.fullpath = strdup(menu_path);
 
-   list_info.label    = label;
-   list_info.idx      = idx;
+   list_info.label       = label;
+   list_info.idx         = idx;
+   list_info.entry_type  = type;
 
    menu_driver_ctl(RARCH_MENU_CTL_LIST_INSERT, &list_info);
 
@@ -382,7 +338,8 @@ void menu_entries_append(file_list_t *list, const char *path, const char *label,
    menu_cbs_init(list, cbs, path, label, type, idx);
 }
 
-void menu_entries_append_enum(file_list_t *list, const char *path, const char *label,
+void menu_entries_append_enum(file_list_t *list, const char *path,
+      const char *label,
       enum msg_hash_enums enum_idx,
       unsigned type, size_t directory_ptr, size_t entry_idx)
 {
@@ -407,6 +364,7 @@ void menu_entries_append_enum(file_list_t *list, const char *path, const char *l
    list_info.path        = path;
    list_info.label       = label;
    list_info.idx         = idx;
+   list_info.entry_type  = type;
 
    menu_driver_ctl(RARCH_MENU_CTL_LIST_INSERT, &list_info);
 
@@ -423,7 +381,12 @@ void menu_entries_append_enum(file_list_t *list, const char *path, const char *l
    file_list_set_actiondata(list, idx, cbs);
 
    cbs->enum_idx = enum_idx;
-   cbs->setting  = menu_setting_find_enum(enum_idx);
+
+   if (enum_idx != MENU_ENUM_LABEL_PLAYLIST_ENTRY
+       && enum_idx != MENU_ENUM_LABEL_PLAYLIST_COLLECTION_ENTRY
+       && enum_idx != MENU_ENUM_LABEL_RDB_ENTRY) {
+      cbs->setting  = menu_setting_find_enum(enum_idx);
+   }
 
    menu_cbs_init(list, cbs, path, label, type, idx);
 }
@@ -453,6 +416,7 @@ void menu_entries_prepend(file_list_t *list, const char *path, const char *label
    list_info.path        = path;
    list_info.label       = label;
    list_info.idx         = idx;
+   list_info.entry_type  = type;
 
    menu_driver_ctl(RARCH_MENU_CTL_LIST_INSERT, &list_info);
 
@@ -476,8 +440,7 @@ void menu_entries_prepend(file_list_t *list, const char *path, const char *label
 
 menu_file_list_cbs_t *menu_entries_get_last_stack_actiondata(void)
 {
-   menu_list_t *menu_list         = NULL;
-   menu_entries_ctl(MENU_ENTRIES_CTL_LIST_GET, &menu_list);
+   menu_list_t *menu_list         = menu_entries_list;
    if (!menu_list)
       return NULL;
    return (menu_file_list_cbs_t*)file_list_get_last_actiondata(
@@ -488,12 +451,11 @@ void menu_entries_get_last_stack(const char **path, const char **label,
       unsigned *file_type, enum msg_hash_enums *enum_idx, size_t *entry_idx)
 {
    menu_file_list_cbs_t *cbs      = NULL;
-   menu_list_t *menu_list         = NULL;
-   menu_entries_ctl(MENU_ENTRIES_CTL_LIST_GET, &menu_list);
+   menu_list_t *menu_list         = menu_entries_list;
    if (!menu_list)
       return;
 
-   menu_entries_get_last(menu_list_get(menu_list, 0),
+   file_list_get_last(menu_list_get(menu_list, 0),
          path, label, file_type, entry_idx);
    cbs = menu_entries_get_last_stack_actiondata();
    if (cbs && enum_idx)
@@ -502,24 +464,21 @@ void menu_entries_get_last_stack(const char **path, const char **label,
 
 void menu_entries_flush_stack(const char *needle, unsigned final_type)
 {
-   menu_list_t *menu_list         = NULL;
-   menu_entries_ctl(MENU_ENTRIES_CTL_LIST_GET, &menu_list);
+   menu_list_t *menu_list         = menu_entries_list;
    if (menu_list)
       menu_list_flush_stack(menu_list, 0, needle, final_type);
 }
 
 void menu_entries_pop_stack(size_t *ptr, size_t idx, bool animate)
 {
-   menu_list_t *menu_list         = NULL;
-   menu_entries_ctl(MENU_ENTRIES_CTL_LIST_GET, &menu_list);
+   menu_list_t *menu_list         = menu_entries_list;
    if (menu_list)
       menu_list_pop_stack(menu_list, idx, ptr, animate);
 }
 
 size_t menu_entries_get_stack_size(size_t idx)
 {
-   menu_list_t *menu_list         = NULL;
-   menu_entries_ctl(MENU_ENTRIES_CTL_LIST_GET, &menu_list);
+   menu_list_t *menu_list         = menu_entries_list;
    if (!menu_list)
       return 0;
    return menu_list_get_stack_size(menu_list, idx);
@@ -527,8 +486,7 @@ size_t menu_entries_get_stack_size(size_t idx)
 
 size_t menu_entries_get_size(void)
 {
-   menu_list_t *menu_list         = NULL;
-   menu_entries_ctl(MENU_ENTRIES_CTL_LIST_GET, &menu_list);
+   menu_list_t *menu_list         = menu_entries_list;
    if (!menu_list)
       return 0;
    return file_list_get_size(menu_list_get_selection(menu_list, 0));
@@ -537,8 +495,8 @@ size_t menu_entries_get_size(void)
 rarch_setting_t *menu_entries_get_setting(uint32_t i)
 {
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-   menu_file_list_cbs_t *cbs  = 
-      menu_entries_get_actiondata_at_offset(selection_buf, i);
+   menu_file_list_cbs_t *cbs  = selection_buf ?
+      (menu_file_list_cbs_t*)file_list_get_actiondata_at_offset(selection_buf, i) : NULL;
 
    if (!cbs)
       return NULL;
@@ -547,13 +505,6 @@ rarch_setting_t *menu_entries_get_setting(uint32_t i)
 
 bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
 {
-   /* Flagged when menu entries need to be refreshed */
-   static bool menu_entries_need_refresh              = false;
-   static bool menu_entries_nonblocking_refresh       = false;
-   static size_t menu_entries_begin                   = 0;
-   static rarch_setting_t *menu_entries_list_settings = NULL;
-   static menu_list_t *menu_entries_list              = NULL;
-
    switch (state)
    {
       case MENU_ENTRIES_CTL_DEINIT:
@@ -641,6 +592,8 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
          }
          break;
       case MENU_ENTRIES_CTL_REFRESH:
+         if (!data)
+            return false;
          return menu_entries_refresh(data);
       case MENU_ENTRIES_CTL_CLEAR:
          return menu_entries_clear((file_list_t*)data);

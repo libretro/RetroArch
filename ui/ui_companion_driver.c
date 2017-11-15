@@ -91,12 +91,7 @@ bool ui_companion_is_on_foreground(void)
  **/
 const ui_companion_driver_t *ui_companion_init_first(void)
 {
-   unsigned i;
-
-   for (i = 0; ui_companion_drivers[i]; i++)
-      return ui_companion_drivers[i];
-
-   return NULL;
+   return ui_companion_drivers[0];
 }
 
 const ui_companion_driver_t *ui_companion_get_ptr(void)
@@ -130,7 +125,7 @@ void ui_companion_driver_init_first(void)
 
    if (ui_companion && ui_companion->toggle)
    {
-      if (settings->ui.companion_start_on_boot)
+      if (settings->bools.ui_companion_start_on_boot)
          ui_companion->toggle(ui_companion_data);
    }
 }

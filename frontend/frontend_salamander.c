@@ -103,7 +103,7 @@ static void find_and_set_first_file(char *s, size_t len,
 
    char first_file[PATH_MAX_LENGTH] = {0};
    find_first_libretro_core(first_file, sizeof(first_file),
-         g_defaults.dir.core, ext);
+         g_defaults.dirs[DEFAULT_DIR_CORE], ext);
 
    if (string_is_empty(first_file))
    {
@@ -111,7 +111,7 @@ static void find_and_set_first_file(char *s, size_t len,
       return;
    }
 
-   fill_pathname_join(s, g_defaults.dir.core, first_file, len);
+   fill_pathname_join(s, g_defaults.dirs[DEFAULT_DIR_CORE], first_file, len);
    RARCH_LOG("libretro_path now set to: %s.\n", s);
 }
 
@@ -131,7 +131,7 @@ static void salamander_init(char *s, size_t len)
          config_get_array(conf, "libretro_path", tmp_str, sizeof(tmp_str));
          config_file_free(conf);
 
-         if (!string_is_equal(tmp_str, "builtin"))
+         if (memcmp(tmp_str, "builtin", 7) != 0)
             strlcpy(s, tmp_str, len);
       }
 #ifdef GEKKO

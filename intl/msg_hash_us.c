@@ -14,6 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
 
@@ -24,189 +25,200 @@
 #include "../configuration.h"
 #include "../verbosity.h"
 
-int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len) {
+int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
+{
     uint32_t driver_hash = 0;
     settings_t *settings = config_get_ptr();
 
+    if (msg == MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM)
+    {
+       snprintf(s, len,
+             "TODO/FIXME - Fill in message here."
+             );
+       return 0;
+    }
     if (msg <= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_END &&
-        msg >= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN) {
-        unsigned idx = msg - MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN;
+        msg >= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN)
+    {
+       unsigned idx = msg - MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN;
 
-        switch (idx) {
-            case RARCH_FAST_FORWARD_KEY:
-                snprintf(s, len,
-                         "Toggles between fast-forwarding and \n"
-                                 "normal speed."
-                );
-                break;
-            case RARCH_FAST_FORWARD_HOLD_KEY:
-                snprintf(s, len,
-                         "Hold for fast-forward. \n"
-                                 " \n"
-                                 "Releasing button disables fast-forward."
-                );
-                break;
-            case RARCH_PAUSE_TOGGLE:
-                snprintf(s, len,
-                         "Toggle between paused and non-paused state.");
-                break;
-            case RARCH_FRAMEADVANCE:
-                snprintf(s, len,
-                         "Frame advance when content is paused.");
-                break;
-            case RARCH_SHADER_NEXT:
-                snprintf(s, len,
-                         "Applies next shader in directory.");
-                break;
-            case RARCH_SHADER_PREV:
-                snprintf(s, len,
-                         "Applies previous shader in directory.");
-                break;
-            case RARCH_CHEAT_INDEX_PLUS:
-            case RARCH_CHEAT_INDEX_MINUS:
-            case RARCH_CHEAT_TOGGLE:
-                snprintf(s, len,
-                         "Cheats.");
-                break;
-            case RARCH_RESET:
-                snprintf(s, len,
-                         "Reset the content.");
-                break;
-            case RARCH_SCREENSHOT:
-                snprintf(s, len,
-                         "Take screenshot.");
-                break;
-            case RARCH_MUTE:
-                snprintf(s, len,
-                         "Mute/unmute audio.");
-                break;
-            case RARCH_OSK:
-                snprintf(s, len,
-                         "Toggles onscreen keyboard.");
-                break;
-            case RARCH_NETPLAY_FLIP:
-                snprintf(s, len,
-                         "Netplay flip users.");
-                break;
-            case RARCH_NETPLAY_GAME_WATCH:
-                snprintf(s, len,
-                         "Netplay toggle play/spectate mode.");
-                break;
-            case RARCH_SLOWMOTION:
-                snprintf(s, len,
-                         "Hold for slowmotion.");
-                break;
-            case RARCH_ENABLE_HOTKEY:
-                snprintf(s, len,
-                         "Enable other hotkeys. \n"
-                                 " \n"
-                                 "If this hotkey is bound to either\n"
-                                 "a keyboard, joybutton or joyaxis, \n"
-                                 "all other hotkeys will be enabled only \n"
-                                 "if this one is held at the same time. \n"
-                                 " \n"
-                                 "Alternatively, all hotkeys for keyboard \n"
-                                 "could be disabled by the user.");
-                break;
-            case RARCH_VOLUME_UP:
-                snprintf(s, len,
-                         "Increases audio volume.");
-                break;
-            case RARCH_VOLUME_DOWN:
-                snprintf(s, len,
-                         "Decreases audio volume.");
-                break;
-            case RARCH_OVERLAY_NEXT:
-                snprintf(s, len,
-                         "Switches to next overlay. Wraps around.");
-                break;
-            case RARCH_DISK_EJECT_TOGGLE:
-                snprintf(s, len,
-                         "Toggles eject for disks. \n"
-                                 " \n"
-                                 "Used for multiple-disk content. ");
-                break;
-            case RARCH_DISK_NEXT:
-            case RARCH_DISK_PREV:
-                snprintf(s, len,
-                         "Cycles through disk images. Use after ejecting. \n"
-                                 " \n"
-                                 "Complete by toggling eject again.");
-                break;
-            case RARCH_GRAB_MOUSE_TOGGLE:
-                snprintf(s, len,
-                         "Toggles mouse grab. \n"
-                                 " \n"
-                                 "When mouse is grabbed, RetroArch hides the \n"
-                                 "mouse, and keeps the mouse pointer inside \n"
-                                 "the window to allow relative mouse input to \n"
-                                 "work better.");
-                break;
-            case RARCH_GAME_FOCUS_TOGGLE:
-                snprintf(s, len,
-                         "Toggles game focus.\n"
-                                 " \n"
-                                 "When a game has focus, RetroArch will both disable \n"
-                                 "hotkeys and keep/warp the mouse pointer inside the window.");
-                break;
-            case RARCH_MENU_TOGGLE:
-                snprintf(s, len, "Toggles menu.");
-                break;
-            case RARCH_LOAD_STATE_KEY:
-                snprintf(s, len,
-                         "Loads state.");
-                break;
-            case RARCH_FULLSCREEN_TOGGLE_KEY:
-                snprintf(s, len,
-                         "Toggles fullscreen.");
-                break;
-            case RARCH_QUIT_KEY:
-                snprintf(s, len,
-                         "Key to exit RetroArch cleanly. \n"
-                                " \n"
-                                "Killing it in any hard way (SIGKILL, etc.) will \n"
-                                "terminate RetroArch without saving RAM, etc."
+       switch (idx)
+       {
+          case RARCH_FAST_FORWARD_KEY:
+             snprintf(s, len,
+                   "Toggles between fast-forwarding and \n"
+                   "normal speed."
+                   );
+             break;
+          case RARCH_FAST_FORWARD_HOLD_KEY:
+             snprintf(s, len,
+                   "Hold for fast-forward. \n"
+                   " \n"
+                   "Releasing button disables fast-forward."
+                   );
+             break;
+          case RARCH_PAUSE_TOGGLE:
+             snprintf(s, len,
+                   "Toggle between paused and non-paused state.");
+             break;
+          case RARCH_FRAMEADVANCE:
+             snprintf(s, len,
+                   "Frame advance when content is paused.");
+             break;
+          case RARCH_SHADER_NEXT:
+             snprintf(s, len,
+                   "Applies next shader in directory.");
+             break;
+          case RARCH_SHADER_PREV:
+             snprintf(s, len,
+                   "Applies previous shader in directory.");
+             break;
+          case RARCH_CHEAT_INDEX_PLUS:
+          case RARCH_CHEAT_INDEX_MINUS:
+          case RARCH_CHEAT_TOGGLE:
+             snprintf(s, len,
+                   "Cheats.");
+             break;
+          case RARCH_RESET:
+             snprintf(s, len,
+                   "Reset the content.");
+             break;
+          case RARCH_SCREENSHOT:
+             snprintf(s, len,
+                   "Take screenshot.");
+             break;
+          case RARCH_MUTE:
+             snprintf(s, len,
+                   "Mute/unmute audio.");
+             break;
+          case RARCH_OSK:
+             snprintf(s, len,
+                   "Toggles onscreen keyboard.");
+             break;
+          case RARCH_NETPLAY_FLIP:
+             snprintf(s, len,
+                   "Netplay flip users.");
+             break;
+          case RARCH_NETPLAY_GAME_WATCH:
+             snprintf(s, len,
+                   "Netplay toggle play/spectate mode.");
+             break;
+          case RARCH_SLOWMOTION:
+             snprintf(s, len,
+                   "Hold for slowmotion.");
+             break;
+          case RARCH_ENABLE_HOTKEY:
+             snprintf(s, len,
+                   "Enable other hotkeys. \n"
+                   " \n"
+                   "If this hotkey is bound to either\n"
+                   "a keyboard, joybutton or joyaxis, \n"
+                   "all other hotkeys will be enabled only \n"
+                   "if this one is held at the same time. \n"
+                   " \n"
+                   "Alternatively, all hotkeys for keyboard \n"
+                   "could be disabled by the user.");
+             break;
+          case RARCH_VOLUME_UP:
+             snprintf(s, len,
+                   "Increases audio volume.");
+             break;
+          case RARCH_VOLUME_DOWN:
+             snprintf(s, len,
+                   "Decreases audio volume.");
+             break;
+          case RARCH_OVERLAY_NEXT:
+             snprintf(s, len,
+                   "Switches to next overlay. Wraps around.");
+             break;
+          case RARCH_DISK_EJECT_TOGGLE:
+             snprintf(s, len,
+                   "Toggles eject for disks. \n"
+                   " \n"
+                   "Used for multiple-disk content. ");
+             break;
+          case RARCH_DISK_NEXT:
+          case RARCH_DISK_PREV:
+             snprintf(s, len,
+                   "Cycles through disk images. Use after ejecting. \n"
+                   " \n"
+                   "Complete by toggling eject again.");
+             break;
+          case RARCH_GRAB_MOUSE_TOGGLE:
+             snprintf(s, len,
+                   "Toggles mouse grab. \n"
+                   " \n"
+                   "When mouse is grabbed, RetroArch hides the \n"
+                   "mouse, and keeps the mouse pointer inside \n"
+                   "the window to allow relative mouse input to \n"
+                   "work better.");
+             break;
+          case RARCH_GAME_FOCUS_TOGGLE:
+             snprintf(s, len,
+                   "Toggles game focus.\n"
+                   " \n"
+                   "When a game has focus, RetroArch will both disable \n"
+                   "hotkeys and keep/warp the mouse pointer inside the window.");
+             break;
+          case RARCH_MENU_TOGGLE:
+             snprintf(s, len, "Toggles menu.");
+             break;
+          case RARCH_LOAD_STATE_KEY:
+             snprintf(s, len,
+                   "Loads state.");
+             break;
+          case RARCH_FULLSCREEN_TOGGLE_KEY:
+             snprintf(s, len,
+                   "Toggles fullscreen.");
+             break;
+          case RARCH_QUIT_KEY:
+             snprintf(s, len,
+                   "Key to exit RetroArch cleanly. \n"
+                   " \n"
+                   "Killing it in any hard way (SIGKILL, etc.) will \n"
+                   "terminate RetroArch without saving RAM, etc."
 #ifdef __unix__
-                        "\nOn Unix-likes, SIGINT/SIGTERM allows a clean \n"
-                        "deinitialization."
+                   "\nOn Unix-likes, SIGINT/SIGTERM allows a clean \n"
+                   "deinitialization."
 #endif
-                                "");
-                break;
-            case RARCH_STATE_SLOT_PLUS:
-            case RARCH_STATE_SLOT_MINUS:
-                snprintf(s, len,
-                         "State slots. \n"
-                                 " \n"
-                                 "With slot set to 0, save state name is \n"
-                                 "*.state (or whatever defined on commandline). \n"
-                                 " \n"
-                                 "When slot is not 0, path will be <path><d>, \n"
-                                 "where <d> is slot number.");
-                break;
-            case RARCH_SAVE_STATE_KEY:
-                snprintf(s, len,
-                         "Saves state.");
-                break;
-            case RARCH_REWIND:
-                snprintf(s, len,
-                         "Hold button down to rewind. \n"
-                                 " \n"
-                                 "Rewinding must be enabled.");
-                break;
-            case RARCH_MOVIE_RECORD_TOGGLE:
-                snprintf(s, len,
-                         "Toggle between recording and not.");
-                break;
-            default:
-                if (string_is_empty(s))
-                    strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
-                break;
-        }
+                   "");
+             break;
+          case RARCH_STATE_SLOT_PLUS:
+          case RARCH_STATE_SLOT_MINUS:
+             snprintf(s, len,
+                   "State slots. \n"
+                   " \n"
+                   "With slot set to 0, save state name is \n"
+                   "*.state (or whatever defined on commandline). \n"
+                   " \n"
+                   "When slot is not 0, path will be <path><d>, \n"
+                   "where <d> is slot number.");
+             break;
+          case RARCH_SAVE_STATE_KEY:
+             snprintf(s, len,
+                   "Saves state.");
+             break;
+          case RARCH_REWIND:
+             snprintf(s, len,
+                   "Hold button down to rewind. \n"
+                   " \n"
+                   "Rewinding must be enabled.");
+             break;
+          case RARCH_MOVIE_RECORD_TOGGLE:
+             snprintf(s, len,
+                   "Toggle between recording and not.");
+             break;
+          default:
+             if (string_is_empty(s))
+                strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
+             break;
+       }
 
-        return 0;
+       return 0;
     }
 
-    switch (msg) {
+    switch (msg)
+    {
         case MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS:
             snprintf(s, len, "Login details for your \n"
                     "Retro Achievements account. \n"
@@ -283,6 +295,9 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len) {
                     " \n"
                     "The screenshot will be stored inside the \n"
                     "Screenshot Directory.");
+            break;
+        case MENU_ENUM_LABEL_ADD_TO_FAVORITES:
+            snprintf(s, len, "Add the entry to your Favorites.");
             break;
         case MENU_ENUM_LABEL_RUN:
             snprintf(s, len, "Start the content.");
@@ -364,8 +379,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len) {
                              " \n"
                              "If this option is disabled, \n"
                              "it will try to load even if such \n"
-                             "firmware is missing. \n"
-                             "down. \n");
+                             "firmware is missing. \n");
             break;
         case MENU_ENUM_LABEL_PARENT_DIRECTORY:
             snprintf(s, len,
@@ -571,6 +585,16 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len) {
                      "Hide the current overlay from appearing \n"
                              "inside the menu.");
             break;
+        case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS:
+            snprintf(s, len,
+                      "Show keyboard/controller button presses on \n"
+                            "the onscreen overlay.");
+            break;
+        case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT:
+            snprintf(s, len,
+                      "Select the port to listen for controller input \n"
+                            "to display on the onscreen overlay.");
+            break;
         case MENU_ENUM_LABEL_OVERLAY_PRESET:
             snprintf(s, len,
                      "Path to input overlay.");
@@ -692,7 +716,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len) {
             break;
         case MENU_ENUM_LABEL_INPUT_DRIVER:
             if (settings)
-                driver_hash = msg_hash_calculate(settings->input.driver);
+                driver_hash = msg_hash_calculate(settings->arrays.input_driver);
 
             switch (driver_hash) {
                 case MENU_LABEL_INPUT_DRIVER_UDEV:
@@ -769,7 +793,8 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len) {
             snprintf(s, len,
                      "Current Video driver.");
 
-            if (string_is_equal(settings->video.driver, "gl")) {
+            if (string_is_equal_fast(settings->arrays.video_driver, "gl", 2))
+            {
                 snprintf(s, len,
                          "OpenGL Video driver. \n"
                                  " \n"
@@ -781,7 +806,9 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len) {
                                  "libretro GL core implementations is \n"
                                  "dependent on your graphics card's \n"
                                  "underlying GL driver).");
-            } else if (string_is_equal(settings->video.driver, "sdl2")) {
+            }
+            else if (string_is_equal_fast(settings->arrays.video_driver, "sdl2", 4))
+            {
                 snprintf(s, len,
                          "SDL 2 Video driver.\n"
                                  " \n"
@@ -791,7 +818,9 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len) {
                                  "Performance for software-rendered libretro \n"
                                  "core implementations is dependent \n"
                                  "on your platform SDL implementation.");
-            } else if (string_is_equal(settings->video.driver, "sdl1")) {
+            }
+            else if (string_is_equal_fast(settings->arrays.video_driver, "sdl1", 4))
+            {
                 snprintf(s, len,
                          "SDL Video driver.\n"
                                  " \n"
@@ -800,14 +829,18 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len) {
                                  " \n"
                                  "Performance is considered to be suboptimal. \n"
                                  "Consider using it only as a last resort.");
-            } else if (string_is_equal(settings->video.driver, "d3d")) {
+            }
+            else if (string_is_equal_fast(settings->arrays.video_driver, "d3d", 3))
+            {
                 snprintf(s, len,
                          "Direct3D Video driver. \n"
                                  " \n"
                                  "Performance for software-rendered cores \n"
                                  "is dependent on your graphic card's \n"
                                  "underlying D3D driver).");
-            } else if (string_is_equal(settings->video.driver, "exynos")) {
+            }
+            else if (string_is_equal_fast(settings->arrays.video_driver, "exynos", 6))
+            {
                 snprintf(s, len,
                          "Exynos-G2D Video Driver. \n"
                                  " \n"
@@ -817,14 +850,18 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len) {
                                  " \n"
                                  "Performance for software rendered cores \n"
                                  "should be optimal.");
-            } else if (string_is_equal(settings->video.driver, "drm")) {
+            }
+            else if (string_is_equal_fast(settings->arrays.video_driver, "drm", 3))
+            {
                 snprintf(s, len,
                          "Plain DRM Video Driver. \n"
                                  " \n"
                                  "This is a low-level video driver using. \n"
                                  "libdrm for hardware scaling using \n"
                                  "GPU overlays.");
-            } else if (string_is_equal(settings->video.driver, "sunxi")) {
+            }
+            else if (string_is_equal_fast(settings->arrays.video_driver, "sunxi", 5))
+            {
                 snprintf(s, len,
                          "Sunxi-G2D Video Driver. \n"
                                  " \n"
@@ -841,7 +878,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len) {
             break;
         case MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER:
             if (settings)
-                driver_hash = msg_hash_calculate(settings->audio.resampler);
+                driver_hash = msg_hash_calculate(settings->arrays.audio_resampler);
 
             switch (driver_hash) {
                 case MENU_LABEL_AUDIO_RESAMPLER_DRIVER_SINC:
@@ -1952,6 +1989,38 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len) {
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS),
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU)
             );
+            break;
+        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE:
+            snprintf(s, len,
+                     "Enables a background color for the OSD.");
+            break;
+        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_RED:
+            snprintf(s, len,
+                     "Sets the red value of the OSD background color. Valid values are between 0 and 255.");
+            break;
+        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_GREEN:
+            snprintf(s, len,
+                     "Sets the green value of the OSD background color. Valid values are between 0 and 255.");
+            break;
+        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_BLUE:
+            snprintf(s, len,
+                     "Sets the blue value of the OSD background color. Valid values are between 0 and 255.");
+            break;
+        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_OPACITY:
+            snprintf(s, len,
+                     "Sets the opacity of the OSD background color. Valid values are between 0.0 and 1.0.");
+            break;
+        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED:
+            snprintf(s, len,
+                     "Sets the red value of the OSD text color. Valid values are between 0 and 255.");
+            break;
+        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_GREEN:
+            snprintf(s, len,
+                     "Sets the green value of the OSD text color. Valid values are between 0 and 255.");
+            break;
+        case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE:
+            snprintf(s, len,
+                     "Sets the blue value of the OSD text color. Valid values are between 0 and 255.");
             break;
         default:
             if (string_is_empty(s))

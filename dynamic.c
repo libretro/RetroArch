@@ -50,7 +50,7 @@
 #include "core.h"
 #include "driver.h"
 #include "performance_counters.h"
-#include "gfx/video_context_driver.h"
+#include "gfx/video_driver.h"
 
 #include "cores/internal_cores.h"
 #include "frontend/frontend_driver.h"
@@ -58,7 +58,6 @@
 #include "dirs.h"
 #include "paths.h"
 #include "retroarch.h"
-#include "runloop.h"
 #include "configuration.h"
 #include "msg_hash.h"
 #include "verbosity.h"
@@ -93,8 +92,9 @@ static dylib_t lib_handle;
 #define SYMBOL_VIDEOPROCESSOR(x) current_core->x = libretro_videoprocessor_##x
 #endif
 
-static bool ignore_environment_cb = false;
-static bool *load_no_content_hook = NULL;
+static bool ignore_environment_cb   = false;
+static bool core_set_shared_context = false;
+static bool *load_no_content_hook   = NULL;
 
 const struct retro_subsystem_info *libretro_find_subsystem_info(
       const struct retro_subsystem_info *info, unsigned num_info,
@@ -191,7 +191,7 @@ static bool environ_cb_get_system_info(unsigned cmd, void *data)
  *
  * For statically linked cores, pass retro_set_environment as argument.
  */
-void libretro_get_environment_info(void (*func)(retro_environment_t),
+static void libretro_get_environment_info(void (*func)(retro_environment_t),
       bool *load_no_content)
 {
    load_no_content_hook = load_no_content;
@@ -297,12 +297,41 @@ static dylib_t libretro_get_system_info_lib(const char *path,
 
    return lib;
 }
-#else
-static bool libretro_get_system_info_static(struct retro_system_info *info,
-      bool *load_no_content)
-{
-   struct retro_system_info dummy_info = {0};
+#endif
 
+/**
+ * libretro_get_system_info:
+ * @path                         : Path to libretro library.
+ * @info                         : Pointer to system info information.
+ * @load_no_content              : If true, core should be able to auto-start
+ *                                 without any content loaded.
+ *
+ * Gets system info from an arbitrary lib.
+ * The struct returned must be freed as strings are allocated dynamically.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
+bool libretro_get_system_info(const char *path,
+      struct retro_system_info *info, bool *load_no_content)
+{
+   struct retro_system_info dummy_info;
+#ifdef HAVE_DYNAMIC
+   dylib_t lib;
+#endif
+
+   dummy_info.library_name     = NULL;
+   dummy_info.library_version  = NULL;
+   dummy_info.valid_extensions = NULL;
+   dummy_info.need_fullpath    = false;
+   dummy_info.block_extract    = false;
+
+#ifdef HAVE_DYNAMIC
+   lib                         = libretro_get_system_info_lib(
+         path, &dummy_info, load_no_content);
+
+   if (!lib)
+      return false;
+#else
    if (load_no_content)
    {
       load_no_content_hook = load_no_content;
@@ -322,6 +351,8 @@ static bool libretro_get_system_info_static(struct retro_system_info *info,
    }
 
    retro_get_system_info(&dummy_info);
+#endif
+
    memcpy(info, &dummy_info, sizeof(*info));
 
    if (!string_is_empty(dummy_info.library_name))
@@ -331,50 +362,13 @@ static bool libretro_get_system_info_static(struct retro_system_info *info,
 
    if (dummy_info.valid_extensions)
       info->valid_extensions = strdup(dummy_info.valid_extensions);
-   return true;
-}
-#endif
 
-/**
- * libretro_get_system_info:
- * @path                         : Path to libretro library.
- * @info                         : Pointer to system info information.
- * @load_no_content              : If true, core should be able to auto-start
- *                                 without any content loaded.
- *
- * Gets system info from an arbitrary lib.
- * The struct returned must be freed as strings are allocated dynamically.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-bool libretro_get_system_info(const char *path,
-      struct retro_system_info *info, bool *load_no_content)
-{
 #ifdef HAVE_DYNAMIC
-   struct retro_system_info dummy_info = {0};
-   dylib_t lib                         = libretro_get_system_info_lib(
-         path, &dummy_info, load_no_content);
-
-   if (!lib)
-      return false;
-
-   memcpy(info, &dummy_info, sizeof(*info));
-   if (!string_is_empty(dummy_info.library_name))
-      info->library_name        = strdup(dummy_info.library_name);
-   if (!string_is_empty(dummy_info.library_version))
-      info->library_version     = strdup(dummy_info.library_version);
-
-   if (dummy_info.valid_extensions)
-      info->valid_extensions    = strdup(dummy_info.valid_extensions);
-
    dylib_close(lib);
-#else
-   if (!libretro_get_system_info_static(info, load_no_content))
-      return false;
 #endif
+
    return true;
 }
-
 
 /**
  * load_symbols:
@@ -618,46 +612,6 @@ static bool load_symbols(enum rarch_core_type type, struct retro_core_t *current
 }
 
 /**
- * libretro_get_current_core_pathname:
- * @name                         : Sanitized name of libretro core.
- * @size                         : Size of @name
- *
- * Transforms a library id to a name suitable as a pathname.
- **/
-void libretro_get_current_core_pathname(char *name, size_t size)
-{
-   size_t i;
-   struct retro_system_info info;
-   const char                *id = msg_hash_to_str(MSG_UNKNOWN);
-
-   if (size == 0)
-      return;
-
-   core_get_system_info(&info);
-
-   if (info.library_name)
-      id = info.library_name;
-
-   if (!id || strlen(id) >= size)
-   {
-      name[0] = '\0';
-      return;
-   }
-
-   name[strlen(id)] = '\0';
-
-   for (i = 0; id[i] != '\0'; i++)
-   {
-      char c = id[i];
-
-      if (isspace((int)c) || isblank((int)c))
-         name[i] = '_';
-      else
-         name[i] = tolower((int)c);
-   }
-}
-
-/**
  * init_libretro_sym:
  * @type                        : Type of core to be loaded.
  *                                If CORE_TYPE_DUMMY, will
@@ -679,6 +633,11 @@ bool init_libretro_sym(enum rarch_core_type type, struct retro_core_t *current_c
    return true;
 }
 
+bool libretro_get_shared_context(void)
+{
+   return core_set_shared_context;
+}
+
 /**
  * uninit_libretro_sym:
  *
@@ -698,9 +657,11 @@ void uninit_libretro_sym(struct retro_core_t *current_core)
 
    memset(current_core, 0, sizeof(struct retro_core_t));
 
-   runloop_ctl(RUNLOOP_CTL_CORE_OPTIONS_DEINIT, NULL);
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_FREE, NULL);
-   runloop_ctl(RUNLOOP_CTL_FRAME_TIME_FREE, NULL);
+   core_set_shared_context = false;
+
+   rarch_ctl(RARCH_CTL_CORE_OPTIONS_DEINIT, NULL);
+   rarch_ctl(RARCH_CTL_SYSTEM_INFO_FREE, NULL);
+   rarch_ctl(RARCH_CTL_FRAME_TIME_FREE, NULL);
    camera_driver_ctl(RARCH_CAMERA_CTL_UNSET_ACTIVE, NULL);
    location_driver_ctl(RARCH_LOCATION_CTL_UNSET_ACTIVE, NULL);
 
@@ -714,7 +675,7 @@ static void rarch_log_libretro(enum retro_log_level level,
    va_list vp;
    settings_t *settings = config_get_ptr();
 
-   if ((unsigned)level < settings->libretro_log_level)
+   if ((unsigned)level < settings->uints.libretro_log_level)
       return;
 
    va_start(vp, fmt);
@@ -953,7 +914,7 @@ static bool dynamic_verify_hw_context(enum retro_hw_context_type type,
 
 static void core_performance_counter_start(struct retro_perf_counter *perf)
 {
-   if (runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL))
+   if (rarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL))
    {
       perf->call_cnt++;
       perf->start      = cpu_features_get_perf_counter();
@@ -962,7 +923,7 @@ static void core_performance_counter_start(struct retro_perf_counter *perf)
 
 static void core_performance_counter_stop(struct retro_perf_counter *perf)
 {
-   if (runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL))
+   if (rarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL))
       perf->total += cpu_features_get_perf_counter() - perf->start;
 }
 
@@ -980,19 +941,17 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 {
    unsigned p;
    settings_t         *settings = config_get_ptr();
-   rarch_system_info_t *system  = NULL;
+   rarch_system_info_t *system  = runloop_get_system_info();
    
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
-
    if (ignore_environment_cb)
       return false;
 
    switch (cmd)
    {
       case RETRO_ENVIRONMENT_GET_OVERSCAN:
-         *(bool*)data = !settings->video.crop_overscan;
+         *(bool*)data = !settings->bools.video_crop_overscan;
          RARCH_LOG("Environ GET_OVERSCAN: %u\n",
-               (unsigned)!settings->video.crop_overscan);
+               (unsigned)!settings->bools.video_crop_overscan);
          break;
 
       case RETRO_ENVIRONMENT_GET_CAN_DUPE:
@@ -1001,7 +960,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_VARIABLE:
-         if (!runloop_ctl(RUNLOOP_CTL_CORE_OPTIONS_GET, data))
+         if (!rarch_ctl(RARCH_CTL_CORE_OPTIONS_GET, data))
          {
             struct retro_variable *var = (struct retro_variable*)data;
 
@@ -1015,14 +974,14 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE:
-         *(bool*)data = runloop_ctl(RUNLOOP_CTL_IS_CORE_OPTION_UPDATED, NULL);
+         *(bool*)data = rarch_ctl(RARCH_CTL_IS_CORE_OPTION_UPDATED, NULL);
          break;
 
       case RETRO_ENVIRONMENT_SET_VARIABLES:
          RARCH_LOG("Environ SET_VARIABLES.\n");
 
-         runloop_ctl(RUNLOOP_CTL_CORE_OPTIONS_DEINIT, NULL);
-         runloop_ctl(RUNLOOP_CTL_CORE_OPTIONS_INIT,   data);
+         rarch_ctl(RARCH_CTL_CORE_OPTIONS_DEINIT, NULL);
+         rarch_ctl(RARCH_CTL_CORE_OPTIONS_INIT,   data);
 
          break;
 
@@ -1038,7 +997,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       {
          unsigned rotation = *(const unsigned*)data;
          RARCH_LOG("Environ SET_ROTATION: %u\n", rotation);
-         if (!settings->video.allow_rotate)
+         if (!settings->bools.video_allow_rotate)
             break;
 
          if (system)
@@ -1051,8 +1010,8 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_SHUTDOWN:
          RARCH_LOG("Environ SHUTDOWN.\n");
-         runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN,      NULL);
-         runloop_ctl(RUNLOOP_CTL_SET_CORE_SHUTDOWN, NULL);
+         rarch_ctl(RARCH_CTL_SET_SHUTDOWN,      NULL);
+         rarch_ctl(RARCH_CTL_SET_CORE_SHUTDOWN, NULL);
          break;
 
       case RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL:
@@ -1065,19 +1024,22 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY:
-         if (string_is_empty(settings->directory.system))
+         if (string_is_empty(settings->paths.directory_system) || settings->bools.systemfiles_in_content_dir)
          {
             const char *fullpath = path_get(RARCH_PATH_CONTENT);
             if (!string_is_empty(fullpath))
             {
-               char temp_path[PATH_MAX_LENGTH];
+               size_t path_size = PATH_MAX_LENGTH * sizeof(char);
+               char *temp_path  = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
                temp_path[0] = '\0';
 
-               RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",
-                     fullpath);
-               fill_pathname_basedir(temp_path, fullpath, sizeof(temp_path));
+               if (string_is_empty(settings->paths.directory_system))
+                  RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",
+                        fullpath);
+               fill_pathname_basedir(temp_path, fullpath, path_size);
                dir_set(RARCH_DIR_SYSTEM, temp_path);
+               free(temp_path);
             }
 
             *(const char**)data = dir_get_ptr(RARCH_DIR_SYSTEM);
@@ -1086,9 +1048,9 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          }
          else
          {
-            *(const char**)data = settings->directory.system;
+            *(const char**)data = settings->paths.directory_system;
             RARCH_LOG("Environ SYSTEM_DIRECTORY: \"%s\".\n",
-               settings->directory.system);
+               settings->paths.directory_system);
          }
 
          break;
@@ -1098,17 +1060,19 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_USERNAME:
-         *(const char**)data = *settings->username ?
-            settings->username : NULL;
+         *(const char**)data = *settings->paths.username ?
+            settings->paths.username : NULL;
          RARCH_LOG("Environ GET_USERNAME: \"%s\".\n",
-               settings->username);
+               settings->paths.username);
          break;
 
       case RETRO_ENVIRONMENT_GET_LANGUAGE:
 #ifdef HAVE_LANGEXTRA
-         *(unsigned *)data = settings->user_language;
-         RARCH_LOG("Environ GET_LANGUAGE: \"%u\".\n",
-               settings->user_language);
+         {
+            unsigned user_lang = *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE);
+            *(unsigned *)data  = user_lang;
+            RARCH_LOG("Environ GET_LANGUAGE: \"%u\".\n", user_lang);
+         }
 #endif
          break;
 
@@ -1218,17 +1182,22 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             }
 
             RARCH_LOG("Environ SET_INPUT_DESCRIPTORS:\n");
-            for (p = 0; p < settings->input.max_users; p++)
+
             {
-               for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
+               unsigned max_users = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+
+               for (p = 0; p < max_users; p++)
                {
-                  const char *description = system->input_desc_btn[p][retro_id];
+                  for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
+                  {
+                     const char *description = system->input_desc_btn[p][retro_id];
 
-                  if (!description)
-                     continue;
+                     if (!description)
+                        continue;
 
-                  RARCH_LOG("\tRetroPad, User %u, Button \"%s\" => \"%s\"\n",
-                        p + 1, libretro_btn_desc[retro_id], description);
+                     RARCH_LOG("\tRetroPad, User %u, Button \"%s\" => \"%s\"\n",
+                           p + 1, libretro_btn_desc[retro_id], description);
+                  }
                }
             }
 
@@ -1245,8 +1214,8 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          const struct retro_keyboard_callback *info =
             (const struct retro_keyboard_callback*)data;
 
-         runloop_ctl(RUNLOOP_CTL_FRONTEND_KEY_EVENT_GET, &frontend_key_event);
-         runloop_ctl(RUNLOOP_CTL_KEY_EVENT_GET, &key_event);
+         rarch_ctl(RARCH_CTL_FRONTEND_KEY_EVENT_GET, &frontend_key_event);
+         rarch_ctl(RARCH_CTL_KEY_EVENT_GET, &key_event);
 
          RARCH_LOG("Environ SET_KEYBOARD_CALLBACK.\n");
          if (key_event)
@@ -1333,7 +1302,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK:
       {
          RARCH_LOG("Environ SET_FRAME_TIME_CALLBACK.\n");
-         runloop_ctl(RUNLOOP_CTL_SET_FRAME_TIME, data);
+         rarch_ctl(RARCH_CTL_SET_FRAME_TIME, data);
          break;
       }
 
@@ -1434,10 +1403,10 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       {
          const char **dir = (const char**)data;
 
-         *dir = *settings->directory.core_assets ?
-            settings->directory.core_assets : NULL;
+         *dir = *settings->paths.directory_core_assets ?
+            settings->paths.directory_core_assets : NULL;
          RARCH_LOG("Environ CORE_ASSETS_DIRECTORY: \"%s\".\n",
-               settings->directory.core_assets);
+               settings->paths.directory_core_assets);
          break;
       }
 
@@ -1621,9 +1590,9 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
          /* Can potentially be called every frame,
           * don't do anything unless required. */
-         if (geom->base_width != in_geom->base_width ||
-               geom->base_height != in_geom->base_height ||
-               geom->aspect_ratio != in_geom->aspect_ratio)
+         if (  (geom->base_width   != in_geom->base_width)  ||
+               (geom->base_height  != in_geom->base_height) ||
+               (geom->aspect_ratio != in_geom->aspect_ratio))
          {
             geom->base_width   = in_geom->base_width;
             geom->base_height  = in_geom->base_height;
@@ -1672,6 +1641,12 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       {
          uint64_t *quirks = (uint64_t *) data;
          core_set_serialization_quirks(*quirks);
+         break;
+      }
+
+      case RETRO_ENVIRONMENT_SET_HW_SHARED_CONTEXT:
+      {
+         core_set_shared_context = true;
          break;
       }
 

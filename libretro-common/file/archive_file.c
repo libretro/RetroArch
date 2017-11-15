@@ -42,7 +42,6 @@
 #include <file/archive_file.h>
 #include <file/file_path.h>
 #include <streams/file_stream.h>
-#include <retro_stat.h>
 #include <retro_miscellaneous.h>
 #include <lists/string_list.h>
 #include <string/stdstring.h>
@@ -56,6 +55,20 @@ struct file_archive_file_data
    size_t size;
 };
 
+static size_t file_archive_size(file_archive_file_data_t *data)
+{
+   if (!data)
+      return 0;
+   return data->size;
+}
+
+static const uint8_t *file_archive_data(file_archive_file_data_t *data)
+{
+   if (!data)
+      return NULL;
+   return (const uint8_t*)data->data;
+}
+
 #ifdef HAVE_MMAP
 /* Closes, unmaps and frees. */
 static void file_archive_free(file_archive_file_data_t *data)
@@ -68,20 +81,6 @@ static void file_archive_free(file_archive_file_data_t *data)
    if (data->fd >= 0)
       close(data->fd);
    free(data);
-}
-
-static const uint8_t *file_archive_data(file_archive_file_data_t *data)
-{
-   if (!data)
-      return NULL;
-   return (const uint8_t*)data->data;
-}
-
-static size_t file_archive_size(file_archive_file_data_t *data)
-{
-   if (!data)
-      return 0;
-   return data->size;
 }
 
 static file_archive_file_data_t* file_archive_open(const char *path)
@@ -126,20 +125,6 @@ static void file_archive_free(file_archive_file_data_t *data)
    if(data->data)
       free(data->data);
    free(data);
-}
-
-static const uint8_t *file_archive_data(file_archive_file_data_t *data)
-{
-   if (!data)
-      return NULL;
-   return (const uint8_t*)data->data;
-}
-
-static size_t file_archive_size(file_archive_file_data_t *data)
-{
-   if (!data)
-      return 0;
-   return data->size;
 }
 
 static file_archive_file_data_t* file_archive_open(const char *path)
@@ -536,30 +521,30 @@ bool file_archive_extract_file(
    bool ret                                 = true;
    struct string_list *list                 = string_split(valid_exts, "|");
 
+   userdata.archive_path[0]                 = '\0';
+   userdata.first_extracted_file_path       = NULL;
+   userdata.extracted_file_path             = NULL;
+   userdata.extraction_directory            = extraction_directory;
+   userdata.archive_path_size               = archive_path_size;
+   userdata.ext                             = list;
+   userdata.list                            = NULL;
+   userdata.found_file                      = false;
+   userdata.list_only                       = false;
+   userdata.context                         = NULL;
+   userdata.archive_name[0]                 = '\0';
+   userdata.crc                             = 0;
+   userdata.dec                             = NULL;
+
+   userdata.decomp_state.opt_file           = NULL;
+   userdata.decomp_state.needle             = NULL;
+   userdata.decomp_state.size               = 0;
+   userdata.decomp_state.found              = false;
+
    if (!list)
    {
       ret = false;
       goto end;
    }
-
-   userdata.archive_path[0]           = '\0';
-   userdata.first_extracted_file_path = NULL;
-   userdata.extracted_file_path       = NULL;
-   userdata.extraction_directory      = extraction_directory;
-   userdata.archive_path_size         = archive_path_size;
-   userdata.ext                       = list;
-   userdata.list                      = NULL;
-   userdata.found_file                = false;
-   userdata.list_only                 = false;
-   userdata.context                   = NULL;
-   userdata.archive_name[0]           = '\0';
-   userdata.crc                       = 0;
-   userdata.dec                       = NULL;
-
-   userdata.decomp_state.opt_file     = NULL;
-   userdata.decomp_state.needle       = NULL;
-   userdata.decomp_state.size         = 0;
-   userdata.decomp_state.found        = NULL;
 
    if (!file_archive_walk(archive_path, valid_exts,
             file_archive_extract_cb, &userdata))
@@ -617,7 +602,7 @@ struct string_list *file_archive_get_file_list(const char *path,
    userdata.decomp_state.opt_file           = NULL;
    userdata.decomp_state.needle             = NULL;
    userdata.decomp_state.size               = 0;
-   userdata.decomp_state.found              = NULL;
+   userdata.decomp_state.found              = false;
 
    if (!userdata.list)
       goto error;

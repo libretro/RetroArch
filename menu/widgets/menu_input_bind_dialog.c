@@ -21,9 +21,8 @@
 #include "menu_input_bind_dialog.h"
 
 #include "../menu_driver.h"
-#include "../menu_navigation.h"
 
-#include "../../input/input_config.h"
+#include "../../input/input_driver.h"
 
 #include "../../configuration.h"
 #include "../../performance_counters.h"
@@ -74,7 +73,7 @@ static bool menu_input_key_bind_custom_bind_keyboard_cb(
    menu_input_binds.begin++;
    menu_input_binds.target++;
    
-   rarch_timer_begin_new_time(&menu_input_binds.timer, settings->input.bind_timeout);
+   rarch_timer_begin_new_time(&menu_input_binds.timer, settings->uints.input_bind_timeout);
 
    return (menu_input_binds.begin <= menu_input_binds.last);
 }
@@ -83,15 +82,14 @@ static int menu_input_key_bind_set_mode_common(
       enum menu_input_binds_ctl_state state,
       rarch_setting_t  *setting)
 {
-   size_t selection;
+   menu_displaylist_info_t info;
    unsigned bind_type            = 0;
-   menu_displaylist_info_t info  = {0};
    struct retro_keybind *keybind = NULL;
-   settings_t     *settings      = config_get_ptr();
    unsigned         index_offset = setting->index_offset;
    file_list_t *menu_stack       = menu_entries_get_menu_stack_ptr(0);
+   size_t selection              = menu_navigation_get_selection();
 
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
+   menu_displaylist_info_init(&info);
 
    switch (state)
    {
@@ -103,37 +101,36 @@ static int menu_input_key_bind_set_mode_common(
 
          bind_type                = setting_get_bind_type(setting);
 
-         menu_input_binds.begin  = bind_type;
-         menu_input_binds.last   = bind_type;
-         menu_input_binds.target = keybind;
-         menu_input_binds.user   = index_offset;
+         menu_input_binds.begin   = bind_type;
+         menu_input_binds.last    = bind_type;
+         menu_input_binds.target  = keybind;
+         menu_input_binds.user    = index_offset;
 
          info.list                = menu_stack;
          info.type                = MENU_SETTINGS_CUSTOM_BIND_KEYBOARD;
          info.directory_ptr       = selection;
          info.enum_idx            = MENU_ENUM_LABEL_CUSTOM_BIND;
-         strlcpy(info.label,
-               msg_hash_to_str(MENU_ENUM_LABEL_CUSTOM_BIND), sizeof(info.label));
-
+         info.label               = strdup(
+               msg_hash_to_str(MENU_ENUM_LABEL_CUSTOM_BIND));
          if (menu_displaylist_ctl(DISPLAYLIST_INFO, &info))
-            menu_displaylist_ctl(DISPLAYLIST_PROCESS, &info);
+            menu_displaylist_process(&info);
+         menu_displaylist_info_free(&info);
          break;
       case MENU_INPUT_BINDS_CTL_BIND_ALL:
-         menu_input_binds.target = &settings->input.binds
-            [index_offset][0];
-         menu_input_binds.begin  = MENU_SETTINGS_BIND_BEGIN;
-         menu_input_binds.last   = MENU_SETTINGS_BIND_LAST;
+         menu_input_binds.target  = &input_config_binds[index_offset][0];
+         menu_input_binds.begin   = MENU_SETTINGS_BIND_BEGIN;
+         menu_input_binds.last    = MENU_SETTINGS_BIND_LAST;
 
          info.list                = menu_stack;
          info.type                = MENU_SETTINGS_CUSTOM_BIND_KEYBOARD;
          info.directory_ptr       = selection;
          info.enum_idx            = MENU_ENUM_LABEL_CUSTOM_BIND_ALL;
-         strlcpy(info.label,
-               msg_hash_to_str(MENU_ENUM_LABEL_CUSTOM_BIND_ALL),
-               sizeof(info.label));
+         info.label               = strdup(
+               msg_hash_to_str(MENU_ENUM_LABEL_CUSTOM_BIND_ALL));
 
          if (menu_displaylist_ctl(DISPLAYLIST_INFO, &info))
-            menu_displaylist_ctl(DISPLAYLIST_PROCESS, &info);
+            menu_displaylist_process(&info);
+         menu_displaylist_info_free(&info);
          break;
       default:
       case MENU_INPUT_BINDS_CTL_BIND_NONE:
@@ -253,14 +250,14 @@ bool menu_input_key_bind_set_mode(
       return false;
 
    index_offset      = setting->index_offset;
-   menu_bind_port    = settings->input.joypad_map[index_offset];
+   menu_bind_port    = settings->uints.input_joypad_map[index_offset];
 
    menu_input_key_bind_poll_bind_get_rested_axes(
          &menu_input_binds, menu_bind_port);
    menu_input_key_bind_poll_bind_state(
          &menu_input_binds, menu_bind_port, false);
 
-   rarch_timer_begin_new_time(&menu_input_binds.timer, settings->input.bind_timeout);
+   rarch_timer_begin_new_time(&menu_input_binds.timer, settings->uints.input_bind_timeout);
 
    keys.userdata = menu;
    keys.cb       = menu_input_key_bind_custom_bind_keyboard_cb;
@@ -351,12 +348,12 @@ static bool menu_input_key_bind_poll_find_trigger(
       struct menu_bind_state *new_state)
 {
    unsigned i;
-   settings_t *settings = config_get_ptr();
+   unsigned max_users   = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
 
    if (!state || !new_state)
       return false;
 
-   for (i = 0; i < settings->input.max_users; i++)
+   for (i = 0; i < max_users; i++)
    {
       if (!menu_input_key_bind_poll_find_trigger_pad(
                state, new_state, i))
@@ -396,7 +393,7 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind)
 
       menu_input_binds.begin++;
       menu_input_binds.target++;
-      rarch_timer_begin_new_time(&menu_input_binds.timer, settings->input.bind_timeout);
+      rarch_timer_begin_new_time(&menu_input_binds.timer, settings->uints.input_bind_timeout);
       timed_out = true;
    }
 
@@ -442,7 +439,7 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind)
       }
 
       binds.target++;
-      rarch_timer_begin_new_time(&binds.timer, settings->input.bind_timeout);
+      rarch_timer_begin_new_time(&binds.timer, settings->uints.input_bind_timeout);
    }
    menu_input_binds = binds;
 

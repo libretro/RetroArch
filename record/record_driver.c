@@ -19,6 +19,7 @@
 #include <file/file_path.h>
 #include <compat/strl.h>
 #include <string/stdstring.h>
+#include <retro_math.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -29,8 +30,8 @@
 #include "../command.h"
 #include "../configuration.h"
 #include "../driver.h"
+#include "../gfx/video_driver.h"
 #include "../retroarch.h"
-#include "../runloop.h"
 #include "../verbosity.h"
 #include "../msg_hash.h"
 #include "../list_special.h"
@@ -103,7 +104,7 @@ void find_record_driver(void)
    settings_t *settings = config_get_ptr();
 
    drv.label = "record_driver";
-   drv.s     = settings->record.driver;
+   drv.s     = settings->arrays.record_driver;
 
    driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
 
@@ -116,7 +117,7 @@ void find_record_driver(void)
       unsigned d;
 
       RARCH_ERR("Couldn't find any record driver named \"%s\"\n",
-            settings->audio.driver);
+            settings->arrays.record_driver);
       RARCH_LOG_OUTPUT("Available record drivers are:\n");
       for (d = 0; record_driver_find_handle(d); d++)
          RARCH_LOG_OUTPUT("\t%s\n", record_driver_find_ident(d));
@@ -200,7 +201,14 @@ void recording_dump_frame(const void *data, unsigned width,
 
    if (has_gpu_record)
    {
-      struct video_viewport vp = {0};
+      struct video_viewport vp;
+
+      vp.x                        = 0;
+      vp.y                        = 0;
+      vp.width                    = 0;
+      vp.height                   = 0;
+      vp.full_width               = 0;
+      vp.full_height              = 0;
 
       video_driver_get_viewport_info(&vp);
 
@@ -319,7 +327,7 @@ bool recording_init(void)
       return false;
    }
 
-   if (!settings->video.gpu_record 
+   if (!settings->bools.video_gpu_record 
          && video_driver_is_hw_context())
    {
       RARCH_WARN("%s.\n",
@@ -357,7 +365,14 @@ bool recording_init(void)
    if (video_driver_supports_recording())
    {
       unsigned gpu_size;
-      struct video_viewport vp = {0};
+      struct video_viewport vp;
+
+      vp.x                        = 0;
+      vp.y                        = 0;
+      vp.width                    = 0;
+      vp.height                   = 0;
+      vp.full_width               = 0;
+      vp.full_height              = 0;
 
       video_driver_get_viewport_info(&vp);
 
@@ -373,7 +388,7 @@ bool recording_init(void)
       params.fb_width   = next_pow2(vp.width);
       params.fb_height  = next_pow2(vp.height);
 
-      if (settings->video.force_aspect &&
+      if (settings->bools.video_force_aspect &&
             (video_driver_get_aspect_ratio() > 0.0f))
          params.aspect_ratio  = video_driver_get_aspect_ratio();
       else
@@ -398,13 +413,13 @@ bool recording_init(void)
          params.out_height = recording_height;
       }
 
-      if (settings->video.force_aspect &&
+      if (settings->bools.video_force_aspect &&
             (video_driver_get_aspect_ratio() > 0.0f))
          params.aspect_ratio = video_driver_get_aspect_ratio();
       else
          params.aspect_ratio = (float)params.out_width / params.out_height;
 
-      if (settings->video.post_filter_record 
+      if (settings->bools.video_post_filter_record 
             && video_driver_frame_filter_alive())
       {
          unsigned max_width  = 0;

@@ -36,6 +36,7 @@
 #include "../font_driver.h"
 
 #include "../../retroarch.h"
+#include "../../verbosity.h"
 
 #define NUMPAGES 2
 
@@ -825,13 +826,6 @@ static void sunxi_gfx_set_rotation(void *data, unsigned rotation)
    (void)rotation;
 }
 
-static bool sunxi_gfx_has_windowed(void *data)
-{
-   (void)data;
-
-   return false;
-}
-
 static bool sunxi_gfx_suppress_screensaver(void *data, bool enable)
 {
    (void)data;
@@ -938,6 +932,8 @@ static void sunxi_set_aspect_ratio (void *data, unsigned aspect_ratio_idx)
 }
 
 static const video_poke_interface_t sunxi_poke_interface = {
+   NULL, /* set_coords */
+   NULL, /* set_mvp */
    NULL,
    NULL,
    NULL, /* set_video_mode */
@@ -971,7 +967,7 @@ video_driver_t video_sunxi = {
   sunxi_gfx_alive,
   sunxi_gfx_focus,
   sunxi_gfx_suppress_screensaver,
-  sunxi_gfx_has_windowed,
+  NULL, /* has_windowed */
   sunxi_gfx_set_shader,
   sunxi_gfx_free,
   "sunxi",

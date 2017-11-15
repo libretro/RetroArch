@@ -31,134 +31,132 @@
 #include "../../verbosity.h"
 #include "../font_driver.h"
 #include "../video_coord_array.h"
-#include "../video_context_driver.h"
+#include "../video_driver.h"
 #include "../drivers/gl_symlinks.h"
+
+RETRO_BEGIN_DECLS
+
+#define MAX_FENCES 4
+
+#ifndef ARB_sync
+typedef struct __GLsync *GLsync;
+#endif
 
 typedef struct gl
 {
-   int version_major;
-   int version_minor;
+   GLenum internal_fmt;
+   GLenum texture_type; /* RGB565 or ARGB */
+   GLenum texture_fmt;
+   GLenum wrap_mode;
 
    bool vsync;
-   GLuint texture[GFX_MAX_TEXTURES];
-   unsigned tex_index; /* For use with PREV. */
-   unsigned textures;
-   struct video_tex_info tex_info;
-   struct video_tex_info prev_info[GFX_MAX_TEXTURES];
-   GLuint tex_mag_filter;
-   GLuint tex_min_filter;
    bool tex_mipmap;
-
-   void *empty_buf;
-
-   void *conv_buffer;
-   struct scaler_ctx scaler;
-
-#ifdef HAVE_FBO
-   /* Render-to-texture, multipass shaders. */
-   GLuint fbo[GFX_MAX_SHADERS];
-   GLuint fbo_texture[GFX_MAX_SHADERS];
-   struct video_fbo_rect fbo_rect[GFX_MAX_SHADERS];
-   struct gfx_fbo_scale fbo_scale[GFX_MAX_SHADERS];
-   int fbo_pass;
    bool fbo_inited;
-
    bool fbo_feedback_enable;
-   unsigned fbo_feedback_pass;
-   GLuint fbo_feedback;
-   GLuint fbo_feedback_texture;
-
-   GLuint hw_render_fbo[GFX_MAX_TEXTURES];
-   GLuint hw_render_depth[GFX_MAX_TEXTURES];
    bool hw_render_fbo_init;
    bool hw_render_depth_init;
+   bool has_fbo;
    bool has_srgb_fbo_gles3;
-#endif
    bool has_fp_fbo;
    bool has_srgb_fbo;
    bool hw_render_use;
+   bool core_context_in_use;
 
    bool should_resize;
    bool quitting;
    bool fullscreen;
    bool keep_aspect;
-   unsigned rotation;
-
-   struct video_viewport vp;
-   unsigned vp_out_width;
-   unsigned vp_out_height;
-   unsigned last_width[GFX_MAX_TEXTURES];
-   unsigned last_height[GFX_MAX_TEXTURES];
-   unsigned tex_w, tex_h;
-   math_matrix_4x4 mvp, mvp_no_rot;
-
-   struct video_coords coords;
-   const float *vertex_ptr;
-   const float *white_color_ptr;
-
-   GLuint pbo;
-
-   GLenum internal_fmt;
-   GLenum texture_type; /* RGB565 or ARGB */
-   GLenum texture_fmt;
-   GLenum wrap_mode;
-   unsigned base_size; /* 2 or 4 */
-#ifdef HAVE_OPENGLES
    bool support_unpack_row_length;
-#else
    bool have_es2_compat;
-#endif
    bool have_full_npot_support;
+   bool have_mipmap;
 
    bool egl_images;
-   video_info_t video_info;
-
-#ifdef HAVE_OVERLAY
-   unsigned overlays;
    bool overlay_enable;
    bool overlay_full_screen;
+   bool menu_texture_enable;
+   bool menu_texture_full_screen;
+   bool have_sync;
+   bool pbo_readback_valid[4];
+   bool pbo_readback_enable;
+
+   int version_major;
+   int version_minor;
+   int fbo_pass;
+
+   GLuint tex_mag_filter;
+   GLuint tex_min_filter;
+   GLuint fbo_feedback;
+   GLuint fbo_feedback_texture;
+   GLuint pbo;
    GLuint *overlay_tex;
+   GLuint menu_texture;
+   GLuint vao;
+   GLuint pbo_readback[4];
+   GLuint texture[GFX_MAX_TEXTURES];
+   GLuint fbo[GFX_MAX_SHADERS];
+   GLuint fbo_texture[GFX_MAX_SHADERS];
+   GLuint hw_render_fbo[GFX_MAX_TEXTURES];
+   GLuint hw_render_depth[GFX_MAX_TEXTURES];
+
+   unsigned tex_index; /* For use with PREV. */
+   unsigned textures;
+   unsigned fbo_feedback_pass;
+   unsigned rotation;
+   unsigned vp_out_width;
+   unsigned vp_out_height;
+   unsigned tex_w;
+   unsigned tex_h;
+   unsigned base_size; /* 2 or 4 */
+   unsigned overlays;
+   unsigned pbo_readback_index;
+   unsigned fence_count;
+   unsigned last_width[GFX_MAX_TEXTURES];
+   unsigned last_height[GFX_MAX_TEXTURES];
+
+   float menu_texture_alpha;
+
+   void *empty_buf;
+   void *conv_buffer;
+   void *readback_buffer_screenshot;
+   const float *vertex_ptr;
+   const float *white_color_ptr;
    float *overlay_vertex_coord;
    float *overlay_tex_coord;
    float *overlay_color_coord;
-#endif
 
-#ifdef HAVE_GL_ASYNC_READBACK
-   /* PBOs used for asynchronous viewport readbacks. */
-   GLuint pbo_readback[4];
-   bool pbo_readback_valid[4];
-   bool pbo_readback_enable;
-   unsigned pbo_readback_index;
+   struct video_tex_info tex_info;
    struct scaler_ctx pbo_readback_scaler;
-#endif
-   void *readback_buffer_screenshot;
+   struct video_viewport vp;
+   math_matrix_4x4 mvp, mvp_no_rot;
+   struct video_coords coords;
+   struct scaler_ctx scaler;
+   video_info_t video_info;
+   struct video_tex_info prev_info[GFX_MAX_TEXTURES];
+   struct video_fbo_rect fbo_rect[GFX_MAX_SHADERS];
+   struct gfx_fbo_scale fbo_scale[GFX_MAX_SHADERS];
 
-#if defined(HAVE_MENU)
-   GLuint menu_texture;
-   bool menu_texture_enable;
-   bool menu_texture_full_screen;
-   float menu_texture_alpha;
-#endif
-
-#ifdef HAVE_GL_SYNC
-#define MAX_FENCES 4
-   bool have_sync;
    GLsync fences[MAX_FENCES];
-   unsigned fence_count;
-#endif
-
-   GLuint vao;
+   const gl_renderchain_driver_t *renderchain_driver;
+   void *renderchain_data;
 } gl_t;
 
-bool gl_load_luts(const struct video_shader *generic_shader,
-      GLuint *lut_textures);
+static INLINE void gl_bind_texture(GLuint id, GLint wrap_mode, GLint mag_filter,
+      GLint min_filter)
+{
+   glBindTexture(GL_TEXTURE_2D, id);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_mode);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_mode);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
+}
 
 static INLINE unsigned gl_wrap_type_to_enum(enum gfx_wrap_type type)
 {
    switch (type)
    {
 #ifndef HAVE_OPENGLES
-      case RARCH_WRAP_BORDER:
+      case RARCH_WRAP_BORDER: /* GL_CLAMP_TO_BORDER: Available since GL 1.3 */
          return GL_CLAMP_TO_BORDER;
 #else
       case RARCH_WRAP_BORDER:
@@ -175,8 +173,7 @@ static INLINE unsigned gl_wrap_type_to_enum(enum gfx_wrap_type type)
 }
 
 bool gl_query_core_context_in_use(void);
-void gl_ff_vertex(const struct video_coords *coords);
-void gl_ff_matrix(const math_matrix_4x4 *mat);
+
 void gl_load_texture_image(GLenum target,
       GLint level,
       GLint internalFormat,
@@ -186,5 +183,15 @@ void gl_load_texture_image(GLenum target,
       GLenum format,
       GLenum type,
       const GLvoid * data);
+
+void gl_load_texture_data(
+      uint32_t id_data,
+      enum gfx_wrap_type wrap_type,
+      enum texture_filter_type filter_type,
+      unsigned alignment,
+      unsigned width, unsigned height,
+      const void *frame, unsigned base_size);
+
+RETRO_END_DECLS
 
 #endif

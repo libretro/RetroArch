@@ -29,7 +29,6 @@
 #include <string/stdstring.h>
 #include <formats/image.h>
 #include <compat/strl.h>
-#include <retro_stat.h>
 #include <string/stdstring.h>
 
 #include "menu_generic.h"
@@ -42,15 +41,13 @@
 #include "../menu_driver.h"
 #include "../menu_animation.h"
 #include "../widgets/menu_entry.h"
-#include "../menu_display.h"
-#include "../menu_navigation.h"
 #include "../../retroarch.h"
 
 #include "../../gfx/font_driver.h"
 
 #include "../../core_info.h"
 #include "../../configuration.h"
-#include "../../runloop.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"
 
@@ -110,6 +107,7 @@ typedef struct zarch_handle
    unsigned height;
    video_font_raster_block_t tmp_block;
    unsigned hash;
+   uint64_t frame_count;
 
    struct {
       unsigned active;
@@ -323,7 +321,7 @@ static bool zarch_zui_list_item(video_frame_info_t *video_info,
    int                y2 = y1 + 50;
    bool           active = zarch_zui_check_button_up(zui, id, x1, y1, x2, y2);
    const float       *bg = zui_bg_panel;
-   uint64_t frame_count  = video_info->frame_count;
+   uint64_t frame_count  = zui->frame_count;
 
    title_buf[0] = '\0';
 
@@ -516,15 +514,16 @@ static int zarch_zui_render_lay_root_recent(
 
       for (i = zui->recent_dlist_first; i < size; ++i)
       {
-         char rich_label[PATH_MAX_LENGTH];
          char entry_value[PATH_MAX_LENGTH];
-         menu_entry_t entry                = {{0}};
+         menu_entry_t entry;
+         char *rich_label  = NULL;
 
-         rich_label[0] = entry_value[0]    = '\0';
+         entry_value[0]    = '\0';
 
+         menu_entry_init(&entry);
          menu_entry_get(&entry, 0, i, NULL, true);
-         menu_entry_get_rich_label(i, rich_label, sizeof(rich_label));
-         menu_entry_get_value(i, NULL, entry_value,sizeof(entry_value));
+         rich_label = menu_entry_get_rich_label(&entry);
+         menu_entry_get_value(&entry, entry_value,sizeof(entry_value));
 
          if (zarch_zui_list_item(
                   video_info,
@@ -533,10 +532,18 @@ static int zarch_zui_render_lay_root_recent(
                   rich_label, i, entry_value, gamepad_index == (signed)i))
          {
             if (menu_entry_action(&entry, i, MENU_ACTION_OK))
+            {
+               menu_entry_free(&entry);
+               if (!string_is_empty(rich_label))
+                  free(rich_label);
                return 1;
+            }
          }
 
          j++;
+         menu_entry_free(&entry);
+         if (!string_is_empty(rich_label))
+            free(rich_label);
       }
 
    }
@@ -583,7 +590,7 @@ static int zarch_zui_render_lay_root_load(
       unsigned cwd_offset;
 
       if (!zui->load_cwd)
-         zui->load_cwd = strdup(settings->directory.menu_content);
+         zui->load_cwd = strdup(settings->paths.directory_menu_content);
 
       if (!zui->load_dlist)
       {
@@ -876,6 +883,8 @@ static void zarch_frame(void *data, video_frame_info_t *video_info)
    if (!zui)
       return;
 
+   zui->frame_count++;
+
    video_driver_get_size(&zui->width, &zui->height);
 
    menu_display_set_viewport(video_info->width, video_info->height);
@@ -904,7 +913,7 @@ static void zarch_frame(void *data, video_frame_info_t *video_info)
 
    zui->tmp_block.carr.coords.vertices = 0;
 
-   menu_display_font_bind_block((font_data_t*)zui->font, &zui->tmp_block);
+   font_driver_bind_block(zui->font, &zui->tmp_block);
 
    menu_display_push_quad(zui->width, zui->height, zui_bg_screen,
          0, 0, zui->width, zui->height);
@@ -929,7 +938,7 @@ static void zarch_frame(void *data, video_frame_info_t *video_info)
          break;
    }
 
-   if (settings->menu.mouse.enable)
+   if (settings->bools.menu_mouse_enable)
       zarch_zui_draw_cursor(
             zarch_zui_input_state(zui, MENU_ZARCH_MOUSE_X),
             zarch_zui_input_state(zui, MENU_ZARCH_MOUSE_Y));
@@ -976,28 +985,31 @@ static void zarch_frame(void *data, video_frame_info_t *video_info)
    menu_display_blend_begin();
    draw.x              = 0;
    draw.y              = 0;
-   menu_display_draw_bg(&draw, video_info, false);
+
+   menu_display_draw_bg(&draw, video_info, false,
+         video_info->menu_wallpaper_opacity);
    menu_display_draw(&draw);
    menu_display_blend_end();
 
    zui->rendering = false;
 
-   menu_display_font_flush_block(video_info->width, video_info->height, 
-         (font_data_t*)zui->font);
+   font_driver_flush(video_info->width, video_info->height, zui->font,
+         video_info);
+   font_driver_bind_block(zui->font, NULL);
+
    menu_display_unset_viewport(video_info->width, video_info->height);
 }
 
-static void *zarch_init(void **userdata)
+static void *zarch_init(void **userdata, bool video_is_threaded)
 {
    zui_t *zui                              = NULL;
-   settings_t *settings                    = config_get_ptr();
    menu_handle_t *menu                     = (menu_handle_t*)
       calloc(1, sizeof(*menu));
 
    if (!menu)
       goto error;
 
-   if (!menu_display_init_first_driver())
+   if (!menu_display_init_first_driver(video_is_threaded))
       goto error;
 
    zui       = (zui_t*)calloc(1, sizeof(zui_t));
@@ -1005,18 +1017,11 @@ static void *zarch_init(void **userdata)
    if (!zui)
       goto error;
 
-   *userdata       = zui;
-
-   if (settings->menu.mouse.enable)
-   {
-      RARCH_WARN("Forcing menu_mouse_enable=false\n");
-      settings->menu.mouse.enable = false;
-   }
-
-   zui->header_height  = 1000; /* dpi / 3; */
+   *userdata            = zui;
+   zui->header_height   = 1000; /* dpi / 3; */
    zui->font_size       = 28;
 
-   matrix_4x4_ortho(&zui->mvp, 0, 1, 1, 0, 0, 1);
+   matrix_4x4_ortho(zui->mvp, 0, 1, 1, 0, 0, 1);
 
    return menu;
 error:
@@ -1086,7 +1091,7 @@ static bool zarch_load_image(void *userdata,
    return true;
 }
 
-static void zarch_context_reset(void *data)
+static void zarch_context_reset(void *data, bool is_threaded)
 {
    settings_t *settings  = config_get_ptr();
    zui_t          *zui   = (zui_t*)data;
@@ -1096,32 +1101,34 @@ static void zarch_context_reset(void *data)
 
    zarch_context_bg_destroy(zui);
 
-   task_push_image_load(settings->path.menu_wallpaper,
+   task_push_image_load(settings->paths.path_menu_wallpaper,
          menu_display_handle_wallpaper_upload, NULL);
 
    menu_display_allocate_white_texture();
 
    menu_display_set_header_height(zui->header_height);
-   zui->font = menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_ZARCH_FONT, zui->font_size);
+   zui->font = menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_ZARCH_FONT,
+         zui->font_size,
+         is_threaded);
 }
 
 static int zarch_iterate(void *data, void *userdata, enum menu_action action)
 {
    int ret;
-   size_t selection;
    menu_entry_t entry;
    zui_t *zui           = (zui_t*)userdata;
+   size_t selection     = menu_navigation_get_selection();
 
    if (!zui)
       return -1;
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-      return 0;
 
+   menu_entry_init(&entry);
    menu_entry_get(&entry, 0, selection, NULL, false);
 
    zui->action       = action;
 
    ret = menu_entry_action(&entry, selection, action);
+   menu_entry_free(&entry);
    if (ret)
       return -1;
    return 0;
@@ -1129,16 +1136,19 @@ static int zarch_iterate(void *data, void *userdata, enum menu_action action)
 
 static bool zarch_menu_init_list(void *data)
 {
-   menu_displaylist_info_t info = {0};
+   menu_displaylist_info_t info;
    file_list_t *menu_stack      = menu_entries_get_menu_stack_ptr(0);
    file_list_t *selection_buf   = menu_entries_get_selection_buf_ptr(0);
 
-   strlcpy(info.label,
-         msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB), sizeof(info.label));
+   menu_displaylist_info_free(&info);
+
+   info.label    = strdup(
+         msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB));
    info.enum_idx = MENU_ENUM_LABEL_HISTORY_TAB;
 
    menu_entries_append_enum(menu_stack,
-         info.path, info.label, MENU_ENUM_LABEL_HISTORY_TAB, info.type, info.flags, 0);
+         info.path, info.label,
+         MENU_ENUM_LABEL_HISTORY_TAB, info.type, info.flags, 0);
 
    command_event(CMD_EVENT_HISTORY_INIT, NULL);
 
@@ -1146,9 +1156,14 @@ static bool zarch_menu_init_list(void *data)
 
    if (menu_displaylist_ctl(DISPLAYLIST_HISTORY, &info))
    {
+      bool ret = false;
       info.need_push = true;
-      return menu_displaylist_ctl(DISPLAYLIST_PROCESS, &info);
+      ret = menu_displaylist_process(&info);
+      menu_displaylist_info_free(&info);
+      return ret;
    }
+
+   menu_displaylist_info_free(&info);
 
    return false;
 }
@@ -1186,8 +1201,13 @@ menu_ctx_driver_t menu_ctx_zarch = {
    NULL,
    zarch_load_image,
    "zarch",
-   NULL,
-   NULL,
-   NULL,
-   NULL
+   NULL,  /* environ */
+   NULL,  /* pointer_tap */
+   NULL,  /* update_thumbnail_path */
+   NULL,  /* update_thumbnail_image */
+   NULL,  /* set_thumbnail_system */
+   NULL,  /* set_thumbnail_content */
+   NULL,  /* osk_ptr_at_pos */
+   NULL,  /* update_savestate_thumbnail_path */
+   NULL,  /* update_savestate_thumbnail_image */
 };

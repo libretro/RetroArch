@@ -36,7 +36,7 @@
 #endif
 
 #include "../../tasks/tasks_internal.h"
-#include "../input_config.h"
+#include "../input_driver.h"
 
 #include "../../verbosity.h"
 
@@ -197,11 +197,11 @@ static bool xinput_joypad_init(void *data)
 
    if (!g_xinput_dll)
    {
-      RARCH_ERR("Failed to load XInput, ensure DirectX and controller drivers are up to date.\n");
+      RARCH_ERR("[XInput]: Failed to load XInput, ensure DirectX and controller drivers are up to date.\n");
       return false;
    }
 
-   RARCH_LOG("Found XInput v%s.\n", version);
+   RARCH_LOG("[XInput]: Found XInput v%s.\n", version);
 
    /* If we get here then an xinput DLL is correctly loaded.
     * First try to load ordinal 100 (XInputGetStateEx).
@@ -219,17 +219,17 @@ static bool xinput_joypad_init(void *data)
 
       if (!g_XInputGetStateEx)
       {
-         RARCH_ERR("Failed to init XInput: DLL is invalid or corrupt.\n");
+         RARCH_ERR("[XInput]: Failed to init: DLL is invalid or corrupt.\n");
          dylib_close(g_xinput_dll);
          return false; /* DLL was loaded but did not contain the correct function. */
       }
-      RARCH_WARN("XInput: No guide button support.\n");
+      RARCH_WARN("[XInput]: No guide button support.\n");
    }
 
    g_XInputSetState = (XInputSetState_t)dylib_proc(g_xinput_dll, "XInputSetState");
    if (!g_XInputSetState)
    {
-      RARCH_ERR("Failed to init XInput: DLL is invalid or corrupt.\n");
+      RARCH_ERR("[XInput]: Failed to init: DLL is invalid or corrupt.\n");
       dylib_close(g_xinput_dll);
       return false; /* DLL was loaded but did not contain the correct function. */
    }
@@ -243,7 +243,7 @@ static bool xinput_joypad_init(void *data)
    {
       g_xinput_states[i].connected = !(g_XInputGetStateEx(i, &dummy_state) == ERROR_DEVICE_NOT_CONNECTED);
       if (g_xinput_states[i].connected)
-         RARCH_LOG("Found XInput controller, user #%u\n", i);
+         RARCH_LOG("[XInput]: Found controller, user #%u\n", i);
    }
 
    if ((!g_xinput_states[0].connected) &&
@@ -251,7 +251,13 @@ static bool xinput_joypad_init(void *data)
          (!g_xinput_states[2].connected) &&
          (!g_xinput_states[3].connected))
       return false;
-
+#if (1)
+   else
+   {
+      RARCH_LOG("[XInput]: Pads connected: %d\n", g_xinput_states[0].connected + 
+      g_xinput_states[1].connected + g_xinput_states[2].connected + g_xinput_states[3].connected);
+   }
+#endif
    g_xinput_block_pads = true;
 
    /* We're going to have to be buddies with dinput if we want to be able
@@ -264,6 +270,7 @@ static bool xinput_joypad_init(void *data)
 
    for (j = 0; j < MAX_USERS; j++)
    {
+      RARCH_LOG("[XInput]: Attempting autoconf for, user #%u\n", j);
       if (pad_index_to_xuser_index(j) > -1)
       {
          if (!input_autoconfigure_connect(
@@ -368,11 +375,11 @@ static bool xinput_joypad_button(unsigned port_num, uint16_t joykey)
 static int16_t xinput_joypad_axis (unsigned port_num, uint32_t joyaxis)
 {
    int xuser;
-   int16_t val  = 0;
-   int     axis = -1;
-
-   bool is_neg  = false;
-   bool is_pos  = false;
+   int16_t val         = 0;
+   int     axis        = -1;
+   bool is_neg         = false;
+   bool is_pos         = false;
+   XINPUT_GAMEPAD* pad = NULL;
 
    if (joyaxis == AXIS_NONE)
       return 0;
@@ -397,7 +404,7 @@ static int16_t xinput_joypad_axis (unsigned port_num, uint32_t joyaxis)
       is_pos = true;
    }
 
-   XINPUT_GAMEPAD* pad = &(g_xinput_states[xuser].xstate.Gamepad);
+   pad = &(g_xinput_states[xuser].xstate.Gamepad);
 
    switch (axis)
    {

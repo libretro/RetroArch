@@ -31,6 +31,7 @@
 #endif
 
 #include <retro_miscellaneous.h>
+#include <retro_timers.h>
 
 #include "../audio_driver.h"
 #include "../../verbosity.h"
@@ -173,8 +174,7 @@ static size_t al_fill_internal_buf(al_t *al, const void *buf, size_t size)
    return read_size;
 }
 
-static ssize_t al_write(void *data, const void *buf_, size_t size,
-      bool is_perfcnt_enable)
+static ssize_t al_write(void *data, const void *buf_, size_t size)
 {
    al_t           *al = (al_t*)data;
    const uint8_t *buf = (const uint8_t*)buf_;

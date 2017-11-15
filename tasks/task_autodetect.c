@@ -21,9 +21,10 @@
 #include <compat/strl.h>
 #include <lists/dir_list.h>
 #include <file/file_path.h>
+#include <file/config_file.h>
 #include <string/stdstring.h>
 
-#include "../input/input_config.h"
+#include "../input/input_driver.h"
 
 #include "../configuration.h"
 #include "../file_path_special.h"
@@ -32,45 +33,54 @@
 
 #include "tasks_internal.h"
 
-typedef struct autoconfig_disconnect
-{
-   unsigned idx;
-   char msg[255];
-} autoconfig_disconnect_t;
+typedef struct autoconfig_disconnect autoconfig_disconnect_t;
+typedef struct autoconfig_params     autoconfig_params_t;
 
-typedef struct autoconfig_params
+struct autoconfig_disconnect
 {
-   char  name[255];
-   char  driver[255];
-   char  display_name[255];
    unsigned idx;
+   char *msg;
+};
+
+struct autoconfig_params
+{
    int32_t vid;
    int32_t pid;
+   unsigned idx;
    uint32_t max_users;
-   char autoconfig_directory[4096];
-} autoconfig_params_t;
+   char  *name;
+   char  *autoconfig_directory;
+};
+
+static bool input_autoconfigured[MAX_USERS];
+static unsigned input_device_name_index[MAX_USERS];
+static bool input_autoconfigure_swap_override;
+
+bool input_autoconfigure_get_swap_override(void)
+{
+   return input_autoconfigure_swap_override;
+}
 
 /* Adds an index for devices with the same name,
  * so they can be identified in the GUI. */
 static void input_autoconfigure_joypad_reindex_devices(autoconfig_params_t *params)
 {
    unsigned i;
-   settings_t      *settings = config_get_ptr();
 
    for(i = 0; i < params->max_users; i++)
-      settings->input.device_name_index[i] = 0;
+      input_device_name_index[i] = 0;
 
    for(i = 0; i < params->max_users; i++)
    {
       unsigned j;
-      const char *tmp = settings->input.device_names[i];
+      const char *tmp = input_config_get_device_name(i);
       int k           = 1;
 
       for(j = 0; j < params->max_users; j++)
       {
-         if(string_is_equal(tmp, settings->input.device_names[j])
-               && settings->input.device_name_index[i] == 0)
-            settings->input.device_name_index[j] = k++;
+         if(string_is_equal(tmp, input_config_get_device_name(j))
+               && input_device_name_index[i] == 0)
+            input_device_name_index[j] = k++;
       }
    }
 }
@@ -120,13 +130,10 @@ static int input_autoconfigure_joypad_try_from_conf(config_file_t *conf,
       score += 3;
 
    /* Check for name match */
-   if (string_is_equal(ident, params->name))
+   if (!string_is_empty(params->name)
+         && !string_is_empty(ident)
+         && string_is_equal(ident, params->name))
       score += 2;
-   else
-   {
-      if (strstr(params->name, ident))
-         score += 1;
-   }
 
    return score;
 }
@@ -134,11 +141,12 @@ static int input_autoconfigure_joypad_try_from_conf(config_file_t *conf,
 static void input_autoconfigure_joypad_add(config_file_t *conf,
       autoconfig_params_t *params, retro_task_t *task)
 {
-   char msg[128];
-   char display_name[128];
-   char device_type[128];
-   bool block_osd_spam                = false;
-   settings_t      *settings          = config_get_ptr();
+   char msg[128], display_name[128], device_type[128];
+   /* This will be the case if input driver is reinitialized.
+    * No reason to spam autoconfigure messages every time. */
+   bool block_osd_spam                = 
+      input_autoconfigured[params->idx]
+      && !string_is_empty(params->name);
 
    msg[0] = display_name[0] = device_type[0] = '\0';
 
@@ -147,38 +155,52 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
    config_get_array(conf, "input_device_type", device_type,
          sizeof(device_type));
 
-   if (!settings)
-      return;
+   input_autoconfigured[params->idx] = true;
 
-   /* This will be the case if input driver is reinitialized.
-    * No reason to spam autoconfigure messages every time. */
-   block_osd_spam = settings->input.autoconfigured[params->idx]
-      && !string_is_empty(params->name);
-
-   settings->input.autoconfigured[params->idx] = true;
    input_autoconfigure_joypad_conf(conf,
-         settings->input.autoconf_binds[params->idx]);
+         input_autoconf_binds[params->idx]);
 
-   if (string_is_equal(device_type, "remote"))
+   if (string_is_equal_fast(device_type, "remote", 6))
    {
       static bool remote_is_bound        = false;
 
       snprintf(msg, sizeof(msg), "%s configured.",
-            string_is_empty(display_name) ? params->name : display_name);
+            (string_is_empty(display_name) &&
+             !string_is_empty(params->name)) ? params->name : (!string_is_empty(display_name) ? display_name : "N/A"));
 
       if(!remote_is_bound)
+      {
+         task_free_title(task);
          task_set_title(task, strdup(msg));
+      }
       remote_is_bound = true;
+      if (params->idx == 0)
+         input_autoconfigure_swap_override = true;
    }
    else
    {
+      bool tmp = false;
       snprintf(msg, sizeof(msg), "%s %s #%u.",
-            string_is_empty(display_name) ? params->name : display_name,
+            (string_is_empty(display_name) &&
+             !string_is_empty(params->name)) 
+            ? params->name : (!string_is_empty(display_name) ? display_name : "N/A"),
             msg_hash_to_str(MSG_DEVICE_CONFIGURED_IN_PORT),
             params->idx);
 
+      /* allow overriding the swap menu controls for player 1*/
+      if (params->idx == 0)
+      {
+         if (config_get_bool(conf, "input_swap_override", &tmp))
+            input_autoconfigure_swap_override = tmp;
+         else
+            input_autoconfigure_swap_override = false;
+      }
+
       if (!block_osd_spam)
+      {
+         task_free_title(task);
          task_set_title(task, strdup(msg));
+      }
    }
 
 
@@ -220,15 +242,22 @@ static bool input_autoconfigure_joypad_from_conf_dir(
    if (!list || !list->size)
    {
       if (list)
+      {
          string_list_free(list);
-      list = dir_list_new_special(params->autoconfig_directory,
-            DIR_LIST_AUTOCONFIG, "cfg");
+         list = NULL;
+      }
+      if (!string_is_empty(params->autoconfig_directory))
+         list = dir_list_new_special(params->autoconfig_directory,
+               DIR_LIST_AUTOCONFIG, "cfg");
    }
 
    if(!list)
       return false;
 
-   RARCH_LOG("Autodetect: %d profiles found.\n", list->size);
+   if (list)
+   {
+      RARCH_LOG("[Autoconf]: %d profiles found.\n", list->size);
+   }
 
    for (i = 0; i < list->size; i++)
    {
@@ -257,7 +286,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
 
          config_get_config_path(conf, conf_path, sizeof(conf_path));
 
-         RARCH_LOG("Autodetect: selected configuration: %s\n", conf_path);
+         RARCH_LOG("[Autoconf]: selected configuration: %s\n", conf_path);
          input_autoconfigure_joypad_add(conf, params, task);
          config_file_free(conf);
          ret = 1;
@@ -292,6 +321,18 @@ static bool input_autoconfigure_joypad_from_conf_internal(
    return false;
 }
 
+static void input_autoconfigure_params_free(autoconfig_params_t *params)
+{
+   if (!params)
+      return;
+   if (!string_is_empty(params->name))
+      free(params->name);
+   if (!string_is_empty(params->autoconfig_directory))
+      free(params->autoconfig_directory);
+   params->name                 = NULL;
+   params->autoconfig_directory = NULL;
+}
+
 static void input_autoconfigure_connect_handler(retro_task_t *task)
 {
    autoconfig_params_t *params = (autoconfig_params_t*)task->state;
@@ -305,30 +346,42 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
       char msg[255];
 
       msg[0] = '\0';
-#ifndef ANDROID
-      RARCH_LOG("Autodetect: no profiles found for %s (%d/%d).\n",
-            params->name, params->vid, params->pid);
+#ifdef ANDROID
+      if (!string_is_empty(params->name))
+         free(params->name);
+      params->name = strdup("Android Gamepad");
 
-      snprintf(msg, sizeof(msg), "%s (%ld/%ld) %s.",
-            params->name, (long)params->vid, (long)params->pid,
-            msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED));
-#else
-      strlcpy(params->name, "Android Gamepad", sizeof(params->name));
       if(input_autoconfigure_joypad_from_conf_internal(params, task))
       {
-         RARCH_LOG("Autodetect: no profiles found for %s (%d/%d). Using fallback\n",
-               params->name, params->vid, params->pid);
+         RARCH_LOG("[Autoconf]: no profiles found for %s (%d/%d). Using fallback\n",
+               !string_is_empty(params->name) ? params->name : "N/A",
+               params->vid, params->pid);
 
          snprintf(msg, sizeof(msg), "%s (%ld/%ld) %s.",
-               params->name, (long)params->vid, (long)params->pid,
+               !string_is_empty(params->name) ? params->name : "N/A",
+               (long)params->vid, (long)params->pid,
                msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED_FALLBACK));
       }
+#else
+      RARCH_LOG("[Autoconf]: no profiles found for %s (%d/%d).\n",
+            !string_is_empty(params->name) ? params->name : "N/A",
+            params->vid, params->pid);
+
+      snprintf(msg, sizeof(msg), "%s (%ld/%ld) %s.",
+            !string_is_empty(params->name) ? params->name : "N/A",
+            (long)params->vid, (long)params->pid,
+            msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED));
 #endif
+      task_free_title(task);
       task_set_title(task, strdup(msg));
    }
 
 end:
-   free(params);
+   if (params)
+   {
+      input_autoconfigure_params_free(params);
+      free(params);
+   }
    task_set_finished(task, true);
 }
 
@@ -342,6 +395,8 @@ static void input_autoconfigure_disconnect_handler(retro_task_t *task)
 
    RARCH_LOG("%s: %s\n", msg_hash_to_str(MSG_AUTODETECT), params->msg);
 
+   if (!string_is_empty(params->msg))
+      free(params->msg);
    free(params);
 }
 
@@ -350,7 +405,6 @@ bool input_autoconfigure_disconnect(unsigned i, const char *ident)
    char msg[255];
    retro_task_t         *task      = (retro_task_t*)calloc(1, sizeof(*task));
    autoconfig_disconnect_t *state  = (autoconfig_disconnect_t*)calloc(1, sizeof(*state));
-   settings_t            *settings = config_get_ptr();
 
    if (!state || !task)
       goto error;
@@ -363,24 +417,56 @@ bool input_autoconfigure_disconnect(unsigned i, const char *ident)
          msg_hash_to_str(MSG_DEVICE_DISCONNECTED_FROM_PORT),
          i, ident);
 
-   strlcpy(state->msg, msg, sizeof(state->msg));
+   state->msg    = strdup(msg);
 
-   settings->input.device_names[state->idx][0] = '\0';
+   input_config_clear_device_name(state->idx);
 
    task->state   = state;
    task->handler = input_autoconfigure_disconnect_handler;
 
-   task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
+   task_queue_push(task);
 
    return true;
 
 error:
    if (state)
+   {
+      if (!string_is_empty(state->msg))
+         free(state->msg);
       free(state);
+   }
    if (task)
       free(task);
 
    return false;
+}
+
+void input_autoconfigure_reset(void)
+{
+   unsigned i, j;
+
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      for (j = 0; j < RARCH_BIND_LIST_END; j++)
+      {
+         input_autoconf_binds[i][j].joykey  = NO_BTN;
+         input_autoconf_binds[i][j].joyaxis = AXIS_NONE;
+      }
+      input_device_name_index[i] = 0;
+      input_autoconfigured[i]    = 0;
+   }
+
+   input_autoconfigure_swap_override = false;
+}
+
+bool input_is_autoconfigured(unsigned i)
+{
+   return input_autoconfigured[i];
+}
+
+unsigned input_autoconfigure_get_device_name_index(unsigned i)
+{
+   return input_device_name_index[i];
 }
 
 bool input_autoconfigure_connect(
@@ -395,54 +481,58 @@ bool input_autoconfigure_connect(
    retro_task_t         *task = (retro_task_t*)calloc(1, sizeof(*task));
    autoconfig_params_t *state = (autoconfig_params_t*)calloc(1, sizeof(*state));
    settings_t       *settings = config_get_ptr();
+   const char *dir_autoconf   = settings ? settings->paths.directory_autoconfig : NULL;
+   bool autodetect_enable     = settings ? settings->bools.input_autodetect_enable : false;
 
-   if (!task || !state || !settings->input.autodetect_enable)
+   if (!task || !state || !autodetect_enable)
       goto error;
 
-   if (!string_is_empty(display_name))
-      strlcpy(state->display_name, display_name,
-            sizeof(state->display_name));
-
    if (!string_is_empty(name))
-      strlcpy(state->name, name, sizeof(state->name));
+      state->name                 = strdup(name);
 
-   if (!string_is_empty(driver))
-      strlcpy(state->driver, driver, sizeof(state->driver));
+   if (!string_is_empty(dir_autoconf))
+      state->autoconfig_directory = strdup(dir_autoconf);
 
-   if (!string_is_empty(settings->directory.autoconfig))
-      strlcpy(state->autoconfig_directory,
-            settings->directory.autoconfig,
-            sizeof(state->autoconfig_directory));
+   state->idx                     = idx;
+   state->vid                     = vid;
+   state->pid                     = pid;
+   state->max_users               = *(
+         input_driver_get_uint(INPUT_ACTION_MAX_USERS));
 
-   state->idx       = idx;
-   state->vid       = vid;
-   state->pid       = pid;
-   state->max_users = settings->input.max_users;
-
-   input_config_set_device_name(state->idx, state->name);
-   settings->input.pid[state->idx]  = state->pid;
-   settings->input.vid[state->idx]  = state->vid;
-
+   if (!string_is_empty(state->name))
+         input_config_set_device_name(state->idx, state->name);
+   input_config_set_pid(state->idx, state->pid);
+   input_config_set_vid(state->idx, state->vid);
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
-      settings->input.autoconf_binds[state->idx][i].joykey           = NO_BTN;
-      settings->input.autoconf_binds[state->idx][i].joyaxis          = AXIS_NONE;
-      settings->input.autoconf_binds[state->idx][i].joykey_label[0]  = '\0';
-      settings->input.autoconf_binds[state->idx][i].joyaxis_label[0] = '\0';
+      input_autoconf_binds[state->idx][i].joykey           = NO_BTN;
+      input_autoconf_binds[state->idx][i].joyaxis          = AXIS_NONE;
+      if ( 
+          !string_is_empty(input_autoconf_binds[state->idx][i].joykey_label))
+         free(input_autoconf_binds[state->idx][i].joykey_label);
+      if ( 
+          !string_is_empty(input_autoconf_binds[state->idx][i].joyaxis_label))
+         free(input_autoconf_binds[state->idx][i].joyaxis_label);
+      input_autoconf_binds[state->idx][i].joykey_label      = NULL;
+      input_autoconf_binds[state->idx][i].joyaxis_label     = NULL;
    }
-   settings->input.autoconfigured[state->idx] = false;
 
-   task->state   = state;
-   task->handler = input_autoconfigure_connect_handler;
+   input_autoconfigured[state->idx] = false;
 
-   task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
+   task->state                      = state;
+   task->handler                    = input_autoconfigure_connect_handler;
+
+   task_queue_push(task);
 
    return true;
 
 error:
    if (state)
+   {
+      input_autoconfigure_params_free(state);
       free(state);
+   }
    if (task)
       free(task);
 

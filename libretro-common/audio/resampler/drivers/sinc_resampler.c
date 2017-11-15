@@ -96,6 +96,12 @@
 #define ENABLE_AVX 0
 #endif
 
+#if SINC_COEFF_LERP
+#define TAPS_MULT 2
+#else
+#define TAPS_MULT 1
+#endif
+
 #if defined(SINC_WINDOW_LANCZOS)
 #define window_function(idx)  (lanzcos_window_function(idx))
 #elif defined(SINC_WINDOW_KAISER)
@@ -131,17 +137,14 @@ typedef struct rarch_sinc_resampler
     * are created in a single calloc().
     * Ensure that we get as good cache locality as we can hope for. */
    float *main_buffer;
-
-   bool neon_enabled;
 } rarch_sinc_resampler_t;
 
 #if defined(__ARM_NEON__) && !defined(SINC_COEFF_LERP)
 /* Assumes that taps >= 8, and that taps is a multiple of 8. */
 void process_sinc_neon_asm(float *out, const float *left, 
       const float *right, const float *coeff, unsigned taps);
-#endif
 
-static void resampler_sinc_process(void *re_, struct resampler_data *data)
+static void resampler_sinc_process_neon(void *re_, struct resampler_data *data)
 {
    rarch_sinc_resampler_t *resamp = (rarch_sinc_resampler_t*)re_;
 
@@ -177,20 +180,66 @@ static void resampler_sinc_process(void *re_, struct resampler_data *data)
          const float *buffer_r    = resamp->buffer_r + resamp->ptr;
          unsigned taps            = resamp->taps;
          unsigned phase           = resamp->time >> SUBPHASE_BITS;
-#if SINC_COEFF_LERP
-         const float *phase_table = resamp->phase_table + phase * taps * 2;
-         const float *delta_table = phase_table + taps;
-#else
          const float *phase_table = resamp->phase_table + phase * taps;
+
+         process_sinc_neon_asm(output, buffer_l, buffer_r, phase_table, taps);
+
+         output += 2;
+         out_frames++;
+         resamp->time += ratio;
+      }
+   }
+
+   data->output_frames = out_frames;
+}
 #endif
 
 #if defined(__AVX__) && ENABLE_AVX
-         __m256 sum_l             = _mm256_setzero_ps();
-         __m256 sum_r             = _mm256_setzero_ps();
+static void resampler_sinc_process_avx(void *re_, struct resampler_data *data)
+{
+   rarch_sinc_resampler_t *resamp = (rarch_sinc_resampler_t*)re_;
+
+   uint32_t ratio                 = PHASES / data->ratio;
+   const float *input             = data->data_in;
+   float *output                  = data->data_out;
+   size_t frames                  = data->input_frames;
+   size_t out_frames              = 0;
+
+   while (frames)
+   {
+      while (frames && resamp->time >= PHASES)
+      {
+         /* Push in reverse to make filter more obvious. */
+         if (!resamp->ptr)
+            resamp->ptr = resamp->taps;
+         resamp->ptr--;
+
+         resamp->buffer_l[resamp->ptr + resamp->taps] = 
+         resamp->buffer_l[resamp->ptr]                = *input++;
+
+         resamp->buffer_r[resamp->ptr + resamp->taps] = 
+         resamp->buffer_r[resamp->ptr]                = *input++;
+
+         resamp->time                                -= PHASES;
+         frames--;
+      }
+
+      while (resamp->time < PHASES)
+      {
+         unsigned i;
+         const float *buffer_l    = resamp->buffer_l + resamp->ptr;
+         const float *buffer_r    = resamp->buffer_r + resamp->ptr;
+         unsigned taps            = resamp->taps;
+         unsigned phase           = resamp->time >> SUBPHASE_BITS;
+         const float *phase_table = resamp->phase_table + phase * taps * TAPS_MULT;
 #if SINC_COEFF_LERP
+         const float *delta_table = phase_table + taps;
          __m256 delta             = _mm256_set1_ps((float)
                (resamp->time & SUBPHASE_MASK) * SUBPHASE_MOD);
 #endif
+
+         __m256 sum_l             = _mm256_setzero_ps();
+         __m256 sum_r             = _mm256_setzero_ps();
 
          for (i = 0; i < taps; i += 8)
          {
@@ -221,14 +270,64 @@ static void resampler_sinc_process(void *re_, struct resampler_data *data)
           * There doesn't seem to be any _mm256_store_ss intrinsic. */
          _mm_store_ss(output + 0, _mm256_extractf128_ps(res_l, 0));
          _mm_store_ss(output + 1, _mm256_extractf128_ps(res_r, 0));
-#elif defined(__SSE__)
+
+         output += 2;
+         out_frames++;
+         resamp->time += ratio;
+      }
+   }
+
+   data->output_frames = out_frames;
+}
+#endif
+
+#if defined(__SSE__)
+static void resampler_sinc_process_sse(void *re_, struct resampler_data *data)
+{
+   rarch_sinc_resampler_t *resamp = (rarch_sinc_resampler_t*)re_;
+
+   uint32_t ratio                 = PHASES / data->ratio;
+   const float *input             = data->data_in;
+   float *output                  = data->data_out;
+   size_t frames                  = data->input_frames;
+   size_t out_frames              = 0;
+
+   while (frames)
+   {
+      while (frames && resamp->time >= PHASES)
+      {
+         /* Push in reverse to make filter more obvious. */
+         if (!resamp->ptr)
+            resamp->ptr = resamp->taps;
+         resamp->ptr--;
+
+         resamp->buffer_l[resamp->ptr + resamp->taps] = 
+         resamp->buffer_l[resamp->ptr]                = *input++;
+
+         resamp->buffer_r[resamp->ptr + resamp->taps] = 
+         resamp->buffer_r[resamp->ptr]                = *input++;
+
+         resamp->time                                -= PHASES;
+         frames--;
+      }
+
+      while (resamp->time < PHASES)
+      {
+         unsigned i;
          __m128 sum;
-         __m128 sum_l             = _mm_setzero_ps();
-         __m128 sum_r             = _mm_setzero_ps();
+         const float *buffer_l    = resamp->buffer_l + resamp->ptr;
+         const float *buffer_r    = resamp->buffer_r + resamp->ptr;
+         unsigned taps            = resamp->taps;
+         unsigned phase           = resamp->time >> SUBPHASE_BITS;
+         const float *phase_table = resamp->phase_table + phase * taps * TAPS_MULT;
 #if SINC_COEFF_LERP
+         const float *delta_table = phase_table + taps;
          __m128 delta             = _mm_set1_ps((float)
                (resamp->time & SUBPHASE_MASK) * SUBPHASE_MOD);
 #endif
+
+         __m128 sum_l             = _mm_setzero_ps();
+         __m128 sum_r             = _mm_setzero_ps();
 
          for (i = 0; i < taps; i += 4)
          {
@@ -270,46 +369,81 @@ static void resampler_sinc_process(void *re_, struct resampler_data *data)
 
          /* movehl { X, R, X, L } == { X, R, X, R } */
          _mm_store_ss(output + 1, _mm_movehl_ps(sum, sum));
-#elif defined(__ARM_NEON__) && !defined(SINC_COEFF_LERP)
-         if (resamp->neon_enabled)
-         {
-            process_sinc_neon_asm(output, buffer_l, buffer_r, phase_table, taps);
-
-            output += 2;
-            out_frames++;
-            resamp->time += ratio;
-            continue;
-         }
-#else
-         {
-            /* Plain ol' C */
-            float sum_l              = 0.0f;
-            float sum_r              = 0.0f;
-#if SINC_COEFF_LERP
-            float delta              = (float)
-               (resamp->time & SUBPHASE_MASK) * SUBPHASE_MOD;
-#endif
-
-            for (i = 0; i < taps; i++)
-            {
-#if SINC_COEFF_LERP
-               float sinc_val = phase_table[i] + delta_table[i] * delta;
-#else
-               float sinc_val = phase_table[i];
-#endif
-               sum_l         += buffer_l[i] * sinc_val;
-               sum_r         += buffer_r[i] * sinc_val;
-            }
-
-            output[0] = sum_l;
-            output[1] = sum_r;
-         }
-#endif
 
          output += 2;
          out_frames++;
          resamp->time += ratio;
       }
+   }
+
+   data->output_frames = out_frames;
+}
+#endif
+
+static void resampler_sinc_process_c(void *re_, struct resampler_data *data)
+{
+   rarch_sinc_resampler_t *resamp = (rarch_sinc_resampler_t*)re_;
+
+   uint32_t ratio                 = PHASES / data->ratio;
+   const float *input             = data->data_in;
+   float *output                  = data->data_out;
+   size_t frames                  = data->input_frames;
+   size_t out_frames              = 0;
+
+   while (frames)
+   {
+      while (frames && resamp->time >= PHASES)
+      {
+         /* Push in reverse to make filter more obvious. */
+         if (!resamp->ptr)
+            resamp->ptr = resamp->taps;
+         resamp->ptr--;
+
+         resamp->buffer_l[resamp->ptr + resamp->taps] = 
+            resamp->buffer_l[resamp->ptr]                = *input++;
+
+         resamp->buffer_r[resamp->ptr + resamp->taps] = 
+            resamp->buffer_r[resamp->ptr]                = *input++;
+
+         resamp->time                                -= PHASES;
+         frames--;
+      }
+
+      while (resamp->time < PHASES)
+      {
+         unsigned i;
+         const float *buffer_l    = resamp->buffer_l + resamp->ptr;
+         const float *buffer_r    = resamp->buffer_r + resamp->ptr;
+         unsigned taps            = resamp->taps;
+         unsigned phase           = resamp->time >> SUBPHASE_BITS;
+         const float *phase_table = resamp->phase_table + phase * taps * TAPS_MULT; 
+#if SINC_COEFF_LERP
+         const float *delta_table = phase_table + taps;
+         float delta              = (float)
+            (resamp->time & SUBPHASE_MASK) * SUBPHASE_MOD;
+#endif
+         float sum_l              = 0.0f;
+         float sum_r              = 0.0f;
+
+         for (i = 0; i < taps; i++)
+         {
+#if SINC_COEFF_LERP
+            float sinc_val = phase_table[i] + delta_table[i] * delta;
+#else
+            float sinc_val = phase_table[i];
+#endif
+            sum_l         += buffer_l[i] * sinc_val;
+            sum_r         += buffer_r[i] * sinc_val;
+         }
+
+         output[0] = sum_l;
+         output[1] = sum_r;
+
+         output += 2;
+         out_frames++;
+         resamp->time += ratio;
+      }
+
    }
 
    data->output_frames = out_frames;
@@ -411,10 +545,7 @@ static void *resampler_sinc_new(const struct resampler_config *config,
    re->taps     = (re->taps + 3) & ~3;
 #endif
 
-   phase_elems  = (1 << PHASE_BITS) * re->taps;
-#if SINC_COEFF_LERP
-   phase_elems *= 2;
-#endif
+   phase_elems  = ((1 << PHASE_BITS) * re->taps) * TAPS_MULT;
    elems        = phase_elems + 4 * re->taps;
 
    re->main_buffer = (float*)memalign_alloc(128, sizeof(float) * elems);
@@ -428,9 +559,17 @@ static void *resampler_sinc_new(const struct resampler_config *config,
    sinc_init_table(re, cutoff, re->phase_table,
          1 << PHASE_BITS, re->taps, SINC_COEFF_LERP);
 
-#if defined(__ARM_NEON__) 
+   sinc_resampler.process = resampler_sinc_process_c;
+
+#if defined(__AVX__) && ENABLE_AVX
+   if (mask & RESAMPLER_SIMD_AVX)
+      sinc_resampler.process = resampler_sinc_process_avx;
+#elif defined(__SSE__)
+   if (mask & RESAMPLER_SIMD_SSE)
+      sinc_resampler.process = resampler_sinc_process_sse;
+#elif defined(__ARM_NEON__) && !defined(SINC_COEFF_LERP)
    if (mask & RESAMPLER_SIMD_NEON)
-      re->neon_enabled = true;
+      sinc_resampler.process = resampler_sinc_process_neon;
 #endif
 
    return re;
@@ -442,7 +581,7 @@ error:
 
 retro_resampler_t sinc_resampler = {
    resampler_sinc_new,
-   resampler_sinc_process,
+   resampler_sinc_process_c,
    resampler_sinc_free,
    RESAMPLER_API_VERSION,
    "sinc",

@@ -8,6 +8,7 @@
 #include <wiiu/os/coroutine.h>
 #include <wiiu/os/debug.h>
 #include <wiiu/os/dynload.h>
+#include <wiiu/os/energy.h>
 #include <wiiu/os/event.h>
 #include <wiiu/os/exception.h>
 #include <wiiu/os/fastcondition.h>

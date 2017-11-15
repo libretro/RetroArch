@@ -13,37 +13,34 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdlib.h>
+
 #include <net/net_http.h>
-#include <queues/message_queue.h>
-#include <lists/string_list.h>
 #include <string/stdstring.h>
 #include <compat/strl.h>
 #include <file/file_path.h>
-#include <file/archive_file.h>
 #include <net/net_compat.h>
-#include <retro_stat.h>
+#include <retro_timers.h>
 
-#include "../msg_hash.h"
 #include "../verbosity.h"
 #include "tasks_internal.h"
 
 enum http_status_enum
 {
-   HTTP_STATUS_POLL = 0,
-   HTTP_STATUS_CONNECTION_TRANSFER,
+   HTTP_STATUS_CONNECTION_TRANSFER = 0,
    HTTP_STATUS_CONNECTION_TRANSFER_PARSE,
    HTTP_STATUS_TRANSFER,
    HTTP_STATUS_TRANSFER_PARSE,
    HTTP_STATUS_TRANSFER_PARSE_FREE
 };
 
-typedef struct http_transfer_info
+struct http_transfer_info
 {
    char url[255];
    int progress;
-} http_transfer_info_t;
+};
 
-typedef struct http_handle
+struct http_handle
 {
    struct
    {
@@ -56,7 +53,10 @@ typedef struct http_handle
    transfer_cb_t  cb;
    unsigned status;
    bool error;
-} http_handle_t;
+};
+
+typedef struct http_transfer_info http_transfer_info_t;
+typedef struct http_handle http_handle_t;
 
 static int task_http_con_iterate_transfer(http_handle_t *http)
 {
@@ -154,7 +154,6 @@ static void task_http_transfer_handler(retro_task_t *task)
             goto task_finished;
          break;
       case HTTP_STATUS_TRANSFER_PARSE:
-      case HTTP_STATUS_POLL:
          goto task_finished;
       default:
          break;
@@ -235,7 +234,9 @@ static bool task_http_retriever(retro_task_t *task, void *data)
    return true;
 }
 
-static void* task_push_http_transfer_generic(struct http_connection_t *conn, const char *url, bool mute, const char *type,
+static void* task_push_http_transfer_generic(
+      struct http_connection_t *conn,
+      const char *url, bool mute, const char *type,
       retro_task_callback_t cb, void *user_data)
 {
    task_finder_data_t find_data;
@@ -252,7 +253,7 @@ static void* task_push_http_transfer_generic(struct http_connection_t *conn, con
    find_data.userdata = (void*)url;
 
    /* Concurrent download of the same file is not allowed */
-   if (task_queue_ctl(TASK_QUEUE_CTL_FIND, &find_data))
+   if (task_queue_find(&find_data))
    {
       RARCH_LOG("[http] '%s'' is already being downloaded.\n", url);
       return NULL;
@@ -292,7 +293,7 @@ static void* task_push_http_transfer_generic(struct http_connection_t *conn, con
 
    t->title                = strdup(tmp);
 
-   task_queue_ctl(TASK_QUEUE_CTL_PUSH, t);
+   task_queue_push(t);
 
    return t;
 
@@ -305,7 +306,8 @@ error:
    return NULL;
 }
 
-void* task_push_http_transfer(const char *url, bool mute, const char *type,
+void* task_push_http_transfer(const char *url, bool mute,
+      const char *type,
       retro_task_callback_t cb, void *user_data)
 {
    struct http_connection_t *conn;
@@ -315,14 +317,16 @@ void* task_push_http_transfer(const char *url, bool mute, const char *type,
    return task_push_http_transfer_generic(conn, url, mute, type, cb, user_data);
 }
 
-void* task_push_http_post_transfer(const char *url, const char *post_data, bool mute,
+void* task_push_http_post_transfer(const char *url,
+      const char *post_data, bool mute,
       const char *type, retro_task_callback_t cb, void *user_data)
 {
    struct http_connection_t *conn;
 
    conn = net_http_connection_new(url, "POST", post_data);
 
-   return task_push_http_transfer_generic(conn, url, mute, type, cb, user_data);
+   return task_push_http_transfer_generic(conn,
+         url, mute, type, cb, user_data);
 }
 
 task_retriever_info_t *http_task_get_transfer_list(void)
@@ -335,6 +339,7 @@ task_retriever_info_t *http_task_get_transfer_list(void)
    retrieve_data.func         = task_http_retriever;
 
    /* Build list of current HTTP transfers and return it */
-   task_queue_ctl(TASK_QUEUE_CTL_RETRIEVE, &retrieve_data);
+   task_queue_retrieve(&retrieve_data);
+
    return retrieve_data.list;
 }

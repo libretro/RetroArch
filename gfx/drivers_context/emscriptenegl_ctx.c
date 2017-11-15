@@ -25,7 +25,7 @@
 #include "../../config.h"
 #endif
 
-#include "../video_context_driver.h"
+#include "../video_driver.h"
 
 #ifdef HAVE_EGL
 #include "../common/egl_common.h"
@@ -74,7 +74,7 @@ static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
    *quit       = false;
 }
 
-static void gfx_ctx_emscripten_swap_buffers(void *data, video_frame_info_t *video_info)
+static void gfx_ctx_emscripten_swap_buffers(void *data, void *data2)
 {
    (void)data;
    /* no-op in emscripten, no way to force swap/wait for VSync in browsers */
@@ -135,7 +135,7 @@ static void *gfx_ctx_emscripten_init(video_frame_info_t *video_info, void *video
       return (void*)"emscripten";
    }
 
-   if (!egl_init_context(&emscripten->egl, EGL_DEFAULT_DISPLAY,
+   if (!egl_init_context(&emscripten->egl, EGL_NONE, EGL_DEFAULT_DISPLAY,
             &major, &minor, &n, attribute_list))
    {
       egl_report_error();

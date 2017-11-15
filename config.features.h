@@ -134,6 +134,12 @@ static const bool _alsa_supp = true;
 static const bool _alsa_supp = false;
 #endif
 
+#ifdef HAVE_TINYALSA
+static const bool _tinyalsa_supp = true;
+#else
+static const bool _tinyalsa_supp = false;
+#endif
+
 #ifdef HAVE_COREAUDIO
 static const bool _coreaudio_supp = true;
 #else
@@ -194,6 +200,12 @@ static const bool _dsound_supp = true;
 static const bool _dsound_supp = false;
 #endif
 
+#ifdef HAVE_WASAPI
+static const bool _wasapi_supp = true;
+#else
+static const bool _wasapi_supp = false;
+#endif
+
 #ifdef HAVE_XAUDIO
 static const bool _xaudio_supp = true;
 #else
@@ -246,12 +258,6 @@ static const bool _libxml2_supp = false;
 static const bool _sdl_image_supp = true;
 #else
 static const bool _sdl_image_supp = false;
-#endif
-
-#ifdef HAVE_FBO
-static const bool _fbo_supp = true;
-#else
-static const bool _fbo_supp = false;
 #endif
 
 #ifdef HAVE_DYNAMIC

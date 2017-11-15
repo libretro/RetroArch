@@ -27,24 +27,50 @@
 #include <stddef.h>
 
 #include <retro_common_api.h>
+#include <retro_inline.h>
 
 RETRO_BEGIN_DECLS
+
+struct fifo_buffer
+{
+   uint8_t *buffer;
+   size_t size;
+   size_t first;
+   size_t end;
+};
 
 typedef struct fifo_buffer fifo_buffer_t;
 
 fifo_buffer_t *fifo_new(size_t size);
 
-void fifo_clear(fifo_buffer_t *buffer);
+static INLINE void fifo_clear(fifo_buffer_t *buffer)
+{
+   buffer->first = 0;
+   buffer->end   = 0;
+}
 
 void fifo_write(fifo_buffer_t *buffer, const void *in_buf, size_t size);
 
 void fifo_read(fifo_buffer_t *buffer, void *in_buf, size_t size);
 
-void fifo_free(fifo_buffer_t *buffer);
+static INLINE void fifo_free(fifo_buffer_t *buffer)
+{
+   if (!buffer)
+      return;
 
-size_t fifo_read_avail(fifo_buffer_t *buffer);
+   free(buffer->buffer);
+   free(buffer);
+}
 
-size_t fifo_write_avail(fifo_buffer_t *buffer);
+static INLINE size_t fifo_read_avail(fifo_buffer_t *buffer)
+{
+   return (buffer->end + ((buffer->end < buffer->first) ? buffer->size : 0)) - buffer->first;
+}
+
+static INLINE size_t fifo_write_avail(fifo_buffer_t *buffer)
+{
+   return (buffer->size - 1) - ((buffer->end + ((buffer->end < buffer->first) ? buffer->size : 0)) - buffer->first);
+}
 
 RETRO_END_DECLS
 

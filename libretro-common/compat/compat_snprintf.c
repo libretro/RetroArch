@@ -21,6 +21,7 @@
  */
 
 /* THIS FILE HAS NOT BEEN VALIDATED ON PLATFORMS BESIDES MSVC */
+#ifdef _MSC_VER
 
 #include <retro_common.h>
 
@@ -56,3 +57,14 @@ int c99_snprintf_retro__(char *outBuf, size_t size, const char *format, ...)
 
    return count;
 }
+
+int c89_vscprintf_retro__(const char *format, va_list pargs)
+{
+   int retval;
+   va_list argcopy;
+   va_copy(argcopy, pargs);
+   retval = vsnprintf(NULL, 0, format, argcopy);
+   va_end(argcopy);
+   return retval;
+}
+#endif

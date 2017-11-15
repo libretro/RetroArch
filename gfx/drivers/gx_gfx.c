@@ -29,7 +29,6 @@
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
-#include "../../menu/menu_display.h"
 #endif
 
 #ifdef HW_RVL
@@ -42,6 +41,37 @@
 #include "../../defines/gx_defines.h"
 #include "../../configuration.h"
 #include "../../driver.h"
+
+#ifndef _CPU_ISR_Disable
+#define _CPU_ISR_Disable( _isr_cookie ) \
+  { register u32 _disable_mask = 0; \
+	_isr_cookie = 0; \
+    __asm__ __volatile__ ( \
+	  "mfmsr %0\n" \
+	  "rlwinm %1,%0,0,17,15\n" \
+	  "mtmsr %1\n" \
+	  "extrwi %0,%0,1,16" \
+	  : "=&r" ((_isr_cookie)), "=&r" ((_disable_mask)) \
+	  : "0" ((_isr_cookie)), "1" ((_disable_mask)) \
+	); \
+  }
+#endif
+
+#ifndef _CPU_ISR_Restore
+#define _CPU_ISR_Restore( _isr_cookie )  \
+  { register u32 _enable_mask = 0; \
+	__asm__ __volatile__ ( \
+    "    cmpwi %0,0\n" \
+	"    beq 1f\n" \
+	"    mfmsr %1\n" \
+	"    ori %1,%1,0x8000\n" \
+	"    mtmsr %1\n" \
+	"1:" \
+	: "=r"((_isr_cookie)),"=&r" ((_enable_mask)) \
+	: "0"((_isr_cookie)),"1" ((_enable_mask)) \
+	); \
+  }
+#endif
 
 extern syssram* __SYS_LockSram(void);
 extern u32 __SYS_UnlockSram(u32 write);
@@ -88,20 +118,32 @@ static struct
 } menu_tex ATTRIBUTE_ALIGN(32);
 
 static OSCond g_video_cond;
-static unsigned g_current_framebuf;
-static volatile bool g_draw_done = false;
-static bool              g_vsync = false;
-static uint32_t g_orientation    = 0;
 
-static uint8_t gx_fifo[256 * 1024] ATTRIBUTE_ALIGN(32);
-static uint8_t display_list[1024]  ATTRIBUTE_ALIGN(32);
-static size_t display_list_size;
-uint16_t gx_xOrigin, gx_yOrigin;
+static volatile bool g_draw_done       = false;
+static bool              g_vsync       = false;
+
 int8_t gx_system_xOrigin, gx_used_system_xOrigin;
 int8_t gx_xOriginNeg, gx_xOriginPos;
 int8_t gx_yOriginNeg, gx_yOriginPos;
+
+static uint8_t gx_fifo[256 * 1024] ATTRIBUTE_ALIGN(32);
+static uint8_t display_list[1024]  ATTRIBUTE_ALIGN(32);
+
+static uint16_t gx_xOrigin             = 0;
+static uint16_t gx_yOrigin             = 0;
+
+static unsigned g_current_framebuf     = 0;
+static uint32_t g_orientation          = 0;
+
+static uint32_t retraceCount           = 0;
+static uint32_t referenceRetraceCount  = 0;
+
+static unsigned gx_old_width           = 0;
+static unsigned gx_old_height          = 0;
+
+static size_t display_list_size;
+
 GXRModeObj gx_mode;
-unsigned gx_old_width, gx_old_height;
 
 float verts[16] ATTRIBUTE_ALIGN(32) = {
    -1,  1, -0.5,
@@ -214,9 +256,15 @@ unsigned menu_gx_resolutions[][2] = {
 
 static void retrace_callback(u32 retrace_count)
 {
+   uint32_t level = 0;
+
    (void)retrace_count;
+
    g_draw_done = true;
    OSSignalCond(g_video_cond);
+   _CPU_ISR_Disable(level);
+   retraceCount = retrace_count;
+   _CPU_ISR_Restore(level);
 }
 
 static bool gx_isValidXOrigin(int origin)
@@ -237,20 +285,25 @@ static bool gx_isValidYOrigin(int origin)
 static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
       bool fullscreen)
 {
-   f32 y_scale;
+   int tmpOrigin;
    float refresh_rate;
-   u16 xfbWidth, xfbHeight;
    bool progressive;
    unsigned modetype, viHeightMultiplier, viWidth, tvmode,
             max_width, i;
-   gx_video_t *gx       = (gx_video_t*)data;
-   settings_t *settings = config_get_ptr();
+   size_t new_fb_pitch    = 0;
+   unsigned new_fb_width  = 0;
+   unsigned new_fb_height = 0;
+   float y_scale          = 0.0f;
+   uint16_t xfbWidth      = 0;
+   uint16_t xfbHeight     = 0;
+   gx_video_t *gx         = (gx_video_t*)data;
+   settings_t *settings   = config_get_ptr();
 
    /* stop vsync callback */
    VIDEO_SetPostRetraceCallback(NULL);
    g_draw_done = false;
    /* wait for next even field */
-   /* this prevents screen artefacts when switching 
+   /* this prevents screen artifacts when switching 
     * between interlaced & non-interlaced modes */
    do VIDEO_WaitVSync();
    while (!VIDEO_GetNextField());
@@ -258,7 +311,7 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    VIDEO_SetBlack(true);
    VIDEO_Flush();
    viHeightMultiplier = 1;
-   viWidth = settings->video.viwidth;
+   viWidth            = settings->uints.video_viwidth;
 
 #if defined(HW_RVL)
    progressive = CONF_GetProgressiveScan() > 0 && VIDEO_HaveComponentCable();
@@ -294,13 +347,13 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
          max_height = VI_MAX_HEIGHT_MPAL;
          break;
       case VI_EURGB60:
-         max_width = VI_MAX_WIDTH_NTSC;
-         max_height = VI_MAX_HEIGHT_NTSC;
+         max_width = VI_MAX_WIDTH_EURGB60;
+         max_height = VI_MAX_HEIGHT_EURGB60;
          break;
       default:
          tvmode = VI_NTSC;
-         max_width = VI_MAX_WIDTH_EURGB60;
-         max_height = VI_MAX_HEIGHT_EURGB60;
+         max_width = VI_MAX_WIDTH_NTSC;
+         max_height = VI_MAX_HEIGHT_NTSC;
          break;
    }
 
@@ -352,7 +405,8 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
       while(viWidth + gx_used_system_xOrigin > 720) gx_used_system_xOrigin++;
    }
 
-   int tmpOrigin = (max_width - gx_mode.viWidth) / 2;
+   tmpOrigin = (max_width - gx_mode.viWidth) / 2;
+
    if(gx_system_xOrigin > 0)
    {
       while(!gx_isValidXOrigin(tmpOrigin)) tmpOrigin--;
@@ -407,10 +461,7 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    gx->should_resize = true;
 
    /* calculate menu dimensions */
-   size_t new_fb_pitch;
-   unsigned new_fb_width;
-   unsigned new_fb_height  = (gx_mode.efbHeight / 
-         (gx->double_strike ? 1 : 2)) & ~3;
+   new_fb_height  = (gx_mode.efbHeight / (gx->double_strike ? 1 : 2)) & ~3;
 
    if (new_fb_height > 240)
       new_fb_height = 240;
@@ -427,14 +478,14 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    GX_SetViewportJitter(0, 0, gx_mode.fbWidth, gx_mode.efbHeight, 0, 1, 1);
    GX_SetDispCopySrc(0, 0, gx_mode.fbWidth, gx_mode.efbHeight);
 
-   y_scale = GX_GetYScaleFactor(gx_mode.efbHeight, gx_mode.xfbHeight);
-   xfbWidth = VIDEO_PadFramebufferWidth(gx_mode.fbWidth);
-   xfbHeight = GX_SetDispCopyYScale(y_scale);
-   GX_SetDispCopyDst(xfbWidth, xfbHeight);
+   y_scale   = GX_GetYScaleFactor(gx_mode.efbHeight, gx_mode.xfbHeight);
+   xfbWidth  = VIDEO_PadFramebufferWidth(gx_mode.fbWidth);
+   xfbHeight = GX_SetDispCopyYScale((f32)y_scale);
+   GX_SetDispCopyDst((u16)xfbWidth, (u16)xfbHeight);
 
    GX_SetCopyFilter(gx_mode.aa, gx_mode.sample_pattern,
          (gx_mode.xfbMode == VI_XFBMODE_SF) 
-         ? GX_FALSE : settings->video.vfilter,
+         ? GX_FALSE : settings->bools.video_vfilter,
          gx_mode.vfilter);
    GXColor color = { 0, 0, 0, 0xff };
    GX_SetCopyClear(color, GX_MAX_Z24);
@@ -546,17 +597,16 @@ static void setup_video_mode(gx_video_t *gx)
 
 static void init_texture(void *data, unsigned width, unsigned height)
 {
-   unsigned g_filter;
    size_t fb_pitch;
    unsigned fb_width, fb_height;
    gx_video_t *gx       = (gx_video_t*)data;
    GXTexObj *fb_ptr   	= (GXTexObj*)&g_tex.obj;
    GXTexObj *menu_ptr 	= (GXTexObj*)&menu_tex.obj;
    settings_t *settings = config_get_ptr();
+   unsigned g_filter    = settings->bools.video_smooth ? GX_LINEAR : GX_NEAR;
 
    width               &= ~3;
    height              &= ~3;
-   g_filter             = settings->video.smooth ? GX_LINEAR : GX_NEAR;
 
    menu_display_get_fb_size(&fb_width, &fb_height,
          &fb_pitch);
@@ -575,7 +625,11 @@ static void init_texture(void *data, unsigned width, unsigned height)
 static void init_vtx(void *data, const video_info_t *video)
 {
    Mtx44 m;
-   gx_video_t *gx = (gx_video_t*)data;
+   gx_video_t *gx      = (gx_video_t*)data;
+   uint32_t level      = 0;
+   _CPU_ISR_Disable(level);
+   referenceRetraceCount = retraceCount;
+   _CPU_ISR_Restore(level);
 
    GX_SetCullMode(GX_CULL_NONE);
    GX_SetClipMode(GX_CLIP_DISABLE);
@@ -702,7 +756,7 @@ static void *gx_init(const video_info_t *video,
    if (!gx)
       return NULL;
 
-   gxinput     = input_gx.init(settings->input.joypad_driver);
+   gxinput     = input_gx.init(settings->arrays.input_joypad_driver);
    *input      = gxinput ? &input_gx : NULL;
    *input_data = gxinput;
 
@@ -855,6 +909,7 @@ static void convert_texture32(const uint32_t *_src, uint32_t *_dst,
 
 static void gx_resize(void *data)
 {
+   int gamma;
    unsigned degrees;
    unsigned width, height;
    Mtx44 m1, m2;
@@ -872,11 +927,11 @@ static void gx_resize(void *data)
 
 #ifdef HW_RVL
    VIDEO_SetTrapFilter(global->console.softfilter_enable);
-   int gamma = global->console.screen.gamma_correction;
+   gamma = global->console.screen.gamma_correction;
    if(gamma == 0) gamma = 10; //default 1.0 gamma value
    VIDEO_SetGamma(gamma);
 #else
-	int gamma = global->console.screen.gamma_correction;
+	gamma = global->console.screen.gamma_correction;
 	GX_SetDispCopyGamma(MAX(0,MIN(2,gamma)));
 #endif
 
@@ -890,15 +945,15 @@ static void gx_resize(void *data)
             g_orientation == ORIENTATION_FLIPPED_ROTATED)
          desired_aspect = 1.0 / desired_aspect;
 
-      if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
          struct video_viewport *custom_vp = video_viewport_get_custom();
 
          if (!custom_vp->width || !custom_vp->height)
          {
-            custom_vp->x = 0;
-            custom_vp->y = 0;
-            custom_vp->width = gx->vp.full_width;
+            custom_vp->x      = 0;
+            custom_vp->y      = 0;
+            custom_vp->width  = gx->vp.full_width;
             custom_vp->height = gx->vp.full_height;
          }
 
@@ -1121,12 +1176,6 @@ static bool gx_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static bool gx_has_windowed(void *data)
-{
-   (void)data;
-   return false;
-}
-
 static void gx_set_rotation(void *data, unsigned orientation)
 {
    gx_video_t *gx = (gx_video_t*)data;
@@ -1213,6 +1262,8 @@ static void gx_get_video_output_next(void *data)
 }
 
 static const video_poke_interface_t gx_poke_interface = {
+   NULL,                      /* set_coords */
+   NULL,                      /* set_mvp */
    NULL,
    NULL,
    gx_set_video_mode,
@@ -1445,14 +1496,11 @@ static bool gx_frame(void *data, const void *frame,
       video_frame_info_t *video_info)
 {
    char fps_text_buf[128];
-   static struct retro_perf_counter gx_frame = {0};
    gx_video_t *gx                     = (gx_video_t*)data;
    u8                       clear_efb = GX_FALSE;
+   uint32_t level                     = 0;
 
    fps_text_buf[0]                    = '\0';
-
-   performance_counter_init(gx_frame, "gx_frame");
-   performance_counter_start_plus(video_info->is_perfcnt_enable, gx_frame);
 
    if(!gx || (!frame && !gx->menu_texture_enable))
       return true;
@@ -1485,11 +1533,6 @@ static bool gx_frame(void *data, const void *frame,
 
    if (frame)
    {
-      static struct retro_perf_counter gx_frame_convert = {0};
-
-      performance_counter_init(gx_frame_convert, "gx_frame_convert");
-      performance_counter_start_plus(video_info->is_perfcnt_enable, gx_frame_convert);
-
       if (gx->rgb32)
          convert_texture32(frame, g_tex.data, width, height, pitch);
       else if (gx->menu_texture_enable)
@@ -1497,8 +1540,6 @@ static bool gx_frame(void *data, const void *frame,
       else
          convert_texture16(frame, g_tex.data, width, height, pitch);
       DCFlushRange(g_tex.data, height * (width << (gx->rgb32 ? 2 : 1)));
-
-      performance_counter_stop_plus(video_info->is_perfcnt_enable, gx_frame_convert);
    }
 
    if (gx->menu_texture_enable && gx->menu_data)
@@ -1542,6 +1583,12 @@ static bool gx_frame(void *data, const void *frame,
       gx_render_overlay(gx);
 #endif
 
+   _CPU_ISR_Disable(level);
+   if (referenceRetraceCount > retraceCount)
+      VIDEO_WaitVSync();
+   referenceRetraceCount = retraceCount;
+   _CPU_ISR_Restore(level);
+
    GX_DrawDone();
 
    if (video_info->fps_show)
@@ -1582,7 +1629,9 @@ static bool gx_frame(void *data, const void *frame,
    VIDEO_SetNextFramebuffer(gx->framebuf[g_current_framebuf]);
    VIDEO_Flush();
 
-   performance_counter_stop_plus(video_info->is_perfcnt_enable, gx_frame);
+   _CPU_ISR_Disable(level);
+   ++referenceRetraceCount;
+   _CPU_ISR_Restore(level);
 
    return true;
 }
@@ -1604,7 +1653,7 @@ video_driver_t video_gx = {
    gx_alive,
    gx_focus,
    gx_suppress_screensaver,
-   gx_has_windowed,
+   NULL, /* has_windowed */
    gx_set_shader,
    gx_free,
    "gx",

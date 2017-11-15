@@ -12,6 +12,6 @@ static const char *stock_fragment_xmb = GLSL(
      vec3 normal=normalize(cross(X,Y));
      float c = (1.0 - dot(normal, up));
      c = (1.0 - cos(c*c))/3.0;
-     gl_FragColor = vec4(1.0, 1.0, 1.0, c);
+     gl_FragColor = vec4(c, c, c, 1.0);
    }
 );

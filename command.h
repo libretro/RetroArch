@@ -134,6 +134,8 @@ enum event_command
    CMD_EVENT_REBOOT,
    /* Resume RetroArch when in menu. */
    CMD_EVENT_RESUME,
+   /* Add a playlist entry to favorites. */
+   CMD_EVENT_ADD_TO_FAVORITES,
    /* Toggles pause. */
    CMD_EVENT_PAUSE_TOGGLE,
    /* Pauses RetroArch. */
@@ -191,12 +193,14 @@ enum event_command
    CMD_EVENT_REMOTE_INIT,
    /* Deinitializes remote gamepad interface. */
    CMD_EVENT_REMOTE_DEINIT,
+   /* Initializes keyboard to gamepad mapper interface. */
+   CMD_EVENT_MAPPER_INIT,
+   /* Deinitializes keyboard to gamepad mapper interface. */
+   CMD_EVENT_MAPPER_DEINIT,
    /* Reinitializes audio driver. */
    CMD_EVENT_AUDIO_REINIT,
    /* Resizes windowed scale. Will reinitialize video driver. */
    CMD_EVENT_RESIZE_WINDOWED_SCALE,
-   /* Deinitializes temporary content. */
-   CMD_EVENT_TEMPORARY_CONTENT_DEINIT,
    CMD_EVENT_LOG_FILE_DEINIT,
    /* Toggles disk eject. */
    CMD_EVENT_DISK_EJECT_TOGGLE,
@@ -217,15 +221,17 @@ enum event_command
    CMD_EVENT_PERFCNT_REPORT_FRONTEND_LOG,
    CMD_EVENT_VOLUME_UP,
    CMD_EVENT_VOLUME_DOWN,
+   CMD_EVENT_MIXER_VOLUME_UP,
+   CMD_EVENT_MIXER_VOLUME_DOWN,
    CMD_EVENT_DISABLE_OVERRIDES,
-   CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET
+   CMD_EVENT_RESTORE_REMAPS,
+   CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET,
+   CMD_EVENT_LIBUI_TEST
 };
 
-#ifdef HAVE_COMMAND
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
+bool command_set_shader(const char *arg);
+
 bool command_network_send(const char *cmd_);
-#endif
-#endif
 
 bool command_network_new(
       command_t *handle,
@@ -233,7 +239,7 @@ bool command_network_new(
       bool network_enable,
       uint16_t port);
 
-command_t *command_new(bool local_enable);
+command_t *command_new(void);
 
 bool command_poll(command_t *handle);
 

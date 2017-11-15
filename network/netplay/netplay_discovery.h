@@ -21,6 +21,7 @@
 #include <retro_miscellaneous.h>
 
 #define NETPLAY_HOST_STR_LEN 32
+#define NETPLAY_HOST_LONGSTR_LEN 256
 
 enum rarch_netplay_discovery_ctl_state
 {
@@ -38,7 +39,8 @@ struct netplay_host
    char nick[NETPLAY_HOST_STR_LEN];
    char core[NETPLAY_HOST_STR_LEN];
    char core_version[NETPLAY_HOST_STR_LEN];
-   char content[NETPLAY_HOST_STR_LEN];
+   char retroarch_version[NETPLAY_HOST_STR_LEN];
+   char content[NETPLAY_HOST_LONGSTR_LEN];
    int  content_crc;
 };
 
@@ -56,8 +58,6 @@ enum netplay_host_method
    NETPLAY_HOST_METHOD_MITM
 };
 
-/* data is ordered like this on the server, I left it in this ordered
-   for reference */
 struct netplay_room
 {
    char nickname    [PATH_MAX_LENGTH];
@@ -73,7 +73,10 @@ struct netplay_room
    int  host_method;
    bool has_password;
    bool has_spectate_password;
+   bool lan;
    bool fixed;
+   char retroarch_version[PATH_MAX_LENGTH];
+   char country[PATH_MAX_LENGTH];
    struct netplay_room *next;
 };
 

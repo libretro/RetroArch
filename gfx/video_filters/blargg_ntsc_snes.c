@@ -19,6 +19,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <boolean.h>
+
+#include <string/stdstring.h>
+
 #include "snes_ntsc/snes_ntsc.h"
 #include "snes_ntsc/snes_ntsc.c"
 
@@ -80,22 +83,22 @@ static void blargg_ntsc_snes_initialize(void *data,
 
    if (config->get_string(userdata, "tvtype", &tvtype, "composite"))
    {
-      if (!strcmp(tvtype, "composite"))
+      if (memcmp(tvtype, "composite", 9) == 0)
       {
          setup = snes_ntsc_composite;
          setup.merge_fields = 1;
       }
-      else if (!strcmp(tvtype, "rf"))
+      else if (memcmp(tvtype, "rf", 2) == 0)
       {
          setup = snes_ntsc_composite;
          setup.merge_fields = 0;
       }
-      else if (!strcmp(tvtype, "rgb"))
+      else if (memcmp(tvtype, "rgb", 3) == 0)
       {
          setup = snes_ntsc_rgb;
          setup.merge_fields = 1;
       }
-      else if (!strcmp(tvtype, "svideo"))
+      else if (memcmp(tvtype, "svideo", 6) == 0)
       {
          setup = snes_ntsc_svideo;
          setup.merge_fields = 1;
@@ -121,9 +124,8 @@ static void *blargg_ntsc_snes_generic_create(const struct softfilter_config *con
       unsigned max_width, unsigned max_height,
       unsigned threads, softfilter_simd_mask_t simd, void *userdata)
 {
-   (void)simd;
-
    struct filter_data *filt = (struct filter_data*)calloc(1, sizeof(*filt));
+   (void)simd;
    if (!filt)
       return NULL;
    filt->workers = (struct softfilter_thread_data*)

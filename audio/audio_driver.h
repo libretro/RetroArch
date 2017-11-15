@@ -22,6 +22,7 @@
 #include <sys/types.h>
 
 #include <boolean.h>
+#include <audio/audio_mixer.h>
 #include <retro_common_api.h>
 
 RETRO_BEGIN_DECLS
@@ -32,6 +33,17 @@ RETRO_BEGIN_DECLS
 #define AUDIO_CHUNK_SIZE_NONBLOCKING   2048
 
 #define AUDIO_MAX_RATIO                16
+
+enum audio_action
+{
+   AUDIO_ACTION_NONE = 0,
+   AUDIO_ACTION_RATE_CONTROL_DELTA,
+   AUDIO_ACTION_MIXER_MUTE_ENABLE,
+   AUDIO_ACTION_MUTE_ENABLE,
+   AUDIO_ACTION_VOLUME_GAIN,
+   AUDIO_ACTION_MIXER_VOLUME_GAIN,
+   AUDIO_ACTION_MIXER
+};
 
 typedef struct audio_driver
 {
@@ -67,8 +79,7 @@ typedef struct audio_driver
     * Unless said otherwise with set_nonblock_state(), all writes
     * are blocking, and it should block till it has written all frames.
     */
-   ssize_t (*write)(void *data, const void *buf, size_t size,
-         bool is_perfcnt_enable);
+   ssize_t (*write)(void *data, const void *buf, size_t size);
 
    /* Temporarily pauses the audio driver. */
    bool (*stop)(void *data);
@@ -116,6 +127,24 @@ typedef struct audio_driver
    size_t (*buffer_size)(void *data);
 } audio_driver_t;
 
+enum audio_mixer_state
+{
+   AUDIO_STREAM_STATE_NONE = 0,
+   AUDIO_STREAM_STATE_STOPPED,
+   AUDIO_STREAM_STATE_PLAYING,
+   AUDIO_STREAM_STATE_PLAYING_LOOPED
+};
+
+typedef struct audio_mixer_stream_params
+{
+   float volume;
+   enum audio_mixer_type  type;
+   enum audio_mixer_state state;
+   void *buf;
+   size_t bufsize;
+   audio_mixer_stop_cb_t cb;
+} audio_mixer_stream_params_t;
+
 void audio_driver_destroy_data(void);
 
 void audio_driver_set_own_driver(void);
@@ -123,8 +152,6 @@ void audio_driver_set_own_driver(void);
 void audio_driver_unset_own_driver(void);
 
 void audio_driver_set_active(void);
-
-void audio_driver_unset_active(void);
 
 void audio_driver_destroy(void);
 
@@ -175,7 +202,7 @@ void audio_driver_sample_rewind(int16_t left, int16_t right);
 
 size_t audio_driver_sample_batch_rewind(const int16_t *data, size_t frames);
 
-void audio_driver_set_volume_gain(float gain);
+bool audio_driver_mixer_extension_supported(const char *ext);
 
 void audio_driver_dsp_filter_free(void);
 
@@ -212,16 +239,27 @@ void audio_driver_unset_callback(void);
 
 void audio_driver_frame_is_reverse(void);
 
-bool audio_driver_alive(void);
+void audio_set_float(enum audio_action action, float val);
+
+void audio_set_bool(enum audio_action action, bool val);
+
+void audio_unset_bool(enum audio_action action, bool val);
+
+float *audio_get_float_ptr(enum audio_action action);
+
+bool *audio_get_bool_ptr(enum audio_action action);
 
 bool audio_driver_deinit(void);
 
 bool audio_driver_init(void);
 
+bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params);
+
 extern audio_driver_t audio_rsound;
 extern audio_driver_t audio_oss;
 extern audio_driver_t audio_alsa;
 extern audio_driver_t audio_alsathread;
+extern audio_driver_t audio_tinyalsa;
 extern audio_driver_t audio_roar;
 extern audio_driver_t audio_openal;
 extern audio_driver_t audio_opensl;
@@ -230,6 +268,7 @@ extern audio_driver_t audio_sdl;
 extern audio_driver_t audio_xa;
 extern audio_driver_t audio_pulse;
 extern audio_driver_t audio_dsound;
+extern audio_driver_t audio_wasapi;
 extern audio_driver_t audio_coreaudio;
 extern audio_driver_t audio_xenon360;
 extern audio_driver_t audio_ps3;

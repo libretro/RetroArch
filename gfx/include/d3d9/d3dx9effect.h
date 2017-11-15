@@ -13,45 +13,12 @@
 #ifndef __D3DX9EFFECT_H__
 #define __D3DX9EFFECT_H__
 
-
-//----------------------------------------------------------------------------
-// D3DXFX_DONOTSAVESTATE
-//   This flag is used as a parameter to ID3DXEffect::Begin().  When this flag
-//   is specified, device state is not saved or restored in Begin/End.
-// D3DXFX_DONOTSAVESHADERSTATE
-//   This flag is used as a parameter to ID3DXEffect::Begin().  When this flag
-//   is specified, shader device state is not saved or restored in Begin/End.
-//   This includes pixel/vertex shaders and shader constants
-// D3DXFX_DONOTSAVESAMPLERSTATE
-//   This flag is used as a parameter to ID3DXEffect::Begin(). When this flag
-//   is specified, sampler device state is not saved or restored in Begin/End.
-// D3DXFX_NOT_CLONEABLE
-//   This flag is used as a parameter to the D3DXCreateEffect family of APIs.
-//   When this flag is specified, the effect will be non-cloneable and will not
-//   contain any shader binary data.
-//   Furthermore, GetPassDesc will not return shader function pointers. 
-//   Setting this flag reduces effect memory usage by about 50%.
-//----------------------------------------------------------------------------
-
 #define D3DXFX_DONOTSAVESTATE         (1 << 0)
 #define D3DXFX_DONOTSAVESHADERSTATE   (1 << 1)
 #define D3DXFX_DONOTSAVESAMPLERSTATE  (1 << 2)
 
 #define D3DXFX_NOT_CLONEABLE          (1 << 11)
 #define D3DXFX_LARGEADDRESSAWARE      (1 << 17)
-
-//----------------------------------------------------------------------------
-// D3DX_PARAMETER_SHARED
-//   Indicates that the value of a parameter will be shared with all effects
-//   which share the same namespace.  Changing the value in one effect will
-//   change it in all.
-//
-// D3DX_PARAMETER_LITERAL
-//   Indicates that the value of this parameter can be treated as literal.
-//   Literal parameters can be marked when the effect is compiled, and their
-//   cannot be changed after the effect is compiled.  Shared parameters cannot
-//   be literal.
-//----------------------------------------------------------------------------
 
 #define D3DX_PARAMETER_SHARED       (1 << 0)
 #define D3DX_PARAMETER_LITERAL      (1 << 1)
@@ -432,7 +399,6 @@ DECLARE_INTERFACE_(ID3DXEffect, ID3DXBaseEffect)
     STDMETHOD(SetRawValue)(THIS_ D3DXHANDLE hParameter, LPCVOID pData, UINT ByteOffset, UINT Bytes) PURE;
 };
 
-
 //////////////////////////////////////////////////////////////////////////////
 // ID3DXEffectCompiler ///////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -536,70 +502,13 @@ DECLARE_INTERFACE_(ID3DXEffectCompiler, ID3DXBaseEffect)
 // APIs //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
-
 #ifdef __cplusplus
 extern "C" {
-#endif //__cplusplus
-
-//----------------------------------------------------------------------------
-// D3DXCreateEffectPool:
-// ---------------------
-// Creates an effect pool.  Pools are used for sharing parameters between
-// multiple effects.  For all effects within a pool, shared parameters of the
-// same name all share the same value.
-//
-// Parameters:
-//  ppPool
-//      Returns the created pool.
-//----------------------------------------------------------------------------
+#endif
 
 HRESULT WINAPI
     D3DXCreateEffectPool(
         LPD3DXEFFECTPOOL*               ppPool);
-
-
-//----------------------------------------------------------------------------
-// D3DXCreateEffect:
-// -----------------
-// Creates an effect from an ascii or binary effect description.
-//
-// Parameters:
-//  pDevice
-//      Pointer of the device on which to create the effect
-//  pSrcFile
-//      Name of the file containing the effect description
-//  hSrcModule
-//      Module handle. if NULL, current module will be used.
-//  pSrcResource
-//      Resource name in module
-//  pSrcData
-//      Pointer to effect description
-//  SrcDataSize
-//      Size of the effect description in bytes
-//  pDefines
-//      Optional NULL-terminated array of preprocessor macro definitions.
-//  Flags
-//      See D3DXSHADER_xxx flags.
-//  pSkipConstants
-//      A list of semi-colon delimited variable names.  The effect will
-//      not set these variables to the device when they are referenced
-//      by a shader.  NOTE: the variables specified here must be
-//      register bound in the file and must not be used in expressions
-//      in passes or samplers or the file will not load.
-//  pInclude
-//      Optional interface pointer to use for handling #include directives.
-//      If this parameter is NULL, #includes will be honored when compiling
-//      from file, and will error when compiling from resource or memory.
-//  pPool
-//      Pointer to ID3DXEffectPool object to use for shared parameters.
-//      If NULL, no parameters will be shared.
-//  ppEffect
-//      Returns a buffer containing created effect.
-//  ppCompilationErrors
-//      Returns a buffer containing any error messages which occurred during
-//      compile.  Or NULL if you do not care about the error messages.
-//
-//----------------------------------------------------------------------------
 
 HRESULT WINAPI
     D3DXCreateEffectFromFileA(
@@ -672,10 +581,6 @@ HRESULT WINAPI
         LPD3DXEFFECTPOOL                pPool,
         LPD3DXEFFECT*                   ppEffect,
         LPD3DXBUFFER*                   ppCompilationErrors);
-
-//
-// Ex functions that accept pSkipConstants in addition to other parameters
-//
 
 HRESULT WINAPI
     D3DXCreateEffectFromFileExA(
@@ -754,39 +659,6 @@ HRESULT WINAPI
         LPD3DXEFFECT*                   ppEffect,
         LPD3DXBUFFER*                   ppCompilationErrors);
 
-//----------------------------------------------------------------------------
-// D3DXCreateEffectCompiler:
-// -------------------------
-// Creates an effect from an ascii or binary effect description.
-//
-// Parameters:
-//  pSrcFile
-//      Name of the file containing the effect description
-//  hSrcModule
-//      Module handle. if NULL, current module will be used.
-//  pSrcResource
-//      Resource name in module
-//  pSrcData
-//      Pointer to effect description
-//  SrcDataSize
-//      Size of the effect description in bytes
-//  pDefines
-//      Optional NULL-terminated array of preprocessor macro definitions.
-//  pInclude
-//      Optional interface pointer to use for handling #include directives.
-//      If this parameter is NULL, #includes will be honored when compiling
-//      from file, and will error when compiling from resource or memory.
-//  pPool
-//      Pointer to ID3DXEffectPool object to use for shared parameters.
-//      If NULL, no parameters will be shared.
-//  ppCompiler
-//      Returns a buffer containing created effect compiler.
-//  ppParseErrors
-//      Returns a buffer containing any error messages which occurred during
-//      parse.  Or NULL if you do not care about the error messages.
-//
-//----------------------------------------------------------------------------
-
 HRESULT WINAPI
     D3DXCreateEffectCompilerFromFileA(
         LPCSTR                          pSrcFile,
@@ -849,20 +721,11 @@ HRESULT WINAPI
         LPD3DXEFFECTCOMPILER*           ppCompiler,
         LPD3DXBUFFER*                   ppParseErrors);
 
-//----------------------------------------------------------------------------
-// D3DXDisassembleEffect:
-// -----------------------
-//
-// Parameters:
-//----------------------------------------------------------------------------
-
 HRESULT WINAPI 
     D3DXDisassembleEffect(
         LPD3DXEFFECT pEffect, 
         BOOL EnableColorCode, 
         LPD3DXBUFFER *ppDisassembly);
-        
-
 
 #ifdef __cplusplus
 }

@@ -60,6 +60,7 @@ typedef struct rarch_system_info
 
    unsigned rotation;
    unsigned performance_level;
+   bool load_no_content;
 
    const char *input_desc_btn[MAX_USERS][RARCH_FIRST_META_KEY];
    char valid_extensions[255];
@@ -141,14 +142,6 @@ typedef struct retro_ctx_environ_info
    retro_environment_t env;
 } retro_ctx_environ_info_t;
 
-typedef struct retro_ctx_frame_info
-{
-   const void *data;
-   unsigned width;
-   unsigned height;
-   size_t pitch;
-} retro_ctx_frame_info_t;
-
 typedef struct retro_callbacks
 {
    retro_video_refresh_t frame_cb;
@@ -162,7 +155,7 @@ bool core_load(unsigned poll_type_behavior);
 
 bool core_unload(void);
 
-bool core_set_default_callbacks(void *data);
+bool core_set_default_callbacks(struct retro_callbacks *cbs);
 
 bool core_set_rewind_callbacks(void);
 
@@ -184,10 +177,6 @@ bool core_deinit(void *data);
 bool core_unload_game(void);
 
 bool core_reset(void);
-
-void core_frame(retro_ctx_frame_info_t *info);
-
-bool core_poll(void);
 
 bool core_set_environment(retro_ctx_environ_info_t *info);
 
@@ -248,6 +237,8 @@ bool core_is_symbols_inited(void);
 bool core_is_inited(void);
 
 bool core_is_game_loaded(void);
+
+extern struct retro_callbacks retro_ctx;
 
 RETRO_END_DECLS
 

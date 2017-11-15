@@ -1,4 +1,4 @@
-﻿MSG_HASH(
+MSG_HASH(
       MSG_COMPILER,
       "컴파일러"
       )
@@ -203,10 +203,6 @@ MSG_HASH(
       "넷플레이"
       )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_ARCHIVE_MODE,
-      "압축 파일 연결 작업"
-      )
-MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE,
       "묻기"
       )
@@ -256,7 +252,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
-      "오디오 출력 레이트 (KHz)"
+      "오디오 출력 레이트 (Hz)"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
@@ -486,7 +482,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS,
       "빠른 메뉴")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
-      "코어 애셋")
+      "다운로드")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
       "다운로드")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
@@ -871,7 +867,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_KOREAN,
       "한국어")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_POLISH,
       "폴란드어")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE,
+MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_BRAZIL,
+      "포르투칼어")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_PORTUGAL,
       "포르투칼어")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_RUSSIAN,
       "러시아어")
@@ -981,6 +979,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT,
       "넷플레이 호스트 연결")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST,
       "넷플레이 호스트 시작")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,
+      "Stop netplay host")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
       "서버 주소")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_LAN_SCAN_SETTINGS,
@@ -1351,6 +1351,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
       "화면 너비(mm)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT,
       "DirectSound 지원")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WASAPI_SUPPORT,
+      "WASAPI 지원")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT,
       "다이나믹 라이브러리 지원")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYNAMIC_SUPPORT,
@@ -2031,6 +2033,8 @@ MSG_HASH(MSG_INPUT_CHEAT_FILENAME,
       "치트 파일명")
 MSG_HASH(MSG_INPUT_PRESET_FILENAME,
       "프리셋 파일명")
+MSG_HASH(MSG_INPUT_RENAME_ENTRY,
+      "Rename Title")
 MSG_HASH(MSG_INTERFACE,
       "인터페이스")
 MSG_HASH(MSG_INTERNAL_STORAGE,
@@ -2966,3 +2970,185 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
       "뷰포트의 Y축 위치를 정의하는 데 사용되는 사용자 뷰포트 오프셋. '정수 단위 화면 크기'가 활성화 된 경우 무시되고 자동으로 중앙이 됩니다.")
 
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
+      "Use Relay Server")
+MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
+      "Forward netplay connections through a man-in-the-middle server. Useful if the host is behind a firewall or has NAT/UPnP problems.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER,
+      "Add to mixer")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION,
+      "Add to mixer")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
+      "Filter by current core")
+MSG_HASH(
+      MSG_AUDIO_MIXER_VOLUME,
+      "Global audio mixer volume"
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME,
+      "Global audio mixer volume (in dB). 0 dB is normal volume, and no gain is applied."
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
+      "Audio Mixer Volume Level (dB)"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
+      "Audio Mixer Mute"
+      )
+MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
+      "Mute/unmute mixer audio.")
+MSG_HASH(MENU_ENUM_LABEL_MENU_SHOW_ONLINE_UPDATER,
+      "Show Online Updater")
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
+      "Show/hide the 'Online Updater' option.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
+      "Show Core Updater")
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
+      "Show/hide the ability to update cores (and core info files).")
+MSG_HASH(MSG_PREPARING_FOR_CONTENT_SCAN,
+      "Preparing for content scan...")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_DELETE,
+      "Delete core")
+MSG_HASH(MENU_ENUM_SUBLABEL_CORE_DELETE,
+      "Remove this core from disk.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_RENAME_ENTRY,
+      "Rename the title of the entry.")
+MSG_HASH(MENU_ENUM_LABEL_RENAME_ENTRY,
+      "Rename")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
+      "Framebuffer Opacity")
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
+      "Modify the opacity of the framebuffer.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
+      "Favorites")
+MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
+      "Content which you have added to 'Favorites' will appear here.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
+      "Music")
+MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_MUSIC,
+      "Music which has been previously played will appear here.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
+      "Image")
+MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_IMAGES,
+      "Images which have been previously viewed will appear here.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
+      "Video")
+MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_VIDEO,
+      "Videos which have been previously played will appear here.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
+      "Menu Icons")
+MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
+      "Enable/disable the menu icons shown at the lefthand side of the menu entries.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
+      "Enable Settings Tab")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_SETTINGS_PASSWORD,
+      "Set Password For Enabling Settings Tab")
+MSG_HASH(MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
+      "Enter Password")
+MSG_HASH(MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,
+      "Password correct.")
+MSG_HASH(MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
+      "Password incorrect.")
+MSG_HASH(MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
+      "Enables the Settings tab. A restart is required for the tab to appear.")
+MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_SETTINGS_PASSWORD,
+      "Supplying a password when hiding the settings tab makes it possible to later restore it from the menu, by going to the Main Menu tab, selecting Enable Settings Tab and entering the password.")
+MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
+      "Allow the user to rename entries in collections.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
+      "Allow to rename entries")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
+      "Show Load Core")
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE,
+      "Show/hide the 'Load Core' option.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT,
+      "Show Load Content")
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT,
+      "Show/hide the 'Load Content' option.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
+      "Show Information")
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
+      "Show/hide the 'Information' option.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
+      "Show Configurations")
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
+      "Show/hide the 'Configurations' option.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
+      "Show Help")
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
+      "Show/hide the 'Help' option.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
+      "Show Quit RetroArch")
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
+      "Show/hide the 'Quit RetroArch' option.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
+      "Show Reboot")
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT,
+      "Show/hide the 'Reboot' option.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
+      "Quick Menu")
+MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_VIEWS_SETTINGS,
+      "Show or hide elements on the Quick Menu screen.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
+      "Show Take Screenshot")
+MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
+      "Show/hide the 'Take Screenshot' option.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
+      "Show Save/Load State")
+MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
+      "Show/hide the options for saving/loading state.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
+      "Show Undo Save/Load State")
+MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
+      "Show/hide the options for undoing save/load state.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
+      "Show Add to Favorites")
+MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
+      "Show/hide the 'Add to Favorites' option.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
+      "Show Options")
+MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_OPTIONS,
+      "Show/hide the 'Options' option.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CONTROLS,
+      "Show Controls")
+MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CONTROLS,
+      "Show/hide the 'Controls' option.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,
+      "Show Cheats")
+MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CHEATS,
+      "Show/hide the 'Cheats' option.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
+      "Show Shaders")
+MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
+      "Show/hide the 'Shaders' option.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
+      "Show Save Core Overrides")
+MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
+      "Show/hide the 'Save Core Overrides' option.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
+      "Show Save Game Overrides")
+MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
+      "Show/hide the 'Save Game Overrides' option.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
+      "Show Information")
+MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_INFORMATION,
+      "Show/hide the 'Information' option.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
+      "Disable Kiosk Mode")
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
+      "Disables kiosk mode. A restart is required for the change to take full effect.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
+      "Enable Kiosk Mode")
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
+      "Protects the setup by hiding all configuration related settings.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_KIOSK_MODE_PASSWORD,
+      "Set Password For Disabling Kiosk Mode")
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_KIOSK_MODE_PASSWORD,
+      "Supplying a password when enabling kiosk mode makes it possible to later disable it from the menu, by going to the Main Menu, selecting Disable Kiosk Mode and entering the password.")
+MSG_HASH(MSG_INPUT_KIOSK_MODE_PASSWORD,
+      "Enter Password")
+MSG_HASH(MSG_INPUT_KIOSK_MODE_PASSWORD_OK,
+      "Password correct.")
+MSG_HASH(MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
+      "Password incorrect.")

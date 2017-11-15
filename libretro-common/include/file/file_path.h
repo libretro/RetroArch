@@ -31,7 +31,6 @@
 #include <retro_common_api.h>
 
 #include <boolean.h>
-#include <retro_inline.h>
 
 RETRO_BEGIN_DECLS
 
@@ -408,14 +407,11 @@ void fill_pathname_abbreviate_special(char *out_path,
  *
  * Returns: true (1) if character is a slash, otherwise false (0).
  */
-static INLINE bool path_char_is_slash(char c)
-{
 #ifdef _WIN32
-   return (c == '/') || (c == '\\');
+#define path_char_is_slash(c) (((c) == '/') || ((c) == '\\'))
 #else
-   return (c == '/');
+#define path_char_is_slash(c) ((c) == '/')
 #endif
-}
 
 /**
  * path_default_slash:
@@ -424,14 +420,11 @@ static INLINE bool path_char_is_slash(char c)
  *
  * Returns: default slash separator.
  */
-static INLINE const char *path_default_slash(void)
-{
 #ifdef _WIN32
-   return "\\";
+#define path_default_slash() "\\"
 #else
-   return "/";
+#define path_default_slash() "/"
 #endif
-}
 
 /** 
  * fill_pathname_slash:
@@ -456,6 +449,26 @@ void fill_pathname_application_path(char *buf, size_t size);
  * Returns: true (1) if directory could be created, otherwise false (0).
  **/
 bool path_mkdir(const char *dir);
+
+/**
+ * path_is_directory:
+ * @path               : path
+ *
+ * Checks if path is a directory.
+ *
+ * Returns: true (1) if path is a directory, otherwise false (0).
+ */
+bool path_is_directory(const char *path);
+
+bool path_is_character_special(const char *path);
+
+bool path_is_valid(const char *path);
+
+int32_t path_get_size(const char *path);
+
+bool path_file_remove(const char *path);
+
+bool path_file_rename(const char *old_path, const char *new_path);
 
 RETRO_END_DECLS
 

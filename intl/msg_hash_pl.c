@@ -44,8 +44,6 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
    {
       case MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST:
          return "Dodaj treść";
-      case MENU_ENUM_LABEL_VALUE_ARCHIVE_MODE:
-         return "Archive File Association Action";
       case MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE:
          return "Pytaj";
       case MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY:
@@ -69,7 +67,7 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_AUDIO_MUTE:
          return "Wycisz dźwięk";
       case MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE:
-         return "Częstotliwość próbkowania dźwięku (KHz)";
+         return "Częstotliwość próbkowania dźwięku (Hz)";
       case MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA:
          return "Audio Rate Control Delta";
       case MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER:
@@ -298,8 +296,10 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
          return "japoński";
       case MENU_ENUM_LABEL_VALUE_LANG_KOREAN:
          return "koreański";
-      case MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE:
-         return "portugalski";
+      case MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_BRAZIL:
+         return "portugalski (brazil)";
+      case MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_PORTUGAL:
+         return "portugalski (portugal)";
       case MENU_ENUM_LABEL_VALUE_LANG_RUSSIAN:
          return "rosyjski";
       case MENU_ENUM_LABEL_VALUE_LANG_SPANISH:
@@ -606,6 +606,8 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
          return "Metryczna szerokość wyświetlacza (mm)";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT:
          return "Wsparcie DirectSound";
+      case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WASAPI_SUPPORT:
+         return "Wsparcie WASAPI";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT:
          return "Wsparcie bibliotek dynamicznych";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_EGL_SUPPORT:

@@ -24,31 +24,13 @@
 #include <ctype.h>
 
 #include <string/stdstring.h>
-
-bool string_is_empty(const char *data)
-{
-   return (data == NULL) || (*data == '\0');
-}
-
-bool string_is_equal(const char *a, const char *b)
-{
-   if (!a || !b)
-      return false;
-   return (strcmp(a, b) == 0);
-}
-
-bool string_is_equal_noncase(const char *a, const char *b)
-{
-   if (!a || !b)
-      return false;
-   return (strcasecmp(a, b) == 0);
-}
+#include <encodings/utf.h>
 
 char *string_to_upper(char *s)
 {
    char *cs = (char *)s;
    for ( ; *cs != '\0'; cs++)
-      *cs = toupper(*cs);
+      *cs = toupper((unsigned char)*cs);
    return s;
 }
 
@@ -56,23 +38,21 @@ char *string_to_lower(char *s)
 {
    char *cs = (char *)s;
    for ( ; *cs != '\0'; cs++)
-      *cs = tolower(*cs);
+      *cs = tolower((unsigned char)*cs);
    return s;
 }
 
 char *string_ucwords(char *s)
 {
-  char *cs = (char *)s;
-  for ( ; *cs != '\0'; cs++)
-  {
-    if (*cs == ' ')
-    {
-      *(cs+1) = toupper(*(cs+1));
-    }
-  }
+   char *cs = (char *)s;
+   for ( ; *cs != '\0'; cs++)
+   {
+      if (*cs == ' ')
+         *(cs+1) = toupper((unsigned char)*(cs+1));
+   }
 
-  s[0] = toupper(s[0]);
-  return s;
+   s[0] = toupper((unsigned char)s[0]);
+   return s;
 }
 
 char *string_replace_substring(const char *in,
@@ -128,7 +108,7 @@ char *string_trim_whitespace_left(char *const s)
       size_t len = strlen(s);
       char *cur  = s;
 
-      while(*cur && isspace(*cur))
+      while(*cur && isspace((unsigned char)*cur))
          ++cur, --len;
 
       if(s != cur)
@@ -147,10 +127,10 @@ char *string_trim_whitespace_right(char *const s)
       size_t len = strlen(s);
       char  *cur = s + len - 1;
 
-      while(cur != s && isspace(*cur))
+      while(cur != s && isspace((unsigned char)*cur))
          --cur, --len;
 
-      cur[isspace(*cur) ? 0 : 1] = '\0';
+      cur[isspace((unsigned char)*cur) ? 0 : 1] = '\0';
    }
 
    return s;
@@ -165,7 +145,7 @@ char *string_trim_whitespace(char *const s)
    return s;
 }
 
-char *word_wrap(char* buffer, const char *string, int line_width)
+char *word_wrap(char* buffer, const char *string, int line_width, bool unicode)
 {
    unsigned i   = 0;
    unsigned len = (unsigned)strlen(string);
@@ -177,20 +157,34 @@ char *word_wrap(char* buffer, const char *string, int line_width)
       /* copy string until the end of the line is reached */
       for (counter = 1; counter <= (unsigned)line_width; counter++)
       {
+         const char *character;
+         unsigned char_len;
+         unsigned j = i;
+
          /* check if end of string reached */
-         if (i == strlen(string))
+         if (i == len)
          {
             buffer[i] = 0;
             return buffer;
          }
 
-         buffer[i] = string[i];
+         character = utf8skip(&string[i], 1);
+         char_len = character - &string[i];
+
+         if (!unicode)
+            counter += char_len - 1;
+
+         do
+         {
+            buffer[i] = string[i];
+            char_len--;
+            i++;
+         } while(char_len);
 
          /* check for newlines embedded in the original input
           * and reset the index */
-         if (buffer[i] == '\n')
+         if (buffer[j] == '\n')
             counter = 1;
-         i++;
       }
 
       /* check for whitespace */

@@ -25,7 +25,7 @@
 #include "../menu_cbs.h"
 #include "../menu_setting.h"
 
-#include "../../input/input_config.h"
+#include "../../input/input_driver.h"
 
 #include "../../configuration.h"
 #include "../../tasks/tasks_internal.h"
@@ -62,8 +62,8 @@ int action_scan_file(const char *path,
    fill_pathname_join(fullpath, menu_path, path, sizeof(fullpath));
 
    task_push_dbscan(
-         settings->directory.playlist,
-         settings->path.content_database,
+         settings->paths.directory_playlist,
+         settings->paths.path_content_database,
          fullpath, false, handle_dbscan_finished);
 
    return 0;
@@ -88,8 +88,8 @@ int action_scan_directory(const char *path,
       fill_pathname_join(fullpath, fullpath, path, sizeof(fullpath));
 
    task_push_dbscan(
-         settings->directory.playlist,
-         settings->path.content_database,
+         settings->paths.directory_playlist,
+         settings->paths.path_content_database,
          fullpath, true, handle_dbscan_finished);
 
    return 0;
@@ -103,13 +103,11 @@ int action_switch_thumbnail(const char *path,
 
    if (!settings)
       return -1;
-   if (settings->menu.thumbnails == 0)
-      return 0;
 
-   settings->menu.thumbnails++;
+   settings->uints.menu_thumbnails++;
 
-   if (settings->menu.thumbnails > 3)
-      settings->menu.thumbnails = 1;
+   if (settings->uints.menu_thumbnails > 3)
+      settings->uints.menu_thumbnails = 0;
 
    menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
    menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);
@@ -121,7 +119,6 @@ static int action_scan_input_desc(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    const char *menu_label         = NULL;
-   settings_t           *settings = config_get_ptr();
    unsigned key                   = 0;
    unsigned inp_desc_user         = 0;
    struct retro_keybind *target   = NULL;
@@ -133,12 +130,14 @@ static int action_scan_input_desc(const char *path,
       unsigned char player_no_str = atoi(&label[1]);
 
       inp_desc_user      = (unsigned)(player_no_str - 1);
-      key                = (unsigned)(idx - 6);
+      /* This hardcoded value may cause issues if any entries are added on 
+         top of the input binds */
+      key                = (unsigned)(idx - 7);
    }
    else
       key = input_config_translate_str_to_bind_id(label);
 
-   target = (struct retro_keybind*)&settings->input.binds[inp_desc_user][key];
+   target = &input_config_binds[inp_desc_user][key];
 
    if (target)
    {

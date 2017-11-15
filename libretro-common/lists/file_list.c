@@ -24,36 +24,30 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <retro_assert.h>
 #include <retro_common.h>
 #include <lists/file_list.h>
+#include <string/stdstring.h>
 #include <compat/strcasestr.h>
 
-/**
- * file_list_capacity:
- * @list             : pointer to file list
- * @cap              : new capacity for file list.
- *
- * Change maximum capacity of file list's size.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-static struct item_file *realloc_file_list_capacity(file_list_t *list, size_t cap)
+bool file_list_reserve(file_list_t *list, size_t nitems)
 {
-   struct item_file *new_data = NULL;
-   retro_assert(cap > list->size);
+   const size_t item_size = sizeof(struct item_file);
+   struct item_file *new_data;
 
-   new_data = (struct item_file*)realloc(list->list,
-         cap * sizeof(struct item_file));
+   if (nitems < list->capacity || nitems > (size_t)-1/item_size)
+      return false;
 
-   if (!new_data)
-      return NULL;
+   new_data = (struct item_file*)realloc(list->list, nitems * item_size);
 
-   if (cap > list->capacity)
-      memset(&new_data[list->capacity], 0,
-            sizeof(*new_data) * (cap - list->capacity));
+   if (new_data)
+   {
+      memset(&new_data[list->capacity], 0, item_size * (nitems - list->capacity));
 
-   return new_data;
+      list->list     = new_data;
+      list->capacity = nitems;
+   }
+
+   return new_data != NULL;
 }
 
 static void file_list_add(file_list_t *list, unsigned idx,
@@ -81,16 +75,8 @@ static void file_list_add(file_list_t *list, unsigned idx,
 static bool file_list_expand_if_needed(file_list_t *list)
 {
    if (list->size >= list->capacity)
-   {
-      size_t new_capacity     = list->capacity * 2 + 1;
-      struct item_file *items = realloc_file_list_capacity(
-            list, new_capacity);
+      return file_list_reserve(list, list->capacity * 2 + 1);
 
-      if (!items)
-         return false;
-      list->list     = items;
-      list->capacity = new_capacity;
-   }
    return true;
 }
 

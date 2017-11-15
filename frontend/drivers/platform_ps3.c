@@ -91,7 +91,7 @@ static void callback_sysutil_exit(uint64_t status,
             if (frontend)
                frontend->shutdown = frontend_ps3_shutdown;
 
-            runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
+            rarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
          }
          break;
    }
@@ -193,15 +193,15 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
             == CELL_GAME_ATTRIBUTE_APP_HOME)
          RARCH_LOG("RetroArch was launched from host machine (APP_HOME).\n");
 
-      ret = cellGameContentPermit(content_info_path, g_defaults.dir.port);
+      ret = cellGameContentPermit(content_info_path, g_defaults.dirs[DEFAULT_DIR_PORT]);
 
 #ifdef HAVE_MULTIMAN
       if (multiman_detected)
       {
          fill_pathname_join(content_info_path, "/dev_hdd0/game/",
                EMULATOR_CONTENT_DIR, sizeof(content_info_path));
-         fill_pathname_join(g_defaults.dir.port, content_info_path,
-               "USRDIR", sizeof(g_defaults.dir.port));
+         fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PORT], content_info_path,
+               "USRDIR", sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
       }
 #endif
 
@@ -211,35 +211,48 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
       {
          RARCH_LOG("cellGameContentPermit() OK.\n");
          RARCH_LOG("content_info_path : [%s].\n", content_info_path);
-         RARCH_LOG("usrDirPath : [%s].\n", g_defaults.dir.port);
+         RARCH_LOG("usrDirPath : [%s].\n", g_defaults.dirs[DEFAULT_DIR_PORT]);
       }
 
-      strlcpy(g_defaults.dir.content_history,
-            g_defaults.dir.port, sizeof(g_defaults.dir.content_history));
-      fill_pathname_join(g_defaults.dir.core, g_defaults.dir.port,
-            "cores", sizeof(g_defaults.dir.core));
-      fill_pathname_join(g_defaults.dir.core_info, g_defaults.dir.core,
-            "info", sizeof(g_defaults.dir.core_info));
-      fill_pathname_join(g_defaults.dir.savestate, g_defaults.dir.core,
-            "savestates", sizeof(g_defaults.dir.savestate));
-      fill_pathname_join(g_defaults.dir.sram, g_defaults.dir.core,
-            "savefiles", sizeof(g_defaults.dir.sram));
-      fill_pathname_join(g_defaults.dir.system, g_defaults.dir.core,
-            "system", sizeof(g_defaults.dir.system));
-      fill_pathname_join(g_defaults.dir.shader,  g_defaults.dir.core,
-            "shaders_cg", sizeof(g_defaults.dir.shader));
-      fill_pathname_join(g_defaults.path.config, g_defaults.dir.port,
+      strlcpy(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY],
+            g_defaults.dirs[DEFAULT_DIR_PORT],
+            sizeof(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY]));
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE],
+            g_defaults.dirs[DEFAULT_DIR_PORT],
+            "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO],
+            g_defaults.dirs[DEFAULT_DIR_CORE],
+            "info",
+            sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE],
+            g_defaults.dirs[DEFAULT_DIR_CORE],
+            "savestates", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SRAM],
+            g_defaults.dirs[DEFAULT_DIR_CORE],
+            "savefiles", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
+            g_defaults.dirs[DEFAULT_DIR_CORE],
+            "system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER],
+            g_defaults.dirs[DEFAULT_DIR_CORE],
+            "shaders_cg", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
+      fill_pathname_join(g_defaults.path.config, g_defaults.dirs[DEFAULT_DIR_PORT],
             file_path_str(FILE_PATH_MAIN_CONFIG),  sizeof(g_defaults.path.config));
-      fill_pathname_join(g_defaults.dir.overlay, g_defaults.dir.core,
-            "overlays", sizeof(g_defaults.dir.overlay));
-      fill_pathname_join(g_defaults.dir.assets,   g_defaults.dir.core,
-            "assets", sizeof(g_defaults.dir.assets));
-      fill_pathname_join(g_defaults.dir.cursor,   g_defaults.dir.core,
-            "database/cursors", sizeof(g_defaults.dir.cursor));
-      fill_pathname_join(g_defaults.dir.database,   g_defaults.dir.core,
-            "database/rdb", sizeof(g_defaults.dir.database));
-      fill_pathname_join(g_defaults.dir.playlist,   g_defaults.dir.core,
-            "playlists", sizeof(g_defaults.dir.playlist));
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY],
+            g_defaults.dirs[DEFAULT_DIR_CORE],
+            "overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS],
+            g_defaults.dirs[DEFAULT_DIR_CORE],
+            "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CURSOR],
+            g_defaults.dirs[DEFAULT_DIR_CORE],
+            "database/cursors", sizeof(g_defaults.dirs[DEFAULT_DIR_CURSOR]));
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE],
+            g_defaults.dirs[DEFAULT_DIR_CORE],
+            "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
+            g_defaults.dirs[DEFAULT_DIR_CORE],
+            "playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
    }
 
 #ifndef IS_SALAMANDER
@@ -491,71 +504,74 @@ enum frontend_architecture frontend_ps3_get_architecture(void)
    return FRONTEND_ARCH_PPC;
 }
 
-static int frontend_ps3_parse_drive_list(void *data)
+static int frontend_ps3_parse_drive_list(void *data, bool load_content)
 {
 #ifndef IS_SALAMANDER
    file_list_t *list = (file_list_t*)data;
+   enum msg_hash_enums enum_idx = load_content ?
+      MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :
+      MSG_UNKNOWN;
 
    menu_entries_append_enum(list,
          "/app_home/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
-         MENU_SETTING_ACTION, 0, 0);
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list,
          "/dev_hdd0/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
-         MENU_SETTING_ACTION, 0, 0);
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list,
          "/dev_hdd1/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
-         MENU_SETTING_ACTION, 0, 0);
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list,
          "/dev_bdvd/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
-         MENU_SETTING_ACTION, 0, 0);
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list,
          "/host_root/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
-         MENU_SETTING_ACTION, 0, 0);
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list,
          "/dev_usb000/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
-         MENU_SETTING_ACTION, 0, 0);
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list,
          "/dev_usb001/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
-         MENU_SETTING_ACTION, 0, 0);
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list,
          "/dev_usb002/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
-         MENU_SETTING_ACTION, 0, 0);
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list,
          "/dev_usb003/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
-         MENU_SETTING_ACTION, 0, 0);
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list,
          "/dev_usb004/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
-         MENU_SETTING_ACTION, 0, 0);
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list,
          "/dev_usb005/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
-         MENU_SETTING_ACTION, 0, 0);
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list,
          "/dev_usb006/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
-         MENU_SETTING_ACTION, 0, 0);
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0);
 #endif
 
    return 0;
@@ -573,7 +589,7 @@ static void frontend_ps3_process_args(int *argc, char *argv[])
       char path[PATH_MAX_LENGTH] = {0};
       strlcpy(path, argv[0], sizeof(path));
       if (path_file_exists(path))
-         runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, path);
+         rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH, path);
    }
 #endif
 }

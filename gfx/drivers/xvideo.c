@@ -136,19 +136,20 @@ static void xv_init_font(xv_t *xv, const char *font_path, unsigned font_size)
 {
    settings_t *settings = config_get_ptr();
 
-   if (!settings->video.font_enable)
+   if (!settings->bools.video_font_enable)
       return;
 
    if (font_renderer_create_default((const void**)&xv->font_driver, 
-            &xv->font, *settings->path.font 
-            ? settings->path.font : NULL, settings->video.font_size))
+            &xv->font, *settings->paths.path_font 
+            ? settings->paths.path_font : NULL,
+            settings->floats.video_font_size))
    {
       int r, g, b;
-      r = settings->video.msg_color_r * 255;
+      r = settings->floats.video_msg_color_r * 255;
       r = (r < 0 ? 0 : (r > 255 ? 255 : r));
-      g = settings->video.msg_color_g * 255;
+      g = settings->floats.video_msg_color_g * 255;
       g = (g < 0 ? 0 : (g > 255 ? 255 : g));
-      b = settings->video.msg_color_b * 255;
+      b = settings->floats.video_msg_color_b * 255;
       b = (b < 0 ? 0 : (b > 255 ? 255 : b));
 
       xv_calculate_yuv(&xv->font_y, &xv->font_u, &xv->font_v,
@@ -371,7 +372,7 @@ static void xv_calc_out_rect(bool keep_aspect,
    vp->full_width       = vp_width;
    vp->full_height      = vp_height;
 
-   if (settings->video.scale_integer)
+   if (settings->bools.video_scale_integer)
       video_viewport_get_scaled_integer(vp, vp_width, vp_height,
             video_driver_get_aspect_ratio(), keep_aspect);
    else if (!keep_aspect)
@@ -420,8 +421,8 @@ static void *xv_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
    unsigned i;
+   int ret;
    XWindowAttributes target;
-   video_frame_info_t video_info;
    char buf[128]                          = {0};
    char title[128]                        = {0};
    XSetWindowAttributes attributes        = {0};
@@ -445,6 +446,13 @@ static void *xv_init(const video_info_t *video,
    XInitThreads();
 
    g_x11_dpy = XOpenDisplay(NULL);
+
+   if (g_x11_dpy == NULL)
+   {
+      RARCH_ERR("[XVideo]: Cannot connect to the X server.\n");
+      RARCH_ERR("[XVideo]: Check DISPLAY variable and if X is running.\n");
+      goto error;
+   }
    
    av_info = video_viewport_get_system_av_info();
 
@@ -461,8 +469,26 @@ static void *xv_init(const video_info_t *video,
 
    /* Find an appropriate Xv port. */
    xv->port = 0;
-   XvQueryAdaptors(g_x11_dpy,
+   ret = XvQueryAdaptors(g_x11_dpy,
          DefaultRootWindow(g_x11_dpy), &adaptor_count, &adaptor_info);
+
+   if (ret != Success)
+   {
+      if (ret == XvBadExtension)
+         RARCH_ERR("[XVideo]: Xv extension not found.\n");
+      else if (ret == XvBadAlloc)
+         RARCH_ERR("[XVideo]: XvQueryAdaptors() failed to allocate memory.\n");
+      else
+         RARCH_ERR("[XVideo]: Unkown error in XvQueryAdaptors().\n");
+
+      goto error;
+   }
+
+   if (adaptor_count == 0)
+   {
+      RARCH_ERR("[XVideo]: XvQueryAdaptors() found 0 adaptors.\n");
+      goto error;
+   }
 
    for (i = 0; i < adaptor_count; i++)
    {
@@ -538,8 +564,6 @@ static void *xv_init(const video_info_t *video,
 
    XMapWindow(g_x11_dpy, g_x11_win);
 
-   video_driver_build_info(&video_info);
-
    video_driver_get_window_title(title, sizeof(title));
 
    if (title[0])
@@ -597,7 +621,7 @@ static void *xv_init(const video_info_t *video,
 
    if (input && input_data)
    {
-      xinput = input_x.init(settings->input.joypad_driver);
+      xinput = input_x.init(settings->arrays.input_joypad_driver);
       if (xinput)
       {
          *input = &input_x;
@@ -608,7 +632,7 @@ static void *xv_init(const video_info_t *video,
    }
 
    xv_init_yuv_tables(xv);
-   xv_init_font(xv, settings->path.font, settings->video.font_size);
+   xv_init_font(xv, settings->paths.path_font, settings->floats.video_font_size);
 
    if (!x11_input_ctx_new(true))
       goto error;
@@ -693,8 +717,8 @@ static void xv_render_msg(xv_t *xv, const char *msg,
 
    atlas          = xv->font_driver->get_atlas(xv->font);
 
-   msg_base_x     = settings->video.msg_pos_x * width;
-   msg_base_y     = height * (1.0f - settings->video.msg_pos_y);
+   msg_base_x     = settings->floats.video_msg_pos_x * width;
+   msg_base_y     = height * (1.0f - settings->floats.video_msg_pos_y);
 
    luma_index[0]  = xv->luma_index[0];
    luma_index[1]  = xv->luma_index[1];

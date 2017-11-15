@@ -26,7 +26,7 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
-#include "../video_context_driver.h"
+#include "../video_driver.h"
 
 #ifndef EGL_CONTEXT_FLAGS_KHR
 #define EGL_CONTEXT_FLAGS_KHR 0x30FC
@@ -89,6 +89,7 @@ void egl_set_swap_interval(egl_ctx_data_t *egl, unsigned interval);
 void egl_get_video_size(egl_ctx_data_t *egl, unsigned *width, unsigned *height);
 
 bool egl_init_context(egl_ctx_data_t *egl,
+      EGLenum platform,
       void *display_data,
       EGLint *major,
       EGLint *minor,

@@ -26,7 +26,6 @@
 #include "../core.h"
 #include "../driver.h"
 #include "../retroarch.h"
-#include "../runloop.h"
 #include "../list_special.h"
 #include "../verbosity.h"
 
@@ -97,7 +96,7 @@ void find_location_driver(void)
    settings_t *settings = config_get_ptr();
 
    drv.label = "location_driver";
-   drv.s     = settings->location.driver;
+   drv.s     = settings->arrays.location_driver;
 
    driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
 
@@ -109,7 +108,7 @@ void find_location_driver(void)
    {
       unsigned d;
       RARCH_ERR("Couldn't find any location driver named \"%s\"\n",
-            settings->location.driver);
+            settings->arrays.location_driver);
       RARCH_LOG_OUTPUT("Available location drivers are:\n");
       for (d = 0; location_driver_find_handle(d); d++)
          RARCH_LOG_OUTPUT("\t%s\n", location_driver_find_ident(d));
@@ -137,7 +136,7 @@ bool driver_location_start(void)
 
    if (location_driver && location_data && location_driver->start)
    {
-      if (settings->location.allow)
+      if (settings->bools.location_allow)
          return location_driver->start(location_data);
 
       runloop_msg_queue_push("Location is explicitly disabled.\n", 1, 180, true);
@@ -206,9 +205,7 @@ bool driver_location_get_position(double *lat, double *lon,
 
 void init_location(void)
 {
-   rarch_system_info_t *system = NULL;
-   
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+   rarch_system_info_t *system = runloop_get_system_info();
 
    /* Resource leaks will follow if location interface is initialized twice. */
    if (location_data)
@@ -230,9 +227,7 @@ void init_location(void)
 
 static void uninit_location(void)
 {
-   rarch_system_info_t *system = NULL;
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+   rarch_system_info_t *system = runloop_get_system_info();
 
    if (location_data && location_driver)
    {

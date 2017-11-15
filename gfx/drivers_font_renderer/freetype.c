@@ -24,6 +24,10 @@
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
 
+#ifdef WIIU
+#include <wiiu/os.h>
+#endif
+
 #include FT_FREETYPE_H
 #include "../font_driver.h"
 
@@ -165,20 +169,23 @@ static bool font_renderer_create_atlas(ft_font_renderer_t *handle, float font_si
    unsigned i, x, y;
    freetype_atlas_slot_t* slot = NULL;
 
-   /* TODO: find a better way to determine max_width/max_height */
-   unsigned max_width          = font_size + 2;
-   unsigned max_height         = font_size + 2;
+   unsigned max_width = round((handle->face->bbox.xMax - handle->face->bbox.xMin) * font_size / handle->face->units_per_EM);
+   unsigned max_height = round((handle->face->bbox.yMax - handle->face->bbox.yMin) * font_size / handle->face->units_per_EM);
 
-   handle->atlas.width         = max_width  * FT_ATLAS_COLS;
-   handle->atlas.height        = max_height * FT_ATLAS_ROWS;
+   unsigned atlas_width        = max_width  * FT_ATLAS_COLS;
 
-   handle->atlas.buffer        = (uint8_t*)
-      calloc(handle->atlas.width * handle->atlas.height, 1);
+   unsigned atlas_height       = max_height * FT_ATLAS_ROWS;
 
-   if (!handle->atlas.buffer)
+   uint8_t *atlas_buffer       = (uint8_t*)
+      calloc(atlas_width * atlas_height, 1);
+
+   if (!atlas_buffer)
       return false;
 
-   slot = handle->atlas_slots;
+   handle->atlas.buffer        = atlas_buffer;
+   handle->atlas.width         = atlas_width;
+   handle->atlas.height        = atlas_height;
+   slot                        = handle->atlas_slots;
 
    for (y = 0; y < FT_ATLAS_ROWS; y++)
    {
@@ -217,9 +224,26 @@ static void *font_renderer_ft_init(const char *font_path, float font_size)
    if (err)
       goto error;
 
-   err = FT_New_Face(handle->lib, font_path, 0, &handle->face);
-   if (err)
-      goto error;
+#ifdef WIIU
+   if(!*font_path)
+   {
+      void* font_data = NULL;
+      uint32_t font_size = 0;
+
+      if(!OSGetSharedData(SHARED_FONT_DEFAULT, 0, &font_data, &font_size))
+         goto error;
+
+      err = FT_New_Memory_Face(handle->lib, font_data, font_size, 0, &handle->face);
+      if (err)
+         goto error;
+   }
+   else
+#endif
+   {
+      err = FT_New_Face(handle->lib, font_path, 0, &handle->face);
+      if (err)
+         goto error;
+   }
 
    err = FT_Select_Charmap(handle->face, FT_ENCODING_UNICODE);
    if (err)
@@ -266,6 +290,9 @@ static const char *font_paths[] = {
 /* Highly OS/platform dependent. */
 static const char *font_renderer_ft_get_default_font(void)
 {
+#ifdef WIIU
+   return "";
+#else
    size_t i;
 
    for (i = 0; i < ARRAY_SIZE(font_paths); i++)
@@ -275,6 +302,7 @@ static const char *font_renderer_ft_get_default_font(void)
    }
 
    return NULL;
+#endif
 }
 
 static int font_renderer_ft_get_line_height(void* data)

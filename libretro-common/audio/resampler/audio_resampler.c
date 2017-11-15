@@ -131,7 +131,8 @@ static bool resampler_append_plugs(void **re,
 {
    resampler_simd_mask_t mask = (resampler_simd_mask_t)cpu_features_get();
 
-   *re = (*backend)->init(&resampler_config, bw_ratio, mask);
+   if (*backend)
+      *re = (*backend)->init(&resampler_config, bw_ratio, mask);
 
    if (!*re)
       return false;

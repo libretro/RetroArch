@@ -394,7 +394,7 @@ $(function() {
 function keyPress(k)
 {
    kp(k, "keydown");
-   setInterval(function(){kp(k, "keyup")}, 1000);
+   setTimeout(function(){kp(k, "keyup")}, 50);
 }
 
 kp = function(k, event) {

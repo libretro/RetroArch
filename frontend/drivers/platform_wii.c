@@ -73,10 +73,15 @@ static void dol_copy_argv_path(const char *dolpath, const char *argpath)
       len += t_len;
    }
    /* a relative path */
-   else if (strstr(dolpath, "sd:/") != dolpath && strstr(dolpath, "usb:/") != dolpath &&
-       strstr(dolpath, "carda:/") != dolpath && strstr(dolpath, "cardb:/") != dolpath)
+   else if (
+         (strstr(dolpath, "sd:/")    != dolpath) && 
+         (strstr(dolpath, "usb:/")   != dolpath) &&
+         (strstr(dolpath, "carda:/") != dolpath) && 
+         (strstr(dolpath, "cardb:/") != dolpath)
+         )
    {
-      fill_pathname_parent_dir(tmp, __system_argv->argv[0], sizeof(tmp));
+      fill_pathname_parent_dir(tmp,
+            __system_argv->argv[0], sizeof(tmp));
       t_len        = strlen(tmp);
       memcpy(cmdline, tmp, t_len);
       len         += t_len;

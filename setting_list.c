@@ -23,6 +23,9 @@
 #include "config.h"
 #endif
 
+#include "input/input_driver.h"
+#include "config.def.keybinds.h"
+
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
 #include "menu/widgets/menu_input_dialog.h"
@@ -31,58 +34,7 @@
 
 #include "configuration.h"
 #include "config.def.h"
-#include "input/input_config.h"
 #include "setting_list.h"
-
-rarch_setting_t setting_terminator_setting(void)
-{
-   rarch_setting_t result;
-
-   result.enum_idx                  = MSG_UNKNOWN;
-   result.type                      = ST_NONE;
-  
-   result.size                      = 0;
-
-   result.name                      = NULL;
-   result.name_hash                 = 0;
-   result.short_description         = NULL;
-   result.group                     = NULL;
-   result.subgroup                  = NULL;
-   result.parent_group              = NULL;
-   result.values                    = NULL;
-
-   result.index                     = 0;
-   result.index_offset              = 0;
-
-   result.min                       = 0.0;
-   result.max                       = 0.0;
-
-   result.flags                     = 0;
-   result.free_flags                = 0;
-
-   result.change_handler            = NULL;
-   result.read_handler              = NULL;
-   result.action_start              = NULL;
-   result.action_left               = NULL;
-   result.action_right              = NULL;
-   result.action_up                 = NULL;
-   result.action_down               = NULL;
-   result.action_cancel             = NULL;
-   result.action_ok                 = NULL;
-   result.action_select             = NULL;
-   result.get_string_representation = NULL;
-
-   result.bind_type                 = 0;
-   result.browser_selection_type    = ST_NONE;
-   result.step                      = 0.0f;
-   result.rounding_fraction         = NULL;
-   result.enforce_minrange          = false;
-   result.enforce_maxrange          = false;
-
-   result.dont_use_enum_idx_representation = false;
-
-   return result;
-}
 
 bool settings_list_append(rarch_setting_t **list,
       rarch_setting_info_t *list_info)
@@ -124,17 +76,11 @@ static int setting_bind_action_ok(void *data, bool wraparound)
 static int setting_int_action_right_default(void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
-#ifdef HAVE_MENU
-   double               min = 0.0f;
-#endif
    double               max = 0.0f;
    
    if (!setting)
       return -1;
 
-#ifdef HAVE_MENU
-   min = setting->min;
-#endif
    max = setting->max;
 
    (void)wraparound; /* TODO/FIXME - handle this */
@@ -147,9 +93,10 @@ static int setting_int_action_right_default(void *data, bool wraparound)
       if (*setting->value.target.integer > max)
       {
          settings_t *settings = config_get_ptr();
-
 #ifdef HAVE_MENU
-         if (settings && settings->menu.navigation.wraparound.enable)
+         double          min  = setting->min;
+
+         if (settings && settings->bools.menu_navigation_wraparound_enable)
             *setting->value.target.integer = min;
          else
 #endif
@@ -210,6 +157,7 @@ static int setting_uint_action_left_default(void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
    double               min = 0.0f;
+   bool                 overflowed = false;
    
    if (!setting)
       return -1;
@@ -218,16 +166,27 @@ static int setting_uint_action_left_default(void *data, bool wraparound)
 
    (void)wraparound; /* TODO/FIXME - handle this */
 
-   if (*setting->value.target.unsigned_integer != min)
-      *setting->value.target.unsigned_integer =
-         *setting->value.target.unsigned_integer - setting->step;
+   overflowed = setting->step > *setting->value.target.unsigned_integer;
+
+   if (!overflowed)
+      *setting->value.target.unsigned_integer = *setting->value.target.unsigned_integer - setting->step;
 
    if (setting->enforce_minrange)
    {
-      if (*setting->value.target.unsigned_integer < min)
-         *setting->value.target.unsigned_integer = min;
-   }
+      if (overflowed || *setting->value.target.unsigned_integer < min)
+      {
+         settings_t *settings = config_get_ptr();
 
+#ifdef HAVE_MENU
+      double           max = setting->max;
+
+         if (settings && settings->bools.menu_navigation_wraparound_enable)
+            *setting->value.target.unsigned_integer = max;
+         else
+#endif
+            *setting->value.target.unsigned_integer = min;
+      }
+   }
 
    return 0;
 }
@@ -235,21 +194,14 @@ static int setting_uint_action_left_default(void *data, bool wraparound)
 static int setting_uint_action_right_default(void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
-#ifdef HAVE_MENU
-   double               min = 0.0f;
-#endif
    double               max = 0.0f;
    
    if (!setting)
       return -1;
 
-#ifdef HAVE_MENU
-   min = setting->min;
-#endif
    max = setting->max;
 
    (void)wraparound; /* TODO/FIXME - handle this */
-
 
    *setting->value.target.unsigned_integer =
       *setting->value.target.unsigned_integer + setting->step;
@@ -261,7 +213,9 @@ static int setting_uint_action_right_default(void *data, bool wraparound)
          settings_t *settings = config_get_ptr();
 
 #ifdef HAVE_MENU
-         if (settings && settings->menu.navigation.wraparound.enable)
+         double           min = setting->min;
+
+         if (settings && settings->bools.menu_navigation_wraparound_enable)
             *setting->value.target.unsigned_integer = min;
          else
 #endif
@@ -326,10 +280,9 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
                *setting->value.target.integer = min;
             if (setting->enforce_maxrange && *setting->value.target.integer > max)
             {
-               settings_t *settings = config_get_ptr();
-
 #ifdef HAVE_MENU
-               if (settings && settings->menu.navigation.wraparound.enable)
+               settings_t *settings = config_get_ptr();
+               if (settings && settings->bools.menu_navigation_wraparound_enable)
                   *setting->value.target.integer = min;
                else
 #endif
@@ -345,10 +298,9 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
                *setting->value.target.unsigned_integer = min;
             if (setting->enforce_maxrange && *setting->value.target.unsigned_integer > max)
             {
-               settings_t *settings = config_get_ptr();
-
 #ifdef HAVE_MENU
-               if (settings && settings->menu.navigation.wraparound.enable)
+               settings_t *settings = config_get_ptr();
+               if (settings && settings->bools.menu_navigation_wraparound_enable)
                   *setting->value.target.unsigned_integer = min;
                else
 #endif
@@ -364,10 +316,9 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
                *setting->value.target.fraction = min;
             if (setting->enforce_maxrange && *setting->value.target.fraction > max)
             {
-               settings_t *settings = config_get_ptr();
-
 #ifdef HAVE_MENU
-               if (settings && settings->menu.navigation.wraparound.enable)
+               settings_t *settings = config_get_ptr();
+               if (settings && settings->bools.menu_navigation_wraparound_enable)
                   *setting->value.target.fraction = min;
                else
 #endif
@@ -383,9 +334,9 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
          strlcpy(setting->value.target.string, value, setting->size);
          break;
       case ST_BOOL:
-         if (string_is_equal(value, "true"))
+         if (string_is_equal_fast(value, "true", 4))
             *setting->value.target.boolean = true;
-         else if (string_is_equal(value, "false"))
+         else if (string_is_equal_fast(value, "false", 5))
             *setting->value.target.boolean = false;
          break;
       default:
@@ -411,13 +362,23 @@ static int setting_fraction_action_left_default(
 
    (void)wraparound; /* TODO/FIXME - handle this */
 
-   *setting->value.target.fraction =
-      *setting->value.target.fraction - setting->step;
+   *setting->value.target.fraction = *setting->value.target.fraction - setting->step;
 
    if (setting->enforce_minrange)
    {
       if (*setting->value.target.fraction < min)
-         *setting->value.target.fraction = min;
+      {
+         settings_t *settings = config_get_ptr();
+
+#ifdef HAVE_MENU
+      double           max = setting->max;
+
+         if (settings && settings->bools.menu_navigation_wraparound_enable)
+            *setting->value.target.fraction = max;
+         else
+#endif
+            *setting->value.target.fraction = min;
+      }
    }
 
    return 0;
@@ -427,17 +388,11 @@ static int setting_fraction_action_right_default(
       void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
-#ifdef HAVE_MENU
-   double               min = 0.0f;
-#endif
    double               max = 0.0f;
 
    if (!setting)
       return -1;
 
-#ifdef HAVE_MENU
-   min = setting->min;
-#endif
    max = setting->max;
 
    (void)wraparound; /* TODO/FIXME - handle this */
@@ -449,10 +404,11 @@ static int setting_fraction_action_right_default(
    {
       if (*setting->value.target.fraction > max)
       {
-         settings_t *settings = config_get_ptr();
-
 #ifdef HAVE_MENU
-         if (settings && settings->menu.navigation.wraparound.enable)
+         settings_t *settings = config_get_ptr();
+         double          min  = setting->min;
+
+         if (settings && settings->bools.menu_navigation_wraparound_enable)
             *setting->value.target.fraction = min;
          else
 #endif
@@ -695,6 +651,9 @@ static rarch_setting_t setting_action_setting(const char* name,
    result.enforce_minrange          = false;
    result.enforce_maxrange          = false;
 
+   result.cmd_trigger.idx           = CMD_EVENT_NONE;
+   result.cmd_trigger.triggered     = false;
+
    result.dont_use_enum_idx_representation = dont_use_enum_idx;
 
    return result;
@@ -754,6 +713,9 @@ static rarch_setting_t setting_group_setting(enum setting_type type, const char*
    result.rounding_fraction         = NULL;
    result.enforce_minrange          = false;
    result.enforce_maxrange          = false;
+
+   result.cmd_trigger.idx           = CMD_EVENT_NONE;
+   result.cmd_trigger.triggered     = false;
 
    result.dont_use_enum_idx_representation = false;
 
@@ -830,6 +792,9 @@ static rarch_setting_t setting_float_setting(const char* name,
    result.original_value.fraction   = *target;
    result.default_value.fraction    = default_value;
 
+   result.cmd_trigger.idx           = CMD_EVENT_NONE;
+   result.cmd_trigger.triggered     = false;
+
    result.dont_use_enum_idx_representation = dont_use_enum_idx;
 
    return result;
@@ -904,6 +869,9 @@ static rarch_setting_t setting_uint_setting(const char* name,
    result.original_value.unsigned_integer = *target;
    result.default_value.unsigned_integer  = default_value;
 
+   result.cmd_trigger.idx           = CMD_EVENT_NONE;
+   result.cmd_trigger.triggered     = false;
+
    result.dont_use_enum_idx_representation = dont_use_enum_idx;
 
    return result;
@@ -977,6 +945,9 @@ static rarch_setting_t setting_hex_setting(const char* name,
    result.value.target.unsigned_integer   = target;
    result.original_value.unsigned_integer = *target;
    result.default_value.unsigned_integer  = default_value;
+
+   result.cmd_trigger.idx           = CMD_EVENT_NONE;
+   result.cmd_trigger.triggered     = false;
 
    result.dont_use_enum_idx_representation = dont_use_enum_idx;
 
@@ -1056,6 +1027,9 @@ static rarch_setting_t setting_bind_setting(const char* name,
    result.value.target.keybind      = target;
    result.default_value.keybind     = default_value;
 
+   result.cmd_trigger.idx           = CMD_EVENT_NONE;
+   result.cmd_trigger.triggered     = false;
+
    result.dont_use_enum_idx_representation = dont_use_enum_idx;
 
    return result;
@@ -1063,26 +1037,34 @@ static rarch_setting_t setting_bind_setting(const char* name,
 
 static int setting_int_action_left_default(void *data, bool wraparound)
 {
-   double min               = 0.0f;
    rarch_setting_t *setting = (rarch_setting_t*)data;
+   double               min = 0.0f;
 
    if (!setting)
       return -1;
 
-   min               = setting->min;
+   min = setting->min;
 
    (void)wraparound; /* TODO/FIXME - handle this */
 
-   if (*setting->value.target.integer != min)
-      *setting->value.target.integer =
-         *setting->value.target.integer - setting->step;
+   *setting->value.target.integer = *setting->value.target.integer - setting->step;
 
    if (setting->enforce_minrange)
    {
       if (*setting->value.target.integer < min)
-         *setting->value.target.integer = min;
-   }
+      {
+         settings_t *settings = config_get_ptr();
 
+#ifdef HAVE_MENU
+      double           max = setting->max;
+
+         if (settings && settings->bools.menu_navigation_wraparound_enable)
+            *setting->value.target.integer = max;
+         else
+#endif
+            *setting->value.target.integer = min;
+      }
+   }
 
    return 0;
 }
@@ -1202,6 +1184,9 @@ static rarch_setting_t setting_string_setting(enum setting_type type,
    result.value.target.string       = target;
    result.default_value.string      = default_value;
 
+   result.cmd_trigger.idx           = CMD_EVENT_NONE;
+   result.cmd_trigger.triggered     = false;
+
    switch (type)
    {
       case ST_DIR:
@@ -1317,6 +1302,9 @@ static rarch_setting_t setting_subgroup_setting(enum setting_type type,
    result.enforce_minrange          = false;
    result.enforce_maxrange          = false;
 
+   result.cmd_trigger.idx           = CMD_EVENT_NONE;
+   result.cmd_trigger.triggered     = false;
+
    result.dont_use_enum_idx_representation = dont_use_enum_idx;
 
    return result;
@@ -1395,6 +1383,9 @@ static rarch_setting_t setting_bool_setting(const char* name,
    result.boolean.off_label         = off;
    result.boolean.on_label          = on;
 
+   result.cmd_trigger.idx           = CMD_EVENT_NONE;
+   result.cmd_trigger.triggered     = false;
+
    result.dont_use_enum_idx_representation = dont_use_enum_idx;
 
    return result;
@@ -1468,6 +1459,9 @@ static rarch_setting_t setting_int_setting(const char* name,
    result.value.target.integer      = target;
    result.original_value.integer    = *target;
    result.default_value.integer     = default_value;
+
+   result.cmd_trigger.idx           = CMD_EVENT_NONE;
+   result.cmd_trigger.triggered     = false;
 
    result.dont_use_enum_idx_representation = dont_use_enum_idx;
 

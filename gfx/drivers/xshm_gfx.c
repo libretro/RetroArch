@@ -138,11 +138,6 @@ static bool xshm_gfx_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static bool xshm_gfx_has_windowed(void *data)
-{
-   return true;
-}
-
 static void xshm_gfx_free(void *data)
 {
    
@@ -190,7 +185,9 @@ static void xshm_poke_texture_enable(void *data, bool enable, bool full_screen)
    
 }
 
-static void xshm_poke_set_osd_msg(void *data, const char *msg,
+static void xshm_poke_set_osd_msg(void *data,
+      video_frame_info_t *video_info,
+      const char *msg,
       const struct font_params *params, void *font)
 {
    
@@ -208,6 +205,8 @@ static void xshm_grab_mouse_toggle(void *data)
 #endif
 
 static video_poke_interface_t xshm_video_poke_interface = {
+   NULL,       /* set_coords */
+   NULL,       /* set_mvp */
    NULL,
    NULL,
    NULL,
@@ -258,7 +257,7 @@ video_driver_t video_xshm = {
    xshm_gfx_alive,
    xshm_gfx_focus,
    xshm_gfx_suppress_screensaver,
-   xshm_gfx_has_windowed,
+   NULL, /* has_windowed */
    xshm_gfx_set_shader,
    xshm_gfx_free,
    "xshm",

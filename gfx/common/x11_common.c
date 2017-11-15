@@ -27,13 +27,21 @@
 #include "../../config.h"
 #endif
 
+#ifdef HAVE_XINERAMA
+#include <X11/extensions/Xinerama.h>
+#endif
+
 #include "x11_common.h"
 
 #include <X11/extensions/xf86vmode.h>
 
+#include <encodings/utf.h>
+
 #include "dbus_common.h"
 
 #include "../../frontend/frontend_driver.h"
+#include "../../input/input_driver.h"
+#include "../../input/input_keymaps.h"
 #include "../../input/common/input_x11_common.h"
 #include "../../verbosity.h"
 
@@ -344,6 +352,75 @@ bool x11_get_metrics(void *data,
    return true;
 }
 
+static void x11_handle_key_event(XEvent *event, XIC ic, bool filter)
+{
+   int i;
+   unsigned key;
+   uint32_t chars[32];
+   uint16_t mod   = 0;
+   unsigned state = event->xkey.state;
+   bool down     = event->type == KeyPress;
+   int num       = 0;
+   KeySym keysym = 0;
+   
+   chars[0] = '\0';
+
+   if (!filter)
+   {
+      if (down)
+      {
+         char keybuf[32];
+
+         keybuf[0] = '\0';
+#ifdef X_HAVE_UTF8_STRING
+         Status status = 0;
+
+         /* XwcLookupString doesn't seem to work. */
+         num = Xutf8LookupString(ic, &event->xkey, keybuf, ARRAY_SIZE(keybuf), &keysym, &status);
+
+         /* libc functions need UTF-8 locale to work properly, 
+          * which makes mbrtowc a bit impractical.
+          *
+          * Use custom UTF8 -> UTF-32 conversion. */
+         num = utf8_conv_utf32(chars, ARRAY_SIZE(chars), keybuf, num);
+#else
+         (void)ic;
+         num = XLookupString(&event->xkey, keybuf, sizeof(keybuf), &keysym, NULL); /* ASCII only. */
+         for (i = 0; i < num; i++)
+            chars[i] = keybuf[i] & 0x7f;
+#endif
+      }
+      else
+         keysym = XLookupKeysym(&event->xkey, (state & ShiftMask) || (state & LockMask));
+   }
+
+   /* We can't feed uppercase letters to the keycode translator. Seems like a bad idea
+    * to feed it keysyms anyway, so here is a little hack... */
+   if (keysym >= XK_A && keysym <= XK_Z)
+       keysym += XK_z - XK_Z;
+
+   key   = input_keymaps_translate_keysym_to_rk(keysym);
+
+   if (state & ShiftMask)
+      mod |= RETROKMOD_SHIFT;
+   if (state & LockMask)
+      mod |= RETROKMOD_CAPSLOCK;
+   if (state & ControlMask)
+      mod |= RETROKMOD_CTRL;
+   if (state & Mod1Mask)
+      mod |= RETROKMOD_ALT;
+   if (state & Mod4Mask)
+      mod |= RETROKMOD_META;
+   if (IsKeypadKey(keysym))
+      mod |= RETROKMOD_NUMLOCK;
+
+   input_keyboard_event(down, key, chars[0], mod, RETRO_DEVICE_KEYBOARD);
+
+   for (i = 1; i < num; i++)
+      input_keyboard_event(down, RETROK_UNKNOWN,
+            chars[i], mod, RETRO_DEVICE_KEYBOARD);
+}
+
 bool x11_alive(void *data)
 {
    while (XPending(g_x11_dpy))
@@ -503,7 +580,7 @@ bool x11_connect(void)
    return true;
 }
 
-void x11_update_title(void *data, video_frame_info_t *video_info)
+void x11_update_title(void *data, void *data2)
 {
    char title[128];
 

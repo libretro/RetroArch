@@ -21,6 +21,8 @@
 /* Direct3D 9 */
 #include <d3d9.h>
 
+#define ID3DSURFACE                    IDirect3DSurface9
+
 #define LPDIRECT3D                     LPDIRECT3D9
 #define LPDIRECT3DDEVICE               LPDIRECT3DDEVICE9
 #define LPDIRECT3DTEXTURE              LPDIRECT3DTEXTURE9
@@ -41,8 +43,12 @@
 #define D3DCREATE_SOFTWARE_VERTEXPROCESSING 0
 #endif
 
-#elif defined(_XBOX1)
+#elif defined(HAVE_D3D8)
+#ifdef _XBOX
 #include <xtl.h>
+#else
+#include "../gfx/include/d3d8/d3d8.h"
+#endif
 
 /* Direct3D 8 */
 #define LPDIRECT3D                     LPDIRECT3D8
@@ -56,9 +62,12 @@
 #define D3DVERTEXELEMENT               D3DVERTEXELEMENT8
 #define D3DVIEWPORT                    D3DVIEWPORT8
 
+#define ID3DSURFACE                    IDirect3DSurface8
 #define D3DCREATE_CTX                  Direct3DCreate8
 
+#if !defined(D3DLOCK_NOSYSLOCK) && defined(_XBOX) 
 #define D3DLOCK_NOSYSLOCK (0)
+#endif
 #define D3DSAMP_ADDRESSU D3DTSS_ADDRESSU
 #define D3DSAMP_ADDRESSV D3DTSS_ADDRESSV
 #define D3DSAMP_MAGFILTER D3DTSS_MAGFILTER
@@ -67,7 +76,7 @@
 
 #if defined(_XBOX360)
 #define D3DFVF_CUSTOMVERTEX 0
-#elif defined(_XBOX1)
+#elif defined(HAVE_D3D8)
 #define D3DFVF_CUSTOMVERTEX	(D3DFVF_XYZRHW | D3DFVF_TEX1)
 #endif
 

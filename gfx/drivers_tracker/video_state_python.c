@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -32,7 +32,7 @@
 #include "../../dynamic.h"
 #include "../../core.h"
 #include "../../verbosity.h"
-#include "../../input/input_config.h"
+#include "../../input/input_driver.h"
 
 static PyObject* py_read_wram(PyObject *self, PyObject *args)
 {
@@ -79,7 +79,7 @@ static PyObject* py_read_vram(PyObject *self, PyObject *args)
    mem_info.id = RETRO_MEMORY_VIDEO_RAM;
 
    core_get_memory(&mem_info);
-   
+
    data = (const uint8_t*)mem_info.data;
 
    (void)self;
@@ -112,10 +112,10 @@ static PyObject *py_read_input(PyObject *self, PyObject *args)
    const struct retro_keybind *py_binds[MAX_USERS];
    int16_t res                                     = 0;
    settings_t *settings                            = config_get_ptr();
-   
+
    for (i = 0; i < MAX_USERS; i++)
-      py_binds[i] = settings->input.binds[i];
-   
+      py_binds[i]                                  = input_config_binds[i];
+
    (void)self;
 
    if (!PyArg_ParseTuple(args, "II", &user, &key))
@@ -124,8 +124,8 @@ static PyObject *py_read_input(PyObject *self, PyObject *args)
    if (user > MAX_USERS || user < 1 || key >= RARCH_FIRST_META_KEY)
       return NULL;
 
-   joypad_info.joy_idx    = settings->input.joypad_map[user - 1];
-   joypad_info.auto_binds = settings->input.autoconf_binds[joypad_info.joy_idx];
+   joypad_info.joy_idx    = settings->uints.input_joypad_map[user - 1];
+   joypad_info.auto_binds = input_autoconf_binds[joypad_info.joy_idx];
 
    if (!input_driver_is_libretro_input_blocked())
       res = current_input->input_state(current_input_data, joypad_info,
@@ -143,7 +143,7 @@ static PyObject *py_read_analog(PyObject *self, PyObject *args)
    settings_t *settings                   = config_get_ptr();
 
    for (i = 0; i < MAX_USERS; i++)
-      py_binds[i] = settings->input.binds[i];
+      py_binds[i]                         = input_config_binds[i];
 
    (void)self;
 
@@ -153,10 +153,10 @@ static PyObject *py_read_analog(PyObject *self, PyObject *args)
    if (user > MAX_USERS || user < 1 || index > 1 || id > 1)
       return NULL;
 
-   joypad_info.joy_idx    = settings->input.joypad_map[user - 1];
-   joypad_info.auto_binds = settings->input.autoconf_binds[joypad_info.joy_idx];
+   joypad_info.joy_idx    = settings->uints.input_joypad_map[user - 1];
+   joypad_info.auto_binds = input_autoconf_binds[joypad_info.joy_idx];
 
-   res = current_input->input_state(current_input_data, 
+   res = current_input->input_state(current_input_data,
          joypad_info, py_binds,
          user - 1, RETRO_DEVICE_ANALOG, index, id);
    return PyFloat_FromDouble((double)res / 0x7fff);
@@ -313,7 +313,7 @@ py_state_t *py_state_new(const char *script,
    {
       /* Have to hack around the fact that the FILE struct
        * isn't standardized across environments.
-       * PyRun_SimpleFile() breaks on Windows because it's 
+       * PyRun_SimpleFile() breaks on Windows because it's
        * compiled with MSVC. */
       ssize_t len;
       char *script_ = NULL;
@@ -399,9 +399,9 @@ float py_state_get(py_state_t *handle, const char *id,
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      struct retro_keybind *general_binds = settings->input.binds[i];
-      struct retro_keybind *auto_binds    = settings->input.autoconf_binds[i];
-      enum analog_dpad_mode dpad_mode     = settings->input.analog_dpad_mode[i];
+      struct retro_keybind *general_binds = input_config_binds[i];
+      struct retro_keybind *auto_binds    = input_autoconf_binds[i];
+      enum analog_dpad_mode dpad_mode     = settings->uints.input_analog_dpad_mode[i];
 
       if (dpad_mode == ANALOG_DPAD_NONE)
          continue;
@@ -414,8 +414,8 @@ float py_state_get(py_state_t *handle, const char *id,
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      struct retro_keybind *general_binds = settings->input.binds[i];
-      struct retro_keybind *auto_binds    = settings->input.autoconf_binds[i];
+      struct retro_keybind *general_binds = input_config_binds[i];
+      struct retro_keybind *auto_binds    = input_autoconf_binds[i];
       input_pop_analog_dpad(general_binds);
       input_pop_analog_dpad(auto_binds);
    }

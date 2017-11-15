@@ -63,7 +63,7 @@ CXX     := $(subst CC,++,$(compiler))
 flags   := -fPIC $(extra_flags) -I$(LIBRETRO_COMM_DIR)/include
 asflags := -fPIC  $(extra_flags)
 LDFLAGS := 
-flags   += -std=c99 -DMD5_BUILD_UTILITY
+flags   += -std=c99 -DMD5_BUILD_UTILITY -DSHA1_BUILD_UTILITY
 
 
 ifeq (1,$(use_neon))
@@ -75,6 +75,7 @@ endif
 OBJS += $(CORE_DIR)/djb2.o \
 		  $(CORE_DIR)/md5.o \
 		  $(CORE_DIR)/sha1.o \
+		  $(CORE_DIR)/sha1_main.o \
 		  $(CORE_DIR)/crc32.o
 UTILS += djb2$(DYLIB) md5$(DYLIB) sha1$(DYLIB) crc32$(DYLIB)
 

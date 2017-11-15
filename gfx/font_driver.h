@@ -33,6 +33,7 @@ enum font_driver_render_api
    FONT_DRIVER_RENDER_DIRECT3D_API,
    FONT_DRIVER_RENDER_VITA2D,
    FONT_DRIVER_RENDER_CTR,
+   FONT_DRIVER_RENDER_WIIU,
    FONT_DRIVER_RENDER_VULKAN_API,
    FONT_DRIVER_RENDER_CACA,
    FONT_DRIVER_RENDER_GDI,
@@ -112,7 +113,8 @@ typedef struct font_renderer
 
    const struct font_glyph *(*get_glyph)(void *data, uint32_t code);
    void (*bind_block)(void *data, void *block);
-   void (*flush)(unsigned width, unsigned height, void *data);
+   void (*flush)(unsigned width, unsigned height, void *data,
+         video_frame_info_t *video_info);
    
    int (*get_message_width)(void *data, const char *msg, unsigned msg_len_full, float scale);
 } font_renderer_t;
@@ -153,14 +155,24 @@ void font_driver_bind_block(void *font_data, void *block);
 
 int font_driver_get_message_width(void *font_data, const char *msg, unsigned len, float scale);
 
-void font_driver_flush(unsigned width, unsigned height, void *font_data);
+void font_driver_flush(unsigned width, unsigned height, void *font_data,
+      video_frame_info_t *video_info);
 
 void font_driver_free(void *font_data);
 
-font_data_t *font_driver_init_first(void *video_data, const char *font_path,
-      float font_size, bool threading_hint, enum font_driver_render_api api);
+font_data_t *font_driver_init_first(
+      void *video_data,
+      const char *font_path,
+      float font_size,
+      bool threading_hint,
+      bool is_threaded,
+      enum font_driver_render_api api);
 
-void font_driver_init_osd(void *video_data, bool threading_hint, enum font_driver_render_api api);
+void font_driver_init_osd(
+      void *video_data,
+      bool threading_hint,
+      bool is_threaded,
+      enum font_driver_render_api api);
 void font_driver_free_osd(void);
 
 extern font_renderer_t gl_raster_font;
@@ -170,6 +182,7 @@ extern font_renderer_t d3d_xdk1_font;
 extern font_renderer_t d3d_win32_font;
 extern font_renderer_t vita2d_vita_font;
 extern font_renderer_t ctr_font;
+extern font_renderer_t wiiu_font;
 extern font_renderer_t vulkan_raster_font;
 extern font_renderer_t caca_font;
 extern font_renderer_t gdi_font;

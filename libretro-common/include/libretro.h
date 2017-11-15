@@ -230,21 +230,22 @@ extern "C" {
 /* Id values for LANGUAGE */
 enum retro_language
 {
-   RETRO_LANGUAGE_ENGLISH             =  0,
-   RETRO_LANGUAGE_JAPANESE            =  1,
-   RETRO_LANGUAGE_FRENCH              =  2,
-   RETRO_LANGUAGE_SPANISH             =  3,
-   RETRO_LANGUAGE_GERMAN              =  4,
-   RETRO_LANGUAGE_ITALIAN             =  5,
-   RETRO_LANGUAGE_DUTCH               =  6,
-   RETRO_LANGUAGE_PORTUGUESE          =  7,
-   RETRO_LANGUAGE_RUSSIAN             =  8,
-   RETRO_LANGUAGE_KOREAN              =  9,
-   RETRO_LANGUAGE_CHINESE_TRADITIONAL = 10,
-   RETRO_LANGUAGE_CHINESE_SIMPLIFIED  = 11,
-   RETRO_LANGUAGE_ESPERANTO           = 12,
-   RETRO_LANGUAGE_POLISH              = 13,
-   RETRO_LANGUAGE_VIETNAMESE          = 14,
+   RETRO_LANGUAGE_ENGLISH             = 0,
+   RETRO_LANGUAGE_JAPANESE            = 1,
+   RETRO_LANGUAGE_FRENCH              = 2,
+   RETRO_LANGUAGE_SPANISH             = 3,
+   RETRO_LANGUAGE_GERMAN              = 4,
+   RETRO_LANGUAGE_ITALIAN             = 5,
+   RETRO_LANGUAGE_DUTCH               = 6,
+   RETRO_LANGUAGE_PORTUGUESE_BRAZIL   = 7,
+   RETRO_LANGUAGE_PORTUGUESE_PORTUGAL = 8,
+   RETRO_LANGUAGE_RUSSIAN             = 9,
+   RETRO_LANGUAGE_KOREAN              = 10,
+   RETRO_LANGUAGE_CHINESE_TRADITIONAL = 11,
+   RETRO_LANGUAGE_CHINESE_SIMPLIFIED  = 12,
+   RETRO_LANGUAGE_ESPERANTO           = 13,
+   RETRO_LANGUAGE_POLISH              = 14,
+   RETRO_LANGUAGE_VIETNAMESE          = 15,
    RETRO_LANGUAGE_LAST,
 
    /* Ensure sizeof(enum) == sizeof(int) */
@@ -713,7 +714,7 @@ enum retro_mod
                                            /* struct retro_log_callback * --
                                             * Gets an interface for logging. This is useful for 
                                             * logging in a cross-platform way
-                                            * as certain platforms cannot use use stderr for logging. 
+                                            * as certain platforms cannot use stderr for logging. 
                                             * It also allows the frontend to
                                             * show logging information in a more suitable way.
                                             * If this interface is not used, libretro cores should 
@@ -920,6 +921,18 @@ enum retro_mod
                                             *
                                             * A frontend must make sure that the pointer obtained from this function is
                                             * writeable (and readable).
+                                            */
+
+#define RETRO_ENVIRONMENT_SET_HW_SHARED_CONTEXT (44 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+                                           /* N/A (null) * --
+                                            * The frontend will try to use a 'shared' hardware context (mostly applicable
+                                            * to OpenGL) when a hardware context is being set up.
+                                            *
+                                            * Returns true if the frontend supports shared hardware contexts and false
+                                            * if the frontend does not support shared hardware contexts.
+                                            *
+                                            * This will do nothing on its own until SET_HW_RENDER env callbacks are
+                                            * being used.
                                             */
 
 enum retro_hw_render_interface_type
@@ -1975,10 +1988,12 @@ struct retro_variable
 struct retro_game_info
 {
    const char *path;       /* Path to game, UTF-8 encoded.
-                            * Usually used as a reference.
-                            * May be NULL if rom was loaded from stdin
-                            * or similar. 
-                            * retro_system_info::need_fullpath guaranteed 
+                            * Sometimes used as a reference for building other paths.
+                            * May be NULL if game was loaded from stdin or similar,
+                            * but in this case some cores will be unable to load `data`.
+                            * So, it is preferable to fabricate something here instead
+                            * of passing NULL, which will help more cores to succeed.
+                            * retro_system_info::need_fullpath requires
                             * that this path is valid. */
    const void *data;       /* Memory buffer of loaded game. Will be NULL 
                             * if need_fullpath was set. */

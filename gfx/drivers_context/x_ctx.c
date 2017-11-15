@@ -36,10 +36,16 @@
 
 #endif
 
+#include <string/stdstring.h>
+
+#include "../../configuration.h"
 #include "../../frontend/frontend_driver.h"
 #include "../common/gl_common.h"
 #include "../common/x11_common.h"
+
+#ifdef HAVE_XINERAMA
 #include "../common/xinerama_common.h"
+#endif
 
 #ifdef HAVE_VULKAN
 #include "../common/vulkan_common.h"
@@ -304,7 +310,7 @@ static void gfx_ctx_x_swap_interval(void *data, unsigned interval)
    }
 }
 
-static void gfx_ctx_x_swap_buffers(void *data, video_frame_info_t *video_info)
+static void gfx_ctx_x_swap_buffers(void *data, void *data2)
 {
    gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
 
@@ -386,6 +392,9 @@ static bool gfx_ctx_x_set_resize(void *data,
 #ifdef HAVE_VULKAN
          {
             gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
+
+            /* FIXME/TODO - threading error here */
+
             if (!vulkan_create_swapchain(&x->vk, width, height, x->g_interval))
             {
                RARCH_ERR("[X/Vulkan]: Failed to update swapchain.\n");
@@ -798,6 +807,8 @@ static bool gfx_ctx_x_set_video_mode(void *data,
             x11_check_window(x, &quit, &resize, &width, &height,
                   shutdown);
 
+            /* FIXME/TODO - threading error here */
+
             /* Use XCB surface since it's the most supported WSI.
              * We can obtain the XCB connection directly from X11. */
             if (!vulkan_surface_create(&x->vk, VULKAN_WSI_XCB,
@@ -892,10 +903,24 @@ static void gfx_ctx_x_input_driver(void *data,
       const char *joypad_name,
       const input_driver_t **input, void **input_data)
 {
-   void *xinput = input_x.init(joypad_name);
+   void *x_input         = NULL;
+#ifdef HAVE_UDEV
+   settings_t *settings = config_get_ptr();
 
-   *input       = xinput ? &input_x : NULL;
-   *input_data  = xinput;
+   if (string_is_equal_fast(settings->arrays.input_driver, "udev", 5))
+   {
+      *input_data = input_udev.init(joypad_name);
+      if (*input_data)
+      {
+         *input = &input_udev;
+         return;
+      }
+   }
+#endif
+
+   x_input      = input_x.init(joypad_name);
+   *input       = x_input ? &input_x : NULL;
+   *input_data  = x_input;
 }
 
 static bool gfx_ctx_x_suppress_screensaver(void *data, bool enable)

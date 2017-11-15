@@ -90,7 +90,7 @@ static void *gfx_ctx_vivante_init(video_frame_info_t *video_info, void *video_dr
    system("setterm -cursor off");
 
 #ifdef HAVE_EGL
-   if (!egl_init_context(&viv->egl, EGL_DEFAULT_DISPLAY, &major, &minor,
+   if (!egl_init_context(&viv->egl, EGL_NONE, EGL_DEFAULT_DISPLAY, &major, &minor,
             &n, attribs))
    {
       egl_report_error();
@@ -219,7 +219,7 @@ static void gfx_ctx_vivante_set_swap_interval(void *data, unsigned swap_interval
 #endif
 }
 
-static void gfx_ctx_vivante_swap_buffers(void *data, video_frame_info_t *video_info)
+static void gfx_ctx_vivante_swap_buffers(void *data, void *data2)
 {
    vivante_ctx_data_t *viv = (vivante_ctx_data_t*)data;
 

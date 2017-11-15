@@ -146,8 +146,7 @@ static void *ps3_audio_init(const char *device,
    return data;
 }
 
-static ssize_t ps3_audio_write(void *data, const void *buf, size_t size,
-      bool is_perfcnt_enable)
+static ssize_t ps3_audio_write(void *data, const void *buf, size_t size)
 {
    ps3_audio_t *aud = data;
 

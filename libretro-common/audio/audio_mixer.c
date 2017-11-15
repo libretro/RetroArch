@@ -23,10 +23,14 @@
 #include <audio/audio_mixer.h>
 #include <audio/audio_resampler.h>
 
-#include <streams/file_stream.h>
 #include <formats/rwav.h>
 #include <memalign.h>
 
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#endif
+
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -40,19 +44,19 @@
 #define STB_VORBIS_NO_STDIO
 #define STB_VORBIS_NO_CRT
 
-#include "../../deps/stb/stb_vorbis.h"
+#include <stb_vorbis.h>
+#endif
+
+#ifdef HAVE_IBXM
+#include <ibxm/ibxm.h>
 #endif
 
 #define AUDIO_MIXER_MAX_VOICES      8
 #define AUDIO_MIXER_TEMP_OGG_BUFFER 8192
 
-#define AUDIO_MIXER_TYPE_NONE       0
-#define AUDIO_MIXER_TYPE_WAV        1
-#define AUDIO_MIXER_TYPE_OGG        2
-
-struct audio_mixer_sound_t
+struct audio_mixer_sound
 {
-   unsigned type;
+   enum audio_mixer_type type;
    
    union
    {
@@ -71,69 +75,86 @@ struct audio_mixer_sound_t
          const void* data;
       } ogg;
 #endif
+
+#ifdef HAVE_IBXM
+      struct
+      {
+         /* mod/s3m/xm */
+         unsigned size;
+         const void* data;
+      } mod;
+#endif
    } types;
 };
 
-struct audio_mixer_voice_t
+struct audio_mixer_voice
 {
-   unsigned type;
    bool     repeat;
+   unsigned type;
    float    volume;
-   audio_mixer_sound_t*  sound;
+   audio_mixer_sound_t *sound;
    audio_mixer_stop_cb_t stop_cb;
    
    union
    {
       struct
       {
-         /* wav */
          unsigned position;
       } wav;
       
 #ifdef HAVE_STB_VORBIS
       struct
       {
-         /* ogg */
          unsigned    position;
          unsigned    samples;
-         stb_vorbis* stream;
-         float*      buffer;
          unsigned    buf_samples;
-         void*       resampler_data;
+         float*      buffer;
          float       ratio;
-         const retro_resampler_t* resampler;
+         stb_vorbis *stream;
+         void       *resampler_data;
+         const retro_resampler_t *resampler;
       } ogg;
+#endif
+
+#ifdef HAVE_IBXM
+      struct
+      {
+         unsigned    		position;
+         unsigned    		samples;
+         unsigned    		buf_samples;
+         int*               buffer;
+         struct replay*		stream;
+      } mod;
 #endif
    } types;
 };
 
-static audio_mixer_voice_t s_voices[AUDIO_MIXER_MAX_VOICES];
-static unsigned s_rate                                       = 0;
+static struct audio_mixer_voice s_voices[AUDIO_MIXER_MAX_VOICES];
+static unsigned s_rate = 0;
 
-static bool wav2float(const rwav_t* wav, float** pcm, size_t* samples_out)
+#ifdef HAVE_THREADS
+static slock_t* s_locker = NULL;
+#endif
+
+static bool wav2float(const rwav_t* wav, float** pcm, size_t samples_out)
 {
    size_t i;
-   float sample       = 0.0f;
-   const uint8_t* u8  = NULL;
-   const int16_t* s16 = NULL;
-   float* f           = NULL;
-
    /* Allocate on a 16-byte boundary, and pad to a multiple of 16 bytes */
-   *samples_out       = wav->numsamples * 2;
-   f                  = (float*)memalign_alloc(16,
-         ((*samples_out + 15) & ~15) * sizeof(float));
+   float *f           = (float*)memalign_alloc(16,
+         ((samples_out + 15) & ~15) * sizeof(float));
    
    if (!f)
       return false;
    
    *pcm = f;
    
-   if (wav->numchannels == 1)
+   if (wav->bitspersample == 8)
    {
-      if (wav->bitspersample == 8)
+      float sample      = 0.0f;
+      const uint8_t *u8 = (const uint8_t*)wav->samples;
+
+      if (wav->numchannels == 1)
       {
-         u8 = (const uint8_t*)wav->samples;
-         
          for (i = wav->numsamples; i != 0; i--)
          {
             sample = (float)*u8++ / 255.0f;
@@ -142,51 +163,51 @@ static bool wav2float(const rwav_t* wav, float** pcm, size_t* samples_out)
             *f++   = sample;
          }
       }
-      else
+      else if (wav->numchannels == 2)
       {
-         s16 = (const int16_t*)wav->samples;
-         
-         for (i = wav->numsamples; i != 0; i--)
-         {
-            sample = (float)((int)*s16++ + 32768) / 65535.0f;
-            sample = sample * 2.0f - 1.0f;
-            *f++   = sample;
-            *f++   = sample;
-         }
-      }
-   }
-   else if (wav->numchannels == 2)
-   {
-      if (wav->bitspersample == 8)
-      {
-         u8 = (const uint8_t*)wav->samples;
-         
          for (i = wav->numsamples; i != 0; i--)
          {
             sample = (float)*u8++ / 255.0f;
             sample = sample * 2.0f - 1.0f;
             *f++   = sample;
             sample = (float)*u8++ / 255.0f;
-            sample = sample * 2.0f - 1.0f;
-            *f++   = sample;
-         }
-      }
-      else
-      {
-         s16 = (const int16_t*)wav->samples;
-         
-         for (i = wav->numsamples; i != 0; i--)
-         {
-            sample = (float)((int)*s16++ + 32768) / 65535.0f;
-            sample = sample * 2.0f - 1.0f;
-            *f++   = sample;
-            sample = (float)((int)*s16++ + 32768) / 65535.0f;
             sample = sample * 2.0f - 1.0f;
             *f++   = sample;
          }
       }
    }
-   
+   else
+   {
+      /* TODO/FIXME note to leiradel - can we use audio/conversion/s16_to_float
+       * functions here? */
+
+      float sample       = 0.0f;
+      const int16_t *s16 = (const int16_t*)wav->samples;
+
+      if (wav->numchannels == 1)
+      {
+         for (i = wav->numsamples; i != 0; i--)
+         {
+            sample = (float)((int)*s16++ + 32768) / 65535.0f;
+            sample = sample * 2.0f - 1.0f;
+            *f++   = sample;
+            *f++   = sample;
+         }
+      }
+      else if (wav->numchannels == 2)
+      {
+         for (i = wav->numsamples; i != 0; i--)
+         {
+            sample = (float)((int)*s16++ + 32768) / 65535.0f;
+            sample = sample * 2.0f - 1.0f;
+            *f++   = sample;
+            sample = (float)((int)*s16++ + 32768) / 65535.0f;
+            sample = sample * 2.0f - 1.0f;
+            *f++   = sample;
+         }
+      }
+   }
+
    return true;
 }
 
@@ -235,46 +256,49 @@ void audio_mixer_init(unsigned rate)
    
    for (i = 0; i < AUDIO_MIXER_MAX_VOICES; i++)
       s_voices[i].type = AUDIO_MIXER_TYPE_NONE;
+   
+#ifdef HAVE_THREADS
+   s_locker = slock_new();
+#endif
 }
 
 void audio_mixer_done(void)
 {
    unsigned i;
    
+#ifdef HAVE_THREADS
+   /* Dont call audio mixer functions after this point */
+   slock_free(s_locker);
+   s_locker = NULL;
+#endif
+   
    for (i = 0; i < AUDIO_MIXER_MAX_VOICES; i++)
       s_voices[i].type = AUDIO_MIXER_TYPE_NONE;
 }
 
-audio_mixer_sound_t* audio_mixer_load_wav(const char* path)
+audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size)
 {
    /* WAV data */
    rwav_t wav;
-   /* Raw WAV bytes */
-   void* buffer               = NULL;
-   ssize_t size               = 0;
    /* WAV samples converted to float */
    float* pcm                 = NULL;
-   float* resampled           = NULL;
    size_t samples             = 0;
    /* Result */
    audio_mixer_sound_t* sound = NULL;
-   
-   if (filestream_read_file(path, &buffer, &size) == 0)
+   enum rwav_state rwav_ret   = rwav_load(&wav, buffer, size);
+
+   if (rwav_ret != RWAV_ITERATE_DONE)
       return NULL;
    
-   if (rwav_load(&wav, buffer, size) != RWAV_ITERATE_DONE)
-   {
-      free(buffer);
-      return NULL;
-   }
+   samples       = wav.numsamples * 2;
    
-   free(buffer);
-   
-   if (!wav2float(&wav, &pcm, &samples))
+   if (!wav2float(&wav, &pcm, samples))
       return NULL;
    
    if (wav.samplerate != s_rate)
    {
+      float* resampled           = NULL;
+
       if (!one_shot_resample(pcm, samples,
                wav.samplerate, &resampled, &samples))
          return NULL;
@@ -283,7 +307,7 @@ audio_mixer_sound_t* audio_mixer_load_wav(const char* path)
       pcm = resampled;
    }
    
-   sound = (audio_mixer_sound_t*)malloc(sizeof(audio_mixer_sound_t));
+   sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound));
    
    if (!sound)
    {
@@ -296,28 +320,19 @@ audio_mixer_sound_t* audio_mixer_load_wav(const char* path)
    sound->types.wav.pcm    = pcm;
    
    rwav_free(&wav);
+
    return sound;
 }
 
-audio_mixer_sound_t* audio_mixer_load_ogg(const char* path)
+audio_mixer_sound_t* audio_mixer_load_ogg(void *buffer, int32_t size)
 {
 #ifdef HAVE_STB_VORBIS
-   ssize_t size;
-   void* buffer               = NULL;
-   audio_mixer_sound_t* sound = NULL;
-   
-   if (filestream_read_file(path, &buffer, &size) == 0)
-      return NULL;
-   
-   sound = (audio_mixer_sound_t*)malloc(sizeof(audio_mixer_sound_t));
+   audio_mixer_sound_t* sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound));
    
    if (!sound)
-   {
-      free(buffer);
       return NULL;
-   }
-   
-   sound->type = AUDIO_MIXER_TYPE_OGG;
+
+   sound->type           = AUDIO_MIXER_TYPE_OGG;
    sound->types.ogg.size = size;
    sound->types.ogg.data = buffer;
    
@@ -327,17 +342,52 @@ audio_mixer_sound_t* audio_mixer_load_ogg(const char* path)
 #endif
 }
 
+audio_mixer_sound_t* audio_mixer_load_mod(void *buffer, int32_t size)
+{
+#ifdef HAVE_IBXM
+   audio_mixer_sound_t* sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound));
+
+   if (!sound)
+      return NULL;
+
+   sound->type           = AUDIO_MIXER_TYPE_MOD;
+   sound->types.mod.size = size;
+   sound->types.mod.data = buffer;
+
+   return sound;
+#else
+   return NULL;
+#endif
+}
+
 void audio_mixer_destroy(audio_mixer_sound_t* sound)
 {
+   void *handle = NULL;
+   if (!sound)
+      return;
+
    switch (sound->type)
    {
       case AUDIO_MIXER_TYPE_WAV:
-         memalign_free((void*)sound->types.wav.pcm);
+         handle = (void*)sound->types.wav.pcm;
+         if (handle)
+            memalign_free(handle);
          break;
       case AUDIO_MIXER_TYPE_OGG:
 #ifdef HAVE_STB_VORBIS
-         memalign_free((void*)sound->types.ogg.data);
+         handle = (void*)sound->types.ogg.data;
+         if (handle)
+            free(handle);
 #endif
+         break;
+      case AUDIO_MIXER_TYPE_MOD:
+#ifdef HAVE_IBXM
+         handle = (void*)sound->types.mod.data;
+         if (handle)
+            free(handle);
+#endif
+         break;
+      case AUDIO_MIXER_TYPE_NONE:
          break;
    }
    
@@ -348,13 +398,7 @@ static bool audio_mixer_play_wav(audio_mixer_sound_t* sound,
       audio_mixer_voice_t* voice, bool repeat, float volume,
       audio_mixer_stop_cb_t stop_cb)
 {
-   voice->type               = AUDIO_MIXER_TYPE_WAV;
-   voice->repeat             = repeat;
-   voice->volume             = volume;
-   voice->sound              = sound;
-   voice->stop_cb            = stop_cb;
    voice->types.wav.position = 0;
-   
    return true;
 }
 
@@ -366,58 +410,122 @@ static bool audio_mixer_play_ogg(
       audio_mixer_stop_cb_t stop_cb)
 {
    stb_vorbis_info info;
-   int res                 = 0;
-   float ratio             = 0.0f;
-   unsigned samples        = 0;
-   
-   voice->repeat           = repeat;
-   voice->volume           = volume;
-   voice->sound            = sound;
-   voice->stop_cb          = stop_cb;
-
-   voice->types.ogg.stream = stb_vorbis_open_memory(
+   int res                         = 0;
+   float ratio                     = 0.0f;
+   unsigned samples                = 0;
+   void *ogg_buffer                = NULL;
+   void *resampler_data            = NULL;
+   const retro_resampler_t* resamp = NULL;
+   stb_vorbis *stb_vorbis          = stb_vorbis_open_memory(
          (const unsigned char*)sound->types.ogg.data,
          sound->types.ogg.size, &res, NULL);
 
-   if (!voice->types.ogg.stream)
+   if (!stb_vorbis)
       return false;
 
-   info = stb_vorbis_get_info(voice->types.ogg.stream);
-   
-   /* Only stereo supported for now */
-   if (info.channels != 2)
-   {
-      stb_vorbis_close(voice->types.ogg.stream);
-      return false;
-   }
+   info                    = stb_vorbis_get_info(stb_vorbis);
    
    if (info.sample_rate != s_rate)
    {
-      voice->types.ogg.ratio = ratio = (double)s_rate / (double)info.sample_rate;
+      ratio = (double)s_rate / (double)info.sample_rate;
       
-      if (!retro_resampler_realloc(&voice->types.ogg.resampler_data,
-               &voice->types.ogg.resampler, NULL, ratio))
-      {
-         stb_vorbis_close(voice->types.ogg.stream);
-         return false;
-      }
+      if (!retro_resampler_realloc(&resampler_data,
+               &resamp, NULL, ratio))
+         goto error;
    }
 
-   samples                         = 
-      voice->types.ogg.buf_samples = (unsigned)(AUDIO_MIXER_TEMP_OGG_BUFFER * ratio);
-   voice->types.ogg.buffer         = (float*)memalign_alloc(16,
+   samples                         = (unsigned)(AUDIO_MIXER_TEMP_OGG_BUFFER * ratio);
+   ogg_buffer                      = (float*)memalign_alloc(16,
          ((samples + 15) & ~15) * sizeof(float));
 
-   if (!voice->types.ogg.buffer)
+   if (!ogg_buffer)
    {
-      voice->types.ogg.resampler->free(voice->types.ogg.resampler_data);
-      stb_vorbis_close(voice->types.ogg.stream);
-      return false;
+      resamp->free(resampler_data);
+      goto error;
    }
 
-   voice->type = AUDIO_MIXER_TYPE_OGG;
-   voice->types.ogg.position = voice->types.ogg.samples = 0;
+   voice->types.ogg.resampler      = resamp;
+   voice->types.ogg.resampler_data = resampler_data;
+   voice->types.ogg.buffer         = (float*)ogg_buffer;
+   voice->types.ogg.buf_samples    = samples;
+   voice->types.ogg.ratio          = ratio;
+   voice->types.ogg.stream         = stb_vorbis;
+   voice->types.ogg.position       = 0;
+   voice->types.ogg.samples        = 0;
+
    return true;
+
+error:
+   stb_vorbis_close(stb_vorbis);
+   return false;
+}
+#endif
+
+#ifdef HAVE_IBXM
+static bool audio_mixer_play_mod(
+      audio_mixer_sound_t* sound,
+      audio_mixer_voice_t* voice,
+      bool repeat, float volume,
+      audio_mixer_stop_cb_t stop_cb)
+{
+   struct data data;
+   char message[64];
+   int buf_samples               = 0;
+   int samples                   = 0;
+   void *mod_buffer              = NULL;
+   struct module* module         = NULL;
+   struct replay* replay         = NULL;
+
+   data.buffer                   = (char*)sound->types.mod.data;
+   data.length                   = sound->types.mod.size;
+   module                        = module_load(&data, message);
+
+   if (!module)
+   {
+      printf("audio_mixer_play_mod module_load() failed with error: %s\n", message);
+      goto error;
+   }
+
+   replay = new_replay( module, s_rate, 1);
+
+   if (!replay)
+   {
+      printf("audio_mixer_play_mod new_replay() failed\n");
+      goto error;
+   }
+
+   buf_samples = calculate_mix_buf_len(s_rate);
+   mod_buffer  = memalign_alloc(16, ((buf_samples + 15) & ~15) * sizeof(int));
+
+   if (!mod_buffer)
+   {
+      printf("audio_mixer_play_mod cannot allocate mod_buffer !\n");
+      goto error;
+   }
+
+   samples = replay_calculate_duration(replay);
+
+   if (!samples)
+   {
+      printf("audio_mixer_play_mod cannot retrieve duration !\n");
+      goto error;
+   }
+
+   voice->types.mod.buffer         = (int*)mod_buffer;
+   voice->types.mod.buf_samples    = buf_samples;
+   voice->types.mod.stream         = replay;
+   voice->types.mod.position       = 0;
+    voice->types.mod.samples       = 0; /* samples; */
+
+   return true;
+
+error:
+   if (mod_buffer)
+      memalign_free(mod_buffer);
+   if (module)
+      dispose_module(module);
+   return false;
+
 }
 #endif
 
@@ -425,48 +533,97 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound, bool repeat,
       float volume, audio_mixer_stop_cb_t stop_cb)
 {
    unsigned i;
-   audio_mixer_voice_t* voice = NULL;
    bool res                   = false;
+   audio_mixer_voice_t* voice = s_voices;
+
+   if (!sound)
+      return NULL;
    
-   for (i = 0, voice = s_voices; i < AUDIO_MIXER_MAX_VOICES; i++, voice++)
-   {
-      if (voice->type == AUDIO_MIXER_TYPE_NONE)
-      {
-         switch (sound->type)
-         {
-            case AUDIO_MIXER_TYPE_WAV:
-               res = audio_mixer_play_wav(sound, voice, repeat, volume, stop_cb);
-               break;
-            case AUDIO_MIXER_TYPE_OGG:
-#ifdef HAVE_STB_VORBIS
-               res = audio_mixer_play_ogg(sound, voice, repeat, volume, stop_cb);
+#ifdef HAVE_THREADS
+   slock_lock(s_locker);
 #endif
-               break;
-         }
-         
-         break;
+
+   for (i = 0; i < AUDIO_MIXER_MAX_VOICES; i++, voice++)
+   {
+      if (voice->type != AUDIO_MIXER_TYPE_NONE)
+         continue;
+
+      switch (sound->type)
+      {
+         case AUDIO_MIXER_TYPE_WAV:
+            res = audio_mixer_play_wav(sound, voice, repeat, volume, stop_cb);
+            break;
+         case AUDIO_MIXER_TYPE_OGG:
+#ifdef HAVE_STB_VORBIS
+            res = audio_mixer_play_ogg(sound, voice, repeat, volume, stop_cb);
+#endif
+            break;
+         case AUDIO_MIXER_TYPE_MOD:
+#ifdef HAVE_IBXM
+            res = audio_mixer_play_mod(sound, voice, repeat, volume, stop_cb);
+#endif
+            break;
+         case AUDIO_MIXER_TYPE_NONE:
+            break;
       }
+
+      break;
    }
    
    if (res)
-      return voice;
-   return NULL;
+   {
+      voice->type     = sound->type;
+      voice->repeat   = repeat;
+      voice->volume   = volume;
+      voice->sound    = sound;
+      voice->stop_cb  = stop_cb;
+   }
+   else
+      voice = NULL;
+
+#ifdef HAVE_THREADS
+   slock_unlock(s_locker);
+#endif
+
+   return voice;
 }
 
 void audio_mixer_stop(audio_mixer_voice_t* voice)
 {
-   voice->stop_cb(voice, AUDIO_MIXER_SOUND_STOPPED);
+   audio_mixer_stop_cb_t stop_cb = NULL;
+   audio_mixer_sound_t* sound    = NULL;
+   
+   if (voice)
+   {
+      stop_cb = voice->stop_cb;
+      sound   = voice->sound;
+      
+#ifdef HAVE_THREADS
+      slock_lock(s_locker);
+#endif
+
+      voice->type = AUDIO_MIXER_TYPE_NONE;
+      
+#ifdef HAVE_THREADS
+      slock_unlock(s_locker);
+#endif
+      
+      if (stop_cb)
+         stop_cb(sound, AUDIO_MIXER_SOUND_STOPPED);
+   }
 }
 
-static void mix_wav(float* buffer, size_t num_frames, audio_mixer_voice_t* voice)
+static void audio_mixer_mix_wav(float* buffer, size_t num_frames,
+      audio_mixer_voice_t* voice,
+      float volume)
 {
    int i;
    unsigned buf_free                = (unsigned)(num_frames * 2);
    const audio_mixer_sound_t* sound = voice->sound;
    unsigned pcm_available           = sound->types.wav.frames 
       * 2 - voice->types.wav.position;
-   const float* pcm                 = sound->types.wav.pcm + voice->types.wav.position;
-   float volume                     = voice->volume;
+   const float* pcm                 = sound->types.wav.pcm + 
+      voice->types.wav.position;
    
 again:
    if (pcm_available < buf_free)
@@ -477,7 +634,7 @@ again:
       if (voice->repeat)
       {
          if (voice->stop_cb)
-            voice->stop_cb(voice, AUDIO_MIXER_SOUND_REPEATED);
+            voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_REPEATED);
 
          buf_free                  -= pcm_available;
          pcm_available              = sound->types.wav.frames * 2;
@@ -487,7 +644,7 @@ again:
       }
 
       if (voice->stop_cb)
-         voice->stop_cb(voice, AUDIO_MIXER_SOUND_FINISHED);
+         voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_FINISHED);
 
       voice->type = AUDIO_MIXER_TYPE_NONE;
    }
@@ -501,18 +658,16 @@ again:
 }
 
 #ifdef HAVE_STB_VORBIS
-static void mix_ogg(float* buffer, size_t num_frames, audio_mixer_voice_t* voice)
+static void audio_mixer_mix_ogg(float* buffer, size_t num_frames,
+      audio_mixer_voice_t* voice,
+      float volume)
 {
    int i;
-   float temp_buffer[AUDIO_MIXER_TEMP_OGG_BUFFER];
    struct resampler_data info;
+   float temp_buffer[AUDIO_MIXER_TEMP_OGG_BUFFER];
    unsigned buf_free                = num_frames * 2;
    unsigned temp_samples            = 0;
-   float volume                     = voice->volume;
    float* pcm                       = NULL;
-#if 0
-   const audio_mixer_sound_t* sound = voice->sound;
-#endif
    
    if (voice->types.ogg.position == voice->types.ogg.samples)
    {
@@ -526,7 +681,7 @@ again:
          if (voice->repeat)
          {
             if (voice->stop_cb)
-               voice->stop_cb(voice, AUDIO_MIXER_SOUND_REPEATED);
+               voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_REPEATED);
 
             stb_vorbis_seek_start(voice->types.ogg.stream);
             goto again;
@@ -534,7 +689,7 @@ again:
          else
          {
             if (voice->stop_cb)
-               voice->stop_cb(voice, AUDIO_MIXER_SOUND_FINISHED);
+               voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_FINISHED);
 
             voice->type = AUDIO_MIXER_TYPE_NONE;
             return;
@@ -574,22 +729,119 @@ again:
 }
 #endif
 
-void audio_mixer_mix(float* buffer, size_t num_frames)
+#ifdef HAVE_IBXM
+static void audio_mixer_mix_mod(float* buffer, size_t num_frames,
+      audio_mixer_voice_t* voice,
+      float volume)
+{
+   int i;
+   float samplef                    = 0.0f;
+   int samplei                      = 0;
+   unsigned temp_samples            = 0;
+   unsigned buf_free                = num_frames * 2;
+   int* pcm                         = NULL;
+
+   if (voice->types.mod.position == voice->types.mod.samples)
+   {
+again:
+      temp_samples = replay_get_audio(
+            voice->types.mod.stream, voice->types.mod.buffer );
+
+      temp_samples *= 2; /* stereo */
+
+      if (temp_samples == 0)
+      {
+         if (voice->repeat)
+         {
+            if (voice->stop_cb)
+               voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_REPEATED);
+
+            replay_seek( voice->types.mod.stream, 0);
+            goto again;
+         }
+         else
+         {
+            if (voice->stop_cb)
+               voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_FINISHED);
+
+            voice->type = AUDIO_MIXER_TYPE_NONE;
+            return;
+         }
+      }
+
+      voice->types.mod.position = 0;
+      voice->types.mod.samples  = temp_samples;
+   }
+   pcm = voice->types.mod.buffer + voice->types.mod.position;
+
+   if (voice->types.mod.samples < buf_free)
+   {
+      for (i = voice->types.mod.samples; i != 0; i--)
+      {
+         samplei     = *pcm++ * volume;
+         samplef     = (float)((int)samplei + 32768) / 65535.0f;
+         samplef     = samplef * 2.0f - 1.0f;
+         *buffer++  += samplef;
+      }
+
+      buf_free -= voice->types.mod.samples;
+      goto again;
+   }
+   else
+   {
+      int i;
+      for (i = buf_free; i != 0; --i ) 
+      {
+         samplei     = *pcm++ * volume;
+         samplef     = (float)((int)samplei + 32768) / 65535.0f;
+         samplef     = samplef * 2.0f - 1.0f;
+         *buffer++  += samplef;
+      }
+
+      voice->types.mod.position += buf_free;
+      voice->types.mod.samples  -= buf_free;
+   }
+}
+#endif
+
+void audio_mixer_mix(float* buffer, size_t num_frames, float volume_override, bool override)
 {
    unsigned i;
    size_t j                   = 0;
    float* sample              = NULL;
-   audio_mixer_voice_t* voice = NULL;
+   audio_mixer_voice_t* voice = s_voices;
    
-   for (i = 0, voice = s_voices; i < AUDIO_MIXER_MAX_VOICES; i++, voice++)
-   {
-      if (voice->type == AUDIO_MIXER_TYPE_WAV)
-         mix_wav(buffer, num_frames, voice);
-#ifdef HAVE_STB_VORBIS
-      else if (voice->type == AUDIO_MIXER_TYPE_OGG)
-         mix_ogg(buffer, num_frames, voice);
+#ifdef HAVE_THREADS
+   slock_lock(s_locker);
 #endif
+   
+   for (i = 0; i < AUDIO_MIXER_MAX_VOICES; i++, voice++)
+   {
+      float volume = (override) ? volume_override : voice->volume;
+
+      switch (voice->type)
+      {
+         case AUDIO_MIXER_TYPE_WAV:
+            audio_mixer_mix_wav(buffer, num_frames, voice, volume);
+            break;
+         case AUDIO_MIXER_TYPE_OGG:
+#ifdef HAVE_STB_VORBIS
+            audio_mixer_mix_ogg(buffer, num_frames, voice, volume);
+#endif
+            break;
+         case AUDIO_MIXER_TYPE_MOD:
+#ifdef HAVE_IBXM
+            audio_mixer_mix_mod(buffer, num_frames, voice, volume);
+#endif
+            break;
+         case AUDIO_MIXER_TYPE_NONE:
+            break;
+      }
    }
+   
+#ifdef HAVE_THREADS
+   slock_unlock(s_locker);
+#endif
    
    for (j = 0, sample = buffer; j < num_frames; j++, sample++)
    {

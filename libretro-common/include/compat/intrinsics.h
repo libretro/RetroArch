@@ -61,7 +61,7 @@ static INLINE int compat_ctz(unsigned x)
 {
 #if defined(__GNUC__) && !defined(RARCH_CONSOLE)
    return __builtin_ctz(x);
-#elif _MSC_VER >= 1400
+#elif _MSC_VER >= 1400 && !defined(_XBOX)
    unsigned long r = 0;
    _BitScanReverse((unsigned long*)&r, x);
    return (int)r;

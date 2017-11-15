@@ -243,8 +243,7 @@ error:
    return NULL;
 }
 
-static ssize_t alsa_thread_write(void *data, const void *buf, size_t size,
-      bool is_perfcnt_enable)
+static ssize_t alsa_thread_write(void *data, const void *buf, size_t size)
 {
    alsa_thread_t *alsa = (alsa_thread_t*)data;
 
@@ -371,7 +370,7 @@ static void *alsa_device_list_new(void *data)
       /* description of device IOID - input / output identifcation
        * ("Input" or "Output"), NULL means both) */
 
-      if (!io || string_is_equal(io,"Output"))
+      if (!io || (string_is_equal_fast(io,"Output", 6)))
          string_list_append(s, name, attr);
 
       if (name)

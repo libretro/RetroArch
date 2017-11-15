@@ -23,6 +23,7 @@
 
 #include <file/archive_file.h>
 #include <retro_common_api.h>
+#include <queues/task_queue.h>
 
 RETRO_BEGIN_DECLS
 
@@ -80,6 +81,18 @@ typedef struct
 
 typedef struct
 {
+   int analog_supported;
+   int rumble_supported;
+   int coop_supported;
+   uint32_t crc32;
+   unsigned size;
+   unsigned famitsu_magazine_rating;
+   unsigned edge_magazine_rating;
+   unsigned edge_magazine_issue;
+   unsigned max_users;
+   unsigned releasemonth;
+   unsigned releaseyear;
+   unsigned tgdb_rating;
    char *name;
    char *rom_name;
    char *serial;
@@ -96,27 +109,15 @@ typedef struct
    char *pegi_rating;
    char *cero_rating;
    char *enhancement_hw;
-   uint32_t crc32;
    char *sha1;
    char *md5;
-   unsigned size;
-   unsigned famitsu_magazine_rating;
-   unsigned edge_magazine_rating;
-   unsigned edge_magazine_issue;
-   unsigned max_users;
-   unsigned releasemonth;
-   unsigned releaseyear;
-   unsigned tgdb_rating;
-   int analog_supported;
-   int rumble_supported;
-   int coop_supported;
    void *userdata;
 } database_info_t;
 
 typedef struct
 {
-   database_info_t *list;
    size_t count;
+   database_info_t *list;
 } database_info_list_t;
 
 database_info_list_t *database_info_list_new(const char *rdb_path,
@@ -125,17 +126,12 @@ database_info_list_t *database_info_list_new(const char *rdb_path,
 void database_info_list_free(database_info_list_t *list);
 
 database_info_handle_t *database_info_dir_init(const char *dir,
-      enum database_type type);
+      enum database_type type, retro_task_t *task);
 
 database_info_handle_t *database_info_file_init(const char *path,
-      enum database_type type);
+      enum database_type type, retro_task_t *task);
 
 void database_info_free(database_info_handle_t *handle);
-
-#if 0
-int database_info_build_query(
-      char *query, size_t len, const char *label, const char *path);
-#endif
 
 int database_info_build_query_enum(
       char *query, size_t len, enum database_query_type type, const char *path);

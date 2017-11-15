@@ -50,7 +50,7 @@
 
 #include "../defaults.h"
 #include "../configuration.h"
-#include "../runloop.h"
+#include "../retroarch.h"
 #include "../paths.h"
 #include "../msg_hash.h"
 
@@ -58,27 +58,29 @@
 
 #include "tasks_internal.h"
 
-typedef struct
+typedef struct screenshot_task_state screenshot_task_state_t;
+
+struct screenshot_task_state
 {
-#ifdef _XBOX1
-   D3DSurface *surf;
-#endif
-   char filename[PATH_MAX_LENGTH];
-   char shotname[256];
-   uint8_t *out_buffer;
-   struct scaler_ctx scaler;
-   const void *frame;
-   unsigned width;
-   unsigned height;
-   int pitch;
    bool bgr24;
    bool silence;
-   void *userbuf;
    bool is_idle;
    bool is_paused;
    bool history_list_enable;
+   int pitch;
+   unsigned width;
+   unsigned height;
    unsigned pixel_format_type;
-} screenshot_task_state_t;
+   uint8_t *out_buffer;
+   const void *frame;
+   char filename[PATH_MAX_LENGTH];
+   char shotname[256];
+#ifdef _XBOX1
+   D3DSurface *surf;
+#endif
+   void *userbuf;
+   struct scaler_ctx scaler;
+};
 
 /**
  * task_screenshot_handler:
@@ -205,11 +207,11 @@ static bool screenshot_dump(
    retro_task_t *task             = (retro_task_t*)calloc(1, sizeof(*task));
    screenshot_task_state_t *state = (screenshot_task_state_t*)
          calloc(1, sizeof(*state));
-   const char *screenshot_dir     = settings->directory.screenshot;
+   const char *screenshot_dir     = settings->paths.directory_screenshot;
 
    screenshot_path[0]             = '\0';
 
-   if (string_is_empty(screenshot_dir))
+   if (string_is_empty(screenshot_dir) || settings->bools.screenshots_in_content_dir)
    {
       fill_pathname_basedir(screenshot_path, name_base,
             sizeof(screenshot_path));
@@ -225,7 +227,7 @@ static bool screenshot_dump(
    state->frame               = frame;
    state->userbuf             = userbuf;
    state->silence             = savestate;
-   state->history_list_enable = settings->history_list_enable;
+   state->history_list_enable = settings->bools.history_list_enable;
    state->pixel_format_type   = video_driver_get_pixel_format();
 
    if (savestate)
@@ -233,7 +235,7 @@ static bool screenshot_dump(
             sizeof(state->filename), "%s.png", name_base);
    else
    {
-      if (settings->auto_screenshot_filename)
+      if (settings->bools.auto_screenshot_filename)
          fill_str_dated_filename(state->shotname, path_basename(name_base),
                IMG_EXT, sizeof(state->shotname));
       else
@@ -265,7 +267,7 @@ static bool screenshot_dump(
    if (!savestate)
       task->title    = strdup(msg_hash_to_str(MSG_TAKING_SCREENSHOT));
 
-   task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
+   task_queue_push(task);
 
    return true;
 }
@@ -334,7 +336,7 @@ static bool take_screenshot_raw(const char *name_base, void *userbuf,
 }
 
 static bool take_screenshot_choice(const char *name_base, bool savestate,
-      bool is_paused, bool is_idle)
+      bool is_paused, bool is_idle, bool has_valid_framebuffer)
 {
    size_t old_pitch;
    unsigned old_width, old_height;
@@ -342,7 +344,7 @@ static bool take_screenshot_choice(const char *name_base, bool savestate,
    void *frame_data            = NULL;
    const void* old_data        = NULL;
    settings_t *settings        = config_get_ptr();
-   const char *screenshot_dir  = settings->directory.screenshot;
+   const char *screenshot_dir  = settings->paths.directory_screenshot;
 
    /* No way to infer screenshot directory. */
    if (     string_is_empty(screenshot_dir)
@@ -362,7 +364,7 @@ static bool take_screenshot_choice(const char *name_base, bool savestate,
 #endif
    }
 
-   if (!video_driver_cached_frame_has_valid_framebuffer())
+   if (!has_valid_framebuffer)
       return take_screenshot_raw(name_base, NULL, savestate, is_idle, is_paused);
 
    if (!video_driver_supports_read_frame_raw())
@@ -387,7 +389,7 @@ static bool take_screenshot_choice(const char *name_base, bool savestate,
    return ret;
 }
 
-bool take_screenshot(const char *name_base, bool silence)
+bool take_screenshot(const char *name_base, bool silence, bool has_valid_framebuffer)
 {
    bool is_paused         = false;
    bool is_idle           = false;
@@ -397,7 +399,8 @@ bool take_screenshot(const char *name_base, bool silence)
 
    runloop_get_status(&is_paused, &is_idle, &is_slowmotion, &is_perfcnt_enable);
 
-   ret       = take_screenshot_choice(name_base, silence, is_paused, is_idle);
+   ret       = take_screenshot_choice(name_base, silence, is_paused, is_idle,
+         has_valid_framebuffer);
 
    if (is_paused && !is_idle)
          video_driver_cached_frame();

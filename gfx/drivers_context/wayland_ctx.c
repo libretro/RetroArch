@@ -42,11 +42,10 @@
 #include "../common/gl_common.h"
 #endif
 
+#include "../common/wayland_common.h"
 #include "../../frontend/frontend_driver.h"
-#include "../../input/input_keyboard.h"
+#include "../../input/input_driver.h"
 #include "../../input/input_keymaps.h"
-#include "../../input/input_joypad_driver.h"
-#include <linux/input.h>
 
 typedef struct gfx_ctx_wayland_data
 {
@@ -55,12 +54,10 @@ typedef struct gfx_ctx_wayland_data
    struct wl_egl_window *win;
 #endif
    bool resize;
-   int fd;
    unsigned width;
    unsigned height;
    unsigned physical_width;
    unsigned physical_height;
-   struct wl_display *dpy;
    struct wl_registry *registry;
    struct wl_compositor *compositor;
    struct wl_surface *surface;
@@ -75,21 +72,6 @@ typedef struct gfx_ctx_wayland_data
 
    unsigned buffer_scale;
 
-   /* Wayland uses Linux keysyms. */
-#define UDEV_MAX_KEYS (KEY_MAX + 7) / 8
-   uint8_t key_state[UDEV_MAX_KEYS];
-   bool keyboard_focus;
-
-   struct
-   {
-      int last_x, last_y;
-      int x, y;
-      int delta_x, delta_y;
-      bool last_valid;
-      bool focus;
-      bool left, right, middle;
-   } mouse;
-
    struct
    {
       struct wl_cursor *default_cursor;
@@ -99,8 +81,7 @@ typedef struct gfx_ctx_wayland_data
       bool visible;
    } cursor;
 
-   const input_device_driver_t *joypad;
-   bool blocked;
+   input_ctx_wayland_data_t input;
 
 #ifdef HAVE_VULKAN
    gfx_ctx_vulkan_data_t vk;
@@ -111,6 +92,10 @@ static enum gfx_ctx_api wl_api   = GFX_CTX_NONE;
 
 #ifndef EGL_OPENGL_ES3_BIT_KHR
 #define EGL_OPENGL_ES3_BIT_KHR 0x0040
+#endif
+
+#ifndef EGL_PLATFORM_WAYLAND_KHR
+#define EGL_PLATFORM_WAYLAND_KHR 0x31D8
 #endif
 
 #ifdef HAVE_XKBCOMMON
@@ -150,7 +135,7 @@ static void keyboard_handle_enter(void* data,
       struct wl_array* keys)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   wl->keyboard_focus = true;
+   wl->input.keyboard_focus = true;
 }
 
 static void keyboard_handle_leave(void *data,
@@ -159,7 +144,7 @@ static void keyboard_handle_leave(void *data,
       struct wl_surface *surface)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   wl->keyboard_focus = false;
+   wl->input.keyboard_focus = false;
 }
 
 static void keyboard_handle_key(void *data,
@@ -177,12 +162,12 @@ static void keyboard_handle_key(void *data,
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
    if (state == WL_KEYBOARD_KEY_STATE_PRESSED)
    {
-      BIT_SET(wl->key_state, key);
+      BIT_SET(wl->input.key_state, key);
       value = 1;
    }
    else if (state == WL_KEYBOARD_KEY_STATE_RELEASED)
    {
-      BIT_CLEAR(wl->key_state, key);
+      BIT_CLEAR(wl->input.key_state, key);
       value = 0;
    }
 
@@ -191,7 +176,7 @@ static void keyboard_handle_key(void *data,
       return;
 #endif
    input_keyboard_event(value,
-         input_keymaps_translate_keysym_to_rk(key),
+         rarch_keysym_lut[key],
          0, 0, RETRO_DEVICE_KEYBOARD);
 }
 
@@ -251,11 +236,11 @@ static void pointer_handle_enter(void *data,
    (void)serial;
    (void)surface;
 
-   wl->mouse.last_x = wl_fixed_to_int(sx * (wl_fixed_t)wl->buffer_scale);
-   wl->mouse.last_y = wl_fixed_to_int(sy * (wl_fixed_t)wl->buffer_scale);
-   wl->mouse.x = wl->mouse.last_x;
-   wl->mouse.y = wl->mouse.last_y;
-   wl->mouse.focus = true;
+   wl->input.mouse.last_x = wl_fixed_to_int(sx * (wl_fixed_t)wl->buffer_scale);
+   wl->input.mouse.last_y = wl_fixed_to_int(sy * (wl_fixed_t)wl->buffer_scale);
+   wl->input.mouse.x = wl->input.mouse.last_x;
+   wl->input.mouse.y = wl->input.mouse.last_y;
+   wl->input.mouse.focus = true;
    wl->cursor.serial = serial;
 
    gfx_ctx_wl_show_mouse(data, wl->cursor.visible);
@@ -267,7 +252,7 @@ static void pointer_handle_leave(void *data,
       struct wl_surface *surface)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   wl->mouse.focus = false;
+   wl->input.mouse.focus = false;
    (void)pointer;
    (void)serial;
    (void)surface;
@@ -280,8 +265,8 @@ static void pointer_handle_motion(void *data,
       wl_fixed_t sy)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   wl->mouse.x = wl_fixed_to_int((wl_fixed_t)wl->buffer_scale * sx);
-   wl->mouse.y = wl_fixed_to_int((wl_fixed_t)wl->buffer_scale * sy);
+   wl->input.mouse.x = wl_fixed_to_int((wl_fixed_t)wl->buffer_scale * sx);
+   wl->input.mouse.y = wl_fixed_to_int((wl_fixed_t)wl->buffer_scale * sy);
 }
 
 static void pointer_handle_button(void *data,
@@ -296,25 +281,25 @@ static void pointer_handle_button(void *data,
    {
       if (button == BTN_LEFT)
       {
-         wl->mouse.left = true;
+         wl->input.mouse.left = true;
 
          /* This behavior matches mpv, seems like a decent way to support window moving for now. */
-         if (BIT_GET(wl->key_state, KEY_LEFTALT) && wl->shell_surf)
+         if (BIT_GET(wl->input.key_state, KEY_LEFTALT) && wl->shell_surf)
             wl_shell_surface_move(wl->shell_surf, wl->seat, serial);
       }
       else if (button == BTN_RIGHT)
-         wl->mouse.right = true;
+         wl->input.mouse.right = true;
       else if (button == BTN_MIDDLE)
-         wl->mouse.middle = true;
+         wl->input.mouse.middle = true;
    }
    else
    { 
       if (button == BTN_LEFT)
-         wl->mouse.left = false;
+         wl->input.mouse.left = false;
       else if (button == BTN_RIGHT)
-         wl->mouse.right = false;
+         wl->input.mouse.right = false;
       else if (button == BTN_MIDDLE)
-         wl->mouse.middle = false;
+         wl->input.mouse.middle = false;
    }
 }
 
@@ -503,7 +488,7 @@ static void registry_handle_global(void *data, struct wl_registry *reg,
       output = (struct wl_output*)wl_registry_bind(reg,
             id, &wl_output_interface, 2);
       wl_output_add_listener(output, &output_listener, wl);
-      wl_display_roundtrip(wl->dpy);
+      wl_display_roundtrip(wl->input.dpy);
    }
    else if (string_is_equal(interface, "wl_shell"))
       wl->shell = (struct wl_shell*)
@@ -560,8 +545,8 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
 #ifdef HAVE_VULKAN
          vulkan_context_destroy(&wl->vk, wl->surface);
 
-         if (wl->fd >= 0)
-            close(wl->fd);
+         if (wl->input.fd >= 0)
+            close(wl->input.fd);
 #endif
          break;
       case GFX_CTX_NONE:
@@ -596,10 +581,10 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
    if (wl->surface)
       wl_surface_destroy(wl->surface);
 
-   if (wl->dpy)
+   if (wl->input.dpy)
    {
-      wl_display_flush(wl->dpy);
-      wl_display_disconnect(wl->dpy);
+      wl_display_flush(wl->input.dpy);
+      wl_display_disconnect(wl->input.dpy);
    }
 
 #ifdef HAVE_EGL
@@ -608,7 +593,7 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
    wl->shell      = NULL;
    wl->compositor = NULL;
    wl->registry   = NULL;
-   wl->dpy        = NULL;
+   wl->input.dpy        = NULL;
    wl->shell_surf = NULL;
    wl->surface    = NULL;
 
@@ -616,9 +601,10 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
    wl->height     = 0;
 }
 
-static void flush_wayland_fd(gfx_ctx_wayland_data_t *wl)
+void flush_wayland_fd(void *data)
 {
    struct pollfd fd = {0};
+   input_ctx_wayland_data_t *wl = (input_ctx_wayland_data_t*)data;
 
    wl_display_dispatch_pending(wl->dpy);
    wl_display_flush(wl->dpy);
@@ -648,7 +634,7 @@ static void gfx_ctx_wl_check_window(void *data, bool *quit,
    unsigned new_width, new_height;
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-   flush_wayland_fd(wl);
+   flush_wayland_fd(&wl->input);
 
    new_width  = *width;
    new_height = *height;
@@ -716,7 +702,7 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
    return true;
 }
 
-static void gfx_ctx_wl_update_title(void *data, video_frame_info_t *video_info)
+static void gfx_ctx_wl_update_title(void *data, void *data2)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
    char title[128];
@@ -858,40 +844,40 @@ static void *gfx_ctx_wl_init(video_frame_info_t *video_info, void *video_driver)
 
    frontend_driver_destroy_signal_handler_state();
 
-   wl->dpy = wl_display_connect(NULL);
+   wl->input.dpy = wl_display_connect(NULL);
    wl->buffer_scale = 1;
 
-   if (!wl->dpy)
+   if (!wl->input.dpy)
    {
-      RARCH_ERR("Failed to connect to Wayland server.\n");
+      RARCH_ERR("[Wayland]: Failed to connect to Wayland server.\n");
       goto error;
    }
 
    frontend_driver_install_signal_handler();
 
-   wl->registry = wl_display_get_registry(wl->dpy);
+   wl->registry = wl_display_get_registry(wl->input.dpy);
    wl_registry_add_listener(wl->registry, &registry_listener, wl);
-   wl_display_roundtrip(wl->dpy);
+   wl_display_roundtrip(wl->input.dpy);
 
    if (!wl->compositor)
    {
-      RARCH_ERR("Failed to create compositor.\n");
+      RARCH_ERR("[Wayland]: Failed to create compositor.\n");
       goto error;
    }
 
    if (!wl->shm)
    {
-      RARCH_ERR("Failed to create shm.\n");
+      RARCH_ERR("[Wayland]: Failed to create shm.\n");
       goto error;
    }
 
    if (!wl->shell)
    {
-      RARCH_ERR("Failed to create shell.\n");
+      RARCH_ERR("[Wayland]: Failed to create shell.\n");
       goto error;
    }
 
-   wl->fd = wl_display_get_fd(wl->dpy);
+   wl->input.fd = wl_display_get_fd(wl->input.dpy);
 
    switch (wl_api)
    {
@@ -900,7 +886,8 @@ static void *gfx_ctx_wl_init(video_frame_info_t *video_info, void *video_driver)
       case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
          if (!egl_init_context(&wl->egl,
-                  (EGLNativeDisplayType)wl->dpy,
+                  EGL_PLATFORM_WAYLAND_KHR,
+                  (EGLNativeDisplayType)wl->input.dpy,
                   &major, &minor, &n, attrib_ptr))
          {
             egl_report_error();
@@ -922,13 +909,13 @@ static void *gfx_ctx_wl_init(video_frame_info_t *video_info, void *video_driver)
          break;
    }
 
-   wl->keyboard_focus = true;
-   wl->mouse.focus = true;
+   wl->input.keyboard_focus = true;
+   wl->input.mouse.focus = true;
 
    wl->cursor.surface = wl_compositor_create_surface(wl->compositor);
    wl->cursor.theme = wl_cursor_theme_load(NULL, 16, wl->shm);
    wl->cursor.default_cursor = wl_cursor_theme_get_cursor(wl->cursor.theme, "left_ptr");
-   flush_wayland_fd(wl);
+   flush_wayland_fd(&wl->input);
 
    return wl;
 
@@ -1134,16 +1121,16 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
       wl_shell_surface_set_fullscreen(wl->shell_surf,
             WL_SHELL_SURFACE_FULLSCREEN_METHOD_DEFAULT, 0, NULL);
 
-   flush_wayland_fd(wl);
+   flush_wayland_fd(&wl->input);
 
    switch (wl_api)
    {
       case GFX_CTX_VULKAN_API:
-         wl_display_roundtrip(wl->dpy);
+         wl_display_roundtrip(wl->input.dpy);
 
 #ifdef HAVE_VULKAN
          if (!vulkan_surface_create(&wl->vk, VULKAN_WSI_WAYLAND,
-                  wl->dpy, wl->surface, 
+                  wl->input.dpy, wl->surface, 
                   wl->width, wl->height, wl->swap_interval))
             goto error;
 #endif
@@ -1168,304 +1155,23 @@ error:
    return false;
 }
 
-static int16_t input_wl_mouse_state(gfx_ctx_wayland_data_t *wl, unsigned id)
-{
-   switch (id)
-   {
-      case RETRO_DEVICE_ID_MOUSE_X:
-         return wl->mouse.delta_x;
-      case RETRO_DEVICE_ID_MOUSE_Y:
-         return wl->mouse.delta_y;
-      case RETRO_DEVICE_ID_MOUSE_LEFT:
-         return wl->mouse.left;
-      case RETRO_DEVICE_ID_MOUSE_RIGHT:
-         return wl->mouse.right;
-      case RETRO_DEVICE_ID_MOUSE_MIDDLE:
-         return wl->mouse.middle;
-
-      /* TODO: Rest of the mouse inputs. */
-   }
-
-   return 0;
-}
-
-static int16_t input_wl_lightgun_state(gfx_ctx_wayland_data_t *wl, unsigned id)
-{
-   switch (id)
-   {
-      case RETRO_DEVICE_ID_LIGHTGUN_X:
-         return wl->mouse.delta_x;
-      case RETRO_DEVICE_ID_LIGHTGUN_Y:
-         return wl->mouse.delta_y;
-      case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
-         return wl->mouse.left;
-      case RETRO_DEVICE_ID_LIGHTGUN_CURSOR:
-         return wl->mouse.middle;
-      case RETRO_DEVICE_ID_LIGHTGUN_TURBO:
-         return wl->mouse.right;
-      case RETRO_DEVICE_ID_LIGHTGUN_START:
-         return wl->mouse.middle && wl->mouse.right; 
-      case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
-         return wl->mouse.middle && wl->mouse.left; 
-   }
-
-   return 0;
-}
-
-static void input_wl_poll(void *data)
-{
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   if (!wl)
-      return;
-
-   flush_wayland_fd(wl);
-
-   wl->mouse.delta_x = wl->mouse.x - wl->mouse.last_x;
-   wl->mouse.delta_y = wl->mouse.y - wl->mouse.last_y;
-   wl->mouse.last_x = wl->mouse.x;
-   wl->mouse.last_y = wl->mouse.y;
-   if (!wl->mouse.focus)
-   {
-      wl->mouse.delta_x = 0;
-      wl->mouse.delta_y = 0;
-   }
-
-   if (wl->joypad)
-      wl->joypad->poll();
-}
-
-bool input_wl_is_pressed(gfx_ctx_wayland_data_t *wl, const struct retro_keybind *binds, unsigned id)
-{
-   if (id < RARCH_BIND_LIST_END)
-   {
-      const struct retro_keybind *bind = &binds[id];
-      unsigned bit = input_keymaps_translate_rk_to_keysym(binds[id].key);
-      return BIT_GET(wl->key_state, bit);
-   }
-   return false;
-}
-
-static int16_t input_wl_analog_pressed(gfx_ctx_wayland_data_t *wl, const struct retro_keybind *binds,
-      unsigned idx, unsigned id)
-{
-   unsigned id_minus     = 0;
-   unsigned id_plus      = 0;
-   int16_t pressed_minus = 0;
-   int16_t pressed_plus  = 0;
-
-   input_conv_analog_id_to_bind_id(idx, id, &id_minus, &id_plus);
-
-   if (binds && binds[id_minus].valid && input_wl_is_pressed(wl, binds, id_minus))
-      pressed_minus = -0x7fff;
-   if (binds && binds[id_plus].valid && input_wl_is_pressed(wl, binds, id_plus))
-      pressed_plus = 0x7fff;
-
-   return pressed_plus + pressed_minus;
-}
-
-bool input_wl_state_kb(gfx_ctx_wayland_data_t *wl, const struct retro_keybind **binds,
-      unsigned port, unsigned device, unsigned idx, unsigned id)
-{
-   unsigned bit = input_keymaps_translate_rk_to_keysym((enum retro_key)id);
-   return id < RETROK_LAST && BIT_GET(wl->key_state, bit);
-}
-
-static int16_t input_wl_pointer_state(gfx_ctx_wayland_data_t *wl,
-      unsigned idx, unsigned id, bool screen)
-{
-   bool inside              = false;
-   struct video_viewport vp = {0};
-   int16_t res_x = 0, res_y = 0, res_screen_x = 0, res_screen_y = 0;
-
-   if (!(video_driver_translate_coord_viewport_wrap(&vp, wl->mouse.x, wl->mouse.y,
-         &res_x, &res_y, &res_screen_x, &res_screen_y)))
-      return 0;
-
-   if (screen)
-   {
-      res_x = res_screen_x;
-      res_y = res_screen_y;
-   }
-
-   inside = (res_x >= -0x7fff) && (res_y >= -0x7fff);
-
-   if (!inside)
-      return 0;
-
-   switch (id)
-   {
-      case RETRO_DEVICE_ID_POINTER_X:
-         return res_x;
-      case RETRO_DEVICE_ID_POINTER_Y:
-         return res_y;
-      case RETRO_DEVICE_ID_POINTER_PRESSED:
-         return wl->mouse.left;
-   }
-
-   return 0;
-}
-
-
-static int16_t input_wl_state(void *data,
-      rarch_joypad_info_t joypad_info,
-      const struct retro_keybind **binds,
-      unsigned port, unsigned device, unsigned idx, unsigned id)
-{
-   int16_t ret;
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-
-   if (!wl)
-      return 0;
-
-   switch (device)
-   {
-      case RETRO_DEVICE_JOYPAD:
-         if (binds[port] && binds[port][id].valid)
-            return input_wl_is_pressed(wl, binds[port], id) ||
-               input_joypad_pressed(wl->joypad, joypad_info, port, binds[port], id);
-         break;
-      case RETRO_DEVICE_ANALOG:
-         ret = input_wl_analog_pressed(wl, binds[port], idx, id);
-         if (!ret && binds[port])
-            ret = input_joypad_analog(wl->joypad, joypad_info, port, idx, id, binds[port]);
-         return ret;
-
-      case RETRO_DEVICE_KEYBOARD:
-         return input_wl_state_kb(wl, binds, port, device, idx, id);
-      case RETRO_DEVICE_MOUSE:
-         return input_wl_mouse_state(wl, id);
-
-      case RETRO_DEVICE_POINTER:
-      case RARCH_DEVICE_POINTER_SCREEN:
-         if (idx == 0)
-            return input_wl_pointer_state(wl, idx, id,
-                  device == RARCH_DEVICE_POINTER_SCREEN);
-         break;
-      case RETRO_DEVICE_LIGHTGUN:
-         return input_wl_lightgun_state(wl, id);
-   }
-
-   return 0;
-}
-
-static void input_wl_free(void *data)
-{
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   if (!wl)
-      return;
-
-   if (wl->joypad)
-      wl->joypad->destroy();
-}
-
-static bool input_wl_init(void *data, const char *joypad_name)
-{
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-
-   if (!wl)
-      return false;
-
-   wl->joypad = input_joypad_init_driver(joypad_name, wl);
-
-   if (!wl->joypad)
-      return false;
-
-   input_keymaps_init_keyboard_lut(rarch_key_map_linux);
-   return true;
-}
-
-static uint64_t input_wl_get_capabilities(void *data)
-{
-   (void)data;
-
-   return
-      (1 << RETRO_DEVICE_JOYPAD)   |
-      (1 << RETRO_DEVICE_ANALOG)   |
-      (1 << RETRO_DEVICE_KEYBOARD) |
-      (1 << RETRO_DEVICE_MOUSE)    |
-      (1 << RETRO_DEVICE_LIGHTGUN);
-}
-
-static void input_wl_grab_mouse(void *data, bool state)
-{
-   /* Dummy for now. Might be useful in the future. */
-   (void)data;
-   (void)state;
-}
-
-static bool input_wl_set_rumble(void *data, unsigned port, enum retro_rumble_effect effect, uint16_t strength)
-{
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   if (wl && wl->joypad)
-      return input_joypad_set_rumble(wl->joypad, port, effect, strength);
-   return false;
-}
-
-static const input_device_driver_t *input_wl_get_joypad_driver(void *data)
-{
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   if (!wl)
-      return NULL;
-   return wl->joypad;
-}
-
-static bool input_wl_keyboard_mapping_is_blocked(void *data)
-{
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   if (!wl)
-      return false;
-   return wl->blocked;
-}
-
-static void input_wl_keyboard_mapping_set_block(void *data, bool value)
-{
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   if (!wl)
-      return;
-   wl->blocked = value;
-}
-
-static bool input_wl_meta_key_pressed(void *data, int key)
-{
-   (void)data;
-   (void)key;
-   /* FIXME: What is this supposed to do? */
-   return false;
-}
-
-static const input_driver_t input_wayland = {
-   NULL,
-   input_wl_poll,
-   input_wl_state,
-   input_wl_meta_key_pressed,
-   input_wl_free,
-   NULL,
-   NULL,
-   input_wl_get_capabilities,
-   "wayland",
-   input_wl_grab_mouse,
-   NULL,
-   input_wl_set_rumble,
-   input_wl_get_joypad_driver,
-   NULL,
-   input_wl_keyboard_mapping_is_blocked,
-   input_wl_keyboard_mapping_set_block,
-};
+bool input_wl_init(void *data, const char *joypad_name);
 
 static void gfx_ctx_wl_input_driver(void *data,
       const char *joypad_name,
       const input_driver_t **input, void **input_data)
 {
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
    /* Input is heavily tied to the window stuff on Wayland, so just implement the input driver here. */
-   if (!input_wl_init(data, joypad_name))
+   if (!input_wl_init(&wl->input, joypad_name))
    {
       *input = NULL;
       *input_data = NULL;
    }
    else
    {
-      *input = &input_wayland;
-      *input_data = data;
+      *input      = &input_wayland;
+      *input_data = &wl->input;
    }
 }
 
@@ -1473,7 +1179,7 @@ static bool gfx_ctx_wl_has_focus(void *data)
 {
    (void)data;
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   return wl->keyboard_focus;
+   return wl->input.keyboard_focus;
 }
 
 static bool gfx_ctx_wl_suppress_screensaver(void *data, bool enable)
@@ -1551,7 +1257,7 @@ static void *gfx_ctx_wl_get_context_data(void *data)
 }
 #endif
 
-static void gfx_ctx_wl_swap_buffers(void *data, video_frame_info_t *video_info)
+static void gfx_ctx_wl_swap_buffers(void *data, void *data2)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
@@ -1568,7 +1274,7 @@ static void gfx_ctx_wl_swap_buffers(void *data, video_frame_info_t *video_info)
 #ifdef HAVE_VULKAN
          vulkan_present(&wl->vk, wl->vk.context.current_swapchain_index);
          vulkan_acquire_next_image(&wl->vk);
-         flush_wayland_fd(wl);
+         flush_wayland_fd(&wl->input);
 #endif
          break;
       case GFX_CTX_NONE:

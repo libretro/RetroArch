@@ -16,9 +16,6 @@
 #if _MSC_VER >= 1200
 #pragma warning(push)
 #endif
-#pragma warning(disable:4201) // anonymous unions warning
-
-
 
 //===========================================================================
 //
@@ -60,25 +57,26 @@ public:
     D3DXFLOAT16( FLOAT );
     D3DXFLOAT16( CONST D3DXFLOAT16& );
 
-    // casting
+    /* casting */
     operator FLOAT ();
 
-    // binary operators
+    /* binary operators */
     BOOL operator == ( CONST D3DXFLOAT16& ) const;
     BOOL operator != ( CONST D3DXFLOAT16& ) const;
 
 protected:
-#endif //__cplusplus
+#endif /*__cplusplus */
     WORD value;
 } D3DXFLOAT16, *LPD3DXFLOAT16;
 
 
 
-//===========================================================================
-//
-// Vectors
-//
-//===========================================================================
+/*===========================================================================
+ *
+ * Vectors
+ *
+ *===========================================================================
+ */
 
 
 //--------------------------
@@ -93,21 +91,21 @@ public:
     D3DXVECTOR2( CONST D3DXFLOAT16 * );
     D3DXVECTOR2( FLOAT x, FLOAT y );
 
-    // casting
+    /* casting */
     operator FLOAT* ();
     operator CONST FLOAT* () const;
 
-    // assignment operators
+    /* assignment operators */
     D3DXVECTOR2& operator += ( CONST D3DXVECTOR2& );
     D3DXVECTOR2& operator -= ( CONST D3DXVECTOR2& );
     D3DXVECTOR2& operator *= ( FLOAT );
     D3DXVECTOR2& operator /= ( FLOAT );
 
-    // unary operators
+    /* unary operators */
     D3DXVECTOR2 operator + () const;
     D3DXVECTOR2 operator - () const;
 
-    // binary operators
+    /* binary operators */
     D3DXVECTOR2 operator + ( CONST D3DXVECTOR2& ) const;
     D3DXVECTOR2 operator - ( CONST D3DXVECTOR2& ) const;
     D3DXVECTOR2 operator * ( FLOAT ) const;
@@ -120,7 +118,7 @@ public:
 
 
 public:
-#endif //__cplusplus
+#endif /*__cplusplus */
     FLOAT x, y;
 } D3DXVECTOR2, *LPD3DXVECTOR2;
 
@@ -139,25 +137,24 @@ public:
     D3DXVECTOR2_16F( CONST D3DXFLOAT16 * );
     D3DXVECTOR2_16F( CONST D3DXFLOAT16 &x, CONST D3DXFLOAT16 &y );
 
-    // casting
+    /* casting */
     operator D3DXFLOAT16* ();
     operator CONST D3DXFLOAT16* () const;
 
-    // binary operators
+    /* binary operators */
     BOOL operator == ( CONST D3DXVECTOR2_16F& ) const;
     BOOL operator != ( CONST D3DXVECTOR2_16F& ) const;
 
 public:
-#endif //__cplusplus
+#endif /*__cplusplus */
     D3DXFLOAT16 x, y;
 
 } D3DXVECTOR2_16F, *LPD3DXVECTOR2_16F;
 
-
-
-//--------------------------
-// 3D Vector
-//--------------------------
+/*--------------------------
+ * 3D Vector
+ *--------------------------
+ */
 #ifdef __cplusplus
 typedef struct D3DXVECTOR3 : public D3DVECTOR
 {
@@ -168,21 +165,21 @@ public:
     D3DXVECTOR3( CONST D3DXFLOAT16 * );
     D3DXVECTOR3( FLOAT x, FLOAT y, FLOAT z );
 
-    // casting
+    /* casting */
     operator FLOAT* ();
     operator CONST FLOAT* () const;
 
-    // assignment operators
+    /* assignment operators */
     D3DXVECTOR3& operator += ( CONST D3DXVECTOR3& );
     D3DXVECTOR3& operator -= ( CONST D3DXVECTOR3& );
     D3DXVECTOR3& operator *= ( FLOAT );
     D3DXVECTOR3& operator /= ( FLOAT );
 
-    // unary operators
+    /* unary operators */
     D3DXVECTOR3 operator + () const;
     D3DXVECTOR3 operator - () const;
 
-    // binary operators
+    /* binary operators */
     D3DXVECTOR3 operator + ( CONST D3DXVECTOR3& ) const;
     D3DXVECTOR3 operator - ( CONST D3DXVECTOR3& ) const;
     D3DXVECTOR3 operator * ( FLOAT ) const;
@@ -195,15 +192,15 @@ public:
 
 } D3DXVECTOR3, *LPD3DXVECTOR3;
 
-#else //!__cplusplus
+#else /* !__cplusplus */
 typedef struct _D3DVECTOR D3DXVECTOR3, *LPD3DXVECTOR3;
-#endif //!__cplusplus
+#endif /* !__cplusplus */
 
+/*--------------------------
+ * 3D Vector (16 bit)
+ *--------------------------
+ */
 
-
-//--------------------------
-// 3D Vector (16 bit)
-//--------------------------
 typedef struct D3DXVECTOR3_16F
 {
 #ifdef __cplusplus
@@ -214,25 +211,24 @@ public:
     D3DXVECTOR3_16F( CONST D3DXFLOAT16 * );
     D3DXVECTOR3_16F( CONST D3DXFLOAT16 &x, CONST D3DXFLOAT16 &y, CONST D3DXFLOAT16 &z );
 
-    // casting
+    /* casting */
     operator D3DXFLOAT16* ();
     operator CONST D3DXFLOAT16* () const;
 
-    // binary operators
+    /* binary operators */
     BOOL operator == ( CONST D3DXVECTOR3_16F& ) const;
     BOOL operator != ( CONST D3DXVECTOR3_16F& ) const;
 
 public:
-#endif //__cplusplus
+#endif /*__cplusplus */
     D3DXFLOAT16 x, y, z;
 
 } D3DXVECTOR3_16F, *LPD3DXVECTOR3_16F;
 
-
-
-//--------------------------
-// 4D Vector
-//--------------------------
+/*--------------------------
+ * 4D Vector
+ *--------------------------
+ */
 typedef struct D3DXVECTOR4
 {
 #ifdef __cplusplus
@@ -243,21 +239,21 @@ public:
     D3DXVECTOR4( CONST D3DVECTOR& xyz, FLOAT w );
     D3DXVECTOR4( FLOAT x, FLOAT y, FLOAT z, FLOAT w );
 
-    // casting
+    /* casting */
     operator FLOAT* ();
     operator CONST FLOAT* () const;
 
-    // assignment operators
+    /* assignment operators */
     D3DXVECTOR4& operator += ( CONST D3DXVECTOR4& );
     D3DXVECTOR4& operator -= ( CONST D3DXVECTOR4& );
     D3DXVECTOR4& operator *= ( FLOAT );
     D3DXVECTOR4& operator /= ( FLOAT );
 
-    // unary operators
+    /* unary operators */
     D3DXVECTOR4 operator + () const;
     D3DXVECTOR4 operator - () const;
 
-    // binary operators
+    /* binary operators */
     D3DXVECTOR4 operator + ( CONST D3DXVECTOR4& ) const;
     D3DXVECTOR4 operator - ( CONST D3DXVECTOR4& ) const;
     D3DXVECTOR4 operator * ( FLOAT ) const;
@@ -269,14 +265,15 @@ public:
     BOOL operator != ( CONST D3DXVECTOR4& ) const;
 
 public:
-#endif //__cplusplus
+#endif /*__cplusplus */
     FLOAT x, y, z, w;
 } D3DXVECTOR4, *LPD3DXVECTOR4;
 
 
-//--------------------------
-// 4D Vector (16 bit)
-//--------------------------
+/*--------------------------
+ * 4D Vector (16 bit)
+ *--------------------------
+ */
 typedef struct D3DXVECTOR4_16F
 {
 #ifdef __cplusplus
@@ -287,27 +284,26 @@ public:
     D3DXVECTOR4_16F( CONST D3DXVECTOR3_16F& xyz, CONST D3DXFLOAT16& w );
     D3DXVECTOR4_16F( CONST D3DXFLOAT16& x, CONST D3DXFLOAT16& y, CONST D3DXFLOAT16& z, CONST D3DXFLOAT16& w );
 
-    // casting
+    /* casting */
     operator D3DXFLOAT16* ();
     operator CONST D3DXFLOAT16* () const;
 
-    // binary operators
+    /* binary operators */
     BOOL operator == ( CONST D3DXVECTOR4_16F& ) const;
     BOOL operator != ( CONST D3DXVECTOR4_16F& ) const;
 
 public:
-#endif //__cplusplus
+#endif /* __cplusplus */
     D3DXFLOAT16 x, y, z, w;
 
 } D3DXVECTOR4_16F, *LPD3DXVECTOR4_16F;
 
-
-
-//===========================================================================
-//
-// Matrices
-//
-//===========================================================================
+/*===========================================================================
+ *
+ * Matrices
+ *
+ *===========================================================================
+ */
 #ifdef __cplusplus
 typedef struct D3DXMATRIX : public D3DMATRIX
 {
@@ -322,26 +318,26 @@ public:
                 FLOAT _41, FLOAT _42, FLOAT _43, FLOAT _44 );
 
 
-    // access grants
+    /* access grants */
     FLOAT& operator () ( UINT Row, UINT Col );
     FLOAT  operator () ( UINT Row, UINT Col ) const;
 
-    // casting operators
+    /* casting operators */
     operator FLOAT* ();
     operator CONST FLOAT* () const;
 
-    // assignment operators
+    /* assignment operators */
     D3DXMATRIX& operator *= ( CONST D3DXMATRIX& );
     D3DXMATRIX& operator += ( CONST D3DXMATRIX& );
     D3DXMATRIX& operator -= ( CONST D3DXMATRIX& );
     D3DXMATRIX& operator *= ( FLOAT );
     D3DXMATRIX& operator /= ( FLOAT );
 
-    // unary operators
+    /* unary operators */
     D3DXMATRIX operator + () const;
     D3DXMATRIX operator - () const;
 
-    // binary operators
+    /* binary operators */
     D3DXMATRIX operator * ( CONST D3DXMATRIX& ) const;
     D3DXMATRIX operator + ( CONST D3DXMATRIX& ) const;
     D3DXMATRIX operator - ( CONST D3DXMATRIX& ) const;
@@ -355,27 +351,28 @@ public:
 
 } D3DXMATRIX, *LPD3DXMATRIX;
 
-#else //!__cplusplus
+#else /* !__cplusplus */
 typedef struct _D3DMATRIX D3DXMATRIX, *LPD3DXMATRIX;
-#endif //!__cplusplus
+#endif /* !__cplusplus */
 
 
-//---------------------------------------------------------------------------
-// Aligned Matrices
-//
-// This class helps keep matrices 16-byte aligned as preferred by P4 cpus.
-// It aligns matrices on the stack and on the heap or in global scope.
-// It does this using __declspec(align(16)) which works on VC7 and on VC 6
-// with the processor pack. Unfortunately there is no way to detect the 
-// latter so this is turned on only on VC7. On other compilers this is the
-// the same as D3DXMATRIX.
-//
-// Using this class on a compiler that does not actually do the alignment
-// can be dangerous since it will not expose bugs that ignore alignment.
-// E.g if an object of this class in inside a struct or class, and some code
-// memcopys data in it assuming tight packing. This could break on a compiler
-// that eventually start aligning the matrix.
-//---------------------------------------------------------------------------
+/*---------------------------------------------------------------------------
+ * Aligned Matrices
+ *
+ * This class helps keep matrices 16-byte aligned as preferred by P4 cpus.
+ * It aligns matrices on the stack and on the heap or in global scope.
+ * It does this using __declspec(align(16)) which works on VC7 and on VC 6
+ * with the processor pack. Unfortunately there is no way to detect the 
+ * latter so this is turned on only on VC7. On other compilers this is the
+ * the same as D3DXMATRIX.
+ *
+ * Using this class on a compiler that does not actually do the alignment
+ * can be dangerous since it will not expose bugs that ignore alignment.
+ * E.g if an object of this class in inside a struct or class, and some code
+ * memcopys data in it assuming tight packing. This could break on a compiler
+ * that eventually start aligning the matrix.
+ *---------------------------------------------------------------------------
+ */
 #ifdef __cplusplus
 typedef struct _D3DXMATRIXA16 : public D3DXMATRIX
 {
@@ -388,34 +385,30 @@ typedef struct _D3DXMATRIXA16 : public D3DXMATRIX
                     FLOAT _31, FLOAT _32, FLOAT _33, FLOAT _34,
                     FLOAT _41, FLOAT _42, FLOAT _43, FLOAT _44 );
 
-    // new operators
+    /* new operators */
     void* operator new   ( size_t );
     void* operator new[] ( size_t );
 
-    // delete operators
-    void operator delete   ( void* );   // These are NOT virtual; Do not 
-    void operator delete[] ( void* );   // cast to D3DXMATRIX and delete.
+    /* delete operators */
+    void operator delete   ( void* );   /* These are NOT virtual; Do not  */
+    void operator delete[] ( void* );   /* cast to D3DXMATRIX and delete. */
     
-    // assignment operators
+    /* assignment operators */
     _D3DXMATRIXA16& operator = ( CONST D3DXMATRIX& );
 
 } _D3DXMATRIXA16;
 
-#else //!__cplusplus
+#else /* !__cplusplus */
 typedef D3DXMATRIX  _D3DXMATRIXA16;
-#endif //!__cplusplus
+#endif /* !__cplusplus */
 
-
-
-#if _MSC_VER >= 1300  // VC7
+#if _MSC_VER >= 1300  /* VC7 */
 #define D3DX_ALIGN16 __declspec(align(16))
 #else
-#define D3DX_ALIGN16  // Earlier compiler may not understand this, do nothing.
+#define D3DX_ALIGN16  /* Earlier compiler may not understand this, do nothing. */
 #endif
 
 typedef D3DX_ALIGN16 _D3DXMATRIXA16 D3DXMATRIXA16, *LPD3DXMATRIXA16;
-
-
 
 //===========================================================================
 //
@@ -901,7 +894,7 @@ BOOL D3DXMatrixIsIdentity
     ( CONST D3DXMATRIX *pM );
 
 
-// non-inline
+/* non-inline */
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -1065,19 +1058,19 @@ D3DXMATRIX* WINAPI D3DXMatrixReflect
 // Quaternion
 //--------------------------
 
-// inline
+/* inline */
 
 FLOAT D3DXQuaternionLength
     ( CONST D3DXQUATERNION *pQ );
 
-// Length squared, or "norm"
+/* Length squared, or "norm" */
 FLOAT D3DXQuaternionLengthSq
     ( CONST D3DXQUATERNION *pQ );
 
 FLOAT D3DXQuaternionDot
     ( CONST D3DXQUATERNION *pQ1, CONST D3DXQUATERNION *pQ2 );
 
-// (0, 0, 0, 1)
+/* (0, 0, 0, 1) */
 D3DXQUATERNION* D3DXQuaternionIdentity
     ( D3DXQUATERNION *pOut );
 
@@ -1272,9 +1265,6 @@ D3DXCOLOR* WINAPI D3DXColorAdjustContrast
 }
 #endif
 
-
-
-
 //--------------------------
 // Misc
 //--------------------------
@@ -1291,8 +1281,6 @@ FLOAT WINAPI D3DXFresnelTerm
 #ifdef __cplusplus
 }
 #endif
-
-
 
 //===========================================================================
 //
@@ -1436,158 +1424,23 @@ extern "C" {
 #define D3DXSH_MINORDER 2
 #define D3DXSH_MAXORDER 6
 
-//============================================================================
-//
-//  D3DXSHEvalDirection:
-//  --------------------
-//  Evaluates the Spherical Harmonic basis functions
-//
-//  Parameters:
-//   pOut
-//      Output SH coefficients - basis function Ylm is stored at l*l + m+l
-//      This is the pointer that is returned.
-//   Order
-//      Order of the SH evaluation, generates Order^2 coefs, degree is Order-1
-//   pDir
-//      Direction to evaluate in - assumed to be normalized
-//
-//============================================================================
-
 FLOAT* WINAPI D3DXSHEvalDirection
     (  FLOAT *pOut, UINT Order, CONST D3DXVECTOR3 *pDir );
     
-//============================================================================
-//
-//  D3DXSHRotate:
-//  --------------------
-//  Rotates SH vector by a rotation matrix
-//
-//  Parameters:
-//   pOut
-//      Output SH coefficients - basis function Ylm is stored at l*l + m+l
-//      This is the pointer that is returned (should not alias with pIn.)
-//   Order
-//      Order of the SH evaluation, generates Order^2 coefs, degree is Order-1
-//   pMatrix
-//      Matrix used for rotation - rotation sub matrix should be orthogonal
-//      and have a unit determinant.
-//   pIn
-//      Input SH coeffs (rotated), incorect results if this is also output.
-//
-//============================================================================
-
 FLOAT* WINAPI D3DXSHRotate
     ( FLOAT *pOut, UINT Order, CONST D3DXMATRIX *pMatrix, CONST FLOAT *pIn );
     
-//============================================================================
-//
-//  D3DXSHRotateZ:
-//  --------------------
-//  Rotates the SH vector in the Z axis by an angle
-//
-//  Parameters:
-//   pOut
-//      Output SH coefficients - basis function Ylm is stored at l*l + m+l
-//      This is the pointer that is returned (should not alias with pIn.)
-//   Order
-//      Order of the SH evaluation, generates Order^2 coefs, degree is Order-1
-//   Angle
-//      Angle in radians to rotate around the Z axis.
-//   pIn
-//      Input SH coeffs (rotated), incorect results if this is also output.
-//
-//============================================================================
-
-
 FLOAT* WINAPI D3DXSHRotateZ
     ( FLOAT *pOut, UINT Order, FLOAT Angle, CONST FLOAT *pIn );
     
-//============================================================================
-//
-//  D3DXSHAdd:
-//  --------------------
-//  Adds two SH vectors, pOut[i] = pA[i] + pB[i];
-//
-//  Parameters:
-//   pOut
-//      Output SH coefficients - basis function Ylm is stored at l*l + m+l
-//      This is the pointer that is returned.
-//   Order
-//      Order of the SH evaluation, generates Order^2 coefs, degree is Order-1
-//   pA
-//      Input SH coeffs.
-//   pB
-//      Input SH coeffs (second vector.)
-//
-//============================================================================
-
 FLOAT* WINAPI D3DXSHAdd
     ( FLOAT *pOut, UINT Order, CONST FLOAT *pA, CONST FLOAT *pB );
-
-//============================================================================
-//
-//  D3DXSHScale:
-//  --------------------
-//  Adds two SH vectors, pOut[i] = pA[i]*Scale;
-//
-//  Parameters:
-//   pOut
-//      Output SH coefficients - basis function Ylm is stored at l*l + m+l
-//      This is the pointer that is returned.
-//   Order
-//      Order of the SH evaluation, generates Order^2 coefs, degree is Order-1
-//   pIn
-//      Input SH coeffs.
-//   Scale
-//      Scale factor.
-//
-//============================================================================
 
 FLOAT* WINAPI D3DXSHScale
     ( FLOAT *pOut, UINT Order, CONST FLOAT *pIn, CONST FLOAT Scale );
     
-//============================================================================
-//
-//  D3DXSHDot:
-//  --------------------
-//  Computes the dot product of two SH vectors
-//
-//  Parameters:
-//   Order
-//      Order of the SH evaluation, generates Order^2 coefs, degree is Order-1
-//   pA
-//      Input SH coeffs.
-//   pB
-//      Second set of input SH coeffs.
-//
-//============================================================================
-
 FLOAT WINAPI D3DXSHDot
     ( UINT Order, CONST FLOAT *pA, CONST FLOAT *pB );
-
-//============================================================================
-//
-//  D3DXSHMultiply[O]:
-//  --------------------
-//  Computes the product of two functions represented using SH (f and g), where:
-//  pOut[i] = int(y_i(s) * f(s) * g(s)), where y_i(s) is the ith SH basis
-//  function, f(s) and g(s) are SH functions (sum_i(y_i(s)*c_i)).  The order O
-//  determines the lengths of the arrays, where there should always be O^2 
-//  coefficients.  In general the product of two SH functions of order O generates
-//  and SH function of order 2*O - 1, but we truncate the result.  This means
-//  that the product commutes (f*g == g*f) but doesn't associate 
-//  (f*(g*h) != (f*g)*h.
-//
-//  Parameters:
-//   pOut
-//      Output SH coefficients - basis function Ylm is stored at l*l + m+l
-//      This is the pointer that is returned.
-//   pF
-//      Input SH coeffs for first function.
-//   pG
-//      Second set of input SH coeffs.
-//
-//============================================================================
 
 FLOAT* WINAPI D3DXSHMultiply2( FLOAT *pOut, CONST FLOAT *pF, CONST FLOAT *pG);
 FLOAT* WINAPI D3DXSHMultiply3( FLOAT *pOut, CONST FLOAT *pF, CONST FLOAT *pG);
@@ -1602,148 +1455,21 @@ FLOAT* WINAPI D3DXSHMultiply6( FLOAT *pOut, CONST FLOAT *pF, CONST FLOAT *pG);
 //
 //============================================================================
 
-//============================================================================
-//
-//  D3DXSHEvalDirectionalLight:
-//  --------------------
-//  Evaluates a directional light and returns spectral SH data.  The output 
-//  vector is computed so that if the intensity of R/G/B is unit the resulting
-//  exit radiance of a point directly under the light on a diffuse object with
-//  an albedo of 1 would be 1.0.  This will compute 3 spectral samples, pROut
-//  has to be specified, while pGout and pBout are optional.
-//
-//  Parameters:
-//   Order
-//      Order of the SH evaluation, generates Order^2 coefs, degree is Order-1
-//   pDir
-//      Direction light is coming from (assumed to be normalized.)
-//   RIntensity
-//      Red intensity of light.
-//   GIntensity
-//      Green intensity of light.
-//   BIntensity
-//      Blue intensity of light.
-//   pROut
-//      Output SH vector for Red.
-//   pGOut
-//      Output SH vector for Green (optional.)
-//   pBOut
-//      Output SH vector for Blue (optional.)        
-//
-//============================================================================
-
 HRESULT WINAPI D3DXSHEvalDirectionalLight
     ( UINT Order, CONST D3DXVECTOR3 *pDir, 
       FLOAT RIntensity, FLOAT GIntensity, FLOAT BIntensity,
       FLOAT *pROut, FLOAT *pGOut, FLOAT *pBOut );
-
-//============================================================================
-//
-//  D3DXSHEvalSphericalLight:
-//  --------------------
-//  Evaluates a spherical light and returns spectral SH data.  There is no 
-//  normalization of the intensity of the light like there is for directional
-//  lights, care has to be taken when specifiying the intensities.  This will 
-//  compute 3 spectral samples, pROut has to be specified, while pGout and 
-//  pBout are optional.
-//
-//  Parameters:
-//   Order
-//      Order of the SH evaluation, generates Order^2 coefs, degree is Order-1
-//   pPos
-//      Position of light - reciever is assumed to be at the origin.
-//   Radius
-//      Radius of the spherical light source.
-//   RIntensity
-//      Red intensity of light.
-//   GIntensity
-//      Green intensity of light.
-//   BIntensity
-//      Blue intensity of light.
-//   pROut
-//      Output SH vector for Red.
-//   pGOut
-//      Output SH vector for Green (optional.)
-//   pBOut
-//      Output SH vector for Blue (optional.)        
-//
-//============================================================================
 
 HRESULT WINAPI D3DXSHEvalSphericalLight
     ( UINT Order, CONST D3DXVECTOR3 *pPos, FLOAT Radius,
       FLOAT RIntensity, FLOAT GIntensity, FLOAT BIntensity,
       FLOAT *pROut, FLOAT *pGOut, FLOAT *pBOut );
 
-//============================================================================
-//
-//  D3DXSHEvalConeLight:
-//  --------------------
-//  Evaluates a light that is a cone of constant intensity and returns spectral
-//  SH data.  The output vector is computed so that if the intensity of R/G/B is
-//  unit the resulting exit radiance of a point directly under the light oriented
-//  in the cone direction on a diffuse object with an albedo of 1 would be 1.0.
-//  This will compute 3 spectral samples, pROut has to be specified, while pGout
-//  and pBout are optional.
-//
-//  Parameters:
-//   Order
-//      Order of the SH evaluation, generates Order^2 coefs, degree is Order-1
-//   pDir
-//      Direction light is coming from (assumed to be normalized.)
-//   Radius
-//      Radius of cone in radians.
-//   RIntensity
-//      Red intensity of light.
-//   GIntensity
-//      Green intensity of light.
-//   BIntensity
-//      Blue intensity of light.
-//   pROut
-//      Output SH vector for Red.
-//   pGOut
-//      Output SH vector for Green (optional.)
-//   pBOut
-//      Output SH vector for Blue (optional.)        
-//
-//============================================================================
-
 HRESULT WINAPI D3DXSHEvalConeLight
     ( UINT Order, CONST D3DXVECTOR3 *pDir, FLOAT Radius,
       FLOAT RIntensity, FLOAT GIntensity, FLOAT BIntensity,
       FLOAT *pROut, FLOAT *pGOut, FLOAT *pBOut );
       
-//============================================================================
-//
-//  D3DXSHEvalHemisphereLight:
-//  --------------------
-//  Evaluates a light that is a linear interpolant between two colors over the
-//  sphere.  The interpolant is linear along the axis of the two points, not
-//  over the surface of the sphere (ie: if the axis was (0,0,1) it is linear in
-//  Z, not in the azimuthal angle.)  The resulting spherical lighting function
-//  is normalized so that a point on a perfectly diffuse surface with no
-//  shadowing and a normal pointed in the direction pDir would result in exit
-//  radiance with a value of 1 if the top color was white and the bottom color
-//  was black.  This is a very simple model where Top represents the intensity 
-//  of the "sky" and Bottom represents the intensity of the "ground".
-//
-//  Parameters:
-//   Order
-//      Order of the SH evaluation, generates Order^2 coefs, degree is Order-1
-//   pDir
-//      Axis of the hemisphere.
-//   Top
-//      Color of the upper hemisphere.
-//   Bottom
-//      Color of the lower hemisphere.
-//   pROut
-//      Output SH vector for Red.
-//   pGOut
-//      Output SH vector for Green
-//   pBOut
-//      Output SH vector for Blue        
-//
-//============================================================================
-
 HRESULT WINAPI D3DXSHEvalHemisphereLight
     ( UINT Order, CONST D3DXVECTOR3 *pDir, D3DXCOLOR Top, D3DXCOLOR Bottom,
       FLOAT *pROut, FLOAT *pGOut, FLOAT *pBOut );
@@ -1783,13 +1509,12 @@ HRESULT WINAPI D3DXSHProjectCubeMap
 }
 #endif
 
-
+#if 0
 #include "d3dx9math.inl"
+#endif
 
 #if _MSC_VER >= 1200
 #pragma warning(pop)
-#else
-#pragma warning(default:4201)
 #endif
 
-#endif // __D3DX9MATH_H__
+#endif /* __D3DX9MATH_H__ */

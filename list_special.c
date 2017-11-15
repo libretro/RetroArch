@@ -48,8 +48,6 @@
 #include "core_info.h"
 #include "gfx/video_driver.h"
 #include "input/input_driver.h"
-#include "input/input_hid_driver.h"
-#include "input/input_joypad_driver.h"
 #include "audio/audio_driver.h"
 #include "record/record_driver.h"
 #include "configuration.h"
@@ -108,13 +106,17 @@ struct string_list *dir_list_new_special(const char *input_dir,
        break;
       case DIR_LIST_SHADERS:
          {
-            union string_list_elem_attr attr = {0};
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_VULKAN)
+            union string_list_elem_attr attr;
+#endif
             struct string_list *str_list     = string_list_new();
 
             if (!str_list)
                return NULL;
 
-            (void)attr;
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_VULKAN)
+            attr.i = 0;
+#endif
 
             dir  = input_dir;
 #ifdef HAVE_CG
@@ -151,7 +153,8 @@ struct string_list *dir_list_new_special(const char *input_dir,
          return NULL;
    }
 
-   return dir_list_new(dir, exts, include_dirs, settings->show_hidden_files, type == DIR_LIST_CORE_INFO, recursive);
+   return dir_list_new(dir, exts, include_dirs, settings->bools.show_hidden_files,
+         type == DIR_LIST_CORE_INFO, recursive);
 }
 
 struct string_list *string_list_new_special(enum string_list_type type,

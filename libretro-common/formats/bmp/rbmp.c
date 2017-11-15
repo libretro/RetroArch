@@ -29,7 +29,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <retro_assert.h>
 #include <retro_inline.h>
 
 #include <formats/image.h>
@@ -161,7 +160,6 @@ static unsigned char *rbmp__convert_format(
                dest[0]=src[0],dest[1]=src[1],dest[2]=src[2];
             break;
          default: 
-            retro_assert(0);
             break;
       }
 
@@ -293,11 +291,10 @@ static unsigned char *rbmp__bmp_load(rbmp__context *s, unsigned *x, unsigned *y,
          }
          if (bpp == 16 || bpp == 32)
          {
-            mr = mg = mb = 0;
-
             switch (compress)
             {
                case 0:
+#if 0
                   if (bpp == 32)
                   {
                      mr = 0xffu << 16;
@@ -311,6 +308,7 @@ static unsigned char *rbmp__bmp_load(rbmp__context *s, unsigned *x, unsigned *y,
                      mg = 31u <<  5;
                      mb = 31u <<  0;
                   }
+#endif
                   break;
                case 3:
                   mr = rbmp__get32le(s);
@@ -323,6 +321,9 @@ static unsigned char *rbmp__bmp_load(rbmp__context *s, unsigned *x, unsigned *y,
                      return 0;
                   break;
                default:
+#if 0
+                  mr = mg = mb = 0;
+#endif
                   break;
             }
 
@@ -332,7 +333,6 @@ static unsigned char *rbmp__bmp_load(rbmp__context *s, unsigned *x, unsigned *y,
       }
       else
       {
-         retro_assert(hsz == 108 || hsz == 124);
          mr = rbmp__get32le(s);
          mg = rbmp__get32le(s);
          mb = rbmp__get32le(s);

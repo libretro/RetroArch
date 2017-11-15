@@ -37,7 +37,7 @@ void autosave_lock(void);
  **/
 void autosave_unlock(void);
 
-void autosave_init(void);
+bool autosave_init(void);
 
 void autosave_deinit(void);
 

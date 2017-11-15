@@ -22,6 +22,7 @@
 
 #include <stdlib.h>
 
+#include <boolean.h>
 #include <file/archive_file.h>
 #include <streams/file_stream.h>
 #include <retro_miscellaneous.h>
@@ -31,10 +32,9 @@
 #include <lists/string_list.h>
 #include <file/file_path.h>
 #include <compat/strl.h>
-#include "../../deps/7zip/7z.h"
-#include "../../deps/7zip/7zAlloc.h"
-#include "../../deps/7zip/7zCrc.h"
-#include "../../deps/7zip/7zFile.h"
+#include <7zip/7z.h>
+#include <7zip/7zCrc.h>
+#include <7zip/7zFile.h>
 
 #define SEVENZIP_MAGIC "7z\xBC\xAF\x27\x1C"
 #define SEVENZIP_MAGIC_LEN 6
@@ -53,6 +53,27 @@ struct sevenzip_context_t {
    file_archive_file_handle_t *handle;
 };
 
+static void *sevenzip_stream_alloc_impl(void *p, size_t size)
+{
+   if (size == 0)
+      return 0;
+   return malloc(size);
+}
+
+static void sevenzip_stream_free_impl(void *p, void *address)
+{
+   (void)p;
+   free(address);
+}
+
+static void *sevenzip_stream_alloc_tmp_impl(void *p, size_t size)
+{
+   (void)p;
+   if (size == 0)
+      return 0;
+   return malloc(size);
+}
+
 static void* sevenzip_stream_new(void)
 {
    struct sevenzip_context_t *sevenzip_context =
@@ -60,10 +81,10 @@ static void* sevenzip_stream_new(void)
 
    /* These are the allocation routines - currently using
     * the non-standard 7zip choices. */
-   sevenzip_context->allocImp.Alloc     = SzAlloc;
-   sevenzip_context->allocImp.Free      = SzFree;
-   sevenzip_context->allocTempImp.Alloc = SzAllocTemp;
-   sevenzip_context->allocTempImp.Free  = SzFreeTemp;
+   sevenzip_context->allocImp.Alloc     = sevenzip_stream_alloc_impl;
+   sevenzip_context->allocImp.Free      = sevenzip_stream_free_impl;
+   sevenzip_context->allocTempImp.Alloc = sevenzip_stream_alloc_tmp_impl;
+   sevenzip_context->allocTempImp.Free  = sevenzip_stream_free_impl;
    sevenzip_context->block_index        = 0xFFFFFFFF;
    sevenzip_context->output             = NULL;
    sevenzip_context->handle             = NULL;
@@ -109,17 +130,17 @@ static int sevenzip_file_read(
 
    /*These are the allocation routines.
     * Currently using the non-standard 7zip choices. */
-   allocImp.Alloc       = SzAlloc;
-   allocImp.Free        = SzFree;
-   allocTempImp.Alloc   = SzAllocTemp;
-   allocTempImp.Free    = SzFreeTemp;
+   allocImp.Alloc       = sevenzip_stream_alloc_impl;
+   allocImp.Free        = sevenzip_stream_free_impl;
+   allocTempImp.Alloc   = sevenzip_stream_alloc_tmp_impl;
+   allocTempImp.Free    = sevenzip_stream_free_impl;
 
    /* Could not open 7zip archive? */
    if (InFile_Open(&archiveStream.file, path))
       return -1;
 
    FileInStream_CreateVTable(&archiveStream);
-   LookToRead_CreateVTable(&lookStream, False);
+   LookToRead_CreateVTable(&lookStream, false);
    lookStream.realStream = &archiveStream.s;
    LookToRead_Init(&lookStream);
    CrcGenerateTable();
@@ -308,7 +329,7 @@ static int sevenzip_parse_file_init(file_archive_transfer_t *state,
    if (state->archive_size < SEVENZIP_MAGIC_LEN)
       goto error;
 
-   if (memcmp(state->data, SEVENZIP_MAGIC, SEVENZIP_MAGIC_LEN) != 0)
+   if (string_is_not_equal_fast(state->data, SEVENZIP_MAGIC, SEVENZIP_MAGIC_LEN))
       goto error;
 
    state->stream = sevenzip_context;
@@ -318,7 +339,7 @@ static int sevenzip_parse_file_init(file_archive_transfer_t *state,
       goto error;
 
    FileInStream_CreateVTable(&sevenzip_context->archiveStream);
-   LookToRead_CreateVTable(&sevenzip_context->lookStream, False);
+   LookToRead_CreateVTable(&sevenzip_context->lookStream, false);
    sevenzip_context->lookStream.realStream = &sevenzip_context->archiveStream.s;
    LookToRead_Init(&sevenzip_context->lookStream);
    CrcGenerateTable();

@@ -25,7 +25,6 @@
 
 #ifdef HAVE_XINERAMA
 #include <X11/extensions/Xinerama.h>
-#endif
 
 #include "xinerama_common.h"
 
@@ -33,7 +32,6 @@
 
 static XineramaScreenInfo *xinerama_query_screens(Display *dpy, int *num_screens)
 {
-#ifdef HAVE_XINERAMA
    int major, minor;
 
    if (!XineramaQueryExtension(dpy, &major, &minor))
@@ -44,7 +42,6 @@ static XineramaScreenInfo *xinerama_query_screens(Display *dpy, int *num_screens
 
    if (XineramaIsActive(dpy))
       return XineramaQueryScreens(dpy, num_screens);
-#endif
 
    return NULL;
 }
@@ -52,7 +49,6 @@ static XineramaScreenInfo *xinerama_query_screens(Display *dpy, int *num_screens
 bool xinerama_get_coord(Display *dpy, int screen,
       int *x, int *y, unsigned *w, unsigned *h)
 {
-#ifdef HAVE_XINERAMA
    int i, num_screens       = 0;
    XineramaScreenInfo *info = xinerama_query_screens(dpy, &num_screens);
 
@@ -72,7 +68,6 @@ bool xinerama_get_coord(Display *dpy, int screen,
    }
 
    XFree(info);
-#endif
 
    return false;
 }
@@ -80,7 +75,6 @@ bool xinerama_get_coord(Display *dpy, int screen,
 unsigned xinerama_get_monitor(Display *dpy, int x, int y,
       int w, int h)
 {
-#ifdef HAVE_XINERAMA
    int       i, num_screens = 0;
    unsigned       monitor   = 0;
    int       largest_area   = 0;
@@ -116,14 +110,12 @@ unsigned xinerama_get_monitor(Display *dpy, int x, int y,
 
    if (monitor > 0)
       return monitor;
-#endif
 
    return 0;
 }
 
 void xinerama_save_last_used_monitor(Window win)
 {
-#ifdef HAVE_XINERAMA
    XWindowAttributes target;
    Window child;
    int x = 0, y = 0;
@@ -137,5 +129,6 @@ void xinerama_save_last_used_monitor(Window win)
          target.width, target.height);
 
    RARCH_LOG("[XINERAMA]: Saved monitor #%u.\n", g_x11_screen);
-#endif
 }
+
+#endif

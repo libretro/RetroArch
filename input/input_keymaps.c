@@ -932,10 +932,14 @@ const struct rarch_key_map rarch_key_map_x11[] = {
    /*{ ?, RETROK_POWER },*/
    { XK_EuroSign, RETROK_EURO },
    { XK_Undo, RETROK_UNDO },
-   { XK_KP_Up,  RETROK_KP0 },
-   { XK_KP_Down,  RETROK_KP1 },
-   { XK_KP_Left,  RETROK_KP2 },
-   { XK_KP_Right,  RETROK_KP3 },
+   /* FIXME(shizeeg): RetroArch can't handle these buttons atm. 
+    * Do we really need RETROK_KP_INSERT, RETROK_KP_END,
+    * RETROK_KP_DOWN, RETROK_KP_PAGEDOWN ???
+    *
+   { XK_KP_Insert,  RETROK_KP0 },
+   { XK_KP_End,  RETROK_KP1 },
+   { XK_KP_Down,  RETROK_KP2 },
+   { XK_KP_Page_Down,  RETROK_KP3 },*/
    { XF86XK_Calculator, RETROK_HELP },
 
    { 0, RETROK_UNKNOWN },
@@ -1515,7 +1519,123 @@ const struct rarch_key_map rarch_key_map_dos[] = {
 };
 #endif
 
-static enum retro_key rarch_keysym_lut[RETROK_LAST];
+#if defined(_WIN32) && _WIN32_WINNT >= 0x0501
+const struct rarch_key_map rarch_key_map_winraw[] = {
+   { VK_BACK, RETROK_BACKSPACE },
+   { VK_TAB, RETROK_TAB },
+   { VK_CLEAR, RETROK_CLEAR },
+   { VK_RETURN, RETROK_RETURN },
+   { VK_PAUSE, RETROK_PAUSE },
+   { VK_ESCAPE, RETROK_ESCAPE },
+   { VK_MODECHANGE, RETROK_MODE },
+   { VK_SPACE, RETROK_SPACE },
+   { VK_PRIOR, RETROK_PAGEUP },
+   { VK_NEXT, RETROK_PAGEDOWN },
+   { VK_END, RETROK_END },
+   { VK_HOME, RETROK_HOME },
+   { VK_LEFT, RETROK_LEFT },
+   { VK_UP, RETROK_UP },
+   { VK_RIGHT, RETROK_RIGHT },
+   { VK_DOWN, RETROK_DOWN },
+   { VK_PRINT, RETROK_PRINT },
+   { VK_INSERT, RETROK_INSERT },
+   { VK_DELETE, RETROK_DELETE },
+   { VK_HELP, RETROK_HELP },
+   { 0x30, RETROK_0 },
+   { 0x31, RETROK_1 },
+   { 0x32, RETROK_2 },
+   { 0x33, RETROK_3 },
+   { 0x34, RETROK_4 },
+   { 0x35, RETROK_5 },
+   { 0x36, RETROK_6 },
+   { 0x37, RETROK_7 },
+   { 0x38, RETROK_8 },
+   { 0x39, RETROK_9 },
+   { 0x41, RETROK_a },
+   { 0x42, RETROK_b },
+   { 0x43, RETROK_c },
+   { 0x44, RETROK_d },
+   { 0x45, RETROK_e },
+   { 0x46, RETROK_f },
+   { 0x47, RETROK_g },
+   { 0x48, RETROK_h },
+   { 0x49, RETROK_i },
+   { 0x4A, RETROK_j },
+   { 0x4B, RETROK_k },
+   { 0x4C, RETROK_l },
+   { 0x4D, RETROK_m },
+   { 0x4E, RETROK_n },
+   { 0x4F, RETROK_o },
+   { 0x50, RETROK_p },
+   { 0x51, RETROK_q },
+   { 0x52, RETROK_r },
+   { 0x53, RETROK_s },
+   { 0x54, RETROK_t },
+   { 0x55, RETROK_u },
+   { 0x56, RETROK_v },
+   { 0x57, RETROK_w },
+   { 0x58, RETROK_x },
+   { 0x59, RETROK_y },
+   { 0x5A, RETROK_z },
+   { VK_LWIN, RETROK_LSUPER },
+   { VK_RWIN, RETROK_RSUPER },
+   { VK_APPS, RETROK_MENU },
+   { VK_NUMPAD0, RETROK_KP0 },
+   { VK_NUMPAD1, RETROK_KP1 },
+   { VK_NUMPAD2, RETROK_KP2 },
+   { VK_NUMPAD3, RETROK_KP3 },
+   { VK_NUMPAD4, RETROK_KP4 },
+   { VK_NUMPAD5, RETROK_KP5 },
+   { VK_NUMPAD6, RETROK_KP6 },
+   { VK_NUMPAD7, RETROK_KP7 },
+   { VK_NUMPAD8, RETROK_KP8 },
+   { VK_NUMPAD9, RETROK_KP9 },
+   { VK_MULTIPLY, RETROK_KP_MULTIPLY },
+   { VK_ADD, RETROK_KP_PLUS },
+   { VK_SUBTRACT, RETROK_KP_MINUS },
+   { VK_DECIMAL, RETROK_KP_PERIOD },
+   { VK_DIVIDE, RETROK_KP_DIVIDE },
+   { VK_F1, RETROK_F1 },
+   { VK_F2, RETROK_F2 },
+   { VK_F3, RETROK_F3 },
+   { VK_F4, RETROK_F4 },
+   { VK_F5, RETROK_F5 },
+   { VK_F6, RETROK_F6 },
+   { VK_F7, RETROK_F7 },
+   { VK_F8, RETROK_F8 },
+   { VK_F9, RETROK_F9 },
+   { VK_F10, RETROK_F10 },
+   { VK_F11, RETROK_F11 },
+   { VK_F12, RETROK_F12 },
+   { VK_F13, RETROK_F13 },
+   { VK_F14, RETROK_F14 },
+   { VK_F15, RETROK_F15 },
+   { VK_NUMLOCK, RETROK_NUMLOCK },
+   { VK_SCROLL, RETROK_SCROLLOCK },
+   { VK_LSHIFT, RETROK_LSHIFT },
+   { VK_RSHIFT, RETROK_RSHIFT },
+   { VK_LCONTROL, RETROK_LCTRL },
+   { VK_RCONTROL, RETROK_RCTRL },
+   { VK_LMENU, RETROK_LALT },
+   { VK_RMENU, RETROK_RALT },
+   { VK_RETURN, RETROK_KP_ENTER },
+   { VK_CAPITAL, RETROK_CAPSLOCK },
+   { VK_OEM_1, RETROK_SEMICOLON },
+   { VK_OEM_PLUS, RETROK_EQUALS },
+   { VK_OEM_COMMA, RETROK_COMMA },
+   { VK_OEM_MINUS, RETROK_MINUS },
+   { VK_OEM_PERIOD, RETROK_PERIOD },
+   { VK_OEM_2, RETROK_SLASH },
+   { VK_OEM_3, RETROK_BACKQUOTE },
+   { VK_OEM_4, RETROK_LEFTBRACKET },
+   { VK_OEM_5, RETROK_BACKSLASH },
+   { VK_OEM_6, RETROK_RIGHTBRACKET },
+   { VK_OEM_7, RETROK_QUOTE },
+   { 0, RETROK_UNKNOWN }
+};
+#endif
+
+enum retro_key rarch_keysym_lut[RETROK_LAST];
 
 /**
  * input_keymaps_init_keyboard_lut:
@@ -1586,18 +1706,4 @@ void input_keymaps_translate_rk_to_str(enum retro_key key, char *buf, size_t siz
       strlcpy(buf, input_config_key_map[i].str, size);
       break;
    }
-}
-
-/**
- * input_keymaps_translate_rk_to_keysym:
- * @key                   : Retro key identifier
- *
- * Translates a retro key identifier to a key symbol
- * from the keyboard layout table.
- *
- * Returns: key symbol from the keyboard layout table.
- **/
-unsigned input_keymaps_translate_rk_to_keysym(enum retro_key key)
-{
-   return rarch_keysym_lut[key];
 }

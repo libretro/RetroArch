@@ -36,6 +36,15 @@ RETRO_BEGIN_DECLS
       | DRIVERS_VIDEO_INPUT_MASK \
       | DRIVER_WIFI_MASK )
 
+#define DRIVERS_CMD_ALL_BUT_MENU \
+      ( DRIVER_AUDIO_MASK \
+      | DRIVER_VIDEO_MASK \
+      | DRIVER_INPUT_MASK \
+      | DRIVER_CAMERA_MASK \
+      | DRIVER_LOCATION_MASK \
+      | DRIVERS_VIDEO_INPUT_MASK \
+      | DRIVER_WIFI_MASK )
+
 enum
 {
    DRIVER_AUDIO = 0,
@@ -65,13 +74,6 @@ enum driver_ctl_state
    RARCH_DRIVER_CTL_NONE = 0,
    RARCH_DRIVER_CTL_DEINIT,
 
-   /* Deinitializes drivers.
-    * @data is a bitmask which determines 
-    * which drivers get deinitialized. */
-   RARCH_DRIVER_CTL_UNINIT,
-
-   RARCH_DRIVER_CTL_UNINIT_ALL,
-
    /* Attempts to find a default driver for 
     * all driver types.
     *
@@ -90,6 +92,8 @@ enum driver_ctl_state
    RARCH_DRIVER_CTL_UPDATE_SYSTEM_AV_INFO,
 
    RARCH_DRIVER_CTL_FIND_FIRST,
+
+   RARCH_DRIVER_CTL_FIND_LAST,
 
    RARCH_DRIVER_CTL_FIND_PREV,
 
@@ -114,6 +118,8 @@ bool driver_ctl(enum driver_ctl_state state, void *data);
  * If nonblock state is false, sets blocking state for both
  * audio and video drivers instead. */
 void driver_set_nonblock_state(void);
+
+void driver_uninit(int flags);
 
 void drivers_init(int flags);
 

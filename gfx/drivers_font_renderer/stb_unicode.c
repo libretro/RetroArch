@@ -20,6 +20,10 @@
 #include <streams/file_stream.h>
 #include <retro_miscellaneous.h>
 
+#ifdef WIIU
+#include <wiiu/os.h>
+#endif
+
 #include "../font_driver.h"
 #include "../../verbosity.h"
 
@@ -216,6 +220,15 @@ static void *font_renderer_stb_unicode_init(const char *font_path, float font_si
    /* See https://github.com/nothings/stb/blob/master/stb_truetype.h#L539 */
    font_size = STBTT_POINT_SIZE(font_size);
 
+#ifdef WIIU
+   if(!*font_path)
+   {
+      uint32_t size = 0;
+      if (!OSGetSharedData(SHARED_FONT_DEFAULT, 0, (void**)&self->font_data, &size))
+         goto error;
+   }
+   else
+#endif
    if (!filestream_read_file(font_path, (void**)&self->font_data, NULL))
       goto error;
 
@@ -245,6 +258,9 @@ error:
 
 static const char *font_renderer_stb_unicode_get_default_font(void)
 {
+#ifdef WIIU
+   return "";
+#else
    static const char *paths[] = {
 #if defined(_WIN32)
       "C:\\Windows\\Fonts\\consola.ttf",
@@ -286,6 +302,7 @@ static const char *font_renderer_stb_unicode_get_default_font(void)
          return *p;
 
    return NULL;
+#endif
 }
 
 static int font_renderer_stb_unicode_get_line_height(void* data)

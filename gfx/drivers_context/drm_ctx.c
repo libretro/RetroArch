@@ -28,14 +28,16 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <fcntl.h>
 #include <sys/poll.h>
 
 #include <libdrm/drm.h>
 #include <gbm.h>
 
 #include <lists/dir_list.h>
-#include <streams/file_stream.h>
+#include <string/stdstring.h>
 
+#include "../../configuration.h"
 #include "../../verbosity.h"
 #include "../../frontend/frontend_driver.h"
 #include "../common/drm_common.h"
@@ -60,6 +62,10 @@
 
 #endif
 
+#ifndef EGL_PLATFORM_GBM_KHR
+#define EGL_PLATFORM_GBM_KHR 0x31D7
+#endif
+
 static enum gfx_ctx_api drm_api           = GFX_CTX_NONE;
 
 static struct gbm_bo *g_bo                = NULL;
@@ -74,7 +80,7 @@ typedef struct gfx_ctx_drm_data
 #ifdef HAVE_EGL
    egl_ctx_data_t egl;
 #endif
-   RFILE *drm;
+   int fd;
    unsigned interval;
    unsigned fb_width;
    unsigned fb_height;
@@ -224,9 +230,10 @@ static bool gfx_ctx_drm_queue_flip(void)
    return false;
 }
 
-static void gfx_ctx_drm_swap_buffers(void *data, video_frame_info_t *video_info)
+static void gfx_ctx_drm_swap_buffers(void *data, void *data2)
 {
-   gfx_ctx_drm_data_t *drm = (gfx_ctx_drm_data_t*)data;
+   gfx_ctx_drm_data_t        *drm = (gfx_ctx_drm_data_t*)data;
+   video_frame_info_t *video_info = (video_frame_info_t*)data2;
 
    switch (drm_api)
    {
@@ -287,12 +294,14 @@ static void free_drm_resources(gfx_ctx_drm_data_t *drm)
 
    drm_free();
 
-   if (drm->drm)
+   if (drm->fd >= 0)
+   {
       if (g_drm_fd >= 0)
       {
          drmDropMaster(g_drm_fd);
-         filestream_close(drm->drm);
+         close(drm->fd);
       }
+   }
 
    g_gbm_surface      = NULL;
    g_gbm_dev          = NULL;
@@ -346,6 +355,7 @@ static void *gfx_ctx_drm_init(video_frame_info_t *video_info, void *video_driver
 
    if (!drm)
       return NULL;
+   drm->fd = -1;
 
    gpu_descriptors = dir_list_new("/dev/dri", NULL, false, true, false, false);
 
@@ -359,14 +369,14 @@ nextgpu:
    }
    gpu = gpu_descriptors->elems[gpu_index++].data;
 
-   drm->drm    = filestream_open(gpu, RFILE_MODE_READ_WRITE, -1);
-   if (!drm->drm)
+   drm->fd    = open(gpu, O_RDWR);
+   if (drm->fd < 0)
    {
       RARCH_WARN("[KMS]: Couldn't open DRM device.\n");
       goto nextgpu;
    }
 
-   fd = filestream_get_fd(drm->drm);
+   fd = drm->fd;
 
    if (!drm_get_resources(fd))
       goto nextgpu;
@@ -563,7 +573,8 @@ static bool gfx_ctx_drm_egl_set_video_mode(gfx_ctx_drm_data_t *drm)
       case GFX_CTX_OPENGL_ES_API:
       case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
-         if (!egl_init_context(&drm->egl, (EGLNativeDisplayType)g_gbm_dev, &major,
+         if (!egl_init_context(&drm->egl, EGL_PLATFORM_GBM_KHR,
+                  (EGLNativeDisplayType)g_gbm_dev, &major,
                   &minor, &n, attrib_ptr))
             goto error;
 
@@ -726,9 +737,42 @@ static void gfx_ctx_drm_destroy(void *data)
 }
 
 static void gfx_ctx_drm_input_driver(void *data,
-      const char *name,
+      const char *joypad_name,
       const input_driver_t **input, void **input_data)
 {
+#ifdef HAVE_X11
+   settings_t *settings = config_get_ptr();
+
+   /* We cannot use the X11 input driver for DRM/KMS */
+   if (string_is_equal(settings->arrays.input_driver, "x"))
+   {
+#ifdef HAVE_UDEV
+      {
+         /* Try to set it to udev instead */
+         void *udev = input_udev.init(joypad_name);
+         if (udev)
+         {
+            *input       = &input_udev;
+            *input_data  = udev;
+            return;
+         }
+      }
+#endif
+#if defined(__linux__) && !defined(ANDROID)
+      {
+         /* Try to set it to linuxraw instead */
+         void *linuxraw = input_linuxraw.init(joypad_name);
+         if (linuxraw)
+         {
+            *input       = &input_linuxraw;
+            *input_data  = linuxraw;
+            return;
+         }
+      }
+#endif
+   }
+#endif
+
    *input      = NULL;
    *input_data = NULL;
 }

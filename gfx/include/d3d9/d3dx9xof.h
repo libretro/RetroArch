@@ -16,41 +16,17 @@
 extern "C" {
 #endif // defined( __cplusplus )
 
-//----------------------------------------------------------------------------
-// D3DXF_FILEFORMAT
-//   This flag is used to specify what file type to use when saving to disk.
-//   _BINARY, and _TEXT are mutually exclusive, while
-//   _COMPRESSED is an optional setting that works with all file types.
-//----------------------------------------------------------------------------
 typedef DWORD D3DXF_FILEFORMAT;
 
 #define D3DXF_FILEFORMAT_BINARY          0
 #define D3DXF_FILEFORMAT_TEXT            1
 #define D3DXF_FILEFORMAT_COMPRESSED      2
 
-//----------------------------------------------------------------------------
-// D3DXF_FILESAVEOPTIONS
-//   This flag is used to specify where to save the file to. Each flag is
-//   mutually exclusive, indicates the data location of the file, and also
-//   chooses which additional data will specify the location.
-//   _TOFILE is paired with a filename (LPCSTR)
-//   _TOWFILE is paired with a filename (LPWSTR)
-//----------------------------------------------------------------------------
 typedef DWORD D3DXF_FILESAVEOPTIONS;
 
 #define D3DXF_FILESAVE_TOFILE     0x00L
 #define D3DXF_FILESAVE_TOWFILE    0x01L
 
-//----------------------------------------------------------------------------
-// D3DXF_FILELOADOPTIONS
-//   This flag is used to specify where to load the file from. Each flag is
-//   mutually exclusive, indicates the data location of the file, and also
-//   chooses which additional data will specify the location.
-//   _FROMFILE is paired with a filename (LPCSTR)
-//   _FROMWFILE is paired with a filename (LPWSTR)
-//   _FROMRESOURCE is paired with a (D3DXF_FILELOADRESOUCE*) description.
-//   _FROMMEMORY is paired with a (D3DXF_FILELOADMEMORY*) description.
-//----------------------------------------------------------------------------
 typedef DWORD D3DXF_FILELOADOPTIONS;
 
 #define D3DXF_FILELOAD_FROMFILE     0x00L

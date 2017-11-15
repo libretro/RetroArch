@@ -145,7 +145,7 @@ bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)
             driver_ctx_info_t drv;
 
             drv.label = "wifi_driver";
-            drv.s     = settings->wifi.driver;
+            drv.s     = settings->arrays.wifi_driver;
 
             driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
 
@@ -157,7 +157,7 @@ bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)
             {
                unsigned d;
                RARCH_ERR("Couldn't find any wifi driver named \"%s\"\n",
-                     settings->wifi.driver);
+                     settings->arrays.wifi_driver);
                RARCH_LOG_OUTPUT("Available wifi drivers are:\n");
                for (d = 0; wifi_driver_find_handle(d); d++)
                   RARCH_LOG_OUTPUT("\t%s\n", wifi_driver_find_ident(d));
@@ -194,7 +194,7 @@ bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)
       case RARCH_WIFI_CTL_START:
         if (wifi_driver && wifi_data && wifi_driver->start)
         {
-           if (settings->wifi.allow)
+           if (settings->bools.wifi_allow)
               return wifi_driver->start(wifi_data);
         }
         return false;

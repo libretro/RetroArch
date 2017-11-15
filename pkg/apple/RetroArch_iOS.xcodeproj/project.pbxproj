@@ -318,6 +318,7 @@
 			buildPhases = (
 				0FDA2A711BE1AFA800F2B5DA /* Sources */,
 				0FDA2A771BE1AFA800F2B5DA /* Frameworks */,
+				928F188C1F23CE9C00117C38 /* ShellScript */,
 				0FDA2A871BE1AFA800F2B5DA /* Resources */,
 			);
 			buildRules = (
@@ -372,11 +373,14 @@
 				LastUpgradeCheck = 0450;
 				ORGANIZATIONNAME = RetroArch;
 				TargetAttributes = {
+					0FDA2A701BE1AFA800F2B5DA = {
+						DevelopmentTeam = R72X3BF4KE;
+					};
 					503700861ACA18E400A51A37 = {
-						DevelopmentTeam = YLQUB5DVUQ;
+						DevelopmentTeam = UK699V5ZS8;
 					};
 					96AFAE2416C1D4EA009DE44C = {
-						DevelopmentTeam = YLQUB5DVUQ;
+						DevelopmentTeam = UK699V5ZS8;
 					};
 				};
 			};
@@ -437,6 +441,22 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		928F188C1F23CE9C00117C38 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "./code-sign-cores.sh";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		0FDA2A711BE1AFA800F2B5DA /* Sources */ = {
@@ -502,12 +522,15 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
+				DEVELOPMENT_TEAM = R72X3BF4KE;
 				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
+					../../deps/stb,
+					../../deps/libz,
 					../../deps,
 				);
 				INFOPLIST_FILE = "RetroArch_iOS9-Info.plist";
@@ -522,6 +545,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
+					"-DHAVE_STB_VORBIS",
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
@@ -534,7 +558,6 @@
 					"-DHAVE_LIBRETRODB",
 					"-DIOS",
 					"-DHAVE_OPENGL",
-					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
 					"-DHAVE_CC_RESAMPLER",
@@ -583,12 +606,15 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
+				DEVELOPMENT_TEAM = R72X3BF4KE;
 				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
+					../../deps/stb,
+					../../deps/libz,
 					../../deps,
 				);
 				INFOPLIST_FILE = "RetroArch_iOS9-Info.plist";
@@ -604,6 +630,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
+					"-DHAVE_STB_VORBIS",
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
@@ -616,7 +643,6 @@
 					"-DHAVE_LIBRETRODB",
 					"-DIOS",
 					"-DHAVE_OPENGL",
-					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
 					"-DHAVE_CC_RESAMPLER",
@@ -656,6 +682,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
+					"-DHAVE_STB_VORBIS",
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
@@ -668,7 +695,6 @@
 					"-DHAVE_LIBRETRODB",
 					"-DIOS",
 					"-DHAVE_OPENGL",
-					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
 					"-DHAVE_CC_RESAMPLER",
@@ -718,12 +744,15 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
+				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
+					../../deps/stb,
+					../../deps/libz,
 					../../deps,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
@@ -738,6 +767,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
+					"-DHAVE_STB_VORBIS",
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
@@ -751,7 +781,6 @@
 					"-DHAVE_LIBRETRODB",
 					"-DIOS",
 					"-DHAVE_OPENGL",
-					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
 					"-DHAVE_CC_RESAMPLER",
@@ -778,6 +807,7 @@
 					"-DHAVE_SHADERPIPELINE",
 					"-D_LZMA_UINT32_IS_ULONG",
 				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch6;
 				PRODUCT_NAME = "RetroArch copy";
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = armv7;
@@ -795,12 +825,15 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
+				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
+					../../deps/stb,
+					../../deps/libz,
 					../../deps,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
@@ -816,6 +849,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
+					"-DHAVE_STB_VORBIS",
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
@@ -828,7 +862,6 @@
 					"-DHAVE_LIBRETRODB",
 					"-DIOS",
 					"-DHAVE_OPENGL",
-					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
 					"-DHAVE_CC_RESAMPLER",
@@ -865,6 +898,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
+					"-DHAVE_STB_VORBIS",
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
@@ -877,7 +911,6 @@
 					"-DHAVE_LIBRETRODB",
 					"-DIOS",
 					"-DHAVE_OPENGL",
-					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
 					"-DHAVE_CC_RESAMPLER",
@@ -905,6 +938,7 @@
 					"-DHAVE_SHADERPIPELINE",
 					"-D_LZMA_UINT32_IS_ULONG",
 				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch6;
 				PRODUCT_NAME = "RetroArch copy";
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = armv7;
@@ -946,6 +980,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
+					"-DHAVE_STB_VORBIS",
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
@@ -959,7 +994,6 @@
 					"-DIOS",
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OPENGL",
-					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
 					"-DHAVE_CC_RESAMPLER",
@@ -970,7 +1004,6 @@
 					"-DRARCH_MOBILE",
 					"-std=gnu99",
 					"-DHAVE_COREAUDIO",
-					"-DHAVE_FBO",
 					"-DHAVE_OVERLAY",
 					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
@@ -1017,6 +1050,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
+					"-DHAVE_STB_VORBIS",
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
@@ -1030,7 +1064,6 @@
 					"-DIOS",
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OPENGL",
-					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
 					"-DHAVE_CC_RESAMPLER",
@@ -1041,7 +1074,6 @@
 					"-DRARCH_MOBILE",
 					"-std=gnu99",
 					"-DHAVE_COREAUDIO",
-					"-DHAVE_FBO",
 					"-DHAVE_OVERLAY",
 					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
@@ -1070,12 +1102,15 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
+				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
+					../../deps/stb,
+					../../deps/libz,
 					../../deps,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
@@ -1090,6 +1125,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
+					"-DHAVE_STB_VORBIS",
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
@@ -1102,7 +1138,6 @@
 					"-DHAVE_LIBRETRODB",
 					"-DIOS",
 					"-DHAVE_OPENGL",
-					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
 					"-DHAVE_CC_RESAMPLER",
@@ -1132,6 +1167,7 @@
 					"-DHAVE_BTSTACK",
 					"-DHAVE_AVFOUNDATION",
 				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchG;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = armv7;
@@ -1150,12 +1186,15 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
+				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
+					../../deps/stb,
+					../../deps/libz,
 					../../deps,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
@@ -1171,6 +1210,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
+					"-DHAVE_STB_VORBIS",
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
@@ -1183,7 +1223,6 @@
 					"-DHAVE_LIBRETRODB",
 					"-DIOS",
 					"-DHAVE_OPENGL",
-					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
 					"-DHAVE_CC_RESAMPLER",
@@ -1223,6 +1262,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
+					"-DHAVE_STB_VORBIS",
 					"-DHAVE_MINIUPNPC",
 					"-DHAVE_BUILTINMINIUPNPC",
 					"-DHAVE_UPDATE_ASSETS",
@@ -1235,7 +1275,6 @@
 					"-DHAVE_LIBRETRODB",
 					"-DIOS",
 					"-DHAVE_OPENGL",
-					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
 					"-DHAVE_CC_RESAMPLER",
@@ -1266,6 +1305,7 @@
 					"-DHAVE_BTSTACK",
 					"-DHAVE_AVFOUNDATION",
 				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchG;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = armv7;

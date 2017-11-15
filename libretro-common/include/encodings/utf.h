@@ -32,6 +32,12 @@
 
 RETRO_BEGIN_DECLS
 
+enum CodePage
+{
+   CODEPAGE_LOCAL = 0, /* CP_ACP */
+   CODEPAGE_UTF8 = 65001 /* CP_UTF8 */
+};
+
 size_t utf8_conv_utf32(uint32_t *out, size_t out_chars,
       const char *in, size_t in_size);
 
@@ -47,6 +53,14 @@ const char *utf8skip(const char *str, size_t chars);
 uint32_t utf8_walk(const char **string);
 
 bool utf16_to_char_string(const uint16_t *in, char *s, size_t len);
+
+char* utf8_to_local_string_alloc(const char *str);
+
+char* local_to_utf8_string_alloc(const char *str);
+
+wchar_t* utf8_to_utf16_string_alloc(const char *str);
+
+char* utf16_to_utf8_string_alloc(const wchar_t *str);
 
 RETRO_END_DECLS
 

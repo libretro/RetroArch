@@ -17,7 +17,7 @@
 #include <stdlib.h>
 
 #include <retro_inline.h>
-#include <retro_miscellaneous.h>
+#include <retro_math.h>
 
 #include "video_coord_array.h"
 
@@ -75,7 +75,7 @@ bool video_coord_array_append(video_coord_array_t *ca,
    base_size = count * sizeof(float);
    offset    = ca->coords.vertices;
 
-   /* XXX: I wish we used interlaced arrays so 
+   /* XXX: I wish we used interlaced arrays so
     * we could call memcpy only once. */
    memcpy(ca->coords.vertex        + offset * 2,
          coords->vertex, base_size * 2);

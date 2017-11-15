@@ -31,6 +31,7 @@
 
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
+#include <retro_timers.h>
 #include <rthreads/rthreads.h>
 #include <queues/fifo_queue.h>
 
@@ -321,7 +322,11 @@ static void *dsound_init(const char *device, unsigned rate, unsigned latency,
 
    RARCH_LOG("DirectSound devices:\n");
 #ifndef _XBOX
-   DirectSoundEnumerate(enumerate_cb, &dev);
+#ifdef UNICODE
+   DirectSoundEnumerate((LPDSENUMCALLBACKW)enumerate_cb, &dev);
+#else
+   DirectSoundEnumerate((LPDSENUMCALLBACKA)enumerate_cb, &dev);
+#endif
 #endif
 
    if (DirectSoundCreate(dev.guid, &ds->ds, NULL) != DS_OK)
@@ -426,8 +431,7 @@ static void dsound_set_nonblock_state(void *data, bool state)
       ds->nonblock = state;
 }
 
-static ssize_t dsound_write(void *data, const void *buf_, size_t size,
-      bool is_perfcnt_enable)
+static ssize_t dsound_write(void *data, const void *buf_, size_t size)
 {
    size_t     written = 0;
    dsound_t       *ds = (dsound_t*)data;

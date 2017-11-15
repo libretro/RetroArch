@@ -31,9 +31,10 @@
 #ifdef HAVE_DYNAMIC
 #include <dynamic/dylib.h>
 #endif
+#include <string/stdstring.h>
 
 #include "../input_defines.h"
-#include "../input_hid_driver.h"
+#include "../input_driver.h"
 #define BUILDING_BTDYNAMIC
 #include "../connect/joypad_connection.h"
 
@@ -554,8 +555,8 @@ uint32_t embedded_get_ticks(void);
 #define READ_L2CAP_LENGTH(buffer)     ( READ_BT_16(buffer, 4))
 #define READ_L2CAP_CHANNEL_ID(buffer) ( READ_BT_16(buffer, 6))
 
-#define BD_ADDR_CMP(a,b) memcmp(a,b, BD_ADDR_LEN)
-#define BD_ADDR_COPY(dest,src) memcpy(dest,src,BD_ADDR_LEN)
+#define BD_ADDR_CMP(a,b)               memcmp(a,b, BD_ADDR_LEN)
+#define BD_ADDR_COPY(dest,src)         memcpy(dest,src,BD_ADDR_LEN)
 
 void bt_store_16(uint8_t *buffer, uint16_t pos, uint16_t value);
 

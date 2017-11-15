@@ -230,8 +230,7 @@ static bool sl_start(void *data, bool is_shutdown)
 }
 
 
-static ssize_t sl_write(void *data, const void *buf_, size_t size,
-      bool is_perfcnt_enable)
+static ssize_t sl_write(void *data, const void *buf_, size_t size)
 {
    sl_t           *sl = (sl_t*)data;
    size_t     written = 0;

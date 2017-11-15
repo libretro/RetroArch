@@ -34,7 +34,7 @@ static const font_renderer_driver_t *font_backends[] = {
    &coretext_font_renderer,
 #endif
 #ifdef HAVE_STB_FONT
-#if defined(VITA) || defined(ANDROID) || defined(_WIN32) && !defined(_XBOX)
+#if defined(VITA) || defined(WIIU) || defined(ANDROID) || defined(_WIN32) && !defined(_XBOX) && !defined(_MSC_VER) || defined(_WIN32) && !defined(_XBOX) && defined(_MSC_VER) && _MSC_VER > 1400
    &stb_unicode_font_renderer,
 #else
    &stb_font_renderer,
@@ -66,7 +66,7 @@ int font_renderer_create_default(const void **data, void **handle,
       *handle = font_backends[i]->init(path, font_size);
       if (*handle)
       {
-         RARCH_LOG("Using font rendering backend: %s.\n",
+         RARCH_LOG("[Font]: Using font rendering backend: %s.\n",
                font_backends[i]->ident);
          *drv = font_backends[i];
          return 1;
@@ -88,9 +88,10 @@ static const font_renderer_t *d3d_font_backends[] = {
    &d3d_xdk1_font,
 #elif defined(_XBOX360)
    &d3d_xbox360_font,
-#elif defined(_WIN32)
+#elif defined(_WIN32) && defined(HAVE_D3D9)
    &d3d_win32_font,
 #endif
+   NULL
 };
 
 static bool d3d_font_init_first(
@@ -337,6 +338,37 @@ static bool ctr_font_init_first(
 }
 #endif
 
+#ifdef WIIU
+static const font_renderer_t *wiiu_font_backends[] = {
+   &wiiu_font,
+   NULL
+};
+
+static bool wiiu_font_init_first(
+      const void **font_driver, void **font_handle,
+      void *video_data, const char *font_path,
+      float font_size, bool is_threaded)
+{
+   unsigned i;
+
+   for (i = 0; wiiu_font_backends[i]; i++)
+   {
+      void *data = wiiu_font_backends[i]->init(
+            video_data, font_path, font_size,
+            is_threaded);
+
+      if (!data)
+         continue;
+
+      *font_driver = wiiu_font_backends[i];
+      *font_handle = data;
+      return true;
+   }
+
+   return false;
+}
+#endif
+
 static bool font_init_first(
       const void **font_driver, void **font_handle,
       void *video_data, const char *font_path, float font_size,
@@ -370,6 +402,11 @@ static bool font_init_first(
 #ifdef _3DS
       case FONT_DRIVER_RENDER_CTR:
          return ctr_font_init_first(font_driver, font_handle,
+               video_data, font_path, font_size, is_threaded);
+#endif
+#ifdef WIIU
+      case FONT_DRIVER_RENDER_WIIU:
+         return wiiu_font_init_first(font_driver, font_handle,
                video_data, font_path, font_size, is_threaded);
 #endif
 #ifdef HAVE_CACA
@@ -415,12 +452,14 @@ void font_driver_bind_block(void *font_data, void *block)
       font->renderer->bind_block(font->renderer_data, block);
 }
 
-void font_driver_flush(unsigned width, unsigned height, void *font_data)
+void font_driver_flush(unsigned width, unsigned height, void *font_data,
+      video_frame_info_t *video_info)
 {
    font_data_t *font = (font_data_t*)(font_data ? font_data : video_font_driver);
    if (font && font->renderer && font->renderer->flush)
-      font->renderer->flush(width, height, font->renderer_data);
+      font->renderer->flush(width, height, font->renderer_data, video_info);
 }
+
 
 int font_driver_get_message_width(void *font_data,
       const char *msg, unsigned len, float scale)
@@ -439,7 +478,8 @@ void font_driver_free(void *font_data)
    {
       bool is_threaded        = false;
 #ifdef HAVE_THREADS
-      is_threaded             = video_driver_is_threaded();
+      bool *is_threaded_tmp   = video_driver_get_threaded();
+      is_threaded             = *is_threaded_tmp;
 #endif
 
       if (font->renderer && font->renderer->free)
@@ -454,14 +494,13 @@ void font_driver_free(void *font_data)
 
 font_data_t *font_driver_init_first(
       void *video_data, const char *font_path, float font_size,
-      bool threading_hint, enum font_driver_render_api api)
+      bool threading_hint, bool is_threaded,
+      enum font_driver_render_api api)
 {
    const void *font_driver = NULL;
    void *font_handle       = NULL;
    bool ok                 = false;
-   bool is_threaded        = false;
 #ifdef HAVE_THREADS
-   is_threaded             = video_driver_is_threaded();
 
    if (     threading_hint 
          && is_threaded 
@@ -487,15 +526,19 @@ font_data_t *font_driver_init_first(
 }
 
 
-void font_driver_init_osd(void *video_data, bool threading_hint, enum font_driver_render_api api)
+void font_driver_init_osd(
+      void *video_data,
+      bool threading_hint, 
+      bool is_threaded,
+      enum font_driver_render_api api)
 {
    settings_t *settings = config_get_ptr();
    if (video_font_driver)
       return;
 
    video_font_driver = font_driver_init_first(video_data,
-         *settings->path.font ? settings->path.font : NULL,
-         settings->video.font_size, threading_hint, api);
+         *settings->paths.path_font ? settings->paths.path_font : NULL,
+         settings->floats.video_font_size, threading_hint, is_threaded, api);
 
    if (!video_font_driver)
       RARCH_ERR("[font]: Failed to initialize OSD font.\n");

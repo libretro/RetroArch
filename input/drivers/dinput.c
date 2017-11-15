@@ -44,15 +44,12 @@
 
 #include <string/stdstring.h>
 
-#include "../input_config.h"
 #include "../input_driver.h"
-#include "../input_joypad_driver.h"
 #include "../input_keymaps.h"
 
 #include "../../gfx/video_driver.h"
 
 #include "../../verbosity.h"
-#include "../../tasks/tasks_internal.h"
 
 /* Keep track of which pad indexes are 360 controllers.
  * Not static, will be read in xinput_joypad.c
@@ -103,7 +100,6 @@ void dinput_destroy_context(void)
 
 bool dinput_init_context(void)
 {
-   bool context_initialized = false;
    if (g_dinput_ctx)
       return true;
 
@@ -111,24 +107,26 @@ bool dinput_init_context(void)
 
    /* Who said we shouldn't have same call signature in a COM API? <_< */
 #ifdef __cplusplus
-   context_initialized = (SUCCEEDED(DirectInput8Create(
-      GetModuleHandle(NULL), DIRECTINPUT_VERSION, IID_IDirectInput8,
-      (void**)&g_dinput_ctx, NULL)));
+   if (!(SUCCEEDED(DirectInput8Create(
+                  GetModuleHandle(NULL), DIRECTINPUT_VERSION,
+                  IID_IDirectInput8,
+                  (void**)&g_dinput_ctx, NULL))))
 #else
-   context_initialized = (SUCCEEDED(DirectInput8Create(
-      GetModuleHandle(NULL), DIRECTINPUT_VERSION, &IID_IDirectInput8,
-      (void**)&g_dinput_ctx, NULL)));
+      if (!(SUCCEEDED(DirectInput8Create(
+                     GetModuleHandle(NULL), DIRECTINPUT_VERSION,
+                     &IID_IDirectInput8,
+                     (void**)&g_dinput_ctx, NULL))))
 #endif
-
-   if (!context_initialized)
       goto error;
 
    return true;
 
 error:
-   RARCH_ERR("Failed to initialize DirectInput.\n");
+   RARCH_ERR("[DINPUT]: Failed to initialize DirectInput.\n");
    return false;
 }
+
+
 
 static void *dinput_init(const char *joypad_driver)
 {
@@ -136,7 +134,7 @@ static void *dinput_init(const char *joypad_driver)
 
    if (!dinput_init_context())
    {
-      RARCH_ERR("Failed to start DirectInput driver.\n");
+      RARCH_ERR("[DINPUT]: Failed to start DirectInput driver.\n");
       return NULL;
    }
 
@@ -148,29 +146,32 @@ static void *dinput_init(const char *joypad_driver)
       di->joypad_driver_name = strdup(joypad_driver);
 
 #ifdef __cplusplus
-   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx, GUID_SysKeyboard, &di->keyboard, NULL)))
+   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx,
+               GUID_SysKeyboard,
+               &di->keyboard, NULL)))
+#else
+   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx,
+               &GUID_SysKeyboard,
+               &di->keyboard, NULL)))
+#endif
    {
-      RARCH_ERR("Failed to create keyboard device.\n");
+      RARCH_ERR("[DINPUT]: Failed to create keyboard device.\n");
       di->keyboard = NULL;
    }
 
-   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx, GUID_SysMouse, &di->mouse, NULL)))
-   {
-      RARCH_ERR("Failed to create mouse device.\n");
-      di->mouse = NULL;
-   }
+#ifdef __cplusplus
+   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx,
+               GUID_SysMouse,
+               &di->mouse, NULL)))
 #else
-   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx, &GUID_SysKeyboard, &di->keyboard, NULL)))
+   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx,
+               &GUID_SysMouse,
+               &di->mouse, NULL)))
+#endif
    {
-      RARCH_ERR("Failed to create keyboard device.\n");
-      di->keyboard = NULL;
-   }
-   if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx, &GUID_SysMouse, &di->mouse, NULL)))
-   {
-      RARCH_ERR("Failed to create mouse device.\n");
+      RARCH_ERR("[DINPUT]: Failed to create mouse device.\n");
       di->mouse = NULL;
    }
-#endif
 
    if (di->keyboard)
    {
@@ -194,16 +195,8 @@ static void *dinput_init(const char *joypad_driver)
    return di;
 }
 
-#if __cplusplus
-extern "C" {
-#endif
-
 bool doubleclick_on_titlebar_pressed(void);
 void unset_doubleclick_on_titlebar(void);
-
-#if __cplusplus
-}
-#endif
 
 static void dinput_poll(void *data)
 {
@@ -228,6 +221,8 @@ static void dinput_poll(void *data)
    if (di->mouse)
    {
       DIMOUSESTATE2 mouse_state;
+      POINT point = {0};
+
       memset(&mouse_state, 0, sizeof(mouse_state));
 
       if (FAILED(IDirectInputDevice8_GetDeviceState(
@@ -243,8 +238,8 @@ static void dinput_poll(void *data)
       di->mouse_rel_y = mouse_state.lY;
 
 
-	  if (!mouse_state.rgbButtons[0])
-		  unset_doubleclick_on_titlebar();
+      if (!mouse_state.rgbButtons[0])
+         unset_doubleclick_on_titlebar();
       if (doubleclick_on_titlebar_pressed())
          di->mouse_l  = 0;
       else
@@ -254,7 +249,6 @@ static void dinput_poll(void *data)
 
       /* No simple way to get absolute coordinates
        * for RETRO_DEVICE_POINTER. Just use Win32 APIs. */
-      POINT point = {0};
       GetCursorPos(&point);
       ScreenToClient((HWND)video_driver_window_get(), &point);
       di->mouse_x = point.x;
@@ -267,12 +261,7 @@ static void dinput_poll(void *data)
 
 static bool dinput_keyboard_pressed(struct dinput_input *di, unsigned key)
 {
-   unsigned sym;
-
-   if (key >= RETROK_LAST)
-      return false;
-
-   sym = input_keymaps_translate_rk_to_keysym((enum retro_key)key);
+   unsigned sym = rarch_keysym_lut[(enum retro_key)key];
    return di->state[sym] & 0x80;
 }
 
@@ -283,10 +272,7 @@ static bool dinput_is_pressed(struct dinput_input *di,
 {
    const struct retro_keybind *bind = &binds[id];
 
-   if (id >= RARCH_BIND_LIST_END)
-      return false;
-
-   if (!di->blocked && dinput_keyboard_pressed(di, bind->key))
+   if (!di->blocked && (bind->key < RETROK_LAST) && dinput_keyboard_pressed(di, bind->key))
       return true;
    if (binds && binds[id].valid && input_joypad_pressed(di->joypad, joypad_info, port, binds, id))
       return true;
@@ -310,9 +296,9 @@ static int16_t dinput_pressed_analog(struct dinput_input *di,
    if (!bind_minus->valid || !bind_plus->valid)
       return 0;
 
-   if (dinput_keyboard_pressed(di, bind_minus->key))
+   if ((bind_minus->key < RETROK_LAST) && dinput_keyboard_pressed(di, bind_minus->key))
       pressed_minus = -0x7fff;
-   if (dinput_keyboard_pressed(di, bind_plus->key))
+   if ((bind_plus->key  < RETROK_LAST) && dinput_keyboard_pressed(di, bind_plus->key))
       pressed_plus  = 0x7fff;
 
    return pressed_plus + pressed_minus;
@@ -405,12 +391,25 @@ static int16_t dinput_mouse_state_screen(struct dinput_input *di, unsigned id)
 static int16_t dinput_pointer_state(struct dinput_input *di,
       unsigned idx, unsigned id, bool screen)
 {
-   bool pointer_down, inside;
-   int x, y;
-   struct video_viewport vp = {0};
-   int16_t res_x = 0, res_y = 0, res_screen_x = 0, res_screen_y = 0;
-   unsigned num  = 0;
-   struct pointer_status *check_pos = di->pointer_head.next;
+   struct video_viewport vp;
+   bool pointer_down           = false;
+   bool inside                 = false;
+   int x                       = 0;
+   int y                       = 0;
+   int16_t res_x               = 0;
+   int16_t res_y               = 0;
+   int16_t res_screen_x        = 0;
+   int16_t res_screen_y        = 0;
+   unsigned num                = 0;
+   struct pointer_status *
+      check_pos                = di->pointer_head.next;
+
+   vp.x                        = 0;
+   vp.y                        = 0;
+   vp.width                    = 0;
+   vp.height                   = 0;
+   vp.full_width               = 0;
+   vp.full_height              = 0;
 
    while (check_pos && num < idx)
    {
@@ -472,10 +471,11 @@ static int16_t dinput_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return dinput_is_pressed(di, joypad_info, binds[port], port, id);
+         if (id < RARCH_BIND_LIST_END)
+            return dinput_is_pressed(di, joypad_info, binds[port], port, id);
+         break;
       case RETRO_DEVICE_KEYBOARD:
-         return dinput_keyboard_pressed(di, id);
-
+         return (id < RETROK_LAST) && dinput_keyboard_pressed(di, id);
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
          {
@@ -594,9 +594,6 @@ static void dinput_clear_pointers(struct dinput_input *di)
    }
 }
 
-#ifdef __cplusplus
-extern "C"
-#endif
 bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lParam)
 {
    struct dinput_input *di = (struct dinput_input *)dinput;
@@ -621,7 +618,7 @@ bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lPa
 
             if (!new_pointer)
             {
-               RARCH_ERR("dinput_handle_message: pointer allocation in WM_POINTERDOWN failed.\n");
+               RARCH_ERR("[DINPUT]: dinput_handle_message: pointer allocation in WM_POINTERDOWN failed.\n");
                return false;
             }
 

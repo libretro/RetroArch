@@ -19,7 +19,7 @@
 
 #include <retro_common_api.h>
 
-#include "../gfx/video_shader_driver.h"
+#include "../gfx/video_driver.h"
 
 RETRO_BEGIN_DECLS
 

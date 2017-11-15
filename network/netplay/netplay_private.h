@@ -192,12 +192,18 @@ enum netplay_cmd_mode_reasons
    NETPLAY_CMD_MODE_REFUSED_REASON_UNPRIVILEGED,
 
    /* There are no free player slots */
-   NETPLAY_CMD_MODE_REFUSED_REASON_NO_SLOTS
+   NETPLAY_CMD_MODE_REFUSED_REASON_NO_SLOTS,
+
+   /* You're changing modes too fast */
+   NETPLAY_CMD_MODE_REFUSED_REASON_TOO_FAST
 };
 
 enum rarch_netplay_connection_mode
 {
    NETPLAY_CONNECTION_NONE = 0,
+
+   NETPLAY_CONNECTION_DELAYED_DISCONNECT, /* The connection is dead, but data
+                                             is still waiting to be forwarded */
 
    /* Initialization: */
    NETPLAY_CONNECTION_INIT, /* Waiting for header */
@@ -298,6 +304,11 @@ struct netplay_connection
    /* Mode of the connection */
    enum rarch_netplay_connection_mode mode;
 
+   /* If the mode is a DELAYED_DISCONNECT or SPECTATOR, the transmission of the
+    * mode change may have to wait for data to be forwarded. This is the frame
+    * to wait for, or 0 if no delay is active. */
+   uint32_t delay_frame;
+
    /* Player # of connected player */
    uint32_t player;
 
@@ -330,6 +341,9 @@ struct netplay
    /* Are we the server? */
    bool is_server;
 
+   /* Are we the connected? */
+   bool is_connected;
+
    /* Our nickname */
    char nick[NETPLAY_NICK_LEN];
 
@@ -353,6 +367,10 @@ struct netplay
    /* Bitmap of players playing in slave mode (should be a subset of
     * connected_players) */
    uint32_t connected_slaves;
+
+   /* Number of desync operations we're currently performing. If set, we don't
+    * attempt to stay in sync. */
+   uint32_t desync;
 
    /* Maximum player number */
    uint32_t player_max;
@@ -712,6 +730,14 @@ void netplay_free(netplay_t *netplay);
  * Disconnects an active Netplay connection due to an error
  */
 void netplay_hangup(netplay_t *netplay, struct netplay_connection *connection);
+
+/**
+ * netplay_delayed_state_change:
+ *
+ * Handle any pending state changes which are ready as of the beginning of the
+ * current frame.
+ */
+void netplay_delayed_state_change(netplay_t *netplay);
 
 /**
  * netplay_send_cur_input

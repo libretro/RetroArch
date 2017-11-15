@@ -21,6 +21,8 @@
 #include <boolean.h>
 
 #include <file/file_path.h>
+#include <string/stdstring.h>
+#include <retro_timers.h>
 
 #ifndef IS_SALAMANDER
 #include <lists/file_list.h>
@@ -37,26 +39,29 @@
 
 
 #include "tasks/tasks_internal.h"
-#include "runloop.h"
+#include "../../retroarch.h"
+#include <net/net_compat.h>
 #include <sys/socket.h>
+#include <arpa/inet.h>
 #include "fs/fs_utils.h"
 #include "fs/sd_fat_devoptab.h"
 #include "system/dynamic.h"
 #include "system/memory.h"
 #include "system/exception_handler.h"
-#include "system/exception.h"
 #include <sys/iosupport.h>
 
 #include <wiiu/os/foreground.h>
+#include <wiiu/gx2/event.h>
 #include <wiiu/procui.h>
 #include <wiiu/sysapp.h>
 #include <wiiu/ios.h>
 #include <wiiu/vpad.h>
 #include <wiiu/kpad.h>
 
+#include "wiiu/controller_patcher/ControllerPatcherWrapper.h"
+
 #include <fat.h>
 #include <iosuhax.h>
-
 #include "wiiu_dbg.h"
 #include "hbl.h"
 
@@ -76,41 +81,46 @@ static const char *elf_path_cst = WIIU_SD_PATH "retroarch/retroarch.elf";
 static void frontend_wiiu_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
+   unsigned i;
    (void)args;
-   DEBUG_LINE();
 
-   fill_pathname_basedir(g_defaults.dir.port, elf_path_cst, sizeof(g_defaults.dir.port));
-   DEBUG_LINE();
-   RARCH_LOG("port dir: [%s]\n", g_defaults.dir.port);
+   fill_pathname_basedir(g_defaults.dirs[DEFAULT_DIR_PORT], elf_path_cst, sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
 
-   fill_pathname_join(g_defaults.dir.core_assets, g_defaults.dir.port,
-         "downloads", sizeof(g_defaults.dir.core_assets));
-   fill_pathname_join(g_defaults.dir.assets, g_defaults.dir.port,
-         "media", sizeof(g_defaults.dir.assets));
-   fill_pathname_join(g_defaults.dir.core, g_defaults.dir.port,
-         "cores", sizeof(g_defaults.dir.core));
-   fill_pathname_join(g_defaults.dir.core_info, g_defaults.dir.core,
-         "info", sizeof(g_defaults.dir.core_info));
-   fill_pathname_join(g_defaults.dir.savestate, g_defaults.dir.core,
-         "savestates", sizeof(g_defaults.dir.savestate));
-   fill_pathname_join(g_defaults.dir.sram, g_defaults.dir.core,
-         "savefiles", sizeof(g_defaults.dir.sram));
-   fill_pathname_join(g_defaults.dir.system, g_defaults.dir.core,
-         "system", sizeof(g_defaults.dir.system));
-   fill_pathname_join(g_defaults.dir.playlist, g_defaults.dir.core,
-         "playlists", sizeof(g_defaults.dir.playlist));
-   fill_pathname_join(g_defaults.dir.menu_config, g_defaults.dir.port,
-         "config", sizeof(g_defaults.dir.menu_config));
-   fill_pathname_join(g_defaults.dir.remap, g_defaults.dir.port,
-         "config/remaps", sizeof(g_defaults.dir.remap));
-   fill_pathname_join(g_defaults.dir.video_filter, g_defaults.dir.port,
-         "filters", sizeof(g_defaults.dir.remap));
-   fill_pathname_join(g_defaults.dir.database, g_defaults.dir.port,
-         "database/rdb", sizeof(g_defaults.dir.database));
-   fill_pathname_join(g_defaults.dir.cursor, g_defaults.dir.port,
-         "database/cursors", sizeof(g_defaults.dir.cursor));
-   fill_pathname_join(g_defaults.path.config, g_defaults.dir.port,
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], g_defaults.dirs[DEFAULT_DIR_PORT],
+         "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], g_defaults.dirs[DEFAULT_DIR_PORT],
+         "media", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], g_defaults.dirs[DEFAULT_DIR_PORT],
+         "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], g_defaults.dirs[DEFAULT_DIR_CORE],
+         "info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE], g_defaults.dirs[DEFAULT_DIR_CORE],
+         "savestates", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SRAM], g_defaults.dirs[DEFAULT_DIR_CORE],
+         "savefiles", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM], g_defaults.dirs[DEFAULT_DIR_CORE],
+         "system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST], g_defaults.dirs[DEFAULT_DIR_CORE],
+         "playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], g_defaults.dirs[DEFAULT_DIR_PORT],
+         "config", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP], g_defaults.dirs[DEFAULT_DIR_PORT],
+         "config/remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER], g_defaults.dirs[DEFAULT_DIR_PORT],
+         "filters", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], g_defaults.dirs[DEFAULT_DIR_PORT],
+         "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CURSOR], g_defaults.dirs[DEFAULT_DIR_PORT],
+         "database/cursors", sizeof(g_defaults.dirs[DEFAULT_DIR_CURSOR]));
+   fill_pathname_join(g_defaults.path.config, g_defaults.dirs[DEFAULT_DIR_PORT],
          file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path.config));
+
+   for (i = 0; i < DEFAULT_DIR_LAST; i++)
+   {
+      const char *dir_path = g_defaults.dirs[i];
+      if (!string_is_empty(dir_path))
+         path_mkdir(dir_path);
+   }
 }
 
 static void frontend_wiiu_deinit(void *data)
@@ -142,23 +152,26 @@ enum frontend_architecture frontend_wiiu_get_architecture(void)
    return FRONTEND_ARCH_PPC;
 }
 
-static int frontend_wiiu_parse_drive_list(void *data)
+static int frontend_wiiu_parse_drive_list(void *data, bool load_content)
 {
 #ifndef IS_SALAMANDER
    file_list_t *list = (file_list_t *)data;
+   enum msg_hash_enums enum_idx = load_content ?
+      MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :
+      MSG_UNKNOWN;
 
    if (!list)
       return -1;
 
    menu_entries_append_enum(list, WIIU_SD_PATH,
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
-         MENU_SETTING_ACTION, 0, 0);
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0);
 
    menu_entries_append_enum(list, WIIU_USB_PATH,
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
-         MENU_SETTING_ACTION, 0, 0);
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0);
 #endif
    return 0;
 }
@@ -295,16 +308,17 @@ frontend_ctx_driver_t frontend_ctx_wiiu =
    NULL,                         /* attach_console */
    NULL,                         /* detach_console */
    "wiiu",
+   NULL,                         /* get_video_driver */
 };
 
-static int log_socket = -1;
-static volatile int log_lock = 0;
+static int wiiu_log_socket = -1;
+static volatile int wiiu_log_lock = 0;
 
-void log_init(const char *ipString, int port)
+void wiiu_log_init(const char *ipString, int port)
 {
-   log_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+   wiiu_log_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
-   if (log_socket < 0)
+   if (wiiu_log_socket < 0)
       return;
 
    struct sockaddr_in connect_addr;
@@ -313,37 +327,37 @@ void log_init(const char *ipString, int port)
    connect_addr.sin_port = port;
    inet_aton(ipString, &connect_addr.sin_addr);
 
-   if (connect(log_socket, (struct sockaddr *)&connect_addr, sizeof(connect_addr)) < 0)
+   if (connect(wiiu_log_socket, (struct sockaddr *)&connect_addr, sizeof(connect_addr)) < 0)
    {
-      socketclose(log_socket);
-      log_socket = -1;
+      socketclose(wiiu_log_socket);
+      wiiu_log_socket = -1;
    }
 }
 
-void log_deinit(void)
+void wiiu_log_deinit(void)
 {
-   if (log_socket >= 0)
+   if (wiiu_log_socket >= 0)
    {
-      socketclose(log_socket);
-      log_socket = -1;
+      socketclose(wiiu_log_socket);
+      wiiu_log_socket = -1;
    }
 }
-static ssize_t log_write(struct _reent *r, void *fd, const char *ptr, size_t len)
+static ssize_t wiiu_log_write(struct _reent *r, void *fd, const char *ptr, size_t len)
 {
-   if (log_socket < 0)
+   if (wiiu_log_socket < 0)
       return len;
 
-   while (log_lock)
+   while (wiiu_log_lock)
       OSSleepTicks(((248625000 / 4)) / 1000);
 
-   log_lock = 1;
+   wiiu_log_lock = 1;
 
    int ret;
 
    while (len > 0)
    {
       int block = len < 1400 ? len : 1400; // take max 1400 bytes per UDP packet
-      ret = send(log_socket, ptr, block, 0);
+      ret = send(wiiu_log_socket, ptr, block, 0);
 
       if (ret < 0)
          break;
@@ -352,48 +366,60 @@ static ssize_t log_write(struct _reent *r, void *fd, const char *ptr, size_t len
       ptr += ret;
    }
 
-   log_lock = 0;
+   wiiu_log_lock = 0;
 
    return len;
 }
 void net_print(const char *str)
 {
-   log_write(NULL, 0, str, strlen(str));
+   wiiu_log_write(NULL, 0, str, strlen(str));
 }
 
 void net_print_exp(const char *str)
 {
-   send(log_socket, str, strlen(str), 0);
+   send(wiiu_log_socket, str, strlen(str), 0);
 }
 
+#if defined(PC_DEVELOPMENT_IP_ADDRESS) && defined(PC_DEVELOPMENT_TCP_PORT)
 static devoptab_t dotab_stdout =
 {
    "stdout_net", // device name
    0,            // size of file structure
    NULL,         // device open
    NULL,         // device close
-   log_write,    // device write
+   wiiu_log_write,    // device write
    NULL,
    /* ... */
 };
+#endif
 
 void SaveCallback()
 {
    OSSavesDone_ReadyToRelease();
 }
 
+static bool swap_is_pending(void* start_time)
+{
+   uint32_t swap_count, flip_count;
+   OSTime last_flip , last_vsync;
+
+   GX2GetSwapStatus(&swap_count, &flip_count, &last_flip, &last_vsync);
+
+   return last_vsync < *(OSTime*)start_time;
+}
+
 int main(int argc, char **argv)
 {
-#if 1
    setup_os_exceptions();
-#else
-   InstallExceptionHandler();
-#endif
    ProcUIInit(&SaveCallback);
 
+#ifdef IS_SALAMANDER
    socket_lib_init();
+#else
+   network_init();
+#endif
 #if defined(PC_DEVELOPMENT_IP_ADDRESS) && defined(PC_DEVELOPMENT_TCP_PORT)
-   log_init(PC_DEVELOPMENT_IP_ADDRESS, PC_DEVELOPMENT_TCP_PORT);
+   wiiu_log_init(PC_DEVELOPMENT_IP_ADDRESS, PC_DEVELOPMENT_TCP_PORT);
    devoptab_list[STD_OUT] = &dotab_stdout;
    devoptab_list[STD_ERR] = &dotab_stdout;
 #endif
@@ -404,8 +430,9 @@ int main(int argc, char **argv)
    KPADInit();
 #endif
    verbosity_enable();
-
-   printf("starting\n");
+#ifndef IS_SALAMANDER
+   ControllerPatcherInit();
+#endif
    fflush(stdout);
    DEBUG_VAR(ARGV_PTR);
    if(ARGV_PTR && ((u32)ARGV_PTR < 0x01000000))
@@ -445,19 +472,29 @@ int main(int argc, char **argv)
    do
    {
       unsigned sleep_ms = 0;
+
+      if(video_driver_get_ptr(false))
+      {
+         OSTime start_time = OSGetSystemTime();
+         task_queue_wait(swap_is_pending, &start_time);
+      }
+      else
+         task_queue_wait(NULL, NULL);
+
       int ret = runloop_iterate(&sleep_ms);
 
       if (ret == 1 && sleep_ms > 0)
          retro_sleep(sleep_ms);
 
-      task_queue_ctl(TASK_QUEUE_CTL_WAIT, NULL);
 
       if (ret == -1)
          break;
 
    }
    while (1);
-
+#ifndef IS_SALAMANDER
+   ControllerPatcherDeInit();
+#endif
    main_exit(NULL);
 #endif
 #endif
@@ -466,7 +503,7 @@ int main(int argc, char **argv)
    ProcUIShutdown();
 
 #if defined(PC_DEVELOPMENT_IP_ADDRESS) && defined(PC_DEVELOPMENT_TCP_PORT)
-   log_deinit();
+   wiiu_log_deinit();
 #endif
 
    /* returning non 0 here can prevent loading a different rpx/elf in the HBL environment */
@@ -608,7 +645,7 @@ void _start(int argc, char **argv)
    __init();
    fsdev_init();
 
-   int ret = main(argc, argv);
+   main(argc, argv);
 
    fsdev_exit();
 //   __fini();

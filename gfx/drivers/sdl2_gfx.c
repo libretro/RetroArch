@@ -40,9 +40,7 @@
 
 #include "../../configuration.h"
 #include "../../retroarch.h"
-#include "../../performance_counters.h"
 #include "../../verbosity.h"
-#include "../video_context_driver.h"
 
 typedef struct sdl2_tex
 {
@@ -103,7 +101,7 @@ static void sdl2_init_font(sdl2_video_t *vid, const char *font_path,
    const struct font_atlas *atlas = NULL;
    settings_t *settings = config_get_ptr();
 
-   if (!settings->video.font_enable)
+   if (!settings->bools.video_font_enable)
       return;
 
    if (!font_renderer_create_default((const void**)&vid->font_driver, &vid->font_data,
@@ -113,9 +111,9 @@ static void sdl2_init_font(sdl2_video_t *vid, const char *font_path,
       return;
    }
 
-   r = settings->video.msg_color_r * 255;
-   g = settings->video.msg_color_g * 255;
-   b = settings->video.msg_color_b * 255;
+   r = settings->floats.video_msg_color_r * 255;
+   g = settings->floats.video_msg_color_g * 255;
+   b = settings->floats.video_msg_color_b * 255;
 
    r = (r < 0) ? 0 : (r > 255 ? 255 : r);
    g = (g < 0) ? 0 : (g > 255 ? 255 : g);
@@ -169,8 +167,8 @@ static void sdl2_render_msg(sdl2_video_t *vid, const char *msg)
    if (!vid->font_data)
       return;
 
-   x       = settings->video.msg_pos_x * width;
-   y       = (1.0f - settings->video.msg_pos_y) * height;
+   x       = settings->floats.video_msg_pos_x * width;
+   y       = (1.0f - settings->floats.video_msg_pos_y) * height;
    delta_x = 0;
    delta_y = 0;
 
@@ -281,29 +279,26 @@ static void sdl_refresh_viewport(sdl2_video_t *vid)
 
    SDL_GetWindowSize(vid->window, &win_w, &win_h);
 
-   vid->vp.x = 0;
-   vid->vp.y = 0;
-   vid->vp.width  = win_w;
-   vid->vp.height = win_h;
+   vid->vp.x           = 0;
+   vid->vp.y           = 0;
+   vid->vp.width       = win_w;
+   vid->vp.height      = win_h;
    vid->vp.full_width  = win_w;
    vid->vp.full_height = win_h;
 
-   if (settings->video.scale_integer)
+   if (settings->bools.video_scale_integer)
       video_viewport_get_scaled_integer(&vid->vp,
             win_w, win_h, video_driver_get_aspect_ratio(),
             vid->video.force_aspect);
-   else if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+   else if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
       const struct video_viewport *custom = 
          (const struct video_viewport*)video_viewport_get_custom();
 
-      if (custom)
-      {
-         vid->vp.x = custom->x;
-         vid->vp.y = custom->y;
-         vid->vp.width  = custom->width;
-         vid->vp.height = custom->height;
-      }
+      vid->vp.x = custom->x;
+      vid->vp.y = custom->y;
+      vid->vp.width  = custom->width;
+      vid->vp.height = custom->height;
    }
    else if (vid->video.force_aspect)
    {
@@ -427,7 +422,7 @@ static void *sdl2_gfx_init(const video_info_t *video,
 
 
    if (video->fullscreen)
-      flags = settings->video.windowed_fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : SDL_WINDOW_FULLSCREEN;
+      flags = settings->bools.video_windowed_fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : SDL_WINDOW_FULLSCREEN;
    else
       flags = SDL_WINDOW_RESIZABLE;
 
@@ -451,7 +446,7 @@ static void *sdl2_gfx_init(const video_info_t *video,
       SDL_ShowCursor(SDL_DISABLE);
 
    sdl2_init_renderer(vid);
-   sdl2_init_font(vid, settings->path.font, settings->video.font_size);
+   sdl2_init_font(vid, settings->paths.path_font, settings->floats.video_font_size);
 
    sdl2_gfx_set_handles(vid);
 
@@ -503,17 +498,9 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
 
    if (frame && video_info->libretro_running)
    {
-      static struct retro_perf_counter sdl_copy_frame = {0};
-
       SDL_RenderClear(vid->renderer);
       sdl_refresh_input_size(vid, false, vid->video.rgb32, width, height, pitch);
-
-      performance_counter_init(sdl_copy_frame, "sdl_copy_frame");
-      performance_counter_start_plus(video_info->is_perfcnt_enable, sdl_copy_frame);
-
       SDL_UpdateTexture(vid->frame.tex, NULL, frame, pitch);
-
-      performance_counter_stop_plus(video_info->is_perfcnt_enable, sdl_copy_frame);
    }
 
    SDL_RenderCopyEx(vid->renderer, vid->frame.tex, NULL, NULL, vid->rotation, NULL, SDL_FLIP_NONE);
@@ -707,7 +694,9 @@ static void sdl2_poke_texture_enable(void *data, bool enable, bool full_screen)
    vid->menu.active = enable;
 }
 
-static void sdl2_poke_set_osd_msg(void *data, const char *msg,
+static void sdl2_poke_set_osd_msg(void *data, 
+      video_frame_info_t *video_info,
+      const char *msg,
       const void *params, void *font)
 {
    sdl2_video_t *vid = (sdl2_video_t*)data;
@@ -729,6 +718,8 @@ static void sdl2_grab_mouse_toggle(void *data)
 #endif
 
 static video_poke_interface_t sdl2_video_poke_interface = {
+   NULL,       /* set_coords */
+   NULL,       /* set_mvp */
    NULL,
    NULL,
    NULL,

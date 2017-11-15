@@ -94,13 +94,11 @@ static OSStatus audio_write_cb(void *userdata,
    (void)bus_number;
    (void)number_frames;
 
-   if (!io_data)
-      return noErr;
-   if (io_data->mNumberBuffers != 1)
+   if (!io_data || io_data->mNumberBuffers != 1)
       return noErr;
 
    write_avail = io_data->mBuffers[0].mDataByteSize;
-   outbuf = io_data->mBuffers[0].mData;
+   outbuf      = io_data->mBuffers[0].mData;
 
    slock_lock(dev->lock);
 
@@ -261,7 +259,7 @@ static void *coreaudio_init(const char *device,
       choose_output_device(dev, device);
 #endif
 
-   dev->dev_alive = true;
+   dev->dev_alive                = true;
 
    /* Set audio format */
    stream_desc.mSampleRate       = rate;
@@ -317,11 +315,11 @@ static void *coreaudio_init(const char *device,
    if (AudioUnitInitialize(dev->dev) != noErr)
       goto error;
 
-   fifo_size = (latency * (*new_rate)) / 1000;
-   fifo_size *= 2 * sizeof(float);
-   dev->buffer_size = fifo_size;
+   fifo_size         = (latency * (*new_rate)) / 1000;
+   fifo_size        *= 2 * sizeof(float);
+   dev->buffer_size  = fifo_size;
 
-   dev->buffer = fifo_new(fifo_size);
+   dev->buffer       = fifo_new(fifo_size);
    if (!dev->buffer)
       goto error;
 
@@ -339,8 +337,7 @@ error:
    return NULL;
 }
 
-static ssize_t coreaudio_write(void *data, const void *buf_, size_t size,
-      bool is_perfcnt_enable)
+static ssize_t coreaudio_write(void *data, const void *buf_, size_t size)
 {
    coreaudio_t *dev   = (coreaudio_t*)data;
    const uint8_t *buf = (const uint8_t*)buf_;

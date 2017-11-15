@@ -39,23 +39,16 @@ static int action_select_default(const char *path, const char *label, unsigned t
    menu_file_list_cbs_t *cbs  = NULL;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
-   entry.path[0]       = '\0';
-   entry.label[0]      = '\0';
-   entry.sublabel[0]   = '\0';
-   entry.value[0]      = '\0';
-   entry.rich_label[0] = '\0';
-   entry.enum_idx      = MSG_UNKNOWN;
-   entry.entry_idx     = 0;
-   entry.idx           = 0;
-   entry.type          = 0;
-   entry.spacing       = 0;
-
+   menu_entry_init(&entry);
    menu_entry_get(&entry, 0, idx, NULL, false);
 
-   cbs = menu_entries_get_actiondata_at_offset(selection_buf, idx);
+   cbs = selection_buf ? (menu_file_list_cbs_t*)file_list_get_actiondata_at_offset(selection_buf, idx) : NULL;
 
    if (!cbs)
+   {
+      menu_entry_free(&entry);
       return -1;
+   }
     
    if (cbs->setting)
    {
@@ -96,7 +89,9 @@ static int action_select_default(const char *path, const char *label, unsigned t
    if (action != MENU_ACTION_NOOP)
        ret = menu_entry_action(&entry, (unsigned)idx, action);
 
-   task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
+   menu_entry_free(&entry);
+
+   task_queue_check();
     
    return ret;
 }
@@ -105,12 +100,6 @@ static int action_select_path_use_directory(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    return action_ok_path_use_directory(path, label, type, idx, 0 /* unused */);
-}
-
-static int action_select_directory(const char *path, const char *label, unsigned type,
-      size_t idx)
-{
-   return action_ok_directory_push(path, label, type, idx, 0 /* ignored */);
 }
 
 static int action_select_driver_setting(const char *path, const char *label, unsigned type,
@@ -151,6 +140,12 @@ static int action_select_input_desc(const char *path, const char *label, unsigne
    return action_right_input_desc(type, label, true);
 }
 
+static int action_select_input_desc_kbd(const char *path, const char *label, unsigned type,
+   size_t idx)
+{
+   return action_right_input_desc_kbd(type, label, true);
+}
+
 static int menu_cbs_init_bind_select_compare_type(
       menu_file_list_cbs_t *cbs, unsigned type)
 {
@@ -176,13 +171,17 @@ static int menu_cbs_init_bind_select_compare_type(
    {
       BIND_ACTION_SELECT(cbs, action_select_input_desc);
    }
+#ifdef HAVE_KEYMAPPER
+   else if (type >= MENU_SETTINGS_INPUT_DESC_KBD_BEGIN
+         && type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
+   {
+      BIND_ACTION_SELECT(cbs, action_select_input_desc_kbd);
+   }
+#endif
    else
    {
       switch (type)
       {
-         case FILE_TYPE_DIRECTORY:
-            BIND_ACTION_SELECT(cbs, action_select_directory);
-            break;
          case FILE_TYPE_USE_DIRECTORY:
             BIND_ACTION_SELECT(cbs, action_select_path_use_directory);
             break;

@@ -33,6 +33,7 @@
 #include <formats/image.h>
 #include <formats/rpng.h>
 #include <streams/trans_stream.h>
+#include <string/stdstring.h>
 
 #include "rpng_internal.h"
 
@@ -91,28 +92,27 @@ struct rpng_process
    bool inflate_initialized;
    bool adam7_pass_initialized;
    bool pass_initialized;
-   uint32_t *data;
-   uint32_t *palette;
-   struct png_ihdr ihdr;
    uint8_t *prev_scanline;
    uint8_t *decoded_scanline;
    uint8_t *inflate_buf;
+   struct png_ihdr ihdr;
    size_t restore_buf_size;
    size_t adam7_restore_buf_size;
    size_t data_restore_buf_size;
    size_t inflate_buf_size;
+   size_t avail_in;
+   size_t avail_out;
+   size_t total_out;
+   size_t pass_size;
    unsigned bpp;
    unsigned pitch;
    unsigned h;
-   struct
-   {
-      unsigned width;
-      unsigned height;
-      size_t   size;
-      unsigned pos;
-   } pass;
+   unsigned pass_width;
+   unsigned pass_height;
+   unsigned pass_pos;
+   uint32_t *data;
+   uint32_t *palette;
    void *stream;
-   size_t avail_in, avail_out, total_out;
    const struct trans_stream_backend *stream_backend;
 };
 
@@ -152,7 +152,7 @@ static enum png_chunk_type png_chunk_type(const struct png_chunk *chunk)
 
    for (i = 0; i < ARRAY_SIZE(chunk_map); i++)
    {
-      if (memcmp(chunk->type, chunk_map[i].id, 4) == 0)
+      if (string_is_equal_fast(chunk->type, chunk_map[i].id, 4))
          return chunk_map[i].type;
    }
 
@@ -517,29 +517,29 @@ static int png_reverse_filter_init(const struct png_ihdr *ihdr,
 
    if (!pngp->adam7_pass_initialized && ihdr->interlace)
    {
-      if (ihdr->width <= passes[pngp->pass.pos].x ||
-            ihdr->height <= passes[pngp->pass.pos].y) /* Empty pass */
+      if (ihdr->width <= passes[pngp->pass_pos].x ||
+            ihdr->height <= passes[pngp->pass_pos].y) /* Empty pass */
          return 1;
 
-      pngp->pass.width  = (ihdr->width - 
-            passes[pngp->pass.pos].x + passes[pngp->pass.pos].stride_x - 1) / passes[pngp->pass.pos].stride_x;
-      pngp->pass.height = (ihdr->height - passes[pngp->pass.pos].y + 
-            passes[pngp->pass.pos].stride_y - 1) / passes[pngp->pass.pos].stride_y;
+      pngp->pass_width  = (ihdr->width - 
+            passes[pngp->pass_pos].x + passes[pngp->pass_pos].stride_x - 1) / passes[pngp->pass_pos].stride_x;
+      pngp->pass_height = (ihdr->height - passes[pngp->pass_pos].y + 
+            passes[pngp->pass_pos].stride_y - 1) / passes[pngp->pass_pos].stride_y;
 
       pngp->data = (uint32_t*)malloc(
-            pngp->pass.width * pngp->pass.height * sizeof(uint32_t));
+            pngp->pass_width * pngp->pass_height * sizeof(uint32_t));
 
       if (!pngp->data)
          return -1;
 
       pngp->ihdr        = *ihdr;
-      pngp->ihdr.width  = pngp->pass.width;
-      pngp->ihdr.height = pngp->pass.height;
+      pngp->ihdr.width  = pngp->pass_width;
+      pngp->ihdr.height = pngp->pass_height;
 
-      png_pass_geom(&pngp->ihdr, pngp->pass.width,
-            pngp->pass.height, NULL, NULL, &pngp->pass.size);
+      png_pass_geom(&pngp->ihdr, pngp->pass_width,
+            pngp->pass_height, NULL, NULL, &pngp->pass_size);
 
-      if (pngp->pass.size > pngp->total_out)
+      if (pngp->pass_size > pngp->total_out)
       {
          free(pngp->data);
          return -1;
@@ -560,8 +560,8 @@ static int png_reverse_filter_init(const struct png_ihdr *ihdr,
 
    pngp->restore_buf_size      = 0;
    pngp->data_restore_buf_size = 0;
-   pngp->prev_scanline    = (uint8_t*)calloc(1, pngp->pitch);
-   pngp->decoded_scanline = (uint8_t*)calloc(1, pngp->pitch);
+   pngp->prev_scanline         = (uint8_t*)calloc(1, pngp->pitch);
+   pngp->decoded_scanline      = (uint8_t*)calloc(1, pngp->pitch);
 
    if (!pngp->prev_scanline || !pngp->decoded_scanline)
       goto error;
@@ -685,7 +685,7 @@ static int png_reverse_filter_adam7_iterate(uint32_t **data_,
       struct rpng_process *pngp)
 {
    int ret = 0;
-   bool to_next = pngp->pass.pos < ARRAY_SIZE(passes);
+   bool to_next = pngp->pass_pos < ARRAY_SIZE(passes);
    uint32_t *data = *data_;
 
    if (!to_next)
@@ -709,19 +709,19 @@ static int png_reverse_filter_adam7_iterate(uint32_t **data_,
    if (ret == IMAGE_PROCESS_ERROR || ret == IMAGE_PROCESS_ERROR_END)
       return IMAGE_PROCESS_ERROR;
 
-   pngp->inflate_buf            += pngp->pass.size;
-   pngp->adam7_restore_buf_size += pngp->pass.size;
+   pngp->inflate_buf            += pngp->pass_size;
+   pngp->adam7_restore_buf_size += pngp->pass_size;
 
-   pngp->total_out -= pngp->pass.size;
+   pngp->total_out              -= pngp->pass_size;
 
    png_reverse_filter_adam7_deinterlace_pass(data,
-         ihdr, pngp->data, pngp->pass.width, pngp->pass.height, &passes[pngp->pass.pos]);
+         ihdr, pngp->data, pngp->pass_width, pngp->pass_height, &passes[pngp->pass_pos]);
 
    free(pngp->data);
 
-   pngp->pass.width  = 0;
-   pngp->pass.height = 0;
-   pngp->pass.size   = 0;
+   pngp->pass_width  = 0;
+   pngp->pass_height = 0;
+   pngp->pass_size   = 0;
    pngp->adam7_pass_initialized = false;
 
    return IMAGE_PROCESS_NEXT;
@@ -740,7 +740,7 @@ static int png_reverse_filter_adam7(uint32_t **data_,
       case IMAGE_PROCESS_END:
          break;
       case IMAGE_PROCESS_NEXT:
-         pngp->pass.pos++;
+         pngp->pass_pos++;
          return 0;
       case IMAGE_PROCESS_ERROR:
          if (pngp->data)
@@ -750,8 +750,8 @@ static int png_reverse_filter_adam7(uint32_t **data_,
          return -1;
    }
 
-   pngp->inflate_buf -= pngp->adam7_restore_buf_size;
-   pngp->adam7_restore_buf_size = 0;
+   pngp->inflate_buf            -= pngp->adam7_restore_buf_size;
+   pngp->adam7_restore_buf_size  = 0;
    return ret;
 }
 
@@ -867,11 +867,44 @@ bool png_realloc_idat(const struct png_chunk *chunk, struct idat_buffer *buf)
 static struct rpng_process *rpng_process_init(rpng_t *rpng, unsigned *width, unsigned *height)
 {
    uint8_t *inflate_buf         = NULL;
-   struct rpng_process *process = (struct rpng_process*)calloc(1, sizeof(*process));
+   struct rpng_process *process = (struct rpng_process*)malloc(sizeof(*process));
 
    if (!process)
       return NULL;
 
+   process->inflate_initialized    = false;
+   process->adam7_pass_initialized = false;
+   process->pass_initialized       = false;
+   process->prev_scanline          = NULL;
+   process->decoded_scanline       = NULL;
+   process->inflate_buf            = NULL;
+
+   process->ihdr.width             = 0;
+   process->ihdr.height            = 0;
+   process->ihdr.depth             = 0;
+   process->ihdr.color_type        = 0;
+   process->ihdr.compression       = 0;
+   process->ihdr.filter            = 0;
+   process->ihdr.interlace         = 0;
+
+   process->restore_buf_size       = 0;
+   process->restore_buf_size       = 0;
+   process->adam7_restore_buf_size = 0;
+   process->data_restore_buf_size  = 0;
+   process->inflate_buf_size       = 0;
+   process->avail_in       = 0;
+   process->avail_out      = 0;
+   process->total_out      = 0;
+   process->pass_size      = 0;
+   process->bpp            = 0;
+   process->pitch          = 0;
+   process->h              = 0;
+   process->pass_width     = 0;
+   process->pass_height    = 0;
+   process->pass_pos       = 0;
+   process->data           = NULL;
+   process->palette        = NULL;
+   process->stream         = NULL;
    process->stream_backend = trans_stream_get_zlib_inflate_backend();
 
    png_pass_geom(&rpng->ihdr, rpng->ihdr.width,
@@ -1153,7 +1186,7 @@ bool rpng_start(rpng_t *rpng)
    for (i = 0; i < 8; i++)
       header[i] = rpng->buff_data[i];
 
-   if (memcmp(header, png_magic, sizeof(png_magic)) != 0)
+   if (string_is_not_equal_fast(header, png_magic, sizeof(png_magic)))
       return false;
 
    rpng->buff_data += 8;
