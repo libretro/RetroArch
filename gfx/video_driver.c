@@ -2473,41 +2473,15 @@ static void video_shader_driver_use_null(void *data,
    (void)set_active;
 }
 
-#if 0
 static bool video_driver_cb_set_coords(void *handle_data,
       void *shader_data, const struct video_coords *coords)
 {
-   current_shader->set_coords(handle_data, shader_data,
-         coords);
+   video_shader_ctx_coords_t ctx_coords;
+   ctx_coords.handle_data = handle_data;
+   ctx_coords.data        = coords;
+
+   video_driver_set_coords(&ctx_coords);
    return true;
-}
-#endif
-
-static bool video_driver_set_coords_fallback(void *handle_data,
-      void *shader_data, const struct video_coords *coords)
-{
-#ifdef HAVE_OPENGL
-#ifndef NO_GL_FF_VERTEX
-   const char *video_ident = (current_video) ? current_video->ident : NULL;
-   if (string_is_equal_fast(video_ident, "gl", 2))
-   {
-      /* Fall back to fixed function-style if needed and possible. */
-      glClientActiveTexture(GL_TEXTURE1);
-      glTexCoordPointer(2, GL_FLOAT, 0, coords->lut_tex_coord);
-      glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-      glClientActiveTexture(GL_TEXTURE0);
-      glVertexPointer(2, GL_FLOAT, 0, coords->vertex);
-      glEnableClientState(GL_VERTEX_ARRAY);
-      glColorPointer(4, GL_FLOAT, 0, coords->color);
-      glEnableClientState(GL_COLOR_ARRAY);
-      glTexCoordPointer(2, GL_FLOAT, 0, coords->tex_coord);
-      glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-      return true;
-   }
-#endif
-#endif
-
-   return false;
 }
 
 void video_driver_build_info(video_frame_info_t *video_info)
@@ -3236,30 +3210,16 @@ static enum gfx_wrap_type video_shader_driver_wrap_type_null(
    return RARCH_WRAP_BORDER;
 }
 
-static bool video_shader_driver_set_mvp_null(void *data,
+static bool video_driver_cb_set_mvp(void *data,
       void *shader_data, const void *mat_data)
 {
-   return false;
-}
+   video_shader_ctx_mvp_t mvp;
+   mvp.data   = data;
+   mvp.matrix = mat_data;
 
-#ifdef HAVE_OPENGL
-#ifndef NO_GL_FF_MATRIX
-static bool video_shader_driver_set_mvp_null_gl(void *data,
-      void *shader_data, const void *mat_data)
-{
-   math_matrix_4x4 ident;
-   const math_matrix_4x4 *mat = (const math_matrix_4x4*)mat_data;
-
-   /* Fall back to fixed function-style if needed and possible. */
-   glMatrixMode(GL_PROJECTION);
-   glLoadMatrixf(mat->data);
-   glMatrixMode(GL_MODELVIEW);
-   matrix_4x4_identity(ident);
-   glLoadMatrixf(ident.data);
+   video_driver_set_mvp(&mvp);
    return true;
 }
-#endif
-#endif
 
 static struct video_shader *video_shader_driver_get_current_shader_null(void *data)
 {
@@ -3318,23 +3278,11 @@ static void video_shader_driver_reset_to_defaults(void)
       video_driver_cb_shader_set_mvp    = current_shader->set_mvp;
    else
    {
-#ifdef HAVE_OPENGL
-#ifndef NO_GL_FF_MATRIX
-      if (string_is_equal_fast(video_driver_get_ident(), "gl", 2))
-      {
-         current_shader->set_mvp           = video_shader_driver_set_mvp_null_gl;
-         video_driver_cb_shader_set_mvp    = video_shader_driver_set_mvp_null_gl;
-      }
-      else
-#endif
-#endif
-      {
-         current_shader->set_mvp           = video_shader_driver_set_mvp_null;
-         video_driver_cb_shader_set_mvp    = video_shader_driver_set_mvp_null;
-      }
+      current_shader->set_mvp           = video_driver_cb_set_mvp;
+      video_driver_cb_shader_set_mvp    = video_driver_cb_set_mvp;
    }
    if (!current_shader->set_coords)
-      current_shader->set_coords        = video_driver_set_coords_fallback;
+      current_shader->set_coords        = video_driver_cb_set_coords;
 
    if (current_shader->use)
       video_driver_cb_shader_use        = current_shader->use;
@@ -3447,8 +3395,13 @@ bool video_shader_driver_wrap_type(video_shader_ctx_wrap_t *wrap)
 
 void video_driver_set_coords(video_shader_ctx_coords_t *coords)
 {
-   if (!current_shader || !current_shader->set_coords || !current_shader->set_coords(coords->handle_data, shader_data, (const struct video_coords*)coords->data)) 
-      video_driver_set_coords_fallback(coords->handle_data, shader_data, (const struct video_coords*)coords->data);
+   if (current_shader && current_shader->set_coords)
+      current_shader->set_coords(coords->handle_data, shader_data, (const struct video_coords*)coords->data);
+   else
+   {
+      if (video_driver_poke && video_driver_poke->set_coords)
+         video_driver_poke->set_coords(coords->handle_data, shader_data, (const struct video_coords*)coords->data);
+   }
 }
 
 void video_driver_set_mvp(video_shader_ctx_mvp_t *mvp)

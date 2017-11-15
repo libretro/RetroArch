@@ -299,7 +299,7 @@ typedef struct video_shader_ctx_info
 typedef struct video_shader_ctx_mvp
 {
    void *data;
-   const math_matrix_4x4 *matrix;
+   const void *matrix;
 } video_shader_ctx_mvp_t;
 
 typedef struct video_shader_ctx_filter
