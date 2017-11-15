@@ -253,14 +253,18 @@ static void gl_cg_reset_attrib(void *data)
    cg->attribs_index = 0;
 }
 
-static bool gl_cg_set_mvp(void *data, void *shader_data, const math_matrix_4x4 *mat)
+static bool gl_cg_set_mvp(void *data, void *shader_data,
+      const void *mat_data)
 {
    cg_shader_data_t *cg = (cg_shader_data_t*)shader_data;
-   if (!cg || !cg->prg[cg->active_idx].mvp)
-      return false;
+   if (cg && cg->prg[cg->active_idx].mvp)
+   {
+      const math_matrix_4x4 *mat = (const math_matrix_4x4*)mat_data;
+      cgGLSetMatrixParameterfc(cg->prg[cg->active_idx].mvp, mat->data);
+      return true;
+   }
 
-   cgGLSetMatrixParameterfc(cg->prg[cg->active_idx].mvp, mat->data);
-   return true;
+   return false;
 }
 
 static bool gl_cg_set_coords(void *handle_data, void *shader_data, const struct video_coords *coords)

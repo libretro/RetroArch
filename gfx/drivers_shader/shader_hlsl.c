@@ -497,11 +497,12 @@ static void hlsl_shader_scale(void *data, unsigned idx, struct gfx_fbo_scale *sc
       scale->valid = false;
 }
 
-static bool hlsl_set_mvp(void *data, void *shader_data, const math_matrix_4x4 *mat)
+static bool hlsl_set_mvp(void *data, void *shader_data, const void *mat_data)
 {
    d3d_video_t *d3d                = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr           = (LPDIRECT3DDEVICE)d3d->dev;
    hlsl_shader_data_t *hlsl_data   = (hlsl_shader_data_t*)shader_data;
+   const math_matrix_4x4 *mat      = (const math_matrix_4x4*)mat_data;
 
    if(hlsl_data && hlsl_data->prg[hlsl_data->active_idx].mvp)
    {

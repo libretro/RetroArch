@@ -127,7 +127,7 @@ typedef struct video_pixel_scaler
 static void (*video_driver_cb_shader_use)(void *data,
       void *shader_data, unsigned index, bool set_active);
 static bool (*video_driver_cb_shader_set_mvp)(void *data,
-      void *shader_data, const math_matrix_4x4 *mat);
+      void *shader_data, const void *mat_data);
 bool (*video_driver_cb_has_focus)(void);
 
 /* Opaque handles to currently running window.
@@ -3237,7 +3237,7 @@ static enum gfx_wrap_type video_shader_driver_wrap_type_null(
 }
 
 static bool video_shader_driver_set_mvp_null(void *data,
-      void *shader_data, const math_matrix_4x4 *mat)
+      void *shader_data, const void *mat_data)
 {
    return false;
 }
@@ -3245,9 +3245,10 @@ static bool video_shader_driver_set_mvp_null(void *data,
 #ifdef HAVE_OPENGL
 #ifndef NO_GL_FF_MATRIX
 static bool video_shader_driver_set_mvp_null_gl(void *data,
-      void *shader_data, const math_matrix_4x4 *mat)
+      void *shader_data, const void *mat_data)
 {
    math_matrix_4x4 ident;
+   const math_matrix_4x4 *mat = (const math_matrix_4x4*)mat_data;
 
    /* Fall back to fixed function-style if needed and possible. */
    glMatrixMode(GL_PROJECTION);

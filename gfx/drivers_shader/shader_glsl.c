@@ -1434,10 +1434,10 @@ static void gl_glsl_set_params(void *data, void *shader_data,
    }
 }
 
-static bool gl_glsl_set_mvp(void *data, void *shader_data, const math_matrix_4x4 *mat)
+static bool gl_glsl_set_mvp(void *data, void *shader_data, const void *mat_data)
 {
    int loc;
-   glsl_shader_data_t *glsl = (glsl_shader_data_t*)shader_data;
+   glsl_shader_data_t *glsl   = (glsl_shader_data_t*)shader_data;
 
    (void)data;
 
@@ -1447,6 +1447,8 @@ static bool gl_glsl_set_mvp(void *data, void *shader_data, const math_matrix_4x4
    loc = glsl->uniforms[glsl->active_idx].mvp;
    if (loc >= 0)
    {
+      const math_matrix_4x4 *mat = (const math_matrix_4x4*)mat_data;
+
       if (  (glsl->current_idx != glsl->active_idx) || 
             (mat->data  != glsl->current_mat_data_pointer[glsl->active_idx]) || 
             (*mat->data != glsl->current_mat_data[glsl->active_idx]))

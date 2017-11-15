@@ -234,7 +234,7 @@ typedef struct shader_backend
    bool (*set_coords)(void *handle_data,
          void *shader_data, const struct video_coords *coords);
    bool (*set_mvp)(void *data, void *shader_data,
-         const math_matrix_4x4 *mat);
+         const void *mat_data);
    unsigned (*get_prev_textures)(void *data);
    bool (*get_feedback_pass)(void *data, unsigned *pass);
    bool (*mipmap_input)(void *data, unsigned index);
@@ -471,7 +471,7 @@ typedef struct video_frame_info
          void *shader_data, const struct video_coords *coords);
 #endif
    bool (*cb_shader_set_mvp)(void *data, void *shader_data,
-         const math_matrix_4x4 *mat);
+         const void *mat_data);
 
    void *context_data;
    void *shader_data;
