@@ -2198,6 +2198,8 @@ MSG_HASH(MSG_SKIPPING_SRAM_LOAD,
       "Пропуск загрузки SRAM.")
 MSG_HASH(MSG_SLOW_MOTION,
       "Замедление.")
+MSG_HASH(MSG_FAST_FORWARD,
+      "Перемотка вперед.")
 MSG_HASH(MSG_SLOW_MOTION_REWIND,
       "Замедленная перемотка.")
 MSG_HASH(MSG_SRAM_WILL_NOT_BE_SAVED,

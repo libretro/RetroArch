@@ -1,4 +1,4 @@
-﻿/*  RetroArch - A frontend for libretro.
+/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -982,6 +982,8 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
          return "Pomijanie wczytywania SRAM.";
       case MSG_SLOW_MOTION:
          return "Spowolnione tempo.";
+      case MSG_FAST_FORWARD:
+         return "Szybko do przodu.";
       case MSG_SLOW_MOTION_REWIND:
          return "Przewijanie w spowolnionym tempie.";
       case MSG_SRAM_WILL_NOT_BE_SAVED:
