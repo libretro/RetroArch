@@ -803,6 +803,9 @@ typedef struct video_driver
 
 typedef struct d3d_renderchain_driver
 {
+   void (*set_mvp)(void *chain_data, 
+         void *data, unsigned vp_width,
+         unsigned vp_height, unsigned rotation);
    void (*chain_free)(void *data);
    void *(*chain_new)(void);
    bool (*reinit)(void *data, const void *info_data);
@@ -1368,7 +1371,7 @@ extern const shader_backend_t shader_null_backend;
 extern d3d_renderchain_driver_t d3d8_renderchain;
 extern d3d_renderchain_driver_t cg_d3d9_renderchain;
 extern d3d_renderchain_driver_t hlsl_d3d9_renderchain;
-extern d3d_renderchain_driver_t null_renderchain;
+extern d3d_renderchain_driver_t null_d3d_renderchain;
 
 extern gl_renderchain_driver_t gl2_renderchain;
 

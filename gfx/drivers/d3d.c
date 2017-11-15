@@ -1064,11 +1064,20 @@ static bool d3d_init_internal(d3d_video_t *d3d,
     * later. */
    type =
       video_shader_parse_type(settings->paths.path_shader, RARCH_SHADER_NONE);
-   if (settings->bools.video_shader_enable && type == RARCH_SHADER_CG)
+
+   if (settings->bools.video_shader_enable)
    {
-      if (!string_is_empty(d3d->shader_path))
-         free(d3d->shader_path);
-      d3d->shader_path = strdup(settings->paths.path_shader);
+      switch (type)
+      {
+         case RARCH_SHADER_CG:
+            if (!string_is_empty(d3d->shader_path))
+               free(d3d->shader_path);
+            if (!string_is_empty(settings->paths.path_shader))
+               d3d->shader_path = strdup(settings->paths.path_shader);
+            break;
+         default:
+            break;
+      }
    }
 
    if (!d3d_process_shader(d3d))
@@ -1710,9 +1719,21 @@ static void d3d_unload_texture(void *data, uintptr_t id)
    d3d_texture_free(texid);
 }
 
+static void d3d_set_mvp(void *data,
+      void *shader_data,
+      const void *mat_data)
+{
+   d3d_video_t *d3d = (d3d_video_t*)data;
+   if (d3d && d3d->renderchain_driver->set_mvp)
+      d3d->renderchain_driver->set_mvp(
+            d3d->renderchain_data,
+            data,
+            640, 480, 0);
+}
+
 static const video_poke_interface_t d3d_poke_interface = {
    NULL,                            /* set_coords */
-   NULL,                            /* set_mvp    */
+   d3d_set_mvp,
    d3d_load_texture,
    d3d_unload_texture,
    NULL,

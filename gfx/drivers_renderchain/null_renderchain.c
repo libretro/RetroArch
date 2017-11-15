@@ -118,7 +118,8 @@ static void null_renderchain_convert_geometry(
    (void)final_viewport_data;
 }
 
-d3d_renderchain_driver_t null_renderchain = {
+d3d_renderchain_driver_t null_d3d_renderchain = {
+   NULL,
    null_renderchain_free,
    null_renderchain_new,
    NULL,
