@@ -3453,8 +3453,16 @@ void video_driver_set_coords(video_shader_ctx_coords_t *coords)
 
 void video_driver_set_mvp(video_shader_ctx_mvp_t *mvp)
 {
-   if (mvp->matrix && current_shader && current_shader->set_mvp)
+   if (!mvp || !mvp->matrix)
+      return;
+
+   if (current_shader && current_shader->set_mvp)
       current_shader->set_mvp(mvp->data, shader_data, mvp->matrix);
+   else
+   {
+      if (video_driver_poke && video_driver_poke->set_mvp)
+         video_driver_poke->set_mvp(mvp->data, shader_data, mvp->matrix);
+   }
 }
 
 bool renderchain_d3d_init_first(

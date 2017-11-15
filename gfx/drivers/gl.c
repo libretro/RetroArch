@@ -2528,9 +2528,27 @@ static void gl_unload_texture(void *data, uintptr_t id)
    glDeleteTextures(1, &glid);
 }
 
+static void gl_set_coords(void *handle_data, void *shader_data,
+      const struct video_coords *coords)
+{
+   gl_t *gl = (gl_t*)handle_data;
+   if (gl && gl->renderchain_driver->set_coords)
+      gl->renderchain_driver->set_coords(handle_data,
+            shader_data, coords);
+}
+
+static void gl_set_mvp(void *data, void *shader_data,
+      const void *mat_data)
+{
+   gl_t *gl = (gl_t*)data;
+   if (gl && gl->renderchain_driver->set_mvp)
+      gl->renderchain_driver->set_mvp(data,
+            shader_data, mat_data);
+}
+
 static const video_poke_interface_t gl_poke_interface = {
-   NULL,                         /* set_coords */
-   NULL,                         /* set_mvp */
+   gl_set_coords,
+   gl_set_mvp,
    gl_load_texture,
    gl_unload_texture,
    gl_set_video_mode,
