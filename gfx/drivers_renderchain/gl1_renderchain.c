@@ -261,7 +261,39 @@ static void gl1_renderchain_readback(void *data,
          (GLenum)fmt, (GLenum)type, (GLvoid*)src);
 }
 
+static void gl1_renderchain_set_mvp(void *data,
+      void *shader_data, const void *mat_data)
+{
+   math_matrix_4x4 ident;
+   const math_matrix_4x4 *mat = (const math_matrix_4x4*)mat_data;
+
+   /* Fall back to fixed function-style if needed and possible. */
+   glMatrixMode(GL_PROJECTION);
+   glLoadMatrixf(mat->data);
+   glMatrixMode(GL_MODELVIEW);
+   matrix_4x4_identity(ident);
+   glLoadMatrixf(ident.data);
+}
+
+static void gl1_renderchain_set_coords(void *handle_data,
+      void *shader_data, const struct video_coords *coords)
+{
+   /* Fall back to fixed function-style if needed and possible. */
+   glClientActiveTexture(GL_TEXTURE1);
+   glTexCoordPointer(2, GL_FLOAT, 0, coords->lut_tex_coord);
+   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+   glClientActiveTexture(GL_TEXTURE0);
+   glVertexPointer(2, GL_FLOAT, 0, coords->vertex);
+   glEnableClientState(GL_VERTEX_ARRAY);
+   glColorPointer(4, GL_FLOAT, 0, coords->color);
+   glEnableClientState(GL_COLOR_ARRAY);
+   glTexCoordPointer(2, GL_FLOAT, 0, coords->tex_coord);
+   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+}
+
 gl_renderchain_driver_t gl2_renderchain = {
+   gl1_renderchain_set_coords,
+   gl1_renderchain_set_mvp,
    NULL,                                  /* init_textures_reference */
    NULL,                                  /* fence_iterate */
    NULL,                                  /* fence_free */

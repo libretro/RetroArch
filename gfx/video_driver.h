@@ -833,6 +833,10 @@ typedef struct d3d_renderchain_driver
 
 typedef struct gl_renderchain_driver
 {
+   void (*set_coords)(void *handle_data,
+         void *shader_data, const struct video_coords *coords);
+   void (*set_mvp)(void *data, void *shader_data,
+         const void *mat_data);
    void (*init_texture_reference)(
          void *data, unsigned i,
          unsigned internal_fmt, unsigned texture_fmt,

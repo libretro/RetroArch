@@ -1437,6 +1437,8 @@ static void gl2_renderchain_init_textures_reference(
 }
 
 gl_renderchain_driver_t gl2_renderchain = {
+   NULL,                                        /* set_coords */
+   NULL,                                        /* set_mvp    */
    gl2_renderchain_init_textures_reference,
 #ifdef HAVE_OPENGLES
    NULL,
