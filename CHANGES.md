@@ -1,5 +1,7 @@
 # 1.6.8 (future)
 - Audio: Fix the Audio DSP picker
+- CHEEVOS: Add support for Atari Lynx cheevos.
+- CHEEVOS: Add support for RetroAchievements Leaderboards.
 - GUI: (MaterialUI) Fix crash that happened on context reset with Vulkan.
 - GUI: (MaterialUI) Skip querying and drawing items that are not visible; Cache content height and bbox calculation.
 - GUI: (MaterialUI) Fix entry box highlight calculation.
