@@ -1525,6 +1525,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
      "Adicionar aos Favoritos"
 	)
+MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES_PLAYLIST,
+     "Adicionar aos Favoritos"
+	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN,
 	 "Executar"
 	)
@@ -3554,6 +3557,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION,
 	 "Visualizar mais informações sobre o conteúdo."
 	)
 MSG_HASH(MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES,
+     "Adicionar o item aos seus favoritos."
+	)
+MSG_HASH(MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES_PLAYLIST,
      "Adicionar o item aos seus favoritos."
 	)
 MSG_HASH(MENU_ENUM_SUBLABEL_RUN,

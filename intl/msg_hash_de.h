@@ -1263,6 +1263,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
       "Rechter Analogstick")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
       "Zu Favoriten hinzufügen")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES_PLAYLIST,
+      "Zu Favoriten hinzufügen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN,
       "Starten")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
@@ -2819,6 +2821,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_DELETE_ENTRY,
 MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION,
       "Zeige weiterführende Informationen über diesen Inhalt an.")
 MSG_HASH(MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES,
+      "Füge diesen Eintrag zu deinen Favoriten hinzu.")
+MSG_HASH(MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES_PLAYLIST,
       "Füge diesen Eintrag zu deinen Favoriten hinzu.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RUN,
       "Starte den Inhalt.")

@@ -3209,7 +3209,34 @@ default_action_ok_cmd_func(action_ok_restart_content,    CMD_EVENT_RESET)
 default_action_ok_cmd_func(action_ok_screenshot,         CMD_EVENT_TAKE_SCREENSHOT)
 default_action_ok_cmd_func(action_ok_disk_cycle_tray_status, CMD_EVENT_DISK_EJECT_TOGGLE        )
 default_action_ok_cmd_func(action_ok_shader_apply_changes, CMD_EVENT_SHADERS_APPLY_CHANGES        )
-default_action_ok_cmd_func(action_ok_add_to_favorites, CMD_EVENT_ADD_TO_FAVORITES)
+
+static int action_ok_add_to_favorites(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   void *new_path = (void*)path_get(RARCH_PATH_CONTENT);
+   if (!command_event(CMD_EVENT_ADD_TO_FAVORITES, new_path))
+      return menu_cbs_exit();
+   return 0;
+}
+
+static int action_ok_add_to_favorites_playlist(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   const char *tmp_path     = NULL;
+   playlist_t *tmp_playlist = NULL;
+
+   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
+
+   if (!tmp_playlist)
+      return 0;
+
+   playlist_get_index(tmp_playlist,
+         rpl_entry_selection_ptr, &tmp_path, NULL, NULL, NULL, NULL, NULL);
+
+   if (!command_event(CMD_EVENT_ADD_TO_FAVORITES, (void*)tmp_path))
+      return menu_cbs_exit();
+   return 0;
+}
 
 static int action_ok_rename_entry(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -4400,6 +4427,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_RESUME_CONTENT:
             BIND_ACTION_OK(cbs, action_ok_resume_content);
+            break;
+         case MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST:
+            BIND_ACTION_OK(cbs, action_ok_add_to_favorites_playlist);
             break;
          case MENU_ENUM_LABEL_ADD_TO_FAVORITES:
             BIND_ACTION_OK(cbs, action_ok_add_to_favorites);

@@ -1263,6 +1263,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
       "Analogico Destro")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
       "Aggiungi a Preferiti")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES_PLAYLIST,
+      "Aggiungi a Preferiti")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN,
       "Avvia")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
@@ -2817,6 +2819,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_DELETE_ENTRY,
 MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION,
       "Visualizza ulteriori informazioni sul contenuto.")
 MSG_HASH(MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES,
+      "Aggiunge il titolo ai tuoi preferiti.")
+MSG_HASH(MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES_PLAYLIST,
       "Aggiunge il titolo ai tuoi preferiti.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RUN,
       "Avvia il contenuto.")
