@@ -2225,8 +2225,6 @@ MSG_HASH(MSG_SKIPPING_SRAM_LOAD,
       "Skipping SRAM load.")
 MSG_HASH(MSG_SLOW_MOTION,
       "Slow motion.")
-MSG_HASH(MSG_FAST_FORWARD,
-      "Avanti veloce.")
 MSG_HASH(MSG_SLOW_MOTION_REWIND,
       "Riavvolgimento lento.")
 MSG_HASH(MSG_SRAM_WILL_NOT_BE_SAVED,
