@@ -1469,6 +1469,8 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
          return "Omitiendo carga de SRAM.";
       case MSG_SLOW_MOTION:
          return "Cámara lenta.";
+      case MSG_FAST_FORWARD:
+         return "Avance rápido.";
       case MSG_SLOW_MOTION_REWIND:
          return "Rebobinar cámara lenta.";
       case MSG_SRAM_WILL_NOT_BE_SAVED:
