@@ -2153,8 +2153,6 @@ MSG_HASH(MSG_SKIPPING_SRAM_LOAD,
       "Ignorando carregamento de SRAM.")
 MSG_HASH(MSG_SLOW_MOTION,
       "Câmera lenta.")
-MSG_HASH(MSG_FAST_FORWARD,
-      "Avanço rápido.")
 MSG_HASH(MSG_SLOW_MOTION_REWIND,
       "Função rewind em câmera lenta.")
 MSG_HASH(MSG_SRAM_WILL_NOT_BE_SAVED,

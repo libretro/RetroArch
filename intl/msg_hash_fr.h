@@ -2183,8 +2183,6 @@ MSG_HASH(MSG_SKIPPING_SRAM_LOAD,
       "Ignore le chargement de la SRAM.")
 MSG_HASH(MSG_SLOW_MOTION,
       "Ralenti.")
-MSG_HASH(MSG_FAST_FORWARD,
-      "Avance rapide.")
 MSG_HASH(MSG_SLOW_MOTION_REWIND,
       "Rembobinage ralenti.")
 MSG_HASH(MSG_SRAM_WILL_NOT_BE_SAVED,
