@@ -333,7 +333,7 @@ static void gl2_renderchain_render(
 
       video_driver_set_coords(&coords);
 
-      video_info->cb_shader_set_mvp(gl,
+      video_info->cb_set_mvp(gl,
             video_info->shader_data, &gl->mvp);
 
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -408,7 +408,7 @@ static void gl2_renderchain_render(
 
    video_driver_set_coords(&coords);
 
-   video_info->cb_shader_set_mvp(gl,
+   video_info->cb_set_mvp(gl,
          video_info->shader_data, &gl->mvp);
 
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);

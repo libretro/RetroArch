@@ -222,7 +222,7 @@ static void gl_render_overlay(gl_t *gl, video_frame_info_t *video_info)
 
    video_driver_set_coords(&coords);
 
-   video_info->cb_shader_set_mvp(gl,
+   video_info->cb_set_mvp(gl,
          video_info->shader_data, &gl->mvp_no_rot);
 
    for (i = 0; i < gl->overlays; i++)
@@ -821,7 +821,7 @@ static void gl_render_osd_background(
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
    glBlendEquation(GL_FUNC_ADD);
 
-   video_info->cb_shader_set_mvp(gl,
+   video_info->cb_set_mvp(gl,
          video_info->shader_data, &gl->mvp_no_rot);
 
    uniform_param.type              = UNIFORM_4F;
@@ -949,7 +949,7 @@ static INLINE void gl_draw_texture(gl_t *gl, video_frame_info_t *video_info)
 
    video_driver_set_coords(&coords);
 
-   video_info->cb_shader_set_mvp(gl,
+   video_info->cb_set_mvp(gl,
          video_info->shader_data, &gl->mvp_no_rot);
 
    glEnable(GL_BLEND);
@@ -1131,7 +1131,7 @@ static bool gl_frame(void *data, const void *frame,
 
    video_driver_set_coords(&coords);
 
-   video_info->cb_shader_set_mvp(gl, video_info->shader_data, &gl->mvp);
+   video_info->cb_set_mvp(gl, video_info->shader_data, &gl->mvp);
 
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
