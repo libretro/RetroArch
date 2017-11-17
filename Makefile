@@ -204,7 +204,7 @@ install: $(TARGET)
 		rm -rf $(DESTDIR)$(ASSETS_DIR)/retroarch/assets/xmb/monochrome/src; \
 		rm -rf $(DESTDIR)$(ASSETS_DIR)/retroarch/assets/xmb/retroactive/src; \
 		rm -rf $(DESTDIR)$(ASSETS_DIR)/retroarch/assets/xmb/neoactive/src; \
-		rm -rf $(DESTDIR)$(ASSETS_DIR)/retroarch/assets/xmb/retroactive_marked/src; \
+		rm -rf $(DESTDIR)$(ASSETS_DIR)/retroarch/assets/xmb/retrosystem/src; \
 		rm -rf $(DESTDIR)$(ASSETS_DIR)/retroarch/assets/xmb/dot-art/src; \
 		echo "Asset copying done."; \
 	fi
