@@ -32,7 +32,7 @@ typedef struct
    HANDLE hnd;
    LONG x, y, dlt_x, dlt_y;
    LONG whl_u, whl_d;
-   bool btn_l, btn_m, btn_r;
+   bool btn_l, btn_m, btn_r, btn_b4, btn_b5;
 } winraw_mouse_t;
 
 typedef struct
@@ -279,6 +279,10 @@ static int16_t winraw_mouse_state(winraw_input_t *wr,
          return mouse->whl_d ? 1 : 0;
       case RETRO_DEVICE_ID_MOUSE_MIDDLE:
          return mouse->btn_m ? 1 : 0;
+      case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
+         return mouse->btn_b4 ? 1 : 0;
+      case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
+         return mouse->btn_b5 ? 1 : 0;
    }
 
    return 0;
@@ -418,6 +422,16 @@ static void winraw_update_mouse_state(winraw_mouse_t *mouse, RAWMOUSE *state)
       mouse->btn_r = true;
    else if (state->usButtonFlags & RI_MOUSE_RIGHT_BUTTON_UP)
       mouse->btn_r = false;
+
+   if (state->usButtonFlags & RI_MOUSE_BUTTON_4_DOWN)
+      mouse->btn_b4 = true;
+   else if (state->usButtonFlags & RI_MOUSE_BUTTON_4_UP)
+      mouse->btn_b4 = false;
+
+   if (state->usButtonFlags & RI_MOUSE_BUTTON_5_DOWN)
+      mouse->btn_b5 = true;
+   else if (state->usButtonFlags & RI_MOUSE_BUTTON_5_UP)
+      mouse->btn_b5 = false;
 
    if (state->usButtonFlags & RI_MOUSE_WHEEL)
    {
@@ -566,6 +580,8 @@ static void winraw_poll(void *d)
       wr->mice[i].btn_l = g_mice[i].btn_l;
       wr->mice[i].btn_m = g_mice[i].btn_m;
       wr->mice[i].btn_r = g_mice[i].btn_r;
+      wr->mice[i].btn_b4 = g_mice[i].btn_b4;
+      wr->mice[i].btn_b5 = g_mice[i].btn_b5;
    }
 
    if (wr->joypad)
