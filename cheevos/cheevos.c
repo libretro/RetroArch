@@ -3388,6 +3388,9 @@ static void cheevos_task_handler(retro_task_t *task)
 {
    coro_t *coro = (coro_t*)task->state;
 
+   if (!coro)
+      return;
+
    if (!cheevos_iterate(coro))
    {
       task_set_finished(task, true);
@@ -3395,16 +3398,15 @@ static void cheevos_task_handler(retro_task_t *task)
          free(CHEEVOS_VAR_DATA);
       if ((void*)CHEEVOS_VAR_PATH)
          free((void*)CHEEVOS_VAR_PATH);
-      if ((void*)coro)
-         free((void*)coro);
+      free((void*)coro);
    }
 }
 
 bool cheevos_load(const void *data)
 {
    retro_task_t *task;
-   coro_t *coro;
-   const struct retro_game_info *info;
+   const struct retro_game_info *info = NULL;
+   coro_t *coro                       = NULL;
 
    cheevos_loaded = 0;
 
