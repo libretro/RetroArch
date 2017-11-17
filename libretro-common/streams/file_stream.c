@@ -155,17 +155,17 @@ void filestream_set_size(RFILE *stream)
    filestream_seek(stream, 0, SEEK_SET);
 }
 
-static void filestream_set_buffer(RFILE *stream, ssize_t len)
-{
-   if (!stream || !stream->fp)
-      return;
-
-   stream->buf = (char*)calloc(1, len);
-
-   setvbuf(stream->fp, stream->buf, _IOFBF, len);
-}
-
-RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
+/**
+ * filestream_open:
+ * @path               : path to file
+ * @mode               : file mode to use when opening (read/write)
+ * @bufsize            : optional buffer size (-1 or 0 to use default)
+ *
+ * Opens a file for reading or writing, depending on the requested mode.
+ * If bufsize is > 0 for unbuffered modes (like RFILE_MODE_WRITE), file will instead be fully buffered.
+ * Returns a pointer to an RFILE if opened successfully, otherwise NULL.
+ **/
+RFILE *filestream_open(const char *path, unsigned mode, ssize_t bufsize)
 {
    int            flags = 0;
    int         mode_int = 0;
@@ -268,9 +268,6 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
 
    if (stream->fd == -1)
       goto error;
-
-   if (len >= 0)
-      filestream_set_buffer(stream, len);
 #else
 #if defined(HAVE_BUFFERED_IO)
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0 && mode_str)
@@ -296,13 +293,24 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
       if (!stream->fp)
          goto error;
 
-      if (len >= 0)
-         filestream_set_buffer(stream, len);
+      if (bufsize > 0)
+      {
+         /* Regarding setvbuf:
+          *
+          * https://www.freebsd.org/cgi/man.cgi?query=setvbuf&apropos=0&sektion=0&manpath=FreeBSD+11.1-RELEASE&arch=default&format=html
+          *
+          * If the size argument is not zero but buf is NULL, a buffer of the given size will be allocated immediately, and
+          * released on close. This is an extension to ANSI C.
+          *
+          * Since C89 does not support specifying a null buffer with a non-zero size, we create and track our own buffer for it.
+          */
+         stream->buf = (char*)calloc(1, bufsize);
+         setvbuf(stream->fp, stream->buf, _IOFBF, bufsize);
+      }
    }
    else
 #endif
    {
-      /* FIXME: HAVE_BUFFERED_IO is always 1, but if it is ever changed, open() needs to be changed to _wopen() for WIndows. */
 #if defined(_WIN32) && !defined(_XBOX)
 #if defined(LEGACY_WIN32)
       (void)path_wide;
@@ -318,14 +326,12 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
          free(path_wide);
 #endif
 #else
+      /* FIXME: HAVE_BUFFERED_IO is always 1, but if it is ever changed, this open() needs to have an alternate _wopen() for Windows. */
       stream->fd = open(path, flags, mode_int);
 #endif
 
       if (stream->fd == -1)
          goto error;
-
-      if (len >= 0)
-         filestream_set_buffer(stream, len);
 #ifdef HAVE_MMAP
       if (stream->hints & RFILE_HINT_MMAP)
       {
