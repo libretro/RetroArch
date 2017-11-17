@@ -915,7 +915,8 @@ static int cheevos_parse_condition(cheevos_condition_t *condition, const char* m
             {
                while (--condset >= condition->condsets)
                {
-                  free((void*)condset->conds);
+                  if ((void*)condset->conds)
+                     free((void*)condset->conds);
                }
             
                return -1;
@@ -937,9 +938,13 @@ static void cheevos_free_condition(cheevos_condition_t* condition)
    if (condition->condsets)
    {
       for (i = 0; i < condition->count; i++)
-         free((void*)condition->condsets[i].conds);
+      {
+         if ((void*)condition->condsets[i].conds)
+            free((void*)condition->condsets[i].conds);
+      }
 
-      free((void*)condition->condsets);
+      if ((void*)condition->condsets)
+         free((void*)condition->condsets);
    }
 }
 
@@ -996,7 +1001,8 @@ static int cheevos_parse_expression(cheevos_expr_t *expr, const char* mem)
          /* invalid character in expression */
          else
          {
-            free((void*)expr->terms);
+            if ((void*)expr->terms)
+               free((void*)expr->terms);
             return -1;
          }
       }
@@ -1072,7 +1078,8 @@ error:
    cheevos_free_condition(&lb->start);
    cheevos_free_condition(&lb->cancel);
    cheevos_free_condition(&lb->submit);
-   free((void*)lb->value.terms);
+   if ((void*)lb->value.terms)
+      free((void*)lb->value.terms);
    return -1;
 }
 
@@ -1130,10 +1137,14 @@ static int cheevos_new_cheevo(cheevos_readud_t *ud)
    return 0;
 
 error:
-   free((void*)cheevo->title);
-   free((void*)cheevo->description);
-   free((void*)cheevo->author);
-   free((void*)cheevo->badge);
+   if ((void*)cheevo->title)
+      free((void*)cheevo->title);
+   if ((void*)cheevo->description)
+      free((void*)cheevo->description);
+   if ((void*)cheevo->author)
+      free((void*)cheevo->author);
+   if ((void*)cheevo->badge)
+      free((void*)cheevo->badge);
    return -1;
 }
 
@@ -1228,8 +1239,10 @@ static int cheevos_new_lboard(cheevos_readud_t *ud)
    return 0;
 
 error:
-   free((void*)lboard->title);
-   free((void*)lboard->description);
+   if ((void*)lboard->title)
+      free((void*)lboard->title);
+   if ((void*)lboard->description)
+      free((void*)lboard->description);
    return -1;
 }
 
@@ -1405,9 +1418,12 @@ static int cheevos_parse(const char *json)
    if (   !cheevos_locals.core.cheevos || !cheevos_locals.unofficial.cheevos
        || !cheevos_locals.leaderboards)
    {
-      free((void*)cheevos_locals.core.cheevos);
-      free((void*)cheevos_locals.unofficial.cheevos);
-      free((void*)cheevos_locals.leaderboards);
+      if ((void*)cheevos_locals.core.cheevos)
+         free((void*)cheevos_locals.core.cheevos);
+      if ((void*)cheevos_locals.unofficial.cheevos)
+         free((void*)cheevos_locals.unofficial.cheevos);
+      if ((void*)cheevos_locals.leaderboards)
+         free((void*)cheevos_locals.leaderboards);
       cheevos_locals.core.count = cheevos_locals.unofficial.count =
          cheevos_locals.lboard_count = 0;
 
@@ -1964,15 +1980,20 @@ Free the loaded achievements.
 
 static void cheevos_free_condset(const cheevos_condset_t *set)
 {
-   free((void*)set->conds);
+   if ((void*)set->conds)
+      free((void*)set->conds);
 }
 
 static void cheevos_free_cheevo(const cheevo_t *cheevo)
 {
-   free((void*)cheevo->title);
-   free((void*)cheevo->description);
-   free((void*)cheevo->author);
-   free((void*)cheevo->badge);
+   if ((void*)cheevo->title)
+      free((void*)cheevo->title);
+   if ((void*)cheevo->description)
+      free((void*)cheevo->description);
+   if ((void*)cheevo->author)
+      free((void*)cheevo->author);
+   if ((void*)cheevo->badge)
+      free((void*)cheevo->badge);
    cheevos_free_condset(cheevo->condition.condsets);
 }
 
@@ -1984,7 +2005,8 @@ static void cheevos_free_cheevo_set(const cheevoset_t *set)
    while (cheevo < end)
       cheevos_free_cheevo(cheevo++);
 
-   free((void*)set->cheevos);
+   if ((void*)set->cheevos)
+      free((void*)set->cheevos);
 }
 
 #ifndef CHEEVOS_DONT_DEACTIVATE
@@ -2757,11 +2779,13 @@ static int cheevos_iterate(coro_t* coro)
 #endif
       if (cheevos_parse(CHEEVOS_VAR_JSON))
       {
-         free((void*)CHEEVOS_VAR_JSON);
+         if ((void*)CHEEVOS_VAR_JSON)
+            free((void*)CHEEVOS_VAR_JSON);
          CORO_STOP();
       }
 
-      free((void*)CHEEVOS_VAR_JSON);
+      if ((void*)CHEEVOS_VAR_JSON)
+         free((void*)CHEEVOS_VAR_JSON);
       cheevos_loaded = true;
 
       /*
@@ -3052,12 +3076,14 @@ static int cheevos_iterate(coro_t* coro)
 
          if (cheevos_get_value(CHEEVOS_VAR_JSON, CHEEVOS_JSON_KEY_GAMEID, gameid, sizeof(gameid)))
          {
-            free((void*)CHEEVOS_VAR_JSON);
+            if ((void*)CHEEVOS_VAR_JSON)
+               free((void*)CHEEVOS_VAR_JSON);
             RARCH_ERR("[CHEEVOS]: error getting game_id.\n");
             CORO_RET();
          }
 
-         free((void*)CHEEVOS_VAR_JSON);
+         if ((void*)CHEEVOS_VAR_JSON)
+            free((void*)CHEEVOS_VAR_JSON);
          RARCH_LOG("[CHEEVOS]: got game id %s.\n", gameid);
          CHEEVOS_VAR_GAMEID = strtol(gameid, NULL, 10);
          CORO_RET();
@@ -3139,7 +3165,8 @@ static int cheevos_iterate(coro_t* coro)
       if (CHEEVOS_VAR_JSON)
       {
          int res = cheevos_get_value(CHEEVOS_VAR_JSON, CHEEVOS_JSON_KEY_TOKEN, cheevos_locals.token, sizeof(cheevos_locals.token));
-         free((void*)CHEEVOS_VAR_JSON);
+         if ((void*)CHEEVOS_VAR_JSON)
+            free((void*)CHEEVOS_VAR_JSON);
 
          if (!res)
          {
@@ -3282,7 +3309,8 @@ static int cheevos_iterate(coro_t* coro)
          else
             RARCH_ERR("[CHEEVOS]: error deactivating unlocked achievements in softcore mode.\n");
       
-         free((void*)CHEEVOS_VAR_JSON);
+         if ((void*)CHEEVOS_VAR_JSON)
+            free((void*)CHEEVOS_VAR_JSON);
       }
       else
          RARCH_ERR("[CHEEVOS]: error retrieving list of unlocked achievements in softcore mode.\n");
@@ -3310,7 +3338,8 @@ static int cheevos_iterate(coro_t* coro)
          else
             RARCH_ERR("[CHEEVOS]: error deactivating unlocked achievements in hardcore mode.\n");
       
-         free((void*)CHEEVOS_VAR_JSON);
+         if ((void*)CHEEVOS_VAR_JSON)
+            free((void*)CHEEVOS_VAR_JSON);
       }
       else
          RARCH_ERR("[CHEEVOS]: error retrieving list of unlocked achievements in hardcore mode.\n");
@@ -3343,7 +3372,8 @@ static int cheevos_iterate(coro_t* coro)
       if (CHEEVOS_VAR_JSON)
       {
           RARCH_LOG("[CHEEVOS]: posted playing activity.\n");
-          free((void*)CHEEVOS_VAR_JSON);
+          if ((void*)CHEEVOS_VAR_JSON)
+             free((void*)CHEEVOS_VAR_JSON);
       }
       else
          RARCH_ERR("[CHEEVOS]: error posting playing activity.\n");
@@ -3361,9 +3391,12 @@ static void cheevos_task_handler(retro_task_t *task)
    if (!cheevos_iterate(coro))
    {
       task_set_finished(task, true);
-      free(CHEEVOS_VAR_DATA);
-      free((void*)CHEEVOS_VAR_PATH);
-      free((void*)coro);
+      if (CHEEVOS_VAR_DATA)
+         free(CHEEVOS_VAR_DATA);
+      if ((void*)CHEEVOS_VAR_PATH)
+         free((void*)CHEEVOS_VAR_PATH);
+      if ((void*)coro)
+         free((void*)coro);
    }
 }
 
@@ -3387,7 +3420,8 @@ bool cheevos_load(const void *data)
 
    if (!task)
    {
-      free((void*)coro);
+      if ((void*)coro)
+         free((void*)coro);
       return false;
    }
 
@@ -3406,8 +3440,10 @@ bool cheevos_load(const void *data)
 
       if (!CHEEVOS_VAR_DATA)
       {
-         free((void*)task);
-         free((void*)coro);
+         if ((void*)task)
+            free((void*)task);
+         if ((void*)coro)
+            free((void*)coro);
          return false;
       }
 
