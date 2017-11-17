@@ -389,14 +389,13 @@ static config_file_t *config_file_new_internal(
       goto error;
 
    conf->include_depth = depth;
-   file                = filestream_open(path, RFILE_MODE_READ_TEXT, -1);
+   file                = filestream_open(path, RFILE_MODE_READ_TEXT, 0x4000);
 
    if (!file)
    {
       free(conf->path);
       goto error;
    }
-   setvbuf(filestream_get_fp(file), NULL, _IOFBF, 0x4000);
 
    while (!filestream_eof(file))
    {
@@ -917,15 +916,9 @@ bool config_file_write(config_file_t *conf, const char *path)
 
    if (!string_is_empty(path))
    {
-      file = filestream_open(path, RFILE_MODE_WRITE, -1);
+      file = filestream_open(path, RFILE_MODE_WRITE, 0x4000);
       if (!file)
          return false;
-#ifdef WIIU
-      /* TODO: use FBF everywhere once https://i.imgur.com/muVhNeF.jpg is fixed */
-      setvbuf(filestream_get_fp(file), NULL, _IONBF, 0x4000);
-#else
-      setvbuf(filestream_get_fp(file), NULL, _IOFBF, 0x4000);
-#endif
       config_file_dump(conf, filestream_get_fp(file));
    }
    else

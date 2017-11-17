@@ -107,6 +107,7 @@ struct RFILE
 #endif
    int fd;
 #endif
+   char *buf;
 };
 
 FILE* filestream_get_fp(RFILE *stream)
@@ -152,6 +153,16 @@ void filestream_set_size(RFILE *stream)
    stream->size = filestream_tell(stream);
 
    filestream_seek(stream, 0, SEEK_SET);
+}
+
+static void filestream_set_buffer(RFILE *stream, ssize_t len)
+{
+   if (!stream || !stream->fp)
+      return;
+
+   stream->buf = (char*)calloc(1, len);
+
+   setvbuf(stream->fp, stream->buf, _IOFBF, len);
 }
 
 RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
@@ -254,6 +265,12 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
 
 #if  defined(PSP)
    stream->fd = sceIoOpen(path, flags, mode_int);
+
+   if (stream->fd == -1)
+      goto error;
+
+   if (len >= 0)
+      filestream_set_buffer(stream, len);
 #else
 #if defined(HAVE_BUFFERED_IO)
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0 && mode_str)
@@ -275,8 +292,12 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
 #else
       stream->fp = fopen(path, mode_str);
 #endif
+
       if (!stream->fp)
          goto error;
+
+      if (len >= 0)
+         filestream_set_buffer(stream, len);
    }
    else
 #endif
@@ -299,8 +320,12 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
 #else
       stream->fd = open(path, flags, mode_int);
 #endif
+
       if (stream->fd == -1)
          goto error;
+
+      if (len >= 0)
+         filestream_set_buffer(stream, len);
 #ifdef HAVE_MMAP
       if (stream->hints & RFILE_HINT_MMAP)
       {
@@ -321,11 +346,6 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
       }
 #endif
    }
-#endif
-
-#if  defined(PSP)
-   if (stream->fd == -1)
-      goto error;
 #endif
 
    {
@@ -666,6 +686,8 @@ int filestream_close(RFILE *stream)
    if (stream->fd > 0)
       close(stream->fd);
 #endif
+   if (stream->buf)
+      free(stream->buf);
    free(stream);
 
    return 0;
