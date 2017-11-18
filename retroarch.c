@@ -2766,7 +2766,7 @@ static enum runloop_state runloop_check_state(
 
       if (new_button_state && !old_button_state)
       {
-         if (input_nonblock_state){
+         if (input_nonblock_state) {
             input_driver_unset_nonblock_state();
             runloop_fastmotion = false;
          }
