@@ -25,6 +25,7 @@
 #endif
 
 #include "../font_driver.h"
+#include "../../configuration.h"
 #include "../../verbosity.h"
 
 #ifndef STB_TRUETYPE_IMPLEMENTATION
@@ -211,7 +212,7 @@ static bool font_renderer_stb_unicode_create_atlas(
 static void *font_renderer_stb_unicode_init(const char *font_path, float font_size)
 {
    int ascent, descent, line_gap;
-   stb_unicode_font_renderer_t *self = 
+   stb_unicode_font_renderer_t *self =
       (stb_unicode_font_renderer_t*)calloc(1, sizeof(*self));
 
    if (!self || font_size < 1.0)
@@ -261,7 +262,12 @@ static const char *font_renderer_stb_unicode_get_default_font(void)
 #ifdef WIIU
    return "";
 #else
+   static char osd_font_path[PATH_MAX_LENGTH];
+   strcpy(osd_font_path, config_get_ptr()->paths.directory_assets);
+   strcat(osd_font_path, "/fonts/osd-font.ttf");
+
    static const char *paths[] = {
+      osd_font_path,
 #if defined(_WIN32)
       "C:\\Windows\\Fonts\\consola.ttf",
       "C:\\Windows\\Fonts\\verdana.ttf",

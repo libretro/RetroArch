@@ -21,6 +21,7 @@
 #include <retro_miscellaneous.h>
 
 #include "../font_driver.h"
+#include "../../configuration.h"
 #include "../../verbosity.h"
 
 #ifndef STB_TRUETYPE_IMPLEMENTATION
@@ -183,7 +184,12 @@ error:
 
 static const char *font_renderer_stb_get_default_font(void)
 {
+   static char osd_font_path[PATH_MAX_LENGTH];
+   strcpy(osd_font_path, config_get_ptr()->paths.directory_assets);
+   strcat(osd_font_path, "/fonts/osd-font.ttf");
+
    static const char *paths[] = {
+      osd_font_path,
 #if defined(_WIN32)
       "C:\\Windows\\Fonts\\consola.ttf",
       "C:\\Windows\\Fonts\\verdana.ttf",

@@ -22,8 +22,8 @@
 #include <ft2build.h>
 
 #include <file/file_path.h>
-#include "../../configuration.h"
 #include <retro_miscellaneous.h>
+#include "../../configuration.h"
 
 #ifdef WIIU
 #include <wiiu/os.h>
