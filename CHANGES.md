@@ -1,4 +1,6 @@
-# 1.6.8 (future)
+# 1.6.9 (future)
+
+# 1.6.8
 - Audio: Fix the Audio DSP picker
 - CHEEVOS: Add support for Atari Lynx cheevos.
 - CHEEVOS: Add support for RetroAchievements Leaderboards.
@@ -12,6 +14,8 @@
 - GUI: Add menu option for OSD text color.
 - GUI: Add menu option to remove frame count from OSD.
 - GUI: Allow wraparound of int/float settings when pressing the left key
+- INPUT/LIBRETRO: Add support for more mouse buttons (buttons 4/5)
+- INPUT/LIBRETRO: Add support for analog buttons
 - INPUT: Always show the controls menu even if descriptors are not set
 - INPUT: Fix input descriptors not being set on cores that don't implement the controllers interface
 - INPUT: Apply descriptors only for the amount of cores the core supports
