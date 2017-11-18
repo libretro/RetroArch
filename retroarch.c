@@ -2898,10 +2898,10 @@ static enum runloop_state runloop_check_state(
 
          if (state_manager_frame_is_reversed())
             runloop_msg_queue_push(
-                  msg_hash_to_str(MSG_SLOW_MOTION_REWIND), 2, 30, true);
+                  msg_hash_to_str(MSG_SLOW_MOTION_REWIND), 1, 1, false);
          else
             runloop_msg_queue_push(
-                  msg_hash_to_str(MSG_SLOW_MOTION), 2, 30, true);
+                  msg_hash_to_str(MSG_SLOW_MOTION), 1, 1, false);
       }
    }
 
