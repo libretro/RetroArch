@@ -2971,6 +2971,9 @@ MSG_HASH(MSG_SKIPPING_SRAM_LOAD,
 MSG_HASH(MSG_SLOW_MOTION,
 	 "Câmera Lenta."
 	)
+MSG_HASH(MSG_FAST_FORWARD,
+    "Avanço rápido."
+   )
 MSG_HASH(MSG_SLOW_MOTION_REWIND,
 	 "Voltar Atrás em Câmera Lenta."
 	)
