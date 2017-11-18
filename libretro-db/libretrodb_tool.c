@@ -177,6 +177,7 @@ int main(int argc, char ** argv)
       goto error;
    }
 
+   libretrodb_cursor_close(cur);
    libretrodb_close(db);
 
 error:
@@ -184,5 +185,7 @@ error:
       libretrodb_free(db);
    if (cur)
       libretrodb_cursor_free(cur);
+   if (q)
+      libretrodb_query_free(q);
    return 1;
 }
