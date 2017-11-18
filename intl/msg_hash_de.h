@@ -2229,6 +2229,8 @@ MSG_HASH(MSG_SKIPPING_SRAM_LOAD,
       "Überspringe Laden des SRAM.")
 MSG_HASH(MSG_SLOW_MOTION,
       "Zeitlupe.")
+MSG_HASH(MSG_FAST_FORWARD,
+      "Snel vooruit.")
 MSG_HASH(MSG_SLOW_MOTION_REWIND,
       "In Zeitlupe zurückspulen.")
 MSG_HASH(MSG_SRAM_WILL_NOT_BE_SAVED,
