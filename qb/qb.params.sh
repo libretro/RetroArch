@@ -50,9 +50,11 @@ EOF
 }
 
 opt_exists() # $opt is returned if exists in OPTS
-{	opt=$(echo "$1" | tr '[:lower:]' '[:upper:]')
-	for OPT in $OPTS; do [ "$opt" = "$OPT" ] && return; done
-	echo "Unknown option $2"; exit 1
+{	opt="$(echo "$1" | tr '[:lower:]' '[:upper:]')"
+	err="$2"
+	eval "set -- $OPTS"
+	for OPT do [ "$opt" = "$OPT" ] && return; done
+	echo "Unknown option $err"; exit 1
 }
 
 parse_input() # Parse stuff :V
