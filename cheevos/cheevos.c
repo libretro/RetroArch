@@ -939,13 +939,15 @@ static void cheevos_free_condition(cheevos_condition_t* condition)
    {
       for (i = 0; i < condition->count; i++)
       {
-         if (condition->condsets[i].conds) {
+         if (condition->condsets[i].conds)
+         {
             free(condition->condsets[i].conds);
             condition->condsets[i].conds = NULL;
          }
       }
 
-      if (condition->condsets) {
+      if (condition->condsets)
+      {
          free(condition->condsets);
          condition->condsets = NULL;
       }
@@ -1005,7 +1007,8 @@ static int cheevos_parse_expression(cheevos_expr_t *expr, const char* mem)
          /* invalid character in expression */
          else
          {
-            if (expr->terms) {
+            if (expr->terms)
+            {
                free(expr->terms);
                expr->terms = NULL;
             }
@@ -1084,7 +1087,8 @@ error:
    cheevos_free_condition(&lb->start);
    cheevos_free_condition(&lb->cancel);
    cheevos_free_condition(&lb->submit);
-   if (lb->value.terms) {
+   if (lb->value.terms)
+   {
       free((void*)lb->value.terms);
       lb->value.terms = NULL;
    }
@@ -1145,19 +1149,23 @@ static int cheevos_new_cheevo(cheevos_readud_t *ud)
    return 0;
 
 error:
-   if (cheevo->title) {
+   if (cheevo->title)
+   {
       free((void*)cheevo->title);
       cheevo->title = NULL;
    }
-   if (cheevo->description) {
+   if (cheevo->description)
+   {
       free((void*)cheevo->description);
       cheevo->description = NULL;
    }
-   if (cheevo->author) {
+   if (cheevo->author)
+   {
       free((void*)cheevo->author);
       cheevo->author = NULL;
    }
-   if (cheevo->badge) {
+   if (cheevo->badge)
+   {
       free((void*)cheevo->badge);
       cheevo->badge = NULL;
    }
