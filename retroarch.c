@@ -2792,7 +2792,7 @@ static enum runloop_state runloop_check_state(
       // Display the fast forward state to the user, if needed.
       if (runloop_fastmotion) {
          runloop_msg_queue_push(
-               msg_hash_to_str(MSG_FAST_FORWARD), 2, 15, true);
+               msg_hash_to_str(MSG_FAST_FORWARD), 1, 1, false);
       }
 
       old_button_state                  = new_button_state;
