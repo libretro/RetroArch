@@ -35,8 +35,7 @@ elif [ "$OS" = 'Win32' ]; then
    SOCKETHEADER="#include <winsock2.h>"
    DYLIB=
 elif [ "$OS" = 'Cygwin' ]; then
-   echo "Error: Cygwin is not a supported platform. See https://bot.libretro.com/docs/compilation/windows/"
-   exit 1
+   die 1 'Error: Cygwin is not a supported platform. See https://bot.libretro.com/docs/compilation/windows/'
 fi
 
 add_define_make DYLIB_LIB "$DYLIB"
@@ -79,7 +78,7 @@ if [ "$HAVE_7ZIP" = "yes" ]; then
 fi
 
 if [ "$HAVE_PRESERVE_DYLIB" = "yes" ]; then
-   echo "Notice: Disabling dlclose() of shared objects for Valgrind support."
+   die : 'Notice: Disabling dlclose() of shared objects for Valgrind support.'
    add_define_make HAVE_PRESERVE_DYLIB "1"
 fi
 
@@ -143,7 +142,7 @@ if [ "$HAVE_DISPMANX" != "no" ]; then
 fi
 
 if [ "$LIBRETRO" ]; then
-   echo "Notice: Explicit libretro used, disabling dynamic libretro loading ..."
+   die : 'Notice: Explicit libretro used, disabling dynamic libretro loading ...'
    HAVE_DYNAMIC='no'
 else LIBRETRO="-lretro"
 fi
@@ -197,7 +196,7 @@ if [ "$HAVE_NETWORKING" = 'yes' ]; then
       check_lib '' GETADDRINFO "$SOCKETLIB" getaddrinfo
       if [ "$HAVE_GETADDRINFO" != 'yes' ]; then
          HAVE_SOCKET_LEGACY=yes
-         echo "Notice: RetroArch will use legacy socket support"
+         die : 'Notice: RetroArch will use legacy socket support'
       fi
    fi
    HAVE_NETWORK_CMD=yes
@@ -211,7 +210,7 @@ if [ "$HAVE_NETWORKING" = 'yes' ]; then
       HAVE_MINIUPNPC='yes'
    fi
 else
-   echo "Warning: All networking features have been disabled."
+   die : 'Warning: All networking features have been disabled.'
    HAVE_KEYMAPPER='no'
    HAVE_NETWORK_CMD='no'
    HAVE_NETWORKGAMEPAD='no'
@@ -229,8 +228,7 @@ fi
 check_lib '' GETOPT_LONG "$CLIB" getopt_long
 
 if [ "$HAVE_DYLIB" = 'no' ] && [ "$HAVE_DYNAMIC" = 'yes' ]; then
-   echo "Error: Dynamic loading of libretro is enabled, but your platform does not appear to have dlopen(), use --disable-dynamic or --with-libretro=\"-lretro\"".
-   exit 1
+   die 1 'Error: Dynamic loading of libretro is enabled, but your platform does not appear to have dlopen(), use --disable-dynamic or --with-libretro="-lretro".'
 fi
 
 check_pkgconf ALSA alsa
@@ -266,10 +264,10 @@ check_pkgconf SDL2 sdl2 2.0.0
 
 if [ "$HAVE_SDL2" = 'yes' ]; then
    if [ "$HAVE_SDL2" = 'yes' ] && [ "$HAVE_SDL" = 'yes' ]; then
-      echo "Notice: SDL drivers will be replaced by SDL2 ones."
+      die : 'Notice: SDL drivers will be replaced by SDL2 ones.'
       HAVE_SDL=no
    elif [ "$HAVE_SDL2" = 'no' ]; then
-      echo "Warning: SDL2 not found, skipping."
+      die : 'Warning: SDL2 not found, skipping.'
       HAVE_SDL2=no
    fi
 fi
@@ -321,7 +319,7 @@ if [ "$HAVE_OPENGL" != 'no' ] && [ "$HAVE_OPENGLES" != 'yes' ]; then
 
       check_pkgconf OSMESA osmesa
    else
-      echo "Notice: Ignoring Cg. Desktop OpenGL is not enabled."
+      die : 'Notice: Ignoring Cg. Desktop OpenGL is not enabled.'
       HAVE_CG='no'
    fi
 fi
@@ -349,11 +347,11 @@ if [ "$HAVE_THREADS" != 'no' ]; then
       HAVE_FFMPEG='yes'
       if [ "$HAVE_AVCODEC" = 'no' ] || [ "$HAVE_SWRESAMPLE" = 'no' ] || [ "$HAVE_AVFORMAT" = 'no' ] || [ "$HAVE_AVUTIL" = 'no' ] || [ "$HAVE_SWSCALE" = 'no' ]; then
          HAVE_FFMPEG='no'
-         echo "Notice: FFmpeg built-in support disabled due to missing or unsuitable packages."
+         die : 'Notice: FFmpeg built-in support disabled due to missing or unsuitable packages.'
       fi
    fi
 else
-   echo "Notice: Not building with threading support. Will skip FFmpeg."
+   die : 'Notice: Not building with threading support. Will skip FFmpeg.'
    HAVE_FFMPEG='no'
 fi
 
@@ -367,8 +365,7 @@ if [ "$HAVE_KMS" != "no" ]; then
    if [ "$HAVE_GBM" = "yes" ] && [ "$HAVE_DRM" = "yes" ] && [ "$HAVE_EGL" = "yes" ]; then
       HAVE_KMS=yes
    elif [ "$HAVE_KMS" = "yes" ]; then
-      echo "Error: Cannot find libgbm, libdrm and EGL libraries required for KMS. Compile without --enable-kms."
-      exit 1
+      die 1 'Error: Cannot find libgbm, libdrm and EGL libraries required for KMS. Compile without --enable-kms.'
    else
       HAVE_KMS=no
    fi
@@ -379,7 +376,7 @@ check_pkgconf LIBXML2 libxml-2.0
 if [ "$HAVE_EGL" = "yes" ]; then
    if [ "$HAVE_OPENGLES" != "no" ]; then
       if [ "$OPENGLES_LIBS" ] || [ "$OPENGLES_CFLAGS" ]; then
-         echo "Notice: Using custom OpenGLES CFLAGS ($OPENGLES_CFLAGS) and LDFLAGS ($OPENGLES_LIBS)."
+         die : "Notice: Using custom OpenGLES CFLAGS ($OPENGLES_CFLAGS) and LDFLAGS ($OPENGLES_LIBS)."
          add_define_make OPENGLES_LIBS "$OPENGLES_LIBS"
          add_define_make OPENGLES_CFLAGS "$OPENGLES_CFLAGS"
       else
@@ -419,7 +416,7 @@ check_pkgconf XINERAMA xinerama
 if [ "$HAVE_X11" = 'yes' ] && [ "$HAVE_XEXT" = 'yes' ] && [ "$HAVE_XF86VM" = 'yes' ]; then
    check_pkgconf XVIDEO xv
 else
-   echo "Notice: X11, Xext or xf86vm not present. Skipping X11 code paths."
+   die : 'Notice: X11, Xext or xf86vm not present. Skipping X11 code paths.'
    HAVE_X11='no'
    HAVE_XVIDEO='no'
 fi
@@ -451,19 +448,19 @@ if [ "$HAVE_MATERIALUI" != 'no' ] || [ "$HAVE_XMB" != 'no' ] || [ "$HAVE_ZARCH" 
       HAVE_MATERIALUI=no
       HAVE_XMB=no
       HAVE_ZARCH=no
-      echo "Notice: RGUI not available, MaterialUI, XMB and ZARCH will also be disabled."
+      die : 'Notice: RGUI not available, MaterialUI, XMB and ZARCH will also be disabled.'
    elif [ "$HAVE_OPENGL" = 'no' ] && [ "$HAVE_OPENGLES" = 'no' ] && [ "$HAVE_VULKAN" = 'no' ]; then
       if [ "$OS" = 'Win32' ]; then
          HAVE_SHADERPIPELINE=no
          HAVE_VULKAN=no
-         echo "Notice: Hardware rendering context not available."
+         die : 'Notice: Hardware rendering context not available.'
       elif [ "$HAVE_CACA" = 'yes' ]; then
-         echo "Notice: Hardware rendering context not available."
+         die : 'Notice: Hardware rendering context not available.'
       else
          HAVE_MATERIALUI=no
          HAVE_XMB=no
          HAVE_ZARCH=no
-         echo "Notice: Hardware rendering context not available, XMB, MaterialUI and ZARCH will also be disabled."
+         die : 'Notice: Hardware rendering context not available, XMB, MaterialUI and ZARCH will also be disabled.'
       fi
    fi
 fi
@@ -474,12 +471,12 @@ add_define_make OS "$OS"
 
 if [ "$HAVE_ZLIB" = 'no' ] && [ "$HAVE_RPNG" != 'no' ]; then
    HAVE_RPNG=no
-   echo "Notice: zlib is not available, RPNG will also be disabled."
+   die : 'Notice: zlib is not available, RPNG will also be disabled.'
 fi
 
 if [ "$HAVE_THREADS" = 'no' ] && [ "$HAVE_LIBUSB" != 'no' ]; then
    HAVE_LIBUSB=no
-   echo "Notice: Threads are not available, libusb will also be disabled."
+   die : 'Notice: Threads are not available, libusb will also be disabled.'
 fi
 
 if [ "$HAVE_V4L2" != 'no' ] && [ "$HAVE_VIDEOPROCESSOR" != 'no' ]; then
