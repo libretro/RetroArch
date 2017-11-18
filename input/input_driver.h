@@ -520,6 +520,7 @@ static INLINE bool input_joypad_pressed(
  *                            E.g.: 
  *                            - RETRO_DEVICE_INDEX_ANALOG_LEFT
  *                            - RETRO_DEVICE_INDEX_ANALOG_RIGHT
+ *                            - RETRO_DEVICE_INDEX_ANALOG_BUTTON
  * @ident                   : Analog key identifier.
  *                            E.g.:
  *                            - RETRO_DEVICE_ID_ANALOG_X
