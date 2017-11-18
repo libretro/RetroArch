@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -22,6 +22,7 @@
 #include <ft2build.h>
 
 #include <file/file_path.h>
+#include "../../configuration.h"
 #include <retro_miscellaneous.h>
 
 #ifdef WIIU
@@ -263,10 +264,11 @@ error:
    return NULL;
 }
 
-/* Not the cleanest way to do things for sure, 
+/* Not the cleanest way to do things for sure,
  * but should hopefully work ... */
 
 static const char *font_paths[] = {
+   "@retroarch-assets/fonts/osd-font.ttf",
 #if defined(_WIN32)
    "C:\\Windows\\Fonts\\consola.ttf",
    "C:\\Windows\\Fonts\\verdana.ttf",
@@ -294,6 +296,15 @@ static const char *font_renderer_ft_get_default_font(void)
    return "";
 #else
    size_t i;
+
+   // Resolve the retroarch-assets osd-font path, if needed.
+   if (strcmp(font_paths[0], "@retroarch-assets/fonts/osd-font.ttf") == 0)
+   {
+      char osd_font_path[PATH_MAX_LENGTH];
+      strcpy(osd_font_path, config_get_ptr()->paths.directory_assets);
+      strcat(osd_font_path, "/fonts/osd-font.ttf");
+      font_paths[0] = osd_font_path;
+   }
 
    for (i = 0; i < ARRAY_SIZE(font_paths); i++)
    {
