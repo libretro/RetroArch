@@ -3760,8 +3760,6 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
          for (i = 0; i < netplay_room_count; i++)
             memcpy(&netplay_room_list[i], netplay_room_get(i), sizeof(netplay_room_list[i]));
 
-
-
          if (lan_room_count != 0)
          {
             struct netplay_host *host = NULL;
@@ -3801,7 +3799,6 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
                      netplay_room_list[i].nickname);
             }
             netplay_room_count += lan_room_count;
-            
          }
          netplay_refresh_rooms_menu(file_list);
       }
