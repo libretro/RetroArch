@@ -237,6 +237,11 @@ bool netplay_lan_ad_server(netplay_t *netplay)
    char reply_addr[NETPLAY_HOST_STR_LEN], port_str[6];
    struct addrinfo *our_addr, hints = {0};
 
+   net_ifinfo_t interfaces;
+
+   if (!net_ifinfo_new(&interfaces))
+      return false;
+
    if (lan_ad_server_fd < 0 && !init_lan_ad_server_socket(netplay, RARCH_DEFAULT_PORT))
        return false;
       
@@ -276,11 +281,6 @@ bool netplay_lan_ad_server(netplay_t *netplay)
          }
 
          strlcpy(reply_addr, ad_packet_buffer.address, NETPLAY_HOST_STR_LEN);
-
-         net_ifinfo_t interfaces;
-
-         if (!net_ifinfo_new(&interfaces))
-            return false;
 
          for (k = 0; k < interfaces.size; k++)
          {
@@ -349,6 +349,7 @@ bool netplay_lan_ad_server(netplay_t *netplay)
       }
 
    }
+   net_ifinfo_free(&interfaces);
 
    return true;
 }
