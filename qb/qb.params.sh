@@ -40,8 +40,11 @@ EOF
 	echo ""
 	echo "Custom options:"
 
-	while IFS='=#' read -r VAR VAL COMMENT; do
-		VAR=$(echo "${VAR##HAVE_}" | tr '[:upper:]' '[:lower:]')
+	while read -r VAR COMMENT; do
+		TMPVAR="${VAR%=*}"
+		COMMENT="${COMMENT#*#}"
+		VAL="${VAR#*=}"
+		VAR="$(echo "${TMPVAR#HAVE_}" | tr '[:upper:]' '[:lower:]')"
 		case "$VAR" in
 			'c89_'*) continue;;
 			*)
@@ -69,9 +72,12 @@ opt_exists() # $opt is returned if exists in OPTS
 }
 
 parse_input() # Parse stuff :V
-{	OPTS=; while IFS='=' read -r VAR _; do OPTS="$OPTS ${VAR##HAVE_}"; done < 'qb/config.params.sh'
-#OPTS contains all available options in config.params.sh - used to speedup
-#things in opt_exists()
+{	OPTS=; while read -r VAR _; do
+		TMPVAR="${VAR%=*}"
+		OPTS="$OPTS ${TMPVAR##HAVE_}"
+	done < 'qb/config.params.sh'
+	#OPTS contains all available options in config.params.sh - used to speedup
+	#things in opt_exists()
 	
 	while [ "$1" ]; do
 		case "$1" in
