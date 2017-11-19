@@ -73,7 +73,6 @@ else
 	BLACKLIST :=
 	BLACKLIST += input/input_overlay.o
 	BLACKLIST += tasks/task_overlay.o
-   BLACKLIST += network/netplay/netplay_discovery.o
 	BLACKLIST += $(LIBRETRO_COMM_DIR)/net/net_ifinfo.o
 	OBJ := $(filter-out $(BLACKLIST),$(OBJ))
 
