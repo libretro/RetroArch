@@ -233,14 +233,9 @@ static int menu_cbs_init_bind_select_compare_type(
       BIND_ACTION_SELECT(cbs, action_select_input_desc_kbd);
    }
 #endif
-#ifdef HAVE_NETWORKING
-   else if (type == MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM)
-   {
-      BIND_ACTION_SELECT(cbs, action_select_netplay_connect_room);
-   }
-#endif      
    else
    {
+
       switch (type)
       {
          case FILE_TYPE_USE_DIRECTORY:
@@ -267,6 +262,14 @@ int menu_cbs_init_bind_select(menu_file_list_cbs_t *cbs,
       return -1;
 
    BIND_ACTION_SELECT(cbs, action_select_default);
+
+#ifdef HAVE_NETWORKING
+   if (cbs->enum_idx == MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM)
+   {
+      BIND_ACTION_SELECT(cbs, action_select_netplay_connect_room);
+      return 0;
+   }
+#endif  
 
    if (cbs->setting)
    {
