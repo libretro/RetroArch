@@ -3735,8 +3735,8 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
       else
       {
          char s[PATH_MAX_LENGTH];
-         int i                                = 0;
-         int k                                = 0;
+         unsigned i                           = 0;
+         unsigned j                           = 0;
          file_list_t *file_list               = menu_entries_get_selection_buf_ptr(0);
 
          netplay_discovery_driver_ctl(RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES, &lan_hosts);
@@ -3760,34 +3760,23 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
          for (i = 0; i < netplay_room_count; i++)
             memcpy(&netplay_room_list[i], netplay_room_get(i), sizeof(netplay_room_list[i]));
 
+
+
          if (lan_room_count != 0)
          {
             struct netplay_host *host = NULL;
 
-            for (host = &lan_hosts->hosts[k]; i < netplay_room_count + lan_room_count; i++)
+            for (j = 0; i < netplay_room_count + lan_room_count; i++)
             {
-               struct sockaddr *address = NULL;
+               struct netplay_host *host = NULL;
+               host = &lan_hosts->hosts[j];
+               
 
                strlcpy(netplay_room_list[i].nickname,
                      host->nick,
                      sizeof(netplay_room_list[i].nickname));
 
-               address = &host->addr;
-
-               if (address->sa_family == AF_INET)
-               {
-                   struct sockaddr_in *sin = (struct sockaddr_in *) address;
-                   inet_ntop_compat(AF_INET, &sin->sin_addr,
-                      netplay_room_list[i].address, INET6_ADDRSTRLEN);
-               }
-#if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY)
-               else if (address->sa_family == AF_INET6)
-               {
-                  struct sockaddr_in6 *sin = (struct sockaddr_in6 *) address;
-                  inet_ntop_compat(AF_INET6, &sin->sin6_addr,
-                     netplay_room_list[i].address, INET6_ADDRSTRLEN);
-               }
-#endif
+               strlcpy(netplay_room_list[i].address, host->address, INET6_ADDRSTRLEN);
 
                strlcpy(netplay_room_list[i].corename,
                      host->core,
@@ -3802,7 +3791,7 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
                      host->content,
                      sizeof(netplay_room_list[i].gamename));
 
-               netplay_room_list[i].port      = 55435;
+               netplay_room_list[i].port      = host->port;
                netplay_room_list[i].gamecrc   = host->content_crc;
                netplay_room_list[i].timestamp = 0;
                netplay_room_list[i].lan = true;
@@ -3810,8 +3799,10 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
                snprintf(s, sizeof(s),
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME),
                      netplay_room_list[i].nickname);
+               j++;
             }
             netplay_room_count += lan_room_count;
+            
          }
          netplay_refresh_rooms_menu(file_list);
       }

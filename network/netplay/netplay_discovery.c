@@ -60,6 +60,7 @@ struct ad_packet
    uint32_t header;
    uint32_t protocol_version;
    uint32_t port;
+   char address[NETPLAY_HOST_STR_LEN];
    char retroarch_version[NETPLAY_HOST_STR_LEN];
    char nick[NETPLAY_HOST_STR_LEN];
    char core[NETPLAY_HOST_STR_LEN];
@@ -90,6 +91,7 @@ bool init_netplay_discovery(void)
 {
    struct addrinfo *addr = NULL;
    int fd = socket_init((void **) &addr, 0, NULL, SOCKET_TYPE_DATAGRAM);
+   char s[NETPLAY_HOST_STR_LEN];
 
    if (fd < 0)
       goto error;
@@ -100,6 +102,9 @@ bool init_netplay_discovery(void)
       goto error;
    }
 
+   inet_ntop_compat(AF_INET, &((struct sockaddr_in *)addr->ai_addr)->sin_addr,
+      s, INET6_ADDRSTRLEN);
+   RARCH_WARN("[discovery] Initialized discovery on %s\n", s);
    lan_ad_client_fd = fd;
    freeaddrinfo_retro(addr);
    return true;
@@ -107,7 +112,7 @@ bool init_netplay_discovery(void)
 error:
    if (addr)
       freeaddrinfo_retro(addr);
-   RARCH_ERR("Failed to initialize netplay advertisement client socket.\n");
+   RARCH_ERR("[discovery] Failed to initialize netplay advertisement client socket.\n");
    return false;
 }
 
@@ -136,6 +141,11 @@ bool netplay_discovery_driver_ctl(enum rarch_netplay_discovery_ctl_state state, 
          struct addrinfo hints = {0}, *addr;
          int canBroadcast = 1;
 
+         net_ifinfo_t interfaces;
+
+         if (!net_ifinfo_new(&interfaces))
+            return false;
+
          /* Get the broadcast address (IPv4 only for now) */
          snprintf(port_str, 6, "%hu", (unsigned short) RARCH_DEFAULT_PORT);
          if (getaddrinfo_retro("255.255.255.255", port_str, &hints, &addr) < 0)
@@ -145,20 +155,27 @@ bool netplay_discovery_driver_ctl(enum rarch_netplay_discovery_ctl_state state, 
 #if defined(SOL_SOCKET) && defined(SO_BROADCAST)
          if (setsockopt(lan_ad_client_fd, SOL_SOCKET, SO_BROADCAST,
                   (const char *)&canBroadcast, sizeof(canBroadcast)) < 0)
-             RARCH_WARN("Failed to set netplay discovery port to broadcast.\n");
+             RARCH_WARN("[discovery] Failed to set netplay discovery port to broadcast.\n");
 #endif
 
          /* Put together the request */
          memcpy((void *) &ad_packet_buffer, "RANQ", 4);
          ad_packet_buffer.protocol_version = htonl(NETPLAY_PROTOCOL_VERSION);
 
-         /* And send it off */
-         if (sendto(lan_ad_client_fd, (const char *) &ad_packet_buffer,
-            2*sizeof(uint32_t), 0, addr->ai_addr, addr->ai_addrlen) <
-            (ssize_t) (2*sizeof(uint32_t)))
-            RARCH_WARN("Failed to send netplay discovery response.\n");
+         for (int k = 0; k < interfaces.size; k++)
+         {
+            strlcpy(ad_packet_buffer.address, interfaces.entries[k].host,
+               NETPLAY_HOST_STR_LEN);
+            /* And send it off */
+            if (sendto(lan_ad_client_fd, (const char *) &ad_packet_buffer,
+               2*sizeof(uint32_t) + NETPLAY_HOST_STR_LEN, 0, addr->ai_addr, addr->ai_addrlen) <
+               (ssize_t) (2*sizeof(uint32_t)))
+               RARCH_WARN("[discovery] Failed to send netplay discovery response.\n");
+         }
 
          freeaddrinfo_retro(addr);
+         net_ifinfo_free(&interfaces);
+
          break;
       }
 
@@ -201,7 +218,7 @@ static bool init_lan_ad_server_socket(netplay_t *netplay, uint16_t port)
 error:
    if (addr)
       freeaddrinfo_retro(addr);
-   RARCH_ERR("Failed to initialize netplay advertisement socket.\n");
+   RARCH_ERR("[discovery] Failed to initialize netplay advertisement socket.\n");
    return false;
 }
 
@@ -217,9 +234,13 @@ bool netplay_lan_ad_server(netplay_t *netplay)
    struct sockaddr their_addr;
    socklen_t addr_size;
    rarch_system_info_t *info = NULL;
+   int ret;
+   char reply_addr[NETPLAY_HOST_STR_LEN];
+   char our_addr[NETPLAY_HOST_STR_LEN];
 
    if (lan_ad_server_fd < 0 && !init_lan_ad_server_socket(netplay, RARCH_DEFAULT_PORT))
        return false;
+      
 
    /* Check for any ad queries */
    while (1)
@@ -234,57 +255,102 @@ bool netplay_lan_ad_server(netplay_t *netplay)
       /* Somebody queried, so check that it's valid */
       addr_size = sizeof(their_addr);
 
-      if (recvfrom(lan_ad_server_fd, (char*)&ad_packet_buffer,
-            sizeof(struct ad_packet), 0, &their_addr, &addr_size) >=
-            (ssize_t) (2*sizeof(uint32_t)))
+      ret = recvfrom(lan_ad_server_fd, (char*)&ad_packet_buffer,
+            sizeof(struct ad_packet), 0, &their_addr, &addr_size);
+      if (ret >= (ssize_t) (2 * sizeof(uint32_t)))
       {
          char s[NETPLAY_HOST_STR_LEN];
          uint32_t content_crc         = 0;
 
          /* Make sure it's a valid query */
          if (memcmp((void *) &ad_packet_buffer, "RANQ", 4))
+         {
+            RARCH_LOG("[discovery] invalid query\n");
             continue;
+         }
 
          /* For this version */
          if (ntohl(ad_packet_buffer.protocol_version) !=
                NETPLAY_PROTOCOL_VERSION)
-            continue;
-
-         info              = runloop_get_system_info();
-
-         /* Now build our response */
-         content_crc = content_get_crc();
-
-         memset(&ad_packet_buffer, 0, sizeof(struct ad_packet));
-         memcpy(&ad_packet_buffer, "RANS", 4);
-
-         ad_packet_buffer.protocol_version =
-            htonl(NETPLAY_PROTOCOL_VERSION);
-         ad_packet_buffer.port = htonl(netplay->tcp_port);
-         strlcpy(ad_packet_buffer.retroarch_version, PACKAGE_VERSION,
-            NETPLAY_HOST_STR_LEN);
-         strlcpy(ad_packet_buffer.content, !string_is_empty(
-                  path_basename(path_get(RARCH_PATH_BASENAME))) 
-               ? path_basename(path_get(RARCH_PATH_BASENAME)) : "N/A",
-               NETPLAY_HOST_LONGSTR_LEN);
-         strlcpy(ad_packet_buffer.nick, netplay->nick, NETPLAY_HOST_STR_LEN);
-
-         if (info)
          {
-            strlcpy(ad_packet_buffer.core, info->info.library_name,
-               NETPLAY_HOST_STR_LEN);
-            strlcpy(ad_packet_buffer.core_version, info->info.library_version,
-               NETPLAY_HOST_STR_LEN);
+            RARCH_LOG("[discovery] invalid protocol version\n");
+            continue;
          }
 
-         snprintf(s, sizeof(s), "%d", content_crc);
-         strlcpy(ad_packet_buffer.content_crc, s,
-            NETPLAY_HOST_STR_LEN);
+         strlcpy(reply_addr, ad_packet_buffer.address, NETPLAY_HOST_STR_LEN);
 
-         /* And send it */
-         sendto(lan_ad_server_fd, (const char*)&ad_packet_buffer,
-            sizeof(struct ad_packet), 0, &their_addr, addr_size);
+         net_ifinfo_t interfaces;
+
+         if (!net_ifinfo_new(&interfaces))
+            return false;
+
+         for (int k = 0; k < interfaces.size; k++)
+         {
+            char *p;
+            char sub[NETPLAY_HOST_STR_LEN];
+
+            p=strrchr(reply_addr,'.');
+            if (p)
+            {
+               strlcpy(sub, reply_addr, p - reply_addr + 1);
+               if (strstr(interfaces.entries[k].host, sub) && !strstr(interfaces.entries[k].host, "127.0.0.1"))
+               {
+                  RARCH_LOG ("[discovery] query received on common interface: %s/%s (theirs / ours) \n", reply_addr, interfaces.entries[k].host);
+
+                  info = runloop_get_system_info();
+
+                  /* Now build our response */
+                  content_crc = content_get_crc();
+
+                  memset(&ad_packet_buffer, 0, sizeof(struct ad_packet));
+                  memcpy(&ad_packet_buffer, "RANS", 4);
+
+                  strlcpy(ad_packet_buffer.address, interfaces.entries[k].host,
+                     NETPLAY_HOST_STR_LEN);
+                  ad_packet_buffer.protocol_version =
+                     htonl(NETPLAY_PROTOCOL_VERSION);
+                  ad_packet_buffer.port = htonl(netplay->tcp_port);
+                  strlcpy(ad_packet_buffer.retroarch_version, PACKAGE_VERSION,
+                     NETPLAY_HOST_STR_LEN);
+                  strlcpy(ad_packet_buffer.content, !string_is_empty(
+                           path_basename(path_get(RARCH_PATH_BASENAME))) 
+                        ? path_basename(path_get(RARCH_PATH_BASENAME)) : "N/A",
+                        NETPLAY_HOST_LONGSTR_LEN);
+                  strlcpy(ad_packet_buffer.nick, netplay->nick, NETPLAY_HOST_STR_LEN);
+
+                  if (info)
+                  {
+                     strlcpy(ad_packet_buffer.core, info->info.library_name,
+                        NETPLAY_HOST_STR_LEN);
+                     strlcpy(ad_packet_buffer.core_version, info->info.library_version,
+                        NETPLAY_HOST_STR_LEN);
+                  }
+
+                  snprintf(s, sizeof(s), "%d", content_crc);
+                  strlcpy(ad_packet_buffer.content_crc, s,
+                     NETPLAY_HOST_STR_LEN);
+
+                  /* Build up the destination address*/
+                  struct addrinfo hints = {0}, *addr;
+                  char port_str[6];
+
+                  snprintf(port_str, 6, "%hu", ntohs(((struct sockaddr_in*)(&their_addr))->sin_port));
+                  if (getaddrinfo_retro(reply_addr, port_str, &hints, &addr) < 0)
+                     continue;
+                  RARCH_LOG ("[discovery] sending reply to %s \n", reply_addr);
+
+                  /* And send it */
+                  sendto(lan_ad_server_fd, (const char*)&ad_packet_buffer,
+                     sizeof(struct ad_packet), 0, addr->ai_addr, addr_size);
+               }
+               else
+                  continue;
+            }
+            else
+               continue;
+         }
       }
+
    }
 
    return true;
@@ -350,7 +416,7 @@ static bool netplay_lan_ad_client(void)
          {
             struct sockaddr_in *sin = NULL;
 
-            RARCH_WARN ("[lobby] using IPv4 for discovery\n");
+            RARCH_WARN ("[discovery] using IPv4 for discovery\n");
             sin           = (struct sockaddr_in *) &their_addr;
             sin->sin_port = htons(ntohl(ad_packet_buffer.port));
 
@@ -359,7 +425,7 @@ static bool netplay_lan_ad_client(void)
          else if (their_addr.sa_family == AF_INET6)
          {
             struct sockaddr_in6 *sin6 = NULL;
-            RARCH_WARN ("[lobby] using IPv6 for discovery\n");
+            RARCH_WARN ("[discovery] using IPv6 for discovery\n");
             sin6            = (struct sockaddr_in6 *) &their_addr;
             sin6->sin6_port = htons(ad_packet_buffer.port);
 
@@ -402,6 +468,9 @@ static bool netplay_lan_ad_client(void)
          host->addr    = their_addr;
          host->addrlen = addr_size;
 
+         host->port = ntohl(ad_packet_buffer.port);
+
+         strlcpy(host->address, ad_packet_buffer.address, NETPLAY_HOST_STR_LEN);
          strlcpy(host->nick, ad_packet_buffer.nick, NETPLAY_HOST_STR_LEN);
          strlcpy(host->core, ad_packet_buffer.core, NETPLAY_HOST_STR_LEN);
          strlcpy(host->retroarch_version, ad_packet_buffer.retroarch_version,
