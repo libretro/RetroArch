@@ -18,6 +18,7 @@
 #define __RARCH_NETPLAY_DISCOVERY_H
 
 #include <net/net_compat.h>
+#include <net/net_ifinfo.h>
 #include <retro_miscellaneous.h>
 
 #define NETPLAY_HOST_STR_LEN 32
@@ -36,12 +37,14 @@ struct netplay_host
    struct sockaddr addr;
    socklen_t addrlen;
 
+   char address[NETPLAY_HOST_STR_LEN];
    char nick[NETPLAY_HOST_STR_LEN];
    char core[NETPLAY_HOST_STR_LEN];
    char core_version[NETPLAY_HOST_STR_LEN];
    char retroarch_version[NETPLAY_HOST_STR_LEN];
    char content[NETPLAY_HOST_LONGSTR_LEN];
    int  content_crc;
+   int  port;
 };
 
 struct netplay_host_list
