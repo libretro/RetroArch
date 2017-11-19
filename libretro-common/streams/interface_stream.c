@@ -105,10 +105,10 @@ bool intfstream_open(intfstream_internal_t *intf, const char *path,
          intf->chd.fp = chdstream_open(path, intf->chd.track);
          if (!intf->chd.fp)
             return false;
+         break;
 #else
          return false;
 #endif
-         break;
    }
 
    return true;

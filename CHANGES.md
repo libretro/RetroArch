@@ -1,34 +1,55 @@
-# 1.6.8 (future)
-- Test
+# 1.6.9 (future)
+
+# 1.6.8
 - Audio: Fix the Audio DSP picker
+- CHEEVOS: Add support for Atari Lynx cheevos.
+- CHEEVOS: Add support for RetroAchievements Leaderboards.
 - GUI: (MaterialUI) Fix crash that happened on context reset with Vulkan.
 - GUI: (MaterialUI) Skip querying and drawing items that are not visible; Cache content height and bbox calculation.
+- GUI: (MaterialUI) Fix entry box highlight calculation.
 - GUI: (XMB) Skip drawing the fading list when it is already transparent. Optimization.
 - GUI: (XMB) Comment out visible item calculation in xmb_draw_items().
 - GUI: (RGUI) Prevent crashes when using a non-English language reliant on UTF8.
-- GUI: Add option for OSD background color.
+- GUI: Add menu option for OSD background color.
+- GUI: Add menu option for OSD text color.
+- GUI: Add menu option to remove frame count from OSD.
+- GUI: Allow wraparound of int/float settings when pressing the left key
+- INPUT/LIBRETRO: Add support for more mouse buttons (buttons 4/5)
+- INPUT/LIBRETRO: Add support for analog buttons
 - INPUT: Always show the controls menu even if descriptors are not set
 - INPUT: Fix input descriptors not being set on cores that don't implement the controllers interface
 - INPUT: Apply descriptors only for the amount of cores the core supports
 - INPUT: Implement keyboard to gamepad input remapping (limited to one gamepad device for now)
 - INPUT: Fix absolute mouse move handling on the winraw driver
 - INPUT: Ignore keyboard input if window is not active on udev driver
+- INPUT: Sanitize the filenames of autoconfig profiles before saving
 - LOBBIES: Fix crash on navigating left / right from the lobby menu
+- LOCALIZATION: Update Dutch translation
 - LOCALIZATION: Update Italian translation.
 - LOCALIZATION: Update Japanese translation.
 - LOCALIZATION: Update Portuguese-Brazilian translation.
 - LOCALIZATION: Update Russian translation.
+- LINUX/ARMHF: Set buildbot updater URL to armhf location instead of blank string
 - LINUX/PI: Broadcom VC4: Add Videocore config option
 - LINUX/UDEV: Fix - RetroArch reads keyboard input when not focused with the udev input driver.
 - NETPLAY: Fix disconnection not fully deinitializing Netplay.
+- NETPLAY: Fix lan rooms when there is more than one room
+- NETPLAY: Fix lan rooms on systems where all addresses are treated as IPv6
 - COMMON: Fix clear/free loop conditionals in playlists.
 - WINDOWS/GDI: Fix flickering of text.
+- WINDOWS/GDI: Fix graphics corruption on Windows 98
+- WINDOWS/GDI: Allow compiling without DirectInput8 for NT support
 - WINDOWS/WGL: Try to use wglSwapLayerBuffers instead of SwapBuffers if possible (for more optimal performance).
+- WINDOWS: Fix menubar text corruption on Japanese locale systems
+- WINDOWS: Support Unicode file I/O (can now display CJK characters in file browser for example).
+- WINDOWS: Support Windows 95, NT3.51, NT4
+- WINDOWS: add Makefile.griffin targets for msvc6,2003,2005,2010,2012,2013
 - WII: Use custom, embedded libogc SDK.
 - WIIU: Initial touchscreen support for WiiU gamepad.
 - WIIU: Add Cheevos support.
 - SCANNER: Fix archive scanning.
 - SCANNER: Support CHD files.
+- SCANNER: Support Gamecube ISO scanning.
 - SCANNER: Use primary data track of disc images for CRC lookups rather than cue files.  This is slower but finds matches more reliably, and is necessary for CHD files to work at all.  Update your databases!
 
 # 1.6.7
@@ -42,7 +63,7 @@
 - GUI: Performance optimizations for XMB menu driver - only calculates visible items.
 - LOCALIZATION: Update Italian translation.
 
-# 1.6.6 (future)
+# 1.6.6
 - 3DS: Fixes serious performance regression that affected every core; rewind was always implicitly enabled.
 - AUDIO: MOD/S3M/XM sound should now be properly mixed in with the core's sound.
 - GUI: Visual makeover of MaterialUI.
@@ -54,7 +75,7 @@
 - INPUT: Overlay controller response - when we press buttons on the gamepad or keyboard, the corresponding buttons on the overlay will be highlighted as well.
 - NETBSD: Silence some compilation warnings.
 - COMMON: Fixed bug 'Deleting an entry from a playlist would not update the list view inside XMB'.
-- COMMON: Fix inet_ntop_compat on *nix
+- COMMON: Fix inet_ntop_compat on Unix
 - LOBBY: Add skeleton to add help descriptions to lobbies
 
 # 1.6.5

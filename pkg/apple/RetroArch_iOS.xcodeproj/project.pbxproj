@@ -529,6 +529,8 @@
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
+					../../deps/stb,
+					../../deps/libz,
 					../../deps,
 				);
 				INFOPLIST_FILE = "RetroArch_iOS9-Info.plist";
@@ -556,7 +558,6 @@
 					"-DHAVE_LIBRETRODB",
 					"-DIOS",
 					"-DHAVE_OPENGL",
-					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
 					"-DHAVE_CC_RESAMPLER",
@@ -612,6 +613,8 @@
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
+					../../deps/stb,
+					../../deps/libz,
 					../../deps,
 				);
 				INFOPLIST_FILE = "RetroArch_iOS9-Info.plist";
@@ -640,7 +643,6 @@
 					"-DHAVE_LIBRETRODB",
 					"-DIOS",
 					"-DHAVE_OPENGL",
-					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
 					"-DHAVE_CC_RESAMPLER",
@@ -693,7 +695,6 @@
 					"-DHAVE_LIBRETRODB",
 					"-DIOS",
 					"-DHAVE_OPENGL",
-					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
 					"-DHAVE_CC_RESAMPLER",
@@ -750,6 +751,8 @@
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
+					../../deps/stb,
+					../../deps/libz,
 					../../deps,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
@@ -778,7 +781,6 @@
 					"-DHAVE_LIBRETRODB",
 					"-DIOS",
 					"-DHAVE_OPENGL",
-					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
 					"-DHAVE_CC_RESAMPLER",
@@ -830,6 +832,8 @@
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
+					../../deps/stb,
+					../../deps/libz,
 					../../deps,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
@@ -858,7 +862,6 @@
 					"-DHAVE_LIBRETRODB",
 					"-DIOS",
 					"-DHAVE_OPENGL",
-					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
 					"-DHAVE_CC_RESAMPLER",
@@ -908,7 +911,6 @@
 					"-DHAVE_LIBRETRODB",
 					"-DIOS",
 					"-DHAVE_OPENGL",
-					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
 					"-DHAVE_CC_RESAMPLER",
@@ -992,7 +994,6 @@
 					"-DIOS",
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OPENGL",
-					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
 					"-DHAVE_CC_RESAMPLER",
@@ -1003,7 +1004,6 @@
 					"-DRARCH_MOBILE",
 					"-std=gnu99",
 					"-DHAVE_COREAUDIO",
-					"-DHAVE_FBO",
 					"-DHAVE_OVERLAY",
 					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
@@ -1064,7 +1064,6 @@
 					"-DIOS",
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OPENGL",
-					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
 					"-DHAVE_CC_RESAMPLER",
@@ -1075,7 +1074,6 @@
 					"-DRARCH_MOBILE",
 					"-std=gnu99",
 					"-DHAVE_COREAUDIO",
-					"-DHAVE_FBO",
 					"-DHAVE_OVERLAY",
 					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
@@ -1111,6 +1109,8 @@
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
+					../../deps/stb,
+					../../deps/libz,
 					../../deps,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
@@ -1138,7 +1138,6 @@
 					"-DHAVE_LIBRETRODB",
 					"-DIOS",
 					"-DHAVE_OPENGL",
-					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
 					"-DHAVE_CC_RESAMPLER",
@@ -1194,6 +1193,8 @@
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
+					../../deps/stb,
+					../../deps/libz,
 					../../deps,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
@@ -1222,7 +1223,6 @@
 					"-DHAVE_LIBRETRODB",
 					"-DIOS",
 					"-DHAVE_OPENGL",
-					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
 					"-DHAVE_CC_RESAMPLER",
@@ -1275,7 +1275,6 @@
 					"-DHAVE_LIBRETRODB",
 					"-DIOS",
 					"-DHAVE_OPENGL",
-					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
 					"-DHAVE_CC_RESAMPLER",

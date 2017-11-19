@@ -279,6 +279,13 @@ VIDEO SHADERS
 #include "../gfx/drivers_shader/shader_glsl.c"
 #endif
 
+#if defined(HAVE_D3D)
+
+#ifdef HAVE_HLSL
+#include "../gfx/drivers_shader/shader_hlsl.c"
+#endif
+#endif
+
 /*============================================================
 VIDEO IMAGE
 ============================================================ */
@@ -321,6 +328,10 @@ VIDEO DRIVER
 #endif
 
 #if defined(HAVE_D3D9)
+
+#ifdef HAVE_HLSL
+#include "../gfx/drivers_renderchain/d3d9_hlsl_renderchain.c"
+#endif
 
 #ifdef HAVE_CG
 #include "../gfx/drivers_renderchain/d3d9_cg_renderchain.c"

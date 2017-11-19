@@ -86,6 +86,8 @@ int detect_ps1_game(intfstream_t *fd, char *game_id);
 
 int detect_psp_game(intfstream_t *fd, char *game_id);
 
+int detect_gc_game(intfstream_t *fd, char *game_id);
+
 int detect_serial_ascii_game(intfstream_t *fd, char *game_id);
 
 static intfstream_t* intfstream_open_file(const char *path)
@@ -264,6 +266,12 @@ static int intfstream_get_serial(intfstream_t *fd, char *serial)
   else if (string_is_equal_fast(system_name, "ps1", 3))
   {
     if (detect_ps1_game(fd, serial) == 0)
+      return 0;
+    RARCH_LOG("%s '%s'\n", msg_hash_to_str(MSG_FOUND_DISK_LABEL), serial);
+  }
+  else if (string_is_equal_fast(system_name, "gc", 2))
+  {
+    if (detect_gc_game(fd, serial) == 0)
       return 0;
     RARCH_LOG("%s '%s'\n", msg_hash_to_str(MSG_FOUND_DISK_LABEL), serial);
   }
@@ -1023,7 +1031,7 @@ static int task_database_iterate_serial_lookup(
    {
       char query[50];
       char *serial_buf =
-         bin_to_hex_alloc((uint8_t*)db_state->serial, 10 * sizeof(uint8_t));
+         bin_to_hex_alloc((uint8_t*)db_state->serial, strlen(db_state->serial) * sizeof(uint8_t));
 
       if (!serial_buf)
          return 1;

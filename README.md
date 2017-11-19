@@ -36,13 +36,16 @@ or visit our IRC channel: #retroarch @ irc.freenode.org.
 
 ## Documentation
 
-See our [wiki](https://github.com/libretro/RetroArch/wiki). On Unix, man-pages are provided.
+See our [Documentation Center](https://docs.libretro.com/). On Unix, man-pages are provided.
 More developer-centric stuff is found [here](https://github.com/libretro/libretro.github.com/wiki/Documentation-devs).
 
 ## Related projects
 
    - Cg/HLSL shaders: [common-shaders](https://github.com/libretro/common-shaders)
+   - slang shaders: [slang-shaders](https://github.com/libretro/slang-shaders)
+   - GLSL shaders: [glsl-shaders](https://github.com/libretro/glsl-shaders)
    - Helper scripts to build libretro implementations: [libretro-super](https://github.com/libretro/libretro-super)
+   - GitHub mirrors of projects, useful for generating diff files: [libretro-mirrors](https://github.com/libretro-mirrors/)
 
 ## Philosophy
 
@@ -58,12 +61,19 @@ RetroArch also emphasizes on being easy to integrate into various launcher front
 
 ## Platforms
 
-RetroArch has been ported to the following platforms outside PC:
+RetroArch has been ported to the following platforms:
 
+   - Windows
+   - Linux
+   - FreeBSD
+   - NetBSD
+   - MacOS
    - PlayStation 3
+   - PlayStation Portable
+   - Original Xbox
    - Xbox 360 (Libxenon/XeXDK)
-   - Xbox 1
-   - Wii, Gamecube (Libogc)
+   - Wii, GameCube (Libogc)
+   - WiiU
    - Nintendo 3DS
    - Raspberry Pi
    - Android
@@ -126,4 +136,4 @@ To configure joypads, use the built-in menu or the `retroarch-joyconfig` command
 
 ## Compiling and installing
 
-Instructions for compiling and installing RetroArch can be found in the [Libretro/RetroArch Documentation Center](https://buildbot.libretro.com/docs).
+Instructions for compiling and installing RetroArch can be found in the [Libretro/RetroArch Documentation Center](https://docs.libretro.com/).

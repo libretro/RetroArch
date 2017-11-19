@@ -26,6 +26,7 @@
 #include <file/file_path.h>
 #include <string/stdstring.h>
 #include <lists/string_list.h>
+#include <streams/file_stream.h>
 
 #include <compat/strl.h>
 
@@ -1858,7 +1859,7 @@ static void systemd_service_toggle(const char *path, char *unit, bool enable)
    args[2] = unit;
 
    if (enable)
-      fclose(fopen(path, "w"));
+      filestream_close(filestream_open(path, RFILE_MODE_WRITE, -1));
    else
       path_file_remove(path);
 
@@ -3949,7 +3950,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler,
-               SD_FLAG_NONE
+               SD_FLAG_LAKKA_ADVANCED
                );
 
          CONFIG_FLOAT(
@@ -3979,6 +3980,7 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          menu_settings_list_current_add_range(list, list_info, -80, 12, 1.0, true, true);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
 #ifdef __CELLOS_LV2__
          CONFIG_BOOL(
@@ -6441,6 +6443,22 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_ADVANCED
+               );
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.cheevos_leaderboards_enable,
+               MENU_ENUM_LABEL_CHEEVOS_LEADERBOARDS_ENABLE,
+               MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
+               false,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
                );
 
          CONFIG_BOOL(

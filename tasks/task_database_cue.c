@@ -61,6 +61,7 @@ static struct magic_entry MAGIC_NUMBERS[] = {
    { 0,        "ps1",    "\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x00\x02\x00\x02\x00"},
    { 0x838840, "pcecd",  "\x82\xb1\x82\xcc\x83\x76\x83\x8d\x83\x4f\x83\x89\x83\x80\x82\xcc\x92"},
    { 0,        "scd",    "\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x00\x02\x00\x01\x53"},
+   { 0x000400, "gc",     "\x00\x01\xC7\x04\x80\x28\x00\x60\x00\x00\x00\x00\x00\x00\x00\x00\x00"},
    { 0,        NULL,     NULL}
 };
 
@@ -295,6 +296,21 @@ int detect_psp_game(intfstream_t *fd, char *game_id)
       }
       else
          break;
+   }
+
+   return rv;
+}
+
+int detect_gc_game(intfstream_t *fd, char *game_id)
+{
+   bool rv   = false;
+
+   intfstream_seek(fd, 0, SEEK_SET);
+
+   if (intfstream_read(fd, game_id, 6) > 0)
+   {
+      game_id[6] = '\0';
+      rv = true;
    }
 
    return rv;

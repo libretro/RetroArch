@@ -38,6 +38,10 @@ RETRO_BEGIN_DECLS
 
 #define MAX_FENCES 4
 
+#ifndef ARB_sync
+typedef struct __GLsync *GLsync;
+#endif
+
 typedef struct gl
 {
    GLenum internal_fmt;
@@ -47,44 +51,34 @@ typedef struct gl
 
    bool vsync;
    bool tex_mipmap;
-#ifdef HAVE_FBO
    bool fbo_inited;
    bool fbo_feedback_enable;
    bool hw_render_fbo_init;
    bool hw_render_depth_init;
+   bool has_fbo;
    bool has_srgb_fbo_gles3;
-#endif
    bool has_fp_fbo;
    bool has_srgb_fbo;
    bool hw_render_use;
+   bool core_context_in_use;
 
    bool should_resize;
    bool quitting;
    bool fullscreen;
    bool keep_aspect;
-#ifdef HAVE_OPENGLES
    bool support_unpack_row_length;
-#else
    bool have_es2_compat;
-#endif
    bool have_full_npot_support;
+   bool have_mipmap;
 
    bool egl_images;
-#ifdef HAVE_OVERLAY
    bool overlay_enable;
    bool overlay_full_screen;
-#endif
-#ifdef HAVE_MENU
    bool menu_texture_enable;
    bool menu_texture_full_screen;
-#endif
-#ifdef HAVE_GL_SYNC
    bool have_sync;
-#endif
-#ifdef HAVE_GL_ASYNC_READBACK
    bool pbo_readback_valid[4];
    bool pbo_readback_enable;
-#endif
 
    int version_major;
    int version_minor;
@@ -92,131 +86,77 @@ typedef struct gl
 
    GLuint tex_mag_filter;
    GLuint tex_min_filter;
-#ifdef HAVE_FBO
    GLuint fbo_feedback;
    GLuint fbo_feedback_texture;
-#endif
    GLuint pbo;
-#ifdef HAVE_OVERLAY
    GLuint *overlay_tex;
-#endif
-#if defined(HAVE_MENU)
    GLuint menu_texture;
-#endif
    GLuint vao;
-#ifdef HAVE_GL_ASYNC_READBACK
    GLuint pbo_readback[4];
-#endif
    GLuint texture[GFX_MAX_TEXTURES];
-#ifdef HAVE_FBO
    GLuint fbo[GFX_MAX_SHADERS];
    GLuint fbo_texture[GFX_MAX_SHADERS];
    GLuint hw_render_fbo[GFX_MAX_TEXTURES];
    GLuint hw_render_depth[GFX_MAX_TEXTURES];
-#endif
 
    unsigned tex_index; /* For use with PREV. */
    unsigned textures;
-#ifdef HAVE_FBO
    unsigned fbo_feedback_pass;
-#endif
    unsigned rotation;
    unsigned vp_out_width;
    unsigned vp_out_height;
    unsigned tex_w;
    unsigned tex_h;
    unsigned base_size; /* 2 or 4 */
-#ifdef HAVE_OVERLAY
    unsigned overlays;
-#endif
-#ifdef HAVE_GL_ASYNC_READBACK
    unsigned pbo_readback_index;
-#endif
-#ifdef HAVE_GL_SYNC
    unsigned fence_count;
-#endif
    unsigned last_width[GFX_MAX_TEXTURES];
    unsigned last_height[GFX_MAX_TEXTURES];
 
-#if defined(HAVE_MENU)
    float menu_texture_alpha;
-#endif
 
    void *empty_buf;
    void *conv_buffer;
    void *readback_buffer_screenshot;
    const float *vertex_ptr;
    const float *white_color_ptr;
-#ifdef HAVE_OVERLAY
    float *overlay_vertex_coord;
    float *overlay_tex_coord;
    float *overlay_color_coord;
-#endif
 
    struct video_tex_info tex_info;
-#ifdef HAVE_GL_ASYNC_READBACK
    struct scaler_ctx pbo_readback_scaler;
-#endif
    struct video_viewport vp;
    math_matrix_4x4 mvp, mvp_no_rot;
    struct video_coords coords;
    struct scaler_ctx scaler;
    video_info_t video_info;
    struct video_tex_info prev_info[GFX_MAX_TEXTURES];
-#ifdef HAVE_FBO
    struct video_fbo_rect fbo_rect[GFX_MAX_SHADERS];
    struct gfx_fbo_scale fbo_scale[GFX_MAX_SHADERS];
-#endif
 
-#ifdef HAVE_GL_SYNC
    GLsync fences[MAX_FENCES];
-#endif
+   const gl_renderchain_driver_t *renderchain_driver;
+   void *renderchain_data;
 } gl_t;
 
-bool gl_load_luts(const struct video_shader *generic_shader,
-      GLuint *lut_textures);
-
-#ifdef NO_GL_FF_VERTEX
-#define gl_ff_vertex(coords) ((void)0)
-#else
-static INLINE void gl_ff_vertex(const struct video_coords *coords)
+static INLINE void gl_bind_texture(GLuint id, GLint wrap_mode, GLint mag_filter,
+      GLint min_filter)
 {
-   /* Fall back to fixed function-style if needed and possible. */
-   glClientActiveTexture(GL_TEXTURE1);
-   glTexCoordPointer(2, GL_FLOAT, 0, coords->lut_tex_coord);
-   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-   glClientActiveTexture(GL_TEXTURE0);
-   glVertexPointer(2, GL_FLOAT, 0, coords->vertex);
-   glEnableClientState(GL_VERTEX_ARRAY);
-   glColorPointer(4, GL_FLOAT, 0, coords->color);
-   glEnableClientState(GL_COLOR_ARRAY);
-   glTexCoordPointer(2, GL_FLOAT, 0, coords->tex_coord);
-   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+   glBindTexture(GL_TEXTURE_2D, id);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_mode);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_mode);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
 }
-#endif
-
-#ifdef NO_GL_FF_MATRIX
-#define gl_ff_matrix(mat) ((void)0)
-#else
-static INLINE void gl_ff_matrix(const math_matrix_4x4 *mat)
-{
-   math_matrix_4x4 ident;
-
-   /* Fall back to fixed function-style if needed and possible. */
-   glMatrixMode(GL_PROJECTION);
-   glLoadMatrixf(mat->data);
-   glMatrixMode(GL_MODELVIEW);
-   matrix_4x4_identity(ident);
-   glLoadMatrixf(ident.data);
-}
-#endif
 
 static INLINE unsigned gl_wrap_type_to_enum(enum gfx_wrap_type type)
 {
    switch (type)
    {
 #ifndef HAVE_OPENGLES
-      case RARCH_WRAP_BORDER:
+      case RARCH_WRAP_BORDER: /* GL_CLAMP_TO_BORDER: Available since GL 1.3 */
          return GL_CLAMP_TO_BORDER;
 #else
       case RARCH_WRAP_BORDER:
@@ -232,8 +172,8 @@ static INLINE unsigned gl_wrap_type_to_enum(enum gfx_wrap_type type)
    return 0;
 }
 
-
 bool gl_query_core_context_in_use(void);
+
 void gl_load_texture_image(GLenum target,
       GLint level,
       GLint internalFormat,
@@ -243,6 +183,14 @@ void gl_load_texture_image(GLenum target,
       GLenum format,
       GLenum type,
       const GLvoid * data);
+
+void gl_load_texture_data(
+      uint32_t id_data,
+      enum gfx_wrap_type wrap_type,
+      enum texture_filter_type filter_type,
+      unsigned alignment,
+      unsigned width, unsigned height,
+      const void *frame, unsigned base_size);
 
 RETRO_END_DECLS
 

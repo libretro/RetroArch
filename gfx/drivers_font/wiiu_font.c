@@ -40,7 +40,7 @@ typedef struct
 static void* wiiu_font_init_font(void* data, const char* font_path,
       float font_size, bool is_threaded)
 {
-   int i;
+   uint32_t i;
    wiiu_font_t* font = (wiiu_font_t*)calloc(1, sizeof(*font));
 
    if (!font)
@@ -401,11 +401,6 @@ static const struct font_glyph* wiiu_font_get_glyph(
    return font->font_driver->get_glyph((void*)font->font_driver, code);
 }
 
-static void wiiu_font_flush_block(unsigned width, unsigned height, void* data)
-{
-   (void)data;
-}
-
 static void wiiu_font_bind_block(void* data, void* userdata)
 {
    (void)data;
@@ -420,6 +415,6 @@ font_renderer_t wiiu_font =
    "wiiufont",
    wiiu_font_get_glyph,
    wiiu_font_bind_block,
-   wiiu_font_flush_block,
+   NULL,                   /* flush */
    wiiu_font_get_message_width,
 };

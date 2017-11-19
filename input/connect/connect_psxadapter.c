@@ -25,7 +25,7 @@
 struct hidpad_psxadapter_data
 {
    struct pad_connection* connection;
-   uint8_t data[8];
+   uint8_t data[64];
    uint32_t slot;
    uint64_t buttons;
 };

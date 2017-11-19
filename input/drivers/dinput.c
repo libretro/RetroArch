@@ -85,7 +85,7 @@ struct dinput_input
    int mouse_rel_y;
    int mouse_x;
    int mouse_y;
-   bool mouse_l, mouse_r, mouse_m, mouse_wu, mouse_wd, mouse_hwu, mouse_hwd;
+   bool mouse_l, mouse_r, mouse_m, mouse_b4, mouse_b5, mouse_wu, mouse_wd, mouse_hwu, mouse_hwd;
    struct pointer_status pointer_head;  /* dummy head for easier iteration */
 };
 
@@ -246,6 +246,8 @@ static void dinput_poll(void *data)
          di->mouse_l  = mouse_state.rgbButtons[0];
       di->mouse_r     = mouse_state.rgbButtons[1];
       di->mouse_m     = mouse_state.rgbButtons[2];
+      di->mouse_b4    = mouse_state.rgbButtons[3];
+      di->mouse_b5    = mouse_state.rgbButtons[4];
 
       /* No simple way to get absolute coordinates
        * for RETRO_DEVICE_POINTER. Just use Win32 APIs. */
@@ -368,6 +370,10 @@ static int16_t dinput_mouse_state(struct dinput_input *di, unsigned id)
          return state;
       case RETRO_DEVICE_ID_MOUSE_MIDDLE:
          return di->mouse_m;
+      case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
+         return di->mouse_b4;
+      case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
+         return di->mouse_b5;
    }
 
    return 0;

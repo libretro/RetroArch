@@ -1077,7 +1077,6 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
    content_ctx.is_ups_pref                    = rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
    content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
    content_ctx.bios_is_missing                = rarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
-   content_ctx.history_list_enable            = false;
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
    content_ctx.name_ips                       = NULL;
@@ -1169,7 +1168,6 @@ bool task_push_load_content_from_playlist_from_menu(
    content_ctx.is_ups_pref                    = rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
    content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
    content_ctx.bios_is_missing                = rarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
-   content_ctx.history_list_enable            = false;
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
    content_ctx.name_ips                       = NULL;
@@ -1267,7 +1265,6 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
    content_ctx.is_ups_pref                    = rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
    content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
    content_ctx.bios_is_missing                = rarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
-   content_ctx.history_list_enable            = false;
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
    content_ctx.name_ips                       = NULL;
@@ -1395,7 +1392,6 @@ bool task_push_load_content_with_new_core_from_menu(
    content_ctx.is_ups_pref                    = rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
    content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
    content_ctx.bios_is_missing                = rarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
-   content_ctx.history_list_enable            = false;
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
    content_ctx.name_ips                       = NULL;
@@ -1499,7 +1495,6 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
    content_ctx.is_ups_pref                    = rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
    content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
    content_ctx.bios_is_missing                = rarch_ctl(RARCH_CTL_IS_MISSING_BIOS, NULL);
-   content_ctx.history_list_enable            = false;
    content_ctx.directory_system               = NULL;
    content_ctx.directory_cache                = NULL;
    content_ctx.name_ips                       = NULL;
@@ -1723,7 +1718,7 @@ void content_deinit(void)
 
          RARCH_LOG("%s: %s.\n",
                msg_hash_to_str(MSG_REMOVING_TEMPORARY_CONTENT_FILE), path);
-         if (path_file_remove(path) < 0)
+         if (!path_file_remove(path))
             RARCH_ERR("%s: %s.\n",
                   msg_hash_to_str(MSG_FAILED_TO_REMOVE_TEMPORARY_FILE),
                   path);

@@ -392,6 +392,8 @@ static void vga_set_osd_msg(void *data,
 }
 
 static const video_poke_interface_t vga_poke_interface = {
+   NULL,       /* set_coords */
+   NULL,       /* set_mvp */
    NULL,
    NULL,
    NULL,
@@ -399,11 +401,7 @@ static const video_poke_interface_t vga_poke_interface = {
    NULL,
    NULL,
    NULL,
-#ifdef HAVE_FBO
    NULL,
-#else
-   NULL,
-#endif
    NULL,
    NULL,
    NULL,

@@ -169,7 +169,10 @@ enum
 #ifdef HAVE_NETWORKING
    XMB_SYSTEM_TAB_NETPLAY,
 #endif
-   XMB_SYSTEM_TAB_ADD
+   XMB_SYSTEM_TAB_ADD,
+
+   /* End of this enum - use the last one to determine num of possible tabs */
+   XMB_SYSTEM_TAB_MAX_LENGTH
 };
 
 typedef struct xmb_handle
@@ -177,7 +180,7 @@ typedef struct xmb_handle
    bool mouse_show;
 
    uint8_t system_tab_end;
-   uint8_t tabs[8];
+   uint8_t tabs[XMB_SYSTEM_TAB_MAX_LENGTH];
 
    int depth;
    int old_depth;
@@ -379,6 +382,8 @@ const char* xmb_theme_ident(void)
          return "flatui";
       case XMB_ICON_THEME_RETROACTIVE:
          return "retroactive";
+      case XMB_ICON_THEME_RETROSYSTEM:
+         return "retrosystem";
       case XMB_ICON_THEME_PIXEL:
          return "pixel";
       case XMB_ICON_THEME_NEOACTIVE:
@@ -3127,10 +3132,12 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             width,
             height);
 
-   font_driver_flush(video_info->width, video_info->height, xmb->font);
+   font_driver_flush(video_info->width, video_info->height, xmb->font,
+         video_info);
    font_driver_bind_block(xmb->font, NULL);
 
-   font_driver_flush(video_info->width, video_info->height, xmb->font2);
+   font_driver_flush(video_info->width, video_info->height, xmb->font2,
+         video_info);
    font_driver_bind_block(xmb->font2, NULL);
 
    if (menu_input_dialog_get_display_kb())
@@ -4027,10 +4034,7 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
       first                   = 0;
    }
    else
-   {
-      selection = 0;
       xmb->selection_ptr_old = 0;
-   }
 
    list_size = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL)
       + xmb->system_tab_end;

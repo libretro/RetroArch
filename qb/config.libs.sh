@@ -35,13 +35,12 @@ elif [ "$OS" = 'Win32' ]; then
    SOCKETHEADER="#include <winsock2.h>"
    DYLIB=
 elif [ "$OS" = 'Cygwin' ]; then
-   echo "Error: Cygwin is not a supported platform. See https://bot.libretro.com/docs/compilation/windows/"
-   exit 1
+   die 1 'Error: Cygwin is not a supported platform. See https://bot.libretro.com/docs/compilation/windows/'
 fi
 
 add_define_make DYLIB_LIB "$DYLIB"
 
-check_lib SYSTEMD -lsystemd sd_get_machine_names
+check_lib '' SYSTEMD -lsystemd sd_get_machine_names
 
 if [ "$HAVE_VIDEOCORE" != "no" ]; then
    check_pkgconf VC_TEST bcm_host
@@ -49,7 +48,7 @@ if [ "$HAVE_VIDEOCORE" != "no" ]; then
    # use fallback if pkgconfig is not available
    if [ ! "$VC_TEST_LIBS" ]; then
       [ -d /opt/vc/lib ] && add_library_dirs /opt/vc/lib && add_library_dirs /opt/vc/lib/GL
-      check_lib VIDEOCORE -lbcm_host bcm_host_init "-lvcos -lvchiq_arm"
+      check_lib '' VIDEOCORE -lbcm_host bcm_host_init "-lvcos -lvchiq_arm"
    else
       HAVE_VIDEOCORE="$HAVE_VC_TEST"
    fi
@@ -79,7 +78,7 @@ if [ "$HAVE_7ZIP" = "yes" ]; then
 fi
 
 if [ "$HAVE_PRESERVE_DYLIB" = "yes" ]; then
-   echo "Notice: Disabling dlclose() of shared objects for Valgrind support."
+   die : 'Notice: Disabling dlclose() of shared objects for Valgrind support.'
    add_define_make HAVE_PRESERVE_DYLIB "1"
 fi
 
@@ -122,7 +121,7 @@ if [ "$HAVE_EGL" != "no" ] && [ "$OS" != 'Win32' ]; then
    check_pkgconf EGL "$VC_PREFIX"egl
    # some systems have EGL libs, but no pkgconfig
    if [ "$HAVE_EGL" = "no" ]; then
-      HAVE_EGL=auto; check_lib EGL "-l${VC_PREFIX}EGL $EXTRA_GL_LIBS"
+      HAVE_EGL=auto; check_lib '' EGL "-l${VC_PREFIX}EGL $EXTRA_GL_LIBS"
       [ "$HAVE_EGL" = "yes" ] && EGL_LIBS=-l"$VC_PREFIX"EGL
    else
       EGL_LIBS="$EGL_LIBS $EXTRA_GL_LIBS"
@@ -130,7 +129,7 @@ if [ "$HAVE_EGL" != "no" ] && [ "$OS" != 'Win32' ]; then
 fi
 
 if [ "$HAVE_SSA" != "no" ]; then
-   check_lib SSA -lass ass_library_init
+   check_lib '' SSA -lass ass_library_init
 fi
 
 if [ "$HAVE_EXYNOS" != "no" ]; then
@@ -143,14 +142,14 @@ if [ "$HAVE_DISPMANX" != "no" ]; then
 fi
 
 if [ "$LIBRETRO" ]; then
-   echo "Notice: Explicit libretro used, disabling dynamic libretro loading ..."
+   die : 'Notice: Explicit libretro used, disabling dynamic libretro loading ...'
    HAVE_DYNAMIC='no'
 else LIBRETRO="-lretro"
 fi
 
 [ "$HAVE_DYNAMIC" = 'yes' ] || {
-   #check_lib RETRO "$LIBRETRO" retro_init "$DYLIB" "Cannot find libretro, did you forget --with-libretro=\"-lretro\"?"
-   check_lib RETRO "$LIBRETRO" "$DYLIB" "Cannot find libretro, did you forget --with-libretro=\"-lretro\"?"
+   #check_lib '' RETRO "$LIBRETRO" retro_init "$DYLIB" "Cannot find libretro, did you forget --with-libretro=\"-lretro\"?"
+   check_lib '' RETRO "$LIBRETRO" "$DYLIB" "Cannot find libretro, did you forget --with-libretro=\"-lretro\"?"
    add_define_make libretro "$LIBRETRO"
 }
 
@@ -173,18 +172,18 @@ if [ "$OS" = 'Win32' ]; then
    HAVE_THREAD_STORAGE=yes
    HAVE_DYLIB=yes
 else
-   check_lib THREADS "$PTHREADLIB" pthread_create
+   check_lib '' THREADS "$PTHREADLIB" pthread_create
 
    if [ "$HAVE_THREADS" = 'yes' ]; then
-      check_lib THREAD_STORAGE "$PTHREADLIB" pthread_key_create
+      check_lib '' THREAD_STORAGE "$PTHREADLIB" pthread_key_create
    else
       HAVE_THREAD_STORAGE=no
    fi
 
-   check_lib DYLIB "$DYLIB" dlopen
+   check_lib '' DYLIB "$DYLIB" dlopen
 fi
 
-check_lib NETWORKING "$SOCKETLIB" socket "" "$SOCKETHEADER"
+check_lib '' NETWORKING "$SOCKETLIB" socket "" "$SOCKETHEADER"
 
 if [ "$HAVE_NETWORKING" = 'yes' ]; then
    HAVE_GETADDRINFO=auto
@@ -194,31 +193,31 @@ if [ "$HAVE_NETWORKING" = 'yes' ]; then
    if [ "$OS" = 'Win32' ]; then
       HAVE_GETADDRINFO=yes
    else
-      check_lib GETADDRINFO "$SOCKETLIB" getaddrinfo
+      check_lib '' GETADDRINFO "$SOCKETLIB" getaddrinfo
       if [ "$HAVE_GETADDRINFO" != 'yes' ]; then
          HAVE_SOCKET_LEGACY=yes
-         echo "Notice: RetroArch will use legacy socket support"
+         die : 'Notice: RetroArch will use legacy socket support'
       fi
    fi
    HAVE_NETWORK_CMD=yes
    HAVE_NETWORKGAMEPAD=yes
 
    if [ "$HAVE_MINIUPNPC" != "no" ]; then
-      check_lib MINIUPNPC "-lminiupnpc"
+      check_lib '' MINIUPNPC "-lminiupnpc"
    fi
 
    if [ "$HAVE_BUILTINMINIUPNPC" = "yes" ]; then
       HAVE_MINIUPNPC='yes'
    fi
 else
-   echo "Warning: All networking features have been disabled."
+   die : 'Warning: All networking features have been disabled.'
    HAVE_KEYMAPPER='no'
    HAVE_NETWORK_CMD='no'
    HAVE_NETWORKGAMEPAD='no'
    HAVE_CHEEVOS='no'
 fi
 
-check_lib STDIN_CMD "$CLIB" fcntl
+check_lib '' STDIN_CMD "$CLIB" fcntl
 
 if [ "$HAVE_NETWORK_CMD" = "yes" ] || [ "$HAVE_STDIN_CMD" = "yes" ]; then
    HAVE_COMMAND='yes'
@@ -226,35 +225,34 @@ else
    HAVE_COMMAND='no'
 fi
 
-check_lib GETOPT_LONG "$CLIB" getopt_long
+check_lib '' GETOPT_LONG "$CLIB" getopt_long
 
 if [ "$HAVE_DYLIB" = 'no' ] && [ "$HAVE_DYNAMIC" = 'yes' ]; then
-   echo "Error: Dynamic loading of libretro is enabled, but your platform does not appear to have dlopen(), use --disable-dynamic or --with-libretro=\"-lretro\"".
-   exit 1
+   die 1 'Error: Dynamic loading of libretro is enabled, but your platform does not appear to have dlopen(), use --disable-dynamic or --with-libretro="-lretro".'
 fi
 
 check_pkgconf ALSA alsa
-check_lib CACA -lcaca
+check_lib '' CACA -lcaca
 check_header OSS sys/soundcard.h
 check_header OSS_BSD soundcard.h
-check_lib OSS_LIB -lossaudio
+check_lib '' OSS_LIB -lossaudio
 
 if [ "$OS" = 'Linux' ]; then
 	HAVE_TINYALSA=yes
 fi
 
 if [ "$OS" = 'Darwin' ]; then
-   check_lib COREAUDIO "-framework AudioUnit" AudioUnitInitialize
-   check_lib CORETEXT "-framework CoreText" CTFontCreateWithName
-   check_lib COCOA "-framework AppKit" NSApplicationMain
-   check_lib AVFOUNDATION "-framework AVFoundation"
-   check_lib CORELOCATION "-framework CoreLocation"
-   check_lib IOHIDMANAGER "-framework IOKit" IOHIDManagerCreate
-   check_lib AL "-framework OpenAL" alcOpenDevice
+   check_lib '' COREAUDIO "-framework AudioUnit" AudioUnitInitialize
+   check_lib '' CORETEXT "-framework CoreText" CTFontCreateWithName
+   check_lib '' COCOA "-framework AppKit" NSApplicationMain
+   check_lib '' AVFOUNDATION "-framework AVFoundation"
+   check_lib '' CORELOCATION "-framework CoreLocation"
+   check_lib '' IOHIDMANAGER "-framework IOKit" IOHIDManagerCreate
+   check_lib '' AL "-framework OpenAL" alcOpenDevice
    HAVE_X11=no # X11 breaks on recent OSXes even if present.
    HAVE_SDL=no
 else
-   check_lib AL -lopenal alcOpenDevice
+   check_lib '' AL -lopenal alcOpenDevice
 fi
 
 check_pkgconf RSOUND rsound 1.1
@@ -266,10 +264,10 @@ check_pkgconf SDL2 sdl2 2.0.0
 
 if [ "$HAVE_SDL2" = 'yes' ]; then
    if [ "$HAVE_SDL2" = 'yes' ] && [ "$HAVE_SDL" = 'yes' ]; then
-      echo "Notice: SDL drivers will be replaced by SDL2 ones."
+      die : 'Notice: SDL drivers will be replaced by SDL2 ones.'
       HAVE_SDL=no
    elif [ "$HAVE_SDL2" = 'no' ]; then
-      echo "Warning: SDL2 not found, skipping."
+      die : 'Warning: SDL2 not found, skipping.'
       HAVE_SDL2=no
    fi
 fi
@@ -277,9 +275,9 @@ fi
 check_pkgconf LIBUSB libusb-1.0 1.0.16
 
 if [ "$OS" = 'Win32' ]; then
-   check_lib DINPUT -ldinput8
-   check_lib D3D9 -ld3d9
-   check_lib DSOUND -ldsound
+   check_lib '' DINPUT -ldinput8
+   check_lib '' D3D9 -ld3d9
+   check_lib '' DSOUND -ldsound
 
    if [ "$HAVE_DINPUT" != 'no' ]; then
       HAVE_XINPUT=yes
@@ -294,25 +292,25 @@ fi
 if [ "$HAVE_OPENGL" != 'no' ] && [ "$HAVE_OPENGLES" != 'yes' ]; then
    if [ "$OS" = 'Darwin' ]; then
       check_header OPENGL "OpenGL/gl.h"
-      check_lib OPENGL "-framework OpenGL"
+      check_lib '' OPENGL "-framework OpenGL"
    elif [ "$OS" = 'Win32' ]; then
       check_header OPENGL "GL/gl.h"
-      check_lib OPENGL -lopengl32
+      check_lib '' OPENGL -lopengl32
    else
       check_header OPENGL "GL/gl.h"
-      check_lib OPENGL -lGL
+      check_lib '' OPENGL -lGL
    fi
 
    if [ "$HAVE_OPENGL" = 'yes' ]; then
       if [ "$OS" = 'Darwin' ]; then
-         check_lib CG "-framework Cg" cgCreateContext
+         check_lib '' CG "-framework Cg" cgCreateContext
          [ "$HAVE_CG" = 'yes' ] && CG_LIBS='-framework Cg'
       elif [ "$OS" = 'Win32' ]; then
-         check_lib_cxx CG -lcg cgCreateContext
+         check_lib cxx CG -lcg cgCreateContext
          [ "$HAVE_CG" = 'yes' ] && CG_LIBS='-lcg -lcgGL'
       else
          # On some distros, -lCg doesn't link against -lstdc++ it seems ...
-         check_lib_cxx CG -lCg cgCreateContext
+         check_lib cxx CG -lCg cgCreateContext
          [ "$HAVE_CG" = 'yes' ] && CG_LIBS='-lCg -lCgGL'
       fi
 
@@ -321,7 +319,7 @@ if [ "$HAVE_OPENGL" != 'no' ] && [ "$HAVE_OPENGLES" != 'yes' ]; then
 
       check_pkgconf OSMESA osmesa
    else
-      echo "Notice: Ignoring Cg. Desktop OpenGL is not enabled."
+      die : 'Notice: Ignoring Cg. Desktop OpenGL is not enabled.'
       HAVE_CG='no'
    fi
 fi
@@ -331,7 +329,7 @@ if [ "$HAVE_ZLIB" != 'no' ]; then
 
    if [ "$HAVE_ZLIB" = 'no' ]; then
       HAVE_ZLIB='auto'
-      check_lib ZLIB '-lz'
+      check_lib '' ZLIB '-lz'
    fi
 fi
 
@@ -349,16 +347,16 @@ if [ "$HAVE_THREADS" != 'no' ]; then
       HAVE_FFMPEG='yes'
       if [ "$HAVE_AVCODEC" = 'no' ] || [ "$HAVE_SWRESAMPLE" = 'no' ] || [ "$HAVE_AVFORMAT" = 'no' ] || [ "$HAVE_AVUTIL" = 'no' ] || [ "$HAVE_SWSCALE" = 'no' ]; then
          HAVE_FFMPEG='no'
-         echo "Notice: FFmpeg built-in support disabled due to missing or unsuitable packages."
+         die : 'Notice: FFmpeg built-in support disabled due to missing or unsuitable packages.'
       fi
    fi
 else
-   echo "Notice: Not building with threading support. Will skip FFmpeg."
+   die : 'Notice: Not building with threading support. Will skip FFmpeg.'
    HAVE_FFMPEG='no'
 fi
 
 if [ "$OS" != 'Win32' ]; then
-   check_lib DYNAMIC "$DYLIB" dlopen
+   check_lib '' DYNAMIC "$DYLIB" dlopen
 fi
 
 if [ "$HAVE_KMS" != "no" ]; then
@@ -367,8 +365,7 @@ if [ "$HAVE_KMS" != "no" ]; then
    if [ "$HAVE_GBM" = "yes" ] && [ "$HAVE_DRM" = "yes" ] && [ "$HAVE_EGL" = "yes" ]; then
       HAVE_KMS=yes
    elif [ "$HAVE_KMS" = "yes" ]; then
-      echo "Error: Cannot find libgbm, libdrm and EGL libraries required for KMS. Compile without --enable-kms."
-      exit 1
+      die 1 'Error: Cannot find libgbm, libdrm and EGL libraries required for KMS. Compile without --enable-kms.'
    else
       HAVE_KMS=no
    fi
@@ -379,13 +376,13 @@ check_pkgconf LIBXML2 libxml-2.0
 if [ "$HAVE_EGL" = "yes" ]; then
    if [ "$HAVE_OPENGLES" != "no" ]; then
       if [ "$OPENGLES_LIBS" ] || [ "$OPENGLES_CFLAGS" ]; then
-         echo "Notice: Using custom OpenGLES CFLAGS ($OPENGLES_CFLAGS) and LDFLAGS ($OPENGLES_LIBS)."
+         die : "Notice: Using custom OpenGLES CFLAGS ($OPENGLES_CFLAGS) and LDFLAGS ($OPENGLES_LIBS)."
          add_define_make OPENGLES_LIBS "$OPENGLES_LIBS"
          add_define_make OPENGLES_CFLAGS "$OPENGLES_CFLAGS"
       else
          HAVE_OPENGLES=auto; check_pkgconf OPENGLES "$VC_PREFIX"glesv2
          if [ "$HAVE_OPENGLES" = "no" ]; then
-            HAVE_OPENGLES=auto; check_lib OPENGLES "-l${VC_PREFIX}GLESv2 $EXTRA_GL_LIBS"
+            HAVE_OPENGLES=auto; check_lib '' OPENGLES "-l${VC_PREFIX}GLESv2 $EXTRA_GL_LIBS"
             add_define_make OPENGLES_LIBS "-l${VC_PREFIX}GLESv2 $EXTRA_GL_LIBS"
          fi
       fi
@@ -393,7 +390,7 @@ if [ "$HAVE_EGL" = "yes" ]; then
    if [ "$HAVE_VG" != "no" ]; then
       check_pkgconf VG "$VC_PREFIX"vg
       if [ "$HAVE_VG" = "no" ]; then
-         HAVE_VG=auto; check_lib VG "-l${VC_PREFIX}OpenVG $EXTRA_GL_LIBS"
+         HAVE_VG=auto; check_lib '' VG "-l${VC_PREFIX}OpenVG $EXTRA_GL_LIBS"
          [ "$HAVE_VG" = "yes" ] && VG_LIBS=-l"$VC_PREFIX"OpenVG
       fi
    fi
@@ -403,19 +400,6 @@ else
 fi
 
 check_pkgconf V4L2 libv4l2
-
-if [ "$OS" = 'Darwin' ]; then
-   check_lib FBO "-framework OpenGL" glFramebufferTexture2D
-elif [ "$OS" = 'Win32' ]; then
-   HAVE_FBO=yes
-else
-   if [ "$HAVE_OPENGLES" = "yes" ]; then
-      [ $HAVE_FBO != "no" ] && HAVE_FBO=yes
-   else
-      check_lib FBO -lGL glFramebufferTexture2D
-   fi
-fi
-
 check_pkgconf FREETYPE freetype2
 check_pkgconf X11 x11
 check_pkgconf XCB xcb
@@ -432,7 +416,7 @@ check_pkgconf XINERAMA xinerama
 if [ "$HAVE_X11" = 'yes' ] && [ "$HAVE_XEXT" = 'yes' ] && [ "$HAVE_XF86VM" = 'yes' ]; then
    check_pkgconf XVIDEO xv
 else
-   echo "Notice: X11, Xext or xf86vm not present. Skipping X11 code paths."
+   die : 'Notice: X11, Xext or xf86vm not present. Skipping X11 code paths.'
    HAVE_X11='no'
    HAVE_XVIDEO='no'
 fi
@@ -440,7 +424,7 @@ fi
 if [ "$HAVE_UDEV" != "no" ]; then
    check_pkgconf UDEV libudev
    if [ "$HAVE_UDEV" = "no" ]; then
-      HAVE_UDEV=auto; check_lib UDEV "-ludev"
+      HAVE_UDEV=auto; check_lib '' UDEV "-ludev"
       [ "$HAVE_UDEV" = "yes" ] && UDEV_LIBS=-ludev
    fi
 fi
@@ -450,24 +434,12 @@ check_header XSHM X11/Xlib.h X11/extensions/XShm.h
 check_header PARPORT linux/parport.h
 check_header PARPORT linux/ppdev.h
 
-if [ "$OS" != 'Win32' ]; then
-   check_lib STRL "$CLIB" strlcpy
+if [ "$OS" != 'Win32' ] && [ "$OS" != 'Linux' ]; then
+   check_lib '' STRL "$CLIB" strlcpy
 fi
-check_lib STRCASESTR "$CLIB" strcasestr
-check_lib MMAP "$CLIB" mmap
-check_lib VULKAN -lvulkan vkCreateInstance
-
-if [ "$HAVE_VULKAN" != 'no' ] && [ ! -e deps/glslang/glslang/README.md ]; then
-	echo "Warning: glslang submodule not loaded, can't use Vulkan."
-	echo "To fix, use:  git submodule init && git submodule update"
-	HAVE_VULKAN=no
-fi
-
-if [ "$HAVE_VULKAN" != 'no' ] && [ ! -e deps/SPIRV-Cross/README.md ]; then
-	echo "Warning: SPIRV-Cross submodule not loaded, can't use Vulkan."
-	echo "To fix, use:  git submodule init && git submodule update"
-	HAVE_VULKAN=no
-fi
+check_lib '' STRCASESTR "$CLIB" strcasestr
+check_lib '' MMAP "$CLIB" mmap
+check_lib '' VULKAN -lvulkan vkCreateInstance
 
 check_pkgconf PYTHON python3
 
@@ -476,19 +448,19 @@ if [ "$HAVE_MATERIALUI" != 'no' ] || [ "$HAVE_XMB" != 'no' ] || [ "$HAVE_ZARCH" 
       HAVE_MATERIALUI=no
       HAVE_XMB=no
       HAVE_ZARCH=no
-      echo "Notice: RGUI not available, MaterialUI, XMB and ZARCH will also be disabled."
+      die : 'Notice: RGUI not available, MaterialUI, XMB and ZARCH will also be disabled.'
    elif [ "$HAVE_OPENGL" = 'no' ] && [ "$HAVE_OPENGLES" = 'no' ] && [ "$HAVE_VULKAN" = 'no' ]; then
       if [ "$OS" = 'Win32' ]; then
          HAVE_SHADERPIPELINE=no
          HAVE_VULKAN=no
-         echo "Notice: Hardware rendering context not available."
+         die : 'Notice: Hardware rendering context not available.'
       elif [ "$HAVE_CACA" = 'yes' ]; then
-         echo "Notice: Hardware rendering context not available."
+         die : 'Notice: Hardware rendering context not available.'
       else
          HAVE_MATERIALUI=no
          HAVE_XMB=no
          HAVE_ZARCH=no
-         echo "Notice: Hardware rendering context not available, XMB, MaterialUI and ZARCH will also be disabled."
+         die : 'Notice: Hardware rendering context not available, XMB, MaterialUI and ZARCH will also be disabled.'
       fi
    fi
 fi
@@ -499,12 +471,12 @@ add_define_make OS "$OS"
 
 if [ "$HAVE_ZLIB" = 'no' ] && [ "$HAVE_RPNG" != 'no' ]; then
    HAVE_RPNG=no
-   echo "Notice: zlib is not available, RPNG will also be disabled."
+   die : 'Notice: zlib is not available, RPNG will also be disabled.'
 fi
 
 if [ "$HAVE_THREADS" = 'no' ] && [ "$HAVE_LIBUSB" != 'no' ]; then
    HAVE_LIBUSB=no
-   echo "Notice: Threads are not available, libusb will also be disabled."
+   die : 'Notice: Threads are not available, libusb will also be disabled.'
 fi
 
 if [ "$HAVE_V4L2" != 'no' ] && [ "$HAVE_VIDEOPROCESSOR" != 'no' ]; then

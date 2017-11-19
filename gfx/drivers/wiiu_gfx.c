@@ -51,7 +51,7 @@ static const wiiu_render_mode_t wiiu_render_mode_map[] =
    {1920, 1080, GX2_TV_RENDER_MODE_WIDE_1080P}  /* GX2_TV_SCAN_MODE_1080P */
 };
 
-static int wiiu_set_position(position_t* position, GX2ColorBuffer* draw_buffer, float x0, float y0, float x1, float y1)
+static void wiiu_set_position(position_t* position, GX2ColorBuffer* draw_buffer, float x0, float y0, float x1, float y1)
 {
    position[0].x = (2.0f * x0 / draw_buffer->surface.width) - 1.0f;
    position[0].y = (2.0f * y0 / draw_buffer->surface.height) - 1.0f;
@@ -194,7 +194,6 @@ static void wiiu_gfx_set_aspect_ratio(void* data, unsigned aspect_ratio_idx)
 static void* wiiu_gfx_init(const video_info_t* video,
       const input_driver_t** input, void** input_data)
 {
-   int i;
    float refresh_rate = 60.0f / 1.001f;
    u32 size           = 0;
    u32 tmp            = 0;
@@ -387,9 +386,9 @@ static void* wiiu_gfx_init(const video_info_t* video,
 
    wiiu->vertex_cache.size       = 0x1000;
    wiiu->vertex_cache.current    = 0;
-   wiiu->vertex_cache.positions  = MEM2_alloc(wiiu->vertex_cache.size 
+   wiiu->vertex_cache.positions  = MEM2_alloc(wiiu->vertex_cache.size
          * sizeof(position_t), GX2_VERTEX_BUFFER_ALIGNMENT);
-   wiiu->vertex_cache.tex_coords = MEM2_alloc(wiiu->vertex_cache.size 
+   wiiu->vertex_cache.tex_coords = MEM2_alloc(wiiu->vertex_cache.size
          * sizeof(tex_coord_t), GX2_VERTEX_BUFFER_ALIGNMENT);
 
    /* Initialize samplers */
@@ -498,7 +497,7 @@ static bool wiiu_gfx_frame(void* data, const void* frame,
    static u32 lastTick , currentTick;
    u32 diff;
 #endif
-   int i;
+   uint32_t i;
    wiiu_video_t* wiiu = (wiiu_video_t*) data;
 
    (void)msg;
@@ -572,7 +571,7 @@ static bool wiiu_gfx_frame(void* data, const void* frame,
 
          for (i = 0; i < height; i++)
          {
-            int j;
+            uint32_t j;
             for(j = 0; j < width; j++)
                dst[j] = src[j];
             dst += wiiu->texture.surface.pitch;
@@ -725,7 +724,7 @@ static bool wiiu_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
 static uintptr_t wiiu_gfx_load_texture(void* video_data, void* data,
       bool threaded, enum texture_filter_type filter_type)
 {
-   int i;
+   uint32_t i;
    wiiu_video_t* wiiu = (wiiu_video_t*) video_data;
    struct texture_image *image = (struct texture_image*)data;
 
@@ -785,7 +784,7 @@ static void wiiu_gfx_apply_state_changes(void* data)
 static void wiiu_gfx_set_texture_frame(void* data, const void* frame, bool rgb32,
                                    unsigned width, unsigned height, float alpha)
 {
-   int i;
+   uint32_t i;
    const uint16_t *src = NULL;
    uint16_t *dst       = NULL;
    wiiu_video_t* wiiu  = (wiiu_video_t*) data;
@@ -849,15 +848,17 @@ static void wiiu_gfx_set_osd_msg(void* data,
 
 static const video_poke_interface_t wiiu_poke_interface =
 {
+   NULL,                      /* set_coords */
+   NULL,                      /* set_mvp */
    wiiu_gfx_load_texture,
    wiiu_gfx_unload_texture,
-   NULL,
+   NULL, /* set_video_mode */
    wiiu_gfx_set_filtering,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
    NULL, /* get_current_framebuffer */
-   NULL,
+   NULL, /* get_proc_address */
    wiiu_gfx_set_aspect_ratio,
    wiiu_gfx_apply_state_changes,
 #ifdef HAVE_MENU
@@ -865,9 +866,11 @@ static const video_poke_interface_t wiiu_poke_interface =
 #endif
    wiiu_gfx_set_texture_enable,
    wiiu_gfx_set_osd_msg,
-   NULL,
-   NULL,
-   NULL
+   NULL, /* show_mouse */
+   NULL, /* grab_mouse_toggle */
+   NULL, /* get_current_shader */
+   NULL, /* get_current_software_framebuffer */
+   NULL, /* get_hw_render_interface */
 };
 
 static void wiiu_gfx_get_poke_interface(void* data,
@@ -898,4 +901,5 @@ video_driver_t video_wiiu =
    NULL, /* overlay_interface */
 #endif
    wiiu_gfx_get_poke_interface,
+   NULL, /* wrap_type_to_enum */
 };

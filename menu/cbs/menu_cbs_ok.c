@@ -3209,7 +3209,34 @@ default_action_ok_cmd_func(action_ok_restart_content,    CMD_EVENT_RESET)
 default_action_ok_cmd_func(action_ok_screenshot,         CMD_EVENT_TAKE_SCREENSHOT)
 default_action_ok_cmd_func(action_ok_disk_cycle_tray_status, CMD_EVENT_DISK_EJECT_TOGGLE        )
 default_action_ok_cmd_func(action_ok_shader_apply_changes, CMD_EVENT_SHADERS_APPLY_CHANGES        )
-default_action_ok_cmd_func(action_ok_add_to_favorites, CMD_EVENT_ADD_TO_FAVORITES)
+
+static int action_ok_add_to_favorites(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   void *new_path = (void*)path_get(RARCH_PATH_CONTENT);
+   if (!command_event(CMD_EVENT_ADD_TO_FAVORITES, new_path))
+      return menu_cbs_exit();
+   return 0;
+}
+
+static int action_ok_add_to_favorites_playlist(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   const char *tmp_path     = NULL;
+   playlist_t *tmp_playlist = NULL;
+
+   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
+
+   if (!tmp_playlist)
+      return 0;
+
+   playlist_get_index(tmp_playlist,
+         rpl_entry_selection_ptr, &tmp_path, NULL, NULL, NULL, NULL, NULL);
+
+   if (!command_event(CMD_EVENT_ADD_TO_FAVORITES, (void*)tmp_path))
+      return menu_cbs_exit();
+   return 0;
+}
 
 static int action_ok_rename_entry(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -3708,8 +3735,8 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
       else
       {
          char s[PATH_MAX_LENGTH];
-         int i                                = 0;
-         int k                                = 0;
+         unsigned i                           = 0;
+         unsigned j                           = 0;
          file_list_t *file_list               = menu_entries_get_selection_buf_ptr(0);
 
          netplay_discovery_driver_ctl(RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES, &lan_hosts);
@@ -3737,30 +3764,17 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
          {
             struct netplay_host *host = NULL;
 
-            for (host = &lan_hosts->hosts[k]; i < netplay_room_count + lan_room_count; i++)
+            for (i = netplay_room_count; i < netplay_room_count + lan_room_count; i++)
             {
-               struct sockaddr *address = NULL;
+               struct netplay_host *host = NULL;
+               host = &lan_hosts->hosts[j++];
+               
 
                strlcpy(netplay_room_list[i].nickname,
                      host->nick,
                      sizeof(netplay_room_list[i].nickname));
 
-               address = &host->addr;
-
-               if (address->sa_family == AF_INET)
-               {
-                   struct sockaddr_in *sin = (struct sockaddr_in *) address;
-                   inet_ntop_compat(AF_INET, &sin->sin_addr,
-                      netplay_room_list[i].address, INET6_ADDRSTRLEN);
-               }
-#if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY)
-               else if (address->sa_family == AF_INET6)
-               {
-                  struct sockaddr_in6 *sin = (struct sockaddr_in6 *) address;
-                  inet_ntop_compat(AF_INET6, &sin->sin6_addr,
-                     netplay_room_list[i].address, INET6_ADDRSTRLEN);
-               }
-#endif
+               strlcpy(netplay_room_list[i].address, host->address, INET6_ADDRSTRLEN);
 
                strlcpy(netplay_room_list[i].corename,
                      host->core,
@@ -3775,7 +3789,7 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
                      host->content,
                      sizeof(netplay_room_list[i].gamename));
 
-               netplay_room_list[i].port      = 55435;
+               netplay_room_list[i].port      = host->port;
                netplay_room_list[i].gamecrc   = host->content_crc;
                netplay_room_list[i].timestamp = 0;
                netplay_room_list[i].lan = true;
@@ -4400,6 +4414,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_RESUME_CONTENT:
             BIND_ACTION_OK(cbs, action_ok_resume_content);
+            break;
+         case MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST:
+            BIND_ACTION_OK(cbs, action_ok_add_to_favorites_playlist);
             break;
          case MENU_ENUM_LABEL_ADD_TO_FAVORITES:
             BIND_ACTION_OK(cbs, action_ok_add_to_favorites);

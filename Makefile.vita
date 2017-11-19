@@ -98,7 +98,7 @@ STRIP   := $(PREFIX)strip
 NM      := $(PREFIX)nm
 LD      := $(CXX)
 
-INCDIRS := -I. -Ideps/libz -Ideps/7zip -Ilibretro-common/include
+INCDIRS := -I. -Ideps/libz -Ideps/7zip -Ilibretro-common/include -Ideps/stb
 LIBDIRS := -L.
 
 ARCHFLAGS := -march=armv7-a -mfpu=neon -mfloat-abi=hard -DVITA

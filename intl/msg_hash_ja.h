@@ -633,6 +633,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_FALSE,
       "偽")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
       "早送り比")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,
+      "お気に入り")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FPS_SHOW,
       "フレームレートを表示")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_ENABLE,
@@ -1241,6 +1243,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE,
       "コアリマップファイルを保存")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
       "ゲームリマップファイルを保存")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE,
+      "コアのりマップファイルを削除")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME,
+      "ゲームのりマップファイルを削除")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REQUIRED,
       "必要")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
@@ -1731,6 +1737,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_PIXEL,
       "ピクセル")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROACTIVE,
       "レトロアクティブ")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROSYSTEM,
+      "Retrosystem")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_DOTART,
       "ドット絵")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
@@ -1883,6 +1891,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
       "無線ネットワークを検索して接続する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_HELP_LIST,
       "RetroArchの使い方について学ぶ。")
+MSG_HASH(MSG_ADDED_TO_FAVORITES,
+      "お気に入りに追加しました")
 MSG_HASH(MSG_APPENDED_DISK,
       "Appended disk")
 MSG_HASH(MSG_APPLICATION_DIR,
@@ -1974,11 +1984,13 @@ MSG_HASH(MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT,
 MSG_HASH(MSG_ERROR_PARSING_ARGUMENTS,
       "Error parsing arguments.")
 MSG_HASH(MSG_ERROR_SAVING_CORE_OPTIONS_FILE,
-      "Error saving core options file.")
+      "コアのオプションファイルを保存に失敗しました。")
 MSG_HASH(MSG_ERROR_SAVING_REMAP_FILE,
-      "Error saving remap file.")
+      "リマップファイルを保存に失敗しました。")
+MSG_HASH(MSG_ERROR_REMOVING_REMAP_FILE,
+      "リマップファイルを削除に失敗しました。")
 MSG_HASH(MSG_ERROR_SAVING_SHADER_PRESET,
-      "Error saving shader preset.")
+      "シェーダーのプリセットを保存に失敗しました。")
 MSG_HASH(MSG_EXTERNAL_APPLICATION_DIR,
       "外部アプリフォルダ")
 MSG_HASH(MSG_EXTRACTING,
@@ -2150,7 +2162,7 @@ MSG_HASH(MSG_NO_STATE_HAS_BEEN_LOADED_YET,
 MSG_HASH(MSG_OVERRIDES_ERROR_SAVING,
       "Error saving overrides.")
 MSG_HASH(MSG_OVERRIDES_SAVED_SUCCESSFULLY,
-      "Overrides saved successfully.")
+      "優先ファイルを保存しました。")
 MSG_HASH(MSG_PAUSED,
       "一時停止。")
 MSG_HASH(MSG_PROGRAM,
@@ -2170,7 +2182,9 @@ MSG_HASH(MSG_REDIRECTING_SAVEFILE_TO,
 MSG_HASH(MSG_REDIRECTING_SAVESTATE_TO,
       "Redirecting savestate to")
 MSG_HASH(MSG_REMAP_FILE_SAVED_SUCCESSFULLY,
-      "Remap file saved successfully.")
+      "リマップファイルを保存しました。")
+MSG_HASH(MSG_REMAP_FILE_REMOVED_SUCCESSFULLY,
+      "リマップファイルを削除しました。")
 MSG_HASH(MSG_REMOVED_DISK_FROM_TRAY,
       "Removed disk from tray.")
 MSG_HASH(MSG_REMOVING_TEMPORARY_CONTENT_FILE,
@@ -2225,6 +2239,8 @@ MSG_HASH(MSG_SKIPPING_SRAM_LOAD,
       "Skipping SRAM load.")
 MSG_HASH(MSG_SLOW_MOTION,
       "スローモーション。")
+MSG_HASH(MSG_FAST_FORWARD,
+      "早送り。")
 MSG_HASH(MSG_SLOW_MOTION_REWIND,
       "スローモーション巻き戻し。")
 MSG_HASH(MSG_SRAM_WILL_NOT_BE_SAVED,
@@ -3153,24 +3169,26 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_OPACITY,
       "OSDメッセージ背景の不透明性")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
       "お気に入りに追加")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES_PLAYLIST,
+      "お気に入りに追加")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-      "Disable Kiosk Mode")
+      "キオスクモードを無効")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
       "Disables kiosk mode. A restart is required for the change to take full effect.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
-      "Enable Kiosk Mode")
+      "キオスクモードを有効")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
       "Protects the setup by hiding all configuration related settings.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_KIOSK_MODE_PASSWORD,
-      "Set Password For Disabling Kiosk Mode")
+      "キオスクモードを無効するパスワードを設定")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_KIOSK_MODE_PASSWORD,
       "Supplying a password when enabling kiosk mode makes it possible to later disable it from the menu, by going to the Main Menu, selecting Disable Kiosk Mode and entering the password.")
 MSG_HASH(MSG_INPUT_KIOSK_MODE_PASSWORD,
-      "Enter Password")
+      "パスワードを入力して下さい")
 MSG_HASH(MSG_INPUT_KIOSK_MODE_PASSWORD_OK,
-      "Password correct.")
+      "パスワード正解。")
 MSG_HASH(MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
-      "Password incorrect.")
+      "パスワード不正解。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED,
       "OSDメッセージの赤色値")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_GREEN,
@@ -3179,3 +3197,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE,
       "OSDメッセージの青色値")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FRAMECOUNT_SHOW,
       "フレームレート表示でフレーム数を表示")
+MSG_HASH(MSG_CONFIG_OVERRIDE_LOADED,
+      "優先ファイルをロードしました。")
+MSG_HASH(MSG_GAME_REMAP_FILE_LOADED,
+      "ゲームの優先ファイルをロードしました。")
+MSG_HASH(MSG_CORE_REMAP_FILE_LOADED,
+      "コアの優先ファイルをロードしました。")

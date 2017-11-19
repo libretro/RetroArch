@@ -398,7 +398,7 @@ void lzma_allocator_free(void* p )
 void *lzma_fast_alloc(void *p, size_t size)
 {
 	int scan;
-   uint32_t *addr;
+    uint32_t *addr        = NULL;
 	lzma_allocator *codec = (lzma_allocator *)(p);
 
 	/* compute the size, rounding to the nearest 1k */

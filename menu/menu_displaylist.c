@@ -1407,15 +1407,6 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FBO_SUPPORT),
-         _fbo_supp ?
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_YES) :
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO));
-   menu_entries_append_enum(info->list, feat_str, "",
-         MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-
-   snprintf(feat_str, sizeof(feat_str),
-         "%s: %s",
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FFMPEG_SUPPORT),
          _ffmpeg_supp ?
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_YES) :
@@ -3044,6 +3035,14 @@ static int menu_displaylist_parse_horizontal_content_actions(
             msg_hash_to_str(MENU_ENUM_LABEL_DELETE_ENTRY),
             MENU_ENUM_LABEL_DELETE_ENTRY,
             MENU_SETTING_ACTION_DELETE_ENTRY, 0, 0);
+
+      if (settings->bools.quick_menu_show_add_to_favorites)
+      {
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES_PLAYLIST),
+               msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST),
+               MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST, FILE_TYPE_PLAYLIST_ENTRY, 0, 0);
+      }
    }
 
    if (!string_is_empty(db_name) && (!content_loaded ||
@@ -5611,10 +5610,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_CHEEVOS_PASSWORD,
                PARSE_ONLY_STRING, false);
          menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_CHEEVOS_TEST_UNOFFICIAL,
+               MENU_ENUM_LABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
+               MENU_ENUM_LABEL_CHEEVOS_LEADERBOARDS_ENABLE,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_CHEEVOS_TEST_UNOFFICIAL,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_CHEEVOS_VERBOSE_ENABLE,

@@ -25,6 +25,7 @@
 #include <compat/posix_string.h>
 #include <retro_assert.h>
 #include <string/stdstring.h>
+#include <streams/file_stream.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -48,6 +49,12 @@
 #include "lakka.h"
 
 #include "tasks/tasks_internal.h"
+
+static const char* invalid_filename_chars[] = {
+   /* https://support.microsoft.com/en-us/help/905231/information-about-the-characters-that-you-cannot-use-in-site-names--fo */
+   "~", "#", "%", "&", "*", "{", "}", "\\", ":", "[", "]", "?", "/", "|", "\'", "\"",
+   NULL
+};
 
 /* All config related settings go here. */
 
@@ -1247,6 +1254,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("cheevos_enable",               &settings->bools.cheevos_enable, true, cheevos_enable, false);
    SETTING_BOOL("cheevos_test_unofficial",      &settings->bools.cheevos_test_unofficial, true, false, false);
    SETTING_BOOL("cheevos_hardcore_mode_enable", &settings->bools.cheevos_hardcore_mode_enable, true, false, false);
+   SETTING_BOOL("cheevos_leaderboards_enable",  &settings->bools.cheevos_leaderboards_enable, true, false, false);
    SETTING_BOOL("cheevos_verbose_enable",       &settings->bools.cheevos_verbose_enable, true, false, false);
 #endif
 #ifdef HAVE_OVERLAY
@@ -1889,6 +1897,8 @@ static config_file_t *open_default_config_file(void)
    config_file_t *conf                    = NULL;
 
    application_data[0] = conf_path[0] = app_path[0] = '\0';
+
+   (void)path_size;
 
 #if defined(_WIN32) && !defined(_XBOX)
    fill_pathname_application_path(app_path, path_size);
@@ -2919,7 +2929,7 @@ bool config_load_override(void)
    /* Restore the libretro_path we're using
     * since it will be overwritten by the override when reloading. */
    path_set(RARCH_PATH_CORE, buf);
-   runloop_msg_queue_push("Configuration override loaded.", 1, 100, true);
+   runloop_msg_queue_push(msg_hash_to_str(MSG_CONFIG_OVERRIDE_LOADED), 1, 100, true);
 
    /* Reset save paths. */
    retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
@@ -3036,7 +3046,7 @@ bool config_load_remap(void)
       RARCH_LOG("Remaps: game-specific remap found at %s.\n", game_path);
       if (input_remapping_load_file(new_conf, game_path))
       {
-         runloop_msg_queue_push("Game remap file loaded.", 1, 100, true);
+         runloop_msg_queue_push(msg_hash_to_str(MSG_GAME_REMAP_FILE_LOADED), 1, 100, true);
          rarch_ctl(RARCH_CTL_SET_REMAPS_GAME_ACTIVE, NULL);
          goto success;
       }
@@ -3056,7 +3066,7 @@ bool config_load_remap(void)
       RARCH_LOG("Remaps: core-specific remap found at %s.\n", core_path);
       if (input_remapping_load_file(new_conf, core_path))
       {
-         runloop_msg_queue_push("Core remap file loaded.", 1, 100, true);
+         runloop_msg_queue_push(msg_hash_to_str(MSG_CORE_REMAP_FILE_LOADED), 1, 100, true);
          rarch_ctl(RARCH_CTL_SET_REMAPS_CORE_ACTIVE, NULL);
          goto success;
       }
@@ -3440,6 +3450,7 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
    unsigned i;
    char *buf                            = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    char *autoconf_file                  = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char *path_new                       = NULL;
    size_t path_size                     = PATH_MAX_LENGTH * sizeof(char);
    int32_t pid_user                     = 0;
    int32_t vid_user                     = 0;
@@ -3450,6 +3461,26 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
    const char *joypad_ident             = settings->arrays.input_joypad_driver;
 
    buf[0] = autoconf_file[0]            = '\0';
+
+   if (string_is_empty(path))
+      goto error;
+
+   path_new = strdup(path);
+
+   for (i = 0; invalid_filename_chars[i]; i++)
+   {
+      while (1)
+      {
+         char *tmp = strstr(path_new, invalid_filename_chars[i]);
+
+         if (tmp)
+            *tmp = '_';
+         else
+            break;
+      }
+   }
+
+   path = path_new;
 
    fill_pathname_join(buf, autoconf_dir, joypad_ident, path_size);
 
@@ -3476,7 +3507,7 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
             path_size);
    }
 
-   conf  = config_file_new(autoconf_file);
+   conf = config_file_new(autoconf_file);
 
    if (!conf)
    {
@@ -3512,11 +3543,15 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
    config_file_free(conf);
    free(buf);
    free(autoconf_file);
+   if (path_new)
+      free(path_new);
    return ret;
 
 error:
    free(buf);
    free(autoconf_file);
+   if (path_new)
+      free(path_new);
    return false;
 }
 
@@ -3699,15 +3734,15 @@ bool config_save_file(const char *path)
 
 #ifdef HAVE_LAKKA
    if (settings->bools.ssh_enable)
-      fclose(fopen(LAKKA_SSH_PATH, "w"));
+      filestream_close(filestream_open(LAKKA_SSH_PATH, RFILE_MODE_WRITE, -1));
    else
       path_file_remove(LAKKA_SSH_PATH);
    if (settings->bools.samba_enable)
-      fclose(fopen(LAKKA_SAMBA_PATH, "w"));
+      filestream_close(filestream_open(LAKKA_SAMBA_PATH, RFILE_MODE_WRITE, -1));
    else
       path_file_remove(LAKKA_SAMBA_PATH);
    if (settings->bools.bluetooth_enable)
-      fclose(fopen(LAKKA_BLUETOOTH_PATH, "w"));
+      filestream_close(filestream_open(LAKKA_BLUETOOTH_PATH, RFILE_MODE_WRITE, -1));
    else
       path_file_remove(LAKKA_BLUETOOTH_PATH);
 #endif

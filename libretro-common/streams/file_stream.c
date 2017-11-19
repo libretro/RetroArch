@@ -81,6 +81,7 @@ struct RFILE
    unsigned hints;
    char *ext;
    int64_t size;
+   FILE *fp;
 #if defined(PSP)
    SceUID fd;
 #else
@@ -99,9 +100,6 @@ struct RFILE
 #define MODE_STR_WRITE_PLUS L"w+"
 #endif
 
-#if defined(HAVE_BUFFERED_IO)
-   FILE *fp;
-#endif
 #if defined(HAVE_MMAP)
    uint8_t *mapped;
    uint64_t mappos;
@@ -109,7 +107,15 @@ struct RFILE
 #endif
    int fd;
 #endif
+   char *buf;
 };
+
+FILE* filestream_get_fp(RFILE *stream)
+{
+   if (!stream)
+      return NULL;
+   return stream->fp;
+}
 
 int filestream_get_fd(RFILE *stream)
 {
@@ -149,7 +155,17 @@ void filestream_set_size(RFILE *stream)
    filestream_seek(stream, 0, SEEK_SET);
 }
 
-RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
+/**
+ * filestream_open:
+ * @path               : path to file
+ * @mode               : file mode to use when opening (read/write)
+ * @bufsize            : optional buffer size (-1 or 0 to use default)
+ *
+ * Opens a file for reading or writing, depending on the requested mode.
+ * If bufsize is > 0 for unbuffered modes (like RFILE_MODE_WRITE), file will instead be fully buffered.
+ * Returns a pointer to an RFILE if opened successfully, otherwise NULL.
+ **/
+RFILE *filestream_open(const char *path, unsigned mode, ssize_t bufsize)
 {
    int            flags = 0;
    int         mode_int = 0;
@@ -249,6 +265,9 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
 
 #if  defined(PSP)
    stream->fd = sceIoOpen(path, flags, mode_int);
+
+   if (stream->fd == -1)
+      goto error;
 #else
 #if defined(HAVE_BUFFERED_IO)
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0 && mode_str)
@@ -270,13 +289,28 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
 #else
       stream->fp = fopen(path, mode_str);
 #endif
+
       if (!stream->fp)
          goto error;
+
+      if (bufsize > 0)
+      {
+         /* Regarding setvbuf:
+          *
+          * https://www.freebsd.org/cgi/man.cgi?query=setvbuf&apropos=0&sektion=0&manpath=FreeBSD+11.1-RELEASE&arch=default&format=html
+          *
+          * If the size argument is not zero but buf is NULL, a buffer of the given size will be allocated immediately, and
+          * released on close. This is an extension to ANSI C.
+          *
+          * Since C89 does not support specifying a null buffer with a non-zero size, we create and track our own buffer for it.
+          */
+         stream->buf = (char*)calloc(1, bufsize);
+         setvbuf(stream->fp, stream->buf, _IOFBF, bufsize);
+      }
    }
    else
 #endif
    {
-      /* FIXME: HAVE_BUFFERED_IO is always 1, but if it is ever changed, open() needs to be changed to _wopen() for WIndows. */
 #if defined(_WIN32) && !defined(_XBOX)
 #if defined(LEGACY_WIN32)
       (void)path_wide;
@@ -292,8 +326,10 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
          free(path_wide);
 #endif
 #else
+      /* FIXME: HAVE_BUFFERED_IO is always 1, but if it is ever changed, this open() needs to have an alternate _wopen() for Windows. */
       stream->fd = open(path, flags, mode_int);
 #endif
+
       if (stream->fd == -1)
          goto error;
 #ifdef HAVE_MMAP
@@ -318,14 +354,10 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
    }
 #endif
 
-#if  defined(PSP)
-   if (stream->fd == -1)
-      goto error;
-#endif
-
    {
       const char *ld = (const char*)strrchr(path, '.');
-      stream->ext    = strdup(ld ? ld + 1 : "");
+      if (ld)
+         stream->ext = strdup(ld + 1);
    }
 
    filestream_set_size(stream);
@@ -369,7 +401,7 @@ char *filestream_getline(RFILE *stream)
    }
 
    newline[idx] = '\0';
-   return newline; 
+   return newline;
 }
 
 char *filestream_gets(RFILE *stream, char *s, size_t len)
@@ -420,7 +452,7 @@ ssize_t filestream_seek(RFILE *stream, ssize_t offset, int whence)
 #endif
 
 #ifdef HAVE_MMAP
-   /* Need to check stream->mapped because this function is 
+   /* Need to check stream->mapped because this function is
     * called in filestream_open() */
    if (stream->mapped && stream->hints & RFILE_HINT_MMAP)
    {
@@ -467,14 +499,26 @@ error:
 
 int filestream_eof(RFILE *stream)
 {
+   return feof(stream->fp);
+
+   /* TODO: FIXME: I can't figure out why this breaks on Windows.
+      The while loop in config_file_new_internal just never exits.
+      The current position seems to jump backwards a few lines,
+      but it doesn't start until somewhere in the middle of the file.
+    */
+   /*
    size_t current_position = filestream_tell(stream);
-   size_t end_position     = filestream_seek(stream, 0, SEEK_END);
+   size_t end_position;
+
+   filestream_seek(stream, 0, SEEK_END);
+   end_position = filestream_tell(stream);
 
    filestream_seek(stream, current_position, SEEK_SET);
 
    if (current_position >= end_position)
       return 1;
    return 0;
+   */
 }
 
 ssize_t filestream_tell(RFILE *stream)
@@ -490,7 +534,7 @@ ssize_t filestream_tell(RFILE *stream)
       return ftell(stream->fp);
 #endif
 #ifdef HAVE_MMAP
-   /* Need to check stream->mapped because this function 
+   /* Need to check stream->mapped because this function
     * is called in filestream_open() */
    if (stream->mapped && stream->hints & RFILE_HINT_MMAP)
       return stream->mappos;
@@ -648,6 +692,8 @@ int filestream_close(RFILE *stream)
    if (stream->fd > 0)
       close(stream->fd);
 #endif
+   if (stream->buf)
+      free(stream->buf);
    free(stream);
 
    return 0;

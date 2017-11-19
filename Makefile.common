@@ -52,10 +52,6 @@ ifeq ($(HAVE_VITA2D), 1)
 	DEFINES += -DHAVE_VITA2D
 endif
 
-ifeq ($(HAVE_FBO), 1)
-   DEFINES += -DHAVE_FBO
-endif
-
 ifeq ($(HAVE_DYLIB), 1)
    DEFINES += -DHAVE_DYLIB
 endif
@@ -1309,9 +1305,6 @@ ifeq ($(HAVE_FLAC),1)
    CFLAGS  += -I$(DEPS_DIR)/libFLAC/include
    DEFINES += -DHAVE_FLAC -DHAVE_STDINT_H -DHAVE_LROUND -DFLAC__HAS_OGG=0 \
               -DFLAC_PACKAGE_VERSION="\"retroarch\""
-   ifneq ($(findstring Win32,$(OS)),)
-      DEFINES += -DHAVE_FSEEKO
-   endif
    FLACOBJ = $(DEPS_DIR)/libFLAC/bitmath.o \
              $(DEPS_DIR)/libFLAC/bitreader.o \
              $(DEPS_DIR)/libFLAC/cpu.o \
@@ -1327,6 +1320,12 @@ ifeq ($(HAVE_FLAC),1)
              $(DEPS_DIR)/libFLAC/md5.o \
              $(DEPS_DIR)/libFLAC/memory.o \
              $(DEPS_DIR)/libFLAC/stream_decoder.o
+   ifneq ($(findstring Win32,$(OS)),)
+      DEFINES += -DHAVE_FSEEKO
+      # make sure not to use this on legacy Windows versions that don't have W-functions implemented
+      DEFINES += -DNEED_UTF8_SUPPORT
+      FLACOBJ += $(DEPS_DIR)/libFLAC/windows_unicode_filenames.o
+   endif
    OBJ += $(FLACOBJ)
 endif
 

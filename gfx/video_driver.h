@@ -233,10 +233,8 @@ typedef struct shader_backend
          unsigned index, struct gfx_fbo_scale *scale);
    bool (*set_coords)(void *handle_data,
          void *shader_data, const struct video_coords *coords);
-   bool (*set_coords_fallback)(void *handle_data,
-         void *shader_data, const struct video_coords *coords);
    bool (*set_mvp)(void *data, void *shader_data,
-         const math_matrix_4x4 *mat);
+         const void *mat_data);
    unsigned (*get_prev_textures)(void *data);
    bool (*get_feedback_pass)(void *data, unsigned *pass);
    bool (*mipmap_input)(void *data, unsigned index);
@@ -301,7 +299,7 @@ typedef struct video_shader_ctx_info
 typedef struct video_shader_ctx_mvp
 {
    void *data;
-   const math_matrix_4x4 *matrix;
+   const void *matrix;
 } video_shader_ctx_mvp_t;
 
 typedef struct video_shader_ctx_filter
@@ -468,8 +466,12 @@ typedef struct video_frame_info
    bool (*cb_set_resize)(void*, unsigned, unsigned);
 
    void (*cb_shader_use)(void *data, void *shader_data, unsigned index, bool set_active);
-   bool (*cb_shader_set_mvp)(void *data, void *shader_data,
-         const math_matrix_4x4 *mat);
+#if 0
+   bool (*cb_set_coords)(void *handle_data,
+         void *shader_data, const struct video_coords *coords);
+#endif
+   bool (*cb_set_mvp)(void *data, void *shader_data,
+         const void *mat_data);
 
    void *context_data;
    void *shader_data;
@@ -671,6 +673,10 @@ struct aspect_ratio_elem
 
 typedef struct video_poke_interface
 {
+   void (*set_coords)(void *handle_data, void *shader_data,
+         const struct video_coords *coords);
+   void (*set_mvp)(void *data, void *shader_data,
+         const void *mat_data);
    uintptr_t (*load_texture)(void *video_data, void *data,
          bool threaded, enum texture_filter_type filter_type);
    void (*unload_texture)(void *data, uintptr_t id);
@@ -797,6 +803,9 @@ typedef struct video_driver
 
 typedef struct d3d_renderchain_driver
 {
+   void (*set_mvp)(void *chain_data, 
+         void *data, unsigned vp_width,
+         unsigned vp_height, unsigned rotation);
    void (*chain_free)(void *data);
    void *(*chain_new)(void);
    bool (*reinit)(void *data, const void *info_data);
@@ -827,6 +836,47 @@ typedef struct d3d_renderchain_driver
 
 typedef struct gl_renderchain_driver
 {
+   void (*set_coords)(void *handle_data,
+         void *shader_data, const struct video_coords *coords);
+   void (*set_mvp)(void *data, void *shader_data,
+         const void *mat_data);
+   void (*init_texture_reference)(
+         void *data, unsigned i,
+         unsigned internal_fmt, unsigned texture_fmt,
+         unsigned texture_type);
+   void (*fence_iterate)(void *data, unsigned hard_sync_frames);
+   void (*fence_free)(void *data);
+   void (*readback)(void *data,
+         unsigned alignment,
+         unsigned fmt, unsigned type,
+         void *src);
+   void (*init_pbo)(unsigned size, const void *data);
+   void (*bind_pbo)(unsigned idx);
+   void (*unbind_pbo)(void);
+   void (*copy_frame)(
+      void *data, 
+      video_frame_info_t *video_info,
+      const void *frame,
+      unsigned width, unsigned height, unsigned pitch);
+   void (*restore_default_state)(void *data);
+   void (*new_vao)(void *data);
+   void (*free_vao)(void *data);
+   void (*bind_vao)(void *data);
+   void (*unbind_vao)(void *data);
+   void (*disable_client_arrays)(void);
+   void (*ff_vertex)(const void *data);
+   void (*ff_matrix)(const void *data);
+   void (*bind_backbuffer)(void);
+   void (*deinit_fbo)(void *data);
+   void (*viewport_info)(
+         void *data, struct video_viewport *vp);
+   bool (*read_viewport)(
+         void *data, uint8_t *buffer, bool is_idle);
+   void (*bind_prev_texture)(
+         void *data,
+         const struct video_tex_info *tex_info);
+   void (*chain_free)(void *data);
+   void *(*chain_new)(void);
    void (*init)(void *data, unsigned fbo_width, unsigned fbo_height);
    bool (*init_hw_render)(void *data, unsigned width, unsigned height);
    void (*free)(void *data);
@@ -1236,17 +1286,13 @@ bool video_shader_driver_get_feedback_pass(unsigned *data);
 
 bool video_shader_driver_mipmap_input(unsigned *index);
 
-#define video_shader_driver_set_coords(coords) \
-   if (!current_shader->set_coords(coords.handle_data, shader_data, (const struct video_coords*)coords.data) && current_shader->set_coords_fallback) \
-      current_shader->set_coords_fallback(coords.handle_data, shader_data, (const struct video_coords*)coords.data)
+void video_driver_set_coords(video_shader_ctx_coords_t *coords);
 
 bool video_shader_driver_scale(video_shader_ctx_scale_t *scaler);
 
 bool video_shader_driver_info(video_shader_ctx_info_t *shader_info);
 
-#define video_shader_driver_set_mvp(mvp) \
-   if (mvp.matrix) \
-      current_shader->set_mvp(mvp.data, shader_data, mvp.matrix) \
+void video_driver_set_mvp(video_shader_ctx_mvp_t *mvp);
 
 bool video_shader_driver_filter_type(video_shader_ctx_filter_t *filter);
 
@@ -1259,6 +1305,10 @@ bool video_shader_driver_wrap_type(video_shader_ctx_wrap_t *wrap);
 
 bool renderchain_d3d_init_first(
       const d3d_renderchain_driver_t **renderchain_driver,
+      void **renderchain_handle);
+
+bool renderchain_gl_init_first(
+      const gl_renderchain_driver_t **renderchain_driver,
       void **renderchain_handle);
 
 extern bool (*video_driver_cb_has_focus)(void);
@@ -1321,7 +1371,9 @@ extern const shader_backend_t shader_null_backend;
 extern d3d_renderchain_driver_t d3d8_renderchain;
 extern d3d_renderchain_driver_t cg_d3d9_renderchain;
 extern d3d_renderchain_driver_t hlsl_d3d9_renderchain;
-extern d3d_renderchain_driver_t null_renderchain;
+extern d3d_renderchain_driver_t null_d3d_renderchain;
+
+extern gl_renderchain_driver_t gl2_renderchain;
 
 RETRO_END_DECLS
 

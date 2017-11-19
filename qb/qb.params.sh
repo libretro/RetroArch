@@ -1,3 +1,14 @@
+die() # $1 = exit code, use : to not exit when printing warnings $@ = exit or warning messages
+{
+	ret="$1"
+	shift 1
+	printf %s\\n "$@" >&2
+	case "$ret" in
+		: ) return 0 ;;
+		* ) exit "$ret" ;;
+	esac
+}
+
 print_help_option() # $1 = option $@ = description
 {
 	_opt="$1"
@@ -29,8 +40,11 @@ EOF
 	echo ""
 	echo "Custom options:"
 
-	while IFS='=#' read VAR VAL COMMENT; do
-		VAR=$(echo "${VAR##HAVE_}" | tr '[:upper:]' '[:lower:]')
+	while read -r VAR COMMENT; do
+		TMPVAR="${VAR%=*}"
+		COMMENT="${COMMENT#*#}"
+		VAL="${VAR#*=}"
+		VAR="$(echo "${TMPVAR#HAVE_}" | tr '[:upper:]' '[:lower:]')"
 		case "$VAR" in
 			'c89_'*) continue;;
 			*)
@@ -50,15 +64,20 @@ EOF
 }
 
 opt_exists() # $opt is returned if exists in OPTS
-{	opt=$(echo "$1" | tr '[:lower:]' '[:upper:]')
-	for OPT in $OPTS; do [ "$opt" = "$OPT" ] && return; done
-	echo "Unknown option $2"; exit 1
+{	opt="$(echo "$1" | tr '[:lower:]' '[:upper:]')"
+	err="$2"
+	eval "set -- $OPTS"
+	for OPT do [ "$opt" = "$OPT" ] && return; done
+	die 1 "Unknown option $err"
 }
 
 parse_input() # Parse stuff :V
-{	OPTS=; while IFS='=' read VAR dummy; do OPTS="$OPTS ${VAR##HAVE_}"; done < 'qb/config.params.sh'
-#OPTS contains all available options in config.params.sh - used to speedup
-#things in opt_exists()
+{	OPTS=; while read -r VAR _; do
+		TMPVAR="${VAR%=*}"
+		OPTS="$OPTS ${TMPVAR##HAVE_}"
+	done < 'qb/config.params.sh'
+	#OPTS contains all available options in config.params.sh - used to speedup
+	#things in opt_exists()
 	
 	while [ "$1" ]; do
 		case "$1" in
@@ -81,7 +100,7 @@ parse_input() # Parse stuff :V
 				eval "$opt=\"$val\""
 			;;
 			-h|--help) print_help; exit 0;;
-			*) echo "Unknown option $1"; exit 1;;
+			*) die 1 "Unknown option $1";;
 		esac
 		shift
 	done
@@ -89,4 +108,4 @@ parse_input() # Parse stuff :V
 
 . qb/config.params.sh
 
-parse_input "$@" 
+parse_input "$@"

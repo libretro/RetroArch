@@ -2239,7 +2239,7 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_ADD_TO_FAVORITES:
          playlist_push(
                g_defaults.content_favorites,
-               path_get(RARCH_PATH_CONTENT),
+               (const char*)data,
                NULL,
                file_path_str(FILE_PATH_DETECT),
                file_path_str(FILE_PATH_DETECT),

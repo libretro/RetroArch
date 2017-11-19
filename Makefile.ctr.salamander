@@ -74,7 +74,7 @@ else
    CFLAGS	+= -O3
 endif
 
-CFLAGS += -I. -Ideps/libz -Ideps/7zip -Ilibretro-common/include
+CFLAGS += -I. -Ideps/libz -Ideps/7zip -Ideps/stb -Ilibretro-common/include
 
 #CFLAGS += -DRARCH_INTERNAL
 CFLAGS += -DRARCH_CONSOLE -DIS_SALAMANDER

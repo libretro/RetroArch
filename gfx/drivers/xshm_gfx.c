@@ -205,6 +205,8 @@ static void xshm_grab_mouse_toggle(void *data)
 #endif
 
 static video_poke_interface_t xshm_video_poke_interface = {
+   NULL,       /* set_coords */
+   NULL,       /* set_mvp */
    NULL,
    NULL,
    NULL,

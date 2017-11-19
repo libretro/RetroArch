@@ -30,6 +30,7 @@
 
 #include <boolean.h>
 #include <file/file_path.h>
+#include <streams/file_stream.h>
 
 #ifndef __MACH__
 #include <compat/strl.h>
@@ -401,17 +402,17 @@ bool path_is_compressed_file(const char* path)
  */
 bool path_file_exists(const char *path)
 {
-   FILE *dummy;
+   RFILE *dummy;
 
    if (!path || !*path)
       return false;
 
-   dummy = fopen(path, "rb");
+   dummy = filestream_open(path, RFILE_MODE_READ, -1);
 
    if (!dummy)
       return false;
 
-   fclose(dummy);
+   filestream_close(dummy);
    return true;
 }
 
@@ -920,7 +921,7 @@ void fill_short_pathname_representation_noext(char* out_rep,
    path_remove_extension(out_rep);
 }
 
-int path_file_remove(const char *path)
+bool path_file_remove(const char *path)
 {
    char *path_local    = NULL;
    wchar_t *path_wide  = NULL;
@@ -937,25 +938,89 @@ int path_file_remove(const char *path)
 
    if (path_local)
    {
-      bool ret = remove(path_local);
+      int ret = remove(path_local);
       free(path_local);
 
-      return ret;
+      if (ret == 0)
+         return true;
    }
 #else
    path_wide = utf8_to_utf16_string_alloc(path);
 
    if (path_wide)
    {
-      bool ret = _wremove(path_wide);
+      int ret = _wremove(path_wide);
       free(path_wide);
 
-      return ret;
+      if (ret == 0)
+         return true;
    }
 #endif
 #else
-   return remove(path);
+   if (remove(path) == 0)
+      return true;
 #endif
+   return false;
+}
 
-   return -1;
+bool path_file_rename(const char *old_path, const char *new_path)
+{
+   char *old_path_local    = NULL;
+   char *new_path_local    = NULL;
+   wchar_t *old_path_wide  = NULL;
+   wchar_t *new_path_wide  = NULL;
+
+   if (!old_path || !*old_path || !new_path || !*new_path)
+      return false;
+
+   (void)old_path_local;
+   (void)new_path_local;
+   (void)old_path_wide;
+   (void)new_path_wide;
+
+#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_MSC_VER) && _MSC_VER < 1400
+   old_path_local = utf8_to_local_string_alloc(old_path);
+   new_path_local = utf8_to_local_string_alloc(new_path);
+
+   if (old_path_local)
+   {
+      if (new_path_local)
+      {
+         int ret = rename(old_path_local, new_path_local);
+         free(old_path_local);
+         free(new_path_local);
+         return ret;
+      }
+
+      free(old_path_local);
+   }
+
+   if (new_path_local)
+      free(new_path_local);
+#else
+   old_path_wide = utf8_to_utf16_string_alloc(old_path);
+   new_path_wide = utf8_to_utf16_string_alloc(new_path);
+
+   if (old_path_wide)
+   {
+      if (new_path_wide)
+      {
+         int ret = _wrename(old_path_wide, new_path_wide);
+         free(old_path_wide);
+         free(new_path_wide);
+         return ret;
+      }
+
+      free(old_path_wide);
+   }
+
+   if (new_path_wide)
+      free(new_path_wide);
+#endif
+#else
+   if (rename(old_path, new_path) == 0)
+      return true;
+#endif
+   return false;
 }

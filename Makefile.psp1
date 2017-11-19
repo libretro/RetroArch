@@ -19,7 +19,7 @@ ifeq ($(WHOLE_ARCHIVE_LINK), 1)
    WHOLE_END := -Wl,--no-whole-archive
 endif
 
-INCDIR = deps/libz deps/7zip libretro-common/include
+INCDIR = deps deps/stb deps/libz deps/7zip libretro-common/include
 CFLAGS = $(OPTIMIZE_LV) -G0 -std=gnu99 -ffast-math
 ASFLAGS = $(CFLAGS)
 

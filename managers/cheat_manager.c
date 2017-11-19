@@ -97,7 +97,8 @@ void cheat_manager_apply_cheats(void)
          cheat_info.enabled = true;
          cheat_info.code    = handle->cheats[i].code;
 
-         core_set_cheat(&cheat_info);
+         if (!string_is_empty(cheat_info.code))
+            core_set_cheat(&cheat_info);
       }
    }
     runloop_msg_queue_push(msg_hash_to_str(MSG_APPLYING_CHEAT), 1, 180, true);

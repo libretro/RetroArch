@@ -98,17 +98,6 @@ MENU
 #endif
 
 /*============================================================
-VIDEO CONTEXT
-============================================================ */
-
-#if defined(HAVE_D3D)
-
-#ifdef HAVE_HLSL
-#include "../gfx/drivers_shader/shader_hlsl.cpp"
-#endif
-#endif
-
-/*============================================================
 UI
 ============================================================ */
 #if defined(HAVE_QT)
@@ -127,10 +116,6 @@ UI
 /*============================================================
 VIDEO DRIVER
 ============================================================ */
-#if defined(HAVE_D3D) && defined(HAVE_D3D9) && defined(HAVE_HLSL)
-#include "../gfx/drivers_renderchain/d3d9_hlsl_renderchain.cpp"
-#endif
-
 #ifdef HAVE_VULKAN
 #include "../gfx/drivers_shader/shader_vulkan.cpp"
 #include "../gfx/drivers_shader/glslang_util.cpp"

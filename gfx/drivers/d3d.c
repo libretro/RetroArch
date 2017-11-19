@@ -66,39 +66,22 @@
 #endif
 #endif
 
+#ifdef _XBOX
+#ifndef HAVE_FBO
+#define HAVE_FBO
+#endif
+
+#endif
+
 static LPDIRECT3D g_pD3D;
-
-static bool d3d_init_luts(d3d_video_t *d3d)
-{
-   unsigned i;
-   settings_t *settings = config_get_ptr();
-
-   if (!d3d->renderchain_driver || !d3d->renderchain_driver->add_lut)
-      return true;
-
-   for (i = 0; i < d3d->shader.luts; i++)
-   {
-      if (!d3d->renderchain_driver->add_lut(
-            d3d->renderchain_data,
-            d3d->shader.lut[i].id, d3d->shader.lut[i].path,
-            d3d->shader.lut[i].filter == RARCH_FILTER_UNSPEC ?
-            settings->bools.video_smooth :
-            (d3d->shader.lut[i].filter == RARCH_FILTER_LINEAR)))
-         return false;
-   }
-
-   return true;
-}
 
 static bool d3d_init_imports(d3d_video_t *d3d)
 {
    retro_ctx_memory_info_t    mem_info;
-   state_tracker_t *state_tracker = NULL;
+   state_tracker_t *state_tracker         = NULL;
    struct state_tracker_info tracker_info = {0};
 
    if (!d3d->shader.variables)
-      return true;
-   if (!d3d->renderchain_driver || !d3d->renderchain_driver->add_state_tracker)
       return true;
 
    mem_info.id = RETRO_MEMORY_SYSTEM_RAM;
@@ -205,15 +188,36 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
    }
 #endif
 
-   if (!d3d_init_luts(d3d))
+   if (d3d->renderchain_driver)
    {
-      RARCH_ERR("[D3D]: Failed to init LUTs.\n");
-      return false;
-   }
-   if (!d3d_init_imports(d3d))
-   {
-      RARCH_ERR("[D3D]: Failed to init imports.\n");
-      return false;
+      if (d3d->renderchain_driver->add_lut)
+      {
+         unsigned i;
+         settings_t *settings = config_get_ptr();
+
+         for (i = 0; i < d3d->shader.luts; i++)
+         {
+            if (!d3d->renderchain_driver->add_lut(
+                     d3d->renderchain_data,
+                     d3d->shader.lut[i].id, d3d->shader.lut[i].path,
+                     d3d->shader.lut[i].filter == RARCH_FILTER_UNSPEC ?
+                     settings->bools.video_smooth :
+                     (d3d->shader.lut[i].filter == RARCH_FILTER_LINEAR)))
+            {
+               RARCH_ERR("[D3D]: Failed to init LUTs.\n");
+               return false;
+            }
+         }
+      }
+
+      if (d3d->renderchain_driver->add_state_tracker)
+      {
+         if (!d3d_init_imports(d3d))
+         {
+            RARCH_ERR("[D3D]: Failed to init imports.\n");
+            return false;
+         }
+      }
    }
 
    return true;
@@ -961,9 +965,7 @@ static void d3d_set_osd_msg(void *data,
    font_driver_render_msg(video_info, NULL, msg, params);
 }
 
-/* Delay constructor due to lack of exceptions. */
-
-static bool d3d_construct(d3d_video_t *d3d,
+static bool d3d_init_internal(d3d_video_t *d3d,
       const video_info_t *info, const input_driver_t **input,
       void **input_data)
 {
@@ -1062,11 +1064,20 @@ static bool d3d_construct(d3d_video_t *d3d,
     * later. */
    type =
       video_shader_parse_type(settings->paths.path_shader, RARCH_SHADER_NONE);
-   if (settings->bools.video_shader_enable && type == RARCH_SHADER_CG)
+
+   if (settings->bools.video_shader_enable)
    {
-      if (!string_is_empty(d3d->shader_path))
-         free(d3d->shader_path);
-      d3d->shader_path = strdup(settings->paths.path_shader);
+      switch (type)
+      {
+         case RARCH_SHADER_CG:
+            if (!string_is_empty(d3d->shader_path))
+               free(d3d->shader_path);
+            if (!string_is_empty(settings->paths.path_shader))
+               d3d->shader_path = strdup(settings->paths.path_shader);
+            break;
+         default:
+            break;
+      }
    }
 
    if (!d3d_process_shader(d3d))
@@ -1171,7 +1182,7 @@ static void *d3d_init(const video_info_t *info,
 
    video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
 
-   if (!d3d_construct(d3d, info, input, input_data))
+   if (!d3d_init_internal(d3d, info, input, input_data))
    {
       RARCH_ERR("[D3D]: Failed to init D3D.\n");
       goto error;
@@ -1708,7 +1719,21 @@ static void d3d_unload_texture(void *data, uintptr_t id)
    d3d_texture_free(texid);
 }
 
+static void d3d_set_mvp(void *data,
+      void *shader_data,
+      const void *mat_data)
+{
+   d3d_video_t *d3d = (d3d_video_t*)data;
+   if (d3d && d3d->renderchain_driver->set_mvp)
+      d3d->renderchain_driver->set_mvp(
+            d3d->renderchain_data,
+            data,
+            640, 480, 0);
+}
+
 static const video_poke_interface_t d3d_poke_interface = {
+   NULL,                            /* set_coords */
+   d3d_set_mvp,
    d3d_load_texture,
    d3d_unload_texture,
    NULL,

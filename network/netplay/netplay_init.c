@@ -184,7 +184,11 @@ static bool init_tcp_socket(netplay_t *netplay, void *direct_host,
    while (tmp_info)
    {
       struct sockaddr_storage sad;
-      int fd = init_tcp_connection(
+      int fd;
+
+      memset(&sad, 0, sizeof(sad));
+
+      fd = init_tcp_connection(
             tmp_info,
             direct_host || server,
             (struct sockaddr*)&sad,

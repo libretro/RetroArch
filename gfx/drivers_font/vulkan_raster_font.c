@@ -436,7 +436,7 @@ static const struct font_glyph *vulkan_raster_font_get_glyph(
 }
 
 static void vulkan_raster_font_flush_block(unsigned width, unsigned height,
-      void *data)
+      void *data, video_frame_info_t *video_info)
 {
    (void)data;
 }

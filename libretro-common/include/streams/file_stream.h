@@ -23,6 +23,7 @@
 #ifndef __LIBRETRO_SDK_FILE_STREAM_H
 #define __LIBRETRO_SDK_FILE_STREAM_H
 
+#include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
 
@@ -44,7 +45,7 @@ enum
    RFILE_MODE_WRITE,
    RFILE_MODE_READ_WRITE,
 
-   /* There is no garantee these requests will be attended. */
+   /* There is no guarantee these requests will be attended. */
    RFILE_HINT_UNBUFFERED = 1<<8,
    RFILE_HINT_MMAP       = 1<<9  /* requires RFILE_MODE_READ */
 };
@@ -55,7 +56,17 @@ void filestream_set_size(RFILE *stream);
 
 const char *filestream_get_ext(RFILE *stream);
 
-RFILE *filestream_open(const char *path, unsigned mode, ssize_t len);
+/**
+ * filestream_open:
+ * @path               : path to file
+ * @mode               : file mode to use when opening (read/write)
+ * @bufsize            : optional buffer size (-1 or 0 to use default)
+ *
+ * Opens a file for reading or writing, depending on the requested mode.
+ * If bufsize is > 0 for unbuffered modes (like RFILE_MODE_WRITE), file will instead be fully buffered.
+ * Returns a pointer to an RFILE if opened successfully, otherwise NULL.
+ **/
+RFILE *filestream_open(const char *path, unsigned mode, ssize_t bufsize);
 
 ssize_t filestream_seek(RFILE *stream, ssize_t offset, int whence);
 
@@ -90,6 +101,8 @@ int filestream_printf(RFILE *stream, const char* format, ...);
 int filestream_error(RFILE *stream);
 
 int filestream_get_fd(RFILE *stream);
+
+FILE* filestream_get_fp(RFILE *stream);
 
 int filestream_flush(RFILE *stream);
 
