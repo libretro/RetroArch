@@ -212,33 +212,33 @@ static void wiiu_joypad_poll(void)
       if (vpad.tpNormal.touched && vpad.tpNormal.validity == VPAD_VALID) {
          struct video_viewport vp = {0};
          video_driver_get_viewport_info(&vp);
-         VPADTouchData cal = {0};
+         VPADTouchData cal720p = {0};
          /* Calibrates data to a 720p screen, seems to clamp outer 12px */
-         VPADGetTPCalibratedPoint(0, &cal, &(vpad.tpNormal));
+         VPADGetTPCalibratedPoint(0, &cal720p, &(vpad.tpNormal));
+         /* Recalibrate to match video driver's coordinate system */
+         VPADTouchData calNative = {0};
+         calNative.x = scaleTP(12, 1268, 0, vp.full_width, cal720p.x);
+         calNative.y = scaleTP(12, 708, 0, vp.full_height, cal720p.y);
          /* Clamp to actual game image */
+         VPADTouchData calClamped = calNative;
          bool touchClamped = false;
-         if (cal.x < vp.x) {
-            cal.x = vp.x;
+         if (calClamped.x < vp.x) {
+            calClamped.x = vp.x;
             touchClamped = true;
-         } else if (cal.x > vp.x + vp.width) {
-            cal.x = vp.x + vp.width;
-            touchClamped = true;
-         }
-         if (cal.y < vp.y) {
-            cal.y = vp.y;
-            touchClamped = true;
-         } else if (cal.y > vp.y + vp.height) {
-            cal.y = vp.y + vp.height;
+         } else if (calClamped.x > vp.x + vp.width) {
+            calClamped.x = vp.x + vp.width;
             touchClamped = true;
          }
-         /* Account for 12px clamp on VPADGetTPCalibratedPoint */
-         if (vp.x < 12) vp.x = 12;
-         if (vp.y < 12) vp.y = 12;
-         if (vp.x + vp.width > 1268) vp.width = 1268 - vp.x;
-         if (vp.y + vp.height > 708) vp.height = 708 - vp.y;
+         if (calClamped.y < vp.y) {
+            calClamped.y = vp.y;
+            touchClamped = true;
+         } else if (calClamped.y > vp.y + vp.height) {
+            calClamped.y = vp.y + vp.height;
+            touchClamped = true;
+         }
          /* Calibrate to libretro spec and save as axis 2 (idx 4,5) */
-         analog_state[0][2][0] = scaleTP(vp.x, vp.x + vp.width, -0x7fff, 0x7fff, cal.x);
-         analog_state[0][2][1] = scaleTP(vp.y, vp.y + vp.height, -0x7fff, 0x7fff, cal.y);
+         analog_state[0][2][0] = scaleTP(vp.x, vp.x + vp.width, -0x7fff, 0x7fff, calClamped.x);
+         analog_state[0][2][1] = scaleTP(vp.y, vp.y + vp.height, -0x7fff, 0x7fff, calClamped.y);
 
          /* Emulating a button (#19) for touch; lets people assign it to menu
             for that traditional RetroArch Wii U feel */
