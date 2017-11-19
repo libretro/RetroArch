@@ -534,6 +534,8 @@ static void cheevos_add_var(const cheevos_var_t* var, char** memaddr,
    {
       if (var->type == CHEEVOS_VAR_TYPE_DELTA_MEM)
          cheevos_add_char(memaddr, left, 'd');
+      else if (var->is_bcd)
+         cheevos_add_char(memaddr, left, 'b');
 
       cheevos_add_string(memaddr, left, "0x");
       cheevos_add_var_size(memaddr, left, var);
@@ -966,8 +968,12 @@ static int cheevos_parse_expression(cheevos_expr_t *expr, const char* mem)
    expr->count = 1;
    expr->compare_count = 1;
 
-   for (aux = mem; *aux != '"'; aux++)
+   for (aux = mem;; aux++)
+   {
+      if(*aux == '"' || *aux == ':')
+         break;
       expr->count += *aux == '_';
+   }
 
    expr->terms = (cheevos_term_t*)calloc(expr->count, sizeof(cheevos_term_t));
 
@@ -1068,8 +1074,6 @@ static int cheevos_parse_mem(cheevos_leaderboard_t *lb, const char* mem)
          if (cheevos_parse_expression(&lb->value, mem + 4))
             goto error;
       }
-      else
-         goto error;
 
       for (mem += 4;; mem++)
       {

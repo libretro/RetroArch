@@ -119,11 +119,20 @@ void cheevos_var_parse(cheevos_var_t* var, const char** memaddr)
    const char *str = *memaddr;
    unsigned base   = 16;
 
+   var->is_bcd = false;
+
    if (toupper((unsigned char)*str) == 'D' && str[1] == '0' && toupper((unsigned char)str[2]) == 'X')
    {
       /* d0x + 4 hex digits */
       str += 3;
       var->type = CHEEVOS_VAR_TYPE_DELTA_MEM;
+   }
+   else if (toupper((unsigned char)*str) == 'B' && str[1] == '0' && toupper((unsigned char)str[2]) == 'X')
+   {
+      /* b0x (binary-coded decimal) */
+      str += 3;
+      var->is_bcd = true;
+      var->type = CHEEVOS_VAR_TYPE_ADDRESS;
    }
    else if (*str == '0' && toupper((unsigned char)str[1]) == 'X')
    {
@@ -406,5 +415,8 @@ unsigned cheevos_var_get_value(cheevos_var_t* var)
          break;
    }
 
-   return value;
+   if(var->is_bcd)
+      return (((value >> 4) & 0xf) * 10) + (value & 0xf);
+   else
+      return value;
 }
