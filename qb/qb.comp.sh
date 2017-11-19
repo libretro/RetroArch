@@ -14,7 +14,7 @@ cc_works=0
 if [ "$CC" ]; then
 	"$CC" -o "$TEMP_EXE" "$TEMP_C" >/dev/null 2>&1 && cc_works=1
 else
-	for CC in $(printf %s "$(which ${CROSS_COMPILE}gcc ${CROSS_COMPILE}cc ${CROSS_COMPILE}clang 2>/dev/null)") ''; do
+	for CC in $(exists ${CROSS_COMPILE}gcc ${CROSS_COMPILE}cc ${CROSS_COMPILE}clang) ''; do
 		"$CC" -o "$TEMP_EXE" "$TEMP_C" >/dev/null 2>&1 && cc_works=1 && break
 	done
 fi
@@ -44,7 +44,7 @@ cxx_works=0
 if [ "$CXX" ]; then
 	"$CXX" -o "$TEMP_EXE" "$TEMP_CXX" >/dev/null 2>&1 && cxx_works=1
 else
-	for CXX in $(printf %s "$(which ${CROSS_COMPILE}g++ ${CROSS_COMPILE}c++ ${CROSS_COMPILE}clang++ 2>/dev/null)") ''; do
+	for CXX in $(exists ${CROSS_COMPILE}g++ ${CROSS_COMPILE}c++ ${CROSS_COMPILE}clang++) ''; do
 		"$CXX" -o "$TEMP_EXE" "$TEMP_CXX" >/dev/null 2>&1 && cxx_works=1 && break
 	done
 fi
@@ -67,7 +67,7 @@ fi
 if [ "$OS" = "Win32" ]; then
 	echobuf="Checking for windres"
 	if [ -z "$WINDRES" ]; then
-		WINDRES=$(which ${CROSS_COMPILE}windres)
+		WINDRES=$(exists ${CROSS_COMPILE}windres)
 		[ "$WINDRES" ] || die 1 "$echobuf ... Not found. Exiting."
 	fi
 	echo "$echobuf ... $WINDRES"
@@ -76,7 +76,7 @@ fi
 [ -n "$PKG_CONF_PATH" ] || {
 	PKG_CONF_PATH="none"
 
-	for p in $(which "${CROSS_COMPILE}pkg-config" 2>/dev/null) ''; do
+	for p in $(exists "${CROSS_COMPILE}pkg-config") ''; do
 		[ -n "$p" ] && {
 			PKG_CONF_PATH=$p;
 			break;
