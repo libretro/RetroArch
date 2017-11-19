@@ -3769,7 +3769,7 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
             for (j = 0; i < netplay_room_count + lan_room_count; i++)
             {
                struct netplay_host *host = NULL;
-               host = &lan_hosts->hosts[j];
+               host = &lan_hosts->hosts[j++];
                
 
                strlcpy(netplay_room_list[i].nickname,
@@ -3799,7 +3799,6 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
                snprintf(s, sizeof(s),
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME),
                      netplay_room_list[i].nickname);
-               j++;
             }
             netplay_room_count += lan_room_count;
             
