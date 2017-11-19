@@ -1,7 +1,3 @@
-IFS=' 	
-'
-\unalias -a 2>/dev/null
-PATH="$(command -p getconf PATH):$PATH"
 
 if [ -n "$CROSS_COMPILE" ]; then
 	case "$CROSS_COMPILE" in
@@ -30,3 +26,4 @@ if [ -e /etc/lsb-release ]; then
 fi
 
 echo "Checking operating system ... $OS ${DISTRO}"
+
