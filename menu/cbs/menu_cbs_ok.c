@@ -3766,7 +3766,7 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
          {
             struct netplay_host *host = NULL;
 
-            for (j = 0; i < netplay_room_count + lan_room_count; i++)
+            for (i = netplay_room_count; i < netplay_room_count + lan_room_count; i++)
             {
                struct netplay_host *host = NULL;
                host = &lan_hosts->hosts[j++];
