@@ -123,8 +123,10 @@ void deinit_netplay_discovery(void)
 }
 
 /** Discovery control */
+/* Todo: implement net_ifinfo and ntohs for consoles */
 bool netplay_discovery_driver_ctl(enum rarch_netplay_discovery_ctl_state state, void *data)
 {
+#ifndef RARCH_CONSOLE
    char port_str[6];
    int k = 0;
    int ret;
@@ -191,7 +193,7 @@ bool netplay_discovery_driver_ctl(enum rarch_netplay_discovery_ctl_state state, 
       default:
          return false;
    }
-
+#endif
    return true;
 }
 
@@ -228,6 +230,8 @@ error:
  */
 bool netplay_lan_ad_server(netplay_t *netplay)
 {
+/* Todo: implement net_ifinfo and ntohs for consoles */
+#ifndef RARCH_CONSOLE
    fd_set fds;
    struct timeval tmp_tv = {0};
    struct sockaddr their_addr;
@@ -351,8 +355,7 @@ bool netplay_lan_ad_server(netplay_t *netplay)
       }
    }
    net_ifinfo_free(&interfaces);
-
-
+#endif
    return true;
 }
 
