@@ -528,7 +528,7 @@ static const bool netplay_nat_traversal = false;
 
 static const unsigned netplay_delay_frames = 16;
 
-static const int netplay_check_frames = 30;
+static const int netplay_check_frames = 600;
 
 static const bool netplay_use_mitm_server = false;
 
