@@ -1566,7 +1566,7 @@ static int action_ok_playlist_entry_collection(const char *path,
 
 
    if (!task_push_load_content_from_playlist_from_menu(
-            new_core_path, path,
+            new_core_path, path, entry_label,
             &content_info,
             NULL, NULL))
       return -1;
@@ -1582,6 +1582,7 @@ static int action_ok_playlist_entry(const char *path,
    size_t selection_ptr                = 0;
    playlist_t *playlist                = g_defaults.content_history;
    const char *entry_path              = NULL;
+   const char *entry_label             = NULL;
    const char *core_path               = NULL;
    const char *core_name               = NULL;
    playlist_t *tmp_playlist            = NULL;
@@ -1598,7 +1599,7 @@ static int action_ok_playlist_entry(const char *path,
    selection_ptr = entry_idx;
 
    playlist_get_index(playlist, selection_ptr,
-         &entry_path,  NULL, &core_path, &core_name, NULL, NULL);
+         &entry_path, &entry_label, &core_path, &core_name, NULL, NULL);
 
    if (     string_is_equal(core_path, file_path_str(FILE_PATH_DETECT))
          && string_is_equal(core_name, file_path_str(FILE_PATH_DETECT)))
@@ -1662,7 +1663,7 @@ static int action_ok_playlist_entry(const char *path,
          NULL, NULL);
 
    if (!task_push_load_content_from_playlist_from_menu(
-            core_path, path,
+            core_path, path, entry_label,
             &content_info,
             NULL, NULL))
       return -1;
@@ -1679,6 +1680,7 @@ static int action_ok_playlist_entry_start_content(const char *path,
    bool playlist_initialized           = false;
    playlist_t *playlist                = NULL;
    const char *entry_path              = NULL;
+   const char *entry_label             = NULL;
    const char *core_path               = NULL;
    const char *core_name               = NULL;
    playlist_t *tmp_playlist            = NULL;
@@ -1708,7 +1710,7 @@ static int action_ok_playlist_entry_start_content(const char *path,
    selection_ptr = rdb_entry_start_game_selection_ptr;
 
    playlist_get_index(playlist, selection_ptr,
-         &entry_path, NULL, &core_path, &core_name, NULL, NULL);
+         &entry_path, &entry_label, &core_path, &core_name, NULL, NULL);
 
    if (     string_is_equal(core_path, file_path_str(FILE_PATH_DETECT))
          && string_is_equal(core_name, file_path_str(FILE_PATH_DETECT)))
@@ -1772,7 +1774,7 @@ static int action_ok_playlist_entry_start_content(const char *path,
          playlist_info.idx, &path, NULL, NULL, NULL, NULL, NULL);
 
    if (!task_push_load_content_from_playlist_from_menu(
-            core_path, path,
+            core_path, path, entry_label,
             &content_info,
             NULL, NULL))
       return -1;
