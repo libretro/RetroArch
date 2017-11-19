@@ -23,6 +23,12 @@
 #include "../widgets/menu_entry.h"
 #include "../menu_cbs.h"
 #include "../menu_setting.h"
+#include "../../tasks/tasks_internal.h"
+
+#ifdef HAVE_NETWORKING
+#include "../../network/netplay/netplay.h"
+#include "../../network/netplay/netplay_discovery.h"
+#endif
 
 #ifndef BIND_ACTION_SELECT
 #define BIND_ACTION_SELECT(cbs, name) \
@@ -148,6 +154,53 @@ static int action_select_input_desc_kbd(const char *path, const char *label, uns
    return action_right_input_desc_kbd(type, label, true);
 }
 
+static int action_select_netplay_connect_room(const char *path, const char *label, unsigned type,
+   size_t idx)
+{
+#ifdef HAVE_NETWORKING
+   char tmp_hostname[4115];
+
+   tmp_hostname[0] = '\0';
+
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
+      command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+   netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
+
+   if (netplay_room_list[idx - 3].host_method == NETPLAY_HOST_METHOD_MITM)
+   {
+      snprintf(tmp_hostname,
+            sizeof(tmp_hostname),
+            "%s|%d",
+         netplay_room_list[idx - 3].mitm_address,
+         netplay_room_list[idx - 3].mitm_port);
+   }
+   else
+   {
+      snprintf(tmp_hostname,
+            sizeof(tmp_hostname),
+            "%s|%d",
+         netplay_room_list[idx - 3].address,
+         netplay_room_list[idx - 3].port);
+   }
+
+#if 0
+   RARCH_LOG("[lobby] connecting to: %s with game: %s/%08x\n",
+         tmp_hostname,
+         netplay_room_list[idx - 3].gamename,
+         netplay_room_list[idx - 3].gamecrc);
+#endif
+
+   task_push_netplay_crc_scan(netplay_room_list[idx - 3].gamecrc,
+      netplay_room_list[idx - 3].gamename,
+      tmp_hostname, netplay_room_list[idx - 3].corename);
+
+#else
+   return -1;
+
+#endif
+   return 0;
+}
+
 static int menu_cbs_init_bind_select_compare_type(
       menu_file_list_cbs_t *cbs, unsigned type)
 {
@@ -180,6 +233,12 @@ static int menu_cbs_init_bind_select_compare_type(
       BIND_ACTION_SELECT(cbs, action_select_input_desc_kbd);
    }
 #endif
+#ifdef HAVE_NETWORKING
+   else if (type == MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM)
+   {
+      BIND_ACTION_SELECT(cbs, action_select_netplay_connect_room);
+   }
+#endif      
    else
    {
       switch (type)
