@@ -339,6 +339,8 @@ bool netplay_lan_ad_server(netplay_t *netplay)
                   /* And send it */
                   sendto(lan_ad_server_fd, (const char*)&ad_packet_buffer,
                      sizeof(struct ad_packet), 0, our_addr->ai_addr, our_addr->ai_addrlen);
+                  if (our_addr)
+                     freeaddrinfo_retro(our_addr);
                }
                else
                   continue;
@@ -347,9 +349,9 @@ bool netplay_lan_ad_server(netplay_t *netplay)
                continue;
          }
       }
-
    }
    net_ifinfo_free(&interfaces);
+
 
    return true;
 }
