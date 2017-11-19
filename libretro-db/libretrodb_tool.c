@@ -118,7 +118,7 @@ int main(int argc, char ** argv)
    {
       if (argc != 4)
       {
-         printf("Usage: %s <db file> find-name <query expression>\n", argv[0]);
+         printf("Usage: %s <db file> get-names <query expression>\n", argv[0]);
          goto error;
       }
       
