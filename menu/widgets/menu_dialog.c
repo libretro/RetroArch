@@ -263,8 +263,13 @@ void menu_dialog_push(void)
 
    info.list                 = menu_entries_get_menu_stack_ptr(0);
    info.enum_idx             = MENU_ENUM_LABEL_HELP;
-   info.label                = strdup(
-         msg_hash_to_str(MENU_ENUM_LABEL_HELP));
+
+   // Set the label string, if it exists.
+   const char *label = msg_hash_to_str(MENU_ENUM_LABEL_HELP);
+   if (label)
+   {
+      info.label = strdup(label);
+   }
 
    menu_displaylist_ctl(DISPLAYLIST_HELP, &info);
 }
