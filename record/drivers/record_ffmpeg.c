@@ -68,6 +68,17 @@ extern "C" {
 #include "../../gfx/video_driver.h"
 #include "../../verbosity.h"
 
+#ifndef AV_CODEC_FLAG_QSCALE
+#define AV_CODEC_FLAG_QSCALE CODEC_FLAG_QSCALE
+#endif
+
+#ifndef AV_CODEC_FLAG_GLOBAL_HEADER
+#define AV_CODEC_FLAG_GLOBAL_HEADER CODEC_FLAG_GLOBAL_HEADER
+#endif
+
+#ifndef AV_INPUT_BUFFER_MIN_SIZE
+#define AV_INPUT_BUFFER_MIN_SIZE FF_MIN_BUFFER_SIZE
+#endif
 
 #ifndef PIX_FMT_RGB32
 #define PIX_FMT_RGB32 AV_PIX_FMT_RGB32
