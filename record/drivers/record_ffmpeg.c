@@ -348,7 +348,7 @@ static bool ffmpeg_init_audio(ffmpeg_t *handle)
 
    if (params->audio_qscale)
    {
-      audio->codec->flags |= CODEC_FLAG_QSCALE;
+      audio->codec->flags |= AV_CODEC_FLAG_QSCALE;
       audio->codec->global_quality = params->audio_global_quality;
    }
    else if (params->audio_bit_rate)
@@ -358,7 +358,7 @@ static bool ffmpeg_init_audio(ffmpeg_t *handle)
    audio->codec->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
 
    if (handle->muxer.ctx->oformat->flags & AVFMT_GLOBALHEADER)
-      audio->codec->flags |= CODEC_FLAG_GLOBAL_HEADER;
+      audio->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
    if (avcodec_open2(audio->codec, codec, params->audio_opts ? &params->audio_opts : NULL) != 0)
       return false;
@@ -378,7 +378,7 @@ static bool ffmpeg_init_audio(ffmpeg_t *handle)
    if (!audio->buffer)
       return false;
 
-   audio->outbuf_size = FF_MIN_BUFFER_SIZE;
+   audio->outbuf_size = AV_INPUT_BUFFER_MIN_SIZE;
    audio->outbuf = (uint8_t*)av_malloc(audio->outbuf_size);
    if (!audio->outbuf)
       return false;
@@ -490,14 +490,14 @@ static bool ffmpeg_init_video(ffmpeg_t *handle)
 
    if (params->video_qscale)
    {
-      video->codec->flags |= CODEC_FLAG_QSCALE;
+      video->codec->flags |= AV_CODEC_FLAG_QSCALE;
       video->codec->global_quality = params->video_global_quality;
    }
    else if (params->video_bit_rate)
       video->codec->bit_rate = params->video_bit_rate;
 
    if (handle->muxer.ctx->oformat->flags & AVFMT_GLOBALHEADER)
-      video->codec->flags |= CODEC_FLAG_GLOBAL_HEADER;
+      video->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
    if (avcodec_open2(video->codec, codec, params->video_opts ?
             &params->video_opts : NULL) != 0)
