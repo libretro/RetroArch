@@ -171,7 +171,7 @@ bool netplay_discovery_driver_ctl(enum rarch_netplay_discovery_ctl_state state, 
             ret = sendto(lan_ad_client_fd, (const char *) &ad_packet_buffer,
                sizeof(struct ad_packet), 0, addr->ai_addr, addr->ai_addrlen);
             if (ret < (ssize_t) (2*sizeof(uint32_t)))
-               RARCH_WARN("[discovery] Failed to send netplay discovery query (error: %d)\n", ret);
+               RARCH_WARN("[discovery] Failed to send netplay discovery query (error: %d)\n", errno);
          }
 
          freeaddrinfo_retro(addr);
