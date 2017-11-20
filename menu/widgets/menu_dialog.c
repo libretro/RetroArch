@@ -267,9 +267,7 @@ void menu_dialog_push(void)
    // Set the label string, if it exists.
    const char *label = msg_hash_to_str(MENU_ENUM_LABEL_HELP);
    if (label)
-   {
       info.label = strdup(label);
-   }
 
    menu_displaylist_ctl(DISPLAYLIST_HELP, &info);
 }
