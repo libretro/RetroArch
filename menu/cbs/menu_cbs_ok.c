@@ -3739,8 +3739,9 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
          char s[PATH_MAX_LENGTH];
          unsigned i                           = 0;
          unsigned j                           = 0;
+         file_list_t *list                    = menu_entries_get_selection_buf_ptr(0);
+
          lan_room_count                       = 0;
-         file_list_t *file_list               = menu_entries_get_selection_buf_ptr(0);
 
 #ifndef RARCH_CONSOLE
          netplay_discovery_driver_ctl(RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES, &lan_hosts);
@@ -3805,7 +3806,7 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
             }
             netplay_room_count += lan_room_count;
          }
-         netplay_refresh_rooms_menu(file_list);
+         netplay_refresh_rooms_menu(list);
       }
    }
 
