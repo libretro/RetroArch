@@ -255,6 +255,7 @@ void menu_dialog_push_pending(bool push, enum menu_dialog_type type)
 void menu_dialog_push(void)
 {
    menu_displaylist_info_t info;
+   const char *label;
 
    if (!menu_dialog_is_push_pending())
       return;
@@ -263,8 +264,11 @@ void menu_dialog_push(void)
 
    info.list                 = menu_entries_get_menu_stack_ptr(0);
    info.enum_idx             = MENU_ENUM_LABEL_HELP;
-   info.label                = strdup(
-         msg_hash_to_str(MENU_ENUM_LABEL_HELP));
+
+   /* Set the label string, if it exists. */
+   label                     = msg_hash_to_str(MENU_ENUM_LABEL_HELP);
+   if (label)
+      info.label             = strdup(label);
 
    menu_displaylist_ctl(DISPLAYLIST_HELP, &info);
 }
