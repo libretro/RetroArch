@@ -641,6 +641,7 @@ static void command_stdin_poll(command_t *handle)
 
 bool command_poll(command_t *handle)
 {
+   memset(handle->state, 0, sizeof(handle->state));
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD) && defined(HAVE_COMMAND)
    command_network_poll(handle);
 #endif
