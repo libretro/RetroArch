@@ -1379,17 +1379,22 @@ static bool command_event_save_config(const char *config_path,
 {
    if (string_is_empty(config_path) || !config_save_file(config_path))
    {
-      snprintf(s, len, "%s \"%s\".",
-            msg_hash_to_str(MSG_FAILED_SAVING_CONFIG_TO),
-            path_get(RARCH_PATH_CONFIG));
-      RARCH_ERR("%s\n", s);
+      const char *str = path_get(RARCH_PATH_CONFIG);
+
+      if (string_is_empty(str))
+      {
+         snprintf(s, len, "%s \"%s\".",
+               msg_hash_to_str(MSG_FAILED_SAVING_CONFIG_TO),
+               str);
+         RARCH_ERR("%s\n", s);
+      }
 
       return false;
    }
 
    snprintf(s, len, "[Config]: %s \"%s\".",
          msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
-         path_get(RARCH_PATH_CONFIG));
+         config_path);
    RARCH_LOG("%s\n", s);
    return true;
 }
@@ -1490,7 +1495,8 @@ static bool command_event_save_core_config(void)
 
    command_event_save_config(config_path, msg, sizeof(msg));
 
-   runloop_msg_queue_push(msg, 1, 180, true);
+   if (!string_is_empty(msg))
+      runloop_msg_queue_push(msg, 1, 180, true);
 
    if (overrides_active)
       rarch_ctl(RARCH_CTL_SET_OVERRIDES_ACTIVE, NULL);
