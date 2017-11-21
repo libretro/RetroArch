@@ -85,7 +85,7 @@ fi
 
 if [ -z "$PKG_CONF_PATH" ]; then
 	PKG_CONF_PATH="none"
-	for pkgconf in pkg-config; do
+	for pkgconf in pkgconf pkg-config; do
 		PKGCONF="$(exists "${CROSS_COMPILE}${pkgconf}")" || PKGCONF=""
 		[ "$PKGCONF" ] && {
 			PKG_CONF_PATH="$PKGCONF"
