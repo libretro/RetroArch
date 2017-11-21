@@ -1381,7 +1381,7 @@ static bool command_event_save_config(const char *config_path,
    {
       const char *str = path_get(RARCH_PATH_CONFIG);
 
-      if (string_is_empty(str))
+      if (!string_is_empty(str))
       {
          snprintf(s, len, "%s \"%s\".",
                msg_hash_to_str(MSG_FAILED_SAVING_CONFIG_TO),
