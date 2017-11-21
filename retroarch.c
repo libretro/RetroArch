@@ -219,6 +219,7 @@ static bool runloop_paused                                 = false;
 static bool runloop_idle                                   = false;
 static bool runloop_exec                                   = false;
 static bool runloop_slowmotion                             = false;
+static bool runloop_fastmotion                             = false;
 static bool runloop_shutdown_initiated                     = false;
 static bool runloop_core_shutdown_initiated                = false;
 static bool runloop_perfcnt_enable                         = false;
@@ -1380,10 +1381,10 @@ static bool rarch_game_specific_options(char **output)
 
    if (!retroarch_validate_game_options(game_path,
             game_path_size, false))
-      goto error; 
+      goto error;
 
    if (!config_file_exists(game_path))
-      goto error; 
+      goto error;
 
    RARCH_LOG("%s %s\n",
          msg_hash_to_str(MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT),
@@ -2765,19 +2766,33 @@ static enum runloop_state runloop_check_state(
 
       if (new_button_state && !old_button_state)
       {
-         if (input_nonblock_state)
+         if (input_nonblock_state) {
             input_driver_unset_nonblock_state();
-         else
+            runloop_fastmotion = false;
+         }
+         else {
             input_driver_set_nonblock_state();
+            runloop_fastmotion = true;
+         }
          driver_set_nonblock_state();
       }
       else if (old_hold_button_state != new_hold_button_state)
       {
-         if (new_hold_button_state)
+         if (new_hold_button_state) {
             input_driver_set_nonblock_state();
-         else
+            runloop_fastmotion = true;
+         }
+         else {
             input_driver_unset_nonblock_state();
+            runloop_fastmotion = false;
+         }
          driver_set_nonblock_state();
+      }
+
+      // Display the fast forward state to the user, if needed.
+      if (runloop_fastmotion) {
+         runloop_msg_queue_push(
+               msg_hash_to_str(MSG_FAST_FORWARD), 1, 1, false);
       }
 
       old_button_state                  = new_button_state;
@@ -2883,10 +2898,10 @@ static enum runloop_state runloop_check_state(
 
          if (state_manager_frame_is_reversed())
             runloop_msg_queue_push(
-                  msg_hash_to_str(MSG_SLOW_MOTION_REWIND), 2, 30, true);
+                  msg_hash_to_str(MSG_SLOW_MOTION_REWIND), 1, 1, false);
          else
             runloop_msg_queue_push(
-                  msg_hash_to_str(MSG_SLOW_MOTION), 2, 30, true);
+                  msg_hash_to_str(MSG_SLOW_MOTION), 1, 1, false);
       }
    }
 
@@ -3130,7 +3145,6 @@ int runloop_iterate(unsigned *sleep_ms)
    if (settings->floats.fastforward_ratio)
       end:
    {
-
       retro_time_t to_sleep_ms  = (
             (frame_limit_last_time + frame_limit_minimum_time)
             - cpu_features_get_time_usec()) / 1000;

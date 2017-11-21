@@ -3035,6 +3035,14 @@ static int menu_displaylist_parse_horizontal_content_actions(
             msg_hash_to_str(MENU_ENUM_LABEL_DELETE_ENTRY),
             MENU_ENUM_LABEL_DELETE_ENTRY,
             MENU_SETTING_ACTION_DELETE_ENTRY, 0, 0);
+
+      if (settings->bools.quick_menu_show_add_to_favorites)
+      {
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES_PLAYLIST),
+               msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST),
+               MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST, FILE_TYPE_PLAYLIST_ENTRY, 0, 0);
+      }
    }
 
    if (!string_is_empty(db_name) && (!content_loaded ||

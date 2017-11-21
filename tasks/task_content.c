@@ -923,7 +923,9 @@ static bool task_load_content(content_ctx_info_t *content_info,
       {
          const char *core_path      = NULL;
          const char *core_name      = NULL;
+         const char *label          = NULL;
          playlist_t *playlist_tmp   = g_defaults.content_history;
+         global_t *global           = global_get_ptr();
 
          switch (path_is_media_type(tmp))
          {
@@ -958,13 +960,16 @@ static bool task_load_content(content_ctx_info_t *content_info,
             content_ctx->history_list_enable = settings->bools.history_list_enable;
          }
 
+         if (global && !string_is_empty(global->name.label))
+            label = global->name.label;
+
          if (
                   content_ctx->history_list_enable 
                && playlist_tmp 
                && playlist_push(
                   playlist_tmp,
                   tmp,
-                  NULL,
+                  label,
                   core_path,
                   core_name,
                   NULL,
@@ -1153,6 +1158,7 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
 bool task_push_load_content_from_playlist_from_menu(
       const char *core_path,
       const char *fullpath,
+      const char *label,
       content_ctx_info_t *content_info,
       retro_task_callback_t cb,
       void *user_data)
@@ -1194,6 +1200,10 @@ bool task_push_load_content_from_playlist_from_menu(
          content_ctx.name_bps                 = strdup(global->name.bps);
       if (!string_is_empty(global->name.ups))
          content_ctx.name_ups                 = strdup(global->name.ups);
+      if (label)
+         strlcpy(global->name.label, label, sizeof(global->name.label));
+      else
+         global->name.label[0] = '\0';
    }
 
    if (!string_is_empty(settings->paths.directory_system))

@@ -2237,18 +2237,35 @@ TODO: Add a setting for these tweaks */
             ui_companion_driver_toggle();
          break;
       case CMD_EVENT_ADD_TO_FAVORITES:
+      {
+         global_t *global               = global_get_ptr();
+         rarch_system_info_t *sys_info  = runloop_get_system_info();
+         const char *core_name          = NULL;
+         const char *core_path          = NULL;
+         const char *label              = NULL;
+
+         if (sys_info)
+         {
+            core_name = sys_info->info.library_name;
+            core_path = path_get(RARCH_PATH_CORE);
+         }
+
+         if (!string_is_empty(global->name.label))
+            label = global->name.label;
+
          playlist_push(
                g_defaults.content_favorites,
-               path_get(RARCH_PATH_CONTENT),
-               NULL,
-               file_path_str(FILE_PATH_DETECT),
-               file_path_str(FILE_PATH_DETECT),
+               (const char*)data,
+               label,
+               core_path,
+               core_name,
                NULL,
                NULL
                );
          playlist_write_file(g_defaults.content_favorites);
          runloop_msg_queue_push(msg_hash_to_str(MSG_ADDED_TO_FAVORITES), 1, 180, true);
          break;
+      }
       case CMD_EVENT_RESTART_RETROARCH:
          if (!frontend_driver_set_fork(FRONTEND_FORK_RESTART))
             return false;

@@ -62,6 +62,7 @@ typedef struct
    cheevos_var_size_t size;
    cheevos_var_type_t type;
    int                bank_id;
+   bool               is_bcd;
    unsigned           value;
    unsigned           previous;
 } cheevos_var_t;

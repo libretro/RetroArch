@@ -1267,6 +1267,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
       "Right Analog")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
       "Add to Favorites")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES_PLAYLIST,
+      "Add to Favorites")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN,
       "Run")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
@@ -1610,9 +1612,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_FLICKER,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE,
       "Enable Onscreen Notifications")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
-      "Onscreen Notification Font")
+      "Notification Font")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FONT_SIZE,
-      "Onscreen Notification Size")
+      "Notification Size")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_ASPECT,
       "Force aspect ratio")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
@@ -1634,9 +1636,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
       "Max swapchain images")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
-      "Onscreen Notification X Position")
+      "Notification X Position")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
-      "Onscreen Notification Y Position")
+      "Notification Y Position")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
       "Monitor Index")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_POST_FILTER_RECORD,
@@ -1727,6 +1729,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_PIXEL,
       "Pixel")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROACTIVE,
       "RetroActive")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROSYSTEM,
+      "Retrosystem")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_DOTART,
       "Dot-Art")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
@@ -2231,6 +2235,8 @@ MSG_HASH(MSG_SKIPPING_SRAM_LOAD,
       "Skipping SRAM load.")
 MSG_HASH(MSG_SLOW_MOTION,
       "Slow motion.")
+MSG_HASH(MSG_FAST_FORWARD,
+      "Fast forward.")
 MSG_HASH(MSG_SLOW_MOTION_REWIND,
       "Slow motion rewind.")
 MSG_HASH(MSG_SRAM_WILL_NOT_BE_SAVED,
@@ -2824,6 +2830,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION,
       "View more information about the content.")
 MSG_HASH(MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES,
       "Add the entry to your favorites.")
+MSG_HASH(MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES_PLAYLIST,
+      "Add the entry to your favorites.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RUN,
       "Start the content.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
@@ -3234,15 +3242,15 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_INFORMATION,
       "Show/hide the 'Information' option.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE,
-      "Onscreen Notification Background Enable")
+      "Notification Background Enable")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_RED,
-      "Onscreen Notification Background Red Color")
+      "Notification Background Red Color")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_GREEN,
-      "Onscreen Notification Background Green Color")
+      "Notification Background Green Color")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_BLUE,
-      "Onscreen Notification Background Blue Color")
+      "Notification Background Blue Color")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_OPACITY,
-      "Onscreen Notification Background Opacity")
+      "Notification Background Opacity")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
       "Disable Kiosk Mode")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
@@ -3262,11 +3270,11 @@ MSG_HASH(MSG_INPUT_KIOSK_MODE_PASSWORD_OK,
 MSG_HASH(MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
       "Password incorrect.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED,
-      "Onscreen Notification Red Color")
+      "Notification Red Color")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_GREEN,
-      "Onscreen Notification Green Color")
+      "Notification Green Color")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE,
-      "Onscreen Notification Blue Color")
+      "Notification Blue Color")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FRAMECOUNT_SHOW,
       "Show frame count on FPS display")
 MSG_HASH(MSG_CONFIG_OVERRIDE_LOADED,

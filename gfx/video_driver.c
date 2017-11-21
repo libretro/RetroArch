@@ -2407,8 +2407,9 @@ void video_driver_frame(const void *data, unsigned width,
 
    video_driver_frame_count++;
 
+   // Display the FPS, with a higher priority.
    if (video_info.fps_show)
-      runloop_msg_queue_push(video_info.fps_text, 1, 1, false);
+      runloop_msg_queue_push(video_info.fps_text, 2, 1, true);
 }
 
 void video_driver_display_type_set(enum rarch_display_type type)
@@ -2590,7 +2591,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->cb_set_resize          = current_video_context.set_resize;
 
    video_info->cb_shader_use          = video_driver_cb_shader_use;
-   video_info->cb_shader_set_mvp      = video_driver_cb_shader_set_mvp;
+   video_info->cb_set_mvp             = video_driver_cb_shader_set_mvp;
 
 #if 0
    video_info->cb_set_coords          = video_driver_cb_set_coords;

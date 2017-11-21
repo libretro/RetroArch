@@ -60,10 +60,9 @@ check_lib() # $1 = language  $2 = HAVE_$2  $3 = lib  $4 = function in lib  $5 = 
 	rm -f -- "$TEMP_CODE" "$TEMP_EXE"
 
 	[ "$answer" = 'no' ] && {
-		[ "$7" ] && { echo "$7"; exit 1;}
+		[ "$7" ] && die 1 "$7"
 		[ "$tmpval" = 'yes' ] && {
-			echo "Forced to build with library $3, but cannot locate. Exiting ..."
-			exit 1
+			die 1 "Forced to build with library $3, but cannot locate. Exiting ..."
 		}
 
 	}
@@ -119,11 +118,9 @@ check_pkgconf()	#$1 = HAVE_$1	$2 = package	$3 = version	$4 = critical error mess
 	echo "$ECHOBUF ... $version"
 	PKG_CONF_USED="$PKG_CONF_USED $1"
 	[ "$answer" = 'no' ] && {
-		[ "$4" ] && { echo "$4"; exit 1;}
-		[ "$tmpval" = 'yes' ] && {
-			echo "Forced to build with package $2, but cannot locate. Exiting ..."
-			exit 1
-		}
+		[ "$4" ] && die 1 "$4"
+		[ "$tmpval" = 'yes' ] && \
+			die 1 "Forced to build with package $2, but cannot locate. Exiting ..."
 	}
 }
 
@@ -140,10 +137,8 @@ check_header()	#$1 = HAVE_$1	$2..$5 = header files
 	"$CC" -o "$TEMP_EXE" "$TEMP_C" $INCLUDE_DIRS >>config.log 2>&1 && answer='yes'
 	eval HAVE_$1="$answer"; echo "Checking presence of header file $CHECKHEADER ... $answer"
 	rm -f -- "$TEMP_C" "$TEMP_EXE"
-	[ "$tmpval" = 'yes' ] && [ "$answer" = 'no' ] && {
-		echo "Build assumed that $2 exists, but cannot locate. Exiting ..."
-		exit 1
-	}
+	[ "$tmpval" = 'yes' ] && [ "$answer" = 'no' ] && \
+		die 1 "Build assumed that $2 exists, but cannot locate. Exiting ..."
 }
 
 check_macro()	#$1 = HAVE_$1	$2 = macro name
@@ -160,10 +155,8 @@ EOF
 	"$CC" -o "$TEMP_EXE" "$TEMP_C" $CFLAGS $INCLUDE_DIRS >>config.log 2>&1 && answer='yes'
 	eval HAVE_$1="$answer"; echo "$ECHOBUF ... $answer"
 	rm -f -- "$TEMP_C" "$TEMP_EXE"
-	[ "$tmpval" = 'yes' ] && [ "$answer" = 'no' ] && {
-		echo "Build assumed that $2 is defined, but it's not. Exiting ..."
-		exit 1
-	}
+	[ "$tmpval" = 'yes' ] && [ "$answer" = 'no' ] && \
+		die 1 "Build assumed that $2 is defined, but it's not. Exiting ..."
 }
 
 check_switch_c()	#$1 = HAVE_$1	$2 = switch	$3 = critical error message [checked only if non-empty]
@@ -174,7 +167,7 @@ check_switch_c()	#$1 = HAVE_$1	$2 = switch	$3 = critical error message [checked 
 	eval HAVE_$1="$answer"; echo "$ECHOBUF ... $answer"
 	rm -f -- "$TEMP_C" "$TEMP_EXE"
 	[ "$answer" = 'no' ] && {
-		[ "$3" ] && { echo "$3"; exit 1;}
+		[ "$3" ] && die 1 "$3"
 	}
 }
 
@@ -186,7 +179,7 @@ check_switch_cxx()	#$1 = HAVE_$1	$2 = switch	$3 = critical error message [checke
 	eval HAVE_$1="$answer"; echo "$ECHOBUF ... $answer"
 	rm -f -- "$TEMP_CXX" "$TEMP_EXE"
 	[ "$answer" = 'no' ] && {
-		[ "$3" ] && { echo "$3"; exit 1;}
+		[ "$3" ] && die 1 "$3"
 	}
 }
 

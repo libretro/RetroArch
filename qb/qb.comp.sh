@@ -31,8 +31,7 @@ fi
 echo "Checking for suitable working C compiler ... $CC $cc_status"
 
 if [ "$cc_works" = '0' ] && [ "$USE_LANG_C" = 'yes' ]; then
-	echo "Error: Cannot proceed without a working C compiler."
-	exit 1
+	die 1 'Error: Cannot proceed without a working C compiler.'
 fi
 
 # Checking for working C++
@@ -62,15 +61,14 @@ fi
 echo "Checking for suitable working C++ compiler ... $CXX $cxx_status"
 
 if [ "$cxx_works" = '0' ] && [ "$USE_LANG_CXX" = 'yes' ]; then
-	echo "Error: Cannot proceed without a working C++ compiler."
-	exit 1
+	die 1 'Error: Cannot proceed without a working C++ compiler.'
 fi
 
 if [ "$OS" = "Win32" ]; then
 	echobuf="Checking for windres"
 	if [ -z "$WINDRES" ]; then
 		WINDRES=$(which ${CROSS_COMPILE}windres)
-		[ "$WINDRES" ] || { echo "$echobuf ... Not found. Exiting."; exit 1; }
+		[ "$WINDRES" ] || die 1 "$echobuf ... Not found. Exiting."
 	fi
 	echo "$echobuf ... $WINDRES"
 fi
@@ -90,5 +88,5 @@ fi
 echo "Checking for pkg-config ... $PKG_CONF_PATH"
 
 if [ "$PKG_CONF_PATH" = "none" ]; then
-	echo "Warning: pkg-config not found, package checks will fail."
+	die : 'Warning: pkg-config not found, package checks will fail.'
 fi
