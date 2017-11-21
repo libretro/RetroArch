@@ -1,6 +1,8 @@
 # 1.7.0 (future)
 
-# 1.6.9 (future)
+# 1.6.9
+- COMMON: Small memory leak.
+- NETPLAY: Fix network command only working once.
 
 # 1.6.8
 - Audio: Fix the Audio DSP picker
