@@ -14,12 +14,17 @@ cc_works=0
 if [ "$CC" ]; then
 	"$CC" -o "$TEMP_EXE" "$TEMP_C" >/dev/null 2>&1 && cc_works=1
 else
-	for CC in $(exists ${CROSS_COMPILE}gcc ${CROSS_COMPILE}cc ${CROSS_COMPILE}clang) ''; do
-		"$CC" -o "$TEMP_EXE" "$TEMP_C" >/dev/null 2>&1 && cc_works=1 && break
+	for cc in gcc cc clang; do
+		CC="$(exists "${CROSS_COMPILE}${cc}")" || CC=""
+		if [ "$CC" ]; then
+			"$CC" -o "$TEMP_EXE" "$TEMP_C" >/dev/null 2>&1 && {
+				cc_works=1; break
+			}
+		fi
 	done
 fi
 
-rm -f "$TEMP_C" "$TEMP_EXE"
+rm -f -- "$TEMP_C" "$TEMP_EXE"
 
 cc_status='does not work'
 if [ "$cc_works" = '1' ]; then
@@ -44,12 +49,17 @@ cxx_works=0
 if [ "$CXX" ]; then
 	"$CXX" -o "$TEMP_EXE" "$TEMP_CXX" >/dev/null 2>&1 && cxx_works=1
 else
-	for CXX in $(exists ${CROSS_COMPILE}g++ ${CROSS_COMPILE}c++ ${CROSS_COMPILE}clang++) ''; do
-		"$CXX" -o "$TEMP_EXE" "$TEMP_CXX" >/dev/null 2>&1 && cxx_works=1 && break
+	for cxx in g++ c++ clang++; do
+		CXX="$(exists "${CROSS_COMPILE}${cxx}")" || CXX=""
+		if [ "$CXX" ]; then
+			"$CXX" -o "$TEMP_EXE" "$TEMP_CXX" >/dev/null 2>&1 && {
+				cxx_works=1; break
+			}
+		fi
 	done
 fi
 
-rm -f "$TEMP_CXX" "$TEMP_EXE"
+rm -f -- "$TEMP_CXX" "$TEMP_EXE"
 
 cxx_status='does not work'
 if [ "$cxx_works" = '1' ]; then
@@ -67,23 +77,22 @@ fi
 if [ "$OS" = "Win32" ]; then
 	echobuf="Checking for windres"
 	if [ -z "$WINDRES" ]; then
-		WINDRES=$(exists ${CROSS_COMPILE}windres)
-		[ "$WINDRES" ] || die 1 "$echobuf ... Not found. Exiting."
+		WINDRES="$(exists "${CROSS_COMPILE}windres")" || WINDRES=""
+		[ -z "$WINDRES" ] && die 1 "$echobuf ... Not found. Exiting."
 	fi
 	echo "$echobuf ... $WINDRES"
 fi
 
-[ -n "$PKG_CONF_PATH" ] || {
+if [ -z "$PKG_CONF_PATH" ]; then
 	PKG_CONF_PATH="none"
-
-	for p in $(exists "${CROSS_COMPILE}pkg-config") ''; do
-		[ -n "$p" ] && {
-			PKG_CONF_PATH=$p;
-			break;
+	for pkgconf in pkg-config; do
+		PKGCONF="$(exists "${CROSS_COMPILE}${pkgconf}")" || PKGCONF=""
+		[ "$PKGCONF" ] && {
+			PKG_CONF_PATH="$PKGCONF"
+			break
 		}
 	done
-
-}
+fi
 
 echo "Checking for pkg-config ... $PKG_CONF_PATH"
 
