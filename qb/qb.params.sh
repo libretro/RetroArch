@@ -35,7 +35,7 @@ EOF
 	print_help_option "--prefix=PATH"            "Install path prefix"
 	print_help_option "--global-config-dir=PATH" "System wide config file prefix"
 	print_help_option "--build=BUILD"            "The build system (no-op)"
-	print_help_option "--host=HOST"              "call HOST-gcc instead of gcc; can be used for cross compilation"
+	print_help_option "--host=HOST"              "Cross-compile with HOST-gcc instead of gcc"
 	print_help_option "--help"                   "Show this help"
 
 	echo ""
