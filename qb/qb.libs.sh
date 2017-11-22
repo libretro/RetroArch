@@ -230,6 +230,7 @@ create_config_make()
 		echo "INCLUDE_DIRS = $INCLUDE_DIRS"
 		echo "LIBRARY_DIRS = $LIBRARY_DIRS"
 		echo "PACKAGE_NAME = $PACKAGE_NAME"
+		echo "BUILD = $BUILD"
 		echo "PREFIX = $PREFIX"
 
 		while [ "$1" ]; do
