@@ -2830,25 +2830,31 @@ static int cheevos_iterate(coro_t* coro)
 
       if(CHEEVOS_VAR_SETTINGS->bools.cheevos_verbose_enable)
       {
-         const cheevo_t* cheevo       = cheevos_locals.core.cheevos;
-         const cheevo_t* end          = cheevo + cheevos_locals.core.count;
-         int number_of_unlocked       = cheevos_locals.core.count;
-         int mode;
-         char msg[256];
+         if(cheevos_locals.core.count > 0)
+         {
+            const cheevo_t* cheevo       = cheevos_locals.core.cheevos;
+            const cheevo_t* end          = cheevo + cheevos_locals.core.count;
+            int number_of_unlocked       = cheevos_locals.core.count;
+            int mode;
+            char msg[256];
 
-         if(CHEEVOS_VAR_SETTINGS->bools.cheevos_hardcore_mode_enable)
-            mode = CHEEVOS_ACTIVE_HARDCORE;
+            if(CHEEVOS_VAR_SETTINGS->bools.cheevos_hardcore_mode_enable)
+               mode = CHEEVOS_ACTIVE_HARDCORE;
+            else
+               mode = CHEEVOS_ACTIVE_SOFTCORE;
+
+            for(; cheevo < end; cheevo++)
+               if(cheevo->active & mode)
+                  number_of_unlocked--;
+
+            snprintf(msg, sizeof(msg), "You have %d of %d achievements unlocked.",
+               number_of_unlocked, cheevos_locals.core.count);
+            msg[sizeof(msg) - 1] = 0;
+            runloop_msg_queue_push(msg, 0, 6 * 60, false);
+         }
          else
-            mode = CHEEVOS_ACTIVE_SOFTCORE;
+            runloop_msg_queue_push("This game doesn't have any achievement.", 0, 5 * 60, false);
 
-         for(; cheevo < end; cheevo++)
-            if(cheevo->active & mode)
-               number_of_unlocked--;
-
-         snprintf(msg, sizeof(msg), "You have %d of %d achievements unlocked.",
-            number_of_unlocked, cheevos_locals.core.count);
-         msg[sizeof(msg) - 1] = 0;
-         runloop_msg_queue_push(msg, 0, 6 * 60, false);
       }
 
       CORO_STOP();
