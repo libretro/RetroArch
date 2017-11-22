@@ -497,10 +497,12 @@ const char* config_get_video_driver_options(void)
    return char_list_new_special(STRING_LIST_VIDEO_DRIVERS, NULL);
 }
 
+#ifdef HAVE_VULKAN
 static bool hw_render_context_is_vulkan(enum retro_hw_context_type type)
 {
    return type == RETRO_HW_CONTEXT_VULKAN;
 }
+#endif
 
 static bool hw_render_context_is_gl(enum retro_hw_context_type type)
 {
