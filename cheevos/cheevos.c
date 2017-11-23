@@ -2853,7 +2853,7 @@ static int cheevos_iterate(coro_t* coro)
             runloop_msg_queue_push(msg, 0, 6 * 60, false);
          }
          else
-            runloop_msg_queue_push("This game doesn't have any achievement.", 0, 5 * 60, false);
+            runloop_msg_queue_push("This game has no achievements.", 0, 5 * 60, false);
 
       }
 
