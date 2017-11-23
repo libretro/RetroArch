@@ -778,17 +778,13 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
  * Grab an input sample for this frame. We exclude
  * keyboard input here.
  *
- * TODO: In case RARCH_BIND_LIST_END starts exceeding 64,
- * and you need a bitmask of more than 64 entries, reimplement
- * it to use something like rarch_bits_t.
- *
  * Returns: Input sample containing a mask of all pressed keys.
  */
-uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
+rarch_input_state_t input_menu_keys_pressed(void *data, rarch_input_state_t last_input)
 {
    unsigned i, port;
    rarch_joypad_info_t joypad_info;
-   uint64_t             ret                     = 0;
+   rarch_input_state_t new_state = {0};
    const struct retro_keybind *binds[MAX_USERS] = {NULL};
    settings_t     *settings                     = (settings_t*)data;
    const struct retro_keybind *binds_norm       = NULL;
@@ -898,7 +894,7 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
 
             if (pressed)
             {
-               BIT64_SET(ret, i);
+               RARCH_INPUT_STATE_BIT_SET(new_state, i);
                continue;
             }
          }
@@ -908,7 +904,7 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
       {
          if (current_input->meta_key_pressed(current_input_data, i))
          {
-            BIT64_SET(ret, i);
+            RARCH_INPUT_STATE_BIT_SET(new_state, i);
             continue;
          }
       }
@@ -916,7 +912,7 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
 #ifdef HAVE_OVERLAY
       if (overlay_ptr && input_overlay_key_pressed(overlay_ptr, i))
       {
-         BIT64_SET(ret, i);
+         RARCH_INPUT_STATE_BIT_SET(new_state, i);
          continue;
       }
 #endif
@@ -931,7 +927,7 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
 
          if (command_get(&handle))
          {
-            BIT64_SET(ret, i);
+            RARCH_INPUT_STATE_BIT_SET(new_state, i);
             continue;
          }
       }
@@ -940,7 +936,7 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
 #ifdef HAVE_NETWORKGAMEPAD
       if (input_driver_remote && input_remote_key_pressed(i, 0))
       {
-         BIT64_SET(ret, i);
+         RARCH_INPUT_STATE_BIT_SET(new_state, i);
          continue;
       }
 #endif
@@ -995,11 +991,11 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
       {
          if (current_input->input_state(current_input_data, joypad_info, binds, 0,
                   RETRO_DEVICE_KEYBOARD, 0, ids[i][0]))
-            BIT64_SET(ret, ids[i][1]);
+            RARCH_INPUT_STATE_BIT_SET(new_state, ids[i][1]);
       }
    }
 
-   return ret;
+   return new_state;
 }
 #endif
 
@@ -1008,17 +1004,13 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
  *
  * Grab an input sample for this frame.
  *
- * TODO: In case RARCH_BIND_LIST_END starts exceeding 64,
- * and you need a bitmask of more than 64 entries, reimplement
- * it to use something like rarch_bits_t.
- *
  * Returns: Input sample containing a mask of all pressed keys.
  */
-uint64_t input_keys_pressed(void *data, uint64_t last_input)
+rarch_input_state_t input_keys_pressed(void *data, rarch_input_state_t last_input)
 {
    unsigned i;
    rarch_joypad_info_t joypad_info;
-   uint64_t                      ret            = 0;
+   rarch_input_state_t new_state = {0};
    settings_t              *settings            = (settings_t*)data;
    const struct retro_keybind *binds            = input_config_binds[0];
    const struct retro_keybind *binds_auto       = &input_autoconf_binds[0][RARCH_ENABLE_HOTKEY];
@@ -1073,7 +1065,7 @@ uint64_t input_keys_pressed(void *data, uint64_t last_input)
                0, RETRO_DEVICE_JOYPAD, 0, i)
          )
       {
-         BIT64_SET(ret, i);
+         RARCH_INPUT_STATE_BIT_SET(new_state, i);
          continue;
       }
 
@@ -1081,7 +1073,7 @@ uint64_t input_keys_pressed(void *data, uint64_t last_input)
             current_input->meta_key_pressed(current_input_data, i)
             )
       {
-         BIT64_SET(ret, i);
+         RARCH_INPUT_STATE_BIT_SET(new_state, i);
          continue;
       }
 
@@ -1089,7 +1081,7 @@ uint64_t input_keys_pressed(void *data, uint64_t last_input)
       if (overlay_ptr && 
             input_overlay_key_pressed(overlay_ptr, i))
       {
-         BIT64_SET(ret, i);
+         RARCH_INPUT_STATE_BIT_SET(new_state, i);
          continue;
       }
 #endif
@@ -1104,7 +1096,7 @@ uint64_t input_keys_pressed(void *data, uint64_t last_input)
 
          if (command_get(&handle))
          {
-            BIT64_SET(ret, i);
+            RARCH_INPUT_STATE_BIT_SET(new_state, i);
             continue;
          }
       }
@@ -1114,13 +1106,13 @@ uint64_t input_keys_pressed(void *data, uint64_t last_input)
       if (input_driver_remote && 
             input_remote_key_pressed(i, 0))
       {
-         BIT64_SET(ret, i);
+         RARCH_INPUT_STATE_BIT_SET(new_state, i);
          continue;
       }
 #endif
    }
 
-   return ret;
+   return new_state;
 }
 
 

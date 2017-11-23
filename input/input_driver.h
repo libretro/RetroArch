@@ -333,10 +333,24 @@ void input_poll(void);
 int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id);
 
-uint64_t input_keys_pressed(void *data, uint64_t last_input);
+typedef struct {
+	uint32_t bank[ 4 ]; // 128 bits
+} rarch_input_state_t;
+
+#define RARCH_INPUT_STATE_BIT_SET(a, bit)   ((a).bank[((bit) >> 5)&3] |=  (1 << ((bit) & 31)))
+#define RARCH_INPUT_STATE_BIT_GET(a, bit)   ((a).bank[((bit) >> 5)&3] &   (1 << ((bit) & 31)))
+#define RARCH_INPUT_STATE_CLEAR(a)          memset(&(a), 0, sizeof(a));
+#define RARCH_INPUT_STATE_ANY_SET(a)        (((a).bank[0])||((a).bank[1])||((a).bank[2])||((a).bank[3]))
+#define RARCH_INPUT_STATE_CLEAR_BITS(a,b)    \
+            ((a).bank[0])&=(~((b).bank[0])); \
+            ((a).bank[1])&=(~((b).bank[1])); \
+            ((a).bank[2])&=(~((b).bank[2])); \
+            ((a).bank[3])&=(~((b).bank[3]));
+
+rarch_input_state_t input_keys_pressed(void *data, rarch_input_state_t last_input);
 
 #ifdef HAVE_MENU
-uint64_t input_menu_keys_pressed(void *data, uint64_t last_input);
+rarch_input_state_t input_menu_keys_pressed(void *data, rarch_input_state_t last_input);
 #endif
 
 void *input_driver_get_data(void);
