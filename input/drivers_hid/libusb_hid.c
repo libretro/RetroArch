@@ -16,7 +16,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef __FreeBSD__
+#include <libusb.h>
+#else
 #include <libusb-1.0/libusb.h>
+#endif
 
 #include <rthreads/rthreads.h>
 #include <compat/strl.h>
@@ -38,7 +42,11 @@ typedef struct libusb_hid
    libusb_context *ctx;
    joypad_connection_t *slots;
    sthread_t *poll_thread;
+#if defined(__FreeBSD__) && LIBUSB_API_VERSION <= 0x01000102
+   libusb_hotplug_callback_handle hp;
+#else
    int hp; /* libusb_hotplug_callback_handle is just int */
+#endif
    int quit;
 } libusb_hid_t;
 
@@ -538,8 +546,14 @@ static void *libusb_hid_init(void)
    if (ret < 0)
       goto error;
 
+#if 0
+   /* NOTE: In what situation could this possibly happen?
+    * Don't use it for now since it requires a newer API
+    * version than FreeBSD has.
+    */
    if (!libusb_has_capability(LIBUSB_CAP_HAS_HOTPLUG))
       goto error;
+#endif
 
    hid->slots = pad_connection_init(MAX_USERS);
 
