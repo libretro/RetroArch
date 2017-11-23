@@ -2576,6 +2576,7 @@ static int cheevos_iterate(coro_t* coro)
    size_t to_read   = 4096;
    uint8_t *buffer  = NULL;
    const char *end  = NULL;
+   RFILE* file;
 
    enum
    {
@@ -3191,7 +3192,6 @@ static int cheevos_iterate(coro_t* coro)
        !settings->bools.cheevos_badges_enable)
       CORO_RET();
 
-   FILE* file;
    CHEEVOS_VAR_CHEEVO_CURR = cheevos_locals.core.cheevos;
    CHEEVOS_VAR_CHEEVO_END = cheevos_locals.core.cheevos + cheevos_locals.core.count;
 
@@ -3220,9 +3220,9 @@ static int cheevos_iterate(coro_t* coro)
             CORO_GOSUB(HTTP_GET);
             if (CHEEVOS_VAR_JSON != NULL)
             {
-               file = fopen (CHEEVOS_VAR_BADGE_PATH, "wb");
-               fwrite(CHEEVOS_VAR_JSON, 1, CHEEVOS_VAR_K, file);
-               fclose(file);
+               file = filestream_open(CHEEVOS_VAR_BADGE_PATH, RFILE_MODE_WRITE, -1);
+               filestream_write(file, CHEEVOS_VAR_JSON, CHEEVOS_VAR_K);
+               filestream_close(file);
 #ifdef CHEEVOS_LOG_BADGES
                RARCH_LOG("[CHEEVOS]: downloaded badge %s\n", CHEEVOS_VAR_BADGE_PATH);
 #endif
