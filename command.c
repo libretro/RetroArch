@@ -1374,29 +1374,32 @@ error:
    return false;
 }
 
-static bool command_event_save_config(const char *config_path,
+static bool command_event_save_config(
+      const char *config_path,
       char *s, size_t len)
 {
-   if (string_is_empty(config_path) || !config_save_file(config_path))
+   bool path_exists = !string_is_empty(config_path);
+   const char *str  = path_exists ? config_path : 
+      path_get(RARCH_PATH_CONFIG);
+
+   if (path_exists && config_save_file(config_path))
    {
-      const char *str = path_get(RARCH_PATH_CONFIG);
-
-      if (!string_is_empty(str))
-      {
-         snprintf(s, len, "%s \"%s\".",
-               msg_hash_to_str(MSG_FAILED_SAVING_CONFIG_TO),
-               str);
-         RARCH_ERR("%s\n", s);
-      }
-
-      return false;
+      snprintf(s, len, "[Config]: %s \"%s\".",
+            msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
+            config_path);
+      RARCH_LOG("%s\n", s);
+      return true;
    }
 
-   snprintf(s, len, "[Config]: %s \"%s\".",
-         msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
-         config_path);
-   RARCH_LOG("%s\n", s);
-   return true;
+   if (!string_is_empty(str))
+   {
+      snprintf(s, len, "%s \"%s\".",
+            msg_hash_to_str(MSG_FAILED_SAVING_CONFIG_TO),
+            str);
+      RARCH_ERR("%s\n", s);
+   }
+
+   return false;
 }
 
 /**
