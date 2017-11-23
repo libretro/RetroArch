@@ -2528,7 +2528,12 @@ typedef struct
    char url[256]; \
    struct http_connection_t *conn; \
    struct http_t *http; \
-   retro_time_t t0;
+   retro_time_t t0; \
+   char badge_basepath[PATH_MAX_LENGTH]; \
+   char badge_fullpath[PATH_MAX_LENGTH]; \
+   char badge_name[16]; \
+   cheevo_t *cheevo; \
+   const cheevo_t *cheevo_end;
 
 #include "coro.h"
 
@@ -2557,8 +2562,13 @@ typedef struct
 #define CHEEVOS_VAR_SIZE     CORO_VAR(size)
 #define CHEEVOS_VAR_URL      CORO_VAR(url)
 #define CHEEVOS_VAR_CONN     CORO_VAR(conn)
-#define CHEEVOS_VAR_HTTP     CORO_VAR(http)
-#define CHEEVOS_VAR_T0       CORO_VAR(t0)
+#define CHEEVOS_VAR_HTTP       CORO_VAR(http)
+#define CHEEVOS_VAR_T0         CORO_VAR(t0)
+#define CHEEVOS_VAR_BADGE_PATH CORO_VAR(badge_fullpath)
+#define CHEEVOS_VAR_BADGE_BASE_PATH CORO_VAR(badge_fullpath)
+#define CHEEVOS_VAR_BADGE_NAME CORO_VAR(badge_name)
+#define CHEEVOS_VAR_CHEEVO_CURR CORO_VAR(cheevo)
+#define CHEEVOS_VAR_CHEEVO_END CORO_VAR(cheevo_end)
 
 static int cheevos_iterate(coro_t* coro)
 {
@@ -2786,7 +2796,7 @@ static int cheevos_iterate(coro_t* coro)
          FILE* file;
          size_t size;
 
-         file = fopen(CHEEVOS_JSON_OVERRIDE, "rb");
+         file = filestream_open(CHEEVOS_JSON_OVERRIDE, RFILE_MODE_READ_WRITE, -1);
          fseek(file, 0, SEEK_END);
          size = ftell(file);
          fseek(file, 0, SEEK_SET);
@@ -3143,14 +3153,12 @@ static int cheevos_iterate(coro_t* coro)
     *************************************************************************/
    CORO_SUB(GET_CHEEVOS)
 
-      CORO_GOSUB(LOGIN);
+   CORO_GOSUB(LOGIN);
 
-      snprintf(
-         CHEEVOS_VAR_URL, sizeof(CHEEVOS_VAR_URL),
-         "http://retroachievements.org/dorequest.php?r=patch&u=%s&g=%u&f=3&l=1&t=%s",
-         CHEEVOS_VAR_SETTINGS->arrays.cheevos_username,
-         CHEEVOS_VAR_GAMEID, cheevos_locals.token
-      );
+   snprintf(CHEEVOS_VAR_URL, sizeof(CHEEVOS_VAR_URL),
+      "http://retroachievements.org/dorequest.php?r=patch&u=%s&g=%u&f=3&l=1&t=%s",
+      CHEEVOS_VAR_SETTINGS->arrays.cheevos_username,
+      CHEEVOS_VAR_GAMEID, cheevos_locals.token);
 
       CHEEVOS_VAR_URL[sizeof(CHEEVOS_VAR_URL) - 1] = 0;
 
@@ -3169,66 +3177,59 @@ static int cheevos_iterate(coro_t* coro)
       RARCH_LOG("[CHEEVOS]: got achievements for game id %u.\n", CHEEVOS_VAR_GAMEID);
       CORO_RET();
 
-    /**************************************************************************
-    * Info    Gets the achievements from Retro Achievements
-    * Inputs  CHEEVOS_VAR_GAMEID
-    * Outputs CHEEVOS_VAR_JSON
-    *************************************************************************/
-    CORO_SUB(GET_BADGES)
+   /**************************************************************************
+   * Info    Gets the achievements from Retro Achievements
+   * Inputs  CHEEVOS_VAR_GAMEID
+   * Outputs CHEEVOS_VAR_JSON
+   *************************************************************************/
+   CORO_SUB(GET_BADGES)
 
-    badges_ctx = new_badges_ctx;
+   badges_ctx = new_badges_ctx;
 
-    settings_t *settings = config_get_ptr();
-    if (!string_is_equal_fast(settings->arrays.menu_driver, "xmb", 3) || !settings->bools.cheevos_badges_enable)
+   settings_t *settings = config_get_ptr();
+   if (!string_is_equal(settings->arrays.menu_driver, "xmb") || 
+       !settings->bools.cheevos_badges_enable)
       CORO_RET();
 
-    char badge_filename[16];
-    char fullpath[PATH_MAX_LENGTH];
-    FILE* file;
-    cheevo_t *cheevo = cheevos_locals.core.cheevos;
-    const cheevo_t *end           = cheevos_locals.core.cheevos +
-                                    cheevos_locals.core.count;
+   FILE* file;
+   CHEEVOS_VAR_CHEEVO_CURR = cheevos_locals.core.cheevos;
+   CHEEVOS_VAR_CHEEVO_END = cheevos_locals.core.cheevos + cheevos_locals.core.count;
 
-    for (; cheevo < end ; cheevo++)
-    {
-      for (unsigned j = 0; j < 2; j++)
+   for (; CHEEVOS_VAR_CHEEVO_CURR < CHEEVOS_VAR_CHEEVO_END ; CHEEVOS_VAR_CHEEVO_CURR++)
+   {
+      for (CHEEVOS_VAR_J = 0 ; CHEEVOS_VAR_J < 2; CHEEVOS_VAR_J++)
       {
-        strcpy(badge_filename, cheevo->badge);
-        if (j == 0) strcat(badge_filename, ".png");
-        else strcat(badge_filename, "_lock.png");
+         CHEEVOS_VAR_BADGE_PATH[0] = '\0';
+         fill_pathname_application_special(CHEEVOS_VAR_BADGE_BASE_PATH, sizeof(CHEEVOS_VAR_BADGE_BASE_PATH),
+            APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES);
 
-        fill_pathname_application_special(fullpath,
-              PATH_MAX_LENGTH * sizeof(char),
-              APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES);
+         if (!path_is_directory(CHEEVOS_VAR_BADGE_BASE_PATH))
+            path_mkdir(CHEEVOS_VAR_BADGE_BASE_PATH);
+         CORO_YIELD();
+         if (CHEEVOS_VAR_J == 0) 
+            snprintf(CHEEVOS_VAR_BADGE_NAME, sizeof(CHEEVOS_VAR_BADGE_NAME), "%s.png", CHEEVOS_VAR_CHEEVO_CURR->badge);
+         else
+            snprintf(CHEEVOS_VAR_BADGE_NAME, sizeof(CHEEVOS_VAR_BADGE_NAME), "%s_lock.png", CHEEVOS_VAR_CHEEVO_CURR->badge);
 
-        if (!path_is_directory(fullpath))
-          path_mkdir(fullpath);
+         fill_pathname_join(CHEEVOS_VAR_BADGE_PATH, CHEEVOS_VAR_BADGE_BASE_PATH, CHEEVOS_VAR_BADGE_NAME, sizeof(CHEEVOS_VAR_BADGE_PATH));
 
-        strcat(fullpath, badge_filename);
+         if (!badge_exists(CHEEVOS_VAR_BADGE_PATH))
+         {
+            snprintf(CHEEVOS_VAR_URL, sizeof(CHEEVOS_VAR_URL), "http://i.retroachievements.org/Badge/%s", CHEEVOS_VAR_BADGE_NAME);
 
-        if (!badge_exists(fullpath))
-        {
-          snprintf(
-             CHEEVOS_VAR_URL, sizeof(CHEEVOS_VAR_URL),
-             "http://i.retroachievements.org/Badge/%s",
-             badge_filename
-          );
-
-          CORO_GOSUB(HTTP_GET);
-
-          if (CHEEVOS_VAR_K > 5)
-          {
-            file = fopen (fullpath, "wb");
-            fwrite(CHEEVOS_VAR_JSON, 1, CHEEVOS_VAR_K, file);
-            fclose(file);
-        #ifdef CHEEVOS_LOG_BADGES
-            RARCH_LOG("[CHEEVOS]: downloaded badge %s.\n", badge_filename);
-        #endif
-          }
-        }
-
+            CORO_GOSUB(HTTP_GET);
+            if (CHEEVOS_VAR_JSON != NULL)
+            {
+               file = fopen (CHEEVOS_VAR_BADGE_PATH, "wb");
+               fwrite(CHEEVOS_VAR_JSON, 1, CHEEVOS_VAR_K, file);
+               fclose(file);
+#ifdef CHEEVOS_LOG_BADGES
+               RARCH_LOG("[CHEEVOS]: downloaded badge %s\n", CHEEVOS_VAR_BADGE_PATH);
+#endif
+            }
+         }
       }
-    }
+   }
 
     CORO_RET();
 
