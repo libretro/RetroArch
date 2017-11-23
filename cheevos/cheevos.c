@@ -2796,7 +2796,7 @@ static int cheevos_iterate(coro_t* coro)
          FILE* file;
          size_t size;
 
-         file = filestream_open(CHEEVOS_JSON_OVERRIDE, RFILE_MODE_READ_WRITE, -1);
+         file = fopen(CHEEVOS_JSON_OVERRIDE, "rb");
          fseek(file, 0, SEEK_END);
          size = ftell(file);
          fseek(file, 0, SEEK_SET);
