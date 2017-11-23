@@ -425,7 +425,10 @@ if [ "$HAVE_UDEV" != "no" ]; then
    check_pkgconf UDEV libudev
    if [ "$HAVE_UDEV" = "no" ]; then
       HAVE_UDEV=auto; check_lib '' UDEV "-ludev"
-      [ "$HAVE_UDEV" = "yes" ] && UDEV_LIBS=-ludev
+      if [ "$HAVE_UDEV" = "yes" ]; then
+         UDEV_LIBS='-ludev'
+         PKG_CONF_USED="$PKG_CONF_USED UDEV"
+      fi
    fi
 fi
 
