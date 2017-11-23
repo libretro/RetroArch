@@ -186,28 +186,32 @@ check_switch_cxx()	#$1 = HAVE_$1	$2 = switch	$3 = critical error message [checke
 create_config_header()
 {   outfile="$1"; shift
 
-	echo "Creating config header: $outfile"
-	name=$(echo "QB_${outfile}__" | tr '.[a-z]' '_[A-Z]')
-	{	echo "#ifndef $name"
-		echo "#define $name"
-		echo ""
-		echo "#define PACKAGE_NAME \"$PACKAGE_NAME\""
+	printf %s\\n "Creating config header: $outfile"
+	name="$(printf %s "QB_${outfile}__" | tr '.[a-z]' '_[A-Z]')"
+
+	{	printf %s\\n "#ifndef $name" "#define $name" '' \
+			"#define PACKAGE_NAME \"$PACKAGE_NAME\""
 
 		while [ "$1" ]; do
-			case $(eval echo \$HAVE_$1) in
+			case "$(eval "printf %s \"\$HAVE_$1\"")" in
 				'yes')
-					if [ "$(eval echo \$C89_$1)" = "no" ]; then echo "#if __cplusplus || __STDC_VERSION__ >= 199901L"; fi
-					echo "#define HAVE_$1 1"
-					if [ "$(eval echo \$C89_$1)" = "no" ]; then echo "#endif"; fi
-					;;
-				'no') echo "/* #undef HAVE_$1 */";;
+					if [ "$(eval "printf %s \"\$C89_$1\"")" = 'no' ]; then
+						printf %s\\n '#if __cplusplus || __STDC_VERSION__ >= 199901L' \
+							"#define HAVE_$1 1" '#endif'
+					else
+						printf %s\\n "#define HAVE_$1 1"
+					fi
+				;;
+				'no') printf %s\\n "/* #undef HAVE_$1 */";;
 			esac
 			shift
 		done
 
-		while IFS='=' read VAR VAL; do echo "#define $VAR $VAL"; done < "$CONFIG_DEFINES"
+		while IFS='=' read -r VAR VAL; do
+			printf %s\\n "#define $VAR $VAL"
+		done < "$CONFIG_DEFINES"
 
-		echo "#endif"
+		printf %s\\n '#endif'
 	} > "$outfile"
 }
 
