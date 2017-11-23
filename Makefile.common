@@ -1474,12 +1474,9 @@ ifeq ($(HAVE_NETWORKING), 1)
    ifeq ($(HAVE_CHEEVOS), 1)
       DEFINES += -DHAVE_CHEEVOS
       OBJ += cheevos/cheevos.o \
-<<<<<<< HEAD
          cheevos/var.o \
          cheevos/cond.o \
-=======
-          cheevos/badges.o \
->>>>>>> Add files to handle all cheevos badges.
+         cheevos/badges.o \
          $(LIBRETRO_COMM_DIR)/utils/md5.o
    endif
 
