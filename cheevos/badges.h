@@ -22,6 +22,7 @@ extern void set_badge_info (badges_ctx_t *badge_struct, int id, const char *badg
 extern menu_texture_item get_badge_texture(int id);
 
 extern badges_ctx_t badges_ctx;
+static badges_ctx_t new_badges_ctx;
 
 RETRO_END_DECLS
 

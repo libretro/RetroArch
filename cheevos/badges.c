@@ -1,7 +1,9 @@
 #include <file/file_path.h>
+#include <string/stdstring.h>
 #include <streams/file_stream.h>
 
 #include "../file_path_special.h"
+#include "../configuration.h"
 #include "../verbosity.h"
 #include "../network/net_http_special.h"
 
@@ -44,5 +46,9 @@ void set_badge_info (badges_ctx_t *badge_struct, int id, const char *badge_id, b
 
 menu_texture_item get_badge_texture (int id)
 {
+  settings_t *settings = config_get_ptr();
+  if (!settings->bools.cheevos_badges_enable)
+    return (menu_texture_item)NULL;
+
   return badges_ctx.menu_texture_list[id];
 }

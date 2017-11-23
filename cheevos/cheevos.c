@@ -17,6 +17,7 @@
 #include <ctype.h>
 
 #include <file/file_path.h>
+#include <string/stdstring.h>
 #include <formats/jsonsax.h>
 #include <streams/file_stream.h>
 #include <features/features_cpu.h>
@@ -3169,6 +3170,12 @@ static int cheevos_iterate(coro_t* coro)
     *************************************************************************/
     CORO_SUB(GET_BADGES)
 
+    badges_ctx = new_badges_ctx;
+
+    settings_t *settings = config_get_ptr();
+    if (!string_is_equal_fast(settings->arrays.menu_driver, "xmb", 3) || !settings->bools.cheevos_badges_enable)
+      CORO_RET();
+
     char badge_filename[16];
     char fullpath[PATH_MAX_LENGTH];
     FILE* file;
@@ -3176,7 +3183,7 @@ static int cheevos_iterate(coro_t* coro)
     const cheevo_t *end           = cheevos_locals.core.cheevos +
                                     cheevos_locals.core.count;
 
-    for (unsigned i = 0; cheevo < end ; cheevo++)
+    for (; cheevo < end ; cheevo++)
     {
       for (unsigned j = 0; j < 2; j++)
       {
