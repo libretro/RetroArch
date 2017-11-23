@@ -1,6 +1,7 @@
 #include <file/file_path.h>
 #include <streams/file_stream.h>
 
+#include "../file_path_special.h"
 #include "../verbosity.h"
 #include "../network/net_http_special.h"
 
@@ -8,49 +9,12 @@
 
 badges_ctx_t badges_ctx;
 
-bool download_badge(const char* filename)
+bool badge_exists(const char* filepath)
 {
-  char fullpath[PATH_MAX_LENGTH];
-
-  strcpy(fullpath, "badges/");
-  strcat(fullpath, filename);
-
-  if(path_file_exists(fullpath))
-  {
+  if(path_file_exists(filepath))
     return true;
-  }
   else
-  {
-    size_t mysize = 1024 * 100;
-    size_t *size;
-    size = &mysize;
-
-    const char **buffer = malloc(sizeof(*buffer) * mysize);
-    char url[PATH_MAX_LENGTH];
-    strcpy(url, "http://i.retroachievements.org/Badge/");
-    strcat(url, filename);
-
-    retro_time_t *timeout;
-    retro_time_t timesecs = 10000000; //10 seconds
-    timeout = &timesecs;
-
-    if(net_http_get(buffer, size, url, timeout) != NET_HTTP_GET_OK)
-    {
-      printf("[CHEEVOS]: Download to %s failed.\n", fullpath);
-      return false;
-    }
-
-    if (!filestream_write_file(fullpath, *buffer, *size))
-    {
-      printf("[CHEEVOS]: Write to %s failed.\n", fullpath);
-      return false;
-    }
-    else
-    {
-      printf("[CHEEVOS]: %s downloaded.\n", fullpath);
-      return true;
-    }
-  }
+    return false;
 }
 
 void set_badge_menu_texture(badges_ctx_t * badges, int i)
@@ -63,8 +27,12 @@ void set_badge_menu_texture(badges_ctx_t * badges, int i)
   snprintf(badge_file, bufferSize, "%s", badges->badge_id_list[i]);
   strcat(badge_file, locked_suffix);
 
-  // Badge directory should probably use a definition
-  menu_display_reset_textures_list(badge_file, "badges", &badges->menu_texture_list[i],TEXTURE_FILTER_MIPMAP_LINEAR);
+  char fullpath[PATH_MAX_LENGTH];
+  fill_pathname_application_special(fullpath,
+        PATH_MAX_LENGTH * sizeof(char),
+        APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES);
+
+  menu_display_reset_textures_list(badge_file, fullpath, &badges->menu_texture_list[i],TEXTURE_FILTER_MIPMAP_LINEAR);
 }
 
 void set_badge_info (badges_ctx_t *badge_struct, int id, const char *badge_id, bool active)

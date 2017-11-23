@@ -2245,9 +2245,11 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
   if ((type >= MENU_SETTINGS_CHEEVOS_START) &&
     (type < MENU_SETTINGS_NETPLAY_ROOMS_START))
     {
-      //return badges_ctx.menu_texture_list[type - MENU_SETTINGS_CHEEVOS_START];
       int new_id = type - MENU_SETTINGS_CHEEVOS_START;
-      return get_badge_texture( new_id );
+      if ( get_badge_texture(new_id) != 0 )
+        return get_badge_texture( new_id );
+      else
+        return xmb->textures.list[XMB_TEXTURE_SUBSETTING]; // Should be replaced with placeholder badge icon.
     }
 #endif
 

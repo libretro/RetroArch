@@ -16,6 +16,7 @@
 #include <string.h>
 #include <ctype.h>
 
+#include <file/file_path.h>
 #include <formats/jsonsax.h>
 #include <streams/file_stream.h>
 #include <features/features_cpu.h>
@@ -40,6 +41,7 @@
 #include "var.h"
 #include "cond.h"
 
+#include "../file_path_special.h"
 #include "../command.h"
 #include "../dynamic.h"
 #include "../configuration.h"
@@ -76,6 +78,9 @@
 /* Define this macro to have the password and token logged. THIS WILL DISCLOSE
  * THE USER'S PASSWORD, TAKE CARE! */
 #undef CHEEVOS_LOG_PASSWORD
+
+/* Define this macro to log downloaded badge images. */
+#undef CHEEVOS_LOG_BADGES
 
 /* C89 wants only int values in enums. */
 #define CHEEVOS_JSON_KEY_GAMEID       0xb4960eecU
@@ -2856,6 +2861,8 @@ static int cheevos_iterate(coro_t* coro)
          runloop_msg_queue_push(msg, 0, 6 * 60, false);
       }
 
+      CORO_GOSUB(GET_BADGES);
+
       CORO_STOP();
 
    /**************************************************************************
@@ -3163,24 +3170,54 @@ static int cheevos_iterate(coro_t* coro)
     CORO_SUB(GET_BADGES)
 
     char badge_filename[16];
+    char fullpath[PATH_MAX_LENGTH];
+    FILE* file;
     cheevo_t *cheevo = cheevos_locals.core.cheevos;
     const cheevo_t *end           = cheevos_locals.core.cheevos +
                                     cheevos_locals.core.count;
 
     for (unsigned i = 0; cheevo < end ; cheevo++)
     {
-      strcpy(badge_filename, cheevo->badge);
-      strcat(badge_filename, ".png");
-      if (!download_badge(badge_filename))
-        break;
+      for (unsigned j = 0; j < 2; j++)
+      {
+        strcpy(badge_filename, cheevo->badge);
+        if (j == 0) strcat(badge_filename, ".png");
+        else strcat(badge_filename, "_lock.png");
 
-      strcpy(badge_filename, cheevo->badge);
-      strcat(badge_filename, "_lock.png");
-      if (!download_badge(badge_filename))
-        break;
+        fill_pathname_application_special(fullpath,
+              PATH_MAX_LENGTH * sizeof(char),
+              APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES);
+
+        if (!path_is_directory(fullpath))
+          path_mkdir(fullpath);
+
+        strcat(fullpath, badge_filename);
+
+        if (!badge_exists(fullpath))
+        {
+          snprintf(
+             CHEEVOS_VAR_URL, sizeof(CHEEVOS_VAR_URL),
+             "http://i.retroachievements.org/Badge/%s",
+             badge_filename
+          );
+
+          CORO_GOSUB(HTTP_GET);
+
+          if (CHEEVOS_VAR_K > 5)
+          {
+            file = fopen (fullpath, "wb");
+            fwrite(CHEEVOS_VAR_JSON, 1, CHEEVOS_VAR_K, file);
+            fclose(file);
+        #ifdef CHEEVOS_LOG_BADGES
+            RARCH_LOG("[CHEEVOS]: downloaded badge %s.\n", badge_filename);
+        #endif
+          }
+        }
+
+      }
     }
 
-         CORO_RET();
+    CORO_RET();
 
    /**************************************************************************
     * Info Logs in the user at Retro Achievements
@@ -3323,6 +3360,7 @@ static int cheevos_iterate(coro_t* coro)
                   CHEEVOS_VAR_JSON[length] = 0;
                }
 
+               CHEEVOS_VAR_K = length;
                net_http_delete(CHEEVOS_VAR_HTTP);
                net_http_connection_free(CHEEVOS_VAR_CONN);
                CORO_RET();
