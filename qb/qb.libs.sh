@@ -214,46 +214,46 @@ create_config_header()
 create_config_make()
 {	outfile="$1"; shift
 
-	echo "Creating make config: $outfile"
+	printf %s\\n "Creating make config: $outfile"
 
-	{	if [ "$USE_LANG_C" = 'yes' ]; then
-			echo "CC = $CC"
-			echo "CFLAGS = $CFLAGS"
-		fi
-		if [ "$USE_LANG_CXX" = 'yes' ]; then
-			echo "CXX = $CXX"
-			echo "CXXFLAGS = $CXXFLAGS"
-		fi
-		echo "WINDRES = $WINDRES"
-		echo "ASFLAGS = $ASFLAGS"
-		echo "LDFLAGS = $LDFLAGS"
-		echo "INCLUDE_DIRS = $INCLUDE_DIRS"
-		echo "LIBRARY_DIRS = $LIBRARY_DIRS"
-		echo "PACKAGE_NAME = $PACKAGE_NAME"
-		echo "BUILD = $BUILD"
-		echo "PREFIX = $PREFIX"
+	{	[ "$USE_LANG_C" = 'yes' ] && printf %s\\n "CC = $CC" "CFLAGS = $CFLAGS"
+		[ "$USE_LANG_CXX" = 'yes' ] && printf %s\\n "CXX = $CXX" "CXXFLAGS = $CXXFLAGS"
+
+		printf %s\\n "WINDRES = $WINDRES" \
+			"ASFLAGS = $ASFLAGS" \
+			"LDFLAGS = $LDFLAGS" \
+			"INCLUDE_DIRS = $INCLUDE_DIRS" \
+			"LIBRARY_DIRS = $LIBRARY_DIRS" \
+			"PACKAGE_NAME = $PACKAGE_NAME" \
+			"BUILD = $BUILD" \
+			"PREFIX = $PREFIX"
 
 		while [ "$1" ]; do
-			case $(eval echo \$HAVE_$1) in
+			case "$(eval "printf %s \"\$HAVE_$1\"")" in
 				'yes')
-					if [ "$(eval echo \$C89_$1)" = "no" ]; then echo "ifneq (\$(C89_BUILD),1)"; fi
-					echo "HAVE_$1 = 1"
-					if [ "$(eval echo \$C89_$1)" = "no" ]; then echo "endif"; fi
-					;;
-				'no') echo "HAVE_$1 = 0";;
+					if [ "$(eval "printf %s \"\$C89_$1\"")" = 'no' ]; then
+						printf %s\\n "ifneq (\$(C89_BUILD),1)" \
+							"HAVE_$1 = 1" 'endif'
+					else
+						printf %s\\n "HAVE_$1 = 1"
+					fi
+				;;
+				'no') printf %s\\n "HAVE_$1 = 0";;
 			esac
 			
 			case "$PKG_CONF_USED" in
 				*$1*)
-					FLAGS="$(eval echo \$$1_CFLAGS)"
-					LIBS="$(eval echo \$$1_LIBS)"
-					echo "$1_CFLAGS = ${FLAGS%"${FLAGS##*[! ]}"}"
-					echo "$1_LIBS = ${LIBS%"${LIBS##*[! ]}"}"
+					FLAGS="$(eval "printf %s \"\$$1_CFLAGS\"")"
+					LIBS="$(eval "printf %s \"\$$1_LIBS\"")"
+					printf %s\\n "$1_CFLAGS = ${FLAGS%"${FLAGS##*[! ]}"}" \
+						"$1_LIBS = ${LIBS%"${LIBS##*[! ]}"}"
 				;;
 			esac
 			shift
 		done
-		while IFS='=' read VAR VAL; do echo "$VAR = $VAL"; done < "$MAKEFILE_DEFINES"
+		while IFS='=' read -r VAR VAL; do
+			printf %s\\n "$VAR = $VAL"
+		done < "$MAKEFILE_DEFINES"
 
 	} > "$outfile"
 }
