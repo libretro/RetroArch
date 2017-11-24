@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -119,7 +119,7 @@ void fill_pathname_abbreviate_special(char *out_path,
     * Keep application dir in front of home, moving app dir to a
     * new location inside home would break otherwise. */
 
-   /* ugly hack - use application_dir pointer 
+   /* ugly hack - use application_dir pointer
     * before filling it in. C89 reasons */
    candidates[0] = application_dir;
    candidates[1] = home;
@@ -129,23 +129,23 @@ void fill_pathname_abbreviate_special(char *out_path,
    notations [1] = "~";
    notations [2] = NULL;
 
-   fill_pathname_application_path(application_dir, 
+   fill_pathname_application_path(application_dir,
          PATH_MAX_LENGTH * sizeof(char));
    path_basedir_wrapper(application_dir);
-   
+
    for (i = 0; candidates[i]; i++)
    {
-      if (!string_is_empty(candidates[i]) && 
+      if (!string_is_empty(candidates[i]) &&
             strstr(in_path, candidates[i]) == in_path)
       {
          size_t src_size  = strlcpy(out_path, notations[i], size);
 
          retro_assert(src_size < size);
-      
+
          out_path        += src_size;
          size            -= src_size;
          in_path         += strlen(candidates[i]);
-      
+
          if (!path_char_is_slash(*in_path))
          {
             retro_assert(strlcpy(out_path,
@@ -242,7 +242,7 @@ void fill_pathname_application_path(char *s, size_t len)
       CFStringGetCString(bundle_path, s, len, kCFStringEncodingUTF8);
       CFRelease(bundle_path);
       CFRelease(bundle_url);
-      
+
       retro_assert(strlcat(s, "nobin", len) < len);
       return;
    }
@@ -269,7 +269,7 @@ void fill_pathname_application_path(char *s, size_t len)
       char link_path[255];
 
       link_path[0] = *s = '\0';
-      pid       = getpid(); 
+      pid       = getpid();
 
       /* Linux, BSD and Solaris paths. Not standardized. */
       for (i = 0; i < ARRAY_SIZE(exts); i++)
@@ -287,7 +287,7 @@ void fill_pathname_application_path(char *s, size_t len)
          }
       }
    }
-   
+
    RARCH_ERR("Cannot resolve application path! This should not happen.\n");
 #endif
 }
@@ -335,7 +335,7 @@ void fill_pathname_application_special(char *s,
             char *s1 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
             s1[0]    = '\0';
 
-            fill_pathname_application_special(s1, 
+            fill_pathname_application_special(s1,
                   PATH_MAX_LENGTH * sizeof(char),
                   APPLICATION_SPECIAL_DIRECTORY_ASSETS_ZARCH);
             fill_pathname_join(s,
@@ -349,7 +349,7 @@ void fill_pathname_application_special(char *s,
 #ifdef HAVE_ZARCH
          {
             settings_t *settings     = config_get_ptr();
-            fill_pathname_join(s, 
+            fill_pathname_join(s,
                   settings->paths.directory_assets,
                   "zarch",
                   len);
@@ -501,6 +501,31 @@ void fill_pathname_application_special(char *s,
          }
 #endif
          break;
+      case APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES:
+      {
+        char *s1 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+        char *s2 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+        settings_t *settings     = config_get_ptr();
+
+        s1[0] = s2[0] = '\0';
+
+        fill_pathname_join(s1,
+              settings->paths.directory_thumbnails,
+              "cheevos",
+              len);
+        fill_pathname_join(s2,
+              s1, "badges",
+              PATH_MAX_LENGTH * sizeof(char)
+              );
+        fill_pathname_slash(s2,
+              PATH_MAX_LENGTH * sizeof(char)
+              );
+        strlcpy(s, s2, len);
+        free(s1);
+        free(s2);
+      }
+      break;
+
       case APPLICATION_SPECIAL_NONE:
       default:
          break;

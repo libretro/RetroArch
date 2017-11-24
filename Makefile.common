@@ -1476,6 +1476,7 @@ ifeq ($(HAVE_NETWORKING), 1)
       OBJ += cheevos/cheevos.o \
          cheevos/var.o \
          cheevos/cond.o \
+         cheevos/badges.o \
          $(LIBRETRO_COMM_DIR)/utils/md5.o
    endif
 

@@ -1,4 +1,5 @@
 # 1.7.0 (future)
+- CHEEVOS: Add badges
 
 # 1.6.9
 - COMMON: Small memory leak.

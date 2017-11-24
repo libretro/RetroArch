@@ -1255,6 +1255,9 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("cheevos_test_unofficial",      &settings->bools.cheevos_test_unofficial, true, false, false);
    SETTING_BOOL("cheevos_hardcore_mode_enable", &settings->bools.cheevos_hardcore_mode_enable, true, false, false);
    SETTING_BOOL("cheevos_leaderboards_enable",  &settings->bools.cheevos_leaderboards_enable, true, false, false);
+#ifdef HAVE_XMB
+   SETTING_BOOL("cheevos_badges_enable",        &settings->bools.cheevos_badges_enable, true, false, false);
+#endif
    SETTING_BOOL("cheevos_verbose_enable",       &settings->bools.cheevos_verbose_enable, true, false, false);
 #endif
 #ifdef HAVE_OVERLAY
@@ -1864,7 +1867,7 @@ static void config_set_defaults(void)
       temp_str[0] = '\0';
 
       fill_pathname_expand_special(temp_str,
-            g_defaults.path.config, 
+            g_defaults.path.config,
             PATH_MAX_LENGTH * sizeof(char));
       path_set(RARCH_PATH_CONFIG, temp_str);
       free(temp_str);

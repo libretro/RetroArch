@@ -61,6 +61,8 @@
 
 #include "../../tasks/tasks_internal.h"
 
+#include "../../cheevos/badges.h"
+
 #define XMB_RIBBON_ROWS 64
 #define XMB_RIBBON_COLS 64
 #define XMB_RIBBON_VERTICES 2*XMB_RIBBON_COLS*XMB_RIBBON_ROWS-2*XMB_RIBBON_COLS
@@ -2238,6 +2240,18 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_ROOM_MITM]; */
 #endif
    }
+
+#ifdef HAVE_CHEEVOS
+  if ((type >= MENU_SETTINGS_CHEEVOS_START) &&
+    (type < MENU_SETTINGS_NETPLAY_ROOMS_START))
+    {
+      int new_id = type - MENU_SETTINGS_CHEEVOS_START;
+      if ( get_badge_texture(new_id) != 0 )
+        return get_badge_texture( new_id );
+      else
+        return xmb->textures.list[XMB_TEXTURE_SUBSETTING]; // Should be replaced with placeholder badge icon.
+    }
+#endif
 
    return xmb->textures.list[XMB_TEXTURE_SUBSETTING];
 }
