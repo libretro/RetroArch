@@ -16,19 +16,23 @@ add_library_dirs()
 	LIBRARY_DIRS="${LIBRARY_DIRS# }"
 }
 
+check_compiler() # $1 = language  $2 = function in lib
+{	if [ "$1" = cxx ]; then
+		COMPILER="$CXX"
+		TEMP_CODE="$TEMP_CXX"
+		TEST_C="extern \"C\" { void $2(void); } int main() { $2(); }"
+	else
+		COMPILER="$CC"
+		TEMP_CODE="$TEMP_C"
+		TEST_C="void $2(void); int main(void) { $2(); return 0; }"
+	fi
+}
+
 check_lib() # $1 = language  $2 = HAVE_$2  $3 = lib  $4 = function in lib  $5 = extralibs $6 = headers $7 = critical error message [checked only if non-empty]
 {	tmpval="$(eval "printf %s \"\$HAVE_$2\"")"
 	[ "$tmpval" = 'no' ] && return 0
 
-	if [ "$1" = cxx ]; then
-		COMPILER="$CXX"
-		TEMP_CODE="$TEMP_CXX"
-		TEST_C="extern \"C\" { void $4(void); } int main() { $4(); }"
-	else
-		COMPILER="$CC"
-		TEMP_CODE="$TEMP_C"
-		TEST_C="void $4(void); int main(void) { $4(); return 0; }"
-	fi
+	check_compiler "$1" "$4"
 
 	if [ "$4" ]; then
 		ECHOBUF="Checking function $4 in ${3% }"
