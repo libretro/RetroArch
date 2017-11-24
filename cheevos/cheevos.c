@@ -2138,7 +2138,7 @@ void cheevos_reset_game(void)
       cheevo->last = 1;
 }
 
-void cheevos_populate_menu(void *data, bool hardcore)
+void cheevos_populate_menu(void *data)
 {
 #ifdef HAVE_MENU
    unsigned i;
@@ -2151,39 +2151,30 @@ void cheevos_populate_menu(void *data, bool hardcore)
 
    for (i = 0; cheevo < end; i++, cheevo++)
    {
-      if (!hardcore)
+
+      if (!(cheevo->active & CHEEVOS_ACTIVE_HARDCORE))
       {
-         if (!(cheevo->active & CHEEVOS_ACTIVE_SOFTCORE))
-         {
-            menu_entries_append_enum(info->list, cheevo->title,
-                  cheevo->description, MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY,
-                  MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
-            items_found++;
-         }
-         else
-         {
-            menu_entries_append_enum(info->list, cheevo->title,
-                  cheevo->description, MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY,
-                  MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
-            items_found++;
-         }
+         menu_entries_append_enum(info->list, cheevo->title,
+            cheevo->description, MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY_HARDCORE,
+            MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
+         items_found++;
+         set_badge_info(&badges_ctx, i, cheevo->badge, (cheevo->active & CHEEVOS_ACTIVE_HARDCORE));
+      }
+      else if (!(cheevo->active & CHEEVOS_ACTIVE_SOFTCORE))
+      {
+         menu_entries_append_enum(info->list, cheevo->title,
+            cheevo->description, MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY,
+            MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
+         items_found++;
+         set_badge_info(&badges_ctx, i, cheevo->badge, (cheevo->active & CHEEVOS_ACTIVE_SOFTCORE));
       }
       else
       {
-         if (!(cheevo->active & CHEEVOS_ACTIVE_HARDCORE))
-         {
-            menu_entries_append_enum(info->list, cheevo->title,
-                  cheevo->description, MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY,
-                  MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
-            items_found++;
-         }
-         else
-         {
-            menu_entries_append_enum(info->list, cheevo->title,
-                  cheevo->description, MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY,
-                  MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
-            items_found++;
-         }
+         menu_entries_append_enum(info->list, cheevo->title,
+            cheevo->description, MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY,
+            MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
+         items_found++;
+         set_badge_info(&badges_ctx, i, cheevo->badge, (cheevo->active & CHEEVOS_ACTIVE_SOFTCORE));
       }
    }
 
@@ -2193,42 +2184,29 @@ void cheevos_populate_menu(void *data, bool hardcore)
       end    = cheevos_locals.unofficial.cheevos
          + cheevos_locals.unofficial.count;
 
-      for (i = cheevos_locals.core.count; cheevo < end; i++, cheevo++)
+      if (!(cheevo->active & CHEEVOS_ACTIVE_HARDCORE))
       {
-         if (!hardcore)
-         {
-            if (!(cheevo->active & CHEEVOS_ACTIVE_SOFTCORE))
-            {
-               menu_entries_append_enum(info->list, cheevo->title,
-                     cheevo->description, MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY,
-                     MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
-               items_found++;
-            }
-            else
-            {
-               menu_entries_append_enum(info->list, cheevo->title,
-                     cheevo->description, MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY,
-                     MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
-               items_found++;
-            }
-         }
-         else
-         {
-            if (!(cheevo->active & CHEEVOS_ACTIVE_HARDCORE))
-            {
-               menu_entries_append_enum(info->list, cheevo->title,
-                     cheevo->description, MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY,
-                     MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
-               items_found++;
-            }
-            else
-            {
-               menu_entries_append_enum(info->list, cheevo->title,
-                     cheevo->description, MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY,
-                     MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
-               items_found++;
-            }
-         }
+         menu_entries_append_enum(info->list, cheevo->title,
+            cheevo->description, MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY_HARDCORE,
+            MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
+         items_found++;
+         set_badge_info(&badges_ctx, i, cheevo->badge, (cheevo->active & CHEEVOS_ACTIVE_HARDCORE));
+      }
+      else if (!(cheevo->active & CHEEVOS_ACTIVE_SOFTCORE))
+      {
+         menu_entries_append_enum(info->list, cheevo->title,
+            cheevo->description, MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY,
+            MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
+         items_found++;
+         set_badge_info(&badges_ctx, i, cheevo->badge, (cheevo->active & CHEEVOS_ACTIVE_SOFTCORE));
+      }
+      else
+      {
+         menu_entries_append_enum(info->list, cheevo->title,
+            cheevo->description, MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY,
+            MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
+         items_found++;
+         set_badge_info(&badges_ctx, i, cheevo->badge, (cheevo->active & CHEEVOS_ACTIVE_SOFTCORE));
       }
    }
 
@@ -3157,6 +3135,63 @@ static int cheevos_iterate(coro_t* coro)
       CORO_RET();
 
    /**************************************************************************
+<<<<<<< Updated upstream
+=======
+   * Info    Gets the achievements from Retro Achievements
+   * Inputs  CHEEVOS_VAR_GAMEID
+   * Outputs CHEEVOS_VAR_JSON
+   *************************************************************************/
+   CORO_SUB(GET_BADGES)
+
+   badges_ctx = new_badges_ctx;
+
+   settings_t *settings = config_get_ptr();
+   if (!string_is_equal(settings->arrays.menu_driver, "xmb") || 
+       !settings->bools.cheevos_badges_enable)
+      CORO_RET();
+
+   CHEEVOS_VAR_CHEEVO_CURR = cheevos_locals.core.cheevos;
+   CHEEVOS_VAR_CHEEVO_END = cheevos_locals.core.cheevos + cheevos_locals.core.count;
+
+   for (; CHEEVOS_VAR_CHEEVO_CURR < CHEEVOS_VAR_CHEEVO_END ; CHEEVOS_VAR_CHEEVO_CURR++)
+   {
+      for (CHEEVOS_VAR_J = 0 ; CHEEVOS_VAR_J < 2; CHEEVOS_VAR_J++)
+      {
+         CHEEVOS_VAR_BADGE_PATH[0] = '\0';
+         fill_pathname_application_special(CHEEVOS_VAR_BADGE_BASE_PATH, sizeof(CHEEVOS_VAR_BADGE_BASE_PATH),
+            APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES);
+
+         if (!path_is_directory(CHEEVOS_VAR_BADGE_BASE_PATH))
+            path_mkdir(CHEEVOS_VAR_BADGE_BASE_PATH);
+         CORO_YIELD();
+         if (CHEEVOS_VAR_J == 0) 
+            snprintf(CHEEVOS_VAR_BADGE_NAME, sizeof(CHEEVOS_VAR_BADGE_NAME), "%s.png", CHEEVOS_VAR_CHEEVO_CURR->badge);
+         else
+            snprintf(CHEEVOS_VAR_BADGE_NAME, sizeof(CHEEVOS_VAR_BADGE_NAME), "%s_lock.png", CHEEVOS_VAR_CHEEVO_CURR->badge);
+
+         fill_pathname_join(CHEEVOS_VAR_BADGE_PATH, CHEEVOS_VAR_BADGE_BASE_PATH, CHEEVOS_VAR_BADGE_NAME, sizeof(CHEEVOS_VAR_BADGE_PATH));
+
+         if (!badge_exists(CHEEVOS_VAR_BADGE_PATH))
+         {
+            snprintf(CHEEVOS_VAR_URL, sizeof(CHEEVOS_VAR_URL), "http://i.retroachievements.org/Badge/%s", CHEEVOS_VAR_BADGE_NAME);
+
+            CORO_GOSUB(HTTP_GET);
+            if (CHEEVOS_VAR_JSON != NULL)
+            {
+               if (filestream_write_file(CHEEVOS_VAR_BADGE_PATH, CHEEVOS_VAR_JSON, CHEEVOS_VAR_K))
+                  RARCH_ERR("[CHEEVOS]: error writing badge %s\n", CHEEVOS_VAR_BADGE_PATH);
+#ifdef CHEEVOS_LOG_BADGES
+               RARCH_LOG("[CHEEVOS]: downloaded badge %s\n", CHEEVOS_VAR_BADGE_PATH);
+#endif
+            }
+         }
+      }
+   }
+
+   CORO_RET();
+
+   /**************************************************************************
+>>>>>>> Stashed changes
     * Info Logs in the user at Retro Achievements
     *************************************************************************/
    CORO_SUB(LOGIN)
