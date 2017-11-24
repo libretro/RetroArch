@@ -78,12 +78,12 @@ bool nbio_iterate(struct nbio_t* handle);
 
 /*
  * Resizes the file up to the given size; cannot shrink.
- * Can not be done if the structure was created with nbio_read.
+ * Can not be done if the structure was created with {N,}BIO_READ.
  */
 void nbio_resize(struct nbio_t* handle, size_t len);
 
 /*
- * Returns a pointer to the file data. Writable only if structure was not created with nbio_read.
+ * Returns a pointer to the file data. Writable only if structure was not created with {N,}BIO_READ.
  * If any operation is in progress, the pointer will be NULL, but len will still be correct.
  */
 void* nbio_get_ptr(struct nbio_t* handle, size_t* len);
