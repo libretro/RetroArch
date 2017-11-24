@@ -669,7 +669,8 @@ int16_t input_state(unsigned port, unsigned device,
 
 #ifdef HAVE_KEYMAPPER
       if (input_driver_mapper)
-         input_mapper_state(&res, port, device, idx, id);
+         input_mapper_state(input_driver_mapper,
+               &res, port, device, idx, id);
 #endif
 
       /* Don't allow turbo for D-pad. */
