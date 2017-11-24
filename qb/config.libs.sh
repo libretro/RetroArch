@@ -5,9 +5,9 @@ check_switch '' NOUNUSED_VARIABLE -Wno-unused-variable
 add_define MAKEFILE NOUNUSED_VARIABLE "$HAVE_NOUNUSED_VARIABLE"
 
 # There are still broken 64-bit Linux distros out there. :)
-[ -z "$CROSS_COMPILE" ] && [ -d /usr/lib64 ] && add_library_dirs /usr/lib64
+[ -z "$CROSS_COMPILE" ] && [ -d /usr/lib64 ] && add_dirs LIBRARY /usr/lib64
 
-[ -z "$CROSS_COMPILE" ] && [ -d /opt/local/lib ] && add_library_dirs /opt/local/lib
+[ -z "$CROSS_COMPILE" ] && [ -d /opt/local/lib ] && add_dirs LIBRARY /opt/local/lib
 
 [ "$GLOBAL_CONFIG_DIR" ] || \
 {	case "$PREFIX" in
@@ -46,7 +46,7 @@ if [ "$HAVE_VIDEOCORE" != "no" ]; then
 
    # use fallback if pkgconfig is not available
    if [ ! "$VC_TEST_LIBS" ]; then
-      [ -d /opt/vc/lib ] && add_library_dirs /opt/vc/lib && add_library_dirs /opt/vc/lib/GL
+      [ -d /opt/vc/lib ] && add_dirs LIBRARY /opt/vc/lib /opt/vc/lib/GL
       check_lib '' VIDEOCORE -lbcm_host bcm_host_init "-lvcos -lvchiq_arm"
    else
       HAVE_VIDEOCORE="$HAVE_VC_TEST"
@@ -59,9 +59,9 @@ if [ "$HAVE_VIDEOCORE" = 'yes' ]; then
 
    # use fallback if pkgconfig is not available
    if [ ! "$VC_TEST_LIBS" ]; then
-      [ -d /opt/vc/include ] && add_include_dirs /opt/vc/include
-      [ -d /opt/vc/include/interface/vcos/pthreads ] && add_include_dirs /opt/vc/include/interface/vcos/pthreads
-      [ -d /opt/vc/include/interface/vmcs_host/linux ] && add_include_dirs /opt/vc/include/interface/vmcs_host/linux
+      [ -d /opt/vc/include ] && add_dirs INCLUDE /opt/vc/include
+      [ -d /opt/vc/include/interface/vcos/pthreads ] && add_dirs INCLUDE /opt/vc/include/interface/vcos/pthreads
+      [ -d /opt/vc/include/interface/vmcs_host/linux ] && add_dirs INCLUDE /opt/vc/include/interface/vmcs_host/linux
       EXTRA_GL_LIBS="-lbrcmEGL -lbrcmGLESv2 -lbcm_host -lvcos -lvchiq_arm"
    fi
 fi
@@ -73,7 +73,7 @@ if [ "$HAVE_NEON" = "yes" ]; then
 fi
 
 if [ "$HAVE_7ZIP" = "yes" ]; then
-   add_include_dirs ./deps/7zip/
+   add_dirs INCLUDE ./deps/7zip
 fi
 
 if [ "$HAVE_PRESERVE_DYLIB" = "yes" ]; then
