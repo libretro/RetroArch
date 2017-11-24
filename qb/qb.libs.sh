@@ -3,11 +3,8 @@ CONFIG_DEFINES=''
 
 [ "$PREFIX" ] || PREFIX="/usr/local"
 
-add_define_header()
-{ CONFIG_DEFINES="${CONFIG_DEFINES} $1=$2"; }
-
-add_define_make()
-{ MAKEFILE_DEFINES="${MAKEFILE_DEFINES} $1=$2"; }
+add_define() # $1 = MAKEFILE or CONFIG $2 = define $3 = value
+{ eval "${1}_DEFINES=\"\${${1}_DEFINES} $2=$3\""; }
 
 add_include_dirs()
 {	while [ "$1" ]; do INCLUDE_DIRS="$INCLUDE_DIRS -I$1"; shift; done

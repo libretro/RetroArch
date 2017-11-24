@@ -1,9 +1,9 @@
 check_switch_c C99 -std=gnu99  "Cannot find C99 compatible compiler."
 
 check_switch_c NOUNUSED -Wno-unused-result
-add_define_make NOUNUSED "$HAVE_NOUNUSED"
+add_define MAKEFILE NOUNUSED "$HAVE_NOUNUSED"
 check_switch_c NOUNUSED_VARIABLE -Wno-unused-variable
-add_define_make NOUNUSED_VARIABLE "$HAVE_NOUNUSED_VARIABLE"
+add_define MAKEFILE NOUNUSED_VARIABLE "$HAVE_NOUNUSED_VARIABLE"
 
 # There are still broken 64-bit Linux distros out there. :)
 [ -z "$CROSS_COMPILE" ] && [ -d /usr/lib64 ] && add_library_dirs /usr/lib64
@@ -38,7 +38,7 @@ elif [ "$OS" = 'Cygwin' ]; then
    die 1 'Error: Cygwin is not a supported platform. See https://bot.libretro.com/docs/compilation/windows/'
 fi
 
-add_define_make DYLIB_LIB "$DYLIB"
+add_define MAKEFILE DYLIB_LIB "$DYLIB"
 
 check_lib '' SYSTEMD -lsystemd sd_get_machine_names
 
@@ -79,7 +79,7 @@ fi
 
 if [ "$HAVE_PRESERVE_DYLIB" = "yes" ]; then
    die : 'Notice: Disabling dlclose() of shared objects for Valgrind support.'
-   add_define_make HAVE_PRESERVE_DYLIB "1"
+   add_define MAKEFILE HAVE_PRESERVE_DYLIB "1"
 fi
 
 if [ "$HAVE_FLOATHARD" = "yes" ]; then
@@ -150,17 +150,17 @@ fi
 [ "$HAVE_DYNAMIC" = 'yes' ] || {
    #check_lib '' RETRO "$LIBRETRO" retro_init "$DYLIB" "Cannot find libretro, did you forget --with-libretro=\"-lretro\"?"
    check_lib '' RETRO "$LIBRETRO" "$DYLIB" "Cannot find libretro, did you forget --with-libretro=\"-lretro\"?"
-   add_define_make libretro "$LIBRETRO"
+   add_define MAKEFILE libretro "$LIBRETRO"
 }
 
 [ -z "$ASSETS_DIR" ] && ASSETS_DIR="${PREFIX}/share"
-add_define_make ASSETS_DIR "$ASSETS_DIR"
+add_define MAKEFILE ASSETS_DIR "$ASSETS_DIR"
 
 [ -z "$BIN_DIR" ] && BIN_DIR="${PREFIX}/bin"
-add_define_make BIN_DIR "$BIN_DIR"
+add_define MAKEFILE BIN_DIR "$BIN_DIR"
 
 [ -z "$MAN_DIR" ] && MAN_DIR="${PREFIX}/share/man"
-add_define_make MAN_DIR "$MAN_DIR"
+add_define MAKEFILE MAN_DIR "$MAN_DIR"
 
 if [ "$OS" = 'DOS' ]; then
    HAVE_SHADERPIPELINE=no
@@ -377,13 +377,13 @@ if [ "$HAVE_EGL" = "yes" ]; then
    if [ "$HAVE_OPENGLES" != "no" ]; then
       if [ "$OPENGLES_LIBS" ] || [ "$OPENGLES_CFLAGS" ]; then
          die : "Notice: Using custom OpenGLES CFLAGS ($OPENGLES_CFLAGS) and LDFLAGS ($OPENGLES_LIBS)."
-         add_define_make OPENGLES_LIBS "$OPENGLES_LIBS"
-         add_define_make OPENGLES_CFLAGS "$OPENGLES_CFLAGS"
+         add_define MAKEFILE OPENGLES_LIBS "$OPENGLES_LIBS"
+         add_define MAKEFILE OPENGLES_CFLAGS "$OPENGLES_CFLAGS"
       else
          HAVE_OPENGLES=auto; check_pkgconf OPENGLES "$VC_PREFIX"glesv2
          if [ "$HAVE_OPENGLES" = "no" ]; then
             HAVE_OPENGLES=auto; check_lib '' OPENGLES "-l${VC_PREFIX}GLESv2 $EXTRA_GL_LIBS"
-            add_define_make OPENGLES_LIBS "-l${VC_PREFIX}GLESv2 $EXTRA_GL_LIBS"
+            add_define MAKEFILE OPENGLES_LIBS "-l${VC_PREFIX}GLESv2 $EXTRA_GL_LIBS"
          fi
       fi
    fi
@@ -470,7 +470,7 @@ fi
 
 check_macro NEON __ARM_NEON__
 
-add_define_make OS "$OS"
+add_define MAKEFILE OS "$OS"
 
 if [ "$HAVE_ZLIB" = 'no' ] && [ "$HAVE_RPNG" != 'no' ]; then
    HAVE_RPNG=no
@@ -487,7 +487,7 @@ if [ "$HAVE_V4L2" != 'no' ] && [ "$HAVE_VIDEOPROCESSOR" != 'no' ]; then
 fi
 
 # Creates config.mk and config.h.
-add_define_make GLOBAL_CONFIG_DIR "$GLOBAL_CONFIG_DIR"
+add_define MAKEFILE GLOBAL_CONFIG_DIR "$GLOBAL_CONFIG_DIR"
 set -- $(set | grep ^HAVE_)
 while [ $# -gt 0 ]; do
    tmpvar="${1%=*}"
