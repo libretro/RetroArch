@@ -2511,10 +2511,17 @@ void input_config_get_bind_string(char *buf, const struct retro_keybind *bind,
    input_keymaps_translate_rk_to_str(bind->key, key, sizeof(key));
    if (string_is_equal(key, file_path_str(FILE_PATH_NUL)))
       *key = '\0';
-
-   snprintf(keybuf, sizeof(keybuf), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_KEY), key);
-   strlcat(buf, keybuf, size);
+   /*empty?*/
+   if ( *key != '\0' ) {
+     snprintf(keybuf, sizeof(keybuf), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_KEY), key);
+     strlcat(buf, keybuf, size);
+   }
 #endif
+
+   /*completely empty?*/
+   if ( *buf == '\0' ) {
+	   strlcat(buf, "---", size);
+   }
 }
 
 const char *input_config_get_device_name(unsigned port)
