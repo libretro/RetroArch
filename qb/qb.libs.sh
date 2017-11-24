@@ -6,14 +6,13 @@ CONFIG_DEFINES=''
 add_define() # $1 = MAKEFILE or CONFIG $2 = define $3 = value
 { eval "${1}_DEFINES=\"\${${1}_DEFINES} $2=$3\""; }
 
-add_include_dirs()
-{	while [ "$1" ]; do INCLUDE_DIRS="$INCLUDE_DIRS -I$1"; shift; done
-	INCLUDE_DIRS="${INCLUDE_DIRS# }"
-}
-
-add_library_dirs()
-{	while [ "$1" ]; do LIBRARY_DIRS="$LIBRARY_DIRS -L$1"; shift; done
-	LIBRARY_DIRS="${LIBRARY_DIRS# }"
+add_dirs() # $1 = INCLUDE or LIBRARY  $@ = include or library paths
+{	ADD="$1"; LINK="${1%"${1#?}"}"; shift
+	while [ "$1" ]; do
+		eval "${ADD}_DIRS=\"\${${ADD}_DIRS} -${LINK}${1}\""
+		shift
+	done
+	eval "${ADD}_DIRS=\"\${${ADD}_DIRS# }\""
 }
 
 check_compiler() # $1 = language  $2 = function in lib
