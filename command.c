@@ -2540,14 +2540,14 @@ TODO: Add a setting for these tweaks */
          command_event(CMD_EVENT_REMOTE_DEINIT, NULL);
          input_driver_init_remote();
          break;
-
       case CMD_EVENT_MAPPER_DEINIT:
          input_driver_deinit_mapper();
          break;
       case CMD_EVENT_MAPPER_INIT:
          command_event(CMD_EVENT_MAPPER_DEINIT, NULL);
-         input_driver_init_mapper();
-      break;
+         if (!input_driver_init_mapper())
+            return false;
+         break;
       case CMD_EVENT_LOG_FILE_DEINIT:
          retro_main_log_file_deinit();
          break;
