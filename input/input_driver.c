@@ -780,11 +780,10 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
  *
  * Returns: Input sample containing a mask of all pressed keys.
  */
-rarch_input_state_t input_menu_keys_pressed(void *data, rarch_input_state_t last_input)
+void input_menu_keys_pressed(void *data, retro_bits_t* p_new_state)
 {
    unsigned i, port;
    rarch_joypad_info_t joypad_info;
-   rarch_input_state_t new_state = {0};
    const struct retro_keybind *binds[MAX_USERS] = {NULL};
    settings_t     *settings                     = (settings_t*)data;
    const struct retro_keybind *binds_norm       = NULL;
@@ -793,6 +792,8 @@ rarch_input_state_t input_menu_keys_pressed(void *data, rarch_input_state_t last
    uint8_t port_max                             = 
             settings->bools.input_all_users_control_menu 
             ? max_users : 1;
+
+   RARCH_INPUT_STATE_CLEAR_PTR( p_new_state );
 
    input_driver_block_libretro_input            = false;
    input_driver_block_hotkey                    = false;
@@ -894,7 +895,7 @@ rarch_input_state_t input_menu_keys_pressed(void *data, rarch_input_state_t last
 
             if (pressed)
             {
-               RARCH_INPUT_STATE_BIT_SET(new_state, i);
+               RARCH_INPUT_STATE_BIT_SET_PTR(p_new_state, i);
                continue;
             }
          }
@@ -904,7 +905,7 @@ rarch_input_state_t input_menu_keys_pressed(void *data, rarch_input_state_t last
       {
          if (current_input->meta_key_pressed(current_input_data, i))
          {
-            RARCH_INPUT_STATE_BIT_SET(new_state, i);
+            RARCH_INPUT_STATE_BIT_SET_PTR(p_new_state, i);
             continue;
          }
       }
@@ -912,7 +913,7 @@ rarch_input_state_t input_menu_keys_pressed(void *data, rarch_input_state_t last
 #ifdef HAVE_OVERLAY
       if (overlay_ptr && input_overlay_key_pressed(overlay_ptr, i))
       {
-         RARCH_INPUT_STATE_BIT_SET(new_state, i);
+         RARCH_INPUT_STATE_BIT_SET_PTR(p_new_state, i);
          continue;
       }
 #endif
@@ -927,7 +928,7 @@ rarch_input_state_t input_menu_keys_pressed(void *data, rarch_input_state_t last
 
          if (command_get(&handle))
          {
-            RARCH_INPUT_STATE_BIT_SET(new_state, i);
+            RARCH_INPUT_STATE_BIT_SET_PTR(p_new_state, i);
             continue;
          }
       }
@@ -936,7 +937,7 @@ rarch_input_state_t input_menu_keys_pressed(void *data, rarch_input_state_t last
 #ifdef HAVE_NETWORKGAMEPAD
       if (input_driver_remote && input_remote_key_pressed(i, 0))
       {
-         RARCH_INPUT_STATE_BIT_SET(new_state, i);
+         RARCH_INPUT_STATE_BIT_SET_PTR(p_new_state, i);
          continue;
       }
 #endif
@@ -991,11 +992,9 @@ rarch_input_state_t input_menu_keys_pressed(void *data, rarch_input_state_t last
       {
          if (current_input->input_state(current_input_data, joypad_info, binds, 0,
                   RETRO_DEVICE_KEYBOARD, 0, ids[i][0]))
-            RARCH_INPUT_STATE_BIT_SET(new_state, ids[i][1]);
+            RARCH_INPUT_STATE_BIT_SET_PTR(p_new_state, ids[i][1]);
       }
    }
-
-   return new_state;
 }
 #endif
 
@@ -1006,11 +1005,10 @@ rarch_input_state_t input_menu_keys_pressed(void *data, rarch_input_state_t last
  *
  * Returns: Input sample containing a mask of all pressed keys.
  */
-rarch_input_state_t input_keys_pressed(void *data, rarch_input_state_t last_input)
+void input_keys_pressed(void *data, retro_bits_t* p_new_state)
 {
    unsigned i;
    rarch_joypad_info_t joypad_info;
-   rarch_input_state_t new_state = {0};
    settings_t              *settings            = (settings_t*)data;
    const struct retro_keybind *binds            = input_config_binds[0];
    const struct retro_keybind *binds_auto       = &input_autoconf_binds[0][RARCH_ENABLE_HOTKEY];
@@ -1020,6 +1018,8 @@ rarch_input_state_t input_keys_pressed(void *data, rarch_input_state_t last_inpu
    const struct retro_keybind *focus_normal     = &binds[RARCH_GAME_FOCUS_TOGGLE];
    const struct retro_keybind *enable_hotkey    = &input_config_binds[0][RARCH_ENABLE_HOTKEY];
    bool game_focus_toggle_valid                 = false;
+
+   RARCH_INPUT_STATE_CLEAR_PTR( p_new_state );
 
    joypad_info.joy_idx                          = settings->uints.input_joypad_map[0];
    joypad_info.auto_binds                       = input_autoconf_binds[joypad_info.joy_idx];
@@ -1065,7 +1065,7 @@ rarch_input_state_t input_keys_pressed(void *data, rarch_input_state_t last_inpu
                0, RETRO_DEVICE_JOYPAD, 0, i)
          )
       {
-         RARCH_INPUT_STATE_BIT_SET(new_state, i);
+         RARCH_INPUT_STATE_BIT_SET_PTR(p_new_state, i);
          continue;
       }
 
@@ -1073,7 +1073,7 @@ rarch_input_state_t input_keys_pressed(void *data, rarch_input_state_t last_inpu
             current_input->meta_key_pressed(current_input_data, i)
             )
       {
-         RARCH_INPUT_STATE_BIT_SET(new_state, i);
+         RARCH_INPUT_STATE_BIT_SET_PTR(p_new_state, i);
          continue;
       }
 
@@ -1081,7 +1081,7 @@ rarch_input_state_t input_keys_pressed(void *data, rarch_input_state_t last_inpu
       if (overlay_ptr && 
             input_overlay_key_pressed(overlay_ptr, i))
       {
-         RARCH_INPUT_STATE_BIT_SET(new_state, i);
+         RARCH_INPUT_STATE_BIT_SET_PTR(p_new_state, i);
          continue;
       }
 #endif
@@ -1096,7 +1096,7 @@ rarch_input_state_t input_keys_pressed(void *data, rarch_input_state_t last_inpu
 
          if (command_get(&handle))
          {
-            RARCH_INPUT_STATE_BIT_SET(new_state, i);
+            RARCH_INPUT_STATE_BIT_SET_PTR(p_new_state, i);
             continue;
          }
       }
@@ -1106,13 +1106,11 @@ rarch_input_state_t input_keys_pressed(void *data, rarch_input_state_t last_inpu
       if (input_driver_remote && 
             input_remote_key_pressed(i, 0))
       {
-         RARCH_INPUT_STATE_BIT_SET(new_state, i);
+         RARCH_INPUT_STATE_BIT_SET_PTR(p_new_state, i);
          continue;
       }
 #endif
    }
-
-   return new_state;
 }
 
 

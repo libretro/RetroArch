@@ -30,6 +30,7 @@
 #include <retro_common_api.h>
 #include <retro_inline.h>
 #include <libretro.h>
+#include <retro_miscellaneous.h>
 
 #include "input_defines.h"
 
@@ -333,24 +334,30 @@ void input_poll(void);
 int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id);
 
-typedef struct {
-	uint32_t bank[ 4 ]; /* 128 bits */
-} rarch_input_state_t;
-
-#define RARCH_INPUT_STATE_BIT_SET(a, bit)   ((a).bank[((bit) >> 5)&3] |=  (1 << ((bit) & 31)))
-#define RARCH_INPUT_STATE_BIT_GET(a, bit)   ((a).bank[((bit) >> 5)&3] &   (1 << ((bit) & 31)))
-#define RARCH_INPUT_STATE_CLEAR(a)          memset(&(a), 0, sizeof(a));
-#define RARCH_INPUT_STATE_ANY_SET(a)        (((a).bank[0])||((a).bank[1])||((a).bank[2])||((a).bank[3]))
+#define RARCH_INPUT_STATE_BIT_SET(a,bit)       ((a).data [((bit) >> 5)] |=  (1 << ((bit) & 31)))
+#define RARCH_INPUT_STATE_BIT_SET_PTR(a,bit)   ((a)->data[((bit) >> 5)] |=  (1 << ((bit) & 31)))
+#define RARCH_INPUT_STATE_BIT_GET(a,bit)       ((a).data [((bit) >> 5)] &   (1 << ((bit) & 31)))
+#define RARCH_INPUT_STATE_BIT_GET_PTR(a,bit)   ((a)->data[((bit) >> 5)] &   (1 << ((bit) & 31)))
+#define RARCH_INPUT_STATE_CLEAR(a)              memset(&a, 0, sizeof(a));
+#define RARCH_INPUT_STATE_CLEAR_PTR(a)          memset(a, 0, sizeof(retro_bits_t));
+#define RARCH_INPUT_STATE_ANY_SET(a)            ( ((a).data[0])||((a).data[1])||((a).data[2])||((a).data[3])||       \
+                                                  ((a).data[4])||((a).data[5])||((a).data[6])||((a).data[7]) )
+#define RARCH_INPUT_STATE_ANY_SET_PTR(a)        ( ((a)->data[0])||((a)->data[1])||((a)->data[2])||((a)->data[3])||   \
+                                                  ((a)->data[4])||((a)->data[5])||((a)->data[6])||((a)->data[7]) )
 #define RARCH_INPUT_STATE_CLEAR_BITS(a,b)    \
-            ((a).bank[0])&=(~((b).bank[0])); \
-            ((a).bank[1])&=(~((b).bank[1])); \
-            ((a).bank[2])&=(~((b).bank[2])); \
-            ((a).bank[3])&=(~((b).bank[3]));
+            ((a).data[0])&=(~((b).data[0])); \
+            ((a).data[1])&=(~((b).data[1])); \
+            ((a).data[2])&=(~((b).data[2])); \
+            ((a).data[3])&=(~((b).data[3])); \
+            ((a).data[4])&=(~((b).data[4])); \
+            ((a).data[5])&=(~((b).data[5])); \
+            ((a).data[6])&=(~((b).data[6])); \
+            ((a).data[7])&=(~((b).data[7]));
 
-rarch_input_state_t input_keys_pressed(void *data, rarch_input_state_t last_input);
+void input_keys_pressed(void *data, retro_bits_t* new_state);
 
 #ifdef HAVE_MENU
-rarch_input_state_t input_menu_keys_pressed(void *data, rarch_input_state_t last_input);
+void input_menu_keys_pressed(void *data, retro_bits_t* new_state);
 #endif
 
 void *input_driver_get_data(void);

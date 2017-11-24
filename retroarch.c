@@ -2310,40 +2310,40 @@ bool runloop_msg_queue_pull(const char **ret)
 
 #ifdef HAVE_MENU
 static bool input_driver_toggle_button_combo(
-      unsigned mode, rarch_input_state_t input)
+      unsigned mode, retro_bits_t* p_input)
 {
    switch (mode)
    {
       case INPUT_TOGGLE_DOWN_Y_L_R:
-         if (!RARCH_INPUT_STATE_BIT_GET(input, RETRO_DEVICE_ID_JOYPAD_DOWN))
+         if (!RARCH_INPUT_STATE_BIT_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
             return false;
-         if (!RARCH_INPUT_STATE_BIT_GET(input, RETRO_DEVICE_ID_JOYPAD_Y))
+         if (!RARCH_INPUT_STATE_BIT_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_Y))
             return false;
-         if (!RARCH_INPUT_STATE_BIT_GET(input, RETRO_DEVICE_ID_JOYPAD_L))
+         if (!RARCH_INPUT_STATE_BIT_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L))
             return false;
-         if (!RARCH_INPUT_STATE_BIT_GET(input, RETRO_DEVICE_ID_JOYPAD_R))
+         if (!RARCH_INPUT_STATE_BIT_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R))
             return false;
          break;
       case INPUT_TOGGLE_L3_R3:
-         if (!RARCH_INPUT_STATE_BIT_GET(input, RETRO_DEVICE_ID_JOYPAD_L3))
+         if (!RARCH_INPUT_STATE_BIT_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L3))
             return false;
-         if (!RARCH_INPUT_STATE_BIT_GET(input, RETRO_DEVICE_ID_JOYPAD_R3))
+         if (!RARCH_INPUT_STATE_BIT_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R3))
             return false;
          break;
       case INPUT_TOGGLE_L1_R1_START_SELECT:
-         if (!RARCH_INPUT_STATE_BIT_GET(input, RETRO_DEVICE_ID_JOYPAD_START))
+         if (!RARCH_INPUT_STATE_BIT_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_START))
             return false;
-         if (!RARCH_INPUT_STATE_BIT_GET(input, RETRO_DEVICE_ID_JOYPAD_SELECT))
+         if (!RARCH_INPUT_STATE_BIT_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
             return false;
-         if (!RARCH_INPUT_STATE_BIT_GET(input, RETRO_DEVICE_ID_JOYPAD_L))
+         if (!RARCH_INPUT_STATE_BIT_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L))
             return false;
-         if (!RARCH_INPUT_STATE_BIT_GET(input, RETRO_DEVICE_ID_JOYPAD_R))
+         if (!RARCH_INPUT_STATE_BIT_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R))
             return false;
          break;
       case INPUT_TOGGLE_START_SELECT:
-         if (!RARCH_INPUT_STATE_BIT_GET(input, RETRO_DEVICE_ID_JOYPAD_START))
+         if (!RARCH_INPUT_STATE_BIT_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_START))
             return false;
-         if (!RARCH_INPUT_STATE_BIT_GET(input, RETRO_DEVICE_ID_JOYPAD_SELECT))
+         if (!RARCH_INPUT_STATE_BIT_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
             return false;
          break;
       default:
@@ -2360,7 +2360,7 @@ static enum runloop_state runloop_check_state(
       bool input_nonblock_state,
       unsigned *sleep_ms)
 {
-   static rarch_input_state_t last_input = {0};
+   static retro_bits_t last_input = {0};
    static bool old_fs_toggle_pressed= false;
    static bool old_focus            = true;
    bool is_focused                  = false;
@@ -2372,13 +2372,17 @@ static enum runloop_state runloop_check_state(
 #ifdef HAVE_MENU
    bool menu_driver_binding_state   = menu_driver_is_binding_state();
    bool menu_is_alive               = menu_driver_is_alive();
-   rarch_input_state_t current_input =
-      menu_is_alive && !(settings->bools.menu_unified_controls && !menu_input_dialog_get_display_kb())?
-      input_menu_keys_pressed(settings, last_input) :
-      input_keys_pressed(settings, last_input);
+
+   retro_bits_t current_input;
+
+   if ( menu_is_alive && !(settings->bools.menu_unified_controls && !menu_input_dialog_get_display_kb()) )
+	   input_menu_keys_pressed(settings, &current_input);
+   else
+	   input_keys_pressed(settings, &current_input);
+
 #else
-   uint64_t current_input           =
-      input_keys_pressed(settings, last_input);
+   retro_bits_t current_input;
+   input_keys_pressed(settings, &current_input);
 #endif
    last_input                       = current_input;
 
@@ -2386,7 +2390,7 @@ static enum runloop_state runloop_check_state(
    if (
          ((settings->uints.input_menu_toggle_gamepad_combo != INPUT_TOGGLE_NONE) &&
           input_driver_toggle_button_combo(
-             settings->uints.input_menu_toggle_gamepad_combo, last_input)))
+             settings->uints.input_menu_toggle_gamepad_combo, &last_input)))
    {
       RARCH_INPUT_STATE_BIT_SET(current_input, RARCH_MENU_TOGGLE);
    }
@@ -2529,20 +2533,20 @@ static enum runloop_state runloop_check_state(
 #ifdef HAVE_MENU
    if (menu_is_alive)
    {
-      static rarch_input_state_t old_input = {0};
+      static retro_bits_t old_input = {0};
       menu_ctx_iterate_t iter;
 
       retro_ctx.poll_cb();
 
       {
-         rarch_input_state_t trigger_input;
+         retro_bits_t trigger_input;
          enum menu_action action;
          bool focused;
 
          trigger_input = current_input;
          RARCH_INPUT_STATE_CLEAR_BITS( trigger_input, old_input );
 
-         action   = (enum menu_action)menu_event(current_input, trigger_input);
+         action   = (enum menu_action)menu_event(&current_input, &trigger_input);
          focused              = pause_nonactive ? is_focused : true;
 
          focused                   = focused && !ui_companion_is_on_foreground();
