@@ -1308,14 +1308,18 @@ static void command_event_restore_default_shader_preset(void)
    if (!path_is_empty(RARCH_PATH_DEFAULT_SHADER_PRESET))
    {
       /* auto shader preset: reload the original shader */
-      settings_t *settings = config_get_ptr();
+      settings_t *settings      = config_get_ptr();
+      const char *shader_preset = path_get(RARCH_PATH_DEFAULT_SHADER_PRESET);
 
-      RARCH_LOG("%s %s\n",
-            msg_hash_to_str(MSG_RESTORING_DEFAULT_SHADER_PRESET_TO),
-            path_get(RARCH_PATH_DEFAULT_SHADER_PRESET));
-      strlcpy(settings->paths.path_shader,
-            path_get(RARCH_PATH_DEFAULT_SHADER_PRESET),
-            sizeof(settings->paths.path_shader));
+      if (!string_is_empty(shader_preset))
+      {
+         RARCH_LOG("%s %s\n",
+               msg_hash_to_str(MSG_RESTORING_DEFAULT_SHADER_PRESET_TO),
+               shader_preset);
+         strlcpy(settings->paths.path_shader,
+               shader_preset,
+               sizeof(settings->paths.path_shader));
+      }
    }
 
    path_clear(RARCH_PATH_DEFAULT_SHADER_PRESET);
@@ -1416,6 +1420,7 @@ static bool command_event_save_core_config(void)
    bool ret                        = false;
    bool found_path                 = false;
    bool overrides_active           = false;
+   const char *core_path           = NULL;
    char *config_dir                = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    char *config_name               = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    char *config_path               = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
@@ -1438,8 +1443,10 @@ static bool command_event_save_core_config(void)
       goto error;
    }
 
+   core_path = path_get(RARCH_PATH_CORE);
+
    /* Infer file name based on libretro core. */
-   if (!string_is_empty(path_get(RARCH_PATH_CORE)) && path_file_exists(path_get(RARCH_PATH_CORE)))
+   if (!string_is_empty(core_path) && path_file_exists(core_path))
    {
       unsigned i;
       RARCH_LOG("%s\n", msg_hash_to_str(MSG_USING_CORE_NAME_FOR_NEW_CONFIG));
@@ -1451,7 +1458,7 @@ static bool command_event_save_core_config(void)
 
          fill_pathname_base_noext(
                config_name,
-               path_get(RARCH_PATH_CORE),
+               core_path,
                config_size);
 
          fill_pathname_join(config_path, config_dir, config_name,
@@ -1745,16 +1752,18 @@ bool command_event(enum event_command cmd, void *data)
             core_info_ctx_find_t info_find;
             rarch_system_info_t *system_info = runloop_get_system_info();
             struct retro_system_info *system = &system_info->info;
+            const char *core_path            = path_get(RARCH_PATH_CORE);
 
 #if defined(HAVE_DYNAMIC)
-            if (string_is_empty(path_get(RARCH_PATH_CORE)))
+            if (string_is_empty(core_path))
                return false;
 #endif
+
             libretro_get_system_info(
-                  path_get(RARCH_PATH_CORE),
+                  core_path,
                   system,
                   &system_info->load_no_content);
-            info_find.path = path_get(RARCH_PATH_CORE);
+            info_find.path = core_path;
 
             if (!core_info_load(&info_find))
             {
