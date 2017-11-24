@@ -878,24 +878,27 @@ static unsigned cheevos_count_cond_sets(const char *memaddr)
 
 static int cheevos_parse_condition(cheevos_condition_t *condition, const char* memaddr)
 {
+   if (!condition)
+      return 0;
+
    condition->count = cheevos_count_cond_sets(memaddr);
 
    if (condition->count)
    {
       unsigned set                 = 0;
-      cheevos_condset_t *condset   = NULL;
-      cheevos_condset_t *conds     = NULL;
       const cheevos_condset_t* end = NULL;
+      cheevos_condset_t *conds     = NULL;
+      cheevos_condset_t *condset   = NULL;
+      cheevos_condset_t *condsets  = (cheevos_condset_t*)
+         calloc(condition->count, sizeof(cheevos_condset_t));
 
       (void)conds;
 
-      condition->condsets = (cheevos_condset_t*)
-         calloc(condition->count, sizeof(cheevos_condset_t));
-
-      if (!condition->condsets)
+      if (!condsets)
          return -1;
 
-      end = condition->condsets + condition->count;
+      condition->condsets = condsets;
+      end                 = condition->condsets + condition->count;
 
       for (condset = condition->condsets; condset < end; condset++, set++)
       {
@@ -1047,10 +1050,10 @@ static int cheevos_parse_expression(cheevos_expr_t *expr, const char* mem)
 
 static int cheevos_parse_mem(cheevos_leaderboard_t *lb, const char* mem)
 {
-   lb->start.condsets = NULL;
+   lb->start.condsets  = NULL;
    lb->cancel.condsets = NULL;
    lb->submit.condsets = NULL;
-   lb->value.terms = NULL;
+   lb->value.terms     = NULL;
 
    for (;;)
    {
