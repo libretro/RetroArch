@@ -78,6 +78,11 @@ static int deferred_push_achievement_list(menu_displaylist_info_t *info)
    return deferred_push_dlist(info, DISPLAYLIST_ACHIEVEMENT_LIST);
 }
 
+static int deferred_push_achievement_list_hardcore(menu_displaylist_info_t *info)
+{
+   return deferred_push_dlist(info, DISPLAYLIST_ACHIEVEMENT_LIST_HARDCORE);
+}
+
 static int deferred_push_rdb_collection(menu_displaylist_info_t *info)
 {
    return deferred_push_dlist(info, DISPLAYLIST_PLAYLIST_COLLECTION);
@@ -1528,6 +1533,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             case MENU_ENUM_LABEL_ACHIEVEMENT_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_achievement_list);
                break;
+            case MENU_ENUM_LABEL_ACHIEVEMENT_LIST_HARDCORE:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_achievement_list_hardcore);
+               break;
             case MENU_ENUM_LABEL_CORE_COUNTERS:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_counters);
                break;
@@ -1759,6 +1767,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
 #endif
             case MENU_LABEL_ACHIEVEMENT_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_achievement_list);
+               break;
+            case MENU_LABEL_ACHIEVEMENT_LIST_HARDCORE:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_achievement_list_hardcore);
                break;
             case MENU_LABEL_CORE_COUNTERS:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_counters);
