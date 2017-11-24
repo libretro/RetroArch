@@ -1,7 +1,7 @@
-MAKEFILE_DEFINES='.MAKEFILE_DEFINES'
+MAKEFILE_DEFINES=''
 CONFIG_DEFINES='.CONFIG_DEFINES'
-cat /dev/null > "$MAKEFILE_DEFINES" > "$CONFIG_DEFINES"
-#cat /dev/null > "${MAKEFILE_DEFINES:=.MAKEFILE_DEFINES}" > "${CONFIG_DEFINES=.CONFIG_DEFINES}"
+cat /dev/null > "$CONFIG_DEFINES"
+#cat /dev/null > "${CONFIG_DEFINES=.CONFIG_DEFINES}"
 
 [ "$PREFIX" ] || PREFIX="/usr/local"
 
@@ -9,7 +9,7 @@ add_define_header()
 { echo "$1=$2" >> "$CONFIG_DEFINES";}
 
 add_define_make()
-{ echo "$1=$2" >> "$MAKEFILE_DEFINES";}
+{ MAKEFILE_DEFINES="${MAKEFILE_DEFINES} $1=$2"; }
 
 add_include_dirs()
 {	while [ "$1" ]; do INCLUDE_DIRS="$INCLUDE_DIRS -I$1"; shift; done
@@ -251,13 +251,14 @@ create_config_make()
 			esac
 			shift
 		done
-		while IFS='=' read -r VAR VAL; do
-			printf %s\\n "$VAR = $VAL"
-		done < "$MAKEFILE_DEFINES"
+		eval "set -- $MAKEFILE_DEFINES"
+		for VAR do
+			printf %s\\n "${VAR%%=*} = ${VAR#*=}"
+		done
 
 	} > "$outfile"
 }
 
 . qb/config.libs.sh
 
-rm -f -- "$MAKEFILE_DEFINES" "$CONFIG_DEFINES"
+rm -f -- "$CONFIG_DEFINES"
