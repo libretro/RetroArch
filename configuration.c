@@ -2265,6 +2265,8 @@ static bool config_load_file(const char *path, bool set_defaults,
 #ifdef HAVE_NETWORKING
    char *override_netplay_ip_address               = NULL;
 #endif
+   const char *path_core                           = NULL;
+   const char *path_config                         = NULL;
    int bool_settings_size                          = sizeof(settings->bools)  / sizeof(settings->bools.placeholder);
    int float_settings_size                         = sizeof(settings->floats) / sizeof(settings->floats.placeholder);
    int int_settings_size                           = sizeof(settings->ints)   / sizeof(settings->ints.placeholder);
@@ -2537,13 +2539,16 @@ static bool config_load_file(const char *path, bool set_defaults,
    audio_set_float(AUDIO_ACTION_VOLUME_GAIN, settings->floats.audio_volume);
    audio_set_float(AUDIO_ACTION_MIXER_VOLUME_GAIN, settings->floats.audio_mixer_volume);
 
+   path_config = path_get(RARCH_PATH_CONFIG);
+   path_core   = path_get(RARCH_PATH_CORE);
+
    if (string_is_empty(settings->paths.path_content_history))
    {
       if (string_is_empty(settings->paths.directory_content_history))
       {
          fill_pathname_resolve_relative(
                settings->paths.path_content_history,
-               path_get(RARCH_PATH_CONFIG),
+               path_config,
                file_path_str(FILE_PATH_CONTENT_HISTORY),
                sizeof(settings->paths.path_content_history));
       }
@@ -2562,7 +2567,7 @@ static bool config_load_file(const char *path, bool set_defaults,
       {
          fill_pathname_resolve_relative(
                settings->paths.path_content_favorites,
-               path_get(RARCH_PATH_CONFIG),
+               path_config,
                file_path_str(FILE_PATH_CONTENT_FAVORITES),
                sizeof(settings->paths.path_content_favorites));
       }
@@ -2581,7 +2586,7 @@ static bool config_load_file(const char *path, bool set_defaults,
       {
          fill_pathname_resolve_relative(
                settings->paths.path_content_music_history,
-               path_get(RARCH_PATH_CONFIG),
+               path_config,
                file_path_str(FILE_PATH_CONTENT_MUSIC_HISTORY),
                sizeof(settings->paths.path_content_music_history));
       }
@@ -2600,7 +2605,7 @@ static bool config_load_file(const char *path, bool set_defaults,
       {
          fill_pathname_resolve_relative(
                settings->paths.path_content_video_history,
-               path_get(RARCH_PATH_CONFIG),
+               path_config,
                file_path_str(FILE_PATH_CONTENT_VIDEO_HISTORY),
                sizeof(settings->paths.path_content_video_history));
       }
@@ -2619,7 +2624,7 @@ static bool config_load_file(const char *path, bool set_defaults,
       {
          fill_pathname_resolve_relative(
                settings->paths.path_content_image_history,
-               path_get(RARCH_PATH_CONFIG),
+               path_config,
                file_path_str(FILE_PATH_CONTENT_IMAGE_HISTORY),
                sizeof(settings->paths.path_content_image_history));
       }
@@ -2645,14 +2650,14 @@ static bool config_load_file(const char *path, bool set_defaults,
    }
 
 #ifdef RARCH_CONSOLE
-   if (!string_is_empty(path_get(RARCH_PATH_CORE)))
+   if (!string_is_empty(path_core))
    {
 #endif
       /* Safe-guard against older behavior. */
-      if (path_is_directory(path_get(RARCH_PATH_CORE)))
+      if (path_is_directory(path_core))
       {
          RARCH_WARN("\"libretro_path\" is a directory, using this for \"libretro_directory\" instead.\n");
-         strlcpy(settings->paths.directory_libretro, path_get(RARCH_PATH_CORE),
+         strlcpy(settings->paths.directory_libretro, path_core,
                sizeof(settings->paths.directory_libretro));
          path_clear(RARCH_PATH_CORE);
       }
@@ -2693,9 +2698,7 @@ static bool config_load_file(const char *path, bool set_defaults,
       *settings->paths.directory_system = '\0';
 
    if (settings->floats.slowmotion_ratio < 1.0f)
-   {
       configuration_set_float(settings, settings->floats.slowmotion_ratio, 1.0f);
-   }
 
    /* Sanitize fastforward_ratio value - previously range was -1
     * and up (with 0 being skipped) */
