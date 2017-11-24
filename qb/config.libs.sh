@@ -1,8 +1,7 @@
-check_switch_c C99 -std=gnu99  "Cannot find C99 compatible compiler."
-
-check_switch_c NOUNUSED -Wno-unused-result
+check_switch '' C99 -std=gnu99 "Cannot find C99 compatible compiler."
+check_switch '' NOUNUSED -Wno-unused-result
 add_define MAKEFILE NOUNUSED "$HAVE_NOUNUSED"
-check_switch_c NOUNUSED_VARIABLE -Wno-unused-variable
+check_switch '' NOUNUSED_VARIABLE -Wno-unused-variable
 add_define MAKEFILE NOUNUSED_VARIABLE "$HAVE_NOUNUSED_VARIABLE"
 
 # There are still broken 64-bit Linux distros out there. :)
