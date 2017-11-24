@@ -81,7 +81,7 @@
 #undef CHEEVOS_LOG_PASSWORD
 
 /* Define this macro to log downloaded badge images. */
-#define CHEEVOS_LOG_BADGES
+#undef CHEEVOS_LOG_BADGES
 
 /* C89 wants only int values in enums. */
 #define CHEEVOS_JSON_KEY_GAMEID       0xb4960eecU
