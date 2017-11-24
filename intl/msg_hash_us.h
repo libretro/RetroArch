@@ -463,6 +463,10 @@ MSG_HASH(
       "Unlocked"
       )
 MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY_HARDCORE,
+      "Hardcore"
+      )
+MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
       "Achievements Verbose Mode"
       )
