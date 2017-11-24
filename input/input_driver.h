@@ -334,7 +334,7 @@ int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id);
 
 typedef struct {
-	uint32_t bank[ 4 ]; // 128 bits
+	uint32_t bank[ 4 ]; /* 128 bits */
 } rarch_input_state_t;
 
 #define RARCH_INPUT_STATE_BIT_SET(a, bit)   ((a).bank[((bit) >> 5)&3] |=  (1 << ((bit) & 31)))
