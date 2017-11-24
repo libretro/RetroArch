@@ -68,6 +68,13 @@ bool nbio_iterate(struct nbio_t* handle)
 
 void nbio_resize(struct nbio_t* handle, size_t len)
 {
+   if (len < handle->len)
+   {
+      /* this works perfectly fine if this check is removed, but it won't work on other nbio implementations */
+      /* therefore, it's blocked so nobody accidentally relies on it */
+      puts("ERROR - attempted file shrink operation, not implemented");
+      abort();
+   }
    if (ftruncate(handle->fd, len) != 0)
    {
       puts("ERROR - couldn't resize file (ftruncate)");
