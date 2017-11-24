@@ -2954,11 +2954,6 @@ static int menu_displaylist_parse_load_content_settings(
             msg_hash_to_str(MENU_ENUM_LABEL_ACHIEVEMENT_LIST),
             MENU_ENUM_LABEL_ACHIEVEMENT_LIST,
             MENU_SETTING_ACTION, 0, 0);
-         menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST_HARDCORE),
-            msg_hash_to_str(MENU_ENUM_LABEL_ACHIEVEMENT_LIST_HARDCORE),
-            MENU_ENUM_LABEL_ACHIEVEMENT_LIST_HARDCORE,
-            MENU_SETTING_ACTION, 0, 0);
       }
 #endif
    }
@@ -4740,15 +4735,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_ACHIEVEMENT_LIST:
 #ifdef HAVE_CHEEVOS
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         cheevos_populate_menu(info, false);
-         info->need_push    = true;
-         info->need_refresh = true;
-#endif
-         break;
-      case DISPLAYLIST_ACHIEVEMENT_LIST_HARDCORE:
-#ifdef HAVE_CHEEVOS
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         cheevos_populate_menu(info, true);
+         cheevos_populate_menu(info);
          info->need_push    = true;
          info->need_refresh = true;
 #endif
