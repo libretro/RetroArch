@@ -70,28 +70,6 @@ check_lib() # $1 = language  $2 = HAVE_$2  $3 = lib  $4 = function in lib  $5 = 
 	return 0
 }
 
-check_code_c()
-{	tmpval="$(eval echo \$HAVE_$1)"
-	[ "$tmpval" = 'no' ] && return 0
-
-	ECHOBUF="Checking C code snippet \"$3\""
-	answer='no'
-	"$CC" -o "$TEMP_EXE" "$TEMP_C" $INCLUDE_DIRS $LIBRARY_DIRS $2 $CFLAGS $LDFLAGS >>config.log 2>&1 && answer='yes'
-	eval HAVE_$1="$answer"; echo "$ECHOBUF ... $answer"
-	rm -f -- "$TEMP_C" "$TEMP_EXE"
-}
-
-check_code_cxx()
-{	tmpval="$(eval echo \$HAVE_$1)"
-	[ "$tmpval" = 'no' ] && return 0
-
-	ECHOBUF="Checking C++ code snippet \"$3\""
-	answer='no'
-	"$CXX" -o "$TEMP_EXE" "$TEMP_CXX" $INCLUDE_DIRS $LIBRARY_DIRS $2 $CXXFLAGS $LDFLAGS >>config.log 2>&1 && answer='yes'
-	eval HAVE_$1="$answer"; echo "$ECHOBUF ... $answer"
-	rm -f -- "$TEMP_CXX" "$TEMP_EXE"
-}
-
 check_pkgconf()	#$1 = HAVE_$1	$2 = package	$3 = version	$4 = critical error message [checked only if non-empty]
 {	tmpval="$(eval echo \$HAVE_$1)"
 	[ "$tmpval" = 'no' ] && return 0
