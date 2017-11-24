@@ -42,6 +42,7 @@ RETRO_BEGIN_DECLS
 #define NBIO_UPDATE 2
 #endif
 
+/* these two are blocking; nbio_iterate always returns true, but that operation (or something earlier) may take arbitrarily long */
 #ifndef BIO_READ
 #define BIO_READ    3
 #endif
@@ -59,13 +60,13 @@ struct nbio_t* nbio_open(const char * filename, unsigned mode);
 
 /*
  * Starts reading the given file. When done, it will be available in nbio_get_ptr.
- * Can not be done if the structure was created with nbio_write.
+ * Can not be done if the structure was created with {N,}BIO_WRITE.
  */
 void nbio_begin_read(struct nbio_t* handle);
 
 /*
  * Starts writing to the given file. Before this, you should've copied the data to nbio_get_ptr.
- * Can not be done if the structure was created with nbio_read.
+ * Can not be done if the structure was created with {N,}BIO_READ.
  */
 void nbio_begin_write(struct nbio_t* handle);
 
