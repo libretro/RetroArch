@@ -75,7 +75,7 @@ struct nbio_t* nbio_open(const char * filename, unsigned mode)
    if (len)
       buf                = malloc(len);
 
-   if (!buf)
+   if (len && !buf)
       goto error;
 
    handle->data          = buf;
