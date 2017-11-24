@@ -137,27 +137,18 @@ EOF
 		die 1 "Build assumed that $2 is defined, but it's not. Exiting ..."
 }
 
-check_switch_c()	#$1 = HAVE_$1	$2 = switch	$3 = critical error message [checked only if non-empty]
-{	ECHOBUF="Checking for availability of switch $2 in $CC"
-	echo "int main(void) { return 0; }" > $TEMP_C
-	answer='no'
-	"$CC" -o "$TEMP_EXE" "$TEMP_C" $2 >>config.log 2>&1 && answer='yes'
-	eval HAVE_$1="$answer"; echo "$ECHOBUF ... $answer"
-	rm -f -- "$TEMP_C" "$TEMP_EXE"
-	[ "$answer" = 'no' ] && {
-		[ "$3" ] && die 1 "$3"
-	}
-}
+check_switch() # $1 = language  $2 = HAVE_$2  $3 = switch  $4 = critical error message [checked only if non-empty]
+{	check_compiler "$1" ''
 
-check_switch_cxx()	#$1 = HAVE_$1	$2 = switch	$3 = critical error message [checked only if non-empty]
-{	ECHOBUF="Checking for availability of switch $2 in $CXX"
-	echo "int main() { return 0; }" > $TEMP_CXX
+	ECHOBUF="Checking for availability of switch $3 in $COMPILER"
+	printf %s\\n 'int main(void) { return 0; }' > "$TEMP_CODE"
 	answer='no'
-	"$CXX" -o "$TEMP_EXE" "$TEMP_CXX" "$2" >>config.log 2>&1 && answer='yes'
-	eval HAVE_$1="$answer"; echo "$ECHOBUF ... $answer"
-	rm -f -- "$TEMP_CXX" "$TEMP_EXE"
+	"$COMPILER" -o "$TEMP_EXE" "$TEMP_CODE" "$3" >>config.log 2>&1 && answer='yes'
+	eval "HAVE_$2=\"$answer\""
+	printf %s\\n "$ECHOBUF ... $answer"
+	rm -f -- "$TEMP_CODE" "$TEMP_EXE"
 	[ "$answer" = 'no' ] && {
-		[ "$3" ] && die 1 "$3"
+		[ "$4" ] && die 1 "$4"
 	}
 }
 
