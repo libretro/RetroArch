@@ -95,7 +95,6 @@ pkg/apple/iOS/modules/
 obj-unix/
 .vagrant/
 
-.CONFIG_DEFINES
 /pkg/msvc/Release Cg/*.exe
 /pkg/msvc/Release Cg/*.iobj
 /pkg/msvc/Release Cg/*.ipdb
