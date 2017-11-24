@@ -17,7 +17,7 @@ add_library_dirs()
 }
 
 check_lib() # $1 = language  $2 = HAVE_$2  $3 = lib  $4 = function in lib  $5 = extralibs $6 = headers $7 = critical error message [checked only if non-empty]
-{	tmpval="$(eval echo \$HAVE_$2)"
+{	tmpval="$(eval "printf %s \"\$HAVE_$2\"")"
 	[ "$tmpval" = 'no' ] && return 0
 
 	if [ "$1" = cxx ]; then
@@ -35,11 +35,11 @@ check_lib() # $1 = language  $2 = HAVE_$2  $3 = lib  $4 = function in lib  $5 = 
 		if [ "$6" ]; then
 			printf %s\\n "$6" "int main(void) { void *p = (void*)$4; return 0; }" > "$TEMP_CODE"
 		else
-			echo "$TEST_C" > "$TEMP_CODE"
+			printf %s\\n "$TEST_C" > "$TEMP_CODE"
 		fi
 	else
 		ECHOBUF="Checking existence of ${3% }"
-		echo "int main(void) { return 0; }" > "$TEMP_CODE"
+		printf %s\\n 'int main(void) { return 0; }' > "$TEMP_CODE"
 	fi
 	answer='no'
 	"$COMPILER" -o \
@@ -51,7 +51,8 @@ check_lib() # $1 = language  $2 = HAVE_$2  $3 = lib  $4 = function in lib  $5 = 
 		$CFLAGS \
 		$LDFLAGS \
 		$(printf %s "$3") >>config.log 2>&1 && answer='yes'
-	eval HAVE_$2="$answer"; echo "$ECHOBUF ... $answer"
+	eval "HAVE_$2=\"$answer\""
+	printf %s\\n "$ECHOBUF ... $answer"
 	rm -f -- "$TEMP_CODE" "$TEMP_EXE"
 
 	[ "$answer" = 'no' ] && {
