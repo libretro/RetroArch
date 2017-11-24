@@ -81,7 +81,7 @@
 #undef CHEEVOS_LOG_PASSWORD
 
 /* Define this macro to log downloaded badge images. */
-#undef CHEEVOS_LOG_BADGES
+#define CHEEVOS_LOG_BADGES
 
 /* C89 wants only int values in enums. */
 #define CHEEVOS_JSON_KEY_GAMEID       0xb4960eecU
@@ -3214,16 +3214,18 @@ static int cheevos_iterate(coro_t* coro)
 
          if (!badge_exists(CHEEVOS_VAR_BADGE_PATH))
          {
+#ifdef CHEEVOS_LOG_BADGES
+            RARCH_LOG("[CHEEVOS]: downloading badge %s\n", CHEEVOS_VAR_BADGE_PATH);
+#endif
             snprintf(CHEEVOS_VAR_URL, sizeof(CHEEVOS_VAR_URL), "http://i.retroachievements.org/Badge/%s", CHEEVOS_VAR_BADGE_NAME);
 
             CORO_GOSUB(HTTP_GET);
             if (CHEEVOS_VAR_JSON != NULL)
             {
-               if (filestream_write_file(CHEEVOS_VAR_BADGE_PATH, CHEEVOS_VAR_JSON, CHEEVOS_VAR_K))
+               if (!filestream_write_file(CHEEVOS_VAR_BADGE_PATH, CHEEVOS_VAR_JSON, CHEEVOS_VAR_K))
                   RARCH_ERR("[CHEEVOS]: error writing badge %s\n", CHEEVOS_VAR_BADGE_PATH);
-#ifdef CHEEVOS_LOG_BADGES
-               RARCH_LOG("[CHEEVOS]: downloaded badge %s\n", CHEEVOS_VAR_BADGE_PATH);
-#endif
+               else
+                  free(CHEEVOS_VAR_JSON);
             }
          }
       }
