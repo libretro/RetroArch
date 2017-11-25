@@ -3229,7 +3229,11 @@ static int action_ok_delete_entry(const char *path,
       playlist = g_defaults.image_history;
 #endif
 
-   playlist_delete_index(playlist, rpl_entry_selection_ptr);
+   if (playlist)
+   {
+      playlist_delete_index(playlist, rpl_entry_selection_ptr);
+      playlist_write_file(playlist);
+   }
 
    new_selection_ptr = menu_navigation_get_selection();
    menu_entries_pop_stack(&new_selection_ptr, 0, 1);
