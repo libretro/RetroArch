@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#if defined(HAVE_MMAP) && defined(__linux__)
+#if defined(HAVE_MMAP) && defined(BSD)
 
 #include <stdio.h>
 #include <stdlib.h>
