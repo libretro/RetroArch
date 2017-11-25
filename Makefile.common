@@ -322,7 +322,7 @@ endif
 endif
 
 ifeq ($(HAVE_SSA),1)
-LIBS += -lass
+LIBS += $(SSA_LIBS)
 endif
 
 # LibretroDB
@@ -601,7 +601,7 @@ ifeq ($(HAVE_AL), 1)
    ifeq ($(OSX),1)
       LIBS += -framework OpenAL
    else
-      LIBS += -lopenal
+      LIBS += $(AL_LIBS)
    endif
 endif
 
@@ -812,7 +812,7 @@ ifeq ($(HAVE_THREADS), 1)
           audio/audio_thread_wrapper.o
    DEFINES += -DHAVE_THREADS
    ifeq ($(findstring Haiku,$(OS)),)
-      LIBS += -lpthread
+      LIBS += $(THREADS_LIBS)
    endif
 endif
 
@@ -1066,7 +1066,7 @@ endif
    else
       DEFINES += -DHAVE_GL_SYNC
       OBJ += $(LIBRETRO_COMM_DIR)/glsym/glsym_gl.o
-      GL_LIBS := -lGL
+      GL_LIBS := $(OPENGL_LIBS)
       ifeq ($(OSX), 1)
          GL_LIBS := -framework OpenGL
          OBJ += gfx/drivers_context/cgl_ctx.o
@@ -1512,7 +1512,7 @@ ifeq ($(HAVE_NETWORKING), 1)
 					 $(DEPS_DIR)/miniupnpc/minixml.o \
 					 $(DEPS_DIR)/miniupnpc/minisoap.o
 		else
-		   LIBS += -lminiupnpc
+		   LIBS += $(MINIUPNPC_LIBS)
       endif
    endif
 endif
