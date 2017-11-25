@@ -158,12 +158,13 @@ static void task_screenshot_handler(retro_task_t *task)
 #endif
 
 #ifdef HAVE_IMAGEVIEWER
-   if (ret && !state->silence)
+   if (  ret                        && 
+         !state->silence            &&
+         state->history_list_enable &&
+         g_defaults.image_history
+         )
    {
-      if (
-            state->history_list_enable 
-            && g_defaults.image_history 
-            && playlist_push(
+      if (playlist_push(
                g_defaults.image_history,
                state->filename,
                NULL,
@@ -171,8 +172,7 @@ static void task_screenshot_handler(retro_task_t *task)
                "imageviewer",
                NULL,
                NULL
-               )
-         )
+               ))
          playlist_write_file(g_defaults.image_history);
    }
 #endif
