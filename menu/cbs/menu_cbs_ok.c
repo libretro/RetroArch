@@ -1444,7 +1444,6 @@ static int action_ok_file_load(const char *path,
 }
 
 static void generic_playlist_update_write(
-      playlist_t *plist,
       size_t idx,
       const char *core_display_name,
       const char *label,
@@ -1452,10 +1451,7 @@ static void generic_playlist_update_write(
 {
    playlist_t *playlist = NULL;
 
-   if (plist)
-      playlist          = plist;
-   else
-      menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
+   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
 
    retro_assert(playlist != NULL);
 
@@ -1535,15 +1531,12 @@ static int action_ok_playlist_entry_collection(const char *path,
          && string_is_equal(core_name, file_path_str(FILE_PATH_DETECT)))
    {
       core_info_ctx_find_t core_info;
-      char new_display_name[PATH_MAX_LENGTH];
       const char *entry_path                 = NULL;
       const char             *path_base      =
          path_basename(menu->db_playlist_file);
       bool        found_associated_core      =
          menu_content_playlist_find_associated_core(
             path_base, new_core_path, sizeof(new_core_path));
-
-      new_display_name[0] = '\0';
 
       core_info.inf       = NULL;
       core_info.path      = new_core_path;
@@ -1562,14 +1555,9 @@ static int action_ok_playlist_entry_collection(const char *path,
          return ret;
       }
 
-      menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
-
-      strlcpy(new_display_name,
-            core_info.inf->display_name, sizeof(new_display_name));
-
-      generic_playlist_update_write(tmp_playlist,
+      generic_playlist_update_write(
             selection_ptr,
-            new_display_name,
+            core_info.inf->display_name,
             NULL,
             new_core_path);
    }
@@ -1631,7 +1619,6 @@ static int action_ok_playlist_entry(const char *path,
    {
       core_info_ctx_find_t core_info;
       char new_core_path[PATH_MAX_LENGTH];
-      char *new_display_name                 = NULL;
       const char *entry_path                 = NULL;
       const char *path_base                  =
          path_basename(menu->db_playlist_file);
@@ -1655,15 +1642,11 @@ static int action_ok_playlist_entry(const char *path,
          return action_ok_file_load_with_detect_core(entry_path,
                label, type, selection_ptr, entry_idx);
 
-      new_display_name = strdup(core_info.inf->display_name);
-
-      generic_playlist_update_write(NULL,
+      generic_playlist_update_write(
             selection_ptr,
-            new_display_name,
+            core_info.inf->display_name,
             NULL,
             new_core_path);
-
-      free(new_display_name);
    }
 
    playlist_info.data = playlist;
@@ -1736,13 +1719,12 @@ static int action_ok_playlist_entry_start_content(const char *path,
    {
       core_info_ctx_find_t core_info;
       char new_core_path[PATH_MAX_LENGTH];
-      char new_display_name[PATH_MAX_LENGTH];
       const char *entry_path                 = NULL;
       const char             *path_base      =
          path_basename(menu->db_playlist_file);
       bool        found_associated_core      = false;
 
-      new_core_path[0] = new_display_name[0] = '\0';
+      new_core_path[0]                       = '\0';
 
       found_associated_core                  =
          menu_content_playlist_find_associated_core(
@@ -1765,15 +1747,9 @@ static int action_ok_playlist_entry_start_content(const char *path,
          return ret;
       }
 
-      menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
-
-      strlcpy(new_display_name,
-            core_info.inf->display_name, sizeof(new_display_name));
-
       generic_playlist_update_write(
-            tmp_playlist,
             selection_ptr,
-            new_display_name,
+            core_info.inf->display_name,
             NULL,
             new_core_path);
    }
@@ -1949,7 +1925,7 @@ static void menu_input_st_string_cb_rename_entry(void *userdata,
       const char        *label    = menu_input_dialog_get_buffer();
 
       if (!string_is_empty(label))
-         generic_playlist_update_write(NULL,
+         generic_playlist_update_write(
                menu_input_dialog_get_kb_idx(),
                NULL,
                label,
@@ -2327,7 +2303,7 @@ static int action_ok_core_deferred_set(const char *path,
    core_display_name[0] = '\0';
 
    core_info_get_name(path, core_display_name, sizeof(core_display_name));
-   generic_playlist_update_write(NULL,
+   generic_playlist_update_write(
          rdb_entry_start_game_selection_ptr,
          core_display_name, NULL, path);
 
@@ -2346,7 +2322,7 @@ static int action_ok_core_deferred_set_current_core(const char *path,
    core_display_name[0] = '\0';
 
    core_info_get_name(path, core_display_name, sizeof(core_display_name));
-   generic_playlist_update_write(NULL,
+   generic_playlist_update_write(
          rdb_entry_start_game_selection_ptr,
          core_display_name, NULL, path);
 
