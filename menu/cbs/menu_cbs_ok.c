@@ -1804,16 +1804,12 @@ static int action_ok_audio_add_to_mixer_and_collection(const char *path,
    fill_pathname_join(combined_path, menu->scratch2_buf,
          menu->scratch_buf, sizeof(combined_path));
 
-   playlist_push(
+   command_playlist_push_write(
          g_defaults.music_history,
          combined_path,
          NULL,
          "builtin",
-         "musicplayer",
-         NULL,
-         NULL);
-
-   playlist_write_file(g_defaults.music_history);
+         "musicplayer");
 
    if(path_file_exists(combined_path))
       task_push_audio_mixer_load(combined_path,

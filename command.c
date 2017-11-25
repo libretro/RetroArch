@@ -1702,6 +1702,37 @@ static bool command_event_resize_windowed_scale(void)
    return true;
 }
 
+void command_playlist_push_write(
+      void *data,
+      const char *path,
+      const char *label,
+      const char *core_path,
+      const char *core_name)
+{
+   playlist_t *plist    = (playlist_t*)data;
+   playlist_t *playlist = NULL;
+
+   if (plist)
+      playlist          = plist;
+#ifdef HAVE_MENU
+   else
+      menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
+#endif
+   if (!playlist)
+      return;
+   
+   playlist_push(
+         playlist,
+         path,
+         label,
+         core_path,
+         core_name,
+         NULL,
+         NULL
+         );
+   playlist_write_file(playlist);
+}
+
 void command_playlist_update_write(
       void *data,
       size_t idx,
@@ -2304,16 +2335,13 @@ TODO: Add a setting for these tweaks */
          if (!string_is_empty(global->name.label))
             label = global->name.label;
 
-         playlist_push(
+         command_playlist_push_write(
                g_defaults.content_favorites,
                (const char*)data,
                label,
                core_path,
-               core_name,
-               NULL,
-               NULL
+               core_name
                );
-         playlist_write_file(g_defaults.content_favorites);
          runloop_msg_queue_push(msg_hash_to_str(MSG_ADDED_TO_FAVORITES), 1, 180, true);
          break;
       }
