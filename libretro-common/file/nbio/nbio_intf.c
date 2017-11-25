@@ -23,6 +23,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <file/nbio.h>
 
 extern nbio_intf_t nbio_linux;
