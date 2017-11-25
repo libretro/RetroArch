@@ -121,7 +121,10 @@ if [ "$HAVE_EGL" != "no" ] && [ "$OS" != 'Win32' ]; then
    # some systems have EGL libs, but no pkgconfig
    if [ "$HAVE_EGL" = "no" ]; then
       HAVE_EGL=auto; check_lib '' EGL "-l${VC_PREFIX}EGL $EXTRA_GL_LIBS"
-      [ "$HAVE_EGL" = "yes" ] && EGL_LIBS=-l"$VC_PREFIX"EGL
+      if [ "$HAVE_EGL" = "yes" ]; then
+         EGL_LIBS="-l${VC_PREFIX}EGL $EXTRA_GL_LIBS"
+         PKG_CONF_USED="$PKG_CONF_USED EGL"
+      fi
    else
       EGL_LIBS="$EGL_LIBS $EXTRA_GL_LIBS"
    fi
@@ -402,7 +405,14 @@ check_pkgconf V4L2 libv4l2
 check_pkgconf FREETYPE freetype2
 check_pkgconf X11 x11
 check_pkgconf XCB xcb
-[ "$HAVE_X11" = "no" ] && HAVE_XEXT=no && HAVE_XF86VM=no && HAVE_XINERAMA=no && HAVE_XSHM=no
+
+if [ "$HAVE_X11" = "no" ] && [ "$OS" != 'Darwin' ]; then
+   HAVE_X11=auto; check_lib '' X11 -lX11
+   if [ "$HAVE_X11" = "yes" ]; then
+      X11_LIBS="-lX11"
+      PKG_CONF_USED="$PKG_CONF_USED X11"
+   fi
+fi
 
 check_pkgconf WAYLAND wayland-egl
 check_pkgconf WAYLAND_CURSOR wayland-cursor
@@ -411,6 +421,27 @@ check_pkgconf XKBCOMMON xkbcommon 0.3.2
 check_pkgconf DBUS dbus-1
 check_pkgconf XEXT xext
 check_pkgconf XF86VM xxf86vm
+
+if [ "$HAVE_X11" != "no" ]; then
+   if [ "$HAVE_XEXT" = "no" ]; then
+      HAVE_XEXT=auto; check_lib '' XEXT -lXext
+      if [ "$HAVE_XEXT" = "yes" ]; then
+         XEXT_LIBS="-lXext"
+         PKG_CONF_USED="$PKG_CONF_USED XEXT"
+      fi
+   fi
+
+   if [ "$HAVE_XF86VM" = "no" ]; then
+      HAVE_XF86VM=auto; check_lib '' XF86VM -lXxf86vm
+      if [ "$HAVE_XF86VM" = "yes" ]; then
+         XF86VM_LIBS="-lXxf86vm"
+         PKG_CONF_USED="$PKG_CONF_USED XF86VM"
+      fi
+   fi
+else
+   HAVE_XEXT=no; HAVE_XF86VM=no; HAVE_XINERAMA=no; HAVE_XSHM=no
+fi
+
 check_pkgconf XINERAMA xinerama
 if [ "$HAVE_X11" = 'yes' ] && [ "$HAVE_XEXT" = 'yes' ] && [ "$HAVE_XF86VM" = 'yes' ]; then
    check_pkgconf XVIDEO xv
