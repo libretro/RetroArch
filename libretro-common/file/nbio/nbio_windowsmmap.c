@@ -43,7 +43,7 @@
 #define FILE_SHARE_ALL (FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE)
 #endif
 
-struct nbio_t
+struct nbio_mmap_win32_t
 {
    HANDLE file;
    bool is_write;
@@ -51,20 +51,20 @@ struct nbio_t
    void* ptr;
 };
 
-static struct nbio_t* nbio_mmap_win32_open(const char * filename, unsigned mode)
+static void *nbio_mmap_win32_open(const char * filename, unsigned mode)
 {
    static const DWORD dispositions[] = { OPEN_EXISTING, CREATE_ALWAYS, OPEN_ALWAYS, OPEN_EXISTING, CREATE_ALWAYS };
    HANDLE mem;
    LARGE_INTEGER len;
-   struct nbio_t* handle  = NULL;
-   void* ptr              = NULL;
-   bool is_write          = (mode == NBIO_WRITE || mode == NBIO_UPDATE || mode == BIO_WRITE);
-   DWORD access           = (is_write ? GENERIC_READ|GENERIC_WRITE : GENERIC_READ);
+   struct nbio_mmap_win32_t* handle  = NULL;
+   void* ptr                         = NULL;
+   bool is_write                     = (mode == NBIO_WRITE || mode == NBIO_UPDATE || mode == BIO_WRITE);
+   DWORD access                      = (is_write ? GENERIC_READ|GENERIC_WRITE : GENERIC_READ);
 #if !defined(_WIN32) || defined(LEGACY_WIN32)
-   HANDLE file            = CreateFile(filename, access, FILE_SHARE_ALL, NULL, dispositions[mode], FILE_ATTRIBUTE_NORMAL, NULL);
+   HANDLE file                       = CreateFile(filename, access, FILE_SHARE_ALL, NULL, dispositions[mode], FILE_ATTRIBUTE_NORMAL, NULL);
 #else
-   wchar_t *filename_wide = utf8_to_utf16_string_alloc(filename);
-   HANDLE file            = CreateFileW(filename_wide, access, FILE_SHARE_ALL, NULL, dispositions[mode], FILE_ATTRIBUTE_NORMAL, NULL);
+   wchar_t *filename_wide            = utf8_to_utf16_string_alloc(filename);
+   HANDLE file                       = CreateFileW(filename_wide, access, FILE_SHARE_ALL, NULL, dispositions[mode], FILE_ATTRIBUTE_NORMAL, NULL);
 
    if (filename_wide)
       free(filename_wide);
@@ -79,7 +79,7 @@ static struct nbio_t* nbio_mmap_win32_open(const char * filename, unsigned mode)
    ptr = MapViewOfFile(mem, is_write ? (FILE_MAP_READ|FILE_MAP_WRITE) : FILE_MAP_READ, 0, 0, len.QuadPart);
    CloseHandle(mem);
 
-   handle           = malloc(sizeof(struct nbio_t));
+   handle           = malloc(sizeof(struct nbio_mmap_win32_t));
 
    handle->file     = file;
    handle->is_write = is_write;
@@ -89,26 +89,27 @@ static struct nbio_t* nbio_mmap_win32_open(const char * filename, unsigned mode)
    return handle;
 }
 
-static void nbio_mmap_win32_begin_read(struct nbio_t* handle)
+static void nbio_mmap_win32_begin_read(void *data)
 {
    /* not needed */
 }
 
-static void nbio_mmap_win32_begin_write(struct nbio_t* handle)
+static void nbio_mmap_win32_begin_write(void *data)
 {
    /* not needed */
 }
 
-static bool nbio_mmap_win32_iterate(struct nbio_t* handle)
+static bool nbio_mmap_win32_iterate(void *data)
 {
    /* not needed */
    return true;
 }
 
-static void nbio_mmap_win32_resize(struct nbio_t* handle, size_t len)
+static void nbio_mmap_win32_resize(void *data, size_t len)
 {
    LARGE_INTEGER len_li;
    HANDLE mem;
+   struct nbio_mmap_win32_t* handle  = (struct nbio_mmap_win32_t*)data;
 
    if (!handle)
       return;
@@ -145,8 +146,9 @@ static void nbio_mmap_win32_resize(struct nbio_t* handle, size_t len)
    }
 }
 
-static void *nbio_mmap_win32_get_ptr(struct nbio_t* handle, size_t* len)
+static void *nbio_mmap_win32_get_ptr(void *data, size_t* len)
 {
+   struct nbio_mmap_win32_t* handle  = (struct nbio_mmap_win32_t*)data;
    if (!handle)
       return NULL;
    if (len)
@@ -154,13 +156,14 @@ static void *nbio_mmap_win32_get_ptr(struct nbio_t* handle, size_t* len)
    return handle->ptr;
 }
 
-static void nbio_mmap_win32_cancel(struct nbio_t* handle)
+static void nbio_mmap_win32_cancel(void *data)
 {
    /* not needed */
 }
 
-static void nbio_mmap_win32_free(struct nbio_t* handle)
+static void nbio_mmap_win32_free(void *data)
 {
+   struct nbio_mmap_win32_t* handle  = (struct nbio_mmap_win32_t*)data;
    if (!handle)
       return;
    CloseHandle(handle->file);

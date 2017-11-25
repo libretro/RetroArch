@@ -35,7 +35,7 @@
 #include <sys/syscall.h>
 #include <linux/aio_abi.h>
 
-struct nbio_t
+struct nbio_linux_t
 {
    int fd;
    bool busy;
@@ -76,33 +76,7 @@ static int io_getevents(aio_context_t ctx, long min_nr, long nr,
    return syscall(__NR_io_getevents, ctx, min_nr, nr, events, timeout);
 }
 
-static struct nbio_t* nbio_linux_open(const char * filename, unsigned mode)
-{
-   static const int o_flags[] =   { O_RDONLY, O_RDWR|O_CREAT|O_TRUNC, O_RDWR, O_RDONLY, O_RDWR|O_CREAT|O_TRUNC };
-
-   aio_context_t ctx     = 0;
-   struct nbio_t* handle = NULL;
-   int fd                = open(filename, o_flags[mode]|O_CLOEXEC, 0644);
-   if (fd < 0)
-      return NULL;
-
-   if (io_setup(128, &ctx) < 0)
-   {
-      close(fd);
-      return NULL;
-   }
-
-   handle       = malloc(sizeof(struct nbio_t));
-   handle->fd   = fd;
-   handle->ctx  = ctx;
-   handle->len  = lseek(fd, 0, SEEK_END);
-   handle->ptr  = malloc(handle->len);
-   handle->busy = false;
-
-   return handle;
-}
-
-static void nbio_begin_op(struct nbio_t* handle, uint16_t op)
+static void nbio_begin_op(struct nbio_linux_t* handle, uint16_t op)
 {
    struct iocb * cbp         = &handle->cb;
 
@@ -124,18 +98,51 @@ static void nbio_begin_op(struct nbio_t* handle, uint16_t op)
    handle->busy = true;
 }
 
-static void nbio_linux_begin_read(struct nbio_t* handle)
+static void *nbio_linux_open(const char * filename, unsigned mode)
 {
-   nbio_begin_op(handle, IOCB_CMD_PREAD);
+   static const int o_flags[]  =   { O_RDONLY, O_RDWR|O_CREAT|O_TRUNC, O_RDWR, O_RDONLY, O_RDWR|O_CREAT|O_TRUNC };
+
+   aio_context_t ctx           = 0;
+   struct nbio_linux_t* handle = NULL;
+   int fd                      = open(filename, o_flags[mode]|O_CLOEXEC, 0644);
+   if (fd < 0)
+      return NULL;
+
+   if (io_setup(128, &ctx) < 0)
+   {
+      close(fd);
+      return NULL;
+   }
+
+   handle       = malloc(sizeof(struct nbio_linux_t));
+   handle->fd   = fd;
+   handle->ctx  = ctx;
+   handle->len  = lseek(fd, 0, SEEK_END);
+   handle->ptr  = malloc(handle->len);
+   handle->busy = false;
+
+   return handle;
 }
 
-static void nbio_linux_begin_write(struct nbio_t* handle)
+static void nbio_linux_begin_read(void *data)
 {
-   nbio_begin_op(handle, IOCB_CMD_PWRITE);
+   struct nbio_linux_t* handle = (struct nbio_linux_t*)data;
+   if (handle)
+      nbio_begin_op(handle, IOCB_CMD_PREAD);
 }
 
-static bool nbio_linux_iterate(struct nbio_t* handle)
+static void nbio_linux_begin_write(void *data)
 {
+   struct nbio_linux_t* handle = (struct nbio_linux_t*)data;
+   if (handle)
+      nbio_begin_op(handle, IOCB_CMD_PWRITE);
+}
+
+static bool nbio_linux_iterate(void *data)
+{
+   struct nbio_linux_t* handle = (struct nbio_linux_t*)data;
+   if (!handle)
+      return false;
    if (handle->busy)
    {
       struct io_event ev;
@@ -145,8 +152,9 @@ static bool nbio_linux_iterate(struct nbio_t* handle)
    return !handle->busy;
 }
 
-static void nbio_linux_resize(struct nbio_t* handle, size_t len)
+static void nbio_linux_resize(void *data, size_t len)
 {
+   struct nbio_linux_t* handle = (struct nbio_linux_t*)data;
    if (!handle)
       return;
 
@@ -169,8 +177,9 @@ static void nbio_linux_resize(struct nbio_t* handle, size_t len)
    handle->len = len;
 }
 
-static void *nbio_linux_get_ptr(struct nbio_t* handle, size_t* len)
+static void *nbio_linux_get_ptr(void *data, size_t* len)
 {
+   struct nbio_linux_t* handle = (struct nbio_linux_t*)data;
    if (!handle)
       return NULL;
    if (len)
@@ -180,8 +189,9 @@ static void *nbio_linux_get_ptr(struct nbio_t* handle, size_t* len)
    return NULL;
 }
 
-static void nbio_linux_cancel(struct nbio_t* handle)
+static void nbio_linux_cancel(void *data)
 {
+   struct nbio_linux_t* handle = (struct nbio_linux_t*)data;
    if (!handle)
       return;
 
@@ -193,8 +203,9 @@ static void nbio_linux_cancel(struct nbio_t* handle)
    }
 }
 
-static void nbio_linux_free(struct nbio_t* handle)
+static void nbio_linux_free(void *data)
 {
+   struct nbio_linux_t* handle = (struct nbio_linux_t*)data;
    if (!handle)
       return;
 

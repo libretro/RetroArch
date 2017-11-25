@@ -35,7 +35,7 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 
-struct nbio_t
+struct nbio_mmap_unix_t
 {
    int fd;
    int map_flags;
@@ -43,15 +43,15 @@ struct nbio_t
    void* ptr;
 };
 
-static struct nbio_t* nbio_mmap_unix_open(const char * filename, unsigned mode)
+static void *nbio_mmap_unix_open(const char * filename, unsigned mode)
 {
    static const int o_flags[] =   { O_RDONLY,  O_RDWR|O_CREAT|O_TRUNC, O_RDWR,               O_RDONLY,  O_RDWR|O_CREAT|O_TRUNC };
    static const int map_flags[] = { PROT_READ, PROT_WRITE|PROT_READ,   PROT_WRITE|PROT_READ, PROT_READ, PROT_WRITE|PROT_READ   };
    
    size_t len;
-   void* ptr             = NULL;
-   struct nbio_t* handle = NULL;
-   int fd                = open(filename, o_flags[mode]|O_CLOEXEC, 0644);
+   void* ptr                       = NULL;
+   struct nbio_mmap_unix_t* handle = NULL;
+   int fd                          = open(filename, o_flags[mode]|O_CLOEXEC, 0644);
    if (fd < 0)
       return NULL;
    
@@ -65,7 +65,7 @@ static struct nbio_t* nbio_mmap_unix_open(const char * filename, unsigned mode)
       return NULL;
    }
    
-   handle            = malloc(sizeof(struct nbio_t));
+   handle            = malloc(sizeof(struct nbio_mmap_unix_t));
    handle->fd        = fd;
    handle->map_flags = map_flags[mode];
    handle->len       = len;
@@ -73,23 +73,26 @@ static struct nbio_t* nbio_mmap_unix_open(const char * filename, unsigned mode)
    return handle;
 }
 
-static void nbio_mmap_unix_begin_read(struct nbio_t* handle)
+static void nbio_mmap_unix_begin_read(void *data)
 {
    /* not needed */
 }
 
-static void nbio_mmap_unix_begin_write(struct nbio_t* handle)
+static void nbio_mmap_unix_begin_write(void *data)
 {
    /* not needed */
 }
 
-static bool nbio_mmap_unix_iterate(struct nbio_t* handle)
+static bool nbio_mmap_unix_iterate(void *data)
 {
    return true; /* not needed */
 }
 
-static void nbio_mmap_unix_resize(struct nbio_t* handle, size_t len)
+static void nbio_mmap_unix_resize(void *data, size_t len)
 {
+   struct nbio_mmap_unix_t* handle = (struct nbio_mmap_unix_t*)data;
+   if (!handle)
+      return;
    if (len < handle->len)
    {
       /* this works perfectly fine if this check is removed, but it 
@@ -118,8 +121,9 @@ static void nbio_mmap_unix_resize(struct nbio_t* handle, size_t len)
    }
 }
 
-static void *nbio_mmap_unix_get_ptr(struct nbio_t* handle, size_t* len)
+static void *nbio_mmap_unix_get_ptr(void *data, size_t* len)
 {
+   struct nbio_mmap_unix_t* handle = (struct nbio_mmap_unix_t*)data;
    if (!handle)
       return NULL;
    if (len)
@@ -127,13 +131,14 @@ static void *nbio_mmap_unix_get_ptr(struct nbio_t* handle, size_t* len)
    return handle->ptr;
 }
 
-static void nbio_mmap_unix_cancel(struct nbio_t* handle)
+static void nbio_mmap_unix_cancel(void *data)
 {
    /* not needed */
 }
 
-static void nbio_mmap_unix_free(struct nbio_t* handle)
+static void nbio_mmap_unix_free(void *data)
 {
+   struct nbio_mmap_unix_t* handle = (struct nbio_mmap_unix_t*)data;
    if (!handle)
       return;
    close(handle->fd);

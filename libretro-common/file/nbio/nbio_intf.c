@@ -44,42 +44,42 @@ static nbio_intf_t *internal_nbio = &nbio_mmap_win32;
 static nbio_intf_t *internal_nbio = &nbio_stdio;
 #endif
 
-struct nbio_t* nbio_open(const char * filename, unsigned mode)
+void *nbio_open(const char * filename, unsigned mode)
 {
    return internal_nbio->open(filename, mode);
 }
 
-void nbio_begin_read(struct nbio_t* handle)
+void nbio_begin_read(void *data)
 {
-   internal_nbio->begin_read(handle);
+   internal_nbio->begin_read(data);
 }
 
-void nbio_begin_write(struct nbio_t* handle)
+void nbio_begin_write(void *data)
 {
-   internal_nbio->begin_write(handle);
+   internal_nbio->begin_write(data);
 }
 
-bool nbio_iterate(struct nbio_t* handle)
+bool nbio_iterate(void *data)
 {
-   return internal_nbio->iterate(handle);
+   return internal_nbio->iterate(data);
 }
 
-void nbio_resize(struct nbio_t* handle, size_t len)
+void nbio_resize(void *data, size_t len)
 {
-   internal_nbio->resize(handle, len);
+   internal_nbio->resize(data, len);
 }
 
-void *nbio_get_ptr(struct nbio_t* handle, size_t* len)
+void *nbio_get_ptr(void *data, size_t* len)
 {
-   return internal_nbio->get_ptr(handle, len);
+   return internal_nbio->get_ptr(data, len);
 }
 
-void nbio_cancel(struct nbio_t* handle)
+void nbio_cancel(void *data)
 {
-   internal_nbio->cancel(handle);
+   internal_nbio->cancel(data);
 }
 
-void nbio_free(struct nbio_t* handle)
+void nbio_free(void *data)
 {
-   internal_nbio->free(handle);
+   internal_nbio->free(data);
 }

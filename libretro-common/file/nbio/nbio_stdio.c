@@ -35,7 +35,7 @@
 
 #endif
 
-struct nbio_t
+struct nbio_stdio_t
 {
    FILE* f;
    void* data;
@@ -52,21 +52,21 @@ struct nbio_t
 };
 
 #if !defined(_WIN32) || defined(LEGACY_WIN32)
-static const char *stdio_modes[]={ "rb", "wb", "r+b", "rb", "wb", "r+b" };
+static const char    *stdio_modes[] = { "rb", "wb", "r+b", "rb", "wb", "r+b" };
 #else
-static const wchar_t *stdio_modes[]={ L"rb", L"wb", L"r+b", L"rb", L"wb", L"r+b" };
+static const wchar_t *stdio_modes[] = { L"rb", L"wb", L"r+b", L"rb", L"wb", L"r+b" };
 #endif
 
-static struct nbio_t* nbio_stdio_open(const char * filename, unsigned mode)
+static void *nbio_stdio_open(const char * filename, unsigned mode)
 {
-   void *buf             = NULL;
-   struct nbio_t* handle = NULL;
-   size_t len            = 0;
+   void *buf                   = NULL;
+   struct nbio_stdio_t* handle = NULL;
+   size_t len                  = 0;
 #if !defined(_WIN32) || defined(LEGACY_WIN32)
-   FILE* f               = fopen(filename, stdio_modes[mode]);
+   FILE* f                     = fopen(filename, stdio_modes[mode]);
 #else
-   wchar_t *filename_wide = utf8_to_utf16_string_alloc(filename);
-   FILE* f               = _wfopen(filename_wide, stdio_modes[mode]);
+   wchar_t *filename_wide      = utf8_to_utf16_string_alloc(filename);
+   FILE* f                     = _wfopen(filename_wide, stdio_modes[mode]);
 
    if (filename_wide)
       free(filename_wide);
@@ -74,7 +74,7 @@ static struct nbio_t* nbio_stdio_open(const char * filename, unsigned mode)
    if (!f)
       return NULL;
 
-   handle                = (struct nbio_t*)malloc(sizeof(struct nbio_t));
+   handle                = (struct nbio_stdio_t*)malloc(sizeof(struct nbio_stdio_t));
 
    if (!handle)
       goto error;
@@ -114,8 +114,9 @@ error:
    return NULL;
 }
 
-static void nbio_stdio_begin_read(struct nbio_t* handle)
+static void nbio_stdio_begin_read(void *data)
 {
+   struct nbio_stdio_t *handle = (struct nbio_stdio_t*)data;
    if (!handle)
       return;
 
@@ -131,8 +132,9 @@ static void nbio_stdio_begin_read(struct nbio_t* handle)
    handle->progress = 0;
 }
 
-static void nbio_stdio_begin_write(struct nbio_t* handle)
+static void nbio_stdio_begin_write(void *data)
 {
+   struct nbio_stdio_t *handle = (struct nbio_stdio_t*)data;
    if (!handle)
       return;
 
@@ -147,9 +149,10 @@ static void nbio_stdio_begin_write(struct nbio_t* handle)
    handle->progress = 0;
 }
 
-static bool nbio_stdio_iterate(struct nbio_t* handle)
+static bool nbio_stdio_iterate(void *data)
 {
-   size_t amount = 65536;
+   size_t amount               = 65536;
+   struct nbio_stdio_t *handle = (struct nbio_stdio_t*)data;
 
    if (!handle)
       return false;
@@ -189,8 +192,9 @@ static bool nbio_stdio_iterate(struct nbio_t* handle)
    return (handle->op < 0);
 }
 
-static void nbio_stdio_resize(struct nbio_t* handle, size_t len)
+static void nbio_stdio_resize(void *data, size_t len)
 {
+   struct nbio_stdio_t *handle = (struct nbio_stdio_t*)data;
    if (!handle)
       return;
 
@@ -211,8 +215,9 @@ static void nbio_stdio_resize(struct nbio_t* handle, size_t len)
    handle->progress = handle->len;
 }
 
-static void *nbio_stdio_get_ptr(struct nbio_t* handle, size_t* len)
+static void *nbio_stdio_get_ptr(void *data, size_t* len)
 {
+   struct nbio_stdio_t *handle = (struct nbio_stdio_t*)data;
    if (!handle)
       return NULL;
    if (len)
@@ -222,8 +227,9 @@ static void *nbio_stdio_get_ptr(struct nbio_t* handle, size_t* len)
    return NULL;
 }
 
-static void nbio_stdio_cancel(struct nbio_t* handle)
+static void nbio_stdio_cancel(void *data)
 {
+   struct nbio_stdio_t *handle = (struct nbio_stdio_t*)data;
    if (!handle)
       return;
 
@@ -231,8 +237,9 @@ static void nbio_stdio_cancel(struct nbio_t* handle)
    handle->progress = handle->len;
 }
 
-static void nbio_stdio_free(struct nbio_t* handle)
+static void nbio_stdio_free(void *data)
 {
+   struct nbio_stdio_t *handle = (struct nbio_stdio_t*)data;
    if (!handle)
       return;
    if (handle->op >= 0)
