@@ -1709,19 +1709,12 @@ void command_playlist_push_write(
       const char *core_path,
       const char *core_name)
 {
-   playlist_t *plist    = (playlist_t*)data;
-   playlist_t *playlist = NULL;
+   playlist_t *playlist = (playlist_t*)data;
 
-   if (plist)
-      playlist          = plist;
-#ifdef HAVE_MENU
-   else
-      menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
-#endif
    if (!playlist)
       return;
    
-   playlist_push(
+   if (playlist_push(
          playlist,
          path,
          label,
@@ -1729,8 +1722,8 @@ void command_playlist_push_write(
          core_name,
          NULL,
          NULL
-         );
-   playlist_write_file(playlist);
+         ))
+      playlist_write_file(playlist);
 }
 
 void command_playlist_update_write(

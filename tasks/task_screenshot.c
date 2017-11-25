@@ -49,6 +49,7 @@
 #endif
 
 #include "../defaults.h"
+#include "../command.h"
 #include "../configuration.h"
 #include "../retroarch.h"
 #include "../paths.h"
@@ -163,18 +164,12 @@ static void task_screenshot_handler(retro_task_t *task)
          state->history_list_enable &&
          g_defaults.image_history
          )
-   {
-      if (playlist_push(
-               g_defaults.image_history,
-               state->filename,
-               NULL,
-               "builtin",
-               "imageviewer",
-               NULL,
-               NULL
-               ))
-         playlist_write_file(g_defaults.image_history);
-   }
+      command_playlist_push_write(
+            g_defaults.image_history,
+            state->filename,
+            NULL,
+            "builtin",
+            "imageviewer");
 #endif
 
    task_set_progress(task, 100);

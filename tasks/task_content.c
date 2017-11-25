@@ -961,18 +961,14 @@ static bool task_load_content(content_ctx_info_t *content_info,
             label = global->name.label;
 
          if (
-                  content_ctx->history_list_enable 
-               && playlist_tmp 
-               && playlist_push(
+               content_ctx->history_list_enable 
+               && playlist_tmp)
+            command_playlist_push_write(
                   playlist_tmp,
                   tmp,
                   label,
                   core_path,
-                  core_name,
-                  NULL,
-                  NULL)
-               )
-            playlist_write_file(playlist_tmp);
+                  core_name);
       }
 
       free(tmp);
