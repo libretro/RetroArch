@@ -505,7 +505,7 @@ static int task_database_cue_get_crc(const char *name, uint32_t *crc)
       return 0;
    }
 
-   RARCH_LOG("CUE '%s' primary track: %s\n (%Zu, %Zu)", name, track_path, offset, size);
+   RARCH_LOG("CUE '%s' primary track: %s\n (%lu, %lu)\n", name, track_path, (unsigned long) offset, (unsigned long) size);
 
    RARCH_LOG("%s\n", msg_hash_to_str(MSG_READING_FIRST_DATA_TRACK));
 
