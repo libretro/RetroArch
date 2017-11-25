@@ -3768,13 +3768,9 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
 
          if (lan_room_count != 0)
          {
-            struct netplay_host *host = NULL;
-
             for (i = netplay_room_count; i < netplay_room_count + lan_room_count; i++)
             {
-               struct netplay_host *host = NULL;
-               host = &lan_hosts->hosts[j++];
-               
+               struct netplay_host *host = &lan_hosts->hosts[j++];
 
                strlcpy(netplay_room_list[i].nickname,
                      host->nick,
