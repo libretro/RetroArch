@@ -1128,7 +1128,7 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
       if (error_string)
       {
          runloop_msg_queue_push(error_string, 2, 90, true);
-         RARCH_ERR(error_string);
+         RARCH_ERR("%s\n", error_string);
          free(error_string);
       }
 
@@ -1219,7 +1219,7 @@ bool task_push_load_content_from_playlist_from_menu(
       if (error_string)
       {
          runloop_msg_queue_push(error_string, 2, 90, true);
-         RARCH_ERR(error_string);
+         RARCH_ERR("%s\n", error_string);
          free(error_string);
       }
 
@@ -1321,7 +1321,7 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
       if (error_string)
       {
          runloop_msg_queue_push(error_string, 2, 90, true);
-         RARCH_ERR(error_string);
+         RARCH_ERR("%s\n", error_string);
          free(error_string);
       }
 
@@ -1449,7 +1449,7 @@ bool task_push_load_content_with_new_core_from_menu(
       if (error_string)
       {
          runloop_msg_queue_push(error_string, 2, 90, true);
-         RARCH_ERR(error_string);
+         RARCH_ERR("%s\n", error_string);
          free(error_string);
       }
 
@@ -1554,7 +1554,7 @@ end:
       if (error_string)
       {
          runloop_msg_queue_push(error_string, 2, 90, true);
-         RARCH_ERR(error_string);
+         RARCH_ERR("%s\n", error_string);
          free(error_string);
       }
 
