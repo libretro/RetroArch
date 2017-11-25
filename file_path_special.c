@@ -28,6 +28,10 @@
 #include <libgen.h>
 #endif
 
+#ifdef __HAIKU__
+#include <kernel/image.h>
+#endif
+
 #include <stdlib.h>
 #include <boolean.h>
 #include <string.h>
