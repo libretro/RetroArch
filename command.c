@@ -1702,6 +1702,38 @@ static bool command_event_resize_windowed_scale(void)
    return true;
 }
 
+void command_playlist_update_write(
+      void *data,
+      size_t idx,
+      const char *core_display_name,
+      const char *label,
+      const char *path)
+{
+   playlist_t *plist    = (playlist_t*)data;
+   playlist_t *playlist = NULL;
+
+   if (plist)
+      playlist          = plist;
+#ifdef HAVE_MENU
+   else
+      menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
+#endif
+   if (!playlist)
+      return;
+
+   playlist_update(
+         playlist,
+         idx,
+         label,
+         NULL,
+         path,
+         core_display_name,
+         NULL,
+         NULL);
+
+   playlist_write_file(playlist);
+}
+
 /**
  * command_event:
  * @cmd                  : Event command index.
