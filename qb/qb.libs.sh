@@ -93,12 +93,13 @@ check_pkgconf()	#$1 = HAVE_$1	$2 = package	$3 = version	$4 = critical error mess
 	
 	eval HAVE_$1="$answer";
 	echo "$ECHOBUF ... $version"
-	PKG_CONF_USED="$PKG_CONF_USED $1"
-	[ "$answer" = 'no' ] && {
+	if [ "$answer" = 'no' ]; then
 		[ "$4" ] && die 1 "$4"
 		[ "$tmpval" = 'yes' ] && \
 			die 1 "Forced to build with package $2, but cannot locate. Exiting ..."
-	}
+	else
+		PKG_CONF_USED="$PKG_CONF_USED $1"
+	fi
 }
 
 check_header()	#$1 = HAVE_$1	$2..$5 = header files
