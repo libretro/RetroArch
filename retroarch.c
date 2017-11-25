@@ -2360,7 +2360,7 @@ static enum runloop_state runloop_check_state(
       bool input_nonblock_state,
       unsigned *sleep_ms)
 {
-   static retro_bits_t last_input = {0};
+   static retro_bits_t last_input   = {{0}};
    static bool old_fs_toggle_pressed= false;
    static bool old_focus            = true;
    bool is_focused                  = false;
@@ -2533,7 +2533,7 @@ static enum runloop_state runloop_check_state(
 #ifdef HAVE_MENU
    if (menu_is_alive)
    {
-      static retro_bits_t old_input = {0};
+      static retro_bits_t old_input = {{0}};
       menu_ctx_iterate_t iter;
 
       retro_ctx.poll_cb();
