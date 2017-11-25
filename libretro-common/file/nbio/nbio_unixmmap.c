@@ -1,3 +1,27 @@
+/* Copyright  (C) 2010-2017 The RetroArch team
+ *
+ * ---------------------------------------------------------------------------------------
+ * The following license statement only applies to this file (nbio_unixmmap.c).
+ * ---------------------------------------------------------------------------------------
+ *
+ * Permission is hereby granted, free of charge,
+ * to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+ * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+#if defined(HAVE_MMAP) && defined(__linux__)
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -19,7 +43,7 @@ struct nbio_t
    void* ptr;
 };
 
-struct nbio_t* nbio_open(const char * filename, unsigned mode)
+static struct nbio_t* nbio_mmap_unix_open(const char * filename, unsigned mode)
 {
    static const int o_flags[] =   { O_RDONLY,  O_RDWR|O_CREAT|O_TRUNC, O_RDWR,               O_RDONLY,  O_RDWR|O_CREAT|O_TRUNC };
    static const int map_flags[] = { PROT_READ, PROT_WRITE|PROT_READ,   PROT_WRITE|PROT_READ, PROT_READ, PROT_WRITE|PROT_READ   };
@@ -49,22 +73,22 @@ struct nbio_t* nbio_open(const char * filename, unsigned mode)
    return handle;
 }
 
-void nbio_begin_read(struct nbio_t* handle)
+static void nbio_mmap_unix_begin_read(struct nbio_t* handle)
 {
    /* not needed */
 }
 
-void nbio_begin_write(struct nbio_t* handle)
+static void nbio_mmap_unix_begin_write(struct nbio_t* handle)
 {
    /* not needed */
 }
 
-bool nbio_iterate(struct nbio_t* handle)
+static bool nbio_mmap_unix_iterate(struct nbio_t* handle)
 {
    return true; /* not needed */
 }
 
-void nbio_resize(struct nbio_t* handle, size_t len)
+static void nbio_mmap_unix_resize(struct nbio_t* handle, size_t len)
 {
    if (len < handle->len)
    {
@@ -94,7 +118,7 @@ void nbio_resize(struct nbio_t* handle, size_t len)
    }
 }
 
-void* nbio_get_ptr(struct nbio_t* handle, size_t* len)
+static void *nbio_mmap_unix_get_ptr(struct nbio_t* handle, size_t* len)
 {
    if (!handle)
       return NULL;
@@ -103,12 +127,12 @@ void* nbio_get_ptr(struct nbio_t* handle, size_t* len)
    return handle->ptr;
 }
 
-void nbio_cancel(struct nbio_t* handle)
+static void nbio_mmap_unix_cancel(struct nbio_t* handle)
 {
    /* not needed */
 }
 
-void nbio_free(struct nbio_t* handle)
+static void nbio_mmap_unix_free(struct nbio_t* handle)
 {
    if (!handle)
       return;
@@ -116,3 +140,17 @@ void nbio_free(struct nbio_t* handle)
    munmap(handle->ptr, handle->len);
    free(handle);
 }
+
+nbio_intf_t nbio_mmap_unix = {
+   nbio_mmap_unix_open,
+   nbio_mmap_unix_begin_read,
+   nbio_mmap_unix_begin_write,
+   nbio_mmap_unix_iterate,
+   nbio_mmap_unix_resize,
+   nbio_mmap_unix_get_ptr,
+   nbio_mmap_unix_cancel,
+   nbio_mmap_unix_free,
+   "nbio_mmap_unix",
+};
+
+#endif

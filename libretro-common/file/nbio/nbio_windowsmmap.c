@@ -1,10 +1,32 @@
+/* Copyright  (C) 2010-2017 The RetroArch team
+ *
+ * ---------------------------------------------------------------------------------------
+ * The following license statement only applies to this file (nbio_windowsmmap.c).
+ * ---------------------------------------------------------------------------------------
+ *
+ * Permission is hereby granted, free of charge,
+ * to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+ * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+#if defined(HAVE_MMAP) && defined(_WIN32)
+
 #include <stdio.h>
 #include <stdlib.h>
 
 #include <file/nbio.h>
-#include <encodings/utf.h>
-
-#include <windows.h>
+#include <encodings/utf.h> 
 
 /* Assume W-functions do not work below VC2005 and Xbox platforms */
 #if defined(_MSC_VER) && _MSC_VER < 1400 || defined(_XBOX)
@@ -17,122 +39,227 @@
 
 struct nbio_t
 {
-   HANDLE file;
-   bool is_write;
+   FILE* f;
+   void* data;
+   size_t progress;
    size_t len;
-   void* ptr;
+   /*
+    * possible values:
+    * NBIO_READ, NBIO_WRITE - obvious
+    * -1 - currently doing nothing
+    * -2 - the pointer was reallocated since the last operation
+    */
+   signed char op;
+   signed char mode;
 };
 
-#define FILE_SHARE_ALL (FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE)
-struct nbio_t* nbio_open(const char * filename, unsigned mode)
-{
-   static const DWORD dispositions[] = { OPEN_EXISTING, CREATE_ALWAYS, OPEN_ALWAYS, OPEN_EXISTING, CREATE_ALWAYS };
-   HANDLE mem;
-   LARGE_INTEGER len;
-   struct nbio_t* handle  = NULL;
-   void* ptr              = NULL;
-   bool is_write          = (mode == NBIO_WRITE || mode == NBIO_UPDATE || mode == BIO_WRITE);
-   DWORD access           = (is_write ? GENERIC_READ|GENERIC_WRITE : GENERIC_READ);
 #if !defined(_WIN32) || defined(LEGACY_WIN32)
-   HANDLE file            = CreateFile(filename, access, FILE_SHARE_ALL, NULL, dispositions[mode], FILE_ATTRIBUTE_NORMAL, NULL);
+static const char * modes[]={ "rb", "wb", "r+b", "rb", "wb", "r+b" };
+#else
+static const wchar_t * modes[]={ L"rb", L"wb", L"r+b", L"rb", L"wb", L"r+b" };
+#endif
+
+static struct nbio_t* nbio_mmap_win32_open(const char * filename, unsigned mode)
+{
+   void *buf             = NULL;
+   struct nbio_t* handle = NULL;
+   size_t len            = 0;
+#if !defined(_WIN32) || defined(LEGACY_WIN32)
+   FILE* f               = fopen(filename, modes[mode]);
 #else
    wchar_t *filename_wide = utf8_to_utf16_string_alloc(filename);
-   HANDLE file            = CreateFileW(filename_wide, access, FILE_SHARE_ALL, NULL, dispositions[mode], FILE_ATTRIBUTE_NORMAL, NULL);
+   FILE* f               = _wfopen(filename_wide, modes[mode]);
 
    if (filename_wide)
       free(filename_wide);
 #endif
-   
-   if (file == INVALID_HANDLE_VALUE)
+   if (!f)
       return NULL;
-   
-   GetFileSizeEx(file, &len);
-   
-   mem = CreateFileMapping(file, NULL, is_write ? PAGE_READWRITE : PAGE_READONLY, 0, 0, NULL);
-   ptr = MapViewOfFile(mem, is_write ? (FILE_MAP_READ|FILE_MAP_WRITE) : FILE_MAP_READ, 0, 0, len.QuadPart);
-   CloseHandle(mem);
-   
-   handle           = malloc(sizeof(struct nbio_t));
 
-   handle->file     = file;
-   handle->is_write = is_write;
-   handle->len      = len.QuadPart;
-   handle->ptr      = ptr;
+   handle                = (struct nbio_t*)malloc(sizeof(struct nbio_t));
+
+   if (!handle)
+      goto error;
+
+   handle->f             = f;
+
+   switch (mode)
+   {
+      case NBIO_WRITE:
+      case BIO_WRITE:
+         break;
+      default:
+         fseek(handle->f, 0, SEEK_END);
+         len = ftell(handle->f);
+         break;
+   }
+
+   handle->mode          = mode;
+
+   if (len)
+      buf                = malloc(len);
+
+   if (len && !buf)
+      goto error;
+
+   handle->data          = buf;
+   handle->len           = len;
+   handle->progress      = handle->len;
+   handle->op            = -2;
 
    return handle;
+
+error:
+   if (handle)
+      free(handle);
+   fclose(f);
+   return NULL;
 }
 
-void nbio_begin_read(struct nbio_t* handle)
+static void nbio_mmap_win32_begin_read(struct nbio_t* handle)
 {
-   /* not needed */
+   if (!handle)
+      return;
+
+   if (handle->op >= 0)
+   {
+      puts("ERROR - attempted file read operation while busy");
+      abort();
+   }
+
+   fseek(handle->f, 0, SEEK_SET);
+
+   handle->op       = NBIO_READ;
+   handle->progress = 0;
 }
 
-void nbio_begin_write(struct nbio_t* handle)
+static void nbio_mmap_win32_begin_write(struct nbio_t* handle)
 {
-   /* not needed */
+   if (!handle)
+      return;
+
+   if (handle->op >= 0)
+   {
+      puts("ERROR - attempted file write operation while busy");
+      abort();
+   }
+
+   fseek(handle->f, 0, SEEK_SET);
+   handle->op = NBIO_WRITE;
+   handle->progress = 0;
 }
 
-bool nbio_iterate(struct nbio_t* handle)
+static bool nbio_mmap_win32_iterate(struct nbio_t* handle)
 {
-   return true; /* not needed */
+   size_t amount = 65536;
+
+   if (!handle)
+      return false;
+
+   if (amount > handle->len - handle->progress)
+      amount = handle->len - handle->progress;
+
+   switch (handle->op)
+   {
+      case NBIO_READ:
+         if (handle->mode == BIO_READ)
+         {
+            amount = handle->len;
+            fread((char*)handle->data, 1, amount, handle->f);
+         }
+         else
+            fread((char*)handle->data + handle->progress, 1, amount, handle->f);
+         break;
+      case NBIO_WRITE:
+         if (handle->mode == BIO_WRITE)
+         {
+            size_t written = 0;
+            amount = handle->len;
+            written = fwrite((char*)handle->data, 1, amount, handle->f);
+            if (written != amount)
+               return false;
+         }
+         else
+            fwrite((char*)handle->data + handle->progress, 1, amount, handle->f);
+         break;
+   }
+
+   handle->progress += amount;
+
+   if (handle->progress == handle->len)
+      handle->op = -1;
+   return (handle->op < 0);
 }
 
-void nbio_resize(struct nbio_t* handle, size_t len)
+static void nbio_mmap_win32_resize(struct nbio_t* handle, size_t len)
 {
-   LARGE_INTEGER len_li;
-   HANDLE mem;
-   
+   if (!handle)
+      return;
+
+   if (handle->op >= 0)
+   {
+      puts("ERROR - attempted file resize operation while busy");
+      abort();
+   }
    if (len < handle->len)
    {
-      /* this works perfectly fine if this check is removed, 
-       * but it won't work on other nbio implementations */
-      /* therefore, it's blocked so nobody accidentally 
-       * relies on it. */
       puts("ERROR - attempted file shrink operation, not implemented");
       abort();
    }
-   
-   len_li.QuadPart = len;
-   SetFilePointerEx(handle->file, len_li, NULL, FILE_BEGIN);
-   
-   if (!SetEndOfFile(handle->file))
-   {
-      puts("ERROR - couldn't resize file (SetEndOfFile)");
-      abort(); /* this one returns void and I can't find any other way for it to report failure */
-   }
-   handle->len = len;
-   
-   UnmapViewOfFile(handle->ptr);
-   mem = CreateFileMapping(handle->file, NULL, handle->is_write ? PAGE_READWRITE : PAGE_READONLY, 0, 0, NULL);
-   handle->ptr = MapViewOfFile(mem, handle->is_write ? (FILE_MAP_READ|FILE_MAP_WRITE) : FILE_MAP_READ, 0, 0, len);
-   CloseHandle(mem);
-   
-   if (!handle->ptr)
-   {
-      puts("ERROR - couldn't resize file (MapViewOfFile)");
-      abort();
-   }
+
+   handle->len  = len;
+   handle->data = realloc(handle->data, handle->len);
+   handle->op   = -1;
+   handle->progress = handle->len;
 }
 
-void* nbio_get_ptr(struct nbio_t* handle, size_t* len)
+static void *nbio_mmap_win32_get_ptr(struct nbio_t* handle, size_t* len)
 {
    if (!handle)
       return NULL;
    if (len)
       *len = handle->len;
-   return handle->ptr;
+   if (handle->op == -1)
+      return handle->data;
+   return NULL;
 }
 
-void nbio_cancel(struct nbio_t* handle)
-{
-   /* not needed */
-}
-
-void nbio_free(struct nbio_t* handle)
+static void nbio_mmap_win32_cancel(struct nbio_t* handle)
 {
    if (!handle)
       return;
-   CloseHandle(handle->file);
-   UnmapViewOfFile(handle->ptr);
+
+   handle->op = -1;
+   handle->progress = handle->len;
+}
+
+static void nbio_mmap_win32_free(struct nbio_t* handle)
+{
+   if (!handle)
+      return;
+   if (handle->op >= 0)
+   {
+      puts("ERROR - attempted free() while busy");
+      abort();
+   }
+   fclose(handle->f);
+   free(handle->data);
+
+   handle->f    = NULL;
+   handle->data = NULL;
    free(handle);
 }
+
+nbio_intf_t nbio_mmap_win32 = {
+   nbio_mmap_win32_open,
+   nbio_mmap_win32_begin_read,
+   nbio_mmap_win32_begin_write,
+   nbio_mmap_win32_iterate,
+   nbio_mmap_win32_resize,
+   nbio_mmap_win32_get_ptr,
+   nbio_mmap_win32_cancel,
+   nbio_mmap_win32_free,
+   "nbio_mmap_win32",
+};
+
+#endif
