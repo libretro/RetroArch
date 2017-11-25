@@ -1443,6 +1443,29 @@ static int action_ok_file_load(const char *path,
    return 0;
 }
 
+static void generic_playlist_write(size_t idx,
+      const char *path)
+{
+   char core_display_name[PATH_MAX_LENGTH];
+   playlist_t *playlist = NULL;
+
+   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
+
+   retro_assert(playlist != NULL);
+
+   core_display_name[0] = '\0';
+
+   core_info_get_name(path, core_display_name, sizeof(core_display_name));
+
+   playlist_update(playlist, idx,
+         NULL, NULL,
+         path, core_display_name,
+         NULL,
+         NULL);
+
+   playlist_write_file(playlist);
+}
+
 static int action_ok_playlist_entry_collection(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -2317,27 +2340,9 @@ static int action_ok_path_scan_directory(const char *path,
 static int action_ok_core_deferred_set(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char core_display_name[PATH_MAX_LENGTH];
-   playlist_t               *playlist      = NULL;
    size_t selection                        = menu_navigation_get_selection();
 
-   core_display_name[0] = '\0';
-
-   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
-
-   retro_assert(playlist != NULL);
-
-   core_info_get_name(path, core_display_name, sizeof(core_display_name));
-
-   idx = rdb_entry_start_game_selection_ptr;
-
-   playlist_update(playlist, idx,
-         NULL, NULL,
-         path, core_display_name,
-         NULL,
-         NULL);
-
-   playlist_write_file(playlist);
+   generic_playlist_write(rdb_entry_start_game_selection_ptr, path);
 
    menu_entries_pop_stack(&selection, 0, 1);
    menu_navigation_set_selection(selection);
@@ -2348,27 +2353,9 @@ static int action_ok_core_deferred_set(const char *path,
 static int action_ok_core_deferred_set_current_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char core_display_name[PATH_MAX_LENGTH];
-   playlist_t               *playlist      = NULL;
    size_t selection                        = menu_navigation_get_selection();
 
-   core_display_name[0] = '\0';
-
-   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
-
-   retro_assert(playlist != NULL);
-
-   core_info_get_name(path, core_display_name, sizeof(core_display_name));
-
-   idx = rdb_entry_start_game_selection_ptr;
-
-   playlist_update(playlist, idx,
-         NULL, NULL,
-         path, core_display_name,
-         NULL,
-         NULL);
-
-   playlist_write_file(playlist);
+   generic_playlist_write(rdb_entry_start_game_selection_ptr, path);
 
    menu_entries_pop_stack(&selection, 0, 1);
    menu_navigation_set_selection(selection);
