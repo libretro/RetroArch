@@ -58,13 +58,14 @@ check_lib() # $1 = language  $2 = HAVE_$2  $3 = lib  $4 = function in lib  $5 = 
 	printf %s\\n "$ECHOBUF ... $answer"
 	rm -f -- "$TEMP_CODE" "$TEMP_EXE"
 
-	[ "$answer" = 'no' ] && {
+	if [ "$answer" = 'no' ]; then
 		[ "$7" ] && die 1 "$7"
 		[ "$tmpval" = 'yes' ] && {
 			die 1 "Forced to build with library $3, but cannot locate. Exiting ..."
 		}
-
-	}
+	else
+		PKG_CONF_USED="$PKG_CONF_USED $2"
+	fi
 
 	return 0
 }
@@ -219,8 +220,8 @@ create_config_make()
 				*$1*)
 					FLAGS="$(eval "printf %s \"\$$1_CFLAGS\"")"
 					LIBS="$(eval "printf %s \"\$$1_LIBS\"")"
-					printf %s\\n "$1_CFLAGS = ${FLAGS%"${FLAGS##*[! ]}"}" \
-						"$1_LIBS = ${LIBS%"${LIBS##*[! ]}"}"
+					[ "${FLAGS}" ] && printf %s\\n "$1_CFLAGS = ${FLAGS%"${FLAGS##*[! ]}"}"
+					[ "${LIBS}" ] && printf %s\\n "$1_LIBS = ${LIBS%"${LIBS##*[! ]}"}"
 				;;
 			esac
 			shift

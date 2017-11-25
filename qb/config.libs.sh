@@ -123,7 +123,6 @@ if [ "$HAVE_EGL" != "no" ] && [ "$OS" != 'Win32' ]; then
       HAVE_EGL=auto; check_lib '' EGL "-l${VC_PREFIX}EGL $EXTRA_GL_LIBS"
       if [ "$HAVE_EGL" = "yes" ]; then
          EGL_LIBS="-l${VC_PREFIX}EGL $EXTRA_GL_LIBS"
-         PKG_CONF_USED="$PKG_CONF_USED EGL"
       fi
    else
       EGL_LIBS="$EGL_LIBS $EXTRA_GL_LIBS"
@@ -316,9 +315,6 @@ if [ "$HAVE_OPENGL" != 'no' ] && [ "$HAVE_OPENGLES" != 'yes' ]; then
          [ "$HAVE_CG" = 'yes' ] && CG_LIBS='-lCg -lCgGL'
       fi
 
-      # fix undefined variables
-      PKG_CONF_USED="$PKG_CONF_USED CG"
-
       check_pkgconf OSMESA osmesa
    else
       die : 'Notice: Ignoring Cg. Desktop OpenGL is not enabled.'
@@ -410,7 +406,6 @@ if [ "$HAVE_X11" = "no" ] && [ "$OS" != 'Darwin' ]; then
    HAVE_X11=auto; check_lib '' X11 -lX11
    if [ "$HAVE_X11" = "yes" ]; then
       X11_LIBS="-lX11"
-      PKG_CONF_USED="$PKG_CONF_USED X11"
    fi
 fi
 
@@ -427,7 +422,6 @@ if [ "$HAVE_X11" != "no" ]; then
       HAVE_XEXT=auto; check_lib '' XEXT -lXext
       if [ "$HAVE_XEXT" = "yes" ]; then
          XEXT_LIBS="-lXext"
-         PKG_CONF_USED="$PKG_CONF_USED XEXT"
       fi
    fi
 
@@ -435,7 +429,6 @@ if [ "$HAVE_X11" != "no" ]; then
       HAVE_XF86VM=auto; check_lib '' XF86VM -lXxf86vm
       if [ "$HAVE_XF86VM" = "yes" ]; then
          XF86VM_LIBS="-lXxf86vm"
-         PKG_CONF_USED="$PKG_CONF_USED XF86VM"
       fi
    fi
 else
@@ -457,7 +450,6 @@ if [ "$HAVE_UDEV" != "no" ]; then
       HAVE_UDEV=auto; check_lib '' UDEV "-ludev"
       if [ "$HAVE_UDEV" = "yes" ]; then
          UDEV_LIBS='-ludev'
-         PKG_CONF_USED="$PKG_CONF_USED UDEV"
       fi
    fi
 fi
