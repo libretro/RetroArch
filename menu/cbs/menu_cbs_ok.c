@@ -1454,8 +1454,10 @@ static void generic_playlist_update_write(
 
    if (plist)
       playlist          = plist;
+#ifdef HAVE_MENU
    else
       menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
+#endif
 
    retro_assert(playlist != NULL);
 
