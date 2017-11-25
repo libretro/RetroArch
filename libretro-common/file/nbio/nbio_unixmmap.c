@@ -96,7 +96,10 @@ void nbio_resize(struct nbio_t* handle, size_t len)
 
 void* nbio_get_ptr(struct nbio_t* handle, size_t* len)
 {
-   if (len) *len = handle->len;
+   if (!handle)
+      return NULL;
+   if (len)
+      *len = handle->len;
    return handle->ptr;
 }
 
@@ -107,6 +110,8 @@ void nbio_cancel(struct nbio_t* handle)
 
 void nbio_free(struct nbio_t* handle)
 {
+   if (!handle)
+      return;
    close(handle->fd);
    munmap(handle->ptr, handle->len);
    free(handle);

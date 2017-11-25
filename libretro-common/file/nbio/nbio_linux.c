@@ -81,15 +81,16 @@ struct nbio_t* nbio_open(const char * filename, unsigned mode)
 
 static void nbio_begin_op(struct nbio_t* handle, uint16_t op)
 {
-   struct iocb * cbp = &handle->cb;
+   struct iocb * cbp         = &handle->cb;
 
    memset(&handle->cb, 0, sizeof(handle->cb));
-   handle->cb.aio_fildes = handle->fd;
+
+   handle->cb.aio_fildes     = handle->fd;
    handle->cb.aio_lio_opcode = op;
 
-   handle->cb.aio_buf = (uint64_t)(uintptr_t)handle->ptr;
-   handle->cb.aio_offset = 0;
-   handle->cb.aio_nbytes = handle->len;
+   handle->cb.aio_buf        = (uint64_t)(uintptr_t)handle->ptr;
+   handle->cb.aio_offset     = 0;
+   handle->cb.aio_nbytes     = handle->len;
 
    if (io_submit(handle->ctx, 1, &cbp) != 1)
    {
@@ -123,6 +124,9 @@ bool nbio_iterate(struct nbio_t* handle)
 
 void nbio_resize(struct nbio_t* handle, size_t len)
 {
+   if (!handle)
+      return;
+
    if (len < handle->len)
    {
       /* this works perfectly fine if this check is removed, but it 
@@ -131,6 +135,7 @@ void nbio_resize(struct nbio_t* handle, size_t len)
       puts("ERROR - attempted file shrink operation, not implemented");
       abort();
    }
+
    if (ftruncate(handle->fd, len) != 0)
    {
       puts("ERROR - couldn't resize file (ftruncate)");
