@@ -1568,16 +1568,16 @@ static int action_ok_playlist_entry_collection(const char *path,
             new_core_path);
    }
    else
-   {
       strlcpy(new_core_path, core_path, sizeof(new_core_path));
-   }
 
    playlist_info.data = playlist;
    playlist_info.idx  = (unsigned)selection_ptr;
 
    if (!menu_content_playlist_load(&playlist_info))
    {
-      runloop_msg_queue_push("File could not be loaded from playlist.\n", 1, 100, true);
+      runloop_msg_queue_push(
+            "File could not be loaded from playlist.\n",
+            1, 100, true);
       return menu_cbs_exit();
    }
 
