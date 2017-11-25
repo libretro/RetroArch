@@ -822,6 +822,7 @@ FILE
 #include "../list_special.c"
 #include "../libretro-common/string/stdstring.c"
 #include "../libretro-common/file/nbio/nbio_stdio.c"
+#include "../libretro-common/file/nbio/nbio_intf.c"
 
 /*============================================================
 MESSAGE

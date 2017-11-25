@@ -35,7 +35,7 @@ static const char * modes[]={ "rb", "wb", "r+b", "rb", "wb", "r+b" };
 static const wchar_t * modes[]={ L"rb", L"wb", L"r+b", L"rb", L"wb", L"r+b" };
 #endif
 
-struct nbio_t* nbio_open(const char * filename, unsigned mode)
+static struct nbio_t* nbio_stdio_open(const char * filename, unsigned mode)
 {
    void *buf             = NULL;
    struct nbio_t* handle = NULL;
@@ -92,7 +92,7 @@ error:
    return NULL;
 }
 
-void nbio_begin_read(struct nbio_t* handle)
+static void nbio_stdio_begin_read(struct nbio_t* handle)
 {
    if (!handle)
       return;
@@ -109,7 +109,7 @@ void nbio_begin_read(struct nbio_t* handle)
    handle->progress = 0;
 }
 
-void nbio_begin_write(struct nbio_t* handle)
+static void nbio_stdio_begin_write(struct nbio_t* handle)
 {
    if (!handle)
       return;
@@ -125,7 +125,7 @@ void nbio_begin_write(struct nbio_t* handle)
    handle->progress = 0;
 }
 
-bool nbio_iterate(struct nbio_t* handle)
+static bool nbio_stdio_iterate(struct nbio_t* handle)
 {
    size_t amount = 65536;
 
@@ -167,7 +167,7 @@ bool nbio_iterate(struct nbio_t* handle)
    return (handle->op < 0);
 }
 
-void nbio_resize(struct nbio_t* handle, size_t len)
+static void nbio_stdio_resize(struct nbio_t* handle, size_t len)
 {
    if (!handle)
       return;
@@ -189,7 +189,7 @@ void nbio_resize(struct nbio_t* handle, size_t len)
    handle->progress = handle->len;
 }
 
-void* nbio_get_ptr(struct nbio_t* handle, size_t* len)
+static void *nbio_stdio_get_ptr(struct nbio_t* handle, size_t* len)
 {
    if (!handle)
       return NULL;
@@ -200,7 +200,7 @@ void* nbio_get_ptr(struct nbio_t* handle, size_t* len)
    return NULL;
 }
 
-void nbio_cancel(struct nbio_t* handle)
+static void nbio_stdio_cancel(struct nbio_t* handle)
 {
    if (!handle)
       return;
@@ -209,7 +209,7 @@ void nbio_cancel(struct nbio_t* handle)
    handle->progress = handle->len;
 }
 
-void nbio_free(struct nbio_t* handle)
+static void nbio_stdio_free(struct nbio_t* handle)
 {
    if (!handle)
       return;
@@ -225,3 +225,15 @@ void nbio_free(struct nbio_t* handle)
    handle->data = NULL;
    free(handle);
 }
+
+nbio_intf_t nbio_stdio = {
+   nbio_stdio_open,
+   nbio_stdio_begin_read,
+   nbio_stdio_begin_write,
+   nbio_stdio_iterate,
+   nbio_stdio_resize,
+   nbio_stdio_get_ptr,
+   nbio_stdio_cancel,
+   nbio_stdio_free,
+   "nbio_stdio",
+};

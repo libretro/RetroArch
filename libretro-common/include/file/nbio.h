@@ -53,6 +53,28 @@ RETRO_BEGIN_DECLS
 
 struct nbio_t;
 
+typedef struct nbio_intf
+{
+   struct nbio_t* (*open)(const char * filename, unsigned mode);
+
+   void (*begin_read)(struct nbio_t* handle);
+
+   void (*begin_write)(struct nbio_t* handle);
+
+   bool (*iterate)(struct nbio_t* handle);
+
+   void (*resize)(struct nbio_t* handle, size_t len);
+
+   void *(*get_ptr)(struct nbio_t* handle, size_t* len);
+
+   void (*cancel)(struct nbio_t* handle);
+
+   void (*free)(struct nbio_t* handle);
+
+   /* Human readable string. */
+   const char *ident;
+} nbio_intf_t;
+
 /*
  * Creates an nbio structure for performing the given operation on the given file.
  */
