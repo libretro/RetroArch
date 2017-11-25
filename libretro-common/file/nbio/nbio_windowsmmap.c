@@ -2,8 +2,18 @@
 #include <stdlib.h>
 
 #include <file/nbio.h>
+#include <encodings/utf.h>
 
 #include <windows.h>
+
+/* Assume W-functions do not work below VC2005 and Xbox platforms */
+#if defined(_MSC_VER) && _MSC_VER < 1400 || defined(_XBOX)
+
+#ifndef LEGACY_WIN32
+#define LEGACY_WIN32
+#endif
+
+#endif
 
 struct nbio_t
 {
@@ -19,11 +29,19 @@ struct nbio_t* nbio_open(const char * filename, unsigned mode)
    static const DWORD dispositions[] = { OPEN_EXISTING, CREATE_ALWAYS, OPEN_ALWAYS, OPEN_EXISTING, CREATE_ALWAYS };
    HANDLE mem;
    LARGE_INTEGER len;
-   struct nbio_t* handle = NULL;
-   void* ptr             = NULL;
-   bool is_write         = (mode == NBIO_WRITE || mode == NBIO_UPDATE || mode == BIO_WRITE);
-   DWORD access          = (is_write ? GENERIC_READ|GENERIC_WRITE : GENERIC_READ);
-   HANDLE file           = CreateFile(filename, access, FILE_SHARE_ALL, NULL, dispositions[mode], FILE_ATTRIBUTE_NORMAL, NULL);
+   struct nbio_t* handle  = NULL;
+   void* ptr              = NULL;
+   bool is_write          = (mode == NBIO_WRITE || mode == NBIO_UPDATE || mode == BIO_WRITE);
+   DWORD access           = (is_write ? GENERIC_READ|GENERIC_WRITE : GENERIC_READ);
+#if !defined(_WIN32) || defined(LEGACY_WIN32)
+   HANDLE file            = CreateFile(filename, access, FILE_SHARE_ALL, NULL, dispositions[mode], FILE_ATTRIBUTE_NORMAL, NULL);
+#else
+   wchar_t *filename_wide = utf8_to_utf16_string_alloc(filename);
+   HANDLE file            = CreateFileW(filename_wide, access, FILE_SHARE_ALL, NULL, dispositions[mode], FILE_ATTRIBUTE_NORMAL, NULL);
+
+   if (filename_wide)
+      free(filename_wide);
+#endif
    
    if (file == INVALID_HANDLE_VALUE)
       return NULL;
