@@ -25,6 +25,10 @@
 #include <string.h>
 #include <errno.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #if defined(_WIN32)
 #  ifdef _MSC_VER
 #    define setmode _setmode
