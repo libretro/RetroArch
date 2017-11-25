@@ -161,8 +161,7 @@ static void task_screenshot_handler(retro_task_t *task)
 #ifdef HAVE_IMAGEVIEWER
    if (  ret                        && 
          !state->silence            &&
-         state->history_list_enable &&
-         g_defaults.image_history
+         state->history_list_enable
          )
       command_playlist_push_write(
             g_defaults.image_history,
