@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#if defined(HAVE_MMAP) && defined(_WIN32)
+#if defined(_WIN32) && !defined(_XBOX)
 
 #include <stdio.h>
 #include <stdlib.h>

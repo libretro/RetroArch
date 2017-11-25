@@ -38,7 +38,7 @@ extern nbio_intf_t nbio_stdio;
 static nbio_intf_t *internal_nbio = &nbio_linux;
 #elif defined(HAVE_MMAP) && defined(BSD) && !defined(__MACH__)
 static nbio_intf_t *internal_nbio = &nbio_mmap_unix;
-#elif defined(HAVE_MMAP) && defined(_WIN32)
+#elif defined(_WIN32) && !defined(_XBOX)
 static nbio_intf_t *internal_nbio = &nbio_mmap_win32;
 #else
 static nbio_intf_t *internal_nbio = &nbio_stdio;
