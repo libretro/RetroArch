@@ -381,13 +381,12 @@ void playlist_write_file(playlist_t *playlist)
 {
    size_t i;
    RFILE *file = NULL;
+   FILE  *fp   = NULL;
 
    if (!playlist || !playlist->modified)
       return;
 
    file = filestream_open(playlist->conf_path, RFILE_MODE_WRITE, -1);
-
-   RARCH_LOG("Trying to write to playlist file: %s\n", playlist->conf_path);
 
    if (!file)
    {
@@ -395,8 +394,10 @@ void playlist_write_file(playlist_t *playlist)
       return;
    }
 
+   fp = filestream_get_fp(file);
+
    for (i = 0; i < playlist->size; i++)
-      fprintf(filestream_get_fp(file), "%s\n%s\n%s\n%s\n%s\n%s\n",
+      fprintf(fp, "%s\n%s\n%s\n%s\n%s\n%s\n",
             playlist->entries[i].path    ? playlist->entries[i].path    : "",
             playlist->entries[i].label   ? playlist->entries[i].label   : "",
             playlist->entries[i].core_path,
@@ -406,6 +407,9 @@ void playlist_write_file(playlist_t *playlist)
             );
 
    playlist->modified = false;
+
+   RARCH_LOG("Written to playlist file: %s\n", playlist->conf_path);
+
    filestream_close(file);
 }
 
