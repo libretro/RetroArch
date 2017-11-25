@@ -17,18 +17,16 @@ struct nbio_t
 struct nbio_t* nbio_open(const char * filename, unsigned mode)
 {
    static const DWORD dispositions[] = { OPEN_EXISTING, CREATE_ALWAYS, OPEN_ALWAYS, OPEN_EXISTING, CREATE_ALWAYS };
-   
-   bool is_write = (mode == NBIO_WRITE || mode == NBIO_UPDATE || mode == BIO_WRITE);
-   DWORD access = (is_write ? GENERIC_READ|GENERIC_WRITE : GENERIC_READ);
-   HANDLE file = CreateFile(filename, access, FILE_SHARE_ALL, NULL, dispositions[mode], FILE_ATTRIBUTE_NORMAL, NULL);
-   
    HANDLE mem;
-   
-   void* ptr;
    LARGE_INTEGER len;
-   struct nbio_t* handle;
+   struct nbio_t* handle = NULL;
+   void* ptr             = NULL;
+   bool is_write         = (mode == NBIO_WRITE || mode == NBIO_UPDATE || mode == BIO_WRITE);
+   DWORD access          = (is_write ? GENERIC_READ|GENERIC_WRITE : GENERIC_READ);
+   HANDLE file           = CreateFile(filename, access, FILE_SHARE_ALL, NULL, dispositions[mode], FILE_ATTRIBUTE_NORMAL, NULL);
    
-   if (file == INVALID_HANDLE_VALUE) return NULL;
+   if (file == INVALID_HANDLE_VALUE)
+      return NULL;
    
    GetFileSizeEx(file, &len);
    
@@ -36,11 +34,13 @@ struct nbio_t* nbio_open(const char * filename, unsigned mode)
    ptr = MapViewOfFile(mem, is_write ? (FILE_MAP_READ|FILE_MAP_WRITE) : FILE_MAP_READ, 0, 0, len.QuadPart);
    CloseHandle(mem);
    
-   handle = malloc(sizeof(struct nbio_t));
-   handle->file = file;
+   handle           = malloc(sizeof(struct nbio_t));
+
+   handle->file     = file;
    handle->is_write = is_write;
-   handle->len = len.QuadPart;
-   handle->ptr = ptr;
+   handle->len      = len.QuadPart;
+   handle->ptr      = ptr;
+
    return handle;
 }
 
@@ -66,8 +66,10 @@ void nbio_resize(struct nbio_t* handle, size_t len)
    
    if (len < handle->len)
    {
-      /* this works perfectly fine if this check is removed, but it won't work on other nbio implementations */
-      /* therefore, it's blocked so nobody accidentally relies on it */
+      /* this works perfectly fine if this check is removed, 
+       * but it won't work on other nbio implementations */
+      /* therefore, it's blocked so nobody accidentally 
+       * relies on it. */
       puts("ERROR - attempted file shrink operation, not implemented");
       abort();
    }
@@ -87,7 +89,7 @@ void nbio_resize(struct nbio_t* handle, size_t len)
    handle->ptr = MapViewOfFile(mem, handle->is_write ? (FILE_MAP_READ|FILE_MAP_WRITE) : FILE_MAP_READ, 0, 0, len);
    CloseHandle(mem);
    
-   if (handle->ptr == NULL)
+   if (!handle->ptr)
    {
       puts("ERROR - couldn't resize file (MapViewOfFile)");
       abort();
@@ -96,7 +98,10 @@ void nbio_resize(struct nbio_t* handle, size_t len)
 
 void* nbio_get_ptr(struct nbio_t* handle, size_t* len)
 {
-   if (len) *len = handle->len;
+   if (!handle)
+      return NULL;
+   if (len)
+      *len = handle->len;
    return handle->ptr;
 }
 
@@ -107,6 +112,8 @@ void nbio_cancel(struct nbio_t* handle)
 
 void nbio_free(struct nbio_t* handle)
 {
+   if (!handle)
+      return;
    CloseHandle(handle->file);
    UnmapViewOfFile(handle->ptr);
    free(handle);
