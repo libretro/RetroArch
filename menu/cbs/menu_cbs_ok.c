@@ -3571,6 +3571,7 @@ static int action_ok_start_core(const char *path,
    content_info.args                   = NULL;
    content_info.environ_get            = NULL;
 
+   path_clear(RARCH_PATH_BASENAME);
    if (!task_push_start_current_core(&content_info))
       return -1;
 
