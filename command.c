@@ -1805,7 +1805,6 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_LOAD_CORE_PERSIST:
          {
 #ifdef HAVE_MENU
-            path_clear_all();
             core_info_ctx_find_t info_find;
             rarch_system_info_t *system_info = runloop_get_system_info();
             struct retro_system_info *system = &system_info->info;
