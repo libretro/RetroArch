@@ -2501,9 +2501,9 @@ static void input_config_get_bind_string_joykey(
    {
       if (bind->joykey_label &&
             !string_is_empty(bind->joykey_label) && label_show)
-         snprintf(buf, size, "%s%s (btn) ", prefix, bind->joykey_label);
+         snprintf(buf, size, "%s%s (btn)", prefix, bind->joykey_label);
       else
-         snprintf(buf, size, "%s%u (%s) ", prefix, (unsigned)bind->joykey,
+         snprintf(buf, size, "%s%u (%s)", prefix, (unsigned)bind->joykey,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
    }
 }
@@ -2531,7 +2531,7 @@ static void input_config_get_bind_string_joyaxis(char *buf, const char *prefix,
          dir = '+';
          axis = AXIS_POS_GET(bind->joyaxis);
       }
-      snprintf(buf, size, "%s%c%u (%s) ", prefix, dir, axis,
+      snprintf(buf, size, "%s%c%u (%s)", prefix, dir, axis,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
    }
 }
@@ -2539,6 +2539,7 @@ static void input_config_get_bind_string_joyaxis(char *buf, const char *prefix,
 void input_config_get_bind_string(char *buf, const struct retro_keybind *bind,
       const struct retro_keybind *auto_bind, size_t size)
 {
+	int delim = 0;
 #ifndef RARCH_CONSOLE
    char key[64];
    char keybuf[64];
@@ -2556,16 +2557,67 @@ void input_config_get_bind_string(char *buf, const struct retro_keybind *bind,
    else if (auto_bind && auto_bind->joyaxis != AXIS_NONE)
       input_config_get_bind_string_joyaxis(buf, "Auto: ", auto_bind, size);
 
+   if ( *buf ) {
+	   delim = 1;
+   }
+
 #ifndef RARCH_CONSOLE
    input_keymaps_translate_rk_to_str(bind->key, key, sizeof(key));
    if (string_is_equal(key, file_path_str(FILE_PATH_NUL)))
       *key = '\0';
    /*empty?*/
    if ( *key != '\0' ) {
+	 if ( delim ) {
+		 strlcat(buf, ", ", size);
+	 }
      snprintf(keybuf, sizeof(keybuf), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_KEY), key);
      strlcat(buf, keybuf, size);
+     delim = 1;
    }
 #endif
+
+	if ( bind->mbutton != NO_BTN )
+	{
+		int tag = 0;
+		switch ( bind->mbutton )
+		{
+		case RETRO_DEVICE_ID_MOUSE_LEFT:
+			tag = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT;
+			break;
+		case RETRO_DEVICE_ID_MOUSE_RIGHT:
+			tag = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_RIGHT;
+			break;
+		case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+			tag = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_MIDDLE;
+			break;
+		case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
+			tag = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_BUTTON4;
+			break;
+		case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
+			tag = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_BUTTON5;
+			break;
+		case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+			tag = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_UP;
+			break;
+		case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+			tag = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_DOWN;
+			break;
+		case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
+			tag = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_UP;
+			break;
+		case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
+			tag = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_DOWN;
+			break;
+		} /* switch ( bind->mbutton ) */
+
+		if ( tag != 0 ) {
+			if ( delim ) {
+				strlcat(buf, ", ", size);
+			}
+			strlcat( buf, msg_hash_to_str(tag), size );
+			delim = 1;
+		}
+	}
 
    /*completely empty?*/
    if ( *buf == '\0' ) {
