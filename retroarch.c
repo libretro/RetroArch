@@ -219,6 +219,7 @@ static bool runloop_paused                                 = false;
 static bool runloop_idle                                   = false;
 static bool runloop_exec                                   = false;
 static bool runloop_slowmotion                             = false;
+static bool runloop_fastmotion                             = false;
 static bool runloop_shutdown_initiated                     = false;
 static bool runloop_core_shutdown_initiated                = false;
 static bool runloop_perfcnt_enable                         = false;
@@ -1380,10 +1381,10 @@ static bool rarch_game_specific_options(char **output)
 
    if (!retroarch_validate_game_options(game_path,
             game_path_size, false))
-      goto error; 
+      goto error;
 
    if (!config_file_exists(game_path))
-      goto error; 
+      goto error;
 
    RARCH_LOG("%s %s\n",
          msg_hash_to_str(MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT),
@@ -2309,40 +2310,40 @@ bool runloop_msg_queue_pull(const char **ret)
 
 #ifdef HAVE_MENU
 static bool input_driver_toggle_button_combo(
-      unsigned mode, uint64_t input)
+      unsigned mode, retro_bits_t* p_input)
 {
    switch (mode)
    {
       case INPUT_TOGGLE_DOWN_Y_L_R:
-         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_DOWN))
+         if (!RARCH_INPUT_STATE_BIT_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
             return false;
-         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_Y))
+         if (!RARCH_INPUT_STATE_BIT_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_Y))
             return false;
-         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_L))
+         if (!RARCH_INPUT_STATE_BIT_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L))
             return false;
-         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_R))
+         if (!RARCH_INPUT_STATE_BIT_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R))
             return false;
          break;
       case INPUT_TOGGLE_L3_R3:
-         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_L3))
+         if (!RARCH_INPUT_STATE_BIT_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L3))
             return false;
-         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_R3))
+         if (!RARCH_INPUT_STATE_BIT_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R3))
             return false;
          break;
       case INPUT_TOGGLE_L1_R1_START_SELECT:
-         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_START))
+         if (!RARCH_INPUT_STATE_BIT_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_START))
             return false;
-         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_SELECT))
+         if (!RARCH_INPUT_STATE_BIT_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
             return false;
-         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_L))
+         if (!RARCH_INPUT_STATE_BIT_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L))
             return false;
-         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_R))
+         if (!RARCH_INPUT_STATE_BIT_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R))
             return false;
          break;
       case INPUT_TOGGLE_START_SELECT:
-         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_START))
+         if (!RARCH_INPUT_STATE_BIT_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_START))
             return false;
-         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_SELECT))
+         if (!RARCH_INPUT_STATE_BIT_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
             return false;
          break;
       default:
@@ -2359,7 +2360,7 @@ static enum runloop_state runloop_check_state(
       bool input_nonblock_state,
       unsigned *sleep_ms)
 {
-   static uint64_t last_input       = 0;
+   static retro_bits_t last_input   = {{0}};
    static bool old_fs_toggle_pressed= false;
    static bool old_focus            = true;
    bool is_focused                  = false;
@@ -2371,13 +2372,17 @@ static enum runloop_state runloop_check_state(
 #ifdef HAVE_MENU
    bool menu_driver_binding_state   = menu_driver_is_binding_state();
    bool menu_is_alive               = menu_driver_is_alive();
-   uint64_t current_input           =
-      menu_is_alive && !(settings->bools.menu_unified_controls && !menu_input_dialog_get_display_kb())?
-      input_menu_keys_pressed(settings, last_input) :
-      input_keys_pressed(settings, last_input);
+
+   retro_bits_t current_input;
+
+   if ( menu_is_alive && !(settings->bools.menu_unified_controls && !menu_input_dialog_get_display_kb()) )
+	   input_menu_keys_pressed(settings, &current_input);
+   else
+	   input_keys_pressed(settings, &current_input);
+
 #else
-   uint64_t current_input           =
-      input_keys_pressed(settings, last_input);
+   retro_bits_t current_input;
+   input_keys_pressed(settings, &current_input);
 #endif
    last_input                       = current_input;
 
@@ -2385,20 +2390,20 @@ static enum runloop_state runloop_check_state(
    if (
          ((settings->uints.input_menu_toggle_gamepad_combo != INPUT_TOGGLE_NONE) &&
           input_driver_toggle_button_combo(
-             settings->uints.input_menu_toggle_gamepad_combo, last_input)))
+             settings->uints.input_menu_toggle_gamepad_combo, &last_input)))
    {
-      BIT64_SET(current_input, RARCH_MENU_TOGGLE);
+      RARCH_INPUT_STATE_BIT_SET(current_input, RARCH_MENU_TOGGLE);
    }
 #endif
 
    if (input_driver_flushing_input)
    {
       input_driver_flushing_input = false;
-      if (current_input)
+      if (RARCH_INPUT_STATE_ANY_SET(current_input))
       {
-         current_input = 0;
+         RARCH_INPUT_STATE_CLEAR( current_input );
          if (runloop_paused)
-            BIT64_SET(current_input, RARCH_PAUSE_TOGGLE);
+            RARCH_INPUT_STATE_BIT_SET(current_input, RARCH_PAUSE_TOGGLE);
          input_driver_flushing_input = true;
       }
    }
@@ -2407,7 +2412,7 @@ static enum runloop_state runloop_check_state(
 
 #ifdef HAVE_MENU
    if (menu_driver_binding_state)
-      current_input = 0;
+      RARCH_INPUT_STATE_CLEAR( current_input );
 #endif
 
 #ifdef HAVE_OVERLAY
@@ -2528,15 +2533,21 @@ static enum runloop_state runloop_check_state(
 #ifdef HAVE_MENU
    if (menu_is_alive)
    {
-      static uint64_t old_input = 0;
+      static retro_bits_t old_input = {{0}};
       menu_ctx_iterate_t iter;
 
       retro_ctx.poll_cb();
 
       {
-         uint64_t trigger_input    = current_input & ~old_input;
-         enum menu_action action   = (enum menu_action)menu_event(current_input, trigger_input);
-         bool focused              = pause_nonactive ? is_focused : true;
+         retro_bits_t trigger_input;
+         enum menu_action action;
+         bool focused;
+
+         trigger_input = current_input;
+         RARCH_INPUT_STATE_CLEAR_BITS( trigger_input, old_input );
+
+         action   = (enum menu_action)menu_event(&current_input, &trigger_input);
+         focused              = pause_nonactive ? is_focused : true;
 
          focused                   = focused && !ui_companion_is_on_foreground();
 
@@ -2765,19 +2776,33 @@ static enum runloop_state runloop_check_state(
 
       if (new_button_state && !old_button_state)
       {
-         if (input_nonblock_state)
+         if (input_nonblock_state) {
             input_driver_unset_nonblock_state();
-         else
+            runloop_fastmotion = false;
+         }
+         else {
             input_driver_set_nonblock_state();
+            runloop_fastmotion = true;
+         }
          driver_set_nonblock_state();
       }
       else if (old_hold_button_state != new_hold_button_state)
       {
-         if (new_hold_button_state)
+         if (new_hold_button_state) {
             input_driver_set_nonblock_state();
-         else
+            runloop_fastmotion = true;
+         }
+         else {
             input_driver_unset_nonblock_state();
+            runloop_fastmotion = false;
+         }
          driver_set_nonblock_state();
+      }
+
+      // Display the fast forward state to the user, if needed.
+      if (runloop_fastmotion) {
+         runloop_msg_queue_push(
+               msg_hash_to_str(MSG_FAST_FORWARD), 1, 1, false);
       }
 
       old_button_state                  = new_button_state;
@@ -2883,10 +2908,10 @@ static enum runloop_state runloop_check_state(
 
          if (state_manager_frame_is_reversed())
             runloop_msg_queue_push(
-                  msg_hash_to_str(MSG_SLOW_MOTION_REWIND), 2, 30, true);
+                  msg_hash_to_str(MSG_SLOW_MOTION_REWIND), 1, 1, false);
          else
             runloop_msg_queue_push(
-                  msg_hash_to_str(MSG_SLOW_MOTION), 2, 30, true);
+                  msg_hash_to_str(MSG_SLOW_MOTION), 1, 1, false);
       }
    }
 
@@ -3130,7 +3155,6 @@ int runloop_iterate(unsigned *sleep_ms)
    if (settings->floats.fastforward_ratio)
       end:
    {
-
       retro_time_t to_sleep_ms  = (
             (frame_limit_last_time + frame_limit_minimum_time)
             - cpu_features_get_time_usec()) / 1000;

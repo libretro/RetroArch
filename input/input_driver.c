@@ -669,7 +669,8 @@ int16_t input_state(unsigned port, unsigned device,
 
 #ifdef HAVE_KEYMAPPER
       if (input_driver_mapper)
-         input_mapper_state(&res, port, device, idx, id);
+         input_mapper_state(input_driver_mapper,
+               &res, port, device, idx, id);
 #endif
 
       /* Don't allow turbo for D-pad. */
@@ -778,17 +779,12 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
  * Grab an input sample for this frame. We exclude
  * keyboard input here.
  *
- * TODO: In case RARCH_BIND_LIST_END starts exceeding 64,
- * and you need a bitmask of more than 64 entries, reimplement
- * it to use something like rarch_bits_t.
- *
  * Returns: Input sample containing a mask of all pressed keys.
  */
-uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
+void input_menu_keys_pressed(void *data, retro_bits_t* p_new_state)
 {
    unsigned i, port;
    rarch_joypad_info_t joypad_info;
-   uint64_t             ret                     = 0;
    const struct retro_keybind *binds[MAX_USERS] = {NULL};
    settings_t     *settings                     = (settings_t*)data;
    const struct retro_keybind *binds_norm       = NULL;
@@ -797,6 +793,8 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
    uint8_t port_max                             = 
             settings->bools.input_all_users_control_menu 
             ? max_users : 1;
+
+   RARCH_INPUT_STATE_CLEAR_PTR( p_new_state );
 
    input_driver_block_libretro_input            = false;
    input_driver_block_hotkey                    = false;
@@ -898,7 +896,7 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
 
             if (pressed)
             {
-               BIT64_SET(ret, i);
+               RARCH_INPUT_STATE_BIT_SET_PTR(p_new_state, i);
                continue;
             }
          }
@@ -908,7 +906,7 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
       {
          if (current_input->meta_key_pressed(current_input_data, i))
          {
-            BIT64_SET(ret, i);
+            RARCH_INPUT_STATE_BIT_SET_PTR(p_new_state, i);
             continue;
          }
       }
@@ -916,7 +914,7 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
 #ifdef HAVE_OVERLAY
       if (overlay_ptr && input_overlay_key_pressed(overlay_ptr, i))
       {
-         BIT64_SET(ret, i);
+         RARCH_INPUT_STATE_BIT_SET_PTR(p_new_state, i);
          continue;
       }
 #endif
@@ -931,7 +929,7 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
 
          if (command_get(&handle))
          {
-            BIT64_SET(ret, i);
+            RARCH_INPUT_STATE_BIT_SET_PTR(p_new_state, i);
             continue;
          }
       }
@@ -940,7 +938,7 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
 #ifdef HAVE_NETWORKGAMEPAD
       if (input_driver_remote && input_remote_key_pressed(i, 0))
       {
-         BIT64_SET(ret, i);
+         RARCH_INPUT_STATE_BIT_SET_PTR(p_new_state, i);
          continue;
       }
 #endif
@@ -995,11 +993,9 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
       {
          if (current_input->input_state(current_input_data, joypad_info, binds, 0,
                   RETRO_DEVICE_KEYBOARD, 0, ids[i][0]))
-            BIT64_SET(ret, ids[i][1]);
+            RARCH_INPUT_STATE_BIT_SET_PTR(p_new_state, ids[i][1]);
       }
    }
-
-   return ret;
 }
 #endif
 
@@ -1008,17 +1004,12 @@ uint64_t input_menu_keys_pressed(void *data, uint64_t last_input)
  *
  * Grab an input sample for this frame.
  *
- * TODO: In case RARCH_BIND_LIST_END starts exceeding 64,
- * and you need a bitmask of more than 64 entries, reimplement
- * it to use something like rarch_bits_t.
- *
  * Returns: Input sample containing a mask of all pressed keys.
  */
-uint64_t input_keys_pressed(void *data, uint64_t last_input)
+void input_keys_pressed(void *data, retro_bits_t* p_new_state)
 {
    unsigned i;
    rarch_joypad_info_t joypad_info;
-   uint64_t                      ret            = 0;
    settings_t              *settings            = (settings_t*)data;
    const struct retro_keybind *binds            = input_config_binds[0];
    const struct retro_keybind *binds_auto       = &input_autoconf_binds[0][RARCH_ENABLE_HOTKEY];
@@ -1028,6 +1019,8 @@ uint64_t input_keys_pressed(void *data, uint64_t last_input)
    const struct retro_keybind *focus_normal     = &binds[RARCH_GAME_FOCUS_TOGGLE];
    const struct retro_keybind *enable_hotkey    = &input_config_binds[0][RARCH_ENABLE_HOTKEY];
    bool game_focus_toggle_valid                 = false;
+
+   RARCH_INPUT_STATE_CLEAR_PTR( p_new_state );
 
    joypad_info.joy_idx                          = settings->uints.input_joypad_map[0];
    joypad_info.auto_binds                       = input_autoconf_binds[joypad_info.joy_idx];
@@ -1073,7 +1066,7 @@ uint64_t input_keys_pressed(void *data, uint64_t last_input)
                0, RETRO_DEVICE_JOYPAD, 0, i)
          )
       {
-         BIT64_SET(ret, i);
+         RARCH_INPUT_STATE_BIT_SET_PTR(p_new_state, i);
          continue;
       }
 
@@ -1081,7 +1074,7 @@ uint64_t input_keys_pressed(void *data, uint64_t last_input)
             current_input->meta_key_pressed(current_input_data, i)
             )
       {
-         BIT64_SET(ret, i);
+         RARCH_INPUT_STATE_BIT_SET_PTR(p_new_state, i);
          continue;
       }
 
@@ -1089,7 +1082,7 @@ uint64_t input_keys_pressed(void *data, uint64_t last_input)
       if (overlay_ptr && 
             input_overlay_key_pressed(overlay_ptr, i))
       {
-         BIT64_SET(ret, i);
+         RARCH_INPUT_STATE_BIT_SET_PTR(p_new_state, i);
          continue;
       }
 #endif
@@ -1104,7 +1097,7 @@ uint64_t input_keys_pressed(void *data, uint64_t last_input)
 
          if (command_get(&handle))
          {
-            BIT64_SET(ret, i);
+            RARCH_INPUT_STATE_BIT_SET_PTR(p_new_state, i);
             continue;
          }
       }
@@ -1114,13 +1107,11 @@ uint64_t input_keys_pressed(void *data, uint64_t last_input)
       if (input_driver_remote && 
             input_remote_key_pressed(i, 0))
       {
-         BIT64_SET(ret, i);
+         RARCH_INPUT_STATE_BIT_SET_PTR(p_new_state, i);
          continue;
       }
 #endif
    }
-
-   return ret;
 }
 
 
@@ -1609,53 +1600,99 @@ int16_t input_joypad_analog(const input_device_driver_t *drv,
       unsigned port, unsigned idx, unsigned ident,
       const struct retro_keybind *binds)
 {
-   uint32_t axis_minus, axis_plus;
-   int16_t  pressed_minus, pressed_plus, res;
-   unsigned ident_minus                   = 0;
-   unsigned ident_plus                    = 0;
-   const struct retro_keybind *bind_minus = NULL;
-   const struct retro_keybind *bind_plus  = NULL;
+	int16_t res;
 
-   input_conv_analog_id_to_bind_id(idx, ident, &ident_minus, &ident_plus);
+	if ( idx == RETRO_DEVICE_INDEX_ANALOG_BUTTON )
+	{
+		/* A RETRO_DEVICE_JOYPAD button? */
+		if ( ident < RARCH_FIRST_CUSTOM_BIND )
+		{
+			uint32_t axis = 0;
+			const struct retro_keybind *bind = NULL;
 
-   bind_minus                             = &binds[ident_minus];
-   bind_plus                              = &binds[ident_plus];
+			bind = &binds[ ident ];
+			if (!bind->valid)
+				return 0;
 
-   if (!bind_minus->valid || !bind_plus->valid)
-      return 0;
+			axis = bind->joyaxis;
+			if ( axis == AXIS_NONE )
+				axis = joypad_info.auto_binds[ ident ].joyaxis;
 
-   axis_minus    = bind_minus->joyaxis;
-   axis_plus     = bind_plus->joyaxis;
+			/* Analog button. */
+			res = abs( drv->axis( joypad_info.joy_idx, axis ) );
 
-   if (axis_minus == AXIS_NONE)
-      axis_minus = joypad_info.auto_binds[ident_minus].joyaxis;
-   if (axis_plus == AXIS_NONE)
-      axis_plus  = joypad_info.auto_binds[ident_plus].joyaxis;
+			/* If the result is zero, it's got a digital button attached to it */
+			if ( res == 0 )
+			{
+				uint64_t key = bind->joykey;
 
-   pressed_minus = abs(drv->axis(joypad_info.joy_idx, axis_minus));
-   pressed_plus  = abs(drv->axis(joypad_info.joy_idx, axis_plus));
-   res           = pressed_plus - pressed_minus;
+				if ( key == NO_BTN )
+					key = joypad_info.auto_binds[ ident ].joykey;
 
-   if (res == 0)
-   {
-      int16_t digital_left  = 0;
-      int16_t digital_right = 0;
-      uint64_t key_minus    = bind_minus->joykey;
-      uint64_t key_plus     = bind_plus->joykey;
+				if ( drv->button(joypad_info.joy_idx, (uint16_t)key))
+					res = 0x7fff;
+			}
+		}
+		else
+		{
+			/* not a suitable button */
+			res = 0;
+		}
+	}
+	else
+	{
+		/* Analog sticks. Either RETRO_DEVICE_INDEX_ANALOG_LEFT
+		 * or RETRO_DEVICE_INDEX_ANALOG_RIGHT */
 
-      if (key_minus == NO_BTN)
-         key_minus = joypad_info.auto_binds[ident_minus].joykey;
-      if (key_plus == NO_BTN)
-         key_plus = joypad_info.auto_binds[ident_plus].joykey;
+		uint32_t axis_minus, axis_plus;
+		int16_t  pressed_minus, pressed_plus;
+		unsigned ident_minus                   = 0;
+		unsigned ident_plus                    = 0;
+		const struct retro_keybind *bind_minus = NULL;
+		const struct retro_keybind *bind_plus  = NULL;
 
-      if (drv->button(joypad_info.joy_idx, (uint16_t)key_minus))
-         digital_left  = -0x7fff;
-      if (drv->button(joypad_info.joy_idx, (uint16_t)key_plus))
-         digital_right = 0x7fff;
-      return digital_right + digital_left;
-   }
+		input_conv_analog_id_to_bind_id(idx, ident, &ident_minus, &ident_plus);
 
-   return res;
+		bind_minus                             = &binds[ident_minus];
+		bind_plus                              = &binds[ident_plus];
+
+		if (!bind_minus->valid || !bind_plus->valid)
+			return 0;
+
+		axis_minus    = bind_minus->joyaxis;
+		axis_plus     = bind_plus->joyaxis;
+
+		if (axis_minus == AXIS_NONE)
+			axis_minus = joypad_info.auto_binds[ident_minus].joyaxis;
+		if (axis_plus == AXIS_NONE)
+			axis_plus  = joypad_info.auto_binds[ident_plus].joyaxis;
+
+		pressed_minus = abs(drv->axis(joypad_info.joy_idx, axis_minus));
+		pressed_plus  = abs(drv->axis(joypad_info.joy_idx, axis_plus));
+		res           = pressed_plus - pressed_minus;
+
+		if (res == 0)
+		{
+			int16_t digital_left  = 0;
+			int16_t digital_right = 0;
+			uint64_t key_minus    = bind_minus->joykey;
+			uint64_t key_plus     = bind_plus->joykey;
+
+			if (key_minus == NO_BTN)
+			key_minus = joypad_info.auto_binds[ident_minus].joykey;
+			if (key_plus == NO_BTN)
+			key_plus = joypad_info.auto_binds[ident_plus].joykey;
+
+			if (drv->button(joypad_info.joy_idx, (uint16_t)key_minus))
+			digital_left  = -0x7fff;
+			if (drv->button(joypad_info.joy_idx, (uint16_t)key_plus))
+			digital_right = 0x7fff;
+
+			return digital_right + digital_left;
+		}
+	}
+
+	return res;
 }
 
 /**
@@ -2474,10 +2511,17 @@ void input_config_get_bind_string(char *buf, const struct retro_keybind *bind,
    input_keymaps_translate_rk_to_str(bind->key, key, sizeof(key));
    if (string_is_equal(key, file_path_str(FILE_PATH_NUL)))
       *key = '\0';
-
-   snprintf(keybuf, sizeof(keybuf), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_KEY), key);
-   strlcat(buf, keybuf, size);
+   /*empty?*/
+   if ( *key != '\0' ) {
+     snprintf(keybuf, sizeof(keybuf), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_KEY), key);
+     strlcat(buf, keybuf, size);
+   }
 #endif
+
+   /*completely empty?*/
+   if ( *buf == '\0' ) {
+	   strlcat(buf, "---", size);
+   }
 }
 
 const char *input_config_get_device_name(unsigned port)

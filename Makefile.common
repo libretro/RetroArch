@@ -184,6 +184,10 @@ OBJ += frontend/frontend.o \
 		 setting_list.o \
        list_special.o \
        $(LIBRETRO_COMM_DIR)/file/nbio/nbio_stdio.o \
+       $(LIBRETRO_COMM_DIR)/file/nbio/nbio_linux.o \
+       $(LIBRETRO_COMM_DIR)/file/nbio/nbio_unixmmap.o \
+       $(LIBRETRO_COMM_DIR)/file/nbio/nbio_windowsmmap.o \
+       $(LIBRETRO_COMM_DIR)/file/nbio/nbio_intf.o \
        $(LIBRETRO_COMM_DIR)/file/file_path.o \
        file_path_special.o \
        file_path_str.o \
@@ -318,7 +322,7 @@ endif
 endif
 
 ifeq ($(HAVE_SSA),1)
-LIBS += -lass
+LIBS += $(SSA_LIBS)
 endif
 
 # LibretroDB
@@ -597,7 +601,7 @@ ifeq ($(HAVE_AL), 1)
    ifeq ($(OSX),1)
       LIBS += -framework OpenAL
    else
-      LIBS += -lopenal
+      LIBS += $(AL_LIBS)
    endif
 endif
 
@@ -808,7 +812,7 @@ ifeq ($(HAVE_THREADS), 1)
           audio/audio_thread_wrapper.o
    DEFINES += -DHAVE_THREADS
    ifeq ($(findstring Haiku,$(OS)),)
-      LIBS += -lpthread
+      LIBS += $(THREADS_LIBS)
    endif
 endif
 
@@ -1062,7 +1066,7 @@ endif
    else
       DEFINES += -DHAVE_GL_SYNC
       OBJ += $(LIBRETRO_COMM_DIR)/glsym/glsym_gl.o
-      GL_LIBS := -lGL
+      GL_LIBS := $(OPENGL_LIBS)
       ifeq ($(OSX), 1)
          GL_LIBS := -framework OpenGL
          OBJ += gfx/drivers_context/cgl_ctx.o
@@ -1476,6 +1480,7 @@ ifeq ($(HAVE_NETWORKING), 1)
       OBJ += cheevos/cheevos.o \
          cheevos/var.o \
          cheevos/cond.o \
+         cheevos/badges.o \
          $(LIBRETRO_COMM_DIR)/utils/md5.o
    endif
 
@@ -1507,7 +1512,7 @@ ifeq ($(HAVE_NETWORKING), 1)
 					 $(DEPS_DIR)/miniupnpc/minixml.o \
 					 $(DEPS_DIR)/miniupnpc/minisoap.o
 		else
-		   LIBS += -lminiupnpc
+		   LIBS += $(MINIUPNPC_LIBS)
       endif
    endif
 endif

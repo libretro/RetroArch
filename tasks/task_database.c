@@ -505,7 +505,7 @@ static int task_database_cue_get_crc(const char *name, uint32_t *crc)
       return 0;
    }
 
-   RARCH_LOG("CUE '%s' primary track: %s\n (%Zu, %Zu)", name, track_path, offset, size);
+   RARCH_LOG("CUE '%s' primary track: %s\n (%lu, %lu)\n", name, track_path, (unsigned long) offset, (unsigned long) size);
 
    RARCH_LOG("%s\n", msg_hash_to_str(MSG_READING_FIRST_DATA_TRACK));
 
@@ -797,6 +797,7 @@ static int database_info_list_iterate_found_match(
       database_info_get_current_element_name(db);
    database_info_t *db_info_entry =
       &db_state->info->list[db_state->entry_index];
+   char *hash;
 
    db_crc[0]                      = '\0';
    db_playlist_path[0]            = '\0';
@@ -826,6 +827,11 @@ static int database_info_list_iterate_found_match(
       fill_pathname_join_delim(entry_path_str,
             entry_path_str, archive_name,
             '#', PATH_MAX_LENGTH * sizeof(char));
+
+   if (core_info_database_match_archive_member(
+         db_state->list->elems[db_state->list_index].data) &&
+       (hash = strchr(entry_path_str, '#')))
+       *hash = '\0';
 
 #if 0
    RARCH_LOG("Found match in database !\n");
@@ -861,6 +867,17 @@ static int database_info_list_iterate_found_match(
    free(db_playlist_path);
    free(db_playlist_base_str);
    free(db_crc);
+
+   /* Move database to start since we are likely to match against it
+      again */
+   if (db_state->list_index != 0)
+   {
+      struct string_list_elem entry = db_state->list->elems[db_state->list_index];
+      memmove(&db_state->list->elems[1],
+              &db_state->list->elems[0],
+              sizeof(entry) * db_state->list_index);
+      db_state->list->elems[0] = entry;
+   }
 
    return 0;
 }
@@ -900,7 +917,10 @@ static int task_database_iterate_crc_lookup(
       query[0] = '\0';
 
       /* don't scan files that can't be in this database */
-      if (!core_info_database_supports_content_path(
+      if (!(path_contains_compressed_file(name) &&
+         core_info_database_match_archive_member(
+         db_state->list->elems[db_state->list_index].data)) &&
+          !core_info_database_supports_content_path(
          db_state->list->elems[db_state->list_index].data, name))
          return database_info_list_iterate_next(db_state);
 

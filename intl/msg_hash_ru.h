@@ -25,11 +25,11 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_GOT_CONNECTION_FROM,
-      "Установленно  соединение с: \"%s\""
+      "Установлено соединение с: \"%s\""
       )
 MSG_HASH(
       MSG_GOT_CONNECTION_FROM_NAME,
-      "Установленно  соединение с: \"%s (%s)\""
+      "Установлено соединение с: \"%s (%s)\""
       )
 MSG_HASH(
       MSG_PUBLIC_ADDRESS,
@@ -41,7 +41,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_NETPLAY_USERS_HAS_FLIPPED,
-      "Netplay users has flipped"
+      "Пользователи Netplay отключились"
       )
 MSG_HASH(
       MSG_SETTING_DISK_IN_TRAY,
@@ -49,7 +49,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_WAITING_FOR_CLIENT,
-      "Ожидание клиента ..."
+      "Ожидание клиента..."
       )
 MSG_HASH(
       MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
@@ -61,7 +61,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_NETPLAY_IMPLEMENTATIONS_DIFFER,
-      "Реализации различаются. Убедитесь, что вы используете точные версии RetroArch и выбранного ядра."
+      "Реализации различаются. Убедитесь, что вы используете одинаковые версии RetroArch и выбранного ядра."
       )
 MSG_HASH(
       MSG_NETPLAY_ENDIAN_DEPENDENT,
@@ -93,7 +93,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_NETPLAY_CANNOT_PLAY_UNPRIVILEGED,
-      "У вас недостаточно прав чтобы играть"
+      "У вас недостаточно прав, чтобы играть"
       )
 MSG_HASH(
       MSG_NETPLAY_CANNOT_PLAY_NO_SLOTS,
@@ -105,7 +105,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_NETPLAY_PEER_PAUSED,
-      "Netplay peer \"%s\" paused"
+      "Пир netplay \"%s\" приостановил игру"
       )
 MSG_HASH(
       MSG_NETPLAY_CHANGED_NICK,
@@ -121,11 +121,11 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
-      "Синхронизируйте CPU и GPU.Это улучшит производительность."
+      "Синхронизируйте CPU и GPU. Это улучшит производительность."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_THREADED,
-      "Повышает производительность за счёт понижения количества кадров в секунду. Использовать только когда другие способы не сработали."
+      "Повышает производительность за счёт понижения количества кадров в секунду. Использовать только тогда, когда другие способы не сработали."
       )
 MSG_HASH(
       MSG_AUDIO_VOLUME,
@@ -157,7 +157,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY,
-      "Sorry, unimplemented: cores that don't demand content cannot participate in netplay."
+      "К сожалению, данная функция не работает: ядра, не запрашивающие контент, не могут участвовать в netplay."
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD,
@@ -189,7 +189,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST_HARDCORE,
-      "Список достижений (Hardcore)"
+      "Список достижений (хардкор)"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
@@ -221,15 +221,15 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
-      "Аудио-устройство"
+      "Аудиоустройство"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
-      "Аудио драйвер"
+      "Аудиодрайвер"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
-      "Аудио плагин DSP"
+      "Аудиоплагин DSP"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
@@ -237,7 +237,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR,
-      "Аудио фильтр"
+      "Аудиофильтр"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_TURBO_DEADZONE_LIST,
@@ -257,7 +257,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
-      "Частота аудиовыхода (KHz)"
+      "Частота аудиовыхода (КГц)"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
@@ -277,7 +277,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
-      "Уровень громкости звука (dB)"
+      "Уровень громкости звука (дБ)"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
@@ -285,15 +285,15 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
-      "WASAPI Float Format"
+      "Формат WASAPI с плавающей точкой"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-      "WASAPI Shared Buffer Length"
+      "Длина общего буфера WASAPI"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
-      "Интервал авто-сохранений"
+      "Интервал автосохранений"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
@@ -301,7 +301,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
-      "Load Remap Files Automatically"
+      "Загружать файлы Remap автоматически"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
@@ -433,11 +433,11 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
-      "Достижения в Hardcore Mode"
+      "Достижения в хардкорном режиме"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ACHIEVEMENTS,
-      "Заблокированные Достижения:"
+      "Заблокированные достижения:"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY,
@@ -449,11 +449,11 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL,
-      "Тестовые Неофициальные Достижения"
+      "Тестовые неофициальные достижения"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
-      "Achievements Verbose Mode"
+      "Режим подробного протоколирования достижений"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ACHIEVEMENTS,
@@ -489,7 +489,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
-      "База Данных контента"
+      "База данных контента"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONTENT_DIR,
@@ -547,7 +547,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
       "Автоматически извлечь загруженный архив")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL,
-      "Создание ботов URL")
+      "URL билдбота ядер")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
       "Обновить ядро")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
@@ -599,17 +599,17 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_ENABLE,
       "Разрешить переопределение DPI")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE,
-      "DPI Переопределение")
+      "Переопределение DPI")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
       "Драйвер")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN,
       "Загрузка макета при выключении ядра")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CHECK_FOR_MISSING_FIRMWARE,
-      "Проверять в отсутствие firmware перед загрузкой")
+      "Проверять отсутствие firmware перед загрузкой")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER,
       "Динамические обои")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY,
-      "Динамические обои")
+      "Каталог с динамическими обоями")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
       "Включить достижения")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR,
@@ -637,7 +637,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_HELP,
       "Помощь")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING,
-      "Устранение проблем с аудио / видео")
+      "Устранение проблем с аудио/видео")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD,
       "Изменение обложки виртуального геймпада")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_HELP_CONTROLS,
@@ -659,47 +659,47 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
       "Образ")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INFORMATION,
-      "информация")
+      "Информация")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
       "Информация")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
-      "Аналого-цифровой тип")
+      "Аналогово-цифровой тип")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
       "Все пользователи управляют меню")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X,
-      "Левый аналог ось - X")
+      "Левый аналоговый стик - ось X")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_MINUS,
-      "Левый аналог ось - X (влево)")
+      "Левый аналоговый стик - ось X (влево)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS,
-      "Левый аналог ось - X+ (вправо)")
+      "Левый аналоговый стик - ось X+ (вправо)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y,
-      "Левый аналог ось - Y")
+      "Левый аналоговый стик - ось Y")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_MINUS,
-      "Левый аналог ось - Y- (вверх)")
+      "Левый аналоговый стик - ось Y- (вверх)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_PLUS,
-      "Левый аналог ось - Y+ (вниз)")
+      "Левый аналоговый стик - ось Y+ (вниз)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X,
-      "Правый аналог ось - X")
+      "Правый аналоговый стик - ось X")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_MINUS,
-      "Правый аналог ось - X- (влево)")
+      "Правый аналоговый стик - ось X- (влево)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_PLUS,
-      "Правый аналог ось - X + (вправо)")
+      "Правый аналоговый стик - ось X + (вправо)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y,
-      "Правый аналог ось - Y")
+      "Правый аналоговый стик - ось Y")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS,
-      "Правый аналог ось - Y- (вверх)")
+      "Правый аналоговый стик - ось Y- (вверх)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS,
-      "Правый аналог ось - Y+ (вниз)")
+      "Правый аналоговый стик - ось Y+ (вниз)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
-      "Авто-конфигурация включена")
+      "Автоматическая настройка включена")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_AXIS_THRESHOLD,
       "Мертвая зона у стиков")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
       "Сменить функции кнопок OK и Отмена")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
-      "Скрепить всё")
+      "Привязать всё")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL,
-      "Скрепить все по умолчанию")
+      "Привязать всё по умолчанию")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
       "Тайм-аут привязки")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND,
@@ -761,9 +761,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
       "Переключать меню геймпадом")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_MINUS,
-      "Cheat index -")
+      "Индекс чита -")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_PLUS,
-      "Cheat index +")
+      "Индекс чита +")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_TOGGLE,
       "Переключить чит")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_EJECT_TOGGLE,
@@ -795,9 +795,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_MOVIE_RECORD_TOGGLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE,
       "Отключения звука")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FLIP,
-      "Netplay отразить пользователей")
+      "Отключить пользователей Netplay")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH,
-      "Переключить режим игры / наблюдателя Netplay")
+      "Переключить режим игры/наблюдателя Netplay")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,
       "Переключение экранной клавиатуры")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
@@ -847,7 +847,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
       "Включить замену привязок")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
-      "Сохранить авто-конфигурацию")
+      "Сохранить автоматическую настройку")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
       "Ввод")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,
@@ -855,15 +855,15 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
       "Включить касание")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
-      "Турбо-режим включить")
+      "Включить турборежим")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
-      "Турбо-период")
+      "Период турборежима")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
-      "Вход пользователя% u Binds")
+      "Привязки ввода пользователя %u")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS,
       "Состояние внутренней памяти")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
-      "Ввод авто-конфига")
+      "Ввод автоматической настройки")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
       "Драйвер геймпада")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES,
@@ -877,7 +877,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_DUTCH,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_ENGLISH,
       "Английский")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_ESPERANTO,
-      "Esperanto")
+      "Эсперанто")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_FRENCH,
       "Французский")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_GERMAN,
@@ -891,9 +891,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_KOREAN,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_POLISH,
       "Польский")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_BRAZIL,
-      "португальский (Бразилия)")
+      "Португальский (Бразилия)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_PORTUGAL,
-      "португальский (Португалия)")
+      "Португальский (Португалия)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_RUSSIAN,
       "Русский")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_SPANISH,
@@ -901,11 +901,11 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_SPANISH,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LANG_VIETNAMESE,
       "Вьетнамский")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
-      "Левый аналог")
+      "Левый аналоговый стик")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH,
       "Ядро")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH,
-      "Информация ядра")
+      "Информация о ядре")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL,
       "Уровень ведения журнала")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LINEAR,
@@ -919,7 +919,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_STATE,
       "Состояние загрузки")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
-      "Разрешить местоположение")
+      "Разрешить определение местоположения")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
       "Местоположение")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
@@ -971,7 +971,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MORE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
       "Поддержка мыши")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MULTIMEDIA_SETTINGS,
-      "Мультимедия")
+      "Мультимедиа")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MUSIC_TAB,
       "Музыка")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
@@ -983,13 +983,13 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NEAREST,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY,
       "Netplay")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
-      "Allow Slave-Mode Clients")
+      "Разрешать клиентов в режиме Slave")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
       "Проверка фреймов Netplay")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-      "Input Latency Frames")
+      "Кадры задержки ввода")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-      "Input Latency Frames Range")
+      "Диапазон кадров задержки ввода")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT,
       "Netplay P2 использует C1")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES,
@@ -1017,13 +1017,13 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_PUBLIC_ANNOUNCE,
       "Публично анонсировать Netplay")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_REQUIRE_SLAVES,
-      "Disallow Non-Slave-Mode Clients")
+      "Запретить клиентов не в режиме Slave")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,
       "Настройки Netplay")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_START_AS_SPECTATOR,
-      "Netplay режим наблюдателя")
+      "Режим наблюдателя Netplay")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_STATELESS_MODE,
-      "Netplay Stateless Mode")
+      "Режим без состояния Netplay")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATE_PASSWORD,
       "Пароль сервера режима Spectate-Only")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE,
@@ -1031,7 +1031,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
       "Порт Netplay TCP / UDP")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
-      "Netplay NAT Traversal")
+      "Пересечение NAT в Netplay")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE,
       "Сетевые команды")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETWORK_CMD_PORT,
@@ -1069,9 +1069,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_ITEMS,
       "Нет элементов.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND,
-      "Сетевыех хостов не найдено.")
+      "Сетевые хосты не найдены.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND,
-      "Сетей не найдено.")
+      "Сети не найдены.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS,
       "Нет счетчиков производительности.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_PLAYLISTS,
@@ -1211,7 +1211,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RECORD_ENABLE,
       "Включить запись")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RECORD_PATH,
-      "Сохранить запись вывода как ...")
+      "Сохранить запись вывода как...")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY,
       "Сохранить записи в выходном каталоге")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_REMAP_FILE,
@@ -1331,9 +1331,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SSH_ENABLE,
       "SSH включён")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_START_CORE,
-      "запустить ядро")
+      "Запустить ядро")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
-      "Запустить удаленный Ретро-геймпад")
+      "Запустить удаленный ретро-геймпад")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
       "Запустить видеопроцессор")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_STATE_SLOT,
@@ -1349,7 +1349,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_BGM_ENABLE,
       "Включен режим BGM")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_DIRECTORY,
-      "Система / BIOS")
+      "Система/BIOS")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
       "Системная информация")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT,
@@ -1371,9 +1371,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
       "Отображать индекс DPI")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
-      "Отображать высоту (mm)")
+      "Отображать высоту (мм)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
-      "Отображать ширину (mm)")
+      "Отображать ширину (мм)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT,
       "Поддержка DirectSound")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WASAPI_SUPPORT,
@@ -1439,7 +1439,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED,
       "Заряжена")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING,
-      "Заряжается ")
+      "Заряжается")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_DISCHARGING,
       "Разряжается")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_NO_SOURCE,
@@ -1501,13 +1501,13 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
       "Обновление эскизов")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS,
-      "Артбоксы")
+      "Бокс-арты")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS,
       "Скриншоты")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS,
       "Экраны заголовков")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
-      "Показать время/дату")
+      "Показать дату/время")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_TITLE_COLOR,
       "Цвет заголовков в меню")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_TRUE,
@@ -1531,7 +1531,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
       "Обновить активы")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
-      "Обновить профили авто-конфигурации")
+      "Обновить профили автоматической настройки")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS,
       "Обновление Cg шейдеров")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
@@ -1559,9 +1559,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
       "Использовать встроенный просмотрщик изображений")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
-      "Использовать встроенный медиа-плеер")
+      "Использовать встроенный медиаплеер")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY,
-      "<Использовать этот катало>")
+      "<Использовать этот каталог>")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE,
       "Разрешить вращение")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
@@ -1571,17 +1571,17 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_AUTO,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
       "Соотношение сторон")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
-      "Вставка черного кадра")
+      "Вставка чёрного кадра")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
       "Обрезка обрезки (перезагрузка)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
       "Отключить компоновку рабочего стола")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
-      "Видео драйвер")
+      "Видеодрайвер")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
-      "Видео фильтр")
+      "Видеофильтр")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR,
-      "Видео фильтр")
+      "Видеофильтр")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_FLICKER,
       "Мерцающий фильтр")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE,
@@ -1599,7 +1599,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
       "Использовать полноэкранный режим")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_GAMMA,
-      "Видео гамма")
+      "Видеогамма")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
       "Использовать GPU Recording")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
@@ -1631,7 +1631,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
       "Видео")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR,
-      "Видео шейдер")
+      "Видеошейдер")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES,
       "Шейдерные проходы")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS,
@@ -1683,7 +1683,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
       "Полноэкранная высота")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
-      "Wi-Fi драйвер")
+      "Драйвер Wi-Fi")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS,
       "Wi-Fi")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
@@ -1704,6 +1704,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_PIXEL,
       "Пиксель")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROACTIVE,
       "RetroActive")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROSYSTEM,
+      "Retrosystem")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_DOTART,
       "Dot-Art")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
@@ -1711,9 +1713,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_APPLE_GREEN,
       "Зеленое яблоко")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK,
-      "Темно")
+      "Тёмный")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK_PURPLE,
-      "Темно фиолетовый")
+      "Тёмно-фиолетовый")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_ELECTRIC_BLUE,
       "Электрический синий")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GOLDEN,
@@ -1721,7 +1723,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GOLDEN,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_LEGACY_RED,
       "Красный")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MIDNIGHT_BLUE,
-      "Темно-синий")
+      "Тёмно-синий")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PLAIN,
       "Обычный")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_UNDERSEA,
@@ -1757,37 +1759,37 @@ MSG_HASH(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
       "Включение или отключение достижений. Для получения дополнительной информации посетите страницу http://retroachievements.org")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
-      "Включение или отключение неофициальных достижений и / или бета-функций в целях тестирования.")
+      "Включение или отключение неофициальных достижений и/или бета-функций в целях тестирования.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
-      "Включить или отключить сохранения, читы, перемотка назад, перемотка вперед, пауза и замедленное воспроизведение для всех игр.")
+      "Включить или отключить сохранения, читы, перемотку назад, перемотку вперед, паузу и замедленное воспроизведение для всех игр.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
-      "Enable or disable OSD verbosity for achievements.")
+      "Включить или отключить экран OSD для достижений.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
-      "Изменение драйверов для этой системы.")
+      "Изменить драйвера для этой системы.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
-      "Изменение настроек для достижений.")
+      "Изменить настройки достижений.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_SETTINGS,
-      "Изменить настройки для ядра.")
+      "Изменить настройки ядра.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
-      "Изменить настройки для записи.")
+      "Изменить настройки записи.")
 MSG_HASH(MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
       "Измените настройки отображения перекрытия, наложения клавиатуры и уведомлений на экране.")
 MSG_HASH(MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
-      "Измените настройки для перемотки, быстрой перемотки и замедленного воспроизведения.")
+      "Измените настройки перемотки, быстрой перемотки и замедленного воспроизведения.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
-      "Измените настройки для сохранения.")
+      "Измените настройки сохранения.")
 MSG_HASH(MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
-      "Изменить настройки для ведения журнала.")
+      "Изменить настройки ведения журнала.")
 MSG_HASH(MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
-      "Изменить настройки для пользовательского интерфейса.")
+      "Изменить настройки пользовательского интерфейса.")
 MSG_HASH(MENU_ENUM_SUBLABEL_USER_SETTINGS,
-      "Измените учетные записи, имя пользователя и язык.")
+      "Изменить учетные записи, имя пользователя и язык.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PRIVACY_SETTINGS,
-      "Измените настройки конфиденциальности.")
+      "Изменить настройки конфиденциальности.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
       "Изменение каталогов по умолчанию для этой системы.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
-      "Изменить настройки для списков воспроизведения.")
+      "Изменить настройки списков воспроизведения.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
       "Настроить параметры сервера и сети.")
 MSG_HASH(MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
@@ -1817,7 +1819,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
 MSG_HASH(MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
       "Включить или отключить ведение журнала в терминале.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY,
-      "Присоединиться или создать сеанс netplay.")
+      "Присоединиться или создать сеанс Netplay.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_LAN_SCAN_SETTINGS,
       "Поиск и подключение к серверу по локальной сети.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
@@ -1829,7 +1831,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SAMBA_ENABLE,
 MSG_HASH(MENU_ENUM_SUBLABEL_SERVICES_SETTINGS,
       "Управление службами операционной системы.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES,
-      "Показывать скрытые файлы / каталоги внутри файлового менеджера.")
+      "Показывать скрытые файлы/каталоги внутри файлового менеджера.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SSH_ENABLE,
       "Включить или отключить удаленный доступ к командной строке.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
@@ -1845,7 +1847,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
       "Устанавливает, сколько кадров процессор может запустить перед графическим процессором при использовании« Hard GPU Sync.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
-      "Указывает видеодрайверу какой режим буферизации использовать.")
+      "Указывает видеодрайверу, какой режим буферизации использовать.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
       "Выбирает, какой экран дисплея использовать.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
@@ -1869,13 +1871,13 @@ MSG_HASH(MSG_AUDIO_MUTED,
 MSG_HASH(MSG_AUDIO_UNMUTED,
       "Звук вкл.")
 MSG_HASH(MSG_AUTOCONFIG_FILE_ERROR_SAVING,
-      "Ошибка при сохранении файла авто-конфигурации.")
+      "Ошибка при сохранении файла автоматической настройки.")
 MSG_HASH(MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
-      "Файл авто-конфигурации успешно сохранен.")
+      "Файл автоматической настройки успешно сохранен.")
 MSG_HASH(MSG_AUTOSAVE_FAILED,
       "Ошибка автосохранения.")
 MSG_HASH(MSG_AUTO_SAVE_STATE_TO,
-      "Процесс авто-сохранения")
+      "Процесс автосохранения")
 MSG_HASH(MSG_BLOCKING_SRAM_OVERWRITE,
       "Перезапись SRAM запрещена.")
 MSG_HASH(MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
@@ -1885,9 +1887,9 @@ MSG_HASH(MSG_BYTES,
 MSG_HASH(MSG_CANNOT_INFER_NEW_CONFIG_PATH,
       "Вывод командного интерфейса на порт.")
 MSG_HASH(MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-      "Режим Hardcore включен, ваши сохранения и функция перемотки отключены.")
+      "Хардкорный режим включен, ваши сохранения и функция перемотки отключены.")
 MSG_HASH(MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
-      "Сравнение с известными магическими числами ...")
+      "Сравнение с известными магическими числами...")
 MSG_HASH(MSG_COMPILED_AGAINST_API,
       "Скомпилирован против API")
 MSG_HASH(MSG_CONFIG_DIRECTORY_NOT_SET,
@@ -1899,7 +1901,7 @@ MSG_HASH(MSG_CONTENT_CRC32S_DIFFER,
 MSG_HASH(MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT,
       "Загрузка контента пропущена, реализация будет загружена сама по себе.")
 MSG_HASH(MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
-      "Ядро не поддерживает быстрые сохранение.")
+      "Ядро не поддерживает быстрые сохранения.")
 MSG_HASH(MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
       "Файл основных настроек успешно создан.")
 MSG_HASH(MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER,
@@ -1913,9 +1915,9 @@ MSG_HASH(MSG_COULD_NOT_OPEN_DATA_TRACK,
 MSG_HASH(MSG_COULD_NOT_READ_CONTENT_FILE,
       "Не удалось прочитать файл контента")
 MSG_HASH(MSG_COULD_NOT_READ_MOVIE_HEADER,
-      "Не удалось прочитать заголовок видео ролика.")
+      "Не удалось прочитать заголовок видеоролика.")
 MSG_HASH(MSG_COULD_NOT_READ_STATE_FROM_MOVIE,
-      "Не удалось прочитать состояние видео ролика.")
+      "Не удалось прочитать состояние видеоролика.")
 MSG_HASH(MSG_CRC32_CHECKSUM_MISMATCH,
       "Ошибка контрольной суммы CRC32 между файлом содержимого и контрольной суммой сохраненного содержимого в заголовке файла воспроизведения), что, скорее всего, приведет к рассинхронизации при воспроизведении.")
 MSG_HASH(MSG_CUSTOM_TIMING_GIVEN,
@@ -2157,9 +2159,9 @@ MSG_HASH(MSG_RESTORED_OLD_SAVE_STATE,
 MSG_HASH(MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
       "Шейдеры: восстановление стандартных настроек шейдера")
 MSG_HASH(MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
-      "Возврат каталога savefile на")
+      "Возврат каталога карт памяти на")
 MSG_HASH(MSG_REVERTING_SAVESTATE_DIRECTORY_TO,
-      "Возврат каталога savestate к")
+      "Возврат каталога сохранений к")
 MSG_HASH(MSG_REWINDING,
       "Перемотка.")
 MSG_HASH(MSG_REWIND_INIT,
@@ -2198,6 +2200,8 @@ MSG_HASH(MSG_SKIPPING_SRAM_LOAD,
       "Пропуск загрузки SRAM.")
 MSG_HASH(MSG_SLOW_MOTION,
       "Замедление.")
+MSG_HASH(MSG_FAST_FORWARD,
+      "Перемотка вперед.")
 MSG_HASH(MSG_SLOW_MOTION_REWIND,
       "Замедленная перемотка.")
 MSG_HASH(MSG_SRAM_WILL_NOT_BE_SAVED,
@@ -2245,7 +2249,7 @@ MSG_HASH(MSG_VIRTUAL_DISK_TRAY,
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
       "Требуемая длительность звукового сигнала в миллисекундах. Невозможно удостовериться, что звуковой драйвер не может обеспечить заданную задержку.")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_MUTE,
-      "Отключить / включить звук.")
+      "Отключить/включить звук.")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
       "Помогает сгладить недостатки времени при синхронизации аудио и видео в одно и то же время. Имейте в виду, что если отключено, правильную синхронизацию получить почти невозможно."
@@ -2276,15 +2280,15 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
-      "Allow the WASAPI driver to take exclusive control of the audio device. If disabled, it will use shared mode instead."
+      "Разрешить драйверу WASAPI получать полный контроль над аудиоустройством. При отключении будет использоваться общий режим."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
-      "Use float format for the WASAPI driver, if supported by your audio device."
+      "Использовать формат с плавающей точкой для драйвера WASAPI, если он поддерживается вашим аудиоустройством."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-      "The intermediate buffer length (in frames) when using the WASAPI driver in shared mode."
+      "Длина промежуточного буфера (в кадрах) при использовании драйвера WASAPI в общем режиме."
       )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SYNC,
@@ -2300,11 +2304,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
-   "Описывает период, в котором переключаются турбо кнопки. Значение описывается в кадрах."
+   "Описывает период, в котором переключаются турбокнопки. Значение описывается в кадрах."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
-   "Описывает, как долго должен действовать период турбо кнопки. Значение описывается в кадрах."
+   "Описывает, как долго должен действовать период турбокнопки. Значение описывается в кадрах."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
@@ -2312,19 +2316,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ALLOW_ROTATE,
-   "Разрешить ядрам задавать поворот, при отключении, запросы на поворот игнорируются, что полезно при настройках, когда один из них поворачивает экран вручную."
+   "Разрешить ядрам задавать поворот, при отключении запросы на поворот игнорируются, что полезно при настройках, когда один из них поворачивает экран вручную."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN,
-   "Некоторые ядра могут иметь функцию отключения, если она включена, это предотвратит остановку ядра от RetroArch, вместо этого он загрузит фиктивное ядро."
+   "Некоторые ядра могут иметь функцию отключения. Если она включена, это предотвратит остановку ядра от RetroArch, вместо этого он загрузит фиктивное ядро."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
-   "Проверьте, все ли необходимые микропрограммы присутствуют, прежде чем пытаться загрузить контент."
+   "Перед загрузкой контента проверьте, все ли необходимые микропрограммы присутствуют."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Вертикальная частота обновления экрана. Используется для расчета подходящей скорости ввода аудиосигнала. ПРИМЕЧАНИЕ: Это будет проигнорировано, если включено« Потоковое видео."
+   "Вертикальная частота обновления экрана. Используется для расчета подходящей скорости ввода аудиосигнала. ПРИМЕЧАНИЕ: Это будет проигнорировано, если включено потоковое видео."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
@@ -2336,7 +2340,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED,
-   "Не вышло"
+   "Не удалось"
    )
 MSG_HASH(
    MSG_SUCCEEDED,
@@ -2356,11 +2360,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DEVELOPER,
-   "База данных - Фильтр: Разработчик"
+   "База данных - фильтр: разработчик"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_PUBLISHER,
-   "База данных - Фильтр: Издатель"
+   "База данных - фильтр: издатель"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISABLED,
@@ -2376,41 +2380,41 @@ MSG_HASH(
    )
 MSG_HASH(
       MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_ORIGIN,
-      "База Данных - Фильтр : по происхождению")
+      "База данных - фильтр: по происхождению")
 MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_FRANCHISE,
-      "База Данных - Фильтр : по франчайзу")
+      "База данных - фильтр: по франчайзу")
 MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_ESRB_RATING,
-      "База Данных - Фильтр : по рейтингу ESRB")
+      "База данных - фильтр: по рейтингу ESRB")
 MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_ELSPA_RATING,
-      "База Данных - Фильтр : по рейтингу ELSPA")
+      "База данных - фильтр: по рейтингу ELSPA")
 MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_PEGI_RATING,
-      "База Данных - Фильтрr : по рейтингу PEGI")
+      "База данных - фильтр: по рейтингу PEGI")
 MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_CERO_RATING,
-      "База Данных - Фильтр : по рейтингу CERO")
+      "База данных - фильтр: по рейтингу CERO")
 MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_BBFC_RATING,
-      "База Данных - Фильтр : по рейтингу BBFC")
+      "База данных - фильтр: по рейтингу BBFC")
 MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_MAX_USERS,
-      "База Данных - Фильтр : по кол-во игроков")
+      "База данных - фильтр: по кол-во игроков")
 MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_RELEASEDATE_BY_MONTH,
-      "База Данных - Фильтр : Вышедшие по месяцам")
+      "База данных - фильтр: Вышедшие по месяцам")
 MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_RELEASEDATE_BY_YEAR,
-      "База Данных - Фильтр : Вышедшие по годам")
+      "База данных - фильтр: Вышедшие по годам")
 MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_ISSUE,
-      "База Данных - Фильтр : ошибки журнела Edge")
+      "База данных - фильтр: ошибки журнела Edge")
 MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_RATING,
-      "База Данных - Фильтрr : рейтинг журнала Edge")
+      "База данных - фильтр: рейтинг журнала Edge")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DATABASE_INFO,
       "Информация базы данных")
 MSG_HASH(MSG_WIFI_SCAN_COMPLETE,
-      "Сканирование Wi-Fi успешно завершен.")
+      "Сканирование Wi-Fi успешно завершено.")
 MSG_HASH(MSG_SCANNING_WIRELESS_NETWORKS,
-      "Scanning wireless networks...")
+      "Сканирование беспроводных сетей...")
 MSG_HASH(MSG_NETPLAY_LAN_SCAN_COMPLETE,
-      "Netplay scan complete.")
+      "Сканирование Netplay завершено.")
 MSG_HASH(MSG_NETPLAY_LAN_SCANNING,
-      "Scanning for netplay hosts...")
+      "Сканирование хостов Netplay...")
 MSG_HASH(MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
-      "Ставить на паузу когда окно теряет фокус.")
+      "Ставить на паузу, когда окно теряет фокус.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
       "Включить или отключить композицию (только для Windows).")
 MSG_HASH(MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
@@ -2420,11 +2424,11 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_UNIFIED_MENU_CONTROLS,
       "Унифицировать управление в меню")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
-      "Использовать управление в меню, такое же как в игре (для клавиатуры).")
+      "Использовать такое же управление в меню, как в игре (для клавиатуры).")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
       "Показывать сообщения на экране.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETWORK_USER_REMOTE_ENABLE,
-      "User %d Remote Enable")
+      "Включить удаленного пользователя %d")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_BATTERY_LEVEL_ENABLE,
       "Показать заряд батареи")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SELECT_FILE,
@@ -2438,7 +2442,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SCALE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED,
       "Netplay заработает, когда вы запустите игру.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
-      "Couldn't find a suitable core or content file, load manually.")
+      "Не удается найти требуемое ядро или файл контента, загрузите его вручную.")
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BROWSE_URL_LIST,
       "Просмотр URL"
@@ -2452,7 +2456,7 @@ MSG_HASH(
       "Старт"
       )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_BOKEH,
-      "Bokeh")
+      "Боке")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
       "Обновить список комнат")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME,
@@ -2466,13 +2470,13 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
       "Добавляет небольшое смазывание к изображению, чтобы избавиться от острых пикселей. Эта настройка мало влияет на производительность.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FILTER,
-      "Применяется CPU-powered видеофильтр. ПРИМЕЧАНИЕ: Возможна высокая нагрузка на производительность. Некоторые фильтры могут работать только на некоторых ядер, которые используют 32bit или 16bit палитру.")
+      "Применяется видеофильтр, работающий на CPU. ПРИМЕЧАНИЕ: Возможна высокая нагрузка на производительность. Некоторые фильтры могут работать только на некоторых ядрах, использующих 32-битную или 16-битную палитру.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_USERNAME,
       "Введите имя пользователя от вашего аккаунта Retro Achievements.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_PASSWORD,
       "Введите пароль от вашего аккаунта Retro Achievements.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_NICKNAME,
-      "Введите ваш никнейм. Он будет использоваться в netplay сесиях и т.д.")
+      "Введите ваш никнейм. Он будет использоваться в сессиях Netplay и т.д.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
       "Записывать процесс игры с выбранными фильтрами (неработает с шейдерами). Ваше видео будет выглядить красивым =)")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_LIST,
@@ -2490,9 +2494,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
       "Изменить размер высоты для окна дисплея. Если вы поменяете параметр на 0, то программа будет пытаться масштабировать окно как можно больше.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-      "Set the custom width size for the non-windowed fullscreen mode. Leaving it at 0 will use the desktop resolution.")
+      "Установить свой размер ширины для неоконного полноэкранного режима. Если оставить его значение на 0, то будет использовано разрешение рабочего стола.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-      "Set the custom height size for the non-windowed fullscreen mode. Leaving it at 0 will use the desktop resolution")
+      "Установить свой размер высоты для неоконного полноэкранного режима. Если оставить его значение на 0, то будет использовано разрешение рабочего стола.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X,
       "Изменить положение оповещение по горизонтали.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
@@ -2500,26 +2504,26 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
       "Изменить размер шрифта уведомления.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
-      "Спрятать наложения в меню интерфеся, и показывать снова после выхода из него.")
+      "Спрятать наложения в меню интерфейса, и показывать снова после выхода из него.")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CONTENT_COLLECTION_LIST,
-      "После сканирование контента он появится в этом списке ."
+      "После сканирования контента он появится в этом списке ."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
-      "Only scales video in integer steps. The base size depends on system-reported geometry and aspect ratio. If 'Force Aspect' is not set, X/Y will be integer scaled independently."
+      "Только масштабирует видео с целочисленным интервалом. Базовый размер зависит от системной геометрии экрана и соотношения сторон. Если 'Принудительная установка' не включена, значения X/Y будут изменяться независимо друг от друга."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
-      "Screenshots output of GPU shaded material if available."
+      "Вывод скриншотов с затененным материалом с помощью GPU, если доступно."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
-      "Forces a certain rotation of the screen. The rotation is added to rotations which the core sets."
+      "Принудительно задает определенный поворот экрана. Он добавляется к поворотам, уже заданным ядром."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
-      "Forcibly disable sRGB FBO support. Some Intel OpenGL drivers on Windows have video problems with sRGB FBO support if this is enabled. Enabling this can work around it."
+      "Принудительно отключить поддержку sRGB FBO. Некоторые драйвера Intel OpenGL на Windows испытывают проблемы с включенной поддержкой sRGB FBO. Включение этой настройки может обойти эту проблему."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
@@ -2531,39 +2535,39 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD,
-      "Records output of GPU shaded material if available."
+      "Записывает вывод с затененным материалом с помощью GPU, если доступно."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
-      "When making a savestate, save state index is automatically increased before it is saved. When loading content, the index will be set to the highest existing index."
+      "Перед сохранением автоматически увеличивается его индекс. При загрузке индекс будет установлен на максимальный существующий."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
-      "Block Save RAM from being overwritten when loading save states. Might potentially lead to buggy games."
+      "Блокировать сохранение ОЗУ от перезаписи при загрузке сохранений. Может привести к багам в играх."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
-      "The maximum rate at which content will be run when using fast forward (e.g., 5.0x for 60 fps content = 300 fps cap). If set to 0.0x, fastforward ratio is unlimited (no FPS cap)."
+      "Максимальный множитель, на котором контент будет запущен при перемотке вперед (например, 5.0x для 60 кадров в секунду контента = ограничение 300 кадров в секунду). Если установлен на 0.0x - скорость перемотки вперед будет неограниченной (нет лимита кадров в секунду)."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
-      "When in slow motion, content will slow down by the factor specified/set."
+      "При снижении скорости контент будет замедляться в соответствии с заданными факторами/настройками."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_REWIND_ENABLE,
-      "Enable rewinding. This will take a performance hit when playing."
+      "Включить перемотку. Это может снижать производительность при воспроизведении."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
-      "When rewinding a defined number of frames, you can rewind several frames at a time, increasing the rewind speed."
+      "При перемотке на определенное количество кадров, вы можете перематывать несколько кадров сразу, увеличивая скорость перемотки."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_LIBRETRO_LOG_LEVEL,
-      "Sets log level for cores. If a log level issued by a core is below this value, it is ignored."
+      "Устанавливает уровень ведения журнала для ядер. Если уровень ведения журнала, заданный ядром, ниже его значения, то он игнорируется."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_PERFCNT_ENABLE,
-      "Enable performance counters for RetroArch (and cores)."
+      "Включить счетчики производительности для RetroArch (и ядер)."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
@@ -2579,87 +2583,87 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
-      "Autosaves the non-volatile Save RAM at a regular interval. This is disabled by default unless set otherwise. The interval is measured in seconds. A value of 0 disables autosave."
+      "Автоматически сохраняет энергонезависимую ОЗУ сохранений через регулярные промежутки времени. По умолчанию отключено, если не включено явно. Интервал измеряется в секундах. Значение 0 отключает автосохранение."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
-      "If enabled, overrides the input binds with the remapped binds set for the current core."
+      "Если включено, перезаписывает привязки ввода переназначенными для текущего ядра."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
-      "Enable input auto-detection. Will attempt to autoconfigure joypads, Plug-and-Play style."
+      "Включить автоматическое обнаружение ввода. Будет производена попытка автоматической настройки геймпадов Plug-and-Play."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
-      "Swap buttons for OK/Cancel. Disabled is the Japanese button orientation, enabled is the western orientation."
+      "Поменять местами кнопки OK/Отмена. Отключено — японское расположение кнопок, включено — западное расположение."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
-      "If disabled, the content will keep running in the background when RetroArch's menu is toggled."
+      "Если включено, контент будет запущен в фоне при включении меню RetroArch."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-      "Video driver to use."
+      "Используемый видеодрайвер."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-      "Audio driver to use."
+      "Используемый аудиодрайвер."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_INPUT_DRIVER,
-      "Input driver to use. Depending on the video driver, it might force a different input driver."
+      "Используемый драйвер ввода. В зависимости от видеодрайвера драйвер ввода может быть установлен принудительно."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-      "Joypad driver to use."
+      "Используемый драйвер геймпада."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
-      "Audio resampler driver to use."
+      "Используемый драйвер аудиоресэмплера."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-      "Camera driver to use."
+      "Используемый драйвер камеры."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-      "Location driver to use."
+      "Используемый драйвер местоположения."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_MENU_DRIVER,
-      "Menu driver to use."
+      "Используемый драйвер меню."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-      "Record driver to use."
+      "Используемый драйвер записи."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-      "WiFi driver to use."
+      "Используемый драйвер Wi-Fi."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
-      "Filter files being shown in filebrowser by supported extensions."
+      "Фильтровать файлы в файловом менеджере по поддерживаемым расширениям."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
-      "Select an image to set as menu wallpaper."
+      "Выберите изображение для установки в качестве обоев меню."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPER,
-      "Dynamically load a new wallpaper depending on context."
+      "Динамически загружать новые обои в зависимости от контекста."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
-      "Override the default audio device the audio driver uses. This is driver dependent."
+      "Перебивать аудиоустройство по умолчанию, используя аудиодрайвер. Эта настройка зависит от драйвера."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
-      "Audio DSP plugin that processes audio before it's sent to the driver."
+      "Аудиоплагин DSP, обрабатывающий аудио до отправки драйверу."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
-      "Audio output sample rate."
+      "Частота дискретизации аудиовывода."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_OVERLAY_OPACITY,
@@ -2683,7 +2687,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_TCP_UDP_PORT,
-      "The port of the host IP address. Can be either a TCP or UDP port."
+      "Порт IP-адреса хоста. Может быть порт TCP или UDP."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_PASSWORD,
@@ -2691,39 +2695,39 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_PUBLIC_ANNOUNCE,
-      "Whether to announce netplay games publicly. If unset, clients must manually connect rather than using the public lobby."
+      "Анонсировать игру netplay публично. Если не установлено, клиенту придется подключаться вручную, не используя публичное лобби."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_SPECTATE_PASSWORD,
-      "The password for connecting to the netplay host with only spectator privileges. Used only in host mode."
+      "Пароль для подключения к хосту netplay только с правами наблюдателя. Используется только в режиме хоста."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
-      "Whether to start netplay in spectator mode."
+      "Начинать netplay в режиме наблюдателя."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_SLAVES,
-      "Whether to allow connections in slave mode. Slave-mode clients require very little processing power on either side, but will suffer significantly from network latency."
+      "Разрешать подключения в режиме slave. Клиенты в режиме slave требуют немного вычислительной мощности со своей стороны, но задержка сети может значительно увеличиться."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_REQUIRE_SLAVES,
-      "Whether to disallow connections not in slave mode. Not recommended except for very fast networks with very weak machines."
+      "Запрещать подключения не в режиме slave. Не рекомендуется, за исключением очень быстрых сетей с очень слабыми машинами."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_STATELESS_MODE,
-      "Whether to run netplay in a mode not requiring save states. If set to true, a very fast network is required, but no rewinding is performed, so there will be no netplay jitter."
+      "Запускать netplay в режиме, не требующем сохранения. Если включено, потребуется очень быстрая сеть, но netplay будет без заиканий, поскольку нет повторов."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES,
-      "The frequency in frames with which netplay will verify that the host and client are in sync."
+      "Частота кадров, с которой netplay будет проверять синхронизацию хоста и клиента."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_NAT_TRAVERSAL,
-      "When hosting, attempt to listen for connections from the public Internet, using UPnP or similar technologies to escape LANs."
+      "В режиме хоста, пытаться слушать подключения из публичного Интернета, используя UPnP или похожие технологии для избежания локальных сетей."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE,
-      "Enable stdin command interface."
+      "Включить интерфейс команды stdin."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_MOUSE_ENABLE,
@@ -2747,58 +2751,58 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
-      "Wrap-around to beginning and/or end if boundary of list is reached horizontally or vertically."
+      "Сортировка к началу и/или концу, если достигнута горизонтальная или вертикальная граница списка."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST,
-      "Запустить netplay на хосте (сервера)."
+      "Запустить netplay на хосте (сервере)."
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
       "Включить netplay в режиме клиента.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
       "Отключить активное соединение Netplay.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
-      "Scans a directory for compatible files and add them to the collection.")
+      "Сканирует каталог для поиска совместимых файлов и добавляет их в коллекцию.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SCAN_FILE,
-      "Scans a compatible file and add it to the collection.")
+      "Сканирует совместимый файл и добавляет его в коллекцию.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
-      "Uses a custom swap interval for Vsync. Set this to effectively halve monitor refresh rate."
+      "Использует заданный интервал обновления для вертикальной синхронизации. Установите для эффективной частоты обновления монитора."
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
-      "Sort save files in folders named after the core used."
+      "Сортировать карты памяти в каталогах, названные после использования ядра."
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
-      "Sort save states in folders named after the core used."
+      "Сортировать файлы сохранений в каталогах, названные после использования ядра."
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_CLIENT_SWAP_INPUT,
-      "When being client over netplay, use keybinds for Player 1.")
+      "Будучи клиентом netplay, использовать привязки клавиш для Игрока 1.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_UPDATER_BUILDBOT_URL,
-      "URL to core updater directory on the Libretro buildbot.")
+      "URL каталога обновлений ядра на билдботе Libretro.")
 MSG_HASH(MENU_ENUM_SUBLABEL_BUILDBOT_ASSETS_URL,
-      "URL to assets updater directory on the Libretro buildbot.")
+      "URL каталога обновлений содержимого на билдботе Libretro.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
-      "After downloading, automatically extract files contained in the downloaded archives."
+      "После загрузки, автоматически извлекать файлы из загруженных архивов."
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
-      "Scan for new rooms.")
+      "Сканировать для поиска новых комнат.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DELETE_ENTRY,
-      "Remove this entry from the collection.")
+      "Удалить эту запись из коллекции.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION,
-      "View more information about the content.")
+      "Просмотреть больше информации о содержимом.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RUN,
-      "Start the content.")
+      "Запустить содержимое.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-      "Adjusts filebrowser settings.")
+      "Задает настройки файлового менеджера.")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE,
-      "Enable customized controls by default at startup."
+      "Включить измененное управление по умолчанию при запуске."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUTO_OVERRIDES_ENABLE,
-      "Enable customized configuration by default at startup."
+      "Включить измененную конфигурацию по умолчанию при запуске."
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_GAME_SPECIFIC_OPTIONS,
-      "Enable customized core options by default at startup.")
+      "Включить измененные настройки ядра по умолчанию при запуске.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_ENABLE,
       "Показывать название ядра в главном меню.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
@@ -2809,73 +2813,73 @@ MSG_HASH(MENU_ENUM_SUBLABEL_TAKE_SCREENSHOT,
       "Сделать скриншот экрана.")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
-      "Выход из игры. Все несохраненные файлы возможно пропадут."
+      "Выход из игры. Все несохраненные файлы, возможно, пропадут."
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_LOAD_STATE,
-      "Load a saved state from the currently selected slot.")
+      "Загрузить сохранение из текущего выбранного слота.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_STATE,
-      "Save a state to the currently selected slot.")
+      "Сохранить в текущий выбранный слот.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RESUME,
-      "Resume the currently running content and leave the Quick Menu.")
+      "Продолжить контент, запущенный в данный момент, и выйти в быстрое меню.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RESUME_CONTENT,
-      "Resume the currently running content and leave the Quick Menu.")
+      "Продолжить контент, запущенный в данный момент, и выйти в быстрое меню.")
 MSG_HASH(MENU_ENUM_SUBLABEL_STATE_SLOT,
-      "Changes the currently selected state slot.")
+      "Изменяет выбранный слот сохранения.")
 MSG_HASH(MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE,
-      "If a state was loaded, content will go back to the state prior to loading.")
+      "При загруженном сохранении, контент изменит свое состояние на предшествующее загруженному.")
 MSG_HASH(MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
-      "If a state was overwritten, it will roll back to the previous save state.")
+      "Если сохранение было перезаписано, будет произведен откат на предшествующее.")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,
       "Сервис Retro Achievements. Для дополнительной информации, посетите страницу http://retroachievements.org"
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_ACCOUNTS_LIST,
-      "Manages currently configured accounts."
+      "Управляет настроенными профилями."
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
       "Управление настройками перемотки.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RESTART_CONTENT,
       "Перезапустить игру.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
-      "Saves an override configuration file which will apply for all content loaded with this core. Will take precedence over the main configuration.")
+      "Сохраняет файл настроек, который будет применен ко всему контенту, загруженному с этим ядром. Он будет иметь более высокий приоритет над основной конфигурацией.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
-      "Saves an override configuration file which will apply for the current content only. Will take precedence over the main configuration.")
+      "Сохраняет файл настроек, который будет применен только к текущему контенту. Он будет иметь более высокий приоритет над основной конфигурацией.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_CHEAT_OPTIONS,
-      "Set up cheat codes.")
+      "Настроить чит-коды.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SHADER_OPTIONS,
-      "Set up shaders to visually augment the image.")
+      "Настроить шейдеры для визуального улучшения изображения.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS,
-      "Change the controls for the currently running content.")
+      "Изменить управление для контента, запущенного в данный момент.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_OPTIONS,
-      "Change the options for the currently running content.")
+      "Изменить настройки для контента, запущенного в данный момент.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
       "Показывать расширенные настройки для опытных пользователей (скрыто по умолчанию).")
 MSG_HASH(MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
-      "Perform tasks on a separate thread.")
+      "Выполнять задачи в отдельном потоке.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
-      "Allow the user to remove entries from collections.")
+      "Разрешить пользователю удалять отдельные записи из коллекции.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
-      "Sets the System directory. Cores can query for this directory to load BIOSes, system-specific configs, etc.")
+      "Устанавливает каталог System. Ядра могут запрашивать его для загрузки BIOS, системных настроек и т.д.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
       "Установить начальный каталог для файлового браузера.")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CONTENT_DIR,
-      "Usually set by developers who bundle libretro/RetroArch apps to point to assets."
+      "Обычно настраивается разработчиками, составляющими комплекты приложений libretro/RetroArch для указания содержимого."
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPERS_DIRECTORY,
-      "Directory to store wallpapers dynamically loaded by the menu depending on context.")
+      "Каталог для хранения обоев, динамически загружающихся в меню в зависимости от контекста.")
 MSG_HASH(MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
-      "Supplementary thumbnails (boxarts/misc. images, etc.) are stored here."
+      "Дополнительные миниатюры (бокс-арты/другие изображения и т.д.) хранятся здесь."
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
-      "Sets start directory for menu configuration browser.")
+      "Задает стартовый каталог для браузера настройки меню.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-      "The number of frames of input latency for netplay to use to hide network latency. Reduces jitter and makes netplay less CPU-intensive, at the expense of noticeable input lag.")
+      "Количество кадров задержки ввода для netplay для сокрытия задержки сети. Уменьшает лаги и делает netplay менее требовательным к CPU, ценой значительной задержки ввода.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-      "The range of frames of input latency that may be used to hide network latency. Reduces jitter and makes netplay less CPU-intensive, at the expense of unpredictable input lag.")
+      "Диапазон кадров задержки ввода для netplay для сокрытия задержки сети. Уменьшает лаги и делает netplay менее требовательным к CPU, ценой непредсказуемой задержки ввода.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DISK_CYCLE_TRAY_STATUS,
-      "Cycle the current disk. If the disk is inserted, it will eject the disk. If the disk has not been inserted, it will be inserted. ")
+      "Зацикливать текущий диск. Если вставлен диск, он будет извлечен. Если диск не вставлен, он будет вставлен.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DISK_INDEX,
       "Изменить индекс диска.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DISK_OPTIONS,
@@ -2887,7 +2891,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_THEME,
       "Выберите другую тему для значка. Изменения заработают после перезагрузки.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
-      "Включить тени для всех значков. Это приведет к незначительному нагрузке.")
+      "Включить тени для всех значков. Это приведет к незначительной нагрузке.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
       "Выберите другую тему цветового градиента.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY,
@@ -2895,7 +2899,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY,
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
       "Выберите другую тему цветового градиента.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
-      "Выберите анимированный фоновый эффект. Может быть GPU-intensive  в зависимости от эффекта. Если производительность не тянет на это, то либо выключите это, либо вернитесь к более простому эффекту.")
+      "Выберите анимированный фоновый эффект. Может быть требовательным к GPU в зависимости от эффекта. Если производительность не тянет на это, то либо выключите это, либо вернитесь к более простому эффекту.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_FONT,
       "Выбрать основной шрифт для меню интерфейса.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_IMAGES,
@@ -2927,11 +2931,11 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY,
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,
       "Сохранить все переназначенные элементы управления в этой папке.")
 MSG_HASH(MENU_ENUM_SUBLABEL_LIBRETRO_DIR_PATH,
-      "путь к папке, в котором программа ищет контент / ядра.")
+      "путь к папке, в котором программа ищет контент/ядра.")
 MSG_HASH(MENU_ENUM_SUBLABEL_LIBRETRO_INFO_PATH,
-      "Здесь хранятся файлы информации контента / ядра.")
+      "Здесь хранятся файлы информации контента/ядра.")
 MSG_HASH(MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
-      "Если игровой джойстик подключен, то джойстик будет автомотически подстроен, если существует одходящий файл авто-конфигурации.")
+      "Если игровой джойстик подключен, то джойстик будет автомотически подстроен, если существует подходящий файл автоматической настройки.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
       "Сохранять все коллекции в выбранной папке.")
 MSG_HASH(
@@ -2939,10 +2943,10 @@ MSG_HASH(
       "Если выбрана папка, содержимое, которое временно извлечено (например, из архивов), будет извлечено в этой папке."
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_CURSOR_DIRECTORY,
-      "Выберите папку, где хранятся saved queries..")
+      "Сохраненные запросы находятся в этом каталоге.")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CONTENT_DATABASE_DIRECTORY,
-      "Выберите папку для хранения базы данных."
+      "Базы данных находятся в этом каталоге."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
@@ -2966,10 +2970,10 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_VIDEO_FILTER_DIR,
-      "Выберите папку, где будут находиться GPU-based фильтры."
+      "Выберите папку, где будут находиться фильтры, обрабатываемые GPU."
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SHADER_DIR,
-      "Выберите папку, где будут находиться GPU-based шейдеры.")
+      "Выберите папку, где будут находиться шейдеры, обрабатываемые GPU.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RECORDING_OUTPUT_DIRECTORY,
       "Выберите папку, где будут сохраняться ваши записи.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RECORDING_CONFIG_DIRECTORY,
@@ -2987,7 +2991,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
       "Сохраните текущие настройки шейдера в качестве нового предустановленного шейдера.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CORE,
-      "Сохраните текущие настройки шейдера как настройки по умолчанию для этого игры / ядра.")
+      "Сохраните текущие настройки шейдера как настройки по умолчанию для этого игры/ядра.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
       "Сохраните текущие настройки шейдера в качестве настроек по умолчанию для игры.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SHADER_PARAMETERS,
@@ -2996,10 +3000,10 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PARAMETERS,
       "Изменяет настройки шейдера, которая в настоящее время используется в меню.")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CHEAT_NUM_PASSES,
-      "Увеличение или уменьшение кол-во используемых чит-кодов."
+      "Увеличение или уменьшение количества используемых чит-кодов."
       )
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES,
-      "Изменения чит-кодов заработают сиюсекундно.")
+      "Изменения чит-кодов заработают немедленно.")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD,
       "Открыть чит-файл."
@@ -3042,7 +3046,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
-      "Уровень громкости звукового микшера (dB)"
+      "Уровень громкости звукового микшера (дБ)"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
@@ -3099,114 +3103,114 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
 MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
       "Отображать или скрывать иконки интерфейса, отображающиеся в левой части меню.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
-      "Enable Settings Tab")
+      "Включить вкладку Настройки")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_SETTINGS_PASSWORD,
-      "Set Password For Enabling Settings Tab")
+      "Задать пароль для включения вкладки Настройки")
 MSG_HASH(MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
-      "Enter Password")
+      "Введите пароль")
 MSG_HASH(MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,
-      "Password correct.")
+      "Пароль верен.")
 MSG_HASH(MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
-      "Password incorrect.")
+      "Пароль неверен.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
-      "Enables the Settings tab. A restart is required for the tab to appear.")
+      "Включает вкладку Настройки. Для появления вкладки требуется перезапуск.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_SETTINGS_PASSWORD,
-      "Supplying a password when hiding the settings tab makes it possible to later restore it from the menu, by going to the Main Menu tab, selecting Enable Settings Tab and entering the password.")
+      "Применение пароля при скрытии вкладки Настройки может позже восстановить ее из меню. Для этого нужно перейти на вкладку Главное меню, выбрать Включить вкладку Настройки и ввести пароль.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
-      "Allow the user to rename entries in collections.")
+      "Разрешить пользователю переименовывать записи в коллекции.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
-      "Allow to rename entries")
+      "Разрешить переименовывать записи")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
-      "Show Load Core")
+      "Показать Загрузить ядро")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE,
-      "Show/hide the 'Load Core' option.")
+      "Показать/скрыть настройку 'Загрузить ядро'.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT,
-      "Show Load Content")
+      "Показать Загрузить содержимое")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT,
-      "Show/hide the 'Load Content' option.")
+      "Показать/скрыть настройку 'Загрузить содержимое'.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
-      "Show Information")
+      "Показать Информация")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
-      "Show/hide the 'Information' option.")
+      "Показать/скрыть настройку 'Информация'.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
-      "Show Configurations")
+      "Показать Настройки")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
-      "Show/hide the 'Configurations' option.")
+      "Показать/скрыть настройку 'Настройки'.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
-      "Show Help")
+      "Показать Помощь")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
-      "Show/hide the 'Help' option.")
+      "Показать/скрыть настройку 'Помощь'.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
-      "Show Quit RetroArch")
+      "Показать Выйти из RetroArch")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
-      "Show/hide the 'Quit RetroArch' option.")
+      "Показать/скрыть настройку 'Выйти из RetroArch'.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
-      "Show Reboot")
+      "Показать Перезагрузить")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT,
-      "Show/hide the 'Reboot' option.")
+      "Показать/скрыть настройку 'Перезагрузить'.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
-      "Quick Menu")
+      "Быстрое меню")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_VIEWS_SETTINGS,
-      "Show or hide elements on the Quick Menu screen.")
+      "Показать/скрыть элементы на экране быстрого меню.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
-      "Show Take Screenshot")
+      "Показать Сделать скриншот")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
-      "Show/hide the 'Take Screenshot' option.")
+      "Показать/скрыть настройку 'Сделать скриншот'.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
-      "Show Save/Load State")
+      "Показать Сохранить/Загрузить")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
-      "Show/hide the options for saving/loading state.")
+      "Показать/скрыть настройки для сохранения/загрузки.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-      "Show Undo Save/Load State")
+      "Показать отменить сохранение/загрузку")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-      "Show/hide the options for undoing save/load state.")
+      "Показать/скрыть настройки для отмены сохранения загрузки.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
-      "Show Add to Favorites")
+      "Показать Добавить в избранное")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
-      "Show/hide the 'Add to Favorites' option.")
+      "Показать/скрыть настройку 'Добавить в избранное'.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
-      "Show Options")
+      "Показать Настройки")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_OPTIONS,
-      "Show/hide the 'Options' option.")
+      "Показать/скрыть настройку 'Настройки'.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CONTROLS,
-      "Show Controls")
+      "Показать Управление")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CONTROLS,
-      "Show/hide the 'Controls' option.")
+      "Показать/скрыть настройку 'Управление'.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,
-      "Show Cheats")
+      "Показать Чит-коды")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CHEATS,
-      "Show/hide the 'Cheats' option.")
+      "Показать/скрыть настройку 'Чит-коды'.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
-      "Show Shaders")
+      "Показать Шейдеры")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
-      "Show/hide the 'Shaders' option.")
+      "Показать/скрыть настройку 'Шейдеры'.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
-      "Show Save Core Overrides")
+      "Показать Сохранить переопределения ядра")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
-      "Show/hide the 'Save Core Overrides' option.")
+      "Показать/скрыть настройку 'Сохранить переопределения ядра'.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
-      "Show Save Game Overrides")
+      "Показать Сохранить переопределения игры")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
-      "Show/hide the 'Save Game Overrides' option.")
+      "Показать/скрыть настройку 'Сохранить переопределения игры.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
-      "Show Information")
+      "Показать Информация")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_INFORMATION,
-      "Show/hide the 'Information' option.")
+      "Показать/скрыть настройку 'Информация'.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-      "Disable Kiosk Mode")
+      "Отключить режим киоска")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
-      "Disables kiosk mode. A restart is required for the change to take full effect.")
+      "Отключает режим киоска. Для достижения нужного эффекта требуется перезапуск.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
-      "Enable Kiosk Mode")
+      "Включить режим киоска")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
-      "Protects the setup by hiding all configuration related settings.")
+      "Защищает конфигурацию путем скрытия всех настроек.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_KIOSK_MODE_PASSWORD,
-      "Set Password For Disabling Kiosk Mode")
+      "Задать пароль для отключения режима киоска")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_KIOSK_MODE_PASSWORD,
-      "Supplying a password when enabling kiosk mode makes it possible to later disable it from the menu, by going to the Main Menu, selecting Disable Kiosk Mode and entering the password.")
+      "Поддержка пароля при включенном режиме киоска дает возможность позже отключить его из меню. Для этого нежно перейти в главное меню, выбрать Отключить режим киоска и ввести пароль.")
 MSG_HASH(MSG_INPUT_KIOSK_MODE_PASSWORD,
-      "Enter Password")
+      "Введите пароль")
 MSG_HASH(MSG_INPUT_KIOSK_MODE_PASSWORD_OK,
-      "Password correct.")
+      "Пароль верен.")
 MSG_HASH(MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
-      "Password incorrect.")
+      "Пароль неверен.")

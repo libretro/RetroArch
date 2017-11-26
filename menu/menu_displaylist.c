@@ -1572,7 +1572,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
                free(tmp);
             }
          }
-         
+
          free(path_short);
       }
 
@@ -2954,11 +2954,6 @@ static int menu_displaylist_parse_load_content_settings(
             msg_hash_to_str(MENU_ENUM_LABEL_ACHIEVEMENT_LIST),
             MENU_ENUM_LABEL_ACHIEVEMENT_LIST,
             MENU_SETTING_ACTION, 0, 0);
-         menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST_HARDCORE),
-            msg_hash_to_str(MENU_ENUM_LABEL_ACHIEVEMENT_LIST_HARDCORE),
-            MENU_ENUM_LABEL_ACHIEVEMENT_LIST_HARDCORE,
-            MENU_SETTING_ACTION, 0, 0);
       }
 #endif
    }
@@ -3035,6 +3030,14 @@ static int menu_displaylist_parse_horizontal_content_actions(
             msg_hash_to_str(MENU_ENUM_LABEL_DELETE_ENTRY),
             MENU_ENUM_LABEL_DELETE_ENTRY,
             MENU_SETTING_ACTION_DELETE_ENTRY, 0, 0);
+
+      if (settings->bools.quick_menu_show_add_to_favorites)
+      {
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES_PLAYLIST),
+               msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST),
+               MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST, FILE_TYPE_PLAYLIST_ENTRY, 0, 0);
+      }
    }
 
    if (!string_is_empty(db_name) && (!content_loaded ||
@@ -3487,7 +3490,7 @@ static int menu_displaylist_parse_options_remappings(
    }
    #ifdef HAVE_KEYMAPPER
    if (system)
-   {     
+   {
       settings_t *settings = config_get_ptr();
 
       unsigned device = settings->uints.input_libretro_device[settings->uints.keymapper_port];
@@ -3506,13 +3509,13 @@ static int menu_displaylist_parse_options_remappings(
             keybind   = &input_config_binds[settings->uints.keymapper_port][retro_id];
             auto_bind = (const struct retro_keybind*)
                input_config_get_bind_auto(settings->uints.keymapper_port, retro_id);
-         
+
             input_config_get_bind_string(descriptor,
                keybind, auto_bind, sizeof(descriptor));
 
             if(!strstr(descriptor, "Auto"))
             {
-               const struct retro_keybind *keyptr = 
+               const struct retro_keybind *keyptr =
                   &input_config_binds[settings->uints.keymapper_port][retro_id];
 
                strlcpy(descriptor, msg_hash_to_str(keyptr->enum_idx), sizeof(descriptor));
@@ -3852,7 +3855,7 @@ static int menu_displaylist_parse_cores(
                malloc(PATH_MAX_LENGTH * sizeof(char));
             char *display_name = (char*)
                malloc(PATH_MAX_LENGTH * sizeof(char));
-            core_path[0]       = 
+            core_path[0]       =
             display_name[0]    = '\0';
 
             fill_pathname_join(core_path, dir, path,
@@ -4172,7 +4175,7 @@ static void menu_displaylist_parse_playlist_generic(
 {
    playlist_t *playlist = NULL;
    char *path_playlist  = NULL;
-   
+
    menu_displaylist_set_new_playlist(menu, playlist_path);
 
    menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
@@ -4732,15 +4735,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_ACHIEVEMENT_LIST:
 #ifdef HAVE_CHEEVOS
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         cheevos_populate_menu(info, false);
-         info->need_push    = true;
-         info->need_refresh = true;
-#endif
-         break;
-      case DISPLAYLIST_ACHIEVEMENT_LIST_HARDCORE:
-#ifdef HAVE_CHEEVOS
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         cheevos_populate_menu(info, true);
+         cheevos_populate_menu(info);
          info->need_push    = true;
          info->need_refresh = true;
 #endif
@@ -5607,6 +5602,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_CHEEVOS_LEADERBOARDS_ENABLE,
                PARSE_ONLY_BOOL, false);
+         if (string_is_equal_fast(settings->arrays.menu_driver, "xmb", 3))
+         {
+            menu_displaylist_parse_settings_enum(menu, info,
+                 MENU_ENUM_LABEL_CHEEVOS_BADGES_ENABLE,
+                 PARSE_ONLY_BOOL, false);
+         }
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_CHEEVOS_TEST_UNOFFICIAL,
                PARSE_ONLY_BOOL, false);

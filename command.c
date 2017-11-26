@@ -641,6 +641,7 @@ static void command_stdin_poll(command_t *handle)
 
 bool command_poll(command_t *handle)
 {
+   memset(handle->state, 0, sizeof(handle->state));
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD) && defined(HAVE_COMMAND)
    command_network_poll(handle);
 #endif
@@ -1307,14 +1308,18 @@ static void command_event_restore_default_shader_preset(void)
    if (!path_is_empty(RARCH_PATH_DEFAULT_SHADER_PRESET))
    {
       /* auto shader preset: reload the original shader */
-      settings_t *settings = config_get_ptr();
+      settings_t *settings      = config_get_ptr();
+      const char *shader_preset = path_get(RARCH_PATH_DEFAULT_SHADER_PRESET);
 
-      RARCH_LOG("%s %s\n",
-            msg_hash_to_str(MSG_RESTORING_DEFAULT_SHADER_PRESET_TO),
-            path_get(RARCH_PATH_DEFAULT_SHADER_PRESET));
-      strlcpy(settings->paths.path_shader,
-            path_get(RARCH_PATH_DEFAULT_SHADER_PRESET),
-            sizeof(settings->paths.path_shader));
+      if (!string_is_empty(shader_preset))
+      {
+         RARCH_LOG("%s %s\n",
+               msg_hash_to_str(MSG_RESTORING_DEFAULT_SHADER_PRESET_TO),
+               shader_preset);
+         strlcpy(settings->paths.path_shader,
+               shader_preset,
+               sizeof(settings->paths.path_shader));
+      }
    }
 
    path_clear(RARCH_PATH_DEFAULT_SHADER_PRESET);
@@ -1373,24 +1378,32 @@ error:
    return false;
 }
 
-static bool command_event_save_config(const char *config_path,
+static bool command_event_save_config(
+      const char *config_path,
       char *s, size_t len)
 {
-   if (string_is_empty(config_path) || !config_save_file(config_path))
+   bool path_exists = !string_is_empty(config_path);
+   const char *str  = path_exists ? config_path : 
+      path_get(RARCH_PATH_CONFIG);
+
+   if (path_exists && config_save_file(config_path))
+   {
+      snprintf(s, len, "[Config]: %s \"%s\".",
+            msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
+            config_path);
+      RARCH_LOG("%s\n", s);
+      return true;
+   }
+
+   if (!string_is_empty(str))
    {
       snprintf(s, len, "%s \"%s\".",
             msg_hash_to_str(MSG_FAILED_SAVING_CONFIG_TO),
-            path_get(RARCH_PATH_CONFIG));
+            str);
       RARCH_ERR("%s\n", s);
-
-      return false;
    }
 
-   snprintf(s, len, "[Config]: %s \"%s\".",
-         msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
-         path_get(RARCH_PATH_CONFIG));
-   RARCH_LOG("%s\n", s);
-   return true;
+   return false;
 }
 
 /**
@@ -1407,6 +1420,7 @@ static bool command_event_save_core_config(void)
    bool ret                        = false;
    bool found_path                 = false;
    bool overrides_active           = false;
+   const char *core_path           = NULL;
    char *config_dir                = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    char *config_name               = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    char *config_path               = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
@@ -1429,8 +1443,10 @@ static bool command_event_save_core_config(void)
       goto error;
    }
 
+   core_path = path_get(RARCH_PATH_CORE);
+
    /* Infer file name based on libretro core. */
-   if (!string_is_empty(path_get(RARCH_PATH_CORE)) && path_file_exists(path_get(RARCH_PATH_CORE)))
+   if (!string_is_empty(core_path) && path_file_exists(core_path))
    {
       unsigned i;
       RARCH_LOG("%s\n", msg_hash_to_str(MSG_USING_CORE_NAME_FOR_NEW_CONFIG));
@@ -1442,7 +1458,7 @@ static bool command_event_save_core_config(void)
 
          fill_pathname_base_noext(
                config_name,
-               path_get(RARCH_PATH_CORE),
+               core_path,
                config_size);
 
          fill_pathname_join(config_path, config_dir, config_name,
@@ -1489,7 +1505,8 @@ static bool command_event_save_core_config(void)
 
    command_event_save_config(config_path, msg, sizeof(msg));
 
-   runloop_msg_queue_push(msg, 1, 180, true);
+   if (!string_is_empty(msg))
+      runloop_msg_queue_push(msg, 1, 180, true);
 
    if (overrides_active)
       rarch_ctl(RARCH_CTL_SET_OVERRIDES_ACTIVE, NULL);
@@ -1685,6 +1702,62 @@ static bool command_event_resize_windowed_scale(void)
    return true;
 }
 
+void command_playlist_push_write(
+      void *data,
+      const char *path,
+      const char *label,
+      const char *core_path,
+      const char *core_name)
+{
+   playlist_t *playlist = (playlist_t*)data;
+
+   if (!playlist)
+      return;
+   
+   if (playlist_push(
+         playlist,
+         path,
+         label,
+         core_path,
+         core_name,
+         NULL,
+         NULL
+         ))
+      playlist_write_file(playlist);
+}
+
+void command_playlist_update_write(
+      void *data,
+      size_t idx,
+      const char *core_display_name,
+      const char *label,
+      const char *path)
+{
+   playlist_t *plist    = (playlist_t*)data;
+   playlist_t *playlist = NULL;
+
+   if (plist)
+      playlist          = plist;
+#ifdef HAVE_MENU
+   else
+      menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
+#endif
+   if (!playlist)
+      return;
+
+   playlist_update(
+         playlist,
+         idx,
+         label,
+         NULL,
+         path,
+         core_display_name,
+         NULL,
+         NULL);
+
+   playlist_write_file(playlist);
+}
+
 /**
  * command_event:
  * @cmd                  : Event command index.
@@ -1735,16 +1808,18 @@ bool command_event(enum event_command cmd, void *data)
             core_info_ctx_find_t info_find;
             rarch_system_info_t *system_info = runloop_get_system_info();
             struct retro_system_info *system = &system_info->info;
+            const char *core_path            = path_get(RARCH_PATH_CORE);
 
 #if defined(HAVE_DYNAMIC)
-            if (string_is_empty(path_get(RARCH_PATH_CORE)))
+            if (string_is_empty(core_path))
                return false;
 #endif
+
             libretro_get_system_info(
-                  path_get(RARCH_PATH_CORE),
+                  core_path,
                   system,
                   &system_info->load_no_content);
-            info_find.path = path_get(RARCH_PATH_CORE);
+            info_find.path = core_path;
 
             if (!core_info_load(&info_find))
             {
@@ -2237,18 +2312,32 @@ TODO: Add a setting for these tweaks */
             ui_companion_driver_toggle();
          break;
       case CMD_EVENT_ADD_TO_FAVORITES:
-         playlist_push(
+      {
+         global_t *global               = global_get_ptr();
+         rarch_system_info_t *sys_info  = runloop_get_system_info();
+         const char *core_name          = NULL;
+         const char *core_path          = NULL;
+         const char *label              = NULL;
+
+         if (sys_info)
+         {
+            core_name = sys_info->info.library_name;
+            core_path = path_get(RARCH_PATH_CORE);
+         }
+
+         if (!string_is_empty(global->name.label))
+            label = global->name.label;
+
+         command_playlist_push_write(
                g_defaults.content_favorites,
-               path_get(RARCH_PATH_CONTENT),
-               NULL,
-               file_path_str(FILE_PATH_DETECT),
-               file_path_str(FILE_PATH_DETECT),
-               NULL,
-               NULL
+               (const char*)data,
+               label,
+               core_path,
+               core_name
                );
-         playlist_write_file(g_defaults.content_favorites);
          runloop_msg_queue_push(msg_hash_to_str(MSG_ADDED_TO_FAVORITES), 1, 180, true);
          break;
+      }
       case CMD_EVENT_RESTART_RETROARCH:
          if (!frontend_driver_set_fork(FRONTEND_FORK_RESTART))
             return false;

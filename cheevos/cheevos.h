@@ -117,7 +117,7 @@ bool cheevos_load(const void *data);
 
 void cheevos_reset_game(void);
 
-void cheevos_populate_menu(void *data, bool hardcore);
+void cheevos_populate_menu(void *data);
 
 bool cheevos_get_description(cheevos_ctx_desc_t *desc);
 

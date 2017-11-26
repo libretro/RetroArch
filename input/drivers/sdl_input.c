@@ -38,7 +38,7 @@ typedef struct sdl_input
 
    int mouse_x, mouse_y;
    int mouse_abs_x, mouse_abs_y;
-   int mouse_l, mouse_r, mouse_m, mouse_wu, mouse_wd, mouse_wl, mouse_wr;
+   int mouse_l, mouse_r, mouse_m, mouse_b4, mouse_b5, mouse_wu, mouse_wd, mouse_wl, mouse_wr;
 } sdl_input_t;
 
 static void *sdl_input_init(const char *joypad_driver)
@@ -131,6 +131,10 @@ static int16_t sdl_mouse_device_state(sdl_input_t *sdl, unsigned id)
          return sdl->mouse_y;
       case RETRO_DEVICE_ID_MOUSE_MIDDLE:
          return sdl->mouse_m;
+      case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
+         return sdl->mouse_b4;
+      case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
+         return sdl->mouse_b5;
    }
 
    return 0;
@@ -310,6 +314,8 @@ static void sdl_poll_mouse(sdl_input_t *sdl)
    sdl->mouse_l  = (SDL_BUTTON(SDL_BUTTON_LEFT)      & btn) ? 1 : 0;
    sdl->mouse_r  = (SDL_BUTTON(SDL_BUTTON_RIGHT)     & btn) ? 1 : 0;
    sdl->mouse_m  = (SDL_BUTTON(SDL_BUTTON_MIDDLE)    & btn) ? 1 : 0;
+   sdl->mouse_b4 = (SDL_BUTTON(SDL_BUTTON_X1)        & btn) ? 1 : 0;
+   sdl->mouse_b5 = (SDL_BUTTON(SDL_BUTTON_X2)        & btn) ? 1 : 0;
 #ifndef HAVE_SDL2
    sdl->mouse_wu = (SDL_BUTTON(SDL_BUTTON_WHEELUP)   & btn) ? 1 : 0;
    sdl->mouse_wd = (SDL_BUTTON(SDL_BUTTON_WHEELDOWN) & btn) ? 1 : 0;

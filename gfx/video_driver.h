@@ -470,7 +470,7 @@ typedef struct video_frame_info
    bool (*cb_set_coords)(void *handle_data,
          void *shader_data, const struct video_coords *coords);
 #endif
-   bool (*cb_shader_set_mvp)(void *data, void *shader_data,
+   bool (*cb_set_mvp)(void *data, void *shader_data,
          const void *mat_data);
 
    void *context_data;

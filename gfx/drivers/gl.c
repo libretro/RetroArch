@@ -222,7 +222,7 @@ static void gl_render_overlay(gl_t *gl, video_frame_info_t *video_info)
 
    video_driver_set_coords(&coords);
 
-   video_info->cb_shader_set_mvp(gl,
+   video_info->cb_set_mvp(gl,
          video_info->shader_data, &gl->mvp_no_rot);
 
    for (i = 0; i < gl->overlays; i++)
@@ -377,18 +377,10 @@ static bool gl_shader_init(gl_t *gl, const gfx_ctx_driver_t *ctx_driver,
       )
 {
    video_shader_ctx_init_t init_data;
-   enum rarch_shader_type type;
    settings_t *settings            = config_get_ptr();
    const char *shader_path         = (settings->bools.video_shader_enable
          && *settings->paths.path_shader) ? settings->paths.path_shader : NULL;
-
-   if (!gl)
-   {
-      RARCH_ERR("[GL]: Invalid GL instance passed.\n");
-      return false;
-   }
-
-   type = video_shader_parse_type(shader_path,
+   enum rarch_shader_type type     = video_shader_parse_type(shader_path,
          gl->core_context_in_use
          ? RARCH_SHADER_GLSL : DEFAULT_SHADER_TYPE);
 
@@ -621,6 +613,7 @@ static INLINE void gl_set_shader_viewports(gl_t *gl)
    shader_info.set_active = true;
 
    video_shader_driver_use(shader_info);
+
    gl_set_viewport_wrapper(gl, width, height, false, true);
 
    shader_info.data       = gl;
@@ -821,7 +814,7 @@ static void gl_render_osd_background(
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
    glBlendEquation(GL_FUNC_ADD);
 
-   video_info->cb_shader_set_mvp(gl,
+   video_info->cb_set_mvp(gl,
          video_info->shader_data, &gl->mvp_no_rot);
 
    uniform_param.type              = UNIFORM_4F;
@@ -931,25 +924,23 @@ static INLINE void gl_draw_texture(gl_t *gl, video_frame_info_t *video_info)
    color[14]              = 1.0f;
    color[15]              = gl->menu_texture_alpha;
 
-   if (!gl->menu_texture)
-      return;
-
    gl->coords.vertex      = vertexes_flipped;
    gl->coords.tex_coord   = tex_coords;
    gl->coords.color       = color;
+
    glBindTexture(GL_TEXTURE_2D, gl->menu_texture);
 
    video_info->cb_shader_use(gl,
          video_info->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
 
-   gl->coords.vertices  = 4;
+   gl->coords.vertices    = 4;
 
-   coords.handle_data   = NULL;
-   coords.data          = &gl->coords;
+   coords.handle_data     = NULL;
+   coords.data            = &gl->coords;
 
    video_driver_set_coords(&coords);
 
-   video_info->cb_shader_set_mvp(gl,
+   video_info->cb_set_mvp(gl,
          video_info->shader_data, &gl->mvp_no_rot);
 
    glEnable(GL_BLEND);
@@ -965,9 +956,9 @@ static INLINE void gl_draw_texture(gl_t *gl, video_frame_info_t *video_info)
 
    glDisable(GL_BLEND);
 
-   gl->coords.vertex    = gl->vertex_ptr;
-   gl->coords.tex_coord = gl->tex_info.coord;
-   gl->coords.color     = gl->white_color_ptr;
+   gl->coords.vertex      = gl->vertex_ptr;
+   gl->coords.tex_coord   = gl->tex_info.coord;
+   gl->coords.color       = gl->white_color_ptr;
 }
 #endif
 
@@ -1131,7 +1122,7 @@ static bool gl_frame(void *data, const void *frame,
 
    video_driver_set_coords(&coords);
 
-   video_info->cb_shader_set_mvp(gl, video_info->shader_data, &gl->mvp);
+   video_info->cb_set_mvp(gl, video_info->shader_data, &gl->mvp);
 
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
@@ -1148,7 +1139,7 @@ static bool gl_frame(void *data, const void *frame,
    {
       menu_driver_frame(video_info);
 
-      if (gl->menu_texture_enable)
+      if (gl->menu_texture)
          gl_draw_texture(gl, video_info);
    }
 #endif
@@ -1340,7 +1331,7 @@ static void gl_set_nonblock_state(void *data, bool state)
 
 static bool resolve_extensions(gl_t *gl, const char *context_ident)
 {
-   settings_t *settings = config_get_ptr();
+   settings_t *settings          = config_get_ptr();
 
    /* have_es2_compat - GL_RGB565 internal format support.
     * Even though ES2 support is claimed, the format
@@ -1510,20 +1501,20 @@ static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
    unsigned minor                       = hwr->version_minor;
 
 #ifdef HAVE_OPENGLES
-   api         = GFX_CTX_OPENGL_ES_API;
-   api_name    = "OpenGL ES 2.0";
+   api                                  = GFX_CTX_OPENGL_ES_API;
+   api_name                             = "OpenGL ES 2.0";
 
    if (hwr->context_type == RETRO_HW_CONTEXT_OPENGLES3)
    {
-      major    = 3;
-      minor    = 0;
-      api_name = "OpenGL ES 3.0";
+      major                             = 3;
+      minor                             = 0;
+      api_name                          = "OpenGL ES 3.0";
    }
    else if (hwr->context_type == RETRO_HW_CONTEXT_OPENGLES_VERSION)
-      api_name = "OpenGL ES 3.1+";
+      api_name                          = "OpenGL ES 3.1+";
 #else
-   api         = GFX_CTX_OPENGL_API;
-   api_name    = "OpenGL";
+   api                                  = GFX_CTX_OPENGL_API;
+   api_name                             = "OpenGL";
 #endif
 
    (void)api_name;

@@ -1,5 +1,14 @@
-# 1.6.8 (future)
+# 1.7.0 (future)
+- CHEEVOS: Add badges
+
+# 1.6.9
+- COMMON: Small memory leak.
+- NETPLAY: Fix network command only working once.
+
+# 1.6.8
 - Audio: Fix the Audio DSP picker
+- CHEEVOS: Add support for Atari Lynx cheevos.
+- CHEEVOS: Add support for RetroAchievements Leaderboards.
 - GUI: (MaterialUI) Fix crash that happened on context reset with Vulkan.
 - GUI: (MaterialUI) Skip querying and drawing items that are not visible; Cache content height and bbox calculation.
 - GUI: (MaterialUI) Fix entry box highlight calculation.
@@ -10,6 +19,8 @@
 - GUI: Add menu option for OSD text color.
 - GUI: Add menu option to remove frame count from OSD.
 - GUI: Allow wraparound of int/float settings when pressing the left key
+- INPUT/LIBRETRO: Add support for more mouse buttons (buttons 4/5)
+- INPUT/LIBRETRO: Add support for analog buttons
 - INPUT: Always show the controls menu even if descriptors are not set
 - INPUT: Fix input descriptors not being set on cores that don't implement the controllers interface
 - INPUT: Apply descriptors only for the amount of cores the core supports
@@ -27,6 +38,8 @@
 - LINUX/PI: Broadcom VC4: Add Videocore config option
 - LINUX/UDEV: Fix - RetroArch reads keyboard input when not focused with the udev input driver.
 - NETPLAY: Fix disconnection not fully deinitializing Netplay.
+- NETPLAY: Fix lan rooms when there is more than one room
+- NETPLAY: Fix lan rooms on systems where all addresses are treated as IPv6
 - COMMON: Fix clear/free loop conditionals in playlists.
 - WINDOWS/GDI: Fix flickering of text.
 - WINDOWS/GDI: Fix graphics corruption on Windows 98
@@ -43,6 +56,7 @@
 - SCANNER: Support CHD files.
 - SCANNER: Support Gamecube ISO scanning.
 - SCANNER: Use primary data track of disc images for CRC lookups rather than cue files.  This is slower but finds matches more reliably, and is necessary for CHD files to work at all.  Update your databases!
+- SCANNER: Fall back on looking inside archives when matching MAME/FBA content (most recent cores only).  If you had difficulty with content being detected before, you may have better luck now.  Update your databases and core info!
 
 # 1.6.7
 - SCANNER: Fix directory scanning.

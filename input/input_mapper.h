@@ -40,6 +40,7 @@ void input_mapper_poll(input_mapper_t *handle);
 bool input_mapper_key_pressed(int key);
 
 void input_mapper_state(
+      input_mapper_t *handle,
       int16_t *ret,
       unsigned port,
       unsigned device,
