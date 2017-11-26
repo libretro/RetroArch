@@ -1490,26 +1490,6 @@ static int action_ok_playlist_entry_collection(const char *path,
    playlist_get_index(playlist, selection_ptr,
          &entry_path, &entry_label, &core_path, &core_name, NULL, NULL);
 
-   /* If the currently loaded core's name is equal
-    * to the core name from the playlist entry,
-    * then we directly load this game with the current core.
-    */
-   if (system &&
-         string_is_equal(system->library_name, core_name))
-   {
-      global_t  *global  = global_get_ptr();
-
-      if (playlist_initialized)
-         playlist_free(tmp_playlist);
-      if (global)
-      {
-         global->name.label[0] = '\0';
-         if (!string_is_empty(entry_label))
-            strlcpy(global->name.label, entry_label, sizeof(global->name.label));
-      }
-      return action_ok_file_load(menu->deferred_path, label, type, idx, entry_idx);
-   }
-
    /* Is the core path / name of the playlist entry not yet filled in? */
    if (     string_is_equal(core_path, file_path_str(FILE_PATH_DETECT))
          && string_is_equal(core_name, file_path_str(FILE_PATH_DETECT)))
