@@ -96,6 +96,8 @@ struct retro_keybind
    enum msg_hash_enums enum_idx;
    enum retro_key key;
 
+   uint16_t mbutton;
+
    /* Joypad key. Joypad POV (hats) 
     * are embedded into this key as well. */
    uint64_t joykey;
