@@ -3859,56 +3859,19 @@ static int action_ok_load_archive_detect_core(const char *path,
    return ret;
 }
 
-static int action_ok_help_audio_video_troubleshooting(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return generic_action_ok_help(path, label, type, idx, entry_idx,
-         MENU_ENUM_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING,
-         MENU_DIALOG_HELP_AUDIO_VIDEO_TROUBLESHOOTING);
+#define default_action_ok_help(funcname, _id, _id2) \
+static int (funcname)(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx) \
+{ \
+   return generic_action_ok_help(path, label, type, idx, entry_idx, _id, _id2); \
 }
 
-static int action_ok_help(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return generic_action_ok_help(path, label, type, idx, entry_idx,
-         MENU_ENUM_LABEL_HELP, MENU_DIALOG_WELCOME);
-}
-
-static int action_ok_help_controls(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return generic_action_ok_help(path, label, type, idx, entry_idx,
-         MENU_ENUM_LABEL_HELP_CONTROLS, MENU_DIALOG_HELP_CONTROLS);
-}
-
-static int action_ok_help_what_is_a_core(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return generic_action_ok_help(path, label, type, idx, entry_idx,
-         MENU_ENUM_LABEL_HELP_WHAT_IS_A_CORE, MENU_DIALOG_HELP_WHAT_IS_A_CORE);
-}
-
-static int action_ok_help_scanning_content(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return generic_action_ok_help(path, label, type, idx, entry_idx,
-         MENU_ENUM_LABEL_HELP_SCANNING_CONTENT, MENU_DIALOG_HELP_SCANNING_CONTENT);
-}
-
-static int action_ok_help_change_virtual_gamepad(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return generic_action_ok_help(path, label, type, idx, entry_idx,
-         MENU_ENUM_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD,
-         MENU_DIALOG_HELP_CHANGE_VIRTUAL_GAMEPAD);
-}
-
-static int action_ok_help_load_content(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return generic_action_ok_help(path, label, type, idx, entry_idx,
-         MENU_ENUM_LABEL_HELP_LOADING_CONTENT, MENU_DIALOG_HELP_LOADING_CONTENT);
-}
+default_action_ok_help(action_ok_help_audio_video_troubleshooting, MENU_ENUM_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING, MENU_DIALOG_HELP_AUDIO_VIDEO_TROUBLESHOOTING)
+default_action_ok_help(action_ok_help, MENU_ENUM_LABEL_HELP, MENU_DIALOG_WELCOME)
+default_action_ok_help(action_ok_help_controls, MENU_ENUM_LABEL_HELP_CONTROLS, MENU_DIALOG_HELP_CONTROLS)
+default_action_ok_help(action_ok_help_what_is_a_core, MENU_ENUM_LABEL_HELP_WHAT_IS_A_CORE, MENU_DIALOG_HELP_WHAT_IS_A_CORE)
+default_action_ok_help(action_ok_help_scanning_content, MENU_ENUM_LABEL_HELP_SCANNING_CONTENT, MENU_DIALOG_HELP_SCANNING_CONTENT)
+default_action_ok_help(action_ok_help_change_virtual_gamepad, MENU_ENUM_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD, MENU_DIALOG_HELP_CHANGE_VIRTUAL_GAMEPAD)
+default_action_ok_help(action_ok_help_load_content, MENU_ENUM_LABEL_HELP_LOADING_CONTENT, MENU_DIALOG_HELP_LOADING_CONTENT)
 
 static int action_ok_video_resolution(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
