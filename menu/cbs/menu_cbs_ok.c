@@ -2618,40 +2618,17 @@ static int generic_action_ok_network(const char *path,
          label, type, idx, entry_idx, type_id2);
 }
 
-static int action_ok_core_content_list(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return generic_action_ok_network(path, label, type, idx, entry_idx,
-         MENU_ENUM_LABEL_CB_CORE_CONTENT_LIST);
+#define default_action_ok_list(funcname, _id) \
+static int (funcname)(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx) \
+{ \
+   return generic_action_ok_network(path, label, type, idx, entry_idx, _id); \
 }
 
-static int action_ok_core_content_dirs_list(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return generic_action_ok_network(path, label, type, idx, entry_idx,
-         MENU_ENUM_LABEL_CB_CORE_CONTENT_DIRS_LIST);
-}
-
-static int action_ok_core_updater_list(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return generic_action_ok_network(path, label, type, idx, entry_idx,
-         MENU_ENUM_LABEL_CB_CORE_UPDATER_LIST);
-}
-
-static int action_ok_thumbnails_updater_list(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return generic_action_ok_network(path, label, type, idx, entry_idx,
-         MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_LIST);
-}
-
-static int action_ok_lakka_list(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return generic_action_ok_network(path, label, type, idx, entry_idx,
-         MENU_ENUM_LABEL_CB_LAKKA_LIST);
-}
+default_action_ok_list(action_ok_core_content_list, MENU_ENUM_LABEL_CB_CORE_CONTENT_LIST)
+default_action_ok_list(action_ok_core_content_dirs_list, MENU_ENUM_LABEL_CB_CORE_CONTENT_DIRS_LIST)
+default_action_ok_list(action_ok_core_updater_list, MENU_ENUM_LABEL_CB_CORE_UPDATER_LIST)
+default_action_ok_list(action_ok_thumbnails_updater_list, MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_LIST)
+default_action_ok_list(action_ok_lakka_list, MENU_ENUM_LABEL_CB_LAKKA_LIST)
 
 static void cb_generic_dir_download(void *task_data,
       void *user_data, const char *err)
