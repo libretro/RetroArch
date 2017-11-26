@@ -1751,12 +1751,6 @@ static int action_ok_playlist_entry_start_content(const char *path,
    return 0;
 }
 
-static int action_ok_cheat_apply_changes(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return generic_action_ok_command(CMD_EVENT_CHEATS_APPLY);
-}
-
 static int action_ok_lookup_setting(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -2981,6 +2975,7 @@ int (func_name)(const char *path, const char *label, unsigned type, size_t idx, 
    return generic_action_ok_command(cmd); \
 }
 
+default_action_ok_cmd_func(action_ok_cheat_apply_changes,CMD_EVENT_CHEATS_APPLY)
 default_action_ok_cmd_func(action_ok_quit,               CMD_EVENT_QUIT)
 default_action_ok_cmd_func(action_ok_save_new_config,    CMD_EVENT_MENU_SAVE_CONFIG)
 default_action_ok_cmd_func(action_ok_resume_content,     CMD_EVENT_RESUME)
@@ -3607,7 +3602,8 @@ static int action_ok_push_downloads_dir(const char *path,
    settings_t            *settings   = config_get_ptr();
 
    filebrowser_set_type(FILEBROWSER_SELECT_FILE);
-   return generic_action_ok_displaylist_push(path, settings->paths.directory_core_assets,
+   return generic_action_ok_displaylist_push(path,
+         settings->paths.directory_core_assets,
          msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
          type, idx,
          entry_idx, ACTION_OK_DL_CONTENT_LIST);
@@ -3928,7 +3924,12 @@ static int action_ok_netplay_disconnect(const char *path,
 static int action_ok_core_delete(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char* core_path = strdup(path_get(RARCH_PATH_CORE));
+   const char *path_core = path_get(RARCH_PATH_CORE);
+   char *core_path       = !string_is_empty(path_core) 
+      ? strdup(path_core) : NULL;
+
+   if (!core_path)
+      return 0;
 
    generic_action_ok_command(CMD_EVENT_UNLOAD_CORE);
    menu_entries_flush_stack(0, 0);
