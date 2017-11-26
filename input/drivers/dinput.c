@@ -267,6 +267,49 @@ static bool dinput_keyboard_pressed(struct dinput_input *di, unsigned key)
    return di->state[sym] & 0x80;
 }
 
+static bool dinput_mbutton_pressed(struct dinput_input *di, unsigned key)
+{
+	bool result;
+
+	switch ( key )
+	{
+
+	case RETRO_DEVICE_ID_MOUSE_LEFT:
+		return di->mouse_l;
+	case RETRO_DEVICE_ID_MOUSE_RIGHT:
+		return di->mouse_r;
+	case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+		return di->mouse_m;
+	case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
+		return di->mouse_b4;
+	case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
+		return di->mouse_b5;
+
+	case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+		result = di->mouse_wu;
+		di->mouse_wu = false;
+		return result;
+
+	case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+		result = di->mouse_wd;
+		di->mouse_wd = false;
+		return result;
+
+	case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
+		result = di->mouse_hwu;
+		di->mouse_hwu = false;
+		return result;
+
+	case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
+		result = di->mouse_hwd;
+		di->mouse_hwd = false;
+		return result;
+
+	}
+
+	return false;
+}
+
 static bool dinput_is_pressed(struct dinput_input *di,
       rarch_joypad_info_t joypad_info,
       const struct retro_keybind *binds,
@@ -276,8 +319,13 @@ static bool dinput_is_pressed(struct dinput_input *di,
 
    if (!di->blocked && (bind->key < RETROK_LAST) && dinput_keyboard_pressed(di, bind->key))
       return true;
-   if (binds && binds[id].valid && input_joypad_pressed(di->joypad, joypad_info, port, binds, id))
-      return true;
+   if (binds && binds[id].valid)
+   {
+     if (dinput_mbutton_pressed(di, bind->mbutton))
+        return true;
+     if (input_joypad_pressed(di->joypad, joypad_info, port, binds, id))
+        return true;
+   }
 
    return false;
 }

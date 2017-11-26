@@ -288,6 +288,50 @@ static int16_t winraw_mouse_state(winraw_input_t *wr,
    return 0;
 }
 
+static bool winraw_mbutton_pressed(winraw_input_t *wr, unsigned port, unsigned key)
+{
+	unsigned i;
+	bool result;
+	winraw_mouse_t *mouse = NULL;
+	settings_t *settings = config_get_ptr();
+
+	if (port >= MAX_USERS)
+		return false;
+
+	for (i = 0; i < g_mouse_cnt; ++i)
+	{
+		if (i == settings->uints.input_mouse_index[port])
+		{
+			mouse = &wr->mice[i];
+			break;
+		}
+	}
+
+	if (!mouse)
+		return false;
+
+	switch ( key )
+	{
+
+	case RETRO_DEVICE_ID_MOUSE_LEFT:
+		return mouse->btn_l;
+	case RETRO_DEVICE_ID_MOUSE_RIGHT:
+		return mouse->btn_r;
+	case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+		return mouse->btn_m;
+	case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
+		return mouse->btn_b4;
+	case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
+		return mouse->btn_b5;
+	case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+		return mouse->whl_u;
+	case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+		return mouse->whl_d;
+	}
+
+	return false;
+}
+
 static int16_t winraw_joypad_state(winraw_input_t *wr,
       rarch_joypad_info_t joypad_info,
       const struct retro_keybind *binds,
@@ -297,6 +341,9 @@ static int16_t winraw_joypad_state(winraw_input_t *wr,
    unsigned key = rarch_keysym_lut[(enum retro_key)bind->key];
 
    if (!wr->kbd_mapp_block && (bind->key < RETROK_LAST) && wr->keyboard.keys[key])
+      return 1;
+
+   if (binds && binds[id].valid && winraw_mbutton_pressed(wr, port, bind->mbutton))
       return 1;
 
    return input_joypad_pressed(wr->joypad, joypad_info, port, binds, id);
@@ -454,7 +501,7 @@ static LRESULT CALLBACK winraw_callback(HWND wnd, UINT msg, WPARAM wpar, LPARAM 
       return DefWindowProcA(wnd, msg, wpar, lpar);
 
    /* app is in the background */
-   if (GET_RAWINPUT_CODE_WPARAM(wpar) != RIM_INPUT) 
+   if (GET_RAWINPUT_CODE_WPARAM(wpar) != RIM_INPUT)
       goto end;
 
    r = GetRawInputData((HRAWINPUT)lpar, RID_INPUT,
