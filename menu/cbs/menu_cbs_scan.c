@@ -144,6 +144,7 @@ static int action_scan_input_desc(const char *path,
       target->key     = RETROK_UNKNOWN;
       target->joykey  = NO_BTN;
       target->joyaxis = AXIS_NONE;
+      target->mbutton = NO_BTN;
    }
 
    return 0;
