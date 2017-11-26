@@ -30,9 +30,11 @@
 #define MENU_MAX_BUTTONS 219
 #define MENU_MAX_AXES    32
 #define MENU_MAX_HATS    4
+#define MENU_MAX_MBUTTONS 32 /*enough to cover largest libretro constant*/
 
 struct menu_bind_state_port
 {
+   bool mbuttons[MENU_MAX_MBUTTONS];
    bool buttons[MENU_MAX_BUTTONS];
    int16_t axes[MENU_MAX_AXES];
    uint16_t hats[MENU_MAX_HATS];
@@ -206,6 +208,7 @@ static void menu_input_key_bind_poll_bind_state(
       unsigned port,
       bool timed_out)
 {
+   unsigned b;
    rarch_joypad_info_t joypad_info;
    const input_device_driver_t *joypad     =
       input_driver_get_joypad_driver();
@@ -216,6 +219,11 @@ static void menu_input_key_bind_poll_bind_state(
       return;
 
    memset(state->state, 0, sizeof(state->state));
+
+    /* poll mouse (on the relevant port) */
+    for (b = 0; b < MENU_MAX_MBUTTONS; b++)
+        state->state[port].mbuttons[b] =
+           input_mouse_button_raw(port, b);
 
    joypad_info.joy_idx        = 0;
    joypad_info.auto_binds     = NULL;
@@ -276,6 +284,30 @@ static bool menu_input_key_bind_poll_find_trigger_pad(
       &new_state->state[p];
    const struct menu_bind_state_port *o = (const struct menu_bind_state_port*)
       &state->state[p];
+
+   for (b = 0; b < MENU_MAX_MBUTTONS; b++)
+   {
+      bool iterate = n->mbuttons[b] && !o->mbuttons[b];
+
+      if (!iterate)
+         continue;
+
+      switch ( b )
+      {
+
+	  case RETRO_DEVICE_ID_MOUSE_LEFT:
+	  case RETRO_DEVICE_ID_MOUSE_RIGHT:
+	  case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+	  case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
+	  case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
+	  case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+	  case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+	  case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
+	  case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
+		  state->target->mbutton = b;
+		  return true;
+	  }
+   }
 
    for (b = 0; b < MENU_MAX_BUTTONS; b++)
    {
@@ -398,7 +430,7 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind)
    }
 
    snprintf(bind->s, bind->len,
-         "[%s]\npress keyboard or joypad\n(timeout %d %s)",
+         "[%s]\npress keyboard, mouse or joypad\n(timeout %d %s)",
          input_config_bind_map_get_desc(
             menu_input_binds.begin - MENU_SETTINGS_BIND_BEGIN),
          rarch_timer_get_timeout(&menu_input_binds.timer),

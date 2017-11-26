@@ -381,6 +381,7 @@ static const void *hid_data                       = NULL;
 #define check_input_driver_block_hotkey(normal_bind, autoconf_bind) \
 ( \
          (((normal_bind)->key      != RETROK_UNKNOWN) \
+      || ((normal_bind)->mbutton   != NO_BTN) \
       || ((normal_bind)->joykey    != NO_BTN) \
       || ((normal_bind)->joyaxis   != AXIS_NONE) \
       || ((autoconf_bind)->key     != RETROK_UNKNOWN ) \
@@ -1745,6 +1746,41 @@ bool input_joypad_hat_raw(const input_device_driver_t *drv,
 }
 
 /**
+ * input_mouse_button_raw:
+ * @port                    : Mouse number.
+ * @button                  : Identifier of key (libretro mouse constant).
+ *
+ * Checks if key (@button) was being pressed by user
+ * with mouse number @port.
+ *
+ * Returns: true (1) if key was pressed, otherwise
+ * false (0).
+ **/
+bool input_mouse_button_raw(unsigned port, unsigned id)
+{
+	int16_t res;
+	rarch_joypad_info_t joypad_info;
+	settings_t *settings = config_get_ptr();
+
+	/*ignore axes*/
+	if ( id == RETRO_DEVICE_ID_MOUSE_X || id == RETRO_DEVICE_ID_MOUSE_Y ) {
+		return false;
+	}
+
+	joypad_info.axis_threshold = input_driver_axis_threshold;
+	joypad_info.joy_idx        = settings->uints.input_joypad_map[port];
+	joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
+
+	res = current_input->input_state(current_input_data,
+		joypad_info, libretro_input_binds, port, RETRO_DEVICE_MOUSE, 0, id);
+
+	if ( res ) {
+		return true;
+	}
+	return false;
+}
+
+/**
  * input_conv_analog_id_to_bind_id:
  * @idx                     : Analog key index.
  *                            E.g.: 
@@ -2410,6 +2446,55 @@ void input_config_parse_joy_axis(void *data, const char *prefix,
    }
 }
 
+void input_config_parse_mouse_button(void *data, const char *prefix,
+      const char *btn, struct retro_keybind *bind)
+{
+	int val;
+	char str[256];
+	char tmp[64];
+	char key[64];
+	config_file_t *conf      = (config_file_t*)data;
+
+	str[0] = tmp[0] = key[0] = '\0';
+
+	fill_pathname_join_delim(str, prefix, btn,
+		'_', sizeof(str));
+	fill_pathname_join_delim(key, str,
+		"mbtn", '_', sizeof(key));
+
+	if ( bind && config_get_array(conf, key, tmp, sizeof(tmp)) )
+	{
+		bind->mbutton = NO_BTN;
+
+		if ( tmp[0]=='w' )
+		{
+			switch ( tmp[1] ) {
+				case 'u': bind->mbutton = RETRO_DEVICE_ID_MOUSE_WHEELUP; break;
+				case 'd': bind->mbutton = RETRO_DEVICE_ID_MOUSE_WHEELDOWN; break;
+				case 'h':
+				{
+					switch ( tmp[2] ) {
+						case 'u': bind->mbutton = RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP; break;
+						case 'd': bind->mbutton = RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN; break;
+					}
+				}
+				break;
+			}
+		}
+		else
+		{
+			val = atoi(tmp);
+			switch ( val ) {
+				case 1: bind->mbutton = RETRO_DEVICE_ID_MOUSE_LEFT; break;
+				case 2: bind->mbutton = RETRO_DEVICE_ID_MOUSE_RIGHT; break;
+				case 3: bind->mbutton = RETRO_DEVICE_ID_MOUSE_MIDDLE; break;
+				case 4: bind->mbutton = RETRO_DEVICE_ID_MOUSE_BUTTON_4; break;
+				case 5: bind->mbutton = RETRO_DEVICE_ID_MOUSE_BUTTON_5; break;
+			}
+		}
+	}
+}
+
 static void input_config_get_bind_string_joykey(
       char *buf, const char *prefix,
       const struct retro_keybind *bind, size_t size)
@@ -2452,9 +2537,9 @@ static void input_config_get_bind_string_joykey(
    {
       if (bind->joykey_label &&
             !string_is_empty(bind->joykey_label) && label_show)
-         snprintf(buf, size, "%s%s (btn) ", prefix, bind->joykey_label);
+         snprintf(buf, size, "%s%s (btn)", prefix, bind->joykey_label);
       else
-         snprintf(buf, size, "%s%u (%s) ", prefix, (unsigned)bind->joykey,
+         snprintf(buf, size, "%s%u (%s)", prefix, (unsigned)bind->joykey,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
    }
 }
@@ -2482,7 +2567,7 @@ static void input_config_get_bind_string_joyaxis(char *buf, const char *prefix,
          dir = '+';
          axis = AXIS_POS_GET(bind->joyaxis);
       }
-      snprintf(buf, size, "%s%c%u (%s) ", prefix, dir, axis,
+      snprintf(buf, size, "%s%c%u (%s)", prefix, dir, axis,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
    }
 }
@@ -2490,6 +2575,7 @@ static void input_config_get_bind_string_joyaxis(char *buf, const char *prefix,
 void input_config_get_bind_string(char *buf, const struct retro_keybind *bind,
       const struct retro_keybind *auto_bind, size_t size)
 {
+	int delim = 0;
 #ifndef RARCH_CONSOLE
    char key[64];
    char keybuf[64];
@@ -2507,16 +2593,67 @@ void input_config_get_bind_string(char *buf, const struct retro_keybind *bind,
    else if (auto_bind && auto_bind->joyaxis != AXIS_NONE)
       input_config_get_bind_string_joyaxis(buf, "Auto: ", auto_bind, size);
 
+   if ( *buf ) {
+	   delim = 1;
+   }
+
 #ifndef RARCH_CONSOLE
    input_keymaps_translate_rk_to_str(bind->key, key, sizeof(key));
    if (string_is_equal(key, file_path_str(FILE_PATH_NUL)))
       *key = '\0';
    /*empty?*/
    if ( *key != '\0' ) {
+	 if ( delim ) {
+		 strlcat(buf, ", ", size);
+	 }
      snprintf(keybuf, sizeof(keybuf), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_KEY), key);
      strlcat(buf, keybuf, size);
+     delim = 1;
    }
 #endif
+
+	if ( bind->mbutton != NO_BTN )
+	{
+		int tag = 0;
+		switch ( bind->mbutton )
+		{
+		case RETRO_DEVICE_ID_MOUSE_LEFT:
+			tag = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT;
+			break;
+		case RETRO_DEVICE_ID_MOUSE_RIGHT:
+			tag = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_RIGHT;
+			break;
+		case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+			tag = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_MIDDLE;
+			break;
+		case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
+			tag = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_BUTTON4;
+			break;
+		case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
+			tag = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_BUTTON5;
+			break;
+		case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+			tag = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_UP;
+			break;
+		case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+			tag = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_DOWN;
+			break;
+		case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
+			tag = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_UP;
+			break;
+		case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
+			tag = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_DOWN;
+			break;
+		} /* switch ( bind->mbutton ) */
+
+		if ( tag != 0 ) {
+			if ( delim ) {
+				strlcat(buf, ", ", size);
+			}
+			strlcat( buf, msg_hash_to_str(tag), size );
+			delim = 1;
+		}
+	}
 
    /*completely empty?*/
    if ( *buf == '\0' ) {

@@ -49,6 +49,7 @@
 
 #include "../../gfx/video_driver.h"
 
+#include "../../configuration.h"
 #include "../../verbosity.h"
 
 /* Keep track of which pad indexes are 360 controllers.
@@ -267,6 +268,58 @@ static bool dinput_keyboard_pressed(struct dinput_input *di, unsigned key)
    return di->state[sym] & 0x80;
 }
 
+static bool dinput_mbutton_pressed(struct dinput_input *di, unsigned port, unsigned key)
+{
+	bool result;
+	settings_t *settings = config_get_ptr();
+
+	if (port >= MAX_USERS)
+		return false;
+
+	/* the driver only supports one mouse */
+	if ( settings->uints.input_mouse_index[ port ] != 0 ) {
+		return false;
+	}
+
+	switch ( key )
+	{
+
+	case RETRO_DEVICE_ID_MOUSE_LEFT:
+		return di->mouse_l;
+	case RETRO_DEVICE_ID_MOUSE_RIGHT:
+		return di->mouse_r;
+	case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+		return di->mouse_m;
+	case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
+		return di->mouse_b4;
+	case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
+		return di->mouse_b5;
+
+	case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+		result = di->mouse_wu;
+		di->mouse_wu = false;
+		return result;
+
+	case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+		result = di->mouse_wd;
+		di->mouse_wd = false;
+		return result;
+
+	case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
+		result = di->mouse_hwu;
+		di->mouse_hwu = false;
+		return result;
+
+	case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
+		result = di->mouse_hwd;
+		di->mouse_hwd = false;
+		return result;
+
+	}
+
+	return false;
+}
+
 static bool dinput_is_pressed(struct dinput_input *di,
       rarch_joypad_info_t joypad_info,
       const struct retro_keybind *binds,
@@ -276,8 +329,13 @@ static bool dinput_is_pressed(struct dinput_input *di,
 
    if (!di->blocked && (bind->key < RETROK_LAST) && dinput_keyboard_pressed(di, bind->key))
       return true;
-   if (binds && binds[id].valid && input_joypad_pressed(di->joypad, joypad_info, port, binds, id))
-      return true;
+   if (binds && binds[id].valid)
+   {
+     if (dinput_mbutton_pressed(di, port, bind->mbutton))
+        return true;
+     if (input_joypad_pressed(di->joypad, joypad_info, port, binds, id))
+        return true;
+   }
 
    return false;
 }
@@ -334,9 +392,19 @@ static int16_t dinput_lightgun_state(struct dinput_input *di, unsigned id)
    return 0;
 }
 
-static int16_t dinput_mouse_state(struct dinput_input *di, unsigned id)
+static int16_t dinput_mouse_state(struct dinput_input *di, unsigned port, unsigned id)
 {
    int16_t state = 0;
+
+	settings_t *settings = config_get_ptr();
+
+	if (port >= MAX_USERS)
+		return false;
+
+	/* the driver only supports one mouse */
+	if ( settings->uints.input_mouse_index[ port ] != 0 ) {
+		return 0;
+	}
 
    switch (id)
    {
@@ -379,8 +447,18 @@ static int16_t dinput_mouse_state(struct dinput_input *di, unsigned id)
    return 0;
 }
 
-static int16_t dinput_mouse_state_screen(struct dinput_input *di, unsigned id)
+static int16_t dinput_mouse_state_screen(struct dinput_input *di, unsigned port, unsigned id)
 {
+	settings_t *settings = config_get_ptr();
+
+	if (port >= MAX_USERS)
+		return false;
+
+	/* the driver only supports one mouse */
+	if ( settings->uints.input_mouse_index[ port ] != 0 ) {
+		return 0;
+	}
+
    switch (id)
    {
       case RETRO_DEVICE_ID_MOUSE_X:
@@ -391,7 +469,7 @@ static int16_t dinput_mouse_state_screen(struct dinput_input *di, unsigned id)
          break;
    }
 
-   return dinput_mouse_state(di, id);
+   return dinput_mouse_state(di, port, id);
 }
 
 static int16_t dinput_pointer_state(struct dinput_input *di,
@@ -494,10 +572,10 @@ static int16_t dinput_input_state(void *data,
          return 0;
 
       case RETRO_DEVICE_MOUSE:
-         return dinput_mouse_state(di, id);
+         return dinput_mouse_state(di, port, id);
 
       case RARCH_DEVICE_MOUSE_SCREEN:
-         return dinput_mouse_state_screen(di, id);
+         return dinput_mouse_state_screen(di, port, id);
 
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:

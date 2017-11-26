@@ -96,6 +96,8 @@ struct retro_keybind
    enum msg_hash_enums enum_idx;
    enum retro_key key;
 
+   uint16_t mbutton;
+
    /* Joypad key. Joypad POV (hats) 
     * are embedded into this key as well. */
    uint64_t joykey;
@@ -606,7 +608,20 @@ bool input_joypad_hat_raw(const input_device_driver_t *driver,
       unsigned joypad, unsigned hat_dir, unsigned hat);
 
 /**
- * input_joypad_name:  
+ * input_mouse_button_raw:
+ * @port                    : Mouse number.
+ * @button                  : Identifier of key (libretro mouse constant).
+ *
+ * Checks if key (@button) was being pressed by user
+ * with mouse number @port.
+ *
+ * Returns: true (1) if key was pressed, otherwise
+ * false (0).
+ **/
+bool input_mouse_button_raw(unsigned port, unsigned button);
+
+/**
+ * input_joypad_name:
  * @drv                     : Input device driver handle.
  * @port                    : Joystick number.
  *
@@ -758,6 +773,9 @@ void input_config_parse_joy_button(void *data, const char *prefix,
 
 void input_config_parse_joy_axis(void *data, const char *prefix,
       const char *axis, struct retro_keybind *bind);
+
+void input_config_parse_mouse_button(void *data, const char *prefix,
+      const char *btn, struct retro_keybind *bind);
 
 void input_config_set_device_name(unsigned port, const char *name);
 
