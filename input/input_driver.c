@@ -381,6 +381,7 @@ static const void *hid_data                       = NULL;
 #define check_input_driver_block_hotkey(normal_bind, autoconf_bind) \
 ( \
          (((normal_bind)->key      != RETROK_UNKNOWN) \
+      || ((normal_bind)->mbutton   != NO_BTN) \
       || ((normal_bind)->joykey    != NO_BTN) \
       || ((normal_bind)->joyaxis   != AXIS_NONE) \
       || ((autoconf_bind)->key     != RETROK_UNKNOWN ) \
