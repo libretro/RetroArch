@@ -1497,8 +1497,16 @@ static int action_ok_playlist_entry_collection(const char *path,
    if (system &&
          string_is_equal(system->library_name, core_name))
    {
+      global_t  *global  = global_get_ptr();
+
       if (playlist_initialized)
          playlist_free(tmp_playlist);
+      if (global)
+      {
+         global->name.label[0] = '\0';
+         if (!string_is_empty(entry_label))
+            strlcpy(global->name.label, entry_label, sizeof(global->name.label));
+      }
       return action_ok_file_load(menu->deferred_path, label, type, idx, entry_idx);
    }
 
