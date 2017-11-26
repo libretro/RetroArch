@@ -120,10 +120,8 @@ if [ "$HAVE_EGL" != "no" ] && [ "$OS" != 'Win32' ]; then
    check_pkgconf EGL "$VC_PREFIX"egl
    # some systems have EGL libs, but no pkgconfig
    if [ "$HAVE_EGL" = "no" ]; then
-      HAVE_EGL=auto; check_lib '' EGL "-l${VC_PREFIX}EGL $EXTRA_GL_LIBS"
-      if [ "$HAVE_EGL" = "yes" ]; then
-         EGL_LIBS="-l${VC_PREFIX}EGL $EXTRA_GL_LIBS"
-      fi
+      HAVE_EGL=auto
+      check_lib '' EGL "-l${VC_PREFIX}EGL $EXTRA_GL_LIBS"
    else
       EGL_LIBS="$EGL_LIBS $EXTRA_GL_LIBS"
    fi
@@ -239,7 +237,7 @@ check_header OSS_BSD soundcard.h
 check_lib '' OSS_LIB -lossaudio
 
 if [ "$OS" = 'Linux' ]; then
-	HAVE_TINYALSA=yes
+   HAVE_TINYALSA=yes
 fi
 
 if [ "$OS" = 'Darwin' ]; then
@@ -304,15 +302,12 @@ if [ "$HAVE_OPENGL" != 'no' ] && [ "$HAVE_OPENGLES" != 'yes' ]; then
 
    if [ "$HAVE_OPENGL" = 'yes' ]; then
       if [ "$OS" = 'Darwin' ]; then
-         check_lib '' CG "-framework Cg" cgCreateContext
-         [ "$HAVE_CG" = 'yes' ] && CG_LIBS='-framework Cg'
+         check_lib '' CG '-framework Cg' cgCreateContext
       elif [ "$OS" = 'Win32' ]; then
-         check_lib cxx CG -lcg cgCreateContext
-         [ "$HAVE_CG" = 'yes' ] && CG_LIBS='-lcg -lcgGL'
+         check_lib cxx CG '-lcg -lcgGL' cgCreateContext
       else
          # On some distros, -lCg doesn't link against -lstdc++ it seems ...
-         check_lib cxx CG -lCg cgCreateContext
-         [ "$HAVE_CG" = 'yes' ] && CG_LIBS='-lCg -lCgGL'
+         check_lib cxx CG '-lCg -lCgGL' cgCreateContext
       fi
 
       check_pkgconf OSMESA osmesa
@@ -403,10 +398,8 @@ check_pkgconf X11 x11
 check_pkgconf XCB xcb
 
 if [ "$HAVE_X11" = "no" ] && [ "$OS" != 'Darwin' ]; then
-   HAVE_X11=auto; check_lib '' X11 -lX11
-   if [ "$HAVE_X11" = "yes" ]; then
-      X11_LIBS="-lX11"
-   fi
+   HAVE_X11=auto
+   check_lib '' X11 -lX11
 fi
 
 check_pkgconf WAYLAND wayland-egl
@@ -419,17 +412,13 @@ check_pkgconf XF86VM xxf86vm
 
 if [ "$HAVE_X11" != "no" ]; then
    if [ "$HAVE_XEXT" = "no" ]; then
-      HAVE_XEXT=auto; check_lib '' XEXT -lXext
-      if [ "$HAVE_XEXT" = "yes" ]; then
-         XEXT_LIBS="-lXext"
-      fi
+      HAVE_XEXT=auto
+      check_lib '' XEXT -lXext
    fi
 
    if [ "$HAVE_XF86VM" = "no" ]; then
-      HAVE_XF86VM=auto; check_lib '' XF86VM -lXxf86vm
-      if [ "$HAVE_XF86VM" = "yes" ]; then
-         XF86VM_LIBS="-lXxf86vm"
-      fi
+      HAVE_XF86VM=auto
+      check_lib '' XF86VM -lXxf86vm
    fi
 else
    HAVE_XEXT=no; HAVE_XF86VM=no; HAVE_XINERAMA=no; HAVE_XSHM=no
@@ -447,10 +436,8 @@ fi
 if [ "$HAVE_UDEV" != "no" ]; then
    check_pkgconf UDEV libudev
    if [ "$HAVE_UDEV" = "no" ]; then
-      HAVE_UDEV=auto; check_lib '' UDEV "-ludev"
-      if [ "$HAVE_UDEV" = "yes" ]; then
-         UDEV_LIBS='-ludev'
-      fi
+      HAVE_UDEV=auto
+      check_lib '' UDEV "-ludev"
    fi
 fi
 

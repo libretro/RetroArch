@@ -64,6 +64,7 @@ check_lib() # $1 = language  $2 = HAVE_$2  $3 = lib  $4 = function in lib  $5 = 
 			die 1 "Forced to build with library $3, but cannot locate. Exiting ..."
 		}
 	else
+		eval "${2}_LIBS=\"$3\""
 		PKG_CONF_USED="$PKG_CONF_USED $2"
 	fi
 
