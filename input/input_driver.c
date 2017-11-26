@@ -1775,9 +1775,8 @@ bool input_mouse_button_raw(unsigned port, unsigned id)
 	settings_t *settings = config_get_ptr();
 
 	/*ignore axes*/
-	if ( id == RETRO_DEVICE_ID_MOUSE_X || id == RETRO_DEVICE_ID_MOUSE_Y ) {
+	if ( id == RETRO_DEVICE_ID_MOUSE_X || id == RETRO_DEVICE_ID_MOUSE_Y )
 		return false;
-	}
 
 	joypad_info.axis_threshold = input_driver_axis_threshold;
 	joypad_info.joy_idx        = settings->uints.input_joypad_map[port];
@@ -1786,9 +1785,8 @@ bool input_mouse_button_raw(unsigned port, unsigned id)
 	res = current_input->input_state(current_input_data,
 		joypad_info, libretro_input_binds, port, RETRO_DEVICE_MOUSE, 0, id);
 
-	if ( res ) {
+	if (res)
 		return true;
-	}
 	return false;
 }
 
@@ -2480,28 +2478,47 @@ void input_config_parse_mouse_button(void *data, const char *prefix,
 
 		if ( tmp[0]=='w' )
 		{
-			switch ( tmp[1] ) {
-				case 'u': bind->mbutton = RETRO_DEVICE_ID_MOUSE_WHEELUP; break;
-				case 'd': bind->mbutton = RETRO_DEVICE_ID_MOUSE_WHEELDOWN; break;
-				case 'h':
-				{
-					switch ( tmp[2] ) {
-						case 'u': bind->mbutton = RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP; break;
-						case 'd': bind->mbutton = RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN; break;
-					}
-				}
-				break;
-			}
+			switch ( tmp[1] )
+         {
+            case 'u':
+               bind->mbutton = RETRO_DEVICE_ID_MOUSE_WHEELUP;
+               break;
+            case 'd':
+               bind->mbutton = RETRO_DEVICE_ID_MOUSE_WHEELDOWN;
+               break;
+            case 'h':
+               switch ( tmp[2] )
+               {
+                  case 'u':
+                     bind->mbutton = RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP;
+                     break;
+                  case 'd':
+                     bind->mbutton = RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN;
+                     break;
+               }
+               break;
+         }
 		}
 		else
 		{
 			val = atoi(tmp);
-			switch ( val ) {
-				case 1: bind->mbutton = RETRO_DEVICE_ID_MOUSE_LEFT; break;
-				case 2: bind->mbutton = RETRO_DEVICE_ID_MOUSE_RIGHT; break;
-				case 3: bind->mbutton = RETRO_DEVICE_ID_MOUSE_MIDDLE; break;
-				case 4: bind->mbutton = RETRO_DEVICE_ID_MOUSE_BUTTON_4; break;
-				case 5: bind->mbutton = RETRO_DEVICE_ID_MOUSE_BUTTON_5; break;
+			switch ( val )
+         {
+				case 1:
+               bind->mbutton = RETRO_DEVICE_ID_MOUSE_LEFT;
+               break;
+				case 2:
+               bind->mbutton = RETRO_DEVICE_ID_MOUSE_RIGHT;
+               break;
+				case 3:
+               bind->mbutton = RETRO_DEVICE_ID_MOUSE_MIDDLE;
+               break;
+				case 4:
+               bind->mbutton = RETRO_DEVICE_ID_MOUSE_BUTTON_4;
+               break;
+				case 5:
+               bind->mbutton = RETRO_DEVICE_ID_MOUSE_BUTTON_5;
+               break;
 			}
 		}
 	}
@@ -2605,22 +2622,21 @@ void input_config_get_bind_string(char *buf, const struct retro_keybind *bind,
    else if (auto_bind && auto_bind->joyaxis != AXIS_NONE)
       input_config_get_bind_string_joyaxis(buf, "Auto: ", auto_bind, size);
 
-   if ( *buf ) {
+   if (*buf)
 	   delim = 1;
-   }
 
 #ifndef RARCH_CONSOLE
    input_keymaps_translate_rk_to_str(bind->key, key, sizeof(key));
    if (string_is_equal(key, file_path_str(FILE_PATH_NUL)))
       *key = '\0';
    /*empty?*/
-   if ( *key != '\0' ) {
-	 if ( delim ) {
-		 strlcat(buf, ", ", size);
-	 }
-     snprintf(keybuf, sizeof(keybuf), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_KEY), key);
-     strlcat(buf, keybuf, size);
-     delim = 1;
+   if (*key != '\0')
+   {
+      if (delim )
+         strlcat(buf, ", ", size);
+      snprintf(keybuf, sizeof(keybuf), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_KEY), key);
+      strlcat(buf, keybuf, size);
+      delim = 1;
    }
 #endif
 
@@ -2628,35 +2644,35 @@ void input_config_get_bind_string(char *buf, const struct retro_keybind *bind,
 	{
 		int tag = 0;
 		switch ( bind->mbutton )
-		{
-		case RETRO_DEVICE_ID_MOUSE_LEFT:
-			tag = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT;
-			break;
-		case RETRO_DEVICE_ID_MOUSE_RIGHT:
-			tag = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_RIGHT;
-			break;
-		case RETRO_DEVICE_ID_MOUSE_MIDDLE:
-			tag = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_MIDDLE;
-			break;
-		case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
-			tag = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_BUTTON4;
-			break;
-		case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
-			tag = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_BUTTON5;
-			break;
-		case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-			tag = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_UP;
-			break;
-		case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-			tag = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_DOWN;
-			break;
-		case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-			tag = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_UP;
-			break;
-		case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-			tag = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_DOWN;
-			break;
-		} /* switch ( bind->mbutton ) */
+      {
+         case RETRO_DEVICE_ID_MOUSE_LEFT:
+            tag = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT;
+            break;
+         case RETRO_DEVICE_ID_MOUSE_RIGHT:
+            tag = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_RIGHT;
+            break;
+         case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+            tag = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_MIDDLE;
+            break;
+         case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
+            tag = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_BUTTON4;
+            break;
+         case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
+            tag = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_BUTTON5;
+            break;
+         case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+            tag = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_UP;
+            break;
+         case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+            tag = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_DOWN;
+            break;
+         case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
+            tag = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_UP;
+            break;
+         case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
+            tag = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_DOWN;
+            break;
+      } /* switch ( bind->mbutton ) */
 
 		if (tag != 0)
 		{
@@ -2668,9 +2684,8 @@ void input_config_get_bind_string(char *buf, const struct retro_keybind *bind,
 	}
 
    /*completely empty?*/
-   if ( *buf == '\0' ) {
+   if ( *buf == '\0' )
 	   strlcat(buf, "---", size);
-   }
 }
 
 const char *input_config_get_device_name(unsigned port)
@@ -2683,11 +2698,9 @@ const char *input_config_get_device_name(unsigned port)
 void input_config_set_device_name(unsigned port, const char *name)
 {
    if (!string_is_empty(name))
-   {
       strlcpy(input_device_names[port],
             name,
             sizeof(input_device_names[port]));
-   }
 }
 
 void input_config_clear_device_name(unsigned port)
@@ -2727,7 +2740,8 @@ bool input_config_get_bind_idx(unsigned port, unsigned *joy_idx_real)
    return true;
 }
 
-const struct retro_keybind *input_config_get_bind_auto(unsigned port, unsigned id)
+const struct retro_keybind *input_config_get_bind_auto(
+      unsigned port, unsigned id)
 {
    settings_t *settings = config_get_ptr();
    unsigned joy_idx     = settings->uints.input_joypad_map[port];
