@@ -338,16 +338,13 @@ bool netplay_lan_ad_server(netplay_t *netplay)
                   snprintf(port_str, 6, "%hu", ntohs(((struct sockaddr_in*)(&their_addr))->sin_port));
                   if (getaddrinfo_retro(reply_addr, port_str, &hints, &our_addr) < 0)
                      continue;
-                  else
-                  {
-                     RARCH_LOG ("[discovery] sending reply to %s \n", reply_addr);
 
-                     /* And send it */
-                     sendto(lan_ad_server_fd, (const char*)&ad_packet_buffer,
+                  RARCH_LOG ("[discovery] sending reply to %s \n", reply_addr);
+
+                  /* And send it */
+                  sendto(lan_ad_server_fd, (const char*)&ad_packet_buffer,
                         sizeof(struct ad_packet), 0, our_addr->ai_addr, our_addr->ai_addrlen);
-                  }
-                  if (our_addr)
-                     freeaddrinfo_retro(our_addr);
+                  freeaddrinfo_retro(our_addr);
                }
                else
                   continue;

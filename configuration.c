@@ -3549,8 +3549,7 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
    config_file_free(conf);
    free(buf);
    free(autoconf_file);
-   if (path_new)
-      free(path_new);
+   free(path_new);
    return ret;
 
 error:
