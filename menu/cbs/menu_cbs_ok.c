@@ -1361,6 +1361,19 @@ error:
    return menu_cbs_exit();
 }
 
+static int default_action_ok_load_content_with_core_from_menu(const char *_path, unsigned _type)
+{
+   content_ctx_info_t content_info;
+   content_info.argc                   = 0;
+   content_info.argv                   = NULL;
+   content_info.args                   = NULL;
+   content_info.environ_get            = NULL;
+   if (!task_push_load_content_with_core_from_menu(_path, &content_info, _type, NULL, NULL))
+      return -1;
+   return 0;
+}
+
+
 #define default_action_ok_set(funcname, _id, _flush) \
 static int (funcname)(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx) \
 { \
@@ -1385,16 +1398,10 @@ static int action_ok_file_load(const char *path,
 {
    char menu_path_new[PATH_MAX_LENGTH];
    char full_path_new[PATH_MAX_LENGTH];
-   content_ctx_info_t content_info;
    const char *menu_label              = NULL;
    const char *menu_path               = NULL;
    rarch_setting_t *setting            = NULL;
    file_list_t  *menu_stack            = menu_entries_get_menu_stack_ptr(0);
-
-   content_info.argc                   = 0;
-   content_info.argv                   = NULL;
-   content_info.args                   = NULL;
-   content_info.environ_get            = NULL;
 
    menu_path_new[0] = full_path_new[0] = '\0';
 
@@ -1440,14 +1447,8 @@ static int action_ok_file_load(const char *path,
          break;
    }
 
-   if (!task_push_load_content_with_core_from_menu(
-         full_path_new,
-         &content_info,
-         CORE_TYPE_PLAIN,
-         NULL, NULL))
-      return -1;
-
-   return 0;
+   return default_action_ok_load_content_with_core_from_menu(full_path_new,
+         CORE_TYPE_PLAIN);
 }
 
 
@@ -2326,31 +2327,18 @@ static int action_ok_file_load_ffmpeg(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char new_path[PATH_MAX_LENGTH];
-   content_ctx_info_t content_info;
-
    const char *menu_path           = NULL;
    file_list_t *menu_stack         = menu_entries_get_menu_stack_ptr(0);
+
    file_list_get_last(menu_stack, &menu_path, NULL, NULL, NULL);
 
    new_path[0] = '\0';
-
-   content_info.argc                   = 0;
-   content_info.argv                   = NULL;
-   content_info.args                   = NULL;
-   content_info.environ_get            = NULL;
 
    if (!string_is_empty(menu_path))
       fill_pathname_join(new_path, menu_path, path,
             sizeof(new_path));
 
-   if (!task_push_load_content_with_core_from_menu(
-         new_path,
-         &content_info,
-         CORE_TYPE_FFMPEG,
-         NULL, NULL))
-      return -1;
-
-   return 0;
+   return default_action_ok_load_content_with_core_from_menu(new_path, CORE_TYPE_FFMPEG);
 }
 #endif
 
@@ -2358,7 +2346,6 @@ static int action_ok_audio_run(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char combined_path[PATH_MAX_LENGTH];
-   content_ctx_info_t content_info;
    menu_handle_t *menu                 = NULL;
 
    combined_path[0] = '\0';
@@ -2369,26 +2356,13 @@ static int action_ok_audio_run(const char *path,
    fill_pathname_join(combined_path, menu->scratch2_buf,
          menu->scratch_buf, sizeof(combined_path));
 
-   content_info.argc                   = 0;
-   content_info.argv                   = NULL;
-   content_info.args                   = NULL;
-   content_info.environ_get            = NULL;
-
-   if (!task_push_load_content_with_core_from_menu(
-         combined_path,
-         &content_info,
-         CORE_TYPE_FFMPEG,
-         NULL, NULL))
-      return -1;
-
-   return 0;
+   return default_action_ok_load_content_with_core_from_menu(combined_path, CORE_TYPE_FFMPEG);
 }
 
 static int action_ok_file_load_imageviewer(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char fullpath[PATH_MAX_LENGTH];
-   content_ctx_info_t content_info;
    const char *menu_path           = NULL;
    file_list_t *menu_stack         = menu_entries_get_menu_stack_ptr(0);
 
@@ -2396,43 +2370,17 @@ static int action_ok_file_load_imageviewer(const char *path,
 
    fullpath[0] = '\0';
 
-   content_info.argc                   = 0;
-   content_info.argv                   = NULL;
-   content_info.args                   = NULL;
-   content_info.environ_get            = NULL;
-
    if (!string_is_empty(menu_path))
       fill_pathname_join(fullpath, menu_path, path,
             sizeof(fullpath));
 
-   if (!task_push_load_content_with_core_from_menu(
-         fullpath,
-         &content_info,
-         CORE_TYPE_IMAGEVIEWER,
-         NULL, NULL))
-      return -1;
-
-   return 0;
+   return default_action_ok_load_content_with_core_from_menu(fullpath, CORE_TYPE_IMAGEVIEWER);
 }
 
 static int action_ok_file_load_current_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   content_ctx_info_t content_info;
-
-   content_info.argc                   = 0;
-   content_info.argv                   = NULL;
-   content_info.args                   = NULL;
-   content_info.environ_get            = NULL;
-
-   if (!task_push_load_content_with_core_from_menu(
-         detect_content_path,
-         &content_info,
-         CORE_TYPE_PLAIN,
-         NULL, NULL))
-      return -1;
-
-   return 0;
+   return default_action_ok_load_content_with_core_from_menu(detect_content_path, CORE_TYPE_PLAIN);
 }
 
 static int action_ok_file_load_detect_core(const char *path,
@@ -3654,16 +3602,9 @@ static int action_ok_start_core(const char *path,
 static int action_ok_load_archive(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   content_ctx_info_t content_info;
-
    menu_handle_t *menu             = NULL;
    const char *menu_path           = NULL;
    const char *content_path        = NULL;
-
-   content_info.argc               = 0;
-   content_info.argv               = NULL;
-   content_info.args               = NULL;
-   content_info.environ_get        = NULL;
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
@@ -3676,14 +3617,9 @@ static int action_ok_load_archive(const char *path,
 
    generic_action_ok_command(CMD_EVENT_LOAD_CORE);
 
-   if (!task_push_load_content_with_core_from_menu(
+   return default_action_ok_load_content_with_core_from_menu(
          detect_content_path,
-         &content_info,
-         CORE_TYPE_PLAIN,
-         NULL, NULL))
-      return -1;
-
-   return 0;
+         CORE_TYPE_PLAIN);
 }
 
 static int action_ok_load_archive_detect_core(const char *path,
