@@ -3388,12 +3388,12 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
             calloc(netplay_room_count + lan_room_count,
                   sizeof(struct netplay_room));
 
-         for (i = 0; i < netplay_room_count; i++)
+         for (i = 0; i < (unsigned)netplay_room_count; i++)
             memcpy(&netplay_room_list[i], netplay_room_get(i), sizeof(netplay_room_list[i]));
 
          if (lan_room_count != 0)
          {
-            for (i = netplay_room_count; i < netplay_room_count + lan_room_count; i++)
+            for (i = netplay_room_count; i < (unsigned)(netplay_room_count + lan_room_count); i++)
             {
                struct netplay_host *host = &lan_hosts->hosts[j++];
 
