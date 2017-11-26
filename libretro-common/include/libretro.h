@@ -130,7 +130,7 @@ extern "C" {
  * It reports X/Y coordinates in screen space (similar to the pointer)
  * in the range [-0x8000, 0x7fff] in both axes, with zero being center.
  * As well as reporting on/off screen state. It features a trigger,
- * start/select buttons, four auxiliary action buttons and a
+ * start/select buttons, auxiliary action buttons and a
  * directional pad. A forced off-screen shot can be requested for
  * auto-reloading function in some games.
  */
