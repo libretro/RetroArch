@@ -150,14 +150,9 @@ fi
    add_define MAKEFILE libretro "$LIBRETRO"
 }
 
-[ -z "$ASSETS_DIR" ] && ASSETS_DIR="${PREFIX}/share"
-add_define MAKEFILE ASSETS_DIR "$ASSETS_DIR"
-
-[ -z "$BIN_DIR" ] && BIN_DIR="${PREFIX}/bin"
-add_define MAKEFILE BIN_DIR "$BIN_DIR"
-
-[ -z "$MAN_DIR" ] && MAN_DIR="${PREFIX}/share/man"
-add_define MAKEFILE MAN_DIR "$MAN_DIR"
+add_define MAKEFILE ASSETS_DIR "${ASSETS_DIR:-${PREFIX}/share}"
+add_define MAKEFILE BIN_DIR "${BIN_DIR:-${PREFIX}/bin}"
+add_define MAKEFILE MAN_DIR "${MAN_DIR:-${PREFIX}/share/man}"
 
 if [ "$OS" = 'DOS' ]; then
    HAVE_SHADERPIPELINE=no
