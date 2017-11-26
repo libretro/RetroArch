@@ -1373,6 +1373,21 @@ static int default_action_ok_load_content_with_core_from_menu(const char *_path,
    return 0;
 }
 
+static int default_action_ok_load_content_from_playlist_from_menu(const char *_path, const char *path, const char *entry_label)
+{
+   content_ctx_info_t content_info;
+   content_info.argc                   = 0;
+   content_info.argv                   = NULL;
+   content_info.args                   = NULL;
+   content_info.environ_get            = NULL;
+   if (!task_push_load_content_from_playlist_from_menu(
+            _path, path, entry_label,
+            &content_info,
+            NULL, NULL))
+      return -1;
+   return 0;
+}
+
 
 #define default_action_ok_set(funcname, _id, _flush) \
 static int (funcname)(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx) \
@@ -1457,7 +1472,6 @@ static int action_ok_playlist_entry_collection(const char *path,
 {
    menu_content_ctx_playlist_info_t playlist_info;
    char new_core_path[PATH_MAX_LENGTH];
-   content_ctx_info_t content_info;
    size_t selection_ptr                = 0;
    bool playlist_initialized           = false;
    playlist_t *playlist                = NULL;
@@ -1469,11 +1483,6 @@ static int action_ok_playlist_entry_collection(const char *path,
    menu_handle_t *menu                 = NULL;
    rarch_system_info_t *info           = runloop_get_system_info();
    struct retro_system_info *system    = &info->info;
-
-   content_info.argc                   = 0;
-   content_info.argv                   = NULL;
-   content_info.args                   = NULL;
-   content_info.environ_get            = NULL;
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
@@ -1552,21 +1561,13 @@ static int action_ok_playlist_entry_collection(const char *path,
    playlist_get_index(playlist,
          playlist_info.idx, &path, NULL, NULL, NULL, NULL, NULL);
 
-
-   if (!task_push_load_content_from_playlist_from_menu(
-            new_core_path, path, entry_label,
-            &content_info,
-            NULL, NULL))
-      return -1;
-
-   return 0;
+   return default_action_ok_load_content_from_playlist_from_menu(new_core_path, path, entry_label);
 }
 
 static int action_ok_playlist_entry(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_content_ctx_playlist_info_t playlist_info;
-   content_ctx_info_t content_info;
    char new_core_path[PATH_MAX_LENGTH];
    size_t selection_ptr                = 0;
    playlist_t *playlist                = g_defaults.content_history;
@@ -1575,11 +1576,6 @@ static int action_ok_playlist_entry(const char *path,
    const char *core_path               = NULL;
    const char *core_name               = NULL;
    menu_handle_t *menu                 = NULL;
-
-   content_info.argc                   = 0;
-   content_info.argv                   = NULL;
-   content_info.args                   = NULL;
-   content_info.environ_get            = NULL;
 
    new_core_path[0] = '\0';
 
@@ -1638,20 +1634,13 @@ static int action_ok_playlist_entry(const char *path,
          playlist_info.idx, &path, NULL, NULL, NULL,
          NULL, NULL);
 
-   if (!task_push_load_content_from_playlist_from_menu(
-            new_core_path, path, entry_label,
-            &content_info,
-            NULL, NULL))
-      return -1;
-
-   return 0;
+   return default_action_ok_load_content_from_playlist_from_menu(new_core_path, path, entry_label);
 }
 
 static int action_ok_playlist_entry_start_content(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_content_ctx_playlist_info_t playlist_info;
-   content_ctx_info_t content_info;
    size_t selection_ptr                = 0;
    bool playlist_initialized           = false;
    playlist_t *playlist                = NULL;
@@ -1661,11 +1650,6 @@ static int action_ok_playlist_entry_start_content(const char *path,
    const char *core_name               = NULL;
    playlist_t *tmp_playlist            = NULL;
    menu_handle_t *menu                 = NULL;
-
-   content_info.argc                   = 0;
-   content_info.argv                   = NULL;
-   content_info.args                   = NULL;
-   content_info.environ_get            = NULL;
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
@@ -1743,13 +1727,7 @@ static int action_ok_playlist_entry_start_content(const char *path,
    playlist_get_index(playlist,
          playlist_info.idx, &path, NULL, NULL, NULL, NULL, NULL);
 
-   if (!task_push_load_content_from_playlist_from_menu(
-            core_path, path, entry_label,
-            &content_info,
-            NULL, NULL))
-      return -1;
-
-   return 0;
+   return default_action_ok_load_content_from_playlist_from_menu(core_path, path, entry_label);
 }
 
 static int action_ok_lookup_setting(const char *path,
