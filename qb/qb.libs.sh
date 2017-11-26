@@ -72,15 +72,15 @@ check_lib() # $1 = language  $2 = HAVE_$2  $3 = lib  $4 = function in lib  $5 = 
 }
 
 check_pkgconf() # $1 = HAVE_$1  $2 = package  $3 = version  $4 = critical error message [checked only if non-empty]
-{	tmpval="$(eval echo \$HAVE_$1)"
+{	tmpval="$(eval "printf %s \"\$HAVE_$1\"")"
 	[ "$tmpval" = 'no' ] && return 0
 
 	ECHOBUF="Checking presence of package $2"
 	[ "$3" ] && ECHOBUF="$ECHOBUF >= $3"
 
 	[ "$PKG_CONF_PATH" = "none" ] && {
-		eval HAVE_$1="no"
-		echo "$ECHOBUF ... no"
+		eval "HAVE_$1=no"
+		printf %s\\n "$ECHOBUF ... no"
 		return 0
 	}
 
@@ -88,13 +88,13 @@ check_pkgconf() # $1 = HAVE_$1  $2 = package  $3 = version  $4 = critical error 
 	version='no'
 	$PKG_CONF_PATH --atleast-version="${3:-0.0}" "$2" && {
 		answer='yes'
-		version=$($PKG_CONF_PATH --modversion "$2")
-		eval $1_CFLAGS=\"$($PKG_CONF_PATH $2 --cflags)\"
-		eval $1_LIBS=\"$($PKG_CONF_PATH $2 --libs)\"
+		version="$("$PKG_CONF_PATH" --modversion "$2")"
+		eval "$1_CFLAGS=\"$("$PKG_CONF_PATH" "$2" --cflags)\""
+		eval "$1_LIBS=\"$("$PKG_CONF_PATH" "$2" --libs)\""
 	}
 	
-	eval HAVE_$1="$answer";
-	echo "$ECHOBUF ... $version"
+	eval "HAVE_$1=\"$answer\""
+	printf %s\\n "$ECHOBUF ... $version"
 	if [ "$answer" = 'no' ]; then
 		[ "$4" ] && die 1 "$4"
 		[ "$tmpval" = 'yes' ] && \
@@ -104,18 +104,19 @@ check_pkgconf() # $1 = HAVE_$1  $2 = package  $3 = version  $4 = critical error 
 	fi
 }
 
-check_header()	#$1 = HAVE_$1	$2..$5 = header files
-{	tmpval="$(eval echo \$HAVE_$1)"
+check_header() #$1 = HAVE_$1  $2..$5 = header files
+{	tmpval="$(eval "printf %s \"\$HAVE_$1\"")"
 	[ "$tmpval" = 'no' ] && return 0
 	CHECKHEADER="$2"
-	echo "#include <$2>" > "$TEMP_C"
-	[ "$3" != "" ] && CHECKHEADER="$3" && echo "#include <$3>" >> "$TEMP_C"
-	[ "$4" != "" ] && CHECKHEADER="$4" && echo "#include <$4>" >> "$TEMP_C"
-	[ "$5" != "" ] && CHECKHEADER="$5" && echo "#include <$5>" >> "$TEMP_C"
-	echo "int main(void) { return 0; }" >> "$TEMP_C"
+	printf %s\\n "#include <$2>" > "$TEMP_C"
+	[ "$3" != '' ] && CHECKHEADER="$3" && printf %s\\n "#include <$3>" >> "$TEMP_C"
+	[ "$4" != '' ] && CHECKHEADER="$4" && printf %s\\n "#include <$4>" >> "$TEMP_C"
+	[ "$5" != '' ] && CHECKHEADER="$5" && printf %s\\n "#include <$5>" >> "$TEMP_C"
+	printf %s\\n "int main(void) { return 0; }" >> "$TEMP_C"
 	answer='no'
 	"$CC" -o "$TEMP_EXE" "$TEMP_C" $INCLUDE_DIRS >>config.log 2>&1 && answer='yes'
-	eval HAVE_$1="$answer"; echo "Checking presence of header file $CHECKHEADER ... $answer"
+	eval "HAVE_$1=\"$answer\""
+	printf %s\\n "Checking presence of header file $CHECKHEADER ... $answer"
 	rm -f -- "$TEMP_C" "$TEMP_EXE"
 	[ "$tmpval" = 'yes' ] && [ "$answer" = 'no' ] && \
 		die 1 "Build assumed that $2 exists, but cannot locate. Exiting ..."
