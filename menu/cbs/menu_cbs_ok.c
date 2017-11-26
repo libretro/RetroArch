@@ -1866,21 +1866,6 @@ static void menu_input_wifi_cb(void *userdata, const char *passphrase)
    menu_input_dialog_end();
 }
 
-static int action_ok_cheat(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   menu_input_ctx_line_t line;
-
-   line.label         = msg_hash_to_str(MSG_INPUT_CHEAT);
-   line.label_setting = label;
-   line.type          = type;
-   line.idx           = (unsigned)idx;
-   line.cb            = menu_input_st_cheat_cb;
-
-   if (!menu_input_dialog_start(&line))
-      return -1;
-   return 0;
-}
 
 static void menu_input_st_string_cb_rename_entry(void *userdata,
       const char *str)
@@ -1987,6 +1972,30 @@ static void menu_input_st_string_cb_save_preset(void *userdata,
    menu_input_dialog_end();
 }
 
+static void menu_input_st_string_cb_cheat_file_save_as(
+      void *userdata, const char *str)
+{
+   if (str && *str)
+   {
+      rarch_setting_t *setting = NULL;
+      settings_t *settings     = config_get_ptr();
+      const char        *label = menu_input_dialog_get_label_buffer();
+
+      if (!string_is_empty(label))
+         setting = menu_setting_find(label);
+
+      if (setting)
+      {
+         setting_set_with_string_representation(setting, str);
+         menu_setting_generic(setting, false);
+      }
+      else if (!string_is_empty(label))
+         cheat_manager_save(str, settings->paths.path_cheat_database);
+   }
+
+   menu_input_dialog_end();
+}
+
 static int action_ok_shader_preset_save_as(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -1997,6 +2006,102 @@ static int action_ok_shader_preset_save_as(const char *path,
    line.type          = type;
    line.idx           = (unsigned)idx;
    line.cb            = menu_input_st_string_cb_save_preset;
+
+   if (!menu_input_dialog_start(&line))
+      return -1;
+   return 0;
+}
+
+static int action_ok_enable_settings(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   menu_input_ctx_line_t line;
+
+   line.label         = msg_hash_to_str(MSG_INPUT_ENABLE_SETTINGS_PASSWORD);
+   line.label_setting = label;
+   line.type          = type;
+   line.idx           = (unsigned)entry_idx;
+   line.cb            = menu_input_st_string_cb_enable_settings;
+
+   if (!menu_input_dialog_start(&line))
+      return -1;
+   return 0;
+}
+
+static int action_ok_wifi(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   menu_input_ctx_line_t line;
+
+   line.label         = "Passphrase";
+   line.label_setting = label;
+   line.type          = type;
+   line.idx           = (unsigned)idx;
+   line.cb            = menu_input_wifi_cb;
+
+   if (!menu_input_dialog_start(&line))
+      return -1;
+   return 0;
+}
+
+static int action_ok_cheat_file_save_as(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   menu_input_ctx_line_t line;
+
+   line.label         = msg_hash_to_str(MSG_INPUT_CHEAT_FILENAME);
+   line.label_setting = label;
+   line.type          = type;
+   line.idx           = (unsigned)idx;
+   line.cb            = menu_input_st_string_cb_cheat_file_save_as;
+
+   if (!menu_input_dialog_start(&line))
+      return -1;
+   return 0;
+}
+
+static int action_ok_cheat(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   menu_input_ctx_line_t line;
+
+   line.label         = msg_hash_to_str(MSG_INPUT_CHEAT);
+   line.label_setting = label;
+   line.type          = type;
+   line.idx           = (unsigned)idx;
+   line.cb            = menu_input_st_cheat_cb;
+
+   if (!menu_input_dialog_start(&line))
+      return -1;
+   return 0;
+}
+
+static int action_ok_disable_kiosk_mode(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   menu_input_ctx_line_t line;
+
+   line.label         = msg_hash_to_str(MSG_INPUT_KIOSK_MODE_PASSWORD);
+   line.label_setting = label;
+   line.type          = type;
+   line.idx           = (unsigned)entry_idx;
+   line.cb            = menu_input_st_string_cb_disable_kiosk_mode;
+
+   if (!menu_input_dialog_start(&line))
+      return -1;
+   return 0;
+}
+
+static int action_ok_rename_entry(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   menu_input_ctx_line_t line;
+
+   line.label         = msg_hash_to_str(MSG_INPUT_RENAME_ENTRY);
+   line.label_setting = label;
+   line.type          = type;
+   line.idx           = (unsigned)entry_idx;
+   line.cb            = menu_input_st_string_cb_rename_entry;
 
    if (!menu_input_dialog_start(&line))
       return -1;
@@ -2081,45 +2186,7 @@ static int action_ok_shader_preset_save_game(const char *path,
          idx, entry_idx, ACTION_OK_SHADER_PRESET_SAVE_GAME);
 }
 
-static void menu_input_st_string_cb_cheat_file_save_as(
-      void *userdata, const char *str)
-{
-   if (str && *str)
-   {
-      rarch_setting_t *setting = NULL;
-      settings_t *settings     = config_get_ptr();
-      const char        *label = menu_input_dialog_get_label_buffer();
 
-      if (!string_is_empty(label))
-         setting = menu_setting_find(label);
-
-      if (setting)
-      {
-         setting_set_with_string_representation(setting, str);
-         menu_setting_generic(setting, false);
-      }
-      else if (!string_is_empty(label))
-         cheat_manager_save(str, settings->paths.path_cheat_database);
-   }
-
-   menu_input_dialog_end();
-}
-
-static int action_ok_cheat_file_save_as(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   menu_input_ctx_line_t line;
-
-   line.label         = msg_hash_to_str(MSG_INPUT_CHEAT_FILENAME);
-   line.label_setting = label;
-   line.type          = type;
-   line.idx           = (unsigned)idx;
-   line.cb            = menu_input_st_string_cb_cheat_file_save_as;
-
-   if (!menu_input_dialog_start(&line))
-      return -1;
-   return 0;
-}
 
 static int generic_action_ok_remap_file_operation(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
@@ -3161,21 +3228,6 @@ static int action_ok_add_to_favorites_playlist(const char *path,
    return 0;
 }
 
-static int action_ok_rename_entry(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   menu_input_ctx_line_t line;
-
-   line.label         = msg_hash_to_str(MSG_INPUT_RENAME_ENTRY);
-   line.label_setting = label;
-   line.type          = type;
-   line.idx           = (unsigned)entry_idx;
-   line.cb            = menu_input_st_string_cb_rename_entry;
-
-   if (!menu_input_dialog_start(&line))
-      return -1;
-   return 0;
-}
 
 static int action_ok_delete_entry(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -3230,37 +3282,6 @@ static int action_ok_delete_entry(const char *path,
    return 0;
 }
 
-static int action_ok_disable_kiosk_mode(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   menu_input_ctx_line_t line;
-
-   line.label         = msg_hash_to_str(MSG_INPUT_KIOSK_MODE_PASSWORD);
-   line.label_setting = label;
-   line.type          = type;
-   line.idx           = (unsigned)entry_idx;
-   line.cb            = menu_input_st_string_cb_disable_kiosk_mode;
-
-   if (!menu_input_dialog_start(&line))
-      return -1;
-   return 0;
-}
-
-static int action_ok_enable_settings(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   menu_input_ctx_line_t line;
-
-   line.label         = msg_hash_to_str(MSG_INPUT_ENABLE_SETTINGS_PASSWORD);
-   line.label_setting = label;
-   line.type          = type;
-   line.idx           = (unsigned)entry_idx;
-   line.cb            = menu_input_st_string_cb_enable_settings;
-
-   if (!menu_input_dialog_start(&line))
-      return -1;
-   return 0;
-}
 
 static int action_ok_rdb_entry_submenu(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -3456,22 +3477,6 @@ static int action_ok_netplay_connect_room(const char *path,
    return 0;
 }
 
-static int action_ok_wifi(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-
-   menu_input_ctx_line_t line;
-
-   line.label         = "Passphrase";
-   line.label_setting = label;
-   line.type          = type;
-   line.idx           = (unsigned)idx;
-   line.cb            = menu_input_wifi_cb;
-
-   if (!menu_input_dialog_start(&line))
-      return -1;
-   return 0;
-}
 
 static int action_ok_netplay_lan_scan(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -4148,12 +4153,12 @@ static int action_ok_netplay_enable_client(const char *path,
       command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
    netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
 
-   /* If no host was specified in the config, ask for one */
-   memset(&line, 0, sizeof(line));
-
-   line.label = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS);
+   line.label         = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS);
    line.label_setting = "no_setting";
-   line.cb = action_ok_netplay_enable_client_hostname_cb;
+   line.type          = 0;
+   line.idx           = 0;
+   line.cb            = action_ok_netplay_enable_client_hostname_cb;
+
    if (menu_input_dialog_start(&line))
       return 0;
 #endif
