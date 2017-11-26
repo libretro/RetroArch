@@ -67,7 +67,7 @@ void task_file_load_handler(retro_task_t *task)
          case NBIO_STATUS_INIT:
             if (nbio && !string_is_empty(nbio->path))
             {
-               struct nbio_t *handle = nbio_open(nbio->path, NBIO_READ);
+               struct nbio_t *handle = (struct nbio_t*)nbio_open(nbio->path, NBIO_READ);
 
                if (handle)
                {

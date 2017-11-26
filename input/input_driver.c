@@ -2658,11 +2658,11 @@ void input_config_get_bind_string(char *buf, const struct retro_keybind *bind,
 			break;
 		} /* switch ( bind->mbutton ) */
 
-		if ( tag != 0 ) {
-			if ( delim ) {
+		if (tag != 0)
+		{
+			if (delim)
 				strlcat(buf, ", ", size);
-			}
-			strlcat( buf, msg_hash_to_str(tag), size );
+			strlcat(buf, msg_hash_to_str((msg_hash_enums)tag), size );
 			delim = 1;
 		}
 	}

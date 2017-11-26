@@ -79,7 +79,7 @@ static void *nbio_mmap_win32_open(const char * filename, unsigned mode)
    ptr = MapViewOfFile(mem, is_write ? (FILE_MAP_READ|FILE_MAP_WRITE) : FILE_MAP_READ, 0, 0, len.QuadPart);
    CloseHandle(mem);
 
-   handle           = malloc(sizeof(struct nbio_mmap_win32_t));
+   handle           = (nbio_mmap_win32_t*)malloc(sizeof(struct nbio_mmap_win32_t));
 
    handle->file     = file;
    handle->is_write = is_write;
