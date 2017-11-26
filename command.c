@@ -1805,11 +1805,15 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_LOAD_CORE_PERSIST:
          {
 #ifdef HAVE_MENU
-            path_clear(RARCH_PATH_BASENAME);
             core_info_ctx_find_t info_find;
-            rarch_system_info_t *system_info = runloop_get_system_info();
-            struct retro_system_info *system = &system_info->info;
-            const char *core_path            = path_get(RARCH_PATH_CORE);
+            rarch_system_info_t *system_info = NULL;
+            struct retro_system_info *system = NULL;
+            const char *core_path            = NULL;
+			
+            path_clear(RARCH_PATH_BASENAME);
+			system_info                      = runloop_get_system_info();
+			system                           = &system_info->info;
+			core_path                        = path_get(RARCH_PATH_CORE);
 
 #if defined(HAVE_DYNAMIC)
             if (string_is_empty(core_path))
