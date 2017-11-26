@@ -2409,7 +2409,7 @@ void video_driver_frame(const void *data, unsigned width,
 
    video_driver_frame_count++;
 
-   // Display the FPS, with a higher priority.
+   /* Display the FPS, with a higher priority. */
    if (video_info.fps_show)
       runloop_msg_queue_push(video_info.fps_text, 2, 1, true);
 }

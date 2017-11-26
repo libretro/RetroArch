@@ -20,6 +20,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <file/nbio.h>
+
 #if defined(__linux__)
 
 #define _GNU_SOURCE
@@ -28,7 +30,6 @@
 #include <stdint.h>
 #include <string.h>
 
-#include <file/nbio.h>
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -224,6 +225,18 @@ nbio_intf_t nbio_linux = {
    nbio_linux_get_ptr,
    nbio_linux_cancel,
    nbio_linux_free,
+   "nbio_linux",
+};
+#else
+nbio_intf_t nbio_linux = {
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
    "nbio_linux",
 };
 

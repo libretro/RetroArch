@@ -20,12 +20,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <file/nbio.h>
+
 #if defined(_WIN32) && !defined(_XBOX)
 
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <file/nbio.h>
 #include <encodings/utf.h> 
 
 #include <windows.h>
@@ -79,7 +80,7 @@ static void *nbio_mmap_win32_open(const char * filename, unsigned mode)
    ptr = MapViewOfFile(mem, is_write ? (FILE_MAP_READ|FILE_MAP_WRITE) : FILE_MAP_READ, 0, 0, len.QuadPart);
    CloseHandle(mem);
 
-   handle           = (nbio_mmap_win32_t*)malloc(sizeof(struct nbio_mmap_win32_t));
+   handle           = (struct nbio_mmap_win32_t*)malloc(sizeof(struct nbio_mmap_win32_t));
 
    handle->file     = file;
    handle->is_write = is_write;
@@ -180,6 +181,18 @@ nbio_intf_t nbio_mmap_win32 = {
    nbio_mmap_win32_get_ptr,
    nbio_mmap_win32_cancel,
    nbio_mmap_win32_free,
+   "nbio_mmap_win32",
+};
+#else
+nbio_intf_t nbio_mmap_win32 = {
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
    "nbio_mmap_win32",
 };
 

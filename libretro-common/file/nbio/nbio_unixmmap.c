@@ -20,12 +20,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <file/nbio.h>
+
 #if defined(HAVE_MMAP) && defined(BSD)
 
 #include <stdio.h>
 #include <stdlib.h>
-
-#include <file/nbio.h>
 
 #ifdef _WIN32
 #include <direct.h>
@@ -155,6 +155,18 @@ nbio_intf_t nbio_mmap_unix = {
    nbio_mmap_unix_get_ptr,
    nbio_mmap_unix_cancel,
    nbio_mmap_unix_free,
+   "nbio_mmap_unix",
+};
+#else
+nbio_intf_t nbio_mmap_unix = {
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
    "nbio_mmap_unix",
 };
 
