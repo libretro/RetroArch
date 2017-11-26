@@ -1559,6 +1559,7 @@ static int action_ok_playlist_entry(const char *path,
 {
    menu_content_ctx_playlist_info_t playlist_info;
    content_ctx_info_t content_info;
+   char new_core_path[PATH_MAX_LENGTH];
    size_t selection_ptr                = 0;
    playlist_t *playlist                = g_defaults.content_history;
    const char *entry_path              = NULL;
@@ -1572,6 +1573,8 @@ static int action_ok_playlist_entry(const char *path,
    content_info.args                   = NULL;
    content_info.environ_get            = NULL;
 
+   new_core_path[0] = '\0';
+
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
@@ -1584,15 +1587,10 @@ static int action_ok_playlist_entry(const char *path,
          && string_is_equal(core_name, file_path_str(FILE_PATH_DETECT)))
    {
       core_info_ctx_find_t core_info;
-      char new_core_path[PATH_MAX_LENGTH];
       const char *entry_path                 = NULL;
       const char *path_base                  =
          path_basename(menu->db_playlist_file);
-      bool        found_associated_core      = false;
-
-      new_core_path[0] = '\0';
-
-      found_associated_core                  =
+      bool        found_associated_core      =
          menu_content_playlist_find_associated_core(
             path_base, new_core_path, sizeof(new_core_path));
 
@@ -1614,6 +1612,8 @@ static int action_ok_playlist_entry(const char *path,
             NULL,
             new_core_path);
    }
+   else
+      strlcpy(new_core_path, core_path, sizeof(new_core_path));
 
    playlist_info.data = playlist;
    playlist_info.idx  = (unsigned)selection_ptr;
@@ -1631,7 +1631,7 @@ static int action_ok_playlist_entry(const char *path,
          NULL, NULL);
 
    if (!task_push_load_content_from_playlist_from_menu(
-            core_path, path, entry_label,
+            new_core_path, path, entry_label,
             &content_info,
             NULL, NULL))
       return -1;
