@@ -210,13 +210,13 @@ else ifeq ($(LIBRETRO), dosbox)
 	APP_ICON            = pkg/ctr/assets/dosbox.png
 	APP_BANNER          = pkg/ctr/assets/dosbox_banner.png
 
-else ifeq ($(LIBRETRO), np2)
+else ifeq ($(LIBRETRO), nekop2)
    APP_TITLE           = Neko Project 2
    APP_AUTHOR          = various
    APP_PRODUCT_CODE    = RARCH-NP2
    APP_UNIQUE_ID       = 0xBAC1C
-   APP_ICON            = pkg/ctr/assets/np2.png
-   APP_BANNER          = pkg/ctr/assets/np2_banner.png
+   APP_ICON            = pkg/ctr/assets/nekop2.png
+   APP_BANNER          = pkg/ctr/assets/nekop2_banner.png
 
 else ifeq ($(LIBRETRO), np2kai)
    APP_TITLE           = Neko Project 2 Kai

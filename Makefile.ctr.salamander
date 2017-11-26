@@ -44,7 +44,7 @@ ifeq ($(strip $(DEVKITPRO)),)
 endif
 
 ifeq ($(strip $(CTRULIB)),)
-	CTRULIB = $(DEVKITPRO)/ctrulib
+	CTRULIB = $(DEVKITPRO)/libctru
 endif
 
 APP_TITLE         := $(shell echo "$(APP_TITLE)" | cut -c1-128)
@@ -160,7 +160,7 @@ endif
 %.vsh:
 
 $(TARGET).smdh: $(APP_ICON)
-	smdhtool --create "$(APP_TITLE)" "$(APP_DESCRIPTION)" "$(APP_AUTHOR)" $(APP_ICON) $@
+	$(DEVKITPRO)/devkitARM/bin/smdhtool --create "$(APP_TITLE)" "$(APP_DESCRIPTION)" "$(APP_AUTHOR)" $(APP_ICON) $@
 
 $(TARGET).3dsx: $(TARGET).elf
 ifeq ($(APP_BIG_TEXT_SECTION), 1)

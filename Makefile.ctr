@@ -228,7 +228,7 @@ endif
 %.vsh:
 
 $(TARGET).smdh: $(APP_ICON)
-	smdhtool --create "$(APP_TITLE)" "$(APP_DESCRIPTION)" "$(APP_AUTHOR)" $(APP_ICON) $@
+	$(DEVKITPRO)/devkitARM/bin/smdhtool --create "$(APP_TITLE)" "$(APP_DESCRIPTION)" "$(APP_AUTHOR)" $(APP_ICON) $@
 
 $(TARGET).3dsx: $(TARGET).elf
 ifeq ($(APP_BIG_TEXT_SECTION), 1)
@@ -236,7 +236,7 @@ ifeq ($(APP_BIG_TEXT_SECTION), 1)
 else
 	rm -f $(TARGET).xml
 endif
-	-3dsxtool $< $@ $(_3DSXFLAGS)
+	$(DEVKITPRO)/devkitARM/bin/3dsxtool $< $@ $(_3DSXFLAGS)
 
 $(TARGET).elf: ctr/3dsx_custom_crt0.o
 	$(LD) $(LDFLAGS) $(OBJ) $(LIBDIRS) $(LIBS) -o $@
