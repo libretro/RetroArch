@@ -2276,25 +2276,6 @@ static int action_ok_core_deferred_set(const char *path,
    return menu_cbs_exit();
 }
 
-static int action_ok_core_deferred_set_current_core(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   char core_display_name[PATH_MAX_LENGTH];
-   size_t selection                        = menu_navigation_get_selection();
-
-   core_display_name[0] = '\0';
-
-   core_info_get_name(path, core_display_name, sizeof(core_display_name));
-   command_playlist_update_write(NULL,
-         rdb_entry_start_game_selection_ptr,
-         core_display_name, NULL, path);
-
-   menu_entries_pop_stack(&selection, 0, 1);
-   menu_navigation_set_selection(selection);
-
-   return 0;
-}
-
 static int action_ok_deferred_list_stub(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -2325,43 +2306,21 @@ static int action_ok_load_core_deferred(const char *path,
    return 0;
 }
 
-static int action_ok_start_net_retropad_core(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   content_ctx_info_t content_info;
-
-   content_info.argc                   = 0;
-   content_info.argv                   = NULL;
-   content_info.args                   = NULL;
-   content_info.environ_get            = NULL;
-
-   if (!task_push_start_builtin_core(
-         &content_info,
-         CORE_TYPE_NETRETROPAD,
-         NULL, NULL))
-      return -1;
-
-   return 0;
+#define default_action_ok_start_builtin_core(funcname, _id) \
+static int (funcname)(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx) \
+{ \
+   content_ctx_info_t content_info; \
+   content_info.argc                   = 0; \
+   content_info.argv                   = NULL; \
+   content_info.args                   = NULL; \
+   content_info.environ_get            = NULL; \
+   if (!task_push_start_builtin_core(&content_info, _id, NULL, NULL)) \
+      return -1; \
+   return 0; \
 }
 
-static int action_ok_start_video_processor_core(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   content_ctx_info_t content_info;
-
-   content_info.argc                   = 0;
-   content_info.argv                   = NULL;
-   content_info.args                   = NULL;
-   content_info.environ_get            = NULL;
-
-   if (!task_push_start_builtin_core(
-         &content_info,
-         CORE_TYPE_VIDEO_PROCESSOR,
-         NULL, NULL))
-      return -1;
-
-   return 0;
-}
+default_action_ok_start_builtin_core(action_ok_start_net_retropad_core, CORE_TYPE_NETRETROPAD)
+default_action_ok_start_builtin_core(action_ok_start_video_processor_core, CORE_TYPE_VIDEO_PROCESSOR)
 
 #ifdef HAVE_FFMPEG
 static int action_ok_file_load_ffmpeg(const char *path,
@@ -4236,10 +4195,8 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_load_core);
             break;
          case MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION:
-            BIND_ACTION_OK(cbs, action_ok_core_deferred_set);
-            break;
          case MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION_CURRENT_CORE:
-            BIND_ACTION_OK(cbs, action_ok_core_deferred_set_current_core);
+            BIND_ACTION_OK(cbs, action_ok_core_deferred_set);
             break;
          case MENU_ENUM_LABEL_START_CORE:
             BIND_ACTION_OK(cbs, action_ok_start_core);
