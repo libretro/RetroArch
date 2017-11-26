@@ -761,6 +761,9 @@ void input_config_parse_joy_button(void *data, const char *prefix,
 void input_config_parse_joy_axis(void *data, const char *prefix,
       const char *axis, struct retro_keybind *bind);
 
+void input_config_parse_mouse_button(void *data, const char *prefix,
+      const char *btn, struct retro_keybind *bind);
+
 void input_config_set_device_name(unsigned port, const char *name);
 
 void input_config_clear_device_name(unsigned port);

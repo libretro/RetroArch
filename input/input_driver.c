@@ -2410,6 +2410,55 @@ void input_config_parse_joy_axis(void *data, const char *prefix,
    }
 }
 
+void input_config_parse_mouse_button(void *data, const char *prefix,
+      const char *btn, struct retro_keybind *bind)
+{
+	int val;
+	char str[256];
+	char tmp[64];
+	char key[64];
+	config_file_t *conf      = (config_file_t*)data;
+
+	str[0] = tmp[0] = key[0] = '\0';
+
+	fill_pathname_join_delim(str, prefix, btn,
+		'_', sizeof(str));
+	fill_pathname_join_delim(key, str,
+		"mbtn", '_', sizeof(key));
+
+	if ( bind && config_get_array(conf, key, tmp, sizeof(tmp)) )
+	{
+		bind->mbutton = NO_BTN;
+
+		if ( tmp[0]=='w' )
+		{
+			switch ( tmp[1] ) {
+				case 'u': bind->mbutton = RETRO_DEVICE_ID_MOUSE_WHEELUP; break;
+				case 'd': bind->mbutton = RETRO_DEVICE_ID_MOUSE_WHEELDOWN; break;
+				case 'h':
+				{
+					switch ( tmp[2] ) {
+						case 'u': bind->mbutton = RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP; break;
+						case 'd': bind->mbutton = RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN; break;
+					}
+				}
+				break;
+			}
+		}
+		else
+		{
+			val = atoi(tmp);
+			switch ( val ) {
+				case 1: bind->mbutton = RETRO_DEVICE_ID_MOUSE_LEFT; break;
+				case 2: bind->mbutton = RETRO_DEVICE_ID_MOUSE_RIGHT; break;
+				case 3: bind->mbutton = RETRO_DEVICE_ID_MOUSE_MIDDLE; break;
+				case 4: bind->mbutton = RETRO_DEVICE_ID_MOUSE_BUTTON_4; break;
+				case 5: bind->mbutton = RETRO_DEVICE_ID_MOUSE_BUTTON_5; break;
+			}
+		}
+	}
+}
+
 static void input_config_get_bind_string_joykey(
       char *buf, const char *prefix,
       const struct retro_keybind *bind, size_t size)

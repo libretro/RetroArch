@@ -2143,6 +2143,24 @@ static void read_keybinds_axis(config_file_t *conf, unsigned user,
             input_config_bind_map_get_base(idx), bind);
 }
 
+static void read_keybinds_mbutton(config_file_t *conf, unsigned user,
+      unsigned idx, struct retro_keybind *bind)
+{
+   const char *prefix = NULL;
+
+   if (!input_config_bind_map_get_valid(idx))
+      return;
+   if (!input_config_bind_map_get_base(idx))
+      return;
+
+   prefix = input_config_get_prefix(user,
+         input_config_bind_map_get_meta(idx));
+
+   if (prefix)
+      input_config_parse_mouse_button(conf, prefix,
+            input_config_bind_map_get_base(idx), bind);
+}
+
 static void read_keybinds_user(config_file_t *conf, unsigned user)
 {
    unsigned i;
@@ -2157,6 +2175,7 @@ static void read_keybinds_user(config_file_t *conf, unsigned user)
       read_keybinds_keyboard(conf, user, i, bind);
       read_keybinds_button(conf, user, i, bind);
       read_keybinds_axis(conf, user, i, bind);
+      read_keybinds_mbutton(conf, user, i, bind);
    }
 }
 
@@ -3349,6 +3368,38 @@ static void save_keybind_axis(config_file_t *conf, const char *prefix,
    }
 }
 
+static void save_keybind_mbutton(config_file_t *conf, const char *prefix,
+      const char *base, const struct retro_keybind *bind, bool save_empty)
+{
+	char key[64];
+
+	key[0] = '\0';
+
+	fill_pathname_join_delim_concat(key, prefix,
+		base, '_', "_mbtn", sizeof(key));
+
+	switch ( bind->mbutton )
+	{
+
+	case RETRO_DEVICE_ID_MOUSE_LEFT:			config_set_uint64(conf, key, 1);		break;
+	case RETRO_DEVICE_ID_MOUSE_RIGHT:			config_set_uint64(conf, key, 2);		break;
+	case RETRO_DEVICE_ID_MOUSE_MIDDLE:			config_set_uint64(conf, key, 3);		break;
+	case RETRO_DEVICE_ID_MOUSE_BUTTON_4:		config_set_uint64(conf, key, 4);		break;
+	case RETRO_DEVICE_ID_MOUSE_BUTTON_5:		config_set_uint64(conf, key, 5);		break;
+
+	case RETRO_DEVICE_ID_MOUSE_WHEELUP:			config_set_string(conf, key, "wu");		break;
+	case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:		config_set_string(conf, key, "wd");		break;
+	case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:	config_set_string(conf, key, "whu");	break;
+	case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:	config_set_string(conf, key, "whd");	break;
+
+	default:
+		if ( save_empty ) {
+			config_set_string(conf, key, file_path_str(FILE_PATH_NUL));
+		}
+		break;
+	}
+}
+
 /**
  * save_keybind:
  * @conf               : pointer to config file object
@@ -3369,6 +3420,7 @@ static void save_keybind(config_file_t *conf, const char *prefix,
       save_keybind_key(conf, prefix, base, bind);
    save_keybind_joykey(conf, prefix, base, bind, save_empty);
    save_keybind_axis(conf, prefix, base, bind, save_empty);
+   save_keybind_mbutton(conf, prefix, base, bind, save_empty);
 }
 
 /**
