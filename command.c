@@ -1102,7 +1102,7 @@ static void command_event_load_auto_state(void)
 #endif
 
 #ifdef HAVE_CHEEVOS
-   if (settings->bools.cheevos_hardcore_mode_enable)
+   if (cheevos_loaded && settings->bools.cheevos_hardcore_mode_enable)
       goto error;
 #endif
 
@@ -1356,7 +1356,7 @@ static bool command_event_save_auto_state(void)
       goto error;
 
 #ifdef HAVE_CHEEVOS
-   if (settings->bools.cheevos_hardcore_mode_enable)
+   if (cheevos_loaded && settings->bools.cheevos_hardcore_mode_enable)
       goto error;
 #endif
 
@@ -1805,7 +1805,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_LOAD_CORE_PERSIST:
          {
 #ifdef HAVE_MENU
-            path_clear_all();
+            path_clear(RARCH_PATH_BASENAME);
             core_info_ctx_find_t info_find;
             rarch_system_info_t *system_info = runloop_get_system_info();
             struct retro_system_info *system = &system_info->info;
@@ -1846,7 +1846,7 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_CHEEVOS
          {
             settings_t *settings      = config_get_ptr();
-            if (settings->bools.cheevos_hardcore_mode_enable)
+            if (cheevos_loaded && settings->bools.cheevos_hardcore_mode_enable)
                return false;
          }
 #endif
@@ -1888,7 +1888,7 @@ bool command_event(enum event_command cmd, void *data)
          {
             settings_t *settings      = config_get_ptr();
 #ifdef HAVE_CHEEVOS
-            if (settings->bools.cheevos_hardcore_mode_enable)
+            if (cheevos_loaded && settings->bools.cheevos_hardcore_mode_enable)
                return false;
 #endif
 
@@ -1979,7 +1979,7 @@ bool command_event(enum event_command cmd, void *data)
          {
 #ifdef HAVE_CHEEVOS
             settings_t *settings      = config_get_ptr();
-            if (settings->bools.cheevos_hardcore_mode_enable)
+            if (cheevos_loaded && settings->bools.cheevos_hardcore_mode_enable)
                return false;
 #endif
 
@@ -1990,7 +1990,7 @@ bool command_event(enum event_command cmd, void *data)
          {
             settings_t *settings      = config_get_ptr();
 #ifdef HAVE_CHEEVOS
-            if (settings->bools.cheevos_hardcore_mode_enable)
+            if (cheevos_loaded && settings->bools.cheevos_hardcore_mode_enable)
                return false;
 #endif
             if (settings->bools.rewind_enable)
