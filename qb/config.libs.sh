@@ -119,10 +119,8 @@ fi
 if [ "$HAVE_EGL" != "no" ] && [ "$OS" != 'Win32' ]; then
    check_pkgconf EGL "$VC_PREFIX"egl
    # some systems have EGL libs, but no pkgconfig
-   if [ "$HAVE_EGL" = "no" ]; then
-      HAVE_EGL=auto
-      check_lib '' EGL "-l${VC_PREFIX}EGL $EXTRA_GL_LIBS"
-   else
+   check_val '' EGL "-l${VC_PREFIX}EGL $EXTRA_GL_LIBS"
+   if [ "$HAVE_EGL" = "yes" ]; then
       EGL_LIBS="$EGL_LIBS $EXTRA_GL_LIBS"
    fi
 fi
@@ -319,11 +317,7 @@ fi
 
 if [ "$HAVE_ZLIB" != 'no' ]; then
    check_pkgconf ZLIB zlib
-
-   if [ "$HAVE_ZLIB" = 'no' ]; then
-      HAVE_ZLIB='auto'
-      check_lib '' ZLIB '-lz'
-   fi
+   check_val '' ZLIB '-lz'
 fi
 
 if [ "$HAVE_THREADS" != 'no' ]; then
@@ -382,10 +376,7 @@ if [ "$HAVE_EGL" = "yes" ]; then
    fi
    if [ "$HAVE_VG" != "no" ]; then
       check_pkgconf VG "$VC_PREFIX"vg
-      if [ "$HAVE_VG" = "no" ]; then
-         HAVE_VG=auto; check_lib '' VG "-l${VC_PREFIX}OpenVG $EXTRA_GL_LIBS"
-         [ "$HAVE_VG" = "yes" ] && VG_LIBS=-l"$VC_PREFIX"OpenVG
-      fi
+      check_val '' VG "-l${VC_PREFIX}OpenVG $EXTRA_GL_LIBS"
    fi
 else
    HAVE_VG=no
@@ -397,9 +388,8 @@ check_pkgconf FREETYPE freetype2
 check_pkgconf X11 x11
 check_pkgconf XCB xcb
 
-if [ "$HAVE_X11" = "no" ] && [ "$OS" != 'Darwin' ]; then
-   HAVE_X11=auto
-   check_lib '' X11 -lX11
+if [ "$OS" != 'Darwin' ]; then
+   check_val '' X11 -lX11
 fi
 
 check_pkgconf WAYLAND wayland-egl
@@ -411,15 +401,8 @@ check_pkgconf XEXT xext
 check_pkgconf XF86VM xxf86vm
 
 if [ "$HAVE_X11" != "no" ]; then
-   if [ "$HAVE_XEXT" = "no" ]; then
-      HAVE_XEXT=auto
-      check_lib '' XEXT -lXext
-   fi
-
-   if [ "$HAVE_XF86VM" = "no" ]; then
-      HAVE_XF86VM=auto
-      check_lib '' XF86VM -lXxf86vm
-   fi
+   check_val '' XEXT -lXext
+   check_val '' XF86VM -lXxf86vm
 else
    HAVE_XEXT=no; HAVE_XF86VM=no; HAVE_XINERAMA=no; HAVE_XSHM=no
 fi
@@ -435,10 +418,7 @@ fi
 
 if [ "$HAVE_UDEV" != "no" ]; then
    check_pkgconf UDEV libudev
-   if [ "$HAVE_UDEV" = "no" ]; then
-      HAVE_UDEV=auto
-      check_lib '' UDEV "-ludev"
-   fi
+   check_val '' UDEV "-ludev"
 fi
 
 check_header XSHM X11/Xlib.h X11/extensions/XShm.h

@@ -71,7 +71,7 @@ check_lib() # $1 = language  $2 = HAVE_$2  $3 = lib  $4 = function in lib  $5 = 
 	return 0
 }
 
-check_pkgconf()	#$1 = HAVE_$1	$2 = package	$3 = version	$4 = critical error message [checked only if non-empty]
+check_pkgconf() # $1 = HAVE_$1  $2 = package  $3 = version  $4 = critical error message [checked only if non-empty]
 {	tmpval="$(eval echo \$HAVE_$1)"
 	[ "$tmpval" = 'no' ] && return 0
 
@@ -152,6 +152,14 @@ check_switch() # $1 = language  $2 = HAVE_$2  $3 = switch  $4 = critical error m
 	[ "$answer" = 'no' ] && {
 		[ "$4" ] && die 1 "$4"
 	}
+}
+
+check_val() # $1 = language  $2 = HAVE_$2  $3 = lib
+{	tmpval="$(eval "printf %s \"\$HAVE_$2\"")"
+	if [ "$tmpval" = 'no' ]; then
+		eval "HAVE_$2=auto"
+		check_lib "$1" "$2" "$3"
+	fi
 }
 
 create_config_header()
