@@ -213,42 +213,6 @@ typedef struct
    cheevos_expr_t      value;
 } cheevos_leaderboard_t;
 
-/*
-typedef struct
-{
-  bool is_lookup;
-  char* prestring;
-  cheevos_expr_t expression;
-} cheevos_rps_element_t;
-
-typedef struct
-{
-  char*    name;
-  unsigned type;
-} cheevos_rps_format_t;
-
-typedef struct
-{
-  unsigned compare;
-  char*    result;
-} cheevos_rps_lookup_value;
-
-typedef struct
-{
-  char*                     name;
-  cheevos_rps_lookup_value* values;
-} cheevos_rps_lookup_t;
-
-typedef struct
-{
-  cheevos_rps_element_t* elements;
-  cheevos_rps_format_t*  formats;
-  unsigned               format_count;
-  cheevos_rps_lookup_t*  lookups;
-  unsigned               lookup_count;
-} cheevos_rps_t;
-*/
-
 typedef struct
 {
    int  console_id;
@@ -2846,6 +2810,11 @@ static int cheevos_iterate(coro_t* coro)
          msg[sizeof(msg) - 1] = 0;
          runloop_msg_queue_push(msg, 0, 6 * 60, false);
       }
+
+      if (   cheevos_locals.core.count == 0
+          && cheevos_locals.unofficial.count == 0
+          && cheevos_locals.lboard_count == 0)
+         cheevos_unload();
 
       CORO_STOP();
 
