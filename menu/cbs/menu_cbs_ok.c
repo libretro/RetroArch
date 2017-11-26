@@ -1189,6 +1189,13 @@ static int set_path_generic(const char *label, const char *action_path)
    return 0;
 }
 
+static int generic_action_ok_command(enum event_command cmd)
+{
+   if (!command_event(cmd, NULL))
+      return menu_cbs_exit();
+   return 0;
+}
+
 static int generic_action_ok(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned id, enum msg_hash_enums flush_id)
@@ -1319,7 +1326,7 @@ static int generic_action_ok(const char *path,
       case ACTION_OK_APPEND_DISK_IMAGE:
          flush_type = MENU_SETTINGS;
          command_event(CMD_EVENT_DISK_APPEND_IMAGE, action_path);
-         command_event(CMD_EVENT_RESUME, NULL);
+         generic_action_ok_command(CMD_EVENT_RESUME);
          break;
       case ACTION_OK_SET_DIRECTORY:
          flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DIRECTORY_SETTINGS_LIST);
@@ -1747,9 +1754,7 @@ static int action_ok_playlist_entry_start_content(const char *path,
 static int action_ok_cheat_apply_changes(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   command_event(CMD_EVENT_CHEATS_APPLY, NULL);
-
-   return 0;
+   return generic_action_ok_command(CMD_EVENT_CHEATS_APPLY);
 }
 
 static int action_ok_lookup_setting(const char *path,
@@ -2456,12 +2461,6 @@ static int action_ok_file_load_detect_core(const char *path,
    return 0;
 }
 
-static int generic_action_ok_command(enum event_command cmd)
-{
-   if (!command_event(cmd, NULL))
-      return menu_cbs_exit();
-   return 0;
-}
 
 static int action_ok_load_state(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -2509,10 +2508,10 @@ static void cb_decompressed(void *task_data, void *user_data, const char *err)
       switch (type_hash)
       {
          case CB_CORE_UPDATER_DOWNLOAD:
-            command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+            generic_action_ok_command(CMD_EVENT_CORE_INFO_INIT);
             break;
          case CB_UPDATE_ASSETS:
-            command_event(CMD_EVENT_REINIT, NULL);
+            generic_action_ok_command(CMD_EVENT_REINIT);
             break;
       }
    }
@@ -2608,7 +2607,7 @@ static int generic_action_ok_network(const char *path,
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
 
-   command_event(CMD_EVENT_NETWORK_INIT, NULL);
+   generic_action_ok_command(CMD_EVENT_NETWORK_INIT);
 
    transf           = (menu_file_transfer_t*)calloc(1, sizeof(*transf));
    strlcpy(transf->path, url_path, sizeof(transf->path));
@@ -2804,7 +2803,7 @@ static void cb_generic_download(void *task_data,
    switch (transf->enum_idx)
    {
       case MENU_ENUM_LABEL_CB_CORE_UPDATER_DOWNLOAD:
-         command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+         generic_action_ok_command(CMD_EVENT_CORE_INFO_INIT);
          break;
       default:
          break;
@@ -3329,7 +3328,7 @@ static int action_ok_netplay_connect_room(const char *path,
    tmp_hostname[0] = '\0';
 
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
-      command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+      generic_action_ok_command(CMD_EVENT_NETPLAY_DEINIT);
    netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
 
    if (netplay_room_list[idx - 3].host_method == NETPLAY_HOST_METHOD_MITM)
@@ -3384,7 +3383,7 @@ static int action_ok_netplay_lan_scan(const char *path,
 
    /* Enable Netplay client mode */
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
-      command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+      generic_action_ok_command(CMD_EVENT_NETPLAY_DEINIT);
    netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
 
    /* Enable Netplay */
@@ -3794,7 +3793,7 @@ static int action_ok_load_archive(const char *path,
    fill_pathname_join(detect_content_path, menu_path, content_path,
          sizeof(detect_content_path));
 
-   command_event(CMD_EVENT_LOAD_CORE, NULL);
+   generic_action_ok_command(CMD_EVENT_LOAD_CORE);
 
    if (!task_push_load_content_with_core_from_menu(
          detect_content_path,
@@ -3947,7 +3946,7 @@ static int action_ok_video_resolution(const char *path,
       msg[0] = '\0';
 
 #if defined(__CELLOS_LV2__) || defined(_WIN32)
-      command_event(CMD_EVENT_REINIT, NULL);
+      generic_action_ok_command(CMD_EVENT_REINIT);
 #endif
       video_driver_set_video_mode(width, height, true);
 #ifdef GEKKO
@@ -3974,7 +3973,7 @@ static int action_ok_netplay_enable_host(const char *path,
    content_get_status(&contentless, &is_inited);
 
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
-      command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+      generic_action_ok_command(CMD_EVENT_NETPLAY_DEINIT);
    netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
 
    /* If we haven't yet started, this will load on its own */
@@ -4040,7 +4039,7 @@ static int action_ok_netplay_enable_client(const char *path,
 #ifdef HAVE_NETWORKING
    menu_input_ctx_line_t line;
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
-      command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+      generic_action_ok_command(CMD_EVENT_NETPLAY_DEINIT);
    netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
 
    line.label         = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS);
@@ -4067,9 +4066,9 @@ static int action_ok_netplay_disconnect(const char *path,
    /* Re-enable rewind if it was enabled
       TODO: Add a setting for these tweaks */
    if (settings->bools.rewind_enable)
-      command_event(CMD_EVENT_REWIND_INIT, NULL);
+      generic_action_ok_command(CMD_EVENT_REWIND_INIT);
    if (settings->uints.autosave_interval != 0)
-      command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
+      generic_action_ok_command(CMD_EVENT_AUTOSAVE_INIT);
    return generic_action_ok_command(CMD_EVENT_RESUME);
 
 #else
