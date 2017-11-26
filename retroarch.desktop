@@ -1,9 +1,10 @@
 [Desktop Entry]
 Version=1.0
 Name=RetroArch
-GenericName=Libretro Frontend
+GenericName=RetroArch
 Type=Application
-Comment=Multi-Engine Platform
+Comment=Frontend for emulators, game engines and media players
+Comment[ru]=Графический интерфейс для эмуляторов, игровых движков и медиаплееров
 Icon=retroarch
 Exec=retroarch
 Terminal=false

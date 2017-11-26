@@ -1255,6 +1255,9 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("cheevos_test_unofficial",      &settings->bools.cheevos_test_unofficial, true, false, false);
    SETTING_BOOL("cheevos_hardcore_mode_enable", &settings->bools.cheevos_hardcore_mode_enable, true, false, false);
    SETTING_BOOL("cheevos_leaderboards_enable",  &settings->bools.cheevos_leaderboards_enable, true, false, false);
+#ifdef HAVE_XMB
+   SETTING_BOOL("cheevos_badges_enable",        &settings->bools.cheevos_badges_enable, true, false, false);
+#endif
    SETTING_BOOL("cheevos_verbose_enable",       &settings->bools.cheevos_verbose_enable, true, false, false);
 #endif
 #ifdef HAVE_OVERLAY
@@ -1864,7 +1867,7 @@ static void config_set_defaults(void)
       temp_str[0] = '\0';
 
       fill_pathname_expand_special(temp_str,
-            g_defaults.path.config, 
+            g_defaults.path.config,
             PATH_MAX_LENGTH * sizeof(char));
       path_set(RARCH_PATH_CONFIG, temp_str);
       free(temp_str);
@@ -2140,6 +2143,24 @@ static void read_keybinds_axis(config_file_t *conf, unsigned user,
             input_config_bind_map_get_base(idx), bind);
 }
 
+static void read_keybinds_mbutton(config_file_t *conf, unsigned user,
+      unsigned idx, struct retro_keybind *bind)
+{
+   const char *prefix = NULL;
+
+   if (!input_config_bind_map_get_valid(idx))
+      return;
+   if (!input_config_bind_map_get_base(idx))
+      return;
+
+   prefix = input_config_get_prefix(user,
+         input_config_bind_map_get_meta(idx));
+
+   if (prefix)
+      input_config_parse_mouse_button(conf, prefix,
+            input_config_bind_map_get_base(idx), bind);
+}
+
 static void read_keybinds_user(config_file_t *conf, unsigned user)
 {
    unsigned i;
@@ -2154,6 +2175,7 @@ static void read_keybinds_user(config_file_t *conf, unsigned user)
       read_keybinds_keyboard(conf, user, i, bind);
       read_keybinds_button(conf, user, i, bind);
       read_keybinds_axis(conf, user, i, bind);
+      read_keybinds_mbutton(conf, user, i, bind);
    }
 }
 
@@ -2262,6 +2284,8 @@ static bool config_load_file(const char *path, bool set_defaults,
 #ifdef HAVE_NETWORKING
    char *override_netplay_ip_address               = NULL;
 #endif
+   const char *path_core                           = NULL;
+   const char *path_config                         = NULL;
    int bool_settings_size                          = sizeof(settings->bools)  / sizeof(settings->bools.placeholder);
    int float_settings_size                         = sizeof(settings->floats) / sizeof(settings->floats.placeholder);
    int int_settings_size                           = sizeof(settings->ints)   / sizeof(settings->ints.placeholder);
@@ -2534,13 +2558,16 @@ static bool config_load_file(const char *path, bool set_defaults,
    audio_set_float(AUDIO_ACTION_VOLUME_GAIN, settings->floats.audio_volume);
    audio_set_float(AUDIO_ACTION_MIXER_VOLUME_GAIN, settings->floats.audio_mixer_volume);
 
+   path_config = path_get(RARCH_PATH_CONFIG);
+   path_core   = path_get(RARCH_PATH_CORE);
+
    if (string_is_empty(settings->paths.path_content_history))
    {
       if (string_is_empty(settings->paths.directory_content_history))
       {
          fill_pathname_resolve_relative(
                settings->paths.path_content_history,
-               path_get(RARCH_PATH_CONFIG),
+               path_config,
                file_path_str(FILE_PATH_CONTENT_HISTORY),
                sizeof(settings->paths.path_content_history));
       }
@@ -2559,7 +2586,7 @@ static bool config_load_file(const char *path, bool set_defaults,
       {
          fill_pathname_resolve_relative(
                settings->paths.path_content_favorites,
-               path_get(RARCH_PATH_CONFIG),
+               path_config,
                file_path_str(FILE_PATH_CONTENT_FAVORITES),
                sizeof(settings->paths.path_content_favorites));
       }
@@ -2578,7 +2605,7 @@ static bool config_load_file(const char *path, bool set_defaults,
       {
          fill_pathname_resolve_relative(
                settings->paths.path_content_music_history,
-               path_get(RARCH_PATH_CONFIG),
+               path_config,
                file_path_str(FILE_PATH_CONTENT_MUSIC_HISTORY),
                sizeof(settings->paths.path_content_music_history));
       }
@@ -2597,7 +2624,7 @@ static bool config_load_file(const char *path, bool set_defaults,
       {
          fill_pathname_resolve_relative(
                settings->paths.path_content_video_history,
-               path_get(RARCH_PATH_CONFIG),
+               path_config,
                file_path_str(FILE_PATH_CONTENT_VIDEO_HISTORY),
                sizeof(settings->paths.path_content_video_history));
       }
@@ -2616,7 +2643,7 @@ static bool config_load_file(const char *path, bool set_defaults,
       {
          fill_pathname_resolve_relative(
                settings->paths.path_content_image_history,
-               path_get(RARCH_PATH_CONFIG),
+               path_config,
                file_path_str(FILE_PATH_CONTENT_IMAGE_HISTORY),
                sizeof(settings->paths.path_content_image_history));
       }
@@ -2642,14 +2669,14 @@ static bool config_load_file(const char *path, bool set_defaults,
    }
 
 #ifdef RARCH_CONSOLE
-   if (!string_is_empty(path_get(RARCH_PATH_CORE)))
+   if (!string_is_empty(path_core))
    {
 #endif
       /* Safe-guard against older behavior. */
-      if (path_is_directory(path_get(RARCH_PATH_CORE)))
+      if (path_is_directory(path_core))
       {
          RARCH_WARN("\"libretro_path\" is a directory, using this for \"libretro_directory\" instead.\n");
-         strlcpy(settings->paths.directory_libretro, path_get(RARCH_PATH_CORE),
+         strlcpy(settings->paths.directory_libretro, path_core,
                sizeof(settings->paths.directory_libretro));
          path_clear(RARCH_PATH_CORE);
       }
@@ -2690,9 +2717,7 @@ static bool config_load_file(const char *path, bool set_defaults,
       *settings->paths.directory_system = '\0';
 
    if (settings->floats.slowmotion_ratio < 1.0f)
-   {
       configuration_set_float(settings, settings->floats.slowmotion_ratio, 1.0f);
-   }
 
    /* Sanitize fastforward_ratio value - previously range was -1
     * and up (with 0 being skipped) */
@@ -3343,6 +3368,38 @@ static void save_keybind_axis(config_file_t *conf, const char *prefix,
    }
 }
 
+static void save_keybind_mbutton(config_file_t *conf, const char *prefix,
+      const char *base, const struct retro_keybind *bind, bool save_empty)
+{
+	char key[64];
+
+	key[0] = '\0';
+
+	fill_pathname_join_delim_concat(key, prefix,
+		base, '_', "_mbtn", sizeof(key));
+
+	switch ( bind->mbutton )
+	{
+
+	case RETRO_DEVICE_ID_MOUSE_LEFT:			config_set_uint64(conf, key, 1);		break;
+	case RETRO_DEVICE_ID_MOUSE_RIGHT:			config_set_uint64(conf, key, 2);		break;
+	case RETRO_DEVICE_ID_MOUSE_MIDDLE:			config_set_uint64(conf, key, 3);		break;
+	case RETRO_DEVICE_ID_MOUSE_BUTTON_4:		config_set_uint64(conf, key, 4);		break;
+	case RETRO_DEVICE_ID_MOUSE_BUTTON_5:		config_set_uint64(conf, key, 5);		break;
+
+	case RETRO_DEVICE_ID_MOUSE_WHEELUP:			config_set_string(conf, key, "wu");		break;
+	case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:		config_set_string(conf, key, "wd");		break;
+	case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:	config_set_string(conf, key, "whu");	break;
+	case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:	config_set_string(conf, key, "whd");	break;
+
+	default:
+		if ( save_empty ) {
+			config_set_string(conf, key, file_path_str(FILE_PATH_NUL));
+		}
+		break;
+	}
+}
+
 /**
  * save_keybind:
  * @conf               : pointer to config file object
@@ -3363,6 +3420,7 @@ static void save_keybind(config_file_t *conf, const char *prefix,
       save_keybind_key(conf, prefix, base, bind);
    save_keybind_joykey(conf, prefix, base, bind, save_empty);
    save_keybind_axis(conf, prefix, base, bind, save_empty);
+   save_keybind_mbutton(conf, prefix, base, bind, save_empty);
 }
 
 /**
@@ -3543,8 +3601,7 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
    config_file_free(conf);
    free(buf);
    free(autoconf_file);
-   if (path_new)
-      free(path_new);
+   free(path_new);
    return ret;
 
 error:

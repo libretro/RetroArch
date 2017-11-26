@@ -274,9 +274,10 @@ void filebrowser_parse(void *data, unsigned type_data)
    }
 
 end:
-   menu_entries_prepend(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY),
-         path,
-         MENU_ENUM_LABEL_PARENT_DIRECTORY,
-         FILE_TYPE_PARENT_DIRECTORY, 0, 0);
+   if (info)
+      menu_entries_prepend(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY),
+            path,
+            MENU_ENUM_LABEL_PARENT_DIRECTORY,
+            FILE_TYPE_PARENT_DIRECTORY, 0, 0);
 }

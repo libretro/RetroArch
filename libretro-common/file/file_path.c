@@ -72,10 +72,6 @@
 #include <pspkernel.h>
 #endif
 
-#ifdef __HAIKU__
-#include <kernel/image.h>
-#endif
-
 #if defined(__CELLOS_LV2__)
 #include <cell/cell_fs.h>
 #endif

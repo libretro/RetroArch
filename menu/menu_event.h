@@ -44,7 +44,7 @@ RETRO_BEGIN_DECLS
  * entire button state either but do a separate event per button
  * state.
  */
-unsigned menu_event(uint64_t input, uint64_t trigger_state);
+unsigned menu_event(retro_bits_t* p_input, retro_bits_t* p_trigger_state);
 
 /* Set a specific keyboard key.
  *

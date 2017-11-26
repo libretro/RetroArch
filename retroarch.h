@@ -27,7 +27,7 @@
 #include "core_type.h"
 #include "core.h"
 
-#define runloop_cmd_press(current_input, id)     (BIT64_GET(current_input, id))
+#define runloop_cmd_press(current_input, id)     (RARCH_INPUT_STATE_BIT_GET(current_input, id))
 
 RETRO_BEGIN_DECLS
 
@@ -225,6 +225,7 @@ typedef struct global
       char ups[8192];
       char bps[8192];
       char ips[8192];
+      char label[8192];
       char *remapfile;
    } name;
 

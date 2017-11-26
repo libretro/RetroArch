@@ -30,6 +30,7 @@
 #include <retro_common_api.h>
 #include <retro_inline.h>
 #include <libretro.h>
+#include <retro_miscellaneous.h>
 
 #include "input_defines.h"
 
@@ -94,6 +95,8 @@ struct retro_keybind
    uint16_t id;
    enum msg_hash_enums enum_idx;
    enum retro_key key;
+
+   uint16_t mbutton;
 
    /* Joypad key. Joypad POV (hats) 
     * are embedded into this key as well. */
@@ -333,10 +336,30 @@ void input_poll(void);
 int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id);
 
-uint64_t input_keys_pressed(void *data, uint64_t last_input);
+#define RARCH_INPUT_STATE_BIT_SET(a,bit)       ((a).data [((bit) >> 5)] |=  (1 << ((bit) & 31)))
+#define RARCH_INPUT_STATE_BIT_SET_PTR(a,bit)   ((a)->data[((bit) >> 5)] |=  (1 << ((bit) & 31)))
+#define RARCH_INPUT_STATE_BIT_GET(a,bit)       ((a).data [((bit) >> 5)] &   (1 << ((bit) & 31)))
+#define RARCH_INPUT_STATE_BIT_GET_PTR(a,bit)   ((a)->data[((bit) >> 5)] &   (1 << ((bit) & 31)))
+#define RARCH_INPUT_STATE_CLEAR(a)              memset(&a, 0, sizeof(a));
+#define RARCH_INPUT_STATE_CLEAR_PTR(a)          memset(a, 0, sizeof(retro_bits_t));
+#define RARCH_INPUT_STATE_ANY_SET(a)            ( ((a).data[0])||((a).data[1])||((a).data[2])||((a).data[3])||       \
+                                                  ((a).data[4])||((a).data[5])||((a).data[6])||((a).data[7]) )
+#define RARCH_INPUT_STATE_ANY_SET_PTR(a)        ( ((a)->data[0])||((a)->data[1])||((a)->data[2])||((a)->data[3])||   \
+                                                  ((a)->data[4])||((a)->data[5])||((a)->data[6])||((a)->data[7]) )
+#define RARCH_INPUT_STATE_CLEAR_BITS(a,b)    \
+            ((a).data[0])&=(~((b).data[0])); \
+            ((a).data[1])&=(~((b).data[1])); \
+            ((a).data[2])&=(~((b).data[2])); \
+            ((a).data[3])&=(~((b).data[3])); \
+            ((a).data[4])&=(~((b).data[4])); \
+            ((a).data[5])&=(~((b).data[5])); \
+            ((a).data[6])&=(~((b).data[6])); \
+            ((a).data[7])&=(~((b).data[7]));
+
+void input_keys_pressed(void *data, retro_bits_t* new_state);
 
 #ifdef HAVE_MENU
-uint64_t input_menu_keys_pressed(void *data, uint64_t last_input);
+void input_menu_keys_pressed(void *data, retro_bits_t* new_state);
 #endif
 
 void *input_driver_get_data(void);
@@ -585,7 +608,20 @@ bool input_joypad_hat_raw(const input_device_driver_t *driver,
       unsigned joypad, unsigned hat_dir, unsigned hat);
 
 /**
- * input_joypad_name:  
+ * input_mouse_button_raw:
+ * @port                    : Mouse number.
+ * @button                  : Identifier of key (libretro mouse constant).
+ *
+ * Checks if key (@button) was being pressed by user
+ * with mouse number @port.
+ *
+ * Returns: true (1) if key was pressed, otherwise
+ * false (0).
+ **/
+bool input_mouse_button_raw(unsigned port, unsigned button);
+
+/**
+ * input_joypad_name:
  * @drv                     : Input device driver handle.
  * @port                    : Joystick number.
  *
@@ -737,6 +773,9 @@ void input_config_parse_joy_button(void *data, const char *prefix,
 
 void input_config_parse_joy_axis(void *data, const char *prefix,
       const char *axis, struct retro_keybind *bind);
+
+void input_config_parse_mouse_button(void *data, const char *prefix,
+      const char *btn, struct retro_keybind *bind);
 
 void input_config_set_device_name(unsigned port, const char *name);
 

@@ -18,14 +18,18 @@ SOURCES_C := 	\
 	$(LIBRETRO_PNG_DIR)/rpng.c \
 	$(LIBRETRO_PNG_DIR)/rpng_encode.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
 	$(LIBRETRO_COMM_DIR)/string/stdstring.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c \
 	$(LIBRETRO_COMM_DIR)/file/nbio/nbio_stdio.c \
 	$(LIBRETRO_COMM_DIR)/file/archive_file.c \
 	$(LIBRETRO_COMM_DIR)/file/archive_file_zlib.c \
-	$(LIBRETRO_COMM_DIR)//file/file_path.c \
-	$(LIBRETRO_COMM_DIR)//file/retro_stat.c \
+	$(LIBRETRO_COMM_DIR)/file/file_path.c \
 	$(LIBRETRO_COMM_DIR)/streams/file_stream.c \
+	$(LIBRETRO_COMM_DIR)/streams/trans_stream.c \
+	$(LIBRETRO_COMM_DIR)/streams/trans_stream_zlib.c \
+	$(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.c \
 	$(LIBRETRO_COMM_DIR)/lists/string_list.c
 
 OBJS := $(SOURCES_C:.c=.o)
