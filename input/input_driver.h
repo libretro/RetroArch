@@ -608,7 +608,20 @@ bool input_joypad_hat_raw(const input_device_driver_t *driver,
       unsigned joypad, unsigned hat_dir, unsigned hat);
 
 /**
- * input_joypad_name:  
+ * input_mouse_button_raw:
+ * @port                    : Mouse number.
+ * @button                  : Identifier of key (libretro mouse constant).
+ *
+ * Checks if key (@button) was being pressed by user
+ * with mouse number @port.
+ *
+ * Returns: true (1) if key was pressed, otherwise
+ * false (0).
+ **/
+bool input_mouse_button_raw(unsigned port, unsigned button);
+
+/**
+ * input_joypad_name:
  * @drv                     : Input device driver handle.
  * @port                    : Joystick number.
  *

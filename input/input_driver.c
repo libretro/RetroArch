@@ -1746,6 +1746,41 @@ bool input_joypad_hat_raw(const input_device_driver_t *drv,
 }
 
 /**
+ * input_mouse_button_raw:
+ * @port                    : Mouse number.
+ * @button                  : Identifier of key (libretro mouse constant).
+ *
+ * Checks if key (@button) was being pressed by user
+ * with mouse number @port.
+ *
+ * Returns: true (1) if key was pressed, otherwise
+ * false (0).
+ **/
+bool input_mouse_button_raw(unsigned port, unsigned id)
+{
+	int16_t res;
+	rarch_joypad_info_t joypad_info;
+	settings_t *settings = config_get_ptr();
+
+	/*ignore axes*/
+	if ( id == RETRO_DEVICE_ID_MOUSE_X || id == RETRO_DEVICE_ID_MOUSE_Y ) {
+		return false;
+	}
+
+	joypad_info.axis_threshold = input_driver_axis_threshold;
+	joypad_info.joy_idx        = settings->uints.input_joypad_map[port];
+	joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
+
+	res = current_input->input_state(current_input_data,
+		joypad_info, libretro_input_binds, port, RETRO_DEVICE_MOUSE, 0, id);
+
+	if ( res ) {
+		return true;
+	}
+	return false;
+}
+
+/**
  * input_conv_analog_id_to_bind_id:
  * @idx                     : Analog key index.
  *                            E.g.: 
