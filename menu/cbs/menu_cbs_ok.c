@@ -3293,33 +3293,18 @@ static int action_ok_netplay_lan_scan(const char *path,
    return -1;
 }
 
-static int action_ok_content_collection_list(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   filebrowser_set_type(FILEBROWSER_SELECT_COLLECTION);
-   return generic_action_ok_displaylist_push(path, NULL, label, type, idx,
-         entry_idx, ACTION_OK_DL_CONTENT_COLLECTION_LIST);
+#define default_action_ok_dl_push(funcname, _fbid, _id, _path) \
+static int (funcname)(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx) \
+{ \
+   settings_t            *settings   = config_get_ptr(); \
+   (void)settings; \
+   filebrowser_set_type(_fbid); \
+   return generic_action_ok_displaylist_push(path, _path, label, type, idx, entry_idx, _id); \
 }
 
-static int action_ok_push_content_list(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   settings_t            *settings   = config_get_ptr();
-   filebrowser_set_type(FILEBROWSER_SELECT_FILE);
-   return generic_action_ok_displaylist_push(path,
-         settings->paths.directory_menu_content, label, type, idx,
-         entry_idx, ACTION_OK_DL_CONTENT_LIST);
-}
-
-static int action_ok_push_scan_file(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   settings_t            *settings   = config_get_ptr();
-   filebrowser_set_type(FILEBROWSER_SCAN_FILE);
-   return generic_action_ok_displaylist_push(path,
-         settings->paths.directory_menu_content, label, type, idx,
-         entry_idx, ACTION_OK_DL_CONTENT_LIST);
-}
+default_action_ok_dl_push(action_ok_content_collection_list, FILEBROWSER_SELECT_COLLECTION, ACTION_OK_DL_CONTENT_COLLECTION_LIST, NULL)
+default_action_ok_dl_push(action_ok_push_content_list, FILEBROWSER_SELECT_FILE, ACTION_OK_DL_CONTENT_LIST, settings->paths.directory_menu_content)
+default_action_ok_dl_push(action_ok_push_scan_file, FILEBROWSER_SCAN_FILE, ACTION_OK_DL_CONTENT_LIST, settings->paths.directory_menu_content)
 
 #ifdef HAVE_NETWORKING
 struct netplay_host_list *lan_hosts;
