@@ -173,26 +173,20 @@ static void content_load_init_wrap(
    *argc = 0;
    argv[(*argc)++] = strdup("retroarch");
 
-#ifdef HAVE_DYNAMIC
-   if (!args->no_content)
+   if (args->content_path)
    {
-#endif
-      if (args->content_path)
-      {
-         RARCH_LOG("Using content: %s.\n", args->content_path);
-         argv[(*argc)++] = strdup(args->content_path);
-      }
+      RARCH_LOG("Using content: %s.\n", args->content_path);
+      argv[(*argc)++] = strdup(args->content_path);
+   }
 #ifdef HAVE_MENU
-      else
-      {
-         RARCH_LOG("%s\n",
-               msg_hash_to_str(MSG_NO_CONTENT_STARTING_DUMMY_CORE));
-         argv[(*argc)++] = strdup("--menu");
-      }
-#endif
-#ifdef HAVE_DYNAMIC
+   else
+   {
+      RARCH_LOG("%s\n",
+            msg_hash_to_str(MSG_NO_CONTENT_STARTING_DUMMY_CORE));
+      argv[(*argc)++] = strdup("--menu");
    }
 #endif
+
 
    if (args->sram_path)
    {
