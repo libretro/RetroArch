@@ -165,7 +165,13 @@ static void libusb_get_description(struct libusb_device *device,
    unsigned i, k;
    struct libusb_config_descriptor *config;
 
-   libusb_get_config_descriptor(device, 0, &config);
+   int desc_ret = libusb_get_config_descriptor(device, 0, &config);
+
+   if (desc_ret != 0)
+   {
+      RARCH_ERR("Error %d getting libusb config descriptor\n", desc_ret);
+      return;
+   }
 
    for (i = 0; i < (int)config->bNumInterfaces; i++)
    {
@@ -208,11 +214,12 @@ static void libusb_get_description(struct libusb_device *device,
                }
             }
          }
+
          goto ret;
       }
    }
 
-   ret:
+ret:
    libusb_free_config_descriptor(config);
 }
 
