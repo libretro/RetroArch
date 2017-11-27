@@ -448,7 +448,7 @@ static bool libusb_hid_joypad_button(void *data,
 
 	/* Check the button. */
 	if ((port < MAX_USERS) && (joykey < 32))
-		return (RARCH_INPUT_STATE_BIT_GET(buttons, joykey)) != 0);
+		return (RARCH_INPUT_STATE_BIT_GET(buttons, joykey) != 0);
 	return false;
 }
 
