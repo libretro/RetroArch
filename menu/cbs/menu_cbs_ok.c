@@ -1481,8 +1481,6 @@ static int action_ok_playlist_entry_collection(const char *path,
    const char *core_name               = NULL;
    playlist_t *tmp_playlist            = NULL;
    menu_handle_t *menu                 = NULL;
-   rarch_system_info_t *info           = runloop_get_system_info();
-   struct retro_system_info *system    = &info->info;
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
