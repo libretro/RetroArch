@@ -56,7 +56,11 @@ static void *nbio_mmap_win32_open(const char * filename, unsigned mode)
 {
    static const DWORD dispositions[] = { OPEN_EXISTING, CREATE_ALWAYS, OPEN_ALWAYS, OPEN_EXISTING, CREATE_ALWAYS };
    HANDLE mem;
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500
    LARGE_INTEGER len;
+#else
+   SIZE_T len;
+#endif
    struct nbio_mmap_win32_t* handle  = NULL;
    void* ptr                         = NULL;
    bool is_write                     = (mode == NBIO_WRITE || mode == NBIO_UPDATE || mode == BIO_WRITE);
@@ -74,17 +78,28 @@ static void *nbio_mmap_win32_open(const char * filename, unsigned mode)
    if (file == INVALID_HANDLE_VALUE)
       return NULL;
 
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500
+   /* GetFileSizeEx is new for Windows 2000 */
    GetFileSizeEx(file, &len);
-
    mem = CreateFileMapping(file, NULL, is_write ? PAGE_READWRITE : PAGE_READONLY, 0, 0, NULL);
    ptr = MapViewOfFile(mem, is_write ? (FILE_MAP_READ|FILE_MAP_WRITE) : FILE_MAP_READ, 0, 0, len.QuadPart);
+#else
+   GetFileSize(file, &len);
+   mem = CreateFileMapping(file, NULL, is_write ? PAGE_READWRITE : PAGE_READONLY, 0, 0, NULL);
+   ptr = MapViewOfFile(mem, is_write ? (FILE_MAP_READ|FILE_MAP_WRITE) : FILE_MAP_READ, 0, 0, len);
+#endif
+
    CloseHandle(mem);
 
    handle           = (struct nbio_mmap_win32_t*)malloc(sizeof(struct nbio_mmap_win32_t));
 
    handle->file     = file;
    handle->is_write = is_write;
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500
    handle->len      = len.QuadPart;
+#else
+   handle->len      = len;
+#endif
    handle->ptr      = ptr;
 
    return handle;
@@ -108,7 +123,11 @@ static bool nbio_mmap_win32_iterate(void *data)
 
 static void nbio_mmap_win32_resize(void *data, size_t len)
 {
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500
    LARGE_INTEGER len_li;
+#else
+   SIZE_T len_li;
+#endif
    HANDLE mem;
    struct nbio_mmap_win32_t* handle  = (struct nbio_mmap_win32_t*)data;
 
@@ -125,8 +144,14 @@ static void nbio_mmap_win32_resize(void *data, size_t len)
       abort();
    }
 
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500
+   /* SetFilePointerEx is new for Windows 2000 */
    len_li.QuadPart = len;
    SetFilePointerEx(handle->file, len_li, NULL, FILE_BEGIN);
+#else
+   len_li = len;
+   SetFilePointer(handle->file, len_li, NULL, FILE_BEGIN);
+#endif
 
    if (!SetEndOfFile(handle->file))
    {
