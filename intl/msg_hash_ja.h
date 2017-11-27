@@ -1,4 +1,4 @@
-#if defined(_MSC_VER) && !defined(_XBOX)
+﻿#if defined(_MSC_VER) && !defined(_XBOX)
 /* https://support.microsoft.com/en-us/kb/980263 */
 #pragma execution_character_set("utf-8")
 #endif
