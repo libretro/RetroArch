@@ -132,7 +132,7 @@ static bool x_is_pressed(x11_input_t *x11,
 
 	if (binds && binds[id].valid)
 	{
-		if (x_mbutton_pressed(di, port, bind->mbutton))
+		if (x_mbutton_pressed(x11, port, bind->mbutton))
 			return true;
 		if (input_joypad_pressed(x11->joypad, joypad_info, port, binds, id))
 			return true;
@@ -184,47 +184,22 @@ static int16_t x_lightgun_aiming_state( x11_input_t *x11, unsigned idx, unsigned
 {
 	const int edge_detect = 32700;
 	struct video_viewport vp;
-	bool inside = false;
-	int x = 0;
-	int y = 0;
-	int16_t res_x = 0;
-	int16_t res_y = 0;
-	int16_t res_screen_x = 0;
-	int16_t res_screen_y = 0;
-	unsigned num = 0;
+	bool inside                 = false;
+	int16_t res_x               = 0;
+	int16_t res_y               = 0;
+	int16_t res_screen_x        = 0;
+	int16_t res_screen_y        = 0;
 
-	struct pointer_status* check_pos = di->pointer_head.next;
+	vp.x                        = 0;
+	vp.y                        = 0;
+	vp.width                    = 0;
+	vp.height                   = 0;
+	vp.full_width               = 0;
+	vp.full_height              = 0;
 
-	vp.x = 0;
-	vp.y = 0;
-	vp.width = 0;
-	vp.height = 0;
-	vp.full_width = 0;
-	vp.full_height = 0;
-
-	while ( check_pos && num < idx )
-	{
-		num++;
-		check_pos = check_pos->next;
-	}
-
-	if ( !check_pos && idx > 0 ) /* idx = 0 has mouse fallback. */
+	if (!(video_driver_translate_coord_viewport_wrap(&vp, x11->mouse_x, x11->mouse_y,
+			&res_x, &res_y, &res_screen_x, &res_screen_y)))
 		return 0;
-
-	x = di->mouse_x;
-	y = di->mouse_y;
-
-	if ( check_pos )
-	{
-		x = check_pos->pointer_x;
-		y = check_pos->pointer_y;
-	}
-
-	if ( !( video_driver_translate_coord_viewport_wrap(
-		&vp, x, y, &res_x, &res_y, &res_screen_x, &res_screen_y ) ) )
-	{
-		return 0;
-	}
 
 	inside = (res_x >= -edge_detect) && (res_y >= -edge_detect) && (res_x <= edge_detect) && (res_y <= edge_detect);
 
@@ -372,31 +347,31 @@ static int16_t x_input_state(void *data,
 				case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
 				case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
 				case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-					return x_lightgun_aiming_state( di, idx, id );
+					return x_lightgun_aiming_state( x11, idx, id );
 
 				/*buttons*/
 				case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
-					return x_is_pressed(di, joypad_info, binds[port], port, RARCH_LIGHTGUN_TRIGGER);
+					return x_is_pressed(x11, joypad_info, binds[port], port, RARCH_LIGHTGUN_TRIGGER);
 				case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
-					return x_is_pressed(di, joypad_info, binds[port], port, RARCH_LIGHTGUN_RELOAD);
+					return x_is_pressed(x11, joypad_info, binds[port], port, RARCH_LIGHTGUN_RELOAD);
 				case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
-					return x_is_pressed(di, joypad_info, binds[port], port, RARCH_LIGHTGUN_AUX_A);
+					return x_is_pressed(x11, joypad_info, binds[port], port, RARCH_LIGHTGUN_AUX_A);
 				case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:
-					return x_is_pressed(di, joypad_info, binds[port], port, RARCH_LIGHTGUN_AUX_B);
+					return x_is_pressed(x11, joypad_info, binds[port], port, RARCH_LIGHTGUN_AUX_B);
 				case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:
-					return x_is_pressed(di, joypad_info, binds[port], port, RARCH_LIGHTGUN_AUX_C);
+					return x_is_pressed(x11, joypad_info, binds[port], port, RARCH_LIGHTGUN_AUX_C);
 				case RETRO_DEVICE_ID_LIGHTGUN_START:
-					return x_is_pressed(di, joypad_info, binds[port], port, RARCH_LIGHTGUN_START);
+					return x_is_pressed(x11, joypad_info, binds[port], port, RARCH_LIGHTGUN_START);
 				case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
-					return x_is_pressed(di, joypad_info, binds[port], port, RARCH_LIGHTGUN_SELECT);
+					return x_is_pressed(x11, joypad_info, binds[port], port, RARCH_LIGHTGUN_SELECT);
 				case RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP:
-					return x_is_pressed(di, joypad_info, binds[port], port, RARCH_LIGHTGUN_DPAD_UP);
+					return x_is_pressed(x11, joypad_info, binds[port], port, RARCH_LIGHTGUN_DPAD_UP);
 				case RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN:
-					return x_is_pressed(di, joypad_info, binds[port], port, RARCH_LIGHTGUN_DPAD_DOWN);
+					return x_is_pressed(x11, joypad_info, binds[port], port, RARCH_LIGHTGUN_DPAD_DOWN);
 				case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT:
-					return x_is_pressed(di, joypad_info, binds[port], port, RARCH_LIGHTGUN_DPAD_LEFT);
+					return x_is_pressed(x11, joypad_info, binds[port], port, RARCH_LIGHTGUN_DPAD_LEFT);
 				case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:
-					return x_is_pressed(di, joypad_info, binds[port], port, RARCH_LIGHTGUN_DPAD_RIGHT);
+					return x_is_pressed(x11, joypad_info, binds[port], port, RARCH_LIGHTGUN_DPAD_RIGHT);
 
 				/*deprecated*/
 				case RETRO_DEVICE_ID_LIGHTGUN_X:
@@ -404,7 +379,7 @@ static int16_t x_input_state(void *data,
 				case RETRO_DEVICE_ID_LIGHTGUN_Y:
 					return x11->mouse_y - x11->mouse_last_y;
 				case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
-					return x_is_pressed(di, joypad_info, binds[port], port, RARCH_LIGHTGUN_START);
+					return x_is_pressed(x11, joypad_info, binds[port], port, RARCH_LIGHTGUN_START);
 
 			}
 			break;
