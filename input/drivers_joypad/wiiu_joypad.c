@@ -122,9 +122,13 @@ static bool wiiu_joypad_button(unsigned port_num, uint16_t key)
    return (pad_state[port_num] & (UINT64_C(1) << key));
 }
 
-static uint64_t wiiu_joypad_get_buttons(unsigned port_num)
+static void wiiu_joypad_get_buttons(unsigned port_num, retro_bits_t *state)
 {
-   return pad_state[port_num];
+	if ( port_num < MAX_PADS ) {
+		RARCH_INPUT_STATE_COPY16_PTR( state, pad_state[port_num] );
+	} else {
+		RARCH_INPUT_STATE_CLEAR_PTR(state);
+	}
 }
 
 static int16_t wiiu_joypad_axis(unsigned port_num, uint32_t joyaxis)

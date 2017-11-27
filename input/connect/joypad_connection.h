@@ -21,6 +21,7 @@
 #include <stddef.h>
 
 #include <libretro.h>
+#include <retro_miscellaneous.h>
 
 typedef void (*send_control_t)(void *data, uint8_t *buf, size_t size);
 
@@ -38,7 +39,7 @@ typedef struct pad_connection_interface
    void     	(*packet_handler)(void* device, uint8_t *packet, uint16_t size);
    void     	(*set_rumble)(void* device, enum retro_rumble_effect effect,
 					uint16_t strength);
-   uint64_t 	(*get_buttons)(void *data);
+   void			(*get_buttons)(void *data, retro_bits_t *state);
    int16_t  	(*get_axis)(void *data, unsigned axis);
    const char*	(*get_name)(void *data);
 } pad_connection_interface_t;
@@ -69,8 +70,8 @@ void pad_connection_pad_deinit(joypad_connection_t *joyconn,
 void pad_connection_packet(joypad_connection_t *joyconn,
    uint32_t idx, uint8_t* data, uint32_t length);
 
-uint64_t pad_connection_get_buttons(joypad_connection_t *joyconn,
-   unsigned idx);
+void pad_connection_get_buttons(joypad_connection_t *joyconn,
+   unsigned idx, retro_bits_t* state);
 
 int16_t pad_connection_get_axis(joypad_connection_t *joyconn,
    unsigned idx, unsigned i);

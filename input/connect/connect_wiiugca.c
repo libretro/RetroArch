@@ -20,6 +20,7 @@
 
 #include <boolean.h>
 #include "joypad_connection.h"
+#include "../input_defines.h"
 
 struct hidpad_wiiugca_data
 {
@@ -27,7 +28,7 @@ struct hidpad_wiiugca_data
    send_control_t send_control;
    uint8_t data[64];
    uint32_t slot;
-   uint64_t buttons;
+   uint32_t buttons;
 };
 
 static void* hidpad_wiiugca_init(void *data, uint32_t slot, send_control_t ptr)
@@ -62,12 +63,14 @@ static void hidpad_wiiugca_deinit(void *data)
       free(device);
 }
 
-static uint64_t hidpad_wiiugca_get_buttons(void *data)
+static void hidpad_wiiugca_get_buttons(void *data, retro_bits_t *state)
 {
-   struct hidpad_wiiugca_data *device = (struct hidpad_wiiugca_data*)data;
-   if (!device)
-      return 0;
-   return device->buttons;
+	struct hidpad_wiiugca_data *device = (struct hidpad_wiiugca_data*)data;
+	if ( device ) {
+		RARCH_INPUT_STATE_COPY16_PTR(state, device->buttons);
+	} else {
+		RARCH_INPUT_STATE_CLEAR_PTR(state);
+	}
 }
 
 static int16_t hidpad_wiiugca_get_axis(void *data, unsigned axis)
