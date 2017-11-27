@@ -289,7 +289,7 @@ struct registered_func registered_functions[100] = {
 static void query_raise_expected_number(ssize_t where, const char **error)
 {
    snprintf(tmp_error_buff, MAX_ERROR_LEN,
-         PRIu64 "::Expected number",
+         "%" PRIu64 "::Expected number",
          (uint64_t)where);
    *error = tmp_error_buff;
 }
@@ -297,7 +297,7 @@ static void query_raise_expected_number(ssize_t where, const char **error)
 static void query_raise_expected_string(ssize_t where, const char ** error)
 {
    snprintf(tmp_error_buff, MAX_ERROR_LEN,
-         PRIu64 "::Expected string",
+         "%" PRIu64 "::Expected string",
          (uint64_t)where);
    *error = tmp_error_buff;
 }
@@ -305,7 +305,7 @@ static void query_raise_expected_string(ssize_t where, const char ** error)
 static void query_raise_unexpected_eof(ssize_t where, const char ** error)
 {
    snprintf(tmp_error_buff, MAX_ERROR_LEN,
-         PRIu64 "::Unexpected EOF",
+         "%" PRIu64 "::Unexpected EOF",
          (uint64_t)where
          );
    *error = tmp_error_buff;
@@ -321,7 +321,7 @@ static void query_raise_unknown_function(ssize_t where, const char *name,
       ssize_t len, const char **error)
 {
    int n = snprintf(tmp_error_buff, MAX_ERROR_LEN,
-         PRIu64 "::Unknown function '",
+         "%" PRIu64 "::Unknown function '",
          (uint64_t)where
          );
 
@@ -336,7 +336,7 @@ static void query_raise_expected_eof(
       ssize_t where, char found, const char **error)
 {
    snprintf(tmp_error_buff, MAX_ERROR_LEN,
-         PRIu64 "::Expected EOF found '%c'",
+         "%" PRIu64 "::Expected EOF found '%c'",
          (uint64_t)where,
          found
          );
@@ -348,7 +348,7 @@ static void query_raise_unexpected_char(
       const char **error)
 {
    snprintf(tmp_error_buff, MAX_ERROR_LEN,
-         PRIu64 "::Expected '%c' found '%c'",
+         "%" PRIu64 "::Expected '%c' found '%c'",
          (uint64_t)where, expected, found);
    *error = tmp_error_buff;
 }
