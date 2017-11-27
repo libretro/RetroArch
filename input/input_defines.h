@@ -18,6 +18,7 @@
 #define __INPUT_DEFINES__H
 
 #include <stdint.h>
+#include <string.h>
 
 #include <retro_common_api.h>
 
