@@ -20,6 +20,7 @@
 
 #include <boolean.h>
 #include "joypad_connection.h"
+#include "../input_defines.h"
 
 struct hidpad_ps3_data
 {
@@ -27,7 +28,7 @@ struct hidpad_ps3_data
    send_control_t send_control;
    uint8_t data[512];
    uint32_t slot;
-   uint64_t buttons;
+   uint32_t buttons;
    bool have_led;
    uint16_t motors[2];
 };
@@ -104,12 +105,19 @@ static void hidpad_ps3_deinit(void *data)
       free(device);
 }
 
-static uint64_t hidpad_ps3_get_buttons(void *data)
+static void hidpad_ps3_get_buttons(void *data, retro_bits_t *state)
 {
-   struct hidpad_ps3_data *device = (struct hidpad_ps3_data*)data;
-   if (!device)
-      return 0;
-   return device->buttons;
+	struct hidpad_ps3_data *device = (struct hidpad_ps3_data*)data;
+	if ( device )
+	{
+		/*copy first 16 bits - standard RetroPad controls*/
+		RARCH_INPUT_STATE_COPY16_PTR(state, device->buttons);
+
+		/*PS button?*/
+		if ( device->buttons & 0x10000 ) {
+			RARCH_INPUT_STATE_BIT_SET_PTR( state, RARCH_MENU_TOGGLE );
+		}
+	}
 }
 
 static int16_t hidpad_ps3_get_axis(void *data, unsigned axis)
