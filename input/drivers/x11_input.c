@@ -72,6 +72,12 @@ static void *x_input_init(const char *joypad_driver)
    return x11;
 }
 
+static bool x_keyboard_pressed(x11_input_t *x11, unsigned key)
+{
+	int keycode = XKeysymToKeycode(x11->display, rarch_keysym_lut[(enum retro_key)key]);
+	return x11->state[keycode >> 3] & (1 << (keycode & 7)));
+}
+
 static bool x_mbutton_pressed(x11_input_t *x11, unsigned port, unsigned key)
 {
 	bool result;
@@ -125,8 +131,7 @@ static bool x_is_pressed(x11_input_t *x11,
 {
 	const struct retro_keybind *bind = &binds[id];
 
-	int keycode = XKeysymToKeycode(x11->display, rarch_keysym_lut[(enum retro_key)bind->key]);
-	if ( (bind->key < RETROK_LAST) && (x11->state[keycode >> 3] & (1 << (keycode & 7))) ) {
+	if ( (bind->key < RETROK_LAST) && x_keyboard_pressed(x11, bind->key) ) {
 		return true;
 	}
 
@@ -312,16 +317,10 @@ static int16_t x_input_state(void *data,
    {
       case RETRO_DEVICE_JOYPAD:
          if (id < RARCH_BIND_LIST_END)
-            return x_is_pressed(di, joypad_info, binds[port], port, id);
+            return x_is_pressed(x11, joypad_info, binds[port], port, id);
          break;
       case RETRO_DEVICE_KEYBOARD:
-         if (id < RETROK_LAST)
-         {
-            int keycode       = XKeysymToKeycode(x11->display,
-                  rarch_keysym_lut[(enum retro_key)id]);
-            ret = x11->state[keycode >> 3] & (1 << (keycode & 7));
-         }
-         return ret;
+         return (id < RETROK_LAST) && x_keyboard_pressed(x11, id);
       case RETRO_DEVICE_ANALOG:
          ret = x_pressed_analog(x11, binds[port], idx, id);
          if (!ret && binds[port])
