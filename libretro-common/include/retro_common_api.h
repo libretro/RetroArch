@@ -75,12 +75,14 @@ typedef int ssize_t;
 #include <sys/types.h>
 #endif
 
-#ifndef _WIN32
-#include <inttypes.h>
-#else
+#ifdef _MSC_VER
+#ifndef PRId64
 #define PRId64 "I64d"
 #define PRIu64 "I64u"
 #define PRIuPTR "Iu"
+#endif
+#else
+#include <inttypes.h>
 #endif
 #define STRING_REP_INT64 "%" PRId64
 #define STRING_REP_UINT64 "%" PRIu64
