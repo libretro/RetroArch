@@ -2297,6 +2297,7 @@ static int action_ok_load_core_deferred(const char *path,
             CORE_TYPE_PLAIN,
             NULL, NULL))
       return -1;
+   content_add_to_playlist(path);
 
    return 0;
 }
