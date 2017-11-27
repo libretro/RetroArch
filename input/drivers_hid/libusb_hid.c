@@ -502,7 +502,8 @@ static void libusb_hid_free(void *data)
       sthread_join(hid->poll_thread);
    }
 
-   pad_connection_destroy(hid->slots);
+   if (hid->slots)
+      pad_connection_destroy(hid->slots);
 
    libusb_hotplug_deregister_callback(hid->ctx, hid->hp);
 
