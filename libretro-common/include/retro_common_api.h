@@ -78,13 +78,13 @@ typedef int ssize_t;
 #ifndef _WIN32
 #include <inttypes.h>
 #else
-#define PRId64 "%I64d"
-#define PRIu64 "%I64u"
-#define PRIuPTR "%Iu"
+#define PRId64 "I64d"
+#define PRIu64 "I64u"
+#define PRIuPTR "Iu"
 #endif
-#define STRING_REP_INT64 PRId64
-#define STRING_REP_UINT64 PRIu64
-#define STRING_REP_USIZE PRIuPTR
+#define STRING_REP_INT64 "%" PRId64
+#define STRING_REP_UINT64 "%" PRIu64
+#define STRING_REP_USIZE "%" PRIuPTR
 
 /*
 I would like to see retro_inline.h moved in here; possibly boolean too.
