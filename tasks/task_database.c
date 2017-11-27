@@ -1254,9 +1254,14 @@ static void task_database_handler(retro_task_t *task)
          }
          else
          {
-            runloop_msg_queue_push(
-                  msg_hash_to_str(MSG_SCANNING_OF_DIRECTORY_FINISHED),
-                  0, 180, true);
+            if (db->is_directory)
+               runloop_msg_queue_push(
+                     msg_hash_to_str(MSG_SCANNING_OF_DIRECTORY_FINISHED),
+                     0, 180, true);
+            else
+               runloop_msg_queue_push(
+                     msg_hash_to_str(MSG_SCANNING_OF_FILE_FINISHED),
+                     0, 180, true);
             goto task_finished;
          }
          break;
