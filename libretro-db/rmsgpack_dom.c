@@ -315,10 +315,10 @@ void rmsgpack_dom_value_print(struct rmsgpack_dom_value *obj)
             printf("false");
          break;
       case RDT_INT:
-         printf(STRING_REP_INT64, (int64_t)obj->val.int_);
+         printf(PRId64, (int64_t)obj->val.int_);
          break;
       case RDT_UINT:
-         printf(STRING_REP_UINT64, (uint64_t)obj->val.uint_);
+         printf(PRIu64, (uint64_t)obj->val.uint_);
          break;
       case RDT_STRING:
          printf("\"%s\"", obj->val.string.buff);
