@@ -247,10 +247,10 @@ static int httpserver_handle_basic_info(struct mg_connection* conn, void* cbdata
          "\"frontendSupportsAchievements\":false,"
          "\"coreSupportsAchievements\":null,"
 #endif
-         "\"saveRam\":{\"pointer\":\"%" PRIXPTR "\",\"size\":" PRIu64 "},"
-         "\"rtcRam\":{\"pointer\":\"%" PRIXPTR "\",\"size\":" PRIu64 "},"
-         "\"systemRam\":{\"pointer\":\"%" PRIXPTR "\",\"size\":" PRIu64 "},"
-         "\"videoRam\":{\"pointer\":\"%" PRIXPTR "\",\"size\":" PRIu64 "},",
+         "\"saveRam\":{\"pointer\":\"%" PRIXPTR "\",\"size\":%" PRIu64 "},"
+         "\"rtcRam\":{\"pointer\":\"%" PRIXPTR "\",\"size\":%" PRIu64 "},"
+         "\"systemRam\":{\"pointer\":\"%" PRIXPTR "\",\"size\":%" PRIu64 "},"
+         "\"videoRam\":{\"pointer\":\"%" PRIXPTR "\",\"size\":%" PRIu64 "},",
       core_path,
       api.version,
       system->info.library_name,
@@ -428,13 +428,13 @@ static int httpserver_handle_get_mmaps(struct mg_connection* conn, void* cbdata)
       mg_printf(conn,
             "%s{"
             "\"id\":%u,"
-            "\"flags\":" PRIu64 ","
+            "\"flags\":%" PRIu64 ","
             "\"ptr\":\"%" PRIXPTR "\","
-            "\"offset\":" PRIu64 ","
-            "\"start\":" PRIu64 ","
-            "\"select\":" PRIu64 ","
-            "\"disconnect\":" PRIu64 ","
-            "\"len\":" PRIu64 ","
+            "\"offset\":%" PRIu64 ","
+            "\"start\":%" PRIu64 ","
+            "\"select\":%" PRIu64 ","
+            "\"disconnect\":%" PRIu64 ","
+            "\"len\":%" PRIu64 ","
             "\"addrspace\":\"%s\""
             "}",
             comma,
