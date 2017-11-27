@@ -1388,6 +1388,7 @@ static int default_action_ok_load_content_with_core_from_menu(const char *_path,
    content_info.environ_get            = NULL;
    if (!task_push_load_content_with_core_from_menu(_path, &content_info, (enum rarch_core_type)_type, NULL, NULL))
       return -1;
+   content_add_to_playlist(_path);
    return 0;
 }
 
