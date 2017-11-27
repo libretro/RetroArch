@@ -281,6 +281,9 @@ void menu_display_timedate(menu_display_ctx_datetime_t *datetime)
       case 4: /* Date and time, without year and seconds */
          strftime(datetime->s, datetime->len,
                "%d/%m %H:%M", localtime(&time_));
+      case 5: /* Time (hours-minutes), in 12 hour AM-PM designation */
+         strftime(datetime->s,datetime->len,
+               "%I:%M %p", localtime(&time_));
          break;
    }
 }
