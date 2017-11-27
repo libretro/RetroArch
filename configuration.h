@@ -243,6 +243,8 @@ typedef struct settings
       bool ssh_enable;
       bool samba_enable;
       bool bluetooth_enable;
+
+      bool automatically_add_content_to_playlist;
    } bools;
 
    struct
