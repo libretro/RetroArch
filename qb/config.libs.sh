@@ -29,6 +29,7 @@ elif [ "$OS" = 'Haiku' ]; then
    CLIB=-lroot
    PTHREADLIB=-lroot
    SOCKETLIB=-lnetwork
+   CFLAGS="$CFLAGS -D_BSD_SOURCE"
 elif [ "$OS" = 'Win32' ]; then
    SOCKETLIB=-lws2_32
    SOCKETHEADER="#include <winsock2.h>"
