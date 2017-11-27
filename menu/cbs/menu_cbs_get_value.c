@@ -572,7 +572,7 @@ static void menu_action_setting_disp_set_label_perf_counters_common(
       return;
 
    snprintf(s, len,
-         PRIu64 " ticks, " PRIu64 " runs.",
+         "%" PRIu64 " ticks, %" PRIu64 " runs.",
          ((uint64_t)counters[offset]->total /
           (uint64_t)counters[offset]->call_cnt),
          (uint64_t)counters[offset]->call_cnt);
