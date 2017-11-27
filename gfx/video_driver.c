@@ -2312,7 +2312,7 @@ void video_driver_frame(const void *data, unsigned width,
 
             snprintf(frames_text,
                   sizeof(frames_text),
-                  STRING_REP_UINT64,
+                  "%" PRIu64,
                   (uint64_t)video_driver_frame_count);
 
             strlcat(video_driver_window_title,
@@ -2330,7 +2330,7 @@ void video_driver_frame(const void *data, unsigned width,
             snprintf(
                   video_info.fps_text,
                   sizeof(video_info.fps_text),
-                  "FPS: %6.1f || %s: " STRING_REP_UINT64,
+                  "FPS: %6.1f || %s: %" PRIu64,
                   last_fps,
                   msg_hash_to_str(MSG_FRAMES),
                   (uint64_t)video_driver_frame_count);
