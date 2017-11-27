@@ -892,7 +892,7 @@ void config_set_uint64(config_file_t *conf, const char *key, uint64_t val)
    char buf[128];
 
    buf[0] = '\0';
-   snprintf(buf, sizeof(buf), PRIu64, val);
+   snprintf(buf, sizeof(buf), "%" PRIu64, val);
    config_set_string(conf, key, buf);
 }
 
