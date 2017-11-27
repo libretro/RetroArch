@@ -547,9 +547,9 @@ static void *libusb_hid_init(void)
       goto error;
 
 #if 0
-   /* NOTE: In what situation could this possibly happen?
-    * Don't use it for now since it requires a newer API
-    * version than FreeBSD has.
+   /* Don't use this for now since it requires a newer API
+    * version than FreeBSD has, and always returns false on Windows anyway.
+    * https://github.com/libusb/libusb/issues/86
     */
    if (!libusb_has_capability(LIBUSB_CAP_HAS_HOTPLUG))
       goto error;
