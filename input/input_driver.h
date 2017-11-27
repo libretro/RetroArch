@@ -174,7 +174,7 @@ struct rarch_joypad_driver
    bool (*query_pad)(unsigned);
    void (*destroy)(void);
    bool (*button)(unsigned, uint16_t);
-   uint64_t (*get_buttons)(unsigned);
+   void (*get_buttons)(unsigned, retro_bits_t *);
    int16_t (*axis)(unsigned, uint32_t);
    void (*poll)(void);
    bool (*set_rumble)(unsigned, enum retro_rumble_effect, uint16_t);

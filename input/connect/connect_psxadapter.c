@@ -62,10 +62,10 @@ static void hidpad_psxadapter_deinit(void *data)
 static void hidpad_psxadapter_get_buttons(void *data, retro_bits_t *state)
 {
 	struct hidpad_psxadapter_data *device = (struct hidpad_psxadapter_data*)data;
-	if ( device )
-	{
-		/*copy first 16 bits - standard RetroPad controls*/
+	if ( device ) {
 		RARCH_INPUT_STATE_COPY16_PTR(state, device->buttons);
+	} else {
+		RARCH_INPUT_STATE_CLEAR_PTR(state);
 	}
 }
 

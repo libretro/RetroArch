@@ -42,7 +42,8 @@ static void null_hid_joypad_get_buttons(void *data, unsigned port, retro_bits_t 
 {
    (void)data;
    (void)port;
-   (void)state;
+
+   RARCH_INPUT_STATE_CLEAR_PTR(state);
 }
 
 static bool null_hid_joypad_button(void *data, unsigned port, uint16_t joykey)

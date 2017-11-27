@@ -177,8 +177,8 @@ enum analog_dpad_mode
             ((a).data[6])&=(~((b).data[6])); \
             ((a).data[7])&=(~((b).data[7]));
 
-#define RARCH_INPUT_STATE_COPY16_PTR(a,bits)   ((a)->data[0] = (bits)&0xffff);
-#define RARCH_INPUT_STATE_COPY32_PTR(a,bits)   ((a)->data[0] = (bits));
+#define RARCH_INPUT_STATE_COPY16_PTR(a,bits)   {memset(a, 0, sizeof(retro_bits_t));((a)->data[0] = (bits)&0xffff);}
+#define RARCH_INPUT_STATE_COPY32_PTR(a,bits)   {memset(a, 0, sizeof(retro_bits_t));((a)->data[0] = (bits));}
 
 
 RETRO_END_DECLS

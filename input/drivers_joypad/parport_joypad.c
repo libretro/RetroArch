@@ -340,10 +340,14 @@ static bool parport_joypad_button(unsigned port, uint16_t joykey)
    return joykey < PARPORT_NUM_BUTTONS && BIT64_GET(pad->buttons, joykey);
 }
 
-static uint64_t parport_joypad_get_buttons(unsigned port)
+static void parport_joypad_get_buttons(unsigned port, retro_bits_t *state)
 {
-   const struct parport_joypad *pad = (const struct parport_joypad*)&parport_pads[port];
-   return pad->buttons;
+	const struct parport_joypad *pad = (const struct parport_joypad*)&parport_pads[port];
+	if ( pad ) {
+		RARCH_INPUT_STATE_COPY16_PTR(pad->buttons, state);
+	} else {
+		RARCH_INPUT_STATE_CLEAR_PTR(state);
+	}
 }
 
 static int16_t parport_joypad_axis(unsigned port, uint32_t joyaxis)
