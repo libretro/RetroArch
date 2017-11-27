@@ -44,28 +44,25 @@ check_lib() # $1 = language  $2 = HAVE_$2  $3 = lib  $4 = function in lib  $5 = 
 		ECHOBUF="Checking existence of ${3% }"
 		printf %s\\n 'int main(void) { return 0; }' > "$TEMP_CODE"
 	fi
+
+	val="$2"
+	lib="$3"
+	error="${7:-}"
 	answer='no'
-	"$COMPILER" -o \
-		"$TEMP_EXE" \
-		"$TEMP_CODE" \
-		$INCLUDE_DIRS \
-		$LIBRARY_DIRS \
-		$(printf %s "$5") \
-		$CFLAGS \
-		$LDFLAGS \
-		$(printf %s "$3") >>config.log 2>&1 && answer='yes'
-	eval "HAVE_$2=\"$answer\""
+	eval "set -- $INCLUDE_DIRS $LIBRARY_DIRS $5 $CFLAGS $LDFLAGS $3"
+	"$COMPILER" -o "$TEMP_EXE" "$TEMP_CODE" "$@" >>config.log 2>&1 && answer='yes'
+	eval "HAVE_$val=\"$answer\""
 	printf %s\\n "$ECHOBUF ... $answer"
 	rm -f -- "$TEMP_CODE" "$TEMP_EXE"
 
 	if [ "$answer" = 'no' ]; then
-		[ "$7" ] && die 1 "$7"
+		[ "$error" ] && die 1 "$error"
 		[ "$tmpval" = 'yes' ] && {
-			die 1 "Forced to build with library $3, but cannot locate. Exiting ..."
+			die 1 "Forced to build with library $lib, but cannot locate. Exiting ..."
 		}
 	else
-		eval "${2}_LIBS=\"$3\""
-		PKG_CONF_USED="$PKG_CONF_USED $2"
+		eval "${val}_LIBS=\"$lib\""
+		PKG_CONF_USED="$PKG_CONF_USED $val"
 	fi
 
 	return 0
@@ -228,9 +225,9 @@ create_config_make()
 			
 			case "$PKG_CONF_USED" in
 				*$1*)
-					FLAGS="$(eval "printf %s \"\$$1_CFLAGS\"")"
+					FLAG="$(eval "printf %s \"\$$1_CFLAGS\"")"
 					LIBS="$(eval "printf %s \"\$$1_LIBS\"")"
-					[ "${FLAGS}" ] && printf %s\\n "$1_CFLAGS = ${FLAGS%"${FLAGS##*[! ]}"}"
+					[ "${FLAG}" ] && printf %s\\n "$1_CFLAGS = ${FLAG%"${FLAG##*[! ]}"}"
 					[ "${LIBS}" ] && printf %s\\n "$1_LIBS = ${LIBS%"${LIBS##*[! ]}"}"
 				;;
 			esac
