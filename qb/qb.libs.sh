@@ -111,16 +111,19 @@ check_header() #$1 = HAVE_$1  $2..$5 = header files
 	[ "$5" != '' ] && CHECKHEADER="$5" && printf %s\\n "#include <$5>" >> "$TEMP_C"
 	printf %s\\n "int main(void) { return 0; }" >> "$TEMP_C"
 	answer='no'
-	"$CC" -o "$TEMP_EXE" "$TEMP_C" $INCLUDE_DIRS >>config.log 2>&1 && answer='yes'
-	eval "HAVE_$1=\"$answer\""
+	val="$1"
+	header="$2"
+	eval "set -- $INCLUDE_DIRS"
+	"$CC" -o "$TEMP_EXE" "$TEMP_C" "$@" >>config.log 2>&1 && answer='yes'
+	eval "HAVE_$val=\"$answer\""
 	printf %s\\n "Checking presence of header file $CHECKHEADER ... $answer"
 	rm -f -- "$TEMP_C" "$TEMP_EXE"
 	[ "$tmpval" = 'yes' ] && [ "$answer" = 'no' ] && \
-		die 1 "Build assumed that $2 exists, but cannot locate. Exiting ..."
+		die 1 "Build assumed that $header exists, but cannot locate. Exiting ..."
 }
 
-check_macro()	#$1 = HAVE_$1	$2 = macro name
-{	tmpval="$(eval echo \$HAVE_$1)"
+check_macro() #$1 = HAVE_$1  $2 = macro name
+{	tmpval="$(eval "printf %s \"\$HAVE_$1\"")"
 	[ "$tmpval" = 'no' ] && return 0
 	ECHOBUF="Checking presence of predefined macro $2"
 	cat << EOF > "$TEMP_C"
@@ -130,11 +133,15 @@ check_macro()	#$1 = HAVE_$1	$2 = macro name
 int main(void) { return 0; }
 EOF
 	answer='no'
-	"$CC" -o "$TEMP_EXE" "$TEMP_C" $CFLAGS $INCLUDE_DIRS >>config.log 2>&1 && answer='yes'
-	eval HAVE_$1="$answer"; echo "$ECHOBUF ... $answer"
+	val="$1"
+	macro="$2"
+	eval "set -- $CFLAGS $INCLUDE_DIRS"
+	"$CC" -o "$TEMP_EXE" "$TEMP_C" "$@" >>config.log 2>&1 && answer='yes'
+	eval "HAVE_$val=\"$answer\""
+	printf %s\\n "$ECHOBUF ... $answer"
 	rm -f -- "$TEMP_C" "$TEMP_EXE"
 	[ "$tmpval" = 'yes' ] && [ "$answer" = 'no' ] && \
-		die 1 "Build assumed that $2 is defined, but it's not. Exiting ..."
+		die 1 "Build assumed that $macro is defined, but it's not. Exiting ..."
 }
 
 check_switch() # $1 = language  $2 = HAVE_$2  $3 = switch  $4 = critical error message [checked only if non-empty]
