@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -19,7 +19,7 @@
 #include "../input_driver.h"
 #include "../../tasks/tasks_internal.h"
 
-static uint64_t pad_state[MAX_PADS];
+static uint32_t pad_state[MAX_PADS];
 static int16_t analog_state[MAX_PADS][2][2];
 #ifdef _XBOX1
 static HANDLE gamepads[MAX_PADS];
@@ -73,12 +73,16 @@ static bool xdk_joypad_button(unsigned port_num, uint16_t joykey)
    if (port_num >= MAX_PADS)
       return false;
 
-   return pad_state[port_num] & (UINT64_C(1) << joykey);
+   return pad_state[port_num] & (1 << joykey);
 }
 
-static uint64_t xdk_joypad_get_buttons(unsigned port_num)
+static void xdk_joypad_get_buttons(unsigned port_num, retro_bits_t *state)
 {
-   return pad_state[port_num];
+	if ( port_num < MAX_PADS ) {
+		RARCH_INPUT_STATE_COPY16_PTR( state, pad_state[port_num] );
+	} else {
+		RARCH_INPUT_STATE_CLEAR_PTR(state);
+	}
 }
 
 static int16_t xdk_joypad_axis(unsigned port_num, uint32_t joyaxis)
@@ -154,7 +158,7 @@ static void xdk_joypad_poll(void)
 
       if(bRemoved[port])
       {
-         /* if the controller was removed after 
+         /* if the controller was removed after
           * XGetDeviceChanges but before
           * XInputOpen, the device handle will be NULL. */
          if(gamepads[port])
@@ -178,14 +182,14 @@ static void xdk_joypad_poll(void)
          m_pollingParameters.bOutputInterval = 8;
          gamepads[port] = XInputOpen(XDEVICE_TYPE_GAMEPAD, port,
                XDEVICE_NO_SLOT, NULL);
-         
+
          xdk_joypad_autodetect_add(port);
       }
 
       if (!gamepads[port])
          continue;
 
-      /* if the controller is removed after 
+      /* if the controller is removed after
        * XGetDeviceChanges but before XInputOpen,
        * the device handle will be NULL. */
 #endif
