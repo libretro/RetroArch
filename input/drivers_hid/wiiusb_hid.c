@@ -478,27 +478,31 @@ static bool wiiusb_hid_joypad_query(void *data, unsigned pad)
    return pad < MAX_USERS;
 }
 
-static uint64_t wiiusb_hid_joypad_get_buttons(void *data, unsigned port)
+static void wiiusb_hid_joypad_get_buttons(void *data, unsigned port, retro_bits_t *state)
 {
-   wiiusb_hid_t *hid = (wiiusb_hid_t*)data;
-   if (hid)
-      return pad_connection_get_buttons(&hid->connections[port], port);
-   return 0;
+	wiiusb_hid_t *hid = (wiiusb_hid_t*)data;
+	if (hid) {
+		return pad_connection_get_buttons(&hid->connections[port], port, state);
+	} else {
+		RARCH_INPUT_STATE_CLEAR_PTR( state );
+	}
 }
 
 static bool wiiusb_hid_joypad_button(void *data, unsigned port, uint16_t joykey)
 {
-   uint64_t buttons = wiiusb_hid_joypad_get_buttons(data, port);
+	retro_bits_t buttons;
 
-   /* Check hat. */
-   if (GET_HAT_DIR(joykey))
-      return false;
+	wiiusb_hid_joypad_get_buttons(data, port, &buttons);
 
-   /* Check the button. */
-   if ((port < MAX_USERS) && (joykey < 32))
-      return ((buttons & (1 << joykey)) != 0);
+	/* Check hat. */
+	if (GET_HAT_DIR(joykey))
+		return false;
 
-   return false;
+	/* Check the button. */
+	if ((port < MAX_USERS) && (joykey < 32))
+		return (RARCH_INPUT_STATE_BIT_GET(buttons, joykey)) != 0);
+
+	return false;
 }
 
 static bool wiiusb_hid_joypad_rumble(void *data, unsigned pad,

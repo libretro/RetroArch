@@ -37,9 +37,9 @@ static bool null_joypad_button(unsigned port_num, uint16_t joykey)
    return false;
 }
 
-static uint64_t null_joypad_get_buttons(unsigned port_num)
+static void null_joypad_get_buttons(unsigned port_num, retro_bits_t *state)
 {
-   return 0;
+	RARCH_INPUT_STATE_CLEAR_PTR( state );
 }
 
 static int16_t null_joypad_axis(unsigned port_num, uint32_t joyaxis)
