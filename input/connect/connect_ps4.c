@@ -186,12 +186,13 @@ static bool hidpad_ps4_check_dpad(struct ps4 *rpt, unsigned id)
 
 static void hidpad_ps4_get_buttons(void *data, retro_bits_t* state)
 {
-   uint64_t buttonstate           = 0;
    struct hidpad_ps4_data *device = (struct hidpad_ps4_data*)data;
    struct ps4 *rpt = device ? (struct ps4*)&device->data : NULL;
 
    if (!device || !rpt)
       return;
+
+    RARCH_INPUT_STATE_CLEAR_PTR( state );
 
 	if ( rpt->btn.r3 ) {
 		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_R3 );

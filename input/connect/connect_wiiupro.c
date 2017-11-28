@@ -126,6 +126,8 @@ static void hidpad_wiiupro_get_buttons(void *data, retro_bits_t *state)
    if (!device || !rpt)
       return;
 
+    RARCH_INPUT_STATE_CLEAR_PTR( state );
+
 	if ( rpt->btn.r3 ) {
 		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_R3 );
 	}
