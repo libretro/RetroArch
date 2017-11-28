@@ -833,6 +833,7 @@ ifeq ($(DEBUG), 1)
       endif
 
       CFLAGS += -Od -Zi -D_DEBUG -MTd -TP
+      LDFLAGS += -DEBUG
    else
       CFLAGS += -O0 -g -DDEBUG
    endif
