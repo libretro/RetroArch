@@ -42,7 +42,10 @@ typedef struct libusb_hid
    libusb_context *ctx;
    joypad_connection_t *slots;
    sthread_t *poll_thread;
+#if 0
+/*disabled - see libusb_hid_init*/
    int can_hotplug;
+#endif
 #if defined(__FreeBSD__) && LIBUSB_API_VERSION <= 0x01000102
    libusb_hotplug_callback_handle hp;
 #else
@@ -406,6 +409,8 @@ static int remove_adapter(void *data, struct libusb_device *dev)
    return -1;
 }
 
+#if 0
+/*disabled - see libusb_hid_init*/
 static int libusb_hid_hotplug_callback(struct libusb_context *ctx,
       struct libusb_device *dev, libusb_hotplug_event event, void *user_data)
 {
@@ -426,6 +431,7 @@ static int libusb_hid_hotplug_callback(struct libusb_context *ctx,
 
    return 0;
 }
+#endif
 
 
 static bool libusb_hid_joypad_query(void *data, unsigned pad)
@@ -565,8 +571,6 @@ static void *libusb_hid_init(void)
       hid->can_hotplug = 1;
    else
       hid->can_hotplug = 0;
-#else
-   hid->can_hotplug = 0;
 #endif
 
    hid->slots = pad_connection_init(MAX_USERS);
@@ -588,6 +592,12 @@ static void *libusb_hid_init(void)
    if (count > 0)
       libusb_free_device_list(devices, 1);
 
+#if 0
+   /* We disable this block as well because, given above, we cannot
+    * determine hotplug capability on FreeBSD, and it is always false on
+    * Windows. This in turn causes the callback registration below to
+    * fail and this initialisation function to fail with it.
+    */
    if (hid->can_hotplug)
    {
       ret = libusb_hotplug_register_callback(
@@ -608,6 +618,7 @@ static void *libusb_hid_init(void)
          goto error;
       }
    }
+#endif
 
    hid->poll_thread = sthread_create(poll_thread, hid);
 
