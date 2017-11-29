@@ -29,6 +29,7 @@ matrix:
             - llvm-toolchain-precise-3.8
           packages:
             - clang-3.8
+            - libusb-1.0-0-dev
       env: COMPILER_NAME=clang-3.8 CXX=clang++-3.8 CC=clang-3.8
     - os: osx
       osx_image: xcode7.3
