@@ -203,6 +203,9 @@ void pad_connection_destroy(joypad_connection_t *joyconn)
 {
    unsigned i;
 
+   if (!joyconn)
+      return;
+
    for (i = 0; i < MAX_USERS; i ++)
       pad_connection_pad_deinit(&joyconn[i], i);
 
