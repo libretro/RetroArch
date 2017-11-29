@@ -1370,7 +1370,6 @@ static void btstack_hid_joypad_get_buttons(void *data, unsigned port, retro_bits
     pad_connection_get_buttons(&hid->slots[port], port, state);
   else
     RARCH_INPUT_STATE_CLEAR_PTR(state);
-  }
 }
 
 static bool btstack_hid_joypad_button(void *data, unsigned port, uint16_t joykey)
