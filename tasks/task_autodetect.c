@@ -25,10 +25,12 @@
 #include <file/config_file.h>
 #include <string/stdstring.h>
 
+#ifdef HAVE_LIBUSB
 #ifdef __FreeBSD__
 #include <libusb.h>
 #else
 #include <libusb-1.0/libusb.h>
+#endif
 #endif
 
 #include "../input/input_driver.h"
@@ -50,7 +52,9 @@
 /* only one blissbox per machine is currently supported */
 static const blissbox_pad_type_t *blissbox_pads[BLISSBOX_MAX_PADS] = {NULL};
 
+#ifdef HAVE_LIBUSB
 static struct libusb_device_handle *autoconfig_libusb_handle = NULL;
+#endif
 
 typedef struct autoconfig_disconnect autoconfig_disconnect_t;
 typedef struct autoconfig_params     autoconfig_params_t;
@@ -424,13 +428,14 @@ static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type(int 
    RARCH_LOG("[Autoconf]: Could not find connected pad in Bliss-Box port#%d.\n", pid - BLISSBOX_PID);
 
    return NULL;
-#else
-   return NULL;
-#endif
+
 error:
    libusb_close(autoconfig_libusb_handle);
    libusb_exit(NULL);
    return NULL;
+#else
+   return NULL;
+#endif
 }
 
 static void input_autoconfigure_override_handler(autoconfig_params_t *params)
