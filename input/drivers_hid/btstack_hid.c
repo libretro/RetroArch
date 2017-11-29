@@ -573,7 +573,7 @@ void hexdump(void *data, int size);
 void printUUID(uint8_t *uuid);
 
 /* Deprecated - please use more convenient bd_addr_to_str. */
-void print_bd_addr( bd_addr_t addr);
+void print_bd_addr(bd_addr_t addr);
 
 char * bd_addr_to_str(bd_addr_t addr);
 
@@ -1365,28 +1365,28 @@ static const char *btstack_hid_joypad_name(void *data, unsigned pad)
 
 static void btstack_hid_joypad_get_buttons(void *data, unsigned port, retro_bits_t *state)
 {
-	btstack_hid_t        *hid   = (btstack_hid_t*)data;
-	if ( hid ) {
-		pad_connection_get_buttons(&hid->slots[port], port, state);
-	} else {
-		RARCH_INPUT_STATE_CLEAR_PTR( state );
-	}
+  btstack_hid_t        *hid   = (btstack_hid_t*)data;
+  if (hid)
+    pad_connection_get_buttons(&hid->slots[port], port, state);
+  else
+    RARCH_INPUT_STATE_CLEAR_PTR(state);
+  }
 }
 
 static bool btstack_hid_joypad_button(void *data, unsigned port, uint16_t joykey)
 {
-	retro_bits_t buttons;
-	btstack_hid_joypad_get_buttons(data, port, &buttons);
+  retro_bits_t buttons;
+  btstack_hid_joypad_get_buttons(data, port, &buttons);
 
-	/* Check hat. */
-	if (GET_HAT_DIR(joykey))
-		return false;
+  /* Check hat. */
+  if (GET_HAT_DIR(joykey))
+    return false;
 
-	/* Check the button. */
-	if ((port < MAX_USERS) && (joykey < 32))
-		return ( RARCH_INPUT_STATE_BIT_GET( buttons, joykey ) != 0 );
+  /* Check the button. */
+  if ((port < MAX_USERS) && (joykey < 32))
+    return (RARCH_INPUT_STATE_BIT_GET(buttons, joykey) != 0);
 
-	return false;
+  return false;
 }
 
 static bool btstack_hid_joypad_rumble(void *data, unsigned pad,
