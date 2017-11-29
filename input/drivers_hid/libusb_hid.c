@@ -314,7 +314,8 @@ static int add_adapter(void *data, struct libusb_device *dev)
 
    if (!pad_connection_has_interface(hid->slots, adapter->slot))
    {
-      RARCH_ERR(" Interface not found (%s).\n", adapter->name);
+      RARCH_ERR("Interface not found (%s) (VID/PID: %04x:%04x).\n",
+         adapter->name, desc.idVendor, desc.idProduct);
       goto error;
    }
 
