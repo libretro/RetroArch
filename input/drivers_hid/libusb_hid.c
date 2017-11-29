@@ -441,18 +441,20 @@ static const char *libusb_hid_joypad_name(void *data, unsigned pad)
    return NULL;
 }
 
-static uint64_t libusb_hid_joypad_get_buttons(void *data, unsigned port)
+static void libusb_hid_joypad_get_buttons(void *data, unsigned port, retro_bits_t *state)
 {
    libusb_hid_t        *hid   = (libusb_hid_t*)data;
    if (hid)
-      return pad_connection_get_buttons(&hid->slots[port], port);
-   return 0;
+      return pad_connection_get_buttons(&hid->slots[port], port, state);
+   else
+      RARCH_INPUT_STATE_CLEAR_PTR(state);
 }
 
 static bool libusb_hid_joypad_button(void *data,
       unsigned port, uint16_t joykey)
 {
-   uint64_t buttons          = libusb_hid_joypad_get_buttons(data, port);
+   retro_bits_t buttons;
+   libusb_hid_joypad_get_buttons(data, port, &buttons);
 
    /* Check hat. */
    if (GET_HAT_DIR(joykey))
@@ -460,7 +462,7 @@ static bool libusb_hid_joypad_button(void *data,
 
    /* Check the button. */
    if ((port < MAX_USERS) && (joykey < 32))
-      return ((buttons & (1 << joykey)) != 0);
+      return (RARCH_INPUT_STATE_BIT_GET(buttons, joykey) != 0);
    return false;
 }
 
