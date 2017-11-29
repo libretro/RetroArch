@@ -201,12 +201,16 @@ bool pad_connection_has_interface(joypad_connection_t *joyconn, unsigned pad)
 
 void pad_connection_destroy(joypad_connection_t *joyconn)
 {
-   unsigned i;
+	unsigned i;
 
-   for (i = 0; i < MAX_USERS; i ++)
-      pad_connection_pad_deinit(&joyconn[i], i);
+	if ( joyconn )
+	{
+		for ( i = 0; i < MAX_USERS; ++i ) {
+			pad_connection_pad_deinit( &joyconn[ i ], i );
+		}
 
-   free(joyconn);
+		free( joyconn );
+	}
 }
 
 bool pad_connection_rumble(joypad_connection_t *joyconn,
