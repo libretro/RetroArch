@@ -169,8 +169,9 @@ void filestream_set_size(RFILE *stream)
  * If bufsize is > 0 for unbuffered modes (like RFILE_MODE_WRITE), file will instead be fully buffered.
  * Returns a pointer to an RFILE if opened successfully, otherwise NULL.
  **/
-RFILE *filestream_open(const char *path, unsigned mode, ssize_t bufsize)
+RFILE *filestream_open(const char *path, unsigned mode, ssize_t unused)
 {
+   ssize_t bufsize      = 0x4000;
    int            flags = 0;
    int         mode_int = 0;
 #if defined(HAVE_BUFFERED_IO)
