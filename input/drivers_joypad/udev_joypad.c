@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2015 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -204,7 +204,7 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
          i = ABS_HAT3Y;
          continue;
       }
-      
+
       if (test_bit(i, absbit))
       {
          struct input_absinfo *abs = &pad->absinfo[axes];
@@ -420,11 +420,11 @@ static bool udev_set_rumble(unsigned i,
 
 static bool udev_joypad_poll_hotplug_available(struct udev_monitor *dev)
 {
-   struct pollfd fds;		
+   struct pollfd fds;
 
-   fds.fd      = udev_monitor_get_fd(dev);		
-   fds.events  = POLLIN;		
-   fds.revents = 0;		
+   fds.fd      = udev_monitor_get_fd(dev);
+   fds.events  = POLLIN;
+   fds.revents = 0;
 
    return (poll(&fds, 1, 0) == 1) && (fds.revents & POLLIN);
 }
@@ -604,10 +604,14 @@ static bool udev_joypad_button(unsigned port, uint16_t joykey)
    return joykey < UDEV_NUM_BUTTONS && BIT64_GET(pad->buttons, joykey);
 }
 
-static uint64_t udev_joypad_get_buttons(unsigned port)
+static void udev_joypad_get_buttons(unsigned port, retro_bits_t *state)
 {
-   const struct udev_joypad *pad = (const struct udev_joypad*)&udev_pads[port];
-   return pad->buttons;
+	const struct udev_joypad *pad = (const struct udev_joypad*)&udev_pads[port];
+	if ( pad ) {
+		RARCH_INPUT_STATE_COPY16_PTR( state, pad->buttons );
+	} else {
+		RARCH_INPUT_STATE_CLEAR_PTR(state);
+	}
 }
 
 static int16_t udev_joypad_axis(unsigned port, uint32_t joyaxis)

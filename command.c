@@ -1809,11 +1809,9 @@ bool command_event(enum event_command cmd, void *data)
             rarch_system_info_t *system_info = NULL;
             struct retro_system_info *system = NULL;
             const char *core_path            = NULL;
-			
-            path_clear(RARCH_PATH_BASENAME);
-			system_info                      = runloop_get_system_info();
-			system                           = &system_info->info;
-			core_path                        = path_get(RARCH_PATH_CORE);
+            system_info                      = runloop_get_system_info();
+            system                           = &system_info->info;
+            core_path                        = path_get(RARCH_PATH_CORE);
 
 #if defined(HAVE_DYNAMIC)
             if (string_is_empty(core_path))

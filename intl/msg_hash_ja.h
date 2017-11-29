@@ -1,4 +1,4 @@
-#if defined(_MSC_VER) && !defined(_XBOX)
+﻿#if defined(_MSC_VER) && !defined(_XBOX)
 /* https://support.microsoft.com/en-us/kb/980263 */
 #pragma execution_character_set("utf-8")
 #endif
@@ -3243,3 +3243,9 @@ MSG_HASH(MSG_GAME_REMAP_FILE_LOADED,
       "ゲームの優先ファイルをロードしました。")
 MSG_HASH(MSG_CORE_REMAP_FILE_LOADED,
       "コアの優先ファイルをロードしました。")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
+      "Automatically add content to playlist")
+MSG_HASH(MENU_ENUM_SUBLABEL_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
+      "Automatically scans loaded content so they appear inside playlists.")
+MSG_HASH(MSG_SCANNING_OF_FILE_FINISHED,
+      "Scanning of file finished")

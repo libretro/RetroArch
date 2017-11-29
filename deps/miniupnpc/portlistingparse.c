@@ -31,7 +31,7 @@ static const struct {
 
 /* Helper function */
 static UNSIGNED_INTEGER
-atoui(const char * p, int l)
+my_atoui(const char * p, int l)
 {
 	UNSIGNED_INTEGER r = 0;
 	while(l > 0 && *p)
@@ -106,7 +106,7 @@ static void portlisting_data(void * d, const char * data, int l)
 		pm->remoteHost[l] = '\0';
 		break;
 	case NewExternalPort:
-		pm->externalPort = (unsigned short)atoui(data, l);
+		pm->externalPort = (unsigned short)my_atoui(data, l);
 		break;
 	case NewProtocol:
 		if(l > 3)
@@ -115,21 +115,21 @@ static void portlisting_data(void * d, const char * data, int l)
 		pm->protocol[l] = '\0';
 		break;
 	case NewInternalPort:
-		pm->internalPort = (unsigned short)atoui(data, l);
+		pm->internalPort = (unsigned short)my_atoui(data, l);
 		break;
 	case NewInternalClient:
 		memcpy(pm->internalClient, data, l);
 		pm->internalClient[l] = '\0';
 		break;
 	case NewEnabled:
-		pm->enabled = (unsigned char)atoui(data, l);
+		pm->enabled = (unsigned char)my_atoui(data, l);
 		break;
 	case NewDescription:
 		memcpy(pm->description, data, l);
 		pm->description[l] = '\0';
 		break;
 	case NewLeaseTime:
-		pm->leaseTime = atoui(data, l);
+		pm->leaseTime = my_atoui(data, l);
 		break;
 	default:
 		break;

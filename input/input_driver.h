@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -79,7 +79,7 @@ enum rarch_input_keyboard_ctl_state
    RARCH_INPUT_KEYBOARD_CTL_LINE_FREE,
 
    /*
-    * Waits for keys to be pressed (used for binding 
+    * Waits for keys to be pressed (used for binding
     * keys in the menu).
     * Callback returns false when all polling is done.
     **/
@@ -98,19 +98,19 @@ struct retro_keybind
 
    uint16_t mbutton;
 
-   /* Joypad key. Joypad POV (hats) 
+   /* Joypad key. Joypad POV (hats)
     * are embedded into this key as well. */
    uint64_t joykey;
 
-   /* Default key binding value - 
+   /* Default key binding value -
     * for resetting bind to default */
    uint64_t def_joykey;
 
-   /* Joypad axis. Negative and positive axes 
+   /* Joypad axis. Negative and positive axes
     * are embedded into this variable. */
    uint32_t joyaxis;
 
-   /* Default joy axis binding value - 
+   /* Default joy axis binding value -
     * for resetting bind to default */
    uint32_t def_joyaxis;
 
@@ -130,7 +130,7 @@ typedef struct rarch_joypad_info
 
 typedef struct input_driver
 {
-   /* Inits input driver. 
+   /* Inits input driver.
     */
    void *(*init)(const char *joypad_driver);
 
@@ -174,7 +174,7 @@ struct rarch_joypad_driver
    bool (*query_pad)(unsigned);
    void (*destroy)(void);
    bool (*button)(unsigned, uint16_t);
-   uint64_t (*get_buttons)(unsigned);
+   void (*get_buttons)(unsigned, retro_bits_t *);
    int16_t (*axis)(unsigned, uint32_t);
    void (*poll)(void);
    bool (*set_rumble)(unsigned, enum retro_rumble_effect, uint16_t);
@@ -189,7 +189,7 @@ struct hid_driver
    bool (*query_pad)(void *, unsigned);
    void (*free)(void *);
    bool (*button)(void *, unsigned, uint16_t);
-   uint64_t (*get_buttons)(void *, unsigned);
+   void (*get_buttons)(void *, unsigned, retro_bits_t *);
    int16_t (*axis)(void *, unsigned, uint32_t);
    void (*poll)(void *);
    bool (*set_rumble)(void *, unsigned, enum retro_rumble_effect, uint16_t);
@@ -336,26 +336,6 @@ void input_poll(void);
 int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id);
 
-#define RARCH_INPUT_STATE_BIT_SET(a,bit)       ((a).data [((bit) >> 5)] |=  (1 << ((bit) & 31)))
-#define RARCH_INPUT_STATE_BIT_SET_PTR(a,bit)   ((a)->data[((bit) >> 5)] |=  (1 << ((bit) & 31)))
-#define RARCH_INPUT_STATE_BIT_GET(a,bit)       ((a).data [((bit) >> 5)] &   (1 << ((bit) & 31)))
-#define RARCH_INPUT_STATE_BIT_GET_PTR(a,bit)   ((a)->data[((bit) >> 5)] &   (1 << ((bit) & 31)))
-#define RARCH_INPUT_STATE_CLEAR(a)              memset(&a, 0, sizeof(a));
-#define RARCH_INPUT_STATE_CLEAR_PTR(a)          memset(a, 0, sizeof(retro_bits_t));
-#define RARCH_INPUT_STATE_ANY_SET(a)            ( ((a).data[0])||((a).data[1])||((a).data[2])||((a).data[3])||       \
-                                                  ((a).data[4])||((a).data[5])||((a).data[6])||((a).data[7]) )
-#define RARCH_INPUT_STATE_ANY_SET_PTR(a)        ( ((a)->data[0])||((a)->data[1])||((a)->data[2])||((a)->data[3])||   \
-                                                  ((a)->data[4])||((a)->data[5])||((a)->data[6])||((a)->data[7]) )
-#define RARCH_INPUT_STATE_CLEAR_BITS(a,b)    \
-            ((a).data[0])&=(~((b).data[0])); \
-            ((a).data[1])&=(~((b).data[1])); \
-            ((a).data[2])&=(~((b).data[2])); \
-            ((a).data[3])&=(~((b).data[3])); \
-            ((a).data[4])&=(~((b).data[4])); \
-            ((a).data[5])&=(~((b).data[5])); \
-            ((a).data[6])&=(~((b).data[6])); \
-            ((a).data[7])&=(~((b).data[7]));
-
 void input_keys_pressed(void *data, retro_bits_t* new_state);
 
 #ifdef HAVE_MENU
@@ -467,7 +447,7 @@ const char* config_get_joypad_driver_options(void);
  *
  * Initialize a joypad driver of name @ident.
  *
- * If ident points to NULL or a zero-length string, 
+ * If ident points to NULL or a zero-length string,
  * equivalent to calling input_joypad_init_first().
  *
  * Returns: joypad driver if found, otherwise NULL.
@@ -486,7 +466,7 @@ const input_device_driver_t *input_joypad_init_first(void *data);
 /**
  * input_conv_analog_id_to_bind_id:
  * @idx                     : Analog key index.
- *                            E.g.: 
+ *                            E.g.:
  *                            - RETRO_DEVICE_INDEX_ANALOG_LEFT
  *                            - RETRO_DEVICE_INDEX_ANALOG_RIGHT
  * @ident                   : Analog key identifier.
@@ -525,7 +505,7 @@ static INLINE bool input_joypad_pressed(
    /* Auto-binds are per joypad, not per user. */
    uint64_t                        joykey = (binds[key].joykey != NO_BTN)
       ? binds[key].joykey : joypad_info.auto_binds[key].joykey;
-   uint32_t                       joyaxis = (binds[key].joyaxis != AXIS_NONE) 
+   uint32_t                       joyaxis = (binds[key].joyaxis != AXIS_NONE)
       ? binds[key].joyaxis : joypad_info.auto_binds[key].joyaxis;
 
    if ((uint16_t)joykey != NO_BTN && drv->button(joypad_info.joy_idx, (uint16_t)joykey))
@@ -540,7 +520,7 @@ static INLINE bool input_joypad_pressed(
  * @drv                     : Input device driver handle.
  * @port                    : User number.
  * @idx                     : Analog key index.
- *                            E.g.: 
+ *                            E.g.:
  *                            - RETRO_DEVICE_INDEX_ANALOG_LEFT
  *                            - RETRO_DEVICE_INDEX_ANALOG_RIGHT
  *                            - RETRO_DEVICE_INDEX_ANALOG_BUTTON
@@ -575,12 +555,12 @@ bool input_joypad_set_rumble(const input_device_driver_t *driver,
       unsigned port, enum retro_rumble_effect effect, uint16_t strength);
 
 /**
- * input_joypad_axis_raw:  
+ * input_joypad_axis_raw:
  * @drv                     : Input device driver handle.
  * @port                    : Joystick number.
  * @axis                    : Identifier of axis.
  *
- * Checks if axis (@axis) was being pressed by user   
+ * Checks if axis (@axis) was being pressed by user
  * with joystick number @port.
  *
  * Returns: true (1) if axis was pressed, otherwise
@@ -674,7 +654,7 @@ const hid_driver_t *input_hid_init_first(void);
 const void *hid_driver_get_data(void);
 #endif
 
-/** Line complete callback. 
+/** Line complete callback.
  * Calls back after return is pressed with the completed line.
  * Line can be NULL.
  **/
@@ -711,8 +691,8 @@ bool input_keyboard_line_append(const char *word);
  *
  * Sets function pointer for keyboard line handle.
  *
- * The underlying buffer can be reallocated at any time 
- * (or be NULL), but the pointer to it remains constant 
+ * The underlying buffer can be reallocated at any time
+ * (or be NULL), but the pointer to it remains constant
  * throughout the objects lifetime.
  *
  * Returns: underlying buffer of the keyboard line.
@@ -759,7 +739,7 @@ const char *input_config_get_prefix(unsigned user, bool meta);
  *
  * Translate string representation to bind ID.
  *
- * Returns: Bind ID value on success, otherwise 
+ * Returns: Bind ID value on success, otherwise
  * RARCH_BIND_LIST_END on not found.
  **/
 unsigned input_config_translate_str_to_bind_id(const char *str);

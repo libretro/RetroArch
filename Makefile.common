@@ -916,7 +916,11 @@ ifeq ($(HAVE_THREADS), 1)
 ifeq ($(HAVE_HID), 1)
    DEFINES += -DHAVE_LIBUSB
    OBJ += input/drivers_hid/libusb_hid.o
-   LIBS += -lusb-1.0
+   ifneq ($(findstring BSD,$(OS)),)
+      LIBS += -lusb
+   else
+      LIBS += -lusb-1.0
+   endif
 endif
 endif
 endif

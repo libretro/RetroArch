@@ -3333,3 +3333,9 @@ MSG_HASH(MSG_GAME_REMAP_FILE_LOADED,
       "Game remap file loaded.")
 MSG_HASH(MSG_CORE_REMAP_FILE_LOADED,
       "Core remap file loaded.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
+      "Automatically add content to playlist")
+MSG_HASH(MENU_ENUM_SUBLABEL_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
+      "Automatically scans loaded content so they appear inside playlists.")
+MSG_HASH(MSG_SCANNING_OF_FILE_FINISHED,
+      "Scanning of file finished")

@@ -44,43 +44,40 @@ check_lib() # $1 = language  $2 = HAVE_$2  $3 = lib  $4 = function in lib  $5 = 
 		ECHOBUF="Checking existence of ${3% }"
 		printf %s\\n 'int main(void) { return 0; }' > "$TEMP_CODE"
 	fi
+
+	val="$2"
+	lib="$3"
+	error="${7:-}"
 	answer='no'
-	"$COMPILER" -o \
-		"$TEMP_EXE" \
-		"$TEMP_CODE" \
-		$INCLUDE_DIRS \
-		$LIBRARY_DIRS \
-		$(printf %s "$5") \
-		$CFLAGS \
-		$LDFLAGS \
-		$(printf %s "$3") >>config.log 2>&1 && answer='yes'
-	eval "HAVE_$2=\"$answer\""
+	eval "set -- $INCLUDE_DIRS $LIBRARY_DIRS $5 $CFLAGS $LDFLAGS $3"
+	"$COMPILER" -o "$TEMP_EXE" "$TEMP_CODE" "$@" >>config.log 2>&1 && answer='yes'
+	eval "HAVE_$val=\"$answer\""
 	printf %s\\n "$ECHOBUF ... $answer"
 	rm -f -- "$TEMP_CODE" "$TEMP_EXE"
 
 	if [ "$answer" = 'no' ]; then
-		[ "$7" ] && die 1 "$7"
+		[ "$error" ] && die 1 "$error"
 		[ "$tmpval" = 'yes' ] && {
-			die 1 "Forced to build with library $3, but cannot locate. Exiting ..."
+			die 1 "Forced to build with library $lib, but cannot locate. Exiting ..."
 		}
 	else
-		eval "${2}_LIBS=\"$3\""
-		PKG_CONF_USED="$PKG_CONF_USED $2"
+		eval "${val}_LIBS=\"$lib\""
+		PKG_CONF_USED="$PKG_CONF_USED $val"
 	fi
 
 	return 0
 }
 
 check_pkgconf() # $1 = HAVE_$1  $2 = package  $3 = version  $4 = critical error message [checked only if non-empty]
-{	tmpval="$(eval echo \$HAVE_$1)"
+{	tmpval="$(eval "printf %s \"\$HAVE_$1\"")"
 	[ "$tmpval" = 'no' ] && return 0
 
 	ECHOBUF="Checking presence of package $2"
 	[ "$3" ] && ECHOBUF="$ECHOBUF >= $3"
 
 	[ "$PKG_CONF_PATH" = "none" ] && {
-		eval HAVE_$1="no"
-		echo "$ECHOBUF ... no"
+		eval "HAVE_$1=no"
+		printf %s\\n "$ECHOBUF ... no"
 		return 0
 	}
 
@@ -88,13 +85,13 @@ check_pkgconf() # $1 = HAVE_$1  $2 = package  $3 = version  $4 = critical error 
 	version='no'
 	$PKG_CONF_PATH --atleast-version="${3:-0.0}" "$2" && {
 		answer='yes'
-		version=$($PKG_CONF_PATH --modversion "$2")
-		eval $1_CFLAGS=\"$($PKG_CONF_PATH $2 --cflags)\"
-		eval $1_LIBS=\"$($PKG_CONF_PATH $2 --libs)\"
+		version="$("$PKG_CONF_PATH" --modversion "$2")"
+		eval "$1_CFLAGS=\"$("$PKG_CONF_PATH" "$2" --cflags)\""
+		eval "$1_LIBS=\"$("$PKG_CONF_PATH" "$2" --libs)\""
 	}
 	
-	eval HAVE_$1="$answer";
-	echo "$ECHOBUF ... $version"
+	eval "HAVE_$1=\"$answer\""
+	printf %s\\n "$ECHOBUF ... $version"
 	if [ "$answer" = 'no' ]; then
 		[ "$4" ] && die 1 "$4"
 		[ "$tmpval" = 'yes' ] && \
@@ -104,25 +101,29 @@ check_pkgconf() # $1 = HAVE_$1  $2 = package  $3 = version  $4 = critical error 
 	fi
 }
 
-check_header()	#$1 = HAVE_$1	$2..$5 = header files
-{	tmpval="$(eval echo \$HAVE_$1)"
+check_header() #$1 = HAVE_$1  $2..$5 = header files
+{	tmpval="$(eval "printf %s \"\$HAVE_$1\"")"
 	[ "$tmpval" = 'no' ] && return 0
 	CHECKHEADER="$2"
-	echo "#include <$2>" > "$TEMP_C"
-	[ "$3" != "" ] && CHECKHEADER="$3" && echo "#include <$3>" >> "$TEMP_C"
-	[ "$4" != "" ] && CHECKHEADER="$4" && echo "#include <$4>" >> "$TEMP_C"
-	[ "$5" != "" ] && CHECKHEADER="$5" && echo "#include <$5>" >> "$TEMP_C"
-	echo "int main(void) { return 0; }" >> "$TEMP_C"
+	printf %s\\n "#include <$2>" > "$TEMP_C"
+	[ "$3" != '' ] && CHECKHEADER="$3" && printf %s\\n "#include <$3>" >> "$TEMP_C"
+	[ "$4" != '' ] && CHECKHEADER="$4" && printf %s\\n "#include <$4>" >> "$TEMP_C"
+	[ "$5" != '' ] && CHECKHEADER="$5" && printf %s\\n "#include <$5>" >> "$TEMP_C"
+	printf %s\\n "int main(void) { return 0; }" >> "$TEMP_C"
 	answer='no'
-	"$CC" -o "$TEMP_EXE" "$TEMP_C" $INCLUDE_DIRS >>config.log 2>&1 && answer='yes'
-	eval HAVE_$1="$answer"; echo "Checking presence of header file $CHECKHEADER ... $answer"
+	val="$1"
+	header="$2"
+	eval "set -- $INCLUDE_DIRS"
+	"$CC" -o "$TEMP_EXE" "$TEMP_C" "$@" >>config.log 2>&1 && answer='yes'
+	eval "HAVE_$val=\"$answer\""
+	printf %s\\n "Checking presence of header file $CHECKHEADER ... $answer"
 	rm -f -- "$TEMP_C" "$TEMP_EXE"
 	[ "$tmpval" = 'yes' ] && [ "$answer" = 'no' ] && \
-		die 1 "Build assumed that $2 exists, but cannot locate. Exiting ..."
+		die 1 "Build assumed that $header exists, but cannot locate. Exiting ..."
 }
 
-check_macro()	#$1 = HAVE_$1	$2 = macro name
-{	tmpval="$(eval echo \$HAVE_$1)"
+check_macro() #$1 = HAVE_$1  $2 = macro name
+{	tmpval="$(eval "printf %s \"\$HAVE_$1\"")"
 	[ "$tmpval" = 'no' ] && return 0
 	ECHOBUF="Checking presence of predefined macro $2"
 	cat << EOF > "$TEMP_C"
@@ -132,11 +133,15 @@ check_macro()	#$1 = HAVE_$1	$2 = macro name
 int main(void) { return 0; }
 EOF
 	answer='no'
-	"$CC" -o "$TEMP_EXE" "$TEMP_C" $CFLAGS $INCLUDE_DIRS >>config.log 2>&1 && answer='yes'
-	eval HAVE_$1="$answer"; echo "$ECHOBUF ... $answer"
+	val="$1"
+	macro="$2"
+	eval "set -- $CFLAGS $INCLUDE_DIRS"
+	"$CC" -o "$TEMP_EXE" "$TEMP_C" "$@" >>config.log 2>&1 && answer='yes'
+	eval "HAVE_$val=\"$answer\""
+	printf %s\\n "$ECHOBUF ... $answer"
 	rm -f -- "$TEMP_C" "$TEMP_EXE"
 	[ "$tmpval" = 'yes' ] && [ "$answer" = 'no' ] && \
-		die 1 "Build assumed that $2 is defined, but it's not. Exiting ..."
+		die 1 "Build assumed that $macro is defined, but it's not. Exiting ..."
 }
 
 check_switch() # $1 = language  $2 = HAVE_$2  $3 = switch  $4 = critical error message [checked only if non-empty]
@@ -227,9 +232,9 @@ create_config_make()
 			
 			case "$PKG_CONF_USED" in
 				*$1*)
-					FLAGS="$(eval "printf %s \"\$$1_CFLAGS\"")"
+					FLAG="$(eval "printf %s \"\$$1_CFLAGS\"")"
 					LIBS="$(eval "printf %s \"\$$1_LIBS\"")"
-					[ "${FLAGS}" ] && printf %s\\n "$1_CFLAGS = ${FLAGS%"${FLAGS##*[! ]}"}"
+					[ "${FLAG}" ] && printf %s\\n "$1_CFLAGS = ${FLAG%"${FLAG##*[! ]}"}"
 					[ "${LIBS}" ] && printf %s\\n "$1_LIBS = ${LIBS%"${LIBS##*[! ]}"}"
 				;;
 			esac

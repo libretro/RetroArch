@@ -644,10 +644,16 @@ static void netplay_announce(void)
 #endif
    task_push_http_post_transfer(url, buf, true, NULL, netplay_announce_cb, NULL);
 
-   free(username);
-   free(corename);
-   free(gamename);
-   free(coreversion);
+   if (username)
+      free(username);
+   if (corename)
+      free(corename);
+   if (gamename)
+      free(gamename);
+   if (coreversion)
+      free(coreversion);
+   if (frontend_ident)
+      free(frontend_ident);
 }
 
 int16_t input_state_net(unsigned port, unsigned device,

@@ -834,21 +834,21 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
          if (memory_used != 0 && memory_total != 0)
          {
             snprintf(tmp, sizeof(tmp),
-                  "%s %s: " STRING_REP_UINT64 "/" STRING_REP_UINT64 " B",
+                  "%s %s: %" PRIu64 "/%" PRIu64 " B",
                   msg_hash_to_str(MSG_MEMORY),
                   msg_hash_to_str(MSG_IN_BYTES),
                   memory_used,
                   memory_total
                   );
             snprintf(tmp2, sizeof(tmp2),
-                  "%s %s: " STRING_REP_UINT64 "/" STRING_REP_UINT64 " MB",
+                  "%s %s: %" PRIu64 "/%" PRIu64 " MB",
                   msg_hash_to_str(MSG_MEMORY),
                   msg_hash_to_str(MSG_IN_MEGABYTES),
                   bytes_to_mb(memory_used),
                   bytes_to_mb(memory_total)
                   );
             snprintf(tmp3, sizeof(tmp3),
-                  "%s %s: " STRING_REP_UINT64 "/" STRING_REP_UINT64 " GB",
+                  "%s %s: %" PRIu64 "/%" PRIu64 " GB",
                   msg_hash_to_str(MSG_MEMORY),
                   msg_hash_to_str(MSG_IN_GIGABYTES),
                   bytes_to_gb(memory_used),
@@ -5303,6 +5303,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_FILTER_BY_CURRENT_CORE,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
                PARSE_ONLY_BOOL, false);
          info->need_refresh = true;
          info->need_push    = true;

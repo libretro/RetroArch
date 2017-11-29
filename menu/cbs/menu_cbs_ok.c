@@ -1032,6 +1032,23 @@ static bool menu_content_find_first_core(menu_content_ctx_defer_info_t *def_info
    return true;
 }
 
+#ifdef HAVE_LIBRETRODB
+void handle_dbscan_finished(void *task_data, void *user_data, const char *err);
+#endif
+
+static void content_add_to_playlist(const char *path)
+{
+#ifdef HAVE_LIBRETRODB
+   settings_t *settings = config_get_ptr();
+   if (!settings || !settings->bools.automatically_add_content_to_playlist)
+      return;
+   task_push_dbscan(
+         settings->paths.directory_playlist,
+         settings->paths.path_content_database,
+         path, false, handle_dbscan_finished);
+#endif
+}
+
 static int file_load_with_detect_core_wrapper(
       enum msg_hash_enums enum_label_idx,
       enum msg_hash_enums enum_idx,
@@ -1118,6 +1135,7 @@ static int file_load_with_detect_core_wrapper(
                   free(new_core_path);
                   return -1;
                }
+               content_add_to_playlist(def_info.s);
 
                ret = 0;
                break;
@@ -1370,6 +1388,7 @@ static int default_action_ok_load_content_with_core_from_menu(const char *_path,
    content_info.environ_get            = NULL;
    if (!task_push_load_content_with_core_from_menu(_path, &content_info, (enum rarch_core_type)_type, NULL, NULL))
       return -1;
+   content_add_to_playlist(_path);
    return 0;
 }
 
@@ -1481,8 +1500,6 @@ static int action_ok_playlist_entry_collection(const char *path,
    const char *core_name               = NULL;
    playlist_t *tmp_playlist            = NULL;
    menu_handle_t *menu                 = NULL;
-   rarch_system_info_t *info           = runloop_get_system_info();
-   struct retro_system_info *system    = &info->info;
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
@@ -2280,6 +2297,7 @@ static int action_ok_load_core_deferred(const char *path,
             CORE_TYPE_PLAIN,
             NULL, NULL))
       return -1;
+   content_add_to_playlist(path);
 
    return 0;
 }
@@ -2374,9 +2392,10 @@ static int action_ok_file_load_detect_core(const char *path,
    if (!task_push_load_content_with_new_core_from_menu(
             path, detect_content_path,
             &content_info,
-            CORE_TYPE_FFMPEG,
+            CORE_TYPE_PLAIN,
             NULL, NULL))
       return -1;
+   content_add_to_playlist(detect_content_path);
 
    return 0;
 }
@@ -3571,6 +3590,7 @@ static int action_ok_start_core(const char *path,
    content_info.args                   = NULL;
    content_info.environ_get            = NULL;
 
+   path_clear(RARCH_PATH_BASENAME);
    if (!task_push_start_current_core(&content_info))
       return -1;
 
