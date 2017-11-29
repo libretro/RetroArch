@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2017 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -24,7 +25,16 @@
 #include <file/config_file.h>
 #include <string/stdstring.h>
 
+#ifdef HAVE_LIBUSB
+#ifdef __FreeBSD__
+#include <libusb.h>
+#else
+#include <libusb-1.0/libusb.h>
+#endif
+#endif
+
 #include "../input/input_driver.h"
+#include "../input/include/blissbox.h"
 
 #include "../configuration.h"
 #include "../file_path_special.h"
@@ -32,6 +42,19 @@
 #include "../verbosity.h"
 
 #include "tasks_internal.h"
+
+/* HID Class-Specific Requests values. See section 7.2 of the HID specifications */
+#define USB_HID_GET_REPORT 0x01
+#define USB_CTRL_IN LIBUSB_ENDPOINT_IN|LIBUSB_REQUEST_TYPE_CLASS|LIBUSB_RECIPIENT_INTERFACE
+#define USB_PACKET_CTRL_LEN 64
+#define USB_TIMEOUT 5000 /* timeout in ms */
+
+/* only one blissbox per machine is currently supported */
+static const blissbox_pad_type_t *blissbox_pads[BLISSBOX_MAX_PADS] = {NULL};
+
+#ifdef HAVE_LIBUSB
+static struct libusb_device_handle *autoconfig_libusb_handle = NULL;
+#endif
 
 typedef struct autoconfig_disconnect autoconfig_disconnect_t;
 typedef struct autoconfig_params     autoconfig_params_t;
@@ -120,13 +143,16 @@ static int input_autoconfigure_joypad_try_from_conf(config_file_t *conf,
    if (config_get_int  (conf, "input_product_id", &tmp_int))
       input_pid = tmp_int;
 
+   if (params->vid == BLISSBOX_VID)
+      input_pid = BLISSBOX_PID;
+
    /* Check for VID/PID */
    if (     (params->vid == input_vid)
          && (params->pid == input_pid)
          && (params->vid != 0)
          && (params->pid != 0)
-         && (input_vid   != 0)
-         && (input_pid   != 0))
+         && (params->vid != BLISSBOX_VID)
+         && (params->pid != BLISSBOX_PID))
       score += 3;
 
    /* Check for name match */
@@ -333,6 +359,131 @@ static void input_autoconfigure_params_free(autoconfig_params_t *params)
    params->autoconfig_directory = NULL;
 }
 
+static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type(int vid, int pid)
+{
+#ifdef HAVE_LIBUSB
+   unsigned char answer[USB_PACKET_CTRL_LEN] = {0};
+   unsigned i;
+   int ret = libusb_init(NULL);
+
+   if (ret < 0)
+   {
+      RARCH_ERR("[Autoconf]: Could not initialize libusb.\n");
+      return NULL;
+   }
+
+   autoconfig_libusb_handle = libusb_open_device_with_vid_pid(NULL, vid, pid);
+
+   if (!autoconfig_libusb_handle)
+   {
+      RARCH_ERR("[Autoconf]: Could not find or open libusb device %d:%d.\n", vid, pid);
+      goto error;
+   }
+
+#ifdef __linux__
+   libusb_detach_kernel_driver(autoconfig_libusb_handle, 0);
+#endif
+
+   ret = libusb_set_configuration(autoconfig_libusb_handle, 1);
+
+   if (ret < 0)
+   {
+      RARCH_ERR("[Autoconf]: Error during libusb_set_configuration.\n");
+      goto error;
+   }
+
+   ret = libusb_claim_interface(autoconfig_libusb_handle, 0);
+
+   if (ret < 0)
+   {
+      RARCH_ERR("[Autoconf]: Error during libusb_claim_interface.\n");
+      goto error;
+   }
+
+   ret = libusb_control_transfer(autoconfig_libusb_handle, USB_CTRL_IN, USB_HID_GET_REPORT, BLISSBOX_USB_FEATURE_REPORT_ID, 0, answer, USB_PACKET_CTRL_LEN, USB_TIMEOUT);
+
+   if (ret < 0)
+      RARCH_ERR("[Autoconf]: Error during libusb_control_transfer.\n");
+
+   libusb_release_interface(autoconfig_libusb_handle, 0);
+
+#ifdef __linux__
+   libusb_attach_kernel_driver(autoconfig_libusb_handle, 0);
+#endif
+
+   libusb_close(autoconfig_libusb_handle);
+   libusb_exit(NULL);
+
+   for (i = 0; i < sizeof(blissbox_pad_types) / sizeof(blissbox_pad_types[0]); i++)
+   {
+      const blissbox_pad_type_t *pad = &blissbox_pad_types[i];
+
+      if (!pad || string_is_empty(pad->name))
+         continue;
+
+      if (pad->index == answer[0])
+         return pad;
+   }
+
+   RARCH_LOG("[Autoconf]: Could not find connected pad in Bliss-Box port#%d.\n", pid - BLISSBOX_PID);
+
+   return NULL;
+
+error:
+   libusb_close(autoconfig_libusb_handle);
+   libusb_exit(NULL);
+   return NULL;
+#else
+   return NULL;
+#endif
+}
+
+static void input_autoconfigure_override_handler(autoconfig_params_t *params)
+{
+   if (params->vid == BLISSBOX_VID)
+   {
+      if (params->pid == BLISSBOX_UPDATE_MODE_PID)
+         RARCH_LOG("[Autoconf]: Bliss-Box in update mode detected. Ignoring.\n");
+      else if (params->pid == BLISSBOX_OLD_PID)
+         RARCH_LOG("[Autoconf]: Bliss-Box 1.0 firmware detected. Please update to 2.0 or later.\n");
+      else if (params->pid >= BLISSBOX_PID && params->pid <= BLISSBOX_PID + BLISSBOX_MAX_PAD_INDEX)
+      {
+         const blissbox_pad_type_t *pad;
+         char name[255] = {0};
+         int index = params->pid - BLISSBOX_PID;
+
+         RARCH_LOG("[Autoconf]: Bliss-Box detected. Getting pad type...\n");
+
+         if (blissbox_pads[index])
+            pad = blissbox_pads[index];
+         else
+            pad = input_autoconfigure_get_blissbox_pad_type(params->vid, params->pid);
+
+         if (pad && !string_is_empty(pad->name))
+         {
+            RARCH_LOG("[Autoconf]: Found Bliss-Box pad type: %s (%d) in port#%d\n", pad->name, pad->index, index);
+
+            if (params->name)
+               free(params->name);
+
+            /* override name given to autoconfig so it knows what kind of pad this is */
+            strlcat(name, "Bliss-Box ", sizeof(name));
+            strlcat(name, pad->name, sizeof(name));
+
+            params->name = strdup(name);
+
+            blissbox_pads[index] = pad;
+         }
+         else
+         {
+            int count = sizeof(blissbox_pad_types) / sizeof(blissbox_pad_types[0]);
+            /* use NULL entry to mark as an unconnected port */
+            blissbox_pads[index] = &blissbox_pad_types[count - 1];
+         }
+      }
+   }
+}
+
 static void input_autoconfigure_connect_handler(retro_task_t *task)
 {
    autoconfig_params_t *params = (autoconfig_params_t*)task->state;
@@ -498,6 +649,8 @@ bool input_autoconfigure_connect(
    state->pid                     = pid;
    state->max_users               = *(
          input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+
+   input_autoconfigure_override_handler(state);
 
    if (!string_is_empty(state->name))
          input_config_set_device_name(state->idx, state->name);
