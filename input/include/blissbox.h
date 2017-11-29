@@ -22,6 +22,8 @@
 
 #define BLISSBOX_VID 0x16d0 /* requires firmware 2.0 */
 #define BLISSBOX_PID 0x0d04 /* first of 4 controllers, each one increments PID by 1 */
+#define BLISSBOX_UPDATE_MODE_PID 0x0a5f
+#define BLISSBOX_OLD_PID 0x0a60
 #define BLISSBOX_MAX_PADS 4
 #define BLISSBOX_MAX_PAD_INDEX (BLISSBOX_MAX_PADS - 1)
 
