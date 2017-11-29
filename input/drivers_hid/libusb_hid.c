@@ -16,7 +16,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef __FreeBSD__
+#include <libusb.h>
+#else
 #include <libusb-1.0/libusb.h>
+#endif
 
 #include <rthreads/rthreads.h>
 #include <compat/strl.h>
@@ -38,7 +42,11 @@ typedef struct libusb_hid
    libusb_context *ctx;
    joypad_connection_t *slots;
    sthread_t *poll_thread;
+#if defined(__FreeBSD__) && LIBUSB_API_VERSION <= 0x01000102
+   libusb_hotplug_callback_handle hp;
+#else
    int hp; /* libusb_hotplug_callback_handle is just int */
+#endif
    int quit;
 } libusb_hid_t;
 
@@ -85,13 +93,13 @@ static void adapter_thread(void *data)
       int size = 0;
 
       slock_lock(adapter->send_control_lock);
-      if (fifo_read_avail(adapter->send_control_buffer)
+      if (fifo_read_avail(adapter->send_control_buffer) 
             >= sizeof(send_command_size))
       {
          fifo_read(adapter->send_control_buffer,
                &send_command_size, sizeof(send_command_size));
 
-         if (fifo_read_avail(adapter->send_control_buffer)
+         if (fifo_read_avail(adapter->send_control_buffer) 
                >= sizeof(send_command_size))
          {
             fifo_read(adapter->send_control_buffer,
@@ -157,7 +165,13 @@ static void libusb_get_description(struct libusb_device *device,
    unsigned i, k;
    struct libusb_config_descriptor *config;
 
-   libusb_get_config_descriptor(device, 0, &config);
+   int desc_ret = libusb_get_config_descriptor(device, 0, &config);
+
+   if (desc_ret != 0)
+   {
+      RARCH_ERR("Error %d getting libusb config descriptor\n", desc_ret);
+      return;
+   }
 
    for (i = 0; i < (int)config->bNumInterfaces; i++)
    {
@@ -165,7 +179,7 @@ static void libusb_get_description(struct libusb_device *device,
 
       for(j = 0; j < inter->num_altsetting; j++)
       {
-         const struct libusb_interface_descriptor *interdesc =
+         const struct libusb_interface_descriptor *interdesc = 
             &inter->altsetting[j];
 
 #if 0
@@ -176,13 +190,13 @@ static void libusb_get_description(struct libusb_device *device,
 
             for(k = 0; k < (int)interdesc->bNumEndpoints; k++)
             {
-               const struct libusb_endpoint_descriptor *epdesc =
+               const struct libusb_endpoint_descriptor *epdesc = 
                   &interdesc->endpoint[k];
-               bool is_int = (epdesc->bmAttributes & LIBUSB_TRANSFER_TYPE_MASK)
+               bool is_int = (epdesc->bmAttributes & LIBUSB_TRANSFER_TYPE_MASK) 
                   == LIBUSB_TRANSFER_TYPE_INTERRUPT;
-               bool is_out = (epdesc->bEndpointAddress & LIBUSB_ENDPOINT_DIR_MASK)
+               bool is_out = (epdesc->bEndpointAddress & LIBUSB_ENDPOINT_DIR_MASK) 
                   == LIBUSB_ENDPOINT_OUT;
-               bool is_in = (epdesc->bEndpointAddress & LIBUSB_ENDPOINT_DIR_MASK)
+               bool is_in = (epdesc->bEndpointAddress & LIBUSB_ENDPOINT_DIR_MASK) 
                   == LIBUSB_ENDPOINT_IN;
 
                if (is_int)
@@ -200,11 +214,12 @@ static void libusb_get_description(struct libusb_device *device,
                }
             }
          }
+
          goto ret;
       }
    }
 
-   ret:
+ret:
    libusb_free_config_descriptor(config);
 }
 
@@ -428,28 +443,27 @@ static const char *libusb_hid_joypad_name(void *data, unsigned pad)
 
 static void libusb_hid_joypad_get_buttons(void *data, unsigned port, retro_bits_t *state)
 {
-	libusb_hid_t        *hid   = (libusb_hid_t*)data;
-	if (hid) {
-		return pad_connection_get_buttons(&hid->slots[port], port, state);
-	} else {
-		RARCH_INPUT_STATE_CLEAR_PTR( state );
-	}
+   libusb_hid_t        *hid   = (libusb_hid_t*)data;
+   if (hid)
+      return pad_connection_get_buttons(&hid->slots[port], port, state);
+   else
+      RARCH_INPUT_STATE_CLEAR_PTR(state);
 }
 
 static bool libusb_hid_joypad_button(void *data,
       unsigned port, uint16_t joykey)
 {
-	retro_bits_t buttons;
-	libusb_hid_joypad_get_buttons(data, port, &buttons);
+   retro_bits_t buttons;
+   libusb_hid_joypad_get_buttons(data, port, &buttons);
 
-	/* Check hat. */
-	if (GET_HAT_DIR(joykey))
-		return false;
+   /* Check hat. */
+   if (GET_HAT_DIR(joykey))
+      return false;
 
-	/* Check the button. */
-	if ((port < MAX_USERS) && (joykey < 32))
-		return (RARCH_INPUT_STATE_BIT_GET(buttons, joykey) != 0);
-	return false;
+   /* Check the button. */
+   if ((port < MAX_USERS) && (joykey < 32))
+      return (RARCH_INPUT_STATE_BIT_GET(buttons, joykey) != 0);
+   return false;
 }
 
 static bool libusb_hid_joypad_rumble(void *data, unsigned pad,
@@ -505,7 +519,8 @@ static void libusb_hid_free(void *data)
       sthread_join(hid->poll_thread);
    }
 
-   pad_connection_destroy(hid->slots);
+   if (hid->slots)
+      pad_connection_destroy(hid->slots);
 
    libusb_hotplug_deregister_callback(hid->ctx, hid->hp);
 
@@ -540,8 +555,14 @@ static void *libusb_hid_init(void)
    if (ret < 0)
       goto error;
 
+#if 0
+   /* Don't use this for now since it requires a newer API
+    * version than FreeBSD has, and always returns false on Windows anyway.
+    * https://github.com/libusb/libusb/issues/86
+    */
    if (!libusb_has_capability(LIBUSB_CAP_HAS_HOTPLUG))
       goto error;
+#endif
 
    hid->slots = pad_connection_init(MAX_USERS);
 

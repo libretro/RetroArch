@@ -110,22 +110,21 @@ static const char *iohidmanager_hid_joypad_name(void *data, unsigned pad)
 
 static void iohidmanager_hid_joypad_get_buttons(void *data, unsigned port, retro_bits_t *state)
 {
-	iohidmanager_hid_t        *hid   = (iohidmanager_hid_t*)data;
-	if (hid) {
-		return pad_connection_get_buttons(&hid->slots[port], port, state);
-	} else {
-		RARCH_INPUT_STATE_CLEAR_PTR( state );
-	}
+  iohidmanager_hid_t        *hid   = (iohidmanager_hid_t*)data;
+  if (hid)
+    return pad_connection_get_buttons(&hid->slots[port], port, state);
+  else
+    RARCH_INPUT_STATE_CLEAR_PTR(state);
 }
 
 static bool iohidmanager_hid_joypad_button(void *data,
       unsigned port, uint16_t joykey)
 {
-	retro_bits_t buttons;
-	iohidmanager_hid_t *hid   = (iohidmanager_hid_t*)data;
-	unsigned hat_dir = GET_HAT_DIR(joykey);
+  retro_bits_t buttons;
+  iohidmanager_hid_t *hid   = (iohidmanager_hid_t*)data;
+  unsigned hat_dir = GET_HAT_DIR(joykey);
 
-	iohidmanager_hid_joypad_get_buttons(data, port, &buttons);
+  iohidmanager_hid_joypad_get_buttons(data, port, &buttons);
 
    /* Check hat. */
    if (hat_dir)
@@ -151,7 +150,7 @@ static bool iohidmanager_hid_joypad_button(void *data,
 
    /* Check the button. */
    if ((port < MAX_USERS) && (joykey < 32))
-      return (RARCH_INPUT_STATE_BIT_GET( buttons, joykey ) != 0)
+      return (RARCH_INPUT_STATE_BIT_GET(buttons, joykey) != 0)
          || ((hid->buttons[port] & (1 << joykey)) != 0);
 
    return false;
