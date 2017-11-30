@@ -61,12 +61,18 @@ static void hidpad_psxadapter_deinit(void *data)
 
 static void hidpad_psxadapter_get_buttons(void *data, retro_bits_t *state)
 {
-	struct hidpad_psxadapter_data *device = (struct hidpad_psxadapter_data*)data;
-	if ( device ) {
-		RARCH_INPUT_STATE_COPY16_PTR(state, device->buttons);
-	} else {
-		RARCH_INPUT_STATE_CLEAR_PTR(state);
-	}
+   struct hidpad_psxadapter_data *device = (struct hidpad_psxadapter_data*)data;
+   if ( device )
+   {
+      RARCH_INPUT_STATE_COPY16_PTR(state, device->buttons);
+
+      if (device->buttons & (1<<RARCH_FIRST_CUSTOM_BIND))
+         RARCH_INPUT_STATE_BIT_SET_PTR(state,RARCH_MENU_TOGGLE);
+   }
+   else
+   {
+      RARCH_INPUT_STATE_CLEAR_PTR(state);
+   }
 }
 
 static int16_t hidpad_psxadapter_get_axis(void *data, unsigned axis)
@@ -109,7 +115,7 @@ static void hidpad_psxadapter_packet_handler(void *data, uint8_t *packet, uint16
 {
    uint32_t i, pressed_keys;
    int16_t hat_value;
-   static const uint32_t button_mapping[16] =
+   static const uint32_t button_mapping[17] =
    {
       RETRO_DEVICE_ID_JOYPAD_L2,
       RETRO_DEVICE_ID_JOYPAD_R2,
@@ -127,6 +133,7 @@ static void hidpad_psxadapter_packet_handler(void *data, uint8_t *packet, uint16
       RETRO_DEVICE_ID_JOYPAD_A,
       RETRO_DEVICE_ID_JOYPAD_B,
       RETRO_DEVICE_ID_JOYPAD_Y,
+      RARCH_FIRST_CUSTOM_BIND, /* Fake HOME BUTTON when pressing SELECT+START */
    };
    struct hidpad_psxadapter_data *device = (struct hidpad_psxadapter_data*)data;
 
@@ -137,9 +144,10 @@ static void hidpad_psxadapter_packet_handler(void *data, uint8_t *packet, uint16
 
    device->buttons = 0;
 
-   pressed_keys  = device->data[7] | (device->data[6] << 8);
+   pressed_keys  = device->data[7] | (device->data[6] << 8) |
+                 (((device->data[7] & 0x30) == 0x30) ? (1 << 16) : 0); /* SELECT+START = MENU TOGGLE */
 
-   for (i = 0; i < 16; i ++)
+   for (i = 0; i < 17; i ++)
       if (button_mapping[i] != NO_BTN)
          device->buttons |= (pressed_keys & (1 << i)) ? (1 << button_mapping[i]) : 0;
 
@@ -165,16 +173,16 @@ static void hidpad_psxadapter_packet_handler(void *data, uint8_t *packet, uint16
 static void hidpad_psxadapter_set_rumble(void *data,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-	(void)data;
-	(void)effect;
+   (void)data;
+   (void)effect;
    (void)strength;
 }
 
 const char * hidpad_psxadapter_get_name(void *data)
 {
-	(void)data;
-	/* For now we return a single static name */
-	return "PSX to PS3 Controller Adapter";
+   (void)data;
+   /* For now we return a single static name */
+   return "PSX to PS3 Controller Adapter";
 }
 
 pad_connection_interface_t pad_connection_psxadapter = {
