@@ -524,7 +524,8 @@ static void libusb_hid_free(void *data)
    if (hid->slots)
       pad_connection_destroy(hid->slots);
 
-   libusb_hotplug_deregister_callback(hid->ctx, hid->hp);
+   if (hid->can_hotplug)
+      libusb_hotplug_deregister_callback(hid->ctx, hid->hp);
 
    libusb_exit(hid->ctx);
    free(hid);
