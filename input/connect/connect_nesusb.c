@@ -61,12 +61,18 @@ static void hidpad_nesusb_deinit(void *data)
 
 static void hidpad_nesusb_get_buttons(void *data, retro_bits_t* state)
 {
-	struct hidpad_nesusb_data *device = (struct hidpad_nesusb_data*)data;
-	if (device) {
-		RARCH_INPUT_STATE_COPY16_PTR(state, device->buttons);
-	} else {
-		RARCH_INPUT_STATE_CLEAR_PTR(state);
-	}
+   struct hidpad_nesusb_data *device = (struct hidpad_nesusb_data*)data;
+   if (device)
+   {
+      RARCH_INPUT_STATE_COPY16_PTR(state, device->buttons);
+
+      if (device->buttons & (1<<RARCH_FIRST_CUSTOM_BIND))
+         RARCH_INPUT_STATE_BIT_SET_PTR(state,RARCH_MENU_TOGGLE);
+   }
+   else
+   {
+      RARCH_INPUT_STATE_CLEAR_PTR(state);
+   }
 }
 
 static int16_t hidpad_nesusb_get_axis(void *data, unsigned axis)
@@ -104,6 +110,7 @@ static void hidpad_nesusb_packet_handler(void *data, uint8_t *packet, uint16_t s
       RETRO_DEVICE_ID_JOYPAD_A,
       RETRO_DEVICE_ID_JOYPAD_Y,
       RETRO_DEVICE_ID_JOYPAD_X,
+      RARCH_FIRST_CUSTOM_BIND, /* Fake HOME BUTTON when pressing SELECT+START */
    };
    struct hidpad_nesusb_data *device = (struct hidpad_nesusb_data*)data;
 
@@ -114,9 +121,10 @@ static void hidpad_nesusb_packet_handler(void *data, uint8_t *packet, uint16_t s
 
    device->buttons = 0;
 
-   pressed_keys  = device->data[7] | (device->data[6] << 8);
+   pressed_keys  = device->data[7] | (device->data[6] << 8) |
+                 (((device->data[7] & 0x30) == 0x30) ? (1 << 16) : 0);  /* SELECT+START=HOME */
 
-   for (i = 0; i < 16; i ++)
+   for (i = 0; i < 17; i ++)
       if (button_mapping[i] != NO_BTN)
          device->buttons |= (pressed_keys & (1 << i)) ? (1 << button_mapping[i]) : 0;
 }
@@ -124,16 +132,16 @@ static void hidpad_nesusb_packet_handler(void *data, uint8_t *packet, uint16_t s
 static void hidpad_nesusb_set_rumble(void *data,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-	(void)data;
-	(void)effect;
+   (void)data;
+   (void)effect;
    (void)strength;
 }
 
 const char * hidpad_nesusb_get_name(void *data)
 {
-	(void)data;
-	/* For now we return a single static name */
-	return "Generic NES USB Controller";
+   (void)data;
+   /* For now we return a single static name */
+   return "Generic NES USB Controller";
 }
 
 pad_connection_interface_t pad_connection_nesusb = {
