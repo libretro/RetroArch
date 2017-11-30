@@ -1,0 +1,91 @@
+{
+   // See https://go.microsoft.com/fwlink/?LinkId=733558
+   // for the documentation about the tasks.json format
+   "version": "2.0.0",
+   "tasks": [
+      {
+         "taskName": "Build",
+         "type": "shell",
+
+         "group": {
+            "kind": "build",
+            "isDefault": true },
+
+         "command": "./configure; make -j2",
+         "options": {
+            "shell": {
+               "executable": "C:\\msys64\\usr\\bin\\bash.exe",
+               "args": [
+                  "-c"
+               ]
+            }
+         }
+      }
+      {
+         "taskName": "Build with debugging symbols",
+         "type": "shell",
+
+         "group": "build",
+
+         "command": "./configure; DEBUG=1 make -j2",
+         "options": {
+            "shell": {
+               "executable": "C:\\msys64\\usr\\bin\\bash.exe",
+               "args": [
+                  "-c"
+               ]
+            }
+         }
+      }
+      {
+         "taskName": "Build without reconfiguring",
+         "type": "shell",
+
+         "group": "build",
+
+         "command": "make -j2",
+         "options": {
+            "shell": {
+               "executable": "C:\\msys64\\usr\\bin\\bash.exe",
+               "args": [
+                  "-c"
+               ]
+            }
+         }
+      }
+      {
+         "taskName": "Clean",
+         "type": "shell",
+
+         "group": "build",
+
+         "command": "make clean",
+         "options": {
+            "shell": {
+               "executable": "C:\\msys64\\usr\\bin\\bash.exe",
+               "args": [
+                  "-c"
+               ]
+            }
+         }
+      }
+      {
+         "taskName": "Start",
+         "type": "shell",
+
+         "group": {
+            "kind": "test",
+            "isDefault": true },
+
+         "command": "./retroarch -v",
+         "options": {
+            "shell": {
+               "executable": "C:\\msys64\\usr\\bin\\bash.exe",
+               "args": [
+                  "-c"
+               ]
+            }
+         }
+      }
+   ]
+}
