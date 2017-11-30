@@ -173,7 +173,7 @@ static void x11_set_window_pid(Display *dpy, Window win)
     if((hostname = malloc(scret + 1)) == NULL)
         return;
 
-    if(gethostname(hostname, HOST_NAME_MAX + 1) == -1)
+    if(gethostname(hostname, scret + 1) == -1)
         RARCH_WARN("Failed to get hostname.\n");
     else
     {
