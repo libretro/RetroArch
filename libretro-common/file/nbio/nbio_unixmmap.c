@@ -20,12 +20,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <stdio.h>
+#include <stdlib.h>
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <file/nbio.h>
 
 #if defined(HAVE_MMAP) && defined(BSD)
-
-#include <stdio.h>
-#include <stdlib.h>
 
 #ifdef _WIN32
 #include <direct.h>
