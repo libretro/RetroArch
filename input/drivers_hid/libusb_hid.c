@@ -42,6 +42,7 @@ typedef struct libusb_hid
    libusb_context *ctx;
    joypad_connection_t *slots;
    sthread_t *poll_thread;
+   int can_hotplug;
 #if defined(__FreeBSD__) && LIBUSB_API_VERSION <= 0x01000102
    libusb_hotplug_callback_handle hp;
 #else
@@ -556,13 +557,21 @@ static void *libusb_hid_init(void)
    if (ret < 0)
       goto error;
 
-#if 0
-   /* Don't use this for now since it requires a newer API
-    * version than FreeBSD has, and always returns false on Windows anyway.
-    * https://github.com/libusb/libusb/issues/86
+#if LIBUSB_API_VERSION <= 0x01000102
+   /* API is too old, so libusb_has_capability function does not exist.
+    * Since we can't be sure, we assume for now there might be hot-plugging
+    * capability and continue on until we're told otherwise.
     */
-   if (!libusb_has_capability(LIBUSB_CAP_HAS_HOTPLUG))
-      goto error;
+   hid->can_hotplug = 1;
+#else
+   /* Ask libusb if it supports hotplug and store the result.
+    * Note: On Windows this will probably be false, see:
+    *  https://github.com/libusb/libusb/issues/86
+    */
+   if (libusb_has_capability(LIBUSB_CAP_HAS_HOTPLUG))
+      hid->can_hotplug = 1;
+   else
+      hid->can_hotplug = 0;
 #endif
 
    hid->slots = pad_connection_init(MAX_USERS);
@@ -584,22 +593,29 @@ static void *libusb_hid_init(void)
    if (count > 0)
       libusb_free_device_list(devices, 1);
 
-   ret = libusb_hotplug_register_callback(
-         hid->ctx,
-         (libusb_hotplug_event)(LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED |
-         LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT),
-         (libusb_hotplug_flag)LIBUSB_HOTPLUG_ENUMERATE,
-         LIBUSB_HOTPLUG_MATCH_ANY,
-         LIBUSB_HOTPLUG_MATCH_ANY,
-         LIBUSB_HOTPLUG_MATCH_ANY,
-         libusb_hid_hotplug_callback,
-         hid,
-         &hid->hp);
-
-   if (ret != LIBUSB_SUCCESS)
+   if (hid->can_hotplug)
    {
-      RARCH_ERR("Error creating a hotplug callback.\n");
-      goto error;
+      ret = libusb_hotplug_register_callback(
+            hid->ctx,
+            (libusb_hotplug_event)(LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED |
+            LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT),
+            (libusb_hotplug_flag)LIBUSB_HOTPLUG_ENUMERATE,
+            LIBUSB_HOTPLUG_MATCH_ANY,
+            LIBUSB_HOTPLUG_MATCH_ANY,
+            LIBUSB_HOTPLUG_MATCH_ANY,
+            libusb_hid_hotplug_callback,
+            hid,
+            &hid->hp);
+
+      if (ret != LIBUSB_SUCCESS)
+      {
+         /* Creating the hotplug callback has failed. We assume libusb
+          * is still okay to continue and just update our knowledge of
+          * the situation accordingly.
+          */
+         RARCH_WARN("[libusb] Failed to create a hotplug callback.\n");
+         hid->can_hotplug = 0;
+      }
    }
 
    hid->poll_thread = sthread_create(poll_thread, hid);
