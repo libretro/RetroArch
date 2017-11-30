@@ -62,12 +62,18 @@ static void hidpad_snesusb_deinit(void *data)
 
 static void hidpad_snesusb_get_buttons(void *data, retro_bits_t *state)
 {
-	struct hidpad_snesusb_data *device = (struct hidpad_snesusb_data*)data;
-	if ( device ) {
-		RARCH_INPUT_STATE_COPY16_PTR(state, device->buttons);
-	} else {
-		RARCH_INPUT_STATE_CLEAR_PTR(state);
-	}
+   struct hidpad_snesusb_data *device = (struct hidpad_snesusb_data*)data;
+   if ( device )
+   {
+      RARCH_INPUT_STATE_COPY16_PTR(state, device->buttons);
+
+      if (device->buttons & (1<<RARCH_FIRST_CUSTOM_BIND))
+         RARCH_INPUT_STATE_BIT_SET_PTR(state,RARCH_MENU_TOGGLE);
+   }
+   else
+   {
+      RARCH_INPUT_STATE_CLEAR_PTR(state);
+   }
 }
 
 static int16_t hidpad_snesusb_get_axis(void *data, unsigned axis)
@@ -87,7 +93,7 @@ static int16_t hidpad_snesusb_get_axis(void *data, unsigned axis)
 static void hidpad_snesusb_packet_handler(void *data, uint8_t *packet, uint16_t size)
 {
    uint32_t i, pressed_keys;
-   static const uint32_t button_mapping[16] =
+   static const uint32_t button_mapping[17] =
    {
       RETRO_DEVICE_ID_JOYPAD_L,
       RETRO_DEVICE_ID_JOYPAD_R,
@@ -104,7 +110,8 @@ static void hidpad_snesusb_packet_handler(void *data, uint8_t *packet, uint16_t 
       RETRO_DEVICE_ID_JOYPAD_X,
       RETRO_DEVICE_ID_JOYPAD_A,
       RETRO_DEVICE_ID_JOYPAD_B,
-      RETRO_DEVICE_ID_JOYPAD_Y
+      RETRO_DEVICE_ID_JOYPAD_Y,
+      RARCH_FIRST_CUSTOM_BIND, /* Fake HOME BUTTON when pressing SELECT+START */
    };
    struct hidpad_snesusb_data *device = (struct hidpad_snesusb_data*)data;
 
@@ -117,7 +124,7 @@ static void hidpad_snesusb_packet_handler(void *data, uint8_t *packet, uint16_t 
 
    pressed_keys  = device->data[7] | (device->data[6] << 8);
 
-   for (i = 0; i < 16; i ++)
+   for (i = 0; i < 17; i ++)
       if (button_mapping[i] != NO_BTN)
          device->buttons |= (pressed_keys & (1 << i)) ? (1 << button_mapping[i]) : 0;
 }
@@ -125,16 +132,16 @@ static void hidpad_snesusb_packet_handler(void *data, uint8_t *packet, uint16_t 
 static void hidpad_snesusb_set_rumble(void *data,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-	(void)data;
-	(void)effect;
+   (void)data;
+   (void)effect;
    (void)strength;
 }
 
 const char * hidpad_snesusb_get_name(void *data)
 {
-	(void)data;
-	/* For now we return a single static name */
-	return "Generic SNES USB Controller";
+   (void)data;
+   /* For now we return a single static name */
+   return "Generic SNES USB Controller";
 }
 
 pad_connection_interface_t pad_connection_snesusb = {
