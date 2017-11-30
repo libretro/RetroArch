@@ -117,7 +117,7 @@ struct udev_input
 
    const input_device_driver_t *joypad;
 
-   int epfd;
+   int fd;
    udev_input_device_t **devices;
    unsigned num_devices;
 
@@ -522,7 +522,7 @@ static bool udev_input_add_device(udev_input_t *udev,
    event.data.ptr           = device;
 
    /* Shouldn't happen, but just check it. */
-   if (epoll_ctl(udev->epfd, EPOLL_CTL_ADD, fd, &event) < 0)
+   if (epoll_ctl(udev->fd, EPOLL_CTL_ADD, fd, &event) < 0)
    {
       RARCH_ERR("Failed to add FD (%d) to epoll list (%s).\n",
             fd, strerror(errno));
@@ -666,7 +666,7 @@ static void udev_input_poll(void *data)
    while (udev->monitor && udev_input_poll_hotplug_available(udev->monitor))
       udev_input_handle_hotplug(udev);
 
-   ret = epoll_wait(udev->epfd, events, ARRAY_SIZE(events), 0);
+   ret = epoll_wait(udev->fd, events, ARRAY_SIZE(events), 0);
 
    for (i = 0; i < ret; i++)
    {
@@ -874,10 +874,10 @@ static void udev_input_free(void *data)
    if (udev->joypad)
       udev->joypad->destroy();
 
-   if (udev->epfd >= 0)
-      close(udev->epfd);
+   if (udev->fd >= 0)
+      close(udev->fd);
 
-   udev->epfd = -1;
+   udev->fd = -1;
 
    for (i = 0; i < udev->num_devices; i++)
    {
@@ -985,7 +985,7 @@ static void *udev_input_init(const char *joypad_driver)
       goto error;
    }
 
-   udev->epfd  = fd;
+   udev->fd  = fd;
 
    if (!open_devices(udev, UDEV_INPUT_KEYBOARD, udev_handle_keyboard))
    {
