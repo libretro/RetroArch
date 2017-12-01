@@ -523,22 +523,26 @@ void __eabi()
 __attribute__((weak))
 void __init(void)
 {
-   extern void(*__CTOR_LIST__[])(void);
-   void(**ctor)(void) = __CTOR_LIST__;
+   extern void (**const __CTOR_LIST__)(void);
+   extern void (**const __CTOR_END__)(void);
 
-   while (*ctor)
+   void (**ctor)(void) = __CTOR_LIST__;
+   while (ctor < __CTOR_END__) {
       (*ctor++)();
+   }
 }
 
 
 __attribute__((weak))
 void __fini(void)
 {
-   extern void(*__DTOR_LIST__[])(void);
-   void(**ctor)(void) = __DTOR_LIST__;
+   extern void (**const __DTOR_LIST__)(void);
+   extern void (**const __DTOR_END__)(void);
 
-   while (*ctor)
-      (*ctor++)();
+   void (**dtor)(void) = __DTOR_LIST__;
+   while (dtor < __DTOR_END__) {
+      (*dtor++)();
+   }
 }
 
 /* libiosuhax related */
@@ -633,7 +637,7 @@ int __entry_menu(int argc, char **argv)
    int ret = main(argc, argv);
 
    fsdev_exit();
-//   __fini();
+   __fini();
    memoryRelease();
    return ret;
 }
