@@ -37,6 +37,8 @@
 /* MinGW Win32 HID API */
 #include <tchar.h>
 #include <strsafe.h>
+#include <guiddef.h>
+#include <ks.h>
 #include <setupapi.h>
 #include <hidsdi.h>
 /* Why doesn't including cguid.h work to get a GUID_NULL instead? */
