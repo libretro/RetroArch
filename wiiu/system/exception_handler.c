@@ -90,7 +90,7 @@ void __attribute__((__noreturn__)) exception_cb(OSContext* ctx, OSExceptionType 
 
 /*	First up, the pretty header that tells you wtf just happened */
 	if (type == OS_EXCEPTION_TYPE_DSI) {
-	/*	Exception type and offending instruction location + opcode */
+	/*	Exception type and offending instruction location */
 		buf_add("DSI: Instr at %08" PRIX32, ctx->srr0);
 	/*	Was this a read or a write? */
 		if (ctx->dsisr & DSISR_WRITE_ATTEMPTED) {
