@@ -1531,7 +1531,7 @@ ifneq ($(findstring Win32,$(OS)),)
           gfx/drivers_font/gdi_font.o \
           menu/drivers_display/menu_display_gdi.o
 
-   LIBS += -lmsimg32
+   LIBS += -lmsimg32 -lhid -lsetupapi
 endif
 
 ifeq ($(HAVE_AVFOUNDATION), 1)
