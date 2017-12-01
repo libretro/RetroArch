@@ -201,17 +201,7 @@ install: $(TARGET)
 	install -m644 media/retroarch.svg $(DESTDIR)$(PREFIX)/share/pixmaps
 	@if test -d media/assets; then \
 		echo "Installing media assets..."; \
-		mkdir -p $(DESTDIR)$(ASSETS_DIR)/retroarch/assets/xmb; \
-		mkdir -p $(DESTDIR)$(ASSETS_DIR)/retroarch/assets/glui; \
-		cp -r media/assets/xmb/  $(DESTDIR)$(ASSETS_DIR)/retroarch/assets; \
-		cp -r media/assets/glui/ $(DESTDIR)$(ASSETS_DIR)/retroarch/assets; \
-		echo "Removing unneeded source image files.."; \
-		rm -rf $(DESTDIR)$(ASSETS_DIR)/retroarch/assets/xmb/flatui/src; \
-		rm -rf $(DESTDIR)$(ASSETS_DIR)/retroarch/assets/xmb/monochrome/src; \
-		rm -rf $(DESTDIR)$(ASSETS_DIR)/retroarch/assets/xmb/retroactive/src; \
-		rm -rf $(DESTDIR)$(ASSETS_DIR)/retroarch/assets/xmb/neoactive/src; \
-		rm -rf $(DESTDIR)$(ASSETS_DIR)/retroarch/assets/xmb/retrosystem/src; \
-		rm -rf $(DESTDIR)$(ASSETS_DIR)/retroarch/assets/xmb/dot-art/src; \
+		cd media/assets && $(MAKE) install INSTALLDIR=$(ASSETS_DIR)/retroarch/assets && cd ../..; \
 		echo "Asset copying done."; \
 	fi
 
