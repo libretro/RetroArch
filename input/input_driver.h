@@ -825,6 +825,7 @@ extern hid_driver_t iohidmanager_hid;
 extern hid_driver_t btstack_hid;
 extern hid_driver_t libusb_hid;
 extern hid_driver_t wiiusb_hid;
+extern hid_driver_t wiiu_hid;
 extern hid_driver_t null_hid;
 #endif
 

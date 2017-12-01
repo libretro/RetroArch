@@ -58,10 +58,6 @@
 #include <wiiu/vpad.h>
 #include <wiiu/kpad.h>
 
-#if defined(ENABLE_CONTROLLER_PATCHER)
-   #include "wiiu/controller_patcher/ControllerPatcherWrapper.h"
-#endif
-
 #include <fat.h>
 #include <iosuhax.h>
 #include "wiiu_dbg.h"
@@ -432,9 +428,6 @@ int main(int argc, char **argv)
    KPADInit();
 #endif
    verbosity_enable();
-#if !defined(IS_SALAMANDER) && defined(ENABLE_CONTROLLER_PATCHER)
-   ControllerPatcherInit();
-#endif
    fflush(stdout);
    DEBUG_VAR(ARGV_PTR);
    if(ARGV_PTR && ((u32)ARGV_PTR < 0x01000000))
@@ -494,9 +487,6 @@ int main(int argc, char **argv)
 
    }
    while (1);
-#if !defined(IS_SALAMANDER) && defined(ENABLE_CONTROLLER_PATCHER)
-   ControllerPatcherDeInit();
-#endif
    main_exit(NULL);
 #endif
 #endif

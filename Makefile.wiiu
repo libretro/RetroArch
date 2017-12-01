@@ -1,9 +1,10 @@
 TARGET		    := retroarch_wiiu
 BUILD_HBL_ELF	     = 1
-BUILD_RPX	         = 1
+BUILD_RPX	     = 1
 DEBUG                = 0
 GRIFFIN_BUILD        = 0
 WHOLE_ARCHIVE_LINK   = 0
+HAVE_HID             = 1
 
 ifneq ($(V), 1)
    Q := @
@@ -13,6 +14,7 @@ PC_DEVELOPMENT_IP_ADDRESS  ?=
 PC_DEVELOPMENT_TCP_PORT	   ?=
 
 OBJ :=
+OBJ += input/drivers_hid/wiiu_hid.o
 OBJ += wiiu/system/memory.o
 OBJ += wiiu/system/exception_handler.o
 OBJ += wiiu/system/missing_libc_functions.o
