@@ -35,7 +35,15 @@
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(_MSC_VER) && _WIN32_WINNT >= 0x0500
 /* MinGW Win32 HID API */
+#include <minwindef.h>
+#include <wtypes.h>
 #include <tchar.h>
+#ifdef __NO_INLINE__
+/* Workaround MinGW issue where compiling without -O2 (which sets __NO_INLINE__) causes the strsafe functions
+ * to never be defined (only declared).
+ */
+#define __CRT_STRSAFE_IMPL
+#endif
 #include <strsafe.h>
 #include <guiddef.h>
 #include <ks.h>
