@@ -744,7 +744,7 @@ static void input_autoconfigure_override_handler(autoconfig_params_t *params)
                free(params->name);
 
             /* override name given to autoconfig so it knows what kind of pad this is */
-            strlcat(name, "Bliss-Box ", sizeof(name));
+            strlcat(name, "Bliss-Box 4-Play ", sizeof(name));
             strlcat(name, pad->name, sizeof(name));
 
             params->name = strdup(name);
