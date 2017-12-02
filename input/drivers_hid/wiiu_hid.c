@@ -26,18 +26,14 @@
 typedef struct wiiu_hid
 {
    void *empty;
-   uint32_t nsyshid;
    HIDClient *client;
-   HIDAttachCallback attach_callback;
 } wiiu_hid_t;
 
 typedef struct wiiu_hid_user
 {
-  unsigned char *buffer;
-  uint32_t nsishid;
-  void *hid_read;
-  void *hid_write;
+  uint8_t *buffer;
   uint32_t transfersize;
+  uint32_t handle;
 } wiiu_hid_user_t;
 
 static wiiu_hid_t *new_wiiu_hid_t(void);
@@ -106,7 +102,7 @@ static void *wiiu_hid_init(void)
   if(!hid || !client)
     goto error;
 
-  HIDAddClient(client, hid->attach_callback);
+  HIDAddClient(client, wiiu_attach_callback);
   hid->client = client;
 
   return hid;
@@ -139,7 +135,20 @@ static void wiiu_hid_poll(void *data)
  */
 
 int32_t wiiu_attach_callback(HIDClient *client, HIDDevice *device, uint32_t attach) {
-  return 0;
+  switch(attach) {
+    int32_t result = DEVICE_UNUSED;
+    case HID_DEVICE_ATTACH:
+      // TODO: new device attached! Register it.
+      break;
+    case HID_DEVICE_DETACH:
+      // TODO: device detached! Unregister it.
+      break;
+    default:
+      // Undefined behavior, bail out
+      break;
+  }
+
+  return result;
 }
 
 static void wiiu_read_callback(uint32_t handle, int32_t errno, unsigned char *buffer, uint32_t transferred, void *usr) {
@@ -159,7 +168,6 @@ static wiiu_hid_t *new_wiiu_hid_t(void) {
     goto error;
 
   memset(hid, 0, sizeof(wiiu_hid_t));
-  hid->attach_callback = wiiu_attach_callback;
 
   return hid;
 
@@ -176,6 +184,7 @@ static void delete_wiiu_hid_t(wiiu_hid_t *hid) {
   if(hid->client) {
     HIDDelClient(hid->client);
     delete_hidclient(hid->client);
+    hid->client = NULL;
   }
 
   free(hid);
@@ -193,6 +202,21 @@ static HIDClient *new_hidclient() {
 static void delete_hidclient(HIDClient *client) {
   if(client)
     free(client);
+}
+
+static wiiu_hid_user_t *new_wiiu_hid_user_t(void) {
+  wiiu_hid_user_t *user = calloc(1, sizeof(wiiu_hid_user_t));
+  if(user != NULL) {
+    memset(client, 0, sizeof(wiiu_hid_user_t));
+  }
+
+  return client;
+}
+
+static void delete_wiiu_hid_user_t(wiiu_hid_user_t *user) {
+  if(user) {
+    free(user);
+  }
 }
 
 hid_driver_t wiiu_hid = {
