@@ -378,25 +378,26 @@ static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_win3
 
    /* HID API is available since Windows 2000 */
 #if defined(_WIN32) && !defined(_XBOX) && !defined(_MSC_VER) && _WIN32_WINNT >= 0x0500
-   HANDLE hDeviceHandle = INVALID_HANDLE_VALUE;
-   GUID guidDeviceInterface = {0};
-   BOOL bResult = TRUE;
-   BOOL success = FALSE;
    HDEVINFO hDeviceInfo;
    SP_DEVINFO_DATA DeviceInfoData;
    SP_DEVICE_INTERFACE_DATA deviceInterfaceData;
-   PSP_DEVICE_INTERFACE_DETAIL_DATA pInterfaceDetailData = NULL;
-   ULONG requiredLength = 0;
-   LPTSTR lpDevicePath = NULL;
-   char *devicePath = NULL;
-   DWORD index = 0;
-   DWORD intIndex = 0;
-   size_t nLength = 0;
-   unsigned len = 0;
-   unsigned i = 0;
-   char vidPidString[32] = {0};
-   char vidString[5] = {0};
-   char pidString[5] = {0};
+   HANDLE hDeviceHandle                 = INVALID_HANDLE_VALUE;
+   BOOL bResult                         = TRUE;
+   BOOL success                         = FALSE;
+   GUID guidDeviceInterface             = {0};
+   PSP_DEVICE_INTERFACE_DETAIL_DATA 
+      pInterfaceDetailData              = NULL;
+   ULONG requiredLength                 = 0;
+   LPTSTR lpDevicePath                  = NULL;
+   char *devicePath                     = NULL;
+   DWORD index                          = 0;
+   DWORD intIndex                       = 0;
+   size_t nLength                       = 0;
+   unsigned len                         = 0;
+   unsigned i                           = 0;
+   char vidPidString[32]                = {0};
+   char vidString[5]                    = {0};
+   char pidString[5]                    = {0};
    char report[USB_PACKET_CTRL_LEN + 1] = {0};
 
    snprintf(vidString, sizeof(vidString), "%04x", vid);
@@ -529,17 +530,15 @@ static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_win3
          }
 
          /* copy device path */
-         nLength = _tcslen(pInterfaceDetailData->DevicePath) + 1;
+         nLength      = _tcslen(pInterfaceDetailData->DevicePath) + 1;
          lpDevicePath = (TCHAR*)LocalAlloc(LPTR, nLength * sizeof(TCHAR));
 
          StringCchCopy(lpDevicePath, nLength, pInterfaceDetailData->DevicePath);
 
-         devicePath = (char*)malloc(nLength);
+         devicePath   = (char*)malloc(nLength);
 
          for (len = 0; len < nLength; len++)
-         {
             devicePath[len] = lpDevicePath[len];
-         }
 
          lpDevicePath[nLength - 1] = 0;
 
@@ -578,10 +577,10 @@ done:
    free(devicePath);
    LocalFree(lpDevicePath);
    LocalFree(pInterfaceDetailData);
-   bResult = SetupDiDestroyDeviceInfoList(hDeviceInfo);
+   bResult              = SetupDiDestroyDeviceInfoList(hDeviceInfo);
 
-   devicePath = NULL;
-   lpDevicePath = NULL;
+   devicePath           = NULL;
+   lpDevicePath         = NULL;
    pInterfaceDetailData = NULL;
 
    if (!bResult)
@@ -611,11 +610,9 @@ done:
    }
 
    RARCH_LOG("[Autoconf]: Could not find connected pad in Bliss-Box port#%d.\n", pid - BLISSBOX_PID);
+#endif
 
    return NULL;
-#else
-   return NULL;
-#endif
 }
 #endif
 
@@ -623,9 +620,9 @@ done:
 static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_libusb(int vid, int pid)
 {
 #ifdef HAVE_LIBUSB
-   unsigned char answer[USB_PACKET_CTRL_LEN] = {0};
    unsigned i;
-   int ret = libusb_init(NULL);
+   unsigned char answer[USB_PACKET_CTRL_LEN] = {0};
+   int ret                                   = libusb_init(NULL);
 
    if (ret < 0)
    {
@@ -693,10 +690,9 @@ static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_libu
 error:
    libusb_close(autoconfig_libusb_handle);
    libusb_exit(NULL);
-   return NULL;
-#else
-   return NULL;
 #endif
+
+   return NULL;
 }
 #endif
 
