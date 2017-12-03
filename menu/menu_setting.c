@@ -2263,7 +2263,7 @@ static bool setting_append_list(
                parent_group);
 #endif
 
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD) && defined(HAVE_NETWORKGAMEPAD_CORE)
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_START_NET_RETROPAD,
