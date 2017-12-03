@@ -26,6 +26,21 @@
 #include "../input_driver.h"
 
 #define POLL_THREAD_SLEEP 10000
+<<<<<<< HEAD
+=======
+
+#define DEVICE_UNUSED 0
+#define DEVICE_USED   1
+
+typedef struct wiiu_hid
+{
+   HIDClient *client;
+   OSThread *polling_thread;
+   // memory accounting; keep a pointer to the stack buffer so we can clean up later.
+   void *polling_thread_stack;
+   volatile bool polling_thread_quit;
+} wiiu_hid_t;
+>>>>>>> Start implementing HID polling thread
 
 #define DEVICE_UNUSED 0
 #define DEVICE_USED   1
@@ -71,8 +86,11 @@ static void start_polling_thread(wiiu_hid_t *hid);
 static void stop_polling_thread(wiiu_hid_t *hid);
 static int wiiu_hid_polling_thread(int argc, const char **argv);
 static void wiiu_hid_do_poll(wiiu_hid_t *hid);
+<<<<<<< HEAD
 
 static void enqueue_device(void);
+=======
+>>>>>>> Start implementing HID polling thread
 
 /**
  * HID driver entrypoints registered with hid_driver_t
@@ -167,6 +185,7 @@ static void wiiu_hid_free(void *data)
   }
 }
 
+<<<<<<< HEAD
 static void free_pad_list(void) {
   wiiu_hid_user_t *top;
 
@@ -177,6 +196,8 @@ static void free_pad_list(void) {
   }
 }
 
+=======
+>>>>>>> Start implementing HID polling thread
 /**
  * This is a no-op because polling is done with a worker thread.
  */
@@ -199,11 +220,15 @@ static void start_polling_thread(wiiu_hid_t *hid) {
   OSThread *thread = memalign(8, sizeof(OSThread));
   void *stack = memalign(32, stack_size);
 
+<<<<<<< HEAD
   if(pad_list_mutex == NULL) {
     pad_list_mutex = new_fastmutex("pad_list");
   }
 
   if(!thread || !stack || !pad_list_mutex)
+=======
+  if(!thread || !stack)
+>>>>>>> Start implementing HID polling thread
     goto error;
 
   if(!OSCreateThread(thread, wiiu_hid_polling_thread, 1, (char *)hid, stack, stack_size, priority, attributes))
@@ -214,8 +239,11 @@ static void start_polling_thread(wiiu_hid_t *hid) {
   return;
 
   error:
+<<<<<<< HEAD
     if(pad_list_mutex)
       delete_fastmutex(pad_list_mutex);
+=======
+>>>>>>> Start implementing HID polling thread
     if(stack)
       free(stack);
     if(thread)
@@ -235,11 +263,14 @@ static void stop_polling_thread(wiiu_hid_t *hid) {
 
   free(hid->polling_thread);
   free(hid->polling_thread_stack);
+<<<<<<< HEAD
 
   // with the thread stopped, we don't need the mutex.
   delete_fastmutex(pad_list_mutex);
   pad_list_mutex = NULL;
   free_pad_list();
+=======
+>>>>>>> Start implementing HID polling thread
 }
 
 /**
@@ -261,6 +292,7 @@ static void wiiu_hid_do_poll(wiiu_hid_t *hid) {
   usleep(POLL_THREAD_SLEEP);
 }
 
+<<<<<<< HEAD
 int32_t wiiu_attach_device(HIDClient *client, HIDDevice *device) {
   wiiu_hid_user_t *adapter = new_wiiu_hid_user_t();
 
@@ -278,6 +310,8 @@ int32_t wiiu_detach_device(HIDClient *client, HIDDevice *device) {
   return DEVICE_UNUSED;
 }
 
+=======
+>>>>>>> Start implementing HID polling thread
 /**
  * Callbacks
  */
