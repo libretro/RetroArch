@@ -525,24 +525,23 @@ void __eabi()
 __attribute__((weak))
 void __init(void)
 {
-   extern void (**const __CTOR_LIST__)(void);
-   extern void (**const __CTOR_END__)(void);
+   extern void (*const __CTOR_LIST__)(void);
+   extern void (*const __CTOR_END__)(void);
 
-   void (**ctor)(void) = __CTOR_LIST__;
-   while (ctor < __CTOR_END__) {
+   void (*const *ctor)(void) = &__CTOR_LIST__;
+   while (ctor < &__CTOR_END__) {
       (*ctor++)();
    }
 }
 
-
 __attribute__((weak))
 void __fini(void)
 {
-   extern void (**const __DTOR_LIST__)(void);
-   extern void (**const __DTOR_END__)(void);
+   extern void (*const __DTOR_LIST__)(void);
+   extern void (*const __DTOR_END__)(void);
 
-   void (**dtor)(void) = __DTOR_LIST__;
-   while (dtor < __DTOR_END__) {
+   void (*const *dtor)(void) = &__DTOR_LIST__;
+   while (dtor < &__DTOR_END__) {
       (*dtor++)();
    }
 }
@@ -654,7 +653,10 @@ void _start(int argc, char **argv)
    main(argc, argv);
 
    fsdev_exit();
-//   __fini();
+
+/* TODO: fix elf2rpl so it doesn't error with "Could not find matching symbol
+         for relocation" then uncomment this */
+// __fini();
    memoryRelease();
    SYSRelaunchTitle(0, 0);
    exit(0);
