@@ -2719,7 +2719,7 @@ static bool config_load_file(const char *path, bool set_defaults,
 
    if (settings->floats.slowmotion_ratio < 1.0f)
    {
-      configuration_set_float(settings, settings->floats.slowmotion_ratio, 15.0f);
+      configuration_set_float(settings, settings->floats.slowmotion_ratio, 1.0f);
    }
 
    /* Sanitize fastforward_ratio value - previously range was -1
