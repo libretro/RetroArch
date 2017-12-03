@@ -124,9 +124,13 @@ static bool psp_joypad_button(unsigned port_num, uint16_t key)
    return (pad_state[port_num] & (UINT64_C(1) << key));
 }
 
-static uint64_t psp_joypad_get_buttons(unsigned port_num)
+static void psp_joypad_get_buttons(unsigned port_num, retro_bits_t *state)
 {
-   return pad_state[port_num];
+	if ( port_num < PSP_MAX_PADS ) {
+		RARCH_INPUT_STATE_COPY16_PTR( state, pad_state[port_num] );
+	} else {
+		RARCH_INPUT_STATE_CLEAR_PTR(state);
+	}
 }
 
 static int16_t psp_joypad_axis(unsigned port_num, uint32_t joyaxis)
@@ -236,10 +240,10 @@ static void psp_joypad_poll(void)
       if (curr_ctrl_info.port[p] == SCE_CTRL_TYPE_UNPAIRED)
          continue;
 #elif defined(SN_TARGET_PSP2)
-      /* Dumb hack, but here's the explanation - 
+      /* Dumb hack, but here's the explanation -
        * sceCtrlPeekBufferPositive's port parameter
        * can be 0 or 1 to read the first controller on
-       * a PSTV, but HAS to be 0 for a real VITA and 2 
+       * a PSTV, but HAS to be 0 for a real VITA and 2
        * for the 2nd controller on a PSTV */
       unsigned p  = (player > 0) ? player+1 : player;
 #else
@@ -256,12 +260,12 @@ static void psp_joypad_poll(void)
          continue;
 #endif
 #if defined(VITA)
-      if (psp2_model == SCE_KERNEL_MODEL_VITA 
+      if (psp2_model == SCE_KERNEL_MODEL_VITA
          && settings->bools.input_backtouch_enable)
       {
          unsigned i;
          SceTouchData touch_surface = {0};
-         sceTouchPeek(settings->bools.input_backtouch_toggle 
+         sceTouchPeek(settings->bools.input_backtouch_toggle
                ? SCE_TOUCH_PORT_FRONT : SCE_TOUCH_PORT_BACK, &touch_surface, 1);
 
          for (i = 0; i < touch_surface.reportNum; i++)

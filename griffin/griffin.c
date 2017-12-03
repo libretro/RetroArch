@@ -151,6 +151,7 @@ ACHIEVEMENTS
 #include "../libretro-common/formats/json/jsonsax.c"
 #include "../network/net_http_special.c"
 #include "../cheevos/cheevos.c"
+#include "../cheevos/badges.c"
 #include "../cheevos/var.c"
 #include "../cheevos/cond.c"
 #endif
@@ -821,6 +822,10 @@ FILE
 #include "../list_special.c"
 #include "../libretro-common/string/stdstring.c"
 #include "../libretro-common/file/nbio/nbio_stdio.c"
+#include "../libretro-common/file/nbio/nbio_linux.c"
+#include "../libretro-common/file/nbio/nbio_unixmmap.c"
+#include "../libretro-common/file/nbio/nbio_windowsmmap.c"
+#include "../libretro-common/file/nbio/nbio_intf.c"
 
 /*============================================================
 MESSAGE

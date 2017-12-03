@@ -1191,13 +1191,14 @@ static void d3d9_cg_renderchain_end_render(cg_renderchain_t *chain)
 }
 
 static void d3d9_cg_renderchain_set_mvp(
-      cg_renderchain_t *chain,
-      void *vertex_program,
+      void *chain_data,
+      void *data,
       unsigned vp_width, unsigned vp_height,
       unsigned rotation)
 {
    D3DMATRIX proj, ortho, rot, tmp;
-   CGprogram     vPrg   = (CGprogram)vertex_program;
+   CGprogram     vPrg      = (CGprogram)data;
+   cg_renderchain_t *chain = (cg_renderchain_t*)chain_data;
 
    d3d_matrix_ortho_off_center_lh(&ortho, 0, vp_width, 0, vp_height, 0, 1);
    d3d_matrix_identity(&rot);
@@ -1686,6 +1687,7 @@ static void d3d9_cg_renderchain_viewport_info(
 }
 
 d3d_renderchain_driver_t cg_d3d9_renderchain = {
+   d3d9_cg_renderchain_set_mvp,
    d3d9_cg_renderchain_free,
    d3d9_cg_renderchain_new,
    NULL,

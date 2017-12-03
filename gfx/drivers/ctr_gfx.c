@@ -1120,14 +1120,16 @@ static void ctr_set_osd_msg(void *data,
 }
 
 static const video_poke_interface_t ctr_poke_interface = {
+   NULL,                                  /* set_coords */
+   NULL,                                  /* set_mvp    */
    ctr_load_texture,
    ctr_unload_texture,
    NULL,
    ctr_set_filtering,
-   NULL, /* get_video_output_size */
-   NULL, /* get_video_output_prev */
-   NULL, /* get_video_output_next */
-   NULL, /* get_current_framebuffer */
+   NULL,                                  /* get_video_output_size */
+   NULL,                                  /* get_video_output_prev */
+   NULL,                                  /* get_video_output_next */
+   NULL,                                  /* get_current_framebuffer */
    NULL,
    ctr_set_aspect_ratio,
    ctr_apply_state_changes,

@@ -1502,10 +1502,12 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
             sublabel_color
             );
 
-   font_driver_flush(video_info->width, video_info->height, mui->font);
+   font_driver_flush(video_info->width, video_info->height, mui->font,
+         video_info);
    font_driver_bind_block(mui->font, NULL);
 
-   font_driver_flush(video_info->width, video_info->height, mui->font2);
+   font_driver_flush(video_info->width, video_info->height, mui->font2,
+         video_info);
    font_driver_bind_block(mui->font2, NULL);
 
    menu_animation_ctl(MENU_ANIMATION_CTL_SET_ACTIVE, NULL);

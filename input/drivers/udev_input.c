@@ -14,6 +14,19 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* TODO/FIXME - set this once the kqueue codepath is implemented and working properly */
+#if 1
+#define HAVE_EPOLL
+#else
+#ifdef __linux__
+#define HAVE_EPOLL 1
+#endif
+
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined (__NetBSD__)
+#define HAVE_KQUEUE 1
+#endif
+#endif
+
 #include <stdint.h>
 #include <string.h>
 
@@ -25,7 +38,11 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#if defined(HAVE_EPOLL)
 #include <sys/epoll.h>
+#elif defined(HAVE_KQUEUE)
+#include <sys/event.h>
+#endif
 #include <sys/poll.h>
 
 #include <libudev.h>
@@ -117,7 +134,7 @@ struct udev_input
 
    const input_device_driver_t *joypad;
 
-   int epfd;
+   int fd;
    udev_input_device_t **devices;
    unsigned num_devices;
 
@@ -450,7 +467,11 @@ static bool udev_input_add_device(udev_input_t *udev,
 {
    int fd;
    struct stat st;
+#if defined(HAVE_EPOLL)
    struct epoll_event event;
+#elif defined(HAVE_KQUEUE)
+   struct kevent event;
+#endif
    struct input_absinfo absinfo;
    udev_input_device_t **tmp;
    udev_input_device_t *device = NULL;
@@ -518,15 +539,24 @@ static bool udev_input_add_device(udev_input_t *udev,
    tmp[udev->num_devices++] = device;
    udev->devices            = tmp;
 
+#if defined(HAVE_EPOLL)
    event.events             = EPOLLIN;
    event.data.ptr           = device;
 
    /* Shouldn't happen, but just check it. */
-   if (epoll_ctl(udev->epfd, EPOLL_CTL_ADD, fd, &event) < 0)
+   if (epoll_ctl(udev->fd, EPOLL_CTL_ADD, fd, &event) < 0)
    {
       RARCH_ERR("Failed to add FD (%d) to epoll list (%s).\n",
             fd, strerror(errno));
    }
+#elif defined(HAVE_KQUEUE)
+   EV_SET(&event, fd, EVFILT_READ, EV_ADD, 0, 0, LISTENSOCKET);
+   if (kevent(udev->fd, &event, 1, NULL, 0, NULL) == -1)
+   {
+      RARCH_ERR("Failed to add FD (%d) to kqueue list (%s).\n",
+            fd, strerror(errno));
+   }
+#endif
 
    return true;
 
@@ -639,7 +669,11 @@ static bool udev_input_poll_hotplug_available(struct udev_monitor *dev)
 static void udev_input_poll(void *data)
 {
    int i, ret;
+#if defined(HAVE_EPOLL)
    struct epoll_event events[32];
+#elif defined(HAVE_KQUEUE)
+   struct kevent events[32];
+#endif
    udev_input_mouse_t *mouse = NULL;
    udev_input_t *udev        = (udev_input_t*)data;
 
@@ -666,15 +700,30 @@ static void udev_input_poll(void *data)
    while (udev->monitor && udev_input_poll_hotplug_available(udev->monitor))
       udev_input_handle_hotplug(udev);
 
-   ret = epoll_wait(udev->epfd, events, ARRAY_SIZE(events), 0);
+#if defined(HAVE_EPOLL)
+   ret = epoll_wait(udev->fd, events, ARRAY_SIZE(events), 0);
+#elif defined(HAVE_KQUEUE)
+   {
+      struct timespec timeoutspec;
+      timeoutspec.tv_sec  = timeout;
+      timeoutspec.tv_nsec = 0;
+      ret                 = kevent(udev->fd, NULL, 0, events,
+            ARRAY_SIZE(events), &timeoutspec);
+   }
+#endif
 
    for (i = 0; i < ret; i++)
    {
+      /* TODO/FIXME - add HAVE_EPOLL/HAVE_KQUEUE codepaths here */
       if (events[i].events & EPOLLIN)
       {
          int j, len;
          struct input_event input_events[32];
+#if defined(HAVE_EPOLL)
          udev_input_device_t *device = (udev_input_device_t*)events[i].data.ptr;
+#elif defined(HAVE_KQUEUE)
+         udev_input_device_t *device = (udev_input_device_t*)events[i].udata;
+#endif
 
          while ((len = read(device->fd,
                      input_events, sizeof(input_events))) > 0)
@@ -874,10 +923,10 @@ static void udev_input_free(void *data)
    if (udev->joypad)
       udev->joypad->destroy();
 
-   if (udev->epfd >= 0)
-      close(udev->epfd);
+   if (udev->fd >= 0)
+      close(udev->fd);
 
-   udev->epfd = -1;
+   udev->fd = -1;
 
    for (i = 0; i < udev->num_devices; i++)
    {
@@ -978,14 +1027,23 @@ static void *udev_input_init(const char *joypad_driver)
    udev->xkb_handling = string_is_equal(ctx_ident.ident, "kms");
 #endif
 
+#if defined(HAVE_EPOLL)
    fd = epoll_create(32);
    if (fd < 0)
    {
-      RARCH_ERR("Failed to create epoll FD.\n");
+      RARCH_ERR("Failed to create poll file descriptor.\n");
       goto error;
    }
+#elif defined(HAVE_KQUEUE)
+   fd = kqueue();
+   if (fd == -1)
+   {
+      RARCH_ERR("Failed to create poll file descriptor.\n");
+      goto error;
+   }
+#endif
 
-   udev->epfd  = fd;
+   udev->fd  = fd;
 
    if (!open_devices(udev, UDEV_INPUT_KEYBOARD, udev_handle_keyboard))
    {

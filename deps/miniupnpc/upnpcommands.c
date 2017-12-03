@@ -14,7 +14,7 @@
 #include "portlistingparse.h"
 
 static UNSIGNED_INTEGER
-my_atoui(const char * s)
+my_custom_atoui(const char * s)
 {
 	return s ? ((UNSIGNED_INTEGER)STRTOUI(s, NULL, 0)) : 0;
 }
@@ -38,7 +38,7 @@ UPNP_GetTotalBytesSent(const char * controlURL,
 	/*DisplayNameValueList(buffer, bufsize);*/
 	free(buffer); buffer = NULL;
 	p = GetValueFromNameValueList(&pdata, "NewTotalBytesSent");
-	r = (unsigned)my_atoui(p);
+	r = (unsigned)my_custom_atoui(p);
 	ClearNameValueList(&pdata);
 	return r;
 }
@@ -62,7 +62,7 @@ UPNP_GetTotalBytesReceived(const char * controlURL,
 	/*DisplayNameValueList(buffer, bufsize);*/
 	free(buffer); buffer = NULL;
 	p = GetValueFromNameValueList(&pdata, "NewTotalBytesReceived");
-	r = (unsigned)my_atoui(p);
+	r = (unsigned)my_custom_atoui(p);
 	ClearNameValueList(&pdata);
 	return r;
 }
@@ -86,7 +86,7 @@ UPNP_GetTotalPacketsSent(const char * controlURL,
 	/*DisplayNameValueList(buffer, bufsize);*/
 	free(buffer); buffer = NULL;
 	p = GetValueFromNameValueList(&pdata, "NewTotalPacketsSent");
-	r = (unsigned)my_atoui(p);
+	r = (unsigned)my_custom_atoui(p);
 	ClearNameValueList(&pdata);
 	return r;
 }
@@ -110,7 +110,7 @@ UPNP_GetTotalPacketsReceived(const char * controlURL,
 	/*DisplayNameValueList(buffer, bufsize);*/
 	free(buffer); buffer = NULL;
 	p = GetValueFromNameValueList(&pdata, "NewTotalPacketsReceived");
-	r = (unsigned)my_atoui(p);
+	r = (unsigned)my_custom_atoui(p);
 	ClearNameValueList(&pdata);
 	return r;
 }
@@ -903,11 +903,11 @@ UPNP_GetFirewallStatus(const char * controlURL,
 	if(ipa && fe)
 		ret = UPNPCOMMAND_SUCCESS;
 	if(fe)
-		*firewallEnabled = (int)my_atoui(fe);
+		*firewallEnabled = (int)my_custom_atoui(fe);
 	/*else
 		*firewallEnabled = 0;*/
 	if(ipa)
-		*inboundPinholeAllowed = (int)my_atoui(ipa);
+		*inboundPinholeAllowed = (int)my_custom_atoui(ipa);
 	/*else
 		*inboundPinholeAllowed = 0;*/
 	p = GetValueFromNameValueList(&pdata, "errorCode");
@@ -971,7 +971,7 @@ UPNP_GetOutboundPinholeTimeout(const char * controlURL, const char * servicetype
 		ret = UPNPCOMMAND_SUCCESS;
 		p = GetValueFromNameValueList(&pdata, "OutboundPinholeTimeout");
 		if(p)
-			*opTimeout = (int)my_atoui(p);
+			*opTimeout = (int)my_custom_atoui(p);
 	}
 	ClearNameValueList(&pdata);
 	return ret;
@@ -1175,7 +1175,7 @@ UPNP_CheckPinholeWorking(const char * controlURL, const char * servicetype,
 	p = GetValueFromNameValueList(&pdata, "IsWorking");
 	if(p)
 	{
-		*isWorking = (int)my_atoui(p);
+		*isWorking = (int)my_custom_atoui(p);
 		ret        = UPNPCOMMAND_SUCCESS;
 	}
 	else
@@ -1222,7 +1222,7 @@ UPNP_GetPinholePackets(const char * controlURL, const char * servicetype,
 	p = GetValueFromNameValueList(&pdata, "PinholePackets");
 	if(p)
 	{
-		*packets = (int)my_atoui(p);
+		*packets = (int)my_custom_atoui(p);
 		ret      = UPNPCOMMAND_SUCCESS;
 	}
 

@@ -4,4 +4,3 @@ USE_LANG_C="yes"
 if [ "$OS" = 'Win32' ]; then
 	USE_LANG_CXX="yes"
 fi
-

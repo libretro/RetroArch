@@ -127,7 +127,7 @@ typedef struct video_pixel_scaler
 static void (*video_driver_cb_shader_use)(void *data,
       void *shader_data, unsigned index, bool set_active);
 static bool (*video_driver_cb_shader_set_mvp)(void *data,
-      void *shader_data, const math_matrix_4x4 *mat);
+      void *shader_data, const void *mat_data);
 bool (*video_driver_cb_has_focus)(void);
 
 /* Opaque handles to currently running window.
@@ -417,12 +417,12 @@ static const d3d_renderchain_driver_t *renderchain_d3d_drivers[] = {
 #if defined(_WIN32) && defined(HAVE_D3D8)
    &d3d8_renderchain,
 #endif
-   &null_renderchain,
+   &null_d3d_renderchain,
    NULL
 };
 
 static const gl_renderchain_driver_t *renderchain_gl_drivers[] = {
-#if defined(HAVE_OPENGL)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    &gl2_renderchain,
 #endif
    NULL
@@ -497,10 +497,12 @@ const char* config_get_video_driver_options(void)
    return char_list_new_special(STRING_LIST_VIDEO_DRIVERS, NULL);
 }
 
+#ifdef HAVE_VULKAN
 static bool hw_render_context_is_vulkan(enum retro_hw_context_type type)
 {
    return type == RETRO_HW_CONTEXT_VULKAN;
 }
+#endif
 
 static bool hw_render_context_is_gl(enum retro_hw_context_type type)
 {
@@ -1796,21 +1798,21 @@ bool video_driver_find_driver(void)
 
       current_video                        = NULL;
 
+#if defined(HAVE_VULKAN)
       if (hwr && hw_render_context_is_vulkan(hwr->context_type))
       {
-#if defined(HAVE_VULKAN)
          RARCH_LOG("[Video]: Using HW render, Vulkan driver forced.\n");
          current_video = &video_vulkan;
-#endif
       }
+#endif
 
+#if defined(HAVE_OPENGL)
       if (hwr && hw_render_context_is_gl(hwr->context_type))
       {
-#if defined(HAVE_OPENGL) && defined(HAVE_FBO)
          RARCH_LOG("[Video]: Using HW render, OpenGL driver forced.\n");
          current_video = &video_gl;
-#endif
       }
+#endif
 
       if (current_video)
          return true;
@@ -2310,7 +2312,7 @@ void video_driver_frame(const void *data, unsigned width,
 
             snprintf(frames_text,
                   sizeof(frames_text),
-                  STRING_REP_UINT64,
+                  "%" PRIu64,
                   (uint64_t)video_driver_frame_count);
 
             strlcat(video_driver_window_title,
@@ -2328,7 +2330,7 @@ void video_driver_frame(const void *data, unsigned width,
             snprintf(
                   video_info.fps_text,
                   sizeof(video_info.fps_text),
-                  "FPS: %6.1f || %s: " STRING_REP_UINT64,
+                  "FPS: %6.1f || %s: %" PRIu64,
                   last_fps,
                   msg_hash_to_str(MSG_FRAMES),
                   (uint64_t)video_driver_frame_count);
@@ -2407,8 +2409,9 @@ void video_driver_frame(const void *data, unsigned width,
 
    video_driver_frame_count++;
 
+   /* Display the FPS, with a higher priority. */
    if (video_info.fps_show)
-      runloop_msg_queue_push(video_info.fps_text, 1, 1, false);
+      runloop_msg_queue_push(video_info.fps_text, 2, 1, true);
 }
 
 void video_driver_display_type_set(enum rarch_display_type type)
@@ -2471,6 +2474,17 @@ static void video_shader_driver_use_null(void *data,
    (void)data;
    (void)idx;
    (void)set_active;
+}
+
+static bool video_driver_cb_set_coords(void *handle_data,
+      void *shader_data, const struct video_coords *coords)
+{
+   video_shader_ctx_coords_t ctx_coords;
+   ctx_coords.handle_data = handle_data;
+   ctx_coords.data        = coords;
+
+   video_driver_set_coords(&ctx_coords);
+   return true;
 }
 
 void video_driver_build_info(video_frame_info_t *video_info)
@@ -2579,7 +2593,11 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->cb_set_resize          = current_video_context.set_resize;
 
    video_info->cb_shader_use          = video_driver_cb_shader_use;
-   video_info->cb_shader_set_mvp      = video_driver_cb_shader_set_mvp;
+   video_info->cb_set_mvp             = video_driver_cb_shader_set_mvp;
+
+#if 0
+   video_info->cb_set_coords          = video_driver_cb_set_coords;
+#endif
 
 #ifdef HAVE_THREADS
    video_driver_threaded_unlock(is_threaded);
@@ -3195,39 +3213,16 @@ static enum gfx_wrap_type video_shader_driver_wrap_type_null(
    return RARCH_WRAP_BORDER;
 }
 
-static bool video_shader_driver_set_mvp_null(void *data,
-      void *shader_data, const math_matrix_4x4 *mat)
+static bool video_driver_cb_set_mvp(void *data,
+      void *shader_data, const void *mat_data)
 {
-   return false;
-}
+   video_shader_ctx_mvp_t mvp;
+   mvp.data   = data;
+   mvp.matrix = mat_data;
 
-#ifdef HAVE_OPENGL
-#ifndef NO_GL_FF_MATRIX
-static bool video_shader_driver_set_mvp_null_gl(void *data,
-      void *shader_data, const math_matrix_4x4 *mat)
-{
-   gl_ff_matrix(mat);
-   return false;
+   video_driver_set_mvp(&mvp);
+   return true;
 }
-#endif
-#endif
-
-static bool video_shader_driver_set_coords_null(void *handle_data,
-      void *shader_data, const struct video_coords *coords)
-{
-   return false;
-}
-
-#ifdef HAVE_OPENGL
-#ifndef NO_GL_FF_VERTEX
-static bool video_shader_driver_set_coords_null_gl(void *handle_data,
-      void *shader_data, const struct video_coords *coords)
-{
-   gl_ff_vertex(coords);
-   return false;
-}
-#endif
-#endif
 
 static struct video_shader *video_shader_driver_get_current_shader_null(void *data)
 {
@@ -3286,32 +3281,12 @@ static void video_shader_driver_reset_to_defaults(void)
       video_driver_cb_shader_set_mvp    = current_shader->set_mvp;
    else
    {
-#ifdef HAVE_OPENGL
-#ifndef NO_GL_FF_MATRIX
-      if (string_is_equal_fast(video_driver_get_ident(), "gl", 2))
-      {
-         current_shader->set_mvp           = video_shader_driver_set_mvp_null_gl;
-         video_driver_cb_shader_set_mvp    = video_shader_driver_set_mvp_null_gl;
-      }
-      else
-#endif
-#endif
-      {
-         current_shader->set_mvp           = video_shader_driver_set_mvp_null;
-         video_driver_cb_shader_set_mvp    = video_shader_driver_set_mvp_null;
-      }
+      current_shader->set_mvp           = video_driver_cb_set_mvp;
+      video_driver_cb_shader_set_mvp    = video_driver_cb_set_mvp;
    }
    if (!current_shader->set_coords)
-   {
-#ifdef HAVE_OPENGL
-#ifndef NO_GL_FF_VERTEX
-      if (string_is_equal_fast(video_driver_get_ident(), "gl", 2))
-         current_shader->set_coords        = video_shader_driver_set_coords_null_gl;
-      else
-#endif
-#endif
-         current_shader->set_coords        = video_shader_driver_set_coords_null;
-   }
+      current_shader->set_coords        = video_driver_cb_set_coords;
+
    if (current_shader->use)
       video_driver_cb_shader_use        = current_shader->use;
    else 
@@ -3400,14 +3375,19 @@ bool video_shader_driver_info(video_shader_ctx_info_t *shader_info)
 
 bool video_shader_driver_filter_type(video_shader_ctx_filter_t *filter)
 {
-   return (filter) ? current_shader->filter_type(shader_data, 
-         filter->index, filter->smooth) : false;
+   if (filter)
+      return current_shader->filter_type(shader_data, 
+            filter->index, filter->smooth);
+   return false;
 }
 
-bool video_shader_driver_compile_program(struct shader_program_info *program_info)
+bool video_shader_driver_compile_program(
+      struct shader_program_info *program_info)
 {
-   return (program_info) ? current_shader->compile_program(program_info->data,
-         program_info->idx, NULL, program_info) : false;
+   if (program_info)
+      return current_shader->compile_program(program_info->data,
+            program_info->idx, NULL, program_info);
+   return false;
 }
 
 bool video_shader_driver_wrap_type(video_shader_ctx_wrap_t *wrap)
@@ -3416,8 +3396,34 @@ bool video_shader_driver_wrap_type(video_shader_ctx_wrap_t *wrap)
    return true;
 }
 
-bool renderchain_d3d_init_first(const d3d_renderchain_driver_t **renderchain_driver,
-	void **renderchain_handle)
+void video_driver_set_coords(video_shader_ctx_coords_t *coords)
+{
+   if (current_shader && current_shader->set_coords)
+      current_shader->set_coords(coords->handle_data, shader_data, (const struct video_coords*)coords->data);
+   else
+   {
+      if (video_driver_poke && video_driver_poke->set_coords)
+         video_driver_poke->set_coords(coords->handle_data, shader_data, (const struct video_coords*)coords->data);
+   }
+}
+
+void video_driver_set_mvp(video_shader_ctx_mvp_t *mvp)
+{
+   if (!mvp || !mvp->matrix)
+      return;
+
+   if (current_shader && current_shader->set_mvp)
+      current_shader->set_mvp(mvp->data, shader_data, mvp->matrix);
+   else
+   {
+      if (video_driver_poke && video_driver_poke->set_mvp)
+         video_driver_poke->set_mvp(mvp->data, shader_data, mvp->matrix);
+   }
+}
+
+bool renderchain_d3d_init_first(
+      const d3d_renderchain_driver_t **renderchain_driver,
+      void **renderchain_handle)
 {
    unsigned i;
 

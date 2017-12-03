@@ -253,17 +253,18 @@ static void gl_cg_reset_attrib(void *data)
    cg->attribs_index = 0;
 }
 
-static bool gl_cg_set_mvp(void *data, void *shader_data, const math_matrix_4x4 *mat)
+static bool gl_cg_set_mvp(void *data, void *shader_data,
+      const void *mat_data)
 {
    cg_shader_data_t *cg = (cg_shader_data_t*)shader_data;
-   if (!cg || !cg->prg[cg->active_idx].mvp)
+   if (cg && cg->prg[cg->active_idx].mvp)
    {
-      gl_ff_matrix(mat);
-      return false;
+      const math_matrix_4x4 *mat = (const math_matrix_4x4*)mat_data;
+      cgGLSetMatrixParameterfc(cg->prg[cg->active_idx].mvp, mat->data);
+      return true;
    }
 
-   cgGLSetMatrixParameterfc(cg->prg[cg->active_idx].mvp, mat->data);
-   return true;
+   return false;
 }
 
 static bool gl_cg_set_coords(void *handle_data, void *shader_data, const struct video_coords *coords)
@@ -289,12 +290,6 @@ static bool gl_cg_set_coords(void *handle_data, void *shader_data, const struct 
    if (cg->prg[cg->active_idx].color)
       gl_cg_set_coord_array(cg->prg[cg->active_idx].color, cg, coords->color, 4);
 
-   return true;
-}
-
-static bool gl_cg_set_coords_fallback(void *handle_data, void *shader_data, const struct video_coords *coords)
-{
-   gl_ff_vertex(coords);
    return true;
 }
 
@@ -1295,7 +1290,6 @@ const shader_backend_t gl_cg_backend = {
    gl_cg_wrap_type,
    gl_cg_shader_scale,
    gl_cg_set_coords,
-   gl_cg_set_coords_fallback,
    gl_cg_set_mvp,
    gl_cg_get_prev_textures,
    gl_cg_get_feedback_pass,

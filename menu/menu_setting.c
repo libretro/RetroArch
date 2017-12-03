@@ -917,7 +917,7 @@ int menu_setting_set(unsigned type, const char *label,
    int ret                    = 0;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    size_t selection           = menu_navigation_get_selection();
-   menu_file_list_cbs_t *cbs  = selection_buf ? 
+   menu_file_list_cbs_t *cbs  = selection_buf ?
       (menu_file_list_cbs_t*)file_list_get_actiondata_at_offset(selection_buf, selection) : NULL;
 
    if (!cbs)
@@ -1441,12 +1441,13 @@ static int setting_action_ok_bind_defaults(void *data, bool wraparound)
       target->key     = def_binds[i - MENU_SETTINGS_BIND_BEGIN].key;
       target->joykey  = NO_BTN;
       target->joyaxis = AXIS_NONE;
+      target->mbutton = NO_BTN;
    }
 
    return 0;
 }
 
-static void 
+static void
 setting_get_string_representation_st_float_video_refresh_rate_auto(
       void *data, char *s, size_t len)
 {
@@ -2262,7 +2263,7 @@ static bool setting_append_list(
                parent_group);
 #endif
 
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD) && defined(HAVE_NETWORKGAMEPAD_CORE)
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_START_NET_RETROPAD,
@@ -5984,6 +5985,23 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
+#ifdef HAVE_LIBRETRODB
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.automatically_add_content_to_playlist,
+               MENU_ENUM_LABEL_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
+               MENU_ENUM_LABEL_VALUE_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
+               true,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+#endif
+
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.multimedia_builtin_mediaplayer_enable,
@@ -6443,6 +6461,38 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_ADVANCED
+               );
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.cheevos_leaderboards_enable,
+               MENU_ENUM_LABEL_CHEEVOS_LEADERBOARDS_ENABLE,
+               MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
+               false,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.cheevos_badges_enable,
+               MENU_ENUM_LABEL_CHEEVOS_BADGES_ENABLE,
+               MENU_ENUM_LABEL_VALUE_CHEEVOS_BADGES_ENABLE,
+               false,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
                );
 
          CONFIG_BOOL(

@@ -220,9 +220,9 @@ static void gl_render_overlay(gl_t *gl, video_frame_info_t *video_info)
    coords.handle_data   = NULL;
    coords.data          = &gl->coords;
 
-   video_shader_driver_set_coords(coords);
+   video_driver_set_coords(&coords);
 
-   video_info->cb_shader_set_mvp(gl,
+   video_info->cb_set_mvp(gl,
          video_info->shader_data, &gl->mvp_no_rot);
 
    for (i = 0; i < gl->overlays; i++)
@@ -377,18 +377,10 @@ static bool gl_shader_init(gl_t *gl, const gfx_ctx_driver_t *ctx_driver,
       )
 {
    video_shader_ctx_init_t init_data;
-   enum rarch_shader_type type;
    settings_t *settings            = config_get_ptr();
    const char *shader_path         = (settings->bools.video_shader_enable
          && *settings->paths.path_shader) ? settings->paths.path_shader : NULL;
-
-   if (!gl)
-   {
-      RARCH_ERR("[GL]: Invalid GL instance passed.\n");
-      return false;
-   }
-
-   type = video_shader_parse_type(shader_path,
+   enum rarch_shader_type type     = video_shader_parse_type(shader_path,
          gl->core_context_in_use
          ? RARCH_SHADER_GLSL : DEFAULT_SHADER_TYPE);
 
@@ -449,6 +441,8 @@ GLenum min_filter_to_mag(GLenum type)
 static uintptr_t gl_get_current_framebuffer(void *data)
 {
    gl_t *gl = (gl_t*)data;
+   if (!gl || !gl->has_fbo)
+      return 0;
    return gl->hw_render_fbo[(gl->tex_index + 1) % gl->textures];
 }
 
@@ -553,7 +547,7 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
 
    /* Use regular textures if we use HW render. */
    gl->egl_images = !gl->hw_render_use && gl_check_capability(GL_CAPS_EGLIMAGE) &&
-      video_context_driver_init_image_buffer((void*)video);
+      video_context_driver_init_image_buffer(video);
 
 #ifdef HAVE_PSGL
    if (!gl->pbo)
@@ -595,11 +589,8 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
 
    for (i = 0; i < gl->textures; i++)
    {
-      glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl->wrap_mode);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl->wrap_mode);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_mag_filter);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_min_filter);
+      gl_bind_texture(gl->texture[i], gl->wrap_mode, gl->tex_mag_filter,
+            gl->tex_min_filter);
 
       if (gl->renderchain_driver->init_texture_reference)
          gl->renderchain_driver->init_texture_reference(
@@ -622,6 +613,7 @@ static INLINE void gl_set_shader_viewports(gl_t *gl)
    shader_info.set_active = true;
 
    video_shader_driver_use(shader_info);
+
    gl_set_viewport_wrapper(gl, width, height, false, true);
 
    shader_info.data       = gl;
@@ -687,11 +679,7 @@ void gl_load_texture_data(
          break;
    }
 
-   glBindTexture(GL_TEXTURE_2D, id);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
+   gl_bind_texture(id, wrap, mag_filter, min_filter);
 
    glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
    glTexImage2D(GL_TEXTURE_2D,
@@ -753,35 +741,27 @@ static void gl_render_osd_background(
       gl_t *gl, video_frame_info_t *video_info,
       const char *msg)
 {
-   int msg_width;
-   video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords_data;
    video_coords_t coords;
-   video_shader_ctx_info_t shader_info;
    struct uniform_info uniform_param;
    float colors[4];
-   float x, x2, y, y2, width, height;
    const unsigned 
       vertices_total       = 6;
    float *dummy            = (float*)calloc(4 * vertices_total, sizeof(float));
    float *verts            = (float*)malloc(2 * vertices_total * sizeof(float));
    settings_t *settings    = config_get_ptr();
-
-   if (!gl || !settings)
-      goto end;
-
-   msg_width               = 
+   int msg_width           = 
       font_driver_get_message_width(NULL, msg, strlen(msg), 1.0f);
 
    /* shader driver expects vertex coords as 0..1 */
-   x                       = video_info->font_msg_pos_x;
-   y                       = video_info->font_msg_pos_y;
-   width                   = msg_width / (float)video_info->width;
-   height                  = 
+   float x                 = video_info->font_msg_pos_x;
+   float y                 = video_info->font_msg_pos_y;
+   float width             = msg_width / (float)video_info->width;
+   float height            = 
       settings->floats.video_font_size / (float)video_info->height;
 
-   x2                      = 0.005f; /* extend background around text */
-   y2                      = 0.005f;
+   float x2                = 0.005f; /* extend background around text */
+   float y2                = 0.005f;
 
    x                      -= x2;
    y                      -= y2;
@@ -822,24 +802,20 @@ static void gl_render_osd_background(
    coords_data.handle_data = NULL;
    coords_data.data        = &coords;
  
-   shader_info.data        = NULL;
-   shader_info.idx         = VIDEO_SHADER_STOCK_BLEND;
-   shader_info.set_active  = true;
-
    video_driver_set_viewport(video_info->width,
          video_info->height, true, false);
 
-   video_shader_driver_use(shader_info);
-   video_shader_driver_set_coords(coords_data);
+   video_info->cb_shader_use(gl,
+         video_info->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
+
+   video_driver_set_coords(&coords_data);
 
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
    glBlendEquation(GL_FUNC_ADD);
 
-   mvp.data                = gl;
-   mvp.matrix              = &gl->mvp_no_rot;
-
-   video_shader_driver_set_mvp(mvp);
+   video_info->cb_set_mvp(gl,
+         video_info->shader_data, &gl->mvp_no_rot);
 
    uniform_param.type              = UNIFORM_4F;
    uniform_param.enabled           = true;
@@ -848,7 +824,7 @@ static void gl_render_osd_background(
 
    uniform_param.lookup.type       = SHADER_PROGRAM_FRAGMENT;
    uniform_param.lookup.ident      = "bgcolor";
-   uniform_param.lookup.idx        = shader_info.idx;
+   uniform_param.lookup.idx        = VIDEO_SHADER_STOCK_BLEND;
    uniform_param.lookup.add_prefix = true;
    uniform_param.lookup.enable     = true;
 
@@ -860,7 +836,7 @@ static void gl_render_osd_background(
    video_shader_driver_set_parameter(uniform_param);
 
    glDrawArrays(GL_TRIANGLES, 0, coords.vertices);
-end:
+
    /* reset uniform back to zero so it is not used for anything else */
    uniform_param.result.f.v0       = 0.0f;
    uniform_param.result.f.v1       = 0.0f;
@@ -948,25 +924,23 @@ static INLINE void gl_draw_texture(gl_t *gl, video_frame_info_t *video_info)
    color[14]              = 1.0f;
    color[15]              = gl->menu_texture_alpha;
 
-   if (!gl->menu_texture)
-      return;
-
    gl->coords.vertex      = vertexes_flipped;
    gl->coords.tex_coord   = tex_coords;
    gl->coords.color       = color;
+
    glBindTexture(GL_TEXTURE_2D, gl->menu_texture);
 
    video_info->cb_shader_use(gl,
          video_info->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
 
-   gl->coords.vertices  = 4;
+   gl->coords.vertices    = 4;
 
-   coords.handle_data   = NULL;
-   coords.data          = &gl->coords;
+   coords.handle_data     = NULL;
+   coords.data            = &gl->coords;
 
-   video_shader_driver_set_coords(coords);
+   video_driver_set_coords(&coords);
 
-   video_info->cb_shader_set_mvp(gl,
+   video_info->cb_set_mvp(gl,
          video_info->shader_data, &gl->mvp_no_rot);
 
    glEnable(GL_BLEND);
@@ -982,9 +956,9 @@ static INLINE void gl_draw_texture(gl_t *gl, video_frame_info_t *video_info)
 
    glDisable(GL_BLEND);
 
-   gl->coords.vertex    = gl->vertex_ptr;
-   gl->coords.tex_coord = gl->tex_info.coord;
-   gl->coords.color     = gl->white_color_ptr;
+   gl->coords.vertex      = gl->vertex_ptr;
+   gl->coords.tex_coord   = gl->tex_info.coord;
+   gl->coords.color       = gl->white_color_ptr;
 }
 #endif
 
@@ -1146,9 +1120,9 @@ static bool gl_frame(void *data, const void *frame,
    coords.handle_data   = NULL;
    coords.data          = &gl->coords;
 
-   video_shader_driver_set_coords(coords);
+   video_driver_set_coords(&coords);
 
-   video_info->cb_shader_set_mvp(gl, video_info->shader_data, &gl->mvp);
+   video_info->cb_set_mvp(gl, video_info->shader_data, &gl->mvp);
 
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
@@ -1165,7 +1139,7 @@ static bool gl_frame(void *data, const void *frame,
    {
       menu_driver_frame(video_info);
 
-      if (gl->menu_texture_enable)
+      if (gl->menu_texture)
          gl_draw_texture(gl, video_info);
    }
 #endif
@@ -1318,10 +1292,6 @@ static void gl_free(void *data)
       scaler_ctx_gen_reset(&gl->pbo_readback_scaler);
    }
 
-   if (gl->renderchain_driver->free)
-      gl->renderchain_driver->free(gl);
-   gl_deinit_chain(gl);
-
    if (gl->core_context_in_use)
    {
       if (gl->renderchain_driver->unbind_vao)
@@ -1329,6 +1299,10 @@ static void gl_free(void *data)
       if (gl->renderchain_driver->free_vao)
          gl->renderchain_driver->free_vao(gl);
    }
+
+   if (gl->renderchain_driver->free)
+      gl->renderchain_driver->free(gl);
+   gl_deinit_chain(gl);
 
    video_context_driver_free();
 
@@ -1357,35 +1331,7 @@ static void gl_set_nonblock_state(void *data, bool state)
 
 static bool resolve_extensions(gl_t *gl, const char *context_ident)
 {
-   settings_t *settings = config_get_ptr();
-   struct retro_hw_render_callback *hwr =
-      video_driver_get_hw_context();
-
-   if (hwr->context_type == RETRO_HW_CONTEXT_OPENGL_CORE)
-   {
-      gfx_ctx_flags_t flags;
-
-      if (!gl_check_capability(GL_CAPS_VAO))
-      {
-         RARCH_ERR("[GL]: Failed to initialize VAOs.\n");
-         return false;
-      }
-
-      gl_query_core_context_set(true);
-      gl->core_context_in_use = true;
-
-      /**
-       * Ensure that the rest of the frontend knows we have a core context
-       */
-      flags.flags = 0;
-      BIT32_SET(flags.flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
-
-      video_context_driver_set_flags(&flags);
-
-      RARCH_LOG("[GL]: Using Core GL context, setting up VAO...\n");
-      if (gl->renderchain_driver->new_vao)
-         gl->renderchain_driver->new_vao(gl);
-   }
+   settings_t *settings          = config_get_ptr();
 
    /* have_es2_compat - GL_RGB565 internal format support.
     * Even though ES2 support is claimed, the format
@@ -1397,12 +1343,15 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
     * have_sync       - Use ARB_sync to reduce latency.
     */
    gl->has_srgb_fbo              = false;
+   gl->has_fbo                   = gl_check_capability(GL_CAPS_FBO);
    gl->have_full_npot_support    = gl_check_capability(GL_CAPS_FULL_NPOT_SUPPORT);
    gl->have_mipmap               = gl_check_capability(GL_CAPS_MIPMAP);
    gl->have_es2_compat           = gl_check_capability(GL_CAPS_ES2_COMPAT);
    gl->has_fp_fbo                = gl_check_capability(GL_CAPS_FP_FBO);
    gl->support_unpack_row_length = gl_check_capability(GL_CAPS_UNPACK_ROW_LENGTH);
    gl->have_sync                 = gl_check_capability(GL_CAPS_SYNC);
+   /* GLES3 has unpack_subimage and sRGB in core. */
+   gl->has_srgb_fbo_gles3        = gl_check_capability(GL_CAPS_SRGB_FBO_ES3);
 
    if (!settings->bools.video_force_srgb_disable)
       gl->has_srgb_fbo           = gl_check_capability(GL_CAPS_SRGB_FBO);
@@ -1419,9 +1368,6 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
       RARCH_WARN("[GL]: GLES implementation does not have BGRA8888 extension.\n"
                  "32-bit path will require conversion.\n");
    }
-
-   /* GLES3 has unpack_subimage and sRGB in core. */
-   gl->has_srgb_fbo_gles3        = gl_check_capability(GL_CAPS_SRGB_FBO_ES3);
    /* TODO/FIXME - No extensions for float FBO currently. */
 #endif
 
@@ -1555,20 +1501,20 @@ static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
    unsigned minor                       = hwr->version_minor;
 
 #ifdef HAVE_OPENGLES
-   api         = GFX_CTX_OPENGL_ES_API;
-   api_name    = "OpenGL ES 2.0";
+   api                                  = GFX_CTX_OPENGL_ES_API;
+   api_name                             = "OpenGL ES 2.0";
 
    if (hwr->context_type == RETRO_HW_CONTEXT_OPENGLES3)
    {
-      major    = 3;
-      minor    = 0;
-      api_name = "OpenGL ES 3.0";
+      major                             = 3;
+      minor                             = 0;
+      api_name                          = "OpenGL ES 3.0";
    }
    else if (hwr->context_type == RETRO_HW_CONTEXT_OPENGLES_VERSION)
-      api_name = "OpenGL ES 3.1+";
+      api_name                          = "OpenGL ES 3.1+";
 #else
-   api         = GFX_CTX_OPENGL_API;
-   api_name    = "OpenGL";
+   api                                  = GFX_CTX_OPENGL_API;
+   api_name                             = "OpenGL";
 #endif
 
    (void)api_name;
@@ -1796,6 +1742,45 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    rglgen_resolve_symbols(ctx_driver->get_proc_address);
 #endif
 
+   hwr = video_driver_get_hw_context();
+
+   if (hwr->context_type == RETRO_HW_CONTEXT_OPENGL_CORE)
+   {
+      gfx_ctx_flags_t flags;
+
+      gl_query_core_context_set(true);
+      gl->core_context_in_use = true;
+
+      /**
+       * Ensure that the rest of the frontend knows we have a core context
+       */
+      flags.flags = 0;
+      BIT32_SET(flags.flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
+
+      video_context_driver_set_flags(&flags);
+
+      RARCH_LOG("[GL]: Using Core GL context, setting up VAO...\n");
+      if (!gl_check_capability(GL_CAPS_VAO))
+      {
+         RARCH_ERR("[GL]: Failed to initialize VAOs.\n");
+         goto error;
+      }
+   }
+
+   if (!renderchain_gl_init_first(&gl->renderchain_driver,
+	   &gl->renderchain_data))
+   {
+	   RARCH_ERR("[GL]: Renderchain could not be initialized.\n");
+      goto error;
+   }
+
+   if (gl->renderchain_driver->restore_default_state)
+      gl->renderchain_driver->restore_default_state(gl);
+
+   if (hwr->context_type == RETRO_HW_CONTEXT_OPENGL_CORE)
+      if (gl->renderchain_driver->new_vao)
+         gl->renderchain_driver->new_vao(gl);
+
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
    glBlendEquation(GL_FUNC_ADD);
 
@@ -1828,8 +1813,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    RARCH_LOG("[GL]: Using resolution %ux%u\n", temp_width, temp_height);
 
-   hwr = video_driver_get_hw_context();
-
    gl->vertex_ptr        = hwr->bottom_left_origin
       ? vertexes : vertexes_flipped;
 
@@ -1839,10 +1822,9 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
     */
    gl->textures         = 4;
    gl->hw_render_use    = false;
-#ifdef HAVE_FBO
-   if (hwr->context_type != RETRO_HW_CONTEXT_NONE)
+
+   if (gl->has_fbo && hwr->context_type != RETRO_HW_CONTEXT_NONE)
       gl->hw_render_use = true;
-#endif
 
    if (gl->hw_render_use)
    {
@@ -1925,16 +1907,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    gl_set_texture_fmts(gl, video->rgb32);
 
-   if (!renderchain_gl_init_first(&gl->renderchain_driver,
-	   &gl->renderchain_data))
-   {
-	   RARCH_ERR("[GL]: Renderchain could not be initialized.\n");
-	   return false;
-   }
-
-   if (gl->renderchain_driver->restore_default_state)
-      gl->renderchain_driver->restore_default_state(gl);
-
    memcpy(gl->tex_info.coord, tex_coords, sizeof(gl->tex_info.coord));
    gl->coords.vertex         = gl->vertex_ptr;
    gl->coords.tex_coord      = gl->tex_info.coord;
@@ -1957,12 +1929,15 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    if (gl->renderchain_driver->init)
       gl->renderchain_driver->init(gl, gl->tex_w, gl->tex_h);
 
-   if (gl->hw_render_use &&
-         gl->renderchain_driver->init_hw_render &&
-         !gl->renderchain_driver->init_hw_render(gl, gl->tex_w, gl->tex_h))
+   if (gl->has_fbo)
    {
-      RARCH_ERR("[GL]: Hardware rendering context initialization failed.\n");
-      goto error;
+      if (gl->hw_render_use &&
+            gl->renderchain_driver->init_hw_render &&
+            !gl->renderchain_driver->init_hw_render(gl, gl->tex_w, gl->tex_h))
+      {
+         RARCH_ERR("[GL]: Hardware rendering context initialization failed.\n");
+         goto error;
+      }
    }
 
    inp.input      = input;
@@ -2089,11 +2064,8 @@ static void gl_update_tex_filter_frame(gl_t *gl)
       if (!gl->texture[i])
          continue;
 
-      glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl->wrap_mode);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl->wrap_mode);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_mag_filter);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_min_filter);
+      gl_bind_texture(gl->texture[i], gl->wrap_mode, gl->tex_mag_filter,
+            gl->tex_min_filter);
    }
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
@@ -2136,11 +2108,13 @@ static bool gl_set_shader(void *data,
          goto error;
    }
 
-   if (gl->renderchain_driver->deinit_fbo)
-      gl->renderchain_driver->deinit_fbo(gl);
-#ifdef HAVE_FBO
-   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-#endif
+   if (gl->fbo_inited)
+   {
+      if (gl->renderchain_driver->deinit_fbo)
+         gl->renderchain_driver->deinit_fbo(gl);
+
+      glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+   }
 
    init_data.shader_type = type;
    init_data.shader      = NULL;
@@ -2167,7 +2141,7 @@ static bool gl_set_shader(void *data,
 
    if (textures > gl->textures) /* Have to reinit a bit. */
    {
-      if (gl->hw_render_use &&
+      if (gl->hw_render_use && gl->fbo_inited &&
             gl->renderchain_driver->deinit_hw_render)
          gl->renderchain_driver->deinit_hw_render(gl);
 
@@ -2545,7 +2519,27 @@ static void gl_unload_texture(void *data, uintptr_t id)
    glDeleteTextures(1, &glid);
 }
 
+static void gl_set_coords(void *handle_data, void *shader_data,
+      const struct video_coords *coords)
+{
+   gl_t *gl = (gl_t*)handle_data;
+   if (gl && gl->renderchain_driver->set_coords)
+      gl->renderchain_driver->set_coords(handle_data,
+            shader_data, coords);
+}
+
+static void gl_set_mvp(void *data, void *shader_data,
+      const void *mat_data)
+{
+   gl_t *gl = (gl_t*)data;
+   if (gl && gl->renderchain_driver->set_mvp)
+      gl->renderchain_driver->set_mvp(data,
+            shader_data, mat_data);
+}
+
 static const video_poke_interface_t gl_poke_interface = {
+   gl_set_coords,
+   gl_set_mvp,
    gl_load_texture,
    gl_unload_texture,
    gl_set_video_mode,
@@ -2553,11 +2547,7 @@ static const video_poke_interface_t gl_poke_interface = {
    gl_get_video_output_size,
    gl_get_video_output_prev,
    gl_get_video_output_next,
-#ifdef HAVE_FBO
    gl_get_current_framebuffer,
-#else
-   NULL,
-#endif
    gl_get_proc_address,
    gl_set_aspect_ratio,
    gl_apply_state_changes,

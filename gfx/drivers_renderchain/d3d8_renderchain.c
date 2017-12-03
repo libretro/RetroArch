@@ -43,12 +43,16 @@ typedef struct d3d8_renderchain
    uint64_t frame_count;
 } d3d8_renderchain_t;
 
-static void renderchain_set_mvp(void *data, unsigned vp_width,
+static void d3d8_renderchain_set_mvp(
+      void *chain_data,
+      void *data, unsigned vp_width,
       unsigned vp_height, unsigned rotation)
 {
    d3d_video_t      *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
    D3DMATRIX p_out, p_rotate, mat;
+
+   (void)chain_data;
 
    d3d_matrix_ortho_off_center_lh(&mat, 0, vp_width,  vp_height, 0, 0.0f, 1.0f);
    d3d_matrix_identity(&p_out);
@@ -67,7 +71,7 @@ static void d3d8_renderchain_clear(void *data)
    d3d_vertex_buffer_free(chain->vertex_buf, chain->vertex_decl);
 }
 
-static bool renderchain_create_first_pass(void *data,
+static bool d3d8_renderchain_create_first_pass(void *data,
       const video_info_t *info)
 {
    d3d_video_t *d3d          = (d3d_video_t*)data;
@@ -106,7 +110,7 @@ static bool renderchain_create_first_pass(void *data,
    return true;
 }
 
-static void renderchain_set_vertices(void *data, unsigned pass,
+static void d3d8_renderchain_set_vertices(void *data, unsigned pass,
       unsigned vert_width, unsigned vert_height, uint64_t frame_count)
 {
    unsigned width, height;
@@ -171,7 +175,7 @@ static void renderchain_set_vertices(void *data, unsigned pass,
    }
 }
 
-static void renderchain_blit_to_texture(void *data, const void *frame,
+static void d3d8_renderchain_blit_to_texture(void *data, const void *frame,
    unsigned width, unsigned height, unsigned pitch)
 {
    D3DLOCKED_RECT d3dlr;
@@ -254,7 +258,7 @@ static bool d3d8_renderchain_init(void *data,
    chain->tex_w                 = link_info->tex_w;
    chain->tex_h                 = link_info->tex_h;
 
-   if (!renderchain_create_first_pass(d3d, video_info))
+   if (!d3d8_renderchain_create_first_pass(d3d, video_info))
       return false;
 
    /* FIXME */
@@ -283,17 +287,17 @@ static bool d3d8_renderchain_render(void *data, const void *frame,
 {
    unsigned i;
    unsigned width, height;
-   d3d_video_t      *d3d    = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr    = (LPDIRECT3DDEVICE)d3d->dev;
-   settings_t *settings     = config_get_ptr();
+   d3d_video_t      *d3d     = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr     = (LPDIRECT3DDEVICE)d3d->dev;
+   settings_t *settings      = config_get_ptr();
    d3d8_renderchain_t *chain = (d3d8_renderchain_t*)d3d->renderchain_data;
 
    chain->frame_count++;
 
    video_driver_get_size(&width, &height);
 
-   renderchain_blit_to_texture(chain, frame, frame_width, frame_height, pitch);
-   renderchain_set_vertices(d3d, 1, frame_width, frame_height, chain->frame_count);
+   d3d8_renderchain_blit_to_texture(chain, frame, frame_width, frame_height, pitch);
+   d3d8_renderchain_set_vertices(d3d, 1, frame_width, frame_height, chain->frame_count);
 
    d3d_set_texture(d3dr, 0, chain->tex);
    d3d_set_viewports(chain->dev, &d3d->final_viewport);
@@ -307,7 +311,7 @@ static bool d3d8_renderchain_render(void *data, const void *frame,
       d3d_set_stream_source(d3dr, i, chain->vertex_buf, 0, sizeof(Vertex));
 
    d3d_draw_primitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
-   renderchain_set_mvp(d3d, width, height, d3d->dev_rotation);
+   d3d8_renderchain_set_mvp(chain, d3d, width, height, d3d->dev_rotation);
 
    return true;
 }
@@ -365,7 +369,8 @@ static bool d3d8_renderchain_reinit(void *data,
    return true;
 }
 
-static void d3d8_renderchain_viewport_info(void *data, struct video_viewport *vp)
+static void d3d8_renderchain_viewport_info(void *data,
+      struct video_viewport *vp)
 {
    unsigned width, height;
    d3d_video_t *d3d = (d3d_video_t*)data;
@@ -385,6 +390,7 @@ static void d3d8_renderchain_viewport_info(void *data, struct video_viewport *vp
 }
 
 d3d_renderchain_driver_t d3d8_d3d_renderchain = {
+   d3d8_renderchain_set_mvp,
    d3d8_renderchain_free,
    d3d8_renderchain_new,
    d3d8_renderchain_reinit,

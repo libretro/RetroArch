@@ -173,26 +173,20 @@ static void content_load_init_wrap(
    *argc = 0;
    argv[(*argc)++] = strdup("retroarch");
 
-#ifdef HAVE_DYNAMIC
-   if (!args->no_content)
+   if (args->content_path)
    {
-#endif
-      if (args->content_path)
-      {
-         RARCH_LOG("Using content: %s.\n", args->content_path);
-         argv[(*argc)++] = strdup(args->content_path);
-      }
+      RARCH_LOG("Using content: %s.\n", args->content_path);
+      argv[(*argc)++] = strdup(args->content_path);
+   }
 #ifdef HAVE_MENU
-      else
-      {
-         RARCH_LOG("%s\n",
-               msg_hash_to_str(MSG_NO_CONTENT_STARTING_DUMMY_CORE));
-         argv[(*argc)++] = strdup("--menu");
-      }
-#endif
-#ifdef HAVE_DYNAMIC
+   else
+   {
+      RARCH_LOG("%s\n",
+            msg_hash_to_str(MSG_NO_CONTENT_STARTING_DUMMY_CORE));
+      argv[(*argc)++] = strdup("--menu");
    }
 #endif
+
 
    if (args->sram_path)
    {
@@ -920,7 +914,9 @@ static bool task_load_content(content_ctx_info_t *content_info,
       {
          const char *core_path      = NULL;
          const char *core_name      = NULL;
+         const char *label          = NULL;
          playlist_t *playlist_tmp   = g_defaults.content_history;
+         global_t *global           = global_get_ptr();
 
          switch (path_is_media_type(tmp))
          {
@@ -955,19 +951,18 @@ static bool task_load_content(content_ctx_info_t *content_info,
             content_ctx->history_list_enable = settings->bools.history_list_enable;
          }
 
+         if (global && !string_is_empty(global->name.label))
+            label = global->name.label;
+
          if (
-                  content_ctx->history_list_enable 
-               && playlist_tmp 
-               && playlist_push(
+               content_ctx->history_list_enable 
+               && playlist_tmp)
+            command_playlist_push_write(
                   playlist_tmp,
                   tmp,
-                  NULL,
+                  label,
                   core_path,
-                  core_name,
-                  NULL,
-                  NULL)
-               )
-            playlist_write_file(playlist_tmp);
+                  core_name);
       }
 
       free(tmp);
@@ -1127,7 +1122,7 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
       if (error_string)
       {
          runloop_msg_queue_push(error_string, 2, 90, true);
-         RARCH_ERR(error_string);
+         RARCH_ERR("%s\n", error_string);
          free(error_string);
       }
 
@@ -1150,6 +1145,7 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
 bool task_push_load_content_from_playlist_from_menu(
       const char *core_path,
       const char *fullpath,
+      const char *label,
       content_ctx_info_t *content_info,
       retro_task_callback_t cb,
       void *user_data)
@@ -1191,6 +1187,10 @@ bool task_push_load_content_from_playlist_from_menu(
          content_ctx.name_bps                 = strdup(global->name.bps);
       if (!string_is_empty(global->name.ups))
          content_ctx.name_ups                 = strdup(global->name.ups);
+      if (label)
+         strlcpy(global->name.label, label, sizeof(global->name.label));
+      else
+         global->name.label[0] = '\0';
    }
 
    if (!string_is_empty(settings->paths.directory_system))
@@ -1213,7 +1213,7 @@ bool task_push_load_content_from_playlist_from_menu(
       if (error_string)
       {
          runloop_msg_queue_push(error_string, 2, 90, true);
-         RARCH_ERR(error_string);
+         RARCH_ERR("%s\n", error_string);
          free(error_string);
       }
 
@@ -1315,7 +1315,7 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
       if (error_string)
       {
          runloop_msg_queue_push(error_string, 2, 90, true);
-         RARCH_ERR(error_string);
+         RARCH_ERR("%s\n", error_string);
          free(error_string);
       }
 
@@ -1443,7 +1443,7 @@ bool task_push_load_content_with_new_core_from_menu(
       if (error_string)
       {
          runloop_msg_queue_push(error_string, 2, 90, true);
-         RARCH_ERR(error_string);
+         RARCH_ERR("%s\n", error_string);
          free(error_string);
       }
 
@@ -1548,7 +1548,7 @@ end:
       if (error_string)
       {
          runloop_msg_queue_push(error_string, 2, 90, true);
-         RARCH_ERR(error_string);
+         RARCH_ERR("%s\n", error_string);
          free(error_string);
       }
 

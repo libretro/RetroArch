@@ -38,6 +38,7 @@ typedef struct
 typedef struct
 {
    bool supports_no_game;
+   bool database_match_archive_member;
    size_t firmware_count;
    char *path;
    void *config_data;
@@ -119,6 +120,8 @@ bool core_info_find(core_info_ctx_find_t *info, const char *name);
 bool core_info_load(core_info_ctx_find_t *info);
 
 bool core_info_database_supports_content_path(const char *database_path, const char *path);
+
+bool core_info_database_match_archive_member(const char *database_path);
 
 bool core_info_unsupported_content_path(const char *path);
 

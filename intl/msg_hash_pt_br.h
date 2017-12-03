@@ -661,6 +661,28 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS,
 	 "Analógico Direito Y+ (baixo)"
 	)
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_TRIGGER,
+      "Gatinho da Pistola")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD,
+      "Recarregar Pistola")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
+      "Aux A da Pistola")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B,
+      "Aux B da Pistola")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C,
+      "Aux C da Pistola")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_START,
+      "Start da Pistola")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_SELECT,
+      "Select da Pistola")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_UP,
+      "D-pad Cima da Pistola")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_DOWN,
+      "D-pad Baixo da Pistola")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_LEFT,
+      "D-pad Esquerdo da Pistola")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
+      "D-pad Direito da Pistola")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
 	 "Habilitar Autoconfiguração"
 	)
@@ -757,6 +779,24 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_KEY,
 	 "(Tecla: %s)"
 	)
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
+      "Mouse 1")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_RIGHT,
+      "Mouse 2")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_MIDDLE,
+      "Mouse 3")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_BUTTON4,
+      "Mouse 4")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_BUTTON5,
+      "Mouse 5")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_UP,
+      "Roda do Mouse para Cima")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_DOWN,
+      "Roda do Mouse para Baixo")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_UP,
+      "Roda do Mouse para Esquerda")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_DOWN,
+      "Roda do Mouse para Diretira")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
 	 "Tipo de Mapeamento para Gamepad no Teclado"
 	)
@@ -857,10 +897,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION,
 	 "Câmera Lenta"
 	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS,
-	 "Posição do Estado de Jogo -"
+	 "Compartimento do Estado de Jogo -"
 	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS,
-	 "Posição do Estado de Jogo +"
+	 "Compartimento do Estado de Jogo +"
 	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_DOWN,
 	 "Volume -"
@@ -1525,6 +1565,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
      "Adicionar aos Favoritos"
 	)
+MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES_PLAYLIST,
+     "Adicionar aos Favoritos"
+	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RUN,
 	 "Executar"
 	)
@@ -1661,7 +1704,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
 	 "Iniciar Processador de Vídeo"
 	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_STATE_SLOT,
-	 "Posição do Estado de Jogo"
+	 "Compartimento do Estado de Jogo"
 	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_STATUS,
 	 "Condição"
@@ -2212,6 +2255,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_PIXEL,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROACTIVE,
 	 "RetroActive"
 	)
+MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROSYSTEM,
+	 "Retrosystem"
+	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_DOTART,
 	 "Dot-Art"
 	)
@@ -2729,7 +2775,7 @@ MSG_HASH(MSG_FOUND_FIRST_DATA_TRACK_ON_FILE,
 	 "Encontrada primeira faixa de dados no arquivo"
 	)
 MSG_HASH(MSG_FOUND_LAST_STATE_SLOT,
-	 "Encontrada última posição de Estado de Jogo"
+	 "Encontrada último compartimento de Estado de Jogo"
 	)
 MSG_HASH(MSG_FOUND_SHADER,
 	 "Shader encontrado"
@@ -2798,10 +2844,10 @@ MSG_HASH(MSG_LIBRETRO_FRONTEND,
 	 "Frontend para Libretro"
 	)
 MSG_HASH(MSG_LOADED_STATE_FROM_SLOT,
-	 "Estado de Jogo carregado da posição #%d."
+	 "Estado de Jogo carregado do compartimento #%d."
 	)
 MSG_HASH(MSG_LOADED_STATE_FROM_SLOT_AUTO,
-	 "Estado de Jogo carregado da posição #-1 (automático)."
+	 "Estado de Jogo carregado do compartimento #-1 (automático)."
 	)
 MSG_HASH(MSG_LOADING,
 	 "Carregando"
@@ -2927,10 +2973,10 @@ MSG_HASH(MSG_SAVED_NEW_CONFIG_TO,
 	 "Nova configuração salva em"
 	)
 MSG_HASH(MSG_SAVED_STATE_TO_SLOT,
-	 "Estado de Jogo salvo na posição #%d."
+	 "Estado de Jogo salvo no compartimento #%d."
 	)
 MSG_HASH(MSG_SAVED_STATE_TO_SLOT_AUTO,
-	 "Estado de Jogo salvo na posição #-1 (automático)."
+	 "Estado de Jogo salvo no compartimento #-1 (automático)."
 	)
 MSG_HASH(MSG_SAVED_SUCCESSFULLY_TO,
 	 "Salvo com sucesso em"
@@ -2965,6 +3011,9 @@ MSG_HASH(MSG_SKIPPING_SRAM_LOAD,
 MSG_HASH(MSG_SLOW_MOTION,
 	 "Câmera Lenta."
 	)
+MSG_HASH(MSG_FAST_FORWARD,
+    "Avanço rápido."
+   )
 MSG_HASH(MSG_SLOW_MOTION_REWIND,
 	 "Voltar Atrás em Câmera Lenta."
 	)
@@ -2981,7 +3030,7 @@ MSG_HASH(MSG_STATE_SIZE,
 	 "Tamanho do Estado de Jogo"
 	)
 MSG_HASH(MSG_STATE_SLOT,
-	 "Posição do Estado de Jogo"
+	 "Compartimento do Estado de Jogo"
 	)
 MSG_HASH(MSG_TAKING_SCREENSHOT,
 	 "Fazendo captura de tela"
@@ -3553,6 +3602,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION,
 MSG_HASH(MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES,
      "Adicionar o item aos seus favoritos."
 	)
+MSG_HASH(MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES_PLAYLIST,
+     "Adicionar o item aos seus favoritos."
+	)
 MSG_HASH(MENU_ENUM_SUBLABEL_RUN,
 	 "Iniciar o conteúdo."
 	)
@@ -3584,10 +3636,10 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
 	 "Fecha o conteúdo atual. Alterações não salvas serão perdidas."
 	)
 MSG_HASH(MENU_ENUM_SUBLABEL_LOAD_STATE,
-	 "Carregar um Estado de Jogo da posição selecionado atualmente."
+	 "Carregar um Estado de Jogo do compartimento selecionado atualmente."
 	)
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVE_STATE,
-	 "Salvar um Estado de Jogo na posição selecionado atualmente."
+	 "Salvar um Estado de Jogo no compartimento selecionado atualmente."
 	)
 MSG_HASH(MENU_ENUM_SUBLABEL_RESUME,
 	 "Retomar a execução do conteúdo atual e sair do Menu Rápido."
@@ -3596,7 +3648,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_RESUME_CONTENT,
 	 "Retomar a execução do conteúdo atual e sair do Menu Rápido."
 	)
 MSG_HASH(MENU_ENUM_SUBLABEL_STATE_SLOT,
-	 "Altera a posição do Estado de Jogo selecionado atualmente."
+	 "Altera o compartimento do Estado de Jogo selecionado atualmente."
 	)
 MSG_HASH(MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE,
 	 "Se um Estado de Jogo for carregado, o conteúdo voltará ao estado anterior ao carregamento."
@@ -4129,3 +4181,9 @@ MSG_HASH(MSG_INPUT_KIOSK_MODE_PASSWORD_OK,
 MSG_HASH(MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
       "Password incorrect."
    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
+      "Automatically add content to playlist")
+MSG_HASH(MENU_ENUM_SUBLABEL_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
+      "Automatically scans loaded content so they appear inside playlists.")
+MSG_HASH(MSG_SCANNING_OF_FILE_FINISHED,
+      "Scanning of file finished")

@@ -27,7 +27,7 @@
 #include "config.h"
 #endif
 
-#if defined(HAVE_FBO) && defined(HAVE_PSGL)
+#if defined(HAVE_PSGL)
 #define glGenFramebuffers glGenFramebuffersOES
 #define glBindFramebuffer glBindFramebufferOES
 #define glFramebufferTexture2D glFramebufferTexture2DOES
@@ -92,12 +92,8 @@
 #define glGenerateMipmap glGenerateMipmapOES
 #endif
 
-#ifdef HAVE_FBO
-
 #if defined(__APPLE__) || defined(HAVE_PSGL)
 #define GL_RGBA32F GL_RGBA32F_ARB
-#endif
-
 #endif
 
 #if defined(HAVE_PSGL)
@@ -144,18 +140,6 @@
 #define RARCH_GL_INTERNAL_FORMAT16_565 GL_RGB565
 #define RARCH_GL_TEXTURE_TYPE16_565 GL_RGB
 #define RARCH_GL_FORMAT16_565 GL_UNSIGNED_SHORT_5_6_5
-#endif
-
-#if defined(HAVE_OPENGL_MODERN) || defined(HAVE_OPENGLES2) || defined(HAVE_OPENGLES3) || defined(HAVE_OPENGLES_3_1) || defined(HAVE_OPENGLES_3_2) || defined(HAVE_PSGL)
-
-#ifndef NO_GL_FF_VERTEX
-#define NO_GL_FF_VERTEX
-#endif
-
-#ifndef NO_GL_FF_MATRIX
-#define NO_GL_FF_MATRIX
-#endif
-
 #endif
 
 #if defined(HAVE_OPENGLES2) /* TODO: Figure out exactly what. */

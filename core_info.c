@@ -389,6 +389,10 @@ static core_info_list_t *core_info_list_new(const char *path)
                &tmp_bool))
             core_info[i].supports_no_game = tmp_bool;
 
+         if (config_get_bool(conf, "database_match_archive_member",
+               &tmp_bool))
+            core_info[i].database_match_archive_member = tmp_bool;
+
          core_info[i].config_data = conf;
       }
       else
@@ -821,6 +825,46 @@ size_t core_info_list_num_info_files(core_info_list_t *core_info_list)
    }
 
    return num;
+}
+
+bool core_info_database_match_archive_member(const char *database_path)
+{
+   char *database           = NULL;
+   const char *new_path     = path_basename(database_path);
+
+   if (string_is_empty(new_path))
+      return false;
+
+   database                 = strdup(new_path);
+
+   if (string_is_empty(database))
+      goto error;
+
+   path_remove_extension(database);
+
+   if (core_info_curr_list)
+   {
+      size_t i;
+
+      for (i = 0; i < core_info_curr_list->count; i++)
+      {
+         const core_info_t *info = &core_info_curr_list->list[i];
+
+         if (!info->database_match_archive_member)
+             continue;
+
+         if (!string_list_find_elem(info->databases_list, database))
+             continue;
+
+         free(database);
+         return true;
+      }
+   }
+
+error:
+   if (database)
+      free(database);
+   return false;
 }
 
 bool core_info_database_supports_content_path(const char *database_path, const char *path)

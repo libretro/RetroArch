@@ -50,10 +50,6 @@
 #include "../../configuration.h"
 #include "../../verbosity.h"
 
-#if defined(_WIN32) && !defined(_XBOX)
-#include "../common/win32_common.h"
-#endif
-
 typedef struct gl2_renderchain
 {
    void *empty;
@@ -251,7 +247,6 @@ static void gl2_renderchain_render(
       const struct video_tex_info *feedback_info)
 {
    int i;
-   video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords;
    video_shader_ctx_params_t params;
    video_shader_ctx_info_t shader_info;
@@ -274,7 +269,6 @@ static void gl2_renderchain_render(
     * and render all passes from FBOs, to another FBO. */
    for (i = 1; i < gl->fbo_pass; i++)
    {
-      video_shader_ctx_mvp_t mvp;
       video_shader_ctx_coords_t coords;
       video_shader_ctx_params_t params;
       const struct video_fbo_rect *rect = &gl->fbo_rect[i];
@@ -337,12 +331,10 @@ static void gl2_renderchain_render(
       coords.handle_data  = NULL;
       coords.data         = &gl->coords;
 
-      video_shader_driver_set_coords(coords);
+      video_driver_set_coords(&coords);
 
-      mvp.data = gl;
-      mvp.matrix = &gl->mvp;
-
-      video_shader_driver_set_mvp(mvp);
+      video_info->cb_set_mvp(gl,
+            video_info->shader_data, &gl->mvp);
 
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
    }
@@ -414,12 +406,11 @@ static void gl2_renderchain_render(
    coords.handle_data   = NULL;
    coords.data          = &gl->coords;
 
-   video_shader_driver_set_coords(coords);
+   video_driver_set_coords(&coords);
 
-   mvp.data             = gl;
-   mvp.matrix           = &gl->mvp;
+   video_info->cb_set_mvp(gl,
+         video_info->shader_data, &gl->mvp);
 
-   video_shader_driver_set_mvp(mvp);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
    gl->coords.tex_coord = gl->tex_info.coord;
@@ -428,8 +419,6 @@ static void gl2_renderchain_render(
 static void gl2_renderchain_deinit_fbo(void *data)
 {
    gl_t *gl = (gl_t*)data;
-   if (!gl->fbo_inited)
-      return;
 
    glDeleteTextures(gl->fbo_pass, gl->fbo_texture);
    glDeleteFramebuffers(gl->fbo_pass, gl->fbo);
@@ -526,23 +515,19 @@ error:
 
 static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
 {
-   unsigned mip_level;
-   GLenum min_filter, mag_filter, wrap_enum;
+   GLenum mag_filter, wrap_enum;
    video_shader_ctx_filter_t filter_type;
    video_shader_ctx_wrap_t wrap = {0};
    bool fp_fbo                  = false;
-   bool mipmapped               = false;
    bool smooth                  = false;
    settings_t *settings         = config_get_ptr();
    GLuint base_filt             = settings->bools.video_smooth ? GL_LINEAR : GL_NEAREST;
    GLuint base_mip_filt         = settings->bools.video_smooth ? 
       GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST;
+   unsigned mip_level           = i + 2;
+   bool mipmapped               = video_shader_driver_mipmap_input(&mip_level);
+   GLenum min_filter            = mipmapped ? base_mip_filt : base_filt;
 
-   glBindTexture(GL_TEXTURE_2D, texture);
-
-   mip_level                    = i + 2;
-   mipmapped                    = video_shader_driver_mipmap_input(&mip_level);
-   min_filter                   = mipmapped ? base_mip_filt : base_filt;
    filter_type.index            = i + 2;
    filter_type.smooth           = &smooth;
 
@@ -560,10 +545,7 @@ static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
 
    wrap_enum  = gl_wrap_type_to_enum(wrap.type);
 
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_enum);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_enum);
+   gl_bind_texture(texture, wrap_enum, mag_filter, min_filter);
 
    fp_fbo   = gl->fbo_scale[i].fp_fbo;
 
@@ -785,7 +767,7 @@ void gl2_renderchain_init(
    if (shader_info.num == 1 && !scale.valid)
       return;
 
-   if (!gl_check_capability(GL_CAPS_FBO))
+   if (!gl->has_fbo)
    {
       RARCH_ERR("[GL]: Failed to locate FBO functions. Won't be able to use render-to-texture.\n");
       return;
@@ -884,7 +866,7 @@ static bool gl2_renderchain_init_hw_render(
    RARCH_LOG("[GL]: Max texture size: %d px, renderbuffer size: %d px.\n",
          max_fbo_size, max_renderbuffer_size);
 
-   if (!gl_check_capability(GL_CAPS_FBO))
+   if (!gl->has_fbo)
       return false;
 
    RARCH_LOG("[GL]: Supports FBO (render-to-texture).\n");
@@ -1121,54 +1103,6 @@ static void *gl2_renderchain_new(void)
    return renderchain;
 }
 
-#ifndef NO_GL_FF_VERTEX
-static void gl2_renderchain_ff_vertex(const void *data)
-{
-   const struct video_coords *coords = (const struct video_coords*)data;
-   /* Fall back to fixed function-style if needed and possible. */
-   glClientActiveTexture(GL_TEXTURE1);
-   glTexCoordPointer(2, GL_FLOAT, 0, coords->lut_tex_coord);
-   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-   glClientActiveTexture(GL_TEXTURE0);
-   glVertexPointer(2, GL_FLOAT, 0, coords->vertex);
-   glEnableClientState(GL_VERTEX_ARRAY);
-   glColorPointer(4, GL_FLOAT, 0, coords->color);
-   glEnableClientState(GL_COLOR_ARRAY);
-   glTexCoordPointer(2, GL_FLOAT, 0, coords->tex_coord);
-   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-}
-#endif
-
-#ifndef NO_GL_FF_MATRIX
-static void gl2_renderchain_ff_matrix(const void *data)
-{
-   math_matrix_4x4 ident;
-   const math_matrix_4x4 *mat = (const math_matrix_4x4*)data;
-
-   /* Fall back to fixed function-style if needed and possible. */
-   glMatrixMode(GL_PROJECTION);
-   glLoadMatrixf(mat->data);
-   glMatrixMode(GL_MODELVIEW);
-   matrix_4x4_identity(ident);
-   glLoadMatrixf(ident.data);
-}
-#endif
-
-#ifndef NO_GL_FF_VERTEX
-static void gl2_renderchain_disable_client_arrays(void)
-{
-   if (gl_query_core_context_in_use())
-      return;
-
-   glClientActiveTexture(GL_TEXTURE1);
-   glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-   glClientActiveTexture(GL_TEXTURE0);
-   glDisableClientState(GL_VERTEX_ARRAY);
-   glDisableClientState(GL_COLOR_ARRAY);
-   glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-}
-#endif
-
 #ifndef HAVE_OPENGLES
 static void gl2_renderchain_bind_vao(void *data)
 {
@@ -1355,28 +1289,24 @@ static void gl2_renderchain_copy_frame(
 #endif
 }
 
+#if !defined(HAVE_OPENGLES2) && !defined(HAVE_PSGL)
 static void gl2_renderchain_bind_pbo(unsigned idx)
 {
-#ifndef HAVE_OPENGLES2
    glBindBuffer(GL_PIXEL_PACK_BUFFER, (GLuint)idx);
-#endif
 }
 
 static void gl2_renderchain_unbind_pbo(void)
 {
-#ifndef HAVE_OPENGLES2
    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
-#endif
 }
 
 static void gl2_renderchain_init_pbo(unsigned size,
       const void *data)
 {
-#ifndef HAVE_OPENGLES2
    glBufferData(GL_PIXEL_PACK_BUFFER, size,
          (const GLvoid*)data, GL_STREAM_READ);
-#endif
 }
+#endif
 
 static void gl2_renderchain_readback(void *data,
       unsigned alignment,
@@ -1459,6 +1389,8 @@ static void gl2_renderchain_init_textures_reference(
 }
 
 gl_renderchain_driver_t gl2_renderchain = {
+   NULL,                                        /* set_coords */
+   NULL,                                        /* set_mvp    */
    gl2_renderchain_init_textures_reference,
 #ifdef HAVE_OPENGLES
    NULL,
@@ -1468,9 +1400,15 @@ gl_renderchain_driver_t gl2_renderchain = {
    gl2_renderchain_fence_free,
 #endif
    gl2_renderchain_readback,
+#if !defined(HAVE_OPENGLES2) && !defined(HAVE_PSGL)
    gl2_renderchain_init_pbo,
    gl2_renderchain_bind_pbo,
    gl2_renderchain_unbind_pbo,
+#else
+   NULL,
+   NULL,
+   NULL,
+#endif
    gl2_renderchain_copy_frame,
    gl2_renderchain_restore_default_state,
 #ifdef HAVE_OPENGLES
@@ -1484,18 +1422,9 @@ gl_renderchain_driver_t gl2_renderchain = {
    gl2_renderchain_bind_vao,
    gl2_renderchain_unbind_vao,
 #endif
-#ifdef NO_GL_FF_VERTEX
    NULL,
    NULL,
-#else
-   gl2_renderchain_disable_client_arrays,
-   gl2_renderchain_ff_vertex,
-#endif
-#ifdef NO_GL_FF_MATRIX
    NULL,
-#else
-   gl2_renderchain_ff_matrix,
-#endif
    gl2_renderchain_bind_backbuffer,
    gl2_renderchain_deinit_fbo,
    gl2_renderchain_viewport_info,

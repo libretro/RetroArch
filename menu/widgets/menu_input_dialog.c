@@ -59,7 +59,7 @@ void menu_input_dialog_end(void)
 {
    menu_input_dialog_keyboard_type             = 0;
    menu_input_dialog_keyboard_idx              = 0;
-   menu_input_dialog_keyboard_display          = false; 
+   menu_input_dialog_keyboard_display          = false;
    menu_input_dialog_keyboard_label[0]         = '\0';
    menu_input_dialog_keyboard_label_setting[0] = '\0';
 
@@ -86,17 +86,17 @@ unsigned menu_input_dialog_get_kb_idx(void)
 
 bool menu_input_dialog_get_display_kb(void)
 {
-   return menu_input_dialog_keyboard_display; 
+   return menu_input_dialog_keyboard_display;
 }
 
 void menu_input_dialog_display_kb(void)
 {
-   menu_input_dialog_keyboard_display = true; 
+   menu_input_dialog_keyboard_display = true;
 }
 
 void menu_input_dialog_hide_kb(void)
 {
-   menu_input_dialog_keyboard_display = false; 
+   menu_input_dialog_keyboard_display = false;
 }
 
 bool menu_input_dialog_start_search(void)
@@ -128,10 +128,14 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
       return false;
 
    menu_input_dialog_display_kb();
-   strlcpy(menu_input_dialog_keyboard_label, line->label, 
-         sizeof(menu_input_dialog_keyboard_label));
-   strlcpy(menu_input_dialog_keyboard_label_setting,
-         line->label_setting, sizeof(menu_input_dialog_keyboard_label_setting));
+
+   /* Only copy over the menu label and setting if they exist. */
+   if (line->label)
+      strlcpy(menu_input_dialog_keyboard_label, line->label,
+            sizeof(menu_input_dialog_keyboard_label));
+   if (line->label_setting)
+      strlcpy(menu_input_dialog_keyboard_label_setting,
+            line->label_setting, sizeof(menu_input_dialog_keyboard_label_setting));
 
    menu_input_dialog_keyboard_type   = line->type;
    menu_input_dialog_keyboard_idx    = line->idx;

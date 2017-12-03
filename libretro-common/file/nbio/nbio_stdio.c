@@ -1,3 +1,25 @@
+/* Copyright  (C) 2010-2017 The RetroArch team
+ *
+ * ---------------------------------------------------------------------------------------
+ * The following license statement only applies to this file (nbio_stdio.c).
+ * ---------------------------------------------------------------------------------------
+ *
+ * Permission is hereby granted, free of charge,
+ * to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+ * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -13,7 +35,7 @@
 
 #endif
 
-struct nbio_t
+struct nbio_stdio_t
 {
    FILE* f;
    void* data;
@@ -30,21 +52,21 @@ struct nbio_t
 };
 
 #if !defined(_WIN32) || defined(LEGACY_WIN32)
-static const char * modes[]={ "rb", "wb", "r+b", "rb", "wb", "r+b" };
+static const char    *stdio_modes[] = { "rb", "wb", "r+b", "rb", "wb", "r+b" };
 #else
-static const wchar_t * modes[]={ L"rb", L"wb", L"r+b", L"rb", L"wb", L"r+b" };
+static const wchar_t *stdio_modes[] = { L"rb", L"wb", L"r+b", L"rb", L"wb", L"r+b" };
 #endif
 
-struct nbio_t* nbio_open(const char * filename, unsigned mode)
+static void *nbio_stdio_open(const char * filename, unsigned mode)
 {
-   void *buf             = NULL;
-   struct nbio_t* handle = NULL;
-   size_t len            = 0;
+   void *buf                   = NULL;
+   struct nbio_stdio_t* handle = NULL;
+   size_t len                  = 0;
 #if !defined(_WIN32) || defined(LEGACY_WIN32)
-   FILE* f               = fopen(filename, modes[mode]);
+   FILE* f                     = fopen(filename, stdio_modes[mode]);
 #else
-   wchar_t *filename_wide = utf8_to_utf16_string_alloc(filename);
-   FILE* f               = _wfopen(filename_wide, modes[mode]);
+   wchar_t *filename_wide      = utf8_to_utf16_string_alloc(filename);
+   FILE* f                     = _wfopen(filename_wide, stdio_modes[mode]);
 
    if (filename_wide)
       free(filename_wide);
@@ -52,7 +74,7 @@ struct nbio_t* nbio_open(const char * filename, unsigned mode)
    if (!f)
       return NULL;
 
-   handle                = (struct nbio_t*)malloc(sizeof(struct nbio_t));
+   handle                = (struct nbio_stdio_t*)malloc(sizeof(struct nbio_stdio_t));
 
    if (!handle)
       goto error;
@@ -75,7 +97,7 @@ struct nbio_t* nbio_open(const char * filename, unsigned mode)
    if (len)
       buf                = malloc(len);
 
-   if (!buf)
+   if (len && !buf)
       goto error;
 
    handle->data          = buf;
@@ -92,8 +114,9 @@ error:
    return NULL;
 }
 
-void nbio_begin_read(struct nbio_t* handle)
+static void nbio_stdio_begin_read(void *data)
 {
+   struct nbio_stdio_t *handle = (struct nbio_stdio_t*)data;
    if (!handle)
       return;
 
@@ -109,8 +132,9 @@ void nbio_begin_read(struct nbio_t* handle)
    handle->progress = 0;
 }
 
-void nbio_begin_write(struct nbio_t* handle)
+static void nbio_stdio_begin_write(void *data)
 {
+   struct nbio_stdio_t *handle = (struct nbio_stdio_t*)data;
    if (!handle)
       return;
 
@@ -125,9 +149,10 @@ void nbio_begin_write(struct nbio_t* handle)
    handle->progress = 0;
 }
 
-bool nbio_iterate(struct nbio_t* handle)
+static bool nbio_stdio_iterate(void *data)
 {
-   size_t amount = 65536;
+   size_t amount               = 65536;
+   struct nbio_stdio_t *handle = (struct nbio_stdio_t*)data;
 
    if (!handle)
       return false;
@@ -167,8 +192,9 @@ bool nbio_iterate(struct nbio_t* handle)
    return (handle->op < 0);
 }
 
-void nbio_resize(struct nbio_t* handle, size_t len)
+static void nbio_stdio_resize(void *data, size_t len)
 {
+   struct nbio_stdio_t *handle = (struct nbio_stdio_t*)data;
    if (!handle)
       return;
 
@@ -189,8 +215,9 @@ void nbio_resize(struct nbio_t* handle, size_t len)
    handle->progress = handle->len;
 }
 
-void* nbio_get_ptr(struct nbio_t* handle, size_t* len)
+static void *nbio_stdio_get_ptr(void *data, size_t* len)
 {
+   struct nbio_stdio_t *handle = (struct nbio_stdio_t*)data;
    if (!handle)
       return NULL;
    if (len)
@@ -200,8 +227,9 @@ void* nbio_get_ptr(struct nbio_t* handle, size_t* len)
    return NULL;
 }
 
-void nbio_cancel(struct nbio_t* handle)
+static void nbio_stdio_cancel(void *data)
 {
+   struct nbio_stdio_t *handle = (struct nbio_stdio_t*)data;
    if (!handle)
       return;
 
@@ -209,8 +237,9 @@ void nbio_cancel(struct nbio_t* handle)
    handle->progress = handle->len;
 }
 
-void nbio_free(struct nbio_t* handle)
+static void nbio_stdio_free(void *data)
 {
+   struct nbio_stdio_t *handle = (struct nbio_stdio_t*)data;
    if (!handle)
       return;
    if (handle->op >= 0)
@@ -225,3 +254,15 @@ void nbio_free(struct nbio_t* handle)
    handle->data = NULL;
    free(handle);
 }
+
+nbio_intf_t nbio_stdio = {
+   nbio_stdio_open,
+   nbio_stdio_begin_read,
+   nbio_stdio_begin_write,
+   nbio_stdio_iterate,
+   nbio_stdio_resize,
+   nbio_stdio_get_ptr,
+   nbio_stdio_cancel,
+   nbio_stdio_free,
+   "nbio_stdio",
+};

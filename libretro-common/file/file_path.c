@@ -72,10 +72,6 @@
 #include <pspkernel.h>
 #endif
 
-#ifdef __HAIKU__
-#include <kernel/image.h>
-#endif
-
 #if defined(__CELLOS_LV2__)
 #include <cell/cell_fs.h>
 #endif
@@ -223,6 +219,17 @@ int32_t path_get_size(const char *path)
    return -1;
 }
 
+static bool path_mkdir_error(int ret)
+{
+#if defined(VITA)
+   return (ret == SCE_ERROR_ERRNO_EEXIST);
+#elif defined(PSP) || defined(_3DS) || defined(WIIU)
+   return (ret == -1);
+#else 
+   return (ret < 0 && errno == EEXIST);
+#endif
+}
+
 /**
  * path_mkdir:
  * @dir                : directory
@@ -234,10 +241,13 @@ int32_t path_get_size(const char *path)
 bool path_mkdir(const char *dir)
 {
    /* Use heap. Real chance of stack overflow if we recurse too hard. */
-   char     *basedir  = strdup(dir);
    const char *target = NULL;
    bool         sret  = false;
    bool norecurse     = false;
+   char     *basedir  = NULL;
+   
+   if (dir && *dir)
+      basedir         = strdup(dir);
 
    if (!basedir)
       return false;
@@ -253,8 +263,8 @@ bool path_mkdir(const char *dir)
    }
    else
    {
-      target = basedir;
-      sret   = path_mkdir(basedir);
+      target    = basedir;
+      sret      = path_mkdir(basedir);
 
       if (sret)
       {
@@ -278,16 +288,9 @@ bool path_mkdir(const char *dir)
 #endif
 
       /* Don't treat this as an error. */
-#if defined(VITA)
-      if ((ret == SCE_ERROR_ERRNO_EEXIST) && path_is_directory(dir))
+      if (path_mkdir_error(ret) && path_is_directory(dir))
          ret = 0;
-#elif defined(PSP) || defined(_3DS) || defined(WIIU)
-      if ((ret == -1) && path_is_directory(dir))
-         ret = 0;
-#else 
-      if (ret < 0 && errno == EEXIST && path_is_directory(dir))
-         ret = 0;
-#endif
+
       if (ret < 0)
          printf("mkdir(%s) error: %s.\n", dir, strerror(errno));
       sret = (ret == 0);

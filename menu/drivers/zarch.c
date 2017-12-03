@@ -993,7 +993,8 @@ static void zarch_frame(void *data, video_frame_info_t *video_info)
 
    zui->rendering = false;
 
-   font_driver_flush(video_info->width, video_info->height, zui->font);
+   font_driver_flush(video_info->width, video_info->height, zui->font,
+         video_info);
    font_driver_bind_block(zui->font, NULL);
 
    menu_display_unset_viewport(video_info->width, video_info->height);

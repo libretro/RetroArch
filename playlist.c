@@ -121,8 +121,6 @@ void playlist_delete_index(playlist_t *playlist,
 
    playlist->size     = playlist->size - 1;
    playlist->modified = true;
-
-   playlist_write_file(playlist);
 }
 
 void playlist_get_index_by_path(playlist_t *playlist,
@@ -283,17 +281,19 @@ bool playlist_push(playlist_t *playlist,
       const char *db_name)
 {
    size_t i;
+   bool core_path_empty = string_is_empty(core_path);
+   bool core_name_empty = string_is_empty(core_name);
 
-   if (string_is_empty(core_path) || string_is_empty(core_name))
+   if (core_path_empty || core_name_empty)
    {
-      if (string_is_empty(core_name) && !string_is_empty(core_path))
+      if (core_name_empty && !core_path_empty)
       {
          static char base_path[255] = {0};
          fill_pathname_base_noext(base_path, core_path, sizeof(base_path));
          core_name = base_path;
       }
 
-      if (string_is_empty(core_path) || string_is_empty(core_name))
+      if (core_path_empty || core_name_empty)
       {
          RARCH_ERR("cannot push NULL or empty core name into the playlist.\n");
          return false;
@@ -381,13 +381,12 @@ void playlist_write_file(playlist_t *playlist)
 {
    size_t i;
    RFILE *file = NULL;
+   FILE  *fp   = NULL;
 
    if (!playlist || !playlist->modified)
       return;
 
    file = filestream_open(playlist->conf_path, RFILE_MODE_WRITE, -1);
-
-   RARCH_LOG("Trying to write to playlist file: %s\n", playlist->conf_path);
 
    if (!file)
    {
@@ -395,8 +394,10 @@ void playlist_write_file(playlist_t *playlist)
       return;
    }
 
+   fp = filestream_get_fp(file);
+
    for (i = 0; i < playlist->size; i++)
-      fprintf(filestream_get_fp(file), "%s\n%s\n%s\n%s\n%s\n%s\n",
+      fprintf(fp, "%s\n%s\n%s\n%s\n%s\n%s\n",
             playlist->entries[i].path    ? playlist->entries[i].path    : "",
             playlist->entries[i].label   ? playlist->entries[i].label   : "",
             playlist->entries[i].core_path,
@@ -406,6 +407,9 @@ void playlist_write_file(playlist_t *playlist)
             );
 
    playlist->modified = false;
+
+   RARCH_LOG("Written to playlist file: %s\n", playlist->conf_path);
+
    filestream_close(file);
 }
 

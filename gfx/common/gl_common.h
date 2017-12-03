@@ -55,6 +55,7 @@ typedef struct gl
    bool fbo_feedback_enable;
    bool hw_render_fbo_init;
    bool hw_render_depth_init;
+   bool has_fbo;
    bool has_srgb_fbo_gles3;
    bool has_fp_fbo;
    bool has_srgb_fbo;
@@ -140,47 +141,22 @@ typedef struct gl
    void *renderchain_data;
 } gl_t;
 
-#ifdef NO_GL_FF_VERTEX
-#define gl_ff_vertex(coords) ((void)0)
-#else
-static INLINE void gl_ff_vertex(const struct video_coords *coords)
+static INLINE void gl_bind_texture(GLuint id, GLint wrap_mode, GLint mag_filter,
+      GLint min_filter)
 {
-   /* Fall back to fixed function-style if needed and possible. */
-   glClientActiveTexture(GL_TEXTURE1);
-   glTexCoordPointer(2, GL_FLOAT, 0, coords->lut_tex_coord);
-   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-   glClientActiveTexture(GL_TEXTURE0);
-   glVertexPointer(2, GL_FLOAT, 0, coords->vertex);
-   glEnableClientState(GL_VERTEX_ARRAY);
-   glColorPointer(4, GL_FLOAT, 0, coords->color);
-   glEnableClientState(GL_COLOR_ARRAY);
-   glTexCoordPointer(2, GL_FLOAT, 0, coords->tex_coord);
-   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+   glBindTexture(GL_TEXTURE_2D, id);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_mode);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_mode);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
 }
-#endif
-
-#ifdef NO_GL_FF_MATRIX
-#define gl_ff_matrix(mat) ((void)0)
-#else
-static INLINE void gl_ff_matrix(const math_matrix_4x4 *mat)
-{
-   math_matrix_4x4 ident;
-
-   /* Fall back to fixed function-style if needed and possible. */
-   glMatrixMode(GL_PROJECTION);
-   glLoadMatrixf(mat->data);
-   glMatrixMode(GL_MODELVIEW);
-   matrix_4x4_identity(ident);
-   glLoadMatrixf(ident.data);
-}
-#endif
 
 static INLINE unsigned gl_wrap_type_to_enum(enum gfx_wrap_type type)
 {
    switch (type)
    {
 #ifndef HAVE_OPENGLES
-      case RARCH_WRAP_BORDER:
+      case RARCH_WRAP_BORDER: /* GL_CLAMP_TO_BORDER: Available since GL 1.3 */
          return GL_CLAMP_TO_BORDER;
 #else
       case RARCH_WRAP_BORDER:

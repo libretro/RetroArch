@@ -356,7 +356,8 @@ static bool gdi_gfx_alive(void *data)
    unsigned temp_height = 0;
    bool quit            = false;
    bool resize          = false;
- 
+   bool ret             = false;
+
    /* Needed because some context drivers don't track their sizes */
    video_driver_get_size(&temp_width, &temp_height);
 
@@ -365,12 +366,13 @@ static bool gdi_gfx_alive(void *data)
    size_data.width      = &temp_width;
    size_data.height     = &temp_height;
 
-   video_context_driver_check_window(&size_data);
+   if (video_context_driver_check_window(&size_data))
+      ret = !quit;
 
    if (temp_width != 0 && temp_height != 0)
       video_driver_set_size(&temp_width, &temp_height);
 
-   return true;
+   return ret;
 }
 
 static bool gdi_gfx_focus(void *data)
@@ -531,6 +533,8 @@ static void gdi_set_video_mode(void *data, unsigned width, unsigned height,
 }
 
 static const video_poke_interface_t gdi_poke_interface = {
+   NULL,                      /* set_coords */
+   NULL,                      /* set_mvp */
    NULL,
    NULL,
    gdi_set_video_mode,
@@ -538,11 +542,7 @@ static const video_poke_interface_t gdi_poke_interface = {
    gdi_get_video_output_size,
    gdi_get_video_output_prev,
    gdi_get_video_output_next,
-#ifdef HAVE_FBO
    NULL,
-#else
-   NULL,
-#endif
    NULL,
    NULL,
    NULL,

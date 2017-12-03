@@ -52,6 +52,8 @@ size_t strlcat(char *dest, const char *source, size_t size);
 
 #endif
 
+char *strldup(const char *s, size_t n);
+
 RETRO_END_DECLS
 
 #endif
