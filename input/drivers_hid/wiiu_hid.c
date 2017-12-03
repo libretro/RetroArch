@@ -16,6 +16,8 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <malloc.h>
+#include <unistd.h>
 
 #include <wiiu/os.h>
 #include <wiiu/syshid.h>
@@ -23,10 +25,18 @@
 #include "../input_defines.h"
 #include "../input_driver.h"
 
+#define POLL_THREAD_SLEEP 10000
+
+#define DEVICE_UNUSED 0
+#define DEVICE_USED   1
+
 typedef struct wiiu_hid
 {
-   void *empty;
    HIDClient *client;
+   OSThread *polling_thread;
+   // memory accounting; keep a pointer to the stack buffer so we can clean up later.
+   void *polling_thread_stack;
+   volatile bool polling_thread_quit;
 } wiiu_hid_t;
 
 typedef struct wiiu_hid_user
@@ -41,7 +51,11 @@ static void delete_wiiu_hid_t(wiiu_hid_t *hid);
 static HIDClient *new_hidclient(void);
 static void delete_hidclient(HIDClient *hid);
 
-int32_t wiiu_attach_callback(HIDClient *client, HIDDevice *device, uint32_t attach);
+static int32_t wiiu_attach_callback(HIDClient *client, HIDDevice *device, uint32_t attach);
+static void start_polling_thread(wiiu_hid_t *hid);
+static void stop_polling_thread(wiiu_hid_t *hid);
+static int wiiu_hid_polling_thread(int argc, const char **argv);
+static void wiiu_hid_do_poll(wiiu_hid_t *hid);
 
 /**
  * HID driver entrypoints registered with hid_driver_t
@@ -102,14 +116,20 @@ static void *wiiu_hid_init(void)
   if(!hid || !client)
     goto error;
 
+  start_polling_thread(hid);
+  if(hid->polling_thread == NULL)
+    goto error;
+
   HIDAddClient(client, wiiu_attach_callback);
   hid->client = client;
 
   return hid;
 
   error:
-    if(hid)
+    if(hid) {
+      stop_polling_thread(hid);
       delete_wiiu_hid_t(hid);
+    }
     if(client)
       free(client);
 
@@ -121,13 +141,82 @@ static void wiiu_hid_free(void *data)
   wiiu_hid_t *hid = (wiiu_hid_t*)data;
 
   if (hid) {
+    stop_polling_thread(hid);
     delete_wiiu_hid_t(hid);
   }
 }
 
+/**
+ * This is a no-op because polling is done with a worker thread.
+ */
 static void wiiu_hid_poll(void *data)
 {
    (void)data;
+}
+
+/**
+ * Implementation functions
+ */
+
+static void start_polling_thread(wiiu_hid_t *hid) {
+  OSThreadAttributes attributes = OS_THREAD_ATTRIB_AFFINITY_CPU2 |
+                                  OS_THREAD_ATTRIB_DETACHED |
+                                  OS_THREAD_ATTRIB_STACK_USAGE;
+  int32_t stack_size = 0x8000;
+  // wild-ass guess. the patcher thread used 28 for the network threads (10 for BOTW).
+  int32_t priority = 19;
+  OSThread *thread = memalign(8, sizeof(OSThread));
+  void *stack = memalign(32, stack_size);
+
+  if(!thread || !stack)
+    goto error;
+
+  if(!OSCreateThread(thread, wiiu_hid_polling_thread, 1, (char *)hid, stack, stack_size, priority, attributes))
+    goto error;
+
+  hid->polling_thread = thread;
+  hid->polling_thread_stack = stack;
+  return;
+
+  error:
+    if(stack)
+      free(stack);
+    if(thread)
+      free(thread);
+
+    return;
+}
+
+static void stop_polling_thread(wiiu_hid_t *hid) {
+  int thread_result = 0;
+
+  if(hid == NULL || hid->polling_thread == NULL)
+    return;
+
+  hid->polling_thread_quit = true;
+  OSJoinThread(hid->polling_thread, &thread_result);
+
+  free(hid->polling_thread);
+  free(hid->polling_thread_stack);
+}
+
+/**
+ * Entrypoint for the polling thread.
+ */
+static int wiiu_hid_polling_thread(int argc, const char **argv) {
+  wiiu_hid_t *hid = (wiiu_hid_t *)argv;
+  while(!hid->polling_thread_quit) {
+    wiiu_hid_do_poll(hid);
+  }
+
+  return 0;
+}
+
+/**
+ * Only call this from the polling thread.
+ */
+static void wiiu_hid_do_poll(wiiu_hid_t *hid) {
+  usleep(POLL_THREAD_SLEEP);
 }
 
 /**
@@ -135,8 +224,9 @@ static void wiiu_hid_poll(void *data)
  */
 
 int32_t wiiu_attach_callback(HIDClient *client, HIDDevice *device, uint32_t attach) {
+  int32_t result = DEVICE_UNUSED;
+
   switch(attach) {
-    int32_t result = DEVICE_UNUSED;
     case HID_DEVICE_ATTACH:
       // TODO: new device attached! Register it.
       break;
@@ -207,10 +297,10 @@ static void delete_hidclient(HIDClient *client) {
 static wiiu_hid_user_t *new_wiiu_hid_user_t(void) {
   wiiu_hid_user_t *user = calloc(1, sizeof(wiiu_hid_user_t));
   if(user != NULL) {
-    memset(client, 0, sizeof(wiiu_hid_user_t));
+    memset(user, 0, sizeof(wiiu_hid_user_t));
   }
 
-  return client;
+  return user;
 }
 
 static void delete_wiiu_hid_user_t(wiiu_hid_user_t *user) {
