@@ -29,21 +29,28 @@
 #include "input/input_defines.h"
 
 #define configuration_set_float(settings, var, newvar) \
+{ \
    settings->modified = true; \
-   var = newvar
+   var = newvar; \
+}
 
 #define configuration_set_bool(settings, var, newvar) \
+{ \
    settings->modified = true; \
-   var = newvar
+   var = newvar; \
+} 
 
 #define configuration_set_uint(settings, var, newvar) \
+{ \
    settings->modified = true; \
-   var = newvar
+   var = newvar; \
+}
 
 #define configuration_set_int(settings, var, newvar) \
+{ \
    settings->modified = true; \
-   var = newvar
-
+   var = newvar; \
+}
 
 enum override_type
 {

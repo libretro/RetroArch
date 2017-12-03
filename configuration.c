@@ -2718,16 +2718,12 @@ static bool config_load_file(const char *path, bool set_defaults,
       *settings->paths.directory_system = '\0';
 
    if (settings->floats.slowmotion_ratio < 1.0f)
-   {
       configuration_set_float(settings, settings->floats.slowmotion_ratio, 1.0f);
-   }
 
    /* Sanitize fastforward_ratio value - previously range was -1
     * and up (with 0 being skipped) */
    if (settings->floats.fastforward_ratio < 0.0f)
-   {
       configuration_set_float(settings, settings->floats.fastforward_ratio, 0.0f);
-   }
 
 
 #ifdef HAVE_LAKKA
