@@ -15,6 +15,8 @@ static const char* stock_fragment_xmb_snowflake = GLSL(
       return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
    }
 
+   float rand(float x){ return rand(vec2(x,1.0));}
+   
    float snow(vec3 pos, vec2 uv, float o)
    {
       vec2 d = (pos.xy - uv);
@@ -35,17 +37,15 @@ static const char* stock_fragment_xmb_snowflake = GLSL(
    float col(vec2 c)
    {
       float color = 0.0;
-      for (int i = 1; i < 15; i++)
+      for (int i = 1; i < 50; i++)
       {
-		   float o = rand(float(i) / 3.) * 15 * 2.0;
+		   float o = rand(float(i) / 3.0) * 15 * 2.0;
 		   float z = rand(float(i) + 13.0);
 		   float x = 1.8 - (3.6) * (rand(floor((time*((z+1.0)/2.0)+o)/2.0)) + sin(time*o/1000.0)/10.0);
 		   float y = 1.0-mod((time*((z+1.0)/2.0))+o, 2.0);
 		
 		   color += snow(vec3(x,y,z),c,o);    
 	   }
-
-
 	
       return color;
    } 
