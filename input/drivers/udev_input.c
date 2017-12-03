@@ -766,7 +766,7 @@ static bool udev_pointer_is_off_window(const udev_input_t *udev)
 #endif
 }
 
-static int16_t udev_lightgun_aiming_state(udev_input_t *udev, unsigned idx, unsigned id )
+static int16_t udev_lightgun_aiming_state(udev_input_t *udev, unsigned port, unsigned id )
 {
    const int edge_detect = 32700;
    struct video_viewport vp;
@@ -998,7 +998,7 @@ static int16_t udev_input_state(void *data,
             case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
             case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
             case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-               return udev_lightgun_aiming_state( x11, idx, id );
+               return udev_lightgun_aiming_state( udev, port, id );
 
             /*buttons*/
             case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
@@ -1027,12 +1027,12 @@ static int16_t udev_input_state(void *data,
             /*deprecated*/
             case RETRO_DEVICE_ID_LIGHTGUN_X:
                {
-                  udev_input_mouse_t *mouse = udev_get_mouse(udev, port)
+                  udev_input_mouse_t *mouse = udev_get_mouse(udev, port);
                   return (mouse) ? : udev_mouse_get_x(mouse) : 0;
                }
             case RETRO_DEVICE_ID_LIGHTGUN_Y:
                {
-                  udev_input_mouse_t *mouse = udev_get_mouse(udev, port)
+                  udev_input_mouse_t *mouse = udev_get_mouse(udev, port);
                   return (mouse) ? : udev_mouse_get_y(mouse) : 0;
                }
             case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
