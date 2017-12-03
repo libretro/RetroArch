@@ -2759,6 +2759,9 @@ static void xmb_draw_bg(
          case XMB_SHADER_PIPELINE_BOKEH:
             draw.pipeline.id  = VIDEO_SHADER_MENU_5;
             break;
+         case XMB_SHADER_PIPELINE_SNOWFLAKE:
+            draw.pipeline.id  = VIDEO_SHADER_MENU_6;
+            break;
          default:
             break;
       }
