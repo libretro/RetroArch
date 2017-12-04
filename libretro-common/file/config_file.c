@@ -38,6 +38,7 @@
 #include <retro_miscellaneous.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
+#include <compat/fopen_utf8.h>
 #include <compat/msvc.h>
 #include <file/config_file.h>
 #include <file/file_path.h>
@@ -915,7 +916,7 @@ bool config_file_write(config_file_t *conf, const char *path)
    if (!string_is_empty(path))
    {
       void* buf  = NULL;
-      FILE *file = fopen(path, "wb");
+      FILE *file = fopen_utf8(path, "wb");
       if (!file)
          return false;
 
