@@ -247,6 +247,11 @@ static void menu_action_setting_disp_set_label_pipeline(
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_BOKEH), len);
          break;
+      case XMB_SHADER_PIPELINE_SNOWFLAKE:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOWFLAKE), len);
+         break;
    }
 
    strlcpy(s2, path, len2);

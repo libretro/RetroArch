@@ -2723,9 +2723,8 @@ static bool config_load_file(const char *path, bool set_defaults,
    /* Sanitize fastforward_ratio value - previously range was -1
     * and up (with 0 being skipped) */
    if (settings->floats.fastforward_ratio < 0.0f)
-   {
       configuration_set_float(settings, settings->floats.fastforward_ratio, 0.0f);
-   }
+
 
 #ifdef HAVE_LAKKA
    settings->bools.ssh_enable       = path_file_exists(LAKKA_SSH_PATH);

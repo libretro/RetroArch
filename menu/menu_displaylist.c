@@ -4273,7 +4273,7 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
             MENU_SETTING_ACTION, 0, 0);
 #endif
 
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD) && defined(HAVE_NETWORKGAMEPAD_CORE)
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD),
             msg_hash_to_str(MENU_ENUM_LABEL_START_NET_RETROPAD),

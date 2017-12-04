@@ -38,6 +38,7 @@
 #include <retro_miscellaneous.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
+#include <compat/fopen_utf8.h>
 #include <compat/msvc.h>
 #include <file/config_file.h>
 #include <file/file_path.h>
@@ -912,20 +913,25 @@ void config_set_bool(config_file_t *conf, const char *key, bool val)
 
 bool config_file_write(config_file_t *conf, const char *path)
 {
-   RFILE *file = NULL;
-
    if (!string_is_empty(path))
    {
-      file = filestream_open(path, RFILE_MODE_WRITE, 0x4000);
+      void* buf  = NULL;
+      FILE *file = fopen_utf8(path, "wb");
       if (!file)
          return false;
-      config_file_dump(conf, filestream_get_fp(file));
+
+      /* TODO: this is only useful for a few platforms, find which and add ifdef */
+      buf = calloc(1, 0x4000);
+      setvbuf(file, (char*)buf, _IOFBF, 0x4000);
+
+      config_file_dump(conf, file);
+
+      if (file != stdout)
+         fclose(file);
+      free(buf);
    }
    else
       config_file_dump(conf, stdout);
-
-   if (file)
-      filestream_close(file);
 
    return true;
 }

@@ -806,6 +806,9 @@ void input_menu_keys_pressed(void *data, retro_bits_t* p_new_state)
    uint8_t port_max                             = 
       settings->bools.input_all_users_control_menu 
       ? max_users : 1;
+	
+   joypad_info.joy_idx                          = 0;
+   joypad_info.auto_binds                       = NULL;
 
    RARCH_INPUT_STATE_CLEAR_PTR( p_new_state );
 

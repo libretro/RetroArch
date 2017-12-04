@@ -33,6 +33,26 @@
 #endif
 #endif
 
+#if defined(_WIN32) && !defined(_XBOX) && !defined(_MSC_VER) && _WIN32_WINNT >= 0x0500
+/* MinGW Win32 HID API */
+#include <minwindef.h>
+#include <wtypes.h>
+#include <tchar.h>
+#ifdef __NO_INLINE__
+/* Workaround MinGW issue where compiling without -O2 (which sets __NO_INLINE__) causes the strsafe functions
+ * to never be defined (only declared).
+ */
+#define __CRT_STRSAFE_IMPL
+#endif
+#include <strsafe.h>
+#include <guiddef.h>
+#include <ks.h>
+#include <setupapi.h>
+#include <hidsdi.h>
+/* Why doesn't including cguid.h work to get a GUID_NULL instead? */
+const GUID GUID_NULL = {0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
+#endif
+
 #include "../input/input_driver.h"
 #include "../input/include/blissbox.h"
 
@@ -359,12 +379,258 @@ static void input_autoconfigure_params_free(autoconfig_params_t *params)
    params->autoconfig_directory = NULL;
 }
 
-static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type(int vid, int pid)
+#ifdef _WIN32
+static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_win32(int vid, int pid)
+{
+   /* TODO: Remove the check for !defined(_MSC_VER) after making sure this builds on MSVC */
+
+   /* HID API is available since Windows 2000 */
+#if defined(_WIN32) && !defined(_XBOX) && !defined(_MSC_VER) && _WIN32_WINNT >= 0x0500
+   HDEVINFO hDeviceInfo;
+   SP_DEVINFO_DATA DeviceInfoData;
+   SP_DEVICE_INTERFACE_DATA deviceInterfaceData;
+   HANDLE hDeviceHandle                 = INVALID_HANDLE_VALUE;
+   BOOL bResult                         = TRUE;
+   BOOL success                         = FALSE;
+   GUID guidDeviceInterface             = {0};
+   PSP_DEVICE_INTERFACE_DETAIL_DATA 
+      pInterfaceDetailData              = NULL;
+   ULONG requiredLength                 = 0;
+   LPTSTR lpDevicePath                  = NULL;
+   char *devicePath                     = NULL;
+   DWORD index                          = 0;
+   DWORD intIndex                       = 0;
+   size_t nLength                       = 0;
+   unsigned len                         = 0;
+   unsigned i                           = 0;
+   char vidPidString[32]                = {0};
+   char vidString[5]                    = {0};
+   char pidString[5]                    = {0};
+   char report[USB_PACKET_CTRL_LEN + 1] = {0};
+
+   snprintf(vidString, sizeof(vidString), "%04x", vid);
+   snprintf(pidString, sizeof(pidString), "%04x", pid);
+
+   strlcat(vidPidString, "vid_", sizeof(vidPidString));
+   strlcat(vidPidString, vidString, sizeof(vidPidString));
+   strlcat(vidPidString, "&pid_", sizeof(vidPidString));
+   strlcat(vidPidString, pidString, sizeof(vidPidString));
+
+   HidD_GetHidGuid(&guidDeviceInterface);
+
+   if (!memcmp(&guidDeviceInterface, &GUID_NULL, sizeof(GUID_NULL)))
+   {
+     RARCH_ERR("[Autoconf]: null guid\n");
+     return NULL;
+   }
+
+   /* Get information about all the installed devices for the specified
+    * device interface class.
+    */
+   hDeviceInfo = SetupDiGetClassDevs(
+    &guidDeviceInterface,
+    NULL,
+    NULL,
+    DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
+
+   if (hDeviceInfo == INVALID_HANDLE_VALUE)
+   {
+      RARCH_ERR("[Autoconf]: Error in SetupDiGetClassDevs: %d.\n", GetLastError());
+      goto done;
+   }
+
+   /* Enumerate all the device interfaces in the device information set. */
+   DeviceInfoData.cbSize = sizeof(SP_DEVINFO_DATA);
+
+   while (!success)
+   {
+      success = SetupDiEnumDeviceInfo(hDeviceInfo, index, &DeviceInfoData);
+
+      /* Reset for this iteration */
+      if (lpDevicePath)
+      {
+         LocalFree(lpDevicePath);
+         lpDevicePath = NULL;
+      }
+
+      if (pInterfaceDetailData)
+      {
+         LocalFree(pInterfaceDetailData);
+         pInterfaceDetailData = NULL;
+      }
+
+      /* Check if this is the last item */
+      if (GetLastError() == ERROR_NO_MORE_ITEMS)
+         break;
+
+      deviceInterfaceData.cbSize = sizeof(SP_INTERFACE_DEVICE_DATA);
+
+      /* Get information about the device interface. */
+      for (intIndex = 0; (bResult = SetupDiEnumDeviceInterfaces(
+         hDeviceInfo,
+         &DeviceInfoData,
+         &guidDeviceInterface,
+         intIndex,
+         &deviceInterfaceData)); intIndex++)
+      {
+         /* Check if this is the last item */
+         if (GetLastError() == ERROR_NO_MORE_ITEMS)
+            break;
+
+         /* Check for some other error */
+         if (!bResult)
+         {
+            RARCH_ERR("[Autoconf]: Error in SetupDiEnumDeviceInterfaces: %d.\n", GetLastError());
+            goto done;
+         }
+
+         /* Interface data is returned in SP_DEVICE_INTERFACE_DETAIL_DATA
+          * which we need to allocate, so we have to call this function twice.
+          * First to get the size so that we know how much to allocate, and
+          * second to do the actual call with the allocated buffer.
+          */
+
+         bResult = SetupDiGetDeviceInterfaceDetail(
+            hDeviceInfo,
+            &deviceInterfaceData,
+            NULL, 0,
+            &requiredLength,
+            NULL);
+
+         /* Check for some other error */
+         if (!bResult)
+         {
+            if ((ERROR_INSUFFICIENT_BUFFER == GetLastError()) && (requiredLength > 0))
+            {
+               /* we got the size, now allocate buffer */
+               pInterfaceDetailData = (PSP_DEVICE_INTERFACE_DETAIL_DATA)LocalAlloc(LPTR, requiredLength);
+
+               if (!pInterfaceDetailData)
+               {
+                  RARCH_ERR("[Autoconf]: Error allocating memory for the device detail buffer.\n");
+                  goto done;
+               }
+            }
+            else
+            {
+               RARCH_ERR("[Autoconf]: Other error: %d.\n", GetLastError());
+               goto done;
+            }
+         }
+
+         /* get the interface detailed data */
+         pInterfaceDetailData->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
+
+         /* Now call it with the correct size and allocated buffer */
+         bResult = SetupDiGetDeviceInterfaceDetail(
+            hDeviceInfo,
+            &deviceInterfaceData,
+            pInterfaceDetailData,
+            requiredLength,
+            NULL,
+            &DeviceInfoData);
+
+         /* Check for some other error */
+         if (!bResult)
+         {
+           RARCH_LOG("[Autoconf]: Error in SetupDiGetDeviceInterfaceDetail: %d.\n", GetLastError());
+           goto done;
+         }
+
+         /* copy device path */
+         nLength      = _tcslen(pInterfaceDetailData->DevicePath) + 1;
+         lpDevicePath = (TCHAR*)LocalAlloc(LPTR, nLength * sizeof(TCHAR));
+
+         StringCchCopy(lpDevicePath, nLength, pInterfaceDetailData->DevicePath);
+
+         devicePath   = (char*)malloc(nLength);
+
+         for (len = 0; len < nLength; len++)
+            devicePath[len] = lpDevicePath[len];
+
+         lpDevicePath[nLength - 1] = 0;
+
+         if (strstr(devicePath, vidPidString))
+            goto found;
+      }
+
+      success = FALSE;
+      index++;
+   }
+
+   if (!lpDevicePath)
+   {
+      RARCH_ERR("[Autoconf]: No devicepath. Error %d.", GetLastError());
+      goto done;
+   }
+
+found:
+   /* Open the device */
+   hDeviceHandle = CreateFileA(
+      devicePath,
+      GENERIC_READ,  /* | GENERIC_WRITE,*/
+      FILE_SHARE_READ,  /* | FILE_SHARE_WRITE,*/
+      NULL,
+      OPEN_EXISTING,
+      0,  /*FILE_FLAG_OVERLAPPED,*/
+      NULL);
+
+   if (hDeviceHandle == INVALID_HANDLE_VALUE)
+   {
+      RARCH_ERR("[Autoconf]: Can't open device: %d.", GetLastError());
+      goto done;
+   }
+
+done:
+   free(devicePath);
+   LocalFree(lpDevicePath);
+   LocalFree(pInterfaceDetailData);
+   bResult              = SetupDiDestroyDeviceInfoList(hDeviceInfo);
+
+   devicePath           = NULL;
+   lpDevicePath         = NULL;
+   pInterfaceDetailData = NULL;
+
+   if (!bResult)
+      RARCH_ERR("[Autoconf]: Could not destroy device info list.\n");
+
+   if (!hDeviceHandle || hDeviceHandle == INVALID_HANDLE_VALUE)
+   {
+      /* device is not connected */
+      return NULL;
+   }
+
+   report[0] = BLISSBOX_USB_FEATURE_REPORT_ID;
+
+   HidD_GetFeature(hDeviceHandle, report, sizeof(report));
+
+   CloseHandle(hDeviceHandle);
+
+   for (i = 0; i < sizeof(blissbox_pad_types) / sizeof(blissbox_pad_types[0]); i++)
+   {
+      const blissbox_pad_type_t *pad = &blissbox_pad_types[i];
+
+      if (!pad || string_is_empty(pad->name))
+         continue;
+
+      if (pad->index == report[0])
+         return pad;
+   }
+
+   RARCH_LOG("[Autoconf]: Could not find connected pad in Bliss-Box port#%d.\n", pid - BLISSBOX_PID);
+#endif
+
+   return NULL;
+}
+#endif
+
+#ifndef _WIN32
+static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_libusb(int vid, int pid)
 {
 #ifdef HAVE_LIBUSB
-   unsigned char answer[USB_PACKET_CTRL_LEN] = {0};
    unsigned i;
-   int ret = libusb_init(NULL);
+   unsigned char answer[USB_PACKET_CTRL_LEN] = {0};
+   int ret                                   = libusb_init(NULL);
 
    if (ret < 0)
    {
@@ -432,9 +698,24 @@ static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type(int 
 error:
    libusb_close(autoconfig_libusb_handle);
    libusb_exit(NULL);
+#endif
+
+   return NULL;
+}
+#endif
+
+static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type(int vid, int pid)
+{
+#if defined(_WIN32)
+#if defined(_MSC_VER) || defined(_XBOX)
+   /* no MSVC/XBOX support */
    return NULL;
 #else
-   return NULL;
+   /* MinGW */
+   return input_autoconfigure_get_blissbox_pad_type_win32(vid, pid);
+#endif
+#else
+   return input_autoconfigure_get_blissbox_pad_type_libusb(vid, pid);
 #endif
 }
 
@@ -467,7 +748,7 @@ static void input_autoconfigure_override_handler(autoconfig_params_t *params)
                free(params->name);
 
             /* override name given to autoconfig so it knows what kind of pad this is */
-            strlcat(name, "Bliss-Box ", sizeof(name));
+            strlcat(name, "Bliss-Box 4-Play ", sizeof(name));
             strlcat(name, pad->name, sizeof(name));
 
             params->name = strdup(name);
