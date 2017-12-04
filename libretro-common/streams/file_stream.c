@@ -114,13 +114,6 @@ struct RFILE
    char *buf;
 };
 
-FILE* filestream_get_fp(RFILE *stream)
-{
-   if (!stream)
-      return NULL;
-   return stream->fp;
-}
-
 const char *filestream_get_ext(RFILE *stream)
 {
    if (!stream)
