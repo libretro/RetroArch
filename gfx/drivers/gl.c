@@ -544,11 +544,9 @@ static void gl_init_textures_data(gl_t *gl)
 static void gl_init_textures(gl_t *gl, const video_info_t *video)
 {
    unsigned i;
-   GLenum internal_fmt, texture_type = 0, texture_fmt = 0;
-
-   /* Use regular textures if we use HW render. */
-   gl->egl_images = !gl->hw_render_use && gl_check_capability(GL_CAPS_EGLIMAGE) &&
-      video_context_driver_init_image_buffer(video);
+   GLenum internal_fmt = gl->internal_fmt;
+   GLenum texture_type = gl->texture_type;
+   GLenum texture_fmt  = gl->texture_fmt;
 
 #ifdef HAVE_PSGL
    if (!gl->pbo)
@@ -559,10 +557,6 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
          gl->tex_w * gl->tex_h * gl->base_size * gl->textures,
          NULL, GL_STREAM_DRAW);
 #endif
-
-   internal_fmt = gl->internal_fmt;
-   texture_type = gl->texture_type;
-   texture_fmt  = gl->texture_fmt;
 
 #if defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
    /* GLES is picky about which format we use here.
@@ -1339,7 +1333,7 @@ static void gl_set_nonblock_state(void *data, bool state)
    context_bind_hw_render(true);
 }
 
-static bool resolve_extensions(gl_t *gl, const char *context_ident)
+static bool resolve_extensions(gl_t *gl, const char *context_ident, const video_info_t *video)
 {
    settings_t *settings          = config_get_ptr();
 
@@ -1365,7 +1359,7 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
    video_driver_unset_rgba();
 
    if (gl->renderchain_driver->resolve_extensions)
-      gl->renderchain_driver->resolve_extensions(gl, gl->renderchain_data, context_ident);
+      gl->renderchain_driver->resolve_extensions(gl, gl->renderchain_data, context_ident, video);
 
 #if defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
    if (!gl_check_capability(GL_CAPS_BGRA8888))
@@ -1790,7 +1784,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
    glBlendEquation(GL_FUNC_ADD);
 
-   if (!resolve_extensions(gl, ctx_driver->ident))
+   if (!resolve_extensions(gl, ctx_driver->ident, video))
       goto error;
 
 #ifdef GL_DEBUG

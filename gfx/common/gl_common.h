@@ -180,7 +180,6 @@ typedef struct gl
    bool have_full_npot_support;
    bool have_mipmap;
 
-   bool egl_images;
    bool overlay_enable;
    bool overlay_full_screen;
    bool menu_texture_enable;

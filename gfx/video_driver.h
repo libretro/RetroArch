@@ -907,7 +907,8 @@ typedef struct gl_renderchain_driver
    void (*resolve_extensions)(
          void *data,
          void *chain_data,
-         const char *context_ident);
+         const char *context_ident,
+         const video_info_t *video);
    const char *ident;
 } gl_renderchain_driver_t;
 

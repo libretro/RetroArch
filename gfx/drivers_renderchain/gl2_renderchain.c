@@ -55,6 +55,7 @@
 
 typedef struct gl2_renderchain
 {
+   bool egl_images;
    bool has_fp_fbo;
    bool has_srgb_fbo_gles3;
    bool has_srgb_fbo;
@@ -1253,7 +1254,7 @@ static void gl2_renderchain_copy_frame(
    }
 #elif defined(HAVE_OPENGLES)
 #if defined(HAVE_EGL)
-   if (gl->egl_images)
+   if (chain->egl_images)
    {
       gfx_ctx_image_t img_info;
       bool new_egl    = false;
@@ -1449,7 +1450,8 @@ static void gl2_renderchain_init_textures_reference(
       unsigned internal_fmt, unsigned texture_fmt,
       unsigned texture_type)
 {
-   gl_t *gl = (gl_t*)data;
+   gl_t                 *gl = (gl_t*)data;
+   gl2_renderchain_t *chain = (gl2_renderchain_t*)chain_data;
 #ifdef HAVE_PSGL
    glTextureReferenceSCE(GL_TEXTURE_2D, 1,
          gl->tex_w, gl->tex_h, 0,
@@ -1457,7 +1459,7 @@ static void gl2_renderchain_init_textures_reference(
          gl->tex_w * gl->base_size,
          gl->tex_w * gl->tex_h * i * gl->base_size);
 #else
-   if (gl->egl_images)
+   if (chain->egl_images)
       return;
 
    gl_load_texture_image(GL_TEXTURE_2D,
@@ -1471,8 +1473,10 @@ static void gl2_renderchain_init_textures_reference(
 }
 
 static void gl2_renderchain_resolve_extensions(void *data,
-      void *chain_data, const char *context_ident)
+      void *chain_data, const char *context_ident,
+      const video_info_t *video)
 {
+   gl_t              *gl            = (gl_t*)data;
    gl2_renderchain_t *chain         = (gl2_renderchain_t*)chain_data;
    settings_t *settings             = config_get_ptr();
 
@@ -1486,6 +1490,10 @@ static void gl2_renderchain_resolve_extensions(void *data,
 
    if (!settings->bools.video_force_srgb_disable)
       chain->has_srgb_fbo           = gl_check_capability(GL_CAPS_SRGB_FBO);
+
+   /* Use regular textures if we use HW render. */
+   chain->egl_images                = !gl->hw_render_use && gl_check_capability(GL_CAPS_EGLIMAGE) &&
+      video_context_driver_init_image_buffer(video);
 }
 
 gl_renderchain_driver_t gl2_renderchain = {
