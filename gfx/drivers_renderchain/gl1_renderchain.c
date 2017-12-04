@@ -57,9 +57,9 @@ typedef struct gl1_renderchain
 
 GLenum min_filter_to_mag(GLenum type);
 
-void gl1_renderchain_free(void *data)
+void gl1_renderchain_free(void *data, void *chain_data)
 {
-   gl_t *gl = (gl_t*)data;
+   (void)chain_data;
    (void)gl;
 }
 
