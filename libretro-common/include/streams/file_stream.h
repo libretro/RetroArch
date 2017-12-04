@@ -99,8 +99,11 @@ int filestream_printf(RFILE *stream, const char* format, ...);
 
 int filestream_error(RFILE *stream);
 
-int filestream_get_fd(RFILE *stream);
+/* DO NOT put this function back, unless you want to deal with
+   the UNAVOIDABLE REGRESSIONS on platforms using unexpected rfile backends
+int filestream_get_fd(RFILE *stream); */
 
+/* TODO: remove, for the same reason as the above */
 FILE* filestream_get_fp(RFILE *stream);
 
 int filestream_flush(RFILE *stream);
