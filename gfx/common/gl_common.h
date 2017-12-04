@@ -33,14 +33,11 @@
 #include "../video_coord_array.h"
 #include "../video_driver.h"
 #include "../drivers/gl_symlinks.h"
+#include <glsym/glsym.h>
 
 RETRO_BEGIN_DECLS
 
 #define MAX_FENCES 4
-
-#ifndef ARB_sync
-typedef struct __GLsync *GLsync;
-#endif
 
 typedef struct gl
 {
