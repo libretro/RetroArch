@@ -67,7 +67,14 @@ typedef struct gl2_renderchain
    coords[5] = yamt; \
    coords[7] = yamt
 
-#define gl2_bind_fb(id) glBindFramebuffer(RARCH_GL_FRAMEBUFFER, id)
+#if (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
+#define gl2_delete_fb(n, fb) glDeleteFramebuffersEXT(n, fb)
+#define gl2_bind_fb(id)      glBindFramebufferEXT(RARCH_GL_FRAMEBUFFER, id)
+#else
+#define gl2_delete_fb(n, fb) glDeleteFramebuffers(n, fb)
+#define gl2_bind_fb(id)      glBindFramebuffer(RARCH_GL_FRAMEBUFFER, id)
+#endif
+
 
 #ifndef GL_SYNC_GPU_COMMANDS_COMPLETE
 #define GL_SYNC_GPU_COMMANDS_COMPLETE     0x9117
@@ -424,13 +431,13 @@ static void gl2_renderchain_deinit_fbo(void *data)
       return;
 
    glDeleteTextures(gl->fbo_pass, gl->fbo_texture);
-   glDeleteFramebuffers(gl->fbo_pass, gl->fbo);
+   gl2_delete_fb(gl->fbo_pass, gl->fbo);
 
    memset(gl->fbo_texture, 0, sizeof(gl->fbo_texture));
    memset(gl->fbo,         0, sizeof(gl->fbo));
 
    if (gl->fbo_feedback)
-      glDeleteFramebuffers(1, &gl->fbo_feedback);
+      gl2_delete_fb(1, &gl->fbo_feedback);
    if (gl->fbo_feedback_texture)
       glDeleteTextures(1, &gl->fbo_feedback_texture);
 
@@ -451,7 +458,7 @@ static void gl2_renderchain_deinit_hw_render(void *data)
    context_bind_hw_render(true);
 
    if (gl->hw_render_fbo_init)
-      glDeleteFramebuffers(gl->textures, gl->hw_render_fbo);
+      gl2_delete_fb(gl->textures, gl->hw_render_fbo);
    if (gl->hw_render_depth_init)
       glDeleteRenderbuffers(gl->textures, gl->hw_render_depth);
    gl->hw_render_fbo_init = false;
@@ -510,9 +517,9 @@ static bool gl_create_fbo_targets(gl_t *gl)
    return true;
 
 error:
-   glDeleteFramebuffers(gl->fbo_pass, gl->fbo);
+   gl2_delete_fb(gl->fbo_pass, gl->fbo);
    if (gl->fbo_feedback)
-      glDeleteFramebuffers(1, &gl->fbo_feedback);
+      gl2_delete_fb(1, &gl->fbo_feedback);
    RARCH_ERR("[GL]: Failed to set up frame buffer objects. Multi-pass shading will not work.\n");
    return false;
 }
