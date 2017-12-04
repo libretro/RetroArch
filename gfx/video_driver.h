@@ -904,6 +904,10 @@ typedef struct gl_renderchain_driver
          uint64_t frame_count,
          const struct video_tex_info *tex_info,
          const struct video_tex_info *feedback_info);
+   void (*resolve_extensions)(
+         void *data,
+         void *chain_data,
+         const char *context_ident);
    const char *ident;
 } gl_renderchain_driver_t;
 

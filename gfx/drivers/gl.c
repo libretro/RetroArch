@@ -1371,6 +1371,9 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
 
    video_driver_unset_rgba();
 
+   if (gl->renderchain_driver->resolve_extensions)
+      gl->renderchain_driver->resolve_extensions(gl, gl->renderchain_data, context_ident);
+
 #if defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
    if (!gl_check_capability(GL_CAPS_BGRA8888))
    {

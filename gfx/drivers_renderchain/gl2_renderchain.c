@@ -1461,6 +1461,11 @@ static void gl2_renderchain_init_textures_reference(
 #endif
 }
 
+static void gl2_renderchain_resolve_extensions(void *data,
+      void *chain_data, const char *context_ident)
+{
+}
+
 gl_renderchain_driver_t gl2_renderchain = {
    NULL,                                        /* set_coords */
    NULL,                                        /* set_mvp    */
@@ -1513,5 +1518,6 @@ gl_renderchain_driver_t gl2_renderchain = {
    gl2_renderchain_check_fbo_dimensions,
    gl2_renderchain_recompute_pass_sizes,
    gl2_renderchain_render,
+   gl2_renderchain_resolve_extensions,
    "gl2",
 };

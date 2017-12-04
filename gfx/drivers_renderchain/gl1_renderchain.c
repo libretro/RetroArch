@@ -327,10 +327,11 @@ gl_renderchain_driver_t gl2_renderchain = {
    NULL,                                  /* renderchain_init */
    NULL,                                  /* init_hw_render */
    gl1_renderchain_free,
-   NULL,                                  /* deinit_hw_render */
-   NULL,                                  /* start_render */
+   NULL,                                  /* deinit_hw_render     */
+   NULL,                                  /* start_render         */
    NULL,                                  /* check_fbo_dimensions */
    NULL,                                  /* recompute_pass_sizes */
-   NULL,                                  /* renderchain_render */
+   NULL,                                  /* renderchain_render   */
+   NULL,                                  /* resolve_extensions   */
    "gl1",
 };
