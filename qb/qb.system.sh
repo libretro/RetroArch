@@ -1,7 +1,24 @@
-IFS=' 	
-'
-\unalias -a 2>/dev/null
-PATH="$(command -p getconf PATH):$PATH"
+exists() # checks executables listed in $@ against the $PATH
+{
+	v=1
+	while [ "$#" -gt 0 ]; do
+		arg="$1"
+		shift 1
+		case "$arg" in ''|*/) continue ;; esac
+		x="${arg##*/}"
+		z="${arg%/*}"
+		[ ! -f "$z/$x" ] || [ ! -x "$z/$x" ] && [ "$z/$x" = "$arg" ] && continue
+		[ "$x" = "$z" ] && [ -x "$z/$x" ] && [ ! -f "$arg" ] && z=
+		p=":$z:$PATH"
+		while [ "$p" != "${p#*:}" ]; do
+			p="${p#*:}"
+			d="${p%%:*}"
+			{ [ -f "$d/$x" ] && [ -x "$d/$x" ] && \
+				{ printf %s\\n "$d/$x"; v=0; break; }; } || :
+		done
+	done
+	return "$v"
+}
 
 if [ -n "$CROSS_COMPILE" ]; then
 	case "$CROSS_COMPILE" in

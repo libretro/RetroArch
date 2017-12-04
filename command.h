@@ -259,6 +259,20 @@ bool command_free(command_t *handle);
  **/
 bool command_event(enum event_command action, void *data);
 
+void command_playlist_push_write(
+      void *data,
+      const char *path,
+      const char *label,
+      const char *core_path,
+      const char *core_name);
+
+void command_playlist_update_write(
+      void *data,
+      size_t idx,
+      const char *core_display_name,
+      const char *label,
+      const char *path);
+
 RETRO_END_DECLS
 
 #endif

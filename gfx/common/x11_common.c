@@ -21,6 +21,9 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
+#include <errno.h>
+#include <unistd.h>
+
 #include <X11/Xatom.h>
 
 #ifdef HAVE_CONFIG_H
@@ -155,9 +158,35 @@ static void x11_set_window_class(Display *dpy, Window win)
    XSetClassHint(dpy, win, &hint);
 }
 
+static void x11_set_window_pid(Display *dpy, Window win)
+{
+    long scret;
+    char *hostname;
+    pid_t pid = getpid();
+
+    XChangeProperty(dpy, win, XInternAtom(dpy, "_NET_WM_PID", False),
+        XA_CARDINAL, 32, PropModeReplace, (unsigned char *)&pid, 1);
+
+    errno = 0;
+    if((scret = sysconf(_SC_HOST_NAME_MAX)) == -1 && errno)
+        return;
+    if((hostname = malloc(scret + 1)) == NULL)
+        return;
+
+    if(gethostname(hostname, scret + 1) == -1)
+        RARCH_WARN("Failed to get hostname.\n");
+    else
+    {
+        XChangeProperty(dpy, win, XA_WM_CLIENT_MACHINE, XA_STRING, 8,
+            PropModeReplace, (unsigned char *)hostname, strlen(hostname));
+    }
+    free(hostname);
+}
+
 void x11_set_window_attr(Display *dpy, Window win)
 {
    x11_set_window_class(dpy, win);
+   x11_set_window_pid(dpy, win);
 }
 
 static void xdg_screensaver_inhibit(Window wnd)

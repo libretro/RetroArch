@@ -80,7 +80,7 @@
 #define BIT128_SET(a, bit)   ((a).data[(bit) >> 5] |=  (1 << ((bit) & 31)))
 #define BIT128_CLEAR(a, bit) ((a).data[(bit) >> 5] &= ~(1 << ((bit) & 31)))
 #define BIT128_GET(a, bit)   ((a).data[(bit) >> 5] &   (1 << ((bit) & 31)))
-#define BIT128_CLEAR_ALL(a)  memset(&(a), 0, sizeof(a));
+#define BIT128_CLEAR_ALL(a)  memset(&(a), 0, sizeof(a))
 
 /* Helper macros and struct to keep track of many booleans.
  * To check for multiple bits, use &&, not &.

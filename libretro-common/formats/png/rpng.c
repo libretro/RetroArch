@@ -999,8 +999,6 @@ bool rpng_iterate_image(rpng_t *rpng)
    if (!read_chunk_header(buf, &chunk))
       return false;
 
-   *buf += 8;
-
 #if 0
    for (i = 0; i < 4; i++)
    {

@@ -293,6 +293,12 @@ static bool xmb_show_add     	 = true;
 #endif
 #endif
 
+#if defined(HAVE_LIBRETRODB) && !defined(RARCH_CONSOLE)
+static bool automatically_add_content_to_playlist = true;
+#else
+static bool automatically_add_content_to_playlist = false;
+#endif
+
 static float menu_framebuffer_opacity = 0.900;
 
 static float menu_wallpaper_opacity = 0.300;
@@ -528,7 +534,7 @@ static const bool netplay_nat_traversal = false;
 
 static const unsigned netplay_delay_frames = 16;
 
-static const int netplay_check_frames = 30;
+static const int netplay_check_frames = 600;
 
 static const bool netplay_use_mitm_server = false;
 

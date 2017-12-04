@@ -179,16 +179,13 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
                && !gl_query_extension("EXT_framebuffer_object"))
             return false;
 
-         if (glGenFramebuffers
-               && glBindFramebuffer
-               && glFramebufferTexture2D
-               && glCheckFramebufferStatus
-               && glDeleteFramebuffers
-               && glGenRenderbuffers
-               && glBindRenderbuffer
-               && glFramebufferRenderbuffer
-               && glRenderbufferStorage
-               && glDeleteRenderbuffers)
+         if (gl_query_extension("ARB_framebuffer_object"))
+            return true;
+
+         if (gl_query_extension("EXT_framebuffer_object"))
+            return true;
+
+         if (major >= 3)
             return true;
          break;
 #endif

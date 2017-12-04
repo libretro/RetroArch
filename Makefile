@@ -119,10 +119,16 @@ endif
 
 RARCH_OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
 
+ifneq ($(X86),)
+   CFLAGS += -m32
+   CXXLAGS += -m32
+   LDFLAGS += -m32
+endif
+
 ifneq ($(SANITIZER),)
-    CFLAGS   := -fsanitize=$(SANITIZER) $(CFLAGS)
-    CXXFLAGS := -fsanitize=$(SANITIZER) $(CXXFLAGS)
-    LDFLAGS  := -fsanitize=$(SANITIZER) $(LDFLAGS)
+   CFLAGS   := -fsanitize=$(SANITIZER) $(CFLAGS)
+   CXXFLAGS := -fsanitize=$(SANITIZER) $(CXXFLAGS)
+   LDFLAGS  := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
 ifneq ($(findstring $(GPERFTOOLS),profiler),)

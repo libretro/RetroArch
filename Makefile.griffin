@@ -334,7 +334,7 @@ else ifeq ($(platform), windows_msvc6_x86)
    PLATCFLAGS += -D_WIN32 -D_WIN32_WINNT=0x0351 -D__STDC_CONSTANT_MACROS -D_MBCS
    LDFLAGS += shell32.lib user32.lib gdi32.lib comdlg32.lib winmm.lib ole32.lib
 
-   VCDIR ?= $(shell reg query "HKLM\SOFTWARE\Wow6432Node\Microsoft\DevStudio\6.0\Products\Microsoft Visual C++" -v "ProductDir" | grep -o '[A-Z]:\\.*')
+   VCDIR ?= $(shell reg query "HKLM\SOFTWARE\Wow6432Node\Microsoft\DevStudio\6.0\Products\Microsoft Visual C++" -v "ProductDir" | grep -io '[A-Z]:\\.*')
 
    PATH := $(shell IFS=$$'\n'; cygpath "$(VCDIR)/bin"):$(PATH)
    PATH := $(PATH):$(shell IFS=$$'\n'; cygpath "$(VCDIR)/../Common/MSDev98/Bin")
@@ -493,8 +493,8 @@ else ifneq (,$(findstring windows_msvc2010,$(platform)))
    PATH := $(PATH):$(shell IFS=$$'\n'; cygpath "$(VS100COMNTOOLS)../IDE")
    INCLUDE := $(shell IFS=$$'\n'; cygpath -w "$(VS100COMNTOOLS)../../VC/include")
 
-   WindowsSdkDir ?= $(shell reg query "HKLM\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v7.0A" -v "InstallationFolder" | grep -o '[A-Z]:\\.*')
-   WindowsSdkDir ?= $(shell reg query "HKLM\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v7.1A" -v "InstallationFolder" | grep -o '[A-Z]:\\.*')
+   WindowsSdkDir ?= $(shell reg query "HKLM\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v7.0A" -v "InstallationFolder" | grep -io '[A-Z]:\\.*')
+   WindowsSdkDir ?= $(shell reg query "HKLM\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v7.1A" -v "InstallationFolder" | grep -io '[A-Z]:\\.*')
    WindowsSdkDir := $(WindowsSdkDir:\=)
 
    ifeq ($(HAVE_DIRECTX), 1)
@@ -568,7 +568,7 @@ else ifneq (,$(findstring windows_msvc2012,$(platform)))
    PATH := $(PATH):$(shell IFS=$$'\n'; cygpath "$(VS110COMNTOOLS)../IDE")
    INCLUDE := $(shell IFS=$$'\n'; cygpath -w "$(VS110COMNTOOLS)../../VC/include")
 
-   WindowsSdkDir ?= $(shell reg query "HKLM\SOFTWARE\Microsoft\Windows Kits\Installed Roots" -v "KitsRoot81" | grep -o '[A-Z]:\\.*')
+   WindowsSdkDir ?= $(shell reg query "HKLM\SOFTWARE\Microsoft\Windows Kits\Installed Roots" -v "KitsRoot81" | grep -io '[A-Z]:\\.*')
    WindowsSdkDir := $(WindowsSdkDir:\=)
 
    ifeq ($(HAVE_DIRECTX), 1)
@@ -642,7 +642,7 @@ else ifneq (,$(findstring windows_msvc2013,$(platform)))
    PATH := $(PATH):$(shell IFS=$$'\n'; cygpath "$(VS120COMNTOOLS)../IDE")
    INCLUDE := $(shell IFS=$$'\n'; cygpath -w "$(VS120COMNTOOLS)../../VC/include")
 
-   WindowsSdkDir ?= $(shell reg query "HKLM\SOFTWARE\Microsoft\Windows Kits\Installed Roots" -v "KitsRoot81" | grep -o '[A-Z]:\\.*')
+   WindowsSdkDir ?= $(shell reg query "HKLM\SOFTWARE\Microsoft\Windows Kits\Installed Roots" -v "KitsRoot81" | grep -io '[A-Z]:\\.*')
    WindowsSdkDir := $(WindowsSdkDir:\=)
 
    ifeq ($(HAVE_DIRECTX), 1)
@@ -833,6 +833,7 @@ ifeq ($(DEBUG), 1)
       endif
 
       CFLAGS += -Od -Zi -D_DEBUG -MTd -TP
+      LDFLAGS += -DEBUG
    else
       CFLAGS += -O0 -g -DDEBUG
    endif

@@ -131,6 +131,8 @@ static int setting_bind_action_start(void *data)
    bind_type    = setting_get_bind_type(setting);
    keybind->key = def_binds[bind_type - MENU_SETTINGS_BIND_BEGIN].key;
 
+   keybind->mbutton = NO_BTN;
+
    return 0;
 }
 #endif

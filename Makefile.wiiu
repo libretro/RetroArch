@@ -18,23 +18,26 @@ OBJ += wiiu/system/exception_handler.o
 OBJ += wiiu/system/missing_libc_functions.o
 OBJ += wiiu/fs/sd_fat_devoptab.o
 OBJ += wiiu/fs/fs_utils.o
-OBJ += wiiu/controller_patcher/ControllerPatcher.o
-OBJ += wiiu/controller_patcher/ControllerPatcherWrapper.o
-OBJ += wiiu/controller_patcher/ConfigReader.o
-OBJ += wiiu/controller_patcher/config/ConfigParser.o
-OBJ += wiiu/controller_patcher/config/ConfigValues.o
-OBJ += wiiu/controller_patcher/network/ControllerPatcherNet.o
-OBJ += wiiu/controller_patcher/network/TCPServer.o
-OBJ += wiiu/controller_patcher/network/UDPClient.o
-OBJ += wiiu/controller_patcher/network/UDPServer.o
-OBJ += wiiu/controller_patcher/patcher/ControllerPatcherUtils.o
-OBJ += wiiu/controller_patcher/patcher/ControllerPatcherHID.o
-OBJ += wiiu/controller_patcher/utils/CPRetainVars.o
-OBJ += wiiu/controller_patcher/utils/CPStringTools.o
-OBJ += wiiu/controller_patcher/utils/PadConst.o
-OBJ += wiiu/controller_patcher/utils/FSHelper.o
 OBJ += wiiu/tex_shader.o
 OBJ += wiiu/hbl.o
+
+ifeq ($(ENABLE_CONTROLLER_PATCHER), 1)
+	OBJ += wiiu/controller_patcher/ControllerPatcher.o
+	OBJ += wiiu/controller_patcher/ControllerPatcherWrapper.o
+	OBJ += wiiu/controller_patcher/ConfigReader.o
+	OBJ += wiiu/controller_patcher/config/ConfigParser.o
+	OBJ += wiiu/controller_patcher/config/ConfigValues.o
+	OBJ += wiiu/controller_patcher/network/ControllerPatcherNet.o
+	OBJ += wiiu/controller_patcher/network/TCPServer.o
+	OBJ += wiiu/controller_patcher/network/UDPClient.o
+	OBJ += wiiu/controller_patcher/network/UDPServer.o
+	OBJ += wiiu/controller_patcher/patcher/ControllerPatcherUtils.o
+	OBJ += wiiu/controller_patcher/patcher/ControllerPatcherHID.o
+	OBJ += wiiu/controller_patcher/utils/CPRetainVars.o
+	OBJ += wiiu/controller_patcher/utils/CPStringTools.o
+	OBJ += wiiu/controller_patcher/utils/PadConst.o
+	OBJ += wiiu/controller_patcher/utils/FSHelper.o
+endif
 
 DEFINES :=
 
@@ -158,6 +161,9 @@ CFLAGS += -DWIIU -DMSB_FIRST
 CFLAGS += -DHAVE_MAIN
 CFLAGS += -DHAVE_UPDATE_ASSETS
 CFLAGS += -DRARCH_INTERNAL -DRARCH_CONSOLE
+ifeq ($(ENABLE_CONTROLLER_PATCHER), 1)
+	CFLAGS += -DENABLE_CONTROLLER_PATCHER
+endif
 CFLAGS += -DHAVE_FILTERS_BUILTIN $(DEFINES)
 
 ifneq ($(PC_DEVELOPMENT_IP_ADDRESS),)
