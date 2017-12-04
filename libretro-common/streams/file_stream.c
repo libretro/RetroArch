@@ -166,7 +166,6 @@ void filestream_set_size(RFILE *stream)
  * @bufsize            : optional buffer size (-1 or 0 to use default)
  *
  * Opens a file for reading or writing, depending on the requested mode.
- * If bufsize is > 0 for unbuffered modes (like RFILE_MODE_WRITE), file will instead be fully buffered.
  * Returns a pointer to an RFILE if opened successfully, otherwise NULL.
  **/
 RFILE *filestream_open(const char *path, unsigned mode, ssize_t unused)
@@ -192,6 +191,7 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t unused)
 
    (void)mode_int;
    (void)flags;
+   (void)bufsize;
 
    stream->hints = mode;
 
