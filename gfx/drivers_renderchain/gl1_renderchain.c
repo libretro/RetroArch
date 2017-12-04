@@ -108,14 +108,12 @@ static bool gl1_renderchain_read_viewport(
    /* Use slow synchronous readbacks. Use this with plain screenshots
       as we don't really care about performance in this case. */
 
-   /* GLES2 only guarantees GL_RGBA/GL_UNSIGNED_BYTE
+   /* GL1 only guarantees GL_RGBA/GL_UNSIGNED_BYTE
     * readbacks so do just that.
-    * GLES2 also doesn't support reading back data
+    * GL1 also doesn't support reading back data
     * from front buffer, so render a cached frame
     * and have gl_frame() do the readback while it's
     * in the back buffer.
-    *
-    * Keep codepath similar for GLES and desktop GL.
     */
    gl->readback_buffer_screenshot = malloc(num_pixels * sizeof(uint32_t));
 
