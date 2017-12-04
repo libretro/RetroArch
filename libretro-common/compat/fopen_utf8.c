@@ -1,5 +1,6 @@
 #include <compat/fopen_utf8.h>
 #include <encodings/utf.h>
+#include <stdlib.h>
 
 #if defined(_MSC_VER) && _MSC_VER < 1400 || defined(_XBOX)
 #ifndef LEGACY_WIN32
