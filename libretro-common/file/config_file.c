@@ -912,12 +912,10 @@ void config_set_bool(config_file_t *conf, const char *key, bool val)
 
 bool config_file_write(config_file_t *conf, const char *path)
 {
-   FILE* file = NULL;
-   void* buf  = NULL;
-
    if (!string_is_empty(path))
    {
-      file = fopen(path, "wb");
+      void* buf  = NULL;
+      FILE *file = fopen(path, "wb");
       if (!file)
          return false;
 
@@ -926,14 +924,13 @@ bool config_file_write(config_file_t *conf, const char *path)
       setvbuf(file, (char*)buf, _IOFBF, 0x4000);
 
       config_file_dump(conf, file);
+
+      if (file != stdout)
+         fclose(file);
+      free(buf);
    }
    else
       config_file_dump(conf, stdout);
-
-   if (file && file != stdout)
-      fclose(file);
-   if (buf)
-      free(buf);
 
    return true;
 }
