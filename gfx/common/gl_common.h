@@ -166,7 +166,6 @@ typedef struct gl
    bool fbo_inited;
    bool fbo_feedback_enable;
    bool hw_render_fbo_init;
-   bool hw_render_depth_init;
    bool has_fbo;
    bool hw_render_use;
    bool core_context_in_use;
@@ -190,7 +189,6 @@ typedef struct gl
 
    int version_major;
    int version_minor;
-   int fbo_pass;
 
    GLuint tex_mag_filter;
    GLuint tex_min_filter;
@@ -199,13 +197,10 @@ typedef struct gl
    GLuint pbo;
    GLuint *overlay_tex;
    GLuint menu_texture;
-   GLuint vao;
    GLuint pbo_readback[4];
    GLuint texture[GFX_MAX_TEXTURES];
    GLuint fbo[GFX_MAX_SHADERS];
-   GLuint fbo_texture[GFX_MAX_SHADERS];
    GLuint hw_render_fbo[GFX_MAX_TEXTURES];
-   GLuint hw_render_depth[GFX_MAX_TEXTURES];
 
    unsigned tex_index; /* For use with PREV. */
    unsigned textures;
