@@ -912,20 +912,28 @@ void config_set_bool(config_file_t *conf, const char *key, bool val)
 
 bool config_file_write(config_file_t *conf, const char *path)
 {
-   RFILE *file = NULL;
+   FILE* file = NULL;
+   void* buf  = NULL;
 
    if (!string_is_empty(path))
    {
-      file = filestream_open(path, RFILE_MODE_WRITE, 0x4000);
+      file = fopen(path, "wb");
       if (!file)
          return false;
-      config_file_dump(conf, filestream_get_fp(file));
+
+      /* TODO: this is only useful for a few platforms, find which and add ifdef */
+      buf = calloc(1, 0x4000);
+      setvbuf(file, buf, _IOFBF, 0x4000);
+
+      config_file_dump(conf, file);
    }
    else
       config_file_dump(conf, stdout);
 
-   if (file)
-      filestream_close(file);
+   if (file && file != stdout)
+      fclose(file);
+   if (buf)
+      free(buf);
 
    return true;
 }
