@@ -51,9 +51,12 @@
 #include "../../configuration.h"
 #include "../../verbosity.h"
 
+#define MAX_FENCES 4
+
 typedef struct gl2_renderchain
 {
-   void *empty;
+   unsigned fence_count;
+   GLsync fences[MAX_FENCES];
 } gl2_renderchain_t;
 
 #if (!defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3))
@@ -1144,12 +1147,12 @@ error:
 
 void gl2_renderchain_free_internal(void *data, void *chain_data)
 {
-   gl2_renderchain_t *cg_data = (gl2_renderchain_t*)chain_data;
+   gl2_renderchain_t *chain = (gl2_renderchain_t*)chain_data;
 
-   if (!cg_data)
+   if (!chain)
       return;
 
-   free(cg_data);
+   free(chain);
 }
 
 static void *gl2_renderchain_new(void)
@@ -1399,20 +1402,20 @@ static void gl2_renderchain_fence_iterate(
       void *chain_data,
       unsigned hard_sync_frames)
 {
-   gl_t *gl = (gl_t*)data;
+   gl2_renderchain_t *chain = (gl2_renderchain_t*)chain_data;
 
-   gl->fences[gl->fence_count++] =
+   chain->fences[chain->fence_count++] =
       glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 
-   while (gl->fence_count > hard_sync_frames)
+   while (chain->fence_count > hard_sync_frames)
    {
-      glClientWaitSync(gl->fences[0],
+      glClientWaitSync(chain->fences[0],
             GL_SYNC_FLUSH_COMMANDS_BIT, 1000000000);
-      glDeleteSync(gl->fences[0]);
+      glDeleteSync(chain->fences[0]);
 
-      gl->fence_count--;
-      memmove(gl->fences, gl->fences + 1,
-            gl->fence_count * sizeof(GLsync));
+      chain->fence_count--;
+      memmove(chain->fences, chain->fences + 1,
+            chain->fence_count * sizeof(GLsync));
    }
 }
 
@@ -1420,15 +1423,15 @@ static void gl2_renderchain_fence_free(void *data,
       void *chain_data)
 {
    unsigned i;
-   gl_t *gl = (gl_t*)data;
+   gl2_renderchain_t *chain = (gl2_renderchain_t*)chain_data;
 
-   for (i = 0; i < gl->fence_count; i++)
+   for (i = 0; i < chain->fence_count; i++)
    {
-      glClientWaitSync(gl->fences[i],
+      glClientWaitSync(chain->fences[i],
             GL_SYNC_FLUSH_COMMANDS_BIT, 1000000000);
-      glDeleteSync(gl->fences[i]);
+      glDeleteSync(chain->fences[i]);
    }
-   gl->fence_count = 0;
+   chain->fence_count = 0;
 }
 #endif
 

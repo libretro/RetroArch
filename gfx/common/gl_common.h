@@ -38,8 +38,6 @@
 
 RETRO_BEGIN_DECLS
 
-#define MAX_FENCES 4
-
 #if defined(HAVE_PSGL)
 #define RARCH_GL_FRAMEBUFFER GL_FRAMEBUFFER_OES
 #define RARCH_GL_FRAMEBUFFER_COMPLETE GL_FRAMEBUFFER_COMPLETE_OES
@@ -250,7 +248,6 @@ typedef struct gl
    struct video_fbo_rect fbo_rect[GFX_MAX_SHADERS];
    struct gfx_fbo_scale fbo_scale[GFX_MAX_SHADERS];
 
-   GLsync fences[MAX_FENCES];
    const gl_renderchain_driver_t *renderchain_driver;
    void *renderchain_data;
 } gl_t;
