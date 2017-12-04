@@ -68,9 +68,15 @@ typedef struct gl2_renderchain
    coords[7] = yamt
 
 #if (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
+#define gl2_fb_texture_2d(a, b, c, d, e) glFramebufferTexture2DEXT(a, b, c, d, e)
+#define gl2_check_fb_status(target) glCheckFramebufferStatusEXT(target)
+#define gl2_gen_fb(n, ids)   glGenFramebuffersEXT(n, ids)
 #define gl2_delete_fb(n, fb) glDeleteFramebuffersEXT(n, fb)
 #define gl2_bind_fb(id)      glBindFramebufferEXT(RARCH_GL_FRAMEBUFFER, id)
 #else
+#define gl2_fb_texture_2d(a, b, c, d, e) glFramebufferTexture2D(a, b, c, d, e)
+#define gl2_check_fb_status(target) glCheckFramebufferStatus(target)
+#define gl2_gen_fb(n, ids)   glGenFramebuffers(n, ids)
 #define gl2_delete_fb(n, fb) glDeleteFramebuffers(n, fb)
 #define gl2_bind_fb(id)      glBindFramebuffer(RARCH_GL_FRAMEBUFFER, id)
 #endif
@@ -176,11 +182,11 @@ static bool gl_recreate_fbo(
          0, RARCH_GL_TEXTURE_TYPE32,
          RARCH_GL_FORMAT32, NULL);
 
-   glFramebufferTexture2D(RARCH_GL_FRAMEBUFFER,
+   gl2_fb_texture_2d(RARCH_GL_FRAMEBUFFER,
          RARCH_GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
          *texture, 0);
 
-   if (glCheckFramebufferStatus(RARCH_GL_FRAMEBUFFER) 
+   if (gl2_check_fb_status(RARCH_GL_FRAMEBUFFER) 
          == RARCH_GL_FRAMEBUFFER_COMPLETE)
       return true;
 
@@ -479,17 +485,17 @@ static bool gl_create_fbo_targets(gl_t *gl)
    int i;
 
    glBindTexture(GL_TEXTURE_2D, 0);
-   glGenFramebuffers(gl->fbo_pass, gl->fbo);
+   gl2_gen_fb(gl->fbo_pass, gl->fbo);
 
    for (i = 0; i < gl->fbo_pass; i++)
    {
       GLenum status;
 
       gl2_bind_fb(gl->fbo[i]);
-      glFramebufferTexture2D(RARCH_GL_FRAMEBUFFER,
+      gl2_fb_texture_2d(RARCH_GL_FRAMEBUFFER,
             RARCH_GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->fbo_texture[i], 0);
 
-      status = glCheckFramebufferStatus(RARCH_GL_FRAMEBUFFER);
+      status = gl2_check_fb_status(RARCH_GL_FRAMEBUFFER);
       if (status != RARCH_GL_FRAMEBUFFER_COMPLETE)
          goto error;
    }
@@ -498,13 +504,13 @@ static bool gl_create_fbo_targets(gl_t *gl)
    {
       GLenum status;
 
-      glGenFramebuffers(1, &gl->fbo_feedback);
+      gl2_gen_fb(1, &gl->fbo_feedback);
       gl2_bind_fb(gl->fbo_feedback);
-      glFramebufferTexture2D(RARCH_GL_FRAMEBUFFER,
+      gl2_fb_texture_2d(RARCH_GL_FRAMEBUFFER,
             RARCH_GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
             gl->fbo_feedback_texture, 0);
 
-      status = glCheckFramebufferStatus(RARCH_GL_FRAMEBUFFER);
+      status = gl2_check_fb_status(RARCH_GL_FRAMEBUFFER);
       if (status != RARCH_GL_FRAMEBUFFER_COMPLETE)
          goto error;
 
@@ -883,7 +889,7 @@ static bool gl2_renderchain_init_hw_render(
    RARCH_LOG("[GL]: Supports FBO (render-to-texture).\n");
 
    glBindTexture(GL_TEXTURE_2D, 0);
-   glGenFramebuffers(gl->textures, gl->hw_render_fbo);
+   gl2_gen_fb(gl->textures, gl->hw_render_fbo);
 
    depth   = hwr->depth;
    stencil = hwr->stencil;
@@ -897,7 +903,7 @@ static bool gl2_renderchain_init_hw_render(
    for (i = 0; i < gl->textures; i++)
    {
       gl2_bind_fb(gl->hw_render_fbo[i]);
-      glFramebufferTexture2D(RARCH_GL_FRAMEBUFFER,
+      gl2_fb_texture_2d(RARCH_GL_FRAMEBUFFER,
             RARCH_GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->texture[i], 0);
 
       if (depth)
@@ -934,7 +940,7 @@ static bool gl2_renderchain_init_hw_render(
          }
       }
 
-      status = glCheckFramebufferStatus(RARCH_GL_FRAMEBUFFER);
+      status = gl2_check_fb_status(RARCH_GL_FRAMEBUFFER);
       if (status != RARCH_GL_FRAMEBUFFER_COMPLETE)
       {
          RARCH_ERR("[GL]: Failed to create HW render FBO #%u, error: 0x%u.\n",
