@@ -35,6 +35,7 @@
 
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
+#include <compat/fopen_utf8.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -96,7 +97,7 @@ void retro_main_log_file_init(const char *path)
    if (path == NULL)
       return;
 
-   log_file_fp          = fopen(path, "wb");
+   log_file_fp          = fopen_utf8(path, "wb");
    log_file_initialized = true;
    
    /* TODO: this is only useful for a few platforms, find which and add ifdef */
