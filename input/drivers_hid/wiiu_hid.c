@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2013-2014 - Jason Fetters
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -30,32 +30,49 @@
 #define DEVICE_UNUSED 0
 #define DEVICE_USED   1
 
+typedef struct wiiu_hid_user wiiu_hid_user_t;
+
+struct wiiu_hid_user
+{
+  wiiu_hid_user_t *next;
+  uint8_t *buffer;
+  uint32_t transfersize;
+  uint32_t handle;
+};
+
 typedef struct wiiu_hid
 {
    HIDClient *client;
    OSThread *polling_thread;
    // memory accounting; keep a pointer to the stack buffer so we can clean up later.
    void *polling_thread_stack;
+   // setting this to true tells the polling thread to quit
    volatile bool polling_thread_quit;
 } wiiu_hid_t;
 
-typedef struct wiiu_hid_user
-{
-  uint8_t *buffer;
-  uint32_t transfersize;
-  uint32_t handle;
-} wiiu_hid_user_t;
+/*
+ * The attach/detach callback has no access to the wiiu_hid_t object. Therefore, we need a
+ * global place to handle device data.
+ */
+static wiiu_hid_user_t *pad_list = NULL;
+static OSFastMutex *pad_list_mutex;
 
 static wiiu_hid_t *new_wiiu_hid_t(void);
 static void delete_wiiu_hid_t(wiiu_hid_t *hid);
+static wiiu_hid_user_t *new_wiiu_hid_user_t(void);
+static void delete_wiiu_hid_user_t(wiiu_hid_user_t *user);
 static HIDClient *new_hidclient(void);
 static void delete_hidclient(HIDClient *hid);
+static OSFastMutex *new_fastmutex(const char *name);
+static void delete_fastmutex(OSFastMutex *mutex);
 
 static int32_t wiiu_attach_callback(HIDClient *client, HIDDevice *device, uint32_t attach);
 static void start_polling_thread(wiiu_hid_t *hid);
 static void stop_polling_thread(wiiu_hid_t *hid);
 static int wiiu_hid_polling_thread(int argc, const char **argv);
 static void wiiu_hid_do_poll(wiiu_hid_t *hid);
+
+static void enqueue_device(void);
 
 /**
  * HID driver entrypoints registered with hid_driver_t
@@ -131,7 +148,11 @@ static void *wiiu_hid_init(void)
       delete_wiiu_hid_t(hid);
     }
     if(client)
-      free(client);
+      delete_hidclient(client);
+    if(pad_list_mutex) {
+      delete_fastmutex(pad_list_mutex);
+      pad_list_mutex = NULL;
+    }
 
     return NULL;
 }
@@ -143,6 +164,16 @@ static void wiiu_hid_free(void *data)
   if (hid) {
     stop_polling_thread(hid);
     delete_wiiu_hid_t(hid);
+  }
+}
+
+static void free_pad_list(void) {
+  wiiu_hid_user_t *top;
+
+  while(pad_list != NULL) {
+    top = pad_list;
+    pad_list = top->next;
+    delete_wiiu_hid_user_t(top);
   }
 }
 
@@ -168,7 +199,11 @@ static void start_polling_thread(wiiu_hid_t *hid) {
   OSThread *thread = memalign(8, sizeof(OSThread));
   void *stack = memalign(32, stack_size);
 
-  if(!thread || !stack)
+  if(pad_list_mutex == NULL) {
+    pad_list_mutex = new_fastmutex("pad_list");
+  }
+
+  if(!thread || !stack || !pad_list_mutex)
     goto error;
 
   if(!OSCreateThread(thread, wiiu_hid_polling_thread, 1, (char *)hid, stack, stack_size, priority, attributes))
@@ -179,6 +214,8 @@ static void start_polling_thread(wiiu_hid_t *hid) {
   return;
 
   error:
+    if(pad_list_mutex)
+      delete_fastmutex(pad_list_mutex);
     if(stack)
       free(stack);
     if(thread)
@@ -198,6 +235,11 @@ static void stop_polling_thread(wiiu_hid_t *hid) {
 
   free(hid->polling_thread);
   free(hid->polling_thread_stack);
+
+  // with the thread stopped, we don't need the mutex.
+  delete_fastmutex(pad_list_mutex);
+  pad_list_mutex = NULL;
+  free_pad_list();
 }
 
 /**
@@ -219,6 +261,23 @@ static void wiiu_hid_do_poll(wiiu_hid_t *hid) {
   usleep(POLL_THREAD_SLEEP);
 }
 
+int32_t wiiu_attach_device(HIDClient *client, HIDDevice *device) {
+  wiiu_hid_user_t *adapter = new_wiiu_hid_user_t();
+
+  if(!adapter)
+    goto error;
+
+  error:
+    if(adapter) {
+      delete_wiiu_hid_user_t(adapter);
+    }
+    return DEVICE_UNUSED;
+}
+
+int32_t wiiu_detach_device(HIDClient *client, HIDDevice *device) {
+  return DEVICE_UNUSED;
+}
+
 /**
  * Callbacks
  */
@@ -228,10 +287,10 @@ int32_t wiiu_attach_callback(HIDClient *client, HIDDevice *device, uint32_t atta
 
   switch(attach) {
     case HID_DEVICE_ATTACH:
-      // TODO: new device attached! Register it.
+      result = wiiu_attach_device(client, device);
       break;
     case HID_DEVICE_DETACH:
-      // TODO: device detached! Unregister it.
+      result = wiiu_detach_device(client, device);
       break;
     default:
       // Undefined behavior, bail out
@@ -280,13 +339,24 @@ static void delete_wiiu_hid_t(wiiu_hid_t *hid) {
   free(hid);
 }
 
-static HIDClient *new_hidclient() {
+static HIDClient *new_hidclient(void) {
   HIDClient *client = calloc(1, sizeof(HIDClient));
   if(client != NULL) {
     memset(client, 0, sizeof(HIDClient));
   }
 
   return client;
+}
+
+static OSFastMutex *new_fastmutex(const char *name) {
+  OSFastMutex *mutex = calloc(1, sizeof(OSFastMutex));
+  if(mutex != NULL) {
+    memset(mutex, 0, sizeof(OSFastMutex));
+  }
+
+  OSFastMutex_Init(mutex, name);
+
+  return mutex;
 }
 
 static void delete_hidclient(HIDClient *client) {
@@ -307,6 +377,11 @@ static void delete_wiiu_hid_user_t(wiiu_hid_user_t *user) {
   if(user) {
     free(user);
   }
+}
+
+static void delete_fastmutex(OSFastMutex *mutex) {
+  if(mutex)
+    free(mutex);
 }
 
 hid_driver_t wiiu_hid = {
