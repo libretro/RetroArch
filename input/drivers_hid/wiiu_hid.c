@@ -32,19 +32,6 @@
 #define DEVICE_UNUSED 0
 #define DEVICE_USED   1
 
-typedef struct wiiu_hid
-{
-   HIDClient *client;
-   OSThread *polling_thread;
-   // memory accounting; keep a pointer to the stack buffer so we can clean up later.
-   void *polling_thread_stack;
-   volatile bool polling_thread_quit;
-} wiiu_hid_t;
->>>>>>> Start implementing HID polling thread
-
-#define DEVICE_UNUSED 0
-#define DEVICE_USED   1
-
 typedef struct wiiu_hid_user wiiu_hid_user_t;
 
 struct wiiu_hid_user
@@ -64,7 +51,34 @@ typedef struct wiiu_hid
    // setting this to true tells the polling thread to quit
    volatile bool polling_thread_quit;
 } wiiu_hid_t;
+>>>>>>> Start implementing HID polling thread
 
+#define DEVICE_UNUSED 0
+#define DEVICE_USED   1
+
+typedef struct wiiu_hid_user wiiu_hid_user_t;
+
+<<<<<<< HEAD
+struct wiiu_hid_user
+{
+  wiiu_hid_user_t *next;
+  uint8_t *buffer;
+  uint32_t transfersize;
+  uint32_t handle;
+};
+
+typedef struct wiiu_hid
+{
+   HIDClient *client;
+   OSThread *polling_thread;
+   // memory accounting; keep a pointer to the stack buffer so we can clean up later.
+   void *polling_thread_stack;
+   // setting this to true tells the polling thread to quit
+   volatile bool polling_thread_quit;
+} wiiu_hid_t;
+
+=======
+>>>>>>> More progress on the HID driver
 /*
  * The attach/detach callback has no access to the wiiu_hid_t object. Therefore, we need a
  * global place to handle device data.
@@ -91,6 +105,8 @@ static void wiiu_hid_do_poll(wiiu_hid_t *hid);
 static void enqueue_device(void);
 =======
 >>>>>>> Start implementing HID polling thread
+
+static void enqueue_device(void);
 
 /**
  * HID driver entrypoints registered with hid_driver_t
@@ -186,6 +202,9 @@ static void wiiu_hid_free(void *data)
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> More progress on the HID driver
 static void free_pad_list(void) {
   wiiu_hid_user_t *top;
 
@@ -196,8 +215,11 @@ static void free_pad_list(void) {
   }
 }
 
+<<<<<<< HEAD
 =======
 >>>>>>> Start implementing HID polling thread
+=======
+>>>>>>> More progress on the HID driver
 /**
  * This is a no-op because polling is done with a worker thread.
  */
@@ -221,14 +243,20 @@ static void start_polling_thread(wiiu_hid_t *hid) {
   void *stack = memalign(32, stack_size);
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> More progress on the HID driver
   if(pad_list_mutex == NULL) {
     pad_list_mutex = new_fastmutex("pad_list");
   }
 
   if(!thread || !stack || !pad_list_mutex)
+<<<<<<< HEAD
 =======
   if(!thread || !stack)
 >>>>>>> Start implementing HID polling thread
+=======
+>>>>>>> More progress on the HID driver
     goto error;
 
   if(!OSCreateThread(thread, wiiu_hid_polling_thread, 1, (char *)hid, stack, stack_size, priority, attributes))
@@ -240,10 +268,15 @@ static void start_polling_thread(wiiu_hid_t *hid) {
 
   error:
 <<<<<<< HEAD
+<<<<<<< HEAD
     if(pad_list_mutex)
       delete_fastmutex(pad_list_mutex);
 =======
 >>>>>>> Start implementing HID polling thread
+=======
+    if(pad_list_mutex)
+      delete_fastmutex(pad_list_mutex);
+>>>>>>> More progress on the HID driver
     if(stack)
       free(stack);
     if(thread)
@@ -264,13 +297,19 @@ static void stop_polling_thread(wiiu_hid_t *hid) {
   free(hid->polling_thread);
   free(hid->polling_thread_stack);
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> More progress on the HID driver
 
   // with the thread stopped, we don't need the mutex.
   delete_fastmutex(pad_list_mutex);
   pad_list_mutex = NULL;
   free_pad_list();
+<<<<<<< HEAD
 =======
 >>>>>>> Start implementing HID polling thread
+=======
+>>>>>>> More progress on the HID driver
 }
 
 /**
@@ -293,6 +332,9 @@ static void wiiu_hid_do_poll(wiiu_hid_t *hid) {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> More progress on the HID driver
 int32_t wiiu_attach_device(HIDClient *client, HIDDevice *device) {
   wiiu_hid_user_t *adapter = new_wiiu_hid_user_t();
 
@@ -310,8 +352,11 @@ int32_t wiiu_detach_device(HIDClient *client, HIDDevice *device) {
   return DEVICE_UNUSED;
 }
 
+<<<<<<< HEAD
 =======
 >>>>>>> Start implementing HID polling thread
+=======
+>>>>>>> More progress on the HID driver
 /**
  * Callbacks
  */
