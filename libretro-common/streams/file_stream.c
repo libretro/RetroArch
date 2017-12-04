@@ -251,7 +251,7 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t unused)
 #if  defined(PSP)
    stream->fd = sceIoOpen(path, flags, mode_int);
 
-   if (stream->fd == -1)
+   if (stream->fd < 0)
       goto error;
 #else
 #if defined(HAVE_BUFFERED_IO)
