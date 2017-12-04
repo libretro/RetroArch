@@ -121,17 +121,6 @@ FILE* filestream_get_fp(RFILE *stream)
    return stream->fp;
 }
 
-int filestream_get_fd(RFILE *stream)
-{
-   if (!stream)
-      return -1;
-#if defined(HAVE_BUFFERED_IO)
-   if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
-      return fileno(stream->fp);
-#endif
-   return stream->fd;
-}
-
 const char *filestream_get_ext(RFILE *stream)
 {
    if (!stream)
