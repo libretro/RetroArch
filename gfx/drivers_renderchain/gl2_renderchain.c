@@ -70,6 +70,8 @@ typedef struct gl2_renderchain
    unsigned fence_count;
 
    GLsync fences[MAX_FENCES];
+
+   struct gfx_fbo_scale fbo_scale[GFX_MAX_SHADERS];
 } gl2_renderchain_t;
 
 #if (!defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3))
@@ -623,7 +625,7 @@ static void gl_create_fbo_texture(gl_t *gl,
 
    gl_bind_texture(texture, wrap_enum, mag_filter, min_filter);
 
-   fp_fbo   = gl->fbo_scale[i].fp_fbo;
+   fp_fbo   = chain->fbo_scale[i].fp_fbo;
 
    if (fp_fbo)
    {
@@ -643,7 +645,7 @@ static void gl_create_fbo_texture(gl_t *gl,
 #endif
    {
 #ifndef HAVE_OPENGLES
-      bool srgb_fbo = gl->fbo_scale[i].srgb_fbo;
+      bool srgb_fbo = chain->fbo_scale[i].srgb_fbo;
        
       if (!fp_fbo && srgb_fbo)
       {
@@ -740,7 +742,7 @@ static void gl2_renderchain_recompute_pass_sizes(
    for (i = 0; i < chain->fbo_pass; i++)
    {
       struct video_fbo_rect  *fbo_rect   = &gl->fbo_rect[i];
-      struct gfx_fbo_scale *fbo_scale    = &gl->fbo_scale[i];
+      struct gfx_fbo_scale *fbo_scale    = &chain->fbo_scale[i];
 
       gl2_renderchain_convert_geometry(
             gl, fbo_rect, fbo_scale,
@@ -871,21 +873,21 @@ void gl2_renderchain_init(
       scale.valid   = true;
    }
 
-   gl->fbo_scale[0] = scale;
+   chain->fbo_scale[0] = scale;
 
    for (i = 1; i < chain->fbo_pass; i++)
    {
       scaler.idx   = i + 1;
-      scaler.scale = &gl->fbo_scale[i];
+      scaler.scale = &chain->fbo_scale[i];
 
       video_shader_driver_scale(&scaler);
 
-      if (!gl->fbo_scale[i].valid)
+      if (!chain->fbo_scale[i].valid)
       {
-         gl->fbo_scale[i].scale_x = gl->fbo_scale[i].scale_y = 1.0f;
-         gl->fbo_scale[i].type_x  = gl->fbo_scale[i].type_y  = 
+         chain->fbo_scale[i].scale_x = chain->fbo_scale[i].scale_y = 1.0f;
+         chain->fbo_scale[i].type_x  = chain->fbo_scale[i].type_y  = 
             RARCH_SCALE_INPUT;
-         gl->fbo_scale[i].valid   = true;
+         chain->fbo_scale[i].valid   = true;
       }
    }
 

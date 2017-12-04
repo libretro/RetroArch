@@ -236,7 +236,6 @@ typedef struct gl
    video_info_t video_info;
    struct video_tex_info prev_info[GFX_MAX_TEXTURES];
    struct video_fbo_rect fbo_rect[GFX_MAX_SHADERS];
-   struct gfx_fbo_scale fbo_scale[GFX_MAX_SHADERS];
 
    const gl_renderchain_driver_t *renderchain_driver;
    void *renderchain_data;
