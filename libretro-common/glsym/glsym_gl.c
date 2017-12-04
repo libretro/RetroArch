@@ -308,11 +308,7 @@ const struct rglgen_sym_map rglgen_symbol_map[] = {
     SYM(GetRenderbufferParameteriv),
     SYM(IsFramebuffer),
     SYM(BindFramebuffer),
-#if (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
-    SYM(DeleteFramebuffersEXT),
-#else
     SYM(DeleteFramebuffers),
-#endif
     SYM(GenFramebuffers),
     SYM(CheckFramebufferStatus),
     SYM(FramebufferTexture1D),
@@ -1341,7 +1337,6 @@ RGLSYMGLGETRENDERBUFFERPARAMETERIVPROC __rglgen_glGetRenderbufferParameteriv;
 RGLSYMGLISFRAMEBUFFERPROC __rglgen_glIsFramebuffer;
 RGLSYMGLBINDFRAMEBUFFERPROC __rglgen_glBindFramebuffer;
 RGLSYMGLDELETEFRAMEBUFFERSPROC __rglgen_glDeleteFramebuffers;
-RGLSYMGLDELETEFRAMEBUFFERSPROC __rglgen_glDeleteFramebuffersEXT;
 RGLSYMGLGENFRAMEBUFFERSPROC __rglgen_glGenFramebuffers;
 RGLSYMGLCHECKFRAMEBUFFERSTATUSPROC __rglgen_glCheckFramebufferStatus;
 RGLSYMGLFRAMEBUFFERTEXTURE1DPROC __rglgen_glFramebufferTexture1D;
