@@ -21,6 +21,8 @@
 #include "../../config.h"
 #endif
 
+#include <glsym/glsym.h>
+
 #include "../drivers/gl_symlinks.h"
 #include "../video_coord_array.h"
 

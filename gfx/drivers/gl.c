@@ -40,6 +40,7 @@
 
 #include <gfx/gl_capabilities.h>
 #include <gfx/video_frame.h>
+#include <glsym/glsym.h>
 
 #include "../../configuration.h"
 #include "../../dynamic.h"

@@ -41,6 +41,7 @@
 
 #include <gfx/gl_capabilities.h>
 #include <gfx/video_frame.h>
+#include <glsym/glsym.h>
 
 #include "../video_driver.h"
 #include "../video_shader_parse.h"
@@ -67,18 +68,43 @@ typedef struct gl2_renderchain
    coords[5] = yamt; \
    coords[7] = yamt
 
-#if (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
+#if defined(HAVE_PSGL)
+#define gl2_fb_texture_2d(a, b, c, d, e) glFramebufferTexture2DOES(a, b, c, d, e)
+#define gl2_check_fb_status(target) glCheckFramebufferStatusOES(target)
+#define gl2_gen_fb(n, ids)   glGenFramebuffersOES(n, ids)
+#define gl2_delete_fb(n, fb) glDeleteFramebuffersOES(n, fb)
+#define gl2_bind_fb(id)      glBindFramebufferOES(RARCH_GL_FRAMEBUFFER, id)
+#define gl2_gen_rb           glGenRenderbuffersOES
+#define gl2_bind_rb          glBindRenderbufferOES
+#define gl2_fb_rb            glFramebufferRenderbufferOES
+#define gl2_rb_storage       glRenderbufferStorageOES
+#define gl2_delete_rb        glDeleteRenderbuffersOES
+
+#elif (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
 #define gl2_fb_texture_2d(a, b, c, d, e) glFramebufferTexture2DEXT(a, b, c, d, e)
 #define gl2_check_fb_status(target) glCheckFramebufferStatusEXT(target)
 #define gl2_gen_fb(n, ids)   glGenFramebuffersEXT(n, ids)
 #define gl2_delete_fb(n, fb) glDeleteFramebuffersEXT(n, fb)
 #define gl2_bind_fb(id)      glBindFramebufferEXT(RARCH_GL_FRAMEBUFFER, id)
+#define gl2_gen_rb           glGenRenderbuffersEXT
+#define gl2_bind_rb          glBindRenderbufferEXT
+#define gl2_fb_rb            glFramebufferRenderbufferEXT
+#define gl2_rb_storage       glRenderbufferStorageEXT
+#define gl2_delete_rb        glDeleteRenderbuffersEXT
+
 #else
+
 #define gl2_fb_texture_2d(a, b, c, d, e) glFramebufferTexture2D(a, b, c, d, e)
 #define gl2_check_fb_status(target) glCheckFramebufferStatus(target)
 #define gl2_gen_fb(n, ids)   glGenFramebuffers(n, ids)
 #define gl2_delete_fb(n, fb) glDeleteFramebuffers(n, fb)
 #define gl2_bind_fb(id)      glBindFramebuffer(RARCH_GL_FRAMEBUFFER, id)
+#define gl2_gen_rb           glGenRenderbuffers
+#define gl2_bind_rb          glBindRenderbuffer
+#define gl2_fb_rb            glFramebufferRenderbuffer
+#define gl2_rb_storage       glRenderbufferStorage
+#define gl2_delete_rb        glDeleteRenderbuffers
+
 #endif
 
 
@@ -466,7 +492,7 @@ static void gl2_renderchain_deinit_hw_render(void *data)
    if (gl->hw_render_fbo_init)
       gl2_delete_fb(gl->textures, gl->hw_render_fbo);
    if (gl->hw_render_depth_init)
-      glDeleteRenderbuffers(gl->textures, gl->hw_render_depth);
+      gl2_delete_rb(gl->textures, gl->hw_render_depth);
    gl->hw_render_fbo_init = false;
 
    context_bind_hw_render(false);
@@ -896,7 +922,7 @@ static bool gl2_renderchain_init_hw_render(
 
    if (depth)
    {
-      glGenRenderbuffers(gl->textures, gl->hw_render_depth);
+      gl2_gen_rb(gl->textures, gl->hw_render_depth);
       gl->hw_render_depth_init = true;
    }
 
@@ -908,33 +934,33 @@ static bool gl2_renderchain_init_hw_render(
 
       if (depth)
       {
-         glBindRenderbuffer(RARCH_GL_RENDERBUFFER, gl->hw_render_depth[i]);
-         glRenderbufferStorage(RARCH_GL_RENDERBUFFER,
+         gl2_bind_rb(RARCH_GL_RENDERBUFFER, gl->hw_render_depth[i]);
+         gl2_rb_storage(RARCH_GL_RENDERBUFFER,
                stencil ? RARCH_GL_DEPTH24_STENCIL8 : GL_DEPTH_COMPONENT16,
                width, height);
-         glBindRenderbuffer(RARCH_GL_RENDERBUFFER, 0);
+         gl2_bind_rb(RARCH_GL_RENDERBUFFER, 0);
 
          if (stencil)
          {
 #if defined(HAVE_OPENGLES2) || defined(HAVE_OPENGLES1) || ((defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__))))
             /* GLES2 is a bit weird, as always.
              * There's no GL_DEPTH_STENCIL_ATTACHMENT like in desktop GL. */
-            glFramebufferRenderbuffer(RARCH_GL_FRAMEBUFFER,
+            gl2_fb_rb(RARCH_GL_FRAMEBUFFER,
                   RARCH_GL_DEPTH_ATTACHMENT,
                   RARCH_GL_RENDERBUFFER, gl->hw_render_depth[i]);
-            glFramebufferRenderbuffer(RARCH_GL_FRAMEBUFFER,
+            gl2_fb_rb(RARCH_GL_FRAMEBUFFER,
                   RARCH_GL_STENCIL_ATTACHMENT,
                   RARCH_GL_RENDERBUFFER, gl->hw_render_depth[i]);
 #else
             /* We use ARB FBO extensions, no need to check. */
-            glFramebufferRenderbuffer(RARCH_GL_FRAMEBUFFER,
+            gl2_fb_rb(RARCH_GL_FRAMEBUFFER,
                   GL_DEPTH_STENCIL_ATTACHMENT,
                   RARCH_GL_RENDERBUFFER, gl->hw_render_depth[i]);
 #endif
          }
          else
          {
-            glFramebufferRenderbuffer(RARCH_GL_FRAMEBUFFER,
+            gl2_fb_rb(RARCH_GL_FRAMEBUFFER,
                   RARCH_GL_DEPTH_ATTACHMENT,
                   RARCH_GL_RENDERBUFFER, gl->hw_render_depth[i]);
          }

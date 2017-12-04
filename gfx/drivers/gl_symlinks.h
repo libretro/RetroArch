@@ -21,23 +21,8 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
-#include <glsym/glsym.h>
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
-
-#if defined(HAVE_PSGL)
-#define glGenFramebuffers glGenFramebuffersOES
-#define glBindFramebuffer glBindFramebufferOES
-#define glFramebufferTexture2D glFramebufferTexture2DOES
-#define glCheckFramebufferStatus glCheckFramebufferStatusOES
-#define glDeleteFramebuffers glDeleteFramebuffersOES
-#define glGenRenderbuffers glGenRenderbuffersOES
-#define glBindRenderbuffer glBindRenderbufferOES
-#define glFramebufferRenderbuffer glFramebufferRenderbufferOES
-#define glRenderbufferStorage glRenderbufferStorageOES
-#define glDeleteRenderbuffers glDeleteRenderbuffersOES
 #endif
 
 #if defined(HAVE_PSGL)
