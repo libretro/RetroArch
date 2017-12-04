@@ -170,7 +170,6 @@ void filestream_set_size(RFILE *stream)
  **/
 RFILE *filestream_open(const char *path, unsigned mode, ssize_t unused)
 {
-   ssize_t bufsize      = 0x4000;
    int            flags = 0;
    int         mode_int = 0;
 #if defined(HAVE_BUFFERED_IO)
@@ -191,7 +190,6 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t unused)
 
    (void)mode_int;
    (void)flags;
-   (void)bufsize;
 
    stream->hints = mode;
 
@@ -298,20 +296,17 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t unused)
       if (!stream->fp)
          goto error;
 
-      if (bufsize > 0)
-      {
-         /* Regarding setvbuf:
-          *
-          * https://www.freebsd.org/cgi/man.cgi?query=setvbuf&apropos=0&sektion=0&manpath=FreeBSD+11.1-RELEASE&arch=default&format=html
-          *
-          * If the size argument is not zero but buf is NULL, a buffer of the given size will be allocated immediately, and
-          * released on close. This is an extension to ANSI C.
-          *
-          * Since C89 does not support specifying a null buffer with a non-zero size, we create and track our own buffer for it.
-          */
-         stream->buf = (char*)calloc(1, bufsize);
-         setvbuf(stream->fp, stream->buf, _IOFBF, bufsize);
-      }
+      /* Regarding setvbuf:
+       *
+       * https://www.freebsd.org/cgi/man.cgi?query=setvbuf&apropos=0&sektion=0&manpath=FreeBSD+11.1-RELEASE&arch=default&format=html
+       *
+       * If the size argument is not zero but buf is NULL, a buffer of the given size will be allocated immediately, and
+       * released on close. This is an extension to ANSI C.
+       *
+       * Since C89 does not support specifying a null buffer with a non-zero size, we create and track our own buffer for it.
+       */
+      stream->buf = (char*)calloc(1, 0x4000);
+      setvbuf(stream->fp, stream->buf, _IOFBF, 0x4000);
    }
    else
 #endif
