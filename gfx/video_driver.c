@@ -46,10 +46,6 @@
 #include "../menu/menu_setting.h"
 #endif
 
-#ifdef HAVE_OPENGL
-#include "common/gl_common.h"
-#endif
-
 #include "video_thread_wrapper.h"
 #include "video_driver.h"
 
