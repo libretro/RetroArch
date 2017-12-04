@@ -420,19 +420,25 @@ static void gl2_renderchain_deinit_fbo(void *data)
 {
    gl_t *gl = (gl_t*)data;
 
+   if (!gl)
+      return;
+
    glDeleteTextures(gl->fbo_pass, gl->fbo_texture);
-   glDeleteFramebuffers(gl->fbo_pass, gl->fbo);
+
+   if (gl->fbo)
+      glDeleteFramebuffers(gl->fbo_pass, gl->fbo);
+
    memset(gl->fbo_texture, 0, sizeof(gl->fbo_texture));
-   memset(gl->fbo, 0, sizeof(gl->fbo));
-   gl->fbo_inited = false;
-   gl->fbo_pass   = 0;
+   memset(gl->fbo,         0, sizeof(gl->fbo));
 
    if (gl->fbo_feedback)
       glDeleteFramebuffers(1, &gl->fbo_feedback);
    if (gl->fbo_feedback_texture)
       glDeleteTextures(1, &gl->fbo_feedback_texture);
 
+   gl->fbo_inited           = false;
    gl->fbo_feedback_enable  = false;
+   gl->fbo_pass             = 0;
    gl->fbo_feedback_pass    = 0;
    gl->fbo_feedback_texture = 0;
    gl->fbo_feedback         = 0;
