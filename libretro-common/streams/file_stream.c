@@ -305,6 +305,7 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t unused)
        *
        * Since C89 does not support specifying a null buffer with a non-zero size, we create and track our own buffer for it.
        */
+      /* TODO: this is only useful for a few platforms, find which and add ifdef */
       stream->buf = (char*)calloc(1, 0x4000);
       setvbuf(stream->fp, stream->buf, _IOFBF, 0x4000);
    }
