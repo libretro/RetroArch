@@ -55,6 +55,9 @@
 
 typedef struct gl2_renderchain
 {
+   bool has_fp_fbo;
+   bool has_srgb_fbo_gles3;
+   bool has_srgb_fbo;
    unsigned fence_count;
    GLsync fences[MAX_FENCES];
 } gl2_renderchain_t;
@@ -296,6 +299,7 @@ static void gl2_renderchain_render(
    video_shader_ctx_params_t params;
    video_shader_ctx_info_t shader_info;
    gl_t *gl                               = (gl_t*)data;
+   gl2_renderchain_t *chain               = (gl2_renderchain_t*)chain_data;
    static GLfloat fbo_tex_coords[8]       = {0.0f};
    struct video_tex_info fbo_tex_info[GFX_MAX_SHADERS];
    struct video_tex_info *fbo_info        = NULL;
@@ -385,7 +389,7 @@ static void gl2_renderchain_render(
    }
 
 #if defined(GL_FRAMEBUFFER_SRGB) && !defined(HAVE_OPENGLES)
-   if (gl->has_srgb_fbo)
+   if (chain->has_srgb_fbo)
       glDisable(GL_FRAMEBUFFER_SRGB);
 #endif
 
@@ -565,13 +569,15 @@ error:
    return false;
 }
 
-static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
+static void gl_create_fbo_texture(gl_t *gl, 
+      void *chain_data, unsigned i, GLuint texture)
 {
    GLenum mag_filter, wrap_enum;
    video_shader_ctx_filter_t filter_type;
    video_shader_ctx_wrap_t wrap = {0};
    bool fp_fbo                  = false;
    bool smooth                  = false;
+   gl2_renderchain_t *chain     = (gl2_renderchain_t*)chain_data;
    settings_t *settings         = config_get_ptr();
    GLuint base_filt             = settings->bools.video_smooth ? GL_LINEAR : GL_NEAREST;
    GLuint base_mip_filt         = settings->bools.video_smooth ? 
@@ -603,12 +609,12 @@ static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
 
    if (fp_fbo)
    {
-      if (!gl->has_fp_fbo)
+      if (!chain->has_fp_fbo)
          RARCH_ERR("[GL]: Floating-point FBO was requested, but is not supported. Falling back to UNORM. Result may band/clip/etc.!\n");
    }
 
 #if !defined(HAVE_OPENGLES2)
-   if (fp_fbo && gl->has_fp_fbo)
+   if (fp_fbo && chain->has_fp_fbo)
    {
       RARCH_LOG("[GL]: FBO pass #%d is floating-point.\n", i);
       gl_load_texture_image(GL_TEXTURE_2D, 0, GL_RGBA32F,
@@ -623,14 +629,14 @@ static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
        
       if (!fp_fbo && srgb_fbo)
       {
-         if (!gl->has_srgb_fbo)
+         if (!chain->has_srgb_fbo)
                RARCH_ERR("[GL]: sRGB FBO was requested, but it is not supported. Falling back to UNORM. Result may have banding!\n");
       }
        
       if (settings->bools.video_force_srgb_disable)
          srgb_fbo = false;
        
-      if (srgb_fbo && gl->has_srgb_fbo)
+      if (srgb_fbo && chain->has_srgb_fbo)
       {
          RARCH_LOG("[GL]: FBO pass #%d is sRGB.\n", i);
 #ifdef HAVE_OPENGLES2
@@ -639,7 +645,7 @@ static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
          glTexImage2D(GL_TEXTURE_2D,
                0, GL_SRGB_ALPHA_EXT,
                gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
-               gl->has_srgb_fbo_gles3 ? GL_RGBA : GL_SRGB_ALPHA_EXT,
+               chain->has_srgb_fbo_gles3 ? GL_RGBA : GL_SRGB_ALPHA_EXT,
                GL_UNSIGNED_BYTE, NULL);
 #else
          gl_load_texture_image(GL_TEXTURE_2D,
@@ -674,12 +680,14 @@ static void gl_create_fbo_textures(gl_t *gl)
    glGenTextures(gl->fbo_pass, gl->fbo_texture);
 
    for (i = 0; i < gl->fbo_pass; i++)
-      gl_create_fbo_texture(gl, i, gl->fbo_texture[i]);
+      gl_create_fbo_texture(gl, gl->renderchain_data,
+            i, gl->fbo_texture[i]);
 
    if (gl->fbo_feedback_enable)
    {
       glGenTextures(1, &gl->fbo_feedback_texture);
       gl_create_fbo_texture(gl,
+            gl->renderchain_data,
             gl->fbo_feedback_pass, gl->fbo_feedback_texture);
    }
 
@@ -767,7 +775,8 @@ static void gl2_renderchain_start_render(void *data,
       0, 1,
       1, 1
    };
-   gl_t *gl = (gl_t*)data;
+   gl_t                 *gl = (gl_t*)data;
+   gl2_renderchain_t *chain = (gl2_renderchain_t*)chain_data;
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
    gl2_bind_fb(gl->fbo[0]);
@@ -783,7 +792,7 @@ static void gl2_renderchain_start_render(void *data,
    gl->coords.vertex = fbo_vertexes;
 
 #if defined(GL_FRAMEBUFFER_SRGB) && !defined(HAVE_OPENGLES)
-   if (gl->has_srgb_fbo)
+   if (chain->has_srgb_fbo)
       glEnable(GL_FRAMEBUFFER_SRGB);
 #endif
 }
@@ -1464,6 +1473,19 @@ static void gl2_renderchain_init_textures_reference(
 static void gl2_renderchain_resolve_extensions(void *data,
       void *chain_data, const char *context_ident)
 {
+   gl2_renderchain_t *chain         = (gl2_renderchain_t*)chain_data;
+   settings_t *settings             = config_get_ptr();
+
+   if (!chain)
+      return;
+
+   chain->has_srgb_fbo              = false;
+   chain->has_fp_fbo                = gl_check_capability(GL_CAPS_FP_FBO);
+   /* GLES3 has unpack_subimage and sRGB in core. */
+   chain->has_srgb_fbo_gles3        = gl_check_capability(GL_CAPS_SRGB_FBO_ES3);
+
+   if (!settings->bools.video_force_srgb_disable)
+      chain->has_srgb_fbo           = gl_check_capability(GL_CAPS_SRGB_FBO);
 }
 
 gl_renderchain_driver_t gl2_renderchain = {

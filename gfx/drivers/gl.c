@@ -1352,19 +1352,12 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
     *
     * have_sync       - Use ARB_sync to reduce latency.
     */
-   gl->has_srgb_fbo              = false;
    gl->has_fbo                   = gl_check_capability(GL_CAPS_FBO);
    gl->have_full_npot_support    = gl_check_capability(GL_CAPS_FULL_NPOT_SUPPORT);
    gl->have_mipmap               = gl_check_capability(GL_CAPS_MIPMAP);
    gl->have_es2_compat           = gl_check_capability(GL_CAPS_ES2_COMPAT);
-   gl->has_fp_fbo                = gl_check_capability(GL_CAPS_FP_FBO);
    gl->support_unpack_row_length = gl_check_capability(GL_CAPS_UNPACK_ROW_LENGTH);
    gl->have_sync                 = gl_check_capability(GL_CAPS_SYNC);
-   /* GLES3 has unpack_subimage and sRGB in core. */
-   gl->has_srgb_fbo_gles3        = gl_check_capability(GL_CAPS_SRGB_FBO_ES3);
-
-   if (!settings->bools.video_force_srgb_disable)
-      gl->has_srgb_fbo           = gl_check_capability(GL_CAPS_SRGB_FBO);
 
    if (gl->have_sync && settings->bools.video_hard_sync)
       RARCH_LOG("[GL]: Using ARB_sync to reduce latency.\n");
