@@ -64,6 +64,7 @@ typedef struct gl2_renderchain
    int fbo_pass;
 
    GLuint vao;
+   GLuint fbo[GFX_MAX_SHADERS];
    GLuint fbo_texture[GFX_MAX_SHADERS];
    GLuint hw_render_depth[GFX_MAX_TEXTURES];
 
@@ -256,7 +257,7 @@ static void gl_check_fbo_dimension(gl_t *gl,
    fbo_rect->width                 = pow2_size;
    fbo_rect->height                = pow2_size;
 
-   gl_recreate_fbo(fbo_rect, gl->fbo[i], &chain->fbo_texture[i]);
+   gl_recreate_fbo(fbo_rect, chain->fbo[i], &chain->fbo_texture[i]);
 
    /* Update feedback texture in-place so we avoid having to 
     * juggle two different fbo_rect structs since they get updated here. */
@@ -354,7 +355,7 @@ static void gl2_renderchain_render(
       memcpy(fbo_info->coord, fbo_tex_coords, sizeof(fbo_tex_coords));
       fbo_tex_info_cnt++;
 
-      gl2_bind_fb(gl->fbo[i]);
+      gl2_bind_fb(chain->fbo[i]);
 
       shader_info.data       = gl;
       shader_info.idx        = i + 1;
@@ -491,10 +492,10 @@ static void gl2_renderchain_deinit_fbo(void *data,
       return;
 
    glDeleteTextures(chain->fbo_pass, chain->fbo_texture);
-   gl2_delete_fb(chain->fbo_pass, gl->fbo);
+   gl2_delete_fb(chain->fbo_pass, chain->fbo);
 
    memset(chain->fbo_texture, 0, sizeof(chain->fbo_texture));
-   memset(gl->fbo,         0, sizeof(gl->fbo));
+   memset(chain->fbo,         0, sizeof(chain->fbo));
 
    if (gl->fbo_feedback)
       gl2_delete_fb(1, &gl->fbo_feedback);
@@ -544,13 +545,13 @@ static bool gl_create_fbo_targets(gl_t *gl, void *chain_data)
    gl2_renderchain_t *chain = (gl2_renderchain_t*)chain_data;
 
    glBindTexture(GL_TEXTURE_2D, 0);
-   gl2_gen_fb(chain->fbo_pass, gl->fbo);
+   gl2_gen_fb(chain->fbo_pass, chain->fbo);
 
    for (i = 0; i < chain->fbo_pass; i++)
    {
       GLenum status;
 
-      gl2_bind_fb(gl->fbo[i]);
+      gl2_bind_fb(chain->fbo[i]);
       gl2_fb_texture_2d(RARCH_GL_FRAMEBUFFER,
             RARCH_GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, chain->fbo_texture[i], 0);
 
@@ -582,7 +583,7 @@ static bool gl_create_fbo_targets(gl_t *gl, void *chain_data)
    return true;
 
 error:
-   gl2_delete_fb(chain->fbo_pass, gl->fbo);
+   gl2_delete_fb(chain->fbo_pass, chain->fbo);
    if (gl->fbo_feedback)
       gl2_delete_fb(1, &gl->fbo_feedback);
    RARCH_ERR("[GL]: Failed to set up frame buffer objects. Multi-pass shading will not work.\n");
@@ -802,7 +803,7 @@ static void gl2_renderchain_start_render(void *data,
    gl2_renderchain_t *chain = (gl2_renderchain_t*)chain_data;
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-   gl2_bind_fb(gl->fbo[0]);
+   gl2_bind_fb(chain->fbo[0]);
 
    gl_set_viewport(gl,
          video_info, gl->fbo_rect[0].img_width,
@@ -1053,9 +1054,9 @@ static void gl2_renderchain_bind_prev_texture(
    {
       GLuint tmp_fbo                 = gl->fbo_feedback;
       GLuint tmp_tex                 = gl->fbo_feedback_texture;
-      gl->fbo_feedback               = gl->fbo[gl->fbo_feedback_pass];
+      gl->fbo_feedback               = chain->fbo[gl->fbo_feedback_pass];
       gl->fbo_feedback_texture       = chain->fbo_texture[gl->fbo_feedback_pass];
-      gl->fbo[gl->fbo_feedback_pass] = tmp_fbo;
+      chain->fbo[gl->fbo_feedback_pass]         = tmp_fbo;
       chain->fbo_texture[gl->fbo_feedback_pass] = tmp_tex;
    }
 }

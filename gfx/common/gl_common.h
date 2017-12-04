@@ -199,7 +199,6 @@ typedef struct gl
    GLuint menu_texture;
    GLuint pbo_readback[4];
    GLuint texture[GFX_MAX_TEXTURES];
-   GLuint fbo[GFX_MAX_SHADERS];
    GLuint hw_render_fbo[GFX_MAX_TEXTURES];
 
    unsigned tex_index; /* For use with PREV. */
