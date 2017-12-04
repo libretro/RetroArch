@@ -308,7 +308,11 @@ const struct rglgen_sym_map rglgen_symbol_map[] = {
     SYM(GetRenderbufferParameteriv),
     SYM(IsFramebuffer),
     SYM(BindFramebuffer),
+#if (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
+    SYM(DeleteFramebuffersEXT),
+#else
     SYM(DeleteFramebuffers),
+#endif
     SYM(GenFramebuffers),
     SYM(CheckFramebufferStatus),
     SYM(FramebufferTexture1D),

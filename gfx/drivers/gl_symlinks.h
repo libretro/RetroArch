@@ -38,17 +38,6 @@
 #define glFramebufferRenderbuffer glFramebufferRenderbufferOES
 #define glRenderbufferStorage glRenderbufferStorageOES
 #define glDeleteRenderbuffers glDeleteRenderbuffersOES
-#elif (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
-#define glGenFramebuffers glGenFramebuffersEXT
-#define glBindFramebuffer glBindFramebufferEXT
-#define glFramebufferTexture2D glFramebufferTexture2DEXT
-#define glCheckFramebufferStatus glCheckFramebufferStatusEXT
-#define glDeleteFramebuffers glDeleteFramebuffersEXT
-#define glGenRenderbuffers glGenRenderbuffersEXT
-#define glBindRenderbuffer glBindRenderbufferEXT
-#define glFramebufferRenderbuffer glFramebufferRenderbufferEXT
-#define glRenderbufferStorage glRenderbufferStorageEXT
-#define glDeleteRenderbuffers glDeleteRenderbuffersEXT
 #endif
 
 #if defined(HAVE_PSGL)

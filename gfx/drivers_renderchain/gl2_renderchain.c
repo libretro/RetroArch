@@ -424,9 +424,7 @@ static void gl2_renderchain_deinit_fbo(void *data)
       return;
 
    glDeleteTextures(gl->fbo_pass, gl->fbo_texture);
-
-   if (gl->fbo)
-      glDeleteFramebuffers(gl->fbo_pass, gl->fbo);
+   glDeleteFramebuffers(gl->fbo_pass, gl->fbo);
 
    memset(gl->fbo_texture, 0, sizeof(gl->fbo_texture));
    memset(gl->fbo,         0, sizeof(gl->fbo));
