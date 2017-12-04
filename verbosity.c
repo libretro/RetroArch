@@ -101,7 +101,7 @@ void retro_main_log_file_init(const char *path)
    
    /* TODO: this is only useful for a few platforms, find which and add ifdef */
    log_file_buf = calloc(1, 0x4000);
-   setvbuf(log_file_fp, log_file_buf, _IOFBF, 0x4000);
+   setvbuf(log_file_fp, (char*)log_file_buf, _IOFBF, 0x4000);
 }
 
 void retro_main_log_file_deinit(void)
