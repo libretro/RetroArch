@@ -222,7 +222,6 @@ typedef struct gl
    unsigned base_size; /* 2 or 4 */
    unsigned overlays;
    unsigned pbo_readback_index;
-   unsigned fence_count;
    unsigned last_width[GFX_MAX_TEXTURES];
    unsigned last_height[GFX_MAX_TEXTURES];
 
