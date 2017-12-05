@@ -164,11 +164,12 @@ static bool gx_joypad_button(unsigned port, uint16_t key)
 
 static void gx_joypad_get_buttons(unsigned port, retro_bits_t *state)
 {
-	if ( port < MAX_PADS ) {
+	if (port < MAX_PADS)
+   {
 		RARCH_INPUT_STATE_COPY16_PTR( state, pad_state[port] );
-	} else {
-		RARCH_INPUT_STATE_CLEAR_PTR(state);
 	}
+   else
+		BIT128_CLEAR_ALL_PTR(state);
 }
 
 static int16_t gx_joypad_axis(unsigned port, uint32_t joyaxis)

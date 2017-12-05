@@ -78,11 +78,12 @@ static bool xdk_joypad_button(unsigned port_num, uint16_t joykey)
 
 static void xdk_joypad_get_buttons(unsigned port_num, retro_bits_t *state)
 {
-	if ( port_num < MAX_PADS ) {
+	if (port_num < MAX_PADS)
+   {
 		RARCH_INPUT_STATE_COPY16_PTR( state, pad_state[port_num] );
-	} else {
-		RARCH_INPUT_STATE_CLEAR_PTR(state);
 	}
+   else
+      BIT128_CLEAR_ALL_PTR(state);
 }
 
 static int16_t xdk_joypad_axis(unsigned port_num, uint32_t joyaxis)

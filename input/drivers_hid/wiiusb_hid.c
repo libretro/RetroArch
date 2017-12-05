@@ -484,7 +484,7 @@ static void wiiusb_hid_joypad_get_buttons(void *data, unsigned port, retro_bits_
   if (hid)
     return pad_connection_get_buttons(&hid->connections[port], port, state);
   else
-    RARCH_INPUT_STATE_CLEAR_PTR(state);
+    BIT128_CLEAR_ALL_PTR(state);
 }
 
 static bool wiiusb_hid_joypad_button(void *data, unsigned port, uint16_t joykey)
@@ -499,7 +499,7 @@ static bool wiiusb_hid_joypad_button(void *data, unsigned port, uint16_t joykey)
 
   /* Check the button. */
   if ((port < MAX_USERS) && (joykey < 32))
-    return (RARCH_INPUT_STATE_BIT_GET(buttons, joykey) != 0);
+    return (BIT128_GET(buttons, joykey) != 0);
 
   return false;
 }

@@ -121,64 +121,48 @@ static void hidpad_wiiupro_deinit(void *data)
 static void hidpad_wiiupro_get_buttons(void *data, retro_bits_t *state)
 {
    struct hidpad_wiiupro_data *device = (struct hidpad_wiiupro_data*)data;
-   struct wiiupro *rpt = device ? (struct wiiupro*)&device->data : NULL;
+   struct wiiupro                *rpt = device ? 
+      (struct wiiupro*)&device->data : NULL;
 
    if (!device || !rpt)
       return;
 
-    RARCH_INPUT_STATE_CLEAR_PTR( state );
+   BIT128_CLEAR_ALL_PTR(state);
 
-	if ( rpt->btn.r3 ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_R3 );
-	}
-	if ( rpt->btn.l3 ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_L3 );
-	}
-	if ( rpt->btn.plus ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_START );
-	}
-	if ( rpt->btn.minus ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_SELECT );
-	}
-	if ( rpt->btn.zr ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_R2 );
-	}
-	if ( rpt->btn.zl ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_L2 );
-	}
-	if ( rpt->btn.r ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_R );
-	}
-	if ( rpt->btn.l ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_L );
-	}
-	if ( rpt->btn.x ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_X );
-	}
-	if ( rpt->btn.a ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_A );
-	}
-	if ( rpt->btn.b ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_B );
-	}
-	if ( rpt->btn.y ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_Y );
-	}
-	if ( rpt->btn.left ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_LEFT );
-	}
-	if ( rpt->btn.down ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_DOWN );
-	}
-	if ( rpt->btn.right ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_RIGHT );
-	}
-	if ( rpt->btn.up ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_UP );
-	}
-	if ( rpt->btn.home ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RARCH_MENU_TOGGLE );
-	}
+   if (rpt->btn.r3)
+      BIT128_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_R3);
+   if (rpt->btn.l3)
+      BIT128_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_L3);
+   if (rpt->btn.plus)
+      BIT128_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_START);
+   if ( rpt->btn.minus)
+      BIT128_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_SELECT);
+   if ( rpt->btn.zr)
+      BIT128_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_R2);
+   if ( rpt->btn.zl)
+      BIT128_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_L2);
+   if ( rpt->btn.r)
+      BIT128_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_R);
+   if ( rpt->btn.l)
+      BIT128_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_L);
+   if ( rpt->btn.x)
+      BIT128_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_X);
+   if ( rpt->btn.a)
+      BIT128_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_A);
+   if ( rpt->btn.b)
+      BIT128_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_B);
+   if ( rpt->btn.y)
+      BIT128_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_Y);
+   if ( rpt->btn.left)
+      BIT128_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_LEFT);
+   if ( rpt->btn.down)
+      BIT128_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_DOWN);
+   if ( rpt->btn.right)
+      BIT128_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+   if ( rpt->btn.up)
+      BIT128_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_UP);
+   if ( rpt->btn.home)
+      BIT128_SET_PTR(state, RARCH_MENU_TOGGLE);
 }
 
 static int16_t hidpad_wiiupro_get_axis(void *data, unsigned axis)

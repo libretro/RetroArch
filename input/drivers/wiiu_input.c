@@ -107,8 +107,8 @@ static int16_t wiiu_pointer_device_state(wiiu_input_t* wiiu, unsigned id)
 		case RETRO_DEVICE_ID_POINTER_PRESSED:
 		{
 			retro_bits_t state;
-			wiiu->joypad->get_buttons(0,&state);
-			return RARCH_INPUT_STATE_BIT_GET(state, VPAD_BUTTON_TOUCH) ? 1 : 0;
+			wiiu->joypad->get_buttons(0, &state);
+			return BIT128_GET(state, VPAD_BUTTON_TOUCH) ? 1 : 0;
 		}
 		case RETRO_DEVICE_ID_POINTER_X:
 			return wiiu->joypad->axis(0, 0xFFFF0004UL);

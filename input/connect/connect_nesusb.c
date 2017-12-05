@@ -62,11 +62,12 @@ static void hidpad_nesusb_deinit(void *data)
 static void hidpad_nesusb_get_buttons(void *data, retro_bits_t* state)
 {
 	struct hidpad_nesusb_data *device = (struct hidpad_nesusb_data*)data;
-	if (device) {
+	if (device)
+   {
 		RARCH_INPUT_STATE_COPY16_PTR(state, device->buttons);
-	} else {
-		RARCH_INPUT_STATE_CLEAR_PTR(state);
 	}
+   else
+		BIT128_CLEAR_ALL_PTR(state);
 }
 
 static int16_t hidpad_nesusb_get_axis(void *data, unsigned axis)

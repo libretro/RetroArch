@@ -329,11 +329,12 @@ static bool linuxraw_joypad_button(unsigned port, uint16_t joykey)
 static void linuxraw_joypad_get_buttons(unsigned port, retro_bits_t *state)
 {
 	const struct linuxraw_joypad *pad = (const struct linuxraw_joypad*)&linuxraw_pads[port];
-	if ( pad ) {
+	if (pad)
+   {
 		RARCH_INPUT_STATE_COPY16_PTR(state, pad->buttons);
-	} else {
-		RARCH_INPUT_STATE_CLEAR_PTR(state);
 	}
+   else
+		BIT128_CLEAR_ALL_PTR(state);
 }
 
 static int16_t linuxraw_joypad_axis(unsigned port, uint32_t joyaxis)
