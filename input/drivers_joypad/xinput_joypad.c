@@ -40,6 +40,12 @@
 
 #include "../../verbosity.h"
 
+#ifndef HAVE_DINPUT
+#error Cannot compile xinput without dinput.
+#endif
+
+#include "dinput_joypad.h"
+
 /* Check if the definitions do not already exist.
  * Official and mingw xinput headers have different include guards.
  */
@@ -90,10 +96,6 @@ typedef struct
 
 #ifndef ERROR_DEVICE_NOT_CONNECTED
 #define ERROR_DEVICE_NOT_CONNECTED 1167
-#endif
-
-#ifndef HAVE_DINPUT
-#error Cannot compile xinput without dinput.
 #endif
 
 /* Due to 360 pads showing up under both XInput and DirectInput, 
@@ -270,16 +272,28 @@ static bool xinput_joypad_init(void *data)
 
    for (j = 0; j < MAX_USERS; j++)
    {
-      RARCH_LOG("[XInput]: Attempting autoconf for, user #%u\n", j);
+      if (xinput_joypad_name(j))
+         RARCH_LOG("[XInput]: Attempting autoconf for \"%s\", user #%u\n", xinput_joypad_name(j), j);
+      else
+         RARCH_LOG("[XInput]: Attempting autoconf for user #%u\n", j);
+
       if (pad_index_to_xuser_index(j) > -1)
       {
+         int vid = 0;
+         int pid = 0;
+         int dinput_index = 0;
+         bool success = dinput_joypad_get_vidpid_from_xinput_index(j, &vid, &pid, &dinput_index);
+
+         if (success)
+            RARCH_LOG("[XInput]: Found VID/PID (%04X/%04X) from DINPUT index %d for \"%s\", user #%u\n", vid, pid, dinput_index, xinput_joypad_name(j), j);
+
          if (!input_autoconfigure_connect(
                xinput_joypad_name(j),
                NULL,
                xinput_joypad.ident,
                j,
-               0,
-               0))
+               vid,
+               pid))
             input_config_set_device_name(j, xinput_joypad_name(j));
       }
    }
