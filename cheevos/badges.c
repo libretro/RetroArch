@@ -21,15 +21,16 @@ bool badge_exists(const char* filepath)
 
 void set_badge_menu_texture(badges_ctx_t * badges, int i)
 {
+  char fullpath[PATH_MAX_LENGTH];
   const char * locked_suffix = (badges->badge_locked[i] == true) ? "_lock.png" : ".png";
 
   unsigned int bufferSize = 16;
+   /* TODO/FIXME - variable length forbidden in C89 - rewrite this! */
   char badge_file[bufferSize];
 
   snprintf(badge_file, bufferSize, "%s", badges->badge_id_list[i]);
   strcat(badge_file, locked_suffix);
 
-  char fullpath[PATH_MAX_LENGTH];
   fill_pathname_application_special(fullpath,
         PATH_MAX_LENGTH * sizeof(char),
         APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES);
