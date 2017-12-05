@@ -852,7 +852,7 @@ static void dinput_free(void *data)
       if (di->mouse)
          IDirectInputDevice8_Release(di->mouse);
 
-      if (string_is_empty(di->joypad_driver_name))
+      if (di->joypad_driver_name)
          free(di->joypad_driver_name);
 
       free(di);
