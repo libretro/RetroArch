@@ -2713,14 +2713,19 @@ const char *input_config_get_device_name(unsigned port)
 void input_config_set_device_name(unsigned port, const char *name)
 {
    if (!string_is_empty(name))
+   {
       strlcpy(input_device_names[port],
             name,
             sizeof(input_device_names[port]));
+      
+	  input_autoconfigure_joypad_reindex_devices();
+   }
 }
 
 void input_config_clear_device_name(unsigned port)
 {
    input_device_names[port][0] = '\0';
+   input_autoconfigure_joypad_reindex_devices();
 }
 
 unsigned *input_config_get_device_ptr(unsigned port)

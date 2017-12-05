@@ -96,7 +96,7 @@ struct autoconfig_params
 };
 
 static bool input_autoconfigured[MAX_USERS];
-static unsigned input_device_name_index[MAX_USERS];
+static unsigned input_device_name_index[MAX_INPUT_DEVICES];
 static bool input_autoconfigure_swap_override;
 
 bool input_autoconfigure_get_swap_override(void)
@@ -106,24 +106,38 @@ bool input_autoconfigure_get_swap_override(void)
 
 /* Adds an index for devices with the same name,
  * so they can be identified in the GUI. */
-static void input_autoconfigure_joypad_reindex_devices(autoconfig_params_t *params)
+void input_autoconfigure_joypad_reindex_devices()
 {
-   unsigned i;
+   unsigned i, j, k;
 
-   for(i = 0; i < params->max_users; i++)
+   for(i = 0; i < MAX_INPUT_DEVICES; i++)
       input_device_name_index[i] = 0;
 
-   for(i = 0; i < params->max_users; i++)
+   for(i = 0; i < MAX_INPUT_DEVICES; i++)
    {
-      unsigned j;
       const char *tmp = input_config_get_device_name(i);
-      int k           = 1;
+      if ( !tmp || input_device_name_index[i] )
+         continue;
 
-      for(j = 0; j < params->max_users; j++)
+      k = 2; /*Additional devices start at two*/
+
+      for(j = i+1; j < MAX_INPUT_DEVICES; j++)
       {
-         if(string_is_equal(tmp, input_config_get_device_name(j))
-               && input_device_name_index[i] == 0)
+         const char *other = input_config_get_device_name(j);
+
+         if (!other)
+            continue;
+
+         /*another device with the same name found, for the first time*/
+         if(string_is_equal(tmp, other) &&
+               input_device_name_index[j]==0 )
+         {
+            /*Mark the first device of the set*/
+            input_device_name_index[i] = 1;
+
+            /*count this additional device, from two up*/
             input_device_name_index[j] = k++;
+         }
       }
    }
 }
@@ -190,7 +204,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
    char msg[128], display_name[128], device_type[128];
    /* This will be the case if input driver is reinitialized.
     * No reason to spam autoconfigure messages every time. */
-   bool block_osd_spam                = 
+   bool block_osd_spam                =
       input_autoconfigured[params->idx]
       && !string_is_empty(params->name);
 
@@ -228,7 +242,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
       bool tmp = false;
       snprintf(msg, sizeof(msg), "%s %s #%u.",
             (string_is_empty(display_name) &&
-             !string_is_empty(params->name)) 
+             !string_is_empty(params->name))
             ? params->name : (!string_is_empty(display_name) ? display_name : "N/A"),
             msg_hash_to_str(MSG_DEVICE_CONFIGURED_IN_PORT),
             params->idx);
@@ -250,7 +264,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
    }
 
 
-   input_autoconfigure_joypad_reindex_devices(params);
+   input_autoconfigure_joypad_reindex_devices();
 }
 
 static int input_autoconfigure_joypad_from_conf(
@@ -393,7 +407,7 @@ static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_win3
    BOOL bResult                         = TRUE;
    BOOL success                         = FALSE;
    GUID guidDeviceInterface             = {0};
-   PSP_DEVICE_INTERFACE_DETAIL_DATA 
+   PSP_DEVICE_INTERFACE_DETAIL_DATA
       pInterfaceDetailData              = NULL;
    ULONG requiredLength                 = 0;
    LPTSTR lpDevicePath                  = NULL;
@@ -845,7 +859,7 @@ bool input_autoconfigure_disconnect(unsigned i, const char *ident)
 
    state->idx  = i;
 
-   snprintf(msg, sizeof(msg), "%s #%u (%s).", 
+   snprintf(msg, sizeof(msg), "%s #%u (%s).",
          msg_hash_to_str(MSG_DEVICE_DISCONNECTED_FROM_PORT),
          i, ident);
 
@@ -942,10 +956,10 @@ bool input_autoconfigure_connect(
    {
       input_autoconf_binds[state->idx][i].joykey           = NO_BTN;
       input_autoconf_binds[state->idx][i].joyaxis          = AXIS_NONE;
-      if ( 
+      if (
           !string_is_empty(input_autoconf_binds[state->idx][i].joykey_label))
          free(input_autoconf_binds[state->idx][i].joykey_label);
-      if ( 
+      if (
           !string_is_empty(input_autoconf_binds[state->idx][i].joyaxis_label))
          free(input_autoconf_binds[state->idx][i].joyaxis_label);
       input_autoconf_binds[state->idx][i].joykey_label      = NULL;
