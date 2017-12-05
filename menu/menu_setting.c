@@ -1512,16 +1512,32 @@ static void get_string_representation_bind_device(void * data, char *s,
       const char *device_name = input_config_get_device_name(map);
 
       if (!string_is_empty(device_name))
-         snprintf(s, len,
-               "%s (#%u)",
-               device_name,
-               input_autoconfigure_get_device_name_index(map));
+      {
+         unsigned idx = input_autoconfigure_get_device_name_index(map);
+
+         /*if idx is non-zero, it's part of a set*/
+         if ( idx > 0 )
+         {
+            snprintf(s, len,
+                  "%s (#%u)",
+                  device_name,
+                  idx);
+         }
+         else
+         {
+            snprintf(s, len,
+                  "%s",
+                  device_name);
+         }
+      }
       else
+      {
          snprintf(s, len,
                "%s (%s #%u)",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT),
                map);
+      }
    }
    else
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), len);
