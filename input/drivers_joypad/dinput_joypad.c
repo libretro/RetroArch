@@ -97,7 +97,7 @@ static void dinput_joypad_destroy(void)
          IDirectInputDevice8_Unacquire(g_pads[i].joypad);
          IDirectInputDevice8_Release(g_pads[i].joypad);
       }
-      
+
       free(g_pads[i].joy_name);
       g_pads[i].joy_name = NULL;
       free(g_pads[i].joy_friendly_name);
