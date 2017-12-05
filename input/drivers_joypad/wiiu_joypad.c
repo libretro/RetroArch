@@ -139,7 +139,7 @@ static void wiiu_joypad_get_buttons(unsigned port_num, retro_bits_t *state)
 {
 	if (port_num < MAX_PADS)
    {
-		RARCH_INPUT_STATE_COPY16_PTR( state, pad_state[port_num] );
+		BITS_COPY16_PTR( state, pad_state[port_num] );
 	}
    else
 		BIT128_CLAR_ALL_PTR(state);

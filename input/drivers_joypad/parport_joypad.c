@@ -345,7 +345,7 @@ static void parport_joypad_get_buttons(unsigned port, retro_bits_t *state)
 	const struct parport_joypad *pad = (const struct parport_joypad*)&parport_pads[port];
 	if (pad)
    {
-		RARCH_INPUT_STATE_COPY16_PTR(state, pad->buttons);
+		BITS_COPY16_PTR(state, pad->buttons);
 	}
    else
 		BIT128_CLEAR_ALL_PTR(state);

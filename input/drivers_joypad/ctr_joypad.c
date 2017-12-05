@@ -74,7 +74,7 @@ static void ctr_joypad_get_buttons(unsigned port_num, retro_bits_t *state)
 {
 	if ( port_num < MAX_PADS )
    {
-		RARCH_INPUT_STATE_COPY16_PTR( state, pad_state );
+		BITS_COPY16_PTR( state, pad_state );
 	}
    else
 		BIT128_CLEAR_ALL_PTR(state);

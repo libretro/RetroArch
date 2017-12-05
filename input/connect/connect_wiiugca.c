@@ -68,7 +68,7 @@ static void hidpad_wiiugca_get_buttons(void *data, retro_bits_t *state)
 	struct hidpad_wiiugca_data *device = (struct hidpad_wiiugca_data*)data;
 	if (device)
    {
-		RARCH_INPUT_STATE_COPY16_PTR(state, device->buttons);
+		BITS_COPY16_PTR(state, device->buttons);
 	}
    else
 		BIT128_CLEAR_ALL_PTR(state);

@@ -609,7 +609,7 @@ static void udev_joypad_get_buttons(unsigned port, retro_bits_t *state)
 	const struct udev_joypad *pad = (const struct udev_joypad*)&udev_pads[port];
 	if (pad)
    {
-		RARCH_INPUT_STATE_COPY16_PTR( state, pad->buttons );
+		BITS_COPY16_PTR( state, pad->buttons );
 	}
    else
       BIT128_CLEAR_ALL_PTR(state);

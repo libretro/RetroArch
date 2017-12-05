@@ -111,7 +111,7 @@ static void hidpad_ps3_get_buttons(void *data, retro_bits_t *state)
 	if ( device )
 	{
 		/*copy first 16 bits - standard RetroPad controls*/
-		RARCH_INPUT_STATE_COPY16_PTR(state, device->buttons);
+		BITS_COPY16_PTR(state, device->buttons);
 
 		/*PS button?*/
 		if (device->buttons & 0x10000)

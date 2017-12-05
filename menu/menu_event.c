@@ -165,7 +165,7 @@ unsigned menu_event(retro_bits_t* p_input, retro_bits_t* p_trigger_input)
 
    ok_old                                  = ok_current;
 
-   if (RARCH_INPUT_STATE_ANY_SET_PTR(p_input))
+   if (BITS_ANY_SET_PTR(p_input))
    {
       if (!first_held)
       {

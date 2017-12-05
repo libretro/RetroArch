@@ -166,7 +166,7 @@ static void gx_joypad_get_buttons(unsigned port, retro_bits_t *state)
 {
 	if (port < MAX_PADS)
    {
-		RARCH_INPUT_STATE_COPY16_PTR( state, pad_state[port] );
+		BITS_COPY16_PTR( state, pad_state[port] );
 	}
    else
 		BIT128_CLEAR_ALL_PTR(state);

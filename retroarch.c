@@ -2397,7 +2397,7 @@ static enum runloop_state runloop_check_state(
    if (input_driver_flushing_input)
    {
       input_driver_flushing_input = false;
-      if (RARCH_INPUT_STATE_ANY_SET(current_input))
+      if (BITS_ANY_SET(current_input))
       {
          BIT128_CLEAR_ALL(current_input);
          if (runloop_paused)
@@ -2537,12 +2537,10 @@ static enum runloop_state runloop_check_state(
       retro_ctx.poll_cb();
 
       {
-         retro_bits_t trigger_input;
          enum menu_action action;
-         bool focused;
-
-         trigger_input = current_input;
-         RARCH_INPUT_STATE_CLEAR_BITS(trigger_input, old_input);
+         bool focused               = false;
+         retro_bits_t trigger_input = current_input;
+         BITS_CLEAR_BITS(trigger_input, old_input);
 
          action   = (enum menu_action)menu_event(&current_input, &trigger_input);
          focused              = pause_nonactive ? is_focused : true;
