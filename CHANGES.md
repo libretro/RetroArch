@@ -7,6 +7,8 @@
 - COMMON: New lightgun API.
 - FREEBSD: Support libusb HID input driver.
 - HAIKU: Buildfix.
+- LINUX/X11: Add RetroArch logo to window title bar.
+- LINUX/X11: Input driver now supports new lightgun code.
 - LOCALIZATION: Update Italian translation.
 - LOCALIZATION: Update Portuguese-Brazilian translation.
 - LOCALIZATION: Update Russian translation.
@@ -14,8 +16,6 @@
 - SCANNER: Fix crash from Windows-incompatible format string.
 - WIIU: Disabled the controller patcher for now since it was the source of many stability issues.
 - WINDOWS: Raw input driver now supports new lightgun code.
-- X11: Add RetroArch logo to window title bar.
-- X11: Input driver now supports new lightgun code.
 
 # 1.6.9
 - COMMON: Small memory leak.
