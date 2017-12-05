@@ -70,7 +70,7 @@ typedef struct gl2_renderchain
 
    unsigned fence_count;
 
-   GLsync fences[MAX_FENCES];
+   void *fences[MAX_FENCES];
 
    struct gfx_fbo_scale fbo_scale[GFX_MAX_SHADERS];
 } gl2_renderchain_t;
@@ -1454,7 +1454,7 @@ static void gl2_renderchain_fence_iterate(
 
       chain->fence_count--;
       memmove(chain->fences, chain->fences + 1,
-            chain->fence_count * sizeof(GLsync));
+            chain->fence_count * sizeof(void*));
    }
 }
 
