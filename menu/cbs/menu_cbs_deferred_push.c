@@ -58,90 +58,85 @@ static int deferred_push_dlist(menu_displaylist_info_t *info, enum menu_displayl
    return 0;
 }
 
-static int deferred_push_core_information(menu_displaylist_info_t *info)
+static int deferred_push_database_manager_list_deferred(
+      menu_displaylist_info_t *info)
 {
-   return deferred_push_dlist(info, DISPLAYLIST_CORE_INFO);
+   if (!string_is_empty(info->path_b))
+      free(info->path_b);
+   if (!string_is_empty(info->path_c))
+      free(info->path_c);
+
+   info->path_b    = strdup(info->path);
+   info->path_c    = NULL;
+
+   return deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
 }
 
-static int deferred_push_system_information(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_SYSTEM_INFO);
+#define generic_deferred_push(name, type) \
+static int (name)(menu_displaylist_info_t *info) \
+{ \
+   return deferred_push_dlist(info, type); \
 }
 
-static int deferred_push_network_information(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_NETWORK_INFO);
-}
-
-static int deferred_push_achievement_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_ACHIEVEMENT_LIST);
-}
-
-static int deferred_push_rdb_collection(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_PLAYLIST_COLLECTION);
-}
-
-static int deferred_main_menu_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_MAIN_MENU);
-}
-
-static int deferred_music_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_MUSIC_LIST);
-}
-
-static int deferred_user_binds_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_USER_BINDS_LIST);
-}
-
-static int deferred_push_accounts_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_ACCOUNTS_LIST);
-}
-
-static int deferred_push_driver_settings_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_DRIVER_SETTINGS_LIST);
-}
-
-static int deferred_push_core_settings_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_CORE_SETTINGS_LIST);
-}
-
-static int deferred_push_video_settings_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_VIDEO_SETTINGS_LIST);
-}
-
-static int deferred_push_configuration_settings_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_CONFIGURATION_SETTINGS_LIST);
-}
-
-static int deferred_push_saving_settings_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_SAVING_SETTINGS_LIST);
-}
-
-static int deferred_push_logging_settings_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_LOGGING_SETTINGS_LIST);
-}
-
-static int deferred_push_frame_throttle_settings_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_FRAME_THROTTLE_SETTINGS_LIST);
-}
-
-static int deferred_push_rewind_settings_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_REWIND_SETTINGS_LIST);
-}
+generic_deferred_push(deferred_push_video_shader_preset_parameters, DISPLAYLIST_SHADER_PARAMETERS_PRESET)
+generic_deferred_push(deferred_push_video_shader_parameters,        DISPLAYLIST_SHADER_PARAMETERS)
+generic_deferred_push(deferred_push_settings,                       DISPLAYLIST_SETTINGS_ALL)
+generic_deferred_push(deferred_push_shader_options,                 DISPLAYLIST_OPTIONS_SHADERS)
+generic_deferred_push(deferred_push_options,                        DISPLAYLIST_OPTIONS)
+generic_deferred_push(deferred_push_netplay,                        DISPLAYLIST_NETPLAY_ROOM_LIST)
+generic_deferred_push(deferred_push_netplay_sublist,                DISPLAYLIST_NETPLAY)
+generic_deferred_push(deferred_push_content_settings,               DISPLAYLIST_CONTENT_SETTINGS)
+generic_deferred_push(deferred_push_add_content_list,               DISPLAYLIST_ADD_CONTENT_LIST)
+generic_deferred_push(deferred_push_history_list,                   DISPLAYLIST_HISTORY)
+generic_deferred_push(deferred_push_database_manager_list,          DISPLAYLIST_DATABASES)
+generic_deferred_push(deferred_push_cursor_manager_list,            DISPLAYLIST_DATABASE_CURSORS)
+generic_deferred_push(deferred_push_content_collection_list,        DISPLAYLIST_DATABASE_PLAYLISTS)
+generic_deferred_push(deferred_push_configurations_list,            DISPLAYLIST_CONFIGURATIONS_LIST)
+generic_deferred_push(deferred_push_load_content_special,           DISPLAYLIST_LOAD_CONTENT_LIST)
+generic_deferred_push(deferred_push_load_content_list,              DISPLAYLIST_LOAD_CONTENT_LIST)
+generic_deferred_push(deferred_push_information_list,               DISPLAYLIST_INFORMATION_LIST)
+generic_deferred_push(deferred_archive_action_detect_core,          DISPLAYLIST_ARCHIVE_ACTION_DETECT_CORE)
+generic_deferred_push(deferred_archive_action,                      DISPLAYLIST_ARCHIVE_ACTION)
+generic_deferred_push(deferred_push_management_options,             DISPLAYLIST_OPTIONS_MANAGEMENT)
+generic_deferred_push(deferred_push_core_counters,                  DISPLAYLIST_PERFCOUNTERS_CORE)
+generic_deferred_push(deferred_push_frontend_counters,              DISPLAYLIST_PERFCOUNTERS_FRONTEND)
+generic_deferred_push(deferred_push_core_cheat_options,             DISPLAYLIST_OPTIONS_CHEATS)
+generic_deferred_push(deferred_push_core_input_remapping_options,   DISPLAYLIST_OPTIONS_REMAPPINGS)
+generic_deferred_push(deferred_push_core_options,                   DISPLAYLIST_CORE_OPTIONS)
+generic_deferred_push(deferred_push_disk_options,                   DISPLAYLIST_OPTIONS_DISK)
+generic_deferred_push(deferred_push_browse_url_list,                DISPLAYLIST_BROWSE_URL_LIST)
+generic_deferred_push(deferred_push_browse_url_start,               DISPLAYLIST_BROWSE_URL_START)
+generic_deferred_push(deferred_push_core_list,                      DISPLAYLIST_CORES)
+generic_deferred_push(deferred_push_configurations,                 DISPLAYLIST_CONFIG_FILES)
+generic_deferred_push(deferred_push_video_shader_preset,            DISPLAYLIST_SHADER_PRESET)
+generic_deferred_push(deferred_push_video_shader_pass,              DISPLAYLIST_SHADER_PASS)
+generic_deferred_push(deferred_push_video_filter,                   DISPLAYLIST_VIDEO_FILTERS)
+generic_deferred_push(deferred_push_images,                         DISPLAYLIST_IMAGES)
+generic_deferred_push(deferred_push_audio_dsp_plugin,               DISPLAYLIST_AUDIO_FILTERS)
+generic_deferred_push(deferred_push_cheat_file_load,                DISPLAYLIST_CHEAT_FILES)
+generic_deferred_push(deferred_push_remap_file_load,                DISPLAYLIST_REMAP_FILES)
+generic_deferred_push(deferred_push_record_configfile,              DISPLAYLIST_RECORD_CONFIG_FILES)
+generic_deferred_push(deferred_push_input_overlay,                  DISPLAYLIST_OVERLAYS)
+generic_deferred_push(deferred_push_video_font_path,                DISPLAYLIST_FONTS)
+generic_deferred_push(deferred_push_xmb_font_path,                  DISPLAYLIST_FONTS)
+generic_deferred_push(deferred_push_content_history_path,           DISPLAYLIST_CONTENT_HISTORY)
+generic_deferred_push(deferred_push_core_information,               DISPLAYLIST_CORE_INFO)
+generic_deferred_push(deferred_push_system_information,             DISPLAYLIST_SYSTEM_INFO)
+generic_deferred_push(deferred_push_network_information,            DISPLAYLIST_NETWORK_INFO)
+generic_deferred_push(deferred_push_achievement_list,               DISPLAYLIST_ACHIEVEMENT_LIST)
+generic_deferred_push(deferred_push_rdb_collection,                 DISPLAYLIST_PLAYLIST_COLLECTION)
+generic_deferred_push(deferred_main_menu_list,                      DISPLAYLIST_MAIN_MENU)
+generic_deferred_push(deferred_music_list,                          DISPLAYLIST_MUSIC_LIST)
+generic_deferred_push(deferred_user_binds_list,                     DISPLAYLIST_USER_BINDS_LIST)
+generic_deferred_push(deferred_push_accounts_list,                  DISPLAYLIST_ACCOUNTS_LIST)
+generic_deferred_push(deferred_push_driver_settings_list,           DISPLAYLIST_DRIVER_SETTINGS_LIST)
+generic_deferred_push(deferred_push_core_settings_list,             DISPLAYLIST_CORE_SETTINGS_LIST)
+generic_deferred_push(deferred_push_video_settings_list,            DISPLAYLIST_VIDEO_SETTINGS_LIST)
+generic_deferred_push(deferred_push_configuration_settings_list,    DISPLAYLIST_CONFIGURATION_SETTINGS_LIST)
+generic_deferred_push(deferred_push_saving_settings_list,           DISPLAYLIST_SAVING_SETTINGS_LIST)
+generic_deferred_push(deferred_push_logging_settings_list,          DISPLAYLIST_LOGGING_SETTINGS_LIST)
+generic_deferred_push(deferred_push_frame_throttle_settings_list,   DISPLAYLIST_FRAME_THROTTLE_SETTINGS_LIST)
+generic_deferred_push(deferred_push_rewind_settings_list,           DISPLAYLIST_REWIND_SETTINGS_LIST)
 
 static int deferred_push_onscreen_display_settings_list(menu_displaylist_info_t *info)
 {
@@ -279,164 +274,15 @@ static int deferred_push_core_collection_list_deferred(
    return deferred_push_dlist(info, DISPLAYLIST_CORES_COLLECTION_SUPPORTED);
 }
 
-static int deferred_push_database_manager_list_deferred(
-      menu_displaylist_info_t *info)
-{
-   if (!string_is_empty(info->path_b))
-      free(info->path_b);
-   if (!string_is_empty(info->path_c))
-      free(info->path_c);
-
-   info->path_b    = strdup(info->path);
-   info->path_c    = NULL;
-
-   return deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
-}
-
-static int deferred_push_video_shader_preset_parameters(
-      menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_SHADER_PARAMETERS_PRESET);
-}
-
-static int deferred_push_video_shader_parameters(
-      menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_SHADER_PARAMETERS);
-}
-
-static int deferred_push_settings(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_SETTINGS_ALL);
-}
-
-static int deferred_push_shader_options(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_OPTIONS_SHADERS);
-}
-
-static int deferred_push_options(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_OPTIONS);
-}
-
-static int deferred_push_netplay(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_NETPLAY_ROOM_LIST);
-}
-
-static int deferred_push_netplay_sublist(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_NETPLAY);
-}
-
-static int deferred_push_content_settings(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_CONTENT_SETTINGS);
-}
-
-static int deferred_push_add_content_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_ADD_CONTENT_LIST);
-}
-
-static int deferred_push_configurations_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_CONFIGURATIONS_LIST);
-}
-
-static int deferred_push_load_content_special(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_LOAD_CONTENT_LIST);
-}
-
-static int deferred_push_load_content_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_LOAD_CONTENT_LIST);
-}
-
-static int deferred_push_information_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_INFORMATION_LIST);
-}
-
-static int deferred_push_management_options(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_OPTIONS_MANAGEMENT);
-}
-
-static int deferred_push_core_counters(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_PERFCOUNTERS_CORE);
-}
-
-static int deferred_push_frontend_counters(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_PERFCOUNTERS_FRONTEND);
-}
-
-static int deferred_push_core_cheat_options(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_OPTIONS_CHEATS);
-}
-
-static int deferred_push_core_input_remapping_options(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_OPTIONS_REMAPPINGS);
-}
-
-static int deferred_push_core_options(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_CORE_OPTIONS);
-}
-
-static int deferred_push_disk_options(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_OPTIONS_DISK);
-}
 
 #ifdef HAVE_NETWORKING
-static int deferred_push_thumbnails_updater_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_THUMBNAILS_UPDATER);
-}
-
-static int deferred_push_core_updater_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_CORES_UPDATER);
-}
-
-static int deferred_push_core_content_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_CORE_CONTENT);
-}
-
-static int deferred_push_core_content_dirs_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_CORE_CONTENT_DIRS);
-}
-
-static int deferred_push_core_content_dirs_subdir_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_CORE_CONTENT_DIRS_SUBDIR);
-}
-
-static int deferred_push_lakka_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_LAKKA);
-}
-
+generic_deferred_push(deferred_push_thumbnails_updater_list,        DISPLAYLIST_THUMBNAILS_UPDATER)
+generic_deferred_push(deferred_push_core_updater_list,              DISPLAYLIST_CORES_UPDATER)
+generic_deferred_push(deferred_push_core_content_list,              DISPLAYLIST_CORE_CONTENT)
+generic_deferred_push(deferred_push_core_content_dirs_list,         DISPLAYLIST_CORE_CONTENT_DIRS)
+generic_deferred_push(deferred_push_core_content_dirs_subdir_list,  DISPLAYLIST_CORE_CONTENT_DIRS_SUBDIR)
+generic_deferred_push(deferred_push_lakka_list,                     DISPLAYLIST_LAKKA)
 #endif
-
-static int deferred_archive_action_detect_core(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_ARCHIVE_ACTION_DETECT_CORE);
-}
-
-static int deferred_archive_action(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_ARCHIVE_ACTION);
-}
 
 static int deferred_push_cursor_manager_list_deferred(
       menu_displaylist_info_t *info)
@@ -941,109 +787,9 @@ static int deferred_push_default(menu_displaylist_info_t *info)
    return general_push(info, PUSH_DEFAULT, DISPLAYLIST_DEFAULT);
 }
 
-static int deferred_push_history_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_HISTORY);
-}
-
-static int deferred_push_database_manager_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_DATABASES);
-}
-
-static int deferred_push_cursor_manager_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_DATABASE_CURSORS);
-}
-
-static int deferred_push_content_collection_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_DATABASE_PLAYLISTS);
-}
-
 static int deferred_push_favorites_list(menu_displaylist_info_t *info)
 {
    return general_push(info, PUSH_DEFAULT, DISPLAYLIST_FAVORITES);
-}
-
-static int deferred_push_browse_url_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_BROWSE_URL_LIST);
-}
-
-static int deferred_push_browse_url_start(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_BROWSE_URL_START);
-}
-
-static int deferred_push_core_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_CORES);
-}
-
-static int deferred_push_configurations(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_CONFIG_FILES);
-}
-
-static int deferred_push_video_shader_preset(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_SHADER_PRESET);
-}
-
-static int deferred_push_video_shader_pass(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_SHADER_PASS);
-}
-
-static int deferred_push_video_filter(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_VIDEO_FILTERS);
-}
-
-static int deferred_push_images(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_IMAGES);
-}
-
-static int deferred_push_audio_dsp_plugin(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_AUDIO_FILTERS);
-}
-
-static int deferred_push_cheat_file_load(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_CHEAT_FILES);
-}
-
-static int deferred_push_remap_file_load(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_REMAP_FILES);
-}
-
-static int deferred_push_record_configfile(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_RECORD_CONFIG_FILES);
-}
-
-static int deferred_push_input_overlay(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_OVERLAYS);
-}
-
-static int deferred_push_video_font_path(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_FONTS);
-}
-
-static int deferred_push_xmb_font_path(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_FONTS);
-}
-
-static int deferred_push_content_history_path(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_CONTENT_HISTORY);
 }
 
 static int menu_cbs_init_bind_deferred_push_compare_label(
