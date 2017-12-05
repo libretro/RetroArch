@@ -78,14 +78,17 @@
 #define BIT64_CLEAR_ALL(a)   ((a) = 0)
 
 #define BIT128_SET(a, bit)   ((a).data[(bit) >> 5] |=  (1 << ((bit) & 31)))
-#define BIT128_SET_PTR(a, bit)   ((a)->data[(bit) >> 5] |=  (1 << ((bit) & 31)))
 #define BIT128_CLEAR(a, bit) ((a).data[(bit) >> 5] &= ~(1 << ((bit) & 31)))
 #define BIT128_GET(a, bit)   (((a).data[(bit) >> 5] >> ((bit) & 31)) & 1)
-#define BIT128_GET_PTR(a, bit)   (((a)->data[(bit) >> 5] >> ((bit) & 31)) & 1)
 #define BIT128_CLEAR_ALL(a)  memset(&(a), 0, sizeof(a))
-#define BIT128_CLEAR_ALL_PTR(a)  memset((a), 0, sizeof(retro_bits_t))
+
+#define BIT128_SET_PTR(a, bit)   BIT128_SET(*a, bit)
+#define BIT128_CLEAR_PTR(a, bit) BIT128_CLEAR(*a, bit)
+#define BIT128_GET_PTR(a, bit)   BIT128_GET(*a, bit)
+#define BIT128_CLEAR_ALL_PTR(a)  BIT128_CLEAR_ALL(*a)
 
 /* Helper macros and struct to keep track of many booleans. */
+/* This struct has 256 bits, but the macros are named 128 due to some historical accident. */
 typedef struct
 {
    uint32_t data[8];
