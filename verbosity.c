@@ -83,11 +83,17 @@ bool *verbosity_get_ptr(void)
    return &main_verbosity;
 }
 
+void *retro_main_log_file(void)
+{
+   return log_file_fp;
+}
+
 void retro_main_log_file_init(const char *path)
 {
    if (log_file_initialized)
       return;
 
+   log_file_fp          = stderr;
    if (path == NULL)
       return;
 
@@ -167,15 +173,14 @@ static aslclient asl_client;
 #else
 
 #ifdef HAVE_FILE_LOGGER
-   filestream_printf(log_file, "%s ", tag ? tag : file_path_str(FILE_PATH_LOG_INFO));
-   filestream_vprintf(log_file, fmt, ap);
-   filestream_flush(log_file);
+   fp = (FILE*)retro_main_log_file();
 #else
-   fprintf(stderr, "%s ", tag ? tag : file_path_str(FILE_PATH_LOG_INFO));
-   vfprintf(stderr, fmt, ap);
-   fflush(stderr);
+   fp = stderr;
 #endif
-   
+   fprintf(fp, "%s ",
+         tag ? tag : file_path_str(FILE_PATH_LOG_INFO));
+   vfprintf(fp, fmt, ap);
+   fflush(fp);
 #endif
 }
 
