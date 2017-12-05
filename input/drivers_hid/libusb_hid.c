@@ -447,9 +447,12 @@ static void libusb_hid_joypad_get_buttons(void *data, unsigned port, retro_bits_
 {
    libusb_hid_t        *hid   = (libusb_hid_t*)data;
    if (hid)
-      return pad_connection_get_buttons(&hid->slots[port], port, state);
-   else
-      RARCH_INPUT_STATE_CLEAR_PTR(state);
+   {
+      pad_connection_get_buttons(&hid->slots[port], port, state);
+      return;
+   }
+
+   BIT256_CLEAR_ALL_PTR(state);
 }
 
 static bool libusb_hid_joypad_button(void *data,
@@ -464,7 +467,7 @@ static bool libusb_hid_joypad_button(void *data,
 
    /* Check the button. */
    if ((port < MAX_USERS) && (joykey < 32))
-      return (RARCH_INPUT_STATE_BIT_GET(buttons, joykey) != 0);
+      return (BIT256_GET(buttons, joykey) != 0);
    return false;
 }
 

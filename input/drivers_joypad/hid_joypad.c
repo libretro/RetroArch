@@ -57,11 +57,10 @@ static bool hid_joypad_button(unsigned port, uint16_t joykey)
 
 static void hid_joypad_get_buttons(unsigned port, retro_bits_t *state)
 {
-   if (generic_hid && generic_hid->get_buttons) {
+   if (generic_hid && generic_hid->get_buttons)
       generic_hid->get_buttons((void*)hid_driver_get_data(), port, state);
-   } else {
-      RARCH_INPUT_STATE_CLEAR_PTR( state );
-   }
+   else
+      BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t hid_joypad_axis(unsigned port, uint32_t joyaxis)

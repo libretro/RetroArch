@@ -62,11 +62,12 @@ static void hidpad_ps2adapter_deinit(void *data)
 static void hidpad_ps2adapter_get_buttons(void *data, retro_bits_t *state)
 {
 	struct hidpad_ps2adapter_data *device = (struct hidpad_ps2adapter_data*)data;
-	if ( device ) {
-		RARCH_INPUT_STATE_COPY16_PTR(state, device->buttons);
-	} else {
-		RARCH_INPUT_STATE_CLEAR_PTR(state);
+	if (device)
+   {
+		BITS_COPY16_PTR(state, device->buttons);
 	}
+   else
+		BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t hidpad_ps2adapter_get_axis(void *data, unsigned axis)

@@ -904,13 +904,19 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS:
           snprintf(s, len,
+                  " \n"
+                  );
+         {
+            /* Work around C89 limitations */
+            const char * t =
                   "Für diesen durchgang skalieren. \n"
                   " \n"
                   "Der Skalierungsfaktor wird multipliziert, \n"
                   "d.h. 2x im ersten durchgang und 2x im \n"
                   "zweiten durchgang bedeute eine 4x Gesamt- \n"
                   "Skalierung."
-                  " \n"
+                  " \n";
+            const char * u =
                   "Wenn es im letzten durchgang einen \n"
                   "Skalierungsfaktor gibt, wird das Ergebnis \n"
                   "mit dem als 'Standardfilter' eingestellten \n"
@@ -919,8 +925,10 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "Wenn 'Ignorieren' eingestellt ist, wird \n"
                   "entweder einfache Skalierung oder Vollbild- \n"
                   "Streckung verwendet - abhängig davon, ob \n"
-                  "es der letzte durchgang ist oder nicht."
-                  );
+                  "es der letzte durchgang ist oder nicht.";
+            strlcpy(s, t, len);
+            strlcat(s, u, len);
+         }
          break;
       case MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES:
          snprintf(s, len,
@@ -1133,7 +1141,9 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "Verwendet für Inhalt, der auf mehreren Datenträgern ausgeliefert wird. ");
          break;
       case MENU_ENUM_LABEL_ENABLE_HOTKEY:
-         snprintf(s, len,
+         {
+            /* Work around C89 limitations */
+            const char * t =
                   "Andere Tastenkürzel aktivieren. \n"
                   " \n"
                   "Wenn dieses Tastenkürzel entweder einer\n"
@@ -1141,14 +1151,18 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "Controller-Achse zugeordnet ist, werden alle \n"
                   "anderen Tastenkürzel nur aktiviert, wenn dieses \n"
                   "Tastenkürzel zur gleichen Zeit gehalten wird. \n"
-                  " \n"
+                  " \n";
+            const char * u =
                   "Dies ist hilfreich für Implementierungen, die auf \n"
                   "RETRO_KEYBOARD ausgelegt sind und eine große \n"
                   "Fläche auf der Tastatur benötigen, wo es nicht \n"
                   "gewünscht ist, dass es zu Kollisionen mit Tastenkürzeln kommt \n."
                   " \n"
                   "Alternativ können auch alle Tastatur-Kürzel durch \n"
-                  "den Benutzer deaktiviert werden.");
+                  "den Benutzer deaktiviert werden.";
+            strlcpy(s, t, len);
+            strlcat(s, u, len);
+         }
          break;
       case MENU_ENUM_LABEL_REWIND_ENABLE:
          snprintf(s, len,
@@ -1165,7 +1179,9 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Libretro-Core-Implementierungen gesucht wird.");
          break;
       case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO:
-         snprintf(s, len,
+         {
+            /* Work around C89 limitations */
+            const char * t =
                   "Bildwiederholrate.\n"
                   " \n"
                   "Die genaue Bildwiederholrate deines Bildschirms (Hz).\n"
@@ -1174,14 +1190,19 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                   " \n"
                   "audio_input_rate = Spiel-Eingaberate * Bildschirm- \n"
                   "Wiederholrate / Spiel-Wiederholrate\n"
-                  " \n"
+                  " \n";
+            const char * u =
                   "Wenn die Implementierung keinen Wert liefert, \n"
                   "werden aus Kompatiblitätsgründen die Werte für NTSC \n"
                   "angenommen.\n"
                   " \n"
                   "Dieser Wert sollte nahe 60Hz liegen, um Tonsprünge zu vermeiden. \n"
                   "Wenn dein Bildschirm nicht auf 60Hz oder einem ähnlichen Wert läuft, \n"
-                  "deaktiviere VSync und lasse diese Einstellung unverändert. \n");
+                  "deaktiviere VSync und lasse diese Einstellung unverändert. \n";
+               ;
+            strlcpy(s, t, len);
+            strlcat(s, u, len);
+         }
          break;
       case MENU_ENUM_LABEL_VIDEO_ROTATION:
          snprintf(s, len,
@@ -1594,20 +1615,26 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                "tritt keine Netplay-Verzögerung auf.\n");
          break;
       case MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES:
-         snprintf(s, len,
+         {
+            /* Work around C89 limitations */
+            const char * t =
                "Die Frequenz in Einzelbildern, mit der Netplay \n"
                "sicherstellen wird, dass Host und Clients \n"
                "synchronisiert sind. \n"
                " \n"
-                  "Bei den meisten Cores wird diese Einstellungen \n"
-                  "keine sichtbaren Auswirkungen haben und kann ignoriert werden. \n"
-                  "Bei nichtdeterministischen Cores legt dieser Wert fest, \n"
-                  "wie oft die Netplay-Mitglieder miteinander synchronisiert \n"
-                  "werden. Bei fehlerhaften Cores wird ein \n"
-                  "anderer Wert als 0 für diese Einstellung erhebliche \n"
-                  "Leistungsprobleme verursachen. Auf 0 setzen, um keine \n"
-                  "Überprüfungen durchzuführen. Diese Einstellung wird nur \n"
-                  "auf dem Netplay-Host verwendet. \n");
+               "Bei den meisten Cores wird diese Einstellungen \n"
+               "keine sichtbaren Auswirkungen haben und kann ignoriert werden. \n";
+            const char *u =
+               "Bei nichtdeterministischen Cores legt dieser Wert fest, \n"
+               "wie oft die Netplay-Mitglieder miteinander synchronisiert \n"
+               "werden. Bei fehlerhaften Cores wird ein \n"
+               "anderer Wert als 0 für diese Einstellung erhebliche \n"
+               "Leistungsprobleme verursachen. Auf 0 setzen, um keine \n"
+               "Überprüfungen durchzuführen. Diese Einstellung wird nur \n"
+               "auf dem Netplay-Host verwendet. \n";
+            strlcpy(s, t, len);
+            strlcat(s, u, len);
+         }
          break;
       case MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN:
          snprintf(s, len,

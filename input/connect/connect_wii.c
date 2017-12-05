@@ -677,9 +677,9 @@ static void hidpad_wii_get_buttons(void *data, retro_bits_t *state)
 	struct connect_wii_wiimote_t* device = (struct connect_wii_wiimote_t*)data;
 	if ( device )
 	{
-		uint32_t b;
-		b = device->btns | (device->exp.cc.classic.btns << 16); /*broken? this doesn't match retropad!!*/
-		RARCH_INPUT_STATE_COPY32_PTR(state, b);
+		/* TODO/FIXME - Broken? this doesn't match retropad! */
+		uint32_t b = device->btns | (device->exp.cc.classic.btns << 16);
+		BITS_COPY32_PTR(state, b);
 	}
 }
 

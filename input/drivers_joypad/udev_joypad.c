@@ -607,11 +607,12 @@ static bool udev_joypad_button(unsigned port, uint16_t joykey)
 static void udev_joypad_get_buttons(unsigned port, retro_bits_t *state)
 {
 	const struct udev_joypad *pad = (const struct udev_joypad*)&udev_pads[port];
-	if ( pad ) {
-		RARCH_INPUT_STATE_COPY16_PTR( state, pad->buttons );
-	} else {
-		RARCH_INPUT_STATE_CLEAR_PTR(state);
+	if (pad)
+   {
+		BITS_COPY16_PTR( state, pad->buttons );
 	}
+   else
+      BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t udev_joypad_axis(unsigned port, uint32_t joyaxis)

@@ -6220,8 +6220,8 @@ typedef uint64_t GLuint64EXT;
 #ifndef GL_ARB_sync
 typedef int64_t GLint64;
 typedef uint64_t GLuint64;
-typedef struct __GLsync *GLsync;
 #endif
+typedef struct __GLsync *GLsync;
 
 #ifndef GL_ARB_cl_event
 /* These incomplete types let us declare types compatible with OpenCL's cl_context and cl_event */

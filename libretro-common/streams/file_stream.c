@@ -65,8 +65,8 @@
 #include <fcntl.h>
 #endif
 
-/* Assume W-functions do not work below VC2005 and Xbox platforms */
-#if defined(_MSC_VER) && _MSC_VER < 1400 || defined(_XBOX)
+/* Assume W-functions do not work below Win2K and Xbox platforms */
+#if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500 || defined(_XBOX)
 
 #ifndef LEGACY_WIN32
 #define LEGACY_WIN32
@@ -114,24 +114,6 @@ struct RFILE
    char *buf;
 };
 
-FILE* filestream_get_fp(RFILE *stream)
-{
-   if (!stream)
-      return NULL;
-   return stream->fp;
-}
-
-int filestream_get_fd(RFILE *stream)
-{
-   if (!stream)
-      return -1;
-#if defined(HAVE_BUFFERED_IO)
-   if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
-      return fileno(stream->fp);
-#endif
-   return stream->fd;
-}
-
 const char *filestream_get_ext(RFILE *stream)
 {
    if (!stream)
@@ -166,12 +148,10 @@ void filestream_set_size(RFILE *stream)
  * @bufsize            : optional buffer size (-1 or 0 to use default)
  *
  * Opens a file for reading or writing, depending on the requested mode.
- * If bufsize is > 0 for unbuffered modes (like RFILE_MODE_WRITE), file will instead be fully buffered.
  * Returns a pointer to an RFILE if opened successfully, otherwise NULL.
  **/
 RFILE *filestream_open(const char *path, unsigned mode, ssize_t unused)
 {
-   ssize_t bufsize      = 0x4000;
    int            flags = 0;
    int         mode_int = 0;
 #if defined(HAVE_BUFFERED_IO)
@@ -271,7 +251,7 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t unused)
 #if  defined(PSP)
    stream->fd = sceIoOpen(path, flags, mode_int);
 
-   if (stream->fd == -1)
+   if (stream->fd < 0)
       goto error;
 #else
 #if defined(HAVE_BUFFERED_IO)
@@ -298,20 +278,18 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t unused)
       if (!stream->fp)
          goto error;
 
-      if (bufsize > 0)
-      {
-         /* Regarding setvbuf:
-          *
-          * https://www.freebsd.org/cgi/man.cgi?query=setvbuf&apropos=0&sektion=0&manpath=FreeBSD+11.1-RELEASE&arch=default&format=html
-          *
-          * If the size argument is not zero but buf is NULL, a buffer of the given size will be allocated immediately, and
-          * released on close. This is an extension to ANSI C.
-          *
-          * Since C89 does not support specifying a null buffer with a non-zero size, we create and track our own buffer for it.
-          */
-         stream->buf = (char*)calloc(1, bufsize);
-         setvbuf(stream->fp, stream->buf, _IOFBF, bufsize);
-      }
+      /* Regarding setvbuf:
+       *
+       * https://www.freebsd.org/cgi/man.cgi?query=setvbuf&apropos=0&sektion=0&manpath=FreeBSD+11.1-RELEASE&arch=default&format=html
+       *
+       * If the size argument is not zero but buf is NULL, a buffer of the given size will be allocated immediately, and
+       * released on close. This is an extension to ANSI C.
+       *
+       * Since C89 does not support specifying a null buffer with a non-zero size, we create and track our own buffer for it.
+       */
+      /* TODO: this is only useful for a few platforms, find which and add ifdef */
+      stream->buf = (char*)calloc(1, 0x4000);
+      setvbuf(stream->fp, stream->buf, _IOFBF, 0x4000);
    }
    else
 #endif

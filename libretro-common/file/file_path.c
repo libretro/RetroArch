@@ -84,8 +84,8 @@
 #include <unistd.h> /* stat() is defined here */
 #endif
 
-/* Assume W-functions do not work below VC2005 and Xbox platforms */
-#if defined(_MSC_VER) && _MSC_VER < 1400 || defined(_XBOX)
+/* Assume W-functions do not work below Win2K and Xbox platforms */
+#if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500 || defined(_XBOX)
 
 #ifndef LEGACY_WIN32
 #define LEGACY_WIN32
@@ -936,7 +936,7 @@ bool path_file_remove(const char *path)
    (void)path_wide;
 
 #if defined(_WIN32) && !defined(_XBOX)
-#if defined(_MSC_VER) && _MSC_VER < 1400
+#if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500
    path_local = utf8_to_local_string_alloc(path);
 
    if (path_local)
@@ -982,7 +982,7 @@ bool path_file_rename(const char *old_path, const char *new_path)
    (void)new_path_wide;
 
 #if defined(_WIN32) && !defined(_XBOX)
-#if defined(_MSC_VER) && _MSC_VER < 1400
+#if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500
    old_path_local = utf8_to_local_string_alloc(old_path);
    new_path_local = utf8_to_local_string_alloc(new_path);
 

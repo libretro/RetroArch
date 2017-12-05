@@ -1,5 +1,22 @@
 # 1.7.0 (future)
-- CHEEVOS: Add badges
+- CHEEVOS: Add badges for achievements, shows thumbnail images of achievements.
+- COMMON: Add 'Automatically Load Content To Playlist' feature, enabled by default.
+- COMMON: Fix slowmotion ratio always being reset back to 1.
+- COMMON: Optimized NBIO implementations now for Apple, Windows, and Linux. Uses mmap for Linux/Windows/BSD if/when available. File I/O should now be much faster for loading images inside the menu.
+- COMMON: Native Blissbox support now for latest firmware as of writing (2.0). Implementation through libusb and/or native Windows HID.
+- COMMON: New lightgun API.
+- COMMON: Fixed some playlist bugs.
+- FREEBSD: Support libusb HID input driver.
+- HAIKU: Buildfix.
+- LINUX/X11: Add RetroArch logo to window title bar.
+- LINUX/X11: Input driver now supports new lightgun code.
+- LOCALIZATION: Update Italian translation.
+- LOCALIZATION: Update Portuguese-Brazilian translation.
+- LOCALIZATION: Update Russian translation.
+- OSX/PPC: Fix the GL2 renderchain, had to use EXT versions of framebuffer/renderbuffer functions.
+- SCANNER: Fix crash from Windows-incompatible format string.
+- WIIU: Disabled the controller patcher for now since it was the source of many stability issues.
+- WINDOWS: Raw input driver now supports new lightgun code.
 
 # 1.6.9
 - COMMON: Small memory leak.

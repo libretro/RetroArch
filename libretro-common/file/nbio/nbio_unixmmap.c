@@ -39,6 +39,20 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 
+#ifdef __APPLE__
+
+#ifndef O_CLOEXEC
+#define O_CLOEXEC 0x1000000
+#endif
+
+#else
+
+#ifndef O_CLOEXEC
+#define O_CLOEXEC 0
+#endif
+
+#endif
+
 struct nbio_mmap_unix_t
 {
    int fd;
