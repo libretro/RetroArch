@@ -904,13 +904,19 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS:
           snprintf(s, len,
+                  " \n"
+                  );
+         {
+            /* Work around C89 limitations */
+            const char * t =
                   "Für diesen durchgang skalieren. \n"
                   " \n"
                   "Der Skalierungsfaktor wird multipliziert, \n"
                   "d.h. 2x im ersten durchgang und 2x im \n"
                   "zweiten durchgang bedeute eine 4x Gesamt- \n"
                   "Skalierung."
-                  " \n"
+                  " \n";
+            const char * u =
                   "Wenn es im letzten durchgang einen \n"
                   "Skalierungsfaktor gibt, wird das Ergebnis \n"
                   "mit dem als 'Standardfilter' eingestellten \n"
@@ -919,8 +925,10 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "Wenn 'Ignorieren' eingestellt ist, wird \n"
                   "entweder einfache Skalierung oder Vollbild- \n"
                   "Streckung verwendet - abhängig davon, ob \n"
-                  "es der letzte durchgang ist oder nicht."
-                  );
+                  "es der letzte durchgang ist oder nicht.";
+            strlcpy(s, t, len);
+            strlcat(s, u, len);
+         }
          break;
       case MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES:
          snprintf(s, len,
