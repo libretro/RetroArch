@@ -48,6 +48,7 @@
 
 #include <boolean.h>
 #include <compat/apple_compat.h>
+#include <retro_assert.h>
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
 #include <rhash.h>
@@ -334,6 +335,15 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
 
    CFSearchPathForDirectoriesInDomains(CFDocumentDirectory,
          CFUserDomainMask, 1, home_dir_buf, sizeof(home_dir_buf));
+
+#if TARGET_OS_IPHONE
+   char resolved_home_dir_buf[PATH_MAX_LENGTH] = {0};
+   if (realpath(home_dir_buf, resolved_home_dir_buf)) {
+      retro_assert(strlcpy(home_dir_buf,
+            resolved_home_dir_buf,
+            sizeof(home_dir_buf)) < sizeof(home_dir_buf));
+   }
+#endif
 
    strlcat(home_dir_buf, "/RetroArch", sizeof(home_dir_buf));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER],

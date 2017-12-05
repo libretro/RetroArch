@@ -340,7 +340,7 @@ static uint64_t frontend_win32_get_mem_total(void)
 {
    /* OSes below 2000 don't have the Ex version,
     * and non-Ex cannot work with >4GB RAM */
-#if _WIN32_WINNT > 0x0400
+#if _WIN32_WINNT >= 0x0500
 	MEMORYSTATUSEX mem_info;
 	mem_info.dwLength = sizeof(MEMORYSTATUSEX);
 	GlobalMemoryStatusEx(&mem_info);
@@ -357,7 +357,7 @@ static uint64_t frontend_win32_get_mem_used(void)
 {
    /* OSes below 2000 don't have the Ex version, 
     * and non-Ex cannot work with >4GB RAM */
-#if _WIN32_WINNT > 0x0400
+#if _WIN32_WINNT >= 0x0500
 	MEMORYSTATUSEX mem_info;
 	mem_info.dwLength = sizeof(MEMORYSTATUSEX);
 	GlobalMemoryStatusEx(&mem_info);

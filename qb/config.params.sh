@@ -19,6 +19,7 @@ C89_SDL2=no
 HAVE_LIBUSB=auto           # Libusb HID support
 C89_LIBUSB=no
 HAVE_DBUS=auto             # dbus support
+HAVE_SYSTEMD=auto          # Systemd support
 HAVE_UDEV=auto             # Udev/Evdev gamepad support
 HAVE_THREADS=auto          # Threading support
 HAVE_THREAD_STORAGE=auto   # Thread Local Storage support

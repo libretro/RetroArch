@@ -128,8 +128,8 @@ bool netplay_discovery_driver_ctl(enum rarch_netplay_discovery_ctl_state state, 
 {
 #ifndef RARCH_CONSOLE
    char port_str[6];
-   int k = 0;
    int ret;
+   unsigned k = 0;
 
    if (lan_ad_client_fd < 0)
       return false;
@@ -138,10 +138,9 @@ bool netplay_discovery_driver_ctl(enum rarch_netplay_discovery_ctl_state state, 
    {
       case RARCH_NETPLAY_DISCOVERY_CTL_LAN_SEND_QUERY:
       {
-         struct addrinfo hints = {0}, *addr;
-         int canBroadcast = 1;
-
          net_ifinfo_t interfaces;
+         struct addrinfo hints = {0}, *addr;
+         int canBroadcast      = 1;
 
          if (!net_ifinfo_new(&interfaces))
             return false;
@@ -162,7 +161,7 @@ bool netplay_discovery_driver_ctl(enum rarch_netplay_discovery_ctl_state state, 
          memcpy((void *) &ad_packet_buffer, "RANQ", 4);
          ad_packet_buffer.protocol_version = htonl(NETPLAY_PROTOCOL_VERSION);
 
-         for (k=0; k < interfaces.size; k++)
+         for (k = 0; k < (unsigned)interfaces.size; k++)
          {
             strlcpy(ad_packet_buffer.address, interfaces.entries[k].host,
                NETPLAY_HOST_STR_LEN);
@@ -233,11 +232,12 @@ bool netplay_lan_ad_server(netplay_t *netplay)
 /* Todo: implement net_ifinfo and ntohs for consoles */
 #ifndef RARCH_CONSOLE
    fd_set fds;
+   int ret;
    struct timeval tmp_tv = {0};
    struct sockaddr their_addr;
    socklen_t addr_size;
    rarch_system_info_t *info = NULL;
-   int ret, k = 0;
+   unsigned k = 0;
    char reply_addr[NETPLAY_HOST_STR_LEN], port_str[6];
    struct addrinfo *our_addr, hints = {0};
 
@@ -338,16 +338,13 @@ bool netplay_lan_ad_server(netplay_t *netplay)
                   snprintf(port_str, 6, "%hu", ntohs(((struct sockaddr_in*)(&their_addr))->sin_port));
                   if (getaddrinfo_retro(reply_addr, port_str, &hints, &our_addr) < 0)
                      continue;
-                  else
-                  {
-                     RARCH_LOG ("[discovery] sending reply to %s \n", reply_addr);
 
-                     /* And send it */
-                     sendto(lan_ad_server_fd, (const char*)&ad_packet_buffer,
+                  RARCH_LOG ("[discovery] sending reply to %s \n", reply_addr);
+
+                  /* And send it */
+                  sendto(lan_ad_server_fd, (const char*)&ad_packet_buffer,
                         sizeof(struct ad_packet), 0, our_addr->ai_addr, our_addr->ai_addrlen);
-                  }
-                  if (our_addr)
-                     freeaddrinfo_retro(our_addr);
+                  freeaddrinfo_retro(our_addr);
                }
                else
                   continue;

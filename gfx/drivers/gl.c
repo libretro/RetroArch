@@ -40,6 +40,7 @@
 
 #include <gfx/gl_capabilities.h>
 #include <gfx/video_frame.h>
+#include <glsym/glsym.h>
 
 #include "../../configuration.h"
 #include "../../dynamic.h"
@@ -543,11 +544,9 @@ static void gl_init_textures_data(gl_t *gl)
 static void gl_init_textures(gl_t *gl, const video_info_t *video)
 {
    unsigned i;
-   GLenum internal_fmt, texture_type = 0, texture_fmt = 0;
-
-   /* Use regular textures if we use HW render. */
-   gl->egl_images = !gl->hw_render_use && gl_check_capability(GL_CAPS_EGLIMAGE) &&
-      video_context_driver_init_image_buffer(video);
+   GLenum internal_fmt = gl->internal_fmt;
+   GLenum texture_type = gl->texture_type;
+   GLenum texture_fmt  = gl->texture_fmt;
 
 #ifdef HAVE_PSGL
    if (!gl->pbo)
@@ -558,10 +557,6 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
          gl->tex_w * gl->tex_h * gl->base_size * gl->textures,
          NULL, GL_STREAM_DRAW);
 #endif
-
-   internal_fmt = gl->internal_fmt;
-   texture_type = gl->texture_type;
-   texture_fmt  = gl->texture_fmt;
 
 #if defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
    /* GLES is picky about which format we use here.
@@ -594,7 +589,7 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
 
       if (gl->renderchain_driver->init_texture_reference)
          gl->renderchain_driver->init_texture_reference(
-               gl, i, internal_fmt,
+               gl, gl->renderchain_data, i, internal_fmt,
                texture_fmt, texture_type);
    }
 
@@ -893,11 +888,11 @@ static void gl_pbo_async_readback(gl_t *gl)
    gl->pbo_readback_valid[gl->pbo_readback_index] = true;
 
    if (gl->renderchain_driver->readback)
-      gl->renderchain_driver->readback(gl,
+      gl->renderchain_driver->readback(gl, gl->renderchain_data,
             video_pixel_get_alignment(gl->vp.width * sizeof(uint32_t)),
             fmt, type, NULL);
    if (gl->renderchain_driver->unbind_pbo)
-      gl->renderchain_driver->unbind_pbo();
+      gl->renderchain_driver->unbind_pbo(gl, gl->renderchain_data);
 }
 
 static INLINE void gl_draw_texture(gl_t *gl, video_frame_info_t *video_info)
@@ -982,7 +977,7 @@ static bool gl_frame(void *data, const void *frame,
    context_bind_hw_render(false);
 
    if (gl->core_context_in_use && gl->renderchain_driver->bind_vao)
-      gl->renderchain_driver->bind_vao(gl);
+      gl->renderchain_driver->bind_vao(gl, gl->renderchain_data);
 
    video_info->cb_shader_use(gl, video_info->shader_data, 1, true);
 
@@ -996,11 +991,12 @@ static bool gl_frame(void *data, const void *frame,
    {
       if (gl->renderchain_driver->recompute_pass_sizes)
          gl->renderchain_driver->recompute_pass_sizes(
-               gl, frame_width, frame_height,
+               gl, gl->renderchain_data, frame_width, frame_height,
                gl->vp_out_width, gl->vp_out_height);
 
       if (gl->renderchain_driver->start_render)
-         gl->renderchain_driver->start_render(gl, video_info);
+         gl->renderchain_driver->start_render(gl, gl->renderchain_data,
+               video_info);
    }
 
    if (gl->should_resize)
@@ -1018,12 +1014,14 @@ static bool gl_frame(void *data, const void *frame,
       if (gl->fbo_inited)
       {
          if (gl->renderchain_driver->check_fbo_dimensions)
-            gl->renderchain_driver->check_fbo_dimensions(gl);
+            gl->renderchain_driver->check_fbo_dimensions(gl,
+                  gl->renderchain_data);
 
          /* Go back to what we're supposed to do,
           * render to FBO #0. */
          if (gl->renderchain_driver->start_render)
-            gl->renderchain_driver->start_render(gl, video_info);
+            gl->renderchain_driver->start_render(gl, gl->renderchain_data,
+                  video_info);
       }
       else
          gl_set_viewport(gl, video_info, width, height, false, true);
@@ -1042,7 +1040,7 @@ static bool gl_frame(void *data, const void *frame,
          gl_update_input_size(gl, frame_width, frame_height, pitch, true);
 
          if (gl->renderchain_driver->copy_frame)
-            gl->renderchain_driver->copy_frame(gl,
+            gl->renderchain_driver->copy_frame(gl, gl->renderchain_data,
                   video_info, frame, frame_width, frame_height, pitch);
       }
 
@@ -1060,12 +1058,12 @@ static bool gl_frame(void *data, const void *frame,
       if (!gl->fbo_inited)
       {
          if (gl->renderchain_driver->bind_backbuffer)
-            gl->renderchain_driver->bind_backbuffer();
+            gl->renderchain_driver->bind_backbuffer(gl, gl->renderchain_data);
          gl_set_viewport(gl, video_info, width, height, false, true);
       }
 
       if (gl->renderchain_driver->restore_default_state)
-         gl->renderchain_driver->restore_default_state(gl);
+         gl->renderchain_driver->restore_default_state(gl, gl->renderchain_data);
 
       glDisable(GL_STENCIL_TEST);
       glDisable(GL_BLEND);
@@ -1127,12 +1125,14 @@ static bool gl_frame(void *data, const void *frame,
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
    if (gl->fbo_inited && gl->renderchain_driver->renderchain_render)
-      gl->renderchain_driver->renderchain_render(gl, video_info,
+      gl->renderchain_driver->renderchain_render(gl, gl->renderchain_data,
+            video_info,
             frame_count, &gl->tex_info, &feedback_info);
 
    /* Set prev textures. */
    if (gl->renderchain_driver->bind_prev_texture)
-      gl->renderchain_driver->bind_prev_texture(gl, &gl->tex_info);
+      gl->renderchain_driver->bind_prev_texture(gl, gl->renderchain_data,
+            &gl->tex_info);
 
 #if defined(HAVE_MENU)
    if (gl->menu_texture_enable)
@@ -1167,7 +1167,8 @@ static bool gl_frame(void *data, const void *frame,
 
       glBindTexture(GL_TEXTURE_2D, 0);
       if (gl->renderchain_driver->disable_client_arrays)
-         gl->renderchain_driver->disable_client_arrays();
+         gl->renderchain_driver->disable_client_arrays(gl,
+               gl->renderchain_data);
    }
 
    /* Screenshots. */
@@ -1175,6 +1176,7 @@ static bool gl_frame(void *data, const void *frame,
    {
       if (gl->renderchain_driver->readback)
          gl->renderchain_driver->readback(gl,
+               gl->renderchain_data,
                4, GL_RGBA, GL_UNSIGNED_BYTE,
                gl->readback_buffer_screenshot);
    }
@@ -1207,12 +1209,14 @@ static bool gl_frame(void *data, const void *frame,
 
       if (gl->renderchain_driver->fence_iterate)
          gl->renderchain_driver->fence_iterate(gl,
+               gl->renderchain_data,
                video_info->hard_sync_frames);
    }
 
    if (gl->core_context_in_use &&
          gl->renderchain_driver->unbind_vao)
-      gl->renderchain_driver->unbind_vao(gl);
+      gl->renderchain_driver->unbind_vao(gl,
+            gl->renderchain_data);
 
    context_bind_hw_render(true);
 
@@ -1242,7 +1246,7 @@ static void gl_deinit_chain(gl_t *gl)
       return;
 
    if (gl->renderchain_driver->chain_free)
-      gl->renderchain_driver->chain_free(gl->renderchain_data);
+      gl->renderchain_driver->chain_free(gl, gl->renderchain_data);
 
    gl->renderchain_driver = NULL;
    gl->renderchain_data   = NULL;
@@ -1259,14 +1263,14 @@ static void gl_free(void *data)
    if (gl->have_sync)
    {
       if (gl->renderchain_driver->fence_free)
-         gl->renderchain_driver->fence_free(gl);
+         gl->renderchain_driver->fence_free(gl, gl->renderchain_data);
    }
 
    font_driver_free_osd();
    video_shader_driver_deinit();
 
    if (gl->renderchain_driver->disable_client_arrays)
-      gl->renderchain_driver->disable_client_arrays();
+      gl->renderchain_driver->disable_client_arrays(gl, gl->renderchain_data);
 
    glDeleteTextures(gl->textures, gl->texture);
 
@@ -1295,13 +1299,13 @@ static void gl_free(void *data)
    if (gl->core_context_in_use)
    {
       if (gl->renderchain_driver->unbind_vao)
-         gl->renderchain_driver->unbind_vao(gl);
+         gl->renderchain_driver->unbind_vao(gl, gl->renderchain_data);
       if (gl->renderchain_driver->free_vao)
-         gl->renderchain_driver->free_vao(gl);
+         gl->renderchain_driver->free_vao(gl, gl->renderchain_data);
    }
 
    if (gl->renderchain_driver->free)
-      gl->renderchain_driver->free(gl);
+      gl->renderchain_driver->free(gl, gl->renderchain_data);
    gl_deinit_chain(gl);
 
    video_context_driver_free();
@@ -1329,7 +1333,7 @@ static void gl_set_nonblock_state(void *data, bool state)
    context_bind_hw_render(true);
 }
 
-static bool resolve_extensions(gl_t *gl, const char *context_ident)
+static bool resolve_extensions(gl_t *gl, const char *context_ident, const video_info_t *video)
 {
    settings_t *settings          = config_get_ptr();
 
@@ -1342,24 +1346,20 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
     *
     * have_sync       - Use ARB_sync to reduce latency.
     */
-   gl->has_srgb_fbo              = false;
    gl->has_fbo                   = gl_check_capability(GL_CAPS_FBO);
    gl->have_full_npot_support    = gl_check_capability(GL_CAPS_FULL_NPOT_SUPPORT);
    gl->have_mipmap               = gl_check_capability(GL_CAPS_MIPMAP);
    gl->have_es2_compat           = gl_check_capability(GL_CAPS_ES2_COMPAT);
-   gl->has_fp_fbo                = gl_check_capability(GL_CAPS_FP_FBO);
    gl->support_unpack_row_length = gl_check_capability(GL_CAPS_UNPACK_ROW_LENGTH);
    gl->have_sync                 = gl_check_capability(GL_CAPS_SYNC);
-   /* GLES3 has unpack_subimage and sRGB in core. */
-   gl->has_srgb_fbo_gles3        = gl_check_capability(GL_CAPS_SRGB_FBO_ES3);
-
-   if (!settings->bools.video_force_srgb_disable)
-      gl->has_srgb_fbo           = gl_check_capability(GL_CAPS_SRGB_FBO);
 
    if (gl->have_sync && settings->bools.video_hard_sync)
       RARCH_LOG("[GL]: Using ARB_sync to reduce latency.\n");
 
    video_driver_unset_rgba();
+
+   if (gl->renderchain_driver->resolve_extensions)
+      gl->renderchain_driver->resolve_extensions(gl, gl->renderchain_data, context_ident, video);
 
 #if defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
    if (!gl_check_capability(GL_CAPS_BGRA8888))
@@ -1463,7 +1463,7 @@ static bool gl_init_pbo_readback(gl_t *gl)
                gl->vp.height * sizeof(uint32_t), NULL);
    }
    if (gl->renderchain_driver->unbind_pbo)
-      gl->renderchain_driver->unbind_pbo();
+      gl->renderchain_driver->unbind_pbo(gl, gl->renderchain_data);
 
 #ifndef HAVE_OPENGLES3
    {
@@ -1775,16 +1775,16 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    }
 
    if (gl->renderchain_driver->restore_default_state)
-      gl->renderchain_driver->restore_default_state(gl);
+      gl->renderchain_driver->restore_default_state(gl, gl->renderchain_data);
 
    if (hwr->context_type == RETRO_HW_CONTEXT_OPENGL_CORE)
       if (gl->renderchain_driver->new_vao)
-         gl->renderchain_driver->new_vao(gl);
+         gl->renderchain_driver->new_vao(gl, gl->renderchain_data);
 
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
    glBlendEquation(GL_FUNC_ADD);
 
-   if (!resolve_extensions(gl, ctx_driver->ident))
+   if (!resolve_extensions(gl, ctx_driver->ident, video))
       goto error;
 
 #ifdef GL_DEBUG
@@ -1927,13 +1927,13 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl_init_textures_data(gl);
 
    if (gl->renderchain_driver->init)
-      gl->renderchain_driver->init(gl, gl->tex_w, gl->tex_h);
+      gl->renderchain_driver->init(gl, gl->renderchain_data, gl->tex_w, gl->tex_h);
 
    if (gl->has_fbo)
    {
       if (gl->hw_render_use &&
             gl->renderchain_driver->init_hw_render &&
-            !gl->renderchain_driver->init_hw_render(gl, gl->tex_w, gl->tex_h))
+            !gl->renderchain_driver->init_hw_render(gl, gl->renderchain_data, gl->tex_w, gl->tex_h))
       {
          RARCH_ERR("[GL]: Hardware rendering context initialization failed.\n");
          goto error;
@@ -2111,7 +2111,7 @@ static bool gl_set_shader(void *data,
    if (gl->fbo_inited)
    {
       if (gl->renderchain_driver->deinit_fbo)
-         gl->renderchain_driver->deinit_fbo(gl);
+         gl->renderchain_driver->deinit_fbo(gl, gl->renderchain_data);
 
       glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
    }
@@ -2143,7 +2143,7 @@ static bool gl_set_shader(void *data,
    {
       if (gl->hw_render_use && gl->fbo_inited &&
             gl->renderchain_driver->deinit_hw_render)
-         gl->renderchain_driver->deinit_hw_render(gl);
+         gl->renderchain_driver->deinit_hw_render(gl, gl->renderchain_data);
 
       glDeleteTextures(gl->textures, gl->texture);
 #if defined(HAVE_PSGL)
@@ -2157,11 +2157,13 @@ static bool gl_set_shader(void *data,
       gl_init_textures_data(gl);
 
       if (gl->hw_render_use && gl->renderchain_driver->init_hw_render)
-         gl->renderchain_driver->init_hw_render(gl, gl->tex_w, gl->tex_h);
+         gl->renderchain_driver->init_hw_render(gl, gl->renderchain_data,
+               gl->tex_w, gl->tex_h);
    }
 
    if (gl->renderchain_driver->init)
-      gl->renderchain_driver->init(gl, gl->tex_w, gl->tex_h);
+      gl->renderchain_driver->init(gl, gl->renderchain_data,
+            gl->tex_w, gl->tex_h);
 
    /* Apparently need to set viewport for passes when we aren't using FBOs. */
    gl_set_shader_viewports(gl);
@@ -2185,7 +2187,7 @@ static void gl_viewport_info(void *data, struct video_viewport *vp)
    gl_t *gl             = (gl_t*)data;
    if (!gl->renderchain_driver || !gl->renderchain_driver->viewport_info)
       return;
-   gl->renderchain_driver->viewport_info(data, vp);
+   gl->renderchain_driver->viewport_info(gl, gl->renderchain_data, vp);
 }
 
 static bool gl_read_viewport(void *data, uint8_t *buffer, bool is_idle)
@@ -2193,7 +2195,8 @@ static bool gl_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    gl_t *gl             = (gl_t*)data;
    if (!gl->renderchain_driver || !gl->renderchain_driver->read_viewport)
       return false;
-   return gl->renderchain_driver->read_viewport(data, buffer, is_idle);
+   return gl->renderchain_driver->read_viewport(gl, gl->renderchain_data,
+         buffer, is_idle);
 }
 
 #if 0
@@ -2524,7 +2527,7 @@ static void gl_set_coords(void *handle_data, void *shader_data,
 {
    gl_t *gl = (gl_t*)handle_data;
    if (gl && gl->renderchain_driver->set_coords)
-      gl->renderchain_driver->set_coords(handle_data,
+      gl->renderchain_driver->set_coords(gl, gl->renderchain_data,
             shader_data, coords);
 }
 
@@ -2533,7 +2536,7 @@ static void gl_set_mvp(void *data, void *shader_data,
 {
    gl_t *gl = (gl_t*)data;
    if (gl && gl->renderchain_driver->set_mvp)
-      gl->renderchain_driver->set_mvp(data,
+      gl->renderchain_driver->set_mvp(gl, gl->renderchain_data,
             shader_data, mat_data);
 }
 

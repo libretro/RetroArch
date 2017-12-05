@@ -14,16 +14,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <gfx/math/matrix_4x4.h>
 #include <gfx/gl_capabilities.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
 
-#include "../drivers/gl_symlinks.h"
-#include "../video_coord_array.h"
-
+#include "gl_common.h"
 
 static void gl_size_format(GLint* internalFormat)
 {

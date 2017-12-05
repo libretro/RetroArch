@@ -14,16 +14,16 @@ APP_DESCRIPTION      = Retroarch 3DS
 APP_AUTHOR           = Team Libretro
 APP_PRODUCT_CODE     = RETROARCH-3DS
 APP_UNIQUE_ID        = 0xBAC00
-APP_ICON             = ctr/assets/default.png
-APP_BANNER           = ctr/assets/libretro_banner.png
-APP_AUDIO            = ctr/assets/silent.wav
-APP_RSF              = ctr/tools/template.rsf
+APP_ICON             = pkg/ctr/assets/default.png
+APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+APP_AUDIO            = pkg/ctr/assets/silent.wav
+APP_RSF              = pkg/ctr/tools/template.rsf
 APP_SYSTEM_MODE      = 64MB
 APP_SYSTEM_MODE_EXT  = 124MB
 APP_BIG_TEXT_SECTION = 0
 APP_USE_SVCHAX       = 0
 
-include ctr/Makefile.cores
+include pkg/ctr/Makefile.cores
 
 OBJ :=
 OBJ += gfx/drivers/ctr_shaders/ctr_sprite.o
@@ -190,14 +190,14 @@ NM      := $(PREFIX)nm
 LD      := $(CXX)
 
 ifneq ($(findstring Linux,$(shell uname -a)),)
-	MAKEROM    = ctr/tools/makerom-linux
-	BANNERTOOL = ctr/tools/bannertool-linux
+	MAKEROM    = pkg/ctr/tools/makerom-linux
+	BANNERTOOL = pkg/ctr/tools/bannertool-linux
 else ifneq ($(findstring Darwin,$(shell uname -a)),)
-	MAKEROM    = ctr/tools/makerom-mac
-	BANNERTOOL = ctr/tools/bannertool-mac
+	MAKEROM    = pkg/ctr/tools/makerom-mac
+	BANNERTOOL = pkg/ctr/tools/bannertool-mac
 else
-	MAKEROM    = ctr/tools/makerom.exe
-	BANNERTOOL = ctr/tools/bannertool.exe
+	MAKEROM    = pkg/ctr/tools/makerom.exe
+	BANNERTOOL = pkg/ctr/tools/bannertool.exe
 endif
 
 %.o: %.vsh %.gsh
@@ -228,15 +228,15 @@ endif
 %.vsh:
 
 $(TARGET).smdh: $(APP_ICON)
-	smdhtool --create "$(APP_TITLE)" "$(APP_DESCRIPTION)" "$(APP_AUTHOR)" $(APP_ICON) $@
+	$(DEVKITPRO)/devkitARM/bin/smdhtool --create "$(APP_TITLE)" "$(APP_DESCRIPTION)" "$(APP_AUTHOR)" $(APP_ICON) $@
 
 $(TARGET).3dsx: $(TARGET).elf
 ifeq ($(APP_BIG_TEXT_SECTION), 1)
-	cp ctr/big_text_section.xml $(TARGET).xml
+	cp pkg/ctr/big_text_section.xml $(TARGET).xml
 else
 	rm -f $(TARGET).xml
 endif
-	-3dsxtool $< $@ $(_3DSXFLAGS)
+	$(DEVKITPRO)/devkitARM/bin/3dsxtool $< $@ $(_3DSXFLAGS)
 
 $(TARGET).elf: ctr/3dsx_custom_crt0.o
 	$(LD) $(LDFLAGS) $(OBJ) $(LIBDIRS) $(LIBS) -o $@

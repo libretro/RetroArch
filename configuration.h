@@ -29,21 +29,28 @@
 #include "input/input_defines.h"
 
 #define configuration_set_float(settings, var, newvar) \
+{ \
    settings->modified = true; \
-   var = newvar
+   var = newvar; \
+}
 
 #define configuration_set_bool(settings, var, newvar) \
+{ \
    settings->modified = true; \
-   var = newvar
+   var = newvar; \
+} 
 
 #define configuration_set_uint(settings, var, newvar) \
+{ \
    settings->modified = true; \
-   var = newvar
+   var = newvar; \
+}
 
 #define configuration_set_int(settings, var, newvar) \
+{ \
    settings->modified = true; \
-   var = newvar
-
+   var = newvar; \
+}
 
 enum override_type
 {
@@ -184,6 +191,7 @@ typedef struct settings
       bool cheevos_test_unofficial;
       bool cheevos_hardcore_mode_enable;
       bool cheevos_leaderboards_enable;
+      bool cheevos_badges_enable;
       bool cheevos_verbose_enable;
 
       /* Camera */
@@ -242,6 +250,8 @@ typedef struct settings
       bool ssh_enable;
       bool samba_enable;
       bool bluetooth_enable;
+
+      bool automatically_add_content_to_playlist;
    } bools;
 
    struct

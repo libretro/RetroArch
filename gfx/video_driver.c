@@ -46,10 +46,6 @@
 #include "../menu/menu_setting.h"
 #endif
 
-#ifdef HAVE_OPENGL
-#include "common/gl_common.h"
-#endif
-
 #include "video_thread_wrapper.h"
 #include "video_driver.h"
 
@@ -497,10 +493,12 @@ const char* config_get_video_driver_options(void)
    return char_list_new_special(STRING_LIST_VIDEO_DRIVERS, NULL);
 }
 
+#ifdef HAVE_VULKAN
 static bool hw_render_context_is_vulkan(enum retro_hw_context_type type)
 {
    return type == RETRO_HW_CONTEXT_VULKAN;
 }
+#endif
 
 static bool hw_render_context_is_gl(enum retro_hw_context_type type)
 {
@@ -2310,7 +2308,7 @@ void video_driver_frame(const void *data, unsigned width,
 
             snprintf(frames_text,
                   sizeof(frames_text),
-                  STRING_REP_UINT64,
+                  "%" PRIu64,
                   (uint64_t)video_driver_frame_count);
 
             strlcat(video_driver_window_title,
@@ -2328,7 +2326,7 @@ void video_driver_frame(const void *data, unsigned width,
             snprintf(
                   video_info.fps_text,
                   sizeof(video_info.fps_text),
-                  "FPS: %6.1f || %s: " STRING_REP_UINT64,
+                  "FPS: %6.1f || %s: %" PRIu64,
                   last_fps,
                   msg_hash_to_str(MSG_FRAMES),
                   (uint64_t)video_driver_frame_count);
@@ -2407,7 +2405,7 @@ void video_driver_frame(const void *data, unsigned width,
 
    video_driver_frame_count++;
 
-   // Display the FPS, with a higher priority.
+   /* Display the FPS, with a higher priority. */
    if (video_info.fps_show)
       runloop_msg_queue_push(video_info.fps_text, 2, 1, true);
 }

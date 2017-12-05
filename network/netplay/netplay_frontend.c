@@ -613,9 +613,12 @@ static void netplay_announce(void)
    char *corename                = NULL;
    char *gamename                = NULL;
    char *coreversion             = NULL;
+   char *frontend_ident          = NULL;
    settings_t *settings          = config_get_ptr();
    rarch_system_info_t *system   = runloop_get_system_info();
    uint32_t content_crc          = content_get_crc();
+   const frontend_ctx_driver_t 
+      *frontend                  = frontend_get_ptr();
 
    net_http_urlencode_full(&username, settings->paths.username);
    net_http_urlencode_full(&corename, system->info.library_name);
@@ -623,27 +626,34 @@ static void netplay_announce(void)
       !string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))) ? 
       path_basename(path_get(RARCH_PATH_BASENAME)) : "N/A");
    net_http_urlencode_full(&coreversion, system->info.library_version);
+   net_http_urlencode_full(&frontend_ident, frontend->ident);
 
    buf[0] = '\0';
 
    snprintf(buf, sizeof(buf), "username=%s&core_name=%s&core_version=%s&"
       "game_name=%s&game_crc=%08X&port=%d"
-      "&has_password=%d&has_spectate_password=%d&force_mitm=%d&retroarch_version=%s",
+      "&has_password=%d&has_spectate_password=%d&force_mitm=%d&retroarch_version=%s&frontend=%s",
       username, corename, coreversion, gamename, content_crc,
       settings->uints.netplay_port,
       *settings->paths.netplay_password ? 1 : 0,
       *settings->paths.netplay_spectate_password ? 1 : 0,
       settings->bools.netplay_use_mitm_server,
-      PACKAGE_VERSION);
+      PACKAGE_VERSION, frontend_ident);
 #if 0
    RARCH_LOG("[netplay] announcement URL: %s\n", buf);
 #endif
    task_push_http_post_transfer(url, buf, true, NULL, netplay_announce_cb, NULL);
 
-   free(username);
-   free(corename);
-   free(gamename);
-   free(coreversion);
+   if (username)
+      free(username);
+   if (corename)
+      free(corename);
+   if (gamename)
+      free(gamename);
+   if (coreversion)
+      free(coreversion);
+   if (frontend_ident)
+      free(frontend_ident);
 }
 
 int16_t input_state_net(unsigned port, unsigned device,

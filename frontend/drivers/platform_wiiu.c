@@ -58,7 +58,9 @@
 #include <wiiu/vpad.h>
 #include <wiiu/kpad.h>
 
-#include "wiiu/controller_patcher/ControllerPatcherWrapper.h"
+#if defined(ENABLE_CONTROLLER_PATCHER)
+   #include "wiiu/controller_patcher/ControllerPatcherWrapper.h"
+#endif
 
 #include <fat.h>
 #include <iosuhax.h>
@@ -430,7 +432,7 @@ int main(int argc, char **argv)
    KPADInit();
 #endif
    verbosity_enable();
-#ifndef IS_SALAMANDER
+#if !defined(IS_SALAMANDER) && defined(ENABLE_CONTROLLER_PATCHER)
    ControllerPatcherInit();
 #endif
    fflush(stdout);
@@ -492,7 +494,7 @@ int main(int argc, char **argv)
 
    }
    while (1);
-#ifndef IS_SALAMANDER
+#if !defined(IS_SALAMANDER) && defined(ENABLE_CONTROLLER_PATCHER)
    ControllerPatcherDeInit();
 #endif
    main_exit(NULL);
@@ -523,22 +525,25 @@ void __eabi()
 __attribute__((weak))
 void __init(void)
 {
-   extern void(*__CTOR_LIST__[])(void);
-   void(**ctor)(void) = __CTOR_LIST__;
+   extern void (*const __CTOR_LIST__)(void);
+   extern void (*const __CTOR_END__)(void);
 
-   while (*ctor)
+   void (*const *ctor)(void) = &__CTOR_LIST__;
+   while (ctor < &__CTOR_END__) {
       (*ctor++)();
+   }
 }
-
 
 __attribute__((weak))
 void __fini(void)
 {
-   extern void(*__DTOR_LIST__[])(void);
-   void(**ctor)(void) = __DTOR_LIST__;
+   extern void (*const __DTOR_LIST__)(void);
+   extern void (*const __DTOR_END__)(void);
 
-   while (*ctor)
-      (*ctor++)();
+   void (*const *dtor)(void) = &__DTOR_LIST__;
+   while (dtor < &__DTOR_END__) {
+      (*dtor++)();
+   }
 }
 
 /* libiosuhax related */
@@ -633,7 +638,7 @@ int __entry_menu(int argc, char **argv)
    int ret = main(argc, argv);
 
    fsdev_exit();
-//   __fini();
+   __fini();
    memoryRelease();
    return ret;
 }
@@ -648,7 +653,10 @@ void _start(int argc, char **argv)
    main(argc, argv);
 
    fsdev_exit();
-//   __fini();
+
+/* TODO: fix elf2rpl so it doesn't error with "Could not find matching symbol
+         for relocation" then uncomment this */
+// __fini();
    memoryRelease();
    SYSRelaunchTitle(0, 0);
    exit(0);

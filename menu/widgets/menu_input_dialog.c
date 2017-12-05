@@ -129,7 +129,7 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
 
    menu_input_dialog_display_kb();
 
-   // Only copy over the menu label and setting if they exist.
+   /* Only copy over the menu label and setting if they exist. */
    if (line->label)
       strlcpy(menu_input_dialog_keyboard_label, line->label,
             sizeof(menu_input_dialog_keyboard_label));
