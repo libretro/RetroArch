@@ -25,6 +25,7 @@
 
 #include <stdint.h>
 #include <boolean.h>
+#include <retro_inline.h>
 
 #if defined(_WIN32) && !defined(_XBOX)		
 #ifndef WIN32_LEAN_AND_MEAN
@@ -40,6 +41,24 @@
 #ifdef _MSC_VER
 #include <compat/msvc.h>
 #endif
+
+static INLINE void bits_clear_bits(uint32_t *a, uint32_t *b, uint32_t count)
+{
+   uint32_t i;
+   for (i = 0; i < count;i++)
+      a[i] &= b[i];
+}
+
+static INLINE bool bits_any_set(uint32_t* ptr, uint32_t count)
+{
+   uint32_t i;
+   for (i = 0; i < count; i++)
+   {
+      if (ptr[i] != 0)
+         return true;
+   }
+   return false;
+}
 
 #ifndef PATH_MAX_LENGTH
 #if defined(_XBOX1) || defined(_3DS) || defined(PSP) || defined(GEKKO)|| defined(WIIU)
@@ -57,46 +76,10 @@
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #endif
 
-#define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
+#define ARRAY_SIZE(a)              (sizeof(a) / sizeof((a)[0]))
 
 #define BITS_GET_ELEM(a, i)        ((a).data[i])
 #define BITS_GET_ELEM_PTR(a, i)    ((a)->data[i])
-
-static inline bool bits_any_set(uint32_t* ptr, uint32_t count)
-{
-   uint32_t i;
-   for (i=0;i<count;i++)
-   {
-      if (ptr[i] != 0) return true;
-   }
-   return false;
-}
-
-#define BITS_ANY_SET(a)            bits_any_set((a).data, sizeof((a).data)/sizeof((a).data[0])
-#define BITS_ANY_SET_PTR(a)        BITS_ANY_SET(*a)
-
-static inline void bits_clear_bits(uint32_t* a, uint32_t* b, uint32_t count)
-{
-   uint32_t i;
-   for (i=0;i<count;i++)
-   {
-      a[i] &= b[i];
-   }
-}
-
-#define BITS_CLEAR_BITS(a,b)    bits_clear_bits((a).data, (b).data, sizeof((a).data)/sizeof((a).data[0])
-
-#define BITS_COPY16_PTR(a,bits) \
-{ \
-   BIT128_CLEAR_ALL_PTR(a); \
-   BITS_GET_ELEM_PTR(a, 0) = (bits) & 0xffff; \
-}
-
-#define BITS_COPY32_PTR(a,bits) \
-{ \
-   BIT128_CLEAR_ALL_PTR(a); \
-   BITS_GET_ELEM_PTR(a, 0) = (bits); \
-}
 
 #define BIT_SET(a, bit)   ((a)[(bit) >> 3] |=  (1 << ((bit) & 7)))
 #define BIT_CLEAR(a, bit) ((a)[(bit) >> 3] &= ~(1 << ((bit) & 7)))
@@ -136,6 +119,18 @@ static inline void bits_clear_bits(uint32_t* a, uint32_t* b, uint32_t count)
 #define BIT256_CLEAR_PTR(a, bit) BIT256_CLEAR(*a, bit)
 #define BIT256_GET_PTR(a, bit)   BIT256_GET(*a, bit)
 #define BIT256_CLEAR_ALL_PTR(a)  BIT256_CLEAR_ALL(*a)
+
+#define BITS_COPY16_PTR(a,bits) \
+{ \
+   BIT128_CLEAR_ALL_PTR(a); \
+   BITS_GET_ELEM_PTR(a, 0) = (bits) & 0xffff; \
+}
+
+#define BITS_COPY32_PTR(a,bits) \
+{ \
+   BIT128_CLEAR_ALL_PTR(a); \
+   BITS_GET_ELEM_PTR(a, 0) = (bits); \
+}
 
 /* Helper macros and struct to keep track of many booleans. */
 /* This struct has 256 bits. */

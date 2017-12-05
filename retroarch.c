@@ -2397,7 +2397,7 @@ static enum runloop_state runloop_check_state(
    if (input_driver_flushing_input)
    {
       input_driver_flushing_input = false;
-      if (BITS_ANY_SET(current_input))
+      if (bits_any_set(current_input.data, ARRAY_SIZE(current_input.data)))
       {
          BIT256_CLEAR_ALL(current_input);
          if (runloop_paused)
@@ -2540,7 +2540,9 @@ static enum runloop_state runloop_check_state(
          enum menu_action action;
          bool focused               = false;
          retro_bits_t trigger_input = current_input;
-         BITS_CLEAR_BITS(trigger_input, old_input);
+
+         bits_clear_bits(trigger_input.data, old_input.data,
+               ARRAY_SIZE(trigger_input.data));
 
          action   = (enum menu_action)menu_event(&current_input, &trigger_input);
          focused              = pause_nonactive ? is_focused : true;
