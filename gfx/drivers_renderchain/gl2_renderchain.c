@@ -53,6 +53,12 @@
 
 #define MAX_FENCES 4
 
+#ifndef HAVE_PSGL
+#if defined(HAVE_OPENGLES2)
+   typedef struct __GLsync *GLsync;
+#endif
+#endif
+
 typedef struct gl2_renderchain
 {
    bool egl_images;
