@@ -1796,6 +1796,7 @@ static void cheevos_test_cheevo_set(const cheevoset_t *set)
          }
          else if (valid)
          {
+            char msg[256];
             char url[256];
             url[0] = '\0';
 
@@ -1807,7 +1808,6 @@ static void cheevos_test_cheevo_set(const cheevoset_t *set)
             RARCH_LOG("[CHEEVOS]: awarding cheevo %u: %s (%s).\n",
                   cheevo->id, cheevo->title, cheevo->description);
 
-            char msg[256];
             snprintf(msg, sizeof(msg), "Achievement Unlocked: %s", cheevo->title);
             msg[sizeof(msg) - 1] = 0;
             runloop_msg_queue_push(msg, 0, 2 * 60, false);
@@ -1856,10 +1856,11 @@ static int cheevos_expr_value(cheevos_expr_t* expr)
 {
    cheevos_term_t* term = expr->terms;
    unsigned i;
-
    /* Separate possible values with '$' operator, submit the largest */
    unsigned current_value = 0;
+   /* TODO/FIXME - variable length forbidden in C89 - rewrite this! */
    int values[expr->compare_count];
+
    memset(values, 0, sizeof values);
 
    for (i = expr->count; i != 0; i--, term++)
@@ -1974,12 +1975,13 @@ static void cheevos_test_leaderboards(void)
             else
             {
                char url[256];
+               char msg[256];
+               char formatted_value[16];
+
                cheevos_make_lboard_url(lboard, url, sizeof(url));
                task_push_http_transfer(url, true, NULL, cheevos_lboard_submit, lboard);
                RARCH_LOG("[CHEEVOS]: submit lboard %s\n", lboard->title);
 
-               char msg[256];
-               char formatted_value[16];
                cheevos_format_value(value, lboard->format, formatted_value, sizeof(formatted_value));
                snprintf(msg, sizeof(msg), "Submitted %s for %s", formatted_value, lboard->title);
                msg[sizeof(msg) - 1] = 0;
@@ -1998,11 +2000,12 @@ static void cheevos_test_leaderboards(void)
       {
          if (cheevos_test_lboard_condition(&lboard->start))
          {
+            char msg[256];
+
             RARCH_LOG("[CHEEVOS]: start lboard  %s\n", lboard->title);
             lboard->active = 1;
             lboard->last_value = -1;
 
-            char msg[256];
             snprintf(msg, sizeof(msg), "Leaderboard Active: %s", lboard->title);
             msg[sizeof(msg) - 1] = 0;
             runloop_msg_queue_push(msg, 0, 2 * 60, false);
@@ -2835,10 +2838,10 @@ static int cheevos_iterate(coro_t* coro)
       {
          if(cheevos_locals.core.count > 0)
          {
+            int mode;
             const cheevo_t* cheevo       = cheevos_locals.core.cheevos;
             const cheevo_t* end          = cheevo + cheevos_locals.core.count;
             int number_of_unlocked       = cheevos_locals.core.count;
-            int mode;
             char msg[256];
 
             if(CHEEVOS_VAR_SETTINGS->bools.cheevos_hardcore_mode_enable)
