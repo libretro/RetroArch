@@ -254,13 +254,9 @@ static bool xinput_joypad_init(void *data)
          (!g_xinput_states[2].connected) &&
          (!g_xinput_states[3].connected))
       return false;
-#if (1)
-   else
-   {
-      RARCH_LOG("[XInput]: Pads connected: %d\n", g_xinput_states[0].connected + 
-      g_xinput_states[1].connected + g_xinput_states[2].connected + g_xinput_states[3].connected);
-   }
-#endif
+
+   RARCH_LOG("[XInput]: Pads connected: %d\n", g_xinput_states[0].connected + 
+         g_xinput_states[1].connected + g_xinput_states[2].connected + g_xinput_states[3].connected);
    g_xinput_block_pads = true;
 
 #ifdef HAVE_DINPUT
