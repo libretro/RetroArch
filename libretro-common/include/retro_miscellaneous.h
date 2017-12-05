@@ -58,32 +58,37 @@
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 
-#define BITS_ANY_SET(a)            ( ((a).data[0])||((a).data[1])||((a).data[2])||((a).data[3])||       \
-                                                  ((a).data[4])||((a).data[5])||((a).data[6])||((a).data[7]) )
-#define BITS_ANY_SET_PTR(a)        ( ((a)->data[0])||((a)->data[1])||((a)->data[2])||((a)->data[3])||   \
-                                                  ((a)->data[4])||((a)->data[5])||((a)->data[6])||((a)->data[7]) )
+#define BITS_GET_ELEM(a, i)        ((a).data[i])
+#define BITS_GET_ELEM_PTR(a, i)    ((a)->data[i])
+
+#define BITS_ANY_SET(a)            ( BITS_GET_ELEM(a, 0)|| BITS_GET_ELEM(a, 1) || BITS_GET_ELEM(a, 2) || BITS_GET_ELEM(a, 3) ||       \
+                                                  BITS_GET_ELEM(a, 4) || BITS_GET_ELEM(a, 5) || BITS_GET_ELEM(a, 6) || BITS_GET_ELEM(a, 7) )
+#define BITS_ANY_SET_PTR(a)        ( BITS_GET_ELEM_PTR(a, 0)|| BITS_GET_ELEM_PTR(a, 1) || BITS_GET_ELEM_PTR(a, 2) || BITS_GET_ELEM_PTR(a, 3) ||       \
+                                                  BITS_GET_ELEM_PTR(a, 4) || BITS_GET_ELEM_PTR(a, 5) || BITS_GET_ELEM_PTR(a, 6) || BITS_GET_ELEM_PTR(a, 7) )
+
 #define BITS_CLEAR_BITS(a,b)    \
-            ((a).data[0])&=(~((b).data[0])); \
-            ((a).data[1])&=(~((b).data[1])); \
-            ((a).data[2])&=(~((b).data[2])); \
-            ((a).data[3])&=(~((b).data[3])); \
-            ((a).data[4])&=(~((b).data[4])); \
-            ((a).data[5])&=(~((b).data[5])); \
-            ((a).data[6])&=(~((b).data[6])); \
-            ((a).data[7])&=(~((b).data[7]));
+{ \
+   BITS_GET_ELEM(a, 0) &= (~BITS_GET_ELEM(b, 0)); \
+   BITS_GET_ELEM(a, 1) &= (~BITS_GET_ELEM(b, 1)); \
+   BITS_GET_ELEM(a, 2) &= (~BITS_GET_ELEM(b, 2)); \
+   BITS_GET_ELEM(a, 3) &= (~BITS_GET_ELEM(b, 3)); \
+   BITS_GET_ELEM(a, 4) &= (~BITS_GET_ELEM(b, 4)); \
+   BITS_GET_ELEM(a, 5) &= (~BITS_GET_ELEM(b, 5)); \
+   BITS_GET_ELEM(a, 6) &= (~BITS_GET_ELEM(b, 6)); \
+   BITS_GET_ELEM(a, 7) &= (~BITS_GET_ELEM(b, 7)); \
+}
 
 #define BITS_COPY16_PTR(a,bits) \
 { \
    BIT128_CLEAR_ALL_PTR(a); \
-   ((a)->data[0] = (bits) & 0xffff); \
+   BITS_GET_ELEM_PTR(a, 0) = (bits) & 0xffff; \
 }
 
 #define BITS_COPY32_PTR(a,bits) \
 { \
    BIT128_CLEAR_ALL_PTR(a); \
-   ((a)->data[0] = (bits)); \
+   BITS_GET_ELEM_PTR(a, 0) = (bits); \
 }
-
 
 #define BIT_SET(a, bit)   ((a)[(bit) >> 3] |=  (1 << ((bit) & 7)))
 #define BIT_CLEAR(a, bit) ((a)[(bit) >> 3] &= ~(1 << ((bit) & 7)))
