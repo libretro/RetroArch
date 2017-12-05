@@ -158,12 +158,12 @@ enum analog_dpad_mode
 #define GET_HAT_DIR(x)     (x & HAT_MASK)
 #define GET_HAT(x)         (x & (~HAT_MASK))
 
-#define RARCH_INPUT_STATE_BIT_SET(a,bit)       ((a).data [((bit) >> 5)] |=  (1 << ((bit) & 31)))
-#define RARCH_INPUT_STATE_BIT_SET_PTR(a,bit)   ((a)->data[((bit) >> 5)] |=  (1 << ((bit) & 31)))
-#define RARCH_INPUT_STATE_BIT_GET(a,bit)       ((a).data [((bit) >> 5)] &   (1 << ((bit) & 31)))
-#define RARCH_INPUT_STATE_BIT_GET_PTR(a,bit)   ((a)->data[((bit) >> 5)] &   (1 << ((bit) & 31)))
-#define RARCH_INPUT_STATE_CLEAR(a)              memset(&a, 0, sizeof(a));
-#define RARCH_INPUT_STATE_CLEAR_PTR(a)          memset(a, 0, sizeof(retro_bits_t));
+#define RARCH_INPUT_STATE_BIT_SET(a,bit)       BIT128_SET(a, bit)
+#define RARCH_INPUT_STATE_BIT_SET_PTR(a,bit)   BIT128_SET_PTR(a, bit)
+#define RARCH_INPUT_STATE_BIT_GET(a,bit)       BIT128_GET(a, bit)
+#define RARCH_INPUT_STATE_BIT_GET_PTR(a,bit)   BIT128_GET_PTR(a, bit)
+#define RARCH_INPUT_STATE_CLEAR(a)             BIT128_CLEAR_ALL(a)
+#define RARCH_INPUT_STATE_CLEAR_PTR(a)         BIT128_CLEAR_ALL_PTR(a)
 #define RARCH_INPUT_STATE_ANY_SET(a)            ( ((a).data[0])||((a).data[1])||((a).data[2])||((a).data[3])||       \
                                                   ((a).data[4])||((a).data[5])||((a).data[6])||((a).data[7]) )
 #define RARCH_INPUT_STATE_ANY_SET_PTR(a)        ( ((a)->data[0])||((a)->data[1])||((a)->data[2])||((a)->data[3])||   \
@@ -178,8 +178,17 @@ enum analog_dpad_mode
             ((a).data[6])&=(~((b).data[6])); \
             ((a).data[7])&=(~((b).data[7]));
 
-#define RARCH_INPUT_STATE_COPY16_PTR(a,bits)   {memset(a, 0, sizeof(retro_bits_t));((a)->data[0] = (bits)&0xffff);}
-#define RARCH_INPUT_STATE_COPY32_PTR(a,bits)   {memset(a, 0, sizeof(retro_bits_t));((a)->data[0] = (bits));}
+#define RARCH_INPUT_STATE_COPY16_PTR(a,bits) \
+{ \
+   BIT128_CLEAR_ALL_PTR(a); \
+   ((a)->data[0] = (bits) & 0xffff); \
+}
+
+#define RARCH_INPUT_STATE_COPY32_PTR(a,bits) \
+{ \
+   BIT128_CLEAR_ALL_PTR(a); \
+   ((a)->data[0] = (bits)); \
+}
 
 
 RETRO_END_DECLS
