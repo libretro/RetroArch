@@ -169,7 +169,7 @@ static void gx_joypad_get_buttons(unsigned port, retro_bits_t *state)
 		BITS_COPY16_PTR( state, pad_state[port] );
 	}
    else
-		BIT128_CLEAR_ALL_PTR(state);
+		BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t gx_joypad_axis(unsigned port, uint32_t joyaxis)

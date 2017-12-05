@@ -356,9 +356,8 @@ static bool winraw_keyboard_pressed(winraw_input_t *wr, unsigned key)
 static bool winraw_mbutton_pressed(winraw_input_t *wr, unsigned port, unsigned key)
 {
 	unsigned i;
-	bool result;
 	winraw_mouse_t *mouse = NULL;
-	settings_t *settings = config_get_ptr();
+	settings_t *settings  = config_get_ptr();
 
 	if (port >= MAX_USERS)
 		return false;

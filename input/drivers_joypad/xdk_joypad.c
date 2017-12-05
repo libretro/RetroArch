@@ -83,7 +83,7 @@ static void xdk_joypad_get_buttons(unsigned port_num, retro_bits_t *state)
 		BITS_COPY16_PTR( state, pad_state[port_num] );
 	}
    else
-      BIT128_CLEAR_ALL_PTR(state);
+      BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t xdk_joypad_axis(unsigned port_num, uint32_t joyaxis)

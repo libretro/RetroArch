@@ -59,7 +59,7 @@ static int cocoa_input_find_any_button_ret(cocoa_input_data_t *apple,
 
    if (state)
       for (i = 0; i < 256; i++)
-         if (BIT128_GET_PTR(state,i))
+         if (BIT256_GET_PTR(state,i))
             return i;
    return -1;
 }

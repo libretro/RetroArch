@@ -115,10 +115,10 @@ static void hidpad_ps3_get_buttons(void *data, retro_bits_t *state)
 
 		/*PS button?*/
 		if (device->buttons & 0x10000)
-			BIT128_SET_PTR(state, RARCH_MENU_TOGGLE);
+			BIT256_SET_PTR(state, RARCH_MENU_TOGGLE);
 	}
 	else
-      BIT128_CLEAR_ALL_PTR(state);
+      BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t hidpad_ps3_get_axis(void *data, unsigned axis)

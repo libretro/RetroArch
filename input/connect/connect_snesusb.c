@@ -68,7 +68,7 @@ static void hidpad_snesusb_get_buttons(void *data, retro_bits_t *state)
 		BITS_COPY16_PTR(state, device->buttons);
 	}
    else
-		BIT128_CLEAR_ALL_PTR(state);
+		BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t hidpad_snesusb_get_axis(void *data, unsigned axis)

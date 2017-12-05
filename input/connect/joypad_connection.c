@@ -176,11 +176,9 @@ void pad_connection_packet(joypad_connection_t *joyconn, uint32_t pad,
 void pad_connection_get_buttons(joypad_connection_t *joyconn, unsigned pad, retro_bits_t* state)
 {
 	if (joyconn->iface)
-   {
 		joyconn->iface->get_buttons(joyconn->data, state);
-	}
    else
-		BIT128_CLEAR_ALL_PTR( state );
+		BIT256_CLEAR_ALL_PTR( state );
 }
 
 int16_t pad_connection_get_axis(joypad_connection_t *joyconn,

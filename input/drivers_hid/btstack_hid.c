@@ -1370,7 +1370,7 @@ static void btstack_hid_joypad_get_buttons(void *data, unsigned port, retro_bits
   if (hid)
     pad_connection_get_buttons(&hid->slots[port], port, state);
   else
-    BIT128_CLEAR_ALL_PTR(state);
+    BIT256_CLEAR_ALL_PTR(state);
 }
 
 static bool btstack_hid_joypad_button(void *data, unsigned port, uint16_t joykey)
@@ -1384,7 +1384,7 @@ static bool btstack_hid_joypad_button(void *data, unsigned port, uint16_t joykey
 
   /* Check the button. */
   if ((port < MAX_USERS) && (joykey < 32))
-    return (BIT128_GET(buttons, joykey) != 0);
+    return (BIT256_GET(buttons, joykey) != 0);
 
   return false;
 }
