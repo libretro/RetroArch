@@ -67,7 +67,7 @@
 #include <unistd.h> /* stat() is defined here */
 #endif
 
-#if defined(_MSC_VER) && _MSC_VER < 1400 || defined(_XBOX)
+#if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500 || defined(_XBOX)
 #ifndef LEGACY_WIN32
 #define LEGACY_WIN32
 #endif
