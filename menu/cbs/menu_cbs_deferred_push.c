@@ -259,101 +259,29 @@ end:
    return ret;
 }
 
-static int deferred_push_cursor_manager_list_deferred_query_rdb_entry_max_users(
-      menu_displaylist_info_t *info)
-{
-   return deferred_push_cursor_manager_list_generic(info, DATABASE_QUERY_ENTRY_MAX_USERS);
+#define generic_deferred_cursor_manager(name, type) \
+static int (name)(menu_displaylist_info_t *info) \
+{ \
+   return deferred_push_cursor_manager_list_generic(info, type); \
 }
 
-static int deferred_push_cursor_manager_list_deferred_query_rdb_entry_famitsu_magazine_rating(
-      menu_displaylist_info_t *info)
-{
-   return deferred_push_cursor_manager_list_generic(info, DATABASE_QUERY_ENTRY_FAMITSU_MAGAZINE_RATING);
-}
+generic_deferred_cursor_manager(deferred_push_cursor_manager_list_deferred_query_rdb_entry_max_users, DATABASE_QUERY_ENTRY_MAX_USERS)
+generic_deferred_cursor_manager(deferred_push_cursor_manager_list_deferred_query_rdb_entry_famitsu_magazine_rating, DATABASE_QUERY_ENTRY_FAMITSU_MAGAZINE_RATING)
+generic_deferred_cursor_manager(deferred_push_cursor_manager_list_deferred_query_rdb_entry_edge_magazine_rating, DATABASE_QUERY_ENTRY_EDGE_MAGAZINE_RATING)
+generic_deferred_cursor_manager(deferred_push_cursor_manager_list_deferred_query_rdb_entry_edge_magazine_issue, DATABASE_QUERY_ENTRY_EDGE_MAGAZINE_ISSUE)
+generic_deferred_cursor_manager(deferred_push_cursor_manager_list_deferred_query_rdb_entry_elspa_rating, DATABASE_QUERY_ENTRY_ELSPA_RATING)
+generic_deferred_cursor_manager(deferred_push_cursor_manager_list_deferred_query_rdb_entry_cero_rating, DATABASE_QUERY_ENTRY_CERO_RATING)
+generic_deferred_cursor_manager(deferred_push_cursor_manager_list_deferred_query_rdb_entry_pegi_rating, DATABASE_QUERY_ENTRY_PEGI_RATING)
+generic_deferred_cursor_manager(deferred_push_cursor_manager_list_deferred_query_rdb_entry_bbfc_rating, DATABASE_QUERY_ENTRY_BBFC_RATING)
+generic_deferred_cursor_manager(deferred_push_cursor_manager_list_deferred_query_rdb_entry_esrb_rating, DATABASE_QUERY_ENTRY_ESRB_RATING)
+generic_deferred_cursor_manager(deferred_push_cursor_manager_list_deferred_query_rdb_entry_enhancement_hw, DATABASE_QUERY_ENTRY_ENHANCEMENT_HW)
+generic_deferred_cursor_manager(deferred_push_cursor_manager_list_deferred_query_rdb_entry_franchise, DATABASE_QUERY_ENTRY_FRANCHISE)
+generic_deferred_cursor_manager(deferred_push_cursor_manager_list_deferred_query_rdb_entry_publisher, DATABASE_QUERY_ENTRY_PUBLISHER)
+generic_deferred_cursor_manager(deferred_push_cursor_manager_list_deferred_query_rdb_entry_developer, DATABASE_QUERY_ENTRY_DEVELOPER)
+generic_deferred_cursor_manager(deferred_push_cursor_manager_list_deferred_query_rdb_entry_origin, DATABASE_QUERY_ENTRY_ORIGIN)
+generic_deferred_cursor_manager(deferred_push_cursor_manager_list_deferred_query_rdb_entry_releasemonth, DATABASE_QUERY_ENTRY_RELEASEDATE_MONTH)
+generic_deferred_cursor_manager(deferred_push_cursor_manager_list_deferred_query_rdb_entry_releaseyear, DATABASE_QUERY_ENTRY_RELEASEDATE_YEAR)
 
-static int deferred_push_cursor_manager_list_deferred_query_rdb_entry_edge_magazine_rating(
-      menu_displaylist_info_t *info)
-{
-   return deferred_push_cursor_manager_list_generic(info, DATABASE_QUERY_ENTRY_EDGE_MAGAZINE_RATING);
-}
-
-static int deferred_push_cursor_manager_list_deferred_query_rdb_entry_edge_magazine_issue(
-      menu_displaylist_info_t *info)
-{
-   return deferred_push_cursor_manager_list_generic(info, DATABASE_QUERY_ENTRY_EDGE_MAGAZINE_ISSUE);
-}
-
-static int deferred_push_cursor_manager_list_deferred_query_rdb_entry_elspa_rating(
-      menu_displaylist_info_t *info)
-{
-   return deferred_push_cursor_manager_list_generic(info, DATABASE_QUERY_ENTRY_ELSPA_RATING);
-}
-
-static int deferred_push_cursor_manager_list_deferred_query_rdb_entry_cero_rating(
-      menu_displaylist_info_t *info)
-{
-   return deferred_push_cursor_manager_list_generic(info, DATABASE_QUERY_ENTRY_CERO_RATING);
-}
-
-static int deferred_push_cursor_manager_list_deferred_query_rdb_entry_pegi_rating(
-      menu_displaylist_info_t *info)
-{
-   return deferred_push_cursor_manager_list_generic(info, DATABASE_QUERY_ENTRY_PEGI_RATING);
-}
-
-static int deferred_push_cursor_manager_list_deferred_query_rdb_entry_bbfc_rating(
-      menu_displaylist_info_t *info)
-{
-   return deferred_push_cursor_manager_list_generic(info, DATABASE_QUERY_ENTRY_BBFC_RATING);
-}
-
-static int deferred_push_cursor_manager_list_deferred_query_rdb_entry_esrb_rating(
-      menu_displaylist_info_t *info)
-{
-   return deferred_push_cursor_manager_list_generic(info, DATABASE_QUERY_ENTRY_ESRB_RATING);
-}
-
-static int deferred_push_cursor_manager_list_deferred_query_rdb_entry_enhancement_hw(
-      menu_displaylist_info_t *info)
-{
-   return deferred_push_cursor_manager_list_generic(info, DATABASE_QUERY_ENTRY_ENHANCEMENT_HW);
-}
-
-static int deferred_push_cursor_manager_list_deferred_query_rdb_entry_franchise(
-      menu_displaylist_info_t *info)
-{
-   return deferred_push_cursor_manager_list_generic(info, DATABASE_QUERY_ENTRY_FRANCHISE);
-}
-
-static int deferred_push_cursor_manager_list_deferred_query_rdb_entry_publisher(
-      menu_displaylist_info_t *info)
-{
-   return deferred_push_cursor_manager_list_generic(info, DATABASE_QUERY_ENTRY_PUBLISHER);
-}
-
-static int deferred_push_cursor_manager_list_deferred_query_rdb_entry_developer(
-      menu_displaylist_info_t *info)
-{
-   return deferred_push_cursor_manager_list_generic(info, DATABASE_QUERY_ENTRY_DEVELOPER);
-}
-
-static int deferred_push_cursor_manager_list_deferred_query_rdb_entry_origin(
-      menu_displaylist_info_t *info)
-{
-   return deferred_push_cursor_manager_list_generic(info, DATABASE_QUERY_ENTRY_ORIGIN);
-}
-
-static int deferred_push_cursor_manager_list_deferred_query_rdb_entry_releasemonth(
-      menu_displaylist_info_t *info)
-{
-   return deferred_push_cursor_manager_list_generic(info, DATABASE_QUERY_ENTRY_RELEASEDATE_MONTH);
-}
-
-static int deferred_push_cursor_manager_list_deferred_query_rdb_entry_releaseyear(
-      menu_displaylist_info_t *info)
-{
-   return deferred_push_cursor_manager_list_generic(info, DATABASE_QUERY_ENTRY_RELEASEDATE_YEAR);
-}
 #endif
 
 #if 0
