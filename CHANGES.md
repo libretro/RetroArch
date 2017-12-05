@@ -5,6 +5,7 @@
 - COMMON: Optimized NBIO implementations now for Apple, Windows, and Linux. Uses mmap for Linux/Windows/BSD if/when available. File I/O should now be much faster for loading images inside the menu.
 - COMMON: Native Blissbox support now for latest firmware as of writing (2.0). Implementation through libusb and/or native Windows HID.
 - COMMON: New lightgun API.
+- COMMON: Fixed some playlist bugs.
 - FREEBSD: Support libusb HID input driver.
 - HAIKU: Buildfix.
 - LINUX/X11: Add RetroArch logo to window title bar.
