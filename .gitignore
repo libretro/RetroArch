@@ -102,6 +102,8 @@ obj-unix/
 /pkg/msvc/Release Cg/*.lpl
 /pkg/msvc/Release Cg/*.cfg
 /pkg/msvc/*.db
+/pkg/msvc/.vs
+/pkg/msvc/*/.vs
 /pkg/msvc/msvc-2010/Release Cg/RetroArc.27FF7CE1.tlog/*.tlog
 /pkg/msvc/msvc-2010/Release Cg/RetroArc.27FF7CE1.tlog/*.lastbuildstate
 /pkg/msvc/msvc-2010/Release Cg/*.log
