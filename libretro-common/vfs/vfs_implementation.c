@@ -25,6 +25,10 @@
 #include <string.h>
 #include <errno.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #if defined(_WIN32)
 #  ifdef _MSC_VER
 #    define setmode _setmode
@@ -119,6 +123,7 @@ struct libretro_vfs_implementation_file
 #endif
 	int fd;
 #endif
+	char *buf;
 };
 
 int64_t retro_vfs_file_seek_internal(libretro_vfs_implementation_file *stream, int64_t offset, int whence);
@@ -210,6 +215,9 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uin
 
 #if  defined(PSP)
 	stream->fd = sceIoOpen(path, flags, mode_int);
+
+	if (stream->fd < 0)
+		goto error;
 #else
 #if defined(HAVE_BUFFERED_IO)
 	if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0 && mode_str)
@@ -231,13 +239,26 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uin
 #else
 		stream->fp = fopen(path, mode_str);
 #endif
+
 		if (!stream->fp)
 			goto error;
+
+      /* Regarding setvbuf:
+       *
+       * https://www.freebsd.org/cgi/man.cgi?query=setvbuf&apropos=0&sektion=0&manpath=FreeBSD+11.1-RELEASE&arch=default&format=html
+       *
+       * If the size argument is not zero but buf is NULL, a buffer of the given size will be allocated immediately, and
+       * released on close. This is an extension to ANSI C.
+       *
+       * Since C89 does not support specifying a null buffer with a non-zero size, we create and track our own buffer for it.
+       */
+      /* TODO: this is only useful for a few platforms, find which and add ifdef */
+		stream->buf = (char*)calloc(1, 0x4000);
+		setvbuf(stream->fp, stream->buf, _IOFBF, 0x4000);
 	}
 	else
 #endif
 	{
-		/* FIXME: HAVE_BUFFERED_IO is always 1, but if it is ever changed, open() needs to be changed to _wopen() for WIndows. */
 #if defined(_WIN32) && !defined(_XBOX)
 #if defined(LEGACY_WIN32)
 		(void)path_wide;
@@ -253,8 +274,10 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uin
 			free(path_wide);
 #endif
 #else
+		/* FIXME: HAVE_BUFFERED_IO is always 1, but if it is ever changed, this open() needs to have an alternate _wopen() for Windows. */
 		stream->fd = open(path, flags, mode_int);
 #endif
+
 		if (stream->fd == -1)
 			goto error;
 #ifdef HAVE_MMAP
@@ -270,7 +293,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uin
 			filestream_rewind(stream);
 
 			stream->mapped = (uint8_t*)mmap((void*)0,
-				stream->mapsize, PROT_READ, MAP_SHARED, stream->fd, 0);
+			stream->mapsize, PROT_READ,  MAP_SHARED, stream->fd, 0);
 
 			if (stream->mapped == MAP_FAILED)
 				stream->hints &= ~RFILE_HINT_MMAP;
@@ -279,14 +302,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uin
 	}
 #endif
 
-#if  defined(PSP)
-	if (stream->fd == -1)
-		goto error;
-#endif
-
-	{
-		stream->path = strdup(path);
-	}
+	stream->path = strdup(path);
 
 	fseek(stream->fp, 0, SEEK_END);
 	stream->size = ftell(stream->fp);
@@ -320,13 +336,15 @@ int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream)
 	else
 #endif
 #ifdef HAVE_MMAP
-		if (stream->hints & RFILE_HINT_MMAP)
-			munmap(stream->mapped, stream->mapsize);
+	if (stream->hints & RFILE_HINT_MMAP)
+		munmap(stream->mapped, stream->mapsize);
 #endif
 
 	if (stream->fd > 0)
 		close(stream->fd);
 #endif
+	if (stream->buf)
+		free(stream->buf);
 	free(stream);
 
 	return 0;
