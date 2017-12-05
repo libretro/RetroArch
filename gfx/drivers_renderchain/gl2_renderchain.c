@@ -1262,7 +1262,9 @@ static void gl2_renderchain_copy_frame(
       const void *frame,
       unsigned width, unsigned height, unsigned pitch)
 {
-   gl_t *gl = (gl_t*)data;
+   gl_t                 *gl = (gl_t*)data;
+   gl2_renderchain_t *chain = (gl2_renderchain_t*)chain_data;
+
 #if defined(HAVE_PSGL)
    {
       unsigned h;
@@ -1281,7 +1283,6 @@ static void gl2_renderchain_copy_frame(
    }
 #elif defined(HAVE_OPENGLES)
 #if defined(HAVE_EGL)
-   gl2_renderchain_t *chain = (gl2_renderchain_t*)chain_data;
    if (chain->egl_images)
    {
       gfx_ctx_image_t img_info;
