@@ -1264,6 +1264,8 @@ static void gl2_renderchain_copy_frame(
 {
    gl_t                 *gl = (gl_t*)data;
    gl2_renderchain_t *chain = (gl2_renderchain_t*)chain_data;
+    
+   (void)chain;
 
 #if defined(HAVE_PSGL)
    {
