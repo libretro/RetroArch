@@ -87,8 +87,18 @@
 #define BIT128_GET_PTR(a, bit)   BIT128_GET(*a, bit)
 #define BIT128_CLEAR_ALL_PTR(a)  BIT128_CLEAR_ALL(*a)
 
+#define BIT256_SET(a, bit)       BIT128_SET(a, bit)
+#define BIT256_CLEAR(a, bit)     BIT128_CLEAR(a, bit)
+#define BIT256_GET(a, bit)       BIT128_GET(a, bit)
+#define BIT256_CLEAR_ALL(a)      BIT128_CLEAR_ALL(a)
+
+#define BIT256_SET_PTR(a, bit)   BIT256_SET(*a, bit)
+#define BIT256_CLEAR_PTR(a, bit) BIT256_CLEAR(*a, bit)
+#define BIT256_GET_PTR(a, bit)   BIT256_GET(*a, bit)
+#define BIT256_CLEAR_ALL_PTR(a)  BIT256_CLEAR_ALL(*a)
+
 /* Helper macros and struct to keep track of many booleans. */
-/* This struct has 256 bits, but the macros are named 128 due to some historical accident. */
+/* This struct has 256 bits. */
 typedef struct
 {
    uint32_t data[8];
