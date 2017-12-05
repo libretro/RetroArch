@@ -24,6 +24,7 @@
 #define __RARCH_MISCELLANEOUS_H
 
 #include <stdint.h>
+#include <boolean.h>
 
 #if defined(_WIN32) && !defined(_XBOX)		
 #ifndef WIN32_LEAN_AND_MEAN
@@ -61,22 +62,29 @@
 #define BITS_GET_ELEM(a, i)        ((a).data[i])
 #define BITS_GET_ELEM_PTR(a, i)    ((a)->data[i])
 
-#define BITS_ANY_SET(a)            ( BITS_GET_ELEM(a, 0)|| BITS_GET_ELEM(a, 1) || BITS_GET_ELEM(a, 2) || BITS_GET_ELEM(a, 3) ||       \
-                                                  BITS_GET_ELEM(a, 4) || BITS_GET_ELEM(a, 5) || BITS_GET_ELEM(a, 6) || BITS_GET_ELEM(a, 7) )
-#define BITS_ANY_SET_PTR(a)        ( BITS_GET_ELEM_PTR(a, 0)|| BITS_GET_ELEM_PTR(a, 1) || BITS_GET_ELEM_PTR(a, 2) || BITS_GET_ELEM_PTR(a, 3) ||       \
-                                                  BITS_GET_ELEM_PTR(a, 4) || BITS_GET_ELEM_PTR(a, 5) || BITS_GET_ELEM_PTR(a, 6) || BITS_GET_ELEM_PTR(a, 7) )
-
-#define BITS_CLEAR_BITS(a,b)    \
-{ \
-   BITS_GET_ELEM(a, 0) &= (~BITS_GET_ELEM(b, 0)); \
-   BITS_GET_ELEM(a, 1) &= (~BITS_GET_ELEM(b, 1)); \
-   BITS_GET_ELEM(a, 2) &= (~BITS_GET_ELEM(b, 2)); \
-   BITS_GET_ELEM(a, 3) &= (~BITS_GET_ELEM(b, 3)); \
-   BITS_GET_ELEM(a, 4) &= (~BITS_GET_ELEM(b, 4)); \
-   BITS_GET_ELEM(a, 5) &= (~BITS_GET_ELEM(b, 5)); \
-   BITS_GET_ELEM(a, 6) &= (~BITS_GET_ELEM(b, 6)); \
-   BITS_GET_ELEM(a, 7) &= (~BITS_GET_ELEM(b, 7)); \
+static inline bool bits_any_set(uint32_t* ptr, uint32_t count)
+{
+   uint32_t i;
+   for (i=0;i<count;i++)
+   {
+      if (ptr[i] != 0) return true;
+   }
+   return false;
 }
+
+#define BITS_ANY_SET(a)            bits_any_set((a).data, sizeof((a).data)/sizeof((a).data[0])
+#define BITS_ANY_SET_PTR(a)        BITS_ANY_SET(*a)
+
+static inline void bits_clear_bits(uint32_t* a, uint32_t* b, uint32_t count)
+{
+   uint32_t i;
+   for (i=0;i<count;i++)
+   {
+      a[i] &= b[i];
+   }
+}
+
+#define BITS_CLEAR_BITS(a,b)    bits_clear_bits((a).data, (b).data, sizeof((a).data)/sizeof((a).data[0])
 
 #define BITS_COPY16_PTR(a,bits) \
 { \
