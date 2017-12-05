@@ -137,143 +137,33 @@ generic_deferred_push(deferred_push_saving_settings_list,           DISPLAYLIST_
 generic_deferred_push(deferred_push_logging_settings_list,          DISPLAYLIST_LOGGING_SETTINGS_LIST)
 generic_deferred_push(deferred_push_frame_throttle_settings_list,   DISPLAYLIST_FRAME_THROTTLE_SETTINGS_LIST)
 generic_deferred_push(deferred_push_rewind_settings_list,           DISPLAYLIST_REWIND_SETTINGS_LIST)
-
-static int deferred_push_onscreen_display_settings_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST);
-}
-
-static int deferred_push_onscreen_notifications_settings_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST);
-}
-
-static int deferred_push_onscreen_overlay_settings_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_ONSCREEN_OVERLAY_SETTINGS_LIST);
-}
-
-static int deferred_push_menu_file_browser_settings_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_MENU_FILE_BROWSER_SETTINGS_LIST);
-}
-
-static int deferred_push_menu_views_settings_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_MENU_VIEWS_SETTINGS_LIST);
-}
-
-static int deferred_push_quick_menu_views_settings_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_QUICK_MENU_VIEWS_SETTINGS_LIST);
-}
-
-static int deferred_push_menu_settings_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_MENU_SETTINGS_LIST);
-}
-
-static int deferred_push_user_interface_settings_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_USER_INTERFACE_SETTINGS_LIST);
-}
-
-static int deferred_push_retro_achievements_settings_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_RETRO_ACHIEVEMENTS_SETTINGS_LIST);
-}
-
-static int deferred_push_updater_settings_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_UPDATER_SETTINGS_LIST);
-}
-
-static int deferred_push_wifi_settings_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_WIFI_SETTINGS_LIST);
-}
-
-static int deferred_push_network_settings_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_NETWORK_SETTINGS_LIST);
-}
-
-static int deferred_push_lakka_services_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_LAKKA_SERVICES_LIST);
-}
-
-static int deferred_push_user_settings_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_USER_SETTINGS_LIST);
-}
-
-static int deferred_push_directory_settings_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_DIRECTORY_SETTINGS_LIST);
-}
-
-static int deferred_push_privacy_settings_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_PRIVACY_SETTINGS_LIST);
-}
-
-static int deferred_push_audio_settings_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_AUDIO_SETTINGS_LIST);
-}
-
-static int deferred_push_input_settings_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_INPUT_SETTINGS_LIST);
-}
-
-static int deferred_push_recording_settings_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_RECORDING_SETTINGS_LIST);
-}
-
-static int deferred_push_playlist_settings_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_PLAYLIST_SETTINGS_LIST);
-}
-
-static int deferred_push_input_hotkey_binds_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST);
-}
-
-static int deferred_push_accounts_cheevos_list(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_ACCOUNTS_CHEEVOS_LIST);
-}
-
-static int deferred_push_help(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_HELP_SCREEN_LIST);
-}
-
-static int deferred_push_rdb_entry_detail(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_DATABASE_ENTRY);
-}
-
-static int deferred_push_rpl_entry_actions(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS);
-}
-
-static int deferred_push_core_list_deferred(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_CORES_SUPPORTED);
-}
-
-static int deferred_push_core_collection_list_deferred(
-      menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_CORES_COLLECTION_SUPPORTED);
-}
-
+generic_deferred_push(deferred_push_onscreen_display_settings_list, DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST)
+generic_deferred_push(deferred_push_onscreen_notifications_settings_list, DISPLAYLIST_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST)
+generic_deferred_push(deferred_push_onscreen_overlay_settings_list, DISPLAYLIST_ONSCREEN_OVERLAY_SETTINGS_LIST)
+generic_deferred_push(deferred_push_menu_file_browser_settings_list,DISPLAYLIST_MENU_FILE_BROWSER_SETTINGS_LIST)
+generic_deferred_push(deferred_push_menu_views_settings_list,       DISPLAYLIST_MENU_VIEWS_SETTINGS_LIST)
+generic_deferred_push(deferred_push_quick_menu_views_settings_list, DISPLAYLIST_QUICK_MENU_VIEWS_SETTINGS_LIST)
+generic_deferred_push(deferred_push_menu_settings_list,             DISPLAYLIST_MENU_SETTINGS_LIST)
+generic_deferred_push(deferred_push_user_interface_settings_list,   DISPLAYLIST_USER_INTERFACE_SETTINGS_LIST)
+generic_deferred_push(deferred_push_retro_achievements_settings_list,DISPLAYLIST_RETRO_ACHIEVEMENTS_SETTINGS_LIST)
+generic_deferred_push(deferred_push_updater_settings_list,          DISPLAYLIST_UPDATER_SETTINGS_LIST)
+generic_deferred_push(deferred_push_wifi_settings_list,             DISPLAYLIST_WIFI_SETTINGS_LIST)
+generic_deferred_push(deferred_push_network_settings_list,          DISPLAYLIST_NETWORK_SETTINGS_LIST)
+generic_deferred_push(deferred_push_lakka_services_list,            DISPLAYLIST_LAKKA_SERVICES_LIST)
+generic_deferred_push(deferred_push_user_settings_list,             DISPLAYLIST_USER_SETTINGS_LIST)
+generic_deferred_push(deferred_push_directory_settings_list,        DISPLAYLIST_DIRECTORY_SETTINGS_LIST)
+generic_deferred_push(deferred_push_privacy_settings_list,          DISPLAYLIST_PRIVACY_SETTINGS_LIST)
+generic_deferred_push(deferred_push_audio_settings_list,            DISPLAYLIST_AUDIO_SETTINGS_LIST)
+generic_deferred_push(deferred_push_input_settings_list,            DISPLAYLIST_INPUT_SETTINGS_LIST)
+generic_deferred_push(deferred_push_recording_settings_list,        DISPLAYLIST_RECORDING_SETTINGS_LIST)
+generic_deferred_push(deferred_push_playlist_settings_list,         DISPLAYLIST_PLAYLIST_SETTINGS_LIST)
+generic_deferred_push(deferred_push_input_hotkey_binds_list,        DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST)
+generic_deferred_push(deferred_push_accounts_cheevos_list,          DISPLAYLIST_ACCOUNTS_CHEEVOS_LIST)
+generic_deferred_push(deferred_push_help,                           DISPLAYLIST_HELP_SCREEN_LIST)
+generic_deferred_push(deferred_push_rdb_entry_detail,               DISPLAYLIST_DATABASE_ENTRY)
+generic_deferred_push(deferred_push_rpl_entry_actions,              DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS)
+generic_deferred_push(deferred_push_core_list_deferred,             DISPLAYLIST_CORES_SUPPORTED)
+generic_deferred_push(deferred_push_core_collection_list_deferred,  DISPLAYLIST_CORES_COLLECTION_SUPPORTED)
 
 #ifdef HAVE_NETWORKING
 generic_deferred_push(deferred_push_thumbnails_updater_list,        DISPLAYLIST_THUMBNAILS_UPDATER)
