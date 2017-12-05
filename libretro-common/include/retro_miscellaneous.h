@@ -83,7 +83,7 @@ static INLINE bool bits_any_set(uint32_t* ptr, uint32_t count)
 
 #define BIT_SET(a, bit)   ((a)[(bit) >> 3] |=  (1 << ((bit) & 7)))
 #define BIT_CLEAR(a, bit) ((a)[(bit) >> 3] &= ~(1 << ((bit) & 7)))
-#define BIT_GET(a, bit)   (((a).data[(bit) >> 3] >> ((bit) & 7)) & 1)
+#define BIT_GET(a, bit)   (((a)[(bit) >> 3] >> ((bit) & 7)) & 1)
 
 #define BIT16_SET(a, bit)    ((a) |=  (1 << ((bit) & 15)))
 #define BIT16_CLEAR(a, bit)  ((a) &= ~(1 << ((bit) & 15)))
