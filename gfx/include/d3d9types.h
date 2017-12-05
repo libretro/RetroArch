@@ -565,25 +565,25 @@ typedef enum _D3DTEXTUREOP
     D3DTOP_MODULATE4X           = 6,      /* multiply and  2 bits */
 
     /* Add */
-    D3DTOP_ADD                  =  7,   // add arguments together
-    D3DTOP_ADDSIGNED            =  8,   // add with -0.5 bias
-    D3DTOP_ADDSIGNED2X          =  9,   // as above but left  1 bit
-    D3DTOP_SUBTRACT             = 10,   // Arg1 - Arg2, with no saturation
-    D3DTOP_ADDSMOOTH            = 11,   // add 2 args, subtract product
-                                        // Arg1 + Arg2 - Arg1*Arg2
-                                        // = Arg1 + (1-Arg1)*Arg2
+    D3DTOP_ADD                  =  7,   /* add arguments together */
+    D3DTOP_ADDSIGNED            =  8,   /* add with -0.5 bias */
+    D3DTOP_ADDSIGNED2X          =  9,   /* as above but left  1 bit */
+    D3DTOP_SUBTRACT             = 10,   /* Arg1 - Arg2, with no saturation */
+    D3DTOP_ADDSMOOTH            = 11,   /* add 2 args, subtract product */
+                                        /* Arg1 + Arg2 - Arg1*Arg2 */
+                                        /* = Arg1 + (1-Arg1)*Arg2 */
 
-    // Linear alpha blend: Arg1*(Alpha) + Arg2*(1-Alpha)
-    D3DTOP_BLENDDIFFUSEALPHA    = 12, // iterated alpha
-    D3DTOP_BLENDTEXTUREALPHA    = 13, // texture alpha
-    D3DTOP_BLENDFACTORALPHA     = 14, // alpha from D3DRS_TEXTUREFACTOR
+    /* Linear alpha blend: Arg1*(Alpha) + Arg2*(1-Alpha) */
+    D3DTOP_BLENDDIFFUSEALPHA    = 12, /* iterated alpha */
+    D3DTOP_BLENDTEXTUREALPHA    = 13, /* texture alpha */
+    D3DTOP_BLENDFACTORALPHA     = 14, /* alpha from D3DRS_TEXTUREFACTOR */
 
-    // Linear alpha blend with pre-multiplied arg1 input: Arg1 + Arg2*(1-Alpha)
-    D3DTOP_BLENDTEXTUREALPHAPM  = 15, // texture alpha
-    D3DTOP_BLENDCURRENTALPHA    = 16, // by alpha of current color
+    /* Linear alpha blend with pre-multiplied arg1 input: Arg1 + Arg2*(1-Alpha) */
+    D3DTOP_BLENDTEXTUREALPHAPM  = 15, /* texture alpha */
+    D3DTOP_BLENDCURRENTALPHA    = 16, /* by alpha of current color */
 
-    // Specular mapping
-    D3DTOP_PREMODULATE            = 17,     // modulate with next texture before use
+    /* Specular mapping */
+    D3DTOP_PREMODULATE            = 17,     /* modulate with next texture before use */
     D3DTOP_MODULATEALPHA_ADDCOLOR = 18,     // Arg1.RGB + Arg1.A*Arg2.RGB
                                             // COLOROP only
     D3DTOP_MODULATECOLOR_ADDALPHA = 19,     // Arg1.RGB*Arg2.RGB + Arg1.A
@@ -1601,10 +1601,11 @@ typedef enum _D3DRESOURCETYPE {
 #endif /* !D3D_DISABLE_9EX */
 /* -- D3D9Ex only */
 
-// When passed to CheckDeviceFormat, D3DUSAGE_AUTOGENMIPMAP may return
-// D3DOK_NOAUTOGEN if the device doesn't support autogeneration for that format.
-// D3DOK_NOAUTOGEN is a success code, not a failure code... the SUCCEEDED and FAILED macros
-// will return true and false respectively for this code.
+/* When passed to CheckDeviceFormat, D3DUSAGE_AUTOGENMIPMAP may return
+ * D3DOK_NOAUTOGEN if the device doesn't support autogeneration for that format.
+ * D3DOK_NOAUTOGEN is a success code, not a failure code... the SUCCEEDED and FAILED macros
+ * will return true and false respectively for this code.
+ */
 #define D3DUSAGE_AUTOGENMIPMAP      (0x00000400L)
 #define D3DUSAGE_DMAP               (0x00004000L)
 
