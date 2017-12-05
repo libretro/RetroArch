@@ -1872,8 +1872,10 @@ static int cheevos_expr_value(cheevos_expr_t* expr)
 
    if (expr->compare_count > 1)
    {
+      unsigned j;
       int maximum = values[0];
-      for (unsigned j = 1; j < expr->compare_count; j++)
+
+      for (j = 1; j < expr->compare_count; j++)
          maximum = values[j] > maximum ? values[j] : maximum;
 
       return maximum;
@@ -3171,10 +3173,12 @@ static int cheevos_iterate(coro_t* coro)
 
    badges_ctx = new_badges_ctx;
 
-   settings_t *settings = config_get_ptr();
-   if (!string_is_equal(settings->arrays.menu_driver, "xmb") || 
-       !settings->bools.cheevos_badges_enable)
-      CORO_RET();
+   {
+      settings_t *settings = config_get_ptr();
+      if (!string_is_equal(settings->arrays.menu_driver, "xmb") || 
+            !settings->bools.cheevos_badges_enable)
+         CORO_RET();
+   }
 
    CHEEVOS_VAR_CHEEVO_CURR = cheevos_locals.core.cheevos;
    CHEEVOS_VAR_CHEEVO_END = cheevos_locals.core.cheevos + cheevos_locals.core.count;
