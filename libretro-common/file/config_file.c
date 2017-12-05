@@ -931,19 +931,19 @@ bool config_file_write(config_file_t *conf, const char *path)
       free(buf);
    }
    else
-      config_file_dump_stdout(conf);
+      config_file_dump(conf, stdout);
 
    return true;
 }
 
-void config_file_dump(config_file_t *conf, RFILE *file)
+void config_file_dump(config_file_t *conf, FILE *file)
 {
    struct config_entry_list       *list = NULL;
    struct config_include_list *includes = conf->includes;
 
    while (includes)
    {
-      filestream_printf(file, "#include \"%s\"\n", includes->path);
+      fprintf(file, "#include \"%s\"\n", includes->path);
       includes = includes->next;
    }
 
@@ -952,28 +952,7 @@ void config_file_dump(config_file_t *conf, RFILE *file)
    while (list)
    {
       if (!list->readonly && list->key)
-         filestream_printf(file, "%s = \"%s\"\n", list->key, list->value);
-      list = list->next;
-   }
-}
-
-void config_file_dump_stdout(config_file_t *conf)
-{
-   struct config_entry_list       *list = NULL;
-   struct config_include_list *includes = conf->includes;
-
-   while (includes)
-   {
-      fprintf(stdout, "#include \"%s\"\n", includes->path);
-      includes = includes->next;
-   }
-
-   list = (struct config_entry_list*)conf->entries;
-
-   while (list)
-   {
-      if (!list->readonly && list->key)
-         fprintf(stdout, "%s = \"%s\"\n", list->key, list->value);
+         fprintf(file, "%s = \"%s\"\n", list->key, list->value);
       list = list->next;
    }
 }

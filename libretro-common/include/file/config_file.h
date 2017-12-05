@@ -34,8 +34,6 @@ RETRO_BEGIN_DECLS
 
 #include <boolean.h>
 
-#include <streams/file_stream.h>
-
 #define CONFIG_GET_BOOL_BASE(conf, base, var, key) do { \
    bool tmp = false; \
    if (config_get_bool(conf, key, &tmp)) \
@@ -158,12 +156,10 @@ bool config_file_write(config_file_t *conf, const char *path);
 
 /* Dump the current config to an already opened file.
  * Does not close the file. */
-void config_file_dump(config_file_t *conf, RFILE *file);
-void config_file_dump_stdout(config_file_t *conf);
+void config_file_dump(config_file_t *conf, FILE *file);
 
 bool config_file_exists(const char *path);
 
 RETRO_END_DECLS
 
 #endif
-
