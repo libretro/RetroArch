@@ -233,7 +233,7 @@ static const uint8_t buttons[] = {
 static uint16_t input_config_vid[MAX_USERS];
 static uint16_t input_config_pid[MAX_USERS];
 
-char input_device_names[MAX_USERS][64];
+char input_device_names[MAX_INPUT_DEVICES][64];
 struct retro_keybind input_config_binds[MAX_USERS][RARCH_BIND_LIST_END];
 struct retro_keybind input_autoconf_binds[MAX_USERS][RARCH_BIND_LIST_END];
 const struct retro_keybind *libretro_input_binds[MAX_USERS];
@@ -2689,6 +2689,18 @@ void input_config_get_bind_string(char *buf, const struct retro_keybind *bind,
    /*completely empty?*/
    if ( *buf == '\0' )
       strlcat(buf, "---", size);
+}
+
+unsigned input_config_get_device_count()
+{
+   unsigned num_devices;
+   for ( num_devices = 0; num_devices < MAX_INPUT_DEVICES; ++num_devices )
+   {
+	   const char *device_name = input_config_get_device_name(num_devices);
+	   if ( string_is_empty(device_name) )
+		   break;
+   }
+   return num_devices;
 }
 
 const char *input_config_get_device_name(unsigned port)

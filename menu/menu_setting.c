@@ -1305,7 +1305,7 @@ static int setting_action_left_bind_device(void *data, bool wraparound)
 {
    unsigned index_offset;
    unsigned               *p = NULL;
-   unsigned max_users        = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+   unsigned max_devices        = input_config_get_device_count();
    rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
 
@@ -1316,8 +1316,8 @@ static int setting_action_left_bind_device(void *data, bool wraparound)
 
    p = &settings->uints.input_joypad_map[index_offset];
 
-   if ((*p) >= max_users)
-      *p = max_users - 1;
+   if ((*p) >= max_devices)
+      *p = max_devices - 1;
    else if ((*p) > 0)
       (*p)--;
 
@@ -1328,7 +1328,7 @@ static int setting_action_right_bind_device(void *data, bool wraparound)
 {
    unsigned index_offset;
    unsigned               *p = NULL;
-   unsigned max_users        = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+   unsigned max_devices      = input_config_get_device_count();
    rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
 
@@ -1339,7 +1339,7 @@ static int setting_action_right_bind_device(void *data, bool wraparound)
 
    p = &settings->uints.input_joypad_map[index_offset];
 
-   if (*p < max_users)
+   if (*p < max_devices)
       (*p)++;
 
    return 0;
@@ -1497,7 +1497,7 @@ static void get_string_representation_bind_device(void * data, char *s,
       size_t len)
 {
    unsigned index_offset, map = 0;
-   unsigned max_users        = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+   unsigned max_devices      = input_config_get_device_count();
    rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
 
@@ -1507,7 +1507,7 @@ static void get_string_representation_bind_device(void * data, char *s,
    index_offset = setting->index_offset;
    map          = settings->uints.input_joypad_map[index_offset];
 
-   if (map < max_users)
+   if (map < max_devices)
    {
       const char *device_name = input_config_get_device_name(map);
 
