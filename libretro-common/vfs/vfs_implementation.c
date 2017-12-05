@@ -65,8 +65,8 @@
 #include <fcntl.h>
 #endif
 
-/* Assume W-functions do not work below VC2005 and Xbox platforms */
-#if defined(_MSC_VER) && _MSC_VER < 1400 || defined(_XBOX)
+/* Assume W-functions do not work below Win2K and Xbox platforms */ 
+#if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500 || defined(_XBOX) 
 
 #ifndef LEGACY_WIN32
 #define LEGACY_WIN32
