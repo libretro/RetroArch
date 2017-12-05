@@ -2,7 +2,7 @@
 #include <encodings/utf.h>
 #include <stdlib.h>
 
-#if defined(_MSC_VER) && _MSC_VER < 1400 || defined(_XBOX)
+#if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500 || defined(_XBOX)
 #ifndef LEGACY_WIN32
 #define LEGACY_WIN32
 #endif
@@ -16,7 +16,7 @@ FILE* fopen_utf8(const char * filename, const char * mode)
 #if defined(_XBOX)
    return fopen(filename, mode);
 #elif defined(LEGACY_WIN32)
-   char * filename_local = utf8_to_local_string_alloc(path);
+   char * filename_local = utf8_to_local_string_alloc(filename);
    FILE* ret = fopen(filename_local, mode);
    free(filename_local);
    return ret;
