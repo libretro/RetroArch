@@ -63,7 +63,7 @@ extern bool g_xinput_block_pads;
 extern int g_xinput_pad_indexes[MAX_USERS];
 extern LPDIRECTINPUT8 g_dinput_ctx;
 
-bool dinput_joypad_get_vidpid_from_xinput_index(int index, int *vid, int *pid)
+bool dinput_joypad_get_vidpid_from_xinput_index(int index, int *vid, int *pid, int *dinput_index)
 {
    int i;
 
@@ -78,6 +78,9 @@ bool dinput_joypad_get_vidpid_from_xinput_index(int index, int *vid, int *pid)
 
          if (pid)
             *pid = g_pads[i].pid;
+
+         if (dinput_index)
+            *dinput_index = i;
 
          return true;
       }
