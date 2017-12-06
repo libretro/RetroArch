@@ -434,12 +434,201 @@ static void* wiiu_gfx_init(const video_info_t* video,
    return wiiu;
 }
 
+#ifdef HAVE_OVERLAY
+static void gx2_overlay_tex_geom(void *data, unsigned image,
+      float x, float y, float w, float h)
+{
+   wiiu_video_t            *gx2 = (wiiu_video_t*)data;
+   struct gx2_overlay_data *o = NULL;
+
+   if (gx2)
+      o = (struct gx2_overlay_data*)&gx2->overlay[image];
+
+   if (!o)
+      return;
+
+   o->tex_coord[0] = x;
+   o->tex_coord[1] = y;
+   o->tex_coord[2] = x + w;
+   o->tex_coord[3] = y;
+   o->tex_coord[4] = x + w;
+   o->tex_coord[5] = y + h;
+   o->tex_coord[6] = x ;
+   o->tex_coord[7] = y + h;
+}
+
+static void gx2_overlay_vertex_geom(void *data, unsigned image,
+         float x, float y, float w, float h)
+{
+   wiiu_video_t            *gx2 = (wiiu_video_t*)data;
+   struct gx2_overlay_data *o = NULL;
+
+   /* Flipped, so we preserve top-down semantics. */
+   y = 1.0f - y;
+   h = -h;
+
+   /* expand from 0 - 1 to -1 - 1 */
+   x = (x * 2.0f) - 1.0f;
+   y = (y * 2.0f) - 1.0f;
+   w = (w * 2.0f);
+   h = (h * 2.0f);
+
+   if (gx2)
+      o = (struct gx2_overlay_data*)&gx2->overlay[image];
+
+   if (!o)
+      return;
+
+   o->vertex_coord[0] = x;
+   o->vertex_coord[1] = y;
+
+   o->vertex_coord[2] = x + w;
+   o->vertex_coord[3] = y;
+
+   o->vertex_coord[4] = x + w;
+   o->vertex_coord[5] = y + h;
+
+   o->vertex_coord[6] = x ;
+   o->vertex_coord[7] = y + h;
+}
+
+static void gx2_free_overlay(wiiu_video_t *gx2)
+{
+   unsigned i;
+   for (i = 0; i < gx2->overlays; i++)
+       MEM2_free(gx2->overlay[i].tex.surface.image);
+
+   free(gx2->overlay);
+   gx2->overlay = NULL;
+   gx2->overlays = 0;
+
+}
+
+static bool gx2_overlay_load(void *data,
+      const void *image_data, unsigned num_images)
+{
+   unsigned i,j;
+   wiiu_video_t *gx2 = (wiiu_video_t*)data;
+   const struct texture_image *images = (const struct texture_image*)image_data;
+
+   gx2_free_overlay(gx2);
+   gx2->overlay = (struct gx2_overlay_data*)calloc(num_images, sizeof(*gx2->overlay));
+   if (!gx2->overlay)
+      return false;
+
+   gx2->overlays = num_images;
+
+   for (i = 0; i < num_images; i++)
+   {
+      struct gx2_overlay_data *o = (struct gx2_overlay_data*)&gx2->overlay[i];
+
+   //GX2Texture* o->tex = calloc(1, sizeof(GX2Texture));
+
+   memset(&o->tex, 0, sizeof(GX2Texture));
+   o->tex.surface.width    = images[i].width;
+   o->tex.surface.height   = images[i].height;
+   o->tex.surface.depth    = 1;
+   o->tex.surface.dim      = GX2_SURFACE_DIM_TEXTURE_2D;
+   o->tex.surface.format   = GX2_SURFACE_FORMAT_UNORM_R8_G8_B8_A8;
+   o->tex.surface.tileMode = GX2_TILE_MODE_LINEAR_ALIGNED;
+   o->tex.viewNumSlices    = 1;
+   o->tex.compMap          = GX2_COMP_SEL(_G, _B, _A, _R);
+   GX2CalcSurfaceSizeAndAlignment(&o->tex.surface);
+   GX2InitTextureRegs(&o->tex);
+
+   o->tex.surface.image = MEM2_alloc(o->tex.surface.imageSize,
+                                       o->tex.surface.alignment);
+
+   for (j = 0; (j< images[i].height) && (j < o->tex.surface.height); j++)
+      memcpy((uint32_t*)o->tex.surface.image + (j * o->tex.surface.pitch),
+             images[i].pixels + (j * images[i].width), images[i].width * sizeof(images[i].pixels));
+
+   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE,  o->tex.surface.image,  o->tex.surface.imageSize);
+
+      /* Default. Stretch to whole screen. */
+      gx2_overlay_tex_geom(gx2, i, 0, 0, 1, 1); 
+      gx2_overlay_vertex_geom(gx2, i, 0, 0, 1, 1);
+      gx2->overlay[i].alpha_mod = 1.0f;
+
+
+	GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, o->vertex_coord,sizeof(o->vertex_coord));
+	GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, o->tex_coord, sizeof(o->vertex_coord));
+
+   }
+
+   return true;
+}
+
+static void gx2_overlay_enable(void *data, bool state)
+{
+
+   wiiu_video_t *gx2 = (wiiu_video_t*)data;
+   gx2->overlay_enable = state;
+}
+
+static void gx2_overlay_full_screen(void *data, bool enable)
+{
+   wiiu_video_t *gx2 = (wiiu_video_t*)data;
+   gx2->overlay_full_screen = enable;
+}
+
+static void gx2_overlay_set_alpha(void *data, unsigned image, float mod)
+{
+   wiiu_video_t *gx2 = (wiiu_video_t*)data;
+
+   if (gx2)
+      gx2->overlay[image].alpha_mod = mod;
+}
+
+static void gx2_render_overlay(void *data)
+{
+   unsigned i;
+
+   wiiu_video_t *gx2 = (wiiu_video_t*)data;
+
+   for (i = 0; i < gx2->overlays; i++){
+
+      GX2SetAttribBuffer(0, 8 * sizeof(float),
+            2*sizeof(float), gx2->overlay[i].vertex_coord);
+      GX2SetAttribBuffer(1, 8 * sizeof(float),
+            2*sizeof(float), gx2->overlay[i].tex_coord);
+
+      GX2SetPixelTexture(&gx2->overlay[i].tex, gx2->shader->sampler.location);
+      GX2SetPixelSampler(&gx2->sampler_linear, gx2->shader->sampler.location);
+
+      GX2DrawEx(GX2_PRIMITIVE_MODE_QUADS, 4, 0, 1);
+
+   }
+
+}
+
+static const video_overlay_interface_t gx2_overlay_interface = {
+   gx2_overlay_enable,
+   gx2_overlay_load,
+   gx2_overlay_tex_geom,
+   gx2_overlay_vertex_geom,
+   gx2_overlay_full_screen,
+   gx2_overlay_set_alpha,
+};
+
+static void gx2_get_overlay_interface(void *data,
+      const video_overlay_interface_t **iface)
+{
+   (void)data;
+   *iface = &gx2_overlay_interface;
+}
+#endif
+
 static void wiiu_gfx_free(void* data)
 {
    wiiu_video_t* wiiu = (wiiu_video_t*) data;
 
    if (!wiiu)
       return;
+
+#ifdef HAVE_OVERLAY
+   gx2_free_overlay(wiiu);
+#endif
 
    /* clear leftover image */
    GX2ClearColor(&wiiu->color_buffer, 0.0f, 0.0f, 0.0f, 1.0f);
@@ -609,6 +798,11 @@ static bool wiiu_gfx_frame(void* data, const void* frame,
                       wiiu->shader->sampler.location);
 
    GX2DrawEx(GX2_PRIMITIVE_MODE_QUADS, 4, 0, 1);
+
+#ifdef HAVE_OVERLAY
+   if (wiiu->overlay_enable)
+      gx2_render_overlay(wiiu);
+#endif
 
    if (wiiu->menu.enable)
    {
@@ -898,7 +1092,7 @@ video_driver_t video_wiiu =
    wiiu_gfx_read_viewport,
    NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
-   NULL, /* overlay_interface */
+   gx2_get_overlay_interface, /* overlay_interface */
 #endif
    wiiu_gfx_get_poke_interface,
    NULL, /* wrap_type_to_enum */
