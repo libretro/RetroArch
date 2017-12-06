@@ -324,16 +324,11 @@ STDAPI XAudio2Create(__deref_out IXAudio2** ppXAudio2, UINT32 Flags X2DEFAULT(0)
 #else
 static INLINE HRESULT XAudio2Create(IXAudio2 **ppXAudio2, UINT32 flags, XAUDIO2_PROCESSOR proc)
 {
-   HRESULT hr;
    IXAudio2 *pXAudio2 = NULL;
-
-   (void)flags;
-   (void)proc;
-
 #ifdef __cplusplus
-   hr = CoCreateInstance(CLSID_XAudio2, NULL, CLSCTX_INPROC_SERVER, IID_IXAudio2, (void**)&pXAudio2);
+   HRESULT hr = CoCreateInstance(CLSID_XAudio2, NULL, CLSCTX_INPROC_SERVER, IID_IXAudio2, (void**)&pXAudio2);
 #else
-   hr = CoCreateInstance(&CLSID_XAudio2, NULL, CLSCTX_INPROC_SERVER, &IID_IXAudio2, (void**)&pXAudio2);
+   HRESULT hr = CoCreateInstance(&CLSID_XAudio2, NULL, CLSCTX_INPROC_SERVER, &IID_IXAudio2, (void**)&pXAudio2);
 #endif
 
    if (SUCCEEDED(hr))
@@ -342,9 +337,7 @@ static INLINE HRESULT XAudio2Create(IXAudio2 **ppXAudio2, UINT32 flags, XAUDIO2_
       if (SUCCEEDED(hr))
          *ppXAudio2 = pXAudio2;
       else
-      {
          IXAudio2_Release(pXAudio2);
-      }
    }
    return hr;
 }

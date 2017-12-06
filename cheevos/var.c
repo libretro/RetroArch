@@ -24,10 +24,15 @@
 #include "../core.h"
 #include "../verbosity.h"
 
+static void STUB_LOG(const char *fmt, ...)
+{
+   (void)fmt;
+}
+
 #ifdef CHEEVOS_VERBOSE
 #define CHEEVOS_LOG RARCH_LOG
 #else
-#define CHEEVOS_LOG(...)
+#define CHEEVOS_LOG STUB_LOG
 #endif
 
 /*****************************************************************************

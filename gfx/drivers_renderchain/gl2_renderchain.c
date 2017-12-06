@@ -53,6 +53,12 @@
 
 #define MAX_FENCES 4
 
+#ifndef HAVE_PSGL
+#if defined(HAVE_OPENGLES2)
+   typedef struct __GLsync *GLsync;
+#endif
+#endif
+
 typedef struct gl2_renderchain
 {
    bool egl_images;
@@ -1262,7 +1268,11 @@ static void gl2_renderchain_copy_frame(
       const void *frame,
       unsigned width, unsigned height, unsigned pitch)
 {
-   gl_t *gl = (gl_t*)data;
+   gl_t                 *gl = (gl_t*)data;
+   gl2_renderchain_t *chain = (gl2_renderchain_t*)chain_data;
+    
+   (void)chain;
+
 #if defined(HAVE_PSGL)
    {
       unsigned h;
@@ -1281,7 +1291,6 @@ static void gl2_renderchain_copy_frame(
    }
 #elif defined(HAVE_OPENGLES)
 #if defined(HAVE_EGL)
-   gl2_renderchain_t *chain = (gl2_renderchain_t*)chain_data;
    if (chain->egl_images)
    {
       gfx_ctx_image_t img_info;
@@ -1453,7 +1462,7 @@ static void gl2_renderchain_fence_iterate(
 
       chain->fence_count--;
       memmove(chain->fences, chain->fences + 1,
-            chain->fence_count * sizeof(GLsync));
+            chain->fence_count * sizeof(void*));
    }
 }
 

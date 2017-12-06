@@ -40,6 +40,10 @@
 
 #include "../../verbosity.h"
 
+#ifdef HAVE_DINPUT
+#include "dinput_joypad.h"
+#endif
+
 /* Check if the definitions do not already exist.
  * Official and mingw xinput headers have different include guards.
  */
@@ -90,10 +94,6 @@ typedef struct
 
 #ifndef ERROR_DEVICE_NOT_CONNECTED
 #define ERROR_DEVICE_NOT_CONNECTED 1167
-#endif
-
-#ifndef HAVE_DINPUT
-#error Cannot compile xinput without dinput.
 #endif
 
 /* Due to 360 pads showing up under both XInput and DirectInput, 
@@ -157,6 +157,8 @@ static const char* const XBOX_ONE_CONTROLLER_NAMES[4] =
 const char *xinput_joypad_name(unsigned pad)
 {
    int xuser = pad_index_to_xuser_index(pad);
+
+#ifdef HAVE_DINPUT
    /* Use the real controller name for XBOX One controllers since
       they are slightly different  */
    if (xuser < 0)
@@ -164,6 +166,7 @@ const char *xinput_joypad_name(unsigned pad)
 
    if (strstr(dinput_joypad.name(pad), "Xbox One For Windows"))
       return XBOX_ONE_CONTROLLER_NAMES[xuser];
+#endif
 
    return XBOX_CONTROLLER_NAMES[xuser];
 }
@@ -251,15 +254,12 @@ static bool xinput_joypad_init(void *data)
          (!g_xinput_states[2].connected) &&
          (!g_xinput_states[3].connected))
       return false;
-#if (1)
-   else
-   {
-      RARCH_LOG("[XInput]: Pads connected: %d\n", g_xinput_states[0].connected + 
-      g_xinput_states[1].connected + g_xinput_states[2].connected + g_xinput_states[3].connected);
-   }
-#endif
+
+   RARCH_LOG("[XInput]: Pads connected: %d\n", g_xinput_states[0].connected + 
+         g_xinput_states[1].connected + g_xinput_states[2].connected + g_xinput_states[3].connected);
    g_xinput_block_pads = true;
 
+#ifdef HAVE_DINPUT
    /* We're going to have to be buddies with dinput if we want to be able
     * to use XInput and non-XInput controllers together. */
    if (!dinput_joypad.init(data))
@@ -267,19 +267,35 @@ static bool xinput_joypad_init(void *data)
       g_xinput_block_pads = false;
       return false;
    }
+#endif
 
    for (j = 0; j < MAX_USERS; j++)
    {
-      RARCH_LOG("[XInput]: Attempting autoconf for, user #%u\n", j);
+      if (xinput_joypad_name(j))
+         RARCH_LOG("[XInput]: Attempting autoconf for \"%s\", user #%u\n", xinput_joypad_name(j), j);
+      else
+         RARCH_LOG("[XInput]: Attempting autoconf for user #%u\n", j);
+
       if (pad_index_to_xuser_index(j) > -1)
       {
+         int vid          = 0;
+         int pid          = 0;
+#ifdef HAVE_DINPUT
+         int dinput_index = 0;
+         bool success     = dinput_joypad_get_vidpid_from_xinput_index(j, &vid, &pid, &dinput_index);
+
+         if (success)
+            RARCH_LOG("[XInput]: Found VID/PID (%04X/%04X) from DINPUT index %d for \"%s\", user #%u\n",
+                  vid, pid, dinput_index, xinput_joypad_name(j), j);
+#endif
+
          if (!input_autoconfigure_connect(
                xinput_joypad_name(j),
                NULL,
                xinput_joypad.ident,
                j,
-               0,
-               0))
+               vid,
+               pid))
             input_config_set_device_name(j, xinput_joypad_name(j));
       }
    }
@@ -292,7 +308,11 @@ static bool xinput_joypad_query_pad(unsigned pad)
    int xuser = pad_index_to_xuser_index(pad);
    if (xuser > -1)
       return g_xinput_states[xuser].connected;
+#ifdef HAVE_DINPUT
    return dinput_joypad.query_pad(pad);
+#else
+   return false;
+#endif
 }
 
 static void xinput_joypad_destroy(void)
@@ -308,7 +328,9 @@ static void xinput_joypad_destroy(void)
    g_XInputGetStateEx  = NULL;
    g_XInputSetState    = NULL;
 
+#ifdef HAVE_DINPUT
    dinput_joypad.destroy();
+#endif
 
    g_xinput_block_pads = false;
 }
@@ -337,8 +359,10 @@ static bool xinput_joypad_button(unsigned port_num, uint16_t joykey)
    unsigned hat_dir     = 0;
    int xuser            = pad_index_to_xuser_index(port_num);
 
+#ifdef HAVE_DINPUT
    if (xuser == -1)
       return dinput_joypad.button(port_num, joykey);
+#endif
 
    if (!(g_xinput_states[xuser].connected))
       return false;
@@ -386,8 +410,10 @@ static int16_t xinput_joypad_axis (unsigned port_num, uint32_t joyaxis)
 
    xuser = pad_index_to_xuser_index(port_num);
 
+#ifdef HAVE_DINPUT
    if (xuser == -1)
       return dinput_joypad.axis(port_num, joyaxis);
+#endif
 
    if (!(g_xinput_states[xuser].connected))
       return 0;
@@ -455,7 +481,9 @@ static void xinput_joypad_poll(void)
       }
    }
 
+#ifdef HAVE_DINPUT
    dinput_joypad.poll();
+#endif
 }
 
 static bool xinput_joypad_rumble(unsigned pad,
@@ -465,8 +493,10 @@ static bool xinput_joypad_rumble(unsigned pad,
 
    if (xuser == -1)
    {
+#ifdef HAVE_DINPUT
       if (dinput_joypad.set_rumble)
          return dinput_joypad.set_rumble(pad, effect, strength);
+#endif
       return false;
    }
 

@@ -63,6 +63,32 @@ extern bool g_xinput_block_pads;
 extern int g_xinput_pad_indexes[MAX_USERS];
 extern LPDIRECTINPUT8 g_dinput_ctx;
 
+bool dinput_joypad_get_vidpid_from_xinput_index(int index, int *vid, int *pid, int *dinput_index)
+{
+   int i;
+
+   for (i = 0; i < ARRAY_SIZE(g_xinput_pad_indexes); i++)
+   {
+      if (index == g_xinput_pad_indexes[i])
+      {
+         RARCH_LOG("[DINPUT]: Found XInput pad at index %d (DINPUT index %d)\n", index, i);
+
+         if (vid)
+            *vid = g_pads[i].vid;
+
+         if (pid)
+            *pid = g_pads[i].pid;
+
+         if (dinput_index)
+            *dinput_index = i;
+
+         return true;
+      }
+   }
+
+   return false;
+}
+
 static void dinput_joypad_destroy(void)
 {
    unsigned i;
@@ -74,7 +100,7 @@ static void dinput_joypad_destroy(void)
          IDirectInputDevice8_Unacquire(g_pads[i].joypad);
          IDirectInputDevice8_Release(g_pads[i].joypad);
       }
-      
+
       free(g_pads[i].joy_name);
       g_pads[i].joy_name = NULL;
       free(g_pads[i].joy_friendly_name);

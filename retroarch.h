@@ -27,8 +27,6 @@
 #include "core_type.h"
 #include "core.h"
 
-#define runloop_cmd_press(current_input, id)     (RARCH_INPUT_STATE_BIT_GET(current_input, id))
-
 RETRO_BEGIN_DECLS
 
 enum rarch_ctl_state
