@@ -54,7 +54,11 @@
 #define MAX_FENCES 4
 
 #if !defined(HAVE_PSGL)
+
+#ifndef HAVE_GL_SYNC
 #define HAVE_GL_SYNC
+#endif
+
 #endif
 
 #ifdef HAVE_GL_SYNC
