@@ -8,6 +8,7 @@
 - COMMON: Fixed some playlist bugs.
 - FREEBSD: Support libusb HID input driver.
 - HAIKU: Buildfix.
+- INPUT: Populate XInput VID/PID from DInput so autoconfig doesn't rely solely on joypad names
 - LINUX/X11: Add RetroArch logo to window title bar.
 - LINUX/X11: Input driver now supports new lightgun code.
 - LOCALIZATION: Update Italian translation.
@@ -19,6 +20,7 @@
 - WIIU: Disabled the controller patcher for now since it was the source of many stability issues.
 - WINDOWS: Add MSVC 2017 solution.
 - WINDOWS: Raw input driver now supports new lightgun code.
+- WINDOWS: Use configured OSD/text message color on GDI driver.
 
 # 1.6.9
 - COMMON: Small memory leak.
