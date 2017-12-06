@@ -559,56 +559,29 @@ static int general_push(menu_displaylist_info_t *info,
    return deferred_push_dlist(info, state);
 }
 
-static int deferred_push_detect_core_list(menu_displaylist_info_t *info)
-{
-   return general_push(info, PUSH_DETECT_CORE_LIST,
-         DISPLAYLIST_CORES_DETECTED);
+#define generic_deferred_push_general(name, a, b) \
+static int (name)(menu_displaylist_info_t *info) \
+{ \
+   return general_push(info, a, b); \
 }
 
-static int deferred_playlist_list(menu_displaylist_info_t *info)
-{
-   menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-   return general_push(info, PUSH_DEFAULT, DISPLAYLIST_PLAYLIST);
+#define generic_deferred_push_clear_general(name, a, b) \
+static int (name)(menu_displaylist_info_t *info) \
+{ \
+   menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list); \
+   return general_push(info, a, b); \
 }
 
-static int deferred_music_history_list(menu_displaylist_info_t *info)
-{
-   menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-   return general_push(info, PUSH_DEFAULT, DISPLAYLIST_MUSIC_HISTORY);
-}
+generic_deferred_push_general(deferred_push_detect_core_list, PUSH_DETECT_CORE_LIST, DISPLAYLIST_CORES_DETECTED)
+generic_deferred_push_general(deferred_archive_open_detect_core, PUSH_ARCHIVE_OPEN_DETECT_CORE, DISPLAYLIST_DEFAULT)
+generic_deferred_push_general(deferred_archive_open, PUSH_ARCHIVE_OPEN, DISPLAYLIST_DEFAULT)
+generic_deferred_push_general(deferred_push_default, PUSH_DEFAULT, DISPLAYLIST_DEFAULT)
+generic_deferred_push_general(deferred_push_favorites_list, PUSH_DEFAULT, DISPLAYLIST_FAVORITES)
 
-static int deferred_image_history_list(menu_displaylist_info_t *info)
-{
-   menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-   return general_push(info, PUSH_DEFAULT, DISPLAYLIST_IMAGES_HISTORY);
-}
-
-static int deferred_video_history_list(menu_displaylist_info_t *info)
-{
-   menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-   return general_push(info, PUSH_DEFAULT, DISPLAYLIST_VIDEO_HISTORY);
-}
-
-static int deferred_archive_open_detect_core(menu_displaylist_info_t *info)
-{
-   return general_push(info, PUSH_ARCHIVE_OPEN_DETECT_CORE,
-         DISPLAYLIST_DEFAULT);
-}
-
-static int deferred_archive_open(menu_displaylist_info_t *info)
-{
-   return general_push(info, PUSH_ARCHIVE_OPEN, DISPLAYLIST_DEFAULT);
-}
-
-static int deferred_push_default(menu_displaylist_info_t *info)
-{
-   return general_push(info, PUSH_DEFAULT, DISPLAYLIST_DEFAULT);
-}
-
-static int deferred_push_favorites_list(menu_displaylist_info_t *info)
-{
-   return general_push(info, PUSH_DEFAULT, DISPLAYLIST_FAVORITES);
-}
+generic_deferred_push_clear_general(deferred_playlist_list, PUSH_DEFAULT, DISPLAYLIST_PLAYLIST)
+generic_deferred_push_clear_general(deferred_music_history_list, PUSH_DEFAULT, DISPLAYLIST_MUSIC_HISTORY)
+generic_deferred_push_clear_general(deferred_image_history_list, PUSH_DEFAULT, DISPLAYLIST_IMAGES_HISTORY)
+generic_deferred_push_clear_general(deferred_video_history_list, PUSH_DEFAULT, DISPLAYLIST_VIDEO_HISTORY)
 
 static int menu_cbs_init_bind_deferred_push_compare_label(
       menu_file_list_cbs_t *cbs, 
