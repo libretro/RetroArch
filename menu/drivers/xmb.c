@@ -2376,30 +2376,29 @@ static int xmb_draw_item(
    }
    else
    {
-      enum msg_file_type type = FILE_TYPE_NONE;
-
       if (!string_is_empty(entry->value))
-          type                = msg_hash_to_file_type(msg_hash_calculate(entry->value));
-
-      switch (type)
       {
-         case FILE_TYPE_IN_CARCHIVE:
-         case FILE_TYPE_COMPRESSED:
-         case FILE_TYPE_MORE:
-         case FILE_TYPE_CORE:
-         case FILE_TYPE_DIRECT_LOAD:
-         case FILE_TYPE_RDB:
-         case FILE_TYPE_CURSOR:
-         case FILE_TYPE_PLAIN:
-         case FILE_TYPE_DIRECTORY:
-         case FILE_TYPE_MUSIC:
-         case FILE_TYPE_IMAGE:
-         case FILE_TYPE_MOVIE:
-            break;
-         default:
-            do_draw_text = true;
-            break;
+         if (
+               string_is_equal(entry->value, "...")     ||
+               string_is_equal(entry->value, "(COMP)")  ||
+               string_is_equal(entry->value, "(CORE)")  ||
+               string_is_equal(entry->value, "(MOVIE)") ||
+               string_is_equal(entry->value, "(MUSIC)") ||
+               string_is_equal(entry->value, "(DIR)")   ||
+               string_is_equal(entry->value, "(RDB)")   ||
+               string_is_equal(entry->value, "(CURSOR)")||
+               string_is_equal(entry->value, "(CFILE)") ||
+               string_is_equal(entry->value, "(FILE)")  ||
+               string_is_equal(entry->value, "(IMAGE)")
+            )
+         {
+         }
+         else
+               do_draw_text = true;
       }
+      else
+         do_draw_text = true;
+
    }
 
    if (string_is_empty(entry->value))
