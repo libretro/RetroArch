@@ -44,17 +44,6 @@
 #include "retroarch.h"
 #include "verbosity.h"
 
-#define HASH_LOCATION_DRIVER           0x09189689U
-#define HASH_CAMERA_DRIVER             0xf25db959U
-#define HASH_MENU_DRIVER               0xd607fb05U
-#define HASH_INPUT_DRIVER              0x4c087840U
-#define HASH_INPUT_JOYPAD_DRIVER       0xab124146U
-#define HASH_VIDEO_DRIVER              0x1805a5e7U
-#define HASH_AUDIO_DRIVER              0x26594002U
-#define HASH_AUDIO_RESAMPLER_DRIVER    0xedcba9ecU
-#define HASH_RECORD_DRIVER             0x144cd2cfU
-#define HASH_WIFI_DRIVER               0x64d7d17fU
-
 /**
  * find_driver_nonempty:
  * @label              : string of driver type to be found.
@@ -72,62 +61,68 @@ static const void *find_driver_nonempty(const char *label, int i,
       char *s, size_t len)
 {
    const void *drv = NULL;
-   uint32_t hash   = msg_hash_calculate(label);
 
-   switch (hash)
+   if (string_is_equal(label, "camera_driver"))
    {
-      case HASH_CAMERA_DRIVER:
-         drv = camera_driver_find_handle(i);
-         if (drv)
-            strlcpy(s, camera_driver_find_ident(i), len);
-         break;
-      case HASH_LOCATION_DRIVER:
-         drv = location_driver_find_handle(i);
-         if (drv)
-            strlcpy(s, location_driver_find_ident(i), len);
-         break;
-      case HASH_MENU_DRIVER:
+      drv = camera_driver_find_handle(i);
+      if (drv)
+         strlcpy(s, camera_driver_find_ident(i), len);
+   }
+   else if (string_is_equal(label, "location_driver"))
+   {
+      drv = location_driver_find_handle(i);
+      if (drv)
+         strlcpy(s, location_driver_find_ident(i), len);
+   }
 #ifdef HAVE_MENU
-         drv = menu_driver_find_handle(i);
-         if (drv)
-            strlcpy(s, menu_driver_find_ident(i), len);
+   else if (string_is_equal(label, "menu_driver"))
+   {
+      drv = menu_driver_find_handle(i);
+      if (drv)
+         strlcpy(s, menu_driver_find_ident(i), len);
+   }
 #endif
-         break;
-      case HASH_INPUT_DRIVER:
-         drv = input_driver_find_handle(i);
-         if (drv)
-            strlcpy(s, input_driver_find_ident(i), len);
-         break;
-      case HASH_INPUT_JOYPAD_DRIVER:
-         drv = joypad_driver_find_handle(i);
-         if (drv)
-            strlcpy(s, joypad_driver_find_ident(i), len);
-         break;
-      case HASH_VIDEO_DRIVER:
-         drv = video_driver_find_handle(i);
-         if (drv)
-            strlcpy(s, video_driver_find_ident(i), len);
-         break;
-      case HASH_AUDIO_DRIVER:
-         drv = audio_driver_find_handle(i);
-         if (drv)
-            strlcpy(s, audio_driver_find_ident(i), len);
-         break;
-      case HASH_RECORD_DRIVER:
-         drv = record_driver_find_handle(i);
-         if (drv)
-            strlcpy(s, record_driver_find_ident(i), len);
-         break;
-      case HASH_AUDIO_RESAMPLER_DRIVER:
-         drv = audio_resampler_driver_find_handle(i);
-         if (drv)
-            strlcpy(s, audio_resampler_driver_find_ident(i), len);
-         break;
-      case HASH_WIFI_DRIVER:
-         drv = wifi_driver_find_handle(i);
-         if (drv)
-            strlcpy(s, wifi_driver_find_ident(i), len);
-         break;
+   else if (string_is_equal(label, "input_driver"))
+   {
+      drv = input_driver_find_handle(i);
+      if (drv)
+         strlcpy(s, input_driver_find_ident(i), len);
+   }
+   else if (string_is_equal(label, "joypad_driver"))
+   {
+      drv = joypad_driver_find_handle(i);
+      if (drv)
+         strlcpy(s, joypad_driver_find_ident(i), len);
+   }
+   else if (string_is_equal(label, "video_driver"))
+   {
+      drv = video_driver_find_handle(i);
+      if (drv)
+         strlcpy(s, video_driver_find_ident(i), len);
+   }
+   else if (string_is_equal(label, "audio_driver"))
+   {
+      drv = audio_driver_find_handle(i);
+      if (drv)
+         strlcpy(s, audio_driver_find_ident(i), len);
+   }
+   else if (string_is_equal(label, "record_driver"))
+   {
+      drv = record_driver_find_handle(i);
+      if (drv)
+         strlcpy(s, record_driver_find_ident(i), len);
+   }
+   else if (string_is_equal(label, "audio_resampler_driver"))
+   {
+      drv = audio_resampler_driver_find_handle(i);
+      if (drv)
+         strlcpy(s, audio_resampler_driver_find_ident(i), len);
+   }
+   else if (string_is_equal(label, "wifi_driver"))
+   {
+      drv = wifi_driver_find_handle(i);
+      if (drv)
+         strlcpy(s, wifi_driver_find_ident(i), len);
    }
 
    return drv;
