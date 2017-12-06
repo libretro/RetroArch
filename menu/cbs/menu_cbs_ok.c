@@ -1633,7 +1633,7 @@ static int action_ok_playlist_entry(const char *path,
             NULL,
             new_core_path);
    }
-   else
+   else if (!string_is_empty(core_path))
       strlcpy(new_core_path, core_path, sizeof(new_core_path));
 
    playlist_info.data = playlist;
@@ -1651,7 +1651,8 @@ static int action_ok_playlist_entry(const char *path,
          playlist_info.idx, &path, NULL, NULL, NULL,
          NULL, NULL);
 
-   return default_action_ok_load_content_from_playlist_from_menu(new_core_path, path, entry_label);
+   return default_action_ok_load_content_from_playlist_from_menu(
+         new_core_path, path, entry_label);
 }
 
 static int action_ok_playlist_entry_start_content(const char *path,
