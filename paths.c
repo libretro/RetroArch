@@ -62,8 +62,7 @@ void path_set_redirect(void)
    size_t path_size                            = PATH_MAX_LENGTH * sizeof(char);
    char *new_savefile_dir                      = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    char *new_savestate_dir                     = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   uint32_t library_name_hash                  = 0;
-   bool check_library_name_hash                = false;
+   bool check_library_name                     = false;
    global_t                *global             = global_get_ptr();
    const char *old_savefile_dir                = dir_get(RARCH_DIR_SAVEFILE);
    const char *old_savestate_dir               = dir_get(RARCH_DIR_SAVESTATE);
@@ -72,22 +71,21 @@ void path_set_redirect(void)
 
    new_savefile_dir[0] = new_savestate_dir[0]  = '\0';
 
-   if (info && !string_is_empty(info->info.library_name))
-      library_name_hash =
-         msg_hash_calculate(info->info.library_name);
-
    /* Initialize current save directories
     * with the values from the config. */
    strlcpy(new_savefile_dir,  old_savefile_dir,  path_size);
    strlcpy(new_savestate_dir, old_savestate_dir, path_size);
 
-   check_library_name_hash = (library_name_hash != 0);
+   if (info && !string_is_empty(info->info.library_name))
+   {
 #ifdef HAVE_MENU
-   check_library_name_hash = check_library_name_hash &&
-      (library_name_hash != MENU_VALUE_NO_CORE);
+      if (!string_is_equal(info->info.library_name,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE)))
 #endif
+         check_library_name = true;
+   }
 
-   if (check_library_name_hash)
+   if (check_library_name)
    {
       /* per-core saves: append the library_name to the save location */
       if (settings->bools.sort_savefiles_enable
