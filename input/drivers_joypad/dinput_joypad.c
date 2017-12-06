@@ -34,6 +34,7 @@
 #include "../input_driver.h"
 #include "../input_keymaps.h"
 #include "../../verbosity.h"
+#include "dinput_joypad.h"
 
 struct dinput_joypad
 {
@@ -63,7 +64,7 @@ extern bool g_xinput_block_pads;
 extern int g_xinput_pad_indexes[MAX_USERS];
 extern LPDIRECTINPUT8 g_dinput_ctx;
 
-bool dinput_joypad_get_vidpid_from_xinput_index(int index, int *vid, int *pid, int *dinput_index)
+bool dinput_joypad_get_vidpid_from_xinput_index(int32_t index, int32_t *vid, int32_t *pid, int32_t *dinput_index)
 {
    int i;
 

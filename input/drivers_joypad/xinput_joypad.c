@@ -278,11 +278,12 @@ static bool xinput_joypad_init(void *data)
 
       if (pad_index_to_xuser_index(j) > -1)
       {
-         int vid          = 0;
-         int pid          = 0;
+         int32_t vid          = 0;
+         int32_t pid          = 0;
 #ifdef HAVE_DINPUT
-         int dinput_index = 0;
-         bool success     = dinput_joypad_get_vidpid_from_xinput_index(pad_index_to_xuser_index(j), &vid, &pid, &dinput_index);
+         int32_t dinput_index = 0;
+         bool success     = dinput_joypad_get_vidpid_from_xinput_index((int32_t)pad_index_to_xuser_index(j), (int32_t*)&vid, (int32_t*)&pid,
+			 (int32_t*)&dinput_index);
 
          if (success)
             RARCH_LOG("[XInput]: Found VID/PID (%04X/%04X) from DINPUT index %d for \"%s\", user #%u\n",
