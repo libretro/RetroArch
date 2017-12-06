@@ -16,6 +16,7 @@
 - OSX/PPC: Fix the GL2 renderchain, had to use EXT versions of framebuffer/renderbuffer functions.
 - SCANNER: Fix crash from Windows-incompatible format string.
 - WIIU: Disabled the controller patcher for now since it was the source of many stability issues.
+- WINDOWS: Add MSVC 2017 solution.
 - WINDOWS: Raw input driver now supports new lightgun code.
 
 # 1.6.9
