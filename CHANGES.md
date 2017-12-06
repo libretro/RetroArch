@@ -11,6 +11,7 @@
 - LINUX/X11: Add RetroArch logo to window title bar.
 - LINUX/X11: Input driver now supports new lightgun code.
 - LOCALIZATION: Update Italian translation.
+- LOCALIZATION: Update Japanese translation.
 - LOCALIZATION: Update Portuguese-Brazilian translation.
 - LOCALIZATION: Update Russian translation.
 - OSX/PPC: Fix the GL2 renderchain, had to use EXT versions of framebuffer/renderbuffer functions.
