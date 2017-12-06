@@ -525,7 +525,7 @@ const char *inet_ntop_compat(int af, const void *src, char *dst, socklen_t cnt)
 {
 #if defined(VITA) || defined(__ORBIS__)
    return sceNetInetNtop(af,src,dst,cnt);
-#elif defined(WIIU) || defined(__CELLOS_LV2__)
+#elif defined(WIIU)
    return inet_ntop(af, src, dst, cnt);
 #elif defined(_XBOX)
    return isockaddr_ntop(af, src, dst, cnt);
