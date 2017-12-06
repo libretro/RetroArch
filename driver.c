@@ -88,7 +88,7 @@ static const void *find_driver_nonempty(const char *label, int i,
       if (drv)
          strlcpy(s, input_driver_find_ident(i), len);
    }
-   else if (string_is_equal(label, "joypad_driver"))
+   else if (string_is_equal(label, "input_joypad_driver"))
    {
       drv = joypad_driver_find_handle(i);
       if (drv)
