@@ -2497,7 +2497,7 @@ static int vorbis_decode_packet_rest(vorb *f, int *len, Mode *m, int left_start,
    for (i=0; i < map->submaps; ++i) {
       float *residue_buffers[STB_VORBIS_MAX_CHANNELS];
       int r;
-      uint8_t do_not_decode[256];
+      uint8_t do_not_decode[256] = {0};
       int ch = 0;
       for (j=0; j < f->channels; ++j) {
          if (map->chan[j].mux == i) {
