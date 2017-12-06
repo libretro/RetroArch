@@ -233,7 +233,7 @@ static const uint8_t buttons[] = {
 static uint16_t input_config_vid[MAX_USERS];
 static uint16_t input_config_pid[MAX_USERS];
 
-char input_device_names[MAX_USERS][64];
+char input_device_names[MAX_INPUT_DEVICES][64];
 struct retro_keybind input_config_binds[MAX_USERS][RARCH_BIND_LIST_END];
 struct retro_keybind input_autoconf_binds[MAX_USERS][RARCH_BIND_LIST_END];
 const struct retro_keybind *libretro_input_binds[MAX_USERS];
@@ -2691,6 +2691,18 @@ void input_config_get_bind_string(char *buf, const struct retro_keybind *bind,
       strlcat(buf, "---", size);
 }
 
+unsigned input_config_get_device_count()
+{
+   unsigned num_devices;
+   for ( num_devices = 0; num_devices < MAX_INPUT_DEVICES; ++num_devices )
+   {
+	   const char *device_name = input_config_get_device_name(num_devices);
+	   if ( string_is_empty(device_name) )
+		   break;
+   }
+   return num_devices;
+}
+
 const char *input_config_get_device_name(unsigned port)
 {
    if (string_is_empty(input_device_names[port]))
@@ -2701,14 +2713,19 @@ const char *input_config_get_device_name(unsigned port)
 void input_config_set_device_name(unsigned port, const char *name)
 {
    if (!string_is_empty(name))
+   {
       strlcpy(input_device_names[port],
             name,
             sizeof(input_device_names[port]));
+      
+	  input_autoconfigure_joypad_reindex_devices();
+   }
 }
 
 void input_config_clear_device_name(unsigned port)
 {
    input_device_names[port][0] = '\0';
+   input_autoconfigure_joypad_reindex_devices();
 }
 
 unsigned *input_config_get_device_ptr(unsigned port)

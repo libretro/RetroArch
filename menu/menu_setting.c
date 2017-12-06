@@ -1305,7 +1305,7 @@ static int setting_action_left_bind_device(void *data, bool wraparound)
 {
    unsigned index_offset;
    unsigned               *p = NULL;
-   unsigned max_users        = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+   unsigned max_devices        = input_config_get_device_count();
    rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
 
@@ -1316,8 +1316,8 @@ static int setting_action_left_bind_device(void *data, bool wraparound)
 
    p = &settings->uints.input_joypad_map[index_offset];
 
-   if ((*p) >= max_users)
-      *p = max_users - 1;
+   if ((*p) >= max_devices)
+      *p = max_devices - 1;
    else if ((*p) > 0)
       (*p)--;
 
@@ -1328,7 +1328,7 @@ static int setting_action_right_bind_device(void *data, bool wraparound)
 {
    unsigned index_offset;
    unsigned               *p = NULL;
-   unsigned max_users        = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+   unsigned max_devices      = input_config_get_device_count();
    rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
 
@@ -1339,7 +1339,7 @@ static int setting_action_right_bind_device(void *data, bool wraparound)
 
    p = &settings->uints.input_joypad_map[index_offset];
 
-   if (*p < max_users)
+   if (*p < max_devices)
       (*p)++;
 
    return 0;
@@ -1497,7 +1497,7 @@ static void get_string_representation_bind_device(void * data, char *s,
       size_t len)
 {
    unsigned index_offset, map = 0;
-   unsigned max_users        = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+   unsigned max_devices      = input_config_get_device_count();
    rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
 
@@ -1507,21 +1507,37 @@ static void get_string_representation_bind_device(void * data, char *s,
    index_offset = setting->index_offset;
    map          = settings->uints.input_joypad_map[index_offset];
 
-   if (map < max_users)
+   if (map < max_devices)
    {
       const char *device_name = input_config_get_device_name(map);
 
       if (!string_is_empty(device_name))
-         snprintf(s, len,
-               "%s (#%u)",
-               device_name,
-               input_autoconfigure_get_device_name_index(map));
+      {
+         unsigned idx = input_autoconfigure_get_device_name_index(map);
+
+         /*if idx is non-zero, it's part of a set*/
+         if ( idx > 0 )
+         {
+            snprintf(s, len,
+                  "%s (#%u)",
+                  device_name,
+                  idx);
+         }
+         else
+         {
+            snprintf(s, len,
+                  "%s",
+                  device_name);
+         }
+      }
       else
+      {
          snprintf(s, len,
                "%s (%s #%u)",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT),
                map);
+      }
    }
    else
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), len);
