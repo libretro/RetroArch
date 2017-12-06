@@ -1,4 +1,4 @@
-/*  RetroArch - A frontend for libretro.
+﻿/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2016-2017 - Hans-Kristian Arntzen
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -1398,7 +1398,6 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 {
    bool use_device_ext;
    uint32_t queue_count;
-   VkResult res;
    unsigned i;
    static const float one             = 1.0f;
    bool found_queue                   = false;

@@ -1,4 +1,4 @@
-/*  RetroArch - A frontend for libretro.
+﻿/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2016-2017 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
@@ -328,7 +328,10 @@ static bool menu_display_vk_font_init_first(
          is_threaded,
          FONT_DRIVER_RENDER_VULKAN_API);
 
-   return *handle;
+   if (*handle)
+      return true;
+
+   return false;
 }
 
 menu_display_ctx_driver_t menu_display_ctx_vulkan = {

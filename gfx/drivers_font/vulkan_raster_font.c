@@ -1,4 +1,4 @@
-/*  RetroArch - A frontend for libretro.
+﻿/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2016-2017 - Hans-Kristian Arntzen
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -107,11 +107,11 @@ static INLINE void vulkan_raster_font_update_glyph(vulkan_raster_t *font, const 
 {
    if(font->atlas->dirty)
    {
-      int row;
-      for(row = glyph->atlas_offset_y; row < (glyph->atlas_offset_y + glyph->height); row++)
+      unsigned row;
+      for (row = glyph->atlas_offset_y; row < (glyph->atlas_offset_y + glyph->height); row++)
       {
-         uint8_t* src = font->atlas->buffer + row * font->atlas->width + glyph->atlas_offset_x;
-         uint8_t* dst = (uint8_t*)font->texture.mapped + row * font->texture.stride + glyph->atlas_offset_x;
+         uint8_t *src = font->atlas->buffer + row * font->atlas->width + glyph->atlas_offset_x;
+         uint8_t *dst = (uint8_t*)font->texture.mapped + row * font->texture.stride + glyph->atlas_offset_x;
          memcpy(dst, src, glyph->width);
       }
 
