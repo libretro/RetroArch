@@ -53,9 +53,13 @@
 
 #define MAX_FENCES 4
 
-#ifndef HAVE_PSGL
+#if !defined(HAVE_PSGL)
+#define HAVE_GL_SYNC
+#endif
+
+#ifdef HAVE_GL_SYNC
 #if defined(HAVE_OPENGLES2)
-   typedef struct __GLsync *GLsync;
+typedef struct __GLsync *GLsync;
 #endif
 #endif
 
@@ -76,7 +80,9 @@ typedef struct gl2_renderchain
 
    unsigned fence_count;
 
+#ifdef HAVE_GL_SYNC
    GLsync fences[MAX_FENCES];
+#endif
 
    struct gfx_fbo_scale fbo_scale[GFX_MAX_SHADERS];
 } gl2_renderchain_t;
@@ -1449,6 +1455,7 @@ static void gl2_renderchain_fence_iterate(
       void *chain_data,
       unsigned hard_sync_frames)
 {
+#ifdef HAVE_GL_SYNC
    gl2_renderchain_t *chain = (gl2_renderchain_t*)chain_data;
 
    chain->fences[chain->fence_count++] =
@@ -1464,11 +1471,13 @@ static void gl2_renderchain_fence_iterate(
       memmove(chain->fences, chain->fences + 1,
             chain->fence_count * sizeof(void*));
    }
+#endif
 }
 
 static void gl2_renderchain_fence_free(void *data,
       void *chain_data)
 {
+#ifdef HAVE_GL_SYNC
    unsigned i;
    gl2_renderchain_t *chain = (gl2_renderchain_t*)chain_data;
 
@@ -1479,6 +1488,7 @@ static void gl2_renderchain_fence_free(void *data,
       glDeleteSync(chain->fences[i]);
    }
    chain->fence_count = 0;
+#endif
 }
 #endif
 
@@ -1489,6 +1499,9 @@ static void gl2_renderchain_init_textures_reference(
 {
    gl_t                 *gl = (gl_t*)data;
    gl2_renderchain_t *chain = (gl2_renderchain_t*)chain_data;
+
+   (void)chain;
+
 #ifdef HAVE_PSGL
    glTextureReferenceSCE(GL_TEXTURE_2D, 1,
          gl->tex_w, gl->tex_h, 0,
