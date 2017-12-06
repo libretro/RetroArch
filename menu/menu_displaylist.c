@@ -5205,8 +5205,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+#ifdef HAVE_OVERLAY
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS,   PARSE_ACTION, false);
+#endif
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,   PARSE_ACTION, false);
 
