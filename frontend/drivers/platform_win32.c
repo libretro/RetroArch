@@ -143,11 +143,13 @@ static void frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
    OSVERSIONINFOEX vi = {0};
    vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
 
-   server = vi.wProductType != VER_NT_WORKSTATION;
-
-   serverR2 = GetSystemMetrics(SM_SERVERR2);
-
    GetSystemInfo(&si);
+
+   /* Available from NT 3.5 and Win95 */
+   GetVersionEx((OSVERSIONINFO*)&vi);
+
+   server = vi.wProductType != VER_NT_WORKSTATION;
+   serverR2 = GetSystemMetrics(SM_SERVERR2);
 
    switch (si.wProcessorArchitecture)
    {
@@ -166,10 +168,11 @@ static void frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
 #else
    OSVERSIONINFO vi = {0};
    vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-#endif
 
    /* Available from NT 3.5 and Win95 */
-   GetVersionEx((OSVERSIONINFO*)&vi);
+   GetVersionEx(&vi);
+#endif
+
 
    if (major)
       *major = vi.dwMajorVersion;
