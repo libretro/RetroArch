@@ -1,5 +1,6 @@
 /* RetroArch - A frontend for libretro.
  * Copyright (C) 2011-2017 - Daniel De Matteis
+ * Copyright (C) 2016-2017 - Brad Parker
  *
  * RetroArch is free software: you can redistribute it and/or modify it under the terms
  * of the GNU General Public License as published by the Free Software Found-
@@ -25,6 +26,7 @@
 #include <dynamic/dylib.h>
 #include <lists/file_list.h>
 #include <file/file_path.h>
+#include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -130,40 +132,110 @@ static void gfx_set_dwm(void)
 
 static void frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
 {
-	uint32_t version = GetVersion();
+   char buildStr[11] = {0};
+   bool server = false;
+   const char *arch = "";
+   bool serverR2 = false;
 
-	*major   = (DWORD)(LOBYTE(LOWORD(version)));
-	*minor   = (DWORD)(HIBYTE(LOWORD(version)));
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500
+   /* Windows 2000 and later */
+   SYSTEM_INFO si = {0};
+   OSVERSIONINFOEX vi = {0};
+   vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
 
-   switch (*major)
+   server = vi.wProductType != VER_NT_WORKSTATION;
+
+   serverR2 = GetSystemMetrics(SM_SERVERR2);
+
+   GetSystemInfo(&si);
+
+   switch (si.wProcessorArchitecture)
+   {
+      case PROCESSOR_ARCHITECTURE_AMD64:
+         arch = "x64";
+         break;
+      case PROCESSOR_ARCHITECTURE_INTEL:
+         arch = "x86";
+         break;
+      case PROCESSOR_ARCHITECTURE_ARM:
+         arch = "ARM";
+         break;
+      default:
+         break;
+   }
+#else
+   OSVERSIONINFO vi = {0};
+   vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+#endif
+
+   /* Available from NT 3.5 and Win95 */
+   GetVersionEx((OSVERSIONINFO*)&vi);
+
+   if (major)
+      *major = vi.dwMajorVersion;
+
+   if (minor)
+      *minor = vi.dwMinorVersion;
+
+   if (vi.dwMajorVersion == 4 && vi.dwMinorVersion == 0)
+      snprintf(buildStr, sizeof(buildStr), "%lu", (DWORD)(LOWORD(vi.dwBuildNumber))); /* Windows 95 build number is in the low-order word only */
+   else
+      snprintf(buildStr, sizeof(buildStr), "%lu", vi.dwBuildNumber);
+
+   switch (vi.dwMajorVersion)
    {
       case 10:
-         strlcpy(s, "Windows 10", len);
+         if (server)
+            strlcpy(s, "Windows Server 2016", len);
+         else
+            strlcpy(s, "Windows 10", len);
          break;
       case 6:
-         switch (*minor)
+         switch (vi.dwMinorVersion)
          {
             case 3:
-               strlcpy(s, "Windows 8.1", len);
+               if (server)
+                  strlcpy(s, "Windows Server 2012 R2", len);
+               else
+                  strlcpy(s, "Windows 8.1", len);
                break;
             case 2:
-               strlcpy(s, "Windows 8", len);
+               if (server)
+                  strlcpy(s, "Windows Server 2012", len);
+               else
+                  strlcpy(s, "Windows 8", len);
                break;
             case 1:
-               strlcpy(s, "Windows 7/2008 R2", len);
+               if (server)
+                  strlcpy(s, "Windows Server 2008 R2", len);
+               else
+                  strlcpy(s, "Windows 7", len);
                break;
             case 0:
-               strlcpy(s, "Windows Vista/2008", len);
+               if (server)
+                  strlcpy(s, "Windows Server 2008", len);
+               else
+                  strlcpy(s, "Windows Vista", len);
                break;
             default:
                break;
          }
          break;
       case 5:
-         switch (*minor)
+         switch (vi.dwMinorVersion)
          {
             case 2:
-               strlcpy(s, "Windows 2003", len);
+               if (server)
+                  if (serverR2)
+                     strlcpy(s, "Windows Server 2003 R2", len);
+                  else
+                     strlcpy(s, "Windows Server 2003", len);
+               else
+               {
+                  /* Yes, XP Pro x64 is a higher version number than XP x86 */
+                  if (string_is_equal(arch, "x64"))
+                     strlcpy(s, "Windows XP", len);
+               }
                break;
             case 1:
                strlcpy(s, "Windows XP", len);
@@ -174,10 +246,15 @@ static void frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
          }
          break;
       case 4:
-         switch (*minor)
+         switch (vi.dwMinorVersion)
          {
             case 0:
-               strlcpy(s, "Windows NT 4.0", len);
+               if (vi.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS)
+                  strlcpy(s, "Windows 95", len);
+               else if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT)
+                  strlcpy(s, "Windows NT 4.0", len);
+               else
+                  strlcpy(s, "Unknown", len);
                break;
             case 90:
                strlcpy(s, "Windows ME", len);
@@ -188,8 +265,23 @@ static void frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
          }
          break;
       default:
-         sprintf(s, "Windows %i.%i", *major, *minor);
+         snprintf(s, len, "Windows %i.%i", *major, *minor);
          break;
+   }
+
+   if (!string_is_empty(arch))
+   {
+      strlcat(s, " ", len);
+      strlcat(s, arch, len);
+   }
+
+   strlcat(s, " Build ", len);
+   strlcat(s, buildStr, len);
+
+   if (!string_is_empty(vi.szCSDVersion))
+   {
+      strlcat(s, " ", len);
+      strlcat(s, vi.szCSDVersion, len);
    }
 }
 

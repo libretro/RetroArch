@@ -21,6 +21,7 @@
 - WINDOWS: Raw input driver now supports new lightgun code.
 - WINDOWS: Use configured OSD/text message color on GDI driver.
 - WINDOWS/XINPUT: Populate XInput VID/PID from DInput so autoconfig doesn't rely solely on joypad names
+- WINDOWS: Improve version reporting under System Information.
 
 # 1.6.9
 - COMMON: Small memory leak.
