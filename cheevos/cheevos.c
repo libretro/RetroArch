@@ -1858,7 +1858,6 @@ static int cheevos_expr_value(cheevos_expr_t* expr)
    unsigned i;
    /* Separate possible values with '$' operator, submit the largest */
    unsigned current_value = 0;
-   /* TODO/FIXME - variable length forbidden in C89 - rewrite this! */
    int values[16];
 
    if (expr->compare_count >= sizeof(values) / sizeof(values[0]))
