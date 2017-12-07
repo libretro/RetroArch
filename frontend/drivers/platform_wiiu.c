@@ -49,7 +49,7 @@
 #include "system/memory.h"
 #include "system/exception_handler.h"
 #include <sys/iosupport.h>
-
+#include <wiiu/syshid.h>
 #include <wiiu/os/foreground.h>
 #include <wiiu/gx2/event.h>
 #include <wiiu/procui.h>
@@ -641,8 +641,15 @@ void _start(int argc, char **argv)
    memoryInitialize();
    __init();
    fsdev_init();
+#ifdef HAVE_HID
+   HIDSetup();
+#endif
 
    main(argc, argv);
+
+#ifdef HAVE_HID
+   HIDTeardown();
+#endif
 
    fsdev_exit();
 

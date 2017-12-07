@@ -24,6 +24,8 @@
 
 #include "../input_defines.h"
 #include "../input_driver.h"
+#include "../connect/joypad_connection.h"
+#include "../../verbosity.h"
 
 #define POLL_THREAD_SLEEP 10000
 <<<<<<< HEAD
@@ -37,9 +39,18 @@ typedef struct wiiu_hid_user wiiu_hid_user_t;
 struct wiiu_hid_user
 {
   wiiu_hid_user_t *next;
-  uint8_t *buffer;
-  uint32_t transfersize;
+  uint8_t *send_control_buffer;
+  uint8_t *send_control_type;
+
   uint32_t handle;
+  uint32_t physical_device_inst;
+  uint16_t vid;
+  uint16_t pid;
+  uint8_t interface_index;
+  uint8_t sub_class;
+  uint8_t protocol;
+  uint16_t max_packet_size_rx;
+  uint16_t max_packet_size_tx;
 };
 
 typedef struct wiiu_hid
@@ -53,6 +64,7 @@ typedef struct wiiu_hid
 } wiiu_hid_t;
 >>>>>>> Start implementing HID polling thread
 
+<<<<<<< HEAD
 #define DEVICE_UNUSED 0
 #define DEVICE_USED   1
 
@@ -96,6 +108,9 @@ static OSFastMutex *new_fastmutex(const char *name);
 static void delete_fastmutex(OSFastMutex *mutex);
 
 static int32_t wiiu_attach_callback(HIDClient *client, HIDDevice *device, uint32_t attach);
+=======
+//static int32_t wiiu_attach_callback(HIDClient *client, HIDDevice *device, uint32_t attach);
+>>>>>>> Only call HIDSetup/HidTeardown once
 static void start_polling_thread(wiiu_hid_t *hid);
 static void stop_polling_thread(wiiu_hid_t *hid);
 static int wiiu_hid_polling_thread(int argc, const char **argv);
@@ -106,7 +121,10 @@ static void enqueue_device(void);
 =======
 >>>>>>> Start implementing HID polling thread
 
-static void enqueue_device(void);
+//HIDClient *new_hidclient(void);
+//void delete_hidclient(HIDClient *client);
+wiiu_hid_t *new_hid(void);
+void delete_hid(wiiu_hid_t *hid);
 
 /**
  * HID driver entrypoints registered with hid_driver_t
@@ -119,7 +137,7 @@ static bool wiiu_hid_joypad_query(void *data, unsigned pad)
 
 static const char *wiiu_hid_joypad_name(void *data, unsigned pad)
 {
-   return NULL;
+  return NULL;
 }
 
 static uint64_t wiiu_hid_joypad_get_buttons(void *data, unsigned port)
@@ -161,32 +179,30 @@ static int16_t wiiu_hid_joypad_axis(void *data, unsigned port, uint32_t joyaxis)
 
 static void *wiiu_hid_init(void)
 {
-  wiiu_hid_t *hid = new_wiiu_hid_t();
-  HIDClient *client = new_hidclient();
+  wiiu_hid_t *hid = new_hid();
+//  HIDClient *client = new_hidclient();
 
-  if(!hid || !client)
+//  if(!hid || !client)
+  if(!hid)
     goto error;
 
   start_polling_thread(hid);
   if(hid->polling_thread == NULL)
     goto error;
 
-  HIDAddClient(client, wiiu_attach_callback);
-  hid->client = client;
+//  HIDAddClient(client, wiiu_attach_callback);
+//  hid->client = client;
 
   return hid;
 
   error:
     if(hid) {
       stop_polling_thread(hid);
-      delete_wiiu_hid_t(hid);
+      delete_hid(hid);
     }
-    if(client)
-      delete_hidclient(client);
-    if(pad_list_mutex) {
-      delete_fastmutex(pad_list_mutex);
-      pad_list_mutex = NULL;
-    }
+//    if(client) {
+//      delete_hidclient(client);
+//    }
 
     return NULL;
 }
@@ -197,6 +213,7 @@ static void wiiu_hid_free(void *data)
 
   if (hid) {
     stop_polling_thread(hid);
+<<<<<<< HEAD
     delete_wiiu_hid_t(hid);
   }
 }
@@ -212,6 +229,9 @@ static void free_pad_list(void) {
     top = pad_list;
     pad_list = top->next;
     delete_wiiu_hid_user_t(top);
+=======
+    delete_hid(hid);
+>>>>>>> Only call HIDSetup/HidTeardown once
   }
 }
 
@@ -234,14 +254,14 @@ static void wiiu_hid_poll(void *data)
 
 static void start_polling_thread(wiiu_hid_t *hid) {
   OSThreadAttributes attributes = OS_THREAD_ATTRIB_AFFINITY_CPU2 |
-                                  OS_THREAD_ATTRIB_DETACHED |
                                   OS_THREAD_ATTRIB_STACK_USAGE;
   int32_t stack_size = 0x8000;
   // wild-ass guess. the patcher thread used 28 for the network threads (10 for BOTW).
-  int32_t priority = 19;
+  int32_t priority = 10;
   OSThread *thread = memalign(8, sizeof(OSThread));
   void *stack = memalign(32, stack_size);
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 =======
@@ -257,6 +277,9 @@ static void start_polling_thread(wiiu_hid_t *hid) {
 >>>>>>> Start implementing HID polling thread
 =======
 >>>>>>> More progress on the HID driver
+=======
+  if(!thread || !stack)
+>>>>>>> Only call HIDSetup/HidTeardown once
     goto error;
 
   if(!OSCreateThread(thread, wiiu_hid_polling_thread, 1, (char *)hid, stack, stack_size, priority, attributes))
@@ -269,6 +292,7 @@ static void start_polling_thread(wiiu_hid_t *hid) {
   error:
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     if(pad_list_mutex)
       delete_fastmutex(pad_list_mutex);
 =======
@@ -277,6 +301,8 @@ static void start_polling_thread(wiiu_hid_t *hid) {
     if(pad_list_mutex)
       delete_fastmutex(pad_list_mutex);
 >>>>>>> More progress on the HID driver
+=======
+>>>>>>> Only call HIDSetup/HidTeardown once
     if(stack)
       free(stack);
     if(thread)
@@ -298,6 +324,7 @@ static void stop_polling_thread(wiiu_hid_t *hid) {
   free(hid->polling_thread_stack);
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 >>>>>>> More progress on the HID driver
 
@@ -310,6 +337,8 @@ static void stop_polling_thread(wiiu_hid_t *hid) {
 >>>>>>> Start implementing HID polling thread
 =======
 >>>>>>> More progress on the HID driver
+=======
+>>>>>>> Only call HIDSetup/HidTeardown once
 }
 
 /**
@@ -331,6 +360,7 @@ static void wiiu_hid_do_poll(wiiu_hid_t *hid) {
   usleep(POLL_THREAD_SLEEP);
 }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 =======
@@ -357,19 +387,21 @@ int32_t wiiu_detach_device(HIDClient *client, HIDDevice *device) {
 >>>>>>> Start implementing HID polling thread
 =======
 >>>>>>> More progress on the HID driver
+=======
+>>>>>>> Only call HIDSetup/HidTeardown once
 /**
  * Callbacks
  */
-
+/*
 int32_t wiiu_attach_callback(HIDClient *client, HIDDevice *device, uint32_t attach) {
   int32_t result = DEVICE_UNUSED;
 
   switch(attach) {
     case HID_DEVICE_ATTACH:
-      result = wiiu_attach_device(client, device);
+      RARCH_LOG("Device attached\n");
       break;
     case HID_DEVICE_DETACH:
-      result = wiiu_detach_device(client, device);
+      RARCH_LOG("Device detached\n");
       break;
     default:
       // Undefined behavior, bail out
@@ -378,91 +410,41 @@ int32_t wiiu_attach_callback(HIDClient *client, HIDDevice *device, uint32_t atta
 
   return result;
 }
-
-static void wiiu_read_callback(uint32_t handle, int32_t errno, unsigned char *buffer, uint32_t transferred, void *usr) {
-}
-
-static void wiiu_write_callback(uint32_t handle, int32_t errno, unsigned char *buffer, uint32_t transferred, void *usr) {
-}
-
+*/
 /**
- * Allocation/deallocation
+ * Allocation
  */
 
-static wiiu_hid_t *new_wiiu_hid_t(void) {
-  wiiu_hid_t *hid = (wiiu_hid_t*)calloc(1, sizeof(wiiu_hid_t));
-
-  if(!hid)
-    goto error;
-
-  memset(hid, 0, sizeof(wiiu_hid_t));
+wiiu_hid_t *new_hid(void) {
+  wiiu_hid_t *hid = calloc(1, sizeof(wiiu_hid_t));
+  if(hid)
+    memset(hid, 0, sizeof(wiiu_hid_t));
 
   return hid;
-
-  error:
-    if(hid)
-      delete_wiiu_hid_t(hid);
-    return NULL;
 }
 
-static void delete_wiiu_hid_t(wiiu_hid_t *hid) {
-  if(!hid)
-    return;
+void delete_hid(wiiu_hid_t *hid) {
+  if(hid) {
+    if(hid->polling_thread_stack)
+      free(hid->polling_thread_stack);
 
-  if(hid->client) {
-    HIDDelClient(hid->client);
-    delete_hidclient(hid->client);
-    hid->client = NULL;
+    free(hid);
   }
-
-  free(hid);
 }
-
-static HIDClient *new_hidclient(void) {
-  HIDClient *client = calloc(1, sizeof(HIDClient));
-  if(client != NULL) {
+/*
+HIDClient *new_hidclient(void) {
+  HIDClient *client = memalign(32, sizeof(HIDClient));
+  if(client)
     memset(client, 0, sizeof(HIDClient));
-  }
 
   return client;
 }
 
-static OSFastMutex *new_fastmutex(const char *name) {
-  OSFastMutex *mutex = calloc(1, sizeof(OSFastMutex));
-  if(mutex != NULL) {
-    memset(mutex, 0, sizeof(OSFastMutex));
-  }
-
-  OSFastMutex_Init(mutex, name);
-
-  return mutex;
-}
-
-static void delete_hidclient(HIDClient *client) {
+void delete_hidclient(HIDClient *client) {
   if(client)
     free(client);
 }
-
-static wiiu_hid_user_t *new_wiiu_hid_user_t(void) {
-  wiiu_hid_user_t *user = calloc(1, sizeof(wiiu_hid_user_t));
-  if(user != NULL) {
-    memset(user, 0, sizeof(wiiu_hid_user_t));
-  }
-
-  return user;
-}
-
-static void delete_wiiu_hid_user_t(wiiu_hid_user_t *user) {
-  if(user) {
-    free(user);
-  }
-}
-
-static void delete_fastmutex(OSFastMutex *mutex) {
-  if(mutex)
-    free(mutex);
-}
-
+*/
 hid_driver_t wiiu_hid = {
    wiiu_hid_init,
    wiiu_hid_joypad_query,
@@ -473,5 +455,5 @@ hid_driver_t wiiu_hid = {
    wiiu_hid_poll,
    wiiu_hid_joypad_rumble,
    wiiu_hid_joypad_name,
-   "wiiu",
+   "wiiu_usb",
 };

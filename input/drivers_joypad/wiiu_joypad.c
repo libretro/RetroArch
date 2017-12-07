@@ -43,6 +43,8 @@
 
 #define GAMEPAD_OFFSET  0
 
+static const hid_driver_t *hid_driver = NULL;
+
 static uint64_t pad_state[MAX_PADS];
 static uint8_t pad_type[MAX_PADS-1] = {WIIUINPUT_TYPE_NONE, WIIUINPUT_TYPE_NONE, WIIUINPUT_TYPE_NONE, WIIUINPUT_TYPE_NONE};
 
@@ -299,6 +301,7 @@ static void wiiu_joypad_poll(void)
 
 static bool wiiu_joypad_init(void* data)
 {
+   hid_driver = input_hid_init_first();
    wiiu_joypad_autodetect_add(0);
 
    wiiu_joypad_poll();
@@ -315,6 +318,11 @@ static bool wiiu_joypad_query_pad(unsigned pad)
 
 static void wiiu_joypad_destroy(void)
 {
+   if(hid_driver) {
+     hid_driver->free(hid_driver_get_data());
+     hid_driver_reset_data();
+     hid_driver = NULL;
+   }
    wiiu_pad_inited = false;
 }
 
