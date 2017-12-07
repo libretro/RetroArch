@@ -127,6 +127,10 @@ ifeq ($(HAVE_UNIX), 1)
 	OBJ += frontend/drivers/platform_unix.o
 endif
 
+ifeq ($(TARGET), retroarch_3ds)
+	OBJ += frontend/drivers/platform_ctr.o
+endif
+
 ifeq ($(findstring Haiku,$(OS)),)
    LIBS += -lm
    DEBUG_FLAG = -g
@@ -570,10 +574,19 @@ ifeq ($(HAVE_CORETEXT), 1)
    OBJ += gfx/drivers_font_renderer/coretext.o
 endif
 
+ifeq ($(TARGET), retroarch_3ds)
+	OBJ += gfx/drivers_font/ctr_font.o
+endif
+
 ifeq ($(HAVE_OSS), 1)
    OBJ += audio/drivers/oss.o
 else ifeq ($(HAVE_OSS_BSD), 1)
    OBJ += audio/drivers/oss.o
+endif
+
+ifeq ($(TARGET), retroarch_3ds)
+	OBJ += audio/drivers/ctr_csnd_audio.o \
+			 audio/drivers/ctr_dsp_audio.o
 endif
 
 ifeq ($(HAVE_ALSA), 1)
@@ -843,6 +856,13 @@ endif
 			 gfx/drivers_font/vita2d_font.o
 
 	CFLAGS  += -I$(DEPS_DIR)/libvita2d/include
+endif
+
+ifeq ($(TARGET), retroarch_3ds)
+	OBJ += gfx/drivers/ctr_gfx.o \
+			 menu/drivers_display/menu_display_ctr.o \
+			 input/drivers/ctr_input.o \
+			 input/drivers_joypad/ctr_joypad.o
 endif
 
 ifeq ($(HAVE_WAYLAND), 1)
@@ -1583,4 +1603,28 @@ ifneq ($(findstring DOS,$(OS)),)
    ifeq ($(HAVE_MENU_COMMON), 1)
       OBJ += menu/drivers_display/menu_display_vga.o
    endif
+endif
+
+ifeq ($(HAVE_STATIC_VIDEO_FILTERS), 1)
+OBJ += gfx/video_filters/2xsai.o \
+		 gfx/video_filters/super2xsai.o \
+		 gfx/video_filters/supereagle.o \
+		 gfx/video_filters/2xbr.o \
+		 gfx/video_filters/darken.o \
+		 gfx/video_filters/epx.o \
+		 gfx/video_filters/scale2x.o \
+		 gfx/video_filters/blargg_ntsc_snes.o \
+		 gfx/video_filters/lq2x.o \
+		 gfx/video_filters/phosphor2x.o
+endif
+
+ifeq ($(HAVE_STATIC_AUDIO_FILTERS), 1)
+OBJ += libretro-common/audio/dsp_filters/echo.o \
+		 libretro-common/audio/dsp_filters/eq.o \
+		 libretro-common/audio/dsp_filters/chorus.o \
+		 libretro-common/audio/dsp_filters/iir.o \
+		 libretro-common/audio/dsp_filters/panning.o \
+		 libretro-common/audio/dsp_filters/phaser.o \
+		 libretro-common/audio/dsp_filters/reverb.o \
+		 libretro-common/audio/dsp_filters/wahwah.o
 endif
