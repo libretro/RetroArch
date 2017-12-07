@@ -60,6 +60,7 @@ const GUID GUID_NULL = {0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
 #include "../file_path_special.h"
 #include "../list_special.h"
 #include "../verbosity.h"
+#include "../retroarch.h"
 
 #include "tasks_internal.h"
 
@@ -591,8 +592,27 @@ found:
 
    if (hDeviceHandle == INVALID_HANDLE_VALUE)
    {
-      RARCH_ERR("[Autoconf]: Can't open device: %d.", GetLastError());
-      goto done;
+      /* Windows sometimes erroneously fails to open with a sharing violation:
+       * https://github.com/signal11/hidapi/issues/231
+       * If this happens, trying again with read + write usually works for some reason.
+       */
+
+      /* Open the device */
+      hDeviceHandle = CreateFileA(
+         devicePath,
+         GENERIC_READ | GENERIC_WRITE,
+         FILE_SHARE_READ | FILE_SHARE_WRITE,
+         NULL,
+         OPEN_EXISTING,
+         0,  /*FILE_FLAG_OVERLAPPED,*/
+         NULL);
+
+      if (hDeviceHandle == INVALID_HANDLE_VALUE)
+      {
+         RARCH_ERR("[Autoconf]: Can't open device for reading and writing: %d.", GetLastError());
+         runloop_msg_queue_push("Bliss-Box already in use. Please make sure other programs are not using it.", 2, 300, false);
+         goto done;
+      }
    }
 
 done:
