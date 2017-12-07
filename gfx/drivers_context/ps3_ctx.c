@@ -129,10 +129,11 @@ static void gfx_ctx_ps3_get_available_resolutions(void)
     * make the last resolution
       that was added to the list (the highest resolution) 
       the default resolution */
-   if (global->console.screen.resolutions.current.id > num_videomodes 
-         || defaultresolution)
-      global->console.screen.resolutions.current.idx = 
-         global->console.screen.resolutions.count - 1;
+   if (global->console.screen.resolutions.current.id > num_videomodes || defaultresolution)
+    {
+      global->console.screen.resolutions.current.idx = resolution_count - 1;
+      global->console.screen.resolutions.current.id = global->console.screen.resolutions.list[global->console.screen.resolutions.current.idx];
+    }
 
    global->console.screen.resolutions.check = true;
 }
