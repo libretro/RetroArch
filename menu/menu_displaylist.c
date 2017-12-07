@@ -681,7 +681,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
             strlcpy(cpu_arch_str, "x86", sizeof(cpu_arch_str));
             break;
          case FRONTEND_ARCH_X86_64:
-            strlcpy(cpu_arch_str, "x86-64", sizeof(cpu_arch_str));
+            strlcpy(cpu_arch_str, "x64", sizeof(cpu_arch_str));
             break;
          case FRONTEND_ARCH_PPC:
             strlcpy(cpu_arch_str, "PPC", sizeof(cpu_arch_str));
