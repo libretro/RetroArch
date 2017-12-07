@@ -1859,13 +1859,26 @@ static int cheevos_expr_value(cheevos_expr_t* expr)
    /* Separate possible values with '$' operator, submit the largest */
    unsigned current_value = 0;
    /* TODO/FIXME - variable length forbidden in C89 - rewrite this! */
-   int values[expr->compare_count];
+   int values[16];
+
+   if (expr->compare_count >= sizeof(values) / sizeof(values[0]))
+   {
+      RARCH_ERR("[CHEEVOS]: too many values in the leaderboard expression: %u\n", expr->compare_count);
+      return 0;
+   }
 
    memset(values, 0, sizeof values);
 
    for (i = expr->count; i != 0; i--, term++)
    {
+      if (current_value >= sizeof(values) / sizeof(values[0]))
+      {
+         RARCH_ERR("[CHEEVOS]: too many values in the leaderboard expression: %u\n", current_value);
+         return 0;
+      }
+
       values[current_value] += cheevos_var_get_value(&term->var) * term->multiplier;
+
       if (term->compare_next)
          current_value++;
    }
@@ -1880,7 +1893,8 @@ static int cheevos_expr_value(cheevos_expr_t* expr)
 
       return maximum;
    }
-   else return values[0];
+   else
+      return values[0];
 }
 
 static void cheevos_make_lboard_url(const cheevos_leaderboard_t *lboard,
