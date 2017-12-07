@@ -802,6 +802,7 @@ static int cheevos_count_cheevos(const char *json,
    int res;
    cheevos_countud_t ud;
    ud.in_cheevos       = 0;
+   ud.in_lboards       = 0;
    ud.core_count       = 0;
    ud.unofficial_count = 0;
    ud.lboard_count     = 0;
@@ -2829,6 +2830,7 @@ static int cheevos_iterate(coro_t* coro)
           && cheevos_locals.lboard_count == 0)
          cheevos_unload();
 
+      CORO_GOSUB(GET_BADGES);
       CORO_STOP();
 
    /**************************************************************************
