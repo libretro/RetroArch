@@ -338,7 +338,28 @@ enum frontend_powerstate frontend_win32_get_powerstate(int *seconds, int *percen
 
 enum frontend_architecture frontend_win32_get_architecture(void)
 {
-   /* stub */
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500
+   /* Windows 2000 and later */
+   SYSTEM_INFO si = {0};
+
+   GetSystemInfo(&si);
+
+   switch (si.wProcessorArchitecture)
+   {
+      case PROCESSOR_ARCHITECTURE_AMD64:
+         return FRONTEND_ARCH_X86_64;
+         break;
+      case PROCESSOR_ARCHITECTURE_INTEL:
+         return FRONTEND_ARCH_X86;
+         break;
+      case PROCESSOR_ARCHITECTURE_ARM:
+         return FRONTEND_ARCH_ARM;
+         break;
+      default:
+         break;
+   }
+#endif
+
    return FRONTEND_ARCH_NONE;
 }
 
