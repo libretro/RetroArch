@@ -2263,7 +2263,9 @@ void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk)
    VkFenceCreateInfo fence_info =
    { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
    VkFence *next_fence             = NULL;
+   bool is_retrying                = false;
 
+retry:
    vkCreateFence(vk->context.device, &fence_info, NULL, &fence);
 
    err = vkAcquireNextImageKHR(vk->context.device,
@@ -2293,8 +2295,27 @@ void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk)
 
    if (err != VK_SUCCESS)
    {
-      RARCH_LOG("[Vulkan]: AcquireNextImage failed, invalidating swapchain.\n");
-      vk->context.invalid_swapchain = true;
+      if (is_retrying)
+      {
+         RARCH_ERR("[Vulkan]: Tried acquring next swapchain image after creating new one, but failed ...\n");
+      }
+      else
+      {
+         RARCH_LOG("[Vulkan]: AcquireNextImage failed, invalidating swapchain.\n");
+         vk->context.invalid_swapchain = true;
+
+         RARCH_LOG("[Vulkan]: AcquireNextImage failed, so trying to recreate swapchain.\n");
+         if (!vulkan_create_swapchain(vk, vk->context.swapchain_width,
+                  vk->context.swapchain_height, vk->context.swap_interval))
+         {
+            RARCH_ERR("[Vulkan]: Failed to create new swapchain.\n");
+         }
+         else
+         {
+            is_retrying = true;
+            goto retry;
+         }
+      }
    }
 }
 
@@ -2517,6 +2538,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
          vkDestroyFence(vk->context.device,
                vk->context.swapchain_fences[i], NULL);
          vk->context.swapchain_fences[i] = VK_NULL_HANDLE;
+         vk->context.swapchain_fences_signalled[i] = false;
       }
    }
 
