@@ -47,6 +47,7 @@ typedef struct cheevos_ctx_desc
 
 typedef enum
 {
+   CHEEVOS_CONSOLE_NONE = 0,
    /* Don't change those, the values match the console IDs
     * at retroachievements.org. */
    CHEEVOS_CONSOLE_MEGA_DRIVE      = 1,

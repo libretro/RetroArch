@@ -258,7 +258,7 @@ typedef struct
 
 typedef struct
 {
-   int  console_id;
+   cheevos_console_t console_id;
    bool core_supports;
    bool addrs_patched;
    int  add_buffer;
@@ -276,7 +276,7 @@ typedef struct
 
 static cheevos_locals_t cheevos_locals =
 {
-   /* console_id          */ 0,
+   /* console_id          */ CHEEVOS_CONSOLE_NONE,
    /* core_supports       */ true,
    /* addrs_patched       */ false,
    /* add_buffer          */ 0,
@@ -1385,7 +1385,7 @@ static int cheevos_read__json_number(void *userdata,
    }
    else if (ud->is_console_id)
    {
-      cheevos_locals.console_id = (int)strtol(number, NULL, 10);
+      cheevos_locals.console_id = (cheevos_console_t)strtol(number, NULL, 10);
       ud->is_console_id = 0;
    }
 
@@ -1858,14 +1858,26 @@ static int cheevos_expr_value(cheevos_expr_t* expr)
    unsigned i;
    /* Separate possible values with '$' operator, submit the largest */
    unsigned current_value = 0;
-   /* TODO/FIXME - variable length forbidden in C89 - rewrite this! */
-   int values[expr->compare_count];
+   int values[16];
+
+   if (expr->compare_count >= sizeof(values) / sizeof(values[0]))
+   {
+      RARCH_ERR("[CHEEVOS]: too many values in the leaderboard expression: %u\n", expr->compare_count);
+      return 0;
+   }
 
    memset(values, 0, sizeof values);
 
    for (i = expr->count; i != 0; i--, term++)
    {
+      if (current_value >= sizeof(values) / sizeof(values[0]))
+      {
+         RARCH_ERR("[CHEEVOS]: too many values in the leaderboard expression: %u\n", current_value);
+         return 0;
+      }
+
       values[current_value] += cheevos_var_get_value(&term->var) * term->multiplier;
+
       if (term->compare_next)
          current_value++;
    }
@@ -1880,7 +1892,8 @@ static int cheevos_expr_value(cheevos_expr_t* expr)
 
       return maximum;
    }
-   else return values[0];
+   else
+      return values[0];
 }
 
 static void cheevos_make_lboard_url(const cheevos_leaderboard_t *lboard,
