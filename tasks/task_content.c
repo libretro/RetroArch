@@ -996,7 +996,7 @@ static bool command_event_cmd_exec(const char *data,
 
 #if defined(HAVE_DYNAMIC)
    if (!task_load_content(&content_info, content_ctx,
-            false, launched_from_cli, error_string))
+            true, launched_from_cli, error_string))
       return false;
 #else
    frontend_driver_set_fork(FRONTEND_FORK_CORE_WITH_ARGS);
