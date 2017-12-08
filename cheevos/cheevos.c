@@ -220,42 +220,6 @@ typedef struct
    cheevos_expr_t      value;
 } cheevos_leaderboard_t;
 
-/*
-typedef struct
-{
-  bool is_lookup;
-  char* prestring;
-  cheevos_expr_t expression;
-} cheevos_rps_element_t;
-
-typedef struct
-{
-  char*    name;
-  unsigned type;
-} cheevos_rps_format_t;
-
-typedef struct
-{
-  unsigned compare;
-  char*    result;
-} cheevos_rps_lookup_value;
-
-typedef struct
-{
-  char*                     name;
-  cheevos_rps_lookup_value* values;
-} cheevos_rps_lookup_t;
-
-typedef struct
-{
-  cheevos_rps_element_t* elements;
-  cheevos_rps_format_t*  formats;
-  unsigned               format_count;
-  cheevos_rps_lookup_t*  lookups;
-  unsigned               lookup_count;
-} cheevos_rps_t;
-*/
-
 typedef struct
 {
    cheevos_console_t console_id;
@@ -838,6 +802,7 @@ static int cheevos_count_cheevos(const char *json,
    int res;
    cheevos_countud_t ud;
    ud.in_cheevos       = 0;
+   ud.in_lboards       = 0;
    ud.core_count       = 0;
    ud.unofficial_count = 0;
    ud.lboard_count     = 0;
@@ -2878,8 +2843,12 @@ static int cheevos_iterate(coro_t* coro)
 
       }
 
-      CORO_GOSUB(GET_BADGES);
+      if (   cheevos_locals.core.count == 0
+          && cheevos_locals.unofficial.count == 0
+          && cheevos_locals.lboard_count == 0)
+         cheevos_unload();
 
+      CORO_GOSUB(GET_BADGES);
       CORO_STOP();
 
    /**************************************************************************
