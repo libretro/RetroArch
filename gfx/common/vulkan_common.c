@@ -2275,16 +2275,18 @@ void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk)
       vkCreateSemaphore(vk->context.device, &sem_info,
             NULL, &vk->context.swapchain_semaphores[index]);
 
-   vkWaitForFences(vk->context.device, 1, &fence, true, UINT64_MAX);
+   if (err == VK_SUCCESS)
+      vkWaitForFences(vk->context.device, 1, &fence, true, UINT64_MAX);
    vkDestroyFence(vk->context.device, fence, NULL);
 
    next_fence = &vk->context.swapchain_fences[index];
 
    if (*next_fence != VK_NULL_HANDLE)
    {
-      vkWaitForFences(vk->context.device, 1, next_fence, true, UINT64_MAX);
-
+      if (vk->context.swapchain_fences_signalled[index])
+         vkWaitForFences(vk->context.device, 1, next_fence, true, UINT64_MAX);
       vkResetFences(vk->context.device, 1, next_fence);
+      vk->context.swapchain_fences_signalled[index] = false;
    }
    else
       vkCreateFence(vk->context.device, &fence_info, NULL, next_fence);
