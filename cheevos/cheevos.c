@@ -258,7 +258,7 @@ typedef struct
 
 typedef struct
 {
-   int  console_id;
+   cheevos_console_t console_id;
    bool core_supports;
    bool addrs_patched;
    int  add_buffer;
@@ -276,7 +276,7 @@ typedef struct
 
 static cheevos_locals_t cheevos_locals =
 {
-   /* console_id          */ 0,
+   /* console_id          */ CHEEVOS_CONSOLE_NONE,
    /* core_supports       */ true,
    /* addrs_patched       */ false,
    /* add_buffer          */ 0,
@@ -1385,7 +1385,7 @@ static int cheevos_read__json_number(void *userdata,
    }
    else if (ud->is_console_id)
    {
-      cheevos_locals.console_id = (int)strtol(number, NULL, 10);
+      cheevos_locals.console_id = (cheevos_console_t)strtol(number, NULL, 10);
       ud->is_console_id = 0;
    }
 
