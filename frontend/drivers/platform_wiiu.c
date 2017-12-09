@@ -641,16 +641,7 @@ void _start(int argc, char **argv)
    memoryInitialize();
    __init();
    fsdev_init();
-#ifdef HAVE_HID
-   HIDSetup();
-#endif
-
    main(argc, argv);
-
-#ifdef HAVE_HID
-   HIDTeardown();
-#endif
-
    fsdev_exit();
 
    /* TODO: fix elf2rpl so it doesn't error with "Could not find matching symbol
