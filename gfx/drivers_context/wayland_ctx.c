@@ -684,7 +684,10 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
          wl->height = height;
 
          if (vulkan_create_swapchain(&wl->vk, width, height, wl->swap_interval))
+         {
             wl->vk.context.invalid_swapchain = true;
+            vulkan_acquire_next_image(&wl->vk);
+         }
          else
          {
             RARCH_ERR("[Wayland/Vulkan]: Failed to update swapchain.\n");

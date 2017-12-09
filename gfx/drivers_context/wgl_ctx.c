@@ -395,6 +395,7 @@ static bool gfx_ctx_wgl_set_resize(void *data,
             return false;
          }
 
+         vulkan_acquire_next_image(&win32_vk);
          win32_vk.context.invalid_swapchain = true;
          win32_vk.need_new_swapchain        = false;
 #endif

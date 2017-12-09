@@ -448,6 +448,7 @@ static bool gfx_ctx_x_set_resize(void *data,
                return false;
             }
 
+            vulkan_acquire_next_image(&x->vk);
             x->vk.context.invalid_swapchain = true;
             x->vk.need_new_swapchain        = false;
          }
