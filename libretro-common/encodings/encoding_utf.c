@@ -397,7 +397,20 @@ wchar_t* utf8_to_utf16_string_alloc(const char *str)
       out_len = MultiByteToWideChar(CP_UTF8, 0, str, -1, buf, len);
    }
    else
-      return strdup(str);
+   {
+      /* fallback to ANSI codepage instead */
+      len = MultiByteToWideChar(CP_ACP, 0, str, -1, NULL, 0);
+
+      if (len)
+      {
+         buf = (wchar_t*)calloc(len, sizeof(wchar_t));
+
+         if (!buf)
+            return NULL;
+
+         out_len = MultiByteToWideChar(CP_ACP, 0, str, -1, buf, len);
+      }
+   }
 
    if (out_len < 0)
    {
@@ -456,7 +469,20 @@ char* utf16_to_utf8_string_alloc(const wchar_t *str)
       out_len = WideCharToMultiByte(CP_UTF8, 0, str, -1, buf, len, NULL, NULL);
    }
    else
-      return strdup(str);
+   {
+      /* fallback to ANSI codepage instead */
+      len = WideCharToMultiByte(CP_ACP, 0, str, -1, NULL, 0, NULL, NULL);
+
+      if (len)
+      {
+         buf = (char*)calloc(len, sizeof(char));
+
+         if (!buf)
+            return NULL;
+
+         out_len = WideCharToMultiByte(CP_ACP, 0, str, -1, buf, len, NULL, NULL);
+      }
+   }
 
    if (out_len < 0)
    {
