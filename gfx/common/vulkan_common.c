@@ -28,6 +28,7 @@
 #endif
 
 #include "vulkan_common.h"
+#include "../../libretro-common/include/retro_timers.h"
 #include "../../configuration.h"
 
 static dylib_t vulkan_library;
@@ -986,7 +987,7 @@ struct vk_buffer vulkan_create_buffer(
    vkAllocateMemory(context->device, &alloc, NULL, &buffer.memory);
    vkBindBufferMemory(context->device, buffer.buffer, buffer.memory, 0);
 
-   buffer.size                = alloc.allocationSize;
+   buffer.size = size;
 
    vkMapMemory(context->device,
          buffer.memory, 0, buffer.size, 0, &buffer.mapped);
@@ -2162,6 +2163,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
             vk, width, height, swap_interval))
       return false;
 
+   vulkan_acquire_next_image(vk);
    return true;
 }
 
@@ -2170,6 +2172,13 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
    VkPresentInfoKHR present        = { VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
    VkResult result                 = VK_SUCCESS;
    VkResult err                    = VK_SUCCESS;
+
+   /* We're still waiting for a proper swapchain, so just fake it. */
+   if (vk->swapchain == VK_NULL_HANDLE)
+   {
+      retro_sleep(10);
+      return;
+   }
 
    present.swapchainCount          = 1;
    present.pSwapchains             = &vk->swapchain;
@@ -2253,17 +2262,72 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
    }
 }
 
+static void vulkan_acquire_clear_fences(gfx_ctx_vulkan_data_t *vk)
+{
+   unsigned i;
+   for (i = 0; i < vk->context.num_swapchain_images; i++)
+   {
+      if (vk->context.swapchain_fences[i])
+      {
+         vkDestroyFence(vk->context.device,
+               vk->context.swapchain_fences[i], NULL);
+         vk->context.swapchain_fences[i] = VK_NULL_HANDLE;
+         vk->context.swapchain_fences_signalled[i] = false;
+      }
+   }
+}
+
+static void vulkan_acquire_wait_fences(gfx_ctx_vulkan_data_t *vk)
+{
+   VkFenceCreateInfo fence_info =
+   { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
+
+   unsigned index = vk->context.current_swapchain_index;
+   VkFence *next_fence = &vk->context.swapchain_fences[index];
+
+   if (*next_fence != VK_NULL_HANDLE)
+   {
+      if (vk->context.swapchain_fences_signalled[index])
+         vkWaitForFences(vk->context.device, 1, next_fence, true, UINT64_MAX);
+      vkResetFences(vk->context.device, 1, next_fence);
+      vk->context.swapchain_fences_signalled[index] = false;
+   }
+   else
+      vkCreateFence(vk->context.device, &fence_info, NULL, next_fence);
+}
+
 void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk)
 {
    unsigned index;
    VkResult err;
    VkFence fence;
-   VkSemaphoreCreateInfo sem_info =
-   { VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
    VkFenceCreateInfo fence_info =
    { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
-   VkFence *next_fence             = NULL;
+   VkSemaphoreCreateInfo sem_info =
+   { VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
+   bool is_retrying                = false;
 
+   if (vk->swapchain == VK_NULL_HANDLE)
+   {
+      /* We don't have a swapchain, try to create one now. */
+      if (!vulkan_create_swapchain(vk, vk->context.swapchain_width,
+               vk->context.swapchain_height, vk->context.swap_interval))
+      {
+         RARCH_ERR("[Vulkan]: Failed to create new swapchain.\n");
+         return;
+      }
+
+      if (vk->swapchain == VK_NULL_HANDLE)
+      {
+         /* We still don't have a swapchain, so just fake it ... */
+         vk->context.current_swapchain_index = 0;
+         vulkan_acquire_clear_fences(vk);
+         vulkan_acquire_wait_fences(vk);
+         return;
+      }
+   }
+
+retry:
    vkCreateFence(vk->context.device, &fence_info, NULL, &fence);
 
    err = vkAcquireNextImageKHR(vk->context.device,
@@ -2275,24 +2339,35 @@ void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk)
       vkCreateSemaphore(vk->context.device, &sem_info,
             NULL, &vk->context.swapchain_semaphores[index]);
 
-   vkWaitForFences(vk->context.device, 1, &fence, true, UINT64_MAX);
+   if (err == VK_SUCCESS)
+      vkWaitForFences(vk->context.device, 1, &fence, true, UINT64_MAX);
    vkDestroyFence(vk->context.device, fence, NULL);
 
-   next_fence = &vk->context.swapchain_fences[index];
-
-   if (*next_fence != VK_NULL_HANDLE)
-   {
-      vkWaitForFences(vk->context.device, 1, next_fence, true, UINT64_MAX);
-
-      vkResetFences(vk->context.device, 1, next_fence);
-   }
-   else
-      vkCreateFence(vk->context.device, &fence_info, NULL, next_fence);
+   vulkan_acquire_wait_fences(vk);
 
    if (err != VK_SUCCESS)
    {
-      RARCH_LOG("[Vulkan]: AcquireNextImage failed, invalidating swapchain.\n");
-      vk->context.invalid_swapchain = true;
+      if (is_retrying)
+      {
+         RARCH_ERR("[Vulkan]: Tried acquring next swapchain image after creating new one, but failed ...\n");
+      }
+      else
+      {
+         RARCH_LOG("[Vulkan]: AcquireNextImage failed, invalidating swapchain.\n");
+         vk->context.invalid_swapchain = true;
+
+         RARCH_LOG("[Vulkan]: AcquireNextImage failed, so trying to recreate swapchain.\n");
+         if (!vulkan_create_swapchain(vk, vk->context.swapchain_width,
+                  vk->context.swapchain_height, vk->context.swap_interval))
+         {
+            RARCH_ERR("[Vulkan]: Failed to create new swapchain.\n");
+         }
+         else
+         {
+            is_retrying = true;
+            goto retry;
+         }
+      }
    }
 }
 
@@ -2407,6 +2482,43 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    else
       swapchain_size           = surface_properties.currentExtent;
 
+#if 0
+   /* Tests for deferred creation. */
+   static unsigned retry_count = 0;
+   if (++retry_count < 50)
+   {
+      surface_properties.maxImageExtent.width = 0;
+      surface_properties.maxImageExtent.height = 0;
+      surface_properties.minImageExtent.width = 0;
+      surface_properties.minImageExtent.height = 0;
+   }
+#endif
+
+   /* Clamp swapchain size to boundaries. */
+   if (swapchain_size.width > surface_properties.maxImageExtent.width)
+      swapchain_size.width = surface_properties.maxImageExtent.width;
+   if (swapchain_size.width < surface_properties.minImageExtent.width)
+      swapchain_size.width = surface_properties.minImageExtent.width;
+   if (swapchain_size.height > surface_properties.maxImageExtent.height)
+      swapchain_size.height = surface_properties.maxImageExtent.height;
+   if (swapchain_size.height < surface_properties.minImageExtent.height)
+      swapchain_size.height = surface_properties.minImageExtent.height;
+
+   if (swapchain_size.width == 0 && swapchain_size.height == 0)
+   {
+      /* Cannot create swapchain yet, try again later. */
+      if (vk->swapchain != VK_NULL_HANDLE)
+         vkDestroySwapchainKHR(vk->context.device, vk->swapchain, NULL);
+      vk->swapchain = VK_NULL_HANDLE;
+      vk->context.swapchain_width      = width;
+      vk->context.swapchain_height     = height;
+      vk->context.num_swapchain_images = 1;
+
+      memset(vk->context.swapchain_images, 0, sizeof(vk->context.swapchain_images));
+      RARCH_LOG("[Vulkan]: Cannot create a swapchain yet. Will try again later ...\n");
+      return true;
+   }
+
    RARCH_LOG("[Vulkan]: Using swapchain size %u x %u.\n",
          swapchain_size.width, swapchain_size.height);
 
@@ -2508,17 +2620,8 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    RARCH_LOG("[Vulkan]: Got %u swapchain images.\n",
          vk->context.num_swapchain_images);
 
-   for (i = 0; i < vk->context.num_swapchain_images; i++)
-   {
-      if (vk->context.swapchain_fences[i])
-      {
-         vkDestroyFence(vk->context.device,
-               vk->context.swapchain_fences[i], NULL);
-         vk->context.swapchain_fences[i] = VK_NULL_HANDLE;
-      }
-   }
-
-   vulkan_acquire_next_image(vk);
+   vulkan_acquire_clear_fences(vk);
+   vk->context.invalid_swapchain = true;
 
    return true;
 }

@@ -128,7 +128,14 @@ static void vulkan_init_framebuffers(
       VkFramebufferCreateInfo info =
       { VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
 
-      vk->swapchain[i].backbuffer.image    = vk->context->swapchain_images[i];
+      vk->swapchain[i].backbuffer.image = vk->context->swapchain_images[i];
+
+      if (vk->context->swapchain_images[i] == VK_NULL_HANDLE)
+      {
+         vk->swapchain[i].backbuffer.view        = VK_NULL_HANDLE;
+         vk->swapchain[i].backbuffer.framebuffer = VK_NULL_HANDLE;
+         continue;
+      }
 
       /* Create an image view which we can render into. */
       view.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
@@ -716,10 +723,17 @@ static void vulkan_deinit_framebuffers(vk_t *vk)
    unsigned i;
    for (i = 0; i < vk->num_swapchain_images; i++)
    {
-      vkDestroyFramebuffer(vk->context->device,
-            vk->swapchain[i].backbuffer.framebuffer, NULL);
-      vkDestroyImageView(vk->context->device,
-            vk->swapchain[i].backbuffer.view, NULL);
+      if (vk->swapchain[i].backbuffer.framebuffer)
+      {
+         vkDestroyFramebuffer(vk->context->device,
+               vk->swapchain[i].backbuffer.framebuffer, NULL);
+      }
+
+      if (vk->swapchain[i].backbuffer.view)
+      {
+         vkDestroyImageView(vk->context->device,
+               vk->swapchain[i].backbuffer.view, NULL);
+      }
    }
 
    vkDestroyRenderPass(vk->context->device, vk->render_pass, NULL);
@@ -1569,6 +1583,7 @@ static void vulkan_inject_black_frame(vk_t *vk, video_frame_info_t *video_info)
 #endif
    vkQueueSubmit(vk->context->queue, 1,
          &submit_info, vk->context->swapchain_fences[frame_index]);
+   vk->context->swapchain_fences_signalled[frame_index] = true;
 #ifdef HAVE_THREADS
    slock_unlock(vk->context->queue_lock);
 #endif
@@ -1747,88 +1762,92 @@ static bool vulkan_frame(void *data, const void *frame,
          (vulkan_filter_chain_t*)vk->filter_chain,
          vk->cmd, &vk->vk_vp);
    /* Render to backbuffer. */
-   rp_info.renderPass               = vk->render_pass;
-   rp_info.framebuffer              = chain->backbuffer.framebuffer;
-   rp_info.renderArea.extent.width  = vk->context->swapchain_width;
-   rp_info.renderArea.extent.height = vk->context->swapchain_height;
-   rp_info.clearValueCount          = 1;
-   rp_info.pClearValues             = &clear_color;
+   if (chain->backbuffer.image != VK_NULL_HANDLE)
+   {
+      rp_info.renderPass               = vk->render_pass;
+      rp_info.framebuffer              = chain->backbuffer.framebuffer;
+      rp_info.renderArea.extent.width  = vk->context->swapchain_width;
+      rp_info.renderArea.extent.height = vk->context->swapchain_height;
+      rp_info.clearValueCount          = 1;
+      rp_info.pClearValues             = &clear_color;
 
-   clear_color.color.float32[0] = 0.0f;
-   clear_color.color.float32[1] = 0.0f;
-   clear_color.color.float32[2] = 0.0f;
-   clear_color.color.float32[3] = 0.0f;
+      clear_color.color.float32[0] = 0.0f;
+      clear_color.color.float32[1] = 0.0f;
+      clear_color.color.float32[2] = 0.0f;
+      clear_color.color.float32[3] = 0.0f;
 
-   /* Prepare backbuffer for rendering. We don't use WSI semaphores here. */
-   vulkan_image_layout_transition(vk, vk->cmd, chain->backbuffer.image,
-         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-         0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT,
-         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+      /* Prepare backbuffer for rendering. We don't use WSI semaphores here. */
+      vulkan_image_layout_transition(vk, vk->cmd, chain->backbuffer.image,
+            VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT,
+            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 
-   /* Begin render pass and set up viewport */
-   vkCmdBeginRenderPass(vk->cmd, &rp_info, VK_SUBPASS_CONTENTS_INLINE);
+      /* Begin render pass and set up viewport */
+      vkCmdBeginRenderPass(vk->cmd, &rp_info, VK_SUBPASS_CONTENTS_INLINE);
 
-   vulkan_filter_chain_build_viewport_pass(
-         (vulkan_filter_chain_t*)vk->filter_chain, vk->cmd,
-         &vk->vk_vp, vk->mvp.data);
+      vulkan_filter_chain_build_viewport_pass(
+            (vulkan_filter_chain_t*)vk->filter_chain, vk->cmd,
+            &vk->vk_vp, vk->mvp.data);
 
 #if defined(HAVE_MENU)
-   if (vk->menu.enable)
-   {
-      menu_driver_frame(video_info);
-
-      if (vk->menu.textures[vk->menu.last_index].image != VK_NULL_HANDLE)
+      if (vk->menu.enable)
       {
-         struct vk_draw_quad quad;
-         struct vk_texture *optimal = &vk->menu.textures_optimal[vk->menu.last_index];
-         vulkan_set_viewport(vk, width, height, vk->menu.full_screen, false);
+         menu_driver_frame(video_info);
 
-         quad.pipeline = vk->pipelines.alpha_blend;
-         quad.texture = &vk->menu.textures[vk->menu.last_index];
-
-         if (optimal->memory != VK_NULL_HANDLE)
+         if (vk->menu.textures[vk->menu.last_index].image != VK_NULL_HANDLE)
          {
-            if (vk->menu.dirty[vk->menu.last_index])
+            struct vk_draw_quad quad;
+            struct vk_texture *optimal = &vk->menu.textures_optimal[vk->menu.last_index];
+            vulkan_set_viewport(vk, width, height, vk->menu.full_screen, false);
+
+            quad.pipeline = vk->pipelines.alpha_blend;
+            quad.texture = &vk->menu.textures[vk->menu.last_index];
+
+            if (optimal->memory != VK_NULL_HANDLE)
             {
-               vulkan_copy_staging_to_dynamic(vk, vk->cmd,
-                     optimal,
-                     quad.texture);
-               vk->menu.dirty[vk->menu.last_index] = false;
+               if (vk->menu.dirty[vk->menu.last_index])
+               {
+                  vulkan_copy_staging_to_dynamic(vk, vk->cmd,
+                        optimal,
+                        quad.texture);
+                  vk->menu.dirty[vk->menu.last_index] = false;
+               }
+               quad.texture = optimal;
             }
-            quad.texture = optimal;
+
+            quad.sampler = optimal->mipmap ?
+               vk->samplers.mipmap_linear : vk->samplers.linear;
+
+            quad.mvp     = &vk->mvp_no_rot;
+            quad.color.r = 1.0f;
+            quad.color.g = 1.0f;
+            quad.color.b = 1.0f;
+            quad.color.a = vk->menu.alpha;
+            vulkan_draw_quad(vk, &quad);
          }
-
-         quad.sampler = optimal->mipmap ?
-            vk->samplers.mipmap_linear : vk->samplers.linear;
-
-         quad.mvp     = &vk->mvp_no_rot;
-         quad.color.r = 1.0f;
-         quad.color.g = 1.0f;
-         quad.color.b = 1.0f;
-         quad.color.a = vk->menu.alpha;
-         vulkan_draw_quad(vk, &quad);
       }
-   }
 #endif
 
-   if (msg)
-      font_driver_render_msg(video_info, NULL, msg, NULL);
+      if (msg)
+         font_driver_render_msg(video_info, NULL, msg, NULL);
 
 #ifdef HAVE_OVERLAY
-   if (vk->overlay.enable)
-      vulkan_render_overlay(vk, video_info);
+      if (vk->overlay.enable)
+         vulkan_render_overlay(vk, video_info);
 #endif
 
-   /* End the render pass. We're done rendering to backbuffer now. */
-   vkCmdEndRenderPass(vk->cmd);
+      /* End the render pass. We're done rendering to backbuffer now. */
+      vkCmdEndRenderPass(vk->cmd);
+   }
 
    /* End the filter chain frame.
     * This must happen outside a render pass.
     */
    vulkan_filter_chain_end_frame((vulkan_filter_chain_t*)vk->filter_chain, vk->cmd);
 
-   if (vk->readback.pending || vk->readback.streamed)
+   if (chain->backbuffer.image != VK_NULL_HANDLE &&
+         (vk->readback.pending || vk->readback.streamed))
    {
       /* We cannot safely read back from an image which 
        * has already been presented as we need to 
@@ -1859,7 +1878,7 @@ static bool vulkan_frame(void *data, const void *frame,
 
       vk->readback.pending = false;
    }
-   else
+   else if (chain->backbuffer.image != VK_NULL_HANDLE)
    {
       /* Prepare backbuffer for presentation. */
       vulkan_image_layout_transition(vk, vk->cmd,
@@ -1929,12 +1948,12 @@ static bool vulkan_frame(void *data, const void *frame,
    }
    submit_info.pSignalSemaphores = submit_info.signalSemaphoreCount ? signal_semaphores : NULL;
 
-
 #ifdef HAVE_THREADS
    slock_lock(vk->context->queue_lock);
 #endif
    vkQueueSubmit(vk->context->queue, 1,
          &submit_info, vk->context->swapchain_fences[frame_index]);
+   vk->context->swapchain_fences_signalled[frame_index] = true;
 #ifdef HAVE_THREADS
    slock_unlock(vk->context->queue_lock);
 #endif
