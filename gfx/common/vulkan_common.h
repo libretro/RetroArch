@@ -22,7 +22,7 @@
 
 #define VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS    16
 #define VULKAN_MAX_DESCRIPTOR_POOL_SIZES        16
-#define VULKAN_BUFFER_BLOCK_SIZE                (4 * 1024)
+#define VULKAN_BUFFER_BLOCK_SIZE                (64 * 1024)
 
 #define VULKAN_MAX_SWAPCHAIN_IMAGES             8
 
