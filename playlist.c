@@ -309,9 +309,17 @@ bool playlist_push(playlist_t *playlist,
    for (i = 0; i < playlist->size; i++)
    {
       struct playlist_entry tmp;
-      bool equal_path = (!path && !playlist->entries[i].path) ||
+      bool equal_path;
+
+      equal_path = (!path && !playlist->entries[i].path) ||
          (path && playlist->entries[i].path &&
-          string_is_equal(path,playlist->entries[i].path));
+#ifdef _WIN32
+          /*prevent duplicates on case-insensitive operating systems*/
+          string_is_equal_noncase(path,playlist->entries[i].path)
+#else
+          string_is_equal(path,playlist->entries[i].path)
+#endif
+          );
 
       /* Core name can have changed while still being the same core.
        * Differentiate based on the core path only. */
