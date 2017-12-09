@@ -968,7 +968,7 @@ void input_menu_keys_pressed(void *data, retro_bits_t* p_new_state)
 
    if (!menu_input_dialog_get_display_kb())
    {
-      unsigned ids[13][2];
+      unsigned ids[14][2];
       const struct retro_keybind *quitkey = &input_config_binds[0][RARCH_QUIT_KEY];
       const struct retro_keybind *fskey   = &input_config_binds[0][RARCH_FULLSCREEN_TOGGLE_KEY];
 
@@ -998,6 +998,8 @@ void input_menu_keys_pressed(void *data, retro_bits_t* p_new_state)
       ids[11][1] = RETRO_DEVICE_ID_JOYPAD_B;
       ids[12][0] = RETROK_RETURN;
       ids[12][1] = RETRO_DEVICE_ID_JOYPAD_A;
+      ids[13][0] = RETROK_DELETE;
+      ids[13][1] = RETRO_DEVICE_ID_JOYPAD_Y;
 
       if (settings->bools.input_menu_swap_ok_cancel_buttons)
       {
@@ -1005,7 +1007,7 @@ void input_menu_keys_pressed(void *data, retro_bits_t* p_new_state)
          ids[12][1] = RETRO_DEVICE_ID_JOYPAD_B;
       }
 
-      for (i = 0; i < 13; i++)
+      for (i = 0; i < 14; i++)
       {
          if (current_input->input_state(current_input_data,
                   joypad_info, binds, 0,
