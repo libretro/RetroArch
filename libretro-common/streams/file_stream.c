@@ -87,8 +87,6 @@ struct RFILE
    int64_t size;
    FILE *fp;
 
-#define HAVE_BUFFERED_IO 1
-
 #if !defined(_WIN32) || defined(LEGACY_WIN32)
 #define MODE_STR_READ "r"
 #define MODE_STR_READ_UNBUF "rb"
@@ -148,19 +146,17 @@ void filestream_set_size(RFILE *stream)
  **/
 RFILE *filestream_open(const char *path, unsigned mode, ssize_t unused)
 {
-   int            flags = 0;
-   int         mode_int = 0;
-#if defined(HAVE_BUFFERED_IO)
+   int            flags    = 0;
+   int         mode_int    = 0;
 #if !defined(_WIN32) || defined(LEGACY_WIN32)
-   const char *mode_str = NULL;
+   const char *mode_str    = NULL;
 #else
    const wchar_t *mode_str = NULL;
 #endif
-#endif
-   RFILE        *stream = (RFILE*)calloc(1, sizeof(*stream));
+   RFILE        *stream    = (RFILE*)calloc(1, sizeof(*stream));
 #if defined(_WIN32) && !defined(_XBOX)
-   char       *path_local = NULL;
-   wchar_t    *path_wide = NULL;
+   char       *path_local  = NULL;
+   wchar_t    *path_wide   = NULL;
 #endif
 
    if (!stream)
@@ -181,26 +177,20 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t unused)
    switch (mode & 0xff)
    {
       case RFILE_MODE_READ_TEXT:
-#if defined(HAVE_BUFFERED_IO)
          if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
             mode_str = MODE_STR_READ;
-#endif
          /* No "else" here */
          flags    = O_RDONLY;
          break;
       case RFILE_MODE_READ:
-#if defined(HAVE_BUFFERED_IO)
          if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
             mode_str = MODE_STR_READ_UNBUF;
-#endif
          /* No "else" here */
          flags    = O_RDONLY;
          break;
       case RFILE_MODE_WRITE:
-#if defined(HAVE_BUFFERED_IO)
          if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
             mode_str = MODE_STR_WRITE_UNBUF;
-#endif
          else
          {
             flags    = O_WRONLY | O_CREAT | O_TRUNC;
@@ -210,10 +200,8 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t unused)
          }
          break;
       case RFILE_MODE_READ_WRITE:
-#if defined(HAVE_BUFFERED_IO)
          if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
             mode_str = MODE_STR_WRITE_PLUS;
-#endif
          else
          {
             flags    = O_RDWR;
@@ -224,7 +212,6 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t unused)
          break;
    }
 
-#if defined(HAVE_BUFFERED_IO)
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0 && mode_str)
    {
 #if defined(_WIN32) && !defined(_XBOX)
@@ -262,7 +249,6 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t unused)
       setvbuf(stream->fp, stream->buf, _IOFBF, 0x4000);
    }
    else
-#endif
    {
 #if defined(_WIN32) && !defined(_XBOX)
 #if defined(LEGACY_WIN32)
@@ -279,7 +265,6 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t unused)
          free(path_wide);
 #endif
 #else
-      /* FIXME: HAVE_BUFFERED_IO is always 1, but if it is ever changed, this open() needs to have an alternate _wopen() for Windows. */
       stream->fd = open(path, flags, mode_int);
 #endif
 
@@ -377,10 +362,8 @@ ssize_t filestream_seek(RFILE *stream, ssize_t offset, int whence)
    if (!stream)
       goto error;
 
-#if defined(HAVE_BUFFERED_IO)
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
       return fseek(stream->fp, (long)offset, whence);
-#endif
 
 #ifdef HAVE_MMAP
    /* Need to check stream->mapped because this function is
@@ -455,10 +438,9 @@ ssize_t filestream_tell(RFILE *stream)
    if (!stream)
       goto error;
 
-#if defined(HAVE_BUFFERED_IO)
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
       return ftell(stream->fp);
-#endif
+
 #ifdef HAVE_MMAP
    /* Need to check stream->mapped because this function
     * is called in filestream_open() */
@@ -484,10 +466,8 @@ ssize_t filestream_read(RFILE *stream, void *s, size_t len)
    if (!stream || !s)
       goto error;
 
-#if defined(HAVE_BUFFERED_IO)
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
       return fread(s, 1, len, stream->fp);
-#endif
 
 #ifdef HAVE_MMAP
    if (stream->hints & RFILE_HINT_MMAP)
@@ -513,11 +493,7 @@ error:
 
 int filestream_flush(RFILE *stream)
 {
-#if defined(HAVE_BUFFERED_IO)
    return fflush(stream->fp);
-#else
-   return 0;
-#endif
 }
 
 ssize_t filestream_write(RFILE *stream, const void *s, size_t len)
@@ -525,10 +501,9 @@ ssize_t filestream_write(RFILE *stream, const void *s, size_t len)
    if (!stream)
       goto error;
 
-#if defined(HAVE_BUFFERED_IO)
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
       return fwrite(s, 1, len, stream->fp);
-#endif
+
 #ifdef HAVE_MMAP
    if (stream->hints & RFILE_HINT_MMAP)
       goto error;
@@ -544,22 +519,17 @@ int filestream_putc(RFILE *stream, int c)
    if (!stream)
       return EOF;
 
-#if defined(HAVE_BUFFERED_IO)
    return fputc(c, stream->fp);
-#else
-   /* unimplemented */
-   return EOF;
-#endif
 }
 
 int filestream_vprintf(RFILE *stream, const char* format, va_list args)
 {
 	static char buffer[8 * 1024];
-	int numChars = vsprintf(buffer, format, args);
+	int num_chars = vsprintf(buffer, format, args);
 
-	if (numChars < 0)
+	if (num_chars < 0)
 		return -1;
-	else if (numChars == 0)
+	else if (num_chars == 0)
 		return 0;
 
 	return filestream_write(stream, buffer, numChars);
@@ -577,12 +547,7 @@ int filestream_printf(RFILE *stream, const char* format, ...)
 
 int filestream_error(RFILE *stream)
 {
-#if defined(HAVE_BUFFERED_IO)
 	return ferror(stream->fp);
-#else
-   /* stub */
-   return 0;
-#endif
 }
 
 int filestream_close(RFILE *stream)
@@ -593,18 +558,18 @@ int filestream_close(RFILE *stream)
    if (!string_is_empty(stream->ext))
       free(stream->ext);
 
-#if defined(HAVE_BUFFERED_IO)
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
    {
       if (stream->fp)
          fclose(stream->fp);
    }
    else
-#endif
+   {
 #ifdef HAVE_MMAP
       if (stream->hints & RFILE_HINT_MMAP)
          munmap(stream->mapped, stream->mapsize);
 #endif
+   }
 
    if (stream->fd > 0)
       close(stream->fd);
