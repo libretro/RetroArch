@@ -25,11 +25,13 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <stddef.h>
 
 #include <sys/types.h>
 
 #include <retro_common_api.h>
+#include <retro_inline.h>
 #include <boolean.h>
 
 #include <stdarg.h>
@@ -84,8 +86,6 @@ int filestream_read_file(const char *path, void **buf, ssize_t *len);
 
 char *filestream_gets(RFILE *stream, char *s, size_t len);
 
-char *filestream_getline(RFILE *stream);
-
 int filestream_getc(RFILE *stream);
 
 int filestream_eof(RFILE *stream);
@@ -106,6 +106,41 @@ int filestream_get_fd(RFILE *stream);
 FILE* filestream_get_fp(RFILE *stream); */
 
 int filestream_flush(RFILE *stream);
+
+static INLINE char *filestream_getline(RFILE *stream)
+{
+   char* newline     = (char*)malloc(9);
+   char* newline_tmp = NULL;
+   size_t cur_size   = 8;
+   size_t idx        = 0;
+   int in            = filestream_getc(stream);
+
+   if (!newline)
+      return NULL;
+
+   while (in != EOF && in != '\n')
+   {
+      if (idx == cur_size)
+      {
+         cur_size *= 2;
+         newline_tmp = (char*)realloc(newline, cur_size + 1);
+
+         if (!newline_tmp)
+         {
+            free(newline);
+            return NULL;
+         }
+
+         newline = newline_tmp;
+      }
+
+      newline[idx++] = in;
+      in             = filestream_getc(stream);
+   }
+
+   newline[idx] = '\0';
+   return newline;
+}
 
 RETRO_END_DECLS
 

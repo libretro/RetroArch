@@ -80,42 +80,6 @@ struct config_file
 static config_file_t *config_file_new_internal(
       const char *path, unsigned depth);
 
-static char *getaline(RFILE *file)
-{
-   char* newline     = (char*)malloc(9);
-   char* newline_tmp = NULL;
-   size_t cur_size   = 8;
-   size_t idx        = 0;
-   int in            = filestream_getc(file);
-
-   if (!newline)
-      return NULL;
-
-   while (in != EOF && in != '\n')
-   {
-      if (idx == cur_size)
-      {
-         cur_size *= 2;
-         newline_tmp = (char*)realloc(newline, cur_size + 1);
-
-         if (!newline_tmp)
-         {
-            free(newline);
-            return NULL;
-         }
-
-         newline = newline_tmp;
-      }
-
-      /* ignore MS line endings */
-      if (in != '\r')
-         newline[idx++] = in;
-      in = filestream_getc(file);
-   }
-   newline[idx] = '\0';
-   return newline;
-}
-
 static char *strip_comment(char *str)
 {
    /* Remove everything after comment.
@@ -419,7 +383,7 @@ static config_file_t *config_file_new_internal(
       list->value     = NULL;
       list->next      = NULL;
 
-      line            = getaline(file);
+      line            = filestream_getline(file);
 
       if (!line)
       {
