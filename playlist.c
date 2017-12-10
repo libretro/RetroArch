@@ -493,7 +493,7 @@ static bool playlist_read_file(
    unsigned i;
    char buf[PLAYLIST_ENTRIES][1024];
    RFILE *file                      = filestream_open(
-         path, RFILE_MODE_READ_TEXT, -1);
+         path, RFILE_MODE_READ, -1);
 
    for (i = 0; i < PLAYLIST_ENTRIES; i++)
       buf[i][0] = '\0';
