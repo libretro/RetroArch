@@ -410,7 +410,7 @@ bool path_file_exists(const char *path)
    if (!path || !*path)
       return false;
 
-   dummy = filestream_open(path, RFILE_MODE_READ, -1);
+   dummy = filestream_open(path, RFILE_MODE_READ, RFILE_HINT_NONE);
 
    if (!dummy)
       return false;

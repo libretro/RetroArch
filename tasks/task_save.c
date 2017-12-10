@@ -157,7 +157,8 @@ static void autosave_thread(void *data)
       if (differ)
       {
          /* Should probably deal with this more elegantly. */
-         RFILE *file = filestream_open(save->path, RFILE_MODE_WRITE, -1);
+         RFILE *file = filestream_open(save->path,
+               RFILE_MODE_WRITE, RFILE_HINT_NONE);
 
          if (file)
          {
@@ -564,7 +565,8 @@ static void task_save_handler(retro_task_t *task)
 
    if (!state->file)
    {
-      state->file = filestream_open(state->path, RFILE_MODE_WRITE, -1);
+      state->file = filestream_open(state->path, RFILE_MODE_WRITE,
+            RFILE_HINT_NONE);
 
       if (!state->file)
          return;
@@ -736,7 +738,8 @@ static void task_load_handler(retro_task_t *task)
 
    if (!state->file)
    {
-      state->file = filestream_open(state->path, RFILE_MODE_READ, -1);
+      state->file = filestream_open(state->path, RFILE_MODE_READ,
+            RFILE_HINT_NONE);
 
       if (!state->file)
          goto error;

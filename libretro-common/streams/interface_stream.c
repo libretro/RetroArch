@@ -83,7 +83,7 @@ bool intfstream_resize(intfstream_internal_t *intf, intfstream_info_t *info)
 }
 
 bool intfstream_open(intfstream_internal_t *intf, const char *path,
-      unsigned mode, ssize_t len)
+      unsigned mode, unsigned hints)
 {
    if (!intf)
       return false;
@@ -91,7 +91,7 @@ bool intfstream_open(intfstream_internal_t *intf, const char *path,
    switch (intf->type)
    {
       case INTFSTREAM_FILE:
-         intf->file.fp = filestream_open(path, mode, len);
+         intf->file.fp = filestream_open(path, mode, hints);
          if (!intf->file.fp)
             return false;
          break;

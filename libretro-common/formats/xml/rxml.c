@@ -419,7 +419,7 @@ rxml_document_t *rxml_load_document(const char *path)
    char *new_memory_buffer = NULL;
    const char *mem_ptr     = NULL;
    long len                = 0;
-   RFILE *file             = filestream_open(path, RFILE_MODE_READ, -1);
+   RFILE *file             = filestream_open(path, RFILE_MODE_READ, RFILE_HINT_NONE);
    if (!file)
       return NULL;
 

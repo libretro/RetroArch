@@ -144,7 +144,7 @@ void filestream_set_size(RFILE *stream)
  * Opens a file for reading or writing, depending on the requested mode.
  * Returns a pointer to an RFILE if opened successfully, otherwise NULL.
  **/
-RFILE *filestream_open(const char *path, unsigned mode, ssize_t unused)
+RFILE *filestream_open(const char *path, unsigned mode, unsigned hints)
 {
    int            flags    = 0;
 #if !defined(_WIN32) || defined(LEGACY_WIN32)
@@ -159,16 +159,16 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t unused)
 
    (void)flags;
 
-   stream->hints = mode;
+   stream->hints           = hints;
 
 #ifdef HAVE_MMAP
-   if (stream->hints & RFILE_HINT_MMAP && (stream->hints & 0xff) == RFILE_MODE_READ)
+   if (stream->hints & RFILE_HINT_MMAP && (stream->mode == RFILE_MODE_READ))
       stream->hints |= RFILE_HINT_UNBUFFERED;
    else
 #endif
       stream->hints &= ~RFILE_HINT_MMAP;
 
-   switch (mode & 0xff)
+   switch (mode)
    {
       case RFILE_MODE_READ:
          if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
@@ -582,7 +582,8 @@ int filestream_read_file(const char *path, void **buf, ssize_t *len)
    ssize_t ret              = 0;
    ssize_t content_buf_size = 0;
    void *content_buf        = NULL;
-   RFILE *file              = filestream_open(path, RFILE_MODE_READ, -1);
+   RFILE *file              = filestream_open(path,
+         RFILE_MODE_READ, RFILE_HINT_NONE);
 
    if (!file)
    {
@@ -648,7 +649,7 @@ error:
 bool filestream_write_file(const char *path, const void *data, ssize_t size)
 {
    ssize_t ret   = 0;
-   RFILE *file   = filestream_open(path, RFILE_MODE_WRITE, -1);
+   RFILE *file   = filestream_open(path, RFILE_MODE_WRITE, RFILE_HINT_NONE);
    if (!file)
       return false;
 

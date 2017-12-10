@@ -92,7 +92,8 @@ int main(int argc, char ** argv)
 
    call_init(L, argc - 2, (const char **) argv + 2);
 
-   dst = filestream_open(db_file, RFILE_MODE_WRITE, -1);
+   dst = filestream_open(db_file, RFILE_MODE_WRITE, RFILE_HINT_NONE);
+
    if (!dst)
    {
       printf(

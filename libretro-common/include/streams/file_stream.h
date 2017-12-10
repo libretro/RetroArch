@@ -38,15 +38,17 @@ RETRO_BEGIN_DECLS
 
 typedef struct RFILE RFILE;
 
+#define RFILE_HINT_NONE       (0)
+/* There is no guarantee these requests will be attended. */
+#define RFILE_HINT_UNBUFFERED (1 << 8)
+/* requires RFILE_MODE_READ */
+#define RFILE_HINT_MMAP       (1 << 9)
+
 enum
 {
    RFILE_MODE_READ = 0,
    RFILE_MODE_WRITE,
-   RFILE_MODE_READ_WRITE,
-
-   /* There is no guarantee these requests will be attended. */
-   RFILE_HINT_UNBUFFERED = 1<<8,
-   RFILE_HINT_MMAP       = 1<<9  /* requires RFILE_MODE_READ */
+   RFILE_MODE_READ_WRITE
 };
 
 int64_t filestream_get_size(RFILE *stream);
@@ -64,7 +66,7 @@ const char *filestream_get_ext(RFILE *stream);
  * Opens a file for reading or writing, depending on the requested mode.
  * Returns a pointer to an RFILE if opened successfully, otherwise NULL.
  **/
-RFILE *filestream_open(const char *path, unsigned mode, ssize_t unused);
+RFILE *filestream_open(const char *path, unsigned mode, unsigned hints);
 
 ssize_t filestream_seek(RFILE *stream, ssize_t offset, int whence);
 

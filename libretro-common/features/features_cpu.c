@@ -320,7 +320,8 @@ static unsigned char check_arm_cpu_feature(const char* feature)
 {
    char line[1024];
    unsigned char status = 0;
-   RFILE *fp = filestream_open("/proc/cpuinfo", RFILE_MODE_READ, -1);
+   RFILE *fp = filestream_open("/proc/cpuinfo",
+         RFILE_MODE_READ, RFILE_HINT_NONE);
 
    if (!fp)
       return 0;

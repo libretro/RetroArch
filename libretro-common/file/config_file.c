@@ -392,7 +392,8 @@ static config_file_t *config_file_new_internal(
       goto error;
 
    conf->include_depth = depth;
-   file                = filestream_open(path, RFILE_MODE_READ, 0x4000);
+   file                = filestream_open(path,
+         RFILE_MODE_READ, RFILE_HINT_NONE);
 
    if (!file)
    {
