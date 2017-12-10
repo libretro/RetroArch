@@ -23,88 +23,69 @@
 #ifndef __LIBRETRO_SDK_FILE_STREAM_H
 #define __LIBRETRO_SDK_FILE_STREAM_H
 
-#include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
 
 #include <sys/types.h>
 
+#include <libretro.h>
 #include <retro_common_api.h>
+
 #include <boolean.h>
 
 #include <stdarg.h>
+
+#define FILESTREAM_REQUIRED_VFS_VERSION 1
 
 RETRO_BEGIN_DECLS
 
 typedef struct RFILE RFILE;
 
-enum
-{
-   RFILE_MODE_READ = 0,
-   RFILE_MODE_READ_TEXT,
-   RFILE_MODE_WRITE,
-   RFILE_MODE_READ_WRITE,
+void filestream_vfs_init(const struct retro_vfs_interface_info* vfs_iface_info);
 
-   /* There is no guarantee these requests will be attended. */
-   RFILE_HINT_UNBUFFERED = 1<<8,
-   RFILE_HINT_MMAP       = 1<<9  /* requires RFILE_MODE_READ */
-};
-
-int64_t filestream_get_size(RFILE *stream);
-
-void filestream_set_size(RFILE *stream);
-
-const char *filestream_get_ext(RFILE *stream);
-
-/**
- * filestream_open:
- * @path               : path to file
- * @mode               : file mode to use when opening (read/write)
- * @bufsize            : optional buffer size (-1 or 0 to use default)
- *
- * Opens a file for reading or writing, depending on the requested mode.
- * Returns a pointer to an RFILE if opened successfully, otherwise NULL.
- **/
-RFILE *filestream_open(const char *path, unsigned mode, ssize_t unused);
-
-ssize_t filestream_seek(RFILE *stream, ssize_t offset, int whence);
-
-ssize_t filestream_read(RFILE *stream, void *data, size_t len);
-
-ssize_t filestream_write(RFILE *stream, const void *data, size_t len);
-
-ssize_t filestream_tell(RFILE *stream);
-
-void filestream_rewind(RFILE *stream);
+RFILE *filestream_open(const char *path, uint64_t flags);
 
 int filestream_close(RFILE *stream);
 
-int filestream_read_file(const char *path, void **buf, ssize_t *len);
+int filestream_error(RFILE *stream);
 
-char *filestream_gets(RFILE *stream, char *s, size_t len);
+int64_t filestream_size(RFILE *stream);
 
-char *filestream_getline(RFILE *stream);
+int64_t filestream_tell(RFILE *stream);
 
-int filestream_getc(RFILE *stream);
+int64_t filestream_seek(RFILE *stream, int64_t offset);
+
+int64_t filestream_read(RFILE *stream, void *s, uint64_t len);
+
+int64_t filestream_write(RFILE *stream, const void *s, uint64_t len);
+
+int filestream_flush(RFILE *stream);
+
+int filestream_delete(const char *path);
+
+const char *filestream_get_path(RFILE *stream);
+
+const char *filestream_get_ext(RFILE *stream);
 
 int filestream_eof(RFILE *stream);
 
-bool filestream_write_file(const char *path, const void *data, ssize_t size);
+void filestream_rewind(RFILE *stream);
+
+char *filestream_getline(RFILE *stream);
+
+char *filestream_gets(RFILE *stream, char *s, uint64_t len);
+
+int filestream_getc(RFILE *stream);
 
 int filestream_putc(RFILE *stream, int c);
 
-int filestream_vprintf(RFILE *stream, const char* format, va_list args);
+uint64_t filestream_vprintf(RFILE *stream, const char* format, va_list args);
 
-int filestream_printf(RFILE *stream, const char* format, ...);
+uint64_t filestream_printf(RFILE *stream, const char* format, ...);
 
-int filestream_error(RFILE *stream);
+int filestream_read_file(const char *path, void **buf, uint64_t *len);
 
-/* DO NOT put these functions back, unless you want to deal with
-   the UNAVOIDABLE REGRESSIONS on platforms using unexpected rfile backends
-int filestream_get_fd(RFILE *stream);
-FILE* filestream_get_fp(RFILE *stream); */
-
-int filestream_flush(RFILE *stream);
+bool filestream_write_file(const char *path, const void *data, uint64_t size);
 
 RETRO_END_DECLS
 

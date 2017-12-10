@@ -215,7 +215,7 @@ bool rbmp_save_image(
       unsigned pitch, enum rbmp_source_type type)
 {
    bool ret    = false;
-   RFILE *file = filestream_open(filename, RFILE_MODE_WRITE, -1);
+   RFILE *file = filestream_open(filename, RETRO_VFS_FILE_ACCESS_READ_WRITE);
    if (!file)
       return false;
 

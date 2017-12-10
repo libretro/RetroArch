@@ -163,4 +163,3 @@ bool config_file_exists(const char *path);
 RETRO_END_DECLS
 
 #endif
-

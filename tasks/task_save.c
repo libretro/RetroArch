@@ -157,7 +157,7 @@ static void autosave_thread(void *data)
       if (differ)
       {
          /* Should probably deal with this more elegantly. */
-         RFILE *file = filestream_open(save->path, RFILE_MODE_WRITE, -1);
+         RFILE *file = filestream_open(save->path, RETRO_VFS_FILE_ACCESS_READ_WRITE);
 
          if (file)
          {
@@ -564,7 +564,7 @@ static void task_save_handler(retro_task_t *task)
 
    if (!state->file)
    {
-      state->file = filestream_open(state->path, RFILE_MODE_WRITE, -1);
+      state->file = filestream_open(state->path, RETRO_VFS_FILE_ACCESS_READ_WRITE);
 
       if (!state->file)
          return;
@@ -736,12 +736,9 @@ static void task_load_handler(retro_task_t *task)
 
    if (!state->file)
    {
-      state->file = filestream_open(state->path, RFILE_MODE_READ, -1);
+      state->file = filestream_open(state->path, RETRO_VFS_FILE_ACCESS_READ_WRITE);
 
       if (!state->file)
-         goto error;
-
-      if (filestream_seek(state->file, 0, SEEK_END) != 0)
          goto error;
 
       state->size = filestream_tell(state->file);
@@ -1337,7 +1334,7 @@ static bool content_get_memory(retro_ctx_memory_info_t *mem_info,
  */
 bool content_load_ram_file(unsigned slot)
 {
-   ssize_t rc;
+   uint64_t rc;
    struct ram_type ram;
    retro_ctx_memory_info_t mem_info;
    void *buf        = NULL;

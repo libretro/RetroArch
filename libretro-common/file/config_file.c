@@ -390,7 +390,7 @@ static config_file_t *config_file_new_internal(
       goto error;
 
    conf->include_depth = depth;
-   file                = filestream_open(path, RFILE_MODE_READ_TEXT, 0x4000);
+   file                = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ);
 
    if (!file)
    {

@@ -101,7 +101,7 @@ static intfstream_t* intfstream_open_file(const char *path)
    if (!fd)
       return NULL;
 
-   if (!intfstream_open(fd, path, RFILE_MODE_READ, -1))
+   if (!intfstream_open(fd, path, RETRO_VFS_FILE_ACCESS_READ))
       goto error;
 
    return fd;
@@ -130,7 +130,7 @@ static intfstream_t *open_memory(void *data, size_t size)
    if (!fd)
       return NULL;
 
-   if (!intfstream_open(fd, NULL, RFILE_MODE_READ, -1))
+   if (!intfstream_open(fd, NULL, RETRO_VFS_FILE_ACCESS_READ))
       goto error;
 
    return fd;
@@ -158,7 +158,7 @@ open_chd_track(const char *path, int32_t track)
    if (!fd)
       return NULL;
 
-   if (!intfstream_open(fd, path, RFILE_MODE_READ, -1))
+   if (!intfstream_open(fd, path, RETRO_VFS_FILE_ACCESS_READ))
       goto error;
 
    return fd;

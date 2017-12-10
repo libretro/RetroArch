@@ -20,6 +20,7 @@
 
 #include <boolean.h>
 #include <file/file_path.h>
+#include <vfs/vfs_implementation.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include <dynamic/dylib.h>
@@ -1647,6 +1648,33 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SET_HW_SHARED_CONTEXT:
       {
          core_set_shared_context = true;
+         break;
+      }
+
+      case RETRO_ENVIRONMENT_GET_VFS_INTERFACE:
+      {
+         const uint32_t supported_vfs_version = 1;
+         static struct retro_vfs_interface vfs_iface =
+         {
+            retro_vfs_file_get_path_impl,
+            retro_vfs_file_open_impl,
+            retro_vfs_file_close_impl,
+            retro_vfs_file_size_impl,
+            retro_vfs_file_tell_impl,
+            retro_vfs_file_seek_impl,
+            retro_vfs_file_read_impl,
+            retro_vfs_file_write_impl,
+            retro_vfs_file_flush_impl,
+            retro_vfs_file_delete_impl
+         };
+
+         struct retro_vfs_interface_info *vfs_iface_info = (struct retro_vfs_interface_info *) data;
+         if (vfs_iface_info->required_interface_version <= supported_vfs_version)
+         {
+            vfs_iface_info->required_interface_version = supported_vfs_version;
+            vfs_iface_info->iface = &vfs_iface;
+         }
+         
          break;
       }
 

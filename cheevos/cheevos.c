@@ -2640,14 +2640,14 @@ static int cheevos_iterate(coro_t* coro)
       /* Load the content into memory, or copy it over to our own buffer */
       if (!CHEEVOS_VAR_DATA)
       {
-         CHEEVOS_VAR_STREAM = filestream_open(CHEEVOS_VAR_PATH, RFILE_MODE_READ, -1);
+         CHEEVOS_VAR_STREAM = filestream_open(CHEEVOS_VAR_PATH, RETRO_VFS_FILE_ACCESS_READ);
 
          if (!CHEEVOS_VAR_STREAM)
             CORO_STOP();
 
          CORO_YIELD();
          CHEEVOS_VAR_LEN = 0;
-         CHEEVOS_VAR_COUNT = filestream_get_size(CHEEVOS_VAR_STREAM);
+         CHEEVOS_VAR_COUNT = filestream_size(CHEEVOS_VAR_STREAM);
 
          if (CHEEVOS_VAR_COUNT > CHEEVOS_SIZE_LIMIT)
             CHEEVOS_VAR_COUNT = CHEEVOS_SIZE_LIMIT;

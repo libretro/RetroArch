@@ -143,6 +143,8 @@ static uint32_t content_rom_crc                               = 0;
 
 static int content_file_read(const char *path, void **buf, ssize_t *length)
 {
+   uint64_t fileSize;
+   
 #ifdef HAVE_COMPRESSION
    if (path_contains_compressed_file(path))
    {
@@ -150,7 +152,8 @@ static int content_file_read(const char *path, void **buf, ssize_t *length)
          return 1;
    }
 #endif
-   return filestream_read_file(path, buf, length);
+   *length = (ssize_t)fileSize;
+   return filestream_read_file(path, buf, &fileSize);
 }
 
 /**
