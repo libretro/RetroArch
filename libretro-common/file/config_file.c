@@ -107,7 +107,9 @@ static char *getaline(RFILE *file)
          newline = newline_tmp;
       }
 
-      newline[idx++] = in;
+      /* ignore MS line endings */
+      if (in != '\r')
+         newline[idx++] = in;
       in = filestream_getc(file);
    }
    newline[idx] = '\0';

@@ -519,10 +519,10 @@ static bool playlist_read_file(
          /* Read playlist entry and terminate string with NUL character
           * regardless of Windows or Unix line endings
           */
-          if((last = strrchr(buf[i], '\r')))
-             *last = '\0';
-          else if((last = strrchr(buf[i], '\n')))
-             *last = '\0';	
+         if((last = strrchr(buf[i], '\r')))
+            *last = '\0';
+         else if((last = strrchr(buf[i], '\n')))
+            *last = '\0';	
       }
 
       entry = &playlist->entries[playlist->size];
