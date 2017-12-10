@@ -211,7 +211,13 @@ int getaddrinfo_retro(const char *node, const char *service,
          goto error;
 
       in_addr->sin_family = host->h_addrtype;
+
+#ifdef AF_INET6
+      /* TODO/FIXME - In case we ever want to support IPv6 */
+      in_addr->sin_addr.s_addr = inet_addr(host->h_addr_list[0]);
+#else
       memcpy(&in_addr->sin_addr, host->h_addr, host->h_length);
+#endif
    }
    else
       goto error;
