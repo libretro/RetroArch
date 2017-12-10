@@ -1013,6 +1013,15 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
 
       if (!string_is_empty(tmp))
       {
+         /* Remove common strings. */
+         tmp = string_replace_substring(tmp, " [b]", "");
+         tmp = string_replace_substring(tmp, " (Proto)", "");
+         tmp = string_replace_substring(tmp, " (Rev A)", "");
+         tmp = string_replace_substring(tmp, " (Rev B)", "");
+         tmp = string_replace_substring(tmp, " (Rev C)", "");
+         tmp = string_replace_substring(tmp, " (Rev D)", "");
+         tmp = string_replace_substring(tmp, " (Rev E)", "");
+
          fill_pathname_join(tmp_new,
                xmb->thumbnail_file_path,
                tmp, PATH_MAX_LENGTH * sizeof(char));
@@ -2252,7 +2261,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       if (get_badge_texture(new_id) != 0)
          return get_badge_texture(new_id);
       /* Should be replaced with placeholder badge icon. */
-      return xmb->textures.list[XMB_TEXTURE_SUBSETTING]; 
+      return xmb->textures.list[XMB_TEXTURE_SUBSETTING];
    }
 #endif
 
