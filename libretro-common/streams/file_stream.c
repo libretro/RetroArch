@@ -162,7 +162,7 @@ RFILE *filestream_open(const char *path, unsigned mode, unsigned hints)
    stream->hints           = hints;
 
 #ifdef HAVE_MMAP
-   if (stream->hints & RFILE_HINT_MMAP && (stream->mode == RFILE_MODE_READ))
+   if (stream->hints & RFILE_HINT_MMAP && mode == RFILE_MODE_READ)
       stream->hints |= RFILE_HINT_UNBUFFERED;
    else
 #endif
