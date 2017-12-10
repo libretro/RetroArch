@@ -147,22 +147,16 @@ void filestream_set_size(RFILE *stream)
 RFILE *filestream_open(const char *path, unsigned mode, ssize_t unused)
 {
    int            flags    = 0;
-   int         mode_int    = 0;
 #if !defined(_WIN32) || defined(LEGACY_WIN32)
    const char *mode_str    = NULL;
 #else
    const wchar_t *mode_str = NULL;
 #endif
    RFILE        *stream    = (RFILE*)calloc(1, sizeof(*stream));
-#if defined(_WIN32) && !defined(_XBOX)
-   char       *path_local  = NULL;
-   wchar_t    *path_wide   = NULL;
-#endif
 
    if (!stream)
       return NULL;
 
-   (void)mode_int;
    (void)flags;
 
    stream->hints = mode;
@@ -176,12 +170,6 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t unused)
 
    switch (mode & 0xff)
    {
-      case RFILE_MODE_READ_TEXT:
-         if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
-            mode_str = MODE_STR_READ;
-         /* No "else" here */
-         flags    = O_RDONLY;
-         break;
       case RFILE_MODE_READ:
          if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
             mode_str = MODE_STR_READ_UNBUF;
@@ -215,16 +203,14 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t unused)
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0 && mode_str)
    {
 #if defined(_WIN32) && !defined(_XBOX)
-      (void)path_local;
-      (void)path_wide;
 #if defined(LEGACY_WIN32)
-      path_local = utf8_to_local_string_alloc(path);
-      stream->fp = fopen(path_local, mode_str);
+      char *path_local    = utf8_to_local_string_alloc(path);
+      stream->fp          = fopen(path_local, mode_str);
       if (path_local)
          free(path_local);
 #else
-      path_wide = utf8_to_utf16_string_alloc(path);
-      stream->fp = _wfopen(path_wide, mode_str);
+      wchar_t * path_wide = utf8_to_utf16_string_alloc(path);
+      stream->fp          = _wfopen(path_wide, mode_str);
       if (path_wide)
          free(path_wide);
 #endif
@@ -252,20 +238,18 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t unused)
    {
 #if defined(_WIN32) && !defined(_XBOX)
 #if defined(LEGACY_WIN32)
-      (void)path_wide;
-      path_local = utf8_to_local_string_alloc(path);
-      stream->fd = open(path_local, flags, mode_int);
+      char *path_local    = utf8_to_local_string_alloc(path);
+      stream->fd          = open(path_local, flags, 0);
       if (path_local)
          free(path_local);
 #else
-      (void)path_local;
-      path_wide = utf8_to_utf16_string_alloc(path);
-      stream->fd = _wopen(path_wide, flags, mode_int);
+      wchar_t * path_wide = utf8_to_utf16_string_alloc(path);
+      stream->fd          = _wopen(path_wide, flags, 0);
       if (path_wide)
          free(path_wide);
 #endif
 #else
-      stream->fd = open(path, flags, mode_int);
+      stream->fd = open(path, flags, 0);
 #endif
 
       if (stream->fd == -1)
@@ -532,7 +516,7 @@ int filestream_vprintf(RFILE *stream, const char* format, va_list args)
 	else if (num_chars == 0)
 		return 0;
 
-	return filestream_write(stream, buffer, numChars);
+	return filestream_write(stream, buffer, num_chars);
 }
 
 int filestream_printf(RFILE *stream, const char* format, ...)
