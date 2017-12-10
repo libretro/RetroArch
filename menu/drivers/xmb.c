@@ -1021,6 +1021,11 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
          tmp = string_replace_substring(tmp, " (Rev C)", "");
          tmp = string_replace_substring(tmp, " (Rev D)", "");
          tmp = string_replace_substring(tmp, " (Rev E)", "");
+         tmp = string_replace_substring(tmp, " (Rev 1)", "");
+         tmp = string_replace_substring(tmp, " (Rev 2)", "");
+         tmp = string_replace_substring(tmp, " (Rev 3)", "");
+         tmp = string_replace_substring(tmp, " (Rev 4)", "");
+         tmp = string_replace_substring(tmp, " (Rev 5)", "");
 
          fill_pathname_join(tmp_new,
                xmb->thumbnail_file_path,
