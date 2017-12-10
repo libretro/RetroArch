@@ -26,7 +26,7 @@
 
 RFILE* rfopen(const char *path, const char *mode)
 {
-   unsigned int retro_mode = RFILE_MODE_READ_TEXT;
+   unsigned int retro_mode = 0;
    if (strstr(mode, "r"))
       if (strstr(mode, "b"))
          retro_mode = RFILE_MODE_READ;

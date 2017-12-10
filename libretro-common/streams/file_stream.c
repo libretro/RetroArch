@@ -86,9 +86,6 @@ struct RFILE
    char *ext;
    int64_t size;
    FILE *fp;
-#if defined(PSP)
-   SceUID fd;
-#else
 
 #define HAVE_BUFFERED_IO 1
 
@@ -110,7 +107,6 @@ struct RFILE
    uint64_t mapsize;
 #endif
    int fd;
-#endif
    char *buf;
 };
 
@@ -185,36 +181,22 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t unused)
    switch (mode & 0xff)
    {
       case RFILE_MODE_READ_TEXT:
-#if  defined(PSP)
-         mode_int = 0666;
-         flags    = PSP_O_RDONLY;
-#else
 #if defined(HAVE_BUFFERED_IO)
          if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
             mode_str = MODE_STR_READ;
 #endif
          /* No "else" here */
          flags    = O_RDONLY;
-#endif
          break;
       case RFILE_MODE_READ:
-#if  defined(PSP)
-         mode_int = 0666;
-         flags    = PSP_O_RDONLY;
-#else
 #if defined(HAVE_BUFFERED_IO)
          if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
             mode_str = MODE_STR_READ_UNBUF;
 #endif
          /* No "else" here */
          flags    = O_RDONLY;
-#endif
          break;
       case RFILE_MODE_WRITE:
-#if  defined(PSP)
-         mode_int = 0666;
-         flags    = PSP_O_CREAT | PSP_O_WRONLY | PSP_O_TRUNC;
-#else
 #if defined(HAVE_BUFFERED_IO)
          if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
             mode_str = MODE_STR_WRITE_UNBUF;
@@ -226,13 +208,8 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t unused)
             flags   |=  S_IRUSR | S_IWUSR;
 #endif
          }
-#endif
          break;
       case RFILE_MODE_READ_WRITE:
-#if  defined(PSP)
-         mode_int = 0666;
-         flags    = PSP_O_RDWR;
-#else
 #if defined(HAVE_BUFFERED_IO)
          if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
             mode_str = MODE_STR_WRITE_PLUS;
@@ -244,16 +221,9 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t unused)
             flags   |= O_BINARY;
 #endif
          }
-#endif
          break;
    }
 
-#if  defined(PSP)
-   stream->fd = sceIoOpen(path, flags, mode_int);
-
-   if (stream->fd < 0)
-      goto error;
-#else
 #if defined(HAVE_BUFFERED_IO)
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0 && mode_str)
    {
@@ -335,7 +305,6 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t unused)
       }
 #endif
    }
-#endif
 
    {
       const char *ld = (const char*)strrchr(path, '.');
@@ -391,15 +360,7 @@ char *filestream_gets(RFILE *stream, char *s, size_t len)
 {
    if (!stream)
       return NULL;
-#if defined(HAVE_BUFFERED_IO)
    return fgets(s, (int)len, stream->fp);
-#elif  defined(PSP)
-   if(filestream_read(stream,s,len)==len)
-      return s;
-   return NULL;
-#else
-   return gets(s);
-#endif
 }
 
 int filestream_getc(RFILE *stream)
@@ -408,26 +369,13 @@ int filestream_getc(RFILE *stream)
    (void)c;
    if (!stream)
       return 0;
-#if defined(HAVE_BUFFERED_IO)
-    return fgetc(stream->fp);
-#elif  defined(PSP)
-    if(filestream_read(stream, &c, 1) == 1)
-       return (int)c;
-    return EOF;
-#else
-   return getc(stream->fd);
-#endif
+   return fgetc(stream->fp);
 }
 
 ssize_t filestream_seek(RFILE *stream, ssize_t offset, int whence)
 {
    if (!stream)
       goto error;
-
-#if  defined(PSP)
-   if (sceIoLseek(stream->fd, (SceOff)offset, whence) == -1)
-      goto error;
-#else
 
 #if defined(HAVE_BUFFERED_IO)
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
@@ -472,8 +420,6 @@ ssize_t filestream_seek(RFILE *stream, ssize_t offset, int whence)
    if (lseek(stream->fd, offset, whence) < 0)
       goto error;
 
-#endif
-
    return 0;
 
 error:
@@ -508,10 +454,7 @@ ssize_t filestream_tell(RFILE *stream)
 {
    if (!stream)
       goto error;
-#if  defined(PSP)
-  if (sceIoLseek(stream->fd, 0, SEEK_CUR) < 0)
-     goto error;
-#else
+
 #if defined(HAVE_BUFFERED_IO)
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
       return ftell(stream->fp);
@@ -524,7 +467,6 @@ ssize_t filestream_tell(RFILE *stream)
 #endif
    if (lseek(stream->fd, 0, SEEK_CUR) < 0)
       goto error;
-#endif
 
    return 0;
 
@@ -541,13 +483,12 @@ ssize_t filestream_read(RFILE *stream, void *s, size_t len)
 {
    if (!stream || !s)
       goto error;
-#if  defined(PSP)
-   return sceIoRead(stream->fd, s, len);
-#else
+
 #if defined(HAVE_BUFFERED_IO)
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
       return fread(s, 1, len, stream->fp);
 #endif
+
 #ifdef HAVE_MMAP
    if (stream->hints & RFILE_HINT_MMAP)
    {
@@ -563,8 +504,8 @@ ssize_t filestream_read(RFILE *stream, void *s, size_t len)
       return len;
    }
 #endif
+
    return read(stream->fd, s, len);
-#endif
 
 error:
    return -1;
@@ -583,9 +524,7 @@ ssize_t filestream_write(RFILE *stream, const void *s, size_t len)
 {
    if (!stream)
       goto error;
-#if  defined(PSP)
-   return sceIoWrite(stream->fd, s, len);
-#else
+
 #if defined(HAVE_BUFFERED_IO)
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
       return fwrite(s, 1, len, stream->fp);
@@ -595,7 +534,6 @@ ssize_t filestream_write(RFILE *stream, const void *s, size_t len)
       goto error;
 #endif
    return write(stream->fd, s, len);
-#endif
 
 error:
    return -1;
@@ -655,10 +593,6 @@ int filestream_close(RFILE *stream)
    if (!string_is_empty(stream->ext))
       free(stream->ext);
 
-#if  defined(PSP)
-   if (stream->fd > 0)
-      sceIoClose(stream->fd);
-#else
 #if defined(HAVE_BUFFERED_IO)
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
    {
@@ -674,7 +608,6 @@ int filestream_close(RFILE *stream)
 
    if (stream->fd > 0)
       close(stream->fd);
-#endif
    if (stream->buf)
       free(stream->buf);
    free(stream);
