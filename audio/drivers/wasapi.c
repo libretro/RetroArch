@@ -336,8 +336,9 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
 
          if (hr == AUDCLNT_E_ALREADY_INITIALIZED)
          {
+            HRESULT hr;
             WASAPI_RELEASE(client);
-            HRESULT hr           = _IMMDevice_Activate(device,
+            hr           = _IMMDevice_Activate(device,
                   IID_IAudioClient, 
                   CLSCTX_ALL, NULL, (void**)&client);
             WASAPI_HR_CHECK(hr, "IMMDevice::Activate", return NULL);
