@@ -115,6 +115,11 @@ static const unsigned window_y = 0;
 static const unsigned fullscreen_x = 0;
 static const unsigned fullscreen_y = 0;
 
+/* Amount of transparency to use for the main window.
+ * 1 is the most transparent while 100 is opaque.
+ */
+static const unsigned window_opacity = 100;
+
 #if defined(RARCH_CONSOLE) || defined(__APPLE__)
 static const bool load_dummy_on_core_shutdown = false;
 #else

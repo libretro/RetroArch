@@ -81,6 +81,7 @@
 #include "../setting_list.h"
 #include "../lakka.h"
 #include "../retroarch.h"
+#include "../gfx/video_display_server.h"
 
 #include "../tasks/tasks_internal.h"
 
@@ -1833,6 +1834,9 @@ void general_write_handler(void *data)
 #ifdef HAVE_NETWORKING
          retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES, NULL);
 #endif
+         break;
+      case MENU_ENUM_LABEL_VIDEO_WINDOW_OPACITY:
+         video_display_server_set_window_opacity((255 * settings->uints.video_window_opacity) / 100);
          break;
       default:
          break;
@@ -3627,6 +3631,19 @@ static bool setting_append_list(
                      general_write_handler,
                      general_read_handler);
                menu_settings_list_current_add_range(list, list_info, 0, 4320, 8, true, true);
+               settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+               CONFIG_UINT(
+                     list, list_info,
+                     &settings->uints.video_window_opacity,
+                     MENU_ENUM_LABEL_VIDEO_WINDOW_OPACITY,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
+                     window_opacity,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler);
+               menu_settings_list_current_add_range(list, list_info, 1, 100, 1, true, true);
                settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
             }
 

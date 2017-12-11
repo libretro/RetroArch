@@ -1377,3 +1377,5 @@ MSG_HASH(MENU_ENUM_LABEL_FRAMECOUNT_SHOW,
       "framecount_show")
 MSG_HASH(MENU_ENUM_LABEL_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
       "automatically_add_content_to_playlist")
+MSG_HASH(MENU_ENUM_LABEL_VIDEO_WINDOW_OPACITY,
+      "video_window_opacity")

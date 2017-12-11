@@ -1378,6 +1378,7 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("video_fullscreen_y",           &settings->uints.video_fullscreen_y,  true, fullscreen_y, false);
    SETTING_UINT("video_window_x",               &settings->uints.video_window_x,  true, fullscreen_x, false);
    SETTING_UINT("video_window_y",               &settings->uints.video_window_y,  true, fullscreen_y, false);
+   SETTING_UINT("video_window_opacity",         &settings->uints.video_window_opacity, true, window_opacity, false);
 #ifdef HAVE_COMMAND
    SETTING_UINT("network_cmd_port",             &settings->uints.network_cmd_port,    true, network_cmd_port, false);
 #endif

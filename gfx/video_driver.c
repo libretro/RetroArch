@@ -48,6 +48,7 @@
 
 #include "video_thread_wrapper.h"
 #include "video_driver.h"
+#include "video_display_server.h"
 
 #include "../frontend/frontend_driver.h"
 #include "../record/record_driver.h"
@@ -1089,6 +1090,8 @@ static bool video_driver_init_internal(bool *video_is_threaded)
 
    video_context_driver_reset();
 
+   video_display_server_init();
+
    return true;
 
 error:
@@ -1550,6 +1553,7 @@ static void video_driver_lock_new(void)
 
 void video_driver_destroy(void)
 {
+   video_display_server_destroy();
    video_driver_cb_has_focus      = null_driver_has_focus;
    video_driver_use_rgba          = false;
    video_driver_data_own          = false;
