@@ -276,7 +276,7 @@ int intfstream_getc(intfstream_internal_t *intf)
 #ifdef HAVE_CHD
          return chdstream_getc(intf->chd.fp);
 #else
-         return -1;
+         break;
 #endif
    }
 
@@ -298,7 +298,7 @@ int intfstream_tell(intfstream_internal_t *intf)
 #ifdef HAVE_CHD
          return (int)chdstream_tell(intf->chd.fp);
 #else
-         return -1;
+         break;
 #endif
    }
 
