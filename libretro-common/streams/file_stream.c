@@ -131,7 +131,7 @@ static void filestream_set_size(RFILE *stream)
  * filestream_open:
  * @path               : path to file
  * @mode               : file mode to use when opening (read/write)
- * @bufsize            : optional buffer size (-1 or 0 to use default)
+ * @hints              :
  *
  * Opens a file for reading or writing, depending on the requested mode.
  * Returns a pointer to an RFILE if opened successfully, otherwise NULL.
@@ -289,8 +289,6 @@ char *filestream_gets(RFILE *stream, char *s, size_t len)
 
 int filestream_getc(RFILE *stream)
 {
-   char c = 0;
-   (void)c;
    if (!stream)
       return 0;
    return fgetc(stream->fp);
