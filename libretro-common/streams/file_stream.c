@@ -249,6 +249,7 @@ RFILE *filestream_open(const char *path, unsigned mode, unsigned hints)
 
       if (stream->fd == -1)
          goto error;
+
 #ifdef HAVE_MMAP
       if (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_MEMORY_MAP)
       {

@@ -429,10 +429,7 @@ rxml_document_t *rxml_load_document(const char *path)
    if (!doc)
       goto error;
 
-   filestream_seek(file, 0, SEEK_END);
-   len = filestream_tell(file);
-   filestream_rewind(file);
-
+   len           = filestream_get_size(file);
    memory_buffer = (char*)malloc(len + 1);
    if (!memory_buffer)
       goto error;
