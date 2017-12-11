@@ -338,7 +338,6 @@ char *filestream_gets(RFILE *stream, char *s, size_t len)
 int filestream_getc(RFILE *stream)
 {
    char c = 0;
-   (void)c;
    if (!stream)
       return 0;
    if(filestream_read(stream, &c, 1) == 1)
