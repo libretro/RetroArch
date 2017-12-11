@@ -125,11 +125,8 @@ int64_t filestream_get_size(RFILE *stream)
    return stream->size;
 }
 
-void filestream_set_size(RFILE *stream)
+static void filestream_set_size(RFILE *stream)
 {
-   if (!stream)
-      return;
-
    filestream_seek(stream, 0, SEEK_SET);
    filestream_seek(stream, 0, SEEK_END);
 

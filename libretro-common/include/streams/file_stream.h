@@ -45,8 +45,6 @@ typedef struct RFILE RFILE;
 
 int64_t filestream_get_size(RFILE *stream);
 
-void filestream_set_size(RFILE *stream);
-
 const char *filestream_get_ext(RFILE *stream);
 
 /**
