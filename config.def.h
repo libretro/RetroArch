@@ -663,7 +663,6 @@ static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/window
 #endif
 #elif _MSC_VER == 1400
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2005/x86/latest/";
-#endif
 #elif _MSC_VER == 1310
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2003/x86/latest/";
 #else
