@@ -22,6 +22,7 @@
 #include <boolean.h>
 #include <compat/posix_string.h>
 #include <string/stdstring.h>
+#include <streams/interface_stream.h>
 #include <streams/file_stream.h>
 #include <file/file_path.h>
 
@@ -494,18 +495,18 @@ static bool playlist_read_file(
 {
    unsigned i;
    char buf[PLAYLIST_ENTRIES][1024];
-   RFILE *file                      = filestream_open(
+   intfstream_t *file = intfstream_open_file(
          path, RETRO_VFS_FILE_ACCESS_READ,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
-   for (i = 0; i < PLAYLIST_ENTRIES; i++)
-      buf[i][0] = '\0';
 
    /* If playlist file does not exist,
     * create an empty playlist instead.
     */
    if (!file)
       return true;
+
+   for (i = 0; i < PLAYLIST_ENTRIES; i++)
+      buf[i][0] = '\0';
 
    for (playlist->size = 0; playlist->size < playlist->cap; )
    {
@@ -516,7 +517,7 @@ static bool playlist_read_file(
          char *last  = NULL;
          *buf[i]     = '\0';
 
-         if (!filestream_gets(file, buf[i], sizeof(buf[i])))
+         if (!intfstream_gets(file, buf[i], sizeof(buf[i])))
             goto end;
 
          /* Read playlist entry and terminate string with NUL character
@@ -548,7 +549,7 @@ static bool playlist_read_file(
    }
 
 end:
-   filestream_close(file);
+   intfstream_close(file);
    return true;
 }
 
