@@ -517,7 +517,7 @@ error:
 int filestream_read_file(const char *path, void **buf, ssize_t *len)
 {
    ssize_t ret              = 0;
-   ssize_t content_buf_size = 0;
+   int64_t content_buf_size = 0;
    void *content_buf        = NULL;
    RFILE *file              = filestream_open(path,
          RETRO_VFS_FILE_ACCESS_READ,
@@ -529,14 +529,10 @@ int filestream_read_file(const char *path, void **buf, ssize_t *len)
       goto error;
    }
 
-   if (filestream_seek(file, 0, SEEK_END) != 0)
-      goto error;
+   content_buf_size = filestream_get_size(file);
 
-   content_buf_size = filestream_tell(file);
    if (content_buf_size < 0)
       goto error;
-
-   filestream_rewind(file);
 
    content_buf = malloc(content_buf_size + 1);
 
