@@ -410,15 +410,15 @@ clean:
    return rv;
 }
 
-static ssize_t get_file_size(const char *path)
+static ssize_t intfstream_get_file_size(const char *path)
 {
    ssize_t rv;
-   RFILE *fd = filestream_open(path,
+   intfstream_t *fd = intfstream_open_file(path,
          RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
-   if (fd == NULL)
+   if (!fd)
       return -1;
-   rv = filestream_get_size(fd);
-   filestream_close(fd);
+   rv = intfstream_get_size(fd);
+   intfstream_close(fd);
    return rv;
 }
 
@@ -503,7 +503,7 @@ int cue_find_track(const char *cue_path, bool first,
          get_token(fd, tmp_token, MAX_TOKEN_LEN);
          fill_pathname_join(last_file, cue_dir, tmp_token, PATH_MAX_LENGTH);
 
-         file_size = get_file_size(last_file);
+         file_size = intfstream_get_file_size(last_file);
 
          get_token(fd, tmp_token, MAX_TOKEN_LEN);
 
@@ -685,7 +685,7 @@ int gdi_find_track(const char *gdi_path, bool first,
 
          fill_pathname_join(last_file,
                gdi_dir, tmp_token, PATH_MAX_LENGTH);
-         file_size = get_file_size(last_file);
+         file_size = intfstream_get_file_size(last_file);
          if (file_size < 0)
          {
             free(gdi_dir);

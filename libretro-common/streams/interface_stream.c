@@ -57,6 +57,25 @@ struct intfstream_internal
 #endif
 };
 
+int64_t intfstream_get_size(intfstream_internal_t *intf)
+{
+   if (!intf)
+      return 0;
+
+   switch (intf->type)
+   {
+      case INTFSTREAM_FILE:
+         return filestream_get_size(intf->file.fp);
+      case INTFSTREAM_MEMORY:
+         return intf->memory.buf.size;
+      case INTFSTREAM_CHD:
+         /* TODO/FIXME - implement this */
+         break;
+   }
+
+   return 0;
+}
+
 bool intfstream_resize(intfstream_internal_t *intf, intfstream_info_t *info)
 {
    if (!intf || !info)

@@ -19,6 +19,7 @@
 #include <file/file_path.h>
 #include <string/stdstring.h>
 #include <formats/jsonsax.h>
+#include <streams/interface_stream.h>
 #include <streams/file_stream.h>
 #include <features/features_cpu.h>
 #include <compat/strl.h>
@@ -2488,7 +2489,7 @@ typedef struct
    size_t romsize, bytes; \
    int mapper; \
    bool round; \
-   RFILE* stream; \
+   intfstream_t *stream; \
    size_t size; \
    char url[256]; \
    struct http_connection_t *conn; \
@@ -2640,7 +2641,7 @@ static int cheevos_iterate(coro_t* coro)
       /* Load the content into memory, or copy it over to our own buffer */
       if (!CHEEVOS_VAR_DATA)
       {
-         CHEEVOS_VAR_STREAM = filestream_open(
+         CHEEVOS_VAR_STREAM = intfstream_open_file(
                CHEEVOS_VAR_PATH,
                RETRO_VFS_FILE_ACCESS_READ,
                RETRO_VFS_FILE_ACCESS_HINT_NONE);
@@ -2650,7 +2651,7 @@ static int cheevos_iterate(coro_t* coro)
 
          CORO_YIELD();
          CHEEVOS_VAR_LEN = 0;
-         CHEEVOS_VAR_COUNT = filestream_get_size(CHEEVOS_VAR_STREAM);
+         CHEEVOS_VAR_COUNT = intfstream_get_size(CHEEVOS_VAR_STREAM);
 
          if (CHEEVOS_VAR_COUNT > CHEEVOS_SIZE_LIMIT)
             CHEEVOS_VAR_COUNT = CHEEVOS_SIZE_LIMIT;
@@ -2659,7 +2660,7 @@ static int cheevos_iterate(coro_t* coro)
 
          if (!CHEEVOS_VAR_DATA)
          {
-            filestream_close(CHEEVOS_VAR_STREAM);
+            intfstream_close(CHEEVOS_VAR_STREAM);
             CORO_STOP();
          }
 
@@ -2671,7 +2672,7 @@ static int cheevos_iterate(coro_t* coro)
             if (to_read > CHEEVOS_VAR_COUNT)
                to_read = CHEEVOS_VAR_COUNT;
 
-            num_read = filestream_read(CHEEVOS_VAR_STREAM, (void*)buffer, to_read);
+            num_read = intfstream_read(CHEEVOS_VAR_STREAM, (void*)buffer, to_read);
 
             if (num_read <= 0)
                break;
@@ -2685,7 +2686,7 @@ static int cheevos_iterate(coro_t* coro)
             CORO_YIELD();
          }
 
-         filestream_close(CHEEVOS_VAR_STREAM);
+         intfstream_close(CHEEVOS_VAR_STREAM);
       }
 
       /* Use the supported extensions as a hint
