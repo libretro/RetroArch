@@ -15,6 +15,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stddef.h>
 #include "../video_display_server.h"
 
 static void* null_display_server_init()

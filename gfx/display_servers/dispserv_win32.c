@@ -26,7 +26,7 @@ typedef struct
 
 static void* win32_display_server_init()
 {
-   dispserv_win32_t *dispserv = calloc(1, sizeof(*dispserv));
+   dispserv_win32_t *dispserv = (dispserv_win32_t*)calloc(1, sizeof(*dispserv));
 
    return dispserv;
 }
