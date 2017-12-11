@@ -13,7 +13,7 @@ TARGET = retroarchpsp
 ifeq ($(DEBUG), 1)
    OPTIMIZE_LV	:= -O0 -g
 else
-   OPTIMIZE_LV	:= -O3 
+   OPTIMIZE_LV	:= -O2
 endif
 
 ifeq ($(WHOLE_ARCHIVE_LINK), 1)
