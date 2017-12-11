@@ -43,10 +43,6 @@ typedef struct RFILE RFILE;
 
 #define FILESTREAM_REQUIRED_VFS_VERSION 1
 
-#define RFILE_HINT_NONE       (0)
-/* requires RETRO_VFS_FILE_ACCESS_READ */
-#define RFILE_HINT_MMAP       (1 << 9)
-
 int64_t filestream_get_size(RFILE *stream);
 
 void filestream_set_size(RFILE *stream);

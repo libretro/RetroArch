@@ -107,7 +107,8 @@ static int create_db(lua_State *L)
    lua_setfield(L, LUA_REGISTRYINDEX, "testlib_get_value");
 
    dst = filestream_open(db_file,
-         RETRO_VFS_FILE_ACCESS_WRITE, RFILE_HINT_NONE);
+         RETRO_VFS_FILE_ACCESS_WRITE,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
    if (!dst)
    {
       lua_pushstring(L, "Could not open destination file");

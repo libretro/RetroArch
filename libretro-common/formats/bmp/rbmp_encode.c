@@ -216,7 +216,8 @@ bool rbmp_save_image(
 {
    bool ret    = false;
    RFILE *file = filestream_open(filename,
-         RETRO_VFS_FILE_ACCESS_WRITE, RFILE_HINT_NONE);
+         RETRO_VFS_FILE_ACCESS_WRITE,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
    if (!file)
       return false;
 

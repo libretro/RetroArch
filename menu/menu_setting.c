@@ -1878,7 +1878,8 @@ static void systemd_service_toggle(const char *path, char *unit, bool enable)
 
    if (enable)
       filestream_close(filestream_open(path,
-               RETRO_VFS_FILE_ACCESS_WRITE, RFILE_HINT_NONE));
+               RETRO_VFS_FILE_ACCESS_WRITE,
+               RETRO_VFS_FILE_ACCESS_HINT_NONE));
    else
       path_file_remove(path);
 

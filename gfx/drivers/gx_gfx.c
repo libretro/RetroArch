@@ -721,7 +721,8 @@ static void gx_efb_screenshot(void)
    int x, y;
    uint8_t tga_header[] = {0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x02, 0xE0, 0x01, 0x18, 0x00};
    RFILE           *out = filestream_open("/screenshot.tga",
-         RETRO_VFS_FILE_ACCESS_WRITE, RFILE_HINT_NONE);
+         RETRO_VFS_FILE_ACCESS_WRITE,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    if (!out)
       return;

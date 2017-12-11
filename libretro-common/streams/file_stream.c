@@ -76,6 +76,7 @@
 
 #define RFILE_HINT_UNBUFFERED (1 << 8)
 
+#include <libretro.h>
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 #include <memmap.h>
@@ -164,11 +165,11 @@ RFILE *filestream_open(const char *path, unsigned mode, unsigned hints)
    stream->hints           = hints;
 
 #ifdef HAVE_MMAP
-   if (stream->hints & RFILE_HINT_MMAP && mode == RETRO_VFS_FILE_ACCESS_READ)
+   if (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_MEMORY_MAP && mode == RETRO_VFS_FILE_ACCESS_READ)
       stream->hints |= RFILE_HINT_UNBUFFERED;
    else
 #endif
-      stream->hints &= ~RFILE_HINT_MMAP;
+      stream->hints &= ~RETRO_VFS_FILE_ACCESS_HINT_MEMORY_MAP;
 
    switch (mode)
    {
@@ -260,7 +261,7 @@ RFILE *filestream_open(const char *path, unsigned mode, unsigned hints)
       if (stream->fd == -1)
          goto error;
 #ifdef HAVE_MMAP
-      if (stream->hints & RFILE_HINT_MMAP)
+      if (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_MEMORY_MAP)
       {
          stream->mappos  = 0;
          stream->mapped  = NULL;
@@ -275,7 +276,7 @@ RFILE *filestream_open(const char *path, unsigned mode, unsigned hints)
                stream->mapsize, PROT_READ,  MAP_SHARED, stream->fd, 0);
 
          if (stream->mapped == MAP_FAILED)
-            stream->hints &= ~RFILE_HINT_MMAP;
+            stream->hints &= ~RETRO_VFS_FILE_ACCESS_HINT_MEMORY_MAP;
       }
 #endif
    }
@@ -322,7 +323,7 @@ ssize_t filestream_seek(RFILE *stream, ssize_t offset, int whence)
 #ifdef HAVE_MMAP
    /* Need to check stream->mapped because this function is
     * called in filestream_open() */
-   if (stream->mapped && stream->hints & RFILE_HINT_MMAP)
+   if (stream->mapped && stream->hints & RETRO_VFS_FILE_ACCESS_HINT_MEMORY_MAP)
    {
       /* fseek() returns error on under/overflow but allows cursor > EOF for
          read-only file descriptors. */
@@ -398,7 +399,7 @@ ssize_t filestream_tell(RFILE *stream)
 #ifdef HAVE_MMAP
    /* Need to check stream->mapped because this function
     * is called in filestream_open() */
-   if (stream->mapped && stream->hints & RFILE_HINT_MMAP)
+   if (stream->mapped && stream->hints & RETRO_VFS_FILE_ACCESS_HINT_MEMORY_MAP)
       return stream->mappos;
 #endif
    if (lseek(stream->fd, 0, SEEK_CUR) < 0)
@@ -424,7 +425,7 @@ ssize_t filestream_read(RFILE *stream, void *s, size_t len)
       return fread(s, 1, len, stream->fp);
 
 #ifdef HAVE_MMAP
-   if (stream->hints & RFILE_HINT_MMAP)
+   if (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_MEMORY_MAP)
    {
       if (stream->mappos > stream->mapsize)
          goto error;
@@ -459,7 +460,7 @@ ssize_t filestream_write(RFILE *stream, const void *s, size_t len)
       return fwrite(s, 1, len, stream->fp);
 
 #ifdef HAVE_MMAP
-   if (stream->hints & RFILE_HINT_MMAP)
+   if (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_MEMORY_MAP)
       goto error;
 #endif
    return write(stream->fd, s, len);
@@ -520,7 +521,7 @@ int filestream_close(RFILE *stream)
    else
    {
 #ifdef HAVE_MMAP
-      if (stream->hints & RFILE_HINT_MMAP)
+      if (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_MEMORY_MAP)
          munmap(stream->mapped, stream->mapsize);
 #endif
    }
@@ -553,7 +554,8 @@ int filestream_read_file(const char *path, void **buf, ssize_t *len)
    ssize_t content_buf_size = 0;
    void *content_buf        = NULL;
    RFILE *file              = filestream_open(path,
-         RETRO_VFS_FILE_ACCESS_READ, RFILE_HINT_NONE);
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    if (!file)
    {
@@ -620,7 +622,8 @@ bool filestream_write_file(const char *path, const void *data, ssize_t size)
 {
    ssize_t ret   = 0;
    RFILE *file   = filestream_open(path,
-         RETRO_VFS_FILE_ACCESS_WRITE, RFILE_HINT_NONE);
+         RETRO_VFS_FILE_ACCESS_WRITE,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
    if (!file)
       return false;
 

@@ -805,7 +805,8 @@ int main(int argc, char** argv)
    }
 
    rdb_file = filestream_open(rdb_path,
-         RETRO_VFS_FILE_ACCESS_WRITE, RFILE_HINT_NONE);
+         RETRO_VFS_FILE_ACCESS_WRITE,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    if (!rdb_file)
    {

@@ -414,7 +414,7 @@ static ssize_t get_file_size(const char *path)
 {
    ssize_t rv;
    RFILE *fd = filestream_open(path,
-         RETRO_VFS_FILE_ACCESS_READ, RFILE_HINT_NONE);
+         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
    if (fd == NULL)
       return -1;
    rv = filestream_get_size(fd);
@@ -469,7 +469,7 @@ int cue_find_track(const char *cue_path, bool first,
       goto error;
 
    if (!intfstream_open(fd, cue_path,
-            RETRO_VFS_FILE_ACCESS_READ, RFILE_HINT_NONE))
+            RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE))
    {
       RARCH_LOG("Could not open CUE file '%s': %s\n", cue_path,
             strerror(errno));
@@ -624,7 +624,7 @@ int gdi_find_track(const char *gdi_path, bool first,
       goto error;
 
    if (!intfstream_open(fd, gdi_path,
-            RETRO_VFS_FILE_ACCESS_READ, RFILE_HINT_NONE))
+            RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE))
    {
       RARCH_LOG("Could not open GDI file '%s': %s\n", gdi_path,
             strerror(errno));

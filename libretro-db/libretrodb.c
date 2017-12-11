@@ -218,7 +218,8 @@ int libretrodb_open(const char *path, libretrodb_t *db)
    libretrodb_metadata_t md;
    int rv    = 0;
    RFILE *fd = filestream_open(path,
-         RETRO_VFS_FILE_ACCESS_READ, RFILE_HINT_NONE);
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    if (!fd)
       return -errno;
@@ -434,7 +435,8 @@ int libretrodb_cursor_open(libretrodb_t *db, libretrodb_cursor_t *cursor,
       return -errno;
 
    fd = filestream_open(db->path,
-         RETRO_VFS_FILE_ACCESS_READ, RFILE_HINT_MMAP);
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_MEMORY_MAP);
 
    if (!fd)
       return -errno;

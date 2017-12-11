@@ -2640,8 +2640,10 @@ static int cheevos_iterate(coro_t* coro)
       /* Load the content into memory, or copy it over to our own buffer */
       if (!CHEEVOS_VAR_DATA)
       {
-         CHEEVOS_VAR_STREAM = filestream_open(CHEEVOS_VAR_PATH,
-               RETRO_VFS_FILE_ACCESS_READ, RFILE_HINT_NONE);
+         CHEEVOS_VAR_STREAM = filestream_open(
+               CHEEVOS_VAR_PATH,
+               RETRO_VFS_FILE_ACCESS_READ,
+               RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
          if (!CHEEVOS_VAR_STREAM)
             CORO_STOP();

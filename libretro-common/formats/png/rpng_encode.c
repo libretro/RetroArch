@@ -228,7 +228,8 @@ static bool rpng_save_image(const char *path,
    uint32_t total_in       = 0;
    uint32_t total_out      = 0;
    RFILE *file             = filestream_open(path,
-         RETRO_VFS_FILE_ACCESS_WRITE, RFILE_HINT_NONE);
+         RETRO_VFS_FILE_ACCESS_WRITE,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
    if (!file)
       GOTO_END_ERROR();
 

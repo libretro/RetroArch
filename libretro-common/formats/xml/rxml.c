@@ -420,7 +420,8 @@ rxml_document_t *rxml_load_document(const char *path)
    const char *mem_ptr     = NULL;
    long len                = 0;
    RFILE *file             = filestream_open(path,
-         RETRO_VFS_FILE_ACCESS_READ, RFILE_HINT_NONE);
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
    if (!file)
       return NULL;
 

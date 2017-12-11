@@ -395,7 +395,7 @@ void playlist_write_file(playlist_t *playlist)
       return;
 
    file = filestream_open(playlist->conf_path,
-         RETRO_VFS_FILE_ACCESS_WRITE, RFILE_HINT_NONE);
+         RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    if (!file)
    {
@@ -495,7 +495,8 @@ static bool playlist_read_file(
    unsigned i;
    char buf[PLAYLIST_ENTRIES][1024];
    RFILE *file                      = filestream_open(
-         path, RETRO_VFS_FILE_ACCESS_READ, RFILE_HINT_NONE);
+         path, RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    for (i = 0; i < PLAYLIST_ENTRIES; i++)
       buf[i][0] = '\0';

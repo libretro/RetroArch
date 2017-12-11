@@ -187,7 +187,8 @@ int main(void)
 {
    struct stub_state state;
    RFILE *fd = filestream_open("test.msgpack",
-         RETRO_VFS_FILE_ACCESS_READ, RFILE_HINT_NONE);
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    state.i        = 0;
    state.stack[0] = 0;

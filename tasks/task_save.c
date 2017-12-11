@@ -158,7 +158,7 @@ static void autosave_thread(void *data)
       {
          /* Should probably deal with this more elegantly. */
          RFILE *file = filestream_open(save->path,
-               RETRO_VFS_FILE_ACCESS_WRITE, RFILE_HINT_NONE);
+               RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
          if (file)
          {
@@ -566,7 +566,7 @@ static void task_save_handler(retro_task_t *task)
    if (!state->file)
    {
       state->file = filestream_open(state->path, RETRO_VFS_FILE_ACCESS_WRITE,
-            RFILE_HINT_NONE);
+            RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
       if (!state->file)
          return;
@@ -740,7 +740,7 @@ static void task_load_handler(retro_task_t *task)
    {
       state->file = filestream_open(state->path,
             RETRO_VFS_FILE_ACCESS_READ,
-            RFILE_HINT_NONE);
+            RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
       if (!state->file)
          goto error;

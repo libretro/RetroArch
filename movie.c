@@ -20,7 +20,7 @@
 #include <rhash.h>
 #include <compat/strl.h>
 #include <retro_endianness.h>
-#include <streams/file_stream.h>
+#include <streams/interface_stream.h>
 
 #include "configuration.h"
 #include "movie.h"
@@ -35,7 +35,7 @@
 
 struct bsv_movie
 {
-   RFILE *file;
+   intfstream_t *file;
 
    /* A ring buffer keeping track of positions
     * in the file for each frame. */
@@ -75,8 +75,9 @@ static bool bsv_movie_init_playback(bsv_movie_t *handle, const char *path)
    uint32_t state_size       = 0;
    uint32_t content_crc      = 0;
    uint32_t header[4]        = {0};
-   RFILE *file               = filestream_open(path,
-         RETRO_VFS_FILE_ACCESS_READ, RFILE_HINT_NONE);
+   intfstream_t *file        = intfstream_open_file(path,
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    if (!file)
    {
@@ -87,7 +88,7 @@ static bool bsv_movie_init_playback(bsv_movie_t *handle, const char *path)
    handle->file              = file;
    handle->playback          = true;
 
-   filestream_read(handle->file, header, sizeof(uint32_t) * 4);
+   intfstream_read(handle->file, header, sizeof(uint32_t) * 4);
    /* Compatibility with old implementation that
     * used incorrect documentation. */
    if (swap_if_little32(header[MAGIC_INDEX]) != BSV_MAGIC
@@ -123,7 +124,8 @@ static bool bsv_movie_init_playback(bsv_movie_t *handle, const char *path)
 
       handle->state      = buf;
       handle->state_size = state_size;
-      if (filestream_read(handle->file, handle->state, state_size) != state_size)
+      if (intfstream_read(handle->file,
+               handle->state, state_size) != state_size)
       {
          RARCH_ERR("%s\n", msg_hash_to_str(MSG_COULD_NOT_READ_STATE_FROM_MOVIE));
          return false;
@@ -153,8 +155,9 @@ static bool bsv_movie_init_record(bsv_movie_t *handle, const char *path)
    uint32_t state_size       = 0;
    uint32_t content_crc      = 0;
    uint32_t header[4]        = {0};
-   RFILE *file               = filestream_open(path,
-         RETRO_VFS_FILE_ACCESS_WRITE, RFILE_HINT_NONE);
+   intfstream_t *file        = intfstream_open_file(path,
+         RETRO_VFS_FILE_ACCESS_WRITE,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    if (!file)
    {
@@ -183,7 +186,7 @@ static bool bsv_movie_init_record(bsv_movie_t *handle, const char *path)
    RARCH_ERR("----- debug %u -----\n", header[3]);
 #endif
 
-   filestream_write(handle->file, header, 4 * sizeof(uint32_t));
+   intfstream_write(handle->file, header, 4 * sizeof(uint32_t));
 
    handle->min_file_pos     = sizeof(header) + state_size;
    handle->state_size       = state_size;
@@ -201,7 +204,8 @@ static bool bsv_movie_init_record(bsv_movie_t *handle, const char *path)
 
       core_serialize(&serial_info);
 
-      filestream_write(handle->file, handle->state, state_size);
+      intfstream_write(handle->file,
+            handle->state, state_size);
    }
 
    return true;
@@ -212,7 +216,7 @@ static void bsv_movie_free(bsv_movie_t *handle)
    if (!handle)
       return;
 
-   filestream_close(handle->file);
+   intfstream_close(handle->file);
 
    free(handle->state);
    free(handle->frame_pos);
@@ -258,7 +262,7 @@ void bsv_movie_set_frame_start(void)
 {
    if (bsv_movie_state_handle)
       bsv_movie_state_handle->frame_pos[bsv_movie_state_handle->frame_ptr] 
-         = filestream_tell(bsv_movie_state_handle->file);
+         = intfstream_tell(bsv_movie_state_handle->file);
 }
 
 void bsv_movie_set_frame_end(void)
@@ -284,7 +288,7 @@ static void bsv_movie_frame_rewind(bsv_movie_t *handle)
    {
       /* If we're at the beginning... */
       handle->frame_ptr = 0;
-      filestream_seek(handle->file, handle->min_file_pos, SEEK_SET);
+      intfstream_seek(handle->file, handle->min_file_pos, SEEK_SET);
    }
    else
    {
@@ -296,11 +300,11 @@ static void bsv_movie_frame_rewind(bsv_movie_t *handle)
        * plus another. */
       handle->frame_ptr = (handle->frame_ptr -
             (handle->first_rewind ? 1 : 2)) & handle->frame_mask;
-      filestream_seek(handle->file,
+      intfstream_seek(handle->file,
             handle->frame_pos[handle->frame_ptr], SEEK_SET);
    }
 
-   if (filestream_tell(handle->file) <= (long)handle->min_file_pos)
+   if (intfstream_tell(handle->file) <= (long)handle->min_file_pos)
    {
       /* We rewound past the beginning. */
 
@@ -311,17 +315,17 @@ static void bsv_movie_frame_rewind(bsv_movie_t *handle)
          /* If recording, we simply reset
           * the starting point. Nice and easy. */
 
-         filestream_seek(handle->file, 4 * sizeof(uint32_t), SEEK_SET);
+         intfstream_seek(handle->file, 4 * sizeof(uint32_t), SEEK_SET);
 
          serial_info.data = handle->state;
          serial_info.size = handle->state_size;
 
          core_serialize(&serial_info);
 
-         filestream_write(handle->file, handle->state, handle->state_size);
+         intfstream_write(handle->file, handle->state, handle->state_size);
       }
       else
-         filestream_seek(handle->file, handle->min_file_pos, SEEK_SET);
+         intfstream_seek(handle->file, handle->min_file_pos, SEEK_SET);
    }
 }
 
@@ -389,7 +393,7 @@ bool bsv_movie_init(void)
 
 bool bsv_movie_get_input(int16_t *bsv_data)
 {
-   if (filestream_read(bsv_movie_state_handle->file, bsv_data, 1) != 1)
+   if (intfstream_read(bsv_movie_state_handle->file, bsv_data, 1) != 1)
       return false;
 
    *bsv_data = swap_if_big16(*bsv_data);
@@ -450,7 +454,7 @@ bool bsv_movie_ctl(enum bsv_ctl_state state, void *data)
             int16_t *bsv_data = (int16_t*)data;
 
             *bsv_data = swap_if_big16(*bsv_data);
-            filestream_write(bsv_movie_state_handle->file, bsv_data, 1);
+            intfstream_write(bsv_movie_state_handle->file, bsv_data, 1);
          }
          break;
       case BSV_MOVIE_CTL_NONE:

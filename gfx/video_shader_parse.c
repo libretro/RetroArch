@@ -547,7 +547,8 @@ bool video_shader_resolve_parameters(config_file_t *conf,
        * Ideally, we'd get rid of this path sooner or later. */
 #endif
       file = filestream_open(path,
-            RETRO_VFS_FILE_ACCESS_READ, RFILE_HINT_NONE);
+            RETRO_VFS_FILE_ACCESS_READ,
+            RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
       if (!file)
       {

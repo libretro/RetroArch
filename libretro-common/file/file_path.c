@@ -412,7 +412,8 @@ bool path_file_exists(const char *path)
       return false;
 
    dummy = filestream_open(path,
-         RETRO_VFS_FILE_ACCESS_READ, RFILE_HINT_NONE);
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    if (!dummy)
       return false;

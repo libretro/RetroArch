@@ -93,7 +93,8 @@ int main(int argc, char ** argv)
    call_init(L, argc - 2, (const char **) argv + 2);
 
    dst = filestream_open(db_file,
-         RETRO_VFS_FILE_ACCESS_WRITE, RFILE_HINT_NONE);
+         RETRO_VFS_FILE_ACCESS_WRITE,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    if (!dst)
    {

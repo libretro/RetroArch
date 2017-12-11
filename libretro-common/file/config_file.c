@@ -355,7 +355,8 @@ static config_file_t *config_file_new_internal(
 
    conf->include_depth = depth;
    file                = filestream_open(path,
-         RETRO_VFS_FILE_ACCESS_READ, RFILE_HINT_NONE);
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    if (!file)
    {
