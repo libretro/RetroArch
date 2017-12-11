@@ -24,14 +24,14 @@ typedef struct
    unsigned opacity;
 } dispserv_win32_t;
 
-static void* win32_display_server_init()
+static void* win32_display_server_init(void)
 {
    dispserv_win32_t *dispserv = (dispserv_win32_t*)calloc(1, sizeof(*dispserv));
 
    return dispserv;
 }
 
-static void win32_display_server_destroy()
+static void win32_display_server_destroy(void)
 {
 
 }

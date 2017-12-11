@@ -23,7 +23,7 @@
 static const video_display_server_t *current_display_server = NULL;
 static void *current_display_server_data = NULL;
 
-void* video_display_server_init()
+void* video_display_server_init(void)
 {
    enum rarch_display_type type = video_driver_display_type_get();
 
@@ -46,7 +46,7 @@ void* video_display_server_init()
    return current_display_server_data;
 }
 
-void video_display_server_destroy()
+void video_display_server_destroy(void)
 {
 
 }

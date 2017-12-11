@@ -18,12 +18,12 @@
 #include <stddef.h>
 #include "../video_display_server.h"
 
-static void* null_display_server_init()
+static void* null_display_server_init(void)
 {
    return NULL;
 }
 
-static void null_display_server_destroy()
+static void null_display_server_destroy(void)
 {
 
 }
