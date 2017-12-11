@@ -30,7 +30,7 @@
 
 #include <sys/types.h>
 
-#include <libretro.h>
+#include <libretro_vfs.h>
 #include <retro_common_api.h>
 #include <retro_inline.h>
 #include <boolean.h>

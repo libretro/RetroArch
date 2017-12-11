@@ -78,10 +78,22 @@
 
 #include <libretro.h>
 #include <streams/file_stream.h>
+#include <vfs/vfs_implementation.H>
 #include <string/stdstring.h>
 #include <memmap.h>
 #include <retro_miscellaneous.h>
 #include <encodings/utf.h>
+
+retro_vfs_file_get_path_t filestream_get_path_cb = NULL;
+retro_vfs_file_open_t filestream_open_cb         = NULL;
+retro_vfs_file_close_t filestream_close_cb       = NULL;
+retro_vfs_file_size_t filestream_size_cb         = NULL;
+retro_vfs_file_tell_t filestream_tell_cb         = NULL;
+retro_vfs_file_seek_t filestream_seek_cb         = NULL;
+retro_vfs_file_read_t filestream_read_cb         = NULL;
+retro_vfs_file_write_t filestream_write_cb       = NULL;
+retro_vfs_file_flush_t filestream_flush_cb       = NULL;
+retro_vfs_file_delete_t filestream_delete_cb     = NULL;
 
 struct RFILE
 {
@@ -109,6 +121,42 @@ struct RFILE
    int fd;
    char *buf;
 };
+
+/* VFS Initialization */
+
+void filestream_vfs_init(const struct retro_vfs_interface_info* vfs_info)
+{
+	const struct retro_vfs_interface* vfs_iface;
+
+	filestream_get_path_cb = NULL;
+	filestream_open_cb     = NULL;
+	filestream_close_cb    = NULL;
+	filestream_tell_cb     = NULL;
+	filestream_size_cb     = NULL;
+	filestream_seek_cb     = NULL;
+	filestream_read_cb     = NULL;
+	filestream_write_cb    = NULL;
+	filestream_flush_cb    = NULL;
+	filestream_delete_cb   = NULL;
+
+	vfs_iface              = vfs_info->iface;
+
+	if (vfs_info->required_interface_version < FILESTREAM_REQUIRED_VFS_VERSION || vfs_iface == NULL)
+		return;
+
+	filestream_get_path_cb = vfs_iface->file_get_path;
+	filestream_open_cb     = vfs_iface->file_open;
+	filestream_close_cb    = vfs_iface->file_close;
+	filestream_size_cb     = vfs_iface->file_size;
+	filestream_tell_cb     = vfs_iface->file_tell;
+	filestream_seek_cb     = vfs_iface->file_seek;
+	filestream_read_cb     = vfs_iface->file_read;
+	filestream_write_cb    = vfs_iface->file_write;
+	filestream_flush_cb    = vfs_iface->file_flush;
+	filestream_delete_cb   = vfs_iface->file_delete;
+}
+
+/* Callback wrappers */
 
 int64_t filestream_get_size(RFILE *stream)
 {

@@ -35,12 +35,6 @@
 #include <retro_miscellaneous.h>
 #include <encodings/utf.h>
 
-enum libretro_file_hints
-{
-	RFILE_HINT_MMAP       = 1 << 8,
-	RFILE_HINT_UNBUFFERED = 1 << 9
-};
-
 #ifdef VFS_FRONTEND
 struct retro_vfs_file_handle
 #else

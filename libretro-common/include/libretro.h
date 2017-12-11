@@ -1044,17 +1044,6 @@ struct retro_hw_render_context_negotiation_interface
                                             * recognize or support. Should be set in either retro_init or retro_load_game, but not both.
                                             */
 
-/* File open flags
- * Introduced in VFS API v1 */
-#define RETRO_VFS_FILE_ACCESS_READ            (1 << 0) /* Read only mode */
-#define RETRO_VFS_FILE_ACCESS_WRITE           (1 << 1) /* Write only mode, discard contents and overwrites existing file unless RETRO_VFS_FILE_ACCESS_UPDATE is also specified */
-#define RETRO_VFS_FILE_ACCESS_READ_WRITE      (RETRO_VFS_FILE_ACCESS_READ | RETRO_VFS_FILE_ACCESS_WRITE) /* Read-write mode, discard contents and overwrites existing file unless RETRO_VFS_FILE_ACCESS_UPDATE is also specified*/
-#define RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING (1 << 2) /* Prevents discarding content of existing files opened for writing */
-
-#define RETRO_VFS_FILE_ACCESS_HINT_NONE            (0)
-/* Indicate that we would want to map the file into memory if possible. Requires RETRO_VFS_FILE_ACCESS_READ. This is only a hint and it is up to the frontend to honor and implement it. */
-#define RETRO_VFS_FILE_ACCESS_HINT_MEMORY_MAP      (1 << 0)
-
 #define RETRO_MEMDESC_CONST     (1 << 0)   /* The frontend will never change this memory area once retro_load_game has returned. */
 #define RETRO_MEMDESC_BIGENDIAN (1 << 1)   /* The memory area contains big endian data. Default is little endian. */
 #define RETRO_MEMDESC_ALIGN_2   (1 << 16)  /* All memory access in this area is aligned to their own size, or 2, whichever is smaller. */
