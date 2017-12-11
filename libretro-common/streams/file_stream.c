@@ -74,6 +74,8 @@
 
 #endif
 
+#define RFILE_HINT_UNBUFFERED (1 << 8)
+
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 #include <memmap.h>

@@ -41,8 +41,6 @@ RETRO_BEGIN_DECLS
 typedef struct RFILE RFILE;
 
 #define RFILE_HINT_NONE       (0)
-/* There is no guarantee these requests will be attended. */
-#define RFILE_HINT_UNBUFFERED (1 << 8)
 /* requires RFILE_MODE_READ */
 #define RFILE_HINT_MMAP       (1 << 9)
 
