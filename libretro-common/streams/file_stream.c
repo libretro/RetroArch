@@ -86,7 +86,6 @@
 struct RFILE
 {
    unsigned hints;
-   char *ext;
    int64_t size;
    FILE *fp;
 
@@ -110,13 +109,6 @@ struct RFILE
    int fd;
    char *buf;
 };
-
-const char *filestream_get_ext(RFILE *stream)
-{
-   if (!stream)
-      return NULL;
-   return stream->ext;
-}
 
 int64_t filestream_get_size(RFILE *stream)
 {
@@ -276,12 +268,6 @@ RFILE *filestream_open(const char *path, unsigned mode, unsigned hints)
             stream->hints &= ~RETRO_VFS_FILE_ACCESS_HINT_MEMORY_MAP;
       }
 #endif
-   }
-
-   {
-      const char *ld = (const char*)strrchr(path, '.');
-      if (ld)
-         stream->ext = strdup(ld + 1);
    }
 
    filestream_set_size(stream);
@@ -492,9 +478,6 @@ int filestream_close(RFILE *stream)
 {
    if (!stream)
       goto error;
-
-   if (!string_is_empty(stream->ext))
-      free(stream->ext);
 
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
    {
