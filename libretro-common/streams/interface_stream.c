@@ -340,3 +340,86 @@ void intfstream_putc(intfstream_internal_t *intf, int c)
          break;
    }
 }
+
+intfstream_t* intfstream_open_file(const char *path, unsigned hints)
+{
+   intfstream_info_t info;
+   intfstream_t *fd = NULL;
+
+   info.type        = INTFSTREAM_FILE;
+   fd               = (intfstream_t*)intfstream_init(&info);
+
+   if (!fd)
+      return NULL;
+
+   if (!intfstream_open(fd, path, RETRO_VFS_FILE_ACCESS_READ, hints))
+      goto error;
+
+   return fd;
+
+error:
+   if (fd)
+   {
+      intfstream_close(fd);
+      free(fd);
+   }
+   return NULL;
+}
+
+intfstream_t *intfstream_open_memory(void *data, size_t size, unsigned hints)
+{
+   intfstream_info_t info;
+   intfstream_t *fd     = NULL;
+
+   info.type            = INTFSTREAM_MEMORY;
+   info.memory.buf.data = (uint8_t*)data;
+   info.memory.buf.size = size;
+   info.memory.writable = false;
+
+   fd                   = (intfstream_t*)intfstream_init(&info);
+   
+   if (!fd)
+      return NULL;
+
+   if (!intfstream_open(fd, NULL, RETRO_VFS_FILE_ACCESS_READ, hints))
+      goto error;
+
+   return fd;
+
+error:
+   if (fd)
+   {
+      intfstream_close(fd);
+      free(fd);
+   }
+   return NULL;
+}
+
+intfstream_t *intfstream_open_chd_track(const char *path,
+      int32_t track, unsigned hints)
+{
+   intfstream_info_t info;
+   intfstream_t *fd = NULL;
+
+   info.type        = INTFSTREAM_CHD;
+   info.chd.track   = track;
+
+   fd               = (intfstream_t*)intfstream_init(&info);
+
+   if (!fd)
+      return NULL;
+
+   if (!intfstream_open(fd, path,
+            RETRO_VFS_FILE_ACCESS_READ, RFILE_HINT_NONE))
+      goto error;
+
+   return fd;
+
+error:
+   if (fd)
+   {
+      intfstream_close(fd);
+      free(fd);
+   }
+   return NULL;
+}

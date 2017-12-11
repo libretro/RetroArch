@@ -90,89 +90,6 @@ int detect_gc_game(intfstream_t *fd, char *game_id);
 
 int detect_serial_ascii_game(intfstream_t *fd, char *game_id);
 
-static intfstream_t* intfstream_open_file(const char *path, unsigned hints)
-{
-   intfstream_info_t info;
-   intfstream_t *fd = NULL;
-
-   info.type        = INTFSTREAM_FILE;
-   fd               = (intfstream_t*)intfstream_init(&info);
-
-   if (!fd)
-      return NULL;
-
-   if (!intfstream_open(fd, path, RETRO_VFS_FILE_ACCESS_READ, hints))
-      goto error;
-
-   return fd;
-
-error:
-   if (fd)
-   {
-      intfstream_close(fd);
-      free(fd);
-   }
-   return NULL;
-}
-
-static intfstream_t *open_memory(void *data, size_t size)
-{
-   intfstream_info_t info;
-   intfstream_t *fd     = NULL;
-
-   info.type            = INTFSTREAM_MEMORY;
-   info.memory.buf.data = (uint8_t*)data;
-   info.memory.buf.size = size;
-   info.memory.writable = false;
-
-   fd                   = (intfstream_t*)intfstream_init(&info);
-   
-   if (!fd)
-      return NULL;
-
-   if (!intfstream_open(fd, NULL, RETRO_VFS_FILE_ACCESS_READ, RFILE_HINT_NONE))
-      goto error;
-
-   return fd;
-
-error:
-   if (fd)
-   {
-      intfstream_close(fd);
-      free(fd);
-   }
-   return NULL;
-}
-
-static intfstream_t*
-open_chd_track(const char *path, int32_t track)
-{
-   intfstream_info_t info;
-   intfstream_t *fd = NULL;
-
-   info.type        = INTFSTREAM_CHD;
-   info.chd.track   = track;
-
-   fd               = (intfstream_t*)intfstream_init(&info);
-
-   if (!fd)
-      return NULL;
-
-   if (!intfstream_open(fd, path,
-            RETRO_VFS_FILE_ACCESS_READ, RFILE_HINT_NONE))
-      goto error;
-
-   return fd;
-
-error:
-   if (fd)
-   {
-      intfstream_close(fd);
-      free(fd);
-   }
-   return NULL;
-}
-
 static void database_info_set_type(
       database_info_handle_t *handle,
       enum database_type type)
@@ -320,7 +237,7 @@ static bool intfstream_file_get_serial(const char *name,
 
       intfstream_close(fd);
       free(fd);
-      fd = open_memory(data, size);
+      fd = intfstream_open_memory(data, size, RFILE_HINT_NONE);
       if (!fd)
       {
          free(data);
@@ -401,7 +318,9 @@ static int task_database_gdi_get_serial(const char *name, char* serial)
 static int task_database_chd_get_serial(const char *name, char* serial)
 {
    int result;
-   intfstream_t *fd = open_chd_track(name, CHDSTREAM_TRACK_FIRST_DATA);
+   intfstream_t *fd = intfstream_open_chd_track(
+         name, CHDSTREAM_TRACK_FIRST_DATA,
+         RFILE_HINT_NONE);
    if (!fd)
       return 0;
 
@@ -462,7 +381,7 @@ static bool intfstream_file_get_crc(const char *name,
 
       intfstream_close(fd);
       free(fd);
-      fd = open_memory(data, size);
+      fd = intfstream_open_memory(data, size, RFILE_HINT_NONE);
 
       if (!fd) 
          goto error;
@@ -552,7 +471,9 @@ static int task_database_gdi_get_crc(const char *name, uint32_t *crc)
 static bool task_database_chd_get_crc(const char *name, uint32_t *crc)
 {
    int rv;
-   intfstream_t *fd = open_chd_track(name, CHDSTREAM_TRACK_PRIMARY);
+   intfstream_t *fd = intfstream_open_chd_track(
+         name, CHDSTREAM_TRACK_PRIMARY,
+         RFILE_HINT_NONE);
    if (!fd)
       return 0;
 
