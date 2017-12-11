@@ -90,7 +90,7 @@ int detect_gc_game(intfstream_t *fd, char *game_id);
 
 int detect_serial_ascii_game(intfstream_t *fd, char *game_id);
 
-static intfstream_t* intfstream_open_file(const char *path)
+static intfstream_t* intfstream_open_file(const char *path, unsigned hints)
 {
    intfstream_info_t info;
    intfstream_t *fd = NULL;
@@ -101,7 +101,7 @@ static intfstream_t* intfstream_open_file(const char *path)
    if (!fd)
       return NULL;
 
-   if (!intfstream_open(fd, path, RETRO_VFS_FILE_ACCESS_READ, RFILE_HINT_NONE))
+   if (!intfstream_open(fd, path, RETRO_VFS_FILE_ACCESS_READ, hints))
       goto error;
 
    return fd;
@@ -289,7 +289,7 @@ static bool intfstream_file_get_serial(const char *name,
    int rv;
    uint8_t *data     = NULL;
    ssize_t file_size = -1;
-   intfstream_t *fd  = intfstream_open_file(name);
+   intfstream_t *fd  = intfstream_open_file(name, RFILE_HINT_NONE);
 
    if (!fd)
       return 0;
@@ -432,7 +432,7 @@ static bool intfstream_file_get_crc(const char *name,
       size_t offset, size_t size, uint32_t *crc)
 {
    int rv;
-   intfstream_t *fd  = intfstream_open_file(name);
+   intfstream_t *fd  = intfstream_open_file(name, RFILE_HINT_NONE);
    uint8_t *data     = NULL;
    ssize_t file_size = -1;
 
@@ -574,7 +574,7 @@ static void task_database_cue_prune(database_info_handle_t *db,
 {
    size_t i;
    char       *path = (char *)malloc(PATH_MAX_LENGTH + 1);
-   intfstream_t *fd = intfstream_open_file(name);
+   intfstream_t *fd = intfstream_open_file(name, RFILE_HINT_NONE);
 
    if (!fd)
       goto end;
@@ -606,7 +606,7 @@ static void gdi_prune(database_info_handle_t *db, const char *name)
 {
    size_t i;
    char       *path = (char *)malloc(PATH_MAX_LENGTH + 1);
-   intfstream_t *fd = intfstream_open_file(name);
+   intfstream_t *fd = intfstream_open_file(name, RFILE_HINT_NONE);
 
    if (!fd)
       goto end;
