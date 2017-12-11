@@ -511,7 +511,8 @@ int sha1_calculate(const char *path, char *result)
    SHA1Context sha;
    unsigned char buff[4096];
    int rv    = 1;
-   RFILE *fd = filestream_open(path, RFILE_MODE_READ, RFILE_HINT_NONE);
+   RFILE *fd = filestream_open(path,
+         RETRO_VFS_FILE_ACCESS_READ, RFILE_HINT_NONE);
 
    if (!fd)
       goto error;

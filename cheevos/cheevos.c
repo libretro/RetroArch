@@ -2641,7 +2641,7 @@ static int cheevos_iterate(coro_t* coro)
       if (!CHEEVOS_VAR_DATA)
       {
          CHEEVOS_VAR_STREAM = filestream_open(CHEEVOS_VAR_PATH,
-               RFILE_MODE_READ, RFILE_HINT_NONE);
+               RETRO_VFS_FILE_ACCESS_READ, RFILE_HINT_NONE);
 
          if (!CHEEVOS_VAR_STREAM)
             CORO_STOP();

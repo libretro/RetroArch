@@ -75,7 +75,8 @@ static bool bsv_movie_init_playback(bsv_movie_t *handle, const char *path)
    uint32_t state_size       = 0;
    uint32_t content_crc      = 0;
    uint32_t header[4]        = {0};
-   RFILE *file               = filestream_open(path, RFILE_MODE_READ, RFILE_HINT_NONE);
+   RFILE *file               = filestream_open(path,
+         RETRO_VFS_FILE_ACCESS_READ, RFILE_HINT_NONE);
 
    if (!file)
    {
@@ -152,7 +153,8 @@ static bool bsv_movie_init_record(bsv_movie_t *handle, const char *path)
    uint32_t state_size       = 0;
    uint32_t content_crc      = 0;
    uint32_t header[4]        = {0};
-   RFILE *file               = filestream_open(path, RFILE_MODE_WRITE, RFILE_HINT_NONE);
+   RFILE *file               = filestream_open(path,
+         RETRO_VFS_FILE_ACCESS_WRITE, RFILE_HINT_NONE);
 
    if (!file)
    {

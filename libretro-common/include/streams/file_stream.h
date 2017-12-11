@@ -30,6 +30,7 @@
 
 #include <sys/types.h>
 
+#include <libretro.h>
 #include <retro_common_api.h>
 #include <retro_inline.h>
 #include <boolean.h>
@@ -40,16 +41,11 @@ RETRO_BEGIN_DECLS
 
 typedef struct RFILE RFILE;
 
-#define RFILE_HINT_NONE       (0)
-/* requires RFILE_MODE_READ */
-#define RFILE_HINT_MMAP       (1 << 9)
+#define FILESTREAM_REQUIRED_VFS_VERSION 1
 
-enum
-{
-   RFILE_MODE_READ = 0,
-   RFILE_MODE_WRITE,
-   RFILE_MODE_READ_WRITE
-};
+#define RFILE_HINT_NONE       (0)
+/* requires RETRO_VFS_FILE_ACCESS_READ */
+#define RFILE_HINT_MMAP       (1 << 9)
 
 int64_t filestream_get_size(RFILE *stream);
 

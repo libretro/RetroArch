@@ -22,6 +22,7 @@
 #include <unistd.h>
 #endif
 
+#include <libretro.h>
 #include <lists/file_list.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
@@ -1877,7 +1878,7 @@ static void systemd_service_toggle(const char *path, char *unit, bool enable)
 
    if (enable)
       filestream_close(filestream_open(path,
-               RFILE_MODE_WRITE, RFILE_HINT_NONE));
+               RETRO_VFS_FILE_ACCESS_WRITE, RFILE_HINT_NONE));
    else
       path_file_remove(path);
 

@@ -21,6 +21,7 @@
 #include <gccore.h>
 #include <ogcsys.h>
 
+#include <libretro.h>
 #include <streams/file_stream.h>
 
 #ifdef HAVE_CONFIG_H
@@ -719,7 +720,8 @@ static void gx_efb_screenshot(void)
 {
    int x, y;
    uint8_t tga_header[] = {0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x02, 0xE0, 0x01, 0x18, 0x00};
-   RFILE           *out = filestream_open("/screenshot.tga", RFILE_MODE_WRITE, RFILE_HINT_NONE);
+   RFILE           *out = filestream_open("/screenshot.tga",
+         RETRO_VFS_FILE_ACCESS_WRITE, RFILE_HINT_NONE);
 
    if (!out)
       return;

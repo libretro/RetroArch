@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <libretro.h>
 #include <compat/posix_string.h>
 #include <compat/msvc.h>
 #include <compat/strl.h>
@@ -545,7 +546,8 @@ bool video_shader_resolve_parameters(config_file_t *conf,
       /* If that doesn't work, fallback to the old path.
        * Ideally, we'd get rid of this path sooner or later. */
 #endif
-      file = filestream_open(path, RFILE_MODE_READ, RFILE_HINT_NONE);
+      file = filestream_open(path,
+            RETRO_VFS_FILE_ACCESS_READ, RFILE_HINT_NONE);
 
       if (!file)
       {

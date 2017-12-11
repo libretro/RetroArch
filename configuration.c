@@ -19,6 +19,7 @@
 
 #include <ctype.h>
 
+#include <libretro.h>
 #include <file/config_file.h>
 #include <file/file_path.h>
 #include <compat/strl.h>
@@ -3792,17 +3793,17 @@ bool config_save_file(const char *path)
 #ifdef HAVE_LAKKA
    if (settings->bools.ssh_enable)
       filestream_close(filestream_open(LAKKA_SSH_PATH,
-               RFILE_MODE_WRITE, RFILE_HINT_NONE));
+               RETRO_VFS_FILE_ACCESS_WRITE, RFILE_HINT_NONE));
    else
       path_file_remove(LAKKA_SSH_PATH);
    if (settings->bools.samba_enable)
       filestream_close(filestream_open(LAKKA_SAMBA_PATH,
-               RFILE_MODE_WRITE, RFILE_HINT_NONE));
+               RETRO_VFS_FILE_ACCESS_WRITE, RFILE_HINT_NONE));
    else
       path_file_remove(LAKKA_SAMBA_PATH);
    if (settings->bools.bluetooth_enable)
       filestream_close(filestream_open(LAKKA_BLUETOOTH_PATH,
-               RFILE_MODE_WRITE, RFILE_HINT_NONE));
+               RETRO_VFS_FILE_ACCESS_WRITE, RFILE_HINT_NONE));
    else
       path_file_remove(LAKKA_BLUETOOTH_PATH);
 #endif

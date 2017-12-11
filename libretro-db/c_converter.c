@@ -804,7 +804,8 @@ int main(int argc, char** argv)
       dat_buffer++;
    }
 
-   rdb_file = filestream_open(rdb_path, RFILE_MODE_WRITE, RFILE_HINT_NONE);
+   rdb_file = filestream_open(rdb_path,
+         RETRO_VFS_FILE_ACCESS_WRITE, RFILE_HINT_NONE);
 
    if (!rdb_file)
    {

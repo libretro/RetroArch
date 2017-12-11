@@ -164,7 +164,7 @@ RFILE *filestream_open(const char *path, unsigned mode, unsigned hints)
    stream->hints           = hints;
 
 #ifdef HAVE_MMAP
-   if (stream->hints & RFILE_HINT_MMAP && mode == RFILE_MODE_READ)
+   if (stream->hints & RFILE_HINT_MMAP && mode == RETRO_VFS_FILE_ACCESS_READ)
       stream->hints |= RFILE_HINT_UNBUFFERED;
    else
 #endif
@@ -172,13 +172,13 @@ RFILE *filestream_open(const char *path, unsigned mode, unsigned hints)
 
    switch (mode)
    {
-      case RFILE_MODE_READ:
+      case RETRO_VFS_FILE_ACCESS_READ:
          if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
             mode_str = MODE_STR_READ_UNBUF;
          /* No "else" here */
          flags    = O_RDONLY;
          break;
-      case RFILE_MODE_WRITE:
+      case RETRO_VFS_FILE_ACCESS_WRITE:
          if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
             mode_str = MODE_STR_WRITE_UNBUF;
          else
@@ -189,7 +189,7 @@ RFILE *filestream_open(const char *path, unsigned mode, unsigned hints)
 #endif
          }
          break;
-      case RFILE_MODE_READ_WRITE:
+      case RETRO_VFS_FILE_ACCESS_READ_WRITE:
          if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
             mode_str = MODE_STR_WRITE_PLUS;
          else
@@ -199,6 +199,9 @@ RFILE *filestream_open(const char *path, unsigned mode, unsigned hints)
             flags   |= O_BINARY;
 #endif
          }
+         break;
+         /* TODO/FIXME - implement */
+      case RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING:
          break;
    }
 
@@ -550,7 +553,7 @@ int filestream_read_file(const char *path, void **buf, ssize_t *len)
    ssize_t content_buf_size = 0;
    void *content_buf        = NULL;
    RFILE *file              = filestream_open(path,
-         RFILE_MODE_READ, RFILE_HINT_NONE);
+         RETRO_VFS_FILE_ACCESS_READ, RFILE_HINT_NONE);
 
    if (!file)
    {
@@ -616,7 +619,8 @@ error:
 bool filestream_write_file(const char *path, const void *data, ssize_t size)
 {
    ssize_t ret   = 0;
-   RFILE *file   = filestream_open(path, RFILE_MODE_WRITE, RFILE_HINT_NONE);
+   RFILE *file   = filestream_open(path,
+         RETRO_VFS_FILE_ACCESS_WRITE, RFILE_HINT_NONE);
    if (!file)
       return false;
 

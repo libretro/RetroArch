@@ -216,8 +216,9 @@ int libretrodb_open(const char *path, libretrodb_t *db)
 {
    libretrodb_header_t header;
    libretrodb_metadata_t md;
-   int rv;
-   RFILE *fd = filestream_open(path, RFILE_MODE_READ, RFILE_HINT_NONE);
+   int rv    = 0;
+   RFILE *fd = filestream_open(path,
+         RETRO_VFS_FILE_ACCESS_READ, RFILE_HINT_NONE);
 
    if (!fd)
       return -errno;
@@ -428,18 +429,21 @@ void libretrodb_cursor_close(libretrodb_cursor_t *cursor)
 int libretrodb_cursor_open(libretrodb_t *db, libretrodb_cursor_t *cursor,
       libretrodb_query_t *q)
 {
+   RFILE *fd = NULL;
    if (!db || string_is_empty(db->path))
       return -errno;
 
-   cursor->fd = filestream_open(db->path, RFILE_MODE_READ, RFILE_HINT_MMAP);
+   fd = filestream_open(db->path,
+         RETRO_VFS_FILE_ACCESS_READ, RFILE_HINT_MMAP);
 
-   if (!cursor->fd)
+   if (!fd)
       return -errno;
 
-   cursor->db = db;
+   cursor->fd       = fd;
+   cursor->db       = db;
    cursor->is_valid = 1;
    libretrodb_cursor_reset(cursor);
-   cursor->query = q;
+   cursor->query    = q;
 
    if (q)
       libretrodb_query_inc_ref(q);
