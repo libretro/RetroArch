@@ -419,6 +419,7 @@ static ssize_t intfstream_get_file_size(const char *path)
       return -1;
    rv = intfstream_get_size(fd);
    intfstream_close(fd);
+   free(fd);
    return rv;
 }
 

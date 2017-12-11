@@ -2661,6 +2661,7 @@ static int cheevos_iterate(coro_t* coro)
          if (!CHEEVOS_VAR_DATA)
          {
             intfstream_close(CHEEVOS_VAR_STREAM);
+            free(CHEEVOS_VAR_STREAM);
             CORO_STOP();
          }
 
@@ -2687,6 +2688,7 @@ static int cheevos_iterate(coro_t* coro)
          }
 
          intfstream_close(CHEEVOS_VAR_STREAM);
+         free(CHEEVOS_VAR_STREAM);
       }
 
       /* Use the supported extensions as a hint

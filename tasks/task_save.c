@@ -178,6 +178,7 @@ static void autosave_thread(void *data)
             failed |= ((size_t)intfstream_write(file, save->buffer, save->bufsize) != save->bufsize);
             failed |= (intfstream_flush(file) != 0);
             failed |= (intfstream_close(file) != 0);
+            free(file);
             if (failed)
                RARCH_WARN("Failed to autosave SRAM. Disk might be full.\n");
          }
@@ -532,6 +533,7 @@ static void task_save_handler_finished(retro_task_t *task,
    task_set_finished(task, true);
 
    intfstream_close(state->file);
+   free(state->file);
 
    if (!task_get_error(task) && task_get_cancelled(task))
       task_set_error(task, strdup("Task canceled"));
@@ -713,7 +715,10 @@ static void task_load_handler_finished(retro_task_t *task,
    task_set_finished(task, true);
 
    if (state->file)
+   {
       intfstream_close(state->file);
+      free(state->file);
+   }
 
    if (!task_get_error(task) && task_get_cancelled(task))
       task_set_error(task, strdup("Task canceled"));

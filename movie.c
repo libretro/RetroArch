@@ -217,6 +217,7 @@ static void bsv_movie_free(bsv_movie_t *handle)
       return;
 
    intfstream_close(handle->file);
+   free(handle->file);
 
    free(handle->state);
    free(handle->frame_pos);

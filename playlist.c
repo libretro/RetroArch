@@ -550,6 +550,7 @@ static bool playlist_read_file(
 
 end:
    intfstream_close(file);
+   free(file);
    return true;
 }
 

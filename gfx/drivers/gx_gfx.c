@@ -746,6 +746,7 @@ static void gx_efb_screenshot(void)
    }
 
    intfstream_close(out);
+   free(out);
 }
 
 #endif

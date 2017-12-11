@@ -250,8 +250,8 @@ static bool intfstream_file_get_serial(const char *name,
 
    rv = intfstream_get_serial(fd, serial);
    intfstream_close(fd);
-   free(data);
    free(fd);
+   free(data);
    return rv;
 
 error:
