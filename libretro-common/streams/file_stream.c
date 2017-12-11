@@ -366,26 +366,12 @@ error:
 
 int filestream_eof(RFILE *stream)
 {
-   return feof(stream->fp);
-
-   /* TODO: FIXME: I can't figure out why this breaks on Windows.
-      The while loop in config_file_new_internal just never exits.
-      The current position seems to jump backwards a few lines,
-      but it doesn't start until somewhere in the middle of the file.
-    */
-   /*
-   size_t current_position = filestream_tell(stream);
-   size_t end_position;
-
-   filestream_seek(stream, 0, SEEK_END);
-   end_position = filestream_tell(stream);
-
-   filestream_seek(stream, current_position, SEEK_SET);
+   int64_t current_position = filestream_tell(stream);
+   int64_t end_position     = filestream_get_size(stream);
 
    if (current_position >= end_position)
       return 1;
    return 0;
-   */
 }
 
 ssize_t filestream_tell(RFILE *stream)
