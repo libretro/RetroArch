@@ -78,7 +78,7 @@
 
 #include <libretro.h>
 #include <streams/file_stream.h>
-#include <vfs/vfs_implementation.H>
+#include <vfs/vfs_implementation.h>
 #include <string/stdstring.h>
 #include <memmap.h>
 #include <retro_miscellaneous.h>
