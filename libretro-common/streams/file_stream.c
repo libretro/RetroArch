@@ -337,9 +337,13 @@ char *filestream_gets(RFILE *stream, char *s, size_t len)
 
 int filestream_getc(RFILE *stream)
 {
+   char c = 0;
+   (void)c;
    if (!stream)
       return 0;
-   return fgetc(stream->fp);
+   if(filestream_read(stream, &c, 1) == 1)
+      return (int)c;
+   return EOF;   
 }
 
 ssize_t filestream_seek(RFILE *stream, ssize_t offset, int whence)
