@@ -25,7 +25,7 @@
 #include "video_driver.h" /* video_context_driver_get_api */
 #include <rhash.h>
 #include <string/stdstring.h>
-#include <streams/file_stream.h>
+#include <streams/interface_stream.h>
 
 #include "../msg_hash.h"
 #include "../verbosity.h"
@@ -521,10 +521,10 @@ bool video_shader_resolve_parameters(config_file_t *conf,
 
    for (i = 0; i < shader->passes; i++)
    {
-      RFILE *file      = NULL;
-      size_t line_size = 4096 * sizeof(char);
-      char *line       = (char*)malloc(4096 * sizeof(char));
-      const char *path = shader->pass[i].source.path;
+      intfstream_t *file = NULL;
+      size_t line_size   = 4096 * sizeof(char);
+      char *line         = (char*)malloc(4096 * sizeof(char));
+      const char *path   = shader->pass[i].source.path;
 
 	  if (string_is_empty(path))
 	  {
@@ -546,7 +546,7 @@ bool video_shader_resolve_parameters(config_file_t *conf,
       /* If that doesn't work, fallback to the old path.
        * Ideally, we'd get rid of this path sooner or later. */
 #endif
-      file = filestream_open(path,
+      file = intfstream_open_file(path,
             RETRO_VFS_FILE_ACCESS_READ,
             RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
@@ -559,7 +559,7 @@ bool video_shader_resolve_parameters(config_file_t *conf,
       line[0] = '\0';
 
       while (shader->num_parameters < ARRAY_SIZE(shader->parameters)
-            && filestream_gets(file, line, line_size))
+            && intfstream_gets(file, line, line_size))
       {
          int ret = sscanf(line,
                "#pragma parameter %63s \"%63[^\"]\" %f %f %f %f",
@@ -585,7 +585,7 @@ bool video_shader_resolve_parameters(config_file_t *conf,
       }
 
       free(line);
-      filestream_close(file);
+      intfstream_close(file);
    }
 
    if (conf && !video_shader_resolve_current_parameters(conf, shader))
