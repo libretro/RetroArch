@@ -341,7 +341,8 @@ void intfstream_putc(intfstream_internal_t *intf, int c)
    }
 }
 
-intfstream_t* intfstream_open_file(const char *path, unsigned hints)
+intfstream_t* intfstream_open_file(const char *path,
+      unsigned mode, unsigned hints)
 {
    intfstream_info_t info;
    intfstream_t *fd = NULL;
@@ -352,7 +353,7 @@ intfstream_t* intfstream_open_file(const char *path, unsigned hints)
    if (!fd)
       return NULL;
 
-   if (!intfstream_open(fd, path, RETRO_VFS_FILE_ACCESS_READ, hints))
+   if (!intfstream_open(fd, path, mode, hints))
       goto error;
 
    return fd;
@@ -366,7 +367,8 @@ error:
    return NULL;
 }
 
-intfstream_t *intfstream_open_memory(void *data, size_t size, unsigned hints)
+intfstream_t *intfstream_open_memory(void *data,
+      unsigned mode, unsigned hints, size_t size)
 {
    intfstream_info_t info;
    intfstream_t *fd     = NULL;
@@ -381,7 +383,7 @@ intfstream_t *intfstream_open_memory(void *data, size_t size, unsigned hints)
    if (!fd)
       return NULL;
 
-   if (!intfstream_open(fd, NULL, RETRO_VFS_FILE_ACCESS_READ, hints))
+   if (!intfstream_open(fd, NULL, mode, hints))
       goto error;
 
    return fd;
@@ -396,7 +398,7 @@ error:
 }
 
 intfstream_t *intfstream_open_chd_track(const char *path,
-      int32_t track, unsigned hints)
+      unsigned mode, unsigned hints, int32_t track)
 {
    intfstream_info_t info;
    intfstream_t *fd = NULL;
@@ -409,8 +411,7 @@ intfstream_t *intfstream_open_chd_track(const char *path,
    if (!fd)
       return NULL;
 
-   if (!intfstream_open(fd, path,
-            RETRO_VFS_FILE_ACCESS_READ, RFILE_HINT_NONE))
+   if (!intfstream_open(fd, path, mode, hints))
       goto error;
 
    return fd;

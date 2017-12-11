@@ -91,13 +91,13 @@ void intfstream_putc(intfstream_internal_t *intf, int c);
 int intfstream_close(intfstream_internal_t *intf);
 
 intfstream_t* intfstream_open_file(const char *path,
-      unsigned hints);
+      unsigned mode, unsigned hints);
 
 intfstream_t *intfstream_open_memory(void *data,
-      size_t size, unsigned hints);
+      unsigned mode, unsigned hints, size_t size);
 
 intfstream_t *intfstream_open_chd_track(const char *path,
-      int32_t track, unsigned hints);
+      unsigned mode, unsigned hints, int32_t track);
 
 RETRO_END_DECLS
 

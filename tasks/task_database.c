@@ -206,7 +206,8 @@ static bool intfstream_file_get_serial(const char *name,
    int rv;
    uint8_t *data     = NULL;
    ssize_t file_size = -1;
-   intfstream_t *fd  = intfstream_open_file(name, RFILE_HINT_NONE);
+   intfstream_t *fd  = intfstream_open_file(name,
+         RETRO_VFS_FILE_ACCESS_READ, RFILE_HINT_NONE);
 
    if (!fd)
       return 0;
@@ -237,7 +238,9 @@ static bool intfstream_file_get_serial(const char *name,
 
       intfstream_close(fd);
       free(fd);
-      fd = intfstream_open_memory(data, size, RFILE_HINT_NONE);
+      fd = intfstream_open_memory(data, RETRO_VFS_FILE_ACCESS_READ,
+            RFILE_HINT_NONE,
+            size);
       if (!fd)
       {
          free(data);
@@ -319,8 +322,10 @@ static int task_database_chd_get_serial(const char *name, char* serial)
 {
    int result;
    intfstream_t *fd = intfstream_open_chd_track(
-         name, CHDSTREAM_TRACK_FIRST_DATA,
-         RFILE_HINT_NONE);
+         name, 
+         RETRO_VFS_FILE_ACCESS_READ,
+         RFILE_HINT_NONE,
+         CHDSTREAM_TRACK_FIRST_DATA);
    if (!fd)
       return 0;
 
@@ -351,7 +356,8 @@ static bool intfstream_file_get_crc(const char *name,
       size_t offset, size_t size, uint32_t *crc)
 {
    int rv;
-   intfstream_t *fd  = intfstream_open_file(name, RFILE_HINT_NONE);
+   intfstream_t *fd  = intfstream_open_file(name,
+         RETRO_VFS_FILE_ACCESS_READ, RFILE_HINT_NONE);
    uint8_t *data     = NULL;
    ssize_t file_size = -1;
 
@@ -381,7 +387,8 @@ static bool intfstream_file_get_crc(const char *name,
 
       intfstream_close(fd);
       free(fd);
-      fd = intfstream_open_memory(data, size, RFILE_HINT_NONE);
+      fd = intfstream_open_memory(data, RETRO_VFS_FILE_ACCESS_READ,
+            RFILE_HINT_NONE, size);
 
       if (!fd) 
          goto error;
@@ -472,8 +479,10 @@ static bool task_database_chd_get_crc(const char *name, uint32_t *crc)
 {
    int rv;
    intfstream_t *fd = intfstream_open_chd_track(
-         name, CHDSTREAM_TRACK_PRIMARY,
-         RFILE_HINT_NONE);
+         name,
+         RETRO_VFS_FILE_ACCESS_READ,
+         RFILE_HINT_NONE,
+         CHDSTREAM_TRACK_PRIMARY);
    if (!fd)
       return 0;
 
@@ -495,7 +504,8 @@ static void task_database_cue_prune(database_info_handle_t *db,
 {
    size_t i;
    char       *path = (char *)malloc(PATH_MAX_LENGTH + 1);
-   intfstream_t *fd = intfstream_open_file(name, RFILE_HINT_NONE);
+   intfstream_t *fd = intfstream_open_file(name,
+         RETRO_VFS_FILE_ACCESS_READ, RFILE_HINT_NONE);
 
    if (!fd)
       goto end;
@@ -527,7 +537,8 @@ static void gdi_prune(database_info_handle_t *db, const char *name)
 {
    size_t i;
    char       *path = (char *)malloc(PATH_MAX_LENGTH + 1);
-   intfstream_t *fd = intfstream_open_file(name, RFILE_HINT_NONE);
+   intfstream_t *fd = intfstream_open_file(name,
+         RETRO_VFS_FILE_ACCESS_READ, RFILE_HINT_NONE);
 
    if (!fd)
       goto end;
