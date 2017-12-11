@@ -22,7 +22,7 @@
 #include <ogcsys.h>
 
 #include <libretro.h>
-#include <streams/file_stream.h>
+#include <streams/interface_stream.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -720,14 +720,14 @@ static void gx_efb_screenshot(void)
 {
    int x, y;
    uint8_t tga_header[] = {0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x02, 0xE0, 0x01, 0x18, 0x00};
-   RFILE           *out = filestream_open("/screenshot.tga",
+   intfstream_t    *out = intfstream_open("/screenshot.tga",
          RETRO_VFS_FILE_ACCESS_WRITE,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    if (!out)
       return;
 
-   filestream_write(out, tga_header, sizeof(tga_header));
+   intfstream_write(out, tga_header, sizeof(tga_header));
 
    for (y = 479; y >= 0; --y)
    {
@@ -742,10 +742,10 @@ static void gx_efb_screenshot(void)
          line[i++] = color.g;
          line[i++] = color.r;
       }
-      filestream_write(out, line, sizeof(line));
+      intfstream_write(out, line, sizeof(line));
    }
 
-   filestream_close(out);
+   intfstream_close(out);
 }
 
 #endif
