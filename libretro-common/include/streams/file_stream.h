@@ -100,11 +100,6 @@ int filestream_printf(RFILE *stream, const char* format, ...);
 
 int filestream_error(RFILE *stream);
 
-/* DO NOT put these functions back, unless you want to deal with
-   the UNAVOIDABLE REGRESSIONS on platforms using unexpected rfile backends
-int filestream_get_fd(RFILE *stream);
-FILE* filestream_get_fp(RFILE *stream); */
-
 int filestream_flush(RFILE *stream);
 
 static INLINE char *filestream_getline(RFILE *stream)
