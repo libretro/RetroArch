@@ -20,32 +20,9 @@
 #include <wiiu/os.h>
 #include <wiiu/syshid.h>
 
-#include "../input_defines.h"
-#include "../input_driver.h"
-#include "../../verbosity.h"
+#include "wiiu_hid.h"
 
-#define DEVICE_UNUSED 0
-#define DEVICE_USED   1
-
-typedef struct wiiu_hid
-{
-  HIDClient *client;
-  OSThread *polling_thread;
-  void *polling_thread_stack;
-  volatile bool polling_thread_quit;
-} wiiu_hid_t;
-
-void *alloc_zeroed(size_t alignment, size_t size);
-static OSThread *new_thread(void);
-static wiiu_hid_t *new_hid(void);
-static void delete_hid(wiiu_hid_t *hid);
-static void delete_hidclient(HIDClient *client);
-static HIDClient *new_hidclient(void);
-
-static void start_polling_thread(wiiu_hid_t *hid);
-static void stop_polling_thread(wiiu_hid_t *hid);
-static int wiiu_hid_polling_thread(int argc, const char **argv);
-static int32_t wiiu_attach_callback(HIDClient *client, HIDDevice *device, uint32_t attach);
+static wiiu_event_list events;
 
 static bool wiiu_hid_joypad_query(void *data, unsigned pad)
 {
@@ -100,16 +77,17 @@ static int16_t wiiu_hid_joypad_axis(void *data, unsigned port, uint32_t joyaxis)
 static void *wiiu_hid_init(void)
 {
    RARCH_LOG("[hid]: wiiu_hid: init\n");
-//   HIDSetup();
    wiiu_hid_t *hid = new_hid();
    HIDClient *client = new_hidclient();
-   if(!hid || !client) {
+   joypad_connection_t *connections = pad_connection_init(MAX_HID_PADS);
+
+   if(!hid || !client || !connections) {
      goto error;
    }
 
-   RARCH_LOG("[hid]: hid: 0x%x\n", hid);
-   RARCH_LOG("[hid]: client: 0x%x\n", client);
+   hid->connections = connections;
 
+   wiiu_hid_init_event_list();
    start_polling_thread(hid);
    if(!hid->polling_thread)
      goto error;
@@ -118,11 +96,13 @@ static void *wiiu_hid_init(void)
    HIDAddClient(client, wiiu_attach_callback);
    hid->client = client;
 
-   RARCH_LOG("[hid]: init success");
+   RARCH_LOG("[hid]: init success\n");
    return hid;
 
    error:
      RARCH_LOG("[hid]: initialization failed. cleaning up.\n");
+     if(connections)
+       free(connections);
      stop_polling_thread(hid);
      delete_hid(hid);
      delete_hidclient(client);
@@ -137,13 +117,29 @@ static void wiiu_hid_free(void *data)
       stop_polling_thread(hid);
       delete_hidclient(hid->client);
       delete_hid(hid);
+      if(events.list) {
+        wiiu_attach_event *event;
+        while( (event = events.list) != NULL) {
+          events.list = event->next;
+          delete_attach_event(event);
+        }
+        memset(&events, 0, sizeof(events));
+      }
    }
-   //HIDTeardown();
 }
 
 static void wiiu_hid_poll(void *data)
 {
    (void)data;
+}
+
+static void wiiu_hid_device_send_control(void *data,
+                                      uint8_t *buffer,
+                                        size_t buffer_size) {
+  struct wiiu_adapter *adapter = (struct wiiu_adapter *)data;
+
+  if(!adapter)
+    return;
 }
 
 static void start_polling_thread(wiiu_hid_t *hid) {
@@ -203,7 +199,7 @@ static void stop_polling_thread(wiiu_hid_t *hid) {
   hid->polling_thread_stack = NULL;
 }
 
-void log_device(HIDDevice *device) {
+static void log_device(HIDDevice *device) {
   if(!device) {
     RARCH_LOG("NULL device.\n");
   }
@@ -219,20 +215,105 @@ void log_device(HIDDevice *device) {
   RARCH_LOG("    max_packet_size_tx: %d\n", device->max_packet_size_tx);
 }
 
+static void synchronized_add_event(wiiu_attach_event *event) {
+  OSFastMutex_Lock(&(events.lock));
+  event->next = events.list;
+  events.list = event;
+  OSFastMutex_Unlock(&(events.lock));
+}
+
+static wiiu_attach_event *synchronized_get_events_list(void) {
+  wiiu_attach_event *list;
+  OSFastMutex_Lock(&(events.lock));
+  list = events.list;
+  events.list = NULL;
+  OSFastMutex_Unlock(&(events.lock));
+
+  return list;
+}
+
+static void synchronized_add_to_adapters_list(struct wiiu_adapter *adapter) {
+}
+
 static int32_t wiiu_attach_callback(HIDClient *client, HIDDevice *device, uint32_t attach) {
+  wiiu_attach_event *event;
+  log_device(device);
   switch(attach) {
     case HID_DEVICE_ATTACH:
-      RARCH_LOG("USB device attach event\n");
-      break;
     case HID_DEVICE_DETACH:
-      RARCH_LOG("USB device detach event\n");
-      break;
+      event = new_attach_event(device);
+      if(!event)
+        goto error;
+
+      event->type = attach;
+      synchronized_add_event(event);
+      return DEVICE_USED;
     default:
       break;
   }
-  log_device(device);
 
-  return DEVICE_UNUSED;
+  error:
+    delete_attach_event(event);
+    return DEVICE_UNUSED;
+}
+
+
+static int32_t wiiu_hid_pad_init(joypad_connection_t *joyconn,
+   const char *name, uint16_t vid, uint16_t pid, void *data,
+   send_control_t ptr) {
+  int pad = pad_connection_find_vacant_pad_max(joyconn, MAX_HID_PADS);
+  return pad_connection_pad_init_with_slot(joyconn, name, vid, pid,
+                 data, ptr, pad);
+}
+
+static void wiiu_hid_detach(wiiu_hid_t *hid, wiiu_attach_event *event) {
+}
+
+
+static void wiiu_hid_attach(wiiu_hid_t *hid, wiiu_attach_event *event) {
+  struct wiiu_adapter *adapter = new_adapter();
+
+  if(!adapter) {
+    RARCH_ERR("[hid]: Failed to allocate adapter.\n");
+    goto error;
+  }
+
+  adapter->hid    = hid;
+  adapter->handle = event->handle;
+  adapter->slot   = wiiu_hid_pad_init(hid->connections,
+      "hid", event->vendor_id, event->product_id, adapter,
+      &wiiu_hid_device_send_control);
+
+  if(adapter->slot < 0) {
+    RARCH_ERR("[hid]: No available slots.\n");
+    goto error;
+  }
+
+  if(!pad_connection_has_interface(hid->connections, adapter->slot)) {
+    RARCH_ERR("[hid]: Interface not found for HID device with vid=0x%04x pid=0x%04x\n",
+              event->vendor_id, event->product_id);
+    goto error;
+  }
+
+  synchronized_add_to_adapters_list(adapter);
+  return;
+
+  error:
+    delete_adapter(adapter);
+}
+
+static void wiiu_handle_attach_events(wiiu_hid_t *hid, wiiu_attach_event *list) {
+  wiiu_attach_event *event;
+  if(!hid || !list)
+    return;
+
+  for(event = list; event != NULL; event = event->next) {
+    if(event->type == HID_DEVICE_ATTACH) {
+      wiiu_hid_attach(hid, event);
+    } else {
+      wiiu_hid_detach(hid, event);
+    }
+  }
 }
 
 static int wiiu_hid_polling_thread(int argc, const char **argv) {
@@ -240,6 +321,7 @@ static int wiiu_hid_polling_thread(int argc, const char **argv) {
   int i = 0;
   RARCH_LOG("[hid]: polling thread is starting\n");
   while(!hid->polling_thread_quit) {
+    wiiu_handle_attach_events(hid, synchronized_get_events_list());
     usleep(10000);
     i += 10000;
     if(i >= (1000 * 1000 * 3)) {
@@ -257,6 +339,12 @@ static OSThread *new_thread(void) {
   t->tag = OS_THREAD_TAG;
 
   return t;
+}
+
+static void wiiu_hid_init_event_list(void) {
+  RARCH_LOG("[hid]: Initializing events list\n");
+  memset(&events, 0, sizeof(events));
+  OSFastMutex_Init(&(events.lock), "attach_events");
 }
 
 static wiiu_hid_t *new_hid(void) {
@@ -280,6 +368,42 @@ static void delete_hidclient(HIDClient *client) {
   if(client)
     free(client);
 }
+
+static struct wiiu_adapter *new_adapter(void) {
+  RARCH_LOG("[hid]: new_adapter()\n");
+  return alloc_zeroed(4, sizeof(struct wiiu_adapter));
+}
+
+static void delete_adapter(struct wiiu_adapter *adapter) {
+  RARCH_LOG("[hid]: delete_adapter()\n");
+  if(adapter)
+    free(adapter);
+}
+
+static wiiu_attach_event *new_attach_event(HIDDevice *device) {
+  if(!device)
+    return NULL;
+
+  wiiu_attach_event *event = alloc_zeroed(4, sizeof(wiiu_attach_event));
+  if(!event)
+    return NULL;
+  event->handle = device->handle;
+  event->vendor_id = device->vid;
+  event->product_id = device->vid;
+  event->interface_index = device->interface_index;
+  event->is_keyboard = (device->sub_class == 1 && device->protocol == 1);
+  event->is_mouse = (device->sub_class == 1 && device->protocol == 2);
+  event->max_packet_size_rx = device->max_packet_size_rx;
+  event->max_packet_size_tx = device->max_packet_size_tx;
+
+  return event;
+}
+
+static void delete_attach_event(wiiu_attach_event *event) {
+  if(event)
+    free(event);
+}
+
 
 void *alloc_zeroed(size_t alignment, size_t size) {
   void *result = memalign(alignment, size);

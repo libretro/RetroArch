@@ -25,12 +25,17 @@
 
 int pad_connection_find_vacant_pad(joypad_connection_t *joyconn)
 {
+  return pad_connection_find_vacant_pad_max(joyconn, MAX_USERS);
+}
+
+int pad_connection_find_vacant_pad_max(joypad_connection_t *joyconn, unsigned max)
+{
    unsigned i;
 
    if (!joyconn)
       return -1;
 
-   for (i = 0; i < MAX_USERS; i++)
+   for (i = 0; i < max; i++)
    {
       joypad_connection_t *conn = &joyconn[i];
 
@@ -66,6 +71,16 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
    const char* name, uint16_t vid, uint16_t pid,
    void *data, send_control_t ptr)
 {
+   int pad = pad_connection_find_vacant_pad(joyconn);
+   return pad_connection_pad_init_with_slot(joyconn, name,
+                                            vid, pid, data, ptr, pad);
+}
+
+int32_t pad_connection_pad_init_with_slot(joypad_connection_t *joyconn,
+   const char *name, uint16_t vid, uint16_t pid,
+   void *data, send_control_t ptr, int slot)
+{
+
    static const struct
    {
       const char* name;
@@ -88,12 +103,11 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
       { 0, 0}
    };
    joypad_connection_t *s = NULL;
-   int                pad = pad_connection_find_vacant_pad(joyconn);
 
-   if (pad == -1)
+   if (slot == -1)
       return -1;
 
-   s = &joyconn[pad];
+   s = &joyconn[slot];
 
    if (s)
    {
@@ -119,7 +133,7 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
          if (name_match || (pad_map[i].vid == vid && pad_map[i].pid == pid))
          {
             s->iface      = pad_map[i].iface;
-            s->data       = s->iface->init(data, pad, ptr);
+            s->data       = s->iface->init(data, slot, ptr);
             s->connected  = true;
 #if 0
             RARCH_LOG("%s found \n", pad_map[i].name);
@@ -144,7 +158,7 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
       }
    }
 
-   return pad;
+   return slot;
 }
 
 void pad_connection_pad_deinit(joypad_connection_t *joyconn, uint32_t pad)

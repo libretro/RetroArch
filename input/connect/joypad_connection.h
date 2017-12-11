@@ -59,6 +59,9 @@ extern pad_connection_interface_t pad_connection_psxadapter;
 int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
    const char* name, uint16_t vid, uint16_t pid,
    void *data, send_control_t ptr);
+int32_t pad_connection_pad_init_with_slot(joypad_connection_t *joyconn,
+   const char* name, uint16_t vid, uint16_t pid,
+   void *data, send_control_t ptr, int slot);
 
 joypad_connection_t *pad_connection_init(unsigned pads);
 
@@ -83,6 +86,7 @@ bool pad_connection_has_interface(joypad_connection_t *joyconn,
    unsigned idx);
 
 int pad_connection_find_vacant_pad(joypad_connection_t *joyconn);
+int pad_connection_find_vacant_pad_max(joypad_connection_t *joyconn, unsigned max);
 
 bool pad_connection_rumble(joypad_connection_t *s,
    unsigned pad, enum retro_rumble_effect effect, uint16_t strength);
