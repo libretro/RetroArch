@@ -202,6 +202,7 @@ OBJ += frontend/frontend.o \
        $(LIBRETRO_COMM_DIR)/audio/audio_mixer.o \
        input/input_driver.o \
        gfx/video_coord_array.o \
+       gfx/video_display_server.o \
        gfx/video_driver.o \
        camera/camera_driver.o \
        wifi/wifi_driver.o \
@@ -248,6 +249,7 @@ OBJ += frontend/frontend.o \
        camera/drivers/nullcamera.o \
        wifi/drivers/nullwifi.o \
        gfx/drivers/nullgfx.o \
+       gfx/display_servers/dispserv_null.o \
        audio/drivers/nullaudio.o \
        input/drivers/nullinput.o \
        input/drivers_hid/null_hid.o \
@@ -1551,6 +1553,7 @@ ifneq ($(findstring Win32,$(OS)),)
    OBJ += gfx/drivers/gdi_gfx.o \
           gfx/drivers_context/gdi_ctx.o \
           gfx/drivers_font/gdi_font.o \
+          gfx/display_servers/dispserv_win32.o \
           menu/drivers_display/menu_display_gdi.o
 
    LIBS += -lmsimg32 -lhid -lsetupapi

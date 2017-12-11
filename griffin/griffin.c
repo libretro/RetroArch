@@ -188,9 +188,8 @@ VIDEO CONTEXT
 #include "../gfx/drivers_context/wgl_ctx.c"
 #endif
 
-#if defined(_WIN32) && !defined(_XBOX)
 #include "../gfx/drivers_context/gdi_ctx.c"
-#endif
+#include "../gfx/display_servers/dispserv_win32.c"
 
 #if defined(HAVE_FFMPEG)
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
@@ -371,6 +370,7 @@ VIDEO DRIVER
 #endif
 
 #include "../gfx/drivers_renderchain/null_renderchain.c"
+#include "../gfx/display_servers/dispserv_null.c"
 
 #ifdef HAVE_OPENGL
 #include "../gfx/common/gl_common.c"
@@ -746,6 +746,7 @@ AUDIO
 DRIVERS
 ============================================================ */
 #include "../gfx/video_driver.c"
+#include "../gfx/video_display_server.c"
 #include "../gfx/video_coord_array.c"
 #include "../input/input_driver.c"
 #include "../audio/audio_driver.c"
