@@ -532,7 +532,7 @@ static void udev_joypad_poll(void)
    }
 }
 
-// Used for sorting devnodes to appear in the correct order
+/* Used for sorting devnodes to appear in the correct order */
 static int sort_devnodes(const void *a, const void *b)
 {
    const struct joypad_udev_entry *aa = a;
@@ -589,8 +589,10 @@ static bool udev_joypad_init(void *data)
       }
    }
 
-   // Sort the udev entries by devnode name so that they are created in the proper order
-   qsort(sorted, sorted_count, sizeof(struct joypad_udev_entry), sort_devnodes);
+   /* Sort the udev entries by devnode name so that they are 
+    * created in the proper order */
+   qsort(sorted, sorted_count,
+         sizeof(struct joypad_udev_entry), sort_devnodes);
 
    for (i = 0; i < sorted_count; i++)
    {
