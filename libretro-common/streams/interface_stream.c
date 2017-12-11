@@ -133,6 +133,24 @@ bool intfstream_open(intfstream_internal_t *intf, const char *path,
    return true;
 }
 
+int intfstream_flush(intfstream_internal_t *intf)
+{
+   if (!intf)
+      return -1;
+
+   switch (intf->type)
+   {
+      case INTFSTREAM_FILE:
+         return filestream_flush(intf->file.fp);
+      case INTFSTREAM_MEMORY:
+      case INTFSTREAM_CHD:
+         /* Should we stub this for these interfaces? */
+         break;
+   }
+
+   return 0;
+}
+
 int intfstream_close(intfstream_internal_t *intf)
 {
    if (!intf)

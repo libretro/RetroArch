@@ -92,6 +92,8 @@ int intfstream_close(intfstream_internal_t *intf);
 
 int64_t intfstream_get_size(intfstream_internal_t *intf);
 
+int intfstream_flush(intfstream_internal_t *intf);
+
 intfstream_t* intfstream_open_file(const char *path,
       unsigned mode, unsigned hints);
 
