@@ -180,7 +180,7 @@ a lot of data that needs to be copied, this should be set high. */
 #define RAW_STATS				0
 #endif
 
-#ifdef LWIP_DEBUG 
+#ifdef LWIP_DEBUG
 #define DBG_TYPES_ON                    -1
 #define DEMO_DEBUG                      DBG_OFF
 #define ETHARP_DEBUG                    DBG_OFF

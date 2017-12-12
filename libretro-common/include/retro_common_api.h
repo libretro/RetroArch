@@ -25,14 +25,14 @@
 
 /*
 This file is designed to normalize the libretro-common compiling environment
-for public API headers. This should be leaner than a normal compiling environment, 
+for public API headers. This should be leaner than a normal compiling environment,
 since it gets #included into other project's sources.
 */
 
 /* ------------------------------------ */
 
 /*
-Ordinarily we want to put #ifdef __cplusplus extern "C" in C library 
+Ordinarily we want to put #ifdef __cplusplus extern "C" in C library
 headers to enable them to get used by c++ sources.
 However, we want to support building this library as C++ as well, so a
 special technique is called for.

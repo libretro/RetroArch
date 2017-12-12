@@ -1,4 +1,4 @@
-/* This source as presented is a modified version of original wiiuse for use 
+/* This source as presented is a modified version of original wiiuse for use
  * with RetroArch, and must not be confused with the original software. */
 
 #ifdef GEKKO
@@ -54,7 +54,7 @@ static s32 __wiiuse_disconnected(void *arg,struct bte_pcb *pcb,u8 err)
 		wm->cmd_head = wm->cmd_head->next;
 	}
 	wm->cmd_tail = NULL;
-	
+
 	if(wm->event_cb) wm->event_cb(wm,WIIUSE_DISCONNECT);
 
 	wml->wm = NULL;
@@ -135,12 +135,12 @@ int wiiuse_register(struct wiimote_listen_t *wml, struct bd_addr *bdaddr, struct
 	bte_arg(wml->sock,wml);
 	bte_received(wml->sock,__wiiuse_receive);
 	bte_disconnected(wml->sock,__wiiuse_disconnected);
-	
+
 	err = bte_registerdeviceasync(wml->sock,bdaddr,__wiiuse_connected);
 	if(err==ERR_OK) return 1;
 
 	return 0;
-}	
+}
 
 void wiiuse_disconnect(struct wiimote_t *wm)
 {

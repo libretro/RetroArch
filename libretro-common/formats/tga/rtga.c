@@ -163,7 +163,7 @@ static unsigned char *rtga__convert_format(
             for(i=x-1; i >= 0; --i, src += 4, dest += 3)
                dest[0]=src[0],dest[1]=src[1],dest[2]=src[2];
             break;
-         default: 
+         default:
             break;
       }
    }
@@ -193,7 +193,7 @@ static uint8_t *rtga__tga_load(rtga__context *s,
 
    /*   image data */
    unsigned char *tga_data = NULL;
-    
+
    (void)tga_palette_start;
    (void)tga_x_origin;
    (void)tga_y_origin;
@@ -245,7 +245,7 @@ static uint8_t *rtga__tga_load(rtga__context *s,
          rtga__getn(s, tga_row, tga_width * tga_comp);
       }
    }
-   else 
+   else
    {
       int i, j;
       int RLE_repeating          = 0;

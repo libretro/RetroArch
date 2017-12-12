@@ -58,23 +58,23 @@ typedef struct _D3DXF_FILELOADMEMORY
 #if defined( _WIN32 ) && !defined( _NO_COM )
 
 // {cef08cf9-7b4f-4429-9624-2a690a933201}
-DEFINE_GUID( IID_ID3DXFile, 
+DEFINE_GUID( IID_ID3DXFile,
 0xcef08cf9, 0x7b4f, 0x4429, 0x96, 0x24, 0x2a, 0x69, 0x0a, 0x93, 0x32, 0x01 );
 
 // {cef08cfa-7b4f-4429-9624-2a690a933201}
-DEFINE_GUID( IID_ID3DXFileSaveObject, 
+DEFINE_GUID( IID_ID3DXFileSaveObject,
 0xcef08cfa, 0x7b4f, 0x4429, 0x96, 0x24, 0x2a, 0x69, 0x0a, 0x93, 0x32, 0x01 );
 
 // {cef08cfb-7b4f-4429-9624-2a690a933201}
-DEFINE_GUID( IID_ID3DXFileSaveData, 
+DEFINE_GUID( IID_ID3DXFileSaveData,
 0xcef08cfb, 0x7b4f, 0x4429, 0x96, 0x24, 0x2a, 0x69, 0x0a, 0x93, 0x32, 0x01 );
 
 // {cef08cfc-7b4f-4429-9624-2a690a933201}
-DEFINE_GUID( IID_ID3DXFileEnumObject, 
+DEFINE_GUID( IID_ID3DXFileEnumObject,
 0xcef08cfc, 0x7b4f, 0x4429, 0x96, 0x24, 0x2a, 0x69, 0x0a, 0x93, 0x32, 0x01 );
 
 // {cef08cfd-7b4f-4429-9624-2a690a933201}
-DEFINE_GUID( IID_ID3DXFileData, 
+DEFINE_GUID( IID_ID3DXFileData,
 0xcef08cfd, 0x7b4f, 0x4429, 0x96, 0x24, 0x2a, 0x69, 0x0a, 0x93, 0x32, 0x01 );
 
 #endif // defined( _WIN32 ) && !defined( _NO_COM )
@@ -131,7 +131,7 @@ DECLARE_INTERFACE_( ID3DXFile, IUnknown )
     STDMETHOD( QueryInterface )( THIS_ REFIID, LPVOID* ) PURE;
     STDMETHOD_( ULONG, AddRef )( THIS ) PURE;
     STDMETHOD_( ULONG, Release )( THIS ) PURE;
-    
+
     STDMETHOD( CreateEnumObject )( THIS_ LPCVOID, D3DXF_FILELOADOPTIONS,
         ID3DXFileEnumObject** ) PURE;
     STDMETHOD( CreateSaveObject )( THIS_ LPCVOID, D3DXF_FILESAVEOPTIONS,
@@ -152,7 +152,7 @@ DECLARE_INTERFACE_( ID3DXFileSaveObject, IUnknown )
     STDMETHOD( QueryInterface )( THIS_ REFIID, LPVOID* ) PURE;
     STDMETHOD_( ULONG, AddRef )( THIS ) PURE;
     STDMETHOD_( ULONG, Release )( THIS ) PURE;
-    
+
     STDMETHOD( GetFile )( THIS_ ID3DXFile** ) PURE;
     STDMETHOD( AddDataObject )( THIS_ REFGUID, LPCSTR, CONST GUID*,
         SIZE_T, LPCVOID, ID3DXFileSaveData** ) PURE;
@@ -171,7 +171,7 @@ DECLARE_INTERFACE_( ID3DXFileSaveData, IUnknown )
     STDMETHOD( QueryInterface )( THIS_ REFIID, LPVOID* ) PURE;
     STDMETHOD_( ULONG, AddRef )( THIS ) PURE;
     STDMETHOD_( ULONG, Release )( THIS ) PURE;
-    
+
     STDMETHOD( GetSave )( THIS_ ID3DXFileSaveObject** ) PURE;
     STDMETHOD( GetName )( THIS_ LPSTR, SIZE_T* ) PURE;
     STDMETHOD( GetId )( THIS_ LPGUID ) PURE;
@@ -193,7 +193,7 @@ DECLARE_INTERFACE_( ID3DXFileEnumObject, IUnknown )
     STDMETHOD( QueryInterface )( THIS_ REFIID, LPVOID* ) PURE;
     STDMETHOD_( ULONG, AddRef )( THIS ) PURE;
     STDMETHOD_( ULONG, Release )( THIS ) PURE;
-    
+
     STDMETHOD( GetFile )( THIS_ ID3DXFile** ) PURE;
     STDMETHOD( GetChildren )( THIS_ SIZE_T* ) PURE;
     STDMETHOD( GetChild )( THIS_ SIZE_T, ID3DXFileData** ) PURE;
@@ -213,7 +213,7 @@ DECLARE_INTERFACE_( ID3DXFileData, IUnknown )
     STDMETHOD( QueryInterface )( THIS_ REFIID, LPVOID* ) PURE;
     STDMETHOD_( ULONG, AddRef )( THIS ) PURE;
     STDMETHOD_( ULONG, Release )( THIS ) PURE;
-    
+
     STDMETHOD( GetEnum )( THIS_ ID3DXFileEnumObject** ) PURE;
     STDMETHOD( GetName )( THIS_ LPSTR, SIZE_T* ) PURE;
     STDMETHOD( GetId )( THIS_ LPGUID ) PURE;

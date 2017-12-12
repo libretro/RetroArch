@@ -263,7 +263,7 @@ protected:
     //     * note, that appropriately gives an error if redeclaring a block that
     //       was already used and hence already copied-up
     //
-    //  - on seeing a layout declaration that sizes the array, fix everything in the 
+    //  - on seeing a layout declaration that sizes the array, fix everything in the
     //    resize-list, giving errors for mismatch
     //
     //  - on seeing an array size declaration, give errors on mismatch between it and previous

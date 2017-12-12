@@ -45,7 +45,7 @@ enum menu_displaylist_parse_type
    PARSE_ONLY_STRING_OPTIONS = (1 << 11),
    PARSE_ONLY_HEX            = (1 << 12),
    PARSE_ONLY_DIR            = (1 << 13),
-   PARSE_SUB_GROUP           = (1 << 14) 
+   PARSE_SUB_GROUP           = (1 << 14)
 };
 
 enum menu_displaylist_ctl_state

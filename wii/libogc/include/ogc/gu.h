@@ -333,7 +333,7 @@ void guLookAt(Mtx mt,guVector *camPos,guVector *camUp,guVector *target);
  * surface to the general viewing direction.
  *
  * \a a and \a b do not have to be unit vectors. Both of these vectors are assumed to be pointing towards the surface from the
- * light or viewer, respectively. Local copies of these vectors are negated, normalized and added head to tail. 
+ * light or viewer, respectively. Local copies of these vectors are negated, normalized and added head to tail.
  *
  * \a half is computed as a unit vector that points from the surface to halfway between the light and the viewing direction.
  *

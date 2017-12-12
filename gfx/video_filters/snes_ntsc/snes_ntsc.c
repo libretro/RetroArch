@@ -85,11 +85,11 @@ void snes_ntsc_init( snes_ntsc_t* ntsc, snes_ntsc_setup_t const* setup )
 	if ( !setup )
 		setup = &snes_ntsc_composite;
 	init( &impl, setup );
-	
+
 	merge_fields = setup->merge_fields;
 	if ( setup->artifacts <= -1 && setup->fringing <= -1 )
 		merge_fields = 1;
-	
+
 	for ( entry = 0; entry < snes_ntsc_palette_size; entry++ )
    {
       /* Reduce number of significant bits of source color. Clearing the
@@ -130,41 +130,41 @@ void snes_ntsc_blit( snes_ntsc_t const* ntsc, SNES_NTSC_IN_T const* input, long 
 		snes_ntsc_out_t* line_out = (snes_ntsc_out_t*) rgb_out;
 		int n;
 		++line_in;
-		
+
 		for ( n = chunk_count; n; --n )
 		{
 			/* order of input and output pixels must not be altered */
 			SNES_NTSC_COLOR_IN( 0, SNES_NTSC_ADJ_IN( line_in [0] ) );
 			SNES_NTSC_RGB_OUT( 0, line_out [0], SNES_NTSC_OUT_DEPTH );
 			SNES_NTSC_RGB_OUT( 1, line_out [1], SNES_NTSC_OUT_DEPTH );
-			
+
 			SNES_NTSC_COLOR_IN( 1, SNES_NTSC_ADJ_IN( line_in [1] ) );
 			SNES_NTSC_RGB_OUT( 2, line_out [2], SNES_NTSC_OUT_DEPTH );
 			SNES_NTSC_RGB_OUT( 3, line_out [3], SNES_NTSC_OUT_DEPTH );
-			
+
 			SNES_NTSC_COLOR_IN( 2, SNES_NTSC_ADJ_IN( line_in [2] ) );
 			SNES_NTSC_RGB_OUT( 4, line_out [4], SNES_NTSC_OUT_DEPTH );
 			SNES_NTSC_RGB_OUT( 5, line_out [5], SNES_NTSC_OUT_DEPTH );
 			SNES_NTSC_RGB_OUT( 6, line_out [6], SNES_NTSC_OUT_DEPTH );
-			
+
 			line_in  += 3;
 			line_out += 7;
 		}
-		
+
 		/* finish final pixels */
 		SNES_NTSC_COLOR_IN( 0, snes_ntsc_black );
 		SNES_NTSC_RGB_OUT( 0, line_out [0], SNES_NTSC_OUT_DEPTH );
 		SNES_NTSC_RGB_OUT( 1, line_out [1], SNES_NTSC_OUT_DEPTH );
-		
+
 		SNES_NTSC_COLOR_IN( 1, snes_ntsc_black );
 		SNES_NTSC_RGB_OUT( 2, line_out [2], SNES_NTSC_OUT_DEPTH );
 		SNES_NTSC_RGB_OUT( 3, line_out [3], SNES_NTSC_OUT_DEPTH );
-		
+
 		SNES_NTSC_COLOR_IN( 2, snes_ntsc_black );
 		SNES_NTSC_RGB_OUT( 4, line_out [4], SNES_NTSC_OUT_DEPTH );
 		SNES_NTSC_RGB_OUT( 5, line_out [5], SNES_NTSC_OUT_DEPTH );
 		SNES_NTSC_RGB_OUT( 6, line_out [6], SNES_NTSC_OUT_DEPTH );
-		
+
 		burst_phase = (burst_phase + 1) % snes_ntsc_burst_count;
 		input += in_row_width;
 		rgb_out = (char*) rgb_out + out_pitch;
@@ -185,52 +185,52 @@ void snes_ntsc_blit_hires( snes_ntsc_t const* ntsc, SNES_NTSC_IN_T const* input,
 		snes_ntsc_out_t* line_out = (snes_ntsc_out_t*) rgb_out;
 		int n;
 		line_in += 2;
-		
+
 		for ( n = chunk_count; n; --n )
 		{
 			/* twice as many input pixels per chunk */
 			SNES_NTSC_COLOR_IN( 0, SNES_NTSC_ADJ_IN( line_in [0] ) );
 			SNES_NTSC_HIRES_OUT( 0, line_out [0], SNES_NTSC_OUT_DEPTH );
-			
+
 			SNES_NTSC_COLOR_IN( 1, SNES_NTSC_ADJ_IN( line_in [1] ) );
 			SNES_NTSC_HIRES_OUT( 1, line_out [1], SNES_NTSC_OUT_DEPTH );
-			
+
 			SNES_NTSC_COLOR_IN( 2, SNES_NTSC_ADJ_IN( line_in [2] ) );
 			SNES_NTSC_HIRES_OUT( 2, line_out [2], SNES_NTSC_OUT_DEPTH );
-			
+
 			SNES_NTSC_COLOR_IN( 3, SNES_NTSC_ADJ_IN( line_in [3] ) );
 			SNES_NTSC_HIRES_OUT( 3, line_out [3], SNES_NTSC_OUT_DEPTH );
-			
+
 			SNES_NTSC_COLOR_IN( 4, SNES_NTSC_ADJ_IN( line_in [4] ) );
 			SNES_NTSC_HIRES_OUT( 4, line_out [4], SNES_NTSC_OUT_DEPTH );
-			
+
 			SNES_NTSC_COLOR_IN( 5, SNES_NTSC_ADJ_IN( line_in [5] ) );
 			SNES_NTSC_HIRES_OUT( 5, line_out [5], SNES_NTSC_OUT_DEPTH );
 			SNES_NTSC_HIRES_OUT( 6, line_out [6], SNES_NTSC_OUT_DEPTH );
-			
+
 			line_in  += 6;
 			line_out += 7;
 		}
-		
+
 		SNES_NTSC_COLOR_IN( 0, snes_ntsc_black );
 		SNES_NTSC_HIRES_OUT( 0, line_out [0], SNES_NTSC_OUT_DEPTH );
-		
+
 		SNES_NTSC_COLOR_IN( 1, snes_ntsc_black );
 		SNES_NTSC_HIRES_OUT( 1, line_out [1], SNES_NTSC_OUT_DEPTH );
-		
+
 		SNES_NTSC_COLOR_IN( 2, snes_ntsc_black );
 		SNES_NTSC_HIRES_OUT( 2, line_out [2], SNES_NTSC_OUT_DEPTH );
-		
+
 		SNES_NTSC_COLOR_IN( 3, snes_ntsc_black );
 		SNES_NTSC_HIRES_OUT( 3, line_out [3], SNES_NTSC_OUT_DEPTH );
-		
+
 		SNES_NTSC_COLOR_IN( 4, snes_ntsc_black );
 		SNES_NTSC_HIRES_OUT( 4, line_out [4], SNES_NTSC_OUT_DEPTH );
-		
+
 		SNES_NTSC_COLOR_IN( 5, snes_ntsc_black );
 		SNES_NTSC_HIRES_OUT( 5, line_out [5], SNES_NTSC_OUT_DEPTH );
 		SNES_NTSC_HIRES_OUT( 6, line_out [6], SNES_NTSC_OUT_DEPTH );
-		
+
 		burst_phase = (burst_phase + 1) % snes_ntsc_burst_count;
 		input += in_row_width;
 		rgb_out = (char*) rgb_out + out_pitch;

@@ -19,23 +19,22 @@
 * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
+
+#include <streams/file_stream.h>
 #include <string.h>
 #include <stdarg.h>
 
-#include <libretro.h>
-#include <streams/file_stream.h>
-
 RFILE* rfopen(const char *path, const char *mode)
 {
-   unsigned int retro_mode = 0;
+   unsigned int retro_mode = RFILE_MODE_READ_TEXT;
    if (strstr(mode, "r"))
       if (strstr(mode, "b"))
-         retro_mode = RETRO_VFS_FILE_ACCESS_READ;
+         retro_mode = RFILE_MODE_READ;
 
    if (strstr(mode, "w"))
-      retro_mode = RETRO_VFS_FILE_ACCESS_WRITE;
+      retro_mode = RFILE_MODE_WRITE;
    if (strstr(mode, "+"))
-      retro_mode = RETRO_VFS_FILE_ACCESS_READ_WRITE;
+      retro_mode = RFILE_MODE_READ_WRITE;
 
    return filestream_open(path, retro_mode, -1);
 }

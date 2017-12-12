@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -171,8 +171,8 @@ void path_set_redirect(void)
 
       if (path_is_directory(global->name.savefile))
       {
-         fill_pathname_dir(global->name.savefile, 
-               !string_is_empty(path_main_basename) ? path_main_basename : 
+         fill_pathname_dir(global->name.savefile,
+               !string_is_empty(path_main_basename) ? path_main_basename :
                   info ? info->info.library_name : NULL,
                file_path_str(FILE_PATH_SRM_EXTENSION),
                sizeof(global->name.savefile));
@@ -183,8 +183,8 @@ void path_set_redirect(void)
 
       if (path_is_directory(global->name.savestate))
       {
-         fill_pathname_dir(global->name.savestate, 
-               !string_is_empty(path_main_basename) ? path_main_basename : 
+         fill_pathname_dir(global->name.savestate,
+               !string_is_empty(path_main_basename) ? path_main_basename :
                   info ? info->info.library_name : NULL,
                file_path_str(FILE_PATH_STATE_EXTENSION),
                sizeof(global->name.savestate));
@@ -378,7 +378,7 @@ static bool path_init_subsystem(void)
 
 void path_init_savefile(void)
 {
-   bool should_sram_be_used = rarch_ctl(RARCH_CTL_IS_SRAM_USED, NULL) 
+   bool should_sram_be_used = rarch_ctl(RARCH_CTL_IS_SRAM_USED, NULL)
       && !rarch_ctl(RARCH_CTL_IS_SRAM_SAVE_DISABLED, NULL);
 
    if (should_sram_be_used)
@@ -415,7 +415,7 @@ void path_fill_names(void)
    global_t *global = global_get_ptr();
 
    path_init_savefile_internal();
-   
+
    if (global)
       bsv_movie_set_path(global->name.savefile);
 

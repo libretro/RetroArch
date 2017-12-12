@@ -19,7 +19,7 @@ extern "C" {
 typedef enum
 {
 	LWP_CPU_BUDGET_ALGO_NONE = 0,
-	LWP_CPU_BUDGET_ALGO_TIMESLICE	
+	LWP_CPU_BUDGET_ALGO_TIMESLICE
 } lwp_cpu_budget_algorithms;
 
 typedef struct _lwpwaitinfo {

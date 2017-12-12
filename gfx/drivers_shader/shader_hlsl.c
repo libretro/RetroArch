@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -35,7 +35,7 @@
 #include "../drivers/d3d_shaders/opaque.hlsl.d3d9.h"
 #include "shader_hlsl.h"
 
-struct shader_program_hlsl_data 
+struct shader_program_hlsl_data
 {
    LPDIRECT3DVERTEXSHADER vprg;
    LPDIRECT3DPIXELSHADER fprg;
@@ -188,9 +188,9 @@ static bool hlsl_compile_program(
    if (program_info->is_file)
    {
       ret_fp = D3DXCompileShaderFromFile(program_info->combined, NULL, NULL,
-            "main_fragment", "ps_3_0", 0, &code_f, &listing_f, &program->f_ctable); 
+            "main_fragment", "ps_3_0", 0, &code_f, &listing_f, &program->f_ctable);
       ret_vp = D3DXCompileShaderFromFile(program_info->combined, NULL, NULL,
-            "main_vertex", "vs_3_0", 0, &code_v, &listing_v, &program->v_ctable); 
+            "main_vertex", "vs_3_0", 0, &code_v, &listing_v, &program->v_ctable);
    }
    else
    {

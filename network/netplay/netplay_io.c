@@ -1126,7 +1126,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
              * arithmetic. */
             do
             {
-               if (     netplay->buffer[tmp_ptr].used 
+               if (     netplay->buffer[tmp_ptr].used
                      && netplay->buffer[tmp_ptr].frame == buffer[0])
                {
                   found = true;
@@ -1470,7 +1470,7 @@ int netplay_poll_net_input(netplay_t *netplay, bool block)
    netplay->timeout_cnt = 0;
 
    do
-   { 
+   {
       had_input = false;
 
       netplay->timeout_cnt++;

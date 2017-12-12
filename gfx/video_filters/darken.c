@@ -104,7 +104,7 @@ static void darken_destroy(void *data)
 
 static void darken_work_cb_xrgb8888(void *data, void *thread_data)
 {
-   struct softfilter_thread_data *thr = 
+   struct softfilter_thread_data *thr =
       (struct softfilter_thread_data*)thread_data;
    const uint32_t *input = (const uint32_t*)thr->in_data;
    uint32_t *output = (uint32_t*)thr->out_data;
@@ -120,7 +120,7 @@ static void darken_work_cb_xrgb8888(void *data, void *thread_data)
 
 static void darken_work_cb_rgb565(void *data, void *thread_data)
 {
-   struct softfilter_thread_data *thr = 
+   struct softfilter_thread_data *thr =
       (struct softfilter_thread_data*)thread_data;
    const uint16_t *input = (const uint16_t*)thr->in_data;
    uint16_t *output = (uint16_t*)thr->out_data;
@@ -143,7 +143,7 @@ static void darken_packets(void *data,
    struct filter_data *filt = (struct filter_data*)data;
    for (i = 0; i < filt->threads; i++)
    {
-      struct softfilter_thread_data *thr = 
+      struct softfilter_thread_data *thr =
          (struct softfilter_thread_data*)&filt->workers[i];
       unsigned y_start = (height * i) / filt->threads;
       unsigned y_end = (height * (i + 1)) / filt->threads;

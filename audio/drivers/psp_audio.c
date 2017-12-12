@@ -244,9 +244,9 @@ static bool psp_audio_stop(void *data)
    SceUInt timeout   = 100000;
    psp_audio_t* psp = (psp_audio_t*)data;
 
-   if(psp && !psp->running)  
+   if(psp && !psp->running)
       return true;
-   
+
    info.size = sizeof(SceKernelThreadInfo);
 
    if (sceKernelGetThreadInfo(
@@ -269,8 +269,8 @@ static bool psp_audio_start(void *data, bool is_shutdown)
 {
    SceKernelThreadInfo info;
    psp_audio_t* psp = (psp_audio_t*)data;
-   
-   if(psp && psp->running)  
+
+   if(psp && psp->running)
       return true;
 
    info.size = sizeof(SceKernelThreadInfo);

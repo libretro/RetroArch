@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2016-2017 - Hans-Kristian Arntzen
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -242,7 +242,7 @@ const gfx_ctx_driver_t gfx_ctx_khr_display = {
    "khr_display",
    gfx_ctx_khr_display_get_flags,
    gfx_ctx_khr_display_set_flags,
-   NULL, 
+   NULL,
    gfx_ctx_khr_display_get_context_data,
    NULL
 };

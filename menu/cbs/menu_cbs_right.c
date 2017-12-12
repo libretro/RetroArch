@@ -244,7 +244,7 @@ static int action_right_shader_scale_pass(unsigned type, const char *label,
 {
 #ifdef HAVE_SHADER_MANAGER
    unsigned current_scale, delta;
-   unsigned pass                         = 
+   unsigned pass                         =
       type - MENU_SETTINGS_SHADER_PASS_SCALE_0;
    struct video_shader_pass *shader_pass = menu_shader_manager_get_pass(pass);
 
@@ -346,7 +346,7 @@ static int playlist_association_right(unsigned type, const char *label,
    core_info_list_t           *list = NULL;
    settings_t *settings             = config_get_ptr();
    const char *path                 = path_basename(label);
-   
+
    core_info_get_list(&list);
    if (!list)
       return menu_cbs_exit();
@@ -535,7 +535,7 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
    {
       const char *parent_group   = cbs->setting->parent_group;
 
-      if (string_is_equal(parent_group, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU)) 
+      if (string_is_equal(parent_group, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU))
                && (setting_get_type(cbs->setting) == ST_GROUP))
       {
          BIND_ACTION_RIGHT(cbs, action_right_scroll);
@@ -607,7 +607,7 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
                break;
             case MENU_ENUM_LABEL_NO_ITEMS:
             case MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE:
-               if (  
+               if (
                      string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB))   ||
                      string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES_TAB)) ||
                      string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU))       ||
@@ -664,7 +664,7 @@ int menu_cbs_init_bind_right(menu_file_list_cbs_t *cbs,
       return menu_cbs_exit();
 
    BIND_ACTION_RIGHT(cbs, bind_right_generic);
-    
+
    if (type == MENU_SETTING_NO_ITEM)
    {
       if (  string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB))   ||

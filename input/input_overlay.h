@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -34,13 +34,13 @@ RETRO_BEGIN_DECLS
 #define KEY_ANALOG_LEFT  0x56b92e81U
 #define KEY_ANALOG_RIGHT 0x2e4dc654U
 
-/* Overlay driver acts as a medium between input drivers 
+/* Overlay driver acts as a medium between input drivers
  * and video driver.
  *
- * Coordinates are fetched from input driver, and an 
+ * Coordinates are fetched from input driver, and an
  * overlay with pressable actions are displayed on-screen.
  *
- * This interface requires that the video driver has support 
+ * This interface requires that the video driver has support
  * for the overlay interface.
  */
 
@@ -236,7 +236,7 @@ void input_overlay_next(input_overlay_t *ol, float opacity);
 
 /*
  * input_poll_overlay:
- * @ol : pointer to overlay 
+ * @ol : pointer to overlay
  *
  * Poll pressed buttons/keys on currently active overlay.
  **/

@@ -457,7 +457,7 @@ static int interpretAddr(struct nlmsghdr *p_hdr, struct ifaddrs **p_resultList, 
 
                if(l_rta->rta_type == IFA_ADDRESS)
                {
-                  /* apparently in a point-to-point network IFA_ADDRESS 
+                  /* apparently in a point-to-point network IFA_ADDRESS
                    * contains the dest address and IFA_LOCAL contains the local address */
                   if(l_entry->ifa_addr)
                      l_entry->ifa_dstaddr = (struct sockaddr *)l_addr;
@@ -485,15 +485,15 @@ static int interpretAddr(struct nlmsghdr *p_hdr, struct ifaddrs **p_resultList, 
       }
    }
 
-   if(l_entry->ifa_addr && 
-         (   l_entry->ifa_addr->sa_family == AF_INET 
+   if(l_entry->ifa_addr &&
+         (   l_entry->ifa_addr->sa_family == AF_INET
           || l_entry->ifa_addr->sa_family == AF_INET6))
    {
       unsigned i;
       char l_mask[16];
-      unsigned l_maxPrefix = (l_entry->ifa_addr->sa_family == AF_INET 
+      unsigned l_maxPrefix = (l_entry->ifa_addr->sa_family == AF_INET
             ? 32 : 128);
-      unsigned l_prefix    = (l_info->ifa_prefixlen > l_maxPrefix 
+      unsigned l_prefix    = (l_info->ifa_prefixlen > l_maxPrefix
             ? l_maxPrefix : l_info->ifa_prefixlen);
 
       l_mask[0] = '\0';

@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -139,7 +139,7 @@ void x11_move_window(Display *dpy, Window win, int x, int y,
    xev.xclient.message_type = XA_NET_MOVERESIZE_WINDOW;
    xev.xclient.window       = win;
    xev.xclient.format       = 32;
-   xev.xclient.data.l[0]    = (1 << MOVERESIZE_X_SHIFT) 
+   xev.xclient.data.l[0]    = (1 << MOVERESIZE_X_SHIFT)
       | (1 << MOVERESIZE_Y_SHIFT);
    xev.xclient.data.l[1]    = x;
    xev.xclient.data.l[2]    = y;
@@ -252,7 +252,7 @@ static bool get_video_mode(video_frame_info_t *video_info,
 
    *desktop_mode = *modes[0];
 
-   /* If we use black frame insertion, we fake a 60 Hz monitor 
+   /* If we use black frame insertion, we fake a 60 Hz monitor
     * for 120 Hz one, etc, so try to match that. */
    refresh_mod = video_info->black_frame_insertion ? 0.5f : 1.0f;
 
@@ -391,7 +391,7 @@ static void x11_handle_key_event(XEvent *event, XIC ic, bool filter)
    bool down     = event->type == KeyPress;
    int num       = 0;
    KeySym keysym = 0;
-   
+
    chars[0] = '\0';
 
    if (!filter)
@@ -407,7 +407,7 @@ static void x11_handle_key_event(XEvent *event, XIC ic, bool filter)
          /* XwcLookupString doesn't seem to work. */
          num = Xutf8LookupString(ic, &event->xkey, keybuf, ARRAY_SIZE(keybuf), &keysym, &status);
 
-         /* libc functions need UTF-8 locale to work properly, 
+         /* libc functions need UTF-8 locale to work properly,
           * which makes mbrtowc a bit impractical.
           *
           * Use custom UTF8 -> UTF-32 conversion. */
@@ -464,7 +464,7 @@ bool x11_alive(void *data)
       switch (event.type)
       {
          case ClientMessage:
-            if (event.xclient.window == g_x11_win && 
+            if (event.xclient.window == g_x11_win &&
                   (Atom)event.xclient.data.l[0] == g_x11_quit_atom)
                frontend_driver_set_signal_handler_state(1);
             break;

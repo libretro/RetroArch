@@ -333,7 +333,7 @@ int mbedtls_rsa_rsaes_oaep_encrypt( mbedtls_rsa_context *ctx,
  *                 as large as the size ctx->len of ctx->N (eg. 128 bytes
  *                 if RSA-1024 is used) to be able to hold an arbitrary
  *                 decrypted message. If it is not large enough to hold
- *                 the decryption of the particular ciphertext provided, 
+ *                 the decryption of the particular ciphertext provided,
  *                 the function will return MBEDTLS_ERR_RSA_OUTPUT_TOO_LARGE.
  *
  * \note           The input buffer must be as large as the size
@@ -365,7 +365,7 @@ int mbedtls_rsa_pkcs1_decrypt( mbedtls_rsa_context *ctx,
  *                 as large as the size ctx->len of ctx->N (eg. 128 bytes
  *                 if RSA-1024 is used) to be able to hold an arbitrary
  *                 decrypted message. If it is not large enough to hold
- *                 the decryption of the particular ciphertext provided, 
+ *                 the decryption of the particular ciphertext provided,
  *                 the function will return MBEDTLS_ERR_RSA_OUTPUT_TOO_LARGE.
  *
  * \note           The input buffer must be as large as the size
@@ -399,10 +399,10 @@ int mbedtls_rsa_rsaes_pkcs1_v15_decrypt( mbedtls_rsa_context *ctx,
  *                 as large as the size ctx->len of ctx->N (eg. 128 bytes
  *                 if RSA-1024 is used) to be able to hold an arbitrary
  *                 decrypted message. If it is not large enough to hold
- *                 the decryption of the particular ciphertext provided, 
+ *                 the decryption of the particular ciphertext provided,
  *                 the function will return MBEDTLS_ERR_RSA_OUTPUT_TOO_LARGE.
  *
- * \note           The input buffer must be as large as the size 
+ * \note           The input buffer must be as large as the size
  *                 of ctx->N (eg. 128 bytes if RSA-1024 is used).
  */
 int mbedtls_rsa_rsaes_oaep_decrypt( mbedtls_rsa_context *ctx,

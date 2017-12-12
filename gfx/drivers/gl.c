@@ -740,19 +740,19 @@ static void gl_render_osd_background(
    video_coords_t coords;
    struct uniform_info uniform_param;
    float colors[4];
-   const unsigned 
+   const unsigned
       vertices_total       = 6;
    float *dummy            = (float*)calloc(4 * vertices_total, sizeof(float));
    float *verts            = (float*)malloc(2 * vertices_total * sizeof(float));
    settings_t *settings    = config_get_ptr();
-   int msg_width           = 
+   int msg_width           =
       font_driver_get_message_width(NULL, msg, strlen(msg), 1.0f);
 
    /* shader driver expects vertex coords as 0..1 */
    float x                 = video_info->font_msg_pos_x;
    float y                 = video_info->font_msg_pos_y;
    float width             = msg_width / (float)video_info->width;
-   float height            = 
+   float height            =
       settings->floats.video_font_size / (float)video_info->height;
 
    float x2                = 0.005f; /* extend background around text */
@@ -796,7 +796,7 @@ static void gl_render_osd_background(
 
    coords_data.handle_data = NULL;
    coords_data.data        = &coords;
- 
+
    video_driver_set_viewport(video_info->width,
          video_info->height, true, false);
 
@@ -1033,7 +1033,7 @@ static bool gl_frame(void *data, const void *frame,
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
    /* Can be NULL for frame dupe / NULL render. */
-   if (frame) 
+   if (frame)
    {
       if (!gl->hw_render_fbo_init)
       {
@@ -1082,7 +1082,7 @@ static bool gl_frame(void *data, const void *frame,
 
    if (gl->fbo_feedback_enable)
    {
-      const struct video_fbo_rect 
+      const struct video_fbo_rect
          *rect                        = &gl->fbo_rect[gl->fbo_feedback_pass];
       GLfloat xamt                    = (GLfloat)rect->img_width / rect->width;
       GLfloat yamt                    = (GLfloat)rect->img_height / rect->height;
@@ -1946,7 +1946,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    video_context_driver_input_driver(&inp);
 
    if (video->font_enable)
-      font_driver_init_osd(gl, false, 
+      font_driver_init_osd(gl, false,
             video->is_threaded,
             FONT_DRIVER_RENDER_OPENGL_API);
 

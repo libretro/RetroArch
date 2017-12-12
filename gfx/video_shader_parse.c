@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -79,7 +79,7 @@ static const char *wrap_mode_to_str(enum gfx_wrap_type type)
    return "???";
 }
 
-/** 
+/**
  * wrap_str_to_mode:
  * @type              : Wrap type in human-readable string format.
  *
@@ -108,7 +108,7 @@ static enum gfx_wrap_type wrap_str_to_mode(const char *wrap_mode)
    return RARCH_WRAP_DEFAULT;
 }
 
-/** 
+/**
  * video_shader_parse_pass:
  * @conf              : Preset file to read from.
  * @pass              : Shader passes handle.
@@ -144,10 +144,10 @@ static bool video_shader_parse_pass(config_file_t *conf,
    float fattr                  = 0.0f;
    int iattr                    = 0;
 
-   fp_fbo_buf[0]     = mipmap_buf[0]    = alias_buf[0]           = 
+   fp_fbo_buf[0]     = mipmap_buf[0]    = alias_buf[0]           =
    scale_name_buf[0] = attr_name_buf[0] = scale_type[0]          =
    scale_type_x[0]   = scale_type_y[0]  = frame_count_mod[0]     =
-   tmp_str[0]        = shader_name[0]   = filter_name_buf[0]     = 
+   tmp_str[0]        = shader_name[0]   = filter_name_buf[0]     =
    wrap_name_buf[0]  = wrap_mode[0]     = frame_count_mod_buf[0] = '\0';
    srgb_output_buf[0] = '\0';
 
@@ -332,7 +332,7 @@ error:
    return false;
 }
 
-/** 
+/**
  * video_shader_parse_textures:
  * @conf              : Preset file to read from.
  * @shader            : Shader pass handle.
@@ -385,7 +385,7 @@ static bool video_shader_parse_textures(config_file_t *conf,
 
       if (path_file_exists(tmp_path))
       {
-         strlcpy(shader->lut[shader->luts].path, 
+         strlcpy(shader->lut[shader->luts].path,
             tmp_path, sizeof(shader->lut[shader->luts].path));
       }
 
@@ -394,7 +394,7 @@ static bool video_shader_parse_textures(config_file_t *conf,
 
       snprintf(id_filter, sizeof(id_filter), "%s_linear", id);
       if (config_get_bool(conf, id_filter, &smooth))
-         shader->lut[shader->luts].filter = smooth ? 
+         shader->lut[shader->luts].filter = smooth ?
             RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST;
       else
          shader->lut[shader->luts].filter = RARCH_FILTER_UNSPEC;
@@ -420,7 +420,7 @@ error:
    return false;
 }
 
-/** 
+/**
  * video_shader_parse_find_parameter:
  * @params            : Shader parameter handle.
  * @num_params        : Number of shader params in @params.
@@ -445,7 +445,7 @@ static struct video_shader_parameter *video_shader_parse_find_parameter(
    return NULL;
 }
 
-/** 
+/**
  * video_shader_set_current_parameters:
  * @conf              : Preset file to read from.
  * @shader            : Shader passes handle.
@@ -478,10 +478,10 @@ bool video_shader_resolve_current_parameters(config_file_t *conf,
       return true;
    }
 
-   for (id = strtok_r(parameters, ";", &save); id; 
+   for (id = strtok_r(parameters, ";", &save); id;
          id = strtok_r(NULL, ";", &save))
    {
-      struct video_shader_parameter *parameter = 
+      struct video_shader_parameter *parameter =
          (struct video_shader_parameter*)
          video_shader_parse_find_parameter(
                shader->parameters, shader->num_parameters, id);
@@ -500,12 +500,12 @@ bool video_shader_resolve_current_parameters(config_file_t *conf,
    return true;
 }
 
-/** 
+/**
  * video_shader_resolve_parameters:
  * @conf              : Preset file to read from.
  * @shader            : Shader passes handle.
  *
- * Resolves all shader parameters belonging to shaders. 
+ * Resolves all shader parameters belonging to shaders.
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
@@ -595,12 +595,12 @@ bool video_shader_resolve_parameters(config_file_t *conf,
    return true;
 }
 
-/** 
+/**
  * video_shader_parse_imports:
  * @conf              : Preset file to read from.
  * @shader            : Shader passes handle.
  *
- * Resolves import parameters belonging to shaders. 
+ * Resolves import parameters belonging to shaders.
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
@@ -615,7 +615,7 @@ static bool video_shader_parse_imports(config_file_t *conf,
 
    imports[0] = tmp_str[0] = '\0';
 
-   if (!config_get_array(conf, "imports", imports, 
+   if (!config_get_array(conf, "imports", imports,
             1024 * sizeof(char)))
    {
       free(imports);
@@ -637,10 +637,10 @@ static bool video_shader_parse_imports(config_file_t *conf,
       unsigned addr           = 0;
       unsigned mask           = 0;
       unsigned equal          = 0;
-      struct state_tracker_uniform_info *var = 
+      struct state_tracker_uniform_info *var =
          &shader->variable[shader->variables];
 
-      semantic_buf[0] = wram_buf[0] = input_slot_buf[0] = 
+      semantic_buf[0] = wram_buf[0] = input_slot_buf[0] =
          mask_buf[0] = equal_buf[0] = semantic[0] = '\0';
 
       strlcpy(var->id, id, sizeof(var->id));
@@ -739,13 +739,13 @@ error:
    return false;
 }
 
-/** 
+/**
  * video_shader_read_conf_cgp:
  * @conf              : Preset file to read from.
  * @shader            : Shader passes handle.
  *
  * Loads preset file and all associated state (passes,
- * textures, imports, etc). 
+ * textures, imports, etc).
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
@@ -925,13 +925,13 @@ static void shader_write_variable(config_file_t *conf,
    }
 }
 
-/** 
+/**
  * video_shader_write_conf_cgp:
  * @conf              : Preset file to read from.
  * @shader            : Shader passes handle.
  *
  * Saves preset and all associated state (passes,
- * textures, imports, etc) to disk. 
+ * textures, imports, etc) to disk.
  **/
 void video_shader_write_conf_cgp(config_file_t *conf,
       struct video_shader *shader)
@@ -1001,7 +1001,7 @@ void video_shader_write_conf_cgp(config_file_t *conf,
       }
 
       config_set_string(conf, "parameters", parameters);
-      
+
       for (i = 0; i < shader->num_parameters; i++)
          config_set_float(conf, shader->parameters[i].id,
                shader->parameters[i].current);
@@ -1038,7 +1038,7 @@ void video_shader_write_conf_cgp(config_file_t *conf,
          if (shader->lut[i].filter != RARCH_FILTER_UNSPEC)
          {
             snprintf(key, sizeof(key), "%s_linear", shader->lut[i].id);
-            config_set_bool(conf, key, 
+            config_set_bool(conf, key,
                   shader->lut[i].filter == RARCH_FILTER_LINEAR);
          }
 
@@ -1087,7 +1087,7 @@ void video_shader_write_conf_cgp(config_file_t *conf,
  * Parses type of shader.
  *
  * Returns: value of shader type on success, otherwise will return
- * user-supplied @fallback value. 
+ * user-supplied @fallback value.
  **/
 enum rarch_shader_type video_shader_parse_type(const char *path,
       enum rarch_shader_type fallback)
@@ -1127,7 +1127,7 @@ enum rarch_shader_type video_shader_parse_type(const char *path,
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
-         if (shader_type == RARCH_SHADER_GLSL 
+         if (shader_type == RARCH_SHADER_GLSL
             || (cg_supported && shader_type == RARCH_SHADER_CG))
             return shader_type;
          break;
@@ -1165,7 +1165,7 @@ void video_shader_resolve_relative(struct video_shader *shader,
    unsigned i;
    size_t tmp_path_size = 4096 * sizeof(char);
    char *tmp_path       = (char*)malloc(4096 * sizeof(char));
-   
+
    tmp_path[0] = '\0';
 
    for (i = 0; i < shader->passes; i++)

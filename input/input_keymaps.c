@@ -250,7 +250,7 @@ const struct input_key_map input_config_key_map[] = {
    { "rctrl", RETROK_RCTRL },
    { "ralt", RETROK_RALT },
 
-   /* Keys not referenced in any keyboard mapping 
+   /* Keys not referenced in any keyboard mapping
     * (except perhaps rarch_key_map_apple_hid) */
    { "caret", RETROK_CARET },
    { "underscore", RETROK_UNDERSCORE },
@@ -932,7 +932,7 @@ const struct rarch_key_map rarch_key_map_x11[] = {
    /*{ ?, RETROK_POWER },*/
    { XK_EuroSign, RETROK_EURO },
    { XK_Undo, RETROK_UNDO },
-   /* FIXME(shizeeg): RetroArch can't handle these buttons atm. 
+   /* FIXME(shizeeg): RetroArch can't handle these buttons atm.
     * Do we really need RETROK_KP_INSERT, RETROK_KP_END,
     * RETROK_KP_DOWN, RETROK_KP_PAGEDOWN ???
     *
@@ -1681,7 +1681,7 @@ enum retro_key input_keymaps_translate_keysym_to_rk(unsigned sym)
  * @buf                   : Buffer.
  * @size                  : Size of @buf.
  *
- * Translates a retro key identifier to a human-readable 
+ * Translates a retro key identifier to a human-readable
  * identifier string.
  **/
 void input_keymaps_translate_rk_to_str(enum retro_key key, char *buf, size_t size)

@@ -165,7 +165,7 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
 
    userdata.conf = filt->conf;
    /* Index-specific configs take priority over ident-specific. */
-   userdata.prefix[0] = key; 
+   userdata.prefix[0] = key;
    userdata.prefix[1] = filt->impl->short_ident;
 
    /* Simple assumptions. */
@@ -209,7 +209,7 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
 
    filt->impl_data = filt->impl->create(
          &softfilter_config, input_fmt, input_fmt, max_width, max_height,
-         threads != RARCH_SOFTFILTER_THREADS_AUTO ? threads : 
+         threads != RARCH_SOFTFILTER_THREADS_AUTO ? threads :
          cpu_features_get_core_amount(), cpu_features,
          &userdata);
    if (!filt->impl_data)
@@ -312,7 +312,7 @@ static bool append_softfilter_plugs(rarch_softfilter_t *filt,
 
       RARCH_LOG("[SoftFilter]: Found plug: %s (%s).\n",
             impl->ident, impl->short_ident);
-      
+
       filt->plugs = new_plugs;
       filt->plugs[filt->num_plugs].lib = lib;
       filt->plugs[filt->num_plugs].impl = impl;
@@ -524,7 +524,7 @@ void rarch_softfilter_process(rarch_softfilter_t *filt,
    if (filt->impl && filt->impl->get_work_packets)
       filt->impl->get_work_packets(filt->impl_data, filt->packets,
             output, output_stride, input, width, height, input_stride);
-   
+
 #ifdef HAVE_THREADS
    /* Fire off workers */
    for (i = 0; i < filt->threads; i++)

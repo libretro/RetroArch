@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -67,7 +67,7 @@ enum
 
 enum gfx_wrap_type
 {
-   RARCH_WRAP_BORDER = 0, /* Kinda deprecated, but keep as default. 
+   RARCH_WRAP_BORDER = 0, /* Kinda deprecated, but keep as default.
                              Will be translated to EDGE in GLES. */
    RARCH_WRAP_DEFAULT = RARCH_WRAP_BORDER,
    RARCH_WRAP_EDGE,
@@ -157,26 +157,26 @@ struct video_shader
    struct state_tracker_uniform_info variable[GFX_MAX_VARIABLES];
 };
 
-/** 
+/**
  * video_shader_read_conf_cgp:
  * @conf              : Preset file to read from.
  * @shader            : Shader passes handle.
  *
  * Loads preset file and all associated state (passes,
- * textures, imports, etc). 
+ * textures, imports, etc).
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
 bool video_shader_read_conf_cgp(config_file_t *conf,
       struct video_shader *shader);
 
-/** 
+/**
  * video_shader_write_conf_cgp:
  * @conf              : Preset file to read from.
  * @shader            : Shader passes handle.
  *
  * Saves preset and all associated state (passes,
- * textures, imports, etc) to disk. 
+ * textures, imports, etc) to disk.
  **/
 void video_shader_write_conf_cgp(config_file_t *conf,
       struct video_shader *shader);
@@ -192,7 +192,7 @@ void video_shader_write_conf_cgp(config_file_t *conf,
 void video_shader_resolve_relative(struct video_shader *shader,
       const char *ref_path);
 
-/** 
+/**
  * video_shader_resolve_parameters:
  * @conf              : Preset file to read from.
  * @shader            : Shader passes handle.
@@ -204,12 +204,12 @@ void video_shader_resolve_relative(struct video_shader *shader,
 bool video_shader_resolve_current_parameters(config_file_t *conf,
       struct video_shader *shader);
 
-/** 
+/**
  * video_shader_resolve_parameters:
  * @conf              : Preset file to read from.
  * @shader            : Shader passes handle.
  *
- * Resolves all shader parameters belonging to shaders. 
+ * Resolves all shader parameters belonging to shaders.
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
@@ -225,7 +225,7 @@ bool video_shader_resolve_parameters(config_file_t *conf,
  * Parses type of shader.
  *
  * Returns: value of shader type on success, otherwise will return
- * user-supplied @fallback value. 
+ * user-supplied @fallback value.
  **/
 enum rarch_shader_type video_shader_parse_type(const char *path,
       enum rarch_shader_type fallback);

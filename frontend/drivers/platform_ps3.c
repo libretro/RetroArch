@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -56,7 +56,7 @@ SYS_PROCESS_PARAM(1001, 0x100000)
 #else
 SYS_PROCESS_PARAM(1001, 0x200000)
 #endif
-   
+
 #ifdef HAVE_MULTIMAN
 #define MULTIMAN_SELF_FILE "/dev_hdd0/game/BLES80608/USRDIR/RELOAD.SELF"
 static bool multiman_detected  = false;
@@ -189,7 +189,7 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
             break;
       }
 
-      if((get_attributes & CELL_GAME_ATTRIBUTE_APP_HOME) 
+      if((get_attributes & CELL_GAME_ATTRIBUTE_APP_HOME)
             == CELL_GAME_ATTRIBUTE_APP_HOME)
          RARCH_LOG("RetroArch was launched from host machine (APP_HOME).\n");
 

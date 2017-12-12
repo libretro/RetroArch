@@ -117,7 +117,7 @@ void menu_setting_get_string_representation(void *data, char *s, size_t len);
  * Get associated label of a setting.
  **/
 void menu_setting_get_label(void *data, char *s,
-      size_t len, unsigned *w, unsigned type, 
+      size_t len, unsigned *w, unsigned type,
       const char *menu_label, const char *label, unsigned idx);
 
 int menu_action_handle_setting(rarch_setting_t *setting,

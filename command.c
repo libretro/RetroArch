@@ -610,7 +610,7 @@ static void command_stdin_poll(command_t *handle)
    handle->stdin_buf_ptr                    += ret;
    handle->stdin_buf[handle->stdin_buf_ptr]  = '\0';
 
-   last_newline                              = 
+   last_newline                              =
       strrchr(handle->stdin_buf, '\n');
 
    if (!last_newline)
@@ -1028,7 +1028,7 @@ static void command_event_init_controllers(void)
             break;
          case RETRO_DEVICE_JOYPAD:
             /* Ideally these checks shouldn't be required but if we always
-             * call core_set_controller_port_device input won't work on 
+             * call core_set_controller_port_device input won't work on
              * cores that don't set port information properly */
             if (info && info->ports.size != 0 && i < info->ports.size)
                set_controller = true;
@@ -1126,7 +1126,7 @@ static void command_event_load_auto_state(void)
          msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
          savestate_name_auto, ret ? "succeeded" : "failed");
    RARCH_LOG("%s\n", msg);
-   
+
    free(savestate_name_auto);
 
    return;
@@ -1338,7 +1338,7 @@ static bool command_event_save_auto_state(void)
    bool is_inited              = false;
    char *savestate_name_auto   = (char*)
       calloc(PATH_MAX_LENGTH, sizeof(*savestate_name_auto));
-   size_t 
+   size_t
       savestate_name_auto_size = PATH_MAX_LENGTH * sizeof(char);
    settings_t *settings        = config_get_ptr();
    global_t   *global          = global_get_ptr();
@@ -1383,7 +1383,7 @@ static bool command_event_save_config(
       char *s, size_t len)
 {
    bool path_exists = !string_is_empty(config_path);
-   const char *str  = path_exists ? config_path : 
+   const char *str  = path_exists ? config_path :
       path_get(RARCH_PATH_CONFIG);
 
    if (path_exists && config_save_file(config_path))
@@ -1713,7 +1713,7 @@ void command_playlist_push_write(
 
    if (!playlist)
       return;
-   
+
    if (playlist_push(
          playlist,
          path,

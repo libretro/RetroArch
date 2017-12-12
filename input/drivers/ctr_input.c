@@ -45,7 +45,7 @@ static void ctr_input_poll(void *data)
       ctr->joypad->poll();
 }
 
-static int16_t ctr_input_state(void *data, 
+static int16_t ctr_input_state(void *data,
       rarch_joypad_info_t joypad_info,
       const struct retro_keybind **binds,
       unsigned port, unsigned device,

@@ -94,13 +94,13 @@ static void adapter_thread(void *data)
       int size = 0;
 
       slock_lock(adapter->send_control_lock);
-      if (fifo_read_avail(adapter->send_control_buffer) 
+      if (fifo_read_avail(adapter->send_control_buffer)
             >= sizeof(send_command_size))
       {
          fifo_read(adapter->send_control_buffer,
                &send_command_size, sizeof(send_command_size));
 
-         if (fifo_read_avail(adapter->send_control_buffer) 
+         if (fifo_read_avail(adapter->send_control_buffer)
                >= sizeof(send_command_size))
          {
             fifo_read(adapter->send_control_buffer,
@@ -180,7 +180,7 @@ static void libusb_get_description(struct libusb_device *device,
 
       for(j = 0; j < inter->num_altsetting; j++)
       {
-         const struct libusb_interface_descriptor *interdesc = 
+         const struct libusb_interface_descriptor *interdesc =
             &inter->altsetting[j];
 
 #if 0
@@ -191,13 +191,13 @@ static void libusb_get_description(struct libusb_device *device,
 
             for(k = 0; k < (int)interdesc->bNumEndpoints; k++)
             {
-               const struct libusb_endpoint_descriptor *epdesc = 
+               const struct libusb_endpoint_descriptor *epdesc =
                   &interdesc->endpoint[k];
-               bool is_int = (epdesc->bmAttributes & LIBUSB_TRANSFER_TYPE_MASK) 
+               bool is_int = (epdesc->bmAttributes & LIBUSB_TRANSFER_TYPE_MASK)
                   == LIBUSB_TRANSFER_TYPE_INTERRUPT;
-               bool is_out = (epdesc->bEndpointAddress & LIBUSB_ENDPOINT_DIR_MASK) 
+               bool is_out = (epdesc->bEndpointAddress & LIBUSB_ENDPOINT_DIR_MASK)
                   == LIBUSB_ENDPOINT_OUT;
-               bool is_in = (epdesc->bEndpointAddress & LIBUSB_ENDPOINT_DIR_MASK) 
+               bool is_in = (epdesc->bEndpointAddress & LIBUSB_ENDPOINT_DIR_MASK)
                   == LIBUSB_ENDPOINT_IN;
 
                if (is_int)

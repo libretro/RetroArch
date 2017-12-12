@@ -13,7 +13,7 @@ void* memb_alloc(struct memb_blks *blk)
 {
 	s32 i;
 	u32 *ptr;
-	
+
 	ptr = (u32*)blk->mem;
 	for(i=0;i<blk->num;i++) {
 		if(*ptr==0) {

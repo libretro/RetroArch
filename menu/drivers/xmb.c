@@ -2252,7 +2252,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       if (get_badge_texture(new_id) != 0)
          return get_badge_texture(new_id);
       /* Should be replaced with placeholder badge icon. */
-      return xmb->textures.list[XMB_TEXTURE_SUBSETTING]; 
+      return xmb->textures.list[XMB_TEXTURE_SUBSETTING];
    }
 #endif
 

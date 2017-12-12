@@ -38,9 +38,9 @@ bool menu_content_playlist_find_associated_core(const char *path, char *s, size_
    unsigned j;
    bool                                ret = false;
    settings_t *settings                    = config_get_ptr();
-   struct string_list *existing_core_names = 
+   struct string_list *existing_core_names =
       string_split(settings->arrays.playlist_names, ";");
-   struct string_list *existing_core_paths = 
+   struct string_list *existing_core_paths =
       string_split(settings->arrays.playlist_cores, ";");
 
    for (j = 0; j < existing_core_names->size; j++)

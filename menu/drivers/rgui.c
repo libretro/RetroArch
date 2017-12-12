@@ -447,7 +447,7 @@ static void rgui_render(void *data, bool is_idle)
       unsigned new_val;
 
       menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &old_start);
-      
+
       new_val = (unsigned)(menu_input_pointer_state(MENU_POINTER_Y_AXIS)
          / (11 - 2 + old_start));
 
@@ -541,7 +541,7 @@ static void rgui_render(void *data, bool is_idle)
             RGUI_TERM_START_X(fb_width),
             title_buf, TITLE_COLOR(settings));
 
-   if (settings->bools.menu_core_enable && 
+   if (settings->bools.menu_core_enable &&
          menu_entries_get_core_title(title_msg, sizeof(title_msg)) == 0)
    {
       if (rgui_framebuf_data)
@@ -720,7 +720,7 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
       goto error;
 
    if (rgui_framebuf_data)
-      rgui_fill_rect(rgui_framebuf_data, 
+      rgui_fill_rect(rgui_framebuf_data,
             fb_pitch, 0, fb_height,
             fb_width, 4, rgui_gray_filler);
 

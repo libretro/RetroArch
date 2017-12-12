@@ -31,10 +31,10 @@ distribution.
 #ifndef __MESSAGE_H__
 #define __MESSAGE_H__
 
-/*! \file message.h 
+/*! \file message.h
 \brief Thread subsystem II
 
-*/ 
+*/
 
 #include <gctypes.h>
 

@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2016-2017 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -78,7 +78,7 @@ static void vulkan_init_render_pass(
       VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO };
    VkAttachmentDescription attachment = {0};
    VkSubpassDescription subpass       = {0};
-   VkAttachmentReference color_ref    = { 0, 
+   VkAttachmentReference color_ref    = { 0,
       VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
 
    /* Backbuffer format. */
@@ -93,7 +93,7 @@ static void vulkan_init_render_pass(
    attachment.stencilLoadOp     = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
    attachment.stencilStoreOp    = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 
-   /* The image layout will be attachment_optimal 
+   /* The image layout will be attachment_optimal
     * when we're executing the renderpass. */
    attachment.initialLayout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
    attachment.finalLayout       = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -170,9 +170,9 @@ static void vulkan_init_framebuffers(
 static void vulkan_init_pipeline_layout(
       vk_t *vk)
 {
-   VkDescriptorSetLayoutCreateInfo set_layout_info = { 
+   VkDescriptorSetLayoutCreateInfo set_layout_info = {
       VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
-   VkPipelineLayoutCreateInfo layout_info          = { 
+   VkPipelineLayoutCreateInfo layout_info          = {
       VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
    VkDescriptorSetLayoutBinding bindings[2]        = {{0}};
 
@@ -245,22 +245,22 @@ static void vulkan_init_pipelines(
       ;
 
    unsigned i;
-   VkPipelineInputAssemblyStateCreateInfo input_assembly = { 
+   VkPipelineInputAssemblyStateCreateInfo input_assembly = {
       VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO };
-   VkPipelineVertexInputStateCreateInfo vertex_input     = { 
+   VkPipelineVertexInputStateCreateInfo vertex_input     = {
       VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
-   VkPipelineRasterizationStateCreateInfo raster         = { 
+   VkPipelineRasterizationStateCreateInfo raster         = {
       VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO };
    VkPipelineColorBlendAttachmentState blend_attachment  = {0};
-   VkPipelineColorBlendStateCreateInfo blend             = { 
+   VkPipelineColorBlendStateCreateInfo blend             = {
       VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO };
-   VkPipelineViewportStateCreateInfo viewport            = { 
+   VkPipelineViewportStateCreateInfo viewport            = {
       VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO };
-   VkPipelineDepthStencilStateCreateInfo depth_stencil   = { 
+   VkPipelineDepthStencilStateCreateInfo depth_stencil   = {
       VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO };
-   VkPipelineMultisampleStateCreateInfo multisample      = { 
+   VkPipelineMultisampleStateCreateInfo multisample      = {
       VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO };
-   VkPipelineDynamicStateCreateInfo dynamic              = { 
+   VkPipelineDynamicStateCreateInfo dynamic              = {
       VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO };
 
    VkPipelineShaderStageCreateInfo shader_stages[2]      = {
@@ -268,9 +268,9 @@ static void vulkan_init_pipelines(
       { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO },
    };
 
-   VkGraphicsPipelineCreateInfo pipe                     = { 
+   VkGraphicsPipelineCreateInfo pipe                     = {
       VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO };
-   VkShaderModuleCreateInfo module_info                  = { 
+   VkShaderModuleCreateInfo module_info                  = {
       VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO };
    VkVertexInputAttributeDescription attributes[3]       = {{0}};
    VkVertexInputBindingDescription binding               = {0};
@@ -517,13 +517,13 @@ static void vulkan_init_command_buffers(vk_t *vk)
 
    for (i = 0; i < vk->num_swapchain_images; i++)
    {
-      VkCommandPoolCreateInfo pool_info = { 
+      VkCommandPoolCreateInfo pool_info = {
          VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO };
-      VkCommandBufferAllocateInfo info  = { 
+      VkCommandBufferAllocateInfo info  = {
          VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
 
       pool_info.queueFamilyIndex = vk->context->graphics_queue_index;
-      pool_info.flags            = 
+      pool_info.flags            =
          VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
       vkCreateCommandPool(vk->context->device,
@@ -622,7 +622,7 @@ static void vulkan_init_descriptor_pool(vk_t *vk)
 
    for (i = 0; i < vk->num_swapchain_images; i++)
    {
-      vk->swapchain[i].descriptor_manager = 
+      vk->swapchain[i].descriptor_manager =
          vulkan_create_descriptor_manager(
                vk->context->device,
                pool_sizes, 2, vk->pipelines.set_layout);
@@ -761,7 +761,7 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
 
    vk->filter_chain           = vulkan_filter_chain_create_default(
          &info,
-         vk->video.smooth ? 
+         vk->video.smooth ?
          VULKAN_FILTER_CHAIN_LINEAR : VULKAN_FILTER_CHAIN_NEAREST);
 
    if (!vk->filter_chain)
@@ -848,10 +848,10 @@ static void vulkan_init_static_resources(vk_t *vk)
 {
    unsigned i;
    uint32_t blank[4 * 4];
-   VkCommandPoolCreateInfo pool_info = { 
+   VkCommandPoolCreateInfo pool_info = {
       VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO };
    /* Create the pipeline cache. */
-   VkPipelineCacheCreateInfo cache   = { 
+   VkPipelineCacheCreateInfo cache   = {
       VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO };
 
    vkCreatePipelineCache(vk->context->device,
@@ -1072,8 +1072,8 @@ static void vulkan_init_hw_render(vk_t *vk)
 static void vulkan_init_readback(vk_t *vk)
 {
    /* Only bother with this if we're doing GPU recording.
-    * Check recording_is_enabled() and not 
-    * driver.recording_data, because recording is 
+    * Check recording_is_enabled() and not
+    * driver.recording_data, because recording is
     * not initialized yet.
     */
    settings_t *settings    = config_get_ptr();
@@ -1171,7 +1171,7 @@ static void *vulkan_init(const video_info_t *video,
    vk->fullscreen        = video->fullscreen;
    vk->tex_w             = RARCH_SCALE_BASE * video->input_scale;
    vk->tex_h             = RARCH_SCALE_BASE * video->input_scale;
-   vk->tex_fmt           = video->rgb32 
+   vk->tex_fmt           = video->rgb32
       ? VK_FORMAT_B8G8R8A8_UNORM : VK_FORMAT_R5G6B5_UNORM_PACK16;
    vk->keep_aspect       = video->force_aspect;
    RARCH_LOG("[Vulkan]: Using %s format.\n", video->rgb32 ? "BGRA8888" : "RGB565");
@@ -1195,7 +1195,7 @@ static void *vulkan_init(const video_info_t *video,
    video_context_driver_input_driver(&inp);
 
    if (video->font_enable)
-      font_driver_init_osd(vk, false, 
+      font_driver_init_osd(vk, false,
             video->is_threaded,
             FONT_DRIVER_RENDER_VULKAN_API);
 
@@ -1422,21 +1422,21 @@ static void vulkan_set_viewport(void *data, unsigned viewport_width,
 
          if (fabsf(device_aspect - desired_aspect) < 0.0001f)
          {
-            /* If the aspect ratios of screen and desired aspect 
-             * ratio are sufficiently equal (floating point stuff), 
+            /* If the aspect ratios of screen and desired aspect
+             * ratio are sufficiently equal (floating point stuff),
              * assume they are actually equal.
              */
          }
          else if (device_aspect > desired_aspect)
          {
-            delta          = (desired_aspect / device_aspect - 1.0f) 
+            delta          = (desired_aspect / device_aspect - 1.0f)
                / 2.0f + 0.5f;
             x              = (int)roundf(viewport_width * (0.5f - delta));
             viewport_width = (unsigned)roundf(2.0f * viewport_width * delta);
          }
          else
          {
-            delta           = (device_aspect / desired_aspect - 1.0f) 
+            delta           = (device_aspect / desired_aspect - 1.0f)
                / 2.0f + 0.5f;
             y               = (int)roundf(viewport_height * (0.5f - delta));
             viewport_height = (unsigned)roundf(2.0f * viewport_height * delta);
@@ -1604,13 +1604,13 @@ static bool vulkan_frame(void *data, const void *frame,
    unsigned height                               = video_info->height;
    VkClearValue clear_color;
 
-   VkCommandBufferBeginInfo begin_info           = { 
+   VkCommandBufferBeginInfo begin_info           = {
       VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
-   VkRenderPassBeginInfo rp_info                 = { 
+   VkRenderPassBeginInfo rp_info                 = {
       VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
-   VkSubmitInfo submit_info                      = { 
+   VkSubmitInfo submit_info                      = {
       VK_STRUCTURE_TYPE_SUBMIT_INFO };
-   unsigned frame_index                          = 
+   unsigned frame_index                          =
       vk->context->current_swapchain_index;
 
    /* Bookkeeping on start of frame. */
@@ -1658,12 +1658,12 @@ static bool vulkan_frame(void *data, const void *frame,
       const uint8_t *src  = (const uint8_t*)frame;
       unsigned bpp        = vk->video.rgb32 ? 4 : 2;
 
-      if (     chain->texture.width != frame_width 
+      if (     chain->texture.width != frame_width
             || chain->texture.height != frame_height)
       {
          chain->texture = vulkan_create_texture(vk, &chain->texture,
                frame_width, frame_height, chain->texture.format, NULL, NULL,
-               chain->texture_optimal.memory 
+               chain->texture_optimal.memory
                ? VULKAN_TEXTURE_STAGING : VULKAN_TEXTURE_STREAMED);
 
          vulkan_map_persistent_texture(
@@ -1685,7 +1685,7 @@ static bool vulkan_frame(void *data, const void *frame,
          if (chain->texture.stride == pitch && pitch == frame_width * bpp)
             memcpy(dst, src, frame_width * frame_height * bpp);
          else
-            for (y = 0; y < frame_height; y++, 
+            for (y = 0; y < frame_height; y++,
                   dst += chain->texture.stride, src += pitch)
                memcpy(dst, src, frame_width * bpp);
       }
@@ -1849,8 +1849,8 @@ static bool vulkan_frame(void *data, const void *frame,
    if (chain->backbuffer.image != VK_NULL_HANDLE &&
          (vk->readback.pending || vk->readback.streamed))
    {
-      /* We cannot safely read back from an image which 
-       * has already been presented as we need to 
+      /* We cannot safely read back from an image which
+       * has already been presented as we need to
        * maintain the PRESENT_SRC_KHR layout.
        *
        * If we're reading back, perform the readback before presenting.
@@ -2068,7 +2068,7 @@ static bool vulkan_get_current_sw_framebuffer(void *data,
 {
    struct vk_per_frame *chain = NULL;
    vk_t *vk                   = (vk_t*)data;
-   vk->chain                  = 
+   vk->chain                  =
       &vk->swapchain[vk->context->current_swapchain_index];
    chain                      = vk->chain;
 
@@ -2095,7 +2095,7 @@ static bool vulkan_get_current_sw_framebuffer(void *data,
 
    framebuffer->data         = chain->texture.mapped;
    framebuffer->pitch        = chain->texture.stride;
-   framebuffer->format       = vk->video.rgb32 
+   framebuffer->format       = vk->video.rgb32
       ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
    framebuffer->memory_flags = 0;
 
@@ -2369,7 +2369,7 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
       {
          unsigned x, y;
          const uint8_t *src  = (const uint8_t*)staging->mapped;
-         buffer             += 3 * (vk->vp.height - 1) 
+         buffer             += 3 * (vk->vp.height - 1)
             * vk->vp.width;
 
          for (y = 0; y < vk->vp.height; y++,
@@ -2532,7 +2532,7 @@ static bool vulkan_overlay_load(void *data,
       const void *image_data, unsigned num_images)
 {
    unsigned i, j;
-   const struct texture_image *images = 
+   const struct texture_image *images =
       (const struct texture_image*)image_data;
    vk_t *vk                           = (vk_t*)data;
    static const struct vk_color white = {

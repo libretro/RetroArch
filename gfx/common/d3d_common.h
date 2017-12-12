@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -45,7 +45,7 @@ LPDIRECT3DTEXTURE d3d_texture_new(LPDIRECT3DDEVICE dev,
       const char *path, unsigned width, unsigned height,
       unsigned miplevels, unsigned usage, D3DFORMAT format,
       D3DPOOL pool, unsigned filter, unsigned mipfilter,
-      D3DCOLOR color_key, void *src_info, 
+      D3DCOLOR color_key, void *src_info,
       PALETTEENTRY *palette);
 
 void d3d_set_stream_source(LPDIRECT3DDEVICE dev, unsigned stream_no,

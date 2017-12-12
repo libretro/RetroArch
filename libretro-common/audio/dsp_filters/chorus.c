@@ -88,7 +88,7 @@ static void chorus_process(void *data, struct dspfilter_output *output,
       r_a         = ch->old[1][(ch->old_ptr - delay_int - 0) & CHORUS_DELAY_MASK];
       r_b         = ch->old[1][(ch->old_ptr - delay_int - 1) & CHORUS_DELAY_MASK];
 
-      /* Lerp introduces aliasing of the chorus component, 
+      /* Lerp introduces aliasing of the chorus component,
        * but doing full polyphase here is probably overkill. */
       chorus_l    = l_a * (1.0f - delay_frac) + l_b * delay_frac;
       chorus_r    = r_a * (1.0f - delay_frac) + r_b * delay_frac;

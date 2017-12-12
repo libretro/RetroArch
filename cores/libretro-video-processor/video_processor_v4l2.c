@@ -219,7 +219,7 @@ enumerate_audio_devices(char *buf, size_t buflen)
       name = snd_device_name_get_hint(*n, "NAME");
       ioid = snd_device_name_get_hint(*n, "IOID");
       if ((ioid == NULL || string_is_equal(ioid, "Input")) &&
-          (!strncmp(name, "hw:", strlen("hw:")) || 
+          (!strncmp(name, "hw:", strlen("hw:")) ||
            !strncmp(name, "default:", strlen("default:"))))
       {
          if (ndevs > 0)
@@ -368,7 +368,7 @@ static bool open_devices(void)
       }
       error = snd_pcm_hw_params_set_format(audio_handle, hw_params, SND_PCM_FORMAT_S16_LE);
       if (error)
-      {   
+      {
          printf("Couldn't set hw param format to SND_PCM_FORMAT_S16_LE: %s\n", snd_strerror(error));
          return false;
       }
@@ -460,12 +460,12 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_get_system_av_info)(struct retro_syst
    cc.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
    error = v4l2_ioctl(video_fd, VIDIOC_CROPCAP, &cc);
    if (error == 0)
-      info->geometry.aspect_ratio = (double)cc.pixelaspect.denominator 
+      info->geometry.aspect_ratio = (double)cc.pixelaspect.denominator
          / (double)cc.pixelaspect.numerator;
 
    info->geometry.base_width  = info->geometry.max_width = video_format.fmt.pix.width;
    info->geometry.base_height = info->geometry.max_height = video_format.fmt.pix.height;
-   info->timing.fps           = (double)video_standard.frameperiod.denominator / 
+   info->timing.fps           = (double)video_standard.frameperiod.denominator /
       (double)video_standard.frameperiod.numerator;
    info->timing.sample_rate   = AUDIO_SAMPLE_RATE;
 
@@ -655,7 +655,7 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
       buf.index = index;
       buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
       buf.memory = V4L2_MEMORY_MMAP;
-      
+
       error = v4l2_ioctl(video_fd, VIDIOC_QBUF, &buf);
       if (error != 0)
       {
@@ -664,8 +664,8 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
       }
    }
 
-   conv_data = (uint16_t*)calloc(1, 
-         video_format.fmt.pix.width * video_format.fmt.pix.height * 2);   
+   conv_data = (uint16_t*)calloc(1,
+         video_format.fmt.pix.width * video_format.fmt.pix.height * 2);
    if (!conv_data)
    {
       printf("Cannot allocate conversion buffer\n");
@@ -707,7 +707,7 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_unload_game)(void)
       for (index = 0; index < video_nbuffers; index++)
          v4l2_munmap(video_buffer[index].start, video_buffer[index].len);
    }
-   
+
    if (conv_data)
       free(conv_data);
    conv_data = NULL;

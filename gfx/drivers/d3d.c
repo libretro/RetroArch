@@ -333,8 +333,8 @@ static void d3d_viewport_info(void *data, struct video_viewport *vp)
 {
    d3d_video_t *d3d   = (d3d_video_t*)data;
 
-   if (  !d3d || 
-         !d3d->renderchain_driver || 
+   if (  !d3d ||
+         !d3d->renderchain_driver ||
          !d3d->renderchain_driver->viewport_info)
       return;
 
@@ -372,7 +372,7 @@ static void d3d_overlay_render(d3d_video_t *d3d, video_frame_info_t *video_info,
       vert[i][7]   = 1.0f;
       vert[i][8]   = overlay->alpha_mod;
    }
-   
+
    d3d_viewport_info(d3d, &vp);
 
    overlay_width   = vp.width;
@@ -514,7 +514,7 @@ void d3d_make_d3dpp(void *data,
 #ifdef _XBOX
    d3dpp->Windowed             = false;
 #else
-   d3dpp->Windowed             = settings->bools.video_windowed_fullscreen 
+   d3dpp->Windowed             = settings->bools.video_windowed_fullscreen
       || !info->fullscreen;
 #endif
    FS_PRESENTINTERVAL(d3dpp)   = D3DPRESENT_INTERVAL_IMMEDIATE;
@@ -545,13 +545,13 @@ void d3d_make_d3dpp(void *data,
    d3dpp->BackBufferFormat =
 #ifdef _XBOX360
       global->console.screen.gamma_correction ?
-      (D3DFORMAT)MAKESRGBFMT(info->rgb32 ? 
+      (D3DFORMAT)MAKESRGBFMT(info->rgb32 ?
             D3DFMT_X8R8G8B8 : D3DFMT_LIN_R5G6B5) :
 #endif
       info->rgb32 ? D3DFMT_X8R8G8B8 : D3DFMT_LIN_R5G6B5;
 #else
    d3dpp->hDeviceWindow    = win32_get_window();
-   d3dpp->BackBufferFormat = !d3dpp->Windowed ? 
+   d3dpp->BackBufferFormat = !d3dpp->Windowed ?
       D3DFMT_X8R8G8B8 : D3DFMT_UNKNOWN;
 #endif
 
@@ -647,7 +647,7 @@ static bool d3d_init_base(void *data, const video_info_t *info)
 #endif
 
    if (!d3d_create_device(&d3d->dev, &d3dpp,
-            g_pD3D, 
+            g_pD3D,
             focus_window,
             d3d->cur_mon_id)
       )
@@ -724,8 +724,8 @@ static void d3d_calculate_rect(void *data,
 
          if (fabsf(device_aspect - desired_aspect) < 0.0001f)
          {
-            /* If the aspect ratios of screen and desired aspect 
-             * ratio are sufficiently equal (floating point stuff), 
+            /* If the aspect ratios of screen and desired aspect
+             * ratio are sufficiently equal (floating point stuff),
              * assume they are actually equal.
              */
          }
@@ -823,7 +823,7 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
    strlcpy(settings->paths.path_font, "game:\\media\\Arial_12.xpr",
          sizeof(settings->paths.path_font));
 #endif
-   font_driver_init_osd(d3d, false, 
+   font_driver_init_osd(d3d, false,
          info->is_threaded,
          FONT_DRIVER_RENDER_DIRECT3D_API);
 
@@ -1513,8 +1513,8 @@ static bool d3d_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    d3d_video_t *d3d   = (d3d_video_t*)data;
 
-   if (  !d3d || 
-         !d3d->renderchain_driver || 
+   if (  !d3d ||
+         !d3d->renderchain_driver ||
          !d3d->renderchain_driver->read_viewport)
       return false;
 
@@ -1660,7 +1660,7 @@ static void video_texture_load_d3d(d3d_video_t *d3d,
       uintptr_t *id)
 {
    *id = (uintptr_t)d3d_texture_new(d3d->dev, NULL,
-         ti->width, ti->height, 1, 
+         ti->width, ti->height, 1,
          0, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, 0, 0, 0,
          NULL, NULL);
 }

@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -78,8 +78,8 @@ char *playlist_get_conf_path(playlist_t *playlist)
  * @path                : Path of playlist entry.
  * @core_path           : Core path of playlist entry.
  * @core_name           : Core name of playlist entry.
- * 
- * Gets values of playlist index: 
+ *
+ * Gets values of playlist index:
  **/
 void playlist_get_index(playlist_t *playlist,
       size_t idx,
@@ -109,8 +109,8 @@ void playlist_get_index(playlist_t *playlist,
  * playlist_delete_index:
  * @playlist            : Playlist handle.
  * @idx                 : Index of playlist entry.
- * 
- * Delete the entry at the index: 
+ *
+ * Delete the entry at the index:
  **/
 void playlist_delete_index(playlist_t *playlist,
       size_t idx)
@@ -526,7 +526,7 @@ static bool playlist_read_file(
          if((last = strrchr(buf[i], '\r')))
             *last = '\0';
          else if((last = strrchr(buf[i], '\n')))
-            *last = '\0';	
+            *last = '\0';
       }
 
       entry = &playlist->entries[playlist->size];

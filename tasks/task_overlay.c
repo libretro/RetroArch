@@ -126,7 +126,7 @@ static bool task_overlay_load_desc(
    const char *box                      = NULL;
    config_file_t *conf                  = loader->conf;
 
-   overlay_desc_key[0] = conf_key[0] = 
+   overlay_desc_key[0] = conf_key[0] =
       overlay_desc_normalized_key[0] = overlay[0] = '\0';
 
    snprintf(overlay_desc_key, sizeof(overlay_desc_key),
@@ -203,7 +203,7 @@ static bool task_overlay_load_desc(
             for (; tmp; tmp = strtok_r(NULL, "|", &save))
             {
                if (!string_is_equal(tmp, file_path_str(FILE_PATH_NUL)))
-                  desc->key_mask |= UINT64_C(1) 
+                  desc->key_mask |= UINT64_C(1)
                      << input_config_translate_str_to_bind_id(tmp);
             }
 

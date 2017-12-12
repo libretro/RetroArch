@@ -201,7 +201,7 @@ static void supertwoxsai_generic_destroy(void *data)
 #endif
 
 static void supertwoxsai_generic_xrgb8888(unsigned width, unsigned height,
-      int first, int last, uint32_t *src, 
+      int first, int last, uint32_t *src,
       unsigned src_stride, uint32_t *dst, unsigned dst_stride)
 {
    unsigned finish;
@@ -221,7 +221,7 @@ static void supertwoxsai_generic_xrgb8888(unsigned width, unsigned height,
          //                             1  2  3 S1
          //                               A1 A2
          //--------------------------------------
-         
+
          supertwoxsai_function(supertwoxsai_result, supertwoxsai_interpolate_xrgb8888, supertwoxsai_interpolate2_xrgb8888);
       }
 
@@ -231,7 +231,7 @@ static void supertwoxsai_generic_xrgb8888(unsigned width, unsigned height,
 }
 
 static void supertwoxsai_generic_rgb565(unsigned width, unsigned height,
-      int first, int last, uint16_t *src, 
+      int first, int last, uint16_t *src,
       unsigned src_stride, uint16_t *dst, unsigned dst_stride)
 {
    unsigned finish;
@@ -251,7 +251,7 @@ static void supertwoxsai_generic_rgb565(unsigned width, unsigned height,
          //                             1  2  3 S1
          //                               A1 A2
          //--------------------------------------
-         
+
          supertwoxsai_function(supertwoxsai_result, supertwoxsai_interpolate_rgb565, supertwoxsai_interpolate2_rgb565);
       }
 

@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -51,7 +51,7 @@ int font_renderer_create_default(const void **data, void **handle,
 {
 
    unsigned i;
-   const font_renderer_driver_t **drv = 
+   const font_renderer_driver_t **drv =
       (const font_renderer_driver_t**)data;
 
    for (i = 0; font_backends[i]; i++)
@@ -502,8 +502,8 @@ font_data_t *font_driver_init_first(
    bool ok                 = false;
 #ifdef HAVE_THREADS
 
-   if (     threading_hint 
-         && is_threaded 
+   if (     threading_hint
+         && is_threaded
          && !video_driver_is_hw_context())
       ok = video_thread_font_init(&font_driver, &font_handle,
             video_data, font_path, font_size, api, font_init_first,
@@ -528,7 +528,7 @@ font_data_t *font_driver_init_first(
 
 void font_driver_init_osd(
       void *video_data,
-      bool threading_hint, 
+      bool threading_hint,
       bool is_threaded,
       enum font_driver_render_api api)
 {

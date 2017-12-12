@@ -277,7 +277,7 @@ static void png_reverse_filter_copy_line_bw(uint32_t *data,
    unsigned i, bit;
    static const unsigned mul_table[] = { 0, 0xff, 0x55, 0, 0x11, 0, 0, 0, 0x01 };
    unsigned mul, mask;
-   
+
    if (depth == 16)
    {
       for (i = 0; i < width; i++)
@@ -334,7 +334,7 @@ static void png_reverse_filter_copy_line_plt(uint32_t *data,
          {
             unsigned w = width / 8;
             unsigned i;
-            
+
             for (i = 0; i < w; i++, decoded++)
             {
                *data++ = palette[(*decoded >> 7) & 1];
@@ -346,7 +346,7 @@ static void png_reverse_filter_copy_line_plt(uint32_t *data,
                *data++ = palette[(*decoded >> 1) & 1];
                *data++ = palette[*decoded & 1];
             }
-            
+
             switch (width & 7)
             {
                case 7:
@@ -359,7 +359,7 @@ static void png_reverse_filter_copy_line_plt(uint32_t *data,
                   data[3] = palette[(*decoded >> 4) & 1];
                case 3:
                   data[2] = palette[(*decoded >> 5) & 1];
-               case 2: 
+               case 2:
                   data[1] = palette[(*decoded >> 6) & 1];
                case 1:
                   data[0] = palette[(*decoded >> 7) & 1];
@@ -367,12 +367,12 @@ static void png_reverse_filter_copy_line_plt(uint32_t *data,
             }
          }
          break;
-      
+
       case 2:
          {
             unsigned w = width / 4;
             unsigned i;
-            
+
             for (i = 0; i < w; i++, decoded++)
             {
                *data++ = palette[(*decoded >> 6) & 3];
@@ -380,12 +380,12 @@ static void png_reverse_filter_copy_line_plt(uint32_t *data,
                *data++ = palette[(*decoded >> 2) & 3];
                *data++ = palette[*decoded & 3];
             }
-            
+
             switch (width & 3)
             {
                case 3:
                   data[2] = palette[(*decoded >> 2) & 3];
-               case 2: 
+               case 2:
                   data[1] = palette[(*decoded >> 4) & 3];
                case 1:
                   data[0] = palette[(*decoded >> 6) & 3];
@@ -393,29 +393,29 @@ static void png_reverse_filter_copy_line_plt(uint32_t *data,
             }
          }
          break;
-      
+
       case 4:
          {
             unsigned w = width / 2;
             unsigned i;
-            
+
             for (i = 0; i < w; i++, decoded++)
             {
                *data++ = palette[*decoded >> 4];
                *data++ = palette[*decoded & 0x0f];
             }
-            
+
             if (width & 1)
             {
                *data = palette[*decoded >> 4];
             }
          }
          break;
-      
+
       case 8:
          {
             unsigned i;
-            
+
             for (i = 0; i < width; i++, decoded++, data++)
             {
                *data = palette[*decoded];
@@ -481,7 +481,7 @@ static void png_reverse_filter_adam7_deinterlace_pass(uint32_t *data,
          y++, data += ihdr->width * pass->stride_y, input += pass_width)
    {
       uint32_t *out = data;
-     
+
       for (x = 0; x < pass_width; x++, out += pass->stride_x)
          *out = input[x];
    }
@@ -521,9 +521,9 @@ static int png_reverse_filter_init(const struct png_ihdr *ihdr,
             ihdr->height <= passes[pngp->pass_pos].y) /* Empty pass */
          return 1;
 
-      pngp->pass_width  = (ihdr->width - 
+      pngp->pass_width  = (ihdr->width -
             passes[pngp->pass_pos].x + passes[pngp->pass_pos].stride_x - 1) / passes[pngp->pass_pos].stride_x;
-      pngp->pass_height = (ihdr->height - passes[pngp->pass_pos].y + 
+      pngp->pass_height = (ihdr->height - passes[pngp->pass_pos].y +
             passes[pngp->pass_pos].stride_y - 1) / passes[pngp->pass_pos].stride_y;
 
       pngp->data = (uint32_t*)malloc(
@@ -799,10 +799,10 @@ end:
    *height = rpng->ihdr.height;
 #ifdef GEKKO
    /* we often use these in textures, make sure they're 32-byte aligned */
-   *data = (uint32_t*)memalign(32, rpng->ihdr.width * 
+   *data = (uint32_t*)memalign(32, rpng->ihdr.width *
          rpng->ihdr.height * sizeof(uint32_t));
 #else
-   *data = (uint32_t*)malloc(rpng->ihdr.width * 
+   *data = (uint32_t*)malloc(rpng->ihdr.width *
          rpng->ihdr.height * sizeof(uint32_t));
 #endif
    if (!*data)
@@ -825,7 +825,7 @@ false_end:
    return -1;
 }
 
-static bool png_read_plte(uint8_t *buf, 
+static bool png_read_plte(uint8_t *buf,
       uint32_t *buffer, unsigned entries)
 {
    unsigned i;
@@ -1098,7 +1098,7 @@ bool rpng_iterate_image(rpng_t *rpng)
          goto error;
    }
 
-   rpng->buff_data += chunk.size + 12; 
+   rpng->buff_data += chunk.size + 12;
 
    return true;
 
@@ -1180,7 +1180,7 @@ bool rpng_start(rpng_t *rpng)
       return false;
 
    header[0] = '\0';
-   
+
    for (i = 0; i < 8; i++)
       header[i] = rpng->buff_data[i];
 

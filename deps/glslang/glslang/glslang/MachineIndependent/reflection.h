@@ -55,7 +55,7 @@ class TReflectionTraverser;
 // Data needed for just a single object at the granularity exchanged by the reflection API
 class TObjectReflection {
 public:
-    TObjectReflection(const TString& pName, const TType& pType, int pOffset, int pGLDefineType, int pSize, int pIndex) : 
+    TObjectReflection(const TString& pName, const TType& pType, int pOffset, int pGLDefineType, int pSize, int pIndex) :
         name(pName), type(pType.clone()),
         offset(pOffset), glDefineType(pGLDefineType), size(pSize), index(pIndex) { }
 
@@ -107,7 +107,7 @@ public:
 
     // for mapping a block index to the block's description
     int getNumUniformBlocks() const { return (int)indexToUniformBlock.size(); }
-    const TObjectReflection& getUniformBlock(int i) const 
+    const TObjectReflection& getUniformBlock(int i) const
     {
         if (i >= 0 && i < (int)indexToUniformBlock.size())
             return indexToUniformBlock[i];
@@ -126,7 +126,7 @@ public:
     }
 
     // for mapping any name to its index (block names, uniform names and attribute names)
-    int getIndex(const char* name) const 
+    int getIndex(const char* name) const
     {
         TNameToIndex::const_iterator it = nameToIndex.find(name);
         if (it == nameToIndex.end())

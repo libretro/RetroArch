@@ -35,10 +35,10 @@ distribution.
 
 
 /*!
- * \file arqmgr.h 
+ * \file arqmgr.h
  * \brief ARAM queue managemnt subsystem
  *
- */ 
+ */
 
 
 #include <gctypes.h>

@@ -1,4 +1,4 @@
-/* This source as presented is a modified version of original wiiuse for use 
+/* This source as presented is a modified version of original wiiuse for use
  * with RetroArch, and must not be confused with the original software. */
 
 #include <stdio.h>
@@ -105,7 +105,7 @@ int nunchuk_handshake(struct wiimote_t *wm,struct nunchuk_t *nc,ubyte *data,uwor
  *
  *	@param nc		A pointer to a nunchuk_t structure.
  */
-void nunchuk_disconnected(struct nunchuk_t* nc) 
+void nunchuk_disconnected(struct nunchuk_t* nc)
 {
 	//printf("nunchuk_disconnected()\n");
 	memset(nc, 0, sizeof(struct nunchuk_t));

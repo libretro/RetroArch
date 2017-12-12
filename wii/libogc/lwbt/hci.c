@@ -1,8 +1,8 @@
 /*
  * Copyright (c) 2003 EISLAB, Lulea University of Technology.
- * All rights reserved. 
- * 
- * Redistribution and use in source and binary forms, with or without modification, 
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
  *
  * 1. Redistributions of source code must retain the above copyright notice,
@@ -11,21 +11,21 @@
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
  * 3. The name of the author may not be used to endorse or promote products
- *    derived from this software without specific prior written permission. 
+ *    derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED 
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF 
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT 
- * SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, 
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT 
- * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN 
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING 
- * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY 
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED
+ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
+ * SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
+ * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+ * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
  * OF SUCH DAMAGE.
  *
  * This file is part of the lwBT Bluetooth stack.
- * 
+ *
  * Author: Conny Ohult <conny@sm.luth.se>
  *
  */
@@ -34,7 +34,7 @@
 /* hci.c
  *
  * Implementation of the Host Controller Interface (HCI). A command interface to the
- * baseband controller and link manager, and gives access to hardware status and 
+ * baseband controller and link manager, and gives access to hardware status and
  * control registers.
  *
  */
@@ -80,7 +80,7 @@ err_t hci_init(void)
 	}
 	memset(hci_dev,0,sizeof(struct hci_pcb));
 
-	hci_active_links = NULL;	
+	hci_active_links = NULL;
 	hci_tmp_link = NULL;
 
 	return ERR_OK;
@@ -100,7 +100,7 @@ struct hci_link* hci_new(void)
 struct hci_link* hci_get_link(struct bd_addr *bdaddr)
 {
 	struct hci_link *link;
-	
+
 	for(link=hci_active_links;link!=NULL;link=link->next) {
 		if(bd_addr_cmp(&(link->bdaddr),bdaddr)) break;
 	}
@@ -108,14 +108,14 @@ struct hci_link* hci_get_link(struct bd_addr *bdaddr)
 }
 
 /*-----------------------------------------------------------------------------------*/
-/* 
+/*
  * hci_close():
  *
  * Close the link control block.
  */
 /*-----------------------------------------------------------------------------------*/
 err_t hci_close(struct hci_link *link)
-{ 
+{
 	if(link->p != NULL) {
 		btpbuf_free(link->p);
 	}
@@ -127,7 +127,7 @@ err_t hci_close(struct hci_link *link)
 }
 
 /*-----------------------------------------------------------------------------------*/
-/* 
+/*
  * hci_reset_all():
  *
  * Closes all active link control blocks.
@@ -138,7 +138,7 @@ void hci_reset_all(void)
 	struct hci_link *link,*tlink;
 	struct hci_inq_res *ires,*tires;
 	struct hci_link_key *ikeys,*tikeys;
-	
+
 	for(link=hci_active_links;link!=NULL;) {
 		tlink = link->next;
 		hci_close(link);
@@ -173,10 +173,10 @@ void hci_cmd_complete(err_t (*cmd_complete)(void *arg,struct hci_pcb *pcb,u8_t o
 }
 
 /*-----------------------------------------------------------------------------------*/
-/* 
+/*
  * hci_pin_req():
  *
- * Used to specify the function that should be called when HCI has received a 
+ * Used to specify the function that should be called when HCI has received a
  * PIN code request event.
  */
 /*-----------------------------------------------------------------------------------*/
@@ -185,10 +185,10 @@ void hci_pin_req(err_t (* pin_req)(void *arg, struct bd_addr *bdaddr))
 	hci_dev->pin_req = pin_req;
 }
 /*-----------------------------------------------------------------------------------*/
-/* 
+/*
  * hci_link_key_req():
  *
- * Used to specify the function that should be called when HCI has received a 
+ * Used to specify the function that should be called when HCI has received a
  * Link Key request event.
  */
 /*-----------------------------------------------------------------------------------*/
@@ -197,10 +197,10 @@ void hci_link_key_req(err_t (* link_key_req)(void *arg, struct bd_addr *bdaddr))
 	hci_dev->link_key_req = link_key_req;
 }
 /*-----------------------------------------------------------------------------------*/
-/* 
+/*
  * hci_link_key_not():
  *
- * Used to specify the function that should be called when HCI has received a 
+ * Used to specify the function that should be called when HCI has received a
  * link key notification event.
  */
 /*-----------------------------------------------------------------------------------*/
@@ -210,10 +210,10 @@ void hci_link_key_not(err_t (* link_key_not)(void *arg, struct bd_addr *bdaddr, 
 }
 
 /*-----------------------------------------------------------------------------------*/
-/* 
+/*
  * hci_connection_complete():
  *
- * Used to specify the function that should be called when HCI has received a 
+ * Used to specify the function that should be called when HCI has received a
  * connection complete event.
  */
 /*-----------------------------------------------------------------------------------*/
@@ -223,10 +223,10 @@ void hci_connection_complete(err_t (* conn_complete)(void *arg, struct bd_addr *
 }
 
 /*-----------------------------------------------------------------------------------*/
-/* 
+/*
  * hci_wlp_complete():
  *
- * Used to specify the function that should be called when HCI has received a 
+ * Used to specify the function that should be called when HCI has received a
  * successful write link policy complete event.
  */
 /*-----------------------------------------------------------------------------------*/
@@ -266,7 +266,7 @@ struct pbuf* hci_cmd_ass(struct pbuf *p,u8_t ocf,u8_t ogf,u8_t len)
 	((u8_t*)p->payload)[1] = (ocf&0xff); /* OCF & OGF */
 	((u8_t*)p->payload)[2] = ((ocf>>8)|(ogf<<2));
 	((u8_t*)p->payload)[3] = len-HCI_CMD_HDR_LEN-1; /* Param len = plen - cmd hdr - ptype */
-	
+
 	if(hci_dev->num_cmd>0) hci_dev->num_cmd--;
 	return p;
 }
@@ -281,7 +281,7 @@ err_t hci_reset(void)
 	}
 
 	p = hci_cmd_ass(p,HCI_RESET_OCF,HCI_HC_BB_OGF,HCI_RESET_PLEN);
-	
+
 	physbusif_output(p,p->tot_len);
 	btpbuf_free(p);
 
@@ -367,7 +367,7 @@ err_t hci_read_stored_link_key()
 		hci_dev->keyres = hci_dev->keyres->next;
 		btmemb_free(&hci_link_key_results,tmpres);
 	}
-	
+
 
 	if((p=btpbuf_alloc(PBUF_RAW,HCI_R_STORED_LINK_KEY_PLEN,PBUF_RAM))==NULL) {
 		ERROR("hci_read_stored_link_keys: Could not allocate memory for pbuf\n");
@@ -432,12 +432,12 @@ err_t hci_set_event_filter(u8_t filter_type,u8_t filter_cond_type,u8_t *cond)
 		ERROR("hci_set_event_filter: Could not allocate memory for pbuf\n");
 		return ERR_MEM;
 	}
-	
+
 	p = hci_cmd_ass(p,HCI_SET_EV_FILTER_OCF,HCI_HC_BB_OGF,HCI_SET_EV_FILTER_PLEN+cond_len);
 	((u8_t*)p->payload)[4] = filter_type;
 	((u8_t*)p->payload)[5] = filter_cond_type;
 	if(cond_len>0) memcpy(p->payload+6,cond,cond_len);
-	
+
 	physbusif_output(p,p->tot_len);
 	btpbuf_free(p);
 
@@ -491,7 +491,7 @@ err_t hci_inquiry(u32_t lap,u8_t inq_len,u8_t num_resp,err_t (*inq_complete)(voi
 		hci_dev->ires = hci_dev->ires->next;
 		btmemb_free(&hci_inq_results,tmpres);
 	}
-	
+
 	hci_dev->inq_complete = inq_complete;
 	if((p=btpbuf_alloc(PBUF_RAW,HCI_INQUIRY_PLEN,PBUF_RAM))==NULL) {
 		ERROR("hci_inquiry: Could not allocate memory for pbuf\n");
@@ -523,7 +523,7 @@ err_t hci_periodic_inquiry(u32_t lap,u16_t min_period,u16_t max_period,u8_t inq_
 		hci_dev->ires = hci_dev->ires->next;
 		btmemb_free(&hci_inq_results,tmpres);
 	}
-	
+
 	hci_dev->inq_complete = inq_complete;
 	if((p=btpbuf_alloc(PBUF_RAW,HCI_PERIODIC_INQUIRY_PLEN,PBUF_RAM))==NULL) {
 		ERROR("hci_periodic_inquiry: Could not allocate memory for pbuf\n");
@@ -624,7 +624,7 @@ err_t hci_write_local_name(u8_t *name,u8_t len)
 	p = hci_cmd_ass(p,HCI_W_LOCAL_NAME_OCF,HCI_HC_BB_OGF,HCI_W_LOCAL_NAME_PLEN);
 	/* Assembling cmd prameters */
 	memcpy(((u8_t *)p->payload) + 4, name, len);
-	
+
 	physbusif_output(p, p->tot_len);
 	btpbuf_free(p);
 
@@ -644,7 +644,7 @@ err_t hci_write_pin_type(u8_t type)
 	p = hci_cmd_ass(p,HCI_W_PIN_TYPE_OCF,HCI_HC_BB_OGF,HCI_W_PIN_TYPE_PLEN);
 	/* Assembling cmd prameters */
 	((u8_t *)p->payload)[4] = type;
-	
+
 	physbusif_output(p, p->tot_len);
 	btpbuf_free(p);
 
@@ -666,7 +666,7 @@ err_t hci_read_remote_name(struct bd_addr *bdaddr)
 			break;
 		}
 	}
-	
+
 	if(ires==NULL) {
 		page_scan_repetition_mode = 0x01;
 		page_scan_mode = 0x00;
@@ -685,7 +685,7 @@ err_t hci_read_remote_name(struct bd_addr *bdaddr)
 	((u8_t*)p->payload)[10] = page_scan_repetition_mode;
 	((u8_t*)p->payload)[11] = page_scan_mode;
 	((u16_t*)p->payload)[6] = htole16(clock_offset);
-	
+
 	physbusif_output(p, p->tot_len);
 	btpbuf_free(p);
 
@@ -783,7 +783,7 @@ err_t hci_sniff_mode(struct bd_addr *bdaddr, u16_t max_interval, u16_t min_inter
 	struct pbuf *p;
 	struct hci_link *link;
 
-	/* Check if an ACL connection exists */ 
+	/* Check if an ACL connection exists */
 	link = hci_get_link(bdaddr);
 
 	if(link == NULL) {
@@ -807,7 +807,7 @@ err_t hci_sniff_mode(struct bd_addr *bdaddr, u16_t max_interval, u16_t min_inter
 
 	physbusif_output(p, p->tot_len);
 	btpbuf_free(p);
-	
+
 	return ERR_OK;
 }
 /*-----------------------------------------------------------------------------------*/
@@ -822,7 +822,7 @@ err_t hci_write_link_policy_settings(struct bd_addr *bdaddr, u16_t link_policy)
 	struct pbuf *p;
 	struct hci_link *link;
 
-	/* Check if an ACL connection exists */ 
+	/* Check if an ACL connection exists */
 	link = hci_get_link(bdaddr);
 
 	if(link == NULL) {
@@ -849,7 +849,7 @@ err_t hci_write_link_policy_settings(struct bd_addr *bdaddr, u16_t link_policy)
 /*-----------------------------------------------------------------------------------*/
 /* hci_pin_code_request_reply():
  *
- * Used to reply to a PIN Code Request event from the Host Controller and specifies 
+ * Used to reply to a PIN Code Request event from the Host Controller and specifies
  * the PIN code to use for a connection.
  */
  /*-----------------------------------------------------------------------------------*/
@@ -881,7 +881,7 @@ err_t hci_pin_code_request_reply(struct bd_addr *bdaddr, u8_t pinlen, u8_t *pinc
 /*-----------------------------------------------------------------------------------*/
 /* hci_link_key_req_reply():
  *
- * Used to reply to a Link Key Code Request event from the Host Controller and specifies 
+ * Used to reply to a Link Key Code Request event from the Host Controller and specifies
  * the Link Key to use for a connection.
  */
  /*-----------------------------------------------------------------------------------*/
@@ -892,7 +892,7 @@ err_t hci_link_key_req_reply(struct bd_addr *bdaddr, unsigned char *link_key)
                 ERROR("hci_link_key_req_reply: Could not allocate memory for pbuf\n");
                 return ERR_MEM;
         }
- 
+
         p = hci_cmd_ass(p, HCI_LINK_KEY_REQ_REP, HCI_LINK_CTRL_OGF, HCI_LINK_KEY_REQ_REP_PLEN);
         //copy bdaddr to offset 0x4
         memcpy(((u8_t *)p->payload)+4, bdaddr->addr, 6);
@@ -901,7 +901,7 @@ err_t hci_link_key_req_reply(struct bd_addr *bdaddr, unsigned char *link_key)
         //send command
         physbusif_output(p,p->tot_len);
         btpbuf_free(p);
- 
+
         return ERR_OK;
 }
 
@@ -909,7 +909,7 @@ err_t hci_link_key_req_reply(struct bd_addr *bdaddr, unsigned char *link_key)
 /*-----------------------------------------------------------------------------------*/
 /* hci_pin_code_request_neg_reply():
  *
- * Used to reply to a PIN Code Request event from the Host Controller when the Host 
+ * Used to reply to a PIN Code Request event from the Host Controller when the Host
  * cannot specify a PIN code to use for a connection.
  */
  /*-----------------------------------------------------------------------------------*/
@@ -934,25 +934,25 @@ err_t hci_pin_code_request_neg_reply(struct bd_addr *bdaddr)
 /*-----------------------------------------------------------------------------------*/
 /* hci_link_key_req_neg_reply():
  *
- * Used to reply to a Link Key Request event from the Host Controller when the Host 
+ * Used to reply to a Link Key Request event from the Host Controller when the Host
  * cannot specify a Link Key to use for a connection.
  */
  /*-----------------------------------------------------------------------------------*/
 err_t hci_link_key_req_neg_reply(struct bd_addr *bdaddr)
 {
         struct pbuf *p;
- 
+
         if ((p = btpbuf_alloc(PBUF_RAW, HCI_LINK_KEY_REQ_REP_NEG_PLEN, PBUF_RAM)) == NULL) {
                 ERROR("hci_link_key_req_neg_repl: Could not allocate memory for pbuf\n");
                 return ERR_MEM;
         }
- 
+
         p = hci_cmd_ass(p, HCI_LINK_KEY_REQ_REP_NEG, HCI_LINK_CTRL_OGF, HCI_LINK_KEY_REQ_REP_NEG_PLEN);
         memcpy(((u8_t *)p->payload)+4, bdaddr->addr, 6);
- 
+
         physbusif_output(p,p->tot_len);
         btpbuf_free(p);
- 
+
         return ERR_OK;
 }
 
@@ -971,7 +971,7 @@ err_t hci_disconnect(struct bd_addr *bdaddr, u8_t reason)
 
 	if(link == NULL) {
 		ERROR("hci_disconnect: Connection does not exist\n");
-		return ERR_CONN; /* Connection does not exist */ 
+		return ERR_CONN; /* Connection does not exist */
 	}
 	if((p = btpbuf_alloc(PBUF_RAW, HCI_DISCONN_PLEN, PBUF_RAM)) == NULL) {
 		ERROR("hci_disconnect: Could not allocate memory for pbuf\n");
@@ -983,7 +983,7 @@ err_t hci_disconnect(struct bd_addr *bdaddr, u8_t reason)
 	/* Assembling cmd prameters */
 	((u16_t *)p->payload)[2] = htole16(link->connhdl);
 	((u8_t *)p->payload)[6] = reason;
-	
+
 	physbusif_output(p, p->tot_len);
 	btpbuf_free(p);
 
@@ -1009,7 +1009,7 @@ err_t hci_reject_connection_request(struct bd_addr *bdaddr, u8_t reason)
 	/* Assembling cmd prameters */
 	memcpy(((u8_t *)p->payload) + 4, bdaddr->addr, 6);
 	((u8_t *)p->payload)[10] = reason;
-	
+
 	physbusif_output(p, p->tot_len);
 	btpbuf_free(p);
 
@@ -1046,7 +1046,7 @@ err_t hci_write_stored_link_key(struct bd_addr *bdaddr, u8_t *link)
 /*-----------------------------------------------------------------------------------*/
 /* hci_write_cod():
  *
- * Write the value for the Class_of_Device parameter, which is used to indicate its 
+ * Write the value for the Class_of_Device parameter, which is used to indicate its
  * capabilities to other devices.
  */
  /*-----------------------------------------------------------------------------------*/
@@ -1057,7 +1057,7 @@ err_t hci_write_cod(u8_t *cod)
 	if((p = btpbuf_alloc(PBUF_RAW, HCI_W_COD_PLEN, PBUF_RAM)) == NULL) {
 		ERROR("hci_write_cod: Could not allocate memory for pbuf\n");
 		return ERR_MEM;
-	} 
+	}
 	/* Assembling command packet */
 	p = hci_cmd_ass(p, HCI_W_COD_OCF, HCI_HC_BB_OGF, HCI_W_COD_PLEN);
 	/* Assembling cmd prameters */
@@ -1076,7 +1076,7 @@ err_t hci_read_current_lap(void)
 	if((p = btpbuf_alloc(PBUF_RAW, HCI_R_CUR_IACLAP_PLEN, PBUF_RAM)) == NULL) {
 		ERROR("hci_read_current_lap: Could not allocate memory for pbuf\n");
 		return ERR_MEM;
-	} 
+	}
 	/* Assembling command packet */
 	p = hci_cmd_ass(p, HCI_R_CUR_IACLAP_OCF, HCI_HC_BB_OGF, HCI_R_CUR_IACLAP_PLEN);
 
@@ -1089,7 +1089,7 @@ err_t hci_read_current_lap(void)
 /*-----------------------------------------------------------------------------------*/
 /* hci_set_hc_to_h_fc():
  *
- * Used by the Host to turn flow control on or off in the direction from the Host 
+ * Used by the Host to turn flow control on or off in the direction from the Host
  * Controller to the Host.
  */
  /*-----------------------------------------------------------------------------------*/
@@ -1100,12 +1100,12 @@ err_t hci_set_hc_to_h_fc(void)
 	if((p = btpbuf_alloc(PBUF_RAW, HCI_SET_HC_TO_H_FC_PLEN, PBUF_RAM)) == NULL) {
 		ERROR("hci_set_hc_to_h_fc: Could not allocate memory for pbuf\n");
 		return ERR_MEM;
-	} 
+	}
 	/* Assembling command packet */
 	p = hci_cmd_ass(p, HCI_SET_HC_TO_H_FC_OCF, HCI_HC_BB_OGF, HCI_SET_HC_TO_H_FC_PLEN);
 	/* Assembling cmd prameters */
-	((u8_t *)p->payload)[4] = 0x01; /* Flow control on for HCI ACL Data Packets and off for HCI 
-									 SCO Data Packets in direction from Host Controller to 
+	((u8_t *)p->payload)[4] = 0x01; /* Flow control on for HCI ACL Data Packets and off for HCI
+									 SCO Data Packets in direction from Host Controller to
 				 Host */
 	physbusif_output(p, p->tot_len);
 	btpbuf_free(p);
@@ -1116,7 +1116,7 @@ err_t hci_set_hc_to_h_fc(void)
 /*-----------------------------------------------------------------------------------*/
 /* hci_host_buffer_size():
  *
- * Used by the Host to notify the Host Controller about the maximum size of the data 
+ * Used by the Host to notify the Host Controller about the maximum size of the data
  * portion of HCI ACL Data Packets sent from the Host Controller to the Host.
  */
  /*-----------------------------------------------------------------------------------*/
@@ -1128,7 +1128,7 @@ err_t hci_host_buffer_size(void)
 		return ERR_MEM;
 	}
 	/* Assembling command packet */
-	p = hci_cmd_ass(p, HCI_H_BUF_SIZE_OCF, HCI_HC_BB_OGF, HCI_H_BUF_SIZE_PLEN); 
+	p = hci_cmd_ass(p, HCI_H_BUF_SIZE_OCF, HCI_HC_BB_OGF, HCI_H_BUF_SIZE_PLEN);
 	((u16_t *)p->payload)[2] = htole16(HCI_HOST_ACL_MAX_LEN); /* Host ACL data packet maximum length */
 	((u8_t *)p->payload)[6] = 255; /* Host SCO Data Packet Length */
 	*((u16_t *)(((u8_t *)p->payload)+7)) = htole16(HCI_HOST_MAX_NUM_ACL); /* Host max total num ACL data packets */
@@ -1144,8 +1144,8 @@ err_t hci_host_buffer_size(void)
 /*-----------------------------------------------------------------------------------*/
 /* hci_host_num_comp_packets():
  *
- * Used by the Host to indicate to the Host Controller the number of HCI Data Packets 
- * that have been completed for each Connection Handle since the previous 
+ * Used by the Host to indicate to the Host Controller the number of HCI Data Packets
+ * that have been completed for each Connection Handle since the previous
  * Host_Number_Of_Completed_Packets command was sent to the Host Controller.
  */
  /*-----------------------------------------------------------------------------------*/
@@ -1158,7 +1158,7 @@ err_t hci_host_num_comp_packets(u16_t conhdl, u16_t num_complete)
 		return ERR_MEM;
 	}
 	/* Assembling command packet */
-	p = hci_cmd_ass(p, HCI_H_NUM_COMPL_OCF, HCI_HC_BB_OGF, HCI_H_NUM_COMPL_PLEN); 
+	p = hci_cmd_ass(p, HCI_H_NUM_COMPL_OCF, HCI_HC_BB_OGF, HCI_H_NUM_COMPL_PLEN);
 	((u8_t*)p->payload)[4] = 1;
 	*(u16_t*)(p->payload+5) = htole16(conhdl);
 	*(u16_t*)(p->payload+7) = htole16(num_complete); /* Number of completed acl packets */
@@ -1186,7 +1186,7 @@ u16_t lp_pdu_maxsize()
 /*-----------------------------------------------------------------------------------*/
 /* lp_is_connected():
  *
- * Called by L2CAP to check if an active ACL connection exists for the specified 
+ * Called by L2CAP to check if an active ACL connection exists for the specified
  * Bluetooth address.
  */
 /*-----------------------------------------------------------------------------------*/
@@ -1249,7 +1249,7 @@ err_t lp_acl_write(struct bd_addr *bdaddr,struct pbuf *p,u16_t len,u8_t pb)
 
 	btpbuf_chain(q,p);
 	((u8_t*)q->payload)[0] = HCI_ACL_DATA_PACKET;
-	
+
 	aclhdr = (void*)((u8_t*)q->payload+1);
 	//aclhdr->connhdl_pb_bc = CONNPBBC(link->connhdl,pb,0);
 	connhdlpbbc = link->connhdl; /* Received from connection complete event */
@@ -1257,7 +1257,7 @@ err_t lp_acl_write(struct bd_addr *bdaddr,struct pbuf *p,u16_t len,u8_t pb)
 	connhdlpbbc &= 0x3FFF; /* Point-to-point */
 	aclhdr->connhdl_pb_bc = htole16(connhdlpbbc);
 	aclhdr->len = htole16(len);
-	
+
 	physbusif_output(q,(q->len+len));
 	--hci_dev->acl_max_pkt;
 
@@ -1277,7 +1277,7 @@ err_t lp_write_flush_timeout(struct bd_addr *bdaddr, u16_t flushto)
 	struct hci_link *link;
 	struct pbuf *p;
 
-	/* Check if an ACL connection exists */ 
+	/* Check if an ACL connection exists */
 	link = hci_get_link(bdaddr);
 
 	if(link == NULL) {
@@ -1304,7 +1304,7 @@ err_t lp_write_flush_timeout(struct bd_addr *bdaddr, u16_t flushto)
 /*-----------------------------------------------------------------------------------*/
 /* lp_connect_req():
  *
- * Called by L2CAP to cause the Link Manager to create a connection to the 
+ * Called by L2CAP to cause the Link Manager to create a connection to the
  * Bluetooth device with the BD_ADDR specified by the command parameters.
  */
 /*-----------------------------------------------------------------------------------*/
@@ -1317,7 +1317,7 @@ err_t lp_connect_req(struct bd_addr *bdaddr, u8_t allow_role_switch)
 	struct hci_inq_res *inqres;
 
 	if(link == NULL) {
-		ERROR("lp_connect_req: Could not allocate memory for link\n"); 
+		ERROR("lp_connect_req: Could not allocate memory for link\n");
 		return ERR_MEM; /* Could not allocate memory for link */
 	}
 
@@ -1337,14 +1337,14 @@ err_t lp_connect_req(struct bd_addr *bdaddr, u8_t allow_role_switch)
 	if(inqres == NULL) {
 		/* No information on parameters from an inquiry. Using default values */
 		page_scan_repetition_mode = 0x01; /* Assuming worst case: time between
-											 successive page scans starting 
+											 successive page scans starting
 											 <= 2.56s */
 		page_scan_mode = 0x00; /* Assumes the device uses mandatory scanning, most
 		devices use this. If no conn is established, try
 		again w this parm set to optional page scanning */
 		clock_offset = 0x00; /* If the device was not found in a recent inquiry
 		this  information is irrelevant */
-	}    
+	}
 
 	if((p = btpbuf_alloc(PBUF_RAW, HCI_CREATE_CONN_PLEN, PBUF_RAM)) == NULL) {
 		ERROR("lp_connect_req: Could not allocate memory for pbuf\n");
@@ -1569,7 +1569,7 @@ static void hci_return_link_key_evt(struct pbuf *p)
 	u32_t i,resp_off;
 	struct bd_addr *bdaddr;
 	struct hci_link_key *keyres;
-	
+
 	num_keys = ((u8_t*)p->payload)[0];
 	//printf("hci_return_link_key_evt(%d)\n",num_keys);
 	for(i=0;i<num_keys && i<MEMB_NUM_HCI_LINK_KEY;i++) {
@@ -1640,7 +1640,7 @@ void hci_event_handler(struct pbuf *p)
 		case HCI_COMMAND_COMPLETE:
 			hci_dev->num_cmd += ((u8_t*)p->payload)[0];
 			btpbuf_header(p,-1);
-			
+
 			opc = le16toh(((u16_t*)p->payload)[0]);
 			ocf = (opc&0x03ff);
 			ogf = (opc>>10);
@@ -1662,12 +1662,12 @@ void hci_event_handler(struct pbuf *p)
 		case HCI_COMMAND_STATUS:
 			if(((u8_t*)p->payload)[0]!=HCI_SUCCESS) {
 				btpbuf_header(p,-2);
-				
+
 				opc = le16toh(((u16_t*)p->payload)[0]);
 				ocf = (opc&0x03ff);
 				ogf = (opc>>10);
 				btpbuf_header(p,-2);
-				
+
 				HCI_EVENT_CMD_COMPLETE(hci_dev,ogf,ocf,((u8_t*)p->payload)[0],ret);
 				btpbuf_header(p,4);
 			}
@@ -1675,7 +1675,7 @@ void hci_event_handler(struct pbuf *p)
 			break;
 		case HCI_HARDWARE_ERROR:
 			//TODO: IS THIS FATAL??
-			break; 
+			break;
 		case HCI_ROLE_CHANGE:
 			break;
 		case HCI_NBR_OF_COMPLETED_PACKETS:
@@ -1694,7 +1694,7 @@ void hci_event_handler(struct pbuf *p)
 					/* NULL attached buffer immediately */
 					link->p = NULL;
 					/* Send the queued packet */
-					lp_acl_write(&link->bdaddr, q, link->len, link->pb); 
+					lp_acl_write(&link->bdaddr, q, link->len, link->pb);
 					/* Free the queued packet */
 					btpbuf_free(q);
 				}
@@ -1707,13 +1707,13 @@ void hci_event_handler(struct pbuf *p)
 			//TODO: IS THIS FATAL????
 			break;
 		case HCI_MAX_SLOTS_CHANGE:
-			break; 
+			break;
 		case HCI_RETURN_LINK_KEYS:
 			hci_return_link_key_evt(p);
 			break;
 		case HCI_PIN_CODE_REQUEST:
 			bdaddr = (void *)((u8_t *)p->payload); /* Get the Bluetooth address */
-			HCI_EVENT_PIN_REQ(hci_dev, bdaddr, ret); /* Notify application. If event is not registered, 
+			HCI_EVENT_PIN_REQ(hci_dev, bdaddr, ret); /* Notify application. If event is not registered,
 													send a negative reply */
 			break;
 		case HCI_LINK_KEY_REQUEST:
@@ -1743,8 +1743,8 @@ void hci_acldata_handler(struct pbuf *p)
 	conhdl = le16toh(aclhdr->connhdl_pb_bc) & 0x0FFF; /* Get the connection handle from the first
 					   12 bits */
 	if(hci_dev->flow) {
-		//TODO: XXX??? DO WE SAVE NUMACL PACKETS COMPLETED IN LINKS LIST?? SHOULD WE CALL 
-		//hci_host_num_comp_packets from the main loop when no data has been received from the 
+		//TODO: XXX??? DO WE SAVE NUMACL PACKETS COMPLETED IN LINKS LIST?? SHOULD WE CALL
+		//hci_host_num_comp_packets from the main loop when no data has been received from the
 		//serial port???
 		--hci_dev->host_num_acl;
 		if(hci_dev->host_num_acl == 0) {

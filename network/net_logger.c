@@ -62,7 +62,7 @@ void logger_init (void)
    in_target.server = server;
    in_target.domain = SOCKET_DOMAIN_INET;
 
-   socket_set_target(&target, &in_target); 
+   socket_set_target(&target, &in_target);
 }
 
 void logger_shutdown (void)

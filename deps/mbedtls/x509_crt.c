@@ -713,7 +713,7 @@ static int x509_crt_parse_der_core( mbedtls_x509_crt *crt, const unsigned char *
 
     memcpy( p, buf, crt->raw.len );
 
-    // Direct pointers to the new buffer 
+    // Direct pointers to the new buffer
     p += crt->raw.len - len;
     end = crt_end = p + len;
 

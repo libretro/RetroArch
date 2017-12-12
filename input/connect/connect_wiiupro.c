@@ -121,7 +121,7 @@ static void hidpad_wiiupro_deinit(void *data)
 static void hidpad_wiiupro_get_buttons(void *data, retro_bits_t *state)
 {
    struct hidpad_wiiupro_data *device = (struct hidpad_wiiupro_data*)data;
-   struct wiiupro                *rpt = device ? 
+   struct wiiupro                *rpt = device ?
       (struct wiiupro*)&device->data : NULL;
 
    if (!device || !rpt)

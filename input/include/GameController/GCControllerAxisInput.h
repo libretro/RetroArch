@@ -12,7 +12,7 @@ GAMECONTROLLER_EXPORT
 
 /**
  Set this block if you want to be notified when the value on this axis changes.
- 
+
  @param axis the element that has been modified.
  @param value the value the axis was set to at the time the valueChangedHandler fired.
  */

@@ -327,9 +327,9 @@ s32 WII_LaunchTitleWithArgs(u64 titleID, int launchcode, ...)
 
 	__WII_WriteStateFlags();
 	__WII_WriteNANDBootInfo();
-	
+
 	args_set = 1;
-	
+
 	ret = WII_LaunchTitle(titleID);
 	if(ret < 0)
 		args_set = 0;

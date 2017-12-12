@@ -416,7 +416,7 @@ intfstream_t *intfstream_open_memory(void *data,
    info.memory.writable = false;
 
    fd                   = (intfstream_t*)intfstream_init(&info);
-   
+
    if (!fd)
       return NULL;
 

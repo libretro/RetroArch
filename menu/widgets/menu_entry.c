@@ -352,7 +352,7 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
 
          cbs->action_label(list,
                entry->type, (unsigned)i,
-               label, path, 
+               label, path,
                tmp,
                sizeof(tmp));
 
@@ -367,7 +367,7 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
 
          cbs->action_sublabel(list,
                entry->type, (unsigned)i,
-               label, path, 
+               label, path,
                tmp,
                sizeof(tmp));
 
@@ -403,7 +403,7 @@ bool menu_entry_is_currently_selected(unsigned id)
  * This is the most important function because it does all the work
  * associated with clicking on things in the UI.
  *
- * This includes loading cores and updating the 
+ * This includes loading cores and updating the
  * currently displayed menu. */
 int menu_entry_select(uint32_t i)
 {
@@ -420,7 +420,7 @@ int menu_entry_select(uint32_t i)
 int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
 {
    int ret                    = 0;
-   file_list_t *selection_buf = 
+   file_list_t *selection_buf =
       menu_entries_get_selection_buf_ptr(0);
    menu_file_list_cbs_t *cbs  = selection_buf ?
       (menu_file_list_cbs_t*)file_list_get_actiondata_at_offset(selection_buf, i) : NULL;

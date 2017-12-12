@@ -74,7 +74,7 @@ static bool menu_input_key_bind_custom_bind_keyboard_cb(
    menu_input_binds.target->key = (enum retro_key)code;
    menu_input_binds.begin++;
    menu_input_binds.target++;
-   
+
    rarch_timer_begin_new_time(&menu_input_binds.timer, settings->uints.input_bind_timeout);
 
    return (menu_input_binds.begin <= menu_input_binds.last);

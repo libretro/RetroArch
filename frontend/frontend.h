@@ -34,14 +34,14 @@ RETRO_BEGIN_DECLS
  * and (optionally) autosave state.
  **/
 void main_exit(void *args);
-    
+
 /**
  * main_entry:
  *
  * Main function of RetroArch.
  *
  * If HAVE_MAIN is not defined, will contain main loop and will not
- * be exited from until we exit the program. Otherwise, will 
+ * be exited from until we exit the program. Otherwise, will
  * just do initialization.
  *
  * Returns: varies per platform.

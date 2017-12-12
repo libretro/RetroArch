@@ -63,7 +63,7 @@ void uip_icmpinput(struct uip_pbuf *p,struct uip_netif *inp)
 			iphdr->src.addr = iphdr->dst.addr;
 			iphdr->dst.addr = tmpaddr.addr;
 			UIP_ICMPH_TYPE_SET(iecho,UIP_ICMP_ER);
-			
+
 			if(iecho->chksum>=htons(0xffff-(UIP_ICMP_ECHO<<8))) iecho->chksum += htons(UIP_ICMP_ECHO<<8)+1;
 			else iecho->chksum += htons(UIP_ICMP_ECHO<<8);
 
@@ -84,18 +84,18 @@ void uip_icmp_destunreach(struct uip_pbuf *p,enum uip_icmp_dur_type t)
 	struct uip_icmp_dur_hdr *idur;
 
 	q = uip_pbuf_alloc(UIP_PBUF_IP,sizeof(struct uip_icmp_dur_hdr)+UIP_IP_HLEN+8,UIP_PBUF_RAM);
-	
+
 	iphdr = p->payload;
 	idur = q->payload;
-	
+
 	UIP_ICMPH_TYPE_SET(idur,UIP_ICMP_DUR);
 	UIP_ICMPH_CODE_SET(idur,t);
 
 	UIP_MEMCPY((u8_t*)q->payload+sizeof(struct uip_icmp_dur_hdr),p->payload,UIP_IP_HLEN+8);
-	
+
 	idur->chksum = 0;
 	idur->chksum = uip_ipchksum(idur,q->len);
-	
+
 	uip_ipoutput(q,NULL,&iphdr->src,UIP_ICMP_TTL,0,UIP_PROTO_ICMP);
 	uip_pbuf_free(q);
 }

@@ -6,7 +6,7 @@ void __lwp_mutex_initialize(lwp_mutex *mutex,lwp_mutex_attr *attrs,u32 init_lock
 	mutex->atrrs = *attrs;
 	mutex->lock = init_lock;
 	mutex->blocked_cnt = 0;
-	
+
 	if(init_lock==LWP_MUTEX_LOCKED) {
 		mutex->nest_cnt = 1;
 		mutex->holder = _thr_executing;
@@ -52,10 +52,10 @@ u32 __lwp_mutex_surrender(lwp_mutex *mutex)
 
 	mutex->holder = NULL;
 	if(__lwp_mutex_isinheritprio(&mutex->atrrs) || __lwp_mutex_isprioceiling(&mutex->atrrs)) {
-		if(holder->res_cnt==0 && holder->real_prio!=holder->cur_prio) 
+		if(holder->res_cnt==0 && holder->real_prio!=holder->cur_prio)
 			__lwp_thread_changepriority(holder,holder->real_prio,TRUE);
 	}
-	
+
 	if((thethread=__lwp_threadqueue_dequeue(&mutex->wait_queue))) {
 		mutex->nest_cnt = 1;
 		mutex->holder = thethread;
@@ -82,7 +82,7 @@ void __lwp_mutex_seize_irq_blocking(lwp_mutex *mutex,u64 timeout)
 
 	if(_thr_executing->wait.ret_code==LWP_MUTEX_SUCCESSFUL) {
 		if(__lwp_mutex_isprioceiling(&mutex->atrrs)) {
-			if(mutex->atrrs.prioceil<exec->cur_prio) 
+			if(mutex->atrrs.prioceil<exec->cur_prio)
 				__lwp_thread_changepriority(exec,mutex->atrrs.prioceil,FALSE);
 		}
 	}

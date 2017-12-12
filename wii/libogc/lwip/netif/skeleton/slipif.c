@@ -1,40 +1,40 @@
 /*
  * Copyright (c) 2001-2004 Swedish Institute of Computer Science.
- * All rights reserved. 
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
- * 3. Neither the name of the Institute nor the names of its contributors 
- *    may be used to endorse or promote products derived from this software 
- *    without specific prior written permission. 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
- * SUCH DAMAGE. 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  *
  * This file is built upon the file: src/arch/rtxc/netif/sioslip.c
  *
- * Author: Magnus Ivarsson <magnus.ivarsson(at)volvo.com> 
+ * Author: Magnus Ivarsson <magnus.ivarsson(at)volvo.com>
  */
 
-/* 
- * This is an arch independent SLIP netif. The specific serial hooks must be provided 
+/*
+ * This is an arch independent SLIP netif. The specific serial hooks must be provided
  * by another file.They are sio_open, sio_recv and sio_send
- */ 
+ */
 
 #include "netif/slipif.h"
 #include "lwip/opt.h"
@@ -54,8 +54,8 @@
 /**
  * Send a pbuf doing the necessary SLIP encapsulation
  *
- * Uses the serial layer's sio_send() 
- */ 
+ * Uses the serial layer's sio_send()
+ */
 err_t
 slipif_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
 {
@@ -92,9 +92,9 @@ slipif_output(struct netif *netif, struct pbuf *p, struct ip_addr *ipaddr)
  * Handle the incoming SLIP stream character by character
  *
  * Poll the serial layer by calling sio_recv()
- * 
- * @return The IP packet when SLIP_END is received 
- */ 
+ *
+ * @return The IP packet when SLIP_END is received
+ */
 static struct pbuf *
 slipif_input( struct netif * netif )
 {
@@ -114,9 +114,9 @@ slipif_input( struct netif * netif )
       if (recved > 0) {
   /* Received whole packet. */
   pbuf_realloc(q, recved);
-  
+
   LINK_STATS_INC(link.recv);
-  
+
   LWIP_DEBUGF(SLIP_DEBUG, ("slipif: Got packet\n"));
   return q;
       }
@@ -133,7 +133,7 @@ slipif_input( struct netif * netif )
   break;
       }
       /* FALLTHROUGH */
-      
+
     default:
       if (p == NULL) {
   LWIP_DEBUGF(SLIP_DEBUG, ("slipif_input: alloc\n"));
@@ -143,7 +143,7 @@ slipif_input( struct netif * netif )
     LINK_STATS_INC(link.drop);
     LWIP_DEBUGF(SLIP_DEBUG, ("slipif_input: no new pbuf! (DROP)\n"));
   }
-  
+
   if (q != NULL) {
     pbuf_cat(q, p);
   } else {
@@ -161,16 +161,16 @@ slipif_input( struct netif * netif )
       }
       break;
     }
-    
+
   }
   return NULL;
 }
 
 /**
- * The SLIP input thread 
+ * The SLIP input thread
  *
  * Feed the IP layer with incoming packets
- */ 
+ */
 static void
 slipif_loop(void *nf)
 {
@@ -188,17 +188,17 @@ slipif_loop(void *nf)
  *
  * Call the arch specific sio_open and remember
  * the opened device in the state field of the netif.
- */ 
+ */
 err_t
 slipif_init(struct netif *netif)
 {
-  
+
   LWIP_DEBUGF(SLIP_DEBUG, ("slipif_init: netif->num=%x\n", (int)netif->num));
 
   netif->name[0] = 's';
   netif->name[1] = 'l';
   netif->output = slipif_output;
-  netif->mtu = 1500;  
+  netif->mtu = 1500;
   netif->flags = NETIF_FLAG_POINTTOPOINT;
 
   netif->state = sio_open(netif->num);

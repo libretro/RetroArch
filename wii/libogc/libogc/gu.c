@@ -37,7 +37,7 @@ void guPerspective(Mtx44 mt,f32 fovy,f32 aspect,f32 n,f32 f)
 
 	angle = fovy*0.5f;
 	angle = DegToRad(angle);
-	
+
 	cot = 1.0f/tanf(angle);
 
 	mt[0][0] = cot/aspect;
@@ -49,13 +49,13 @@ void guPerspective(Mtx44 mt,f32 fovy,f32 aspect,f32 n,f32 f)
 	mt[1][1] = cot;
 	mt[1][2] = 0.0f;
 	mt[1][3] = 0.0f;
-	
+
 	tmp = 1.0f/(f-n);
 	mt[2][0] = 0.0f;
 	mt[2][1] = 0.0f;
 	mt[2][2] = -(n)*tmp;
 	mt[2][3] = -(f*n)*tmp;
-	
+
 	mt[3][0] = 0.0f;
 	mt[3][1] = 0.0f;
 	mt[3][2] = -1.0f;
@@ -97,7 +97,7 @@ void guLightPerspective(Mtx mt,f32 fovY,f32 aspect,f32 scaleS,f32 scaleT,f32 tra
 
 	angle = fovY*0.5f;
 	angle = DegToRad(angle);
-	
+
 	cot = 1.0f/tanf(angle);
 
     mt[0][0] =    (cot / aspect) * scaleS;
@@ -141,7 +141,7 @@ void guLightOrtho(Mtx mt,f32 t,f32 b,f32 l,f32 r,f32 scaleS,f32 scaleT,f32 trans
 void guLightFrustum(Mtx mt,f32 t,f32 b,f32 l,f32 r,f32 n,f32 scaleS,f32 scaleT,f32 transS,f32 transT)
 {
     f32 tmp;
-    
+
     tmp     =  1.0f / (r - l);
     mt[0][0] =  ((2*n) * tmp) * scaleS;
     mt[0][1] =  0.0f;
@@ -171,7 +171,7 @@ void guLookAt(Mtx mt,guVector *camPos,guVector *camUp,guVector *target)
 
 	guVecCross(camUp,&vLook,&vRight);
 	guVecNormalize(&vRight);
-	
+
 	guVecCross(&vLook,&vRight,&vUp);
 
     mt[0][0] = vRight.x;
@@ -225,7 +225,7 @@ void ps_guMtxRotAxisRad(Mtx mt,guVector *axis,f32 rad)
 {
 	f32 sinT = sinf(rad);
 	f32 cosT = cosf(rad);
- 
+
 	__ps_guMtxRotAxisRadInternal(mt,axis,sinT,cosT);
 }
 
@@ -263,13 +263,13 @@ void c_guMtxRotAxisRad(Mtx mt,guVector *axis,f32 rad)
 	f32 t;
 	f32 x,y,z;
 	f32 xSq,ySq,zSq;
-	
+
 	s = sinf(rad);
 	c = cosf(rad);
 	t = 1.0f-c;
-	
+
 	c_guVecNormalize(axis);
-	
+
 	x = axis->x;
 	y = axis->y;
 	z = axis->z;
@@ -407,7 +407,7 @@ u32 c_guMtxInverse(Mtx src,Mtx inv)
 
     if(src==inv)
         m = mTmp;
-	else 
+	else
         m = inv;
 
 
@@ -496,7 +496,7 @@ u32 c_guMtxInvXpose(Mtx src, Mtx xPose)
 
     // Find the transposed matrix of cofactors of the upper submatrix
     // and multiply by (1/det)
-    
+
     det = 1.0f / det;
 
     m[0][0] =  (src[1][1]*src[2][2] - src[2][1]*src[1][2]) * det;
@@ -599,7 +599,7 @@ void c_guVecCross(guVector *a,guVector *b,guVector *axb)
 void c_guVecMultiply(Mtx mt,guVector *src,guVector *dst)
 {
 	guVector tmp;
-	
+
     tmp.x = mt[0][0]*src->x + mt[0][1]*src->y + mt[0][2]*src->z + mt[0][3];
     tmp.y = mt[1][0]*src->x + mt[1][1]*src->y + mt[1][2]*src->z + mt[1][3];
     tmp.z = mt[2][0]*src->x + mt[2][1]*src->y + mt[2][2]*src->z + mt[2][3];
@@ -612,7 +612,7 @@ void c_guVecMultiply(Mtx mt,guVector *src,guVector *dst)
 void c_guVecMultiplySR(Mtx mt,guVector *src,guVector *dst)
 {
 	guVector tmp;
-	
+
     tmp.x = mt[0][0]*src->x + mt[0][1]*src->y + mt[0][2]*src->z;
     tmp.y = mt[1][0]*src->x + mt[1][1]*src->y + mt[1][2]*src->z;
     tmp.z = mt[2][0]*src->x + mt[2][1]*src->y + mt[2][2]*src->z;
@@ -694,10 +694,10 @@ void c_guQuatMultiply(guQuaternion *a,guQuaternion *b,guQuaternion *ab)
 {
 	guQuaternion *r;
 	guQuaternion ab_tmp;
-	
+
 	if(a==ab || b==ab) r = &ab_tmp;
 	else r = ab;
-	
+
 	r->w = a->w*b->w - a->x*b->x - a->y*b->y - a->z*b->z;
 	r->x = a->w*b->x + a->x*b->w + a->y*b->z - a->z*b->y;
 	r->y = a->w*b->y + a->y*b->w + a->z*b->x - a->x*b->z;
@@ -711,7 +711,7 @@ void ps_guQuatMultiply(register guQuaternion *a,register guQuaternion *b,registe
 {
 	register f32 aXY,aZW,bXY,bZW;
 	register f32 tmp0,tmp1,tmp2,tmp3,tmp4,tmp5,tmp6,tmp7;
-	
+
 	__asm__ __volatile__ (
 		"psq_l		%0,0(%12),0,0\n"		// [px][py]
 		"psq_l		%1,8(%12),0,0\n"		// [pz][pw]
@@ -781,7 +781,7 @@ void ps_guQuatNormalize(register guQuaternion *a,register guQuaternion *d)
 		"ps_muls0	%0,%0,%3\n"			// [ax*rsqmag][ay*rsqmag]
 		"ps_muls0	%1,%1,%3\n"			// [az*rsqmag][aw*rsqmag]
 		"psq_st		%0,0(%7),0,0\n"		// X = [az*rsqmag], Y = [aw*rsqmag]
-		"psq_st		%1,8(%7),0,0\n"		// Z = [az*rsqmag], W = [aw*rsqmag]	
+		"psq_st		%1,8(%7),0,0\n"		// Z = [az*rsqmag], W = [aw*rsqmag]
 		: "=&f"(axy),"=&f"(azw),"=&f"(tmp0),"=&f"(tmp1),"=&f"(tmp2),"=&f"(tmp3)
 		: "b"(a),"b"(d),"f"(c_half),"f"(c_three),"f"(c_zero)
 		: "memory"

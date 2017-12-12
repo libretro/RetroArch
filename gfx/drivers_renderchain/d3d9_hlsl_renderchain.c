@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -99,14 +99,14 @@ static bool hlsl_d3d9_renderchain_create_first_pass(void *data,
       d3d->renderchain_data;
 
    chain->vertex_buf        = d3d_vertex_buffer_new(
-         d3dr, 4 * sizeof(Vertex), 
-         D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, 
+         d3dr, 4 * sizeof(Vertex),
+         D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED,
          NULL);
 
    if (!chain->vertex_buf)
       return false;
 
-   chain->tex = d3d_texture_new(d3dr, NULL, 
+   chain->tex = d3d_texture_new(d3dr, NULL,
          chain->tex_w, chain->tex_h, 1, 0,
 #ifdef _XBOX
          info->rgb32 ? D3DFMT_LIN_X8R8G8B8 : D3DFMT_LIN_R5G6B5,
@@ -137,7 +137,7 @@ static void hlsl_d3d9_renderchain_set_vertices(
    video_shader_ctx_info_t shader_info;
    unsigned width, height;
    d3d_video_t *d3d         = (d3d_video_t*)data;
-   hlsl_d3d9_renderchain_t *chain = d3d ? 
+   hlsl_d3d9_renderchain_t *chain = d3d ?
       (hlsl_d3d9_renderchain_t*)d3d->renderchain_data : NULL;
 
    video_driver_get_size(&width, &height);
@@ -191,7 +191,7 @@ static void hlsl_d3d9_renderchain_set_vertices(
       d3d_vertex_buffer_unlock(chain->vertex_buf);
    }
 
-   hlsl_d3d9_renderchain_set_mvp(chain, 
+   hlsl_d3d9_renderchain_set_mvp(chain,
          d3d, width, height, d3d->dev_rotation);
 
    shader_info.data = d3d;
@@ -236,7 +236,7 @@ static void hlsl_d3d9_renderchain_blit_to_texture(
    }
 
    /* Set the texture to NULL so D3D doesn't complain about it being in use... */
-   d3d_set_texture(d3dr, 0, NULL); 
+   d3d_set_texture(d3dr, 0, NULL);
    d3d_texture_blit(chain->pixel_size, chain->tex,
          &d3dlr, frame, width, height, pitch);
 }
@@ -269,7 +269,7 @@ static void hlsl_d3d9_renderchain_free(void *data)
 
 void *hlsl_d3d9_renderchain_new(void)
 {
-   hlsl_d3d9_renderchain_t *renderchain = 
+   hlsl_d3d9_renderchain_t *renderchain =
       (hlsl_d3d9_renderchain_t*)calloc(1, sizeof(*renderchain));
    if (!renderchain)
       return NULL;
@@ -277,7 +277,7 @@ void *hlsl_d3d9_renderchain_new(void)
    return renderchain;
 }
 
-static bool hlsl_d3d9_renderchain_init_shader(void *data, 
+static bool hlsl_d3d9_renderchain_init_shader(void *data,
       void *renderchain_data)
 {
    video_shader_ctx_init_t init;
@@ -316,12 +316,12 @@ static bool hlsl_d3d9_renderchain_init(void *data,
    const LinkInfo *link_info          = (const LinkInfo*)info_data;
    hlsl_d3d9_renderchain_t *chain     = (hlsl_d3d9_renderchain_t*)
       d3d->renderchain_data;
-   unsigned fmt                       = (rgb32) 
+   unsigned fmt                       = (rgb32)
       ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
    struct video_viewport *custom_vp   = video_viewport_get_custom();
 
    (void)final_viewport_data;
-   
+
    if (!hlsl_d3d9_renderchain_init_shader(d3d, NULL))
       return false;
 
@@ -426,7 +426,7 @@ static void hlsl_d3d9_renderchain_convert_geometry(
    (void)width;
    (void)height;
    (void)final_viewport_data;
-   
+
    /* stub */
 }
 
@@ -442,7 +442,7 @@ static bool hlsl_d3d9_renderchain_reinit(void *data,
 
    chain->pixel_size         = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
    chain->tex_w              = RARCH_SCALE_BASE * video->input_scale;
-   chain->tex_h              = RARCH_SCALE_BASE * video->input_scale; 
+   chain->tex_h              = RARCH_SCALE_BASE * video->input_scale;
 
    RARCH_LOG(
          "Reinitializing renderchain - and textures (%u x %u @ %u bpp)\n",

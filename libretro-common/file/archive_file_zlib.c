@@ -83,7 +83,7 @@ static bool zlib_stream_decompress_data_to_file_init(
    if (!handle->data)
       goto error;
 
-   zlib_inflate_backend.set_in(handle->stream, 
+   zlib_inflate_backend.set_in(handle->stream,
          (const uint8_t*)cdata, csize);
    zlib_inflate_backend.set_out(handle->stream,
          handle->data, size);

@@ -32,7 +32,7 @@ static unsigned long lword (unsigned char *p);
 
 static unsigned long mirror (unsigned long x, int n);
 
-s32 depackrnc1_ulen(void *packed) 
+s32 depackrnc1_ulen(void *packed)
 {
     unsigned char *p = packed;
     if (blong (p) != RNC_SIGNATURE)

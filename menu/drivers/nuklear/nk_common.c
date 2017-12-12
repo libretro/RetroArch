@@ -110,7 +110,7 @@ void nk_common_device_init(struct nk_device *dev)
    dev->attrib_pos   = glGetAttribLocation(dev->prog, "Position");
    dev->attrib_uv    = glGetAttribLocation(dev->prog, "TexCoord");
    dev->attrib_col   = glGetAttribLocation(dev->prog, "Color");
-   
+
    glGenBuffers(1, &dev->vbo);
    glGenBuffers(1, &dev->ebo);
    glGenVertexArrays(1, &dev->vao);

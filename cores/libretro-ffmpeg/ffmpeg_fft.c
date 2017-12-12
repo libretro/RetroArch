@@ -45,7 +45,7 @@ struct Pass
    GLuint parameter_tex;
 };
 
-struct GLFFT 
+struct GLFFT
 {
    GLuint ms_rb_color;
    GLuint ms_rb_ds;
@@ -102,7 +102,7 @@ static GLuint fft_compile_shader(fft_t *fft, GLenum type, const char *source)
 
    glShaderSource(shader, 1, (const GLchar**)&source, NULL);
    glCompileShader(shader);
-   
+
    glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
 
    if (!status)
@@ -153,7 +153,7 @@ typedef float stub_matrix4x4[4][4];
 static INLINE unsigned log2i(unsigned x)
 {
    unsigned res;
-   
+
    for (res = 0; x; x >>= 1)
       res++;
    return res - 1;
@@ -297,7 +297,7 @@ static void fft_init(fft_t *fft)
    glUniform1i(glGetUniformLocation(fft->prog_complex, "sTexture"), 0);
    glUniform1i(glGetUniformLocation(fft->prog_complex, "sParameterTexture"), 1);
    glUniform4fv(glGetUniformLocation(fft->prog_complex, "uOffsetScale"), 1, unity);
-   
+
    glUseProgram(fft->prog_resolve);
    glUniform1i(glGetUniformLocation(fft->prog_resolve, "sFFT"), 0);
    glUniform4fv(glGetUniformLocation(fft->prog_resolve, "uOffsetScale"), 1, unity);
@@ -478,7 +478,7 @@ static bool fft_context_reset(fft_t *fft, unsigned fft_steps,
    return true;
 }
 
-/* GLFFT requires either GLES3 or 
+/* GLFFT requires either GLES3 or
  * desktop GL with ES3_compat (supported by MESA on Linux) extension. */
 fft_t *fft_new(unsigned fft_steps, rglgen_proc_address_t proc)
 {
@@ -621,14 +621,14 @@ void fft_step_fft(fft_t *fft, const GLshort *audio_buffer, unsigned frames)
       if (i == fft->steps - 1)
       {
          glBindFramebuffer(GL_FRAMEBUFFER, fft->output.fbo);
-         glUniform1i(glGetUniformLocation(i == 0 
+         glUniform1i(glGetUniformLocation(i == 0
                   ? fft->prog_real : fft->prog_complex, "uViewportOffset"),
                fft->output_ptr);
          glViewport(0, fft->output_ptr, fft->size, 1);
       }
       else
       {
-         glUniform1i(glGetUniformLocation(i == 0 
+         glUniform1i(glGetUniformLocation(i == 0
                   ? fft->prog_real : fft->prog_complex, "uViewportOffset"), 0);
          glBindFramebuffer(GL_FRAMEBUFFER, fft->passes[i].target.fbo);
          glClear(GL_COLOR_BUFFER_BIT);

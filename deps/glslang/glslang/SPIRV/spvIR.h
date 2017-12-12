@@ -36,9 +36,9 @@
 //
 // Simple in-memory representation (IR) of SPIRV.  Just for holding
 // Each function's CFG of blocks.  Has this hierarchy:
-//  - Module, which is a list of 
-//    - Function, which is a list of 
-//      - Block, which is a list of 
+//  - Module, which is a list of
+//    - Function, which is a list of
+//      - Block, which is a list of
 //        - Instruction
 //
 
@@ -65,7 +65,7 @@ const Id NoResult = 0;
 const Id NoType = 0;
 
 const Decoration NoPrecision = DecorationMax;
-const MemorySemanticsMask MemorySemanticsAllMemory = 
+const MemorySemanticsMask MemorySemanticsAllMemory =
                 (MemorySemanticsMask)(MemorySemanticsSequentiallyConsistentMask |
                                       MemorySemanticsUniformMemoryMask |
                                       MemorySemanticsSubgroupMemoryMask |
@@ -229,7 +229,7 @@ protected:
     std::vector<std::unique_ptr<Instruction> > localVariables;
     Function& parent;
 
-    // track whether this block is known to be uncreachable (not necessarily 
+    // track whether this block is known to be uncreachable (not necessarily
     // true for all unreachable blocks, but should be set at least
     // for the extraneous ones introduced by the builder).
     bool unreachable;

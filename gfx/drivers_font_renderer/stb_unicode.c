@@ -211,7 +211,7 @@ static bool font_renderer_stb_unicode_create_atlas(
 static void *font_renderer_stb_unicode_init(const char *font_path, float font_size)
 {
    int ascent, descent, line_gap;
-   stb_unicode_font_renderer_t *self = 
+   stb_unicode_font_renderer_t *self =
       (stb_unicode_font_renderer_t*)calloc(1, sizeof(*self));
 
    if (!self || font_size < 1.0)

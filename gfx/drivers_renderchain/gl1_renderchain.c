@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -213,7 +213,7 @@ static void gl1_renderchain_restore_default_state(void *data,
 }
 
 static void gl1_renderchain_copy_frame(
-      void *data, 
+      void *data,
       void *chain_data,
       video_frame_info_t *video_info,
       const void *frame,
