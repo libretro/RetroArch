@@ -9,8 +9,8 @@ BUILD_3DS               = 1
 BUILD_CIA               = 1
 LIBCTRU_NO_DEPRECATION  = 1
 
-APP_TITLE            = Retroarch 3DS
-APP_DESCRIPTION      = Retroarch 3DS
+APP_TITLE            = RetroArch 3DS
+APP_DESCRIPTION      = RetroArch 3DS
 APP_AUTHOR           = Team Libretro
 APP_PRODUCT_CODE     = RETROARCH-3DS
 APP_UNIQUE_ID        = 0xBAC00
