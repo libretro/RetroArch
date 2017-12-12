@@ -589,7 +589,7 @@ static bool udev_joypad_init(void *data)
       }
    }
 
-   /* Sort the udev entries by devnode name so that they are 
+   /* Sort the udev entries by devnode name so that they are
     * created in the proper order */
    qsort(sorted, sorted_count,
          sizeof(struct joypad_udev_entry), sort_devnodes);

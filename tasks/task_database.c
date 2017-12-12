@@ -322,7 +322,7 @@ static int task_database_chd_get_serial(const char *name, char* serial)
 {
    int result;
    intfstream_t *fd = intfstream_open_chd_track(
-         name, 
+         name,
          RETRO_VFS_FILE_ACCESS_READ,
          RETRO_VFS_FILE_ACCESS_HINT_NONE,
          CHDSTREAM_TRACK_FIRST_DATA);

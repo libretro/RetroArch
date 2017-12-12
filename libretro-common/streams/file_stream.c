@@ -342,7 +342,7 @@ int filestream_getc(RFILE *stream)
       return 0;
    if(filestream_read(stream, &c, 1) == 1)
       return (int)c;
-   return EOF;   
+   return EOF;
 }
 
 ssize_t filestream_seek(RFILE *stream, ssize_t offset, int whence)
