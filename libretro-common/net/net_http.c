@@ -60,11 +60,11 @@ struct http_socket_state_t
 struct http_t
 {
    int status;
-   
+
    char part;
    char bodytype;
    bool error;
-   
+
    size_t pos;
    size_t len;
    size_t buflen;
@@ -533,7 +533,7 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
                      strlen("Content-Length: ")))
             {
                state->bodytype = T_LEN;
-               state->len = strtol(state->data + 
+               state->len = strtol(state->data +
                      strlen("Content-Length: "), NULL, 10);
             }
             if (string_is_equal(state->data, "Transfer-Encoding: chunked"))

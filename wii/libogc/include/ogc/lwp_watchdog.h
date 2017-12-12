@@ -21,7 +21,7 @@
 #define TB_HRSPERDAY				24
 #define TB_SECSPERDAY				(TB_SECSPERMIN*TB_MINSPERHR*TB_HRSPERDAY)
 #define TB_SECSPERNYR				(365*TB_SECSPERDAY)
-								
+
 #define TB_MSPERSEC					1000
 #define TB_USPERSEC					1000000
 #define TB_NSPERSEC					1000000000
@@ -50,10 +50,10 @@
 #define LWP_WD_INSERTED				1
 #define LWP_WD_ACTIVE				2
 #define LWP_WD_REMOVE				3
-								
+
 #define LWP_WD_FORWARD				0
 #define LWP_WD_BACKWARD				1
-								
+
 #define LWP_WD_NOTIMEOUT			0
 
 #define LWP_WD_ABS(x)				((s64)(x)>0?(s64)(x):-((s64)(x)))

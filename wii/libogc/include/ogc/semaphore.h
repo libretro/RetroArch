@@ -31,10 +31,10 @@ distribution.
 #ifndef __SEMAPHORE_H__
 #define __SEMAPHORE_H__
 
-/*! \file semaphore.h 
+/*! \file semaphore.h
 \brief Thread subsystem IV
 
-*/ 
+*/
 
 
 #include <gctypes.h>

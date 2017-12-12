@@ -2,9 +2,9 @@
  disc.h
  Interface to the low level disc functions. Used by the higher level
  file system code.
- 
+
  Copyright (c) 2006 Michael "Chishm" Chisholm
-	
+
  Redistribution and use in source and binary forms, with or without modification,
  are permitted provided that the following conditions are met:
 
@@ -32,11 +32,11 @@
 #include "common.h"
 
 /*
-A list of all default devices to try at startup, 
+A list of all default devices to try at startup,
 terminated by a {NULL,NULL} entry.
 */
 typedef struct {
-	const char* name; 
+	const char* name;
 	const DISC_INTERFACE* (*getInterface)(void);
 } INTERFACE_ID;
 extern const INTERFACE_ID _FAT_disc_interfaces[];
@@ -50,7 +50,7 @@ static inline bool _FAT_disc_isInserted (const DISC_INTERFACE* disc) {
 }
 
 /*
-Read numSectors sectors from a disc, starting at sector. 
+Read numSectors sectors from a disc, starting at sector.
 numSectors is between 1 and LIMIT_SECTORS if LIMIT_SECTORS is defined,
 else it is at least 1
 sector is 0 or greater
@@ -61,7 +61,7 @@ static inline bool _FAT_disc_readSectors (const DISC_INTERFACE* disc, sec_t sect
 }
 
 /*
-Write numSectors sectors to a disc, starting at sector. 
+Write numSectors sectors to a disc, starting at sector.
 numSectors is between 1 and LIMIT_SECTORS if LIMIT_SECTORS is defined,
 else it is at least 1
 sector is 0 or greater

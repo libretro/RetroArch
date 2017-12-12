@@ -24,7 +24,7 @@ int __libc_start_hook(lwp_cntrl *curr_thr,lwp_cntrl *start_thr)
 	if(!ptr) abort();
 
 	_REENT_INIT_PTR((ptr));
-	
+
 	start_thr->libc_reent = ptr;
 	return 1;
 }
@@ -37,7 +37,7 @@ int __libc_delete_hook(lwp_cntrl *curr_thr, lwp_cntrl *delete_thr)
 		ptr = _REENT;
 	else
 		ptr = (struct _reent*)delete_thr->libc_reent;
-	
+
 	if(ptr && ptr!=&libc_globl_reent) {
 		_reclaim_reent(ptr);
 		free(ptr);

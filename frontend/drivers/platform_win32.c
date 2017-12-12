@@ -42,8 +42,8 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 
-/* We only load this library once, so we let it be 
- * unloaded at application shutdown, since unloading 
+/* We only load this library once, so we let it be
+ * unloaded at application shutdown, since unloading
  * it early seems to cause issues on some systems.
  */
 
@@ -89,10 +89,10 @@ static bool gfx_init_dwm(void)
       return false;
    }
 
-   DragAcceptFiles_func = 
+   DragAcceptFiles_func =
       (VOID (WINAPI*)(HWND, BOOL))dylib_proc(shell32lib, "DragAcceptFiles");
 
-   mmcss = 
+   mmcss =
       (HRESULT (WINAPI*)(BOOL))dylib_proc(dwmlib, "DwmEnableMMCSS");
    if (mmcss)
    {
@@ -116,7 +116,7 @@ static void gfx_set_dwm(void)
    if (settings->bools.video_disable_composition == dwm_composition_disabled)
       return;
 
-   composition_enable = 
+   composition_enable =
       (HRESULT (WINAPI*)(UINT))dylib_proc(dwmlib, "DwmEnableComposition");
    if (!composition_enable)
    {
@@ -292,11 +292,11 @@ static void frontend_win32_init(void *data)
 {
 	typedef BOOL (WINAPI *isProcessDPIAwareProc)();
 	typedef BOOL (WINAPI *setProcessDPIAwareProc)();
-	HMODULE handle                         = 
+	HMODULE handle                         =
       GetModuleHandle("User32.dll");
-	isProcessDPIAwareProc  isDPIAwareProc  = 
+	isProcessDPIAwareProc  isDPIAwareProc  =
       (isProcessDPIAwareProc)dylib_proc(handle, "IsProcessDPIAware");
-	setProcessDPIAwareProc setDPIAwareProc = 
+	setProcessDPIAwareProc setDPIAwareProc =
       (setProcessDPIAwareProc)dylib_proc(handle, "SetProcessDPIAware");
 
 	if (isDPIAwareProc)
@@ -307,7 +307,7 @@ static void frontend_win32_init(void *data)
 				setDPIAwareProc();
 		}
 	}
-   
+
 }
 
 enum frontend_powerstate frontend_win32_get_powerstate(int *seconds, int *percent)
@@ -471,7 +471,7 @@ static uint64_t frontend_win32_get_mem_total(void)
 
 static uint64_t frontend_win32_get_mem_used(void)
 {
-   /* OSes below 2000 don't have the Ex version, 
+   /* OSes below 2000 don't have the Ex version,
     * and non-Ex cannot work with >4GB RAM */
 #if _WIN32_WINNT >= 0x0500
 	MEMORYSTATUSEX mem_info;
@@ -492,24 +492,24 @@ static void frontend_win32_attach_console(void)
 #ifdef _WIN32_WINNT_WINXP
 
    /* msys will start the process with FILE_TYPE_PIPE connected.
-    *   cmd will start the process with FILE_TYPE_UNKNOWN connected 
+    *   cmd will start the process with FILE_TYPE_UNKNOWN connected
     *   (since this is subsystem windows application
-    * ... UNLESS stdout/stderr were redirected (then FILE_TYPE_DISK 
+    * ... UNLESS stdout/stderr were redirected (then FILE_TYPE_DISK
     * will be connected most likely)
     * explorer will start the process with NOTHING connected.
     *
     * Now, let's not reconnect anything that's already connected.
     * If any are disconnected, open a console, and connect to them.
-    * In case we're launched from msys or cmd, try attaching to the 
+    * In case we're launched from msys or cmd, try attaching to the
     * parent process console first.
     *
-    * Take care to leave a record of what we did, so we can 
+    * Take care to leave a record of what we did, so we can
     * undo it precisely.
     */
 
-   bool need_stdout = (GetFileType(GetStdHandle(STD_OUTPUT_HANDLE)) 
+   bool need_stdout = (GetFileType(GetStdHandle(STD_OUTPUT_HANDLE))
          == FILE_TYPE_UNKNOWN);
-   bool need_stderr = (GetFileType(GetStdHandle(STD_ERROR_HANDLE)) 
+   bool need_stderr = (GetFileType(GetStdHandle(STD_ERROR_HANDLE))
          == FILE_TYPE_UNKNOWN);
 
    if(need_stdout || need_stderr)
@@ -534,8 +534,8 @@ static void frontend_win32_detach_console(void)
 
    if(console_needs_free)
    {
-      /* we don't reconnect stdout/stderr to anything here, 
-       * because by definition, they weren't connected to 
+      /* we don't reconnect stdout/stderr to anything here,
+       * because by definition, they weren't connected to
        * anything in the first place. */
       FreeConsole();
       console_needs_free = false;

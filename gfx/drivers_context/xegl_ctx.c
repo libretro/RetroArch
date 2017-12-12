@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
 *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
 *  Copyright (C) 2011-2017 - Daniel De Matteis
-* 
+*
 *  RetroArch is free software: you can redistribute it and/or modify it under the terms
 *  of the GNU General Public License as published by the Free Software Found-
 *  ation, either version 3 of the License, or (at your option) any later version.
@@ -87,7 +87,7 @@ static void gfx_ctx_xegl_destroy(void *data)
 
    free(data);
 
-   /* Do not close g_x11_dpy. We'll keep one for the entire application 
+   /* Do not close g_x11_dpy. We'll keep one for the entire application
     * lifecycle to work-around nVidia EGL limitations.
     */
 }
@@ -212,7 +212,7 @@ static EGLint *xegl_fill_attribs(xegl_ctx_data_t *xegl, EGLint *attr)
                *attr++ = xegl->egl.minor;
 
                /* Technically, we don't have core/compat until 3.2.
-                * Version 3.1 is either compat or not depending 
+                * Version 3.1 is either compat or not depending
                 * on GL_ARB_compatibility.
                 */
                if (version >= 3002)
@@ -294,7 +294,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    swa.colormap = g_x11_cmap = XCreateColormap(
          g_x11_dpy, RootWindow(g_x11_dpy, vi->screen),
          vi->visual, AllocNone);
-   swa.event_mask = StructureNotifyMask | KeyPressMask | 
+   swa.event_mask = StructureNotifyMask | KeyPressMask |
       ButtonPressMask | ButtonReleaseMask | KeyReleaseMask;
    swa.override_redirect = fullscreen ? True : False;
 
@@ -337,8 +337,8 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
 
    g_x11_win = XCreateWindow(g_x11_dpy, RootWindow(g_x11_dpy, vi->screen),
          x_off, y_off, width, height, 0,
-         vi->depth, InputOutput, vi->visual, 
-         CWBorderPixel | CWColormap | CWEventMask | 
+         vi->depth, InputOutput, vi->visual,
+         CWBorderPixel | CWColormap | CWEventMask |
          (true_full ? CWOverrideRedirect : 0), &swa);
    XSetWindowBackground(g_x11_dpy, g_x11_win, 0);
 
@@ -362,14 +362,14 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
       RARCH_LOG("[X/EGL]: Using true fullscreen.\n");
       XMapRaised(g_x11_dpy, g_x11_win);
    }
-   else if (fullscreen) 
+   else if (fullscreen)
    {
       /* We attempted true fullscreen, but failed.
        * Attempt using windowed fullscreen. */
       XMapRaised(g_x11_dpy, g_x11_win);
       RARCH_LOG("[X/EGL]: Using windowed fullscreen.\n");
 
-      /* We have to move the window to the screen we 
+      /* We have to move the window to the screen we
        * want to go fullscreen on first.
        * x_off and y_off usually get ignored in XCreateWindow().
        */
@@ -380,7 +380,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    {
       XMapWindow(g_x11_dpy, g_x11_win);
 
-      /* If we want to map the window on a different screen, 
+      /* If we want to map the window on a different screen,
        * we'll have to do it by force.
        *
        * Otherwise, we should try to let the window manager sort it out.
@@ -397,7 +397,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    gfx_ctx_xegl_set_swap_interval(&xegl->egl, xegl->egl.interval);
 #endif
 
-   /* This can blow up on some drivers. It's not fatal, 
+   /* This can blow up on some drivers. It's not fatal,
     * so override errors for this call.
     */
    old_handler = XSetErrorHandler(x_nul_handler);
@@ -583,7 +583,7 @@ const gfx_ctx_driver_t gfx_ctx_x_egl =
    gfx_ctx_xegl_init,
    gfx_ctx_xegl_destroy,
    gfx_ctx_xegl_bind_api,
-   gfx_ctx_xegl_set_swap_interval, 
+   gfx_ctx_xegl_set_swap_interval,
    gfx_ctx_xegl_set_video_mode,
    x11_get_video_size,
    NULL, /* get_video_output_size */

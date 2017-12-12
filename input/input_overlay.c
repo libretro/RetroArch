@@ -40,7 +40,7 @@
 typedef struct input_overlay_state
 {
    /* Left X, Left Y, Right X, Right Y */
-   int16_t analog[4]; 
+   int16_t analog[4];
    uint32_t keys[RETROK_LAST / 32 + 1];
    /* This is a bitmask of (1 << key_bind_id). */
    uint64_t buttons;
@@ -144,7 +144,7 @@ static void input_overlay_set_vertex_geom(input_overlay_t *ol)
 void input_overlay_set_scale_factor(input_overlay_t *ol, float scale)
 {
    size_t i;
-    
+
    if (!ol)
       return;
 
@@ -231,7 +231,7 @@ static void input_overlay_enable(input_overlay_t *ol, bool enable)
  * Check whether the given @x and @y coordinates of the overlay
  * descriptor @desc is inside the overlay descriptor's hitbox.
  *
- * Returns: true (1) if X, Y coordinates are inside a hitbox, otherwise false (0). 
+ * Returns: true (1) if X, Y coordinates are inside a hitbox, otherwise false (0).
  **/
 static bool inside_hitbox(const struct overlay_desc *desc, float x, float y)
 {
@@ -250,7 +250,7 @@ static bool inside_hitbox(const struct overlay_desc *desc, float x, float y)
       }
 
       case OVERLAY_HITBOX_RECT:
-         return 
+         return
             (fabs(x - desc->x) <= desc->range_x_mod) &&
             (fabs(y - desc->y) <= desc->range_y_mod);
    }
@@ -348,7 +348,7 @@ static void input_overlay_poll(
  * input_overlay_update_desc_geom:
  * @ol                    : overlay handle.
  * @desc                  : overlay descriptors handle.
- * 
+ *
  * Update input overlay descriptors' vertex geometry.
  **/
 static void input_overlay_update_desc_geom(input_overlay_t *ol,
@@ -735,9 +735,9 @@ void input_state_overlay(input_overlay_t *ol, int16_t *ret,
       case RETRO_DEVICE_KEYBOARD:
          if (id < RETROK_LAST)
          {
-            /*RARCH_LOG("UDLR %u %u %u %u\n", 
-               OVERLAY_GET_KEY(ol_state, RETROK_UP), 
-               OVERLAY_GET_KEY(ol_state, RETROK_DOWN), 
+            /*RARCH_LOG("UDLR %u %u %u %u\n",
+               OVERLAY_GET_KEY(ol_state, RETROK_UP),
+               OVERLAY_GET_KEY(ol_state, RETROK_DOWN),
                OVERLAY_GET_KEY(ol_state, RETROK_LEFT),
                OVERLAY_GET_KEY(ol_state, RETROK_RIGHT)
             );*/
@@ -765,7 +765,7 @@ void input_state_overlay(input_overlay_t *ol, int16_t *ret,
  * @port : the user to show the inputs of
  *
  * Adds inputs from current_input to the overlay, so it's displayed
- * returns true if an input that is pressed will change the overlay 
+ * returns true if an input that is pressed will change the overlay
  */
 static bool input_overlay_add_inputs(input_overlay_t *ol,
       unsigned port, unsigned analog_dpad_mode)
@@ -788,7 +788,7 @@ static bool input_overlay_add_inputs(input_overlay_t *ol,
          case OVERLAY_TYPE_BUTTONS:
             mask = desc->key_mask;
             id = RETRO_DEVICE_ID_JOYPAD_B;
-            /* Need to check all bits in the mask, 
+            /* Need to check all bits in the mask,
              * multiple ones can be pressed */
             current_button_pressed = false;
             while(mask)
@@ -823,7 +823,7 @@ static bool input_overlay_add_inputs(input_overlay_t *ol,
             {
                float analog_x, analog_y;
                float dx, dy;
-               unsigned int index = (desc->type == OVERLAY_TYPE_ANALOG_RIGHT) ? 
+               unsigned int index = (desc->type == OVERLAY_TYPE_ANALOG_RIGHT) ?
                   RETRO_DEVICE_INDEX_ANALOG_RIGHT : RETRO_DEVICE_INDEX_ANALOG_LEFT;
 
                analog_x = input_state(port, RETRO_DEVICE_ANALOG, index, RETRO_DEVICE_ID_ANALOG_X);

@@ -67,16 +67,16 @@ static uint32_t __lwp_heap_block_size(heap_cntrl *theheap, void *ptr)
 
 static heap_cntrl gx_mem2_heap;
 
-bool gx_init_mem2(void)  
+bool gx_init_mem2(void)
 {
    void *heap_ptr;
    uint32_t level, size;
    _CPU_ISR_Disable(level);
 
-   /* BIG NOTE: MEM2 on the Wii is 64MB, but a portion 
+   /* BIG NOTE: MEM2 on the Wii is 64MB, but a portion
     * of that is reserved for IOS.
     *
-    * libogc by default defines the "safe" area for MEM2 
+    * libogc by default defines the "safe" area for MEM2
     * to go from 0x90002000 to 0x933E0000.
     *
     * However, from my testing, I've found I need to
@@ -102,7 +102,7 @@ void *_mem2_memalign(uint8_t align, uint32_t size)
 {
    if(size == 0)
       return NULL;
-   return __lwp_heap_allocate(&gx_mem2_heap, size); 
+   return __lwp_heap_allocate(&gx_mem2_heap, size);
 }
 
 void *_mem2_malloc(uint32_t size)
@@ -111,7 +111,7 @@ void *_mem2_malloc(uint32_t size)
 }
 
 void _mem2_free(void *ptr)
-{ 
+{
    if (ptr)
       __lwp_heap_free(&gx_mem2_heap, ptr);
 }
@@ -134,9 +134,9 @@ void *_mem2_realloc(void *ptr, uint32_t newsize)
 
    if (size > newsize)
       size = newsize;
-   
+
    newptr = _mem2_malloc(newsize);
-   
+
    if (!newptr)
       return NULL;
 

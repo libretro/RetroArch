@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2013-2015 - pinumbernumber
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -96,8 +96,8 @@ typedef struct
 #define ERROR_DEVICE_NOT_CONNECTED 1167
 #endif
 
-/* Due to 360 pads showing up under both XInput and DirectInput, 
- * and since we are going to have to pass through unhandled 
+/* Due to 360 pads showing up under both XInput and DirectInput,
+ * and since we are going to have to pass through unhandled
  * joypad numbers to DirectInput, a slightly ugly
  * hack is required here. dinput_joypad_init will fill this.
  *
@@ -191,7 +191,7 @@ static bool xinput_joypad_init(void *data)
     * success anyway.
     */
 
-   g_xinput_dll = dylib_load("xinput1_4.dll"); 
+   g_xinput_dll = dylib_load("xinput1_4.dll");
    if (!g_xinput_dll)
    {
       g_xinput_dll = dylib_load("xinput1_3.dll");
@@ -255,7 +255,7 @@ static bool xinput_joypad_init(void *data)
          (!g_xinput_states[3].connected))
       return false;
 
-   RARCH_LOG("[XInput]: Pads connected: %d\n", g_xinput_states[0].connected + 
+   RARCH_LOG("[XInput]: Pads connected: %d\n", g_xinput_states[0].connected +
          g_xinput_states[1].connected + g_xinput_states[2].connected + g_xinput_states[3].connected);
    g_xinput_block_pads = true;
 
@@ -350,7 +350,7 @@ static const uint16_t button_index_to_bitmap_code[] =  {
    XINPUT_GAMEPAD_BACK,
    XINPUT_GAMEPAD_LEFT_THUMB,
    XINPUT_GAMEPAD_RIGHT_THUMB,
-   XINPUT_GAMEPAD_GUIDE      
+   XINPUT_GAMEPAD_GUIDE
 };
 
 static bool xinput_joypad_button(unsigned port_num, uint16_t joykey)
@@ -420,7 +420,7 @@ static int16_t xinput_joypad_axis (unsigned port_num, uint32_t joyaxis)
       return 0;
 
    /* triggers (axes 4,5) cannot be negative */
-   if (AXIS_NEG_GET(joyaxis) <= 3) 
+   if (AXIS_NEG_GET(joyaxis) <= 3)
    {
       axis = AXIS_NEG_GET(joyaxis);
       is_neg = true;
@@ -475,8 +475,8 @@ static void xinput_joypad_poll(void)
    {
       if (g_xinput_states[i].connected)
       {
-         if (g_XInputGetStateEx(i, 
-                  &(g_xinput_states[i].xstate)) 
+         if (g_XInputGetStateEx(i,
+                  &(g_xinput_states[i].xstate))
                == ERROR_DEVICE_NOT_CONNECTED)
             g_xinput_states[i].connected = false;
       }
@@ -507,7 +507,7 @@ static bool xinput_joypad_rumble(unsigned pad,
    else if (effect == RETRO_RUMBLE_WEAK)
       g_xinput_rumble_states[xuser].wRightMotorSpeed = strength;
 
-   return (g_XInputSetState(xuser, &g_xinput_rumble_states[xuser]) 
+   return (g_XInputSetState(xuser, &g_xinput_rumble_states[xuser])
       == 0);
 }
 

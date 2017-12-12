@@ -256,7 +256,7 @@ void cheevos_var_patch_addr(cheevos_var_t* var, cheevos_console_t console)
    else
    {
       unsigned i;
-      
+
       for (i = 0; i < 4; i++)
       {
          retro_ctx_memory_info_t meminfo;
@@ -352,7 +352,7 @@ unsigned cheevos_var_get_value(cheevos_var_t* var)
       case CHEEVOS_VAR_TYPE_VALUE_COMP:
          value = var->value;
          break;
-      
+
       case CHEEVOS_VAR_TYPE_ADDRESS:
       case CHEEVOS_VAR_TYPE_DELTA_MEM:
          memory = cheevos_var_get_memory(var);

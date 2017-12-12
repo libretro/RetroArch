@@ -130,7 +130,7 @@ static int action_scan_input_desc(const char *path,
       unsigned char player_no_str = atoi(&label[1]);
 
       inp_desc_user      = (unsigned)(player_no_str - 1);
-      /* This hardcoded value may cause issues if any entries are added on 
+      /* This hardcoded value may cause issues if any entries are added on
          top of the input binds */
       key                = (unsigned)(idx - 7);
    }

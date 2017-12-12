@@ -41,17 +41,17 @@ int main(void)
 
    while (!net_http_update(http1, &pos, &tot))
       printf("%.9lu / %.9lu        \r",pos,tot);
-	
+
    http3 = net_http_new("http://www.wikipedia.org/");
    while (!net_http_update(http3, NULL, NULL)) {}
-	
+
    data  = (char*)net_http_data(http3, &len, false);
 
    printf("%.*s\n", (int)256, data);
 
    net_http_delete(http1);
    net_http_delete(http3);
-   
+
    network_deinit();
 
    return 0;

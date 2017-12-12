@@ -48,7 +48,7 @@ RETRO_BEGIN_DECLS
 #define RESAMPLER_SIMD_PS       (1 << 14)
 
 /* A bit-mask of all supported SIMD instruction sets.
- * Allows an implementation to pick different 
+ * Allows an implementation to pick different
  * resampler_implementation structs.
  */
 typedef unsigned resampler_simd_mask_t;
@@ -66,7 +66,7 @@ struct resampler_data
    double ratio;
 };
 
-/* Returns true if config key was found. Otherwise, 
+/* Returns true if config key was found. Otherwise,
  * returns false, and sets value to default value.
  */
 typedef int (*resampler_config_get_float_t)(void *userdata,
@@ -76,7 +76,7 @@ typedef int (*resampler_config_get_int_t)(void *userdata,
       const char *key, int *value, int default_value);
 
 /* Allocates an array with values. free() with resampler_config_free_t. */
-typedef int (*resampler_config_get_float_array_t)(void *userdata, 
+typedef int (*resampler_config_get_float_array_t)(void *userdata,
       const char *key, float **values, unsigned *out_num_values,
       const float *default_values, unsigned num_default_values);
 
@@ -87,7 +87,7 @@ typedef int (*resampler_config_get_int_array_t)(void *userdata,
 typedef int (*resampler_config_get_string_t)(void *userdata,
       const char *key, char **output, const char *default_output);
 
-/* Calls free() in host runtime. Sometimes needed on Windows. 
+/* Calls free() in host runtime. Sometimes needed on Windows.
  * free() on NULL is fine. */
 typedef void (*resampler_config_free_t)(void *ptr);
 
@@ -100,12 +100,12 @@ struct resampler_config
    resampler_config_get_int_array_t get_int_array;
 
    resampler_config_get_string_t get_string;
-   /* Avoid problems where resampler plug and host are 
+   /* Avoid problems where resampler plug and host are
     * linked against different C runtimes. */
-   resampler_config_free_t free; 
+   resampler_config_free_t free;
 };
 
-/* Bandwidth factor. Will be < 1.0 for downsampling, > 1.0 for upsampling. 
+/* Bandwidth factor. Will be < 1.0 for downsampling, > 1.0 for upsampling.
  * Corresponds to expected resampling ratio. */
 typedef void *(*resampler_init_t)(const struct resampler_config *config,
       double bandwidth_mod, resampler_simd_mask_t mask);
@@ -130,7 +130,7 @@ typedef struct retro_resampler
 
    /* Computer-friendly short version of ident.
     * Lower case, no spaces and special characters, etc. */
-   const char *short_ident; 
+   const char *short_ident;
 } retro_resampler_t;
 
 typedef struct audio_frame_float
@@ -171,7 +171,7 @@ const char *audio_resampler_driver_find_ident(int index);
  * @ident                      : Identifier name for resampler we want.
  * @bw_ratio                   : Bandwidth ratio.
  *
- * Reallocates resampler. Will free previous handle before 
+ * Reallocates resampler. Will free previous handle before
  * allocating a new one. If ident is NULL, first resampler will be used.
  *
  * Returns: true (1) if successful, otherwise false (0).

@@ -93,7 +93,7 @@ static s32 __lwp_cond_waitsupp(cond_t cond,mutex_t mutex,u64 timeout,u8 timedout
 	cond_st *thecond = __lwp_cond_open(cond);
 
 	if(!thecond) return -1;
-		
+
 	if(thecond->lock!=LWP_MUTEX_NULL && thecond->lock!=mutex) {
 		__lwp_thread_dispatchenable();
 		return EINVAL;
@@ -111,7 +111,7 @@ static s32 __lwp_cond_waitsupp(cond_t cond,mutex_t mutex,u64 timeout,u8 timedout
 		_CPU_ISR_Restore(level);
 		__lwp_threadqueue_enqueue(&thecond->wait_queue,timeout);
 		__lwp_thread_dispatchenable();
-		
+
 		status = _thr_executing->wait.ret_code;
 		if(status && status!=ETIMEDOUT)
 			return status;
@@ -144,9 +144,9 @@ static s32 __lwp_cond_signalsupp(cond_t cond,u8 isbroadcast)
 s32 LWP_CondInit(cond_t *cond)
 {
 	cond_st *ret;
-	
+
 	if(!cond) return -1;
-	
+
 	ret = __lwp_cond_allocate();
 	if(!ret) return ENOMEM;
 

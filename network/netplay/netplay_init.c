@@ -90,7 +90,7 @@ static int init_tcp_connection(const struct addrinfo *res,
             RARCH_WARN("Failed to listen on both IPv6 and IPv4\n");
       }
 #endif
-      if (  !socket_bind(fd, (void*)res) || 
+      if (  !socket_bind(fd, (void*)res) ||
             listen(fd, 1024) < 0)
       {
          ret = false;
@@ -177,7 +177,7 @@ static bool init_tcp_socket(netplay_t *netplay, void *direct_host,
    }
 #endif
 
-   /* If "localhost" is used, it is important to check every possible 
+   /* If "localhost" is used, it is important to check every possible
     * address for IPv4/IPv6. */
    tmp_info = res;
 
@@ -413,7 +413,7 @@ static bool netplay_init_buffers(netplay_t *netplay)
  * @nick                 : Nickname of user.
  * @quirks               : Netplay quirks required for this session.
  *
- * Creates a new netplay handle. A NULL server means we're 
+ * Creates a new netplay handle. A NULL server means we're
  * hosting.
  *
  * Returns: new netplay data.
@@ -456,7 +456,7 @@ netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
       netplay->connections[0].fd = -1;
    }
 
-   strlcpy(netplay->nick, nick[0] 
+   strlcpy(netplay->nick, nick[0]
          ? nick : RARCH_DEFAULT_NICK,
          sizeof(netplay->nick));
 
@@ -480,7 +480,7 @@ netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
       netplay->self_mode           = NETPLAY_CONNECTION_INIT;
    }
 
-   /* FIXME: Not really the right place to do this, 
+   /* FIXME: Not really the right place to do this,
     * socket initialization needs to be fixed in general. */
    if (netplay->is_server)
    {

@@ -40,9 +40,9 @@ MEMB(l2cap_sigs,sizeof(struct l2cap_sig),MEMB_NUM_L2CAP_SIG);
 MEMB(l2cap_segs,sizeof(struct l2cap_seg),MEMB_NUM_L2CAP_SEG);
 
 /*-----------------------------------------------------------------------------------*/
-/* 
+/*
  * l2cap_init():
- * 
+ *
  * Initializes the L2CAP layer.
  */
 /*-----------------------------------------------------------------------------------*/
@@ -159,13 +159,13 @@ void l2cap_tmr()
 }
 
 /*-----------------------------------------------------------------------------------*/
-/* 
+/*
  * l2cap_write():
- * 
+ *
  * Output L2CAP data to the lower layers. Segments the packet in to PDUs.
  */
 /*-----------------------------------------------------------------------------------*/
-err_t l2cap_write(struct bd_addr *bdaddr, struct pbuf *p, u16_t len) 
+err_t l2cap_write(struct bd_addr *bdaddr, struct pbuf *p, u16_t len)
 {
 	u8_t pb = L2CAP_ACL_START;
 	u16_t maxsize;
@@ -216,9 +216,9 @@ err_t l2cap_write(struct bd_addr *bdaddr, struct pbuf *p, u16_t len)
 }
 
 /*-----------------------------------------------------------------------------------*/
-/* 
+/*
  * l2cap_process_sig():
- * 
+ *
  * Parses the received message handles it.
  */
 /*-----------------------------------------------------------------------------------*/
@@ -230,7 +230,7 @@ void l2cap_process_sig(struct pbuf *q, struct l2cap_hdr *l2caphdr, struct bd_add
 	struct l2cap_pcb_listen *lpcb;
 	struct l2cap_cfgopt_hdr *opthdr;
 	u16_t result, status, flags, psm, dcid;
-	u16_t len; 
+	u16_t len;
 	u16_t siglen;
 	struct pbuf *p, *r = NULL, *s = NULL, *data;
 	err_t ret;
@@ -249,19 +249,19 @@ void l2cap_process_sig(struct pbuf *q, struct l2cap_hdr *l2caphdr, struct bd_add
 			}
 		} else {
 			ERROR("l2cap_process_sig: Could not allocate buffer for fragmented packet\n");
-			return; 
+			return;
 		}
 	} else {
 		p = q;
 	}
 
 	len = l2caphdr->len;
-  
+
 	while(len > 0) {
 		/* Set up signal header */
 		sighdr = p->payload;
 		btpbuf_header(p, -L2CAP_SIGHDR_LEN);
-    
+
 	    /* Check if this is a response/reject signal, and if so, find the matching request */
 		if(sighdr->code % 2) { /* if odd this is a resp/rej signal */
 			LOG("l2cap_process_sig: Response/reject signal received id = %d code = %d\n", sighdr->id, sighdr->code);
@@ -269,7 +269,7 @@ void l2cap_process_sig(struct pbuf *q, struct l2cap_hdr *l2caphdr, struct bd_add
 				for(sig = pcb->unrsp_sigs; sig != NULL; sig = sig->next) {
 					if(sig->sigid == sighdr->id) {
 						break; /* found */
-					} 
+					}
 				}
 				if(sig != NULL) {
 					break;
@@ -280,7 +280,7 @@ void l2cap_process_sig(struct pbuf *q, struct l2cap_hdr *l2caphdr, struct bd_add
 		}
 
 		/* Reject packet if length exceeds MTU */
-		if(l2caphdr->len > L2CAP_MTU) {		      
+		if(l2caphdr->len > L2CAP_MTU) {
 			/* Alloc size of reason in cmd rej + MTU */
 			if((data = btpbuf_alloc(PBUF_RAW, L2CAP_CMD_REJ_SIZE+2, PBUF_RAM)) != NULL) {
 				((u16_t *)data->payload)[0] = htole16(L2CAP_MTU_EXCEEDED);
@@ -290,14 +290,14 @@ void l2cap_process_sig(struct pbuf *q, struct l2cap_hdr *l2caphdr, struct bd_add
 			}
 			break;
 		}
-    
+
 		switch(sighdr->code) {
 			case L2CAP_CMD_REJ:
 				/* Remove signal from unresponded list and deallocate it */
 				L2CAP_SIG_RMV(&(pcb->unrsp_sigs), sig);
 				btpbuf_free(sig->p);
 				btmemb_free(&l2cap_sigs, sig);
-				LOG("l2cap_process_sig: Our command was rejected so we disconnect\n"); 
+				LOG("l2cap_process_sig: Our command was rejected so we disconnect\n");
 				l2ca_disconnect_req(pcb, NULL);
 				break;
 			case L2CAP_CONN_REQ:
@@ -324,7 +324,7 @@ void l2cap_process_sig(struct pbuf *q, struct l2cap_hdr *l2caphdr, struct bd_add
 					pcb = l2cap_new();
 					if(pcb == NULL) {
 						LOG("l2cap_process_sig: could not allocate PCB\n");
-						/* Send a connection rsp neg (no resources available) and alloc size of data in conn rsp 
+						/* Send a connection rsp neg (no resources available) and alloc size of data in conn rsp
 						signal */
 						if((data = btpbuf_alloc(PBUF_RAW, L2CAP_CONN_RSP_SIZE, PBUF_RAM)) != NULL) {
 							((u16_t *)data->payload)[0] = htole16(L2CAP_CONN_REF_RES);
@@ -497,7 +497,7 @@ void l2cap_process_sig(struct pbuf *q, struct l2cap_hdr *l2caphdr, struct bd_add
 											btpbuf_free(s);
 										}
 									}
-									break; 
+									break;
 							} /* switch */
 						} /* if(L2CAP_OPTH_TOA(opthdr) == 0) */
 						btpbuf_header(p, -(L2CAP_CFGOPTHDR_LEN + opthdr->len));
@@ -626,7 +626,7 @@ void l2cap_process_sig(struct pbuf *q, struct l2cap_hdr *l2caphdr, struct bd_add
 										break;
 									default:
 										/* Should not happen, skip option */
-										break; 
+										break;
 								} /* switch */
 							} /* if(L2CAP_OPTH_TOA(opthdr) == 0) */
 							btpbuf_header(p, -(L2CAP_CFGOPTHDR_LEN + opthdr->len));
@@ -649,7 +649,7 @@ void l2cap_process_sig(struct pbuf *q, struct l2cap_hdr *l2caphdr, struct bd_add
 							return;
 						}
 						break;
-				} /* switch(result) */  
+				} /* switch(result) */
 
 				/* If continuation flag is set we must send a NULL configuration request */
 				if((flags & 0x0001) == 1) {
@@ -660,7 +660,7 @@ void l2cap_process_sig(struct pbuf *q, struct l2cap_hdr *l2caphdr, struct bd_add
 					}
 					/* Assemble config request packet */
 					((u16_t *)data->payload)[0] = htole16(pcb->scid);
-					((u16_t *)data->payload)[2] = 0; 
+					((u16_t *)data->payload)[2] = 0;
 					l2cap_signal(pcb, L2CAP_CFG_REQ, 0, &(pcb->remote_bdaddr), data);
 				}
 				break;
@@ -698,8 +698,8 @@ void l2cap_process_sig(struct pbuf *q, struct l2cap_hdr *l2caphdr, struct bd_add
 						/* Give upper layer indication */
 						pcb->state = L2CAP_CLOSED;
 						LOG("l2cap_process_sig: Disconnection request\n");
-						L2CA_ACTION_DISCONN_IND(pcb,ERR_OK,ret);  
-					}	  
+						L2CA_ACTION_DISCONN_IND(pcb,ERR_OK,ret);
+					}
 				}
 				break;
 			case L2CAP_DISCONN_RSP:
@@ -716,7 +716,7 @@ void l2cap_process_sig(struct pbuf *q, struct l2cap_hdr *l2caphdr, struct bd_add
 							   now close the connection */
 				break;
 			case L2CAP_ECHO_REQ:
-				pcb->ursp_id = sighdr->id; 
+				pcb->ursp_id = sighdr->id;
 				ret = l2cap_signal(pcb, L2CAP_ECHO_RSP, sighdr->id, &(pcb->remote_bdaddr), NULL);
 				break;
 			case L2CAP_ECHO_RSP:
@@ -748,9 +748,9 @@ void l2cap_process_sig(struct pbuf *q, struct l2cap_hdr *l2caphdr, struct bd_add
 }
 
 /*-----------------------------------------------------------------------------------*/
-/* 
+/*
  * l2cap_input():
- * 
+ *
  * Called by the lower layer. Reassembles the packet, parses the header and forward
  * it to the upper layer or the signal handler.
  */
@@ -817,7 +817,7 @@ void l2cap_input(struct pbuf *p, struct bd_addr *bdaddr)
 		inseg->l2caphdr = p->payload;
 		inseg->l2caphdr->cid = le16toh(inseg->l2caphdr->cid);
 		inseg->l2caphdr->len = le16toh(inseg->l2caphdr->len);
-		
+
 		inseg->len = inseg->l2caphdr->len + L2CAP_HDR_LEN;
 		for(inseg->pcb = l2cap_active_pcbs; inseg->pcb != NULL; inseg->pcb = inseg->pcb->next) {
 			if(inseg->pcb->scid == inseg->l2caphdr->cid) {
@@ -893,10 +893,10 @@ void l2cap_input(struct pbuf *p, struct bd_addr *bdaddr)
 }
 
 /*-----------------------------------------------------------------------------------*/
-/* 
+/*
  * l2cap_cid_alloc():
- * 
- * Allocates a channel identifier (CID). They are local names representing a logical 
+ *
+ * Allocates a channel identifier (CID). They are local names representing a logical
  * channel endpoint on the device.
  */
 /*-----------------------------------------------------------------------------------*/
@@ -919,9 +919,9 @@ static u16_t l2cap_cid_alloc(void)
 }
 
 /*-----------------------------------------------------------------------------------*/
-/* 
+/*
  * l2cap_new():
- * 
+ *
  * Creates a new L2CAP protocol control block but doesn't place it on
  * any of the L2CAP PCB lists.
  */
@@ -939,9 +939,9 @@ struct l2cap_pcb* l2cap_new(void)
 
 		/* Maximum Transmission Unit */
 		pcb->cfg.inmtu = L2CAP_MTU; /* The MTU that this implementation support */
-		pcb->cfg.outmtu = 672; /* Default MTU. Two Baseband DH5 packets minus the Baseband ACL headers and 
+		pcb->cfg.outmtu = 672; /* Default MTU. Two Baseband DH5 packets minus the Baseband ACL headers and
 								  L2CAP header. This can be set here since we will never send any signals
-								  larger than the L2CAP sig MTU (48 bytes) before L2CAP has been configured 
+								  larger than the L2CAP sig MTU (48 bytes) before L2CAP has been configured
 							   */
 
 		/* Flush Timeout */
@@ -958,9 +958,9 @@ struct l2cap_pcb* l2cap_new(void)
 }
 
 /*-----------------------------------------------------------------------------------*/
-/* 
+/*
  * l2cap_close():
- * 
+ *
  * Closes the L2CAP protocol control block.
  */
 /*-----------------------------------------------------------------------------------*/
@@ -986,14 +986,14 @@ err_t l2cap_close(struct l2cap_pcb *pcb)
 	return ERR_OK;
 }
 /*-----------------------------------------------------------------------------------*/
-/* 
+/*
  * l2cap_reset_all():
  *
  * Closes all active and listening L2CAP protocol control blocks.
  */
 /*-----------------------------------------------------------------------------------*/
 void l2cap_reset_all(void)
-{ 
+{
 	struct l2cap_pcb *pcb, *tpcb;
 	struct l2cap_pcb_listen *lpcb, *tlpcb;
 	struct l2cap_seg *seg, *tseg;
@@ -1025,9 +1025,9 @@ void l2cap_reset_all(void)
  */
 /*-----------------------------------------------------------------------------------*/
 /*-----------------------------------------------------------------------------------*/
-/* 
+/*
  * l2cap_signal():
- * 
+ *
  * Assembles the signalling packet and passes it to the lower layer.
  */
 /*-----------------------------------------------------------------------------------*/
@@ -1099,9 +1099,9 @@ err_t l2cap_signal(struct l2cap_pcb *pcb, u8_t code, u16_t ursp_id, struct bd_ad
 }
 
 /*-----------------------------------------------------------------------------------*/
-/* 
+/*
  * l2cap_rexmit_signal():
- * 
+ *
  * Called by the l2cap timer. Retransmitts a signal.
  */
 /*-----------------------------------------------------------------------------------*/
@@ -1119,16 +1119,16 @@ err_t l2cap_rexmit_signal(struct l2cap_pcb *pcb, struct l2cap_sig *sig)
  */
 /*-----------------------------------------------------------------------------------*/
 /*-----------------------------------------------------------------------------------*/
-/* 
+/*
  * l2ca_connect_req():
- * 
- * Initiates the sending of a connect request message. Requests the creation of a 
- * channel representing a logicalconnection to a physical address. Input parameters 
- * are the target protocol(PSM) and remote devices 48-bit address (BD_ADDR). Also 
+ *
+ * Initiates the sending of a connect request message. Requests the creation of a
+ * channel representing a logicalconnection to a physical address. Input parameters
+ * are the target protocol(PSM) and remote devices 48-bit address (BD_ADDR). Also
  * specify the function to be called when a confirm has been received.
  */
 /*-----------------------------------------------------------------------------------*/
-err_t l2ca_connect_req(struct l2cap_pcb *pcb, struct bd_addr *bdaddr, u16_t psm, 
+err_t l2ca_connect_req(struct l2cap_pcb *pcb, struct bd_addr *bdaddr, u16_t psm,
                  u8_t role_switch, err_t (* l2ca_connect_cfm)(void *arg, struct l2cap_pcb *lpcb,
 					    u16_t result, u16_t status))
 {
@@ -1167,12 +1167,12 @@ err_t l2ca_connect_req(struct l2cap_pcb *pcb, struct bd_addr *bdaddr, u16_t psm,
 }
 
 /*-----------------------------------------------------------------------------------*/
-/* 
+/*
  * l2ca_config_req():
- * 
- * Requests the initial configuration (or reconfiguration) of a channel to a new set 
- * of channel parameters. Input parameters are the local CID endpoint, new incoming 
- * receivable MTU (InMTU), new outgoing flow specification, and flush and link 
+ *
+ * Requests the initial configuration (or reconfiguration) of a channel to a new set
+ * of channel parameters. Input parameters are the local CID endpoint, new incoming
+ * receivable MTU (InMTU), new outgoing flow specification, and flush and link
  * timeouts. Also specify the function to be called when a confirm has been received.
  */
 /*-----------------------------------------------------------------------------------*/
@@ -1185,7 +1185,7 @@ err_t l2ca_config_req(struct l2cap_pcb *pcb)
 	switch(pcb->state) {
 		case L2CAP_OPEN:
 			LOG("l2cap_config_req: state = L2CAP_OPEN. Suspend transmission\n");
-			/* Note: Application should have suspended data transmission, otherwise outgoing data will be 
+			/* Note: Application should have suspended data transmission, otherwise outgoing data will be
 			dropped */
 			pcb->state = L2CAP_CONFIG;
 			/* Fallthrough */
@@ -1204,9 +1204,9 @@ err_t l2ca_config_req(struct l2cap_pcb *pcb)
 			signal packet. Therefore we will never send a config_req packet
 			that will cause the signal to be larger than the minimum L2CAP MTU
 			48 bytes. Hence, this flag will always be cleared */
-			((u16_t *)p->payload)[1] = 0; 
+			((u16_t *)p->payload)[1] = 0;
 
-			/* Add MTU and out flush timeout to cfg packet if not default value. QoS (Best effort) is always 
+			/* Add MTU and out flush timeout to cfg packet if not default value. QoS (Best effort) is always
 			set to default and can be skipped */
 			if(pcb->cfg.inmtu != L2CAP_CFG_DEFAULT_INMTU) {
 				if((q = btpbuf_alloc(PBUF_RAW, L2CAP_CFGOPTHDR_LEN + L2CAP_MTU_LEN, PBUF_RAM)) == NULL) {
@@ -1247,9 +1247,9 @@ err_t l2ca_config_req(struct l2cap_pcb *pcb)
 	return ret;
 }
 /*-----------------------------------------------------------------------------------*/
-/* 
+/*
  * l2ca_disconnect_req():
- * 
+ *
  * Requests the disconnection of the channel. Also specify the function to be called
  * when a confirm is received
  */
@@ -1261,7 +1261,7 @@ err_t l2ca_disconnect_req(struct l2cap_pcb *pcb, err_t (* l2ca_disconnect_cfm)(v
 
 	if(pcb->state == L2CAP_OPEN || pcb->state == L2CAP_CONFIG) {
 		if((data = btpbuf_alloc(PBUF_RAW, L2CAP_DISCONN_REQ_SIZE, PBUF_RAM)) == NULL) {
-			ERROR("l2cap_disconnect_req: Could not allocate memory for pbuf\n"); 
+			ERROR("l2cap_disconnect_req: Could not allocate memory for pbuf\n");
 			return ERR_MEM;
 		}
 		pcb->l2ca_disconnect_cfm = l2ca_disconnect_cfm;
@@ -1272,7 +1272,7 @@ err_t l2ca_disconnect_req(struct l2cap_pcb *pcb, err_t (* l2ca_disconnect_cfm)(v
 		ret = l2cap_signal(pcb, L2CAP_DISCONN_REQ, 0, &(pcb->remote_bdaddr), data);
 
 		if(ret == ERR_OK) {
-			pcb->state = W4_L2CAP_DISCONNECT_RSP;  
+			pcb->state = W4_L2CAP_DISCONNECT_RSP;
 		}
 	} else {
 		return ERR_CONN; /* Signal not supported in this state */
@@ -1281,9 +1281,9 @@ err_t l2ca_disconnect_req(struct l2cap_pcb *pcb, err_t (* l2ca_disconnect_cfm)(v
 	return ret;
 }
 /*-----------------------------------------------------------------------------------*/
-/* 
+/*
  * l2ca_datawrite():
- * 
+ *
  * Transfers data across the channel.
  */
 /*-----------------------------------------------------------------------------------*/
@@ -1314,7 +1314,7 @@ err_t l2ca_datawrite(struct l2cap_pcb *pcb, struct pbuf *p)
 		l2caphdr->len = htole16(pcb->cfg.outmtu);
 		if((ret = l2cap_write(&(pcb->remote_bdaddr), q, pcb->cfg.outmtu + L2CAP_HDR_LEN)) == ERR_OK) {
 			//LOG("l2cap_datawrite: Length of data exceeds the OutMTU p->tot_len = %d\n", p->tot_len);
-			ret = ERR_BUF; /* Length of data exceeds the OutMTU */ 
+			ret = ERR_BUF; /* Length of data exceeds the OutMTU */
 		}
 	} else {
 		/* Send peer L2CAP data */
@@ -1330,9 +1330,9 @@ err_t l2ca_datawrite(struct l2cap_pcb *pcb, struct pbuf *p)
 	return ret;
 }
 /*-----------------------------------------------------------------------------------*/
-/* 
+/*
  * l2ca_ping():
- * 
+ *
  * Sends an empty L2CAP echo request message. Also specify the function that should
  * be called when a L2CAP echo reply has been received.
  */
@@ -1360,9 +1360,9 @@ err_t l2ca_ping(struct bd_addr *bdaddr, struct l2cap_pcb *tpcb,
  */
 /*-----------------------------------------------------------------------------------*/
 /*-----------------------------------------------------------------------------------*/
-/* 
+/*
  * lp_connect_cfm():
- * 
+ *
  * Confirms the request to establish a lower layer (Baseband) connection.
  */
 /*-----------------------------------------------------------------------------------*/
@@ -1379,7 +1379,7 @@ void lp_connect_cfm(struct bd_addr *bdaddr, u8_t encrypt_mode, err_t err)
 	}
 	if(pcb == NULL) {
 		/* Silently discard */
-		LOG("lp_connect_cfm: Silently discard\n"); 
+		LOG("lp_connect_cfm: Silently discard\n");
 	} else {
 		if(err == ERR_OK) {
 			pcb->encrypt = encrypt_mode;
@@ -1392,33 +1392,33 @@ void lp_connect_cfm(struct bd_addr *bdaddr, u8_t encrypt_mode, err_t err)
 				} else {
 					L2CA_ACTION_CONN_CFM(pcb,L2CAP_CONN_REF_RES,0x0000,ret); /* No resources available? */
 				}
-				//LOG("lp_connect_cfm: l2cap_conn_req signal sent. err = %d\nPSM = 0x%x\nscid = 0x%x\nencrypt mode = 0x%x\n", err, pcb->psm, pcb->scid, pcb->encrypt); 
+				//LOG("lp_connect_cfm: l2cap_conn_req signal sent. err = %d\nPSM = 0x%x\nscid = 0x%x\nencrypt mode = 0x%x\n", err, pcb->psm, pcb->scid, pcb->encrypt);
 			} else {
-				ERROR("lp_connect_cfm: No resources available\n"); 
+				ERROR("lp_connect_cfm: No resources available\n");
 				L2CA_ACTION_CONN_CFM(pcb,L2CAP_CONN_REF_RES,0x0000,ret); /* No resources available */
 			}
 		} else {
-			ERROR("lp_connect_cfm: Connection falied\n"); 
+			ERROR("lp_connect_cfm: Connection falied\n");
 			L2CA_ACTION_CONN_CFM(pcb,L2CAP_CONN_REF_RES,0x0000,ret); /* No resources available */
 		}
 	}
 }
 /*-----------------------------------------------------------------------------------*/
-/* 
+/*
  * lp_connect_ind():
- * 
+ *
  * Indicates the lower protocol has successfully established a connection.
  */
 /*-----------------------------------------------------------------------------------*/
 void lp_connect_ind(struct bd_addr *bdaddr)
 {
-	LOG("lp_connect_ind\n"); 
+	LOG("lp_connect_ind\n");
 }
 /*-----------------------------------------------------------------------------------*/
-/* 
+/*
  * lp_disconnect_ind():
- * 
- * Indicates the lower protocol (Baseband) has been shut down by LMP commands or a 
+ *
+ * Indicates the lower protocol (Baseband) has been shut down by LMP commands or a
  * timeout event..
  */
 /*-----------------------------------------------------------------------------------*/
@@ -1444,9 +1444,9 @@ void lp_disconnect_ind(struct bd_addr *bdaddr,u8_t reason)
 }
 
 /*-----------------------------------------------------------------------------------*/
-/* 
+/*
  * l2cap_disconnect_bb():
- * 
+ *
  * Register a callback to obtain the disconnection reason from the baseband
  */
 /*-----------------------------------------------------------------------------------*/
@@ -1459,9 +1459,9 @@ void (*l2cap_disconnect_bb(void (*l2ca_disconnect_bb)(struct bd_addr *bdaddr,u8_
 }
 
 /*-----------------------------------------------------------------------------------*/
-/* 
+/*
  * l2cap_next_sigid():
- * 
+ *
  * Issues a signal identifier that helps matching a request with the reply.
  */
 /*-----------------------------------------------------------------------------------*/
@@ -1474,9 +1474,9 @@ u8_t l2cap_next_sigid(void)
 	return sigid_nxt;
 }
 /*-----------------------------------------------------------------------------------*/
-/* 
+/*
  * l2cap_arg():
- * 
+ *
  * Used to specify the argument that should be passed callback functions.
  */
 /*-----------------------------------------------------------------------------------*/
@@ -1486,13 +1486,13 @@ void l2cap_arg(struct l2cap_pcb *pcb, void *arg)
 }
 
 /*-----------------------------------------------------------------------------------*/
-/* 
+/*
  * l2cap_connect_ind():
- * 
- * Set the state of the connection to be LISTEN, which means that it is able to accept 
- * incoming connections. The protocol control block is reallocated in order to consume 
- * less memory. Setting the connection to LISTEN is an irreversible process. Also 
- * specify the function that should be called when the channel has received a 
+ *
+ * Set the state of the connection to be LISTEN, which means that it is able to accept
+ * incoming connections. The protocol control block is reallocated in order to consume
+ * less memory. Setting the connection to LISTEN is an irreversible process. Also
+ * specify the function that should be called when the channel has received a
  * connection request.
  */
 /*-----------------------------------------------------------------------------------*/
@@ -1517,11 +1517,11 @@ err_t l2cap_connect_ind(struct l2cap_pcb *npcb, struct bd_addr *bdaddr, u16_t ps
 }
 
 /*-----------------------------------------------------------------------------------*/
-/* 
+/*
  * l2cap_disconnect_ind():
- * 
- * Used to specify the a function to be called when a disconnection request has been 
- * received from a remote device or the remote device has been disconnected because it 
+ *
+ * Used to specify the a function to be called when a disconnection request has been
+ * received from a remote device or the remote device has been disconnected because it
  * has failed to respond to a signalling request.
  */
 /*-----------------------------------------------------------------------------------*/
@@ -1532,7 +1532,7 @@ void l2cap_disconnect_ind(struct l2cap_pcb *pcb, err_t (* l2ca_disconnect_ind)(v
 /*-----------------------------------------------------------------------------------*/
 /*
  * l2cap_timeout_ind():
- * 
+ *
  * Used to specify the function to be called when RTX or ERTX timer has expired.
  */
 /*-----------------------------------------------------------------------------------*/
@@ -1541,10 +1541,10 @@ void l2cap_timeout_ind(struct l2cap_pcb *pcb,err_t (* l2ca_timeout_ind)(void *ar
 	pcb->l2ca_timeout_ind = l2ca_timeout_ind;
 }
 /*-----------------------------------------------------------------------------------*/
-/* 
+/*
  * l2cap_recv():
- * 
- * Used to specify the function that should be called when a L2CAP connection receives 
+ *
+ * Used to specify the function that should be called when a L2CAP connection receives
  * data.
  */
 /*-----------------------------------------------------------------------------------*/

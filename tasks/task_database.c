@@ -229,7 +229,7 @@ static bool intfstream_file_get_serial(const char *name,
          goto error;
 
       data = (uint8_t*)malloc(size);
-         
+
       if (intfstream_read(fd, data, size) != (ssize_t) size)
       {
          free(data);
@@ -262,7 +262,7 @@ error:
 
 static int task_database_cue_get_serial(const char *name, char* serial)
 {
-   char *track_path                 = (char*)malloc(PATH_MAX_LENGTH 
+   char *track_path                 = (char*)malloc(PATH_MAX_LENGTH
          * sizeof(char));
    int ret                          = 0;
    size_t offset                    = 0;
@@ -390,7 +390,7 @@ static bool intfstream_file_get_crc(const char *name,
       fd = intfstream_open_memory(data, RETRO_VFS_FILE_ACCESS_READ,
             RETRO_VFS_FILE_ACCESS_HINT_NONE, size);
 
-      if (!fd) 
+      if (!fd)
          goto error;
    }
 
@@ -514,7 +514,7 @@ static void task_database_cue_prune(database_info_handle_t *db,
    {
       for (i = db->list_ptr; i < db->list->size; ++i)
       {
-         if (db->list->elems[i].data 
+         if (db->list->elems[i].data
                && !strcmp(path, db->list->elems[i].data))
          {
             RARCH_LOG("Pruning file referenced by cue: %s\n", path);
@@ -1133,7 +1133,7 @@ static void task_database_handler(retro_task_t *task)
             {
                size_t i;
                char *dirname = NULL;
-               
+
                if (!string_is_empty(db->fullpath))
                   dirname    = find_last_slash(db->fullpath) + 1;
 

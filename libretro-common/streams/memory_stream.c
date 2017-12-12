@@ -98,7 +98,7 @@ size_t memstream_read(memstream_t *stream, void *data, size_t bytes)
 
    if (!stream)
       return 0;
-   
+
    avail = stream->size - stream->ptr;
    if (bytes > avail)
       bytes = avail;
@@ -115,7 +115,7 @@ size_t memstream_write(memstream_t *stream, const void *data, size_t bytes)
 
    if (!stream)
       return 0;
-   
+
    avail = stream->size - stream->ptr;
    if (bytes > avail)
       bytes = avail;

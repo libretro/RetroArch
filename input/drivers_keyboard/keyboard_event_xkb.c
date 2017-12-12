@@ -152,7 +152,7 @@ void handle_xkb_state_mask(uint32_t depressed,
    xkb_state_update_mask(xkb_state, depressed, latched, locked, 0, 0, group);
 }
 
-/* FIXME: Don't handle composed and dead-keys properly. 
+/* FIXME: Don't handle composed and dead-keys properly.
  * Waiting for support in libxkbcommon ... */
 int handle_xkb(int code, int value)
 {

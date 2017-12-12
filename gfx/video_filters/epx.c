@@ -196,7 +196,7 @@ static void epx_generic_rgb565 (unsigned width, unsigned height,
 
 static void epx_work_cb_rgb565(void *data, void *thread_data)
 {
-   struct softfilter_thread_data *thr = 
+   struct softfilter_thread_data *thr =
       (struct softfilter_thread_data*)thread_data;
    uint16_t *input = (uint16_t*)thr->in_data;
    uint16_t *output = (uint16_t*)thr->out_data;
@@ -221,7 +221,7 @@ static void epx_generic_packets(void *data,
 
    for (i = 0; i < filt->threads; i++)
    {
-      struct softfilter_thread_data *thr = 
+      struct softfilter_thread_data *thr =
          (struct softfilter_thread_data*)&filt->workers[i];
 
       unsigned y_start = (height * i) / filt->threads;
@@ -233,7 +233,7 @@ static void epx_generic_packets(void *data,
       thr->width = width;
       thr->height = y_end - y_start;
 
-      /* Workers need to know if they can 
+      /* Workers need to know if they can
        * access pixels outside their given buffer. */
       thr->first = y_start;
       thr->last = y_end == height;

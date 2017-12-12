@@ -74,9 +74,9 @@ public:
     TInfoSinkBase& operator<<(const char* s)           { append(s); return *this; }
     TInfoSinkBase& operator<<(int n)                   { append(String(n)); return *this; }
     TInfoSinkBase& operator<<(unsigned int n)          { append(String(n)); return *this; }
-    TInfoSinkBase& operator<<(float n)                 { const int size = 40; char buf[size]; 
+    TInfoSinkBase& operator<<(float n)                 { const int size = 40; char buf[size];
                                                          snprintf(buf, size, (fabs(n) > 1e-8 && fabs(n) < 1e8) || n == 0.0f ? "%f" : "%g", n);
-                                                         append(buf); 
+                                                         append(buf);
                                                          return *this; }
     TInfoSinkBase& operator+(const TPersistString& t)  { append(t); return *this; }
     TInfoSinkBase& operator+(const TString& t)         { append(t); return *this; }
@@ -113,20 +113,20 @@ public:
         append(s);
         append("\n");
     }
-    
+
     void setOutputStream(int output = 4)
     {
         outputStream = output;
     }
 
 protected:
-    void append(const char* s); 
+    void append(const char* s);
 
     void append(int count, char c);
     void append(const TPersistString& t);
     void append(const TString& t);
 
-    void checkMem(size_t growth) { if (sink.capacity() < sink.size() + growth + 2)  
+    void checkMem(size_t growth) { if (sink.capacity() < sink.size() + growth + 2)
                                        sink.reserve(sink.capacity() +  sink.capacity() / 2); }
     void appendToStream(const char* s);
     TPersistString sink;

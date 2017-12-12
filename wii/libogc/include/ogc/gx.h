@@ -1229,9 +1229,9 @@ typedef struct _gx_tlutobj {
  *
  * \details This structure contains precompiled register state setting commands and data. The application must use the
  * GX_InitTexCacheRegion() function to initialize or change this object. The proper size of the object is returned by
- * 
+ *
  * \code sizeof(GXTexRegion) \endcode
- * 
+ *
  * \details but the internal data representation is not visible to the application.
  */
 typedef struct _gx_texreg {
@@ -1747,7 +1747,7 @@ void GX_DrawDone();
  * It makes sure that the texture pipeline is finished with that area of the texture memory prior to changing its usage.
  * This function should be called prior to drawing any primitives that uses the texture memory region in its new mode. It is not
  * necessary to call this command when changing texture memory regions from cached to preloaded (or TLUT), since the commands to
- * load the regions with data will cause the necessary synchronization to happen automatically. 
+ * load the regions with data will cause the necessary synchronization to happen automatically.
  *
  * \return none
  */
@@ -2750,7 +2750,7 @@ void GX_SetTexCoordGen2(u16 texcoord,u32 tgen_typ,u32 tgen_src,u32 mtxsrc,u32 no
  * to the current 16-bit Z format before comparing with the EFB's Z.
  *
  * \note The Z-texture calculation is done before the fog range calculation.<br><br>
- * 
+ *
  * \note GX_Init() disables Z texturing.
  *
  * \param[in] op \ref ztexop to perform
@@ -3500,7 +3500,7 @@ void GX_SetDstAlpha(u8 enable,u8 a);
  * \fn void GX_SetFieldMask(u8 even_mask,u8 odd_mask)
  * \brief selectively enables and disables interlacing of the frame buffer image.
  *
- * \details This function is used when rendering fields to an interlaced Embedded Frame Buffer (EFB). 
+ * \details This function is used when rendering fields to an interlaced Embedded Frame Buffer (EFB).
  *
  * \note When the mask is <tt>GX_FALSE</tt>, that field will not be written to the EFB, but the other field will be computed. In other words, you pay the
  * fill rate price of a frame to produce a field.
@@ -3946,7 +3946,7 @@ void GX_PeekZ(u16 x,u16 y,u32 *z);
  * When \a comp_enable is set to <tt>GX_DISABLE</tt>, poke Z buffering is disabled and the Z buffer is not updated. The \a func parameter determines the
  * comparison that is performed. In the comparison function, the poked Z value is on the left while the Z value from the Z buffer is on the
  * right. If the result of the comparison is false, the poked Z value is discarded. The parameter \a update_enable determines whether or not the
- * Z buffer is updated with the new Z value after a comparison is performed. 
+ * Z buffer is updated with the new Z value after a comparison is performed.
  *
  * \note The normal rendering Z mode (set by GX_SetZMode()) is not affected by this function.<br><br>
  *
@@ -3975,7 +3975,7 @@ u32 GX_GetTexObjFmt(GXTexObj *obj);
 /*!
  * \fn u32 GX_GetTexObjMipMap(GXTexObj *obj)
  * \brief Returns the texture mipmap enable described by texture object \a obj.
- * 
+ *
  * \note Use GX_InitTexObj() or GX_InitTexObjCI() to initialize the texture mipmap enable.
  *
  * \param[in] obj ptr to a texture object

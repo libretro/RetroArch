@@ -34,7 +34,7 @@ int __vita_delete_thread_reent(int thid)
 	// We only need to cleanup if reent is allocated, i.e. if it's on our TLS
 	// We also don't need to clean up the global reent
 	struct _reent **on_tls = NULL;
-	
+
 	if (thid == 0)
 		on_tls = TLS_REENT_PTR;
 	else
@@ -141,16 +141,16 @@ struct _reent *__getreent_for_thread(int thid) {
 
 	// A pointer to our reent should be on the TLS
 	struct _reent **on_tls = NULL;
-	
+
 	if (thid == 0)
 		on_tls = TLS_REENT_PTR;
 	else
-		on_tls = TLS_REENT_THID_PTR(thid);	
-	
+		on_tls = TLS_REENT_THID_PTR(thid);
+
 	if (*on_tls) {
 		return *on_tls;
 	}
-  
+
   	sceKernelLockMutex(_newlib_reent_mutex, 1, 0);
 
 	// If it's not on the TLS this means the thread doesn't have a reent allocated yet

@@ -405,7 +405,7 @@ static void frontend_gx_exitspawn(char *s, size_t len)
          sizeof(salamander_basename));
 
    /* FIXME/TODO - hack
-    * direct loading failed (out of memory), 
+    * direct loading failed (out of memory),
     * try to jump to Salamander,
     * then load the correct core */
    fill_pathname_join(s, g_defaults.dirs[DEFAULT_DIR_CORE],

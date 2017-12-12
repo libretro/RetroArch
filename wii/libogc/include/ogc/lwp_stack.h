@@ -19,7 +19,7 @@ void __lwp_stack_free(lwp_cntrl *);
 #ifdef LIBOGC_INTERNAL
 #include <libogc/lwp_stack.inl>
 #endif
-	
+
 #ifdef __cplusplus
 	}
 #endif

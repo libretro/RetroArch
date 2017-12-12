@@ -2006,7 +2006,7 @@ static int (funcname)(const char *path, const char *label, unsigned type, size_t
    return 0; \
 }
 
-default_action_dialog_start(action_ok_shader_preset_save_as, 
+default_action_dialog_start(action_ok_shader_preset_save_as,
    msg_hash_to_str(MSG_INPUT_PRESET_FILENAME),
    (unsigned)idx,
    menu_input_st_string_cb_save_preset)
@@ -2177,7 +2177,7 @@ static int generic_action_ok_remap_file_operation(const char *path,
    {
       if(input_remapping_remove_file(file))
       {
-         if (action_type == ACTION_OK_REMAP_FILE_REMOVE_CORE && 
+         if (action_type == ACTION_OK_REMAP_FILE_REMOVE_CORE &&
                rarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL))
          {
             rarch_ctl(RARCH_CTL_UNSET_REMAPS_CORE_ACTIVE, NULL);
@@ -3391,7 +3391,7 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
 #ifndef RARCH_CONSOLE
          netplay_discovery_driver_ctl(RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES, &lan_hosts);
          if (lan_hosts)
-            lan_room_count                    = (int)lan_hosts->size;   
+            lan_room_count                    = (int)lan_hosts->size;
 #endif
 
          netplay_rooms_parse(data->data);
@@ -3860,7 +3860,7 @@ static int action_ok_core_delete(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    const char *path_core = path_get(RARCH_PATH_CORE);
-   char *core_path       = !string_is_empty(path_core) 
+   char *core_path       = !string_is_empty(path_core)
       ? strdup(path_core) : NULL;
 
    if (!core_path)

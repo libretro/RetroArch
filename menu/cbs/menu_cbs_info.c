@@ -83,7 +83,7 @@ int menu_cbs_init_bind_info(menu_file_list_cbs_t *cbs,
       return -1;
 
 #ifdef HAVE_CHEEVOS
-   if ((type >= MENU_SETTINGS_CHEEVOS_START) && 
+   if ((type >= MENU_SETTINGS_CHEEVOS_START) &&
       (type < MENU_SETTINGS_NETPLAY_ROOMS_START))
    {
       BIND_ACTION_INFO(cbs, action_info_cheevos);

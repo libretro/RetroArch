@@ -121,7 +121,7 @@ struct uip_pbuf* uip_pbuf_alloc(uip_pbuf_layer layer,u16_t len,uip_pbuf_flag fla
 			UIP_ERROR("uip_pbuf_alloc: bad flag value.\n");
 			return NULL;
 	}
-	
+
 	p->ref = 1;
 	return p;
 }
@@ -147,7 +147,7 @@ u8_t uip_pbuf_free(struct uip_pbuf *p)
 			}
 			cnt++;
 			p = q;
-		} else 
+		} else
 			p = NULL;
 	}
 	return cnt;
@@ -172,7 +172,7 @@ void uip_pbuf_realloc(struct uip_pbuf *p,u16_t new_len)
 
 	if(q->flags==UIP_PBUF_FLAG_RAM && rem_len!=q->len)
 		memr_realloc(q,(u8_t*)q->payload-(u8_t*)q+rem_len);
-	
+
 	q->len = rem_len;
 	q->tot_len = q->len;
 
@@ -207,7 +207,7 @@ u8_t uip_pbuf_header(struct uip_pbuf *p,s16_t hdr_size_inc)
 u8_t uip_pbuf_clen(struct uip_pbuf *p)
 {
 	u8_t len;
-	
+
 	len = 0;
 	while(p!=NULL) {
 		len++;
@@ -241,7 +241,7 @@ void uip_pbuf_queue(struct uip_pbuf *p,struct uip_pbuf *n)
 	if(p==NULL || n==NULL || p==n) return;
 
 	while(p->next!=NULL) p = p->next;
-	
+
 	p->next = n;
 	uip_pbuf_ref(n);
 }
@@ -252,7 +252,7 @@ struct uip_pbuf* uip_pbuf_dequeue(struct uip_pbuf *p)
 	u8_t tail_gone = 1;
 
 	if(p==NULL) return NULL;
-	
+
 	while(p->tot_len!=p->len) p = p->next;
 
 	q = p->next;
@@ -273,13 +273,13 @@ struct uip_pbuf* uip_pbuf_dechain(struct uip_pbuf *p)
 {
 	struct uip_pbuf *q;
 	u8_t tail_gone = 1;
-	
+
 	q = p->next;
 	if(q!=NULL) {
 		q->tot_len = p->tot_len - p->len;
 		p->next = NULL;
 		p->tot_len = p->len;
-		
+
 		tail_gone = uip_pbuf_free(q);
 	}
 

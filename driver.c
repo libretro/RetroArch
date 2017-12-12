@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -145,7 +145,7 @@ static int driver_find_index(const char * label, const char *drv)
 
    str[0] = '\0';
 
-   for (i = 0; 
+   for (i = 0;
          find_driver_nonempty(label, i, str, sizeof(str)) != NULL; i++)
    {
       if (string_is_empty(str))
@@ -253,7 +253,7 @@ static void driver_adjust_system_rates(void)
  *
  * Sets audio and video drivers to nonblock state (if enabled).
  *
- * If nonblock state is false, sets 
+ * If nonblock state is false, sets
  * blocking state for both audio and video drivers instead.
  **/
 void driver_set_nonblock_state(void)
@@ -266,7 +266,7 @@ void driver_set_nonblock_state(void)
       settings_t *settings = config_get_ptr();
       bool video_nonblock  = enable;
 
-      if (     !settings->bools.video_vsync 
+      if (     !settings->bools.video_vsync
             || rarch_ctl(RARCH_CTL_IS_NONBLOCK_FORCED, NULL))
          video_nonblock = true;
       video_driver_set_nonblock_state(video_nonblock);
@@ -279,7 +279,7 @@ void driver_set_nonblock_state(void)
  * driver_update_system_av_info:
  * @data               : pointer to new A/V info
  *
- * Update the system Audio/Video information. 
+ * Update the system Audio/Video information.
  * Will reinitialize audio/video drivers.
  * Used by RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO.
  *
@@ -397,17 +397,17 @@ void drivers_init(int flags)
  **/
 
 /**
- * Driver ownership - set this to true if the platform in question needs to 'own' 
- * the respective handle and therefore skip regular RetroArch 
+ * Driver ownership - set this to true if the platform in question needs to 'own'
+ * the respective handle and therefore skip regular RetroArch
  * driver teardown/reiniting procedure.
  *
- * If  to true, the 'free' function will get skipped. It is 
- * then up to the driver implementation to properly handle 
- * 'reiniting' inside the 'init' function and make sure it 
- * returns the existing handle instead of allocating and 
+ * If  to true, the 'free' function will get skipped. It is
+ * then up to the driver implementation to properly handle
+ * 'reiniting' inside the 'init' function and make sure it
+ * returns the existing handle instead of allocating and
  * returning a pointer to a new handle.
  *
- * Typically, if a driver intends to make use of this, it should 
+ * Typically, if a driver intends to make use of this, it should
  * set this to true at the end of its 'init' function.
  **/
 void driver_uninit(int flags)

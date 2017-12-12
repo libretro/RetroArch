@@ -30,14 +30,14 @@ RETRO_BEGIN_DECLS
 
 enum
 {
-   /* Polling is performed before 
+   /* Polling is performed before
     * call to retro_run. */
    POLL_TYPE_EARLY = 0,
 
    /* Polling is performed when requested. */
    POLL_TYPE_NORMAL,
 
-   /* Polling is performed on first call to 
+   /* Polling is performed on first call to
     * retro_input_state per frame. */
    POLL_TYPE_LATE
 };
@@ -65,7 +65,7 @@ typedef struct rarch_system_info
    const char *input_desc_btn[MAX_USERS][RARCH_FIRST_META_KEY];
    char valid_extensions[255];
 
-   struct retro_disk_control_callback  disk_control_cb; 
+   struct retro_disk_control_callback  disk_control_cb;
    struct retro_location_callback      location_cb;
 
    struct
@@ -79,7 +79,7 @@ typedef struct rarch_system_info
       struct retro_controller_info *data;
       unsigned size;
    } ports;
-   
+
    rarch_memory_map_t mmaps;
 } rarch_system_info_t;
 

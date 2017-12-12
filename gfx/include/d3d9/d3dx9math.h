@@ -362,7 +362,7 @@ typedef struct _D3DMATRIX D3DXMATRIX, *LPD3DXMATRIX;
  * This class helps keep matrices 16-byte aligned as preferred by P4 cpus.
  * It aligns matrices on the stack and on the heap or in global scope.
  * It does this using __declspec(align(16)) which works on VC7 and on VC 6
- * with the processor pack. Unfortunately there is no way to detect the 
+ * with the processor pack. Unfortunately there is no way to detect the
  * latter so this is turned on only on VC7. On other compilers this is the
  * the same as D3DXMATRIX.
  *
@@ -392,7 +392,7 @@ typedef struct _D3DXMATRIXA16 : public D3DXMATRIX
     /* delete operators */
     void operator delete   ( void* );   /* These are NOT virtual; Do not  */
     void operator delete[] ( void* );   /* cast to D3DXMATRIX and delete. */
-    
+
     /* assignment operators */
     _D3DXMATRIXA16& operator = ( CONST D3DXMATRIX& );
 
@@ -662,7 +662,7 @@ D3DXVECTOR2* WINAPI D3DXVec2TransformCoord
 // Transform (x, y, 0, 0) by matrix.
 D3DXVECTOR2* WINAPI D3DXVec2TransformNormal
     ( D3DXVECTOR2 *pOut, CONST D3DXVECTOR2 *pV, CONST D3DXMATRIX *pM );
-     
+
 // Transform Array (x, y, 0, 1) by matrix.
 D3DXVECTOR4* WINAPI D3DXVec2TransformArray
     ( D3DXVECTOR4 *pOut, UINT OutStride, CONST D3DXVECTOR2 *pV, UINT VStride, CONST D3DXMATRIX *pM, UINT n);
@@ -674,8 +674,8 @@ D3DXVECTOR2* WINAPI D3DXVec2TransformCoordArray
 // Transform Array (x, y, 0, 0) by matrix.
 D3DXVECTOR2* WINAPI D3DXVec2TransformNormalArray
     ( D3DXVECTOR2 *pOut, UINT OutStride, CONST D3DXVECTOR2 *pV, UINT VStride, CONST D3DXMATRIX *pM, UINT n );
-    
-    
+
+
 
 #ifdef __cplusplus
 }
@@ -754,14 +754,14 @@ D3DXVECTOR4* WINAPI D3DXVec3Transform
 D3DXVECTOR3* WINAPI D3DXVec3TransformCoord
     ( D3DXVECTOR3 *pOut, CONST D3DXVECTOR3 *pV, CONST D3DXMATRIX *pM );
 
-// Transform (x, y, z, 0) by matrix.  If you transforming a normal by a 
-// non-affine matrix, the matrix you pass to this function should be the 
+// Transform (x, y, z, 0) by matrix.  If you transforming a normal by a
+// non-affine matrix, the matrix you pass to this function should be the
 // transpose of the inverse of the matrix you would use to transform a coord.
 D3DXVECTOR3* WINAPI D3DXVec3TransformNormal
     ( D3DXVECTOR3 *pOut, CONST D3DXVECTOR3 *pV, CONST D3DXMATRIX *pM );
-    
-    
-// Transform Array (x, y, z, 1) by matrix. 
+
+
+// Transform Array (x, y, z, 1) by matrix.
 D3DXVECTOR4* WINAPI D3DXVec3TransformArray
     ( D3DXVECTOR4 *pOut, UINT OutStride, CONST D3DXVECTOR3 *pV, UINT VStride, CONST D3DXMATRIX *pM, UINT n );
 
@@ -769,8 +769,8 @@ D3DXVECTOR4* WINAPI D3DXVec3TransformArray
 D3DXVECTOR3* WINAPI D3DXVec3TransformCoordArray
     ( D3DXVECTOR3 *pOut, UINT OutStride, CONST D3DXVECTOR3 *pV, UINT VStride, CONST D3DXMATRIX *pM, UINT n );
 
-// Transform (x, y, z, 0) by matrix.  If you transforming a normal by a 
-// non-affine matrix, the matrix you pass to this function should be the 
+// Transform (x, y, z, 0) by matrix.  If you transforming a normal by a
+// non-affine matrix, the matrix you pass to this function should be the
 // transpose of the inverse of the matrix you would use to transform a coord.
 D3DXVECTOR3* WINAPI D3DXVec3TransformNormalArray
     ( D3DXVECTOR3 *pOut, UINT OutStride, CONST D3DXVECTOR3 *pV, UINT VStride, CONST D3DXMATRIX *pM, UINT n );
@@ -784,7 +784,7 @@ D3DXVECTOR3* WINAPI D3DXVec3Project
 D3DXVECTOR3* WINAPI D3DXVec3Unproject
     ( D3DXVECTOR3 *pOut, CONST D3DXVECTOR3 *pV, CONST D3DVIEWPORT9 *pViewport,
       CONST D3DXMATRIX *pProjection, CONST D3DXMATRIX *pView, CONST D3DXMATRIX *pWorld);
-      
+
 // Project vector Array from object space into screen space
 D3DXVECTOR3* WINAPI D3DXVec3ProjectArray
     ( D3DXVECTOR3 *pOut, UINT OutStride,CONST D3DXVECTOR3 *pV, UINT VStride,CONST D3DVIEWPORT9 *pViewport,
@@ -871,7 +871,7 @@ D3DXVECTOR4* WINAPI D3DXVec4BaryCentric
 // Transform vector by matrix.
 D3DXVECTOR4* WINAPI D3DXVec4Transform
     ( D3DXVECTOR4 *pOut, CONST D3DXVECTOR4 *pV, CONST D3DXMATRIX *pM );
-    
+
 // Transform vector array by matrix.
 D3DXVECTOR4* WINAPI D3DXVec4TransformArray
     ( D3DXVECTOR4 *pOut, UINT OutStride, CONST D3DXVECTOR4 *pV, UINT VStride, CONST D3DXMATRIX *pM, UINT n );
@@ -903,7 +903,7 @@ FLOAT WINAPI D3DXMatrixDeterminant
     ( CONST D3DXMATRIX *pM );
 
 HRESULT WINAPI D3DXMatrixDecompose
-    ( D3DXVECTOR3 *pOutScale, D3DXQUATERNION *pOutRotation, 
+    ( D3DXVECTOR3 *pOutScale, D3DXQUATERNION *pOutRotation,
 	  D3DXVECTOR3 *pOutTranslation, CONST D3DXMATRIX *pM );
 
 D3DXMATRIX* WINAPI D3DXMatrixTranspose
@@ -968,9 +968,9 @@ D3DXMATRIX* WINAPI D3DXMatrixTransformation
 // Build 2D transformation matrix in XY plane.  NULL arguments are treated as identity.
 // Mout = Msc-1 * Msr-1 * Ms * Msr * Msc * Mrc-1 * Mr * Mrc * Mt
 D3DXMATRIX* WINAPI D3DXMatrixTransformation2D
-    ( D3DXMATRIX *pOut, CONST D3DXVECTOR2* pScalingCenter, 
-      FLOAT ScalingRotation, CONST D3DXVECTOR2* pScaling, 
-      CONST D3DXVECTOR2* pRotationCenter, FLOAT Rotation, 
+    ( D3DXMATRIX *pOut, CONST D3DXVECTOR2* pScalingCenter,
+      FLOAT ScalingRotation, CONST D3DXVECTOR2* pScaling,
+      CONST D3DXVECTOR2* pRotationCenter, FLOAT Rotation,
       CONST D3DXVECTOR2* pTranslation);
 
 // Build affine transformation matrix.  NULL arguments are treated as identity.
@@ -982,7 +982,7 @@ D3DXMATRIX* WINAPI D3DXMatrixAffineTransformation
 // Build 2D affine transformation matrix in XY plane.  NULL arguments are treated as identity.
 // Mout = Ms * Mrc-1 * Mr * Mrc * Mt
 D3DXMATRIX* WINAPI D3DXMatrixAffineTransformation2D
-    ( D3DXMATRIX *pOut, FLOAT Scaling, CONST D3DXVECTOR2* pRotationCenter, 
+    ( D3DXMATRIX *pOut, FLOAT Scaling, CONST D3DXVECTOR2* pRotationCenter,
       FLOAT Rotation, CONST D3DXVECTOR2* pTranslation);
 
 // Build a lookat matrix. (right-handed)
@@ -1126,7 +1126,7 @@ D3DXQUATERNION* WINAPI D3DXQuaternionLn
 // if q = (0, theta * v); exp(q) = (cos(theta), sin(theta) * v)
 D3DXQUATERNION* WINAPI D3DXQuaternionExp
     ( D3DXQUATERNION *pOut, CONST D3DXQUATERNION *pQ );
-      
+
 // Spherical linear interpolation between Q1 (t == 0) and Q2 (t == 1).
 // Expects unit quaternions.
 D3DXQUATERNION* WINAPI D3DXQuaternionSlerp
@@ -1141,11 +1141,11 @@ D3DXQUATERNION* WINAPI D3DXQuaternionSquad
       CONST D3DXQUATERNION *pC, FLOAT t );
 
 // Setup control points for spherical quadrangle interpolation
-// from Q1 to Q2.  The control points are chosen in such a way 
+// from Q1 to Q2.  The control points are chosen in such a way
 // to ensure the continuity of tangents with adjacent segments.
 void WINAPI D3DXQuaternionSquadSetup
     ( D3DXQUATERNION *pAOut, D3DXQUATERNION *pBOut, D3DXQUATERNION *pCOut,
-      CONST D3DXQUATERNION *pQ0, CONST D3DXQUATERNION *pQ1, 
+      CONST D3DXQUATERNION *pQ0, CONST D3DXQUATERNION *pQ1,
       CONST D3DXQUATERNION *pQ2, CONST D3DXQUATERNION *pQ3 );
 
 // Barycentric interpolation.
@@ -1209,7 +1209,7 @@ D3DXPLANE* WINAPI D3DXPlaneFromPoints
 // M should be the inverse transpose of the transformation desired.
 D3DXPLANE* WINAPI D3DXPlaneTransform
     ( D3DXPLANE *pOut, CONST D3DXPLANE *pP, CONST D3DXMATRIX *pM );
-    
+
 // Transform an array of planes by a matrix.  The vectors (a,b,c) must be normal.
 // M should be the inverse transpose of the transformation desired.
 D3DXPLANE* WINAPI D3DXPlaneTransformArray
@@ -1276,7 +1276,7 @@ extern "C" {
 // Calculate Fresnel term given the cosine of theta (likely obtained by
 // taking the dot of two normals), and the refraction index of the material.
 FLOAT WINAPI D3DXFresnelTerm
-    (FLOAT CosTheta, FLOAT RefractionIndex);     
+    (FLOAT CosTheta, FLOAT RefractionIndex);
 
 #ifdef __cplusplus
 }
@@ -1292,7 +1292,7 @@ typedef interface ID3DXMatrixStack ID3DXMatrixStack;
 typedef interface ID3DXMatrixStack *LPD3DXMATRIXSTACK;
 
 // {C7885BA7-F990-4fe7-922D-8515E477DD85}
-DEFINE_GUID(IID_ID3DXMatrixStack, 
+DEFINE_GUID(IID_ID3DXMatrixStack,
 0xc7885ba7, 0xf990, 0x4fe7, 0x92, 0x2d, 0x85, 0x15, 0xe4, 0x77, 0xdd, 0x85);
 
 
@@ -1387,9 +1387,9 @@ DECLARE_INTERFACE_(ID3DXMatrixStack, IUnknown)
 extern "C" {
 #endif
 
-HRESULT WINAPI 
-    D3DXCreateMatrixStack( 
-        DWORD               Flags, 
+HRESULT WINAPI
+    D3DXCreateMatrixStack(
+        DWORD               Flags,
         LPD3DXMATRIXSTACK*  ppStack);
 
 #ifdef __cplusplus
@@ -1402,7 +1402,7 @@ HRESULT WINAPI
 //
 // NOTE:
 //  * Most of these functions can take the same object as in and out parameters.
-//    The exceptions are the rotation functions.  
+//    The exceptions are the rotation functions.
 //
 //  * Out parameters are typically also returned as return values, so that
 //    the output of one function may be used as a parameter to another.
@@ -1426,19 +1426,19 @@ extern "C" {
 
 FLOAT* WINAPI D3DXSHEvalDirection
     (  FLOAT *pOut, UINT Order, CONST D3DXVECTOR3 *pDir );
-    
+
 FLOAT* WINAPI D3DXSHRotate
     ( FLOAT *pOut, UINT Order, CONST D3DXMATRIX *pMatrix, CONST FLOAT *pIn );
-    
+
 FLOAT* WINAPI D3DXSHRotateZ
     ( FLOAT *pOut, UINT Order, FLOAT Angle, CONST FLOAT *pIn );
-    
+
 FLOAT* WINAPI D3DXSHAdd
     ( FLOAT *pOut, UINT Order, CONST FLOAT *pA, CONST FLOAT *pB );
 
 FLOAT* WINAPI D3DXSHScale
     ( FLOAT *pOut, UINT Order, CONST FLOAT *pIn, CONST FLOAT Scale );
-    
+
 FLOAT WINAPI D3DXSHDot
     ( UINT Order, CONST FLOAT *pA, CONST FLOAT *pB );
 
@@ -1456,7 +1456,7 @@ FLOAT* WINAPI D3DXSHMultiply6( FLOAT *pOut, CONST FLOAT *pF, CONST FLOAT *pG);
 //============================================================================
 
 HRESULT WINAPI D3DXSHEvalDirectionalLight
-    ( UINT Order, CONST D3DXVECTOR3 *pDir, 
+    ( UINT Order, CONST D3DXVECTOR3 *pDir,
       FLOAT RIntensity, FLOAT GIntensity, FLOAT BIntensity,
       FLOAT *pROut, FLOAT *pGOut, FLOAT *pBOut );
 
@@ -1469,7 +1469,7 @@ HRESULT WINAPI D3DXSHEvalConeLight
     ( UINT Order, CONST D3DXVECTOR3 *pDir, FLOAT Radius,
       FLOAT RIntensity, FLOAT GIntensity, FLOAT BIntensity,
       FLOAT *pROut, FLOAT *pGOut, FLOAT *pBOut );
-      
+
 HRESULT WINAPI D3DXSHEvalHemisphereLight
     ( UINT Order, CONST D3DXVECTOR3 *pDir, D3DXCOLOR Top, D3DXCOLOR Bottom,
       FLOAT *pROut, FLOAT *pGOut, FLOAT *pBOut );
@@ -1496,7 +1496,7 @@ HRESULT WINAPI D3DXSHEvalHemisphereLight
 //   pGOut
 //      Output SH vector for Green
 //   pBOut
-//      Output SH vector for Blue        
+//      Output SH vector for Blue
 //
 //============================================================================
 

@@ -32,7 +32,7 @@ typedef struct
    int ge_callback_id;
 
    GuSwapBuffersCallback swapBuffersCallback;
-   int swapBuffersBehaviour;	
+   int swapBuffersBehaviour;
 } GuSettings;
 
 typedef struct

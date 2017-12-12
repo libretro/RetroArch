@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -294,7 +294,7 @@ static bool gl_cg_set_coords(void *handle_data, void *shader_data, const struct 
 }
 
 static void gl_cg_set_texture_info(
-      cg_shader_data_t *cg, 
+      cg_shader_data_t *cg,
       const struct cg_fbo_params *params,
       const struct video_tex_info *info)
 {
@@ -316,7 +316,7 @@ static void gl_cg_set_texture_info(
 }
 
 static void gl_cg_set_params(void *data, void *shader_data,
-      unsigned width, unsigned height, 
+      unsigned width, unsigned height,
       unsigned tex_width, unsigned tex_height,
       unsigned out_width, unsigned out_height,
       unsigned frame_count,
@@ -717,7 +717,7 @@ static bool gl_cg_load_imports(void *data)
 
       core_get_memory(&mem_info);
 
-      if ((memtype != -1u) && 
+      if ((memtype != -1u) &&
             (cg->shader->variable[i].addr >= mem_info.size))
       {
          RARCH_ERR("Address out of bounds.\n");
@@ -744,7 +744,7 @@ static bool gl_cg_load_imports(void *data)
       tracker_info.script_is_file = true;
    }
 
-   tracker_info.script_class = 
+   tracker_info.script_class =
       *cg->shader->script_class ? cg->shader->script_class : NULL;
 #endif
 
@@ -1019,7 +1019,7 @@ static void gl_cg_set_program_attributes(void *data, unsigned i)
       attr_buf_tex[0] = attr_buf_vid_size[0] = attr_buf_tex_size[0] =
          attr_buf_coord[0] = '\0';
 
-      snprintf(attr_buf_tex,      sizeof(attr_buf_tex),     
+      snprintf(attr_buf_tex,      sizeof(attr_buf_tex),
             "%s.texture", prev_names[j]);
       snprintf(attr_buf_vid_size, sizeof(attr_buf_vid_size),
             "%s.video_size", prev_names[j]);
@@ -1031,14 +1031,14 @@ static void gl_cg_set_program_attributes(void *data, unsigned i)
       cg->prg[i].prev[j].tex = cgGetNamedParameter(cg->prg[i].fprg,
             attr_buf_tex);
 
-      cg->prg[i].prev[j].vid_size_v = 
+      cg->prg[i].prev[j].vid_size_v =
          cgGetNamedParameter(cg->prg[i].vprg, attr_buf_vid_size);
-      cg->prg[i].prev[j].vid_size_f = 
+      cg->prg[i].prev[j].vid_size_f =
          cgGetNamedParameter(cg->prg[i].fprg, attr_buf_vid_size);
 
-      cg->prg[i].prev[j].tex_size_v = 
+      cg->prg[i].prev[j].tex_size_v =
          cgGetNamedParameter(cg->prg[i].vprg, attr_buf_tex_size);
-      cg->prg[i].prev[j].tex_size_f = 
+      cg->prg[i].prev[j].tex_size_f =
          cgGetNamedParameter(cg->prg[i].fprg, attr_buf_tex_size);
 
       cg->prg[i].prev[j].coord = cgGetNamedParameter(cg->prg[i].vprg,
@@ -1109,7 +1109,7 @@ static void *gl_cg_init(void *data, const char *path)
 
    memset(cg->alias_define, 0, sizeof(cg->alias_define));
 
-   if (    !string_is_empty(path) 
+   if (    !string_is_empty(path)
          && string_is_equal_fast(path_get_extension(path), "cgp", 3))
    {
       if (!gl_cg_load_preset(cg, path))
@@ -1126,12 +1126,12 @@ static void *gl_cg_init(void *data, const char *path)
    for (i = 1; i <= cg->shader->passes; i++)
       gl_cg_set_program_attributes(cg, i);
 
-   /* If we aren't using last pass non-FBO shader, 
+   /* If we aren't using last pass non-FBO shader,
     * this shader will be assumed to be "fixed-function".
     *
     * Just use prg[0] for that pass, which will be
     * pass-through. */
-   cg->prg[cg->shader->passes + 1] = cg->prg[0]; 
+   cg->prg[cg->shader->passes + 1] = cg->prg[0];
 
    /* No need to apply Android hack in Cg. */
    cg->prg[VIDEO_SHADER_STOCK_BLEND]    = cg->prg[0];

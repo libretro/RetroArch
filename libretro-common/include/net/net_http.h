@@ -46,7 +46,7 @@ const char *net_http_connection_url(struct http_connection_t *conn);
 
 struct http_t *net_http_new(struct http_connection_t *conn);
 
-/* You can use this to call net_http_update 
+/* You can use this to call net_http_update
  * only when something will happen; select() it for reading. */
 int net_http_fd(struct http_t *state);
 
@@ -59,8 +59,8 @@ int net_http_status(struct http_t *state);
 
 bool net_http_error(struct http_t *state);
 
-/* Returns the downloaded data. The returned buffer is owned by the 
- * HTTP handler; it's freed by net_http_delete. 
+/* Returns the downloaded data. The returned buffer is owned by the
+ * HTTP handler; it's freed by net_http_delete.
  *
  * If the status is not 20x and accept_error is false, it returns NULL. */
 uint8_t* net_http_data(struct http_t *state, size_t* len, bool accept_error);

@@ -28,7 +28,7 @@
 int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) {
     uint32_t driver_hash = 0;
     settings_t *settings = config_get_ptr();
-	
+
 	if (msg == MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM)
     {
        snprintf(s, len,
@@ -36,7 +36,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
              );
        return 0;
     }
-	
+
     if (msg <= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_END &&
         msg >= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN) {
         unsigned idx = msg - MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN;
@@ -1069,7 +1069,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
         case MENU_ENUM_LABEL_LIBRETRO_LOG_LEVEL:
             snprintf(s, len,
                      "Define o nível de registro de eventos dos \n"
-                             "núcleos libretro. (GET_LOG_INTERFACE) \n" 
+                             "núcleos libretro. (GET_LOG_INTERFACE) \n"
                              " \n"
                              " Se o nível do registro de evento emitido \n"
                              " pelo núcleo libretro for abaixo do nível \n"
@@ -1491,7 +1491,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
         case MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL:
             snprintf(s, len,
                      "Intervalo de Troca da Sincronia Vertical \n"
-                             "(V-Sync). \n" 
+                             "(V-Sync). \n"
                              " \n"
                              "Usa um intervalo de troca personalizado \n"
                              "para V-Sync. Defina para reduzir \n"
@@ -1583,7 +1583,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
             snprintf(s, len, "Habilitar controle do menu por toque.");
             break;
         case MENU_ENUM_LABEL_MENU_WALLPAPER:
-            snprintf(s, len, 
+            snprintf(s, len,
                     "Selecionar uma imagem para definir como \n"
                              "plano de fundo.");
             break;
@@ -2059,7 +2059,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
             snprintf(s, len,
                      "Você pode alterar a transparência de \n"
                              "gamepad virtual indo em \n"
-                             "'%s' -> '%s'. \n" 
+                             "'%s' -> '%s'. \n"
                              " \n"
                              "De lá você pode alterar a transparência, \n"
                              "mudar o tamanho e opacidade dos botões, etc. \n"

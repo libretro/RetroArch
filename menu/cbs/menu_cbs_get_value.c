@@ -361,7 +361,7 @@ static void menu_action_setting_disp_set_label_shader_preset_parameter(
       const char *path,
       char *s2, size_t len2)
 {
-   const struct video_shader_parameter *param = 
+   const struct video_shader_parameter *param =
       menu_shader_manager_get_parameters(
             type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0);
 
@@ -526,7 +526,7 @@ static void menu_action_setting_disp_set_label_input_desc_kbd(
    if (!settings)
       return;
 
-   remap_id = 
+   remap_id =
       settings->uints.input_keymapper_ids[type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN];
 
    for (key_id = 0; key_id < MENU_SETTINGS_INPUT_DESC_KBD_END - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN; key_id++)

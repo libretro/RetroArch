@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -77,9 +77,9 @@ bool linux_terminal_init(void)
 
 void linux_terminal_claim_stdin(void)
 {
-   /* We need to disable use of stdin command interface if 
+   /* We need to disable use of stdin command interface if
     * stdin is supposed to be used for input. */
-   linux_stdin_claimed = true; 
+   linux_stdin_claimed = true;
 }
 
 bool linux_terminal_grab_stdin(void *data)
@@ -114,7 +114,7 @@ bool linux_terminal_disable_input(void)
    sa.sa_flags   = SA_RESTART | SA_RESETHAND;
    sigemptyset(&sa.sa_mask);
 
-   /* Trap some standard termination codes so we 
+   /* Trap some standard termination codes so we
     * can restore the keyboard before we lose control. */
    sigaction(SIGABRT, &sa, NULL);
    sigaction(SIGBUS,  &sa, NULL);

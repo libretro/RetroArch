@@ -107,14 +107,14 @@ typedef struct _D3DCONTENTPROTECTIONCAPS
 #define D3DCPCAPS_SEQUENTIAL_CTR_IV     0x00000100
 #define D3DCPCAPS_ENCRYPTSLICEDATAONLY  0x00000200
 
-DEFINE_GUID(D3DCRYPTOTYPE_AES128_CTR, 
+DEFINE_GUID(D3DCRYPTOTYPE_AES128_CTR,
 0x9b6bd711, 0x4f74, 0x41c9, 0x9e, 0x7b, 0xb, 0xe2, 0xd7, 0xd9, 0x3b, 0x4f);
-DEFINE_GUID(D3DCRYPTOTYPE_PROPRIETARY, 
+DEFINE_GUID(D3DCRYPTOTYPE_PROPRIETARY,
 0xab4e9afd, 0x1d1c, 0x46e6, 0xa7, 0x2f, 0x8, 0x69, 0x91, 0x7b, 0xd, 0xe8);
 
-DEFINE_GUID(D3DKEYEXCHANGE_RSAES_OAEP, 
+DEFINE_GUID(D3DKEYEXCHANGE_RSAES_OAEP,
 0xc1949895, 0xd72a, 0x4a1d, 0x8e, 0x5d, 0xed, 0x85, 0x7d, 0x17, 0x15, 0x20);
-DEFINE_GUID(D3DKEYEXCHANGE_DXVA, 
+DEFINE_GUID(D3DKEYEXCHANGE_DXVA,
 0x43d3775c, 0x38e5, 0x4924, 0x8d, 0x86, 0xd3, 0xfc, 0xcf, 0x15, 0x3e, 0x9b);
 
 #endif /* !D3D_DISABLE_9EX */
@@ -211,7 +211,7 @@ typedef struct _D3DCAPS9
     DWORD   VertexTextureFilterCaps;    /* D3DPTFILTERCAPS for IDirect3DTexture9's for texture, used in vertex shaders */
     DWORD   MaxVShaderInstructionsExecuted; /* maximum number of vertex shader instructions that can be executed */
     DWORD   MaxPShaderInstructionsExecuted; /* maximum number of pixel shader instructions that can be executed */
-    DWORD   MaxVertexShader30InstructionSlots; 
+    DWORD   MaxVertexShader30InstructionSlots;
     DWORD   MaxPixelShader30InstructionSlots;
 } D3DCAPS9;
 
@@ -250,7 +250,7 @@ typedef struct _D3DCAPS9
  */
 #define D3DCAPS3_ALPHA_FULLSCREEN_FLIP_OR_DISCARD   0x00000020L
 
-/* Indicates that the device can perform a gamma correction from 
+/* Indicates that the device can perform a gamma correction from
  * a windowed back buffer containing linear content to the sRGB desktop.
  */
 #define D3DCAPS3_LINEAR_TO_SRGB_PRESENTATION 0x00000080L
@@ -354,7 +354,7 @@ typedef struct _D3DCAPS9
 #define D3DPRASTERCAPS_COLORPERSPECTIVE       0x00400000L /* Device iterates colors perspective correct */
 #define D3DPRASTERCAPS_SCISSORTEST            0x01000000L
 #define D3DPRASTERCAPS_SLOPESCALEDEPTHBIAS    0x02000000L
-#define D3DPRASTERCAPS_DEPTHBIAS              0x04000000L 
+#define D3DPRASTERCAPS_DEPTHBIAS              0x04000000L
 #define D3DPRASTERCAPS_MULTISAMPLE_TOGGLE     0x08000000L
 
 /*
@@ -428,7 +428,7 @@ typedef struct _D3DCAPS9
 #define D3DPTEXTURECAPS_MIPCUBEMAP          0x00010000L /* Device can do mipmapped cube maps */
 #define D3DPTEXTURECAPS_CUBEMAP_POW2        0x00020000L /* Device requires that cubemaps be power-of-2 dimension */
 #define D3DPTEXTURECAPS_VOLUMEMAP_POW2      0x00040000L /* Device requires that volume maps be power-of-2 dimension */
-#define D3DPTEXTURECAPS_NOPROJECTEDBUMPENV  0x00200000L /* Device does not support projected bump env lookup operation 
+#define D3DPTEXTURECAPS_NOPROJECTEDBUMPENV  0x00200000L /* Device does not support projected bump env lookup operation
                                                            in programmable and fixed function pixel shaders */
 
 /*

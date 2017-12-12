@@ -114,7 +114,7 @@ static int dom_read_bin(void *value, uint32_t len, void *data)
    struct dom_reader_state *dom_state = (struct dom_reader_state *)data;
    struct rmsgpack_dom_value *v =
       (struct rmsgpack_dom_value*)dom_reader_state_pop(dom_state);
-   
+
    v->type = RDT_BINARY;
    v->val.binary.len = len;
    v->val.binary.buff = (char *)value;
@@ -487,7 +487,7 @@ int rmsgpack_dom_read_into(RFILE *fd, ...)
          case RDT_STRING:
             buff_value = va_arg(ap, char *);
             uint_value = va_arg(ap, uint64_t *);
-            min_len    = (value->val.string.len + 1 > *uint_value) ? 
+            min_len    = (value->val.string.len + 1 > *uint_value) ?
                *uint_value : value->val.string.len + 1;
             *uint_value = min_len;
 

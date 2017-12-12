@@ -53,13 +53,13 @@ struct uip_netif* uip_netif_add(struct uip_netif *netif,struct uip_ip_addr *ipad
 	netif->state = state;
 	netif->num = netif_num++;
 	netif->input = input;
-	
+
 	uip_netif_setaddr(netif,ipaddr,netmask,gw);
-	
+
 	if(init(netif)!=0) return NULL;
 
 	UIP_LOG("uip_netif_add: netif is up.\n");
-	
+
 	netif->next = uip_netif_list;
 	uip_netif_list = netif;
 
@@ -68,9 +68,9 @@ struct uip_netif* uip_netif_add(struct uip_netif *netif,struct uip_ip_addr *ipad
 
 void uip_netif_setaddr(struct uip_netif *netif,struct uip_ip_addr *ipaddr,struct uip_ip_addr *netmask,struct uip_ip_addr *gw)
 {
-	uip_netif_setipaddr(netif,ipaddr);	
-	uip_netif_setnetmask(netif,netmask);	
-	uip_netif_setgw(netif,gw);	
+	uip_netif_setipaddr(netif,ipaddr);
+	uip_netif_setnetmask(netif,netmask);
+	uip_netif_setgw(netif,gw);
 }
 
 void uip_netif_setipaddr(struct uip_netif *netif,struct uip_ip_addr *ipaddr)
@@ -128,6 +128,6 @@ struct uip_netif* uip_netif_find(const char *name)
 			netif->name[0]==name[0] &&
 			netif->name[1]==name[1]) return netif;
 	}
-	
+
 	return NULL;
 }

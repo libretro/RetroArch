@@ -56,7 +56,7 @@ static void find_first_libretro_core(char *first_file,
 
    RARCH_LOG("Searching for valid libretro implementation in: \"%s\".\n",
          dir);
-   
+
    for (i = 0; i < list->size && !ret; i++)
    {
       char fname[PATH_MAX_LENGTH]           = {0};
@@ -94,7 +94,7 @@ static void find_first_libretro_core(char *first_file,
    dir_list_free(list);
 }
 
-/* Last fallback - we'll need to start the first executable file 
+/* Last fallback - we'll need to start the first executable file
  * we can find in the RetroArch cores directory.
  */
 static void find_and_set_first_file(char *s, size_t len,
@@ -135,9 +135,9 @@ static void salamander_init(char *s, size_t len)
             strlcpy(s, tmp_str, len);
       }
 #ifdef GEKKO
-      /* stupid libfat bug or something; sometimes it says 
+      /* stupid libfat bug or something; sometimes it says
        * the file is there when it doesn't. */
-      else 
+      else
       {
          config_exists = false;
       }

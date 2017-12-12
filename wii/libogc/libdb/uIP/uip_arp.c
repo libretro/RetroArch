@@ -6,7 +6,7 @@
 /**
  * \defgroup uiparp uIP Address Resolution Protocol
  * @{
- * 
+ *
  * The Address Resolution Protocol ARP is used for mapping between IP
  * addresses and link level addresses such as the Ethernet MAC
  * addresses. ARP uses broadcast queries to ask for the link level
@@ -16,7 +16,7 @@
  *
  * \note This ARP implementation only supports Ethernet.
  */
- 
+
 /**
  * \file
  * Implementation of the ARP Address Resolution Protocol.
@@ -26,19 +26,19 @@
 
 /*
  * Copyright (c) 2001-2003, Adam Dunkels.
- * All rights reserved. 
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  * 3. The name of the author may not be used to endorse or promote
  *    products derived from this software without specific prior
- *    written permission.  
+ *    written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS
  * OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -50,7 +50,7 @@
  * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.  
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * This file is part of the uIP TCP/IP stack.
  *
@@ -180,7 +180,7 @@ static s8_t uip_arp_findentry(struct uip_ip_addr *ipaddr,u8_t flags)
 		}
 	}
 	if(empty==UIP_ARPTAB_SIZE && !(flags&ARP_TRY_HARD)) return UIP_ERR_MEM;
-	
+
 	if(empty<UIP_ARPTAB_SIZE) i = empty;
 	else if(old_stable<UIP_ARPTAB_SIZE) i = old_stable;
 	else if(old_pending<UIP_ARPTAB_SIZE) i = old_pending;
@@ -189,7 +189,7 @@ static s8_t uip_arp_findentry(struct uip_ip_addr *ipaddr,u8_t flags)
 	arp_table[i].time = 0;
 	arp_table[i].state = ARP_STATE_EMPTY;
 	if(ipaddr!=NULL) ip_addr_set(&arp_table[i].ipaddr,ipaddr);
-	
+
 	return (s8_t)i;
 }
 
@@ -232,7 +232,7 @@ uip_arp_ipin(struct uip_netif *netif,struct uip_pbuf *p)
 
 	hdr = p->payload;
 	if(!ip_addr_netcmp(&hdr->ip.src,&netif->ip_addr,&netif->netmask)) return;
-	
+
 	uip_arp_update(netif,&hdr->ip.src,&hdr->ethhdr.src,0);
  }
 
@@ -270,12 +270,12 @@ uip_arp_arpin(struct uip_netif *netif,struct uip_eth_addr *ethaddr,struct uip_pb
 		uip_pbuf_free(p);
 		return;
 	}
-	
+
 	hdr = p->payload;
-	
+
 	*(struct uip_ip_addr2*)((void*)&sipaddr) = hdr->sipaddr;
 	*(struct uip_ip_addr2*)((void*)&dipaddr) = hdr->dipaddr;
-	
+
 	if(netif->ip_addr.addr==0) for_us = 0;
 	else for_us = ip_addr_cmp(&dipaddr,&netif->ip_addr);
 
@@ -288,14 +288,14 @@ uip_arp_arpin(struct uip_netif *netif,struct uip_eth_addr *ethaddr,struct uip_pb
 				hdr->opcode = htons(ARP_REPLY);
 				hdr->dipaddr = hdr->sipaddr;
 				hdr->sipaddr = *(struct uip_ip_addr2*)((void*)&netif->ip_addr);
-				
+
 				for(i=0;i<netif->hwaddr_len;i++) {
 					hdr->dhwaddr.addr[i] = hdr->shwaddr.addr[i];
 					hdr->shwaddr.addr[i] = ethaddr->addr[i];
 					hdr->ethhdr.dest.addr[i] = hdr->dhwaddr.addr[i];
 					hdr->ethhdr.src.addr[i] = ethaddr->addr[i];
 				}
-				
+
 				hdr->hwtype = htons(ARP_HWTYPE_ETH);
 				ARPH_HWLEN_SET(hdr,netif->hwaddr_len);
 
@@ -393,7 +393,7 @@ s8_t uip_arp_arpquery(struct uip_netif *netif,struct uip_ip_addr *ipaddr,struct 
 	s8_t err = UIP_ERR_MEM;
 	struct uip_eth_addr *srcaddr = (struct uip_eth_addr*)netif->hwaddr;
 
-	if(ip_addr_isbroadcast(ipaddr,netif) || 
+	if(ip_addr_isbroadcast(ipaddr,netif) ||
 		ip_addr_ismulticast(ipaddr) ||
 		ip_addr_isany(ipaddr)) return UIP_ERR_ARG;
 
@@ -405,7 +405,7 @@ s8_t uip_arp_arpquery(struct uip_netif *netif,struct uip_ip_addr *ipaddr,struct 
 
 	if(q!=NULL) {
 		if(arp_table[i].state==ARP_STATE_STABLE) {
-			
+
 			struct uip_eth_hdr *hdr = q->payload;
 			for(k=0;k<netif->hwaddr_len;k++) {
 				hdr->dest.addr[k] = arp_table[i].ethaddr.addr[k];
@@ -434,7 +434,7 @@ s8_t uip_arp_arprequest(struct uip_netif *netif,struct uip_ip_addr *ipaddr)
 
 	hdr = p->payload;
 	hdr->opcode = htons(ARP_REQUEST);
-	
+
 	for(k=0;k<netif->hwaddr_len;k++) {
 		hdr->shwaddr.addr[k] = srcaddr->addr[k];
 		hdr->dhwaddr.addr[k] = 0;

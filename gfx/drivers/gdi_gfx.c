@@ -493,7 +493,7 @@ static void gdi_set_texture_frame(void *data,
    }
 }
 
-static void gdi_set_osd_msg(void *data, 
+static void gdi_set_osd_msg(void *data,
       video_frame_info_t *video_info,
       const char *msg,
       const void *params, void *font)

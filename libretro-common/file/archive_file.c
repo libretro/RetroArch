@@ -195,7 +195,7 @@ static int file_archive_get_file_list_cb(
 
       if (!file_ext)
          goto error;
-      
+
       if (!string_list_find_elem_prefix(ext_list, ".", file_ext))
       {
          /* keep iterating */
@@ -401,7 +401,7 @@ int file_archive_parse_file_iterate(
          {
             const struct file_archive_file_backend *backend =
                file_archive_get_file_backend(file);
-            int ret                                         = 
+            int ret                                         =
                backend->archive_parse_file_iterate_step(state,
                   valid_exts, userdata, file_cb);
 

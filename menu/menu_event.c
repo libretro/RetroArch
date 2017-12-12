@@ -68,7 +68,7 @@ static int menu_event_pointer(unsigned *action)
       current_input->input_state(current_input_data, joypad_info, binds,
             0, pointer_device, 0, RETRO_DEVICE_ID_POINTER_Y);
 
-   menu_input->pointer.pressed[0]  = current_input->input_state(current_input_data, 
+   menu_input->pointer.pressed[0]  = current_input->input_state(current_input_data,
          joypad_info,
          binds,
          0, pointer_device, 0, RETRO_DEVICE_ID_POINTER_PRESSED);
@@ -101,7 +101,7 @@ static void menu_event_kb_set_internal(unsigned idx, unsigned char key)
 
 /* Set a specific keyboard key.
  *
- * 'down' sets the latch (true would 
+ * 'down' sets the latch (true would
  * mean the key is being pressed down, while 'false' would mean that
  * the key has been released).
  **/
@@ -118,7 +118,7 @@ void menu_event_kb_set(bool down, enum retro_key key)
       menu_event_kb_set_internal(key, ((menu_event_kb_is_set(key) & 1) << 1) | down);
 }
 
-/* 
+/*
  * This function gets called in order to process all input events
  * for the current frame.
  *
@@ -154,10 +154,10 @@ unsigned menu_event(retro_bits_t* p_input, retro_bits_t* p_trigger_input)
    settings_t *settings                    = config_get_ptr();
    static unsigned ok_old                  = 0;
    bool input_swap_override                = input_autoconfigure_get_swap_override();
-   unsigned menu_ok_btn                    = (!input_swap_override && 
+   unsigned menu_ok_btn                    = (!input_swap_override &&
       settings->bools.input_menu_swap_ok_cancel_buttons) ?
       RETRO_DEVICE_ID_JOYPAD_B : RETRO_DEVICE_ID_JOYPAD_A;
-   unsigned menu_cancel_btn                = (!input_swap_override && 
+   unsigned menu_cancel_btn                = (!input_swap_override &&
       settings->bools.input_menu_swap_ok_cancel_buttons) ?
       RETRO_DEVICE_ID_JOYPAD_A : RETRO_DEVICE_ID_JOYPAD_B;
    unsigned ok_current                     = BIT256_GET_PTR(p_input, menu_ok_btn );

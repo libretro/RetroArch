@@ -104,7 +104,7 @@ struct pbuf* btpbuf_alloc(pbuf_layer layer,u16_t len,pbuf_flag flag)
 			ERROR("btpbuf_alloc: bad flag value.\n");
 			return NULL;
 	}
-	
+
 	p->ref = 1;
 	return p;
 }
@@ -133,7 +133,7 @@ u8_t btpbuf_free(struct pbuf *p)
 			}
 			cnt++;
 			p = q;
-		} else 
+		} else
 			p = NULL;
 	}
 	_CPU_ISR_Restore(level);
@@ -160,7 +160,7 @@ void btpbuf_realloc(struct pbuf *p,u16_t new_len)
 
 	if(q->flags==PBUF_FLAG_RAM && rem_len!=q->len)
 		btmemr_realloc(q,(u8_t*)q->payload-(u8_t*)q+rem_len);
-	
+
 	q->len = rem_len;
 	q->tot_len = q->len;
 
@@ -195,7 +195,7 @@ u8_t btpbuf_header(struct pbuf *p,s16_t hdr_size_inc)
 u8_t btpbuf_clen(struct pbuf *p)
 {
 	u8_t len;
-	
+
 	len = 0;
 	while(p!=NULL) {
 		len++;
@@ -233,7 +233,7 @@ void btpbuf_queue(struct pbuf *p,struct pbuf *n)
 	if(p==NULL || n==NULL || p==n) return;
 
 	while(p->next!=NULL) p = p->next;
-	
+
 	p->next = n;
 	btpbuf_ref(n);
 }
@@ -243,7 +243,7 @@ struct pbuf* btpbuf_dequeue(struct pbuf *p)
 	struct pbuf *q;
 
 	if(p==NULL) return NULL;
-	
+
 	while(p->tot_len!=p->len) p = p->next;
 
 	q = p->next;
@@ -262,13 +262,13 @@ struct pbuf* btpbuf_dechain(struct pbuf *p)
 {
 	struct pbuf *q;
 	u8_t tail_gone = 1;
-	
+
 	q = p->next;
 	if(q!=NULL) {
 		q->tot_len = p->tot_len - p->len;
 		p->next = NULL;
 		p->tot_len = p->len;
-		
+
 		tail_gone = btpbuf_free(q);
 	}
 

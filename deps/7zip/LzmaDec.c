@@ -162,7 +162,7 @@ static int MY_FAST_CALL LzmaDec_DecodeReal(CLzmaDec *p, size_t limit, const uint
       ttt = *(prob);
       LZMADEC_NORMALIZE;
       bound = (range >> kNumBitModelTotalBits) * ttt;
-      
+
       if (codes < bound)
       {
          unsigned symbol;
@@ -291,7 +291,7 @@ static int MY_FAST_CALL LzmaDec_DecodeReal(CLzmaDec *p, size_t limit, const uint
          {
             unsigned _limit, offset;
             uint16_t *probLen = prob + LenChoice;
-               
+
             ttt = *(probLen);
             LZMADEC_NORMALIZE;
             bound = (range >> kNumBitModelTotalBits) * ttt;

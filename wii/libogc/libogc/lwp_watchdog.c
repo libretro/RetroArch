@@ -144,7 +144,7 @@ void __lwp_wd_tickle(lwp_queue *queue)
 	if(diff<=0) {
 		do {
 			switch(__lwp_wd_remove(queue,wd)) {
-				case LWP_WD_ACTIVE:	
+				case LWP_WD_ACTIVE:
 					wd->routine(wd->usr_data);
 					break;
 				case LWP_WD_INACTIVE:

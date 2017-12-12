@@ -445,9 +445,9 @@ int huffman_build_tree(struct huffman_decoder* decoder, uint32_t totaldata, uint
 		/* create new node */
 		struct node_t* newnode = &decoder->huffnode[nextalloc++];
 		newnode->parent        = NULL;
-		node0->parent          = 
+		node0->parent          =
          node1->parent       = newnode;
-		newnode->weight        = 
+		newnode->weight        =
          node0->weight + node1->weight;
 
 		/* insert into list at appropriate location */
@@ -476,7 +476,7 @@ int huffman_build_tree(struct huffman_decoder* decoder, uint32_t totaldata, uint
 		if (node->weight > 0)
 		{
 			/* determine the number of bits for this node */
-			for (curnode = node; 
+			for (curnode = node;
                curnode->parent != NULL; curnode = curnode->parent)
 				node->numbits++;
 			if (node->numbits == 0)

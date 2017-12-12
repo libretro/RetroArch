@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -30,7 +30,7 @@ void dbus_ensure_connection(void)
 #ifdef HAVE_DBUS
     DBusError err;
     int ret;
-    
+
     dbus_error_init(&err);
 
     dbus_connection = dbus_bus_get_private(DBUS_BUS_SESSION, &err);

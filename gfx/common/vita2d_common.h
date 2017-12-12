@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -41,12 +41,12 @@ struct vita_overlay_data
 {
    vita2d_texture *tex;
    float x;
-   float y; 
-   float w; 
+   float y;
+   float w;
    float h;
    float tex_x;
-   float tex_y; 
-   float tex_w; 
+   float tex_y;
+   float tex_w;
    float tex_h;
    float alpha_mod;
    float width;
@@ -76,14 +76,14 @@ typedef struct vita_video
    bool should_resize;
 
    vita_menu_t menu;
-   
+
 #ifdef HAVE_OVERLAY
    struct vita_overlay_data *overlay;
    unsigned overlays;
    bool overlay_enable;
    bool overlay_full_screen;
 #endif
-   
+
 } vita_video_t;
 
 #endif

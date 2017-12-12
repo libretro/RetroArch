@@ -43,7 +43,7 @@
 //
 
 
-#define SH_EXPORTING   
+#define SH_EXPORTING
 #include "../Public/ShaderLang.h"
 #include "../MachineIndependent/Versions.h"
 #include "InfoSink.h"
@@ -73,7 +73,7 @@ public:
     TUniformMap() { }
     virtual ~TUniformMap() { }
     virtual TUniformMap* getAsUniformMap() { return this; }
-    virtual int getLocation(const char* name) = 0;    
+    virtual int getLocation(const char* name) = 0;
     virtual TInfoSink& getInfoSink() { return infoSink; }
     TInfoSink infoSink;
 };
@@ -95,7 +95,7 @@ public:
 
     virtual TCompiler* getAsCompiler() { return this; }
     virtual bool linkable() { return haveValidObjectCode; }
-    
+
     TInfoSink& infoSink;
 protected:
     TCompiler& operator=(TCompiler&);
@@ -117,9 +117,9 @@ typedef glslang::TVector<TShHandleBase*> THandleList;
 
 class TLinker : public TShHandleBase {
 public:
-    TLinker(EShExecutable e, TInfoSink& iSink) : 
+    TLinker(EShExecutable e, TInfoSink& iSink) :
         infoSink(iSink),
-        executable(e), 
+        executable(e),
         haveReturnableObjectCode(false),
         appAttributeBindings(0),
         fixedAttributeBindings(0),
@@ -147,7 +147,7 @@ protected:
     const ShBindingTable* fixedAttributeBindings;
     const int* excludedAttributes;
     int excludedCount;
-    ShBindingTable* uniformBindings;                // created by the linker    
+    ShBindingTable* uniformBindings;                // created by the linker
 };
 
 //
@@ -155,7 +155,7 @@ protected:
 // and the machine dependent code.
 //
 // The machine dependent code should derive from the classes
-// above. Then Construct*() and Delete*() will create and 
+// above. Then Construct*() and Delete*() will create and
 // destroy the machine dependent objects, which contain the
 // above machine independent information.
 //
@@ -165,7 +165,7 @@ TShHandleBase* ConstructLinker(EShExecutable, int);
 TShHandleBase* ConstructBindings();
 void DeleteLinker(TShHandleBase*);
 void DeleteBindingList(TShHandleBase* bindingList);
-    
+
 TUniformMap* ConstructUniformMap();
 void DeleteCompiler(TCompiler*);
 

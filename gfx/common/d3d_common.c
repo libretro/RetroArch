@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -111,7 +111,7 @@ LPDIRECT3DTEXTURE d3d_texture_new(LPDIRECT3DDEVICE dev,
       const char *path, unsigned width, unsigned height,
       unsigned miplevels, unsigned usage, D3DFORMAT format,
       D3DPOOL pool, unsigned filter, unsigned mipfilter,
-      D3DCOLOR color_key, void *src_info_data, 
+      D3DCOLOR color_key, void *src_info_data,
       PALETTEENTRY *palette)
 {
    HRESULT hr;
@@ -535,7 +535,7 @@ void d3d_clear(LPDIRECT3DDEVICE dev,
 #if defined(_XBOX1)
    D3DDevice_Clear(count, rects, flags, color, z, stencil);
 #elif defined(_XBOX360)
-   D3DDevice_Clear(dev, count, rects, flags, color, z, 
+   D3DDevice_Clear(dev, count, rects, flags, color, z,
          stencil, false);
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DDevice9_Clear(dev, count, rects, flags,
@@ -646,10 +646,10 @@ void d3d_set_texture(LPDIRECT3DDEVICE dev, unsigned sampler,
 #if defined(_XBOX1)
    D3DDevice_SetTexture(sampler, tex);
 #elif defined(_XBOX360)
-   unsigned fetchConstant = 
+   unsigned fetchConstant =
       GPU_CONVERT_D3D_TO_HARDWARE_TEXTUREFETCHCONSTANT(sampler);
-   uint64_t pendingMask3 = 
-      D3DTAG_MASKENCODE(D3DTAG_START(D3DTAG_FETCHCONSTANTS) 
+   uint64_t pendingMask3 =
+      D3DTAG_MASKENCODE(D3DTAG_START(D3DTAG_FETCHCONSTANTS)
             + fetchConstant, D3DTAG_START(D3DTAG_FETCHCONSTANTS)
             + fetchConstant);
 #if defined(__cplusplus)
@@ -976,7 +976,7 @@ D3DTEXTUREFILTERTYPE d3d_translate_filter(unsigned type)
    return D3DTEXF_POINT;
 }
 
- 
+
 void *d3d_matrix_transpose(void *_pout, const void *_pm)
 {
    unsigned i,j;

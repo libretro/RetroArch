@@ -3163,7 +3163,7 @@ static int cheevos_iterate(coro_t* coro)
 
    {
       settings_t *settings = config_get_ptr();
-      if (!string_is_equal(settings->arrays.menu_driver, "xmb") || 
+      if (!string_is_equal(settings->arrays.menu_driver, "xmb") ||
             !settings->bools.cheevos_badges_enable)
          CORO_RET();
    }
@@ -3182,7 +3182,7 @@ static int cheevos_iterate(coro_t* coro)
          if (!path_is_directory(CHEEVOS_VAR_BADGE_BASE_PATH))
             path_mkdir(CHEEVOS_VAR_BADGE_BASE_PATH);
          CORO_YIELD();
-         if (CHEEVOS_VAR_J == 0) 
+         if (CHEEVOS_VAR_J == 0)
             snprintf(CHEEVOS_VAR_BADGE_NAME, sizeof(CHEEVOS_VAR_BADGE_NAME), "%s.png", CHEEVOS_VAR_CHEEVO_CURR->badge);
          else
             snprintf(CHEEVOS_VAR_BADGE_NAME, sizeof(CHEEVOS_VAR_BADGE_NAME), "%s_lock.png", CHEEVOS_VAR_CHEEVO_CURR->badge);

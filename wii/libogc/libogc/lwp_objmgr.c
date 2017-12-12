@@ -22,7 +22,7 @@ void __lwp_objmgr_initinfo(lwp_objinfo *info,u32 max_nodes,u32 node_size)
 	lwp_obj *object;
 	lwp_queue inactives;
 	void **local_table;
-	
+
 	info->min_id = 0;
 	info->max_id = 0;
 	info->inactives_cnt = 0;

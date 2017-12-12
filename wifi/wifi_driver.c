@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2014-2017 - Jean-André Santoni
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -137,7 +137,7 @@ bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)
       case RARCH_WIFI_CTL_OWNS_DRIVER:
          return wifi_driver_data_own;
       case RARCH_WIFI_CTL_SET_ACTIVE:
-         wifi_driver_active = true; 
+         wifi_driver_active = true;
          break;
       case RARCH_WIFI_CTL_FIND_DRIVER:
          {
@@ -172,10 +172,10 @@ bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)
          }
          break;
       case RARCH_WIFI_CTL_UNSET_ACTIVE:
-         wifi_driver_active = false; 
+         wifi_driver_active = false;
          break;
       case RARCH_WIFI_CTL_IS_ACTIVE:
-        return wifi_driver_active; 
+        return wifi_driver_active;
       case RARCH_WIFI_CTL_DEINIT:
         if (wifi_data && wifi_driver)
         {
@@ -186,8 +186,8 @@ bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)
         wifi_data = NULL;
         break;
       case RARCH_WIFI_CTL_STOP:
-        if (     wifi_driver 
-              && wifi_driver->stop 
+        if (     wifi_driver
+              && wifi_driver->stop
               && wifi_data)
            wifi_driver->stop(wifi_data);
         break;
@@ -226,6 +226,6 @@ bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)
       default:
          break;
    }
-   
+
    return false;
 }

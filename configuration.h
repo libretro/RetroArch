@@ -38,7 +38,7 @@
 { \
    settings->modified = true; \
    var = newvar; \
-} 
+}
 
 #define configuration_set_uint(settings, var, newvar) \
 { \

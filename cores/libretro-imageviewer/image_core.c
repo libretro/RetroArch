@@ -274,7 +274,7 @@ bool IMAGE_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
    dir_list_sort(file_list, false);
    free(dir);
 
-  
+
    if (!IMAGE_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
    {
       if (IMAGE_CORE_PREFIX(log_cb))
@@ -437,7 +437,7 @@ void IMAGE_CORE_PREFIX(retro_run)(void)
          {
             uint32_t pixel = *buf;
             uint32_t a = pixel >> 24;
-            
+
             if (a == 255)
                *buf = (pixel & 0x0000ff00) | ((pixel << 16) & 0x00ff0000) | ((pixel >> 16) & 0x000000ff);
             else
@@ -446,11 +446,11 @@ void IMAGE_CORE_PREFIX(retro_run)(void)
                uint32_t g = (pixel & 0x00ff00) >> 8;
                uint32_t b = (pixel & 0xff0000) >> 16;
                uint32_t bg = ((x & 8) ^ (y & 8)) ? 0x66 : 0x99;
-               
+
                r = a * r / 255 + (255 - a) * bg / 255;
                g = a * g / 255 + (255 - a) * bg / 255;
                b = a * b / 255 + (255 - a) * bg / 255;
-               
+
                *buf = r << 16 | g << 8 | b;
             }
          }

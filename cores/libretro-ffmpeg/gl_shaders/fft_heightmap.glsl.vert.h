@@ -21,7 +21,7 @@ static const char *fft_vertex_program_heightmap = GLSL_300(
 
      float lod = log2(world_pos.z + 1.0) - 6.0;
      vec4 heights = textureLod(sHeight, tex_coord, lod);
-   
+
      float cangle = cos(angle);
      float sangle = sin(angle);
 

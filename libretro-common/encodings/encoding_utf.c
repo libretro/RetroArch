@@ -282,7 +282,7 @@ static char* mb_to_mb_string_alloc(const char *str,
 
    if (!str || !*str)
       return NULL;
-    
+
    (void)path_buf;
    (void)path_buf_wide;
    (void)path_buf_len;
@@ -390,7 +390,7 @@ wchar_t* utf8_to_utf16_string_alloc(const char *str)
    if (len)
    {
       buf = (wchar_t*)calloc(len, sizeof(wchar_t));
-      
+
       if (!buf)
          return NULL;
 
@@ -424,7 +424,7 @@ wchar_t* utf8_to_utf16_string_alloc(const char *str)
    if (len)
    {
       buf = (wchar_t*)calloc(len, sizeof(wchar_t));
-      
+
       if (!buf)
          return NULL;
 

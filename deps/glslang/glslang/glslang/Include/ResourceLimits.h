@@ -81,7 +81,7 @@ struct TBuiltInResource {
     int maxComputeImageUniforms;
     int maxComputeAtomicCounters;
     int maxComputeAtomicCounterBuffers;
-    int maxVaryingComponents; 
+    int maxVaryingComponents;
     int maxVertexOutputComponents;
     int maxGeometryInputComponents;
     int maxGeometryOutputComponents;

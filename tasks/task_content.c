@@ -468,7 +468,7 @@ static bool content_file_init_extract(
 
          temp_content[0] = new_path[0] = '\0';
 
-         strlcpy(temp_content, path, 
+         strlcpy(temp_content, path,
                PATH_MAX_LENGTH * sizeof(char));
 
          if (!valid_ext || !file_archive_extract_file(
@@ -549,7 +549,7 @@ static bool content_file_load(
       {
          strlcpy(msg,
                msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT),
-               msg_size 
+               msg_size
                );
          *error_string = strdup(msg);
          goto error;
@@ -635,7 +635,7 @@ error:
    return false;
 }
 
-static const struct 
+static const struct
 retro_subsystem_info *content_file_init_subsystem(
       content_information_ctx_t *content_ctx,
       char **error_string,
@@ -663,7 +663,7 @@ retro_subsystem_info *content_file_init_subsystem(
    {
       strlcpy(msg,
             msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT),
-            path_size 
+            path_size
             );
       *error_string = strdup(msg);
       goto error;
@@ -737,7 +737,7 @@ static bool content_file_init_set_attribs(
       attr.i              |= (!contentless)  << 2;
 
       if (path_is_empty(RARCH_PATH_CONTENT)
-            && contentless 
+            && contentless
             && content_ctx->set_supports_no_game_enable)
          string_list_append(content, "", attr);
       else
@@ -768,14 +768,14 @@ static bool content_file_init(
       char **error_string)
 {
    struct retro_game_info               *info = NULL;
-   bool ret                                   = 
-      path_is_empty(RARCH_PATH_SUBSYSTEM) 
+   bool ret                                   =
+      path_is_empty(RARCH_PATH_SUBSYSTEM)
       ? true : false;
-   const struct retro_subsystem_info *special = 
-      path_is_empty(RARCH_PATH_SUBSYSTEM) 
+   const struct retro_subsystem_info *special =
+      path_is_empty(RARCH_PATH_SUBSYSTEM)
       ? NULL : content_file_init_subsystem(content_ctx, error_string, &ret);
 
-   if (  !ret || 
+   if (  !ret ||
          !content_file_init_set_attribs(content, special, content_ctx, error_string))
       return false;
 
@@ -864,7 +864,7 @@ static bool task_load_content(content_ctx_info_t *content_info,
       {
          if (!path_is_empty(RARCH_PATH_CONTENT) && !string_is_empty(name))
          {
-            snprintf(msg, 
+            snprintf(msg,
                   255 * sizeof(char), "%s %s.\n",
                   msg_hash_to_str(MSG_FAILED_TO_LOAD),
                   name);
@@ -955,7 +955,7 @@ static bool task_load_content(content_ctx_info_t *content_info,
             label = global->name.label;
 
          if (
-               content_ctx->history_list_enable 
+               content_ctx->history_list_enable
                && playlist_tmp)
             command_playlist_push_write(
                   playlist_tmp,
@@ -1031,12 +1031,12 @@ static bool firmware_update_status(
    }
 
    RARCH_LOG("Updating firmware status for: %s on %s\n",
-         core_info->path, 
+         core_info->path,
          firmware_info.directory.system);
    core_info_list_update_missing_firmware(&firmware_info);
 
    if(
-         content_ctx->bios_is_missing && 
+         content_ctx->bios_is_missing &&
          content_ctx->check_firmware_before_loading)
    {
       runloop_msg_queue_push(
@@ -1151,7 +1151,7 @@ bool task_push_load_content_from_playlist_from_menu(
       void *user_data)
 {
    content_information_ctx_t content_ctx;
-  
+
    bool ret                                   = true;
    char *error_string                         = NULL;
    global_t *global                           = global_get_ptr();
@@ -1250,7 +1250,7 @@ end:
 bool task_push_start_current_core(content_ctx_info_t *content_info)
 {
    content_information_ctx_t content_ctx;
-  
+
    bool ret                                   = true;
    char *error_string                         = NULL;
    global_t *global                           = global_get_ptr();
@@ -1380,7 +1380,7 @@ bool task_push_load_content_with_new_core_from_menu(
       void *user_data)
 {
    content_information_ctx_t content_ctx;
-  
+
    bool ret                                   = true;
    char *error_string                         = NULL;
    global_t *global                           = global_get_ptr();
@@ -1454,7 +1454,7 @@ bool task_push_load_content_with_new_core_from_menu(
    }
 
 #else
-   command_event_cmd_exec(path_get(RARCH_PATH_CONTENT), &content_ctx, 
+   command_event_cmd_exec(path_get(RARCH_PATH_CONTENT), &content_ctx,
          false, &error_string);
    command_event(CMD_EVENT_QUIT, NULL);
 #endif
@@ -1776,7 +1776,7 @@ bool content_init(void)
       if (!string_is_empty(global->name.ups))
          content_ctx.name_ups                 = strdup(global->name.ups);
    }
-   
+
    if (sys_info)
    {
       content_ctx.history_list_enable         = settings->bools.history_list_enable;
@@ -1799,7 +1799,7 @@ bool content_init(void)
    _content_is_inited = true;
    content            = string_list_new();
 
-   if (     !temporary_content 
+   if (     !temporary_content
          || !content_file_init(&content_ctx, content, &error_string))
    {
       content_deinit();

@@ -181,7 +181,7 @@ static void nk_menu_get_message(void *data, const char *message)
    strlcpy(nk->box_message, message, sizeof(nk->box_message));
 }
 
-/* this is the main control function, it opens and closes windows and will 
+/* this is the main control function, it opens and closes windows and will
    control the logic of the whole menu driver */
 static void nk_menu_main(nk_menu_handle_t *nk)
 {
@@ -210,7 +210,7 @@ static void nk_menu_frame(void *data, video_frame_info_t *video_info)
       0.98, 0.98, 0.98, 1,
       0.98, 0.98, 0.98, 1,
    };
-   
+
 
    for (i = 0; i < 16; i++)
    {
@@ -357,7 +357,7 @@ static bool nk_menu_init_list(void *data)
    info.enum_idx = MENU_ENUM_LABEL_HISTORY_TAB;
 
    menu_entries_append_enum(menu_stack,
-         info.path, info.label, MSG_UNKNOWN, 
+         info.path, info.label, MSG_UNKNOWN,
          info.type, info.flags, 0);
 
    command_event(CMD_EVENT_HISTORY_INIT, NULL);

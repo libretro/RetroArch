@@ -90,15 +90,15 @@ bool input_remapping_load_file(void *data, const char *path)
             if (config_get_int(conf, keymapper_ident[j], &key_remap))
             {
                settings->uints.input_keymapper_ids[j] = key_remap;
-#if 0               
+#if 0
                RARCH_LOG ("%s: %u\n", keymapper_ident[j], settings->uints.input_keymapper_ids[j]);
 #endif
             }
-            else   
+            else
                settings->uints.input_keymapper_ids[j] = RETROK_UNKNOWN;
          }
-            
-         
+
+
       }
 
       for (j = 0; j < 4; j++)
@@ -244,7 +244,7 @@ bool input_remapping_remove_file(const char *path)
    ret = path_file_remove(remap_file) == 0 ? true : false;;
    free(buf);
    free(remap_file);
-   return ret; 
+   return ret;
 }
 
 void input_remapping_set_defaults(bool deinit)
@@ -252,7 +252,7 @@ void input_remapping_set_defaults(bool deinit)
    unsigned i, j;
    settings_t *settings = config_get_ptr();
    global_t *global = global_get_ptr();
-   
+
    if (!global)
       return;
 
@@ -273,7 +273,7 @@ void input_remapping_set_defaults(bool deinit)
          if (keybind)
             settings->uints.input_remap_ids[i][j] = keybind->id;
          settings->uints.input_keymapper_ids[j] = RETROK_UNKNOWN;
-         
+
       }
       for (j = 0; j < 4; j++)
          settings->uints.input_remap_ids[i][RARCH_FIRST_CUSTOM_BIND + j] = j;

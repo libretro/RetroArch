@@ -108,7 +108,7 @@ typedef interface ID3DXEffectPool ID3DXEffectPool;
 typedef interface ID3DXEffectPool *LPD3DXEFFECTPOOL;
 
 // {9537AB04-3250-412e-8213-FCD2F8677933}
-DEFINE_GUID(IID_ID3DXEffectPool, 
+DEFINE_GUID(IID_ID3DXEffectPool,
 0x9537ab04, 0x3250, 0x412e, 0x82, 0x13, 0xfc, 0xd2, 0xf8, 0x67, 0x79, 0x33);
 
 
@@ -134,7 +134,7 @@ typedef interface ID3DXBaseEffect ID3DXBaseEffect;
 typedef interface ID3DXBaseEffect *LPD3DXBASEEFFECT;
 
 // {017C18AC-103F-4417-8C51-6BF6EF1E56BE}
-DEFINE_GUID(IID_ID3DXBaseEffect, 
+DEFINE_GUID(IID_ID3DXBaseEffect,
 0x17c18ac, 0x103f, 0x4417, 0x8c, 0x51, 0x6b, 0xf6, 0xef, 0x1e, 0x56, 0xbe);
 
 
@@ -209,7 +209,7 @@ DECLARE_INTERFACE_(ID3DXBaseEffect, IUnknown)
 
     //Set Range of an Array to pass to device
     //Useful for sending only a subrange of an array down to the device
-    STDMETHOD(SetArrayRange)(THIS_ D3DXHANDLE hParameter, UINT uStart, UINT uEnd) PURE; 
+    STDMETHOD(SetArrayRange)(THIS_ D3DXHANDLE hParameter, UINT uStart, UINT uEnd) PURE;
 
 };
 
@@ -217,7 +217,7 @@ DECLARE_INTERFACE_(ID3DXBaseEffect, IUnknown)
 //----------------------------------------------------------------------------
 // ID3DXEffectStateManager:
 // ------------------------
-// This is a user implemented interface that can be used to manage device 
+// This is a user implemented interface that can be used to manage device
 // state changes made by an Effect.
 //----------------------------------------------------------------------------
 
@@ -225,7 +225,7 @@ typedef interface ID3DXEffectStateManager ID3DXEffectStateManager;
 typedef interface ID3DXEffectStateManager *LPD3DXEFFECTSTATEMANAGER;
 
 // {79AAB587-6DBC-4fa7-82DE-37FA1781C5CE}
-DEFINE_GUID(IID_ID3DXEffectStateManager, 
+DEFINE_GUID(IID_ID3DXEffectStateManager,
 0x79aab587, 0x6dbc, 0x4fa7, 0x82, 0xde, 0x37, 0xfa, 0x17, 0x81, 0xc5, 0xce);
 
 #undef INTERFACE
@@ -240,11 +240,11 @@ DECLARE_INTERFACE_(ID3DXEffectStateManager, IUnknown)
     STDMETHOD_(ULONG, AddRef)(THIS) PURE;
     STDMETHOD_(ULONG, Release)(THIS) PURE;
 
-    // The following methods are called by the Effect when it wants to make 
+    // The following methods are called by the Effect when it wants to make
     // the corresponding device call.  Note that:
-    // 1. Users manage the state and are therefore responsible for making the 
-    //    the corresponding device calls themselves inside their callbacks.  
-    // 2. Effects pay attention to the return values of the callbacks, and so 
+    // 1. Users manage the state and are therefore responsible for making the
+    //    the corresponding device calls themselves inside their callbacks.
+    // 2. Effects pay attention to the return values of the callbacks, and so
     //    users must pay attention to what they return in their callbacks.
 
     STDMETHOD(SetTransform)(THIS_ D3DTRANSFORMSTATETYPE State, CONST D3DMATRIX *pMatrix) PURE;
@@ -276,7 +276,7 @@ typedef interface ID3DXEffect ID3DXEffect;
 typedef interface ID3DXEffect *LPD3DXEFFECT;
 
 // {F6CEB4B3-4E4C-40dd-B883-8D8DE5EA0CD5}
-DEFINE_GUID(IID_ID3DXEffect, 
+DEFINE_GUID(IID_ID3DXEffect,
 0xf6ceb4b3, 0x4e4c, 0x40dd, 0xb8, 0x83, 0x8d, 0x8d, 0xe5, 0xea, 0xc, 0xd5);
 
 #undef INTERFACE
@@ -350,10 +350,10 @@ DECLARE_INTERFACE_(ID3DXEffect, ID3DXBaseEffect)
 
 	//Set Range of an Array to pass to device
 	//Usefull for sending only a subrange of an array down to the device
-	STDMETHOD(SetArrayRange)(THIS_ D3DXHANDLE hParameter, UINT uStart, UINT uEnd) PURE; 
+	STDMETHOD(SetArrayRange)(THIS_ D3DXHANDLE hParameter, UINT uStart, UINT uEnd) PURE;
 	// ID3DXBaseEffect
-    
-    
+
+
     // Pool
     STDMETHOD(GetPool)(THIS_ LPD3DXEFFECTPOOL* ppPool) PURE;
 
@@ -394,7 +394,7 @@ DECLARE_INTERFACE_(ID3DXEffect, ID3DXBaseEffect)
 
     // Cloning
     STDMETHOD(CloneEffect)(THIS_ LPDIRECT3DDEVICE9 pDevice, LPD3DXEFFECT* ppEffect) PURE;
-    
+
     // Fast path for setting variables directly in ID3DXEffect
     STDMETHOD(SetRawValue)(THIS_ D3DXHANDLE hParameter, LPCVOID pData, UINT ByteOffset, UINT Bytes) PURE;
 };
@@ -407,7 +407,7 @@ typedef interface ID3DXEffectCompiler ID3DXEffectCompiler;
 typedef interface ID3DXEffectCompiler *LPD3DXEFFECTCOMPILER;
 
 // {51B8A949-1A31-47e6-BEA0-4B30DB53F1E0}
-DEFINE_GUID(IID_ID3DXEffectCompiler, 
+DEFINE_GUID(IID_ID3DXEffectCompiler,
 0x51b8a949, 0x1a31, 0x47e6, 0xbe, 0xa0, 0x4b, 0x30, 0xdb, 0x53, 0xf1, 0xe0);
 
 
@@ -479,10 +479,10 @@ DECLARE_INTERFACE_(ID3DXEffectCompiler, ID3DXBaseEffect)
     STDMETHOD(GetTexture)(THIS_ D3DXHANDLE hParameter, LPDIRECT3DBASETEXTURE9 *ppTexture) PURE;
     STDMETHOD(GetPixelShader)(THIS_ D3DXHANDLE hParameter, LPDIRECT3DPIXELSHADER9 *ppPShader) PURE;
     STDMETHOD(GetVertexShader)(THIS_ D3DXHANDLE hParameter, LPDIRECT3DVERTEXSHADER9 *ppVShader) PURE;
-    
+
 	//Set Range of an Array to pass to device
 	//Usefull for sending only a subrange of an array down to the device
-	STDMETHOD(SetArrayRange)(THIS_ D3DXHANDLE hParameter, UINT uStart, UINT uEnd) PURE; 
+	STDMETHOD(SetArrayRange)(THIS_ D3DXHANDLE hParameter, UINT uStart, UINT uEnd) PURE;
 	// ID3DXBaseEffect
 
     // Parameter sharing, specialization, and information
@@ -588,7 +588,7 @@ HRESULT WINAPI
         LPCSTR                          pSrcFile,
         CONST D3DXMACRO*                pDefines,
         LPD3DXINCLUDE                   pInclude,
-        LPCSTR                          pSkipConstants, 
+        LPCSTR                          pSkipConstants,
         DWORD                           Flags,
         LPD3DXEFFECTPOOL                pPool,
         LPD3DXEFFECT*                   ppEffect,
@@ -600,7 +600,7 @@ HRESULT WINAPI
         LPCWSTR                         pSrcFile,
         CONST D3DXMACRO*                pDefines,
         LPD3DXINCLUDE                   pInclude,
-        LPCSTR                          pSkipConstants, 
+        LPCSTR                          pSkipConstants,
         DWORD                           Flags,
         LPD3DXEFFECTPOOL                pPool,
         LPD3DXEFFECT*                   ppEffect,
@@ -620,7 +620,7 @@ HRESULT WINAPI
         LPCSTR                          pSrcResource,
         CONST D3DXMACRO*                pDefines,
         LPD3DXINCLUDE                   pInclude,
-        LPCSTR                          pSkipConstants, 
+        LPCSTR                          pSkipConstants,
         DWORD                           Flags,
         LPD3DXEFFECTPOOL                pPool,
         LPD3DXEFFECT*                   ppEffect,
@@ -633,7 +633,7 @@ HRESULT WINAPI
         LPCWSTR                         pSrcResource,
         CONST D3DXMACRO*                pDefines,
         LPD3DXINCLUDE                   pInclude,
-        LPCSTR                          pSkipConstants, 
+        LPCSTR                          pSkipConstants,
         DWORD                           Flags,
         LPD3DXEFFECTPOOL                pPool,
         LPD3DXEFFECT*                   ppEffect,
@@ -653,7 +653,7 @@ HRESULT WINAPI
         UINT                            SrcDataLen,
         CONST D3DXMACRO*                pDefines,
         LPD3DXINCLUDE                   pInclude,
-        LPCSTR                          pSkipConstants, 
+        LPCSTR                          pSkipConstants,
         DWORD                           Flags,
         LPD3DXEFFECTPOOL                pPool,
         LPD3DXEFFECT*                   ppEffect,
@@ -721,10 +721,10 @@ HRESULT WINAPI
         LPD3DXEFFECTCOMPILER*           ppCompiler,
         LPD3DXBUFFER*                   ppParseErrors);
 
-HRESULT WINAPI 
+HRESULT WINAPI
     D3DXDisassembleEffect(
-        LPD3DXEFFECT pEffect, 
-        BOOL EnableColorCode, 
+        LPD3DXEFFECT pEffect,
+        BOOL EnableColorCode,
         LPD3DXBUFFER *ppDisassembly);
 
 #ifdef __cplusplus

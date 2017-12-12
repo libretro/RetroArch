@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -242,10 +242,10 @@ static bsv_movie_t *bsv_movie_init_internal(const char *path,
    else if (!bsv_movie_init_record(handle, path))
       goto error;
 
-   /* Just pick something really large 
+   /* Just pick something really large
     * ~1 million frames rewind should do the trick. */
    if (!(frame_pos = (size_t*)calloc((1 << 20), sizeof(size_t))))
-      goto error; 
+      goto error;
 
    handle->frame_pos       = frame_pos;
 
@@ -263,7 +263,7 @@ error:
 void bsv_movie_set_frame_start(void)
 {
    if (bsv_movie_state_handle)
-      bsv_movie_state_handle->frame_pos[bsv_movie_state_handle->frame_ptr] 
+      bsv_movie_state_handle->frame_pos[bsv_movie_state_handle->frame_ptr]
          = intfstream_tell(bsv_movie_state_handle->file);
 }
 
@@ -272,11 +272,11 @@ void bsv_movie_set_frame_end(void)
    if (!bsv_movie_state_handle)
       return;
 
-   bsv_movie_state_handle->frame_ptr    = 
-      (bsv_movie_state_handle->frame_ptr + 1) 
+   bsv_movie_state_handle->frame_ptr    =
+      (bsv_movie_state_handle->frame_ptr + 1)
       & bsv_movie_state_handle->frame_mask;
 
-   bsv_movie_state_handle->first_rewind = 
+   bsv_movie_state_handle->first_rewind =
       !bsv_movie_state_handle->did_rewind;
    bsv_movie_state_handle->did_rewind   = false;
 }
@@ -285,7 +285,7 @@ static void bsv_movie_frame_rewind(bsv_movie_t *handle)
 {
    handle->did_rewind = true;
 
-   if (     (handle->frame_ptr <= 1) 
+   if (     (handle->frame_ptr <= 1)
          && (handle->frame_pos[0] == handle->min_file_pos))
    {
       /* If we're at the beginning... */

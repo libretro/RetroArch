@@ -45,7 +45,7 @@ static void frontend_qnx_shutdown(bool unused)
 
 static int frontend_qnx_get_rating(void)
 {
-   /* TODO/FIXME - look at unique identifier per device and 
+   /* TODO/FIXME - look at unique identifier per device and
     * determine rating for some */
    return -1;
 }

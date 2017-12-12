@@ -188,7 +188,7 @@ static int action_start_core_setting(unsigned type,
 {
    unsigned idx                = type - MENU_SETTINGS_CORE_OPTION_START;
    core_option_manager_t *coreopts = NULL;
-   
+
    if (rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
       core_option_manager_set_default(coreopts, idx);
 
@@ -348,7 +348,7 @@ int menu_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
       return -1;
 
    BIND_ACTION_START(cbs, action_start_lookup_setting);
-   
+
    if (menu_cbs_init_bind_start_compare_label(cbs) == 0)
       return 0;
 

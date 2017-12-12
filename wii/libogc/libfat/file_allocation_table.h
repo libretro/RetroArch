@@ -4,7 +4,7 @@
  a FAT partition
 
  Copyright (c) 2006 Michael "Chishm" Chisholm
-	
+
  Redistribution and use in source and binary forms, with or without modification,
  are permitted provided that the following conditions are met:
 
@@ -58,8 +58,8 @@ uint32_t _FAT_fat_lastCluster (PARTITION* partition, uint32_t cluster);
 unsigned int _FAT_fat_freeClusterCount (PARTITION* partition);
 
 static inline sec_t _FAT_fat_clusterToSector (PARTITION* partition, uint32_t cluster) {
-	return (cluster >= CLUSTER_FIRST) ? 
-		((cluster - CLUSTER_FIRST) * (sec_t)partition->sectorsPerCluster) + partition->dataStart : 
+	return (cluster >= CLUSTER_FIRST) ?
+		((cluster - CLUSTER_FIRST) * (sec_t)partition->sectorsPerCluster) + partition->dataStart :
 		partition->rootDirStart;
 }
 
