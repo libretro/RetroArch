@@ -192,9 +192,11 @@ static ssize_t psp_audio_write(void *data, const void *buf, size_t size)
 
    if (psp->nonblocking)
    {
+#ifdef VITA
       if (AUDIO_BUFFER_SIZE - ((uint16_t)
             (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK) < size)
          return 0;
+#endif
    }
 
 #ifdef VITA
