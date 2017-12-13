@@ -1004,7 +1004,7 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
 
       if (!string_is_empty(tmp))
       {
-         while((scrub_char_pointer = strpbrk(tmp, "&*/:`<>?\\|")))
+         while((scrub_char_pointer = strpbrk(tmp, "&*/:`\"<>?\\|")))
             *scrub_char_pointer = '_';
       }
 
