@@ -322,7 +322,7 @@ static int wiiusb_hid_add_adapter(void *data, usb_device_entry *dev)
     * control name until we get its interface */
    adapter->slot = pad_connection_pad_init(hid->connections,
          "hid", desc.idVendor, desc.idProduct,
-         adapter, &wiiusb_hid_device_send_control);
+         adapter, &wiiusb_hid);
 
    if (adapter->slot == -1)
       goto error;

@@ -1210,7 +1210,7 @@ static void btpad_packet_handler(uint8_t packet_type,
                   RARCH_LOG("[BTpad]: Got %.200s.\n", (char*)&packet[9]);
 
                   connection->slot  = pad_connection_pad_init(&slots[connection->slot],
-                        (char*)packet + 9, 0, 0, connection, &btpad_connection_send_control);
+                        (char*)packet + 9, 0, 0, connection, &btstack_hid);
                   connection->state = BTPAD_CONNECTED;
                }
                break;

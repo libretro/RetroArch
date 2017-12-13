@@ -25,13 +25,13 @@
 struct hidpad_wiiugca_data
 {
    struct pad_connection* connection;
-   send_control_t send_control;
+   hid_driver_t *driver;
    uint8_t data[64];
    uint32_t slot;
    uint32_t buttons;
 };
 
-static void* hidpad_wiiugca_init(void *data, uint32_t slot, send_control_t ptr)
+static void* hidpad_wiiugca_init(void *data, uint32_t slot, hid_driver_t *driver)
 {
    static uint8_t magic_data[]         = {0x01, 0x13}; /* Special command to enable reading */
    struct pad_connection* connection   = (struct pad_connection*)data;
@@ -47,10 +47,11 @@ static void* hidpad_wiiugca_init(void *data, uint32_t slot, send_control_t ptr)
       return NULL;
    }
 
-   device->connection   = connection;
-   device->slot         = slot;
-   device->send_control = ptr;
-   device->send_control(device->connection, magic_data, sizeof(magic_data));
+   device->connection = connection;
+   device->slot       = slot;
+   device->driver     = driver;
+
+   device->driver->send_control(device->connection, magic_data, sizeof(magic_data));
 
    return device;
 }

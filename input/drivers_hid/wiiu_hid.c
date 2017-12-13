@@ -258,13 +258,6 @@ static int32_t wiiu_attach_callback(HIDClient *client, HIDDevice *device, uint32
 }
 
 
-static int32_t wiiu_hid_pad_init(joypad_connection_t *joyconn,
-   const char *name, uint16_t vid, uint16_t pid, void *data,
-   send_control_t ptr) {
-  int pad = pad_connection_find_vacant_pad_max(joyconn, MAX_HID_PADS);
-  return pad_connection_pad_init_with_slot(joyconn, name, vid, pid,
-                 data, ptr, pad);
-}
 
 static void wiiu_hid_detach(wiiu_hid_t *hid, wiiu_attach_event *event) {
 }
@@ -280,9 +273,9 @@ static void wiiu_hid_attach(wiiu_hid_t *hid, wiiu_attach_event *event) {
 
   adapter->hid    = hid;
   adapter->handle = event->handle;
-  adapter->slot   = wiiu_hid_pad_init(hid->connections,
+  adapter->slot   = pad_connection_pad_init(hid->connections,
       "hid", event->vendor_id, event->product_id, adapter,
-      &wiiu_hid_device_send_control);
+      &wiiu_hid);
 
   if(adapter->slot < 0) {
     RARCH_ERR("[hid]: No available slots.\n");

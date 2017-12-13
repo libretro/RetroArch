@@ -23,7 +23,7 @@
 #include <libretro.h>
 #include <retro_miscellaneous.h>
 
-typedef void (*send_control_t)(void *data, uint8_t *buf, size_t size);
+#include "../input_driver.h"
 
 struct joypad_connection
 {
@@ -34,7 +34,7 @@ struct joypad_connection
 
 typedef struct pad_connection_interface
 {
-   void*    	(*init)(void *data, uint32_t slot, send_control_t ptr);
+   void*    	(*init)(void *data, uint32_t slot, hid_driver_t *driver);
    void     	(*deinit)(void* device);
    void     	(*packet_handler)(void* device, uint8_t *packet, uint16_t size);
    void     	(*set_rumble)(void* device, enum retro_rumble_effect effect,
@@ -58,7 +58,7 @@ extern pad_connection_interface_t pad_connection_psxadapter;
 
 int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
    const char* name, uint16_t vid, uint16_t pid,
-   void *data, send_control_t ptr);
+   void *data, hid_driver_t *driver);
 
 joypad_connection_t *pad_connection_init(unsigned pads);
 

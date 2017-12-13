@@ -31,7 +31,7 @@ struct hidpad_snesusb_data
    uint32_t buttons;
 };
 
-static void* hidpad_snesusb_init(void *data, uint32_t slot, send_control_t ptr)
+static void* hidpad_snesusb_init(void *data, uint32_t slot, hid_driver_t *driver)
 {
    struct pad_connection* connection = (struct pad_connection*)data;
    struct hidpad_snesusb_data* device    = (struct hidpad_snesusb_data*)

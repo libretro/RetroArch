@@ -25,7 +25,7 @@
 struct hidpad_ps3_data
 {
    struct pad_connection* connection;
-   send_control_t send_control;
+   hid_driver_t *driver;
    uint8_t data[512];
    uint32_t slot;
    uint32_t buttons;
@@ -54,13 +54,13 @@ static void hidpad_ps3_send_control(struct hidpad_ps3_data* device)
    report_buffer[6]  = device->motors[0] >> 8;
 #ifdef HAVE_WIIUSB_HID
    report_buffer[1]  = 0x03; /* send control message type */
-   device->send_control(device->connection, &report_buffer[1], sizeof(report_buffer)-1);
+   device->driver->send_control(device->connection, &report_buffer[1], sizeof(report_buffer)-1);
 #else
-   device->send_control(device->connection, report_buffer, sizeof(report_buffer));
+   device->driver->send_control(device->connection, report_buffer, sizeof(report_buffer));
 #endif
 }
 
-static void* hidpad_ps3_init(void *data, uint32_t slot, send_control_t ptr)
+static void* hidpad_ps3_init(void *data, uint32_t slot, hid_driver_t *driver)
 {
 #ifdef HAVE_WIIUSB_HID
    /* Special command to enable Sixaxis, first byte defines the message type */
@@ -82,12 +82,12 @@ static void* hidpad_ps3_init(void *data, uint32_t slot, send_control_t ptr)
       return NULL;
    }
 
-   device->connection   = connection;
-   device->slot         = slot;
-   device->send_control = ptr;
+   device->connection = connection;
+   device->slot       = slot;
+   device->driver     = driver;
 
 #if defined(IOS) || defined(HAVE_WIIUSB_HID)
-   device->send_control(device->connection, magic_data, sizeof(magic_data));
+   device->driver->send_control(device->connection, magic_data, sizeof(magic_data));
 #endif
 
 #ifndef HAVE_WIIUSB_HID

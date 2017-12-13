@@ -64,7 +64,7 @@ joypad_connection_t *pad_connection_init(unsigned pads)
 
 int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
    const char *name, uint16_t vid, uint16_t pid,
-   void *data, send_control_t ptr)
+   void *data, hid_driver_t *driver)
 {
 
    static const struct
@@ -120,7 +120,7 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
          if (name_match || (pad_map[i].vid == vid && pad_map[i].pid == pid))
          {
             s->iface      = pad_map[i].iface;
-            s->data       = s->iface->init(data, pad, ptr);
+            s->data       = s->iface->init(data, pad, driver);
             s->connected  = true;
 #if 0
             RARCH_LOG("%s found \n", pad_map[i].name);

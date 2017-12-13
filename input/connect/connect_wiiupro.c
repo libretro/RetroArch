@@ -62,7 +62,7 @@ struct wiiupro_calib
 struct hidpad_wiiupro_data
 {
    struct pad_connection* connection;
-   send_control_t send_control;
+   hid_driver_t *driver;
    struct wiiupro data;
    uint32_t slot;
    bool have_led;
@@ -75,12 +75,12 @@ static void hidpad_wiiupro_send_control(struct hidpad_wiiupro_data* device)
 {
    /* 0x12 = Set data report; 0x34 = All buttons and analogs */
    static uint8_t report_buffer[4] = { 0xA2, 0x12, 0x00, 0x34 };
-   device->send_control(device->connection,
+   device->driver->send_control(device->connection,
          report_buffer, sizeof(report_buffer));
 }
 
 static void* hidpad_wiiupro_init(void *data,
-      uint32_t slot, send_control_t ptr)
+      uint32_t slot, hid_driver_t *driver)
 {
    struct pad_connection* connection = (struct pad_connection*)data;
    struct hidpad_wiiupro_data* device    = (struct hidpad_wiiupro_data*)
@@ -94,9 +94,9 @@ static void* hidpad_wiiupro_init(void *data,
    if (!connection)
       goto error;
 
-   device->connection   = connection;
-   device->slot         = slot;
-   device->send_control = ptr;
+   device->connection = connection;
+   device->slot       = slot;
+   device->driver     = driver;
 
    calib_data->calib_round = 0;
    /* Without this, the digital buttons won't be reported. */

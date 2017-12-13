@@ -127,7 +127,7 @@ static void wiiu_input_poll(void *data)
    if(wiiu->joypad)
      wiiu->joypad->poll();
    if(wiiu->hid_joypad)
-     wiiu->hid_joypad->poll();
+     wiiu->hid_joypad->poll(hid_driver_get_data());
 }
 
 static bool wiiu_key_pressed(int key)

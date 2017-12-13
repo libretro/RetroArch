@@ -193,6 +193,7 @@ struct hid_driver
    bool (*set_rumble)(void *, unsigned, enum retro_rumble_effect, uint16_t);
    const char *(*name)(void *, unsigned);
    const char *ident;
+   void (*send_control)(void *data, uint8_t *buf, size_t size);
    int32_t (*set_report)(void *, uint8_t, uint8_t, void *, uint32_t);
    int32_t (*set_idle)(void *, uint8_t, uint8_t);
    int32_t (*set_protocol)(void *, uint8_t, uint8_t);

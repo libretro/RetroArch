@@ -81,9 +81,6 @@ static int wiiu_hid_polling_thread(int argc, const char **argv);
 static int32_t wiiu_attach_callback(HIDClient *client, HIDDevice *device, uint32_t attach);
 static wiiu_attach_event *synchronized_get_events_list(void);
 static void wiiu_handle_attach_events(wiiu_hid_t *hid, wiiu_attach_event *list);
-static int32_t wiiu_hid_pad_init(joypad_connection_t *joyconn,
-   const char *name, uint16_t vid, uint16_t pid, void *data,
-   send_control_t ptr);
 static void wiiu_hid_attach(wiiu_hid_t *hid, wiiu_attach_event *event);
 static void wiiu_hid_detach(wiiu_hid_t *hid, wiiu_attach_event *event);
 static void synchronized_add_to_adapters_list(struct wiiu_adapter *adapter);

@@ -510,7 +510,7 @@ static void iohidmanager_hid_device_add(void *data, IOReturn result,
 
    adapter->slot = pad_connection_pad_init(hid->slots,
          adapter->name, dev_vid, dev_pid, adapter,
-         &iohidmanager_hid_device_send_control);
+         &iohidmanager_hid);
 
    if (adapter->slot == -1)
       goto error;
