@@ -84,6 +84,8 @@
 #include <retro_miscellaneous.h>
 #include <encodings/utf.h>
 
+static const int64_t vfs_error_return_value      = -1;
+
 retro_vfs_file_get_path_t filestream_get_path_cb = NULL;
 retro_vfs_file_open_t filestream_open_cb         = NULL;
 retro_vfs_file_close_t filestream_close_cb       = NULL;
@@ -94,12 +96,6 @@ retro_vfs_file_read_t filestream_read_cb         = NULL;
 retro_vfs_file_write_t filestream_write_cb       = NULL;
 retro_vfs_file_flush_t filestream_flush_cb       = NULL;
 retro_vfs_file_delete_t filestream_delete_cb     = NULL;
-
-struct RFILE
-{
-   unsigned hints;
-   int64_t size;
-   FILE *fp;
 
 #if !defined(_WIN32) || defined(LEGACY_WIN32)
 #define MODE_STR_READ "r"
@@ -113,13 +109,21 @@ struct RFILE
 #define MODE_STR_WRITE_PLUS L"w+"
 #endif
 
+struct RFILE
+{
+   bool error_flag;
+   int fd;
+   unsigned hints;
+   int64_t size;
 #if defined(HAVE_MMAP)
-   uint8_t *mapped;
    uint64_t mappos;
    uint64_t mapsize;
 #endif
-   int fd;
    char *buf;
+   FILE *fp;
+#if defined(HAVE_MMAP)
+   uint8_t *mapped;
+#endif
 };
 
 /* VFS Initialization */
@@ -141,7 +145,8 @@ void filestream_vfs_init(const struct retro_vfs_interface_info* vfs_info)
 
 	vfs_iface              = vfs_info->iface;
 
-	if (vfs_info->required_interface_version < FILESTREAM_REQUIRED_VFS_VERSION || vfs_iface == NULL)
+	if (vfs_info->required_interface_version < 
+         FILESTREAM_REQUIRED_VFS_VERSION || !vfs_iface)
 		return;
 
 	filestream_get_path_cb = vfs_iface->file_get_path;
@@ -158,11 +163,99 @@ void filestream_vfs_init(const struct retro_vfs_interface_info* vfs_info)
 
 /* Callback wrappers */
 
-int64_t filestream_get_size(RFILE *stream)
+static int64_t filestream_file_size_impl(RFILE *stream)
 {
    if (!stream)
       return 0;
    return stream->size;
+}
+
+static ssize_t filestream_seek_impl(
+      RFILE *stream, ssize_t offset, int whence)
+{
+   if (!stream)
+      goto error;
+
+   if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
+      return fseek(stream->fp, (long)offset, whence);
+
+#ifdef HAVE_MMAP
+   /* Need to check stream->mapped because this function is
+    * called in filestream_open() */
+   if (stream->mapped && stream->hints & 
+         RETRO_VFS_FILE_ACCESS_HINT_MEMORY_MAP)
+   {
+      /* fseek() returns error on under/overflow but 
+       * allows cursor > EOF for
+         read-only file descriptors. */
+      switch (whence)
+      {
+         case SEEK_SET:
+            if (offset < 0)
+               goto error;
+
+            stream->mappos = offset;
+            break;
+
+         case SEEK_CUR:
+            if ((offset   < 0 && stream->mappos + offset > stream->mappos) ||
+                  (offset > 0 && stream->mappos + offset < stream->mappos))
+               goto error;
+
+            stream->mappos += offset;
+            break;
+
+         case SEEK_END:
+            if (stream->mapsize + offset < stream->mapsize)
+               goto error;
+
+            stream->mappos = stream->mapsize + offset;
+            break;
+      }
+      return stream->mappos;
+   }
+#endif
+
+   if (lseek(stream->fd, offset, whence) < 0)
+      goto error;
+
+   return 0;
+
+error:
+   return -1;
+}
+
+static ssize_t filestream_tell_impl(RFILE *stream)
+{
+   if (!stream)
+      goto error;
+
+   if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
+      return ftell(stream->fp);
+
+#ifdef HAVE_MMAP
+   /* Need to check stream->mapped because this function
+    * is called in filestream_open() */
+   if (stream->mapped && stream->hints & RETRO_VFS_FILE_ACCESS_HINT_MEMORY_MAP)
+      return stream->mappos;
+#endif
+   if (lseek(stream->fd, 0, SEEK_CUR) < 0)
+      goto error;
+
+   return 0;
+
+error:
+   return -1;
+}
+
+int64_t filestream_get_size(RFILE *stream)
+{
+   int64_t output = filestream_file_size_impl(stream);
+
+   if (output == vfs_error_return_value)
+      stream->error_flag = true;
+
+   return output;
 }
 
 static void filestream_set_size(RFILE *stream)
@@ -362,56 +455,15 @@ int filestream_getc(RFILE *stream)
    return EOF;
 }
 
+
 ssize_t filestream_seek(RFILE *stream, ssize_t offset, int whence)
 {
-   if (!stream)
-      goto error;
+   int64_t output = filestream_seek_impl(stream, offset, whence);
 
-   if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
-      return fseek(stream->fp, (long)offset, whence);
+   if (output == vfs_error_return_value)
+      stream->error_flag = true;
 
-#ifdef HAVE_MMAP
-   /* Need to check stream->mapped because this function is
-    * called in filestream_open() */
-   if (stream->mapped && stream->hints & RETRO_VFS_FILE_ACCESS_HINT_MEMORY_MAP)
-   {
-      /* fseek() returns error on under/overflow but allows cursor > EOF for
-         read-only file descriptors. */
-      switch (whence)
-      {
-         case SEEK_SET:
-            if (offset < 0)
-               goto error;
-
-            stream->mappos = offset;
-            break;
-
-         case SEEK_CUR:
-            if ((offset < 0 && stream->mappos + offset > stream->mappos) ||
-                  (offset > 0 && stream->mappos + offset < stream->mappos))
-               goto error;
-
-            stream->mappos += offset;
-            break;
-
-         case SEEK_END:
-            if (stream->mapsize + offset < stream->mapsize)
-               goto error;
-
-            stream->mappos = stream->mapsize + offset;
-            break;
-      }
-      return stream->mappos;
-   }
-#endif
-
-   if (lseek(stream->fd, offset, whence) < 0)
-      goto error;
-
-   return 0;
-
-error:
-   return -1;
+   return output;
 }
 
 int filestream_eof(RFILE *stream)
@@ -424,35 +476,26 @@ int filestream_eof(RFILE *stream)
    return 0;
 }
 
+
 ssize_t filestream_tell(RFILE *stream)
 {
-   if (!stream)
-      goto error;
+   ssize_t output = filestream_tell_impl(stream);
 
-   if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
-      return ftell(stream->fp);
+   if (output == vfs_error_return_value)
+      stream->error_flag = true;
 
-#ifdef HAVE_MMAP
-   /* Need to check stream->mapped because this function
-    * is called in filestream_open() */
-   if (stream->mapped && stream->hints & RETRO_VFS_FILE_ACCESS_HINT_MEMORY_MAP)
-      return stream->mappos;
-#endif
-   if (lseek(stream->fd, 0, SEEK_CUR) < 0)
-      goto error;
-
-   return 0;
-
-error:
-   return -1;
+   return output;
 }
 
 void filestream_rewind(RFILE *stream)
 {
+   if (!stream)
+      return;
    filestream_seek(stream, 0L, SEEK_SET);
+   stream->error_flag = false;
 }
 
-ssize_t filestream_read(RFILE *stream, void *s, size_t len)
+static ssize_t filestream_read_impl(RFILE *stream, void *s, size_t len)
 {
    if (!stream || !s)
       goto error;
@@ -482,9 +525,31 @@ error:
    return -1;
 }
 
+ssize_t filestream_read(RFILE *stream, void *s, size_t len)
+{
+   int64_t output = filestream_read_impl(stream, s, len);
+
+   if (output == vfs_error_return_value)
+      stream->error_flag = true;
+
+   return output;
+}
+
+static int filestream_flush_impl(RFILE *stream)
+{
+   if (!stream)
+      return -1;
+   return fflush(stream->fp);
+}
+
 int filestream_flush(RFILE *stream)
 {
-   return fflush(stream->fp);
+   int output = filestream_flush_impl(stream);
+
+   if (output == vfs_error_return_value)
+      stream->error_flag = true;
+
+   return output;
 }
 
 ssize_t filestream_write(RFILE *stream, const void *s, size_t len)
@@ -538,7 +603,9 @@ int filestream_printf(RFILE *stream, const char* format, ...)
 
 int filestream_error(RFILE *stream)
 {
-	return ferror(stream->fp);
+   if (stream->error_flag)
+      return 1;
+   return 0;
 }
 
 int filestream_close(RFILE *stream)
