@@ -330,9 +330,26 @@ error:
 
 char *filestream_gets(RFILE *stream, char *s, size_t len)
 {
+   int c   = 0;
+   char *p = NULL;
    if (!stream)
       return NULL;
-   return fgets(s, (int)len, stream->fp);
+
+   /* get max bytes or up to a newline */
+
+   for (p = s, len--; len > 0; len--)
+   {
+      if ((c = filestream_getc(stream)) == EOF)
+         break;
+      *p++ = c;
+      if (c == '\n')
+         break;
+   }
+   *p = 0;
+
+   if (p == s || c == EOF)
+      return NULL;
+   return (p);
 }
 
 int filestream_getc(RFILE *stream)
