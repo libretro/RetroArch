@@ -88,6 +88,10 @@ int filestream_error(RFILE *stream);
 
 int filestream_flush(RFILE *stream);
 
+int filestream_delete(const char *path);
+
+const char *filestream_get_path(RFILE *stream);
+
 static INLINE char *filestream_getline(RFILE *stream)
 {
    char* newline     = (char*)malloc(9);

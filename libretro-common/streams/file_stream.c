@@ -163,6 +163,54 @@ void filestream_vfs_init(const struct retro_vfs_interface_info* vfs_info)
 
 /* Callback wrappers */
 
+static ssize_t filestream_read_impl(RFILE *stream, void *s, size_t len)
+{
+   if (!stream || !s)
+      goto error;
+
+   if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
+      return fread(s, 1, len, stream->fp);
+
+#ifdef HAVE_MMAP
+   if (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_MEMORY_MAP)
+   {
+      if (stream->mappos > stream->mapsize)
+         goto error;
+
+      if (stream->mappos + len > stream->mapsize)
+         len = stream->mapsize - stream->mappos;
+
+      memcpy(s, &stream->mapped[stream->mappos], len);
+      stream->mappos += len;
+
+      return len;
+   }
+#endif
+
+   return read(stream->fd, s, len);
+
+error:
+   return -1;
+}
+
+
+static void filestream_set_size(RFILE *stream)
+{
+   filestream_seek(stream, 0, SEEK_SET);
+   filestream_seek(stream, 0, SEEK_END);
+
+   stream->size = filestream_tell(stream);
+
+   filestream_seek(stream, 0, SEEK_SET);
+}
+
+static int filestream_flush_impl(RFILE *stream)
+{
+   if (!stream)
+      return -1;
+   return fflush(stream->fp);
+}
+
 static int64_t filestream_file_size_impl(RFILE *stream)
 {
    if (!stream)
@@ -256,16 +304,6 @@ int64_t filestream_get_size(RFILE *stream)
       stream->error_flag = true;
 
    return output;
-}
-
-static void filestream_set_size(RFILE *stream)
-{
-   filestream_seek(stream, 0, SEEK_SET);
-   filestream_seek(stream, 0, SEEK_END);
-
-   stream->size = filestream_tell(stream);
-
-   filestream_seek(stream, 0, SEEK_SET);
 }
 
 /**
@@ -495,36 +533,6 @@ void filestream_rewind(RFILE *stream)
    stream->error_flag = false;
 }
 
-static ssize_t filestream_read_impl(RFILE *stream, void *s, size_t len)
-{
-   if (!stream || !s)
-      goto error;
-
-   if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
-      return fread(s, 1, len, stream->fp);
-
-#ifdef HAVE_MMAP
-   if (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_MEMORY_MAP)
-   {
-      if (stream->mappos > stream->mapsize)
-         goto error;
-
-      if (stream->mappos + len > stream->mapsize)
-         len = stream->mapsize - stream->mappos;
-
-      memcpy(s, &stream->mapped[stream->mappos], len);
-      stream->mappos += len;
-
-      return len;
-   }
-#endif
-
-   return read(stream->fd, s, len);
-
-error:
-   return -1;
-}
-
 ssize_t filestream_read(RFILE *stream, void *s, size_t len)
 {
    int64_t output = filestream_read_impl(stream, s, len);
@@ -533,13 +541,6 @@ ssize_t filestream_read(RFILE *stream, void *s, size_t len)
       stream->error_flag = true;
 
    return output;
-}
-
-static int filestream_flush_impl(RFILE *stream)
-{
-   if (!stream)
-      return -1;
-   return fflush(stream->fp);
 }
 
 int filestream_flush(RFILE *stream)
@@ -552,7 +553,12 @@ int filestream_flush(RFILE *stream)
    return output;
 }
 
-ssize_t filestream_write(RFILE *stream, const void *s, size_t len)
+static int filestream_delete_impl(const char *path)
+{
+   return remove(path) == 0;
+}
+
+static int64_t filestream_write_impl(RFILE *stream, const void *s, size_t len)
 {
    if (!stream)
       goto error;
@@ -568,6 +574,28 @@ ssize_t filestream_write(RFILE *stream, const void *s, size_t len)
 
 error:
    return -1;
+}
+
+int filestream_delete(const char *path)
+{
+   return filestream_delete_impl(path);
+}
+
+const char *filestream_get_path(RFILE *stream)
+{
+   /* TODO/FIXME - implement - is a char pointer sufficient here
+    * or should we cater to wchar_t and friends too? */
+   return NULL;
+}
+
+ssize_t filestream_write(RFILE *stream, const void *s, size_t len)
+{
+   int64_t output = filestream_write_impl(stream, s, len);
+
+   if (output == vfs_error_return_value)
+      stream->error_flag = true;
+
+   return output;
 }
 
 int filestream_putc(RFILE *stream, int c)
@@ -603,7 +631,7 @@ int filestream_printf(RFILE *stream, const char* format, ...)
 
 int filestream_error(RFILE *stream)
 {
-   if (stream->error_flag)
+   if (stream && stream->error_flag)
       return 1;
    return 0;
 }
