@@ -25,6 +25,10 @@
 #include "../config.h"
 #endif
 
+#include "menu_entries.h"
+
+#include "../msg_hash.h"
+
 RETRO_BEGIN_DECLS
 
 typedef struct key_desc

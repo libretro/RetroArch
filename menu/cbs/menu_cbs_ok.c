@@ -33,6 +33,7 @@
 #include "../widgets/menu_dialog.h"
 #include "../widgets/menu_filebrowser.h"
 #include "../widgets/menu_input_dialog.h"
+#include "../menu_networking.h"
 #include "../menu_content.h"
 #include "../menu_shader.h"
 
@@ -114,11 +115,6 @@ static char *lakka_get_project(void)
    return lakka_project;
 }
 #endif
-
-void cb_net_generic_subdir(void *task_data, void *user_data, const char *err);
-
-/* defined in menu_cbs_deferred_push */
-void cb_net_generic(void *task_data, void *user_data, const char *err);
 #endif
 
 int generic_action_ok_displaylist_push(const char *path,
