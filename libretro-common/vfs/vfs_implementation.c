@@ -437,11 +437,3 @@ const char *retro_vfs_file_get_path_impl(libretro_vfs_implementation_file *strea
    /* TODO/FIXME - implement */
    return NULL;
 }
-
-int retro_vfs_file_putc(libretro_vfs_implementation_file *stream, int c)
-{
-   if (!stream)
-      return EOF;
-
-   return fputc(c, stream->fp);
-}

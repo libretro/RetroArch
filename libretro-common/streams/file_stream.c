@@ -278,12 +278,12 @@ ssize_t filestream_write(RFILE *stream, const void *s, size_t len)
    return output;
 }
 
-/* Hack function */
-int retro_vfs_file_putc(libretro_vfs_implementation_file *stream, int c);
-
 int filestream_putc(RFILE *stream, int c)
 {
-   return retro_vfs_file_putc((libretro_vfs_implementation_file*)stream->hfile, c);
+   char c_char = (char)c;
+   if (!stream)
+      return EOF;
+	return filestream_write(stream, &c_char, 1);
 }
 
 int filestream_vprintf(RFILE *stream, const char* format, va_list args)
