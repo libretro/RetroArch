@@ -32,32 +32,26 @@
  * for VFS and as fallbacks for when the front end does not provide VFS functionality.
  */
 
-#ifdef VFS_FRONTEND
-typedef struct retro_vfs_file_handle libretro_vfs_implementation_file;
-#else
-typedef struct libretro_vfs_implementation_file libretro_vfs_implementation_file;
-#endif
+void *retro_vfs_file_open_impl(const char *path, unsigned mode, unsigned hints);
 
-libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, unsigned mode, unsigned hints);
+int retro_vfs_file_close_impl(void *data);
 
-int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream);
+int retro_vfs_file_error_impl(void *data);
 
-int retro_vfs_file_error_impl(libretro_vfs_implementation_file *stream);
+int64_t retro_vfs_file_size_impl(void *data);
 
-int64_t retro_vfs_file_size_impl(libretro_vfs_implementation_file *stream);
+int64_t retro_vfs_file_tell_impl(void *data);
 
-int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream);
+int64_t retro_vfs_file_seek_impl(void *data, int64_t offset, int whence);
 
-int64_t retro_vfs_file_seek_impl(libretro_vfs_implementation_file *stream, int64_t offset, int whence);
+int64_t retro_vfs_file_read_impl(void *data, void *s, uint64_t len);
 
-int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream, void *s, uint64_t len);
+int64_t retro_vfs_file_write_impl(void *data, const void *s, uint64_t len);
 
-int64_t retro_vfs_file_write_impl(libretro_vfs_implementation_file *stream, const void *s, uint64_t len);
-
-int retro_vfs_file_flush_impl(libretro_vfs_implementation_file *stream);
+int retro_vfs_file_flush_impl(void *data);
 
 int retro_vfs_file_delete_impl(const char *path);
 
-const char *retro_vfs_file_get_path_impl(libretro_vfs_implementation_file *stream);
+const char *retro_vfs_file_get_path_impl(void *data);
 
 #endif

@@ -99,7 +99,7 @@ int64_t filestream_get_size(RFILE *stream)
    if (filestream_size_cb != NULL)
       output = filestream_size_cb(stream->hfile);
    else
-      output = retro_vfs_file_size_impl((libretro_vfs_implementation_file*)stream->hfile);
+      output = retro_vfs_file_size_impl(stream->hfile);
 
    if (output == vfs_error_return_value)
       stream->error_flag = true;
@@ -177,7 +177,7 @@ ssize_t filestream_seek(RFILE *stream, ssize_t offset, int whence)
    if (filestream_seek_cb != NULL)
       output = filestream_seek_cb(stream->hfile, offset, whence);
    else
-      output = retro_vfs_file_seek_impl((libretro_vfs_implementation_file*)stream->hfile, offset, whence);
+      output = retro_vfs_file_seek_impl(stream->hfile, offset, whence);
 
    if (output == vfs_error_return_value)
       stream->error_flag = true;
@@ -203,7 +203,7 @@ ssize_t filestream_tell(RFILE *stream)
    if (filestream_size_cb != NULL)
       output = filestream_tell_cb(stream->hfile);
    else
-      output = retro_vfs_file_tell_impl((libretro_vfs_implementation_file*)stream->hfile);
+      output = retro_vfs_file_tell_impl(stream->hfile);
 
    if (output == vfs_error_return_value)
       stream->error_flag = true;
@@ -226,7 +226,7 @@ ssize_t filestream_read(RFILE *stream, void *s, size_t len)
    if (filestream_read_cb != NULL)
       output = filestream_read_cb(stream->hfile, s, len);
    else
-      output = retro_vfs_file_read_impl((libretro_vfs_implementation_file*)stream->hfile, s, len);
+      output = retro_vfs_file_read_impl(stream->hfile, s, len);
 
    if (output == vfs_error_return_value)
       stream->error_flag = true;
@@ -241,7 +241,7 @@ int filestream_flush(RFILE *stream)
    if (filestream_flush_cb != NULL)
       output = filestream_flush_cb(stream->hfile);
    else
-      output = retro_vfs_file_flush_impl((libretro_vfs_implementation_file*)stream->hfile);
+      output = retro_vfs_file_flush_impl(stream->hfile);
 
    if (output == vfs_error_return_value)
       stream->error_flag = true;
@@ -262,7 +262,7 @@ const char *filestream_get_path(RFILE *stream)
    if (filestream_get_path_cb != NULL)
       return filestream_get_path_cb(stream->hfile);
 
-   return retro_vfs_file_get_path_impl((libretro_vfs_implementation_file*)stream->hfile);
+   return retro_vfs_file_get_path_impl(stream->hfile);
 }
 
 ssize_t filestream_write(RFILE *stream, const void *s, size_t len)
@@ -272,7 +272,7 @@ ssize_t filestream_write(RFILE *stream, const void *s, size_t len)
    if (filestream_write_cb != NULL)
       output = filestream_write_cb(stream->hfile, s, len);
    else
-      output = retro_vfs_file_write_impl((libretro_vfs_implementation_file*)stream->hfile, s, len);
+      output = retro_vfs_file_write_impl(stream->hfile, s, len);
 
    if (output == vfs_error_return_value)
       stream->error_flag = true;
@@ -281,11 +281,11 @@ ssize_t filestream_write(RFILE *stream, const void *s, size_t len)
 }
 
 /* Hack function */
-int retro_vfs_file_putc(libretro_vfs_implementation_file *stream, int c);
+int retro_vfs_file_putc(void *data, int c);
 
 int filestream_putc(RFILE *stream, int c)
 {
-   return retro_vfs_file_putc((libretro_vfs_implementation_file*)stream->hfile, c);
+   return retro_vfs_file_putc(stream->hfile, c);
 }
 
 int filestream_vprintf(RFILE *stream, const char* format, va_list args)
@@ -321,12 +321,12 @@ int filestream_error(RFILE *stream)
 int filestream_close(RFILE *stream)
 {
    int output;
-   struct retro_vfs_file_handle* fp = stream->hfile;
+   void *fp = stream->hfile;
 
    if (filestream_close_cb != NULL)
       output = filestream_close_cb(fp);
    else
-      output = retro_vfs_file_close_impl((libretro_vfs_implementation_file*)fp);
+      output = retro_vfs_file_close_impl(fp);
 
    if (output == 0)
       free(stream);

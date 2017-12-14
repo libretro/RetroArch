@@ -94,21 +94,15 @@
 #include <retro_miscellaneous.h>
 #include <encodings/utf.h>
 
-#if 0
 #ifdef RARCH_INTERNAL
 #ifndef VFS_FRONTEND
 #define VFS_FRONTEND
 #endif
 #endif
-#endif
 
 #define RFILE_HINT_UNBUFFERED (1 << 8)
 
-#ifdef VFS_FRONTEND
-struct retro_vfs_file_handle
-#else
 struct libretro_vfs_implementation_file
-#endif
 {
    int fd;
    unsigned hints;
@@ -124,8 +118,9 @@ struct libretro_vfs_implementation_file
 #endif
 };
 
-int64_t retro_vfs_file_seek_internal(libretro_vfs_implementation_file *stream, int64_t offset, int whence)
+int64_t retro_vfs_file_seek_internal(void *data, int64_t offset, int whence)
 {
+   struct libretro_vfs_implementation_file *stream = (struct libretro_vfs_implementation_file*)data;
    if (!stream)
       goto error;
 
@@ -188,7 +183,7 @@ error:
  * Returns a pointer to an RFILE if opened successfully, otherwise NULL.
  **/
 
-libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, unsigned mode, unsigned hints)
+void *retro_vfs_file_open_impl(const char *path, unsigned mode, unsigned hints)
 {
    int            flags    = 0;
 #if !defined(_WIN32) || defined(LEGACY_WIN32)
@@ -196,7 +191,8 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uns
 #else
    const wchar_t *mode_str = NULL;
 #endif
-   libretro_vfs_implementation_file *stream = (libretro_vfs_implementation_file*)calloc(1, sizeof(*stream));
+   struct libretro_vfs_implementation_file *stream = 
+      (struct libretro_vfs_implementation_file*)calloc(1, sizeof(*stream));
 
    if (!stream)
       return NULL;
@@ -337,8 +333,10 @@ error:
    return NULL;
 }
 
-int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream)
+int retro_vfs_file_close_impl(void *data)
 {
+   struct libretro_vfs_implementation_file *stream = 
+      (struct libretro_vfs_implementation_file*)data;
    if (!stream)
       return -1;
 
@@ -364,20 +362,26 @@ int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream)
    return 0;
 }
 
-int retro_vfs_file_error_impl(libretro_vfs_implementation_file *stream)
+int retro_vfs_file_error_impl(void *data)
 {
+   struct libretro_vfs_implementation_file *stream = 
+      (struct libretro_vfs_implementation_file*)data;
    return ferror(stream->fp);
 }
 
-int64_t retro_vfs_file_size_impl(libretro_vfs_implementation_file *stream)
+int64_t retro_vfs_file_size_impl(void *data)
 {
+   struct libretro_vfs_implementation_file *stream = 
+      (struct libretro_vfs_implementation_file*)data;
    if (!stream)
       return 0;
    return stream->size;
 }
 
-int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream)
+int64_t retro_vfs_file_tell_impl(void *data)
 {
+   struct libretro_vfs_implementation_file *stream = 
+      (struct libretro_vfs_implementation_file*)data;
    if (!stream)
       return -1;
 
@@ -396,13 +400,17 @@ int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream)
    return 0;
 }
 
-int64_t retro_vfs_file_seek_impl(libretro_vfs_implementation_file *stream, int64_t offset, int whence)
+int64_t retro_vfs_file_seek_impl(void *data, int64_t offset, int whence)
 {
+   struct libretro_vfs_implementation_file *stream = 
+      (struct libretro_vfs_implementation_file*)data;
 	return retro_vfs_file_seek_internal(stream, offset, whence);
 }
 
-int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream, void *s, uint64_t len)
+int64_t retro_vfs_file_read_impl(void *data, void *s, uint64_t len)
 {
+   struct libretro_vfs_implementation_file *stream = 
+      (struct libretro_vfs_implementation_file*)data;
    if (!stream || !s)
       goto error;
 
@@ -431,8 +439,10 @@ error:
    return -1;
 }
 
-int64_t retro_vfs_file_write_impl(libretro_vfs_implementation_file *stream, const void *s, uint64_t len)
+int64_t retro_vfs_file_write_impl(void *data, const void *s, uint64_t len)
 {
+   struct libretro_vfs_implementation_file *stream = 
+      (struct libretro_vfs_implementation_file*)data;
    if (!stream)
       goto error;
 
@@ -449,8 +459,10 @@ error:
    return -1;
 }
 
-int retro_vfs_file_flush_impl(libretro_vfs_implementation_file *stream)
+int retro_vfs_file_flush_impl(void *data)
 {
+   struct libretro_vfs_implementation_file *stream = 
+      (struct libretro_vfs_implementation_file*)data;
    if (!stream)
       return -1;
    return fflush(stream->fp);
@@ -461,14 +473,18 @@ int retro_vfs_file_delete_impl(const char *path)
    return remove(path) == 0;
 }
 
-const char *retro_vfs_file_get_path_impl(libretro_vfs_implementation_file *stream)
+const char *retro_vfs_file_get_path_impl(void *data)
 {
+   struct libretro_vfs_implementation_file *stream = 
+      (struct libretro_vfs_implementation_file*)data;
    /* TODO/FIXME - implement */
    return NULL;
 }
 
-int retro_vfs_file_putc(libretro_vfs_implementation_file *stream, int c)
+int retro_vfs_file_putc(void *data, int c)
 {
+   struct libretro_vfs_implementation_file *stream = 
+      (struct libretro_vfs_implementation_file*)data;
    if (!stream)
       return EOF;
 
