@@ -88,7 +88,6 @@
 #include <vfs/vfs_implementation.h>
 #include <libretro.h>
 #include <memmap.h>
-#include <retro_miscellaneous.h>
 #include <encodings/utf.h>
 #include <compat/fopen_utf8.h>
 
