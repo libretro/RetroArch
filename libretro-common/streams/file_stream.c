@@ -36,16 +36,16 @@
 
 static const int64_t vfs_error_return_value      = -1;
 
-retro_vfs_file_get_path_t filestream_get_path_cb = NULL;
-retro_vfs_file_open_t filestream_open_cb         = NULL;
-retro_vfs_file_close_t filestream_close_cb       = NULL;
-retro_vfs_file_size_t filestream_size_cb         = NULL;
-retro_vfs_file_tell_t filestream_tell_cb         = NULL;
-retro_vfs_file_seek_t filestream_seek_cb         = NULL;
-retro_vfs_file_read_t filestream_read_cb         = NULL;
-retro_vfs_file_write_t filestream_write_cb       = NULL;
-retro_vfs_file_flush_t filestream_flush_cb       = NULL;
-retro_vfs_file_delete_t filestream_delete_cb     = NULL;
+static retro_vfs_file_get_path_t filestream_get_path_cb = NULL;
+static retro_vfs_file_open_t filestream_open_cb         = NULL;
+static retro_vfs_file_close_t filestream_close_cb       = NULL;
+static retro_vfs_file_size_t filestream_size_cb         = NULL;
+static retro_vfs_file_tell_t filestream_tell_cb         = NULL;
+static retro_vfs_file_seek_t filestream_seek_cb         = NULL;
+static retro_vfs_file_read_t filestream_read_cb         = NULL;
+static retro_vfs_file_write_t filestream_write_cb       = NULL;
+static retro_vfs_file_flush_t filestream_flush_cb       = NULL;
+static retro_vfs_file_delete_t filestream_delete_cb     = NULL;
 
 struct RFILE
 {
