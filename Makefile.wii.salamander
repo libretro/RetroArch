@@ -61,6 +61,7 @@ OBJ = frontend/frontend_salamander.o \
 		libretro-common/lists/string_list.o \
 		libretro-common/lists/dir_list.o \
 		libretro-common/streams/file_stream.o \
+		libretro-common/vfs/vfs_implementation.o \
 		libretro-common/file/retro_dirent.o \
 		libretro-common/encodings/encoding_utf.o \
 		libretro-common/compat/compat_strl.o \
