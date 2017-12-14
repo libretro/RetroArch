@@ -106,6 +106,7 @@ struct libretro_vfs_implementation_file
    int64_t size;
    char *buf;
    FILE *fp;
+   char* orig_path;
 #if defined(HAVE_MMAP)
    uint64_t mappos;
    uint64_t mapsize;
@@ -189,6 +190,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uns
    (void)flags;
 
    stream->hints           = hints;
+   stream->orig_path       = strdup(path);
 
 #ifdef HAVE_MMAP
    if (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_MEMORY_MAP && mode == RETRO_VFS_FILE_ACCESS_READ)
@@ -330,6 +332,8 @@ int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream)
       close(stream->fd);
    if (stream->buf)
       free(stream->buf);
+   if (stream->orig_path)
+      free(stream->orig_path);
    free(stream);
 
    return 0;
@@ -434,6 +438,6 @@ int retro_vfs_file_delete_impl(const char *path)
 
 const char *retro_vfs_file_get_path_impl(libretro_vfs_implementation_file *stream)
 {
-   /* TODO/FIXME - implement */
-   return NULL;
+   if (!stream) abort(); /* should never happen, do something noisy so caller can be fixed */
+   return stream->orig_path;
 }
