@@ -92,6 +92,24 @@ void filestream_vfs_init(const struct retro_vfs_interface_info* vfs_info)
 }
 
 /* Callback wrappers */
+bool filestream_exists(const char *path)
+{
+   RFILE *dummy              = NULL;
+
+   if (!path || !*path)
+      return false;
+   
+   dummy = filestream_open(path,
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+   if (!dummy)
+      return false;
+
+   filestream_close(dummy);
+   return true;
+}
+
 int64_t filestream_get_size(RFILE *stream)
 {
    int64_t output;

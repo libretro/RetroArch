@@ -26,6 +26,7 @@
 #include <file/file_path.h>
 #include <file/archive_file.h>
 #include <string/stdstring.h>
+#include <streams/file_stream.h>
 #include <features/features_cpu.h>
 
 #ifdef HAVE_CONFIG_H
@@ -2811,7 +2812,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
             file_path_str(FILE_PATH_RDB_EXTENSION),
             PATH_MAX_LENGTH * sizeof(char));
 
-      if (path_file_exists(db_path))
+      if (filestream_exists(db_path))
          menu_entries_append_enum(
                info->list,
                label,

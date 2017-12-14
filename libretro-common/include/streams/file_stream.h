@@ -96,6 +96,8 @@ int filestream_rename(const char *old_path, const char *new_path);
 
 const char *filestream_get_path(RFILE *stream);
 
+bool filestream_exists(const char *path);
+
 static INLINE char *filestream_getline(RFILE *stream)
 {
    char* newline     = (char*)malloc(9);

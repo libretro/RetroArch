@@ -734,7 +734,7 @@ int file_archive_compressed_read(
     * hoping that optional_filename is the
     * same as requested.
     */
-   if (optional_filename && path_file_exists(optional_filename))
+   if (optional_filename && filestream_exists(optional_filename))
    {
       *length = 0;
       string_list_free(str_list);

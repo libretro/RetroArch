@@ -667,7 +667,7 @@ static void check_proc_acpi_battery(const char * node, bool * have_battery,
 
    snprintf(path, sizeof(path), "%s/%s/%s", base, node, "state");
 
-   if (!path_file_exists(path))
+   if (!filestream_exists(path))
       goto end;
 
    if (!filestream_read_file(path, (void**)&buf, &length))
@@ -795,8 +795,9 @@ static void check_proc_acpi_sysfs_battery(const char *node,
 
    snprintf(path, sizeof(path), "%s/%s/%s", base, node, "status");
 
-   if (!path_file_exists(path))
+   if (!filestream_exists(path))
       return;
+
    if (filestream_read_file(path, (void**)&buf, &length) != 1)
       return;
 
@@ -842,8 +843,9 @@ static void check_proc_acpi_ac_adapter(const char * node, bool *have_ac)
    path[0]          = '\0';
 
    snprintf(path, sizeof(path), "%s/%s/%s", base, node, "state");
-   if (!path_file_exists(path))
+   if (!filestream_exists(path))
       return;
+
    if (filestream_read_file(path, (void**)&buf, &length) != 1)
       return;
 
@@ -873,8 +875,9 @@ static void check_proc_acpi_sysfs_ac_adapter(const char * node, bool *have_ac)
    path[0]          = '\0';
 
    snprintf(path, sizeof(path), "%s/%s", base, "online");
-   if (!path_file_exists(path))
+   if (!filestream_exists(path))
       return;
+
    if (filestream_read_file(path, (void**)&buf, &length) != 1)
       return;
 
@@ -928,8 +931,9 @@ static bool frontend_unix_powerstate_check_apm(
    char  *buf          = NULL;
    char *str           = NULL;
 
-   if (!path_file_exists(proc_apm_path))
+   if (!filestream_exists(proc_apm_path))
       goto error;
+
    if (filestream_read_file(proc_apm_path, (void**)&buf, &length) != 1)
       goto error;
 

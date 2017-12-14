@@ -23,6 +23,7 @@
 #include <lists/string_list.h>
 #include <file/file_path.h>
 #include <compat/strl.h>
+#include <streams/file_stream.h>
 #include <string/stdstring.h>
 
 #ifdef HAVE_NETWORKING
@@ -153,7 +154,7 @@ void print_buf_lines(file_list_t *list, char *buf,
                         sizeof(core_path));
 
                   if (
-                           path_file_exists(core_path)
+                           filestream_exists(core_path)
                         && core_info_get_display_name(
                            core_path, display_name, sizeof(display_name)))
                      file_list_set_alt_at_offset(list, j, display_name);

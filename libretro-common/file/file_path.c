@@ -31,7 +31,6 @@
 #include <libretro.h>
 #include <boolean.h>
 #include <file/file_path.h>
-#include <streams/file_stream.h>
 
 #ifndef __MACH__
 #include <compat/strl.h>
@@ -394,32 +393,6 @@ bool path_is_compressed_file(const char* path)
       return true;
 
    return false;
-}
-
-/**
- * path_file_exists:
- * @path               : path
- *
- * Checks if a file already exists at the specified path (@path).
- *
- * Returns: true (1) if file already exists, otherwise false (0).
- */
-bool path_file_exists(const char *path)
-{
-   RFILE *dummy;
-
-   if (!path || !*path)
-      return false;
-
-   dummy = filestream_open(path,
-         RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
-   if (!dummy)
-      return false;
-
-   filestream_close(dummy);
-   return true;
 }
 
 /**

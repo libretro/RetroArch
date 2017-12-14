@@ -24,6 +24,7 @@
 #include <file/file_path.h>
 #include <lists/dir_list.h>
 #include <string/stdstring.h>
+#include <streams/file_stream.h>
 #include <streams/stdin_stream.h>
 
 #ifdef HAVE_CONFIG_H
@@ -1114,7 +1115,7 @@ static void command_event_load_auto_state(void)
             file_path_str(FILE_PATH_AUTO_EXTENSION),
             savestate_name_auto_size);
 
-   if (!path_file_exists(savestate_name_auto))
+   if (!filestream_exists(savestate_name_auto))
       goto error;
 
    ret = content_load_state(savestate_name_auto, false, true);
@@ -1446,7 +1447,7 @@ static bool command_event_save_core_config(void)
    core_path = path_get(RARCH_PATH_CORE);
 
    /* Infer file name based on libretro core. */
-   if (!string_is_empty(core_path) && path_file_exists(core_path))
+   if (!string_is_empty(core_path) && filestream_exists(core_path))
    {
       unsigned i;
       RARCH_LOG("%s\n", msg_hash_to_str(MSG_USING_CORE_NAME_FOR_NEW_CONFIG));
@@ -1474,7 +1475,7 @@ static bool command_event_save_core_config(void)
                   sizeof(tmp));
 
          strlcat(config_path, tmp, config_size);
-         if (!path_file_exists(config_path))
+         if (!filestream_exists(config_path))
          {
             found_path = true;
             break;

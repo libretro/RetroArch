@@ -33,6 +33,7 @@
 
 #include <compat/strl.h>
 #include <string/stdstring.h>
+#include <streams/file_stream.h>
 #include <file/file_path.h>
 #ifndef IS_SALAMANDER
 #include <lists/file_list.h>
@@ -125,7 +126,7 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
 #ifdef HAVE_MULTIMAN
    /* not launched from external launcher, set default path */
    // second param is multiMAN SELF file
-   if(path_file_exists(argv[2]) && *argc > 1
+   if (     filestream_exists(argv[2]) && *argc > 1
          && (string_is_equal(argv[2], EMULATOR_CONTENT_DIR)))
    {
       multiman_detected = true;
@@ -588,7 +589,7 @@ static void frontend_ps3_process_args(int *argc, char *argv[])
    {
       char path[PATH_MAX_LENGTH] = {0};
       strlcpy(path, argv[0], sizeof(path));
-      if (path_file_exists(path))
+      if (filestream_exists(path))
          rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH, path);
    }
 #endif

@@ -29,6 +29,7 @@
 #include <file/file_path.h>
 #include <formats/image.h>
 #include <gfx/math/matrix_4x4.h>
+#include <streams/file_stream.h>
 #include <string/stdstring.h>
 #include <lists/string_list.h>
 
@@ -288,7 +289,7 @@ static void nk_menu_context_load_textures(nk_menu_handle_t *nk,
 
    fill_pathname_join(path, iconpath,
          "pointer.png", sizeof(path));
-   if (!string_is_empty(path) && path_file_exists(path))
+   if (!string_is_empty(path) && filestream_exists(path))
    {
       image_texture_load(&ti, path);
       video_driver_texture_load(&ti,
@@ -297,7 +298,7 @@ static void nk_menu_context_load_textures(nk_menu_handle_t *nk,
 
    fill_pathname_join(path, iconpath,
          "bg.png", sizeof(path));
-   if (!string_is_empty(path) && path_file_exists(path))
+   if (!string_is_empty(path) && filestream_exists(path))
    {
       image_texture_load(&ti, path);
       video_driver_texture_load(&ti,
@@ -325,7 +326,7 @@ static void nk_menu_context_reset(void *data, bool is_threaded)
    nk_menu_init_device(nk);
    nk_menu_context_load_textures(nk, iconpath);
 
-   if (path_file_exists(settings->paths.path_menu_wallpaper))
+   if (filestream_exists(settings->paths.path_menu_wallpaper))
       task_push_image_load(settings->paths.path_menu_wallpaper,
             menu_display_handle_wallpaper_upload, NULL);
 }

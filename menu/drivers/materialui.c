@@ -28,6 +28,7 @@
 #include <formats/image.h>
 #include <gfx/math/matrix_4x4.h>
 #include <string/stdstring.h>
+#include <streams/file_stream.h>
 #include <lists/string_list.h>
 #include <encodings/utf.h>
 
@@ -1894,7 +1895,7 @@ static void mui_context_reset(void *data, bool is_threaded)
    menu_display_allocate_white_texture();
    mui_context_reset_textures(mui);
 
-   if (path_file_exists(settings->paths.path_menu_wallpaper))
+   if (filestream_exists(settings->paths.path_menu_wallpaper))
       task_push_image_load(settings->paths.path_menu_wallpaper,
             menu_display_handle_wallpaper_upload, NULL);
 }

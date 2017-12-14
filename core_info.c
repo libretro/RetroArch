@@ -20,6 +20,7 @@
 #include <file/file_path.h>
 #include <lists/dir_list.h>
 #include <file/archive_file.h>
+#include <streams/file_stream.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -540,7 +541,7 @@ static bool core_info_list_update_missing_firmware_internal(
 
       fill_pathname_join(path, systemdir,
             info->firmware[i].path, path_size);
-      info->firmware[i].missing = !path_file_exists(path);
+      info->firmware[i].missing = !filestream_exists(path);
       if (info->firmware[i].missing && !info->firmware[i].optional)
       {
          rarch_ctl(RARCH_CTL_SET_MISSING_BIOS, NULL);
@@ -596,7 +597,7 @@ static void core_info_list_get_missing_firmware(
    {
       fill_pathname_join(path, systemdir,
             info->firmware[i].path, sizeof(path));
-      info->firmware[i].missing = !path_file_exists(path);
+      info->firmware[i].missing = !filestream_exists(path);
       *num_firmware += info->firmware[i].missing;
    }
 

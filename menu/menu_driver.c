@@ -22,6 +22,7 @@
 #include <retro_miscellaneous.h>
 #include <formats/image.h>
 #include <file/file_path.h>
+#include <streams/file_stream.h>
 #include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
@@ -1307,7 +1308,7 @@ void menu_display_reset_textures_list(
    if (!string_is_empty(texture_path))
       fill_pathname_join(texpath, iconpath, texture_path, texpath_size);
 
-   if (string_is_empty(texpath) || !path_file_exists(texpath))
+   if (string_is_empty(texpath) || !filestream_exists(texpath))
       goto error;
 
    if (!image_texture_load(&ti, texpath))

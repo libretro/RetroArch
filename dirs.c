@@ -19,6 +19,7 @@
 #include <lists/dir_list.h>
 #include <lists/string_list.h>
 #include <string/stdstring.h>
+#include <streams/file_stream.h>
 #include <retro_assert.h>
 
 #include "dirs.h"
@@ -305,7 +306,7 @@ void dir_check_defaults(void)
    /* early return for people with a custom folder setup
       so it doesn't create unnecessary directories
     */
-   if (path_file_exists("custom.ini"))
+   if (filestream_exists("custom.ini"))
       return;
 
    for (i = 0; i < DEFAULT_DIR_LAST; i++)

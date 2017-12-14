@@ -74,16 +74,6 @@ bool path_is_compressed_file(const char *path);
 #define path_contains_compressed_file(path) (path_get_archive_delim((path)) != NULL)
 
 /**
- * path_file_exists:
- * @path               : path
- *
- * Checks if a file already exists at the specified path (@path).
- *
- * Returns: true (1) if file already exists, otherwise false (0).
- */
-bool path_file_exists(const char *path);
-
-/**
  * path_get_archive_delim:
  * @path               : path
  *

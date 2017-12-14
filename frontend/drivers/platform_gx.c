@@ -42,6 +42,7 @@
 #include <lists/file_list.h>
 #endif
 #include <string/stdstring.h>
+#include <streams/file_stream.h>
 
 #include "../frontend_driver.h"
 #include "../../defaults.h"
@@ -424,7 +425,7 @@ static void frontend_gx_process_args(int *argc, char *argv[])
    {
       char path[PATH_MAX_LENGTH] = {0};
       strlcpy(path, strrchr(argv[0], '/') + 1, sizeof(path));
-      if (path_file_exists(path))
+      if (filestream_exists(path))
          rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH, path);
    }
 #endif

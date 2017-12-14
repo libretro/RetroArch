@@ -1241,14 +1241,14 @@ static int generic_action_ok(const char *path,
    {
       case ACTION_OK_LOAD_WALLPAPER:
          flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MENU_SETTINGS_LIST);
-         if (path_file_exists(action_path))
+         if (filestream_exists(action_path))
          {
             settings_t            *settings = config_get_ptr();
 
             strlcpy(settings->paths.path_menu_wallpaper,
                   action_path, sizeof(settings->paths.path_menu_wallpaper));
 
-            if (path_file_exists(action_path))
+            if (filestream_exists(action_path))
                task_push_image_load(action_path,
                      menu_display_handle_wallpaper_upload, NULL);
          }
@@ -1763,7 +1763,7 @@ static int action_ok_audio_add_to_mixer(const char *path,
    playlist_get_index(tmp_playlist, entry_idx,
          &entry_path, NULL, NULL, NULL, NULL, NULL);
 
-   if(path_file_exists(entry_path))
+   if (filestream_exists(entry_path))
       task_push_audio_mixer_load(entry_path,
             NULL, NULL);
 
@@ -1791,7 +1791,7 @@ static int action_ok_audio_add_to_mixer_and_collection(const char *path,
          "builtin",
          "musicplayer");
 
-   if(path_file_exists(combined_path))
+   if (filestream_exists(combined_path))
       task_push_audio_mixer_load(combined_path,
             NULL, NULL);
 
@@ -2066,7 +2066,7 @@ static int generic_action_ok_shader_preset_save(const char *path,
             core_name,
             sizeof(directory));
    }
-   if(!path_file_exists(directory))
+   if (!filestream_exists(directory))
        path_mkdir(directory);
 
    switch (action_type)
@@ -2148,7 +2148,7 @@ static int generic_action_ok_remap_file_operation(const char *path,
          break;
    }
 
-   if(!path_file_exists(directory))
+   if (!filestream_exists(directory))
        path_mkdir(directory);
 
    if (action_type < ACTION_OK_REMAP_FILE_REMOVE_CORE)
@@ -2457,7 +2457,7 @@ static void cb_decompressed(void *task_data, void *user_data, const char *err)
 
    if (dec)
    {
-      if (path_file_exists(dec->source_file))
+      if (filestream_exists(dec->source_file))
          filestream_delete(dec->source_file);
 
       free(dec->source_file);
@@ -2648,7 +2648,7 @@ static void cb_generic_download(void *task_data,
                   dirname,
                   sizeof(shaderdir));
 
-            if (!path_file_exists(shaderdir) && !path_mkdir(shaderdir))
+            if (!filestream_exists(shaderdir) && !path_mkdir(shaderdir))
                goto finish;
 
             dir_path = shaderdir;

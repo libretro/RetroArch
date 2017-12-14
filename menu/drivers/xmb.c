@@ -28,6 +28,7 @@
 #include <string/stdstring.h>
 #include <lists/string_list.h>
 #include <gfx/math/matrix_4x4.h>
+#include <streams/file_stream.h>
 #include <encodings/utf.h>
 #include <features/features_cpu.h>
 
@@ -1077,7 +1078,7 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
 
          strlcat(path, file_path_str(FILE_PATH_PNG_EXTENSION), path_size);
 
-         if (path_file_exists(path))
+         if (filestream_exists(path))
          {
             if (!string_is_empty(xmb->savestate_thumbnail_file_path))
                free(xmb->savestate_thumbnail_file_path);
@@ -1097,7 +1098,7 @@ static void xmb_update_thumbnail_image(void *data)
    if (!xmb)
       return;
 
-   if (path_file_exists(xmb->thumbnail_file_path))
+   if (filestream_exists(xmb->thumbnail_file_path))
       task_push_image_load(xmb->thumbnail_file_path,
             menu_display_handle_thumbnail_upload, NULL);
    else
@@ -1142,7 +1143,7 @@ static void xmb_update_savestate_thumbnail_image(void *data)
       return;
 
    if (!string_is_empty(xmb->savestate_thumbnail_file_path)
-         && path_file_exists(xmb->savestate_thumbnail_file_path))
+         && filestream_exists(xmb->savestate_thumbnail_file_path))
       task_push_image_load(xmb->savestate_thumbnail_file_path,
             menu_display_handle_savestate_thumbnail_upload, NULL);
    else
@@ -1546,13 +1547,13 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
             file_path_str(FILE_PATH_PNG_EXTENSION),
             path_size);
 
-      if (!path_file_exists(path))
+      if (!filestream_exists(path))
          fill_pathname_application_special(path, path_size,
                APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG);
 
        if(!string_is_equal(path, xmb->background_file_path))
        {
-           if(path_file_exists(path))
+           if(filestream_exists(path))
            {
               task_push_image_load(path,
                   menu_display_handle_wallpaper_upload, NULL);
@@ -3838,7 +3839,7 @@ static void xmb_context_reset_background(const char *iconpath)
       strlcpy(path, settings->paths.path_menu_wallpaper,
             PATH_MAX_LENGTH * sizeof(char));
 
-   if (path_file_exists(path))
+   if (filestream_exists(path))
       task_push_image_load(path,
             menu_display_handle_wallpaper_upload, NULL);
 

@@ -1609,9 +1609,9 @@ static void config_set_defaults(void)
    settings->rewind_buffer_size                = rewind_buffer_size;
 
 #ifdef HAVE_LAKKA
-   settings->bools.ssh_enable                  = path_file_exists(LAKKA_SSH_PATH);
-   settings->bools.samba_enable                = path_file_exists(LAKKA_SAMBA_PATH);
-   settings->bools.bluetooth_enable            = path_file_exists(LAKKA_BLUETOOTH_PATH);
+   settings->bools.ssh_enable                  = filestream_exists(LAKKA_SSH_PATH);
+   settings->bools.samba_enable                = filestream_exists(LAKKA_SAMBA_PATH);
+   settings->bools.bluetooth_enable            = filestream_exists(LAKKA_BLUETOOTH_PATH);
 #endif
 
 #ifdef HAVE_MENU
@@ -2729,9 +2729,9 @@ static bool config_load_file(const char *path, bool set_defaults,
 
 
 #ifdef HAVE_LAKKA
-   settings->bools.ssh_enable       = path_file_exists(LAKKA_SSH_PATH);
-   settings->bools.samba_enable     = path_file_exists(LAKKA_SAMBA_PATH);
-   settings->bools.bluetooth_enable = path_file_exists(LAKKA_BLUETOOTH_PATH);
+   settings->bools.ssh_enable       = filestream_exists(LAKKA_SSH_PATH);
+   settings->bools.samba_enable     = filestream_exists(LAKKA_SAMBA_PATH);
+   settings->bools.bluetooth_enable = filestream_exists(LAKKA_BLUETOOTH_PATH);
 #endif
 
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL) &&
@@ -3882,7 +3882,7 @@ bool config_save_overrides(int override_type)
    fill_pathname_join(override_directory, config_directory, core_name,
       path_size);
 
-   if(!path_file_exists(override_directory))
+   if (!filestream_exists(override_directory))
        path_mkdir(override_directory);
 
    /* Concatenate strings into full paths for core_path, game_path */

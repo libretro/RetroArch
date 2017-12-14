@@ -22,6 +22,7 @@
 #include <ft2build.h>
 
 #include <file/file_path.h>
+#include <streams/file_stream.h>
 #include <retro_miscellaneous.h>
 
 #ifdef WIIU
@@ -297,7 +298,7 @@ static const char *font_renderer_ft_get_default_font(void)
 
    for (i = 0; i < ARRAY_SIZE(font_paths); i++)
    {
-      if (path_file_exists(font_paths[i]))
+      if (filestream_exists(font_paths[i]))
          return font_paths[i];
    }
 

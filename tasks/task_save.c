@@ -1175,7 +1175,7 @@ bool content_save_state(const char *path, bool save_to_disk, bool autosave)
    {
       if (save_to_disk)
       {
-         if (path_file_exists(path) && !autosave)
+         if (filestream_exists(path) && !autosave)
          {
             /* Before overwritting the savestate file, load it into a buffer
             to allow undo_save_state() to work */
@@ -1272,7 +1272,7 @@ error:
 bool content_rename_state(const char *origin, const char *dest)
 {
    int ret = 0;
-   if (path_file_exists(dest))
+   if (filestream_exists(dest))
       filestream_delete(dest);
 
    ret = filestream_rename(origin, dest);

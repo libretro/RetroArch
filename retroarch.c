@@ -43,6 +43,7 @@
 #include <compat/getopt.h>
 #include <audio/audio_mixer.h>
 #include <compat/posix_string.h>
+#include <streams/file_stream.h>
 #include <file/file_path.h>
 #include <retro_assert.h>
 #include <retro_miscellaneous.h>
@@ -835,7 +836,7 @@ static void retroarch_parse_input(int argc, char *argv[])
                      "Setting libretro_directory to \"%s\" instead.\n",
                      optarg);
             }
-            else if (path_file_exists(optarg))
+            else if (filestream_exists(optarg))
             {
                rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH, optarg);
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
