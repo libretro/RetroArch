@@ -302,7 +302,7 @@ void *retro_vfs_file_open_impl(const char *path, unsigned mode, unsigned hints)
          if (stream->mapsize == (uint64_t)-1)
             goto error;
 
-         filestream_rewind(stream);
+         retro_vfs_file_seek_internal(stream, 0, SEEK_SET);
 
          stream->mapped = (uint8_t*)mmap((void*)0,
                stream->mapsize, PROT_READ,  MAP_SHARED, stream->fd, 0);
