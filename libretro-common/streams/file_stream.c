@@ -33,9 +33,6 @@
 #include <vfs/vfs_implementation.h>
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
-#include <memmap.h>
-#include <retro_miscellaneous.h>
-#include <encodings/utf.h>
 
 static const int64_t vfs_error_return_value      = -1;
 
