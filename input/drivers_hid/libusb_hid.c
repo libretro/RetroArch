@@ -655,4 +655,5 @@ hid_driver_t libusb_hid = {
    libusb_hid_joypad_rumble,
    libusb_hid_joypad_name,
    "libusb",
+   libusb_hid_device_send_control,
 };

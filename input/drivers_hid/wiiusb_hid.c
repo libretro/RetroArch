@@ -630,4 +630,5 @@ hid_driver_t wiiusb_hid = {
    wiiusb_hid_joypad_rumble,
    wiiusb_hid_joypad_name,
    "wiiusb",
+   wiiusb_hid_device_send_control,
 };

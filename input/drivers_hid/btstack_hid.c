@@ -1477,4 +1477,5 @@ hid_driver_t btstack_hid = {
    btstack_hid_joypad_rumble,
    btstack_hid_joypad_name,
    "btstack",
+   btpad_connection_send_control
 };

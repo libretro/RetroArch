@@ -860,4 +860,5 @@ hid_driver_t iohidmanager_hid = {
    iohidmanager_hid_joypad_rumble,
    iohidmanager_hid_joypad_name,
    "iohidmanager",
+   iohidmanager_hid_device_send_control,
 };
