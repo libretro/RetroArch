@@ -28,7 +28,6 @@
 
 #include <sys/stat.h>
 
-#include <libretro.h>
 #include <boolean.h>
 #include <file/file_path.h>
 
