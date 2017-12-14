@@ -87,6 +87,10 @@ typedef int (RETRO_CALLCONV *retro_vfs_file_flush_t)(struct retro_vfs_file_handl
  * Introduced in VFS API v1 */
 typedef int (RETRO_CALLCONV *retro_vfs_file_delete_t)(const char *path);
 
+/* Rename the specified file. Returns 0 on success, -1 on failure
+ * Introduced in VFS API v1 */
+typedef int (RETRO_CALLCONV *retro_vfs_file_rename_t)(const char *old_path, const char *new_path);
+
 struct retro_vfs_interface
 {
 	retro_vfs_file_get_path_t file_get_path;
@@ -99,6 +103,7 @@ struct retro_vfs_interface
 	retro_vfs_file_write_t file_write;
 	retro_vfs_file_flush_t file_flush;
 	retro_vfs_file_delete_t file_delete;
+	retro_vfs_file_rename_t file_rename;
 };
 
 struct retro_vfs_interface_info

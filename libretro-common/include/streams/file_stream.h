@@ -92,6 +92,8 @@ int filestream_flush(RFILE *stream);
 
 int filestream_delete(const char *path);
 
+int filestream_rename(const char *old_path, const char *new_path);
+
 const char *filestream_get_path(RFILE *stream);
 
 static INLINE char *filestream_getline(RFILE *stream)

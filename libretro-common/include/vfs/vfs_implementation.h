@@ -58,6 +58,8 @@ int retro_vfs_file_flush_impl(libretro_vfs_implementation_file *stream);
 
 int retro_vfs_file_delete_impl(const char *path);
 
+int retro_vfs_file_rename_impl(const char *old_path, const char *new_path);
+
 const char *retro_vfs_file_get_path_impl(libretro_vfs_implementation_file *stream);
 
 #endif

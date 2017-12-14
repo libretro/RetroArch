@@ -17,6 +17,7 @@
 #include <compat/strl.h>
 #include <file/config_file.h>
 #include <file/file_path.h>
+#include <streams/file_stream.h>
 #include <string/stdstring.h>
 
 #include "input_driver.h"
@@ -241,7 +242,7 @@ bool input_remapping_remove_file(const char *path)
 
    fill_pathname_noext(remap_file, buf, ".rmp", path_size);
 
-   ret = path_file_remove(remap_file) == 0 ? true : false;;
+   ret = filestream_delete(remap_file) == 0 ? true : false;
    free(buf);
    free(remap_file);
    return ret;

@@ -1273,9 +1273,9 @@ bool content_rename_state(const char *origin, const char *dest)
 {
    int ret = 0;
    if (path_file_exists(dest))
-      path_file_remove(dest);
+      filestream_delete(dest);
 
-   ret = path_file_rename(origin, dest);
+   ret = filestream_rename(origin, dest);
    if (!ret)
       return true;
 

@@ -2458,7 +2458,7 @@ static void cb_decompressed(void *task_data, void *user_data, const char *err)
    if (dec)
    {
       if (path_file_exists(dec->source_file))
-         path_file_remove(dec->source_file);
+         filestream_delete(dec->source_file);
 
       free(dec->source_file);
       free(dec);
@@ -3865,7 +3865,7 @@ static int action_ok_core_delete(const char *path,
    generic_action_ok_command(CMD_EVENT_UNLOAD_CORE);
    menu_entries_flush_stack(0, 0);
 
-   if (path_file_remove(core_path) != 0) { }
+   if (filestream_delete(core_path) != 0) { }
 
    free(core_path);
 

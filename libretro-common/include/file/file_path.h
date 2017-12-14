@@ -466,10 +466,6 @@ bool path_is_valid(const char *path);
 
 int32_t path_get_size(const char *path);
 
-bool path_file_remove(const char *path);
-
-bool path_file_rename(const char *old_path, const char *new_path);
-
 RETRO_END_DECLS
 
 #endif

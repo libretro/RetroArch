@@ -1046,7 +1046,17 @@ MENU
 #include "../menu/menu_setting.c"
 #include "../menu/menu_cbs.c"
 #include "../menu/menu_content.c"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "../menu/menu_networking.c"
+
+#ifdef __cplusplus
+}
+#endif
+
 #include "../menu/widgets/menu_entry.c"
 #include "../menu/widgets/menu_filebrowser.c"
 #include "../menu/widgets/menu_dialog.c"

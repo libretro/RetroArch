@@ -1885,7 +1885,7 @@ static void systemd_service_toggle(const char *path, char *unit, bool enable)
                RETRO_VFS_FILE_ACCESS_WRITE,
                RETRO_VFS_FILE_ACCESS_HINT_NONE));
    else
-      path_file_remove(path);
+      filestream_delete(path);
 
    if (pid == 0)
       execvp(args[0], args);

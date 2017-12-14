@@ -3797,19 +3797,19 @@ bool config_save_file(const char *path)
                RETRO_VFS_FILE_ACCESS_WRITE,
                RETRO_VFS_FILE_ACCESS_HINT_NONE));
    else
-      path_file_remove(LAKKA_SSH_PATH);
+      filestream_delete(LAKKA_SSH_PATH);
    if (settings->bools.samba_enable)
       filestream_close(filestream_open(LAKKA_SAMBA_PATH,
                RETRO_VFS_FILE_ACCESS_WRITE,
                RETRO_VFS_FILE_ACCESS_HINT_NONE));
    else
-      path_file_remove(LAKKA_SAMBA_PATH);
+      filestream_delete(LAKKA_SAMBA_PATH);
    if (settings->bools.bluetooth_enable)
       filestream_close(filestream_open(LAKKA_BLUETOOTH_PATH,
                RETRO_VFS_FILE_ACCESS_WRITE,
                RETRO_VFS_FILE_ACCESS_HINT_NONE));
    else
-      path_file_remove(LAKKA_BLUETOOTH_PATH);
+      filestream_delete(LAKKA_BLUETOOTH_PATH);
 #endif
 
    for (i = 0; i < MAX_USERS; i++)

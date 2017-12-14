@@ -46,6 +46,7 @@ static retro_vfs_file_read_t filestream_read_cb         = NULL;
 static retro_vfs_file_write_t filestream_write_cb       = NULL;
 static retro_vfs_file_flush_t filestream_flush_cb       = NULL;
 static retro_vfs_file_delete_t filestream_delete_cb     = NULL;
+static retro_vfs_file_rename_t filestream_rename_cb     = NULL;
 
 struct RFILE
 {
@@ -69,6 +70,7 @@ void filestream_vfs_init(const struct retro_vfs_interface_info* vfs_info)
 	filestream_write_cb    = NULL;
 	filestream_flush_cb    = NULL;
 	filestream_delete_cb   = NULL;
+	filestream_rename_cb   = NULL;
 
 	vfs_iface              = vfs_info->iface;
 
@@ -86,6 +88,7 @@ void filestream_vfs_init(const struct retro_vfs_interface_info* vfs_info)
 	filestream_write_cb    = vfs_iface->file_write;
 	filestream_flush_cb    = vfs_iface->file_flush;
 	filestream_delete_cb   = vfs_iface->file_delete;
+	filestream_rename_cb   = vfs_iface->file_rename;
 }
 
 /* Callback wrappers */
@@ -253,6 +256,14 @@ int filestream_delete(const char *path)
       return filestream_delete_cb(path);
 
    return retro_vfs_file_delete_impl(path);
+}
+
+int filestream_rename(const char *old_path, const char *new_path)
+{
+   if (filestream_rename_cb != NULL)
+      return filestream_rename_cb(old_path, new_path);
+
+   return retro_vfs_file_rename_impl(old_path, new_path);
 }
 
 const char *filestream_get_path(RFILE *stream)

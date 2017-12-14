@@ -1718,7 +1718,7 @@ void content_deinit(void)
 
          RARCH_LOG("%s: %s.\n",
                msg_hash_to_str(MSG_REMOVING_TEMPORARY_CONTENT_FILE), path);
-         if (!path_file_remove(path))
+         if (!filestream_delete(path))
             RARCH_ERR("%s: %s.\n",
                   msg_hash_to_str(MSG_FAILED_TO_REMOVE_TEMPORARY_FILE),
                   path);
