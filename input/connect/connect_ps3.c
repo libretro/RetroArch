@@ -22,6 +22,10 @@
 #include "joypad_connection.h"
 #include "../input_defines.h"
 
+#ifdef WIIU
+#include <wiiu/syshid.h>
+#endif
+
 struct hidpad_ps3_data
 {
    struct pad_connection* connection;
@@ -32,6 +36,13 @@ struct hidpad_ps3_data
    bool have_led;
    uint16_t motors[2];
 };
+
+/*
+ * TODO: give these more meaningful names.
+ */
+
+#define DS3_ACTIVATION_REPORT_ID 0xf4
+#define DS3_RUMBLE_REPORT_ID     0x01
 
 static void hidpad_ps3_send_control(struct hidpad_ps3_data* device)
 {
@@ -49,12 +60,20 @@ static void hidpad_ps3_send_control(struct hidpad_ps3_data* device)
       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
    };
 
+   // Turn on the appropriate LED
    report_buffer[11] = 1 << ((device->slot % 4) + 1);
+   // Set rumble state
    report_buffer[4]  = device->motors[1] >> 8;
    report_buffer[6]  = device->motors[0] >> 8;
 #ifdef HAVE_WIIUSB_HID
    report_buffer[1]  = 0x03; /* send control message type */
    device->driver->send_control(device->connection, &report_buffer[1], sizeof(report_buffer)-1);
+#elif defined(WIIU)
+   device->driver->set_report(device->connection,
+                              HID_REPORT_OUTPUT,
+                              DS3_RUMBLE_REPORT_ID,
+                              report_buffer+2,
+                              sizeof(report_buffer) - (2*sizeof(uint8_t)));
 #else
    device->driver->send_control(device->connection, report_buffer, sizeof(report_buffer));
 #endif
@@ -62,7 +81,7 @@ static void hidpad_ps3_send_control(struct hidpad_ps3_data* device)
 
 static void* hidpad_ps3_init(void *data, uint32_t slot, hid_driver_t *driver)
 {
-#ifdef HAVE_WIIUSB_HID
+#if defined(HAVE_WIIUSB_HID) || defined(WIIU)
    /* Special command to enable Sixaxis, first byte defines the message type */
    static uint8_t magic_data[]       = {0x02, 0x42, 0x0c, 0x00, 0x00};
 #elif defined(IOS)
@@ -88,6 +107,16 @@ static void* hidpad_ps3_init(void *data, uint32_t slot, hid_driver_t *driver)
 
 #if defined(IOS) || defined(HAVE_WIIUSB_HID)
    device->driver->send_control(device->connection, magic_data, sizeof(magic_data));
+#endif
+
+#ifdef WIIU
+   device->driver->set_protocol(device->connection, 1);
+   hidpad_ps3_send_control(device);
+   device->driver->set_report(device->connection,
+                              HID_REPORT_FEATURE,
+                              DS3_ACTIVATION_REPORT_ID,
+                              magic_data+1,
+                              (sizeof(magic_data) - sizeof(uint8_t)));
 #endif
 
 #ifndef HAVE_WIIUSB_HID
