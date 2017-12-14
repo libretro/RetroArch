@@ -26,6 +26,7 @@
 #include <string/stdstring.h>
 #include <retro_assert.h>
 #include <libretro_vfs.h>
+#define VFS_FRONTEND
 #include <vfs/vfs_implementation.h>
 
 #include <features/features_cpu.h>
@@ -1651,7 +1652,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          core_set_shared_context = true;
          break;
       }
-
+ 
       case RETRO_ENVIRONMENT_GET_VFS_INTERFACE:
       {
          const uint32_t supported_vfs_version = 1;
