@@ -122,7 +122,8 @@ RFILE *filestream_open(const char *path, unsigned mode, unsigned hints)
 	RFILE* output                     = NULL;
 
 	if (filestream_open_cb != NULL)
-		fp = filestream_open_cb(path, mode, hints);
+		fp = (struct retro_vfs_file_handle*)
+         filestream_open_cb(path, mode, hints);
 	else
 		fp = (struct retro_vfs_file_handle*)
          retro_vfs_file_open_impl(path, mode, hints);
