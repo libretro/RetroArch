@@ -74,17 +74,10 @@
 
 #endif
 
-#if !defined(_WIN32) || defined(LEGACY_WIN32)
 #define MODE_STR_READ "r"
 #define MODE_STR_READ_UNBUF "rb"
 #define MODE_STR_WRITE_UNBUF "wb"
 #define MODE_STR_WRITE_PLUS "w+"
-#else
-#define MODE_STR_READ L"r"
-#define MODE_STR_READ_UNBUF L"rb"
-#define MODE_STR_WRITE_UNBUF L"wb"
-#define MODE_STR_WRITE_PLUS L"w+"
-#endif
 
 #ifdef RARCH_INTERNAL
 #ifndef VFS_FRONTEND
@@ -98,6 +91,7 @@
 #include <memmap.h>
 #include <retro_miscellaneous.h>
 #include <encodings/utf.h>
+#include <compat/fopen_utf8.h>
 
 #define RFILE_HINT_UNBUFFERED (1 << 8)
 
@@ -110,13 +104,11 @@ struct libretro_vfs_implementation_file
    int fd;
    unsigned hints;
    int64_t size;
-#if defined(HAVE_MMAP)
-   uint64_t mappos;
-   uint64_t mapsize;
-#endif
    char *buf;
    FILE *fp;
 #if defined(HAVE_MMAP)
+   uint64_t mappos;
+   uint64_t mapsize;
    uint8_t *mapped;
 #endif
 };
@@ -188,11 +180,7 @@ error:
 libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, unsigned mode, unsigned hints)
 {
    int            flags    = 0;
-#if !defined(_WIN32) || defined(LEGACY_WIN32)
    const char *mode_str    = NULL;
-#else
-   const wchar_t *mode_str = NULL;
-#endif
    libretro_vfs_implementation_file *stream = (libretro_vfs_implementation_file*)calloc(1, sizeof(*stream));
 
    if (!stream)
@@ -246,21 +234,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uns
 
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0 && mode_str)
    {
-#if defined(_WIN32) && !defined(_XBOX)
-#if defined(LEGACY_WIN32)
-      char *path_local    = utf8_to_local_string_alloc(path);
-      stream->fp          = fopen(path_local, mode_str);
-      if (path_local)
-         free(path_local);
-#else
-      wchar_t * path_wide = utf8_to_utf16_string_alloc(path);
-      stream->fp          = _wfopen(path_wide, mode_str);
-      if (path_wide)
-         free(path_wide);
-#endif
-#else
-      stream->fp = fopen(path, mode_str);
-#endif
+      stream->fp = fopen(path_utf8, mode_str);
 
       if (!stream->fp)
          goto error;
