@@ -234,7 +234,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uns
 
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0 && mode_str)
    {
-      stream->fp = fopen(path_utf8, mode_str);
+      stream->fp = fopen_utf8(path, mode_str);
 
       if (!stream->fp)
          goto error;
