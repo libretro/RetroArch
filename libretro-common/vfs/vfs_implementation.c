@@ -463,6 +463,7 @@ int retro_vfs_file_delete_impl(const char *path)
 
 const char *retro_vfs_file_get_path_impl(libretro_vfs_implementation_file *stream)
 {
+   /* TODO/FIXME - implement */
    return NULL;
 }
 

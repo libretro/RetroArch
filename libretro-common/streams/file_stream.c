@@ -259,9 +259,10 @@ int filestream_delete(const char *path)
 
 const char *filestream_get_path(RFILE *stream)
 {
-   /* TODO/FIXME - implement - is a char pointer sufficient here
-    * or should we cater to wchar_t and friends too? */
-   return NULL;
+   if (filestream_get_path_cb != NULL)
+      return filestream_get_path_cb(stream->hfile);
+
+   return retro_vfs_file_get_path_impl((libretro_vfs_implementation_file*)stream->hfile);
 }
 
 ssize_t filestream_write(RFILE *stream, const void *s, size_t len)
