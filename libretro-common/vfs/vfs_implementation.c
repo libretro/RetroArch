@@ -94,12 +94,6 @@
 #include <retro_miscellaneous.h>
 #include <encodings/utf.h>
 
-#ifdef RARCH_INTERNAL
-#ifndef VFS_FRONTEND
-#define VFS_FRONTEND
-#endif
-#endif
-
 #define RFILE_HINT_UNBUFFERED (1 << 8)
 
 struct libretro_vfs_implementation_file
