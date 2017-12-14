@@ -159,13 +159,16 @@ int intfstream_close(intfstream_internal_t *intf)
    switch (intf->type)
    {
       case INTFSTREAM_FILE:
-         return filestream_close(intf->file.fp);
+         if (intf->file.fp)
+            return filestream_close(intf->file.fp);
       case INTFSTREAM_MEMORY:
-         memstream_close(intf->memory.fp);
+         if (intf->memory.fp)
+            memstream_close(intf->memory.fp);
          return 0;
       case INTFSTREAM_CHD:
 #ifdef HAVE_CHD
-         chdstream_close(intf->chd.fp);
+         if (intf->chd.fp)
+            chdstream_close(intf->chd.fp);
 #endif
          return 0;
    }

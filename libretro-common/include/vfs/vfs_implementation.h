@@ -38,7 +38,7 @@ typedef struct retro_vfs_file_handle libretro_vfs_implementation_file;
 typedef struct libretro_vfs_implementation_file libretro_vfs_implementation_file;
 #endif
 
-libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uint64_t flags);
+libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, unsigned mode, unsigned hints);
 
 int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream);
 
@@ -48,7 +48,7 @@ int64_t retro_vfs_file_size_impl(libretro_vfs_implementation_file *stream);
 
 int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream);
 
-int64_t retro_vfs_file_seek_impl(libretro_vfs_implementation_file *stream, int64_t offset);
+int64_t retro_vfs_file_seek_impl(libretro_vfs_implementation_file *stream, int64_t offset, int whence);
 
 int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream, void *s, uint64_t len);
 

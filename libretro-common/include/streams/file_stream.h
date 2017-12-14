@@ -37,6 +37,8 @@
 
 #include <stdarg.h>
 
+#define FILESTREAM_REQUIRED_VFS_VERSION 1
+
 RETRO_BEGIN_DECLS
 
 typedef struct RFILE RFILE;

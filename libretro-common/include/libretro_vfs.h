@@ -52,7 +52,7 @@ typedef const char *(RETRO_CALLCONV *retro_vfs_file_get_path_t)(struct retro_vfs
 /* Open a file for reading or writing. If path points to a directory, this will
  * fail. Returns the opaque file handle, or NULL for error.
  * Introduced in VFS API v1 */
-typedef struct retro_vfs_file_handle *(RETRO_CALLCONV *retro_vfs_file_open_t)(const char *path, uint64_t flags);
+typedef struct retro_vfs_file_handle *(RETRO_CALLCONV *retro_vfs_file_open_t)(const char *path, unsigned mode, unsigned hints);
 
 /* Close the file and release its resources. Must be called if open_file returns non-NULL. Returns 0 on succes, -1 on failure.
  * Whether the call succeeds ot not, the handle passed as parameter becomes invalid and should no longer be used.
@@ -69,7 +69,7 @@ typedef int64_t (RETRO_CALLCONV *retro_vfs_file_tell_t)(struct retro_vfs_file_ha
 
 /* Set the current read/write position for the file. Returns the new position, -1 for error.
  * Introduced in VFS API v1 */
-typedef int64_t (RETRO_CALLCONV *retro_vfs_file_seek_t)(struct retro_vfs_file_handle *stream, int64_t offset);
+typedef int64_t (RETRO_CALLCONV *retro_vfs_file_seek_t)(struct retro_vfs_file_handle *stream, int64_t offset, int whence);
 
 /* Read data from a file. Returns the number of bytes read, or -1 for error.
  * Introduced in VFS API v1 */
