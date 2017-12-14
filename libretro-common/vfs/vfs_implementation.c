@@ -65,8 +65,6 @@
 #include <fcntl.h>
 #endif
 
-#include <streams/file_stream.h>
-
 /* Assume W-functions do not work below Win2K and Xbox platforms */
 #if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500 || defined(_XBOX)
 
@@ -89,6 +87,7 @@
 #endif
 
 #include <vfs/vfs_implementation.h>
+#include <libretro_vfs.h>
 #include <string/stdstring.h>
 #include <memmap.h>
 #include <retro_miscellaneous.h>
