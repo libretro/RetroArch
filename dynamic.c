@@ -25,7 +25,7 @@
 #include <dynamic/dylib.h>
 #include <string/stdstring.h>
 #include <retro_assert.h>
-#include <libretro_vfs.h>
+#include <libretro.h>
 #define VFS_FRONTEND
 #include <vfs/vfs_implementation.h>
 

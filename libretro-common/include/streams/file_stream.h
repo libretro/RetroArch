@@ -30,7 +30,7 @@
 
 #include <sys/types.h>
 
-#include <libretro_vfs.h>
+#include <libretro.h>
 #include <retro_common_api.h>
 #include <retro_inline.h>
 #include <boolean.h>
@@ -44,6 +44,8 @@ RETRO_BEGIN_DECLS
 typedef struct RFILE RFILE;
 
 #define FILESTREAM_REQUIRED_VFS_VERSION 1
+
+void filestream_vfs_init(const struct retro_vfs_interface_info* vfs_info);
 
 int64_t filestream_get_size(RFILE *stream);
 
@@ -98,40 +100,7 @@ const char *filestream_get_path(RFILE *stream);
 
 bool filestream_exists(const char *path);
 
-static INLINE char *filestream_getline(RFILE *stream)
-{
-   char* newline     = (char*)malloc(9);
-   char* newline_tmp = NULL;
-   size_t cur_size   = 8;
-   size_t idx        = 0;
-   int in            = filestream_getc(stream);
-
-   if (!newline)
-      return NULL;
-
-   while (in != EOF && in != '\n')
-   {
-      if (idx == cur_size)
-      {
-         cur_size *= 2;
-         newline_tmp = (char*)realloc(newline, cur_size + 1);
-
-         if (!newline_tmp)
-         {
-            free(newline);
-            return NULL;
-         }
-
-         newline = newline_tmp;
-      }
-
-      newline[idx++] = in;
-      in             = filestream_getc(stream);
-   }
-
-   newline[idx] = '\0';
-   return newline;
-}
+char *filestream_getline(RFILE *stream);
 
 RETRO_END_DECLS
 

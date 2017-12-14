@@ -23,7 +23,7 @@
 #include <string.h>
 #include <stdarg.h>
 
-#include <libretro_vfs.h>
+#include <libretro.h>
 #include <streams/file_stream.h>
 
 RFILE* rfopen(const char *path, const char *mode)

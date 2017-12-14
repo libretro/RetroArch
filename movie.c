@@ -17,7 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <libretro_vfs.h>
+#include <libretro.h>
 #include <rhash.h>
 #include <compat/strl.h>
 #include <retro_endianness.h>

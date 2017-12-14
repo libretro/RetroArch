@@ -23,16 +23,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 #include <errno.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-#include <libretro_vfs.h>
-#include <vfs/vfs_implementation.h>
-#include <string/stdstring.h>
 #include <streams/file_stream.h>
+#include <vfs/vfs_implementation.h>
 
 static const int64_t vfs_error_return_value      = -1;
 
@@ -453,4 +452,39 @@ bool filestream_write_file(const char *path, const void *data, ssize_t size)
       return false;
 
    return true;
+}
+
+char *filestream_getline(RFILE *stream)
+{
+   char* newline     = (char*)malloc(9);
+   char* newline_tmp = NULL;
+   size_t cur_size   = 8;
+   size_t idx        = 0;
+   int in            = filestream_getc(stream);
+
+   if (!newline)
+      return NULL;
+
+   while (in != EOF && in != '\n')
+   {
+      if (idx == cur_size)
+      {
+         cur_size *= 2;
+         newline_tmp = (char*)realloc(newline, cur_size + 1);
+
+         if (!newline_tmp)
+         {
+            free(newline);
+            return NULL;
+         }
+
+         newline = newline_tmp;
+      }
+
+      newline[idx++] = in;
+      in             = filestream_getc(stream);
+   }
+
+   newline[idx] = '\0';
+   return newline;
 }

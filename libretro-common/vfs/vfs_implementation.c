@@ -86,8 +86,7 @@
 #endif
 
 #include <vfs/vfs_implementation.h>
-#include <libretro_vfs.h>
-#include <string/stdstring.h>
+#include <libretro.h>
 #include <memmap.h>
 #include <retro_miscellaneous.h>
 #include <encodings/utf.h>
