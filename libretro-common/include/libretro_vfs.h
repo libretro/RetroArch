@@ -40,9 +40,11 @@ struct retro_vfs_file_handle;
 #define RETRO_VFS_FILE_ACCESS_READ_WRITE      (RETRO_VFS_FILE_ACCESS_READ | RETRO_VFS_FILE_ACCESS_WRITE) /* Read-write mode, discard contents and overwrites existing file unless RETRO_VFS_FILE_ACCESS_UPDATE is also specified*/
 #define RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING (1 << 2) /* Prevents discarding content of existing files opened for writing */
 
-#define RETRO_VFS_FILE_ACCESS_HINT_NONE            (0)
-/* Indicate that we would want to map the file into memory if possible. Requires RETRO_VFS_FILE_ACCESS_READ. This is only a hint and it is up to the frontend to honor and implement it. */
-#define RETRO_VFS_FILE_ACCESS_HINT_MEMORY_MAP      (1 << 0)
+/* These are only hints. The frontend may choose to ignore them. Other than RAM/CPU/etc use,
+   and how they react to unlikely external interference (for example the file's server going down), behavior will not change. */
+#define RETRO_VFS_FILE_ACCESS_HINT_NONE              (0)
+/* Indicate that the file will be accessed many times. The frontend should aggressively cache everything. */
+#define RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS   (1 << 0)
 
 
 /* Get path from opaque handle. Returns the exact same path passed to file_open when getting the handle

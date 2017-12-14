@@ -126,7 +126,7 @@ int64_t retro_vfs_file_seek_internal(libretro_vfs_implementation_file *stream, i
    /* Need to check stream->mapped because this function is
     * called in filestream_open() */
    if (stream->mapped && stream->hints & 
-         RETRO_VFS_FILE_ACCESS_HINT_MEMORY_MAP)
+         RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS)
    {
       /* fseek() returns error on under/overflow but 
        * allows cursor > EOF for
@@ -193,11 +193,11 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uns
    stream->orig_path       = strdup(path);
 
 #ifdef HAVE_MMAP
-   if (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_MEMORY_MAP && mode == RETRO_VFS_FILE_ACCESS_READ)
+   if (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS && mode == RETRO_VFS_FILE_ACCESS_READ)
       stream->hints |= RFILE_HINT_UNBUFFERED;
    else
 #endif
-      stream->hints &= ~RETRO_VFS_FILE_ACCESS_HINT_MEMORY_MAP;
+      stream->hints &= ~RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS;
 
    switch (mode)
    {
@@ -276,7 +276,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uns
          goto error;
 
 #ifdef HAVE_MMAP
-      if (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_MEMORY_MAP)
+      if (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS)
       {
          stream->mappos  = 0;
          stream->mapped  = NULL;
@@ -291,7 +291,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uns
                stream->mapsize, PROT_READ,  MAP_SHARED, stream->fd, 0);
 
          if (stream->mapped == MAP_FAILED)
-            stream->hints &= ~RETRO_VFS_FILE_ACCESS_HINT_MEMORY_MAP;
+            stream->hints &= ~RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS;
       }
 #endif
    }
@@ -323,7 +323,7 @@ int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream)
    else
    {
 #ifdef HAVE_MMAP
-      if (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_MEMORY_MAP)
+      if (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS)
          munmap(stream->mapped, stream->mapsize);
 #endif
    }
@@ -362,7 +362,7 @@ int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream)
 #ifdef HAVE_MMAP
    /* Need to check stream->mapped because this function
     * is called in filestream_open() */
-   if (stream->mapped && stream->hints & RETRO_VFS_FILE_ACCESS_HINT_MEMORY_MAP)
+   if (stream->mapped && stream->hints & RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS)
       return stream->mappos;
 #endif
    if (lseek(stream->fd, 0, SEEK_CUR) < 0)
@@ -385,7 +385,7 @@ int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream, void 
       return fread(s, 1, len, stream->fp);
 
 #ifdef HAVE_MMAP
-   if (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_MEMORY_MAP)
+   if (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS)
    {
       if (stream->mappos > stream->mapsize)
          goto error;
@@ -415,7 +415,7 @@ int64_t retro_vfs_file_write_impl(libretro_vfs_implementation_file *stream, cons
       return fwrite(s, 1, len, stream->fp);
 
 #ifdef HAVE_MMAP
-   if (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_MEMORY_MAP)
+   if (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS)
       goto error;
 #endif
    return write(stream->fd, s, len);
