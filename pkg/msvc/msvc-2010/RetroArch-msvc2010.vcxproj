@@ -272,7 +272,7 @@
     </ClCompile>
     <Link>
       <SubSystem>WINDOWS</SubSystem>
-      <Entry>main</Entry>
+      <EntryPointSymbol>main</EntryPointSymbol>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
@@ -297,7 +297,7 @@
     </ClCompile>
     <Link>
       <SubSystem>WINDOWS</SubSystem>
-      <Entry>main</Entry>
+      <EntryPointSymbol>main</EntryPointSymbol>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
@@ -323,6 +323,7 @@
     </ClCompile>
     <Link>
       <SubSystem>WINDOWS</SubSystem>
+      <EntryPointSymbol>main</EntryPointSymbol>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
@@ -347,6 +348,7 @@
     </ClCompile>
     <Link>
       <SubSystem>WINDOWS</SubSystem>
+      <EntryPointSymbol>main</EntryPointSymbol>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
