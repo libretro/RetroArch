@@ -62,9 +62,9 @@ RFILE *filestream_open(const char *path, unsigned mode, unsigned hints);
 
 ssize_t filestream_seek(RFILE *stream, ssize_t offset, int whence);
 
-ssize_t filestream_read(RFILE *stream, void *data, size_t len);
+ssize_t filestream_read(RFILE *stream, void *data, int64_t len);
 
-ssize_t filestream_write(RFILE *stream, const void *data, size_t len);
+ssize_t filestream_write(RFILE *stream, const void *data, int64_t len);
 
 ssize_t filestream_tell(RFILE *stream);
 
