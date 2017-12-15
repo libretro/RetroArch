@@ -531,6 +531,7 @@ int retro_vfs_file_rename_impl(const char *old_path, const char *new_path)
    if (new_path_wide)
       free(new_path_wide);
 #endif
+   return -1;
 #else
    return rename(old_path, new_path);
 #endif
