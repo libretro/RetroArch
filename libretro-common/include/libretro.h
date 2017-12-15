@@ -978,7 +978,9 @@ struct retro_vfs_file_handle;
 #define RETRO_VFS_FILE_ACCESS_READ_WRITE      (RETRO_VFS_FILE_ACCESS_READ | RETRO_VFS_FILE_ACCESS_WRITE) /* Read-write mode, discard contents and overwrites existing file unless RETRO_VFS_FILE_ACCESS_UPDATE is also specified*/
 #define RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING (1 << 2) /* Prevents discarding content of existing files opened for writing */
 
-/* These are only hints. The frontend may choose to ignore them. Other than RAM/CPU/etc use, and how they react to unlikely external interference (for example the file's server going down), behavior will not change. */
+/* These are only hints. The frontend may choose to ignore them. Other than RAM/CPU/etc use,
+   and how they react to unlikely external interference (for example someone else writing to that file,
+   or the file's server going down), behavior will not change. */
 #define RETRO_VFS_FILE_ACCESS_HINT_NONE              (0)
 /* Indicate that the file will be accessed many times. The frontend should aggressively cache everything. */
 #define RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS   (1 << 0)

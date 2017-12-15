@@ -1680,7 +1680,6 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
       }
 
-      /* Default */
       default:
          RARCH_LOG("Environ UNSUPPORTED (#%u).\n", cmd);
          return false;
