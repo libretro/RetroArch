@@ -1667,7 +1667,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             retro_vfs_file_read_impl,
             retro_vfs_file_write_impl,
             retro_vfs_file_flush_impl,
-            retro_vfs_file_delete_impl
+            retro_vfs_file_remove_impl
          };
 
          struct retro_vfs_interface_info *vfs_iface_info = (struct retro_vfs_interface_info *) data;

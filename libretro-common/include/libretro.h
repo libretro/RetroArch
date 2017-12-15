@@ -987,63 +987,63 @@ struct retro_vfs_file_handle;
 
 /* Get path from opaque handle. Returns the exact same path passed to file_open when getting the handle
  * Introduced in VFS API v1 */
-typedef const char *(RETRO_CALLCONV *retro_vfs_file_get_path_t)(struct retro_vfs_file_handle *stream);
+typedef const char *(RETRO_CALLCONV *retro_vfs_get_path_t)(struct retro_vfs_file_handle *stream);
 
 /* Open a file for reading or writing. If path points to a directory, this will
  * fail. Returns the opaque file handle, or NULL for error.
  * Introduced in VFS API v1 */
-typedef struct retro_vfs_file_handle *(RETRO_CALLCONV *retro_vfs_file_open_t)(const char *path, unsigned mode, unsigned hints);
+typedef struct retro_vfs_file_handle *(RETRO_CALLCONV *retro_vfs_open_t)(const char *path, unsigned mode, unsigned hints);
 
 /* Close the file and release its resources. Must be called if open_file returns non-NULL. Returns 0 on succes, -1 on failure.
  * Whether the call succeeds ot not, the handle passed as parameter becomes invalid and should no longer be used.
  * Introduced in VFS API v1 */
-typedef int (RETRO_CALLCONV *retro_vfs_file_close_t)(struct retro_vfs_file_handle *stream);
+typedef int (RETRO_CALLCONV *retro_vfs_close_t)(struct retro_vfs_file_handle *stream);
 
 /* Return the size of the file in bytes, or -1 for error.
  * Introduced in VFS API v1 */
-typedef int64_t (RETRO_CALLCONV *retro_vfs_file_size_t)(struct retro_vfs_file_handle *stream);
+typedef int64_t (RETRO_CALLCONV *retro_vfs_size_t)(struct retro_vfs_file_handle *stream);
 
 /* Get the current read / write position for the file. Returns - 1 for error.
  * Introduced in VFS API v1 */
-typedef int64_t (RETRO_CALLCONV *retro_vfs_file_tell_t)(struct retro_vfs_file_handle *stream);
+typedef int64_t (RETRO_CALLCONV *retro_vfs_tell_t)(struct retro_vfs_file_handle *stream);
 
 /* Set the current read/write position for the file. Returns the new position, -1 for error.
  * Introduced in VFS API v1 */
-typedef int64_t (RETRO_CALLCONV *retro_vfs_file_seek_t)(struct retro_vfs_file_handle *stream, int64_t offset, int whence);
+typedef int64_t (RETRO_CALLCONV *retro_vfs_seek_t)(struct retro_vfs_file_handle *stream, int64_t offset, int whence);
 
 /* Read data from a file. Returns the number of bytes read, or -1 for error.
  * Introduced in VFS API v1 */
-typedef int64_t (RETRO_CALLCONV *retro_vfs_file_read_t)(struct retro_vfs_file_handle *stream, void *s, uint64_t len);
+typedef int64_t (RETRO_CALLCONV *retro_vfs_read_t)(struct retro_vfs_file_handle *stream, void *s, uint64_t len);
 
 /* Write data to a file. Returns the number of bytes written, or -1 for error.
  * Introduced in VFS API v1 */
-typedef int64_t (RETRO_CALLCONV *retro_vfs_file_write_t)(struct retro_vfs_file_handle *stream, const void *s, uint64_t len);
+typedef int64_t (RETRO_CALLCONV *retro_vfs_write_t)(struct retro_vfs_file_handle *stream, const void *s, uint64_t len);
 
 /* Flush pending writes to file, if using buffered IO. Returns 0 on sucess, or -1 on failure.
  * Introduced in VFS API v1 */
-typedef int (RETRO_CALLCONV *retro_vfs_file_flush_t)(struct retro_vfs_file_handle *stream);
+typedef int (RETRO_CALLCONV *retro_vfs_flush_t)(struct retro_vfs_file_handle *stream);
 
 /* Delete the specified file. Returns 0 on success, -1 on failure
  * Introduced in VFS API v1 */
-typedef int (RETRO_CALLCONV *retro_vfs_file_delete_t)(const char *path);
+typedef int (RETRO_CALLCONV *retro_vfs_remove_t)(const char *path);
 
 /* Rename the specified file. Returns 0 on success, -1 on failure
  * Introduced in VFS API v1 */
-typedef int (RETRO_CALLCONV *retro_vfs_file_rename_t)(const char *old_path, const char *new_path);
+typedef int (RETRO_CALLCONV *retro_vfs_rename_t)(const char *old_path, const char *new_path);
 
 struct retro_vfs_interface
 {
-	retro_vfs_file_get_path_t file_get_path;
-	retro_vfs_file_open_t file_open;
-	retro_vfs_file_close_t file_close;
-	retro_vfs_file_size_t file_size;
-	retro_vfs_file_tell_t file_tell;
-	retro_vfs_file_seek_t file_seek;
-	retro_vfs_file_read_t file_read;
-	retro_vfs_file_write_t file_write;
-	retro_vfs_file_flush_t file_flush;
-	retro_vfs_file_delete_t file_delete;
-	retro_vfs_file_rename_t file_rename;
+	retro_vfs_get_path_t get_path;
+	retro_vfs_open_t open;
+	retro_vfs_close_t close;
+	retro_vfs_size_t size;
+	retro_vfs_tell_t tell;
+	retro_vfs_seek_t seek;
+	retro_vfs_read_t read;
+	retro_vfs_write_t write;
+	retro_vfs_flush_t flush;
+	retro_vfs_remove_t remove;
+	retro_vfs_rename_t rename;
 };
 
 struct retro_vfs_interface_info
