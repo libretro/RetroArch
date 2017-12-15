@@ -157,7 +157,7 @@ int64_t retro_vfs_file_seek_internal(libretro_vfs_implementation_file *stream, i
    }
 #endif
 
-   if (lseek(stream->fd, offset, whence) < 0)
+   if (lseek(stream->fd, (off_t)offset, whence) < 0)
       goto error;
 
    return 0;
@@ -385,7 +385,7 @@ int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream, void 
       goto error;
 
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
-      return fread(s, 1, len, stream->fp);
+      return fread(s, 1, (size_t)len, stream->fp);
 
 #ifdef HAVE_MMAP
    if (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS)
@@ -403,7 +403,7 @@ int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream, void 
    }
 #endif
 
-   return read(stream->fd, s, len);
+   return read(stream->fd, s, (size_t)len);
 
 error:
    return -1;
@@ -415,13 +415,13 @@ int64_t retro_vfs_file_write_impl(libretro_vfs_implementation_file *stream, cons
       goto error;
 
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
-      return fwrite(s, 1, len, stream->fp);
+      return fwrite(s, 1, (size_t)len, stream->fp);
 
 #ifdef HAVE_MMAP
    if (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS)
       goto error;
 #endif
-   return write(stream->fd, s, len);
+   return write(stream->fd, s, (size_t)len);
 
 error:
    return -1;
@@ -534,7 +534,6 @@ int retro_vfs_file_rename_impl(const char *old_path, const char *new_path)
 #else
    return rename(old_path, new_path);
 #endif
-   return -1;
 }
 
 const char *retro_vfs_file_get_path_impl(libretro_vfs_implementation_file *stream)

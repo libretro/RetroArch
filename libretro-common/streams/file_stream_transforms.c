@@ -38,7 +38,7 @@ RFILE* rfopen(const char *path, const char *mode)
    if (strstr(mode, "+"))
       retro_mode = RETRO_VFS_FILE_ACCESS_READ_WRITE;
 
-   return filestream_open(path, retro_mode, -1);
+   return filestream_open(path, retro_mode, RETRO_VFS_FILE_ACCESS_HINT_NONE);
 }
 
 int rfclose(RFILE* stream)
