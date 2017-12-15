@@ -249,7 +249,7 @@ static bool imageviewer_load(const char *path, int image_index)
    imageviewer_free_image();
 
 #ifdef STB_IMAGE_IMPLEMENTATION
-   f = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ, 0);
+   f = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
    len = filestream_get_size(f);
    buf = malloc(len);
    filestream_read(f, buf, len);
