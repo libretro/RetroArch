@@ -159,9 +159,9 @@ void IMAGE_CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
    static const struct retro_variable vars[] = {
       { NULL, NULL },
    };
-   
-   
+#ifndef RARCH_INTERNAL
    struct retro_vfs_interface_info vfs_iface_info = { 1, NULL };
+#endif
 
    IMAGE_CORE_PREFIX(environ_cb) = cb;
 
