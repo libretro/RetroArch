@@ -1216,7 +1216,19 @@ static void frontend_unix_get_os(char *s,
       return;
 
    sscanf(buffer.release, "%d.%d.%u", major, minor, &krel);
+#if defined(__FreeBSD__)
+   strlcpy(s, "FreeBSD", len);
+#elif defined(__NetBSD__)
+   strlcpy(s, "NetBSD", len);
+#elif defined(__OpenBSD__)
+   strlcpy(s, "OpenBSD", len);
+#elif defined(__DragonFly__)
+   strlcpy(s, "DragonFly BSD", len);
+#elif defined(BSD)
+   strlcpy(s, "BSD", len);
+#else
    strlcpy(s, "Linux", len);
+#endif
 #endif
 }
 
