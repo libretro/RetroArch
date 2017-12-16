@@ -899,7 +899,6 @@ endif
 ifeq ($(HAVE_X11), 1)
    OBJ += input/common/input_x11_common.o \
           input/drivers/x11_input.o \
-			 gfx/common/dbus_common.o \
           gfx/common/x11_common.o \
 			 gfx/common/xinerama_common.o
 
@@ -927,6 +926,7 @@ endif
 ifeq ($(HAVE_DBUS), 1)
 	LIBS += $(DBUS_LIBS)
 	CFLAGS += $(DBUS_CFLAGS)
+	OBJ += gfx/common/dbus_common.o
 endif
 
 ifeq ($(HAVE_UDEV), 1)
