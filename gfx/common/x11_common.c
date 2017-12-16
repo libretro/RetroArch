@@ -40,7 +40,9 @@
 
 #include <encodings/utf.h>
 
+#ifdef HAVE_DBUS
 #include "dbus_common.h"
+#endif
 
 #include "../../frontend/frontend_driver.h"
 #include "../../input/input_driver.h"
@@ -604,7 +606,9 @@ bool x11_connect(void)
          return false;
    }
 
+#ifdef HAVE_DBUS
    dbus_ensure_connection();
+#endif
 
    return true;
 }
