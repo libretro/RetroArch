@@ -401,17 +401,17 @@ int chdstream_seek(chdstream_t *stream, ssize_t offset, int whence)
 
    switch (whence)
    {
-     case SEEK_SET:
-        new_offset = offset;
-        break;
-     case SEEK_CUR:
-        new_offset = stream->offset + offset;
-        break;
-     case SEEK_END:
-        new_offset = stream->track_end + offset;
-        break;
-     default:
-        return -1;
+      case SEEK_SET:
+         new_offset = offset;
+         break;
+      case SEEK_CUR:
+         new_offset = stream->offset + offset;
+         break;
+      case SEEK_END:
+         new_offset = stream->track_end + offset;
+         break;
+      default:
+         return -1;
    }
 
    if (new_offset < 0)

@@ -188,14 +188,14 @@ int filestream_getc(RFILE *stream)
    return EOF;
 }
 
-ssize_t filestream_seek(RFILE *stream, ssize_t offset, int whence)
+ssize_t filestream_seek(RFILE *stream, ssize_t offset, int seek_position)
 {
    int64_t output;
 
    if (filestream_seek_cb != NULL)
-      output = filestream_seek_cb(stream->hfile, offset, whence);
+      output = filestream_seek_cb(stream->hfile, offset, seek_position);
    else
-      output = retro_vfs_file_seek_impl((libretro_vfs_implementation_file*)stream->hfile, offset, whence);
+      output = retro_vfs_file_seek_impl((libretro_vfs_implementation_file*)stream->hfile, offset, seek_position);
 
    if (output == vfs_error_return_value)
       stream->error_flag = true;
@@ -233,7 +233,7 @@ void filestream_rewind(RFILE *stream)
 {
    if (!stream)
       return;
-   filestream_seek(stream, 0L, SEEK_SET);
+   filestream_seek(stream, 0L, RETRO_VFS_SEEK_POSITION_START);
    stream->error_flag = false;
 }
 

@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <sys/types.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -376,9 +377,23 @@ int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream)
    return 0;
 }
 
-int64_t retro_vfs_file_seek_impl(libretro_vfs_implementation_file *stream, int64_t offset, int whence)
+int64_t retro_vfs_file_seek_impl(libretro_vfs_implementation_file *stream, int64_t offset, int seek_position)
 {
-	return retro_vfs_file_seek_internal(stream, offset, whence);
+   int whence = -1;
+   switch (seek_position)
+   {
+   case RETRO_VFS_SEEK_POSITION_START:
+      whence = SEEK_SET;
+      break;
+   case RETRO_VFS_SEEK_POSITION_CURRENT:
+      whence = SEEK_CUR;
+      break;
+   case RETRO_VFS_SEEK_POSITION_END:
+      whence = SEEK_END;
+      break;
+   }
+
+   return retro_vfs_file_seek_internal(stream, offset, whence);
 }
 
 int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream, void *s, uint64_t len)

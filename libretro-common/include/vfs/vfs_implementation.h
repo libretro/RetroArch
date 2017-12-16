@@ -48,7 +48,7 @@ int64_t retro_vfs_file_size_impl(libretro_vfs_implementation_file *stream);
 
 int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream);
 
-int64_t retro_vfs_file_seek_impl(libretro_vfs_implementation_file *stream, int64_t offset, int whence);
+int64_t retro_vfs_file_seek_impl(libretro_vfs_implementation_file *stream, int64_t offset, int seek_position);
 
 int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream, void *s, uint64_t len);
 

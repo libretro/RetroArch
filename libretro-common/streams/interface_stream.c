@@ -223,7 +223,23 @@ int intfstream_seek(intfstream_internal_t *intf, int offset, int whence)
    switch (intf->type)
    {
       case INTFSTREAM_FILE:
-         return (int)filestream_seek(intf->file.fp, (int)offset, whence);
+         {
+            int seek_position = 0;
+            switch (whence)
+            {
+               case SEEK_SET:
+                  seek_position = RETRO_VFS_SEEK_POSITION_START;
+                  break;
+               case SEEK_CUR:
+                  seek_position = RETRO_VFS_SEEK_POSITION_CURRENT;
+                  break;
+               case SEEK_END:
+                  seek_position = RETRO_VFS_SEEK_POSITION_END;
+                  break;
+            }
+            return (int)filestream_seek(intf->file.fp, (int)offset,
+                  seek_position);
+         }
       case INTFSTREAM_MEMORY:
          return (int)memstream_seek(intf->memory.fp, offset, whence);
       case INTFSTREAM_CHD:

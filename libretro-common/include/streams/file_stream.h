@@ -60,7 +60,7 @@ int64_t filestream_get_size(RFILE *stream);
  **/
 RFILE *filestream_open(const char *path, unsigned mode, unsigned hints);
 
-ssize_t filestream_seek(RFILE *stream, ssize_t offset, int whence);
+ssize_t filestream_seek(RFILE *stream, ssize_t offset, int seek_position);
 
 ssize_t filestream_read(RFILE *stream, void *data, int64_t len);
 

@@ -967,6 +967,23 @@ enum retro_mod
                                             * core supports VFS before it starts handing out paths.
                                             * It is recomended to do so in retro_set_environment */
 
+/* VFS functionality */
+
+/* File paths:
+ * File paths passed as parameters when using this api shall be well formed unix-style,
+ * using "/" (unquoted forward slash) as directory separator regardless of the platform's native separator.
+ * Paths shall also include at least one forward slash ("game.bin" is an invalid path, use "./game.bin" instead).
+ * Other than the directory separator, cores shall not make assumptions about path format:
+ * "C:/path/game.bin", "http://example.com/game.bin", "#game/game.bin", "./game.bin" (without quotes) are all valid paths.
+ * Cores may replace the basename or remove path components from the end, and/or add new components;
+ * however, cores shall not append "./", "../" or multiple consecutive forward slashes ("//") to paths they request to front end.
+ * The frontend is encouraged to make such paths work as well as it can, but is allowed to give up if the core alters paths too much.
+ * Frontends are encouraged, but not required, to support native file system paths (modulo replacing the directory separator, if applicable).
+ * Cores are allowed to try using them, but must remain functional if the front rejects such requests.
+ * Cores are encouraged to use the libretro-common filestream functions for file I/O,
+ * as they seamlessly integrate with VFS, deal with directory separator replacement as appropriate
+ * and provide platform-specific fallbacks in cases where front ends do not support VFS. */
+
 /* Opaque file handle
  * Introduced in VFS API v1 */
 struct retro_vfs_file_handle;
@@ -984,6 +1001,11 @@ struct retro_vfs_file_handle;
 #define RETRO_VFS_FILE_ACCESS_HINT_NONE              (0)
 /* Indicate that the file will be accessed many times. The frontend should aggressively cache everything. */
 #define RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS   (1 << 0)
+
+/* Seek positions */
+#define RETRO_VFS_SEEK_POSITION_START    0
+#define RETRO_VFS_SEEK_POSITION_CURRENT  1
+#define RETRO_VFS_SEEK_POSITION_END      2
 
 /* Get path from opaque handle. Returns the exact same path passed to file_open when getting the handle
  * Introduced in VFS API v1 */
@@ -1009,7 +1031,7 @@ typedef int64_t (RETRO_CALLCONV *retro_vfs_tell_t)(struct retro_vfs_file_handle 
 
 /* Set the current read/write position for the file. Returns the new position, -1 for error.
  * Introduced in VFS API v1 */
-typedef int64_t (RETRO_CALLCONV *retro_vfs_seek_t)(struct retro_vfs_file_handle *stream, int64_t offset, int whence);
+typedef int64_t (RETRO_CALLCONV *retro_vfs_seek_t)(struct retro_vfs_file_handle *stream, int64_t offset, int seek_position);
 
 /* Read data from a file. Returns the number of bytes read, or -1 for error.
  * Introduced in VFS API v1 */
