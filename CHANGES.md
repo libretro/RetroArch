@@ -12,15 +12,19 @@
 - EMSCRIPTEN: Fix references to browserfs.
 - FREEBSD: Support libusb HID input driver.
 - HAIKU: Buildfix.
+- INPUT: Map clear button to DEL key.
 - LINUX/X11: Add RetroArch logo to window title bar.
 - LINUX/X11: Input driver now supports new lightgun code.
-- LOBBIES: Fix for crash on join netplay rooms via touch / glui
+- LOBBIES: Fix for crash on join netplay rooms via touch / glui.
 - LOCALIZATION: Update Italian translation.
 - LOCALIZATION: Update Japanese translation.
 - LOCALIZATION: Update Portuguese-Brazilian translation.
 - LOCALIZATION: Update Russian translation.
 - OSX/PPC: Fix the GL2 renderchain, had to use EXT versions of framebuffer/renderbuffer functions.
+- PSP: Fix content loading, port should be functional again.
+- PSP: Us 64MB when available.
 - SCANNER: Fix crash from Windows-incompatible format string.
+- VITA: Improve packaging, installation times.
 - WIIU: Disabled the controller patcher for now since it was the source of many stability issues.
 - WINDOWS: Add MSVC 2017 solution.
 - WINDOWS: Get rid of the empty console window in MSVC 2010 builds.
