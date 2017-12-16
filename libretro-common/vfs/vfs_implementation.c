@@ -157,7 +157,7 @@ int64_t retro_vfs_file_seek_internal(libretro_vfs_implementation_file *stream, i
    }
 #endif
 
-   if (lseek(stream->fd, (off_t)offset, whence) < 0)
+   if (lseek(stream->fd, offset, whence) < 0)
       goto error;
 
    return 0;
@@ -178,13 +178,15 @@ error:
 
 libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, unsigned mode, unsigned hints)
 {
-   int            flags    = 0;
-   const char *mode_str    = NULL;
+   int                                flags = 0;
+   const char                     *mode_str = NULL;
    libretro_vfs_implementation_file *stream = (libretro_vfs_implementation_file*)calloc(1, sizeof(*stream));
 
 #ifdef VFS_FRONTEND
-   const char * dumb_prefix = "vfsonly://";
-   if (!memcmp(path, dumb_prefix, strlen(dumb_prefix))) path += strlen(dumb_prefix);
+   const char                 *dumb_prefix  = "vfsonly://";
+
+   if (!memcmp(path, dumb_prefix, strlen(dumb_prefix)))
+	   path += strlen(dumb_prefix);
 #endif
 
    if (!stream)
