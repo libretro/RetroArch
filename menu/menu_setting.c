@@ -1836,7 +1836,7 @@ void general_write_handler(void *data)
 #endif
          break;
       case MENU_ENUM_LABEL_VIDEO_WINDOW_OPACITY:
-         video_display_server_set_window_opacity((255 * settings->uints.video_window_opacity) / 100);
+         video_display_server_set_window_opacity(settings->uints.video_window_opacity);
          break;
       default:
          break;

@@ -623,7 +623,10 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    int (*old_handler)(Display*, XErrorEvent*) = NULL;
    gfx_ctx_x_data_t *x       = (gfx_ctx_x_data_t*)data;
    Atom net_wm_icon = XInternAtom(g_x11_dpy, "_NET_WM_ICON", False);
+   Atom net_wm_opacity = XInternAtom(g_x11_dpy, "_NET_WM_WINDOW_OPACITY", False);
    Atom cardinal = XInternAtom(g_x11_dpy, "CARDINAL", False);
+   settings_t *settings = config_get_ptr();
+   unsigned opacity = settings->uints.video_window_opacity * ((unsigned)-1 / 100.0);
 
    frontend_driver_install_signal_handler();
 
@@ -712,6 +715,9 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    XSetWindowBackground(g_x11_dpy, g_x11_win, 0);
 
    XChangeProperty(g_x11_dpy, g_x11_win, net_wm_icon, cardinal, 32, PropModeReplace, (const unsigned char*)retroarch_icon_data, sizeof(retroarch_icon_data) / sizeof(*retroarch_icon_data));
+
+   if (opacity < (unsigned)-1)
+      XChangeProperty(g_x11_dpy, g_x11_win, net_wm_opacity, cardinal, 32, PropModeReplace, (const unsigned char*)&opacity, 1);
 
    switch (x_api)
    {

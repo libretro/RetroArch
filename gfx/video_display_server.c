@@ -29,11 +29,16 @@ void* video_display_server_init(void)
 
    switch (type)
    {
-      case RARCH_DISPLAY_WIN32:
 #if defined(_WIN32) && !defined(_XBOX)
+      case RARCH_DISPLAY_WIN32:
          current_display_server = &dispserv_win32;
-#endif
          break;
+#endif
+#if defined(HAVE_X11)
+      case RARCH_DISPLAY_X11:
+         current_display_server = &dispserv_x11;
+         break;
+#endif
       default:
          current_display_server = &dispserv_null;
          break;
