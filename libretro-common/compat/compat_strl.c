@@ -24,7 +24,6 @@
 #include <ctype.h>
 
 #include <compat/strl.h>
-#include <compat/posix_string.h>
 
 /* Implementation of strlcpy()/strlcat() based on OpenBSD. */
 
