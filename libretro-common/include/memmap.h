@@ -23,6 +23,9 @@
 #ifndef _LIBRETRO_MEMMAP_H
 #define _LIBRETRO_MEMMAP_H
 
+#include <stdio.h>
+#include <stdint.h>
+
 #if defined(__CELLOS_LV2__) || defined(PSP) || defined(GEKKO) || defined(VITA) || defined(_XBOX) || defined(_3DS) || defined(WIIU)
 /* No mman available */
 #elif defined(_WIN32) && !defined(_XBOX)
