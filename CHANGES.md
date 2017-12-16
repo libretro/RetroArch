@@ -1,5 +1,6 @@
 # 1.7.0 (future)
 - CHEEVOS: Add badges for achievements, shows thumbnail images of achievements.
+- CHEEVOS: Leaderboard support.
 - CHEEVOS: Only disable savestates on hardcore mode if achievements are not available.
 - COMMON: Add 'Automatically Load Content To Playlist' feature, enabled by default.
 - COMMON: Fix slowmotion ratio always being reset back to 1.
