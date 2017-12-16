@@ -1,15 +1,20 @@
 # 1.7.0 (future)
 - CHEEVOS: Add badges for achievements, shows thumbnail images of achievements.
+- CHEEVOS: Only disable savestates on hardcore mode if achievements are not available.
 - COMMON: Add 'Automatically Load Content To Playlist' feature, enabled by default.
 - COMMON: Fix slowmotion ratio always being reset back to 1.
 - COMMON: Optimized NBIO implementations now for Apple, Windows, and Linux. Uses mmap for Linux/Windows/BSD if/when available. File I/O should now be much faster for loading images inside the menu.
 - COMMON: Native Blissbox support now for latest firmware as of writing (2.0). Implementation through libusb and/or native Windows HID.
 - COMMON: New lightgun API.
 - COMMON: Fixed some playlist bugs.
+- COMMON: New snow shader.
+- COMMON: Fix loading cores that require no content one after another.
+- EMSCRIPTEN: Fix references to browserfs.
 - FREEBSD: Support libusb HID input driver.
 - HAIKU: Buildfix.
 - LINUX/X11: Add RetroArch logo to window title bar.
 - LINUX/X11: Input driver now supports new lightgun code.
+- LOBBIES: Fix for crash on join netplay rooms via touch / glui
 - LOCALIZATION: Update Italian translation.
 - LOCALIZATION: Update Japanese translation.
 - LOCALIZATION: Update Portuguese-Brazilian translation.
@@ -18,6 +23,7 @@
 - SCANNER: Fix crash from Windows-incompatible format string.
 - WIIU: Disabled the controller patcher for now since it was the source of many stability issues.
 - WINDOWS: Add MSVC 2017 solution.
+- WINDOWS: Get rid of the empty console window in MSVC 2010 builds.
 - WINDOWS: Raw input driver now supports new lightgun code.
 - WINDOWS: Use configured OSD/text message color on GDI driver.
 - WINDOWS/XINPUT: Populate XInput VID/PID from DInput so autoconfig doesn't rely solely on joypad names
