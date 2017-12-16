@@ -45,8 +45,6 @@
 #endif
 #elif defined(GEKKO)
 #include "gx_pthread.h"
-#elif defined(PSP)
-#include "psp_pthread.h"
 #elif defined(__CELLOS_LV2__)
 #include <pthread.h>
 #include <sys/sys_time.h>
