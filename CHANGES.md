@@ -16,6 +16,7 @@
 - INPUT: Map clear button to DEL key.
 - LINUX/X11: Add RetroArch logo to window title bar.
 - LINUX/X11: Input driver now supports new lightgun code.
+- LINUX/X11: Support window transparency.
 - LOBBIES: Fix for crash on join netplay rooms via touch / glui.
 - LOCALIZATION: Update Italian translation.
 - LOCALIZATION: Update Japanese translation.
@@ -33,6 +34,7 @@
 - WINDOWS: Use configured OSD/text message color on GDI driver.
 - WINDOWS/XINPUT: Populate XInput VID/PID from DInput so autoconfig doesn't rely solely on joypad names
 - WINDOWS: Improve version reporting under System Information.
+- WINDOWS: Support window transparency.
 
 # 1.6.9
 - COMMON: Small memory leak.

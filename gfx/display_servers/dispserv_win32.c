@@ -45,7 +45,7 @@ static bool win32_set_window_opacity(void *data, unsigned opacity)
 
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500
    /* Set window transparency on Windows 2000 and above */
-   return SetLayeredWindowAttributes(hwnd, 0, opacity, LWA_ALPHA);
+   return SetLayeredWindowAttributes(hwnd, 0, (255 * opacity) / 100, LWA_ALPHA);
 #else
    return false;
 #endif

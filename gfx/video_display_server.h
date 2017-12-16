@@ -36,6 +36,7 @@ void video_display_server_destroy(void);
 bool video_display_server_set_window_opacity(unsigned opacity);
 
 extern const video_display_server_t dispserv_win32;
+extern const video_display_server_t dispserv_x11;
 extern const video_display_server_t dispserv_null;
 
 RETRO_END_DECLS
