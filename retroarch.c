@@ -2360,6 +2360,44 @@ static bool input_driver_toggle_button_combo(
 }
 #endif
 
+#ifdef HAVE_MENU
+static void runloop_check_state_menu_toggle(
+      bool pressed, bool old_pressed)
+{
+   bool menu_toggle_kb_is_set = menu_event_kb_is_set(RETROK_F1);
+   bool menu_is_alive         = menu_driver_is_alive();
+
+   if (menu_toggle_kb_is_set == 1)
+   {
+      if (menu_is_alive)
+         goto finished;
+   }
+   else if (
+         (!menu_toggle_kb_is_set &&
+          (pressed && !old_pressed)) ||
+         (current_core_type == CORE_TYPE_DUMMY)
+         )
+   {
+      if (menu_is_alive)
+         goto finished;
+
+      menu_display_toggle_set_reason(MENU_TOGGLE_REASON_USER);
+      rarch_menu_running();
+   }
+   else
+      menu_event_kb_set(false, RETROK_F1);
+
+   return;
+
+finished:
+   if (rarch_is_inited && (current_core_type != CORE_TYPE_DUMMY))
+   {
+      rarch_menu_running_finished();
+      menu_event_kb_set(false, RETROK_F1);
+   }
+}
+#endif
+
 static enum runloop_state runloop_check_state(
       settings_t *settings,
       bool input_nonblock_state,
@@ -2602,34 +2640,7 @@ static enum runloop_state runloop_check_state(
       bool pressed            = BIT256_GET(
             current_input, RARCH_MENU_TOGGLE);
 
-      if (menu_event_kb_is_set(RETROK_F1) == 1)
-      {
-         if (menu_driver_is_alive())
-         {
-            if (rarch_is_inited && (current_core_type != CORE_TYPE_DUMMY))
-            {
-               rarch_menu_running_finished();
-               menu_event_kb_set(false, RETROK_F1);
-            }
-         }
-      }
-      else if ((!menu_event_kb_is_set(RETROK_F1) &&
-               (pressed && !old_pressed)) ||
-            (current_core_type == CORE_TYPE_DUMMY))
-      {
-         if (menu_driver_is_alive())
-         {
-            if (rarch_is_inited && (current_core_type != CORE_TYPE_DUMMY))
-               rarch_menu_running_finished();
-         }
-         else
-         {
-            menu_display_toggle_set_reason(MENU_TOGGLE_REASON_USER);
-            rarch_menu_running();
-         }
-      }
-      else
-         menu_event_kb_set(false, RETROK_F1);
+      runloop_check_state_menu_toggle(pressed, old_pressed);
 
       old_pressed             = pressed;
    }
