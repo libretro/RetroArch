@@ -289,6 +289,8 @@ bool retroarch_validate_game_options(char *s, size_t len, bool mkdir);
 
 bool retroarch_is_forced_fullscreen(void);
 
+void retroarch_unset_forced_fullscreen(void);
+
 void retroarch_set_current_core_type(enum rarch_core_type type, bool explicitly_set);
 
 /**

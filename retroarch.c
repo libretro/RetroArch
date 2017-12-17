@@ -1106,8 +1106,6 @@ static bool retroarch_init_state(void)
    video_driver_set_active();
    audio_driver_set_active();
 
-   rarch_force_fullscreen = false;
-
    return true;
 }
 
@@ -1447,7 +1445,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          rarch_is_inited         = false;
          rarch_error_on_init     = false;
          rarch_block_config_read = false;
-         rarch_force_fullscreen  = false;
 
          retroarch_msg_queue_deinit();
          driver_uninit(DRIVERS_CMD_ALL);
@@ -1924,6 +1921,11 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 bool retroarch_is_forced_fullscreen(void)
 {
    return rarch_force_fullscreen;
+}
+
+void retroarch_unset_forced_fullscreen(void)
+{
+   rarch_force_fullscreen = false;
 }
 
 bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx, void *data)
