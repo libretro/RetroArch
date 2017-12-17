@@ -1182,10 +1182,6 @@ static void retroarch_main_init_media(void)
    if (!settings)
       return;
 
-   /* -L overrides internal cores */
-   if (!string_is_empty(path_get(RARCH_PATH_CORE)))
-      return;
-
    builtin_imageviewer      = settings->bools.multimedia_builtin_imageviewer_enable;
    builtin_mediaplayer      = settings->bools.multimedia_builtin_mediaplayer_enable;
 
