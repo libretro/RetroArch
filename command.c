@@ -1957,6 +1957,10 @@ bool command_event(enum event_command cmd, void *data)
          cheevos_toggle_hardcore_mode();
 #endif
          break;
+      /* this fallthrough is on purpose, it should do 
+         a CMD_EVENT_REINIT too */
+      case CMD_EVENT_REINIT_FROM_TOGGLE:
+         retroarch_unset_forced_fullscreen();
       case CMD_EVENT_REINIT:
          video_driver_reinit();
          /* Poll input to avoid possibly stale data to corrupt things. */
@@ -2567,15 +2571,21 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_FULLSCREEN_TOGGLE:
          {
             settings_t *settings      = config_get_ptr();
-            bool new_fullscreen_state = !settings->bools.video_fullscreen;
+            bool new_fullscreen_state = !settings->bools.video_fullscreen 
+               && !retroarch_is_forced_fullscreen();
             if (!video_driver_has_windowed())
                return false;
 
-            /* If we go fullscreen we drop all drivers and
-             * reinitialize to be safe. */
+            /* we toggled manually, write the new value to settings */
             configuration_set_bool(settings, settings->bools.video_fullscreen,
                   new_fullscreen_state);
 
+            /* we toggled manually, the cli arg is irrelevant now */
+            if (retroarch_is_forced_fullscreen())
+               retroarch_unset_forced_fullscreen();
+
+            /* If we go fullscreen we drop all drivers and
+             * reinitialize to be safe. */
             command_event(CMD_EVENT_REINIT, NULL);
             if (settings->bools.video_fullscreen)
                video_driver_hide_mouse();

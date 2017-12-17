@@ -61,6 +61,8 @@ enum event_command
    /* Quits RetroArch. */
    CMD_EVENT_QUIT,
    /* Reinitialize all drivers. */
+   CMD_EVENT_REINIT_FROM_TOGGLE,
+   /* Reinitialize all drivers. */
    CMD_EVENT_REINIT,
    /* Toggles cheevos hardcore mode. */
    CMD_EVENT_CHEEVOS_HARDCORE_MODE_TOGGLE,
