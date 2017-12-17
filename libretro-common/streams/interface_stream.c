@@ -161,6 +161,7 @@ int intfstream_close(intfstream_internal_t *intf)
       case INTFSTREAM_FILE:
          if (intf->file.fp)
             return filestream_close(intf->file.fp);
+         return 0;
       case INTFSTREAM_MEMORY:
          if (intf->memory.fp)
             memstream_close(intf->memory.fp);
