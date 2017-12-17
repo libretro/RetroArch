@@ -336,7 +336,7 @@ static void input_overlay_poll(
       }
    }
 
-   if (bits_any_set(out->buttons.data, ARRAY_SIZE(out->buttons.data)))
+   if (!bits_any_set(out->buttons.data, ARRAY_SIZE(out->buttons.data)))
       ol->blocked = false;
    else if (ol->blocked)
       memset(out, 0, sizeof(*out));
