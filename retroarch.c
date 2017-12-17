@@ -2403,6 +2403,7 @@ static enum runloop_state runloop_check_state(
       bool input_nonblock_state,
       unsigned *sleep_ms)
 {
+   retro_bits_t current_input;
    static retro_bits_t last_input   = {{0}};
    static bool old_fs_toggle_pressed= false;
    static bool old_focus            = true;
@@ -2416,17 +2417,12 @@ static enum runloop_state runloop_check_state(
    bool menu_driver_binding_state   = menu_driver_is_binding_state();
    bool menu_is_alive               = menu_driver_is_alive();
 
-   retro_bits_t current_input;
-
    if (menu_is_alive && !(settings->bools.menu_unified_controls && !menu_input_dialog_get_display_kb()))
 	   input_menu_keys_pressed(settings, &current_input);
    else
+#endif
 	   input_keys_pressed(settings, &current_input);
 
-#else
-   retro_bits_t current_input;
-   input_keys_pressed(settings, &current_input);
-#endif
    last_input                       = current_input;
 
 #ifdef HAVE_MENU
