@@ -111,7 +111,7 @@ $(TARGET): $(TARGET_3DSX) $(TARGET_3DS) $(TARGET_CIA)
 $(TARGET).3dsx: $(TARGET).elf
 $(TARGET).elf: $(OBJ)
 
-PREFIX		:=	$(DEVKITPRO)/devkitARM/bin/arm-none-eabi-
+PREFIX		:=	$(DEVKITARM)/bin/arm-none-eabi-
 
 CC      := $(PREFIX)gcc
 CXX     := $(PREFIX)g++
@@ -134,13 +134,13 @@ else
 endif
 
 %.o: %.vsh %.gsh
-	$(DEVKITPRO)/devkitARM/bin/picasso $^ -o $*.shbin
-	$(DEVKITPRO)/devkitARM/bin/bin2s $*.shbin | $(PREFIX)as -o $@
+	$(DEVKITARM)/bin/picasso $^ -o $*.shbin
+	$(DEVKITARM)/bin/bin2s $*.shbin | $(PREFIX)as -o $@
 	rm $*.shbin
 
 %.o: %.vsh
-	$(DEVKITPRO)/devkitARM/bin/picasso $^ -o $*.shbin
-	$(DEVKITPRO)/devkitARM/bin/bin2s $*.shbin | $(PREFIX)as -o $@
+	$(DEVKITARM)/bin/picasso $^ -o $*.shbin
+	$(DEVKITARM)/bin/bin2s $*.shbin | $(PREFIX)as -o $@
 	rm $*.shbin
 
 %.o: %.cpp
@@ -161,7 +161,7 @@ endif
 %.vsh:
 
 $(TARGET).smdh: $(APP_ICON)
-	$(DEVKITPRO)/devkitARM/bin/smdhtool --create "$(APP_TITLE)" "$(APP_DESCRIPTION)" "$(APP_AUTHOR)" $(APP_ICON) $@
+	$(DEVKITARM)/bin/smdhtool --create "$(APP_TITLE)" "$(APP_DESCRIPTION)" "$(APP_AUTHOR)" $(APP_ICON) $@
 
 $(TARGET).3dsx: $(TARGET).elf
 ifeq ($(APP_BIG_TEXT_SECTION), 1)
