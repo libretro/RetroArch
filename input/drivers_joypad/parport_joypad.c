@@ -40,7 +40,7 @@
 struct parport_joypad
 {
    int fd;
-   uint64_t buttons;
+   uint32_t buttons;
    bool button_enable[PARPORT_NUM_BUTTONS];
    char saved_data;
    char saved_control;
@@ -97,22 +97,22 @@ static void parport_poll_pad(struct parport_joypad *pad)
    for (i = 0; i < 8; i++)
    {
       if (!(data & UINT8_C(1 << i)) && pad->button_enable[i])
-         BIT64_SET(pad->buttons, i);
+         BIT32_SET(pad->buttons, i);
       else
-         BIT64_CLEAR(pad->buttons, i);
+         BIT32_CLEAR(pad->buttons, i);
    }
    for (i = 3; i < 8; i++)
    {
       if (!(status & UINT8_C(1 << i)) && pad->button_enable[i + 5])
-         BIT64_SET(pad->buttons, i + 5);
+         BIT32_SET(pad->buttons, i + 5);
       else
-         BIT64_CLEAR(pad->buttons, i + 5);
+         BIT32_CLEAR(pad->buttons, i + 5);
    }
 
-   if (BIT64_GET(pad->buttons, 12) && pad->button_enable[12])
-      BIT64_CLEAR(pad->buttons, 12);
+   if (BIT32_GET(pad->buttons, 12) && pad->button_enable[12])
+      BIT32_CLEAR(pad->buttons, 12);
    else
-      BIT64_SET(pad->buttons, 12);
+      BIT32_SET(pad->buttons, 12);
 }
 
 static bool parport_joypad_init_pad(const char *path, struct parport_joypad *pad)
@@ -268,7 +268,7 @@ static bool parport_joypad_init(void *data)
 
          for (j = 0; j < PARPORT_NUM_BUTTONS; j++)
          {
-            if (!(BIT64_GET(pad->buttons, j)))
+            if (!(BIT32_GET(pad->buttons, j)))
             {
                pad->button_enable[j] = true;
                found_enabled_button = true;
@@ -337,13 +337,18 @@ static void parport_joypad_destroy(void)
 static bool parport_joypad_button(unsigned port, uint16_t joykey)
 {
    const struct parport_joypad *pad = (const struct parport_joypad*)&parport_pads[port];
-   return joykey < PARPORT_NUM_BUTTONS && BIT64_GET(pad->buttons, joykey);
+   return joykey < PARPORT_NUM_BUTTONS && BIT32_GET(pad->buttons, joykey);
 }
 
-static uint64_t parport_joypad_get_buttons(unsigned port)
+static void parport_joypad_get_buttons(unsigned port, retro_bits_t *state)
 {
-   const struct parport_joypad *pad = (const struct parport_joypad*)&parport_pads[port];
-   return pad->buttons;
+	const struct parport_joypad *pad = (const struct parport_joypad*)&parport_pads[port];
+	if (pad)
+   {
+		BITS_COPY16_PTR(state, pad->buttons);
+	}
+   else
+		BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t parport_joypad_axis(unsigned port, uint32_t joyaxis)

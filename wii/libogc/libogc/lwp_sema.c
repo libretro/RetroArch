@@ -13,7 +13,7 @@ u32 __lwp_sema_surrender(lwp_sema *sema,u32 id)
 {
 	u32 level,ret;
 	lwp_cntrl *thethread;
-	
+
 	ret = LWP_SEMA_SUCCESSFUL;
 	if((thethread=__lwp_threadqueue_dequeue(&sema->wait_queue))) return ret;
 	else {
@@ -31,7 +31,7 @@ u32 __lwp_sema_seize(lwp_sema *sema,u32 id,u32 wait,u64 timeout)
 {
 	u32 level;
 	lwp_cntrl *exec;
-	
+
 	exec = _thr_executing;
 	exec->wait.ret_code = LWP_SEMA_SUCCESSFUL;
 
@@ -52,7 +52,7 @@ u32 __lwp_sema_seize(lwp_sema *sema,u32 id,u32 wait,u64 timeout)
 	exec->wait.queue = &sema->wait_queue;
 	exec->wait.id = id;
 	_CPU_ISR_Restore(level);
-	
+
 	__lwp_threadqueue_enqueue(&sema->wait_queue,timeout);
 	return LWP_SEMA_SUCCESSFUL;
 }

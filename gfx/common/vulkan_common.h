@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2016-2017 - Hans-Kristian Arntzen
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -22,7 +22,7 @@
 
 #define VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS    16
 #define VULKAN_MAX_DESCRIPTOR_POOL_SIZES        16
-#define VULKAN_BUFFER_BLOCK_SIZE                (4 * 1024)
+#define VULKAN_BUFFER_BLOCK_SIZE                (64 * 1024)
 
 #define VULKAN_MAX_SWAPCHAIN_IMAGES             8
 
@@ -109,6 +109,7 @@ typedef struct vulkan_context
 
    VkImage swapchain_images[VULKAN_MAX_SWAPCHAIN_IMAGES];
    VkFence swapchain_fences[VULKAN_MAX_SWAPCHAIN_IMAGES];
+   bool swapchain_fences_signalled[VULKAN_MAX_SWAPCHAIN_IMAGES];
    VkSemaphore swapchain_semaphores[VULKAN_MAX_SWAPCHAIN_IMAGES];
    VkFormat swapchain_format;
 

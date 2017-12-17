@@ -49,7 +49,7 @@ typedef struct
 static void ctr_csnd_audio_update_playpos(ctr_csnd_audio_t* ctr)
 {
    uint64_t current_tick   = svcGetSystemTick();
-   uint32_t samples_played = (current_tick - ctr->cpu_ticks_last) 
+   uint32_t samples_played = (current_tick - ctr->cpu_ticks_last)
       / CTR_CSND_CPU_TICKS_PER_SAMPLE;
 
    ctr->playpos   = (ctr->playpos + samples_played) & CTR_CSND_AUDIO_COUNT_MASK;
@@ -94,7 +94,7 @@ Result csndPlaySound_custom(int chn, u32 flags, float vol, float pan,
 
 	if (loopMode == CSND_LOOPMODE_NORMAL && paddr1 > paddr0)
 	{
-		/* Now that the first block is playing, 
+		/* Now that the first block is playing,
        * configure the size of the subsequent blocks */
 		size -= paddr1 - paddr0;
 		CSND_SetBlock(chn, 1, paddr1, size);
@@ -209,7 +209,7 @@ static ssize_t ctr_csnd_audio_write(void *data, const void *buf, size_t size)
 }
 
 static bool ctr_csnd_audio_stop(void *data)
-{   
+{
    ctr_csnd_audio_t* ctr = (ctr_csnd_audio_t*)data;
 
    /* using SetPlayState would make tracking the playback

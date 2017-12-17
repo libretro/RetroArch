@@ -215,7 +215,7 @@ static void supereagle_generic_destroy(void *data)
 #endif
 
 static void supereagle_generic_xrgb8888(unsigned width, unsigned height,
-      int first, int last, uint32_t *src, 
+      int first, int last, uint32_t *src,
       unsigned src_stride, uint32_t *dst, unsigned dst_stride)
 {
    unsigned finish;
@@ -239,7 +239,7 @@ static void supereagle_generic_xrgb8888(unsigned width, unsigned height,
 }
 
 static void supereagle_generic_rgb565(unsigned width, unsigned height,
-      int first, int last, uint16_t *src, 
+      int first, int last, uint16_t *src,
       unsigned src_stride, uint16_t *dst, unsigned dst_stride)
 {
    unsigned finish;

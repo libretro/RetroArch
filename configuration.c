@@ -19,6 +19,7 @@
 
 #include <ctype.h>
 
+#include <libretro.h>
 #include <file/config_file.h>
 #include <file/file_path.h>
 #include <compat/strl.h>
@@ -1114,6 +1115,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    unsigned count                      = 0;
    global_t   *global                  = global_get_ptr();
 
+   SETTING_BOOL("automatically_add_content_to_playlist", &settings->bools.automatically_add_content_to_playlist, true, automatically_add_content_to_playlist, false);
    SETTING_BOOL("ui_companion_start_on_boot",    &settings->bools.ui_companion_start_on_boot, true, ui_companion_start_on_boot, false);
    SETTING_BOOL("ui_companion_enable",           &settings->bools.ui_companion_enable, true, ui_companion_enable, false);
    SETTING_BOOL("video_gpu_record",              &settings->bools.video_gpu_record, true, gpu_record, false);
@@ -1376,6 +1378,7 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("video_fullscreen_y",           &settings->uints.video_fullscreen_y,  true, fullscreen_y, false);
    SETTING_UINT("video_window_x",               &settings->uints.video_window_x,  true, fullscreen_x, false);
    SETTING_UINT("video_window_y",               &settings->uints.video_window_y,  true, fullscreen_y, false);
+   SETTING_UINT("video_window_opacity",         &settings->uints.video_window_opacity, true, window_opacity, false);
 #ifdef HAVE_COMMAND
    SETTING_UINT("network_cmd_port",             &settings->uints.network_cmd_port,    true, network_cmd_port, false);
 #endif
@@ -1606,9 +1609,9 @@ static void config_set_defaults(void)
    settings->rewind_buffer_size                = rewind_buffer_size;
 
 #ifdef HAVE_LAKKA
-   settings->bools.ssh_enable                  = path_file_exists(LAKKA_SSH_PATH);
-   settings->bools.samba_enable                = path_file_exists(LAKKA_SAMBA_PATH);
-   settings->bools.bluetooth_enable            = path_file_exists(LAKKA_BLUETOOTH_PATH);
+   settings->bools.ssh_enable                  = filestream_exists(LAKKA_SSH_PATH);
+   settings->bools.samba_enable                = filestream_exists(LAKKA_SAMBA_PATH);
+   settings->bools.bluetooth_enable            = filestream_exists(LAKKA_BLUETOOTH_PATH);
 #endif
 
 #ifdef HAVE_MENU
@@ -2143,6 +2146,24 @@ static void read_keybinds_axis(config_file_t *conf, unsigned user,
             input_config_bind_map_get_base(idx), bind);
 }
 
+static void read_keybinds_mbutton(config_file_t *conf, unsigned user,
+      unsigned idx, struct retro_keybind *bind)
+{
+   const char *prefix = NULL;
+
+   if (!input_config_bind_map_get_valid(idx))
+      return;
+   if (!input_config_bind_map_get_base(idx))
+      return;
+
+   prefix = input_config_get_prefix(user,
+         input_config_bind_map_get_meta(idx));
+
+   if (prefix)
+      input_config_parse_mouse_button(conf, prefix,
+            input_config_bind_map_get_base(idx), bind);
+}
+
 static void read_keybinds_user(config_file_t *conf, unsigned user)
 {
    unsigned i;
@@ -2157,6 +2178,7 @@ static void read_keybinds_user(config_file_t *conf, unsigned user)
       read_keybinds_keyboard(conf, user, i, bind);
       read_keybinds_button(conf, user, i, bind);
       read_keybinds_axis(conf, user, i, bind);
+      read_keybinds_mbutton(conf, user, i, bind);
    }
 }
 
@@ -2703,14 +2725,13 @@ static bool config_load_file(const char *path, bool set_defaults,
    /* Sanitize fastforward_ratio value - previously range was -1
     * and up (with 0 being skipped) */
    if (settings->floats.fastforward_ratio < 0.0f)
-   {
       configuration_set_float(settings, settings->floats.fastforward_ratio, 0.0f);
-   }
+
 
 #ifdef HAVE_LAKKA
-   settings->bools.ssh_enable       = path_file_exists(LAKKA_SSH_PATH);
-   settings->bools.samba_enable     = path_file_exists(LAKKA_SAMBA_PATH);
-   settings->bools.bluetooth_enable = path_file_exists(LAKKA_BLUETOOTH_PATH);
+   settings->bools.ssh_enable       = filestream_exists(LAKKA_SSH_PATH);
+   settings->bools.samba_enable     = filestream_exists(LAKKA_SAMBA_PATH);
+   settings->bools.bluetooth_enable = filestream_exists(LAKKA_BLUETOOTH_PATH);
 #endif
 
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL) &&
@@ -3349,6 +3370,38 @@ static void save_keybind_axis(config_file_t *conf, const char *prefix,
    }
 }
 
+static void save_keybind_mbutton(config_file_t *conf, const char *prefix,
+      const char *base, const struct retro_keybind *bind, bool save_empty)
+{
+	char key[64];
+
+	key[0] = '\0';
+
+	fill_pathname_join_delim_concat(key, prefix,
+		base, '_', "_mbtn", sizeof(key));
+
+	switch ( bind->mbutton )
+	{
+
+	case RETRO_DEVICE_ID_MOUSE_LEFT:			config_set_uint64(conf, key, 1);		break;
+	case RETRO_DEVICE_ID_MOUSE_RIGHT:			config_set_uint64(conf, key, 2);		break;
+	case RETRO_DEVICE_ID_MOUSE_MIDDLE:			config_set_uint64(conf, key, 3);		break;
+	case RETRO_DEVICE_ID_MOUSE_BUTTON_4:		config_set_uint64(conf, key, 4);		break;
+	case RETRO_DEVICE_ID_MOUSE_BUTTON_5:		config_set_uint64(conf, key, 5);		break;
+
+	case RETRO_DEVICE_ID_MOUSE_WHEELUP:			config_set_string(conf, key, "wu");		break;
+	case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:		config_set_string(conf, key, "wd");		break;
+	case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:	config_set_string(conf, key, "whu");	break;
+	case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:	config_set_string(conf, key, "whd");	break;
+
+	default:
+		if ( save_empty ) {
+			config_set_string(conf, key, file_path_str(FILE_PATH_NUL));
+		}
+		break;
+	}
+}
+
 /**
  * save_keybind:
  * @conf               : pointer to config file object
@@ -3369,6 +3422,7 @@ static void save_keybind(config_file_t *conf, const char *prefix,
       save_keybind_key(conf, prefix, base, bind);
    save_keybind_joykey(conf, prefix, base, bind, save_empty);
    save_keybind_axis(conf, prefix, base, bind, save_empty);
+   save_keybind_mbutton(conf, prefix, base, bind, save_empty);
 }
 
 /**
@@ -3739,17 +3793,23 @@ bool config_save_file(const char *path)
 
 #ifdef HAVE_LAKKA
    if (settings->bools.ssh_enable)
-      filestream_close(filestream_open(LAKKA_SSH_PATH, RFILE_MODE_WRITE, -1));
+      filestream_close(filestream_open(LAKKA_SSH_PATH,
+               RETRO_VFS_FILE_ACCESS_WRITE,
+               RETRO_VFS_FILE_ACCESS_HINT_NONE));
    else
-      path_file_remove(LAKKA_SSH_PATH);
+      filestream_delete(LAKKA_SSH_PATH);
    if (settings->bools.samba_enable)
-      filestream_close(filestream_open(LAKKA_SAMBA_PATH, RFILE_MODE_WRITE, -1));
+      filestream_close(filestream_open(LAKKA_SAMBA_PATH,
+               RETRO_VFS_FILE_ACCESS_WRITE,
+               RETRO_VFS_FILE_ACCESS_HINT_NONE));
    else
-      path_file_remove(LAKKA_SAMBA_PATH);
+      filestream_delete(LAKKA_SAMBA_PATH);
    if (settings->bools.bluetooth_enable)
-      filestream_close(filestream_open(LAKKA_BLUETOOTH_PATH, RFILE_MODE_WRITE, -1));
+      filestream_close(filestream_open(LAKKA_BLUETOOTH_PATH,
+               RETRO_VFS_FILE_ACCESS_WRITE,
+               RETRO_VFS_FILE_ACCESS_HINT_NONE));
    else
-      path_file_remove(LAKKA_BLUETOOTH_PATH);
+      filestream_delete(LAKKA_BLUETOOTH_PATH);
 #endif
 
    for (i = 0; i < MAX_USERS; i++)
@@ -3822,7 +3882,7 @@ bool config_save_overrides(int override_type)
    fill_pathname_join(override_directory, config_directory, core_name,
       path_size);
 
-   if(!path_file_exists(override_directory))
+   if (!filestream_exists(override_directory))
        path_mkdir(override_directory);
 
    /* Concatenate strings into full paths for core_path, game_path */

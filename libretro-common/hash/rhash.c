@@ -55,7 +55,7 @@ static const uint32_t T_K[64] = {
 
 /* SHA256 implementation from bSNES. Written by valditx. */
 
-struct sha256_ctx 
+struct sha256_ctx
 {
    union
    {
@@ -69,22 +69,22 @@ struct sha256_ctx
    uint64_t len;
 };
 
-static void sha256_init(struct sha256_ctx *p) 
+static void sha256_init(struct sha256_ctx *p)
 {
    memset(p, 0, sizeof(struct sha256_ctx));
    memcpy(p->h, T_H, sizeof(T_H));
 }
 
-static void sha256_block(struct sha256_ctx *p) 
+static void sha256_block(struct sha256_ctx *p)
 {
    unsigned i;
    uint32_t s0, s1;
    uint32_t a, b, c, d, e, f, g, h;
 
-   for (i = 0; i < 16; i++) 
+   for (i = 0; i < 16; i++)
       p->w[i] = load32be(p->in.u32 + i);
 
-   for (i = 16; i < 64; i++) 
+   for (i = 16; i < 64; i++)
    {
       s0 = ROR32(p->w[i - 15],  7) ^ ROR32(p->w[i - 15], 18) ^ LSR32(p->w[i - 15],  3);
       s1 = ROR32(p->w[i -  2], 17) ^ ROR32(p->w[i -  2], 19) ^ LSR32(p->w[i -  2], 10);
@@ -94,7 +94,7 @@ static void sha256_block(struct sha256_ctx *p)
    a = p->h[0]; b = p->h[1]; c = p->h[2]; d = p->h[3];
    e = p->h[4]; f = p->h[5]; g = p->h[6]; h = p->h[7];
 
-   for (i = 0; i < 64; i++) 
+   for (i = 0; i < 64; i++)
    {
       uint32_t t1, t2, maj, ch;
 
@@ -123,11 +123,11 @@ static void sha256_block(struct sha256_ctx *p)
 }
 
 static void sha256_chunk(struct sha256_ctx *p,
-      const uint8_t *s, unsigned len) 
+      const uint8_t *s, unsigned len)
 {
    p->len += len;
 
-   while (len) 
+   while (len)
    {
       unsigned l = 64 - p->inlen;
 
@@ -140,17 +140,17 @@ static void sha256_chunk(struct sha256_ctx *p,
       p->inlen  += l;
       len       -= l;
 
-      if (p->inlen == 64) 
+      if (p->inlen == 64)
          sha256_block(p);
    }
 }
 
-static void sha256_final(struct sha256_ctx *p) 
+static void sha256_final(struct sha256_ctx *p)
 {
    uint64_t len;
    p->in.u8[p->inlen++] = 0x80;
 
-   if (p->inlen > 56) 
+   if (p->inlen > 56)
    {
       memset(p->in.u8 + p->inlen, 0, 64 - p->inlen);
       sha256_block(p);
@@ -164,14 +164,14 @@ static void sha256_final(struct sha256_ctx *p)
    sha256_block(p);
 }
 
-static void sha256_subhash(struct sha256_ctx *p, uint32_t *t) 
+static void sha256_subhash(struct sha256_ctx *p, uint32_t *t)
 {
    unsigned i;
-   for (i = 0; i < 8; i++) 
+   for (i = 0; i < 8; i++)
       store32be(t++, p->h[i]);
 }
 
-/** 
+/**
  * sha256_hash:
  * @s                 : Output.
  * @in                : Input.
@@ -328,7 +328,7 @@ static void SHA1Reset(SHA1Context *context)
 
 static void SHA1ProcessMessageBlock(SHA1Context *context)
 {
-   const unsigned K[] =            /* Constants defined in SHA-1   */      
+   const unsigned K[] =            /* Constants defined in SHA-1   */
    {
       0x5A827999,
       0x6ED9EBA1,
@@ -511,7 +511,9 @@ int sha1_calculate(const char *path, char *result)
    SHA1Context sha;
    unsigned char buff[4096];
    int rv    = 1;
-   RFILE *fd = filestream_open(path, RFILE_MODE_READ, -1);
+   RFILE *fd = filestream_open(path,
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    if (!fd)
       goto error;

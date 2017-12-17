@@ -114,7 +114,7 @@ static void sdl_ctx_destroy(void *data)
 
    if (!sdl)
       return;
-   
+
    sdl_ctx_destroy_resources(sdl);
    free(sdl);
 }

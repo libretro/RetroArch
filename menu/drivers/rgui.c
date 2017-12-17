@@ -83,30 +83,6 @@ static uint16_t argb32_to_rgba4444(uint32_t col)
 }
 #endif
 
-static void rgui_copy_glyph(uint8_t *glyph, const uint8_t *buf)
-{
-   int x, y;
-
-   if (!glyph)
-      return;
-
-   for (y = 0; y < FONT_HEIGHT; y++)
-   {
-      for (x = 0; x < FONT_WIDTH; x++)
-      {
-         uint32_t col    =
-            ((uint32_t)buf[3 * (-y * 256 + x) + 0] << 0) |
-            ((uint32_t)buf[3 * (-y * 256 + x) + 1] << 8) |
-            ((uint32_t)buf[3 * (-y * 256 + x) + 2] << 16);
-
-         uint8_t rem     = 1 << ((x + y * FONT_WIDTH) & 7);
-         unsigned offset = (x + y * FONT_WIDTH) >> 3;
-
-         if (col != 0xff)
-            glyph[offset] |= rem;
-      }
-   }
-}
 
 static uint16_t rgui_gray_filler(unsigned x, unsigned y)
 {
@@ -190,6 +166,32 @@ static void blit_line(int x, int y,
    }
 }
 
+#if 0
+static void rgui_copy_glyph(uint8_t *glyph, const uint8_t *buf)
+{
+   int x, y;
+
+   if (!glyph)
+      return;
+
+   for (y = 0; y < FONT_HEIGHT; y++)
+   {
+      for (x = 0; x < FONT_WIDTH; x++)
+      {
+         uint32_t col    =
+            ((uint32_t)buf[3 * (-y * 256 + x) + 0] << 0) |
+            ((uint32_t)buf[3 * (-y * 256 + x) + 1] << 8) |
+            ((uint32_t)buf[3 * (-y * 256 + x) + 2] << 16);
+
+         uint8_t rem     = 1 << ((x + y * FONT_WIDTH) & 7);
+         unsigned offset = (x + y * FONT_WIDTH) >> 3;
+
+         if (col != 0xff)
+            glyph[offset] |= rem;
+      }
+   }
+}
+
 static bool init_font(menu_handle_t *menu, const uint8_t *font_bmp_buf)
 {
    unsigned i;
@@ -213,17 +215,22 @@ static bool init_font(menu_handle_t *menu, const uint8_t *font_bmp_buf)
 
    return true;
 }
+#endif
 
 static bool rguidisp_init_font(menu_handle_t *menu)
 {
+#if 0
    const uint8_t *font_bmp_buf = NULL;
+#endif
    const uint8_t *font_bin_buf = bitmap_bin;
 
    if (!menu)
       return false;
 
+#if 0
    if (font_bmp_buf)
       return init_font(menu, font_bmp_buf);
+#endif
 
    menu_display_set_font_framebuffer(font_bin_buf);
 
@@ -440,7 +447,7 @@ static void rgui_render(void *data, bool is_idle)
       unsigned new_val;
 
       menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &old_start);
-      
+
       new_val = (unsigned)(menu_input_pointer_state(MENU_POINTER_Y_AXIS)
          / (11 - 2 + old_start));
 
@@ -534,7 +541,7 @@ static void rgui_render(void *data, bool is_idle)
             RGUI_TERM_START_X(fb_width),
             title_buf, TITLE_COLOR(settings));
 
-   if (settings->bools.menu_core_enable && 
+   if (settings->bools.menu_core_enable &&
          menu_entries_get_core_title(title_msg, sizeof(title_msg)) == 0)
    {
       if (rgui_framebuf_data)
@@ -713,7 +720,7 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
       goto error;
 
    if (rgui_framebuf_data)
-      rgui_fill_rect(rgui_framebuf_data, 
+      rgui_fill_rect(rgui_framebuf_data,
             fb_pitch, 0, fb_height,
             fb_width, 4, rgui_gray_filler);
 

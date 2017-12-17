@@ -81,7 +81,7 @@ static int __usb_checkrecv(s32 chn)
 static void __usb_flush(s32 chn)
 {
 	char tmp;
-	
+
 	if(!EXI_Lock(chn,EXI_DEVICE_0,NULL)) return;
 
 	while(__usb_recvbyte(chn,&tmp));

@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -34,6 +34,7 @@
 #include "../input_driver.h"
 #include "../input_keymaps.h"
 #include "../../verbosity.h"
+#include "dinput_joypad.h"
 
 struct dinput_joypad
 {
@@ -63,6 +64,32 @@ extern bool g_xinput_block_pads;
 extern int g_xinput_pad_indexes[MAX_USERS];
 extern LPDIRECTINPUT8 g_dinput_ctx;
 
+bool dinput_joypad_get_vidpid_from_xinput_index(int32_t index, int32_t *vid, int32_t *pid, int32_t *dinput_index)
+{
+   int i;
+
+   for (i = 0; i < ARRAY_SIZE(g_xinput_pad_indexes); i++)
+   {
+      if (index == g_xinput_pad_indexes[i])
+      {
+         RARCH_LOG("[DINPUT]: Found XInput pad at index %d (DINPUT index %d)\n", index, i);
+
+         if (vid)
+            *vid = g_pads[i].vid;
+
+         if (pid)
+            *pid = g_pads[i].pid;
+
+         if (dinput_index)
+            *dinput_index = i;
+
+         return true;
+      }
+   }
+
+   return false;
+}
+
 static void dinput_joypad_destroy(void)
 {
    unsigned i;
@@ -74,7 +101,7 @@ static void dinput_joypad_destroy(void)
          IDirectInputDevice8_Unacquire(g_pads[i].joypad);
          IDirectInputDevice8_Release(g_pads[i].joypad);
       }
-      
+
       free(g_pads[i].joy_name);
       g_pads[i].joy_name = NULL;
       free(g_pads[i].joy_friendly_name);
@@ -114,11 +141,11 @@ static bool guid_is_xinput_device(const GUID* product_guid)
    unsigned i, num_raw_devs = 0;
    PRAWINPUTDEVICELIST raw_devs = NULL;
 
-   /* Check for well known XInput device GUIDs, 
+   /* Check for well known XInput device GUIDs,
     * thereby removing the need for the IG_ check.
-    * This lets us skip RAWINPUT for popular devices. 
+    * This lets us skip RAWINPUT for popular devices.
     *
-    * Also, we need to do this for the Valve Streaming Gamepad 
+    * Also, we need to do this for the Valve Streaming Gamepad
     * because it's virtualized and doesn't show up in the device list.  */
 
    for (i = 0; i < ARRAY_SIZE(common_xinput_guids); ++i)

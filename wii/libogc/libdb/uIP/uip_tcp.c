@@ -102,7 +102,7 @@ s8_t uip_tcpenqueue(struct uip_tcp_pcb *pcb,void *arg,u16_t len,u8_t flags,u8_t 
 
 	seqno = pcb->snd_lbb;
 	queue_len = pcb->snd_queuelen;
-	
+
 	if(queue_len>=UIP_TCP_SND_QUEUELEN) {
 		UIP_ERROR("uip_tcpenqueue: too long queue.");
 		goto memerr;
@@ -116,7 +116,7 @@ s8_t uip_tcpenqueue(struct uip_tcp_pcb *pcb,void *arg,u16_t len,u8_t flags,u8_t 
 			UIP_ERROR("uip_tcpenqueue: could not allocate memory for tcp_seg.");
 			goto memerr;
 		}
-		
+
 		seg->next = NULL;
 		seg->p = NULL;
 
@@ -124,7 +124,7 @@ s8_t uip_tcpenqueue(struct uip_tcp_pcb *pcb,void *arg,u16_t len,u8_t flags,u8_t 
 		else useg->next = seg;
 
 		useg = seg;
-		
+
 		if(optdata!=NULL) {
 			if((seg->p=uip_pbuf_alloc(UIP_PBUF_TRANSPORT,optlen,UIP_PBUF_RAM))==NULL) {
 				UIP_ERROR("uip_tcpenqueue: could not allocate memory for pbuf opdata.");
@@ -147,7 +147,7 @@ s8_t uip_tcpenqueue(struct uip_tcp_pcb *pcb,void *arg,u16_t len,u8_t flags,u8_t 
 				UIP_ERROR("uip_tcpenqueue: could not allocate memory for zero-copy pbuf.");
 				goto memerr;
 			}
-			
+
 			++queue_len;
 			p->payload = ptr;
 			seg->dataptr = ptr;
@@ -166,13 +166,13 @@ s8_t uip_tcpenqueue(struct uip_tcp_pcb *pcb,void *arg,u16_t len,u8_t flags,u8_t 
 			UIP_ERROR("uip_tcpenqueue: queue too long.");
 			goto memerr;
 		}
-		
+
 		seg->len = seglen;
 		if(uip_pbuf_header(seg->p,UIP_TCP_HLEN)) {
 			UIP_ERROR("uip_tcpenqueue: no room for TCP header in pbuf.");
 			goto memerr;
 		}
-		
+
 		seg->tcphdr = seg->p->payload;
 		seg->tcphdr->src = htons(pcb->local_port);
 		seg->tcphdr->dst = htons(pcb->remote_port);
@@ -193,7 +193,7 @@ s8_t uip_tcpenqueue(struct uip_tcp_pcb *pcb,void *arg,u16_t len,u8_t flags,u8_t 
 	else {
 		for(useg=pcb->unsent;useg->next!=NULL;useg=useg->next);
 	}
-	
+
 	if(useg!=NULL &&
 		UIP_TCP_TCPLEN(useg)!=0 &&
 		!(UIP_TCPH_FLAGS(useg->tcphdr)&(UIP_TCP_SYN|UIP_TCP_FIN)) &&
@@ -214,13 +214,13 @@ s8_t uip_tcpenqueue(struct uip_tcp_pcb *pcb,void *arg,u16_t len,u8_t flags,u8_t 
 	}
 
 	if(flags&UIP_TCP_SYN || flags&UIP_TCP_FIN) len++;
-	
+
 	pcb->snd_lbb += len;
 	pcb->snd_buf -= len;
 	pcb->snd_queuelen = queue_len;
-	
+
 	if(seg!=NULL && seglen>0 && seg->tcphdr!=NULL) UIP_TCPH_SET_FLAG(seg->tcphdr,UIP_TCP_PSH);
-	
+
 	return UIP_ERR_OK;
 memerr:
 	if(queue!=NULL) uip_tcpsegs_free(queue);
@@ -247,7 +247,7 @@ void uip_tcpinput(struct uip_pbuf *p,struct uip_netif *inp)
 		uip_pbuf_free(p);
 		return;
 	}
-	
+
 	if(uip_chksum_pseudo(p,&uip_iphdr->src,&uip_iphdr->dst,UIP_PROTO_TCP,p->tot_len)!=0) {
 		UIP_LOG("uip_tcpinput: packet discarded due to failing checksum.");
 		uip_pbuf_free(p);
@@ -265,7 +265,7 @@ void uip_tcpinput(struct uip_pbuf *p,struct uip_netif *inp)
 
 	uip_flags = UIP_TCPH_FLAGS(uip_tcphdr)&UIP_TCP_FLAGS;
 	uip_tcplen = p->tot_len+((uip_flags&UIP_TCP_FIN||uip_flags&UIP_TCP_SYN)?1:0);
-	
+
 	prev = NULL;
 	for(pcb=uip_tcp_active_pcbs;pcb!=NULL;pcb=pcb->next) {
 		if(pcb->state!=UIP_CLOSED && pcb->state!=UIP_TIME_WAIT && pcb->state!=UIP_LISTEN) {
@@ -283,7 +283,7 @@ void uip_tcpinput(struct uip_pbuf *p,struct uip_netif *inp)
 			prev = pcb;
 		}
 	}
-	
+
 	if(pcb==NULL) {
 		for(pcb=uip_tcp_tw_pcbs;pcb!=NULL;pcb=pcb->next) {
 			if(pcb->state==UIP_TIME_WAIT &&
@@ -295,7 +295,7 @@ void uip_tcpinput(struct uip_pbuf *p,struct uip_netif *inp)
 				return;
 			}
 		}
-	
+
 		prev = NULL;
 		for(lpcb=uip_tcp_listen_pcbs.listen_pcbs;lpcb!=NULL;lpcb=lpcb->next) {
 			if((ip_addr_isany(&lpcb->local_ip) || ip_addr_cmp(&lpcb->local_ip,&uip_iphdr->dst)) &&
@@ -321,7 +321,7 @@ void uip_tcpinput(struct uip_pbuf *p,struct uip_netif *inp)
 
 		uip_recv_data = NULL;
 		uip_recv_flags = 0;
-		
+
 		uip_tcp_input_pcb = pcb;
 		err = uip_tcpprocess(pcb);
 		uip_tcp_input_pcb = NULL;
@@ -336,7 +336,7 @@ void uip_tcpinput(struct uip_pbuf *p,struct uip_netif *inp)
 				memb_free(&uip_tcp_pcbs,pcb);
 			} else {
 				err = UIP_ERR_OK;
-				
+
 				if(pcb->acked>0) {
 					if(pcb->sent) err = pcb->sent(pcb->cb_arg,pcb,pcb->acked);
 				}
@@ -350,7 +350,7 @@ void uip_tcpinput(struct uip_pbuf *p,struct uip_netif *inp)
 		}
 		if(uip_inseg.p!=NULL) uip_pbuf_free(uip_inseg.p);
 	} else {
-		if(!(UIP_TCPH_FLAGS(uip_tcphdr)&UIP_TCP_RST)) 
+		if(!(UIP_TCPH_FLAGS(uip_tcphdr)&UIP_TCP_RST))
 			uip_tcp_rst(uip_ackno,uip_seqno+uip_tcplen,&uip_iphdr->dst,&uip_iphdr->src,uip_tcphdr->dst,uip_tcphdr->src);
 
 		uip_pbuf_free(p);
@@ -395,7 +395,7 @@ s8_t uip_tcpoutput(struct uip_tcp_pcb *pcb)
 
 		tcphdr->chksum = 0;
 		tcphdr->chksum = uip_chksum_pseudo(p,&pcb->local_ip,&pcb->remote_ip,UIP_PROTO_TCP,p->tot_len);
-		
+
 		uip_ipoutput(p,&pcb->local_ip,&pcb->remote_ip,pcb->ttl,pcb->tos,UIP_PROTO_TCP);
 		uip_pbuf_free(p);
 
@@ -548,7 +548,7 @@ void uip_tcp_pcbpurge(struct uip_tcp_pcb *pcb)
 		uip_tcpsegs_free(pcb->unsent);
 		uip_tcpsegs_free(pcb->unacked);
 		pcb->unsent = pcb->unacked = pcb->ooseq = NULL;
-	}	
+	}
 }
 
 struct uip_tcp_pcb* uip_tcp_new()
@@ -561,7 +561,7 @@ s8_t uip_tcp_bind(struct uip_tcp_pcb *pcb,struct uip_ip_addr *ipaddr,u16_t port)
 	struct uip_tcp_pcb *cpcb;
 
 	if(port==0) port = uip_tcp_newport();
-	
+
 	for(cpcb=(struct uip_tcp_pcb*)uip_tcp_listen_pcbs.pcbs;cpcb!=NULL;cpcb=cpcb->next) {
 		if(cpcb->local_port==port) {
 			if(ip_addr_isany(&cpcb->local_ip) ||
@@ -587,7 +587,7 @@ s8_t uip_tcp_bind(struct uip_tcp_pcb *pcb,struct uip_ip_addr *ipaddr,u16_t port)
 struct uip_tcp_pcb* uip_tcp_listen(struct uip_tcp_pcb *pcb)
 {
 	struct uip_tcp_pcb_listen *lpcb;
-	
+
 	if(pcb->state==UIP_LISTEN) return pcb;
 
 	lpcb = memb_alloc(&uip_listen_tcp_pcbs);
@@ -601,13 +601,13 @@ struct uip_tcp_pcb* uip_tcp_listen(struct uip_tcp_pcb *pcb)
 	lpcb->ttl = pcb->ttl;
 	lpcb->tos = pcb->tos;
 	ip_addr_set(&lpcb->local_ip,&pcb->local_ip);
-	
+
 	memb_free(&uip_tcp_pcbs,pcb);
 
 	lpcb->accept = uip_tcp_nullaccept;
 
 	UIP_TCP_REG(&uip_tcp_listen_pcbs.listen_pcbs,lpcb);
-	return (struct uip_tcp_pcb*)lpcb;	
+	return (struct uip_tcp_pcb*)lpcb;
 }
 
 void uip_tcp_recved(struct uip_tcp_pcb *pcb,u16_t len)
@@ -659,7 +659,7 @@ s8_t uip_tcp_close(struct uip_tcp_pcb *pcb)
 			break;
 	}
 	if(pcb!=NULL && err==UIP_ERR_OK) uip_tcpoutput(pcb);
-	
+
 	return err;
 }
 
@@ -673,7 +673,7 @@ void uip_tcp_rst(u32_t seqno,u32_t ackno,struct uip_ip_addr *lipaddr,struct uip_
 		UIP_LOG("uip_tcp_rst: could not allocate memory for pbuf.\n");
 		return;
 	}
-	
+
 	tcphdr = p->payload;
 	tcphdr->src = htons(lport);
 	tcphdr->dst = htons(rport);
@@ -683,7 +683,7 @@ void uip_tcp_rst(u32_t seqno,u32_t ackno,struct uip_ip_addr *lipaddr,struct uip_
 	tcphdr->wnd = htons(UIP_TCP_WND);
 	tcphdr->urgp = 0;
 	UIP_TCPH_HDRLEN_SET(tcphdr,5);
-	
+
 	tcphdr->chksum = 0;
 	tcphdr->chksum = uip_chksum_pseudo(p,lipaddr,ripaddr,UIP_PROTO_TCP,p->tot_len);
 
@@ -698,24 +698,24 @@ void uip_tcp_abort(struct uip_tcp_pcb *pcb)
 	struct uip_ip_addr remote_ip,local_ip;
 	void (*errf)(void *arg,s8_t err);
 	void *errf_arg;
-	
+
 	if(pcb->state==UIP_TIME_WAIT) {
 		memb_free(&uip_tcp_pcbs,pcb);
 	} else {
 		seqno = pcb->snd_nxt;
 		ackno = pcb->rcv_nxt;
-		
+
 		ip_addr_set(&local_ip,&pcb->local_ip);
 		ip_addr_set(&remote_ip,&pcb->remote_ip);
 		local_port = pcb->local_port;
 		remote_port = pcb->remote_port;
-		
+
 		errf = pcb->errf;
 		errf_arg = pcb->cb_arg;
 
 		uip_tcp_pcbremove(&uip_tcp_active_pcbs,pcb);
-		
-		if(pcb->unacked!=NULL) 
+
+		if(pcb->unacked!=NULL)
 			uip_tcpsegs_free(pcb->unacked);
 		if(pcb->unsent!=NULL)
 			uip_tcpsegs_free(pcb->unsent);
@@ -748,7 +748,7 @@ void uip_tcp_keepalive(struct uip_tcp_pcb *pcb)
 
 	tcphdr->chksum = 0;
 	tcphdr->chksum = uip_chksum_pseudo(p,&pcb->local_ip,&pcb->remote_ip,UIP_PROTO_TCP,p->tot_len);
-	
+
 	uip_ipoutput(p,&pcb->local_ip,&pcb->remote_ip,pcb->ttl,0,UIP_PROTO_TCP);
 	uip_pbuf_free(p);
 }
@@ -782,10 +782,10 @@ void uip_tcp_rexmit_rto(struct uip_tcp_pcb *pcb)
 	seg->next = pcb->unsent;
 	pcb->unsent = pcb->unacked;
 	pcb->unacked = NULL;
-	
+
 	pcb->snd_nxt = ntohl(pcb->unsent->tcphdr->seqno);
 	pcb->nrtx++;
-	
+
 	uip_tcpoutput(pcb);
 }
 
@@ -809,7 +809,7 @@ void uip_tcp_slowtmr()
 	s8_t err;
 
 	err = UIP_ERR_OK;
-	
+
 	uip_tcp_ticks++;
 
 	prev = NULL;
@@ -826,14 +826,14 @@ void uip_tcp_slowtmr()
 
 				eff_wnd = UIP_MIN(pcb->cwnd,pcb->snd_wnd);
 				pcb->ssthresh = eff_wnd>>1;
-				
+
 				if(pcb->ssthresh<pcb->mss) pcb->ssthresh = pcb->mss*2;
 				pcb->cwnd = pcb->mss;
 
 				uip_tcp_rexmit_rto(pcb);
 			}
 		}
-		
+
 		if(pcb->state==UIP_FIN_WAIT_2) {
 			if((u32_t)(uip_tcp_ticks-pcb->tmr)>UIP_TCP_FIN_WAIT_TIMEOUT/UIP_TCP_SLOW_INTERVAL) pcb_remove++;
 		}
@@ -874,7 +874,7 @@ void uip_tcp_slowtmr()
 
 				if(err==UIP_ERR_OK) uip_tcpoutput(pcb);
 			}
-			
+
 			prev = pcb;
 			pcb = pcb->next;
 		}
@@ -886,7 +886,7 @@ void uip_tcp_slowtmr()
 		pcb_remove = 0;
 
 		if((u32_t)(uip_tcp_ticks-pcb->tmr)>2*UIP_TCP_MSL/UIP_TCP_SLOW_INTERVAL) pcb_remove++;
-		
+
 		if(pcb_remove) {
 			uip_tcp_pcbpurge(pcb);
 
@@ -927,7 +927,7 @@ u8_t uip_tcpsegs_free(struct uip_tcpseg *seg)
 {
 	u8_t cnt = 0;
 	struct uip_tcpseg *next;
-	
+
 	while(seg!=NULL) {
 		next = seg->next;
 		cnt += uip_tcpseg_free(seg);
@@ -1061,11 +1061,11 @@ static s8_t uip_tcpinput_listen(struct uip_tcp_pcb_listen *pcb)
 		npcb->so_options = pcb->so_options&(UIP_SOF_DEBUG|UIP_SOF_DONTROUTE|UIP_SOF_KEEPALIVE|UIP_SOF_OOBINLINE|UIP_SOF_LINGER);
 
 		UIP_TCP_REG(&uip_tcp_active_pcbs,npcb);
-		
+
 		uip_tcp_parseopt(npcb);
 
 		optdata = htonl((((u32_t)2<<24)|((u32_t)4<<16)|(((u32_t)npcb->mss/256)<<8)|((u32_t)npcb->mss&255)));
-		
+
 		uip_tcpenqueue(npcb,NULL,0,UIP_TCP_SYN|UIP_TCP_ACK,0,(u8_t*)&optdata,4);
 		return uip_tcpoutput(npcb);
 	}
@@ -1118,13 +1118,13 @@ static s8_t uip_tcpprocess(struct uip_tcp_pcb *pcb)
 				pcb->state = UIP_ESTABLISHED;
 				pcb->cwnd = pcb->mss;
 				pcb->snd_queuelen--;
-				
+
 				rseg = pcb->unacked;
 				pcb->unacked = rseg->next;
 				uip_tcpseg_free(rseg);
 
 				uip_tcp_parseopt(pcb);
-				
+
 				if(pcb->connected!=NULL) err = pcb->connected(pcb->cb_arg,pcb,UIP_ERR_OK);
 
 				uip_tcp_ack(pcb);
@@ -1136,7 +1136,7 @@ static s8_t uip_tcpprocess(struct uip_tcp_pcb *pcb)
 			if(uip_flags&UIP_TCP_ACK && !(uip_flags&UIP_TCP_RST)) {
 				if(UIP_TCP_SEQ_BETWEEN(uip_ackno,pcb->lastack+1,pcb->snd_nxt)) {
 					pcb->state = UIP_ESTABLISHED;
-					
+
 					if(pcb->accept!=NULL) err = pcb->accept(pcb->cb_arg,pcb,UIP_ERR_OK);
 					if(err!=UIP_ERR_OK)	 {
 						uip_tcp_abort(pcb);
@@ -1203,7 +1203,7 @@ static s8_t uip_tcpprocess(struct uip_tcp_pcb *pcb)
 			break;
 		default:
 			break;
-			
+
 	}
 	return UIP_ERR_OK;
 }
@@ -1216,7 +1216,7 @@ static void uip_tcpreceive(struct uip_tcp_pcb *pcb)
 	s32_t off,m;
 	u32_t right_wnd_edge;
 	u16_t new_tot_len;
-	
+
 	if(uip_flags&UIP_TCP_ACK) {
 		right_wnd_edge = pcb->snd_wnd+pcb->snd_wl1;
 		if(UIP_TCP_SEQ_LT(pcb->snd_wl1,uip_seqno) ||
@@ -1226,7 +1226,7 @@ static void uip_tcpreceive(struct uip_tcp_pcb *pcb)
 			pcb->snd_wl1 = uip_seqno;
 			pcb->snd_wl2 = uip_ackno;
 		}
-		
+
 		if(pcb->lastack==uip_ackno) {
 			pcb->acked = 0;
 			if(pcb->snd_wl1+pcb->snd_wnd==right_wnd_edge) {
@@ -1262,7 +1262,7 @@ static void uip_tcpreceive(struct uip_tcp_pcb *pcb)
 			if(pcb->state>=UIP_ESTABLISHED) {
 				if(pcb->cwnd<pcb->ssthresh) {
 					if((u16_t)(pcb->cwnd+pcb->mss)>pcb->cwnd) pcb->cwnd += pcb->mss;
-					
+
 				} else {
 					u16_t new_cwnd = (pcb->cwnd+pcb->mss*pcb->mss/pcb->cwnd);
 					if(new_cwnd>pcb->cwnd) pcb->cwnd = new_cwnd;
@@ -1287,7 +1287,7 @@ static void uip_tcpreceive(struct uip_tcp_pcb *pcb)
 			next = pcb->unsent;
 			pcb->unsent = pcb->unsent->next;
 			pcb->snd_queuelen -= uip_pbuf_clen(next->p);
-			
+
 			uip_tcpseg_free(next);
 
 			if(pcb->unsent!=NULL) pcb->snd_nxt = htonl(pcb->unsent->tcphdr->seqno);
@@ -1342,11 +1342,11 @@ static void uip_tcpreceive(struct uip_tcp_pcb *pcb)
 					uip_inseg.len = pcb->ooseq->tcphdr->seqno - uip_seqno;
 					uip_pbuf_realloc(uip_inseg.p,uip_inseg.len);
 				}
-				
+
 				uip_tcplen = UIP_TCP_TCPLEN(&uip_inseg);
 				if(pcb->state!=UIP_CLOSE_WAIT) pcb->rcv_nxt += uip_tcplen;
 				//printf("uip_tcpreceive: uip_tcplen = %u, rcv_nxt = %u\n",uip_tcplen,pcb->rcv_nxt);
-				
+
 				if(pcb->rcv_wnd<uip_tcplen) pcb->rcv_wnd = 0;
 				else pcb->rcv_wnd -= uip_tcplen;
 
@@ -1363,7 +1363,7 @@ static void uip_tcpreceive(struct uip_tcp_pcb *pcb)
 				while(pcb->ooseq!=NULL && pcb->ooseq->tcphdr->seqno==pcb->rcv_nxt) {
 					cseg = pcb->ooseq;
 					uip_seqno = pcb->ooseq->tcphdr->seqno;
-					
+
 					pcb->rcv_nxt += UIP_TCP_TCPLEN(cseg);
 					if(pcb->rcv_wnd<UIP_TCP_TCPLEN(cseg)) pcb->rcv_wnd = 0;
 					else pcb->rcv_wnd -= UIP_TCP_TCPLEN(cseg);
@@ -1371,7 +1371,7 @@ static void uip_tcpreceive(struct uip_tcp_pcb *pcb)
 					if(cseg->p->tot_len>0) {
 						if(uip_recv_data) uip_pbuf_cat(uip_recv_data,cseg->p);
 						else uip_recv_data = cseg->p;
-						
+
 						cseg->p = NULL;
 					}
 
@@ -1403,7 +1403,7 @@ static void uip_tcpreceive(struct uip_tcp_pcb *pcb)
 									else pcb->ooseq = cseg;
 								}
 								break;
-							} else 
+							} else
 								break;
 						} else {
 							if(prev==NULL) {
@@ -1473,6 +1473,6 @@ static s8_t uip_tcp_nullrecv(void *arg,struct uip_tcp_pcb *pcb,struct uip_pbuf *
 {
 	if(p!=NULL) uip_pbuf_free(p);
 	else if(err==UIP_ERR_OK) return uip_tcp_close(pcb);
-	
+
 	return UIP_ERR_OK;
 }

@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define __STDC_FORMAT_MACROS 
+#define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 #include <string.h>
 #include <stdarg.h>
@@ -247,10 +247,10 @@ static int httpserver_handle_basic_info(struct mg_connection* conn, void* cbdata
          "\"frontendSupportsAchievements\":false,"
          "\"coreSupportsAchievements\":null,"
 #endif
-         "\"saveRam\":{\"pointer\":\"%" PRIXPTR "\",\"size\":" STRING_REP_UINT64 "},"
-         "\"rtcRam\":{\"pointer\":\"%" PRIXPTR "\",\"size\":" STRING_REP_UINT64 "},"
-         "\"systemRam\":{\"pointer\":\"%" PRIXPTR "\",\"size\":" STRING_REP_UINT64 "},"
-         "\"videoRam\":{\"pointer\":\"%" PRIXPTR "\",\"size\":" STRING_REP_UINT64 "},",
+         "\"saveRam\":{\"pointer\":\"%" PRIXPTR "\",\"size\":%" PRIu64 "},"
+         "\"rtcRam\":{\"pointer\":\"%" PRIXPTR "\",\"size\":%" PRIu64 "},"
+         "\"systemRam\":{\"pointer\":\"%" PRIXPTR "\",\"size\":%" PRIu64 "},"
+         "\"videoRam\":{\"pointer\":\"%" PRIXPTR "\",\"size\":%" PRIu64 "},",
       core_path,
       api.version,
       system->info.library_name,
@@ -428,13 +428,13 @@ static int httpserver_handle_get_mmaps(struct mg_connection* conn, void* cbdata)
       mg_printf(conn,
             "%s{"
             "\"id\":%u,"
-            "\"flags\":" STRING_REP_UINT64 ","
+            "\"flags\":%" PRIu64 ","
             "\"ptr\":\"%" PRIXPTR "\","
-            "\"offset\":" STRING_REP_UINT64 ","
-            "\"start\":" STRING_REP_UINT64 ","
-            "\"select\":" STRING_REP_UINT64 ","
-            "\"disconnect\":" STRING_REP_UINT64 ","
-            "\"len\":" STRING_REP_UINT64 ","
+            "\"offset\":%" PRIu64 ","
+            "\"start\":%" PRIu64 ","
+            "\"select\":%" PRIu64 ","
+            "\"disconnect\":%" PRIu64 ","
+            "\"len\":%" PRIu64 ","
             "\"addrspace\":\"%s\""
             "}",
             comma,

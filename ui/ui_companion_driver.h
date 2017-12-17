@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -66,7 +66,7 @@ typedef struct ui_msg_window_state
 
 typedef struct ui_browser_window_state
 {
-   struct 
+   struct
    {
       bool can_choose_directories;
       bool can_choose_directories_val;
@@ -184,7 +184,7 @@ const ui_companion_driver_t *ui_companion_get_ptr(void);
  *
  * Finds first suitable driver and initialize.
  *
- * Returns: pointer to first suitable driver, otherwise NULL. 
+ * Returns: pointer to first suitable driver, otherwise NULL.
  **/
 const ui_companion_driver_t *ui_companion_init_first(void);
 

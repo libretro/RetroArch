@@ -27,7 +27,7 @@ struct hidpad_ps2adapter_data
    struct pad_connection* connection;
    uint8_t data[64];
    uint32_t slot;
-   uint64_t buttons;
+   uint32_t buttons;
 };
 
 static void* hidpad_ps2adapter_init(void *data, uint32_t slot, send_control_t ptr)
@@ -59,12 +59,15 @@ static void hidpad_ps2adapter_deinit(void *data)
       free(device);
 }
 
-static uint64_t hidpad_ps2adapter_get_buttons(void *data)
+static void hidpad_ps2adapter_get_buttons(void *data, retro_bits_t *state)
 {
-   struct hidpad_ps2adapter_data *device = (struct hidpad_ps2adapter_data*)data;
-   if (!device)
-      return 0;
-   return device->buttons;
+	struct hidpad_ps2adapter_data *device = (struct hidpad_ps2adapter_data*)data;
+	if (device)
+   {
+		BITS_COPY16_PTR(state, device->buttons);
+	}
+   else
+		BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t hidpad_ps2adapter_get_axis(void *data, unsigned axis)
@@ -74,7 +77,7 @@ static int16_t hidpad_ps2adapter_get_axis(void *data, unsigned axis)
 
    if (!device || axis >= 4)
       return 0;
-   
+
    switch (axis)
    {
       case 0:
@@ -90,7 +93,7 @@ static int16_t hidpad_ps2adapter_get_axis(void *data, unsigned axis)
          val = device->data[2];
          break;
    }
-   
+
    val = (val << 8) - 0x8000;
 
    return (abs(val) > 0x1000) ? val : 0;
@@ -133,7 +136,7 @@ static void hidpad_ps2adapter_packet_handler(void *data, uint8_t *packet, uint16
    /* Check if the data corresponds to the first controller, exit otherwise */
    if (packet[1] != 1)
       return;
-   
+
    memcpy(device->data, packet, size);
 
    device->buttons = 0;
@@ -143,7 +146,7 @@ static void hidpad_ps2adapter_packet_handler(void *data, uint8_t *packet, uint16
    for (i = 0; i < 16; i ++)
       if (button_mapping[i] != NO_BTN)
          device->buttons |= (pressed_keys & (1 << i)) ? (UINT64_C(1) << button_mapping[i]) : 0;
-         
+
    /* Now process the hat values as if they were pad buttons */
    hat_value = PS2_H_GET(device->data[6]);
    device->buttons |= PS2_H_LEFT(hat_value) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;

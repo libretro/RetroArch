@@ -18,7 +18,7 @@ void* btmemb_alloc(struct memb_blks *blk)
 	u32 *ptr;
 	u32 level;
 	void *p;
-	
+
 	_CPU_ISR_Disable(level);
 	ptr = (u32*)blk->mem;
 	for(i=0;i<blk->num;i++) {
@@ -61,7 +61,7 @@ u8 btmemb_ref(struct memb_blks *blk,void *ptr)
 	u8 ref;
 	u32 *pref;
 	u32 level;
-	
+
 	_CPU_ISR_Disable(level);
 	pref = ptr-sizeof(u32);
 	ref = ++(*pref);

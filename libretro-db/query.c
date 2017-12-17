@@ -101,7 +101,7 @@ static struct buffer query_parse_table(struct buffer buff,
 /* Errors */
 static void query_raise_too_many_arguments(const char **error)
 {
-   strlcpy(tmp_error_buff, 
+   strlcpy(tmp_error_buff,
          "Too many arguments in function call.", sizeof(tmp_error_buff));
    *error = tmp_error_buff;
 }
@@ -236,12 +236,12 @@ static struct rmsgpack_dom_value query_func_between(
    {
       case RDT_INT:
          res.val.bool_ = (
-               (input.val.int_ >= argv[0].a.value.val.int_) 
+               (input.val.int_ >= argv[0].a.value.val.int_)
                && (input.val.int_ <= argv[1].a.value.val.int_));
          break;
       case RDT_UINT:
          res.val.bool_ = (
-               ((unsigned)input.val.int_ >= argv[0].a.value.val.uint_) 
+               ((unsigned)input.val.int_ >= argv[0].a.value.val.uint_)
                && (input.val.int_ <= argv[1].a.value.val.int_));
          break;
       default:
@@ -289,7 +289,7 @@ struct registered_func registered_functions[100] = {
 static void query_raise_expected_number(ssize_t where, const char **error)
 {
    snprintf(tmp_error_buff, MAX_ERROR_LEN,
-         STRING_REP_UINT64 "::Expected number",
+         "%" PRIu64 "::Expected number",
          (uint64_t)where);
    *error = tmp_error_buff;
 }
@@ -297,7 +297,7 @@ static void query_raise_expected_number(ssize_t where, const char **error)
 static void query_raise_expected_string(ssize_t where, const char ** error)
 {
    snprintf(tmp_error_buff, MAX_ERROR_LEN,
-         STRING_REP_UINT64 "::Expected string",
+         "%" PRIu64 "::Expected string",
          (uint64_t)where);
    *error = tmp_error_buff;
 }
@@ -305,7 +305,7 @@ static void query_raise_expected_string(ssize_t where, const char ** error)
 static void query_raise_unexpected_eof(ssize_t where, const char ** error)
 {
    snprintf(tmp_error_buff, MAX_ERROR_LEN,
-         STRING_REP_UINT64 "::Unexpected EOF",
+         "%" PRIu64 "::Unexpected EOF",
          (uint64_t)where
          );
    *error = tmp_error_buff;
@@ -321,7 +321,7 @@ static void query_raise_unknown_function(ssize_t where, const char *name,
       ssize_t len, const char **error)
 {
    int n = snprintf(tmp_error_buff, MAX_ERROR_LEN,
-         STRING_REP_UINT64 "::Unknown function '",
+         "%" PRIu64 "::Unknown function '",
          (uint64_t)where
          );
 
@@ -336,7 +336,7 @@ static void query_raise_expected_eof(
       ssize_t where, char found, const char **error)
 {
    snprintf(tmp_error_buff, MAX_ERROR_LEN,
-         STRING_REP_UINT64 "::Expected EOF found '%c'",
+         "%" PRIu64 "::Expected EOF found '%c'",
          (uint64_t)where,
          found
          );
@@ -348,7 +348,7 @@ static void query_raise_unexpected_char(
       const char **error)
 {
    snprintf(tmp_error_buff, MAX_ERROR_LEN,
-         STRING_REP_UINT64 "::Expected '%c' found '%c'",
+         "%" PRIu64 "::Expected '%c' found '%c'",
          (uint64_t)where, expected, found);
    *error = tmp_error_buff;
 }
@@ -394,7 +394,7 @@ static struct buffer query_parse_integer(struct buffer buff,
 
 static struct buffer query_chomp(struct buffer buff)
 {
-   for (; (unsigned)buff.offset < buff.len 
+   for (; (unsigned)buff.offset < buff.len
          && isspace((int)buff.data[buff.offset]); buff.offset++);
    return buff;
 }
@@ -482,7 +482,7 @@ static struct buffer query_parse_string(struct buffer buff,
       value->type            = is_binstr ? RDT_BINARY : RDT_STRING;
       value->val.string.len  = (uint32_t)((buff.data + buff.offset) - str_start - 1);
 
-      count                  = is_binstr ? (value->val.string.len + 1) / 2 
+      count                  = is_binstr ? (value->val.string.len + 1) / 2
          : (value->val.string.len + 1);
       value->val.string.buff = (char*)calloc(count, sizeof(char));
 
@@ -625,7 +625,7 @@ static struct buffer query_parse_argument(struct buffer buff,
                query_peek(buff, "nil")
             || query_peek(buff, "true")
             || query_peek(buff, "false")
-            || query_peek(buff, "b\"") 
+            || query_peek(buff, "b\"")
             || query_peek(buff,  "b'") /* bin string prefix*/
             )
       )

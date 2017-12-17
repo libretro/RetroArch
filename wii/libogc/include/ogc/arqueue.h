@@ -75,7 +75,7 @@ void ARQ_Reset();
  * \param[in] req structure to hold ARAM DMA request informations.
  * \param[in] owner unique owner id.
  * \param[in] dir direction of ARAM DMA transfer.
- * \param[in] prio priority of request. 
+ * \param[in] prio priority of request.
  * \param[in] aram_addr startaddress of buffer to be pushed onto the queue. <b><i>NOTE:</i></b> Must be 32-bytealigned.
  * \param[in] mram_addr length of data to be pushed onto the queue.
  * \param[in] len startaddress of buffer to be pushed onto the queue. <b><i>NOTE:</i></b> Must be 32-bytealigned.
@@ -93,7 +93,7 @@ void ARQ_PostRequest(ARQRequest *req,u32 owner,u32 dir,u32 prio,u32 aram_addr,u3
  * \param[in] req structure to hold ARAM DMA request informations.
  * \param[in] owner unique owner id.
  * \param[in] dir direction of ARAM DMA transfer.
- * \param[in] prio priority of request. 
+ * \param[in] prio priority of request.
  * \param[in] aram_addr startaddress of buffer to be pushed onto the queue. <b><i>NOTE:</i></b> Must be 32-bytealigned.
  * \param[in] mram_addr length of data to be pushed onto the queue.
  * \param[in] len startaddress of buffer to be pushed onto the queue. <b><i>NOTE:</i></b> Must be 32-bytealigned.

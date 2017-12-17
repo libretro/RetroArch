@@ -68,7 +68,7 @@ static int menu_event_pointer(unsigned *action)
       current_input->input_state(current_input_data, joypad_info, binds,
             0, pointer_device, 0, RETRO_DEVICE_ID_POINTER_Y);
 
-   menu_input->pointer.pressed[0]  = current_input->input_state(current_input_data, 
+   menu_input->pointer.pressed[0]  = current_input->input_state(current_input_data,
          joypad_info,
          binds,
          0, pointer_device, 0, RETRO_DEVICE_ID_POINTER_PRESSED);
@@ -101,7 +101,7 @@ static void menu_event_kb_set_internal(unsigned idx, unsigned char key)
 
 /* Set a specific keyboard key.
  *
- * 'down' sets the latch (true would 
+ * 'down' sets the latch (true would
  * mean the key is being pressed down, while 'false' would mean that
  * the key has been released).
  **/
@@ -118,7 +118,7 @@ void menu_event_kb_set(bool down, enum retro_key key)
       menu_event_kb_set_internal(key, ((menu_event_kb_is_set(key) & 1) << 1) | down);
 }
 
-/* 
+/*
  * This function gets called in order to process all input events
  * for the current frame.
  *
@@ -154,18 +154,18 @@ unsigned menu_event(retro_bits_t* p_input, retro_bits_t* p_trigger_input)
    settings_t *settings                    = config_get_ptr();
    static unsigned ok_old                  = 0;
    bool input_swap_override                = input_autoconfigure_get_swap_override();
-   unsigned menu_ok_btn                    = (!input_swap_override && 
+   unsigned menu_ok_btn                    = (!input_swap_override &&
       settings->bools.input_menu_swap_ok_cancel_buttons) ?
       RETRO_DEVICE_ID_JOYPAD_B : RETRO_DEVICE_ID_JOYPAD_A;
-   unsigned menu_cancel_btn                = (!input_swap_override && 
+   unsigned menu_cancel_btn                = (!input_swap_override &&
       settings->bools.input_menu_swap_ok_cancel_buttons) ?
       RETRO_DEVICE_ID_JOYPAD_A : RETRO_DEVICE_ID_JOYPAD_B;
-   unsigned ok_current                     = RARCH_INPUT_STATE_BIT_GET_PTR(p_input, menu_ok_btn );
+   unsigned ok_current                     = BIT256_GET_PTR(p_input, menu_ok_btn );
    unsigned ok_trigger                     = ok_current & ~ok_old;
 
    ok_old                                  = ok_current;
 
-   if (RARCH_INPUT_STATE_ANY_SET_PTR(p_input))
+   if (bits_any_set(p_input->data, ARRAY_SIZE(p_input->data)))
    {
       if (!first_held)
       {
@@ -221,31 +221,31 @@ unsigned menu_event(retro_bits_t* p_input, retro_bits_t* p_trigger_input)
    {
       menu_event_osk_iterate();
 
-      if (RARCH_INPUT_STATE_BIT_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
+      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
       {
          if (menu_event_get_osk_ptr() < 33)
             menu_event_set_osk_ptr(menu_event_get_osk_ptr() + OSK_CHARS_PER_LINE);
       }
 
-      if (RARCH_INPUT_STATE_BIT_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_UP))
+      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_UP))
       {
          if (menu_event_get_osk_ptr() >= OSK_CHARS_PER_LINE)
             menu_event_set_osk_ptr(menu_event_get_osk_ptr() - OSK_CHARS_PER_LINE);
       }
 
-      if (RARCH_INPUT_STATE_BIT_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_RIGHT))
+      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_RIGHT))
       {
          if (menu_event_get_osk_ptr() < 43)
             menu_event_set_osk_ptr(menu_event_get_osk_ptr() + 1);
       }
 
-      if (RARCH_INPUT_STATE_BIT_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_LEFT))
+      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_LEFT))
       {
          if (menu_event_get_osk_ptr() >= 1)
             menu_event_set_osk_ptr(menu_event_get_osk_ptr() - 1);
       }
 
-      if (RARCH_INPUT_STATE_BIT_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_L))
+      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_L))
       {
          if (menu_event_get_osk_idx() > OSK_TYPE_UNKNOWN + 1)
             menu_event_set_osk_idx((enum osk_type)(menu_event_get_osk_idx() - 1));
@@ -253,7 +253,7 @@ unsigned menu_event(retro_bits_t* p_input, retro_bits_t* p_trigger_input)
             menu_event_set_osk_idx((enum osk_type)(OSK_TYPE_LAST - 1));
       }
 
-      if (RARCH_INPUT_STATE_BIT_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R))
+      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R))
       {
          if (menu_event_get_osk_idx() < OSK_TYPE_LAST - 1)
             menu_event_set_osk_idx((enum osk_type)(menu_event_get_osk_idx() + 1));
@@ -261,50 +261,50 @@ unsigned menu_event(retro_bits_t* p_input, retro_bits_t* p_trigger_input)
             menu_event_set_osk_idx((enum osk_type)(OSK_TYPE_UNKNOWN + 1));
       }
 
-      if (RARCH_INPUT_STATE_BIT_GET_PTR(p_trigger_input, menu_ok_btn))
+      if (BIT256_GET_PTR(p_trigger_input, menu_ok_btn))
       {
          if (menu_event_get_osk_ptr() >= 0)
             menu_event_osk_append(menu_event_get_osk_ptr());
       }
 
-      if (RARCH_INPUT_STATE_BIT_GET_PTR(p_trigger_input, menu_cancel_btn))
+      if (BIT256_GET_PTR(p_trigger_input, menu_cancel_btn))
       {
          input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
       }
 
       /* send return key to close keyboard input window */
-      if (RARCH_INPUT_STATE_BIT_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_START))
+      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_START))
          input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
 
-      RARCH_INPUT_STATE_CLEAR_PTR(p_trigger_input);
+      BIT256_CLEAR_ALL_PTR(p_trigger_input);
    }
    else
    {
-      if (RARCH_INPUT_STATE_BIT_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_UP))
+      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_UP))
          ret = MENU_ACTION_UP;
-      else if (RARCH_INPUT_STATE_BIT_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
+      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
          ret = MENU_ACTION_DOWN;
-      else if (RARCH_INPUT_STATE_BIT_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_LEFT))
+      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_LEFT))
          ret = MENU_ACTION_LEFT;
-      else if (RARCH_INPUT_STATE_BIT_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_RIGHT))
+      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_RIGHT))
          ret = MENU_ACTION_RIGHT;
-      else if (RARCH_INPUT_STATE_BIT_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_L))
+      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_L))
          ret = MENU_ACTION_SCROLL_UP;
-      else if (RARCH_INPUT_STATE_BIT_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R))
+      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R))
          ret = MENU_ACTION_SCROLL_DOWN;
       else if (ok_trigger)
          ret = MENU_ACTION_OK;
-      else if (RARCH_INPUT_STATE_BIT_GET_PTR(p_trigger_input, menu_cancel_btn))
+      else if (BIT256_GET_PTR(p_trigger_input, menu_cancel_btn))
          ret = MENU_ACTION_CANCEL;
-      else if (RARCH_INPUT_STATE_BIT_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_X))
+      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_X))
          ret = MENU_ACTION_SEARCH;
-      else if (RARCH_INPUT_STATE_BIT_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_Y))
+      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_Y))
          ret = MENU_ACTION_SCAN;
-      else if (RARCH_INPUT_STATE_BIT_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_START))
+      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_START))
          ret = MENU_ACTION_START;
-      else if (RARCH_INPUT_STATE_BIT_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
+      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
          ret = MENU_ACTION_INFO;
-      else if (RARCH_INPUT_STATE_BIT_GET_PTR(p_trigger_input, RARCH_MENU_TOGGLE))
+      else if (BIT256_GET_PTR(p_trigger_input, RARCH_MENU_TOGGLE))
          ret = MENU_ACTION_TOGGLE;
    }
 
@@ -314,7 +314,7 @@ unsigned menu_event(retro_bits_t* p_input, retro_bits_t* p_trigger_input)
       menu_event_kb_set_internal(RETROK_F11, 0);
    }
 
-   if (RARCH_INPUT_STATE_BIT_GET_PTR(p_trigger_input, RARCH_QUIT_KEY))
+   if (BIT256_GET_PTR(p_trigger_input, RARCH_QUIT_KEY))
       return MENU_ACTION_QUIT;
 
    mouse_enabled                      = settings->bools.menu_mouse_enable;

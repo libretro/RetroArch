@@ -79,7 +79,7 @@ static bool netplay_is_alive(void)
  * netplay_should_skip:
  * @netplay              : pointer to netplay object
  *
- * If we're fast-forward replaying to resync, check if we 
+ * If we're fast-forward replaying to resync, check if we
  * should actually show frame.
  *
  * Returns: bool (1) if we should skip this frame, otherwise
@@ -130,7 +130,7 @@ static bool get_self_input_state(netplay_t *netplay)
 
    if (!input_driver_is_libretro_input_blocked() && netplay->self_frame_count > 0)
    {
-      /* First frame we always give zero input since relying on 
+      /* First frame we always give zero input since relying on
        * input from first frame screws up when we use -F 0. */
       retro_input_state_t cb = netplay->cbs.state_cb;
       for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
@@ -194,8 +194,8 @@ bool init_netplay_deferred(const char* server, unsigned port)
  * netplay_poll:
  * @netplay              : pointer to netplay object
  *
- * Polls network to see if we have anything new. If our 
- * network buffer is full, we simply have to block 
+ * Polls network to see if we have anything new. If our
+ * network buffer is full, we simply have to block
  * for new input data.
  *
  * Returns: true (1) if successful, otherwise false (0).
@@ -478,7 +478,7 @@ static int16_t netplay_input_state(netplay_t *netplay,
       unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
-   size_t ptr = netplay->is_replay ? 
+   size_t ptr = netplay->is_replay ?
       netplay->replay_ptr : netplay->run_ptr;
 
    const uint32_t *curr_input_state = NULL;
@@ -613,37 +613,47 @@ static void netplay_announce(void)
    char *corename                = NULL;
    char *gamename                = NULL;
    char *coreversion             = NULL;
+   char *frontend_ident          = NULL;
    settings_t *settings          = config_get_ptr();
    rarch_system_info_t *system   = runloop_get_system_info();
    uint32_t content_crc          = content_get_crc();
+   const frontend_ctx_driver_t
+      *frontend                  = frontend_get_ptr();
 
    net_http_urlencode_full(&username, settings->paths.username);
    net_http_urlencode_full(&corename, system->info.library_name);
-   net_http_urlencode_full(&gamename, 
-      !string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))) ? 
+   net_http_urlencode_full(&gamename,
+      !string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))) ?
       path_basename(path_get(RARCH_PATH_BASENAME)) : "N/A");
    net_http_urlencode_full(&coreversion, system->info.library_version);
+   net_http_urlencode_full(&frontend_ident, frontend->ident);
 
    buf[0] = '\0';
 
    snprintf(buf, sizeof(buf), "username=%s&core_name=%s&core_version=%s&"
       "game_name=%s&game_crc=%08X&port=%d"
-      "&has_password=%d&has_spectate_password=%d&force_mitm=%d&retroarch_version=%s",
+      "&has_password=%d&has_spectate_password=%d&force_mitm=%d&retroarch_version=%s&frontend=%s",
       username, corename, coreversion, gamename, content_crc,
       settings->uints.netplay_port,
       *settings->paths.netplay_password ? 1 : 0,
       *settings->paths.netplay_spectate_password ? 1 : 0,
       settings->bools.netplay_use_mitm_server,
-      PACKAGE_VERSION);
+      PACKAGE_VERSION, frontend_ident);
 #if 0
    RARCH_LOG("[netplay] announcement URL: %s\n", buf);
 #endif
    task_push_http_post_transfer(url, buf, true, NULL, netplay_announce_cb, NULL);
 
-   free(username);
-   free(corename);
-   free(gamename);
-   free(coreversion);
+   if (username)
+      free(username);
+   if (corename)
+      free(corename);
+   if (gamename)
+      free(gamename);
+   if (coreversion)
+      free(coreversion);
+   if (frontend_ident)
+      free(frontend_ident);
 }
 
 int16_t input_state_net(unsigned port, unsigned device,
@@ -663,7 +673,7 @@ int16_t input_state_net(unsigned port, unsigned device,
  * @sz                     : size of data
  * @command_str            : name of action
  * @success_msg            : message to display upon success
- * 
+ *
  * Sends a single netplay command and waits for response. Only actually used
  * for player flipping. FIXME: Should probably just be removed.
  */
@@ -689,7 +699,7 @@ bool netplay_command(netplay_t* netplay, struct netplay_connection *connection,
  */
 static void netplay_flip_users(netplay_t *netplay)
 {
-   /* Must be in the future because we may have 
+   /* Must be in the future because we may have
     * already sent this frame's data */
    uint32_t     flip_frame = netplay->self_frame_count + 1;
    uint32_t flip_frame_net = htonl(flip_frame);
@@ -763,7 +773,7 @@ static void netplay_frontend_paused(netplay_t *netplay, bool paused)
 }
 
 /**
- * netplay_pre_frame:   
+ * netplay_pre_frame:
  * @netplay              : pointer to netplay object
  *
  * Pre-frame for Netplay.
@@ -847,7 +857,7 @@ bool netplay_pre_frame(netplay_t *netplay)
 }
 
 /**
- * netplay_post_frame:   
+ * netplay_post_frame:
  * @netplay              : pointer to netplay object
  *
  * Post-frame for Netplay.
@@ -973,9 +983,9 @@ void netplay_send_savestate(netplay_t *netplay,
 /**
  * netplay_load_savestate
  * @netplay              : pointer to netplay object
- * @serial_info          : the savestate being loaded, NULL means 
+ * @serial_info          : the savestate being loaded, NULL means
  *                         "load it yourself"
- * @save                 : Whether to save the provided serial_info 
+ * @save                 : Whether to save the provided serial_info
  *                         into the frame buffer
  *
  * Inform Netplay of a savestate load and send it to the other side
@@ -1262,7 +1272,7 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
 
 /**
  * netplay_driver_ctl
- * 
+ *
  * Frontend access to Netplay functionality
  */
 bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)

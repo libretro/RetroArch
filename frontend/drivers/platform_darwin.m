@@ -51,6 +51,7 @@
 #include <retro_assert.h>
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
+#include <streams/file_stream.h>
 #include <rhash.h>
 
 #ifdef HAVE_MENU
@@ -416,7 +417,7 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
 
     fill_pathname_join(assets_zip_path, bundle_path_buf, "assets.zip", sizeof(assets_zip_path));
     
-    if (path_file_exists(assets_zip_path))
+    if (filestream_exists(assets_zip_path))
     {
        settings_t *settings = config_get_ptr();
 

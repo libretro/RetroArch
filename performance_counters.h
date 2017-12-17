@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -77,7 +77,7 @@ void rarch_perf_register(struct retro_perf_counter *perf);
  * performance_counter_start:
  * @perf               : pointer to performance counter
  *
- * Start performance counter. 
+ * Start performance counter.
  **/
 #define performance_counter_start_plus(is_perfcnt_enable, perf) performance_counter_start_internal(is_perfcnt_enable, perf)
 
@@ -85,7 +85,7 @@ void rarch_perf_register(struct retro_perf_counter *perf);
  * performance_counter_stop:
  * @perf               : pointer to performance counter
  *
- * Stop performance counter. 
+ * Stop performance counter.
  **/
 #define performance_counter_stop_plus(is_perfcnt_enable, perf) performance_counter_stop_internal(is_perfcnt_enable, perf)
 

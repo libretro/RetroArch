@@ -628,7 +628,7 @@ typedef struct wiimote_t {
 	WCONST ubyte expansion_state;			/**< the state of the expansion handshake	*/
 
 	WCONST struct data_req_t* data_req;		/**< list of data read requests				*/
-	
+
 	WCONST struct cmd_blk_t *cmd_head;
 	WCONST struct cmd_blk_t *cmd_tail;
 

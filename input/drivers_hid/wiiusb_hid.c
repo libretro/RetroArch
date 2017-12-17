@@ -64,7 +64,7 @@ struct wiiusb_adapter
    int32_t slot;
    uint8_t *data;
 
-   uint8_t	send_control_type;
+   uint8_t  send_control_type;
    uint8_t *send_control_buffer;
    uint32_t send_control_size;
 };
@@ -113,10 +113,10 @@ static int32_t wiiusb_hid_read_cb(int32_t size, void *data)
       pad_connection_packet(&hid->connections[adapter->slot],
             adapter->slot, adapter->data-1, size+1);
 
-	if (adapter)
+  if (adapter)
       adapter->busy = false;
 
-	return size;
+  return size;
 }
 
 static void wiiusb_hid_device_send_control(void *data,
@@ -398,7 +398,7 @@ static void wiiusb_hid_scan_for_devices(wiiusb_hid_t *hid)
 
    for (i = 0; i < count; i++)
    {
-		/* first check the device is not already in our list */
+    /* first check the device is not already in our list */
       if (!wiiusb_hid_new_device(hid, dev_entries[i].device_id))
          continue;
 
@@ -461,11 +461,11 @@ static int wiiusb_hid_change_cb(int result, void *usrdata)
       return -1;
 
    /* As it's not coming from the removal callback
-      then we	detected a new device being inserted */
-	if (!hid->removal_cb)
-		hid->device_detected = true;
-	else
-		hid->removal_cb      = false;
+      then we detected a new device being inserted */
+  if (!hid->removal_cb)
+    hid->device_detected = true;
+  else
+    hid->removal_cb      = false;
 
    /* Re-submit the change alert */
    USB_DeviceChangeNotifyAsync(USB_CLASS_HID, wiiusb_hid_change_cb, usrdata);
@@ -478,33 +478,38 @@ static bool wiiusb_hid_joypad_query(void *data, unsigned pad)
    return pad < MAX_USERS;
 }
 
-static uint64_t wiiusb_hid_joypad_get_buttons(void *data, unsigned port)
+static void wiiusb_hid_joypad_get_buttons(void *data, unsigned port, retro_bits_t *state)
 {
-   wiiusb_hid_t *hid = (wiiusb_hid_t*)data;
-   if (hid)
-      return pad_connection_get_buttons(&hid->connections[port], port);
-   return 0;
+  wiiusb_hid_t *hid = (wiiusb_hid_t*)data;
+  if (hid)
+  {
+    pad_connection_get_buttons(&hid->connections[port], port, state);
+    return;
+  }
+  BIT256_CLEAR_ALL_PTR(state);
 }
 
 static bool wiiusb_hid_joypad_button(void *data, unsigned port, uint16_t joykey)
 {
-   uint64_t buttons = wiiusb_hid_joypad_get_buttons(data, port);
+  retro_bits_t buttons;
 
-   /* Check hat. */
-   if (GET_HAT_DIR(joykey))
-      return false;
+  wiiusb_hid_joypad_get_buttons(data, port, &buttons);
 
-   /* Check the button. */
-   if ((port < MAX_USERS) && (joykey < 32))
-      return ((buttons & (1 << joykey)) != 0);
+  /* Check hat. */
+  if (GET_HAT_DIR(joykey))
+    return false;
 
-   return false;
+  /* Check the button. */
+  if ((port < MAX_USERS) && (joykey < 32))
+    return (BIT256_GET(buttons, joykey) != 0);
+
+  return false;
 }
 
 static bool wiiusb_hid_joypad_rumble(void *data, unsigned pad,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   wiiusb_hid_t *hid	= (wiiusb_hid_t*)data;
+   wiiusb_hid_t *hid  = (wiiusb_hid_t*)data;
 
    if (!hid)
       return false;

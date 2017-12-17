@@ -154,7 +154,7 @@ static s32 __isfsReadDirCB(s32 result,void *usrdata)
 static s32 __isfsFunctionCB(s32 result,void *usrdata)
 {
 	struct isfs_cb *param = (struct isfs_cb*)usrdata;
-	
+
 	if(result>=0) {
 		if(param->functype==ISFS_FUNCGETSTAT) __isfsGetStatsCB(result,usrdata);
 		else if(param->functype==ISFS_FUNCREADDIR) __isfsReadDirCB(result,usrdata);
@@ -162,7 +162,7 @@ static s32 __isfsFunctionCB(s32 result,void *usrdata)
 		else if(param->functype==ISFS_FUNCGETUSAGE) __isfsGetUsageCB(result,usrdata);
 	}
 	if(param->cb!=NULL) param->cb(result,param->usrdata);
-	
+
 	iosFree(hId,param);
 	return result;
 }
@@ -289,7 +289,7 @@ s32 ISFS_CreateDir(const char *filepath,u8 attributes,u8 owner_perm,u8 group_per
 	if(param==NULL) return ISFS_ENOMEM;
 
 	memcpy(param->fsattr.filepath ,filepath,(len+1));
-	
+
 	param->fsattr.attributes = attributes;
 	param->fsattr.ownerperm = owner_perm;
 	param->fsattr.groupperm = group_perm;
@@ -317,7 +317,7 @@ s32 ISFS_CreateDirAsync(const char *filepath,u8 attributes,u8 owner_perm,u8 grou
 	param->usrdata = usrdata;
 	param->functype = ISFS_FUNCNULL;
 	memcpy(param->fsattr.filepath,filepath,(len+1));
-	
+
 	param->fsattr.attributes = attributes;
 	param->fsattr.ownerperm = owner_perm;
 	param->fsattr.groupperm = group_perm;
@@ -381,7 +381,7 @@ s32 ISFS_FormatAsync(isfscallback cb,void *usrdata)
 
 	param = (struct isfs_cb*)iosAlloc(hId,ISFS_STRUCTSIZE);
 	if(param==NULL) return ISFS_ENOMEM;
-	
+
 	param->cb = cb;
 	param->usrdata = usrdata;
 	param->functype = ISFS_FUNCNULL;
@@ -400,7 +400,7 @@ s32 ISFS_GetStats(void *stats)
 
 	ret = IOS_Ioctl(_fs_fd,ISFS_IOCTL_GETSTATS,NULL,0,&param->fsstats,sizeof(param->fsstats));
 	if(ret==IPC_OK) memcpy(stats,&param->fsstats,sizeof(param->fsstats));
-	
+
 	if(param!=NULL) iosFree(hId,param);
 	return ret;
 }
@@ -424,7 +424,7 @@ s32 ISFS_GetStatsAsync(void *stats,isfscallback cb,void *usrdata)
 s32 ISFS_Write(s32 fd,const void *buffer,u32 length)
 {
 	if(length<=0 || buffer==NULL) return ISFS_EINVAL;
-	
+
 	return IOS_Write(fd,buffer,length);
 }
 
@@ -433,7 +433,7 @@ s32 ISFS_WriteAsync(s32 fd,const void *buffer,u32 length,isfscallback cb,void *u
 	struct isfs_cb *param;
 
 	if(length<=0 || buffer==NULL) return ISFS_EINVAL;
-	
+
 	param = (struct isfs_cb*)iosAlloc(hId,ISFS_STRUCTSIZE);
 	if(param==NULL) return ISFS_ENOMEM;
 
@@ -446,7 +446,7 @@ s32 ISFS_WriteAsync(s32 fd,const void *buffer,u32 length,isfscallback cb,void *u
 s32 ISFS_Read(s32 fd,void *buffer,u32 length)
 {
 	if(length<=0 || buffer==NULL || ((u32)buffer%32)!=0) return ISFS_EINVAL;
-	
+
 	return IOS_Read(fd,buffer,length);
 }
 
@@ -455,7 +455,7 @@ s32 ISFS_ReadAsync(s32 fd,void *buffer,u32 length,isfscallback cb,void *usrdata)
 	struct isfs_cb *param;
 
 	if(length<=0 || buffer==NULL || ((u32)buffer%32)!=0) return ISFS_EINVAL;
-	
+
 	param = (struct isfs_cb*)iosAlloc(hId,ISFS_STRUCTSIZE);
 	if(param==NULL) return ISFS_ENOMEM;
 
@@ -473,7 +473,7 @@ s32 ISFS_Seek(s32 fd,s32 where,s32 whence)
 s32 ISFS_SeekAsync(s32 fd,s32 where,s32 whence,isfscallback cb,void *usrdata)
 {
 	struct isfs_cb *param;
-	
+
 	param = (struct isfs_cb*)iosAlloc(hId,ISFS_STRUCTSIZE);
 	if(param==NULL) return ISFS_ENOMEM;
 
@@ -498,7 +498,7 @@ s32 ISFS_CreateFile(const char *filepath,u8 attributes,u8 owner_perm,u8 group_pe
 	if(param==NULL) return ISFS_ENOMEM;
 
 	memcpy(param->fsattr.filepath,filepath,(len+1));
-	
+
 	param->fsattr.attributes = attributes;
 	param->fsattr.ownerperm = owner_perm;
 	param->fsattr.groupperm = group_perm;
@@ -526,7 +526,7 @@ s32 ISFS_CreateFileAsync(const char *filepath,u8 attributes,u8 owner_perm,u8 gro
 	param->usrdata = usrdata;
 	param->functype = ISFS_FUNCNULL;
 	memcpy(param->fsattr.filepath,filepath,(len+1));
-	
+
 	param->fsattr.attributes = attributes;
 	param->fsattr.ownerperm = owner_perm;
 	param->fsattr.groupperm = group_perm;
@@ -644,7 +644,7 @@ s32 ISFS_GetAttr(const char *filepath,u32 *ownerID,u16 *groupID,u8 *attributes,u
 		*otherperm = param->fsattr.otherperm;
 		*attributes = param->fsattr.attributes;
 	}
-	
+
 	if(param!=NULL) iosFree(hId,param);
 	return ret;
 }
@@ -729,15 +729,15 @@ s32 ISFS_SetAttr(const char *filepath,u32 ownerID,u16 groupID,u8 attributes,u8 o
 {
 	s32 ret, len;
 	struct isfs_cb *param;
-	
+
 	if(_fs_fd<0 || filepath==NULL) return ISFS_EINVAL;
-	
+
 	len = strnlen(filepath, ISFS_MAXPATH);
 	if(len>=ISFS_MAXPATH) return ISFS_EINVAL;
-	
+
 	param = (struct isfs_cb*)iosAlloc(hId, ISFS_STRUCTSIZE);
 	if(param==NULL) return ISFS_ENOMEM;
-	
+
 	memcpy(param->fsattr.filepath, filepath, (len+1));
 	param->fsattr.owner_id = ownerID;
 	param->fsattr.group_id = groupID;
@@ -745,26 +745,26 @@ s32 ISFS_SetAttr(const char *filepath,u32 ownerID,u16 groupID,u8 attributes,u8 o
 	param->fsattr.groupperm = groupperm;
 	param->fsattr.otherperm = otherperm;
 	param->fsattr.attributes = attributes;
-	
+
 	ret = IOS_Ioctl(_fs_fd,ISFS_IOCTL_SETATTR,&param->fsattr,sizeof(param->fsattr),NULL,0);
-	
+
 	if(param!=NULL) iosFree(hId,param);
 	return ret;
-} 
+}
 
 s32 ISFS_SetAttrAsync(const char *filepath,u32 ownerID,u16 groupID,u8 attributes,u8 ownerperm,u8 groupperm,u8 otherperm,isfscallback cb,void *usrdata)
 {
 	s32 len;
 	struct isfs_cb *param;
-	
+
 	if(_fs_fd<0 || filepath==NULL) return ISFS_EINVAL;
-	
+
 	len = strnlen(filepath, ISFS_MAXPATH);
 	if(len>=ISFS_MAXPATH) return ISFS_EINVAL;
-	
+
 	param = (struct isfs_cb*)iosAlloc(hId, ISFS_STRUCTSIZE);
 	if(param==NULL) return ISFS_ENOMEM;
-	
+
 	param->cb = cb;
 	param->usrdata = usrdata;
 	param->functype = ISFS_FUNCNULL;
@@ -776,19 +776,19 @@ s32 ISFS_SetAttrAsync(const char *filepath,u32 ownerID,u16 groupID,u8 attributes
 	param->fsattr.otherperm = otherperm;
 	param->fsattr.attributes = attributes;
 	return IOS_IoctlAsync(_fs_fd,ISFS_IOCTL_SETATTR,&param->fsattr,sizeof(param->fsattr),NULL,0,__isfsFunctionCB,param);
-} 
+}
 
 s32 ISFS_GetUsage(const char* filepath, u32* usage1, u32* usage2)
 {
 	s32 ret,len;
 	struct isfs_cb *param;
-	
+
 	if(_fs_fd<0 || filepath==NULL || usage1==NULL || usage2 == NULL)
 		return ISFS_EINVAL;
-	
+
 	len = strnlen(filepath, ISFS_MAXPATH);
 	if(len>=ISFS_MAXPATH) return ISFS_EINVAL;
-	
+
 	param = (struct isfs_cb*)iosAlloc(hId, ISFS_STRUCTSIZE);
 	if(param==NULL) return ISFS_ENOMEM;
 
@@ -805,7 +805,7 @@ s32 ISFS_GetUsage(const char* filepath, u32* usage1, u32* usage2)
 		*usage1 = param->fsusage.usage1;
 		*usage2 = param->fsusage.usage2;
 	}
-	
+
 	if(param!=NULL) iosFree(hId, param);
 	return ret;
 }
@@ -814,13 +814,13 @@ s32 ISFS_GetUsageAsync(const char* filepath, u32* usage1, u32* usage2,isfscallba
 {
 	s32 len;
 	struct isfs_cb *param;
-	
+
 	if(_fs_fd<0 || filepath==NULL || usage1==NULL || usage2 == NULL)
 		return ISFS_EINVAL;
-	
+
 	len = strnlen(filepath, ISFS_MAXPATH);
 	if(len>=ISFS_MAXPATH) return ISFS_EINVAL;
-	
+
 	param = (struct isfs_cb*)iosAlloc(hId, ISFS_STRUCTSIZE);
 	if(param==NULL) return ISFS_ENOMEM;
 

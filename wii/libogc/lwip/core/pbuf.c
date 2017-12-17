@@ -12,14 +12,14 @@
  *
  * Multiple packets may be queued, also using this singly linked list.
  * This is called a "packet queue".
- * 
+ *
  * So, a packet queue consists of one or more pbuf chains, each of
  * which consist of one or more pbufs. Currently, queues are only
  * supported in a limited section of lwIP, this is the etharp queueing
  * code. Outside of this section no packet queues are supported yet.
- * 
+ *
  * The differences between a pbuf chain and a packet queue are very
- * precise but subtle. 
+ * precise but subtle.
  *
  * The last pbuf of a packet has a ->tot_len field that equals the
  * ->len field. It can be found by traversing the list. If the last
@@ -468,7 +468,7 @@ pbuf_header(struct pbuf *p, s16_t header_size_increment)
 
   LWIP_ASSERT("p != NULL", p != NULL);
   if ((header_size_increment == 0) || (p == NULL)) return 0;
- 
+
   /* remember current payload pointer */
   payload = p->payload;
 
@@ -533,7 +533,7 @@ pbuf_header(struct pbuf *p, s16_t header_size_increment)
  *
  * Assuming existing chains a->b->c with the following reference
  * counts, calling pbuf_free(a) results in:
- * 
+ *
  * 1->2->3 becomes ...1->3
  * 3->3->3 becomes 2->3->3
  * 1->1->2 becomes ......1
@@ -649,10 +649,10 @@ pbuf_ref(struct pbuf *p)
 /**
  * Concatenate two pbufs (each may be a pbuf chain) and take over
  * the caller's reference of the tail pbuf.
- * 
+ *
  * @note The caller MAY NOT reference the tail pbuf afterwards.
  * Use pbuf_chain() for that purpose.
- * 
+ *
  * @see pbuf_chain()
  */
 
@@ -684,10 +684,10 @@ pbuf_cat(struct pbuf *h, struct pbuf *t)
 
 /**
  * Chain two pbufs (or pbuf chains) together.
- * 
+ *
  * The caller MUST call pbuf_free(t) once it has stopped
  * using it. Use pbuf_cat() instead if you no longer use t.
- * 
+ *
  * @param h head pbuf (chain)
  * @param t tail pbuf (chain)
  * @note The pbufs MUST belong to the same packet.
@@ -771,7 +771,7 @@ pbuf_queue(struct pbuf *p, struct pbuf *n)
  * The caller MUST reference the remainder of the queue (as returned). The
  * caller MUST NOT call pbuf_ref() as it implicitly takes over the reference
  * from p.
- * 
+ *
  * @param p pointer to first packet on the queue which will be dequeued.
  * @return first packet on the remaining queue (NULL if no further packets).
  *

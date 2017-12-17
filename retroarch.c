@@ -43,6 +43,7 @@
 #include <compat/getopt.h>
 #include <audio/audio_mixer.h>
 #include <compat/posix_string.h>
+#include <streams/file_stream.h>
 #include <file/file_path.h>
 #include <retro_assert.h>
 #include <retro_miscellaneous.h>
@@ -835,7 +836,7 @@ static void retroarch_parse_input(int argc, char *argv[])
                      "Setting libretro_directory to \"%s\" instead.\n",
                      optarg);
             }
-            else if (path_file_exists(optarg))
+            else if (filestream_exists(optarg))
             {
                rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH, optarg);
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
@@ -1179,6 +1180,10 @@ static void retroarch_main_init_media(void)
    bool builtin_mediaplayer = false;
 
    if (!settings)
+      return;
+
+   /* -L overrides internal cores */
+   if (!string_is_empty(path_get(RARCH_PATH_CORE)))
       return;
 
    builtin_imageviewer      = settings->bools.multimedia_builtin_imageviewer_enable;
@@ -1931,7 +1936,7 @@ bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx, voi
             if (val)
             {
                unsigned bit = *val;
-               return BIT128_GET(has_set_libretro_device, bit);
+               return BIT256_GET(has_set_libretro_device, bit);
             }
          }
          break;
@@ -1980,7 +1985,7 @@ void retroarch_override_setting_set(enum rarch_override_setting enum_idx, void *
             if (val)
             {
                unsigned bit = *val;
-               BIT128_SET(has_set_libretro_device, bit);
+               BIT256_SET(has_set_libretro_device, bit);
             }
          }
          break;
@@ -2039,7 +2044,7 @@ void retroarch_override_setting_unset(enum rarch_override_setting enum_idx, void
             if (val)
             {
                unsigned bit = *val;
-               BIT128_CLEAR(has_set_libretro_device, bit);
+               BIT256_CLEAR(has_set_libretro_device, bit);
             }
          }
          break;
@@ -2315,35 +2320,35 @@ static bool input_driver_toggle_button_combo(
    switch (mode)
    {
       case INPUT_TOGGLE_DOWN_Y_L_R:
-         if (!RARCH_INPUT_STATE_BIT_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
+         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
             return false;
-         if (!RARCH_INPUT_STATE_BIT_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_Y))
+         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_Y))
             return false;
-         if (!RARCH_INPUT_STATE_BIT_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L))
+         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L))
             return false;
-         if (!RARCH_INPUT_STATE_BIT_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R))
+         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R))
             return false;
          break;
       case INPUT_TOGGLE_L3_R3:
-         if (!RARCH_INPUT_STATE_BIT_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L3))
+         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L3))
             return false;
-         if (!RARCH_INPUT_STATE_BIT_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R3))
+         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R3))
             return false;
          break;
       case INPUT_TOGGLE_L1_R1_START_SELECT:
-         if (!RARCH_INPUT_STATE_BIT_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_START))
+         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_START))
             return false;
-         if (!RARCH_INPUT_STATE_BIT_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
+         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
             return false;
-         if (!RARCH_INPUT_STATE_BIT_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L))
+         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L))
             return false;
-         if (!RARCH_INPUT_STATE_BIT_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R))
+         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R))
             return false;
          break;
       case INPUT_TOGGLE_START_SELECT:
-         if (!RARCH_INPUT_STATE_BIT_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_START))
+         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_START))
             return false;
-         if (!RARCH_INPUT_STATE_BIT_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
+         if (!BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
             return false;
          break;
       default:
@@ -2375,7 +2380,7 @@ static enum runloop_state runloop_check_state(
 
    retro_bits_t current_input;
 
-   if ( menu_is_alive && !(settings->bools.menu_unified_controls && !menu_input_dialog_get_display_kb()) )
+   if (menu_is_alive && !(settings->bools.menu_unified_controls && !menu_input_dialog_get_display_kb()))
 	   input_menu_keys_pressed(settings, &current_input);
    else
 	   input_keys_pressed(settings, &current_input);
@@ -2391,19 +2396,17 @@ static enum runloop_state runloop_check_state(
          ((settings->uints.input_menu_toggle_gamepad_combo != INPUT_TOGGLE_NONE) &&
           input_driver_toggle_button_combo(
              settings->uints.input_menu_toggle_gamepad_combo, &last_input)))
-   {
-      RARCH_INPUT_STATE_BIT_SET(current_input, RARCH_MENU_TOGGLE);
-   }
+      BIT256_SET(current_input, RARCH_MENU_TOGGLE);
 #endif
 
    if (input_driver_flushing_input)
    {
       input_driver_flushing_input = false;
-      if (RARCH_INPUT_STATE_ANY_SET(current_input))
+      if (bits_any_set(current_input.data, ARRAY_SIZE(current_input.data)))
       {
-         RARCH_INPUT_STATE_CLEAR( current_input );
+         BIT256_CLEAR_ALL(current_input);
          if (runloop_paused)
-            RARCH_INPUT_STATE_BIT_SET(current_input, RARCH_PAUSE_TOGGLE);
+            BIT256_SET(current_input, RARCH_PAUSE_TOGGLE);
          input_driver_flushing_input = true;
       }
    }
@@ -2412,14 +2415,14 @@ static enum runloop_state runloop_check_state(
 
 #ifdef HAVE_MENU
    if (menu_driver_binding_state)
-      RARCH_INPUT_STATE_CLEAR( current_input );
+      BIT256_CLEAR_ALL(current_input);
 #endif
 
 #ifdef HAVE_OVERLAY
    /* Check next overlay */
    {
       static bool old_should_check_next_overlay = false;
-      bool should_check_next_overlay            = runloop_cmd_press(
+      bool should_check_next_overlay            = BIT256_GET(
             current_input, RARCH_OVERLAY_NEXT);
 
       if (should_check_next_overlay && !old_should_check_next_overlay)
@@ -2431,7 +2434,7 @@ static enum runloop_state runloop_check_state(
 
    /* Check fullscreen toggle */
    {
-      bool fs_toggle_pressed = runloop_cmd_press(
+      bool fs_toggle_pressed = BIT256_GET(
             current_input, RARCH_FULLSCREEN_TOGGLE_KEY);
       fs_toggle_triggered    = fs_toggle_pressed && !old_fs_toggle_pressed;
 
@@ -2454,7 +2457,7 @@ static enum runloop_state runloop_check_state(
    /* Check mouse grab toggle */
    {
       static bool old_pressed = false;
-      bool pressed            = runloop_cmd_press(
+      bool pressed            = BIT256_GET(
             current_input, RARCH_GRAB_MOUSE_TOGGLE);
 
       if (pressed && !old_pressed)
@@ -2489,7 +2492,7 @@ static enum runloop_state runloop_check_state(
    /* Check quit key */
    {
       static bool old_quit_key = false;
-      bool quit_key            = runloop_cmd_press(
+      bool quit_key            = BIT256_GET(
             current_input, RARCH_QUIT_KEY);
       bool trig_quit_key       = quit_key && !old_quit_key;
 
@@ -2539,12 +2542,12 @@ static enum runloop_state runloop_check_state(
       retro_ctx.poll_cb();
 
       {
-         retro_bits_t trigger_input;
          enum menu_action action;
-         bool focused;
+         bool focused               = false;
+         retro_bits_t trigger_input = current_input;
 
-         trigger_input = current_input;
-         RARCH_INPUT_STATE_CLEAR_BITS( trigger_input, old_input );
+         bits_clear_bits(trigger_input.data, old_input.data,
+               ARRAY_SIZE(trigger_input.data));
 
          action   = (enum menu_action)menu_event(&current_input, &trigger_input);
          focused              = pause_nonactive ? is_focused : true;
@@ -2583,7 +2586,7 @@ static enum runloop_state runloop_check_state(
    /* Check game focus toggle */
    {
       static bool old_pressed = false;
-      bool pressed            = runloop_cmd_press(
+      bool pressed            = BIT256_GET(
             current_input, RARCH_GAME_FOCUS_TOGGLE);
 
       if (pressed && !old_pressed)
@@ -2596,7 +2599,7 @@ static enum runloop_state runloop_check_state(
    /* Check menu toggle */
    {
       static bool old_pressed = false;
-      bool pressed            = runloop_cmd_press(
+      bool pressed            = BIT256_GET(
             current_input, RARCH_MENU_TOGGLE);
 
       if (menu_event_kb_is_set(RETROK_F1) == 1)
@@ -2646,7 +2649,7 @@ static enum runloop_state runloop_check_state(
    /* Check screenshot toggle */
    {
       static bool old_pressed = false;
-      bool pressed            = runloop_cmd_press(
+      bool pressed            = BIT256_GET(
             current_input, RARCH_SCREENSHOT);
 
       if (pressed && old_pressed)
@@ -2658,7 +2661,7 @@ static enum runloop_state runloop_check_state(
    /* Check audio mute toggle */
    {
       static bool old_pressed = false;
-      bool pressed            = runloop_cmd_press(
+      bool pressed            = BIT256_GET(
             current_input, RARCH_MUTE);
 
       if (pressed && !old_pressed)
@@ -2670,8 +2673,7 @@ static enum runloop_state runloop_check_state(
    /* Check OSK toggle */
    {
       static bool old_pressed = false;
-      bool pressed            = runloop_cmd_press(
-            current_input, RARCH_OSK);
+      bool pressed            = BIT256_GET(current_input, RARCH_OSK);
 
       if (pressed && !old_pressed)
       {
@@ -2687,9 +2689,9 @@ static enum runloop_state runloop_check_state(
       old_pressed             = pressed;
    }
 
-   if (runloop_cmd_press(current_input, RARCH_VOLUME_UP))
+   if (BIT256_GET(current_input, RARCH_VOLUME_UP))
       command_event(CMD_EVENT_VOLUME_UP, NULL);
-   else if (runloop_cmd_press(current_input, RARCH_VOLUME_DOWN))
+   else if (BIT256_GET(current_input, RARCH_VOLUME_DOWN))
       command_event(CMD_EVENT_VOLUME_DOWN, NULL);
 
 #ifdef HAVE_NETWORKING
@@ -2697,9 +2699,9 @@ static enum runloop_state runloop_check_state(
    {
       static bool old_netplay_flip  = false;
       static bool old_netplay_watch = false;
-      bool netplay_flip             = runloop_cmd_press(
+      bool netplay_flip             = BIT256_GET(
             current_input, RARCH_NETPLAY_FLIP);
-      bool netplay_watch            = runloop_cmd_press(
+      bool netplay_watch            = BIT256_GET(
             current_input, RARCH_NETPLAY_GAME_WATCH);
 
       if (netplay_flip && !old_netplay_flip)
@@ -2718,9 +2720,9 @@ static enum runloop_state runloop_check_state(
       static bool old_frameadvance  = false;
       static bool old_pause_pressed = false;
       bool check_is_oneshot         = true;
-      bool frameadvance_pressed     = runloop_cmd_press(
+      bool frameadvance_pressed     = BIT256_GET(
             current_input, RARCH_FRAMEADVANCE);
-      bool pause_pressed            = runloop_cmd_press(
+      bool pause_pressed            = BIT256_GET(
             current_input, RARCH_PAUSE_TOGGLE);
       bool trig_frameadvance        = frameadvance_pressed && !old_frameadvance;
 
@@ -2744,7 +2746,7 @@ static enum runloop_state runloop_check_state(
       if (runloop_paused)
       {
          check_is_oneshot = trig_frameadvance ||
-            runloop_cmd_press(current_input, RARCH_REWIND);
+            BIT256_GET(current_input, RARCH_REWIND);
 
          if (fs_toggle_triggered)
          {
@@ -2769,9 +2771,9 @@ static enum runloop_state runloop_check_state(
    {
       static bool old_button_state      = false;
       static bool old_hold_button_state = false;
-      bool new_button_state             = runloop_cmd_press(
+      bool new_button_state             = BIT256_GET(
             current_input, RARCH_FAST_FORWARD_KEY);
-      bool new_hold_button_state        = runloop_cmd_press(
+      bool new_hold_button_state        = BIT256_GET(
             current_input, RARCH_FAST_FORWARD_HOLD_KEY);
 
       if (new_button_state && !old_button_state)
@@ -2799,11 +2801,10 @@ static enum runloop_state runloop_check_state(
          driver_set_nonblock_state();
       }
 
-      // Display the fast forward state to the user, if needed.
-      if (runloop_fastmotion) {
+      /* Display the fast forward state to the user, if needed. */
+      if (runloop_fastmotion)
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_FAST_FORWARD), 1, 1, false);
-      }
 
       old_button_state                  = new_button_state;
       old_hold_button_state             = new_hold_button_state;
@@ -2813,9 +2814,9 @@ static enum runloop_state runloop_check_state(
    {
       static bool old_should_slot_increase = false;
       static bool old_should_slot_decrease = false;
-      bool should_slot_increase            = runloop_cmd_press(
+      bool should_slot_increase            = BIT256_GET(
             current_input, RARCH_STATE_SLOT_PLUS);
-      bool should_slot_decrease            = runloop_cmd_press(
+      bool should_slot_decrease            = BIT256_GET(
             current_input, RARCH_STATE_SLOT_MINUS);
 
       /* Checks if the state increase/decrease keys have been pressed
@@ -2866,9 +2867,9 @@ static enum runloop_state runloop_check_state(
    {
       static bool old_should_savestate = false;
       static bool old_should_loadstate = false;
-      bool should_savestate            = runloop_cmd_press(
+      bool should_savestate            = BIT256_GET(
             current_input, RARCH_SAVE_STATE_KEY);
-      bool should_loadstate            = runloop_cmd_press(
+      bool should_loadstate            = BIT256_GET(
             current_input, RARCH_LOAD_STATE_KEY);
 
       if (should_savestate && !old_should_savestate)
@@ -2889,14 +2890,14 @@ static enum runloop_state runloop_check_state(
 
       s[0] = '\0';
 
-      if (state_manager_check_rewind(runloop_cmd_press(current_input, RARCH_REWIND),
+      if (state_manager_check_rewind(BIT256_GET(current_input, RARCH_REWIND),
             settings->uints.rewind_granularity, runloop_paused, s, sizeof(s), &t))
          runloop_msg_queue_push(s, 0, t, true);
    }
 
    /* Checks if slowmotion toggle/hold was being pressed and/or held. */
    {
-      runloop_slowmotion = runloop_cmd_press(current_input, RARCH_SLOWMOTION);
+      runloop_slowmotion = BIT256_GET(current_input, RARCH_SLOWMOTION);
 
       if (runloop_slowmotion)
       {
@@ -2918,7 +2919,7 @@ static enum runloop_state runloop_check_state(
    /* Check movie record toggle */
    {
       static bool old_pressed = false;
-      bool pressed            = runloop_cmd_press(
+      bool pressed            = BIT256_GET(
             current_input, RARCH_MOVIE_RECORD_TOGGLE);
 
       if (pressed && !old_pressed)
@@ -2931,9 +2932,9 @@ static enum runloop_state runloop_check_state(
    {
       static bool old_shader_next = false;
       static bool old_shader_prev = false;
-      bool shader_next            = runloop_cmd_press(
+      bool shader_next            = BIT256_GET(
             current_input, RARCH_SHADER_NEXT);
-      bool shader_prev            = runloop_cmd_press(
+      bool shader_prev            = BIT256_GET(
             current_input, RARCH_SHADER_PREV);
       bool trig_shader_next       = shader_next && !old_shader_next;
       bool trig_shader_prev       = shader_prev && !old_shader_prev;
@@ -2950,11 +2951,11 @@ static enum runloop_state runloop_check_state(
       static bool old_disk_eject  = false;
       static bool old_disk_next   = false;
       static bool old_disk_prev   = false;
-      bool disk_eject             = runloop_cmd_press(
+      bool disk_eject             = BIT256_GET(
             current_input, RARCH_DISK_EJECT_TOGGLE);
-      bool disk_next              = runloop_cmd_press(
+      bool disk_next              = BIT256_GET(
             current_input, RARCH_DISK_NEXT);
-      bool disk_prev              = runloop_cmd_press(
+      bool disk_prev              = BIT256_GET(
             current_input, RARCH_DISK_PREV);
 
       if (disk_eject && !old_disk_eject)
@@ -2972,7 +2973,7 @@ static enum runloop_state runloop_check_state(
    /* Check reset */
    {
       static bool old_state = false;
-      bool new_state        = runloop_cmd_press(
+      bool new_state        = BIT256_GET(
             current_input, RARCH_RESET);
 
       if (new_state && !old_state)
@@ -2986,11 +2987,11 @@ static enum runloop_state runloop_check_state(
       static bool old_cheat_index_plus   = false;
       static bool old_cheat_index_minus  = false;
       static bool old_cheat_index_toggle = false;
-      bool cheat_index_plus              = runloop_cmd_press(
+      bool cheat_index_plus              = BIT256_GET(
             current_input, RARCH_CHEAT_INDEX_PLUS);
-      bool cheat_index_minus             = runloop_cmd_press(
+      bool cheat_index_minus             = BIT256_GET(
             current_input, RARCH_CHEAT_INDEX_MINUS);
-      bool cheat_index_toggle            = runloop_cmd_press(
+      bool cheat_index_toggle            = BIT256_GET(
             current_input, RARCH_CHEAT_TOGGLE);
 
       if (cheat_index_plus && !old_cheat_index_plus)

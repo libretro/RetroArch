@@ -44,7 +44,7 @@
 namespace glslang {
 
     class TAttributeMap; // forward declare
-    
+
     // Should just be the grammar aspect of HLSL.
     // Described in more detail in hlslGrammar.cpp.
 

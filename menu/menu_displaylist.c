@@ -26,6 +26,7 @@
 #include <file/file_path.h>
 #include <file/archive_file.h>
 #include <string/stdstring.h>
+#include <streams/file_stream.h>
 #include <features/features_cpu.h>
 
 #ifdef HAVE_CONFIG_H
@@ -53,6 +54,7 @@
 #include "menu_content.h"
 #include "menu_driver.h"
 #include "menu_shader.h"
+#include "menu_networking.h"
 #include "widgets/menu_dialog.h"
 #include "widgets/menu_list.h"
 #include "widgets/menu_filebrowser.h"
@@ -89,251 +91,6 @@ static enum msg_hash_enums new_type     = MSG_UNKNOWN;
 /* HACK - we have to find some way to pass state inbetween
  * function pointer callback functions that don't necessarily
  * call each other. */
-static char *core_buf                   = NULL;
-static size_t core_len                  = 0;
-
-void cb_net_generic_subdir(void *task_data, void *user_data, const char *err)
-{
-   char subdir_path[PATH_MAX_LENGTH];
-   http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
-   menu_file_transfer_t *state       = (menu_file_transfer_t*)user_data;
-
-   subdir_path[0] = '\0';
-
-   if (!data || err)
-      goto finish;
-
-   if (!string_is_empty(data->data))
-      memcpy(subdir_path, data->data, data->len * sizeof(char));
-   subdir_path[data->len] = '\0';
-
-finish:
-   if (!err && !strstr(subdir_path, file_path_str(FILE_PATH_INDEX_DIRS_URL)))
-   {
-      char parent_dir[PATH_MAX_LENGTH];
-
-      parent_dir[0] = '\0';
-
-      fill_pathname_parent_dir(parent_dir,
-            state->path, sizeof(parent_dir));
-
-      /*generic_action_ok_displaylist_push(parent_dir, NULL,
-            subdir_path, 0, 0, 0, ACTION_OK_DL_CORE_CONTENT_DIRS_SUBDIR_LIST);*/
-   }
-
-   if (data)
-   {
-      if (data->data)
-         free(data->data);
-      free(data);
-   }
-
-   if (user_data)
-      free(user_data);
-}
-
-void cb_net_generic(void *task_data, void *user_data, const char *err)
-{
-   bool refresh                = false;
-   http_transfer_data_t *data  = (http_transfer_data_t*)task_data;
-   menu_file_transfer_t *state = (menu_file_transfer_t*)user_data;
-
-   if (core_buf)
-      free(core_buf);
-
-
-   core_buf = NULL;
-   core_len = 0;
-
-   if (!data || err)
-      goto finish;
-
-   core_buf = (char*)malloc((data->len+1) * sizeof(char));
-
-   if (!core_buf)
-      goto finish;
-
-   if (!string_is_empty(data->data))
-      memcpy(core_buf, data->data, data->len * sizeof(char));
-   core_buf[data->len] = '\0';
-   core_len      = data->len;
-
-finish:
-   refresh = true;
-   menu_entries_ctl(MENU_ENTRIES_CTL_UNSET_REFRESH, &refresh);
-
-   if (data)
-   {
-      if (data->data)
-         free(data->data);
-      free(data);
-   }
-
-   if (!err && !strstr(state->path, file_path_str(FILE_PATH_INDEX_DIRS_URL)))
-   {
-      char *parent_dir                 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-      menu_file_transfer_t *transf     = NULL;
-
-      parent_dir[0] = '\0';
-
-      fill_pathname_parent_dir(parent_dir,
-            state->path, PATH_MAX_LENGTH * sizeof(char));
-      strlcat(parent_dir,
-            file_path_str(FILE_PATH_INDEX_DIRS_URL),
-            PATH_MAX_LENGTH * sizeof(char));
-
-      transf           = (menu_file_transfer_t*)malloc(sizeof(*transf));
-
-      transf->enum_idx = MSG_UNKNOWN;
-      strlcpy(transf->path, parent_dir, sizeof(transf->path));
-
-      task_push_http_transfer(parent_dir, true,
-            "index_dirs", cb_net_generic_subdir, transf);
-
-      free(parent_dir);
-   }
-
-   if (state)
-      free(state);
-}
-
-static void print_buf_lines(file_list_t *list, char *buf,
-      const char *label, int buf_size,
-      enum msg_file_type type, bool append, bool extended)
-{
-   char c;
-   int i, j = 0;
-   char *line_start = buf;
-
-   if (!buf || !buf_size)
-   {
-      menu_entries_append_enum(list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-            msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
-            MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-            FILE_TYPE_NONE, 0, 0);
-      return;
-   }
-
-   for (i = 0; i < buf_size; i++)
-   {
-      size_t ln;
-      const char *core_date        = NULL;
-      const char *core_crc         = NULL;
-      const char *core_pathname    = NULL;
-      struct string_list *str_list = NULL;
-
-      /* The end of the buffer, print the last bit */
-      if (*(buf + i) == '\0')
-         break;
-
-      if (*(buf + i) != '\n')
-         continue;
-
-      /* Found a line ending, print the line and compute new line_start */
-
-      /* Save the next char  */
-      c = *(buf + i + 1);
-      /* replace with \0 */
-      *(buf + i + 1) = '\0';
-
-      /* We need to strip the newline. */
-      ln = strlen(line_start) - 1;
-      if (line_start[ln] == '\n')
-         line_start[ln] = '\0';
-
-      str_list      = string_split(line_start, " ");
-
-      if (str_list->elems[0].data)
-         core_date     = str_list->elems[0].data;
-      if (str_list->elems[1].data)
-         core_crc      = str_list->elems[1].data;
-      if (str_list->elems[2].data)
-         core_pathname = str_list->elems[2].data;
-
-      (void)core_date;
-      (void)core_crc;
-
-      if (extended)
-      {
-         if (append)
-            menu_entries_append_enum(list, core_pathname, "",
-                  MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0);
-         else
-            menu_entries_prepend(list, core_pathname, "",
-                  MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0);
-      }
-      else
-      {
-         if (append)
-            menu_entries_append_enum(list, line_start, label,
-                  MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0);
-         else
-            menu_entries_prepend(list, line_start, label,
-                  MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0);
-      }
-
-      switch (type)
-      {
-         case FILE_TYPE_DOWNLOAD_CORE:
-            {
-               settings_t *settings      = config_get_ptr();
-
-               if (settings)
-               {
-                  char display_name[255];
-                  char core_path[PATH_MAX_LENGTH];
-                  char *last                         = NULL;
-
-                  display_name[0] = core_path[0]     = '\0';
-
-                  fill_pathname_join_noext(
-                        core_path,
-                        settings->paths.path_libretro_info,
-                        (extended && !string_is_empty(core_pathname))
-                        ? core_pathname : line_start,
-                        sizeof(core_path));
-                  path_remove_extension(core_path);
-
-                  last = (char*)strrchr(core_path, '_');
-
-                  if (!string_is_empty(last))
-                  {
-                     if (string_is_not_equal_fast(last, "_libretro", 9))
-                        *last = '\0';
-                  }
-
-                  strlcat(core_path,
-                        file_path_str(FILE_PATH_CORE_INFO_EXTENSION),
-                        sizeof(core_path));
-
-                  if (
-                           path_file_exists(core_path)
-                        && core_info_get_display_name(
-                           core_path, display_name, sizeof(display_name)))
-                     file_list_set_alt_at_offset(list, j, display_name);
-               }
-            }
-            break;
-         default:
-         case FILE_TYPE_NONE:
-            break;
-      }
-
-      j++;
-
-      string_list_free(str_list);
-
-      /* Restore the saved char */
-      *(buf + i + 1) = c;
-      line_start     = buf + i + 1;
-   }
-
-   if (append)
-      file_list_sort_on_alt(list);
-   /* If the buffer was completely full, and didn't end
-    * with a newline, just ignore the partial last line. */
-}
 
 #if !defined(HAVE_SOCKET_LEGACY) && !defined(WIIU)
 #include <net/net_ifinfo.h>
@@ -681,7 +438,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
             strlcpy(cpu_arch_str, "x86", sizeof(cpu_arch_str));
             break;
          case FRONTEND_ARCH_X86_64:
-            strlcpy(cpu_arch_str, "x86-64", sizeof(cpu_arch_str));
+            strlcpy(cpu_arch_str, "x64", sizeof(cpu_arch_str));
             break;
          case FRONTEND_ARCH_PPC:
             strlcpy(cpu_arch_str, "PPC", sizeof(cpu_arch_str));
@@ -805,7 +562,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
       if (frontend->get_os)
       {
          frontend->get_os(tmp2, sizeof(tmp2), &major, &minor);
-         snprintf(tmp, sizeof(tmp), "%s : %s %d.%d",
+         snprintf(tmp, sizeof(tmp), "%s : %s (v%d.%d)",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS),
                frontend->get_os
                ? tmp2 : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
@@ -834,21 +591,21 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
          if (memory_used != 0 && memory_total != 0)
          {
             snprintf(tmp, sizeof(tmp),
-                  "%s %s: " STRING_REP_UINT64 "/" STRING_REP_UINT64 " B",
+                  "%s %s: %" PRIu64 "/%" PRIu64 " B",
                   msg_hash_to_str(MSG_MEMORY),
                   msg_hash_to_str(MSG_IN_BYTES),
                   memory_used,
                   memory_total
                   );
             snprintf(tmp2, sizeof(tmp2),
-                  "%s %s: " STRING_REP_UINT64 "/" STRING_REP_UINT64 " MB",
+                  "%s %s: %" PRIu64 "/%" PRIu64 " MB",
                   msg_hash_to_str(MSG_MEMORY),
                   msg_hash_to_str(MSG_IN_MEGABYTES),
                   bytes_to_mb(memory_used),
                   bytes_to_mb(memory_total)
                   );
             snprintf(tmp3, sizeof(tmp3),
-                  "%s %s: " STRING_REP_UINT64 "/" STRING_REP_UINT64 " GB",
+                  "%s %s: %" PRIu64 "/%" PRIu64 " GB",
                   msg_hash_to_str(MSG_MEMORY),
                   msg_hash_to_str(MSG_IN_GIGABYTES),
                   bytes_to_gb(memory_used),
@@ -3055,7 +2812,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
             file_path_str(FILE_PATH_RDB_EXTENSION),
             PATH_MAX_LENGTH * sizeof(char));
 
-      if (path_file_exists(db_path))
+      if (filestream_exists(db_path))
          menu_entries_append_enum(
                info->list,
                label,
@@ -4273,7 +4030,7 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
             MENU_SETTING_ACTION, 0, 0);
 #endif
 
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD) && defined(HAVE_NETWORKGAMEPAD_CORE)
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD),
             msg_hash_to_str(MENU_ENUM_LABEL_START_NET_RETROPAD),
@@ -5205,8 +4962,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+#ifdef HAVE_OVERLAY
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS,   PARSE_ACTION, false);
+#endif
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,   PARSE_ACTION, false);
 
@@ -5303,6 +5062,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_FILTER_BY_CURRENT_CORE,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
                PARSE_ONLY_BOOL, false);
          info->need_refresh = true;
          info->need_push    = true;
@@ -6022,6 +5784,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                PARSE_ONLY_UINT, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_VIDEO_WINDOW_HEIGHT,
+               PARSE_ONLY_UINT, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_VIDEO_WINDOW_OPACITY,
                PARSE_ONLY_UINT, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER,

@@ -42,7 +42,7 @@ bool menu_shader_manager_init(void);
 
 /**
  * menu_shader_manager_set_preset:
- * @shader                   : Shader handle.   
+ * @shader                   : Shader handle.
  * @type                     : Type of shader.
  * @preset_path              : Preset path to load from.
  *
@@ -63,11 +63,11 @@ bool menu_shader_manager_save_preset(
 
 /**
  * menu_shader_manager_get_type:
- * @shader                   : shader handle     
+ * @shader                   : shader handle
  *
  * Gets type of shader.
  *
- * Returns: type of shader. 
+ * Returns: type of shader.
  **/
 unsigned menu_shader_manager_get_type(const void *data);
 

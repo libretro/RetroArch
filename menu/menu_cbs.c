@@ -32,7 +32,7 @@ static void menu_cbs_init_log(const char *entry_label, const char *bind_label, c
 #endif
 }
 
-struct key_desc key_descriptors[MENU_SETTINGS_INPUT_DESC_KBD_END] = 
+struct key_desc key_descriptors[MENU_SETTINGS_INPUT_DESC_KBD_END] =
 {
    {RETROK_FIRST,         "Unmapped"},
    {RETROK_BACKSPACE,     "Backspace"},
@@ -106,7 +106,7 @@ struct key_desc key_descriptors[MENU_SETTINGS_INPUT_DESC_KBD_END] =
    {RETROK_y,             "y"},
    {RETROK_z,             "z"},
    {RETROK_DELETE,        "Delete"},
-   
+
    {RETROK_KP0,           "Numpad 0"},
    {RETROK_KP1,           "Numpad 1"},
    {RETROK_KP2,           "Numpad 2"},
@@ -124,7 +124,7 @@ struct key_desc key_descriptors[MENU_SETTINGS_INPUT_DESC_KBD_END] =
    {RETROK_KP_PLUS,        "Numpad +"},
    {RETROK_KP_ENTER,       "Numpad Enter"},
    {RETROK_KP_EQUALS,      "Numpad ="},
-   
+
    {RETROK_UP,             "Up"},
    {RETROK_DOWN,           "Down"},
    {RETROK_RIGHT,          "Right"},
@@ -134,7 +134,7 @@ struct key_desc key_descriptors[MENU_SETTINGS_INPUT_DESC_KBD_END] =
    {RETROK_END,            "End"},
    {RETROK_PAGEUP,         "Page Up"},
    {RETROK_PAGEDOWN,       "Page Down"},
-   
+
    {RETROK_F1,             "F1"},
    {RETROK_F2,             "F2"},
    {RETROK_F3,             "F3"},
@@ -150,7 +150,7 @@ struct key_desc key_descriptors[MENU_SETTINGS_INPUT_DESC_KBD_END] =
    {RETROK_F13,            "F13"},
    {RETROK_F14,            "F14"},
    {RETROK_F15,            "F15"},
-   
+
    {RETROK_NUMLOCK,        "Num Lock"},
    {RETROK_CAPSLOCK,       "Caps Lock"},
    {RETROK_SCROLLOCK,      "Scroll Lock"},
@@ -166,7 +166,7 @@ struct key_desc key_descriptors[MENU_SETTINGS_INPUT_DESC_KBD_END] =
    {RETROK_RSUPER,         "Left Super"},
    {RETROK_MODE,           "Mode"},
    {RETROK_COMPOSE,        "Compose"},
-   
+
    {RETROK_HELP,           "Help"},
    {RETROK_PRINT,          "Print"},
    {RETROK_SYSREQ,         "Sys Req"},
@@ -193,9 +193,9 @@ struct key_desc key_descriptors[MENU_SETTINGS_INPUT_DESC_KBD_END] =
  * Deferred push : When pressing an entry results in spawning a new list, it waits until the next
  * frame to push this onto the stack. This function callback will then be invoked.
  * Refresh : What happens when the screen has to be refreshed. Does an entry have internal state
- * that needs to be rebuild? 
+ * that needs to be rebuild?
  * Get value: Each entry has associated 'text', which we call the value. This function callback
- * lets us render that text. 
+ * lets us render that text.
  * Get title: Each entry can have a custom 'title'.
  * Label: Each entry has a label name. This function callback lets us render that label text.
  * Sublabel: each entry has a sublabel, which consists of one or more lines of additional information.

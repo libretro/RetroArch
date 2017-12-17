@@ -23,7 +23,7 @@ void __memlock_init()
 		lwp_mutex_attr attr;
 
 		initialized = 1;
-		
+
 		attr.mode = LWP_MUTEX_FIFO;
 		attr.nest_behavior = LWP_MUTEX_NEST_ACQUIRE;
 		attr.onlyownerrelease = TRUE;
@@ -38,7 +38,7 @@ void _DEFUN(__libogc_malloc_lock,(r),
 			struct _reent *r)
 {
 	u32 level;
-	
+
 	if(!initialized) return;
 
 	_CPU_ISR_Disable(level);
@@ -60,7 +60,7 @@ void _DEFUN(__libogc_malloc_lock,(ptr),
 			struct _reent *ptr)
 {
 	unsigned int level;
-	
+
 	if(!initialized) return;
 
 	_CPU_ISR_Disable(level);

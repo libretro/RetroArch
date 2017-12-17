@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -231,7 +231,7 @@ static ssize_t alsa_qsa_write(void *data, const void *buf, size_t size)
 
       if (avail_write)
       {
-         memcpy(alsa->buffer[alsa->buffer_index] + 
+         memcpy(alsa->buffer[alsa->buffer_index] +
                alsa->buffer_ptr, buf, avail_write);
 
          alsa->buffer_ptr      += avail_write;
@@ -355,8 +355,8 @@ static void alsa_qsa_free(void *data)
 static size_t alsa_qsa_write_avail(void *data)
 {
    alsa_t *alsa = (alsa_t*)data;
-   size_t avail = (alsa->buf_count - 
-         (int)alsa->buffered_blocks - 1) * alsa->buf_size + 
+   size_t avail = (alsa->buf_count -
+         (int)alsa->buffered_blocks - 1) * alsa->buf_size +
       (alsa->buf_size - (int)alsa->buffer_ptr);
    return avail;
 }
@@ -364,7 +364,7 @@ static size_t alsa_qsa_write_avail(void *data)
 static size_t alsa_qsa_buffer_size(void *data)
 {
    alsa_t *alsa = (alsa_t*)data;
-   return alsa->buf_size * alsa->buf_count; 
+   return alsa->buf_size * alsa->buf_count;
 }
 
 audio_driver_t audio_alsa = {

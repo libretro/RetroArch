@@ -20,18 +20,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <file/nbio.h>
+
 #if defined(_WIN32) && !defined(_XBOX)
 
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <file/nbio.h>
-#include <encodings/utf.h> 
+#include <encodings/utf.h>
 
 #include <windows.h>
 
-/* Assume W-functions do not work below VC2005 and Xbox platforms */
-#if defined(_MSC_VER) && _MSC_VER < 1400 || defined(_XBOX)
+/* Assume W-functions do not work below Win2K and Xbox platforms */
+#if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500 || defined(_XBOX)
 
 #ifndef LEGACY_WIN32
 #define LEGACY_WIN32
@@ -55,7 +56,11 @@ static void *nbio_mmap_win32_open(const char * filename, unsigned mode)
 {
    static const DWORD dispositions[] = { OPEN_EXISTING, CREATE_ALWAYS, OPEN_ALWAYS, OPEN_EXISTING, CREATE_ALWAYS };
    HANDLE mem;
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500
    LARGE_INTEGER len;
+#else
+   SIZE_T len;
+#endif
    struct nbio_mmap_win32_t* handle  = NULL;
    void* ptr                         = NULL;
    bool is_write                     = (mode == NBIO_WRITE || mode == NBIO_UPDATE || mode == BIO_WRITE);
@@ -73,17 +78,28 @@ static void *nbio_mmap_win32_open(const char * filename, unsigned mode)
    if (file == INVALID_HANDLE_VALUE)
       return NULL;
 
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500
+   /* GetFileSizeEx is new for Windows 2000 */
    GetFileSizeEx(file, &len);
-
    mem = CreateFileMapping(file, NULL, is_write ? PAGE_READWRITE : PAGE_READONLY, 0, 0, NULL);
    ptr = MapViewOfFile(mem, is_write ? (FILE_MAP_READ|FILE_MAP_WRITE) : FILE_MAP_READ, 0, 0, len.QuadPart);
+#else
+   GetFileSize(file, &len);
+   mem = CreateFileMapping(file, NULL, is_write ? PAGE_READWRITE : PAGE_READONLY, 0, 0, NULL);
+   ptr = MapViewOfFile(mem, is_write ? (FILE_MAP_READ|FILE_MAP_WRITE) : FILE_MAP_READ, 0, 0, len);
+#endif
+
    CloseHandle(mem);
 
-   handle           = malloc(sizeof(struct nbio_mmap_win32_t));
+   handle           = (struct nbio_mmap_win32_t*)malloc(sizeof(struct nbio_mmap_win32_t));
 
    handle->file     = file;
    handle->is_write = is_write;
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500
    handle->len      = len.QuadPart;
+#else
+   handle->len      = len;
+#endif
    handle->ptr      = ptr;
 
    return handle;
@@ -107,7 +123,11 @@ static bool nbio_mmap_win32_iterate(void *data)
 
 static void nbio_mmap_win32_resize(void *data, size_t len)
 {
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500
    LARGE_INTEGER len_li;
+#else
+   SIZE_T len_li;
+#endif
    HANDLE mem;
    struct nbio_mmap_win32_t* handle  = (struct nbio_mmap_win32_t*)data;
 
@@ -116,16 +136,22 @@ static void nbio_mmap_win32_resize(void *data, size_t len)
 
    if (len < handle->len)
    {
-      /* this works perfectly fine if this check is removed, 
+      /* this works perfectly fine if this check is removed,
        * but it won't work on other nbio implementations */
-      /* therefore, it's blocked so nobody accidentally 
+      /* therefore, it's blocked so nobody accidentally
        * relies on it. */
       puts("ERROR - attempted file shrink operation, not implemented");
       abort();
    }
 
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500
+   /* SetFilePointerEx is new for Windows 2000 */
    len_li.QuadPart = len;
    SetFilePointerEx(handle->file, len_li, NULL, FILE_BEGIN);
+#else
+   len_li = len;
+   SetFilePointer(handle->file, len_li, NULL, FILE_BEGIN);
+#endif
 
    if (!SetEndOfFile(handle->file))
    {
@@ -180,6 +206,18 @@ nbio_intf_t nbio_mmap_win32 = {
    nbio_mmap_win32_get_ptr,
    nbio_mmap_win32_cancel,
    nbio_mmap_win32_free,
+   "nbio_mmap_win32",
+};
+#else
+nbio_intf_t nbio_mmap_win32 = {
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
    "nbio_mmap_win32",
 };
 

@@ -129,7 +129,7 @@ static void frontend_ctr_deinit(void *data)
 
    cfguExit();
    ndspExit();
-   csndExit();   
+   csndExit();
    gfxTopRightFramebuffers[0] = NULL;
    gfxTopRightFramebuffers[1] = NULL;
    gfxExit();
@@ -322,7 +322,7 @@ static void frontend_ctr_init(void *data)
 
    verbosity_enable();
 
-   gfxInit(GSP_BGR8_OES,GSP_RGB565_OES,false);   
+   gfxInit(GSP_BGR8_OES,GSP_RGB565_OES,false);
 
    u32 topSize = 400 * 240 * 3;
 	u32 bottomSize = 320 * 240 * 2;

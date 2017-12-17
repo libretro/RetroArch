@@ -31,10 +31,10 @@ distribution.
 #ifndef __COND_H__
 #define __COND_H__
 
-/*! \file cond.h 
+/*! \file cond.h
 \brief Thread subsystem V
 
-*/ 
+*/
 
 #include <gctypes.h>
 #include <time.h>
@@ -62,7 +62,7 @@ s32 LWP_CondInit(cond_t *cond);
 
 
 /*! \fn s32 LWP_CondWait(cond_t cond,mutex_t mutex)
-\brief Wait on condition variable. 
+\brief Wait on condition variable.
 \param[in] cond handle to the cond_t structure
 \param[in] mutex handle to the mutex_t structure
 

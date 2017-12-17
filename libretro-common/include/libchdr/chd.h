@@ -305,9 +305,9 @@ struct _chd_header
 	UINT8		parentmd5[CHD_MD5_BYTES];	/* overall MD5 checksum of parent */
 	UINT8		sha1[CHD_SHA1_BYTES];		/* overall SHA1 checksum */
 	UINT8		rawsha1[CHD_SHA1_BYTES];	/* SHA1 checksum of raw data */
-	UINT8		parentsha1[CHD_SHA1_BYTES];	/* overall SHA1 checksum of parent */	
+	UINT8		parentsha1[CHD_SHA1_BYTES];	/* overall SHA1 checksum of parent */
 	UINT32		unitbytes;					/* TODO V5 */
-	UINT64		unitcount;					/* TODO V5 */	
+	UINT64		unitcount;					/* TODO V5 */
     UINT32      hunkcount;                  /* TODO V5 */
 
     /* map information */

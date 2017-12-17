@@ -667,7 +667,7 @@ static void check_proc_acpi_battery(const char * node, bool * have_battery,
 
    snprintf(path, sizeof(path), "%s/%s/%s", base, node, "state");
 
-   if (!path_file_exists(path))
+   if (!filestream_exists(path))
       goto end;
 
    if (!filestream_read_file(path, (void**)&buf, &length))
@@ -795,8 +795,9 @@ static void check_proc_acpi_sysfs_battery(const char *node,
 
    snprintf(path, sizeof(path), "%s/%s/%s", base, node, "status");
 
-   if (!path_file_exists(path))
+   if (!filestream_exists(path))
       return;
+
    if (filestream_read_file(path, (void**)&buf, &length) != 1)
       return;
 
@@ -842,8 +843,9 @@ static void check_proc_acpi_ac_adapter(const char * node, bool *have_ac)
    path[0]          = '\0';
 
    snprintf(path, sizeof(path), "%s/%s/%s", base, node, "state");
-   if (!path_file_exists(path))
+   if (!filestream_exists(path))
       return;
+
    if (filestream_read_file(path, (void**)&buf, &length) != 1)
       return;
 
@@ -873,8 +875,9 @@ static void check_proc_acpi_sysfs_ac_adapter(const char * node, bool *have_ac)
    path[0]          = '\0';
 
    snprintf(path, sizeof(path), "%s/%s", base, "online");
-   if (!path_file_exists(path))
+   if (!filestream_exists(path))
       return;
+
    if (filestream_read_file(path, (void**)&buf, &length) != 1)
       return;
 
@@ -928,8 +931,9 @@ static bool frontend_unix_powerstate_check_apm(
    char  *buf          = NULL;
    char *str           = NULL;
 
-   if (!path_file_exists(proc_apm_path))
+   if (!filestream_exists(proc_apm_path))
       goto error;
+
    if (filestream_read_file(proc_apm_path, (void**)&buf, &length) != 1)
       goto error;
 
@@ -1212,7 +1216,19 @@ static void frontend_unix_get_os(char *s,
       return;
 
    sscanf(buffer.release, "%d.%d.%u", major, minor, &krel);
+#if defined(__FreeBSD__)
+   strlcpy(s, "FreeBSD", len);
+#elif defined(__NetBSD__)
+   strlcpy(s, "NetBSD", len);
+#elif defined(__OpenBSD__)
+   strlcpy(s, "OpenBSD", len);
+#elif defined(__DragonFly__)
+   strlcpy(s, "DragonFly BSD", len);
+#elif defined(BSD)
+   strlcpy(s, "BSD", len);
+#else
    strlcpy(s, "Linux", len);
+#endif
 #endif
 }
 
@@ -1502,7 +1518,7 @@ static void frontend_unix_get_env(int *argc,
       __android_log_print(ANDROID_LOG_INFO,
          "RetroArch", "[ENV]: app dir: [%s]\n", app_dir);
 
-      /* set paths depending on the ability to write 
+      /* set paths depending on the ability to write
        * to internal_storage_path */
 
       if(!string_is_empty(internal_storage_path))
@@ -1592,7 +1608,7 @@ static void frontend_unix_get_env(int *argc,
                         internal_storage_app_path, "cheats",
                         sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
 
-                  if(!string_is_empty(screenshot_dir) 
+                  if(!string_is_empty(screenshot_dir)
                      && test_permissions(screenshot_dir))
                   {
                      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
@@ -1606,7 +1622,7 @@ static void frontend_unix_get_env(int *argc,
                            sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
                   }
 
-                  if(!string_is_empty(downloads_dir) 
+                  if(!string_is_empty(downloads_dir)
                      && test_permissions(downloads_dir))
                   {
                      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS],
@@ -1621,7 +1637,7 @@ static void frontend_unix_get_env(int *argc,
                   }
 
                   break;
-                  
+
                /* only the internal app dir is writable, this should never happen*/
                case INTERNAL_STORAGE_NOT_WRITABLE:
                   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SRAM],
@@ -1650,7 +1666,7 @@ static void frontend_unix_get_env(int *argc,
                         app_dir, "cheats",
                         sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
 
-                  if(      !string_is_empty(screenshot_dir) 
+                  if(      !string_is_empty(screenshot_dir)
                         &&  test_permissions(screenshot_dir))
                   {
                      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
@@ -1664,7 +1680,7 @@ static void frontend_unix_get_env(int *argc,
                            sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
                   }
 
-                  if(!string_is_empty(downloads_dir) 
+                  if(!string_is_empty(downloads_dir)
                      && test_permissions(downloads_dir))
                   {
                      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS],
@@ -1768,7 +1784,7 @@ static void frontend_unix_get_env(int *argc,
 #endif
 
 #if 0
-      /* Set the OK/cancel menu buttons to the default 
+      /* Set the OK/cancel menu buttons to the default
        * ones used for Shield */
       g_defaults.menu.controls.set = true;
       g_defaults.menu.controls.menu_btn_ok     = RETRO_DEVICE_ID_JOYPAD_B;
@@ -2035,7 +2051,7 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
    menu_entries_append_enum(list,
          "/storage",
          msg_hash_to_str(MSG_REMOVABLE_STORAGE),
-         enum_idx, 
+         enum_idx,
          FILE_TYPE_DIRECTORY, 0, 0);
 #endif
 
@@ -2175,7 +2191,7 @@ VALGRIND_PRINTF_BACKTRACE("SIGINT");
    if (unix_sighandler_quit == 1) {}
    if (unix_sighandler_quit == 2) exit(1);
    /* in case there's a second deadlock in a C++ destructor or something */
-   if (unix_sighandler_quit >= 3) abort(); 
+   if (unix_sighandler_quit >= 3) abort();
 }
 
 static void frontend_unix_install_signal_handlers(void)

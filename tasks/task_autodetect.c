@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2016-2017 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -24,14 +25,57 @@
 #include <file/config_file.h>
 #include <string/stdstring.h>
 
+#ifdef HAVE_LIBUSB
+#ifdef __FreeBSD__
+#include <libusb.h>
+#else
+#include <libusb-1.0/libusb.h>
+#endif
+#endif
+
+#if defined(_WIN32) && !defined(_XBOX) && !defined(_MSC_VER) && _WIN32_WINNT >= 0x0500
+/* MinGW Win32 HID API */
+#include <minwindef.h>
+#include <wtypes.h>
+#include <tchar.h>
+#ifdef __NO_INLINE__
+/* Workaround MinGW issue where compiling without -O2 (which sets __NO_INLINE__) causes the strsafe functions
+ * to never be defined (only declared).
+ */
+#define __CRT_STRSAFE_IMPL
+#endif
+#include <strsafe.h>
+#include <guiddef.h>
+#include <ks.h>
+#include <setupapi.h>
+#include <hidsdi.h>
+/* Why doesn't including cguid.h work to get a GUID_NULL instead? */
+const GUID GUID_NULL = {0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
+#endif
+
 #include "../input/input_driver.h"
+#include "../input/include/blissbox.h"
 
 #include "../configuration.h"
 #include "../file_path_special.h"
 #include "../list_special.h"
 #include "../verbosity.h"
+#include "../retroarch.h"
 
 #include "tasks_internal.h"
+
+/* HID Class-Specific Requests values. See section 7.2 of the HID specifications */
+#define USB_HID_GET_REPORT 0x01
+#define USB_CTRL_IN LIBUSB_ENDPOINT_IN|LIBUSB_REQUEST_TYPE_CLASS|LIBUSB_RECIPIENT_INTERFACE
+#define USB_PACKET_CTRL_LEN 64
+#define USB_TIMEOUT 5000 /* timeout in ms */
+
+/* only one blissbox per machine is currently supported */
+static const blissbox_pad_type_t *blissbox_pads[BLISSBOX_MAX_PADS] = {NULL};
+
+#ifdef HAVE_LIBUSB
+static struct libusb_device_handle *autoconfig_libusb_handle = NULL;
+#endif
 
 typedef struct autoconfig_disconnect autoconfig_disconnect_t;
 typedef struct autoconfig_params     autoconfig_params_t;
@@ -53,7 +97,7 @@ struct autoconfig_params
 };
 
 static bool input_autoconfigured[MAX_USERS];
-static unsigned input_device_name_index[MAX_USERS];
+static unsigned input_device_name_index[MAX_INPUT_DEVICES];
 static bool input_autoconfigure_swap_override;
 
 bool input_autoconfigure_get_swap_override(void)
@@ -63,24 +107,38 @@ bool input_autoconfigure_get_swap_override(void)
 
 /* Adds an index for devices with the same name,
  * so they can be identified in the GUI. */
-static void input_autoconfigure_joypad_reindex_devices(autoconfig_params_t *params)
+void input_autoconfigure_joypad_reindex_devices()
 {
-   unsigned i;
+   unsigned i, j, k;
 
-   for(i = 0; i < params->max_users; i++)
+   for(i = 0; i < MAX_INPUT_DEVICES; i++)
       input_device_name_index[i] = 0;
 
-   for(i = 0; i < params->max_users; i++)
+   for(i = 0; i < MAX_INPUT_DEVICES; i++)
    {
-      unsigned j;
       const char *tmp = input_config_get_device_name(i);
-      int k           = 1;
+      if ( !tmp || input_device_name_index[i] )
+         continue;
 
-      for(j = 0; j < params->max_users; j++)
+      k = 2; /*Additional devices start at two*/
+
+      for(j = i+1; j < MAX_INPUT_DEVICES; j++)
       {
-         if(string_is_equal(tmp, input_config_get_device_name(j))
-               && input_device_name_index[i] == 0)
+         const char *other = input_config_get_device_name(j);
+
+         if (!other)
+            continue;
+
+         /*another device with the same name found, for the first time*/
+         if(string_is_equal(tmp, other) &&
+               input_device_name_index[j]==0 )
+         {
+            /*Mark the first device of the set*/
+            input_device_name_index[i] = 1;
+
+            /*count this additional device, from two up*/
             input_device_name_index[j] = k++;
+         }
       }
    }
 }
@@ -120,13 +178,16 @@ static int input_autoconfigure_joypad_try_from_conf(config_file_t *conf,
    if (config_get_int  (conf, "input_product_id", &tmp_int))
       input_pid = tmp_int;
 
+   if (params->vid == BLISSBOX_VID)
+      input_pid = BLISSBOX_PID;
+
    /* Check for VID/PID */
    if (     (params->vid == input_vid)
          && (params->pid == input_pid)
          && (params->vid != 0)
          && (params->pid != 0)
-         && (input_vid   != 0)
-         && (input_pid   != 0))
+         && (params->vid != BLISSBOX_VID)
+         && (params->pid != BLISSBOX_PID))
       score += 3;
 
    /* Check for name match */
@@ -144,7 +205,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
    char msg[128], display_name[128], device_type[128];
    /* This will be the case if input driver is reinitialized.
     * No reason to spam autoconfigure messages every time. */
-   bool block_osd_spam                = 
+   bool block_osd_spam                =
       input_autoconfigured[params->idx]
       && !string_is_empty(params->name);
 
@@ -182,7 +243,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
       bool tmp = false;
       snprintf(msg, sizeof(msg), "%s %s #%u.",
             (string_is_empty(display_name) &&
-             !string_is_empty(params->name)) 
+             !string_is_empty(params->name))
             ? params->name : (!string_is_empty(display_name) ? display_name : "N/A"),
             msg_hash_to_str(MSG_DEVICE_CONFIGURED_IN_PORT),
             params->idx);
@@ -204,7 +265,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
    }
 
 
-   input_autoconfigure_joypad_reindex_devices(params);
+   input_autoconfigure_joypad_reindex_devices();
 }
 
 static int input_autoconfigure_joypad_from_conf(
@@ -333,6 +394,411 @@ static void input_autoconfigure_params_free(autoconfig_params_t *params)
    params->autoconfig_directory = NULL;
 }
 
+#ifdef _WIN32
+static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_win32(int vid, int pid)
+{
+   /* TODO: Remove the check for !defined(_MSC_VER) after making sure this builds on MSVC */
+
+   /* HID API is available since Windows 2000 */
+#if defined(_WIN32) && !defined(_XBOX) && !defined(_MSC_VER) && _WIN32_WINNT >= 0x0500
+   HDEVINFO hDeviceInfo;
+   SP_DEVINFO_DATA DeviceInfoData;
+   SP_DEVICE_INTERFACE_DATA deviceInterfaceData;
+   HANDLE hDeviceHandle                 = INVALID_HANDLE_VALUE;
+   BOOL bResult                         = TRUE;
+   BOOL success                         = FALSE;
+   GUID guidDeviceInterface             = {0};
+   PSP_DEVICE_INTERFACE_DETAIL_DATA
+      pInterfaceDetailData              = NULL;
+   ULONG requiredLength                 = 0;
+   LPTSTR lpDevicePath                  = NULL;
+   char *devicePath                     = NULL;
+   DWORD index                          = 0;
+   DWORD intIndex                       = 0;
+   size_t nLength                       = 0;
+   unsigned len                         = 0;
+   unsigned i                           = 0;
+   char vidPidString[32]                = {0};
+   char vidString[5]                    = {0};
+   char pidString[5]                    = {0};
+   char report[USB_PACKET_CTRL_LEN + 1] = {0};
+
+   snprintf(vidString, sizeof(vidString), "%04x", vid);
+   snprintf(pidString, sizeof(pidString), "%04x", pid);
+
+   strlcat(vidPidString, "vid_", sizeof(vidPidString));
+   strlcat(vidPidString, vidString, sizeof(vidPidString));
+   strlcat(vidPidString, "&pid_", sizeof(vidPidString));
+   strlcat(vidPidString, pidString, sizeof(vidPidString));
+
+   HidD_GetHidGuid(&guidDeviceInterface);
+
+   if (!memcmp(&guidDeviceInterface, &GUID_NULL, sizeof(GUID_NULL)))
+   {
+     RARCH_ERR("[Autoconf]: null guid\n");
+     return NULL;
+   }
+
+   /* Get information about all the installed devices for the specified
+    * device interface class.
+    */
+   hDeviceInfo = SetupDiGetClassDevs(
+    &guidDeviceInterface,
+    NULL,
+    NULL,
+    DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
+
+   if (hDeviceInfo == INVALID_HANDLE_VALUE)
+   {
+      RARCH_ERR("[Autoconf]: Error in SetupDiGetClassDevs: %d.\n", GetLastError());
+      goto done;
+   }
+
+   /* Enumerate all the device interfaces in the device information set. */
+   DeviceInfoData.cbSize = sizeof(SP_DEVINFO_DATA);
+
+   while (!success)
+   {
+      success = SetupDiEnumDeviceInfo(hDeviceInfo, index, &DeviceInfoData);
+
+      /* Reset for this iteration */
+      if (lpDevicePath)
+      {
+         LocalFree(lpDevicePath);
+         lpDevicePath = NULL;
+      }
+
+      if (pInterfaceDetailData)
+      {
+         LocalFree(pInterfaceDetailData);
+         pInterfaceDetailData = NULL;
+      }
+
+      /* Check if this is the last item */
+      if (GetLastError() == ERROR_NO_MORE_ITEMS)
+         break;
+
+      deviceInterfaceData.cbSize = sizeof(SP_INTERFACE_DEVICE_DATA);
+
+      /* Get information about the device interface. */
+      for (intIndex = 0; (bResult = SetupDiEnumDeviceInterfaces(
+         hDeviceInfo,
+         &DeviceInfoData,
+         &guidDeviceInterface,
+         intIndex,
+         &deviceInterfaceData)); intIndex++)
+      {
+         /* Check if this is the last item */
+         if (GetLastError() == ERROR_NO_MORE_ITEMS)
+            break;
+
+         /* Check for some other error */
+         if (!bResult)
+         {
+            RARCH_ERR("[Autoconf]: Error in SetupDiEnumDeviceInterfaces: %d.\n", GetLastError());
+            goto done;
+         }
+
+         /* Interface data is returned in SP_DEVICE_INTERFACE_DETAIL_DATA
+          * which we need to allocate, so we have to call this function twice.
+          * First to get the size so that we know how much to allocate, and
+          * second to do the actual call with the allocated buffer.
+          */
+
+         bResult = SetupDiGetDeviceInterfaceDetail(
+            hDeviceInfo,
+            &deviceInterfaceData,
+            NULL, 0,
+            &requiredLength,
+            NULL);
+
+         /* Check for some other error */
+         if (!bResult)
+         {
+            if ((ERROR_INSUFFICIENT_BUFFER == GetLastError()) && (requiredLength > 0))
+            {
+               /* we got the size, now allocate buffer */
+               pInterfaceDetailData = (PSP_DEVICE_INTERFACE_DETAIL_DATA)LocalAlloc(LPTR, requiredLength);
+
+               if (!pInterfaceDetailData)
+               {
+                  RARCH_ERR("[Autoconf]: Error allocating memory for the device detail buffer.\n");
+                  goto done;
+               }
+            }
+            else
+            {
+               RARCH_ERR("[Autoconf]: Other error: %d.\n", GetLastError());
+               goto done;
+            }
+         }
+
+         /* get the interface detailed data */
+         pInterfaceDetailData->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
+
+         /* Now call it with the correct size and allocated buffer */
+         bResult = SetupDiGetDeviceInterfaceDetail(
+            hDeviceInfo,
+            &deviceInterfaceData,
+            pInterfaceDetailData,
+            requiredLength,
+            NULL,
+            &DeviceInfoData);
+
+         /* Check for some other error */
+         if (!bResult)
+         {
+           RARCH_LOG("[Autoconf]: Error in SetupDiGetDeviceInterfaceDetail: %d.\n", GetLastError());
+           goto done;
+         }
+
+         /* copy device path */
+         nLength      = _tcslen(pInterfaceDetailData->DevicePath) + 1;
+         lpDevicePath = (TCHAR*)LocalAlloc(LPTR, nLength * sizeof(TCHAR));
+
+         StringCchCopy(lpDevicePath, nLength, pInterfaceDetailData->DevicePath);
+
+         devicePath   = (char*)malloc(nLength);
+
+         for (len = 0; len < nLength; len++)
+            devicePath[len] = lpDevicePath[len];
+
+         lpDevicePath[nLength - 1] = 0;
+
+         if (strstr(devicePath, vidPidString))
+            goto found;
+      }
+
+      success = FALSE;
+      index++;
+   }
+
+   if (!lpDevicePath)
+   {
+      RARCH_ERR("[Autoconf]: No devicepath. Error %d.", GetLastError());
+      goto done;
+   }
+
+found:
+   /* Open the device */
+   hDeviceHandle = CreateFileA(
+      devicePath,
+      GENERIC_READ,  /* | GENERIC_WRITE,*/
+      FILE_SHARE_READ,  /* | FILE_SHARE_WRITE,*/
+      NULL,
+      OPEN_EXISTING,
+      0,  /*FILE_FLAG_OVERLAPPED,*/
+      NULL);
+
+   if (hDeviceHandle == INVALID_HANDLE_VALUE)
+   {
+      /* Windows sometimes erroneously fails to open with a sharing violation:
+       * https://github.com/signal11/hidapi/issues/231
+       * If this happens, trying again with read + write usually works for some reason.
+       */
+
+      /* Open the device */
+      hDeviceHandle = CreateFileA(
+         devicePath,
+         GENERIC_READ | GENERIC_WRITE,
+         FILE_SHARE_READ | FILE_SHARE_WRITE,
+         NULL,
+         OPEN_EXISTING,
+         0,  /*FILE_FLAG_OVERLAPPED,*/
+         NULL);
+
+      if (hDeviceHandle == INVALID_HANDLE_VALUE)
+      {
+         RARCH_ERR("[Autoconf]: Can't open device for reading and writing: %d.", GetLastError());
+         runloop_msg_queue_push("Bliss-Box already in use. Please make sure other programs are not using it.", 2, 300, false);
+         goto done;
+      }
+   }
+
+done:
+   free(devicePath);
+   LocalFree(lpDevicePath);
+   LocalFree(pInterfaceDetailData);
+   bResult              = SetupDiDestroyDeviceInfoList(hDeviceInfo);
+
+   devicePath           = NULL;
+   lpDevicePath         = NULL;
+   pInterfaceDetailData = NULL;
+
+   if (!bResult)
+      RARCH_ERR("[Autoconf]: Could not destroy device info list.\n");
+
+   if (!hDeviceHandle || hDeviceHandle == INVALID_HANDLE_VALUE)
+   {
+      /* device is not connected */
+      return NULL;
+   }
+
+   report[0] = BLISSBOX_USB_FEATURE_REPORT_ID;
+
+   HidD_GetFeature(hDeviceHandle, report, sizeof(report));
+
+   CloseHandle(hDeviceHandle);
+
+   for (i = 0; i < sizeof(blissbox_pad_types) / sizeof(blissbox_pad_types[0]); i++)
+   {
+      const blissbox_pad_type_t *pad = &blissbox_pad_types[i];
+
+      if (!pad || string_is_empty(pad->name))
+         continue;
+
+      if (pad->index == report[0])
+         return pad;
+   }
+
+   RARCH_LOG("[Autoconf]: Could not find connected pad in Bliss-Box port#%d.\n", pid - BLISSBOX_PID);
+#endif
+
+   return NULL;
+}
+#endif
+
+#ifndef _WIN32
+static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_libusb(int vid, int pid)
+{
+#ifdef HAVE_LIBUSB
+   unsigned i;
+   unsigned char answer[USB_PACKET_CTRL_LEN] = {0};
+   int ret                                   = libusb_init(NULL);
+
+   if (ret < 0)
+   {
+      RARCH_ERR("[Autoconf]: Could not initialize libusb.\n");
+      return NULL;
+   }
+
+   autoconfig_libusb_handle = libusb_open_device_with_vid_pid(NULL, vid, pid);
+
+   if (!autoconfig_libusb_handle)
+   {
+      RARCH_ERR("[Autoconf]: Could not find or open libusb device %d:%d.\n", vid, pid);
+      goto error;
+   }
+
+#ifdef __linux__
+   libusb_detach_kernel_driver(autoconfig_libusb_handle, 0);
+#endif
+
+   ret = libusb_set_configuration(autoconfig_libusb_handle, 1);
+
+   if (ret < 0)
+   {
+      RARCH_ERR("[Autoconf]: Error during libusb_set_configuration.\n");
+      goto error;
+   }
+
+   ret = libusb_claim_interface(autoconfig_libusb_handle, 0);
+
+   if (ret < 0)
+   {
+      RARCH_ERR("[Autoconf]: Error during libusb_claim_interface.\n");
+      goto error;
+   }
+
+   ret = libusb_control_transfer(autoconfig_libusb_handle, USB_CTRL_IN, USB_HID_GET_REPORT, BLISSBOX_USB_FEATURE_REPORT_ID, 0, answer, USB_PACKET_CTRL_LEN, USB_TIMEOUT);
+
+   if (ret < 0)
+      RARCH_ERR("[Autoconf]: Error during libusb_control_transfer.\n");
+
+   libusb_release_interface(autoconfig_libusb_handle, 0);
+
+#ifdef __linux__
+   libusb_attach_kernel_driver(autoconfig_libusb_handle, 0);
+#endif
+
+   libusb_close(autoconfig_libusb_handle);
+   libusb_exit(NULL);
+
+   for (i = 0; i < sizeof(blissbox_pad_types) / sizeof(blissbox_pad_types[0]); i++)
+   {
+      const blissbox_pad_type_t *pad = &blissbox_pad_types[i];
+
+      if (!pad || string_is_empty(pad->name))
+         continue;
+
+      if (pad->index == answer[0])
+         return pad;
+   }
+
+   RARCH_LOG("[Autoconf]: Could not find connected pad in Bliss-Box port#%d.\n", pid - BLISSBOX_PID);
+
+   return NULL;
+
+error:
+   libusb_close(autoconfig_libusb_handle);
+   libusb_exit(NULL);
+#endif
+
+   return NULL;
+}
+#endif
+
+static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type(int vid, int pid)
+{
+#if defined(_WIN32)
+#if defined(_MSC_VER) || defined(_XBOX)
+   /* no MSVC/XBOX support */
+   return NULL;
+#else
+   /* MinGW */
+   return input_autoconfigure_get_blissbox_pad_type_win32(vid, pid);
+#endif
+#else
+   return input_autoconfigure_get_blissbox_pad_type_libusb(vid, pid);
+#endif
+}
+
+static void input_autoconfigure_override_handler(autoconfig_params_t *params)
+{
+   if (params->vid == BLISSBOX_VID)
+   {
+      if (params->pid == BLISSBOX_UPDATE_MODE_PID)
+         RARCH_LOG("[Autoconf]: Bliss-Box in update mode detected. Ignoring.\n");
+      else if (params->pid == BLISSBOX_OLD_PID)
+         RARCH_LOG("[Autoconf]: Bliss-Box 1.0 firmware detected. Please update to 2.0 or later.\n");
+      else if (params->pid >= BLISSBOX_PID && params->pid <= BLISSBOX_PID + BLISSBOX_MAX_PAD_INDEX)
+      {
+         const blissbox_pad_type_t *pad;
+         char name[255] = {0};
+         int index = params->pid - BLISSBOX_PID;
+
+         RARCH_LOG("[Autoconf]: Bliss-Box detected. Getting pad type...\n");
+
+         if (blissbox_pads[index])
+            pad = blissbox_pads[index];
+         else
+            pad = input_autoconfigure_get_blissbox_pad_type(params->vid, params->pid);
+
+         if (pad && !string_is_empty(pad->name))
+         {
+            RARCH_LOG("[Autoconf]: Found Bliss-Box pad type: %s (%d) in port#%d\n", pad->name, pad->index, index);
+
+            if (params->name)
+               free(params->name);
+
+            /* override name given to autoconfig so it knows what kind of pad this is */
+            strlcat(name, "Bliss-Box 4-Play ", sizeof(name));
+            strlcat(name, pad->name, sizeof(name));
+
+            params->name = strdup(name);
+
+            blissbox_pads[index] = pad;
+         }
+         else
+         {
+            int count = sizeof(blissbox_pad_types) / sizeof(blissbox_pad_types[0]);
+            /* use NULL entry to mark as an unconnected port */
+            blissbox_pads[index] = &blissbox_pad_types[count - 1];
+         }
+      }
+   }
+}
+
 static void input_autoconfigure_connect_handler(retro_task_t *task)
 {
    autoconfig_params_t *params = (autoconfig_params_t*)task->state;
@@ -413,7 +879,7 @@ bool input_autoconfigure_disconnect(unsigned i, const char *ident)
 
    state->idx  = i;
 
-   snprintf(msg, sizeof(msg), "%s #%u (%s).", 
+   snprintf(msg, sizeof(msg), "%s #%u (%s).",
          msg_hash_to_str(MSG_DEVICE_DISCONNECTED_FROM_PORT),
          i, ident);
 
@@ -499,6 +965,8 @@ bool input_autoconfigure_connect(
    state->max_users               = *(
          input_driver_get_uint(INPUT_ACTION_MAX_USERS));
 
+   input_autoconfigure_override_handler(state);
+
    if (!string_is_empty(state->name))
          input_config_set_device_name(state->idx, state->name);
    input_config_set_pid(state->idx, state->pid);
@@ -508,10 +976,10 @@ bool input_autoconfigure_connect(
    {
       input_autoconf_binds[state->idx][i].joykey           = NO_BTN;
       input_autoconf_binds[state->idx][i].joyaxis          = AXIS_NONE;
-      if ( 
+      if (
           !string_is_empty(input_autoconf_binds[state->idx][i].joykey_label))
          free(input_autoconf_binds[state->idx][i].joykey_label);
-      if ( 
+      if (
           !string_is_empty(input_autoconf_binds[state->idx][i].joyaxis_label))
          free(input_autoconf_binds[state->idx][i].joyaxis_label);
       input_autoconf_binds[state->idx][i].joykey_label      = NULL;

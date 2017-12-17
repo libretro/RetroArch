@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -113,7 +113,7 @@ static int16_t linuxraw_input_state(void *data,
                linuxraw->state[rarch_keysym_lut[(enum retro_key)binds[port][id].key]]
                );
          if (!ret)
-            ret = input_joypad_pressed(linuxraw->joypad, 
+            ret = input_joypad_pressed(linuxraw->joypad,
                   joypad_info, port, binds[port], id);
          return ret;
       case RETRO_DEVICE_ANALOG:

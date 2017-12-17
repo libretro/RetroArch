@@ -30,7 +30,6 @@
 
 #include <boolean.h>
 #include <file/file_path.h>
-#include <streams/file_stream.h>
 
 #ifndef __MACH__
 #include <compat/strl.h>
@@ -84,8 +83,8 @@
 #include <unistd.h> /* stat() is defined here */
 #endif
 
-/* Assume W-functions do not work below VC2005 and Xbox platforms */
-#if defined(_MSC_VER) && _MSC_VER < 1400 || defined(_XBOX)
+/* Assume W-functions do not work below Win2K and Xbox platforms */
+#if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500 || defined(_XBOX)
 
 #ifndef LEGACY_WIN32
 #define LEGACY_WIN32
@@ -219,6 +218,17 @@ int32_t path_get_size(const char *path)
    return -1;
 }
 
+static bool path_mkdir_error(int ret)
+{
+#if defined(VITA)
+   return (ret == SCE_ERROR_ERRNO_EEXIST);
+#elif defined(PSP) || defined(_3DS) || defined(WIIU)
+   return (ret == -1);
+#else
+   return (ret < 0 && errno == EEXIST);
+#endif
+}
+
 /**
  * path_mkdir:
  * @dir                : directory
@@ -230,10 +240,13 @@ int32_t path_get_size(const char *path)
 bool path_mkdir(const char *dir)
 {
    /* Use heap. Real chance of stack overflow if we recurse too hard. */
-   char     *basedir  = strdup(dir);
    const char *target = NULL;
    bool         sret  = false;
    bool norecurse     = false;
+   char     *basedir  = NULL;
+
+   if (dir && *dir)
+      basedir         = strdup(dir);
 
    if (!basedir)
       return false;
@@ -249,8 +262,8 @@ bool path_mkdir(const char *dir)
    }
    else
    {
-      target = basedir;
-      sret   = path_mkdir(basedir);
+      target    = basedir;
+      sret      = path_mkdir(basedir);
 
       if (sret)
       {
@@ -274,16 +287,9 @@ bool path_mkdir(const char *dir)
 #endif
 
       /* Don't treat this as an error. */
-#if defined(VITA)
-      if ((ret == SCE_ERROR_ERRNO_EEXIST) && path_is_directory(dir))
+      if (path_mkdir_error(ret) && path_is_directory(dir))
          ret = 0;
-#elif defined(PSP) || defined(_3DS) || defined(WIIU)
-      if ((ret == -1) && path_is_directory(dir))
-         ret = 0;
-#else 
-      if (ret < 0 && errno == EEXIST && path_is_directory(dir))
-         ret = 0;
-#endif
+
       if (ret < 0)
          printf("mkdir(%s) error: %s.\n", dir, strerror(errno));
       sret = (ret == 0);
@@ -380,36 +386,12 @@ bool path_is_compressed_file(const char* path)
 {
    const char *ext = path_get_extension(path);
 
-   if (     strcasestr(ext, "zip") 
+   if (     strcasestr(ext, "zip")
          || strcasestr(ext, "apk")
          || strcasestr(ext, "7z"))
       return true;
 
    return false;
-}
-
-/**
- * path_file_exists:
- * @path               : path
- *
- * Checks if a file already exists at the specified path (@path).
- *
- * Returns: true (1) if file already exists, otherwise false (0).
- */
-bool path_file_exists(const char *path)
-{
-   RFILE *dummy;
-
-   if (!path || !*path)
-      return false;
-
-   dummy = filestream_open(path, RFILE_MODE_READ, -1);
-
-   if (!dummy)
-      return false;
-
-   filestream_close(dummy);
-   return true;
 }
 
 /**
@@ -705,7 +687,7 @@ void path_parent_dir(char *path)
  **/
 const char *path_basename(const char *path)
 {
-   /* We cut either at the first compression-related hash 
+   /* We cut either at the first compression-related hash
     * or the last slash; whichever comes last */
    const char *last  = find_last_slash(path);
    const char *delim = path_get_archive_delim(path);
@@ -734,8 +716,8 @@ bool path_is_absolute(const char *path)
 #ifdef _WIN32
    /* Many roads lead to Rome ... */
    if ((    strstr(path, "\\\\") == path)
-         || strstr(path, ":/") 
-         || strstr(path, ":\\") 
+         || strstr(path, ":/")
+         || strstr(path, ":\\")
          || strstr(path, ":\\\\"))
       return true;
 #endif
@@ -915,108 +897,4 @@ void fill_short_pathname_representation_noext(char* out_rep,
 {
    fill_short_pathname_representation(out_rep, in_path, size);
    path_remove_extension(out_rep);
-}
-
-bool path_file_remove(const char *path)
-{
-   char *path_local    = NULL;
-   wchar_t *path_wide  = NULL;
-
-   if (!path || !*path)
-      return false;
-
-   (void)path_local;
-   (void)path_wide;
-
-#if defined(_WIN32) && !defined(_XBOX)
-#if defined(_MSC_VER) && _MSC_VER < 1400
-   path_local = utf8_to_local_string_alloc(path);
-
-   if (path_local)
-   {
-      int ret = remove(path_local);
-      free(path_local);
-
-      if (ret == 0)
-         return true;
-   }
-#else
-   path_wide = utf8_to_utf16_string_alloc(path);
-
-   if (path_wide)
-   {
-      int ret = _wremove(path_wide);
-      free(path_wide);
-
-      if (ret == 0)
-         return true;
-   }
-#endif
-#else
-   if (remove(path) == 0)
-      return true;
-#endif
-   return false;
-}
-
-bool path_file_rename(const char *old_path, const char *new_path)
-{
-   char *old_path_local    = NULL;
-   char *new_path_local    = NULL;
-   wchar_t *old_path_wide  = NULL;
-   wchar_t *new_path_wide  = NULL;
-
-   if (!old_path || !*old_path || !new_path || !*new_path)
-      return false;
-
-   (void)old_path_local;
-   (void)new_path_local;
-   (void)old_path_wide;
-   (void)new_path_wide;
-
-#if defined(_WIN32) && !defined(_XBOX)
-#if defined(_MSC_VER) && _MSC_VER < 1400
-   old_path_local = utf8_to_local_string_alloc(old_path);
-   new_path_local = utf8_to_local_string_alloc(new_path);
-
-   if (old_path_local)
-   {
-      if (new_path_local)
-      {
-         int ret = rename(old_path_local, new_path_local);
-         free(old_path_local);
-         free(new_path_local);
-         return ret;
-      }
-
-      free(old_path_local);
-   }
-
-   if (new_path_local)
-      free(new_path_local);
-#else
-   old_path_wide = utf8_to_utf16_string_alloc(old_path);
-   new_path_wide = utf8_to_utf16_string_alloc(new_path);
-
-   if (old_path_wide)
-   {
-      if (new_path_wide)
-      {
-         int ret = _wrename(old_path_wide, new_path_wide);
-         free(old_path_wide);
-         free(new_path_wide);
-         return ret;
-      }
-
-      free(old_path_wide);
-   }
-
-   if (new_path_wide)
-      free(new_path_wide);
-#endif
-#else
-   if (rename(old_path, new_path) == 0)
-      return true;
-#endif
-   return false;
 }

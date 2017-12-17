@@ -1,4 +1,4 @@
-/* This source as presented is a modified version of original wiiuse for use 
+/* This source as presented is a modified version of original wiiuse for use
  * with RetroArch, and must not be confused with the original software. */
 
 #include <stdio.h>
@@ -582,7 +582,7 @@ void find_sensorbar(struct ir_t* ir, struct orient_t *orient) {
 					hadj = SB_DOT_HEIGHT_RATIO * difference.x;
 					wadj = SB_DOT_WIDTH_RATIO * difference.x;
 					rotate_dots(&dots[i], &tdot, 1, cand.angle);
-					if( ((cand.rot_dots[0].x + wadj) < tdot.x) && 
+					if( ((cand.rot_dots[0].x + wadj) < tdot.x) &&
 						((cand.rot_dots[1].x - wadj) > tdot.x) &&
 						((cand.rot_dots[0].y + hadj) > tdot.y) &&
 						((cand.rot_dots[0].y - hadj) < tdot.y))

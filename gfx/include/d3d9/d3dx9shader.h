@@ -187,7 +187,7 @@ typedef interface ID3DXConstantTable ID3DXConstantTable;
 typedef interface ID3DXConstantTable *LPD3DXCONSTANTTABLE;
 
 // {AB3C758F-093E-4356-B762-4DB18F1B3A01}
-DEFINE_GUID(IID_ID3DXConstantTable, 
+DEFINE_GUID(IID_ID3DXConstantTable,
 0xab3c758f, 0x93e, 0x4356, 0xb7, 0x62, 0x4d, 0xb1, 0x8f, 0x1b, 0x3a, 0x1);
 
 
@@ -243,7 +243,7 @@ typedef interface ID3DXTextureShader ID3DXTextureShader;
 typedef interface ID3DXTextureShader *LPD3DXTEXTURESHADER;
 
 // {3E3D67F8-AA7A-405d-A857-BA01D4758426}
-DEFINE_GUID(IID_ID3DXTextureShader, 
+DEFINE_GUID(IID_ID3DXTextureShader,
 0x3e3d67f8, 0xaa7a, 0x405d, 0xa8, 0x57, 0xba, 0x1, 0xd4, 0x75, 0x84, 0x26);
 
 #undef INTERFACE
@@ -460,9 +460,9 @@ HRESULT WINAPI
 
 HRESULT WINAPI
     D3DXDisassembleShader(
-        CONST DWORD*                    pShader, 
-        BOOL                            EnableColorCode, 
-        LPCSTR                          pComments, 
+        CONST DWORD*                    pShader,
+        BOOL                            EnableColorCode,
+        LPCSTR                          pComments,
         LPD3DXBUFFER*                   ppDisassembly);
 
 LPCSTR WINAPI
@@ -519,18 +519,18 @@ HRESULT WINAPI
 
 HRESULT WINAPI
     D3DXCreateTextureShader(
-        CONST DWORD*                    pFunction, 
+        CONST DWORD*                    pFunction,
         LPD3DXTEXTURESHADER*            ppTextureShader);
 
-HRESULT WINAPI 
+HRESULT WINAPI
     D3DXPreprocessShaderFromFileA(
         LPCSTR                       pSrcFile,
         CONST D3DXMACRO*             pDefines,
         LPD3DXINCLUDE                pInclude,
         LPD3DXBUFFER*                ppShaderText,
         LPD3DXBUFFER*                ppErrorMsgs);
-                                             
-HRESULT WINAPI 
+
+HRESULT WINAPI
     D3DXPreprocessShaderFromFileW(
         LPCWSTR                      pSrcFile,
         CONST D3DXMACRO*             pDefines,
@@ -543,8 +543,8 @@ HRESULT WINAPI
 #else
 #define D3DXPreprocessShaderFromFile D3DXPreprocessShaderFromFileA
 #endif
-                                             
-HRESULT WINAPI 
+
+HRESULT WINAPI
     D3DXPreprocessShaderFromResourceA(
         HMODULE                      hSrcModule,
         LPCSTR                       pSrcResource,
@@ -553,7 +553,7 @@ HRESULT WINAPI
         LPD3DXBUFFER*                ppShaderText,
         LPD3DXBUFFER*                ppErrorMsgs);
 
-HRESULT WINAPI 
+HRESULT WINAPI
     D3DXPreprocessShaderFromResourceW(
         HMODULE                      hSrcModule,
         LPCWSTR                      pSrcResource,
@@ -568,7 +568,7 @@ HRESULT WINAPI
 #define D3DXPreprocessShaderFromResource D3DXPreprocessShaderFromResourceA
 #endif
 
-HRESULT WINAPI 
+HRESULT WINAPI
     D3DXPreprocessShader(
         LPCSTR                       pSrcData,
         UINT                         SrcDataSize,
@@ -603,7 +603,7 @@ typedef struct _D3DXSHADER_CONSTANTTABLE
     DWORD Constants;        // number of constants
     DWORD ConstantInfo;     // D3DXSHADER_CONSTANTINFO[Constants] offset
     DWORD Flags;            // flags shader was compiled with
-    DWORD Target;           // LPCSTR offset 
+    DWORD Target;           // LPCSTR offset
 
 } D3DXSHADER_CONSTANTTABLE, *LPD3DXSHADER_CONSTANTTABLE;
 
@@ -643,4 +643,4 @@ typedef struct _D3DXSHADER_STRUCTMEMBERINFO
 
 
 
-#endif //__D3DX9SHADER_H__
+#endif /* __D3DX9SHADER_H__ */

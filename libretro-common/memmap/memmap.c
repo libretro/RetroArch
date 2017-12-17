@@ -48,7 +48,7 @@
 #endif
 
 #ifdef _WIN32
-void* mmap(void *addr, size_t len, int prot, int flags, 
+void* mmap(void *addr, size_t len, int prot, int flags,
       int fildes, size_t offset)
 {
    void     *map = (void*)NULL;
@@ -123,7 +123,7 @@ int munmap(void *addr, size_t len)
 
 int mprotect(void *addr, size_t len, int prot)
 {
-   /* stub - not really needed at this point 
+   /* stub - not really needed at this point
     * since this codepath has no dynarecs. */
    return 0;
 }

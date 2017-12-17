@@ -20,6 +20,7 @@
 
 #include <boolean.h>
 #include <retro_environment.h>
+#include <retro_miscellaneous.h>
 
 #include "joypad_connection.h"
 #include "../input_defines.h"
@@ -184,35 +185,51 @@ static bool hidpad_ps4_check_dpad(struct ps4 *rpt, unsigned id)
    return false;
 }
 
-static uint64_t hidpad_ps4_get_buttons(void *data)
+static void hidpad_ps4_get_buttons(void *data, retro_bits_t* state)
 {
-   uint64_t buttonstate           = 0;
    struct hidpad_ps4_data *device = (struct hidpad_ps4_data*)data;
-   struct ps4 *rpt = device ? (struct ps4*)&device->data : NULL;
+   struct ps4                *rpt = device ?
+      (struct ps4*)&device->data : NULL;
 
    if (!device || !rpt)
-      return 0;
+      return;
 
-   buttonstate |= (rpt->btn.r3 ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R3)     : 0);
-   buttonstate |= (rpt->btn.l3 ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L3)     : 0);
-   buttonstate |= (rpt->btn.options ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_START)  : 0);
-   buttonstate |= (rpt->btn.share ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0);
-   buttonstate |= (rpt->btn.r2 ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R2)     : 0);
-   buttonstate |= (rpt->btn.l2 ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L2)     : 0);
-   buttonstate |= (rpt->btn.r1 ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R)      : 0);
-   buttonstate |= (rpt->btn.l1 ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L)      : 0);
+   BIT256_CLEAR_ALL_PTR( state );
 
-   buttonstate |= (rpt->btn.triangle ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_X)      : 0);
-   buttonstate |= (rpt->btn.circle ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_A)      : 0);
-   buttonstate |= (rpt->btn.cross  ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_B)      : 0);
-   buttonstate |= (rpt->btn.square  ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_Y)      : 0);
-   buttonstate |= ((hidpad_ps4_check_dpad(rpt, RETRO_DEVICE_ID_JOYPAD_LEFT))   ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT)   : 0);
-   buttonstate |= ((hidpad_ps4_check_dpad(rpt, RETRO_DEVICE_ID_JOYPAD_DOWN))   ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN)   : 0);
-   buttonstate |= ((hidpad_ps4_check_dpad(rpt, RETRO_DEVICE_ID_JOYPAD_RIGHT))   ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_RIGHT)  : 0);
-   buttonstate |= ((hidpad_ps4_check_dpad(rpt, RETRO_DEVICE_ID_JOYPAD_UP))   ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP)     : 0);
-   buttonstate |= (rpt->btn.ps ? (UINT64_C(1) << RARCH_MENU_TOGGLE)             : 0);
-
-   return buttonstate;
+   if (rpt->btn.r3)
+      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_R3 );
+   if (rpt->btn.l3)
+      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_L3 );
+   if (rpt->btn.options)
+      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_START );
+   if ( rpt->btn.share)
+      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_SELECT );
+   if ( rpt->btn.r2)
+      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_R2 );
+   if (rpt->btn.l2)
+      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_L2 );
+   if (rpt->btn.r1)
+      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_R );
+   if (rpt->btn.l1)
+      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_L );
+   if (rpt->btn.triangle)
+      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_X );
+   if (rpt->btn.circle)
+      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_A );
+   if (rpt->btn.cross)
+      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_B );
+   if (rpt->btn.square)
+      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_Y );
+   if ((hidpad_ps4_check_dpad(rpt, RETRO_DEVICE_ID_JOYPAD_LEFT)))
+      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_LEFT );
+   if ((hidpad_ps4_check_dpad(rpt, RETRO_DEVICE_ID_JOYPAD_DOWN)))
+      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_DOWN );
+   if ((hidpad_ps4_check_dpad(rpt, RETRO_DEVICE_ID_JOYPAD_RIGHT)))
+      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_RIGHT );
+   if ((hidpad_ps4_check_dpad(rpt, RETRO_DEVICE_ID_JOYPAD_UP)))
+      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_UP );
+   if (rpt->btn.ps)
+      BIT256_SET_PTR( state, RARCH_MENU_TOGGLE );
 }
 
 static int16_t hidpad_ps4_get_axis(void *data, unsigned axis)

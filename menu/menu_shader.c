@@ -198,9 +198,9 @@ bool menu_shader_manager_init(void)
          {
             char preset_path[PATH_MAX_LENGTH];
             config_file_t *conf               = NULL;
-            const char *shader_dir            = 
+            const char *shader_dir            =
                *settings->paths.directory_video_shader ?
-               settings->paths.directory_video_shader : 
+               settings->paths.directory_video_shader :
                settings->paths.directory_system;
 
             preset_path[0] = '\0';
@@ -242,7 +242,7 @@ bool menu_shader_manager_init(void)
 
 /**
  * menu_shader_manager_set_preset:
- * @shader                   : Shader handle.   
+ * @shader                   : Shader handle.
  * @type                     : Type of shader.
  * @preset_path              : Preset path to load from.
  *
@@ -273,9 +273,9 @@ void menu_shader_manager_set_preset(void *data,
    if (!preset_path || !shader)
       return;
 
-   /* Load stored Preset into menu on success. 
+   /* Load stored Preset into menu on success.
     * Used when a preset is directly loaded.
-    * No point in updating when the Preset was 
+    * No point in updating when the Preset was
     * created from the menu itself. */
    conf = config_file_new(preset_path);
 
@@ -334,7 +334,7 @@ bool menu_shader_manager_save_preset(
       strlcpy(buffer, basename, sizeof(buffer));
 
       /* Append extension automatically as appropriate. */
-      if (     !strstr(basename, file_path_str(FILE_PATH_CGP_EXTENSION)) 
+      if (     !strstr(basename, file_path_str(FILE_PATH_CGP_EXTENSION))
             && !strstr(basename, file_path_str(FILE_PATH_GLSLP_EXTENSION))
             && !strstr(basename, file_path_str(FILE_PATH_SLANGP_EXTENSION)))
       {
@@ -469,14 +469,14 @@ int menu_shader_manager_clear_num_passes(void)
 int menu_shader_manager_clear_parameter(unsigned i)
 {
 #ifdef HAVE_SHADER_MANAGER
-   struct video_shader_parameter *param = 
+   struct video_shader_parameter *param =
       menu_shader_manager_get_parameters(i);
 
    if (!param)
       return 0;
 
    param->current = param->initial;
-   param->current = MIN(MAX(param->minimum, 
+   param->current = MIN(MAX(param->minimum,
             param->current), param->maximum);
 #endif
 
@@ -486,7 +486,7 @@ int menu_shader_manager_clear_parameter(unsigned i)
 int menu_shader_manager_clear_pass_filter(unsigned i)
 {
 #ifdef HAVE_SHADER_MANAGER
-   struct video_shader_pass *shader_pass = 
+   struct video_shader_pass *shader_pass =
       menu_shader_manager_get_pass(i);
 
    if (!shader_pass)
@@ -503,7 +503,7 @@ int menu_shader_manager_clear_pass_filter(unsigned i)
 void menu_shader_manager_clear_pass_scale(unsigned i)
 {
 #ifdef HAVE_SHADER_MANAGER
-   struct video_shader_pass *shader_pass = 
+   struct video_shader_pass *shader_pass =
       menu_shader_manager_get_pass(i);
 
    if (!shader_pass)
@@ -518,7 +518,7 @@ void menu_shader_manager_clear_pass_scale(unsigned i)
 void menu_shader_manager_clear_pass_path(unsigned i)
 {
 #ifdef HAVE_SHADER_MANAGER
-   struct video_shader_pass *shader_pass = 
+   struct video_shader_pass *shader_pass =
       menu_shader_manager_get_pass(i);
 
    if (shader_pass)
@@ -528,11 +528,11 @@ void menu_shader_manager_clear_pass_path(unsigned i)
 
 /**
  * menu_shader_manager_get_type:
- * @shader                   : shader handle     
+ * @shader                   : shader handle
  *
  * Gets type of shader.
  *
- * Returns: type of shader. 
+ * Returns: type of shader.
  **/
 unsigned menu_shader_manager_get_type(const void *data)
 {
@@ -547,7 +547,7 @@ unsigned menu_shader_manager_get_type(const void *data)
 
    for (i = 0; i < shader->passes; i++)
    {
-      enum rarch_shader_type pass_type = 
+      enum rarch_shader_type pass_type =
          video_shader_parse_type(shader->pass[i].source.path,
                RARCH_SHADER_NONE);
 

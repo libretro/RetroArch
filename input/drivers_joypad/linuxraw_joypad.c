@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -41,7 +41,7 @@
 struct linuxraw_joypad
 {
    int fd;
-   uint64_t buttons;
+   uint32_t buttons;
    int16_t axes[NUM_AXES];
 
    char *ident;
@@ -55,7 +55,7 @@ static bool linuxraw_hotplug                           = false;
 static void linuxraw_poll_pad(struct linuxraw_joypad *pad)
 {
    struct js_event event;
-   
+
    while (read(pad->fd, &event, sizeof(event)) == (ssize_t)sizeof(event))
    {
       unsigned type = event.type & ~JS_EVENT_INIT;
@@ -66,9 +66,9 @@ static void linuxraw_poll_pad(struct linuxraw_joypad *pad)
             if (event.number < NUM_BUTTONS)
             {
                if (event.value)
-                  BIT64_SET(pad->buttons, event.number);
+                  BIT32_SET(pad->buttons, event.number);
                else
-                  BIT64_CLEAR(pad->buttons, event.number);
+                  BIT32_CLEAR(pad->buttons, event.number);
             }
             break;
 
@@ -200,7 +200,7 @@ retry:
                         input_config_set_device_name(idx, NULL);
                   }
                }
-               /* Sometimes, device will be created before 
+               /* Sometimes, device will be created before
                 * access to it is established. */
                else if (event->mask & (IN_CREATE | IN_ATTRIB))
                {
@@ -210,7 +210,7 @@ retry:
 
                   snprintf(path, sizeof(path), "/dev/input/%s", event->name);
 
-                  if (     !string_is_empty(linuxraw_pads[idx].ident) 
+                  if (     !string_is_empty(linuxraw_pads[idx].ident)
                         && linuxraw_joypad_init_pad(path, &linuxraw_pads[idx]))
                   {
                      if (!input_autoconfigure_connect(
@@ -251,7 +251,7 @@ static bool linuxraw_joypad_init(void *data)
 
       pad->fd                     = -1;
       pad->ident                  = input_device_names[i];
-      
+
       snprintf(path, sizeof(path), "/dev/input/js%u", i);
 
       if (!input_autoconfigure_connect(
@@ -323,15 +323,18 @@ static bool linuxraw_joypad_button(unsigned port, uint16_t joykey)
    const struct linuxraw_joypad *pad = (const struct linuxraw_joypad*)
       &linuxraw_pads[port];
 
-   return joykey < NUM_BUTTONS && BIT64_GET(pad->buttons, joykey);
+   return joykey < NUM_BUTTONS && BIT32_GET(pad->buttons, joykey);
 }
 
-static uint64_t linuxraw_joypad_get_buttons(unsigned port)
+static void linuxraw_joypad_get_buttons(unsigned port, retro_bits_t *state)
 {
-   const struct linuxraw_joypad *pad = (const struct linuxraw_joypad*)
-      &linuxraw_pads[port];
-
-   return pad->buttons;
+	const struct linuxraw_joypad *pad = (const struct linuxraw_joypad*)&linuxraw_pads[port];
+	if (pad)
+   {
+		BITS_COPY16_PTR(state, pad->buttons);
+	}
+   else
+		BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t linuxraw_joypad_axis(unsigned port, uint32_t joyaxis)

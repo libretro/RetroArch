@@ -145,7 +145,7 @@ static float applyCalibration(float inval,float minval, float maxval,float cente
    /* We don't use the exact ranges but the ranges +1 in case we get bad calibration
     * data - avoid div0 */
 
-   if (inval == centerval) 
+   if (inval == centerval)
       ret = 0;
    else if (inval < centerval)
       ret = (inval - centerval) / (centerval - minval + 1);

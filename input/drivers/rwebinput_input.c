@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2015 - Michael Lelli
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -71,7 +71,7 @@ static bool rwebinput_key_pressed_internal(void *data, int key)
    unsigned sym;
    bool ret;
    rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
-   
+
    if (key >= RETROK_LAST)
       return false;
 
@@ -95,7 +95,7 @@ static bool rwebinput_is_pressed(rwebinput_input_t *rwebinput,
    {
       const struct retro_keybind *bind = &binds[id];
       int key                          = binds[id].key;
-      return bind->valid && (key < RETROK_LAST) 
+      return bind->valid && (key < RETROK_LAST)
          && rwebinput_key_pressed_internal(rwebinput, key);
    }
 

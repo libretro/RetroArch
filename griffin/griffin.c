@@ -58,6 +58,7 @@ COMPATIBILITY
 #endif
 
 #include "../libretro-common/compat/compat_fnmatch.c"
+#include "../libretro-common/compat/fopen_utf8.c"
 #include "../libretro-common/memmap/memalign.c"
 
 /*============================================================
@@ -187,9 +188,8 @@ VIDEO CONTEXT
 #include "../gfx/drivers_context/wgl_ctx.c"
 #endif
 
-#if defined(_WIN32) && !defined(_XBOX)
 #include "../gfx/drivers_context/gdi_ctx.c"
-#endif
+#include "../gfx/display_servers/dispserv_win32.c"
 
 #if defined(HAVE_FFMPEG)
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
@@ -251,8 +251,11 @@ VIDEO CONTEXT
 
 #if defined(HAVE_X11)
 #include "../gfx/common/x11_common.c"
-#include "../gfx/common/dbus_common.c"
 #include "../gfx/common/xinerama_common.c"
+
+#ifdef HAVE_DBUS
+#include "../gfx/common/dbus_common.c"
+#endif
 
 #ifndef HAVE_OPENGLES
 #include "../gfx/drivers_context/x_ctx.c"
@@ -370,6 +373,7 @@ VIDEO DRIVER
 #endif
 
 #include "../gfx/drivers_renderchain/null_renderchain.c"
+#include "../gfx/display_servers/dispserv_null.c"
 
 #ifdef HAVE_OPENGL
 #include "../gfx/common/gl_common.c"
@@ -745,6 +749,7 @@ AUDIO
 DRIVERS
 ============================================================ */
 #include "../gfx/video_driver.c"
+#include "../gfx/video_display_server.c"
 #include "../gfx/video_coord_array.c"
 #include "../input/input_driver.c"
 #include "../audio/audio_driver.c"
@@ -819,6 +824,7 @@ FILE
 #include "../libretro-common/streams/file_stream_transforms.c"
 #include "../libretro-common/streams/interface_stream.c"
 #include "../libretro-common/streams/memory_stream.c"
+#include "../libretro-common/vfs/vfs_implementation.c"
 #include "../list_special.c"
 #include "../libretro-common/string/stdstring.c"
 #include "../libretro-common/file/nbio/nbio_stdio.c"
@@ -1043,6 +1049,17 @@ MENU
 #include "../menu/menu_setting.c"
 #include "../menu/menu_cbs.c"
 #include "../menu/menu_content.c"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include "../menu/menu_networking.c"
+
+#ifdef __cplusplus
+}
+#endif
+
 #include "../menu/widgets/menu_entry.c"
 #include "../menu/widgets/menu_filebrowser.c"
 #include "../menu/widgets/menu_dialog.c"

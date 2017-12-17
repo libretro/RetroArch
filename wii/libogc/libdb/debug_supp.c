@@ -269,11 +269,11 @@ s32 gdbstub_getnextthread(s32 athread)
 	max_id = _lwp_thr_objects.max_id;
 	lim = first_id + max_id - min_id;
 	if(athread<lim) {
-		if(athread<first_id) 
+		if(athread<first_id)
 			start = first_id;
-		else 
+		else
 			start = athread+1;
-		
+
 		for(id=start;id<lim;id++)
 			if(_lwp_thr_objects.local_table[id - first_id]!=NULL) return id;
 	}
@@ -397,7 +397,7 @@ void packqq(char *out,s32 mask,s32 thread,struct gdbstub_threadinfo *info)
 	if(mask&0x04) {
 		memcpy(out,"00000004",8);
 		out += 8;
-		
+
 		info->display[sizeof(info->display)-1] = 0;			//for god sake
 		len = strlen(info->display);
 
@@ -410,7 +410,7 @@ void packqq(char *out,s32 mask,s32 thread,struct gdbstub_threadinfo *info)
 	if(mask&0x08) {
 		memcpy(out,"00000008",8);
 		out += 8;
-		
+
 		info->display[sizeof(info->name)-1] = 0;			//for god sake
 		len = strlen(info->name);
 
@@ -423,7 +423,7 @@ void packqq(char *out,s32 mask,s32 thread,struct gdbstub_threadinfo *info)
 	if(mask&0x10) {
 		memcpy(out,"00000010",8);
 		out += 8;
-		
+
 		info->display[sizeof(info->more_display)-1] = 0;			//for god sake
 		len = strlen(info->more_display);
 

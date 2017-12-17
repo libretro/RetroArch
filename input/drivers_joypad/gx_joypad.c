@@ -162,9 +162,14 @@ static bool gx_joypad_button(unsigned port, uint16_t key)
    return (pad_state[port] & (UINT64_C(1) << key));
 }
 
-static uint64_t gx_joypad_get_buttons(unsigned port)
+static void gx_joypad_get_buttons(unsigned port, retro_bits_t *state)
 {
-   return pad_state[port];
+	if (port < MAX_PADS)
+   {
+		BITS_COPY16_PTR( state, pad_state[port] );
+	}
+   else
+		BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t gx_joypad_axis(unsigned port, uint32_t joyaxis)
@@ -501,8 +506,8 @@ static void gx_joypad_destroy(void)
    int i;
    for (i = 0; i < MAX_PADS; i++)
    {
-      /* Commenting this out fixes the Wii 
-       * remote not reconnecting after 
+      /* Commenting this out fixes the Wii
+       * remote not reconnecting after
        * core load, exit, etc. */
       WPAD_Flush(i);
       WPADDisconnect(i);

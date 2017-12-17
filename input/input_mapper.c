@@ -127,9 +127,9 @@ void input_mapper_state(
          if (id < RETROK_LAST)
          {
             /*
-               RARCH_LOG("State: UDLR %u %u %u %u\n", 
-               MAPPER_GET_KEY(handle, RETROK_UP), 
-               MAPPER_GET_KEY(handle, RETROK_DOWN), 
+               RARCH_LOG("State: UDLR %u %u %u %u\n",
+               MAPPER_GET_KEY(handle, RETROK_UP),
+               MAPPER_GET_KEY(handle, RETROK_DOWN),
                MAPPER_GET_KEY(handle, RETROK_LEFT),
                MAPPER_GET_KEY(handle, RETROK_RIGHT)
                );*/

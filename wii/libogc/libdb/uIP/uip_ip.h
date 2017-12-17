@@ -69,7 +69,7 @@
 #define ip4_addr2(ipaddr) ((u16_t)(ntohl((ipaddr)->addr) >> 16) & 0xff)
 #define ip4_addr3(ipaddr) ((u16_t)(ntohl((ipaddr)->addr) >> 8) & 0xff)
 #define ip4_addr4(ipaddr) ((u16_t)(ntohl((ipaddr)->addr)) & 0xff)
-	
+
 #ifndef HAVE_IN_ADDR
 #define HAVE_IN_ADDR
 struct in_addr {
@@ -103,7 +103,7 @@ struct uip_ip_hdr {
 	PACK_STRUCT_FIELD(u16_t _offset);
 	PACK_STRUCT_FIELD(u16_t _ttl_proto);
 	PACK_STRUCT_FIELD(u16_t _chksum);
-	
+
 	PACK_STRUCT_FIELD(struct uip_ip_addr src);
 	PACK_STRUCT_FIELD(struct uip_ip_addr dst);
 } PACK_STRUCT_STRUCT;
@@ -115,7 +115,7 @@ PACK_STRUCT_END
 	u16_t so_options;				\
 	u8_t tos;						\
 	u8_t ttl
-	
+
 struct uip_pbuf;
 struct uip_netif;
 struct ip_addr;

@@ -27,7 +27,7 @@ struct hidpad_nesusb_data
    struct pad_connection* connection;
    uint8_t data[64];
    uint32_t slot;
-   uint64_t buttons;
+   uint32_t buttons;
 };
 
 static void* hidpad_nesusb_init(void *data, uint32_t slot, send_control_t ptr)
@@ -59,12 +59,15 @@ static void hidpad_nesusb_deinit(void *data)
       free(device);
 }
 
-static uint64_t hidpad_nesusb_get_buttons(void *data)
+static void hidpad_nesusb_get_buttons(void *data, retro_bits_t* state)
 {
-   struct hidpad_nesusb_data *device = (struct hidpad_nesusb_data*)data;
-   if (!device)
-      return 0;
-   return device->buttons;
+	struct hidpad_nesusb_data *device = (struct hidpad_nesusb_data*)data;
+	if (device)
+   {
+		BITS_COPY16_PTR(state, device->buttons);
+	}
+   else
+		BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t hidpad_nesusb_get_axis(void *data, unsigned axis)
@@ -102,7 +105,6 @@ static void hidpad_nesusb_packet_handler(void *data, uint8_t *packet, uint16_t s
       RETRO_DEVICE_ID_JOYPAD_A,
       RETRO_DEVICE_ID_JOYPAD_Y,
       RETRO_DEVICE_ID_JOYPAD_X,
-      16, /* HOME BUTTON when pressing SELECT+START */
    };
    struct hidpad_nesusb_data *device = (struct hidpad_nesusb_data*)data;
 
@@ -113,12 +115,11 @@ static void hidpad_nesusb_packet_handler(void *data, uint8_t *packet, uint16_t s
 
    device->buttons = 0;
 
-   pressed_keys  = device->data[7] | (device->data[6] << 8) |
-                (((device->data[7] & 0x30) == 0x30) ? (1 << 16) : 0);  /* SELECT+START=HOME */
+   pressed_keys  = device->data[7] | (device->data[6] << 8);
 
-   for (i = 0; i < 17; i ++)
+   for (i = 0; i < 16; i ++)
       if (button_mapping[i] != NO_BTN)
-         device->buttons |= (pressed_keys & (1 << i)) ? (UINT64_C(1) << button_mapping[i]) : 0;
+         device->buttons |= (pressed_keys & (1 << i)) ? (1 << button_mapping[i]) : 0;
 }
 
 static void hidpad_nesusb_set_rumble(void *data,

@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -16,7 +16,7 @@
 
 /*  RSound - A PCM audio client/server
  *  Copyright (C) 2010 - Hans-Kristian Arntzen
- * 
+ *
  *  RSound is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -67,7 +67,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <time.h>
-#include <errno.h> 
+#include <errno.h>
 
 #include <compat/strl.h>
 #include <retro_inline.h>
@@ -75,8 +75,8 @@
 #include <retro_miscellaneous.h>
 #include <retro_timers.h>
 
-/* 
- ****************************************************************************   
+/*
+ ****************************************************************************
  Naming convention. Functions for use in API are called rsd_*(),         *
  internal function are called rsnd_*()                                   *
  ****************************************************************************
@@ -251,7 +251,7 @@ static int rsnd_connect_server( rsound_t *rd )
    if ( rd->conn.ctl_socket < 0 )
       goto error;
 
-   /* Uses non-blocking IO since it performed more deterministic with poll()/send() */   
+   /* Uses non-blocking IO since it performed more deterministic with poll()/send() */
 
 #ifdef __CELLOS_LV2__
    setsockopt(rd->conn.socket, SOL_SOCKET, SO_NBIO, &i, sizeof(int));
@@ -302,7 +302,7 @@ static int rsnd_send_header_info(rsound_t *rd)
    uint16_t temp16;
    uint32_t temp32;
 
-   /* These magic numbers represent the position of the elements in the wave header. 
+   /* These magic numbers represent the position of the elements in the wave header.
       We can't simply send a wave struct over the network since the compiler is allowed to
       pad our structs as they like, so sizeof(waveheader) might not be similar on two different
       systems. */
@@ -353,7 +353,7 @@ static int rsnd_send_header_info(rsound_t *rd)
    }
 
    /* Since the values in the wave header we are interested in, are little endian (>_<), we need
-      to determine whether we're running it or not, so we can byte swap accordingly. 
+      to determine whether we're running it or not, so we can byte swap accordingly.
       Could determine this compile time, but it was simpler to do it this way. */
 
    // Fancy macros for embedding little endian values into the header.
@@ -501,7 +501,7 @@ static int rsnd_get_backend_info ( rsound_t *rd )
    // Can we read the last 8 bytes so we can use the protocol interface?
    // This is non-blocking.
    if ( rsnd_recv_chunk(rd->conn.socket, rsnd_header, RSND_HEADER_SIZE, 0) == RSND_HEADER_SIZE )
-      rd->conn_type |= RSD_CONN_PROTO; 
+      rd->conn_type |= RSD_CONN_PROTO;
    else
    {  RSD_DEBUG("[RSound] Failed to get new proto.\n"); }
 
@@ -515,7 +515,7 @@ static int rsnd_get_backend_info ( rsound_t *rd )
    return 0;
 }
 
-/* Makes sure that we're connected and done with wave header handshaking. Returns -1 on error, and 0 on success. 
+/* Makes sure that we're connected and done with wave header handshaking. Returns -1 on error, and 0 on success.
    This goes for all other functions in use. */
 static int rsnd_create_connection(rsound_t *rd)
 {
@@ -750,7 +750,7 @@ static int64_t rsnd_get_time_usec(void)
 
 /* Calculates how many bytes there are in total in the virtual buffer. This is calculated client side.
    It should be accurate enough unless we have big problems with buffer underruns.
-   This function is called by rsd_delay() to determine the latency. 
+   This function is called by rsd_delay() to determine the latency.
    This function might be changed in the future to correctly determine latency from server. */
 static void rsnd_drain(rsound_t *rd)
 {
@@ -777,7 +777,7 @@ static void rsnd_drain(rsound_t *rd)
 }
 
 /* Tries to fill the buffer. Uses signals to determine when the buffer is ready to be filled. Should the thread not be active
-   it will treat this as an error. Crude implementation of a blocking FIFO. */ 
+   it will treat this as an error. Crude implementation of a blocking FIFO. */
 static size_t rsnd_fill_buffer(rsound_t *rd, const char *buf, size_t size)
 {
 
@@ -851,7 +851,7 @@ static int rsnd_stop_thread(rsound_t *rd)
 
       sthread_join(rd->thread.thread);
       RSD_DEBUG("[RSound] Thread joined successfully.\n");
-      
+
       return 0;
    }
    else
@@ -981,7 +981,7 @@ static int rsnd_close_ctl(rsound_t *rd)
 }
 
 
-// Sends delay info request to server on the ctl socket. This code section isn't critical, and will work if it works. 
+// Sends delay info request to server on the ctl socket. This code section isn't critical, and will work if it works.
 // It will never block.
 static int rsnd_send_info_query(rsound_t *rd)
 {
@@ -1111,7 +1111,7 @@ static void rsnd_thread ( void * thread_data )
          // We only bother to check after 1 sec of audio has been played, as it might be quite inaccurate in the start of the stream.
          if ( (rd->conn_type & RSD_CONN_PROTO) && (rd->total_written > rd->channels * rd->rate * rd->samplesize) )
          {
-            rsnd_send_info_query(rd); 
+            rsnd_send_info_query(rd);
             rsnd_update_server_info(rd);
          }
 
@@ -1263,7 +1263,7 @@ static void rsnd_cb_thread(void *thread_data)
 
       if ( (rd->conn_type & RSD_CONN_PROTO) && (rd->total_written > rd->channels * rd->rate * rd->samplesize) )
       {
-         rsnd_send_info_query(rd); 
+         rsnd_send_info_query(rd);
          rsnd_update_server_info(rd);
       }
 
@@ -1304,7 +1304,7 @@ int rsd_stop(rsound_t *rd)
 
    const char buf[] = "RSD    5 STOP";
 
-   // Do not really care about errors here. 
+   // Do not really care about errors here.
    // The socket will be closed down in any case in rsnd_reset().
    rsnd_send_chunk(rd->conn.ctl_socket, buf, strlen(buf), 0);
 
@@ -1325,7 +1325,7 @@ size_t rsd_write( rsound_t *rsound, const void* buf, size_t size)
 
    while ( written < size )
    {
-      size_t write_size = (size - written) > max_write ? max_write : (size - written); 
+      size_t write_size = (size - written) > max_write ? max_write : (size - written);
       size_t     result = rsnd_fill_buffer(rsound, (const char*)buf + written, write_size);
 
       if (result == 0)
@@ -1454,7 +1454,7 @@ int rsd_set_param(rsound_t *rd, enum rsd_settings option, void* param)
 			rd->max_latency = *((int*)param);
 			break;
 
-			// Checks if format is valid.   
+			// Checks if format is valid.
 		case RSD_FORMAT:
 			rd->format = (uint16_t)(*((int*)param));
 			rd->samplesize = rsnd_format_to_samplesize(rd->format);
@@ -1509,7 +1509,7 @@ size_t rsd_pointer(rsound_t *rsound)
    retro_assert(rsound != NULL);
    int ptr;
 
-   ptr = rsnd_get_ptr(rsound);   
+   ptr = rsnd_get_ptr(rsound);
 
    return ptr;
 }

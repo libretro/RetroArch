@@ -39,7 +39,7 @@ void __lwpmq_msg_insert(mq_cntrl *mqueue,mq_buffercntrl *msg,u32 type)
 		}
 		break;
 	}
-	
+
 	if(mqueue->num_pendingmsgs==1 && mqueue->notify_handler)
 		mqueue->notify_handler(mqueue->notify_arg);
 }
@@ -48,7 +48,7 @@ u32 __lwpmq_initialize(mq_cntrl *mqueue,mq_attr *attrs,u32 max_pendingmsgs,u32 m
 {
 	u32 alloc_msgsize;
 	u32 buffering_req;
-	
+
 #ifdef _LWPMQ_DEBUG
 	printf("__lwpmq_initialize(%p,%p,%d,%d)\n",mqueue,attrs,max_pendingmsgs,max_msgsize);
 #endif
@@ -56,11 +56,11 @@ u32 __lwpmq_initialize(mq_cntrl *mqueue,mq_attr *attrs,u32 max_pendingmsgs,u32 m
 	mqueue->num_pendingmsgs = 0;
 	mqueue->max_msgsize = max_msgsize;
 	__lwpmq_set_notify(mqueue,NULL,NULL);
-	
+
 	alloc_msgsize = max_msgsize;
 	if(alloc_msgsize&(sizeof(u32)-1))
 		alloc_msgsize = (alloc_msgsize+sizeof(u32))&~(sizeof(u32)-1);
-	
+
 	buffering_req = max_pendingmsgs*(alloc_msgsize+sizeof(mq_buffercntrl));
 	mqueue->msq_buffers = (mq_buffer*)__lwp_wkspace_allocate(buffering_req);
 
@@ -84,13 +84,13 @@ u32 __lwpmq_seize(mq_cntrl *mqueue,u32 id,void *buffer,u32 *size,u32 wait,u64 ti
 #ifdef _LWPMQ_DEBUG
 	printf("__lwpmq_seize(%p,%d,%p,%p,%d,%d)\n",mqueue,id,buffer,size,wait,mqueue->num_pendingmsgs);
 #endif
-	
+
 	_CPU_ISR_Disable(level);
 	if(mqueue->num_pendingmsgs!=0) {
 		--mqueue->num_pendingmsgs;
 		msg = __lwpmq_get_pendingmsg(mqueue);
 		_CPU_ISR_Restore(level);
-		
+
 		*size = msg->contents.size;
 		exec->wait.cnt = msg->prio;
 		__lwpmq_buffer_copy(buffer,msg->contents.buffer,*size);
@@ -104,7 +104,7 @@ u32 __lwpmq_seize(mq_cntrl *mqueue,u32 id,void *buffer,u32 *size,u32 wait,u64 ti
 		msg->prio = thread->wait.cnt;
 		msg->contents.size = (u32)thread->wait.ret_arg_1;
 		__lwpmq_buffer_copy(msg->contents.buffer,thread->wait.ret_arg,msg->contents.size);
-		
+
 		__lwpmq_msg_insert(mqueue,msg,msg->prio);
 		return LWP_MQ_STATUS_SUCCESSFUL;
 	}
@@ -173,7 +173,7 @@ u32 __lwpmq_submit(mq_cntrl *mqueue,u32 id,void *buffer,u32 size,u32 type,u32 wa
 		exec->wait.ret_arg_1 = (void*)size;
 		exec->wait.cnt = type;
 		_CPU_ISR_Restore(level);
-		
+
 		__lwp_threadqueue_enqueue(&mqueue->wait_queue,timeout);
 	}
 	return LWP_MQ_STATUS_UNSATISFIED_WAIT;
@@ -242,7 +242,7 @@ u32 __lwpmq_flush_support(mq_cntrl *mqueue)
 	mqueue_last->next = inactive;
 	inactive->prev = mqueue_last;
 	mqueue_first->prev = __lwp_queue_head(&mqueue->inactive_msgs);
-	
+
 	__lwp_queue_init_empty(&mqueue->pending_msgs);
 
 	cnt = mqueue->num_pendingmsgs;

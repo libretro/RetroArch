@@ -44,7 +44,7 @@ u64 _DEFUN(gettime,(),
 		u64 ull;
 		u32 ul[2];
 	} v;
-	
+
 	__asm__ __volatile__(
 		"1:	mftbu	%0\n\
 		    mftb	%1\n\
@@ -316,7 +316,7 @@ int __libogc_gettod_r(struct _reent *ptr, struct timeval *tp, struct timezone *t
 	if (tz != NULL) {
 		tz->tz_minuteswest = 0;
 		tz->tz_dsttime = 0;
-		
+
 	}
 	return 0;
 }

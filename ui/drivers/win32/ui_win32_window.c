@@ -62,7 +62,7 @@ static void ui_window_win32_set_focused(void *data)
    SetFocus(window->hwnd);
 }
 
-static void ui_window_win32_set_visible(void *data, 
+static void ui_window_win32_set_visible(void *data,
         bool set_visible)
 {
    ui_window_win32_t *window = (ui_window_win32_t*)data;

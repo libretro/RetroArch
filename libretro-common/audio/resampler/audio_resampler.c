@@ -146,7 +146,7 @@ static bool resampler_append_plugs(void **re,
  * @ident                      : Identifier name for resampler we want.
  * @bw_ratio                   : Bandwidth ratio.
  *
- * Reallocates resampler. Will free previous handle before 
+ * Reallocates resampler. Will free previous handle before
  * allocating a new one. If ident is NULL, first resampler will be used.
  *
  * Returns: true (1) if successful, otherwise false (0).

@@ -31,10 +31,10 @@ distribution.
 #ifndef __MUTEX_H__
 #define __MUTEX_H__
 
-/*! \file mutex.h 
+/*! \file mutex.h
 \brief Thread subsystem III
 
-*/ 
+*/
 
 #include <gctypes.h>
 

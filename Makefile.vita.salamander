@@ -46,6 +46,7 @@ OBJS = frontend/frontend_salamander.o \
 		 libretro-common/compat/compat_strcasestr.o \
 		 libretro-common/file/config_file.o \
 		 libretro-common/streams/file_stream.o \
+		 libretro-common/vfs/vfs_implementation.o \
 		 libretro-common/hash/rhash.o \
 		 file_path_str.o \
 		 verbosity.o

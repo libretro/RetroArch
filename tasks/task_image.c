@@ -109,7 +109,7 @@ static int cb_image_menu_thumbnail(void *data, size_t len)
 {
    unsigned width                   = 0;
    unsigned height                  = 0;
-   nbio_handle_t        *nbio       = (nbio_handle_t*)data; 
+   nbio_handle_t        *nbio       = (nbio_handle_t*)data;
    struct nbio_image_handle *image  = (struct nbio_image_handle*)nbio->data;
    int retval                       = task_image_process(image, &width, &height);
 
@@ -182,8 +182,8 @@ static void task_image_load_free(retro_task_t *task)
 static int cb_nbio_image_menu_thumbnail(void *data, size_t len)
 {
    void *ptr                       = NULL;
-   nbio_handle_t *nbio             = (nbio_handle_t*)data; 
-   struct nbio_image_handle *image = nbio ? 
+   nbio_handle_t *nbio             = (nbio_handle_t*)data;
+   struct nbio_image_handle *image = nbio ?
       (struct nbio_image_handle*)nbio->data : NULL;
    void *handle                    = image ? image_transfer_new(image->type) : NULL;
 
@@ -199,7 +199,7 @@ static int cb_nbio_image_menu_thumbnail(void *data, size_t len)
    image_transfer_set_buffer_ptr(image->handle, image->type, ptr);
 
    image->size                     = len;
-   image->pos_increment            = (len / 2) ? 
+   image->pos_increment            = (len / 2) ?
       ((unsigned)(len / 2)) : 1;
    image->processing_pos_increment = (len / 4) ?
        ((unsigned)(len / 4)) : 1;
@@ -314,7 +314,7 @@ bool task_push_image_load(const char *fullpath, retro_task_callback_t cb, void *
    if (video_driver_supports_rgba())
       BIT32_SET(nbio->status_flags, NBIO_FLAG_IMAGE_SUPPORTS_RGBA);
 
-   image              = (struct nbio_image_handle*)malloc(sizeof(*image));   
+   image              = (struct nbio_image_handle*)malloc(sizeof(*image));
    if (!image)
       goto error;
 
@@ -339,7 +339,7 @@ bool task_push_image_load(const char *fullpath, retro_task_callback_t cb, void *
       nbio->type       = NBIO_TYPE_PNG;
       image->type      = IMAGE_TYPE_PNG;
    }
-   else if (strstr(fullpath, file_path_str(FILE_PATH_JPEG_EXTENSION)) 
+   else if (strstr(fullpath, file_path_str(FILE_PATH_JPEG_EXTENSION))
          || strstr(fullpath, file_path_str(FILE_PATH_JPG_EXTENSION)))
    {
       nbio->type       = NBIO_TYPE_JPEG;

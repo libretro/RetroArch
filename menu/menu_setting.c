@@ -22,6 +22,7 @@
 #include <unistd.h>
 #endif
 
+#include <libretro.h>
 #include <lists/file_list.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
@@ -80,6 +81,7 @@
 #include "../setting_list.h"
 #include "../lakka.h"
 #include "../retroarch.h"
+#include "../gfx/video_display_server.h"
 
 #include "../tasks/tasks_internal.h"
 
@@ -1305,7 +1307,7 @@ static int setting_action_left_bind_device(void *data, bool wraparound)
 {
    unsigned index_offset;
    unsigned               *p = NULL;
-   unsigned max_users        = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+   unsigned max_devices        = input_config_get_device_count();
    rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
 
@@ -1316,8 +1318,8 @@ static int setting_action_left_bind_device(void *data, bool wraparound)
 
    p = &settings->uints.input_joypad_map[index_offset];
 
-   if ((*p) >= max_users)
-      *p = max_users - 1;
+   if ((*p) >= max_devices)
+      *p = max_devices - 1;
    else if ((*p) > 0)
       (*p)--;
 
@@ -1328,7 +1330,7 @@ static int setting_action_right_bind_device(void *data, bool wraparound)
 {
    unsigned index_offset;
    unsigned               *p = NULL;
-   unsigned max_users        = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+   unsigned max_devices      = input_config_get_device_count();
    rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
 
@@ -1339,7 +1341,7 @@ static int setting_action_right_bind_device(void *data, bool wraparound)
 
    p = &settings->uints.input_joypad_map[index_offset];
 
-   if (*p < max_users)
+   if (*p < max_devices)
       (*p)++;
 
    return 0;
@@ -1441,6 +1443,7 @@ static int setting_action_ok_bind_defaults(void *data, bool wraparound)
       target->key     = def_binds[i - MENU_SETTINGS_BIND_BEGIN].key;
       target->joykey  = NO_BTN;
       target->joyaxis = AXIS_NONE;
+      target->mbutton = NO_BTN;
    }
 
    return 0;
@@ -1496,7 +1499,7 @@ static void get_string_representation_bind_device(void * data, char *s,
       size_t len)
 {
    unsigned index_offset, map = 0;
-   unsigned max_users        = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+   unsigned max_devices      = input_config_get_device_count();
    rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
 
@@ -1506,21 +1509,37 @@ static void get_string_representation_bind_device(void * data, char *s,
    index_offset = setting->index_offset;
    map          = settings->uints.input_joypad_map[index_offset];
 
-   if (map < max_users)
+   if (map < max_devices)
    {
       const char *device_name = input_config_get_device_name(map);
 
       if (!string_is_empty(device_name))
-         snprintf(s, len,
-               "%s (#%u)",
-               device_name,
-               input_autoconfigure_get_device_name_index(map));
+      {
+         unsigned idx = input_autoconfigure_get_device_name_index(map);
+
+         /*if idx is non-zero, it's part of a set*/
+         if ( idx > 0 )
+         {
+            snprintf(s, len,
+                  "%s (#%u)",
+                  device_name,
+                  idx);
+         }
+         else
+         {
+            snprintf(s, len,
+                  "%s",
+                  device_name);
+         }
+      }
       else
+      {
          snprintf(s, len,
                "%s (%s #%u)",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT),
                map);
+      }
    }
    else
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), len);
@@ -1816,6 +1835,9 @@ void general_write_handler(void *data)
          retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES, NULL);
 #endif
          break;
+      case MENU_ENUM_LABEL_VIDEO_WINDOW_OPACITY:
+         video_display_server_set_window_opacity(settings->uints.video_window_opacity);
+         break;
       default:
          break;
    }
@@ -1859,9 +1881,11 @@ static void systemd_service_toggle(const char *path, char *unit, bool enable)
    args[2] = unit;
 
    if (enable)
-      filestream_close(filestream_open(path, RFILE_MODE_WRITE, -1));
+      filestream_close(filestream_open(path,
+               RETRO_VFS_FILE_ACCESS_WRITE,
+               RETRO_VFS_FILE_ACCESS_HINT_NONE));
    else
-      path_file_remove(path);
+      filestream_delete(path);
 
    if (pid == 0)
       execvp(args[0], args);
@@ -2262,7 +2286,7 @@ static bool setting_append_list(
                parent_group);
 #endif
 
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD) && defined(HAVE_NETWORKGAMEPAD_CORE)
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_START_NET_RETROPAD,
@@ -3607,6 +3631,19 @@ static bool setting_append_list(
                      general_write_handler,
                      general_read_handler);
                menu_settings_list_current_add_range(list, list_info, 0, 4320, 8, true, true);
+               settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+               CONFIG_UINT(
+                     list, list_info,
+                     &settings->uints.video_window_opacity,
+                     MENU_ENUM_LABEL_VIDEO_WINDOW_OPACITY,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
+                     window_opacity,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler);
+               menu_settings_list_current_add_range(list, list_info, 1, 100, 1, true, true);
                settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
             }
 
@@ -5983,6 +6020,23 @@ static bool setting_append_list(
          parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+
+#ifdef HAVE_LIBRETRODB
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.automatically_add_content_to_playlist,
+               MENU_ENUM_LABEL_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
+               MENU_ENUM_LABEL_VALUE_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
+               true,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+#endif
 
          CONFIG_BOOL(
                list, list_info,

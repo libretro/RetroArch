@@ -668,7 +668,7 @@ u32 PAD_ScanPads()
 
 		switch(padstatus[i].err) {
 		case PAD_ERR_NONE:
-			oldstate				= __pad_keys[i].state; 
+			oldstate				= __pad_keys[i].state;
 			state					= padstatus[i].button;
 			__pad_keys[i].stickX	= padstatus[i].stickX;
 			__pad_keys[i].stickY	= padstatus[i].stickY;

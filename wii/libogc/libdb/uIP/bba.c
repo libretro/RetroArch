@@ -16,7 +16,7 @@
 #define BBA_MINPKTSIZE			60
 
 #define BBA_CID					0x04020200
-	
+
 #define BBA_CMD_IRMASKALL		0x00
 #define BBA_CMD_IRMASKNONE		0xF8
 
@@ -344,7 +344,7 @@ static inline void bba_insregister(u32 reg)
 static inline void bba_insdata(void *val,u32 len)
 {
 	EXI_ImmEx(EXI_CHANNEL_0,val,len,EXI_READ);
-}	
+}
 
 
 static inline void bba_outsregister(u32 reg)
@@ -452,7 +452,7 @@ static s8_t bba_start_rx(struct uip_netif *dev,u32 budget)
 	struct uip_pbuf *p,*q;
 
 	UIP_LOG("bba_start_rx()\n");
-	
+
 	recvd = 0;
 	rwp = bba_in12(BBA_RWP);
 	rrp = bba_in12(BBA_RRP);
@@ -473,10 +473,10 @@ static s8_t bba_start_rx(struct uip_netif *dev,u32 budget)
 			rrp = bba_in12(BBA_RRP);
 			continue;
 		}
-		
+
 		pos = (rrp<<8)+4;
 		top = (BBA_INIT_RHBP+1)<<8;
-		
+
 		p = uip_pbuf_alloc(UIP_PBUF_RAW,size,UIP_PBUF_POOL);
 		if(p) {
 			for(q=p;q!=NULL;q=q->next) {
@@ -486,7 +486,7 @@ static s8_t bba_start_rx(struct uip_netif *dev,u32 budget)
 					bba_insdata(q->payload,size);
 				} else {
 					s32 chunk = top-pos;
-					
+
 					size -= chunk;
 					pos = BBA_INIT_RRP<<8;
 					bba_insdata(q->payload,chunk);
@@ -499,7 +499,7 @@ static s8_t bba_start_rx(struct uip_netif *dev,u32 budget)
 				bba_deselect();
 				pos += size;
 			}
-		
+
 			EXI_Unlock(EXI_CHANNEL_0);
 			bba_process(p,dev);
 			EXI_Lock(EXI_CHANNEL_0,EXI_DEVICE_2,NULL);
@@ -507,7 +507,7 @@ static s8_t bba_start_rx(struct uip_netif *dev,u32 budget)
 			break;
 
 		recvd++;
-		
+
 		bba_out12(BBA_RRP,(rrp=cur_descr.next_packet_ptr));
 		rwp = bba_in12(BBA_RWP);
 	}
@@ -517,7 +517,7 @@ static s8_t bba_start_rx(struct uip_netif *dev,u32 budget)
 static inline void bba_interrupt(u16 *pstatus)
 {
 	u8 ir,imr,status;
-	
+
 	ir = bba_in8(BBA_IR);
 	imr = bba_in8(BBA_IMR);
 	status = ir&imr;
@@ -555,7 +555,7 @@ static s8_t bba_dochallengeresponse()
 {
 	u16 status;
 	s32 cnt;
-	
+
 	UIP_LOG("bba_dochallengeresponse()\n");
 	/* as we do not have interrupts we've to poll the irqs */
 	cnt = 0;
@@ -564,7 +564,7 @@ static s8_t bba_dochallengeresponse()
 		bba_devpoll(&status);
 		if(status==0x1000) cnt = 0;
 	} while(cnt<100 && !(status&0x0800));
-	
+
 	if(cnt>=1000) return UIP_ERR_IF;
 	return UIP_ERR_OK;
 }
@@ -577,7 +577,7 @@ static s8_t __bba_init(struct uip_netif *dev)
 	__bba_reset();
 
 	priv->revid = bba_cmd_in8(0x01);
-	
+
 	bba_cmd_outs(0x04,&priv->devid,2);
 	bba_cmd_out8(0x05,priv->acstart);
 
@@ -586,7 +586,7 @@ static s8_t __bba_init(struct uip_netif *dev)
 	bba_out8(0x5c, (bba_in8(0x5c)|0x04));
 
 	__bba_recv_init();
-	
+
 	bba_ins(BBA_NAFR_PAR0,priv->ethaddr->addr, 6);
 
 	bba_out8(BBA_IR,0xFF);
@@ -607,9 +607,9 @@ static s8_t bba_init_one(struct uip_netif *dev)
 	priv->revid = 0x00;
 	priv->devid = 0xD107;
 	priv->acstart = 0x4E;
-	
+
 	ret = __bba_init(dev);
-	
+
 	return ret;
 }
 
@@ -668,7 +668,7 @@ static void bba_devpoll(u16 *pstatus)
 	s64 now;
 
 	UIP_LOG("bba_devpoll()\n");
-	
+
 	now = gettime();
 	if(diff_msec(bba_arp_tmr,now)>=UIP_ARP_TMRINTERVAL) {
 		uip_arp_timer();
@@ -743,7 +743,7 @@ static s8_t __bba_link_tx(struct uip_netif *dev,struct uip_pbuf *p)
 	u8 pad[60];
 	u32 len;
 	struct uip_pbuf *tmp;
-	
+
 	if(EXI_Lock(EXI_CHANNEL_0,EXI_DEVICE_2,NULL)==0) return UIP_ERR_IF;
 
 	if(p->tot_len>BBA_TX_MAX_PACKET_SIZE) {
@@ -751,7 +751,7 @@ static s8_t __bba_link_tx(struct uip_netif *dev,struct uip_pbuf *p)
 		EXI_Unlock(EXI_CHANNEL_0);
 		return UIP_ERR_PKTSIZE;
 	}
-	
+
 	if(!__linkstate()) {
 		EXI_Unlock(EXI_CHANNEL_0);
 		return UIP_ERR_ABRT;
@@ -796,13 +796,13 @@ s8_t uip_bba_init(struct uip_netif *dev)
 	} while((ret=__bba_getlink_state_async())==0 && cnt<10000);
 	if(!ret) return UIP_ERR_IF;
 
-	dev->flags |= UIP_NETIF_FLAG_LINK_UP; 
+	dev->flags |= UIP_NETIF_FLAG_LINK_UP;
 	uip_netif_setup(dev);
 	uip_arp_init();
-	
+
 	bba_recv_pbufs = NULL;
 	bba_arp_tmr = gettime();
-	
+
 	return UIP_ERR_OK;
 }
 
@@ -810,13 +810,13 @@ uipdev_s uip_bba_create(struct uip_netif *dev)
 {
 	dev->name[0] = IFNAME0;
 	dev->name[1] = IFNAME1;
-	
+
 	dev->output = __bba_start_tx;
 	dev->linkoutput = __bba_link_tx;
 	dev->mtu = 1500;
 	dev->flags = UIP_NETIF_FLAG_BROADCAST;
 	dev->hwaddr_len = 6;
-	
+
 	bba_device.ethaddr = (struct uip_eth_addr*)dev->hwaddr;
 	bba_device.state = UIP_ERR_OK;
 
@@ -829,7 +829,7 @@ void uip_bba_poll(struct uip_netif *dev)
 	u16 status;
 
 	UIP_LOG("uip_bba_poll()\n");
-	
+
 	bba_devpoll(&status);
 
 }

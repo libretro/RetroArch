@@ -83,7 +83,7 @@ static __inline__ void spin_lock_irqsave(spinlock_t *lock,register u32 *p_isr_le
     register u32 tmp;
 
 	_CPU_ISR_Disable(level);
-		
+
     __asm__ __volatile__(
    "	b       1f                      # spin_lock\n\
 	2:  lwzx    %0,0,%1\n\
@@ -98,7 +98,7 @@ static __inline__ void spin_lock_irqsave(spinlock_t *lock,register u32 *p_isr_le
     : "=&r"(tmp)
     : "r"(lock), "r"(1)
     : "cr0", "memory");
-	
+
 	*p_isr_level = level;
 }
 

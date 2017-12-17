@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2013-2014 - Jason Fetters
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -38,12 +38,12 @@ static const char *null_hid_joypad_name(void *data, unsigned pad)
    return NULL;
 }
 
-static uint64_t null_hid_joypad_get_buttons(void *data, unsigned port)
+static void null_hid_joypad_get_buttons(void *data, unsigned port, retro_bits_t *state)
 {
    (void)data;
    (void)port;
 
-   return 0;
+   BIT256_CLEAR_ALL_PTR(state);
 }
 
 static bool null_hid_joypad_button(void *data, unsigned port, uint16_t joykey)

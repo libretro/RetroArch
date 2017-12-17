@@ -18,23 +18,26 @@ OBJ += wiiu/system/exception_handler.o
 OBJ += wiiu/system/missing_libc_functions.o
 OBJ += wiiu/fs/sd_fat_devoptab.o
 OBJ += wiiu/fs/fs_utils.o
-OBJ += wiiu/controller_patcher/ControllerPatcher.o
-OBJ += wiiu/controller_patcher/ControllerPatcherWrapper.o
-OBJ += wiiu/controller_patcher/ConfigReader.o
-OBJ += wiiu/controller_patcher/config/ConfigParser.o
-OBJ += wiiu/controller_patcher/config/ConfigValues.o
-OBJ += wiiu/controller_patcher/network/ControllerPatcherNet.o
-OBJ += wiiu/controller_patcher/network/TCPServer.o
-OBJ += wiiu/controller_patcher/network/UDPClient.o
-OBJ += wiiu/controller_patcher/network/UDPServer.o
-OBJ += wiiu/controller_patcher/patcher/ControllerPatcherUtils.o
-OBJ += wiiu/controller_patcher/patcher/ControllerPatcherHID.o
-OBJ += wiiu/controller_patcher/utils/CPRetainVars.o
-OBJ += wiiu/controller_patcher/utils/CPStringTools.o
-OBJ += wiiu/controller_patcher/utils/PadConst.o
-OBJ += wiiu/controller_patcher/utils/FSHelper.o
 OBJ += wiiu/tex_shader.o
 OBJ += wiiu/hbl.o
+
+ifeq ($(ENABLE_CONTROLLER_PATCHER), 1)
+	OBJ += wiiu/controller_patcher/ControllerPatcher.o
+	OBJ += wiiu/controller_patcher/ControllerPatcherWrapper.o
+	OBJ += wiiu/controller_patcher/ConfigReader.o
+	OBJ += wiiu/controller_patcher/config/ConfigParser.o
+	OBJ += wiiu/controller_patcher/config/ConfigValues.o
+	OBJ += wiiu/controller_patcher/network/ControllerPatcherNet.o
+	OBJ += wiiu/controller_patcher/network/TCPServer.o
+	OBJ += wiiu/controller_patcher/network/UDPClient.o
+	OBJ += wiiu/controller_patcher/network/UDPServer.o
+	OBJ += wiiu/controller_patcher/patcher/ControllerPatcherUtils.o
+	OBJ += wiiu/controller_patcher/patcher/ControllerPatcherHID.o
+	OBJ += wiiu/controller_patcher/utils/CPRetainVars.o
+	OBJ += wiiu/controller_patcher/utils/CPStringTools.o
+	OBJ += wiiu/controller_patcher/utils/PadConst.o
+	OBJ += wiiu/controller_patcher/utils/FSHelper.o
+endif
 
 DEFINES :=
 
@@ -68,6 +71,8 @@ else
 	HAVE_NETWORKING = 1
 	HAVE_CHEEVOS = 1
 #	WANT_IFADDRS = 1
+	HAVE_STATIC_VIDEO_FILTERS = 1
+	HAVE_STATIC_AUDIO_FILTERS = 1
 
 	include Makefile.common
 	BLACKLIST :=
@@ -83,24 +88,6 @@ else
 	OBJ += input/drivers_joypad/wiiu_joypad.o
 	OBJ += audio/drivers/wiiu_audio.o
 	OBJ += frontend/drivers/platform_wiiu.o
-	OBJ += gfx/video_filters/2xsai.o
-	OBJ += gfx/video_filters/super2xsai.o
-	OBJ += gfx/video_filters/supereagle.o
-	OBJ += gfx/video_filters/2xbr.o
-	OBJ += gfx/video_filters/darken.o
-	OBJ += gfx/video_filters/epx.o
-	OBJ += gfx/video_filters/scale2x.o
-	OBJ += gfx/video_filters/blargg_ntsc_snes.o
-	OBJ += gfx/video_filters/lq2x.o
-	OBJ += gfx/video_filters/phosphor2x.o
-	OBJ += libretro-common/audio/dsp_filters/echo.o
-	OBJ += libretro-common/audio/dsp_filters/eq.o
-	OBJ += libretro-common/audio/dsp_filters/chorus.o
-	OBJ += libretro-common/audio/dsp_filters/iir.o
-	OBJ += libretro-common/audio/dsp_filters/panning.o
-	OBJ += libretro-common/audio/dsp_filters/phaser.o
-	OBJ += libretro-common/audio/dsp_filters/reverb.o
-	OBJ += libretro-common/audio/dsp_filters/wahwah.o
 endif
 
 DEFINES += -DHAVE_KEYMAPPER
@@ -158,6 +145,9 @@ CFLAGS += -DWIIU -DMSB_FIRST
 CFLAGS += -DHAVE_MAIN
 CFLAGS += -DHAVE_UPDATE_ASSETS
 CFLAGS += -DRARCH_INTERNAL -DRARCH_CONSOLE
+ifeq ($(ENABLE_CONTROLLER_PATCHER), 1)
+	CFLAGS += -DENABLE_CONTROLLER_PATCHER
+endif
 CFLAGS += -DHAVE_FILTERS_BUILTIN $(DEFINES)
 
 ifneq ($(PC_DEVELOPMENT_IP_ADDRESS),)

@@ -63,7 +63,7 @@ msg_queue_t *msg_queue_new(size_t size)
    queue->size = size + 1;
 
    elems = (struct queue_elem**)calloc(queue->size,
-         sizeof(struct queue_elem*)); 
+         sizeof(struct queue_elem*));
 
    if (!elems)
    {
@@ -182,9 +182,9 @@ const char *msg_queue_pull(msg_queue_t *queue)
 {
    struct queue_elem *front  = NULL, *last = NULL;
    size_t tmp_ptr = 1;
-    
+
    (void)tmp_ptr;
-    
+
    /* Nothing in queue. */
    if (!queue || queue->ptr == 1)
       return NULL;

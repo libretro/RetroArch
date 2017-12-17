@@ -60,8 +60,8 @@ typedef struct _gx_rmodeobj {
 	u16 fbWidth;
 	u16 efbHeight;
 	u16 xfbHeight;
-	u16 viXOrigin;	
-	u16 viYOrigin;	
+	u16 viXOrigin;
+	u16 viYOrigin;
 	u16 viWidth;
 	u16 viHeight;
 	u32  xfbMode;

@@ -5158,7 +5158,7 @@ static stbi_uc *stbi__psd_load(stbi__context *s, int *x, int *y, int *comp, int 
       //     Else if n is 128, noop.
       // Endloop
 
-      /* The RLE-compressed data is preceeded by a 2-byte data count 
+      /* The RLE-compressed data is preceeded by a 2-byte data count
        * for each row in the data, which we're going to just skip. */
       stbi__skip(s, h * channelCount * 2 );
 
@@ -5948,7 +5948,7 @@ static float *stbi__hdr_load(stbi__context *s, int *x, int *y, int *comp, int re
          c2 = stbi__get8(s);
          len = stbi__get8(s);
          if (c1 != 2 || c2 != 2 || (len & 0x80)) {
-            /* not run-length encoded, so we have to 
+            /* not run-length encoded, so we have to
              * actually use THIS data as a decoded
              * pixel (note this can't be a valid pixel
              * --one of RGB must be >= 128) */

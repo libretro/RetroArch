@@ -251,7 +251,7 @@ int image_transfer_process(
 
 bool image_transfer_iterate(void *data, enum image_type_enum type)
 {
-   
+
    switch (type)
    {
       case IMAGE_TYPE_PNG:

@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -181,7 +181,7 @@ static void *ja_init(const char *device, unsigned rate, unsigned latency,
       RARCH_ERR("[JACK]: Failed to register ports.\n");
       goto error;
    }
-   
+
    jports = jack_get_ports(jd->client, NULL, NULL, JackPortIsPhysical | JackPortIsInput);
    if (jports == NULL)
    {
@@ -222,7 +222,7 @@ static void *ja_init(const char *device, unsigned rate, unsigned latency,
 
    for (i = 0; i < parsed; i++)
       free(dest_ports[i]);
-  
+
    jack_free(jports);
    return jd;
 

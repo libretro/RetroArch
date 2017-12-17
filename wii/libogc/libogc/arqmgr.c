@@ -76,16 +76,16 @@ static void __ARQMPollCallback(ARQRequest *req)
 void ARQM_Init(u32 arambase,s32 len)
 {
 	u32 i;
-	
+
 	if(len<=0) return;
 
 	__ARQMStackLocation = 0;
 	__ARQMStackPointer[0] = arambase;
 	__ARQMFreeBytes = len;
-	
+
 	for(i=0;i<ARQM_ZEROBYTES/sizeof(u32);i++) ((u32*)__ARQMZeroBuffer)[i] = 0;
 	ARQM_PushData(__ARQMZeroBuffer,ARQM_ZEROBYTES);
-	
+
 }
 
 u32 ARQM_PushData(void *buffer,s32 len)
@@ -98,7 +98,7 @@ u32 ARQM_PushData(void *buffer,s32 len)
 	rlen = ROUNDUP32(len);
 	if(__ARQMFreeBytes>=rlen && __ARQMStackLocation<(ARQM_STACKENTRIES-1)) {
 		ptr = &__ARQMInfo[__ARQMStackLocation];
-		
+
 		_CPU_ISR_Disable(level);
 		ptr->polled = FALSE;
 		ptr->aram_start = __ARQMStackPointer[__ARQMStackLocation++];

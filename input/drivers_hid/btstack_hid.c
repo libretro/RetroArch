@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2013-2014 - Jason Fetters
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -27,6 +27,7 @@
 #endif
 
 #include <boolean.h>
+#include <retro_miscellaneous.h>
 #include <rthreads/rthreads.h>
 #ifdef HAVE_DYNAMIC
 #include <dynamic/dylib.h>
@@ -44,13 +45,13 @@
 #define LINK_KEY_LEN       16
 /* The device name type. */
 #define DEVICE_NAME_LEN    248
-    
+
 /* Type definitions. */
 typedef uint16_t hci_con_handle_t;
 typedef uint8_t bd_addr_t[BD_ADDR_LEN];
 typedef uint8_t link_key_t[LINK_KEY_LEN];
 typedef uint8_t device_name_t[DEVICE_NAME_LEN+1];
-    
+
 /* Packet handler. */
 typedef void (*btstack_packet_handler_t) (uint8_t packet_type,
     uint16_t channel, uint8_t *packet, uint16_t size);
@@ -62,7 +63,7 @@ typedef enum
    HCI_POWER_ON,
    HCI_POWER_SLEEP
 } HCI_POWER_MODE;
-    
+
 /* State of BTstack */
 typedef enum
 {
@@ -73,14 +74,14 @@ typedef enum
    HCI_STATE_SLEEPING,
    HCI_STATE_FALLING_ASLEEP
 } HCI_STATE;
-    
+
 typedef enum
 {
    RUN_LOOP_POSIX = 1,
    RUN_LOOP_COCOA,
    RUN_LOOP_EMBEDDED
 } RUN_LOOP_TYPE;
-    
+
 /* compact HCI Command packet description */
 typedef struct
 {
@@ -93,7 +94,7 @@ typedef struct linked_item
    struct linked_item *next; /* <-- next element in list, or NULL */
    void *user_data;          /* <-- pointer to struct base */
 } linked_item_t;
-    
+
 typedef linked_item_t *linked_list_t;
 
 typedef struct data_source
@@ -108,7 +109,7 @@ typedef struct data_source
 
 typedef struct timer
 {
-   linked_item_t item; 
+   linked_item_t item;
    /* Next timeout. */
    struct timeval timeout;
 #ifdef HAVE_TICK
@@ -167,7 +168,7 @@ BTDIMPORT const hci_cmd_t* l2cap_decline_connection_ptr;
 
 /* extension for client/server communication */
 #define DAEMON_EVENT_PACKET                                 0x05
-    
+
 /* L2CAP data */
 #define L2CAP_DATA_PACKET                                   0x06
 
@@ -179,7 +180,7 @@ BTDIMPORT const hci_cmd_t* l2cap_decline_connection_ptr;
 
 /* Security Manager protocol data */
 #define SM_DATA_PACKET                                      0x09
-    
+
 /* debug log messages */
 #define LOG_MESSAGE_PACKET                                  0xFC
 
@@ -228,7 +229,7 @@ BTDIMPORT const hci_cmd_t* l2cap_decline_connection_ptr;
 #define HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE          0x03
 #define HCI_SUBEVENT_LE_READ_REMOTE_USED_FEATURES_COMPLETE  0x04
 #define HCI_SUBEVENT_LE_LONG_TERM_KEY_REQUEST               0x05
-    
+
 /* last used HCI_EVENT in 2.1 is 0x3d */
 
 /* events 0x50-0x5f are used internally */
@@ -257,7 +258,7 @@ BTDIMPORT const hci_cmd_t* l2cap_decline_connection_ptr;
 #define BTSTACK_EVENT_DISCOVERABLE_ENABLED                  0x66
 
 /* L2CAP EVENTS */
-	
+
 /* data: event (8), len(8), status (8), address(48), handle (16), psm (16), local_cid(16), remote_cid (16), local_mtu(16), remote_mtu(16)  */
 #define L2CAP_EVENT_CHANNEL_OPENED                          0x70
 
@@ -277,31 +278,31 @@ BTDIMPORT const hci_cmd_t* l2cap_decline_connection_ptr;
 #define L2CAP_EVENT_SERVICE_REGISTERED                      0x75
 
 /* RFCOMM EVENTS */
-	
+
 // data: event(8), len(8), status (8), address (48), handle (16), server channel(8), rfcomm_cid(16), max frame size(16)
 #define RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE                  0x80
-	
+
 // data: event(8), len(8), rfcomm_cid(16)
 #define RFCOMM_EVENT_CHANNEL_CLOSED                         0x81
-	
+
 // data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
 #define RFCOMM_EVENT_INCOMING_CONNECTION                    0x82
-	
+
 // data: event (8), len(8), rfcommid (16), ...
 #define RFCOMM_EVENT_REMOTE_LINE_STATUS                     0x83
-	
+
 /* data: event(8), len(8), rfcomm_cid(16), credits(8) */
 #define RFCOMM_EVENT_CREDITS                                0x84
-	
+
 /* data: event(8), len(8), status (8), rfcomm server channel id (8)  */
 #define RFCOMM_EVENT_SERVICE_REGISTERED                     0x85
-    
+
 /* data: event(8), len(8), status (8), rfcomm server channel id (8)  */
 #define RFCOMM_EVENT_PERSISTENT_CHANNEL                     0x86
-    
+
 /* data: event(8), len(8), status(8), service_record_handle(32) */
 #define SDP_SERVICE_REGISTERED                              0x90
-	
+
 /* last error code in 2.1 is 0x38 - we start with 0x50 for BTstack errors */
 
 #define BTSTACK_CONNECTION_TO_BTDAEMON_FAILED               0x50
@@ -329,14 +330,14 @@ BTDIMPORT const hci_cmd_t* l2cap_decline_connection_ptr;
 #define L2CAP_CONFIG_RESPONSE_RESULT_REJECTED               0x68
 #define L2CAP_CONFIG_RESPONSE_RESULT_UNKNOWN_OPTIONS        0x69
 #define L2CAP_SERVICE_ALREADY_REGISTERED                    0x6a
-    
+
 #define RFCOMM_MULTIPLEXER_STOPPED                          0x70
 #define RFCOMM_CHANNEL_ALREADY_REGISTERED                   0x71
 #define RFCOMM_NO_OUTGOING_CREDITS                          0x72
 
 #define SDP_HANDLE_ALREADY_REGISTERED                       0x80
- 
-/* Default INQ Mode 
+
+/* Default INQ Mode
  * 0x9E8B33: General/Unlimited Inquiry Access Code (GIAC)
  **/
 #define HCI_INQUIRY_LAP                                     0x9E8B33L
@@ -350,7 +351,7 @@ extern const hci_cmd_t btstack_get_system_bluetooth_enabled;
 extern const hci_cmd_t btstack_set_system_bluetooth_enabled;
 extern const hci_cmd_t btstack_set_discoverable;
 extern const hci_cmd_t btstack_set_bluetooth_enabled;    /* only used by btstack config */
-	
+
 extern const hci_cmd_t hci_accept_connection_request;
 extern const hci_cmd_t hci_authentication_requested;
 extern const hci_cmd_t hci_change_connection_link_key;
@@ -425,7 +426,7 @@ extern const hci_cmd_t hci_le_set_scan_response_data;
 extern const hci_cmd_t hci_le_start_encryption;
 extern const hci_cmd_t hci_le_test_end;
 extern const hci_cmd_t hci_le_transmitter_test;
-    
+
 extern const hci_cmd_t l2cap_accept_connection;
 extern const hci_cmd_t l2cap_create_channel;
 extern const hci_cmd_t l2cap_create_channel_mtu;
@@ -487,12 +488,12 @@ void run_loop_set_timer_handler(timer_source_t *ts,
       void (*process)(timer_source_t *_ts));
 
 /* Add timer source. */
-void run_loop_add_timer(timer_source_t *timer); 
+void run_loop_add_timer(timer_source_t *timer);
 
 /* Remove timer source. */
 int  run_loop_remove_timer(timer_source_t *timer);
 
-/* Init must be called before any other run_loop call. 
+/* Init must be called before any other run_loop call.
  * Use RUN_LOOP_EMBEDDED for embedded devices.
  */
 void run_loop_init(RUN_LOOP_TYPE type);
@@ -507,7 +508,7 @@ void run_loop_add_data_source(data_source_t *dataSource);
 /* Remove data source. */
 int  run_loop_remove_data_source(data_source_t *dataSource);
 
-/* Execute configured run loop. 
+/* Execute configured run loop.
  * This function does not return. */
 void run_loop_execute(void);
 
@@ -525,7 +526,7 @@ uint32_t embedded_get_ticks(void);
 
 /* Connection handle type. */
 
-	
+
 /* helper for BT little endian format. */
 #define READ_BT_16( buffer, pos) ( ((uint16_t) buffer[pos]) | (((uint16_t)buffer[pos+1]) << 8))
 #define READ_BT_24( buffer, pos) ( ((uint32_t) buffer[pos]) | (((uint32_t)buffer[pos+1]) << 8) | (((uint32_t)buffer[pos+2]) << 16))
@@ -573,18 +574,18 @@ void hexdump(void *data, int size);
 void printUUID(uint8_t *uuid);
 
 /* Deprecated - please use more convenient bd_addr_to_str. */
-void print_bd_addr( bd_addr_t addr);
+void print_bd_addr(bd_addr_t addr);
 
 char * bd_addr_to_str(bd_addr_t addr);
 
 int sscan_bd_addr(uint8_t * addr_string, bd_addr_t addr);
-    
+
 uint8_t crc8_check(uint8_t *data, uint16_t len, uint8_t check_sum);
 
 uint8_t crc8_calc(uint8_t *data, uint16_t len);
 
 /* btstack.h */
-	
+
 /* Default TCP port for BTstack daemon. */
 #define BTSTACK_PORT            13333
 
@@ -594,13 +595,13 @@ uint8_t crc8_calc(uint8_t *data, uint16_t len);
 
 /* Optional
  *
- * If called before bt_open, TCP socket is used 
+ * If called before bt_open, TCP socket is used
  * instead of local UNIX socket.
  *
- * note: Address is not copied and must be 
+ * note: Address is not copied and must be
  * valid during bt_open.
  */
-void bt_use_tcp(const char * address, uint16_t port); 
+void bt_use_tcp(const char * address, uint16_t port);
 
 /* Init BTstack library. */
 int bt_open(void);
@@ -611,7 +612,7 @@ int bt_close(void);
 /* Send HCI cmd packet. */
 int bt_send_cmd(const hci_cmd_t *cmd, ...);
 
-/* Register packet handler -- channel only valid 
+/* Register packet handler -- channel only valid
  for L2CAP and RFCOMM packets.
  */
 btstack_packet_handler_t bt_register_packet_handler(
@@ -783,7 +784,7 @@ static void btpad_queue_process_cmd(struct btpad_queue_command *cmd)
 {
     if (!cmd)
         return;
-    
+
     if (cmd->command == btstack_set_power_mode_ptr)
         bt_send_cmd_ptr(
                         cmd->command,
@@ -808,7 +809,7 @@ static void btpad_queue_process_cmd(struct btpad_queue_command *cmd)
                         cmd->hci_remote_name_request.page_scan_repetition_mode,
                         cmd->hci_remote_name_request.reserved,
                         cmd->hci_remote_name_request.clock_offset);
-    
+
     else if (cmd->command == hci_pin_code_request_reply_ptr)
         bt_send_cmd_ptr(
                         cmd->command,
@@ -889,7 +890,7 @@ static void btpad_queue_hci_remote_name_request(
 
    cmd->command = hci_remote_name_request_ptr;
    memcpy(cmd->hci_remote_name_request.bd_addr, bd_addr, sizeof(bd_addr_t));
-   cmd->hci_remote_name_request.page_scan_repetition_mode = 
+   cmd->hci_remote_name_request.page_scan_repetition_mode =
       page_scan_repetition_mode;
    cmd->hci_remote_name_request.reserved     = reserved;
    cmd->hci_remote_name_request.clock_offset = clock_offset;
@@ -1024,7 +1025,7 @@ static void btpad_packet_handler(uint8_t packet_type,
             if (!connection || connection->state != BTPAD_CONNECTED)
                continue;
 
-            if (     connection->channels[0] == channel 
+            if (     connection->channels[0] == channel
                   || connection->channels[1] == channel)
                pad_connection_packet(&slots[connection->slot], connection->slot, packet, size);
          }
@@ -1036,14 +1037,14 @@ static void btpad_packet_handler(uint8_t packet_type,
                RARCH_LOG("[BTstack]: HCI State %d.\n", packet[2]);
 
                switch (packet[2])
-               {                  
+               {
                   case HCI_STATE_WORKING:
                      btpad_queue_reset();
                      btpad_queue_hci_read_bd_addr(cmd);
 
                      /* TODO: Where did I get 672 for MTU? */
 
-                     bt_send_cmd_ptr(l2cap_register_service_ptr, PSM_HID_CONTROL,   672);  
+                     bt_send_cmd_ptr(l2cap_register_service_ptr, PSM_HID_CONTROL,   672);
                      bt_send_cmd_ptr(l2cap_register_service_ptr, PSM_HID_INTERRUPT, 672);
                      btpad_queue_hci_inquiry(cmd, HCI_INQUIRY_LAP, 3, 1);
 
@@ -1052,7 +1053,7 @@ static void btpad_packet_handler(uint8_t packet_type,
 
                   case HCI_STATE_HALTING:
                      btpad_close_all_connections();
-                     break;                  
+                     break;
                }
                break;
 
@@ -1100,7 +1101,7 @@ static void btpad_packet_handler(uint8_t packet_type,
                break;
 
             case HCI_EVENT_INQUIRY_COMPLETE:
-               /* This must be turned off during gameplay 
+               /* This must be turned off during gameplay
                 * as it causes a ton of lag. */
                inquiry_running = !inquiry_off;
 
@@ -1363,26 +1364,29 @@ static const char *btstack_hid_joypad_name(void *data, unsigned pad)
    return NULL;
 }
 
-static uint64_t btstack_hid_joypad_get_buttons(void *data, unsigned port)
+static void btstack_hid_joypad_get_buttons(void *data, unsigned port, retro_bits_t *state)
 {
-   btstack_hid_t        *hid   = (btstack_hid_t*)data;
-   if (hid)
-      return pad_connection_get_buttons(&hid->slots[port], port);
-   return 0;
+  btstack_hid_t        *hid   = (btstack_hid_t*)data;
+  if (hid)
+    pad_connection_get_buttons(&hid->slots[port], port, state);
+  else
+    BIT256_CLEAR_ALL_PTR(state);
 }
 
 static bool btstack_hid_joypad_button(void *data, unsigned port, uint16_t joykey)
 {
-   uint64_t buttons          = btstack_hid_joypad_get_buttons(data, port);
+  retro_bits_t buttons;
+  btstack_hid_joypad_get_buttons(data, port, &buttons);
 
-   /* Check hat. */
-   if (GET_HAT_DIR(joykey))
-      return false;
+  /* Check hat. */
+  if (GET_HAT_DIR(joykey))
+    return false;
 
-   /* Check the button. */
-   if ((port < MAX_USERS) && (joykey < 32))
-      return ((buttons & (1 << joykey)) != 0);
-   return false;
+  /* Check the button. */
+  if ((port < MAX_USERS) && (joykey < 32))
+    return (BIT256_GET(buttons, joykey) != 0);
+
+  return false;
 }
 
 static bool btstack_hid_joypad_rumble(void *data, unsigned pad,

@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2016-2017 - Gregor Richards
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -128,8 +128,8 @@ bool netplay_discovery_driver_ctl(enum rarch_netplay_discovery_ctl_state state, 
 {
 #ifndef RARCH_CONSOLE
    char port_str[6];
-   int k = 0;
    int ret;
+   unsigned k = 0;
 
    if (lan_ad_client_fd < 0)
       return false;
@@ -138,10 +138,9 @@ bool netplay_discovery_driver_ctl(enum rarch_netplay_discovery_ctl_state state, 
    {
       case RARCH_NETPLAY_DISCOVERY_CTL_LAN_SEND_QUERY:
       {
-         struct addrinfo hints = {0}, *addr;
-         int canBroadcast = 1;
-
          net_ifinfo_t interfaces;
+         struct addrinfo hints = {0}, *addr;
+         int canBroadcast      = 1;
 
          if (!net_ifinfo_new(&interfaces))
             return false;
@@ -162,7 +161,7 @@ bool netplay_discovery_driver_ctl(enum rarch_netplay_discovery_ctl_state state, 
          memcpy((void *) &ad_packet_buffer, "RANQ", 4);
          ad_packet_buffer.protocol_version = htonl(NETPLAY_PROTOCOL_VERSION);
 
-         for (k=0; k < interfaces.size; k++)
+         for (k = 0; k < (unsigned)interfaces.size; k++)
          {
             strlcpy(ad_packet_buffer.address, interfaces.entries[k].host,
                NETPLAY_HOST_STR_LEN);
@@ -233,11 +232,12 @@ bool netplay_lan_ad_server(netplay_t *netplay)
 /* Todo: implement net_ifinfo and ntohs for consoles */
 #ifndef RARCH_CONSOLE
    fd_set fds;
+   int ret;
    struct timeval tmp_tv = {0};
    struct sockaddr their_addr;
    socklen_t addr_size;
    rarch_system_info_t *info = NULL;
-   int ret, k = 0;
+   unsigned k = 0;
    char reply_addr[NETPLAY_HOST_STR_LEN], port_str[6];
    struct addrinfo *our_addr, hints = {0};
 
@@ -248,7 +248,7 @@ bool netplay_lan_ad_server(netplay_t *netplay)
 
    if (lan_ad_server_fd < 0 && !init_lan_ad_server_socket(netplay, RARCH_DEFAULT_PORT))
        return false;
-      
+
    /* Check for any ad queries */
    while (1)
    {
@@ -295,10 +295,10 @@ bool netplay_lan_ad_server(netplay_t *netplay)
             if (p)
             {
                strlcpy(sub, reply_addr, p - reply_addr + 1);
-               if (strstr(interfaces.entries[k].host, sub) && 
+               if (strstr(interfaces.entries[k].host, sub) &&
                   !strstr(interfaces.entries[k].host, "127.0.0.1"))
                {
-                  RARCH_LOG ("[discovery] query received on common interface: %s/%s (theirs / ours) \n", 
+                  RARCH_LOG ("[discovery] query received on common interface: %s/%s (theirs / ours) \n",
                      reply_addr, interfaces.entries[k].host);
 
                   info = runloop_get_system_info();
@@ -317,7 +317,7 @@ bool netplay_lan_ad_server(netplay_t *netplay)
                   strlcpy(ad_packet_buffer.retroarch_version, PACKAGE_VERSION,
                      NETPLAY_HOST_STR_LEN);
                   strlcpy(ad_packet_buffer.content, !string_is_empty(
-                           path_basename(path_get(RARCH_PATH_BASENAME))) 
+                           path_basename(path_get(RARCH_PATH_BASENAME)))
                         ? path_basename(path_get(RARCH_PATH_BASENAME)) : "N/A",
                         NETPLAY_HOST_LONGSTR_LEN);
                   strlcpy(ad_packet_buffer.nick, netplay->nick, NETPLAY_HOST_STR_LEN);
@@ -483,7 +483,7 @@ static bool netplay_lan_ad_client(void)
          strlcpy(host->content, ad_packet_buffer.content,
             NETPLAY_HOST_LONGSTR_LEN);
 
-         host->content_crc                  = 
+         host->content_crc                  =
             atoi(ad_packet_buffer.content_crc);
          host->nick[NETPLAY_HOST_STR_LEN-1] =
             host->core[NETPLAY_HOST_STR_LEN-1] =

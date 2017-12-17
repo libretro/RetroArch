@@ -77,7 +77,7 @@ static void __ARQServiceQueueLo()
 		req = (ARQRequest*)__lwp_queue_getI(&__ARQReqQueueLo);
 		__ARQReqPendingLo = req;
 	}
-	
+
 	req = __ARQReqPendingLo;
 	if(req) {
 		req->state = ARQ_TASK_RUNNING;
@@ -121,7 +121,7 @@ void ARQ_Init()
 	__ARQReqPendingHi = NULL;
 	__ARQCallbackLo = NULL;
 	__ARQCallbackHi = NULL;
-	
+
 	__ARQChunkSize = ARQ_DEF_CHUNK_SIZE;
 
 	LWP_InitQueue(&__ARQSyncQueue);
@@ -161,7 +161,7 @@ void ARQ_FlushQueue()
 	u32 level;
 
 	_CPU_ISR_Disable(level);
-	
+
 	__lwp_queue_init_empty(&__ARQReqQueueLo);
 	__lwp_queue_init_empty(&__ARQReqQueueHi);
 	if(!__ARQCallbackLo) __ARQReqPendingLo = NULL;
@@ -182,7 +182,7 @@ void ARQ_PostRequestAsync(ARQRequest *req,u32 owner,u32 dir,u32 prio,u32 aram_ad
 	req->len = len;
 	req->prio = prio;
 	req->callback = (cb==NULL) ? __ARQCallbackDummy : cb;
-	
+
 	_CPU_ISR_Disable(level);
 
 	if(prio==ARQ_PRIO_LO) __lwp_queue_appendI(&__ARQReqQueueLo,&req->node);
@@ -230,7 +230,7 @@ u32 ARQ_RemoveOwnerRequest(u32 owner)
 	ARQRequest *req;
 
 	_CPU_ISR_Disable(level);
-	
+
 	cnt = 0;
 	req = (ARQRequest*)__ARQReqQueueHi.first;
 	while(req!=(ARQRequest*)__lwp_queue_tail(&__ARQReqQueueHi)) {

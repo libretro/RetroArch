@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -64,7 +64,7 @@ static void gfx_ctx_null_destroy(void *data)
    (void)data;
 }
 
-static void gfx_ctx_null_input_driver(void *data, 
+static void gfx_ctx_null_input_driver(void *data,
       const char *name,
       const input_driver_t **input, void **input_data)
 {

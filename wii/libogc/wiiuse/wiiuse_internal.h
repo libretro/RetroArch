@@ -41,7 +41,7 @@
  *	internally, wiiuse.h is included only here.
  */
 
-/* This source as presented is a modified version of original wiiuse for use 
+/* This source as presented is a modified version of original wiiuse for use
  * with RetroArch, and must not be confused with the original software. */
 
 #ifndef WIIUSE_INTERNAL_H_INCLUDED

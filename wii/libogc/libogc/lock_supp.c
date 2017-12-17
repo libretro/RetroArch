@@ -19,7 +19,7 @@ int __libogc_lock_init(int *lock,int recursive)
 	mutex_t retlck = LWP_MUTEX_NULL;
 
 	if(!lock) return -1;
-	
+
 	*lock = 0;
 	ret = LWP_MutexInit(&retlck,(recursive?TRUE:FALSE));
 	if(ret==0) *lock = (int)retlck;
@@ -31,9 +31,9 @@ int __libogc_lock_close(int *lock)
 {
 	s32 ret;
 	mutex_t plock;
-	
+
 	if(!lock || *lock==0) return -1;
-	
+
 	plock = (mutex_t)*lock;
 	ret = LWP_MutexDestroy(plock);
 	if(ret==0) *lock = 0;
@@ -44,7 +44,7 @@ int __libogc_lock_close(int *lock)
 int __libogc_lock_acquire(int *lock)
 {
 	mutex_t plock;
-	
+
 	if(!lock || *lock==0) return -1;
 
 	plock = (mutex_t)*lock;
@@ -55,7 +55,7 @@ int __libogc_lock_acquire(int *lock)
 int __libogc_lock_release(int *lock)
 {
 	mutex_t plock;
-	
+
 	if(!lock || *lock==0) return -1;
 
 	plock = (mutex_t)*lock;

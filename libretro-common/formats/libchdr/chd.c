@@ -215,7 +215,7 @@ struct _lzma_allocator
 };
 
 typedef struct _lzma_codec_data lzma_codec_data;
-struct _lzma_codec_data 
+struct _lzma_codec_data
 {
 	CLzmaDec		decoder;
 	lzma_allocator	allocator;
@@ -520,7 +520,7 @@ chd_error lzma_codec_init(void* codec, uint32_t hunkbytes)
 	/* do memory allocations */
 	if (LzmaDec_Allocate(&lzma_codec->decoder, decoder_props, LZMA_PROPS_SIZE, (ISzAlloc*)alloc) != SZ_OK)
 		return CHDERR_DECOMPRESSION_ERROR;
-	
+
 	/* Okay */
 	return CHDERR_NONE;
 }
@@ -576,7 +576,7 @@ chd_error cdlz_codec_init(void* codec, uint32_t hunkbytes)
 	cdlz->buffer = (uint8_t*)malloc(sizeof(uint8_t) * hunkbytes);
 	if (cdlz->buffer == NULL)
 		return CHDERR_OUT_OF_MEMORY;
-	
+
 	ret = lzma_codec_init(&cdlz->base_decompressor, (hunkbytes / CD_FRAME_SIZE) * CD_MAX_SECTOR_DATA);
 	if (ret != CHDERR_NONE)
 		return ret;
@@ -894,7 +894,7 @@ static const codec_interface codec_interfaces[] =
 		cdzl_codec_free,
 		cdzl_codec_decompress,
 		NULL
-	},	
+	},
 
 	/* V5 CD lzma compression */
 	{
@@ -905,7 +905,7 @@ static const codec_interface codec_interfaces[] =
 		cdlz_codec_free,
 		cdlz_codec_decompress,
 		NULL
-	},		
+	},
 
 	/* V5 CD flac compression */
 	{
@@ -916,7 +916,7 @@ static const codec_interface codec_interfaces[] =
 		cdfl_codec_free,
 		cdfl_codec_decompress,
 		NULL
-	},		
+	},
 };
 
 /***************************************************************************
@@ -970,7 +970,7 @@ static INLINE UINT64 get_bigendian_uint48(const UINT8 *base)
 
 static INLINE void put_bigendian_uint48(UINT8 *base, UINT64 value)
 {
-	value &= 0xffffffffffff; 
+	value &= 0xffffffffffff;
 	base[0] = value >> 40;
 	base[1] = value >> 32;
 	base[2] = value >> 24;
@@ -1403,7 +1403,7 @@ chd_error chd_open_file(core_file *file, int mode, chd_file *parent, chd_file **
 		if (err != CHDERR_NONE)
 			EARLY_EXIT(err);
 	}
-	else 
+	else
 	{
 		err = decompress_v5_map(newchd, &(newchd->header));
         (void)err;
@@ -1461,7 +1461,7 @@ chd_error chd_open_file(core_file *file, int mode, chd_file *parent, chd_file **
                     }
 
 					/* initialize the codec */
-					if (newchd->codecintf[decompnum]->init != NULL) 
+					if (newchd->codecintf[decompnum]->init != NULL)
 					{
 						void* codec = NULL;
 						switch (newchd->header.compression[decompnum])
@@ -1484,7 +1484,7 @@ chd_error chd_open_file(core_file *file, int mode, chd_file *parent, chd_file **
                             (void)err;
                         }
 					}
-					
+
 				}
 			}
 		}
@@ -1998,7 +1998,7 @@ static chd_error header_read(core_file *file, chd_header *header)
 	}
 
 	/* Unknown version */
-	else 
+	else
 	{
 		/* TODO */
 	}

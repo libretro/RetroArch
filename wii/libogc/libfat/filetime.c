@@ -3,7 +3,7 @@
  Conversion of file time and date values to various other types
 
  Copyright (c) 2006 Michael "Chishm" Chisholm
-	
+
  Redistribution and use in source and binary forms, with or without modification,
  are permitted provided that the following conditions are met:
 
@@ -44,7 +44,7 @@ uint16_t _FAT_filetime_getTimeFromRTC (void) {
 #ifdef USE_RTC_TIME
 	struct tm timeParts;
 	time_t epochTime;
-	
+
 	if (time(&epochTime) == (time_t)-1) {
 		return 0;
 	}
@@ -55,11 +55,11 @@ uint16_t _FAT_filetime_getTimeFromRTC (void) {
 	if ((timeParts.tm_hour < 0) || (timeParts.tm_hour > MAX_HOUR))	return 0;
 	if ((timeParts.tm_min < 0) || (timeParts.tm_min > MAX_MINUTE)) return 0;
 	if ((timeParts.tm_sec < 0) || (timeParts.tm_sec > MAX_SECOND)) return 0;
-	
+
 	return (
 		((timeParts.tm_hour & 0x1F) << 11) |
 		((timeParts.tm_min & 0x3F) << 5) |
-		((timeParts.tm_sec >> 1) & 0x1F) 
+		((timeParts.tm_sec >> 1) & 0x1F)
 	);
 #else
 	return 0;
@@ -71,7 +71,7 @@ uint16_t _FAT_filetime_getDateFromRTC (void) {
 #ifdef USE_RTC_TIME
 	struct tm timeParts;
 	time_t epochTime;
-	
+
 	if (time(&epochTime) == (time_t)-1) {
 		return 0;
 	}
@@ -79,8 +79,8 @@ uint16_t _FAT_filetime_getDateFromRTC (void) {
 
 	if ((timeParts.tm_mon < MIN_MONTH) || (timeParts.tm_mon > MAX_MONTH)) return 0;
 	if ((timeParts.tm_mday < MIN_DAY) || (timeParts.tm_mday > MAX_DAY)) return 0;
-	
-	return ( 
+
+	return (
 		(((timeParts.tm_year - 80) & 0x7F) <<9) |	// Adjust for MS-FAT base year (1980 vs 1900 for tm_year)
 		(((timeParts.tm_mon + 1) & 0xF) << 5) |
 		(timeParts.tm_mday & 0x1F)
@@ -96,12 +96,12 @@ time_t _FAT_filetime_to_time_t (uint16_t t, uint16_t d) {
 	timeParts.tm_hour = t >> 11;
 	timeParts.tm_min = (t >> 5) & 0x3F;
 	timeParts.tm_sec = (t & 0x1F) << 1;
-	
+
 	timeParts.tm_mday = d & 0x1F;
 	timeParts.tm_mon = ((d >> 5) & 0x0F) - 1;
 	timeParts.tm_year = (d >> 9) + 80;
-	
+
 	timeParts.tm_isdst = 0;
-	
+
 	return mktime(&timeParts);
 }

@@ -57,7 +57,7 @@ static int action_select_default(const char *path, const char *label, unsigned t
       menu_entry_free(&entry);
       return -1;
    }
-    
+
    if (cbs->setting)
    {
       switch (setting_get_type(cbs->setting))
@@ -80,7 +80,7 @@ static int action_select_default(const char *path, const char *label, unsigned t
             break;
       }
    }
-    
+
    if (action == MENU_ACTION_NOOP)
    {
        if (cbs->action_ok)
@@ -93,14 +93,14 @@ static int action_select_default(const char *path, const char *label, unsigned t
                action = MENU_ACTION_RIGHT;
        }
    }
-    
+
    if (action != MENU_ACTION_NOOP)
        ret = menu_entry_action(&entry, (unsigned)idx, action);
 
    menu_entry_free(&entry);
 
    task_queue_check();
-    
+
    return ret;
 }
 
@@ -269,7 +269,7 @@ int menu_cbs_init_bind_select(menu_file_list_cbs_t *cbs,
       BIND_ACTION_SELECT(cbs, action_select_netplay_connect_room);
       return 0;
    }
-#endif  
+#endif
 
    if (cbs->setting)
    {

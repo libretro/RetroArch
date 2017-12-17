@@ -193,6 +193,12 @@ int getaddrinfo_retro(const char *node, const char *service,
    in_addr->sin_family = AF_INET;
    in_addr->sin_port   = inet_htons(strtoul(service, NULL, 0));
 
+   //sin_port seems to be the wrong endian for ps3
+   #if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
+   in_addr->sin_port = (in_addr->sin_port>>8) | (in_addr->sin_port<<8);
+   #endif
+
+
    if (!node && (hints->ai_flags & AI_PASSIVE))
       in_addr->sin_addr.s_addr = INADDR_ANY;
    else if (node && isdigit(*node))
@@ -204,7 +210,14 @@ int getaddrinfo_retro(const char *node, const char *service,
       if (!host || !host->h_addr_list[0])
          goto error;
 
+      in_addr->sin_family = host->h_addrtype;
+
+#ifdef AF_INET6
+      /* TODO/FIXME - In case we ever want to support IPv6 */
       in_addr->sin_addr.s_addr = inet_addr(host->h_addr_list[0]);
+#else
+      memcpy(&in_addr->sin_addr, host->h_addr, host->h_length);
+#endif
    }
    else
       goto error;
@@ -295,7 +308,7 @@ bool network_init(void)
 
       sceNetCtlInit();
    }
-   
+
    retro_epoll_fd = sceNetEpollCreate("epoll", 0);
 #elif defined(GEKKO)
    char t[16];
@@ -358,7 +371,7 @@ static int inet_aton(const char *cp, struct in_addr *addr)
 int inet_ptrton(int af, const char *src, void *dst)
 {
 #if defined(VITA) || defined(__ORBIS__)
-   return sceNetInetPton(af, src, dst);	
+   return sceNetInetPton(af, src, dst);
 #elif defined(GEKKO) || defined(_WIN32)
    /* TODO/FIXME - should use InetPton on Vista and later */
    return inet_aton(src, (struct in_addr*)dst);
@@ -385,7 +398,7 @@ struct in_addr6_compat
 #ifndef IM_INADDRSZ
 #define	IM_INADDRSZ		4
 #endif
-/* Taken from https://github.com/skywind3000/easenet/blob/master/inetbase.c 
+/* Taken from https://github.com/skywind3000/easenet/blob/master/inetbase.c
  */
 
 /* convert presentation format to network format */
@@ -438,7 +451,7 @@ inet_ntop6x(const unsigned char *src, char *dst, size_t size)
             cur.len  = 1;
          }
          else cur.len++;
-      } 
+      }
       else
       {
          if (cur.base != -1)
@@ -482,8 +495,8 @@ inet_ntop6x(const unsigned char *src, char *dst, size_t size)
       tp += inc;
    }
 
-   if (best.base != -1 && (best.base + best.len) == 
-         (IM_IN6ADDRSZ / IM_INT16SZ)) 
+   if (best.base != -1 && (best.base + best.len) ==
+         (IM_IN6ADDRSZ / IM_INT16SZ))
       *tp++ = ':';
 
    *tp++ = '\0';

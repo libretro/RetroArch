@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2015 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -80,6 +80,12 @@ struct udev_joypad
    char *path;
    int32_t vid;
    int32_t pid;
+};
+
+struct joypad_udev_entry
+{
+   const char *devnode;
+   struct udev_list_entry *item;
 };
 
 static struct udev *udev_joypad_fd             = NULL;
@@ -204,7 +210,7 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
          i = ABS_HAT3Y;
          continue;
       }
-      
+
       if (test_bit(i, absbit))
       {
          struct input_absinfo *abs = &pad->absinfo[axes];
@@ -420,11 +426,11 @@ static bool udev_set_rumble(unsigned i,
 
 static bool udev_joypad_poll_hotplug_available(struct udev_monitor *dev)
 {
-   struct pollfd fds;		
+   struct pollfd fds;
 
-   fds.fd      = udev_monitor_get_fd(dev);		
-   fds.events  = POLLIN;		
-   fds.revents = 0;		
+   fds.fd      = udev_monitor_get_fd(dev);
+   fds.events  = POLLIN;
+   fds.revents = 0;
 
    return (poll(&fds, 1, 0) == 1) && (fds.revents & POLLIN);
 }
@@ -526,12 +532,22 @@ static void udev_joypad_poll(void)
    }
 }
 
+/* Used for sorting devnodes to appear in the correct order */
+static int sort_devnodes(const void *a, const void *b)
+{
+   const struct joypad_udev_entry *aa = a;
+   const struct joypad_udev_entry *bb = b;
+   return strcmp(aa->devnode, bb->devnode);
+}
+
 static bool udev_joypad_init(void *data)
 {
    unsigned i;
+   unsigned sorted_count = 0;
    struct udev_list_entry *devs     = NULL;
    struct udev_list_entry *item     = NULL;
    struct udev_enumerate *enumerate = NULL;
+   struct joypad_udev_entry sorted[MAX_USERS];
 
    (void)data;
 
@@ -561,6 +577,26 @@ static bool udev_joypad_init(void *data)
    for (item = devs; item; item = udev_list_entry_get_next(item))
    {
       const char         *name = udev_list_entry_get_name(item);
+      struct udev_device  *dev = udev_device_new_from_syspath(udev_joypad_fd, name);
+      const char      *devnode = udev_device_get_devnode(dev);
+
+      if (devnode != NULL) {
+         sorted[sorted_count].devnode = devnode;
+         sorted[sorted_count].item = item;
+         sorted_count++;
+      } else {
+         udev_device_unref(dev);
+      }
+   }
+
+   /* Sort the udev entries by devnode name so that they are
+    * created in the proper order */
+   qsort(sorted, sorted_count,
+         sizeof(struct joypad_udev_entry), sort_devnodes);
+
+   for (i = 0; i < sorted_count; i++)
+   {
+      const char         *name = udev_list_entry_get_name(sorted[i].item);
       struct udev_device  *dev = udev_device_new_from_syspath(udev_joypad_fd, name);
       const char      *devnode = udev_device_get_devnode(dev);
 
@@ -604,10 +640,15 @@ static bool udev_joypad_button(unsigned port, uint16_t joykey)
    return joykey < UDEV_NUM_BUTTONS && BIT64_GET(pad->buttons, joykey);
 }
 
-static uint64_t udev_joypad_get_buttons(unsigned port)
+static void udev_joypad_get_buttons(unsigned port, retro_bits_t *state)
 {
-   const struct udev_joypad *pad = (const struct udev_joypad*)&udev_pads[port];
-   return pad->buttons;
+	const struct udev_joypad *pad = (const struct udev_joypad*)&udev_pads[port];
+	if (pad)
+   {
+		BITS_COPY16_PTR( state, pad->buttons );
+	}
+   else
+      BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t udev_joypad_axis(unsigned port, uint32_t joyaxis)

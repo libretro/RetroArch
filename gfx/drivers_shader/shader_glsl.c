@@ -129,6 +129,7 @@ static const char *glsl_prefixes[] = {
 #include "../drivers/gl_shaders/modern_pipeline_xmb_ribbon.glsl.vert.h"
 #include "../drivers/gl_shaders/pipeline_xmb_ribbon.glsl.frag.h"
 #include "../drivers/gl_shaders/pipeline_bokeh.glsl.frag.h"
+#include "../drivers/gl_shaders/pipeline_snowflake.glsl.frag.h"
 #endif
 
 typedef struct glsl_shader_data
@@ -524,7 +525,7 @@ static bool gl_glsl_compile_programs(
        * load the file here, and pretend
        * we were really using XML all along.
        */
-      if (     !string_is_empty(pass->source.path) 
+      if (     !string_is_empty(pass->source.path)
             && !gl_glsl_load_source_path(pass, pass->source.path))
       {
          RARCH_ERR("Failed to load GLSL shader: %s.\n",
@@ -736,7 +737,7 @@ static void gl_glsl_destroy_resources(glsl_shader_data_t *glsl)
       return;
 
    glsl->current_idx = 0;
-   
+
    glUseProgram(0);
 
    for (i = 0; i < GFX_MAX_SHADERS; i++)
@@ -1095,6 +1096,21 @@ static void *gl_glsl_init(void *data, const char *path)
          &shader_prog_info);
    gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU_5].id,
          &glsl->uniforms[VIDEO_SHADER_MENU_5]);
+
+#if defined(HAVE_OPENGLES)
+   shader_prog_info.vertex   = stock_vertex_xmb_snow_modern;
+#else
+   shader_prog_info.vertex   = glsl_core ? stock_vertex_xmb_snow_modern : stock_vertex_xmb_snow_legacy;
+#endif
+   shader_prog_info.fragment = stock_fragment_xmb_snowflake;
+
+   gl_glsl_compile_program(
+         glsl,
+         VIDEO_SHADER_MENU_6,
+         &glsl->prg[VIDEO_SHADER_MENU_6],
+         &shader_prog_info);
+   gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU_6].id,
+         &glsl->uniforms[VIDEO_SHADER_MENU_6]);
 #endif
 
    gl_glsl_reset_attrib(glsl);
@@ -1449,8 +1465,8 @@ static bool gl_glsl_set_mvp(void *data, void *shader_data, const void *mat_data)
    {
       const math_matrix_4x4 *mat = (const math_matrix_4x4*)mat_data;
 
-      if (  (glsl->current_idx != glsl->active_idx) || 
-            (mat->data  != glsl->current_mat_data_pointer[glsl->active_idx]) || 
+      if (  (glsl->current_idx != glsl->active_idx) ||
+            (mat->data  != glsl->current_mat_data_pointer[glsl->active_idx]) ||
             (*mat->data != glsl->current_mat_data[glsl->active_idx]))
       {
          glUniformMatrix4fv(loc, 1, GL_FALSE, mat->data);
@@ -1481,7 +1497,7 @@ static bool gl_glsl_set_coords(void *handle_data, void *shader_data,
    size_t                       size = 0;
    GLfloat *buffer                   = short_buffer;
    glsl_shader_data_t          *glsl = (glsl_shader_data_t*)shader_data;
-   const struct shader_uniforms *uni = glsl 
+   const struct shader_uniforms *uni = glsl
       ? &glsl->uniforms[glsl->active_idx] : NULL;
 
    if (!glsl || !glsl->shader->modern || !coords)

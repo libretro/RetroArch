@@ -31,11 +31,11 @@ distribution.
 #ifndef __CARD_H__
 #define __CARD_H__
 
-/*! 
-\file card.h 
+/*!
+\file card.h
 \brief Memory card subsystem
 
-*/ 
+*/
 
 
 #include <gctypes.h>
@@ -52,7 +52,7 @@ distribution.
 
 #define CARD_WORKAREA				(5*8*1024)	/*!< minimum size of the workarea passed to Mount[Async]() */
 #define CARD_READSIZE				512			/*!< minimum size of block to read from memory card */
-#define CARD_FILENAMELEN			32			/*!< maximum filename length */	
+#define CARD_FILENAMELEN			32			/*!< maximum filename length */
 #define CARD_MAXFILES				128			/*!< maximum number of files on the memory card */
 
 /*! \addtogroup card_errors Memory card error codes
@@ -145,16 +145,16 @@ typedef struct _card_file {
 \param company[2] string identifier <=2.
 \param showall boolean flag whether to showall entries or ony those identified by card_gamecode and card_company, previously set within the call to CARD_Init()
 */
-typedef struct _card_dir { 
-      s32 chn; 
-      u32 fileno; 
+typedef struct _card_dir {
+      s32 chn;
+      u32 fileno;
 	  u32 filelen;
 	  u8 permissions;
-      u8 filename[CARD_FILENAMELEN]; 
-      u8 gamecode[4]; 
+      u8 filename[CARD_FILENAMELEN];
+      u8 gamecode[4];
       u8 company[2];
       bool showall;
-} card_dir; 
+} card_dir;
 
 
 /*! \typedef struct card_stat
@@ -163,7 +163,7 @@ typedef struct _card_dir {
 \param len length of file.
 \param gamecode[4] string identifier <=4.
 \param company[2] string identifier <=2.
-\param banner_fmt format of banner. 
+\param banner_fmt format of banner.
 \param icon_addr icon image address in file.
 \param icon_speed speed of an animated icon.
 \param comment_addr address in file of the comment block.
@@ -461,7 +461,7 @@ s32 CARD_GetErrorCode(s32 chn);
 \return \ref card_errors "card error codes"
 */
 s32 CARD_FindFirst(s32 chn, card_dir *dir, bool showall);
- 
+
 
 /*! \fn s32 CARD_FindNext(card_dir *dir)
 \brief Returns the next directory entry from the memory cards directory structure.
@@ -469,7 +469,7 @@ s32 CARD_FindFirst(s32 chn, card_dir *dir, bool showall);
 
 \return \ref card_errors "card error codes"
 */
-s32 CARD_FindNext(card_dir *dir); 
+s32 CARD_FindNext(card_dir *dir);
 
 
 /*! \fn s32 CARD_GetDirectory(s32 chn, card_dir *dir_entries, s32 *count, bool showall)
@@ -482,7 +482,7 @@ s32 CARD_FindNext(card_dir *dir);
 \return \ref card_errors "card error codes"
 */
 s32 CARD_GetDirectory(s32 chn, card_dir *dir_entries, s32 *count, bool showall);
- 
+
 
 /*! \fn s32 CARD_GetSectorSize(s32 chn,u32 *sector_size)
 \brief Returns the next directory entry from the memory cards directory structure.

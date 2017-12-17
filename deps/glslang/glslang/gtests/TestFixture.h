@@ -258,7 +258,7 @@ public:
 
         glslang::TProgram program;
         program.addShader(&shader);
-        
+
         success &= program.link(controls);
         success &= program.mapIO();
 
@@ -330,7 +330,7 @@ public:
             std::vector<uint32_t> spirv_binary(code); // scratch copy
 
             spv::spirvbin_t(0 /*verbosity*/).remap(spirv_binary, remapOptions);
-            
+
             std::ostringstream disassembly_stream;
             spv::Parameterize();
             spv::Disassemble(disassembly_stream, spirv_binary);

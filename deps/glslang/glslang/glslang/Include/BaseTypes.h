@@ -84,7 +84,7 @@ enum TStorageQualifier {
     EvqUniform,       // read only, shared with app
     EvqBuffer,        // read/write, shared with app
     EvqShared,        // compute shader's read/write 'shared' qualifier
-    
+
     // parameters
     EvqIn,            // also, for 'in' in the grammar before we know if it's a pipeline input or an 'in' parameter
     EvqOut,           // also, for 'out' in the grammar before we know if it's a pipeline output or an 'out' parameter
@@ -212,7 +212,7 @@ enum TBuiltInVariable {
 };
 
 // These will show up in error messages
-__inline const char* GetStorageQualifierString(TStorageQualifier q) 
+__inline const char* GetStorageQualifierString(TStorageQualifier q)
 {
     switch (q) {
     case EvqTemporary:      return "temp";           break;

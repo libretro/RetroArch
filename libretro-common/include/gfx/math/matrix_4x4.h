@@ -29,7 +29,7 @@
 #include <gfx/math/vector_3.h>
 
 /* Column-major matrix (OpenGL-style).
- * Reimplements functionality from FF OpenGL pipeline to be able 
+ * Reimplements functionality from FF OpenGL pipeline to be able
  * to work on GLES 2.0 and modern GL variants.
  */
 
@@ -129,7 +129,7 @@ typedef struct math_matrix_4x4
 }
 
 /*
- * Builds a rotation matrix using the 
+ * Builds a rotation matrix using the
  * rotation around the Y-axis.
  */
 
@@ -156,7 +156,7 @@ typedef struct math_matrix_4x4
 }
 
 /*
- * Builds a rotation matrix using the 
+ * Builds a rotation matrix using the
  * rotation around the Z-axis.
  */
 #define matrix_4x4_rotate_z(mat, radians) \
@@ -341,7 +341,7 @@ typedef struct math_matrix_4x4
    MAT_ELEM_4X4(mat, 3, 3) = 1.0f
 
 /*
- * Builds a translation matrix. All other elements in 
+ * Builds a translation matrix. All other elements in
  * the matrix will be set to zero except for the
  * diagonal which is set to 1.0
  */

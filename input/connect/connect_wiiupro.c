@@ -97,7 +97,7 @@ static void* hidpad_wiiupro_init(void *data,
    device->connection   = connection;
    device->slot         = slot;
    device->send_control = ptr;
-   
+
    calib_data->calib_round = 0;
    /* Without this, the digital buttons won't be reported. */
    hidpad_wiiupro_send_control(device);
@@ -118,35 +118,51 @@ static void hidpad_wiiupro_deinit(void *data)
       free(device);
 }
 
-static uint64_t hidpad_wiiupro_get_buttons(void *data)
+static void hidpad_wiiupro_get_buttons(void *data, retro_bits_t *state)
 {
-   uint64_t buttonstate           = 0;
    struct hidpad_wiiupro_data *device = (struct hidpad_wiiupro_data*)data;
-   struct wiiupro *rpt = device ? (struct wiiupro*)&device->data : NULL;
+   struct wiiupro                *rpt = device ?
+      (struct wiiupro*)&device->data : NULL;
 
    if (!device || !rpt)
-      return 0;
+      return;
 
-   buttonstate |= (rpt->btn.r3       ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R3)     : 0);
-   buttonstate |= (rpt->btn.l3       ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L3)     : 0);
-   buttonstate |= (rpt->btn.plus     ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_START)  : 0);
-   buttonstate |= (rpt->btn.minus    ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0);
-   buttonstate |= (rpt->btn.zr       ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R2)     : 0);
-   buttonstate |= (rpt->btn.zl       ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L2)     : 0);
-   buttonstate |= (rpt->btn.r        ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R)      : 0);
-   buttonstate |= (rpt->btn.l        ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L)      : 0);
+   BIT256_CLEAR_ALL_PTR(state);
 
-   buttonstate |= (rpt->btn.x        ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_X)      : 0);
-   buttonstate |= (rpt->btn.a        ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_A)      : 0);
-   buttonstate |= (rpt->btn.b        ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_B)      : 0);
-   buttonstate |= (rpt->btn.y        ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_Y)      : 0);
-   buttonstate |= (rpt->btn.left     ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT)   : 0);
-   buttonstate |= (rpt->btn.right    ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_RIGHT)  : 0);
-   buttonstate |= (rpt->btn.up       ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP)     : 0);
-   buttonstate |= (rpt->btn.down     ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN)   : 0);
-   buttonstate |= (rpt->btn.home     ? (UINT64_C(1) << RARCH_MENU_TOGGLE)             : 0);
-
-   return buttonstate;
+   if (rpt->btn.r3)
+      BIT256_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_R3);
+   if (rpt->btn.l3)
+      BIT256_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_L3);
+   if (rpt->btn.plus)
+      BIT256_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_START);
+   if ( rpt->btn.minus)
+      BIT256_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_SELECT);
+   if ( rpt->btn.zr)
+      BIT256_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_R2);
+   if ( rpt->btn.zl)
+      BIT256_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_L2);
+   if ( rpt->btn.r)
+      BIT256_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_R);
+   if ( rpt->btn.l)
+      BIT256_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_L);
+   if ( rpt->btn.x)
+      BIT256_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_X);
+   if ( rpt->btn.a)
+      BIT256_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_A);
+   if ( rpt->btn.b)
+      BIT256_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_B);
+   if ( rpt->btn.y)
+      BIT256_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_Y);
+   if ( rpt->btn.left)
+      BIT256_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_LEFT);
+   if ( rpt->btn.down)
+      BIT256_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_DOWN);
+   if ( rpt->btn.right)
+      BIT256_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+   if ( rpt->btn.up)
+      BIT256_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_UP);
+   if ( rpt->btn.home)
+      BIT256_SET_PTR(state, RARCH_MENU_TOGGLE);
 }
 
 static int16_t hidpad_wiiupro_get_axis(void *data, unsigned axis)
@@ -214,18 +230,18 @@ static void hidpad_wiiupro_packet_handler(void *data,
        calib_data->hatvalue_calib[1] = (packet[8] |  (packet[8 + 1] << 8));
        calib_data->hatvalue_calib[2] = (packet[6] |  (packet[6 + 1] << 8));
        calib_data->hatvalue_calib[3] = (packet[10] | (packet[10 + 1] << 8));
-       
+
        calib_data->calib_round++;
    }
    else
    {
-       device->data.hatvalue[0] = (packet[4] |  (packet[4 + 1] << 8)) 
+       device->data.hatvalue[0] = (packet[4] |  (packet[4 + 1] << 8))
           - calib_data->hatvalue_calib[0];
-       device->data.hatvalue[1] = (packet[8] |  (packet[8 + 1] << 8)) 
+       device->data.hatvalue[1] = (packet[8] |  (packet[8 + 1] << 8))
           - calib_data->hatvalue_calib[1];
-       device->data.hatvalue[2] = (packet[6] |  (packet[6 + 1] << 8)) 
+       device->data.hatvalue[2] = (packet[6] |  (packet[6 + 1] << 8))
           - calib_data->hatvalue_calib[2];
-       device->data.hatvalue[3] = (packet[10] | (packet[10 + 1] << 8)) 
+       device->data.hatvalue[3] = (packet[10] | (packet[10 + 1] << 8))
           - calib_data->hatvalue_calib[3];
    }
 }

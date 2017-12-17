@@ -24,6 +24,7 @@
 #include <packageinfo.h>
 
 #include <boolean.h>
+#include <streams/file_stream.h>
 #include <string/stdstring.h>
 
 #include "../../defaults.h"
@@ -45,7 +46,7 @@ static void frontend_qnx_shutdown(bool unused)
 
 static int frontend_qnx_get_rating(void)
 {
-   /* TODO/FIXME - look at unique identifier per device and 
+   /* TODO/FIXME - look at unique identifier per device and
     * determine rating for some */
    return -1;
 }
@@ -54,12 +55,13 @@ static void frontend_qnx_get_environment_settings(int *argc, char *argv[],
       void *data, void *params_data)
 {
    unsigned i;
-   char assets_path[PATH_MAX] = {0};
-   char data_path[PATH_MAX] = {0};
-   char user_path[PATH_MAX] = {0};
-   char tmp_path[PATH_MAX] = {0};
+   char data_assets_path[PATH_MAX] = {0};
+   char assets_path[PATH_MAX]      = {0};
+   char data_path[PATH_MAX]        = {0};
+   char user_path[PATH_MAX]        = {0};
+   char tmp_path[PATH_MAX]         = {0};
+   char workdir[PATH_MAX]          = {0};
 
-   char workdir[PATH_MAX] = {0};
    getcwd(workdir, sizeof(workdir));
 
    if(!string_is_empty(workdir))
@@ -140,20 +142,20 @@ static void frontend_qnx_get_environment_settings(int *argc, char *argv[],
          file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path.config));
 
    /* bundle copy */
-   char data_assets_path[PATH_MAX] = {0};
    sprintf(data_assets_path, "%s/%s", data_path, "assets");
-   if(!path_file_exists(data_assets_path))
+
+   if (!filestream_exists(data_assets_path))
    {
+      char copy_command[PATH_MAX] = {0};
+
       RARCH_LOG( "Copying application assets to data directory...\n" );
 
-      char copy_command[PATH_MAX] = {0};
       sprintf(copy_command, "cp -r %s/. %s", assets_path, data_path);
 
-      if(system(copy_command) == -1) {
+      if(system(copy_command) == -1)
          RARCH_LOG( "Asset copy failed: Shell could not be run.\n" );
-      } else {
+      else
          RARCH_LOG( "Asset copy successful.\n");
-      }
    }
 
    for (i = 0; i < DEFAULT_DIR_LAST; i++)

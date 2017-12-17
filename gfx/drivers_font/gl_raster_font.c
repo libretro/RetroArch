@@ -303,7 +303,7 @@ static void gl_raster_font_render_line(
    {
       i = 0;
       while ((i < MAX_MSG_LEN_CHUNK) && (msg < msg_end))
-      {         
+      {
          int off_x, off_y, tex_x, tex_y, width, height;
          unsigned                  code = utf8_walk(&msg);
          const struct font_glyph *glyph = font->font_driver->get_glyph(
@@ -374,7 +374,7 @@ static void gl_raster_font_render_message(
    for (;;)
    {
       const char *delim = strchr(msg, '\n');
-      unsigned msg_len  = delim 
+      unsigned msg_len  = delim
          ? (unsigned)(delim - msg) : (unsigned)strlen(msg);
 
       /* Draw the line */

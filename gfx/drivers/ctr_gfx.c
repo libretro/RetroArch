@@ -436,7 +436,7 @@ static void* ctr_init(const video_info_t* video,
    driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, &refresh_rate);
    aptHook(&ctr->lcd_aptHook, ctr_lcd_aptHook, ctr);
 
-   font_driver_init_osd(ctr, false, 
+   font_driver_init_osd(ctr, false,
          video->is_threaded,
          FONT_DRIVER_RENDER_CTR);
 
@@ -826,7 +826,7 @@ static bool ctr_frame(void* data, const void* frame,
    topFramebufferInfo.unk       = 0x00000000;
 
    u8* framebufferInfoHeader    = gfxSharedMemory+0x200+gfxThreadID*0x80;
-	GSPGPU_FramebufferInfo* 
+	GSPGPU_FramebufferInfo*
       framebufferInfo           = (GSPGPU_FramebufferInfo*)&framebufferInfoHeader[0x4];
 	framebufferInfoHeader[0x0]  ^= 1;
 	framebufferInfo[framebufferInfoHeader[0x0]] = topFramebufferInfo;

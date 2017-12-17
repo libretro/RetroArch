@@ -9,7 +9,7 @@ static void __lwp_threadqueue_timeout(void *usr_data)
 {
 	lwp_cntrl *thethread;
 	lwp_thrqueue *thequeue;
-	
+
 	__lwp_thread_dispatchdisable();
 	thethread = (lwp_cntrl*)usr_data;
 	thequeue = thethread->wait.queue;
@@ -46,7 +46,7 @@ void __lwp_threadqueue_enqueuefifo(lwp_thrqueue *queue,lwp_cntrl *thethread,u64 
 	u32 level,sync_state;
 
 	_CPU_ISR_Disable(level);
-	
+
 	sync_state = queue->sync_state;
 	queue->sync_state = LWP_THREADQ_SYNCHRONIZED;
 #ifdef _LWPTHRQ_DEBUG
@@ -95,7 +95,7 @@ lwp_cntrl* __lwp_threadqueue_dequeuefifo(lwp_thrqueue *queue)
 		}
 		return ret;
 	}
-	
+
 	switch(queue->sync_state) {
 		case LWP_THREADQ_SYNCHRONIZED:
 		case LWP_THREADQ_SATISFIED:
@@ -118,7 +118,7 @@ void __lwp_threadqueue_enqueuepriority(lwp_thrqueue *queue,lwp_cntrl *thethread,
 	lwp_node *cur_node,*next_node,*prev_node,*search_node;
 
 	__lwp_queue_init_empty(&thethread->wait.block2n);
-	
+
 	prio = thethread->cur_prio;
 	header_idx = prio/LWP_THREADQ_PRIOPERHEADER;
 	header = &queue->queues.priority[header_idx];
@@ -156,7 +156,7 @@ forward_search:
 	search_node = (lwp_node*)search_thread;
 	prev_node = search_node->prev;
 	cur_node = (lwp_node*)thethread;
-	
+
 	cur_node->next = search_node;
 	cur_node->prev = prev_node;
 	prev_node->next = cur_node;
@@ -186,7 +186,7 @@ reverse_search:
 	search_node = (lwp_node*)search_thread;
 	next_node = search_node->next;
 	cur_node = (lwp_node*)thethread;
-	
+
 	cur_node->next = next_node;
 	cur_node->prev = search_node;
 	search_node->next = cur_node;
@@ -281,7 +281,7 @@ dequeue:
 		next_node->prev = newfirstnode;
 		newfirstnode->next = next_node;
 		newfirstnode->prev = prev_node;
-		
+
 		if(!__lwp_queue_onenode(&ret->wait.block2n)) {
 			newsecnode->prev = __lwp_queue_head(&newfirstthr->wait.block2n);
 			newfirstthr->wait.block2n.first = newsecnode;
@@ -352,12 +352,12 @@ void __lwp_threadqueue_enqueue(lwp_thrqueue *queue,u64 timeout)
 
 	thethread = _thr_executing;
 	__lwp_thread_setstate(thethread,queue->state);
-	
+
 	if(timeout) {
 		__lwp_wd_initialize(&thethread->timer,__lwp_threadqueue_timeout,thethread->object.id,thethread);
 		__lwp_wd_insert_ticks(&thethread->timer,timeout);
 	}
-	
+
 #ifdef _LWPTHRQ_DEBUG
 	printf("__lwp_threadqueue_enqueue(%p,%p,%d)\n",queue,thethread,queue->mode);
 #endif
@@ -425,7 +425,7 @@ void __lwp_threadqueue_extractfifo(lwp_thrqueue *queue,lwp_cntrl *thethread)
 		_CPU_ISR_Restore(level);
 		return;
 	}
-	
+
 	__lwp_queue_extractI(&thethread->object.node);
 	if(!__lwp_wd_isactive(&thethread->timer)) {
 		_CPU_ISR_Restore(level);
@@ -449,7 +449,7 @@ void __lwp_threadqueue_extractpriority(lwp_thrqueue *queue,lwp_cntrl *thethread)
 	if(__lwp_statewaitthreadqueue(thethread->cur_state)) {
 		next = curr->next;
 		prev = curr->prev;
-		
+
 		if(!__lwp_queue_isempty(&thethread->wait.block2n)) {
 			new_first = thethread->wait.block2n.first;
 			first = (lwp_cntrl*)new_first;

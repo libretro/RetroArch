@@ -1,6 +1,6 @@
-/*  RetroArch - A frontend for libretro.
+﻿/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2016-2017 - Hans-Kristian Arntzen
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -43,7 +43,7 @@ static void *vulkan_raster_font_init_font(void *data,
       const char *font_path, float font_size,
       bool is_threaded)
 {
-   vulkan_raster_t *font          = 
+   vulkan_raster_t *font          =
       (vulkan_raster_t*)calloc(1, sizeof(*font));
 
 #if 0
@@ -95,7 +95,7 @@ static void vulkan_raster_font_free_font(void *data, bool is_threaded)
       font->font_driver->free(font->font_data);
 
    vkQueueWaitIdle(font->vk->context->queue);
-   vulkan_destroy_texture( 
+   vulkan_destroy_texture(
          font->vk->context->device, &font->texture);
    vulkan_destroy_texture(
          font->vk->context->device, &font->texture_optimal);
@@ -107,11 +107,11 @@ static INLINE void vulkan_raster_font_update_glyph(vulkan_raster_t *font, const 
 {
    if(font->atlas->dirty)
    {
-      int row;
-      for(row = glyph->atlas_offset_y; row < (glyph->atlas_offset_y + glyph->height); row++)
+      unsigned row;
+      for (row = glyph->atlas_offset_y; row < (glyph->atlas_offset_y + glyph->height); row++)
       {
-         uint8_t* src = font->atlas->buffer + row * font->atlas->width + glyph->atlas_offset_x;
-         uint8_t* dst = (uint8_t*)font->texture.mapped + row * font->texture.stride + glyph->atlas_offset_x;
+         uint8_t *src = font->atlas->buffer + row * font->atlas->width + glyph->atlas_offset_x;
+         uint8_t *dst = (uint8_t*)font->texture.mapped + row * font->texture.stride + glyph->atlas_offset_x;
          memcpy(dst, src, glyph->width);
       }
 
@@ -124,7 +124,7 @@ static int vulkan_get_message_width(void *data, const char *msg,
       unsigned msg_len, float scale)
 {
    vulkan_raster_t *font = (vulkan_raster_t*)data;
-      
+
    unsigned i;
    int delta_x = 0;
 
@@ -133,7 +133,7 @@ static int vulkan_get_message_width(void *data, const char *msg,
 
    for (i = 0; i < msg_len; i++)
    {
-      const struct font_glyph *glyph = 
+      const struct font_glyph *glyph =
          font->font_driver->get_glyph(font->font_data, (uint8_t)msg[i]);
       if (!glyph) /* Do something smarter here ... */
          glyph = font->font_driver->get_glyph(font->font_data, '?');
@@ -272,7 +272,7 @@ static void vulkan_raster_font_render_message(
 static void vulkan_raster_font_flush(vulkan_raster_t *font)
 {
    struct vk_draw_triangles call;
-   
+
    call.pipeline     = font->vk->pipelines.font;
    call.texture      = &font->texture_optimal;
    call.sampler      = font->vk->samplers.mipmap_linear;
@@ -407,7 +407,7 @@ static void vulkan_raster_font_render_msg(
       color_dark[3] = color[3] * drop_alpha;
 
       vulkan_raster_font_render_message(font, msg, scale, color_dark,
-            x + scale * drop_x / vk->vp.width, y + 
+            x + scale * drop_x / vk->vp.width, y +
             scale * drop_y / vk->vp.height, text_align);
    }
 

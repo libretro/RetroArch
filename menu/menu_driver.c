@@ -22,6 +22,7 @@
 #include <retro_miscellaneous.h>
 #include <formats/image.h>
 #include <file/file_path.h>
+#include <streams/file_stream.h>
 #include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
@@ -121,7 +122,7 @@ uintptr_t menu_display_white_texture;
 
 static video_coord_array_t menu_disp_ca;
 
-static enum 
+static enum
 menu_toggle_reason menu_display_toggle_reason    = MENU_TOGGLE_REASON_NONE;
 
 /* Width, height and pitch of the menu framebuffer */
@@ -190,7 +191,7 @@ void menu_display_toggle_set_reason(enum menu_toggle_reason reason)
   menu_display_toggle_reason = reason;
 }
 
-/* Check if the current menu driver is compatible 
+/* Check if the current menu driver is compatible
  * with your video driver. */
 static bool menu_display_check_compatibility(
       enum menu_display_driver_type type,
@@ -344,7 +345,7 @@ font_data_t *menu_display_font(
    return menu_display_font_main_init(&font_info, is_threaded);
 }
 
-/* Reset the menu's coordinate array vertices. 
+/* Reset the menu's coordinate array vertices.
  * NOTE: Not every menu driver uses this. */
 void menu_display_coords_array_reset(void)
 {
@@ -367,7 +368,7 @@ void menu_display_set_font_framebuffer(const uint8_t *buffer)
 }
 
 static bool menu_display_libretro_running(
-      bool rarch_is_inited, 
+      bool rarch_is_inited,
       bool rarch_is_dummy_core)
 {
    settings_t *settings = config_get_ptr();
@@ -398,7 +399,7 @@ bool menu_display_libretro(bool is_idle,
    }
 
    if (is_idle)
-      return true; /* Maybe return false here 
+      return true; /* Maybe return false here
                       for indication of idleness? */
    return video_driver_cached_frame();
 }
@@ -464,8 +465,8 @@ void menu_display_set_font_data_init(bool state)
    menu_display_font_alloc_framebuf = state;
 }
 
-/* Returns true if an animation is still active or 
- * when the menu framebuffer still is dirty and 
+/* Returns true if an animation is still active or
+ * when the menu framebuffer still is dirty and
  * therefore it still needs to be rendered onscreen.
  *
  * This function can be used for optimization purposes
@@ -1055,8 +1056,8 @@ void menu_display_handle_savestate_thumbnail_upload(void *task_data,
    free(user_data);
 }
 
-/* Function that gets called when we want to load in a 
- * new menu wallpaper. 
+/* Function that gets called when we want to load in a
+ * new menu wallpaper.
  */
 void menu_display_handle_wallpaper_upload(void *task_data,
       void *user_data, const char *err)
@@ -1089,7 +1090,7 @@ void menu_display_allocate_white_texture(void)
          TEXTURE_FILTER_NEAREST, &menu_display_white_texture);
 }
 
-/* 
+/*
  * Draw a hardware cursor on top of the screen for the mouse.
  */
 void menu_display_draw_cursor(
@@ -1236,7 +1237,7 @@ void menu_display_snow(int width, int height)
       if (!p->alive)
          continue;
 
-      alpha = menu_display_randf(0, 100) > 90 ? 
+      alpha = menu_display_randf(0, 100) > 90 ?
          p->alpha/2 : p->alpha;
 
       for (j = 0; j < 16; j++)
@@ -1253,7 +1254,7 @@ void menu_display_snow(int width, int height)
    }
 }
 
-/* Draw text on top of the screen. 
+/* Draw text on top of the screen.
  */
 void menu_display_draw_text(
       const font_data_t *font, const char *text,
@@ -1307,7 +1308,7 @@ void menu_display_reset_textures_list(
    if (!string_is_empty(texture_path))
       fill_pathname_join(texpath, iconpath, texture_path, texpath_size);
 
-   if (string_is_empty(texpath) || !path_file_exists(texpath))
+   if (string_is_empty(texpath) || !filestream_exists(texpath))
       goto error;
 
    if (!image_texture_load(&ti, texpath))
@@ -1495,7 +1496,7 @@ static void menu_driver_toggle(bool on)
    retro_keyboard_event_t *key_event          = NULL;
    retro_keyboard_event_t *frontend_key_event = NULL;
    settings_t                 *settings       = config_get_ptr();
-   bool pause_libretro                        = settings ? 
+   bool pause_libretro                        = settings ?
       settings->bools.menu_pause_libretro : false;
 
    menu_driver_toggled = on;
@@ -1621,7 +1622,7 @@ bool menu_driver_is_alive(void)
    return menu_driver_alive;
 }
 
-/* Checks if the menu framebuffer is set. 
+/* Checks if the menu framebuffer is set.
  * This would usually only return true
  * for framebuffer-based menu drivers, like RGUI. */
 bool menu_driver_is_texture_set(void)
@@ -2219,7 +2220,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                else if (menu_list_size > 0)
                   menu_driver_ctl(MENU_NAVIGATION_CTL_SET_LAST,  NULL);
             }
-            
+
             if (menu_driver_ctx->navigation_increment)
                menu_driver_ctx->navigation_increment(menu_userdata);
          }

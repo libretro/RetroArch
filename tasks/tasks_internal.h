@@ -135,7 +135,7 @@ bool task_push_dbscan(
 bool task_push_overlay_load_default(
         retro_task_callback_t cb, void *user_data);
 #endif
-    
+
 bool task_check_decompress(const char *source_file);
 
 bool task_push_decompress(
@@ -185,7 +185,7 @@ bool task_push_load_content_with_new_core_from_companion_ui(
       content_ctx_info_t *content_info,
       retro_task_callback_t cb,
       void *user_data);
-   
+
 #ifdef HAVE_MENU
 bool task_push_load_content_with_new_core_from_menu(
       const char *core_path,
@@ -244,6 +244,8 @@ bool input_autoconfigure_connect(
 bool input_autoconfigure_disconnect(unsigned i, const char *ident);
 
 bool input_autoconfigure_get_swap_override(void);
+
+void input_autoconfigure_joypad_reindex_devices(void);
 
 void task_push_get_powerstate(void);
 

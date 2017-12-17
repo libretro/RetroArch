@@ -130,7 +130,7 @@ static void menu_display_d3d_bind_texture(void *data)
 {
    d3d_video_t              *d3d = (d3d_video_t*)video_driver_get_ptr(false);
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
-   
+
    if (!d3d || !draw)
       return;
 
@@ -149,7 +149,7 @@ static void menu_display_d3d_draw(void *data)
 
    if (!d3d || !draw)
       return;
-   
+
    if (!draw->coords->vertex)
       draw->coords->vertex        = menu_display_d3d_get_default_vertices();
    if (!draw->coords->tex_coord)
@@ -223,7 +223,7 @@ static void menu_display_d3d_clear_color(menu_display_ctx_clearcolor_t *clearcol
 
    if (!d3d || !clearcolor)
       return;
-   
+
    clear_color = D3DCOLOR_ARGB(
          BYTE_CLAMP(clearcolor->a * 255.0f), /* A */
          BYTE_CLAMP(clearcolor->r * 255.0f), /* R */

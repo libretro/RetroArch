@@ -24,7 +24,7 @@ extern const char *tcp_gateway;
  *
  * \return none.
  */
-void _break();	
+void _break();
 
 
 /*!\fn void DEBUG_Init(s32 device_type,s32 channel_port)

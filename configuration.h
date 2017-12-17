@@ -29,21 +29,28 @@
 #include "input/input_defines.h"
 
 #define configuration_set_float(settings, var, newvar) \
+{ \
    settings->modified = true; \
-   var = newvar
+   var = newvar; \
+}
 
 #define configuration_set_bool(settings, var, newvar) \
+{ \
    settings->modified = true; \
-   var = newvar
+   var = newvar; \
+}
 
 #define configuration_set_uint(settings, var, newvar) \
+{ \
    settings->modified = true; \
-   var = newvar
+   var = newvar; \
+}
 
 #define configuration_set_int(settings, var, newvar) \
+{ \
    settings->modified = true; \
-   var = newvar
-
+   var = newvar; \
+}
 
 enum override_type
 {
@@ -243,6 +250,8 @@ typedef struct settings
       bool ssh_enable;
       bool samba_enable;
       bool bluetooth_enable;
+
+      bool automatically_add_content_to_playlist;
    } bools;
 
    struct
@@ -316,6 +325,7 @@ typedef struct settings
       unsigned keymapper_port;
       unsigned video_window_x;
       unsigned video_window_y;
+      unsigned video_window_opacity;
       unsigned video_monitor_index;
       unsigned video_fullscreen_x;
       unsigned video_fullscreen_y;

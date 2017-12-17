@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -57,14 +57,15 @@ typedef struct gl1_renderchain
 
 GLenum min_filter_to_mag(GLenum type);
 
-void gl1_renderchain_free(void *data)
+void gl1_renderchain_free(void *data, void *chain_data)
 {
-   gl_t *gl = (gl_t*)data;
-   (void)gl;
+   (void)chain_data;
+   (void)data;
 }
 
 static void gl1_renderchain_bind_prev_texture(
       void *data,
+      void *chain_data,
       const struct video_tex_info *tex_info)
 {
    gl_t *gl = (gl_t*)data;
@@ -76,7 +77,8 @@ static void gl1_renderchain_bind_prev_texture(
 }
 
 static void gl1_renderchain_viewport_info(
-      void *data, struct video_viewport *vp)
+      void *data, void *chain_data,
+      struct video_viewport *vp)
 {
    unsigned width, height;
    unsigned top_y, top_dist;
@@ -95,7 +97,8 @@ static void gl1_renderchain_viewport_info(
 }
 
 static bool gl1_renderchain_read_viewport(
-      void *data, uint8_t *buffer, bool is_idle)
+      void *data, void *chain_data,
+      uint8_t *buffer, bool is_idle)
 {
    unsigned                     num_pixels = 0;
    gl_t                                *gl = (gl_t*)data;
@@ -108,14 +111,12 @@ static bool gl1_renderchain_read_viewport(
    /* Use slow synchronous readbacks. Use this with plain screenshots
       as we don't really care about performance in this case. */
 
-   /* GLES2 only guarantees GL_RGBA/GL_UNSIGNED_BYTE
+   /* GL1 only guarantees GL_RGBA/GL_UNSIGNED_BYTE
     * readbacks so do just that.
-    * GLES2 also doesn't support reading back data
+    * GL1 also doesn't support reading back data
     * from front buffer, so render a cached frame
     * and have gl_frame() do the readback while it's
     * in the back buffer.
-    *
-    * Keep codepath similar for GLES and desktop GL.
     */
    gl->readback_buffer_screenshot = malloc(num_pixels * sizeof(uint32_t));
 
@@ -136,9 +137,9 @@ static bool gl1_renderchain_read_viewport(
    return true;
 }
 
-void gl1_renderchain_free_internal(void *data)
+void gl1_renderchain_free_internal(void *data, void *chain_data)
 {
-   gl1_renderchain_t *cg_data = (gl1_renderchain_t*)data;
+   gl1_renderchain_t *cg_data = (gl1_renderchain_t*)chain_data;
 
    if (!cg_data)
       return;
@@ -185,7 +186,8 @@ static void gl1_renderchain_ff_matrix(const void *data)
    glLoadMatrixf(ident.data);
 }
 
-static void gl1_renderchain_disable_client_arrays(void)
+static void gl1_renderchain_disable_client_arrays(void *data,
+      void *chain_data)
 {
    if (gl_query_core_context_in_use())
       return;
@@ -198,7 +200,8 @@ static void gl1_renderchain_disable_client_arrays(void)
    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 }
 
-static void gl1_renderchain_restore_default_state(void *data)
+static void gl1_renderchain_restore_default_state(void *data,
+      void *chain_data)
 {
    gl_t *gl = (gl_t*)data;
    if (!gl)
@@ -210,7 +213,8 @@ static void gl1_renderchain_restore_default_state(void *data)
 }
 
 static void gl1_renderchain_copy_frame(
-      void *data, 
+      void *data,
+      void *chain_data,
       video_frame_info_t *video_info,
       const void *frame,
       unsigned width, unsigned height, unsigned pitch)
@@ -246,6 +250,7 @@ static void gl1_renderchain_copy_frame(
 }
 
 static void gl1_renderchain_readback(void *data,
+      void *chain_data,
       unsigned alignment,
       unsigned fmt, unsigned type,
       void *src)
@@ -262,6 +267,7 @@ static void gl1_renderchain_readback(void *data,
 }
 
 static void gl1_renderchain_set_mvp(void *data,
+      void *chain_data,
       void *shader_data, const void *mat_data)
 {
    math_matrix_4x4 ident;
@@ -276,6 +282,7 @@ static void gl1_renderchain_set_mvp(void *data,
 }
 
 static void gl1_renderchain_set_coords(void *handle_data,
+      void *chain_data,
       void *shader_data, const struct video_coords *coords)
 {
    /* Fall back to fixed function-style if needed and possible. */
@@ -320,10 +327,11 @@ gl_renderchain_driver_t gl2_renderchain = {
    NULL,                                  /* renderchain_init */
    NULL,                                  /* init_hw_render */
    gl1_renderchain_free,
-   NULL,                                  /* deinit_hw_render */
-   NULL,                                  /* start_render */
+   NULL,                                  /* deinit_hw_render     */
+   NULL,                                  /* start_render         */
    NULL,                                  /* check_fbo_dimensions */
    NULL,                                  /* recompute_pass_sizes */
-   NULL,                                  /* renderchain_render */
+   NULL,                                  /* renderchain_render   */
+   NULL,                                  /* resolve_extensions   */
    "gl1",
 };
