@@ -3748,12 +3748,15 @@ static int action_ok_netplay_enable_host(const char *path,
    bool contentless = false;
    bool is_inited   = false;
 
+   file_list_t *list = menu_entries_get_selection_buf_ptr(0);
+
    content_get_status(&contentless, &is_inited);
 
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
       generic_action_ok_command(CMD_EVENT_NETPLAY_DEINIT);
    netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
 
+   netplay_refresh_rooms_menu(list);
    /* If we haven't yet started, this will load on its own */
    if (!is_inited)
    {
