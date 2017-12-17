@@ -24,7 +24,7 @@
 - LOCALIZATION: Update Russian translation.
 - OSX/PPC: Fix the GL2 renderchain, had to use EXT versions of framebuffer/renderbuffer functions.
 - PSP: Fix content loading, port should be functional again.
-- PSP: Us 64MB when available.
+- PSP: Use 64MB when available.
 - SCANNER: Fix crash from Windows-incompatible format string.
 - VITA: Improve packaging, installation times.
 - WIIU: Disabled the controller patcher for now since it was the source of many stability issues.
