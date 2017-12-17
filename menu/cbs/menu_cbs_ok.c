@@ -3431,6 +3431,9 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
                strlcpy(netplay_room_list[i].gamename,
                      host->content,
                      sizeof(netplay_room_list[i].gamename));
+               strlcpy(netplay_room_list[i].frontend,
+                     host->frontend,
+                     sizeof(netplay_room_list[i].frontend));
 
                netplay_room_list[i].port      = host->port;
                netplay_room_list[i].gamecrc   = host->content_crc;

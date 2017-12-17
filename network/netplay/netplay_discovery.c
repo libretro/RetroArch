@@ -63,6 +63,7 @@ struct ad_packet
    char address[NETPLAY_HOST_STR_LEN];
    char retroarch_version[NETPLAY_HOST_STR_LEN];
    char nick[NETPLAY_HOST_STR_LEN];
+   char frontend[NETPLAY_HOST_STR_LEN];
    char core[NETPLAY_HOST_STR_LEN];
    char core_version[NETPLAY_HOST_STR_LEN];
    char content[NETPLAY_HOST_LONGSTR_LEN];
@@ -290,6 +291,8 @@ bool netplay_lan_ad_server(netplay_t *netplay)
          {
             char *p;
             char sub[NETPLAY_HOST_STR_LEN];
+            char frontend[NETPLAY_HOST_STR_LEN];
+            netplay_get_architecture(frontend, sizeof(frontend));
 
             p=strrchr(reply_addr,'.');
             if (p)
@@ -321,6 +324,7 @@ bool netplay_lan_ad_server(netplay_t *netplay)
                         ? path_basename(path_get(RARCH_PATH_BASENAME)) : "N/A",
                         NETPLAY_HOST_LONGSTR_LEN);
                   strlcpy(ad_packet_buffer.nick, netplay->nick, NETPLAY_HOST_STR_LEN);
+                  strlcpy(ad_packet_buffer.frontend, frontend, NETPLAY_HOST_STR_LEN);
 
                   if (info)
                   {
@@ -481,6 +485,8 @@ static bool netplay_lan_ad_client(void)
          strlcpy(host->core_version, ad_packet_buffer.core_version,
             NETPLAY_HOST_STR_LEN);
          strlcpy(host->content, ad_packet_buffer.content,
+            NETPLAY_HOST_LONGSTR_LEN);
+         strlcpy(host->frontend, ad_packet_buffer.frontend,
             NETPLAY_HOST_LONGSTR_LEN);
 
          host->content_crc                  =

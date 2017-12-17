@@ -405,6 +405,8 @@ static int action_bind_sublabel_netplay_room(
    const char *corename   = NULL;
    const char *gamename   = NULL;
    const char *core_ver   = NULL;
+   const char *frontend   = NULL;
+   
    /* This offset may cause issues if any entries are added to this menu */
    unsigned offset        = i - 3;
 
@@ -415,11 +417,13 @@ static int action_bind_sublabel_netplay_room(
    corename   = netplay_room_list[offset].corename;
    gamename   = netplay_room_list[offset].gamename;
    core_ver   = netplay_room_list[offset].coreversion;
-   gamecrc   = netplay_room_list[offset].gamecrc;
+   gamecrc    = netplay_room_list[offset].gamecrc;
+   frontend   = netplay_room_list[offset].frontend;
 
    snprintf(s, len,
-	   "RetroArch: %s\nCore: %s (%s)\nGame: %s (%08x)",
+	   "RetroArch: %s (%s)\nCore: %s (%s)\nGame: %s (%08x)",
       string_is_empty(ra_version) ? "n/a" : ra_version,
+      string_is_empty(frontend) ? "n/a" : frontend,
       corename, core_ver,
       !string_is_equal(gamename, "N/A") ? gamename : "n/a",
       gamecrc);
