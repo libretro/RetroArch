@@ -119,7 +119,7 @@ static char *strip_comment(char *str)
 static char *extract_value(char *line, bool is_value)
 {
    char *save = NULL;
-   char *end  = NULL;
+   char *tok  = NULL;
 
    if (is_value)
    {
@@ -137,24 +137,24 @@ static char *extract_value(char *line, bool is_value)
    while (isspace((int)*line))
       line++;
 
+   /* We have a full string. Read until next ". */
    if (*line == '"')
    {
-      /* We have a full string. Read until next ". */
       line++;
-      end = line;
-      while (*end != '\0' && *end != '\"') end++;
+      if (*line == '"') return strdup("");
+      tok = strtok_r(line, "\"", &save);
    }
    else if (*line == '\0') /* Nothing */
       return NULL;
    else
    {
       /* We don't have that. Read until next space. */
-      end = line;
-      while (*end != '\0' && !isspace(*end)) end++;
+      tok = strtok_r(line, " \n\t\f\r\v", &save);
    }
 
-   *end = '\0';
-   return strdup(end);
+   if (tok)
+      return strdup(tok);
+   return NULL;
 }
 
 /* Move semantics? */
