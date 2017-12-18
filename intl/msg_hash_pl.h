@@ -1,4 +1,4 @@
-MSG_HASH(
+﻿MSG_HASH(
       MSG_COMPILER,
       "Kompilator"
       )
@@ -620,7 +620,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
       "Włącz osiągnięcia")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR,
-      "Zmodyfikowany kolor menu)
+      "Zmodyfikowany kolor menu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ENTRY_NORMAL_COLOR,
       "Normalny kolor menu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FALSE,
@@ -2662,7 +2662,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-      "Automatycznie tworzy stan zapisywania na końcu środowiska wykonawczego RetroArch. RetroArch automatycznie załaduje ten stan zapisu "Auto Load State" jest włączony."
+      "Automatycznie tworzy stan zapisywania na końcu środowiska wykonawczego RetroArch. RetroArch automatycznie załaduje ten stan zapisu Auto Load State jest włączony."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
@@ -3178,7 +3178,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
       "Ulubione")
 MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
-      "Treści, które dodałeś do "Ulubionych" pojawią się tutaj.")
+      "Treści, które dodałeś do \"Ulubionych\" pojawią się tutaj.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
       "Muzyka")
 MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_MUSIC,
@@ -3224,7 +3224,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT,
       "Pokaż ładunek zawartości")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT,
-      "Pokaż / ukryj opcję "Wczytaj zawartość".")
+      "Pokaż / ukryj opcję \"Wczytaj zawartość\".")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
       "Pokaż informacje")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
@@ -3236,7 +3236,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
       "Pokaż pomoc")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
-      "Pokaż / ukryj opcję "Pomoc".")
+      "Pokaż / ukryj opcję \"Pomoc\".")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
       "Pokaż Zamknij RetroArch")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
@@ -3252,7 +3252,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_VIEWS_SETTINGS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
       "Pokaż zrzut ekranu")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
-      "Pokaż / ukryj opcję "Zrób zrzut ekranu".")
+      "Pokaż / ukryj opcję \"Zrób zrzut ekranu\".")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
       "Pokaż stan zapisywania / ładowania")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
