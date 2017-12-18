@@ -25,6 +25,7 @@
 - LOCALIZATION: Update Portuguese-Brazilian translation.
 - LOCALIZATION: Update Russian translation.
 - OSX/PPC: Fix the GL2 renderchain, had to use EXT versions of framebuffer/renderbuffer functions.
+- PSP: Fix audio sync.
 - PSP: Fix content loading, port should be functional again.
 - PSP: Use 64MB when available.
 - SCANNER: Fix crash from Windows-incompatible format string.
