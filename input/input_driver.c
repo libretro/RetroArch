@@ -787,10 +787,13 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
 static INLINE bool input_keys_pressed_iterate(unsigned i,
       retro_bits_t* p_new_state)
 {
-   if ((i >= RARCH_FIRST_META_KEY) &&
-         current_input->meta_key_pressed(current_input_data, i)
-      )
-      return true;
+   if (current_input->meta_key_pressed)
+   {
+      if ((i >= RARCH_FIRST_META_KEY) && 
+            current_input->meta_key_pressed(current_input_data, i)
+         )
+         return true;
+   }
 
 #ifdef HAVE_OVERLAY
    if (overlay_ptr &&

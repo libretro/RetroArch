@@ -202,10 +202,7 @@ static void* wiiu_input_init(const char *joypad_driver)
 
 static bool wiiu_input_meta_key_pressed(void *data, int key)
 {
-   if (BIT64_GET(lifecycle_state, key))
-      return true;
-
-   return false;
+   return BIT64_GET(lifecycle_state, key);
 }
 
 static uint64_t wiiu_input_get_capabilities(void *data)

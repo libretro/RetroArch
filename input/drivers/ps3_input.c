@@ -179,11 +179,6 @@ static void* ps3_input_init(const char *joypad_driver)
    return ps3;
 }
 
-static bool ps3_input_meta_key_pressed(void *data, int key)
-{
-   return false;
-}
-
 static uint64_t ps3_input_get_capabilities(void *data)
 {
    (void)data;
@@ -266,7 +261,7 @@ input_driver_t input_ps3 = {
    ps3_input_init,
    ps3_input_poll,
    ps3_input_state,
-   ps3_input_meta_key_pressed,
+   NULL,                                  /* meta_key_pressed */
    ps3_input_free_input,
    ps3_input_set_sensor_state,
    NULL,

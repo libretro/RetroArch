@@ -81,13 +81,6 @@ static bool rwebinput_key_pressed_internal(void *data, int key)
    return ret;
 }
 
-static bool rwebinput_meta_key_pressed(void *data, int key)
-{
-   (void)data;
-   (void)key;
-   return false;
-}
-
 static bool rwebinput_is_pressed(rwebinput_input_t *rwebinput,
       const struct retro_keybind *binds, unsigned id)
 {
@@ -254,7 +247,7 @@ input_driver_t input_rwebinput = {
    rwebinput_input_init,
    rwebinput_input_poll,
    rwebinput_input_state,
-   rwebinput_meta_key_pressed,
+   NULL,                                     /* meta_key_pressed */
    rwebinput_input_free,
    NULL,
    NULL,

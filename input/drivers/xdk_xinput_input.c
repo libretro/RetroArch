@@ -94,11 +94,6 @@ static void *xdk_input_init(const char *joypad_driver)
    return xdk;
 }
 
-static bool xdk_input_meta_key_pressed(void *data, int key)
-{
-   return false;
-}
-
 static uint64_t xdk_input_get_capabilities(void *data)
 {
    (void)data;
@@ -178,7 +173,7 @@ input_driver_t input_xinput = {
    xdk_input_init,
    xdk_input_poll,
    xdk_input_state,
-   xdk_input_meta_key_pressed,
+   NULL,                            /* meta_key_pressed */
    xdk_input_free_input,
    NULL,
    NULL,

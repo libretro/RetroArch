@@ -93,11 +93,6 @@ static int16_t linuxraw_analog_pressed(linuxraw_input_t *linuxraw,
    return pressed_plus + pressed_minus;
 }
 
-static bool linuxraw_input_meta_key_pressed(void *data, int key)
-{
-   return false;
-}
-
 static int16_t linuxraw_input_state(void *data,
       rarch_joypad_info_t joypad_info,
       const struct retro_keybind **binds, unsigned port,
@@ -223,7 +218,7 @@ input_driver_t input_linuxraw = {
    linuxraw_input_init,
    linuxraw_input_poll,
    linuxraw_input_state,
-   linuxraw_input_meta_key_pressed,
+   NULL,                                  /* meta_key_pressed */
    linuxraw_input_free,
    NULL,
    NULL,

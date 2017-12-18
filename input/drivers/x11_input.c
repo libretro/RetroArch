@@ -179,11 +179,6 @@ static int16_t x_pressed_analog(x11_input_t *x11,
    return pressed_plus + pressed_minus;
 }
 
-static bool x_input_meta_key_pressed(void *data, int key)
-{
-   return false;
-}
-
 static int16_t x_lightgun_aiming_state( x11_input_t *x11, unsigned idx, unsigned id )
 {
    const int edge_detect = 32700;
@@ -531,7 +526,7 @@ input_driver_t input_x = {
    x_input_init,
    x_input_poll,
    x_input_state,
-   x_input_meta_key_pressed,
+   NULL,                            /* meta_key_pressed */
    x_input_free,
    NULL,
    NULL,

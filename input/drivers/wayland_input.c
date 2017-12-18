@@ -320,19 +320,11 @@ static void input_wl_keyboard_mapping_set_block(void *data, bool value)
    wl->blocked = value;
 }
 
-static bool input_wl_meta_key_pressed(void *data, int key)
-{
-   (void)data;
-   (void)key;
-   /* FIXME: What is this supposed to do? */
-   return false;
-}
-
 input_driver_t input_wayland = {
    NULL,
    input_wl_poll,
    input_wl_state,
-   input_wl_meta_key_pressed,
+   NULL,                            /* meta_key_pressed */
    input_wl_free,
    NULL,
    NULL,
