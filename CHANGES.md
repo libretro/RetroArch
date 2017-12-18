@@ -11,6 +11,7 @@
 - COMMON: New VFS (Virtual File System) API.
 - COMMON: Fixed some playlist bugs.
 - COMMON: New snow shader.
+- COMMON: Fix Quick Menu title.
 - COMMON: Fix loading cores that require no content one after another.
 - EMSCRIPTEN: Fix references to browserfs.
 - FREEBSD: Support libusb HID input driver.
