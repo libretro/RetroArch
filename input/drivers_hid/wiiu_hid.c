@@ -133,13 +133,44 @@ static void wiiu_hid_poll(void *data)
    (void)data;
 }
 
-static void wiiu_hid_device_send_control(void *data,
-                                      uint8_t *buffer,
-                                        size_t buffer_size) {
-  struct wiiu_adapter *adapter = (struct wiiu_adapter *)data;
+static int32_t wiiu_hid_set_report(void *data, uint8_t report_type, report_id,
+                                   void *report_data, uint32_t report_length)
+{
+  wiiu_hid_t *hid = (wiiu_hid_t)data;
 
-  if(!adapter)
-    return;
+  if(!hid)
+    return -1;
+
+  return HIDSetReport(hid->handle,
+                      report_type,
+                      report_id,
+                      report_data,
+                      report_length,
+                      NULL, NULL);
+}
+
+static int32_t wiiu_hid_set_idle(void *data, uint8_t duration)
+{
+  wiiu_hid_t *hid = (wiiu_hid_t)data;
+  if(!hid)
+    return -1;
+
+  return HIDSetIdle(hid->handle,
+                    hid->interface_index,
+                    duration,
+                    NULL, NULL);
+}
+
+static int32_t wiiu_hid_set_protocol(void *data, uint8_t protocol)
+{
+  wiiu_hid_t *hid = (wiiu_hid_t)data;
+  if(!hid)
+    return -1;
+
+  return HIDSetProtocol(hid->handle,
+                    hid->interface_index,
+                    protocol,
+                    NULL, NULL);
 }
 
 static void start_polling_thread(wiiu_hid_t *hid) {
@@ -419,4 +450,8 @@ hid_driver_t wiiu_hid = {
    wiiu_hid_joypad_rumble,
    wiiu_hid_joypad_name,
    "wiiu",
+   NULL, // send_control
+   wiiu_hid_set_report,
+   wiiu_hid_set_idle,
+   wiiu_hid_set_protocol
 };

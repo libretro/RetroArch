@@ -104,7 +104,7 @@ HIDSetIdle(uint32_t handle,
 
 int32_t
 HIDSetProtocol(uint32_t handle,
-               uint8_t int32_terface_index,
+               uint8_t interface_index,
                uint8_t protocol,
                HIDCallback hc,
                void *p_user);
