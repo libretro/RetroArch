@@ -49,7 +49,7 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY:
          return "Katalog assetów";
       case MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES:
-         return "Block Frames";
+         return "Blokada klatek";
       case MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE:
          return "Urządzenie audio";
       case MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER:
@@ -63,13 +63,13 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY:
          return "Opóźnienie dźwięku (ms)";
       case MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW:
-         return "Audio Maximum Timing Skew";
+         return "Maksymalne przesunięcie czasowe dźwięku";
       case MENU_ENUM_LABEL_VALUE_AUDIO_MUTE:
          return "Wycisz dźwięk";
       case MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE:
          return "Częstotliwość próbkowania dźwięku (Hz)";
       case MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA:
-         return "Audio Rate Control Delta";
+         return "Kontrola jakości audio Delta";
       case MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER:
          return "Kontroler resamplera dźwięku";
       case MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS:
@@ -81,7 +81,7 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL:
          return "Częstotliwość automatycznego zapisu SaveRAM";
       case MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE:
-         return "Load Override Files Automatically"; /* this one's rather complicated */
+         return "Automatyczne zastępowanie plików"; /* this one's rather complicated */
       case MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE:
          return "Automatycznie wczytuj pliki remapowania";
       case MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE:
@@ -193,7 +193,7 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_DISABLED:
          return "Wyłączone";
       case MENU_ENUM_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS:
-         return "Disk Cycle Tray Status";
+         return "Status cyklu dysku";
       case MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND:
          return "Dopisz do obrazu dysku";
       case MENU_ENUM_LABEL_VALUE_DISK_INDEX:
@@ -231,15 +231,15 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_ENABLE:
          return "Limituj maksymalną szybkość działania";
       case MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS:
-         return "Frame Throttle Settings";
+         return "Ustawienia przepustowości klatek";
       case MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS:
          return "Liczniki frontendu";
       case MENU_ENUM_LABEL_VALUE_HELP:
-         return "Pooc";
+         return "Pomoc";
       case MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE:
          return "Włącz historię treści";
       case MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU: /* Don't change. Breaks everything. (Would be: "Menu poziome") */
-         return "Horizontal Menu";
+         return "Menu poziome";
       case MENU_ENUM_LABEL_VALUE_INFORMATION_LIST:
          return "Informacje";
       case MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE:
@@ -255,7 +255,7 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE:
          return "Cykl zmian";
       case MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS:
-         return "Input Hotkey Binds";
+         return "Wejściowe powiązania skrótów";
       case MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS:
          return "Maksymalna liczba użytkowników";
       case MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_ENABLE:
@@ -337,7 +337,7 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_MENU_DRIVER:
          return "Kontroler menu";
       case MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS:
-         return "Menu File Browser Settings";
+         return "Ustawienia menu plików przeglądania";
       case MENU_ENUM_LABEL_VALUE_MENU_SETTINGS:
          return "Ustawienia menu";
       case MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER:
@@ -357,7 +357,7 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT: /* TODO: Original string changed */
          return "Zamień kontrolery w grze sieciowej";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES:
-         return "Opóxnione klatki w grze sieciowej";
+         return "Opóźnione klatki w grze sieciowej";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE:
          return "Włącz grę sieciową";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS: /* TODO: Original string changed */
@@ -507,9 +507,9 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_RESUME_CONTENT:
          return "Wznów";
       case MENU_ENUM_LABEL_VALUE_RETROKEYBOARD:
-         return "RetroKeyboard";
+         return "Retro klawiatura";
       case MENU_ENUM_LABEL_VALUE_RETROPAD:
-         return "RetroPad";
+         return "Retro pad";
       case MENU_ENUM_LABEL_VALUE_REWIND_ENABLE:
          return "Włącz przewijanie";
       case MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY:
@@ -757,7 +757,7 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_AUTO:
          return "Auto współczynnik proporcji";
       case MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX:
-         return "łczynnika proporcji";
+         return "Współczynnika proporcji";
       case MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION:
          return "Wstawiaj czarne klatki";
       case MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN:
@@ -835,13 +835,13 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER:
          return "Włącz filtr programowy";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL:
-         return "VSync Swap Interval";
+         return "Wymień interwał VSync";
       case MENU_ENUM_LABEL_VALUE_VIDEO_THREADED:
          return "Osobny wątek wideo";
       case MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER:
          return "Redukcja migotania";
       case MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH:
-         return "Set VI Screen Width";
+         return "Ustaw VI szerokość ekranu";
       case MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC:
          return "Synchronizacja pionowa";
       case MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN:
@@ -851,7 +851,7 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
       case MSG_APPENDED_DISK:
          return "Dopisano do dysku";
       case MSG_APPLYING_CHEAT:
-         return "Applying cheat changes.";
+         return "Stosowanie zmian w cheacie.";
       case MSG_APPLYING_SHADER:
          return "Aplikowanie shadera";
       case MSG_AUDIO_MUTED:
@@ -907,7 +907,7 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
       case MSG_GOT_INVALID_DISK_INDEX:
          return "Otrzymano nieprawidłowy indeks dysku.";
       case MSG_GRAB_MOUSE_STATE:
-         return "Grab mouse state";
+         return "Sprawdź stan myszy";
       case MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING:
          return "Ten rdzeń libretro używa renderowania sprzętowego. Konieczne jest użycie nagrywania wraz z zaaplikowanymi shaderami.";
       case MSG_LIBRETRO_ABI_BREAK:
