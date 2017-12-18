@@ -784,9 +784,8 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
    }
 }
 
-static void input_keys_pressed_iterate(unsigned i,
-      retro_bits_t* p_new_state,
-      rarch_joypad_info_t *joypad_info)
+static INLINE void input_keys_pressed_iterate(unsigned i,
+      retro_bits_t* p_new_state)
 {
    if ((i >= RARCH_FIRST_META_KEY) &&
          current_input->meta_key_pressed(current_input_data, i)
@@ -965,8 +964,7 @@ void input_menu_keys_pressed(void *data, retro_bits_t* p_new_state)
          }
       }
 
-      input_keys_pressed_iterate(i, p_new_state,
-            &joypad_info);
+      input_keys_pressed_iterate(i, p_new_state);
    }
 
    for (i = 0; i < max_users; i++)
@@ -1098,9 +1096,7 @@ void input_keys_pressed(void *data, retro_bits_t* p_new_state)
          return;
       }
 
-
-      input_keys_pressed_iterate(i, p_new_state, 
-            &joypad_info);
+      input_keys_pressed_iterate(i, p_new_state);
    }
 }
 
