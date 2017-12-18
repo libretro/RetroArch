@@ -1078,6 +1078,8 @@ void input_keys_pressed(void *data, retro_bits_t* p_new_state)
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
+      bool bit_pressed = false;
+
       if (
             ((!input_driver_block_libretro_input && ((i < RARCH_FIRST_META_KEY)))
              || !input_driver_block_hotkey) &&
@@ -1085,18 +1087,14 @@ void input_keys_pressed(void *data, retro_bits_t* p_new_state)
                joypad_info, &binds,
                0, RETRO_DEVICE_JOYPAD, 0, i)
          )
-      {
-         BIT256_SET_PTR(p_new_state, i);
-         return;
-      }
+         bit_pressed = true;
 
-      if (input_keys_pressed_iterate(i, p_new_state))
+      if (bit_pressed || input_keys_pressed_iterate(i, p_new_state))
       {
          BIT256_SET_PTR(p_new_state, i);
       }
    }
 }
-
 
 void *input_driver_get_data(void)
 {
