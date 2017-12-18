@@ -404,7 +404,6 @@ input_driver_t input_sdl = {
    sdl_input_init,
    sdl_input_poll,
    sdl_input_state,
-   NULL,                      /* meta_key_pressed */
    sdl_input_free,
    NULL,
    NULL,

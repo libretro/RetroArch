@@ -526,7 +526,6 @@ input_driver_t input_x = {
    x_input_init,
    x_input_poll,
    x_input_state,
-   NULL,                            /* meta_key_pressed */
    x_input_free,
    NULL,
    NULL,

@@ -920,7 +920,6 @@ input_driver_t input_dinput = {
    dinput_init,
    dinput_poll,
    dinput_input_state,
-   NULL,                                  /* meta_key_pressed */
    dinput_free,
    NULL,
    NULL,

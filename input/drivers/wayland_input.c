@@ -324,7 +324,6 @@ input_driver_t input_wayland = {
    NULL,
    input_wl_poll,
    input_wl_state,
-   NULL,                            /* meta_key_pressed */
    input_wl_free,
    NULL,
    NULL,

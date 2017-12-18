@@ -1582,7 +1582,6 @@ input_driver_t input_android = {
    android_input_init,
    android_input_poll,
    android_input_state,
-   NULL,                            /* meta_key_pressed */
    android_input_free_input,
    android_input_set_sensor_state,
    android_input_get_sensor_input,

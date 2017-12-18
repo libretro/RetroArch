@@ -31,8 +31,6 @@
 #define MAX_PADS 4
 #endif
 
-uint64_t lifecycle_state;
-
 typedef struct gx_input
 {
    bool blocked;
@@ -97,14 +95,6 @@ static void gx_input_poll(void *data)
       gx->joypad->poll();
 }
 
-static bool gx_input_meta_key_pressed(void *data, int key)
-{
-   if (BIT64_GET(lifecycle_state, key))
-      return true;
-
-   return false;
-}
-
 static uint64_t gx_input_get_capabilities(void *data)
 {
    (void)data;
@@ -157,7 +147,6 @@ input_driver_t input_gx = {
    gx_input_init,
    gx_input_poll,
    gx_input_state,
-   gx_input_meta_key_pressed,
    gx_input_free_input,
    NULL,
    NULL,

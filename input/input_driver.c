@@ -233,6 +233,7 @@ static const uint8_t buttons[] = {
 static uint16_t input_config_vid[MAX_USERS];
 static uint16_t input_config_pid[MAX_USERS];
 
+uint64_t lifecycle_state;
 char input_device_names[MAX_INPUT_DEVICES][64];
 struct retro_keybind input_config_binds[MAX_USERS][RARCH_BIND_LIST_END];
 struct retro_keybind input_autoconf_binds[MAX_USERS][RARCH_BIND_LIST_END];
@@ -787,13 +788,10 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
 static INLINE bool input_keys_pressed_iterate(unsigned i,
       retro_bits_t* p_new_state)
 {
-   if (current_input->meta_key_pressed)
-   {
-      if ((i >= RARCH_FIRST_META_KEY) && 
-            current_input->meta_key_pressed(current_input_data, i)
-         )
-         return true;
-   }
+   if ((i >= RARCH_FIRST_META_KEY) && 
+         BIT64_GET(lifecycle_state, i)
+      )
+      return true;
 
 #ifdef HAVE_OVERLAY
    if (overlay_ptr &&

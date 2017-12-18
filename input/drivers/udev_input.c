@@ -1155,7 +1155,6 @@ input_driver_t input_udev = {
    udev_input_init,
    udev_input_poll,
    udev_input_state,
-   NULL,                                     /* meta_key_pressed */
    udev_input_free,
    NULL,
    NULL,

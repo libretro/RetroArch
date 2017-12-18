@@ -218,7 +218,6 @@ input_driver_t input_linuxraw = {
    linuxraw_input_init,
    linuxraw_input_poll,
    linuxraw_input_state,
-   NULL,                                  /* meta_key_pressed */
    linuxraw_input_free,
    NULL,
    NULL,

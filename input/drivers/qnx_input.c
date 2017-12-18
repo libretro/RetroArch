@@ -848,7 +848,6 @@ input_driver_t input_qnx = {
    qnx_input_init,
    qnx_input_poll,
    qnx_input_state,
-   NULL,                                  /* meta_key_pressed */
    qnx_input_free_input,
    NULL,
    NULL,

@@ -247,7 +247,6 @@ input_driver_t input_rwebinput = {
    rwebinput_input_init,
    rwebinput_input_poll,
    rwebinput_input_state,
-   NULL,                                     /* meta_key_pressed */
    rwebinput_input_free,
    NULL,
    NULL,

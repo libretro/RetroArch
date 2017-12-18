@@ -173,7 +173,6 @@ input_driver_t input_xinput = {
    xdk_input_init,
    xdk_input_poll,
    xdk_input_state,
-   NULL,                            /* meta_key_pressed */
    xdk_input_free_input,
    NULL,
    NULL,

@@ -836,7 +836,6 @@ input_driver_t input_winraw = {
    winraw_init,
    winraw_poll,
    winraw_input_state,
-   NULL,                               /* meta_key_pressed */
    winraw_free,
    NULL,
    NULL,

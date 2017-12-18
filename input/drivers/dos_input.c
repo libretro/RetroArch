@@ -124,7 +124,6 @@ input_driver_t input_dos = {
    dos_input_init,
    dos_input_poll,
    dos_input_state,
-   NULL,                         /* meta_key_pressed */
    dos_input_free_input,
    NULL,
    NULL,
