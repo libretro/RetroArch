@@ -836,6 +836,7 @@ ifeq ($(DEBUG), 1)
       LDFLAGS += -DEBUG
    else
       CFLAGS += -O0 -g -DDEBUG
+      LDFLAGS += -SUBSYSTEM:WINDOWS -ENTRY:mainCRTStartup
    endif
 else ifeq ($(platform), psp1)
    CFLAGS += -O2
