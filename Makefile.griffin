@@ -844,6 +844,7 @@ else ifeq ($(platform), vita)
 else ifneq (,$(findstring msvc,$(platform)))
    ifeq ($(platform), windows_msvc2003_x86)
       CFLAGS += -Wp64
+      LDFLAGS += -SUBSYSTEM:WINDOWS -ENTRY:mainCRTStartup
    endif
 
    CFLAGS += -O2 -DNDEBUG -MT -TP
