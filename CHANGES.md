@@ -2,11 +2,13 @@
 - CHEEVOS: Add badges for achievements, shows thumbnail images of achievements.
 - CHEEVOS: Leaderboard support.
 - CHEEVOS: Only disable savestates on hardcore mode if achievements are not available.
+- COMMANDLINE: Fix fullscreen toggle switch.
 - COMMON: Add 'Automatically Load Content To Playlist' feature, enabled by default.
 - COMMON: Fix slowmotion ratio always being reset back to 1.
 - COMMON: Optimized NBIO implementations now for Apple, Windows, and Linux. Uses mmap for Linux/Windows/BSD if/when available. File I/O should now be much faster for loading images inside the menu.
 - COMMON: Native Blissbox support now for latest firmware as of writing (2.0). Implementation through libusb and/or native Windows HID.
 - COMMON: New lightgun API.
+- COMMON: New VFS (Virtual File System) API.
 - COMMON: Fixed some playlist bugs.
 - COMMON: New snow shader.
 - COMMON: Fix loading cores that require no content one after another.
