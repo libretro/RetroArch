@@ -119,7 +119,7 @@ static char *strip_comment(char *str)
 static char *extract_value(char *line, bool is_value)
 {
    char *save = NULL;
-   char *tok  = NULL;
+   char *end  = NULL;
 
    if (is_value)
    {
@@ -137,23 +137,24 @@ static char *extract_value(char *line, bool is_value)
    while (isspace((int)*line))
       line++;
 
-   /* We have a full string. Read until next ". */
    if (*line == '"')
    {
+      /* We have a full string. Read until next ". */
       line++;
-      tok = strtok_r(line, "\"", &save);
-      goto end;
+      end = line;
+      while (*end != '\0' && *end != '\"') end++;
    }
    else if (*line == '\0') /* Nothing */
       return NULL;
+   else
+   {
+      /* We don't have that. Read until next space. */
+      end = line;
+      while (*end != '\0' && !isspace(*end)) end++;
+   }
 
-   /* We don't have that. Read until next space. */
-   tok = strtok_r(line, " \n\t\f\r\v", &save);
-
-end:
-   if (tok)
-      return strdup(tok);
-   return NULL;
+   *end = '\0';
+   return strdup(end);
 }
 
 /* Move semantics? */
@@ -274,8 +275,8 @@ static bool parse_line(config_file_t *conf,
 
    comment = strip_comment(line);
 
-   /* Starting line with # and include includes config files. */
-   if ((comment == line) && (conf->include_depth < MAX_INCLUDE_DEPTH))
+   /* Starting line with #include includes config files. */
+   if (comment == line)
    {
       comment++;
       if (strstr(comment, "include ") == comment)
@@ -283,13 +284,14 @@ static bool parse_line(config_file_t *conf,
          char *line = comment + strlen("include ");
          char *path = extract_value(line, false);
          if (path)
-            add_sub_conf(conf, path);
+         {
+            if (conf->include_depth >= MAX_INCLUDE_DEPTH)
+               fprintf(stderr, "!!! #include depth exceeded for config. Might be a cycle.\n");
+            else
+               add_sub_conf(conf, path);
+         }
          goto error;
       }
-   }
-   else if (conf->include_depth >= MAX_INCLUDE_DEPTH)
-   {
-      fprintf(stderr, "!!! #include depth exceeded for config. Might be a cycle.\n");
    }
 
    /* Skips to first character. */
