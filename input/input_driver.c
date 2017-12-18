@@ -894,9 +894,11 @@ void input_menu_keys_pressed(void *data, retro_bits_t* p_new_state)
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
+      bool bit_pressed    = false;
+
       if (
-            (((!input_driver_block_libretro_input && ((i < RARCH_FIRST_META_KEY)))
-              || !input_driver_block_hotkey))
+              (!input_driver_block_libretro_input && ((i < RARCH_FIRST_META_KEY)))
+            || !input_driver_block_hotkey
          )
       {
          const input_device_driver_t *first = current_input->get_joypad_driver
@@ -906,21 +908,20 @@ void input_menu_keys_pressed(void *data, retro_bits_t* p_new_state)
 
          for (port = 0; port < port_max; port++)
          {
-            uint64_t joykey      = 0;
-            uint32_t joyaxis     = 0;
-            bool      pressed    = false;
+            uint64_t              joykey      = 0;
+            uint32_t              joyaxis     = 0;
             const struct retro_keybind *mtkey = &input_config_binds[port][i];
 
             if (!mtkey->valid)
                continue;
 
-            joypad_info.joy_idx                          = settings->uints.input_joypad_map[port];
-            joypad_info.auto_binds                       = input_autoconf_binds[joypad_info.joy_idx];
-            joypad_info.axis_threshold                   = input_driver_axis_threshold;
+            joypad_info.joy_idx               = settings->uints.input_joypad_map[port];
+            joypad_info.auto_binds            = input_autoconf_binds[joypad_info.joy_idx];
+            joypad_info.axis_threshold        = input_driver_axis_threshold;
 
-            joykey     = (input_config_binds[port][i].joykey != NO_BTN)
+            joykey                            = (input_config_binds[port][i].joykey != NO_BTN)
                ? input_config_binds[port][i].joykey : joypad_info.auto_binds[i].joykey;
-            joyaxis     = (input_config_binds[port][i].joyaxis != AXIS_NONE)
+            joyaxis                           = (input_config_binds[port][i].joyaxis != AXIS_NONE)
                ? input_config_binds[port][i].joyaxis : joypad_info.auto_binds[i].joyaxis;
 
             if (sec)
@@ -929,33 +930,30 @@ void input_menu_keys_pressed(void *data, retro_bits_t* p_new_state)
                {
                   int16_t  axis        = sec->axis(joypad_info.joy_idx, joyaxis);
                   float    scaled_axis = (float)abs(axis) / 0x8000;
-                  pressed              = scaled_axis > joypad_info.axis_threshold;
+                  bit_pressed          = scaled_axis > joypad_info.axis_threshold;
                }
                else
-                  pressed              = true;
+                  bit_pressed          = true;
             }
 
-            if (!pressed && first)
+            if (!bit_pressed && first)
             {
                if ((uint16_t)joykey == NO_BTN || !first->button(joypad_info.joy_idx, (uint16_t)joykey))
                {
                   int16_t  axis        = first->axis(joypad_info.joy_idx, joyaxis);
                   float    scaled_axis = (float)abs(axis) / 0x8000;
-                  pressed              = scaled_axis > joypad_info.axis_threshold;
+                  bit_pressed          = scaled_axis > joypad_info.axis_threshold;
                }
                else
-                  pressed              = true;
+                  bit_pressed          = true;
             }
 
-            if (pressed)
-            {
-               BIT256_SET_PTR(p_new_state, i);
-               continue;
-            }
+            if (bit_pressed)
+               break;
          }
       }
 
-      if (input_keys_pressed_iterate(i, p_new_state))
+      if (bit_pressed || input_keys_pressed_iterate(i, p_new_state))
       {
          BIT256_SET_PTR(p_new_state, i);
       }
