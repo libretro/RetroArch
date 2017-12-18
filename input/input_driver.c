@@ -784,6 +784,53 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
    }
 }
 
+static void input_keys_pressed_iterate(unsigned i,
+      retro_bits_t* p_new_state,
+      rarch_joypad_info_t *joypad_info)
+{
+   if ((i >= RARCH_FIRST_META_KEY) &&
+         current_input->meta_key_pressed(current_input_data, i)
+      )
+   {
+      BIT256_SET_PTR(p_new_state, i);
+      return;
+   }
+
+#ifdef HAVE_OVERLAY
+   if (overlay_ptr &&
+         input_overlay_key_pressed(overlay_ptr, i))
+   {
+      BIT256_SET_PTR(p_new_state, i);
+      return;
+   }
+#endif
+
+#ifdef HAVE_COMMAND
+   if (input_driver_command)
+   {
+      command_handle_t handle;
+
+      handle.handle = input_driver_command;
+      handle.id     = i;
+
+      if (command_get(&handle))
+      {
+         BIT256_SET_PTR(p_new_state, i);
+         return;
+      }
+   }
+#endif
+
+#ifdef HAVE_NETWORKGAMEPAD
+   if (input_driver_remote &&
+         input_remote_key_pressed(i, 0))
+   {
+      BIT256_SET_PTR(p_new_state, i);
+      return;
+   }
+#endif
+}
+
 #ifdef HAVE_MENU
 
 /**
@@ -918,46 +965,8 @@ void input_menu_keys_pressed(void *data, retro_bits_t* p_new_state)
          }
       }
 
-      if (i >= RARCH_FIRST_META_KEY)
-      {
-         if (current_input->meta_key_pressed(current_input_data, i))
-         {
-            BIT256_SET_PTR(p_new_state, i);
-            continue;
-         }
-      }
-
-#ifdef HAVE_OVERLAY
-      if (overlay_ptr && input_overlay_key_pressed(overlay_ptr, i))
-      {
-         BIT256_SET_PTR(p_new_state, i);
-         continue;
-      }
-#endif
-
-#ifdef HAVE_COMMAND
-      if (input_driver_command)
-      {
-         command_handle_t handle;
-
-         handle.handle = input_driver_command;
-         handle.id     = i;
-
-         if (command_get(&handle))
-         {
-            BIT256_SET_PTR(p_new_state, i);
-            continue;
-         }
-      }
-#endif
-
-#ifdef HAVE_NETWORKGAMEPAD
-      if (input_driver_remote && input_remote_key_pressed(i, 0))
-      {
-         BIT256_SET_PTR(p_new_state, i);
-         continue;
-      }
-#endif
+      input_keys_pressed_iterate(i, p_new_state,
+            &joypad_info);
    }
 
    for (i = 0; i < max_users; i++)
@@ -1086,50 +1095,12 @@ void input_keys_pressed(void *data, retro_bits_t* p_new_state)
          )
       {
          BIT256_SET_PTR(p_new_state, i);
-         continue;
+         return;
       }
 
-      if ((i >= RARCH_FIRST_META_KEY) &&
-            current_input->meta_key_pressed(current_input_data, i)
-         )
-      {
-         BIT256_SET_PTR(p_new_state, i);
-         continue;
-      }
 
-#ifdef HAVE_OVERLAY
-      if (overlay_ptr &&
-            input_overlay_key_pressed(overlay_ptr, i))
-      {
-         BIT256_SET_PTR(p_new_state, i);
-         continue;
-      }
-#endif
-
-#ifdef HAVE_COMMAND
-      if (input_driver_command)
-      {
-         command_handle_t handle;
-
-         handle.handle = input_driver_command;
-         handle.id     = i;
-
-         if (command_get(&handle))
-         {
-            BIT256_SET_PTR(p_new_state, i);
-            continue;
-         }
-      }
-#endif
-
-#ifdef HAVE_NETWORKGAMEPAD
-      if (input_driver_remote &&
-            input_remote_key_pressed(i, 0))
-      {
-         BIT256_SET_PTR(p_new_state, i);
-         continue;
-      }
-#endif
+      input_keys_pressed_iterate(i, p_new_state, 
+            &joypad_info);
    }
 }
 
