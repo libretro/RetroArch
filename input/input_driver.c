@@ -784,24 +784,18 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
    }
 }
 
-static INLINE void input_keys_pressed_iterate(unsigned i,
+static INLINE bool input_keys_pressed_iterate(unsigned i,
       retro_bits_t* p_new_state)
 {
    if ((i >= RARCH_FIRST_META_KEY) &&
          current_input->meta_key_pressed(current_input_data, i)
       )
-   {
-      BIT256_SET_PTR(p_new_state, i);
-      return;
-   }
+      return true;
 
 #ifdef HAVE_OVERLAY
    if (overlay_ptr &&
          input_overlay_key_pressed(overlay_ptr, i))
-   {
-      BIT256_SET_PTR(p_new_state, i);
-      return;
-   }
+      return true;
 #endif
 
 #ifdef HAVE_COMMAND
@@ -813,21 +807,17 @@ static INLINE void input_keys_pressed_iterate(unsigned i,
       handle.id     = i;
 
       if (command_get(&handle))
-      {
-         BIT256_SET_PTR(p_new_state, i);
-         return;
-      }
+         return true;
    }
 #endif
 
 #ifdef HAVE_NETWORKGAMEPAD
    if (input_driver_remote &&
          input_remote_key_pressed(i, 0))
-   {
-      BIT256_SET_PTR(p_new_state, i);
-      return;
-   }
+      return true;
 #endif
+
+   return false;
 }
 
 #ifdef HAVE_MENU
@@ -964,7 +954,10 @@ void input_menu_keys_pressed(void *data, retro_bits_t* p_new_state)
          }
       }
 
-      input_keys_pressed_iterate(i, p_new_state);
+      if (input_keys_pressed_iterate(i, p_new_state))
+      {
+         BIT256_SET_PTR(p_new_state, i);
+      }
    }
 
    for (i = 0; i < max_users; i++)
@@ -1096,7 +1089,10 @@ void input_keys_pressed(void *data, retro_bits_t* p_new_state)
          return;
       }
 
-      input_keys_pressed_iterate(i, p_new_state);
+      if (input_keys_pressed_iterate(i, p_new_state))
+      {
+         BIT256_SET_PTR(p_new_state, i);
+      }
    }
 }
 
