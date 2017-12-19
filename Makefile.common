@@ -1624,6 +1624,29 @@ OBJ += gfx/video_filters/2xsai.o \
 		 gfx/video_filters/phosphor2x.o
 endif
 
+ifeq ($(WANT_IOSUHAX), 1)
+DEFINES += -I$(DEPS_DIR)/libiosuhax
+CFLAGS  += -I$(DEPS_DIR)/libiosuhax
+OBJ += $(DEPS_DIR)/libiosuhax/iosuhax.o \
+		 $(DEPS_DIR)/libiosuhax/iosuhax_devoptab.o \
+		 $(DEPS_DIR)/libiosuhax/iosuhax_disc_interface.o
+endif
+
+ifeq ($(WANT_LIBFAT), 1)
+DEFINES += -I$(DEPS_DIR)/libfat/include
+CFLAGS  += -I$(DEPS_DIR)/libfat/include
+OBJ += $(DEPS_DIR)/libfat/cache.o \
+		 $(DEPS_DIR)/libfat/directory.o \
+		 $(DEPS_DIR)/libfat/disc.o \
+		 $(DEPS_DIR)/libfat/fatdir.o \
+		 $(DEPS_DIR)/libfat/fatfile.o \
+		 $(DEPS_DIR)/libfat/file_allocation_table.o \
+		 $(DEPS_DIR)/libfat/filetime.o \
+		 $(DEPS_DIR)/libfat/libfat.o \
+		 $(DEPS_DIR)/libfat/lock.o \
+		 $(DEPS_DIR)/libfat/partition.o
+endif
+
 ifeq ($(HAVE_STATIC_AUDIO_FILTERS), 1)
 OBJ += libretro-common/audio/dsp_filters/echo.o \
 		 libretro-common/audio/dsp_filters/eq.o \
