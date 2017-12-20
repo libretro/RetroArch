@@ -143,7 +143,7 @@ CFLAGS +=  -ffast-math -Werror=implicit-function-declaration
 #CFLAGS	+= -Wall
 
 #todo: remove -DWIIU and use the built-in macros instead (HW_WUP or __wiiu__).
-CFLAGS += -DWIIU -DMSB_FIRST
+CFLAGS += -DWIIU -DMSB_FIRST -D__WUT__
 CFLAGS += -DHAVE_MAIN
 CFLAGS += -DHAVE_UPDATE_ASSETS
 CFLAGS += -DRARCH_INTERNAL -DRARCH_CONSOLE
