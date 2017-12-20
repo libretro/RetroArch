@@ -308,6 +308,8 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t unused)
       if (path_wide)
          free(path_wide);
 #endif
+#elif defined(__CELLOS_LV2__)
+	  cellFsOpen(path, flags, &stream->fd, NULL, 0);
 #else
       /* FIXME: HAVE_BUFFERED_IO is always 1, but if it is ever changed, this open() needs to have an alternate _wopen() for Windows. */
       stream->fd = open(path, flags, mode_int);
