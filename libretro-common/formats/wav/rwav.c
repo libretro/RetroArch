@@ -52,7 +52,7 @@ void rwav_init(rwav_iterator_t* iter, rwav_t* out, const void* buf, size_t size)
    iter->data   = (const uint8_t*)buf;
    iter->size   = size;
    iter->step   = ITER_BEGIN;
-   
+
    out->samples = NULL;
 }
 
@@ -63,7 +63,7 @@ enum rwav_state rwav_iterate(rwav_iterator_t *iter)
    void *samples       = NULL;
    rwav_t *rwav        = iter->out;
    const uint8_t *data = iter->data;
-   
+
    switch (iter->step)
    {
       case ITER_BEGIN:
@@ -154,7 +154,7 @@ enum rwav_state rwav_iterate(rwav_iterator_t *iter)
             return RWAV_ITERATE_MORE;
          return RWAV_ITERATE_DONE;
    }
-   
+
    return RWAV_ITERATE_ERROR;
 }
 

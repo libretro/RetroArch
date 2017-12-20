@@ -33,6 +33,7 @@
 #include "../widgets/menu_dialog.h"
 #include "../widgets/menu_filebrowser.h"
 #include "../widgets/menu_input_dialog.h"
+#include "../menu_networking.h"
 #include "../menu_content.h"
 #include "../menu_shader.h"
 
@@ -114,11 +115,6 @@ static char *lakka_get_project(void)
    return lakka_project;
 }
 #endif
-
-void cb_net_generic_subdir(void *task_data, void *user_data, const char *err);
-
-/* defined in menu_cbs_deferred_push */
-void cb_net_generic(void *task_data, void *user_data, const char *err);
 #endif
 
 int generic_action_ok_displaylist_push(const char *path,
@@ -1245,14 +1241,14 @@ static int generic_action_ok(const char *path,
    {
       case ACTION_OK_LOAD_WALLPAPER:
          flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MENU_SETTINGS_LIST);
-         if (path_file_exists(action_path))
+         if (filestream_exists(action_path))
          {
             settings_t            *settings = config_get_ptr();
 
             strlcpy(settings->paths.path_menu_wallpaper,
                   action_path, sizeof(settings->paths.path_menu_wallpaper));
 
-            if (path_file_exists(action_path))
+            if (filestream_exists(action_path))
                task_push_image_load(action_path,
                      menu_display_handle_wallpaper_upload, NULL);
          }
@@ -1767,7 +1763,7 @@ static int action_ok_audio_add_to_mixer(const char *path,
    playlist_get_index(tmp_playlist, entry_idx,
          &entry_path, NULL, NULL, NULL, NULL, NULL);
 
-   if(path_file_exists(entry_path))
+   if (filestream_exists(entry_path))
       task_push_audio_mixer_load(entry_path,
             NULL, NULL);
 
@@ -1795,7 +1791,7 @@ static int action_ok_audio_add_to_mixer_and_collection(const char *path,
          "builtin",
          "musicplayer");
 
-   if(path_file_exists(combined_path))
+   if (filestream_exists(combined_path))
       task_push_audio_mixer_load(combined_path,
             NULL, NULL);
 
@@ -2006,7 +2002,7 @@ static int (funcname)(const char *path, const char *label, unsigned type, size_t
    return 0; \
 }
 
-default_action_dialog_start(action_ok_shader_preset_save_as, 
+default_action_dialog_start(action_ok_shader_preset_save_as,
    msg_hash_to_str(MSG_INPUT_PRESET_FILENAME),
    (unsigned)idx,
    menu_input_st_string_cb_save_preset)
@@ -2070,7 +2066,7 @@ static int generic_action_ok_shader_preset_save(const char *path,
             core_name,
             sizeof(directory));
    }
-   if(!path_file_exists(directory))
+   if (!filestream_exists(directory))
        path_mkdir(directory);
 
    switch (action_type)
@@ -2152,7 +2148,7 @@ static int generic_action_ok_remap_file_operation(const char *path,
          break;
    }
 
-   if(!path_file_exists(directory))
+   if (!filestream_exists(directory))
        path_mkdir(directory);
 
    if (action_type < ACTION_OK_REMAP_FILE_REMOVE_CORE)
@@ -2177,7 +2173,7 @@ static int generic_action_ok_remap_file_operation(const char *path,
    {
       if(input_remapping_remove_file(file))
       {
-         if (action_type == ACTION_OK_REMAP_FILE_REMOVE_CORE && 
+         if (action_type == ACTION_OK_REMAP_FILE_REMOVE_CORE &&
                rarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL))
          {
             rarch_ctl(RARCH_CTL_UNSET_REMAPS_CORE_ACTIVE, NULL);
@@ -2461,8 +2457,8 @@ static void cb_decompressed(void *task_data, void *user_data, const char *err)
 
    if (dec)
    {
-      if (path_file_exists(dec->source_file))
-         path_file_remove(dec->source_file);
+      if (filestream_exists(dec->source_file))
+         filestream_delete(dec->source_file);
 
       free(dec->source_file);
       free(dec);
@@ -2652,7 +2648,7 @@ static void cb_generic_download(void *task_data,
                   dirname,
                   sizeof(shaderdir));
 
-            if (!path_file_exists(shaderdir) && !path_mkdir(shaderdir))
+            if (!filestream_exists(shaderdir) && !path_mkdir(shaderdir))
                goto finish;
 
             dir_path = shaderdir;
@@ -3391,7 +3387,7 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
 #ifndef RARCH_CONSOLE
          netplay_discovery_driver_ctl(RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES, &lan_hosts);
          if (lan_hosts)
-            lan_room_count                    = (int)lan_hosts->size;   
+            lan_room_count                    = (int)lan_hosts->size;
 #endif
 
          netplay_rooms_parse(data->data);
@@ -3435,6 +3431,9 @@ static void netplay_refresh_rooms_cb(void *task_data, void *user_data, const cha
                strlcpy(netplay_room_list[i].gamename,
                      host->content,
                      sizeof(netplay_room_list[i].gamename));
+               strlcpy(netplay_room_list[i].frontend,
+                     host->frontend,
+                     sizeof(netplay_room_list[i].frontend));
 
                netplay_room_list[i].port      = host->port;
                netplay_room_list[i].gamecrc   = host->content_crc;
@@ -3749,12 +3748,15 @@ static int action_ok_netplay_enable_host(const char *path,
    bool contentless = false;
    bool is_inited   = false;
 
+   file_list_t *list = menu_entries_get_selection_buf_ptr(0);
+
    content_get_status(&contentless, &is_inited);
 
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
       generic_action_ok_command(CMD_EVENT_NETPLAY_DEINIT);
    netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
 
+   netplay_refresh_rooms_menu(list);
    /* If we haven't yet started, this will load on its own */
    if (!is_inited)
    {
@@ -3860,7 +3862,7 @@ static int action_ok_core_delete(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    const char *path_core = path_get(RARCH_PATH_CORE);
-   char *core_path       = !string_is_empty(path_core) 
+   char *core_path       = !string_is_empty(path_core)
       ? strdup(path_core) : NULL;
 
    if (!core_path)
@@ -3869,7 +3871,7 @@ static int action_ok_core_delete(const char *path,
    generic_action_ok_command(CMD_EVENT_UNLOAD_CORE);
    menu_entries_flush_stack(0, 0);
 
-   if (path_file_remove(core_path) != 0) { }
+   if (filestream_delete(core_path) != 0) { }
 
    free(core_path);
 

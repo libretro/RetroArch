@@ -75,7 +75,7 @@ typedef interface ID3DXEffect ID3DXEffect;
 typedef interface ID3DXEffect *LPD3DXEFFECT;
 
 // {648B1CEB-8D4E-4d66-B6FA-E44969E82E89}
-DEFINE_GUID( IID_ID3DXEffect, 
+DEFINE_GUID( IID_ID3DXEffect,
 0x648b1ceb, 0x8d4e, 0x4d66, 0xb6, 0xfa, 0xe4, 0x49, 0x69, 0xe8, 0x2e, 0x89);
 
 
@@ -103,9 +103,9 @@ DECLARE_INTERFACE_(ID3DXEffect, IUnknown)
     STDMETHOD(GetTechnique)(THIS_ LPCSTR* ppTechnique) PURE;
 
     STDMETHOD(SetDword)(THIS_ LPCSTR pParameter, DWORD dw) PURE;
-    STDMETHOD(GetDword)(THIS_ LPCSTR pParameter, DWORD* pdw) PURE; 
+    STDMETHOD(GetDword)(THIS_ LPCSTR pParameter, DWORD* pdw) PURE;
     STDMETHOD(SetFloat)(THIS_ LPCSTR pParameter, FLOAT f) PURE;
-    STDMETHOD(GetFloat)(THIS_ LPCSTR pParameter, FLOAT* pf) PURE;    
+    STDMETHOD(GetFloat)(THIS_ LPCSTR pParameter, FLOAT* pf) PURE;
     STDMETHOD(SetVector)(THIS_ LPCSTR pParameter, CONST D3DXVECTOR4* pVector) PURE;
     STDMETHOD(GetVector)(THIS_ LPCSTR pParameter, D3DXVECTOR4* pVector) PURE;
     STDMETHOD(SetMatrix)(THIS_ LPCSTR pParameter, CONST D3DXMATRIX* pMatrix) PURE;

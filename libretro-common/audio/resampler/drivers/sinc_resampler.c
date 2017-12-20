@@ -133,7 +133,7 @@ typedef struct rarch_sinc_resampler
    unsigned ptr;
    uint32_t time;
 
-   /* A buffer for phase_table, buffer_l and buffer_r 
+   /* A buffer for phase_table, buffer_l and buffer_r
     * are created in a single calloc().
     * Ensure that we get as good cache locality as we can hope for. */
    float *main_buffer;
@@ -141,7 +141,7 @@ typedef struct rarch_sinc_resampler
 
 #if defined(__ARM_NEON__) && !defined(SINC_COEFF_LERP)
 /* Assumes that taps >= 8, and that taps is a multiple of 8. */
-void process_sinc_neon_asm(float *out, const float *left, 
+void process_sinc_neon_asm(float *out, const float *left,
       const float *right, const float *coeff, unsigned taps);
 
 static void resampler_sinc_process_neon(void *re_, struct resampler_data *data)
@@ -163,10 +163,10 @@ static void resampler_sinc_process_neon(void *re_, struct resampler_data *data)
             resamp->ptr = resamp->taps;
          resamp->ptr--;
 
-         resamp->buffer_l[resamp->ptr + resamp->taps] = 
+         resamp->buffer_l[resamp->ptr + resamp->taps] =
          resamp->buffer_l[resamp->ptr]                = *input++;
 
-         resamp->buffer_r[resamp->ptr + resamp->taps] = 
+         resamp->buffer_r[resamp->ptr + resamp->taps] =
          resamp->buffer_r[resamp->ptr]                = *input++;
 
          resamp->time                                -= PHASES;
@@ -214,10 +214,10 @@ static void resampler_sinc_process_avx(void *re_, struct resampler_data *data)
             resamp->ptr = resamp->taps;
          resamp->ptr--;
 
-         resamp->buffer_l[resamp->ptr + resamp->taps] = 
+         resamp->buffer_l[resamp->ptr + resamp->taps] =
          resamp->buffer_l[resamp->ptr]                = *input++;
 
-         resamp->buffer_r[resamp->ptr + resamp->taps] = 
+         resamp->buffer_r[resamp->ptr + resamp->taps] =
          resamp->buffer_r[resamp->ptr]                = *input++;
 
          resamp->time                                -= PHASES;
@@ -257,7 +257,7 @@ static void resampler_sinc_process_avx(void *re_, struct resampler_data *data)
             sum_r         = _mm256_add_ps(sum_r, _mm256_mul_ps(buf_r, sinc));
          }
 
-         /* hadd on AVX is weird, and acts on low-lanes 
+         /* hadd on AVX is weird, and acts on low-lanes
           * and high-lanes separately. */
          __m256 res_l = _mm256_hadd_ps(sum_l, sum_l);
          __m256 res_r = _mm256_hadd_ps(sum_r, sum_r);
@@ -301,10 +301,10 @@ static void resampler_sinc_process_sse(void *re_, struct resampler_data *data)
             resamp->ptr = resamp->taps;
          resamp->ptr--;
 
-         resamp->buffer_l[resamp->ptr + resamp->taps] = 
+         resamp->buffer_l[resamp->ptr + resamp->taps] =
          resamp->buffer_l[resamp->ptr]                = *input++;
 
-         resamp->buffer_r[resamp->ptr + resamp->taps] = 
+         resamp->buffer_r[resamp->ptr + resamp->taps] =
          resamp->buffer_r[resamp->ptr]                = *input++;
 
          resamp->time                                -= PHASES;
@@ -361,7 +361,7 @@ static void resampler_sinc_process_sse(void *re_, struct resampler_data *data)
          sum = _mm_add_ps(_mm_shuffle_ps(sum, sum, _MM_SHUFFLE(3, 3, 1, 1)), sum);
 
          /* sum   = {R1, R1, L1, L1 } + { R1, R0, L1, L0 }
-          * sum   = { X,  R,  X,  L } 
+          * sum   = { X,  R,  X,  L }
           */
 
          /* Store L */
@@ -399,10 +399,10 @@ static void resampler_sinc_process_c(void *re_, struct resampler_data *data)
             resamp->ptr = resamp->taps;
          resamp->ptr--;
 
-         resamp->buffer_l[resamp->ptr + resamp->taps] = 
+         resamp->buffer_l[resamp->ptr + resamp->taps] =
             resamp->buffer_l[resamp->ptr]                = *input++;
 
-         resamp->buffer_r[resamp->ptr + resamp->taps] = 
+         resamp->buffer_r[resamp->ptr + resamp->taps] =
             resamp->buffer_r[resamp->ptr]                = *input++;
 
          resamp->time                                -= PHASES;
@@ -416,7 +416,7 @@ static void resampler_sinc_process_c(void *re_, struct resampler_data *data)
          const float *buffer_r    = resamp->buffer_r + resamp->ptr;
          unsigned taps            = resamp->taps;
          unsigned phase           = resamp->time >> SUBPHASE_BITS;
-         const float *phase_table = resamp->phase_table + phase * taps * TAPS_MULT; 
+         const float *phase_table = resamp->phase_table + phase * taps * TAPS_MULT;
 #if SINC_COEFF_LERP
          const float *delta_table = phase_table + taps;
          float delta              = (float)
@@ -467,7 +467,7 @@ static void sinc_init_table(rarch_sinc_resampler_t *resamp, double cutoff,
          double window_phase = (double)n / (phases * taps); /* [0, 1). */
          window_phase        = 2.0 * window_phase - 1.0; /* [-1, 1) */
          sinc_phase          = sidelobes * window_phase;
-         val                 = cutoff * sinc(M_PI * sinc_phase * cutoff) * 
+         val                 = cutoff * sinc(M_PI * sinc_phase * cutoff) *
             window_function(window_phase) / window_mod;
          phase_table[i * stride * taps + j] = val;
       }
@@ -482,7 +482,7 @@ static void sinc_init_table(rarch_sinc_resampler_t *resamp, double cutoff,
       {
          for (j = 0; j < taps; j++)
          {
-            float delta = phase_table[(p + 1) * stride * taps + j] - 
+            float delta = phase_table[(p + 1) * stride * taps + j] -
                phase_table[p * stride * taps + j];
             phase_table[(p * stride + 1) * taps + j] = delta;
          }
@@ -498,7 +498,7 @@ static void sinc_init_table(rarch_sinc_resampler_t *resamp, double cutoff,
          window_phase        = 2.0 * window_phase - 1.0; /* (-1, 1] */
          sinc_phase          = sidelobes * window_phase;
 
-         val                 = cutoff * sinc(M_PI * sinc_phase * cutoff) * 
+         val                 = cutoff * sinc(M_PI * sinc_phase * cutoff) *
             window_function(window_phase) / window_mod;
          delta = (val - phase_table[phase * stride * taps + j]);
          phase_table[(phase * stride + 1) * taps + j] = delta;
@@ -530,7 +530,7 @@ static void *resampler_sinc_new(const struct resampler_config *config,
    re->taps = TAPS;
    cutoff   = CUTOFF;
 
-   /* Downsampling, must lower cutoff, and extend number of 
+   /* Downsampling, must lower cutoff, and extend number of
     * taps accordingly to keep same stopband attenuation. */
    if (bandwidth_mod < 1.0)
    {

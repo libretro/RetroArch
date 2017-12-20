@@ -28,13 +28,13 @@
 #endif
 
 /* Custom implementation of the GNU getopt_long for portability.
- * Not designed to be fully compatible, but compatible with 
+ * Not designed to be fully compatible, but compatible with
  * the features RetroArch uses. */
 
 #ifdef HAVE_GETOPT_LONG
 #include <getopt.h>
 #else
-/* Avoid possible naming collisions during link since we 
+/* Avoid possible naming collisions during link since we
  * prefer to use the actual name. */
 #define getopt_long(argc, argv, optstring, longopts, longindex) __getopt_long_retro(argc, argv, optstring, longopts, longindex)
 
@@ -51,7 +51,7 @@ struct option
 };
 
 /* argv[] is declared with char * const argv[] in GNU,
- * but this makes no sense, as non-POSIX getopt_long 
+ * but this makes no sense, as non-POSIX getopt_long
  * mutates argv (non-opts are moved to the end). */
 int getopt_long(int argc, char *argv[],
       const char *optstring, const struct option *longopts, int *longindex);

@@ -27,7 +27,7 @@ static void plug_holes(struct mem *rmem)
 {
 	struct mem *nmem;
 	struct mem *pmem;
-	
+
 	nmem = (struct mem*)&ram_block[rmem->next];
 	if(rmem!=nmem && nmem->used==0 && (u8_t*)nmem!=(u8_t*)ram_end) {
 		if(ram_free==nmem) ram_free = rmem;
@@ -53,7 +53,7 @@ void memr_init()
 	rmem->next = UIP_MEM_SIZE;
 	rmem->prev = 0;
 	rmem->used = 0;
-	
+
 	ram_end = (struct mem*)&ram_block[UIP_MEM_SIZE];
 	ram_end->used = 1;
 	ram_end->prev = UIP_MEM_SIZE;
@@ -77,7 +77,7 @@ void* memr_malloc(u32 size)
 		if(!rmem->used && rmem->next - (ptr + SIZEOF_STRUCT_MEM)>=size + SIZEOF_STRUCT_MEM) {
 			ptr2 = ptr + SIZEOF_STRUCT_MEM + size;
 			rmem2 = (struct mem*)&ram_block[ptr2];
-			
+
 			rmem2->prev = ptr;
 			rmem2->next = rmem->next;
 			rmem->next = ptr2;
@@ -105,7 +105,7 @@ void memr_free(void *ptr)
 
 	rmem = (struct mem*)((u8_t*)ptr - SIZEOF_STRUCT_MEM);
 	rmem->used = 0;
-	
+
 	if(rmem<ram_free) ram_free = rmem;
 
 	plug_holes(rmem);
@@ -115,7 +115,7 @@ void* memr_realloc(void *ptr,u32 newsize)
 {
 	u32 size,ptr1,ptr2;
 	struct mem *rmem,*rmem2;
-	
+
 	if(newsize%MEM_ALIGNMENT) newsize += MEM_ALIGNMENT - ((newsize + SIZEOF_STRUCT_MEM)%MEM_ALIGNMENT);
 	if(newsize>UIP_MEM_SIZE) return NULL;
 	if((u8_t*)ptr<(u8_t*)ram_block || (u8_t*)ptr>=(u8_t*)ram_end) {

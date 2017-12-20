@@ -77,7 +77,7 @@ static int setting_int_action_right_default(void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
    double               max = 0.0f;
-   
+
    if (!setting)
       return -1;
 
@@ -160,7 +160,7 @@ static int setting_uint_action_left_default(void *data, bool wraparound)
    rarch_setting_t *setting = (rarch_setting_t*)data;
    double               min = 0.0f;
    bool                 overflowed = false;
-   
+
    if (!setting)
       return -1;
 
@@ -197,7 +197,7 @@ static int setting_uint_action_right_default(void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
    double               max = 0.0f;
-   
+
    if (!setting)
       return -1;
 
@@ -309,7 +309,7 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
                   *setting->value.target.unsigned_integer = max;
             }
          }
-         break;      
+         break;
       case ST_FLOAT:
          sscanf(value, "%f", setting->value.target.fraction);
          if (flags & SD_FLAG_HAS_RANGE)
@@ -356,7 +356,7 @@ static int setting_fraction_action_left_default(
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
    double               min = 0.0f;
-   
+
    if (!setting)
       return -1;
 
@@ -399,7 +399,7 @@ static int setting_fraction_action_right_default(
 
    (void)wraparound; /* TODO/FIXME - handle this */
 
-   *setting->value.target.fraction = 
+   *setting->value.target.fraction =
       *setting->value.target.fraction + setting->step;
 
    if (setting->enforce_maxrange)
@@ -614,7 +614,7 @@ static rarch_setting_t setting_action_setting(const char* name,
 
    result.enum_idx                  = MSG_UNKNOWN;
    result.type                      = ST_ACTION;
-  
+
    result.size                      = 0;
 
    result.name                      = name;
@@ -677,7 +677,7 @@ static rarch_setting_t setting_group_setting(enum setting_type type, const char*
 
    result.enum_idx                  = MSG_UNKNOWN;
    result.type                      = type;
-  
+
    result.size                      = 0;
 
    result.name                      = name;
@@ -751,7 +751,7 @@ static rarch_setting_t setting_float_setting(const char* name,
 
    result.enum_idx                  = MSG_UNKNOWN;
    result.type                      = ST_FLOAT;
-  
+
    result.size                      = sizeof(float);
 
    result.name                      = name;
@@ -813,7 +813,7 @@ static rarch_setting_t setting_float_setting(const char* name,
  * @change_handler     : Function callback for change handler function pointer.
  * @read_handler       : Function callback for read handler function pointer.
  *
- * Initializes a setting of type ST_UINT. 
+ * Initializes a setting of type ST_UINT.
  *
  * Returns: setting of type ST_UINT.
  **/
@@ -828,7 +828,7 @@ static rarch_setting_t setting_uint_setting(const char* name,
 
    result.enum_idx                  = MSG_UNKNOWN;
    result.type                      = ST_UINT;
-  
+
    result.size                      = sizeof(unsigned int);
 
    result.name                      = name;
@@ -905,7 +905,7 @@ static rarch_setting_t setting_hex_setting(const char* name,
 
    result.enum_idx                  = MSG_UNKNOWN;
    result.type                      = ST_HEX;
-  
+
    result.size                      = sizeof(unsigned int);
 
    result.name                      = name;
@@ -967,7 +967,7 @@ static rarch_setting_t setting_hex_setting(const char* name,
  * @group              : Group that the setting belongs to.
  * @subgroup           : Subgroup that the setting belongs to.
  *
- * Initializes a setting of type ST_BIND. 
+ * Initializes a setting of type ST_BIND.
  *
  * Returns: setting of type ST_BIND.
  **/
@@ -983,7 +983,7 @@ static rarch_setting_t setting_bind_setting(const char* name,
 
    result.enum_idx                  = MSG_UNKNOWN;
    result.type                      = ST_BIND;
-  
+
    result.size                      = 0;
 
    result.name                      = name;
@@ -1008,7 +1008,7 @@ static rarch_setting_t setting_bind_setting(const char* name,
 #ifdef HAVE_MENU
    result.action_start              = setting_bind_action_start;
 #else
-   result.action_start              = NULL; 
+   result.action_start              = NULL;
 #endif
    result.action_left               = NULL;
    result.action_right              = NULL;
@@ -1127,7 +1127,7 @@ int setting_string_action_start_generic(void *data)
  * @change_handler     : Function callback for change handler function pointer.
  * @read_handler       : Function callback for read handler function pointer.
  *
- * Initializes a string setting (of type @type). 
+ * Initializes a string setting (of type @type).
  *
  * Returns: String setting of type @type.
  **/
@@ -1143,7 +1143,7 @@ static rarch_setting_t setting_string_setting(enum setting_type type,
 
    result.enum_idx                  = MSG_UNKNOWN;
    result.type                      = type;
-  
+
    result.size                      = size;
 
    result.name                      = name;
@@ -1225,7 +1225,7 @@ static rarch_setting_t setting_string_setting(enum setting_type type,
  * @change_handler     : Function callback for change handler function pointer.
  * @read_handler       : Function callback for read handler function pointer.
  *
- * Initializes a string options list setting. 
+ * Initializes a string options list setting.
  *
  * Returns: string option list setting.
  **/
@@ -1265,7 +1265,7 @@ static rarch_setting_t setting_subgroup_setting(enum setting_type type,
 
    result.enum_idx                  = MSG_UNKNOWN;
    result.type                      = type;
-  
+
    result.size                      = 0;
 
    result.name                      = name;
@@ -1340,7 +1340,7 @@ static rarch_setting_t setting_bool_setting(const char* name,
 
    result.enum_idx                  = MSG_UNKNOWN;
    result.type                      = ST_BOOL;
-  
+
    result.size                      = sizeof(bool);
 
    result.name                      = name;
@@ -1404,7 +1404,7 @@ static rarch_setting_t setting_bool_setting(const char* name,
  * @change_handler     : Function callback for change handler function pointer.
  * @read_handler       : Function callback for read handler function pointer.
  *
- * Initializes a setting of type ST_INT. 
+ * Initializes a setting of type ST_INT.
  *
  * Returns: setting of type ST_INT.
  **/
@@ -1419,7 +1419,7 @@ static rarch_setting_t setting_int_setting(const char* name,
 
    result.enum_idx                  = MSG_UNKNOWN;
    result.type                      = ST_INT;
-  
+
    result.size                      = sizeof(int);
 
    result.name                      = name;
@@ -1708,7 +1708,7 @@ bool CONFIG_DIR(
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
-   rarch_setting_t value = setting_string_setting(ST_DIR, 
+   rarch_setting_t value = setting_string_setting(ST_DIR,
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
          target, (unsigned)len, default_value,
@@ -1804,7 +1804,7 @@ bool CONFIG_HEX(
       unsigned int *target,
       enum msg_hash_enums name_enum_idx,
       enum msg_hash_enums SHORT_enum_idx,
-      unsigned int default_value, 
+      unsigned int default_value,
       rarch_setting_group_info_t *group_info,
       rarch_setting_group_info_t *subgroup_info,
       const char *parent_group,

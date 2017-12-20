@@ -82,6 +82,12 @@ struct udev_joypad
    int32_t pid;
 };
 
+struct joypad_udev_entry
+{
+   const char *devnode;
+   struct udev_list_entry *item;
+};
+
 static struct udev *udev_joypad_fd             = NULL;
 static struct udev_monitor *udev_joypad_mon    = NULL;
 static struct udev_joypad udev_pads[MAX_USERS];
@@ -526,12 +532,22 @@ static void udev_joypad_poll(void)
    }
 }
 
+/* Used for sorting devnodes to appear in the correct order */
+static int sort_devnodes(const void *a, const void *b)
+{
+   const struct joypad_udev_entry *aa = a;
+   const struct joypad_udev_entry *bb = b;
+   return strcmp(aa->devnode, bb->devnode);
+}
+
 static bool udev_joypad_init(void *data)
 {
    unsigned i;
+   unsigned sorted_count = 0;
    struct udev_list_entry *devs     = NULL;
    struct udev_list_entry *item     = NULL;
    struct udev_enumerate *enumerate = NULL;
+   struct joypad_udev_entry sorted[MAX_USERS];
 
    (void)data;
 
@@ -561,6 +577,26 @@ static bool udev_joypad_init(void *data)
    for (item = devs; item; item = udev_list_entry_get_next(item))
    {
       const char         *name = udev_list_entry_get_name(item);
+      struct udev_device  *dev = udev_device_new_from_syspath(udev_joypad_fd, name);
+      const char      *devnode = udev_device_get_devnode(dev);
+
+      if (devnode != NULL) {
+         sorted[sorted_count].devnode = devnode;
+         sorted[sorted_count].item = item;
+         sorted_count++;
+      } else {
+         udev_device_unref(dev);
+      }
+   }
+
+   /* Sort the udev entries by devnode name so that they are
+    * created in the proper order */
+   qsort(sorted, sorted_count,
+         sizeof(struct joypad_udev_entry), sort_devnodes);
+
+   for (i = 0; i < sorted_count; i++)
+   {
+      const char         *name = udev_list_entry_get_name(sorted[i].item);
       struct udev_device  *dev = udev_device_new_from_syspath(udev_joypad_fd, name);
       const char      *devnode = udev_device_get_devnode(dev);
 

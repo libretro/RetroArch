@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -45,6 +45,7 @@
 #include "../../input/input_driver.h"
 #include "../../input/input_keymaps.h"
 #include "../video_thread_wrapper.h"
+#include "../video_display_server.h"
 #include <shellapi.h>
 
 #ifdef HAVE_MENU
@@ -742,6 +743,7 @@ bool win32_window_create(void *data, unsigned style,
       RECT *mon_rect, unsigned width,
       unsigned height, bool fullscreen)
 {
+   settings_t *settings  = config_get_ptr();
 #ifndef _XBOX
    main_window.hwnd = CreateWindowEx(0,
          "RetroArch", "RetroArch",
@@ -756,6 +758,14 @@ bool win32_window_create(void *data, unsigned style,
    video_driver_display_type_set(RARCH_DISPLAY_WIN32);
    video_driver_display_set(0);
    video_driver_window_set((uintptr_t)main_window.hwnd);
+
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500
+   /* Windows 2000 and above use layered windows to enable transparency */
+   SetWindowLongPtr(main_window.hwnd,
+        GWL_EXSTYLE,
+        GetWindowLongPtr(main_window.hwnd, GWL_EXSTYLE) | WS_EX_LAYERED);
+   SetLayeredWindowAttributes(main_window.hwnd, 0, (255 * settings->uints.video_window_opacity) / 100, LWA_ALPHA);
+#endif
 #endif
    return true;
 }

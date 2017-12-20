@@ -24,6 +24,7 @@
 #include <file/file_path.h>
 #include <lists/dir_list.h>
 #include <string/stdstring.h>
+#include <streams/file_stream.h>
 #include <streams/stdin_stream.h>
 
 #ifdef HAVE_CONFIG_H
@@ -610,7 +611,7 @@ static void command_stdin_poll(command_t *handle)
    handle->stdin_buf_ptr                    += ret;
    handle->stdin_buf[handle->stdin_buf_ptr]  = '\0';
 
-   last_newline                              = 
+   last_newline                              =
       strrchr(handle->stdin_buf, '\n');
 
    if (!last_newline)
@@ -1028,7 +1029,7 @@ static void command_event_init_controllers(void)
             break;
          case RETRO_DEVICE_JOYPAD:
             /* Ideally these checks shouldn't be required but if we always
-             * call core_set_controller_port_device input won't work on 
+             * call core_set_controller_port_device input won't work on
              * cores that don't set port information properly */
             if (info && info->ports.size != 0 && i < info->ports.size)
                set_controller = true;
@@ -1114,7 +1115,7 @@ static void command_event_load_auto_state(void)
             file_path_str(FILE_PATH_AUTO_EXTENSION),
             savestate_name_auto_size);
 
-   if (!path_file_exists(savestate_name_auto))
+   if (!filestream_exists(savestate_name_auto))
       goto error;
 
    ret = content_load_state(savestate_name_auto, false, true);
@@ -1126,7 +1127,7 @@ static void command_event_load_auto_state(void)
          msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
          savestate_name_auto, ret ? "succeeded" : "failed");
    RARCH_LOG("%s\n", msg);
-   
+
    free(savestate_name_auto);
 
    return;
@@ -1338,7 +1339,7 @@ static bool command_event_save_auto_state(void)
    bool is_inited              = false;
    char *savestate_name_auto   = (char*)
       calloc(PATH_MAX_LENGTH, sizeof(*savestate_name_auto));
-   size_t 
+   size_t
       savestate_name_auto_size = PATH_MAX_LENGTH * sizeof(char);
    settings_t *settings        = config_get_ptr();
    global_t   *global          = global_get_ptr();
@@ -1383,7 +1384,7 @@ static bool command_event_save_config(
       char *s, size_t len)
 {
    bool path_exists = !string_is_empty(config_path);
-   const char *str  = path_exists ? config_path : 
+   const char *str  = path_exists ? config_path :
       path_get(RARCH_PATH_CONFIG);
 
    if (path_exists && config_save_file(config_path))
@@ -1446,7 +1447,7 @@ static bool command_event_save_core_config(void)
    core_path = path_get(RARCH_PATH_CORE);
 
    /* Infer file name based on libretro core. */
-   if (!string_is_empty(core_path) && path_file_exists(core_path))
+   if (!string_is_empty(core_path) && filestream_exists(core_path))
    {
       unsigned i;
       RARCH_LOG("%s\n", msg_hash_to_str(MSG_USING_CORE_NAME_FOR_NEW_CONFIG));
@@ -1474,7 +1475,7 @@ static bool command_event_save_core_config(void)
                   sizeof(tmp));
 
          strlcat(config_path, tmp, config_size);
-         if (!path_file_exists(config_path))
+         if (!filestream_exists(config_path))
          {
             found_path = true;
             break;
@@ -1713,7 +1714,7 @@ void command_playlist_push_write(
 
    if (!playlist)
       return;
-   
+
    if (playlist_push(
          playlist,
          path,
@@ -1956,6 +1957,10 @@ bool command_event(enum event_command cmd, void *data)
          cheevos_toggle_hardcore_mode();
 #endif
          break;
+      /* this fallthrough is on purpose, it should do 
+         a CMD_EVENT_REINIT too */
+      case CMD_EVENT_REINIT_FROM_TOGGLE:
+         retroarch_unset_forced_fullscreen();
       case CMD_EVENT_REINIT:
          video_driver_reinit();
          /* Poll input to avoid possibly stale data to corrupt things. */
@@ -2566,15 +2571,21 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_FULLSCREEN_TOGGLE:
          {
             settings_t *settings      = config_get_ptr();
-            bool new_fullscreen_state = !settings->bools.video_fullscreen;
+            bool new_fullscreen_state = !settings->bools.video_fullscreen 
+               && !retroarch_is_forced_fullscreen();
             if (!video_driver_has_windowed())
                return false;
 
-            /* If we go fullscreen we drop all drivers and
-             * reinitialize to be safe. */
+            /* we toggled manually, write the new value to settings */
             configuration_set_bool(settings, settings->bools.video_fullscreen,
                   new_fullscreen_state);
 
+            /* we toggled manually, the cli arg is irrelevant now */
+            if (retroarch_is_forced_fullscreen())
+               retroarch_unset_forced_fullscreen();
+
+            /* If we go fullscreen we drop all drivers and
+             * reinitialize to be safe. */
             command_event(CMD_EVENT_REINIT, NULL);
             if (settings->bools.video_fullscreen)
                video_driver_hide_mouse();

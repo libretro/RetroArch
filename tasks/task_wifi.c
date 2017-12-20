@@ -41,7 +41,7 @@ bool task_push_wifi_scan(retro_task_callback_t cb)
    if (!task)
       return false;
 
-   /* blocking means no other task can run while this one is running, 
+   /* blocking means no other task can run while this one is running,
     * which is the default */
    task->type           = TASK_TYPE_BLOCKING;
    task->state          = NULL;

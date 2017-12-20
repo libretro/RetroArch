@@ -52,7 +52,7 @@ typedef void (*retro_task_handler_t)(retro_task_t *task);
 typedef bool (*retro_task_finder_t)(retro_task_t *task,
       void *userdata);
 
-typedef void (*retro_task_queue_msg_t)(const char *msg, 
+typedef void (*retro_task_queue_msg_t)(const char *msg,
       unsigned prio, unsigned duration, bool flush);
 
 typedef bool (*retro_task_retriever_t)(retro_task_t *task, void *data);
@@ -177,29 +177,29 @@ void task_queue_unset_threaded(void);
 
 bool task_queue_is_threaded(void);
 
-/**		
- * Calls func for every running task		
- * until it returns true.		
- * Returns a task or NULL if not found.		
+/**
+ * Calls func for every running task
+ * until it returns true.
+ * Returns a task or NULL if not found.
  */
 bool task_queue_find(task_finder_data_t *find_data);
 
-/**		
- * Calls func for every running task when handler		
- * parameter matches task handler, allowing the		
- * list parameter to be filled with user-defined		
- * data.		
+/**
+ * Calls func for every running task when handler
+ * parameter matches task handler, allowing the
+ * list parameter to be filled with user-defined
+ * data.
  */
 void task_queue_retrieve(task_retriever_data_t *data);
 
- /* Checks for finished tasks		
-  * Takes the finished tasks, if any,		
-  * and runs their callbacks.		
+ /* Checks for finished tasks
+  * Takes the finished tasks, if any,
+  * and runs their callbacks.
   * This must only be called from the main thread. */
 void task_queue_check(void);
 
-/* Pushes a task		
- * The task will start as soon as possible. */		
+/* Pushes a task
+ * The task will start as soon as possible. */
 void task_queue_push(retro_task_t *task);
 
 /* Blocks until all tasks have finished
@@ -209,11 +209,11 @@ void task_queue_push(retro_task_t *task);
 void task_queue_wait(retro_task_condition_fn_t cond, void* data);
 
 
-/* Sends a signal to terminate all the tasks.		
- *		
- * This won't terminate the tasks immediately.		
- * They will finish as soon as possible.		
- *		
+/* Sends a signal to terminate all the tasks.
+ *
+ * This won't terminate the tasks immediately.
+ * They will finish as soon as possible.
+ *
  * This must only be called from the main thread. */
 void task_queue_reset(void);
 

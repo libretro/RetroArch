@@ -110,7 +110,7 @@ void __lwp_thread_delayended(void *arg)
 	kprintf("__lwp_thread_delayended(%p)\n",thethread);
 #endif
 	if(!thethread) return;
-	
+
 	__lwp_thread_dispatchdisable();
 	__lwp_thread_unblock(thethread);
 	__lwp_thread_dispatchunnest();
@@ -123,7 +123,7 @@ void __lwp_thread_tickle_timeslice(void *arg)
 
 	exec = _thr_executing;
 	ticks = millisecs_to_ticks(1);
-	
+
 	__lwp_thread_dispatchdisable();
 
 	if(!exec->is_preemptible) {
@@ -229,7 +229,7 @@ void __lwp_rotate_readyqueue(u32 prio)
 
 	ready = &_lwp_thr_ready[prio];
 	exec = _thr_executing;
-	
+
 	if(ready==exec->ready) {
 		__lwp_thread_yield();
 		return;
@@ -241,7 +241,7 @@ void __lwp_rotate_readyqueue(u32 prio)
 		__lwp_queue_appendI(ready,node);
 	}
 	_CPU_ISR_Flash(level);
-	
+
 	if(_thr_heir->ready==ready)
 		_thr_heir = (lwp_cntrl*)ready->first;
 
@@ -259,10 +259,10 @@ void __lwp_thread_yield()
 	u32 level;
 	lwp_cntrl *exec;
 	lwp_queue *ready;
-	
+
 	exec = _thr_executing;
 	ready = exec->ready;
-	
+
 	_CPU_ISR_Disable(level);
 	if(!__lwp_queue_onenode(ready)) {
 		__lwp_queue_extractI(&exec->object.node);
@@ -323,7 +323,7 @@ void __lwp_thread_setstate(lwp_cntrl *thethread,u32 state)
 	if(__lwp_queue_onenode(ready)) {
 		__lwp_queue_init_empty(ready);
 		__lwp_priomap_removefrom(&thethread->priomap);
-	} else 
+	} else
 		__lwp_queue_extractI(&thethread->object.node);
 	_CPU_ISR_Flash(level);
 
@@ -340,7 +340,7 @@ void __lwp_thread_setstate(lwp_cntrl *thethread,u32 state)
 void __lwp_thread_clearstate(lwp_cntrl *thethread,u32 state)
 {
 	u32 level,cur_state;
-	
+
 	_CPU_ISR_Disable(level);
 
 	cur_state = thethread->cur_state;
@@ -350,7 +350,7 @@ void __lwp_thread_clearstate(lwp_cntrl *thethread,u32 state)
 			__lwp_priomap_addto(&thethread->priomap);
 			__lwp_queue_appendI(thethread->ready,&thethread->object.node);
 			_CPU_ISR_Flash(level);
-			
+
 			if(thethread->cur_prio<_thr_heir->cur_prio) {
 				_thr_heir = thethread;
 				if(_thr_executing->is_preemptible
@@ -366,7 +366,7 @@ void __lwp_thread_clearstate(lwp_cntrl *thethread,u32 state)
 u32 __lwp_evaluatemode()
 {
 	lwp_cntrl *exec;
-	
+
 	exec = _thr_executing;
 	if(!__lwp_stateready(exec->cur_state)
 		|| (!__lwp_thread_isheir(exec) && exec->is_preemptible)){
@@ -379,10 +379,10 @@ u32 __lwp_evaluatemode()
 void __lwp_thread_changepriority(lwp_cntrl *thethread,u32 prio,u32 prependit)
 {
 	u32 level;
-	
+
 	__lwp_thread_settransient(thethread);
-	
-	if(thethread->cur_prio!=prio) 
+
+	if(thethread->cur_prio!=prio)
 		__lwp_thread_setpriority(thethread,prio);
 
 	_CPU_ISR_Disable(level);
@@ -402,7 +402,7 @@ void __lwp_thread_changepriority(lwp_cntrl *thethread,u32 prio,u32 prependit)
 	_CPU_ISR_Flash(level);
 
 	__lwp_thread_calcheir();
-	
+
 	if(!(_thr_executing==_thr_heir)
 		&& _thr_executing->is_preemptible)
 		_context_switch_want = TRUE;
@@ -426,7 +426,7 @@ void __lwp_thread_suspend(lwp_cntrl *thethread)
 	lwp_queue *ready;
 
 	ready = thethread->ready;
-	
+
 	_CPU_ISR_Disable(level);
 	thethread->suspendcnt++;
 	if(!__lwp_stateready(thethread->cur_state)) {
@@ -434,7 +434,7 @@ void __lwp_thread_suspend(lwp_cntrl *thethread)
 		_CPU_ISR_Restore(level);
 		return;
 	}
-	
+
 	thethread->cur_state = LWP_STATES_SUSPENDED;
 	if(__lwp_queue_onenode(ready)) {
 		__lwp_queue_init_empty(ready);
@@ -443,10 +443,10 @@ void __lwp_thread_suspend(lwp_cntrl *thethread)
 		__lwp_queue_extractI(&thethread->object.node);
 	}
 	_CPU_ISR_Flash(level);
-	
+
 	if(__lwp_thread_isheir(thethread))
 		__lwp_thread_calcheir();
-	
+
 	if(__lwp_thread_isexec(thethread))
 		_context_switch_want = TRUE;
 
@@ -461,7 +461,7 @@ void __lwp_thread_settransient(lwp_cntrl *thethread)
 	ready = thethread->ready;
 
 	_CPU_ISR_Disable(level);
-	
+
 	oldstates = thethread->cur_state;
 	thethread->cur_state = __lwp_setstate(oldstates,LWP_STATES_TRANSIENT);
 
@@ -480,14 +480,14 @@ void __lwp_thread_settransient(lwp_cntrl *thethread)
 void __lwp_thread_resume(lwp_cntrl *thethread,u32 force)
 {
 	u32 level,state;
-	
+
 	_CPU_ISR_Disable(level);
 
 	if(force==TRUE)
 		thethread->suspendcnt = 0;
 	else
 		thethread->suspendcnt--;
-	
+
 	if(thethread->suspendcnt>0) {
 		_CPU_ISR_Restore(level);
 		return;
@@ -515,7 +515,7 @@ void __lwp_thread_loadenv(lwp_cntrl *thethread)
 {
 	u32 stackbase,sp,size;
 	u32 r2,r13,msr_value;
-	
+
 	thethread->context.FPSCR = 0x000000f8;
 
 	stackbase = (u32)thethread->stack;
@@ -526,13 +526,13 @@ void __lwp_thread_loadenv(lwp_cntrl *thethread)
 	sp = stackbase+size-CPU_MINIMUM_STACK_FRAME_SIZE;
 	sp &= ~(CPU_STACK_ALIGNMENT-1);
 	*((u32*)sp) = 0;
-	
+
 	thethread->context.GPR[1] = sp;
-	
+
 	msr_value = (MSR_ME|MSR_IR|MSR_DR|MSR_RI);
 	if(!(thethread->isr_level&CPU_MODES_INTERRUPT_MASK))
 		msr_value |= MSR_EE;
-	
+
 	thethread->context.MSR = msr_value;
 	thethread->context.LR = (u32)__lwp_thread_handler;
 
@@ -564,7 +564,7 @@ void __lwp_thread_ready(lwp_cntrl *thethread)
 	heir = _thr_heir;
 	if(!(__lwp_thread_isexec(heir)) && _thr_executing->is_preemptible)
 		_context_switch_want = TRUE;
-	
+
 	_CPU_ISR_Restore(level);
 }
 
@@ -620,12 +620,12 @@ void __lwp_thread_close(lwp_cntrl *thethread)
 	lwp_cntrl *p;
 
 	__lwp_thread_setstate(thethread,LWP_STATES_TRANSIENT);
-	
+
 	if(!__lwp_threadqueue_extractproxy(thethread)) {
 		if(__lwp_wd_isactive(&thethread->timer))
 			__lwp_wd_remove_ticks(&thethread->timer);
 	}
-	
+
 	_CPU_ISR_Disable(level);
 	value_ptr = (void**)thethread->wait.ret_arg;
 	while((p=__lwp_threadqueue_dequeue(&thethread->join_list))!=NULL) {
@@ -733,7 +733,7 @@ void __lwp_thread_coreinit()
 #endif
 	__lwp_thread_dispatchinitialize();
 	__lwp_thread_inittimeslice();
-	
+
 	_context_switch_want = FALSE;
 	_thr_executing = NULL;
 	_thr_heir = NULL;
@@ -744,7 +744,7 @@ void __lwp_thread_coreinit()
 
 	for(index=0;index<=LWP_PRIO_MAX;index++)
 		__lwp_queue_init_empty(&_lwp_thr_ready[index]);
-	
+
 	__sys_state_set(SYS_STATE_BEFORE_MT);
 }
 

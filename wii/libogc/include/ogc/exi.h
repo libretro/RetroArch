@@ -31,8 +31,8 @@ distribution.
 #ifndef __EXI_H__
 #define __EXI_H__
 
-/*! 
-\file exi.h 
+/*!
+\file exi.h
 \brief EXI subsystem
 
 */

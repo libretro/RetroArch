@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2016-2017 - Gregor Richards
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -90,5 +90,7 @@ struct netplay_room* netplay_room_get(int index);
 int netplay_rooms_get_count();
 
 void netplay_rooms_free();
+
+void netplay_get_architecture(char *frontend_architecture, size_t size);
 
 #endif

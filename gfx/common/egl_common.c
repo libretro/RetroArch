@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (c) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -174,7 +174,7 @@ void egl_swap_buffers(void *data)
 void egl_set_swap_interval(egl_ctx_data_t *egl, unsigned interval)
 {
    /* Can be called before initialization.
-    * Some contexts require that swap interval 
+    * Some contexts require that swap interval
     * is known at startup time.
     */
    egl->interval = interval;

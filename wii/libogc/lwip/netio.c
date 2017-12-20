@@ -57,8 +57,8 @@ int netio_open(struct _reent *r, void *fileStruct, const char *path,int flags,in
 		nport = atoi(cport);
 	}
 	if(nport==-1) nport = 7;	//try to connect to the well known port 7
-	
-	name.sin_addr.s_addr = inet_addr(path); 
+
+	name.sin_addr.s_addr = inet_addr(path);
 	name.sin_port = htons(nport);
 	name.sin_family = AF_INET;
 	if(net_connect(udp_sock,(struct sockaddr*)&name,namelen)==-1) {
@@ -66,7 +66,7 @@ int netio_open(struct _reent *r, void *fileStruct, const char *path,int flags,in
 		return -1;
 	}
 	net_setsockopt(udp_sock,IPPROTO_TCP,TCP_NODELAY,&optval,sizeof(optval));
-	
+
 	return udp_sock;
 }
 
@@ -84,7 +84,7 @@ int netio_write(struct _reent *r,void *fd,const char *ptr,size_t len)
 	int ret;
 
 	if(fd<0) return -1;
-	
+
 	ret = net_write(fd,(void*)ptr,len);
 
 	return ret;

@@ -19,6 +19,7 @@
 
 #include <ctype.h>
 
+#include <libretro.h>
 #include <file/config_file.h>
 #include <file/file_path.h>
 #include <compat/strl.h>
@@ -1377,6 +1378,7 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("video_fullscreen_y",           &settings->uints.video_fullscreen_y,  true, fullscreen_y, false);
    SETTING_UINT("video_window_x",               &settings->uints.video_window_x,  true, fullscreen_x, false);
    SETTING_UINT("video_window_y",               &settings->uints.video_window_y,  true, fullscreen_y, false);
+   SETTING_UINT("video_window_opacity",         &settings->uints.video_window_opacity, true, window_opacity, false);
 #ifdef HAVE_COMMAND
    SETTING_UINT("network_cmd_port",             &settings->uints.network_cmd_port,    true, network_cmd_port, false);
 #endif
@@ -1576,11 +1578,6 @@ static void config_set_defaults(void)
 #endif
    settings->floats.video_scale                = scale;
 
-   if (retroarch_is_forced_fullscreen())
-   {
-      configuration_set_bool(settings, settings->bools.video_fullscreen, true);
-   }
-
    if (g_defaults.settings.video_threaded_enable != video_threaded)
       video_driver_set_threaded(g_defaults.settings.video_threaded_enable);
 
@@ -1607,9 +1604,9 @@ static void config_set_defaults(void)
    settings->rewind_buffer_size                = rewind_buffer_size;
 
 #ifdef HAVE_LAKKA
-   settings->bools.ssh_enable                  = path_file_exists(LAKKA_SSH_PATH);
-   settings->bools.samba_enable                = path_file_exists(LAKKA_SAMBA_PATH);
-   settings->bools.bluetooth_enable            = path_file_exists(LAKKA_BLUETOOTH_PATH);
+   settings->bools.ssh_enable                  = filestream_exists(LAKKA_SSH_PATH);
+   settings->bools.samba_enable                = filestream_exists(LAKKA_SAMBA_PATH);
+   settings->bools.bluetooth_enable            = filestream_exists(LAKKA_BLUETOOTH_PATH);
 #endif
 
 #ifdef HAVE_MENU
@@ -2375,9 +2372,6 @@ static bool config_load_file(const char *path, bool set_defaults,
          *bool_settings[i].ptr = tmp;
    }
 
-   if (!retroarch_is_forced_fullscreen())
-      CONFIG_GET_BOOL_BASE(conf, settings, bools.video_fullscreen, "video_fullscreen");
-
 #ifdef HAVE_NETWORKGAMEPAD
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -2727,9 +2721,9 @@ static bool config_load_file(const char *path, bool set_defaults,
 
 
 #ifdef HAVE_LAKKA
-   settings->bools.ssh_enable       = path_file_exists(LAKKA_SSH_PATH);
-   settings->bools.samba_enable     = path_file_exists(LAKKA_SAMBA_PATH);
-   settings->bools.bluetooth_enable = path_file_exists(LAKKA_BLUETOOTH_PATH);
+   settings->bools.ssh_enable       = filestream_exists(LAKKA_SSH_PATH);
+   settings->bools.samba_enable     = filestream_exists(LAKKA_SAMBA_PATH);
+   settings->bools.bluetooth_enable = filestream_exists(LAKKA_BLUETOOTH_PATH);
 #endif
 
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL) &&
@@ -3791,17 +3785,23 @@ bool config_save_file(const char *path)
 
 #ifdef HAVE_LAKKA
    if (settings->bools.ssh_enable)
-      filestream_close(filestream_open(LAKKA_SSH_PATH, RFILE_MODE_WRITE, -1));
+      filestream_close(filestream_open(LAKKA_SSH_PATH,
+               RETRO_VFS_FILE_ACCESS_WRITE,
+               RETRO_VFS_FILE_ACCESS_HINT_NONE));
    else
-      path_file_remove(LAKKA_SSH_PATH);
+      filestream_delete(LAKKA_SSH_PATH);
    if (settings->bools.samba_enable)
-      filestream_close(filestream_open(LAKKA_SAMBA_PATH, RFILE_MODE_WRITE, -1));
+      filestream_close(filestream_open(LAKKA_SAMBA_PATH,
+               RETRO_VFS_FILE_ACCESS_WRITE,
+               RETRO_VFS_FILE_ACCESS_HINT_NONE));
    else
-      path_file_remove(LAKKA_SAMBA_PATH);
+      filestream_delete(LAKKA_SAMBA_PATH);
    if (settings->bools.bluetooth_enable)
-      filestream_close(filestream_open(LAKKA_BLUETOOTH_PATH, RFILE_MODE_WRITE, -1));
+      filestream_close(filestream_open(LAKKA_BLUETOOTH_PATH,
+               RETRO_VFS_FILE_ACCESS_WRITE,
+               RETRO_VFS_FILE_ACCESS_HINT_NONE));
    else
-      path_file_remove(LAKKA_BLUETOOTH_PATH);
+      filestream_delete(LAKKA_BLUETOOTH_PATH);
 #endif
 
    for (i = 0; i < MAX_USERS; i++)
@@ -3874,7 +3874,7 @@ bool config_save_overrides(int override_type)
    fill_pathname_join(override_directory, config_directory, core_name,
       path_size);
 
-   if(!path_file_exists(override_directory))
+   if (!filestream_exists(override_directory))
        path_mkdir(override_directory);
 
    /* Concatenate strings into full paths for core_path, game_path */

@@ -1,12 +1,12 @@
 /* Copyright (c) 2011 PSL1GHT Development Team
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
 
@@ -25,7 +25,7 @@ static PyObject *sha1_callback = NULL;
 
 static void manipulate(uint8_t *key)
 {
-   uint64_t temp = key[0x38] << 56| 
+   uint64_t temp = key[0x38] << 56|
       key[0x39] << 48|
       key[0x3a] << 40|
       key[0x3b] << 32|
@@ -61,9 +61,9 @@ static PyObject* pkg_crypt(PyObject *self, PyObject *args)
    while (remaining > 0)
    {
       int outHash_length;
-      uint8_t *outHash; 
+      uint8_t *outHash;
       int bytes_to_dump = remaining;
-      if (bytes_to_dump > 0x10) 
+      if (bytes_to_dump > 0x10)
          bytes_to_dump = 0x10;
 
       arglist = Py_BuildValue("(s#)", key, 0x40);

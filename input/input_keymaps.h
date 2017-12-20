@@ -42,7 +42,7 @@ struct apple_key_name_map_entry
    const char* const keyname;
    const uint32_t hid_id;
 };
-    
+
 extern const struct apple_key_name_map_entry apple_key_name_map[];
 #endif
 
@@ -86,7 +86,7 @@ enum retro_key input_keymaps_translate_keysym_to_rk(unsigned sym);
  * @buf                   : Buffer.
  * @size                  : Size of @buf.
  *
- * Translates a retro key identifier to a human-readable 
+ * Translates a retro key identifier to a human-readable
  * identifier string.
  **/
 void input_keymaps_translate_rk_to_str(enum retro_key key, char *buf, size_t size);

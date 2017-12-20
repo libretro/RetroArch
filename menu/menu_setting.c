@@ -22,6 +22,7 @@
 #include <unistd.h>
 #endif
 
+#include <libretro.h>
 #include <lists/file_list.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
@@ -80,6 +81,7 @@
 #include "../setting_list.h"
 #include "../lakka.h"
 #include "../retroarch.h"
+#include "../gfx/video_display_server.h"
 
 #include "../tasks/tasks_internal.h"
 
@@ -1833,6 +1835,9 @@ void general_write_handler(void *data)
          retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES, NULL);
 #endif
          break;
+      case MENU_ENUM_LABEL_VIDEO_WINDOW_OPACITY:
+         video_display_server_set_window_opacity(settings->uints.video_window_opacity);
+         break;
       default:
          break;
    }
@@ -1876,9 +1881,11 @@ static void systemd_service_toggle(const char *path, char *unit, bool enable)
    args[2] = unit;
 
    if (enable)
-      filestream_close(filestream_open(path, RFILE_MODE_WRITE, -1));
+      filestream_close(filestream_open(path,
+               RETRO_VFS_FILE_ACCESS_WRITE,
+               RETRO_VFS_FILE_ACCESS_HINT_NONE));
    else
-      path_file_remove(path);
+      filestream_delete(path);
 
    if (pid == 0)
       execvp(args[0], args);
@@ -3347,7 +3354,7 @@ static bool setting_append_list(
                      general_write_handler,
                      general_read_handler,
                      SD_FLAG_CMD_APPLY_AUTO);
-               menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
+               menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT_FROM_TOGGLE);
                settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
             }
             if (video_driver_has_windowed())
@@ -3624,6 +3631,19 @@ static bool setting_append_list(
                      general_write_handler,
                      general_read_handler);
                menu_settings_list_current_add_range(list, list_info, 0, 4320, 8, true, true);
+               settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+               CONFIG_UINT(
+                     list, list_info,
+                     &settings->uints.video_window_opacity,
+                     MENU_ENUM_LABEL_VIDEO_WINDOW_OPACITY,
+                     MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
+                     window_opacity,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler);
+               menu_settings_list_current_add_range(list, list_info, 1, 100, 1, true, true);
                settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
             }
 

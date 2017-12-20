@@ -65,14 +65,14 @@ static void *nbio_mmap_unix_open(const char * filename, unsigned mode)
 {
    static const int o_flags[] =   { O_RDONLY,  O_RDWR|O_CREAT|O_TRUNC, O_RDWR,               O_RDONLY,  O_RDWR|O_CREAT|O_TRUNC };
    static const int map_flags[] = { PROT_READ, PROT_WRITE|PROT_READ,   PROT_WRITE|PROT_READ, PROT_READ, PROT_WRITE|PROT_READ   };
-   
+
    size_t len;
    void* ptr                       = NULL;
    struct nbio_mmap_unix_t* handle = NULL;
    int fd                          = open(filename, o_flags[mode]|O_CLOEXEC, 0644);
    if (fd < 0)
       return NULL;
-   
+
    len = lseek(fd, 0, SEEK_END);
    if (len != 0)
       ptr = mmap(NULL, len, map_flags[mode], MAP_SHARED, fd, 0);
@@ -82,7 +82,7 @@ static void *nbio_mmap_unix_open(const char * filename, unsigned mode)
       close(fd);
       return NULL;
    }
-   
+
    handle            = malloc(sizeof(struct nbio_mmap_unix_t));
    handle->fd        = fd;
    handle->map_flags = map_flags[mode];
@@ -113,7 +113,7 @@ static void nbio_mmap_unix_resize(void *data, size_t len)
       return;
    if (len < handle->len)
    {
-      /* this works perfectly fine if this check is removed, but it 
+      /* this works perfectly fine if this check is removed, but it
        * won't work on other nbio implementations */
       /* therefore, it's blocked so nobody accidentally relies on it */
       puts("ERROR - attempted file shrink operation, not implemented");
@@ -123,7 +123,7 @@ static void nbio_mmap_unix_resize(void *data, size_t len)
    if (ftruncate(handle->fd, len) != 0)
    {
       puts("ERROR - couldn't resize file (ftruncate)");
-      abort(); /* this one returns void and I can't find any other 
+      abort(); /* this one returns void and I can't find any other
                   way for it to report failure */
    }
 

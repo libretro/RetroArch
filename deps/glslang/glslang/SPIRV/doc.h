@@ -195,7 +195,7 @@ public:
 // Parameterize a set of enumerants that form an enum
 class EnumDefinition : public EnumParameters {
 public:
-    EnumDefinition() : 
+    EnumDefinition() :
         ceiling(0), bitmask(false), getName(0), enumParams(0), operandParams(0) { }
     void set(int ceil, const char* (*name)(int), EnumParameters* ep, bool mask = false)
     {

@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -51,7 +51,7 @@ static void *oss_init(const char *device, unsigned rate, unsigned latency,
    int frags, frag, channels, format, new_rate;
    int              *fd   = (int*)calloc(1, sizeof(int));
    const char *oss_device = device ? device : DEFAULT_OSS_DEV;
-   
+
    if (!fd)
       return NULL;
 

@@ -2389,7 +2389,7 @@ static bool dvdio_IsInserted()
 	u32 status = 0;
 	DVD_LowGetStatus(&status, NULL);
 
-	if(DVD_STATUS(status) == DVD_STATUS_READY) 
+	if(DVD_STATUS(status) == DVD_STATUS_READY)
 		return true;
 
 	return false;

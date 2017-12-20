@@ -1,4 +1,4 @@
-/* credits to: TheTimJames 
+/* credits to: TheTimJames
    https://www.shadertoy.com/view/Md2GRw
 */
 
@@ -17,17 +17,17 @@ static const char* stock_fragment_xmb_snowflake = GLSL(
    }
 
    float rand_float(float x)
-   { 
+   {
       return rand(vec2(x, 1.0));
    }
-   
+
    float snow(vec3 pos, vec2 uv, float o)
    {
       vec2 d = (pos.xy - uv);
       float a = atan(d.y,d.x) + sin(atime*1.0 + o) * 10.0;
-      
+
       float dist = d.x*d.x + d.y*d.y;
-      
+
       if(dist < pos.z/400.0)
       {
          float col = 0.0;
@@ -41,7 +41,7 @@ static const char* stock_fragment_xmb_snowflake = GLSL(
          }
          return col * pos.z;
       }
-      
+
       return 0.0;
    }
 
@@ -54,12 +54,12 @@ static const char* stock_fragment_xmb_snowflake = GLSL(
 		   float z = rand_float(float(i) + 13.0);
 		   float x = 1.8 - (3.6) * (rand_float(floor((time*((z + 1.0) / 2.0) +o) / 2.0)) + sin(time * o /1000.0) / 10.0);
 		   float y = 1.0 - mod((time * ((z + 1.0)/2.0)) + o, 2.0);
-		
-		   color += snow(vec3(x,y,z), c, o);    
+
+		   color += snow(vec3(x,y,z), c, o);
 	   }
-	
+
       return color;
-   } 
+   }
 
    void main(void)
    {
@@ -67,9 +67,9 @@ static const char* stock_fragment_xmb_snowflake = GLSL(
       uv = uv * 2.0 - 1.0;
       vec2 p = uv;
       p.x *= OutputSize.x / OutputSize.y;
-      
+
       atime = (time + 1.0) / 4.0;
-	
+
       gl_FragColor = vec4(col(p));
    }
 

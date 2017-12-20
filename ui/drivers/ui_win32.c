@@ -114,12 +114,12 @@ typedef struct
 
 static shader_dlg_t g_shader_dlg = {{0}};
 
-static bool shader_dlg_refresh_trackbar_label(int index, 
+static bool shader_dlg_refresh_trackbar_label(int index,
       video_shader_ctx_t *shader_info)
 {
    char val_buffer[32]         = {0};
 
-   if (floorf(shader_info->data->parameters[index].current) 
+   if (floorf(shader_info->data->parameters[index].current)
          == shader_info->data->parameters[index].current)
       snprintf(val_buffer, sizeof(val_buffer), "%.0f",
             shader_info->data->parameters[index].current);
@@ -154,7 +154,7 @@ static void shader_dlg_params_refresh(void)
                video_shader_driver_get_current_shader(&shader_info);
 
                checked = shader_info.data ?
-                  (shader_info.data->parameters[i].current == 
+                  (shader_info.data->parameters[i].current ==
                    shader_info.data->parameters[i].maximum) : false;
                SendMessage(control->elems.checkbox.hwnd, BM_SETCHECK, checked, 0);
             }
@@ -172,12 +172,12 @@ static void shader_dlg_params_refresh(void)
                         TBM_SETRANGEMIN, (WPARAM)TRUE, (LPARAM)0);
                   SendMessage(control->elems.trackbar.hwnd,
                         TBM_SETRANGEMAX, (WPARAM)TRUE,
-                        (LPARAM)((shader_info.data->parameters[i].maximum - 
-                              shader_info.data->parameters[i].minimum) 
+                        (LPARAM)((shader_info.data->parameters[i].maximum -
+                              shader_info.data->parameters[i].minimum)
                            / shader_info.data->parameters[i].step));
                   SendMessage(control->elems.trackbar.hwnd, TBM_SETPOS, (WPARAM)TRUE,
-                        (LPARAM)((shader_info.data->parameters[i].current - 
-                              shader_info.data->parameters[i].minimum) / 
+                        (LPARAM)((shader_info.data->parameters[i].current -
+                              shader_info.data->parameters[i].minimum) /
                            shader_info.data->parameters[i].step));
                }
             }
@@ -230,7 +230,7 @@ void shader_dlg_params_reload(void)
    int i, pos_x, pos_y;
    video_shader_ctx_t shader_info;
    const ui_window_t *window = NULL;
-   
+
    shader_dlg_params_clear();
 
    video_shader_driver_get_current_shader(&shader_info);
@@ -248,12 +248,12 @@ void shader_dlg_params_reload(void)
       shader_param_ctrl_t*control = &g_shader_dlg.controls[i];
 
       if ((shader_info.data->parameters[i].minimum == 0.0)
-            && (shader_info.data->parameters[i].maximum 
-               == (shader_info.data->parameters[i].minimum 
+            && (shader_info.data->parameters[i].maximum
+               == (shader_info.data->parameters[i].minimum
                   + shader_info.data->parameters[i].step)))
       {
-         if ((pos_y + SHADER_DLG_CHECKBOX_HEIGHT 
-                    + SHADER_DLG_CTRL_MARGIN + 20) 
+         if ((pos_y + SHADER_DLG_CHECKBOX_HEIGHT
+                    + SHADER_DLG_CTRL_MARGIN + 20)
                > SHADER_DLG_MAX_HEIGHT)
          {
             pos_y  = g_shader_dlg.parameters_start_y;
@@ -334,7 +334,7 @@ static void shader_dlg_update_on_top_state(void)
    bool on_top = SendMessage(g_shader_dlg.on_top_checkbox.hwnd,
          BM_GETCHECK, 0, 0) == BST_CHECKED;
 
-   SetWindowPos(g_shader_dlg.window.hwnd, on_top 
+   SetWindowPos(g_shader_dlg.window.hwnd, on_top
          ? HWND_TOPMOST : HWND_NOTOPMOST , 0, 0, 0, 0,
          SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 }
@@ -405,10 +405,10 @@ static LRESULT CALLBACK ShaderDlgWndProc(HWND hwnd, UINT message,
 
             if (SendMessage(g_shader_dlg.controls[i].elems.checkbox.hwnd,
                      BM_GETCHECK, 0, 0) == BST_CHECKED)
-               shader_info.data->parameters[i].current = 
+               shader_info.data->parameters[i].current =
                   shader_info.data->parameters[i].maximum;
             else
-               shader_info.data->parameters[i].current = 
+               shader_info.data->parameters[i].current =
                   shader_info.data->parameters[i].minimum;
          }
          break;
@@ -429,7 +429,7 @@ static LRESULT CALLBACK ShaderDlgWndProc(HWND hwnd, UINT message,
 
             {
 
-               shader_info.data->parameters[i].current = 
+               shader_info.data->parameters[i].current =
                   shader_info.data->parameters[i].minimum + pos * shader_info.data->parameters[i].step;
             }
 
@@ -516,13 +516,13 @@ bool win32_window_init(WNDCLASSEX *wndclass,
    if (!RegisterClassEx(wndclass))
       return false;
 
-   /* This is non-NULL when we want a window for shader dialogs, 
+   /* This is non-NULL when we want a window for shader dialogs,
     * therefore early return here */
    /* TODO/FIXME - this is ugly. Find a better way */
-   if (class_name != NULL) 
+   if (class_name != NULL)
       return true;
 
-   /* Shader dialog is disabled for now, until 
+   /* Shader dialog is disabled for now, until
     * video_threaded issues are fixed.
    if (!win32_shader_dlg_init())
       RARCH_ERR("[WGL]: wgl_shader_dlg_init() failed.\n");*/
@@ -539,16 +539,16 @@ static bool win32_browser(
       const char *initial_dir)
 {
    bool result = false;
-   const ui_browser_window_t *browser = 
+   const ui_browser_window_t *browser =
       ui_companion_driver_get_browser_window_ptr();
 
    if (browser)
    {
       ui_browser_window_state_t browser_state;
 
-      /* These need to be big enough to hold the 
+      /* These need to be big enough to hold the
        * path/name of any file the user may select.
-       * FIXME: We should really handle the 
+       * FIXME: We should really handle the
        * error case when this isn't big enough. */
       char new_title[TITLE_MAX];
       char new_file[FULLPATH_MAX];
@@ -562,7 +562,7 @@ static bool win32_browser(
       if (filename && *filename)
          strlcpy(new_file, filename, sizeof(new_file));
 
-      /* OPENFILENAME.lpstrFilters is actually const, 
+      /* OPENFILENAME.lpstrFilters is actually const,
        * so this cast should be safe */
       browser_state.filters  = (char*)extensions;
       browser_state.title    = new_title;
@@ -603,8 +603,8 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
 
             switch (mode)
             {
-               /* OPENFILENAME.lpstrFilter requires 
-                * a NULL-separated list of name/ext 
+               /* OPENFILENAME.lpstrFilter requires
+                * a NULL-separated list of name/ext
                 * pairs terminated by a second null at the end. */
                case ID_M_LOAD_CORE:
                   extensions  = "Libretro core (.dll)\0*.dll\0All Files\0*.*\0\0";
@@ -619,10 +619,10 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
                   break;
             }
 
-            /* Convert UTF8 to UTF16, then back to the 
+            /* Convert UTF8 to UTF16, then back to the
              * local code page.
-             * This is needed for proper multi-byte 
-             * string display until Unicode is 
+             * This is needed for proper multi-byte
+             * string display until Unicode is
              * fully supported.
              */
             MultiByteToWideChar(CP_UTF8, 0, title, -1,
@@ -714,7 +714,7 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
             configuration_set_int(
                   settings, settings->ints.state_slot, idx);
          }
-         else if (mode >= (ID_M_STATE_INDEX_AUTO+1) 
+         else if (mode >= (ID_M_STATE_INDEX_AUTO+1)
                && mode <= (ID_M_STATE_INDEX_AUTO+10))
          {
             signed idx = (mode - (ID_M_STATE_INDEX_AUTO+1));
@@ -729,7 +729,7 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
 
    if (do_wm_close)
       PostMessage(owner, WM_CLOSE, 0, 0);
-   
+
    return 0L;
 }
 

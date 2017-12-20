@@ -28,7 +28,7 @@ distribution.
 
 -------------------------------------------------------------*/
 
-/* This source as presented is a modified version of original wiiuse for use 
+/* This source as presented is a modified version of original wiiuse for use
  * with RetroArch, and must not be confused with the original software. */
 
 #include <stdio.h>
@@ -758,7 +758,7 @@ s32 WPAD_SetMotionPlus(s32 chan, u8 enable)
 	u32 level;
 	s32 ret;
 	int i;
-	
+
 	if(chan == WPAD_CHAN_ALL) {
 		for(i=WPAD_CHAN_0; i<WPAD_MAX_WIIMOTES; i++)
 			if((ret = WPAD_SetMotionPlus(i, enable)) < WPAD_ERR_NONE)
@@ -857,7 +857,7 @@ s32 WPAD_Probe(s32 chan,u32 *type)
 
 	return ret;
 }
- 
+
 #ifdef HAVE_WIIUSE_QUEUE_EXT
 s32 WPAD_SetEventBufs(s32 chan, WPADData *bufs, u32 cnt)
 {

@@ -185,17 +185,17 @@ static void __console_clear_line( int line, int from, int to ) {
 	unsigned int px_per_col = FONT_XSIZE/2;
 	unsigned int line_height = FONT_YSIZE;
 	unsigned int line_width;
-	
+
 	if( !(con = curr_con) ) return;
 	// For some reason there are xres/2 pixels per screen width
   x_pixels = con->con_xres / 2;
-	
+
 	line_width = (to - from)*px_per_col;
 	p = (unsigned int*)con->destbuffer;
-	
+
 	// Move pointer to the current line and column offset
 	p += line*(FONT_YSIZE*x_pixels) + from*px_per_col;
-	
+
 	// Clears 1 line of pixels at a time, line_height times
   while( line_height-- ) {
   	c = line_width;
@@ -215,7 +215,7 @@ static void __console_clear(void)
 
 	c = (con->con_xres*con->con_yres)/2;
 	p = (unsigned int*)con->destbuffer;
-	
+
 	while(c--)
 		*p++ = con->background;
 
@@ -227,25 +227,25 @@ static void __console_clear(void)
 static void __console_clear_from_cursor() {
 	console_data_s *con;
 	int cur_row;
-	
+
   if( !(con = curr_con) ) return;
 	cur_row = con->cursor_row;
-	
+
   __console_clear_line( cur_row, con->cursor_col, con->con_cols );
-  
+
   while( cur_row++ < con->con_rows )
     __console_clear_line( cur_row, 0, con->con_cols );
-  
+
 }
 static void __console_clear_to_cursor() {
 	console_data_s *con;
 	int cur_row;
-	
+
   if( !(con = curr_con) ) return;
 	cur_row = con->cursor_row;
-	
+
   __console_clear_line( cur_row, 0, con->cursor_col );
-  
+
   while( cur_row-- )
     __console_clear_line( cur_row, 0, con->con_cols );
 }
@@ -421,7 +421,7 @@ static int __console_parse_escsequence(char *pchr)
         __console_clear_to_cursor();
 			if( parameters[0] == 2 )
         __console_clear();
-        
+
 			break;
 		}
 		/////////////////////////////////////////
@@ -435,7 +435,7 @@ static int __console_parse_escsequence(char *pchr)
         __console_clear_line( curr_con->cursor_row, 0, curr_con->cursor_col );
 			if( parameters[0] == 2 )
         __console_clear_line( curr_con->cursor_row, 0, curr_con->con_cols);
-        
+
 			break;
 		}
 		/////////////////////////////////////////
@@ -598,7 +598,7 @@ s32 CON_InitEx(GXRModeObj *rmode, s32 conXOrigin,s32 conYOrigin,s32 conWidth,s32
 	VIDEO_SetPostRetraceCallback(NULL);
 	if(_console_buffer)
 		free(_console_buffer);
-	
+
 	_console_buffer = malloc(conWidth*conHeight*VI_DISPLAY_PIX_SZ);
 	if(!_console_buffer) return -1;
 

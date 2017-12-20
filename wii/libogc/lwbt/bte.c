@@ -203,7 +203,7 @@ static inline void __bte_close_ctrl_queue(struct bte_pcb *pcb)
 			btmemb_free(&bte_ctrl_reqs,req);
 		} else
 			LWP_ThreadSignal(pcb->cmdq);
-	
+
 		pcb->ctrl_req_head = req->next;
 	}
 	pcb->ctrl_req_tail = NULL;
@@ -259,13 +259,13 @@ static s32 __bte_send_request(struct ctrl_req_t *req)
 	_CPU_ISR_Restore(level);
 
 	return err;
-}	
+}
 
 static err_t __bte_shutdown_finished(void *arg,struct hci_pcb *pcb,u8_t ogf,u8_t ocf,u8_t result)
 {
 	err_t err;
 	struct bt_state *state = (struct bt_state*)arg;
-	
+
 	if(state==NULL) return ERR_OK;
 
 	state->hci_inited = 0;
@@ -483,7 +483,7 @@ s32 BTE_ReadStoredLinkKey(struct linkkey_info *keys,u8 max_cnt,btecallback cb)
 }
 
 s32 BTE_ReadBdAddr(struct bd_addr *bdaddr, btecallback cb)
-{    
+{
     u32 level;
 
     _CPU_ISR_Disable(level);
@@ -544,7 +544,7 @@ s32 bte_registerdeviceasync(struct bte_pcb *pcb,struct bd_addr *bdaddr,s32 (*con
 		err = ERR_CONN;
 		goto error;
 	}
-	
+
 	if((l2capcb=l2cap_new())==NULL) {
 		err = ERR_MEM;
 		goto error;
@@ -855,7 +855,7 @@ err_t pin_req(void *arg,struct bd_addr *bdaddr)
 err_t l2cap_disconnected_ind(void *arg, struct l2cap_pcb *pcb, err_t err)
 {
 	struct bte_pcb *bte = (struct bte_pcb*)arg;
-	
+
 	if(bte==NULL) return ERR_OK;
 
 	bte->state = (u32)STATE_DISCONNECTING;
@@ -907,7 +907,7 @@ err_t l2cap_disconnect_cfm(void *arg, struct l2cap_pcb *pcb)
 		hci_cmd_complete(NULL);
 		hci_disconnect(&(bte->bdaddr),HCI_OTHER_END_TERMINATED_CONN_USER_ENDED);
 	}
-	
+
 	return ERR_OK;
 }
 
@@ -1016,11 +1016,11 @@ err_t bte_read_stored_link_key_complete(void *arg,struct hci_pcb *pcb,u8_t ogf,u
 	struct hci_link_key *p;
 	struct linkkey_info *keys;
 	struct bt_state *state = (struct bt_state*)arg;
-	
+
 	if(!pcb) return ERR_CONN;
 
 	LOG("bte_read_stored_link_key_complete(%02x,%p)\n",result,pcb->keyres);
-	
+
 	if(state==NULL) return ERR_VAL;
 	if(!(ogf==HCI_HC_BB_OGF && ocf==HCI_R_STORED_LINK_KEY_OCF)) return __bte_cmdfinish(state,ERR_CONN);
 
@@ -1158,7 +1158,7 @@ err_t bte_hci_initcore_complete(void *arg,struct hci_pcb *pcb,u8_t ogf,u8_t ocf,
 			if(ocf==HCI_RESET) {
 				if(result==HCI_SUCCESS) {
 					hci_read_buffer_size();
-				} else 
+				} else
 					err = ERR_CONN;
 			} else if(ocf==HCI_WRITE_COD) {
 				if(result==HCI_SUCCESS) {
@@ -1259,7 +1259,7 @@ err_t bte_hci_patch_complete(void *arg,struct hci_pcb *pcb,u8_t ogf,u8_t ocf,u8_
 			if(ocf==HCI_RESET) {
 				if(result==HCI_SUCCESS) {
 					hci_read_buffer_size();
-				} else 
+				} else
 					err = ERR_CONN;
 			} else if(ocf==HCI_WRITE_COD) {
 				if(result==HCI_SUCCESS) {

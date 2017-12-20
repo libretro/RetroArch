@@ -622,7 +622,7 @@ s32 ES_ImportBoot(const signed_blob *tik, u32 tik_size,const signed_blob *tik_ce
 	if(!ISALIGNED(tik_certs)) return ES_EALIGN;
 	if(!ISALIGNED(tmd_certs)) return ES_EALIGN;
 	if(!ISALIGNED(content)) return ES_EALIGN;
-	
+
 	return IOS_IoctlvFormat(__es_hid, __es_fd, IOCTL_ES_IMPORTBOOT, "dddddd:", tik, tik_size, tik_certs, tik_certs_size, tmd, tmd_size, tmd_certs, tmd_certs_size, NULL, 0, content, content_size);
 }
 
@@ -681,7 +681,7 @@ s32 ES_Encrypt(u32 keynum, u8 *iv, u8 *source, u32 size, u8 *dest)
  	if(!ISALIGNED(source) || !ISALIGNED(iv) || !ISALIGNED(dest)) return ES_EALIGN;
  	return IOS_IoctlvFormat(__es_hid, __es_fd, IOCTL_ES_ENCRYPT, "idd:dd", keynum, iv, 0x10, source, size, iv, 0x10, dest, size);
 }
- 
+
 s32 ES_Decrypt(u32 keynum, u8 *iv, u8 *source, u32 size, u8 *dest)
 {
 	if(__es_fd<0) return ES_ENOTINIT;
@@ -767,7 +767,7 @@ static s32 _ES_decodepath (struct _reent *r, const char *path, u64 *titleID, tmd
 	char *bad;
 	int i;
 	u64 mytid;
-	
+
 	// check the device
 	if(strncmp(path,"es:",3)) {
 		r->_errno = EINVAL;
@@ -822,7 +822,7 @@ static s32 _ES_decodepath (struct _reent *r, const char *path, u64 *titleID, tmd
 		r->_errno = ENOENT;
 		return -1;
 	}
-	
+
 	_stmd = (signed_blob*)_tmdbuf;
 	if(ES_GetStoredTMD(_tid, _stmd, tmd_size) < 0) {
 		r->_errno = EIO;
@@ -927,7 +927,7 @@ static int _ES_read_r (struct _reent *r, void *fd, char *ptr, size_t len) {
 	int read = 0;
 	int res;
 
-	
+
 	LWP_MutexLock(file->mutex);
 	if(file->cfd < 0) {
 		LWP_MutexUnlock(file->mutex);

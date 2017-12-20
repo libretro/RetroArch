@@ -28,6 +28,7 @@
 #include <string/stdstring.h>
 #include <lists/string_list.h>
 #include <gfx/math/matrix_4x4.h>
+#include <streams/file_stream.h>
 #include <encodings/utf.h>
 #include <features/features_cpu.h>
 
@@ -1004,7 +1005,7 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
 
       if (!string_is_empty(tmp))
       {
-         while((scrub_char_pointer = strpbrk(tmp, "&*/:`<>?\\|")))
+         while((scrub_char_pointer = strpbrk(tmp, "&*/:`\"<>?\\|")))
             *scrub_char_pointer = '_';
       }
 
@@ -1077,7 +1078,7 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
 
          strlcat(path, file_path_str(FILE_PATH_PNG_EXTENSION), path_size);
 
-         if (path_file_exists(path))
+         if (filestream_exists(path))
          {
             if (!string_is_empty(xmb->savestate_thumbnail_file_path))
                free(xmb->savestate_thumbnail_file_path);
@@ -1097,7 +1098,7 @@ static void xmb_update_thumbnail_image(void *data)
    if (!xmb)
       return;
 
-   if (path_file_exists(xmb->thumbnail_file_path))
+   if (filestream_exists(xmb->thumbnail_file_path))
       task_push_image_load(xmb->thumbnail_file_path,
             menu_display_handle_thumbnail_upload, NULL);
    else
@@ -1142,7 +1143,7 @@ static void xmb_update_savestate_thumbnail_image(void *data)
       return;
 
    if (!string_is_empty(xmb->savestate_thumbnail_file_path)
-         && path_file_exists(xmb->savestate_thumbnail_file_path))
+         && filestream_exists(xmb->savestate_thumbnail_file_path))
       task_push_image_load(xmb->savestate_thumbnail_file_path,
             menu_display_handle_savestate_thumbnail_upload, NULL);
    else
@@ -1546,13 +1547,13 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
             file_path_str(FILE_PATH_PNG_EXTENSION),
             path_size);
 
-      if (!path_file_exists(path))
+      if (!filestream_exists(path))
          fill_pathname_application_special(path, path_size,
                APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG);
 
        if(!string_is_equal(path, xmb->background_file_path))
        {
-           if(path_file_exists(path))
+           if(filestream_exists(path))
            {
               task_push_image_load(path,
                   menu_display_handle_wallpaper_upload, NULL);
@@ -2252,7 +2253,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       if (get_badge_texture(new_id) != 0)
          return get_badge_texture(new_id);
       /* Should be replaced with placeholder badge icon. */
-      return xmb->textures.list[XMB_TEXTURE_SUBSETTING]; 
+      return xmb->textures.list[XMB_TEXTURE_SUBSETTING];
    }
 #endif
 
@@ -2376,30 +2377,29 @@ static int xmb_draw_item(
    }
    else
    {
-      enum msg_file_type type = FILE_TYPE_NONE;
-
       if (!string_is_empty(entry->value))
-          type                = msg_hash_to_file_type(msg_hash_calculate(entry->value));
-
-      switch (type)
       {
-         case FILE_TYPE_IN_CARCHIVE:
-         case FILE_TYPE_COMPRESSED:
-         case FILE_TYPE_MORE:
-         case FILE_TYPE_CORE:
-         case FILE_TYPE_DIRECT_LOAD:
-         case FILE_TYPE_RDB:
-         case FILE_TYPE_CURSOR:
-         case FILE_TYPE_PLAIN:
-         case FILE_TYPE_DIRECTORY:
-         case FILE_TYPE_MUSIC:
-         case FILE_TYPE_IMAGE:
-         case FILE_TYPE_MOVIE:
-            break;
-         default:
-            do_draw_text = true;
-            break;
+         if (
+               string_is_equal(entry->value, "...")     ||
+               string_is_equal(entry->value, "(COMP)")  ||
+               string_is_equal(entry->value, "(CORE)")  ||
+               string_is_equal(entry->value, "(MOVIE)") ||
+               string_is_equal(entry->value, "(MUSIC)") ||
+               string_is_equal(entry->value, "(DIR)")   ||
+               string_is_equal(entry->value, "(RDB)")   ||
+               string_is_equal(entry->value, "(CURSOR)")||
+               string_is_equal(entry->value, "(CFILE)") ||
+               string_is_equal(entry->value, "(FILE)")  ||
+               string_is_equal(entry->value, "(IMAGE)")
+            )
+         {
+         }
+         else
+               do_draw_text = true;
       }
+      else
+         do_draw_text = true;
+
    }
 
    if (string_is_empty(entry->value))
@@ -3839,7 +3839,7 @@ static void xmb_context_reset_background(const char *iconpath)
       strlcpy(path, settings->paths.path_menu_wallpaper,
             PATH_MAX_LENGTH * sizeof(char));
 
-   if (path_file_exists(path))
+   if (filestream_exists(path))
       task_push_image_load(path,
             menu_display_handle_wallpaper_upload, NULL);
 

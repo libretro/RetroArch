@@ -32,7 +32,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
- 
+
 #include "softfilter.h"
 #include <stdlib.h>
 #include <string.h>
@@ -68,17 +68,17 @@ struct filter_data
    uint16_t tbl_5_to_8[32];
    uint16_t tbl_6_to_8[64];
 };
- 
+
 static unsigned twoxbr_generic_input_fmts(void)
 {
    return SOFTFILTER_FMT_RGB565 | SOFTFILTER_FMT_XRGB8888;
 }
- 
+
 static unsigned twoxbr_generic_output_fmts(unsigned input_fmts)
 {
    return input_fmts;
 }
- 
+
 static unsigned twoxbr_generic_threads(void *data)
 {
    struct filter_data *filt = (struct filter_data*)data;
@@ -218,7 +218,7 @@ static void SetupFormat(void * data)
       filt->RGBtoYUV[c] = y + u + v;
    }
 }
- 
+
 static void *twoxbr_generic_create(const struct softfilter_config *config,
       unsigned in_fmt, unsigned out_fmt,
       unsigned max_width, unsigned max_height,
@@ -244,7 +244,7 @@ static void *twoxbr_generic_create(const struct softfilter_config *config,
 
    return filt;
 }
- 
+
 static void twoxbr_generic_output(void *data,
       unsigned *out_width, unsigned *out_height,
       unsigned width, unsigned height)
@@ -252,7 +252,7 @@ static void twoxbr_generic_output(void *data,
    *out_width = width * TWOXBR_SCALE;
    *out_height = height * TWOXBR_SCALE;
 }
- 
+
 static void twoxbr_generic_destroy(void *data)
 {
    struct filter_data *filt = (struct filter_data*)data;
@@ -263,9 +263,9 @@ static void twoxbr_generic_destroy(void *data)
    free(filt->workers);
    free(filt);
 }
- 
+
 #define ALPHA_BLEND_128_W(dst, src) dst = ((src & pg_lbmask) >> 1) + ((dst & pg_lbmask) >> 1)
- 
+
 #define ALPHA_BLEND_32_W(dst, src) \
         dst = ( \
     (pg_red_mask & ((dst & pg_red_mask) + \
@@ -277,7 +277,7 @@ static void twoxbr_generic_destroy(void *data)
     (pg_blue_mask & ((dst & pg_blue_mask) + \
         ((((src & pg_blue_mask) - \
         (dst & pg_blue_mask))) >>3))) )
- 
+
 
 #define ALPHA_BLEND_8888_32_W(dst, src) \
 	dst = ( \
@@ -304,7 +304,7 @@ static void twoxbr_generic_destroy(void *data)
     (pg_blue_mask & ((dst & pg_blue_mask) + \
         ((((src & pg_blue_mask) - \
         (dst & pg_blue_mask))) >>2))) )
- 
+
 #define ALPHA_BLEND_8888_64_W(dst, src) \
 	dst = ( \
     (pg_red_mask & ((dst & pg_red_mask) + \
@@ -330,7 +330,7 @@ static void twoxbr_generic_destroy(void *data)
     (pg_blue_mask & ((dst & pg_blue_mask) + \
         ((((src & pg_blue_mask) - \
         (dst & pg_blue_mask)) * 192) >>8))) )
-       
+
 
 #define ALPHA_BLEND_8888_192_W(dst, src) \
 	dst = ( \
@@ -375,44 +375,44 @@ static void twoxbr_generic_destroy(void *data)
              ALPHA_BLEND_224_W(E[N3], PIXEL); \
              ALPHA_BLEND_64_W( E[N2], PIXEL); \
              E[N1] = E[N2]; \
- 
-       
+
+
 #define LEFT_2_2X(N3, N2, PIXEL)\
              ALPHA_BLEND_192_W(E[N3], PIXEL); \
              ALPHA_BLEND_64_W( E[N2], PIXEL); \
- 
+
 #define UP_2_2X(N3, N1, PIXEL)\
              ALPHA_BLEND_192_W(E[N3], PIXEL); \
              ALPHA_BLEND_64_W( E[N1], PIXEL); \
- 
+
 #define DIA_2X(N3, PIXEL)\
              ALPHA_BLEND_128_W(E[N3], PIXEL); \
- 
+
 
 #define LEFT_UP_2_8888_2X(N3, N2, N1, PIXEL)\
              ALPHA_BLEND_8888_224_W(E[N3], PIXEL); \
              ALPHA_BLEND_8888_64_W( E[N2], PIXEL); \
              E[N1] = E[N2]; \
- 
-       
+
+
 #define LEFT_2_8888_2X(N3, N2, PIXEL)\
              ALPHA_BLEND_8888_192_W(E[N3], PIXEL); \
              ALPHA_BLEND_8888_64_W( E[N2], PIXEL); \
- 
+
 #define UP_2_8888_2X(N3, N1, PIXEL)\
              ALPHA_BLEND_8888_192_W(E[N3], PIXEL); \
              ALPHA_BLEND_8888_64_W( E[N1], PIXEL); \
- 
+
 #define DIA_8888_2X(N3, PIXEL)\
              ALPHA_BLEND_128_W(E[N3], PIXEL); \
 
 
 #define df(Z, A, B)\
         abs(Z->RGBtoYUV[A] - Z->RGBtoYUV[B])\
- 
+
 #define eq(Z, A, B)\
         (df(Z, A, B) < 155)\
- 
+
 
 
 float df8(uint32_t A, uint32_t B,
@@ -443,7 +443,7 @@ int eq8(uint32_t A, uint32_t B,
 {
     uint32_t r, g, b;
     uint32_t y, u, v;
-   
+
 #ifdef MSB_FIRST
    r = abs((int)(((A & pg_red_mask  )>>24) - ((B & pg_red_mask  )>> 24)));
    g = abs((int)(((A & pg_green_mask  )>>16) - ((B & pg_green_mask  )>> 16)));
@@ -453,7 +453,7 @@ int eq8(uint32_t A, uint32_t B,
    g = abs((int)(((A & pg_green_mask)>>8  ) - ((B & pg_green_mask )>>  8)));
    r = abs((int)(((A & pg_red_mask        ) -  (B & pg_red_mask         ))));
 #endif
-   
+
     y = fabs(0.299*r + 0.587*g + 0.114*b);
     u = fabs(-0.169*r - 0.331*g + 0.500*b);
     v = fabs(0.500*r - 0.419*g - 0.081*b);
@@ -495,7 +495,7 @@ int eq8(uint32_t A, uint32_t B,
                ALPHA_BLEND_128_W( E[N3], ((df(Z, PE,PF) <= df(Z, PE,PH)) ? PF : PH)); \
           }\
      }\
- 
+
 #define FILTRO_RGB8888(Z, PE, _PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, N0, N1, N2, N3, pg_red_mask, pg_green_mask, pg_blue_mask) \
      ex   = (PE!=PH && PE!=PF); \
      if ( ex )\
@@ -530,8 +530,8 @@ int eq8(uint32_t A, uint32_t B,
                ALPHA_BLEND_128_W( E[N3], ((df8(PE,PF, pg_red_mask, pg_green_mask, pg_blue_mask) <= df8(PE,PH, pg_red_mask, pg_green_mask, pg_blue_mask)) ? PF : PH)); \
           }\
      }\
- 
- 
+
+
 #ifndef twoxbr_function
 #define twoxbr_function(FILTRO, Z) \
             E[0] = E[1] = E[2] = E[3] = PE;\
@@ -546,8 +546,8 @@ int eq8(uint32_t A, uint32_t B,
          ++in; \
          out += 2
 #endif
- 
- 
+
+
 static void twoxbr_generic_xrgb8888(void *data, unsigned width, unsigned height,
       int first, int last, uint32_t *src,
       unsigned src_stride, uint32_t *dst, unsigned dst_stride)
@@ -563,12 +563,12 @@ static void twoxbr_generic_xrgb8888(void *data, unsigned width, unsigned height,
    (void)filt;
 
    nextline = (last) ? 0 : src_stride;
-   
+
    for (; height; height--)
    {
       uint32_t *in  = (uint32_t*)src;
       uint32_t *out = (uint32_t*)dst;
- 
+
       for (finish = width; finish; finish -= 1)
       {
          uint32_t E[4];
@@ -594,7 +594,7 @@ static void twoxbr_generic_xrgb8888(void *data, unsigned width, unsigned height,
          uint32_t G5 = *(in + nextline + nextline - 1);
          uint32_t H5 = *(in + nextline + nextline);
          uint32_t I5 = *(in + nextline + nextline + 1);
- 
+
          /*
           * Map of the pixels:          A1 B1 C1
           *                          A0 PA PB PC C4
@@ -602,15 +602,15 @@ static void twoxbr_generic_xrgb8888(void *data, unsigned width, unsigned height,
           *                          G0 PG PH _PI I4
           *                             G5 H5 I5
           */
- 
+
          twoxbr_function(FILTRO_RGB8888, filt);
       }
- 
+
       src += src_stride;
       dst += 2 * dst_stride;
    }
 }
- 
+
 static void twoxbr_generic_rgb565(void *data, unsigned width, unsigned height,
       int first, int last, uint16_t *src,
       unsigned src_stride, uint16_t *dst, unsigned dst_stride)
@@ -622,12 +622,12 @@ static void twoxbr_generic_rgb565(void *data, unsigned width, unsigned height,
    uint16_t pg_blue_mask    = BLUE_MASK565;
    uint16_t pg_lbmask       = PG_LBMASK565;
    unsigned nextline        = (last) ? 0 : src_stride;
- 
+
    for (; height; height--)
    {
       uint16_t *in  = (uint16_t*)src;
       uint16_t *out = (uint16_t*)dst;
- 
+
       for (finish = width; finish; finish -= 1)
       {
          uint16_t E[4];
@@ -653,7 +653,7 @@ static void twoxbr_generic_rgb565(void *data, unsigned width, unsigned height,
          uint16_t G5 = *(in + nextline + nextline - 1);
          uint16_t H5 = *(in + nextline + nextline);
          uint16_t I5 = *(in + nextline + nextline + 1);
- 
+
          /*
           * Map of the pixels:          A1 B1 C1
           *                          A0 PA PB PC C4
@@ -661,47 +661,47 @@ static void twoxbr_generic_rgb565(void *data, unsigned width, unsigned height,
           *                          G0 PG PH _PI I4
           *                             G5 H5 I5
           */
- 
+
          twoxbr_function(FILTRO_RGB565, filt);
       }
- 
+
       src += src_stride;
       dst += 2 * dst_stride;
    }
 }
- 
+
 static void twoxbr_work_cb_rgb565(void *data, void *thread_data)
 {
-   struct softfilter_thread_data *thr = 
+   struct softfilter_thread_data *thr =
       (struct softfilter_thread_data*)thread_data;
    uint16_t *input = (uint16_t*)thr->in_data;
    uint16_t *output = (uint16_t*)thr->out_data;
    unsigned width = thr->width;
    unsigned height = thr->height;
- 
+
    twoxbr_generic_rgb565(data, width, height,
          thr->first, thr->last, input,
          (unsigned)(thr->in_pitch / SOFTFILTER_BPP_RGB565),
          output,
          (unsigned)(thr->out_pitch / SOFTFILTER_BPP_RGB565));
 }
- 
+
 static void twoxbr_work_cb_xrgb8888(void *data, void *thread_data)
 {
-   struct softfilter_thread_data *thr = 
+   struct softfilter_thread_data *thr =
       (struct softfilter_thread_data*)thread_data;
    uint32_t *input = (uint32_t*)thr->in_data;
    uint32_t *output = (uint32_t*)thr->out_data;
    unsigned width = thr->width;
    unsigned height = thr->height;
- 
+
    twoxbr_generic_xrgb8888(data, width, height,
          thr->first, thr->last, input,
          (unsigned)(thr->in_pitch / SOFTFILTER_BPP_XRGB8888),
         output,
          (unsigned)(thr->out_pitch / SOFTFILTER_BPP_XRGB8888));
 }
- 
+
 static void twoxbr_generic_packets(void *data,
       struct softfilter_work_packet *packets,
       void *output, size_t output_stride,
@@ -713,25 +713,25 @@ static void twoxbr_generic_packets(void *data,
 
    for (i = 0; i < filt->threads; i++)
    {
-      struct softfilter_thread_data *thr = 
+      struct softfilter_thread_data *thr =
          (struct softfilter_thread_data*)&filt->workers[i];
- 
+
       unsigned y_start = (height * i) / filt->threads;
       unsigned y_end = (height * (i + 1)) / filt->threads;
 
-      thr->out_data = (uint8_t*)output + y_start * 
+      thr->out_data = (uint8_t*)output + y_start *
          TWOXBR_SCALE * output_stride;
       thr->in_data = (const uint8_t*)input + y_start * input_stride;
       thr->out_pitch = output_stride;
       thr->in_pitch = input_stride;
       thr->width = width;
       thr->height = y_end - y_start;
- 
-      /* Workers need to know if they can access 
+
+      /* Workers need to know if they can access
        * pixels outside their given buffer. */
       thr->first = y_start;
       thr->last = y_end == height;
- 
+
       if (filt->in_fmt == SOFTFILTER_FMT_RGB565)
          packets[i].work = twoxbr_work_cb_rgb565;
 #if 0
@@ -743,14 +743,14 @@ static void twoxbr_generic_packets(void *data,
       packets[i].thread_data = thr;
    }
 }
- 
+
 static const struct softfilter_implementation twoxbr_generic = {
    twoxbr_generic_input_fmts,
    twoxbr_generic_output_fmts,
- 
+
    twoxbr_generic_create,
    twoxbr_generic_destroy,
- 
+
    twoxbr_generic_threads,
    twoxbr_generic_output,
    twoxbr_generic_packets,
@@ -758,14 +758,14 @@ static const struct softfilter_implementation twoxbr_generic = {
    "2xBR",
    "2xbr",
 };
- 
+
 const struct softfilter_implementation *softfilter_get_implementation(
       softfilter_simd_mask_t simd)
 {
    (void)simd;
    return &twoxbr_generic;
 }
- 
+
 #ifdef RARCH_INTERNAL
 #undef softfilter_get_implementation
 #undef softfilter_thread_data

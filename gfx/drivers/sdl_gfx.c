@@ -152,7 +152,7 @@ static void sdl_render_msg(sdl_video_t *vid, SDL_Surface *buffer,
 
       base_x = msg_base_x + glyph->draw_offset_x;
       base_y = msg_base_y + glyph->draw_offset_y;
-      src    = atlas->buffer + glyph->atlas_offset_x 
+      src    = atlas->buffer + glyph->atlas_offset_x
          + glyph->atlas_offset_y * atlas->width;
 
       if (base_x < 0)
@@ -470,7 +470,7 @@ static void sdl_apply_state_changes(void *data)
 static void sdl_set_texture_frame(void *data, const void *frame, bool rgb32,
       unsigned width, unsigned height, float alpha)
 {
-   enum scaler_pix_fmt format = rgb32 
+   enum scaler_pix_fmt format = rgb32
       ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGBA4444;
    sdl_video_t           *vid = (sdl_video_t*)data;
 
@@ -560,7 +560,7 @@ static bool sdl_gfx_set_shader(void *data,
    (void)type;
    (void)path;
 
-   return false; 
+   return false;
 }
 
 static void sdl_gfx_set_rotation(void *data, unsigned rotation)

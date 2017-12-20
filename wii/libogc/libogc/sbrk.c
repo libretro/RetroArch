@@ -88,5 +88,5 @@ void* _DEFUN(__libogc_sbrk_r,(ptr,incr),
 #endif
 	_CPU_ISR_Restore(level);
 
-	return (void*)prev_heap;	
+	return (void*)prev_heap;
 }

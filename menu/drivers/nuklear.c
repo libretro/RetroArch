@@ -29,6 +29,7 @@
 #include <file/file_path.h>
 #include <formats/image.h>
 #include <gfx/math/matrix_4x4.h>
+#include <streams/file_stream.h>
 #include <string/stdstring.h>
 #include <lists/string_list.h>
 
@@ -181,7 +182,7 @@ static void nk_menu_get_message(void *data, const char *message)
    strlcpy(nk->box_message, message, sizeof(nk->box_message));
 }
 
-/* this is the main control function, it opens and closes windows and will 
+/* this is the main control function, it opens and closes windows and will
    control the logic of the whole menu driver */
 static void nk_menu_main(nk_menu_handle_t *nk)
 {
@@ -210,7 +211,7 @@ static void nk_menu_frame(void *data, video_frame_info_t *video_info)
       0.98, 0.98, 0.98, 1,
       0.98, 0.98, 0.98, 1,
    };
-   
+
 
    for (i = 0; i < 16; i++)
    {
@@ -288,7 +289,7 @@ static void nk_menu_context_load_textures(nk_menu_handle_t *nk,
 
    fill_pathname_join(path, iconpath,
          "pointer.png", sizeof(path));
-   if (!string_is_empty(path) && path_file_exists(path))
+   if (!string_is_empty(path) && filestream_exists(path))
    {
       image_texture_load(&ti, path);
       video_driver_texture_load(&ti,
@@ -297,7 +298,7 @@ static void nk_menu_context_load_textures(nk_menu_handle_t *nk,
 
    fill_pathname_join(path, iconpath,
          "bg.png", sizeof(path));
-   if (!string_is_empty(path) && path_file_exists(path))
+   if (!string_is_empty(path) && filestream_exists(path))
    {
       image_texture_load(&ti, path);
       video_driver_texture_load(&ti,
@@ -325,7 +326,7 @@ static void nk_menu_context_reset(void *data, bool is_threaded)
    nk_menu_init_device(nk);
    nk_menu_context_load_textures(nk, iconpath);
 
-   if (path_file_exists(settings->paths.path_menu_wallpaper))
+   if (filestream_exists(settings->paths.path_menu_wallpaper))
       task_push_image_load(settings->paths.path_menu_wallpaper,
             menu_display_handle_wallpaper_upload, NULL);
 }
@@ -357,7 +358,7 @@ static bool nk_menu_init_list(void *data)
    info.enum_idx = MENU_ENUM_LABEL_HISTORY_TAB;
 
    menu_entries_append_enum(menu_stack,
-         info.path, info.label, MSG_UNKNOWN, 
+         info.path, info.label, MSG_UNKNOWN,
          info.type, info.flags, 0);
 
    command_event(CMD_EVENT_HISTORY_INIT, NULL);

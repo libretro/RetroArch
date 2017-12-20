@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -21,7 +21,8 @@
 #include <gccore.h>
 #include <ogcsys.h>
 
-#include <streams/file_stream.h>
+#include <libretro.h>
+#include <streams/interface_stream.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -269,7 +270,7 @@ static void retrace_callback(u32 retrace_count)
 
 static bool gx_isValidXOrigin(int origin)
 {
-   if(origin < 0 || origin + gx_used_system_xOrigin < 0 || 
+   if(origin < 0 || origin + gx_used_system_xOrigin < 0 ||
          gx_mode.viWidth + origin + gx_used_system_xOrigin > 720)
       return false;
    return true;
@@ -303,7 +304,7 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    VIDEO_SetPostRetraceCallback(NULL);
    g_draw_done = false;
    /* wait for next even field */
-   /* this prevents screen artifacts when switching 
+   /* this prevents screen artifacts when switching
     * between interlaced & non-interlaced modes */
    do VIDEO_WaitVSync();
    while (!VIDEO_GetNextField());
@@ -417,7 +418,7 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    }
 
    gx_mode.viXOrigin = gx_xOrigin = tmpOrigin;
-   gx_mode.viYOrigin = gx_yOrigin = 
+   gx_mode.viYOrigin = gx_yOrigin =
       (max_height - gx_mode.viHeight) / (2 * viHeightMultiplier);
 
    gx_xOriginNeg = 0, gx_xOriginPos = 0;
@@ -484,7 +485,7 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    GX_SetDispCopyDst((u16)xfbWidth, (u16)xfbHeight);
 
    GX_SetCopyFilter(gx_mode.aa, gx_mode.sample_pattern,
-         (gx_mode.xfbMode == VI_XFBMODE_SF) 
+         (gx_mode.xfbMode == VI_XFBMODE_SF)
          ? GX_FALSE : settings->bools.video_vfilter,
          gx_mode.vfilter);
    GXColor color = { 0, 0, 0, 0xff };
@@ -494,7 +495,7 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
    GX_InvalidateTexAll();
    GX_Flush();
-   
+
    /* Now apply all the configuration to the screen */
    VIDEO_Configure(&gx_mode);
    VIDEO_ClearFrameBuffer(&gx_mode, gx->framebuf[0], COLOR_BLACK);
@@ -506,7 +507,7 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    VIDEO_SetBlack(false);
    VIDEO_Flush();
    VIDEO_WaitVSync();
-   
+
    RARCH_LOG("[GX]: Resolution: %dx%d (%s)\n", gx_mode.fbWidth,
          gx_mode.efbHeight, (gx_mode.viTVMode & 3) == VI_INTERLACE
          ? "interlaced" : "progressive");
@@ -523,7 +524,7 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
       if (modetype == VI_NON_INTERLACE)
          refresh_rate = 59.8261f;
    }
-   
+
    driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, &refresh_rate);
 }
 
@@ -719,12 +720,14 @@ static void gx_efb_screenshot(void)
 {
    int x, y;
    uint8_t tga_header[] = {0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x02, 0xE0, 0x01, 0x18, 0x00};
-   RFILE           *out = filestream_open("/screenshot.tga", RFILE_MODE_WRITE, -1);
+   intfstream_t    *out = intfstream_open("/screenshot.tga",
+         RETRO_VFS_FILE_ACCESS_WRITE,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    if (!out)
       return;
 
-   filestream_write(out, tga_header, sizeof(tga_header));
+   intfstream_write(out, tga_header, sizeof(tga_header));
 
    for (y = 479; y >= 0; --y)
    {
@@ -739,10 +742,11 @@ static void gx_efb_screenshot(void)
          line[i++] = color.g;
          line[i++] = color.r;
       }
-      filestream_write(out, line, sizeof(line));
+      intfstream_write(out, line, sizeof(line));
    }
 
-   filestream_close(out);
+   intfstream_close(out);
+   free(out);
 }
 
 #endif
@@ -973,8 +977,8 @@ static void gx_resize(void *data)
 #endif
          if (fabs(device_aspect - desired_aspect) < 0.0001)
          {
-            /* If the aspect ratios of screen and desired aspect ratio 
-             * are sufficiently equal (floating point stuff), 
+            /* If the aspect ratios of screen and desired aspect ratio
+             * are sufficiently equal (floating point stuff),
              * assume they are actually equal. */
          }
          else if (device_aspect > desired_aspect)
@@ -1107,8 +1111,8 @@ static void gx_blit_line(gx_video_t *gx,
          {
             uint8_t     rem = 1 << ((i + j * FONT_WIDTH) & 7);
             unsigned offset = (i + j * FONT_WIDTH) >> 3;
-            bool        col = 
-               (bitmap_bin[FONT_OFFSET((unsigned char)*message) + offset] 
+            bool        col =
+               (bitmap_bin[FONT_OFFSET((unsigned char)*message) + offset]
                 & rem);
             GXColor       c = b;
 
@@ -1209,7 +1213,7 @@ static void gx_set_texture_enable(void *data, bool enable, bool full_screen)
       return;
 
    gx->menu_texture_enable = enable;
-   /* need to make sure the game texture is the right pixel 
+   /* need to make sure the game texture is the right pixel
     * format for menu overlay. */
    gx->should_resize = true;
 }
@@ -1375,7 +1379,7 @@ static bool gx_overlay_load(void *data,
             images[i].height * sizeof(uint32_t));
 
       /* Default. Stretch to whole screen. */
-      gx_overlay_tex_geom(gx, i, 0, 0, 1, 1); 
+      gx_overlay_tex_geom(gx, i, 0, 0, 1, 1);
       gx_overlay_vertex_geom(gx, i, 0, 0, 1, 1);
       gx->overlay[i].alpha_mod = 1.0f;
    }
@@ -1643,7 +1647,7 @@ static bool gx_set_shader(void *data,
    (void)type;
    (void)path;
 
-   return false; 
+   return false;
 }
 
 video_driver_t video_gx = {

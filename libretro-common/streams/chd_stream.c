@@ -255,7 +255,7 @@ chdstream_t *chdstream_open(const char *path, int32_t track)
    stream->frames_per_hunk = hd->hunkbytes / hd->unitbytes;
    stream->track_frame     = meta.frame_offset;
    stream->track_start     = (size_t) pregap * stream->frame_size;
-   stream->track_end       = stream->track_start + 
+   stream->track_end       = stream->track_start +
       (size_t) meta.frames * stream->frame_size;
    stream->offset          = 0;
    stream->hunknum         = -1;
@@ -349,7 +349,7 @@ ssize_t chdstream_read(chdstream_t *stream, void *data, size_t bytes)
             return -1;
          }
          memcpy(out + data_offset,
-                stream->hunkmem + frame_offset 
+                stream->hunkmem + frame_offset
                 + hunk_offset + stream->frame_offset, amount);
       }
 
@@ -401,17 +401,17 @@ int chdstream_seek(chdstream_t *stream, ssize_t offset, int whence)
 
    switch (whence)
    {
-     case SEEK_SET:
-        new_offset = offset;
-        break;
-     case SEEK_CUR:
-        new_offset = stream->offset + offset;
-        break;
-     case SEEK_END:
-        new_offset = stream->track_end + offset;
-        break;
-     default:
-        return -1;
+      case SEEK_SET:
+         new_offset = offset;
+         break;
+      case SEEK_CUR:
+         new_offset = stream->offset + offset;
+         break;
+      case SEEK_END:
+         new_offset = stream->track_end + offset;
+         break;
+      default:
+         return -1;
    }
 
    if (new_offset < 0)

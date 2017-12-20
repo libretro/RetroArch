@@ -34,7 +34,7 @@ typedef struct _CMatchFinder
 
   unsigned char *bufferBase;
   ISeqInStream *stream;
-  
+
   uint32_t blockSize;
   uint32_t keepSizeBefore;
   uint32_t keepSizeAfter;
@@ -57,7 +57,7 @@ typedef struct _CMatchFinder
     ((p)->streamEndWasReached \
         && (p)->streamPos == (p)->pos \
         && (!(p)->directInput || (p)->directInputRem == 0))
-      
+
 int MatchFinder_NeedMove(CMatchFinder *p);
 unsigned char *MatchFinder_GetPointerToCurrentPos(CMatchFinder *p);
 void MatchFinder_MoveBlock(CMatchFinder *p);

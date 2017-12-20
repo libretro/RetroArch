@@ -149,7 +149,7 @@ static void generate_response(fft_complex_t *response,
       gains++;
    }
 
-   /* Create a response by linear interpolation between 
+   /* Create a response by linear interpolation between
     * known frequency sample points. */
    for (i = 0; i <= samples; i++)
    {
@@ -213,9 +213,9 @@ static void create_filter(struct eq_data *eq, unsigned size_log2,
    fft_process_inverse(fft, time_filter, eq->filter, 1);
 
    /* ifftshift() to create the correct linear phase filter.
-    * The filter response was designed with zero phase, which 
+    * The filter response was designed with zero phase, which
     * won't work unless we compensate
-    * for the repeating property of the FFT here 
+    * for the repeating property of the FFT here
     * by flipping left and right blocks. */
    for (i = 0; i < half_block_size; i++)
    {

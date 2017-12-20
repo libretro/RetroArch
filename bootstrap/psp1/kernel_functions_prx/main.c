@@ -66,7 +66,7 @@ int module_start(SceSize args, void *argp)
    (void)argp;
 
    buttons = 0;
-   thread_active = 0;   
+   thread_active = 0;
    main_thread_id = sceKernelCreateThread("main Thread", main_thread, 0x11, 0x200, 0, NULL);
 
    if (main_thread >= 0)

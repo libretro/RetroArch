@@ -1281,7 +1281,7 @@ static JSON_Status JSON_Parser_CallStringHandler(JSON_Parser parser, int isObjec
       {
          JSON_Parser_SetErrorAtToken(parser,
                (isObjectMember && result == JSON_Parser_TreatAsDuplicateObjectMember)
-               ? JSON_Error_DuplicateObjectMember 
+               ? JSON_Error_DuplicateObjectMember
                : JSON_Error_AbortedByHandler);
          return JSON_Failure;
       }
@@ -1513,10 +1513,10 @@ static JSON_Status JSON_Parser_HandleInvalidNumber(JSON_Parser parser,
          "1.2e+!" => "1.2"
          "1.2e-!" => "1.2"
          */
-      parser->codepointLocationByte -= (size_t)codepointsSinceValidNumber 
+      parser->codepointLocationByte -= (size_t)codepointsSinceValidNumber
          * SHORTEST_ENCODING_SEQUENCE(parser->inputEncoding);
       parser->codepointLocationColumn -= (size_t)codepointsSinceValidNumber;
-      parser->tokenBytesUsed -= (size_t)codepointsSinceValidNumber 
+      parser->tokenBytesUsed -= (size_t)codepointsSinceValidNumber
          * SHORTEST_ENCODING_SEQUENCE(parser->numberEncoding);
       return JSON_Parser_ProcessToken(parser); /* always fails */
    }
@@ -2585,9 +2585,9 @@ JSON_Encoding JSON_CALL JSON_Parser_GetInputEncoding(JSON_Parser parser)
 
 JSON_Status JSON_CALL JSON_Parser_SetInputEncoding(JSON_Parser parser, JSON_Encoding encoding)
 {
-   if (     !parser 
-         || encoding < JSON_UnknownEncoding 
-         || encoding > JSON_UTF32BE 
+   if (     !parser
+         || encoding < JSON_UnknownEncoding
+         || encoding > JSON_UTF32BE
          || GET_FLAGS(parser->state, PARSER_STARTED))
       return JSON_Failure;
    parser->inputEncoding = (Encoding)encoding;
@@ -2602,9 +2602,9 @@ JSON_Encoding JSON_CALL JSON_Parser_GetStringEncoding(JSON_Parser parser)
 JSON_Status JSON_CALL JSON_Parser_SetStringEncoding(JSON_Parser parser, JSON_Encoding encoding)
 {
    if (
-            !parser 
-         || encoding <= JSON_UnknownEncoding 
-         || encoding > JSON_UTF32BE 
+            !parser
+         || encoding <= JSON_UnknownEncoding
+         || encoding > JSON_UTF32BE
          || GET_FLAGS(parser->state, PARSER_STARTED))
       return JSON_Failure;
    parser->stringEncoding = (Encoding)encoding;
@@ -2618,7 +2618,7 @@ size_t JSON_CALL JSON_Parser_GetMaxStringLength(JSON_Parser parser)
 
 JSON_Status JSON_CALL JSON_Parser_SetMaxStringLength(JSON_Parser parser, size_t maxLength)
 {
-   if (     !parser 
+   if (     !parser
          || GET_FLAGS(parser->state, PARSER_STARTED))
       return JSON_Failure;
    parser->maxStringLength = maxLength;
@@ -2645,7 +2645,7 @@ size_t JSON_CALL JSON_Parser_GetMaxNumberLength(JSON_Parser parser)
 
 JSON_Status JSON_CALL JSON_Parser_SetMaxNumberLength(JSON_Parser parser, size_t maxLength)
 {
-   if (     !parser 
+   if (     !parser
          || GET_FLAGS(parser->state, PARSER_STARTED))
       return JSON_Failure;
    parser->maxNumberLength = maxLength;

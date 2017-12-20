@@ -108,7 +108,7 @@ static void task_screenshot_handler(retro_task_t *task)
       free(state);
       return;
    }
-    
+
 #ifdef HAVE_RBMP
     (void)bmp_type;
 #endif
@@ -128,7 +128,7 @@ static void task_screenshot_handler(retro_task_t *task)
    video_frame_convert_to_bgr24(
          scaler,
          state->out_buffer,
-         (const uint8_t*)state->frame + ((int)state->height - 1) 
+         (const uint8_t*)state->frame + ((int)state->height - 1)
          * state->pitch,
          state->width, state->height,
          -state->pitch);
@@ -159,7 +159,7 @@ static void task_screenshot_handler(retro_task_t *task)
 #endif
 
 #ifdef HAVE_IMAGEVIEWER
-   if (  ret                        && 
+   if (  ret                        &&
          !state->silence            &&
          state->history_list_enable
          )
@@ -321,7 +321,7 @@ static bool take_screenshot_raw(const char *name_base, void *userbuf,
    /* Negative pitch is needed as screenshot takes bottom-up,
     * but we use top-down.
     */
-   if (!screenshot_dump(name_base, 
+   if (!screenshot_dump(name_base,
          (const uint8_t*)data + (height - 1) * pitch,
          width, height, (int)(-pitch), false, userbuf, savestate, is_idle, is_paused))
       return false;

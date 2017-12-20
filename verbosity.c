@@ -99,7 +99,7 @@ void retro_main_log_file_init(const char *path)
 
    log_file_fp          = fopen_utf8(path, "wb");
    log_file_initialized = true;
-   
+
    /* TODO: this is only useful for a few platforms, find which and add ifdef */
    log_file_buf = calloc(1, 0x4000);
    setvbuf(log_file_fp, (char*)log_file_buf, _IOFBF, 0x4000);

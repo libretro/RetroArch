@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2012-2014 - OV2
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -341,7 +341,7 @@ static void gfx_ctx_d3d_swap_interval(void *data, unsigned interval)
 {
    d3d_video_t      *d3d = (d3d_video_t*)data;
 #ifdef _XBOX
-   unsigned d3d_interval = interval ? 
+   unsigned d3d_interval = interval ?
       D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
 
    d3d_set_render_state(d3d->dev, XBOX_PRESENTATIONINTERVAL, d3d_interval);

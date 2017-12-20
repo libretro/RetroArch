@@ -172,7 +172,7 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
    time_ticks = __mftb();
 #elif defined(GEKKO)
    time_ticks = gettime();
-#elif defined(PSP) 
+#elif defined(PSP)
    sceRtcGetCurrentTick((uint64_t*)&time_ticks);
 #elif defined(VITA)
    sceRtcGetCurrentTick((SceRtcTick*)&time_ticks);
@@ -320,7 +320,9 @@ static unsigned char check_arm_cpu_feature(const char* feature)
 {
    char line[1024];
    unsigned char status = 0;
-   RFILE *fp = filestream_open("/proc/cpuinfo", RFILE_MODE_READ_TEXT, -1);
+   RFILE *fp = filestream_open("/proc/cpuinfo",
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    if (!fp)
       return 0;

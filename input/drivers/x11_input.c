@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2015 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -156,7 +156,7 @@ static int16_t x_pressed_analog(x11_input_t *x11,
    int id_plus_key       = 0;
    unsigned sym          = 0;
    int keycode           = 0;
-   
+
    input_conv_analog_id_to_bind_id(idx, id, &id_minus, &id_plus);
 
    id_minus_key          = binds[id_minus].key;
@@ -164,24 +164,19 @@ static int16_t x_pressed_analog(x11_input_t *x11,
 
    sym                   = rarch_keysym_lut[(enum retro_key)id_minus_key];
    keycode               = XKeysymToKeycode(x11->display, sym);
-   if (      binds[id_minus].valid 
+   if (      binds[id_minus].valid
          && (id_minus_key < RETROK_LAST)
          && (x11->state[keycode >> 3] & (1 << (keycode & 7))))
       pressed_minus = -0x7fff;
 
    sym                   = rarch_keysym_lut[(enum retro_key)id_plus_key];
    keycode               = XKeysymToKeycode(x11->display, sym);
-   if (      binds[id_plus].valid 
-         && (id_plus_key < RETROK_LAST) 
+   if (      binds[id_plus].valid
+         && (id_plus_key < RETROK_LAST)
          && (x11->state[keycode >> 3] & (1 << (keycode & 7))))
       pressed_plus  =  0x7fff;
 
    return pressed_plus + pressed_minus;
-}
-
-static bool x_input_meta_key_pressed(void *data, int key)
-{
-   return false;
 }
 
 static int16_t x_lightgun_aiming_state( x11_input_t *x11, unsigned idx, unsigned id )
@@ -421,9 +416,9 @@ static void x_input_poll_mouse(x11_input_t *x11)
    {
       x11->mouse_x  = win_x;
       x11->mouse_y  = win_y;
-      x11->mouse_l  = mask & Button1Mask; 
-      x11->mouse_m  = mask & Button2Mask; 
-      x11->mouse_r  = mask & Button3Mask; 
+      x11->mouse_l  = mask & Button1Mask;
+      x11->mouse_m  = mask & Button2Mask;
+      x11->mouse_r  = mask & Button3Mask;
 
       /* Somewhat hacky, but seem to do the job. */
       if (x11->grab_mouse && video_driver_cb_has_focus())
@@ -531,7 +526,6 @@ input_driver_t input_x = {
    x_input_init,
    x_input_poll,
    x_input_state,
-   x_input_meta_key_pressed,
    x_input_free,
    NULL,
    NULL,

@@ -68,7 +68,7 @@ static void rxml_free_node(struct rxml_node *node)
 
       if (!attrib_node_head)
          continue;
-      
+
       next_attrib = (struct rxml_attrib_node*)attrib_node_head->next;
 
       if (!next_attrib)
@@ -176,7 +176,7 @@ static struct rxml_attrib_node *rxml_parse_attrs(const char *str)
       if (!attrib || !value)
          goto end;
 
-      struct rxml_attrib_node *new_node = 
+      struct rxml_attrib_node *new_node =
          (struct rxml_attrib_node*)calloc(1, sizeof(*new_node));
       if (!new_node)
          goto end;
@@ -303,7 +303,7 @@ static struct rxml_node *rxml_parse_node(const char **ptr_)
             goto error;
          }
 
-         node->data = strdup_range(cdata_start + 
+         node->data = strdup_range(cdata_start +
                strlen("<![CDATA["), cdata_end);
       }
       else if (closing_start && closing_start == child_start) /* Simple Data */
@@ -319,7 +319,7 @@ static struct rxml_node *rxml_parse_node(const char **ptr_)
          ptr           = child_start;
          first_start   = strchr(ptr, '<');
          first_closing = strstr(ptr, "</");
-          
+
          while (
                 first_start &&
                 first_closing &&
@@ -327,7 +327,7 @@ static struct rxml_node *rxml_parse_node(const char **ptr_)
                 )
          {
             struct rxml_node *new_node = rxml_parse_node(&ptr);
-             
+
             if (!new_node)
             {
                free(closing_tag);
@@ -400,7 +400,7 @@ static char *purge_xml_comments(const char *str)
       copy_src   = comment_end + strlen("-->");
    }
 
-   /* Avoid strcpy() as OpenBSD is anal and hates you 
+   /* Avoid strcpy() as OpenBSD is anal and hates you
     * for using it even when it's perfectly safe. */
    len = strlen(copy_src);
    memcpy(copy_dest, copy_src, len);
@@ -419,7 +419,9 @@ rxml_document_t *rxml_load_document(const char *path)
    char *new_memory_buffer = NULL;
    const char *mem_ptr     = NULL;
    long len                = 0;
-   RFILE *file             = filestream_open(path, RFILE_MODE_READ, -1);
+   RFILE *file             = filestream_open(path,
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
    if (!file)
       return NULL;
 
@@ -427,10 +429,7 @@ rxml_document_t *rxml_load_document(const char *path)
    if (!doc)
       goto error;
 
-   filestream_seek(file, 0, SEEK_END);
-   len = filestream_tell(file);
-   filestream_rewind(file);
-
+   len           = filestream_get_size(file);
    memory_buffer = (char*)malloc(len + 1);
    if (!memory_buffer)
       goto error;

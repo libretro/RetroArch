@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -56,7 +56,7 @@ static void audio_thread_loop(void *data)
       return;
 
    RARCH_LOG("[Audio Thread]: Initializing audio driver.\n");
-   thr->driver_data   = thr->driver->init(thr->device, thr->out_rate, thr->latency, 
+   thr->driver_data   = thr->driver->init(thr->device, thr->out_rate, thr->latency,
          thr->block_frames, thr->new_rate);
    slock_lock(thr->lock);
    thr->inited        = thr->driver_data ? 1 : -1;
@@ -68,7 +68,7 @@ static void audio_thread_loop(void *data)
    if (thr->inited < 0)
       return;
 
-   /* Wait until we start to avoid calling 
+   /* Wait until we start to avoid calling
     * stop immediately after initialization. */
    slock_lock(thr->lock);
    while (thr->stopped)
@@ -188,7 +188,7 @@ static bool audio_thread_stop(void *data)
    audio_thread_t *thr = (audio_thread_t*)data;
 
    if (!thr)
-      return false; 
+      return false;
 
    audio_thread_block(thr);
    thr->is_paused = true;
@@ -274,7 +274,7 @@ static const audio_driver_t audio_thread = {
  *
  * Starts a audio driver in a new thread.
  * Access to audio driver will be mediated through this driver.
- * This driver interfaces with audio callback and is 
+ * This driver interfaces with audio callback and is
  * only used in that case.
  *
  * Returns: true (1) if successful, otherwise false (0).

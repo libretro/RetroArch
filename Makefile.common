@@ -127,6 +127,10 @@ ifeq ($(HAVE_UNIX), 1)
 	OBJ += frontend/drivers/platform_unix.o
 endif
 
+ifeq ($(TARGET), retroarch_3ds)
+	OBJ += frontend/drivers/platform_ctr.o
+endif
+
 ifeq ($(findstring Haiku,$(OS)),)
    LIBS += -lm
    DEBUG_FLAG = -g
@@ -179,6 +183,7 @@ OBJ += frontend/frontend.o \
        $(LIBRETRO_COMM_DIR)/streams/file_stream_transforms.o \
        $(LIBRETRO_COMM_DIR)/streams/interface_stream.o \
        $(LIBRETRO_COMM_DIR)/streams/memory_stream.o \
+       $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.o \
        $(LIBRETRO_COMM_DIR)/lists/string_list.o \
        $(LIBRETRO_COMM_DIR)/string/stdstring.o \
        $(LIBRETRO_COMM_DIR)/memmap/memalign.o \
@@ -197,6 +202,7 @@ OBJ += frontend/frontend.o \
        $(LIBRETRO_COMM_DIR)/audio/audio_mixer.o \
        input/input_driver.o \
        gfx/video_coord_array.o \
+       gfx/video_display_server.o \
        gfx/video_driver.o \
        camera/camera_driver.o \
        wifi/wifi_driver.o \
@@ -243,6 +249,7 @@ OBJ += frontend/frontend.o \
        camera/drivers/nullcamera.o \
        wifi/drivers/nullwifi.o \
        gfx/drivers/nullgfx.o \
+       gfx/display_servers/dispserv_null.o \
        audio/drivers/nullaudio.o \
        input/drivers/nullinput.o \
        input/drivers_hid/null_hid.o \
@@ -570,10 +577,19 @@ ifeq ($(HAVE_CORETEXT), 1)
    OBJ += gfx/drivers_font_renderer/coretext.o
 endif
 
+ifeq ($(TARGET), retroarch_3ds)
+	OBJ += gfx/drivers_font/ctr_font.o
+endif
+
 ifeq ($(HAVE_OSS), 1)
    OBJ += audio/drivers/oss.o
 else ifeq ($(HAVE_OSS_BSD), 1)
    OBJ += audio/drivers/oss.o
+endif
+
+ifeq ($(TARGET), retroarch_3ds)
+	OBJ += audio/drivers/ctr_csnd_audio.o \
+			 audio/drivers/ctr_dsp_audio.o
 endif
 
 ifeq ($(HAVE_ALSA), 1)
@@ -758,6 +774,7 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/menu_event.o \
           menu/menu_entries.o \
           menu/menu_setting.o \
+          menu/menu_networking.o \
           menu/menu_shader.o \
 			 menu/widgets/menu_filebrowser.o \
 			 menu/widgets/menu_dialog.o \
@@ -845,6 +862,13 @@ endif
 	CFLAGS  += -I$(DEPS_DIR)/libvita2d/include
 endif
 
+ifeq ($(TARGET), retroarch_3ds)
+	OBJ += gfx/drivers/ctr_gfx.o \
+			 menu/drivers_display/menu_display_ctr.o \
+			 input/drivers/ctr_input.o \
+			 input/drivers_joypad/ctr_joypad.o
+endif
+
 ifeq ($(HAVE_WAYLAND), 1)
  OBJ += gfx/drivers_context/wayland_ctx.o \
 		  input/drivers/wayland_input.o
@@ -875,12 +899,12 @@ endif
 ifeq ($(HAVE_X11), 1)
    OBJ += input/common/input_x11_common.o \
           input/drivers/x11_input.o \
-			 gfx/common/dbus_common.o \
           gfx/common/x11_common.o \
-			 gfx/common/xinerama_common.o
+          gfx/common/xinerama_common.o \
+          gfx/display_servers/dispserv_x11.o
 
    LIBS += $(X11_LIBS) $(XEXT_LIBS) $(XF86VM_LIBS) $(XINERAMA_LIBS)
-   DEFINES += $(X11_CFLAGS) $(XEXT_CFLAGS) $(XF86VM_CFLAGS) $(XINERAMA_CFLAGS)
+   DEFINES += -DHAVE_X11 $(X11_CFLAGS) $(XEXT_CFLAGS) $(XF86VM_CFLAGS) $(XINERAMA_CFLAGS)
 ifeq ($(HAVE_XCB),1)
    LIBS    += -lX11-xcb
 endif
@@ -903,6 +927,7 @@ endif
 ifeq ($(HAVE_DBUS), 1)
 	LIBS += $(DBUS_LIBS)
 	CFLAGS += $(DBUS_CFLAGS)
+	OBJ += gfx/common/dbus_common.o
 endif
 
 ifeq ($(HAVE_UDEV), 1)
@@ -1530,6 +1555,7 @@ ifneq ($(findstring Win32,$(OS)),)
    OBJ += gfx/drivers/gdi_gfx.o \
           gfx/drivers_context/gdi_ctx.o \
           gfx/drivers_font/gdi_font.o \
+          gfx/display_servers/dispserv_win32.o \
           menu/drivers_display/menu_display_gdi.o
 
    LIBS += -lmsimg32 -lhid -lsetupapi
@@ -1583,4 +1609,51 @@ ifneq ($(findstring DOS,$(OS)),)
    ifeq ($(HAVE_MENU_COMMON), 1)
       OBJ += menu/drivers_display/menu_display_vga.o
    endif
+endif
+
+ifeq ($(HAVE_STATIC_VIDEO_FILTERS), 1)
+OBJ += gfx/video_filters/2xsai.o \
+		 gfx/video_filters/super2xsai.o \
+		 gfx/video_filters/supereagle.o \
+		 gfx/video_filters/2xbr.o \
+		 gfx/video_filters/darken.o \
+		 gfx/video_filters/epx.o \
+		 gfx/video_filters/scale2x.o \
+		 gfx/video_filters/blargg_ntsc_snes.o \
+		 gfx/video_filters/lq2x.o \
+		 gfx/video_filters/phosphor2x.o
+endif
+
+ifeq ($(WANT_IOSUHAX), 1)
+DEFINES += -I$(DEPS_DIR)/libiosuhax
+CFLAGS  += -I$(DEPS_DIR)/libiosuhax
+OBJ += $(DEPS_DIR)/libiosuhax/iosuhax.o \
+		 $(DEPS_DIR)/libiosuhax/iosuhax_devoptab.o \
+		 $(DEPS_DIR)/libiosuhax/iosuhax_disc_interface.o
+endif
+
+ifeq ($(WANT_LIBFAT), 1)
+DEFINES += -I$(DEPS_DIR)/libfat/include
+CFLAGS  += -I$(DEPS_DIR)/libfat/include
+OBJ += $(DEPS_DIR)/libfat/cache.o \
+		 $(DEPS_DIR)/libfat/directory.o \
+		 $(DEPS_DIR)/libfat/disc.o \
+		 $(DEPS_DIR)/libfat/fatdir.o \
+		 $(DEPS_DIR)/libfat/fatfile.o \
+		 $(DEPS_DIR)/libfat/file_allocation_table.o \
+		 $(DEPS_DIR)/libfat/filetime.o \
+		 $(DEPS_DIR)/libfat/libfat.o \
+		 $(DEPS_DIR)/libfat/lock.o \
+		 $(DEPS_DIR)/libfat/partition.o
+endif
+
+ifeq ($(HAVE_STATIC_AUDIO_FILTERS), 1)
+OBJ += libretro-common/audio/dsp_filters/echo.o \
+		 libretro-common/audio/dsp_filters/eq.o \
+		 libretro-common/audio/dsp_filters/chorus.o \
+		 libretro-common/audio/dsp_filters/iir.o \
+		 libretro-common/audio/dsp_filters/panning.o \
+		 libretro-common/audio/dsp_filters/phaser.o \
+		 libretro-common/audio/dsp_filters/reverb.o \
+		 libretro-common/audio/dsp_filters/wahwah.o
 endif

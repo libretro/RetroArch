@@ -31,46 +31,46 @@ distribution.
 #ifndef __DVD_H__
 #define __DVD_H__
 
-/*! 
- * \file dvd.h 
+/*!
+ * \file dvd.h
  * \brief DVD subsystem
  *
- */ 
+ */
 
 #include <gctypes.h>
 #include <ogc/lwp_queue.h>
 #include <ogc/disc_io.h>
 
-/*! 
+/*!
  * \addtogroup dvd_statecodes DVD state codes
  * @{
  */
 
-#define  DVD_STATE_FATAL_ERROR			-1 
-#define  DVD_STATE_END					0 
-#define  DVD_STATE_BUSY					1 
-#define  DVD_STATE_WAITING				2 
-#define  DVD_STATE_COVER_CLOSED			3 
-#define  DVD_STATE_NO_DISK				4 
-#define  DVD_STATE_COVER_OPEN			5 
-#define  DVD_STATE_WRONG_DISK			6 
-#define  DVD_STATE_MOTOR_STOPPED		7 
-#define  DVD_STATE_IGNORED				8 
-#define  DVD_STATE_CANCELED				10 
-#define  DVD_STATE_RETRY				11 
+#define  DVD_STATE_FATAL_ERROR			-1
+#define  DVD_STATE_END					0
+#define  DVD_STATE_BUSY					1
+#define  DVD_STATE_WAITING				2
+#define  DVD_STATE_COVER_CLOSED			3
+#define  DVD_STATE_NO_DISK				4
+#define  DVD_STATE_COVER_OPEN			5
+#define  DVD_STATE_WRONG_DISK			6
+#define  DVD_STATE_MOTOR_STOPPED		7
+#define  DVD_STATE_IGNORED				8
+#define  DVD_STATE_CANCELED				10
+#define  DVD_STATE_RETRY				11
 
-#define  DVD_ERROR_OK					0 
-#define  DVD_ERROR_FATAL				-1 
-#define  DVD_ERROR_IGNORED				-2 
-#define  DVD_ERROR_CANCELED				-3 
-#define  DVD_ERROR_COVER_CLOSED			-4 
+#define  DVD_ERROR_OK					0
+#define  DVD_ERROR_FATAL				-1
+#define  DVD_ERROR_IGNORED				-2
+#define  DVD_ERROR_CANCELED				-3
+#define  DVD_ERROR_COVER_CLOSED			-4
 
 /*!
  * @}
  */
 
 
-/*! 
+/*!
  * \addtogroup dvd_resetmode DVD reset modes
  * @{
  */
@@ -84,7 +84,7 @@ distribution.
  */
 
 
-/*! 
+/*!
  * \addtogroup dvd_motorctrlmode DVD motor control modes
  * @{
  */
@@ -123,7 +123,7 @@ typedef struct _dvddiskid dvddiskid;
  * \param gamever version of game
  * \param streaming flag to control audio streaming
  * \param streambufsize size of buffer used for audio streaming
- * \param pad[22] padding 
+ * \param pad[22] padding
  */
 struct _dvddiskid {
 	s8 gamename[4];
@@ -225,7 +225,7 @@ struct _dvdfileinfo {
 };
 
 
-/*! 
+/*!
  * \fn void DVD_Init()
  * \brief Initializes the DVD subsystem
  *
@@ -237,7 +237,7 @@ void DVD_Init();
 void DVD_Pause();
 
 
-/*! 
+/*!
  * \fn void DVD_Reset(u32 reset_mode)
  * \brief Performs a reset of the drive and FW respectively.
  *
@@ -248,7 +248,7 @@ void DVD_Pause();
 void DVD_Reset(u32 reset_mode);
 
 
-/*! 
+/*!
  * \fn s32 DVD_Mount()
  * \brief Mounts the DVD drive.
  *
@@ -260,7 +260,7 @@ s32 DVD_Mount();
 s32 DVD_GetDriveStatus();
 
 
-/*! 
+/*!
  * \fn s32 DVD_MountAsync(dvdcmdblk *block,dvdcbcallback cb)
  * \brief Mounts the DVD drive.
  *
@@ -283,7 +283,7 @@ s32 DVD_GetDriveStatus();
 s32 DVD_MountAsync(dvdcmdblk *block,dvdcbcallback cb);
 
 
-/*! 
+/*!
  * \fn s32 DVD_ControlDrive(dvdcmdblk *block,u32 cmd)
  * \brief Controls the drive's motor and behavior.
  *
@@ -297,7 +297,7 @@ s32 DVD_MountAsync(dvdcmdblk *block,dvdcbcallback cb);
 s32 DVD_ControlDrive(dvdcmdblk *block,u32 cmd);
 
 
-/*! 
+/*!
  * \fn s32 DVD_ControlDriveAsync(dvdcmdblk *block,u32 cmd,dvdcbcallback cb)
  * \brief Controls the drive's motor and behavior.
  *
@@ -310,7 +310,7 @@ s32 DVD_ControlDrive(dvdcmdblk *block,u32 cmd);
 s32 DVD_ControlDriveAsync(dvdcmdblk *block,u32 cmd,dvdcbcallback cb);
 
 
-/*! 
+/*!
  * \fn s32 DVD_SetGCMOffset(dvdcmdblk *block,u32 offset)
  * \brief Sets the offset to the GCM. Used for multigame discs.
  *
@@ -324,7 +324,7 @@ s32 DVD_ControlDriveAsync(dvdcmdblk *block,u32 cmd,dvdcbcallback cb);
 s32 DVD_SetGCMOffset(dvdcmdblk *block,s64 offset);
 
 
-/*! 
+/*!
  * \fn s32 DVD_SetGCMOffsetAsync(dvdcmdblk *block,u32 offset,dvdcbcallback cb)
  * \brief Sets the offset to the GCM. Used for multigame discs.
  *

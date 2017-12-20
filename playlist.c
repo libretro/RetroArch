@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -18,9 +18,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <libretro.h>
 #include <boolean.h>
 #include <compat/posix_string.h>
 #include <string/stdstring.h>
+#include <streams/interface_stream.h>
 #include <streams/file_stream.h>
 #include <file/file_path.h>
 
@@ -76,8 +78,8 @@ char *playlist_get_conf_path(playlist_t *playlist)
  * @path                : Path of playlist entry.
  * @core_path           : Core path of playlist entry.
  * @core_name           : Core name of playlist entry.
- * 
- * Gets values of playlist index: 
+ *
+ * Gets values of playlist index:
  **/
 void playlist_get_index(playlist_t *playlist,
       size_t idx,
@@ -107,8 +109,8 @@ void playlist_get_index(playlist_t *playlist,
  * playlist_delete_index:
  * @playlist            : Playlist handle.
  * @idx                 : Index of playlist entry.
- * 
- * Delete the entry at the index: 
+ *
+ * Delete the entry at the index:
  **/
 void playlist_delete_index(playlist_t *playlist,
       size_t idx)
@@ -309,9 +311,17 @@ bool playlist_push(playlist_t *playlist,
    for (i = 0; i < playlist->size; i++)
    {
       struct playlist_entry tmp;
-      bool equal_path = (!path && !playlist->entries[i].path) ||
+      bool equal_path;
+
+      equal_path = (!path && !playlist->entries[i].path) ||
          (path && playlist->entries[i].path &&
-          string_is_equal(path,playlist->entries[i].path));
+#ifdef _WIN32
+          /*prevent duplicates on case-insensitive operating systems*/
+          string_is_equal_noncase(path,playlist->entries[i].path)
+#else
+          string_is_equal(path,playlist->entries[i].path)
+#endif
+          );
 
       /* Core name can have changed while still being the same core.
        * Differentiate based on the core path only. */
@@ -385,7 +395,8 @@ void playlist_write_file(playlist_t *playlist)
    if (!playlist || !playlist->modified)
       return;
 
-   file = filestream_open(playlist->conf_path, RFILE_MODE_WRITE, -1);
+   file = filestream_open(playlist->conf_path,
+         RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    if (!file)
    {
@@ -484,17 +495,18 @@ static bool playlist_read_file(
 {
    unsigned i;
    char buf[PLAYLIST_ENTRIES][1024];
-   RFILE *file                      = filestream_open(
-         path, RFILE_MODE_READ_TEXT, -1);
-
-   for (i = 0; i < PLAYLIST_ENTRIES; i++)
-      buf[i][0] = '\0';
+   intfstream_t *file = intfstream_open_file(
+         path, RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    /* If playlist file does not exist,
     * create an empty playlist instead.
     */
    if (!file)
       return true;
+
+   for (i = 0; i < PLAYLIST_ENTRIES; i++)
+      buf[i][0] = '\0';
 
    for (playlist->size = 0; playlist->size < playlist->cap; )
    {
@@ -505,16 +517,16 @@ static bool playlist_read_file(
          char *last  = NULL;
          *buf[i]     = '\0';
 
-         if (!filestream_gets(file, buf[i], sizeof(buf[i])))
+         if (!intfstream_gets(file, buf[i], sizeof(buf[i])))
             goto end;
 
          /* Read playlist entry and terminate string with NUL character
           * regardless of Windows or Unix line endings
           */
-          if((last = strrchr(buf[i], '\r')))
-             *last = '\0';
-          else if((last = strrchr(buf[i], '\n')))
-             *last = '\0';	
+         if((last = strrchr(buf[i], '\r')))
+            *last = '\0';
+         else if((last = strrchr(buf[i], '\n')))
+            *last = '\0';
       }
 
       entry = &playlist->entries[playlist->size];
@@ -537,7 +549,8 @@ static bool playlist_read_file(
    }
 
 end:
-   filestream_close(file);
+   intfstream_close(file);
+   free(file);
    return true;
 }
 

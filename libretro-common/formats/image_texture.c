@@ -114,17 +114,17 @@ static bool image_texture_internal_gx_convert_texture32(
    unsigned tmp_pitch, width2, i;
    const uint16_t *src = NULL;
    uint16_t *dst       = NULL;
-   /* Memory allocation in libogc is extremely primitive so try 
-    * to avoid gaps in memory when converting by copying over to 
-    * a temporary buffer first, then converting over into 
+   /* Memory allocation in libogc is extremely primitive so try
+    * to avoid gaps in memory when converting by copying over to
+    * a temporary buffer first, then converting over into
     * main buffer again. */
-   void *tmp           = malloc(image->width 
+   void *tmp           = malloc(image->width
          * image->height * sizeof(uint32_t));
 
    if (!tmp)
       return false;
 
-   memcpy(tmp, image->pixels, image->width 
+   memcpy(tmp, image->pixels, image->width
          * image->height * sizeof(uint32_t));
    tmp_pitch = (image->width * sizeof(uint32_t)) >> 1;
 
@@ -264,7 +264,7 @@ static enum image_type_enum image_texture_convert_fmt_to_type(enum video_image_f
    return IMAGE_TYPE_NONE;
 }
 
-bool image_texture_load(struct texture_image *out_img, 
+bool image_texture_load(struct texture_image *out_img,
       const char *path)
 {
    unsigned r_shift, g_shift, b_shift, a_shift;

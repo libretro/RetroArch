@@ -1,4 +1,4 @@
-/*  RetroArch - A frontend for libretro.
+﻿/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2016-2017 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
@@ -218,7 +218,7 @@ static void menu_display_vk_draw(void *data)
    {
       pv->x       = *vertex++;
       /* Y-flip. Vulkan is top-left clip space */
-      pv->y       = 1.0f - (*vertex++); 
+      pv->y       = 1.0f - (*vertex++);
       pv->tex_x   = *tex_coord++;
       pv->tex_y   = *tex_coord++;
       pv->color.r = *color++;
@@ -257,13 +257,13 @@ static void menu_display_vk_draw(void *data)
       default:
       {
          struct vk_draw_triangles call;
-         
+
          call.pipeline     = vk->display.pipelines[
                to_display_pipeline(draw->prim_type, vk->display.blend)];
          call.texture      = texture;
          call.sampler      = texture->mipmap ?
             vk->samplers.mipmap_linear :
-            (texture->default_smooth ? vk->samplers.linear 
+            (texture->default_smooth ? vk->samplers.linear
              : vk->samplers.nearest);
          call.uniform      = draw->matrix_data
             ? draw->matrix_data : menu_display_vk_get_default_mvp();
@@ -328,7 +328,10 @@ static bool menu_display_vk_font_init_first(
          is_threaded,
          FONT_DRIVER_RENDER_VULKAN_API);
 
-   return *handle;
+   if (*handle)
+      return true;
+
+   return false;
 }
 
 menu_display_ctx_driver_t menu_display_ctx_vulkan = {

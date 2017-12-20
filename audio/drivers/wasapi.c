@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -15,7 +15,7 @@
 
 #include <stdlib.h>
 
-#ifdef _WIN32_WINNT 
+#ifdef _WIN32_WINNT
 #undef _WIN32_WINNT
 #endif
 #define _WIN32_WINNT 0x0600
@@ -40,7 +40,7 @@ DEFINE_PROPERTYKEY(PKEY_Device_FriendlyName, 0xa45c254e, 0xdf1c, 0x4efd, 0x80, 0
 
 #ifdef __cplusplus
 #define _IMMDeviceCollection_Item(This,nDevice,ppdevice) (This)->Item(nDevice,ppdevice)
-#define _IAudioClient_Start(This)	( (This)->Start() ) 
+#define _IAudioClient_Start(This)	( (This)->Start() )
 #define _IAudioClient_Stop(This)	( (This)->Stop() )
 #define _IAudioClient_GetCurrentPadding(This,pNumPaddingFrames)	\
     ( (This)->GetCurrentPadding(pNumPaddingFrames) )
@@ -62,7 +62,7 @@ DEFINE_PROPERTYKEY(PKEY_Device_FriendlyName, 0xa45c254e, 0xdf1c, 0x4efd, 0x80, 0
 #define _IMMDeviceCollection_GetCount(This,cProps) ( (This)->GetCount(cProps) )
 #else
 #define _IMMDeviceCollection_Item(This,nDevice,ppdevice) (This)->lpVtbl->Item(This,nDevice,ppdevice)
-#define _IAudioClient_Start(This)	( (This)->lpVtbl -> Start(This) ) 
+#define _IAudioClient_Start(This)	( (This)->lpVtbl -> Start(This) )
 #define _IAudioClient_Stop(This)	( (This)->lpVtbl -> Stop(This) )
 #define _IAudioClient_GetCurrentPadding(This,pNumPaddingFrames)	\
     ( (This)->lpVtbl -> GetCurrentPadding(This,pNumPaddingFrames) )
@@ -163,7 +163,7 @@ static bool wasapi_check_device_id(IMMDevice *device, const char *id)
 
    id_length = MultiByteToWideChar(CP_ACP, 0, id, -1, dev_cmp_id, id_length);
    WASAPI_SR_CHECK(id_length > 0, "MultiByteToWideChar", goto error);
-   
+
    hr = _IMMDevice_GetId(device, &dev_id);
    WASAPI_HR_CHECK(hr, "IMMDevice::GetId", goto error);
 
@@ -306,7 +306,7 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
    bool float_fmt_res   = *float_fmt;
    unsigned rate_res    = *rate;
    HRESULT hr           = _IMMDevice_Activate(device,
-         IID_IAudioClient, 
+         IID_IAudioClient,
          CLSCTX_ALL, NULL, (void**)&client);
    WASAPI_HR_CHECK(hr, "IMMDevice::Activate", return NULL);
 
@@ -336,9 +336,10 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
 
          if (hr == AUDCLNT_E_ALREADY_INITIALIZED)
          {
+            HRESULT hr;
             WASAPI_RELEASE(client);
-            HRESULT hr           = _IMMDevice_Activate(device,
-                  IID_IAudioClient, 
+            hr           = _IMMDevice_Activate(device,
+                  IID_IAudioClient,
                   CLSCTX_ALL, NULL, (void**)&client);
             WASAPI_HR_CHECK(hr, "IMMDevice::Activate", return NULL);
 
@@ -390,7 +391,7 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
    REFERENCE_TIME buffer_duration = 0;
    UINT32 buffer_length           = 0;
    HRESULT hr                     = _IMMDevice_Activate(device,
-         IID_IAudioClient, 
+         IID_IAudioClient,
          CLSCTX_ALL, NULL, (void**)&client);
    WASAPI_HR_CHECK(hr, "IMMDevice::Activate", return NULL);
 
@@ -432,7 +433,7 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
 
             WASAPI_RELEASE(client);
             hr                     = _IMMDevice_Activate(device,
-                  IID_IAudioClient, 
+                  IID_IAudioClient,
                   CLSCTX_ALL, NULL, (void**)&client);
             WASAPI_HR_CHECK(hr, "IMMDevice::Activate", return NULL);
 
@@ -451,7 +452,7 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
          {
             WASAPI_RELEASE(client);
             hr                     = _IMMDevice_Activate(device,
-                  IID_IAudioClient, 
+                  IID_IAudioClient,
                   CLSCTX_ALL, NULL, (void**)&client);
             WASAPI_HR_CHECK(hr, "IMMDevice::Activate", return NULL);
 
@@ -668,7 +669,7 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
 
 error:
    WASAPI_RELEASE(w->renderer);
-   WASAPI_RELEASE(w->client);      
+   WASAPI_RELEASE(w->client);
    WASAPI_RELEASE(w->device);
    if (w->write_event)
       CloseHandle(w->write_event);
@@ -1044,7 +1045,7 @@ static size_t wasapi_write_avail(void *wh)
 
    hr = _IAudioClient_GetCurrentPadding(w->client, &padding);
    WASAPI_HR_CHECK(hr, "IAudioClient::GetCurrentPadding", return 0);
-   
+
    return w->engine_buffer_size - padding * w->frame_size;
 }
 

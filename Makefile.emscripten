@@ -20,6 +20,8 @@ HAVE_SDL = 0
 HAVE_SDL2 = 1
 HAVE_ZLIB = 1
 WANT_ZLIB = 1
+HAVE_STATIC_VIDEO_FILTERS = 1
+HAVE_STATIC_AUDIO_FILTERS = 1
 MEMORY = 536870912
 
 # XXX: setting this to 1/2 currently crashes Firefox nightly
@@ -50,26 +52,6 @@ ifeq ($(ASYNC), 1)
 endif  
 
 include Makefile.common
-
-OBJ += gfx/video_filters/2xsai.o
-OBJ += gfx/video_filters/super2xsai.o
-OBJ += gfx/video_filters/supereagle.o
-OBJ += gfx/video_filters/2xbr.o
-OBJ += gfx/video_filters/darken.o
-OBJ += gfx/video_filters/epx.o
-OBJ += gfx/video_filters/scale2x.o
-OBJ += gfx/video_filters/blargg_ntsc_snes.o
-OBJ += gfx/video_filters/lq2x.o
-OBJ += gfx/video_filters/phosphor2x.o
-
-OBJ += libretro-common/audio/dsp_filters/echo.o
-OBJ += libretro-common/audio/dsp_filters/eq.o
-OBJ += libretro-common/audio/dsp_filters/chorus.o
-OBJ += libretro-common/audio/dsp_filters/iir.o
-OBJ += libretro-common/audio/dsp_filters/panning.o
-OBJ += libretro-common/audio/dsp_filters/phaser.o
-OBJ += libretro-common/audio/dsp_filters/reverb.o
-OBJ += libretro-common/audio/dsp_filters/wahwah.o
 
 CFLAGS += -Ideps/libz -Ideps -Ideps/stb
 libretro = libretro_emscripten.bc

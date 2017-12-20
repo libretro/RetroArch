@@ -498,12 +498,12 @@ static void *resampler_CC_init(const struct resampler_config *config,
    rarch_CC_resampler_t *re = (rarch_CC_resampler_t*)
       memalign_alloc(32, sizeof(rarch_CC_resampler_t));
 
-   /* TODO: lookup if NEON support can be detected at 
+   /* TODO: lookup if NEON support can be detected at
     * runtime and a funcptr set at runtime for either
     * C codepath or NEON codepath. This will help out
     * Android. */
    (void)mask;
-   (void)config; 
+   (void)config;
    if (!re)
       return NULL;
 

@@ -20,23 +20,25 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#include <streams/file_stream.h>
 #include <string.h>
 #include <stdarg.h>
 
+#include <libretro.h>
+#include <streams/file_stream.h>
+
 RFILE* rfopen(const char *path, const char *mode)
 {
-   unsigned int retro_mode = RFILE_MODE_READ_TEXT;
+   unsigned int retro_mode = 0;
    if (strstr(mode, "r"))
       if (strstr(mode, "b"))
-         retro_mode = RFILE_MODE_READ;
+         retro_mode = RETRO_VFS_FILE_ACCESS_READ;
 
    if (strstr(mode, "w"))
-      retro_mode = RFILE_MODE_WRITE;
+      retro_mode = RETRO_VFS_FILE_ACCESS_WRITE;
    if (strstr(mode, "+"))
-      retro_mode = RFILE_MODE_READ_WRITE;
+      retro_mode = RETRO_VFS_FILE_ACCESS_READ_WRITE;
 
-   return filestream_open(path, retro_mode, -1);
+   return filestream_open(path, retro_mode, RETRO_VFS_FILE_ACCESS_HINT_NONE);
 }
 
 int rfclose(RFILE* stream)
@@ -51,7 +53,21 @@ long rftell(RFILE* stream)
 
 int rfseek(RFILE* stream, long offset, int origin)
 {
-   return filestream_seek(stream, offset, origin);
+   int seek_position = -1;
+   switch (origin)
+   {
+      case SEEK_SET:
+         seek_position = RETRO_VFS_SEEK_POSITION_START;
+         break;
+      case SEEK_CUR:
+         seek_position = RETRO_VFS_SEEK_POSITION_CURRENT;
+         break;
+      case SEEK_END:
+         seek_position = RETRO_VFS_SEEK_POSITION_END;
+         break;
+   }
+
+   return filestream_seek(stream, offset, seek_position);
 }
 
 size_t rfread(void* buffer,

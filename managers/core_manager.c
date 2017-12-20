@@ -45,7 +45,7 @@ bool find_libretro_core(char *fullpath,
 
    RARCH_LOG("Searching for valid libretro implementation in: \"%s\".\n",
          dir);
-   
+
    for (i = 0; i < list->size; i++)
    {
       char fname[PATH_MAX_LENGTH]           = {0};

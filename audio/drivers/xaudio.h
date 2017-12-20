@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2010-2014 - OV2
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -58,7 +58,7 @@ DEFINE_IID(IXAudio2, 8bcf1f58, 9fe7, 4583, 8a, c6, e2, ad, c4, 65, c8, bb);
 #include <mmreg.h>
 
 #ifndef __cplusplus
-#undef OPAQUE		
+#undef OPAQUE
 #define OPAQUE struct
 #endif
 
@@ -131,7 +131,7 @@ typedef enum XAUDIO2_WINDOWS_PROCESSOR_SPECIFIER
 typedef enum XAUDIO2_FILTER_TYPE {
    LowPassFilter,
    BandPassFilter,
-   HighPassFilter 
+   HighPassFilter
 } XAUDIO2_FILTER_TYPE;
 
 typedef struct XAUDIO2_DEVICE_DETAILS
@@ -294,27 +294,27 @@ DECLARE_INTERFACE_(IXAudio2, IUnknown)
 
 #ifdef __cplusplus
 /* C++ hooks */
-#define IXAudio2_Initialize(handle,a,b) handle->Initialize(a, b)		
-#define IXAudio2SourceVoice_SubmitSourceBuffer(handle, a, b) handle->SubmitSourceBuffer(a, b)		
-#define IXAudio2SourceVoice_Stop(handle, a, b) handle->Stop(a, b)		
-#define IXAudio2SourceVoice_DestroyVoice(handle) handle->DestroyVoice()		
-#define IXAudio2MasteringVoice_DestroyVoice(handle) handle->DestroyVoice()		
-#define IXAudio2_Release(handle) handle->Release()		
-#define IXAudio2_CreateSourceVoice(handle, a, b, c, d, e, f, g) handle->CreateSourceVoice(a, b, c, d, e, f, g)		
-#define IXAudio2_CreateMasteringVoice(handle, a, b, c, d, e, f) handle->CreateMasteringVoice(a, b, c, d, e, f)		
-#define IXAudio2SourceVoice_Start(handle, a, b) handle->Start(a, b)		
+#define IXAudio2_Initialize(handle,a,b) handle->Initialize(a, b)
+#define IXAudio2SourceVoice_SubmitSourceBuffer(handle, a, b) handle->SubmitSourceBuffer(a, b)
+#define IXAudio2SourceVoice_Stop(handle, a, b) handle->Stop(a, b)
+#define IXAudio2SourceVoice_DestroyVoice(handle) handle->DestroyVoice()
+#define IXAudio2MasteringVoice_DestroyVoice(handle) handle->DestroyVoice()
+#define IXAudio2_Release(handle) handle->Release()
+#define IXAudio2_CreateSourceVoice(handle, a, b, c, d, e, f, g) handle->CreateSourceVoice(a, b, c, d, e, f, g)
+#define IXAudio2_CreateMasteringVoice(handle, a, b, c, d, e, f) handle->CreateMasteringVoice(a, b, c, d, e, f)
+#define IXAudio2SourceVoice_Start(handle, a, b) handle->Start(a, b)
 #else
 /* C hooks */
-#define IXAudio2_Initialize(THIS,a,b) (THIS)->lpVtbl->Initialize(THIS, a, b)		
-#define IXAudio2_Release(THIS) (THIS)->lpVtbl->Release(THIS)		
-#define IXAudio2_CreateSourceVoice(THIS,ppSourceVoice,pSourceFormat,Flags,MaxFrequencyRatio,pCallback,pSendList,pEffectChain) (THIS)->lpVtbl->CreateSourceVoice(THIS, ppSourceVoice,pSourceFormat,Flags,MaxFrequencyRatio,pCallback,pSendList,pEffectChain)		
-#define IXAudio2_CreateMasteringVoice(THIS,ppMasteringVoice,InputChannels,InputSampleRate,Flags,DeviceIndex,pEffectChain) (THIS)->lpVtbl->CreateMasteringVoice(THIS, ppMasteringVoice,InputChannels,InputSampleRate,Flags,DeviceIndex,pEffectChain)		
-#define IXAudio2_GetDeviceCount(THIS, puCount) (THIS)->lpVtbl->GetDeviceCount(THIS, puCount)		
-#define IXAudio2_GetDeviceDetails(THIS, Index,pDeviceDetails) (THIS)->lpVtbl->GetDeviceDetails(THIS, Index, pDeviceDetails)		
-#define IXAudio2SourceVoice_Start(THIS, Flags, OperationSet) (THIS)->lpVtbl->Start(THIS, Flags, OperationSet)		
-#define IXAudio2SourceVoice_Stop(THIS, Flags, OperationSet) (THIS)->lpVtbl->Stop(THIS, Flags, OperationSet)		
-#define IXAudio2SourceVoice_SubmitSourceBuffer(THIS, pBuffer, pBufferWMA) (THIS)->lpVtbl->SubmitSourceBuffer(THIS, pBuffer, pBufferWMA)		
-#define IXAudio2SourceVoice_DestroyVoice(THIS) (THIS)->lpVtbl->DestroyVoice(THIS)		
+#define IXAudio2_Initialize(THIS,a,b) (THIS)->lpVtbl->Initialize(THIS, a, b)
+#define IXAudio2_Release(THIS) (THIS)->lpVtbl->Release(THIS)
+#define IXAudio2_CreateSourceVoice(THIS,ppSourceVoice,pSourceFormat,Flags,MaxFrequencyRatio,pCallback,pSendList,pEffectChain) (THIS)->lpVtbl->CreateSourceVoice(THIS, ppSourceVoice,pSourceFormat,Flags,MaxFrequencyRatio,pCallback,pSendList,pEffectChain)
+#define IXAudio2_CreateMasteringVoice(THIS,ppMasteringVoice,InputChannels,InputSampleRate,Flags,DeviceIndex,pEffectChain) (THIS)->lpVtbl->CreateMasteringVoice(THIS, ppMasteringVoice,InputChannels,InputSampleRate,Flags,DeviceIndex,pEffectChain)
+#define IXAudio2_GetDeviceCount(THIS, puCount) (THIS)->lpVtbl->GetDeviceCount(THIS, puCount)
+#define IXAudio2_GetDeviceDetails(THIS, Index,pDeviceDetails) (THIS)->lpVtbl->GetDeviceDetails(THIS, Index, pDeviceDetails)
+#define IXAudio2SourceVoice_Start(THIS, Flags, OperationSet) (THIS)->lpVtbl->Start(THIS, Flags, OperationSet)
+#define IXAudio2SourceVoice_Stop(THIS, Flags, OperationSet) (THIS)->lpVtbl->Stop(THIS, Flags, OperationSet)
+#define IXAudio2SourceVoice_SubmitSourceBuffer(THIS, pBuffer, pBufferWMA) (THIS)->lpVtbl->SubmitSourceBuffer(THIS, pBuffer, pBufferWMA)
+#define IXAudio2SourceVoice_DestroyVoice(THIS) (THIS)->lpVtbl->DestroyVoice(THIS)
 #define IXAudio2MasteringVoice_DestroyVoice(THIS) (THIS)->lpVtbl->DestroyVoice(THIS)
 #endif
 

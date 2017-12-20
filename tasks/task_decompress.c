@@ -19,6 +19,7 @@
 #include <string/stdstring.h>
 #include <file/file_path.h>
 #include <file/archive_file.h>
+#include <streams/file_stream.h>
 #include <retro_miscellaneous.h>
 #include <compat/strl.h>
 
@@ -272,7 +273,7 @@ bool task_push_decompress(
    }
 
    /* ZIP or APK only */
-   if (!path_file_exists(source_file) ||
+   if (!filestream_exists(source_file) ||
          msg_hash_to_file_type(msg_hash_calculate(path_get_extension(source_file)))
          != FILE_TYPE_COMPRESSED)
    {

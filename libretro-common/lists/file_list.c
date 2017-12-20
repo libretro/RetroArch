@@ -86,7 +86,7 @@ bool file_list_prepend(file_list_t *list,
       size_t entry_idx)
 {
    unsigned i;
-   
+
    if (!file_list_expand_if_needed(list))
       return false;
 
@@ -94,7 +94,7 @@ bool file_list_prepend(file_list_t *list,
    {
       struct item_file *copy = (struct item_file*)
          calloc(1, sizeof(struct item_file));
-      
+
       memcpy(copy, &list->list[i-1], sizeof(struct item_file));
 
       memcpy(&list->list[i-1], &list->list[i], sizeof(struct item_file));
@@ -169,7 +169,7 @@ void file_list_free(file_list_t *list)
    {
       file_list_free_userdata(list, i);
       file_list_free_actiondata(list, i);
-       
+
       if (list->list[i].path)
          free(list->list[i].path);
       list->list[i].path = NULL;
@@ -461,7 +461,7 @@ bool file_list_search(const file_list_t *list, const char *needle, size_t *idx)
       }
       else if (str && !ret)
       {
-         /* Found mid-string match, but try to find a match with 
+         /* Found mid-string match, but try to find a match with
           * first characters before we settle. */
          *idx = i;
          ret = true;

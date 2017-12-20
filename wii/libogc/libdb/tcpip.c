@@ -90,9 +90,9 @@ static int opentcpip(struct dbginterface *device)
 	if(listensock>=0 && (device->fhndl<0 ))
 		device->fhndl = tcpip_accept(listensock);
 
-	if(device->fhndl<0) 
+	if(device->fhndl<0)
 		return -1;
-	else 
+	else
 		tcpip_starttimer(device->fhndl);
 
 	return 0;
@@ -191,21 +191,21 @@ static s8_t tcpip_accept_func(void *arg,struct uip_tcp_pcb *newpcb,s8_t err)
 		uip_tcp_close(newpcb);
 		return UIP_ERR_ABRT;
 	}
-	
+
 	newsock = tcpip_getsocket(s);
 	newsock->pcb->flags |= UIP_TF_NODELAY;
-	
+
 	ptr = tcpip_accepted_sockets;
 	while(ptr && ptr->next) ptr = ptr->next;
 	if(!ptr) tcpip_accepted_sockets = newsock;
 	else ptr->next = newsock;
-	
+
 	uip_tcp_arg(newpcb,newsock);
 	uip_tcp_recv(newpcb,tcpip_recved);
 	uip_tcp_sent(newpcb,tcpip_sent);
 	uip_tcp_err(newpcb,tcpip_err);
 	uip_tcp_poll(newpcb,tcpip_poll,4);
-	
+
 	return UIP_ERR_OK;
 }
 
@@ -217,7 +217,7 @@ static void __tcpip_poll()
 	if(uip_netif_default==NULL) return;
 
 	uip_bba_poll(uip_netif_default);
-	
+
 	if(tcpip_time && (uip_tcp_active_pcbs || uip_tcp_tw_pcbs)) {
 		now = gettime();
 		diff = diff_msec(tcpip_time,now);
@@ -300,10 +300,10 @@ s32_t tcpip_socket()
 		uip_tcp_close(pcb);
 		return -1;
 	}
-	
+
 	sock = tcpip_getsocket(s);
 	uip_tcp_arg(pcb,sock);
-	
+
 	return s;
 }
 
@@ -313,15 +313,15 @@ s32_t tcpip_bind(s32_t s,struct sockaddr *name,socklen_t *namelen)
 	struct uip_ip_addr local_ip;
 	u16_t local_port;
 	s8_t err;
-	
+
 	sock = tcpip_getsocket(s);
 	if(!sock) return -1;
-	
+
 	local_ip.addr = ((struct sockaddr_in*)name)->sin_addr.s_addr;
 	local_port = ((struct sockaddr_in*)name)->sin_port;
 
 	err = uip_tcp_bind(sock->pcb,&local_ip,local_port);
-	
+
 	return (s32_t)err;
 }
 
@@ -347,7 +347,7 @@ s32_t tcpip_accept(s32_t s)
 
 	sock = tcpip_getsocket(s);
 	if(sock==NULL) return -1;
-	
+
 	do {
 		__tcpip_poll();
 	} while(!tcpip_accepted_sockets);
@@ -367,11 +367,11 @@ s32_t tcpip_read(s32_t s,void *buffer,u32_t len)
 
 	sock = tcpip_getsocket(s);
 	if(!sock) return -1;
-	
+
 	do {
 		__tcpip_poll();
 	} while(sock->lastdata==NULL);
-	
+
 	if(sock->lastdata) {
 		off = 0;
 		ptr = buffer;
@@ -380,7 +380,7 @@ s32_t tcpip_read(s32_t s,void *buffer,u32_t len)
 
 			if(len>p->len-sock->lastoffset) copy = (p->len-sock->lastoffset);
 			else copy = len;
-		
+
 			UIP_MEMCPY(ptr+off,(u8_t*)p->payload+sock->lastoffset,copy);
 
 			off += copy;
@@ -417,14 +417,14 @@ s32_t tcpip_write(s32_t s,const void *buffer,u32_t len)
 		do {
 			__tcpip_poll();
 		} while((snd_buf=uip_tcp_sndbuf(sock->pcb))==0);
-		
+
 		if(len>snd_buf) copy = snd_buf;
 		else copy = len;
-		
+
 		err = uip_tcp_write(sock->pcb,buffer,copy,1);
 		if(err==UIP_ERR_OK && (!sock->pcb->unacked || sock->pcb->flags&UIP_TF_NODELAY || sock->pcb->snd_queuelen>1))
 			uip_tcpoutput(sock->pcb);
-		
+
 		buffer = buffer+copy;
 		len -= copy;
 	}
@@ -449,7 +449,7 @@ void tcpip_stoptimer(s32_t s)
 
 	sock = tcpip_getsocket(s);
 	if(!sock) return;
-	
+
 	if(tcpip_time && sock->pcb && (uip_tcp_active_pcbs || uip_tcp_tw_pcbs)) tcpip_time = 0;
 }
 
@@ -460,7 +460,7 @@ void tcpip_starttimer(s32_t s)
 
 	sock = tcpip_getsocket(s);
 	if(!sock) return;
-	
+
 	if(tcpip_time==0 && sock->pcb && (uip_tcp_active_pcbs || uip_tcp_tw_pcbs)) tcpip_time = gettime();
 }
 

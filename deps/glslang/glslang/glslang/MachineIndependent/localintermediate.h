@@ -83,7 +83,7 @@ struct TCall {
 // A generic 1-D range.
 struct TRange {
     TRange(int start, int last) : start(start), last(last) { }
-    bool overlap(const TRange& rhs) const 
+    bool overlap(const TRange& rhs) const
     {
         return last >= rhs.start && start <= rhs.last;
     }
@@ -188,7 +188,7 @@ public:
     bool getFlattenUniformArrays()        const { return flattenUniformArrays; }
     void setNoStorageFormat(bool b)             { useUnknownFormat = b; }
     bool getNoStorageFormat()             const { return useUnknownFormat; }
-    
+
     void setVersion(int v) { version = v; }
     int getVersion() const { return version; }
     void setProfile(EProfile p) { profile = p; }
@@ -269,7 +269,7 @@ public:
     void addSymbolLinkageNodes(TIntermAggregate*& linkage, EShLanguage, TSymbolTable&);
     void addSymbolLinkageNode(TIntermAggregate*& linkage, const TSymbol&);
 
-    bool setInvocations(int i) 
+    bool setInvocations(int i)
     {
         if (invocations != TQualifier::layoutNotSet)
             return invocations == i;
@@ -311,7 +311,7 @@ public:
     TVertexOrder getVertexOrder() const { return vertexOrder; }
     void setPointMode() { pointMode = true; }
     bool getPointMode() const { return pointMode; }
-    
+
     bool setLocalSize(int dim, int size)
     {
         if (localSize[dim] > 1)
@@ -406,7 +406,7 @@ protected:
     bool promoteBinary(TIntermBinary&);
     void addSymbolLinkageNode(TIntermAggregate*& linkage, TSymbolTable&, const TString&);
     bool promoteAggregate(TIntermAggregate&);
-    
+
     const EShLanguage language;  // stage, known at construction time
     EShSource source;            // source language, known a bit later
     std::string entryPointName;

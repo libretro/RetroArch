@@ -220,7 +220,7 @@ static const char *font_renderer_stb_get_default_font(void)
    const char **p;
 
    for (p = paths; *p; ++p)
-      if (path_file_exists(*p))
+      if (filestream_exists(*p))
          return *p;
 
    return NULL;

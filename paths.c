@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -62,8 +62,7 @@ void path_set_redirect(void)
    size_t path_size                            = PATH_MAX_LENGTH * sizeof(char);
    char *new_savefile_dir                      = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    char *new_savestate_dir                     = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   uint32_t library_name_hash                  = 0;
-   bool check_library_name_hash                = false;
+   bool check_library_name                     = false;
    global_t                *global             = global_get_ptr();
    const char *old_savefile_dir                = dir_get(RARCH_DIR_SAVEFILE);
    const char *old_savestate_dir               = dir_get(RARCH_DIR_SAVESTATE);
@@ -72,22 +71,21 @@ void path_set_redirect(void)
 
    new_savefile_dir[0] = new_savestate_dir[0]  = '\0';
 
-   if (info && !string_is_empty(info->info.library_name))
-      library_name_hash =
-         msg_hash_calculate(info->info.library_name);
-
    /* Initialize current save directories
     * with the values from the config. */
    strlcpy(new_savefile_dir,  old_savefile_dir,  path_size);
    strlcpy(new_savestate_dir, old_savestate_dir, path_size);
 
-   check_library_name_hash = (library_name_hash != 0);
+   if (info && !string_is_empty(info->info.library_name))
+   {
 #ifdef HAVE_MENU
-   check_library_name_hash = check_library_name_hash &&
-      (library_name_hash != MENU_VALUE_NO_CORE);
+      if (!string_is_equal(info->info.library_name,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE)))
 #endif
+         check_library_name = true;
+   }
 
-   if (check_library_name_hash)
+   if (check_library_name)
    {
       /* per-core saves: append the library_name to the save location */
       if (settings->bools.sort_savefiles_enable
@@ -173,8 +171,8 @@ void path_set_redirect(void)
 
       if (path_is_directory(global->name.savefile))
       {
-         fill_pathname_dir(global->name.savefile, 
-               !string_is_empty(path_main_basename) ? path_main_basename : 
+         fill_pathname_dir(global->name.savefile,
+               !string_is_empty(path_main_basename) ? path_main_basename :
                   info ? info->info.library_name : NULL,
                file_path_str(FILE_PATH_SRM_EXTENSION),
                sizeof(global->name.savefile));
@@ -185,8 +183,8 @@ void path_set_redirect(void)
 
       if (path_is_directory(global->name.savestate))
       {
-         fill_pathname_dir(global->name.savestate, 
-               !string_is_empty(path_main_basename) ? path_main_basename : 
+         fill_pathname_dir(global->name.savestate,
+               !string_is_empty(path_main_basename) ? path_main_basename :
                   info ? info->info.library_name : NULL,
                file_path_str(FILE_PATH_STATE_EXTENSION),
                sizeof(global->name.savestate));
@@ -380,7 +378,7 @@ static bool path_init_subsystem(void)
 
 void path_init_savefile(void)
 {
-   bool should_sram_be_used = rarch_ctl(RARCH_CTL_IS_SRAM_USED, NULL) 
+   bool should_sram_be_used = rarch_ctl(RARCH_CTL_IS_SRAM_USED, NULL)
       && !rarch_ctl(RARCH_CTL_IS_SRAM_SAVE_DISABLED, NULL);
 
    if (should_sram_be_used)
@@ -417,7 +415,7 @@ void path_fill_names(void)
    global_t *global = global_get_ptr();
 
    path_init_savefile_internal();
-   
+
    if (global)
       bsv_movie_set_path(global->name.savefile);
 

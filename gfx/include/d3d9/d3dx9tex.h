@@ -61,12 +61,12 @@ typedef enum _D3DXIMAGE_FILEFORMAT
 
 } D3DXIMAGE_FILEFORMAT;
 
-typedef VOID (WINAPI *LPD3DXFILL2D)(D3DXVECTOR4 *pOut, 
+typedef VOID (WINAPI *LPD3DXFILL2D)(D3DXVECTOR4 *pOut,
     CONST D3DXVECTOR2 *pTexCoord, CONST D3DXVECTOR2 *pTexelSize, LPVOID pData);
 
-typedef VOID (WINAPI *LPD3DXFILL3D)(D3DXVECTOR4 *pOut, 
+typedef VOID (WINAPI *LPD3DXFILL3D)(D3DXVECTOR4 *pOut,
     CONST D3DXVECTOR3 *pTexCoord, CONST D3DXVECTOR3 *pTexelSize, LPVOID pData);
- 
+
 typedef struct _D3DXIMAGE_INFO
 {
     UINT                    Width;
@@ -974,7 +974,7 @@ HRESULT WINAPI
         LPD3DXFILL3D              pFunction,
         LPVOID                    pData);
 
-HRESULT WINAPI 
+HRESULT WINAPI
     D3DXFillTextureTX(
         LPDIRECT3DTEXTURE9        pTexture,
         LPD3DXTEXTURESHADER       pTextureShader);
@@ -984,9 +984,9 @@ HRESULT WINAPI
     D3DXFillCubeTextureTX(
         LPDIRECT3DCUBETEXTURE9    pCubeTexture,
         LPD3DXTEXTURESHADER       pTextureShader);
-                                                
-                                                        
-HRESULT WINAPI 
+
+
+HRESULT WINAPI
     D3DXFillVolumeTextureTX(
         LPDIRECT3DVOLUMETEXTURE9  pVolumeTexture,
         LPD3DXTEXTURESHADER       pTextureShader);

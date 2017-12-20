@@ -9,7 +9,7 @@
 typedef struct _buf_node {
 	struct _buf_node *next;
 	u8 data[SECTOR_SIZE+2];
-	
+
 } BufNode;
 
 static BufNode s_buf[BUF_POOL_CNT];
@@ -28,7 +28,7 @@ void sdgecko_initBufferPool()
 u8*	sdgecko_allocBuffer()
 {
 	u8 *buf = NULL;
-	
+
 	if(s_freepool) {
 		buf = s_freepool->data;
 		s_freepool = s_freepool->next;
@@ -36,7 +36,7 @@ u8*	sdgecko_allocBuffer()
 
 	return buf;
 }
- 
+
 void sdgecko_freeBuffer(u8 *buf)
 {
 	if(buf) {

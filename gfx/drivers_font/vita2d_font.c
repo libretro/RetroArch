@@ -38,14 +38,14 @@ static void *vita2d_font_init_font(void *data,
       bool is_threaded)
 {
    unsigned int stride, pitch, j, k;
-   const uint8_t         *frame32 = NULL;    
+   const uint8_t         *frame32 = NULL;
    uint8_t                 *tex32 = NULL;
    const struct font_atlas *atlas = NULL;
    vita_font_t              *font = (vita_font_t*)calloc(1, sizeof(*font));
 
    if (!font)
       return NULL;
-      
+
    font->vita                     = (vita_video_t*)data;
 
    if (!font_renderer_create_default((const void**)&font->font_driver,
@@ -78,7 +78,7 @@ static void *vita2d_font_init_font(void *data,
    for (j = 0; j < atlas->height; j++)
       for (k = 0; k < atlas->width; k++)
          tex32[k + j*stride] = frame32[k + j*pitch];
-   
+
    font->atlas->dirty = false;
 
    return font;
@@ -169,7 +169,7 @@ static void vita2d_font_render_line(
       int off_x, off_y, tex_x, tex_y, width, height;
       unsigned int stride, pitch, j, k;
       const struct font_glyph *glyph = NULL;
-      const uint8_t         *frame32 = NULL;    
+      const uint8_t         *frame32 = NULL;
       uint8_t                 *tex32 = NULL;
       const char *msg_tmp            = &msg[i];
       unsigned code                  = utf8_walk(&msg_tmp);
@@ -192,7 +192,7 @@ static void vita2d_font_render_line(
       tex_y  = glyph->atlas_offset_y;
       width  = glyph->width;
       height = glyph->height;
-      
+
       if (font->atlas->dirty)
       {
         stride  = vita2d_texture_get_stride(font->texture);
@@ -203,7 +203,7 @@ static void vita2d_font_render_line(
         for (j = 0; j < font->atlas->height; j++)
            for (k = 0; k < font->atlas->width; k++)
               tex32[k + j*stride] = frame32[k + j*pitch];
-              
+
          font->atlas->dirty = false;
       }
 

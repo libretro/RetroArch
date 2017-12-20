@@ -27,7 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <encodings/utf.h> 
+#include <encodings/utf.h>
 
 #include <windows.h>
 
@@ -136,9 +136,9 @@ static void nbio_mmap_win32_resize(void *data, size_t len)
 
    if (len < handle->len)
    {
-      /* this works perfectly fine if this check is removed, 
+      /* this works perfectly fine if this check is removed,
        * but it won't work on other nbio implementations */
-      /* therefore, it's blocked so nobody accidentally 
+      /* therefore, it's blocked so nobody accidentally
        * relies on it. */
       puts("ERROR - attempted file shrink operation, not implemented");
       abort();

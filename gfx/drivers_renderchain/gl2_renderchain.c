@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -54,7 +54,11 @@
 #define MAX_FENCES 4
 
 #if !defined(HAVE_PSGL)
+
+#ifndef HAVE_GL_SYNC
 #define HAVE_GL_SYNC
+#endif
+
 #endif
 
 #ifdef HAVE_GL_SYNC
@@ -173,7 +177,7 @@ void gl_load_texture_data(
       const void *frame, unsigned base_size);
 
 void gl_set_viewport(
-      void *data, video_frame_info_t *video_info, 
+      void *data, video_frame_info_t *video_info,
       unsigned viewport_width,
       unsigned viewport_height,
       bool force_full, bool allow_rotate);
@@ -194,12 +198,12 @@ static void gl2_renderchain_convert_geometry(
          break;
 
       case RARCH_SCALE_ABSOLUTE:
-         fbo_rect->img_width      = fbo_rect->max_img_width = 
+         fbo_rect->img_width      = fbo_rect->max_img_width =
             fbo_scale->abs_x;
          break;
 
       case RARCH_SCALE_VIEWPORT:
-         fbo_rect->img_width      = fbo_rect->max_img_width = 
+         fbo_rect->img_width      = fbo_rect->max_img_width =
             fbo_scale->scale_x * vp_width;
          break;
    }
@@ -217,7 +221,7 @@ static void gl2_renderchain_convert_geometry(
          break;
 
       case RARCH_SCALE_VIEWPORT:
-         fbo_rect->img_height     = fbo_rect->max_img_height = 
+         fbo_rect->img_height     = fbo_rect->max_img_height =
             fbo_scale->scale_y * vp_height;
          break;
    }
@@ -244,7 +248,7 @@ static bool gl_recreate_fbo(
          RARCH_GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
          *texture, 0);
 
-   if (gl2_check_fb_status(RARCH_GL_FRAMEBUFFER) 
+   if (gl2_check_fb_status(RARCH_GL_FRAMEBUFFER)
          == RARCH_GL_FRAMEBUFFER_COMPLETE)
       return true;
 
@@ -252,13 +256,13 @@ static bool gl_recreate_fbo(
    return false;
 }
 
-static void gl_check_fbo_dimension(gl_t *gl, 
+static void gl_check_fbo_dimension(gl_t *gl,
       void *chain_data,
       unsigned i,
       bool update_feedback)
 {
    struct video_fbo_rect *fbo_rect = &gl->fbo_rect[i];
-   /* Check proactively since we might suddently 
+   /* Check proactively since we might suddently
     * get sizes of tex_w width or tex_h height. */
    gl2_renderchain_t *chain        = (gl2_renderchain_t*)chain_data;
    unsigned img_width              = fbo_rect->max_img_width;
@@ -271,14 +275,14 @@ static void gl_check_fbo_dimension(gl_t *gl,
 
    gl_recreate_fbo(fbo_rect, chain->fbo[i], &chain->fbo_texture[i]);
 
-   /* Update feedback texture in-place so we avoid having to 
+   /* Update feedback texture in-place so we avoid having to
     * juggle two different fbo_rect structs since they get updated here. */
    if (update_feedback)
    {
       if (gl_recreate_fbo(fbo_rect, gl->fbo_feedback,
                &gl->fbo_feedback_texture))
       {
-         /* Make sure the feedback textures are cleared 
+         /* Make sure the feedback textures are cleared
           * so we don't feedback noise. */
          glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
          glClear(GL_COLOR_BUFFER_BIT);
@@ -289,7 +293,7 @@ static void gl_check_fbo_dimension(gl_t *gl,
          i, fbo_rect->width, fbo_rect->height);
 }
 
-/* On resize, we might have to recreate our FBOs 
+/* On resize, we might have to recreate our FBOs
  * due to "Viewport" scale, and set a new viewport. */
 
 static void gl2_renderchain_check_fbo_dimensions(void *data,
@@ -305,7 +309,7 @@ static void gl2_renderchain_check_fbo_dimensions(void *data,
       struct video_fbo_rect *fbo_rect = &gl->fbo_rect[i];
       if (fbo_rect)
       {
-         bool update_feedback = gl->fbo_feedback_enable 
+         bool update_feedback = gl->fbo_feedback_enable
             && (unsigned)i == gl->fbo_feedback_pass;
 
          if ((fbo_rect->max_img_width  > fbo_rect->width) ||
@@ -586,7 +590,7 @@ static bool gl_create_fbo_targets(gl_t *gl, void *chain_data)
       if (status != RARCH_GL_FRAMEBUFFER_COMPLETE)
          goto error;
 
-      /* Make sure the feedback textures are cleared 
+      /* Make sure the feedback textures are cleared
        * so we don't feedback noise. */
       glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
       glClear(GL_COLOR_BUFFER_BIT);
@@ -602,7 +606,7 @@ error:
    return false;
 }
 
-static void gl_create_fbo_texture(gl_t *gl, 
+static void gl_create_fbo_texture(gl_t *gl,
       void *chain_data, unsigned i, GLuint texture)
 {
    GLenum mag_filter, wrap_enum;
@@ -613,7 +617,7 @@ static void gl_create_fbo_texture(gl_t *gl,
    gl2_renderchain_t *chain     = (gl2_renderchain_t*)chain_data;
    settings_t *settings         = config_get_ptr();
    GLuint base_filt             = settings->bools.video_smooth ? GL_LINEAR : GL_NEAREST;
-   GLuint base_mip_filt         = settings->bools.video_smooth ? 
+   GLuint base_mip_filt         = settings->bools.video_smooth ?
       GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST;
    unsigned mip_level           = i + 2;
    bool mipmapped               = video_shader_driver_mipmap_input(&mip_level);
@@ -624,7 +628,7 @@ static void gl_create_fbo_texture(gl_t *gl,
 
    if (video_shader_driver_filter_type(&filter_type))
    {
-      min_filter = mipmapped ? (smooth ? 
+      min_filter = mipmapped ? (smooth ?
             GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST)
          : (smooth ? GL_LINEAR : GL_NEAREST);
    }
@@ -659,21 +663,21 @@ static void gl_create_fbo_texture(gl_t *gl,
    {
 #ifndef HAVE_OPENGLES
       bool srgb_fbo = chain->fbo_scale[i].srgb_fbo;
-       
+
       if (!fp_fbo && srgb_fbo)
       {
          if (!chain->has_srgb_fbo)
                RARCH_ERR("[GL]: sRGB FBO was requested, but it is not supported. Falling back to UNORM. Result may have banding!\n");
       }
-       
+
       if (settings->bools.video_force_srgb_disable)
          srgb_fbo = false;
-       
+
       if (srgb_fbo && chain->has_srgb_fbo)
       {
          RARCH_LOG("[GL]: FBO pass #%d is sRGB.\n", i);
 #ifdef HAVE_OPENGLES2
-         /* EXT defines are same as core GLES3 defines, 
+         /* EXT defines are same as core GLES3 defines,
           * but GLES3 variant requires different arguments. */
          glTexImage2D(GL_TEXTURE_2D,
                0, GL_SRGB_ALPHA_EXT,
@@ -696,7 +700,7 @@ static void gl_create_fbo_texture(gl_t *gl,
                gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
                GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 #else
-         /* Avoid potential performance 
+         /* Avoid potential performance
           * reductions on particular platforms. */
          gl_load_texture_image(GL_TEXTURE_2D,
             0, RARCH_GL_INTERNAL_FORMAT32,
@@ -730,7 +734,7 @@ static void gl_create_fbo_textures(gl_t *gl, void *chain_data)
 }
 
 /* Compute FBO geometry.
- * When width/height changes or window sizes change, 
+ * When width/height changes or window sizes change,
  * we have to recalculate geometry of our FBO. */
 
 static void gl2_renderchain_recompute_pass_sizes(
@@ -803,7 +807,7 @@ static void gl2_renderchain_start_render(void *data,
       video_frame_info_t *video_info)
 {
    /* Used when rendering to an FBO.
-    * Texture coords have to be aligned 
+    * Texture coords have to be aligned
     * with vertex coordinates. */
    static const GLfloat fbo_vertexes[] = {
       0, 0,
@@ -821,7 +825,7 @@ static void gl2_renderchain_start_render(void *data,
          video_info, gl->fbo_rect[0].img_width,
          gl->fbo_rect[0].img_height, true, false);
 
-   /* Need to preserve the "flipped" state when in FBO 
+   /* Need to preserve the "flipped" state when in FBO
     * as well to have consistent texture coordinates.
     *
     * We will "flip" it in place on last pass. */
@@ -881,7 +885,7 @@ void gl2_renderchain_init(
    if (!scale.valid)
    {
       scale.scale_x = 1.0f;
-      scale.scale_y = 1.0f; 
+      scale.scale_y = 1.0f;
       scale.type_x  = scale.type_y = RARCH_SCALE_INPUT;
       scale.valid   = true;
    }
@@ -898,7 +902,7 @@ void gl2_renderchain_init(
       if (!chain->fbo_scale[i].valid)
       {
          chain->fbo_scale[i].scale_x = chain->fbo_scale[i].scale_y = 1.0f;
-         chain->fbo_scale[i].type_x  = chain->fbo_scale[i].type_y  = 
+         chain->fbo_scale[i].type_x  = chain->fbo_scale[i].type_y  =
             RARCH_SCALE_INPUT;
          chain->fbo_scale[i].valid   = true;
       }
@@ -919,7 +923,7 @@ void gl2_renderchain_init(
    gl->fbo_feedback_enable = video_shader_driver_get_feedback_pass(
          &gl->fbo_feedback_pass);
 
-   if (gl->fbo_feedback_enable && gl->fbo_feedback_pass 
+   if (gl->fbo_feedback_enable && gl->fbo_feedback_pass
          < (unsigned)chain->fbo_pass)
    {
       RARCH_LOG("[GL]: Creating feedback FBO %d @ %ux%u\n", i,
@@ -1060,7 +1064,7 @@ static void gl2_renderchain_bind_prev_texture(
    memcpy(&gl->prev_info[0], tex_info,
          sizeof(*tex_info));
 
-   /* Implement feedback by swapping out FBO/textures 
+   /* Implement feedback by swapping out FBO/textures
     * for FBO pass #N and feedbacks. */
    if (gl->fbo_feedback_enable)
    {
@@ -1094,7 +1098,7 @@ static void gl2_renderchain_viewport_info(
 }
 
 static bool gl2_renderchain_read_viewport(
-      void *data, 
+      void *data,
       void *chain_data,
       uint8_t *buffer, bool is_idle)
 {
@@ -1156,7 +1160,7 @@ static bool gl2_renderchain_read_viewport(
       glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
       glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
    }
-   else 
+   else
 #endif
    {
       /* Use slow synchronous readbacks. Use this with plain screenshots
@@ -1268,7 +1272,7 @@ static void gl2_renderchain_restore_default_state(
 }
 
 static void gl2_renderchain_copy_frame(
-      void *data, 
+      void *data,
       void *chain_data,
       video_frame_info_t *video_info,
       const void *frame,
@@ -1276,7 +1280,7 @@ static void gl2_renderchain_copy_frame(
 {
    gl_t                 *gl = (gl_t*)data;
    gl2_renderchain_t *chain = (gl2_renderchain_t*)chain_data;
-    
+
    (void)chain;
 
 #if defined(HAVE_PSGL)
@@ -1311,7 +1315,7 @@ static void gl2_renderchain_copy_frame(
       img_info.rgb32  = (gl->base_size == 4);
       img_info.handle = &img;
 
-      new_egl         = 
+      new_egl         =
          video_context_driver_write_to_image_buffer(&img_info);
 
       if (img == EGL_NO_IMAGE_KHR)

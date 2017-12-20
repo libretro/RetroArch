@@ -88,7 +88,7 @@ static bool null_gfx_set_shader(void *data,
    (void)type;
    (void)path;
 
-   return false; 
+   return false;
 }
 
 static void null_gfx_set_rotation(void *data,

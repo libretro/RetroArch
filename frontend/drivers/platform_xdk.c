@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -240,10 +240,10 @@ typedef struct _FILE_FS_SIZE_INFORMATION {
 #define DEVICE_TYPE ULONG
 
 // Structure of FileFsDeviceInformation
-typedef struct _FILE_FS_DEVICE_INFORMATION {                    
-    DEVICE_TYPE DeviceType;                                     
-    ULONG Characteristics;                                      
-} FILE_FS_DEVICE_INFORMATION, *PFILE_FS_DEVICE_INFORMATION;     
+typedef struct _FILE_FS_DEVICE_INFORMATION {
+    DEVICE_TYPE DeviceType;
+    ULONG Characteristics;
+} FILE_FS_DEVICE_INFORMATION, *PFILE_FS_DEVICE_INFORMATION;
 
 // DEVICE_TYPEs (I took a guess as to which the XBOX might have.)
 #define FILE_DEVICE_CD_ROM              0x00000002
@@ -993,12 +993,12 @@ extern "C"
 	// Thanks and credit go to Team Evox
 	extern VOID	 WINAPI HalReturnToFirmware(DWORD);
 
-	extern INT WINAPI XNetLoadConfigParams(LPBYTE);   
-	extern INT WINAPI XNetSaveConfigParams(LPBYTE);     
+	extern INT WINAPI XNetLoadConfigParams(LPBYTE);
+	extern INT WINAPI XNetSaveConfigParams(LPBYTE);
 
 	extern INT WINAPI XWriteTitleInfoNoReboot(LPVOID,LPVOID,DWORD,DWORD,LPVOID);
 
-	extern DWORD* LaunchDataPage;  
+	extern DWORD* LaunchDataPage;
 }
 
 #endif
@@ -1006,7 +1006,7 @@ extern "C"
 static enum frontend_fork xdk_fork_mode = FRONTEND_FORK_NONE;
 
 #ifdef _XBOX360
-typedef struct _STRING 
+typedef struct _STRING
 {
     USHORT Length;
     USHORT MaximumLength;
@@ -1016,7 +1016,7 @@ typedef struct _STRING
 #ifdef __cplusplus
 extern "C" {
 #endif
-VOID RtlInitAnsiString(PSTRING DestinationString, PCHAR SourceString);	
+VOID RtlInitAnsiString(PSTRING DestinationString, PCHAR SourceString);
 HRESULT ObDeleteSymbolicLink(PSTRING SymbolicLinkName);
 HRESULT ObCreateSymbolicLink(PSTRING SymbolicLinkName, PSTRING DeviceName);
 #ifdef __cplusplus

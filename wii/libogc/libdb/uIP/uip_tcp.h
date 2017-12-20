@@ -137,10 +137,10 @@ struct uip_tcp_pcb {
 
 	u8_t prio;
 	void *cb_arg;
-	
+
 	u16_t local_port;
 	u16_t remote_port;
-	
+
 	u8_t flags;
 #define UIP_TF_ACK_DELAY (u8_t)0x01U   /* Delayed ACK. */
 #define UIP_TF_ACK_NOW   (u8_t)0x02U   /* Immediate ACK. */
@@ -152,32 +152,32 @@ struct uip_tcp_pcb {
 
 	u32_t rcv_nxt;
 	u16_t rcv_wnd;
-	
+
 	u32_t tmr;
 	u8_t polltmr,pollinterval;
-	
+
 	u16_t rtime;
 	u16_t mss;
 
 	u32_t rttest;
 	u32_t rtseq;
 	s16_t sa,sv;
-	
+
 	u16_t rto;
 	u8_t nrtx;
-	
+
 	u32_t lastack;
 	u8_t dupacks;
-	
+
 	u16_t cwnd;
 	u16_t ssthresh;
-	
+
 	u32_t snd_nxt,snd_max,snd_wnd,snd_wl1,snd_wl2,snd_lbb;
 
 	u16_t acked;
 	u16_t snd_buf;
 	u8_t snd_queuelen;
-	
+
 	struct uip_tcpseg *unsent;
 	struct uip_tcpseg *unacked;
 	struct uip_tcpseg *ooseq;
@@ -185,12 +185,12 @@ struct uip_tcp_pcb {
 	s8_t (*accept)(void *arg,struct uip_tcp_pcb *newpcb,s8_t err);
 	s8_t (*connected)(void *arg,struct uip_tcp_pcb *newpcb,s8_t err);
 	s8_t (*poll)(void *arg,struct uip_tcp_pcb *pcb);
-	
+
 	s8_t (*sent)(void *arg,struct uip_tcp_pcb *pcb,u16_t space);
 	s8_t (*recv)(void *arg,struct uip_tcp_pcb *pcb,struct uip_pbuf *p,s8_t err);
 
 	void (*errf)(void *arg,s8_t err);
-	
+
 	u32_t keepalive;
 	u8_t keepcnt;
 };
@@ -200,12 +200,12 @@ struct uip_tcp_pcb_listen {
 
 	struct uip_tcp_pcb_listen *next;
 	enum uip_tcp_state state;
-	
+
 	u8_t prio;
 	void *cb_arg;
 
 	u16_t local_port;
-	
+
 	s8_t (*accept)(void *arg,struct uip_tcp_pcb *newpcb,s8_t err);
 };
 

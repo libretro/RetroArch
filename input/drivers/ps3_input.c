@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -76,7 +76,7 @@ static int16_t ps3_mouse_device_state(ps3_input_t *ps3,
 {
    CellMouseData mouse_state;
    cellMouseGetData(id, &mouse_state);
-   
+
    if (!ps3->mice_connected)
       return 0;
 
@@ -179,11 +179,6 @@ static void* ps3_input_init(const char *joypad_driver)
    return ps3;
 }
 
-static bool ps3_input_meta_key_pressed(void *data, int key)
-{
-   return false;
-}
-
 static uint64_t ps3_input_get_capabilities(void *data)
 {
    (void)data;
@@ -205,8 +200,8 @@ static bool ps3_input_set_sensor_state(void *data, unsigned port,
    {
       case RETRO_SENSOR_ACCELEROMETER_ENABLE:
          cellPadGetInfo2(&pad_info);
-         if ((pad_info.device_capability[port] 
-                  & CELL_PAD_CAPABILITY_SENSOR_MODE) 
+         if ((pad_info.device_capability[port]
+                  & CELL_PAD_CAPABILITY_SENSOR_MODE)
                != CELL_PAD_CAPABILITY_SENSOR_MODE)
             return false;
 
@@ -266,7 +261,6 @@ input_driver_t input_ps3 = {
    ps3_input_init,
    ps3_input_poll,
    ps3_input_state,
-   ps3_input_meta_key_pressed,
    ps3_input_free_input,
    ps3_input_set_sensor_state,
    NULL,

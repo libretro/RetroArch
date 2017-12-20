@@ -1,26 +1,44 @@
 # 1.7.0 (future)
 - CHEEVOS: Add badges for achievements, shows thumbnail images of achievements.
+- CHEEVOS: Leaderboard support.
+- CHEEVOS: Only disable savestates on hardcore mode if achievements are not available.
+- COMMANDLINE: Fix fullscreen toggle switch.
 - COMMON: Add 'Automatically Load Content To Playlist' feature, enabled by default.
 - COMMON: Fix slowmotion ratio always being reset back to 1.
 - COMMON: Optimized NBIO implementations now for Apple, Windows, and Linux. Uses mmap for Linux/Windows/BSD if/when available. File I/O should now be much faster for loading images inside the menu.
 - COMMON: Native Blissbox support now for latest firmware as of writing (2.0). Implementation through libusb and/or native Windows HID.
 - COMMON: New lightgun API.
+- COMMON: New VFS (Virtual File System) API.
 - COMMON: Fixed some playlist bugs.
+- COMMON: New snow shader.
+- COMMON: Fix Quick Menu title.
+- COMMON: Fix loading cores that require no content one after another.
+- EMSCRIPTEN: Fix references to browserfs.
 - FREEBSD: Support libusb HID input driver.
 - HAIKU: Buildfix.
+- INPUT: Map clear button to DEL key.
 - LINUX/X11: Add RetroArch logo to window title bar.
 - LINUX/X11: Input driver now supports new lightgun code.
+- LINUX/X11: Support window transparency (requires a compositing window manager).
+- LOBBIES: Fix for crash on join netplay rooms via touch / glui.
 - LOCALIZATION: Update Italian translation.
 - LOCALIZATION: Update Japanese translation.
 - LOCALIZATION: Update Portuguese-Brazilian translation.
 - LOCALIZATION: Update Russian translation.
 - OSX/PPC: Fix the GL2 renderchain, had to use EXT versions of framebuffer/renderbuffer functions.
+- PSP: Fix audio sync.
+- PSP: Fix content loading, port should be functional again.
+- PSP: Use 64MB when available.
 - SCANNER: Fix crash from Windows-incompatible format string.
+- VITA: Improve packaging, installation times.
 - WIIU: Disabled the controller patcher for now since it was the source of many stability issues.
 - WINDOWS: Add MSVC 2017 solution.
+- WINDOWS: Get rid of the empty console window in MSVC 2010 builds.
 - WINDOWS: Raw input driver now supports new lightgun code.
 - WINDOWS: Use configured OSD/text message color on GDI driver.
 - WINDOWS/XINPUT: Populate XInput VID/PID from DInput so autoconfig doesn't rely solely on joypad names
+- WINDOWS: Improve version reporting under System Information.
+- WINDOWS: Support window transparency.
 
 # 1.6.9
 - COMMON: Small memory leak.

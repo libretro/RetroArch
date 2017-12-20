@@ -85,7 +85,7 @@ s32 __STM_Init()
 
 	__stm_eh_fd = IOS_Open(__stm_eh_fs,0);
 	if(__stm_eh_fd<0) return 0;
-	
+
 	__stm_initialized = 1;
 	__STM_SetEventHook();
 	return 1;
@@ -96,7 +96,7 @@ s32 __STM_Close()
 	s32 res;
 	s32 ret = 0;
 	__STM_ReleaseEventHook();
-	
+
 	if(__stm_imm_fd >= 0) {
 		res = IOS_Close(__stm_imm_fd);
 		if(res < 0) ret = res;
@@ -117,9 +117,9 @@ s32 __STM_SetEventHook()
 	u32 level;
 
 	if(__stm_initialized==0) return STM_ENOTINIT;
-	
+
 	__stm_ehclear = 0;
-	
+
 	_CPU_ISR_Disable(level);
 	ret = IOS_IoctlAsync(__stm_eh_fd,IOCTL_STM_EVENTHOOK,__stm_ehbufin,0x20,__stm_ehbufout,0x20,__STMEventHandler,NULL);
 	if(ret<0) __stm_ehregistered = 0;
@@ -137,7 +137,7 @@ s32 __STM_ReleaseEventHook()
 	if(__stm_ehregistered==0) return STM_ENOHANDLER;
 
 	__stm_ehclear = 1;
-	
+
 	ret = IOS_Ioctl(__stm_imm_fd,IOCTL_STM_RELEASE_EH,__stm_immbufin,0x20,__stm_immbufout,0x20);
 	if(ret>=0) __stm_ehregistered = 0;
 
@@ -147,21 +147,21 @@ s32 __STM_ReleaseEventHook()
 static s32 __STMEventHandler(s32 result,void *usrdata)
 {
 	__stm_ehregistered = 0;
-	
+
 	if(result < 0) { // shouldn't happen
 		return result;
 	}
-	
+
 	if(__stm_ehclear) { //release
 		return 0;
 	}
-	
+
 	if(__stm_eventcb) {
 		__stm_eventcb(__stm_ehbufout[0]);
 	}
-	
+
 	__STM_SetEventHook();
-	
+
 	return 0;
 }
 
@@ -176,7 +176,7 @@ stmcallback STM_RegisterEventHandler(stmcallback newhandler)
 s32 STM_ShutdownToStandby()
 {
 	int res;
-	
+
 	_viReg[1] = 0;
 	if(__stm_initialized==0) {
 		return STM_ENOTINIT;
@@ -191,7 +191,7 @@ s32 STM_ShutdownToStandby()
 s32 STM_ShutdownToIdle()
 {
 	int res;
-	
+
 	_viReg[1] = 0;
 	if(__stm_initialized==0) {
 		return STM_ENOTINIT;
@@ -226,7 +226,7 @@ s32 STM_SetLedMode(u32 mode)
 s32 STM_RebootSystem()
 {
 	int res;
-	
+
 	_viReg[1] = 0;
 	if(__stm_initialized==0) {
 		return STM_ENOTINIT;

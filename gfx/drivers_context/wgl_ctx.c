@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -159,9 +159,9 @@ static void create_gl_context(HWND hwnd, bool *quit)
    else
    {
       win32_hrc = wglCreateContext(win32_hdc);
-      
+
       /* We'll create shared context later if not. */
-      if (win32_hrc && !core_context && !debug) 
+      if (win32_hrc && !core_context && !debug)
       {
          win32_hw_hrc = wglCreateContext(win32_hdc);
          if (win32_hw_hrc)
@@ -203,7 +203,7 @@ static void create_gl_context(HWND hwnd, bool *quit)
          *aptr++ = win32_minor;
 
          /* Technically, we don't have core/compat until 3.2.
-          * Version 3.1 is either compat or not depending 
+          * Version 3.1 is either compat or not depending
           * on GL_ARB_compatibility.
           */
          if ((win32_major * 1000 + win32_minor) >= 3002)
@@ -280,7 +280,7 @@ void create_graphics_context(HWND hwnd, bool *quit)
          height   = rect.bottom - rect.top;
 
          if (!vulkan_surface_create(&win32_vk, VULKAN_WSI_WIN32,
-                  &instance, &hwnd, 
+                  &instance, &hwnd,
                   width, height, win32_interval))
             *quit = true;
 
@@ -395,6 +395,7 @@ static bool gfx_ctx_wgl_set_resize(void *data,
             return false;
          }
 
+         vulkan_acquire_next_image(&win32_vk);
          win32_vk.context.invalid_swapchain = true;
          win32_vk.need_new_swapchain        = false;
 #endif
@@ -461,7 +462,7 @@ static void *gfx_ctx_wgl_init(video_frame_info_t *video_info, void *video_driver
       return NULL;
 
    dll_handle = dylib_load("OpenGL32.dll");
-   
+
    win32_window_reset();
    win32_monitor_init();
 

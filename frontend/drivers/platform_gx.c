@@ -42,6 +42,7 @@
 #include <lists/file_list.h>
 #endif
 #include <string/stdstring.h>
+#include <streams/file_stream.h>
 
 #include "../frontend_driver.h"
 #include "../../defaults.h"
@@ -405,7 +406,7 @@ static void frontend_gx_exitspawn(char *s, size_t len)
          sizeof(salamander_basename));
 
    /* FIXME/TODO - hack
-    * direct loading failed (out of memory), 
+    * direct loading failed (out of memory),
     * try to jump to Salamander,
     * then load the correct core */
    fill_pathname_join(s, g_defaults.dirs[DEFAULT_DIR_CORE],
@@ -424,7 +425,7 @@ static void frontend_gx_process_args(int *argc, char *argv[])
    {
       char path[PATH_MAX_LENGTH] = {0};
       strlcpy(path, strrchr(argv[0], '/') + 1, sizeof(path));
-      if (path_file_exists(path))
+      if (filestream_exists(path))
          rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH, path);
    }
 #endif

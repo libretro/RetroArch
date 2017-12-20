@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2015 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -87,9 +87,9 @@ static int16_t input_wl_lightgun_state(input_ctx_wayland_data_t *wl, unsigned id
       case RETRO_DEVICE_ID_LIGHTGUN_TURBO:
          return wl->mouse.right;
       case RETRO_DEVICE_ID_LIGHTGUN_START:
-         return wl->mouse.middle && wl->mouse.right; 
+         return wl->mouse.middle && wl->mouse.right;
       case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
-         return wl->mouse.middle && wl->mouse.left; 
+         return wl->mouse.middle && wl->mouse.left;
    }
 
    return 0;
@@ -129,14 +129,14 @@ static int16_t input_wl_analog_pressed(input_ctx_wayland_data_t *wl,
 
    input_conv_analog_id_to_bind_id(idx, id, &id_minus, &id_plus);
 
-   if (binds 
-         && binds[id_minus].valid 
+   if (binds
+         && binds[id_minus].valid
          && (id_minus < RARCH_BIND_LIST_END)
          && BIT_GET(wl->key_state, rarch_keysym_lut[binds[id_minus].key])
       )
       pressed_minus = -0x7fff;
-   if (binds 
-         && binds[id_plus].valid 
+   if (binds
+         && binds[id_plus].valid
          && (id_plus < RARCH_BIND_LIST_END)
          && BIT_GET(wl->key_state, rarch_keysym_lut[binds[id_plus].key])
       )
@@ -320,19 +320,10 @@ static void input_wl_keyboard_mapping_set_block(void *data, bool value)
    wl->blocked = value;
 }
 
-static bool input_wl_meta_key_pressed(void *data, int key)
-{
-   (void)data;
-   (void)key;
-   /* FIXME: What is this supposed to do? */
-   return false;
-}
-
 input_driver_t input_wayland = {
    NULL,
    input_wl_poll,
    input_wl_state,
-   input_wl_meta_key_pressed,
    input_wl_free,
    NULL,
    NULL,

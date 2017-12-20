@@ -1,18 +1,18 @@
 /*
  * Copyright (c) 2001, Adam Dunkels.
- * All rights reserved. 
+ * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions 
- * are met: 
- * 1. Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
- * 2. Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the distribution. 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  * 3. The name of the author may not be used to endorse or promote
  *    products derived from this software without specific prior
- *    written permission.  
+ *    written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS
  * OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -24,7 +24,7 @@
  * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.  
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * This file is part of the uIP TCP/IP stack.
  *
@@ -46,7 +46,7 @@
 u16_t uip_chksum(u16_t *sdata, u32_t len)
 {
   u32_t acc;
-  
+
   for(acc = 0;len > 1;len -= 2) {
     acc += *sdata++;
   }
@@ -74,7 +74,7 @@ u16_t uip_chksum_pseudo(struct uip_pbuf *p,struct uip_ip_addr *src,struct uip_ip
 		acc += uip_chksum(q->payload,len);
 		rem -= len;
 	}
-	
+
 	acc += (src->addr&0xffffUL);
 	acc += ((src->addr>>16)&0xffffUL);
 	acc += (dst->addr&0xffffUL);
@@ -83,7 +83,7 @@ u16_t uip_chksum_pseudo(struct uip_pbuf *p,struct uip_ip_addr *src,struct uip_ip
 	acc += (u32_t)htons(proto_len);
 
 	while(acc>>16) acc = (acc&0xffffUL)+(acc>>16);
-	
+
 	return (u16_t)~(acc&0xffffUL);
 }
 /*-----------------------------------------------------------------------------------*/
@@ -103,7 +103,7 @@ u16_t uip_ipchksum_pbuf(struct uip_pbuf *p)
 	acc += uip_chksum(q->payload,q->len);
   }
   while(acc>>16) acc = (acc&0xffffUL)+(acc>>16);
-  
+
   return (u16_t)~(acc & 0xffffUL);
 }
 

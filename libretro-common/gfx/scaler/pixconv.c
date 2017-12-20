@@ -647,7 +647,7 @@ void conv_argb8888_abgr8888(void *output_, const void *input_,
       for (w = 0; w < width; w++)
       {
          uint32_t col = input[w];
-         output[w]    = ((col << 16) & 0xff0000) | 
+         output[w]    = ((col << 16) & 0xff0000) |
             ((col >> 16) & 0xff) | (col & 0xff00ff00);
       }
    }

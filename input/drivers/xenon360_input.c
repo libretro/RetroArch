@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -90,11 +90,6 @@ static void* xenon360_input_init(const char *joypad_driver)
    return (void*)-1;
 }
 
-static bool xenon360_input_meta_key_pressed(void *data, int key)
-{
-   return (state & (UINT64_C(1) << key));
-}
-
 static uint64_t xenon360_input_get_capabilities(void *data)
 {
    uint64_t caps = 0;
@@ -125,7 +120,6 @@ input_driver_t input_xenon360 = {
    xenon360_input_init,
    xenon360_input_poll,
    xenon360_input_state,
-   xenon360_input_meta_key_pressed,
    xenon360_input_free_input,
    NULL,
    NULL,

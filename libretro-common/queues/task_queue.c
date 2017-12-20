@@ -306,13 +306,13 @@ static void task_queue_remove(task_queue_t *queue, retro_task_t *task)
       queue->front = task->next;
       slock_unlock(queue_lock);
       task->next   = NULL;
-       
+
       return;
    }
 
    /* Parse queue */
    t = front;
-    
+
    while (t && t->next)
    {
       /* Remove task and update queue */

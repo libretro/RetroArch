@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -78,17 +78,17 @@ static bool d3d8_renderchain_create_first_pass(void *data,
    LPDIRECT3DDEVICE d3dr     = (LPDIRECT3DDEVICE)d3d->dev;
    d3d8_renderchain_t *chain = (d3d8_renderchain_t*)d3d->renderchain_data;
 
-   chain->vertex_buf         = d3d_vertex_buffer_new(d3dr, 4 * sizeof(Vertex), 
-         D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, 
+   chain->vertex_buf         = d3d_vertex_buffer_new(d3dr, 4 * sizeof(Vertex),
+         D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED,
          NULL);
 
    if (!chain->vertex_buf)
       return false;
 
-   chain->tex = d3d_texture_new(d3dr, NULL, 
+   chain->tex = d3d_texture_new(d3dr, NULL,
          chain->tex_w, chain->tex_h, 1, 0,
-         info->rgb32 
-         ? 
+         info->rgb32
+         ?
 #ifdef _XBOX
          D3DFMT_LIN_X8R8G8B8 : D3DFMT_LIN_R5G6B5,
 #else
@@ -193,7 +193,7 @@ static void d3d8_renderchain_blit_to_texture(void *data, const void *frame,
    }
 
    /* Set the texture to NULL so D3D doesn't complain about it being in use... */
-   d3d_set_texture(d3dr, 0, NULL); 
+   d3d_set_texture(d3dr, 0, NULL);
    d3d_texture_blit(chain->pixel_size, chain->tex,
          &d3dlr, frame, width, height, pitch);
 }
@@ -249,7 +249,7 @@ static bool d3d8_renderchain_init(void *data,
    unsigned fmt                    = (rgb32) ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
    struct video_viewport *custom_vp = video_viewport_get_custom();
    (void)final_viewport_data;
-   
+
    video_driver_get_size(&width, &height);
 
    chain->dev                   = (LPDIRECT3DDEVICE)dev_data;
@@ -346,7 +346,7 @@ static void d3d8_renderchain_convert_geometry(
    (void)width;
    (void)height;
    (void)final_viewport_data;
-   
+
    /* stub */
 }
 
@@ -361,7 +361,7 @@ static bool d3d8_renderchain_reinit(void *data,
       return false;
 
    chain->pixel_size         = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
-   chain->tex_w = chain->tex_h = RARCH_SCALE_BASE * video->input_scale; 
+   chain->tex_w = chain->tex_h = RARCH_SCALE_BASE * video->input_scale;
    RARCH_LOG(
          "Reinitializing renderchain - and textures (%u x %u @ %u bpp)\n",
          chain->tex_w, chain->tex_h, chain->pixel_size * CHAR_BIT);

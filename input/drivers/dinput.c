@@ -364,11 +364,6 @@ static int16_t dinput_pressed_analog(struct dinput_input *di,
    return pressed_plus + pressed_minus;
 }
 
-static bool dinput_meta_key_pressed(void *data, int key)
-{
-   return false;
-}
-
 static int16_t dinput_lightgun_aiming_state( struct dinput_input *di, unsigned idx, unsigned id )
 {
 	const int edge_detect = 32700;
@@ -925,7 +920,6 @@ input_driver_t input_dinput = {
    dinput_init,
    dinput_poll,
    dinput_input_state,
-   dinput_meta_key_pressed,
    dinput_free,
    NULL,
    NULL,

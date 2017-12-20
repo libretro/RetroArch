@@ -90,7 +90,7 @@
 #define L2CAP_ACL_CONT 0x01
 
 /* L2CAP config default parameters */
-#define L2CAP_CFG_DEFAULT_INMTU 672 /* Two Baseband DH5 packets (2*341=682) minus the Baseband ACL 
+#define L2CAP_CFG_DEFAULT_INMTU 672 /* Two Baseband DH5 packets (2*341=682) minus the Baseband ACL
 				       headers (2*2=4) and L2CAP header (6) */
 #define L2CAP_CFG_DEFAULT_OUTFLUSHTO 0xFFFF
 

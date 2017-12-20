@@ -90,88 +90,6 @@ int detect_gc_game(intfstream_t *fd, char *game_id);
 
 int detect_serial_ascii_game(intfstream_t *fd, char *game_id);
 
-static intfstream_t* intfstream_open_file(const char *path)
-{
-   intfstream_info_t info;
-   intfstream_t *fd = NULL;
-
-   info.type        = INTFSTREAM_FILE;
-   fd               = (intfstream_t*)intfstream_init(&info);
-
-   if (!fd)
-      return NULL;
-
-   if (!intfstream_open(fd, path, RFILE_MODE_READ, -1))
-      goto error;
-
-   return fd;
-
-error:
-   if (fd)
-   {
-      intfstream_close(fd);
-      free(fd);
-   }
-   return NULL;
-}
-
-static intfstream_t *open_memory(void *data, size_t size)
-{
-   intfstream_info_t info;
-   intfstream_t *fd     = NULL;
-
-   info.type            = INTFSTREAM_MEMORY;
-   info.memory.buf.data = (uint8_t*)data;
-   info.memory.buf.size = size;
-   info.memory.writable = false;
-
-   fd                   = (intfstream_t*)intfstream_init(&info);
-   
-   if (!fd)
-      return NULL;
-
-   if (!intfstream_open(fd, NULL, RFILE_MODE_READ, -1))
-      goto error;
-
-   return fd;
-
-error:
-   if (fd)
-   {
-      intfstream_close(fd);
-      free(fd);
-   }
-   return NULL;
-}
-
-static intfstream_t*
-open_chd_track(const char *path, int32_t track)
-{
-   intfstream_info_t info;
-   intfstream_t *fd = NULL;
-
-   info.type        = INTFSTREAM_CHD;
-   info.chd.track   = track;
-
-   fd               = (intfstream_t*)intfstream_init(&info);
-
-   if (!fd)
-      return NULL;
-
-   if (!intfstream_open(fd, path, RFILE_MODE_READ, -1))
-      goto error;
-
-   return fd;
-
-error:
-   if (fd)
-   {
-      intfstream_close(fd);
-      free(fd);
-   }
-   return NULL;
-}
-
 static void database_info_set_type(
       database_info_handle_t *handle,
       enum database_type type)
@@ -288,7 +206,8 @@ static bool intfstream_file_get_serial(const char *name,
    int rv;
    uint8_t *data     = NULL;
    ssize_t file_size = -1;
-   intfstream_t *fd  = intfstream_open_file(name);
+   intfstream_t *fd  = intfstream_open_file(name,
+         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    if (!fd)
       return 0;
@@ -310,7 +229,7 @@ static bool intfstream_file_get_serial(const char *name,
          goto error;
 
       data = (uint8_t*)malloc(size);
-         
+
       if (intfstream_read(fd, data, size) != (ssize_t) size)
       {
          free(data);
@@ -319,7 +238,9 @@ static bool intfstream_file_get_serial(const char *name,
 
       intfstream_close(fd);
       free(fd);
-      fd = open_memory(data, size);
+      fd = intfstream_open_memory(data, RETRO_VFS_FILE_ACCESS_READ,
+            RETRO_VFS_FILE_ACCESS_HINT_NONE,
+            size);
       if (!fd)
       {
          free(data);
@@ -329,8 +250,8 @@ static bool intfstream_file_get_serial(const char *name,
 
    rv = intfstream_get_serial(fd, serial);
    intfstream_close(fd);
-   free(data);
    free(fd);
+   free(data);
    return rv;
 
 error:
@@ -341,7 +262,7 @@ error:
 
 static int task_database_cue_get_serial(const char *name, char* serial)
 {
-   char *track_path                 = (char*)malloc(PATH_MAX_LENGTH 
+   char *track_path                 = (char*)malloc(PATH_MAX_LENGTH
          * sizeof(char));
    int ret                          = 0;
    size_t offset                    = 0;
@@ -400,7 +321,11 @@ static int task_database_gdi_get_serial(const char *name, char* serial)
 static int task_database_chd_get_serial(const char *name, char* serial)
 {
    int result;
-   intfstream_t *fd = open_chd_track(name, CHDSTREAM_TRACK_FIRST_DATA);
+   intfstream_t *fd = intfstream_open_chd_track(
+         name,
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE,
+         CHDSTREAM_TRACK_FIRST_DATA);
    if (!fd)
       return 0;
 
@@ -431,7 +356,8 @@ static bool intfstream_file_get_crc(const char *name,
       size_t offset, size_t size, uint32_t *crc)
 {
    int rv;
-   intfstream_t *fd  = intfstream_open_file(name);
+   intfstream_t *fd  = intfstream_open_file(name,
+         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
    uint8_t *data     = NULL;
    ssize_t file_size = -1;
 
@@ -461,9 +387,10 @@ static bool intfstream_file_get_crc(const char *name,
 
       intfstream_close(fd);
       free(fd);
-      fd = open_memory(data, size);
+      fd = intfstream_open_memory(data, RETRO_VFS_FILE_ACCESS_READ,
+            RETRO_VFS_FILE_ACCESS_HINT_NONE, size);
 
-      if (!fd) 
+      if (!fd)
          goto error;
    }
 
@@ -551,7 +478,11 @@ static int task_database_gdi_get_crc(const char *name, uint32_t *crc)
 static bool task_database_chd_get_crc(const char *name, uint32_t *crc)
 {
    int rv;
-   intfstream_t *fd = open_chd_track(name, CHDSTREAM_TRACK_PRIMARY);
+   intfstream_t *fd = intfstream_open_chd_track(
+         name,
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE,
+         CHDSTREAM_TRACK_PRIMARY);
    if (!fd)
       return 0;
 
@@ -573,7 +504,8 @@ static void task_database_cue_prune(database_info_handle_t *db,
 {
    size_t i;
    char       *path = (char *)malloc(PATH_MAX_LENGTH + 1);
-   intfstream_t *fd = intfstream_open_file(name);
+   intfstream_t *fd = intfstream_open_file(name,
+         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    if (!fd)
       goto end;
@@ -582,7 +514,7 @@ static void task_database_cue_prune(database_info_handle_t *db,
    {
       for (i = db->list_ptr; i < db->list->size; ++i)
       {
-         if (db->list->elems[i].data 
+         if (db->list->elems[i].data
                && !strcmp(path, db->list->elems[i].data))
          {
             RARCH_LOG("Pruning file referenced by cue: %s\n", path);
@@ -605,7 +537,8 @@ static void gdi_prune(database_info_handle_t *db, const char *name)
 {
    size_t i;
    char       *path = (char *)malloc(PATH_MAX_LENGTH + 1);
-   intfstream_t *fd = intfstream_open_file(name);
+   intfstream_t *fd = intfstream_open_file(name,
+         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    if (!fd)
       goto end;
@@ -1200,7 +1133,7 @@ static void task_database_handler(retro_task_t *task)
             {
                size_t i;
                char *dirname = NULL;
-               
+
                if (!string_is_empty(db->fullpath))
                   dirname    = find_last_slash(db->fullpath) + 1;
 

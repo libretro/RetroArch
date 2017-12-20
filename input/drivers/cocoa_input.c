@@ -328,11 +328,6 @@ static int16_t cocoa_input_state(void *data,
    return 0;
 }
 
-static bool cocoa_input_meta_key_pressed(void *data, int key)
-{
-   return false;
-}
-
 static void cocoa_input_free(void *data)
 {
    unsigned i;
@@ -426,7 +421,6 @@ input_driver_t input_cocoa = {
    cocoa_input_init,
    cocoa_input_poll,
    cocoa_input_state,
-   cocoa_input_meta_key_pressed,
    cocoa_input_free,
    NULL,
    NULL,

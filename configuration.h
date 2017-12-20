@@ -38,7 +38,7 @@
 { \
    settings->modified = true; \
    var = newvar; \
-} 
+}
 
 #define configuration_set_uint(settings, var, newvar) \
 { \
@@ -325,6 +325,7 @@ typedef struct settings
       unsigned keymapper_port;
       unsigned video_window_x;
       unsigned video_window_y;
+      unsigned video_window_opacity;
       unsigned video_monitor_index;
       unsigned video_fullscreen_x;
       unsigned video_fullscreen_y;

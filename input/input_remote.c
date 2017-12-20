@@ -66,7 +66,7 @@ struct input_remote
 typedef struct input_remote_state
 {
    /* Left X, Left Y, Right X, Right Y */
-   int16_t analog[4][MAX_USERS]; 
+   int16_t analog[4][MAX_USERS];
    /* This is a bitmask of (1 << key_bind_id). */
    uint64_t buttons[MAX_USERS];
 } input_remote_state_t;
@@ -230,7 +230,7 @@ void input_remote_poll(input_remote_t *handle, unsigned max_users)
    unsigned user;
    settings_t *settings            = config_get_ptr();
    input_remote_state_t *input_state  = input_remote_get_state_ptr();
-   
+
    for(user = 0; user < max_users; user++)
    {
       if (settings->bools.network_remote_enable_user[user])

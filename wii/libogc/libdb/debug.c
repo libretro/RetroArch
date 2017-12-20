@@ -63,11 +63,11 @@ static struct hard_trap_info {
 	{EX_PRG,SIGTRAP},		/* Breakpoint Trap */
 	{EX_FP,SIGFPE},			/* FPU unavail */
 	{EX_DEC,SIGALRM},		/* Decrementer */
-	{EX_SYS_CALL,SIGSYS},	/* System Call */			
+	{EX_SYS_CALL,SIGSYS},	/* System Call */
 	{EX_TRACE,SIGTRAP},		/* Singel-Step/Watch */
 	{0xB,SIGILL},			/* Reserved */
 	{EX_IABR,SIGTRAP},		/* Instruction Address Breakpoint (GEKKO) */
-	{0xD,SIGFPE},			/* FP assist */			
+	{0xD,SIGFPE},			/* FP assist */
 	{0,0}					/* MUST be the last */
 };
 
@@ -157,7 +157,7 @@ static u32 insert_bp(void *mem)
 		if(bp_entries[i].address == NULL) break;
 	}
 	if(i==GEKKO_MAX_BP) return 0;
-	
+
 	p = &bp_entries[i];
 	p->next = p_bpentries;
 	p->address = mem;
@@ -165,7 +165,7 @@ static u32 insert_bp(void *mem)
 
 	p->instr = *(p->address);
 	*(p->address) = BPCODE;
-	
+
 	DCStoreRangeNoSync((void*)((u32)mem&~0x1f),32);
 	ICInvalidateRange((void*)((u32)mem&~0x1f),32);
 	_sync();
@@ -235,20 +235,20 @@ static void putpacket(const char *buffer)
 	do {
 		inp = buffer;
 		ptr = outbuf;
-		
+
 		*ptr++ = '$';
-		
+
 		chksum = 0;
 		while((ch=*inp++)!='\0') {
 			*ptr++ = ch;
 			chksum += ch;
 		}
-		
+
 		*ptr++ = '#';
 		*ptr++ = hexchars[chksum>>4];
 		*ptr++ = hexchars[chksum&0x0f];
 		*ptr = '\0';
-	
+
 		putdbgstr(outbuf);
 
 		recv = getdbgchar();
@@ -267,7 +267,7 @@ static void getpacket(char *buffer)
 		cnt = 0;
 		chksum = 0;
 		xmitsum = -1;
-		
+
 		while(cnt<BUFMAX) {
 			ch = getdbgchar()&0x7f;
 			if(ch=='#') break;
@@ -277,12 +277,12 @@ static void getpacket(char *buffer)
 			cnt++;
 		}
 		if(cnt>=BUFMAX) continue;
-		
+
 		buffer[cnt] = 0;
 		if(ch=='#') {
 			xmitsum = hex(getdbgchar()&0x7f)<<4;
 			xmitsum |= hex(getdbgchar()&0x7f);
-			
+
 			if(chksum!=xmitsum) putdbgchar('-');
 			else {
 				putdbgchar('+');
@@ -505,7 +505,7 @@ void c_debug_handler(frame_context *frame)
 			case 's':
 				dbg_instep = 1;
 				dbg_active = 1;
-				frame->SRR1 |= MSR_SE; 
+				frame->SRR1 |= MSR_SE;
 				current_device->wait(current_device);
 				goto exit;
 			case 'z':
@@ -646,7 +646,7 @@ void DEBUG_Init(s32 device_type,s32 channel_port)
 		_CPU_ISR_Restore(level);
 
 		dbg_initialized = 1;
-		
+
 	}
 	__lwp_thread_dispatchenable();
 }

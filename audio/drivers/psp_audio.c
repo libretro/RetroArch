@@ -50,6 +50,9 @@ typedef struct psp_audio
    char lock[32] __attribute__ ((aligned (8)));
    char cond_lock[32] __attribute__ ((aligned (8)));
    char cond[32] __attribute__ ((aligned (8)));
+#else
+   SceUID lock;
+   SceUID cond;
 #endif
 } psp_audio_t;
 
@@ -83,15 +86,13 @@ static int audioMainLoop(SceSize args, void* argp)
 
 #ifdef VITA
       sceKernelLockLwMutex((struct SceKernelLwMutexWork*)&psp->lock, 1, 0);
+#else
+      sceKernelWaitSema(psp->lock, 1, 0);
 #endif
 
       cond                = ((uint16_t)(psp->write_pos - read_pos) & AUDIO_BUFFER_SIZE_MASK)
             < (AUDIO_OUT_COUNT * 2);
 
-#ifndef VITA
-      sceAudioSRCOutputBlocking(PSP_AUDIO_VOLUME_MAX, cond ? (psp->zeroBuffer)
-            : (psp->buffer + read_pos));
-#endif
       if (!cond)
       {
          read_pos      += AUDIO_OUT_COUNT;
@@ -106,6 +107,13 @@ static int audioMainLoop(SceSize args, void* argp)
       sceAudioOutOutput(port,
         cond ? (psp->zeroBuffer)
               : (psp->buffer + read_pos_2));
+#else
+      sceKernelSignalSema(psp->lock, 1);
+      if(!cond){
+          sceKernelSignalSema(psp->cond, 1);
+      }
+      sceAudioSRCOutputBlocking(PSP_AUDIO_VOLUME_MAX, cond ? (psp->zeroBuffer)
+            : (psp->buffer + read_pos));
 #endif
    }
 
@@ -151,6 +159,8 @@ static void *psp_audio_init(const char *device,
    psp->thread      = sceKernelCreateThread
       ("audioMainLoop", audioMainLoop, 0x10000100, 0x10000, 0, 0, NULL);
 #else
+   psp->cond=sceKernelCreateSema("audio_start_sema",  0, 0, 1, NULL);
+   psp->lock=sceKernelCreateSema("audio_lock_sema",  0, 1, 1, NULL);
    psp->thread      = sceKernelCreateThread
       ("audioMainLoop", audioMainLoop, 0x08, 0x10000, 0, NULL);
 #endif
@@ -177,6 +187,8 @@ static void psp_audio_free(void *data)
    sceKernelDeleteLwCond((struct SceKernelLwCondWork*)&psp->cond);
 #else
    sceKernelWaitThreadEnd(psp->thread, &timeout);
+   sceKernelDeleteSema(psp->lock);
+   sceKernelDeleteSema(psp->cond);
 #endif
    free(psp->buffer);
    sceKernelDeleteThread(psp->thread);
@@ -192,9 +204,11 @@ static ssize_t psp_audio_write(void *data, const void *buf, size_t size)
 
    if (psp->nonblocking)
    {
+//#ifdef VITA
       if (AUDIO_BUFFER_SIZE - ((uint16_t)
             (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK) < size)
-         return 0;
+      return 0;
+//#endif
    }
 
 #ifdef VITA
@@ -203,6 +217,11 @@ static ssize_t psp_audio_write(void *data, const void *buf, size_t size)
       sceKernelWaitLwCond((struct SceKernelLwCondWork*)&psp->cond, 0);
 
    sceKernelLockLwMutex((struct SceKernelLwMutexWork*)&psp->lock, 1, 0);
+#else
+   while (AUDIO_BUFFER_SIZE - ((uint16_t)
+         (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK) < size)
+      sceKernelWaitSema(psp->cond, 1, 0);
+   sceKernelWaitSema(psp->lock, 1, 0);
 #endif
 
    if((write_pos + sampleCount) > AUDIO_BUFFER_SIZE)
@@ -225,7 +244,9 @@ static ssize_t psp_audio_write(void *data, const void *buf, size_t size)
 
   return size;
 #else
-  return sampleCount;
+   sceKernelSignalSema(psp->lock, 1);
+
+  return size;
 #endif
 }
 
@@ -244,9 +265,9 @@ static bool psp_audio_stop(void *data)
    SceUInt timeout   = 100000;
    psp_audio_t* psp = (psp_audio_t*)data;
 
-   if(psp && !psp->running)  
+   if(psp && !psp->running)
       return true;
-   
+
    info.size = sizeof(SceKernelThreadInfo);
 
    if (sceKernelGetThreadInfo(
@@ -269,8 +290,8 @@ static bool psp_audio_start(void *data, bool is_shutdown)
 {
    SceKernelThreadInfo info;
    psp_audio_t* psp = (psp_audio_t*)data;
-   
-   if(psp && psp->running)  
+
+   if(psp && psp->running)
       return true;
 
    info.size = sizeof(SceKernelThreadInfo);
@@ -309,6 +330,8 @@ static size_t psp_write_avail(void *data)
 
 #ifdef VITA
    sceKernelLockLwMutex((struct SceKernelLwMutexWork*)&psp->lock, 1, 0);
+#else
+   sceKernelWaitSema(psp->lock, 1, 0);
 #endif
 
    val = AUDIO_BUFFER_SIZE - ((uint16_t)
@@ -316,6 +339,8 @@ static size_t psp_write_avail(void *data)
 
 #ifdef VITA
    sceKernelUnlockLwMutex((struct SceKernelLwMutexWork*)&psp->lock, 1);
+#else
+   sceKernelSignalSema(psp->lock, 1);
 #endif
 
    return val;

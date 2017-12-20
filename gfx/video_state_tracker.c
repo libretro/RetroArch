@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -54,7 +54,7 @@ struct state_tracker_internal
    uint32_t prev[2];
    int frame_count;
    int frame_count_prev;
-   uint32_t old_value; 
+   uint32_t old_value;
    int transition_count;
 };
 
@@ -121,7 +121,7 @@ state_tracker_t* state_tracker_init(const struct state_tracker_info *info)
 
       tracker->info[i].addr  = info->info[i].addr;
       tracker->info[i].type  = info->info[i].type;
-      tracker->info[i].mask  = (info->info[i].mask == 0) 
+      tracker->info[i].mask  = (info->info[i].mask == 0)
          ? 0xffff : info->info[i].mask;
       tracker->info[i].equal = info->info[i].equal;
 
@@ -250,13 +250,13 @@ static void state_tracker_update_element(
          }
          uniform->value = info->frame_count_prev;
          break;
-      
+
 #ifdef HAVE_PYTHON
       case RARCH_STATE_PYTHON:
          uniform->value = py_state_get(info->py, info->id, frame_count);
          break;
 #endif
-      
+
       default:
          break;
    }
@@ -282,7 +282,7 @@ unsigned state_tracker_get_uniform(state_tracker_t *tracker,
       unsigned elem, unsigned frame_count)
 {
    unsigned i, elems = elem;
-   
+
    if (tracker->info_elem < elem)
       elems = tracker->info_elem;
 

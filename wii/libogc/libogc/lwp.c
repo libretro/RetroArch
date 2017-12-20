@@ -86,7 +86,7 @@ static __inline__ tqueue_st* __lwp_tqueue_open(lwpq_t tqueue)
 static lwp_cntrl* __lwp_cntrl_allocate()
 {
 	lwp_cntrl *thethread;
-	
+
 	__lwp_thread_dispatchdisable();
 	thethread = (lwp_cntrl*)__lwp_objmgr_allocate(&_lwp_thr_objects);
 	if(thethread) {
@@ -154,13 +154,13 @@ BOOL __lwp_thread_isalive(lwp_t thr_id)
 	if(thr_id==LWP_THREAD_NULL || LWP_OBJTYPE(thr_id)!=LWP_OBJTYPE_THREAD) return FALSE;
 
 	lwp_cntrl *thethread = (lwp_cntrl*)__lwp_objmgr_getnoprotection(&_lwp_thr_objects,LWP_OBJMASKID(thr_id));
-	
-	if(thethread) {  
+
+	if(thethread) {
 		u32 *stackbase = thethread->stack;
 		if(stackbase[0]==0xDEADBABE && !__lwp_statedormant(thethread->cur_state) && !__lwp_statetransient(thethread->cur_state))
 			return TRUE;
 	}
-	
+
 	return FALSE;
 }
 
@@ -191,7 +191,7 @@ s32 LWP_CreateThread(lwp_t *thethread,void* (*entry)(void *),void *arg,void *sta
 {
 	u32 status;
 	lwp_cntrl *lwp_thread;
-	
+
 	if(!thethread || !entry) return -1;
 
 	lwp_thread = __lwp_cntrl_allocate();
@@ -203,7 +203,7 @@ s32 LWP_CreateThread(lwp_t *thethread,void* (*entry)(void *),void *arg,void *sta
 		__lwp_thread_dispatchenable();
 		return -1;
 	}
-	
+
 	status = __lwp_thread_start(lwp_thread,entry,arg);
 	if(!status) {
 		__lwp_cntrl_free(lwp_thread);
@@ -294,7 +294,7 @@ BOOL LWP_ThreadIsSuspended(lwp_t thethread)
 
 	lwp_thread = __lwp_cntrl_open(thethread);
   	if(!lwp_thread) return FALSE;
-	
+
 	state = (__lwp_statesuspended(lwp_thread->cur_state) ? TRUE : FALSE);
 
 	__lwp_thread_dispatchenable();
@@ -307,7 +307,7 @@ s32 LWP_JoinThread(lwp_t thethread,void **value_ptr)
 	u32 level;
 	void *return_ptr;
 	lwp_cntrl *exec,*lwp_thread;
-	
+
 	lwp_thread = __lwp_cntrl_open(thethread);
 	if(!lwp_thread) return 0;
 
@@ -356,7 +356,7 @@ void LWP_CloseQueue(lwpq_t thequeue)
 
 	tq = __lwp_tqueue_open(thequeue);
 	if(!tq) return;
-	
+
 	do {
 		thethread = __lwp_threadqueue_dequeue(&tq->tqueue);
 	} while(thethread);
@@ -396,7 +396,7 @@ void LWP_ThreadBroadcast(lwpq_t thequeue)
 
 	tq = __lwp_tqueue_open(thequeue);
 	if(!tq) return;
-	
+
 	do {
 		thethread = __lwp_threadqueue_dequeue(&tq->tqueue);
 	} while(thethread);

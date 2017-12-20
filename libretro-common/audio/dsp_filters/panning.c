@@ -76,7 +76,7 @@ static void *panning_init(const struct dspfilter_info *info,
    config->get_float_array(userdata, "right_mix",
          &right, &num_right, default_right, 2);
 
-   memcpy(pan->left,  (num_left  == 2) ? 
+   memcpy(pan->left,  (num_left  == 2) ?
          left :  default_left,  sizeof(pan->left));
    memcpy(pan->right, (num_right == 2) ?
          right : default_right, sizeof(pan->right));

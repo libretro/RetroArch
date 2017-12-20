@@ -31,14 +31,14 @@ distribution.
 #ifndef __DSP_H__
 #define __DSP_H__
 
-/*! \file dsp.h 
+/*! \file dsp.h
 \brief DSP subsystem
 
-*/ 
+*/
 
 #include <gctypes.h>
 
-/*! 
+/*!
  * \addtogroup dsp_taskstate DSP task states
  * \brief DSP task state indicating DSP task's current operation
  * @{
@@ -54,7 +54,7 @@ distribution.
  */
 
 
-/*! 
+/*!
  * \addtogroup dsp_taskflag DSP task flags
  * \brief DSP task queue state flag indicating the task's current queue state. Multiple states are OR'd.
  * @{
@@ -73,7 +73,7 @@ distribution.
 #endif /* __cplusplus */
 
 
-/*! 
+/*!
 \typedef struct _dsp_task dsptask_t
 \brief forward typdef to struct _dsp_task. This struture holds certain DSP task information for execution.
 */
@@ -96,7 +96,7 @@ typedef void (*DSPCallback)(void);
 /*! \typedef struct _dsp_task dsptask_t
 \param state current task \ref dsp_taskstate "state" set
 \param prio priority of the task
-\param flags currnet task \ref dsp_taskflag "flag(s)" set. 
+\param flags currnet task \ref dsp_taskflag "flag(s)" set.
 \param init_vec initialization vector. depends on the DSP code to execute.
 \param resume_vec resume vector. depends on the DSP code to execute.
 \param iram_maddr main memory address of i-ram image. NOTE: Has to be aligned on a 32byte boundery!
@@ -116,7 +116,7 @@ struct _dsp_task {
 	vu32 state;
 	vu32 prio;
 	vu32 flags;
-	
+
 	void *iram_maddr;
 	u32 iram_len;
 	u32 iram_addr;
@@ -124,10 +124,10 @@ struct _dsp_task {
 	void *dram_maddr;
 	u32 dram_len;
 	u32 dram_addr;
-	
+
 	u16 init_vec;
 	u16 resume_vec;
-	
+
 	DSPTaskCallback init_cb;
 	DSPTaskCallback res_cb;
 	DSPTaskCallback done_cb;

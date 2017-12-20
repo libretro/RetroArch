@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -230,7 +230,7 @@ static void android_gfx_ctx_check_window(void *data, bool *quit,
          break;
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
-         /* Swapchains are recreated in set_resize as a 
+         /* Swapchains are recreated in set_resize as a
           * central place, so use that to trigger swapchain reinit. */
          *resize    = and->vk.need_new_swapchain;
          new_width  = and->width;
@@ -281,6 +281,7 @@ static bool android_gfx_ctx_set_resize(void *data,
             return false;
          }
 
+         vulkan_acquire_next_image(&and->vk);
          and->vk.context.invalid_swapchain = true;
          and->vk.need_new_swapchain        = false;
 #endif
@@ -369,7 +370,7 @@ static bool android_gfx_ctx_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
    unsigned version;
-   
+
    switch (api)
    {
       case GFX_CTX_OPENGL_API:
@@ -581,7 +582,7 @@ static uint32_t android_gfx_ctx_get_flags(void *data)
 {
    uint32_t flags = 0;
    BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
-   
+
    return flags;
 }
 

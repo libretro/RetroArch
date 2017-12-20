@@ -66,7 +66,7 @@ bool intfstream_resize(intfstream_internal_t *intf,
       intfstream_info_t *info);
 
 bool intfstream_open(intfstream_internal_t *intf,
-      const char *path, unsigned mode, ssize_t len);
+      const char *path, unsigned mode, unsigned hints);
 
 ssize_t intfstream_read(intfstream_internal_t *intf,
       void *s, size_t len);
@@ -89,6 +89,20 @@ int intfstream_tell(intfstream_internal_t *intf);
 void intfstream_putc(intfstream_internal_t *intf, int c);
 
 int intfstream_close(intfstream_internal_t *intf);
+
+int64_t intfstream_get_size(intfstream_internal_t *intf);
+
+int intfstream_flush(intfstream_internal_t *intf);
+
+intfstream_t* intfstream_open_file(const char *path,
+      unsigned mode, unsigned hints);
+
+intfstream_t *intfstream_open_memory(void *data,
+      unsigned mode, unsigned hints, size_t size);
+
+intfstream_t *intfstream_open_chd_track(const char *path,
+      unsigned mode, unsigned hints, int32_t track);
+
 
 RETRO_END_DECLS
 

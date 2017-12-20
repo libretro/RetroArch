@@ -43,6 +43,7 @@
 #include <compat/getopt.h>
 #include <audio/audio_mixer.h>
 #include <compat/posix_string.h>
+#include <streams/file_stream.h>
 #include <file/file_path.h>
 #include <retro_assert.h>
 #include <retro_miscellaneous.h>
@@ -835,7 +836,7 @@ static void retroarch_parse_input(int argc, char *argv[])
                      "Setting libretro_directory to \"%s\" instead.\n",
                      optarg);
             }
-            else if (path_file_exists(optarg))
+            else if (filestream_exists(optarg))
             {
                rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH, optarg);
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
@@ -1104,8 +1105,6 @@ static bool retroarch_init_state(void)
 {
    video_driver_set_active();
    audio_driver_set_active();
-
-   rarch_force_fullscreen = false;
 
    return true;
 }
@@ -1442,7 +1441,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          rarch_is_inited         = false;
          rarch_error_on_init     = false;
          rarch_block_config_read = false;
-         rarch_force_fullscreen  = false;
 
          retroarch_msg_queue_deinit();
          driver_uninit(DRIVERS_CMD_ALL);
@@ -1921,6 +1919,11 @@ bool retroarch_is_forced_fullscreen(void)
    return rarch_force_fullscreen;
 }
 
+void retroarch_unset_forced_fullscreen(void)
+{
+   rarch_force_fullscreen = false;
+}
+
 bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx, void *data)
 {
    switch (enum_idx)
@@ -2360,6 +2363,7 @@ static enum runloop_state runloop_check_state(
       bool input_nonblock_state,
       unsigned *sleep_ms)
 {
+   retro_bits_t current_input;
    static retro_bits_t last_input   = {{0}};
    static bool old_fs_toggle_pressed= false;
    static bool old_focus            = true;
@@ -2373,17 +2377,12 @@ static enum runloop_state runloop_check_state(
    bool menu_driver_binding_state   = menu_driver_is_binding_state();
    bool menu_is_alive               = menu_driver_is_alive();
 
-   retro_bits_t current_input;
-
    if (menu_is_alive && !(settings->bools.menu_unified_controls && !menu_input_dialog_get_display_kb()))
 	   input_menu_keys_pressed(settings, &current_input);
    else
+#endif
 	   input_keys_pressed(settings, &current_input);
 
-#else
-   retro_bits_t current_input;
-   input_keys_pressed(settings, &current_input);
-#endif
    last_input                       = current_input;
 
 #ifdef HAVE_MENU

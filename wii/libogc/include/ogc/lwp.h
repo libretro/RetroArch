@@ -33,10 +33,10 @@ distribution.
 #ifndef __LWP_H__
 #define __LWP_H__
 
-/*! \file lwp.h 
+/*! \file lwp.h
 \brief Thread subsystem I
 
-*/ 
+*/
 
 #include <gctypes.h>
 

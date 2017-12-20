@@ -27,13 +27,13 @@
 #include <boolean.h>
 #include <retro_inline.h>
 
-#if defined(_WIN32) && !defined(_XBOX)		
+#if defined(_WIN32) && !defined(_XBOX)
 #ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN		
+#define WIN32_LEAN_AND_MEAN
 #endif
-#include <windows.h>		
-#elif defined(_WIN32) && defined(_XBOX)		
-#include <Xtl.h>		
+#include <windows.h>
+#elif defined(_WIN32) && defined(_XBOX)
+#include <Xtl.h>
 #endif
 
 #include <limits.h>
@@ -41,6 +41,13 @@
 #ifdef _MSC_VER
 #include <compat/msvc.h>
 #endif
+
+static INLINE void bits_or_bits(uint32_t *a, uint32_t *b, uint32_t count)
+{
+   uint32_t i;
+   for (i = 0; i < count;i++)
+      a[i] |= b[i];
+}
 
 static INLINE void bits_clear_bits(uint32_t *a, uint32_t *b, uint32_t count)
 {

@@ -25,6 +25,10 @@
 #include "../config.h"
 #endif
 
+#include "menu_entries.h"
+
+#include "../msg_hash.h"
+
 RETRO_BEGIN_DECLS
 
 typedef struct key_desc
@@ -255,9 +259,9 @@ int bind_right_generic(unsigned type, const char *label,
  * Deferred push : When pressing an entry results in spawning a new list, it waits until the next
  * frame to push this onto the stack. This function callback will then be invoked.
  * Refresh : What happens when the screen has to be refreshed. Does an entry have internal state
- * that needs to be rebuild? 
+ * that needs to be rebuild?
  * Get value: Each entry has associated 'text', which we call the value. This function callback
- * lets us render that text. 
+ * lets us render that text.
  * Get title: Each entry can have a custom 'title'.
  * Label: Each entry has a label name. This function callback lets us render that label text.
  * Sublabel: each entry has a sublabel, which consists of one or more lines of additional information.
