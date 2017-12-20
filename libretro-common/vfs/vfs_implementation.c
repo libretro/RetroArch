@@ -274,6 +274,8 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uns
       if (path_wide)
          free(path_wide);
 #endif
+#elif defined(__CELLOS_LV2__)
+	  cellFsOpen(path, flags, &stream->fd, NULL, 0);
 #else
       stream->fd = open(path, flags, 0);
 #endif
