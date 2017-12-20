@@ -68,7 +68,7 @@ static INLINE bool bits_any_set(uint32_t* ptr, uint32_t count)
 }
 
 #ifndef PATH_MAX_LENGTH
-#if defined(_XBOX1) || defined(_3DS) || defined(PSP) || defined(GEKKO)|| defined(WIIU)
+#if defined(_XBOX1) || defined(_3DS) || defined(PSP) || defined(GEKKO)|| defined(WIIU) || defined(__CELLOS_LV2__)
 #define PATH_MAX_LENGTH 512
 #else
 #define PATH_MAX_LENGTH 4096
