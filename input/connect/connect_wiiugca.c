@@ -33,7 +33,11 @@ struct hidpad_wiiugca_data
 
 static void* hidpad_wiiugca_init(void *data, uint32_t slot, hid_driver_t *driver)
 {
+#ifdef WIIU
+   static uint8_t magic_data[]         = {0x13}; /* Special command to enable reading */
+#else
    static uint8_t magic_data[]         = {0x01, 0x13}; /* Special command to enable reading */
+#endif
    struct pad_connection* connection   = (struct pad_connection*)data;
    struct hidpad_wiiugca_data* device  = (struct hidpad_wiiugca_data*)
       calloc(1, sizeof(struct hidpad_wiiugca_data));
