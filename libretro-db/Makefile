@@ -12,7 +12,8 @@ CFLAGS               = -g -O2 -Wall -DNDEBUG
 endif
 
 LIBRETRO_COMMON_C = \
-			 $(LIBRETRO_COMM_DIR)/streams/file_stream.c
+			 $(LIBRETRO_COMM_DIR)/streams/file_stream.c \
+			 $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
 
 C_CONVERTER_C = \
 			 $(LIBRETRODB_DIR)/rmsgpack.c \
@@ -71,4 +72,4 @@ rmsgpack_test: $(RMSGPACK_OBJS)
 	$(CC) $(INCFLAGS) $(RMSGPACK_OBJS) -g -o $@
 
 clean:
-	rm -rf $(TARGETS) $(C_CONVERTER_OBJS) $(RARCHDB_TOOL_OBJS) $(RMSGPACK_OBJS) $(TESTLIB_OBJS) 
+	rm -rf $(TARGETS) $(C_CONVERTER_OBJS) $(RARCHDB_TOOL_OBJS) $(RMSGPACK_OBJS) $(TESTLIB_OBJS)
