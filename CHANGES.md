@@ -26,6 +26,7 @@
 - LOCALIZATION: Update Portuguese-Brazilian translation.
 - LOCALIZATION: Update Russian translation.
 - OSX/PPC: Fix the GL2 renderchain, had to use EXT versions of framebuffer/renderbuffer functions.
+- PSP: Make it work with Vita's Adrenaline.
 - PSP: Fix audio sync.
 - PSP: Fix content loading, port should be functional again.
 - PSP: Use 64MB when available.
