@@ -88,7 +88,7 @@ struct http_connection_t
 static char urlencode_lut[256];
 static bool urlencode_lut_inited = false;
 
-void urlencode_lut_init()
+static void urlencode_lut_init()
 {
    unsigned i;
 
@@ -98,6 +98,29 @@ void urlencode_lut_init()
    {
       urlencode_lut[i] = isalnum(i) || i == '*' || i == '-' || i == '.' || i == '_' ? i : (i == ' ') ? '+' : 0;
    }
+}
+
+/* Use the same pointer for both src/dst */
+int net_http_urldecode_inplace(char *dst, char *src)
+{
+   int len;
+
+   for (len = 0; *src; len++)
+   {
+      if (*src == '%' && src[1] && src[2] && isxdigit(src[1]) && isxdigit(src[2]))
+      {
+         src[1] -= src[1] <= '9' ? '0' : (src[1] <= 'F' ? 'A' : 'a') - 10;
+         src[2] -= src[2] <= '9' ? '0' : (src[2] <= 'F' ? 'A' : 'a') - 10;
+         dst[len] = 16 * src[1] + src[2];
+         src += 3;
+         continue;
+      }
+
+      dst[len] = *src++;
+   }
+
+   dst[len] = '\0';
+   return len;
 }
 
 /* caller is responsible for deleting the destination buffer */
@@ -126,6 +149,103 @@ void net_http_urlencode_full(char **dest, const char *source)
    }
 
    (*dest)[len - 1] = '\0';
+}
+
+/* Fills a string with a URL and optional path part. Ensures any absolute paths given will replace an existing relative path in the original URL. Returns the length of the created string, or -1 if there was an error. */
+int net_http_create_url(char *dst, const char *url, const char *path, size_t dst_size)
+{
+   int url_len = 0;
+   char *url_tmp = NULL;
+   char *pos = NULL;
+   const char *scheme = NULL;
+   const char *authority = NULL;
+   const char *path_in_url = NULL;
+
+   if (!dst || string_is_empty(url))
+      return -1;
+
+   /* if no path was provided, just fill string with the URL */
+   if (string_is_empty(path))
+      return strlcpy(dst, url, dst_size);
+
+   url_len = strlen(url);
+   url_tmp = strdup(url);
+   scheme = url_tmp;
+   pos = url_tmp;
+
+   if (!url_tmp)
+      return -1;
+
+   /* find end of scheme in the existing URL */
+   pos = strstr(pos, "://");
+
+   if (!pos)
+      goto error;
+
+   /* terminate string where the :// starts, now scheme should contain e.g. "http" */
+   *pos = '\0';
+
+   /* skip past the :// part after the scheme */
+   if (url_len > (pos + 3) - url_tmp)
+      pos += 3;
+   else
+      goto error;
+
+   /* find the authority (optional user/pass, plus the domain) which ends at the / where the path starts */
+   authority = pos;
+   pos = strstr(pos, "/");
+
+   if (!pos)
+   {
+      /* URL contains no path, that's ok */
+   }
+   else
+   {
+      /* terminate authority string, we'll add the slash back later */
+      *pos = '\0';
+      pos += 1;
+
+      /* the rest is the existing path in the URL, minus the leading slash */
+      path_in_url = pos;
+   }
+
+   /* start building up the URL in the destination buffer */
+   strlcpy(dst, scheme, dst_size);
+   strlcat(dst, "://", dst_size);
+   strlcat(dst, authority, dst_size);
+
+   if (*path == '/')
+   {
+      /* provided path was absolute, ignore path from the URL and just use this one */
+      strlcat(dst, path, dst_size);
+   }
+   else
+   {
+      /* provided path was relative, append it to the end of any path that was in the URL */
+      strlcat(dst, "/", dst_size);
+
+      /* there might not have been anything else after the initial slash */
+      if (path_in_url)
+      {
+         size_t len = strlcat(dst, path_in_url, dst_size);
+
+         if (len >= dst_size)
+            goto error;
+
+         if (dst[len - 1] != '/')
+            strlcat(dst, "/", dst_size);
+      }
+
+      strlcat(dst, path, dst_size);
+   }
+
+   free(url_tmp);
+
+   return strlen(dst);
+
+error:
+   free(url_tmp);
+   return -1;
 }
 
 static int net_http_new_socket(struct http_connection_t *conn)

@@ -19,22 +19,14 @@
 #define _MENU_NETWORKING_H
 
 #include <stdint.h>
-
 #include <retro_common_api.h>
-#include <retro_environment.h>
 
 #include <lists/file_list.h>
 
-#include "../msg_hash.h"
-
 RETRO_BEGIN_DECLS
 
-extern char *core_buf;
-extern size_t core_len;
-
-void print_buf_lines(file_list_t *list, char *buf,
-      const char *label, int buf_size,
-      enum msg_file_type type, bool append, bool extended);
+void parse_index_lines(file_list_t *list, char *buf,
+      const char *label, enum msg_file_type type, bool append, bool extended);
 
 void cb_net_generic_subdir(void *task_data, void *user_data,
       const char *err);

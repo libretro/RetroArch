@@ -30,7 +30,6 @@
 #include <net/net_http_parse.h>
 #endif
 
-#include "menu_networking.h"
 #include "menu_cbs.h"
 #include "menu_entries.h"
 #include "widgets/menu_list.h"
@@ -41,18 +40,25 @@
 #include "../msg_hash.h"
 #include "../tasks/tasks_internal.h"
 
-char *core_buf                   = NULL;
-size_t core_len                  = 0;
+static char *core_buf                   = NULL;
+static size_t core_len                  = 0;
 
-void print_buf_lines(file_list_t *list, char *buf,
-      const char *label, int buf_size,
-      enum msg_file_type type, bool append, bool extended)
+void parse_index_lines(file_list_t *list, char *buf,
+      const char *label, enum msg_file_type type, bool append, bool extended)
 {
    char c;
    int i, j = 0;
-   char *line_start = buf;
+   char *line_start;
+   bool newline = false;
+   bool end = false;
 
-   if (!buf || !buf_size)
+   if (buf)
+      strlcpy(core_buf, buf, core_len);
+
+   buf = core_buf;
+   line_start = buf;
+
+   if (!buf || !core_len)
    {
       menu_entries_append_enum(list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
@@ -62,124 +68,171 @@ void print_buf_lines(file_list_t *list, char *buf,
       return;
    }
 
-   for (i = 0; i < buf_size; i++)
+   for (i = 0; i < core_len; i++)
    {
-      size_t ln;
+      size_t ln, name_len;
       const char *core_date        = NULL;
       const char *core_crc         = NULL;
       const char *core_pathname    = NULL;
-      struct string_list *str_list = NULL;
+      char *link = NULL;
+      char *name = NULL;
+      int len;
 
-      /* The end of the buffer, print the last bit */
-      if (*(buf + i) == '\0')
-         break;
-
-      if (*(buf + i) != '\n')
-         continue;
-
-      /* Found a line ending, print the line and compute new line_start */
-
-      /* Save the next char  */
-      c = *(buf + i + 1);
-      /* replace with \0 */
-      *(buf + i + 1) = '\0';
-
-      /* We need to strip the newline. */
-      ln = strlen(line_start) - 1;
-      if (line_start[ln] == '\n')
-         line_start[ln] = '\0';
-
-      str_list      = string_split(line_start, " ");
-
-      if (str_list->elems[0].data)
-         core_date     = str_list->elems[0].data;
-      if (str_list->elems[1].data)
-         core_crc      = str_list->elems[1].data;
-      if (str_list->elems[2].data)
-         core_pathname = str_list->elems[2].data;
-
-      (void)core_date;
-      (void)core_crc;
-
-      if (extended)
+      if (*(buf + i) == '\n')
       {
-         if (append)
-            menu_entries_append_enum(list, core_pathname, "",
-                  MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0);
-         else
-            menu_entries_prepend(list, core_pathname, "",
-                  MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0);
+         /* Found a line ending, print the line and compute new line_start */
+         newline = true;
+
+         /* Save the next char  */
+         c = *(buf + i + 1);
+         /* replace with \0 */
+         *(buf + i + 1) = '\0';
+
+         /* We need to strip the newline. */
+         ln = strlen(line_start) - 1;
+
+         if (line_start[ln] == '\n')
+            line_start[ln] = '\0';
+      }
+      else if (*(buf + i + 1) == '\0')
+      {
+         /* Found end of buffer, but there may still be data left to read */
+         newline = false;
       }
       else
+         continue;
+
+      while (!string_is_empty(line_start))
       {
-         if (append)
-            menu_entries_append_enum(list, line_start, label,
-                  MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0);
+         link = (char*)calloc(1, ln + 1);
+         name = (char*)calloc(1, ln + 1);
+
+         len = string_parse_html_anchor(line_start, link, name, ln + 1, ln + 1);
+
+         core_pathname = link;
+
+         (void)core_date;
+         (void)core_crc;
+
+         if (string_is_empty(core_pathname))
+           goto next;
+
+         name_len = strlen(name);
+
+         if (name[name_len - 1] == '/')
+            name[name_len - 1] = '\0';
+
+         if (!string_is_empty(name))
+         {
+            if (string_is_equal(name, ".") ||
+                string_is_equal(name, ".."))
+               goto next;
+         }
+
+         if (extended)
+         {
+            if (append)
+               menu_entries_append_enum(list, core_pathname, "",
+                     MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0);
+            else
+               menu_entries_prepend(list, core_pathname, "",
+                     MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0);
+         }
          else
-            menu_entries_prepend(list, line_start, label,
-                  MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0);
-      }
+         {
+            if (append)
+               menu_entries_append_enum(list, core_pathname, label,
+                     MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0);
+            else
+               menu_entries_prepend(list, core_pathname, label,
+                     MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0);
+         }
 
-      switch (type)
-      {
-         case FILE_TYPE_DOWNLOAD_CORE:
-            {
-               settings_t *settings      = config_get_ptr();
+         file_list_set_alt_at_offset(list, j, name);
 
-               if (settings)
+         switch (type)
+         {
+            case FILE_TYPE_DOWNLOAD_CORE:
                {
-                  char display_name[255];
-                  char core_path[PATH_MAX_LENGTH];
-                  char *last                         = NULL;
+                  settings_t *settings      = config_get_ptr();
 
-                  display_name[0] = core_path[0]     = '\0';
-
-                  fill_pathname_join_noext(
-                        core_path,
-                        settings->paths.path_libretro_info,
-                        (extended && !string_is_empty(core_pathname))
-                        ? core_pathname : line_start,
-                        sizeof(core_path));
-                  path_remove_extension(core_path);
-
-                  last = (char*)strrchr(core_path, '_');
-
-                  if (!string_is_empty(last))
+                  if (settings)
                   {
-                     if (string_is_not_equal_fast(last, "_libretro", 9))
-                        *last = '\0';
+                     char display_name[255];
+                     char core_path[PATH_MAX_LENGTH];
+                     char *last                         = NULL;
+
+                     display_name[0] = core_path[0]     = '\0';
+
+                     fill_pathname_join_noext(
+                           core_path,
+                           settings->paths.path_libretro_info,
+                           core_pathname,
+                           sizeof(core_path));
+                     path_remove_extension(core_path);
+
+                     last = (char*)strrchr(core_path, '_');
+
+                     if (!string_is_empty(last))
+                     {
+                        if (string_is_not_equal_fast(last, "_libretro", 9))
+                           *last = '\0';
+                     }
+
+                     strlcat(core_path,
+                           file_path_str(FILE_PATH_CORE_INFO_EXTENSION),
+                           sizeof(core_path));
+
+                     if (
+                              filestream_exists(core_path)
+                           && core_info_get_display_name(
+                              core_path, display_name, sizeof(display_name)))
+                        file_list_set_alt_at_offset(list, j, display_name);
                   }
-
-                  strlcat(core_path,
-                        file_path_str(FILE_PATH_CORE_INFO_EXTENSION),
-                        sizeof(core_path));
-
-                  if (
-                           filestream_exists(core_path)
-                        && core_info_get_display_name(
-                           core_path, display_name, sizeof(display_name)))
-                     file_list_set_alt_at_offset(list, j, display_name);
                }
-            }
-            break;
-         default:
-         case FILE_TYPE_NONE:
-            break;
+               break;
+            case FILE_TYPE_NONE:
+            default:
+               break;
+         }
+
+         j++;
+
+         /* advance past the link we parsed and keep looking for more */
+         if (len > 0)
+         {
+            line_start += len;
+            free(link);
+            free(name);
+            link = NULL;
+            name = NULL;
+         }
+      }
+next:
+      if (link)
+         free(link);
+      if (name)
+         free(name);
+
+      /* The end of the buffer, we're done */
+      if (end)
+         break;
+
+      if (!newline && *(buf + i) == '\0')
+      {
+         end = true;
       }
 
-      j++;
-
-      string_list_free(str_list);
-
-      /* Restore the saved char */
-      *(buf + i + 1) = c;
-      line_start     = buf + i + 1;
+      if (newline && !end)
+      {
+         /* Restore the saved char */
+         *(buf + i + 1) = c;
+         line_start     = buf + i + 1;
+      }
    }
 
    if (append)
       file_list_sort_on_alt(list);
-   /* If the buffer was completely full, and didn't end
-    * with a newline, just ignore the partial last line. */
 }
 
 void cb_net_generic_subdir(void *task_data, void *user_data, const char *err)
@@ -188,18 +241,21 @@ void cb_net_generic_subdir(void *task_data, void *user_data, const char *err)
    char subdir_path[PATH_MAX_LENGTH];
    http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
    menu_file_transfer_t *state       = (menu_file_transfer_t*)user_data;
+   size_t buf_size;
 
    subdir_path[0] = '\0';
 
-   if (!data || err)
+   if (!data || data->len == 0 || err)
       goto finish;
 
+   buf_size = MIN(sizeof(subdir_path), data->len * sizeof(char));
+
    if (!string_is_empty(data->data))
-      memcpy(subdir_path, data->data, data->len * sizeof(char));
-   subdir_path[data->len] = '\0';
+      memcpy(subdir_path, data->data, buf_size - 1);
+   subdir_path[buf_size - 1] = '\0';
 
 finish:
-   if (!err && !strstr(subdir_path, file_path_str(FILE_PATH_INDEX_DIRS_URL)))
+   if (!err && !strstr(subdir_path, ".index-dirs"))
    {
       char parent_dir[PATH_MAX_LENGTH];
 
@@ -261,7 +317,19 @@ finish:
       free(data);
    }
 
-   if (!err && !strstr(state->path, file_path_str(FILE_PATH_INDEX_DIRS_URL)))
+   if (!err)
+   {
+      char *parent_dir                 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+
+      parent_dir[0] = '\0';
+
+      fill_pathname_parent_dir(parent_dir,
+            state->path, PATH_MAX_LENGTH * sizeof(char));
+   }
+
+   /* no need to make a second request */
+#if 0
+   if (!err && !strstr(state->path, ".index-dirs"))
    {
       char *parent_dir                 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
       menu_file_transfer_t *transf     = NULL;
@@ -270,9 +338,9 @@ finish:
 
       fill_pathname_parent_dir(parent_dir,
             state->path, PATH_MAX_LENGTH * sizeof(char));
-      strlcat(parent_dir,
-            file_path_str(FILE_PATH_INDEX_DIRS_URL),
-            PATH_MAX_LENGTH * sizeof(char));
+      /*strlcat(parent_dir,
+            ".index-dirs",
+            PATH_MAX_LENGTH * sizeof(char));*/
 
       transf           = (menu_file_transfer_t*)malloc(sizeof(*transf));
 
@@ -284,6 +352,7 @@ finish:
 
       free(parent_dir);
    }
+#endif
 
    if (state)
       free(state);

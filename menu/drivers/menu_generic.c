@@ -147,6 +147,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
             {
                unsigned type = 0;
                enum msg_hash_enums enum_idx = MSG_UNKNOWN;
+
                menu_entries_get_at_offset(selection_buf, selection,
                      NULL, NULL, &type, NULL, NULL);
 

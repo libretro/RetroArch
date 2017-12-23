@@ -21,6 +21,7 @@
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <lists/string_list.h>
+#include <net/net_http.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -2490,15 +2491,15 @@ static int generic_action_ok_network(const char *path,
 
          fill_pathname_join(url_path,
                settings->paths.network_buildbot_assets_url,
-               "cores/.index-dirs", sizeof(url_path));
+               "cores/", sizeof(url_path));
          url_label = msg_hash_to_str(enum_idx);
          type_id2  = ACTION_OK_DL_CORE_CONTENT_DIRS_LIST;
          callback  = cb_net_generic;
          suppress_msg = true;
          break;
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_LIST:
-         fill_pathname_join(url_path, path,
-               file_path_str(FILE_PATH_INDEX_URL), sizeof(url_path));
+         strlcpy(url_path, path,
+               sizeof(url_path));
          url_label = msg_hash_to_str(enum_idx);
          type_id2  = ACTION_OK_DL_CORE_CONTENT_LIST;
          callback  = cb_net_generic;
@@ -2509,8 +2510,8 @@ static int generic_action_ok_network(const char *path,
          if (string_is_empty(settings->paths.network_buildbot_url))
             return menu_cbs_exit();
 
-         fill_pathname_join(url_path, settings->paths.network_buildbot_url,
-               file_path_str(FILE_PATH_INDEX_EXTENDED_URL), sizeof(url_path));
+         strlcpy(url_path, settings->paths.network_buildbot_url,
+               sizeof(url_path));
          url_label = msg_hash_to_str(enum_idx);
          type_id2  = ACTION_OK_DL_CORE_UPDATER_LIST;
          callback  = cb_net_generic;
@@ -2518,7 +2519,7 @@ static int generic_action_ok_network(const char *path,
       case MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_LIST:
          fill_pathname_join(url_path,
                file_path_str(FILE_PATH_CORE_THUMBNAILS_URL),
-               file_path_str(FILE_PATH_INDEX_URL), sizeof(url_path));
+               "/", sizeof(url_path));
          url_label = msg_hash_to_str(enum_idx);
          type_id2  = ACTION_OK_DL_THUMBNAILS_UPDATER_LIST;
          callback  = cb_net_generic;
@@ -2529,8 +2530,7 @@ static int generic_action_ok_network(const char *path,
          fill_pathname_join(url_path,
                file_path_str(FILE_PATH_LAKKA_URL),
                lakka_get_project(), sizeof(url_path));
-         fill_pathname_join(url_path, url_path,
-               file_path_str(FILE_PATH_INDEX_URL),
+         strlcpy(url_path, url_path,
                sizeof(url_path));
          url_label = msg_hash_to_str(enum_idx);
          type_id2  = ACTION_OK_DL_LAKKA_LIST;

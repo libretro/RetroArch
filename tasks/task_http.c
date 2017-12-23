@@ -249,6 +249,8 @@ static void* task_push_http_transfer_generic(
    char tmp[255];
    retro_task_t  *t               = NULL;
    http_handle_t *http            = NULL;
+   const char *url_base;
+   char *url_decoded;
 
    if (string_is_empty(url))
       return NULL;
@@ -295,8 +297,21 @@ static void* task_push_http_transfer_generic(
    t->user_data            = user_data;
    t->progress             = -1;
 
-   snprintf(tmp, sizeof(tmp), "%s '%s'",
-         msg_hash_to_str(MSG_DOWNLOADING), path_basename(url));
+   url_base = path_basename(url);
+
+   if (!string_is_empty(url_base))
+   {
+      url_decoded = strdup(url_base);
+      net_http_urldecode(url_decoded);
+
+      snprintf(tmp, sizeof(tmp), "%s '%s'",
+            msg_hash_to_str(MSG_DOWNLOADING), url_decoded);
+
+      free(url_decoded);
+   }
+   else
+      snprintf(tmp, sizeof(tmp), "%s",
+            msg_hash_to_str(MSG_DOWNLOADING));
 
    t->title                = strdup(tmp);
 

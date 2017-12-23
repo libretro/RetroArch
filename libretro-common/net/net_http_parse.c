@@ -22,45 +22,63 @@
 
 #include <stdio.h>
 #include <compat/strcasestr.h>
+#include <boolean.h>
 
 /**
  * string_parse_html_anchor:
  * @line               : Buffer where the <a> tag is stored
  * @link               : Buffer to store the link URL in
- * @name               : Buffer to store the link URL in
- * @link_size          : Size of the link buffer including the NUL-terminator
- * @name_size          : Size of the name buffer including the NUL-terminator
+ * @name               : Buffer to store the filename in
+ * @link_size          : Size of the link buffer including the NULL terminator
+ * @name_size          : Size of the name buffer including the NULL terminator
  *
  * Parses an HTML anchor link stored in @line in the form of: <a href="/path/to/url">Title</a>
  * The buffer pointed to by @link is filled with the URL path the link points to,
  * and @name is filled with the title portion of the link.
  *
- * Returns: 0 if URL was parsed completely, otherwise 1.
+ * Returns: The number of characters scanned if the URL was parsed completely, otherwise -1 if there was an error.
  **/
 int string_parse_html_anchor(const char *line, char *link, char *name,
       size_t link_size, size_t name_size)
 {
+   const char *line_pos;
+   const char *line_orig = line;
+   bool single_quote = false;
+   int len = 0;
+
    if (!line || !link || !name)
-      return 1;
+      return -1;
 
    memset(link, 0, link_size);
    memset(name, 0, name_size);
 
-   line = strcasestr(line, "<a href=\"");
+   line_pos = strcasestr(line, "<a href=\"");
 
-   if (!line)
-      return 1;
+   if (!line_pos)
+   {
+      line_pos = strcasestr(line, "<a href=\'");
 
-   line += 9;
+      if (!line_pos)
+         return -1;
+
+      single_quote = true;
+   }
+
+   line = line_pos + 9;
 
    if (line && *line)
    {
       if (!*link)
       {
-         const char *end = strstr(line, "\"");
+         const char *end;
+
+         if (single_quote)
+            end = strstr(line, "\'");
+         else
+            end = strstr(line, "\"");
 
          if (!end)
-            return 1;
+            return -1;
 
          memcpy(link, line, end - line);
 
@@ -70,19 +88,28 @@ int string_parse_html_anchor(const char *line, char *link, char *name,
 
       if (!*name)
       {
-         const char *start = strstr(line, "\">");
-         const char *end   = start ? strstr(start, "</a>") : NULL;
+         const char *start;
+         const char *end;
+
+         if (single_quote)
+            start = strstr(line, "\'>");
+         else
+            start = strstr(line, "\">");
+
+         end = start ? strstr(start, "</a>") : NULL;
 
          if (!start || !end)
-            return 1;
+            return -1;
 
          memcpy(name, start + 2, end - start - 2);
 
          *(name + (end - start - 2)) = '\0';
+
+         len = (end + 4) - line_orig;
       }
    }
 
-   return 0;
+   return len;
 }
 
 #ifndef RARCH_INTERNAL
