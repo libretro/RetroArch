@@ -1947,8 +1947,9 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
          case 31: /* Database entry */
             BIND_ACTION_GET_VALUE(cbs, menu_action_setting_disp_set_label_db_entry);
             break;
-         case 25: /* URL directory entries */
-         case 26: /* URL entries */
+         case FILE_TYPE_DOWNLOAD_URL: /* URL directory entries */
+         case FILE_TYPE_DOWNLOAD_CORE_CONTENT: /* URL entries */
+         case FILE_TYPE_DOWNLOAD_THUMBNAIL_CONTENT:
             BIND_ACTION_GET_VALUE(cbs, menu_action_setting_disp_set_label_entry_url);
             break;
          case MENU_SETTING_NO_ITEM:

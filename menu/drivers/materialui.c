@@ -2351,7 +2351,7 @@ static void mui_list_insert(void *userdata,
             node->texture_switch2_index = MUI_TEXTURE_DATABASE;
             node->texture_switch2_set   = true;
             break;
-         case 32: /* TODO: Need to find out what this is */
+         case FILE_TYPE_RPL_ENTRY:
          case FILE_TYPE_RDB_ENTRY:
             node->texture_switch2_index = MUI_TEXTURE_SETTINGS;
             node->texture_switch2_set   = true;

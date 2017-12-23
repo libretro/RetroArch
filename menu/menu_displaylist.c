@@ -3013,13 +3013,11 @@ static int menu_displaylist_parse_options(
          MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST,
          MENU_SETTING_ACTION, 0, 0);
 
-#ifdef HAVE_NETWORKING
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT),
          msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS),
          MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS,
          MENU_SETTING_ACTION, 0, 0);
-#endif
 
    if (settings->bools.menu_show_core_updater)
       menu_entries_append_enum(info->list,
@@ -4244,8 +4242,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_CORE_CONTENT:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 #ifdef HAVE_NETWORKING
-         print_buf_lines(info->list, core_buf, "",
-               (int)core_len, FILE_TYPE_DOWNLOAD_CORE_CONTENT, true, false);
+         parse_index_lines(info->list, NULL, "",
+               FILE_TYPE_DOWNLOAD_CORE_CONTENT, true, false);
          info->need_push    = true;
          info->need_refresh = true;
          info->need_clear   = true;
@@ -4261,10 +4259,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
             if (str_list->elems[0].data)
                strlcpy(new_label, str_list->elems[0].data, sizeof(new_label));
-            if (str_list->elems[1].data)
-               strlcpy(core_buf, str_list->elems[1].data, core_len);
-            print_buf_lines(info->list, core_buf, new_label,
-                  (int)core_len, FILE_TYPE_DOWNLOAD_URL, false, false);
+            parse_index_lines(info->list, str_list->elems[1].data, new_label,
+                  FILE_TYPE_DOWNLOAD_URL, false, false);
             info->need_push    = true;
             info->need_refresh = true;
             info->need_clear   = true;
@@ -4283,9 +4279,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
             fill_pathname_join(new_label,
                   settings->paths.network_buildbot_assets_url,
-                  "cores", sizeof(new_label));
-            print_buf_lines(info->list, core_buf, new_label,
-                  (int)core_len, FILE_TYPE_DOWNLOAD_URL, true, false);
+                  "cores/", sizeof(new_label));
+            parse_index_lines(info->list, NULL, new_label,
+                  FILE_TYPE_DOWNLOAD_URL, true, false);
             info->need_push    = true;
             info->need_refresh = true;
             info->need_clear   = true;
@@ -4295,8 +4291,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_CORES_UPDATER:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 #ifdef HAVE_NETWORKING
-         print_buf_lines(info->list, core_buf, "",
-               (int)core_len, FILE_TYPE_DOWNLOAD_CORE, true, true);
+         parse_index_lines(info->list, NULL, "",
+               FILE_TYPE_DOWNLOAD_CORE, true, true);
          info->need_push    = true;
          info->need_refresh = true;
          info->need_clear   = true;
@@ -4305,8 +4301,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_THUMBNAILS_UPDATER:
 #ifdef HAVE_NETWORKING
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         print_buf_lines(info->list, core_buf, "",
-               (int)core_len, FILE_TYPE_DOWNLOAD_THUMBNAIL_CONTENT,
+         parse_index_lines(info->list, NULL, "",
+               FILE_TYPE_DOWNLOAD_THUMBNAIL_CONTENT,
                true, false);
          info->need_push    = true;
          info->need_refresh = true;
@@ -4316,8 +4312,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_LAKKA:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 #ifdef HAVE_NETWORKING
-         print_buf_lines(info->list, core_buf, "",
-               (int)core_len, FILE_TYPE_DOWNLOAD_LAKKA,
+         parse_index_lines(info->list, NULL, "",
+               FILE_TYPE_DOWNLOAD_LAKKA,
                true, false);
          info->need_push    = true;
          info->need_refresh = true;

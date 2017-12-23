@@ -70,6 +70,13 @@ void net_http_delete(struct http_t *state);
 
 void net_http_urlencode_full(char **dest, const char *source);
 
+/* Use the same pointer for both src/dst */
+int net_http_urldecode_inplace(char *dst, char *src);
+#define net_http_urldecode(url) net_http_urldecode_inplace(url, url)
+
+/* Fills a string with a URL and optional path part. Ensures any absolute paths given will replace an existing relative path in the original URL. Returns the length of the created string, or -1 if there was an error. */
+int net_http_create_url(char *dst, const char *url, const char *path, size_t dst_size);
+
 RETRO_END_DECLS
 
 #endif

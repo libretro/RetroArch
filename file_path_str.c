@@ -146,15 +146,6 @@ const char *file_path_str(enum file_path_enum enum_idx)
       case FILE_PATH_7Z_EXTENSION:
          str = ".7z";
          break;
-      case FILE_PATH_INDEX_URL:
-         str = ".index";
-         break;
-      case FILE_PATH_INDEX_DIRS_URL:
-         str = ".index-dirs";
-         break;
-      case FILE_PATH_INDEX_EXTENDED_URL:
-         str = ".index-extended";
-         break;
       case FILE_PATH_NETPLAY_ROOM_LIST_URL:
          str = "registry.lpl";
          break;
