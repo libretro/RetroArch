@@ -24,6 +24,7 @@
 #include <file/file_path.h>
 #include <compat/strl.h>
 #include <streams/file_stream.h>
+#include <net/net_http.h>
 #include <string/stdstring.h>
 
 #ifdef HAVE_NETWORKING
@@ -357,4 +358,27 @@ finish:
    if (state)
       free(state);
 #endif
+}
+
+void menu_networking_push_http_request(
+      bool suppress_msg,
+      const char *str,
+      const char *enum_str,
+      const char *path,
+      enum msg_hash_enums enum_idx,
+      retro_task_callback_t cb
+      )
+{
+   menu_file_transfer_t *transf = (menu_file_transfer_t*)
+      calloc(1, sizeof(*transf));
+
+   if (!transf)
+      return;
+
+   transf->enum_idx = enum_idx;
+
+   if (!string_is_empty(path))
+      strlcpy(transf->path, path, sizeof(transf->path));
+
+   task_push_http_transfer(str, suppress_msg, enum_str, cb, transf);
 }
