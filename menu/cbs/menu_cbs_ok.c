@@ -54,6 +54,7 @@
 #ifdef HAVE_NETWORKING
 #include "../../network/netplay/netplay.h"
 #include "../../network/netplay/netplay_discovery.h"
+#include <net/net_http.h>
 #endif
 
 enum
@@ -2754,6 +2755,7 @@ static int action_ok_download_generic(const char *path,
    char s3[PATH_MAX_LENGTH];
    settings_t *settings         = config_get_ptr();
    bool suppress_msg            = false;
+   bool append                  = true;
    retro_task_callback_t cb     = cb_generic_download;
 
    s[0] = s3[0] = '\0';
@@ -2815,12 +2817,17 @@ static int action_ok_download_generic(const char *path,
       case MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD:
          strlcpy(s, file_path_str(FILE_PATH_CORE_THUMBNAILS_URL), sizeof(s));
          break;
+      case MENU_ENUM_LABEL_CB_CORE_UPDATER_DOWNLOAD:
+         append = false;
+         net_http_create_url(s3, settings->paths.network_buildbot_url, path, sizeof(s3));
+         break;
       default:
          strlcpy(s, settings->paths.network_buildbot_url, sizeof(s));
          break;
    }
 
-   fill_pathname_join(s3, s, path, sizeof(s3));
+   if (append)
+      fill_pathname_join(s3, s, path, sizeof(s3));
 
    menu_networking_push_http_request(suppress_msg,
          s3, msg_hash_to_str(enum_idx), path,
