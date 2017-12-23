@@ -167,7 +167,7 @@ void parse_index_lines(file_list_t *list, char *buf,
                      fill_pathname_join_noext(
                            core_path,
                            settings->paths.path_libretro_info,
-                           core_pathname,
+                           path_basename(core_pathname),
                            sizeof(core_path));
                      path_remove_extension(core_path);
 
