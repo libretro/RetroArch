@@ -23,7 +23,19 @@
 
 #include <lists/file_list.h>
 
+#include "../msg_hash.h"
+#include "../tasks/tasks_internal.h"
+
 RETRO_BEGIN_DECLS
+
+void menu_networking_push_http_request(
+      bool suppress_msg,
+      const char *str,
+      const char *enum_str,
+      const char *path,
+      enum msg_hash_enums enum_idx,
+      retro_task_callback_t cb
+      );
 
 void parse_index_lines(file_list_t *list, char *buf,
       const char *label, enum msg_file_type type, bool append, bool extended);

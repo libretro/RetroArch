@@ -21,7 +21,6 @@
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <lists/string_list.h>
-#include <net/net_http.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -2474,7 +2473,6 @@ static int generic_action_ok_network(const char *path,
    char url_path[PATH_MAX_LENGTH];
    settings_t *settings           = config_get_ptr();
    unsigned type_id2              = 0;
-   menu_file_transfer_t *transf   = NULL;
    const char *url_label          = NULL;
    retro_task_callback_t callback = NULL;
    bool refresh                   = true;
@@ -2545,10 +2543,13 @@ static int generic_action_ok_network(const char *path,
 
    generic_action_ok_command(CMD_EVENT_NETWORK_INIT);
 
-   transf           = (menu_file_transfer_t*)calloc(1, sizeof(*transf));
-   strlcpy(transf->path, url_path, sizeof(transf->path));
-
-   task_push_http_transfer(url_path, suppress_msg, url_label, callback, transf);
+   menu_networking_push_http_request(
+         suppress_msg,
+         url_path,
+         url_label,
+         url_path,
+         MSG_UNKNOWN,
+         callback);
 
    return generic_action_ok_displaylist_push(path, NULL,
          label, type, idx, entry_idx, type_id2);
@@ -2751,7 +2752,6 @@ static int action_ok_download_generic(const char *path,
 #ifdef HAVE_NETWORKING
    char s[PATH_MAX_LENGTH];
    char s3[PATH_MAX_LENGTH];
-   menu_file_transfer_t *transf = NULL;
    settings_t *settings         = config_get_ptr();
    bool suppress_msg            = false;
    retro_task_callback_t cb     = cb_generic_download;
@@ -2822,11 +2822,9 @@ static int action_ok_download_generic(const char *path,
 
    fill_pathname_join(s3, s, path, sizeof(s3));
 
-   transf           = (menu_file_transfer_t*)calloc(1, sizeof(*transf));
-   transf->enum_idx = enum_idx;
-   strlcpy(transf->path, path, sizeof(transf->path));
-
-   task_push_http_transfer(s3, suppress_msg, msg_hash_to_str(enum_idx), cb, transf);
+   menu_networking_push_http_request(suppress_msg,
+         s3, msg_hash_to_str(enum_idx), path,
+         enum_idx, cb);
 #endif
    return 0;
 }
@@ -3515,7 +3513,12 @@ static int action_ok_push_netplay_refresh_rooms(const char *path,
 #ifndef RARCH_CONSOLE
    task_push_netplay_lan_scan(netplay_lan_scan_callback);
 #endif
-   task_push_http_transfer(url, true, NULL, netplay_refresh_rooms_cb, NULL);
+   menu_networking_push_http_request(true,
+         url,
+         NULL,
+         NULL,
+         MSG_UNKNOWN,
+         netplay_refresh_rooms_cb);
    return 0;
 }
 #endif
