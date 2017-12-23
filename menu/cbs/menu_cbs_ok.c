@@ -21,6 +21,7 @@
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <lists/string_list.h>
+#include <net/net_http.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
