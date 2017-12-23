@@ -27,6 +27,18 @@ STRIP			= $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-strip.exe
 INCFLAGS    = -I. -Idefines -Ilibretro-common/include -Ideps/libz
 DEFINES     = -D__CELLOS_LV2__ -DIS_SALAMANDER -DRARCH_CONSOLE -DHAVE_SYSUTILS -DHAVE_SYSMODULES -DHAVE_RARCH_EXEC
 
+ifeq ($(DEX_BUILD), 1)
+DEFINES += -DDEX_BUILD
+endif
+
+ifeq ($(CEX_BUILD), 1)
+DEFINES += -DCEX_BUILD
+endif
+
+ifeq ($(ODE_BUILD), 1)
+DEFINES += -DODE_BUILD
+endif
+
 PPU_CFLAGS	:= $(PPU_OPTIMIZE_LV) $(INCFLAGS) $(DEFINES)
 PPU_CXXFLAGS := $(PPU_OPTIMIZE_LV) $(INCFLAGS) $(DEFINES)
 
