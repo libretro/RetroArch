@@ -101,6 +101,18 @@ ifeq ($(ODE_BUILD), 1)
 DEFINES += -DODE_BUILD
 endif
 
+ifeq ($(DEX_BUILD), 1)
+DEFINES += -DDEX_BUILD
+endif
+
+ifeq ($(CEX_BUILD), 1)
+DEFINES += -DCEX_BUILD
+endif
+
+ifeq ($(ODE_BUILD), 1)
+DEFINES += -DODE_BUILD
+endif
+
 ifeq ($(HAVE_GCMGL), 1)
 DEFINES			+= -DHAVE_GCMGL
 GL_LIBS			:= -L. -lrgl_ps3
