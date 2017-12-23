@@ -2819,7 +2819,8 @@ static int action_ok_download_generic(const char *path,
          path = file_path_str(FILE_PATH_SHADERS_CG_ZIP);
          break;
       case MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD:
-         strlcpy(s, file_path_str(FILE_PATH_CORE_THUMBNAILS_URL), sizeof(s));
+         append = false;
+         net_http_create_url(s3, file_path_str(FILE_PATH_CORE_THUMBNAILS_URL), path, sizeof(s3));
          break;
       case MENU_ENUM_LABEL_CB_CORE_UPDATER_DOWNLOAD:
          append = false;
