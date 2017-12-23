@@ -2828,10 +2828,6 @@ static int action_ok_download_generic(const char *path,
          path = path_basename(path);
          net_http_create_url(s3, settings->paths.network_buildbot_url, path, sizeof(s3));
          break;
-      case MENU_ENUM_LABEL_CB_CORE_UPDATER_DOWNLOAD:
-         append = false;
-         net_http_create_url(s3, settings->paths.network_buildbot_url, path, sizeof(s3));
-         break;
       default:
          strlcpy(s, settings->paths.network_buildbot_url, sizeof(s));
          break;
