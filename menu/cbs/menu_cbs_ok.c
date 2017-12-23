@@ -2768,9 +2768,9 @@ static int action_ok_download_generic(const char *path,
    {
       case MENU_ENUM_LABEL_CB_DOWNLOAD_URL:
          suppress_msg = true;
-         fill_pathname_join(s, label,
-               path, sizeof(s));
-         path = s;
+         append = false;
+         net_http_create_url(s3, label, path, sizeof(s3));
+         path = path_basename(path);
          cb = cb_generic_dir_download;
          break;
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD:
