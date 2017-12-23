@@ -41,6 +41,8 @@
 #include "../msg_hash.h"
 #include "../tasks/tasks_internal.h"
 
+static char http_buf[PATH_MAX_LENGTH]   = {0};
+
 static char *core_buf                   = NULL;
 static size_t core_len                  = 0;
 
@@ -379,6 +381,8 @@ void menu_networking_push_http_request(
 
    if (!string_is_empty(path))
       strlcpy(transf->path, path, sizeof(transf->path));
+
+   strlcpy(http_buf, str, sizeof(http_buf));
 
    task_push_http_transfer(str, suppress_msg, enum_str, cb, transf);
 }
