@@ -2488,7 +2488,7 @@ static int generic_action_ok_network(const char *path,
          if (string_is_empty(settings->paths.network_buildbot_assets_url))
             return menu_cbs_exit();
 
-         fill_pathname_join(url_path,
+         net_http_create_url(url_path,
                settings->paths.network_buildbot_assets_url,
                "cores/", sizeof(url_path));
          url_label = msg_hash_to_str(enum_idx);
@@ -2516,7 +2516,7 @@ static int generic_action_ok_network(const char *path,
          callback  = cb_net_generic;
          break;
       case MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_LIST:
-         fill_pathname_join(url_path,
+         net_http_create_url(url_path,
                file_path_str(FILE_PATH_CORE_THUMBNAILS_URL),
                "/", sizeof(url_path));
          url_label = msg_hash_to_str(enum_idx);
