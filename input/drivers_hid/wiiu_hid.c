@@ -356,10 +356,57 @@ void wiiu_start_read_loop(wiiu_adapter_t *adapter)
   HIDRead(adapter->handle, adapter->rx_buffer, adapter->rx_size, wiiu_hid_read_loop_callback, adapter);
 }
 
+/**
+ * Takes a buffer and formats it for the log file, 16 bytes per line.
+ *
+ * When the end of the buffer is reached, it is padded out with 0xff. So e.g.
+ * a 5-byte buffer might look like:
+ *
+ * 5 bytes read fro HIDRead:
+ * 0102030405ffffff  ffffffffffffffff
+ * ==================================
+ */
+static void log_buffer(uint8_t *data, uint32_t len) {
+(uint8_t *)data;
+(uint32_t)len;
+
+  int i, o;
+  int padding = len % 16;
+  uint8_t buf[16];
+
+  RARCH_LOG("%d bytes read from HIDRead:\n", len);
+  for(i = 0, o = 0; i < len; i++) {
+    buf[o] = data[i];
+    o++;
+    if(o == 16) {
+      o = 0;
+      RARCH_LOG("%02x%02x%02x%02x%02x%02x%02x%02x  %02x%02x%02x%02x%02x%02x%02x%02x\n",
+      buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7],
+      buf[8], buf[9], buf[10], buf[11], buf[12],  buf[13], buf[14], buf[15]);
+    }
+  }
+  if(padding) {
+    for(i = padding; i < 16; i++)
+      buf[i] = 0xff;
+
+    RARCH_LOG("%02x%02x%02x%02x%02x%02x%02x%02x  %02x%02x%02x%02x%02x%02x%02x%02x\n",
+    buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7],
+    buf[8], buf[9], buf[10], buf[11], buf[12],  buf[13], buf[14], buf[15]);
+  }
+  RARCH_LOG("==================================\n");
+
+}
+
+static void wiiu_hid_do_read(wiiu_adapter_t *adapter, uint8_t *data, uint32_t length)
+{
+  log_buffer(data, length);
+ // do_sampling()
+ // do other stuff?
+}
+
 static void wiiu_hid_read_loop_callback(uint32_t handle, int32_t error,
               uint8_t *buffer, uint32_t buffer_size, void *userdata)
 {
-  uint32_t coreId = OSGetCoreId();
   wiiu_adapter_t *adapter = (wiiu_adapter_t *)userdata;
   if(!adapter)
   {
@@ -367,35 +414,50 @@ static void wiiu_hid_read_loop_callback(uint32_t handle, int32_t error,
     return;
   }
 
-  RARCH_LOG("read_loop_callback running on core %d\n", coreId);
-  usleep(5000);
-  if(!adapter->hid->polling_thread_quit) {
-    adapter->state = ADAPTER_STATE_READING;
-    HIDRead(adapter->handle, adapter->rx_buffer, adapter->rx_size,
-      wiiu_hid_read_loop_callback, adapter);
+  if(adapter->hid->polling_thread_quit) {
+    RARCH_LOG("Shutting down read loop for slot %d\n", adapter->slot);
+    adapter->state = ADAPTER_STATE_DONE;
     return;
   }
 
-  adapter->state = ADAPTER_STATE_DONE;
+  wiiu_hid_do_read(adapter, buffer, buffer_size);
+
+  adapter->state = ADAPTER_STATE_READING;
+  HIDRead(adapter->handle, adapter->rx_buffer, adapter->rx_size,
+      wiiu_hid_read_loop_callback, adapter);
 }
 
 /**
  * Block until all the HIDRead() calls have returned.
  */
 static void wiiu_hid_polling_thread_cleanup(OSThread *thread, void *stack) {
-  int not_done = 0;
+  int incomplete = 0;
   wiiu_adapter_t *adapter;
+  RARCH_LOG("Waiting for in-flight reads to finish.\n");
   do {
     OSFastMutex_Lock(&(adapters.lock));
-    not_done = 0;
+    incomplete = 0;
     for(adapter = adapters.list; adapter != NULL; adapter = adapter->next) {
       if(adapter->state != ADAPTER_STATE_DONE) {
-        not_done++;
+        incomplete++;
+      }
+    }
+    // We are clear for shutdown. Clean up the list while we are holding
+    // the lock.
+    if(incomplete == 0) {
+      while(adapters.list != NULL) {
+        adapter = adapters.list;
+        adapters.list = adapter->next;
+        delete_adapter(adapter);
       }
     }
     OSFastMutex_Unlock(&(adapters.lock));
-    usleep(1000);
-  } while(not_done);
+    if(incomplete) {
+      RARCH_LOG("%d unfinished adapters found, waiting 1ms\n", incomplete);
+      usleep(1000);
+    }
+  } while(incomplete);
+  RARCH_LOG("All in-flight reads complete.\n");
 }
 
 static void wiiu_handle_attach_events(wiiu_hid_t *hid, wiiu_attach_event *list) {

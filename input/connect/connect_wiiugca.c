@@ -70,13 +70,13 @@ static void hidpad_wiiugca_deinit(void *data)
 
 static void hidpad_wiiugca_get_buttons(void *data, retro_bits_t *state)
 {
-	struct hidpad_wiiugca_data *device = (struct hidpad_wiiugca_data*)data;
-	if (device)
-   {
-		BITS_COPY16_PTR(state, device->buttons);
-	}
-   else
-		BIT256_CLEAR_ALL_PTR(state);
+  struct hidpad_wiiugca_data *device = (struct hidpad_wiiugca_data*)data;
+  if (device)
+  {
+    BITS_COPY16_PTR(state, device->buttons);
+  }
+  else
+    BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t hidpad_wiiugca_get_axis(void *data, unsigned axis)
@@ -134,16 +134,16 @@ static void hidpad_wiiugca_packet_handler(void *data, uint8_t *packet, uint16_t 
 static void hidpad_wiiugca_set_rumble(void *data,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-	(void)data;
-	(void)effect;
-   (void)strength;
+  (void)data;
+  (void)effect;
+  (void)strength;
 }
 
 const char * hidpad_wiiugca_get_name(void *data)
 {
-	(void)data;
-	/* For now we return a single static name */
-	return "Wii U GC Controller Adapter";
+  (void)data;
+  /* For now we return a single static name */
+  return "Wii U GC Controller Adapter";
 }
 
 pad_connection_interface_t pad_connection_wiiugca = {
