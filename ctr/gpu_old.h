@@ -235,3 +235,6 @@ void GPU_DrawElements(GPU_Primitive_t primitive, u32* indexArray, u32 n) DEPRECA
  * @deprecated
  */
 void GPU_FinishDrawing() DEPRECATED;
+
+/// Finalizes the GPU command buffer.
+void GPUCMD_Finalize(void) DEPRECATED;
