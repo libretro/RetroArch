@@ -43,6 +43,7 @@
 - WINDOWS/XINPUT: Fix crash that occurs in some situations with Steam running and a Steam Controller plugged in.
 - WINDOWS: Improve version reporting under System Information.
 - WINDOWS: Support window transparency.
+- WINDOWS: Correct usage of GetWindowPlacement per MS docs, fixes game window position on Win95/98.
 
 # 1.6.9
 - COMMON: Small memory leak.

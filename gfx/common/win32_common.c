@@ -86,8 +86,8 @@ bool g_restore_desktop              = false;
 static bool doubleclick_on_titlebar = false;
 bool g_inited                       = false;
 static bool g_quit                  = false;
-static unsigned g_pos_x             = CW_USEDEFAULT;
-static unsigned g_pos_y             = CW_USEDEFAULT;
+static int g_pos_x                  = CW_USEDEFAULT;
+static int g_pos_y                  = CW_USEDEFAULT;
 static void *curD3D                 = NULL;
 
 ui_window_win32_t main_window;
@@ -513,7 +513,11 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
       case WM_QUIT:
          {
             WINDOWPLACEMENT placement;
+            memset(&placement, 0, sizeof(placement));
+            placement.length = sizeof(placement);
+
             GetWindowPlacement(main_window.hwnd, &placement);
+
             g_pos_x = placement.rcNormalPosition.left;
             g_pos_y = placement.rcNormalPosition.top;
             g_quit  = true;
