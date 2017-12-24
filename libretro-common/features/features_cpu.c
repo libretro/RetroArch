@@ -79,6 +79,11 @@
 #include <wiiu/os/time.h>
 #endif
 
+#ifdef SWITCH
+#include <libtransistor/types.h>
+#include <libtransistor/svc.h>
+#endif
+
 #if defined(_3DS)
 #include <3ds/svc.h>
 #include <3ds/os.h>
@@ -230,6 +235,8 @@ retro_time_t cpu_features_get_time_usec(void)
    return sceKernelGetProcessTimeWide();
 #elif defined(WIIU)
    return ticks_to_us(OSGetSystemTime());
+#elif defined(SWITCH)
+   return (svcGetSystemTick() * 10) / 192;
 #else
 #error "Your platform does not have a timer function implemented in cpu_features_get_time_usec(). Cannot continue."
 #endif

@@ -71,6 +71,9 @@ static const input_driver_t *input_drivers[] = {
 #if defined(_3DS)
    &input_ctr,
 #endif
+#if defined(SWITCH)
+   &input_switch,
+#endif
 #if defined(HAVE_SDL) || defined(HAVE_SDL2)
    &input_sdl,
 #endif
@@ -142,6 +145,9 @@ static input_device_driver_t *joypad_drivers[] = {
 #endif
 #ifdef _3DS
    &ctr_joypad,
+#endif
+#ifdef SWITCH
+   &switch_joypad,
 #endif
 #ifdef HAVE_DINPUT
    &dinput_joypad,

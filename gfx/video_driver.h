@@ -1339,6 +1339,7 @@ extern video_driver_t video_vulkan;
 extern video_driver_t video_psp1;
 extern video_driver_t video_vita2d;
 extern video_driver_t video_ctr;
+extern video_driver_t video_switch;
 extern video_driver_t video_d3d;
 extern video_driver_t video_gx;
 extern video_driver_t video_wiiu;

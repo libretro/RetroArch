@@ -870,6 +870,12 @@ ifeq ($(TARGET), retroarch_3ds)
 			 input/drivers_joypad/ctr_joypad.o
 endif
 
+ifeq ($(TARGET), retroarch_switch)
+	OBJ += gfx/drivers/switch_gfx.o \
+			input/drivers/switch_input.o \
+                        input/drivers_joypad/switch_joypad.o
+endif
+
 ifeq ($(HAVE_WAYLAND), 1)
  OBJ += gfx/drivers_context/wayland_ctx.o \
 		  input/drivers/wayland_input.o

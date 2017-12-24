@@ -130,6 +130,7 @@ enum video_driver_enum
    VIDEO_PSP1,
    VIDEO_VITA2D,
    VIDEO_CTR,
+   VIDEO_SWITCH,
    VIDEO_D3D9,
    VIDEO_VG,
    VIDEO_OMAP,
@@ -190,6 +191,7 @@ enum input_driver_enum
    INPUT_PS3,
    INPUT_PSP,
    INPUT_CTR,
+   INPUT_SWITCH,
    INPUT_XENON360,
    INPUT_WII,
    INPUT_WIIU,
@@ -212,6 +214,7 @@ enum joypad_driver_enum
    JOYPAD_XDK,
    JOYPAD_PSP,
    JOYPAD_CTR,
+   JOYPAD_SWITCH,
    JOYPAD_DINPUT,
    JOYPAD_UDEV,
    JOYPAD_LINUXRAW,
@@ -288,6 +291,8 @@ static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_VITA2D;
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_PSP1;
 #elif defined(_3DS)
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_CTR;
+#elif defined(SWITCH)
+static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SWITCH;
 #elif defined(HAVE_XVIDEO)
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_XVIDEO;
 #elif defined(HAVE_SDL)
@@ -386,6 +391,8 @@ static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PS3;
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PSP;
 #elif defined(_3DS)
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_CTR;
+#elif defined(SWITCH)
+static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_SWITCH;
 #elif defined(GEKKO)
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_WII;
 #elif defined(WIIU)
@@ -426,6 +433,8 @@ static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_XDK;
 static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_PSP;
 #elif defined(_3DS)
 static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_CTR;
+#elif defined(SWITCH)
+static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_SWITCH;
 #elif defined(HAVE_DINPUT)
 static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_DINPUT;
 #elif defined(HAVE_UDEV)
@@ -684,6 +693,8 @@ const char *config_get_default_video(void)
          return "vita2d";
       case VIDEO_CTR:
          return "ctr";
+      case VIDEO_SWITCH:
+         return "switch";
       case VIDEO_XVIDEO:
          return "xvideo";
       case VIDEO_SDL:
@@ -740,6 +751,8 @@ const char *config_get_default_input(void)
 #endif
       case INPUT_CTR:
          return "ctr";
+      case INPUT_SWITCH:
+         return "switch";
       case INPUT_SDL:
          return "sdl";
       case INPUT_SDL2:
@@ -808,6 +821,8 @@ const char *config_get_default_joypad(void)
 #endif
       case JOYPAD_CTR:
          return "ctr";
+      case JOYPAD_SWITCH:
+         return "switch";
       case JOYPAD_DINPUT:
          return "dinput";
       case JOYPAD_UDEV:

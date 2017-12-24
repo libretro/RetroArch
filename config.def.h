@@ -324,6 +324,7 @@ static const uint32_t menu_title_color        = 0xff64ff64;
 
 #else
 static bool default_block_config_read = false;
+static bool automatically_add_content_to_playlist = false;
 #endif
 
 static bool default_game_specific_options = true;

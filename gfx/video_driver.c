@@ -274,6 +274,9 @@ static const video_driver_t *video_drivers[] = {
 #ifdef _3DS
    &video_ctr,
 #endif
+#ifdef SWITCH
+   &video_switch,
+#endif
 #ifdef HAVE_SDL
    &video_sdl,
 #endif
