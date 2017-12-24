@@ -277,6 +277,7 @@ extern audio_driver_t audio_ax;
 extern audio_driver_t audio_psp;
 extern audio_driver_t audio_ctr_csnd;
 extern audio_driver_t audio_ctr_dsp;
+extern audio_driver_t audio_switch;
 extern audio_driver_t audio_rwebaudio;
 extern audio_driver_t audio_null;
 

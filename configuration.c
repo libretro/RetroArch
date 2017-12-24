@@ -169,6 +169,7 @@ enum audio_driver_enum
    AUDIO_RWEBAUDIO,
    AUDIO_PSP,
    AUDIO_CTR,
+   AUDIO_SWITCH,
    AUDIO_NULL
 };
 
@@ -321,6 +322,8 @@ static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_WIIU;
 static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PSP;
 #elif defined(_3DS)
 static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_CTR;
+#elif defined(SWITCH)
+static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_SWITCH;
 #elif defined(HAVE_PULSE)
 static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PULSE;
 #elif defined(HAVE_ALSA) && defined(HAVE_VIDEOCORE)
@@ -607,6 +610,8 @@ const char *config_get_default_audio(void)
 #endif
       case AUDIO_CTR:
          return "csnd";
+      case AUDIO_SWITCH:
+         return "switch";
       case AUDIO_RWEBAUDIO:
          return "rwebaudio";
       case AUDIO_JACK:

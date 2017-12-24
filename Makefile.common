@@ -873,7 +873,8 @@ endif
 ifeq ($(TARGET), retroarch_switch)
 	OBJ += gfx/drivers/switch_gfx.o \
 			input/drivers/switch_input.o \
-                        input/drivers_joypad/switch_joypad.o
+                        input/drivers_joypad/switch_joypad.o \
+                        audio/drivers/switch_audio.o
 endif
 
 ifeq ($(HAVE_WAYLAND), 1)
