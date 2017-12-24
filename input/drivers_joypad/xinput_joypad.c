@@ -475,7 +475,7 @@ static void xinput_joypad_poll(void)
    {
       if (g_xinput_states[i].connected)
       {
-         if (g_XInputGetStateEx(i,
+         if (g_XInputGetStateEx && g_XInputGetStateEx(i,
                   &(g_xinput_states[i].xstate))
                == ERROR_DEVICE_NOT_CONNECTED)
             g_xinput_states[i].connected = false;
@@ -506,6 +506,9 @@ static bool xinput_joypad_rumble(unsigned pad,
       g_xinput_rumble_states[xuser].wLeftMotorSpeed = strength;
    else if (effect == RETRO_RUMBLE_WEAK)
       g_xinput_rumble_states[xuser].wRightMotorSpeed = strength;
+
+   if (!g_XInputSetState)
+      return false;
 
    return (g_XInputSetState(xuser, &g_xinput_rumble_states[xuser])
       == 0);

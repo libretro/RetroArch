@@ -40,6 +40,7 @@
 - WINDOWS: Raw input driver now supports new lightgun code.
 - WINDOWS: Use configured OSD/text message color on GDI driver.
 - WINDOWS/XINPUT: Populate XInput VID/PID from DInput so autoconfig doesn't rely solely on joypad names
+- WINDOWS/XINPUT: Fix crash that occurs in some situations with Steam running and a Steam Controller plugged in.
 - WINDOWS: Improve version reporting under System Information.
 - WINDOWS: Support window transparency.
 
