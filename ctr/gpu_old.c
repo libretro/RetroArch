@@ -306,3 +306,18 @@ void GPU_FinishDrawing()
 	GPUCMD_AddWrite(GPUREG_FRAMEBUFFER_INVALIDATE, 0x00000001);
 	GPUCMD_AddWrite(GPUREG_EARLYDEPTH_CLEAR, 0x00000001);
 }
+
+
+void GPU_Finalize(void)
+{
+   GPUCMD_AddMaskedWrite(GPUREG_PRIMITIVE_CONFIG, 0x8, 0x00000000);
+   GPUCMD_AddWrite(GPUREG_FRAMEBUFFER_FLUSH, 0x00000001);
+   GPUCMD_AddWrite(GPUREG_FRAMEBUFFER_INVALIDATE, 0x00000001);
+#if 0
+   GPUCMD_Split(NULL, NULL);
+#else
+   GPUCMD_AddWrite(GPUREG_FINALIZE, 0x12345678);
+   //not the cleanest way of guaranteeing 0x10-byte size but whatever good enough for now
+   GPUCMD_AddWrite(GPUREG_FINALIZE,0x12345678);
+#endif
+}
