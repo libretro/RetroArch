@@ -1,4 +1,6 @@
-# 1.7.0 (future)
+# 1.7.1 (future)
+
+# 1.7.0
 - CHEEVOS: Add badges for achievements, shows thumbnail images of achievements.
 - CHEEVOS: Leaderboard support.
 - CHEEVOS: Only disable savestates on hardcore mode if achievements are not available.
@@ -11,8 +13,10 @@
 - COMMON: New VFS (Virtual File System) API.
 - COMMON: Fixed some playlist bugs.
 - COMMON: New snow shader.
-- COMMON: Fix Quick Menu title.
+- COMMON: Fix Quick Menu title, no longer shows 'Select File'.
 - COMMON: Fix loading cores that require no content one after another.
+- COMMON: Map Delete key to Y button for non-unified menu keyboard controls.
+- COMMON: Fix for relative paths being normalised and generating a duplicate history entry.
 - EMSCRIPTEN: Fix references to browserfs.
 - FREEBSD: Support libusb HID input driver.
 - HAIKU: Buildfix.
@@ -24,7 +28,9 @@
 - LOCALIZATION: Update Italian translation.
 - LOCALIZATION: Update Japanese translation.
 - LOCALIZATION: Update Portuguese-Brazilian translation.
+- LOCALIZATION: Update Polish translation.
 - LOCALIZATION: Update Russian translation.
+- MENU: Snowflake menu shader effect.
 - OSX/PPC: Fix the GL2 renderchain, had to use EXT versions of framebuffer/renderbuffer functions.
 - PS3: HTTP requests / downloads should now work.
 - PS3: Core Updater now works.
@@ -36,6 +42,7 @@
 - SCANNER: Fix crash from Windows-incompatible format string.
 - VITA: Improve packaging, installation times.
 - WIIU: Disabled the controller patcher for now since it was the source of many stability issues.
+- VULKAN: Various stability fixes for WSI.
 - WINDOWS: Add MSVC 2017 solution.
 - WINDOWS: Get rid of the empty console window in MSVC 2010 builds.
 - WINDOWS: Raw input driver now supports new lightgun code.
@@ -45,6 +52,7 @@
 - WINDOWS: Improve version reporting under System Information.
 - WINDOWS: Support window transparency.
 - WINDOWS: Correct usage of GetWindowPlacement per MS docs, fixes game window position on Win95/98.
+- WINDOWS: Added Visual Studio 2017 support.
 
 # 1.6.9
 - COMMON: Small memory leak.
