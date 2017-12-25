@@ -238,7 +238,7 @@ static void ctr_lcd_aptHook(APT_HookType hook, void* param)
                                CTRGU_ATTRIBFMT(GPU_SHORT, 4) << 0 |
                                CTRGU_ATTRIBFMT(GPU_SHORT, 4) << 4,
                                sizeof(ctr_vertex_t));
-      GPUCMD_Finalize();
+      GPU_Finalize();
       ctrGuFlushAndRun(true);
       gspWaitForEvent(GSPGPU_EVENT_P3D, false);
       ctr->p3d_event_pending = false;
@@ -407,7 +407,7 @@ static void* ctr_init(const video_info_t* video,
                             CTRGU_ATTRIBFMT(GPU_SHORT, 4) << 0 |
                             CTRGU_ATTRIBFMT(GPU_SHORT, 4) << 4,
                             sizeof(ctr_vertex_t));
-   GPUCMD_Finalize();
+   GPU_Finalize();
    ctrGuFlushAndRun(true);
 
    ctr->p3d_event_pending = true;
@@ -779,7 +779,7 @@ static bool ctr_frame(void* data, const void* frame,
 #endif
 
    GPU_FinishDrawing();
-   GPUCMD_Finalize();
+   GPU_Finalize();
    ctrGuFlushAndRun(true);
 
    ctrGuDisplayTransfer(true, ctr->drawbuffers.top.left,
