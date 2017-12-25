@@ -22,8 +22,25 @@
 
 #include <libretro.h>
 #include <retro_miscellaneous.h>
-
+#include <retro_endianness.h>
 #include "../input_driver.h"
+
+#define VID_NINTENDO      swap_if_big16(0x057e)
+#define VID_SONY          swap_if_big16(0x054c)
+#define VID_MICRONTEK     swap_if_big16(0x0079)
+#define VID_PCS           swap_if_big16(0x0810)
+#define VID_PS3_CLONE     swap_if_big16(0x0313)
+#define VID_SNES_CLONE    swap_if_big16(0x081f)
+
+#define PID_NINTENDO_PRO  swap_if_big16(0x0330)
+#define PID_SONY_DS3      swap_if_big16(0x0268)
+#define PID_SONY_DS4      swap_if_big16(0x05c4)
+#define PID_DS3_CLONE     swap_if_big16(0x20d6)
+#define PID_SNES_CLONE    swap_if_big16(0xe401)
+#define PID_MICRONTEK_NES swap_if_big16(0x0011)
+#define PID_NINTENDO_GCA  swap_if_big16(0x0337)
+#define PID_PCS_PS2PSX    swap_if_big16(0x0001)
+#define PID_PCS_PSX2PS3   swap_if_big16(0x0003)
 
 struct joypad_connection
 {

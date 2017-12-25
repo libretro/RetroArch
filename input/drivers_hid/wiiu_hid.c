@@ -323,8 +323,7 @@ static void wiiu_hid_attach(wiiu_hid_t *hid, wiiu_attach_event *event) {
 
   RARCH_LOG("[hid]: pad_connection_pad_init\n");
   adapter->slot   = pad_connection_pad_init(hid->connections,
-//      "hid", event->vendor_id, event->product_id, adapter,
-      "hid", SWAP16(event->vendor_id), SWAP16(event->product_id), adapter,
+      "hid", event->vendor_id, event->product_id, adapter,
       &wiiu_hid);
 
   if(adapter->slot < 0) {
