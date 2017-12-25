@@ -45,6 +45,12 @@ typedef struct xaudio2 xaudio2_t;
 
 #define MAX_BUFFERS_MASK (MAX_BUFFERS - 1)
 
+#ifndef COINIT_MULTITHREADED
+#define COINIT_MULTITHREADED 0x00
+#endif
+
+#define XAUDIO2_WRITE_AVAILABLE(handle) ((handle)->bufsize * (MAX_BUFFERS - (handle)->buffers - 1))
+
 typedef struct
 {
    xaudio2_t *xa;
@@ -190,10 +196,6 @@ static void xaudio2_free(xaudio2_t *handle)
 #endif
 }
 
-#ifndef COINIT_MULTITHREADED
-#define COINIT_MULTITHREADED 0x00
-#endif
-
 static xaudio2_t *xaudio2_new(unsigned samplerate, unsigned channels,
       size_t size, unsigned device)
 {
@@ -251,15 +253,9 @@ error:
    return NULL;
 }
 
-static size_t xaudio2_write_avail(xaudio2_t *handle)
-{
-   return handle->bufsize * (MAX_BUFFERS - handle->buffers - 1);
-}
-
-static size_t xaudio2_write(xaudio2_t *handle, const void *buf, size_t bytes_)
+static size_t xaudio2_write(xaudio2_t *handle, const uint8_t *buffer, size_t bytes_)
 {
    unsigned bytes        = bytes_;
-   const uint8_t *buffer = (const uint8_t*)buf;
 
    while (bytes)
    {
@@ -344,7 +340,7 @@ static ssize_t xa_write(void *data, const void *buf, size_t size)
 
    if (xa->nonblock)
    {
-      size_t avail = xaudio2_write_avail(xa->xa);
+      size_t avail = XAUDIO2_WRITE_AVAILABLE(xa->xa);
 
       if (avail == 0)
          return 0;
@@ -352,7 +348,7 @@ static ssize_t xa_write(void *data, const void *buf, size_t size)
          size = avail;
    }
 
-   ret = xaudio2_write(xa->xa, buf, size);
+   ret = xaudio2_write(xa->xa, (const uint8_t*)buf, size);
    if (ret == 0 && size > 0)
       return -1;
    return ret;
@@ -408,7 +404,7 @@ static void xa_free(void *data)
 static size_t xa_write_avail(void *data)
 {
    xa_t *xa = (xa_t*)data;
-   return xaudio2_write_avail(xa->xa);
+   return XAUDIO2_WRITE_AVAILABLE(xa->xa);
 }
 
 static size_t xa_buffer_size(void *data)
