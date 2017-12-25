@@ -298,11 +298,7 @@ static bool xmb_show_add     	 = true;
 #endif
 #endif
 
-#if defined(HAVE_LIBRETRODB) && !defined(RARCH_CONSOLE) && !defined(EMSCRIPTEN)
-static bool automatically_add_content_to_playlist = true;
-#else
 static bool automatically_add_content_to_playlist = false;
-#endif
 
 static float menu_framebuffer_opacity = 0.900;
 
