@@ -26,8 +26,9 @@
 - LOCALIZATION: Update Portuguese-Brazilian translation.
 - LOCALIZATION: Update Russian translation.
 - OSX/PPC: Fix the GL2 renderchain, had to use EXT versions of framebuffer/renderbuffer functions.
-- PS3: HTTP requests / downloads now work.
-- PS3: Enable STB Unicode font renderer.
+- PS3: HTTP requests / downloads should now work.
+- PS3: Core Updater now works.
+- PS3: Improved font rendering, enable STB Unicode font renderer.
 - PSP: Make it work with Vita's Adrenaline.
 - PSP: Fix audio sync.
 - PSP: Fix content loading, port should be functional again.
