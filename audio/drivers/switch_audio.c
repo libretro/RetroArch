@@ -40,6 +40,8 @@ typedef struct {
 	audio_output_buffer_t *current_buffer;
 	bool blocking;
 	bool is_paused;
+	uint64_t last_append;
+	unsigned latency;
 } switch_audio_t;
 
 static ssize_t switch_audio_write(void *data, const void *buf, size_t size) {
@@ -53,7 +55,7 @@ static ssize_t switch_audio_write(void *data, const void *buf, size_t size) {
 			printf("failed to get released buffer?\n");
 			return -1;
 		}
-		printf("got buffer, num %d, ptr %p\n", num, swa->current_buffer);
+		//printf("got buffer, num %d, ptr %p\n", num, swa->current_buffer);
 		if(num < 1) {
 			swa->current_buffer = NULL;
 		}
@@ -72,28 +74,34 @@ static ssize_t switch_audio_write(void *data, const void *buf, size_t size) {
 					}
 				}
 			} else {
-				printf("no buffer, nonblocking...\n");
+				//printf("no buffer, nonblocking...\n");
 				return 0;
 			}
 		}
+
+		swa->current_buffer->data_size = 0;
 	}
 
 	size_t to_write = size;
-	if(size > sample_buffer_size) {
-		size = sample_buffer_size;
+	if(to_write > sample_buffer_size - swa->current_buffer->data_size) {
+		to_write = sample_buffer_size - swa->current_buffer->data_size;
 	}
 	
-	memcpy(swa->current_buffer->sample_data, buf, to_write);
-	swa->current_buffer->data_size = to_write;
+	memcpy(((uint8_t*) swa->current_buffer->sample_data) + swa->current_buffer->data_size, buf, to_write);
+	swa->current_buffer->data_size+= to_write;
 	swa->current_buffer->buffer_size = sample_buffer_size;
-	result_t r;
-	if((r = audio_ipc_output_append_buffer(&swa->output, swa->current_buffer)) != RESULT_OK) {
-		printf("failed to append buffer: 0x%x\n", r);
-		return -1;
-	}
-	swa->current_buffer = NULL;
 
-	//printf("submitted samples\n");
+	if(swa->current_buffer->data_size > (48000*swa->latency)/1000) {
+		result_t r;
+		if((r = audio_ipc_output_append_buffer(&swa->output, swa->current_buffer)) != RESULT_OK) {
+			printf("failed to append buffer: 0x%x\n", r);
+			return -1;
+		}
+		swa->current_buffer = NULL;
+	}
+
+	//printf("submitted %ld samples, %ld samples since last submit\n", to_write/num_channels/sizeof(uint16_t), (svcGetSystemTick() - swa->last_append) * sample_rate / 19200000);
+	swa->last_append = svcGetSystemTick();
 	
 	return to_write;
 }
@@ -107,6 +115,8 @@ static bool switch_audio_stop(void *data) {
 static bool switch_audio_start(void *data, bool is_shutdown) {
 	switch_audio_t *swa = (switch_audio_t*) data;
 
+	printf("start\n");
+	
 	if(audio_ipc_output_start(&swa->output) != RESULT_OK) {
 		return false;
 	}
@@ -214,6 +224,9 @@ static void *switch_audio_init(const char *device,
 	}
 
 	swa->current_buffer = NULL;
+	swa->latency = latency;
+
+	swa->last_append = svcGetSystemTick();
 	
 	if(audio_ipc_output_start(&swa->output) != RESULT_OK) {
 		goto fail_audio_output;
