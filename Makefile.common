@@ -1428,13 +1428,13 @@ ifeq ($(HAVE_BUILTINZLIB),1)
           $(DEPS_DIR)/libz/uncompr.o \
           $(DEPS_DIR)/libz/zutil.o
 else
-ifeq ($(HAVE_ZLIB),1)
+ifeq ($(HAVE_ZLIB), 1)
 OBJ += $(ZLIB_OBJS)
 endif
 endif
 
-ifeq ($(HAVE_7ZIP),1)
-ifeq ($(HAVE_FLAC),1)
+ifeq ($(HAVE_ZLIB), 1)
+ifeq ($(HAVE_FLAC), 1)
      DEFINES += -DHAVE_CHD -DWANT_SUBCODE -DWANT_RAW_DATA_SECTOR
      CFLAGS += -I$(LIBRETRO_COMM_DIR)/formats/libchdr
      OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/bitstream.o \
