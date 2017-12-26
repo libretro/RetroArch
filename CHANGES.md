@@ -1,4 +1,5 @@
 # 1.7.1 (future)
+- COMMON: Fix menu toggle with keymapper active.
 - PS3: Enable Cheevos.
 - PSP: Enable threading support through pthreads.
 
