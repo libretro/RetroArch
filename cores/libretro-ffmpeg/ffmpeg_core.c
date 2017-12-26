@@ -272,7 +272,7 @@ void CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
 {
    static const struct retro_variable vars[] = {
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
-      { "ffmpeg_temporal_interp", "Temporal Interpolation; enabled|disabled" },
+      { "ffmpeg_temporal_interp", "Temporal Interpolation; disabled|enabled" },
 #ifdef HAVE_GL_FFT
       { "ffmpeg_fft_resolution", "FFT Resolution; 1280x720|1920x1080|2560x1440|3840x2160|640x360|320x180" },
       { "ffmpeg_fft_multisample", "FFT Multisample; 1x|2x|4x" },

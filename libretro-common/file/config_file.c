@@ -44,7 +44,6 @@
 #include <file/file_path.h>
 #include <lists/string_list.h>
 #include <string/stdstring.h>
-#include <streams/file_stream.h>
 
 #define MAX_INCLUDE_DEPTH 16
 
@@ -77,6 +76,40 @@ struct config_file
 
 static config_file_t *config_file_new_internal(
       const char *path, unsigned depth);
+
+static char *getaline(FILE *file)
+{
+   char* newline     = (char*)malloc(9);
+   char* newline_tmp = NULL;
+   size_t cur_size   = 8;
+   size_t idx        = 0;
+   int in            = fgetc(file);
+
+   if (!newline)
+      return NULL;
+
+   while (in != EOF && in != '\n')
+   {
+      if (idx == cur_size)
+      {
+         cur_size *= 2;
+         newline_tmp = (char*)realloc(newline, cur_size + 1);
+
+         if (!newline_tmp)
+         {
+            free(newline);
+            return NULL;
+         }
+
+         newline = newline_tmp;
+      }
+
+      newline[idx++] = in;
+      in = fgetc(file);
+   }
+   newline[idx] = '\0';
+   return newline;
+}
 
 static char *strip_comment(char *str)
 {
@@ -190,7 +223,7 @@ static void add_child_list(config_file_t *parent, config_file_t *child)
    /* Rebase tail. */
    if (parent->entries)
    {
-      struct config_entry_list *head =
+      struct config_entry_list *head = 
          (struct config_entry_list*)parent->entries;
 
       while (head->next)
@@ -311,11 +344,10 @@ static bool parse_line(config_file_t *conf,
 
       key[idx++] = *line++;
    }
-   key[idx]      = '\0';
-   list->key     = key;
+   key[idx] = '\0';
+   list->key = key;
 
-   list->value   = extract_value(line, true);
-
+   list->value = extract_value(line, true);
    if (!list->value)
    {
       list->key = NULL;
@@ -332,7 +364,7 @@ error:
 static config_file_t *config_file_new_internal(
       const char *path, unsigned depth)
 {
-   RFILE              *file = NULL;
+   FILE              *file  = NULL;
    struct config_file *conf = (struct config_file*)malloc(sizeof(*conf));
    if (!conf)
       return NULL;
@@ -354,9 +386,7 @@ static config_file_t *config_file_new_internal(
       goto error;
 
    conf->include_depth = depth;
-   file                = filestream_open(path,
-         RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   file                = fopen_utf8(path, "r");
 
    if (!file)
    {
@@ -364,7 +394,7 @@ static config_file_t *config_file_new_internal(
       goto error;
    }
 
-   while (!filestream_eof(file))
+   while (!feof(file))
    {
       char *line                     = NULL;
       struct config_entry_list *list = (struct config_entry_list*)malloc(sizeof(*list));
@@ -372,7 +402,7 @@ static config_file_t *config_file_new_internal(
       if (!list)
       {
          config_file_free(conf);
-         filestream_close(file);
+         fclose(file);
          return NULL;
       }
 
@@ -381,7 +411,7 @@ static config_file_t *config_file_new_internal(
       list->value     = NULL;
       list->next      = NULL;
 
-      line            = filestream_getline(file);
+      line            = getaline(file);
 
       if (!line)
       {
@@ -405,7 +435,7 @@ static config_file_t *config_file_new_internal(
          free(list);
    }
 
-   filestream_close(file);
+   fclose(file);
 
    return conf;
 
@@ -490,7 +520,7 @@ config_file_t *config_file_new_from_string(const char *from_string)
    conf->tail          = NULL;
    conf->includes      = NULL;
    conf->include_depth = 0;
-
+   
    lines = string_split(from_string, "\n");
    if (!lines)
       return conf;
@@ -542,8 +572,11 @@ config_file_t *config_file_new(const char *path)
 static struct config_entry_list *config_get_entry(const config_file_t *conf,
       const char *key, struct config_entry_list **prev)
 {
-   struct config_entry_list *entry    = NULL;
-   struct config_entry_list *previous = prev ? *prev : NULL;
+   struct config_entry_list *entry;
+   struct config_entry_list *previous = NULL;
+
+   if (prev)
+      previous = *prev;
 
    for (entry = conf->entries; entry; entry = entry->next)
    {
@@ -869,32 +902,9 @@ void config_set_bool(config_file_t *conf, const char *key, bool val)
    config_set_string(conf, key, val ? "true" : "false");
 }
 
-bool config_file_write(config_file_t *conf, const char *path)
-{
-   if (!string_is_empty(path))
-   {
-      void* buf  = NULL;
-      FILE *file = fopen_utf8(path, "wb");
-      if (!file)
-         return false;
-
-      /* TODO: this is only useful for a few platforms, find which and add ifdef */
-      buf = calloc(1, 0x4000);
-      setvbuf(file, (char*)buf, _IOFBF, 0x4000);
-
-      config_file_dump(conf, file);
-
-      if (file != stdout)
-         fclose(file);
-      free(buf);
-   }
-   else
-      config_file_dump(conf, stdout);
-
-   return true;
-}
-
-void config_file_dump(config_file_t *conf, FILE *file)
+/* Dump the current config to an already opened file.
+ * Does not close the file. */
+static void config_file_dump(config_file_t *conf, FILE *file)
 {
    struct config_entry_list       *list = NULL;
    struct config_include_list *includes = conf->includes;
@@ -914,6 +924,33 @@ void config_file_dump(config_file_t *conf, FILE *file)
       list = list->next;
    }
 }
+
+bool config_file_write(config_file_t *conf, const char *path)
+{
+   void* buf  = NULL;
+   FILE *file = !string_is_empty(path) ? fopen_utf8(path, "wb") : stdout;
+
+   if (!file)
+      return false;
+
+   /* TODO: this is only useful for a few platforms, find which and add ifdef */
+   if (file != stdout)
+   {
+      buf = calloc(1, 0x4000);
+      setvbuf(file, (char*)buf, _IOFBF, 0x4000);
+   }
+
+   config_file_dump(conf, file);
+
+   if (file != stdout)
+   {
+      fclose(file);
+      free(buf);
+   }
+
+   return true;
+}
+
 
 bool config_entry_exists(config_file_t *conf, const char *entry)
 {

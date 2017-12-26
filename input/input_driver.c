@@ -233,6 +233,7 @@ static const uint8_t buttons[] = {
 static uint16_t input_config_vid[MAX_USERS];
 static uint16_t input_config_pid[MAX_USERS];
 
+uint64_t lifecycle_state;
 char input_device_names[MAX_INPUT_DEVICES][64];
 struct retro_keybind input_config_binds[MAX_USERS][RARCH_BIND_LIST_END];
 struct retro_keybind input_autoconf_binds[MAX_USERS][RARCH_BIND_LIST_END];
@@ -784,6 +785,42 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
    }
 }
 
+static INLINE bool input_keys_pressed_iterate(unsigned i,
+      retro_bits_t* p_new_state)
+{
+   if ((i >= RARCH_FIRST_META_KEY) && 
+         BIT64_GET(lifecycle_state, i)
+      )
+      return true;
+
+#ifdef HAVE_OVERLAY
+   if (overlay_ptr &&
+         input_overlay_key_pressed(overlay_ptr, i))
+      return true;
+#endif
+
+#ifdef HAVE_COMMAND
+   if (input_driver_command)
+   {
+      command_handle_t handle;
+
+      handle.handle = input_driver_command;
+      handle.id     = i;
+
+      if (command_get(&handle))
+         return true;
+   }
+#endif
+
+#ifdef HAVE_NETWORKGAMEPAD
+   if (input_driver_remote &&
+         input_remote_key_pressed(i, 0))
+      return true;
+#endif
+
+   return false;
+}
+
 #ifdef HAVE_MENU
 
 /**
@@ -857,9 +894,11 @@ void input_menu_keys_pressed(void *data, retro_bits_t* p_new_state)
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
+      bool bit_pressed    = false;
+
       if (
-            (((!input_driver_block_libretro_input && ((i < RARCH_FIRST_META_KEY)))
-              || !input_driver_block_hotkey))
+              (!input_driver_block_libretro_input && ((i < RARCH_FIRST_META_KEY)))
+            || !input_driver_block_hotkey
          )
       {
          const input_device_driver_t *first = current_input->get_joypad_driver
@@ -869,21 +908,20 @@ void input_menu_keys_pressed(void *data, retro_bits_t* p_new_state)
 
          for (port = 0; port < port_max; port++)
          {
-            uint64_t joykey      = 0;
-            uint32_t joyaxis     = 0;
-            bool      pressed    = false;
+            uint64_t              joykey      = 0;
+            uint32_t              joyaxis     = 0;
             const struct retro_keybind *mtkey = &input_config_binds[port][i];
 
             if (!mtkey->valid)
                continue;
 
-            joypad_info.joy_idx                          = settings->uints.input_joypad_map[port];
-            joypad_info.auto_binds                       = input_autoconf_binds[joypad_info.joy_idx];
-            joypad_info.axis_threshold                   = input_driver_axis_threshold;
+            joypad_info.joy_idx               = settings->uints.input_joypad_map[port];
+            joypad_info.auto_binds            = input_autoconf_binds[joypad_info.joy_idx];
+            joypad_info.axis_threshold        = input_driver_axis_threshold;
 
-            joykey     = (input_config_binds[port][i].joykey != NO_BTN)
+            joykey                            = (input_config_binds[port][i].joykey != NO_BTN)
                ? input_config_binds[port][i].joykey : joypad_info.auto_binds[i].joykey;
-            joyaxis     = (input_config_binds[port][i].joyaxis != AXIS_NONE)
+            joyaxis                           = (input_config_binds[port][i].joyaxis != AXIS_NONE)
                ? input_config_binds[port][i].joyaxis : joypad_info.auto_binds[i].joyaxis;
 
             if (sec)
@@ -892,72 +930,33 @@ void input_menu_keys_pressed(void *data, retro_bits_t* p_new_state)
                {
                   int16_t  axis        = sec->axis(joypad_info.joy_idx, joyaxis);
                   float    scaled_axis = (float)abs(axis) / 0x8000;
-                  pressed              = scaled_axis > joypad_info.axis_threshold;
+                  bit_pressed          = scaled_axis > joypad_info.axis_threshold;
                }
                else
-                  pressed              = true;
+                  bit_pressed          = true;
             }
 
-            if (!pressed && first)
+            if (!bit_pressed && first)
             {
                if ((uint16_t)joykey == NO_BTN || !first->button(joypad_info.joy_idx, (uint16_t)joykey))
                {
                   int16_t  axis        = first->axis(joypad_info.joy_idx, joyaxis);
                   float    scaled_axis = (float)abs(axis) / 0x8000;
-                  pressed              = scaled_axis > joypad_info.axis_threshold;
+                  bit_pressed          = scaled_axis > joypad_info.axis_threshold;
                }
                else
-                  pressed              = true;
+                  bit_pressed          = true;
             }
 
-            if (pressed)
-            {
-               BIT256_SET_PTR(p_new_state, i);
-               continue;
-            }
+            if (bit_pressed)
+               break;
          }
       }
 
-      if (i >= RARCH_FIRST_META_KEY)
-      {
-         if (current_input->meta_key_pressed(current_input_data, i))
-         {
-            BIT256_SET_PTR(p_new_state, i);
-            continue;
-         }
-      }
-
-#ifdef HAVE_OVERLAY
-      if (overlay_ptr && input_overlay_key_pressed(overlay_ptr, i))
+      if (bit_pressed || input_keys_pressed_iterate(i, p_new_state))
       {
          BIT256_SET_PTR(p_new_state, i);
-         continue;
       }
-#endif
-
-#ifdef HAVE_COMMAND
-      if (input_driver_command)
-      {
-         command_handle_t handle;
-
-         handle.handle = input_driver_command;
-         handle.id     = i;
-
-         if (command_get(&handle))
-         {
-            BIT256_SET_PTR(p_new_state, i);
-            continue;
-         }
-      }
-#endif
-
-#ifdef HAVE_NETWORKGAMEPAD
-      if (input_driver_remote && input_remote_key_pressed(i, 0))
-      {
-         BIT256_SET_PTR(p_new_state, i);
-         continue;
-      }
-#endif
    }
 
    for (i = 0; i < max_users; i++)
@@ -1077,6 +1076,8 @@ void input_keys_pressed(void *data, retro_bits_t* p_new_state)
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
+      bool bit_pressed = false;
+
       if (
             ((!input_driver_block_libretro_input && ((i < RARCH_FIRST_META_KEY)))
              || !input_driver_block_hotkey) &&
@@ -1084,55 +1085,14 @@ void input_keys_pressed(void *data, retro_bits_t* p_new_state)
                joypad_info, &binds,
                0, RETRO_DEVICE_JOYPAD, 0, i)
          )
+         bit_pressed = true;
+
+      if (bit_pressed || input_keys_pressed_iterate(i, p_new_state))
       {
          BIT256_SET_PTR(p_new_state, i);
-         continue;
       }
-
-      if ((i >= RARCH_FIRST_META_KEY) &&
-            current_input->meta_key_pressed(current_input_data, i)
-         )
-      {
-         BIT256_SET_PTR(p_new_state, i);
-         continue;
-      }
-
-#ifdef HAVE_OVERLAY
-      if (overlay_ptr &&
-            input_overlay_key_pressed(overlay_ptr, i))
-      {
-         BIT256_SET_PTR(p_new_state, i);
-         continue;
-      }
-#endif
-
-#ifdef HAVE_COMMAND
-      if (input_driver_command)
-      {
-         command_handle_t handle;
-
-         handle.handle = input_driver_command;
-         handle.id     = i;
-
-         if (command_get(&handle))
-         {
-            BIT256_SET_PTR(p_new_state, i);
-            continue;
-         }
-      }
-#endif
-
-#ifdef HAVE_NETWORKGAMEPAD
-      if (input_driver_remote &&
-            input_remote_key_pressed(i, 0))
-      {
-         BIT256_SET_PTR(p_new_state, i);
-         continue;
-      }
-#endif
    }
 }
-
 
 void *input_driver_get_data(void)
 {

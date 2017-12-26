@@ -1106,8 +1106,6 @@ static bool retroarch_init_state(void)
    video_driver_set_active();
    audio_driver_set_active();
 
-   rarch_force_fullscreen = false;
-
    return true;
 }
 
@@ -1180,10 +1178,6 @@ static void retroarch_main_init_media(void)
    bool builtin_mediaplayer = false;
 
    if (!settings)
-      return;
-
-   /* -L overrides internal cores */
-   if (!string_is_empty(path_get(RARCH_PATH_CORE)))
       return;
 
    builtin_imageviewer      = settings->bools.multimedia_builtin_imageviewer_enable;
@@ -1447,7 +1441,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          rarch_is_inited         = false;
          rarch_error_on_init     = false;
          rarch_block_config_read = false;
-         rarch_force_fullscreen  = false;
 
          retroarch_msg_queue_deinit();
          driver_uninit(DRIVERS_CMD_ALL);
@@ -1926,6 +1919,11 @@ bool retroarch_is_forced_fullscreen(void)
    return rarch_force_fullscreen;
 }
 
+void retroarch_unset_forced_fullscreen(void)
+{
+   rarch_force_fullscreen = false;
+}
+
 bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx, void *data)
 {
    switch (enum_idx)
@@ -2365,6 +2363,7 @@ static enum runloop_state runloop_check_state(
       bool input_nonblock_state,
       unsigned *sleep_ms)
 {
+   retro_bits_t current_input;
    static retro_bits_t last_input   = {{0}};
    static bool old_fs_toggle_pressed= false;
    static bool old_focus            = true;
@@ -2378,17 +2377,12 @@ static enum runloop_state runloop_check_state(
    bool menu_driver_binding_state   = menu_driver_is_binding_state();
    bool menu_is_alive               = menu_driver_is_alive();
 
-   retro_bits_t current_input;
-
    if (menu_is_alive && !(settings->bools.menu_unified_controls && !menu_input_dialog_get_display_kb()))
 	   input_menu_keys_pressed(settings, &current_input);
    else
+#endif
 	   input_keys_pressed(settings, &current_input);
 
-#else
-   retro_bits_t current_input;
-   input_keys_pressed(settings, &current_input);
-#endif
    last_input                       = current_input;
 
 #ifdef HAVE_MENU

@@ -254,6 +254,15 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
             g_defaults.dirs[DEFAULT_DIR_CORE],
             "playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS],
+            g_defaults.dirs[DEFAULT_DIR_CORE],
+            "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS],
+            g_defaults.dirs[DEFAULT_DIR_CORE], "cheats",
+            sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG], 
+            g_defaults.dirs[DEFAULT_DIR_CORE],
+            "autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
    }
 
 #ifndef IS_SALAMANDER

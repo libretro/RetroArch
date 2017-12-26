@@ -49,7 +49,7 @@
 #endif
 
 static enum frontend_fork ctr_fork_mode = FRONTEND_FORK_NONE;
-static const char* elf_path_cst = "sdmc:/retroarch/test.3dsx";
+static const char* elf_path_cst         = "sdmc:/retroarch/test.3dsx";
 
 static void frontend_ctr_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
@@ -151,7 +151,7 @@ static void frontend_ctr_exec(const char *path, bool should_load_game)
    DEBUG_STR(path);
 
    strlcpy(param.args, elf_path_cst, sizeof(param.args));
-   len = strlen(param.args) + 1;
+   len        = strlen(param.args) + 1;
    param.argc = 1;
 
    RARCH_LOG("Attempt to load core: [%s].\n", path);
@@ -172,11 +172,13 @@ static void frontend_ctr_exec(const char *path, bool should_load_game)
    }
    else
    {
-      u32 app_ID_low;
       char app_ID_str[11];
-      FILE* fp = fopen(path, "rb");
+      u32 app_ID_low    = 0;
+      FILE* fp          = fopen(path, "rb");
       size_t bytes_read = fread(app_ID_str, 1, sizeof(app_ID_str), fp);
+
       fclose(fp);
+
       if(bytes_read <= 0)
       {
          RARCH_LOG("error reading APP_ID from: [%s].\n", path);

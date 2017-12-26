@@ -762,11 +762,6 @@ static int16_t winraw_input_state(void *d,
    return 0;
 }
 
-static bool winraw_meta_key_pressed(void *u1, int u2)
-{
-   return false;
-}
-
 static void winraw_free(void *d)
 {
    winraw_input_t *wr = (winraw_input_t*)d;
@@ -841,7 +836,6 @@ input_driver_t input_winraw = {
    winraw_init,
    winraw_poll,
    winraw_input_state,
-   winraw_meta_key_pressed,
    winraw_free,
    NULL,
    NULL,

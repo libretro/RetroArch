@@ -587,7 +587,6 @@ bool video_shader_resolve_parameters(config_file_t *conf,
 
       free(line);
       intfstream_close(file);
-      free(file);
    }
 
    if (conf && !video_shader_resolve_current_parameters(conf, shader))

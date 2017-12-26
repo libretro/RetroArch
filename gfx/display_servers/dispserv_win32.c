@@ -28,6 +28,9 @@ static void* win32_display_server_init(void)
 {
    dispserv_win32_t *dispserv = (dispserv_win32_t*)calloc(1, sizeof(*dispserv));
 
+   if (!dispserv)
+      return NULL;
+
    return dispserv;
 }
 
@@ -38,17 +41,17 @@ static void win32_display_server_destroy(void)
 
 static bool win32_set_window_opacity(void *data, unsigned opacity)
 {
-   HWND hwnd = win32_get_window();
+   HWND              hwnd = win32_get_window();
    dispserv_win32_t *serv = (dispserv_win32_t*)data;
 
-   serv->opacity = opacity;
+   serv->opacity          = opacity;
 
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500
    /* Set window transparency on Windows 2000 and above */
-   return SetLayeredWindowAttributes(hwnd, 0, (255 * opacity) / 100, LWA_ALPHA);
-#else
-   return false;
+   if (SetLayeredWindowAttributes(hwnd, 0, (255 * opacity) / 100, LWA_ALPHA))
+      return true;
 #endif
+   return false;
 }
 
 const video_display_server_t dispserv_win32 = {

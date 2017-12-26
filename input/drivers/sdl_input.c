@@ -89,11 +89,6 @@ static int16_t sdl_analog_pressed(sdl_input_t *sdl, const struct retro_keybind *
    return pressed_plus + pressed_minus;
 }
 
-static bool sdl_input_meta_key_pressed(void *data, int key)
-{
-   return false;
-}
-
 static int16_t sdl_joypad_device_state(sdl_input_t *sdl,
       rarch_joypad_info_t joypad_info,
       const struct retro_keybind *binds,
@@ -409,7 +404,6 @@ input_driver_t input_sdl = {
    sdl_input_init,
    sdl_input_poll,
    sdl_input_state,
-   sdl_input_meta_key_pressed,
    sdl_input_free,
    NULL,
    NULL,

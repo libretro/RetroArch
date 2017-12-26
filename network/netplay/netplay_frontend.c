@@ -605,6 +605,49 @@ static void netplay_announce_cb(void *task_data, void *user_data, const char *er
    return;
 }
 
+void netplay_get_architecture(char *frontend_architecture, size_t size)
+{
+   const frontend_ctx_driver_t
+      *frontend                  = frontend_get_ptr();
+   enum frontend_architecture arch = frontend_driver_get_cpu_architecture();
+   char architecture[PATH_MAX_LENGTH];
+
+   switch (arch)
+   {
+      case FRONTEND_ARCH_X86:
+         strlcpy(architecture, "x86", sizeof(architecture));
+         break;
+      case FRONTEND_ARCH_X86_64:
+         strlcpy(architecture, "x64", sizeof(architecture));
+         break;
+      case FRONTEND_ARCH_PPC:
+         strlcpy(architecture, "PPC", sizeof(architecture));
+         break;
+      case FRONTEND_ARCH_ARM:
+         strlcpy(architecture, "ARM", sizeof(architecture));
+         break;
+      case FRONTEND_ARCH_ARMV7:
+         strlcpy(architecture, "ARMv7", sizeof(architecture));
+         break;
+      case FRONTEND_ARCH_ARMV8:
+         strlcpy(architecture, "ARMv8", sizeof(architecture));
+         break;
+      case FRONTEND_ARCH_MIPS:
+         strlcpy(architecture, "MIPS", sizeof(architecture));
+         break;
+      case FRONTEND_ARCH_TILE:
+         strlcpy(architecture, "Tilera", sizeof(architecture));
+         break;
+      case FRONTEND_ARCH_NONE:
+      default:
+         strlcpy(architecture,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+               sizeof(architecture));
+         break;
+   }
+   snprintf(frontend_architecture, size, "%s %s", frontend->ident, architecture);
+}
+
 static void netplay_announce(void)
 {
    char buf [2048];
@@ -617,8 +660,9 @@ static void netplay_announce(void)
    settings_t *settings          = config_get_ptr();
    rarch_system_info_t *system   = runloop_get_system_info();
    uint32_t content_crc          = content_get_crc();
-   const frontend_ctx_driver_t
-      *frontend                  = frontend_get_ptr();
+   char frontend_architecture[PATH_MAX_LENGTH];
+
+   netplay_get_architecture(frontend_architecture, sizeof(frontend_architecture));
 
    net_http_urlencode_full(&username, settings->paths.username);
    net_http_urlencode_full(&corename, system->info.library_name);
@@ -626,7 +670,7 @@ static void netplay_announce(void)
       !string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))) ?
       path_basename(path_get(RARCH_PATH_BASENAME)) : "N/A");
    net_http_urlencode_full(&coreversion, system->info.library_version);
-   net_http_urlencode_full(&frontend_ident, frontend->ident);
+   net_http_urlencode_full(&frontend_ident, frontend_architecture);
 
    buf[0] = '\0';
 
@@ -638,7 +682,7 @@ static void netplay_announce(void)
       *settings->paths.netplay_password ? 1 : 0,
       *settings->paths.netplay_spectate_password ? 1 : 0,
       settings->bools.netplay_use_mitm_server,
-      PACKAGE_VERSION, frontend_ident);
+      PACKAGE_VERSION, frontend_architecture);
 #if 0
    RARCH_LOG("[netplay] announcement URL: %s\n", buf);
 #endif

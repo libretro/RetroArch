@@ -32,6 +32,7 @@
 
 #include <retro_assert.h>
 #include <string/stdstring.h>
+#include <streams/file_stream.h>
 
 #include "libretrodb.h"
 

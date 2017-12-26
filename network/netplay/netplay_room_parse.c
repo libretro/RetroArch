@@ -283,6 +283,11 @@ static JSON_Parser_HandlerResult JSON_CALL ObjectMemberHandler(JSON_Parser parse
             pCtx->cur_field       = strdup(pValue);
             pCtx->cur_member      = &rooms->cur->country;
          }
+         else if (string_is_equal_fast(pValue, "frontend", 7))
+         {
+            pCtx->cur_field       = strdup(pValue);
+            pCtx->cur_member      = &rooms->cur->frontend;
+         }
       }
    }
 

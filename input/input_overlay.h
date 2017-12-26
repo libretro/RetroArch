@@ -172,7 +172,11 @@ struct overlay_desc
    float x;
    float y;
 
-   uint64_t key_mask;
+   /* This is a retro_key value for keyboards */
+   unsigned retro_key_idx;
+
+   /* This is a bit mask of all input binds to set with this overlay control */
+   retro_bits_t button_mask;
 
    char next_index_name[64];
 
@@ -247,7 +251,7 @@ void input_state_overlay(input_overlay_t *ol,
       int16_t *ret, unsigned port, unsigned device, unsigned idx,
       unsigned id);
 
-bool input_overlay_key_pressed(input_overlay_t *ol, int key);
+bool input_overlay_key_pressed(input_overlay_t *ol, unsigned key);
 
 bool input_overlay_is_alive(input_overlay_t *ol);
 

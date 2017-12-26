@@ -1429,11 +1429,6 @@ static int16_t android_input_state(void *data,
    return 0;
 }
 
-static bool android_input_meta_key_pressed(void *data, int key)
-{
-   return false;
-}
-
 static void android_input_free_input(void *data)
 {
    android_input_t *android = (android_input_t*)data;
@@ -1587,7 +1582,6 @@ input_driver_t input_android = {
    android_input_init,
    android_input_poll,
    android_input_state,
-   android_input_meta_key_pressed,
    android_input_free_input,
    android_input_set_sensor_state,
    android_input_get_sensor_input,

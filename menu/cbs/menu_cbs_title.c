@@ -1119,5 +1119,11 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
    if (menu_cbs_init_bind_title_compare_type(cbs, type) == 0)
       return 0;
 
+   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)))
+   {
+      BIND_ACTION_GET_TITLE(cbs, action_get_quick_menu_views_settings_list);
+      return 0;
+   }
+
    return -1;
 }
