@@ -358,16 +358,11 @@ static void frontend_ctr_init(void *data)
    }
    osSetSpeedupEnable(true);
 
-   audio_driver_t* dsp_audio_driver = &audio_ctr_dsp;
    if(csndInit() != 0)
-   {
-      dsp_audio_driver = &audio_ctr_csnd;
-      audio_ctr_csnd = audio_ctr_dsp;
-      audio_ctr_dsp  = audio_null;
-   }
+      audio_ctr_csnd = audio_null;
    ctr_check_dspfirm();
    if(ndspInit() != 0)
-      *dsp_audio_driver = audio_null;
+      audio_ctr_dsp = audio_null;
    cfguInit();
 #endif
 }
