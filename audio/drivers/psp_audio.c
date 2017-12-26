@@ -39,13 +39,16 @@ typedef struct psp_audio
 {
    bool nonblocking;
 
+   uint32_t* buffer;
+   uint32_t* zeroBuffer;
+
+   SceUID thread;
    int rate;
 
-   size_t buffer_size;
-   size_t period_size;
-
    volatile bool running;
-   fifo_buffer_t *buffer;
+   volatile uint16_t read_pos;
+   volatile uint16_t write_pos;
+
    sthread_t *worker_thread;
    slock_t *fifo_lock;
    scond_t *cond;
@@ -55,11 +58,11 @@ typedef struct psp_audio
 
 #define AUDIO_OUT_COUNT 512u
 #define AUDIO_BUFFER_SIZE (1u<<13u)
+#define AUDIO_BUFFER_SIZE_MASK (AUDIO_BUFFER_SIZE-1)
 
 static void audioMainLoop(void *data)
 {
    psp_audio_t* psp = (psp_audio_t*)data;
-   uint8_t     *buf = (uint8_t *)calloc(1, psp->period_size);
 
 #ifdef VITA
    int port         = sceAudioOutOpenPort(
@@ -71,22 +74,34 @@ static void audioMainLoop(void *data)
 
    while (psp->running)
    {
-      size_t avail;
-      size_t fifo_size;
-      slock_lock(psp->fifo_lock);
-      avail = fifo_read_avail(psp->buffer);
-      fifo_size = MIN(psp->period_size, avail);
-      fifo_read(psp->buffer, buf, fifo_size);
-      scond_signal(psp->cond);
-      slock_unlock(psp->fifo_lock);
+      bool cond           = false;
+      uint16_t read_pos   = psp->read_pos;
+      uint16_t read_pos_2 = psp->read_pos;
 
-      /* If underrun, fill rest with silence. */
-      memset(buf + fifo_size, 0, psp->period_size - fifo_size);
+      slock_lock(psp->fifo_lock);
+
+      cond                = ((uint16_t)(psp->write_pos - read_pos) & AUDIO_BUFFER_SIZE_MASK)
+            < (AUDIO_OUT_COUNT * 2);
+
+      if (!cond)
+      {
+         read_pos      += AUDIO_OUT_COUNT;
+         read_pos      &= AUDIO_BUFFER_SIZE_MASK;
+         psp->read_pos  = read_pos;
+      }
+
+      slock_unlock(psp->fifo_lock);
+      slock_lock(psp->cond_lock);
+      scond_signal(psp->cond);
+      slock_unlock(psp->cond_lock);
 
 #ifdef VITA
-      sceAudioOutOutput(port, buf);
+      sceAudioOutOutput(port,
+        cond ? (psp->zeroBuffer)
+              : (psp->buffer + read_pos_2));
 #else
-      sceAudioSRCOutputBlocking(PSP_AUDIO_VOLUME_MAX, buf);
+      sceAudioSRCOutputBlocking(PSP_AUDIO_VOLUME_MAX, cond ? (psp->zeroBuffer)
+            : (psp->buffer + read_pos));
 #endif
    }
 
@@ -96,11 +111,6 @@ static void audioMainLoop(void *data)
    sceAudioSRCChRelease();
 #endif
 
-   slock_lock(psp->cond_lock);
-   psp->running = false;
-   scond_signal(psp->cond);
-   slock_unlock(psp->cond_lock);
-   free(buf);
    return;
 }
 
@@ -117,19 +127,24 @@ static void *psp_audio_init(const char *device,
    (void)device;
    (void)latency;
 
-   psp->buffer_size = AUDIO_BUFFER_SIZE * sizeof(uint32_t);
-   psp->period_size = AUDIO_OUT_COUNT * sizeof(uint32_t);
+   /* Cache aligned, not necessary but helpful. */
+   psp->buffer      = (uint32_t*)
+      memalign(64, AUDIO_BUFFER_SIZE * sizeof(uint32_t));
+   memset(psp->buffer, 0, AUDIO_BUFFER_SIZE * sizeof(uint32_t));
+   psp->zeroBuffer  = (uint32_t*)
+      memalign(64, AUDIO_OUT_COUNT   * sizeof(uint32_t));
+   memset(psp->zeroBuffer, 0, AUDIO_OUT_COUNT * sizeof(uint32_t));
+
+   psp->read_pos    = 0;
+   psp->write_pos   = 0;
+   psp->rate        = rate;
 
    psp->fifo_lock = slock_new();
    psp->cond_lock = slock_new();
    psp->cond = scond_new();
-   psp->buffer = fifo_new(psp->buffer_size);
-
-   psp->rate        = rate;
 
    psp->nonblocking = false;
    psp->running     = true;
-
    psp->worker_thread = sthread_create(audioMainLoop, psp);
 
    return psp;
@@ -144,13 +159,10 @@ static void psp_audio_free(void *data)
    if(psp->running){
       if (psp->worker_thread)
       {
-            slock_lock(psp->cond_lock);
             psp->running = false;
-            slock_unlock(psp->cond_lock);
             sthread_join(psp->worker_thread);
       }
-      if (psp->buffer)
-            fifo_free(psp->buffer);
+      
       if (psp->cond)
             scond_free(psp->cond);
       if (psp->fifo_lock)
@@ -158,58 +170,54 @@ static void psp_audio_free(void *data)
       if (psp->cond_lock)
             slock_free(psp->cond_lock);
    }
-
+   free(psp->buffer);
+   psp->worker_thread = NULL;
+   free(psp->zeroBuffer);
    free(psp);
 }
 
 static ssize_t psp_audio_write(void *data, const void *buf, size_t size)
 {
    psp_audio_t* psp = (psp_audio_t*)data;
+   uint16_t write_pos   = psp->write_pos;
+   uint16_t sampleCount = size / sizeof(uint32_t);
+   
    if (!psp->running)
       return -1;
 
    if (psp->nonblocking)
    {
-      size_t avail;
-      size_t write_amt;
+      if (AUDIO_BUFFER_SIZE - ((uint16_t)
+            (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK) < size)
+      return 0;
+   }
 
-      slock_lock(psp->fifo_lock);
-      avail           = fifo_write_avail(psp->buffer);
-      write_amt       = MIN(avail, size);
+   slock_lock(psp->cond_lock);
+   while (AUDIO_BUFFER_SIZE - ((uint16_t)
+      (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK) < size)
+      scond_wait(psp->cond, psp->cond_lock);
+   slock_unlock(psp->cond_lock);
 
-      fifo_write(psp->buffer, buf, write_amt);
-      slock_unlock(psp->fifo_lock);
-
-      return write_amt;
+   slock_lock(psp->fifo_lock);
+   if((write_pos + sampleCount) > AUDIO_BUFFER_SIZE)
+   {
+      memcpy(psp->buffer + write_pos, buf,
+            (AUDIO_BUFFER_SIZE - write_pos) * sizeof(uint32_t));
+      memcpy(psp->buffer, (uint32_t*) buf +
+            (AUDIO_BUFFER_SIZE - write_pos),
+            (write_pos + sampleCount - AUDIO_BUFFER_SIZE) * sizeof(uint32_t));
    }
    else
-   {
-      size_t written = 0;
-      while (written < size && psp->running)
-      {
-         size_t avail;
-         slock_lock(psp->fifo_lock);
-         avail = fifo_write_avail(psp->buffer);
+      memcpy(psp->buffer + write_pos, buf, size);
 
-         if (avail == 0)
-         {
-            slock_unlock(psp->fifo_lock);
-            slock_lock(psp->cond_lock);
-            if (psp->running)
-               scond_wait(psp->cond, psp->cond_lock);
-            slock_unlock(psp->cond_lock);
-         }
-         else
-         {
-            size_t write_amt = MIN(size - written, avail);
-            fifo_write(psp->buffer,
-                  (const char*)buf + written, write_amt);
-            slock_unlock(psp->fifo_lock);
-            written += write_amt;
-         }
-      }
-      return written;
-   }
+   write_pos      += sampleCount;
+   write_pos      &= AUDIO_BUFFER_SIZE_MASK;
+   psp->write_pos  = write_pos;
+
+   slock_unlock(psp->fifo_lock);
+   return size;
+
+   
 }
 
 static bool psp_audio_alive(void *data)
@@ -274,7 +282,8 @@ static size_t psp_write_avail(void *data)
    if (!psp||!psp->running)
       return 0;
    slock_lock(psp->fifo_lock);
-   val = fifo_write_avail(psp->buffer);
+   val = AUDIO_BUFFER_SIZE - ((uint16_t)
+         (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK);
    slock_unlock(psp->fifo_lock);
    return val;
 }
