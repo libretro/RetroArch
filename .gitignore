@@ -73,6 +73,7 @@ wiiu/wut/elf2rpl/elf2rpl
 *.3dsx
 *.smdh
 
+
 # Ctags
 /tags
 

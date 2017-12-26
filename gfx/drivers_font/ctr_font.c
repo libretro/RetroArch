@@ -27,6 +27,7 @@
 #include "../video_driver.h"
 #include "../common/ctr_common.h"
 #include "../drivers/ctr_gu.h"
+#include "../../ctr/gpu_old.h"
 
 #include "../../verbosity.h"
 
