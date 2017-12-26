@@ -266,6 +266,15 @@ if [ "$HAVE_SDL2" = 'yes' ]; then
    fi
 fi
 
+if [ "$HAVE_FLAC" = 'no' ]; then
+   HAVE_BUILTINFLAC=no
+elif [ "$HAVE_BUILTINFLAC" = 'yes' ]; then
+   HAVE_FLAC=yes
+else
+   check_pkgconf FLAC flac
+   check_val '' FLAC '-lFLAC'
+fi
+
 check_pkgconf LIBUSB libusb-1.0 1.0.13
 
 if [ "$OS" = 'Win32' ]; then
