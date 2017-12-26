@@ -1,4 +1,6 @@
 # 1.7.1 (future)
+- PS3: Enable Cheevos.
+- PSP: Enable threading support through pthreads.
 
 # 1.7.0
 - CHEEVOS: Add badges for achievements, shows thumbnail images of achievements.
