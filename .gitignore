@@ -68,9 +68,6 @@ menu/driverspzarch.c
 *.rpx
 wiiu/wut/elf2rpl/elf2rpl
 
-# 3ds
-/.lst
-
 # Ctags
 /tags
 
