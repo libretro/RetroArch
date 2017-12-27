@@ -668,6 +668,18 @@ CAMERA
 #include "../camera/drivers/nullcamera.c"
 
 /*============================================================
+LEDS
+============================================================ */
+
+#include "../led/led_driver.c"
+
+#include "../led/null_led_driver.c"
+
+#if defined(HAVE_RPILED)
+#include "../led/rpi_led_driver.c"
+#endif
+
+/*============================================================
 LOCATION
 ============================================================ */
 #if defined(ANDROID)
@@ -1309,6 +1321,7 @@ XML
 #include "../deps/miniupnpc/minixml.c"
 #include "../deps/miniupnpc/minisoap.c"
 #endif
+
 
 /*============================================================
 HTTP SERVER
