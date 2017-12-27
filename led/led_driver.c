@@ -27,7 +27,7 @@ bool led_driver_init(void)
    char *drivername     = settings ? settings->arrays.led_driver : NULL;
 
    if(!drivername)
-      drivername = "null";
+      drivername = (char*)"null";
 
    current_led_driver = null_led_driver;
 
