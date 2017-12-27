@@ -41,6 +41,7 @@
 
 #include <windows.h>
 #include <commdlg.h>
+#include <dbt.h>
 #include "../../retroarch.h"
 #include "../../input/input_driver.h"
 #include "../../input/input_keymaps.h"
@@ -68,6 +69,9 @@
 #else
 #define DragQueryFileR DragQueryFileW
 #endif
+
+const GUID GUID_DEVINTERFACE_HID = { 0x4d1e55b2, 0xf16f, 0x11Cf, { 0x88, 0xcb, 0x00, 0x11, 0x11, 0x00, 0x00, 0x30 } };
+HDEVNOTIFY notification_handler;
 
 extern LRESULT win32_menu_loop(HWND owner, WPARAM wparam);
 
@@ -759,6 +763,16 @@ bool win32_window_create(void *data, unsigned style,
    if (!main_window.hwnd)
       return false;
 
+   DEV_BROADCAST_DEVICEINTERFACE notification_filter;
+   ZeroMemory( &notification_filter, sizeof(notification_filter) );
+   notification_filter.dbcc_size = sizeof(DEV_BROADCAST_DEVICEINTERFACE);
+   notification_filter.dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE;
+   notification_filter.dbcc_classguid = GUID_DEVINTERFACE_HID;
+   notification_handler = RegisterDeviceNotification(main_window.hwnd, &notification_filter, DEVICE_NOTIFY_WINDOW_HANDLE);
+
+   if (notification_handler)
+      RARCH_ERR("Error registering for notifications\n");
+
    video_driver_display_type_set(RARCH_DISPLAY_WIN32);
    video_driver_display_set(0);
    video_driver_window_set((uintptr_t)main_window.hwnd);
@@ -1145,6 +1159,7 @@ void win32_destroy_window(void)
 #ifndef _XBOX
    UnregisterClass("RetroArch", GetModuleHandle(NULL));
 #endif
+   UnregisterDeviceNotification(notification_handler);
    main_window.hwnd = NULL;
 }
 
