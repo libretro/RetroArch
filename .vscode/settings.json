@@ -9,4 +9,9 @@
    "editor.tabSize": 3,
    "editor.renderWhitespace": "all",
    "editor.insertSpaces": true,
+   "files.associations": {
+      "frontend_driver.h": "c",
+      "*.in": "c",
+      "*.rh": "c"
+   },
 }

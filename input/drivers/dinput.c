@@ -21,8 +21,6 @@
 #undef DIRECTINPUT_VERSION
 #define DIRECTINPUT_VERSION 0x0800
 
-#define DBT_DEVNODES_CHANGED 0x0007
-
 #ifndef WM_MOUSEHWHEEL
 #define WM_MOUSEHWHEEL 0x20e
 #endif
@@ -32,6 +30,7 @@
 #endif
 
 #include <dinput.h>
+#include <dbt.h>
 
 #include <stdlib.h>
 #include <stddef.h>
@@ -804,11 +803,17 @@ bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lPa
             return true;
          }
       case WM_DEVICECHANGE:
-            if (wParam == DBT_DEVNODES_CHANGED)
+            if (wParam == DBT_DEVICEARRIVAL  || wParam == DBT_DEVICEREMOVECOMPLETE)
             {
-               if (di->joypad)
-                  di->joypad->destroy();
-               di->joypad = input_joypad_init_driver(di->joypad_driver_name, di);
+               PDEV_BROADCAST_HDR pHdr = (PDEV_BROADCAST_HDR)lParam;
+               if( pHdr->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE)
+               {
+                  PDEV_BROADCAST_DEVICEINTERFACE pDevInf = (PDEV_BROADCAST_DEVICEINTERFACE)pHdr;
+                  /* To-Do: Don't destroy everything, lets just handle new devices gracefully */
+                  if (di->joypad)
+                     di->joypad->destroy();
+                  di->joypad = input_joypad_init_driver(di->joypad_driver_name, di);
+               }
             }
          break;
       case WM_MOUSEWHEEL:
