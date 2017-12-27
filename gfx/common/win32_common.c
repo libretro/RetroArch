@@ -751,6 +751,7 @@ bool win32_window_create(void *data, unsigned style,
       RECT *mon_rect, unsigned width,
       unsigned height, bool fullscreen)
 {
+   DEV_BROADCAST_DEVICEINTERFACE notification_filter;
    settings_t *settings  = config_get_ptr();
 #ifndef _XBOX
    main_window.hwnd = CreateWindowEx(0,
@@ -763,7 +764,6 @@ bool win32_window_create(void *data, unsigned style,
    if (!main_window.hwnd)
       return false;
 
-   DEV_BROADCAST_DEVICEINTERFACE notification_filter;
    ZeroMemory( &notification_filter, sizeof(notification_filter) );
    notification_filter.dbcc_size = sizeof(DEV_BROADCAST_DEVICEINTERFACE);
    notification_filter.dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE;
