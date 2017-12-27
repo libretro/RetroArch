@@ -744,9 +744,9 @@ static void xmb_draw_text(
 
    settings = config_get_ptr();
    color = FONT_COLOR_RGBA(
-         settings->uints.menu_xmb_font_color_red,
-         settings->uints.menu_xmb_font_color_green,
-         settings->uints.menu_xmb_font_color_blue, a8);
+         settings->uints.menu_font_color_red,
+         settings->uints.menu_font_color_green,
+         settings->uints.menu_font_color_blue, a8);
 
    menu_display_draw_text(font, str, x, y,
          width, height, color, text_align, scale_factor,
