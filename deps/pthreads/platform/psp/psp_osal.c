@@ -38,7 +38,7 @@
 
 #include <pspkerror.h>
 
-#include "../../pte_osal.h"
+#include "pte_osal.h"
 #include "../../pthread.h"
 #include "../helper/tls-helper.h"
 
