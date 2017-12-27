@@ -22,7 +22,6 @@
 
 #include "win32_common.h"
 #include "gdi_common.h"
-#include "dbt.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
@@ -42,6 +41,7 @@
 
 #include <windows.h>
 #include <commdlg.h>
+#include <dbt.h>
 #include "../../retroarch.h"
 #include "../../input/input_driver.h"
 #include "../../input/input_keymaps.h"
