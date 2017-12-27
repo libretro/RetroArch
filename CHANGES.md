@@ -3,6 +3,7 @@
 - KEYMAPPER: prevent a condition that caused input_menu_toggle to stop working when a RETRO_DEVICE_KEYBOARD type device is enabled
 - PS3: Enable Cheevos.
 - PSP: Enable threading support through pthreads.
+- WINDOWS: Improved Unicode support (for cores/directory creation).
 - WIIU: Overlay support.
 
 # 1.7.0
