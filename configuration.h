@@ -27,6 +27,7 @@
 
 #include "gfx/video_driver.h"
 #include "input/input_defines.h"
+#include "led/led_defines.h"
 
 #define configuration_set_float(settings, var, newvar) \
    settings->modified = true; \
@@ -357,6 +358,8 @@ typedef struct settings
       unsigned input_keymapper_ids[RARCH_CUSTOM_BIND_LIST_END];
 
       unsigned input_remap_ids[MAX_USERS][RARCH_CUSTOM_BIND_LIST_END];
+
+      unsigned led_map[MAX_LEDS];
    } uints;
 
    struct
@@ -367,6 +370,7 @@ typedef struct settings
       char record_driver[32];
       char camera_driver[32];
       char wifi_driver[32];
+      char led_driver[32];
       char location_driver[32];
       char menu_driver[32];
       char cheevos_username[32];

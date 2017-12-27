@@ -191,6 +191,8 @@ OBJ += frontend/frontend.o \
        audio/audio_driver.o \
        $(LIBRETRO_COMM_DIR)/audio/audio_mixer.o \
        input/input_driver.o \
+       led/led_driver.o \
+       led/null_led_driver.o \
        gfx/video_coord_array.o \
        gfx/video_driver.o \
        camera/camera_driver.o \
@@ -1573,4 +1575,8 @@ ifneq ($(findstring DOS,$(OS)),)
    ifeq ($(HAVE_MENU_COMMON), 1)
       OBJ += menu/drivers_display/menu_display_vga.o
    endif
+endif
+
+ifeq ($(HAVE_RPILED), 1)
+   OBJ += led/rpi_led_driver.o
 endif
