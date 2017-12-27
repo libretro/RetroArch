@@ -298,11 +298,7 @@ static bool xmb_show_add     	 = true;
 #endif
 #endif
 
-#if defined(HAVE_LIBRETRODB) && !defined(RARCH_CONSOLE) && !defined(EMSCRIPTEN)
-static bool automatically_add_content_to_playlist = true;
-#else
 static bool automatically_add_content_to_playlist = false;
-#endif
 
 static float menu_framebuffer_opacity = 0.900;
 
@@ -689,6 +685,12 @@ static char buildbot_server_url[] = "";
 #endif
 #elif defined(WIIU)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/nintendo/wiiu/latest/";
+#elif defined(__CELLOS_LV2__) && defined(DEX_BUILD)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/playstation/ps3/latest/dex-ps3/";
+#elif defined(__CELLOS_LV2__) && defined(CEX_BUILD)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/playstation/ps3/latest/cex-ps3/";
+#elif defined(__CELLOS_LV2__) && defined(ODE_BUILD)
+static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/playstation/ps3/latest/ode-ps3/";
 #else
 static char buildbot_server_url[] = "";
 #endif

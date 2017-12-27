@@ -193,12 +193,6 @@ int getaddrinfo_retro(const char *node, const char *service,
    in_addr->sin_family = AF_INET;
    in_addr->sin_port   = inet_htons(strtoul(service, NULL, 0));
 
-   //sin_port seems to be the wrong endian for ps3
-   #if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
-   in_addr->sin_port = (in_addr->sin_port>>8) | (in_addr->sin_port<<8);
-   #endif
-
-
    if (!node && (hints->ai_flags & AI_PASSIVE))
       in_addr->sin_addr.s_addr = INADDR_ANY;
    else if (node && isdigit(*node))
@@ -212,7 +206,7 @@ int getaddrinfo_retro(const char *node, const char *service,
 
       in_addr->sin_family = host->h_addrtype;
 
-#ifdef AF_INET6
+#if defined(AF_INET6) && !defined(__CELLOS_LV2__)
       /* TODO/FIXME - In case we ever want to support IPv6 */
       in_addr->sin_addr.s_addr = inet_addr(host->h_addr_list[0]);
 #else

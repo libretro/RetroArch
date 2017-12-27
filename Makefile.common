@@ -1428,13 +1428,14 @@ ifeq ($(HAVE_BUILTINZLIB),1)
           $(DEPS_DIR)/libz/uncompr.o \
           $(DEPS_DIR)/libz/zutil.o
 else
-ifeq ($(HAVE_ZLIB),1)
+ifeq ($(HAVE_ZLIB), 1)
 OBJ += $(ZLIB_OBJS)
 endif
 endif
 
-ifeq ($(HAVE_7ZIP),1)
-ifeq ($(HAVE_FLAC),1)
+ifeq ($(HAVE_7ZIP), 1)
+ifeq ($(HAVE_ZLIB), 1)
+ifeq ($(HAVE_FLAC), 1)
      DEFINES += -DHAVE_CHD -DWANT_SUBCODE -DWANT_RAW_DATA_SECTOR
      CFLAGS += -I$(LIBRETRO_COMM_DIR)/formats/libchdr
      OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/bitstream.o \
@@ -1443,6 +1444,7 @@ ifeq ($(HAVE_FLAC),1)
             $(LIBRETRO_COMM_DIR)/formats/libchdr/flac.o \
             $(LIBRETRO_COMM_DIR)/formats/libchdr/huffman.o \
             $(LIBRETRO_COMM_DIR)/streams/chd_stream.o
+endif
 endif
 endif
 
@@ -1523,27 +1525,24 @@ ifeq ($(HAVE_NETWORKING), 1)
              cores/libretro-net-retropad/net_retropad_core.o
    endif
 
-   ifeq ($(HAVE_MINIUPNPC), 1)
-      ifeq ($(HAVE_BUILTINMINIUPNPC), 1)
-         DEFINES += -DHAVE_BUILTINMINIUPNPC -DMINIUPNPC_SET_SOCKET_TIMEOUT -DMINIUPNPC_GET_SRC_ADDR
-			DEFINES += -I$(DEPS_DIR)
-         OBJ     += \
-					 $(DEPS_DIR)/miniupnpc/igd_desc_parse.o \
-					 $(DEPS_DIR)/miniupnpc/upnpreplyparse.o \
-					 $(DEPS_DIR)/miniupnpc/upnpcommands.o \
-					 $(DEPS_DIR)/miniupnpc/upnperrors.o \
-					 $(DEPS_DIR)/miniupnpc/connecthostport.o \
-					 $(DEPS_DIR)/miniupnpc/portlistingparse.o \
-					 $(DEPS_DIR)/miniupnpc/receivedata.o \
-					 $(DEPS_DIR)/miniupnpc/upnpdev.o \
-					 $(DEPS_DIR)/miniupnpc/minissdpc.o \
-					 $(DEPS_DIR)/miniupnpc/miniwget.o \
-					 $(DEPS_DIR)/miniupnpc/miniupnpc.o \
-					 $(DEPS_DIR)/miniupnpc/minixml.o \
-					 $(DEPS_DIR)/miniupnpc/minisoap.o
-		else
-		   LIBS += $(MINIUPNPC_LIBS)
-      endif
+   ifeq ($(HAVE_BUILTINMINIUPNPC), 1)
+      DEFINES += -DHAVE_BUILTINMINIUPNPC -DMINIUPNPC_SET_SOCKET_TIMEOUT -DMINIUPNPC_GET_SRC_ADDR
+      DEFINES += -I$(DEPS_DIR)
+      OBJ     += $(DEPS_DIR)/miniupnpc/igd_desc_parse.o \
+                 $(DEPS_DIR)/miniupnpc/upnpreplyparse.o \
+                 $(DEPS_DIR)/miniupnpc/upnpcommands.o \
+                 $(DEPS_DIR)/miniupnpc/upnperrors.o \
+                 $(DEPS_DIR)/miniupnpc/connecthostport.o \
+                 $(DEPS_DIR)/miniupnpc/portlistingparse.o \
+                 $(DEPS_DIR)/miniupnpc/receivedata.o \
+                 $(DEPS_DIR)/miniupnpc/upnpdev.o \
+                 $(DEPS_DIR)/miniupnpc/minissdpc.o \
+                 $(DEPS_DIR)/miniupnpc/miniwget.o \
+                 $(DEPS_DIR)/miniupnpc/miniupnpc.o \
+                 $(DEPS_DIR)/miniupnpc/minixml.o \
+                 $(DEPS_DIR)/miniupnpc/minisoap.o
+   else ifeq ($(HAVE_MINIUPNPC), 1)
+      LIBS    += $(MINIUPNPC_LIBS)
    endif
 endif
 
@@ -1622,6 +1621,29 @@ OBJ += gfx/video_filters/2xsai.o \
 		 gfx/video_filters/blargg_ntsc_snes.o \
 		 gfx/video_filters/lq2x.o \
 		 gfx/video_filters/phosphor2x.o
+endif
+
+ifeq ($(WANT_IOSUHAX), 1)
+DEFINES += -I$(DEPS_DIR)/libiosuhax
+CFLAGS  += -I$(DEPS_DIR)/libiosuhax
+OBJ += $(DEPS_DIR)/libiosuhax/iosuhax.o \
+		 $(DEPS_DIR)/libiosuhax/iosuhax_devoptab.o \
+		 $(DEPS_DIR)/libiosuhax/iosuhax_disc_interface.o
+endif
+
+ifeq ($(WANT_LIBFAT), 1)
+DEFINES += -I$(DEPS_DIR)/libfat/include
+CFLAGS  += -I$(DEPS_DIR)/libfat/include
+OBJ += $(DEPS_DIR)/libfat/cache.o \
+		 $(DEPS_DIR)/libfat/directory.o \
+		 $(DEPS_DIR)/libfat/disc.o \
+		 $(DEPS_DIR)/libfat/fatdir.o \
+		 $(DEPS_DIR)/libfat/fatfile.o \
+		 $(DEPS_DIR)/libfat/file_allocation_table.o \
+		 $(DEPS_DIR)/libfat/filetime.o \
+		 $(DEPS_DIR)/libfat/libfat.o \
+		 $(DEPS_DIR)/libfat/lock.o \
+		 $(DEPS_DIR)/libfat/partition.o
 endif
 
 ifeq ($(HAVE_STATIC_AUDIO_FILTERS), 1)

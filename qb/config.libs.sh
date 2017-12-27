@@ -195,12 +195,12 @@ if [ "$HAVE_NETWORKING" = 'yes' ]; then
    HAVE_NETWORK_CMD=yes
    HAVE_NETWORKGAMEPAD=yes
 
-   if [ "$HAVE_MINIUPNPC" != "no" ]; then
-      check_lib '' MINIUPNPC "-lminiupnpc"
-   fi
-
-   if [ "$HAVE_BUILTINMINIUPNPC" = "yes" ]; then
-      HAVE_MINIUPNPC='yes'
+   if [ "$HAVE_MINIUPNPC" = 'no' ]; then
+      HAVE_BUILTINMINIUPNPC=no
+   elif [ "$HAVE_BUILTINMINIUPNPC" = 'yes' ]; then
+      HAVE_MINIUPNPC=yes
+   else
+      check_lib '' MINIUPNPC '-lminiupnpc'
    fi
 else
    die : 'Warning: All networking features have been disabled.'

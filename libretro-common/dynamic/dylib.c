@@ -23,6 +23,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <dynamic/dylib.h>
+#include <encodings/utf.h>
 
 #ifdef NEED_DYNAMIC
 
@@ -31,6 +32,15 @@
 #include <windows.h>
 #else
 #include <dlfcn.h>
+#endif
+
+/* Assume W-functions do not work below Win2K and Xbox platforms */
+#if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500 || defined(_XBOX)
+
+#ifndef LEGACY_WIN32
+#define LEGACY_WIN32
+#endif
+
 #endif
 
 #ifdef _WIN32
@@ -65,7 +75,14 @@ dylib_t dylib_load(const char *path)
 {
 #ifdef _WIN32
    int prevmode = SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOOPENFILEERRORBOX);
+#ifdef LEGACY_WIN32
    dylib_t lib  = LoadLibrary(path);
+#else
+   wchar_t *pathW = utf8_to_utf16_string_alloc(path);
+   dylib_t lib  = LoadLibraryW(pathW);
+
+   free(pathW);
+#endif
 
    SetErrorMode(prevmode);
 

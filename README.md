@@ -63,6 +63,7 @@ RetroArch also emphasizes on being easy to integrate into various launcher front
 
 RetroArch has been ported to the following platforms:
 
+   - DOS
    - Windows
    - Linux
    - FreeBSD

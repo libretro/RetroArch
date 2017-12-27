@@ -43,14 +43,6 @@ static int16_t nullinput_input_state(void *data,
    return 0;
 }
 
-static bool nullinput_input_meta_key_pressed(void *data, int key)
-{
-   (void)data;
-   (void)key;
-
-   return false;
-}
-
 static void nullinput_input_free_input(void *data)
 {
    (void)data;
@@ -100,7 +92,6 @@ input_driver_t input_null = {
    nullinput_input_init,
    nullinput_input_poll,
    nullinput_input_state,
-   nullinput_input_meta_key_pressed,
    nullinput_input_free_input,
    nullinput_set_sensor_state,
    NULL,

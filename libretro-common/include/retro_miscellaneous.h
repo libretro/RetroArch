@@ -36,11 +36,22 @@
 #include <Xtl.h>
 #endif
 
+#if defined(__CELLOS_LV2__)
+#include <sys/fs_external.h>
+#endif
+
 #include <limits.h>
 
 #ifdef _MSC_VER
 #include <compat/msvc.h>
 #endif
+
+static INLINE void bits_or_bits(uint32_t *a, uint32_t *b, uint32_t count)
+{
+   uint32_t i;
+   for (i = 0; i < count;i++)
+      a[i] |= b[i];
+}
 
 static INLINE void bits_clear_bits(uint32_t *a, uint32_t *b, uint32_t count)
 {
@@ -61,7 +72,9 @@ static INLINE bool bits_any_set(uint32_t* ptr, uint32_t count)
 }
 
 #ifndef PATH_MAX_LENGTH
-#if defined(_XBOX1) || defined(_3DS) || defined(PSP) || defined(GEKKO)|| defined(WIIU)
+#if defined(__CELLOS_LV2__)
+#define PATH_MAX_LENGTH CELL_FS_MAX_FS_PATH_LENGTH
+#elif defined(_XBOX1) || defined(_3DS) || defined(PSP) || defined(GEKKO)|| defined(WIIU)
 #define PATH_MAX_LENGTH 512
 #else
 #define PATH_MAX_LENGTH 4096

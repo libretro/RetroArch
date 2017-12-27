@@ -235,3 +235,5 @@ void GPU_DrawElements(GPU_Primitive_t primitive, u32* indexArray, u32 n) DEPRECA
  * @deprecated
  */
 void GPU_FinishDrawing() DEPRECATED;
+
+void GPU_Finalize(void) DEPRECATED;

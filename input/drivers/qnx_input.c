@@ -803,11 +803,6 @@ static int16_t qnx_input_state(void *data,
    return 0;
 }
 
-static bool qnx_input_meta_key_pressed(void *data, int key)
-{
-    return false;
-}
-
 static void qnx_input_free_input(void *data)
 {
    if (data)
@@ -853,7 +848,6 @@ input_driver_t input_qnx = {
    qnx_input_init,
    qnx_input_poll,
    qnx_input_state,
-   qnx_input_meta_key_pressed,
    qnx_input_free_input,
    NULL,
    NULL,

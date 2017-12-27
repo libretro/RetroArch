@@ -21,6 +21,8 @@
 #undef DIRECTINPUT_VERSION
 #define DIRECTINPUT_VERSION 0x0800
 
+#define DBT_DEVNODES_CHANGED 0x0007
+
 #ifndef WM_MOUSEHWHEEL
 #define WM_MOUSEHWHEEL 0x20e
 #endif
@@ -362,11 +364,6 @@ static int16_t dinput_pressed_analog(struct dinput_input *di,
       pressed_plus  = 0x7fff;
 
    return pressed_plus + pressed_minus;
-}
-
-static bool dinput_meta_key_pressed(void *data, int key)
-{
-   return false;
 }
 
 static int16_t dinput_lightgun_aiming_state( struct dinput_input *di, unsigned idx, unsigned id )
@@ -807,9 +804,12 @@ bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lPa
             return true;
          }
       case WM_DEVICECHANGE:
-            if (di->joypad)
-               di->joypad->destroy();
-            di->joypad = input_joypad_init_driver(di->joypad_driver_name, di);
+            if (wParam == DBT_DEVNODES_CHANGED)
+            {
+               if (di->joypad)
+                  di->joypad->destroy();
+               di->joypad = input_joypad_init_driver(di->joypad_driver_name, di);
+            }
          break;
       case WM_MOUSEWHEEL:
             if (((short) HIWORD(wParam))/120 > 0)
@@ -925,7 +925,6 @@ input_driver_t input_dinput = {
    dinput_init,
    dinput_poll,
    dinput_input_state,
-   dinput_meta_key_pressed,
    dinput_free,
    NULL,
    NULL,

@@ -71,14 +71,14 @@ else
 	HAVE_NETWORKING = 1
 	HAVE_CHEEVOS = 1
 #	WANT_IFADDRS = 1
+	HAVE_OVERLAY = 1
 	HAVE_STATIC_VIDEO_FILTERS = 1
 	HAVE_STATIC_AUDIO_FILTERS = 1
+	WANT_LIBFAT = 1
+	WANT_IOSUHAX = 1
 
 	include Makefile.common
-	BLACKLIST :=
-	BLACKLIST += input/input_overlay.o
-	BLACKLIST += tasks/task_overlay.o
-	BLACKLIST += $(LIBRETRO_COMM_DIR)/net/net_ifinfo.o
+	BLACKLIST := $(LIBRETRO_COMM_DIR)/net/net_ifinfo.o
 	OBJ := $(filter-out $(BLACKLIST),$(OBJ))
 
 	OBJ += gfx/drivers/wiiu_gfx.o
@@ -141,7 +141,7 @@ CFLAGS +=  -ffast-math -Werror=implicit-function-declaration
 #CFLAGS	+= -Wall
 
 #todo: remove -DWIIU and use the built-in macros instead (HW_WUP or __wiiu__).
-CFLAGS += -DWIIU -DMSB_FIRST
+CFLAGS += -DWIIU -DMSB_FIRST -D__WUT__
 CFLAGS += -DHAVE_MAIN
 CFLAGS += -DHAVE_UPDATE_ASSETS
 CFLAGS += -DRARCH_INTERNAL -DRARCH_CONSOLE
@@ -166,7 +166,15 @@ CXXFLAGS := $(CFLAGS) -fno-rtti -fno-exceptions -D_GNU_SOURCE
 
 LDFLAGS  += -Wl,--gc-sections
 
-LIBS	:= $(WHOLE_START) -lretro_wiiu $(WHOLE_END) -lm -lfat -liosuhax
+LIBS	:= $(WHOLE_START) -lretro_wiiu $(WHOLE_END) -lm
+
+ifneq ($(WANT_LIBFAT), 1)
+LIBS += -lfat
+endif
+
+ifneq ($(WANT_IOSUHAX), 1)
+LIBS += -liosuhax
+endif
 
 
 RPX_OBJ           = wiiu/system/stubs_rpl.o

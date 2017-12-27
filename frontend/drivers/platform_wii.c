@@ -124,8 +124,8 @@ static void dol_copy_argv_path(const char *dolpath, const char *argpath)
  * heap memory and are restricted to the stack only. */
 void system_exec_wii(const char *_path, bool should_load_game)
 {
-   FILE *fp;
    size_t size, booter_size;
+   FILE *fp                        = NULL;
    void *dol                       = NULL;
    char path[PATH_MAX_LENGTH]      = {0};
    char game_path[PATH_MAX_LENGTH] = {0};

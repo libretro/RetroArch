@@ -955,7 +955,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    video_driver_set_aspect_ratio_value(
       aspectratio_lut[settings->uints.video_aspect_ratio_idx].value);
 
-   if (settings->bools.video_fullscreen)
+   if (settings->bools.video_fullscreen|| retroarch_is_forced_fullscreen())
    {
       width  = settings->uints.video_fullscreen_x;
       height = settings->uints.video_fullscreen_y;
@@ -999,7 +999,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
 
    video.width         = width;
    video.height        = height;
-   video.fullscreen    = settings->bools.video_fullscreen;
+   video.fullscreen    = settings->bools.video_fullscreen || retroarch_is_forced_fullscreen();
    video.vsync         = settings->bools.video_vsync && !rarch_ctl(RARCH_CTL_IS_NONBLOCK_FORCED, NULL);
    video.force_aspect  = settings->bools.video_force_aspect;
    video.font_enable   = settings->bools.video_font_enable;
@@ -2515,7 +2515,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->post_filter_record    = settings->bools.video_post_filter_record;
    video_info->max_swapchain_images  = settings->uints.video_max_swapchain_images;
    video_info->windowed_fullscreen   = settings->bools.video_windowed_fullscreen;
-   video_info->fullscreen            = settings->bools.video_fullscreen;
+   video_info->fullscreen            = settings->bools.video_fullscreen || retroarch_is_forced_fullscreen();
    video_info->monitor_index         = settings->uints.video_monitor_index;
    video_info->shared_context        = settings->bools.video_shared_context;
 

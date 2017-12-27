@@ -109,7 +109,7 @@ void x11_show_mouse(Display *dpy, Window win, bool state)
 
 void x11_windowed_fullscreen(Display *dpy, Window win)
 {
-   XEvent xev = {0};
+   XEvent xev                 = {0};
 
    XA_NET_WM_STATE            = XInternAtom(dpy, "_NET_WM_STATE", False);
    XA_NET_WM_STATE_FULLSCREEN = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False);
@@ -132,7 +132,7 @@ void x11_windowed_fullscreen(Display *dpy, Window win)
 void x11_move_window(Display *dpy, Window win, int x, int y,
       unsigned width, unsigned height)
 {
-   XEvent xev = {0};
+   XEvent xev               = {0};
 
    XA_NET_MOVERESIZE_WINDOW = XInternAtom(dpy, "_NET_MOVERESIZE_WINDOW", False);
 
@@ -162,9 +162,9 @@ static void x11_set_window_class(Display *dpy, Window win)
 
 static void x11_set_window_pid(Display *dpy, Window win)
 {
-    long scret;
-    char *hostname;
-    pid_t pid = getpid();
+    long scret     = 0;
+    char *hostname = NULL;
+    pid_t pid      = getpid();
 
     XChangeProperty(dpy, win, XInternAtom(dpy, "_NET_WM_PID", False),
         XA_CARDINAL, 32, PropModeReplace, (unsigned char *)&pid, 1);
@@ -238,9 +238,9 @@ static bool get_video_mode(video_frame_info_t *video_info,
       Display *dpy, unsigned width, unsigned height,
       XF86VidModeModeInfo *mode, XF86VidModeModeInfo *desktop_mode)
 {
-   float refresh_mod;
    int i, num_modes            = 0;
    bool ret                    = false;
+   float refresh_mod           = 0.0f;
    float minimum_fps_diff      = 0.0f;
    XF86VidModeModeInfo **modes = NULL;
 
@@ -386,15 +386,15 @@ bool x11_get_metrics(void *data,
 static void x11_handle_key_event(XEvent *event, XIC ic, bool filter)
 {
    int i;
-   unsigned key;
    uint32_t chars[32];
+   unsigned key   = 0;
    uint16_t mod   = 0;
    unsigned state = event->xkey.state;
-   bool down     = event->type == KeyPress;
-   int num       = 0;
-   KeySym keysym = 0;
+   bool down      = event->type == KeyPress;
+   int num        = 0;
+   KeySym keysym  = 0;
 
-   chars[0] = '\0';
+   chars[0]       = '\0';
 
    if (!filter)
    {

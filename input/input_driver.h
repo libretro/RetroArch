@@ -147,8 +147,6 @@ typedef struct input_driver
          const struct retro_keybind **retro_keybinds,
          unsigned port, unsigned device, unsigned index, unsigned id);
 
-   bool (*meta_key_pressed)(void *data, int key);
-
    /* Frees the input struct. */
    void (*free)(void *data);
 

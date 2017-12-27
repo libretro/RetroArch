@@ -39,6 +39,7 @@ struct netplay_host
 
    char address[NETPLAY_HOST_STR_LEN];
    char nick[NETPLAY_HOST_STR_LEN];
+   char frontend[NETPLAY_HOST_STR_LEN];
    char core[NETPLAY_HOST_STR_LEN];
    char core_version[NETPLAY_HOST_STR_LEN];
    char retroarch_version[NETPLAY_HOST_STR_LEN];
@@ -69,6 +70,7 @@ struct netplay_room
    int  port;
    int  mitm_port;
    char corename    [PATH_MAX_LENGTH];
+   char frontend    [PATH_MAX_LENGTH];
    char coreversion [PATH_MAX_LENGTH];
    char gamename    [PATH_MAX_LENGTH];
    int  gamecrc;
