@@ -311,7 +311,11 @@ if [ "$HAVE_OPENGL" != 'no' ] && [ "$HAVE_OPENGLES" != 'yes' ]; then
    fi
 fi
 
-if [ "$HAVE_ZLIB" != 'no' ]; then
+if [ "$HAVE_ZLIB" = 'no' ]; then
+   HAVE_BUILTINZLIB=no
+elif [ "$HAVE_BUILTINZLIB" = 'yes' ]; then
+   HAVE_ZLIB=yes
+else
    check_pkgconf ZLIB zlib
    check_val '' ZLIB '-lz'
 fi
