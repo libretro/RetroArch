@@ -67,12 +67,12 @@ CFComparisonResult iohidmanager_sort_elements(const void *val1, const void *val2
    uint32_t cookie2 = (uint32_t)IOHIDElementGetCookie((IOHIDElementRef)val2);
 
    if (page1 != page2)
-      return (enum CFComparisonResult)(page1 > page2);
+      return (CFComparisonResult)(page1 > page2);
 
    if(use1 != use2)
-       return (enum CFComparisonResult)(use1 > use2);
+       return (CFComparisonResult)(use1 > use2);
 
-   return (enum CFComparisonResult)(cookie1 > cookie2);
+   return (CFComparisonResult)(cookie1 > cookie2);
 }
 
 static bool iohidmanager_check_for_id(apple_input_rec_t *rec, uint32_t id)
