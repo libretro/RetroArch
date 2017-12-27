@@ -1,5 +1,6 @@
 # 1.7.1 (future)
-- COMMON: Fix menu toggle with keymapper active.
+- DINPUT: don't reinitialize input driver on network events / media insertion / network drive connection
+- KEYMAPPER: prevent a condition that caused input_menu_toggle to stop working when a RETRO_DEVICE_KEYBOARD type device is enabled
 - PS3: Enable Cheevos.
 - PSP: Enable threading support through pthreads.
 
