@@ -41,6 +41,7 @@
 #include "config.features.h"
 #include "input/input_keymaps.h"
 #include "input/input_remapping.h"
+#include "led/led_defines.h"
 #include "defaults.h"
 #include "core.h"
 #include "dirs.h"
@@ -886,6 +887,18 @@ const char *config_get_default_wifi(void)
 }
 
 /**
+ * config_get_default_led:
+ *
+ * Gets default led driver.
+ *
+ * Returns: Default led driver.
+ **/
+const char *config_get_default_led(void)
+{
+   return "null";
+}
+
+/**
  * config_get_default_location:
  *
  * Gets default location driver.
@@ -982,7 +995,7 @@ static struct config_array_setting *populate_settings_array(settings_t *settings
    SETTING_ARRAY("bundle_assets_src_path",   settings->arrays.bundle_assets_src, false, NULL, true);
    SETTING_ARRAY("bundle_assets_dst_path",   settings->arrays.bundle_assets_dst, false, NULL, true);
    SETTING_ARRAY("bundle_assets_dst_path_subdir", settings->arrays.bundle_assets_dst_subdir, false, NULL, true);
-
+   SETTING_ARRAY("led_driver",               settings->arrays.led_driver, false, NULL, true);
    *size = count;
 
    return tmp;
@@ -1429,7 +1442,7 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("video_msg_bgcolor_red",        &settings->uints.video_msg_bgcolor_red, true, message_bgcolor_red, false);
    SETTING_UINT("video_msg_bgcolor_green",        &settings->uints.video_msg_bgcolor_green, true, message_bgcolor_green, false);
    SETTING_UINT("video_msg_bgcolor_blue",        &settings->uints.video_msg_bgcolor_blue, true, message_bgcolor_blue, false);
-
+   
    *size = count;
 
    return tmp;
@@ -1479,6 +1492,7 @@ static void config_set_defaults(void)
 #endif
    const char *def_camera          = config_get_default_camera();
    const char *def_wifi            = config_get_default_wifi();
+   const char *def_led             = config_get_default_led();
    const char *def_location        = config_get_default_location();
    const char *def_record          = config_get_default_record();
    struct config_float_setting      *float_settings = populate_settings_float  (settings, &float_settings_size);
@@ -1536,6 +1550,9 @@ static void config_set_defaults(void)
    if (def_wifi)
       strlcpy(settings->arrays.wifi_driver,
             def_wifi, sizeof(settings->arrays.wifi_driver));
+   if (def_led)
+      strlcpy(settings->arrays.led_driver,
+            def_led, sizeof(settings->arrays.led_driver));
    if (def_location)
       strlcpy(settings->arrays.location_driver,
             def_location, sizeof(settings->arrays.location_driver));
@@ -2455,6 +2472,18 @@ static bool config_load_file(const char *path, bool set_defaults,
          CONFIG_GET_INT_BASE(conf, settings, uints.input_libretro_device[i], buf);
       }
    }
+
+   /* LED map for use by the led driver */
+   for (i = 0; i < MAX_LEDS; i++)
+   {
+      char buf[64];
+
+      buf[0] = '\0';
+
+      snprintf(buf, sizeof(buf), "led%u_map", i + 1);
+      CONFIG_GET_INT_BASE(conf, settings, uints.led_map[i], buf);
+   }
+   
    {
       /* ugly hack around C89 not allowing mixing declarations and code */
       int buffer_size = 0;

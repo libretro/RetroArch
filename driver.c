@@ -37,6 +37,7 @@
 #include "record/record_driver.h"
 #include "location/location_driver.h"
 #include "wifi/wifi_driver.h"
+#include "led/led_driver.h"
 #include "configuration.h"
 #include "core.h"
 #include "core_info.h"
@@ -316,6 +317,7 @@ static bool driver_update_system_av_info(const struct retro_system_av_info *info
 void drivers_init(int flags)
 {
    bool video_is_threaded = false;
+
    if (flags & DRIVER_VIDEO_MASK)
       video_driver_unset_own_driver();
    if (flags & DRIVER_AUDIO_MASK)
@@ -383,6 +385,11 @@ void drivers_init(int flags)
       if (input_driver_is_nonblock_state())
          driver_set_nonblock_state();
    }
+
+   if (flags & DRIVER_LED_MASK)
+   {
+      led_driver_init();
+   }
 }
 
 
@@ -429,6 +436,9 @@ void driver_uninit(int flags)
    if ((flags & DRIVER_WIFI_MASK) && !wifi_driver_ctl(RARCH_WIFI_CTL_OWNS_DRIVER, NULL))
       wifi_driver_ctl(RARCH_WIFI_CTL_DEINIT, NULL);
 
+   if (flags & DRIVER_LED)
+      led_driver_free();
+   
    if (flags & DRIVERS_VIDEO_INPUT)
       video_driver_free();
 
@@ -440,7 +450,7 @@ void driver_uninit(int flags)
 
    if ((flags & DRIVER_INPUT_MASK) && !input_driver_owns_driver())
       input_driver_destroy_data();
-
+   
    if ((flags & DRIVER_AUDIO_MASK) && !audio_driver_owns_driver())
       audio_driver_destroy_data();
 }

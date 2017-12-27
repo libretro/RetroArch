@@ -201,6 +201,8 @@ OBJ += frontend/frontend.o \
        audio/audio_driver.o \
        $(LIBRETRO_COMM_DIR)/audio/audio_mixer.o \
        input/input_driver.o \
+       led/led_driver.o \
+       led/null_led_driver.o \
        gfx/video_coord_array.o \
        gfx/video_display_server.o \
        gfx/video_driver.o \
@@ -1656,4 +1658,8 @@ OBJ += libretro-common/audio/dsp_filters/echo.o \
 		 libretro-common/audio/dsp_filters/phaser.o \
 		 libretro-common/audio/dsp_filters/reverb.o \
 		 libretro-common/audio/dsp_filters/wahwah.o
+endif
+
+ifeq ($(HAVE_RPILED), 1)
+   OBJ += led/rpi_led_driver.o
 endif

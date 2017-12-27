@@ -232,6 +232,7 @@ check_lib '' OSS_LIB -lossaudio
 
 if [ "$OS" = 'Linux' ]; then
    HAVE_TINYALSA=yes
+   HAVE_RPILED=yes
 fi
 
 if [ "$OS" = 'Darwin' ]; then

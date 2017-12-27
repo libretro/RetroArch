@@ -54,6 +54,7 @@
 #include "driver.h"
 #include "performance_counters.h"
 #include "gfx/video_driver.h"
+#include "led/led_driver.h"
 
 #include "cores/internal_cores.h"
 #include "frontend/frontend_driver.h"
@@ -1680,6 +1681,13 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
       }
 
+      case RETRO_ENVIRONMENT_GET_LED_INTERFACE:
+      {
+         struct retro_led_interface *ledintf =
+            (struct retro_led_interface *)data;
+         ledintf->set_led_state = led_driver_set_led;
+      }
+      
       default:
          RARCH_LOG("Environ UNSUPPORTED (#%u).\n", cmd);
          return false;
