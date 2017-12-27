@@ -148,11 +148,13 @@ static int action_select_input_desc(const char *path, const char *label, unsigne
    return action_right_input_desc(type, label, true);
 }
 
+#ifdef HAVE_KEYMAPPER
 static int action_select_input_desc_kbd(const char *path, const char *label, unsigned type,
    size_t idx)
 {
    return action_right_input_desc_kbd(type, label, true);
 }
+#endif
 
 static int action_select_netplay_connect_room(const char *path, const char *label, unsigned type,
    size_t idx)

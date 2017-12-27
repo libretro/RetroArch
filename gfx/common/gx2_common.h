@@ -1,9 +1,6 @@
-
-
 #include <wiiu/gx2.h>
 
 #include "wiiu/tex_shader.h"
-
 
 #undef _X
 #undef _B
@@ -35,13 +32,21 @@ typedef struct
 {
    float x;
    float y;
-}position_t;
+} position_t;
 
 typedef struct
 {
    float u;
    float v;
-}tex_coord_t;
+} tex_coord_t;
+
+struct gx2_overlay_data
+{
+   GX2Texture tex;
+   float tex_coord[8];
+   float vertex_coord[8];
+   float alpha_mod;
+};
 
 typedef struct
 {
@@ -55,6 +60,13 @@ typedef struct
       position_t* position;
       tex_coord_t* tex_coord;
    } menu;
+
+#ifdef HAVE_OVERLAY
+   struct gx2_overlay_data *overlay;
+   unsigned overlays;
+   bool overlay_enable;
+   bool overlay_full_screen;
+#endif
 
    GX2Sampler sampler_nearest;
    GX2Sampler sampler_linear;
@@ -70,7 +82,7 @@ typedef struct
       tex_coord_t* tex_coords;
       int size;
       int current;
-   }vertex_cache;
+   } vertex_cache;
 
    void* drc_scan_buffer;
    void* tv_scan_buffer;
@@ -89,5 +101,4 @@ typedef struct
    bool keep_aspect;
    bool should_resize;
    bool render_msg_enabled;
-
 } wiiu_video_t;

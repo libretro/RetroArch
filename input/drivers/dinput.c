@@ -21,6 +21,8 @@
 #undef DIRECTINPUT_VERSION
 #define DIRECTINPUT_VERSION 0x0800
 
+#define DBT_DEVNODES_CHANGED 0x0007
+
 #ifndef WM_MOUSEHWHEEL
 #define WM_MOUSEHWHEEL 0x20e
 #endif
@@ -802,9 +804,12 @@ bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lPa
             return true;
          }
       case WM_DEVICECHANGE:
-            if (di->joypad)
-               di->joypad->destroy();
-            di->joypad = input_joypad_init_driver(di->joypad_driver_name, di);
+            if (wParam == DBT_DEVNODES_CHANGED)
+            {
+               if (di->joypad)
+                  di->joypad->destroy();
+               di->joypad = input_joypad_init_driver(di->joypad_driver_name, di);
+            }
          break;
       case WM_MOUSEWHEEL:
             if (((short) HIWORD(wParam))/120 > 0)

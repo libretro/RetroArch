@@ -188,8 +188,8 @@ static void frontend_wiiu_exec(const char *path, bool should_load_game)
       u32 argc;
       char * argv[3];
       char args[];
-   }*param = getApplicationEndAddr();
-   int len = 0;
+   }*param     = getApplicationEndAddr();
+   int len     = 0;
    param->argc = 0;
 
    if(!path || !*path)
@@ -395,7 +395,7 @@ static devoptab_t dotab_stdout =
 };
 #endif
 
-void SaveCallback()
+void SaveCallback(void)
 {
    OSSavesDone_ReadyToRelease();
 }
@@ -517,7 +517,7 @@ unsigned long _times_r(struct _reent *r, struct tms *tmsbuf)
    return 0;
 }
 
-void __eabi()
+void __eabi(void)
 {
 
 }
@@ -556,7 +556,7 @@ void someFunc(void *arg)
 
 static int mcp_hook_fd = -1;
 
-int MCPHookOpen()
+int MCPHookOpen(void)
 {
    //take over mcp thread
    mcp_hook_fd = IOS_Open("/dev/mcp", 0);
@@ -578,7 +578,7 @@ int MCPHookOpen()
    return 0;
 }
 
-void MCPHookClose()
+void MCPHookClose(void)
 {
    if (mcp_hook_fd < 0)
       return;
@@ -630,12 +630,14 @@ static void fsdev_exit(void)
 /* HBL elf entry point */
 int __entry_menu(int argc, char **argv)
 {
+   int ret;
+
    InitFunctionPointers();
    memoryInitialize();
    __init();
    fsdev_init();
 
-   int ret = main(argc, argv);
+   ret = main(argc, argv);
 
    fsdev_exit();
    __fini();
@@ -654,9 +656,11 @@ void _start(int argc, char **argv)
 
    fsdev_exit();
 
-/* TODO: fix elf2rpl so it doesn't error with "Could not find matching symbol
-         for relocation" then uncomment this */
-// __fini();
+   /* TODO: fix elf2rpl so it doesn't error with "Could not find matching symbol
+      for relocation" then uncomment this */
+#if 0
+   __fini();
+#endif
    memoryRelease();
    SYSRelaunchTitle(0, 0);
    exit(0);

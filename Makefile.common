@@ -1430,13 +1430,14 @@ ifeq ($(HAVE_BUILTINZLIB),1)
           $(DEPS_DIR)/libz/uncompr.o \
           $(DEPS_DIR)/libz/zutil.o
 else
-ifeq ($(HAVE_ZLIB),1)
+ifeq ($(HAVE_ZLIB), 1)
 OBJ += $(ZLIB_OBJS)
 endif
 endif
 
-ifeq ($(HAVE_7ZIP),1)
-ifeq ($(HAVE_FLAC),1)
+ifeq ($(HAVE_7ZIP), 1)
+ifeq ($(HAVE_ZLIB), 1)
+ifeq ($(HAVE_FLAC), 1)
      DEFINES += -DHAVE_CHD -DWANT_SUBCODE -DWANT_RAW_DATA_SECTOR
      CFLAGS += -I$(LIBRETRO_COMM_DIR)/formats/libchdr
      OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/bitstream.o \
@@ -1445,6 +1446,7 @@ ifeq ($(HAVE_FLAC),1)
             $(LIBRETRO_COMM_DIR)/formats/libchdr/flac.o \
             $(LIBRETRO_COMM_DIR)/formats/libchdr/huffman.o \
             $(LIBRETRO_COMM_DIR)/streams/chd_stream.o
+endif
 endif
 endif
 
@@ -1525,27 +1527,24 @@ ifeq ($(HAVE_NETWORKING), 1)
              cores/libretro-net-retropad/net_retropad_core.o
    endif
 
-   ifeq ($(HAVE_MINIUPNPC), 1)
-      ifeq ($(HAVE_BUILTINMINIUPNPC), 1)
-         DEFINES += -DHAVE_BUILTINMINIUPNPC -DMINIUPNPC_SET_SOCKET_TIMEOUT -DMINIUPNPC_GET_SRC_ADDR
-			DEFINES += -I$(DEPS_DIR)
-         OBJ     += \
-					 $(DEPS_DIR)/miniupnpc/igd_desc_parse.o \
-					 $(DEPS_DIR)/miniupnpc/upnpreplyparse.o \
-					 $(DEPS_DIR)/miniupnpc/upnpcommands.o \
-					 $(DEPS_DIR)/miniupnpc/upnperrors.o \
-					 $(DEPS_DIR)/miniupnpc/connecthostport.o \
-					 $(DEPS_DIR)/miniupnpc/portlistingparse.o \
-					 $(DEPS_DIR)/miniupnpc/receivedata.o \
-					 $(DEPS_DIR)/miniupnpc/upnpdev.o \
-					 $(DEPS_DIR)/miniupnpc/minissdpc.o \
-					 $(DEPS_DIR)/miniupnpc/miniwget.o \
-					 $(DEPS_DIR)/miniupnpc/miniupnpc.o \
-					 $(DEPS_DIR)/miniupnpc/minixml.o \
-					 $(DEPS_DIR)/miniupnpc/minisoap.o
-		else
-		   LIBS += $(MINIUPNPC_LIBS)
-      endif
+   ifeq ($(HAVE_BUILTINMINIUPNPC), 1)
+      DEFINES += -DHAVE_BUILTINMINIUPNPC -DMINIUPNPC_SET_SOCKET_TIMEOUT -DMINIUPNPC_GET_SRC_ADDR
+      DEFINES += -I$(DEPS_DIR)
+      OBJ     += $(DEPS_DIR)/miniupnpc/igd_desc_parse.o \
+                 $(DEPS_DIR)/miniupnpc/upnpreplyparse.o \
+                 $(DEPS_DIR)/miniupnpc/upnpcommands.o \
+                 $(DEPS_DIR)/miniupnpc/upnperrors.o \
+                 $(DEPS_DIR)/miniupnpc/connecthostport.o \
+                 $(DEPS_DIR)/miniupnpc/portlistingparse.o \
+                 $(DEPS_DIR)/miniupnpc/receivedata.o \
+                 $(DEPS_DIR)/miniupnpc/upnpdev.o \
+                 $(DEPS_DIR)/miniupnpc/minissdpc.o \
+                 $(DEPS_DIR)/miniupnpc/miniwget.o \
+                 $(DEPS_DIR)/miniupnpc/miniupnpc.o \
+                 $(DEPS_DIR)/miniupnpc/minixml.o \
+                 $(DEPS_DIR)/miniupnpc/minisoap.o
+   else ifeq ($(HAVE_MINIUPNPC), 1)
+      LIBS    += $(MINIUPNPC_LIBS)
    endif
 endif
 
