@@ -106,59 +106,58 @@ int pspStubThreadEntry (unsigned int argc, void *argv)
 
 pte_osResult pte_osInit(void)
 {
-  pte_osResult result;
-  pspThreadData *pThreadData;
-  char cancelSemName[64];
+   pte_osResult result;
+   pspThreadData *pThreadData;
+   char cancelSemName[64];
 
-  /* Allocate and initialize TLS support */
-  result = pteTlsGlobalInit(PSP_MAX_TLS);
+   /* Allocate and initialize TLS support */
+   result = pteTlsGlobalInit(PSP_MAX_TLS);
 
-  if (result == PTE_OS_OK)
-  {
+   if (result == PTE_OS_OK)
+   {
+      /* Allocate a key that we use to store control information (e.g. cancellation semaphore) per thread */
+      result = pteTlsAlloc(&threadDataKey);
 
-    /* Allocate a key that we use to store control information (e.g. cancellation semaphore) per thread */
-    result = pteTlsAlloc(&threadDataKey);
-
-    if (result == PTE_OS_OK)
+      if (result == PTE_OS_OK)
       {
 
-	/* Initialize the structure used to emulate TLS for 
-	 * non-POSIX threads 
-	 */
-	globalTls = pteTlsThreadInit();
+         /* Initialize the structure used to emulate TLS for 
+          * non-POSIX threads 
+          */
+         globalTls = pteTlsThreadInit();
 
-	/* Also create a "thread data" structure for a single non-POSIX thread. */
+         /* Also create a "thread data" structure for a single non-POSIX thread. */
 
-	/* Allocate some memory for our per-thread control data.  We use this for:
-	 * 1. Entry point and parameters for the user thread's main function.
-	 * 2. Semaphore used for thread cancellation.
-	 */
-	pThreadData = (pspThreadData *) malloc(sizeof(pspThreadData));
-	
-	if (pThreadData == NULL)
-	  {
-	    result = PTE_OS_NO_RESOURCES;
-	  }
-	else
-	  {
+         /* Allocate some memory for our per-thread control data.  We use this for:
+          * 1. Entry point and parameters for the user thread's main function.
+          * 2. Semaphore used for thread cancellation.
+          */
+         pThreadData = (pspThreadData *) malloc(sizeof(pspThreadData));
 
-	    /* Save a pointer to our per-thread control data as a TLS value */
-	    pteTlsSetValue(globalTls, threadDataKey, pThreadData);
-	
-	    /* Create a semaphore used to cancel threads */
-	    snprintf(cancelSemName, sizeof(cancelSemName), "pthread_cancelSemGlobal");
-	    
-	    pThreadData->cancelSem = sceKernelCreateSema(cancelSemName,
-							 0,          /* attributes (default) */
-							 0,          /* initial value        */
-							 255,        /* maximum value        */
-							 0);         /* options (default)    */
-	    result = PTE_OS_OK;
-	  }
+         if (pThreadData == NULL)
+         {
+            result = PTE_OS_NO_RESOURCES;
+         }
+         else
+         {
+
+            /* Save a pointer to our per-thread control data as a TLS value */
+            pteTlsSetValue(globalTls, threadDataKey, pThreadData);
+
+            /* Create a semaphore used to cancel threads */
+            snprintf(cancelSemName, sizeof(cancelSemName), "pthread_cancelSemGlobal");
+
+            pThreadData->cancelSem = sceKernelCreateSema(cancelSemName,
+                  0,          /* attributes (default) */
+                  0,          /* initial value        */
+                  255,        /* maximum value        */
+                  0);         /* options (default)    */
+            result = PTE_OS_OK;
+         }
       }
-  }
+   }
 
-  return result;
+   return result;
 }
 
 /****************************************************************************
@@ -656,13 +655,11 @@ pte_osResult pte_osSemaphoreCancellablePend(pte_osSemaphoreHandle semHandle, uns
                   result = PTE_OS_INTERRUPTED;
                   break;
                }
+               /* Nothing found and not timed out yet; let's yield so we're not
+                * in busy loop.
+                */
                else
-               {
-                  /* Nothing found and not timed out yet; let's yield so we're not
-                   * in busy loop.
-                   */
                   sceKernelDelayThread(POLLING_DELAY_IN_us);
-               }
             }
             else
             {
