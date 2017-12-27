@@ -30,17 +30,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <pspkerror.h>
-#include "pte_osal.h"
-#include "pthread.h"
-#include "../helper/tls-helper.h"
 
 /* For ftime */
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/timeb.h>
 
-#define MAX_PSP_UID 2048 // SWAG
+#include <pspkerror.h>
+
+#include "../../pte_osal.h"
+#include "../../pthread.h"
+#include "../helper/tls-helper.h"
+
+#define MAX_PSP_UID 2048 /* SWAG */
 
 #define DEFAULT_STACK_SIZE_BYTES 4096
 
@@ -171,150 +173,143 @@ pte_osResult pte_osThreadCreate(pte_osThreadEntryPoint entryPoint,
                                 void *argv,
                                 pte_osThreadHandle* ppte_osThreadHandle)
 {
-  char threadName[64];
-  char cancelSemName[64];
-  static int threadNum = 1;
-  int pspAttr;
-  void *pTls;
-  SceUID threadId;
-  pte_osResult result;
-  pspThreadData *pThreadData;
+   char threadName[64];
+   char cancelSemName[64];
+   static int threadNum = 1;
+   int pspAttr;
+   void *pTls;
+   SceUID threadId;
+   pte_osResult result;
+   pspThreadData *pThreadData;
 
-  if (threadNum++ > MAX_PSP_UID)
-    {
+   if (threadNum++ > MAX_PSP_UID)
       threadNum = 0;
-    }
 
-  /* Make sure that the stack we're going to allocate is big enough */
-  if (stackSize < DEFAULT_STACK_SIZE_BYTES)
-    {
+   /* Make sure that the stack we're going to allocate is big enough */
+   if (stackSize < DEFAULT_STACK_SIZE_BYTES)
       stackSize = DEFAULT_STACK_SIZE_BYTES;
-    }
 
-  /* Allocate TLS structure for this thread. */
-  pTls = pteTlsThreadInit();
-  if (pTls == NULL)
-    {
+   /* Allocate TLS structure for this thread. */
+   pTls = pteTlsThreadInit();
+   if (pTls == NULL)
+   {
       PSP_DEBUG("pteTlsThreadInit: PTE_OS_NO_RESOURCES\n");
       result = PTE_OS_NO_RESOURCES;
       goto FAIL0;
-    }
+   }
 
-  /* Allocate some memory for our per-thread control data.  We use this for:
-   * 1. Entry point and parameters for the user thread's main function.
-   * 2. Semaphore used for thread cancellation.
-   */
-  pThreadData = (pspThreadData *) malloc(sizeof(pspThreadData));
+   /* Allocate some memory for our per-thread control data.  We use this for:
+    * 1. Entry point and parameters for the user thread's main function.
+    * 2. Semaphore used for thread cancellation.
+    */
+   pThreadData = (pspThreadData *) malloc(sizeof(pspThreadData));
 
-  if (pThreadData == NULL)
-    {
+   if (pThreadData == NULL)
+   {
       pteTlsThreadDestroy(pTls);
 
       PSP_DEBUG("malloc(pspThreadData): PTE_OS_NO_RESOURCES\n");
       result = PTE_OS_NO_RESOURCES;
       goto FAIL0;
-    }
+   }
 
-  /* Save a pointer to our per-thread control data as a TLS value */
-  pteTlsSetValue(pTls, threadDataKey, pThreadData);
+   /* Save a pointer to our per-thread control data as a TLS value */
+   pteTlsSetValue(pTls, threadDataKey, pThreadData);
 
-  pThreadData->entryPoint = entryPoint;
-  pThreadData->argv = argv;
+   pThreadData->entryPoint = entryPoint;
+   pThreadData->argv = argv;
 
-  /* Create a semaphore used to cancel threads */
-  snprintf(cancelSemName, sizeof(cancelSemName), "pthread_cancelSem%04d", threadNum);
+   /* Create a semaphore used to cancel threads */
+   snprintf(cancelSemName, sizeof(cancelSemName), "pthread_cancelSem%04d", threadNum);
 
-  pThreadData->cancelSem = sceKernelCreateSema(cancelSemName,
-                           0,          /* attributes (default) */
-                           0,          /* initial value        */
-                           255,        /* maximum value        */
-                           0);         /* options (default)    */
+   pThreadData->cancelSem = sceKernelCreateSema(cancelSemName,
+         0,          /* attributes (default) */
+         0,          /* initial value        */
+         255,        /* maximum value        */
+         0);         /* options (default)    */
 
 
-  /* In order to emulate TLS functionality, we append the address of the TLS structure that we
-   * allocated above to the thread's name.  To set or get TLS values for this thread, the user
-   * needs to get the name of the thread from the OS and then parse the name to extract
-   * a pointer to the TLS structure.
-   */
-  snprintf(threadName, sizeof(threadName), "pthread%04d__%x", threadNum, (unsigned int) pTls);
+   /* In order to emulate TLS functionality, we append the address of the TLS structure that we
+    * allocated above to the thread's name.  To set or get TLS values for this thread, the user
+    * needs to get the name of the thread from the OS and then parse the name to extract
+    * a pointer to the TLS structure.
+    */
+   snprintf(threadName, sizeof(threadName), "pthread%04d__%x", threadNum, (unsigned int) pTls);
 
-  pspAttr = 0;
+   pspAttr = 0;
 
-  //  printf("%s %p %d %d %d\n",threadName, pspStubThreadEntry, initialPriority, stackSize, pspAttr);
-  threadId = sceKernelCreateThread(threadName,
-                                   pspStubThreadEntry,
-                                   initialPriority,
-                                   stackSize,
-                                   pspAttr,
-                                   NULL);
+#if 0
+   printf("%s %p %d %d %d\n",threadName, pspStubThreadEntry, initialPriority, stackSize, pspAttr);
+#endif
+   threadId = sceKernelCreateThread(threadName,
+         pspStubThreadEntry,
+         initialPriority,
+         stackSize,
+         pspAttr,
+         NULL);
 
-  if (threadId == (SceUID) SCE_KERNEL_ERROR_NO_MEMORY)
-    {
+   if (threadId == (SceUID) SCE_KERNEL_ERROR_NO_MEMORY)
+   {
       free(pThreadData);
       pteTlsThreadDestroy(pTls);
 
       PSP_DEBUG("sceKernelCreateThread: PTE_OS_NO_RESOURCES\n");
       result =  PTE_OS_NO_RESOURCES;
-    }
-  else if (threadId < 0)
-    {
+   }
+   else if (threadId < 0)
+   {
       free(pThreadData);
       pteTlsThreadDestroy(pTls);
 
       PSP_DEBUG("sceKernelCreateThread: PTE_OS_GENERAL_FAILURE\n");
       result = PTE_OS_GENERAL_FAILURE;
-    }
-  else
-    {
+   }
+   else
+   {
       *ppte_osThreadHandle = threadId;
       result = PTE_OS_OK;
-    }
+   }
 
 FAIL0:
-  return result;
+   return result;
 }
-
 
 pte_osResult pte_osThreadStart(pte_osThreadHandle osThreadHandle)
 {
-  sceKernelStartThread(osThreadHandle, 0, NULL);
+   sceKernelStartThread(osThreadHandle, 0, NULL);
 
-  return PTE_OS_OK;
+   return PTE_OS_OK;
 }
 
 
 pte_osResult pte_osThreadDelete(pte_osThreadHandle handle)
 {
-  pspThreadData *pThreadData;
-  void *pTls;
+   void                 *pTls = getTlsStructFromThread(handle);
+   pspThreadData *pThreadData = getThreadData(handle);
 
-  pTls = getTlsStructFromThread(handle);
+   sceKernelDeleteSema(pThreadData->cancelSem);  
 
-  pThreadData = getThreadData(handle);
+   free(pThreadData);
 
-  sceKernelDeleteSema(pThreadData->cancelSem);  
+   pteTlsThreadDestroy(pTls);
 
-  free(pThreadData);
+   sceKernelDeleteThread(handle);
 
-  pteTlsThreadDestroy(pTls);
-
-  sceKernelDeleteThread(handle);
-
-  return PTE_OS_OK;
+   return PTE_OS_OK;
 }
 
 pte_osResult pte_osThreadExitAndDelete(pte_osThreadHandle handle)
 {
-  pte_osThreadDelete(handle);
+   pte_osThreadDelete(handle);
 
-  sceKernelExitDeleteThread(0);
+   sceKernelExitDeleteThread(0);
 
-  return PTE_OS_OK;
+   return PTE_OS_OK;
 }
 
-void pte_osThreadExit()
+void pte_osThreadExit(void)
 {
-  sceKernelExitThread(0);
+   sceKernelExitThread(0);
 }
 
 /*
@@ -323,13 +318,11 @@ void pte_osThreadExit()
  */
 pte_osResult pte_osThreadWaitForEnd(pte_osThreadHandle threadHandle)
 {
-  pte_osResult result;
-  pspThreadData *pThreadData;
+   pte_osResult result;
+   pspThreadData *pThreadData = getThreadData(sceKernelGetThreadId());
 
-  pThreadData = getThreadData(sceKernelGetThreadId());
-
-  while (1)
-    {
+   while (1)
+   {
       SceKernelThreadRunStatus info;
 
       /* Poll task to see if it has ended */
@@ -338,131 +331,108 @@ pte_osResult pte_osThreadWaitForEnd(pte_osThreadHandle threadHandle)
       sceKernelReferThreadRunStatus(threadHandle, &info);      
 
       if (info.status == PSP_THREAD_STOPPED)
-        {
-	  /* Thread has ended */
-          result = PTE_OS_OK;
-          break;
-        }
+      {
+         /* Thread has ended */
+         result = PTE_OS_OK;
+         break;
+      }
       else
-        {
-          SceKernelSemaInfo semInfo;
+      {
+         SceKernelSemaInfo semInfo;
 
-          if (pThreadData != NULL)
+         if (pThreadData != NULL)
+         {
+            SceUID osResult;
+
+            osResult = sceKernelReferSemaStatus(pThreadData->cancelSem, &semInfo);
+
+            if (osResult == SCE_KERNEL_ERROR_OK)
             {
-	      SceUID osResult;
-	      
-              osResult = sceKernelReferSemaStatus(pThreadData->cancelSem, &semInfo);
-	      
-	      if (osResult == SCE_KERNEL_ERROR_OK)
-		{
-		  if (semInfo.currentCount > 0)
-		    {
-		      result = PTE_OS_INTERRUPTED;
-		      break;
-		    }
-		  else
-		    {
-		      /* Nothing found and not timed out yet; let's yield so we're not
-		       * in busy loop.
-		       */
-		      sceKernelDelayThread(POLLING_DELAY_IN_us);
-		    }
-		}
-	      else
-		{
-		  result = PTE_OS_GENERAL_FAILURE;
-		  break;
-		}
+               if (semInfo.currentCount > 0)
+               {
+                  result = PTE_OS_INTERRUPTED;
+                  break;
+               }
+               /* Nothing found and not timed out yet; let's yield so we're not
+                * in busy loop.
+                */
+               else
+                  sceKernelDelayThread(POLLING_DELAY_IN_us);
             }
-        }
-    }
+            else
+            {
+               result = PTE_OS_GENERAL_FAILURE;
+               break;
+            }
+         }
+      }
+   }
 
 
-  return result;
+   return result;
 }
 
 pte_osThreadHandle pte_osThreadGetHandle(void)
 {
-  return sceKernelGetThreadId();
+   return sceKernelGetThreadId();
 }
 
 int pte_osThreadGetPriority(pte_osThreadHandle threadHandle)
 {
-  SceKernelThreadInfo thinfo;
+   SceKernelThreadInfo thinfo;
 
-  thinfo.size = sizeof(SceKernelThreadInfo);
+   thinfo.size = sizeof(SceKernelThreadInfo);
 
-  sceKernelReferThreadStatus(threadHandle, &thinfo);
+   sceKernelReferThreadStatus(threadHandle, &thinfo);
 
-  return thinfo.currentPriority;
+   return thinfo.currentPriority;
 }
 
 pte_osResult pte_osThreadSetPriority(pte_osThreadHandle threadHandle, int newPriority)
 {
-  sceKernelChangeThreadPriority(threadHandle, newPriority);
-  return PTE_OS_OK;
+   sceKernelChangeThreadPriority(threadHandle, newPriority);
+   return PTE_OS_OK;
 }
 
 pte_osResult pte_osThreadCancel(pte_osThreadHandle threadHandle)
 {
-  SceUID osResult;
-  pte_osResult result;
-  pspThreadData *pThreadData;
+   pspThreadData *pThreadData = getThreadData(threadHandle);
+   SceUID osResult            = sceKernelSignalSema(pThreadData->cancelSem, 1);
 
-  pThreadData = getThreadData(threadHandle);
+   if (osResult == SCE_KERNEL_ERROR_OK)
+      return PTE_OS_OK;
 
-  osResult = sceKernelSignalSema(pThreadData->cancelSem, 1);
-
-  if (osResult == SCE_KERNEL_ERROR_OK)
-    {
-      result = PTE_OS_OK;
-    }
-  else
-    {
-      result = PTE_OS_GENERAL_FAILURE;
-    }
-
-  return result;
+   return PTE_OS_GENERAL_FAILURE;
 }
 
 
 pte_osResult pte_osThreadCheckCancel(pte_osThreadHandle threadHandle)
 {
-  pspThreadData *pThreadData;
-  SceKernelSemaInfo semInfo;
-  SceUID osResult;
-  pte_osResult result;
+   SceKernelSemaInfo semInfo;
+   SceUID osResult;
+   pte_osResult result;
+   pspThreadData *pThreadData = getThreadData(threadHandle);
 
-  pThreadData = getThreadData(threadHandle);
-
-  if (pThreadData != NULL)
-    {
+   if (pThreadData != NULL)
+   {
       osResult = sceKernelReferSemaStatus(pThreadData->cancelSem, &semInfo);
 
       if (osResult == SCE_KERNEL_ERROR_OK)
-	{
-	  if (semInfo.currentCount > 0)
-	    {
-	      result = PTE_OS_INTERRUPTED;
-	    }
-	  else
-	    {
-	      result = PTE_OS_OK;
-	    }
-	}
+      {
+         if (semInfo.currentCount > 0)
+            result = PTE_OS_INTERRUPTED;
+         else
+            result = PTE_OS_OK;
+      }
+      /* sceKernelReferSemaStatus returned an error */
       else
-	{
-	  /* sceKernelReferSemaStatus returned an error */
-	  result = PTE_OS_GENERAL_FAILURE;
-	}
-    }
-  else
-    {
-      /* For some reason, we couldn't get thread data */
+         result = PTE_OS_GENERAL_FAILURE;
+   }
+   /* For some reason, we couldn't get thread data */
+   else
       result = PTE_OS_GENERAL_FAILURE;
-    }
 
-  return result;
+   return result;
 }
 
 void pte_osThreadSleep(unsigned int msecs)
@@ -470,17 +440,17 @@ void pte_osThreadSleep(unsigned int msecs)
   sceKernelDelayThread(msecs*1000);
 }
 
-int pte_osThreadGetMinPriority()
+int pte_osThreadGetMinPriority(void)
 {
   return 17;
 }
 
-int pte_osThreadGetMaxPriority()
+int pte_osThreadGetMaxPriority(void)
 {
   return 30;
 }
 
-int pte_osThreadGetDefaultPriority()
+int pte_osThreadGetDefaultPriority(void)
 {
   return 18;
 }
@@ -493,26 +463,24 @@ int pte_osThreadGetDefaultPriority()
 
 pte_osResult pte_osMutexCreate(pte_osMutexHandle *pHandle)
 {
-  static int mutexCtr = 0;
-  char mutexName[32];
-  pte_osMutexHandle handle;
+   static int mutexCtr = 0;
+   char mutexName[32];
+   pte_osMutexHandle handle;
 
-  if (mutexCtr++ > MAX_PSP_UID)
-    {
+   if (mutexCtr++ > MAX_PSP_UID)
       mutexCtr = 0;
-    }
 
-  snprintf(mutexName,sizeof(mutexName),"mutex%d",mutexCtr);
+   snprintf(mutexName,sizeof(mutexName),"mutex%d",mutexCtr);
 
-  handle = sceKernelCreateSema(mutexName,
-                               0,          /* attributes (default) */
-                               1,          /* initial value        */
-                               1,          /* maximum value        */
-                               0);         /* options (default)    */
+   handle = sceKernelCreateSema(mutexName,
+         0,          /* attributes (default) */
+         1,          /* initial value        */
+         1,          /* maximum value        */
+         0);         /* options (default)    */
 
-  *pHandle = handle;
+   *pHandle = handle;
 
-  return PTE_OS_OK;
+   return PTE_OS_OK;
 }
 
 pte_osResult pte_osMutexDelete(pte_osMutexHandle handle)
@@ -522,41 +490,31 @@ pte_osResult pte_osMutexDelete(pte_osMutexHandle handle)
   return PTE_OS_OK;
 }
 
-
-
 pte_osResult pte_osMutexLock(pte_osMutexHandle handle)
 {
-  sceKernelWaitSema(handle, 1, NULL);
+   sceKernelWaitSema(handle, 1, NULL);
 
-  return PTE_OS_OK;
+   return PTE_OS_OK;
 }
 
 pte_osResult pte_osMutexTimedLock(pte_osMutexHandle handle, unsigned int timeoutMsecs)
 {
-  pte_osResult result;
-  SceUInt timeoutUsecs = timeoutMsecs*1000;
+   SceUInt timeoutUsecs = timeoutMsecs*1000;
+   int status = sceKernelWaitSema(handle, 1, &timeoutUsecs);
 
-  int status = sceKernelWaitSema(handle, 1, &timeoutUsecs);
+   /* Assume that any error from sceKernelWaitSema was due to a timeout */
+   if (status < 0)
+      return PTE_OS_TIMEOUT;
 
-  if (status < 0)
-    {
-      // Assume that any error from sceKernelWaitSema was due to a timeout
-      result = PTE_OS_TIMEOUT;
-    }
-  else
-    {
-      result = PTE_OS_OK;
-    }
-
-  return result;
+   return PTE_OS_OK;
 }
 
 
 pte_osResult pte_osMutexUnlock(pte_osMutexHandle handle)
 {
-  sceKernelSignalSema(handle, 1);
+   sceKernelSignalSema(handle, 1);
 
-  return PTE_OS_OK;
+   return PTE_OS_OK;
 }
 
 /****************************************************************************
@@ -567,76 +525,65 @@ pte_osResult pte_osMutexUnlock(pte_osMutexHandle handle)
 
 pte_osResult pte_osSemaphoreCreate(int initialValue, pte_osSemaphoreHandle *pHandle)
 {
-  pte_osSemaphoreHandle handle;
-  static int semCtr = 0;
-  char semName[32];
+   pte_osSemaphoreHandle handle;
+   static int semCtr = 0;
+   char semName[32];
 
-  if (semCtr++ > MAX_PSP_UID)
-    {
+   if (semCtr++ > MAX_PSP_UID)
       semCtr = 0;
-    }
 
-  snprintf(semName,sizeof(semName),"pthread_sem%d",semCtr);
+   snprintf(semName,sizeof(semName),"pthread_sem%d",semCtr);
 
-  handle = sceKernelCreateSema(semName,
-                               0,              /* attributes (default) */
-                               initialValue,   /* initial value        */
-                               SEM_VALUE_MAX,  /* maximum value        */
-                               0);             /* options (default)    */
+   handle = sceKernelCreateSema(semName,
+         0,              /* attributes (default) */
+         initialValue,   /* initial value        */
+         SEM_VALUE_MAX,  /* maximum value        */
+         0);             /* options (default)    */
 
-  *pHandle = handle;
+   *pHandle = handle;
 
-  return PTE_OS_OK;
+   return PTE_OS_OK;
 }
 
 pte_osResult pte_osSemaphoreDelete(pte_osSemaphoreHandle handle)
 {
-  sceKernelDeleteSema(handle);
+   sceKernelDeleteSema(handle);
 
-  return PTE_OS_OK;
+   return PTE_OS_OK;
 }
 
 
 pte_osResult pte_osSemaphorePost(pte_osSemaphoreHandle handle, int count)
 {
-  sceKernelSignalSema(handle, count);
+   sceKernelSignalSema(handle, count);
 
-  return PTE_OS_OK;
+   return PTE_OS_OK;
 }
 
 pte_osResult pte_osSemaphorePend(pte_osSemaphoreHandle handle, unsigned int *pTimeoutMsecs)
 {
-  unsigned int timeoutUsecs;
-  unsigned int *pTimeoutUsecs;
-  SceUInt result;
-  pte_osResult osResult;
+   unsigned int timeoutUsecs;
+   unsigned int *pTimeoutUsecs;
+   SceUInt result;
+   pte_osResult osResult;
 
-  if (pTimeoutMsecs == NULL)
-    {
+   if (pTimeoutMsecs == NULL)
       pTimeoutUsecs = NULL;
-    }
-  else
-    {
+   else
+   {
       timeoutUsecs = *pTimeoutMsecs * 1000;
       pTimeoutUsecs = &timeoutUsecs;
-    }
+   }
 
-  result = sceKernelWaitSema(handle, 1, pTimeoutUsecs);
+   result = sceKernelWaitSema(handle, 1, pTimeoutUsecs);
 
-  if (result == SCE_KERNEL_ERROR_OK)
-    {
-      osResult = PTE_OS_OK;
-    }
-  else if (result == SCE_KERNEL_ERROR_WAIT_TIMEOUT)
-    {
-      osResult = PTE_OS_TIMEOUT;
-    }
-  else
-    {
-      osResult = PTE_OS_GENERAL_FAILURE;
-    }
+   if (result == SCE_KERNEL_ERROR_OK)
+      return PTE_OS_OK;
 
-  return osResult;
+   if (result == SCE_KERNEL_ERROR_WAIT_TIMEOUT)
+      return PTE_OS_TIMEOUT;
+
+   return PTE_OS_GENERAL_FAILURE;
 }
 
 
@@ -648,31 +595,31 @@ pte_osResult pte_osSemaphorePend(pte_osSemaphoreHandle handle, unsigned int *pTi
  */
 pte_osResult pte_osSemaphoreCancellablePend(pte_osSemaphoreHandle semHandle, unsigned int *pTimeout)
 {
-  pspThreadData *pThreadData;
+   pspThreadData *pThreadData;
 
-  pThreadData = getThreadData(sceKernelGetThreadId());
+   pThreadData = getThreadData(sceKernelGetThreadId());
 
-  clock_t start_time;
-  pte_osResult result =  PTE_OS_OK;
-  unsigned int timeout;
-  unsigned char timeoutEnabled;
+   clock_t start_time;
+   pte_osResult result =  PTE_OS_OK;
+   unsigned int timeout;
+   unsigned char timeoutEnabled;
 
-  start_time = clock();
+   start_time = clock();
 
-  // clock() is in microseconds, timeout as passed in was in milliseconds
-  if (pTimeout == NULL)
-    {
+   // clock() is in microseconds, timeout as passed in was in milliseconds
+   if (pTimeout == NULL)
+   {
       timeout = 0;
       timeoutEnabled = 0;
-    }
-  else
-    {
+   }
+   else
+   {
       timeout = *pTimeout * 1000;
       timeoutEnabled = 1;
-    }
+   }
 
-  while (1)
-    {
+   while (1)
+   {
       SceUInt semTimeout;
       int status;
 
@@ -681,52 +628,52 @@ pte_osResult pte_osSemaphoreCancellablePend(pte_osSemaphoreHandle semHandle, uns
       status = sceKernelWaitSema(semHandle, 1, &semTimeout);
 
       if (status == SCE_KERNEL_ERROR_OK)
-        {
-          /* User semaphore posted to */
-          result = PTE_OS_OK;
-          break;
-        }
+      {
+         /* User semaphore posted to */
+         result = PTE_OS_OK;
+         break;
+      }
       else if ((timeoutEnabled) && ((clock() - start_time) > timeout))
-        {
-          /* Timeout expired */
-          result = PTE_OS_TIMEOUT;
-          break;
-        }
+      {
+         /* Timeout expired */
+         result = PTE_OS_TIMEOUT;
+         break;
+      }
       else
-        {
-          SceKernelSemaInfo semInfo;
+      {
+         SceKernelSemaInfo semInfo;
 
-          if (pThreadData != NULL)
+         if (pThreadData != NULL)
+         {
+            SceUID osResult;
+
+            osResult = sceKernelReferSemaStatus(pThreadData->cancelSem, &semInfo);
+
+            if (osResult == SCE_KERNEL_ERROR_OK)
             {
-	      SceUID osResult;
-	      
-              osResult = sceKernelReferSemaStatus(pThreadData->cancelSem, &semInfo);
-	      
-	      if (osResult == SCE_KERNEL_ERROR_OK)
-		{
-		  if (semInfo.currentCount > 0)
-		    {
-		      result = PTE_OS_INTERRUPTED;
-		      break;
-		    }
-		  else
-		    {
-		      /* Nothing found and not timed out yet; let's yield so we're not
-		       * in busy loop.
-		       */
-		      sceKernelDelayThread(POLLING_DELAY_IN_us);
-		    }
-		}
-	      else
-		{
-		  result = PTE_OS_GENERAL_FAILURE;
-		  break;
-		}
+               if (semInfo.currentCount > 0)
+               {
+                  result = PTE_OS_INTERRUPTED;
+                  break;
+               }
+               else
+               {
+                  /* Nothing found and not timed out yet; let's yield so we're not
+                   * in busy loop.
+                   */
+                  sceKernelDelayThread(POLLING_DELAY_IN_us);
+               }
             }
-        }
-    }
+            else
+            {
+               result = PTE_OS_GENERAL_FAILURE;
+               break;
+            }
+         }
+      }
+   }
 
-  return result;
+   return result;
 }
 
 
@@ -738,77 +685,69 @@ pte_osResult pte_osSemaphoreCancellablePend(pte_osSemaphoreHandle semHandle, uns
 
 int pte_osAtomicExchange(int *ptarg, int val)
 {
-  int intc = pspSdkDisableInterrupts();
-  int origVal;
+   int intc    = pspSdkDisableInterrupts();
+   int origVal = *ptarg;
 
-  origVal = *ptarg;
+   *ptarg = val;
 
-  *ptarg = val;
+   pspSdkEnableInterrupts(intc);
 
-  pspSdkEnableInterrupts(intc);
-
-  return origVal;
+   return origVal;
 
 }
 
 int pte_osAtomicCompareExchange(int *pdest, int exchange, int comp)
 {
-  int intc = pspSdkDisableInterrupts();
-  int origVal;
+   int intc    = pspSdkDisableInterrupts();
+   int origVal = *pdest;
 
-  origVal = *pdest;
-
-  if (*pdest == comp)
-    {
+   if (*pdest == comp)
       *pdest = exchange;
-    }
 
-  pspSdkEnableInterrupts(intc);
+   pspSdkEnableInterrupts(intc);
 
-  return origVal;
+   return origVal;
 }
 
 
 int pte_osAtomicExchangeAdd(int volatile* pAddend, int value)
 {
-  int origVal;
-  int intc = pspSdkDisableInterrupts();
+   int intc    = pspSdkDisableInterrupts();
+   int origVal = *pAddend;
 
-  origVal = *pAddend;
+   *pAddend += value;
 
-  *pAddend += value;
+   pspSdkEnableInterrupts(intc);
 
-  pspSdkEnableInterrupts(intc);
-
-  return origVal;
+   return origVal;
 }
 
 int pte_osAtomicDecrement(int *pdest)
 {
-  int val;
+   int val;
 
-  int intc = pspSdkDisableInterrupts();
+   int intc = pspSdkDisableInterrupts();
 
-  (*pdest)--;
-  val = *pdest;
+   (*pdest)--;
+   val = *pdest;
 
-  pspSdkEnableInterrupts(intc);
+   pspSdkEnableInterrupts(intc);
 
-  return val;
+   return val;
 }
 
 int pte_osAtomicIncrement(int *pdest)
 {
-  int val;
+   int val;
 
-  int intc = pspSdkDisableInterrupts();
+   int intc = pspSdkDisableInterrupts();
 
-  (*pdest)++;
-  val = *pdest;
+   (*pdest)++;
+   val = *pdest;
 
-  pspSdkEnableInterrupts(intc);
+   pspSdkEnableInterrupts(intc);
 
-  return val;
+   return val;
 }
 
 /****************************************************************************
@@ -819,45 +758,34 @@ int pte_osAtomicIncrement(int *pdest)
 
 static pspThreadData *getThreadData(SceUID threadHandle)
 {
-  pspThreadData *pThreadData;
-  void *pTls;
+   void *pTls = getTlsStructFromThread(threadHandle);
+   pspThreadData *pThreadData = (pspThreadData *)
+      pteTlsGetValue(pTls, threadDataKey);
 
-  pTls = getTlsStructFromThread(threadHandle);
-
-  pThreadData = (pspThreadData *) pteTlsGetValue(pTls, threadDataKey);
-
-  return pThreadData;
+   return pThreadData;
 }
 
 static void *getTlsStructFromThread(SceUID thid)
 {
-  SceKernelThreadInfo thinfo;
-  unsigned int ptr;
-  unsigned int thrNum;
-  void *pTls;
-  int numMatches;
+   SceKernelThreadInfo thinfo;
+   unsigned int ptr;
+   unsigned int thrNum;
+   int numMatches;
 
+   thinfo.size = sizeof(SceKernelThreadInfo);
 
-  thinfo.size = sizeof(SceKernelThreadInfo);
+   sceKernelReferThreadStatus(thid, &thinfo);
 
-  sceKernelReferThreadStatus(thid, &thinfo);
+   numMatches = sscanf(thinfo.name,"pthread%04d__%x", &thrNum, &ptr);
 
-  numMatches = sscanf(thinfo.name,"pthread%04d__%x", &thrNum, &ptr);
+   /* If we were called from a pthread, use the TLS allocated when the thread
+    * was created.  Otherwise, we were called from a non-pthread, so use the
+    * "global".  This is a pretty bad hack, but necessary due to lack of TLS on PSP.
+    */
+   if (numMatches == 2)
+      return (void *) ptr;
 
-  /* If we were called from a pthread, use the TLS allocated when the thread
-   * was created.  Otherwise, we were called from a non-pthread, so use the
-   * "global".  This is a pretty bad hack, but necessary due to lack of TLS on PSP.
-   */
-  if (numMatches == 2)
-    {
-      pTls = (void *) ptr;
-    }
-  else
-    {
-      pTls = globalTls;
-    }
-
-  return pTls;
+   return globalTls;
 }
 
 /****************************************************************************
@@ -868,38 +796,31 @@ static void *getTlsStructFromThread(SceUID thid)
 
 pte_osResult pte_osTlsSetValue(unsigned int key, void * value)
 {
-  void *pTls;
+   void *pTls = getTlsStructFromThread(sceKernelGetThreadId());
 
-  pTls = getTlsStructFromThread(sceKernelGetThreadId());
-
-  return pteTlsSetValue(pTls, key, value);
+   return pteTlsSetValue(pTls, key, value);
 }
 
 void * pte_osTlsGetValue(unsigned int index)
 {
+   void *pTls = getTlsStructFromThread(sceKernelGetThreadId());
 
-  void *pTls;
-
-  pTls = getTlsStructFromThread(sceKernelGetThreadId());
-
-  return (void *) pteTlsGetValue(pTls, index);
+   return (void *) pteTlsGetValue(pTls, index);
 
 }
 
 
 pte_osResult pte_osTlsAlloc(unsigned int *pKey)
 {
-  void * pTls;
+   void *pTls = getTlsStructFromThread(sceKernelGetThreadId());
 
-  pTls = getTlsStructFromThread(sceKernelGetThreadId());
-
-  return pteTlsAlloc(pKey);
+   return pteTlsAlloc(pKey);
 
 }
 
 pte_osResult pte_osTlsFree(unsigned int index)
 {
-  return pteTlsFree(index);
+   return pteTlsFree(index);
 }
 
 /****************************************************************************
@@ -910,15 +831,15 @@ pte_osResult pte_osTlsFree(unsigned int index)
 
 int ftime(struct timeb *tb)
 {
-  struct timeval tv;
-  struct timezone tz;
+   struct timeval tv;
+   struct timezone tz;
 
-  gettimeofday(&tv, &tz);
+   gettimeofday(&tv, &tz);
 
-  tb->time = tv.tv_sec;
-  tb->millitm = tv.tv_usec / 1000;
-  tb->timezone = tz.tz_minuteswest;
-  tb->dstflag = tz.tz_dsttime;
+   tb->time = tv.tv_sec;
+   tb->millitm = tv.tv_usec / 1000;
+   tb->timezone = tz.tz_minuteswest;
+   tb->dstflag = tz.tz_dsttime;
 
-  return 0;
+   return 0;
 }

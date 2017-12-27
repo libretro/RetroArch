@@ -29,9 +29,9 @@
 #ifndef _TLS_HELPER_H_
 #define _TLS_HELPER_H_
 
-#include "pte_osal.h"
+#include "../../pte_osal.h"
 
-/// @todo document..
+/* @todo document.. */
 
 pte_osResult pteTlsGlobalInit(int maxEntries);
 void * pteTlsThreadInit(void);

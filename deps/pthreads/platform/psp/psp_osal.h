@@ -37,9 +37,6 @@ typedef SceUID pte_osMutexHandle;
 
 #define OS_IS_HANDLE_VALID(x) ((x) > 0)
 
-
-
-
 #define OS_MAX_SIMUL_THREADS 10
 
 #define OS_DEFAULT_PRIO 11
@@ -47,11 +44,11 @@ typedef SceUID pte_osMutexHandle;
 #define OS_MIN_PRIO 17
 #define OS_MAX_PRIO 32
 
-//#define HAVE_THREAD_SAFE_ERRNO
+#if 0
+#define HAVE_THREAD_SAFE_ERRNO
+#endif
 
 #define POLLING_DELAY_IN_us 100
-
-
 
 #define OS_MAX_SEM_VALUE 254
 
