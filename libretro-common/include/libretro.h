@@ -1094,6 +1094,21 @@ struct retro_hw_render_interface
    enum retro_hw_render_interface_type interface_type;
    unsigned interface_version;
 };
+
+
+#define RETRO_ENVIRONMENT_GET_LED_INTERFACE (46 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+                                           /* struct retro_led_interface * --
+                                            * Gets an interface which is used by a libretro core to set 
+                                            * state of LEDs.
+                                            */
+
+typedef void (RETRO_CALLCONV *retro_set_led_state_t)(int led, int state);
+struct retro_led_interface
+{
+    retro_set_led_state_t set_led_state;
+};
+
+
 #define RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE (41 | RETRO_ENVIRONMENT_EXPERIMENTAL)
                                            /* const struct retro_hw_render_interface ** --
                                             * Returns an API specific rendering interface for accessing API specific data.
