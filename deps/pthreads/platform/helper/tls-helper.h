@@ -29,7 +29,7 @@
 #ifndef _TLS_HELPER_H_
 #define _TLS_HELPER_H_
 
-#include "../../pte_osal.h"
+#include "../psp/pte_osal.h"
 
 /* @todo document.. */
 
