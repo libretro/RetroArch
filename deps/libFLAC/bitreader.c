@@ -116,7 +116,7 @@ struct FLAC__BitReader {
 
 static INLINE void crc16_update_word_(FLAC__BitReader *br, brword word)
 {
-	register unsigned crc = br->read_crc16;
+   unsigned crc = br->read_crc16;
 #if FLAC__BYTES_PER_WORD == 4
 	switch(br->crc16_align) {
 		case  0: crc = FLAC__CRC16_UPDATE((unsigned)(word >> 24), crc); /* fallthrough */
