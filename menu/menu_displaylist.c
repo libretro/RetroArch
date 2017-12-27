@@ -5268,13 +5268,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                PARSE_ONLY_PATH, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_XMB_FONT_COLOR_RED,
-               PARSE_ONLY_PATH, false);
+               PARSE_ONLY_UINT, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_XMB_FONT_COLOR_GREEN,
-               PARSE_ONLY_PATH, false);
+               PARSE_ONLY_UINT, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_XMB_FONT_COLOR_BLUE,
-               PARSE_ONLY_PATH, false);
+               PARSE_ONLY_UINT, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_XMB_THEME,
                PARSE_ONLY_UINT, false);
