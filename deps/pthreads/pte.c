@@ -74,9 +74,8 @@ static int pte_thread_detach_common (unsigned char threadShouldExit)
        */
       pte_thread_t * sp = (pte_thread_t *) pthread_getspecific (pte_selfThreadKey);
 
-      if (sp != NULL) // otherwise OS thread with no implicit POSIX handle.
+      if (sp) // otherwise OS thread with no implicit POSIX handle.
       {
-
          pte_callUserDestroyRoutines (sp);
 
          (void) pthread_mutex_lock (&sp->cancelLock);
@@ -91,22 +90,18 @@ static int pte_thread_detach_common (unsigned char threadShouldExit)
          if (sp->detachState == PTHREAD_CREATE_DETACHED)
          {
             if (threadShouldExit)
-            {
                pte_threadExitAndDestroy (sp);
-            }
             else
-            {
                pte_threadDestroy (sp);
-            }
 
-            // pte_osTlsSetValue (pte_selfThreadKey->key, NULL);
+#if 0
+            pte_osTlsSetValue (pte_selfThreadKey->key, NULL);
+#endif
          }
          else
          {
             if (threadShouldExit)
-            {
                pte_osThreadExit();
-            }
          }
       }
    }
@@ -116,41 +111,34 @@ static int pte_thread_detach_common (unsigned char threadShouldExit)
 
 static void pte_threadDestroyCommon (pthread_t thread, unsigned char shouldThreadExit)
 {
-   pte_thread_t * tp = (pte_thread_t *) thread;
    pte_thread_t threadCopy;
+   pte_thread_t * tp = (pte_thread_t *) thread;
 
-   if (tp != NULL)
+   if (!tp)
+      return;
+
+   /*
+    * Copy thread state so that the thread can be atomically NULLed.
+    */
+   memcpy (&threadCopy, tp, sizeof (threadCopy));
+
+   /*
+    * Thread ID structs are never freed. They're NULLed and reused.
+    * This also sets the thread to PThreadStateInitial (invalid).
+    */
+   pte_threadReusePush (thread);
+
+   (void) pthread_mutex_destroy(&threadCopy.cancelLock);
+   (void) pthread_mutex_destroy(&threadCopy.threadLock);
+
+   if (threadCopy.threadId != 0)
    {
-      /*
-       * Copy thread state so that the thread can be atomically NULLed.
-       */
-      memcpy (&threadCopy, tp, sizeof (threadCopy));
-
-      /*
-       * Thread ID structs are never freed. They're NULLed and reused.
-       * This also sets the thread to PThreadStateInitial (invalid).
-       */
-      pte_threadReusePush (thread);
-
-      (void) pthread_mutex_destroy(&threadCopy.cancelLock);
-      (void) pthread_mutex_destroy(&threadCopy.threadLock);
-
-      if (threadCopy.threadId != 0)
-      {
-         if (shouldThreadExit)
-         {
-            pte_osThreadExitAndDelete(threadCopy.threadId);
-         }
-         else
-         {
-            pte_osThreadDelete(threadCopy.threadId);
-         }
-      }
-
-
-
+      if (shouldThreadExit)
+         pte_osThreadExitAndDelete(threadCopy.threadId);
+      else
+         pte_osThreadDelete(threadCopy.threadId);
    }
-}				/* pte_threadDestroy */
+}
 
 void
 pte_callUserDestroyRoutines (pthread_t thread)
@@ -171,159 +159,130 @@ pte_callUserDestroyRoutines (pthread_t thread)
  * -------------------------------------------------------------------
  */
 {
-   ThreadKeyAssoc * assoc;
+   int assocsRemaining;
+   int iterations = 0;
+   ThreadKeyAssoc *assoc = NULL;
+   pte_thread_t   *sp    = (pte_thread_t *) thread;
 
-   if (thread != NULL)
+   if (!thread)
+      return;
+
+   /*
+    * Run through all Thread<-->Key associations
+    * for the current thread.
+    *
+    * Do this process at most PTHREAD_DESTRUCTOR_ITERATIONS times.
+    */
+   do
    {
-      int assocsRemaining;
-      int iterations = 0;
-      pte_thread_t * sp = (pte_thread_t *) thread;
+      assocsRemaining = 0;
+      iterations++;
 
+      (void) pthread_mutex_lock(&(sp->threadLock));
       /*
-       * Run through all Thread<-->Key associations
-       * for the current thread.
-       *
-       * Do this process at most PTHREAD_DESTRUCTOR_ITERATIONS times.
+       * The pointer to the next assoc is stored in the thread struct so that
+       * the assoc destructor in pthread_key_delete can adjust it
+       * if it deletes this assoc. This can happen if we fail to acquire
+       * both locks below, and are forced to release all of our locks,
+       * leaving open the opportunity for pthread_key_delete to get in
+       * before us.
        */
-      do
+      sp->nextAssoc = sp->keys;
+      (void) pthread_mutex_unlock(&(sp->threadLock));
+
+      for (;;)
       {
-         assocsRemaining = 0;
-         iterations++;
+         void * value;
+         pthread_key_t k;
+         void (*destructor) (void *);
 
-         (void) pthread_mutex_lock(&(sp->threadLock));
          /*
-          * The pointer to the next assoc is stored in the thread struct so that
-          * the assoc destructor in pthread_key_delete can adjust it
-          * if it deletes this assoc. This can happen if we fail to acquire
-          * both locks below, and are forced to release all of our locks,
-          * leaving open the opportunity for pthread_key_delete to get in
-          * before us.
+          * First we need to serialise with pthread_key_delete by locking
+          * both assoc guards, but in the reverse order to our convention,
+          * so we must be careful to avoid deadlock.
           */
-         sp->nextAssoc = sp->keys;
-         (void) pthread_mutex_unlock(&(sp->threadLock));
+         (void) pthread_mutex_lock(&(sp->threadLock));
 
-         for (;;)
+         if ((assoc = (ThreadKeyAssoc *)sp->nextAssoc) == NULL)
          {
-            void * value;
-            pthread_key_t k;
-            void (*destructor) (void *);
-
+            /* Finished */
+            pthread_mutex_unlock(&(sp->threadLock));
+            break;
+         }
+         else
+         {
             /*
-             * First we need to serialise with pthread_key_delete by locking
-             * both assoc guards, but in the reverse order to our convention,
-             * so we must be careful to avoid deadlock.
+             * assoc->key must be valid because assoc can't change or be
+             * removed from our chain while we hold at least one lock. If
+             * the assoc was on our key chain then the key has not been
+             * deleted yet.
+             *
+             * Now try to acquire the second lock without deadlocking.
+             * If we fail, we need to relinquish the first lock and the
+             * processor and then try to acquire them all again.
              */
-            (void) pthread_mutex_lock(&(sp->threadLock));
-
-            if ((assoc = (ThreadKeyAssoc *)sp->nextAssoc) == NULL)
+            if (pthread_mutex_trylock(&(assoc->key->keyLock)) == EBUSY)
             {
-               /* Finished */
                pthread_mutex_unlock(&(sp->threadLock));
-               break;
-            }
-            else
-            {
+               pte_osThreadSleep(1); // Ugly but necessary to avoid priority effects.
                /*
-                * assoc->key must be valid because assoc can't change or be
-                * removed from our chain while we hold at least one lock. If
-                * the assoc was on our key chain then the key has not been
-                * deleted yet.
-                *
-                * Now try to acquire the second lock without deadlocking.
-                * If we fail, we need to relinquish the first lock and the
-                * processor and then try to acquire them all again.
+                * Go around again.
+                * If pthread_key_delete has removed this assoc in the meantime,
+                * sp->nextAssoc will point to a new assoc.
                 */
-               if (pthread_mutex_trylock(&(assoc->key->keyLock)) == EBUSY)
-               {
-                  pthread_mutex_unlock(&(sp->threadLock));
-                  pte_osThreadSleep(1); // Ugly but necessary to avoid priority effects.
-                  /*
-                   * Go around again.
-                   * If pthread_key_delete has removed this assoc in the meantime,
-                   * sp->nextAssoc will point to a new assoc.
-                   */
-                  continue;
-               }
-            }
-
-            /* We now hold both locks */
-
-            sp->nextAssoc = assoc->nextKey;
-
-            /*
-             * Key still active; pthread_key_delete
-             * will block on these same mutexes before
-             * it can release actual key; therefore,
-             * key is valid and we can call the destroy
-             * routine;
-             */
-            k = assoc->key;
-            destructor = k->destructor;
-            value = pte_osTlsGetValue(k->key);
-            pte_osTlsSetValue (k->key, NULL);
-
-            // Every assoc->key exists and has a destructor
-            if (value != NULL && iterations <= PTHREAD_DESTRUCTOR_ITERATIONS)
-            {
-               /*
-                * Unlock both locks before the destructor runs.
-                * POSIX says pthread_key_delete can be run from destructors,
-                * and that probably includes with this key as target.
-                * pthread_setspecific can also be run from destructors and
-                * also needs to be able to access the assocs.
-                */
-               (void) pthread_mutex_unlock(&(sp->threadLock));
-               (void) pthread_mutex_unlock(&(k->keyLock));
-
-               assocsRemaining++;
-
-#ifdef __cplusplus
-
-               try
-               {
-                  /*
-                   * Run the caller's cleanup routine.
-                   */
-                  destructor (value);
-               }
-               catch (...)
-               {
-                  /*
-                   * A system unexpected exception has occurred
-                   * running the user's destructor.
-                   * We get control back within this block in case
-                   * the application has set up it's own terminate
-                   * handler. Since we are leaving the thread we
-                   * should not get any internal pthreads
-                   * exceptions.
-                   */
-                  terminate ();
-               }
-
-#else /* __cplusplus */
-
-               /*
-                * Run the caller's cleanup routine.
-                */
-               destructor (value);
-
-#endif /* __cplusplus */
-
-            }
-            else
-            {
-               /*
-                * Remove association from both the key and thread chains
-                * and reclaim it's memory resources.
-                */
-               pte_tkAssocDestroy (assoc);
-               (void) pthread_mutex_unlock(&(sp->threadLock));
-               (void) pthread_mutex_unlock(&(k->keyLock));
+               continue;
             }
          }
+
+         /* We now hold both locks */
+
+         sp->nextAssoc = assoc->nextKey;
+
+         /*
+          * Key still active; pthread_key_delete
+          * will block on these same mutexes before
+          * it can release actual key; therefore,
+          * key is valid and we can call the destroy
+          * routine;
+          */
+         k = assoc->key;
+         destructor = k->destructor;
+         value = pte_osTlsGetValue(k->key);
+         pte_osTlsSetValue (k->key, NULL);
+
+         // Every assoc->key exists and has a destructor
+         if (value && iterations <= PTHREAD_DESTRUCTOR_ITERATIONS)
+         {
+            /*
+             * Unlock both locks before the destructor runs.
+             * POSIX says pthread_key_delete can be run from destructors,
+             * and that probably includes with this key as target.
+             * pthread_setspecific can also be run from destructors and
+             * also needs to be able to access the assocs.
+             */
+            (void) pthread_mutex_unlock(&(sp->threadLock));
+            (void) pthread_mutex_unlock(&(k->keyLock));
+
+            assocsRemaining++;
+
+
+            /*
+             * Run the caller's cleanup routine.
+             */
+            destructor (value);
+         }
+         else
+         {
+            /*
+             * Remove association from both the key and thread chains
+             * and reclaim it's memory resources.
+             */
+            pte_tkAssocDestroy (assoc);
+            (void) pthread_mutex_unlock(&(sp->threadLock));
+            (void) pthread_mutex_unlock(&(k->keyLock));
+         }
       }
-      while (assocsRemaining);
-   }
+   }while (assocsRemaining);
 }
 
 int pte_cancellable_wait (pte_osSemaphoreHandle semHandle, unsigned int* timeout)
@@ -334,7 +293,7 @@ int pte_cancellable_wait (pte_osSemaphoreHandle semHandle, unsigned int* timeout
    pthread_t self    = pthread_self();
    pte_thread_t *sp  = (pte_thread_t *) self;
 
-   if (sp != NULL)
+   if (sp)
    {
       /*
        * Get cancelEvent handle
@@ -360,7 +319,7 @@ int pte_cancellable_wait (pte_osSemaphoreHandle semHandle, unsigned int* timeout
          break;
 
       case PTE_OS_INTERRUPTED:
-         if (sp != NULL)
+         if (sp)
          {
             /*
              * Should handle POSIX and implicit POSIX threads..
@@ -519,26 +478,18 @@ int pte_mutex_check_need_init (pthread_mutex_t * mutex)
    mtx = *mutex;
 
    if (mtx == PTHREAD_MUTEX_INITIALIZER)
-   {
       result = pthread_mutex_init (mutex, NULL);
-   }
    else if (mtx == PTHREAD_RECURSIVE_MUTEX_INITIALIZER)
-   {
       result = pthread_mutex_init (mutex, &pte_recursive_mutexattr);
-   }
    else if (mtx == PTHREAD_ERRORCHECK_MUTEX_INITIALIZER)
-   {
       result = pthread_mutex_init (mutex, &pte_errorcheck_mutexattr);
-   }
+   /*
+    * The mutex has been destroyed while we were waiting to
+    * initialise it, so the operation that caused the
+    * auto-initialisation should fail.
+    */
    else if (mtx == NULL)
-   {
-      /*
-       * The mutex has been destroyed while we were waiting to
-       * initialise it, so the operation that caused the
-       * auto-initialisation should fail.
-       */
       result = EINVAL;
-   }
 
    pte_osMutexUnlock(pte_mutex_test_init_lock);
 
@@ -547,8 +498,8 @@ int pte_mutex_check_need_init (pthread_mutex_t * mutex)
 
 pthread_t pte_new (void)
 {
-   pthread_t nil = NULL;
-   pte_thread_t * tp;
+   pthread_t nil     = NULL;
+   pte_thread_t * tp = NULL;
 
    /*
     * If there's a reusable pthread_t then use it.
@@ -588,7 +539,6 @@ unsigned int pte_relmillisecs (const struct timespec * abstime)
    const long long NANOSEC_PER_MILLISEC = 1000000;
    const long long MILLISEC_PER_SEC = 1000;
    unsigned int milliseconds;
-   long long tmpAbsMilliseconds;
    long  tmpCurrMilliseconds;
    struct timeb currSysTime;
 
@@ -603,7 +553,7 @@ unsigned int pte_relmillisecs (const struct timespec * abstime)
     *
     * Assume all integers are unsigned, i.e. cannot test if less than 0.
     */
-   tmpAbsMilliseconds =  (int64_t)abstime->tv_sec * MILLISEC_PER_SEC;
+   long long tmpAbsMilliseconds =  (int64_t)abstime->tv_sec * MILLISEC_PER_SEC;
    tmpAbsMilliseconds += ((int64_t)abstime->tv_nsec + (NANOSEC_PER_MILLISEC/2)) / NANOSEC_PER_MILLISEC;
 
    /* get current system time */
@@ -665,7 +615,6 @@ pte_threadReusePop (void)
 {
    pthread_t t = NULL;
 
-
    pte_osMutexLock (pte_thread_reuse_lock);
 
    if (PTE_THREAD_REUSE_EMPTY != pte_threadReuseTop)
@@ -677,9 +626,7 @@ pte_threadReusePop (void)
       pte_threadReuseTop = tp->prevReuse;
 
       if (PTE_THREAD_REUSE_EMPTY == pte_threadReuseTop)
-      {
          pte_threadReuseBottom = PTE_THREAD_REUSE_EMPTY;
-      }
 
       tp->prevReuse = NULL;
 
@@ -859,7 +806,10 @@ int pte_threadStart (void *vthreadParms)
    pte_thread_t *sp = (pte_thread_t *) self;
    start = threadParms->start;
    arg = threadParms->arg;
-   //  free (threadParms);
+
+#if 0
+   free (threadParms);
+#endif
 
    pthread_setspecific (pte_selfThreadKey, sp);
 
@@ -868,14 +818,11 @@ int pte_threadStart (void *vthreadParms)
    setjmp_rc = setjmp (sp->start_mark);
 
 
+   /*
+    * Run the caller's routine;
+    */
    if (0 == setjmp_rc)
-   {
-
-      /*
-       * Run the caller's routine;
-       */
       sp->exitStatus = status = (*start) (arg);
-   }
    else
    {
       switch (setjmp_rc)
@@ -934,11 +881,9 @@ void pte_throw (unsigned int exception)
    pte_thread_t * sp = (pte_thread_t *) pthread_getspecific (pte_selfThreadKey);
 
 
+   /* Should never enter here */
    if (exception != PTE_EPS_CANCEL && exception != PTE_EPS_EXIT)
-   {
-      /* Should never enter here */
       exit (1);
-   }
 
    if (NULL == sp || sp->implicit)
    {
@@ -962,8 +907,9 @@ void pte_throw (unsigned int exception)
 
       pte_thread_detach_and_exit_np ();
 
-      //      pte_osThreadExit((void*)exitCode);
-
+#if 0
+      pte_osThreadExit((void*)exitCode);
+#endif
    }
 
    pte_pop_cleanup_all (1);
@@ -1026,19 +972,17 @@ int pte_tkAssocCreate (pte_thread_t * sp, pthread_key_t key)
    assoc = (ThreadKeyAssoc *) calloc (1, sizeof (*assoc));
 
    if (assoc == NULL)
-   {
       return ENOMEM;
-   }
 
    assoc->thread = sp;
-   assoc->key = key;
+   assoc->key    = key;
 
    /*
     * Register assoc with key
     */
    assoc->prevThread = NULL;
    assoc->nextThread = (ThreadKeyAssoc *) key->threads;
-   if (assoc->nextThread != NULL)
+   if (assoc->nextThread)
       assoc->nextThread->prevThread = assoc;
    key->threads = (void *) assoc;
 
@@ -1047,7 +991,7 @@ int pte_tkAssocCreate (pte_thread_t * sp, pthread_key_t key)
     */
    assoc->prevKey = NULL;
    assoc->nextKey = (ThreadKeyAssoc *) sp->keys;
-   if (assoc->nextKey != NULL)
+   if (assoc->nextKey)
       assoc->nextKey->prevKey = assoc;
    sp->keys = (void *) assoc;
 
@@ -1069,48 +1013,47 @@ void pte_tkAssocDestroy (ThreadKeyAssoc * assoc)
     * -------------------------------------------------------------------
     */
 {
-
+   ThreadKeyAssoc *prev = NULL;
+   ThreadKeyAssoc *next = NULL;
    /*
     * Both key->keyLock and thread->threadLock are locked on
     * entry to this routine.
     */
-   if (assoc != NULL)
+   if (!assoc)
+      return;
+
+   /* Remove assoc from thread's keys chain */
+   prev = assoc->prevKey;
+   next = assoc->nextKey;
+   if (prev)
+      prev->nextKey = next;
+   if (next)
+      next->prevKey = prev;
+
+   /* We're at the head of the thread's keys chain */
+   if (assoc->thread->keys == assoc)
+      assoc->thread->keys = next;
+
+   if (assoc->thread->nextAssoc == assoc)
    {
-      ThreadKeyAssoc * prev, * next;
-
-      /* Remove assoc from thread's keys chain */
-      prev = assoc->prevKey;
-      next = assoc->nextKey;
-      if (prev != NULL)
-         prev->nextKey = next;
-      if (next != NULL)
-         next->prevKey = prev;
-
-      /* We're at the head of the thread's keys chain */
-      if (assoc->thread->keys == assoc)
-         assoc->thread->keys = next;
-
-      if (assoc->thread->nextAssoc == assoc)
-      {
-         /*
-          * Thread is exiting and we're deleting the assoc to be processed next.
-          * Hand thread the assoc after this one.
-          */
-         assoc->thread->nextAssoc = next;
-      }
-
-      /* Remove assoc from key's threads chain */
-      prev = assoc->prevThread;
-      next = assoc->nextThread;
-      if (prev != NULL)
-         prev->nextThread = next;
-      if (next != NULL)
-         next->prevThread = prev;
-
-      /* We're at the head of the key's threads chain */
-      if (assoc->key->threads == assoc)
-         assoc->key->threads = next;
-
-      free (assoc);
+      /*
+       * Thread is exiting and we're deleting the assoc to be processed next.
+       * Hand thread the assoc after this one.
+       */
+      assoc->thread->nextAssoc = next;
    }
+
+   /* Remove assoc from key's threads chain */
+   prev = assoc->prevThread;
+   next = assoc->nextThread;
+   if (prev)
+      prev->nextThread = next;
+   if (next)
+      next->prevThread = prev;
+
+   /* We're at the head of the key's threads chain */
+   if (assoc->key->threads == assoc)
+      assoc->key->threads = next;
+
+   free (assoc);
 }
