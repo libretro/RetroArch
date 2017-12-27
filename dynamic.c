@@ -1685,8 +1685,10 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       {
          struct retro_led_interface *ledintf =
             (struct retro_led_interface *)data;
-         ledintf->set_led_state = led_driver_set_led;
+         if (ledintf)
+            ledintf->set_led_state = led_driver_set_led;
       }
+      break;
       
       default:
          RARCH_LOG("Environ UNSUPPORTED (#%u).\n", cmd);
