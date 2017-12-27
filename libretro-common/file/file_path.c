@@ -275,7 +275,18 @@ bool path_mkdir(const char *dir)
    if (norecurse)
    {
 #if defined(_WIN32)
+#ifdef LEGACY_WIN32
       int ret = _mkdir(dir);
+#else
+      wchar_t *dirW = utf8_to_utf16_string_alloc(dir);
+      int ret = -1;
+
+      if (dirW)
+      {
+         ret = _wmkdir(dirW);
+         free(dirW);
+      }
+#endif
 #elif defined(IOS)
       int ret = mkdir(dir, 0755);
 #elif defined(VITA) || defined(PSP)
