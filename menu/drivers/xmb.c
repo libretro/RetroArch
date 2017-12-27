@@ -31,7 +31,6 @@
 #include <streams/file_stream.h>
 #include <encodings/utf.h>
 #include <features/features_cpu.h>
-#include <config.def.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
