@@ -806,9 +806,10 @@ bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lPa
             if (wParam == DBT_DEVICEARRIVAL  || wParam == DBT_DEVICEREMOVECOMPLETE)
             {
                PDEV_BROADCAST_HDR pHdr = (PDEV_BROADCAST_HDR)lParam;
-               if( pHdr->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE)
+               if(pHdr->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE)
                {
                   PDEV_BROADCAST_DEVICEINTERFACE pDevInf = (PDEV_BROADCAST_DEVICEINTERFACE)pHdr;
+
                   /* To-Do: Don't destroy everything, lets just handle new devices gracefully */
                   if (di->joypad)
                      di->joypad->destroy();
