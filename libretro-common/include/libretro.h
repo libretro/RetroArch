@@ -1096,7 +1096,7 @@ struct retro_hw_render_interface
 };
 
 
-#define RETRO_ENVIRONMENT_GET_LED_INTERFACE (45 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+#define RETRO_ENVIRONMENT_GET_LED_INTERFACE (46 | RETRO_ENVIRONMENT_EXPERIMENTAL)
                                            /* struct retro_led_interface * --
                                             * Gets an interface which is used by a libretro core to set 
                                             * state of LEDs.
