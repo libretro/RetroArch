@@ -15,6 +15,10 @@ PC_DEVELOPMENT_TCP_PORT	   ?=4405
 
 OBJ :=
 OBJ += input/drivers_hid/wiiu_hid.o
+OBJ += wiiu/input/wpad_driver.o
+OBJ += wiiu/input/kpad_driver.o
+OBJ += wiiu/input/hidpad_driver.o
+OBJ += wiiu/input/pad_functions.o
 OBJ += wiiu/system/memory.o
 OBJ += wiiu/system/exception_handler.o
 OBJ += wiiu/system/missing_libc_functions.o

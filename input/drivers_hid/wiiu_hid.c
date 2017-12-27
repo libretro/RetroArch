@@ -398,7 +398,7 @@ static void log_buffer(uint8_t *data, uint32_t len) {
 
 static void wiiu_hid_do_read(wiiu_adapter_t *adapter, uint8_t *data, uint32_t length)
 {
-  log_buffer(data, length);
+ // log_buffer(data, length);
  // do_sampling()
  // do other stuff?
 }
