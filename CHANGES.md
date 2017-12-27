@@ -1,4 +1,5 @@
 # 1.7.1 (future)
+- COMMON: New LED API. Driver implemented for Raspberry Pi, proof of concept implemented for core MAME 2003.
 - DINPUT: don't reinitialize input driver on network events / media insertion / network drive connection
 - KEYMAPPER: prevent a condition that caused input_menu_toggle to stop working when a RETRO_DEVICE_KEYBOARD type device is enabled
 - PS3: Enable Cheevos.
