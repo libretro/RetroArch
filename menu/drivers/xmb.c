@@ -372,6 +372,13 @@ float gradient_dark[16] = {
    0.0, 0.0, 0.0, 1.00,
 };
 
+float gradient_light[16] = {
+   0.9, 0.9, 0.9, 1.00,
+   0.9, 0.9, 0.9, 1.00,
+   1.0, 1.0, 1.0, 1.00,
+   1.0, 1.0, 1.0, 1.00,
+};
+
 static void xmb_calculate_visible_range(const xmb_handle_t *xmb,
       unsigned height, size_t list_size, unsigned current,
       unsigned *first, unsigned *last);
@@ -508,6 +515,8 @@ static float *xmb_gradient_ident(video_frame_info_t *video_info)
          return &gradient_volcanic_red[0];
       case XMB_THEME_DARK:
          return &gradient_dark[0];
+      case XMB_THEME_LIGHT:
+         return &gradient_light[0];
       case XMB_THEME_LEGACY_RED:
       default:
          break;
