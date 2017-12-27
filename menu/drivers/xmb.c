@@ -31,6 +31,7 @@
 #include <streams/file_stream.h>
 #include <encodings/utf.h>
 #include <features/features_cpu.h>
+#include <config.def.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -740,7 +741,7 @@ static void xmb_draw_text(
    if (a8 == 0)
       return;
 
-   color = FONT_COLOR_RGBA(255, 255, 255, a8);
+   color = FONT_COLOR_RGBA(xmb_font_color_red, xmb_font_color_green, xmb_font_color_blue, a8);
 
    menu_display_draw_text(font, str, x, y,
          width, height, color, text_align, scale_factor,

@@ -1412,6 +1412,9 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("xmb_scale_factor",             &settings->uints.menu_xmb_scale_factor, true, xmb_scale_factor, false);
    SETTING_UINT("xmb_theme",                    &settings->uints.menu_xmb_theme, true, xmb_icon_theme, false);
    SETTING_UINT("xmb_menu_color_theme",         &settings->uints.menu_xmb_color_theme, true, xmb_theme, false);
+   SETTING_UINT("xmb_menu_font_color_red",      &settings->uints.menu_xmb_font_color_red, true, xmb_font_color_red, false);
+   SETTING_UINT("xmb_menu_font_color_green",    &settings->uints.menu_xmb_font_color_green, true, xmb_font_color_green, false);
+   SETTING_UINT("xmb_menu_font_color_blue",     &settings->uints.menu_xmb_font_color_blue, true, xmb_font_color_blue, false);
 #endif
    SETTING_UINT("materialui_menu_color_theme",  &settings->uints.menu_materialui_color_theme, true, MATERIALUI_THEME_BLUE, false);
    SETTING_UINT("menu_shader_pipeline",         &settings->uints.menu_xmb_shader_pipeline, true, menu_shader_pipeline, false);
@@ -1442,7 +1445,7 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("video_msg_bgcolor_red",        &settings->uints.video_msg_bgcolor_red, true, message_bgcolor_red, false);
    SETTING_UINT("video_msg_bgcolor_green",        &settings->uints.video_msg_bgcolor_green, true, message_bgcolor_green, false);
    SETTING_UINT("video_msg_bgcolor_blue",        &settings->uints.video_msg_bgcolor_blue, true, message_bgcolor_blue, false);
-   
+
    *size = count;
 
    return tmp;
@@ -2483,7 +2486,7 @@ static bool config_load_file(const char *path, bool set_defaults,
       snprintf(buf, sizeof(buf), "led%u_map", i + 1);
       CONFIG_GET_INT_BASE(conf, settings, uints.led_map[i], buf);
    }
-   
+
    {
       /* ugly hack around C89 not allowing mixing declarations and code */
       int buffer_size = 0;

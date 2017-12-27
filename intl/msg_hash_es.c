@@ -2315,6 +2315,12 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
          return "Pantalla completa en ventana";
       case MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR:
          return "Transparencia del XMB";
+      case MENU_ENUM_LABEL_VALUE_XMB_FONT_COLOR_RED:
+         return "Fuente del XMB Red";
+      case MENU_ENUM_LABEL_VALUE_XMB_FONT_COLOR_GREEN:
+         return "Fuente del XMB Green";
+      case MENU_ENUM_LABEL_VALUE_XMB_FONT_COLOR_BLUE:
+         return "Fuente del XMB Blue";
       case MENU_ENUM_LABEL_VALUE_XMB_FONT:
          return "Fuente del XMB";
       case MENU_ENUM_LABEL_VALUE_XMB_SCALE_FACTOR:
