@@ -63,8 +63,7 @@ typedef struct psp_audio
 #ifdef VITA
 #define PSP_THREAD_STOPPED SCE_THREAD_STOPPED
 #else
-#define SceKernelThreadInfo SceKernelThreadRunStatus
-#define sceKernelGetThreadInfo sceKernelReferThreadRunStatus
+#define sceKernelGetThreadInfo sceKernelReferThreadStatus
 #endif
 
 static int audioMainLoop(SceSize args, void* argp)
