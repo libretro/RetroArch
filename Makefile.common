@@ -1366,14 +1366,27 @@ endif
 ifeq ($(HAVE_ZLIB), 1)
    OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file_zlib.o \
           $(LIBRETRO_COMM_DIR)/streams/trans_stream_zlib.o
-   OBJ += $(ZLIB_OBJS)
    DEFINES += -DHAVE_ZLIB
    HAVE_COMPRESSION = 1
    ifeq ($(HAVE_BUILTINZLIB), 1)
+      OBJ += $(DEPS_DIR)/libz/adler32.o \
+             $(DEPS_DIR)/libz/compress.o \
+             $(DEPS_DIR)/libz/crc32.o \
+             $(DEPS_DIR)/libz/deflate.o \
+             $(DEPS_DIR)/libz/gzclose.o \
+             $(DEPS_DIR)/libz/gzlib.o \
+             $(DEPS_DIR)/libz/gzread.o \
+             $(DEPS_DIR)/libz/gzwrite.o \
+             $(DEPS_DIR)/libz/inffast.o \
+             $(DEPS_DIR)/libz/inflate.o \
+             $(DEPS_DIR)/libz/inftrees.o \
+             $(DEPS_DIR)/libz/trees.o \
+             $(DEPS_DIR)/libz/uncompr.o \
+             $(DEPS_DIR)/libz/zutil.o
       INCLUDE_DIRS += -I$(LIBRETRO_COMM_DIR)/include/compat
       DEFINES += -DWANT_ZLIB
    else
-      LIBS += -lz
+      LIBS += $(ZLIB_LIBS)
    endif
 endif
 
@@ -1410,27 +1423,6 @@ OBJ += $(LIBRETRO_COMM_DIR)/formats/bmp/rbmp_encode.o \
 
 ifdef HAVE_COMPRESSION
    DEFINES += -DHAVE_COMPRESSION
-endif
-
-ifeq ($(HAVE_BUILTINZLIB),1)
-   OBJ += $(DEPS_DIR)/libz/adler32.o \
-          $(DEPS_DIR)/libz/compress.o \
-          $(DEPS_DIR)/libz/crc32.o \
-          $(DEPS_DIR)/libz/deflate.o \
-          $(DEPS_DIR)/libz/gzclose.o \
-          $(DEPS_DIR)/libz/gzlib.o \
-          $(DEPS_DIR)/libz/gzread.o \
-          $(DEPS_DIR)/libz/gzwrite.o \
-          $(DEPS_DIR)/libz/inffast.o \
-          $(DEPS_DIR)/libz/inflate.o \
-          $(DEPS_DIR)/libz/inftrees.o \
-          $(DEPS_DIR)/libz/trees.o \
-          $(DEPS_DIR)/libz/uncompr.o \
-          $(DEPS_DIR)/libz/zutil.o
-else
-ifeq ($(HAVE_ZLIB), 1)
-OBJ += $(ZLIB_OBJS)
-endif
 endif
 
 ifeq ($(HAVE_7ZIP), 1)
