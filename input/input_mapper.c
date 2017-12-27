@@ -30,7 +30,8 @@
 #include <compat/posix_string.h>
 #include <retro_miscellaneous.h>
 #include <libretro.h>
-#include "menu/menu_driver.h"
+
+#include "../menu/menu_driver.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
