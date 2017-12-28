@@ -404,6 +404,8 @@ const char* xmb_theme_ident(void)
          return "dot-art";
       case XMB_ICON_THEME_CUSTOM:
          return "custom";
+      case XMB_ICON_THEME_MONOCHROME_INVERTED:
+         return "monochrome-inverted";
       case XMB_ICON_THEME_MONOCHROME:
       default:
          break;

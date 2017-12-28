@@ -796,10 +796,14 @@ static void menu_action_setting_disp_set_label_xmb_theme(
       case XMB_ICON_THEME_SYSTEMATIC:
          strlcpy(s,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_SYSTEMATIC), len);
-	 break;
+         break;
       case XMB_ICON_THEME_DOTART:
          strlcpy(s,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_DOTART), len);
+         break;
+      case XMB_ICON_THEME_MONOCHROME_INVERTED:
+         strlcpy(s,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME_INVERTED), len);
          break;
       case XMB_ICON_THEME_CUSTOM:
          strlcpy(s,
