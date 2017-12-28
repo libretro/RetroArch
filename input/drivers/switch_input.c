@@ -13,88 +13,97 @@
 
 #define MAX_PADS 10
 
-typedef struct switch_input {
-	const input_device_driver_t *joypad;
-	bool blocked;
+typedef struct switch_input
+{
+   const input_device_driver_t *joypad;
+   bool blocked;
 } switch_input_t;
 
-static void switch_input_poll(void *data) {
+static void switch_input_poll(void *data)
+{
 	switch_input_t *sw = (switch_input_t*) data;
 
-	if(sw->joypad) {
+	if (sw->joypad)
 		sw->joypad->poll();
-	}
 }
 
 static int16_t switch_input_state(void *data,
-                                  rarch_joypad_info_t joypad_info,
-                                  const struct retro_keybind **binds,
-                                  unsigned port, unsigned device,
-                                  unsigned idx, unsigned id) {
-	switch_input_t *sw = (switch_input_t*) data;
+      rarch_joypad_info_t joypad_info,
+      const struct retro_keybind **binds,
+      unsigned port, unsigned device,
+      unsigned idx, unsigned id)
+{
+   switch_input_t *sw = (switch_input_t*) data;
 
-	if (port > MAX_PADS-1)
-		return 0;
+   if (port > MAX_PADS-1)
+      return 0;
 
-	switch (device) {
-	case RETRO_DEVICE_JOYPAD:
-		//return input_joypad_pressed(sw->joypad,
-		//                            joypad_info, port, binds[port], id);
-		if(sw->joypad) {
-			return sw->joypad->button(port, id);
-		}
-	case RETRO_DEVICE_ANALOG:
-		if(binds[port]) {
-			return input_joypad_analog(sw->joypad,
-			                           joypad_info, port, idx, id, binds[port]);
-		}
-		break;
-	}
-	
-	return 0;
+   switch (device)
+   {
+      case RETRO_DEVICE_JOYPAD:
+#if 0
+         return input_joypad_pressed(sw->joypad,
+               joypad_info, port, binds[port], id);
+#else
+         if (sw->joypad)
+            return sw->joypad->button(port, id);
+#endif
+         break;
+      case RETRO_DEVICE_ANALOG:
+         if (binds[port])
+            return input_joypad_analog(sw->joypad,
+                  joypad_info, port, idx, id, binds[port]);
+         break;
+   }
+
+   return 0;
 }
 
-static void switch_input_free_input(void *data) {
-	switch_input_t *sw = (switch_input_t*) data;
+static void switch_input_free_input(void *data)
+{
+   switch_input_t *sw = (switch_input_t*) data;
 
-	if (sw && sw->joypad) {
-		sw->joypad->destroy();
-	}
+   if (sw && sw->joypad)
+      sw->joypad->destroy();
 
-	free(sw);
+   free(sw);
 }
 
-static void* switch_input_init(const char *joypad_driver) {
-	switch_input_t *sw = (switch_input_t*) calloc(1, sizeof(*sw));
-	if (!sw)
-		return NULL;
+static void* switch_input_init(const char *joypad_driver)
+{
+   switch_input_t *sw = (switch_input_t*) calloc(1, sizeof(*sw));
+   if (!sw)
+      return NULL;
 
-	sw->joypad = input_joypad_init_driver(joypad_driver, sw);
+   sw->joypad = input_joypad_init_driver(joypad_driver, sw);
 
-	return sw;
+   return sw;
 }
 
-static uint64_t switch_input_get_capabilities(void *data) {
-	(void) data;
+static uint64_t switch_input_get_capabilities(void *data)
+{
+   (void) data;
 
-	return (1 << RETRO_DEVICE_JOYPAD) | (1 << RETRO_DEVICE_ANALOG);
+   return (1 << RETRO_DEVICE_JOYPAD) | (1 << RETRO_DEVICE_ANALOG);
 }
 
-static const input_device_driver_t *switch_input_get_joypad_driver(void *data) {
-	switch_input_t *sw = (switch_input_t*) data;
-	if(sw) {
-		return sw->joypad;
-	}
-	return NULL;
+static const input_device_driver_t *switch_input_get_joypad_driver(void *data)
+{
+   switch_input_t *sw = (switch_input_t*) data;
+   if (sw)
+      return sw->joypad;
+   return NULL;
 }
 
-static void switch_input_grab_mouse(void *data, bool state) {
-	(void)data;
-	(void)state;
+static void switch_input_grab_mouse(void *data, bool state)
+{
+   (void)data;
+   (void)state;
 }
 
 static bool switch_input_set_rumble(void *data, unsigned port,
-                                    enum retro_rumble_effect effect, uint16_t strength) {
+      enum retro_rumble_effect effect, uint16_t strength)
+{
 	(void)data;
 	(void)port;
 	(void)effect;
@@ -103,20 +112,20 @@ static bool switch_input_set_rumble(void *data, unsigned port,
 	return false;
 }
 
-static bool switch_input_keyboard_mapping_is_blocked(void *data) {
-	switch_input_t *sw = (switch_input_t*) data;
-	if (!sw) {
-		return false;
-	}
-	return sw->blocked;
+static bool switch_input_keyboard_mapping_is_blocked(void *data)
+{
+   switch_input_t *sw = (switch_input_t*) data;
+   if (!sw)
+      return false;
+   return sw->blocked;
 }
 
-static void switch_input_keyboard_mapping_set_block(void *data, bool value) {
-	switch_input_t *sw = (switch_input_t*) data;
-	if(!sw) {
-		return;
-	}
-	sw->blocked = value;
+static void switch_input_keyboard_mapping_set_block(void *data, bool value)
+{
+   switch_input_t *sw = (switch_input_t*) data;
+   if (!sw)
+      return;
+   sw->blocked = value;
 }
 
 input_driver_t input_switch = {
