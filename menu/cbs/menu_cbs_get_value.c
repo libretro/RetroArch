@@ -903,6 +903,12 @@ static void menu_action_setting_disp_set_label_xmb_menu_color_theme(
                  MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK),
                len);
          break;
+      case XMB_THEME_LIGHT:
+         strlcpy(s,
+               msg_hash_to_str(
+                 MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_LIGHT),
+               len);
+         break;
    }
 }
 
