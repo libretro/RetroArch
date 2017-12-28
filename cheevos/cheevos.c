@@ -3131,9 +3131,10 @@ static int cheevos_iterate(coro_t* coro)
    CORO_GOSUB(LOGIN);
 
    snprintf(CHEEVOS_VAR_URL, sizeof(CHEEVOS_VAR_URL),
-      "http://retroachievements.org/dorequest.php?r=patch&u=%s&g=%u&f=3&l=1&t=%s",
+      "http://retroachievements.org/dorequest.php?r=patch&u=%s&g=%u&f=%u&l=1&t=%s",
       CHEEVOS_VAR_SETTINGS->arrays.cheevos_username,
-      CHEEVOS_VAR_GAMEID, cheevos_locals.token);
+      CHEEVOS_VAR_GAMEID, CHEEVOS_VAR_SETTINGS->bools.cheevos_test_unofficial ? 0:3,
+      cheevos_locals.token);
 
       CHEEVOS_VAR_URL[sizeof(CHEEVOS_VAR_URL) - 1] = 0;
 
