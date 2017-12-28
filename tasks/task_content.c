@@ -468,8 +468,9 @@ static bool content_file_init_extract(
 
          temp_content[0] = new_path[0] = '\0';
 
-         strlcpy(temp_content, path,
-               PATH_MAX_LENGTH * sizeof(char));
+         if (!string_is_empty(path))
+            strlcpy(temp_content, path,
+                  PATH_MAX_LENGTH * sizeof(char));
 
          if (!valid_ext || !file_archive_extract_file(
                   temp_content,
@@ -855,6 +856,7 @@ static bool task_load_content(content_ctx_info_t *content_info,
 
    if (!content_load(content_info))
    {
+      /* TODO/FIXME - Hardcoded sizes */
       char *name = (char*)malloc(255 * sizeof(char));
       char *msg  = (char*)malloc(255 * sizeof(char));
 
@@ -886,14 +888,15 @@ static bool task_load_content(content_ctx_info_t *content_info,
       char *tmp                      = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
       struct retro_system_info *info = NULL;
       rarch_system_info_t *sys_info  = runloop_get_system_info();
+      const char *path_content       = path_get(RARCH_PATH_CONTENT);
 
       tmp[0] = '\0';
 
       if (sys_info)
          info = &sys_info->info;
 
-      strlcpy(tmp, path_get(RARCH_PATH_CONTENT),
-            PATH_MAX_LENGTH * sizeof(char));
+      if (!string_is_empty(path_content))
+         strlcpy(tmp, path_content, PATH_MAX_LENGTH * sizeof(char));
 
       if (!launched_from_menu)
       {
