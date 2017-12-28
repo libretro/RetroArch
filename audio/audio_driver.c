@@ -212,8 +212,9 @@ static void compute_audio_buffer_statistics(void)
       accum_var += diff * diff;
    }
 
-#ifdef REPLACE_THIS_WITH_SOME_DEFINE_THAT_DETECTS_WARPOS
+#ifdef WARPUP
    /* uint64 to double not implemented, fair chance signed int64 to double doesn't exist either */
+   /* https://forums.libretro.com/t/unsupported-platform-help/13903/ */
    (void)stddev; (void)avg_filled; (void)deviation;
 #elif defined(_MSC_VER) && _MSC_VER <= 1200
    /* FIXME: error C2520: conversion from unsigned __int64 to double not implemented, use signed __int64 */
