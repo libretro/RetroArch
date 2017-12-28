@@ -212,13 +212,21 @@ static void compute_audio_buffer_statistics(void)
       accum_var += diff * diff;
    }
 
-#if defined(_MSC_VER) && _MSC_VER <= 1200
+#ifdef REPLACE_THIS_WITH_SOME_DEFINE_THAT_DETECTS_WARPOS
+   /* uint64 to double not implemented, fair chance signed int64 to double doesn't exist either */
+   (void)stddev; (void)avg_filled; (void)deviation;
+#elif defined(_MSC_VER) && _MSC_VER <= 1200
    /* FIXME: error C2520: conversion from unsigned __int64 to double not implemented, use signed __int64 */
+   (void)stddev; (void)avg_filled; (void)deviation;
 #else
    stddev          = (unsigned)sqrt((double)accum_var / (samples - 2));
    avg_filled      = 1.0f - (float)avg / audio_driver_buffer_size;
    deviation       = (float)stddev / audio_driver_buffer_size;
+
+   RARCH_LOG("[Audio]: Average audio buffer saturation: %.2f %%, standard deviation (percentage points): %.2f %%.\n",
+         avg_filled * 100.0, deviation * 100.0);
 #endif
+
    low_water_size  = (unsigned)(audio_driver_buffer_size * 3 / 4);
    high_water_size = (unsigned)(audio_driver_buffer_size     / 4);
 
@@ -230,8 +238,6 @@ static void compute_audio_buffer_statistics(void)
          high_water_count++;
    }
 
-   RARCH_LOG("[Audio]: Average audio buffer saturation: %.2f %%, standard deviation (percentage points): %.2f %%.\n",
-         avg_filled * 100.0, deviation * 100.0);
    RARCH_LOG("[Audio]: Amount of time spent close to underrun: %.2f %%. Close to blocking: %.2f %%.\n",
          (100.0 * low_water_count) / (samples - 1),
          (100.0 * high_water_count) / (samples - 1));
