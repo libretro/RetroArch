@@ -1748,11 +1748,11 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
       "Menu del fattore Alfa")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
-      "Menu Font Red Color")
+      "Font del Menu di colore Rosso")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
-      "Menu Font Green Color")
+      "Font del Menu di colore Verde")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
-      "Menu Font Blue Color")
+      "Font del Menu di colore Blue")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_FONT,
       "Font del Menu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_CUSTOM,
