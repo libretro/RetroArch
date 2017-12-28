@@ -273,6 +273,7 @@ static int libretrodb_find_index(libretrodb_t *db, const char *index_name,
          (ssize_t)db->first_index_offset,
          RETRO_VFS_SEEK_POSITION_START);
 
+   /* TODO: this should use filestream_eof instead */
    while (offset < eof)
    {
       libretrodb_read_index_header(db->fd, idx);
