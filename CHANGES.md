@@ -4,6 +4,7 @@
 - GUI: Allow changing menu font color.
 - GUI/XMB: Allow changing menu scale to 200%.
 - KEYMAPPER: prevent a condition that caused input_menu_toggle to stop working when a RETRO_DEVICE_KEYBOARD type device is enabled
+- NSW: Initial Nintendo Switch port, based on libtransistor SDK.
 - PS3: Enable Cheevos.
 - PSP: Enable threading support through pthreads.
 - WINDOWS: Improved Unicode support (for cores/directory creation).
