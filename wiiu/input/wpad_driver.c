@@ -190,7 +190,7 @@ static int16_t scale_touchpad(int16_t from_min, int16_t from_max,
 }
 
 static const char *wpad_name(unsigned pad) {
-  return "WiiU Gamepad";
+  return PAD_NAME_WIIU_GAMEPAD;
 }
 
 input_device_driver_t wpad_driver =

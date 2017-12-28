@@ -194,7 +194,17 @@ static int input_autoconfigure_joypad_try_from_conf(config_file_t *conf,
    if (!string_is_empty(params->name)
          && !string_is_empty(ident)
          && string_is_equal(ident, params->name))
+   {
       score += 2;
+   } else {
+     if(string_is_empty(params->name))
+       RARCH_LOG("[autoconf]: failed match because params->name was empty\n");
+     else if(string_is_empty(ident))
+       RARCH_LOG("[autoconf]: failed match because ident was empty\n");
+     else
+       RARCH_LOG("[autoconf]: failed match because ident '%s' != param->name '%s'\n",
+         ident, params->name);
+   }
 
    return score;
 }
@@ -274,8 +284,9 @@ static int input_autoconfigure_joypad_from_conf(
    int ret = input_autoconfigure_joypad_try_from_conf(conf,
          params);
 
-   if (ret)
+   if (ret) {
       input_autoconfigure_joypad_add(conf, params, task);
+   }
 
    config_file_free(conf);
 
@@ -312,8 +323,10 @@ static bool input_autoconfigure_joypad_from_conf_dir(
                DIR_LIST_AUTOCONFIG, "cfg");
    }
 
-   if(!list)
+   if(!list) {
+      RARCH_LOG("[autoconf]: No profiles found.\n");
       return false;
+   }
 
    if (list)
    {
@@ -347,7 +360,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
 
          config_get_config_path(conf, conf_path, sizeof(conf_path));
 
-         RARCH_LOG("[Autoconf]: selected configuration: %s\n", conf_path);
+         RARCH_LOG("[autoconf]: selected configuration: %s\n", conf_path);
          input_autoconfigure_joypad_add(conf, params, task);
          config_file_free(conf);
          ret = 1;
@@ -374,7 +387,7 @@ static bool input_autoconfigure_joypad_from_conf_internal(
       config_file_t *conf = config_file_new_from_string(
             input_builtin_autoconfs[i]);
       if (conf && input_autoconfigure_joypad_from_conf(conf, params, task))
-         return true;
+        return true;
    }
 
    if (string_is_empty(params->autoconfig_directory))

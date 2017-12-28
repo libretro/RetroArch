@@ -81,7 +81,7 @@ static const char *hidpad_name(unsigned pad)
   if(!hidpad_query_pad(pad))
     return "n/a";
 
-  return "Unknown";
+  return PAD_NAME_HID;
 }
 
 input_device_driver_t hidpad_driver =

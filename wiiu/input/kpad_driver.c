@@ -167,13 +167,13 @@ static const char *kpad_name(unsigned pad)
   switch(wiimotes[pad].type)
   {
     case WIIMOTE_TYPE_PRO:
-      return "WiiU Pro Controller";
+      return PAD_NAME_WIIU_PRO;
     case WIIMOTE_TYPE_CLASSIC:
-      return "Classic Controller";
+      return PAD_NAME_CLASSIC;
     case WIIMOTE_TYPE_NUNCHUK:
-      return "Wiimote+Nunchuk  Controller";
+      return PAD_NAME_NUNCHUK;
     case WIIMOTE_TYPE_WIIPLUS:
-      return "Wiimote Controller";
+      return PAD_NAME_WIIMOTE;
     case WIIMOTE_TYPE_NONE:
     default:
       return "N/A";
