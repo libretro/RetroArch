@@ -546,7 +546,7 @@ static int16_t wiiusb_hid_joypad_axis(void *data,
    return val;
 }
 
-static void wiiusb_hid_free(void *data)
+static void wiiusb_hid_free(const void *data)
 {
    struct wiiusb_adapter      *adapter = NULL;
    struct wiiusb_adapter *next_adapter = NULL;

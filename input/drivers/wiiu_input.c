@@ -44,7 +44,6 @@ typedef struct wiiu_input
 {
    bool blocked;
    const input_device_driver_t *joypad;
-   const hid_driver_t *hid_joypad;
 } wiiu_input_t;
 
 void kb_connection_callback(KBDKeyEvent *key)
@@ -126,8 +125,6 @@ static void wiiu_input_poll(void *data)
 
    if(wiiu->joypad)
      wiiu->joypad->poll();
-   if(wiiu->hid_joypad)
-     wiiu->hid_joypad->poll(hid_driver_get_data());
 }
 
 static bool wiiu_key_pressed(int key)
@@ -181,12 +178,6 @@ static void wiiu_input_free_input(void *data)
    if (wiiu && wiiu->joypad)
       wiiu->joypad->destroy();
 
-   if (wiiu && wiiu->hid_joypad)
-   {
-      wiiu->hid_joypad->free(hid_driver_get_data());
-      hid_driver_reset_data();
-   }
-
    KBDTeardown();
 
    free(data);
@@ -200,7 +191,6 @@ static void* wiiu_input_init(const char *joypad_driver)
 
    DEBUG_STR(joypad_driver);
    wiiu->joypad = input_joypad_init_driver(joypad_driver, wiiu);
-   wiiu->hid_joypad = input_hid_init_first();
 
    KBDSetup(&kb_connection_callback,
          &kb_disconnection_callback,&kb_key_callback);

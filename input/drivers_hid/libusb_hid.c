@@ -509,7 +509,7 @@ static int16_t libusb_hid_joypad_axis(void *data,
    return val;
 }
 
-static void libusb_hid_free(void *data)
+static void libusb_hid_free(const void *data)
 {
    libusb_hid_t *hid = (libusb_hid_t*)data;
 

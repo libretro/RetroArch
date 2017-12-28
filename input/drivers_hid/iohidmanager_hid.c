@@ -830,7 +830,7 @@ error:
    return NULL;
 }
 
-static void iohidmanager_hid_free(void *data)
+static void iohidmanager_hid_free(const void *data)
 {
    iohidmanager_hid_t *hid_apple = (iohidmanager_hid_t*)data;
 

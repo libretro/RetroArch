@@ -70,6 +70,18 @@
 #define WIIMOTE_TYPE_NONE    0xFD
 
 /**
+ * These are used to map pad names to controller mappings. You can
+ * change these relatively free-form.
+ */
+
+#define PAD_NAME_WIIU_GAMEPAD "WiiU Gamepad"
+#define PAD_NAME_WIIU_PRO "WiiU Pro Controller"
+#define PAD_NAME_WIIMOTE "Wiimote Controller"
+#define PAD_NAME_NUNCHUK "Wiimote+Nunchuk Controller"
+#define PAD_NAME_CLASSIC "Classic Controller"
+#define PAD_NAME_HID "HID Controller"
+
+/**
  * The Wii U gamepad and wiimotes have 3 sets of x/y axes. The third
  * is used by the gamepad for the touchpad driver; the wiimotes is
  * currently unimplemented, but could be used for future IR pointer
@@ -95,6 +107,7 @@ struct _wiiu_pad_functions {
 };
 
 extern wiiu_pad_functions_t pad_functions;
+extern input_device_driver_t wiiu_joypad;
 extern input_device_driver_t wpad_driver;
 extern input_device_driver_t kpad_driver;
 extern input_device_driver_t hidpad_driver;

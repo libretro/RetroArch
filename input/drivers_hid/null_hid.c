@@ -80,7 +80,7 @@ static void *null_hid_init(void)
    return (null_hid_t*)calloc(1, sizeof(null_hid_t));
 }
 
-static void null_hid_free(void *data)
+static void null_hid_free(const void *data)
 {
    null_hid_t *hid_null = (null_hid_t*)data;
 

@@ -42,11 +42,28 @@ int pad_connection_find_vacant_pad(joypad_connection_t *joyconn)
    return -1;
 }
 
+static void set_end_of_list(joypad_connection_t *list, unsigned end)
+{
+  joypad_connection_t *entry = (joypad_connection_t *)&list[end];
+  entry->connected = false;
+  entry->iface = NULL;
+  entry->data = (void *)0xdeadbeef;
+}
+
+static bool joypad_is_end_of_list(joypad_connection_t *pad) {
+  return pad && !pad->connected && !pad->iface && pad->data == (void *)0xdeadbeef;
+}
+
+/**
+ * Since the pad_connection_destroy() call needs to iterate through this
+ * list, we allocate pads+1 entries and use the extra spot to store a
+ * marker.
+ */
 joypad_connection_t *pad_connection_init(unsigned pads)
 {
    unsigned i;
    joypad_connection_t *joyconn = (joypad_connection_t*)
-      calloc(pads, sizeof(joypad_connection_t));
+      calloc(pads+1, sizeof(joypad_connection_t));
 
    if (!joyconn)
       return NULL;
@@ -59,6 +76,8 @@ joypad_connection_t *pad_connection_init(unsigned pads)
       conn->iface               = NULL;
       conn->data                = NULL;
    }
+
+   set_end_of_list(joyconn, pads);
 
    return joyconn;
 }
@@ -208,7 +227,12 @@ void pad_connection_destroy(joypad_connection_t *joyconn)
    unsigned i;
 
    for (i = 0; i < MAX_USERS; i ++)
-      pad_connection_pad_deinit(&joyconn[i], i);
+   {
+     if(joypad_is_end_of_list(&joyconn[i]))
+       break;
+
+     pad_connection_pad_deinit(&joyconn[i], i);
+   }
 
    free(joyconn);
 }

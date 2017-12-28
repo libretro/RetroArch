@@ -111,7 +111,7 @@ static void *wiiu_hid_init(void)
      return NULL;
 }
 
-static void wiiu_hid_free(void *data)
+static void wiiu_hid_free(const void *data)
 {
    wiiu_hid_t *hid = (wiiu_hid_t*)data;
 

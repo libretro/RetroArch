@@ -1424,7 +1424,7 @@ static int16_t btstack_hid_joypad_axis(void *data, unsigned port, uint32_t joyax
    return val;
 }
 
-static void btstack_hid_free(void *data)
+static void btstack_hid_free(const void *data)
 {
    btstack_hid_t *hid = (btstack_hid_t*)data;
 

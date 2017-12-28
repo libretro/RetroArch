@@ -185,7 +185,7 @@ struct hid_driver
 {
    void *(*init)(void);
    bool (*query_pad)(void *, unsigned);
-   void (*free)(void *);
+   void (*free)(const void *);
    bool (*button)(void *, unsigned, uint16_t);
    void (*get_buttons)(void *, unsigned, retro_bits_t *);
    int16_t (*axis)(void *, unsigned, uint32_t);
