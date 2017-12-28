@@ -5537,6 +5537,48 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
+                  &settings->uints.menu_font_color_red,
+                  MENU_ENUM_LABEL_MENU_FONT_COLOR_RED,
+                  MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
+                  menu_font_color_red,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0, 255, 1, true, true);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.menu_font_color_green,
+                  MENU_ENUM_LABEL_MENU_FONT_COLOR_GREEN,
+                  MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
+                  menu_font_color_green,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0, 255, 1, true, true);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.menu_font_color_blue,
+                  MENU_ENUM_LABEL_MENU_FONT_COLOR_BLUE,
+                  MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
+                  menu_font_color_blue,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0, 255, 1, true, true);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+
+            CONFIG_UINT(
+                  list, list_info,
                   &settings->uints.menu_xmb_theme,
                   MENU_ENUM_LABEL_XMB_THEME,
                   MENU_ENUM_LABEL_VALUE_XMB_THEME,

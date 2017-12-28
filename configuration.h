@@ -352,6 +352,9 @@ typedef struct settings
       unsigned menu_xmb_theme;
       unsigned menu_xmb_color_theme;
       unsigned menu_materialui_color_theme;
+      unsigned menu_font_color_red;
+      unsigned menu_font_color_green;
+      unsigned menu_font_color_blue;
 
       unsigned camera_width;
       unsigned camera_height;

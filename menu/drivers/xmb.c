@@ -730,6 +730,7 @@ static void xmb_draw_text(
 {
    uint32_t color;
    uint8_t a8;
+   settings_t *settings;
 
    if (alpha > xmb->alpha)
       alpha = xmb->alpha;
@@ -740,7 +741,11 @@ static void xmb_draw_text(
    if (a8 == 0)
       return;
 
-   color = FONT_COLOR_RGBA(255, 255, 255, a8);
+   settings = config_get_ptr();
+   color = FONT_COLOR_RGBA(
+         settings->uints.menu_font_color_red,
+         settings->uints.menu_font_color_green,
+         settings->uints.menu_font_color_blue, a8);
 
    menu_display_draw_text(font, str, x, y,
          width, height, color, text_align, scale_factor,
