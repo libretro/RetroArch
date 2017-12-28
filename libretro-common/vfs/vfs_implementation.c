@@ -448,7 +448,7 @@ int retro_vfs_file_flush_impl(libretro_vfs_implementation_file *stream)
 {
    if (!stream)
       return -1;
-   return fflush(stream->fp);
+   return fflush(stream->fp)==0 ? 0 : -1;
 }
 
 int retro_vfs_file_remove_impl(const char *path)
@@ -457,7 +457,7 @@ int retro_vfs_file_remove_impl(const char *path)
    wchar_t *path_wide  = NULL;
 
    if (!path || !*path)
-      return false;
+      return -1;
 
    (void)path_local;
    (void)path_wide;
@@ -472,7 +472,7 @@ int retro_vfs_file_remove_impl(const char *path)
       free(path_local);
 
       if (ret == 0)
-         return true;
+         return 0;
    }
 #else
    path_wide = utf8_to_utf16_string_alloc(path);
@@ -483,14 +483,14 @@ int retro_vfs_file_remove_impl(const char *path)
       free(path_wide);
 
       if (ret == 0)
-         return true;
+         return 0;
    }
 #endif
 #else
    if (remove(path) == 0)
-      return true;
+      return 0;
 #endif
-   return false;
+   return -1;
 }
 
 int retro_vfs_file_rename_impl(const char *old_path, const char *new_path)
@@ -520,7 +520,7 @@ int retro_vfs_file_rename_impl(const char *old_path, const char *new_path)
          int ret = rename(old_path_local, new_path_local);
          free(old_path_local);
          free(new_path_local);
-         return ret;
+         return ret==0 ? 0 : -1;
       }
 
       free(old_path_local);
@@ -539,7 +539,7 @@ int retro_vfs_file_rename_impl(const char *old_path, const char *new_path)
          int ret = _wrename(old_path_wide, new_path_wide);
          free(old_path_wide);
          free(new_path_wide);
-         return ret;
+         return ret==0 ? 0 : -1;
       }
 
       free(old_path_wide);
@@ -550,7 +550,7 @@ int retro_vfs_file_rename_impl(const char *old_path, const char *new_path)
 #endif
    return -1;
 #else
-   return rename(old_path, new_path);
+   return rename(old_path, new_path)==0 ? 0 : -1;
 #endif
 }
 
