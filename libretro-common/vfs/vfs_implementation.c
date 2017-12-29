@@ -235,13 +235,17 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uns
 #endif
          }
          break;
-         /* TODO/FIXME - implement */
       case RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING:
-         break;
+         /* TODO/FIXME - implement */
+         return NULL;
+      default:
+         return NULL;
    }
 
-   if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0 && mode_str)
+   if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
    {
+      if (!mode_str)
+         return NULL;
       stream->fp = fopen_utf8(path, mode_str);
 
       if (!stream->fp)

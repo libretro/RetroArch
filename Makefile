@@ -64,7 +64,7 @@ ifneq ($(V),1)
    Q := @
 endif
 
-ifeq ($(DEBUG), 1)
+ifneq ($(DEBUG), 0)
    OPTIMIZE_FLAG = -O0 -g
 else
    OPTIMIZE_FLAG = -O3 -ffast-math

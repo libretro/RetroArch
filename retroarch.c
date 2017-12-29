@@ -1222,7 +1222,7 @@ static void retroarch_main_init_media(void)
  *
  * Initializes the program.
  *
- * Returns: 0 on success, otherwise 1 if there was an error.
+ * Returns: true on success, otherwise false if there was an error.
  **/
 bool retroarch_main_init(int argc, char *argv[])
 {

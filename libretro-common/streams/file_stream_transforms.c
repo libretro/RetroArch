@@ -30,8 +30,7 @@ RFILE* rfopen(const char *path, const char *mode)
 {
    unsigned int retro_mode = 0;
    if (strstr(mode, "r"))
-      if (strstr(mode, "b"))
-         retro_mode = RETRO_VFS_FILE_ACCESS_READ;
+      retro_mode = RETRO_VFS_FILE_ACCESS_READ;
 
    if (strstr(mode, "w"))
       retro_mode = RETRO_VFS_FILE_ACCESS_WRITE;
