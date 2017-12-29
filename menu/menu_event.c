@@ -49,6 +49,8 @@ static int menu_event_pointer(unsigned *action)
    size_t fb_pitch;
    unsigned fb_width, fb_height;
    const struct retro_keybind *binds[MAX_USERS] = {NULL};
+   const input_driver_t *input_ptr              = input_get_ptr();
+   void *input_data                             = input_get_data();
    menu_input_t *menu_input                     = menu_input_get_ptr();
    int pointer_device                           = menu_driver_is_texture_set()
       ?
@@ -62,21 +64,21 @@ static int menu_event_pointer(unsigned *action)
    joypad_info.axis_threshold                   = 0.0f;
 
    pointer_x                                    =
-      current_input->input_state(current_input_data, joypad_info, binds,
+      input_ptr->input_state(input_data, joypad_info, binds,
             0, pointer_device, 0, RETRO_DEVICE_ID_POINTER_X);
    pointer_y                                    =
-      current_input->input_state(current_input_data, joypad_info, binds,
+      input_ptr->input_state(input_data, joypad_info, binds,
             0, pointer_device, 0, RETRO_DEVICE_ID_POINTER_Y);
 
-   menu_input->pointer.pressed[0]  = current_input->input_state(current_input_data,
+   menu_input->pointer.pressed[0]  = input_ptr->input_state(input_data,
          joypad_info,
          binds,
          0, pointer_device, 0, RETRO_DEVICE_ID_POINTER_PRESSED);
-   menu_input->pointer.pressed[1]  = current_input->input_state(current_input_data,
+   menu_input->pointer.pressed[1]  = input_ptr->input_state(input_data,
          joypad_info,
          binds,
          0, pointer_device, 1, RETRO_DEVICE_ID_POINTER_PRESSED);
-   menu_input->pointer.back        = current_input->input_state(current_input_data,
+   menu_input->pointer.back        = input_ptr->input_state(input_data,
          joypad_info,
          binds,
          0, pointer_device, 0, RARCH_DEVICE_ID_POINTER_BACK);

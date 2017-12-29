@@ -372,8 +372,8 @@ static input_remote_t *input_driver_remote        = NULL;
 #ifdef HAVE_KEYMAPPER
 static input_mapper_t *input_driver_mapper        = NULL;
 #endif
-const input_driver_t *current_input               = NULL;
-void *current_input_data                          = NULL;
+static const input_driver_t *current_input        = NULL;
+static void *current_input_data                   = NULL;
 static bool input_driver_block_hotkey             = false;
 static bool input_driver_block_libretro_input     = false;
 static bool input_driver_nonblock_state           = false;
@@ -448,6 +448,11 @@ const char *input_driver_find_ident(int idx)
 const char* config_get_input_driver_options(void)
 {
    return char_list_new_special(STRING_LIST_INPUT_DRIVERS, NULL);
+}
+
+void *input_get_data(void)
+{
+   return current_input_data;
 }
 
 const input_driver_t *input_get_ptr(void)
@@ -1115,11 +1120,6 @@ bool input_driver_has_capabilities(void)
    if (!current_input->get_capabilities || !current_input_data)
       return false;
    return true;
-}
-
-void input_driver_poll(void)
-{
-   current_input->poll(current_input_data);
 }
 
 bool input_driver_init(void)

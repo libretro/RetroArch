@@ -365,12 +365,14 @@ int16_t menu_input_pointer_state(enum menu_input_pointer_state state)
 int16_t menu_input_mouse_state(enum menu_input_mouse_state state)
 {
    rarch_joypad_info_t joypad_info;
-   unsigned type              = 0;
-   unsigned device            = RETRO_DEVICE_MOUSE;
+   const input_driver_t *input_ptr = input_get_ptr();
+   void *input_data                = input_get_data();
+   unsigned type                   = 0;
+   unsigned device                 = RETRO_DEVICE_MOUSE;
 
-   joypad_info.joy_idx        = 0;
-   joypad_info.auto_binds     = NULL;
-   joypad_info.axis_threshold = 0.0f;
+   joypad_info.joy_idx             = 0;
+   joypad_info.auto_binds          = NULL;
+   joypad_info.axis_threshold      = 0.0f;
 
    switch (state)
    {
@@ -402,7 +404,7 @@ int16_t menu_input_mouse_state(enum menu_input_mouse_state state)
          break;
    }
 
-   return current_input->input_state(current_input_data, joypad_info,
+   return input_ptr->input_state(input_data, joypad_info,
          NULL, 0, device, 0, type);
 }
 

@@ -577,7 +577,9 @@ void input_poll_overlay(input_overlay_t *ol, float opacity, unsigned analog_dpad
    uint16_t key_mod                = 0;
    bool polled                     = false;
    bool button_pressed             = false;
+   void *input_data                = input_get_data();
    input_overlay_state_t *ol_state = &ol->overlay_state;
+   const input_driver_t *input_ptr = input_get_ptr();
 
    if (!ol_state)
       return;
@@ -594,16 +596,16 @@ void input_poll_overlay(input_overlay_t *ol, float opacity, unsigned analog_dpad
       RARCH_DEVICE_POINTER_SCREEN : RETRO_DEVICE_POINTER;
 
    for (i = 0;
-         current_input->input_state(current_input_data, joypad_info,
+         input_ptr->input_state(input_data, joypad_info,
             NULL,
             0, device, i, RETRO_DEVICE_ID_POINTER_PRESSED);
          i++)
    {
       input_overlay_state_t polled_data;
-      int16_t x = current_input->input_state(current_input_data, joypad_info,
+      int16_t x = input_ptr->input_state(input_data, joypad_info,
             NULL,
             0, device, i, RETRO_DEVICE_ID_POINTER_X);
-      int16_t y = current_input->input_state(current_input_data, joypad_info,
+      int16_t y = input_ptr->input_state(input_data, joypad_info,
             NULL,
             0, device, i, RETRO_DEVICE_ID_POINTER_Y);
 

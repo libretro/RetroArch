@@ -196,9 +196,6 @@ struct hid_driver
    const char *ident;
 };
 
-extern const input_driver_t *current_input;
-extern void *current_input_data;
-
 /**
  * input_driver_find_handle:
  * @index              : index of driver to get handle to.
@@ -344,13 +341,13 @@ void *input_driver_get_data(void);
 
 const input_driver_t *input_get_ptr(void);
 
+void *input_get_data(void);
+
 const input_driver_t **input_get_double_ptr(void);
 
 void **input_driver_get_data_ptr(void);
 
 bool input_driver_has_capabilities(void);
-
-void input_driver_poll(void);
 
 bool input_driver_init(void);
 
