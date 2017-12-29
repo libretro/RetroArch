@@ -1,9 +1,13 @@
 # 1.7.1 (future)
+- CHEEVOS: Fix unofficial achievements not being loaded
+- CHEEVOS: Support Neo Geo Pocket.
 - COMMON: New LED API. Driver implemented for Raspberry Pi, proof of concept implemented for core MAME 2003.
 - DINPUT: don't reinitialize input driver on network events / media insertion / network drive connection
 - GUI: Allow changing menu font color.
+- GUI/XMB: Add Monochrome Inverted icon theme.
 - GUI/XMB: Allow changing menu scale to 200%.
 - KEYMAPPER: prevent a condition that caused input_menu_toggle to stop working when a RETRO_DEVICE_KEYBOARD type device is enabled
+- LOCALIZATION: Update Italian translation.
 - NSW: Initial Nintendo Switch port, based on libtransistor SDK.
 - PS3: Enable Cheevos.
 - PSP: Enable threading support through pthreads.
