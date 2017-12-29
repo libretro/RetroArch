@@ -398,7 +398,7 @@ check_pkgconf FREETYPE freetype2
 check_pkgconf X11 x11
 check_pkgconf XCB xcb
 
-if [ "$HAVE_X11" != 'no' ] && [ "$OS" != 'Darwin' ]; then
+if [ "$OS" != 'Darwin' ]; then
    check_val '' X11 -lX11
 fi
 
