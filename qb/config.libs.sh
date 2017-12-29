@@ -134,7 +134,6 @@ fi
 
 if [ "$HAVE_EXYNOS" != "no" ]; then
    check_pkgconf EXYNOS libdrm_exynos
-   check_pkgconf DRM libdrm
 fi
 
 if [ "$HAVE_DISPMANX" != "no" ]; then
@@ -225,6 +224,7 @@ if [ "$HAVE_DYLIB" = 'no' ] && [ "$HAVE_DYNAMIC" = 'yes' ]; then
 fi
 
 check_pkgconf ALSA alsa
+check_val '' ALSA -lasound alsa
 check_lib '' CACA -lcaca
 
 if [ "$HAVE_OSS" != 'no' ]; then
@@ -260,15 +260,13 @@ check_pkgconf SDL sdl 1.2.10
 check_pkgconf SDL2 sdl2 2.0.0
 
 check_val '' JACK -ljack
+check_val '' PULSE -lpulse
+check_val '' SDL -lSDL SDL
+check_val '' SDL2 -lSDL2 SDL2
 
-if [ "$HAVE_SDL2" = 'yes' ]; then
-   if [ "$HAVE_SDL2" = 'yes' ] && [ "$HAVE_SDL" = 'yes' ]; then
-      die : 'Notice: SDL drivers will be replaced by SDL2 ones.'
-      HAVE_SDL=no
-   elif [ "$HAVE_SDL2" = 'no' ]; then
-      die : 'Warning: SDL2 not found, skipping.'
-      HAVE_SDL2=no
-   fi
+if [ "$HAVE_SDL2" = 'yes' ] && [ "$HAVE_SDL" = 'yes' ]; then
+   die : 'Notice: SDL drivers will be replaced by SDL2 ones.'
+   HAVE_SDL=no
 fi
 
 if [ "$HAVE_FLAC" = 'no' ]; then
@@ -279,6 +277,7 @@ check_pkgconf FLAC flac
 check_val '' FLAC '-lFLAC'
 
 check_pkgconf LIBUSB libusb-1.0 1.0.13
+check_val '' LIBUSB -lusb-1.0 libusb-1.0
 
 if [ "$OS" = 'Win32' ]; then
    check_lib '' DINPUT -ldinput8
@@ -333,22 +332,29 @@ else
    check_val '' ZLIB '-lz'
 fi
 
-if [ "$HAVE_THREADS" != 'no' ]; then
-   if [ "$HAVE_FFMPEG" != 'no' ]; then
-      check_pkgconf AVCODEC libavcodec 54
-      check_pkgconf AVFORMAT libavformat 54
-      check_pkgconf AVDEVICE libavdevice
-      check_pkgconf SWRESAMPLE libswresample
-      check_pkgconf AVRESAMPLE libavresample
-      check_pkgconf AVUTIL libavutil 51
-      check_pkgconf SWSCALE libswscale 2.1
-      check_header AV_CHANNEL_LAYOUT libavutil/channel_layout.h
+if [ "$HAVE_THREADS" != 'no' ] && [ "$HAVE_FFMPEG" != 'no' ]; then
+   check_pkgconf AVCODEC libavcodec 54
+   check_pkgconf AVFORMAT libavformat 54
+   check_pkgconf AVDEVICE libavdevice
+   check_pkgconf SWRESAMPLE libswresample
+   check_pkgconf AVRESAMPLE libavresample
+   check_pkgconf AVUTIL libavutil 51
+   check_pkgconf SWSCALE libswscale 2.1
 
-      HAVE_FFMPEG='yes'
-      if [ "$HAVE_AVCODEC" = 'no' ] || [ "$HAVE_SWRESAMPLE" = 'no' ] || [ "$HAVE_AVFORMAT" = 'no' ] || [ "$HAVE_AVUTIL" = 'no' ] || [ "$HAVE_SWSCALE" = 'no' ]; then
-         HAVE_FFMPEG='no'
-         die : 'Notice: FFmpeg built-in support disabled due to missing or unsuitable packages.'
-      fi
+   check_val '' AVCODEC -lavcodec
+   check_val '' AVFORMAT -lavformat
+   check_val '' AVDEVICE -lavdevice
+   check_val '' SWRESAMPLE -lswresample
+   check_val '' AVRESAMPLE -lavresample
+   check_val '' AVUTIL -lavutil
+   check_val '' SWSCALE -lswscale
+
+   check_header AV_CHANNEL_LAYOUT libavutil/channel_layout.h
+
+   HAVE_FFMPEG='yes'
+   if [ "$HAVE_AVCODEC" = 'no' ] || [ "$HAVE_SWRESAMPLE" = 'no' ] || [ "$HAVE_AVFORMAT" = 'no' ] || [ "$HAVE_AVUTIL" = 'no' ] || [ "$HAVE_SWSCALE" = 'no' ]; then
+      HAVE_FFMPEG='no'
+      die : 'Notice: FFmpeg built-in support disabled due to missing or unsuitable packages.'
    fi
 else
    die : 'Notice: Not building with threading support. Will skip FFmpeg.'
@@ -362,6 +368,9 @@ fi
 if [ "$HAVE_KMS" != "no" ]; then
    check_pkgconf GBM gbm 9.0
    check_pkgconf DRM libdrm
+   check_val '' GBM -lgbm
+   check_val '' DRM -ldrm libdrm
+
    if [ "$HAVE_GBM" = "yes" ] && [ "$HAVE_DRM" = "yes" ] && [ "$HAVE_EGL" = "yes" ]; then
       HAVE_KMS=yes
    elif [ "$HAVE_KMS" = "yes" ]; then
@@ -372,6 +381,7 @@ if [ "$HAVE_KMS" != "no" ]; then
 fi
 
 check_pkgconf LIBXML2 libxml-2.0
+check_val '' LIBXML2 -lxml2 libxml2
 
 if [ "$HAVE_EGL" = "yes" ]; then
    if [ "$HAVE_OPENGLES" != "no" ]; then
@@ -405,18 +415,26 @@ check_pkgconf DBUS dbus-1
 check_pkgconf XEXT xext
 check_pkgconf XF86VM xxf86vm
 
+check_val '' V4L2 -lv4l2
+check_val '' FREETYPE -lfreetype freetype2
 check_val '' X11 -lX11
+check_val '' XCB -lxcb
+check_val '' WAYLAND '-lwayland-egl -lwayland-client'
+check_val '' WAYLAND_CURSOR -lwayland-cursor
+check_val '' XKBCOMMON -lxkbcommon
 check_val '' XEXT -lXext
 check_val '' XF86VM -lXxf86vm
 
-if [ "$HAVE_X11" = "no" ]; then
+if [ "$HAVE_X11" = 'no' ]; then
    HAVE_XEXT=no; HAVE_XF86VM=no; HAVE_XINERAMA=no; HAVE_XSHM=no
 fi
 
 check_pkgconf XINERAMA xinerama
+check_val '' XINERAMA -lXinerama
 
 if [ "$HAVE_X11" = 'yes' ] && [ "$HAVE_XEXT" = 'yes' ] && [ "$HAVE_XF86VM" = 'yes' ]; then
    check_pkgconf XVIDEO xv
+   check_val '' XVIDEO -lXv
 else
    die : 'Notice: X11, Xext or xf86vm not present. Skipping X11 code paths.'
    HAVE_X11='no'

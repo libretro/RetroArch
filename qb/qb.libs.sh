@@ -160,12 +160,19 @@ check_switch() # $1 = language  $2 = HAVE_$2  $3 = switch  $4 = critical error m
 	}
 }
 
-check_val() # $1 = language  $2 = HAVE_$2  $3 = lib
+check_val() # $1 = language  $2 = HAVE_$2  $3 = lib  $4 = include directory [checked only if non-empty]
 {	tmpval="$(eval "printf %s \"\$HAVE_$2\"")"
 	oldval="$(eval "printf %s \"\$TMP_$2\"")"
 	if [ "$tmpval" = 'no' ] && [ "$oldval" != 'no' ]; then
 		eval "HAVE_$2=auto"
 		check_lib "$1" "$2" "$3"
+
+		if [ "${4:-}" ] && [ "$answer" = 'yes' ]; then
+			for dir in usr/include usr/local/include opt/vc/include; do
+				[ -d "/$dir/$4" ] && { eval "$2_CFLAGS=\"-I/$dir/$4\""; break; }
+			done
+			[ -z "$(eval "printf %s \"\${$2_CFLAGS}\"")" ] && eval "HAVE_$2=no"
+		fi
 
 		if [ "$answer" = 'no' ] && [ "$oldval" = 'yes' ]; then
 			die 1 "Forced to build with library $lib, but cannot locate. Exiting ..."
