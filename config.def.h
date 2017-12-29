@@ -264,7 +264,7 @@ static bool menu_show_help               = true;
 static bool menu_show_quit_retroarch     = true;
 static bool menu_show_reboot             = true;
 
-#if defined(HAVE_LAKKA) || defined(VITA)
+#if defined(HAVE_LAKKA) || defined(VITA) || defined(_3DS)
 static bool menu_show_core_updater       = false;
 #else
 static bool menu_show_core_updater       = true;

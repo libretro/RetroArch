@@ -142,6 +142,13 @@ struct hostent *gethostbyname(const char *name)
 }
 
 int retro_epoll_fd;
+#elif defined(_3DS)
+#include <malloc.h>
+#include <3ds/types.h>
+#include <3ds/services/soc.h>
+#define SOC_ALIGN       0x1000
+#define SOC_BUFFERSIZE  0x100000
+static u32* _net_compat_net_memory;
 #elif defined(_WIN32)
 int inet_aton(const char *cp, struct in_addr *inp)
 {
@@ -310,6 +317,15 @@ bool network_init(void)
       return false;
 #elif defined(WIIU)
    socket_lib_init();
+#elif defined(_3DS)
+    _net_compat_net_memory = (u32*)memalign(SOC_ALIGN, SOC_BUFFERSIZE);
+	if (_net_compat_net_memory == NULL)
+		return false;
+	//RARCH_LOG("Wifi Buffer at: [0x%08X]\n", (u32)_net_compat_net_memory);
+	Result ret = socInit(_net_compat_net_memory, SOC_BUFFERSIZE);//WIFI init
+	if (ret != 0)
+		return false;
+	//RARCH_LOG("Socket Status: [0x%08X]\n", (uint32_t)ret);
 #else
    signal(SIGPIPE, SIG_IGN); /* Do not like SIGPIPE killing our app. */
 #endif
@@ -342,6 +358,14 @@ void network_deinit(void)
    }
 #elif defined(GEKKO) && !defined(HW_DOL)
    net_deinit();
+#elif defined(_3DS)
+   socExit();
+   
+   if(_net_compat_net_memory)
+   {
+	  free(_net_compat_net_memory);
+	  _net_compat_net_memory = NULL;
+   }
 #endif
 }
 
