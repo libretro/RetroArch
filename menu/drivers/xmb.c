@@ -2117,6 +2117,38 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
 {
    switch (enum_idx)
    {
+      case MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS:
+         return xmb->textures.list[XMB_TEXTURE_ACHIEVEMENT_LIST];
+      case MENU_ENUM_LABEL_CONTENT_SETTINGS:
+         return xmb->textures.list[XMB_TEXTURE_CORE];
+      case MENU_ENUM_LABEL_PLAYLIST_SETTINGS:
+         return xmb->textures.list[XMB_TEXTURE_RDB];
+      case MENU_ENUM_LABEL_NETWORK_SETTINGS:
+         return xmb->textures.list[XMB_TEXTURE_WIFI];
+      case MENU_ENUM_LABEL_CORE_SETTINGS:
+         return xmb->textures.list[XMB_TEXTURE_CORE];
+      case MENU_ENUM_LABEL_DIRECTORY_SETTINGS:
+         return xmb->textures.list[XMB_TEXTURE_FOLDER];
+      case MENU_ENUM_LABEL_SAVING_SETTINGS:
+         return xmb->textures.list[XMB_TEXTURE_SAVESTATE];
+      case MENU_ENUM_LABEL_SCAN_FILE:
+         return xmb->textures.list[XMB_TEXTURE_FILE];
+      case MENU_ENUM_LABEL_SCAN_DIRECTORY:
+         return xmb->textures.list[XMB_TEXTURE_FOLDER];
+      case MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST:
+         return xmb->textures.list[XMB_TEXTURE_RDB];
+      case MENU_ENUM_LABEL_QUIT_RETROARCH:
+         return xmb->textures.list[XMB_TEXTURE_CLOSE];
+      case MENU_ENUM_LABEL_HELP_LIST:
+         return xmb->textures.list[XMB_TEXTURE_CORE_INFO];
+      case MENU_ENUM_LABEL_INFORMATION_LIST:
+         return xmb->textures.list[XMB_TEXTURE_CORE_OPTIONS];
+      case MENU_ENUM_LABEL_ONLINE_UPDATER:
+         return xmb->textures.list[XMB_TEXTURE_WIFI];
+      case MENU_ENUM_LABEL_CORE_LIST:
+         return xmb->textures.list[XMB_TEXTURE_CORE];
+      case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
+         return xmb->textures.list[XMB_TEXTURE_FILE];
       case MENU_ENUM_LABEL_CORE_OPTIONS:
       case MENU_ENUM_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
          return xmb->textures.list[XMB_TEXTURE_CORE_OPTIONS];
