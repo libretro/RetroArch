@@ -566,11 +566,14 @@ void input_poll(void)
    input_driver_turbo_btns.count++;
 
    for (i = 0; i < max_users; i++)
-   {
       input_driver_turbo_btns.frame_enable[i] = 0;
 
-      if (!input_driver_block_libretro_input &&
-            libretro_input_binds[i][RARCH_TURBO_ENABLE].valid)
+   if (input_driver_block_libretro_input)
+      return;
+
+   for (i = 0; i < max_users; i++)
+   {
+      if (libretro_input_binds[i][RARCH_TURBO_ENABLE].valid)
       {
          rarch_joypad_info_t joypad_info;
          joypad_info.axis_threshold = input_driver_axis_threshold;
@@ -582,9 +585,6 @@ void input_poll(void)
                (unsigned)i, RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
       }
    }
-
-   if (input_driver_block_libretro_input)
-      return;
 
 #ifdef HAVE_OVERLAY
    if (overlay_ptr && input_overlay_is_alive(overlay_ptr))
