@@ -12,7 +12,7 @@ include config.mk
 # Put your favorite compile flags in this file, if you want different defaults than upstream.
 # Do not attempt to create that file upstream.
 # (It'd be better to put this comment in that file, but .gitignore doesn't work on files that exist in the repo.)
--include Makefile.custom
+-include Makefile.local
 
 TARGET = retroarch
 
