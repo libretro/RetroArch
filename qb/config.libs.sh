@@ -395,16 +395,15 @@ fi
 
 check_pkgconf V4L2 libv4l2
 check_pkgconf FREETYPE freetype2
-check_pkgconf X11 x11
-check_pkgconf XCB xcb
 
-if [ "$HAVE_X11" != 'no' ] && [ "$OS" != 'Darwin' ]; then
+if [ "$HAVE_X11" != 'no' ]; then
+   check_pkgconf X11 x11
    check_val '' X11 -lX11
 fi
 
+check_pkgconf XCB xcb
 check_pkgconf WAYLAND wayland-egl
 check_pkgconf WAYLAND_CURSOR wayland-cursor
-
 check_pkgconf XKBCOMMON xkbcommon 0.3.2
 check_pkgconf DBUS dbus-1
 check_pkgconf XEXT xext
