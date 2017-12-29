@@ -51,6 +51,7 @@ struct RFILE
 {
    struct retro_vfs_file_handle *hfile;
 	bool error_flag;
+	bool eof_flag;
 };
 
 /* VFS Initialization */
@@ -150,6 +151,7 @@ RFILE *filestream_open(const char *path, unsigned mode, unsigned hints)
 
 	output             = (RFILE*)malloc(sizeof(RFILE));
 	output->error_flag = false;
+	output->eof_flag   = false;
 	output->hfile      = fp;
 	return output;
 }
@@ -199,18 +201,14 @@ ssize_t filestream_seek(RFILE *stream, ssize_t offset, int seek_position)
 
    if (output == vfs_error_return_value)
       stream->error_flag = true;
+   stream->eof_flag = false;
 
    return output;
 }
 
 int filestream_eof(RFILE *stream)
 {
-   int64_t current_position = filestream_tell(stream);
-   int64_t end_position     = filestream_get_size(stream);
-
-   if (current_position >= end_position)
-      return 1;
-   return 0;
+   return stream->eof_flag;
 }
 
 
@@ -235,6 +233,7 @@ void filestream_rewind(RFILE *stream)
       return;
    filestream_seek(stream, 0L, RETRO_VFS_SEEK_POSITION_START);
    stream->error_flag = false;
+   stream->eof_flag = false;
 }
 
 ssize_t filestream_read(RFILE *stream, void *s, int64_t len)
@@ -249,6 +248,8 @@ ssize_t filestream_read(RFILE *stream, void *s, int64_t len)
 
    if (output == vfs_error_return_value)
       stream->error_flag = true;
+   if (output < len)
+      stream->eof_flag = true;
 
    return output;
 }
@@ -312,7 +313,7 @@ int filestream_putc(RFILE *stream, int c)
    char c_char = (char)c;
    if (!stream)
       return EOF;
-	return filestream_write(stream, &c_char, 1);
+	return filestream_write(stream, &c_char, 1)==1 ? c : EOF;
 }
 
 int filestream_vprintf(RFILE *stream, const char* format, va_list args)
