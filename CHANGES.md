@@ -1,4 +1,6 @@
 # 1.7.1 (future)
+- 3DS: Now correctly reports amount of CPU cores.
+- 3DS: Initial networking support, HTTP requests won't work yet.
 - CHEEVOS: Fix unofficial achievements not being loaded
 - CHEEVOS: Support Neo Geo Pocket.
 - COMMON: New LED API. Driver implemented for Raspberry Pi, proof of concept implemented for core MAME 2003.
