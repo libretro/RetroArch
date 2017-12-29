@@ -118,7 +118,7 @@ static bool switch_frame(void *data, const void *frame,
    uint64_t begin, done_copying, post_vsync, pre_swizzle, post_swizzle,
             copy_ms, swizzle_ms, vsync_ms;
    int tgtw, tgth, centerx, centery;
-   uint16_t *frame_pixels = frame;
+   const uint16_t *frame_pixels = frame;
    uint32_t *out_buffer   = NULL;
    switch_video_t *sw     = data;
    int xsf                = 1280 / width;
@@ -149,8 +149,8 @@ static bool switch_frame(void *data, const void *frame,
          b               = (b * 256) / 32;
          dpixel          = (r << 0) | (g << 8) | (b << 16) | (0xFF << 24);
 
-         for (subx = 0; subx < xsf; subx++)
-            for (suby = 0; suby < ysf; suby++)
+         for (int subx = 0; subx < xsf; subx++)
+            for (int suby = 0; suby < ysf; suby++)
                image[(((y*sf)+suby+centery)*1280) 
                   + ((x*sf)+subx+centerx)] = dpixel;
       }
