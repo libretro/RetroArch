@@ -2585,7 +2585,9 @@ static void cb_generic_download(void *task_data,
       void *user_data, const char *err)
 {
    char output_path[PATH_MAX_LENGTH];
-   bool extract = true;
+#if defined(HAVE_COMPRESSION) && defined(HAVE_ZLIB)
+   bool extract                          = true;
+#endif
    const char             *dir_path      = NULL;
    menu_file_transfer_t     *transf      = (menu_file_transfer_t*)user_data;
    settings_t              *settings     = config_get_ptr();
@@ -2609,7 +2611,9 @@ static void cb_generic_download(void *task_data,
          break;
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD:
          dir_path = settings->paths.directory_core_assets;
+#if defined(HAVE_COMPRESSION) && defined(HAVE_ZLIB)
          extract = settings->bools.network_buildbot_auto_extract_archive;
+#endif
          break;
       case MENU_ENUM_LABEL_CB_UPDATE_CORE_INFO_FILES:
          dir_path = settings->paths.path_libretro_info;
