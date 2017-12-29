@@ -101,7 +101,8 @@ static bool hidpad_button(unsigned pad, uint16_t button)
   if(!hidpad_query_pad(pad))
     return false;
 
-  return hid_driver->button(hid_data, to_slot(pad), button);
+//  return hid_driver->button(hid_data, to_slot(pad), button);
+  return false;
 }
 
 static void hidpad_get_buttons(unsigned pad, retro_bits_t *state)
@@ -109,7 +110,8 @@ static void hidpad_get_buttons(unsigned pad, retro_bits_t *state)
   if(!hidpad_query_pad(pad))
     BIT256_CLEAR_ALL_PTR(state);
 
-  hid_driver->get_buttons(hid_data, to_slot(pad), state);
+//  hid_driver->get_buttons(hid_data, to_slot(pad), state);
+  BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t hidpad_axis(unsigned pad, uint32_t axis)
@@ -117,13 +119,14 @@ static int16_t hidpad_axis(unsigned pad, uint32_t axis)
   if(!hidpad_query_pad(pad));
     return 0;
 
-  return hid_driver->axis(hid_data, to_slot(pad), axis);
+//  return hid_driver->axis(hid_data, to_slot(pad), axis);
+  return 0;
 }
 
 static void hidpad_poll(void)
 {
-  if(ready)
-    hid_driver->poll(hid_data);
+//  if(ready)
+//    hid_driver->poll(hid_data);
 }
 
 static const char *hidpad_name(unsigned pad)
@@ -131,7 +134,8 @@ static const char *hidpad_name(unsigned pad)
   if(!hidpad_query_pad(pad))
     return "N/A";
 
-  return hid_driver->name(hid_data, to_slot(pad));
+  return PAD_NAME_HID;
+  //return hid_driver->name(hid_data, to_slot(pad));
 }
 
 input_device_driver_t hidpad_driver =
