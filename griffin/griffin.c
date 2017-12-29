@@ -160,7 +160,7 @@ ACHIEVEMENTS
 /*============================================================
 MD5
 ============================================================ */
-#if (defined(HAVE_CHEEVOS) && defined(HAVE_THREADS)) || (defined(HAVE_HTTPSERVER) && defined(HAVE_ZLIB))
+#if defined(HAVE_CHEEVOS) || (defined(HAVE_HTTPSERVER) && defined(HAVE_ZLIB))
 #include "../libretro-common/utils/md5.c"
 #endif
 

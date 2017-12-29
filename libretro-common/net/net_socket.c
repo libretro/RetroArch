@@ -236,7 +236,7 @@ int socket_connect(int fd, void *data, bool timeout_enable)
 {
    struct addrinfo *addr = (struct addrinfo*)data;
 
-#if !defined(_WIN32) && !defined(VITA) && !defined(WIIU)
+#if !defined(_WIN32) && !defined(VITA) && !defined(WIIU) && !defined(_3DS)
    if (timeout_enable)
    {
       struct timeval timeout;
