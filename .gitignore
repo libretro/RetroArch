@@ -117,3 +117,4 @@ obj-unix/
 /pkg/msvc/msvc-2010/Release Cg/*.pdb
 
 retroarch.cfg
+Makefile.custom
