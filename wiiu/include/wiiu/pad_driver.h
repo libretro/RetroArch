@@ -21,6 +21,11 @@
 #include  "../../config.h"
 #endif // HAVE_CONFIG_H
 
+#include <string.h>
+#include <malloc.h>
+#include <unistd.h>
+#include <wiiu/os.h>
+#include <wiiu/syshid.h>
 #include <wiiu/vpad.h>
 #include <wiiu/kpad.h>
 #include <string.h>
@@ -106,10 +111,71 @@ struct _wiiu_pad_functions {
   void (*connect)(unsigned pad, input_device_driver_t *driver);
 };
 
+/**
+ * HID driver data structures
+ */
+
+typedef struct wiiu_hid {
+  // used to register for HID notifications
+  HIDClient *client;
+  // list of HID pads
+  joypad_connection_t *connections;
+  // size of connections list
+  unsigned connections_size;
+  // thread state data for HID polling thread
+  OSThread *polling_thread;
+  // stack space for polling thread
+  void *polling_thread_stack;
+  // watch variable to tell the polling thread to terminate
+  volatile bool polling_thread_quit;
+} wiiu_hid_t;
+
+typedef struct wiiu_adapter wiiu_adapter_t;
+
+struct wiiu_adapter {
+  wiiu_adapter_t *next;
+  wiiu_hid_t *hid;
+  uint8_t state;
+  uint8_t *rx_buffer;
+  int32_t rx_size;
+  int32_t slot;
+  uint32_t handle;
+  uint8_t interface_index;
+};
+
+typedef struct wiiu_attach wiiu_attach_event;
+
+struct wiiu_attach {
+  wiiu_attach_event *next;
+  uint32_t type;
+  uint32_t handle;
+  uint16_t vendor_id;
+  uint16_t product_id;
+  uint8_t interface_index;
+  uint8_t is_keyboard;
+  uint8_t is_mouse;
+  uint16_t max_packet_size_rx;
+  uint16_t max_packet_size_tx;
+};
+
+typedef struct _wiiu_event_list wiiu_event_list;
+typedef struct _wiiu_adapter_list wiiu_adapter_list;
+
+struct _wiiu_event_list {
+  OSFastMutex lock;
+  wiiu_attach_event *list;
+};
+
+struct _wiiu_adapter_list {
+  OSFastMutex lock;
+  wiiu_adapter_t *list;
+};
+
 extern wiiu_pad_functions_t pad_functions;
 extern input_device_driver_t wiiu_joypad;
 extern input_device_driver_t wpad_driver;
 extern input_device_driver_t kpad_driver;
 extern input_device_driver_t hidpad_driver;
+extern hid_driver_t wiiu_hid;
 
 #endif // __PAD_DRIVER__H

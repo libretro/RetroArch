@@ -14,7 +14,7 @@ PC_DEVELOPMENT_IP_ADDRESS  ?=192.168.29.137
 PC_DEVELOPMENT_TCP_PORT	   ?=4405
 
 OBJ :=
-OBJ += input/drivers_hid/wiiu_hid.o
+OBJ += wiiu/input/wiiu_hid.o
 OBJ += wiiu/input/wpad_driver.o
 OBJ += wiiu/input/kpad_driver.o
 OBJ += wiiu/input/hidpad_driver.o

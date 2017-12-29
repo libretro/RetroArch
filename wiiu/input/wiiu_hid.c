@@ -14,29 +14,28 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <string.h>
-#include <malloc.h>
-#include <unistd.h>
-#include <wiiu/os.h>
-#include <wiiu/syshid.h>
-#include <retro_endianness.h>
-
 #include "wiiu_hid.h"
 
 static wiiu_event_list events;
 static wiiu_adapter_list adapters;
 
-static bool wiiu_hid_joypad_query(void *data, unsigned pad)
+static bool wiiu_hid_joypad_query(void *data, unsigned slot)
 {
-   return pad < MAX_USERS;
+  wiiu_hid_t *hid = (wiiu_hid_t *)data;
+  if(!hid)
+    return false;
+
+  return slot < hid->connections_size;
 }
 
-static const char *wiiu_hid_joypad_name(void *data, unsigned pad)
+static const char *wiiu_hid_joypad_name(void *data, unsigned slot)
 {
-   if (pad >= MAX_USERS)
-      return NULL;
+  if(!wiiu_hid_joypad_query(data, slot))
+    return NULL;
 
-   return NULL;
+  wiiu_hid_t *hid = (wiiu_hid_t *)data;
+
+  return hid->connections[slot].iface->get_name(data);
 }
 
 static void wiiu_hid_joypad_get_buttons(void *data, unsigned port, retro_bits_t *state)
@@ -81,13 +80,10 @@ static void *wiiu_hid_init(void)
    RARCH_LOG("[hid]: wiiu_hid: init\n");
    wiiu_hid_t *hid = new_hid();
    HIDClient *client = new_hidclient();
-   joypad_connection_t *connections = pad_connection_init(MAX_HID_PADS);
 
-   if(!hid || !client || !connections) {
+   if(!hid || !client) {
      goto error;
    }
-
-   hid->connections = connections;
 
    wiiu_hid_init_lists();
    start_polling_thread(hid);
@@ -103,8 +99,6 @@ static void *wiiu_hid_init(void)
 
    error:
      RARCH_LOG("[hid]: initialization failed. cleaning up.\n");
-     if(connections)
-       free(connections);
      stop_polling_thread(hid);
      delete_hid(hid);
      delete_hidclient(client);
