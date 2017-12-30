@@ -261,6 +261,8 @@ check_pkgconf PULSE libpulse
 check_pkgconf SDL sdl 1.2.10
 check_pkgconf SDL2 sdl2 2.0.0
 
+check_val '' JACK -ljack
+
 if [ "$HAVE_SDL2" = 'yes' ]; then
    if [ "$HAVE_SDL2" = 'yes' ] && [ "$HAVE_SDL" = 'yes' ]; then
       die : 'Notice: SDL drivers will be replaced by SDL2 ones.'
