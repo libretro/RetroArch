@@ -30,6 +30,7 @@
 #include <net/net_http_parse.h>
 #endif
 
+#include "menu_networking.h"
 #include "menu_cbs.h"
 #include "menu_entries.h"
 #include "widgets/menu_list.h"

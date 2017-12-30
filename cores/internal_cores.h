@@ -20,6 +20,7 @@
 
 #include <boolean.h>
 #include <libretro.h>
+#include <retro_common_api.h>
 #include <retro_environment.h>
 
 #ifdef HAVE_CONFIG_H

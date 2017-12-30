@@ -21,6 +21,7 @@
 #include <stddef.h>
 
 #include <boolean.h>
+#include <retro_common_api.h>
 #include <retro_environment.h>
 
 RETRO_BEGIN_DECLS

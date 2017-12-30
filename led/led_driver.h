@@ -21,6 +21,7 @@
 #include <sys/types.h>
 
 #include <boolean.h>
+#include <libretro.h>
 #include <retro_common_api.h>
 #include <retro_environment.h>
 
@@ -33,6 +34,7 @@ typedef struct led_driver
    void (*set_led)(int led,int value);
 } led_driver_t;
 
+
 bool led_driver_init(void);
 
 void led_driver_free(void);
@@ -41,5 +43,7 @@ void led_driver_set_led(int led,int value);
 
 extern led_driver_t *null_led_driver;
 extern led_driver_t *rpi_led_driver;
+
+RETRO_END_DECLS
 
 #endif
