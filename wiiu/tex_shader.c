@@ -133,67 +133,64 @@ tex_shader_t tex_shader =
 {
    {
       {
-         0x00000103, 0x00000000, 0x00000000, 0x00000001, /* sq_pgm_resources_vs, vgt_primitiveid_en, spi_vs_out_config, num_spi_vs_out_id */
-         { 0xffffff00, _x9(0xffffffff) }, /* spi_vs_out_id @10 */
-         0x00000000, 0xfffffffc, 0x00000002, /* pa_cl_vs_out_cntl, sq_vtx_semantic_clear, num_sq_vtx_semantic */
+         .sq_pgm_resources_vs.num_gprs = 3,
+         .sq_pgm_resources_vs.stack_size = 1,
+         .num_spi_vs_out_id = 1,
          {
-            0x00000000, 0x00000001, _x30(0x000000ff) /* sq_vtx_semantic @32 */
+            {.semantic_0 = 0x00, .semantic_1 = 0xFF, .semantic_2 = 0xFF, .semantic_3 = 0xFF},
+            {.semantic_0 = 0xFF, .semantic_1 = 0xFF, .semantic_2 = 0xFF, .semantic_3 = 0xFF},
+            {.semantic_0 = 0xFF, .semantic_1 = 0xFF, .semantic_2 = 0xFF, .semantic_3 = 0xFF},
+            {.semantic_0 = 0xFF, .semantic_1 = 0xFF, .semantic_2 = 0xFF, .semantic_3 = 0xFF},
+            {.semantic_0 = 0xFF, .semantic_1 = 0xFF, .semantic_2 = 0xFF, .semantic_3 = 0xFF},
+            {.semantic_0 = 0xFF, .semantic_1 = 0xFF, .semantic_2 = 0xFF, .semantic_3 = 0xFF},
+            {.semantic_0 = 0xFF, .semantic_1 = 0xFF, .semantic_2 = 0xFF, .semantic_3 = 0xFF},
+            {.semantic_0 = 0xFF, .semantic_1 = 0xFF, .semantic_2 = 0xFF, .semantic_3 = 0xFF},
+            {.semantic_0 = 0xFF, .semantic_1 = 0xFF, .semantic_2 = 0xFF, .semantic_3 = 0xFF},
+            {.semantic_0 = 0xFF, .semantic_1 = 0xFF, .semantic_2 = 0xFF, .semantic_3 = 0xFF},
          },
-         0x00000000, 0x0000000e, 0x00000010 /* vgt_strmout_buffer_en, vgt_vertex_reuse_block_cntl, vgt_hos_reuse_depth */
-      },                                                    /* regs */
-      sizeof(vs_program),                                   /* size */
-      (uint8_t*)&vs_program,                                /* program */
-      GX2_SHADER_MODE_UNIFORM_REGISTER,                     /* mode */
-      0,                                                    /* uniformBlockCount */
-      NULL,                                                 /* uniformBlocks */
-      0,                                                    /* uniformVarCount */
-      NULL,                                                 /* uniformVars */
-      0,                                                    /* initialValueCount */
-      NULL,                                                 /* initialValues */
-      0,                                                    /* loopVarCount */
-      NULL,                                                 /* loopVars */
-      0,                                                    /* samplerVarCount */
-      NULL,                                                 /* samplerVars */
-      sizeof(tex_shader.attributes) / sizeof(GX2AttribVar), /* attribVarCount */
-      (GX2AttribVar*) &tex_shader.attributes,               /* attribVars */
-      0,                                                    /* ringItemsize */
-      FALSE,                                                /* hasStreamOut */
-      {0},                                                  /* streamOutStride @4 */
-      {}                                                    /* gx2rBuffer */
+         .sq_vtx_semantic_clear = ~0x3,
+         .num_sq_vtx_semantic = 2,
+         {
+               0,    1, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+            0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+         },
+         .vgt_vertex_reuse_block_cntl.vtx_reuse_depth = 0xE,
+         .vgt_hos_reuse_depth.reuse_depth = 0x10,
+      }, /* regs */
+      .size = sizeof(vs_program),
+      .program = (uint8_t*)&vs_program,
+      .mode = GX2_SHADER_MODE_UNIFORM_REGISTER,
+      .attribVarCount = sizeof(tex_shader.attributes) / sizeof(GX2AttribVar), (GX2AttribVar*) &tex_shader.attributes,
    },
    {
       {
-         0x00000001, 0x00000002, 0x14000001, 0x00000000, /* sq_pgm_resources_ps, sq_pgm_exports_ps, spi_ps_in_control_0, spi_ps_in_control_1 */
-         0x00000001, /* num_spi_ps_input_cntl */
-         { 0x00000100, _x30(0x00000000)}, /* spi_ps_input_cntls @ 32*/
-         0x0000000f, 0x00000001, 0x00000010, 0x00000000 /* cb_shader_mask, cb_shader_control, db_shader_control, spi_input_z */
-      },                                                    /* regs */
-      sizeof(ps_program),                                   /* size */
-      (uint8_t*)&ps_program,                                /* program */
-      GX2_SHADER_MODE_UNIFORM_REGISTER,                     /* mode */
-      0,                                                    /* uniformBlockCount */
-      NULL,                                                 /* uniformBlocks */
-      0,                                                    /* uniformVarCount */
-      NULL,                                                 /* uniformVars */
-      0,                                                    /* initialValueCount */
-      NULL,                                                 /* initialValues */
-      0,                                                    /* loopVarCount */
-      NULL,                                                 /* loopVars */
-      1,                                                    /* samplerVarCount */
-      (GX2SamplerVar*) &tex_shader.sampler,                 /* samplerVars */
-      {}                                                    /* gx2rBuffer */
+         .sq_pgm_resources_ps.num_gprs = 1,
+         .sq_pgm_exports_ps.export_mode = 0x2,
+         .spi_ps_in_control_0.num_interp = 1,
+         .spi_ps_in_control_0.persp_gradient_ena = 1,
+         .spi_ps_in_control_0.baryc_sample_cntl = spi_baryc_cntl_centers_only,
+         .num_spi_ps_input_cntl = 1, {{.default_val = 1},},
+         .cb_shader_mask.output0_enable = 0xF,
+         .cb_shader_control.rt0_enable = TRUE,
+         .db_shader_control.z_order = db_z_order_early_z_then_late_z,
+      }, /* regs */
+      .size = sizeof(ps_program),
+      .program = (uint8_t*)&ps_program,
+      .mode = GX2_SHADER_MODE_UNIFORM_REGISTER,
+      .samplerVarCount = 1,
+      .samplerVars = (GX2SamplerVar*) &tex_shader.sampler,
    },
-   { "s", GX2_SAMPLER_VAR_TYPE_SAMPLER_2D, 0 },
-   {
-      { "position",     GX2_SHADER_VAR_TYPE_FLOAT2, 0, 0},
-      { "tex_coord_in", GX2_SHADER_VAR_TYPE_FLOAT2, 0, 1}
+   .sampler = { "s", GX2_SAMPLER_VAR_TYPE_SAMPLER_2D, 0 },
+   .attributes = {
+      .position =  { "position",     GX2_SHADER_VAR_TYPE_FLOAT2, 0, 0},
+      .tex_coord = { "tex_coord_in", GX2_SHADER_VAR_TYPE_FLOAT2, 0, 1}
    },
-   {
-      {
+   .attribute_stream = {
+      .position = {
          0, 0, 0, GX2_ATTRIB_FORMAT_FLOAT_32_32,
          GX2_ATTRIB_INDEX_PER_VERTEX, 0, GX2_COMP_SEL(_X, _Y, _0, _1), GX2_ENDIAN_SWAP_DEFAULT
       },
-      {
+      .tex_coord = {
          1, 1, 0, GX2_ATTRIB_FORMAT_FLOAT_32_32,
          GX2_ATTRIB_INDEX_PER_VERTEX, 0, GX2_COMP_SEL(_X, _Y, _0, _1), GX2_ENDIAN_SWAP_DEFAULT
       }
