@@ -6,6 +6,9 @@
 #include <retro_math.h>
 #include <formats/image.h>
 
+#include <gfx/scaler/scaler.h>
+#include <gfx/scaler/pixconv.h>
+
 #include <libtransistor/nx.h>
 
 #ifdef HAVE_CONFIG_H
@@ -37,6 +40,18 @@ typedef struct
    surface_t surface;
    revent_h vsync_h;
    struct video_viewport vp;
+
+	struct {
+		bool enable;
+		bool fullscreen;
+
+		uint32_t *pixels;
+
+		unsigned width;
+		unsigned height;
+
+		struct scaler_ctx scaler;
+	} menu_texture;
 } switch_video_t;
 
 static uint32_t image[1280*720];
@@ -88,7 +103,7 @@ static void *switch_init(const video_info_t *video,
    video_driver_set_size(&sw->vp.width, &sw->vp.height);
 
    sw->vsync = video->vsync;
-
+   
    *input = NULL;
    *input_data = NULL;
 
@@ -157,6 +172,22 @@ static bool switch_frame(void *data, const void *frame,
       }
    }
 
+#if defined(HAVE_MENU)
+   if(sw->menu_texture.enable)
+	{
+		menu_driver_frame(video_info);
+
+		if(sw->menu_texture.pixels != NULL)
+		{
+			//if(sw->menu_texture.fullscreen) {
+				scaler_ctx_scale(&sw->menu_texture.scaler, image, sw->menu_texture.pixels);
+				//} else {
+				
+				//}
+		}
+	}
+#endif
+   
    done_copying = svcGetSystemTick();
 
 #if 0
@@ -274,11 +305,95 @@ static bool switch_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    return true;
 }
 
+#if defined(HAVE_MENU)
+static void switch_set_texture_frame(void *data, const void *frame, bool rgb32,
+                                     unsigned width, unsigned height, float alpha)
+{
+
+	switch_video_t *sw = data;
+	if(sw->menu_texture.pixels == NULL || sw->menu_texture.width != width || sw->menu_texture.height != height) {
+		if(sw->menu_texture.pixels != NULL) {
+			free(sw->menu_texture.pixels);
+		}
+
+		sw->menu_texture.pixels = malloc(width * height * 4);
+		if(sw->menu_texture.pixels == NULL) {
+			RARCH_ERR("failed to allocate buffer for menu texture\n");
+			return;
+		}
+
+		sw->menu_texture.width = width;
+		sw->menu_texture.height = height;
+		
+		struct scaler_ctx *sctx = &sw->menu_texture.scaler;
+		scaler_ctx_gen_reset(sctx);
+		
+		sctx->in_width = width;
+		sctx->in_height = height;
+		sctx->in_stride = width * 4;
+		sctx->in_fmt = SCALER_FMT_ARGB8888;
+		
+		sctx->out_width = 1280;
+		sctx->out_height = 720;
+		sctx->out_stride = 1280 * 4;
+		sctx->out_fmt = SCALER_FMT_ARGB8888;
+		
+		sctx->scaler_type = SCALER_TYPE_POINT;
+		
+		if(!scaler_ctx_gen_filter(sctx)) {
+			RARCH_ERR("failed to generate scaler for menu texture\n");
+			return;
+		}
+	}
+	
+	if(rgb32) {
+		memcpy(sw->menu_texture.pixels, frame, width * height * 4);
+	} else {
+		conv_rgb565_argb8888(sw->menu_texture.pixels, frame,
+		                     width, height,
+		                     width * sizeof(uint32_t), width * sizeof(uint16_t));
+	}
+}
+#endif
+
+static void switch_set_texture_enable(void *data, bool enable, bool full_screen)
+{
+	switch_video_t *sw = data;
+	sw->menu_texture.enable = enable;
+	sw->menu_texture.fullscreen = full_screen;
+}
+
+static const video_poke_interface_t switch_poke_interface = {
+	NULL, /* set_coords */
+	NULL, /* set_mvp */
+	NULL, /* load_texture */
+	NULL, /* unload_texture */
+	NULL, /* set_video_mode */
+	NULL, /* set_filtering */
+	NULL, /* get_video_output_size */
+	NULL, /* get_video_output_prev */
+	NULL, /* get_video_output_next */
+	NULL, /* get_current_framebuffer */
+	NULL, /* get_proc_address */
+	NULL, /* set_aspect_ratio */
+	NULL, /* apply_state_changes */
+#if defined(HAVE_MENU)
+	switch_set_texture_frame, /* set_texture_frame */
+#endif
+	switch_set_texture_enable, /* set_texture_enable */
+	NULL, /* set_osd_msg */
+	NULL, /* show_mouse */
+	NULL, /* grab_mouse_toggle */
+	NULL, /* get_current_shader */
+	NULL, /* get_current_software_framebuffer */
+	NULL, /* get_hw_render_interface */
+};
+
 static void switch_get_poke_interface(void *data,
       const video_poke_interface_t **iface)
 {
    (void) data;
-   (void) iface;
+   *iface = &switch_poke_interface;
 }
 
 video_driver_t video_switch = {
