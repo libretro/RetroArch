@@ -133,6 +133,8 @@ static void hlsl_set_params(void *data, void *shader_data,
       const void *_feedback_info,
       const void *_fbo_info, unsigned fbo_info_cnt)
 {
+   float ori_size[2], tex_size[2], out_size[2];
+   float frame_cnt                        = frame_counter;
    d3d_video_t *d3d                       = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr                  = (LPDIRECT3DDEVICE)d3d->dev;
    const struct video_tex_info *info      = (const struct video_tex_info*)_info;
@@ -143,10 +145,12 @@ static void hlsl_set_params(void *data, void *shader_data,
    if (!hlsl)
       return;
 
-   const float ori_size[2] = { (float)width,     (float)height     };
-   const float tex_size[2] = { (float)tex_width, (float)tex_height };
-   const float out_size[2] = { (float)out_width, (float)out_height };
-   float frame_cnt = frame_counter;
+   ori_size[0] = (float)width;
+   ori_size[1] = (float)height;
+   tex_size[0] = (float)tex_width;
+   tex_size[1] = (float)tex_height;
+   out_size[0] = (float)out_width;
+   out_size[1] = (float)out_height;
 
    hlsl->prg[hlsl->active_idx].f_ctable->SetDefaults(d3dr);
    hlsl->prg[hlsl->active_idx].v_ctable->SetDefaults(d3dr);
