@@ -321,11 +321,9 @@ bool network_init(void)
     _net_compat_net_memory = (u32*)memalign(SOC_ALIGN, SOC_BUFFERSIZE);
 	if (_net_compat_net_memory == NULL)
 		return false;
-	//RARCH_LOG("Wifi Buffer at: [0x%08X]\n", (u32)_net_compat_net_memory);
 	Result ret = socInit(_net_compat_net_memory, SOC_BUFFERSIZE);//WIFI init
 	if (ret != 0)
 		return false;
-	//RARCH_LOG("Socket Status: [0x%08X]\n", (uint32_t)ret);
 #else
    signal(SIGPIPE, SIG_IGN); /* Do not like SIGPIPE killing our app. */
 #endif

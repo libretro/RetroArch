@@ -79,7 +79,7 @@ else
 endif
 
 ifeq ($(strip $(DEVKITPRO)),)
-$(error "Please set DEVKITPRO in your environment. export DEVKITPRO=<path to>devkitpro")
+	$(error "Please set DEVKITPRO in your environment. export DEVKITPRO=<path to>devkitpro")
 endif
 
 ifeq ($(strip $(CTRULIB)),)
@@ -136,19 +136,25 @@ LDFLAGS  +=	-specs=ctr/3dsx_custom.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 CFLAGS   += -std=gnu99 -ffast-math
 
 
-LIBS	:= $(WHOLE_START) -lretro_ctr $(WHOLE_END) -lctru -lm
+LIBS	:= $(WHOLE_START) -lretro_ctr $(WHOLE_END) -lm
+
+ifeq ($(DEBUG), 1)
+	LIBS	+= -lctrud
+else
+	LIBS	+= -lctru
+endif
 
 
 ifeq ($(BUILD_3DSX), 1)
-TARGET_3DSX := $(TARGET).3dsx $(TARGET).smdh
+	TARGET_3DSX := $(TARGET).3dsx $(TARGET).smdh
 endif
 
 ifeq ($(BUILD_3DS), 1)
-TARGET_3DS := $(TARGET).3ds
+	TARGET_3DS := $(TARGET).3ds
 endif
 
 ifeq ($(BUILD_CIA), 1)
-TARGET_CIA := $(TARGET).cia
+	TARGET_CIA := $(TARGET).cia
 endif
 
 .PHONY: $(BUILD) clean all
