@@ -59,6 +59,20 @@ struct shader_program_hlsl_data
 
 typedef struct hlsl_shader_data hlsl_shader_data_t;
 
+#ifdef __cplusplus
+
+#ifndef ID3DXConstantTable_SetDefaults
+#define ID3DXConstantTable_SetDefaults(p,a) (p)->SetDefaults(a);
+#endif
+
+#else
+
+#ifndef ID3DXConstantTable_SetDefaults
+#define ID3DXConstantTable_SetDefaults(p,a) (p)->lpVtbl->SetDefaults(p,a)
+#endif
+
+#endif
+
 struct hlsl_shader_data
 {
    d3d_video_t *d3d;
@@ -152,8 +166,10 @@ static void hlsl_set_params(void *data, void *shader_data,
    out_size[0] = (float)out_width;
    out_size[1] = (float)out_height;
 
-   hlsl->prg[hlsl->active_idx].f_ctable->SetDefaults(d3dr);
-   hlsl->prg[hlsl->active_idx].v_ctable->SetDefaults(d3dr);
+   ID3DXConstantTable_SetDefaults(
+   hlsl->prg[hlsl->active_idx].f_ctable, d3dr);
+   ID3DXConstantTable_SetDefaults(
+   hlsl->prg[hlsl->active_idx].v_ctable, d3dr);
 
    set_param_2f(hlsl->prg[hlsl->active_idx].vid_size_f, ori_size, hlsl->prg[hlsl->active_idx].f_ctable);
    set_param_2f(hlsl->prg[hlsl->active_idx].tex_size_f, tex_size, hlsl->prg[hlsl->active_idx].f_ctable);
