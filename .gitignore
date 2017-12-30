@@ -9,6 +9,7 @@
 *.map
 .tmp
 .tmp.c
+.tmp.cxx
 config.log
 /retroarch
 /retroarch.cfg
