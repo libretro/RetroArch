@@ -22,6 +22,9 @@
 #include <stddef.h>
 
 #include <lists/string_list.h>
+#include <retro_environment.h>
+
+RETRO_BEGIN_DECLS
 
 enum dir_list_type
 {
@@ -61,5 +64,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
       void *data, unsigned *len, size_t *list_size);
 
 const char *char_list_new_special(enum string_list_type type, void *data);
+
+RETRO_END_DECLS
 
 #endif

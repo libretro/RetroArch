@@ -32,6 +32,7 @@
 
 #include <boolean.h>
 #include <retro_common_api.h>
+#include <retro_environment.h>
 #include "../../driver.h"
 #include "../video_driver.h"
 
@@ -42,9 +43,7 @@
 #include "../../ui/drivers/ui_win32.h"
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 #ifndef _XBOX
 extern unsigned g_resize_width;
@@ -141,8 +140,8 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
 BOOL IsIconic(HWND hwnd);
 #endif
 
-#ifdef __cplusplus
-}
-#endif
+LRESULT win32_menu_loop(HWND owner, WPARAM wparam);
+
+RETRO_END_DECLS
 
 #endif

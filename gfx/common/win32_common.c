@@ -73,8 +73,6 @@
 const GUID GUID_DEVINTERFACE_HID = { 0x4d1e55b2, 0xf16f, 0x11Cf, { 0x88, 0xcb, 0x00, 0x11, 0x11, 0x00, 0x00, 0x30 } };
 HDEVNOTIFY notification_handler;
 
-extern LRESULT win32_menu_loop(HWND owner, WPARAM wparam);
-
 #if defined(HAVE_D3D9) || defined(HAVE_D3D8)
 extern bool dinput_handle_message(void *dinput, UINT message,
       WPARAM wParam, LPARAM lParam);

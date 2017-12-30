@@ -1085,15 +1085,7 @@ MENU
 #include "../menu/menu_cbs.c"
 #include "../menu/menu_content.c"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "../menu/menu_networking.c"
-
-#ifdef __cplusplus
-}
-#endif
 
 #include "../menu/widgets/menu_entry.c"
 #include "../menu/widgets/menu_filebrowser.c"
@@ -1203,10 +1195,6 @@ extern "C" {
 #endif
 
 #include "../command.c"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #if defined(HAVE_NETWORKING)
 #include "../libretro-common/net/net_http_parse.c"
@@ -1329,8 +1317,4 @@ HTTP SERVER
 #if defined(HAVE_HTTPSERVER) && defined(HAVE_ZLIB)
 #include "../deps/civetweb/civetweb.c"
 #include "network/httpserver/httpserver.c"
-#endif
-
-#ifdef __cplusplus
-}
 #endif

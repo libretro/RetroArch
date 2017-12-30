@@ -21,6 +21,9 @@
 #include <stddef.h>
 
 #include <boolean.h>
+#include <retro_environment.h>
+
+RETRO_BEGIN_DECLS
 
 enum file_path_enum
 {
@@ -140,5 +143,7 @@ const char *file_path_str(enum file_path_enum enum_idx);
 bool fill_pathname_application_data(char *s, size_t len);
 
 void fill_pathname_application_special(char *s, size_t len, enum application_special_type type);
+
+RETRO_END_DECLS
 
 #endif
