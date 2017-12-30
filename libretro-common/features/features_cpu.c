@@ -493,6 +493,7 @@ unsigned cpu_features_get_core_amount(void)
 			return 2;
 	   
 		case 2:
+		case 4:
 		case 5:
 			/*New 3/2DS*/
 			return 4;

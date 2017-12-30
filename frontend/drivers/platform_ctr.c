@@ -327,25 +327,25 @@ static void frontend_ctr_init(void *data)
    gfxInit(GSP_BGR8_OES,GSP_RGB565_OES,false);
 
    u32 topSize = 400 * 240 * 3;
-	u32 bottomSize = 320 * 240 * 2;
+   u32 bottomSize = 320 * 240 * 2;
    linearFree(gfxTopLeftFramebuffers[0]);
-	linearFree(gfxTopLeftFramebuffers[1]);
-	linearFree(gfxBottomFramebuffers[0]);
-	linearFree(gfxBottomFramebuffers[1]);
-	linearFree(gfxTopRightFramebuffers[0]);
-	linearFree(gfxTopRightFramebuffers[1]);
+   linearFree(gfxTopLeftFramebuffers[1]);
+   linearFree(gfxBottomFramebuffers[0]);
+   linearFree(gfxBottomFramebuffers[1]);
+   linearFree(gfxTopRightFramebuffers[0]);
+   linearFree(gfxTopRightFramebuffers[1]);
 
-	gfxTopLeftFramebuffers[0]=linearAlloc(topSize * 2);
-	gfxTopRightFramebuffers[0] = gfxTopLeftFramebuffers[0] + topSize;
+   gfxTopLeftFramebuffers[0]=linearAlloc(topSize * 2);
+   gfxTopRightFramebuffers[0] = gfxTopLeftFramebuffers[0] + topSize;
 
    gfxTopLeftFramebuffers[1]=linearAlloc(topSize * 2);
    gfxTopRightFramebuffers[1] = gfxTopLeftFramebuffers[1] + topSize;
 
    gfxBottomFramebuffers[0]=linearAlloc(bottomSize);
-	gfxBottomFramebuffers[1]=linearAlloc(bottomSize);
+   gfxBottomFramebuffers[1]=linearAlloc(bottomSize);
 
    gfxSetFramebufferInfo(GFX_TOP, 0);
-	gfxSetFramebufferInfo(GFX_BOTTOM, 0);
+   gfxSetFramebufferInfo(GFX_BOTTOM, 0);
 
    gfxSet3D(true);
    consoleInit(GFX_BOTTOM, NULL);
