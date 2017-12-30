@@ -21,6 +21,9 @@
 #include <boolean.h>
 
 #include <3ds.h>
+#include <3ds/svc.h>
+#include <3ds/os.h>
+#include <3ds/services/cfgu.h>
 
 #include <file/file_path.h>
 
@@ -99,10 +102,14 @@ static void frontend_ctr_get_environment_settings(int *argc, char *argv[],
 
 static void frontend_ctr_deinit(void *data)
 {
-   extern PrintConsole* currentConsole;
    Handle lcd_handle;
+   u32 parallax_layer_reg_state;
    u8 not_2DS;
+
+   extern PrintConsole* currentConsole;
+
    (void)data;
+
 #ifndef IS_SALAMANDER
    verbosity_enable();
 
@@ -115,16 +122,17 @@ static void frontend_ctr_deinit(void *data)
       wait_for_input();
 
    CFGU_GetModelNintendo2DS(&not_2DS);
+
    if(not_2DS && srvGetServiceHandle(&lcd_handle, "gsp::Lcd") >= 0)
    {
       u32 *cmdbuf = getThreadCommandBuffer();
-      cmdbuf[0] = 0x00110040;
-      cmdbuf[1] = 2;
+      cmdbuf[0]   = 0x00110040;
+      cmdbuf[1]   = 2;
       svcSendSyncRequest(lcd_handle);
       svcCloseHandle(lcd_handle);
    }
 
-   u32 parallax_layer_reg_state = (*(float*)0x1FF81080 == 0.0)? 0x0 : 0x00010001;
+   parallax_layer_reg_state = (*(float*)0x1FF81080 == 0.0)? 0x0 : 0x00010001;
    GSPGPU_WriteHWRegs(0x202000, &parallax_layer_reg_state, 4);
 
    cfguExit();
@@ -144,6 +152,7 @@ static void frontend_ctr_exec(const char *path, bool should_load_game)
       char args[0x300 - 0x4];
    }param;
    int len;
+   uint64_t app_ID;
    Result res;
    extern char __argv_hmac[0x20];
 
@@ -164,7 +173,6 @@ static void frontend_ctr_exec(const char *path, bool should_load_game)
       RARCH_LOG("content path: [%s].\n", path_get(RARCH_PATH_CONTENT));
    }
 #endif
-   uint64_t app_ID;
    if(!path || !*path)
    {
       APT_GetProgramID(&app_ID);
@@ -191,12 +199,13 @@ static void frontend_ctr_exec(const char *path, bool should_load_game)
       RARCH_LOG("APP_ID [%s] -- > 0x%016llX.\n", app_ID_str, app_ID);
    }
 
-   if(R_SUCCEEDED(res = APT_PrepareToDoApplicationJump(0, app_ID, 0x1)))
+   res = APT_PrepareToDoApplicationJump(0, app_ID, 0x1);
+   if(R_SUCCEEDED(res))
         res = APT_DoApplicationJump(&param, sizeof(param.argc) + len, __argv_hmac);
 
    if(res)
    {
-      RARCH_LOG("Failed to load core\n");
+      RARCH_ERR("Failed to load core\n");
       dump_result_value(res);
    }
 
@@ -370,6 +379,28 @@ static void frontend_ctr_init(void *data)
 
 static int frontend_ctr_get_rating(void)
 {
+   u8 device_model = 0xFF;
+   CFGU_GetSystemModel(&device_model);/*(0 = O3DS, 1 = O3DSXL, 2 = N3DS, 3 = 2DS, 4 = N3DSXL, 5 = N2DSXL)*/
+
+   switch (device_model)
+   {
+      case 0:
+      case 1:
+      case 3:
+         /*Old 3/2DS*/
+         break;
+
+      case 2:
+      case 4:
+      case 5:
+         /*New 3/2DS*/
+         return 6;
+
+      default:
+         /*Unknown Device Or Check Failed*/
+         break;
+   }
+
    return 3;
 }
 
