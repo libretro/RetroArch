@@ -228,9 +228,12 @@ fi
 
 check_pkgconf ALSA alsa
 check_lib '' CACA -lcaca
-check_header OSS sys/soundcard.h
-check_header OSS_BSD soundcard.h
-check_lib '' OSS_LIB -lossaudio
+
+if [ "$HAVE_OSS" != 'no' ]; then
+   check_header OSS sys/soundcard.h
+   check_header OSS_BSD soundcard.h
+   check_lib '' OSS_LIB -lossaudio
+fi
 
 if [ "$OS" = 'Linux' ]; then
    HAVE_TINYALSA=yes
