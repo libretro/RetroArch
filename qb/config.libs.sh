@@ -24,6 +24,7 @@ SOCKETHEADER=
 
 if [ "$OS" = 'BSD' ]; then
    [ -d /usr/local/include ] && add_dirs INCLUDE /usr/local/include
+   [ -d /usr/local/lib ] && add_dirs LIBRARY /usr/local/lib
    DYLIB=-lc;
 elif [ "$OS" = 'Haiku' ]; then
    DYLIB=""
