@@ -149,12 +149,12 @@ typedef struct GX2VertexShader
       struct
       {
          unsigned :24;
-         uint8_t vtx_reuse_depth;
+         unsigned vtx_reuse_depth :8;
       }vgt_vertex_reuse_block_cntl;
       struct
       {
          unsigned :24;
-         uint8_t reuse_depth;
+         unsigned reuse_depth :8;
       }vgt_hos_reuse_depth;
    } regs;
 

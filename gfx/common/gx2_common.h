@@ -17,7 +17,9 @@
 #define _1 0x05
 #define GX2_COMP_SEL(c0, c1, c2, c3) (((c0) << 24) | ((c1) << 16) | ((c2) << 8) | (c3))
 
-#define COLOR_ABGR(r, g, b, a) (((unsigned)(a) << 24) | ((b) << 16) | ((g) << 8) | ((r) << 0))
+#define COLOR_ABGR(r, g, b, a) (((u32)(a) << 24) | ((u32)(b) << 16) | ((u32)(g) << 8) | ((u32)(r) << 0))
+#define COLOR_RGBA(r, g, b, a) (((u32)(a) << 24) | ((u32)(r) << 16) | ((u32)(g) << 8) | ((u32)(b) << 0))
+#define COLOR_RGBA(r, g, b, a) (((u32)(r) << 24) | ((u32)(g) << 16) | ((u32)(b) << 8) | ((u32)(a) << 0))
 
 //#define GX2_CAN_ACCESS_DATA_SECTION
 
@@ -45,6 +47,7 @@ struct gx2_overlay_data
    GX2Texture tex;
    float tex_coord[8];
    float vertex_coord[8];
+   u32 color[4];
    float alpha_mod;
 };
 
@@ -59,6 +62,7 @@ typedef struct
       bool enable;
       position_t* position;
       tex_coord_t* tex_coord;
+      u32* color;
    } menu;
 
 #ifdef HAVE_OVERLAY
@@ -73,6 +77,7 @@ typedef struct
    GX2Texture texture;
    position_t* position;
    tex_coord_t* tex_coord;
+   u32* color;
    int width;
    int height;
 
@@ -80,6 +85,7 @@ typedef struct
    {
       position_t* positions;
       tex_coord_t* tex_coords;
+      u32* colors;
       int size;
       int current;
    } vertex_cache;

@@ -113,9 +113,11 @@
 #define CF_INST_CALL_FS 0x13
 /* ALU */
 #define ALU_INST_ALU     0x8
+#define OP2_INST_MUL     0x1
 #define OP2_INST_MOV     0x19
 
 /* EXP */
+#define CF_INST_EXP      0x27
 #define CF_INST_EXP_DONE 0x28
 
 /* TEX */
@@ -136,6 +138,7 @@
 #define PIX(id)   EXPORT_ARRAY_BASE_PIX(id)   | (EXPORT_TYPE_PIXEL << 13)
 #define POS0   POS(0)
 #define PARAM0 PARAM(0)
+#define PARAM1 PARAM(1)
 #define PIX0   PIX(0)
 
 /* registers */
@@ -143,6 +146,7 @@
 #define _R0    _R(0x0)
 #define _R1    _R(0x1)
 #define _R2    _R(0x2)
+#define _R3    _R(0x3)
 
 /* texture */
 #define _t(x)  x
@@ -161,9 +165,14 @@
 #define EXP_DONE(dstReg_and_type, srcReg, srcSelX, srcSelY, srcSelZ, srcSelW) CF_EXP_WORD0(dstReg_and_type, srcReg, 0x0, 0x0, 0x0), \
    CF_EXP_WORD1(srcSelX, srcSelY, srcSelZ, srcSelW, 0x0, CF_INST_EXP_DONE)
 
+#define EXP(dstReg_and_type, srcReg, srcSelX, srcSelY, srcSelZ, srcSelW) CF_EXP_WORD0(dstReg_and_type, srcReg, 0x0, 0x0, 0x0), \
+   CF_EXP_WORD1(srcSelX, srcSelY, srcSelZ, srcSelW, 0x0, CF_INST_EXP)
+
 #define ALU_MOV(dstGpr, dstChan, src0Sel, src0Chan) ALU_WORD0(src0Sel, 0x0, src0Chan, 0x0, ALU_SRC_0, 0x0, 0x0, 0x0, 0x0, 0x0), \
    ALU_WORD1_OP2(0x0, 0x0, 0x0, 0x0, 0x1, 0x0, OP2_INST_MOV, 0x0, 0x0, dstGpr, 0x0, dstChan, 0x0)
 
+#define ALU_MUL(dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan) ALU_WORD0(src0Sel, 0x0, src0Chan, 0x0, src1Sel, 0x0, src1Chan, 0x0, 0x0, 0x0), \
+   ALU_WORD1_OP2(0x0, 0x0, 0x0, 0x0, 0x1, 0x0, OP2_INST_MUL, 0x0, 0x0, dstGpr, 0x0, dstChan, 0x0)
 
 #define TEX_SAMPLE(dstReg, dstSelX, dstSelY, dstSelZ, dstSelW, srcReg, srcSelX, srcSelY, srcSelZ, srcSelW, resourceID, samplerID)\
    TEX_WORD0(TEX_INST_SAMPLE, 0x0, 0x0, resourceID, srcReg, 0x0, 0x0), \
