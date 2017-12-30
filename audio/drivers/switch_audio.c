@@ -130,16 +130,23 @@ static bool switch_audio_stop(void *data)
    if (!swa)
       return false;
 
+   if(!swa->is_paused) {
+	   if(audio_ipc_output_stop(&swa->output) != RESULT_OK)
+		   return false;
+   }
+
    swa->is_paused = true;
-   return audio_ipc_output_stop(&swa->output) == RESULT_OK;
+   return true;
 }
 
 static bool switch_audio_start(void *data, bool is_shutdown)
 {
    switch_audio_t *swa = (switch_audio_t*) data;
 
-   if (audio_ipc_output_start(&swa->output) != RESULT_OK)
-      return false;
+   if(swa->is_paused) {
+	   if (audio_ipc_output_start(&swa->output) != RESULT_OK)
+		   return false;
+   }
 
    swa->is_paused = false;
    return true;
@@ -260,9 +267,8 @@ static void *switch_audio_init(const char *device,
    swa->latency        = latency;
    swa->last_append    = svcGetSystemTick();
 
-   if (audio_ipc_output_start(&swa->output) != RESULT_OK)
-      goto fail_audio_output;
-
+   swa->is_paused      = true;
+   
    return swa;
 
 fail_audio_output:
