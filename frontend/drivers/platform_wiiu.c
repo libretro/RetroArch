@@ -49,7 +49,7 @@
 #include "system/memory.h"
 #include "system/exception_handler.h"
 #include <sys/iosupport.h>
-
+#include <wiiu/syshid.h>
 #include <wiiu/os/foreground.h>
 #include <wiiu/gx2/event.h>
 #include <wiiu/procui.h>
@@ -57,10 +57,6 @@
 #include <wiiu/ios.h>
 #include <wiiu/vpad.h>
 #include <wiiu/kpad.h>
-
-#if defined(ENABLE_CONTROLLER_PATCHER)
-   #include "wiiu/controller_patcher/ControllerPatcherWrapper.h"
-#endif
 
 #include <fat.h>
 #include <iosuhax.h>
@@ -432,9 +428,6 @@ int main(int argc, char **argv)
    KPADInit();
 #endif
    verbosity_enable();
-#if !defined(IS_SALAMANDER) && defined(ENABLE_CONTROLLER_PATCHER)
-   ControllerPatcherInit();
-#endif
    fflush(stdout);
    DEBUG_VAR(ARGV_PTR);
    if(ARGV_PTR && ((u32)ARGV_PTR < 0x01000000))
@@ -494,9 +487,6 @@ int main(int argc, char **argv)
 
    }
    while (1);
-#if !defined(IS_SALAMANDER) && defined(ENABLE_CONTROLLER_PATCHER)
-   ControllerPatcherDeInit();
-#endif
    main_exit(NULL);
 #endif
 #endif
@@ -651,9 +641,7 @@ void _start(int argc, char **argv)
    memoryInitialize();
    __init();
    fsdev_init();
-
    main(argc, argv);
-
    fsdev_exit();
 
    /* TODO: fix elf2rpl so it doesn't error with "Could not find matching symbol

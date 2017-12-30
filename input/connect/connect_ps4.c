@@ -98,7 +98,7 @@ struct ps4
 struct hidpad_ps4_data
 {
    struct pad_connection* connection;
-   send_control_t send_control;
+   hid_driver_t *driver;
    struct ps4 data;
    uint32_t slot;
    bool have_led;
@@ -119,11 +119,11 @@ static void hidpad_ps4_send_control(struct hidpad_ps4_data* device)
    report_buffer[11] = rgb[(device->slot % 4)][2];
 #endif
 
-   device->send_control(device->connection,
+   device->driver->send_control(device->connection,
          report_buffer, sizeof(report_buffer));
 }
 
-static void* hidpad_ps4_init(void *data, uint32_t slot, send_control_t ptr)
+static void* hidpad_ps4_init(void *data, uint32_t slot, hid_driver_t *driver)
 {
 #if 0
    uint8_t magic_data[0x25];
@@ -138,14 +138,14 @@ static void* hidpad_ps4_init(void *data, uint32_t slot, send_control_t ptr)
    if (!connection)
       goto error;
 
-   device->connection   = connection;
-   device->slot         = slot;
-   device->send_control = ptr;
+   device->connection = connection;
+   device->slot       = slot;
+   device->driver     = driver;
 
 #if 0
    /* TODO - unsure of this */
    /* This is needed to get full input packet over bluetooth. */
-   device->send_control(device->connection, magic_data, 0x2);
+   device->driver->send_control(device->connection, magic_data, 0x2);
    (void)magic_data;
 #endif
 

@@ -308,7 +308,7 @@ static int add_adapter(void *data, struct libusb_device *dev)
 
    adapter->slot = pad_connection_pad_init(hid->slots,
          device_name, desc.idVendor, desc.idProduct,
-         adapter, &libusb_hid_device_send_control);
+         adapter, &libusb_hid);
 
    if (adapter->slot == -1)
       goto error;
@@ -509,7 +509,7 @@ static int16_t libusb_hid_joypad_axis(void *data,
    return val;
 }
 
-static void libusb_hid_free(void *data)
+static void libusb_hid_free(const void *data)
 {
    libusb_hid_t *hid = (libusb_hid_t*)data;
 
@@ -655,4 +655,5 @@ hid_driver_t libusb_hid = {
    libusb_hid_joypad_rumble,
    libusb_hid_joypad_name,
    "libusb",
+   libusb_hid_device_send_control,
 };

@@ -1,6 +1,15 @@
 #pragma once
 #include <wiiu/types.h>
 
+/*
+ * Report types for the report_type parameter in HIDSetReport()
+ */
+
+//  what is 1?
+#define HID_REPORT_OUTPUT  2
+#define HID_REPORT_FEATURE 3
+// are there more?
+
 typedef struct
 {
     uint32_t handle;
@@ -95,7 +104,7 @@ HIDSetIdle(uint32_t handle,
 
 int32_t
 HIDSetProtocol(uint32_t handle,
-               uint8_t int32_terface_index,
+               uint8_t interface_index,
                uint8_t protocol,
                HIDCallback hc,
                void *p_user);

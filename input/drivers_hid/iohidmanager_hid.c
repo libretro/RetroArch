@@ -510,7 +510,7 @@ static void iohidmanager_hid_device_add(void *data, IOReturn result,
 
    adapter->slot = pad_connection_pad_init(hid->slots,
          adapter->name, dev_vid, dev_pid, adapter,
-         &iohidmanager_hid_device_send_control);
+         &iohidmanager_hid);
 
    if (adapter->slot == -1)
       goto error;
@@ -830,7 +830,7 @@ error:
    return NULL;
 }
 
-static void iohidmanager_hid_free(void *data)
+static void iohidmanager_hid_free(const void *data)
 {
    iohidmanager_hid_t *hid_apple = (iohidmanager_hid_t*)data;
 
@@ -860,4 +860,5 @@ hid_driver_t iohidmanager_hid = {
    iohidmanager_hid_joypad_rumble,
    iohidmanager_hid_joypad_name,
    "iohidmanager",
+   iohidmanager_hid_device_send_control,
 };

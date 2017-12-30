@@ -22,8 +22,27 @@
 
 #include <libretro.h>
 #include <retro_miscellaneous.h>
+#include <retro_endianness.h>
+#include "../input_driver.h"
 
-typedef void (*send_control_t)(void *data, uint8_t *buf, size_t size);
+#define VID_NONE          0x0000
+#define VID_NINTENDO      swap_if_big16(0x057e)
+#define VID_SONY          swap_if_big16(0x054c)
+#define VID_MICRONTEK     swap_if_big16(0x0079)
+#define VID_PCS           swap_if_big16(0x0810)
+#define VID_PS3_CLONE     swap_if_big16(0x0313)
+#define VID_SNES_CLONE    swap_if_big16(0x081f)
+
+#define PID_NONE          0x0000
+#define PID_NINTENDO_PRO  swap_if_big16(0x0330)
+#define PID_SONY_DS3      swap_if_big16(0x0268)
+#define PID_SONY_DS4      swap_if_big16(0x05c4)
+#define PID_DS3_CLONE     swap_if_big16(0x20d6)
+#define PID_SNES_CLONE    swap_if_big16(0xe401)
+#define PID_MICRONTEK_NES swap_if_big16(0x0011)
+#define PID_NINTENDO_GCA  swap_if_big16(0x0337)
+#define PID_PCS_PS2PSX    swap_if_big16(0x0001)
+#define PID_PCS_PSX2PS3   swap_if_big16(0x0003)
 
 struct joypad_connection
 {
@@ -34,7 +53,7 @@ struct joypad_connection
 
 typedef struct pad_connection_interface
 {
-   void*    	(*init)(void *data, uint32_t slot, send_control_t ptr);
+   void*    	(*init)(void *data, uint32_t slot, hid_driver_t *driver);
    void     	(*deinit)(void* device);
    void     	(*packet_handler)(void* device, uint8_t *packet, uint16_t size);
    void     	(*set_rumble)(void* device, enum retro_rumble_effect effect,
@@ -58,7 +77,7 @@ extern pad_connection_interface_t pad_connection_psxadapter;
 
 int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
    const char* name, uint16_t vid, uint16_t pid,
-   void *data, send_control_t ptr);
+   void *data, hid_driver_t *driver);
 
 joypad_connection_t *pad_connection_init(unsigned pads);
 

@@ -1210,7 +1210,7 @@ static void btpad_packet_handler(uint8_t packet_type,
                   RARCH_LOG("[BTpad]: Got %.200s.\n", (char*)&packet[9]);
 
                   connection->slot  = pad_connection_pad_init(&slots[connection->slot],
-                        (char*)packet + 9, 0, 0, connection, &btpad_connection_send_control);
+                        (char*)packet + 9, 0, 0, connection, &btstack_hid);
                   connection->state = BTPAD_CONNECTED;
                }
                break;
@@ -1424,7 +1424,7 @@ static int16_t btstack_hid_joypad_axis(void *data, unsigned port, uint32_t joyax
    return val;
 }
 
-static void btstack_hid_free(void *data)
+static void btstack_hid_free(const void *data)
 {
    btstack_hid_t *hid = (btstack_hid_t*)data;
 
@@ -1477,4 +1477,5 @@ hid_driver_t btstack_hid = {
    btstack_hid_joypad_rumble,
    btstack_hid_joypad_name,
    "btstack",
+   btpad_connection_send_control
 };

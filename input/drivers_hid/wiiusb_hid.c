@@ -322,7 +322,7 @@ static int wiiusb_hid_add_adapter(void *data, usb_device_entry *dev)
     * control name until we get its interface */
    adapter->slot = pad_connection_pad_init(hid->connections,
          "hid", desc.idVendor, desc.idProduct,
-         adapter, &wiiusb_hid_device_send_control);
+         adapter, &wiiusb_hid);
 
    if (adapter->slot == -1)
       goto error;
@@ -546,7 +546,7 @@ static int16_t wiiusb_hid_joypad_axis(void *data,
    return val;
 }
 
-static void wiiusb_hid_free(void *data)
+static void wiiusb_hid_free(const void *data)
 {
    struct wiiusb_adapter      *adapter = NULL;
    struct wiiusb_adapter *next_adapter = NULL;
@@ -630,4 +630,5 @@ hid_driver_t wiiusb_hid = {
    wiiusb_hid_joypad_rumble,
    wiiusb_hid_joypad_name,
    "wiiusb",
+   wiiusb_hid_device_send_control,
 };

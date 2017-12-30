@@ -176,7 +176,10 @@ static input_device_driver_t *joypad_drivers[] = {
 #ifdef DJGPP
    &dos_joypad,
 #endif
-#ifdef HAVE_HID
+// Selecting the HID gamepad driver disables the Wii U gamepad. So while
+// we want the HID code to be compiled & linked, we don't want the driver
+// to be selectable in the UI.
+#if defined(HAVE_HID) && !defined(WIIU)
    &hid_joypad,
 #endif
    &null_joypad,
@@ -1824,6 +1827,14 @@ const void *hid_driver_find_handle(int idx)
 const void *hid_driver_get_data(void)
 {
    return hid_data;
+}
+
+// This is only to be called after we've invoked free() on the
+// HID driver; the memory will have already been freed, so we need to
+// reset the pointer.
+void hid_driver_reset_data(void)
+{
+  hid_data = NULL;
 }
 
 /**

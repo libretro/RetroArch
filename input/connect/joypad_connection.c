@@ -20,6 +20,7 @@
 #include <string/stdstring.h>
 
 #include "../input_driver.h"
+#include "../../verbosity.h"
 
 #include "joypad_connection.h"
 
@@ -41,11 +42,28 @@ int pad_connection_find_vacant_pad(joypad_connection_t *joyconn)
    return -1;
 }
 
+static void set_end_of_list(joypad_connection_t *list, unsigned end)
+{
+  joypad_connection_t *entry = (joypad_connection_t *)&list[end];
+  entry->connected = false;
+  entry->iface = NULL;
+  entry->data = (void *)0xdeadbeef;
+}
+
+static bool joypad_is_end_of_list(joypad_connection_t *pad) {
+  return pad && !pad->connected && !pad->iface && pad->data == (void *)0xdeadbeef;
+}
+
+/**
+ * Since the pad_connection_destroy() call needs to iterate through this
+ * list, we allocate pads+1 entries and use the extra spot to store a
+ * marker.
+ */
 joypad_connection_t *pad_connection_init(unsigned pads)
 {
    unsigned i;
    joypad_connection_t *joyconn = (joypad_connection_t*)
-      calloc(pads, sizeof(joypad_connection_t));
+      calloc(pads+1, sizeof(joypad_connection_t));
 
    if (!joyconn)
       return NULL;
@@ -59,13 +77,16 @@ joypad_connection_t *pad_connection_init(unsigned pads)
       conn->data                = NULL;
    }
 
+   set_end_of_list(joyconn, pads);
+
    return joyconn;
 }
 
 int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
-   const char* name, uint16_t vid, uint16_t pid,
-   void *data, send_control_t ptr)
+   const char *name, uint16_t vid, uint16_t pid,
+   void *data, hid_driver_t *driver)
 {
+
    static const struct
    {
       const char* name;
@@ -74,21 +95,21 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
       pad_connection_interface_t *iface;
    } pad_map[] =
    {
-      { "Nintendo RVL-CNT-01",         1406,  816,    &pad_connection_wii },
-      { "Nintendo RVL-CNT-01-UC",      1406,  816,    &pad_connection_wiiupro },
-      { "Wireless Controller",         1356,  1476,   &pad_connection_ps4 },
-      { "PLAYSTATION(R)3 Controller",  1356,  616,    &pad_connection_ps3 },
-      { "PLAYSTATION(R)3 Controller",  787,   8406,   &pad_connection_ps3 },
-      { "Generic SNES USB Controller", 2079,  58369,  &pad_connection_snesusb },
-      { "Generic NES USB Controller",  121,   17,     &pad_connection_nesusb },
-      { "Wii U GC Controller Adapter", 1406,  823,    &pad_connection_wiiugca },
-      { "PS2/PSX Controller Adapter",  2064,  1,      &pad_connection_ps2adapter },
-      { "PSX to PS3 Controller Adapter", 2064, 3,     &pad_connection_psxadapter },
+      { "Nintendo RVL-CNT-01",           VID_NINTENDO,   PID_NINTENDO_PRO,  &pad_connection_wii },
+      { "Nintendo RVL-CNT-01-UC",        VID_NINTENDO,   PID_NINTENDO_PRO,  &pad_connection_wiiupro },
+      { "Wireless Controller",           VID_SONY,       PID_SONY_DS4,      &pad_connection_ps4 },
+      { "PLAYSTATION(R)3 Controller",    VID_SONY,       PID_SONY_DS3,      &pad_connection_ps3 },
+      { "PLAYSTATION(R)3 Controller",    VID_PS3_CLONE,  PID_DS3_CLONE,     &pad_connection_ps3 },
+      { "Generic SNES USB Controller",   VID_SNES_CLONE, PID_SNES_CLONE,    &pad_connection_snesusb },
+      { "Generic NES USB Controller",    VID_MICRONTEK,  PID_MICRONTEK_NES, &pad_connection_nesusb },
+      { "Wii U GC Controller Adapter",   VID_NINTENDO,   PID_NINTENDO_GCA,  &pad_connection_wiiugca },
+      { "PS2/PSX Controller Adapter",    VID_PCS,        PID_PCS_PS2PSX,    &pad_connection_ps2adapter },
+      { "PSX to PS3 Controller Adapter", VID_PCS,        PID_PCS_PSX2PS3,   &pad_connection_psxadapter },
       { "Mayflash DolphinBar",         1406,  774,    &pad_connection_wii },
       { 0, 0}
    };
    joypad_connection_t *s = NULL;
-   int                pad = pad_connection_find_vacant_pad(joyconn);
+   int pad                = pad_connection_find_vacant_pad(joyconn);
 
    if (pad == -1)
       return -1;
@@ -111,15 +132,17 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
          }
 
 #if 0
-         RARCH_LOG("name: %s\n", name);
-         RARCH_LOG("%d VID, PID %d (config)\n", vid, pid);
-         RARCH_LOG("%d VID, PID %d\n", pad_map[i].vid, pad_map[i].pid);
+         RARCH_LOG("[connect] %s\n", pad_map[i].name);
+         RARCH_LOG("[connect] VID: Expected: %04x got: %04x\n",
+                   pad_map[i].vid, vid);
+         RARCH_LOG("[connect] PID: Expected: %04x got: %04x\n",
+                   pad_map[i].pid, pid);
 #endif
 
          if (name_match || (pad_map[i].vid == vid && pad_map[i].pid == pid))
          {
             s->iface      = pad_map[i].iface;
-            s->data       = s->iface->init(data, pad, ptr);
+            s->data       = s->iface->init(data, pad, driver);
             s->connected  = true;
 #if 0
             RARCH_LOG("%s found \n", pad_map[i].name);
@@ -204,7 +227,12 @@ void pad_connection_destroy(joypad_connection_t *joyconn)
    unsigned i;
 
    for (i = 0; i < MAX_USERS; i ++)
-      pad_connection_pad_deinit(&joyconn[i], i);
+   {
+     if(joypad_is_end_of_list(&joyconn[i]))
+       break;
+
+     pad_connection_pad_deinit(&joyconn[i], i);
+   }
 
    free(joyconn);
 }

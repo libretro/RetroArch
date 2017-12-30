@@ -28,12 +28,16 @@
 #include <screen/screen.h>
 #endif
 
+#ifdef WIIU
+#include <wiiu/pad_driver.h>
+#endif
+
 #define DECL_BTN(btn, bind) "input_" #btn "_btn = " #bind "\n"
 #define DECL_BTN_EX(btn, bind, name) "input_" #btn "_btn = " #bind "\ninput_" #btn "_btn_label = \"" name "\"\n"
 #define DECL_AXIS(axis, bind) "input_" #axis "_axis = " #bind "\n"
 #define DECL_AXIS_EX(axis, bind, name) "input_" #axis "_axis = " #bind "\ninput_" #axis "_axis_label = \"" name "\"\n"
 #define DECL_MENU(btn) "input_menu_toggle_btn = " #btn "\n"
-#define DECL_AUTOCONF_DEVICE(device, driver, binds) "input_device = \"" #device "\" \ninput_driver = \"" #driver "\"                    \n" binds
+#define DECL_AUTOCONF_DEVICE(device, driver, binds) "input_device = \"" device "\" \ninput_driver = \"" driver "\"                    \n" binds
 
 /* TODO/FIXME - Missing L2/R2 */
 
@@ -546,14 +550,12 @@ const char* const input_builtin_autoconfs[] =
 #endif
 #endif
 #ifdef WIIU
-   DECL_AUTOCONF_DEVICE("WIIU Gamepad", "wiiu", WIIUINPUT_GAMEPAD_DEFAULT_BINDS),
-   DECL_AUTOCONF_DEVICE("WIIU Pro Controller", "wiiu", WIIUINPUT_PRO_CONTROLLER_DEFAULT_BINDS),
-   DECL_AUTOCONF_DEVICE("Wiimote Controller", "wiiu", WIIUINPUT_WIIMOTE_DEFAULT_BINDS),
-   DECL_AUTOCONF_DEVICE("Nunchuk Controller", "wiiu", WIIUINPUT_NUNCHUK_DEFAULT_BINDS),
-   DECL_AUTOCONF_DEVICE("Classic Controller", "wiiu", WIIUINPUT_CLASSIC_CONTROLLER_DEFAULT_BINDS),
-   #if defined(ENABLE_CONTROLLER_PATCHER)
-      DECL_AUTOCONF_DEVICE("HID Controller", "wiiu", WIIUINPUT_GAMEPAD_DEFAULT_BINDS),
-   #endif
+   DECL_AUTOCONF_DEVICE(PAD_NAME_WIIU_GAMEPAD, "wiiu", WIIUINPUT_GAMEPAD_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE(PAD_NAME_WIIU_PRO, "wiiu", WIIUINPUT_PRO_CONTROLLER_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE(PAD_NAME_WIIMOTE, "wiiu", WIIUINPUT_WIIMOTE_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE(PAD_NAME_NUNCHUK, "wiiu", WIIUINPUT_NUNCHUK_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE(PAD_NAME_CLASSIC, "wiiu", WIIUINPUT_CLASSIC_CONTROLLER_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE(PAD_NAME_HID, "wiiu", WIIUINPUT_GAMEPAD_DEFAULT_BINDS),
 #endif
 #ifdef __CELLOS_LV2__
    DECL_AUTOCONF_DEVICE("SixAxis Controller", "ps3", PS3INPUT_DEFAULT_BINDS),

@@ -120,8 +120,11 @@ static void wiiu_input_poll(void *data)
 {
    wiiu_input_t *wiiu = (wiiu_input_t*)data;
 
-   if (wiiu && wiiu->joypad)
-      wiiu->joypad->poll();
+   if(!wiiu)
+     return;
+
+   if(wiiu->joypad)
+     wiiu->joypad->poll();
 }
 
 static bool wiiu_key_pressed(int key)

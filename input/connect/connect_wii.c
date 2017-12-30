@@ -145,7 +145,7 @@ typedef struct connect_wii_wiimote_t
    int unid;
 
    struct pad_connection* connection;
-   send_control_t send_control;
+   hid_driver_t *driver;
 
    /* Various state flags. */
    uint32_t state;
@@ -195,7 +195,7 @@ static int wiimote_send(struct connect_wii_wiimote_t* wm,
    printf("\n");
 #endif
 
-   wm->send_control(wm->connection, buf, len + 2);
+   wm->driver->send_control(wm->connection, buf, len + 2);
    return 1;
 }
 
@@ -616,7 +616,7 @@ static void hidpad_wii_deinit(void *data)
 }
 
 static void* hidpad_wii_init(void *data, uint32_t slot,
-      send_control_t ptr)
+      hid_driver_t *driver)
 {
    struct pad_connection *connection = (struct pad_connection*)data;
    struct connect_wii_wiimote_t *device = (struct connect_wii_wiimote_t*)
@@ -628,11 +628,11 @@ static void* hidpad_wii_init(void *data, uint32_t slot,
    if (!connection)
       goto error;
 
-   device->connection   = connection;
-   device->unid         = slot;
-   device->state        = WIIMOTE_STATE_CONNECTED;
-   device->exp.type     = EXP_NONE;
-   device->send_control = ptr;
+   device->connection = connection;
+   device->unid       = slot;
+   device->state      = WIIMOTE_STATE_CONNECTED;
+   device->exp.type   = EXP_NONE;
+   device->driver     = driver;
 
    wiimote_handshake(device, -1, NULL, -1);
 
