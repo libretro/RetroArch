@@ -25,6 +25,8 @@
 
 #include <lists/file_list.h>
 
+#include "../msg_hash.h"
+
 RETRO_BEGIN_DECLS
 
 extern char *core_buf;
