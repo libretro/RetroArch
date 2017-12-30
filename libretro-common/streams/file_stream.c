@@ -159,13 +159,13 @@ RFILE *filestream_open(const char *path, unsigned mode, unsigned hints)
 char *filestream_gets(RFILE *stream, char *s, size_t len)
 {
    int c   = 0;
-   char *p = NULL;
+   char *p = s;
    if (!stream)
       return NULL;
 
    /* get max bytes or up to a newline */
 
-   for (p = s, len--; len > 0; len--)
+   for (len--; len > 0; len--)
    {
       if ((c = filestream_getc(stream)) == EOF)
          break;
@@ -175,9 +175,9 @@ char *filestream_gets(RFILE *stream, char *s, size_t len)
    }
    *p = 0;
 
-   if (p == s || c == EOF)
+   if (p == s && c == EOF)
       return NULL;
-   return (p);
+   return (s);
 }
 
 int filestream_getc(RFILE *stream)
