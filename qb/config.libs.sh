@@ -389,10 +389,8 @@ if [ "$HAVE_EGL" = "yes" ]; then
          fi
       fi
    fi
-   if [ "$HAVE_VG" != "no" ]; then
-      check_pkgconf VG "$VC_PREFIX"vg
-      check_val '' VG "-l${VC_PREFIX}OpenVG $EXTRA_GL_LIBS"
-   fi
+   check_pkgconf VG "$VC_PREFIX"vg
+   check_val '' VG "-l${VC_PREFIX}OpenVG $EXTRA_GL_LIBS"
 else
    HAVE_VG=no
    HAVE_OPENGLES=no
@@ -400,12 +398,7 @@ fi
 
 check_pkgconf V4L2 libv4l2
 check_pkgconf FREETYPE freetype2
-
-if [ "$HAVE_X11" != 'no' ]; then
-   check_pkgconf X11 x11
-   check_val '' X11 -lX11
-fi
-
+check_pkgconf X11 x11
 check_pkgconf XCB xcb
 check_pkgconf WAYLAND wayland-egl
 check_pkgconf WAYLAND_CURSOR wayland-cursor
@@ -414,14 +407,16 @@ check_pkgconf DBUS dbus-1
 check_pkgconf XEXT xext
 check_pkgconf XF86VM xxf86vm
 
-if [ "$HAVE_X11" != "no" ]; then
-   check_val '' XEXT -lXext
-   check_val '' XF86VM -lXxf86vm
-else
+check_val '' X11 -lX11
+check_val '' XEXT -lXext
+check_val '' XF86VM -lXxf86vm
+
+if [ "$HAVE_X11" = "no" ]; then
    HAVE_XEXT=no; HAVE_XF86VM=no; HAVE_XINERAMA=no; HAVE_XSHM=no
 fi
 
 check_pkgconf XINERAMA xinerama
+
 if [ "$HAVE_X11" = 'yes' ] && [ "$HAVE_XEXT" = 'yes' ] && [ "$HAVE_XF86VM" = 'yes' ]; then
    check_pkgconf XVIDEO xv
 else
@@ -430,19 +425,17 @@ else
    HAVE_XVIDEO='no'
 fi
 
-if [ "$HAVE_UDEV" != "no" ]; then
-   check_pkgconf UDEV libudev
-   check_val '' UDEV "-ludev"
-fi
+check_pkgconf UDEV libudev
+check_val '' UDEV "-ludev"
 
 check_header XSHM X11/Xlib.h X11/extensions/XShm.h
-
 check_header PARPORT linux/parport.h
 check_header PARPORT linux/ppdev.h
 
 if [ "$OS" != 'Win32' ] && [ "$OS" != 'Linux' ]; then
    check_lib '' STRL "$CLIB" strlcpy
 fi
+
 check_lib '' STRCASESTR "$CLIB" strcasestr
 check_lib '' MMAP "$CLIB" mmap
 check_lib '' VULKAN -lvulkan vkCreateInstance
