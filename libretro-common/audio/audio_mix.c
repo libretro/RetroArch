@@ -184,7 +184,7 @@ audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate)
       goto error;
    }
 
-   if (sample_rate != chunk->rwav->samplerate)
+   if (sample_rate != (int)chunk->rwav->samplerate)
    {
       chunk->resample = true;
       chunk->ratio = (double)sample_rate / chunk->rwav->samplerate;

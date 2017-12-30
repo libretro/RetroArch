@@ -117,7 +117,7 @@ static void *nbio_linux_open(const char * filename, unsigned mode)
       return NULL;
    }
 
-   handle       = malloc(sizeof(struct nbio_linux_t));
+   handle       = (struct nbio_linux_t*)malloc(sizeof(struct nbio_linux_t));
    handle->fd   = fd;
    handle->ctx  = ctx;
    handle->len  = lseek(fd, 0, SEEK_END);
