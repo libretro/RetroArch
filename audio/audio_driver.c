@@ -538,11 +538,8 @@ void audio_driver_set_nonblocking_state(bool enable)
  *
  * Writes audio samples to audio driver. Will first
  * perform DSP processing (if enabled) and resampling.
- *
- * Returns: true (1) if audio samples were written to the audio
- * driver, false (0) in case of an error.
  **/
-static bool audio_driver_flush(const int16_t *data, size_t samples)
+static void audio_driver_flush(const int16_t *data, size_t samples)
 {
    struct resampler_data src_data;
    bool is_perfcnt_enable                               = false;
@@ -566,10 +563,8 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    runloop_get_status(&is_paused, &is_idle, &is_slowmotion,
          &is_perfcnt_enable);
 
-   if (is_paused)
-      return true;
-   if (!audio_driver_active || !audio_driver_input_data)
-      return false;
+   if (is_paused || !audio_driver_active || !audio_driver_input_data)
+      return;
 
    convert_s16_to_float(audio_driver_input_data, data, samples,
          audio_volume_gain);
@@ -666,12 +661,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
 
    if (current_audio->write(audio_driver_context_audio_data,
             output_data, output_frames * 2) < 0)
-   {
       audio_driver_active = false;
-      return false;
-   }
-
-   return true;
 }
 
 /**
