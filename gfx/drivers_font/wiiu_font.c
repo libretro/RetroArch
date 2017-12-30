@@ -162,6 +162,7 @@ static void wiiu_font_render_line(
 
    position_t* pos = wiiu->vertex_cache.positions + wiiu->vertex_cache.current;
    tex_coord_t* coord = wiiu->vertex_cache.tex_coords + wiiu->vertex_cache.current;
+   u32* col = wiiu->vertex_cache.colors + wiiu->vertex_cache.current;
 
    for (i = 0; i < msg_len; i++)
    {
@@ -219,6 +220,12 @@ static void wiiu_font_render_line(
       coord[3].v = v0 / font->texture.surface.height;
       coord += 4;
 
+      col[0] = color;
+      col[1] = color;
+      col[2] = color;
+      col[3] = color;
+      col += 4;
+
       delta_x += glyph->advance_x;
       delta_y += glyph->advance_y;
    }
@@ -231,6 +238,7 @@ static void wiiu_font_render_line(
 
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, wiiu->vertex_cache.positions + wiiu->vertex_cache.current, count * sizeof(position_t));
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, wiiu->vertex_cache.tex_coords + wiiu->vertex_cache.current, count * sizeof(tex_coord_t));
+   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, wiiu->vertex_cache.colors + wiiu->vertex_cache.current, count * sizeof(u32));
 
    if(font->atlas->dirty)
    {
@@ -251,16 +259,7 @@ static void wiiu_font_render_line(
 
    GX2SetPixelTexture(&font->texture, wiiu->shader->sampler.location);
 
-   GX2SetBlendConstantColor(((color >> 0) & 0xFF) / 255.0f, ((color >> 8) & 0xFF) / 255.0f,
-                            ((color >> 16) & 0xFF) / 255.0f, ((color >> 24) & 0xFF) / 255.0f);
-
-   GX2SetBlendControl(GX2_RENDER_TARGET_0, GX2_BLEND_MODE_BLEND_FACTOR, GX2_BLEND_MODE_INV_SRC_ALPHA, GX2_BLEND_COMBINE_MODE_ADD,
-                      GX2_ENABLE,          GX2_BLEND_MODE_SRC_ALPHA, GX2_BLEND_MODE_INV_SRC_ALPHA, GX2_BLEND_COMBINE_MODE_ADD);
-
    GX2DrawEx(GX2_PRIMITIVE_MODE_QUADS, count, wiiu->vertex_cache.current, 1);
-
-   GX2SetBlendControl(GX2_RENDER_TARGET_0, GX2_BLEND_MODE_SRC_ALPHA, GX2_BLEND_MODE_INV_SRC_ALPHA, GX2_BLEND_COMBINE_MODE_ADD,
-                      GX2_ENABLE,          GX2_BLEND_MODE_SRC_ALPHA, GX2_BLEND_MODE_INV_SRC_ALPHA, GX2_BLEND_COMBINE_MODE_ADD);
 
    wiiu->vertex_cache.current = pos - wiiu->vertex_cache.positions;
 }
@@ -357,7 +356,7 @@ static void wiiu_font_render_msg(
       g              = (video_info->font_msg_color_g * 255);
       b              = (video_info->font_msg_color_b * 255);
       alpha          = 255;
-      color          = COLOR_ABGR(r, g, b, alpha);
+      color          = COLOR_RGBA(r, g, b, alpha);
 
       drop_x         = -2;
       drop_y         = -2;
@@ -376,7 +375,7 @@ static void wiiu_font_render_msg(
       g_dark         = g * drop_mod;
       b_dark         = b * drop_mod;
       alpha_dark     = alpha * drop_alpha;
-      color_dark     = COLOR_ABGR(r_dark, g_dark, b_dark, alpha_dark);
+      color_dark     = COLOR_RGBA(r_dark, g_dark, b_dark, alpha_dark);
 
       wiiu_font_render_message(video_info, font, msg, scale, color_dark,
                               x + scale * drop_x / width, y +

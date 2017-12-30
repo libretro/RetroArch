@@ -28,11 +28,13 @@ typedef struct __attribute__((aligned(GX2_VERTEX_BUFFER_ALIGNMENT)))
    GX2SamplerVar sampler;
    struct
    {
+      GX2AttribVar color;
       GX2AttribVar position;
       GX2AttribVar tex_coord;
    } attributes;
    struct
    {
+      GX2AttribStream color;
       GX2AttribStream position;
       GX2AttribStream tex_coord;
    } attribute_stream;
