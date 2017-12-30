@@ -32,6 +32,9 @@
 //ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //POSSIBILITY OF SUCH DAMAGE.
 
+#ifndef _SPIRV_doc_h
+#define _SPIRV_doc_h
+
 //
 // Parameterize the SPIR-V enumerants.
 //
@@ -258,3 +261,5 @@ const char* AccessQualifierString(int attr);
 void PrintOperands(const OperandParameters& operands, int reservedOperands);
 
 };  // end namespace spv
+
+#endif

@@ -1,4 +1,4 @@
-/* RetroArch - A frontend for libretro.
+﻿/* RetroArch - A frontend for libretro.
 * Copyright (C) 2011-2017 - Daniel De Matteis
 *
 * RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -28,7 +28,9 @@
 #ifdef WANT_GLSLANG
 #ifdef HAVE_VULKAN
 #include "../deps/glslang/glslang.cpp"
+#if 0
 #include "../deps/glslang/glslang_tab.cpp"
+#endif
 #include "../deps/glslang/glslang/SPIRV/disassemble.cpp"
 #include "../deps/glslang/glslang/SPIRV/doc.cpp"
 #include "../deps/glslang/glslang/SPIRV/GlslangToSpv.cpp"
