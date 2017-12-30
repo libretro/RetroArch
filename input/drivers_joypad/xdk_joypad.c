@@ -206,7 +206,7 @@ static void xdk_joypad_poll(void)
          continue;
 #endif
 
-      state_cur = &pad_state[port];
+      state_cur  = &pad_state[port];
 
       *state_cur = 0;
       *state_cur |= ((state_tmp.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0);

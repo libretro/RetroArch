@@ -65,10 +65,42 @@ typedef struct hlsl_shader_data hlsl_shader_data_t;
 #define ID3DXConstantTable_SetDefaults(p,a) (p)->SetDefaults(a);
 #endif
 
+#ifndef ID3DXConstantTable_SetFloatArray
+#define ID3DXConstantTable_SetFloatArray(p,a,b,c,d) (p)->SetFloatArray(a,b,c,d)
+#endif
+
+#ifndef ID3DXConstantTable_SetFloat
+#define ID3DXConstantTable_SetFloat(p,a,b,c) (p)->SetFloat(a,b,c)
+#endif
+
+#ifndef ID3DXConstantTable_GetBufferPointer
+#define ID3DXConstantTable_GetBufferPointer(p) (p)->GetBufferPointer()
+#endif
+
+#ifndef ID3DXBuffer_Release
+#define ID3DXBuffer_Release(p) (p)->Release()
+#endif
+
 #else
 
 #ifndef ID3DXConstantTable_SetDefaults
 #define ID3DXConstantTable_SetDefaults(p,a) (p)->lpVtbl->SetDefaults(p,a)
+#endif
+
+#ifndef ID3DXConstantTable_SetFloatArray
+#define ID3DXConstantTable_SetFloatArray(p,a,b,c,d) (p)->lpVtbl->SetFloatArray(p,a,b,c,d)
+#endif
+
+#ifndef ID3DXConstantTable_SetFloat
+#define ID3DXConstantTable_SetFloat(p,a,b,c) (p)->lpVtbl->SetFloat(p,a,b,c)
+#endif
+
+#ifndef ID3DXConstantTable_GetBufferPointer
+#define ID3DXConstantTable_GetBufferPointer(p) (p)->lpVtbl->GetBufferPointer(p)
+#endif
+
+#ifndef ID3DXBuffer_Release
+#define ID3DXBuffer_Release(p) (p)->lpVtbl->Release(p)
 #endif
 
 #endif
@@ -132,10 +164,8 @@ static void hlsl_set_uniform_parameter(
    }
 }
 
-#define set_param_2f(param, xy, constanttable) \
-   if (param) constanttable->SetFloatArray(d3dr, param, xy, 2)
-#define set_param_1f(param, x, constanttable) \
-   if (param) constanttable->SetFloat(d3dr, param, x)
+#define set_param_2f(param, xy, constanttable) if (param) { ID3DXConstantTable_SetFloatArray(constanttable, d3dr, param, xy, 2); }
+#define set_param_1f(param, x, constanttable)  if (param) { ID3DXConstantTable_SetFloat(constanttable, d3dr, param, x); }
 
 static void hlsl_set_params(void *data, void *shader_data,
       unsigned width, unsigned height,
@@ -225,24 +255,28 @@ static bool hlsl_compile_program(
    {
       RARCH_ERR("Cg/HLSL error:\n");
       if(listing_f)
-         RARCH_ERR("Fragment:\n%s\n", (char*)listing_f->GetBufferPointer());
+         RARCH_ERR("Fragment:\n%s\n", (char*)ID3DXConstantTable_GetBufferPointer(listing_f));
       if(listing_v)
-         RARCH_ERR("Vertex:\n%s\n", (char*)listing_v->GetBufferPointer());
+         RARCH_ERR("Vertex:\n%s\n", (char*)ID3DXConstantTable_GetBufferPointer(listing_v));
 
       ret = false;
       goto end;
    }
 
-   d3dr->CreatePixelShader((const DWORD*)code_f->GetBufferPointer(),  &program->fprg);
-   d3dr->CreateVertexShader((const DWORD*)code_v->GetBufferPointer(), &program->vprg);
-   code_f->Release();
-   code_v->Release();
+   d3dr->CreatePixelShader((const DWORD*)ID3DXConstantTable_GetBufferPointer(code_f),  &program->fprg);
+   d3dr->CreateVertexShader((const DWORD*)ID3DXConstantTable_GetBufferPointer(code_v), &program->vprg);
+   ID3DXBuffer_Release(code_f);
+   ID3DXBuffer_Release(code_v);
 
 end:
    if (listing_f)
-      listing_f->Release();
+   {
+      ID3DXBuffer_Release(listing_f);
+   }
    if (listing_v)
-      listing_v->Release();
+   {
+      ID3DXBuffer_Release(listing_v);
+   }
    return ret;
 }
 

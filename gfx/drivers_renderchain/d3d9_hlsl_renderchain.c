@@ -149,15 +149,15 @@ static void hlsl_d3d9_renderchain_set_vertices(
    {
       unsigned i;
       Vertex vert[4];
+	  float tex_w      = 0.0f;
+	  float tex_h      = 0.0f;
       void *verts      = NULL;
 
       chain->last_width  = vert_width;
       chain->last_height = vert_height;
 
-      float tex_w        = vert_width;
-      float tex_h        = vert_height;
-      tex_w             /= ((float)chain->tex_w);
-      tex_h             /= ((float)chain->tex_h);
+      tex_w              = vert_width  / ((float)chain->tex_w);
+      tex_h              = vert_height / ((float)chain->tex_h);
 
       vert[0].x          = -1.0f;
       vert[0].y          = -1.0f;
