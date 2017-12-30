@@ -105,6 +105,8 @@ unsigned state_tracker_get_uniform(state_tracker_t *tracker,
       struct state_tracker_uniform *uniforms,
       unsigned elem, unsigned frame_count);
 
+void state_tracker_update_input(uint16_t *input1, uint16_t *input2);
+
 RETRO_END_DECLS
 
 #endif
