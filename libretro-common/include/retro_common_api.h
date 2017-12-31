@@ -82,7 +82,14 @@ typedef int ssize_t;
 #define PRIuPTR "Iu"
 #endif
 #else
+/* C++11 says this one isn't needed, but apparently (some versions of) mingw require it anyways */
+/* https://stackoverflow.com/questions/8132399/how-to-printf-uint64-t-fails-with-spurious-trailing-in-format */
+/* https://github.com/libretro/RetroArch/issues/6009 */
+#define __STDC_FORMAT_MACROS
 #include <inttypes.h>
+#endif
+#ifndef PRId64
+#error "inttypes.h is being screwy"
 #endif
 #define STRING_REP_INT64 "%" PRId64
 #define STRING_REP_UINT64 "%" PRIu64
