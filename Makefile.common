@@ -673,13 +673,7 @@ ifeq ($(HAVE_NEON),1)
    OBJ += $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/sinc_resampler_neon.o \
           audio/drivers_resampler/cc_resampler_neon.o \
           memory/neon/memcpy-neon.o
-   # When compiled without this, tries to attempt to compile sinc lerp,
-   # which will error out
-   #
-   # TODO - we need to make quality levels of sinc
-   # runtime toggleable instead of going by compile-time
-   # defines
-   DEFINES += -DSINC_LOWER_QUALITY
+	DEFINES += -DHAVE_NEON
 endif
 
 OBJ += $(LIBRETRO_COMM_DIR)/audio/conversion/s16_to_float.o \

@@ -125,7 +125,7 @@ endif
 
 CFLAGS += -I. -Ideps -Ideps/libz -Ideps/7zip -Ideps/stb -Ilibretro-common/include
 
-CFLAGS += -DRARCH_INTERNAL -DRARCH_CONSOLE -DSINC_LOWEST_QUALITY
+CFLAGS += -DRARCH_INTERNAL -DRARCH_CONSOLE
 CFLAGS += -DHAVE_FILTERS_BUILTIN $(DEFINES)
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
