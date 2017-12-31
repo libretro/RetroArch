@@ -1,4 +1,4 @@
-MSG_HASH(
+﻿MSG_HASH(
       MSG_COMPILER,
       "编译器"
       )
