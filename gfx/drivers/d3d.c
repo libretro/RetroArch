@@ -1745,13 +1745,8 @@ static const video_poke_interface_t d3d_poke_interface = {
    NULL, /* get_proc_address */
    d3d_set_aspect_ratio,
    d3d_apply_state_changes,
-#ifdef HAVE_MENU
    d3d_set_menu_texture_frame,
    d3d_set_menu_texture_enable,
-#else
-   NULL,
-   NULL,
-#endif
    d3d_set_osd_msg,
 
    d3d_show_mouse,

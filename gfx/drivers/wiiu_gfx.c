@@ -1054,9 +1054,7 @@ static const video_poke_interface_t wiiu_poke_interface =
    NULL, /* get_proc_address */
    wiiu_gfx_set_aspect_ratio,
    wiiu_gfx_apply_state_changes,
-#ifdef HAVE_MENU
    wiiu_gfx_set_texture_frame,
-#endif
    wiiu_gfx_set_texture_enable,
    wiiu_gfx_set_osd_msg,
    NULL, /* show_mouse */

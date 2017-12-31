@@ -972,10 +972,8 @@ static const video_poke_interface_t drm_poke_interface = {
    NULL, /* get_proc_address */
    drm_set_aspect_ratio,
    NULL, /* drm_apply_state_changes */
-#ifdef HAVE_MENU
    drm_set_texture_frame,
    drm_set_texture_enable,
-#endif
    NULL, /* drm_set_osd_msg */
    NULL  /* drm_show_mouse */
 };

@@ -945,10 +945,8 @@ static const video_poke_interface_t sunxi_poke_interface = {
    NULL, /* get_proc_address */
    sunxi_set_aspect_ratio,
    NULL, /* sunxi_apply_state_changes */
-#ifdef HAVE_MENU
    sunxi_set_texture_frame,
    sunxi_set_texture_enable,
-#endif
    NULL, /* sunxi_set_osd_msg */
    NULL  /* sunxi_show_mouse */
 };

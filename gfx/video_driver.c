@@ -1168,11 +1168,9 @@ void video_driver_set_texture_enable(bool enable, bool fullscreen)
 void video_driver_set_texture_frame(const void *frame, bool rgb32,
       unsigned width, unsigned height, float alpha)
 {
-#ifdef HAVE_MENU
    if (video_driver_poke && video_driver_poke->set_texture_frame)
       video_driver_poke->set_texture_frame(video_driver_data,
             frame, rgb32, width, height, alpha);
-#endif
 }
 
 #ifdef HAVE_OVERLAY

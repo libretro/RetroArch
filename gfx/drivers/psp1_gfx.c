@@ -844,10 +844,8 @@ static const video_poke_interface_t psp_poke_interface = {
    NULL, /* get_proc_address */
    psp_set_aspect_ratio,
    psp_apply_state_changes,
-#ifdef HAVE_MENU
    psp_set_texture_frame,
    psp_set_texture_enable,
-#endif
    NULL,
    NULL,
    NULL

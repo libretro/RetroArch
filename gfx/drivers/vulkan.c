@@ -2115,7 +2115,6 @@ static bool vulkan_get_hw_render_interface(void *data,
    return vk->hw.enable;
 }
 
-#if defined(HAVE_MENU)
 static void vulkan_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
@@ -2190,6 +2189,7 @@ static void vulkan_set_texture_enable(void *data, bool state, bool full_screen)
    vk->menu.full_screen = full_screen;
 }
 
+#if defined(HAVE_MENU)
 static void vulkan_set_osd_msg(void *data,
       video_frame_info_t *video_info,
       const char *msg,
@@ -2274,13 +2274,8 @@ static const video_poke_interface_t vulkan_poke_interface = {
    NULL,
    vulkan_set_aspect_ratio,
    vulkan_apply_state_changes,
-#if defined(HAVE_MENU)
    vulkan_set_texture_frame,
    vulkan_set_texture_enable,
-#else
-   NULL,
-   NULL,
-#endif
 #ifdef HAVE_MENU
    vulkan_set_osd_msg,
 #endif

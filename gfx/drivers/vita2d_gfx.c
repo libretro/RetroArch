@@ -792,21 +792,16 @@ static const video_poke_interface_t vita_poke_interface = {
    NULL, /* get_proc_address */
    vita_set_aspect_ratio,
    vita_apply_state_changes,
-#ifdef HAVE_MENU
    vita_set_texture_frame,
    vita_set_texture_enable,
-   #else
-      NULL,
-      NULL,
-   #endif
-   #ifdef HAVE_MENU
-      vita_set_osd_msg,
-   #endif
-      NULL,
-      NULL,
-      NULL,
-      vita_get_current_sw_framebuffer,
-      NULL,
+#ifdef HAVE_MENU
+   vita_set_osd_msg,
+#endif
+   NULL,
+   NULL,
+   NULL,
+   vita_get_current_sw_framebuffer,
+   NULL,
  };
 
 static void vita2d_gfx_get_poke_interface(void *data,

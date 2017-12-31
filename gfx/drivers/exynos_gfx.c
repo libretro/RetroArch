@@ -1491,10 +1491,8 @@ static const video_poke_interface_t exynos_poke_interface = {
    NULL, /* get_proc_address */
    exynos_set_aspect_ratio,
    exynos_apply_state_changes,
-#ifdef HAVE_MENU
    exynos_set_texture_frame,
    exynos_set_texture_enable,
-#endif
    exynos_set_osd_msg,
    exynos_show_mouse
 };

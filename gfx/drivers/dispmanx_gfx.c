@@ -644,10 +644,8 @@ static const video_poke_interface_t dispmanx_poke_interface = {
    NULL, /* get_proc_address */
    dispmanx_set_aspect_ratio,
    NULL, /* dispmanx_apply_state_changes */
-#ifdef HAVE_MENU
    dispmanx_set_texture_frame,
    dispmanx_set_texture_enable,
-#endif
    NULL, /* dispmanx_set_osd_msg */
    NULL  /* dispmanx_show_mouse */
 };

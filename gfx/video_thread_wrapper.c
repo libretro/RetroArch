@@ -1270,12 +1270,11 @@ static const video_poke_interface_t thread_poke = {
    NULL, /* get_proc_address */
    thread_set_aspect_ratio,
    thread_apply_state_changes,
-#if defined(HAVE_MENU)
    thread_set_texture_frame,
    thread_set_texture_enable,
+#if defined(HAVE_MENU)
    thread_set_osd_msg,
 #else
-   NULL,
    NULL,
 #endif
 

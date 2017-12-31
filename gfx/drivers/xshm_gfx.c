@@ -218,15 +218,13 @@ static video_poke_interface_t xshm_video_poke_interface = {
    NULL, /* get_proc_address */
    xshm_poke_set_aspect_ratio,
    xshm_poke_apply_state_changes,
-#ifdef HAVE_MENU
    xshm_poke_set_texture_frame,
    xshm_poke_texture_enable,
+#ifdef HAVE_MENU
    xshm_poke_set_osd_msg,
    xshm_show_mouse,
    xshm_grab_mouse_toggle,
 #else
-   NULL,
-   NULL,
    NULL,
    NULL,
    NULL,

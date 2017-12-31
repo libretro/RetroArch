@@ -1133,9 +1133,9 @@ static const video_poke_interface_t ctr_poke_interface = {
    NULL,
    ctr_set_aspect_ratio,
    ctr_apply_state_changes,
-#ifdef HAVE_MENU
    ctr_set_texture_frame,
    ctr_set_texture_enable,
+#ifdef HAVE_MENU
    ctr_set_osd_msg,
 #endif
    NULL,

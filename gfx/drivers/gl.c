@@ -688,8 +688,6 @@ void gl_load_texture_data(
       glGenerateMipmap(GL_TEXTURE_2D);
 }
 
-
-#if defined(HAVE_MENU)
 static void gl_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
@@ -732,6 +730,7 @@ static void gl_set_texture_enable(void *data, bool state, bool full_screen)
    gl->menu_texture_full_screen = full_screen;
 }
 
+#if defined(HAVE_MENU)
 static void gl_render_osd_background(
       gl_t *gl, video_frame_info_t *video_info,
       const char *msg)
@@ -2554,14 +2553,12 @@ static const video_poke_interface_t gl_poke_interface = {
    gl_get_proc_address,
    gl_set_aspect_ratio,
    gl_apply_state_changes,
-#if defined(HAVE_MENU)
    gl_set_texture_frame,
    gl_set_texture_enable,
+#if defined(HAVE_MENU)
    gl_set_osd_msg,
    gl_show_mouse,
 #else
-   NULL,
-   NULL,
    NULL,
    NULL,
 #endif
