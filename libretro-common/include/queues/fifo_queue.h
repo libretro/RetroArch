@@ -25,6 +25,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdlib.h>
 
 #include <retro_common_api.h>
 #include <retro_inline.h>

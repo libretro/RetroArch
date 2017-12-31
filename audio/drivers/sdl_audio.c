@@ -14,14 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdint.h>
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include "SDL.h"
-#include "SDL_audio.h"
-
 #include <boolean.h>
 #include <rthreads/rthreads.h>
 #include <queues/fifo_queue.h>
@@ -30,6 +22,14 @@
 
 #include "../audio_driver.h"
 #include "../../verbosity.h"
+
+#include <stdint.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "SDL.h"
+#include "SDL_audio.h"
 
 typedef struct sdl_audio
 {
