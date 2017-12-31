@@ -71,7 +71,9 @@
 #endif
 
 const GUID GUID_DEVINTERFACE_HID = { 0x4d1e55b2, 0xf16f, 0x11Cf, { 0x88, 0xcb, 0x00, 0x11, 0x11, 0x00, 0x00, 0x30 } };
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x501
 static HDEVNOTIFY notification_handler;
+#endif
 
 #if defined(HAVE_D3D9) || defined(HAVE_D3D8)
 extern bool dinput_handle_message(void *dinput, UINT message,
@@ -749,7 +751,9 @@ bool win32_window_create(void *data, unsigned style,
       RECT *mon_rect, unsigned width,
       unsigned height, bool fullscreen)
 {
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x501
    DEV_BROADCAST_DEVICEINTERFACE notification_filter;
+#endif
    settings_t *settings  = config_get_ptr();
 #ifndef _XBOX
    main_window.hwnd = CreateWindowEx(0,
