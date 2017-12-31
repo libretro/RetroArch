@@ -1348,49 +1348,34 @@ ifeq ($(HAVE_IBXM), 1)
    OBJ += $(DEPS_DIR)/ibxm/ibxm.o
 endif
 
-ifeq ($(HAVE_FLAC),1)
-   DEFINES += -DHAVE_FLAC
-   ifeq ($(HAVE_BUILTINFLAC),1)
-      CFLAGS  += -I$(DEPS_DIR)/libFLAC/include
-      DEFINES += -DHAVE_STDINT_H -DHAVE_LROUND -DFLAC__HAS_OGG=0 \
-                 -DFLAC_PACKAGE_VERSION="\"retroarch\""
-      FLACOBJ = $(DEPS_DIR)/libFLAC/bitmath.o \
-                $(DEPS_DIR)/libFLAC/bitreader.o \
-                $(DEPS_DIR)/libFLAC/cpu.o \
-                $(DEPS_DIR)/libFLAC/crc.o \
-                $(DEPS_DIR)/libFLAC/fixed.o \
-                $(DEPS_DIR)/libFLAC/float.o \
-                $(DEPS_DIR)/libFLAC/format.o \
-                $(DEPS_DIR)/libFLAC/lpc.o \
-                $(DEPS_DIR)/libFLAC/lpc_intrin_avx2.o \
-                $(DEPS_DIR)/libFLAC/lpc_intrin_sse2.o \
-                $(DEPS_DIR)/libFLAC/lpc_intrin_sse41.o \
-                $(DEPS_DIR)/libFLAC/lpc_intrin_sse.o \
-                $(DEPS_DIR)/libFLAC/md5.o \
-                $(DEPS_DIR)/libFLAC/memory.o \
-                $(DEPS_DIR)/libFLAC/stream_decoder.o
-      ifneq ($(findstring Win32,$(OS)),)
-         DEFINES += -DHAVE_FSEEKO
-         # make sure not to use this on legacy Windows versions that don't have W-functions implemented
-         DEFINES += -DNEED_UTF8_SUPPORT
-         FLACOBJ += $(DEPS_DIR)/libFLAC/windows_unicode_filenames.o
-      endif
-      OBJ += $(FLACOBJ)
-   else
-      LIBS += $(FLAC_LIBS)
+ifeq ($(HAVE_BUILTINFLAC),1)
+   CFLAGS  += -DHAVE_FLAC -I$(DEPS_DIR)/libFLAC/include
+   DEFINES += -DHAVE_STDINT_H -DHAVE_LROUND -DFLAC__HAS_OGG=0 \
+              -DFLAC_PACKAGE_VERSION="\"retroarch\""
+   FLACOBJ = $(DEPS_DIR)/libFLAC/bitmath.o \
+             $(DEPS_DIR)/libFLAC/bitreader.o \
+             $(DEPS_DIR)/libFLAC/cpu.o \
+             $(DEPS_DIR)/libFLAC/crc.o \
+             $(DEPS_DIR)/libFLAC/fixed.o \
+             $(DEPS_DIR)/libFLAC/float.o \
+             $(DEPS_DIR)/libFLAC/format.o \
+             $(DEPS_DIR)/libFLAC/lpc.o \
+             $(DEPS_DIR)/libFLAC/lpc_intrin_avx2.o \
+             $(DEPS_DIR)/libFLAC/lpc_intrin_sse2.o \
+             $(DEPS_DIR)/libFLAC/lpc_intrin_sse41.o \
+             $(DEPS_DIR)/libFLAC/lpc_intrin_sse.o \
+             $(DEPS_DIR)/libFLAC/md5.o \
+             $(DEPS_DIR)/libFLAC/memory.o \
+             $(DEPS_DIR)/libFLAC/stream_decoder.o
+   ifneq ($(findstring Win32,$(OS)),)
+      DEFINES += -DHAVE_FSEEKO
+      # make sure not to use this on legacy Windows versions that don't have W-functions implemented
+      DEFINES += -DNEED_UTF8_SUPPORT
+      FLACOBJ += $(DEPS_DIR)/libFLAC/windows_unicode_filenames.o
    endif
-   ifeq ($(HAVE_7ZIP), 1)
-   ifeq ($(HAVE_ZLIB), 1)
-      DEFINES += -DHAVE_CHD -DWANT_SUBCODE -DWANT_RAW_DATA_SECTOR
-      CFLAGS  += -I$(LIBRETRO_COMM_DIR)/formats/libchdr
-      OBJ     += $(LIBRETRO_COMM_DIR)/formats/libchdr/bitstream.o \
-                 $(LIBRETRO_COMM_DIR)/formats/libchdr/cdrom.o \
-                 $(LIBRETRO_COMM_DIR)/formats/libchdr/chd.o \
-                 $(LIBRETRO_COMM_DIR)/formats/libchdr/flac.o \
-                 $(LIBRETRO_COMM_DIR)/formats/libchdr/huffman.o \
-                 $(LIBRETRO_COMM_DIR)/streams/chd_stream.o
-   endif
-   endif
+   OBJ += $(FLACOBJ)
+else ifeq ($(HAVE_FLAC),1)
+   LIBS += $(FLAC_LIBS)
 endif
 
 ifeq ($(HAVE_ZLIB), 1)
@@ -1418,6 +1403,21 @@ ifeq ($(HAVE_ZLIB), 1)
    else
       LIBS += $(ZLIB_LIBS)
    endif
+endif
+
+ifeq ($(HAVE_FLAC), 1)
+ifeq ($(HAVE_7ZIP), 1)
+ifeq ($(HAVE_ZLIB), 1)
+   DEFINES += -DHAVE_CHD -DWANT_SUBCODE -DWANT_RAW_DATA_SECTOR
+   CFLAGS  += -I$(LIBRETRO_COMM_DIR)/formats/libchdr
+   OBJ     += $(LIBRETRO_COMM_DIR)/formats/libchdr/bitstream.o \
+              $(LIBRETRO_COMM_DIR)/formats/libchdr/cdrom.o \
+              $(LIBRETRO_COMM_DIR)/formats/libchdr/chd.o \
+              $(LIBRETRO_COMM_DIR)/formats/libchdr/flac.o \
+              $(LIBRETRO_COMM_DIR)/formats/libchdr/huffman.o \
+              $(LIBRETRO_COMM_DIR)/streams/chd_stream.o
+endif
+endif
 endif
 
 ifeq ($(HAVE_RTGA), 1)

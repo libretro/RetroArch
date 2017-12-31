@@ -70,6 +70,7 @@ check_lib() # $1 = language  $2 = HAVE_$2  $3 = lib  $4 = function in lib  $5 = 
 
 check_pkgconf() # $1 = HAVE_$1  $2 = package  $3 = version  $4 = critical error message [checked only if non-empty]
 {	tmpval="$(eval "printf %s \"\$HAVE_$1\"")"
+	eval "TMP_$1=\$tmpval"
 	[ "$tmpval" = 'no' ] && return 0
 
 	ECHOBUF="Checking presence of package $2"
@@ -161,9 +162,14 @@ check_switch() # $1 = language  $2 = HAVE_$2  $3 = switch  $4 = critical error m
 
 check_val() # $1 = language  $2 = HAVE_$2  $3 = lib
 {	tmpval="$(eval "printf %s \"\$HAVE_$2\"")"
-	if [ "$tmpval" = 'no' ]; then
+	oldval="$(eval "printf %s \"\$TMP_$2\"")"
+	if [ "$tmpval" = 'no' ] && [ "$oldval" != 'no' ]; then
 		eval "HAVE_$2=auto"
 		check_lib "$1" "$2" "$3"
+
+		if [ "$answer" = 'no' ] && [ "$oldval" = 'yes' ]; then
+			die 1 "Forced to build with library $lib, but cannot locate. Exiting ..."
+		fi
 	fi
 }
 
