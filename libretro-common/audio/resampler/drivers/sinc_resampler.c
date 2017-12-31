@@ -558,9 +558,9 @@ static void sinc_init_table_lanczos(rarch_sinc_resampler_t *resamp, double cutof
 }
 
 static void *resampler_sinc_new(const struct resampler_config *config,
-      double bandwidth_mod, resampler_simd_mask_t mask)
+      double bandwidth_mod, enum resampler_quality quality, 
+      resampler_simd_mask_t mask)
 {
-   enum resampler_quality quality = RESAMPLER_QUALITY_DONTCARE;
    double cutoff                  = 0.0;
    size_t phase_elems             = 0;
    size_t elems                   = 0;
@@ -570,18 +570,6 @@ static void *resampler_sinc_new(const struct resampler_config *config,
 
    if (!re)
       return NULL;
-
-#if defined(SINC_LOWEST_QUALITY)
-   quality                        = RESAMPLER_QUALITY_LOWEST;
-#elif defined(SINC_LOWER_QUALITY)
-   quality                        = RESAMPLER_QUALITY_LOWER;
-#elif defined(SINC_HIGHER_QUALITY)
-   quality                        = RESAMPLER_QUALITY_HIGHER;
-#elif defined(SINC_HIGHEST_QUALITY)
-   quality                        = RESAMPLER_QUALITY_HIGHEST;
-#else
-   quality                        = RESAMPLER_QUALITY_NORMAL;
-#endif
 
    re->window_type                = SINC_WINDOW_NONE;
 

@@ -219,7 +219,8 @@ static bool one_shot_resample(const float* in, size_t samples_in,
    const retro_resampler_t* resampler = NULL;
    float ratio                        = (double)s_rate / (double)rate;
 
-   if (!retro_resampler_realloc(&data, &resampler, NULL, ratio))
+   if (!retro_resampler_realloc(&data, &resampler, NULL, 
+            RESAMPLER_QUALITY_DONTCARE, ratio))
       return false;
 
    /*
@@ -430,7 +431,8 @@ static bool audio_mixer_play_ogg(
       ratio = (double)s_rate / (double)info.sample_rate;
 
       if (!retro_resampler_realloc(&resampler_data,
-               &resamp, NULL, ratio))
+               &resamp, NULL, RESAMPLER_QUALITY_DONTCARE,
+               ratio))
          goto error;
    }
 

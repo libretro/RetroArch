@@ -151,7 +151,9 @@ done:
 }
 
 static void *resampler_CC_init(const struct resampler_config *config,
-      double bandwidth_mod, resampler_simd_mask_t mask)
+      double bandwidth_mod, 
+      enum resampler_quality quality,
+      resampler_simd_mask_t mask)
 {
    (void)mask;
    (void)bandwidth_mod;
@@ -492,7 +494,9 @@ static void resampler_CC_process(void *re_, struct resampler_data *data)
 
 
 static void *resampler_CC_init(const struct resampler_config *config,
-      double bandwidth_mod, resampler_simd_mask_t mask)
+      double bandwidth_mod, 
+      enum resampler_quality quality,
+      resampler_simd_mask_t mask)
 {
    int i;
    rarch_CC_resampler_t *re = (rarch_CC_resampler_t*)

@@ -118,7 +118,8 @@ struct resampler_config
 /* Bandwidth factor. Will be < 1.0 for downsampling, > 1.0 for upsampling.
  * Corresponds to expected resampling ratio. */
 typedef void *(*resampler_init_t)(const struct resampler_config *config,
-      double bandwidth_mod, resampler_simd_mask_t mask);
+      double bandwidth_mod, enum resampler_quality quality,
+      resampler_simd_mask_t mask);
 
 /* Frees the handle. */
 typedef void (*resampler_free_t)(void *data);
@@ -187,7 +188,7 @@ const char *audio_resampler_driver_find_ident(int index);
  * Returns: true (1) if successful, otherwise false (0).
  **/
 bool retro_resampler_realloc(void **re, const retro_resampler_t **backend,
-      const char *ident, double bw_ratio);
+      const char *ident, enum resampler_quality quality, double bw_ratio);
 
 RETRO_END_DECLS
 

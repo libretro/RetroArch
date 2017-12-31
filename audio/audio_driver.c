@@ -21,7 +21,6 @@
 #include <lists/string_list.h>
 #include <audio/conversion/float_to_s16.h>
 #include <audio/conversion/s16_to_float.h>
-#include <audio/audio_resampler.h>
 #include <audio/dsp_filter.h>
 #include <file/file_path.h>
 #include <lists/dir_list.h>
@@ -181,6 +180,21 @@ static const retro_resampler_t *audio_driver_resampler   = NULL;
 static void *audio_driver_resampler_data                 = NULL;
 static const audio_driver_t *current_audio               = NULL;
 static void *audio_driver_context_audio_data             = NULL;
+
+enum resampler_quality audio_driver_get_resampler_quality(void)
+{
+#if defined(SINC_LOWEST_QUALITY)
+   return RESAMPLER_QUALITY_LOWEST;
+#elif defined(SINC_LOWER_QUALITY)
+   return RESAMPLER_QUALITY_LOWER;
+#elif defined(SINC_HIGHER_QUALITY)
+   return RESAMPLER_QUALITY_HIGHER;
+#elif defined(SINC_HIGHEST_QUALITY)
+   return RESAMPLER_QUALITY_HIGHEST;
+#else
+   return RESAMPLER_QUALITY_NORMAL;
+#endif
+}
 
 /**
  * compute_audio_buffer_statistics:
@@ -449,6 +463,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
             &audio_driver_resampler_data,
             &audio_driver_resampler,
             settings->arrays.audio_resampler,
+            audio_driver_get_resampler_quality(),
             audio_source_ratio_original))
    {
       RARCH_ERR("Failed to initialize resampler \"%s\".\n",

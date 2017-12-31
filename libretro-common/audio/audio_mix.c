@@ -192,6 +192,7 @@ audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate)
       retro_resampler_realloc(&chunk->resampler_data,
             &chunk->resampler,
             NULL,
+            RESAMPLER_QUALITY_DONTCARE,
             chunk->ratio);
 
       if (chunk->resampler && chunk->resampler_data)
