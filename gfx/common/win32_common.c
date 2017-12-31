@@ -762,6 +762,7 @@ bool win32_window_create(void *data, unsigned style,
    if (!main_window.hwnd)
       return false;
 
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x501
    ZeroMemory(&notification_filter, sizeof(notification_filter) );
    notification_filter.dbcc_size       = sizeof(DEV_BROADCAST_DEVICEINTERFACE);
    notification_filter.dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE;
@@ -771,6 +772,7 @@ bool win32_window_create(void *data, unsigned style,
 
    if (notification_handler)
       RARCH_ERR("Error registering for notifications\n");
+#endif
 
    video_driver_display_type_set(RARCH_DISPLAY_WIN32);
    video_driver_display_set(0);
@@ -1158,7 +1160,9 @@ void win32_destroy_window(void)
 #ifndef _XBOX
    UnregisterClass("RetroArch", GetModuleHandle(NULL));
 #endif
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x501
    UnregisterDeviceNotification(notification_handler);
+#endif
    main_window.hwnd = NULL;
 }
 
