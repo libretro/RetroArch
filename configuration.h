@@ -302,7 +302,7 @@ typedef struct settings
       unsigned audio_block_frames;
       unsigned audio_latency;
 
-
+      unsigned audio_resampler_quality;
 
       unsigned input_turbo_period;
       unsigned input_turbo_duty_cycle;

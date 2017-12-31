@@ -19,6 +19,7 @@
 #define __CONFIG_DEF_H
 
 #include <boolean.h>
+#include <audio/audio_resampler.h>
 #include "gfx/video_defines.h"
 #include "input/input_driver.h"
 
@@ -636,6 +637,14 @@ static const bool ui_companion_start_on_boot = true;
 #endif
 
 static const bool ui_companion_enable = false;
+
+#if defined(__QNX__) || defined(_XBOX1) || defined(_XBOX360) || defined(__CELLOS_LV2__) || (defined(__MACH__) && defined(IOS)) || defined(ANDROID) || defined(WIIU)
+static enum resampler_quality audio_resampler_quality_level = RESAMPLER_QUALITY_LOWER;
+#elif defined(PSP) || defined(_3DS) || defined(VITA)
+static enum resampler_quality audio_resampler_quality_level = RESAMPLER_QUALITY_LOWEST;
+#else
+static enum resampler_quality audio_resampler_quality_level = RESAMPLER_QUALITY_NORMAL;
+#endif
 
 #if defined(ANDROID)
 #if defined(ANDROID_ARM)

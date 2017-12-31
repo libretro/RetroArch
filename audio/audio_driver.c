@@ -183,17 +183,12 @@ static void *audio_driver_context_audio_data             = NULL;
 
 enum resampler_quality audio_driver_get_resampler_quality(void)
 {
-#if defined(SINC_LOWEST_QUALITY)
-   return RESAMPLER_QUALITY_LOWEST;
-#elif defined(SINC_LOWER_QUALITY)
-   return RESAMPLER_QUALITY_LOWER;
-#elif defined(SINC_HIGHER_QUALITY)
-   return RESAMPLER_QUALITY_HIGHER;
-#elif defined(SINC_HIGHEST_QUALITY)
-   return RESAMPLER_QUALITY_HIGHEST;
-#else
-   return RESAMPLER_QUALITY_NORMAL;
-#endif
+   settings_t *settings = config_get_ptr();
+
+   if (!settings)
+      return RESAMPLER_QUALITY_DONTCARE;
+
+   return (enum resampler_quality)settings->uints.audio_resampler_quality;
 }
 
 /**
