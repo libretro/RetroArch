@@ -803,6 +803,7 @@ bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lPa
             return true;
          }
       case WM_DEVICECHANGE:
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500 /* 2K */
             if (wParam == DBT_DEVICEARRIVAL  || wParam == DBT_DEVICEREMOVECOMPLETE)
             {
                PDEV_BROADCAST_HDR pHdr = (PDEV_BROADCAST_HDR)lParam;
@@ -816,6 +817,7 @@ bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lPa
                   di->joypad = input_joypad_init_driver(di->joypad_driver_name, di);
                }
             }
+#endif
          break;
       case WM_MOUSEWHEEL:
             if (((short) HIWORD(wParam))/120 > 0)

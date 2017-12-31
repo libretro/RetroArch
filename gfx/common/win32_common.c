@@ -447,7 +447,7 @@ static LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
          if (message == WM_KEYUP || message == WM_SYSKEYUP)
             keydown = false;
 
-#if _WIN32_WINNT >= 0x0501
+#if _WIN32_WINNT >= 0x0501 /* XP */
          if (string_is_equal_fast(config_get_ptr()->arrays.input_driver, "raw", 4))
             keycode = input_keymaps_translate_keysym_to_rk((unsigned)(wparam));
          else
@@ -751,7 +751,7 @@ bool win32_window_create(void *data, unsigned style,
       RECT *mon_rect, unsigned width,
       unsigned height, bool fullscreen)
 {
-#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x501
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500 /* 2K */
    DEV_BROADCAST_DEVICEINTERFACE notification_filter;
 #endif
    settings_t *settings  = config_get_ptr();
@@ -766,7 +766,7 @@ bool win32_window_create(void *data, unsigned style,
    if (!main_window.hwnd)
       return false;
 
-#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x501
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500 /* 2K */
    ZeroMemory(&notification_filter, sizeof(notification_filter) );
    notification_filter.dbcc_size       = sizeof(DEV_BROADCAST_DEVICEINTERFACE);
    notification_filter.dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE;
@@ -782,7 +782,7 @@ bool win32_window_create(void *data, unsigned style,
    video_driver_display_set(0);
    video_driver_window_set((uintptr_t)main_window.hwnd);
 
-#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500 /* 2K */
    /* Windows 2000 and above use layered windows to enable transparency */
    SetWindowLongPtr(main_window.hwnd,
         GWL_EXSTYLE,
@@ -1164,7 +1164,7 @@ void win32_destroy_window(void)
 #ifndef _XBOX
    UnregisterClass("RetroArch", GetModuleHandle(NULL));
 #endif
-#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x501
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x500 /* 2K */
    UnregisterDeviceNotification(notification_handler);
 #endif
    main_window.hwnd = NULL;
