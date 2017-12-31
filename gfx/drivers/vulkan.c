@@ -2189,7 +2189,6 @@ static void vulkan_set_texture_enable(void *data, bool state, bool full_screen)
    vk->menu.full_screen = full_screen;
 }
 
-#if defined(HAVE_MENU)
 static void vulkan_set_osd_msg(void *data,
       video_frame_info_t *video_info,
       const char *msg,
@@ -2197,7 +2196,6 @@ static void vulkan_set_osd_msg(void *data,
 {
    font_driver_render_msg(video_info, font, msg, params);
 }
-#endif
 
 static uintptr_t vulkan_load_texture(void *video_data, void *data,
       bool threaded, enum texture_filter_type filter_type)
@@ -2276,11 +2274,9 @@ static const video_poke_interface_t vulkan_poke_interface = {
    vulkan_apply_state_changes,
    vulkan_set_texture_frame,
    vulkan_set_texture_enable,
-#ifdef HAVE_MENU
    vulkan_set_osd_msg,
-#endif
    vulkan_show_mouse,
-   NULL,
+   NULL,                               /* grab_mouse_toggle */
    vulkan_get_current_shader,
    vulkan_get_current_sw_framebuffer,
    vulkan_get_hw_render_interface,

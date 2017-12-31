@@ -2,6 +2,10 @@
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 
+#ifdef HAVE_MENU
+#include "../menu/menu_display.h"
+#endif
+
 #include "../file_path_special.h"
 #include "../configuration.h"
 #include "../verbosity.h"
@@ -30,8 +34,10 @@ void set_badge_menu_texture(badges_ctx_t * badges, int i)
          PATH_MAX_LENGTH * sizeof(char),
          APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES);
 
+#ifdef HAVE_MENU
    menu_display_reset_textures_list(badge_file, fullpath,
          &badges->menu_texture_list[i],TEXTURE_FILTER_MIPMAP_LINEAR);
+#endif
 }
 
 void set_badge_info (badges_ctx_t *badge_struct, int id,

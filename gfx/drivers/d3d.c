@@ -341,7 +341,8 @@ static void d3d_viewport_info(void *data, struct video_viewport *vp)
    d3d->renderchain_driver->viewport_info(d3d, vp);
 }
 
-static void d3d_overlay_render(d3d_video_t *d3d, video_frame_info_t *video_info,
+static void d3d_overlay_render(d3d_video_t *d3d,
+      video_frame_info_t *video_info,
       overlay_t *overlay)
 {
    struct video_viewport vp;
@@ -991,7 +992,6 @@ static bool d3d_init_internal(d3d_video_t *d3d,
 
    d3d->should_resize        = false;
 
-#if defined(HAVE_MENU)
    d3d->menu                 = (overlay_t*)calloc(1, sizeof(*d3d->menu));
 
    if (!d3d->menu)
@@ -1005,7 +1005,6 @@ static bool d3d_init_internal(d3d_video_t *d3d,
    d3d->menu->vert_coords[1] = 1;
    d3d->menu->vert_coords[2] = 1;
    d3d->menu->vert_coords[3] = -1;
-#endif
 
    memset(&d3d->windowClass, 0, sizeof(d3d->windowClass));
 
@@ -1174,11 +1173,8 @@ static void *d3d_init(const video_info_t *info,
 #endif
 #ifdef _XBOX
    d3d->should_resize        = false;
-#else
-#ifdef HAVE_MENU
+#endif
    d3d->menu                 = NULL;
-#endif
-#endif
 
    video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
 
@@ -1233,12 +1229,10 @@ static void d3d_free(void *data)
    d3d->overlays_size = 0;
 #endif
 
-#ifdef HAVE_MENU
    d3d_free_overlay(d3d, d3d->menu);
    if (d3d->menu)
       free(d3d->menu);
    d3d->menu          = NULL;
-#endif
 
    d3d_deinitialize(d3d);
 
@@ -1558,7 +1552,6 @@ static bool d3d_set_shader(void *data,
    return true;
 }
 
-#ifdef HAVE_MENU
 static void d3d_set_menu_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
@@ -1573,8 +1566,9 @@ static void d3d_set_menu_texture_frame(void *data,
    (void)height;
    (void)alpha;
 
-   if (!d3d->menu->tex || d3d->menu->tex_w != width
-         || d3d->menu->tex_h != height)
+   if (    !d3d->menu->tex            || 
+            d3d->menu->tex_w != width ||
+            d3d->menu->tex_h != height)
    {
       if (d3d->menu)
 	     d3d_texture_free(d3d->menu->tex);
@@ -1652,7 +1646,6 @@ static void d3d_set_menu_texture_enable(void *data,
    d3d->menu->enabled            = state;
    d3d->menu->fullscreen         = full_screen;
 }
-#endif
 
 static void video_texture_load_d3d(d3d_video_t *d3d,
       struct texture_image *ti,

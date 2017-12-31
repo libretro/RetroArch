@@ -730,7 +730,6 @@ static void gl_set_texture_enable(void *data, bool state, bool full_screen)
    gl->menu_texture_full_screen = full_screen;
 }
 
-#if defined(HAVE_MENU)
 static void gl_render_osd_background(
       gl_t *gl, video_frame_info_t *video_info,
       const char *msg)
@@ -846,6 +845,7 @@ static void gl_render_osd_background(
          video_info->height, false, true);
 }
 
+#if defined(HAVE_MENU)
 static void gl_set_osd_msg(void *data,
       video_frame_info_t *video_info,
       const char *msg,
@@ -866,32 +866,6 @@ static struct video_shader *gl_get_current_shader(void *data)
    video_shader_driver_direct_get_current_shader(&shader_info);
 
    return shader_info.data;
-}
-
-static void gl_pbo_async_readback(gl_t *gl)
-{
-#ifdef HAVE_OPENGLES
-   GLenum fmt  = GL_RGBA;
-   GLenum type = GL_UNSIGNED_BYTE;
-#else
-   GLenum fmt  = GL_BGRA;
-   GLenum type = GL_UNSIGNED_INT_8_8_8_8_REV;
-#endif
-
-   if (gl->renderchain_driver->bind_pbo)
-      gl->renderchain_driver->bind_pbo(
-         gl->pbo_readback[gl->pbo_readback_index++]);
-   gl->pbo_readback_index &= 3;
-
-   /* 4 frames back, we can readback. */
-   gl->pbo_readback_valid[gl->pbo_readback_index] = true;
-
-   if (gl->renderchain_driver->readback)
-      gl->renderchain_driver->readback(gl, gl->renderchain_data,
-            video_pixel_get_alignment(gl->vp.width * sizeof(uint32_t)),
-            fmt, type, NULL);
-   if (gl->renderchain_driver->unbind_pbo)
-      gl->renderchain_driver->unbind_pbo(gl, gl->renderchain_data);
 }
 
 static INLINE void gl_draw_texture(gl_t *gl, video_frame_info_t *video_info)
@@ -955,6 +929,32 @@ static INLINE void gl_draw_texture(gl_t *gl, video_frame_info_t *video_info)
    gl->coords.color       = gl->white_color_ptr;
 }
 #endif
+
+static void gl_pbo_async_readback(gl_t *gl)
+{
+#ifdef HAVE_OPENGLES
+   GLenum fmt  = GL_RGBA;
+   GLenum type = GL_UNSIGNED_BYTE;
+#else
+   GLenum fmt  = GL_BGRA;
+   GLenum type = GL_UNSIGNED_INT_8_8_8_8_REV;
+#endif
+
+   if (gl->renderchain_driver->bind_pbo)
+      gl->renderchain_driver->bind_pbo(
+         gl->pbo_readback[gl->pbo_readback_index++]);
+   gl->pbo_readback_index &= 3;
+
+   /* 4 frames back, we can readback. */
+   gl->pbo_readback_valid[gl->pbo_readback_index] = true;
+
+   if (gl->renderchain_driver->readback)
+      gl->renderchain_driver->readback(gl, gl->renderchain_data,
+            video_pixel_get_alignment(gl->vp.width * sizeof(uint32_t)),
+            fmt, type, NULL);
+   if (gl->renderchain_driver->unbind_pbo)
+      gl->renderchain_driver->unbind_pbo(gl, gl->renderchain_data);
+}
 
 
 static bool gl_frame(void *data, const void *frame,

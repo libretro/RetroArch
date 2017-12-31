@@ -77,9 +77,7 @@ typedef struct d3d_video
    unsigned cur_mon_id;
    unsigned dev_rotation;
 
-#if defined(HAVE_MENU)
    overlay_t *menu;
-#endif
    const d3d_renderchain_driver_t *renderchain_driver;
    void *renderchain_data;
 

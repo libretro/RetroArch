@@ -166,7 +166,6 @@ struct thread_video
    const input_driver_t **input;
    void **input_data;
 
-#if defined(HAVE_MENU)
    struct
    {
       void *frame;
@@ -179,7 +178,6 @@ struct thread_video
       bool enable;
       bool full_screen;
    } texture;
-#endif
    bool apply_state_changes;
 
    bool alive;
@@ -1154,7 +1152,6 @@ static void thread_set_aspect_ratio(void *data, unsigned aspectratio_idx)
    video_thread_send_and_wait_user_to_thread(thr, &pkt);
 }
 
-#if defined(HAVE_MENU)
 static void thread_set_texture_frame(void *data, const void *frame,
       bool rgb32, unsigned width, unsigned height, float alpha)
 {
@@ -1195,6 +1192,7 @@ static void thread_set_texture_enable(void *data, bool state, bool full_screen)
    slock_unlock(thr->frame.lock);
 }
 
+#if defined(HAVE_MENU)
 static void thread_set_osd_msg(void *data,
       video_frame_info_t *video_info,
       const char *msg,
