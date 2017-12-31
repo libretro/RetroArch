@@ -190,15 +190,15 @@ tex_shader_t tex_shader =
    },
    .attribute_stream = {
       .color = {
-         0, 2, 0, GX2_ATTRIB_FORMAT_UNORM_8_8_8_8,
+         0, 0, offsetof(tex_shader_vertex_t, color), GX2_ATTRIB_FORMAT_UNORM_8_8_8_8,
          GX2_ATTRIB_INDEX_PER_VERTEX, 0, GX2_COMP_SEL(_X, _Y, _Z, _W), GX2_ENDIAN_SWAP_DEFAULT
       },
       .position = {
-         1, 0, 0, GX2_ATTRIB_FORMAT_FLOAT_32_32,
+         1, 0, offsetof(tex_shader_vertex_t, pos), GX2_ATTRIB_FORMAT_FLOAT_32_32,
          GX2_ATTRIB_INDEX_PER_VERTEX, 0, GX2_COMP_SEL(_X, _Y, _0, _1), GX2_ENDIAN_SWAP_DEFAULT
       },
       .tex_coord = {
-         2, 1, 0, GX2_ATTRIB_FORMAT_FLOAT_32_32,
+         2, 0, offsetof(tex_shader_vertex_t, coord), GX2_ATTRIB_FORMAT_FLOAT_32_32,
          GX2_ATTRIB_INDEX_PER_VERTEX, 0, GX2_COMP_SEL(_X, _Y, _0, _1), GX2_ENDIAN_SWAP_DEFAULT
       }
    },

@@ -160,9 +160,7 @@ static void wiiu_font_render_line(
          break;
    }
 
-   position_t* pos = wiiu->vertex_cache.positions + wiiu->vertex_cache.current;
-   tex_coord_t* coord = wiiu->vertex_cache.tex_coords + wiiu->vertex_cache.current;
-   u32* col = wiiu->vertex_cache.colors + wiiu->vertex_cache.current;
+   tex_shader_vertex_t* v = wiiu->vertex_cache.v + wiiu->vertex_cache.current;
 
    for (i = 0; i < msg_len; i++)
    {
@@ -200,45 +198,42 @@ static void wiiu_font_render_line(
       float u1 = u0 + width;
       float v1 = v0 + height;
 
-      pos[0].x = (2.0f * x0 / wiiu->color_buffer.surface.width) - 1.0f;
-      pos[0].y = (-2.0f * y0 / wiiu->color_buffer.surface.height) + 1.0f;
-      pos[1].x = (2.0f * x1 / wiiu->color_buffer.surface.width) - 1.0f;;
-      pos[1].y = (-2.0f * y0 / wiiu->color_buffer.surface.height) + 1.0f;
-      pos[2].x = (2.0f * x1 / wiiu->color_buffer.surface.width) - 1.0f;;
-      pos[2].y = (-2.0f * y1 / wiiu->color_buffer.surface.height) + 1.0f;
-      pos[3].x = (2.0f * x0 / wiiu->color_buffer.surface.width) - 1.0f;;
-      pos[3].y = (-2.0f * y1 / wiiu->color_buffer.surface.height) + 1.0f;
-      pos += 4;
+      v[0].pos.x = (2.0f * x0 / wiiu->color_buffer.surface.width) - 1.0f;
+      v[0].pos.y = (-2.0f * y0 / wiiu->color_buffer.surface.height) + 1.0f;
+      v[1].pos.x = (2.0f * x1 / wiiu->color_buffer.surface.width) - 1.0f;;
+      v[1].pos.y = (-2.0f * y0 / wiiu->color_buffer.surface.height) + 1.0f;
+      v[2].pos.x = (2.0f * x1 / wiiu->color_buffer.surface.width) - 1.0f;;
+      v[2].pos.y = (-2.0f * y1 / wiiu->color_buffer.surface.height) + 1.0f;
+      v[3].pos.x = (2.0f * x0 / wiiu->color_buffer.surface.width) - 1.0f;;
+      v[3].pos.y = (-2.0f * y1 / wiiu->color_buffer.surface.height) + 1.0f;
 
-      coord[0].u = u0 / font->texture.surface.width;
-      coord[0].v = v1 / font->texture.surface.height;
-      coord[1].u = u1 / font->texture.surface.width;
-      coord[1].v = v1 / font->texture.surface.height;
-      coord[2].u = u1 / font->texture.surface.width;
-      coord[2].v = v0 / font->texture.surface.height;
-      coord[3].u = u0 / font->texture.surface.width;
-      coord[3].v = v0 / font->texture.surface.height;
-      coord += 4;
+      v[0].coord.u = u0 / font->texture.surface.width;
+      v[0].coord.v = v1 / font->texture.surface.height;
+      v[1].coord.u = u1 / font->texture.surface.width;
+      v[1].coord.v = v1 / font->texture.surface.height;
+      v[2].coord.u = u1 / font->texture.surface.width;
+      v[2].coord.v = v0 / font->texture.surface.height;
+      v[3].coord.u = u0 / font->texture.surface.width;
+      v[3].coord.v = v0 / font->texture.surface.height;
 
-      col[0] = color;
-      col[1] = color;
-      col[2] = color;
-      col[3] = color;
-      col += 4;
+      v[0].color = color;
+      v[1].color = color;
+      v[2].color = color;
+      v[3].color = color;
+
+      v += 4;
 
       delta_x += glyph->advance_x;
       delta_y += glyph->advance_y;
    }
 
-   int count = pos - wiiu->vertex_cache.positions - wiiu->vertex_cache.current;
+   int count = v - wiiu->vertex_cache.v - wiiu->vertex_cache.current;
 
    if (!count)
       return;
 
 
-   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, wiiu->vertex_cache.positions + wiiu->vertex_cache.current, count * sizeof(position_t));
-   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, wiiu->vertex_cache.tex_coords + wiiu->vertex_cache.current, count * sizeof(tex_coord_t));
-   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, wiiu->vertex_cache.colors + wiiu->vertex_cache.current, count * sizeof(u32));
+   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, wiiu->vertex_cache.v + wiiu->vertex_cache.current, count * sizeof(wiiu->vertex_cache.v));
 
    if(font->atlas->dirty)
    {
@@ -261,7 +256,7 @@ static void wiiu_font_render_line(
 
    GX2DrawEx(GX2_PRIMITIVE_MODE_QUADS, count, wiiu->vertex_cache.current, 1);
 
-   wiiu->vertex_cache.current = pos - wiiu->vertex_cache.positions;
+   wiiu->vertex_cache.current = v - wiiu->vertex_cache.v;
 }
 
 static void wiiu_font_render_message(

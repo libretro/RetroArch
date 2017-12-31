@@ -41,6 +41,23 @@ typedef struct __attribute__((aligned(GX2_VERTEX_BUFFER_ALIGNMENT)))
    GX2FetchShader fs;
 }tex_shader_t;
 
+typedef struct
+{
+   struct
+   {
+      float x;
+      float y;
+   }pos;
+
+   struct
+   {
+      float u;
+      float v;
+   }coord;
+
+   u32 color;
+}tex_shader_vertex_t;
+
 extern tex_shader_t tex_shader;
 
 #ifdef __cplusplus
