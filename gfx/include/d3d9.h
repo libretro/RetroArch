@@ -1662,5 +1662,3 @@ typedef struct IDirect3DQuery9 *LPDIRECT3DQUERY9, *PDIRECT3DQUERY9;
 
 #endif /* (DIRECT3D_VERSION >= 0x0900) */
 #endif /* _D3D_H_ */
-
-

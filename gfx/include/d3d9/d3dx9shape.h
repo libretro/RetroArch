@@ -1,11 +1,11 @@
-///////////////////////////////////////////////////////////////////////////
-//
-//  Copyright (C) Microsoft Corporation.  All Rights Reserved.
-//
-//  File:       d3dx9shapes.h
-//  Content:    D3DX simple shapes
-//
-///////////////////////////////////////////////////////////////////////////
+/*
+ *
+ *  Copyright (C) Microsoft Corporation.  All Rights Reserved.
+ *
+ *  File:       d3dx9shapes.h
+ *  Content:    D3DX simple shapes
+ *
+ */
 
 #include "d3dx9.h"
 
