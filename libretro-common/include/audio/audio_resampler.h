@@ -47,6 +47,16 @@ RETRO_BEGIN_DECLS
 #define RESAMPLER_SIMD_VFPU     (1 << 13)
 #define RESAMPLER_SIMD_PS       (1 << 14)
 
+enum resampler_quality
+{
+   RESAMPLER_QUALITY_DONTCARE = 0,
+   RESAMPLER_QUALITY_LOWEST,
+   RESAMPLER_QUALITY_LOWER,
+   RESAMPLER_QUALITY_NORMAL,
+   RESAMPLER_QUALITY_HIGHER,
+   RESAMPLER_QUALITY_HIGHEST
+};
+
 /* A bit-mask of all supported SIMD instruction sets.
  * Allows an implementation to pick different
  * resampler_implementation structs.
