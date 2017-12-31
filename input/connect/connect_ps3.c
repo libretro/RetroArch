@@ -60,9 +60,9 @@ static void hidpad_ps3_send_control(struct hidpad_ps3_data* device)
       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
    };
 
-   // Turn on the appropriate LED
+   /* Turn on the appropriate LED */
    report_buffer[11] = 1 << ((device->slot % 4) + 1);
-   // Set rumble state
+   /* Set rumble state */
    report_buffer[4]  = device->motors[1] >> 8;
    report_buffer[6]  = device->motors[0] >> 8;
 #ifdef HAVE_WIIUSB_HID
