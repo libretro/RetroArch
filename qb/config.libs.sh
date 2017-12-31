@@ -275,12 +275,10 @@ fi
 
 if [ "$HAVE_FLAC" = 'no' ]; then
    HAVE_BUILTINFLAC=no
-elif [ "$HAVE_BUILTINFLAC" = 'yes' ]; then
-   HAVE_FLAC=yes
-else
-   check_pkgconf FLAC flac
-   check_val '' FLAC '-lFLAC'
 fi
+
+check_pkgconf FLAC flac
+check_val '' FLAC '-lFLAC'
 
 check_pkgconf LIBUSB libusb-1.0 1.0.13
 
