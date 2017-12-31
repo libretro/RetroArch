@@ -15,8 +15,8 @@ cp *.info ../pkg/wiiu/retroarch/cores/info/
 mkdir -p ../pkg/wiiu/rpx/retroarch/cores/info
 cp *.info ../pkg/wiiu/rpx/retroarch/cores/info/
 
-make -C ../ -f Makefile.${platform}.salamander clean || exit 1
-make -C ../ -f Makefile.${platform}.salamander BUILD_HBL_ELF=1 BUILD_RPX=1 -j3 || exit 1
+make -C ../ -f Makefile.${platform} SALAMANDER_BUILD=1 clean || exit 1
+make -C ../ -f Makefile.${platform} SALAMANDER_BUILD=1 BUILD_HBL_ELF=1 BUILD_RPX=1 -j3 || exit 1
 
 mkdir -p ../pkg/wiiu/wiiu/apps/retroarch
 mv -f ../retroarch_wiiu_salamander.elf ../pkg/wiiu/wiiu/apps/retroarch/retroarch.elf

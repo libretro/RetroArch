@@ -77,9 +77,7 @@ static void menu_display_wiiu_draw(void *data)
    if (wiiu->vertex_cache.current + 4 > wiiu->vertex_cache.size)
       return;
 
-   position_t* pos = wiiu->vertex_cache.positions + wiiu->vertex_cache.current;
-   tex_coord_t* coord = wiiu->vertex_cache.tex_coords + wiiu->vertex_cache.current;
-   u32* col = wiiu->vertex_cache.colors + wiiu->vertex_cache.current;
+   tex_shader_vertex_t* v = wiiu->vertex_cache.v + wiiu->vertex_cache.current;
 
    float x0 = draw->x;
    float y0 = draw->y;
@@ -90,43 +88,47 @@ static void menu_display_wiiu_draw(void *data)
    {
       for(int i = 0; i < 4; i++)
       {
-         pos[i].x = draw->coords->vertex[i << 1] * 2.0f - 1.0f;
-         pos[i].y = draw->coords->vertex[(i << 1) + 1] * 2.0f - 1.0f;
+         v[i].pos.x = draw->coords->vertex[i << 1] * 2.0f - 1.0f;
+         v[i].pos.y = draw->coords->vertex[(i << 1) + 1] * 2.0f - 1.0f;
       }
    }
    else
    {
-      pos[0].x = (2.0f * x0 / wiiu->color_buffer.surface.width) - 1.0f;
-      pos[0].y = (2.0f * y0 / wiiu->color_buffer.surface.height) - 1.0f;
-      pos[1].x = (2.0f * x1 / wiiu->color_buffer.surface.width) - 1.0f;;
-      pos[1].y = (2.0f * y0 / wiiu->color_buffer.surface.height) - 1.0f;
-      pos[2].x = (2.0f * x1 / wiiu->color_buffer.surface.width) - 1.0f;;
-      pos[2].y = (2.0f * y1 / wiiu->color_buffer.surface.height) - 1.0f;
-      pos[3].x = (2.0f * x0 / wiiu->color_buffer.surface.width) - 1.0f;;
-      pos[3].y = (2.0f * y1 / wiiu->color_buffer.surface.height) - 1.0f;
+      v[0].pos.x = (2.0f * x0 / wiiu->color_buffer.surface.width) - 1.0f;
+      v[0].pos.y = (2.0f * y0 / wiiu->color_buffer.surface.height) - 1.0f;
+      v[1].pos.x = (2.0f * x1 / wiiu->color_buffer.surface.width) - 1.0f;;
+      v[1].pos.y = (2.0f * y0 / wiiu->color_buffer.surface.height) - 1.0f;
+      v[2].pos.x = (2.0f * x1 / wiiu->color_buffer.surface.width) - 1.0f;;
+      v[2].pos.y = (2.0f * y1 / wiiu->color_buffer.surface.height) - 1.0f;
+      v[3].pos.x = (2.0f * x0 / wiiu->color_buffer.surface.width) - 1.0f;;
+      v[3].pos.y = (2.0f * y1 / wiiu->color_buffer.surface.height) - 1.0f;
    }
    if(draw->coords->tex_coord && draw->coords->vertices == 4)
    {
-      memcpy(coord, draw->coords->tex_coord, 8 * sizeof(float));
+      for(int i = 0; i < 4; i++)
+      {
+         v[i].coord.u = draw->coords->tex_coord[i << 1];
+         v[i].coord.v = draw->coords->tex_coord[(i << 1) + 1];
+      }
    }
    else
    {
-      coord[0].u = 0.0f;
-      coord[0].v = 1.0f;
-      coord[1].u = 1.0f;
-      coord[1].v = 1.0f;
-      coord[2].u = 1.0f;
-      coord[2].v = 0.0f;
-      coord[3].u = 0.0f;
-      coord[3].v = 0.0f;
+      v[0].coord.u = 0.0f;
+      v[0].coord.v = 1.0f;
+      v[1].coord.u = 1.0f;
+      v[1].coord.v = 1.0f;
+      v[2].coord.u = 1.0f;
+      v[2].coord.v = 0.0f;
+      v[3].coord.u = 0.0f;
+      v[3].coord.v = 0.0f;
    }
 
 
-   col[0] = COLOR_RGBA(0xFF * draw->coords->color[0], 0xFF * draw->coords->color[1],
+   v[0].color = COLOR_RGBA(0xFF * draw->coords->color[0], 0xFF * draw->coords->color[1],
                        0xFF * draw->coords->color[2], 0xFF * draw->coords->color[3]);
-   col[1] = col[0];
-   col[2] = col[0];
-   col[3] = col[0];
+   v[1].color = v[0].color;
+   v[2].color = v[0].color;
+   v[3].color = v[0].color;
 
 //   printf("color : %f, %f, %f, %f  --> 0x%08X\n", draw->coords->color[0], draw->coords->color[1], draw->coords->color[2], draw->coords->color[3], col[0]);
 
