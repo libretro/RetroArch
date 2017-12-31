@@ -1,3 +1,4 @@
+#include <retro_common_api.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
