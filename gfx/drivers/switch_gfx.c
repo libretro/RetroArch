@@ -37,8 +37,6 @@ typedef struct
    bool vsync;
    unsigned width, height;
    unsigned rotation;
-   surface_t surface;
-   revent_h vsync_h;
    struct video_viewport vp;
 
 	struct {
@@ -56,6 +54,10 @@ typedef struct
 
 static uint32_t image[1280*720];
 
+static bool has_initialized = false;
+static surface_t surface;
+static revent_h vsync_h;
+
 static void *switch_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
@@ -68,6 +70,8 @@ static void *switch_init(const video_info_t *video,
 
    if (libtransistor_context.magic != LIBTRANSISTOR_CONTEXT_MAGIC)
       RARCH_LOG("running under CTU, skipping graphics init...\n");
+   else if(has_initialized)
+	   RARCH_LOG("global graphics were already initialized; skipping...\n");
    else
    {
       result_t r = display_init();
@@ -76,7 +80,7 @@ static void *switch_init(const video_info_t *video,
          free(sw);
          return NULL;
       }
-      r = display_open_layer(&sw->surface);
+      r = display_open_layer(&surface);
 
       if (r != RESULT_OK)
       {
@@ -84,7 +88,7 @@ static void *switch_init(const video_info_t *video,
          free(sw);
          return NULL;
       }
-      r = display_get_vsync_event(&sw->vsync_h);
+      r = display_get_vsync_event(&vsync_h);
 
       if (r != RESULT_OK)
       {
@@ -92,6 +96,9 @@ static void *switch_init(const video_info_t *video,
          free(sw);
          return NULL;
       }
+
+      atexit(display_finalize);
+      has_initialized = true;
    }
 
    sw->vp.x           = 0;
@@ -119,8 +126,8 @@ static void *switch_init(const video_info_t *video,
 static void switch_wait_vsync(switch_video_t *sw)
 {
 	uint32_t handle_idx;
-	svcWaitSynchronization(&handle_idx, &sw->vsync_h, 1, 33333333);
-	svcResetSignal(sw->vsync_h);
+	svcWaitSynchronization(&handle_idx, &vsync_h, 1, 33333333);
+	svcResetSignal(vsync_h);
 }
 
 static bool switch_frame(void *data, const void *frame,
@@ -212,7 +219,7 @@ static bool switch_frame(void *data, const void *frame,
 
    post_vsync = svcGetSystemTick();
 
-   r = surface_dequeue_buffer(&sw->surface, &out_buffer);
+   r = surface_dequeue_buffer(&surface, &out_buffer);
 
    if (r != RESULT_OK)
       return false;
@@ -221,7 +228,7 @@ static bool switch_frame(void *data, const void *frame,
    gfx_slow_swizzling_blit(out_buffer, image, 1280, 720, 0, 0);
    post_swizzle = svcGetSystemTick();
 
-   r = surface_queue_buffer(&sw->surface);
+   r = surface_queue_buffer(&surface);
 
    if (r != RESULT_OK)
       return false;
@@ -270,7 +277,6 @@ static void switch_free(void *data)
 {
 	switch_video_t *sw = data;
 	free(sw);
-	display_finalize();
 }
 
 static bool switch_set_shader(void *data,
