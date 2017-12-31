@@ -696,8 +696,6 @@ static void sdl2_poke_texture_enable(void *data,
       vid->menu.active = enable;
 }
 
-
-#ifdef HAVE_MENU
 static void sdl2_poke_set_osd_msg(void *data,
       video_frame_info_t *video_info,
       const char *msg,
@@ -708,6 +706,7 @@ static void sdl2_poke_set_osd_msg(void *data,
    RARCH_LOG("[SDL2]: OSD MSG: %s\n", msg);
 }
 
+#ifdef HAVE_MENU
 static void sdl2_show_mouse(void *data, bool state)
 {
    (void)data;
@@ -737,12 +736,11 @@ static video_poke_interface_t sdl2_video_poke_interface = {
    sdl2_poke_apply_state_changes,
    sdl2_poke_set_texture_frame,
    sdl2_poke_texture_enable,
-#ifdef HAVE_MENU
    sdl2_poke_set_osd_msg,
+#ifdef HAVE_MENU
    sdl2_show_mouse,
    sdl2_grab_mouse_toggle,
 #else
-   NULL,
    NULL,
    NULL,
 #endif

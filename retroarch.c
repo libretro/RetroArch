@@ -2364,7 +2364,9 @@ static enum runloop_state runloop_check_state(
       unsigned *sleep_ms)
 {
    retro_bits_t current_input;
+#ifdef HAVE_MENU
    static retro_bits_t last_input   = {{0}};
+#endif
    static bool old_fs_toggle_pressed= false;
    static bool old_focus            = true;
    bool is_focused                  = false;
@@ -2383,9 +2385,8 @@ static enum runloop_state runloop_check_state(
 #endif
 	   input_keys_pressed(settings, &current_input);
 
-   last_input                       = current_input;
-
 #ifdef HAVE_MENU
+   last_input                       = current_input;
    if (
          ((settings->uints.input_menu_toggle_gamepad_combo != INPUT_TOGGLE_NONE) &&
           input_driver_toggle_button_combo(

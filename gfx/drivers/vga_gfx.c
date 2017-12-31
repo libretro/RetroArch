@@ -407,11 +407,7 @@ static const video_poke_interface_t vga_poke_interface = {
    NULL,
    vga_set_texture_frame,
    NULL,
-#if defined(HAVE_MENU)
    vga_set_osd_msg,
-#else
-   NULL,
-#endif
    NULL,
 
    NULL,

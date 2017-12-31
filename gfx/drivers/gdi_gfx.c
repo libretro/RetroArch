@@ -548,11 +548,7 @@ static const video_poke_interface_t gdi_poke_interface = {
    NULL,
    gdi_set_texture_frame,
    NULL,
-#if defined(HAVE_MENU)
    gdi_set_osd_msg,
-#else
-   NULL,
-#endif
    NULL,
 
    NULL,

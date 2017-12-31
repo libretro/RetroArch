@@ -845,7 +845,6 @@ static void gl_render_osd_background(
          video_info->height, false, true);
 }
 
-#if defined(HAVE_MENU)
 static void gl_set_osd_msg(void *data,
       video_frame_info_t *video_info,
       const char *msg,
@@ -854,6 +853,7 @@ static void gl_set_osd_msg(void *data,
    font_driver_render_msg(video_info, font, msg, params);
 }
 
+#if defined(HAVE_MENU)
 static void gl_show_mouse(void *data, bool state)
 {
    video_context_driver_show_mouse(&state);
@@ -2555,11 +2555,10 @@ static const video_poke_interface_t gl_poke_interface = {
    gl_apply_state_changes,
    gl_set_texture_frame,
    gl_set_texture_enable,
-#if defined(HAVE_MENU)
    gl_set_osd_msg,
+#if defined(HAVE_MENU)
    gl_show_mouse,
 #else
-   NULL,
    NULL,
 #endif
 

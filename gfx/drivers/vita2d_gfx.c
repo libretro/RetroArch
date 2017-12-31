@@ -794,9 +794,7 @@ static const video_poke_interface_t vita_poke_interface = {
    vita_apply_state_changes,
    vita_set_texture_frame,
    vita_set_texture_enable,
-#ifdef HAVE_MENU
    vita_set_osd_msg,
-#endif
    NULL,
    NULL,
    NULL,

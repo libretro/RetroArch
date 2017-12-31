@@ -190,7 +190,6 @@ static void xshm_poke_set_osd_msg(void *data,
       const char *msg,
       const struct font_params *params, void *font)
 {
-
 }
 
 static void xshm_show_mouse(void *data, bool state)
@@ -220,12 +219,11 @@ static video_poke_interface_t xshm_video_poke_interface = {
    xshm_poke_apply_state_changes,
    xshm_poke_set_texture_frame,
    xshm_poke_texture_enable,
-#ifdef HAVE_MENU
    xshm_poke_set_osd_msg,
+#ifdef HAVE_MENU
    xshm_show_mouse,
    xshm_grab_mouse_toggle,
 #else
-   NULL,
    NULL,
    NULL,
 #endif

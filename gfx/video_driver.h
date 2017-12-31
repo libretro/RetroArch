@@ -467,10 +467,6 @@ typedef struct video_frame_info
    bool (*cb_set_resize)(void*, unsigned, unsigned);
 
    void (*cb_shader_use)(void *data, void *shader_data, unsigned index, bool set_active);
-#if 0
-   bool (*cb_set_coords)(void *handle_data,
-         void *shader_data, const struct video_coords *coords);
-#endif
    bool (*cb_set_mvp)(void *data, void *shader_data,
          const void *mat_data);
 
