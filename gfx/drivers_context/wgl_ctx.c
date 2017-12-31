@@ -411,17 +411,17 @@ static bool gfx_ctx_wgl_set_resize(void *data,
 
 static void gfx_ctx_wgl_update_title(void *data, void *data2)
 {
-   const ui_window_t *window = ui_companion_driver_get_window_ptr();
+   char title[128];
 
-   if (window)
+   title[0] = '\0';
+
+   video_driver_get_window_title(title, sizeof(title));
+
+   if (title[0])
    {
-      char title[128];
+      const ui_window_t *window = ui_companion_driver_get_window_ptr();
 
-      title[0] = '\0';
-
-      video_driver_get_window_title(title, sizeof(title));
-
-      if (title[0])
+      if (window)
          window->set_title(&main_window, title);
    }
 }
