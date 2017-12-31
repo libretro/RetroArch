@@ -3,7 +3,7 @@
 #include <streams/file_stream.h>
 
 #ifdef HAVE_MENU
-#include "../menu/menu_display.h"
+#include "../menu/menu_driver.h"
 #endif
 
 #include "../file_path_special.h"
