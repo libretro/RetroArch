@@ -762,11 +762,12 @@ bool win32_window_create(void *data, unsigned style,
    if (!main_window.hwnd)
       return false;
 
-   ZeroMemory( &notification_filter, sizeof(notification_filter) );
-   notification_filter.dbcc_size = sizeof(DEV_BROADCAST_DEVICEINTERFACE);
+   ZeroMemory(&notification_filter, sizeof(notification_filter) );
+   notification_filter.dbcc_size       = sizeof(DEV_BROADCAST_DEVICEINTERFACE);
    notification_filter.dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE;
-   notification_filter.dbcc_classguid = GUID_DEVINTERFACE_HID;
-   notification_handler = RegisterDeviceNotification(main_window.hwnd, &notification_filter, DEVICE_NOTIFY_WINDOW_HANDLE);
+   notification_filter.dbcc_classguid  = GUID_DEVINTERFACE_HID;
+   notification_handler                = RegisterDeviceNotification(
+	   main_window.hwnd, &notification_filter, DEVICE_NOTIFY_WINDOW_HANDLE);
 
    if (notification_handler)
       RARCH_ERR("Error registering for notifications\n");

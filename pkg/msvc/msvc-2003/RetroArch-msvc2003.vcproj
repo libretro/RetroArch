@@ -221,25 +221,25 @@
 					Name="Debug|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
-						CompileAs="2"/>
+						CompileAs="1"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Release|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
-						CompileAs="2"/>
+						CompileAs="1"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Release NoDX|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
-						CompileAs="2"/>
+						CompileAs="1"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug NoDX|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
-						CompileAs="2"/>
+						CompileAs="1"/>
 				</FileConfiguration>
 			</File>
 			<File
