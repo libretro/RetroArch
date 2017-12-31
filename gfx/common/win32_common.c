@@ -71,7 +71,9 @@
 #endif
 
 const GUID GUID_DEVINTERFACE_HID = { 0x4d1e55b2, 0xf16f, 0x11Cf, { 0x88, 0xcb, 0x00, 0x11, 0x11, 0x00, 0x00, 0x30 } };
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x501
 static HDEVNOTIFY notification_handler;
+#endif
 
 #if defined(HAVE_D3D9) || defined(HAVE_D3D8)
 extern bool dinput_handle_message(void *dinput, UINT message,
@@ -749,7 +751,9 @@ bool win32_window_create(void *data, unsigned style,
       RECT *mon_rect, unsigned width,
       unsigned height, bool fullscreen)
 {
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x501
    DEV_BROADCAST_DEVICEINTERFACE notification_filter;
+#endif
    settings_t *settings  = config_get_ptr();
 #ifndef _XBOX
    main_window.hwnd = CreateWindowEx(0,
@@ -762,6 +766,7 @@ bool win32_window_create(void *data, unsigned style,
    if (!main_window.hwnd)
       return false;
 
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x501
    ZeroMemory(&notification_filter, sizeof(notification_filter) );
    notification_filter.dbcc_size       = sizeof(DEV_BROADCAST_DEVICEINTERFACE);
    notification_filter.dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE;
@@ -771,6 +776,7 @@ bool win32_window_create(void *data, unsigned style,
 
    if (notification_handler)
       RARCH_ERR("Error registering for notifications\n");
+#endif
 
    video_driver_display_type_set(RARCH_DISPLAY_WIN32);
    video_driver_display_set(0);
@@ -1158,7 +1164,9 @@ void win32_destroy_window(void)
 #ifndef _XBOX
    UnregisterClass("RetroArch", GetModuleHandle(NULL));
 #endif
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x501
    UnregisterDeviceNotification(notification_handler);
+#endif
    main_window.hwnd = NULL;
 }
 
