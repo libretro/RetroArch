@@ -71,7 +71,7 @@
 #endif
 
 const GUID GUID_DEVINTERFACE_HID = { 0x4d1e55b2, 0xf16f, 0x11Cf, { 0x88, 0xcb, 0x00, 0x11, 0x11, 0x00, 0x00, 0x30 } };
-HDEVNOTIFY notification_handler;
+static HDEVNOTIFY notification_handler;
 
 #if defined(HAVE_D3D9) || defined(HAVE_D3D8)
 extern bool dinput_handle_message(void *dinput, UINT message,
