@@ -24,22 +24,22 @@
 
 #include "joypad_connection.h"
 
+static bool joypad_is_end_of_list(joypad_connection_t *pad);
+
 int pad_connection_find_vacant_pad(joypad_connection_t *joyconn)
 {
-   unsigned i;
+  unsigned i;
 
-   if (!joyconn)
-      return -1;
+  if (!joyconn)
+    return -1;
 
-   for (i = 0; i < MAX_USERS; i++)
-   {
-      joypad_connection_t *conn = &joyconn[i];
+  for (i = 0; !joypad_is_end_of_list(&joyconn[i]); i++)
+  {
+    if(!joyconn[i].connected)
+      return i;
+  }
 
-      if (conn && !conn->connected)
-         return i;
-   }
-
-   return -1;
+  return -1;
 }
 
 static void set_end_of_list(joypad_connection_t *list, unsigned end)
@@ -62,6 +62,14 @@ static bool joypad_is_end_of_list(joypad_connection_t *pad) {
 joypad_connection_t *pad_connection_init(unsigned pads)
 {
    unsigned i;
+
+   if(pads > MAX_USERS)
+   {
+     RARCH_WARN("[joypad] invalid number of pads requested (%d), using default (%d)\n",
+      pads, MAX_USERS);
+     pads = MAX_USERS;
+   }
+
    joypad_connection_t *joyconn = (joypad_connection_t*)
       calloc(pads+1, sizeof(joypad_connection_t));
 
@@ -226,13 +234,8 @@ void pad_connection_destroy(joypad_connection_t *joyconn)
 {
    unsigned i;
 
-   for (i = 0; i < MAX_USERS; i ++)
-   {
-     if(joypad_is_end_of_list(&joyconn[i]))
-       break;
-
+   for (i = 0; !joypad_is_end_of_list(&joyconn[i]); i ++)
      pad_connection_pad_deinit(&joyconn[i], i);
-   }
 
    free(joyconn);
 }

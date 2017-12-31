@@ -425,6 +425,7 @@ static void wiiu_hid_read_loop_callback(uint32_t handle, int32_t error,
  */
 static void wiiu_hid_polling_thread_cleanup(OSThread *thread, void *stack) {
   int incomplete = 0;
+  int retries = 0;
   wiiu_adapter_t *adapter;
   RARCH_LOG("Waiting for in-flight reads to finish.\n");
   do {
@@ -446,8 +447,11 @@ static void wiiu_hid_polling_thread_cleanup(OSThread *thread, void *stack) {
     }
     OSFastMutex_Unlock(&(adapters.lock));
     if(incomplete) {
-      RARCH_LOG("%d unfinished adapters found, waiting 1ms\n", incomplete);
-      usleep(1000);
+      usleep(5000);
+    }
+    if(++retries >= 1000) {
+      RARCH_WARN("[hid]: timed out waiting for in-flight read to finish.\n");
+      incomplete = 0;
     }
   } while(incomplete);
   RARCH_LOG("All in-flight reads complete.\n");
