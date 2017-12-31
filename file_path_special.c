@@ -249,7 +249,6 @@ void fill_pathname_application_path(char *s, size_t len)
 #endif
 #ifdef _WIN32
    DWORD ret;
-   char *str;
    wchar_t wstr[PATH_MAX_LENGTH] = {0};
 #endif
 #ifdef __HAIKU__
@@ -269,7 +268,7 @@ void fill_pathname_application_path(char *s, size_t len)
 
    if (*wstr)
    {
-      str = utf16_to_utf8_string_alloc(wstr);
+      char *str = utf16_to_utf8_string_alloc(wstr);
 
       if (str)
       {
