@@ -502,6 +502,32 @@ DECL_AXIS(r_y_plus,  -3) \
 DECL_AXIS(r_y_minus, +3)
 #endif
 
+#define SWITCH_DEFAULT_BINDS \
+DECL_BTN(a, 0) \
+DECL_BTN(b, 1) \
+DECL_BTN(x, 2) \
+DECL_BTN(y, 3) \
+DECL_BTN(start, 10) \
+DECL_BTN(select, 11) \
+DECL_BTN(up, 13) \
+DECL_BTN(down, 15) \
+DECL_BTN(left, 12) \
+DECL_BTN(right, 14) \
+DECL_BTN(l, 6) \
+DECL_BTN(r, 7) \
+DECL_BTN(l2, 8) \
+DECL_BTN(r2, 9) \
+DECL_BTN(l3, 4) \
+DECL_BTN(r3, 5) \
+DECL_AXIS(l_x_plus,  +0) \
+DECL_AXIS(l_x_minus, -0) \
+DECL_AXIS(l_y_plus,  +1) \
+DECL_AXIS(l_y_minus, -1) \
+DECL_AXIS(r_x_plus,  +2) \
+DECL_AXIS(r_x_minus, -2) \
+DECL_AXIS(r_y_plus,  +3) \
+DECL_AXIS(r_y_minus, -3)
+
 const char* const input_builtin_autoconfs[] =
 {
 #if defined(_WIN32) && defined(_XBOX)
@@ -559,6 +585,9 @@ const char* const input_builtin_autoconfs[] =
 #endif
 #ifdef __CELLOS_LV2__
    DECL_AUTOCONF_DEVICE("SixAxis Controller", "ps3", PS3INPUT_DEFAULT_BINDS),
+#endif
+#ifdef __SWITCH__
+   DECL_AUTOCONF_DEVICE("Switch Controller", "switch", SWITCH_DEFAULT_BINDS),
 #endif
    NULL
 };

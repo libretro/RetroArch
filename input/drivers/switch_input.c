@@ -41,13 +41,8 @@ static int16_t switch_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-#if 0
          return input_joypad_pressed(sw->joypad,
                joypad_info, port, binds[port], id);
-#else
-         if (sw->joypad)
-            return sw->joypad->button(port, id);
-#endif
          break;
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
