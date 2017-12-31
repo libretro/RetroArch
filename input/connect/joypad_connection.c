@@ -207,7 +207,7 @@ void pad_connection_packet(joypad_connection_t *joyconn, uint32_t pad,
 
 void pad_connection_get_buttons(joypad_connection_t *joyconn, unsigned pad, retro_bits_t* state)
 {
-	if (joyconn->iface)
+	if (joyconn && joyconn->iface)
 		joyconn->iface->get_buttons(joyconn->data, state);
    else
 		BIT256_CLEAR_ALL_PTR( state );
@@ -216,7 +216,7 @@ void pad_connection_get_buttons(joypad_connection_t *joyconn, unsigned pad, retr
 int16_t pad_connection_get_axis(joypad_connection_t *joyconn,
    unsigned idx, unsigned i)
 {
-   if (!joyconn->iface)
+   if (!joyconn || !joyconn->iface)
       return 0;
    return joyconn->iface->get_axis(joyconn->data, i);
 }
@@ -254,7 +254,7 @@ bool pad_connection_rumble(joypad_connection_t *joyconn,
 
 const char* pad_connection_get_name(joypad_connection_t *joyconn, unsigned pad)
 {
-   if (!joyconn->iface || !joyconn->iface->get_name)
+   if (!joyconn || !joyconn->iface || !joyconn->iface->get_name)
       return NULL;
    return joyconn->iface->get_name(joyconn->data);
 }
