@@ -396,7 +396,7 @@ int filestream_read_file(const char *path, void **buf, ssize_t *len)
 
    if (!content_buf)
       goto error;
-   if ((size_t)(content_buf_size + 1) != (content_buf_size + 1))
+   if ((int64_t)(size_t)(content_buf_size + 1) != (content_buf_size + 1))
       goto error;
 
    ret = filestream_read(file, content_buf, (int64_t)content_buf_size);
