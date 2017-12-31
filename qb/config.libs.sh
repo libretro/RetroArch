@@ -199,11 +199,9 @@ if [ "$HAVE_NETWORKING" = 'yes' ]; then
 
    if [ "$HAVE_MINIUPNPC" = 'no' ]; then
       HAVE_BUILTINMINIUPNPC=no
-   elif [ "$HAVE_BUILTINMINIUPNPC" = 'yes' ]; then
-      HAVE_MINIUPNPC=yes
-   else
-      check_lib '' MINIUPNPC '-lminiupnpc'
    fi
+
+   check_lib '' MINIUPNPC '-lminiupnpc'
 else
    die : 'Warning: All networking features have been disabled.'
    HAVE_KEYMAPPER='no'
