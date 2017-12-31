@@ -313,7 +313,7 @@ static bool hlsl_d3d9_renderchain_init(void *data,
    d3d_video_t *d3d                   = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr              = (LPDIRECT3DDEVICE)d3d->dev;
    const video_info_t *video_info     = (const video_info_t*)_video_info;
-   const LinkInfo *link_info          = (const LinkInfo*)info_data;
+   const struct LinkInfo *link_info   = (const struct LinkInfo*)info_data;
    hlsl_d3d9_renderchain_t *chain     = (hlsl_d3d9_renderchain_t*)
       d3d->renderchain_data;
    unsigned fmt                       = (rgb32)

@@ -19,7 +19,7 @@
 #include "../input_driver.h"
 #include "../../tasks/tasks_internal.h"
 
-static uint32_t pad_state[MAX_PADS];
+static uint64_t pad_state[MAX_PADS];
 static int16_t analog_state[MAX_PADS][2][2];
 #ifdef _XBOX1
 static HANDLE gamepads[MAX_PADS];
@@ -73,7 +73,7 @@ static bool xdk_joypad_button(unsigned port_num, uint16_t joykey)
    if (port_num >= MAX_PADS)
       return false;
 
-   return pad_state[port_num] & (1 << joykey);
+   return pad_state[port_num] & (UINT64_C(1) << joykey);
 }
 
 static void xdk_joypad_get_buttons(unsigned port_num, retro_bits_t *state)

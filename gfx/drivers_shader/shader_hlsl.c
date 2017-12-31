@@ -81,6 +81,10 @@ typedef struct hlsl_shader_data hlsl_shader_data_t;
 #define ID3DXBuffer_Release(p) (p)->Release()
 #endif
 
+#ifndef ID3DXConstantTable_GetConstantByName
+#define ID3DXConstantTable_GetConstantByName(p,a,b)  ((p)->GetConstantByName(a, b))
+#endif
+
 #else
 
 #ifndef ID3DXConstantTable_SetDefaults
@@ -103,7 +107,15 @@ typedef struct hlsl_shader_data hlsl_shader_data_t;
 #define ID3DXBuffer_Release(p) (p)->lpVtbl->Release(p)
 #endif
 
+#ifndef ID3DXConstantTable_GetConstantByName
+#define ID3DXConstantTable_GetConstantByName(p,a,b)  ((p)->lpVtbl->GetConstantByName(p, a, b))
 #endif
+
+#endif
+
+#define set_param_2f(param, xy, constanttable) if (param) { ID3DXConstantTable_SetFloatArray(constanttable, d3dr, param, xy, 2); }
+#define set_param_1f(param, x, constanttable)  if (param) { ID3DXConstantTable_SetFloat(constanttable, d3dr, param, x); }
+#define get_constant_by_name(a, b, constanttable) ID3DXConstantTable_GetConstantByName(constanttable, a, b)
 
 struct hlsl_shader_data
 {
@@ -163,9 +175,6 @@ static void hlsl_set_uniform_parameter(
          break;
    }
 }
-
-#define set_param_2f(param, xy, constanttable) if (param) { ID3DXConstantTable_SetFloatArray(constanttable, d3dr, param, xy, 2); }
-#define set_param_1f(param, x, constanttable)  if (param) { ID3DXConstantTable_SetFloat(constanttable, d3dr, param, x); }
 
 static void hlsl_set_params(void *data, void *shader_data,
       unsigned width, unsigned height,
@@ -303,17 +312,17 @@ static void hlsl_set_program_attributes(hlsl_shader_data_t *hlsl, unsigned i)
    if (!hlsl)
       return;
 
-   hlsl->prg[i].vid_size_f  = hlsl->prg[i].f_ctable->GetConstantByName(NULL, "$IN.video_size");
-   hlsl->prg[i].tex_size_f  = hlsl->prg[i].f_ctable->GetConstantByName(NULL, "$IN.texture_size");
-   hlsl->prg[i].out_size_f  = hlsl->prg[i].f_ctable->GetConstantByName(NULL, "$IN.output_size");
-   hlsl->prg[i].frame_cnt_f = hlsl->prg[i].f_ctable->GetConstantByName(NULL, "$IN.frame_count");
-   hlsl->prg[i].frame_dir_f = hlsl->prg[i].f_ctable->GetConstantByName(NULL, "$IN.frame_direction");
-   hlsl->prg[i].vid_size_v  = hlsl->prg[i].v_ctable->GetConstantByName(NULL, "$IN.video_size");
-   hlsl->prg[i].tex_size_v  = hlsl->prg[i].v_ctable->GetConstantByName(NULL, "$IN.texture_size");
-   hlsl->prg[i].out_size_v  = hlsl->prg[i].v_ctable->GetConstantByName(NULL, "$IN.output_size");
-   hlsl->prg[i].frame_cnt_v = hlsl->prg[i].v_ctable->GetConstantByName(NULL, "$IN.frame_count");
-   hlsl->prg[i].frame_dir_v = hlsl->prg[i].v_ctable->GetConstantByName(NULL, "$IN.frame_direction");
-   hlsl->prg[i].mvp         = hlsl->prg[i].v_ctable->GetConstantByName(NULL, "$modelViewProj");
+   hlsl->prg[i].vid_size_f  = get_constant_by_name(NULL, "$IN.video_size",      hlsl->prg[i].f_ctable);
+   hlsl->prg[i].tex_size_f  = get_constant_by_name(NULL, "$IN.texture_size",    hlsl->prg[i].f_ctable);
+   hlsl->prg[i].out_size_f  = get_constant_by_name(NULL, "$IN.output_size",     hlsl->prg[i].f_ctable);
+   hlsl->prg[i].frame_cnt_f = get_constant_by_name(NULL, "$IN.frame_count",     hlsl->prg[i].f_ctable);
+   hlsl->prg[i].frame_dir_f = get_constant_by_name(NULL, "$IN.frame_direction", hlsl->prg[i].f_ctable);
+   hlsl->prg[i].vid_size_v  = get_constant_by_name(NULL, "$IN.video_size",      hlsl->prg[i].v_ctable);
+   hlsl->prg[i].tex_size_v  = get_constant_by_name(NULL, "$IN.texture_size",    hlsl->prg[i].v_ctable);
+   hlsl->prg[i].out_size_v  = get_constant_by_name(NULL, "$IN.output_size",     hlsl->prg[i].v_ctable);
+   hlsl->prg[i].frame_cnt_v = get_constant_by_name(NULL, "$IN.frame_count",     hlsl->prg[i].v_ctable);
+   hlsl->prg[i].frame_dir_v = get_constant_by_name(NULL, "$IN.frame_direction", hlsl->prg[i].v_ctable);
+   hlsl->prg[i].mvp         = get_constant_by_name(NULL, "$modelViewProj",      hlsl->prg[i].v_ctable);
    hlsl->prg[i].mvp_val     = XMMatrixIdentity();
 }
 
