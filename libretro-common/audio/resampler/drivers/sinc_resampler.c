@@ -56,7 +56,7 @@ enum sinc_window
 {
    SINC_WINDOW_NONE   = 0,
    SINC_WINDOW_KAISER,
-   SINC_WINDOW_LANCZOS,
+   SINC_WINDOW_LANCZOS
 };
 
 /* For the little amount of taps we're using,
