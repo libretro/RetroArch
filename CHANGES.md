@@ -16,6 +16,8 @@
 - PSP: Enable threading support through pthreads.
 - WINDOWS: Improved Unicode support (for cores/directory creation).
 - WIIU: Overlay support.
+- WIIU: Transparency support in menu + overlays.
+- WIIU: New HID pad support.
 
 # 1.7.0
 - CHEEVOS: Add badges for achievements, shows thumbnail images of achievements.
