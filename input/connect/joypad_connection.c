@@ -62,6 +62,7 @@ static bool joypad_is_end_of_list(joypad_connection_t *pad) {
 joypad_connection_t *pad_connection_init(unsigned pads)
 {
    unsigned i;
+   joypad_connection_t *joyconn;
 
    if(pads > MAX_USERS)
    {
@@ -70,8 +71,7 @@ joypad_connection_t *pad_connection_init(unsigned pads)
      pads = MAX_USERS;
    }
 
-   joypad_connection_t *joyconn = (joypad_connection_t*)
-      calloc(pads+1, sizeof(joypad_connection_t));
+   joyconn = (joypad_connection_t*)calloc(pads+1, sizeof(joypad_connection_t));
 
    if (!joyconn)
       return NULL;

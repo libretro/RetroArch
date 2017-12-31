@@ -753,9 +753,9 @@ struct pcm
    /** Flags that were passed to @ref pcm_open */
    unsigned int flags;
    /** Whether the PCM is running or not */
-   int running:1;
+   unsigned int running:1;
    /** Whether or not the PCM has been prepared */
-   int prepared:1;
+   unsigned int prepared:1;
    /** The number of underruns that have occured */
    int underruns;
    /** Size of the buffer */
