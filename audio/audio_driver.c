@@ -58,7 +58,7 @@ static const audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_TINYALSA
 	&audio_tinyalsa,
 #endif
-#if defined(HAVE_OSS) || defined(HAVE_OSS_BSD)
+#if !defined(HAVE_NO_OSS) && (defined(HAVE_OSS) || defined(HAVE_OSS_BSD))
    &audio_oss,
 #endif
 #ifdef HAVE_RSOUND
