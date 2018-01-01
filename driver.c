@@ -289,6 +289,7 @@ void driver_set_nonblock_state(void)
 static bool driver_update_system_av_info(const struct retro_system_av_info *info)
 {
    struct retro_system_av_info *av_info    = video_viewport_get_system_av_info();
+   settings_t *settings = config_get_ptr();
 
    memcpy(av_info, info, sizeof(*av_info));
    command_event(CMD_EVENT_REINIT, NULL);
@@ -303,6 +304,11 @@ static bool driver_update_system_av_info(const struct retro_system_av_info *info
       command_event(CMD_EVENT_RECORD_DEINIT, NULL);
       command_event(CMD_EVENT_RECORD_INIT, NULL);
    }
+
+   /* Hide mouse cursor in fullscreen after 
+    * a RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO call. */
+   if (settings->bools.video_fullscreen)
+      video_driver_hide_mouse();
 
    return true;
 }
