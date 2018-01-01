@@ -148,7 +148,7 @@ typedef enum _D3DXCALLBACK_SEARCH_FLAGS
     D3DXCALLBACK_SEARCH_EXCLUDING_INITIAL_POSITION = 0x01,  /* exclude callbacks at the initial position from the search */
     D3DXCALLBACK_SEARCH_BEHIND_INITIAL_POSITION    = 0x02,  /* reverse the callback search direction */
 
-    D3DXCALLBACK_SEARCH_FORCE_DWORD                = 0x7fffffff,
+    D3DXCALLBACK_SEARCH_FORCE_DWORD                = 0x7fffffff
 } D3DXCALLBACK_SEARCH_FLAGS;
 
 typedef interface ID3DXAnimationSet ID3DXAnimationSet;
@@ -383,7 +383,7 @@ typedef enum _D3DXPRIORITY_TYPE
    D3DXPRIORITY_LOW         = 0,           /* This track should be blended with all low priority tracks before mixed with the high priority result */
    D3DXPRIORITY_HIGH        = 1,           /* This track should be blended with all high priority tracks before mixed with the low priority result */
 
-   D3DXPRIORITY_FORCE_DWORD = 0x7fffffff,  /* force 32-bit size enum */
+   D3DXPRIORITY_FORCE_DWORD = 0x7fffffff   /* force 32-bit size enum */
 } D3DXPRIORITY_TYPE;
 
 typedef struct _D3DXTRACK_DESC

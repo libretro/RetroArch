@@ -1,18 +1,18 @@
-//////////////////////////////////////////////////////////////////////////////
-//
-//  Copyright (C) Microsoft Corporation.  All Rights Reserved.
-//
-//  File:       d3dx9mesh.h
-//  Content:    D3DX mesh types and functions
-//
-//////////////////////////////////////////////////////////////////////////////
+/*
+ *
+ *  Copyright (C) Microsoft Corporation.  All Rights Reserved.
+ *
+ *  File:       d3dx9mesh.h
+ *  Content:    D3DX mesh types and functions
+ *
+ */
 
 #include "d3dx9.h"
 
 #ifndef __D3DX9MESH_H__
 #define __D3DX9MESH_H__
 
-// {7ED943DD-52E8-40b5-A8D8-76685C406330}
+/* {7ED943DD-52E8-40b5-A8D8-76685C406330} */
 DEFINE_GUID(IID_ID3DXBaseMesh,
 0x7ed943dd, 0x52e8, 0x40b5, 0xa8, 0xd8, 0x76, 0x68, 0x5c, 0x40, 0x63, 0x30);
 
@@ -72,7 +72,7 @@ enum _D3DXMESH {
     D3DXMESH_MANAGED                = 0x220, // D3DXMESH_VB_MANAGED | D3DXMESH_IB_MANAGED
     D3DXMESH_WRITEONLY              = 0x440, // D3DXMESH_VB_WRITEONLY | D3DXMESH_IB_WRITEONLY
     D3DXMESH_DYNAMIC                = 0x880, // D3DXMESH_VB_DYNAMIC | D3DXMESH_IB_DYNAMIC
-    D3DXMESH_SOFTWAREPROCESSING   = 0x18000, // D3DXMESH_VB_SOFTWAREPROCESSING | D3DXMESH_IB_SOFTWAREPROCESSING
+    D3DXMESH_SOFTWAREPROCESSING   = 0x18000  // D3DXMESH_VB_SOFTWAREPROCESSING | D3DXMESH_IB_SOFTWAREPROCESSING
 
 };
 
@@ -84,8 +84,7 @@ enum _D3DXPATCHMESH {
 enum _D3DXMESHSIMP
 {
     D3DXMESHSIMP_VERTEX   = 0x1,
-    D3DXMESHSIMP_FACE     = 0x2,
-
+    D3DXMESHSIMP_FACE     = 0x2
 };
 
 typedef enum _D3DXCLEANTYPE {
@@ -95,7 +94,7 @@ typedef enum _D3DXCLEANTYPE {
 	// Helper options
 	D3DXCLEAN_SKINNING		= D3DXCLEAN_BACKFACING,	// Bowtie cleaning modifies geometry and breaks skinning
 	D3DXCLEAN_OPTIMIZATION	= D3DXCLEAN_BACKFACING,
-	D3DXCLEAN_SIMPLIFICATION= D3DXCLEAN_BACKFACING | D3DXCLEAN_BOWTIES,
+	D3DXCLEAN_SIMPLIFICATION= D3DXCLEAN_BACKFACING | D3DXCLEAN_BOWTIES
 } D3DXCLEANTYPE;
 
 enum _MAX_FVF_DECL_SIZE
@@ -116,7 +115,7 @@ typedef enum _D3DXTANGENT
     D3DXTANGENT_WEIGHT_EQUAL =              0x080,
     D3DXTANGENT_WIND_CW =                   0x0100,
     D3DXTANGENT_CALCULATE_NORMALS =         0x0200,
-    D3DXTANGENT_GENERATE_IN_PLACE =         0x0400,
+    D3DXTANGENT_GENERATE_IN_PLACE =         0x0400
 } D3DXTANGENT;
 
 // D3DXIMT_WRAP_U means the texture wraps in the U direction
@@ -126,7 +125,7 @@ typedef enum _D3DXIMT
 {
     D3DXIMT_WRAP_U =                    0x01,
     D3DXIMT_WRAP_V =                    0x02,
-    D3DXIMT_WRAP_UV =                   0x03,
+    D3DXIMT_WRAP_UV =                   0x03
 } D3DXIMT;
 
 // These options are only valid for UVAtlasCreate and UVAtlasPartition, we may add more for UVAtlasPack if necessary
@@ -137,7 +136,7 @@ typedef enum _D3DXUVATLAS
 {
     D3DXUVATLAS_DEFAULT               = 0x00,
     D3DXUVATLAS_GEODESIC_FAST         = 0x01,
-    D3DXUVATLAS_GEODESIC_QUALITY      = 0x02,
+    D3DXUVATLAS_GEODESIC_QUALITY      = 0x02
 } D3DXUVATLAS;
 
 typedef struct ID3DXBaseMesh *LPD3DXBASEMESH;
@@ -215,7 +214,7 @@ enum _D3DXWELDEPSILONSFLAGS
                                                     // ONLY valid if D3DXWELDEPSILONS_WELDPARTIALMATCHES is set
                                                     // useful to modify vertices to be equal, but not allow vertices to be removed
 
-    D3DXWELDEPSILONS_DONOTSPLIT          = 0x8,  // instructs weld to specify the D3DXMESHOPT_DONOTSPLIT flag when doing an Optimize(ATTR_SORT)
+    D3DXWELDEPSILONS_DONOTSPLIT          = 0x8      // instructs weld to specify the D3DXMESHOPT_DONOTSPLIT flag when doing an Optimize(ATTR_SORT)
                                                     // if this flag is not set, all vertices that are in separate attribute groups
                                                     // will remain split and not welded.  Setting this flag can slow down software vertex processing
 
@@ -440,7 +439,7 @@ enum _D3DXMESHOPT {
     D3DXMESHOPT_STRIPREORDER  = 0x08000000,
     D3DXMESHOPT_IGNOREVERTS   = 0x10000000,  // optimize faces only, don't touch vertices
     D3DXMESHOPT_DONOTSPLIT    = 0x20000000,  // do not split vertices shared between attribute groups when attribute sorting
-    D3DXMESHOPT_DEVICEINDEPENDENT = 0x00400000,  // Only affects VCache.  uses a static known good cache size for all cards
+    D3DXMESHOPT_DEVICEINDEPENDENT = 0x00400000  // Only affects VCache.  uses a static known good cache size for all cards
 
     // D3DXMESHOPT_SHAREVB has been removed, please use D3DXMESH_VB_SHARE instead
 
@@ -3002,4 +3001,4 @@ typedef struct _XFILECOMPRESSEDANIMATIONSET
             array DWORD attributeMispredicts[nAttributeMispredicts]; \
         } "
 
-#endif //__D3DX9MESH_H__
+#endif /*__D3DX9MESH_H__ */
