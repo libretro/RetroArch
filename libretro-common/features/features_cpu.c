@@ -500,8 +500,9 @@ unsigned cpu_features_get_core_amount(void)
 	   
 		default:
 			/*Unknown Device Or Check Failed*/
-			return 1;
+			break;
    }
+   return 1;
 #elif defined(WIIU)
    return 3;
 #elif defined(_SC_NPROCESSORS_ONLN)

@@ -36,9 +36,8 @@
 #include "../../config.h"
 #endif
 
-#ifndef HAVE_DYNAMIC
+//this is needed regardless of HAVE_DYNAMIC because of frontend_driver_parse_drive_list
 #include "../../frontend/frontend_driver.h"
-#endif
 
 #include "menu_generic.h"
 
