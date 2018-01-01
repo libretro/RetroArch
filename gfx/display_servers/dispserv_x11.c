@@ -62,6 +62,7 @@ const video_display_server_t dispserv_x11 = {
    x11_display_server_init,
    x11_display_server_destroy,
    x11_set_window_opacity,
+   NULL,
    "x11"
 };
 

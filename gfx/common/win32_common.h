@@ -123,6 +123,10 @@ void win32_window_reset(void);
 
 void win32_destroy_window(void);
 
+bool win32_taskbar_is_created(void);
+
+void win32_set_taskbar_created(bool created);
+
 #if defined(HAVE_D3D9) || defined(HAVE_D3D8)
 LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
