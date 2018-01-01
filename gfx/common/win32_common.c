@@ -93,6 +93,8 @@ static bool g_quit                  = false;
 static int g_pos_x                  = CW_USEDEFAULT;
 static int g_pos_y                  = CW_USEDEFAULT;
 static void *curD3D                 = NULL;
+static bool g_taskbar_is_created    = false;
+static unsigned g_taskbar_message   = 0;
 
 ui_window_win32_t main_window;
 
@@ -146,6 +148,16 @@ typedef REASON_CONTEXT POWER_REQUEST_CONTEXT, *PPOWER_REQUEST_CONTEXT, *LPPOWER_
 static HMONITOR win32_monitor_last;
 static HMONITOR win32_monitor_all[MAX_MONITORS];
 static unsigned win32_monitor_count              = 0;
+
+bool win32_taskbar_is_created(void)
+{
+   return g_taskbar_is_created;
+}
+
+void win32_set_taskbar_created(bool created)
+{
+   g_taskbar_is_created = created;
+}
 
 bool doubleclick_on_titlebar_pressed(void)
 {
@@ -598,6 +610,11 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
          return 0;
    }
 
+#if _WIN32_WINNT >= 0x0500 /* 2K */
+      if (g_taskbar_message && message == g_taskbar_message)
+         win32_set_taskbar_created(true);
+#endif
+
    if (dinput && dinput_handle_message(dinput,
             message, wparam, lparam))
       return 0;
@@ -645,6 +662,11 @@ LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
          }
          return 0;
    }
+
+#if _WIN32_WINNT >= 0x0500 /* 2K */
+      if (g_taskbar_message && message == g_taskbar_message)
+         win32_set_taskbar_created(true);
+#endif
 
 #if defined(HAVE_D3D9) || defined(HAVE_D3D8)
    if (dinput_wgl && dinput_handle_message(dinput_wgl,
@@ -739,6 +761,11 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
          return 0;
    }
 
+#if _WIN32_WINNT >= 0x0500 /* 2K */
+      if (g_taskbar_message && message == g_taskbar_message)
+         win32_set_taskbar_created(true);
+#endif
+
 #if defined(HAVE_D3D9) || defined(HAVE_D3D8)
    if (dinput_gdi && dinput_handle_message(dinput_gdi,
             message, wparam, lparam))
@@ -767,6 +794,8 @@ bool win32_window_create(void *data, unsigned style,
       return false;
 
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500 /* 2K */
+   g_taskbar_message = RegisterWindowMessage("TaskbarButtonCreated");
+
    ZeroMemory(&notification_filter, sizeof(notification_filter) );
    notification_filter.dbcc_size       = sizeof(DEV_BROADCAST_DEVICEINTERFACE);
    notification_filter.dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE;

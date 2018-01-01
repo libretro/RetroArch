@@ -60,3 +60,8 @@ bool video_display_server_set_window_opacity(unsigned opacity)
 {
    return current_display_server->set_window_opacity(current_display_server_data, opacity);
 }
+
+bool video_display_server_set_window_progress(int progress, bool finished)
+{
+   return current_display_server->set_window_progress(current_display_server_data, progress, finished);
+}

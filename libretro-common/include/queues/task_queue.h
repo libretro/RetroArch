@@ -99,8 +99,10 @@ struct retro_task
     * (after calling the callback) */
    char *error;
 
-   /* -1 = unmettered, 0-100 progress value */
+   /* -1 = unmetered/indeterminate, 0-100 = current progress percentage */
    int8_t progress;
+
+   void (*progress_cb)(retro_task_t*);
 
    /* handler can modify but will be
     * free()d automatically if non-NULL. */
