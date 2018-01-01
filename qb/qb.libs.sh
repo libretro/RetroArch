@@ -168,10 +168,13 @@ check_val() # $1 = language  $2 = HAVE_$2  $3 = lib  $4 = include directory [che
 		check_lib "$1" "$2" "$3"
 
 		if [ "${4:-}" ] && [ "$answer" = 'yes' ]; then
-			for dir in usr/include usr/local/include opt/vc/include; do
-				[ -d "/$dir/$4" ] && { eval "$2_CFLAGS=\"-I/$dir/$4\""; break; }
+			val="$2"
+			include="$4"
+			eval "set -- $INCLUDES"
+			for dir do
+				[ -d "/$dir/$include" ] && { eval "${val}_CFLAGS=\"-I/$dir/$include\""; break; }
 			done
-			[ -z "$(eval "printf %s \"\${$2_CFLAGS}\"")" ] && eval "HAVE_$2=no"
+			[ -z "$(eval "printf %s \"\${${val}_CFLAGS}\"")" ] && eval "HAVE_$val=no"
 		fi
 
 		if [ "$answer" = 'no' ] && [ "$oldval" = 'yes' ]; then

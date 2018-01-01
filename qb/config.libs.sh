@@ -21,6 +21,7 @@ CLIB=-lc
 PTHREADLIB=-lpthread
 SOCKETLIB=-lc
 SOCKETHEADER=
+INCLUDES='usr/include usr/local/include'
 
 if [ "$OS" = 'BSD' ]; then
    [ -d /usr/local/include ] && add_dirs INCLUDE /usr/local/include
@@ -48,7 +49,7 @@ if [ "$HAVE_VIDEOCORE" != "no" ]; then
    check_pkgconf VC_TEST bcm_host
 
    # use fallback if pkgconfig is not available
-   if [ ! "$VC_TEST_LIBS" ]; then
+   if [ -z "$VC_TEST_LIBS" ]; then
       [ -d /opt/vc/lib ] && add_dirs LIBRARY /opt/vc/lib /opt/vc/lib/GL
       check_lib '' VIDEOCORE -lbcm_host bcm_host_init "-lvcos -lvchiq_arm"
    else
@@ -58,10 +59,11 @@ fi
 
 if [ "$HAVE_VIDEOCORE" = 'yes' ]; then
    HAVE_OPENGLES='auto'
-   VC_PREFIX="brcm"
+   VC_PREFIX='brcm'
+   INCLUDES="${INCLUDES} opt/vc/include"
 
    # use fallback if pkgconfig is not available
-   if [ ! "$VC_TEST_LIBS" ]; then
+   if [ -z "$VC_TEST_LIBS" ]; then
       [ -d /opt/vc/include ] && add_dirs INCLUDE /opt/vc/include
       [ -d /opt/vc/include/interface/vcos/pthreads ] && add_dirs INCLUDE /opt/vc/include/interface/vcos/pthreads
       [ -d /opt/vc/include/interface/vmcs_host/linux ] && add_dirs INCLUDE /opt/vc/include/interface/vmcs_host/linux
