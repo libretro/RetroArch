@@ -5785,70 +5785,6 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->bools.menu_xmb_show_favorites,
-                  MENU_ENUM_LABEL_XMB_SHOW_FAVORITES,
-                  MENU_ENUM_LABEL_VALUE_XMB_SHOW_FAVORITES,
-                  xmb_show_favorites,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE);
-
-#ifdef HAVE_IMAGEVIEWER
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.menu_xmb_show_images,
-                  MENU_ENUM_LABEL_XMB_SHOW_IMAGES,
-                  MENU_ENUM_LABEL_VALUE_XMB_SHOW_IMAGES,
-                  xmb_show_images,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE);
-#endif
-
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.menu_xmb_show_music,
-                  MENU_ENUM_LABEL_XMB_SHOW_MUSIC,
-                  MENU_ENUM_LABEL_VALUE_XMB_SHOW_MUSIC,
-                  xmb_show_music,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE);
-
-#ifdef HAVE_FFMPEG
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.menu_xmb_show_video,
-                  MENU_ENUM_LABEL_XMB_SHOW_VIDEO,
-                  MENU_ENUM_LABEL_VALUE_XMB_SHOW_VIDEO,
-                  xmb_show_video,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE);
-#endif
-
-            CONFIG_BOOL(
-                  list, list_info,
                   &settings->bools.menu_xmb_show_history,
                   MENU_ENUM_LABEL_XMB_SHOW_HISTORY,
                   MENU_ENUM_LABEL_VALUE_XMB_SHOW_HISTORY,
@@ -5992,6 +5928,70 @@ static bool setting_append_list(
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
          }
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.menu_xmb_show_favorites,
+               MENU_ENUM_LABEL_XMB_SHOW_FAVORITES,
+               MENU_ENUM_LABEL_VALUE_XMB_SHOW_FAVORITES,
+               xmb_show_favorites,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+#ifdef HAVE_IMAGEVIEWER
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.menu_xmb_show_images,
+               MENU_ENUM_LABEL_XMB_SHOW_IMAGES,
+               MENU_ENUM_LABEL_VALUE_XMB_SHOW_IMAGES,
+               xmb_show_images,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+#endif
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.menu_xmb_show_music,
+               MENU_ENUM_LABEL_XMB_SHOW_MUSIC,
+               MENU_ENUM_LABEL_VALUE_XMB_SHOW_MUSIC,
+               xmb_show_music,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+#ifdef HAVE_FFMPEG
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.menu_xmb_show_video,
+               MENU_ENUM_LABEL_XMB_SHOW_VIDEO,
+               MENU_ENUM_LABEL_VALUE_XMB_SHOW_VIDEO,
+               xmb_show_video,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+#endif
 
          CONFIG_BOOL(
                list, list_info,

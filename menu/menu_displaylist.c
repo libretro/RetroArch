@@ -3333,18 +3333,22 @@ static int menu_displaylist_parse_playlists(
             MENU_ENUM_LABEL_SCAN_FILE,
             MENU_SETTING_ACTION, 0, 0);
 #endif
+
+      if (settings->bools.menu_xmb_show_favorites)
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
             msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES),
             MENU_ENUM_LABEL_GOTO_FAVORITES,
             MENU_SETTING_ACTION, 0, 0);
 
+      if (settings->bools.menu_xmb_show_images)
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_IMAGES),
             msg_hash_to_str(MENU_ENUM_LABEL_GOTO_IMAGES),
             MENU_ENUM_LABEL_GOTO_IMAGES,
             MENU_SETTING_ACTION, 0, 0);
 
+      if (settings->bools.menu_xmb_show_music)
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_MUSIC),
             msg_hash_to_str(MENU_ENUM_LABEL_GOTO_MUSIC),
@@ -3352,6 +3356,7 @@ static int menu_displaylist_parse_playlists(
             MENU_SETTING_ACTION, 0, 0);
 
 #ifdef HAVE_FFMPEG
+      if (settings->bools.menu_xmb_show_video)
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_VIDEO),
             msg_hash_to_str(MENU_ENUM_LABEL_GOTO_VIDEO),
@@ -6111,33 +6116,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_LOAD_CONTENT_SPECIAL:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
-         menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
-               msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES),
-               MENU_ENUM_LABEL_GOTO_FAVORITES,
-               MENU_SETTING_ACTION, 0, 0);
-
-         menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_IMAGES),
-               msg_hash_to_str(MENU_ENUM_LABEL_GOTO_IMAGES),
-               MENU_ENUM_LABEL_GOTO_IMAGES,
-               MENU_SETTING_ACTION, 0, 0);
-
-         menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_MUSIC),
-               msg_hash_to_str(MENU_ENUM_LABEL_GOTO_MUSIC),
-               MENU_ENUM_LABEL_GOTO_MUSIC,
-               MENU_SETTING_ACTION, 0, 0);
-
-#ifdef HAVE_FFMPEG
-         menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_VIDEO),
-               msg_hash_to_str(MENU_ENUM_LABEL_GOTO_VIDEO),
-               MENU_ENUM_LABEL_GOTO_VIDEO,
-               MENU_SETTING_ACTION, 0, 0);
-#endif
-
-         if (!string_is_empty(settings->paths.directory_menu_content))
+  if (!string_is_empty(settings->paths.directory_menu_content))
             menu_entries_append_enum(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES),
                   msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
@@ -6305,9 +6284,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   PARSE_ACTION, false);
             menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY,
-                  PARSE_ACTION, false);
-            menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_ADD_CONTENT_LIST,
                   PARSE_ACTION, false);
 #ifdef HAVE_NETWORKING
             menu_displaylist_parse_settings_enum(menu, info,
