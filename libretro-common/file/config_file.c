@@ -141,16 +141,13 @@ static char *extract_value(char *line, bool is_value)
    if (*line == '"')
    {
       line++;
-      if (*line == '"') return strdup("");
+      if (*line == '"')
+         return strdup("");
       tok = strtok_r(line, "\"", &save);
    }
-   else if (*line == '\0') /* Nothing */
-      return NULL;
-   else
-   {
-      /* We don't have that. Read until next space. */
+   /* We don't have that. Read until next space. */
+   else if (*line != '\0') /* Nothing */
       tok = strtok_r(line, " \n\t\f\r\v", &save);
-   }
 
    if (tok)
       return strdup(tok);
