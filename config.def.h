@@ -263,11 +263,27 @@ static bool menu_show_configurations     = true;
 static bool menu_show_help               = true;
 static bool menu_show_quit_retroarch     = true;
 static bool menu_show_reboot             = true;
-
 #if defined(HAVE_LAKKA) || defined(VITA) || defined(_3DS)
 static bool menu_show_core_updater       = false;
 #else
 static bool menu_show_core_updater       = true;
+#endif
+
+static bool content_show_settings    = true;
+static bool content_show_favorites   = true;
+#ifdef HAVE_IMAGEVIEWER
+static bool content_show_images      = true;
+#endif
+static bool content_show_music       = true;
+#ifdef HAVE_FFMPEG
+static bool content_show_video       = true;
+#endif
+#ifdef HAVE_NETWORKING
+static bool content_show_netplay     = true;
+#endif
+static bool content_show_history     = true;
+#ifdef HAVE_LIBRETRODB
+static bool content_show_add     	 = true;
 #endif
 
 #ifdef HAVE_XMB
@@ -282,22 +298,6 @@ static unsigned xmb_theme        = XMB_THEME_ELECTRIC_BLUE;
 static bool xmb_shadows_enable   = false;
 #else
 static bool xmb_shadows_enable   = true;
-#endif
-static bool xmb_show_settings    = true;
-static bool xmb_show_favorites   = true;
-#ifdef HAVE_IMAGEVIEWER
-static bool xmb_show_images      = true;
-#endif
-static bool xmb_show_music       = true;
-#ifdef HAVE_FFMPEG
-static bool xmb_show_video       = true;
-#endif
-#ifdef HAVE_NETWORKING
-static bool xmb_show_netplay     = true;
-#endif
-static bool xmb_show_history     = true;
-#ifdef HAVE_LIBRETRODB
-static bool xmb_show_add     	 = true;
 #endif
 #endif
 

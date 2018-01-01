@@ -1803,21 +1803,21 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SCALE_FACTOR,
       "Menu Scale Factor")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
       "Abilita Ombre delle Icone")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_HISTORY,
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
       "Visualizza la colonna cronologia")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_ADD,
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD,
       "Visualizza colonna Importa contenuto")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_FAVORITES,
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES,
       "Visualizza colonna Preferiti")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_IMAGES,
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_IMAGES,
       "Visualizza colonna Immagini")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_MUSIC,
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_MUSIC,
       "Visualizza colonna Musica")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_SETTINGS,
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS,
       "Visualizza colonna Impostazioni")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_VIDEO,
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO,
       "Visualizza colonna Video")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_NETPLAY,
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
       "Visualizza colonna Stanze Netplay ")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_THEME,
       "Icone del Menu")
@@ -2985,21 +2985,21 @@ MSG_HASH(MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
       "Seleziona un effetto con sfondo animato. Può essere intenso in base alla GPU a seconda dell'effetto. Se le prestazioni sono insoddisfacenti, disattivare o tornare ad un effetto più semplice.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_FONT,
       "Seleziona un altro tipo di carattere principale da utilizzare dal menu.")
-MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_FAVORITES,
+MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
       "Mostra la colonna preferiti all'interno del menu principale.")
-MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_IMAGES,
+MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_IMAGES,
       "Mostra la colonna immagini all'interno del menu principale.")
-MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_MUSIC,
+MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_MUSIC,
       "Mostra la colonna musica all'interno del menu principale.")
-MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_VIDEO,
+MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO,
       "Mostra la colonna video all'interno del menu principale")
-MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_NETPLAY,
+MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
       "Mostra la colonna camere netplay all'interno del menu principale")
-MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_SETTINGS,
+MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS,
       "Mostra la colonna impostazioni all'interno del menu principale")
-MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_HISTORY,
+MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_HISTORY,
       "Mostra la colonna cronologia all'interno del menu principale.")
-MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_ADD,
+MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD,
       "Mostra la colonna importa contenuto all'interno del menu principale.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
       "Mostra la schermata di avvio nel menu. Questo viene automaticamente impostato su off dopo l'avvio del programma per la prima volta.")
@@ -3189,7 +3189,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
       "Abilita/disabilita le icone del menu visualizzate sul lato sinistro di ogni voce.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
       "Abilita la colonna Impostazioni")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_SHOW_SETTINGS_PASSWORD,
+MSG_HASH(MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
       "Imposta una Password per abilitare la colonna Impostazioni")
 MSG_HASH(MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
       "Inserisci Password")
@@ -3199,7 +3199,7 @@ MSG_HASH(MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
       "Password non corretta.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
       "Abilita la colonna Impostazioni. È necessario un riavvio affinchè le modifiche abbiano effetto.")
-MSG_HASH(MENU_ENUM_SUBLABEL_XMB_SHOW_SETTINGS_PASSWORD,
+MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
       "Fornisce una password quando si nasconde la colonna Impostazioni per poi ripristinarli dal menu, andando alla colonna Menù Principale, selezionando abilita la colonna Impostazioni e immettere la password")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
       "Consente all'utente di rinominare le voci nelle collezioni.")

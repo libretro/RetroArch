@@ -146,14 +146,14 @@ typedef struct settings
       bool menu_show_reboot;
       bool menu_materialui_icons_enable;
       bool menu_xmb_shadows_enable;
-      bool menu_xmb_show_settings;
-      bool menu_xmb_show_favorites;
-      bool menu_xmb_show_images;
-      bool menu_xmb_show_music;
-      bool menu_xmb_show_video;
-      bool menu_xmb_show_netplay;
-      bool menu_xmb_show_history;
-      bool menu_xmb_show_add;
+      bool menu_content_show_settings;
+      bool menu_content_show_favorites;
+      bool menu_content_show_images;
+      bool menu_content_show_music;
+      bool menu_content_show_video;
+      bool menu_content_show_netplay;
+      bool menu_content_show_history;
+      bool menu_content_show_add;
       bool menu_unified_controls;
       bool quick_menu_show_take_screenshot;
       bool quick_menu_show_save_load_state;
@@ -420,7 +420,7 @@ typedef struct settings
       char browse_url[4096];
 
       char path_menu_xmb_font[PATH_MAX_LENGTH];
-      char menu_xmb_show_settings_password[PATH_MAX_LENGTH];
+      char menu_content_show_settings_password[PATH_MAX_LENGTH];
       char kiosk_mode_password[PATH_MAX_LENGTH];
       char path_cheat_database[PATH_MAX_LENGTH];
       char path_content_database[PATH_MAX_LENGTH];
