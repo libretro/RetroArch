@@ -289,6 +289,7 @@ static bool parse_line(config_file_t *conf,
                fprintf(stderr, "!!! #include depth exceeded for config. Might be a cycle.\n");
             else
                add_sub_conf(conf, path);
+            free(path);
          }
          goto error;
       }
