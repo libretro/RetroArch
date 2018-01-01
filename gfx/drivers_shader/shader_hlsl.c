@@ -85,6 +85,30 @@ typedef struct hlsl_shader_data hlsl_shader_data_t;
 #define ID3DXConstantTable_GetConstantByName(p,a,b)  ((p)->GetConstantByName(a, b))
 #endif
 
+#ifndef IDirect3DDevice9_CreatePixelShader
+#define IDirect3DDevice9_CreatePixelShader(p, a, b) ((p)->CreatePixelShader(a, b))
+#endif
+
+#ifndef IDirect3DDevice9_CreateVertexShader
+#define IDirect3DDevice9_CreateVertexShader(p, a, b) ((p)->CreateVertexShader(a, b))
+#endif
+
+#ifndef IDirect3DDevice9_SetPixelShader
+#define IDirect3DDevice9_SetPixelShader(p, a) ((p)->SetPixelShader(a))
+#endif
+
+#ifndef IDirect3DPixelShader9_Release
+#define IDirect3DPixelShader9_Release(p) ((p)->Release())
+#endif
+
+#ifndef IDirect3DVertexShader9_Release
+#define IDirect3DVertexShader9_Release(p) ((p)->Release())
+#endif
+
+#ifndef ID3DXConstantTable_SetMatrix
+#define ID3DXConstantTable_SetMatrix(p,a,b,c) ((p)->SetMatrix(a,b,c))
+#endif
+
 #else
 
 #ifndef ID3DXConstantTable_SetDefaults
@@ -109,6 +133,10 @@ typedef struct hlsl_shader_data hlsl_shader_data_t;
 
 #ifndef ID3DXConstantTable_GetConstantByName
 #define ID3DXConstantTable_GetConstantByName(p,a,b)  ((p)->lpVtbl->GetConstantByName(p, a, b))
+#endif
+
+#ifndef ID3DXConstantTable_SetMatrix
+#define ID3DXConstantTable_SetMatrix(p,a,b,c) ((p)->lpVtbl->SetMatrix(p,a,b,c))
 #endif
 
 #endif
@@ -272,8 +300,8 @@ static bool hlsl_compile_program(
       goto end;
    }
 
-   d3dr->CreatePixelShader((const DWORD*)ID3DXConstantTable_GetBufferPointer(code_f),  &program->fprg);
-   d3dr->CreateVertexShader((const DWORD*)ID3DXConstantTable_GetBufferPointer(code_v), &program->vprg);
+   IDirect3DDevice9_CreatePixelShader(d3dr, (const DWORD*)ID3DXConstantTable_GetBufferPointer(code_f),  &program->fprg);
+   IDirect3DDevice9_CreateVertexShader(d3dr, (const DWORD*)ID3DXConstantTable_GetBufferPointer(code_v), &program->vprg);
    ID3DXBuffer_Release(code_f);
    ID3DXBuffer_Release(code_v);
 
@@ -392,18 +420,18 @@ static void hlsl_deinit_progs(hlsl_shader_data_t *hlsl)
    for (i = 1; i < RARCH_HLSL_MAX_SHADERS; i++)
    {
       if (hlsl->prg[i].fprg && hlsl->prg[i].fprg != hlsl->prg[0].fprg)
-         hlsl->prg[i].fprg->Release();
+         IDirect3DPixelShader9_Release(hlsl->prg[i].fprg);
       if (hlsl->prg[i].vprg && hlsl->prg[i].vprg != hlsl->prg[0].vprg)
-         hlsl->prg[i].vprg->Release();
+         IDirect3DVertexShader9_Release(hlsl->prg[i].vprg);
 
 	  hlsl->prg[i].fprg = NULL;
 	  hlsl->prg[i].vprg = NULL;
    }
 
    if (hlsl->prg[0].fprg)
-      hlsl->prg[0].fprg->Release();
+      IDirect3DPixelShader9_Release(hlsl->prg[0].fprg);
    if (hlsl->prg[0].vprg)
-      hlsl->prg[0].vprg->Release();
+      IDirect3DVertexShader9_Release(hlsl->prg[0].vprg);
 
    hlsl->prg[0].fprg = NULL;
    hlsl->prg[0].vprg = NULL;
@@ -495,7 +523,7 @@ static void *hlsl_init(void *data, const char *path)
       hlsl_set_program_attributes(hlsl_data, i);
 
    d3d_set_vertex_shader(d3d->dev, 1, hlsl_data->prg[1].vprg);
-   d3d->dev->SetPixelShader(hlsl_data->prg[1].fprg);
+   IDirect3DDevice9_SetPixelShader(d3d->dev, hlsl_data->prg[1].fprg);
 
    return hlsl_data;
 
@@ -527,7 +555,7 @@ static void hlsl_use(void *data, void *shader_data, unsigned idx, bool set_activ
          hlsl_data->active_idx = idx;
 
       d3d_set_vertex_shader(d3dr, idx, hlsl_data->prg[idx].vprg);
-      d3dr->SetPixelShader(hlsl_data->prg[idx].fprg);
+      IDirect3DDevice9_SetPixelShader(d3dr, hlsl_data->prg[idx].fprg);
    }
 }
 
@@ -569,7 +597,7 @@ static bool hlsl_set_mvp(void *data, void *shader_data, const void *mat_data)
 
    if(hlsl_data && hlsl_data->prg[hlsl_data->active_idx].mvp)
    {
-      hlsl_data->prg[hlsl_data->active_idx].v_ctable->SetMatrix(d3dr,
+      ID3DXConstantTable_SetMatrix(hlsl_data->prg[hlsl_data->active_idx].v_ctable, d3dr,
 		  hlsl_data->prg[hlsl_data->active_idx].mvp,
 		  (D3DXMATRIX*)&hlsl_data->prg[hlsl_data->active_idx].mvp_val);
       return true;
