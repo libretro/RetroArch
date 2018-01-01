@@ -1,11 +1,11 @@
-///////////////////////////////////////////////////////////////////////////
-//
-//  Copyright (C) Microsoft Corporation.  All Rights Reserved.
-//
-//  File:       d3dx9core.h
-//  Content:    D3DX core types and functions
-//
-///////////////////////////////////////////////////////////////////////////
+/*
+ *
+ *  Copyright (C) Microsoft Corporation.  All Rights Reserved.
+ *
+ *  File:       d3dx9core.h
+ *  Content:    D3DX core types and functions
+ *
+ */
 
 #include "d3dx9.h"
 
@@ -18,7 +18,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif //__cplusplus
+#endif /* __cplusplus */
 
 BOOL WINAPI
     D3DXCheckVersion(UINT D3DSdkVersion, UINT D3DXSdkVersion);
@@ -31,12 +31,12 @@ UINT WINAPI
 
 #ifdef __cplusplus
 }
-#endif //__cplusplus
+#endif /* __cplusplus */
 
 typedef interface ID3DXBuffer ID3DXBuffer;
 typedef interface ID3DXBuffer *LPD3DXBUFFER;
 
-// {8BA5FB08-5195-40e2-AC58-0D989C3A0102}
+/* {8BA5FB08-5195-40e2-AC58-0D989C3A0102} */
 DEFINE_GUID(IID_ID3DXBuffer,
 0x8ba5fb08, 0x5195, 0x40e2, 0xac, 0x58, 0xd, 0x98, 0x9c, 0x3a, 0x1, 0x2);
 
@@ -45,12 +45,12 @@ DEFINE_GUID(IID_ID3DXBuffer,
 
 DECLARE_INTERFACE_(ID3DXBuffer, IUnknown)
 {
-    // IUnknown
+    /* IUnknown */
     STDMETHOD(QueryInterface)(THIS_ REFIID iid, LPVOID *ppv) PURE;
     STDMETHOD_(ULONG, AddRef)(THIS) PURE;
     STDMETHOD_(ULONG, Release)(THIS) PURE;
 
-    // ID3DXBuffer
+    /* ID3DXBuffer */
     STDMETHOD_(LPVOID, GetBufferPointer)(THIS) PURE;
     STDMETHOD_(DWORD, GetBufferSize)(THIS) PURE;
 };
@@ -69,7 +69,7 @@ typedef interface ID3DXSprite ID3DXSprite;
 typedef interface ID3DXSprite *LPD3DXSPRITE;
 
 
-// {BA0B762D-7D28-43ec-B9DC-2F84443B0614}
+/* {BA0B762D-7D28-43ec-B9DC-2F84443B0614} */
 DEFINE_GUID(IID_ID3DXSprite,
 0xba0b762d, 0x7d28, 0x43ec, 0xb9, 0xdc, 0x2f, 0x84, 0x44, 0x3b, 0x6, 0x14);
 
@@ -79,12 +79,12 @@ DEFINE_GUID(IID_ID3DXSprite,
 
 DECLARE_INTERFACE_(ID3DXSprite, IUnknown)
 {
-    // IUnknown
+    /* IUnknown */
     STDMETHOD(QueryInterface)(THIS_ REFIID iid, LPVOID *ppv) PURE;
     STDMETHOD_(ULONG, AddRef)(THIS) PURE;
     STDMETHOD_(ULONG, Release)(THIS) PURE;
 
-    // ID3DXSprite
+    /* ID3DXSprite */
     STDMETHOD(GetDevice)(THIS_ LPDIRECT3DDEVICE9* ppDevice) PURE;
 
     STDMETHOD(GetTransform)(THIS_ D3DXMATRIX *pTransform) PURE;
@@ -105,7 +105,7 @@ DECLARE_INTERFACE_(ID3DXSprite, IUnknown)
 
 #ifdef __cplusplus
 extern "C" {
-#endif //__cplusplus
+#endif /* __cplusplus */
 
 HRESULT WINAPI
     D3DXCreateSprite(
@@ -114,7 +114,7 @@ HRESULT WINAPI
 
 #ifdef __cplusplus
 }
-#endif //__cplusplus
+#endif /* __cplusplus */
 
 typedef struct _D3DXFONT_DESCA
 {
@@ -158,8 +158,7 @@ typedef LPD3DXFONT_DESCA LPD3DXFONT_DESC;
 typedef interface ID3DXFont ID3DXFont;
 typedef interface ID3DXFont *LPD3DXFONT;
 
-
-// {D79DBB70-5F21-4d36-BBC2-FF525C213CDC}
+/* {D79DBB70-5F21-4d36-BBC2-FF525C213CDC} */
 DEFINE_GUID(IID_ID3DXFont,
 0xd79dbb70, 0x5f21, 0x4d36, 0xbb, 0xc2, 0xff, 0x52, 0x5c, 0x21, 0x3c, 0xdc);
 
@@ -169,12 +168,12 @@ DEFINE_GUID(IID_ID3DXFont,
 
 DECLARE_INTERFACE_(ID3DXFont, IUnknown)
 {
-    // IUnknown
+    /* IUnknown */
     STDMETHOD(QueryInterface)(THIS_ REFIID iid, LPVOID *ppv) PURE;
     STDMETHOD_(ULONG, AddRef)(THIS) PURE;
     STDMETHOD_(ULONG, Release)(THIS) PURE;
 
-    // ID3DXFont
+    /* ID3DXFont */
     STDMETHOD(GetDevice)(THIS_ LPDIRECT3DDEVICE9 *ppDevice) PURE;
     STDMETHOD(GetDescA)(THIS_ D3DXFONT_DESCA *pDesc) PURE;
     STDMETHOD(GetDescW)(THIS_ D3DXFONT_DESCW *pDesc) PURE;
@@ -203,7 +202,7 @@ DECLARE_INTERFACE_(ID3DXFont, IUnknown)
     HRESULT GetDesc(D3DXFONT_DESCA *pDesc) { return GetDescA(pDesc); }
     HRESULT PreloadText(LPCSTR pString, INT Count) { return PreloadTextA(pString, Count); }
 #endif
-#endif //__cplusplus
+#endif /* __cplusplus */
 };
 
 #ifndef GetTextMetrics
@@ -225,7 +224,7 @@ DECLARE_INTERFACE_(ID3DXFont, IUnknown)
 
 #ifdef __cplusplus
 extern "C" {
-#endif //__cplusplus
+#endif /*__cplusplus */
 
 
 HRESULT WINAPI
@@ -286,7 +285,7 @@ HRESULT WINAPI
 
 #ifdef __cplusplus
 }
-#endif //__cplusplus
+#endif /*__cplusplus */
 
 typedef struct _D3DXRTS_DESC
 {
@@ -302,8 +301,7 @@ typedef struct _D3DXRTS_DESC
 typedef interface ID3DXRenderToSurface ID3DXRenderToSurface;
 typedef interface ID3DXRenderToSurface *LPD3DXRENDERTOSURFACE;
 
-
-// {6985F346-2C3D-43b3-BE8B-DAAE8A03D894}
+/* {6985F346-2C3D-43b3-BE8B-DAAE8A03D894} */
 DEFINE_GUID(IID_ID3DXRenderToSurface,
 0x6985f346, 0x2c3d, 0x43b3, 0xbe, 0x8b, 0xda, 0xae, 0x8a, 0x3, 0xd8, 0x94);
 
@@ -313,12 +311,12 @@ DEFINE_GUID(IID_ID3DXRenderToSurface,
 
 DECLARE_INTERFACE_(ID3DXRenderToSurface, IUnknown)
 {
-    // IUnknown
+    /* IUnknown */
     STDMETHOD(QueryInterface)(THIS_ REFIID iid, LPVOID *ppv) PURE;
     STDMETHOD_(ULONG, AddRef)(THIS) PURE;
     STDMETHOD_(ULONG, Release)(THIS) PURE;
 
-    // ID3DXRenderToSurface
+    /* ID3DXRenderToSurface */
     STDMETHOD(GetDevice)(THIS_ LPDIRECT3DDEVICE9* ppDevice) PURE;
     STDMETHOD(GetDesc)(THIS_ D3DXRTS_DESC* pDesc) PURE;
 
@@ -332,7 +330,7 @@ DECLARE_INTERFACE_(ID3DXRenderToSurface, IUnknown)
 
 #ifdef __cplusplus
 extern "C" {
-#endif //__cplusplus
+#endif /* __cplusplus */
 
 HRESULT WINAPI
     D3DXCreateRenderToSurface(
@@ -346,7 +344,7 @@ HRESULT WINAPI
 
 #ifdef __cplusplus
 }
-#endif //__cplusplus
+#endif /* __cplusplus */
 
 typedef struct _D3DXRTE_DESC
 {
@@ -362,8 +360,7 @@ typedef struct _D3DXRTE_DESC
 typedef interface ID3DXRenderToEnvMap ID3DXRenderToEnvMap;
 typedef interface ID3DXRenderToEnvMap *LPD3DXRenderToEnvMap;
 
-
-// {313F1B4B-C7B0-4fa2-9D9D-8D380B64385E}
+/* {313F1B4B-C7B0-4fa2-9D9D-8D380B64385E} */
 DEFINE_GUID(IID_ID3DXRenderToEnvMap,
 0x313f1b4b, 0xc7b0, 0x4fa2, 0x9d, 0x9d, 0x8d, 0x38, 0xb, 0x64, 0x38, 0x5e);
 
@@ -373,12 +370,12 @@ DEFINE_GUID(IID_ID3DXRenderToEnvMap,
 
 DECLARE_INTERFACE_(ID3DXRenderToEnvMap, IUnknown)
 {
-    // IUnknown
+    /* IUnknown */
     STDMETHOD(QueryInterface)(THIS_ REFIID iid, LPVOID *ppv) PURE;
     STDMETHOD_(ULONG, AddRef)(THIS) PURE;
     STDMETHOD_(ULONG, Release)(THIS) PURE;
 
-    // ID3DXRenderToEnvMap
+    /* ID3DXRenderToEnvMap */
     STDMETHOD(GetDevice)(THIS_ LPDIRECT3DDEVICE9* ppDevice) PURE;
     STDMETHOD(GetDesc)(THIS_ D3DXRTE_DESC* pDesc) PURE;
 
@@ -406,7 +403,7 @@ DECLARE_INTERFACE_(ID3DXRenderToEnvMap, IUnknown)
 
 #ifdef __cplusplus
 extern "C" {
-#endif //__cplusplus
+#endif /*__cplusplus */
 
 HRESULT WINAPI
     D3DXCreateRenderToEnvMap(
@@ -420,13 +417,12 @@ HRESULT WINAPI
 
 #ifdef __cplusplus
 }
-#endif //__cplusplus
+#endif /*__cplusplus */
 
 typedef interface ID3DXLine ID3DXLine;
 typedef interface ID3DXLine *LPD3DXLINE;
 
-
-// {D379BA7F-9042-4ac4-9F5E-58192A4C6BD8}
+/* {D379BA7F-9042-4ac4-9F5E-58192A4C6BD8} */
 DEFINE_GUID(IID_ID3DXLine,
 0xd379ba7f, 0x9042, 0x4ac4, 0x9f, 0x5e, 0x58, 0x19, 0x2a, 0x4c, 0x6b, 0xd8);
 
@@ -435,12 +431,12 @@ DEFINE_GUID(IID_ID3DXLine,
 
 DECLARE_INTERFACE_(ID3DXLine, IUnknown)
 {
-    // IUnknown
+    /* IUnknown */
     STDMETHOD(QueryInterface)(THIS_ REFIID iid, LPVOID *ppv) PURE;
     STDMETHOD_(ULONG, AddRef)(THIS) PURE;
     STDMETHOD_(ULONG, Release)(THIS) PURE;
 
-    // ID3DXLine
+    /* ID3DXLine */
     STDMETHOD(GetDevice)(THIS_ LPDIRECT3DDEVICE9* ppDevice) PURE;
 
     STDMETHOD(Begin)(THIS) PURE;
@@ -476,7 +472,7 @@ DECLARE_INTERFACE_(ID3DXLine, IUnknown)
 
 #ifdef __cplusplus
 extern "C" {
-#endif //__cplusplus
+#endif /*__cplusplus */
 
 
 HRESULT WINAPI
@@ -486,6 +482,6 @@ HRESULT WINAPI
 
 #ifdef __cplusplus
 }
-#endif //__cplusplus
+#endif /* __cplusplus */
 
-#endif //__D3DX9CORE_H__
+#endif /*__D3DX9CORE_H__ */

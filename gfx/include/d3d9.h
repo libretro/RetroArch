@@ -1628,7 +1628,7 @@ typedef struct IDirect3DQuery9 *LPDIRECT3DQUERY9, *PDIRECT3DQUERY9;
 /*
  * Direct3D Errors
  */
-#define D3D_OK                              S_OK
+#define D3D_OK                                  S_OK
 
 #define D3DERR_WRONGTEXTUREFORMAT               MAKE_D3DHRESULT(2072)
 #define D3DERR_UNSUPPORTEDCOLOROPERATION        MAKE_D3DHRESULT(2073)
