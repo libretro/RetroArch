@@ -6108,32 +6108,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_LOAD_CONTENT_SPECIAL:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
-         menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
-               msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES),
-               MENU_ENUM_LABEL_GOTO_FAVORITES,
-               MENU_SETTING_ACTION, 0, 0);
-
-         menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_IMAGES),
-               msg_hash_to_str(MENU_ENUM_LABEL_GOTO_IMAGES),
-               MENU_ENUM_LABEL_GOTO_IMAGES,
-               MENU_SETTING_ACTION, 0, 0);
-
-         menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_MUSIC),
-               msg_hash_to_str(MENU_ENUM_LABEL_GOTO_MUSIC),
-               MENU_ENUM_LABEL_GOTO_MUSIC,
-               MENU_SETTING_ACTION, 0, 0);
-
-#ifdef HAVE_FFMPEG
-         menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_VIDEO),
-               msg_hash_to_str(MENU_ENUM_LABEL_GOTO_VIDEO),
-               MENU_ENUM_LABEL_GOTO_VIDEO,
-               MENU_SETTING_ACTION, 0, 0);
-#endif
-
          if (!string_is_empty(settings->paths.directory_menu_content))
             menu_entries_append_enum(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES),
