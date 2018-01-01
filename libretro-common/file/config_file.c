@@ -963,3 +963,55 @@ bool config_file_exists(const char *path)
    config_file_free(config);
    return true;
 }
+
+void test_config_file_parse_contains(const char * cfgtext, const char * key, const char * val)
+{
+	config_file_t* cfg = config_file_new_from_string(cfgtext);
+	char* out;
+	bool ok;
+	
+	if (!cfg) abort();
+	
+	ok = config_get_string(cfg, key, &out);
+	if (ok != (bool)val) abort();
+	if (!val) return;
+	
+	if (out == NULL) out = strdup("");
+	if (strcmp(out, val) != 0) abort();
+	free(out);
+}
+
+void test_config_file()
+{
+	test_config_file_parse_contains("foo = \"bar\"\n",   "foo", "bar");
+	test_config_file_parse_contains("foo = \"bar\"",     "foo", "bar");
+	test_config_file_parse_contains("foo = \"bar\"\r\n", "foo", "bar");
+	test_config_file_parse_contains("foo = \"bar\"",     "foo", "bar");
+	
+	/* turns out it treats empty as nonexistent - should probably be fixed */
+	/*
+	test_config_file_parse_contains("foo = \"\"\n",   "foo", "");
+	test_config_file_parse_contains("foo = \"\"",     "foo", "");
+	test_config_file_parse_contains("foo = \"\"\r\n", "foo", "");
+	test_config_file_parse_contains("foo = \"\"",     "foo", "");
+	// */
+	
+	test_config_file_parse_contains("foo = \"\"\n",   "bar", NULL);
+	test_config_file_parse_contains("foo = \"\"",     "bar", NULL);
+	test_config_file_parse_contains("foo = \"\"\r\n", "bar", NULL);
+	test_config_file_parse_contains("foo = \"\"",     "bar", NULL);
+}
+
+/* compile with:
+ gcc config_file.c -g -I ../include/ \
+ ../streams/file_stream.c ../vfs/vfs_implementation.c ../lists/string_list.c \
+ ../compat/compat_strl.c file_path.c ../compat/compat_strcasestr.c \
+ && ./a.out
+*/
+
+/*
+int main()
+{
+	test_config_file();
+}
+*/
