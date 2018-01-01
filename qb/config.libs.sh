@@ -436,7 +436,12 @@ fi
 
 check_lib '' STRCASESTR "$CLIB" strcasestr
 check_lib '' MMAP "$CLIB" mmap
-check_lib '' VULKAN -lvulkan vkCreateInstance
+
+if [ "$HAVE_VULKAN" != "no" ] && [ "$OS" = 'Win32' ]; then
+   HAVE_VULKAN=yes
+else
+   check_lib '' VULKAN -lvulkan vkCreateInstance
+fi
 
 check_pkgconf PYTHON python3
 
