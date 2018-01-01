@@ -304,6 +304,12 @@ static bool driver_update_system_av_info(const struct retro_system_av_info *info
       command_event(CMD_EVENT_RECORD_INIT, NULL);
    }
 
+   /* Hide mouse cursor in fullscreen after 
+    * a RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO call. */
+   settings_t *settings = config_get_ptr();
+   if (settings->bools.video_fullscreen)
+      video_driver_hide_mouse();
+
    return true;
 }
 
