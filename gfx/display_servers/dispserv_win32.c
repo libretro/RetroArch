@@ -75,7 +75,7 @@ static void* win32_display_server_init(void)
       return NULL;
 
 #ifdef HAS_TASKBAR_EXT
-#ifdef _MSC_VER
+#ifdef __cplusplus
    /* when compiling in C++ mode, GUIDs are references instead of pointers */
    hr = CoCreateInstance(CLSID_TaskbarList, NULL, CLSCTX_INPROC_SERVER, IID_ITaskbarList3, (void**)&g_taskbarList);
 #else
