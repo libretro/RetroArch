@@ -95,7 +95,7 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
    void *data, hid_driver_t *driver)
 {
 
-   static const struct
+   static struct
    {
       const char* name;
       uint16_t vid;
@@ -103,17 +103,17 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
       pad_connection_interface_t *iface;
    } pad_map[] =
    {
-      { "Nintendo RVL-CNT-01",           VID_NINTENDO,   PID_NINTENDO_PRO,  &pad_connection_wii },
-      { "Nintendo RVL-CNT-01-UC",        VID_NINTENDO,   PID_NINTENDO_PRO,  &pad_connection_wiiupro },
-      { "Wireless Controller",           VID_SONY,       PID_SONY_DS4,      &pad_connection_ps4 },
-      { "PLAYSTATION(R)3 Controller",    VID_SONY,       PID_SONY_DS3,      &pad_connection_ps3 },
-      { "PLAYSTATION(R)3 Controller",    VID_PS3_CLONE,  PID_DS3_CLONE,     &pad_connection_ps3 },
-      { "Generic SNES USB Controller",   VID_SNES_CLONE, PID_SNES_CLONE,    &pad_connection_snesusb },
-      { "Generic NES USB Controller",    VID_MICRONTEK,  PID_MICRONTEK_NES, &pad_connection_nesusb },
-      { "Wii U GC Controller Adapter",   VID_NINTENDO,   PID_NINTENDO_GCA,  &pad_connection_wiiugca },
-      { "PS2/PSX Controller Adapter",    VID_PCS,        PID_PCS_PS2PSX,    &pad_connection_ps2adapter },
-      { "PSX to PS3 Controller Adapter", VID_PCS,        PID_PCS_PSX2PS3,   &pad_connection_psxadapter },
-      { "Mayflash DolphinBar",         1406,  774,    &pad_connection_wii },
+      { "Nintendo RVL-CNT-01",           0,     0,  &pad_connection_wii },
+      { "Nintendo RVL-CNT-01-UC",        0,     0,  &pad_connection_wiiupro },
+      { "Wireless Controller",           0,     0,  &pad_connection_ps4 },
+      { "PLAYSTATION(R)3 Controller",    0,     0,  &pad_connection_ps3 },
+      { "PLAYSTATION(R)3 Controller",    0,     0,  &pad_connection_ps3 },
+      { "Generic SNES USB Controller",   0,     0,  &pad_connection_snesusb },
+      { "Generic NES USB Controller",    0,     0,  &pad_connection_nesusb },
+      { "Wii U GC Controller Adapter",   0,     0,  &pad_connection_wiiugca },
+      { "PS2/PSX Controller Adapter",    0,     0,  &pad_connection_ps2adapter },
+      { "PSX to PS3 Controller Adapter", 0,     0,  &pad_connection_psxadapter },
+      { "Mayflash DolphinBar",           0,     0,  &pad_connection_wii },
       { 0, 0}
    };
    joypad_connection_t *s = NULL;
@@ -123,6 +123,29 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
       return -1;
 
    s = &joyconn[pad];
+
+   pad_map[0].vid         = VID_NINTENDO;
+   pad_map[0].pid         = PID_NINTENDO_PRO;
+   pad_map[1].vid         = VID_NINTENDO;
+   pad_map[1].pid         = PID_NINTENDO_PRO;
+   pad_map[2].vid         = VID_SONY;
+   pad_map[2].pid         = PID_SONY_DS4;
+   pad_map[3].vid         = VID_SONY;
+   pad_map[3].pid         = PID_SONY_DS3;
+   pad_map[4].vid         = VID_PS3_CLONE;
+   pad_map[4].pid         = PID_DS3_CLONE;
+   pad_map[5].vid         = VID_SNES_CLONE;
+   pad_map[5].pid         = PID_SNES_CLONE;
+   pad_map[6].vid         = VID_MICRONTEK;
+   pad_map[6].pid         = PID_MICRONTEK_NES;
+   pad_map[7].vid         = VID_NINTENDO;
+   pad_map[7].pid         = PID_NINTENDO_GCA;
+   pad_map[8].vid         = VID_PCS;
+   pad_map[8].pid         = PID_PCS_PS2PSX;
+   pad_map[9].vid         = VID_PCS;
+   pad_map[9].pid         = PID_PCS_PSX2PS3;
+   pad_map[10].vid        = 1406;
+   pad_map[10].pid        = 774;
 
    if (s)
    {
@@ -157,12 +180,12 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
 #endif
             break;
          }
+#if 0
          else
          {
-#if 0
             RARCH_LOG("%s not found \n", pad_map[i].name);
-#endif
          }
+#endif
       }
 
       /* We failed to find a matching pad,
