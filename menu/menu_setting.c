@@ -28,6 +28,7 @@
 #include <string/stdstring.h>
 #include <lists/string_list.h>
 #include <streams/file_stream.h>
+#include <audio/audio_resampler.h>
 
 #include <compat/strl.h>
 
@@ -4080,6 +4081,19 @@ static bool setting_append_list(
                general_read_handler);
          menu_settings_list_current_add_range(list, list_info, 0, 512, 1.0, true, true);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.audio_resampler_quality,
+               MENU_ENUM_LABEL_AUDIO_RESAMPLER_QUALITY,
+               MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
+               audio_resampler_quality_level,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         menu_settings_list_current_add_range(list, list_info, RESAMPLER_QUALITY_DONTCARE, RESAMPLER_QUALITY_HIGHEST, 1.0, true, true);
 
          CONFIG_FLOAT(
                list, list_info,

@@ -17,6 +17,7 @@
 #include <compat/strl.h>
 #include <string/stdstring.h>
 #include <lists/string_list.h>
+#include <audio/audio_resampler.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -180,6 +181,52 @@ static void menu_action_setting_disp_set_label_shader_filter_pass(
               len);
         break;
   }
+}
+
+static void menu_action_setting_disp_set_label_audio_resampler_quality(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   settings_t *settings = config_get_ptr();
+   *s = '\0';
+   *w = 19;
+   strlcpy(s2, path, len2);
+
+   if (settings)
+   {
+      switch (settings->uints.audio_resampler_quality)
+      {
+         case RESAMPLER_QUALITY_DONTCARE:
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE),
+                  len);
+            break;
+         case RESAMPLER_QUALITY_LOWEST:
+            strlcpy(s, "Lowest",
+                  len);
+            break;
+         case RESAMPLER_QUALITY_LOWER:
+            strlcpy(s, "Lower",
+                  len);
+            break;
+         case RESAMPLER_QUALITY_HIGHER:
+            strlcpy(s, "Higher",
+                  len);
+            break;
+         case RESAMPLER_QUALITY_HIGHEST:
+            strlcpy(s, "Highest",
+                  len);
+            break;
+         case RESAMPLER_QUALITY_NORMAL:
+            strlcpy(s, "Normal",
+                  len);
+            break;
+      }
+   }
 }
 
 static void menu_action_setting_disp_set_label_filter(
@@ -1725,6 +1772,10 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          case MENU_ENUM_LABEL_REMAP_FILE_LOAD:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_remap_file_load);
+            break;
+         case MENU_ENUM_LABEL_AUDIO_RESAMPLER_QUALITY:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_audio_resampler_quality);
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_FILTER_PASS:
             BIND_ACTION_GET_VALUE(cbs,
