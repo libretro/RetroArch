@@ -902,9 +902,32 @@ void config_set_bool(config_file_t *conf, const char *key, bool val)
    config_set_string(conf, key, val ? "true" : "false");
 }
 
-/* Dump the current config to an already opened file.
- * Does not close the file. */
-static void config_file_dump(config_file_t *conf, FILE *file)
+bool config_file_write(config_file_t *conf, const char *path)
+{
+   if (!string_is_empty(path))
+   {
+      void* buf  = NULL;
+      FILE *file = fopen_utf8(path, "wb");
+      if (!file)
+         return false;
+
+      /* TODO: this is only useful for a few platforms, find which and add ifdef */
+      buf = calloc(1, 0x4000);
+      setvbuf(file, (char*)buf, _IOFBF, 0x4000);
+
+      config_file_dump(conf, file);
+
+      if (file != stdout)
+         fclose(file);
+      free(buf);
+   }
+   else
+      config_file_dump(conf, stdout);
+
+   return true;
+}
+
+void config_file_dump(config_file_t *conf, FILE *file)
 {
    struct config_entry_list       *list = NULL;
    struct config_include_list *includes = conf->includes;
@@ -924,33 +947,6 @@ static void config_file_dump(config_file_t *conf, FILE *file)
       list = list->next;
    }
 }
-
-bool config_file_write(config_file_t *conf, const char *path)
-{
-   void* buf  = NULL;
-   FILE *file = !string_is_empty(path) ? fopen_utf8(path, "wb") : stdout;
-
-   if (!file)
-      return false;
-
-   /* TODO: this is only useful for a few platforms, find which and add ifdef */
-   if (file != stdout)
-   {
-      buf = calloc(1, 0x4000);
-      setvbuf(file, (char*)buf, _IOFBF, 0x4000);
-   }
-
-   config_file_dump(conf, file);
-
-   if (file != stdout)
-   {
-      fclose(file);
-      free(buf);
-   }
-
-   return true;
-}
-
 
 bool config_entry_exists(config_file_t *conf, const char *entry)
 {
