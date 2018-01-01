@@ -129,7 +129,7 @@ int64_t retro_vfs_file_seek_internal(libretro_vfs_implementation_file *stream, i
    {
       /* fseek() returns error on under/overflow but 
        * allows cursor > EOF for
-         read-only file descriptors. */
+       read-only file descriptors. */
       switch (whence)
       {
          case SEEK_SET:
@@ -187,7 +187,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uns
    const char                 *dumb_prefix  = "vfsonly://";
 
    if (!memcmp(path, dumb_prefix, strlen(dumb_prefix)))
-	   path += strlen(dumb_prefix);
+      path += strlen(dumb_prefix);
 #endif
 
    if (!stream)
@@ -387,15 +387,15 @@ int64_t retro_vfs_file_seek_impl(libretro_vfs_implementation_file *stream, int64
    int whence = -1;
    switch (seek_position)
    {
-   case RETRO_VFS_SEEK_POSITION_START:
-      whence = SEEK_SET;
-      break;
-   case RETRO_VFS_SEEK_POSITION_CURRENT:
-      whence = SEEK_CUR;
-      break;
-   case RETRO_VFS_SEEK_POSITION_END:
-      whence = SEEK_END;
-      break;
+      case RETRO_VFS_SEEK_POSITION_START:
+         whence = SEEK_SET;
+         break;
+      case RETRO_VFS_SEEK_POSITION_CURRENT:
+         whence = SEEK_CUR;
+         break;
+      case RETRO_VFS_SEEK_POSITION_END:
+         whence = SEEK_END;
+         break;
    }
 
    return retro_vfs_file_seek_internal(stream, offset, whence);

@@ -58,37 +58,37 @@ struct RFILE
 
 void filestream_vfs_init(const struct retro_vfs_interface_info* vfs_info)
 {
-	const struct retro_vfs_interface* vfs_iface;
+   const struct retro_vfs_interface* vfs_iface;
 
-	filestream_get_path_cb = NULL;
-	filestream_open_cb     = NULL;
-	filestream_close_cb    = NULL;
-	filestream_tell_cb     = NULL;
-	filestream_size_cb     = NULL;
-	filestream_seek_cb     = NULL;
-	filestream_read_cb     = NULL;
-	filestream_write_cb    = NULL;
-	filestream_flush_cb    = NULL;
-	filestream_remove_cb   = NULL;
-	filestream_rename_cb   = NULL;
+   filestream_get_path_cb = NULL;
+   filestream_open_cb     = NULL;
+   filestream_close_cb    = NULL;
+   filestream_tell_cb     = NULL;
+   filestream_size_cb     = NULL;
+   filestream_seek_cb     = NULL;
+   filestream_read_cb     = NULL;
+   filestream_write_cb    = NULL;
+   filestream_flush_cb    = NULL;
+   filestream_remove_cb   = NULL;
+   filestream_rename_cb   = NULL;
 
-	vfs_iface              = vfs_info->iface;
+   vfs_iface              = vfs_info->iface;
 
-	if (vfs_info->required_interface_version < FILESTREAM_REQUIRED_VFS_VERSION
-	    || !vfs_iface)
-		return;
+   if (vfs_info->required_interface_version < FILESTREAM_REQUIRED_VFS_VERSION
+         || !vfs_iface)
+      return;
 
-	filestream_get_path_cb = vfs_iface->get_path;
-	filestream_open_cb     = vfs_iface->open;
-	filestream_close_cb    = vfs_iface->close;
-	filestream_size_cb     = vfs_iface->size;
-	filestream_tell_cb     = vfs_iface->tell;
-	filestream_seek_cb     = vfs_iface->seek;
-	filestream_read_cb     = vfs_iface->read;
-	filestream_write_cb    = vfs_iface->write;
-	filestream_flush_cb    = vfs_iface->flush;
-	filestream_remove_cb   = vfs_iface->remove;
-	filestream_rename_cb   = vfs_iface->rename;
+   filestream_get_path_cb = vfs_iface->get_path;
+   filestream_open_cb     = vfs_iface->open;
+   filestream_close_cb    = vfs_iface->close;
+   filestream_size_cb     = vfs_iface->size;
+   filestream_tell_cb     = vfs_iface->tell;
+   filestream_seek_cb     = vfs_iface->seek;
+   filestream_read_cb     = vfs_iface->read;
+   filestream_write_cb    = vfs_iface->write;
+   filestream_flush_cb    = vfs_iface->flush;
+   filestream_remove_cb   = vfs_iface->remove;
+   filestream_rename_cb   = vfs_iface->rename;
 }
 
 /* Callback wrappers */
@@ -98,7 +98,7 @@ bool filestream_exists(const char *path)
 
    if (!path || !*path)
       return false;
-   
+
    dummy = filestream_open(path,
          RETRO_VFS_FILE_ACCESS_READ,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
@@ -137,23 +137,23 @@ int64_t filestream_get_size(RFILE *stream)
 RFILE *filestream_open(const char *path, unsigned mode, unsigned hints)
 {
    struct retro_vfs_file_handle  *fp = NULL;
-	RFILE* output                     = NULL;
+   RFILE* output                     = NULL;
 
-	if (filestream_open_cb != NULL)
-		fp = (struct retro_vfs_file_handle*)
+   if (filestream_open_cb != NULL)
+      fp = (struct retro_vfs_file_handle*)
          filestream_open_cb(path, mode, hints);
-	else
-		fp = (struct retro_vfs_file_handle*)
+   else
+      fp = (struct retro_vfs_file_handle*)
          retro_vfs_file_open_impl(path, mode, hints);
 
-	if (!fp)
-		return NULL;
+   if (!fp)
+      return NULL;
 
-	output             = (RFILE*)malloc(sizeof(RFILE));
-	output->error_flag = false;
-	output->eof_flag   = false;
-	output->hfile      = fp;
-	return output;
+   output             = (RFILE*)malloc(sizeof(RFILE));
+   output->error_flag = false;
+   output->eof_flag   = false;
+   output->hfile      = fp;
+   return output;
 }
 
 char *filestream_gets(RFILE *stream, char *s, size_t len)
@@ -313,30 +313,30 @@ int filestream_putc(RFILE *stream, int c)
    char c_char = (char)c;
    if (!stream)
       return EOF;
-	return filestream_write(stream, &c_char, 1)==1 ? c : EOF;
+   return filestream_write(stream, &c_char, 1)==1 ? c : EOF;
 }
 
 int filestream_vprintf(RFILE *stream, const char* format, va_list args)
 {
-	static char buffer[8 * 1024];
-	int num_chars = vsprintf(buffer, format, args);
+   static char buffer[8 * 1024];
+   int num_chars = vsprintf(buffer, format, args);
 
-	if (num_chars < 0)
-		return -1;
-	else if (num_chars == 0)
-		return 0;
+   if (num_chars < 0)
+      return -1;
+   else if (num_chars == 0)
+      return 0;
 
-	return filestream_write(stream, buffer, num_chars);
+   return filestream_write(stream, buffer, num_chars);
 }
 
 int filestream_printf(RFILE *stream, const char* format, ...)
 {
-	va_list vl;
+   va_list vl;
    int result;
-	va_start(vl, format);
-	result = filestream_vprintf(stream, format, vl);
-	va_end(vl);
-	return result;
+   va_start(vl, format);
+   result = filestream_vprintf(stream, format, vl);
+   va_end(vl);
+   return result;
 }
 
 int filestream_error(RFILE *stream)
