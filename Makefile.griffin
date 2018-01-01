@@ -832,7 +832,7 @@ ifeq ($(DEBUG), 1)
          CFLAGS += -Wp64
       endif
 
-      CFLAGS += -Od -Zi -D_DEBUG -MTd -TP
+      CFLAGS += -Od -Zi -D_DEBUG -MTd
       LDFLAGS += -DEBUG
    else
       CFLAGS += -O0 -g -DDEBUG
@@ -847,7 +847,7 @@ else ifneq (,$(findstring msvc,$(platform)))
       LDFLAGS += -SUBSYSTEM:WINDOWS -ENTRY:mainCRTStartup
    endif
 
-   CFLAGS += -O2 -DNDEBUG -MT -TP
+   CFLAGS += -O2 -DNDEBUG -MT
 else
    CFLAGS += -O3
 endif
