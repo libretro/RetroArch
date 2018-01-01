@@ -28,6 +28,10 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#if defined(_MSC_VER) && _MSC_VER < 1800
+#define va_copy(dst, src) ((dst) = (src))
+#endif
+
 /* http://stackoverflow.com/questions/2915672/snprintf-and-visual-studio-2010 */
 
 int c99_vsnprintf_retro__(char *outBuf, size_t size, const char *format, va_list ap)
