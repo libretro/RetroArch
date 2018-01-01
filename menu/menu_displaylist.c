@@ -6179,7 +6179,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_BROWSE_URL_LIST,
                MENU_SETTING_ACTION, 0, 0);
 #endif
-		 if (settings->bools.menu_content_show_settings)
          menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS),
                msg_hash_to_str(MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS),
@@ -6322,10 +6321,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_NETPLAY,
                   PARSE_ACTION, false);
-            if (settings->bools.menu_show_online_updater)
-               menu_displaylist_parse_settings_enum(menu, info,
-                     MENU_ENUM_LABEL_ONLINE_UPDATER,
-                     PARSE_ACTION, false);
+         if (settings->bools.menu_show_online_updater)
+            menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_ONLINE_UPDATER,
+                  PARSE_ACTION, false);
 #endif
             menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_SETTINGS, PARSE_ACTION, false);

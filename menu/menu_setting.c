@@ -5742,6 +5742,9 @@ static bool setting_append_list(
                   SD_FLAG_NONE);
 #endif
 				  
+#ifdef HAVE_XMB
+         if (string_is_equal_fast(settings->arrays.menu_driver, "xmb", 3))
+         {
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.menu_content_show_settings,
@@ -5758,9 +5761,6 @@ static bool setting_append_list(
                   SD_FLAG_NONE);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 			
-#ifdef HAVE_XMB
-			if (string_is_equal_fast(settings->arrays.menu_driver, "xmb", 3))
-			{
 				CONFIG_STRING(
 				   list, list_info,
 				   settings->paths.menu_content_show_settings_password,
