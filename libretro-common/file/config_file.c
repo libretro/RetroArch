@@ -709,7 +709,7 @@ bool config_get_array(config_file_t *conf, const char *key,
 bool config_get_path(config_file_t *conf, const char *key,
       char *buf, size_t size)
 {
-#if defined(RARCH_CONSOLE)
+#if defined(RARCH_CONSOLE) || !defined(RARCH_INTERNAL)
    if (config_get_array(conf, key, buf, size))
       return true;
 #else
@@ -791,7 +791,7 @@ void config_unset(config_file_t *conf, const char *key)
 
 void config_set_path(config_file_t *conf, const char *entry, const char *val)
 {
-#if defined(RARCH_CONSOLE)
+#if defined(RARCH_CONSOLE) || !defined(RARCH_INTERNAL)
    config_set_string(conf, entry, val);
 #else
    char buf[PATH_MAX_LENGTH];
