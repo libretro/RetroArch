@@ -44,6 +44,7 @@
 #include <file/file_path.h>
 #include <lists/string_list.h>
 #include <string/stdstring.h>
+#include <streams/file_stream.h>
 
 #define MAX_INCLUDE_DEPTH 16
 
@@ -76,40 +77,6 @@ struct config_file
 
 static config_file_t *config_file_new_internal(
       const char *path, unsigned depth);
-
-static char *getaline(FILE *file)
-{
-   char* newline     = (char*)malloc(9);
-   char* newline_tmp = NULL;
-   size_t cur_size   = 8;
-   size_t idx        = 0;
-   int in            = fgetc(file);
-
-   if (!newline)
-      return NULL;
-
-   while (in != EOF && in != '\n')
-   {
-      if (idx == cur_size)
-      {
-         cur_size *= 2;
-         newline_tmp = (char*)realloc(newline, cur_size + 1);
-
-         if (!newline_tmp)
-         {
-            free(newline);
-            return NULL;
-         }
-
-         newline = newline_tmp;
-      }
-
-      newline[idx++] = in;
-      in = fgetc(file);
-   }
-   newline[idx] = '\0';
-   return newline;
-}
 
 static char *strip_comment(char *str)
 {
@@ -174,16 +141,17 @@ static char *extract_value(char *line, bool is_value)
    if (*line == '"')
    {
       line++;
+      if (*line == '"') return strdup("");
       tok = strtok_r(line, "\"", &save);
-      goto end;
    }
    else if (*line == '\0') /* Nothing */
       return NULL;
+   else
+   {
+      /* We don't have that. Read until next space. */
+      tok = strtok_r(line, " \n\t\f\r\v", &save);
+   }
 
-   /* We don't have that. Read until next space. */
-   tok = strtok_r(line, " \n\t\f\r\v", &save);
-
-end:
    if (tok)
       return strdup(tok);
    return NULL;
@@ -223,7 +191,7 @@ static void add_child_list(config_file_t *parent, config_file_t *child)
    /* Rebase tail. */
    if (parent->entries)
    {
-      struct config_entry_list *head = 
+      struct config_entry_list *head =
          (struct config_entry_list*)parent->entries;
 
       while (head->next)
@@ -307,8 +275,8 @@ static bool parse_line(config_file_t *conf,
 
    comment = strip_comment(line);
 
-   /* Starting line with # and include includes config files. */
-   if ((comment == line) && (conf->include_depth < MAX_INCLUDE_DEPTH))
+   /* Starting line with #include includes config files. */
+   if (comment == line)
    {
       comment++;
       if (strstr(comment, "include ") == comment)
@@ -316,13 +284,14 @@ static bool parse_line(config_file_t *conf,
          char *line = comment + strlen("include ");
          char *path = extract_value(line, false);
          if (path)
-            add_sub_conf(conf, path);
+         {
+            if (conf->include_depth >= MAX_INCLUDE_DEPTH)
+               fprintf(stderr, "!!! #include depth exceeded for config. Might be a cycle.\n");
+            else
+               add_sub_conf(conf, path);
+         }
          goto error;
       }
-   }
-   else if (conf->include_depth >= MAX_INCLUDE_DEPTH)
-   {
-      fprintf(stderr, "!!! #include depth exceeded for config. Might be a cycle.\n");
    }
 
    /* Skips to first character. */
@@ -344,10 +313,11 @@ static bool parse_line(config_file_t *conf,
 
       key[idx++] = *line++;
    }
-   key[idx] = '\0';
-   list->key = key;
+   key[idx]      = '\0';
+   list->key     = key;
 
-   list->value = extract_value(line, true);
+   list->value   = extract_value(line, true);
+
    if (!list->value)
    {
       list->key = NULL;
@@ -364,7 +334,7 @@ error:
 static config_file_t *config_file_new_internal(
       const char *path, unsigned depth)
 {
-   FILE              *file  = NULL;
+   RFILE              *file = NULL;
    struct config_file *conf = (struct config_file*)malloc(sizeof(*conf));
    if (!conf)
       return NULL;
@@ -386,7 +356,9 @@ static config_file_t *config_file_new_internal(
       goto error;
 
    conf->include_depth = depth;
-   file                = fopen_utf8(path, "r");
+   file                = filestream_open(path,
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    if (!file)
    {
@@ -394,7 +366,7 @@ static config_file_t *config_file_new_internal(
       goto error;
    }
 
-   while (!feof(file))
+   while (!filestream_eof(file))
    {
       char *line                     = NULL;
       struct config_entry_list *list = (struct config_entry_list*)malloc(sizeof(*list));
@@ -402,7 +374,7 @@ static config_file_t *config_file_new_internal(
       if (!list)
       {
          config_file_free(conf);
-         fclose(file);
+         filestream_close(file);
          return NULL;
       }
 
@@ -411,7 +383,7 @@ static config_file_t *config_file_new_internal(
       list->value     = NULL;
       list->next      = NULL;
 
-      line            = getaline(file);
+      line            = filestream_getline(file);
 
       if (!line)
       {
@@ -435,7 +407,7 @@ static config_file_t *config_file_new_internal(
          free(list);
    }
 
-   fclose(file);
+   filestream_close(file);
 
    return conf;
 
@@ -520,7 +492,7 @@ config_file_t *config_file_new_from_string(const char *from_string)
    conf->tail          = NULL;
    conf->includes      = NULL;
    conf->include_depth = 0;
-   
+
    lines = string_split(from_string, "\n");
    if (!lines)
       return conf;
@@ -572,11 +544,8 @@ config_file_t *config_file_new(const char *path)
 static struct config_entry_list *config_get_entry(const config_file_t *conf,
       const char *key, struct config_entry_list **prev)
 {
-   struct config_entry_list *entry;
-   struct config_entry_list *previous = NULL;
-
-   if (prev)
-      previous = *prev;
+   struct config_entry_list *entry    = NULL;
+   struct config_entry_list *previous = prev ? *prev : NULL;
 
    for (entry = conf->entries; entry; entry = entry->next)
    {
