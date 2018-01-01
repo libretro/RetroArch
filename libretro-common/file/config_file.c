@@ -204,7 +204,8 @@ static void add_sub_conf(config_file_t *conf, char *path)
    char real_path[PATH_MAX_LENGTH];
    config_file_t         *sub_conf  = NULL;
    struct config_include_list *head = conf->includes;
-   struct config_include_list *node = (struct config_include_list*)malloc(sizeof(*node));
+   struct config_include_list *node = (struct config_include_list*)
+      malloc(sizeof(*node));
 
    if (node)
    {
@@ -247,15 +248,11 @@ static void add_sub_conf(config_file_t *conf, char *path)
    sub_conf = (config_file_t*)
       config_file_new_internal(real_path, conf->include_depth + 1);
    if (!sub_conf)
-   {
-      free(path);
       return;
-   }
 
    /* Pilfer internal list. */
    add_child_list(conf, sub_conf);
    config_file_free(sub_conf);
-   free(path);
 }
 
 static bool parse_line(config_file_t *conf,
@@ -280,6 +277,7 @@ static bool parse_line(config_file_t *conf,
       {
          char *line = comment + strlen("include ");
          char *path = extract_value(line, false);
+
          if (path)
          {
             if (conf->include_depth >= MAX_INCLUDE_DEPTH)
