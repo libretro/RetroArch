@@ -13,6 +13,7 @@
 - GUI/XMB: Allow changing menu scale to 200%.
 - KEYMAPPER: prevent a condition that caused input_menu_toggle to stop working when a RETRO_DEVICE_KEYBOARD type device is enabled
 - LOCALIZATION: Update Italian translation.
+- LOCALIZATION: Update Spanish translation.
 - NSW: Initial Nintendo Switch port, based on libtransistor SDK.
 - PS3: Enable Cheevos.
 - PSP: Enable threading support through pthreads.
