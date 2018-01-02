@@ -37,6 +37,14 @@ ifneq ($(findstring Win32,$(OS)),)
    LDFLAGS += -static-libgcc -lwinmm
 endif
 
+ifeq ($(DEBUG), 1)
+   OPTIMIZE_FLAG = -O0 -g
+   GL_DEBUG = 1
+   VULKAN_DEBUG = 1
+else
+   OPTIMIZE_FLAG = -O3 -ffast-math
+endif
+
 include Makefile.common
 
 ifeq ($(shell $(CC) -v 2>&1 | grep -c "clang"),1)
@@ -67,12 +75,6 @@ endif
 
 ifneq ($(V),1)
    Q := @
-endif
-
-ifeq ($(DEBUG), 1)
-   OPTIMIZE_FLAG = -O0 -g
-else
-   OPTIMIZE_FLAG = -O3 -ffast-math
 endif
 
 ifneq ($(findstring Win32,$(OS)),)
