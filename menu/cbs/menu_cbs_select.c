@@ -149,17 +149,19 @@ static int action_select_input_desc(const char *path, const char *label, unsigne
 }
 
 #ifdef HAVE_KEYMAPPER
-static int action_select_input_desc_kbd(const char *path, const char *label, unsigned type,
+static int action_select_input_desc_kbd(const char *path,
+      const char *label, unsigned type,
    size_t idx)
 {
    return action_right_input_desc_kbd(type, label, true);
 }
 #endif
 
-static int action_select_netplay_connect_room(const char *path, const char *label, unsigned type,
-   size_t idx)
-{
 #ifdef HAVE_NETWORKING
+static int action_select_netplay_connect_room(const char *path,
+      const char *label, unsigned type,
+      size_t idx)
+{
    char tmp_hostname[4115];
 
    tmp_hostname[0] = '\0';
@@ -173,16 +175,16 @@ static int action_select_netplay_connect_room(const char *path, const char *labe
       snprintf(tmp_hostname,
             sizeof(tmp_hostname),
             "%s|%d",
-         netplay_room_list[idx - 3].mitm_address,
-         netplay_room_list[idx - 3].mitm_port);
+            netplay_room_list[idx - 3].mitm_address,
+            netplay_room_list[idx - 3].mitm_port);
    }
    else
    {
       snprintf(tmp_hostname,
             sizeof(tmp_hostname),
             "%s|%d",
-         netplay_room_list[idx - 3].address,
-         netplay_room_list[idx - 3].port);
+            netplay_room_list[idx - 3].address,
+            netplay_room_list[idx - 3].port);
    }
 
 #if 0
@@ -193,15 +195,12 @@ static int action_select_netplay_connect_room(const char *path, const char *labe
 #endif
 
    task_push_netplay_crc_scan(netplay_room_list[idx - 3].gamecrc,
-      netplay_room_list[idx - 3].gamename,
-      tmp_hostname, netplay_room_list[idx - 3].corename);
+         netplay_room_list[idx - 3].gamename,
+         tmp_hostname, netplay_room_list[idx - 3].corename);
 
-#else
-   return -1;
-
-#endif
    return 0;
 }
+#endif
 
 static int menu_cbs_init_bind_select_compare_type(
       menu_file_list_cbs_t *cbs, unsigned type)
