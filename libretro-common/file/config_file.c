@@ -964,42 +964,51 @@ bool config_file_exists(const char *path)
    return true;
 }
 
-void test_config_file_parse_contains(const char * cfgtext, const char * key, const char * val)
+#if 0
+static void test_config_file_parse_contains(
+      const char * cfgtext,
+      const char *key, const char *val)
 {
-	config_file_t* cfg = config_file_new_from_string(cfgtext);
-	char* out;
-	bool ok;
-	
-	if (!cfg) abort();
-	
-	ok = config_get_string(cfg, key, &out);
-	if (ok != (bool)val) abort();
-	if (!val) return;
-	
-	if (out == NULL) out = strdup("");
-	if (strcmp(out, val) != 0) abort();
-	free(out);
+   config_file_t *cfg = config_file_new_from_string(cfgtext);
+   char          *out = NULL;
+   bool            ok = false;
+
+   if (!cfg)
+      abort();
+
+   ok = config_get_string(cfg, key, &out);
+   if (ok != (bool)val)
+      abort();
+   if (!val)
+      return;
+
+   if (out == NULL)
+      out = strdup("");
+   if (strcmp(out, val) != 0)
+      abort();
+   free(out);
 }
 
-void test_config_file()
+static void test_config_file(void)
 {
-	test_config_file_parse_contains("foo = \"bar\"\n",   "foo", "bar");
-	test_config_file_parse_contains("foo = \"bar\"",     "foo", "bar");
-	test_config_file_parse_contains("foo = \"bar\"\r\n", "foo", "bar");
-	test_config_file_parse_contains("foo = \"bar\"",     "foo", "bar");
-	
-	/* turns out it treats empty as nonexistent - should probably be fixed */
-	/*
-	test_config_file_parse_contains("foo = \"\"\n",   "foo", "");
-	test_config_file_parse_contains("foo = \"\"",     "foo", "");
-	test_config_file_parse_contains("foo = \"\"\r\n", "foo", "");
-	test_config_file_parse_contains("foo = \"\"",     "foo", "");
-	// */
-	
-	test_config_file_parse_contains("foo = \"\"\n",   "bar", NULL);
-	test_config_file_parse_contains("foo = \"\"",     "bar", NULL);
-	test_config_file_parse_contains("foo = \"\"\r\n", "bar", NULL);
-	test_config_file_parse_contains("foo = \"\"",     "bar", NULL);
+   test_config_file_parse_contains("foo = \"bar\"\n",   "foo", "bar");
+   test_config_file_parse_contains("foo = \"bar\"",     "foo", "bar");
+   test_config_file_parse_contains("foo = \"bar\"\r\n", "foo", "bar");
+   test_config_file_parse_contains("foo = \"bar\"",     "foo", "bar");
+
+#if 0
+   /* turns out it treats empty as nonexistent - 
+    * should probably be fixed */
+   test_config_file_parse_contains("foo = \"\"\n",   "foo", "");
+   test_config_file_parse_contains("foo = \"\"",     "foo", "");
+   test_config_file_parse_contains("foo = \"\"\r\n", "foo", "");
+   test_config_file_parse_contains("foo = \"\"",     "foo", "");
+#endif
+
+   test_config_file_parse_contains("foo = \"\"\n",   "bar", NULL);
+   test_config_file_parse_contains("foo = \"\"",     "bar", NULL);
+   test_config_file_parse_contains("foo = \"\"\r\n", "bar", NULL);
+   test_config_file_parse_contains("foo = \"\"",     "bar", NULL);
 }
 
 /* compile with:
@@ -1009,9 +1018,8 @@ void test_config_file()
  && ./a.out
 */
 
-/*
-int main()
+int main(void)
 {
 	test_config_file();
 }
-*/
+#endif
