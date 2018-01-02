@@ -135,6 +135,8 @@ static bool switch_frame(void *data, const void *frame,
       uint64_t frame_count, unsigned pitch,
       const char *msg, video_frame_info_t *video_info)
 {
+	static uint64_t last_frame = 0;
+	
    unsigned x, y;
    result_t r;
    uint64_t begin, done_copying, post_vsync, pre_swizzle, post_swizzle,
@@ -214,15 +216,14 @@ static bool switch_frame(void *data, const void *frame,
    if (msg != NULL && strlen(msg) > 0)
       RARCH_LOG("message: %s\n", msg);
 
-   if (sw->vsync)
-      switch_wait_vsync(sw);
-
-   post_vsync = svcGetSystemTick();
-
-   r = surface_dequeue_buffer(&surface, &out_buffer);
-
-   if (r != RESULT_OK)
-      return false;
+   do {
+	   if (sw->vsync) // vsync seems to sometimes return before the buffer has actually been dequeued?
+		   switch_wait_vsync(sw);
+	   
+	   post_vsync = svcGetSystemTick();
+	   
+	   r = surface_dequeue_buffer(&surface, &out_buffer);
+   } while(r != RESULT_OK);
 
    pre_swizzle  = svcGetSystemTick();
    gfx_slow_swizzling_blit(out_buffer, image, 1280, 720, 0, 0);
@@ -239,6 +240,7 @@ static bool switch_frame(void *data, const void *frame,
 
    RARCH_LOG("frame %d benchmark: copy %ld ms, swizzle %ld ms, vsync %ld ms\n", frame_count, copy_ms, swizzle_ms, vsync_ms);
 
+   last_frame = svcGetSystemTick();
    return true;
 }
 
