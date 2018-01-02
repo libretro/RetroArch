@@ -918,7 +918,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                 "Activa o desactiva el modo \n"
                 "pantalla completa.");
          break;
-      case MENU_ENUM_LABEL_BLOCK_SaveRAM_OVERWRITE:
+      case MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE:
          snprintf(s, len,
                "Impide que la SaveRAM sea sobrescrita \n"
                "mientras se carga un guardado rápido.\n"
