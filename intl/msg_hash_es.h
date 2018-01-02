@@ -3115,35 +3115,35 @@ MSG_HASH(
 	"Sombras de iconos"
 	)
 MSG_HASH(
-	MENU_ENUM_LABEL_VALUE_XMB_SHOW_HISTORY,
+	MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
 	"Mostrar pestaña historial"
 	)
 MSG_HASH(
-	MENU_ENUM_LABEL_VALUE_XMB_SHOW_ADD,
+	MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD,
 	"Mostrar pestaña importar contenido"
 	)
 MSG_HASH(
-	MENU_ENUM_LABEL_VALUE_XMB_SHOW_FAVORITES,
+	MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES,
 	"Mostrar pestaña favoritos"
 	)
 MSG_HASH(
-	MENU_ENUM_LABEL_VALUE_XMB_SHOW_IMAGES,
+	MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_IMAGES,
 	"Mostrar pestaña imágenes"
 	)
 MSG_HASH(
-	MENU_ENUM_LABEL_VALUE_XMB_SHOW_MUSIC,
+	MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_MUSIC,
 	"Mostrar pestaña música"
 	)
 MSG_HASH(
-	MENU_ENUM_LABEL_VALUE_XMB_SHOW_SETTINGS,
+	MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS,
 	"Mostrar pestaña configuración"
 	)
 MSG_HASH(
-	MENU_ENUM_LABEL_VALUE_XMB_SHOW_VIDEO,
+	MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO,
 	"Mostrar pestaña video"
 	)
 MSG_HASH(
-	MENU_ENUM_LABEL_VALUE_XMB_SHOW_NETPLAY,
+	MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
 	"Mostrar pestaña juego en red"
 	)
 MSG_HASH(
@@ -5063,35 +5063,35 @@ MSG_HASH(
 	"Seleccionar el tipo de letra usado en el menú"
 	)
 MSG_HASH(
-	MENU_ENUM_SUBLABEL_XMB_SHOW_FAVORITES,
+	MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
 	"Mostrar la pestaña de favoritos en el menú principal"
 	)
 MSG_HASH(
-	MENU_ENUM_SUBLABEL_XMB_SHOW_IMAGES,
+	MENU_ENUM_SUBLABEL_CONTENT_SHOW_IMAGES,
 	"Mostrar la pestaña de imágenes en el menú principal"
 	)
 MSG_HASH(
-	MENU_ENUM_SUBLABEL_XMB_SHOW_MUSIC,
+	MENU_ENUM_SUBLABEL_CONTENT_SHOW_MUSIC,
 	"Mostrar la pestaña de música en el menú principal"
 	)
 MSG_HASH(
-	MENU_ENUM_SUBLABEL_XMB_SHOW_VIDEO,
+	MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO,
 	"Mostrar la pestaña de video en el menú principal"
 	)
 MSG_HASH(
-	MENU_ENUM_SUBLABEL_XMB_SHOW_NETPLAY,
+	MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
 	"Mostrar la pestaña de juego en red en el menú principal"
 	)
 MSG_HASH(
-	MENU_ENUM_SUBLABEL_XMB_SHOW_SETTINGS,
+	MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS,
 	"Mostrar la pestaña de configuración en el menú principal"
 	)
 MSG_HASH(
-	MENU_ENUM_SUBLABEL_XMB_SHOW_HISTORY,
+	MENU_ENUM_SUBLABEL_CONTENT_SHOW_HISTORY,
 	"Mostrar la pestaña de historial en el menú principal"
 	)
 MSG_HASH(
-	MENU_ENUM_SUBLABEL_XMB_SHOW_ADD,
+	MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD,
 	"Mostrar la pestaña de importar contenido en el menú principal"
 	)
 MSG_HASH(
@@ -5403,7 +5403,7 @@ MSG_HASH(
 	"Activar pestaña de opciones"
 	)
 MSG_HASH(
-	MENU_ENUM_LABEL_VALUE_XMB_SHOW_SETTINGS_PASSWORD,
+	MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
 	"Establecer contraseña para activar la pestaña de opciones"
 	)
 MSG_HASH(
@@ -5423,7 +5423,7 @@ MSG_HASH(
 	"Activa la pestaña de opciones. Es necesario reiniciar para que aparezca"
 	)
 MSG_HASH(
-	MENU_ENUM_SUBLABEL_XMB_SHOW_SETTINGS_PASSWORD,
+	MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
 	"Proveer una contraseña al ocultar la pestaña de opciones, hace posible restaurarla desde el menú principal, activando 'Mostrar pestaña de opciones'"
 	)
 MSG_HASH(
