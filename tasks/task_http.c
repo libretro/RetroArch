@@ -237,6 +237,8 @@ static bool task_http_retriever(retro_task_t *task, void *data)
 
 static void http_transfer_progress_cb(retro_task_t *task)
 {
+   if (!task)
+      return;
    video_display_server_set_window_progress(task->progress, task->finished);
 }
 

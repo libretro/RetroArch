@@ -46,7 +46,8 @@ void* video_display_server_init(void)
 
    current_display_server_data = current_display_server->init();
 
-   RARCH_LOG("[Video]: Found display server: %s\n", current_display_server->ident);
+   RARCH_LOG("[Video]: Found display server: %s\n",
+		   current_display_server->ident);
 
    return current_display_server_data;
 }
@@ -58,10 +59,14 @@ void video_display_server_destroy(void)
 
 bool video_display_server_set_window_opacity(unsigned opacity)
 {
-   return current_display_server->set_window_opacity(current_display_server_data, opacity);
+   if (current_display_server && current_display_server->set_window_opacity)
+      return current_display_server->set_window_opacity(current_display_server_data, opacity);
+   return false;
 }
 
 bool video_display_server_set_window_progress(int progress, bool finished)
 {
-   return current_display_server->set_window_progress(current_display_server_data, progress, finished);
+   if (current_display_server && current_display_server->set_window_progress)
+      return current_display_server->set_window_progress(current_display_server_data, progress, finished);
+   return false;
 }
