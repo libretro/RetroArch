@@ -686,14 +686,6 @@ ifeq ($(HAVE_NEON),1)
           $(LIBRETRO_COMM_DIR)/audio/conversion/float_to_s16_neon.o
 endif
 
-ifneq ($(findstring Win32,$(OS)),)
-   # if user explicitly sets --disable-vulkan on Windows, then disable it
-   ifneq ($(HAVE_NO_VULKAN),1)
-      HAVE_VULKAN=1
-      DEFINES += -DHAVE_VULKAN
-   endif
-endif
-
 HW_CONTEXT_MENU_DRIVERS=$(HAVE_RGUI)
 
 ifeq ($(HW_CONTEXT_MENU_DRIVERS),0)
