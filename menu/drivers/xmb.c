@@ -36,9 +36,8 @@
 #include "../../config.h"
 #endif
 
-#ifndef HAVE_DYNAMIC
+//this is required regardless of HAVE_DYNAMIC for frontend_driver_parse_drive_list
 #include "../../frontend/frontend_driver.h"
-#endif
 
 #include "menu_generic.h"
 
@@ -3509,28 +3508,28 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
 
    xmb->system_tab_end                = 0;
    xmb->tabs[xmb->system_tab_end]     = XMB_SYSTEM_TAB_MAIN;
-   if (settings->bools.menu_xmb_show_settings && !settings->bools.kiosk_mode_enable)
+   if (settings->bools.menu_content_show_settings && !settings->bools.kiosk_mode_enable)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_SETTINGS;
-   if (settings->bools.menu_xmb_show_favorites)
+   if (settings->bools.menu_content_show_favorites)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_FAVORITES;
-   if (settings->bools.menu_xmb_show_history)
+   if (settings->bools.menu_content_show_history)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_HISTORY;
 #ifdef HAVE_IMAGEVIEWER
-   if (settings->bools.menu_xmb_show_images)
+   if (settings->bools.menu_content_show_images)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_IMAGES;
 #endif
-   if (settings->bools.menu_xmb_show_music)
+   if (settings->bools.menu_content_show_music)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_MUSIC;
 #ifdef HAVE_FFMPEG
-   if (settings->bools.menu_xmb_show_video)
+   if (settings->bools.menu_content_show_video)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_VIDEO;
 #endif
 #ifdef HAVE_NETWORKING
-   if (settings->bools.menu_xmb_show_netplay)
+   if (settings->bools.menu_content_show_netplay)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_NETPLAY;
 #endif
 #ifdef HAVE_LIBRETRODB
-   if (settings->bools.menu_xmb_show_add && !settings->bools.kiosk_mode_enable)
+   if (settings->bools.menu_content_show_add && !settings->bools.kiosk_mode_enable)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_ADD;
 #endif
 
@@ -4397,7 +4396,7 @@ static int xmb_list_push(void *data, void *userdata,
                }
             }
 #endif
-            if (!settings->bools.menu_xmb_show_settings && !string_is_empty(settings->paths.menu_xmb_show_settings_password))
+            if (!settings->bools.menu_content_show_settings && !string_is_empty(settings->paths.menu_content_show_settings_password))
             {
                entry.enum_idx      = MENU_ENUM_LABEL_XMB_MAIN_MENU_ENABLE_SETTINGS;
                menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);

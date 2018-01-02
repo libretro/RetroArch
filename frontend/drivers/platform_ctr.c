@@ -388,7 +388,7 @@ static int frontend_ctr_get_rating(void)
       case 1:
       case 3:
          /*Old 3/2DS*/
-         break;
+         return 3;
 
       case 2:
       case 4:
@@ -401,7 +401,7 @@ static int frontend_ctr_get_rating(void)
          break;
    }
 
-   return 3;
+   return -1;
 }
 
 enum frontend_architecture frontend_ctr_get_architecture(void)

@@ -1030,8 +1030,8 @@ static struct config_path_setting *populate_settings_path(settings_t *settings, 
    /* Paths */
 #ifdef HAVE_XMB
    SETTING_PATH("xmb_font",                   settings->paths.path_menu_xmb_font, false, NULL, true);
-   SETTING_PATH("xmb_show_settings_password", settings->paths.menu_xmb_show_settings_password, false, NULL, true);
 #endif
+   SETTING_PATH("content_show_settings_password", settings->paths.menu_content_show_settings_password, false, NULL, true);
    SETTING_PATH("kiosk_mode_password",        settings->paths.kiosk_mode_password, false, NULL, true);
    SETTING_PATH("netplay_nickname",           settings->paths.username, false, NULL, true);
    SETTING_PATH("video_filter",               settings->paths.path_softfilter_plugin, false, NULL, true);
@@ -1247,17 +1247,22 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("quick_menu_show_save_game_overrides",  &settings->bools.quick_menu_show_save_game_overrides, true, quick_menu_show_save_game_overrides, false);
    SETTING_BOOL("quick_menu_show_information",   &settings->bools.quick_menu_show_information, true, quick_menu_show_information, false);
    SETTING_BOOL("kiosk_mode_enable",             &settings->bools.kiosk_mode_enable, true, kiosk_mode_enable, false);
-#ifdef HAVE_MATERIALUI
-   SETTING_BOOL("materialui_icons_enable",            &settings->bools.menu_materialui_icons_enable, true, materialui_icons_enable, false);
-#endif
-#ifdef HAVE_XMB
-   SETTING_BOOL("xmb_shadows_enable",            &settings->bools.menu_xmb_shadows_enable, true, xmb_shadows_enable, false);
-   SETTING_BOOL("xmb_show_settings",             &settings->bools.menu_xmb_show_settings, true, xmb_show_settings, false);
-   SETTING_BOOL("xmb_show_favorites",            &settings->bools.menu_xmb_show_favorites, true, xmb_show_favorites, false);
+   SETTING_BOOL("content_show_settings",         &settings->bools.menu_content_show_settings, true, content_show_settings, false);
+   SETTING_BOOL("content_show_favorites",        &settings->bools.menu_content_show_favorites, true, content_show_favorites, false);
 #ifdef HAVE_IMAGEVIEWER
-   SETTING_BOOL("xmb_show_images",               &settings->bools.menu_xmb_show_images, true, xmb_show_images, false);
+   SETTING_BOOL("content_show_images",           &settings->bools.menu_content_show_images, true, content_show_images, false);
 #endif
-   SETTING_BOOL("xmb_show_music",                &settings->bools.menu_xmb_show_music, true, xmb_show_music, false);
+   SETTING_BOOL("content_show_music",            &settings->bools.menu_content_show_music, true, content_show_music, false);
+#ifdef HAVE_FFMPEG
+   SETTING_BOOL("content_show_video",            &settings->bools.menu_content_show_video, true, content_show_video, false);
+#endif
+#ifdef HAVE_NETWORKING
+   SETTING_BOOL("content_show_netplay",          &settings->bools.menu_content_show_netplay, true, content_show_netplay, false);
+#endif
+   SETTING_BOOL("content_show_history",          &settings->bools.menu_content_show_history, true, content_show_history, false);
+#ifdef HAVE_LIBRETRODB
+   SETTING_BOOL("content_show_add",              &settings->bools.menu_content_show_add, true, content_show_add, false);
+#endif
    SETTING_BOOL("menu_show_load_core",           &settings->bools.menu_show_load_core, true, menu_show_load_core, false);
    SETTING_BOOL("menu_show_load_content",        &settings->bools.menu_show_load_content, true, menu_show_load_content, false);
    SETTING_BOOL("menu_show_information",         &settings->bools.menu_show_information, true, menu_show_information, false);
@@ -1267,23 +1272,18 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("menu_show_reboot",              &settings->bools.menu_show_reboot, true, menu_show_reboot, false);
    SETTING_BOOL("menu_show_online_updater",      &settings->bools.menu_show_online_updater, true, menu_show_online_updater, false);
    SETTING_BOOL("menu_show_core_updater",        &settings->bools.menu_show_core_updater, true, menu_show_core_updater, false);
-#ifdef HAVE_FFMPEG
-   SETTING_BOOL("xmb_show_video",                &settings->bools.menu_xmb_show_video, true, xmb_show_video, false);
-#endif
-#ifdef HAVE_NETWORKING
-   SETTING_BOOL("xmb_show_netplay",              &settings->bools.menu_xmb_show_netplay, true, xmb_show_netplay, false);
-#endif
-   SETTING_BOOL("xmb_show_history",              &settings->bools.menu_xmb_show_history, true, xmb_show_history, false);
-#ifdef HAVE_LIBRETRODB
-   SETTING_BOOL("xmb_show_add",                  &settings->bools.menu_xmb_show_add, true, xmb_show_add, false);
-#endif
-#endif
    SETTING_BOOL("filter_by_current_core",        &settings->bools.filter_by_current_core, false, false /* TODO */, false);
    SETTING_BOOL("rgui_show_start_screen",        &settings->bools.menu_show_start_screen, false, false /* TODO */, false);
    SETTING_BOOL("menu_navigation_wraparound_enable", &settings->bools.menu_navigation_wraparound_enable, true, true, false);
    SETTING_BOOL("menu_navigation_browser_filter_supported_extensions_enable",
          &settings->bools.menu_navigation_browser_filter_supported_extensions_enable, true, true, false);
    SETTING_BOOL("menu_show_advanced_settings",  &settings->bools.menu_show_advanced_settings, true, show_advanced_settings, false);
+#ifdef HAVE_MATERIALUI
+   SETTING_BOOL("materialui_icons_enable",       &settings->bools.menu_materialui_icons_enable, true, materialui_icons_enable, false);
+#endif
+#ifdef HAVE_XMB
+   SETTING_BOOL("xmb_shadows_enable",            &settings->bools.menu_xmb_shadows_enable, true, xmb_shadows_enable, false);
+#endif
 #endif
 #ifdef HAVE_CHEEVOS
    SETTING_BOOL("cheevos_enable",               &settings->bools.cheevos_enable, true, cheevos_enable, false);

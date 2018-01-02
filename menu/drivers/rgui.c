@@ -36,6 +36,9 @@
 #include "../../config.h"
 #endif
 
+//this is required regardless of HAVE_DYNAMIC for frontend_driver_parse_drive_list
+#include "../../frontend/frontend_driver.h"
+
 #include "menu_generic.h"
 
 #include "../menu_driver.h"
@@ -523,7 +526,7 @@ static void rgui_render(void *data, bool is_idle)
       back_buf[0] = back_msg[0] = '\0';
 
       strlcpy(back_buf, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK), sizeof(back_buf));
-      strlcpy(back_msg, string_to_upper(back_buf), sizeof(back_msg));
+      string_to_upper(back_buf);
       if (rgui_framebuf_data)
          blit_line(
                RGUI_TERM_START_X(fb_width),
@@ -532,7 +535,7 @@ static void rgui_render(void *data, bool is_idle)
                TITLE_COLOR(settings));
    }
 
-   strlcpy(title_buf, string_to_upper(title_buf), sizeof(title_buf));
+   string_to_upper(title_buf);
 
    if (rgui_framebuf_data)
       blit_line(

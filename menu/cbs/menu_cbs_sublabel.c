@@ -241,10 +241,10 @@ default_sublabel_macro(action_bind_sublabel_delete_entry,                       
 default_sublabel_macro(action_bind_sublabel_information,                           MENU_ENUM_SUBLABEL_INFORMATION)
 default_sublabel_macro(action_bind_sublabel_run,                                   MENU_ENUM_SUBLABEL_RUN)
 default_sublabel_macro(action_bind_sublabel_add_to_favorites,                      MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES)
-default_sublabel_macro(action_bind_sublabel_goto_favorites,                      MENU_ENUM_SUBLABEL_GOTO_FAVORITES)
-default_sublabel_macro(action_bind_sublabel_goto_images,                      MENU_ENUM_SUBLABEL_GOTO_IMAGES)
-default_sublabel_macro(action_bind_sublabel_goto_music,                      MENU_ENUM_SUBLABEL_GOTO_MUSIC)
-default_sublabel_macro(action_bind_sublabel_goto_video,                      MENU_ENUM_SUBLABEL_GOTO_VIDEO)
+default_sublabel_macro(action_bind_sublabel_goto_favorites,                        MENU_ENUM_SUBLABEL_GOTO_FAVORITES)
+default_sublabel_macro(action_bind_sublabel_goto_images,                           MENU_ENUM_SUBLABEL_GOTO_IMAGES)
+default_sublabel_macro(action_bind_sublabel_goto_music,                            MENU_ENUM_SUBLABEL_GOTO_MUSIC)
+default_sublabel_macro(action_bind_sublabel_goto_video,                            MENU_ENUM_SUBLABEL_GOTO_VIDEO)
 default_sublabel_macro(action_bind_sublabel_menu_filebrowser_settings,             MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_auto_remaps_enable,                    MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE)
 default_sublabel_macro(action_bind_sublabel_auto_overrides_enable,                 MENU_ENUM_SUBLABEL_AUTO_OVERRIDES_ENABLE)
@@ -308,8 +308,8 @@ default_sublabel_macro(action_bind_sublabel_quick_menu_show_information,        
 default_sublabel_macro(action_bind_sublabel_menu_enable_kiosk_mode,                MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE)
 default_sublabel_macro(action_bind_sublabel_menu_disable_kiosk_mode,               MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE)
 default_sublabel_macro(action_bind_sublabel_menu_kiosk_mode_password,              MENU_ENUM_SUBLABEL_MENU_KIOSK_MODE_PASSWORD)
-default_sublabel_macro(action_bind_sublabel_menu_favorites_tab,                    MENU_ENUM_SUBLABEL_XMB_SHOW_FAVORITES)
-default_sublabel_macro(action_bind_sublabel_menu_images_tab,                       MENU_ENUM_SUBLABEL_XMB_SHOW_IMAGES)
+default_sublabel_macro(action_bind_sublabel_menu_favorites_tab,                    MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES)
+default_sublabel_macro(action_bind_sublabel_menu_images_tab,                       MENU_ENUM_SUBLABEL_CONTENT_SHOW_IMAGES)
 default_sublabel_macro(action_bind_sublabel_menu_show_load_core,                   MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE)
 default_sublabel_macro(action_bind_sublabel_menu_show_load_content,                MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT)
 default_sublabel_macro(action_bind_sublabel_menu_show_information,                 MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION)
@@ -319,13 +319,13 @@ default_sublabel_macro(action_bind_sublabel_menu_show_quit_retroarch,           
 default_sublabel_macro(action_bind_sublabel_menu_show_reboot,                      MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT)
 default_sublabel_macro(action_bind_sublabel_menu_show_online_updater,              MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER)
 default_sublabel_macro(action_bind_sublabel_menu_show_core_updater,                MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER)
-default_sublabel_macro(action_bind_sublabel_menu_music_tab,                        MENU_ENUM_SUBLABEL_XMB_SHOW_MUSIC)
-default_sublabel_macro(action_bind_sublabel_menu_video_tab,                        MENU_ENUM_SUBLABEL_XMB_SHOW_VIDEO)
-default_sublabel_macro(action_bind_sublabel_menu_netplay_tab,                      MENU_ENUM_SUBLABEL_XMB_SHOW_NETPLAY)
-default_sublabel_macro(action_bind_sublabel_menu_settings_tab,                     MENU_ENUM_SUBLABEL_XMB_SHOW_SETTINGS)
-default_sublabel_macro(action_bind_sublabel_menu_settings_tab_enable_password,     MENU_ENUM_SUBLABEL_XMB_SHOW_SETTINGS_PASSWORD)
-default_sublabel_macro(action_bind_sublabel_menu_history_tab,                      MENU_ENUM_SUBLABEL_XMB_SHOW_HISTORY)
-default_sublabel_macro(action_bind_sublabel_menu_import_content_tab,               MENU_ENUM_SUBLABEL_XMB_SHOW_ADD)
+default_sublabel_macro(action_bind_sublabel_menu_music_tab,                        MENU_ENUM_SUBLABEL_CONTENT_SHOW_MUSIC)
+default_sublabel_macro(action_bind_sublabel_menu_video_tab,                        MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO)
+default_sublabel_macro(action_bind_sublabel_menu_netplay_tab,                      MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY)
+default_sublabel_macro(action_bind_sublabel_menu_settings_tab,                     MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS)
+default_sublabel_macro(action_bind_sublabel_menu_settings_tab_enable_password,     MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD)
+default_sublabel_macro(action_bind_sublabel_menu_history_tab,                      MENU_ENUM_SUBLABEL_CONTENT_SHOW_HISTORY)
+default_sublabel_macro(action_bind_sublabel_menu_import_content_tab,               MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD)
 default_sublabel_macro(action_bind_sublabel_main_menu_enable_settings,             MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_rgui_show_start_screen,                MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN)
 default_sublabel_macro(action_bind_sublabel_menu_header_opacity,                   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_HEADER_OPACITY)
@@ -597,19 +597,19 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_rgui_show_start_screen);
             break;
-         case MENU_ENUM_LABEL_XMB_SHOW_ADD:
+         case MENU_ENUM_LABEL_CONTENT_SHOW_ADD:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_import_content_tab);
             break;
          case MENU_ENUM_LABEL_XMB_MAIN_MENU_ENABLE_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_main_menu_enable_settings);
             break;
-         case MENU_ENUM_LABEL_XMB_SHOW_HISTORY:
+         case MENU_ENUM_LABEL_CONTENT_SHOW_HISTORY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_history_tab);
             break;
-         case MENU_ENUM_LABEL_XMB_SHOW_SETTINGS:
+         case MENU_ENUM_LABEL_CONTENT_SHOW_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_settings_tab);
             break;
-         case MENU_ENUM_LABEL_XMB_SHOW_SETTINGS_PASSWORD:
+         case MENU_ENUM_LABEL_CONTENT_SHOW_SETTINGS_PASSWORD:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_settings_tab_enable_password);
             break;
          case MENU_ENUM_LABEL_GOTO_IMAGES:
@@ -666,13 +666,13 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_MENU_KIOSK_MODE_PASSWORD:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_kiosk_mode_password);
             break;
-         case MENU_ENUM_LABEL_XMB_SHOW_FAVORITES:
+         case MENU_ENUM_LABEL_CONTENT_SHOW_FAVORITES:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_favorites_tab);
             break;
-         case MENU_ENUM_LABEL_XMB_SHOW_IMAGES:
+         case MENU_ENUM_LABEL_CONTENT_SHOW_IMAGES:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_images_tab);
             break;
-         case MENU_ENUM_LABEL_XMB_SHOW_MUSIC:
+         case MENU_ENUM_LABEL_CONTENT_SHOW_MUSIC:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_music_tab);
             break;
          case MENU_ENUM_LABEL_MENU_SHOW_LOAD_CORE:
@@ -702,10 +702,10 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_MENU_SHOW_CORE_UPDATER:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_show_core_updater);
             break;
-         case MENU_ENUM_LABEL_XMB_SHOW_NETPLAY:
+         case MENU_ENUM_LABEL_CONTENT_SHOW_NETPLAY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_netplay_tab);
             break;
-         case MENU_ENUM_LABEL_XMB_SHOW_VIDEO:
+         case MENU_ENUM_LABEL_CONTENT_SHOW_VIDEO:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_video_tab);
             break;
          case MENU_ENUM_LABEL_XMB_FONT:

@@ -36,9 +36,8 @@
 #include "../../config.h"
 #endif
 
-#ifndef HAVE_DYNAMIC
+//this is required regardless of HAVE_DYNAMIC for frontend_driver_parse_drive_list
 #include "../../frontend/frontend_driver.h"
-#endif
 
 #include "menu_generic.h"
 
@@ -2029,6 +2028,8 @@ static int mui_list_push(void *data, void *userdata,
    {
       case DISPLAYLIST_LOAD_CONTENT_LIST:
          {
+            settings_t   *settings      = config_get_ptr();
+            
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
             menu_entries_append_enum(info->list,
@@ -2066,6 +2067,7 @@ static int mui_list_push(void *data, void *userdata,
          break;
       case DISPLAYLIST_MAIN_MENU:
          {
+            settings_t   *settings      = config_get_ptr();
             rarch_system_info_t *system = runloop_get_system_info();
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
@@ -2086,8 +2088,11 @@ static int mui_list_push(void *data, void *userdata,
             if (frontend_driver_has_fork())
 #endif
             {
-               entry.enum_idx      = MENU_ENUM_LABEL_CORE_LIST;
-               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+               if (settings->bools.menu_show_load_core)
+               {
+                  entry.enum_idx      = MENU_ENUM_LABEL_CORE_LIST;
+                  menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+               }
             }
 
             if (system->load_no_content)
@@ -2096,12 +2101,17 @@ static int mui_list_push(void *data, void *userdata,
                menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
             }
 
+            if (settings->bools.menu_show_load_content)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_LOAD_CONTENT_LIST;
+               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            }
 
-            entry.enum_idx      = MENU_ENUM_LABEL_LOAD_CONTENT_LIST;
-            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
-
-            entry.enum_idx      = MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY;
-            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            if (settings->bools.menu_content_show_history)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY;
+               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            }
 
 #if defined(HAVE_NETWORKING)
 #ifdef HAVE_LAKKA
@@ -2118,27 +2128,42 @@ static int mui_list_push(void *data, void *userdata,
             }
 #endif
 
-            entry.enum_idx      = MENU_ENUM_LABEL_NETPLAY;
-            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            if (settings->bools.menu_content_show_netplay)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_NETPLAY;
+               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            }
 #endif
-            entry.enum_idx      = MENU_ENUM_LABEL_INFORMATION_LIST;
-            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            if (settings->bools.menu_show_information)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_INFORMATION_LIST;
+               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            }
 #ifndef HAVE_DYNAMIC
             entry.enum_idx      = MENU_ENUM_LABEL_RESTART_RETROARCH;
             menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 #endif
-            entry.enum_idx      = MENU_ENUM_LABEL_CONFIGURATIONS_LIST;
-            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            if (settings->bools.menu_show_configurations)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_CONFIGURATIONS_LIST;
+               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            }
 
-            entry.enum_idx      = MENU_ENUM_LABEL_HELP_LIST;
-            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            if (settings->bools.menu_show_help)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_HELP_LIST;
+               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            }
 #if !defined(IOS)
             entry.enum_idx      = MENU_ENUM_LABEL_QUIT_RETROARCH;
             menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 #endif
 #if defined(HAVE_LAKKA)
-            entry.enum_idx      = MENU_ENUM_LABEL_REBOOT;
-            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            if (settings->bools.menu_show_reboot)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_REBOOT;
+               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            }
 
             entry.enum_idx      = MENU_ENUM_LABEL_SHUTDOWN;
             menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);

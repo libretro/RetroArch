@@ -1912,9 +1912,9 @@ static void menu_input_st_string_cb_enable_settings(void *userdata,
       const char *label = menu_input_dialog_get_buffer();
       settings_t *settings = config_get_ptr();
 
-      if (string_is_equal(label, settings->paths.menu_xmb_show_settings_password))
+      if (string_is_equal(label, settings->paths.menu_content_show_settings_password))
       {
-         settings->bools.menu_xmb_show_settings = true;
+         settings->bools.menu_content_show_settings = true;
 
          runloop_msg_queue_push(
             msg_hash_to_str(MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK),
