@@ -2587,6 +2587,7 @@ static int menu_displaylist_parse_load_content_settings(
                MENU_SETTING_ACTION_SCREENSHOT, 0, 0);
       }
 
+#ifdef HAVE_CHEEVOS
       if (settings->bools.quick_menu_show_save_load_state &&
           !(settings->bools.cheevos_hardcore_mode_enable && cheevos_loaded))
       {
@@ -2622,6 +2623,7 @@ static int menu_displaylist_parse_load_content_settings(
                MENU_ENUM_LABEL_UNDO_SAVE_STATE,
                MENU_SETTING_ACTION_LOADSTATE, 0, 0);
       }
+#endif
 
       if (settings->bools.quick_menu_show_add_to_favorites)
       {

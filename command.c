@@ -124,8 +124,10 @@ struct command
 #endif
 };
 
+#ifdef HAVE_CHEEVOS
 static bool command_read_ram(const char *arg);
 static bool command_write_ram(const char *arg);
+#endif
 
 static const struct cmd_action_map action_map[] = {
    { "SET_SHADER",      command_set_shader,  "<shader path>" },
@@ -247,9 +249,9 @@ bool command_set_shader(const char *arg)
    return video_driver_set_shader(type, arg);
 }
 
+#if defined(HAVE_COMMAND) && defined(HAVE_CHEEVOS)
 static bool command_read_ram(const char *arg)
 {
-#if defined(HAVE_COMMAND) && defined(HAVE_CHEEVOS)
    cheevos_var_t var;
    unsigned i;
    unsigned nbytes;
@@ -283,14 +285,10 @@ static bool command_read_ram(const char *arg)
    }
 
    return true;
-#else
-   return false;
-#endif
 }
 
 static bool command_write_ram(const char *arg)
 {
-#if defined(HAVE_COMMAND) && defined(HAVE_CHEEVOS)
    int i;
    cheevos_var_t var;
    unsigned nbytes   = 0;
@@ -311,10 +309,9 @@ static bool command_write_ram(const char *arg)
       return true;
    }
 
-#endif
-
    return false;
 }
+#endif
 
 static bool command_get_arg(const char *tok,
       const char **arg, unsigned *index)
@@ -355,28 +352,6 @@ static bool command_get_arg(const char *tok,
    }
 
    return false;
-}
-
-static void command_parse_sub_msg(command_t *handle, const char *tok)
-{
-   const char *arg = NULL;
-   unsigned index  = 0;
-
-   if (command_get_arg(tok, &arg, &index))
-   {
-      if (arg)
-      {
-         if (!action_map[index].action(arg))
-            RARCH_ERR("Command \"%s\" failed.\n", arg);
-      }
-      else
-         handle->state[map[index].id] = true;
-   }
-   else
-      RARCH_WARN("%s \"%s\" %s.\n",
-            msg_hash_to_str(MSG_UNRECOGNIZED_COMMAND),
-            tok,
-            msg_hash_to_str(MSG_RECEIVED));
 }
 
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD) && defined(HAVE_COMMAND)
@@ -434,6 +409,28 @@ static bool command_verify(const char *cmd)
 }
 
 #ifdef HAVE_COMMAND
+static void command_parse_sub_msg(command_t *handle, const char *tok)
+{
+   const char *arg = NULL;
+   unsigned index  = 0;
+
+   if (command_get_arg(tok, &arg, &index))
+   {
+      if (arg)
+      {
+         if (!action_map[index].action(arg))
+            RARCH_ERR("Command \"%s\" failed.\n", arg);
+      }
+      else
+         handle->state[map[index].id] = true;
+   }
+   else
+      RARCH_WARN("%s \"%s\" %s.\n",
+            msg_hash_to_str(MSG_UNRECOGNIZED_COMMAND),
+            tok,
+            msg_hash_to_str(MSG_RECEIVED));
+}
+
 static void command_parse_msg(command_t *handle, char *buf, enum cmd_source_t source)
 {
    char *save      = NULL;
