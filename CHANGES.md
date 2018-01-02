@@ -3,12 +3,15 @@
 - 3DS: Frontend rating is now correctly implemented for both New 3DS/2DS and Old 3DS/2DS.
 - 3DS: Initial networking support, HTTP requests won't work yet.
 - AUDIO: Added 'Audio Resampler Quality' setting to Audio Settings. Setting this higher will increase sound quality at the expense of sound latency and/or performance. Setting this value lower will improve sound latency/performance at the expense of sound quality. Only has an effect if the Sinc resampler is used, and you have to restart the game for changes to take effect.
-- CHEEVOS: Fix unofficial achievements not being loaded
+- CHEEVOS: Fix unofficial achievements not being loaded.
+- CHEEVOS: Show the menu entries when no achievements are found even if hardcore mode is enabled.
 - CHEEVOS: Support Neo Geo Pocket.
+- COMMON: Bugfix for issue related to 'Windows mouse pointer visible when running MESS or MAME cores'.
 - COMMON: Fix bug 'Last item in a Playlist is ignored'.
 - COMMON: New LED API. Driver implemented for Raspberry Pi, proof of concept implemented for core MAME 2003.
 - DINPUT: don't reinitialize input driver on network events / media insertion / network drive connection
 - GUI: Allow changing menu font color.
+- GUI: Menu visibility options for RGUI and MaterialUI.
 - GUI/XMB: Add Monochrome Inverted icon theme.
 - GUI/XMB: Allow changing menu scale to 200%.
 - KEYMAPPER: prevent a condition that caused input_menu_toggle to stop working when a RETRO_DEVICE_KEYBOARD type device is enabled
