@@ -1801,6 +1801,8 @@ bool video_driver_find_driver(void)
 
       current_video                        = NULL;
 
+      (void)hwr;
+
 #if defined(HAVE_VULKAN)
       if (hwr && hw_render_context_is_vulkan(hwr->context_type))
       {
