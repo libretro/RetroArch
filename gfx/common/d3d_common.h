@@ -173,6 +173,8 @@ bool d3d_device_get_backbuffer(LPDIRECT3DDEVICE dev,
 
 void d3d_device_free(LPDIRECT3DDEVICE dev, LPDIRECT3D pd3d);
 
+void *d3d_create(void);
+
 D3DTEXTUREFILTERTYPE d3d_translate_filter(unsigned type);
 
 RETRO_END_DECLS

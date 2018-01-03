@@ -28,6 +28,15 @@
 #include <xgraphics.h>
 #endif
 
+void *d3d_create(void)
+{
+#if defined(HAVE_D3D9)
+   return Direct3DCreate9(D3D_SDK_VERSION);
+#elif defined(HAVE_D3D8)
+   return Direct3DCreate8(D3D_SDK_VERSION);
+#endif
+}
+
 bool d3d_swap(void *data, LPDIRECT3DDEVICE dev)
 {
 #if defined(_XBOX1)

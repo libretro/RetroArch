@@ -637,7 +637,8 @@ static bool d3d_init_base(void *data, const video_info_t *info)
 
    d3d_make_d3dpp(d3d, info, &d3dpp);
 
-   g_pD3D = D3DCREATE_CTX(D3D_SDK_VERSION);
+   g_pD3D            = (LPDIRECT3D)d3d_create();
+
    if (!g_pD3D)
    {
       RARCH_ERR("[D3D]: Failed to create D3D interface.\n");
