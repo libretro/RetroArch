@@ -126,13 +126,14 @@ static void d3d8_renderchain_set_vertices(void *data, unsigned pass,
    {
       unsigned i;
       Vertex vert[4];
+      float tex_w, tex_h;
       void *verts        = NULL;
 
       chain->last_width  = vert_width;
       chain->last_height = vert_height;
 
-      float tex_w        = vert_width;
-      float tex_h        = vert_height;
+      tex_w              = vert_width;
+      tex_h              = vert_height;
 
       vert[0].x        = -1.0f;
       vert[0].y        = -1.0f;
