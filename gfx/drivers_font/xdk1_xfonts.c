@@ -57,7 +57,8 @@ static void *xfonts_init_font(void *video_data,
    XFONT_SetBkMode(xfont->debug_font, XFONT_TRANSPARENT);
    XFONT_SetBkColor(xfont->debug_font, D3DCOLOR_ARGB(100,0,0,0));
    XFONT_SetTextHeight(xfont->debug_font, 14);
-   XFONT_SetTextAntialiasLevel(XFONT_GetTextAntialiasLevel(xfont->debug_font));
+   XFONT_SetTextAntialiasLevel(xfont->debug_font,
+         XFONT_GetTextAntialiasLevel(xfont->debug_font));
 #endif
 
    return xfont;
