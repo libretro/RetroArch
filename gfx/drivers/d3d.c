@@ -494,7 +494,7 @@ static void d3d_deinitialize(d3d_video_t *d3d)
    d3d_deinit_chain(d3d);
 }
 
-#if defined(HAVE_D3D8) && !defined(_XBOX)
+#if defined(HAVE_D3D8)
 #define FS_PRESENTINTERVAL(pp) ((pp)->FullScreen_PresentationInterval)
 #else
 #define FS_PRESENTINTERVAL(pp) ((pp)->PresentationInterval)
