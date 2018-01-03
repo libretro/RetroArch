@@ -257,14 +257,15 @@ LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(LPDIRECT3DDEVICE dev,
 #ifndef _XBOX
    if (usage == 0)
    {
-#if defined(HAVE_D3D9) && !defined(__cplusplus)
-	  if (IDirect3DDevice9_GetSoftwareVertexProcessing(dev))
-#elif defined(HAVE_D3D8) && !defined(__cplusplus)
-	  if (IDirect3DDevice8_GetSoftwareVertexProcessing(dev))
-#else
+#if defined(HAVE_D3D9)
+#ifdef __cplusplus
 	  if (dev->GetSoftwareVertexProcessing())
-#endif
          usage = D3DUSAGE_SOFTWAREPROCESSING;
+#else
+	  if (IDirect3DDevice9_GetSoftwareVertexProcessing(dev))
+         usage = D3DUSAGE_SOFTWAREPROCESSING;
+#endif
+#endif         
    }
 #endif
 
@@ -310,6 +311,8 @@ void *d3d_vertex_buffer_lock(void *vertbuf_ptr)
    buf = D3DVertexBuffer_Lock(vertbuf, 0, 0, 0);
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DVertexBuffer9_Lock(vertbuf, 0, sizeof(buf), &buf, 0);
+#elif defined(HAVE_D3D8) && !defined(__cplusplus)
+   IDirect3DVertexBuffer8_Lock(vertbuf, 0, sizeof(buf), &buf, 0);
 #else
    vertbuf->Lock(0, sizeof(buf), &buf, 0);
 #endif
@@ -418,7 +421,7 @@ void d3d_set_sampler_address_u(LPDIRECT3DDEVICE dev,
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DDevice9_SetSamplerState(dev, sampler, D3DSAMP_ADDRESSU, value);
 #elif defined(HAVE_D3D8)
-   d3d_set_texture_stage(dev, sampler, D3DTSS_ADDRESSU, value);
+   d3d_set_texture_stage_state(dev, sampler, D3DTSS_ADDRESSU, value);
 #else
    dev->SetSamplerState(sampler, D3DSAMP_ADDRESSU, value);
 #endif
@@ -435,7 +438,7 @@ void d3d_set_sampler_address_v(LPDIRECT3DDEVICE dev,
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DDevice9_SetSamplerState(dev, sampler, D3DSAMP_ADDRESSV, value);
 #elif defined(HAVE_D3D8)
-   d3d_set_texture_stage(dev, sampler, D3DTSS_ADDRESSV, value);
+   d3d_set_texture_stage_state(dev, sampler, D3DTSS_ADDRESSV, value);
 #else
    dev->SetSamplerState(sampler, D3DSAMP_ADDRESSV, value);
 #endif
@@ -452,7 +455,7 @@ void d3d_set_sampler_minfilter(LPDIRECT3DDEVICE dev,
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DDevice9_SetSamplerState(dev, sampler, D3DSAMP_MINFILTER, value);
 #elif defined(HAVE_D3D8)
-   d3d_set_texture_stage(dev, sampler, D3DTSS_MINFILTER, value);
+   d3d_set_texture_stage_state(dev, sampler, D3DTSS_MINFILTER, value);
 #else
    dev->SetSamplerState(sampler, D3DSAMP_MINFILTER, value);
 #endif
@@ -469,7 +472,7 @@ void d3d_set_sampler_magfilter(LPDIRECT3DDEVICE dev,
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DDevice9_SetSamplerState(dev, sampler, D3DSAMP_MAGFILTER, value);
 #elif defined(HAVE_D3D8)
-   d3d_set_texture_stage(dev, sampler, D3DTSS_MAGFILTER, value);
+   d3d_set_texture_stage_state(dev, sampler, D3DTSS_MAGFILTER, value);
 #else
    dev->SetSamplerState(sampler, D3DSAMP_MAGFILTER, value);
 #endif
@@ -559,33 +562,52 @@ void d3d_clear(LPDIRECT3DDEVICE dev,
 bool d3d_device_get_render_target_data(LPDIRECT3DDEVICE dev,
       void *_src, void *_dst)
 {
+#if defined(HAVE_D3D9)
    LPDIRECT3DSURFACE src = (LPDIRECT3DSURFACE)_src;
    LPDIRECT3DSURFACE dst = (LPDIRECT3DSURFACE)_dst;
-#if defined(HAVE_D3D9) && !defined(__cplusplus) && !defined(_XBOX)
-   if (SUCCEEDED(IDirect3DDevice9_GetRenderTargetData(dev, src, dst)))
-      return true;
-#elif !defined(_XBOX)
+
+#ifndef _XBOX
+#ifdef __cplusplus
    if (SUCCEEDED(dev->GetRenderTargetData(src, dst)))
       return true;
+#else
+   if (SUCCEEDED(IDirect3DDevice9_GetRenderTargetData(dev, src, dst)))
+      return true;
 #endif
+#endif
+#endif
+
    return false;
 }
 
 bool d3d_device_get_render_target(LPDIRECT3DDEVICE dev,
       unsigned idx, void **data)
 {
-#if defined(HAVE_D3D9) && !defined(__cplusplus)
-   if (FAILED(IDirect3DDevice9_GetRenderTarget(dev, idx,
+   if (!dev)
+	   return false;
+
+#if defined(HAVE_D3D9)
+#ifdef __cplusplus
+   if (SUCCEEDED(dev->GetRenderTarget(idx,
                (LPDIRECT3DSURFACE*)data)))
-#elif defined(HAVE_D3D8) && !defined(__cplusplus)
-   if (FAILED(IDirect3DDevice8_GetRenderTarget(dev,
-               (LPDIRECT3DSURFACE*)data)))
+      return true;
 #else
-   if (FAILED(dev->GetRenderTarget(idx,
-               (LPDIRECT3DSURFACE*)data)))
+   if (SUCCEEDED(IDirect3DDevice9_GetRenderTarget(dev,
+	   idx, (LPDIRECT3DSURFACE*)data)))
+      return true;
 #endif
-      return false;
-   return true;
+#elif defined(HAVE_D3D8)
+#ifdef __cplusplus
+   if (SUCCEEDED(dev->GetRenderTarget(
+               (LPDIRECT3DSURFACE*)data)))
+      return true;
+#else
+   if (SUCCEEDED(IDirect3DDevice8_GetRenderTarget(dev,
+               (LPDIRECT3DSURFACE*)data)))
+      return true;
+#endif
+#endif
+   return false;
 }
 
 
@@ -599,7 +621,7 @@ bool d3d_lock_rectangle(LPDIRECT3DTEXTURE tex,
    if (IDirect3DTexture9_LockRect(tex, level, lock_rect, (const RECT*)rect, flags) != D3D_OK)
       return false;
 #elif defined(HAVE_D3D8) && !defined(__cplusplus)
-   if (IDirect3DTexture8_LockRect(tex, lock_rect, rect, flags) != D3D_OK)
+   if (IDirect3DTexture8_LockRect(tex, level, lock_rect, rect, flags) != D3D_OK)
       return false;
 #else
    if (FAILED(tex->LockRect(level, lock_rect, rect, flags)))
@@ -615,7 +637,7 @@ void d3d_unlock_rectangle(LPDIRECT3DTEXTURE tex)
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DTexture9_UnlockRect(tex, 0);
 #elif defined(HAVE_D3D8) && !defined(__cplusplus)
-   IDirect3DTexture8_UnlockRect(tex);
+   IDirect3DTexture8_UnlockRect(tex, 0);
 #else
    tex->UnlockRect(0);
 #endif
@@ -752,7 +774,7 @@ void d3d_device_set_render_target(LPDIRECT3DDEVICE dev, unsigned idx,
 #if defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DDevice9_SetRenderTarget(dev, idx, surf);
 #elif defined(HAVE_D3D8) && !defined(__cplusplus)
-   IDirect3DDevice8_SetRenderTarget(dev, idx, surf);
+   IDirect3DDevice8_SetRenderTarget(dev, surf, NULL);
 #else
    dev->SetRenderTarget(idx, surf);
 #endif
