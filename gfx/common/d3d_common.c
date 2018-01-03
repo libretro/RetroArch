@@ -65,6 +65,12 @@ typedef HRESULT (__stdcall
         D3DXIMAGE_INFO*           pSrcInfo,
         PALETTEENTRY*             pPalette,
         LPDIRECT3DTEXTURE9*       ppTexture);
+
+typedef HRESULT (__stdcall
+    *D3DXCreateFontIndirect_t)(
+        LPDIRECT3DDEVICE9       pDevice,
+        D3DXFONT_DESC*   pDesc,
+        LPD3DXFONT*             ppFont);
 #elif defined(HAVE_D3D8)
 typedef IDirect3D8 *(__stdcall *D3DCreate_t)(UINT);
 typedef HRESULT (__stdcall 
@@ -83,13 +89,14 @@ typedef HRESULT (__stdcall
         D3DXIMAGE_INFO*           pSrcInfo,
         PALETTEENTRY*             pPalette,
         LPDIRECT3DTEXTURE8*       ppTexture);
-#endif
 
 typedef HRESULT (__stdcall
     *D3DXCreateFontIndirect_t)(
         LPDIRECT3DDEVICE8       pDevice,
         CONST LOGFONT*   pDesc,
         LPD3DXFONT*             ppFont);
+#endif
+
 
 static D3DXCreateFontIndirect_t D3DCreateFontIndirect;
 static D3DCreateTextureFromFile_t D3DCreateTextureFromFile;
