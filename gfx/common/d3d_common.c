@@ -217,7 +217,9 @@ void d3d_vertex_declaration_free(void *data)
    LPDIRECT3DVERTEXDECLARATION vertex_decl = (LPDIRECT3DVERTEXDECLARATION)data;
    if (!vertex_decl)
       return;
-#if defined(HAVE_D3D9) && !defined(__cplusplus)
+#if defined(HAVE_D3D8)
+   /* empty */
+#elif defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DVertexDeclaration9_Release(vertex_decl);
 #else
    vertex_decl->Release();
@@ -798,10 +800,8 @@ void d3d_disable_blend_func(void *data)
 
 void d3d_set_vertex_declaration(void *data, void *vertex_data)
 {
-   LPDIRECT3DDEVICE dev = (LPDIRECT3DDEVICE)data;
-#if defined(HAVE_D3D9)
+   LPDIRECT3DDEVICE dev             = (LPDIRECT3DDEVICE)data;
    LPDIRECT3DVERTEXDECLARATION decl = (LPDIRECT3DVERTEXDECLARATION)vertex_data;
-#endif
    if (!dev)
       return;
 
