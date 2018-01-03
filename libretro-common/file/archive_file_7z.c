@@ -370,18 +370,21 @@ static int sevenzip_parse_file_init(file_archive_transfer_t *state,
    if (InFile_Open(&sevenzip_context->archiveStream.file, file))
       goto error;
 #else
-   fileW = utf8_to_utf16_string_alloc(file);
-
-   if (fileW)
+   if (!string_is_empty(file))
    {
-      /* could not open 7zip archive? */
-      if (InFile_OpenW(&sevenzip_context->archiveStream.file, fileW))
-      {
-         free(fileW);
-         goto error;
-      }
+      fileW = utf8_to_utf16_string_alloc(file);
 
-      free(fileW);
+      if (fileW)
+      {
+         /* could not open 7zip archive? */
+         if (InFile_OpenW(&sevenzip_context->archiveStream.file, fileW))
+         {
+            free(fileW);
+            goto error;
+         }
+
+         free(fileW);
+      }
    }
 #endif
 
