@@ -30,10 +30,17 @@
 
 void *d3d_create(void)
 {
+   UINT SDKVersion = 0;
 #if defined(HAVE_D3D9)
-   return Direct3DCreate9(D3D_SDK_VERSION);
+#ifndef _XBOX
+   SDKVersion = 31;
+#endif
+   return Direct3DCreate9(SDKVersion);
 #elif defined(HAVE_D3D8)
-   return Direct3DCreate8(D3D_SDK_VERSION);
+#ifndef _XBOX
+   SDKVersion = 220;
+#endif
+   return Direct3DCreate8(SDKVersion);
 #endif
 }
 
