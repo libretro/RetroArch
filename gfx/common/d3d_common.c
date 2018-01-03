@@ -323,6 +323,8 @@ void d3d_vertex_buffer_free(void *vertex_data, void *vertex_declaration)
       LPDIRECT3DVERTEXBUFFER buf = (LPDIRECT3DVERTEXBUFFER)vertex_data;
 #if defined(HAVE_D3D9) && !defined(__cplusplus)
       IDirect3DVertexBuffer9_Release(buf);
+#elif defined(HAVE_D3D8) && !defined(__cplusplus)
+      IDirect3DVertexBuffer8_Release(buf);
 #else
       buf->Release();
 #endif
