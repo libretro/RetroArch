@@ -1141,6 +1141,9 @@ static void *d3d_init(const video_info_t *info,
    d3d_video_t            *d3d        = NULL;
    const gfx_ctx_driver_t *ctx_driver = NULL;
 
+   if (!d3d_initialize_symbols())
+      return NULL;
+
 #ifdef _XBOX
    if (video_driver_get_ptr(false))
    {
@@ -1257,6 +1260,8 @@ static void d3d_free(void *data)
 
    if (d3d)
       free(d3d);
+
+   d3d_deinitialize_symbols();
 
 #ifndef _XBOX
    win32_destroy_window();

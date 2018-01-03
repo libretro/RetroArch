@@ -28,20 +28,42 @@
 #include <xgraphics.h>
 #endif
 
+static UINT SDKVersion = 0;
+
+#if defined(HAVE_D3D9)
+typedef IDirect3D9 *(__stdcall *D3DCreate_t)(UINT);
+#elif defined(HAVE_D3D8)
+typedef IDirect3D8 *(__stdcall *D3DCreate_t)(UINT);
+#endif
+
+static D3DCreate_t D3DCreate;
+
 void *d3d_create(void)
 {
-   UINT SDKVersion = 0;
+   return D3DCreate(SDKVersion);
+}
+
+bool d3d_initialize_symbols(void)
+{
+   /* For Xbox we will just link statically 
+    * to Direct3D libraries. */
 #if defined(HAVE_D3D9)
-#ifndef _XBOX
    SDKVersion = 31;
-#endif
-   return Direct3DCreate9(SDKVersion);
+   D3DCreate  = Direct3DCreate9;
 #elif defined(HAVE_D3D8)
-#ifndef _XBOX
    SDKVersion = 220;
+   D3DCreate  = Direct3DCreate8;
 #endif
-   return Direct3DCreate8(SDKVersion);
+
+#ifdef _XBOX
+   SDKVersion = 0;
 #endif
+
+   return true;
+}
+
+void d3d_deinitialize_symbols(void)
+{
 }
 
 bool d3d_swap(void *data, LPDIRECT3DDEVICE dev)

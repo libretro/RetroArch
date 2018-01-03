@@ -175,6 +175,10 @@ void d3d_device_free(LPDIRECT3DDEVICE dev, LPDIRECT3D pd3d);
 
 void *d3d_create(void);
 
+bool d3d_initialize_symbols(void);
+
+void d3d_deinitialize_symbols(void);
+
 D3DTEXTUREFILTERTYPE d3d_translate_filter(unsigned type);
 
 RETRO_END_DECLS
