@@ -20,7 +20,7 @@
 - NSW: Initial Nintendo Switch port, based on libtransistor SDK.
 - PS3: Enable Cheevos.
 - PSP: Enable threading support through pthreads.
-- WINDOWS: Improved Unicode support (for cores/directory creation).
+- WINDOWS: Improved Unicode support (for cores/directory creation and 7zip archives).
 - WINDOWS: Show progress meter on taskbar for downloads (Windows 7 and up).
 - WIIU: Overlay support.
 - WIIU: Transparency support in menu + overlays.
