@@ -804,16 +804,15 @@ void d3d_disable_blend_func(void *data)
 void d3d_set_vertex_declaration(void *data, void *vertex_data)
 {
    LPDIRECT3DDEVICE dev             = (LPDIRECT3DDEVICE)data;
-   LPDIRECT3DVERTEXDECLARATION decl = (LPDIRECT3DVERTEXDECLARATION)vertex_data;
    if (!dev)
       return;
 
 #ifdef _XBOX1
    d3d_set_vertex_shader(dev, D3DFVF_XYZ | D3DFVF_TEX1, NULL);
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
-   IDirect3DDevice9_SetVertexDeclaration(dev, decl);
+   IDirect3DDevice9_SetVertexDeclaration(dev, (LPDIRECT3DVERTEXDECLARATION)vertex_data);
 #elif defined(HAVE_D3D9)
-   dev->SetVertexDeclaration(decl);
+   dev->SetVertexDeclaration((LPDIRECT3DVERTEXDECLARATION)vertex_data);
 #endif
 }
 
