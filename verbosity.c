@@ -29,6 +29,10 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#ifdef _MSC_VER
+#include <compat/msvc.h>
+#endif
+
 #ifdef ANDROID
 #include <android/log.h>
 #endif
@@ -146,6 +150,7 @@ static aslclient asl_client;
    asl_free(msg);
 #endif
 #elif defined(_XBOX1)
+   {
    /* FIXME: Using arbitrary string as fmt argument is unsafe. */
    char msg_new[1024];
    char buffer[1024];
@@ -157,6 +162,7 @@ static aslclient asl_client;
          fmt);
    wvsprintf(buffer, msg_new, ap);
    OutputDebugStringA(buffer);
+   }
 #elif defined(ANDROID)
    int prio = ANDROID_LOG_INFO;
    if (tag)

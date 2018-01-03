@@ -69,10 +69,6 @@ typedef struct _AURORA_LAUNCHDATA_EXECUTABLE
 
 #include <pshpack4.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // Don't do __declspec(dllimport) for things like emulators
 #if defined(NTSYSAPI) && defined(DONT_IMPORT_INTERNAL)
 #undef NTSYSAPI
@@ -978,14 +974,8 @@ XeLoadSection(
 #define STATUS_TOO_MANY_SECRETS			   0xC0000156
 #define STATUS_REGION_MISMATCH			   0xC0050001
 
-#ifdef __cplusplus
-};
-#endif
-
 #include <poppack.h>
 
-extern "C"
-{
 	// Thanks and credit go to Woodoo
 	extern VOID  WINAPI HalWriteSMBusValue(BYTE, BYTE, BOOL, BYTE);
 	extern VOID  WINAPI HalReadSMCTrayState(DWORD* state, DWORD* count);
@@ -999,8 +989,6 @@ extern "C"
 	extern INT WINAPI XWriteTitleInfoNoReboot(LPVOID,LPVOID,DWORD,DWORD,LPVOID);
 
 	extern DWORD* LaunchDataPage;
-}
-
 #endif
 
 static enum frontend_fork xdk_fork_mode = FRONTEND_FORK_NONE;
@@ -1013,15 +1001,9 @@ typedef struct _STRING
     PCHAR Buffer;
 } STRING, *PSTRING;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 VOID RtlInitAnsiString(PSTRING DestinationString, PCHAR SourceString);
 HRESULT ObDeleteSymbolicLink(PSTRING SymbolicLinkName);
 HRESULT ObCreateSymbolicLink(PSTRING SymbolicLinkName, PSTRING DeviceName);
-#ifdef __cplusplus
-}
-#endif
 
 static HRESULT xbox_io_mount(const char* szDrive, char* szDevice)
 {
@@ -1040,6 +1022,7 @@ static HRESULT xbox_io_mount(const char* szDrive, char* szDevice)
 #ifdef _XBOX1
 static HRESULT xbox_io_mount(char *szDrive, char *szDevice)
 {
+   STRING DeviceName, LinkName;
 #ifndef IS_SALAMANDER
    bool original_verbose       = verbosity_is_enabled();
 #endif
@@ -1051,19 +1034,13 @@ static HRESULT xbox_io_mount(char *szDrive, char *szDevice)
    snprintf(szDestinationDrive, sizeof(szDestinationDrive),
          "\\??\\%s", szDrive);
 
-   STRING DeviceName =
-   {
-      strlen(szSourceDevice),
-      strlen(szSourceDevice) + 1,
-      szSourceDevice
-   };
+   DeviceName.Length        = strlen(szSourceDevice);
+   DeviceName.MaximumLength = strlen(szSourceDevice) + 1;
+   DeviceName.Buffer        = szSourceDevice;
 
-   STRING LinkName =
-   {
-      strlen(szDestinationDrive),
-      strlen(szDestinationDrive) + 1,
-      szDestinationDrive
-   };
+   LinkName.Length          = strlen(szDestinationDrive);
+   LinkName.MaximumLength   = strlen(szDestinationDrive) + 1;
+   LinkName.Buffer          = szDestinationDrive;
 
    IoCreateSymbolicLink(&LinkName, &DeviceName);
 
@@ -1078,17 +1055,15 @@ static HRESULT xbox_io_mount(char *szDrive, char *szDevice)
 
 static HRESULT xbox_io_unmount(char *szDrive)
 {
+   STRING LinkName;
    char szDestinationDrive[16] = {0};
 
    snprintf(szDestinationDrive, sizeof(szDestinationDrive),
          "\\??\\%s", szDrive);
 
-   STRING LinkName =
-   {
-      strlen(szDestinationDrive),
-      strlen(szDestinationDrive) + 1,
-      szDestinationDrive
-   };
+   LinkName.Length        = strlen(szDestinationDrive);
+   LinkName.MaximumLength = strlen(szDestinationDrive) + 1;
+   LinkName.Buffer        = szDestinationDrive;
 
    IoDeleteSymbolicLink(&LinkName);
 
