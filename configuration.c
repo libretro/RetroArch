@@ -1932,6 +1932,7 @@ static void config_set_defaults(void)
  **/
 static config_file_t *open_default_config_file(void)
 {
+   bool has_application_data;
    size_t path_size                       = PATH_MAX_LENGTH * sizeof(char);
    char *application_data                 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    char *conf_path                        = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
@@ -2025,7 +2026,7 @@ static config_file_t *open_default_config_file(void)
       RARCH_WARN("Created new config file in: \"%s\".\n", conf_path);
    }
 #elif !defined(RARCH_CONSOLE)
-   bool has_application_data =
+   has_application_data =
       fill_pathname_application_data(application_data,
             path_size);
 
