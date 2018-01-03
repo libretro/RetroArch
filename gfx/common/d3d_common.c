@@ -85,20 +85,11 @@ typedef HRESULT (__stdcall
         LPDIRECT3DTEXTURE8*       ppTexture);
 #endif
 
-#ifdef UNICODE
-#define D3DXCreateFontIndirect D3DXCreateFontIndirectW
-typedef HRESULT (__stdcall *D3DXCreateFontIndirect_t)
-    (
-        LPDIRECT3DDEVICE9       pDevice,
-        CONST D3DXFONT_DESCW*   pDesc,
-        LPD3DXFONT*             ppFont);
-#else
 typedef HRESULT (__stdcall
     *D3DXCreateFontIndirect_t)(
-        LPDIRECT3DDEVICE9       pDevice,
-        CONST D3DXFONT_DESCA*   pDesc,
+        LPDIRECT3DDEVICE8       pDevice,
+        CONST LOGFONT*   pDesc,
         LPD3DXFONT*             ppFont);
-#endif
 
 static D3DXCreateFontIndirect_t D3DCreateFontIndirect;
 static D3DCreateTextureFromFile_t D3DCreateTextureFromFile;
@@ -1340,6 +1331,7 @@ bool d3d_create_font_indirect(LPDIRECT3DDEVICE dev,
       void *desc, void **font_data)
 {
 #ifndef _XBOX
+#if defined(HAVE_D3D9)
 #ifdef __cplusplus
    if (FAILED(D3DCreateFontIndirect(
                dev, (D3DXFONT_DESC*)desc, font_data)))
@@ -1347,6 +1339,12 @@ bool d3d_create_font_indirect(LPDIRECT3DDEVICE dev,
 #else
    if (FAILED(D3DCreateFontIndirect(
                dev, (D3DXFONT_DESC*)desc,
+               (struct ID3DXFont**)font_data)))
+      return false;
+#endif
+#elif defined(HAVE_D3D8)
+   if (FAILED(D3DCreateFontIndirect(
+               dev, (CONST LOGFONT*)desc,
                (struct ID3DXFont**)font_data)))
       return false;
 #endif
