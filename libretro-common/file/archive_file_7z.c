@@ -145,11 +145,7 @@ static int sevenzip_file_read(
    allocTempImp.Alloc   = sevenzip_stream_alloc_tmp_impl;
    allocTempImp.Free    = sevenzip_stream_free_impl;
 
-#ifdef LEGACY_WIN32
-   /* Could not open 7zip archive? */
-   if (InFile_Open(&archiveStream.file, path))
-      return -1;
-#else
+#if defined(_WIN32) && defined(USE_WINDOWS_FILE) && !defined(LEGACY_WIN32)
    if (!string_is_empty(path))
    {
       pathW = utf8_to_utf16_string_alloc(path);
@@ -166,7 +162,12 @@ static int sevenzip_file_read(
          free(pathW);
       }
    }
+#else
+   /* Could not open 7zip archive? */
+   if (InFile_Open(&archiveStream.file, path))
+      return -1;
 #endif
+
    FileInStream_CreateVTable(&archiveStream);
    LookToRead_CreateVTable(&lookStream, false);
    lookStream.realStream = &archiveStream.s;
@@ -365,11 +366,7 @@ static int sevenzip_parse_file_init(file_archive_transfer_t *state,
 
    state->stream = sevenzip_context;
 
-#ifdef LEGACY_WIN32
-   /* could not open 7zip archive? */
-   if (InFile_Open(&sevenzip_context->archiveStream.file, file))
-      goto error;
-#else
+#if defined(_WIN32) && defined(USE_WINDOWS_FILE) && !defined(LEGACY_WIN32)
    if (!string_is_empty(file))
    {
       fileW = utf8_to_utf16_string_alloc(file);
@@ -386,6 +383,10 @@ static int sevenzip_parse_file_init(file_archive_transfer_t *state,
          free(fileW);
       }
    }
+#else
+   /* could not open 7zip archive? */
+   if (InFile_Open(&sevenzip_context->archiveStream.file, file))
+      goto error;
 #endif
 
    FileInStream_CreateVTable(&sevenzip_context->archiveStream);
