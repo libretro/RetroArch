@@ -43,14 +43,65 @@ static UINT SDKVersion = 0;
 
 #ifdef HAVE_DYNAMIC_D3D
 static dylib_t g_d3d_dll;
+static dylib_t g_d3dx_dll;
+static bool dylib_initialized = false;
 #endif
 
 #if defined(HAVE_D3D9)
 typedef IDirect3D9 *(__stdcall *D3DCreate_t)(UINT);
+typedef HRESULT (__stdcall
+    *D3DCreateTextureFromFile_t)(
+        LPDIRECT3DDEVICE9         pDevice,
+        LPCSTR                    pSrcFile,
+        UINT                      Width,
+        UINT                      Height,
+        UINT                      MipLevels,
+        DWORD                     Usage,
+        D3DFORMAT                 Format,
+        D3DPOOL                   Pool,
+        DWORD                     Filter,
+        DWORD                     MipFilter,
+        D3DCOLOR                  ColorKey,
+        D3DXIMAGE_INFO*           pSrcInfo,
+        PALETTEENTRY*             pPalette,
+        LPDIRECT3DTEXTURE9*       ppTexture);
 #elif defined(HAVE_D3D8)
 typedef IDirect3D8 *(__stdcall *D3DCreate_t)(UINT);
+typedef HRESULT (__stdcall 
+    *D3DCreateTextureFromFile_t)(
+        LPDIRECT3DDEVICE8         pDevice,
+        LPCSTR                    pSrcFile,
+        UINT                      Width,
+        UINT                      Height,
+        UINT                      MipLevels,
+        DWORD                     Usage,
+        D3DFORMAT                 Format,
+        D3DPOOL                   Pool,
+        DWORD                     Filter,
+        DWORD                     MipFilter,
+        D3DCOLOR                  ColorKey,
+        D3DXIMAGE_INFO*           pSrcInfo,
+        PALETTEENTRY*             pPalette,
+        LPDIRECT3DTEXTURE8*       ppTexture);
 #endif
 
+#ifdef UNICODE
+#define D3DXCreateFontIndirect D3DXCreateFontIndirectW
+typedef HRESULT (__stdcall *D3DXCreateFontIndirect_t)
+    (
+        LPDIRECT3DDEVICE9       pDevice,
+        CONST D3DXFONT_DESCW*   pDesc,
+        LPD3DXFONT*             ppFont);
+#else
+typedef HRESULT (__stdcall
+    *D3DXCreateFontIndirect_t)(
+        LPDIRECT3DDEVICE9       pDevice,
+        CONST D3DXFONT_DESCA*   pDesc,
+        LPD3DXFONT*             ppFont);
+#endif
+
+static D3DXCreateFontIndirect_t D3DCreateFontIndirect;
+static D3DCreateTextureFromFile_t D3DCreateTextureFromFile;
 static D3DCreate_t D3DCreate;
 
 void *d3d_create(void)
@@ -58,31 +109,105 @@ void *d3d_create(void)
    return D3DCreate(SDKVersion);
 }
 
+#ifdef HAVE_DYNAMIC_D3D
+dylib_t dylib_load_d3dx(void)
+{
+   dylib_t dll;
+
+#if defined(HAVE_D3D9)
+   dll = dylib_load("d3dx9_24.dll");
+
+   if (!dll)
+      dll = dylib_load("d3dx9_25.dll");
+   if (!dll)
+      dll = dylib_load("d3dx9_26.dll");
+   if (!dll)
+      dll = dylib_load("d3dx9_27.dll");
+   if (!dll)
+      dll = dylib_load("d3dx9_28.dll");
+   if (!dll)
+      dll = dylib_load("d3dx9_29.dll");
+   if (!dll)
+      dll = dylib_load("d3dx9_30.dll");
+   if (!dll)
+      dll = dylib_load("d3dx9_31.dll");
+   if (!dll)
+      dll = dylib_load("d3dx9_32.dll");
+   if (!dll)
+      dll = dylib_load("d3dx9_33.dll");
+   if (!dll)
+      dll = dylib_load("d3dx9_34.dll");
+   if (!dll)
+      dll = dylib_load("d3dx9_35.dll");
+   if (!dll)
+      dll = dylib_load("d3dx9_36.dll");
+   if (!dll)
+      dll = dylib_load("d3dx9_37.dll");
+   if (!dll)
+      dll = dylib_load("d3dx9_38.dll");
+   if (!dll)
+      dll = dylib_load("d3dx9_39.dll");
+   if (!dll)
+      dll = dylib_load("d3dx9_40.dll");
+   if (!dll)
+      dll = dylib_load("d3dx9_41.dll");
+   if (!dll)
+      dll = dylib_load("d3dx9_42.dll");
+   if (!dll)
+      dll = dylib_load("d3dx9_43.dll");
+#elif defined(HAVE_D3D8)
+   dll    = dylib_load("d3dx81ab.dll");
+#endif
+
+   return dll;
+}
+#endif
+
 bool d3d_initialize_symbols(void)
 {
+   if (dylib_initialized)
+      return true;
+
 #ifdef HAVE_DYNAMIC_D3D
 #if defined(HAVE_D3D9)
-   g_d3d_dll = dylib_load("d3d9.dll");
+   g_d3d_dll  = dylib_load("d3d9.dll");
 #elif defined(HAVE_D3D8)
-   g_d3d_dll = dylib_load("d3d8.dll");
+   g_d3d_dll  = dylib_load("d3d8.dll");
 #endif
-   if (!g_d3d_dll)
+   g_d3dx_dll = dylib_load_d3dx();
+   if (!g_d3d_dll || !g_d3dx_dll)
       return false;
 #endif
 
 #if defined(HAVE_D3D9)
-   SDKVersion = 31;
+   SDKVersion               = 31;
 #ifdef HAVE_DYNAMIC_D3D
-   D3DCreate  = (D3DCreate_t)dylib_proc(g_d3d_dll, "Direct3DCreate9");
+   D3DCreate                = (D3DCreate_t)dylib_proc(g_d3d_dll, "Direct3DCreate9");
+#ifdef UNICODE
+   D3DCreateFontIndirect    = (D3DXCreateFontIndirect_t)dylib_proc(g_d3dx_dll, "D3DXCreateFontIndirectW");
 #else
-   D3DCreate  = Direct3DCreate9;
+   D3DCreateFontIndirect    = (D3DXCreateFontIndirect_t)dylib_proc(g_d3dx_dll, "D3DXCreateFontIndirectA");
+#endif
+   D3DCreateTextureFromFile = (D3DCreateTextureFromFile_t)dylib_proc(g_d3dx_dll, "D3DXCreateTextureFromFileExA");
+#else
+   D3DCreate                = Direct3DCreate9;
+   D3DCreateFontIndirect    = D3DXCreateFontIndirect;
+   D3DCreateTextureFromFile = D3DXCreateTextureFromFileExA;
 #endif
 #elif defined(HAVE_D3D8)
    SDKVersion = 220;
 #ifdef HAVE_DYNAMIC_D3D
-   D3DCreate  = (D3DCreate_t)dylib_proc(g_d3d_dll, "Direct3DCreate8");
+   D3DCreate                = (D3DCreate_t)dylib_proc(g_d3d_dll, "Direct3DCreate8");
+#ifdef UNICODE
+   D3DCreateFontIndirect    = (D3DXCreateFontIndirect_t)dylib_proc(g_d3dx_dll, "D3DXCreateFontIndirectW");
 #else
-   D3DCreate  = Direct3DCreate8;
+   D3DCreateFontIndirect    = (D3DXCreateFontIndirect_t)dylib_proc(g_d3dx_dll, "D3DXCreateFontIndirectA");
+#endif
+   D3DCreateTextureFromFile = (D3DCreateTextureFromFile_t)dylib_proc(g_d3dx_dll, "D3DXCreateTextureFromFileExA");
+#else
+   D3DCreate                = Direct3DCreate8;
+   D3DCreateFontIndirect    = D3DXCreateFontIndirect;
+   D3DCreateTextureFromFile = D3DXCreateTextureFromFileExA;
 #endif
 #endif
 
@@ -92,19 +217,25 @@ bool d3d_initialize_symbols(void)
 #ifdef _XBOX
    SDKVersion = 0;
 #endif
+   dylib_initialized = true;
 
    return true;
 
 error:
-   if (g_d3d_dll)
-      d3d_deinitialize_symbols();
+   d3d_deinitialize_symbols();
    return false;
 }
 
 void d3d_deinitialize_symbols(void)
 {
-   dylib_close(g_d3d_dll);
-   g_d3d_dll = NULL;
+   if (g_d3d_dll)
+      dylib_close(g_d3d_dll);
+   if (g_d3dx_dll)
+      dylib_close(g_d3dx_dll);
+   g_d3d_dll  = NULL;
+   g_d3dx_dll = NULL;
+
+   dylib_initialized = false;
 }
 
 bool d3d_swap(void *data, LPDIRECT3DDEVICE dev)
@@ -198,10 +329,12 @@ LPDIRECT3DTEXTURE d3d_texture_new(LPDIRECT3DDEVICE dev,
    D3DXIMAGE_INFO *src_info = (D3DXIMAGE_INFO*)src_info_data;
 
    if (path)
-      hr = D3DXCreateTextureFromFileExA(dev,
+   {
+      hr = D3DCreateTextureFromFile(dev,
             path, width, height, miplevels, usage, format,
             pool, filter, mipfilter, color_key, src_info,
             palette, &buf);
+   }
    else
    {
 #if defined(HAVE_D3D9) && !defined(__cplusplus)
@@ -1208,11 +1341,11 @@ bool d3d_create_font_indirect(LPDIRECT3DDEVICE dev,
 {
 #ifndef _XBOX
 #ifdef __cplusplus
-   if (FAILED(D3DXCreateFontIndirect(
+   if (FAILED(D3DCreateFontIndirect(
                dev, (D3DXFONT_DESC*)desc, font_data)))
       return false;
 #else
-   if (FAILED(D3DXCreateFontIndirect(
+   if (FAILED(D3DCreateFontIndirect(
                dev, (D3DXFONT_DESC*)desc,
                (struct ID3DXFont**)font_data)))
       return false;
