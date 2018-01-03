@@ -1766,6 +1766,7 @@ void command_playlist_update_write(
  **/
 bool command_event(enum event_command cmd, void *data)
 {
+   settings_t *settings      = config_get_ptr();
    bool boolean              = false;
 
    switch (cmd)
@@ -1971,6 +1972,9 @@ bool command_event(enum event_command cmd, void *data)
             command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, (void*)(intptr_t)-1);
 #ifdef HAVE_MENU
             menu_display_set_framebuffer_dirty_flag();
+            if (settings->bools.video_fullscreen)
+               video_driver_hide_mouse();
+
             if (menu_driver_is_alive())
                command_event(CMD_EVENT_VIDEO_SET_BLOCKING_STATE, NULL);
 #endif
