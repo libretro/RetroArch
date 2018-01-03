@@ -13,6 +13,17 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* For Xbox we will just link statically 
+ * to Direct3D libraries instead. */
+
+#if !defined(_XBOX) && defined(HAVE_DYLIB)
+#define HAVE_DYNAMIC_D3D
+#endif
+
+#ifdef HAVE_DYNAMIC_D3D
+#include <dynamic/dylib.h>
+#endif
+
 #include "../../configuration.h"
 #include "../../verbosity.h"
 
@@ -30,6 +41,10 @@
 
 static UINT SDKVersion = 0;
 
+#ifdef HAVE_DYNAMIC_D3D
+static dylib_t g_d3d_dll;
+#endif
+
 #if defined(HAVE_D3D9)
 typedef IDirect3D9 *(__stdcall *D3DCreate_t)(UINT);
 #elif defined(HAVE_D3D8)
@@ -45,25 +60,51 @@ void *d3d_create(void)
 
 bool d3d_initialize_symbols(void)
 {
-   /* For Xbox we will just link statically 
-    * to Direct3D libraries. */
+#ifdef HAVE_DYNAMIC_D3D
+#if defined(HAVE_D3D9)
+   g_d3d_dll = dylib_load("d3d9.dll");
+#elif defined(HAVE_D3D8)
+   g_d3d_dll = dylib_load("d3d8.dll");
+#endif
+   if (!g_d3d_dll)
+      return false;
+#endif
+
 #if defined(HAVE_D3D9)
    SDKVersion = 31;
+#ifdef HAVE_DYNAMIC_D3D
+   D3DCreate  = (D3DCreate_t)dylib_proc(g_d3d_dll, "Direct3DCreate9");
+#else
    D3DCreate  = Direct3DCreate9;
+#endif
 #elif defined(HAVE_D3D8)
    SDKVersion = 220;
+#ifdef HAVE_DYNAMIC_D3D
+   D3DCreate  = (D3DCreate_t)dylib_proc(g_d3d_dll, "Direct3DCreate8");
+#else
    D3DCreate  = Direct3DCreate8;
 #endif
+#endif
+
+   if (!D3DCreate)
+      goto error;
 
 #ifdef _XBOX
    SDKVersion = 0;
 #endif
 
    return true;
+
+error:
+   if (g_d3d_dll)
+      d3d_deinitialize_symbols();
+   return false;
 }
 
 void d3d_deinitialize_symbols(void)
 {
+   dylib_close(g_d3d_dll);
+   g_d3d_dll = NULL;
 }
 
 bool d3d_swap(void *data, LPDIRECT3DDEVICE dev)
