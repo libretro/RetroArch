@@ -214,15 +214,16 @@ void d3d_surface_free(void *data)
 
 void d3d_vertex_declaration_free(void *data)
 {
-   LPDIRECT3DVERTEXDECLARATION vertex_decl = (LPDIRECT3DVERTEXDECLARATION)data;
-   if (!vertex_decl)
+   if (!data)
       return;
 #if defined(HAVE_D3D8)
    /* empty */
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
-   IDirect3DVertexDeclaration9_Release(vertex_decl);
+   IDirect3DVertexDeclaration9_Release((LPDIRECT3DVERTEXDECLARATION)data);
 #else
-   vertex_decl->Release();
+   LPDIRECT3DVERTEXDECLARATION vertex_decl = (LPDIRECDT3DVERTEXDECLARATION)data;
+   if (vertex_decl)
+      vertex_decl->Release();
 #endif
 }
 
