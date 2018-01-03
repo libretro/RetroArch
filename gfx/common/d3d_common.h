@@ -167,6 +167,10 @@ bool d3d_create_device(LPDIRECT3DDEVICE *dev,
 
 bool d3d_reset(LPDIRECT3DDEVICE dev, D3DPRESENT_PARAMETERS *d3dpp);
 
+bool d3d_device_get_backbuffer(LPDIRECT3DDEVICE dev, 
+      unsigned idx, unsigned swapchain_idx, 
+      unsigned backbuffer_type, void **data);
+
 void d3d_device_free(LPDIRECT3DDEVICE dev, LPDIRECT3D pd3d);
 
 D3DTEXTUREFILTERTYPE d3d_translate_filter(unsigned type);

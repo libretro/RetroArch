@@ -939,6 +939,45 @@ bool d3d_reset(LPDIRECT3DDEVICE dev, D3DPRESENT_PARAMETERS *d3dpp)
    return false;
 }
 
+bool d3d_device_get_backbuffer(LPDIRECT3DDEVICE dev, 
+      unsigned idx, unsigned swapchain_idx, 
+      unsigned backbuffer_type, void **data)
+{
+   if (!dev)
+      return false;
+
+#if defined(HAVE_D3D9) && !defined(__cplusplus)
+#ifdef __cplusplus
+   if (SUCCEEDED(dev->GetBackBuffer( 
+               swapchain_idx, idx, 
+               (D3DBACKBUFFER_TYPE)backbuffer_type,
+               (LPDIRECT3DSURFACE*)data)))
+      return true;
+#else
+   if (SUCCEEDED(IDirect3DDevice9_GetBackBuffer(dev, 
+               swapchain_idx, idx, 
+               (D3DBACKBUFFER_TYPE)backbuffer_type,
+               (LPDIRECT3DSURFACE*)data)))
+      return true;
+#endif
+#elif defined(HAVE_D3D8)
+#ifdef __cplusplus
+   if (SUCCEEDED(dev->GetBackBuffer(idx,
+               (D3DBACKBUFFER_TYPE)backbuffer_type,
+               (LPDIRECT3DSURFACE*)data)))
+      return true;
+#else
+   if (SUCCEEDED(IDirect3DDevice8_GetBackBuffer(dev, idx,
+               (D3DBACKBUFFER_TYPE)backbuffer_type,
+               (LPDIRECT3DSURFACE*)data)))
+      return true;
+#endif
+#endif
+
+   return false;
+}
+
+
 void d3d_device_free(LPDIRECT3DDEVICE dev, LPDIRECT3D pd3d)
 {
    if (dev)
