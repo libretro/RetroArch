@@ -89,7 +89,7 @@ static void xfonts_render_msg(
 
    mbstowcs(str, msg, sizeof(str) / sizeof(wchar_t));
    xfonts->debug_font->TextOut(xfonts->surf, str, (unsigned)-1, x, y);
-   xfonts->surf->Release();
+   d3d_surface_free(xfonts->surf);
 }
 
 font_renderer_t d3d_xdk1_font = {

@@ -116,7 +116,7 @@ static void task_screenshot_handler(retro_task_t *task)
 #if defined(_XBOX1)
    if (XGWriteSurfaceToFile(state->surf, state->filename) == S_OK)
       ret = true;
-   state->surf->Release();
+   d3d_surface_free(state->surf);
 #elif defined(HAVE_RPNG)
    if (state->bgr24)
       scaler->in_fmt   = SCALER_FMT_BGR24;
