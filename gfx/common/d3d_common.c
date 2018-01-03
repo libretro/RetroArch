@@ -804,10 +804,6 @@ void d3d_frame_postprocess(void *data)
    LPDIRECT3DDEVICE    dev = (LPDIRECT3DDEVICE)data;
    if (!dev)
       return;
-#if 0
-   if (!d3d_restore_device(dev))
-      return;
-#endif
 
    dev->SetFlickerFilter(global->console.screen.flicker_filter_index);
    dev->SetSoftDisplayFilter(global->console.softfilter_enable);
