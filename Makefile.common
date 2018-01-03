@@ -1281,8 +1281,9 @@ ifeq ($(HAVE_D3D8), 1)
    HAVE_DX_COMMON  = 1
    DEFINES += -DHAVE_D3D8
 ifneq ($(HAVE_DYLIB), 1)
-   LIBS += -ld3d8 -ld3dx8
+   LIBS += -ld3d8
 endif
+   LIBS += -ld3dx8
 
    OBJ += gfx/drivers_renderchain/d3d8_renderchain.o
 endif

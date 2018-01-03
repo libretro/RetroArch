@@ -153,8 +153,6 @@ dylib_t dylib_load_d3dx(void)
       dll = dylib_load("d3dx9_42.dll");
    if (!dll)
       dll = dylib_load("d3dx9_43.dll");
-#elif defined(HAVE_D3D8)
-   dll    = dylib_load("d3dx81ab.dll");
 #endif
 
    return dll;
@@ -169,12 +167,16 @@ bool d3d_initialize_symbols(void)
 #ifdef HAVE_DYNAMIC_D3D
 #if defined(HAVE_D3D9)
    g_d3d_dll  = dylib_load("d3d9.dll");
-#elif defined(HAVE_D3D8)
-   g_d3d_dll  = dylib_load("d3d8.dll");
-#endif
    g_d3dx_dll = dylib_load_d3dx();
+
    if (!g_d3d_dll || !g_d3dx_dll)
       return false;
+#elif defined(HAVE_D3D8)
+   g_d3d_dll  = dylib_load("d3d8.dll");
+
+   if (!g_d3d_dll)
+      return false;
+#endif
 #endif
 
 #if defined(HAVE_D3D9)
@@ -197,11 +199,10 @@ bool d3d_initialize_symbols(void)
 #ifdef HAVE_DYNAMIC_D3D
    D3DCreate                = (D3DCreate_t)dylib_proc(g_d3d_dll, "Direct3DCreate8");
 #ifdef UNICODE
-   D3DCreateFontIndirect    = (D3DXCreateFontIndirect_t)dylib_proc(g_d3dx_dll, "D3DXCreateFontIndirectW");
+   D3DCreateFontIndirect    = D3DXCreateFontIndirectW;
 #else
-   D3DCreateFontIndirect    = (D3DXCreateFontIndirect_t)dylib_proc(g_d3dx_dll, "D3DXCreateFontIndirectA");
+   D3DCreateFontIndirect    = D3DXCreateFontIndirectA;
 #endif
-   D3DCreateTextureFromFile = (D3DCreateTextureFromFile_t)dylib_proc(g_d3dx_dll, "D3DXCreateTextureFromFileExA");
 #else
    D3DCreate                = Direct3DCreate8;
    D3DCreateFontIndirect    = D3DXCreateFontIndirect;
