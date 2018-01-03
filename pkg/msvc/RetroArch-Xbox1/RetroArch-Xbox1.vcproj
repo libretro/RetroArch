@@ -408,43 +408,43 @@
 					Name="Debug|Xbox">
 					<Tool
 						Name="VCCLCompilerTool"
-						CompileAs="2"/>
+						CompileAs="1"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Profile|Xbox">
 					<Tool
 						Name="VCCLCompilerTool"
-						CompileAs="2"/>
+						CompileAs="1"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Profile_FastCap|Xbox">
 					<Tool
 						Name="VCCLCompilerTool"
-						CompileAs="2"/>
+						CompileAs="1"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Release|Xbox">
 					<Tool
 						Name="VCCLCompilerTool"
-						CompileAs="2"/>
+						CompileAs="1"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Release_LTCG|Xbox">
 					<Tool
 						Name="VCCLCompilerTool"
-						CompileAs="2"/>
+						CompileAs="1"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Release_BigStack|Xbox">
 					<Tool
 						Name="VCCLCompilerTool"
-						CompileAs="2"/>
+						CompileAs="1"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Release_LTCG_BigStack|Xbox">
 					<Tool
 						Name="VCCLCompilerTool"
-						CompileAs="2"/>
+						CompileAs="1"/>
 				</FileConfiguration>
 			</File>
 			<File

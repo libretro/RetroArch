@@ -579,6 +579,7 @@ void d3d_make_d3dpp(void *data,
    d3dpp->MultiSampleType         = D3DMULTISAMPLE_NONE;
    d3dpp->EnableAutoDepthStencil  = FALSE;
 #if defined(_XBOX1)
+   {
    /* Get the "video mode" */
    DWORD video_mode               = XGetVideoFlags();
 
@@ -609,6 +610,7 @@ void d3d_make_d3dpp(void *data,
 
    if (widescreen_mode)
       d3dpp->Flags |= D3DPRESENTFLAG_WIDESCREEN;
+   }
 #elif defined(_XBOX360)
 #if 0
    if (!widescreen_mode)
