@@ -106,6 +106,7 @@ typedef int ssize_t;
       #define ceilf(x) ((float)ceil((double)x))
       #define floorf(x) ((float)floor((double)x))
       #define sqrtf(x) ((float)sqrt((double)x))
+      #define fabsf(x)    ((float)fabs((double)(x)))
    #endif
 
    #ifndef _vscprintf
