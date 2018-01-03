@@ -140,9 +140,15 @@ static void xdk_joypad_poll(void)
 #endif
 
 #if defined(_XBOX1)
+#ifdef __cplusplus
    XGetDeviceChanges(XDEVICE_TYPE_GAMEPAD,
          reinterpret_cast<PDWORD>(&dwInsertions),
          reinterpret_cast<PDWORD>(&dwRemovals));
+#else
+   XGetDeviceChanges(XDEVICE_TYPE_GAMEPAD,
+         (PDWORD)&dwInsertions,
+         (PDWORD)&dwRemovals);
+#endif
 #endif
 
    for (port = 0; port < MAX_PADS; port++)
