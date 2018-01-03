@@ -946,7 +946,7 @@ bool d3d_device_get_backbuffer(LPDIRECT3DDEVICE dev,
    if (!dev)
       return false;
 
-#if defined(HAVE_D3D9) && !defined(__cplusplus)
+#if defined(HAVE_D3D9)
 #ifdef __cplusplus
    if (SUCCEEDED(dev->GetBackBuffer( 
                swapchain_idx, idx, 
