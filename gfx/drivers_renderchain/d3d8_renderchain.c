@@ -242,13 +242,13 @@ static bool d3d8_renderchain_init(void *data,
       )
 {
    unsigned width, height;
-   d3d_video_t *d3d                = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr           = (LPDIRECT3DDEVICE)d3d->dev;
-   const video_info_t *video_info  = (const video_info_t*)_video_info;
-   const LinkInfo *link_info       = (const LinkInfo*)info_data;
-   d3d8_renderchain_t *chain       = (d3d8_renderchain_t*)d3d->renderchain_data;
-   unsigned fmt                    = (rgb32) ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
-   struct video_viewport *custom_vp = video_viewport_get_custom();
+   d3d_video_t *d3d                       = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr                  = (LPDIRECT3DDEVICE)d3d->dev;
+   const video_info_t *video_info         = (const video_info_t*)_video_info;
+   const struct LinkInfo *link_info       = (const struct LinkInfo*)info_data;
+   d3d8_renderchain_t *chain              = (d3d8_renderchain_t*)d3d->renderchain_data;
+   unsigned fmt                           = (rgb32) ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
+   struct video_viewport *custom_vp       = video_viewport_get_custom();
    (void)final_viewport_data;
 
    video_driver_get_size(&width, &height);
