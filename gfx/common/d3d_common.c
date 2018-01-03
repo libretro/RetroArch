@@ -776,9 +776,10 @@ void d3d_enable_alpha_blend_texture_func(void *data)
 void d3d_frame_postprocess(void *data)
 {
 #if defined(_XBOX1)
-   LPDIRECT3DDEVICE    dev = (LPDIRECT3DDEVICE)data;
    global_t        *global = global_get_ptr();
 
+#ifdef __cplusplus
+   LPDIRECT3DDEVICE    dev = (LPDIRECT3DDEVICE)data;
    if (!dev)
       return;
 #if 0
@@ -788,6 +789,10 @@ void d3d_frame_postprocess(void *data)
 
    dev->SetFlickerFilter(global->console.screen.flicker_filter_index);
    dev->SetSoftDisplayFilter(global->console.softfilter_enable);
+#else
+   D3DDevice_SetFlickerFilter(global->console.screen.flicker_filter_index);
+   D3DDevice_SetSoftDisplayFilter(global->console.softfilter_enable);
+#endif
 #endif
 }
 
