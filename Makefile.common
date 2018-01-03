@@ -649,7 +649,8 @@ endif
 ifeq ($(HAVE_DSOUND), 1)
    OBJ += audio/drivers/dsound.o
    DEFINES += -DHAVE_DSOUND
-   LIBS += -ldxguid -ldsound
+	HAVE_DX_COMMON  = 1
+   LIBS += -ldsound
 endif
 
 ifeq ($(HAVE_WASAPI), 1)
@@ -870,7 +871,8 @@ endif
 #Input
 
 ifeq ($(HAVE_DINPUT), 1)
-   LIBS += -ldinput8 -ldxguid -lole32
+	HAVE_DX_COMMON  = 1
+   LIBS += -ldinput8 -lole32
    DEFINES += -DHAVE_DINPUT
    OBJ += input/drivers/dinput.o \
           input/drivers_joypad/dinput_joypad.o
@@ -1261,7 +1263,7 @@ ifeq ($(HAVE_D3D9), 1)
 ifneq ($(HAVE_DYLIB), 1)
    LIBS += -ld3d9 -ld3dx9
 endif
-   LIBS += -ldxguid
+	HAVE_DX_COMMON  = 1
    OBJ  += gfx/drivers_font/d3d_w32_font.o
    ifeq ($(HAVE_CG), 1)
       LIBS += -lcgD3D9
@@ -1276,13 +1278,17 @@ endif
 
 ifeq ($(HAVE_D3D8), 1)
 	HAVE_D3D_COMMON = 1
+   HAVE_DX_COMMON  = 1
    DEFINES += -DHAVE_D3D8
 ifneq ($(HAVE_DYLIB), 1)
    LIBS += -ld3d8 -ld3dx8
 endif
-   LIBS += -ldxguid
 
    OBJ += gfx/drivers_renderchain/d3d8_renderchain.o
+endif
+
+ifeq ($(HAVE_DX_COMMON), 1)
+	LIBS += -ldxguid
 endif
 
 ifeq ($(HAVE_D3D_COMMON), 1)
