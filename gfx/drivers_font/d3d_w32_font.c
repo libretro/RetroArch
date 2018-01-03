@@ -77,16 +77,9 @@ static void *d3dfonts_w32_init_font(void *video_data,
    d3dfonts->d3d   = (d3d_video_t*)video_data;
    d3dfonts->color = D3DCOLOR_XRGB(r, g, b);
 
-#ifdef __cplusplus
-   if (FAILED(D3DXCreateFontIndirect(
-               d3dfonts->d3d->dev, &desc, &d3dfonts->font)))
+   if (!d3d_create_font_indirect(d3dfonts->d3d->dev,
+            &desc, (void**)&d3dfonts->font))
       goto error;
-#else
-   if (FAILED(D3DXCreateFontIndirect(
-               d3dfonts->d3d->dev, &desc,
-               (struct ID3DXFont**)&d3dfonts->font)))
-      goto error;
-#endif
 
    return d3dfonts;
 

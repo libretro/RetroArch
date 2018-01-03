@@ -1202,3 +1202,21 @@ void *d3d_matrix_rotation_z(void *_pout, float angle)
    pout->m[1][0] = -sin(angle);
    return pout;
 }
+
+bool d3d_create_font_indirect(LPDIRECT3DDEVICE dev,
+      void *desc, void **font_data)
+{
+#ifndef _XBOX
+#ifdef __cplusplus
+   if (FAILED(D3DXCreateFontIndirect(
+               dev, (D3DXFONT_DESC*)desc, font_data)))
+      return false;
+#else
+   if (FAILED(D3DXCreateFontIndirect(
+               dev, (D3DXFONT_DESC*)desc,
+               (struct ID3DXFont**)font_data)))
+      return false;
+#endif
+#endif
+   return true;
+}
