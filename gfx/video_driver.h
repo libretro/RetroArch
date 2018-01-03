@@ -1381,7 +1381,7 @@ extern const shader_backend_t hlsl_backend;
 extern const shader_backend_t gl_cg_backend;
 extern const shader_backend_t shader_null_backend;
 
-extern d3d_renderchain_driver_t d3d8_renderchain;
+extern d3d_renderchain_driver_t d3d8_d3d_renderchain;
 extern d3d_renderchain_driver_t cg_d3d9_renderchain;
 extern d3d_renderchain_driver_t hlsl_d3d9_renderchain;
 extern d3d_renderchain_driver_t null_d3d_renderchain;

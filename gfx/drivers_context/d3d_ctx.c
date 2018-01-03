@@ -35,8 +35,10 @@
 
 #ifdef _MSC_VER
 #ifndef _XBOX
+#ifndef HAVE_DYLIB
 #pragma comment( lib, "d3d9" )
 #pragma comment( lib, "d3dx9" )
+#endif
 #ifdef HAVE_CG
 #pragma comment( lib, "cgd3d9" )
 #endif

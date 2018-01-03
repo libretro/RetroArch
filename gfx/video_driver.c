@@ -415,7 +415,7 @@ static const d3d_renderchain_driver_t *renderchain_d3d_drivers[] = {
    &hlsl_d3d9_renderchain,
 #endif
 #if defined(_WIN32) && defined(HAVE_D3D8)
-   &d3d8_renderchain,
+   &d3d8_d3d_renderchain,
 #endif
    &null_d3d_renderchain,
    NULL
