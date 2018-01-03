@@ -46,10 +46,19 @@ static void *xfonts_init_font(void *video_data,
    xfont->d3d = (d3d_video_t*)video_data;
 
    XFONT_OpenDefaultFont(&xfont->debug_font);
+
+#ifdef __cplusplus
    xfont->debug_font->SetBkMode(XFONT_TRANSPARENT);
    xfont->debug_font->SetBkColor(D3DCOLOR_ARGB(100,0,0,0));
    xfont->debug_font->SetTextHeight(14);
-   xfont->debug_font->SetTextAntialiasLevel(xfont->debug_font->GetTextAntialiasLevel());
+   xfont->debug_font->SetTextAntialiasLevel(
+         xfont->debug_font->GetTextAntialiasLevel());
+#else
+   XFONT_SetBkMode(xfont->debug_font, XFONT_TRANSPARENT);
+   XFONT_SetBkColor(xfont->debug_font, D3DCOLOR_ARGB(100,0,0,0));
+   XFONT_SetTextHeight(xfont->debug_font, 14);
+   XFONT_SetTextAntialiasLevel(XFONT_GetTextAntialiasLevel(xfont->debug_font));
+#endif
 
    return xfont;
 }
@@ -72,7 +81,7 @@ static void xfonts_render_msg(
    wchar_t str[PATH_MAX_LENGTH];
    float x, y;
    const struct font_params *params = (const struct font_params*)userdata;
-   xfonts_t *xfonts = (xfonts_t*)data;
+   xfonts_t *xfonts                 = (xfonts_t*)data;
 
    if (params)
    {
@@ -88,7 +97,12 @@ static void xfonts_render_msg(
    xfonts->d3d->dev->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &xfonts->surf);
 
    mbstowcs(str, msg, sizeof(str) / sizeof(wchar_t));
+
+#ifdef __cplusplus
    xfonts->debug_font->TextOut(xfonts->surf, str, (unsigned)-1, x, y);
+#else
+   XFONT_TextOut(xfonts->debug_font, xfonts->surf, str, (unsigned)-1, x, y);
+#endif
    d3d_surface_free(xfonts->surf);
 }
 
