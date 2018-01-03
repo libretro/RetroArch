@@ -33,6 +33,8 @@
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include <windows.h>
+#elif defined(_XBOX)
+#include <xtl.h>
 #endif
 
 static unsigned leading_ones(uint8_t c)

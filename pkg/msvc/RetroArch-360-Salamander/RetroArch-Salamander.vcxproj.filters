@@ -18,34 +18,82 @@
     <Filter Include="Source Files\libretro-common\file">
       <UniqueIdentifier>{b4898f5c-14c7-4816-88fa-c27a52e45e84}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\libretro-common\lists">
+      <UniqueIdentifier>{1ea4934c-e780-4385-9f79-889f5940e6ee}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\libretro-common\string">
+      <UniqueIdentifier>{444bce6f-4f03-4582-8a00-9fcbab8f107a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\libretro-common\streams">
+      <UniqueIdentifier>{daea3f95-3eb3-42f5-ad6f-21cedf52b19b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\libretro-common\vfs">
+      <UniqueIdentifier>{2cc92055-f9d4-400a-8d2d-07df80fa4f83}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\libretro-common\encodings">
+      <UniqueIdentifier>{ff35ab14-b622-44bf-8c26-9d26fb31133b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\frontend\frontend_salamander.c">
+    <ClCompile Include="..\..\..\libretro-common\file\retro_dirent.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\frontend\frontend_context.c">
+    <ClCompile Include="..\..\..\frontend\frontend_salamander.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\frontend\platform\platform_null.c">
+    <ClCompile Include="..\..\..\frontend\frontend_driver.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\frontend\platform\platform_xdk.c">
+    <ClCompile Include="..\..\..\frontend\drivers\platform_null.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\libretro-common\compat\compat.c">
+    <ClCompile Include="..\..\..\frontend\drivers\platform_xdk.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\compat\compat_posix_string.c">
       <Filter>Source Files\libretro-common\compat</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\libretro-common\file\dir_list.c">
+    <ClCompile Include="..\..\..\libretro-common\compat\compat_strcasestr.c">
+      <Filter>Source Files\libretro-common\compat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\compat\compat_strl.c">
+      <Filter>Source Files\libretro-common\compat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\file\config_file.c">
       <Filter>Source Files\libretro-common\file</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\libretro-common\file\file_path.c">
+    <ClCompile Include="..\..\..\libretro-common\lists\dir_list.c">
+      <Filter>Source Files\libretro-common\lists</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\file\file_path.c">
       <Filter>Source Files\libretro-common\file</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\libretro-common\string\string_list.c">
-      <Filter>Source Files\libretro-common\file</Filter>
+    <ClCompile Include="..\..\..\libretro-common\string\stdstring.c">
+      <Filter>Source Files\libretro-common\string</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\libretro-common\file\config_file.c">
-      <Filter>Source Files\libretro-common\file</Filter>
+    <ClCompile Include="..\..\..\libretro-common\lists\string_list.c">
+      <Filter>Source Files\libretro-common\lists</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\vfs\vfs_implementation.c">
+      <Filter>Source Files\libretro-common\vfs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\streams\file_stream.c">
+      <Filter>Source Files\libretro-common\streams</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\compat\fopen_utf8.c">
+      <Filter>Source Files\libretro-common\compat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\encodings\encoding_utf.c">
+      <Filter>Source Files\libretro-common\encodings</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\verbosity.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\compat\compat_snprintf.c">
+      <Filter>Source Files\libretro-common\compat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\file_path_str.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
