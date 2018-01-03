@@ -580,36 +580,38 @@ void d3d_make_d3dpp(void *data,
    d3dpp->EnableAutoDepthStencil  = FALSE;
 #if defined(_XBOX1)
    {
-   /* Get the "video mode" */
-   DWORD video_mode               = XGetVideoFlags();
+      /* Get the "video mode" */
+      DWORD video_mode               = XGetVideoFlags();
 
-   /* Check if we are able to use progressive mode. */
-   if (video_mode & XC_VIDEO_FLAGS_HDTV_480p)
-      d3dpp->Flags = D3DPRESENTFLAG_PROGRESSIVE;
-   else
-      d3dpp->Flags = D3DPRESENTFLAG_INTERLACED;
-
-   /* Only valid in PAL mode, not valid for HDTV modes. */
-   if (XGetVideoStandard() == XC_VIDEO_STANDARD_PAL_I)
-   {
-      if (video_mode & XC_VIDEO_FLAGS_PAL_60Hz)
-         d3dpp->FullScreen_RefreshRateInHz = 60;
-      else
-         d3dpp->FullScreen_RefreshRateInHz = 50;
-   }
-
-   if (XGetAVPack() == XC_AV_PACK_HDTV)
-   {
+      /* Check if we are able to use progressive mode. */
       if (video_mode & XC_VIDEO_FLAGS_HDTV_480p)
          d3dpp->Flags = D3DPRESENTFLAG_PROGRESSIVE;
-      else if (video_mode & XC_VIDEO_FLAGS_HDTV_720p)
-         d3dpp->Flags = D3DPRESENTFLAG_PROGRESSIVE;
-      else if (video_mode & XC_VIDEO_FLAGS_HDTV_1080i)
+      else
          d3dpp->Flags = D3DPRESENTFLAG_INTERLACED;
-   }
 
-   if (widescreen_mode)
-      d3dpp->Flags |= D3DPRESENTFLAG_WIDESCREEN;
+      /* Only valid in PAL mode, not valid for HDTV modes. */
+      if (XGetVideoStandard() == XC_VIDEO_STANDARD_PAL_I)
+      {
+         if (video_mode & XC_VIDEO_FLAGS_PAL_60Hz)
+            d3dpp->FullScreen_RefreshRateInHz = 60;
+         else
+            d3dpp->FullScreen_RefreshRateInHz = 50;
+      }
+
+      if (XGetAVPack() == XC_AV_PACK_HDTV)
+      {
+         if (video_mode & XC_VIDEO_FLAGS_HDTV_480p)
+            d3dpp->Flags = D3DPRESENTFLAG_PROGRESSIVE;
+         else if (video_mode & XC_VIDEO_FLAGS_HDTV_720p)
+            d3dpp->Flags = D3DPRESENTFLAG_PROGRESSIVE;
+         else if (video_mode & XC_VIDEO_FLAGS_HDTV_1080i)
+            d3dpp->Flags = D3DPRESENTFLAG_INTERLACED;
+      }
+
+#if 0
+      if (widescreen_mode)
+         d3dpp->Flags |= D3DPRESENTFLAG_WIDESCREEN;
+#endif
    }
 #elif defined(_XBOX360)
 #if 0
