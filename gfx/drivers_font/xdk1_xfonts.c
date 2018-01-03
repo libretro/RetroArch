@@ -95,7 +95,7 @@ static void xfonts_render_msg(
       y = video_info->font_msg_pos_y;
    }
 
-   xfonts->d3d->dev->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &xfonts->surf);
+   d3d_device_get_backbuffer(xfonts->d3d->dev, -1, 0, D3DBACKBUFFER_TYPE_MONO, &xfonts->surf);
 
    mbstowcs(str, msg, sizeof(str) / sizeof(wchar_t));
 

@@ -241,7 +241,8 @@ static bool screenshot_dump(
    }
 
 #ifdef _XBOX1
-   d3d->dev->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &state->surf);
+   d3d_device_get_backbuffer(d3d->dev, -1, 0, D3DBACKBUFFER_TYPE_MONO,
+      &state->surf);
 #elif defined(HAVE_RPNG)
    buf = (uint8_t*)malloc(width * height * 3);
    if (!buf)
