@@ -255,10 +255,12 @@ bool d3d_vertex_declaration_new(LPDIRECT3DDEVICE dev,
 
 #if defined(__cplusplus)
    if (SUCCEEDED(dev->CreateVertexDeclaration(vertex_elements, (IDirect3DVertexDeclaration9**)vertex_decl)))
+      return true;
 #else
    if (SUCCEEDED(IDirect3DDevice9_CreateVertexDeclaration(dev, vertex_elements, (IDirect3DVertexDeclaration9**)vertex_decl)))
-#endif
       return true;
+#endif
+
 #endif
    return false;
 }
