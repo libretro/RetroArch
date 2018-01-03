@@ -221,9 +221,12 @@ void d3d_vertex_declaration_free(void *data)
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DVertexDeclaration9_Release((LPDIRECT3DVERTEXDECLARATION)data);
 #else
-   LPDIRECT3DVERTEXDECLARATION vertex_decl = (LPDIRECDT3DVERTEXDECLARATION)data;
-   if (vertex_decl)
-      vertex_decl->Release();
+   {
+      LPDIRECT3DVERTEXDECLARATION vertex_decl = 
+         (LPDIRECDT3DVERTEXDECLARATION)data;
+      if (vertex_decl)
+         vertex_decl->Release();
+   }
 #endif
 }
 
