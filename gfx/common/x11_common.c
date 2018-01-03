@@ -386,6 +386,7 @@ bool x11_get_metrics(void *data,
 static void x11_handle_key_event(XEvent *event, XIC ic, bool filter)
 {
    int i;
+   Status status;
    uint32_t chars[32];
    unsigned key   = 0;
    uint16_t mod   = 0;
@@ -404,7 +405,7 @@ static void x11_handle_key_event(XEvent *event, XIC ic, bool filter)
 
          keybuf[0] = '\0';
 #ifdef X_HAVE_UTF8_STRING
-         Status status = 0;
+         status = 0;
 
          /* XwcLookupString doesn't seem to work. */
          num = Xutf8LookupString(ic, &event->xkey, keybuf, ARRAY_SIZE(keybuf), &keysym, &status);
