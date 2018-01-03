@@ -110,7 +110,7 @@ void *d3d_create(void)
 #ifdef HAVE_DYNAMIC_D3D
 dylib_t dylib_load_d3dx(void)
 {
-   dylib_t dll;
+   dylib_t dll = NULL;
 
 #if defined(HAVE_D3D9)
    dll = dylib_load("d3dx9_24.dll");
@@ -198,11 +198,8 @@ bool d3d_initialize_symbols(void)
    SDKVersion = 220;
 #ifdef HAVE_DYNAMIC_D3D
    D3DCreate                = (D3DCreate_t)dylib_proc(g_d3d_dll, "Direct3DCreate8");
-#ifdef UNICODE
-   D3DCreateFontIndirect    = D3DXCreateFontIndirectW;
-#else
-   D3DCreateFontIndirect    = D3DXCreateFontIndirectA;
-#endif
+   D3DCreateFontIndirect    = D3DXCreateFontIndirect;
+   D3DCreateTextureFromFile = D3DXCreateTextureFromFileExA;
 #else
    D3DCreate                = Direct3DCreate8;
    D3DCreateFontIndirect    = D3DXCreateFontIndirect;
