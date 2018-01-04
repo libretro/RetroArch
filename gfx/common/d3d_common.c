@@ -485,7 +485,7 @@ void d3d_vertex_declaration_free(void *data)
 #else
    {
       LPDIRECT3DVERTEXDECLARATION vertex_decl = 
-         (LPDIRECDT3DVERTEXDECLARATION)data;
+         (LPDIRECT3DVERTEXDECLARATION)data;
       if (vertex_decl)
          vertex_decl->Release();
    }
