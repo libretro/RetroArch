@@ -604,6 +604,7 @@ void cdlz_codec_free(void* codec)
 
 chd_error cdlz_codec_decompress(void *codec, const uint8_t *src, uint32_t complen, uint8_t *dest, uint32_t destlen)
 {
+	uint8_t *sector;
 	uint32_t framenum;
 	cdlz_codec_data* cdlz = (cdlz_codec_data*)codec;
 
@@ -636,7 +637,7 @@ chd_error cdlz_codec_decompress(void *codec, const uint8_t *src, uint32_t comple
 
 #ifdef WANT_RAW_DATA_SECTOR
 		/* reconstitute the ECC data and sync header */
-		uint8_t *sector = &dest[framenum * CD_FRAME_SIZE];
+		sector = (uint8_t *)&dest[framenum * CD_FRAME_SIZE];
 		if ((src[framenum / 8] & (1 << (framenum % 8))) != 0)
 		{
 			memcpy(sector, s_cd_sync_header, sizeof(s_cd_sync_header));
@@ -690,6 +691,7 @@ void cdzl_codec_free(void *codec)
 
 chd_error cdzl_codec_decompress(void *codec, const uint8_t *src, uint32_t complen, uint8_t *dest, uint32_t destlen)
 {
+	uint8_t *sector;
 	uint32_t framenum;
 	cdzl_codec_data* cdzl = (cdzl_codec_data*)codec;
 
@@ -720,7 +722,7 @@ chd_error cdzl_codec_decompress(void *codec, const uint8_t *src, uint32_t comple
 
 #ifdef WANT_RAW_DATA_SECTOR
 		/* reconstitute the ECC data and sync header */
-		uint8_t *sector = &dest[framenum * CD_FRAME_SIZE];
+		sector = (uint8_t *)&dest[framenum * CD_FRAME_SIZE];
 		if ((src[framenum / 8] & (1 << (framenum % 8))) != 0)
 		{
 			memcpy(sector, s_cd_sync_header, sizeof(s_cd_sync_header));
