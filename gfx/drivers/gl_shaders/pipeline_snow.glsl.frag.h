@@ -4,9 +4,9 @@ static const char* stock_fragment_xmb_snow = GLSL(
    uniform float time;
    uniform vec2 OutputSize;
 
-   float baseScale = 3.5;  //  [1.0  .. 10.0]
-   float density   = 0.7;  //  [0.01 ..  1.0]
-   float speed     = 0.25; //  [0.1  ..  1.0]
+   float baseScale = 3.5;  /* [1.0  .. 10.0] */
+   float density   = 0.7;  /* [0.01 ..  1.0] */
+   float speed     = 0.25; /* [0.1  ..  1.0] */
 
    float rand(vec2 co)
    {
@@ -39,9 +39,9 @@ static const char* stock_fragment_xmb_snow = GLSL(
 
    float snow(vec2 pos, float time, float scale)
    {
-      // add wobble
+      /* add wobble */
       pos.x += cos(pos.y * 1.2 + time * 3.14159 * 2.0 + 1.0 / scale) / (8.0 / scale) * 4.0;
-      // add gravity
+      /* add gravity */
       pos += time * scale * vec2(-0.5, 1.0) * 4.0;
       return random_dots(pos / scale) * (scale * 0.5 + 0.5);
    }
@@ -51,9 +51,11 @@ static const char* stock_fragment_xmb_snow = GLSL(
       float tim = time * 0.4 * speed;
       vec2 pos = gl_FragCoord.xy / OutputSize.xx;
       float a = 0.0;
-      // Each of these is a layer of snow
-      // Remove some for better performance
-      // Changing the scale (3rd value) will mess with the looping
+      /**
+       * Each of these is a layer of snow
+       * Remove some for better performance
+       * Changing the scale (3rd value) will mess with the looping
+       **/
       a += snow(pos, tim, 1.0);
       a += snow(pos, tim, 0.7);
       a += snow(pos, tim, 0.6);
