@@ -12,9 +12,9 @@
 
 #ifndef DIRECT3D_VERSION
 #define DIRECT3D_VERSION         0x0800
-#endif  //DIRECT3D_VERSION
+#endif  /* DIRECT3D_VERSION */
 
-// include this file content only if compiling for DX8 interfaces
+/* include this file content only if compiling for DX8 interfaces */
 #if(DIRECT3D_VERSION >= 0x0800)
 
 #if defined(_X86_) || defined(_IA64_)
@@ -47,13 +47,13 @@ typedef struct _D3DCAPS8
     DWORD   AlphaCmpCaps;
     DWORD   ShadeCaps;
     DWORD   TextureCaps;
-    DWORD   TextureFilterCaps;          // D3DPTFILTERCAPS for IDirect3DTexture8's
-    DWORD   CubeTextureFilterCaps;      // D3DPTFILTERCAPS for IDirect3DCubeTexture8's
-    DWORD   VolumeTextureFilterCaps;    // D3DPTFILTERCAPS for IDirect3DVolumeTexture8's
-    DWORD   TextureAddressCaps;         // D3DPTADDRESSCAPS for IDirect3DTexture8's
-    DWORD   VolumeTextureAddressCaps;   // D3DPTADDRESSCAPS for IDirect3DVolumeTexture8's
+    DWORD   TextureFilterCaps;          /* D3DPTFILTERCAPS for IDirect3DTexture8's        */
+    DWORD   CubeTextureFilterCaps;      /* D3DPTFILTERCAPS for IDirect3DCubeTexture8's    */
+    DWORD   VolumeTextureFilterCaps;    /* D3DPTFILTERCAPS for IDirect3DVolumeTexture8's  */
+    DWORD   TextureAddressCaps;         /* D3DPTADDRESSCAPS for IDirect3DTexture8's       */
+    DWORD   VolumeTextureAddressCaps;   /* D3DPTADDRESSCAPS for IDirect3DVolumeTexture8's */
 
-    DWORD   LineCaps;                   // D3DLINECAPS
+    DWORD   LineCaps;                   /* D3DLINECAPS */
 
     DWORD   MaxTextureWidth, MaxTextureHeight;
     DWORD   MaxVolumeExtent;
@@ -84,31 +84,25 @@ typedef struct _D3DCAPS8
 
     float   MaxPointSize;
 
-    DWORD   MaxPrimitiveCount;          // max number of primitives per DrawPrimitive call
+    DWORD   MaxPrimitiveCount;          /* max number of primitives per DrawPrimitive call */
     DWORD   MaxVertexIndex;
     DWORD   MaxStreams;
-    DWORD   MaxStreamStride;            // max stride for SetStreamSource
+    DWORD   MaxStreamStride;            /* max stride for SetStreamSource */
 
     DWORD   VertexShaderVersion;
-    DWORD   MaxVertexShaderConst;       // number of vertex shader constant registers
+    DWORD   MaxVertexShaderConst;       /* number of vertex shader constant registers */
 
     DWORD   PixelShaderVersion;
-    float   MaxPixelShaderValue;        // max value of pixel shader arithmetic component
+    float   MaxPixelShaderValue;        /* max value of pixel shader arithmetic component */
 
 } D3DCAPS8;
 
-//
-// BIT DEFINES FOR D3DCAPS8 DWORD MEMBERS
-//
+/* BIT DEFINES FOR D3DCAPS8 DWORD MEMBERS */
 
-//
-// Caps
-//
+/* Caps */
 #define D3DCAPS_READ_SCANLINE           0x00020000L
 
-//
-// Caps2
-//
+/* Caps2 */
 #define D3DCAPS2_NO2DDURING3DSCENE      0x00000002L
 #define D3DCAPS2_FULLSCREENGAMMA        0x00020000L
 #define D3DCAPS2_CANRENDERWINDOWED      0x00080000L
@@ -117,19 +111,16 @@ typedef struct _D3DCAPS8
 #define D3DCAPS2_CANMANAGERESOURCE      0x10000000L
 #define D3DCAPS2_DYNAMICTEXTURES        0x20000000L
 
-//
-// Caps3
-//
+/* Caps3 */
 #define D3DCAPS3_RESERVED               0x8000001fL
 
-// Indicates that the device can respect the ALPHABLENDENABLE render state
-// when fullscreen while using the FLIP or DISCARD swap effect.
-// COPY and COPYVSYNC swap effects work whether or not this flag is set.
+/* Indicates that the device can respect the ALPHABLENDENABLE render state
+ * when fullscreen while using the FLIP or DISCARD swap effect.
+ * COPY and COPYVSYNC swap effects work whether or not this flag is set.
+ */
 #define D3DCAPS3_ALPHA_FULLSCREEN_FLIP_OR_DISCARD   0x00000020L
 
-//
-// PresentationIntervals
-//
+/* PresentationIntervals */
 #define D3DPRESENT_INTERVAL_DEFAULT     0x00000000L
 #define D3DPRESENT_INTERVAL_ONE         0x00000001L
 #define D3DPRESENT_INTERVAL_TWO         0x00000002L
@@ -137,17 +128,14 @@ typedef struct _D3DCAPS8
 #define D3DPRESENT_INTERVAL_FOUR        0x00000008L
 #define D3DPRESENT_INTERVAL_IMMEDIATE   0x80000000L
 
-//
-// CursorCaps
-//
-// Driver supports HW color cursor in at least hi-res modes(height >=400)
+/* CursorCaps */
+
+/* Driver supports HW color cursor in at least hi-res modes(height >=400) */
 #define D3DCURSORCAPS_COLOR             0x00000001L
-// Driver supports HW cursor also in low-res modes(height < 400)
+/* Driver supports HW cursor also in low-res modes(height < 400) */
 #define D3DCURSORCAPS_LOWRES            0x00000002L
 
-//
-// DevCaps
-//
+/* DevCaps */
 #define D3DDEVCAPS_EXECUTESYSTEMMEMORY  0x00000010L /* Device can use execute buffers from system memory */
 #define D3DDEVCAPS_EXECUTEVIDEOMEMORY   0x00000020L /* Device can use execute buffers from video memory */
 #define D3DDEVCAPS_TLVERTEXSYSTEMMEMORY 0x00000040L /* Device can use TL buffers from system memory */
@@ -169,9 +157,7 @@ typedef struct _D3DCAPS8
 #define D3DDEVCAPS_RTPATCHHANDLEZERO    0x00800000L /* Indicates that RT Patches may be drawn efficiently using handle 0 */
 #define D3DDEVCAPS_NPATCHES             0x01000000L /* Device supports N-Patches */
 
-//
-// PrimitiveMiscCaps
-//
+/* PrimitiveMiscCaps */
 #define D3DPMISCCAPS_MASKZ              0x00000002L
 #define D3DPMISCCAPS_LINEPATTERNREP     0x00000004L
 #define D3DPMISCCAPS_CULLNONE           0x00000010L
@@ -184,18 +170,14 @@ typedef struct _D3DCAPS8
 #define D3DPMISCCAPS_BLENDOP            0x00000800L /* device supports D3DRS_BLENDOP */
 #define D3DPMISCCAPS_NULLREFERENCE      0x00001000L /* Reference Device that doesnt render */
 
-//
-// LineCaps
-//
+/* LineCaps */
 #define D3DLINECAPS_TEXTURE             0x00000001L
 #define D3DLINECAPS_ZTEST               0x00000002L
 #define D3DLINECAPS_BLEND               0x00000004L
 #define D3DLINECAPS_ALPHACMP            0x00000008L
 #define D3DLINECAPS_FOG                 0x00000010L
 
-//
-// RasterCaps
-//
+/* RasterCaps */
 #define D3DPRASTERCAPS_DITHER           0x00000001L
 #define D3DPRASTERCAPS_PAT              0x00000008L
 #define D3DPRASTERCAPS_ZTEST            0x00000010L
@@ -213,9 +195,7 @@ typedef struct _D3DCAPS8
 #define D3DPRASTERCAPS_COLORPERSPECTIVE 0x00400000L /* Device iterates colors perspective correct */
 #define D3DPRASTERCAPS_STRETCHBLTMULTISAMPLE  0x00800000L
 
-//
-// ZCmpCaps, AlphaCmpCaps
-//
+/* ZCmpCaps, AlphaCmpCaps */
 #define D3DPCMPCAPS_NEVER               0x00000001L
 #define D3DPCMPCAPS_LESS                0x00000002L
 #define D3DPCMPCAPS_EQUAL               0x00000004L
@@ -225,9 +205,7 @@ typedef struct _D3DCAPS8
 #define D3DPCMPCAPS_GREATEREQUAL        0x00000040L
 #define D3DPCMPCAPS_ALWAYS              0x00000080L
 
-//
-// SourceBlendCaps, DestBlendCaps
-//
+/* SourceBlendCaps, DestBlendCaps */
 #define D3DPBLENDCAPS_ZERO              0x00000001L
 #define D3DPBLENDCAPS_ONE               0x00000002L
 #define D3DPBLENDCAPS_SRCCOLOR          0x00000004L
@@ -242,27 +220,24 @@ typedef struct _D3DCAPS8
 #define D3DPBLENDCAPS_BOTHSRCALPHA      0x00000800L
 #define D3DPBLENDCAPS_BOTHINVSRCALPHA   0x00001000L
 
-//
-// ShadeCaps
-//
+/* ShadeCaps */
 #define D3DPSHADECAPS_COLORGOURAUDRGB       0x00000008L
 #define D3DPSHADECAPS_SPECULARGOURAUDRGB    0x00000200L
 #define D3DPSHADECAPS_ALPHAGOURAUDBLEND     0x00004000L
 #define D3DPSHADECAPS_FOGGOURAUD            0x00080000L
 
-//
-// TextureCaps
-//
+/* TextureCaps */
 #define D3DPTEXTURECAPS_PERSPECTIVE         0x00000001L /* Perspective-correct texturing is supported */
 #define D3DPTEXTURECAPS_POW2                0x00000002L /* Power-of-2 texture dimensions are required - applies to non-Cube/Volume textures only. */
 #define D3DPTEXTURECAPS_ALPHA               0x00000004L /* Alpha in texture pixels is supported */
 #define D3DPTEXTURECAPS_SQUAREONLY          0x00000020L /* Only square textures are supported */
 #define D3DPTEXTURECAPS_TEXREPEATNOTSCALEDBYSIZE 0x00000040L /* Texture indices are not scaled by the texture size prior to interpolation */
 #define D3DPTEXTURECAPS_ALPHAPALETTE        0x00000080L /* Device can draw alpha from texture palettes */
-// Device can use non-POW2 textures if:
-//  1) D3DTEXTURE_ADDRESS is set to CLAMP for this texture's stage
-//  2) D3DRS_WRAP(N) is zero for this texture's coordinates
-//  3) mip mapping is not enabled (use magnification filter only)
+/* Device can use non-POW2 textures if:
+ *  1) D3DTEXTURE_ADDRESS is set to CLAMP for this texture's stage
+ *  2) D3DRS_WRAP(N) is zero for this texture's coordinates
+ *  3) mip mapping is not enabled (use magnification filter only)
+ */
 #define D3DPTEXTURECAPS_NONPOW2CONDITIONAL  0x00000100L
 #define D3DPTEXTURECAPS_PROJECTED           0x00000400L /* Device can do D3DTTFF_PROJECTED */
 #define D3DPTEXTURECAPS_CUBEMAP             0x00000800L /* Device can do cubemap textures */
@@ -273,9 +248,7 @@ typedef struct _D3DCAPS8
 #define D3DPTEXTURECAPS_CUBEMAP_POW2        0x00020000L /* Device requires that cubemaps be power-of-2 dimension */
 #define D3DPTEXTURECAPS_VOLUMEMAP_POW2      0x00040000L /* Device requires that volume maps be power-of-2 dimension */
 
-//
-// TextureFilterCaps
-//
+/* TextureFilterCaps */
 #define D3DPTFILTERCAPS_MINFPOINT           0x00000100L /* Min Filter */
 #define D3DPTFILTERCAPS_MINFLINEAR          0x00000200L
 #define D3DPTFILTERCAPS_MINFANISOTROPIC     0x00000400L
@@ -287,9 +260,7 @@ typedef struct _D3DCAPS8
 #define D3DPTFILTERCAPS_MAGFAFLATCUBIC      0x08000000L
 #define D3DPTFILTERCAPS_MAGFGAUSSIANCUBIC   0x10000000L
 
-//
-// TextureAddressCaps
-//
+/* TextureAddressCaps */
 #define D3DPTADDRESSCAPS_WRAP           0x00000001L
 #define D3DPTADDRESSCAPS_MIRROR         0x00000002L
 #define D3DPTADDRESSCAPS_CLAMP          0x00000004L
@@ -297,9 +268,7 @@ typedef struct _D3DCAPS8
 #define D3DPTADDRESSCAPS_INDEPENDENTUV  0x00000010L
 #define D3DPTADDRESSCAPS_MIRRORONCE     0x00000020L
 
-//
-// StencilCaps
-//
+/* StencilCaps */
 #define D3DSTENCILCAPS_KEEP             0x00000001L
 #define D3DSTENCILCAPS_ZERO             0x00000002L
 #define D3DSTENCILCAPS_REPLACE          0x00000004L
@@ -309,9 +278,7 @@ typedef struct _D3DCAPS8
 #define D3DSTENCILCAPS_INCR             0x00000040L
 #define D3DSTENCILCAPS_DECR             0x00000080L
 
-//
-// TextureOpCaps
-//
+/* TextureOpCaps */
 #define D3DTEXOPCAPS_DISABLE                    0x00000001L
 #define D3DTEXOPCAPS_SELECTARG1                 0x00000002L
 #define D3DTEXOPCAPS_SELECTARG2                 0x00000004L
@@ -339,16 +306,12 @@ typedef struct _D3DCAPS8
 #define D3DTEXOPCAPS_MULTIPLYADD                0x01000000L
 #define D3DTEXOPCAPS_LERP                       0x02000000L
 
-//
-// FVFCaps
-//
+/* FVFCaps */
 #define D3DFVFCAPS_TEXCOORDCOUNTMASK    0x0000ffffL /* mask for texture coordinate count field */
 #define D3DFVFCAPS_DONOTSTRIPELEMENTS   0x00080000L /* Device prefers that vertex elements not be stripped */
 #define D3DFVFCAPS_PSIZE                0x00100000L /* Device can receive point size */
 
-//
-// VertexProcessingCaps
-//
+/* VertexProcessingCaps */
 #define D3DVTXPCAPS_TEXGEN              0x00000001L /* device can do texgen */
 #define D3DVTXPCAPS_MATERIALSOURCE7     0x00000002L /* device can do DX7-level colormaterialsource ops */
 #define D3DVTXPCAPS_DIRECTIONALLIGHTS   0x00000008L /* device can do directional lights */

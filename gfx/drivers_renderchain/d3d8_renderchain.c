@@ -21,8 +21,6 @@
 #include "../drivers/d3d.h"
 #include "../common/d3d_common.h"
 
-#include "../include/d3d8/d3dx8math.h"
-
 #include "../video_driver.h"
 
 #include "../../configuration.h"
