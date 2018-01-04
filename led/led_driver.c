@@ -20,6 +20,11 @@
 #include "../verbosity.h"
 
 static led_driver_t *current_led_driver = NULL;
+extern led_driver_t *null_led_driver;
+extern led_driver_t *overlay_led_driver;
+#if HAVE_RPILED
+extern led_driver_t *rpi_led_driver;
+#endif
 
 bool led_driver_init(void)
 {
@@ -31,10 +36,16 @@ bool led_driver_init(void)
 
    current_led_driver = null_led_driver;
 
-#if HAVE_RPILED      
-   if(string_is_equal("rpi", drivername))
+   if(string_is_equal("overlay",drivername))
+      current_led_driver = overlay_led_driver;
+#if HAVE_RPILED
+   else if(string_is_equal("rpi", drivername))
       current_led_driver = rpi_led_driver;
 #endif          
+   else
+   {
+      current_led_driver = null_led_driver;
+   }
 
    RARCH_LOG("[LED]: LED driver = '%s' %p\n",
          drivername,current_led_driver);

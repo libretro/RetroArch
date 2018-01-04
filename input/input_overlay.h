@@ -94,6 +94,13 @@ enum overlay_image_transfer_status
    OVERLAY_IMAGE_TRANSFER_ERROR
 };
 
+enum overlay_visibility
+{
+   OVERLAY_VISIBILITY_DEFAULT = 0,
+   OVERLAY_VISIBILITY_VISIBLE,
+   OVERLAY_VISIBILITY_HIDDEN
+};
+
 struct overlay
 {
    bool full_screen;
@@ -256,6 +263,8 @@ bool input_overlay_key_pressed(input_overlay_t *ol, unsigned key);
 bool input_overlay_is_alive(input_overlay_t *ol);
 
 void input_overlay_loaded(void *task_data, void *user_data, const char *err);
+
+void input_overlay_set_visibility(int overlay_idx,enum overlay_visibility vis);
 
 /* FIXME - temporary. Globals are bad */
 extern input_overlay_t *overlay_ptr;
