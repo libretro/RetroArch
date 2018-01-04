@@ -1093,13 +1093,12 @@ enum rarch_shader_type video_shader_parse_type(const char *path,
       enum rarch_shader_type fallback)
 {
    enum rarch_shader_type shader_type = RARCH_SHADER_NONE;
-   enum gfx_ctx_api api = video_context_driver_get_api();
-
-   #ifdef HAVE_CG
-   bool cg_supported = true;
-   #else
-   bool cg_supported = false;
-   #endif
+   enum gfx_ctx_api api               = video_context_driver_get_api();
+#ifdef HAVE_CG
+   bool cg_supported                  = true;
+#else
+   bool cg_supported                  = false;
+#endif
 
    if (!path)
       return fallback;
