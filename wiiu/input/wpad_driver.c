@@ -86,18 +86,50 @@ static void apply_clamping(VPADTouchData *point, struct video_viewport *viewport
   }
 }
 
-static void get_touch_coordinates(VPADTouchData *point, VPADStatus *vpad,  bool *clamped)
+static void get_touch_coordinates(VPADTouchData *point, VPADStatus *vpad, struct video_viewport *viewport, bool *clamped)
 {
-  struct video_viewport viewport = {0};
-
-  video_driver_get_viewport_info(&viewport);
-  get_calibrated_point(point, &viewport, vpad);
-  apply_clamping(point, &viewport, clamped);
+  get_calibrated_point(point, viewport, vpad);
+  apply_clamping(point, viewport, clamped);
 }
+
+#if 0
+/**
+ * Get absolute value of a signed integer using bit manipulation.
+ */
+static int16_t bitwise_abs(int16_t value)
+{
+  bool is_negative = value & 0x8000;
+  if(!is_negative)
+    return value;
+
+  value = value &~ 0x8000;
+  return (~value & 0x7fff)+1;
+}
+
+/**
+ * printf doesn't have a concept of a signed hex digit, so we fake it.
+ */
+static void log_coords(int16_t x, int16_t y)
+{
+  bool x_negative = x & 0x8000;
+  bool y_negative = y & 0x8000;
+ 
+  int16_t x_digit = bitwise_abs(x);
+  int16_t y_digit = bitwise_abs(y);
+
+  RARCH_LOG("[wpad]: calibrated point: %s%04x, %s%04x\n",
+    x_negative ? "-" : "",
+    x_digit,
+    y_negative ? "-" : "",
+    y_digit);
+}
+#endif
 
 static void update_touch_state(int16_t state[3][2], uint64_t *buttons, VPADStatus *vpad)
 {
    VPADTouchData point = {0};
+   struct video_viewport viewport = {0};
+
    bool touch_clamped = false;
 
    if(!vpad->tpNormal.touched || vpad->tpNormal.validity != VPAD_VALID)
@@ -106,10 +138,17 @@ static void update_touch_state(int16_t state[3][2], uint64_t *buttons, VPADStatu
       return;
    }
 
-   get_touch_coordinates(&point, vpad, &touch_clamped);
+   video_driver_get_viewport_info(&viewport);
+   get_touch_coordinates(&point, vpad, &viewport, &touch_clamped);
 
-   state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_X] = point.x;
-   state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_Y] = point.y;
+   state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_X] = scale_touchpad(viewport.x, viewport.x + viewport.width, -0x7fff, 0x7fff, point.x);
+   state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_Y] = scale_touchpad(viewport.y, viewport.y + viewport.height, -0x7fff, 0x7fff, point.y);
+
+#if 0
+   log_coords(state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_X],
+              state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_Y]);
+#endif
+
 
    if(!touch_clamped)
       *buttons |= VPAD_BUTTON_TOUCH;
