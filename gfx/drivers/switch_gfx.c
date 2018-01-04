@@ -35,6 +35,7 @@
 typedef struct
 {
    bool vsync;
+   bool rgb32;
    unsigned width, height;
    unsigned rotation;
    struct video_viewport vp;
@@ -110,6 +111,8 @@ static void *switch_init(const video_info_t *video,
    video_driver_set_size(&sw->vp.width, &sw->vp.height);
 
    sw->vsync = video->vsync;
+
+   sw->rgb32 = video->rgb32;
    
    *input = NULL;
    *input_data = NULL;
@@ -142,7 +145,6 @@ static bool switch_frame(void *data, const void *frame,
    uint64_t begin, done_copying, post_vsync, pre_swizzle, post_swizzle,
             copy_ms, swizzle_ms, vsync_ms;
    int tgtw, tgth, centerx, centery;
-   const uint16_t *frame_pixels = frame;
    uint32_t *out_buffer   = NULL;
    switch_video_t *sw     = data;
    int xsf                = 1280 / width;
@@ -163,21 +165,29 @@ static bool switch_frame(void *data, const void *frame,
    {
       for(y = 0; y < height; y++)
       {
-         unsigned subx, suby;
-         uint32_t spixel = frame_pixels[(y*pitch/sizeof(uint16_t)) + x];
-         uint32_t dpixel = 0;
-         uint8_t r       = (spixel >> 11) & 31;
-         uint8_t g       = (spixel >> 5) & 63;
-         uint8_t b       = (spixel >> 0) & 31;
-         r               = (r * 256) / 32;
-         g               = (g * 256) / 64;
-         b               = (b * 256) / 32;
-         dpixel          = (r << 0) | (g << 8) | (b << 16) | (0xFF << 24);
+         uint32_t pixel = 0;
+
+         if (sw->rgb32)
+         {
+            const uint32_t *frame_pixels = frame;
+            pixel = frame_pixels[(y*pitch/sizeof(uint32_t)) + x];
+         } else {
+            const uint16_t *frame_pixels = frame;
+            unsigned subx, suby;
+            uint32_t spixel = frame_pixels[(y*pitch/sizeof(uint16_t)) + x];
+            uint8_t r       = (spixel >> 11) & 31;
+            uint8_t g       = (spixel >> 5) & 63;
+            uint8_t b       = (spixel >> 0) & 31;
+            r               = (r * 256) / 32;
+            g               = (g * 256) / 64;
+            b               = (b * 256) / 32;
+            pixel           = (r << 0) | (g << 8) | (b << 16) | (0xFF << 24);
+         }
 
          for (subx = 0; subx < xsf; subx++)
             for (suby = 0; suby < ysf; suby++)
                image[(((y*sf)+suby+centery)*1280) 
-                  + ((x*sf)+subx+centerx)] = dpixel;
+                  + ((x*sf)+subx+centerx)] = pixel;
       }
    }
 
