@@ -49,6 +49,49 @@ static int16_t scale_touchpad(int16_t from_min, int16_t from_max,
   return (((value - from_min) * to_range) / from_range) + to_min;
 }
 
+
+static void get_calibrated_point(VPADTouchData *point, struct video_viewport *viewport, VPADStatus *vpad)
+{
+   VPADTouchData calibrated720p = {0};
+
+   VPADGetTPCalibratedPoint(PAD_GAMEPAD, &calibrated720p, &(vpad->tpNormal));
+   point->x = scale_touchpad(12, 1268, 0, viewport->full_width, calibrated720p.x);
+   point->y = scale_touchpad(12, 708, 0, viewport->full_height, calibrated720p.y);
+}
+
+static void apply_clamping(VPADTouchData *point, struct video_viewport *viewport, bool *clamped)
+{
+  /* clamp the x domain to the viewport */
+  if(point->x < viewport->x)
+  {
+    point->x = viewport->x;
+    *clamped = true;
+  }
+  else if(point->x > (viewport->x + viewport->width))
+  {
+    point->x = viewport->x + viewport->width;
+    *clamped = true;
+  }
+  
+  /* clamp the y domain to the viewport */
+  if(point->y < viewport->y)
+  {
+    point->y = viewport->y;
+    *clamped = true;
+  }
+  else if(point->y > (viewport->y + viewport->height))
+  {
+    point->y =  viewport->y + viewport->height;
+    *clamped = true;
+  }
+}
+
+static void get_touch_coordinates(VPADTouchData *point, VPADStatus *vpad, struct video_viewport *viewport, bool *clamped)
+{
+  get_calibrated_point(point, viewport, vpad);
+  apply_clamping(point, viewport, clamped);
+}
+
 #if 0
 /**
  * Get absolute value of a signed integer using bit manipulation.
@@ -60,7 +103,7 @@ static int16_t bitwise_abs(int16_t value)
     return value;
 
   value = value &~ 0x8000;
-  return ~value & 0x7fff;
+  return (~value & 0x7fff)+1;
 }
 
 /**
@@ -70,7 +113,7 @@ static void log_coords(int16_t x, int16_t y)
 {
   bool x_negative = x & 0x8000;
   bool y_negative = y & 0x8000;
-
+ 
   int16_t x_digit = bitwise_abs(x);
   int16_t y_digit = bitwise_abs(y);
 
@@ -82,21 +125,12 @@ static void log_coords(int16_t x, int16_t y)
 }
 #endif
 
-static void get_calibrated_point(VPADTouchData *point, VPADStatus *vpad)
-{
-   VPADTouchData calibrated720p = {0};
-
-   VPADGetTPCalibratedPoint(PAD_GAMEPAD, &calibrated720p, &(vpad->tpNormal));
-   point->x = scale_touchpad(12, 1268, -0x7fff, 0x7fff, calibrated720p.x);
-   point->y = scale_touchpad(12, 708, -0x7fff, 0x7fff, calibrated720p.y);
-#if 0
-   log_coords(point->x, point->y);
-#endif
-}
-
 static void update_touch_state(int16_t state[3][2], uint64_t *buttons, VPADStatus *vpad)
 {
    VPADTouchData point = {0};
+   struct video_viewport viewport = {0};
+
+   bool touch_clamped = false;
 
    if(!vpad->tpNormal.touched || vpad->tpNormal.validity != VPAD_VALID)
    {
@@ -104,12 +138,22 @@ static void update_touch_state(int16_t state[3][2], uint64_t *buttons, VPADStatu
       return;
    }
 
-   get_calibrated_point(&point, vpad);
+   video_driver_get_viewport_info(&viewport);
+   get_touch_coordinates(&point, vpad, &viewport, &touch_clamped);
 
-   state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_X] = point.x;
-   state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_Y] = point.y;
+   state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_X] = scale_touchpad(viewport.x, viewport.x + viewport.width, -0x7fff, 0x7fff, point.x);
+   state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_Y] = scale_touchpad(viewport.y, viewport.y + viewport.height, -0x7fff, 0x7fff, point.y);
 
-   *buttons |= VPAD_BUTTON_TOUCH;
+#if 0
+   log_coords(state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_X],
+              state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_Y]);
+#endif
+
+
+   if(!touch_clamped)
+      *buttons |= VPAD_BUTTON_TOUCH;
+   else
+      *buttons &= ~VPAD_BUTTON_TOUCH;
 }
 
 static void check_panic_button(uint32_t held_buttons)
