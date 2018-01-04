@@ -13,8 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef TEX_SHADER_H
-#define TEX_SHADER_H
+#ifndef SPRITE_SHADER_H
+#define SPRITE_SHADER_H
 
 #include <wiiu/shader_utils.h>
 
@@ -28,19 +28,25 @@ typedef struct
    {
       float x;
       float y;
+      float width;
+      float height;
    }pos;
 
    struct
    {
       float u;
       float v;
+      float width;
+      float height;
    }coord;
-}tex_shader_vertex_t;
 
-extern GX2Shader tex_shader;
+   u32 color;
+}sprite_vertex_t;
+
+extern GX2Shader sprite_shader;
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // TEX_SHADER_H
+#endif // SPRITE_SHADER_H

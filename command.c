@@ -124,14 +124,14 @@ struct command
 #endif
 };
 
-#ifdef HAVE_CHEEVOS
+#if defined(HAVE_COMMAND) && defined(HAVE_CHEEVOS)
 static bool command_read_ram(const char *arg);
 static bool command_write_ram(const char *arg);
 #endif
 
 static const struct cmd_action_map action_map[] = {
    { "SET_SHADER",      command_set_shader,  "<shader path>" },
-#ifdef HAVE_CHEEVOS
+#if defined(HAVE_COMMAND) && defined(HAVE_CHEEVOS)
    { "READ_CORE_RAM",   command_read_ram,    "<address> <number of bytes>" },
    { "WRITE_CORE_RAM",  command_write_ram,   "<address> <byte1> <byte2> ..." },
 #endif

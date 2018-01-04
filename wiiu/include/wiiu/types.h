@@ -37,3 +37,5 @@ typedef double f64;
 
 typedef volatile float vf32;
 typedef volatile double vf64;
+
+#define countof(array)  (sizeof(array) / sizeof(*array))
