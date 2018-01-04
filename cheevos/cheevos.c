@@ -1095,11 +1095,14 @@ static INLINE const char *cheevos_dupstr(const cheevos_field_t *field)
 static int cheevos_new_cheevo(cheevos_readud_t *ud)
 {
    cheevo_t *cheevo = NULL;
+   long flags = strtol(ud->flags.string, NULL, 10);
 
-   if (strtol(ud->flags.string, NULL, 10) == 3)
+   if (flags == 3)
       cheevo = cheevos_locals.core.cheevos + ud->core_count++;
-   else
+   else if (flags == 5)
       cheevo = cheevos_locals.unofficial.cheevos + ud->unofficial_count++;
+   else
+      return 0;
 
    cheevo->id          = (unsigned)strtol(ud->id.string, NULL, 10);
    cheevo->title       = cheevos_dupstr(&ud->title);
@@ -2772,7 +2775,7 @@ static int cheevos_iterate(coro_t* coro)
          size = ftell(file);
          fseek(file, 0, SEEK_SET);
 
-         CHEEVOS_VAR_JSON = (const char*)malloc(size + 1);
+         CHEEVOS_VAR_JSON = (char*)malloc(size + 1);
          fread((void*)CHEEVOS_VAR_JSON, 1, size, file);
 
          fclose(file);
@@ -3131,9 +3134,9 @@ static int cheevos_iterate(coro_t* coro)
    CORO_GOSUB(LOGIN);
 
    snprintf(CHEEVOS_VAR_URL, sizeof(CHEEVOS_VAR_URL),
-      "http://retroachievements.org/dorequest.php?r=patch&u=%s&g=%u&f=%u&l=1&t=%s",
+      "http://retroachievements.org/dorequest.php?r=patch&g=%u&u=%s&t=%s",
+      CHEEVOS_VAR_GAMEID,
       CHEEVOS_VAR_SETTINGS->arrays.cheevos_username,
-      CHEEVOS_VAR_GAMEID, CHEEVOS_VAR_SETTINGS->bools.cheevos_test_unofficial ? 0:3,
       cheevos_locals.token);
 
       CHEEVOS_VAR_URL[sizeof(CHEEVOS_VAR_URL) - 1] = 0;
