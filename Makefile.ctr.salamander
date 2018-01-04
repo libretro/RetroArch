@@ -122,15 +122,28 @@ STRIP   := $(PREFIX)strip
 NM      := $(PREFIX)nm
 LD      := $(CXX)
 
-ifneq ($(findstring Linux,$(shell uname -a)),)
-	MAKEROM    = pkg/ctr/tools/makerom-linux
-	BANNERTOOL = pkg/ctr/tools/bannertool-linux
-else ifneq ($(findstring Darwin,$(shell uname -a)),)
-	MAKEROM    = pkg/ctr/tools/makerom-mac
-	BANNERTOOL = pkg/ctr/tools/bannertool-mac
+ifeq ($(strip $(CTRBANNERTOOL)),)
+	ifneq ($(findstring Linux,$(shell uname -a)),)
+		BANNERTOOL = pkg/ctr/tools/bannertool-linux
+	else ifneq ($(findstring Darwin,$(shell uname -a)),)
+		BANNERTOOL = pkg/ctr/tools/bannertool-mac
+	else
+		BANNERTOOL = pkg/ctr/tools/bannertool.exe
+	endif
 else
-	MAKEROM    = pkg/ctr/tools/makerom.exe
-	BANNERTOOL = pkg/ctr/tools/bannertool.exe
+	BANNERTOOL = $(CTRBANNERTOOL)
+endif
+
+ifeq ($(strip $(CTRMAKEROM)),)
+	ifneq ($(findstring Linux,$(shell uname -a)),)
+		MAKEROM    = pkg/ctr/tools/makerom-linux
+	else ifneq ($(findstring Darwin,$(shell uname -a)),)
+		MAKEROM    = pkg/ctr/tools/makerom-mac
+	else
+		MAKEROM    = pkg/ctr/tools/makerom.exe
+	endif
+else
+	MAKEROM = $(CTRMAKEROM)
 endif
 
 %.o: %.vsh %.gsh
