@@ -322,7 +322,7 @@ static bool d3d_process_shader(d3d_video_t *d3d)
 {
 #ifdef HAVE_FBO
    if (d3d && !string_is_empty(d3d->shader_path) &&
-         string_is_equal_fast(path_get_extension(d3d->shader_path), "cgp", 3))
+         string_is_equal(path_get_extension(d3d->shader_path), "cgp"))
       return d3d_init_multipass(d3d);
 #endif
 
@@ -982,9 +982,6 @@ static bool d3d_init_internal(d3d_video_t *d3d,
    MONITORINFOEX current_mon;
    HMONITOR hm_to_use;
 #endif
-#ifdef HAVE_SHADERS
-   enum rarch_shader_type type;
-#endif
 #ifdef HAVE_WINDOW
    DWORD style;
    unsigned win_width        = 0;
@@ -1066,11 +1063,11 @@ static bool d3d_init_internal(d3d_video_t *d3d,
    /* This should only be done once here
     * to avoid set_shader() to be overridden
     * later. */
-   type =
-      video_shader_parse_type(settings->paths.path_shader, RARCH_SHADER_NONE);
-
    if (settings->bools.video_shader_enable)
    {
+      enum rarch_shader_type type =
+         video_shader_parse_type(settings->paths.path_shader, RARCH_SHADER_NONE);
+
       switch (type)
       {
          case RARCH_SHADER_CG:
