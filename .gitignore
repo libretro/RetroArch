@@ -70,14 +70,19 @@ menu/driverspzarch.c
 *.depend
 *.rpx
 wiiu/wut/elf2rpl/elf2rpl
+/pkg/wiiu/retroarch
+/pkg/wiiu/wiiu
+/pkg/wiiu/rpx
 
 # 3ds
 /.lst
 *.3dsx
+*.cia
+*.3ds
+*.bnr
 *.smdh
-/pkg/wiiu/retroarch
-/pkg/wiiu/wiiu
-/pkg/wiiu/rpx
+/retroarch_3ds.core
+/retroarch_3ds.icn
 
 # Ctags
 /tags
