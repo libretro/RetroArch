@@ -351,16 +351,17 @@ static ssize_t wiiu_log_write(struct _reent *r, void *fd, const char *ptr, size_
    wiiu_log_lock = 1;
 
    int ret;
+   int remaining = len;
 
-   while (len > 0)
+   while (remaining > 0)
    {
-      int block = len < 1400 ? len : 1400; // take max 1400 bytes per UDP packet
+      int block = remaining < 1400 ? remaining : 1400; // take max 1400 bytes per UDP packet
       ret = send(wiiu_log_socket, ptr, block, 0);
 
       if (ret < 0)
          break;
 
-      len -= ret;
+      remaining -= ret;
       ptr += ret;
    }
 
