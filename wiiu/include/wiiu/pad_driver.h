@@ -36,6 +36,7 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../command.h"
+#include "../../gfx/video_driver.h"
 
 /**
  * Magic button sequence that triggers an exit. Useful for if the visuals are
