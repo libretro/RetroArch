@@ -1,6 +1,7 @@
 #include <wiiu/gx2.h>
 
 #include "wiiu/tex_shader.h"
+#include "wiiu/sprite_shader.h"
 
 #undef _X
 #undef _B
@@ -21,8 +22,6 @@
 #define COLOR_ARGB(r, g, b, a) (((u32)(a) << 24) | ((u32)(r) << 16) | ((u32)(g) << 8) | ((u32)(b) << 0))
 #define COLOR_RGBA(r, g, b, a) (((u32)(r) << 24) | ((u32)(g) << 16) | ((u32)(b) << 8) | ((u32)(a) << 0))
 
-//#define GX2_CAN_ACCESS_DATA_SECTION
-
 typedef struct
 {
    int width;
@@ -33,20 +32,19 @@ typedef struct
 struct gx2_overlay_data
 {
    GX2Texture tex;
-   tex_shader_vertex_t v[4];
+   sprite_vertex_t v;
    float alpha_mod;
 };
 
 typedef struct
 {
-   tex_shader_t* shader;
    struct
    {
       GX2Texture texture;
       int width;
       int height;
       bool enable;
-      tex_shader_vertex_t* v;
+      sprite_vertex_t* v;
    } menu;
 
 #ifdef HAVE_OVERLAY
@@ -60,12 +58,19 @@ typedef struct
    GX2Sampler sampler_linear;
    GX2Texture texture;
    tex_shader_vertex_t* v;
+   GX2_vec2* ubo_vp;
+   GX2_vec2* ubo_tex;
+   void* input_ring_buffer;
+   u32 input_ring_buffer_size;
+   void* output_ring_buffer;
+   u32 output_ring_buffer_size;
+
    int width;
    int height;
 
    struct
    {
-      tex_shader_vertex_t* v;
+      sprite_vertex_t* v;
       int size;
       int current;
    } vertex_cache;

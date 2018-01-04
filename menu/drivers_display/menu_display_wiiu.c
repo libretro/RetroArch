@@ -77,68 +77,48 @@ static void menu_display_wiiu_draw(void *data)
    if (wiiu->vertex_cache.current + 4 > wiiu->vertex_cache.size)
       return;
 
-   tex_shader_vertex_t* v = wiiu->vertex_cache.v + wiiu->vertex_cache.current;
-
-   float x0 = draw->x;
-   float y0 = draw->y;
-   float x1 = x0 + draw->width;
-   float y1 = y0 + draw->height;
+   sprite_vertex_t* v = wiiu->vertex_cache.v + wiiu->vertex_cache.current;
 
    if(draw->coords->vertex && draw->coords->vertices == 4)
    {
-      for(int i = 0; i < 4; i++)
-      {
-         v[i].pos.x = draw->coords->vertex[i << 1] * 2.0f - 1.0f;
-         v[i].pos.y = draw->coords->vertex[(i << 1) + 1] * 2.0f - 1.0f;
-      }
+      v->pos.x = MIN(MIN(MIN(draw->coords->vertex[0], draw->coords->vertex[2]), draw->coords->vertex[4]), draw->coords->vertex[6]);
+      v->pos.y = 1.0 - MAX(MAX(MAX(draw->coords->vertex[1], draw->coords->vertex[3]), draw->coords->vertex[5]), draw->coords->vertex[7]);
+      v->pos.width  = MAX(MAX(MAX(draw->coords->vertex[0], draw->coords->vertex[2]), draw->coords->vertex[4]), draw->coords->vertex[6]) - v->pos.x;
+      v->pos.height = 1.0 - MIN(MIN(MIN(draw->coords->vertex[1], draw->coords->vertex[3]), draw->coords->vertex[5]), draw->coords->vertex[7]) - v->pos.y;
+      v->pos.x *= wiiu->color_buffer.surface.width;
+      v->pos.y *= wiiu->color_buffer.surface.height;
+      v->pos.width *= wiiu->color_buffer.surface.width;
+      v->pos.height *= wiiu->color_buffer.surface.height;
    }
    else
    {
-      v[0].pos.x = (2.0f * x0 / wiiu->color_buffer.surface.width) - 1.0f;
-      v[0].pos.y = (2.0f * y0 / wiiu->color_buffer.surface.height) - 1.0f;
-      v[1].pos.x = (2.0f * x1 / wiiu->color_buffer.surface.width) - 1.0f;;
-      v[1].pos.y = (2.0f * y0 / wiiu->color_buffer.surface.height) - 1.0f;
-      v[2].pos.x = (2.0f * x1 / wiiu->color_buffer.surface.width) - 1.0f;;
-      v[2].pos.y = (2.0f * y1 / wiiu->color_buffer.surface.height) - 1.0f;
-      v[3].pos.x = (2.0f * x0 / wiiu->color_buffer.surface.width) - 1.0f;;
-      v[3].pos.y = (2.0f * y1 / wiiu->color_buffer.surface.height) - 1.0f;
+      v->pos.x = draw->x;
+      v->pos.y = wiiu->color_buffer.surface.height - draw->y - draw->height;
+      v->pos.width = draw->width;
+      v->pos.height = draw->height;
    }
    if(draw->coords->tex_coord && draw->coords->vertices == 4)
    {
-      for(int i = 0; i < 4; i++)
-      {
-         v[i].coord.u = draw->coords->tex_coord[i << 1];
-         v[i].coord.v = draw->coords->tex_coord[(i << 1) + 1];
-      }
+      v->coord.u = MIN(MIN(MIN(draw->coords->tex_coord[0], draw->coords->tex_coord[2]), draw->coords->tex_coord[4]), draw->coords->tex_coord[6]);
+      v->coord.v = MIN(MIN(MIN(draw->coords->tex_coord[1], draw->coords->tex_coord[3]), draw->coords->tex_coord[5]), draw->coords->tex_coord[7]);
+      v->coord.width  = MAX(MAX(MAX(draw->coords->tex_coord[0], draw->coords->tex_coord[2]), draw->coords->tex_coord[4]), draw->coords->tex_coord[6]) - v->coord.u;
+      v->coord.height = MAX(MAX(MAX(draw->coords->tex_coord[1], draw->coords->tex_coord[3]), draw->coords->tex_coord[5]), draw->coords->tex_coord[7]) - v->coord.v;
    }
    else
    {
-      v[0].coord.u = 0.0f;
-      v[0].coord.v = 1.0f;
-      v[1].coord.u = 1.0f;
-      v[1].coord.v = 1.0f;
-      v[2].coord.u = 1.0f;
-      v[2].coord.v = 0.0f;
-      v[3].coord.u = 0.0f;
-      v[3].coord.v = 0.0f;
+      v->coord.u = 0.0f;
+      v->coord.v = 0.0f;
+      v->coord.width = 1.0f;
+      v->coord.height = 1.0f;
    }
 
 
-   v[0].color = COLOR_RGBA(0xFF * draw->coords->color[0], 0xFF * draw->coords->color[1],
+   v->color = COLOR_RGBA(0xFF * draw->coords->color[0], 0xFF * draw->coords->color[1],
                        0xFF * draw->coords->color[2], 0xFF * draw->coords->color[3]);
-   v[1].color = v[0].color;
-   v[2].color = v[0].color;
-   v[3].color = v[0].color;
 
-//   printf("color : %f, %f, %f, %f  --> 0x%08X\n", draw->coords->color[0], draw->coords->color[1], draw->coords->color[2], draw->coords->color[3], col[0]);
+   GX2SetPixelTexture(texture, tex_shader.ps.samplerVars[0].location);
 
-   GX2SetPixelTexture(texture, wiiu->shader->sampler.location);
-
-
-   if(draw->coords->vertex && draw->coords->vertices == 4)
-      GX2DrawEx(GX2_PRIMITIVE_MODE_TRIANGLE_STRIP, 4, wiiu->vertex_cache.current, 1);
-   else
-      GX2DrawEx(GX2_PRIMITIVE_MODE_QUADS, 4, wiiu->vertex_cache.current, 1);
+   GX2DrawEx(GX2_PRIMITIVE_MODE_POINTS, 1, wiiu->vertex_cache.current, 1);
 
 #if 0
    printf("(%i,%i,%i,%i) , (%i,%i)\n", (int)draw->x,
@@ -146,7 +126,7 @@ static void menu_display_wiiu_draw(void *data)
          texture->surface.width, texture->surface.height);
 #endif
 
-   wiiu->vertex_cache.current += 4;
+   wiiu->vertex_cache.current ++;
 
 }
 
