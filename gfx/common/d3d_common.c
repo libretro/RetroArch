@@ -169,10 +169,10 @@ dylib_t dylib_load_d3dx(void)
 
 bool d3d_initialize_symbols(void)
 {
+#ifdef HAVE_DYNAMIC_D3D
    if (dylib_initialized)
       return true;
 
-#ifdef HAVE_DYNAMIC_D3D
 #if defined(HAVE_D3D9)
    g_d3d_dll  = dylib_load("d3d9.dll");
 #ifdef HAVE_D3DX
@@ -236,7 +236,9 @@ bool d3d_initialize_symbols(void)
 #ifdef _XBOX
    SDKVersion = 0;
 #endif
+#ifdef HAVE_DYNAMIC_D3D
    dylib_initialized = true;
+#endif
 
    return true;
 
@@ -247,6 +249,7 @@ error:
 
 void d3d_deinitialize_symbols(void)
 {
+#ifdef HAVE_DYNAMIC_D3D
    if (g_d3d_dll)
       dylib_close(g_d3d_dll);
 #ifdef HAVE_D3DX
@@ -257,6 +260,7 @@ void d3d_deinitialize_symbols(void)
    g_d3d_dll  = NULL;
 
    dylib_initialized = false;
+#endif
 }
 
 bool d3d_swap(void *data, LPDIRECT3DDEVICE dev)
