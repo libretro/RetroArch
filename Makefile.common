@@ -1259,7 +1259,8 @@ endif
 
 ifeq ($(HAVE_D3D9), 1)
 	HAVE_D3D_COMMON = 1
-   DEFINES += -DHAVE_D3D9
+	HAVE_D3DX = 1
+   DEFINES += -DHAVE_D3D9 -DHAVE_D3DX
 ifneq ($(HAVE_DYLIB), 1)
    LIBS += -ld3d9 -ld3dx9
 endif

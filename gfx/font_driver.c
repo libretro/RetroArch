@@ -14,17 +14,17 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "font_driver.h"
-#include "video_thread_wrapper.h"
-
-#include "../configuration.h"
-#include "../verbosity.h"
+#include <stdlib.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
 
-#include <stdlib.h>
+#include "font_driver.h"
+#include "video_thread_wrapper.h"
+
+#include "../configuration.h"
+#include "../verbosity.h"
 
 static const font_renderer_driver_t *font_backends[] = {
 #ifdef HAVE_FREETYPE
@@ -88,7 +88,7 @@ static const font_renderer_t *d3d_font_backends[] = {
    &d3d_xdk1_font,
 #elif defined(_XBOX360)
    &d3d_xbox360_font,
-#elif defined(_WIN32) && defined(HAVE_D3D9)
+#elif defined(_WIN32) && defined(HAVE_D3DX)
    &d3d_win32_font,
 #endif
    NULL
@@ -103,9 +103,9 @@ static bool d3d_font_init_first(
 
    for (i = 0; i < ARRAY_SIZE(d3d_font_backends); i++)
    {
-      void *data = d3d_font_backends[i]->init(
+      void *data = d3d_font_backends[i] ? d3d_font_backends[i]->init(
             video_data, font_path, font_size,
-            is_threaded);
+            is_threaded) : NULL;
 
       if (!data)
          continue;

@@ -431,7 +431,7 @@ FONTS
 #include "../gfx/drivers_font_renderer/bitmapfont.c"
 #include "../gfx/font_driver.c"
 
-#if defined(HAVE_D3D9) && !defined(_XBOX)
+#if defined(HAVE_D3D9) && defined(HAVE_D3DX)
 #include "../gfx/drivers_font/d3d_w32_font.c"
 #endif
 

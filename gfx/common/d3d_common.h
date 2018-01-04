@@ -179,7 +179,7 @@ bool d3d_initialize_symbols(void);
 
 void d3d_deinitialize_symbols(void);
 
-bool d3d_create_font_indirect(LPDIRECT3DDEVICE dev,
+bool d3dx_create_font_indirect(LPDIRECT3DDEVICE dev,
       void *desc, void **font_data);
 
 D3DTEXTUREFILTERTYPE d3d_translate_filter(unsigned type);
