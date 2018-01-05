@@ -200,6 +200,7 @@ OBJ += frontend/frontend.o \
        input/input_driver.o \
        led/led_driver.o \
        led/null_led_driver.o \
+       led/overlay_led_driver.o \
        gfx/video_coord_array.o \
        gfx/video_display_server.o \
        gfx/video_driver.o \

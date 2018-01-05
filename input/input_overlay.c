@@ -37,6 +37,9 @@
 #define OVERLAY_GET_KEY(state, key) (((state)->keys[(key) / 32] >> ((key) % 32)) & 1)
 #define OVERLAY_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
 
+#define MAX_VISIBILITY 32
+static enum overlay_visibility* visibility = NULL;
+
 typedef struct input_overlay_state
 {
    /* Left X, Left Y, Right X, Right Y */
@@ -528,6 +531,39 @@ abort_load:
    free(data);
 }
 
+void input_overlay_set_visibility(int overlay_idx,enum overlay_visibility vis)
+{
+    int i;
+    input_overlay_t *ol = overlay_ptr;
+      
+    if(visibility == NULL)
+    {
+        visibility = (enum overlay_visibility *)calloc(MAX_VISIBILITY,sizeof(enum overlay_visibility));
+        for(i=0;i<MAX_VISIBILITY;i++)
+        {
+            visibility[i] = OVERLAY_VISIBILITY_DEFAULT;
+        }
+    }
+
+    visibility[overlay_idx] = vis;
+
+    if(ol == NULL) return;
+    if(vis == OVERLAY_VISIBILITY_HIDDEN)
+      ol->iface->set_alpha(ol->iface_data, overlay_idx, 0.0);
+}
+
+static enum overlay_visibility input_overlay_get_visibility(int overlay_idx)
+{
+    if(visibility == NULL) return OVERLAY_VISIBILITY_DEFAULT;
+    if((overlay_idx < 0) || (overlay_idx >= MAX_VISIBILITY)) return OVERLAY_VISIBILITY_DEFAULT;
+    return visibility[overlay_idx];
+}
+
+static bool input_overlay_is_hidden(int overlay_idx)
+{
+    return (input_overlay_get_visibility(overlay_idx) == OVERLAY_VISIBILITY_HIDDEN);
+}
+
 /**
  * input_overlay_set_alpha_mod:
  * @ol                    : Overlay handle.
@@ -544,7 +580,12 @@ void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod)
       return;
 
    for (i = 0; i < ol->active->load_images_size; i++)
-      ol->iface->set_alpha(ol->iface_data, i, mod);
+   {
+      if(input_overlay_is_hidden(i))
+          ol->iface->set_alpha(ol->iface_data, i, 0.0);
+      else
+          ol->iface->set_alpha(ol->iface_data, i, mod);
+   }
 }
 
 bool input_overlay_is_alive(input_overlay_t *ol)

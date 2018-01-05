@@ -53,7 +53,7 @@ static int set_gpio(int gpio,int value)
 {
    FILE *fp;
    char buf[256];
-   snprintf(buf, sizeof(buf), "/sys/class/gpio/%d/value", gpio);
+   snprintf(buf, sizeof(buf), "/sys/class/gpio/gpio%d/value", gpio);
    fp = fopen(buf,"w");
 
    if(!fp)
@@ -71,7 +71,7 @@ static int setup_gpio(int gpio)
 {
    FILE *fp;
    char buf[256];
-   snprintf(buf, sizeof(buf), "/sys/class/gpio/%d/direction", gpio);
+   snprintf(buf, sizeof(buf), "/sys/class/gpio/gpio%d/direction", gpio);
    fp = fopen(buf,"w");
 
    if(!fp)
@@ -88,7 +88,7 @@ static int setup_gpio(int gpio)
       fprintf(fp,"%d\n",gpio);
       fclose(fp);
 
-      snprintf(buf, sizeof(buf), "/sys/class/gpio/%d/direction",gpio);
+      snprintf(buf, sizeof(buf), "/sys/class/gpio/gpio%d/direction",gpio);
       fp = fopen(buf,"w");    
    }
 
@@ -102,8 +102,8 @@ static int setup_gpio(int gpio)
    fprintf(fp,"out\n");
    fclose(fp);
    return 1;
-
 }
+
 static void rpi_set(int led,int state)
 {
    int gpio = 0;
