@@ -131,10 +131,12 @@ static void switch_joypad_destroy(void)
 
 static void switch_joypad_poll(void)
 {
-   hid_controller_t    *controllers = hid_get_shared_memory()->controllers;
-   hid_controller_t           *cont = &controllers[0];
-   hid_controller_state_entry_t ent = cont->main.entries[cont->main.latest_idx];
-   pad_state[0] = ent.button_state;
+   hid_controller_t    *controllers  = hid_get_shared_memory()->controllers;
+   hid_controller_t           *cont  = &controllers[0];
+   hid_controller_state_entry_t ent  = cont->main.entries[cont->main.latest_idx];
+   hid_controller_state_entry_t ent8 = (cont+8)->main.entries[(cont+8)->main.latest_idx];
+   pad_state[0] = ent.button_state | ent8.button_state;
+   
    analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_X]  = ent.left_stick_x / 0x20000;
    analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y]  = ent.left_stick_y / 0x20000;
    analog_state[0][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = ent.right_stick_x / 0x20000;
