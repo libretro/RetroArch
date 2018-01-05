@@ -30,112 +30,130 @@ static bool ready = false;
 static wiiu_hid_t *hid_data;
 static hid_driver_t *hid_driver;
 
-static unsigned to_slot(unsigned pad) {
-  return pad - (WIIU_WIIMOTE_CHANNELS+1);
+static unsigned to_slot(unsigned pad)
+{
+   return pad - (WIIU_WIIMOTE_CHANNELS+1);
 }
 
-const void *get_hid_data(void) {
-  return hid_data;
+const void *get_hid_data(void)
+{
+   return hid_data;
 }
 
 static hid_driver_t *init_hid_driver(void)
 {
-  unsigned connections_size = MAX_USERS - (WIIU_WIIMOTE_CHANNELS+1);
-  hid_data = (wiiu_hid_t *)wiiu_hid.init();
-  joypad_connection_t *connections = pad_connection_init(connections_size);
+   joypad_connection_t *connections = NULL;
+   unsigned connections_size        = MAX_USERS - (WIIU_WIIMOTE_CHANNELS+1);
 
-  if(!hid_data || !connections)
-    goto error;
+   hid_data                         = (wiiu_hid_t *)wiiu_hid.init();
+   connections                      = pad_connection_init(connections_size);
 
-  hid_data->connections = connections;
-  hid_data->connections_size = connections_size;
-  return &wiiu_hid;
+   if (!hid_data || !connections)
+      goto error;
 
-  error:
-    if(connections)
+   hid_data->connections = connections;
+   hid_data->connections_size = connections_size;
+   return &wiiu_hid;
+
+error:
+   if (connections)
       free(connections);
-    if(hid_data)
-    {
+   if (hid_data)
+   {
       wiiu_hid.free(hid_data);
       free(hid_data);
       hid_data = NULL;
-    }
-  return NULL;
+   }
+   return NULL;
 }
 
 static bool hidpad_init(void *data)
 {
-  (void *)data;
-  hid_driver = init_hid_driver();
-  if(!hid_driver)
-  {
-    RARCH_ERR("Failed to initialize HID driver.\n");
-    return false;
-  }
+   (void *)data;
 
-  hidpad_poll();
-  ready = true;
+   hid_driver = init_hid_driver();
+   if (!hid_driver)
+   {
+      RARCH_ERR("Failed to initialize HID driver.\n");
+      return false;
+   }
 
-  return true;
+   hidpad_poll();
+   ready = true;
+
+   return true;
 }
 
 static bool hidpad_query_pad(unsigned pad)
 {
-  return ready && (pad > WIIU_WIIMOTE_CHANNELS && pad < MAX_USERS);
+   return ready && (pad > WIIU_WIIMOTE_CHANNELS && pad < MAX_USERS);
 }
 
 static void hidpad_destroy(void)
 {
-  ready = false;
+   ready = false;
 
-  if(hid_driver)
-  {
-    hid_driver->free(get_hid_data());
-    free(hid_data);
-    hid_data = NULL;
-  }
+   if (!hid_driver)
+      return;
+
+   hid_driver->free(get_hid_data());
+   free(hid_data);
+   hid_data = NULL;
 }
 
 static bool hidpad_button(unsigned pad, uint16_t button)
 {
-  if(!hidpad_query_pad(pad))
-    return false;
+   if (!hidpad_query_pad(pad))
+      return false;
 
-//  return hid_driver->button(hid_data, to_slot(pad), button);
-  return false;
+#if 0
+   return hid_driver->button(hid_data, to_slot(pad), button);
+#else
+   return false;
+#endif
 }
 
 static void hidpad_get_buttons(unsigned pad, retro_bits_t *state)
 {
-  if(!hidpad_query_pad(pad))
+  if (!hidpad_query_pad(pad))
     BIT256_CLEAR_ALL_PTR(state);
 
-//  hid_driver->get_buttons(hid_data, to_slot(pad), state);
+#if 0
+  hid_driver->get_buttons(hid_data, to_slot(pad), state);
+#endif
   BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t hidpad_axis(unsigned pad, uint32_t axis)
 {
-  if(!hidpad_query_pad(pad));
-    return 0;
+   if (!hidpad_query_pad(pad));
+   return 0;
 
-//  return hid_driver->axis(hid_data, to_slot(pad), axis);
-  return 0;
+#if 0
+   return hid_driver->axis(hid_data, to_slot(pad), axis);
+#else
+   return 0;
+#endif
 }
 
 static void hidpad_poll(void)
 {
-//  if(ready)
-//    hid_driver->poll(hid_data);
+#if 0
+   if (ready)
+      hid_driver->poll(hid_data);
+#endif
 }
 
 static const char *hidpad_name(unsigned pad)
 {
-  if(!hidpad_query_pad(pad))
-    return "N/A";
+   if (!hidpad_query_pad(pad))
+      return "N/A";
 
-  return PAD_NAME_HID;
-  //return hid_driver->name(hid_data, to_slot(pad));
+#if 1
+   return PAD_NAME_HID;
+#else
+   return hid_driver->name(hid_data, to_slot(pad));
+#endif
 }
 
 input_device_driver_t hidpad_driver =

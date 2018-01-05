@@ -24,17 +24,24 @@ static MEMExpandedHeap* bucket_heap;
 
 void memoryInitialize(void)
 {
-    MEMHeapHandle mem1_heap_handle = MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM1);
-    unsigned int mem1_allocatable_size = MEMGetAllocatableSizeForFrmHeapEx(mem1_heap_handle, 4);
-    void *mem1_memory = MEMAllocFromFrmHeapEx(mem1_heap_handle, mem1_allocatable_size, 4);
-    if(mem1_memory)
-        mem1_heap = MEMCreateExpHeapEx(mem1_memory, mem1_allocatable_size, 0);
+   unsigned int bucket_allocatable_size;
+   MEMHeapHandle bucket_heap_handle;
+   void *bucket_memory                = NULL;
+   MEMHeapHandle mem1_heap_handle     = MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM1);
+   unsigned int mem1_allocatable_size = MEMGetAllocatableSizeForFrmHeapEx(mem1_heap_handle, 4);
+   void *mem1_memory                  = MEMAllocFromFrmHeapEx(mem1_heap_handle, mem1_allocatable_size, 4);
 
-    MEMHeapHandle bucket_heap_handle = MEMGetBaseHeapHandle(MEM_BASE_HEAP_FG);
-    unsigned int bucket_allocatable_size = MEMGetAllocatableSizeForFrmHeapEx(bucket_heap_handle, 4);
-    void *bucket_memory = MEMAllocFromFrmHeapEx(bucket_heap_handle, bucket_allocatable_size, 4);
-    if(bucket_memory)
-        bucket_heap = MEMCreateExpHeapEx(bucket_memory, bucket_allocatable_size, 0);
+   if(mem1_memory)
+      mem1_heap = MEMCreateExpHeapEx(mem1_memory,
+            mem1_allocatable_size, 0);
+
+   bucket_heap_handle      = MEMGetBaseHeapHandle(MEM_BASE_HEAP_FG);
+   bucket_allocatable_size = MEMGetAllocatableSizeForFrmHeapEx(bucket_heap_handle, 4);
+   bucket_memory           = MEMAllocFromFrmHeapEx(bucket_heap_handle, bucket_allocatable_size, 4);
+
+   if(bucket_memory)
+      bucket_heap = MEMCreateExpHeapEx(bucket_memory,
+            bucket_allocatable_size, 0);
 }
 
 void memoryRelease(void)
@@ -60,9 +67,8 @@ void* _malloc_r(struct _reent *r, size_t size)
 
 void _free_r(struct _reent *r, void *ptr)
 {
-   if (ptr) {
+   if (ptr)
       MEMFreeToExpHeap(MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM2), ptr);
-   }
 }
 
 size_t _malloc_usable_size_r(struct _reent *r, void *ptr)
@@ -72,13 +78,14 @@ size_t _malloc_usable_size_r(struct _reent *r, void *ptr)
 
 void * _realloc_r(struct _reent *r, void *ptr, size_t size)
 {
+   void *realloc_ptr = NULL;
    if (!ptr)
       return _malloc_r(r, size);
 
    if (_malloc_usable_size_r(r, ptr) >= size)
       return ptr;
 
-   void *realloc_ptr = _malloc_r(r, size);
+   realloc_ptr = _malloc_r(r, size);
 
    if(!realloc_ptr)
       return NULL;
@@ -93,9 +100,8 @@ void* _calloc_r(struct _reent *r, size_t num, size_t size)
 {
    void *ptr = _malloc_r(r, num*size);
 
-   if(ptr) {
+   if(ptr)
       memset(ptr, 0, num*size);
-   }
 
    return ptr;
 }
@@ -106,12 +112,11 @@ void * _valloc_r(struct _reent *r, size_t size)
 }
 
 
-//!-------------------------------------------------------------------------------------------
-//! some wrappers
-//!-------------------------------------------------------------------------------------------
+/* some wrappers */
+
 void * MEM2_alloc(unsigned int size, unsigned int align)
 {
-    return MEMAllocFromExpHeapEx(MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM2), size, align);
+   return MEMAllocFromExpHeapEx(MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM2), size, align);
 }
 
 void MEM2_free(void *ptr)
@@ -122,24 +127,24 @@ void MEM2_free(void *ptr)
 
 void * MEM1_alloc(unsigned int size, unsigned int align)
 {
-    if (align < 4)
-        align = 4;
-    return MEMAllocFromExpHeapEx(mem1_heap, size, align);
+   if (align < 4)
+      align = 4;
+   return MEMAllocFromExpHeapEx(mem1_heap, size, align);
 }
 
 void MEM1_free(void *ptr)
 {
-    MEMFreeToExpHeap(mem1_heap, ptr);
+   MEMFreeToExpHeap(mem1_heap, ptr);
 }
 
 void * MEMBucket_alloc(unsigned int size, unsigned int align)
 {
-    if (align < 4)
-        align = 4;
-    return MEMAllocFromExpHeapEx(bucket_heap, size, align);
+   if (align < 4)
+      align = 4;
+   return MEMAllocFromExpHeapEx(bucket_heap, size, align);
 }
 
 void MEMBucket_free(void *ptr)
 {
-    MEMFreeToExpHeap(bucket_heap, ptr);
+   MEMFreeToExpHeap(bucket_heap, ptr);
 }

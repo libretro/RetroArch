@@ -29,24 +29,24 @@ static int16_t  analog_state[3][2];
 
 static void update_button_state(uint64_t *state, uint32_t held_buttons)
 {
-  *state = held_buttons & VPAD_MASK_BUTTONS;
+   *state = held_buttons & VPAD_MASK_BUTTONS;
 }
 
 static void update_analog_state(int16_t state[3][2],  VPADStatus *vpad)
 {
-  state[RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X] = WIIU_READ_STICK(vpad->leftStick.x);
-  state[RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y] = WIIU_READ_STICK(vpad->leftStick.y);
-  state[RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = WIIU_READ_STICK(vpad->rightStick.x);
-  state[RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = WIIU_READ_STICK(vpad->rightStick.y);
+   state[RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X] = WIIU_READ_STICK(vpad->leftStick.x);
+   state[RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y] = WIIU_READ_STICK(vpad->leftStick.y);
+   state[RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = WIIU_READ_STICK(vpad->rightStick.x);
+   state[RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = WIIU_READ_STICK(vpad->rightStick.y);
 }
 
 static int16_t scale_touchpad(int16_t from_min, int16_t from_max,
-                              int16_t to_min,   int16_t to_max, int16_t value )
+      int16_t to_min,   int16_t to_max, int16_t value )
 {
-  int32_t from_range = from_max - from_min;
-  int32_t to_range = to_max - to_min;
+   int32_t from_range = from_max - from_min;
+   int32_t to_range = to_max - to_min;
 
-  return (((value - from_min) * to_range) / from_range) + to_min;
+   return (((value - from_min) * to_range) / from_range) + to_min;
 }
 
 
@@ -61,35 +61,36 @@ static void get_calibrated_point(VPADTouchData *point, struct video_viewport *vi
 
 static void apply_clamping(VPADTouchData *point, struct video_viewport *viewport, bool *clamped)
 {
-  /* clamp the x domain to the viewport */
-  if(point->x < viewport->x)
-  {
-    point->x = viewport->x;
-    *clamped = true;
-  }
-  else if(point->x > (viewport->x + viewport->width))
-  {
-    point->x = viewport->x + viewport->width;
-    *clamped = true;
-  }
-  
-  /* clamp the y domain to the viewport */
-  if(point->y < viewport->y)
-  {
-    point->y = viewport->y;
-    *clamped = true;
-  }
-  else if(point->y > (viewport->y + viewport->height))
-  {
-    point->y =  viewport->y + viewport->height;
-    *clamped = true;
-  }
+   /* clamp the x domain to the viewport */
+   if (point->x < viewport->x)
+   {
+      point->x = viewport->x;
+      *clamped = true;
+   }
+   else if (point->x > (viewport->x + viewport->width))
+   {
+      point->x = viewport->x + viewport->width;
+      *clamped = true;
+   }
+
+   /* clamp the y domain to the viewport */
+   if (point->y < viewport->y)
+   {
+      point->y = viewport->y;
+      *clamped = true;
+   }
+   else if (point->y > (viewport->y + viewport->height))
+   {
+      point->y =  viewport->y + viewport->height;
+      *clamped = true;
+   }
 }
 
-static void get_touch_coordinates(VPADTouchData *point, VPADStatus *vpad, struct video_viewport *viewport, bool *clamped)
+static void get_touch_coordinates(VPADTouchData *point, VPADStatus *vpad,
+      struct video_viewport *viewport, bool *clamped)
 {
-  get_calibrated_point(point, viewport, vpad);
-  apply_clamping(point, viewport, clamped);
+   get_calibrated_point(point, viewport, vpad);
+   apply_clamping(point, viewport, clamped);
 }
 
 #if 0
@@ -98,12 +99,12 @@ static void get_touch_coordinates(VPADTouchData *point, VPADStatus *vpad, struct
  */
 static int16_t bitwise_abs(int16_t value)
 {
-  bool is_negative = value & 0x8000;
-  if(!is_negative)
-    return value;
+   bool is_negative = value & 0x8000;
+   if (!is_negative)
+      return value;
 
-  value = value &~ 0x8000;
-  return (~value & 0x7fff)+1;
+   value = value &~ 0x8000;
+   return (~value & 0x7fff)+1;
 }
 
 /**
@@ -111,17 +112,17 @@ static int16_t bitwise_abs(int16_t value)
  */
 static void log_coords(int16_t x, int16_t y)
 {
-  bool x_negative = x & 0x8000;
-  bool y_negative = y & 0x8000;
- 
-  int16_t x_digit = bitwise_abs(x);
-  int16_t y_digit = bitwise_abs(y);
+   bool x_negative = x & 0x8000;
+   bool y_negative = y & 0x8000;
 
-  RARCH_LOG("[wpad]: calibrated point: %s%04x, %s%04x\n",
-    x_negative ? "-" : "",
-    x_digit,
-    y_negative ? "-" : "",
-    y_digit);
+   int16_t x_digit = bitwise_abs(x);
+   int16_t y_digit = bitwise_abs(y);
+
+   RARCH_LOG("[wpad]: calibrated point: %s%04x, %s%04x\n",
+         x_negative ? "-" : "",
+         x_digit,
+         y_negative ? "-" : "",
+         y_digit);
 }
 #endif
 
@@ -132,7 +133,7 @@ static void update_touch_state(int16_t state[3][2], uint64_t *buttons, VPADStatu
 
    bool touch_clamped = false;
 
-   if(!vpad->tpNormal.touched || vpad->tpNormal.validity != VPAD_VALID)
+   if (!vpad->tpNormal.touched || vpad->tpNormal.validity != VPAD_VALID)
    {
       *buttons &= ~VPAD_BUTTON_TOUCH;
       return;
@@ -141,16 +142,18 @@ static void update_touch_state(int16_t state[3][2], uint64_t *buttons, VPADStatu
    video_driver_get_viewport_info(&viewport);
    get_touch_coordinates(&point, vpad, &viewport, &touch_clamped);
 
-   state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_X] = scale_touchpad(viewport.x, viewport.x + viewport.width, -0x7fff, 0x7fff, point.x);
-   state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_Y] = scale_touchpad(viewport.y, viewport.y + viewport.height, -0x7fff, 0x7fff, point.y);
+   state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_X] = scale_touchpad(
+         viewport.x, viewport.x + viewport.width, -0x7fff, 0x7fff, point.x);
+   state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_Y] = scale_touchpad(
+         viewport.y, viewport.y + viewport.height, -0x7fff, 0x7fff, point.y);
 
 #if 0
    log_coords(state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_X],
-              state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_Y]);
+         state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_Y]);
 #endif
 
 
-   if(!touch_clamped)
+   if (!touch_clamped)
       *buttons |= VPAD_BUTTON_TOUCH;
    else
       *buttons &= ~VPAD_BUTTON_TOUCH;
@@ -158,7 +161,7 @@ static void update_touch_state(int16_t state[3][2], uint64_t *buttons, VPADStatu
 
 static void check_panic_button(uint32_t held_buttons)
 {
-   if( (held_buttons & PANIC_BUTTON_MASK) == PANIC_BUTTON_MASK)
+   if ((held_buttons & PANIC_BUTTON_MASK) == PANIC_BUTTON_MASK)
       command_event(CMD_EVENT_QUIT, NULL);
 }
 
@@ -170,22 +173,22 @@ static void wpad_poll(void)
 
    VPADRead(PAD_GAMEPAD, &vpad, 1, &error);
 
-   if(!error)
-   {
-      update_button_state(&button_state, vpad.hold);
-      update_analog_state(analog_state, &vpad);
-      update_touch_state(analog_state, &button_state, &vpad);
-      check_panic_button(vpad.hold);
-   }
+   if (error)
+      return;
+
+   update_button_state(&button_state, vpad.hold);
+   update_analog_state(analog_state, &vpad);
+   update_touch_state(analog_state, &button_state, &vpad);
+   check_panic_button(vpad.hold);
 }
 
 static bool wpad_init(void *data)
 {
-  pad_functions.connect(PAD_GAMEPAD, &wpad_driver);
-  wpad_poll();
-  ready = true;
+   pad_functions.connect(PAD_GAMEPAD, &wpad_driver);
+   wpad_poll();
+   ready = true;
 
-  return true;
+   return true;
 }
 
 static bool wpad_query_pad(unsigned pad)
@@ -208,7 +211,7 @@ static bool wpad_button(unsigned pad, uint16_t button_bit)
 
 static void wpad_get_buttons(unsigned pad, retro_bits_t *state)
 {
-   if(!wpad_query_pad(pad))
+   if (!wpad_query_pad(pad))
       BIT256_CLEAR_ALL_PTR(state);
    else
       BITS_COPY32_PTR(state, button_state);
@@ -218,7 +221,7 @@ static int16_t wpad_axis(unsigned pad, uint32_t axis)
 {
    axis_data data;
 
-   if(!wpad_query_pad(pad) || axis == AXIS_NONE)
+   if (!wpad_query_pad(pad) || axis == AXIS_NONE)
       return 0;
 
    pad_functions.read_axis_data(axis, &data);

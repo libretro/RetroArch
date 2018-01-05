@@ -139,7 +139,7 @@ static void hidpad_wiiugca_set_rumble(void *data,
   (void)strength;
 }
 
-const char * hidpad_wiiugca_get_name(void *data)
+const char *hidpad_wiiugca_get_name(void *data)
 {
   (void)data;
   /* For now we return a single static name */

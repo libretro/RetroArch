@@ -26,38 +26,42 @@ enum wiiu_pad_axes {
   AXIS_INVALID
 };
 
-static int16_t clamp_axis(int16_t value, bool is_negative) {
-  if(is_negative && value > 0)
-     return 0;
-  if(!is_negative && value < 0)
-    return 0;
+static int16_t clamp_axis(int16_t value, bool is_negative)
+{
+   if(is_negative && value > 0)
+      return 0;
+   if(!is_negative && value < 0)
+      return 0;
 
-  return value;
+   return value;
 }
 
-static int16_t wiiu_pad_get_axis_value(int32_t axis, int16_t state[3][2], bool is_negative) {
-  int16_t value = 0;
+static int16_t wiiu_pad_get_axis_value(int32_t axis,
+      int16_t state[3][2], bool is_negative)
+{
+   int16_t value = 0;
 
-  switch(axis) {
-    case AXIS_LEFT_ANALOG_X:
-      value = state[RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_X];
-      break;
-    case AXIS_LEFT_ANALOG_Y:
-      value = state[RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y];
-      break;
-    case AXIS_RIGHT_ANALOG_X:
-      value = state[RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X];
-      break;
-    case AXIS_RIGHT_ANALOG_Y:
-      value = state[RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y];
-      break;
-    case AXIS_TOUCH_X:
-      return state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_X];
-    case AXIS_TOUCH_Y:
-      return state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_Y];
-  }
+   switch(axis)
+   {
+      case AXIS_LEFT_ANALOG_X:
+         value = state[RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_X];
+         break;
+      case AXIS_LEFT_ANALOG_Y:
+         value = state[RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y];
+         break;
+      case AXIS_RIGHT_ANALOG_X:
+         value = state[RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X];
+         break;
+      case AXIS_RIGHT_ANALOG_Y:
+         value = state[RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y];
+         break;
+      case AXIS_TOUCH_X:
+         return state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_X];
+      case AXIS_TOUCH_Y:
+         return state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_Y];
+   }
 
-  return clamp_axis(value, is_negative);
+   return clamp_axis(value, is_negative);
 }
 
 void wiiu_pad_set_axis_value(int16_t state[3][2], int16_t left_x, int16_t left_y,
@@ -72,22 +76,23 @@ void wiiu_pad_set_axis_value(int16_t state[3][2], int16_t left_x, int16_t left_y
 }
 
 
-void wiiu_pad_read_axis_data(uint32_t axis, axis_data *data) {
-  data->axis = AXIS_POS_GET(axis);
-  data->is_negative = false;
+void wiiu_pad_read_axis_data(uint32_t axis, axis_data *data)
+{
+   data->axis        = AXIS_POS_GET(axis);
+   data->is_negative = false;
 
-  if(data->axis >= AXIS_INVALID) {
-    data->axis = AXIS_NEG_GET(axis);
-    data->is_negative = true;
-  }
+   if(data->axis >= AXIS_INVALID)
+   {
+      data->axis = AXIS_NEG_GET(axis);
+      data->is_negative = true;
+   }
 }
 
-void wiiu_pad_connect(unsigned pad, input_device_driver_t *driver) {
-  if(!input_autoconfigure_connect(driver->name(pad), NULL, driver->ident,
-        pad, VID_NONE, PID_NONE))
-  {
-    input_config_set_device_name(pad, driver->name(pad));
-  }
+void wiiu_pad_connect(unsigned pad, input_device_driver_t *driver)
+{
+   if(!input_autoconfigure_connect(driver->name(pad), NULL, driver->ident,
+            pad, VID_NONE, PID_NONE))
+      input_config_set_device_name(pad, driver->name(pad));
 }
 
 wiiu_pad_functions_t pad_functions = {
