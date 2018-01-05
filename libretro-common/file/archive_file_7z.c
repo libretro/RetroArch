@@ -145,7 +145,7 @@ static int sevenzip_file_read(
 #if defined(_WIN32) && defined(USE_WINDOWS_FILE) && !defined(LEGACY_WIN32)
    if (!string_is_empty(path))
    {
-      whcar_t *pathW = utf8_to_utf16_string_alloc(path);
+      wchar_t *pathW = utf8_to_utf16_string_alloc(path);
 
       if (pathW)
       {
