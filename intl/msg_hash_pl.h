@@ -35,10 +35,6 @@ MSG_HASH(
       "Brak argumentów i brak wbudowanego menu, wyświetlanie pomocy..."
       )
 MSG_HASH(
-      MSG_NETPLAY_USERS_HAS_FLIPPED,
-      "Użytkownicy Netplay odwrócili się"
-      )
-MSG_HASH(
       MSG_SETTING_DISK_IN_TRAY,
       "Ustawianie dysku w zasobniku"
       )
@@ -53,10 +49,6 @@ MSG_HASH(
 MSG_HASH(
       MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N,
       "Dołączyłeś jako gracz %d"
-      )
-MSG_HASH(
-      MSG_NETPLAY_IMPLEMENTATIONS_DIFFER,
-      "Implementacja różni się. Upewnij się, że używasz dokładnie tych samych wersji RetroArch i rdzenia."
       )
 MSG_HASH(
       MSG_NETPLAY_ENDIAN_DEPENDENT,
@@ -843,8 +835,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_MOVIE_RECORD_TOGGLE,
       "Przełącznik nagrywania filmu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE,
       "Przełącznik wyciszania dźwięku")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FLIP,
-      "Netplay przerzuca użytkowników")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH,
       "Netplay przełącza tryb play / spectate")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,

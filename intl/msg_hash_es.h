@@ -35,10 +35,6 @@ MSG_HASH(
 	"No se pasaron argumentos y no hay menú integrado, Mostrando ayuda.."
 	)
 MSG_HASH(
-	MSG_NETPLAY_USERS_HAS_FLIPPED,
-	"Usuarios de juego en red se fueron"
-	)
-MSG_HASH(
 	MSG_SETTING_DISK_IN_TRAY,
 	"Poniendo disco en bandeja"
 	)
@@ -53,10 +49,6 @@ MSG_HASH(
 MSG_HASH(
 	MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N,
 	"Unido como jugador %d"
-	)
-MSG_HASH(
-	MSG_NETPLAY_IMPLEMENTATIONS_DIFFER,
-	"Las implementaciones difieren. Asegurate de usar la misma versión de Retroarch y del núcleo"
 	)
 MSG_HASH(
 	MSG_NETPLAY_ENDIAN_DEPENDENT,
@@ -1181,10 +1173,6 @@ MSG_HASH(
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE,
 	"Silenciar audio"
-	)
-MSG_HASH(
-	MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FLIP,
-	"Juego en red: intercambiar usuarios"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH,
