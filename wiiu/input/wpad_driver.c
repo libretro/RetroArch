@@ -211,7 +211,7 @@ static void wpad_get_buttons(unsigned pad, retro_bits_t *state)
    if(!wpad_query_pad(pad))
       BIT256_CLEAR_ALL_PTR(state);
    else
-      BITS_COPY16_PTR(state, button_state);
+      BITS_COPY32_PTR(state, button_state);
 }
 
 static int16_t wpad_axis(unsigned pad, uint32_t axis)
