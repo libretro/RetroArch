@@ -109,11 +109,6 @@ typedef int ssize_t;
       #define fabsf(x)    ((float)fabs((double)(x)))
    #endif
 
-   #ifndef _vscprintf
-      #define _vscprintf c89_vscprintf_retro__
-      int c89_vscprintf_retro__(const char *format, va_list pargs);
-   #endif
-
    #ifndef _strtoui64
       #define _strtoui64(x, y, z) (_atoi64(x))
    #endif

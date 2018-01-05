@@ -28,10 +28,6 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#if defined(_MSC_VER) && _MSC_VER < 1800
-#define va_copy(dst, src) ((dst) = (src))
-#endif
-
 /* http://stackoverflow.com/questions/2915672/snprintf-and-visual-studio-2010 */
 
 int c99_vsnprintf_retro__(char *outBuf, size_t size, const char *format, va_list ap)
@@ -60,15 +56,5 @@ int c99_snprintf_retro__(char *outBuf, size_t size, const char *format, ...)
    va_end(ap);
 
    return count;
-}
-
-int c89_vscprintf_retro__(const char *format, va_list pargs)
-{
-   int retval;
-   va_list argcopy;
-   va_copy(argcopy, pargs);
-   retval = vsnprintf(NULL, 0, format, argcopy);
-   va_end(argcopy);
-   return retval;
 }
 #endif
