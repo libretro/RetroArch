@@ -200,7 +200,6 @@ OBJ += frontend/frontend.o \
        input/input_driver.o \
        led/led_driver.o \
        led/null_led_driver.o \
-       led/overlay_led_driver.o \
        gfx/video_coord_array.o \
        gfx/video_display_server.o \
        gfx/video_driver.o \
@@ -220,8 +219,6 @@ OBJ += frontend/frontend.o \
 		 input/input_autodetect_builtin.o \
        input/input_keymaps.o \
        input/input_remapping.o \
-       tasks/task_overlay.o \
-       input/input_overlay.o \
        $(LIBRETRO_COMM_DIR)/queues/fifo_queue.o \
        managers/core_option_manager.o \
        $(LIBRETRO_COMM_DIR)/compat/compat_fnmatch.o \
@@ -796,6 +793,10 @@ endif
 
 ifeq ($(HAVE_OVERLAY), 1)
    DEFINES += -DHAVE_OVERLAY
+   OBJ += \
+	  tasks/task_overlay.o \
+	  input/input_overlay.o \
+	  led/overlay_led_driver.o
 endif
 
 ifeq ($(HAVE_STB_FONT), 1)

@@ -42,6 +42,7 @@ void led_driver_free(void);
 void led_driver_set_led(int led,int value);
 
 extern led_driver_t *null_led_driver;
+extern led_driver_t *overlay_led_driver;
 extern led_driver_t *rpi_led_driver;
 
 RETRO_END_DECLS
