@@ -335,8 +335,12 @@ static void wiiu_hid_attach(wiiu_hid_t *hid, wiiu_attach_event *event) {
 
   RARCH_LOG("[hid]: adding to adapter list\n");
   synchronized_add_to_adapters_list(adapter);
+#if 0
+  // this is breaking again. Not sure why. But disabling it now so the
+  // startup/shutdown times aren't affected by the blocking call.
   RARCH_LOG("[hid]: starting read loop\n");
   wiiu_start_read_loop(adapter);
+#endif
   return;
 
   error:
@@ -346,6 +350,11 @@ static void wiiu_hid_attach(wiiu_hid_t *hid, wiiu_attach_event *event) {
 void wiiu_start_read_loop(wiiu_adapter_t *adapter)
 {
   adapter->state = ADAPTER_STATE_READING;
+#if 0
+  RARCH_LOG("HIDRead(0x%08x, 0x%08x, %d, 0x%08x, 0x%08x)\n",
+	adapter->handle, adapter->rx_buffer, adapter->rx_size,
+        wiiu_hid_read_loop_callback, adapter);
+#endif
   HIDRead(adapter->handle, adapter->rx_buffer, adapter->rx_size, wiiu_hid_read_loop_callback, adapter);
 }
 
@@ -392,7 +401,7 @@ static void log_buffer(uint8_t *data, uint32_t len) {
 
 static void wiiu_hid_do_read(wiiu_adapter_t *adapter, uint8_t *data, uint32_t length)
 {
- // log_buffer(data, length);
+//  log_buffer(data, length);
  // do_sampling()
  // do other stuff?
 }
@@ -432,7 +441,7 @@ static void wiiu_hid_polling_thread_cleanup(OSThread *thread, void *stack) {
     OSFastMutex_Lock(&(adapters.lock));
     incomplete = 0;
     for(adapter = adapters.list; adapter != NULL; adapter = adapter->next) {
-      if(adapter->state != ADAPTER_STATE_DONE) {
+      if(adapter->state == ADAPTER_STATE_READING) {
         incomplete++;
       }
     }
@@ -458,16 +467,19 @@ static void wiiu_hid_polling_thread_cleanup(OSThread *thread, void *stack) {
 }
 
 static void wiiu_handle_attach_events(wiiu_hid_t *hid, wiiu_attach_event *list) {
-  wiiu_attach_event *event;
+  wiiu_attach_event *event, *event_next = NULL;
+
   if(!hid || !list)
     return;
 
-  for(event = list; event != NULL; event = event->next) {
+  for(event = list; event != NULL; event = event_next ) {
+    event_next  = event->next;
     if(event->type == HID_DEVICE_ATTACH) {
       wiiu_hid_attach(hid, event);
     } else {
       wiiu_hid_detach(hid, event);
     }
+    delete_attach_event(event);
   }
 }
 
