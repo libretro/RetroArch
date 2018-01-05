@@ -2027,8 +2027,6 @@ static int mui_list_push(void *data, void *userdata,
    {
       case DISPLAYLIST_LOAD_CONTENT_LIST:
          {
-            settings_t   *settings      = config_get_ptr();
-            
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
             menu_entries_append_enum(info->list,

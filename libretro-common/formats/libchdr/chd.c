@@ -604,7 +604,9 @@ void cdlz_codec_free(void* codec)
 
 chd_error cdlz_codec_decompress(void *codec, const uint8_t *src, uint32_t complen, uint8_t *dest, uint32_t destlen)
 {
+#ifdef WANT_RAW_DATA_SECTOR
 	uint8_t *sector;
+#endif
 	uint32_t framenum;
 	cdlz_codec_data* cdlz = (cdlz_codec_data*)codec;
 
@@ -691,7 +693,9 @@ void cdzl_codec_free(void *codec)
 
 chd_error cdzl_codec_decompress(void *codec, const uint8_t *src, uint32_t complen, uint8_t *dest, uint32_t destlen)
 {
+#ifdef WANT_RAW_DATA_SECTOR
 	uint8_t *sector;
+#endif
 	uint32_t framenum;
 	cdzl_codec_data* cdzl = (cdzl_codec_data*)codec;
 
