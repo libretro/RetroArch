@@ -45,6 +45,22 @@ __attribute__((scalar_storage_order ("little-endian")))
    };
 }GX2_vec4;
 
+
+typedef union
+{
+   struct
+   {
+      GX2_vec4 v0;
+      GX2_vec4 v1;
+      GX2_vec4 v2;
+      GX2_vec4 v3;
+   };
+   struct __attribute__((scalar_storage_order ("little-endian")))
+   {
+      float data[16];
+   };
+}GX2_mat4x4;
+
 typedef struct
 {
    GX2VertexShader vs;

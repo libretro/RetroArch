@@ -1,6 +1,6 @@
 #include <wiiu/gx2.h>
 
-#include "wiiu/tex_shader.h"
+#include "wiiu/frame_shader.h"
 #include "wiiu/sprite_shader.h"
 
 #undef _X
@@ -57,9 +57,10 @@ typedef struct
    GX2Sampler sampler_nearest;
    GX2Sampler sampler_linear;
    GX2Texture texture;
-   tex_shader_vertex_t* v;
+   frame_vertex_t* v;
    GX2_vec2* ubo_vp;
    GX2_vec2* ubo_tex;
+   GX2_mat4x4* ubo_mvp;
    void* input_ring_buffer;
    u32 input_ring_buffer_size;
    void* output_ring_buffer;

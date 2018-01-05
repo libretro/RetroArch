@@ -116,7 +116,7 @@ static void menu_display_wiiu_draw(void *data)
    v->color = COLOR_RGBA(0xFF * draw->coords->color[0], 0xFF * draw->coords->color[1],
                        0xFF * draw->coords->color[2], 0xFF * draw->coords->color[3]);
 
-   GX2SetPixelTexture(texture, tex_shader.ps.samplerVars[0].location);
+   GX2SetPixelTexture(texture, sprite_shader.ps.samplerVars[0].location);
 
    GX2DrawEx(GX2_PRIMITIVE_MODE_POINTS, 1, wiiu->vertex_cache.current, 1);
 
