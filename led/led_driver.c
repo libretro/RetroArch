@@ -43,9 +43,7 @@ bool led_driver_init(void)
       current_led_driver = rpi_led_driver;
 #endif          
    else
-   {
       current_led_driver = null_led_driver;
-   }
 
    RARCH_LOG("[LED]: LED driver = '%s' %p\n",
          drivername,current_led_driver);
@@ -58,12 +56,12 @@ bool led_driver_init(void)
 
 void led_driver_free(void)
 {
-    if(current_led_driver)
-       (*current_led_driver->free)();
+   if(current_led_driver)
+      (*current_led_driver->free)();
 }
 
 void led_driver_set_led(int led,int value)
 {
-    if(current_led_driver)
-       (*current_led_driver->set_led)(led,value);
+   if(current_led_driver)
+      (*current_led_driver->set_led)(led,value);
 }
