@@ -75,11 +75,6 @@
 
 #endif
 
-#define MODE_STR_READ "r"
-#define MODE_STR_READ_UNBUF "rb"
-#define MODE_STR_WRITE_UNBUF "wb"
-#define MODE_STR_WRITE_PLUS "w+"
-
 #ifdef RARCH_INTERNAL
 #ifndef VFS_FRONTEND
 #define VFS_FRONTEND
@@ -208,36 +203,48 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uns
    switch (mode)
    {
       case RETRO_VFS_FILE_ACCESS_READ:
-         if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
-            mode_str = MODE_STR_READ_UNBUF;
-         /* No "else" here */
+         mode_str = "rb";
+
          flags    = O_RDONLY;
-         break;
-      case RETRO_VFS_FILE_ACCESS_WRITE:
-         if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
-            mode_str = MODE_STR_WRITE_UNBUF;
-         else
-         {
-            flags    = O_WRONLY | O_CREAT | O_TRUNC;
-#ifndef _WIN32
-            flags   |=  S_IRUSR | S_IWUSR;
-#endif
-         }
-         break;
-      case RETRO_VFS_FILE_ACCESS_READ_WRITE:
-         if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
-            mode_str = MODE_STR_WRITE_PLUS;
-         else
-         {
-            flags    = O_RDWR;
 #ifdef _WIN32
-            flags   |= O_BINARY;
+         flags   |= O_BINARY;
 #endif
-         }
          break;
-      case RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING:
-         /* TODO/FIXME - implement */
-         goto error;
+
+      case RETRO_VFS_FILE_ACCESS_WRITE:
+         mode_str = "wb";
+
+         flags    = O_WRONLY | O_CREAT | O_TRUNC;
+#ifndef _WIN32
+         flags   |= S_IRUSR | S_IWUSR;
+#else
+         flags   |= O_BINARY;
+#endif
+         break;
+
+      case RETRO_VFS_FILE_ACCESS_READ_WRITE:
+         mode_str = "w+b";
+
+         flags    = O_RDWR | O_CREAT | O_TRUNC;
+#ifndef _WIN32
+         flags   |= S_IRUSR | S_IWUSR;
+#else
+         flags   |= O_BINARY;
+#endif
+         break;
+
+      case RETRO_VFS_FILE_ACCESS_WRITE | RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING:
+      case RETRO_VFS_FILE_ACCESS_READ_WRITE | RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING:
+         mode_str = "r+b";
+
+         flags    = O_RDWR;
+#ifndef _WIN32
+         flags   |= S_IRUSR | S_IWUSR;
+#else
+         flags   |= O_BINARY;
+#endif
+         break;
+         
       default:
          goto error;
    }

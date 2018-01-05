@@ -32,21 +32,31 @@ RFILE* rfopen(const char *path, const char *mode)
    unsigned int retro_mode = RETRO_VFS_FILE_ACCESS_READ;
    bool position_to_end    = false;
 
-   if (strstr(mode, "w"))
-      retro_mode = RETRO_VFS_FILE_ACCESS_WRITE;
-
-   if (strstr(mode, "a"))
+   if (strstr(mode, "r"))
    {
-      retro_mode = RETRO_VFS_FILE_ACCESS_READ_WRITE | 
+      retro_mode = RETRO_VFS_FILE_ACCESS_READ;
+      if (strstr(mode, "+"))
+      {
+         retro_mode = RETRO_VFS_FILE_ACCESS_READ_WRITE | 
+            RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING;
+      }
+   }
+   else if (strstr(mode, "w"))
+   {
+      retro_mode = RETRO_VFS_FILE_ACCESS_WRITE;
+      if (strstr(mode, "+"))
+         retro_mode = RETRO_VFS_FILE_ACCESS_READ_WRITE;
+   }
+   else if (strstr(mode, "a"))
+   {
+      retro_mode = RETRO_VFS_FILE_ACCESS_WRITE | 
          RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING;
       position_to_end = true;
-   }
-
-   if (strstr(mode, "+"))
-   {
-      retro_mode = RETRO_VFS_FILE_ACCESS_READ_WRITE;
-      if (strstr(mode, "r"))
-         retro_mode = retro_mode & RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING;
+      if (strstr(mode, "+"))
+      {
+         retro_mode = RETRO_VFS_FILE_ACCESS_READ_WRITE | 
+            RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING;
+      }
    }
 
    output = filestream_open(path, retro_mode,
