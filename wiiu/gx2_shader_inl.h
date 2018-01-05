@@ -81,9 +81,9 @@
       to_LE(src0Abs | (src1Abs << 1) | (updateExecuteMask << 2) | (updatePred << 3) | (writeMask << 4) | (omod << 5) | (inst << 7) | \
                          (encoding << 15) | (bankSwizzle << 18) | ((dstGpr&0x7F) << 21) | (dstRel << 28) | ((dstChan&0x3) << 29) | (clamp << 31))
 
-#define ALU_WORD1_OP3(src2Sel, src2Rel, src2Chan, src2Neg, inst, encoding, bankSwizzle, dstGpr, dstRel, dstChan, clamp) \
+#define ALU_WORD1_OP3(src2Sel, src2Rel, src2Chan, src2Neg, inst, bankSwizzle, dstGpr, dstRel, dstChan, clamp) \
       to_LE(src2Sel | (src2Rel << 9) | (src2Chan << 10) | (src2Neg << 12) | (inst << 13) | \
-     (encoding << 15) | (bankSwizzle << 18) | ((dstGpr&0x7F) << 21) | (dstRel << 28) | ((dstChan&0x3) << 29) | (clamp << 31)
+     (bankSwizzle << 18) | ((dstGpr&0x7F) << 21) | (dstRel << 28) | ((dstChan&0x3) << 29) | (clamp << 31))
 
 /* TEX */
 #define TEX_WORD0(inst, bcFracMode, fetchWholeQuad, resourceID, srcReg, srcRel, altConst) \
@@ -200,6 +200,8 @@
 #define OP2_INST_MUL_IEEE     0x2
 #define OP2_INST_MOV          0x19
 #define OP2_INST_RECIP_IEEE   0x66
+
+#define OP3_INST_MULADD       0x10
 /* EXP */
 #define CF_INST_EXP      0x27
 #define CF_INST_EXP_DONE 0x28
@@ -292,6 +294,10 @@
    to_QWORD(ALU_WORD0(src0Sel, 0x0, src0Chan, 0x0, src1Sel, 0x0, src1Chan, 0x0, 0x0, 0x0), \
    ALU_WORD1_OP2(0x0, 0x0, 0x0, 0x0, (((dstGpr&__) >> 7) ^ 0x1), omod, inst, 0x0, 0x0, dstGpr, 0x0, dstChan, 0x0))
 
+#define ALU_OP3(inst, dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, src2Sel, src2Chan) \
+   to_QWORD(ALU_WORD0(src0Sel, 0x0, src0Chan, 0x0, src1Sel, 0x0, src1Chan, 0x0, 0x0, 0x0), \
+   ALU_WORD1_OP3(src2Sel, 0x0, src2Chan, 0x0, inst, 0x0, dstGpr, 0x0, dstChan, 0x0))
+
 #define ALU_MOV(dstGpr, dstChan, src0Sel, src0Chan) \
    ALU_OP2(OP2_INST_MOV, dstGpr, dstChan, src0Sel, src0Chan, ALU_SRC_0, 0x0, ALU_OMOD_OFF)
 
@@ -300,6 +306,9 @@
 
 #define ALU_MUL(dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan) \
    ALU_OP2(OP2_INST_MUL, dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, ALU_OMOD_OFF)
+
+#define ALU_MULADD(dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, src2Sel, src2Chan) \
+   ALU_OP3(OP3_INST_MULADD, dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, src2Sel, src2Chan)
 
 #define ALU_MUL_IEEE(dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan) \
    ALU_OP2(OP2_INST_MUL_IEEE, dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, ALU_OMOD_OFF)

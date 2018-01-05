@@ -217,14 +217,14 @@ static GX2SamplerVar samplers[] =
    { "s", GX2_SAMPLER_VAR_TYPE_SAMPLER_2D, 0 },
 };
 
-GX2UniformBlock uniform_blocks[] =
+static GX2UniformBlock uniform_blocks[] =
 {
     {"UBO_vp", 1, sizeof(GX2_vec2)},
     {"UBO_tex", 2, sizeof(GX2_vec2)},
 };
 
 
-GX2UniformVar uniform_vars[] =
+static GX2UniformVar uniform_vars[] =
 {
     {"vp_size",  GX2_SHADER_VAR_TYPE_FLOAT2, 1, 0, 0},
     {"tex_size", GX2_SHADER_VAR_TYPE_FLOAT2, 1, 0, 1},

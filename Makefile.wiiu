@@ -69,6 +69,7 @@ else
    OBJ += wiiu/shader_utils.o
    OBJ += wiiu/tex_shader.o
    OBJ += wiiu/sprite_shader.o
+   OBJ += wiiu/frame_shader.o
 
    ifeq ($(GRIFFIN_BUILD), 1)
    	OBJ += griffin/griffin.o

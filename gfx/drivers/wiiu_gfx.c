@@ -51,64 +51,67 @@ static const wiiu_render_mode_t wiiu_render_mode_map[] =
    {1920, 1080, GX2_TV_RENDER_MODE_WIDE_1080P}  /* GX2_TV_SCAN_MODE_1080P */
 };
 
-static void wiiu_set_position(tex_shader_vertex_t* v, GX2ColorBuffer* draw_buffer, float x0, float y0, float x1, float y1)
+static void wiiu_set_tex_coords(frame_vertex_t* v, GX2Texture* texture, float u0, float v0, float u1, float v1, unsigned rotation)
 {
-   v[0].pos.x = (2.0f * x0 / draw_buffer->surface.width) - 1.0f;
-   v[0].pos.y = (2.0f * y0 / draw_buffer->surface.height) - 1.0f;
-   v[1].pos.x = (2.0f * x1 / draw_buffer->surface.width) - 1.0f;;
-   v[1].pos.y = (2.0f * y0 / draw_buffer->surface.height) - 1.0f;
-   v[2].pos.x = (2.0f * x1 / draw_buffer->surface.width) - 1.0f;;
-   v[2].pos.y = (2.0f * y1 / draw_buffer->surface.height) - 1.0f;
-   v[3].pos.x = (2.0f * x0 / draw_buffer->surface.width) - 1.0f;;
-   v[3].pos.y = (2.0f * y1 / draw_buffer->surface.height) - 1.0f;
+   v[0].coord.u = u0 / texture->surface.width;
+   v[0].coord.v = v0 / texture->surface.height;
+   v[1].coord.u = u1 / texture->surface.width;
+   v[1].coord.v = v0 / texture->surface.height;
+   v[2].coord.u = u1 / texture->surface.width;
+   v[2].coord.v = v1 / texture->surface.height;
+   v[3].coord.u = u0 / texture->surface.width;
+   v[3].coord.v = v1 / texture->surface.height;
+   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, v, 4 * sizeof(*v));
 }
 
-static void wiiu_set_tex_coords(tex_shader_vertex_t* v, GX2Texture* texture, float u0, float v0, float u1, float v1, unsigned rotation)
+static void wiiu_set_projection(wiiu_video_t *wiiu)
 {
-   v[((0 + rotation) % 4)].coord.u = u0 / texture->surface.width;
-   v[((0 + rotation) % 4)].coord.v = (v1 / texture->surface.height);
-   v[((1 + rotation) % 4)].coord.u = u1 / texture->surface.width;
-   v[((1 + rotation) % 4)].coord.v = (v1 / texture->surface.height);
-   v[((2 + rotation) % 4)].coord.u = u1 / texture->surface.width;
-   v[((2 + rotation) % 4)].coord.v = (v0 / texture->surface.height);
-   v[((3 + rotation) % 4)].coord.u = u0 / texture->surface.width;
-   v[((3 + rotation) % 4)].coord.v = (v0 / texture->surface.height);
+   math_matrix_4x4 proj, rot;
+   matrix_4x4_ortho(proj, 0, 1, 1, 0, -1, 1);
+   matrix_4x4_rotate_z(rot, wiiu->rotation * -M_PI_2);
+   matrix_4x4_multiply((*wiiu->ubo_mvp), rot, proj);
+   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_UNIFORM_BLOCK, wiiu->ubo_mvp, sizeof(*wiiu->ubo_mvp));
 }
 
 static void wiiu_gfx_update_viewport(wiiu_video_t* wiiu)
 {
-   int x                = 0;
-   int y                = 0;
-   float width          = wiiu->vp.full_width;
-   float height         = wiiu->vp.full_height;
-   settings_t *settings = config_get_ptr();
-   float desired_aspect = video_driver_get_aspect_ratio();
+   unsigned width, height;
+   int x                    = 0;
+   int y                    = 0;
+   unsigned viewport_width  = wiiu->color_buffer.surface.width;
+   unsigned viewport_height = wiiu->color_buffer.surface.height;
+   float device_aspect      = (float)viewport_width / viewport_height;
+   settings_t *settings     = config_get_ptr();
 
-   if(wiiu->rotation & 0x1)
-      desired_aspect = 1.0 / desired_aspect;
+   video_driver_get_size(&width, &height);
 
    if (settings->bools.video_scale_integer)
    {
-      video_viewport_get_scaled_integer(&wiiu->vp, wiiu->vp.full_width,
-            wiiu->vp.full_height, desired_aspect, wiiu->keep_aspect);
+      video_viewport_get_scaled_integer(&wiiu->vp,
+            viewport_width, viewport_height,
+            video_driver_get_aspect_ratio(), wiiu->keep_aspect);
+      viewport_width  = wiiu->vp.width;
+      viewport_height = wiiu->vp.height;
    }
    else if (wiiu->keep_aspect)
    {
+      float desired_aspect = video_driver_get_aspect_ratio();
+
 #if defined(HAVE_MENU)
       if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
-         struct video_viewport *custom = video_viewport_get_custom();
+         const struct video_viewport *custom = video_viewport_get_custom();
 
-         x      = custom->x;
-         y      = custom->y;
-         width  = custom->width;
-         height = custom->height;
+         /* Vulkan has top-left origin viewport. */
+         x               = custom->x;
+         y               = custom->y;
+         viewport_width  = custom->width;
+         viewport_height = custom->height;
       }
       else
 #endif
       {
          float delta;
-         float device_aspect  = ((float)wiiu->vp.full_width) / wiiu->vp.full_height;
 
          if (fabsf(device_aspect - desired_aspect) < 0.0001f)
          {
@@ -119,43 +122,34 @@ static void wiiu_gfx_update_viewport(wiiu_video_t* wiiu)
          }
          else if (device_aspect > desired_aspect)
          {
-            delta = (desired_aspect / device_aspect - 1.0f)
+            delta          = (desired_aspect / device_aspect - 1.0f)
                / 2.0f + 0.5f;
-            x     = (int)roundf(width * (0.5f - delta));
-            width = (unsigned)roundf(2.0f * width * delta);
+            x              = (int)roundf(viewport_width * (0.5f - delta));
+            viewport_width = (unsigned)roundf(2.0f * viewport_width * delta);
          }
          else
          {
-            delta  = (device_aspect / desired_aspect - 1.0f)
+            delta           = (device_aspect / desired_aspect - 1.0f)
                / 2.0f + 0.5f;
-            y      = (int)roundf(height * (0.5f - delta));
-            height = (unsigned)roundf(2.0f * height * delta);
+            y               = (int)roundf(viewport_height * (0.5f - delta));
+            viewport_height = (unsigned)roundf(2.0f * viewport_height * delta);
          }
       }
 
       wiiu->vp.x      = x;
       wiiu->vp.y      = y;
-      wiiu->vp.width  = width;
-      wiiu->vp.height = height;
+      wiiu->vp.width  = viewport_width;
+      wiiu->vp.height = viewport_height;
    }
    else
    {
-      wiiu->vp.x = wiiu->vp.y = 0;
-      wiiu->vp.width = width;
-      wiiu->vp.height = height;
+      wiiu->vp.x      = 0;
+      wiiu->vp.y      = 0;
+      wiiu->vp.width  = viewport_width;
+      wiiu->vp.height = viewport_height;
    }
 
-   float scale_w = wiiu->color_buffer.surface.width / wiiu->render_mode.width;
-   float scale_h = wiiu->color_buffer.surface.height / wiiu->render_mode.height;
-   wiiu_set_position(wiiu->v, &wiiu->color_buffer,
-                     wiiu->vp.x * scale_w,
-                     wiiu->vp.y * scale_h,
-                    (wiiu->vp.x + wiiu->vp.width) * scale_w,
-                    (wiiu->vp.y + wiiu->vp.height) * scale_h);
-
-   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, wiiu->v, 4 * sizeof(*wiiu->v));
-
-   wiiu->should_resize = false;
+   wiiu_set_projection(wiiu);
 }
 
 static void wiiu_gfx_set_aspect_ratio(void* data, unsigned aspect_ratio_idx)
@@ -277,19 +271,22 @@ static void* wiiu_gfx_init(const video_info_t* video,
                       GX2_ENABLE,          GX2_BLEND_MODE_SRC_ALPHA, GX2_BLEND_MODE_INV_SRC_ALPHA, GX2_BLEND_COMBINE_MODE_ADD);
    GX2SetCullOnlyControl(GX2_FRONT_FACE_CCW, GX2_DISABLE, GX2_DISABLE);
 
-   GX2InitShader(&tex_shader);
+   GX2InitShader(&frame_shader);
    GX2InitShader(&sprite_shader);
-   GX2SetShader(&tex_shader);
+   GX2SetShader(&frame_shader);
 
    wiiu->ubo_vp  = MEM1_alloc(sizeof(*wiiu->ubo_vp), GX2_UNIFORM_BLOCK_ALIGNMENT);
    wiiu->ubo_vp->width = wiiu->color_buffer.surface.width;
    wiiu->ubo_vp->height = wiiu->color_buffer.surface.height;
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_UNIFORM_BLOCK, wiiu->ubo_vp, sizeof(*wiiu->ubo_vp));
 
-   wiiu->ubo_tex  = MEM1_alloc(sizeof(*wiiu->ubo_tex), GX2_UNIFORM_BLOCK_ALIGNMENT);
+   wiiu->ubo_tex = MEM1_alloc(sizeof(*wiiu->ubo_tex), GX2_UNIFORM_BLOCK_ALIGNMENT);
    wiiu->ubo_tex->width = 1.0;
    wiiu->ubo_tex->height = 1.0;
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_UNIFORM_BLOCK, wiiu->ubo_tex, sizeof(*wiiu->ubo_tex));
+
+   wiiu->ubo_mvp = MEM1_alloc(sizeof(*wiiu->ubo_mvp), GX2_UNIFORM_BLOCK_ALIGNMENT);
+   wiiu_set_projection(wiiu);
 
    wiiu->input_ring_buffer_size = GX2CalcGeometryShaderInputRingBufferSize(sprite_shader.vs.ringItemSize);
    wiiu->output_ring_buffer_size = GX2CalcGeometryShaderOutputRingBufferSize(sprite_shader.gs.ringItemSize);
@@ -347,12 +344,19 @@ static void* wiiu_gfx_init(const video_info_t* video,
 
    wiiu->v = MEM2_alloc(4 * sizeof(*wiiu->v), GX2_VERTEX_BUFFER_ALIGNMENT);
 
-   wiiu_set_position(wiiu->v, &wiiu->color_buffer, 0, 0,
-         wiiu->color_buffer.surface.width, wiiu->color_buffer.surface.height);
+   wiiu->v[0].pos.x = 0.0f;
+   wiiu->v[0].pos.y = 0.0f;
+   wiiu->v[1].pos.x = 1.0f;
+   wiiu->v[1].pos.y = 0.0f;
+   wiiu->v[2].pos.x = 1.0f;
+   wiiu->v[2].pos.y = 1.0f;
+   wiiu->v[3].pos.x = 0.0f;
+   wiiu->v[3].pos.y = 1.0f;
+   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, wiiu->v, 4 * sizeof(*wiiu->v));
+
    wiiu_set_tex_coords(wiiu->v, &wiiu->texture, 0, 0,
          wiiu->texture.surface.width, wiiu->texture.surface.height, wiiu->rotation);
 
-   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, wiiu->v, 4 * sizeof(*wiiu->v));
    GX2SetAttribBuffer(0, 4 * sizeof(*wiiu->v), sizeof(*wiiu->v), wiiu->v);
 
    wiiu->menu.v = MEM2_alloc(4 * sizeof(*wiiu->menu.v), GX2_VERTEX_BUFFER_ALIGNMENT);
@@ -377,8 +381,8 @@ static void* wiiu_gfx_init(const video_info_t* video,
    GX2InitSampler(&wiiu->sampler_linear, GX2_TEX_CLAMP_MODE_CLAMP, GX2_TEX_XY_FILTER_MODE_LINEAR);
 
    /* set Texture and Sampler */
-   GX2SetPixelTexture(&wiiu->texture, tex_shader.ps.samplerVars[0].location);
-   GX2SetPixelSampler(&wiiu->sampler_linear, tex_shader.ps.samplerVars[0].location);
+   GX2SetPixelTexture(&wiiu->texture, frame_shader.ps.samplerVars[0].location);
+   GX2SetPixelSampler(&wiiu->sampler_linear, frame_shader.ps.samplerVars[0].location);
 
    /* clear leftover image */
    GX2ClearColor(&wiiu->color_buffer, 0.0f, 0.0f, 0.0f, 1.0f);
@@ -608,7 +612,7 @@ static void wiiu_gfx_free(void* data)
    GX2SetTVEnable(GX2_DISABLE);
    GX2SetDRCEnable(GX2_DISABLE);
 
-   GX2DestroyShader(&tex_shader);
+   GX2DestroyShader(&frame_shader);
    GX2DestroyShader(&sprite_shader);
 
    MEM2_free(wiiu->ctx_state);
@@ -622,6 +626,7 @@ static void wiiu_gfx_free(void* data)
    MEM1_free(wiiu->color_buffer.surface.image);
    MEM1_free(wiiu->ubo_vp);
    MEM1_free(wiiu->ubo_tex);
+   MEM1_free(wiiu->ubo_mvp);
    MEM1_free(wiiu->input_ring_buffer);
    MEM1_free(wiiu->output_ring_buffer);
 
@@ -742,15 +747,17 @@ static bool wiiu_gfx_frame(void* data, const void* frame,
                     wiiu->texture.surface.imageSize);
 
       wiiu_set_tex_coords(wiiu->v, &wiiu->texture, 0, 0, width, height, wiiu->rotation);
-      GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, wiiu->v, 4 * sizeof(*wiiu->v));
    }
 
-   GX2SetShaderMode(GX2_SHADER_MODE_UNIFORM_REGISTER);
-   GX2SetShader(&tex_shader);
+   GX2SetShaderMode(GX2_SHADER_MODE_UNIFORM_BLOCK);
+   GX2SetShader(&frame_shader);
+   GX2SetVertexUniformBlock(frame_shader.vs.uniformBlocks[0].offset, frame_shader.vs.uniformBlocks[0].size, wiiu->ubo_mvp);
+   GX2SetViewport(wiiu->vp.x, wiiu->vp.y, wiiu->vp.width, wiiu->vp.height, 0.0f, 1.0f);
+   GX2SetScissor(wiiu->vp.x, wiiu->vp.y, wiiu->vp.width, wiiu->vp.height);
 
    GX2SetAttribBuffer(0, 4 * sizeof(*wiiu->v), sizeof(*wiiu->v), wiiu->v);
-   GX2SetPixelTexture(&wiiu->texture, tex_shader.ps.samplerVars[0].location);
-   GX2SetPixelSampler(wiiu->smooth? &wiiu->sampler_linear : &wiiu->sampler_nearest, tex_shader.ps.samplerVars[0].location);
+   GX2SetPixelTexture(&wiiu->texture, frame_shader.ps.samplerVars[0].location);
+   GX2SetPixelSampler(wiiu->smooth? &wiiu->sampler_linear : &wiiu->sampler_nearest, frame_shader.ps.samplerVars[0].location);
 
    GX2DrawEx(GX2_PRIMITIVE_MODE_QUADS, 4, 0, 1);
 
@@ -760,6 +767,8 @@ static bool wiiu_gfx_frame(void* data, const void* frame,
    GX2SetGeometryShaderOutputRingBuffer(wiiu->output_ring_buffer, wiiu->output_ring_buffer_size);
    GX2SetVertexUniformBlock(sprite_shader.vs.uniformBlocks[0].offset, sprite_shader.vs.uniformBlocks[0].size, wiiu->ubo_vp);
    GX2SetVertexUniformBlock(sprite_shader.vs.uniformBlocks[1].offset, sprite_shader.vs.uniformBlocks[1].size, wiiu->ubo_tex);
+   GX2SetViewport(0.0f, 0.0f, wiiu->color_buffer.surface.width, wiiu->color_buffer.surface.height, 0.0f, 1.0f);
+   GX2SetScissor(0, 0, wiiu->color_buffer.surface.width, wiiu->color_buffer.surface.height);
 
 #ifdef HAVE_OVERLAY
    if (wiiu->overlay_enable)
@@ -852,6 +861,7 @@ static void wiiu_gfx_set_rotation(void* data,
    if(wiiu)
    {
       wiiu->rotation = rotation;
+      wiiu_set_projection(wiiu);
       wiiu->should_resize = true;
    }
 }
