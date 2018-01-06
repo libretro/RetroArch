@@ -306,8 +306,12 @@ bool d3d_get_adapter_display_mode(LPDIRECT3D d3d,
    if (!display_mode || !d3d)
       return false;
 #if defined(HAVE_D3D9) && !defined(__cplusplus)
+#ifdef _XBOX
+   return true;
+#else
    if (FAILED(IDirect3D9_GetAdapterDisplayMode(d3d, idx, display_mode)))
       return false;
+#endif
 #elif defined(HAVE_D3D8) && !defined(__cplusplus)
    if (FAILED(IDirect3D8_GetAdapterDisplayMode(d3d, idx, display_mode)))
       return false;

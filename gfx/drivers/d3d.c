@@ -504,7 +504,7 @@ static D3DFORMAT d3d_get_color_format_backbuffer(bool rgb32, bool windowed)
 {
    D3DFORMAT fmt = D3DFMT_UNKNOWN;
 #ifdef _XBOX
-   if (info->rgb32)
+   if (rgb32)
       fmt        = D3DFMT_X8R8G8B8;
    else
       fmt        = D3DFMT_LIN_R5G6B5;
