@@ -263,6 +263,42 @@ void d3d_deinitialize_symbols(void)
 #endif
 }
 
+bool d3d_check_device_type(LPDIRECT3D d3d,
+      unsigned idx,
+      D3DFORMAT disp_format,
+      D3DFORMAT backbuffer_format,
+      bool windowed_mode)
+{
+   if (!d3d)
+      return false;
+#if defined(HAVE_D3D9) && !defined(__cplusplus)
+   if (FAILED(IDirect3D9_CheckDeviceType(d3d,
+               0,
+               D3DDEVTYPE_HAL,
+               disp_format,
+               backbuffer_format,
+               windowed_mode)))
+      return false;
+#elif defined(HAVE_D3D8) && !defined(__cplusplus)
+   if (FAILED(IDirect3D8_CheckDeviceType(d3d,
+               0,
+               D3DDEVTYPE_HAL,
+               disp_format,
+               backbuffer_format,
+               windowed_mode)))
+      return false;
+#else
+   if (FAILED(d3d->CheckDeviceType(
+               0,
+               D3DDEVTYPE_HAL,
+               disp_format,
+               backbuffer_format,
+               windowed_mode)))
+      return false;
+#endif
+   return true;
+}
+
 bool d3d_get_adapter_display_mode(LPDIRECT3D d3d,
       unsigned idx,
       D3DDISPLAYMODE *display_mode)

@@ -183,6 +183,12 @@ bool d3d_initialize_symbols(void);
 
 void d3d_deinitialize_symbols(void);
 
+bool d3d_check_device_type(LPDIRECT3D d3d,
+      unsigned idx,
+      D3DFORMAT disp_format,
+      D3DFORMAT backbuffer_format,
+      bool windowed_mode);
+
 bool d3dx_create_font_indirect(LPDIRECT3DDEVICE dev,
       void *desc, void **font_data);
 
