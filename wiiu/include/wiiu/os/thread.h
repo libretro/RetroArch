@@ -227,7 +227,7 @@ typedef struct OSThread
    //! Queue of threads waiting for a thread to be suspended.
    OSThreadQueue suspendQueue;
 
-   uint32_t unknown4[0x2A];
+   uint32_t unknown4[0x2B];
 } OSThread;
 #pragma pack(pop)
 

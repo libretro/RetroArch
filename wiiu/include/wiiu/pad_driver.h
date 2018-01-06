@@ -138,6 +138,8 @@ struct wiiu_adapter {
   uint8_t state;
   uint8_t *rx_buffer;
   int32_t rx_size;
+  uint8_t *tx_buffer;
+  int32_t tx_size;
   int32_t slot;
   uint32_t handle;
   uint8_t interface_index;
