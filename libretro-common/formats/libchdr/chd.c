@@ -295,7 +295,7 @@ static const UINT8 nullsha1[CHD_SHA1_BYTES] = { 0 };
 
 /* internal header operations */
 static chd_error header_validate(const chd_header *header);
-static chd_error header_read(core_file *file, chd_header *header);
+static chd_error header_read(chd_file *chd, chd_header *header);
 
 /* internal hunk read/write */
 #ifdef NEED_CACHE_HUNK
@@ -1337,7 +1337,7 @@ chd_error chd_open_file(core_file *file, int mode, chd_file *parent, chd_file **
 	newchd->file = file;
 
 	/* now attempt to read the header */
-	err = header_read(newchd->file, &newchd->header);
+	err = header_read(newchd, &newchd->header);
 	if (err != CHDERR_NONE)
 		EARLY_EXIT(err);
 
@@ -1843,11 +1843,36 @@ static chd_error header_validate(const chd_header *header)
 }
 
 /*-------------------------------------------------
+    header_guess_unitbytes - for older CHD formats,
+    guess at the bytes/unit based on metadata
+-------------------------------------------------*/
+
+static UINT32 header_guess_unitbytes(chd_file *chd)
+{
+	/* look for hard disk metadata; if found, then the unit size == sector size */
+	char metadata[512];
+	int i0, i1, i2, i3;
+	if (chd_get_metadata(chd, HARD_DISK_METADATA_TAG, 0, metadata, sizeof(metadata), NULL, NULL, NULL) == CHDERR_NONE &&
+		sscanf(metadata, HARD_DISK_METADATA_FORMAT, &i0, &i1, &i2, &i3) == 4)
+		return i3;
+
+	/* look for CD-ROM metadata; if found, then the unit size == CD frame size */
+	if (chd_get_metadata(chd, CDROM_OLD_METADATA_TAG, 0, metadata, sizeof(metadata), NULL, NULL, NULL) == CHDERR_NONE ||
+		chd_get_metadata(chd, CDROM_TRACK_METADATA_TAG, 0, metadata, sizeof(metadata), NULL, NULL, NULL) == CHDERR_NONE ||
+		chd_get_metadata(chd, CDROM_TRACK_METADATA2_TAG, 0, metadata, sizeof(metadata), NULL, NULL, NULL) == CHDERR_NONE ||
+		chd_get_metadata(chd, GDROM_TRACK_METADATA_TAG, 0, metadata, sizeof(metadata), NULL, NULL, NULL) == CHDERR_NONE)
+		return CD_FRAME_SIZE;
+
+	/* otherwise, just map 1:1 with the hunk size */
+	return chd->header.hunkbytes;
+}
+
+/*-------------------------------------------------
     header_read - read a CHD header into the
     internal data structure
 -------------------------------------------------*/
 
-static chd_error header_read(core_file *file, chd_header *header)
+static chd_error header_read(chd_file *chd, chd_header *header)
 {
 	UINT8 rawheader[CHD_MAX_HEADER_SIZE];
 	UINT32 count;
@@ -1857,12 +1882,12 @@ static chd_error header_read(core_file *file, chd_header *header)
 		return CHDERR_INVALID_PARAMETER;
 
 	/* punt if invalid file */
-	if (file == NULL)
+	if (chd->file == NULL)
 		return CHDERR_INVALID_FILE;
 
 	/* seek and read */
-	core_fseek(file, 0, SEEK_SET);
-	count = core_fread(file, rawheader, sizeof(rawheader));
+	core_fseek(chd->file, 0, SEEK_SET);
+	count = core_fread(chd->file, rawheader, sizeof(rawheader));
 	if (count != sizeof(rawheader))
 		return CHDERR_READ_ERROR;
 
@@ -1905,6 +1930,8 @@ static chd_error header_read(core_file *file, chd_header *header)
 		memcpy(header->parentmd5, &rawheader[60], CHD_MD5_BYTES);
 		header->logicalbytes = (UINT64)header->obsolete_cylinders * (UINT64)header->obsolete_heads * (UINT64)header->obsolete_sectors * (UINT64)seclen;
 		header->hunkbytes = seclen * header->obsolete_hunksize;
+		header->unitbytes          = header_guess_unitbytes(chd);
+		header->unitcount          = (header->logicalbytes + header->unitbytes - 1) / header->unitbytes;
 		header->metaoffset = 0;
 	}
 
@@ -1917,6 +1944,8 @@ static chd_error header_read(core_file *file, chd_header *header)
 		memcpy(header->md5, &rawheader[44], CHD_MD5_BYTES);
 		memcpy(header->parentmd5, &rawheader[60], CHD_MD5_BYTES);
 		header->hunkbytes    = get_bigendian_uint32(&rawheader[76]);
+		header->unitbytes    = header_guess_unitbytes(chd);
+		header->unitcount    = (header->logicalbytes + header->unitbytes - 1) / header->unitbytes;
 		memcpy(header->sha1, &rawheader[80], CHD_SHA1_BYTES);
 		memcpy(header->parentsha1, &rawheader[100], CHD_SHA1_BYTES);
 	}
@@ -1928,6 +1957,8 @@ static chd_error header_read(core_file *file, chd_header *header)
 		header->logicalbytes = get_bigendian_uint64(&rawheader[28]);
 		header->metaoffset   = get_bigendian_uint64(&rawheader[36]);
 		header->hunkbytes    = get_bigendian_uint32(&rawheader[44]);
+		header->unitbytes    = header_guess_unitbytes(chd);
+		header->unitcount    = (header->logicalbytes + header->unitbytes - 1) / header->unitbytes;
 		memcpy(header->sha1, &rawheader[48], CHD_SHA1_BYTES);
 		memcpy(header->parentsha1, &rawheader[68], CHD_SHA1_BYTES);
 		memcpy(header->rawsha1, &rawheader[88], CHD_SHA1_BYTES);
