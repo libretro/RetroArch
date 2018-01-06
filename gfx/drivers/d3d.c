@@ -522,29 +522,36 @@ static D3DFORMAT d3d_get_color_format_front_buffer(void)
 }
 #endif
 
+static bool d3d_is_windowed_enable(bool info_fullscreen)
+{
+#ifndef _XBOX
+   settings_t *settings = config_get_ptr();
+   if (settings)
+      return ((settings->bools.video_windowed_fullscreen)
+      || !info_fullscreen);
+#endif
+   return false;
+}
+
 void d3d_make_d3dpp(void *data,
       const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp)
 {
    d3d_video_t     *d3d = (d3d_video_t*)data;
-   settings_t *settings = config_get_ptr();
 #ifdef _XBOX360
    /* TODO/FIXME - get rid of global state dependencies. */
    global_t *global     = global_get_ptr();
-   bool gamma_enable    = global->console.screen.gamma_correction;
+   bool gamma_enable    = global ? global->console.screen.gamma_correction : false;
 #endif
+   bool windowed_enable = d3d_is_windowed_enable(info->fullscreen);
 
    memset(d3dpp, 0, sizeof(*d3dpp));
 
-#ifdef _XBOX
-   d3dpp->Windowed             = false;
-#else
-   d3dpp->Windowed             = settings->bools.video_windowed_fullscreen
-      || !info->fullscreen;
-#endif
+   d3dpp->Windowed             = windowed_enable;
    FS_PRESENTINTERVAL(d3dpp)   = D3DPRESENT_INTERVAL_IMMEDIATE;
 
    if (info->vsync)
    {
+      settings_t *settings = config_get_ptr();
       switch (settings->uints.video_swap_interval)
       {
          default:
@@ -565,17 +572,22 @@ void d3d_make_d3dpp(void *data,
 
    d3dpp->SwapEffect          = D3DSWAPEFFECT_DISCARD;
    d3dpp->BackBufferCount     = 2;
-   d3dpp->BackBufferFormat    = d3d_get_color_format_backbuffer(info->rgb32, d3dpp->Windowed);
+   d3dpp->BackBufferFormat    = d3d_get_color_format_backbuffer(info->rgb32, windowed_enable);
 #ifndef _XBOX
    d3dpp->hDeviceWindow       = win32_get_window();
 #endif
 
 #ifdef _XBOX360
+   d3dpp->FrontBufferFormat   = d3d_get_color_format_front_buffer();
+
    if (gamma_enable)
+   {
       d3dpp->BackBufferFormat = (D3DFORMAT)MAKESRGBFMT(d3dpp->BackBufferFormat);
+      d3dpp->FrontBufferFormat= (D3DFORMAT)MAKESRGBFMT(d3dpp->FrontBufferFormat);
+   }
 #endif
 
-   if (!d3dpp->Windowed)
+   if (!windowed_enable)
    {
 #ifdef _XBOX
       gfx_ctx_mode_t mode;
@@ -637,12 +649,6 @@ void d3d_make_d3dpp(void *data,
    if (!widescreen_mode)
       d3dpp->Flags |= D3DPRESENTFLAG_NO_LETTERBOX;
 #endif
-
-   d3dpp->FrontBufferFormat          = d3d_get_color_format_front_buffer();
-
-   if (gamma_enable)
-      d3dpp->FrontBufferFormat       = (D3DFORMAT)MAKESRGBFMT(d3dpp->FrontBufferFormat);
-
    d3dpp->MultiSampleQuality      = 0;
 #endif
 #endif
