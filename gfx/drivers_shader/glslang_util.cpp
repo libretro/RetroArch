@@ -25,9 +25,14 @@
 #include <lists/string_list.h>
 #include <string/stdstring.h>
 
-#include "glslang_util.hpp"
-#include "glslang.hpp"
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
+#include "glslang_util.hpp"
+#ifdef HAVE_VULKAN
+#include "glslang.hpp"
+#endif
 #include "../../verbosity.h"
 
 using namespace std;
@@ -363,6 +368,7 @@ bool glslang_parse_meta(const vector<string> &lines, glslang_meta *meta)
    return true;
 }
 
+#ifdef HAVE_VULKAN
 bool glslang_compile_shader(const char *shader_path, glslang_output *output)
 {
    vector<string> lines;
@@ -391,4 +397,4 @@ bool glslang_compile_shader(const char *shader_path, glslang_output *output)
 
    return true;
 }
-
+#endif

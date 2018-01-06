@@ -2,6 +2,7 @@
 
 #include "wiiu/frame_shader.h"
 #include "wiiu/sprite_shader.h"
+#include "gfx/video_shader_parse.h"
 
 #undef _X
 #undef _B
@@ -81,6 +82,15 @@ typedef struct
    GX2ColorBuffer color_buffer;
    GX2ContextState* ctx_state;
    void* cmd_buffer;
+   struct video_shader* shader_preset;
+   struct
+   {
+      GFDFile* gfd;
+      float* vs_ubo;
+      float* ps_ubo;
+      GX2Texture texture;
+      GX2ColorBuffer color_buffer;
+   }pass[GFX_MAX_SHADERS];
 
    wiiu_render_mode_t render_mode;
    video_viewport_t vp;

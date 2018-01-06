@@ -603,7 +603,7 @@ void menu_shader_manager_apply_changes(void)
       shader_type = RARCH_SHADER_GLSL;
 #elif defined(HAVE_CG) || defined(HAVE_HLSL)
       shader_type = RARCH_SHADER_CG;
-#elif defined(HAVE_VULKAN)
+#elif defined(HAVE_SLANG)
       shader_type = RARCH_SHADER_SLANG;
 #endif
    }

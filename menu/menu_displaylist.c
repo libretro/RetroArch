@@ -6599,7 +6599,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          {
             char new_exts[PATH_MAX_LENGTH];
             struct string_list *str_list;
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_VULKAN)
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG)
             union string_list_elem_attr attr;
             attr.i = 0;
 #endif
@@ -6616,7 +6616,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 #ifdef HAVE_GLSL
             string_list_append(str_list, "glslp", attr);
 #endif
-#ifdef HAVE_VULKAN
+#ifdef HAVE_SLANG
             string_list_append(str_list, "slangp", attr);
 #endif
             string_list_join_concat(new_exts, sizeof(new_exts), str_list, "|");
@@ -6632,7 +6632,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          {
             char new_exts[PATH_MAX_LENGTH];
             struct string_list *str_list;
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_VULKAN)
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG)
             union string_list_elem_attr attr;
             attr.i = 0;
 #endif
@@ -6650,7 +6650,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 #ifdef HAVE_GLSL
             string_list_append(str_list, "glsl", attr);
 #endif
-#ifdef HAVE_VULKAN
+#ifdef HAVE_SLANG
             string_list_append(str_list, "slang", attr);
 #endif
             string_list_join_concat(new_exts, sizeof(new_exts), str_list, "|");
