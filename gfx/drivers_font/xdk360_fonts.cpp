@@ -505,7 +505,8 @@ static HRESULT xdk360_video_font_create_shaders(xdk360_video_font_t * font)
                      break;
                   }
                }
-               font->s_FontLocals.m_pFontVertexShader->Release();
+
+               d3d_free_vertex_shader(font->s_FontLocals.m_pFontVertexShader);
             }
 
             font->s_FontLocals.m_pFontVertexShader = NULL;
@@ -608,9 +609,9 @@ static void xdk360_free_font(void *data, bool is_threaded)
    font->m_TranslatorTable = NULL;
 
    if (font->s_FontLocals.m_pFontPixelShader)
-      font->s_FontLocals.m_pFontPixelShader->Release();
+      d3d_free_pixel_shader(font->s_FontLocals.m_pFontPixelShader);
    if (font->s_FontLocals.m_pFontVertexShader)
-      font->s_FontLocals.m_pFontVertexShader->Release();
+      d3d_free_vertex_shader(font->s_FontLocals.m_pFontVertexShader);
    if (font->s_FontLocals.m_pFontVertexDecl)
       d3d_vertex_declaration_free(font->s_FontLocals.m_pFontVertexDecl);
 

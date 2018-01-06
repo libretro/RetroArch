@@ -1023,6 +1023,34 @@ void d3d_set_texture(LPDIRECT3DDEVICE dev, unsigned sampler,
 #endif
 }
 
+void d3d_free_vertex_shader(LPDIRECT3DDEVICE dev, void *data)
+{
+#ifdef HAVE_D3D9
+   IDirect3DVertexShader9 *vs = (IDirect3DVertexShader9*)data;
+   if (!dev || !vs)
+      return;
+#ifdef __cplusplus
+   vs->Release();
+#else
+   IDirect3DVertexShader9_Release(vs);
+#endif
+#endif
+}
+
+void d3d_free_pixel_shader(LPDIRECT3DDEVICE dev, void *data)
+{
+#ifdef HAVE_D3D9
+   IDirect3DPixelShader9 *ps = (IDirect3DPixelShader9*)data;
+   if (!dev || !ps)
+      return;
+#ifdef __cplusplus
+   ps->Release();
+#else
+   IDirect3DPixelShader9_Release(ps);
+#endif
+#endif
+}
+
 bool d3d_set_pixel_shader(LPDIRECT3DDEVICE dev, void *data)
 {
 #ifdef HAVE_D3D9

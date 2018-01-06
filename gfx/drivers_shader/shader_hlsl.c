@@ -89,14 +89,6 @@ typedef struct hlsl_shader_data hlsl_shader_data_t;
 #define IDirect3DDevice9_CreateVertexShader(p, a, b) ((p)->CreateVertexShader(a, b))
 #endif
 
-#ifndef IDirect3DPixelShader9_Release
-#define IDirect3DPixelShader9_Release(p) ((p)->Release())
-#endif
-
-#ifndef IDirect3DVertexShader9_Release
-#define IDirect3DVertexShader9_Release(p) ((p)->Release())
-#endif
-
 #ifndef ID3DXConstantTable_SetMatrix
 #define ID3DXConstantTable_SetMatrix(p,a,b,c) ((p)->SetMatrix(a,b,c))
 #endif
@@ -405,18 +397,18 @@ static void hlsl_deinit_progs(hlsl_shader_data_t *hlsl)
    for (i = 1; i < RARCH_HLSL_MAX_SHADERS; i++)
    {
       if (hlsl->prg[i].fprg && hlsl->prg[i].fprg != hlsl->prg[0].fprg)
-         IDirect3DPixelShader9_Release(hlsl->prg[i].fprg);
+         d3d_free_pixel_shader(hlsl->prg[i].fprg);
       if (hlsl->prg[i].vprg && hlsl->prg[i].vprg != hlsl->prg[0].vprg)
-         IDirect3DVertexShader9_Release(hlsl->prg[i].vprg);
+         d3d_free_vertex_shader(hlsl->prg[i].vprg);
 
 	  hlsl->prg[i].fprg = NULL;
 	  hlsl->prg[i].vprg = NULL;
    }
 
    if (hlsl->prg[0].fprg)
-      IDirect3DPixelShader9_Release(hlsl->prg[0].fprg);
+      d3d_free_pixel_shader(hlsl->prg[0].fprg);
    if (hlsl->prg[0].vprg)
-      IDirect3DVertexShader9_Release(hlsl->prg[0].vprg);
+      d3d_free_vertex_shader(hlsl->prg[0].vprg);
 
    hlsl->prg[0].fprg = NULL;
    hlsl->prg[0].vprg = NULL;
