@@ -159,6 +159,10 @@ void * d3d_matrix_identity(void *_pout);
 
 void *d3d_matrix_rotation_z(void *_pout, float angle);
 
+bool d3d_get_adapter_display_mode(LPDIRECT3D d3d,
+      unsigned idx,
+      D3DDISPLAYMODE *display_mode);
+
 bool d3d_create_device(LPDIRECT3DDEVICE *dev,
       D3DPRESENT_PARAMETERS *d3dpp,
       LPDIRECT3D d3d,

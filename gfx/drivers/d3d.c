@@ -509,7 +509,13 @@ static D3DFORMAT d3d_get_color_format_backbuffer(bool rgb32, bool windowed)
    else
       fmt        = D3DFMT_LIN_R5G6B5;
 #else
-   if (!windowed)
+   if (windowed)
+   {
+      D3DDISPLAYMODE display_mode;
+      if (d3d_get_adapter_display_mode(g_pD3D, 0, &display_mode))
+         fmt = display_mode.Format;
+   }
+   else
       fmt        = D3DFMT_X8R8G8B8;
 #endif
    return fmt;

@@ -263,6 +263,25 @@ void d3d_deinitialize_symbols(void)
 #endif
 }
 
+bool d3d_get_adapter_display_mode(LPDIRECT3D d3d,
+      unsigned idx,
+      D3DDISPLAYMODE *display_mode)
+{
+   if (!display_mode || !d3d)
+      return false;
+#if defined(HAVE_D3D9) && !defined(__cplusplus)
+   if (FAILED(IDirect3D9_GetAdapterDisplayMode(d3d, idx, display_mode)))
+      return false;
+#elif defined(HAVE_D3D8) && !defined(__cplusplus)
+   if (FAILED(IDirect3D8_GetAdapterDisplayMode(d3d, idx, display_mode)))
+      return false;
+#else
+   if (FAILED(d3d->GetAdapterDisplayMode(idx, display_mode)))
+      return false;
+#endif
+   return true;
+}
+
 bool d3d_swap(void *data, LPDIRECT3DDEVICE dev)
 {
 #if defined(_XBOX1)
