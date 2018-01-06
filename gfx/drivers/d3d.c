@@ -1019,14 +1019,12 @@ static bool d3d_init_internal(d3d_video_t *d3d,
    unsigned full_x           = 0;
    unsigned full_y           = 0;
    settings_t    *settings   = config_get_ptr();
+   overlay_t *menu           = (overlay_t*)calloc(1, sizeof(*menu));
 
-   d3d->should_resize        = false;
-
-   d3d->menu                 = (overlay_t*)calloc(1, sizeof(*d3d->menu));
-
-   if (!d3d->menu)
+   if (!menu)
       return false;
 
+   d3d->menu                 = menu;
    d3d->cur_mon_id           = 0;
    d3d->menu->tex_coords[0]  = 0;
    d3d->menu->tex_coords[1]  = 0;
@@ -1046,16 +1044,18 @@ static bool d3d_init_internal(d3d_video_t *d3d,
 
 #ifdef HAVE_MONITOR
    win32_monitor_info(&current_mon, &hm_to_use, &d3d->cur_mon_id);
-   mon_rect = current_mon.rcMonitor;
+
+   mon_rect        = current_mon.rcMonitor;
    g_resize_width  = info->width;
    g_resize_height = info->height;
 
-   windowed_full = settings->bools.video_windowed_fullscreen;
+   windowed_full   = settings->bools.video_windowed_fullscreen;
 
-   full_x = (windowed_full || info->width  == 0) ?
+   full_x          = (windowed_full || info->width  == 0) ?
       (mon_rect.right  - mon_rect.left) : info->width;
-   full_y = (windowed_full || info->height == 0) ?
+   full_y          = (windowed_full || info->height == 0) ?
       (mon_rect.bottom - mon_rect.top)  : info->height;
+
    RARCH_LOG("[D3D]: Monitor size: %dx%d.\n",
          (int)(mon_rect.right  - mon_rect.left),
          (int)(mon_rect.bottom - mon_rect.top));
@@ -1095,7 +1095,8 @@ static bool d3d_init_internal(d3d_video_t *d3d,
    if (settings->bools.video_shader_enable)
    {
       enum rarch_shader_type type =
-         video_shader_parse_type(settings->paths.path_shader, RARCH_SHADER_NONE);
+         video_shader_parse_type(settings->paths.path_shader,
+               RARCH_SHADER_NONE);
 
       switch (type)
       {
@@ -1148,7 +1149,6 @@ static const gfx_ctx_driver_t *d3d_get_context(void *data)
    /* Default to Direct3D9 for now.
    TODO: GL core contexts through ANGLE? */
    unsigned minor       = 0;
-   settings_t *settings = config_get_ptr();
 #if defined(HAVE_D3D8)
    unsigned major       = 8;
    enum gfx_ctx_api api = GFX_CTX_DIRECT3D8_API;
@@ -1156,6 +1156,8 @@ static const gfx_ctx_driver_t *d3d_get_context(void *data)
    unsigned major       = 9;
    enum gfx_ctx_api api = GFX_CTX_DIRECT3D9_API;
 #endif
+   settings_t *settings = config_get_ptr();
+
    return video_context_driver_init_first(data,
          settings->arrays.video_context_driver,
          api, major, minor, false);
@@ -1205,9 +1207,7 @@ static void *d3d_init(const video_info_t *info,
 #ifdef HAVE_OVERLAY
    d3d->overlays_enabled     = false;
 #endif
-#ifdef _XBOX
    d3d->should_resize        = false;
-#endif
    d3d->menu                 = NULL;
 
    video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
