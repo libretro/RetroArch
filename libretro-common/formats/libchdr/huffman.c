@@ -1,6 +1,6 @@
 /* license:BSD-3-Clause
  * copyright-holders:Aaron Giles
- ***************************************************************************
+****************************************************************************
 
     huffman.c
 
@@ -111,10 +111,9 @@
 
 #define MAKE_LOOKUP(code,bits)  (((code) << 5) | ((bits) & 0x1f))
 
-
 /***************************************************************************
  *  IMPLEMENTATION
- * **************************************************************************
+ ***************************************************************************
  */
 
 /*-------------------------------------------------
@@ -313,7 +312,6 @@ enum huffman_error huffman_import_tree_huffman(struct huffman_decoder* decoder, 
 	return bitstream_overflow(bitbuf) ? HUFFERR_INPUT_BUFFER_TOO_SMALL : HUFFERR_NONE;
 }
 
-
 /*-------------------------------------------------
  *  compute_tree_from_histo - common backend for
  *  computing a tree based on the data histogram
@@ -355,8 +353,6 @@ enum huffman_error huffman_compute_tree_from_histo(struct huffman_decoder* decod
 	return huffman_assign_canonical_codes(decoder);
 }
 
-
-
 /***************************************************************************
  *  INTERNAL FUNCTIONS
  ***************************************************************************
@@ -378,7 +374,6 @@ static int huffman_tree_node_compare(const void *item1, const void *item2)
 		fprintf(stderr, "identical node sort keys, should not happen!\n");
 	return (int)node1->bits - (int)node2->bits;
 }
-
 
 /*-------------------------------------------------
  *  build_tree - build a huffman tree based on the
@@ -418,10 +413,10 @@ int huffman_build_tree(struct huffman_decoder* decoder, uint32_t totaldata, uint
       for (i = 0; i < listitems; i++)
          fprintf(stderr, "weight: %d code: %d\n",
                list[i]->m_weight, list[i]->m_bits);
-      */ sort the list by weight, largest weight first */
    }
 #endif
 
+	/* sort the list by weight, largest weight first */
 	qsort(&list[0], listitems, sizeof(list[0]), huffman_tree_node_compare);
 
 #if 0
@@ -490,7 +485,6 @@ int huffman_build_tree(struct huffman_decoder* decoder, uint32_t totaldata, uint
 	return maxbits;
 }
 
-
 /*-------------------------------------------------
  *  assign_canonical_codes - assign canonical codes
  *  to all the nodes based on the number of bits
@@ -532,7 +526,6 @@ enum huffman_error huffman_assign_canonical_codes(struct huffman_decoder* decode
 	}
 	return HUFFERR_NONE;
 }
-
 
 /*-------------------------------------------------
  *  build_lookup_table - build a lookup table for
