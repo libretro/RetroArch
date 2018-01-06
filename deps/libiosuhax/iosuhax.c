@@ -101,6 +101,9 @@ int IOSUHAX_memwrite(uint32_t address, const uint8_t * buffer, uint32_t size)
     if(iosuhaxHandle < 0)
         return iosuhaxHandle;
 
+    if(!buffer)
+        return -1;
+
     uint32_t *io_buf = (uint32_t*)memalign(0x20, size + 4);
     if(!io_buf)
         return -2;
@@ -119,6 +122,9 @@ int IOSUHAX_memread(uint32_t address, uint8_t * out_buffer, uint32_t size)
     if(iosuhaxHandle < 0)
         return iosuhaxHandle;
 
+    if(!out_buffer || !size)
+        return -1;
+
     return IOS_Ioctl(iosuhaxHandle, IOCTL_MEM_READ, &address, sizeof(address), out_buffer, size);
 }
 
@@ -126,6 +132,9 @@ int IOSUHAX_memcpy(uint32_t dst, uint32_t src, uint32_t size)
 {
     if(iosuhaxHandle < 0)
         return iosuhaxHandle;
+
+    if(!dst || !src || !size)
+      return -1;
 
     uint32_t io_buf[3];
     io_buf[0] = dst;
@@ -190,6 +199,9 @@ int IOSUHAX_FSA_Mount(int fsaFd, const char* device_path, const char* volume_pat
     if(iosuhaxHandle < 0)
         return iosuhaxHandle;
 
+    if(!device_path || !volume_path || !arg_string)
+        return -1;
+
     const int input_cnt = 6;
 
     int io_buf_size = (sizeof(uint32_t) * input_cnt) + strlen(device_path) + strlen(volume_path) + arg_string_len + 3;
@@ -230,6 +242,9 @@ int IOSUHAX_FSA_Unmount(int fsaFd, const char* path, uint32_t flags)
     if(iosuhaxHandle < 0)
         return iosuhaxHandle;
 
+    if(!path)
+        return -1;
+
     const int input_cnt = 3;
 
     int io_buf_size = sizeof(uint32_t) * input_cnt + strlen(path) + 1;
@@ -261,6 +276,9 @@ int IOSUHAX_FSA_FlushVolume(int fsaFd, const char *volume_path)
     if(iosuhaxHandle < 0)
         return iosuhaxHandle;
 
+    if(!volume_path)
+        return -1;
+
     const int input_cnt = 2;
 
     int io_buf_size = sizeof(uint32_t) * input_cnt + strlen(volume_path) + 1;
@@ -290,6 +308,9 @@ int IOSUHAX_FSA_GetDeviceInfo(int fsaFd, const char* device_path, int type, uint
 {
     if(iosuhaxHandle < 0)
         return iosuhaxHandle;
+
+    if(!device_path || !out_data)
+        return -1;
 
     const int input_cnt = 3;
 
@@ -323,6 +344,9 @@ int IOSUHAX_FSA_MakeDir(int fsaFd, const char* path, uint32_t flags)
     if(iosuhaxHandle < 0)
         return iosuhaxHandle;
 
+    if(!path)
+        return -1;
+
     const int input_cnt = 3;
 
     int io_buf_size = sizeof(uint32_t) * input_cnt + strlen(path) + 1;
@@ -352,6 +376,9 @@ int IOSUHAX_FSA_OpenDir(int fsaFd, const char* path, int* outHandle)
 {
     if(iosuhaxHandle < 0)
         return iosuhaxHandle;
+
+    if(!path)
+        return -1;
 
     const int input_cnt = 2;
 
@@ -383,6 +410,9 @@ int IOSUHAX_FSA_ReadDir(int fsaFd, int handle, directoryEntry_s* out_data)
 {
     if(iosuhaxHandle < 0)
         return iosuhaxHandle;
+
+    if(!out_data)
+        return -1;
 
     const int input_cnt = 2;
 
@@ -481,6 +511,9 @@ int IOSUHAX_FSA_ChangeDir(int fsaFd, const char *path)
     if(iosuhaxHandle < 0)
         return iosuhaxHandle;
 
+    if(!path)
+        return -1;
+
     const int input_cnt = 2;
 
     int io_buf_size = sizeof(uint32_t) * input_cnt + strlen(path) + 1;
@@ -510,6 +543,9 @@ int IOSUHAX_FSA_OpenFile(int fsaFd, const char* path, const char* mode, int* out
 {
     if(iosuhaxHandle < 0)
         return iosuhaxHandle;
+
+    if(!path || !mode || !outHandle)
+        return -1;
 
     const int input_cnt = 3;
 
@@ -543,6 +579,9 @@ int IOSUHAX_FSA_ReadFile(int fsaFd, void* data, uint32_t size, uint32_t cnt, int
 {
     if(iosuhaxHandle < 0)
         return iosuhaxHandle;
+
+    if(!data)
+        return -1;
 
     const int input_cnt = 5;
 
@@ -590,6 +629,9 @@ int IOSUHAX_FSA_WriteFile(int fsaFd, const void* data, uint32_t size, uint32_t c
     if(iosuhaxHandle < 0)
         return iosuhaxHandle;
 
+    if(!data)
+        return -1;
+
     const int input_cnt = 5;
 
     int io_buf_size = ((sizeof(uint32_t) * input_cnt + size * cnt + 0x40) + 0x3F) & ~0x3F;
@@ -622,6 +664,9 @@ int IOSUHAX_FSA_StatFile(int fsaFd, int fileHandle, fileStat_s* out_data)
 {
     if(iosuhaxHandle < 0)
         return iosuhaxHandle;
+
+    if(!out_data)
+        return -1;
 
     const int input_cnt = 2;
 
@@ -722,6 +767,9 @@ int IOSUHAX_FSA_GetStat(int fsaFd, const char *path, fileStat_s* out_data)
     if(iosuhaxHandle < 0)
         return iosuhaxHandle;
 
+    if(!path || !out_data)
+        return -1;
+
     const int input_cnt = 2;
 
     int io_buf_size = sizeof(uint32_t) * input_cnt + strlen(path) + 1;
@@ -763,6 +811,9 @@ int IOSUHAX_FSA_Remove(int fsaFd, const char *path)
     if(iosuhaxHandle < 0)
         return iosuhaxHandle;
 
+    if(!path)
+        return -1;
+
     const int input_cnt = 2;
 
     int io_buf_size = sizeof(uint32_t) * input_cnt + strlen(path) + 1;
@@ -792,6 +843,9 @@ int IOSUHAX_FSA_ChangeMode(int fsaFd, const char* path, int mode)
 {
     if(iosuhaxHandle < 0)
         return iosuhaxHandle;
+
+    if(!path)
+        return -1;
 
     const int input_cnt = 3;
 
@@ -823,6 +877,9 @@ int IOSUHAX_FSA_RawOpen(int fsaFd, const char* device_path, int* outHandle)
 {
     if(iosuhaxHandle < 0)
         return iosuhaxHandle;
+
+    if(!device_path && !outHandle)
+        return -1;
 
     const int input_cnt = 2;
 
@@ -856,6 +913,9 @@ int IOSUHAX_FSA_RawRead(int fsaFd, void* data, uint32_t block_size, uint32_t blo
 {
     if(iosuhaxHandle < 0)
         return iosuhaxHandle;
+
+    if(!data)
+        return -1;
 
     const int input_cnt = 6;
 
@@ -903,6 +963,9 @@ int IOSUHAX_FSA_RawWrite(int fsaFd, const void* data, uint32_t block_size, uint3
 {
     if(iosuhaxHandle < 0)
         return iosuhaxHandle;
+
+    if(!data)
+        return -1;
 
     const int input_cnt = 6;
 

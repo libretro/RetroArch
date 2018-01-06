@@ -141,7 +141,7 @@ static bool IOSUHAX_sdio_shutdown(void)
 
 static bool IOSUHAX_sdio_readSectors(uint32_t sector, uint32_t numSectors, void* buffer)
 {
-    if(!IOSUHAX_sdio_isInserted())
+    if(!IOSUHAX_sdio_isInserted() || !buffer)
         return false;
 
     int res = IOSUHAX_FSA_RawRead(fsaFdSd, buffer, 512, numSectors, sector, sdioFd);
@@ -155,7 +155,7 @@ static bool IOSUHAX_sdio_readSectors(uint32_t sector, uint32_t numSectors, void*
 
 static bool IOSUHAX_sdio_writeSectors(uint32_t sector, uint32_t numSectors, const void* buffer)
 {
-    if(!IOSUHAX_sdio_isInserted())
+    if(!IOSUHAX_sdio_isInserted() || !buffer)
         return false;
 
     int res = IOSUHAX_FSA_RawWrite(fsaFdSd, buffer, 512, numSectors, sector, sdioFd);
@@ -223,7 +223,7 @@ static bool IOSUHAX_usb_shutdown(void)
 
 static bool IOSUHAX_usb_readSectors(uint32_t sector, uint32_t numSectors, void* buffer)
 {
-    if(!IOSUHAX_usb_isInserted())
+    if(!IOSUHAX_usb_isInserted() || !buffer)
         return false;
 
     int res = IOSUHAX_FSA_RawRead(fsaFdUsb, buffer, 512, numSectors, sector, usbFd);
@@ -237,7 +237,7 @@ static bool IOSUHAX_usb_readSectors(uint32_t sector, uint32_t numSectors, void* 
 
 static bool IOSUHAX_usb_writeSectors(uint32_t sector, uint32_t numSectors, const void* buffer)
 {
-    if(!IOSUHAX_usb_isInserted())
+    if(!IOSUHAX_usb_isInserted() || !buffer)
         return false;
 
     int res = IOSUHAX_FSA_RawWrite(fsaFdUsb, buffer, 512, numSectors, sector, usbFd);

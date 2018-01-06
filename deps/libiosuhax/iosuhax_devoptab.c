@@ -63,6 +63,9 @@ static fs_dev_private_t *fs_dev_get_device_data(const char *path)
     char name[128] = {0};
     int i;
 
+    if(!path)
+        return NULL;
+
     /* Get the device name from the path */
     strncpy(name, path, 127);
     strtok(name, ":/");
@@ -86,7 +89,7 @@ static fs_dev_private_t *fs_dev_get_device_data(const char *path)
 static char *fs_dev_real_path (const char *path, fs_dev_private_t *dev)
 {
     /* Sanity check */
-    if (!path)
+    if (!path || !dev)
         return NULL;
 
     /* Move the path pointer to the start of the actual path */
@@ -108,12 +111,20 @@ static char *fs_dev_real_path (const char *path, fs_dev_private_t *dev)
 static int fs_dev_open_r (struct _reent *r, void *fileStruct, const char *path, int flags, int mode)
 {
     fs_dev_private_t *dev = fs_dev_get_device_data(path);
+
+    if(!r)
+        return -1;
+
     if(!dev) {
         r->_errno = ENODEV;
         return -1;
     }
 
     fs_dev_file_state_t *file = (fs_dev_file_state_t *)fileStruct;
+    if(!file) {
+       r->_errno = EINVAL;
+       return -1;
+    }
 
     file->dev = dev;
     /* Determine which mode the file is opened for */
@@ -178,10 +189,18 @@ static int fs_dev_open_r (struct _reent *r, void *fileStruct, const char *path, 
     return -1;
 }
 
-
 static int fs_dev_close_r (struct _reent *r, void *fd)
 {
     fs_dev_file_state_t *file = (fs_dev_file_state_t *)fd;
+
+    if(!r)
+        return -1;
+
+    if(!file) {
+        r->_errno = EINVAL;
+        return -1;
+    }
+
     if(!file->dev) {
         r->_errno = ENODEV;
         return -1;
@@ -204,6 +223,15 @@ static int fs_dev_close_r (struct _reent *r, void *fd)
 static off_t fs_dev_seek_r (struct _reent *r, void* fd, off_t pos, int dir)
 {
     fs_dev_file_state_t *file = (fs_dev_file_state_t *)fd;
+
+    if(!r)
+        return 0;
+
+    if(!file) {
+        r->_errno = EINVAL;
+        return 0;
+    }
+
     if(!file->dev) {
         r->_errno = ENODEV;
         return 0;
@@ -242,6 +270,15 @@ static off_t fs_dev_seek_r (struct _reent *r, void* fd, off_t pos, int dir)
 static ssize_t fs_dev_write_r (struct _reent *r, void *fd, const char *ptr, size_t len)
 {
     fs_dev_file_state_t *file = (fs_dev_file_state_t *)fd;
+
+    if(!r)
+        return 0;
+
+    if(!file) {
+        r->_errno = EINVAL;
+        return 0;
+    }
+
     if(!file->dev) {
         r->_errno = ENODEV;
         return 0;
@@ -286,7 +323,16 @@ static ssize_t fs_dev_write_r (struct _reent *r, void *fd, const char *ptr, size
 
 static ssize_t fs_dev_read_r (struct _reent *r, void *fd, char *ptr, size_t len)
 {
+    if(!r)
+        return 0;
+
     fs_dev_file_state_t *file = (fs_dev_file_state_t *)fd;
+
+    if(!file) {
+        r->_errno = EINVAL;
+        return 0;
+    }
+
     if(!file->dev) {
         r->_errno = ENODEV;
         return 0;
@@ -333,6 +379,15 @@ static ssize_t fs_dev_read_r (struct _reent *r, void *fd, char *ptr, size_t len)
 static int fs_dev_fstat_r (struct _reent *r, void *fd, struct stat *st)
 {
     fs_dev_file_state_t *file = (fs_dev_file_state_t *)fd;
+
+    if(!r)
+        return -1;
+
+    if(!file) {
+        r->_errno = EINVAL;
+        return -1;
+    }
+
     if(!file->dev) {
         r->_errno = ENODEV;
         return -1;
@@ -371,6 +426,15 @@ static int fs_dev_fstat_r (struct _reent *r, void *fd, struct stat *st)
 static int fs_dev_ftruncate_r (struct _reent *r, void *fd, off_t len)
 {
     fs_dev_file_state_t *file = (fs_dev_file_state_t *)fd;
+
+    if(!r)
+        return -1;
+
+    if(!file) {
+        r->_errno = EINVAL;
+        return -1;
+    }
+
     if(!file->dev) {
         r->_errno = ENODEV;
         return -1;
@@ -384,6 +448,15 @@ static int fs_dev_ftruncate_r (struct _reent *r, void *fd, off_t len)
 static int fs_dev_fsync_r (struct _reent *r, void *fd)
 {
     fs_dev_file_state_t *file = (fs_dev_file_state_t *)fd;
+
+    if(!r)
+        return -1;
+
+    if(!file) {
+        r->_errno = EINVAL;
+        return -1;
+    }
+
     if(!file->dev) {
         r->_errno = ENODEV;
         return -1;
@@ -397,6 +470,10 @@ static int fs_dev_fsync_r (struct _reent *r, void *fd)
 static int fs_dev_stat_r (struct _reent *r, const char *path, struct stat *st)
 {
     fs_dev_private_t *dev = fs_dev_get_device_data(path);
+
+    if(!r)
+        return -1;
+
     if(!dev) {
         r->_errno = ENODEV;
         return -1;
@@ -447,6 +524,9 @@ static int fs_dev_stat_r (struct _reent *r, const char *path, struct stat *st)
 
 static int fs_dev_link_r (struct _reent *r, const char *existing, const char *newLink)
 {
+    if(!r)
+      return -1;
+
     r->_errno = ENOTSUP;
     return -1;
 }
@@ -454,6 +534,10 @@ static int fs_dev_link_r (struct _reent *r, const char *existing, const char *ne
 static int fs_dev_unlink_r (struct _reent *r, const char *name)
 {
     fs_dev_private_t *dev = fs_dev_get_device_data(name);
+
+    if(!r)
+        return -1;
+
     if(!dev) {
         r->_errno = ENODEV;
         return -1;
@@ -485,6 +569,10 @@ static int fs_dev_unlink_r (struct _reent *r, const char *name)
 static int fs_dev_chdir_r (struct _reent *r, const char *name)
 {
     fs_dev_private_t *dev = fs_dev_get_device_data(name);
+
+    if(!r)
+        return -1;
+
     if(!dev) {
         r->_errno = ENODEV;
         return -1;
@@ -516,9 +604,18 @@ static int fs_dev_chdir_r (struct _reent *r, const char *name)
 static int fs_dev_rename_r (struct _reent *r, const char *oldName, const char *newName)
 {
     fs_dev_private_t *dev = fs_dev_get_device_data(oldName);
+
+    if(!r)
+        return -1;
+
     if(!dev) {
         r->_errno = ENODEV;
         return -1;
+    }
+
+    if(!newName) {
+       r->_errno = EINVAL;
+       return -1;
     }
 
     OSLockMutex(dev->pMutex);
@@ -557,6 +654,10 @@ static int fs_dev_rename_r (struct _reent *r, const char *oldName, const char *n
 static int fs_dev_mkdir_r (struct _reent *r, const char *path, int mode)
 {
     fs_dev_private_t *dev = fs_dev_get_device_data(path);
+
+    if(!r)
+        return -1;
+
     if(!dev) {
         r->_errno = ENODEV;
         return -1;
@@ -588,6 +689,10 @@ static int fs_dev_mkdir_r (struct _reent *r, const char *path, int mode)
 static int fs_dev_chmod_r (struct _reent *r, const char *path, int mode)
 {
     fs_dev_private_t *dev = fs_dev_get_device_data(path);
+
+    if(!r)
+        return -1;
+
     if(!dev) {
         r->_errno = ENODEV;
         return -1;
@@ -619,8 +724,17 @@ static int fs_dev_chmod_r (struct _reent *r, const char *path, int mode)
 static int fs_dev_statvfs_r (struct _reent *r, const char *path, struct statvfs *buf)
 {
     fs_dev_private_t *dev = fs_dev_get_device_data(path);
+
+    if(!r)
+        return -1;
+
     if(!dev) {
         r->_errno = ENODEV;
+        return -1;
+    }
+
+    if(!buf) {
+        r->_errno = EINVAL;
         return -1;
     }
 
@@ -683,9 +797,18 @@ static int fs_dev_statvfs_r (struct _reent *r, const char *path, struct statvfs 
 static DIR_ITER *fs_dev_diropen_r (struct _reent *r, DIR_ITER *dirState, const char *path)
 {
     fs_dev_private_t *dev = fs_dev_get_device_data(path);
+
+    if(!r)
+        return NULL;
+
     if(!dev) {
         r->_errno = ENODEV;
         return NULL;
+    }
+
+    if(!dirState) {
+       r->_errno = EINVAL;
+       return NULL;
     }
 
     fs_dev_dir_entry_t *dirIter = (fs_dev_dir_entry_t *)dirState->dirStruct;
@@ -721,7 +844,18 @@ static DIR_ITER *fs_dev_diropen_r (struct _reent *r, DIR_ITER *dirState, const c
 
 static int fs_dev_dirclose_r (struct _reent *r, DIR_ITER *dirState)
 {
-    fs_dev_dir_entry_t *dirIter = (fs_dev_dir_entry_t *)dirState->dirStruct;
+    fs_dev_dir_entry_t *dirIter;
+
+    if(!r)
+        return -1;
+
+    if(!dirState) {
+        r->_errno = EINVAL;
+        return -1;
+    }
+
+    dirIter = (fs_dev_dir_entry_t *)dirState->dirStruct;
+
     if(!dirIter->dev) {
         r->_errno = ENODEV;
         return -1;
@@ -743,7 +877,18 @@ static int fs_dev_dirclose_r (struct _reent *r, DIR_ITER *dirState)
 
 static int fs_dev_dirreset_r (struct _reent *r, DIR_ITER *dirState)
 {
-    fs_dev_dir_entry_t *dirIter = (fs_dev_dir_entry_t *)dirState->dirStruct;
+    fs_dev_dir_entry_t *dirIter;
+
+    if(!r)
+        return -1;
+
+    if(!dirState) {
+        r->_errno = EINVAL;
+        return -1;
+    }
+
+    dirIter = (fs_dev_dir_entry_t *)dirState->dirStruct;
+
     if(!dirIter->dev) {
         r->_errno = ENODEV;
         return -1;
@@ -765,7 +910,18 @@ static int fs_dev_dirreset_r (struct _reent *r, DIR_ITER *dirState)
 
 static int fs_dev_dirnext_r (struct _reent *r, DIR_ITER *dirState, char *filename, struct stat *st)
 {
-    fs_dev_dir_entry_t *dirIter = (fs_dev_dir_entry_t *)dirState->dirStruct;
+    fs_dev_dir_entry_t *dirIter;
+
+    if(!r)
+        return -1;
+
+    if(!dirState) {
+        r->_errno = EINVAL;
+        return -1;
+    }
+
+    dirIter = (fs_dev_dir_entry_t *)dirState->dirStruct;
+
     if(!dirIter->dev) {
         r->_errno = ENODEV;
         return -1;
@@ -845,7 +1001,7 @@ static int fs_dev_add_device (const char *name, const char *mount_path, int fsaF
     int i;
 
     // Sanity check
-    if (!name) {
+    if (!name || !mount_path) {
         errno = EINVAL;
         return -1;
     }
@@ -914,6 +1070,9 @@ static int fs_dev_remove_device (const char *path)
     const devoptab_t *devoptab = NULL;
     char name[128] = {0};
     int i;
+
+    if(!path)
+        return -1;
 
     // Get the device name from the path
     strncpy(name, path, 127);
