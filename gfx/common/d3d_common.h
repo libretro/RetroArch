@@ -93,6 +93,12 @@ void d3d_unlock_rectangle(LPDIRECT3DTEXTURE tex);
 void d3d_set_texture(LPDIRECT3DDEVICE dev, unsigned sampler,
       void *tex_data);
 
+bool d3d_create_vertex_shader(LPDIRECT3DDEVICE dev,
+      const DWORD *a, void **b);
+
+bool d3d_create_pixel_shader(LPDIRECT3DDEVICE dev,
+      const DWORD *a, void **b);
+
 void d3d_free_pixel_shader(LPDIRECT3DDEVICE dev, void *data);
 
 void d3d_free_vertex_shader(LPDIRECT3DDEVICE dev, void *data);

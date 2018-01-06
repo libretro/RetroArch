@@ -1051,6 +1051,44 @@ void d3d_free_pixel_shader(LPDIRECT3DDEVICE dev, void *data)
 #endif
 }
 
+bool d3d_create_vertex_shader(LPDIRECT3DDEVICE dev, const DWORD *a, void **b)
+{
+#ifdef HAVE_D3D9
+   if (!dev)
+      return false;
+#if defined(__cplusplus)
+   if (dev->CreateVertexShader(a, b) != D3D_OK)
+      return false;
+#else
+   if (IDirect3DDevice9_CreateVertexShader(dev, a,
+            (LPDIRECT3DVERTEXSHADER*)b) != D3D_OK)
+      return false;
+#endif
+   return true;
+#else
+   return false;
+#endif
+}
+
+bool d3d_create_pixel_shader(LPDIRECT3DDEVICE dev, const DWORD *a, void **b)
+{
+#ifdef HAVE_D3D9
+   if (!dev)
+      return false;
+#if defined(__cplusplus)
+   if (dev->CreatePixelShader(a, b) != D3D_OK)
+      return false;
+#else
+   if (IDirect3DDevice9_CreatePixelShader(dev, a,
+            (LPDIRECT3DPIXELSHADER*)b) != D3D_OK)
+      return false;
+#endif
+   return true;
+#else
+   return false;
+#endif
+}
+
 bool d3d_set_pixel_shader(LPDIRECT3DDEVICE dev, void *data)
 {
 #ifdef HAVE_D3D9

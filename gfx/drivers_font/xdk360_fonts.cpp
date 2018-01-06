@@ -484,22 +484,20 @@ static HRESULT xdk360_video_font_create_shaders(xdk360_video_font_t * font)
 
          if (hr >= 0)
          {
-            hr = d3dr->CreateVertexShader((const DWORD*)pShaderCode->GetBufferPointer(),
-                  &font->s_FontLocals.m_pFontVertexShader );
+            bool ret = d3d_create_vertex_shader(d3dr, (const DWORD*)pShaderCode->GetBufferPointer(), &font->s_FontLocals.m_pFontVertexShader );
             d3dxbuffer_release(pShaderCode);
 
-            if (hr >= 0)
+            if (!ret)
             {
                hr = D3DXCompileShader(font_hlsl_d3d9_program, sizeof(font_hlsl_d3d9_program)-1 ,
                      NULL, NULL, "main_fragment", "ps.2.0", 0,&pShaderCode, NULL, NULL );
 
                if (hr >= 0)
                {
-                  hr = d3dr->CreatePixelShader((DWORD*)pShaderCode->GetBufferPointer(),
-                        &font->s_FontLocals.m_pFontPixelShader );
+                  ret = d3d_create_pixel_shader(d3dr, (DWORD*)pShaderCode->GetBufferPointer(), &font->s_FontLocals.m_pFontPixelShader);
                   d3dxbuffer_release(pShaderCode);
 
-                  if (hr >= 0) 
+                  if (!ret) 
                   {
                      hr = 0;
                      break;

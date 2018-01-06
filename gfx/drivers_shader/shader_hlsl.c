@@ -81,14 +81,6 @@ typedef struct hlsl_shader_data hlsl_shader_data_t;
 #define ID3DXConstantTable_GetConstantByName(p,a,b)  ((p)->GetConstantByName(a, b))
 #endif
 
-#ifndef IDirect3DDevice9_CreatePixelShader
-#define IDirect3DDevice9_CreatePixelShader(p, a, b) ((p)->CreatePixelShader(a, b))
-#endif
-
-#ifndef IDirect3DDevice9_CreateVertexShader
-#define IDirect3DDevice9_CreateVertexShader(p, a, b) ((p)->CreateVertexShader(a, b))
-#endif
-
 #ifndef ID3DXConstantTable_SetMatrix
 #define ID3DXConstantTable_SetMatrix(p,a,b,c) ((p)->SetMatrix(a,b,c))
 #endif
@@ -281,8 +273,8 @@ static bool hlsl_compile_program(
       goto end;
    }
 
-   IDirect3DDevice9_CreatePixelShader(d3dr, (const DWORD*)ID3DXConstantTable_GetBufferPointer(code_f),  &program->fprg);
-   IDirect3DDevice9_CreateVertexShader(d3dr, (const DWORD*)ID3DXConstantTable_GetBufferPointer(code_v), &program->vprg);
+   d3d_create_pixel_shader(d3dr, (const DWORD*)ID3DXConstantTable_GetBufferPointer(code_f),  &program->fprg);
+   d3d_create_vertex_shader(d3dr, (const DWORD*)ID3DXConstantTable_GetBufferPointer(code_v), &program->vprg);
    d3dxbuffer_release((void*)code_f);
    d3dxbuffer_release((void*)code_v);
 
