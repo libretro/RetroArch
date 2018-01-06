@@ -89,10 +89,6 @@ typedef struct hlsl_shader_data hlsl_shader_data_t;
 #define IDirect3DDevice9_CreateVertexShader(p, a, b) ((p)->CreateVertexShader(a, b))
 #endif
 
-#ifndef IDirect3DDevice9_SetPixelShader
-#define IDirect3DDevice9_SetPixelShader(p, a) ((p)->SetPixelShader(a))
-#endif
-
 #ifndef IDirect3DPixelShader9_Release
 #define IDirect3DPixelShader9_Release(p) ((p)->Release())
 #endif
@@ -512,7 +508,7 @@ static void *hlsl_init(void *data, const char *path)
       hlsl_set_program_attributes(hlsl_data, i);
 
    d3d_set_vertex_shader(d3d->dev, 1, hlsl_data->prg[1].vprg);
-   IDirect3DDevice9_SetPixelShader(d3d->dev, hlsl_data->prg[1].fprg);
+   d3d_set_pixel_shader(d3d->dev, hlsl_data->prg[1].fprg);
 
    return hlsl_data;
 
@@ -544,7 +540,7 @@ static void hlsl_use(void *data, void *shader_data, unsigned idx, bool set_activ
          hlsl_data->active_idx = idx;
 
       d3d_set_vertex_shader(d3dr, idx, hlsl_data->prg[idx].vprg);
-      IDirect3DDevice9_SetPixelShader(d3dr, hlsl_data->prg[idx].fprg);
+      d3d_set_pixel_shader(d3dr, hlsl_data->prg[idx].fprg);
    }
 }
 

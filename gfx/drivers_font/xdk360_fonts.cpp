@@ -632,7 +632,7 @@ static void xdk360_render_msg_post(xdk360_video_font_t * font)
    d3d_set_texture(d3dr, 0, NULL);
    d3d_set_vertex_declaration(d3dr, NULL);
    d3d_set_vertex_shader(d3dr, 0, NULL);
-   D3DDevice_SetPixelShader(d3dr, NULL);
+   d3d_set_pixel_shader(d3dr, NULL);
    d3d_set_render_state(d3dr, D3DRS_VIEWPORTENABLE, font->m_dwSavedState);
 }
 
@@ -661,7 +661,7 @@ static void xdk360_render_msg_pre(xdk360_video_font_t * font)
    d3d_set_render_state(d3dr, D3DRS_VIEWPORTENABLE, FALSE);
    d3d_set_vertex_declaration(d3dr, font->s_FontLocals.m_pFontVertexDecl);
    d3d_set_vertex_shader(d3dr, 0, font->s_FontLocals.m_pFontVertexShader);
-   d3dr->SetPixelShader(font->s_FontLocals.m_pFontPixelShader);
+   d3d_set_pixel_shader(d3dr, font->s_FontLocals.m_pFontPixelShader);
 
    /* Set the texture scaling factor as a vertex shader constant.
     * Call here to avoid load hit store from writing to vTexScale above

@@ -1023,22 +1023,41 @@ void d3d_set_texture(LPDIRECT3DDEVICE dev, unsigned sampler,
 #endif
 }
 
-HRESULT d3d_set_vertex_shader(LPDIRECT3DDEVICE dev, unsigned index,
+bool d3d_set_pixel_shader(LPDIRECT3DDEVICE dev, void *data)
+{
+#ifdef HAVE_D3D9
+   if (!dev)
+      return false;
+#if defined(__cplusplus)
+   if (dev->SetPixelShader(data) != D3D_OK)
+      return true;
+#else
+   if (IDirect3DDevice9_SetPixelShader(dev, data) != D3D_OK)
+      return true;
+#endif
+#endif
+   return false;
+}
+
+bool d3d_set_vertex_shader(LPDIRECT3DDEVICE dev, unsigned index,
       void *data)
 {
 #if defined(_XBOX360)
    LPDIRECT3DVERTEXSHADER shader = (LPDIRECT3DVERTEXSHADER)data;
    D3DDevice_SetVertexShader(dev, shader);
-   return S_OK;
 #elif defined(HAVE_D3D8) && !defined(__cplusplus)
-   return IDirect3DDevice8_SetVertexShader(dev, index);
+   if (IDirect3DDevice8_SetVertexShader(dev, index) != D3D_OK)
+      return false;
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
    LPDIRECT3DVERTEXSHADER shader = (LPDIRECT3DVERTEXSHADER)data;
-   return IDirect3DDevice9_SetVertexShader(dev, shader);
+   if (IDirect3DDevice9_SetVertexShader(dev, shader) != D3D_OK)
+      return false;
 #else
    LPDIRECT3DVERTEXSHADER shader = (LPDIRECT3DVERTEXSHADER)data;
-   return dev->SetVertexShader(shader);
+   if (dev->SetVertexShader(shader) != D3D_OK)
+      return false;
 #endif
+   return true;
 }
 
 
