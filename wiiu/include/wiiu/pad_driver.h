@@ -19,7 +19,7 @@
 
 #ifdef HAVE_CONFIG_H
 #include  "../../config.h"
-#endif // HAVE_CONFIG_H
+#endif /* HAVE_CONFIG_H */
 
 #include <string.h>
 #include <malloc.h>
@@ -63,15 +63,15 @@
  * These are used by the wiimote driver to identify the wiimote configuration
  * attached to the channel.
  */
-// wiimote with Wii U Pro controller
+/* wiimote with Wii U Pro controller */
 #define WIIMOTE_TYPE_PRO     0x1f
-// wiimote with Classic Controller
+/* wiimote with Classic Controller */
 #define WIIMOTE_TYPE_CLASSIC 0x02
-// wiimote with nunchuk
+/* wiimote with nunchuk */
 #define WIIMOTE_TYPE_NUNCHUK 0x01
-// wiimote plus (no accessory attached)
+/* wiimote plus (no accessory attached) */
 #define WIIMOTE_TYPE_WIIPLUS 0x00
-// wiimote not attached on this channel
+/* wiimote not attached on this channel */
 #define WIIMOTE_TYPE_NONE    0xFD
 
 /**
@@ -116,17 +116,17 @@ struct _wiiu_pad_functions {
  */
 
 typedef struct wiiu_hid {
-  // used to register for HID notifications
+  /* used to register for HID notifications */
   HIDClient *client;
-  // list of HID pads
+  /* list of HID pads */
   joypad_connection_t *connections;
-  // size of connections list
+  /* size of connections list */
   unsigned connections_size;
-  // thread state data for HID polling thread
+  /* thread state data for HID polling thread */
   OSThread *polling_thread;
-  // stack space for polling thread
+  /* stack space for polling thread */
   void *polling_thread_stack;
-  // watch variable to tell the polling thread to terminate
+  /* watch variable to tell the polling thread to terminate */
   volatile bool polling_thread_quit;
 } wiiu_hid_t;
 
@@ -180,4 +180,4 @@ extern input_device_driver_t kpad_driver;
 extern input_device_driver_t hidpad_driver;
 extern hid_driver_t wiiu_hid;
 
-#endif // __PAD_DRIVER__H
+#endif /* __PAD_DRIVER__H */

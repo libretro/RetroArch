@@ -43,4 +43,4 @@ extern GX2Shader frame_shader;
 }
 #endif
 
-#endif // __FRAME_SHADER_H_
+#endif /* __FRAME_SHADER_H_ */

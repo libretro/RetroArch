@@ -32,25 +32,25 @@ typedef enum MEMHeapFlags
 
 typedef struct MEMHeapHeader
 {
-   //! Tag indicating which type of heap this is
+   /*! Tag indicating which type of heap this is */
    MEMHeapTag tag;
 
-   //! Link for list this heap is in
+   /*! Link for list this heap is in */
    MEMMemoryLink link;
 
-   //! List of all child heaps in this heap
+   /*! List of all child heaps in this heap */
    MEMMemoryList list;
 
-   //! Pointer to start of allocatable memory
+   /*! Pointer to start of allocatable memory */
    void *dataStart;
 
-   //! Pointer to end of allocatable memory
+   /*! Pointer to end of allocatable memory */
    void *dataEnd;
 
-   //! Lock used when MEM_HEAP_FLAG_USE_LOCK is set.
+   /*! Lock used when MEM_HEAP_FLAG_USE_LOCK is set. */
    OSSpinLock lock;
 
-   //! Flags set during heap creation.
+   /*! Flags set during heap creation. */
    uint32_t flags;
 
    uint32_t __unknown[0x3];

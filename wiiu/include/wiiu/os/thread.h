@@ -16,16 +16,16 @@ enum OS_THREAD_STATE
 {
    OS_THREAD_STATE_NONE             = 0,
 
-   //! Thread is ready to run
+   /*! Thread is ready to run */
    OS_THREAD_STATE_READY            = 1 << 0,
 
-   //! Thread is running
+   /*! Thread is running */
    OS_THREAD_STATE_RUNNING          = 1 << 1,
 
-   //! Thread is waiting, i.e. on a mutex
+   /*! Thread is waiting, i.e. on a mutex */
    OS_THREAD_STATE_WAITING          = 1 << 2,
 
-   //! Thread is about to terminate
+   /*! Thread is about to terminate */
    OS_THREAD_STATE_MORIBUND         = 1 << 3,
 };
 typedef uint8_t OSThreadState;
@@ -40,22 +40,22 @@ typedef uint32_t OSThreadRequest;
 
 enum OS_THREAD_ATTRIB
 {
-   //! Allow the thread to run on CPU0.
+   /*! Allow the thread to run on CPU0. */
    OS_THREAD_ATTRIB_AFFINITY_CPU0   = 1 << 0,
 
-   //! Allow the thread to run on CPU1.
+   /*! Allow the thread to run on CPU1. */
    OS_THREAD_ATTRIB_AFFINITY_CPU1   = 1 << 1,
 
-   //! Allow the thread to run on CPU2.
+   /*! Allow the thread to run on CPU2. */
    OS_THREAD_ATTRIB_AFFINITY_CPU2   = 1 << 2,
 
-   //! Allow the thread to run any CPU.
+   /*! Allow the thread to run any CPU. */
    OS_THREAD_ATTRIB_AFFINITY_ANY    = ((1 << 0) | (1 << 1) | (1 << 2)),
 
-   //! Start the thread detached.
+   /*! Start the thread detached. */
    OS_THREAD_ATTRIB_DETACHED        = 1 << 3,
 
-   //! Enables tracking of stack usage.
+   /*! Enables tracking of stack usage. */
    OS_THREAD_ATTRIB_STACK_USAGE     = 1 << 5
 };
 typedef uint8_t OSThreadAttributes;
@@ -64,7 +64,7 @@ typedef uint8_t OSThreadAttributes;
 
 typedef struct OSContext
 {
-   //! Should always be set to the value OS_CONTEXT_TAG.
+   /*! Should always be set to the value OS_CONTEXT_TAG. */
    uint64_t tag;
 
    uint32_t gpr[32];
@@ -138,93 +138,93 @@ typedef struct OSThread
 {
    OSContext context;
 
-   //! Should always be set to the value OS_THREAD_TAG.
+   /*! Should always be set to the value OS_THREAD_TAG. */
    uint32_t tag;
 
-   //! Bitfield of OS_THREAD_STATE
+   /*! Bitfield of OS_THREAD_STATE */
    OSThreadState state;
 
-   //! Bitfield of OS_THREAD_ATTRIB
+   /*! Bitfield of OS_THREAD_ATTRIB */
    OSThreadAttributes attr;
 
-   //! Unique thread ID
+   /*! Unique thread ID */
    uint16_t id;
 
-   //! Suspend count (increased by OSSuspendThread).
+   /*! Suspend count (increased by OSSuspendThread). */
    int32_t suspendCounter;
 
-   //! Actual priority of thread.
+   /*! Actual priority of thread. */
    int32_t priority;
 
-   //! Base priority of thread, 0 is highest priority, 31 is lowest priority.
+   /*! Base priority of thread, 0 is highest priority, 31 is lowest priority. */
    int32_t basePriority;
 
-   //! Exit value
+   /*! Exit value */
    int32_t exitValue;
 
    uint32_t unknown0[0x9];
 
-   //! Queue the thread is currently waiting on
+   /*! Queue the thread is currently waiting on */
    OSThreadQueue *queue;
 
-   //! Link used for thread queue
+   /*! Link used for thread queue */
    OSThreadLink link;
 
-   //! Queue of threads waiting to join this thread
+   /*! Queue of threads waiting to join this thread */
    OSThreadQueue joinQueue;
 
-   //! Mutex this thread is waiting to lock
+   /*! Mutex this thread is waiting to lock */
    OSMutex *mutex;
 
-   //! Queue of mutexes this thread owns
+   /*! Queue of mutexes this thread owns */
    OSMutexQueue mutexQueue;
 
-   //! Link for global active thread queue
+   /*! Link for global active thread queue */
    OSThreadLink activeLink;
 
-   //! Stack start (top, highest address)
+   /*! Stack start (top, highest address) */
    void *stackStart;
 
-   //! Stack end (bottom, lowest address)
+   /*! Stack end (bottom, lowest address) */
    void *stackEnd;
 
-   //! Thread entry point
+   /*! Thread entry point */
    OSThreadEntryPointFn entryPoint;
 
    uint32_t unknown1[0x77];
 
-   //! Thread specific values, accessed with OSSetThreadSpecific and OSGetThreadSpecific.
+   /*! Thread specific values, accessed with OSSetThreadSpecific and OSGetThreadSpecific. */
    uint32_t specific[0x10];
 
    uint32_t unknown2;
 
-   //! Thread name, accessed with OSSetThreadName and OSGetThreadName.
+   /*! Thread name, accessed with OSSetThreadName and OSGetThreadName. */
    const char *name;
 
    uint32_t unknown3;
 
-   //! The stack pointer passed in OSCreateThread.
+   /*! The stack pointer passed in OSCreateThread. */
    void *userStackPointer;
 
-   //! Called just before thread is terminated, set with OSSetThreadCleanupCallback
+   /*! Called just before thread is terminated, set with OSSetThreadCleanupCallback */
    OSThreadCleanupCallbackFn cleanupCallback;
 
-   //! Called just after a thread is terminated, set with OSSetThreadDeallocator
+   /*! Called just after a thread is terminated, set with OSSetThreadDeallocator */
    OSThreadDeallocatorFn deallocator;
 
-   //! If TRUE then a thread can be cancelled or suspended, set with OSSetThreadCancelState
+   /*! If TRUE then a thread can be cancelled or suspended, set with OSSetThreadCancelState */
    BOOL cancelState;
 
-   //! Current thread request, used for cancelleing and suspending the thread.
+   /*! Current thread request, used for cancelleing and suspending the thread. */
    OSThreadRequest requestFlag;
 
-   //! Pending suspend request count
+   /*! Pending suspend request count */
    int32_t needSuspend;
 
-   //! Result of thread suspend
+   /*! Result of thread suspend */
    int32_t suspendResult;
 
-   //! Queue of threads waiting for a thread to be suspended.
+   /*! Queue of threads waiting for a thread to be suspended. */
    OSThreadQueue suspendQueue;
 
    uint32_t unknown4[0x2B];

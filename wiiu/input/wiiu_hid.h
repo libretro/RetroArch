@@ -53,4 +53,4 @@ static void wiiu_hid_read_loop_callback(uint32_t handle, int32_t error,
                uint8_t *buffer, uint32_t buffer_size, void *userdata);
 static void wiiu_hid_polling_thread_cleanup(OSThread *thread, void *stack);
 
-#endif // __WIIU_HID__H
+#endif /* __WIIU_HID__H */

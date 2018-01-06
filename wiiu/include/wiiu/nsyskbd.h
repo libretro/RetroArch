@@ -26,10 +26,10 @@ typedef enum _KBDModifier
 typedef struct _KBDKeyEvent
 {
     unsigned char  channel;
-    unsigned char  scancode;    // scancode
-    KEYState  state;            // when held, value is 0x03, which is KBD_DOWN & KBD_REPEAT
-    KBDModifier modifier;       // modifier state
-    unsigned short  UTF16;	    // unicode, if any
+    unsigned char  scancode;    /* scancode */
+    KEYState  state;            /* when held, value is 0x03, which is KBD_DOWN & KBD_REPEAT */
+    KBDModifier modifier;       /* modifier state */
+    unsigned short  UTF16;	    /* unicode, if any */
 } KBDKeyEvent;
 
 char KBDSetup(void *connection_callback, void *disconnection_callback, void *key_callback);

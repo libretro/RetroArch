@@ -35,4 +35,4 @@ int unmount_sd_fat(const char *path);
 }
 #endif
 
-#endif // __SD_FAT_DEVOPTAB_H_
+#endif /* __SD_FAT_DEVOPTAB_H_ */
