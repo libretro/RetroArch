@@ -657,7 +657,11 @@ void d3d_make_d3dpp(void *data,
 static bool d3d_init_base(void *data, const video_info_t *info)
 {
    D3DPRESENT_PARAMETERS d3dpp;
+#ifdef _XBOX
    HWND focus_window = NULL;
+#else
+   HWND focus_window = win32_get_window();
+#endif
    d3d_video_t *d3d  = (d3d_video_t*)data;
 
    d3d_make_d3dpp(d3d, info, &d3dpp);
@@ -669,13 +673,6 @@ static bool d3d_init_base(void *data, const video_info_t *info)
       RARCH_ERR("[D3D]: Failed to create D3D interface.\n");
       return false;
    }
-
-#ifdef _XBOX360
-   d3d->cur_mon_id = 0;
-#endif
-#ifndef _XBOX
-   focus_window    = win32_get_window();
-#endif
 
    if (!d3d_create_device(&d3d->dev, &d3dpp,
             g_pD3D,
@@ -1024,6 +1021,7 @@ static bool d3d_init_internal(d3d_video_t *d3d,
    if (!d3d->menu)
       return false;
 
+   d3d->cur_mon_id           = 0;
    d3d->menu->tex_coords[0]  = 0;
    d3d->menu->tex_coords[1]  = 0;
    d3d->menu->tex_coords[2]  = 1;
