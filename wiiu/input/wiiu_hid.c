@@ -77,7 +77,7 @@ static int16_t wiiu_hid_joypad_axis(void *data, unsigned port, uint32_t joyaxis)
 
 static void *wiiu_hid_init(void)
 {
-   RARCH_LOG("[hid]: wiiu_hid: init\n");
+   RARCH_LOG("[hid]: initializing HID subsystem\n");
    wiiu_hid_t *hid = new_hid();
    HIDClient *client = new_hidclient();
 
@@ -135,10 +135,28 @@ static void wiiu_hid_poll(void *data)
 static void wiiu_hid_send_control(void *data, uint8_t *buf, size_t size)
 {
    wiiu_adapter_t *adapter = (wiiu_adapter_t *)data;
-   if (!adapter)
-      return;
+   int32_t result;
 
-   HIDWrite(adapter->handle, buf, size, NULL, NULL);
+   if (!adapter) {
+      RARCH_ERR("[hid]: send_control: bad adapter.\n");
+      return;
+   }
+
+   memset(adapter->tx_buffer, 0, adapter->tx_size);
+   memcpy(adapter->tx_buffer, buf, size);
+
+   // From testing, HIDWrite returns an error that looks like it's two
+   // int16_t's bitmasked together. For example, one error I saw when trying
+   // to write a single byte was 0xffe2ff97, which works out to -30 and -105.
+   //  I have no idea what these mean.
+   result = HIDWrite(adapter->handle, adapter->tx_buffer, adapter->tx_size, NULL, NULL);
+   if(result < 0) {
+     int16_t r1, r2;
+
+     r1 = (result & 0x0000FFFF);
+     r2 = ((result & 0xFFFF0000) >> 16);
+     RARCH_LOG("[hid]: write failed: %08x (%d:%d)\n", result, r2, r1);
+  }
 }
 
 static int32_t wiiu_hid_set_report(void *data, uint8_t report_type,
@@ -356,12 +374,9 @@ static void wiiu_hid_attach(wiiu_hid_t *hid, wiiu_attach_event *event)
    RARCH_LOG("[hid]: adding to adapter list\n");
    synchronized_add_to_adapters_list(adapter);
 
-#if 0
-   /* this is breaking again. Not sure why. But disabling it now so the
-    * startup/shutdown times aren't affected by the blocking call. */
    RARCH_LOG("[hid]: starting read loop\n");
    wiiu_start_read_loop(adapter);
-#endif
+
    return;
 
 error:
@@ -429,10 +444,11 @@ static void log_buffer(uint8_t *data, uint32_t len)
 static void wiiu_hid_do_read(wiiu_adapter_t *adapter,
       uint8_t *data, uint32_t length)
 {
- /*  log_buffer(data, length);
-  * do_sampling()
-  * do other stuff?
-  */
+#if 0
+   log_buffer(data, length);
+#endif
+
+   // TODO: get this data to the connect_xxx driver somehow.
 }
 
 static void wiiu_hid_read_loop_callback(uint32_t handle, int32_t error,
@@ -593,7 +609,7 @@ static void delete_hidclient(HIDClient *client)
 
 static wiiu_adapter_t *new_adapter(wiiu_attach_event *event)
 {
-   wiiu_adapter_t *adapter  = alloc_zeroed(64, sizeof(wiiu_adapter_t));
+   wiiu_adapter_t *adapter  = alloc_zeroed(32, sizeof(wiiu_adapter_t));
 
    if (!adapter)
       return NULL;
@@ -601,7 +617,9 @@ static wiiu_adapter_t *new_adapter(wiiu_attach_event *event)
    adapter->handle          = event->handle;
    adapter->interface_index = event->interface_index;
    adapter->rx_size         = event->max_packet_size_rx;
-   adapter->rx_buffer       = alloc_zeroed(64, adapter->rx_size);
+   adapter->rx_buffer       = alloc_zeroed(32, adapter->rx_size);
+   adapter->tx_size         = event->max_packet_size_tx;
+   adapter->tx_buffer       = alloc_zeroed(32, adapter->tx_size);
 
    return adapter;
 }
