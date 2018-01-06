@@ -42,7 +42,7 @@ typedef struct hlsl_d3d9_renderchain
 } hlsl_d3d9_renderchain_t;
 
 /* TODO/FIXME - this forward declaration should not be necesary */
-void hlsl_set_proj_matrix(void *data, XMMATRIX rotation_value);
+void hlsl_set_proj_matrix(void *data, void *matrix_data);
 
 static void hlsl_d3d9_renderchain_set_mvp(
       void *chain_data,
@@ -50,14 +50,21 @@ static void hlsl_d3d9_renderchain_set_mvp(
       unsigned vp_height, unsigned rotation)
 {
    video_shader_ctx_mvp_t mvp;
+   D3DMATRIX proj, ortho, rot, tmp;
    d3d_video_t      *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
 
-   hlsl_set_proj_matrix((void*)&d3d->shader,
-         XMMatrixRotationZ(rotation * (M_PI / 2.0)));
+   d3d_matrix_ortho_off_center_lh(&ortho, 0, vp_width, 0, vp_height, 0, 1);
+   d3d_matrix_identity(&rot);
+   d3d_matrix_rotation_z(&rot, rotation * (M_PI / 2.0));
+
+   d3d_matrix_multiply(&proj, &ortho, &rot);
+   d3d_matrix_transpose(&tmp, &proj);
+
+   hlsl_set_proj_matrix((void*)&d3d->shader, &rot);
 
    mvp.data   = d3d;
-   mvp.matrix = NULL;
+   mvp.matrix = &rot;
 
    video_driver_set_mvp(&mvp);
 }

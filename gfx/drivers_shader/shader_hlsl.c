@@ -54,7 +54,7 @@ struct shader_program_hlsl_data
 
    LPD3DXCONSTANTTABLE v_ctable;
    LPD3DXCONSTANTTABLE f_ctable;
-   XMMATRIX mvp_val;   /* TODO: Move to D3DXMATRIX here */
+   D3DXMATRIX mvp_val;
 };
 
 typedef struct hlsl_shader_data hlsl_shader_data_t;
@@ -153,11 +153,12 @@ struct hlsl_shader_data
    struct video_shader *cg_shader;
 };
 
-void hlsl_set_proj_matrix(void *data, XMMATRIX rotation_value)
+void hlsl_set_proj_matrix(void *data, void *matrix_data)
 {
    hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)data;
-   if (hlsl)
-      hlsl->prg[hlsl->active_idx].mvp_val = rotation_value;
+   const D3DMATRIX *matrix  = (const D3DMATRIX*)matrix_data;
+   if (hlsl && matrix)
+      hlsl->prg[hlsl->active_idx].mvp_val = *matrix;
 }
 
 static void hlsl_set_uniform_parameter(
@@ -351,7 +352,7 @@ static void hlsl_set_program_attributes(hlsl_shader_data_t *hlsl, unsigned i)
    hlsl->prg[i].frame_cnt_v = get_constant_by_name(NULL, "$IN.frame_count",     hlsl->prg[i].v_ctable);
    hlsl->prg[i].frame_dir_v = get_constant_by_name(NULL, "$IN.frame_direction", hlsl->prg[i].v_ctable);
    hlsl->prg[i].mvp         = get_constant_by_name(NULL, "$modelViewProj",      hlsl->prg[i].v_ctable);
-   hlsl->prg[i].mvp_val     = XMMatrixIdentity();
+   d3d_matrix_identity(&hlsl->prg[i].mvp_val);
 }
 
 static bool hlsl_load_shader(hlsl_shader_data_t *hlsl,
@@ -599,7 +600,7 @@ static bool hlsl_set_mvp(void *data, void *shader_data, const void *mat_data)
    {
       ID3DXConstantTable_SetMatrix(hlsl_data->prg[hlsl_data->active_idx].v_ctable, d3dr,
 		  hlsl_data->prg[hlsl_data->active_idx].mvp,
-		  (D3DXMATRIX*)&hlsl_data->prg[hlsl_data->active_idx].mvp_val);
+		  &hlsl_data->prg[hlsl_data->active_idx].mvp_val);
       return true;
    }
    return false;
