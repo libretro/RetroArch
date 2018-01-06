@@ -500,6 +500,21 @@ static void d3d_deinitialize(d3d_video_t *d3d)
 #define FS_PRESENTINTERVAL(pp) ((pp)->PresentationInterval)
 #endif
 
+static D3DFORMAT d3d_get_color_format(bool rgb32, bool windowed)
+{
+   D3DFORMAT fmt = D3DFMT_UNKNOWN;
+#ifdef _XBOX
+   if (info->rgb32)
+      fmt        = D3DFMT_X8R8G8B8;
+   else
+      fmt        = D3DFMT_LIN_R5G6B5;
+#else
+   if (!windowed)
+      fmt        = D3DFMT_X8R8G8B8;
+#endif
+   return fmt;
+}
+
 void d3d_make_d3dpp(void *data,
       const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp)
 {
@@ -540,20 +555,16 @@ void d3d_make_d3dpp(void *data,
       }
    }
 
-   d3dpp->SwapEffect = D3DSWAPEFFECT_DISCARD;
-   d3dpp->BackBufferCount = 2;
-#ifdef _XBOX
-   d3dpp->BackBufferFormat =
-#ifdef _XBOX360
-      global->console.screen.gamma_correction ?
-      (D3DFORMAT)MAKESRGBFMT(info->rgb32 ?
-            D3DFMT_X8R8G8B8 : D3DFMT_LIN_R5G6B5) :
+   d3dpp->SwapEffect          = D3DSWAPEFFECT_DISCARD;
+   d3dpp->BackBufferCount     = 2;
+   d3dpp->BackBufferFormat    = d3d_get_color_format(info->rgb32, d3dpp->Windowed);
+#ifndef _XBOX
+   d3dpp->hDeviceWindow       = win32_get_window();
 #endif
-      info->rgb32 ? D3DFMT_X8R8G8B8 : D3DFMT_LIN_R5G6B5;
-#else
-   d3dpp->hDeviceWindow    = win32_get_window();
-   d3dpp->BackBufferFormat = !d3dpp->Windowed ?
-      D3DFMT_X8R8G8B8 : D3DFMT_UNKNOWN;
+
+#ifdef _XBOX360
+   if (global->console.screen.gamma_correction)
+      d3dpp->BackBufferFormat = (D3DFORMAT)MAKESRGBFMT(d3dpp->BackBufferFormat);
 #endif
 
    if (!d3dpp->Windowed)
