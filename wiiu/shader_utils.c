@@ -452,6 +452,7 @@ GFDFile *gfd_open(const char *filename)
          if(gfd->vs->program)
             continue;
 
+         GX2Invalidate(GX2_INVALIDATE_MODE_CPU_SHADER, block->data, block->header.dataSize);
          gfd->vs->program = block->data;
          break;
 
@@ -469,6 +470,7 @@ GFDFile *gfd_open(const char *filename)
          if(gfd->ps->program)
             continue;
 
+         GX2Invalidate(GX2_INVALIDATE_MODE_CPU_SHADER, block->data, block->header.dataSize);
          gfd->ps->program = block->data;
          break;
 

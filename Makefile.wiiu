@@ -64,12 +64,15 @@ else
    DEFINES += -DHAVE_KEYMAPPER
    DEFINES += -DHAVE_UPDATE_ASSETS
    DEFINES += -DHAVE_FILTERS_BUILTIN
+   DEFINES += -DHAVE_SLANG
 
    OBJ += wiiu/system/missing_libc_functions.o
    OBJ += wiiu/shader_utils.o
    OBJ += wiiu/tex_shader.o
    OBJ += wiiu/sprite_shader.o
    OBJ += wiiu/frame_shader.o
+   OBJ += gfx/drivers_shader/slang_preprocess.o
+   OBJ += gfx/drivers_shader/glslang_util.o
 
    ifeq ($(GRIFFIN_BUILD), 1)
    	OBJ += griffin/griffin.o
