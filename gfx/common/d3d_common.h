@@ -192,6 +192,8 @@ bool d3d_check_device_type(LPDIRECT3D d3d,
 bool d3dx_create_font_indirect(LPDIRECT3DDEVICE dev,
       void *desc, void **font_data);
 
+void d3dxbuffer_release(void *data);
+
 D3DTEXTUREFILTERTYPE d3d_translate_filter(unsigned type);
 
 RETRO_END_DECLS

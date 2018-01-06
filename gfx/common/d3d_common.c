@@ -1477,3 +1477,24 @@ bool d3dx_create_font_indirect(LPDIRECT3DDEVICE dev,
    return false;
 #endif
 }
+
+void d3dxbuffer_release(void *data)
+{
+#ifdef HAVE_D3D9
+#ifdef HAVE_D3DX
+#ifdef __cplusplus
+   ID3DXBuffer *p = (ID3DXBuffer*)data;
+#else
+   LPD3DXBUFFER p = (LPD3DXBUFFER)data;
+#endif
+   if (!p)
+      return;
+
+#ifdef __cplusplus
+   p->Release();
+#else
+   p->lpVtbl->Release(p);
+#endif
+#endif
+#endif
+}

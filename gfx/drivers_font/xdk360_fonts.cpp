@@ -409,8 +409,8 @@ typedef struct GLYPH_ATTR
 typedef struct
 {
    D3DVertexDeclaration *m_pFontVertexDecl;
-   D3DVertexShader *m_pFontVertexShader;
-   D3DPixelShader *m_pFontPixelShader;
+   D3DVertexShader      *m_pFontVertexShader;
+   D3DPixelShader       *m_pFontPixelShader;
 } Font_Locals_t;
 
 typedef struct
@@ -486,7 +486,7 @@ static HRESULT xdk360_video_font_create_shaders(xdk360_video_font_t * font)
          {
             hr = d3dr->CreateVertexShader((const DWORD*)pShaderCode->GetBufferPointer(),
                   &font->s_FontLocals.m_pFontVertexShader );
-            pShaderCode->Release();
+            d3dxbuffer_release(pShaderCode);
 
             if (hr >= 0)
             {
@@ -497,7 +497,7 @@ static HRESULT xdk360_video_font_create_shaders(xdk360_video_font_t * font)
                {
                   hr = d3dr->CreatePixelShader((DWORD*)pShaderCode->GetBufferPointer(),
                         &font->s_FontLocals.m_pFontPixelShader );
-                  pShaderCode->Release();
+                  d3dxbuffer_release(pShaderCode);
 
                   if (hr >= 0) 
                   {

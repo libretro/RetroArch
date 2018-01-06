@@ -77,10 +77,6 @@ typedef struct hlsl_shader_data hlsl_shader_data_t;
 #define ID3DXConstantTable_GetBufferPointer(p) (p)->GetBufferPointer()
 #endif
 
-#ifndef ID3DXBuffer_Release
-#define ID3DXBuffer_Release(p) (p)->Release()
-#endif
-
 #ifndef ID3DXConstantTable_GetConstantByName
 #define ID3DXConstantTable_GetConstantByName(p,a,b)  ((p)->GetConstantByName(a, b))
 #endif
@@ -125,10 +121,6 @@ typedef struct hlsl_shader_data hlsl_shader_data_t;
 
 #ifndef ID3DXConstantTable_GetBufferPointer
 #define ID3DXConstantTable_GetBufferPointer(p) (p)->lpVtbl->GetBufferPointer(p)
-#endif
-
-#ifndef ID3DXBuffer_Release
-#define ID3DXBuffer_Release(p) (p)->lpVtbl->Release(p)
 #endif
 
 #ifndef ID3DXConstantTable_GetConstantByName
@@ -303,18 +295,14 @@ static bool hlsl_compile_program(
 
    IDirect3DDevice9_CreatePixelShader(d3dr, (const DWORD*)ID3DXConstantTable_GetBufferPointer(code_f),  &program->fprg);
    IDirect3DDevice9_CreateVertexShader(d3dr, (const DWORD*)ID3DXConstantTable_GetBufferPointer(code_v), &program->vprg);
-   ID3DXBuffer_Release(code_f);
-   ID3DXBuffer_Release(code_v);
+   d3dxbuffer_release((void*)code_f);
+   d3dxbuffer_release((void*)code_v);
 
 end:
    if (listing_f)
-   {
-      ID3DXBuffer_Release(listing_f);
-   }
+      d3dxbuffer_release((void*)listing_f);
    if (listing_v)
-   {
-      ID3DXBuffer_Release(listing_v);
-   }
+      d3dxbuffer_release((void*)listing_v);
    return ret;
 }
 
