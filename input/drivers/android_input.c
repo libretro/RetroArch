@@ -910,7 +910,7 @@ static void handle_hotplug(android_input_t *android,
     */
    if(strstr(device_model, "SHIELD Android TV") && (
       strstr(device_name, "Virtual") ||
-      strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.03")))
+      strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.0")))
    {
       /* only use the hack if the device is one of the built-in devices */
       RARCH_LOG("Special Device Detected: %s\n", device_model);
@@ -940,7 +940,7 @@ static void handle_hotplug(android_input_t *android,
          /* apply the hack only for the first controller
           * store the id for later use
          */
-         if (strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.03")
+         if (strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.0")
                && android->pads_connected==0)
             pad_id1 = id;
          else if (strstr(device_name, "Virtual") && pad_id1 != -1)
