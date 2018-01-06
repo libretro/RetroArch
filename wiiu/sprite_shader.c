@@ -35,30 +35,30 @@ static struct
       END_OF_PROGRAM
    },
    {
-      ALU_MOV_x2(_R127,_x, _R3,_y), //@64
+      ALU_MOV_x2(_R127,_x, _R3,_y), /* @64 */
       ALU_MOV_x2(__,_y, _R3,_x),
       ALU_MOV_x2(_R127,_z, _R3,_w),
-      ALU_MOV_x2(__,_w, _R3,_z), //@70
+      ALU_MOV_x2(__,_w, _R3,_z), /* @70 */
       ALU_RECIP_IEEE(__,__, KC0(0), _x) SCL_210
       ALU_LAST,
       ALU_MUL_IEEE(_R0,_z, ALU_SRC_PV, _w, ALU_SRC_PS, _x),
       ALU_MUL_IEEE(__,_w, ALU_SRC_PV,_y, ALU_SRC_PS,_x),
       ALU_RECIP_IEEE(__,_z, KC0(0),_y) SCL_210
       ALU_LAST,
-      ALU_ADD(_R0,_x, ALU_SRC_PV,_w, ALU_SRC_1 _NEG,_x), //@80
+      ALU_ADD(_R0,_x, ALU_SRC_PV,_w, ALU_SRC_1 _NEG,_x), /* @80 */
       ALU_MUL_IEEE(__,_z, _R127,_x, ALU_SRC_PS,_x),
       ALU_MUL_IEEE(_R0,_w, _R127,_z, ALU_SRC_PS,_x),
       ALU_RECIP_IEEE(__,__, KC1(0),_x) SCL_210
       ALU_LAST,
       ALU_MUL_IEEE(_R3,_x, _R2,_x, ALU_SRC_PS,_x),
-      ALU_ADD(_R0,_y, ALU_SRC_PV _NEG,_z, ALU_SRC_1,_x), //@90
+      ALU_ADD(_R0,_y, ALU_SRC_PV _NEG,_z, ALU_SRC_1,_x), /* @90 */
       ALU_MUL_IEEE(_R3,_z, _R2,_z, ALU_SRC_PS,_x),
       ALU_RECIP_IEEE(__,__, KC1(0),_y) SCL_210
       ALU_LAST,
       ALU_MUL_IEEE(_R3,_y, _R2,_y, ALU_SRC_PS,_x),
       ALU_MUL_IEEE(_R3,_w, _R2,_w, ALU_SRC_PS,_x)
       ALU_LAST,
-      ALU_MOV(_R1,_x, _R1,_x), //@100
+      ALU_MOV(_R1,_x, _R1,_x), /* @100 */
       ALU_MOV(_R1,_y, _R1,_y),
       ALU_MOV(_R1,_z, _R1,_z),
       ALU_MOV(_R1,_w, _R1,_w)
@@ -74,9 +74,9 @@ static struct
 __attribute__((aligned(GX2_SHADER_ALIGNMENT)))
 static struct
 {
-   u64 cf[32];     // @0
-   u64 alu[16];    // @32
-   u64 tex[1 * 2]; // @48
+   u64 cf[32];     /* @0 */
+   u64 alu[16];    /* @32 */
+   u64 tex[1 * 2]; /* @48 */
 } ps_program =
 {
    {
@@ -100,9 +100,9 @@ static struct
 __attribute__((aligned(GX2_SHADER_ALIGNMENT)))
 static struct
 {
-   u64 cf[32];     // @0
-   u64 alu[80-32]; // @32
-   u64 tex[3 * 2]; // @80
+   u64 cf[32];     /* @0 */
+   u64 alu[80-32]; /* @32 */
+   u64 tex[3 * 2]; /* @80 */
 } gs_program =
 {
    {
@@ -169,7 +169,7 @@ static struct
       ALU_LAST,
    },
    {
-      VTX_FETCH(_R7,_x,_y,_z,_w, _R0,_x, _b(159), FETCH_TYPE(NO_INDEX_OFFSET), MEGA(16), OFFSET(0)), // @160
+      VTX_FETCH(_R7,_x,_y,_z,_w, _R0,_x, _b(159), FETCH_TYPE(NO_INDEX_OFFSET), MEGA(16), OFFSET(0)), /* @160 */
       VTX_FETCH(_R1,_x,_y,_z,_w, _R0,_x, _b(159), FETCH_TYPE(NO_INDEX_OFFSET), MEGA(16), OFFSET(32)),
       VTX_FETCH(_R0,_x,_y,_z,_w, _R0,_x, _b(159), FETCH_TYPE(NO_INDEX_OFFSET), MEGA(16), OFFSET(16)),
    }
@@ -178,8 +178,8 @@ static struct
 __attribute__((aligned(GX2_SHADER_ALIGNMENT)))
 static struct
 {
-   u64 cf[16];     // @0
-   u64 vtx[3 * 2]; // @16
+   u64 cf[16];     /* @0 */
+   u64 vtx[3 * 2]; /* @16 */
 } gs_copy_program=
 {
    {

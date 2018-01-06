@@ -3,4 +3,4 @@
 
 void InitFunctionPointers(void);
 
-#endif // DYNAMIC_H
+#endif /* DYNAMIC_H */

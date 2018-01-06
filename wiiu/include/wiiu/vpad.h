@@ -86,13 +86,13 @@ typedef enum VPADButtons
 
 typedef enum VPADTouchPadValidity
 {
-   //! Both X and Y touchpad positions are accurate
+   /*! Both X and Y touchpad positions are accurate */
    VPAD_VALID           = 0x0,
 
-   //! X position is inaccurate
+   /*! X position is inaccurate */
    VPAD_INVALID_X       = 0x1,
 
-   //! Y position is inaccurate
+   /*! Y position is inaccurate */
    VPAD_INVALID_Y       = 0x2,
 } VPADTouchPadValidity;
 
@@ -158,13 +158,13 @@ typedef struct VPADStatus
 
    uint16_t __unknown0;
 
-   //! Current touch position on DRC
+   /*! Current touch position on DRC */
    VPADTouchData tpNormal;
 
-   //! Filtered touch position, first level of smoothing
+   /*! Filtered touch position, first level of smoothing */
    VPADTouchData tpFiltered1;
 
-   //! Filtered touch position, second level of smoothing
+   /*! Filtered touch position, second level of smoothing */
    VPADTouchData tpFiltered2;
 
    uint32_t __unknown1[0xA];
@@ -177,7 +177,7 @@ typedef struct VPADStatus
    uint32_t __unknown2[0x2];
 }VPADStatus;
 
-//! Deprecated
+/*! Deprecated */
 void VPADInit();
 
 int32_t VPADRead(uint32_t chan, VPADStatus *buffers, uint32_t count, VPADReadError *error);

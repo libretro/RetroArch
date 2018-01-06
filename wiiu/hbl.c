@@ -50,27 +50,27 @@ typedef struct _memory_values_t
 
 static const memory_values_t mem_vals_540[] =
 {
-    { 0x2E609EFC, 0x2FF82000 }, // 26083 kB
-    { 0x29030800, 0x293F6000 }, // 3864 kB
-    { 0x288EEC30, 0x28B06800 }, // 2144 kB
-    { 0x2D3B966C, 0x2D894000 }, // 4971 kB
-    { 0x2CB56370, 0x2D1EF000 }, // 6756 kB
-    { 0x2D8AD3D8, 0x2E000000 }, // 7499 kB
-    { 0x2970200C, 0x298B9800 }, // 1759 kB
-    { 0x2A057B68, 0x2A1B9000 }, // 1414 kB
-    { 0x2ABBCC4C, 0x2ACB9000 }, // 1010 kB
+    { 0x2E609EFC, 0x2FF82000 }, /* 26083 kB */
+    { 0x29030800, 0x293F6000 }, /* 3864 kB */
+    { 0x288EEC30, 0x28B06800 }, /* 2144 kB */
+    { 0x2D3B966C, 0x2D894000 }, /* 4971 kB */
+    { 0x2CB56370, 0x2D1EF000 }, /* 6756 kB */
+    { 0x2D8AD3D8, 0x2E000000 }, /* 7499 kB */
+    { 0x2970200C, 0x298B9800 }, /* 1759 kB */
+    { 0x2A057B68, 0x2A1B9000 }, /* 1414 kB */
+    { 0x2ABBCC4C, 0x2ACB9000 }, /* 1010 kB */
     {0, 0}
 };
 
 static inline void memoryAddArea(int start, int end, int cur_index)
 {
-    // Create and copy new memory area
+    /* Create and copy new memory area */
     s_mem_area * mem_area = MEM_AREA_TABLE;
     mem_area[cur_index].address = start;
     mem_area[cur_index].size    = end - start;
     mem_area[cur_index].next    = 0;
 
-    // Fill pointer to this area in the previous area
+    /* Fill pointer to this area in the previous area */
     if (cur_index > 0)
     {
         mem_area[cur_index - 1].next = &mem_area[cur_index];
@@ -89,13 +89,13 @@ static void memoryInitAreaTable(u32 args_size)
 {
     u32 ApplicationMemoryEnd = (u32)getApplicationEndAddr() + args_size;
 
-    // This one seems to be available on every firmware and therefore its our code area but also our main RPX area behind our code
-    // 22876 kB - our application    // ok
+    /* This one seems to be available on every firmware and therefore its our code area but also our main RPX area behind our code */
+    /* 22876 kB - our application      ok  */
     memoryAddArea(ApplicationMemoryEnd + 0x30000000, 0x30000000 + 0x01E20000, 0);
 
     const memory_values_t * mem_vals = mem_vals_540;
 
-    // Fill entries
+    /* Fill entries */
     int i = 0;
     while (mem_vals[i].start_address)
     {
@@ -116,10 +116,10 @@ static int HomebrewCopyMemory(u8 *address, u32 bytes, u32 args_size)
    RPX_MAX_SIZE = 0x40000000;
    RPX_MAX_CODE_SIZE = 0x03000000;
 
-   // check if we load an RPX or an ELF
+   /* check if we load an RPX or an ELF */
    if (*(u16 *)&address[7] != 0xCAFE)
    {
-      // assume ELF
+      /* assume ELF */
       printf("loading ELF file \n");
 
       ELF_DATA_ADDR = (u32)getApplicationEndAddr() + args_size;
@@ -128,13 +128,13 @@ static int HomebrewCopyMemory(u8 *address, u32 bytes, u32 args_size)
    }
    else
    {
-      // RPX
+      /* RPX */
       printf("loading RPX file \n");
 
       ELF_DATA_ADDR = MEM_AREA_TABLE->address;
    }
 
-   //! if we load an ELF file
+   /*! if we load an ELF file */
    if (ELF_DATA_ADDR < 0x01000000)
    {
 
@@ -211,7 +211,7 @@ int HBL_loadToMemory(const char *filepath, u32 args_size)
       return -1;
    }
 
-   // Copy rpl in memory
+   /* Copy rpl in memory */
    while (bytesRead < fileSize)
    {
       printf("progress: %f        \r", 100.0f * (f32)bytesRead / (f32)fileSize);

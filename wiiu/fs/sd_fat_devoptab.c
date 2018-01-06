@@ -87,14 +87,14 @@ static sd_fat_private_t *sd_fat_get_device_data(const char *path)
     char name[128] = {0};
     int i;
 
-    // Get the device name from the path
+    /* Get the device name from the path */
     strncpy(name, path, 127);
     strtok(name, ":/");
 
-    // Search the devoptab table for the specified device name
-    // NOTE: We do this manually due to a 'bug' in GetDeviceOpTab
-    //       which ignores names with suffixes and causes names
-    //       like "ntfs" and "ntfs1" to be seen as equals
+    /* Search the devoptab table for the specified device name */
+    /* NOTE: We do this manually due to a 'bug' in GetDeviceOpTab */
+    /*       which ignores names with suffixes and causes names */
+    /*       like "ntfs" and "ntfs1" to be seen as equals */
     for (i = 3; i < STD_MAX; i++) {
         devoptab = devoptab_list[i];
         if (devoptab && devoptab->name) {
@@ -109,11 +109,11 @@ static sd_fat_private_t *sd_fat_get_device_data(const char *path)
 
 static char *sd_fat_real_path (const char *path, sd_fat_private_t *dev)
 {
-    // Sanity check
+    /* Sanity check */
     if (!path)
         return NULL;
 
-    // Move the path pointer to the start of the actual path
+    /* Move the path pointer to the start of the actual path */
     if (strchr(path, ':') != NULL) {
         path = strchr(path, ':') + 1;
     }
@@ -140,7 +140,7 @@ static int sd_fat_open_r (struct _reent *r, void *fileStruct, const char *path, 
     sd_fat_file_state_t *file = (sd_fat_file_state_t *)fileStruct;
 
     file->dev = dev;
-    // Determine which mode the file is opened for
+    /* Determine which mode the file is opened for */
     file->flags = flags;
 
     const char *mode_str;
@@ -366,7 +366,7 @@ static ssize_t sd_fat_read_r (struct _reent *r, void* fd, char *ptr, size_t len)
         }
         else if(result == 0)
         {
-            //! TODO: error on read_size > 0
+            /*! TODO: error on read_size > 0 */
             break;
         }
         else
@@ -393,7 +393,7 @@ static int sd_fat_fstat_r (struct _reent *r, void* fd, struct stat *st)
 
     OSLockMutex(file->dev->pMutex);
 
-    // Zero out the stat buffer
+    /* Zero out the stat buffer */
     memset(st, 0, sizeof(struct stat));
 
     FSStat__ stats;
@@ -409,7 +409,7 @@ static int sd_fat_fstat_r (struct _reent *r, void* fd, struct stat *st)
     st->st_blocks = (stats.size + 511) >> 9;
     st->st_nlink = 1;
 
-    // Fill in the generic entry stats
+    /* Fill in the generic entry stats */
     st->st_dev = stats.ent_id;
     st->st_uid = stats.owner_id;
     st->st_gid = stats.group_id;
@@ -475,7 +475,7 @@ static int sd_fat_stat_r (struct _reent *r, const char *path, struct stat *st)
 
     OSLockMutex(dev->pMutex);
 
-    // Zero out the stat buffer
+    /* Zero out the stat buffer */
     memset(st, 0, sizeof(struct stat));
 
     char *real_path = sd_fat_real_path(path, dev);
@@ -497,12 +497,12 @@ static int sd_fat_stat_r (struct _reent *r, const char *path, struct stat *st)
         return -1;
     }
 
-    // mark root also as directory
+    /* mark root also as directory */
     st->st_mode = ((stats.flag & 0x80000000) || (strlen(dev->mount_path) + 1 == strlen(real_path)))? S_IFDIR : S_IFREG;
     st->st_nlink = 1;
     st->st_size = stats.size;
     st->st_blocks = (stats.size + 511) >> 9;
-    // Fill in the generic entry stats
+    /* Fill in the generic entry stats */
     st->st_dev = stats.ent_id;
     st->st_uid = stats.owner_id;
     st->st_gid = stats.group_id;
@@ -666,7 +666,7 @@ static int sd_fat_statvfs_r (struct _reent *r, const char *path, struct statvfs 
 
     OSLockMutex(dev->pMutex);
 
-    // Zero out the stat buffer
+    /* Zero out the stat buffer */
     memset(buf, 0, sizeof(struct statvfs));
 
     char *real_path = sd_fat_real_path(path, dev);
@@ -688,31 +688,31 @@ static int sd_fat_statvfs_r (struct _reent *r, const char *path, struct statvfs 
         return -1;
     }
 
-    // File system block size
+    /* File system block size */
     buf->f_bsize = 512;
 
-    // Fundamental file system block size
+    /* Fundamental file system block size */
     buf->f_frsize = 512;
 
-    // Total number of blocks on file system in units of f_frsize
-    buf->f_blocks = size >> 9; // this is unknown
+    /* Total number of blocks on file system in units of f_frsize */
+    buf->f_blocks = size >> 9; /* this is unknown */
 
-    // Free blocks available for all and for non-privileged processes
+    /* Free blocks available for all and for non-privileged processes */
     buf->f_bfree = buf->f_bavail = size >> 9;
 
-    // Number of inodes at this point in time
+    /* Number of inodes at this point in time */
     buf->f_files = 0xffffffff;
 
-    // Free inodes available for all and for non-privileged processes
+    /* Free inodes available for all and for non-privileged processes */
     buf->f_ffree = 0xffffffff;
 
-    // File system id
+    /* File system id */
     buf->f_fsid = (int)dev;
 
-    // Bit mask of f_flag values.
+    /* Bit mask of f_flag values. */
     buf->f_flag = 0;
 
-    // Maximum length of filenames
+    /* Maximum length of filenames */
     buf->f_namemax = 255;
 
     OSUnlockMutex(dev->pMutex);
@@ -824,7 +824,7 @@ static int sd_fat_dirnext_r (struct _reent *r, DIR_ITER *dirState, char *filenam
         return -1;
     }
 
-    // Fetch the current entry
+    /* Fetch the current entry */
     strcpy(filename, dir_entry->name);
 
     if(st)
@@ -848,7 +848,7 @@ static int sd_fat_dirnext_r (struct _reent *r, DIR_ITER *dirState, char *filenam
     return 0;
 }
 
-// NTFS device driver devoptab
+/* NTFS device driver devoptab */
 static const devoptab_t devops_sd_fat = {
     NULL, /* Device name */
     sizeof (sd_fat_file_state_t),
@@ -884,24 +884,24 @@ static int sd_fat_add_device (const char *name, const char *mount_path, void *pC
     char *devpath = NULL;
     int i;
 
-    // Sanity check
+    /* Sanity check */
     if (!name) {
         errno = EINVAL;
         return -1;
     }
 
-    // Allocate a devoptab for this device
+    /* Allocate a devoptab for this device */
     dev = (devoptab_t *) malloc(sizeof(devoptab_t) + strlen(name) + 1);
     if (!dev) {
         errno = ENOMEM;
         return -1;
     }
 
-    // Use the space allocated at the end of the devoptab for storing the device name
+    /* Use the space allocated at the end of the devoptab for storing the device name */
     devname = (char*)(dev + 1);
     strcpy(devname, name);
 
-    // create private data
+    /* create private data */
     sd_fat_private_t *priv = (sd_fat_private_t *)malloc(sizeof(sd_fat_private_t) + strlen(mount_path) + 1);
     if(!priv) {
         free(dev);
@@ -912,7 +912,7 @@ static int sd_fat_add_device (const char *name, const char *mount_path, void *pC
     devpath = (char*)(priv+1);
     strcpy(devpath, mount_path);
 
-    // setup private data
+    /* setup private data */
     priv->mount_path = devpath;
     priv->pClient = pClient;
     priv->pCmd = pCmd;
@@ -927,12 +927,12 @@ static int sd_fat_add_device (const char *name, const char *mount_path, void *pC
 
     OSInitMutex(priv->pMutex);
 
-    // Setup the devoptab
+    /* Setup the devoptab */
     memcpy(dev, &devops_sd_fat, sizeof(devoptab_t));
     dev->name = devname;
     dev->deviceData = priv;
 
-    // Add the device to the devoptab table (if there is a free slot)
+    /* Add the device to the devoptab table (if there is a free slot) */
     for (i = 3; i < STD_MAX; i++) {
         if (devoptab_list[i] == devoptab_list[0]) {
             devoptab_list[i] = dev;
@@ -940,11 +940,11 @@ static int sd_fat_add_device (const char *name, const char *mount_path, void *pC
         }
     }
 
-    // failure, free all memory
+    /* failure, free all memory */
     free(priv);
     free(dev);
 
-    // If we reach here then there are no free slots in the devoptab table for this device
+    /* If we reach here then there are no free slots in the devoptab table for this device */
     errno = EADDRNOTAVAIL;
     return -1;
 }
@@ -955,14 +955,14 @@ static int sd_fat_remove_device (const char *path, void **pClient, void **pCmd, 
     char name[128] = {0};
     int i;
 
-    // Get the device name from the path
+    /* Get the device name from the path */
     strncpy(name, path, 127);
     strtok(name, ":/");
 
-    // Find and remove the specified device from the devoptab table
-    // NOTE: We do this manually due to a 'bug' in RemoveDevice
-    //       which ignores names with suffixes and causes names
-    //       like "ntfs" and "ntfs1" to be seen as equals
+    /* Find and remove the specified device from the devoptab table */
+    /* NOTE: We do this manually due to a 'bug' in RemoveDevice */
+    /*       which ignores names with suffixes and causes names */
+    /*       like "ntfs" and "ntfs1" to be seen as equals */
     for (i = 3; i < STD_MAX; i++) {
         devoptab = devoptab_list[i];
         if (devoptab && devoptab->name) {
@@ -995,12 +995,12 @@ int mount_sd_fat(const char *path)
 {
     int result = -1;
 
-    // get command and client
+    /* get command and client */
     void* pClient = malloc(sizeof(FSClient));
     void* pCmd = malloc(sizeof(FSCmdBlock));
 
     if(!pClient || !pCmd) {
-        // just in case free if not 0
+        /* just in case free if not 0 */
         if(pClient)
             free(pClient);
         if(pCmd)
@@ -1036,7 +1036,7 @@ int unmount_sd_fat(const char *path)
         free(pClient);
         free(pCmd);
         free(mountPath);
-        //FSShutdown();
+        /* FSShutdown(); */
     }
     return result;
 }

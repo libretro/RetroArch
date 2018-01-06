@@ -43,4 +43,4 @@ extern GX2Shader tex_shader;
 }
 #endif
 
-#endif // TEX_SHADER_H
+#endif /* TEX_SHADER_H */

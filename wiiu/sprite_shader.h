@@ -49,4 +49,4 @@ extern GX2Shader sprite_shader;
 }
 #endif
 
-#endif // SPRITE_SHADER_H
+#endif /* SPRITE_SHADER_H */

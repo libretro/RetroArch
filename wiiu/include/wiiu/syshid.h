@@ -5,10 +5,10 @@
  * Report types for the report_type parameter in HIDSetReport()
  */
 
-//  what is 1?
+/*  what is 1? */
 #define HID_REPORT_OUTPUT  2
 #define HID_REPORT_FEATURE 3
-// are there more?
+/* are there more? */
 
 typedef struct
 {

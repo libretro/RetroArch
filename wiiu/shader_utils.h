@@ -3,7 +3,7 @@
 #include <wiiu/gx2/shaders.h>
 
 /* incompatible with elf builds */
-//#define GX2_CAN_ACCESS_DATA_SECTION
+/* #define GX2_CAN_ACCESS_DATA_SECTION */
 
 #ifdef __cplusplus
 extern "C" {

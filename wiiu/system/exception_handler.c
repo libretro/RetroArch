@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-//TODO: Program exceptions don't seem to work. Good thing they almost never happen.
+/* TODO: Program exceptions don't seem to work. Good thing they almost never happen. */
 
 #include <stdio.h>
 #include <stdlib.h>

@@ -217,8 +217,8 @@
 #define EXPORT_TYPE_POS    0x1
 #define EXPORT_TYPE_PARAM  0x2
 
-#define EXPORT_ARRAY_BASE_POS(id)      (0x3C + id)   // [0, 3]
-#define EXPORT_ARRAY_BASE_PARAM(id)    id          // [0, 31]
+#define EXPORT_ARRAY_BASE_POS(id)      (0x3C + id)   /* [0, 3] */
+#define EXPORT_ARRAY_BASE_PARAM(id)    id          /* [0, 31] */
 #define EXPORT_ARRAY_BASE_PIX(id)      id
 
 /* exports */
@@ -340,4 +340,4 @@
 #define _x30(v) _x16(v), _x8(v), _x4(v),_x2(v)
 #define _x31(v) _x30(v), v
 
-#endif // GX2_SHADER_INL_H
+#endif /* GX2_SHADER_INL_H */
