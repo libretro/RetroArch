@@ -145,18 +145,17 @@ static void wiiu_hid_send_control(void *data, uint8_t *buf, size_t size)
    memset(adapter->tx_buffer, 0, adapter->tx_size);
    memcpy(adapter->tx_buffer, buf, size);
 
-   // From testing, HIDWrite returns an error that looks like it's two
-   // int16_t's bitmasked together. For example, one error I saw when trying
-   // to write a single byte was 0xffe2ff97, which works out to -30 and -105.
-   //  I have no idea what these mean.
+   /* From testing, HIDWrite returns an error that looks like it's two
+    * int16_t's bitmasked together. For example, one error I saw when trying
+    * to write a single byte was 0xffe2ff97, which works out to -30 and -105.
+    *  I have no idea what these mean. */
    result = HIDWrite(adapter->handle, adapter->tx_buffer, adapter->tx_size, NULL, NULL);
-   if(result < 0) {
-     int16_t r1, r2;
-
-     r1 = (result & 0x0000FFFF);
-     r2 = ((result & 0xFFFF0000) >> 16);
-     RARCH_LOG("[hid]: write failed: %08x (%d:%d)\n", result, r2, r1);
-  }
+   if(result < 0)
+   {
+      int16_t r1 =  (result & 0x0000FFFF);
+      int16_t r2 = ((result & 0xFFFF0000) >> 16);
+      RARCH_LOG("[hid]: write failed: %08x (%d:%d)\n", result, r2, r1);
+   }
 }
 
 static int32_t wiiu_hid_set_report(void *data, uint8_t report_type,
@@ -448,7 +447,7 @@ static void wiiu_hid_do_read(wiiu_adapter_t *adapter,
    log_buffer(data, length);
 #endif
 
-   // TODO: get this data to the connect_xxx driver somehow.
+   /* TODO: get this data to the connect_xxx driver somehow. */
 }
 
 static void wiiu_hid_read_loop_callback(uint32_t handle, int32_t error,
