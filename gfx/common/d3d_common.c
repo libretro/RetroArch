@@ -53,6 +53,18 @@ static bool dylib_initialized = false;
 typedef IDirect3D9 *(__stdcall *D3DCreate_t)(UINT);
 #ifdef HAVE_D3DX
 typedef HRESULT (__stdcall
+      *D3DCompileShader_t)(
+         LPCSTR              pSrcData,
+         UINT                srcDataLen,
+         const D3DXMACRO     *pDefines,
+         LPD3DXINCLUDE       pInclude,
+         LPCSTR              pFunctionName,
+         LPCSTR              pProfile,
+         DWORD               Flags,
+         LPD3DXBUFFER        *ppShader,
+         LPD3DXBUFFER        *ppErrorMsgs,
+         LPD3DXCONSTANTTABLE *ppConstantTable);
+typedef HRESULT (__stdcall
       *D3DCompileShaderFromFile_t)(
           LPCTSTR             pSrcFile,
     const D3DXMACRO           *pDefines,
@@ -121,6 +133,7 @@ static D3DXCreateFontIndirect_t   D3DCreateFontIndirect;
 static D3DCreateTextureFromFile_t D3DCreateTextureFromFile;
 #ifdef HAVE_D3D9
 static D3DCompileShaderFromFile_t D3DCompileShaderFromFile;
+static D3DCompileShader_t         D3DCompileShader;
 #endif
 #endif
 static D3DCreate_t D3DCreate;
@@ -228,6 +241,7 @@ bool d3d_initialize_symbols(void)
 #endif
    D3DCreateTextureFromFile = (D3DCreateTextureFromFile_t)dylib_proc(g_d3dx_dll, "D3DXCreateTextureFromFileExA");
    D3DCompileShaderFromFile = (D3DCompileShaderFromFile_t)dylib_proc(g_d3dx_dll, "D3DXCompileShaderFromFile");
+   D3DCompileShader         = (D3DCompileShader_t)dylib_proc(g_d3dx_dll, "D3DXCompileShader");
 #endif
 #else
    D3DCreate                = Direct3DCreate9;
@@ -235,6 +249,7 @@ bool d3d_initialize_symbols(void)
    D3DCreateFontIndirect    = D3DXCreateFontIndirect;
    D3DCreateTextureFromFile = D3DXCreateTextureFromFileExA;
    D3DCompileShaderFromFile = D3DXCompileShaderFromFile;
+   D3DCompileShader         = D3DXCompileShader;
 #endif
 #endif
 #elif defined(HAVE_D3D8)
@@ -1613,6 +1628,39 @@ void d3dxbuffer_release(void *data)
 #endif
 #endif
 #endif
+}
+
+bool d3dx_compile_shader(
+      const char *src,
+      unsigned src_data_len,
+      const void *pdefines,
+      void *pinclude,
+      const char *pfunctionname,
+      const char *pprofile,
+      unsigned flags,
+      void *ppshader,
+      void *pperrormsgs,
+      void *ppconstanttable)
+{
+#ifdef HAVE_D3DX
+   if (D3DCompileShader)
+   {
+      if (D3DCompileShader(
+               (LPCTSTR)src,
+               (UINT)src_data_len,
+               (const D3DXMACRO*)pdefines,
+               (LPD3DXINCLUDE)pinclude,
+               (LPCSTR)pfunctionname,
+               (LPCSTR)pprofile,
+               (DWORD)flags,
+               (LPD3DXBUFFER*)ppshader,
+               (LPD3DXBUFFER*)pperrormsgs,
+               (LPD3DXCONSTANTTABLE*)ppconstanttable) < 0)
+         return false;
+      return true;
+   }
+#endif
+   return false;
 }
 
 bool d3dx_compile_shader_from_file(
