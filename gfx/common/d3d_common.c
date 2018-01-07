@@ -1116,7 +1116,7 @@ bool d3d_create_pixel_shader(LPDIRECT3DDEVICE dev, const DWORD *a, void **b)
 bool d3d_set_pixel_shader(LPDIRECT3DDEVICE dev, void *data)
 {
 #ifdef HAVE_D3D9
-   D3DPixelShader *d3dps = (D3DPixelShader*)data;
+   LPDIRECT3DPIXELSHADER d3dps = (LPDIRECT3DPIXELSHADER)data;
    if (!dev || !d3dps)
       return false;
 #if defined(__cplusplus)
