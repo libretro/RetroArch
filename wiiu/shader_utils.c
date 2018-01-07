@@ -320,8 +320,11 @@ typedef struct
 
 void gfd_free(GFDFile* gfd)
 {
-   MEM2_free(gfd->data);
-   free(gfd);
+   if(gfd)
+   {
+      MEM2_free(gfd->data);
+      free(gfd);
+   }
 }
 
 static bool gfd_relocate_block(GFDBlock* block)
