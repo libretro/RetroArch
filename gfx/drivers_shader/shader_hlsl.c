@@ -257,11 +257,15 @@ static bool hlsl_compile_program(
    else
    {
       /* TODO - crashes currently - to do with 'end of line' of stock shader */
-      if (D3DXCompileShader(program_info->combined, strlen(program_info->combined), NULL, NULL,
-            "main_fragment", "ps_3_0", 0, &code_f, &listing_f, &program->f_ctable ) > 0)
+      if (!d3dx_compile_shader(program_info->combined,
+               strlen(program_info->combined), NULL, NULL,
+               "main_fragment", "ps_3_0", 0, &code_f, &listing_f,
+               &program->f_ctable ))
          goto error;
-      if (D3DXCompileShader(program_info->combined, strlen(program_info->combined), NULL, NULL,
-            "main_vertex", "vs_3_0", 0, &code_v, &listing_v, &program->v_ctable ) > 0)
+      if (!d3dx_compile_shader(program_info->combined,
+               strlen(program_info->combined), NULL, NULL,
+               "main_vertex", "vs_3_0", 0, &code_v, &listing_v,
+               &program->v_ctable ))
          goto error;
    }
 

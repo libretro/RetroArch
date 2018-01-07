@@ -451,72 +451,62 @@ typedef struct
 
 static PackedResource m_xprResource;
 
-static HRESULT xdk360_video_font_create_shaders(xdk360_video_font_t * font)
+static bool xdk360_video_font_create_shaders(xdk360_video_font_t * font, LPDIRECT3DDEVICE d3dr)
 {
-   HRESULT hr;
-   LPDIRECT3DDEVICE d3dr = font->d3d->dev;
+   ID3DXBuffer* pShaderCode = NULL;
+
+   static const D3DVERTEXELEMENT9 decl[] =
+   {
+      { 0,  0, D3DDECLTYPE_FLOAT2,   D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
+      { 0,  8, D3DDECLTYPE_USHORT2,  D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
+      { 0, 12, D3DDECLTYPE_D3DCOLOR, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 1 },
+      D3DDECL_END()
+   };
 
    if (font->s_FontLocals.m_pFontVertexDecl)
    {
       font->s_FontLocals.m_pFontVertexDecl->AddRef();
       font->s_FontLocals.m_pFontVertexShader->AddRef();
       font->s_FontLocals.m_pFontPixelShader->AddRef();
-      return 0;
+      return true;
    }
 
-   do
-   {
-      static const D3DVERTEXELEMENT9 decl[] =
-      {
-         { 0,  0, D3DDECLTYPE_FLOAT2,   D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
-         { 0,  8, D3DDECLTYPE_USHORT2,  D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
-         { 0, 12, D3DDECLTYPE_D3DCOLOR, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 1 },
-         D3DDECL_END()
-      };
+   if (!d3d_vertex_declaration_new(d3dr,decl, (void**)&font->s_FontLocals.m_pFontVertexDecl))
+      goto error;
 
-      if (d3d_vertex_declaration_new(d3dr,decl, (void**)&font->s_FontLocals.m_pFontVertexDecl))
-      {
-         ID3DXBuffer* pShaderCode;
+   if (!d3dx_compile_shader( font_hlsl_d3d9_program, sizeof(font_hlsl_d3d9_program)-1 ,
+            NULL, NULL, "main_vertex", "vs.2.0", 0, &pShaderCode, NULL, NULL ))
+      goto error;
 
-         hr = D3DXCompileShader( font_hlsl_d3d9_program, sizeof(font_hlsl_d3d9_program)-1 ,
-               NULL, NULL, "main_vertex", "vs.2.0", 0,&pShaderCode, NULL, NULL );
+   if (!d3d_create_vertex_shader(d3dr, (const DWORD*)pShaderCode->GetBufferPointer(),
+         (void**)&font->s_FontLocals.m_pFontVertexShader ))
+      goto error;
 
-         if (hr >= 0)
-         {
-            bool ret = d3d_create_vertex_shader(d3dr, (const DWORD*)pShaderCode->GetBufferPointer(),
-				(void**)&font->s_FontLocals.m_pFontVertexShader );
-            d3dxbuffer_release(pShaderCode);
+   d3dxbuffer_release(pShaderCode);
 
-            if (!ret)
-            {
-               hr = D3DXCompileShader(font_hlsl_d3d9_program, sizeof(font_hlsl_d3d9_program)-1 ,
-                     NULL, NULL, "main_fragment", "ps.2.0", 0,&pShaderCode, NULL, NULL );
+   if (!d3dx_compile_shader(font_hlsl_d3d9_program, sizeof(font_hlsl_d3d9_program)-1 ,
+            NULL, NULL, "main_fragment", "ps.2.0", 0,&pShaderCode, NULL, NULL ))
+      goto error;
 
-               if (hr >= 0)
-               {
-                  ret = d3d_create_pixel_shader(d3dr, (DWORD*)pShaderCode->GetBufferPointer(),
-					  (void**)&font->s_FontLocals.m_pFontPixelShader);
-                  d3dxbuffer_release(pShaderCode);
+   if (!d3d_create_pixel_shader(d3dr, (DWORD*)pShaderCode->GetBufferPointer(),
+         (void**)&font->s_FontLocals.m_pFontPixelShader))
+      goto error;
 
-                  if (!ret) 
-                  {
-                     hr = 0;
-                     break;
-                  }
-               }
+   d3dxbuffer_release(pShaderCode);
 
-               d3d_free_vertex_shader(font->d3d->dev, font->s_FontLocals.m_pFontVertexShader);
-            }
+   return true;
 
-            font->s_FontLocals.m_pFontVertexShader = NULL;
-         }
+error:
+   if (pShaderCode)
+      d3dxbuffer_release(pShaderCode);
+   d3d_free_pixel_shader(font->d3d->dev,  font->s_FontLocals.m_pFontPixelShader);
+   d3d_free_vertex_shader(font->d3d->dev, font->s_FontLocals.m_pFontVertexShader);
+   d3d_vertex_declaration_free(font->s_FontLocals.m_pFontVertexDecl);
+   font->s_FontLocals.m_pFontPixelShader  = NULL;
+   font->s_FontLocals.m_pFontVertexShader = NULL;
+   font->s_FontLocals.m_pFontVertexDecl   = NULL;
 
-         d3d_vertex_declaration_free(font->s_FontLocals.m_pFontVertexDecl);
-      }
-      font->s_FontLocals.m_pFontVertexDecl = NULL;
-   }while(0);
-
-   return hr;
+   return false;
 }
 
 static void *xdk360_init_font(void *video_data,
@@ -578,7 +568,7 @@ static void *xdk360_init_font(void *video_data,
    font->m_Glyphs             = ((const FontFileStrikesImage_t *)pData)->m_Glyphs;
 
    /* Create the vertex and pixel shaders for rendering the font */
-   if (FAILED(xdk360_video_font_create_shaders(font)))
+   if (!xdk360_video_font_create_shaders(font, font->d3d->dev))
    {
       RARCH_ERR( "Could not create font shaders.\n" );
       goto error;
