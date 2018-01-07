@@ -209,7 +209,7 @@ static void d3d8_renderchain_free(void *data)
 {
    d3d_video_t *chain = (d3d_video_t*)data;
 
-   if (!chain)
+   if (!chain || !chain->renderchain_data)
       return;
 
    d3d8_renderchain_deinit(chain->renderchain_data);

@@ -21,8 +21,8 @@
 
 #ifndef _XBOX
 #include <windows.h>
-#include <mmreg.h>
 #include <mmsystem.h>
+#include <mmreg.h>
 #endif
 
 #include <dsound.h>

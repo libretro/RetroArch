@@ -576,6 +576,12 @@ void d3d_make_d3dpp(void *data,
       }
    }
 
+#ifdef HAVE_D3D8
+   /* PresentationInterval must be zero for windowed mode on DX8. */
+   if (d3dpp->Windowed)
+      FS_PRESENTINTERVAL(d3dpp)   = D3DPRESENT_INTERVAL_DEFAULT;
+#endif
+
    d3dpp->SwapEffect          = D3DSWAPEFFECT_DISCARD;
    d3dpp->BackBufferCount     = 2;
    d3dpp->BackBufferFormat    = d3d_get_color_format_backbuffer(info->rgb32, windowed_enable);
@@ -670,9 +676,12 @@ static bool d3d_init_base(void *data, const video_info_t *info)
 #endif
    d3d_video_t *d3d  = (d3d_video_t*)data;
 
-   d3d_make_d3dpp(d3d, info, &d3dpp);
+   memset(&d3dpp, 0, sizeof(d3dpp));
 
    g_pD3D            = (LPDIRECT3D)d3d_create();
+
+   /* this needs g_pD3D created first */
+   d3d_make_d3dpp(d3d, info, &d3dpp);
 
    if (!g_pD3D)
    {

@@ -174,7 +174,11 @@ bool d3d_initialize_symbols(void)
       return true;
 
 #if defined(HAVE_D3D9)
+#if defined(DEBUG) || defined(_DEBUG)
+   g_d3d_dll  = dylib_load("d3d9d.dll");
+#else
    g_d3d_dll  = dylib_load("d3d9.dll");
+#endif
 #ifdef HAVE_D3DX
    g_d3dx_dll = dylib_load_d3dx();
 #endif
@@ -187,8 +191,11 @@ bool d3d_initialize_symbols(void)
 #endif
 
 #elif defined(HAVE_D3D8)
+#if defined(DEBUG) || defined(_DEBUG)
+   g_d3d_dll  = dylib_load("d3d8d.dll");
+#else
    g_d3d_dll  = dylib_load("d3d8.dll");
-
+#endif
    if (!g_d3d_dll)
       return false;
 #endif
