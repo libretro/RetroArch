@@ -436,7 +436,6 @@ static void d3d_overlay_render(d3d_video_t *d3d,
    d3d_set_stream_source(d3d->dev, 0, overlay->vert_buf,
          0, sizeof(*vert));
 
-
    if (overlay->fullscreen)
    {
       D3DVIEWPORT vp_full;
@@ -532,9 +531,10 @@ static bool d3d_is_windowed_enable(bool info_fullscreen)
 {
 #ifndef _XBOX
    settings_t *settings = config_get_ptr();
+   if (!info_fullscreen)
+      return true;
    if (settings)
-      return ((settings->bools.video_windowed_fullscreen)
-      || !info_fullscreen);
+      return settings->bools.video_windowed_fullscreen;
 #endif
    return false;
 }
@@ -542,22 +542,24 @@ static bool d3d_is_windowed_enable(bool info_fullscreen)
 void d3d_make_d3dpp(void *data,
       const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp)
 {
-   d3d_video_t     *d3d = (d3d_video_t*)data;
+   d3d_video_t *d3d               = (d3d_video_t*)data;
 #ifdef _XBOX360
    /* TODO/FIXME - get rid of global state dependencies. */
-   global_t *global     = global_get_ptr();
-   bool gamma_enable    = global ? global->console.screen.gamma_correction : false;
+   global_t *global               = global_get_ptr();
+   bool gamma_enable              = global ? 
+      global->console.screen.gamma_correction : false;
 #endif
-   bool windowed_enable = d3d_is_windowed_enable(info->fullscreen);
+   bool windowed_enable           = d3d_is_windowed_enable(info->fullscreen);
 
    memset(d3dpp, 0, sizeof(*d3dpp));
 
-   d3dpp->Windowed             = windowed_enable;
-   FS_PRESENTINTERVAL(d3dpp)   = D3DPRESENT_INTERVAL_IMMEDIATE;
+   d3dpp->Windowed                = windowed_enable;
+   FS_PRESENTINTERVAL(d3dpp)      = D3DPRESENT_INTERVAL_IMMEDIATE;
 
    if (info->vsync)
    {
-      settings_t *settings = config_get_ptr();
+      settings_t *settings        = config_get_ptr();
+
       switch (settings->uints.video_swap_interval)
       {
          default:
@@ -582,20 +584,23 @@ void d3d_make_d3dpp(void *data,
       FS_PRESENTINTERVAL(d3dpp)   = D3DPRESENT_INTERVAL_DEFAULT;
 #endif
 
-   d3dpp->SwapEffect          = D3DSWAPEFFECT_DISCARD;
-   d3dpp->BackBufferCount     = 2;
-   d3dpp->BackBufferFormat    = d3d_get_color_format_backbuffer(info->rgb32, windowed_enable);
+   d3dpp->SwapEffect              = D3DSWAPEFFECT_DISCARD;
+   d3dpp->BackBufferCount         = 2;
+   d3dpp->BackBufferFormat        = d3d_get_color_format_backbuffer(
+         info->rgb32, windowed_enable);
 #ifndef _XBOX
-   d3dpp->hDeviceWindow       = win32_get_window();
+   d3dpp->hDeviceWindow           = win32_get_window();
 #endif
 
 #ifdef _XBOX360
-   d3dpp->FrontBufferFormat   = d3d_get_color_format_front_buffer();
+   d3dpp->FrontBufferFormat       = d3d_get_color_format_front_buffer();
 
    if (gamma_enable)
    {
-      d3dpp->BackBufferFormat = (D3DFORMAT)MAKESRGBFMT(d3dpp->BackBufferFormat);
-      d3dpp->FrontBufferFormat= (D3DFORMAT)MAKESRGBFMT(d3dpp->FrontBufferFormat);
+      d3dpp->BackBufferFormat     = (D3DFORMAT)MAKESRGBFMT(
+            d3dpp->BackBufferFormat);
+      d3dpp->FrontBufferFormat    = (D3DFORMAT)MAKESRGBFMT(
+            d3dpp->FrontBufferFormat);
    }
 #endif
 
@@ -603,15 +608,15 @@ void d3d_make_d3dpp(void *data,
    {
 #ifdef _XBOX
       gfx_ctx_mode_t mode;
-      unsigned width          = 0;
-      unsigned height         = 0;
+      unsigned width              = 0;
+      unsigned height             = 0;
 
       video_context_driver_get_video_size(&mode);
 
-      width                   = mode.width;
-      height                  = mode.height;
-      mode.width              = 0;
-      mode.height             = 0;
+      width                       = mode.width;
+      height                      = mode.height;
+      mode.width                  = 0;
+      mode.height                 = 0;
       video_driver_set_size(&width, &height);
 #endif
       video_driver_get_size(&d3dpp->BackBufferWidth,
@@ -624,7 +629,7 @@ void d3d_make_d3dpp(void *data,
 #if defined(_XBOX1)
    {
       /* Get the "video mode" */
-      DWORD video_mode               = XGetVideoFlags();
+      DWORD video_mode            = XGetVideoFlags();
 
       /* Check if we are able to use progressive mode. */
       if (video_mode & XC_VIDEO_FLAGS_HDTV_480p)
