@@ -159,13 +159,8 @@ static void copy_block     (deflate_state *s, charf *buf, unsigned len,
 static void gen_trees_header (void);
 #endif
 
-#ifndef DEBUG
 #  define send_code(s, c, tree) send_bits(s, tree[c].Code, tree[c].Len)
 /* Send a code of the given tree. c and tree must not have side effects */
-
-#else /* DEBUG */
-#  define send_code(s, c, tree) { send_bits(s, tree[c].Code, tree[c].Len); }
-#endif
 
 /* ===========================================================================
  * Output a short LSB first on the stream.
