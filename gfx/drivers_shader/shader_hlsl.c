@@ -35,30 +35,6 @@
 #include "../drivers/d3d_shaders/opaque.hlsl.d3d9.h"
 #include "shader_hlsl.h"
 
-struct shader_program_hlsl_data
-{
-   LPDIRECT3DVERTEXSHADER vprg;
-   LPDIRECT3DPIXELSHADER fprg;
-
-   D3DXHANDLE	   vid_size_f;
-   D3DXHANDLE	   tex_size_f;
-   D3DXHANDLE	   out_size_f;
-   D3DXHANDLE     frame_cnt_f;
-   D3DXHANDLE     frame_dir_f;
-   D3DXHANDLE	   vid_size_v;
-   D3DXHANDLE	   tex_size_v;
-   D3DXHANDLE	   out_size_v;
-   D3DXHANDLE     frame_cnt_v;
-   D3DXHANDLE     frame_dir_v;
-   D3DXHANDLE     mvp;
-
-   LPD3DXCONSTANTTABLE v_ctable;
-   LPD3DXCONSTANTTABLE f_ctable;
-   D3DXMATRIX mvp_val;
-};
-
-typedef struct hlsl_shader_data hlsl_shader_data_t;
-
 #ifdef __cplusplus
 
 #ifndef ID3DXConstantTable_SetDefaults
@@ -116,6 +92,31 @@ typedef struct hlsl_shader_data hlsl_shader_data_t;
 #define set_param_2f(param, xy, constanttable) if (param) { ID3DXConstantTable_SetFloatArray(constanttable, d3dr, param, xy, 2); }
 #define set_param_1f(param, x, constanttable)  if (param) { ID3DXConstantTable_SetFloat(constanttable, d3dr, param, x); }
 #define get_constant_by_name(a, b, constanttable) ID3DXConstantTable_GetConstantByName(constanttable, a, b)
+
+
+struct shader_program_hlsl_data
+{
+   LPDIRECT3DVERTEXSHADER vprg;
+   LPDIRECT3DPIXELSHADER fprg;
+
+   D3DXHANDLE	   vid_size_f;
+   D3DXHANDLE	   tex_size_f;
+   D3DXHANDLE	   out_size_f;
+   D3DXHANDLE     frame_cnt_f;
+   D3DXHANDLE     frame_dir_f;
+   D3DXHANDLE	   vid_size_v;
+   D3DXHANDLE	   tex_size_v;
+   D3DXHANDLE	   out_size_v;
+   D3DXHANDLE     frame_cnt_v;
+   D3DXHANDLE     frame_dir_v;
+   D3DXHANDLE     mvp;
+
+   LPD3DXCONSTANTTABLE v_ctable;
+   LPD3DXCONSTANTTABLE f_ctable;
+   D3DXMATRIX mvp_val;
+};
+
+typedef struct hlsl_shader_data hlsl_shader_data_t;
 
 struct hlsl_shader_data
 {
@@ -207,9 +208,9 @@ static void hlsl_set_params(void *data, void *shader_data,
    out_size[1] = (float)out_height;
 
    ID3DXConstantTable_SetDefaults(
-   hlsl->prg[hlsl->active_idx].f_ctable, d3dr);
+         hlsl->prg[hlsl->active_idx].f_ctable, d3dr);
    ID3DXConstantTable_SetDefaults(
-   hlsl->prg[hlsl->active_idx].v_ctable, d3dr);
+         hlsl->prg[hlsl->active_idx].v_ctable, d3dr);
 
    set_param_2f(hlsl->prg[hlsl->active_idx].vid_size_f, ori_size, hlsl->prg[hlsl->active_idx].f_ctable);
    set_param_2f(hlsl->prg[hlsl->active_idx].tex_size_f, tex_size, hlsl->prg[hlsl->active_idx].f_ctable);
@@ -248,10 +249,10 @@ static bool hlsl_compile_program(
    if (program_info->is_file)
    {
       if (!d3dx_compile_shader_from_file(program_info->combined, NULL, NULL,
-            "main_fragment", "ps_3_0", 0, &code_f, &listing_f, &program->f_ctable))
+               "main_fragment", "ps_3_0", 0, &code_f, &listing_f, &program->f_ctable))
          goto error;
       if (!d3dx_compile_shader_from_file(program_info->combined, NULL, NULL,
-            "main_vertex", "vs_3_0", 0, &code_v, &listing_v, &program->v_ctable))
+               "main_vertex", "vs_3_0", 0, &code_v, &listing_v, &program->v_ctable))
          goto error;
    }
    else
@@ -261,12 +262,18 @@ static bool hlsl_compile_program(
                strlen(program_info->combined), NULL, NULL,
                "main_fragment", "ps_3_0", 0, &code_f, &listing_f,
                &program->f_ctable ))
+      {
+         RARCH_ERR("Errors here.\n");
          goto error;
+      }
       if (!d3dx_compile_shader(program_info->combined,
                strlen(program_info->combined), NULL, NULL,
                "main_vertex", "vs_3_0", 0, &code_v, &listing_v,
                &program->v_ctable ))
+      {
+         RARCH_ERR("Errors 2 here.\n");
          goto error;
+      }
    }
 
    d3d_create_pixel_shader(d3dr, (const DWORD*)ID3DXConstantTable_GetBufferPointer(code_f),  &program->fprg);
@@ -328,7 +335,7 @@ static void hlsl_set_program_attributes(hlsl_shader_data_t *hlsl, unsigned i)
 }
 
 static bool hlsl_load_shader(hlsl_shader_data_t *hlsl,
-	void *data, const char *cgp_path, unsigned i)
+      void *data, const char *cgp_path, unsigned i)
 {
    struct shader_program_info program_info;
    char path_buf[PATH_MAX_LENGTH];
@@ -339,7 +346,7 @@ static bool hlsl_load_shader(hlsl_shader_data_t *hlsl,
    program_info.is_file  = true;
 
    fill_pathname_resolve_relative(path_buf, cgp_path,
-      hlsl->cg_shader->pass[i].source.path, sizeof(path_buf));
+         hlsl->cg_shader->pass[i].source.path, sizeof(path_buf));
 
    RARCH_LOG("Loading Cg/HLSL shader: \"%s\".\n", path_buf);
 
@@ -372,7 +379,7 @@ static bool hlsl_load_plain(hlsl_shader_data_t *hlsl, void *data, const char *pa
       RARCH_LOG("Loading Cg/HLSL file: %s\n", path);
 
       strlcpy(hlsl->cg_shader->pass[0].source.path,
-		  path, sizeof(hlsl->cg_shader->pass[0].source.path));
+            path, sizeof(hlsl->cg_shader->pass[0].source.path));
 
       hlsl->d3d = (d3d_video_t*)data;
       if (!hlsl_compile_program(hlsl, 1, &hlsl->prg[1], &program_info))
@@ -397,8 +404,8 @@ static void hlsl_deinit_progs(hlsl_shader_data_t *hlsl)
       if (hlsl->prg[i].vprg && hlsl->prg[i].vprg != hlsl->prg[0].vprg)
          d3d_free_vertex_shader(hlsl->d3d->dev, hlsl->prg[i].vprg);
 
-	  hlsl->prg[i].fprg = NULL;
-	  hlsl->prg[i].vprg = NULL;
+      hlsl->prg[i].fprg = NULL;
+      hlsl->prg[i].vprg = NULL;
    }
 
    if (hlsl->prg[0].fprg)
@@ -479,7 +486,7 @@ static void *hlsl_init(void *data, const char *path)
       calloc(1, sizeof(hlsl_shader_data_t));
 
    if (!hlsl_data)
-	   return NULL;
+      return NULL;
 
    if (path && (string_is_equal_fast(path_get_extension(path), ".cgp", 4)))
    {
@@ -502,7 +509,7 @@ static void *hlsl_init(void *data, const char *path)
 
 error:
    if (hlsl_data)
-	   free(hlsl_data);
+      free(hlsl_data);
    return NULL;
 }
 
@@ -571,8 +578,8 @@ static bool hlsl_set_mvp(void *data, void *shader_data, const void *mat_data)
    if(hlsl_data && hlsl_data->prg[hlsl_data->active_idx].mvp)
    {
       ID3DXConstantTable_SetMatrix(hlsl_data->prg[hlsl_data->active_idx].v_ctable, d3dr,
-		  hlsl_data->prg[hlsl_data->active_idx].mvp,
-		  &hlsl_data->prg[hlsl_data->active_idx].mvp_val);
+            hlsl_data->prg[hlsl_data->active_idx].mvp,
+            &hlsl_data->prg[hlsl_data->active_idx].mvp_val);
       return true;
    }
    return false;

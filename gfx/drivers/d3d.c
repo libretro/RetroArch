@@ -55,10 +55,6 @@
 #include "../../defines/d3d_defines.h"
 #include "../../verbosity.h"
 
-#ifdef HAVE_HLSL
-#include "../drivers_shader/shader_hlsl.h"
-#endif
-
 #ifdef _XBOX
 #ifndef HAVE_FBO
 #define HAVE_FBO
