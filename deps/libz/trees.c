@@ -164,9 +164,7 @@ static void gen_trees_header (void);
 /* Send a code of the given tree. c and tree must not have side effects */
 
 #else /* DEBUG */
-#  define send_code(s, c, tree) \
-{ if (z_verbose>2) fprintf(stderr,"\ncd %3d ",(c)); \
-   send_bits(s, tree[c].Code, tree[c].Len); }
+#  define send_code(s, c, tree) { send_bits(s, tree[c].Code, tree[c].Len); }
 #endif
 
 /* ===========================================================================
