@@ -55,12 +55,8 @@
 #include "../../defines/d3d_defines.h"
 #include "../../verbosity.h"
 
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
-
 #ifdef HAVE_HLSL
 #include "../drivers_shader/shader_hlsl.h"
-#endif
-
 #endif
 
 #ifdef _XBOX
@@ -81,26 +77,31 @@ static bool d3d_init_imports(d3d_video_t *d3d)
    if (!d3d->shader.variables)
       return true;
 
-   mem_info.id = RETRO_MEMORY_SYSTEM_RAM;
+   mem_info.id                    = RETRO_MEMORY_SYSTEM_RAM;
 
    core_get_memory(&mem_info);
 
-   tracker_info.wram      = (uint8_t*)mem_info.data;
-   tracker_info.info      = d3d->shader.variable;
-   tracker_info.info_elem = d3d->shader.variables;
+   tracker_info.script_class      = NULL;
+   tracker_info.wram              = (uint8_t*)mem_info.data;
+   tracker_info.info              = d3d->shader.variable;
+   tracker_info.info_elem         = d3d->shader.variables;
+   tracker_info.script            = NULL;
+   tracker_info.script_is_file    = false;
 
 #ifdef HAVE_PYTHON
    if (*d3d->shader.script_path)
    {
-      tracker_info.script = d3d->shader.script_path;
+      tracker_info.script         = d3d->shader.script_path;
       tracker_info.script_is_file = true;
    }
 
-   tracker_info.script_class =
-      *d3d->shader.script_class ? d3d->shader.script_class : NULL;
+   if (*d3d->shader.script_class)
+      tracker_info.script_class   = d3d->shader.script_class;
 #endif
 
-   state_tracker = state_tracker_init(&tracker_info);
+   state_tracker                  = 
+      state_tracker_init(&tracker_info);
+
    if (!state_tracker)
    {
       RARCH_ERR("[D3D]: Failed to initialize state tracker.\n");
