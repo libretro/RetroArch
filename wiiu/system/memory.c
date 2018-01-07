@@ -134,7 +134,8 @@ void * MEM1_alloc(unsigned int size, unsigned int align)
 
 void MEM1_free(void *ptr)
 {
-   MEMFreeToExpHeap(mem1_heap, ptr);
+   if (ptr)
+      MEMFreeToExpHeap(mem1_heap, ptr);
 }
 
 void * MEMBucket_alloc(unsigned int size, unsigned int align)
@@ -146,5 +147,6 @@ void * MEMBucket_alloc(unsigned int size, unsigned int align)
 
 void MEMBucket_free(void *ptr)
 {
-   MEMFreeToExpHeap(bucket_heap, ptr);
+   if (ptr)
+      MEMFreeToExpHeap(bucket_heap, ptr);
 }
