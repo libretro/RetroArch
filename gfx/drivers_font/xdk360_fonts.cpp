@@ -27,6 +27,15 @@
 
 #include "../drivers/d3d_shaders/font.hlsl.d3d9.h"
 
+#define XPR0_MAGIC_VALUE 0x30525058
+#define XPR1_MAGIC_VALUE 0x31525058
+#define XPR2_MAGIC_VALUE 0x58505232
+
+#define FONT_SCALE(d3d) ((d3d->resolution_hd_enable) ? 2 : 1)
+#define CALCFONTFILEHEADERSIZE(x) ( sizeof(uint32_t) + (sizeof(float)* 4) + sizeof(uint16_t) + (sizeof(wchar_t)*(x)) )
+#define FONTFILEVERSION 5
+
+
 #ifdef _XBOX360
 struct XPR_HEADER
 {
@@ -140,10 +149,6 @@ class PackedResource
       PackedResource();
       ~PackedResource();
 };
-
-#define XPR0_MAGIC_VALUE 0x30525058
-#define XPR1_MAGIC_VALUE 0x31525058
-#define XPR2_MAGIC_VALUE 0x58505232
 
 PackedResource::PackedResource()
 {
@@ -395,8 +400,6 @@ BOOL PackedResource::Initialized() const
    return m_bInitialized;
 }
 
-#define FONT_SCALE(d3d) ((d3d->resolution_hd_enable) ? 2 : 1)
-
 typedef struct GLYPH_ATTR
 {
    uint16_t tu1, tv1, tu2, tv2;           /* Texture coordinates for the image. */
@@ -428,10 +431,6 @@ typedef struct
    D3DTexture* m_pFontTexture;
    const GLYPH_ATTR* m_Glyphs;          /* Array of glyphs. */
 } xdk360_video_font_t;
-
-
-#define CALCFONTFILEHEADERSIZE(x) ( sizeof(uint32_t) + (sizeof(float)* 4) + sizeof(uint16_t) + (sizeof(wchar_t)*(x)) )
-#define FONTFILEVERSION 5
 
 typedef struct
 {
@@ -572,7 +571,7 @@ static void *xdk360_init_font(void *video_data,
    font->m_cMaxGlyph          = ((const FontFileHeaderImage_t *)pData)->m_cMaxGlyph;
    font->m_TranslatorTable    = const_cast<FontFileHeaderImage_t*>((const FontFileHeaderImage_t *)pData)->m_TranslatorTable;
 
-   pData += CALCFONTFILEHEADERSIZE( font->m_cMaxGlyph + 1 );
+   pData                     += CALCFONTFILEHEADERSIZE(font->m_cMaxGlyph + 1);
 
    /* Read the glyph attributes from the file. */
    font->m_dwNumGlyphs        = ((const FontFileStrikesImage_t *)pData)->m_dwNumGlyphs;
@@ -608,12 +607,9 @@ static void xdk360_free_font(void *data, bool is_threaded)
    font->m_cMaxGlyph       = 0;
    font->m_TranslatorTable = NULL;
 
-   if (font->s_FontLocals.m_pFontPixelShader)
-      d3d_free_pixel_shader(font->d3d->dev, font->s_FontLocals.m_pFontPixelShader);
-   if (font->s_FontLocals.m_pFontVertexShader)
-      d3d_free_vertex_shader(font->d3d->dev, font->s_FontLocals.m_pFontVertexShader);
-   if (font->s_FontLocals.m_pFontVertexDecl)
-      d3d_vertex_declaration_free(font->s_FontLocals.m_pFontVertexDecl);
+   d3d_free_pixel_shader(font->d3d->dev, font->s_FontLocals.m_pFontPixelShader);
+   d3d_free_vertex_shader(font->d3d->dev, font->s_FontLocals.m_pFontVertexShader);
+   d3d_vertex_declaration_free(font->s_FontLocals.m_pFontVertexDecl);
 
    font->s_FontLocals.m_pFontPixelShader  = NULL;
    font->s_FontLocals.m_pFontVertexShader = NULL;
@@ -679,21 +675,21 @@ static void xdk360_draw_text(xdk360_video_font_t *font,
    LPDIRECT3DDEVICE d3dr = font->d3d->dev;
 
    /* Set the color as a vertex shader constant. */
-   vColor[0] = ((0xffffffff & 0x00ff0000) >> 16L) / 255.0f;
-   vColor[1] = ((0xffffffff & 0x0000ff00) >> 8L)  / 255.0f;
-   vColor[2] = ((0xffffffff & 0x000000ff) >> 0L)  / 255.0f;
-   vColor[3] = ((0xffffffff & 0xff000000) >> 24L) / 255.0f;
+   vColor[0]   = ((0xffffffff & 0x00ff0000) >> 16L) / 255.0f;
+   vColor[1]   = ((0xffffffff & 0x0000ff00) >> 8L)  / 255.0f;
+   vColor[2]   = ((0xffffffff & 0x000000ff) >> 0L)  / 255.0f;
+   vColor[3]   = ((0xffffffff & 0xff000000) >> 24L) / 255.0f;
 
    /* Perform the actual storing of the color constant here to prevent
     * a load-hit-store by inserting work between the store and the use of
     * the vColor array. */
    d3dr->SetVertexShaderConstantF(1, vColor, 1);
 
-   m_fCursorX = floorf(x);
-   m_fCursorY = floorf(y);
+   m_fCursorX  = floorf(x);
+   m_fCursorY  = floorf(y);
 
    /* Adjust for padding. */
-   y -= font->m_fFontTopPadding;
+   y          -= font->m_fFontTopPadding;
 
    /* Begin drawing the vertices
     * Declared as volatile to force writing in ascending
@@ -727,14 +723,14 @@ static void xdk360_draw_text(xdk360_video_font_t *font,
 
       /* Translate unprintable characters. */
       if (letter <= font->m_cMaxGlyph)
-         pGlyph = &font->m_Glyphs[font->m_TranslatorTable[letter]];
+         pGlyph   = &font->m_Glyphs[font->m_TranslatorTable[letter]];
       else
-         pGlyph = &font->m_Glyphs[0];
+         pGlyph   = &font->m_Glyphs[0];
 
-      fOffset  = FONT_SCALE(font->d3d) * (float)pGlyph->wOffset;
-      fAdvance = FONT_SCALE(font->d3d) * (float)pGlyph->wAdvance;
-      fWidth   = FONT_SCALE(font->d3d) * (float)pGlyph->wWidth;
-      fHeight  = FONT_SCALE(font->d3d) * font->m_fFontHeight;
+      fOffset     = FONT_SCALE(font->d3d) * (float)pGlyph->wOffset;
+      fAdvance    = FONT_SCALE(font->d3d) * (float)pGlyph->wAdvance;
+      fWidth      = FONT_SCALE(font->d3d) * (float)pGlyph->wWidth;
+      fHeight     = FONT_SCALE(font->d3d) * font->m_fFontHeight;
 
       m_fCursorX += fOffset;
 
@@ -763,28 +759,27 @@ static void xdk360_draw_text(xdk360_video_font_t *font,
        */
 
       /* Setup the vertex/screen coordinates */
-
-      pVertex[0]  = m_fCursorX;
-      pVertex[1]  = m_fCursorY;
-      pVertex[3]  = 0;
-      pVertex[4]  = m_fCursorX + fWidth;
-      pVertex[5]  = m_fCursorY;
-      pVertex[7]  = 0;
-      pVertex[8]  = m_fCursorX + fWidth;
-      pVertex[9]  = m_fCursorY + fHeight;
-      pVertex[11] = 0;
-      pVertex[12] = m_fCursorX;
-      pVertex[13] = m_fCursorY + fHeight;
+      pVertex[0]                         = m_fCursorX;
+      pVertex[1]                         = m_fCursorY;
+      pVertex[3]                         = 0;
+      pVertex[4]                         = m_fCursorX + fWidth;
+      pVertex[5]                         = m_fCursorY;
+      pVertex[7]                         = 0;
+      pVertex[8]                         = m_fCursorX + fWidth;
+      pVertex[9]                         = m_fCursorY + fHeight;
+      pVertex[11]                        = 0;
+      pVertex[12]                        = m_fCursorX;
+      pVertex[13]                        = m_fCursorY + fHeight;
 #ifdef MSB_FIRST
       ((volatile uint32_t *)pVertex)[2]  = (tu1 << 16) | tv1;       /* Merged using big endian rules */
       ((volatile uint32_t *)pVertex)[6]  = (tu2 << 16) | tv1;       /* Merged using big endian rules */
-      ((volatile uint32_t*)pVertex)[10] = (tu2 << 16) | tv2;        /* Merged using big endian rules */
-      ((volatile uint32_t*)pVertex)[14] = (tu1 << 16) | tv2;        /* Merged using big endian rules */
+      ((volatile uint32_t*)pVertex)[10]  = (tu2 << 16) | tv2;        /* Merged using big endian rules */
+      ((volatile uint32_t*)pVertex)[14]  = (tu1 << 16) | tv2;        /* Merged using big endian rules */
 #endif
-      pVertex[15] = 0;
-      pVertex += 16;
+      pVertex[15]                        = 0;
+      pVertex                           += 16;
 
-      m_fCursorX += fAdvance;
+      m_fCursorX                        += fAdvance;
 
       dwNumChars--;
    }
