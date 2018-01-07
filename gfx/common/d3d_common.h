@@ -208,6 +208,17 @@ void d3dxbuffer_release(void *data);
 
 D3DTEXTUREFILTERTYPE d3d_translate_filter(unsigned type);
 
+bool d3dx_compile_shader_from_file(
+      const char *src,
+      const void *pdefines,
+      void *pinclude,
+      const char *pfunctionname,
+      const char *pprofile,
+      unsigned flags,
+      void *ppshader,
+      void *pperrormsgs,
+      void *ppconstanttable);
+
 RETRO_END_DECLS
 
 #endif

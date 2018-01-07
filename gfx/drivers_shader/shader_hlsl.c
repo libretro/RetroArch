@@ -232,7 +232,7 @@ static bool hlsl_compile_program(
       void *program_data,
       struct shader_program_info *program_info)
 {
-   HRESULT ret, ret_fp, ret_vp;
+   HRESULT ret;
    hlsl_shader_data_t *hlsl                  = (hlsl_shader_data_t*)data;
    d3d_video_t *d3d                          = (d3d_video_t*)hlsl->d3d;
    struct shader_program_hlsl_data *program  = (struct shader_program_hlsl_data*)program_data;
@@ -247,42 +247,42 @@ static bool hlsl_compile_program(
 
    if (program_info->is_file)
    {
-      ret_fp = D3DXCompileShaderFromFile(program_info->combined, NULL, NULL,
-            "main_fragment", "ps_3_0", 0, &code_f, &listing_f, &program->f_ctable);
-      ret_vp = D3DXCompileShaderFromFile(program_info->combined, NULL, NULL,
-            "main_vertex", "vs_3_0", 0, &code_v, &listing_v, &program->v_ctable);
+      if (!d3dx_compile_shader_from_file(program_info->combined, NULL, NULL,
+            "main_fragment", "ps_3_0", 0, &code_f, &listing_f, &program->f_ctable))
+         goto error;
+      if (!d3dx_compile_shader_from_file(program_info->combined, NULL, NULL,
+            "main_vertex", "vs_3_0", 0, &code_v, &listing_v, &program->v_ctable))
+         goto error;
    }
    else
    {
       /* TODO - crashes currently - to do with 'end of line' of stock shader */
-      ret_fp = D3DXCompileShader(program_info->combined, strlen(program_info->combined), NULL, NULL,
-            "main_fragment", "ps_3_0", 0, &code_f, &listing_f, &program->f_ctable );
-      ret_vp = D3DXCompileShader(program_info->combined, strlen(program_info->combined), NULL, NULL,
-            "main_vertex", "vs_3_0", 0, &code_v, &listing_v, &program->v_ctable );
-   }
-
-   if (ret_fp < 0 || ret_vp < 0 || listing_v || listing_f)
-   {
-      RARCH_ERR("Cg/HLSL error:\n");
-      if(listing_f)
-         RARCH_ERR("Fragment:\n%s\n", (char*)ID3DXConstantTable_GetBufferPointer(listing_f));
-      if(listing_v)
-         RARCH_ERR("Vertex:\n%s\n", (char*)ID3DXConstantTable_GetBufferPointer(listing_v));
-
-      ret = false;
-      goto end;
+      if (D3DXCompileShader(program_info->combined, strlen(program_info->combined), NULL, NULL,
+            "main_fragment", "ps_3_0", 0, &code_f, &listing_f, &program->f_ctable ) > 0)
+         goto error;
+      if (D3DXCompileShader(program_info->combined, strlen(program_info->combined), NULL, NULL,
+            "main_vertex", "vs_3_0", 0, &code_v, &listing_v, &program->v_ctable ) > 0)
+         goto error;
    }
 
    d3d_create_pixel_shader(d3dr, (const DWORD*)ID3DXConstantTable_GetBufferPointer(code_f),  &program->fprg);
    d3d_create_vertex_shader(d3dr, (const DWORD*)ID3DXConstantTable_GetBufferPointer(code_v), &program->vprg);
    d3dxbuffer_release((void*)code_f);
    d3dxbuffer_release((void*)code_v);
+   goto end;
+
+error:
+   RARCH_ERR("Cg/HLSL error:\n");
+   if(listing_f)
+      RARCH_ERR("Fragment:\n%s\n", (char*)ID3DXConstantTable_GetBufferPointer(listing_f));
+   if(listing_v)
+      RARCH_ERR("Vertex:\n%s\n", (char*)ID3DXConstantTable_GetBufferPointer(listing_v));
+
+   ret = false;
 
 end:
-   if (listing_f)
-      d3dxbuffer_release((void*)listing_f);
-   if (listing_v)
-      d3dxbuffer_release((void*)listing_v);
+   d3dxbuffer_release((void*)listing_f);
+   d3dxbuffer_release((void*)listing_v);
    return ret;
 }
 
