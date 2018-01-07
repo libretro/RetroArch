@@ -1116,14 +1116,21 @@ bool d3d_create_pixel_shader(LPDIRECT3DDEVICE dev, const DWORD *a, void **b)
 bool d3d_set_pixel_shader(LPDIRECT3DDEVICE dev, void *data)
 {
 #ifdef HAVE_D3D9
-   if (!dev)
+   D3DPixelShader *d3dps = (D3DPixelShader*)data;
+   if (!dev || !d3dps)
       return false;
 #if defined(__cplusplus)
-   if (dev->SetPixelShader(data) != D3D_OK)
+   if (dev->SetPixelShader(d3dps) == D3D_OK)
       return true;
 #else
-   if (IDirect3DDevice9_SetPixelShader(dev, data) != D3D_OK)
+#ifdef _XBOX
+   /* Returns void on Xbox */
+   IDirect3DDevice9_SetPixelShader(dev, d3dps);
+   return true;
+#else
+   if (IDirect3DDevice9_SetPixelShader(dev, d3dps) == D3D_OK)
       return true;
+#endif
 #endif
 #endif
    return false;

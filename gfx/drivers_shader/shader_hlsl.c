@@ -389,18 +389,18 @@ static void hlsl_deinit_progs(hlsl_shader_data_t *hlsl)
    for (i = 1; i < RARCH_HLSL_MAX_SHADERS; i++)
    {
       if (hlsl->prg[i].fprg && hlsl->prg[i].fprg != hlsl->prg[0].fprg)
-         d3d_free_pixel_shader(hlsl->prg[i].fprg);
+         d3d_free_pixel_shader(hlsl->d3d->dev, hlsl->prg[i].fprg);
       if (hlsl->prg[i].vprg && hlsl->prg[i].vprg != hlsl->prg[0].vprg)
-         d3d_free_vertex_shader(hlsl->prg[i].vprg);
+         d3d_free_vertex_shader(hlsl->d3d->dev, hlsl->prg[i].vprg);
 
 	  hlsl->prg[i].fprg = NULL;
 	  hlsl->prg[i].vprg = NULL;
    }
 
    if (hlsl->prg[0].fprg)
-      d3d_free_pixel_shader(hlsl->prg[0].fprg);
+      d3d_free_pixel_shader(hlsl->d3d->dev, hlsl->prg[0].fprg);
    if (hlsl->prg[0].vprg)
-      d3d_free_vertex_shader(hlsl->prg[0].vprg);
+      d3d_free_vertex_shader(hlsl->d3d->dev, hlsl->prg[0].vprg);
 
    hlsl->prg[0].fprg = NULL;
    hlsl->prg[0].vprg = NULL;

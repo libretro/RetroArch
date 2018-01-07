@@ -484,7 +484,8 @@ static HRESULT xdk360_video_font_create_shaders(xdk360_video_font_t * font)
 
          if (hr >= 0)
          {
-            bool ret = d3d_create_vertex_shader(d3dr, (const DWORD*)pShaderCode->GetBufferPointer(), &font->s_FontLocals.m_pFontVertexShader );
+            bool ret = d3d_create_vertex_shader(d3dr, (const DWORD*)pShaderCode->GetBufferPointer(),
+				(void**)&font->s_FontLocals.m_pFontVertexShader );
             d3dxbuffer_release(pShaderCode);
 
             if (!ret)
@@ -494,7 +495,8 @@ static HRESULT xdk360_video_font_create_shaders(xdk360_video_font_t * font)
 
                if (hr >= 0)
                {
-                  ret = d3d_create_pixel_shader(d3dr, (DWORD*)pShaderCode->GetBufferPointer(), &font->s_FontLocals.m_pFontPixelShader);
+                  ret = d3d_create_pixel_shader(d3dr, (DWORD*)pShaderCode->GetBufferPointer(),
+					  (void**)&font->s_FontLocals.m_pFontPixelShader);
                   d3dxbuffer_release(pShaderCode);
 
                   if (!ret) 
@@ -504,7 +506,7 @@ static HRESULT xdk360_video_font_create_shaders(xdk360_video_font_t * font)
                   }
                }
 
-               d3d_free_vertex_shader(font->s_FontLocals.m_pFontVertexShader);
+               d3d_free_vertex_shader(font->d3d->dev, font->s_FontLocals.m_pFontVertexShader);
             }
 
             font->s_FontLocals.m_pFontVertexShader = NULL;
@@ -607,9 +609,9 @@ static void xdk360_free_font(void *data, bool is_threaded)
    font->m_TranslatorTable = NULL;
 
    if (font->s_FontLocals.m_pFontPixelShader)
-      d3d_free_pixel_shader(font->s_FontLocals.m_pFontPixelShader);
+      d3d_free_pixel_shader(font->d3d->dev, font->s_FontLocals.m_pFontPixelShader);
    if (font->s_FontLocals.m_pFontVertexShader)
-      d3d_free_vertex_shader(font->s_FontLocals.m_pFontVertexShader);
+      d3d_free_vertex_shader(font->d3d->dev, font->s_FontLocals.m_pFontVertexShader);
    if (font->s_FontLocals.m_pFontVertexDecl)
       d3d_vertex_declaration_free(font->s_FontLocals.m_pFontVertexDecl);
 
