@@ -233,7 +233,6 @@ static bool hlsl_compile_program(
       void *program_data,
       struct shader_program_info *program_info)
 {
-   HRESULT ret;
    hlsl_shader_data_t *hlsl                  = (hlsl_shader_data_t*)data;
    d3d_video_t *d3d                          = (d3d_video_t*)hlsl->d3d;
    struct shader_program_hlsl_data *program  = (struct shader_program_hlsl_data*)program_data;
@@ -262,25 +261,20 @@ static bool hlsl_compile_program(
                strlen(program_info->combined), NULL, NULL,
                "main_fragment", "ps_3_0", 0, &code_f, &listing_f,
                &program->f_ctable ))
-      {
-         RARCH_ERR("Errors here.\n");
          goto error;
-      }
       if (!d3dx_compile_shader(program_info->combined,
                strlen(program_info->combined), NULL, NULL,
                "main_vertex", "vs_3_0", 0, &code_v, &listing_v,
                &program->v_ctable ))
-      {
-         RARCH_ERR("Errors 2 here.\n");
          goto error;
-      }
    }
 
-   d3d_create_pixel_shader(d3dr, (const DWORD*)ID3DXConstantTable_GetBufferPointer(code_f),  &program->fprg);
-   d3d_create_vertex_shader(d3dr, (const DWORD*)ID3DXConstantTable_GetBufferPointer(code_v), &program->vprg);
+   d3d_create_pixel_shader(d3dr, (const DWORD*)ID3DXConstantTable_GetBufferPointer(code_f),  (void**)&program->fprg);
+   d3d_create_vertex_shader(d3dr, (const DWORD*)ID3DXConstantTable_GetBufferPointer(code_v), (void**)&program->vprg);
    d3dxbuffer_release((void*)code_f);
    d3dxbuffer_release((void*)code_v);
-   goto end;
+
+   return true;
 
 error:
    RARCH_ERR("Cg/HLSL error:\n");
@@ -288,23 +282,20 @@ error:
       RARCH_ERR("Fragment:\n%s\n", (char*)ID3DXConstantTable_GetBufferPointer(listing_f));
    if(listing_v)
       RARCH_ERR("Vertex:\n%s\n", (char*)ID3DXConstantTable_GetBufferPointer(listing_v));
-
-   ret = false;
-
-end:
    d3dxbuffer_release((void*)listing_f);
    d3dxbuffer_release((void*)listing_v);
-   return ret;
+
+   return false;
 }
 
 static bool hlsl_load_stock(hlsl_shader_data_t *hlsl, void *data)
 {
    struct shader_program_info program_info;
 
-   program_info.combined = stock_hlsl_program;
-   program_info.is_file  = false;
+   program_info.combined     = stock_hlsl_program;
+   program_info.is_file      = false;
 
-   hlsl->d3d = (d3d_video_t*)data;
+   hlsl->d3d                 = (d3d_video_t*)data;
 
    if (!hlsl_compile_program(hlsl, 0, &hlsl->prg[0], &program_info))
    {
