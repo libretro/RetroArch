@@ -57,13 +57,10 @@
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
 
-#if defined(HAVE_CG)
-#define HAVE_SHADERS
-#endif
-
 #ifdef HAVE_HLSL
 #include "../drivers_shader/shader_hlsl.h"
 #endif
+
 #endif
 
 #ifdef _XBOX
@@ -252,12 +249,12 @@ static bool d3d_init_singlepass(d3d_video_t *d3d)
 }
 
 #ifdef HAVE_FBO
-static bool d3d_init_multipass(d3d_video_t *d3d)
+static bool d3d_init_multipass(d3d_video_t *d3d, const char *shader_path)
 {
    unsigned i;
-   bool use_extra_pass     = false;
+   bool            use_extra_pass = false;
    struct video_shader_pass *pass = NULL;
-   config_file_t *conf     = !string_is_empty(d3d->shader_path) ? config_file_new(d3d->shader_path) : NULL;
+   config_file_t            *conf = config_file_new(shader_path);
 
    if (!conf)
    {
@@ -266,19 +263,18 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
    }
 
    memset(&d3d->shader, 0, sizeof(d3d->shader));
-#ifdef HAVE_SHADERPIPELINE
+
    if (!video_shader_read_conf_cgp(conf, &d3d->shader))
    {
       config_file_free(conf);
       RARCH_ERR("[D3D]: Failed to parse CGP file.\n");
       return false;
    }
-#endif
+
    config_file_free(conf);
-#ifdef HAVE_SHADERPIPELINE
-   if (!string_is_empty(d3d->shader_path))
-      video_shader_resolve_relative(&d3d->shader, d3d->shader_path);
-#endif
+
+   if (!string_is_empty(shader_path))
+      video_shader_resolve_relative(&d3d->shader, shader_path);
    RARCH_LOG("[D3D]: Found %u shaders.\n", d3d->shader.passes);
 
    for (i = 0; i < d3d->shader.passes; i++)
@@ -301,8 +297,10 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
       pass              = (struct video_shader_pass*)
          &d3d->shader.pass[d3d->shader.passes - 1];
 
-      pass->fbo.scale_x = pass->fbo.scale_y = 1.0f;
-      pass->fbo.type_x  = pass->fbo.type_y = RARCH_SCALE_VIEWPORT;
+      pass->fbo.scale_x = 1.0f;
+      pass->fbo.scale_y = 1.0f;
+      pass->fbo.type_x  = RARCH_SCALE_VIEWPORT;
+      pass->fbo.type_y  = RARCH_SCALE_VIEWPORT;
       pass->filter      = RARCH_FILTER_UNSPEC;
    }
    else
@@ -310,8 +308,10 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
       pass              = (struct video_shader_pass*)
          &d3d->shader.pass[d3d->shader.passes - 1];
 
-      pass->fbo.scale_x = pass->fbo.scale_y = 1.0f;
-      pass->fbo.type_x  = pass->fbo.type_y = RARCH_SCALE_VIEWPORT;
+      pass->fbo.scale_x = 1.0f;
+      pass->fbo.scale_y = 1.0f;
+      pass->fbo.type_x  = RARCH_SCALE_VIEWPORT;
+      pass->fbo.type_y  = RARCH_SCALE_VIEWPORT;
    }
 
    return true;
@@ -321,9 +321,10 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
 static bool d3d_process_shader(d3d_video_t *d3d)
 {
 #ifdef HAVE_FBO
-   if (d3d && !string_is_empty(d3d->shader_path) &&
-         string_is_equal(path_get_extension(d3d->shader_path), "cgp"))
-      return d3d_init_multipass(d3d);
+   const char *shader_path = d3d->shader_path;
+   if (d3d && !string_is_empty(shader_path) &&
+         string_is_equal(path_get_extension(shader_path), "cgp"))
+      return d3d_init_multipass(d3d, shader_path);
 #endif
 
    return d3d_init_singlepass(d3d);
@@ -1102,7 +1103,6 @@ static bool d3d_init_internal(d3d_video_t *d3d,
 	   windowed_full, &rect);
 #endif
 
-#ifdef HAVE_SHADERS
    /* This should only be done once here
     * to avoid set_shader() to be overridden
     * later. */
@@ -1127,7 +1127,6 @@ static bool d3d_init_internal(d3d_video_t *d3d,
 
    if (!d3d_process_shader(d3d))
       return false;
-#endif
 
    d3d->video_info = *info;
    if (!d3d_initialize(d3d, &d3d->video_info))
