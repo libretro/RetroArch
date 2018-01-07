@@ -17,6 +17,10 @@
 #ifndef D3DVIDEO_DEFINES_H
 #define D3DVIDEO_DEFINES_H
 
+#if defined(DEBUG) || defined(_DEBUG)
+#define D3D_DEBUG_INFO
+#endif
+
 #if defined(HAVE_D3D9)
 /* Direct3D 9 */
 #include <d3d9.h>
