@@ -230,6 +230,7 @@ static bool runloop_remaps_game_active                     = false;
 static bool runloop_game_options_active                    = false;
 static bool runloop_missing_bios                           = false;
 static bool runloop_autosave                               = false;
+static bool runloop_had_hard_sync                          = false;
 
 static rarch_system_info_t runloop_system;
 static struct retro_frame_time_callback runloop_frame_time;
@@ -2800,6 +2801,18 @@ static enum runloop_state runloop_check_state(
       if (runloop_fastmotion)
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_FAST_FORWARD), 1, 1, false);
+
+      /* Disable gpu hard sync in fast forward state for speed. */
+      if (runloop_fastmotion && settings->bools.video_hard_sync)
+      {
+         settings->bools.video_hard_sync = false;
+         runloop_had_hard_sync = true;
+      }
+      else if (!runloop_fastmotion && runloop_had_hard_sync)
+      {
+         settings->bools.video_hard_sync = true;
+         runloop_had_hard_sync = false;
+      }
 
       old_button_state                  = new_button_state;
       old_hold_button_state             = new_hold_button_state;
