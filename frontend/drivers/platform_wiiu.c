@@ -314,6 +314,8 @@ static volatile int wiiu_log_lock = 0;
 
 void wiiu_log_init(const char *ipString, int port)
 {
+   wiiu_log_lock = 0;
+
    wiiu_log_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
    if (wiiu_log_socket < 0)

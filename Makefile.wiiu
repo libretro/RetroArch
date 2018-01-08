@@ -6,7 +6,8 @@ DEBUG                      = 0
 GRIFFIN_BUILD              = 0
 SALAMANDER_BUILD           = 0
 WHOLE_ARCHIVE_LINK         = 0
-HAVE_HID                   = 1
+HAVE_HID                   = 0
+WIIU_HID                   = 0
 BUILD_DIR                  = objs/wiiu
 PC_DEVELOPMENT_IP_ADDRESS  ?=
 PC_DEVELOPMENT_TCP_PORT	   ?=
@@ -25,10 +26,8 @@ ifneq ($(V), 1)
 endif
 
 OBJ :=
-OBJ += wiiu/input/wiiu_hid.o
 OBJ += wiiu/input/wpad_driver.o
 OBJ += wiiu/input/kpad_driver.o
-OBJ += wiiu/input/hidpad_driver.o
 OBJ += wiiu/input/pad_functions.o
 OBJ += wiiu/system/memory.o
 OBJ += wiiu/system/exception_handler.o
@@ -37,6 +36,12 @@ OBJ += wiiu/fs/fs_utils.o
 OBJ += wiiu/hbl.o
 
 DEFINES :=
+
+ifeq ($(WIIU_HID),1)
+   DEFINES += -DWIIU_HID
+   OBJ += wiiu/input/hidpad_driver.o
+   OBJ += wiiu/input/wiiu_hid.o
+endif
 
 ifeq ($(SALAMANDER_BUILD),1)
    DEFINES += -DRARCH_CONSOLE -DIS_SALAMANDER

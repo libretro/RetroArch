@@ -71,6 +71,7 @@ static bool hidpad_init(void *data)
 {
    (void *)data;
 
+#if 0
    hid_driver = init_hid_driver();
    if (!hid_driver)
    {
@@ -82,6 +83,9 @@ static bool hidpad_init(void *data)
    ready = true;
 
    return true;
+#else
+   return false;
+#endif
 }
 
 static bool hidpad_query_pad(unsigned pad)
