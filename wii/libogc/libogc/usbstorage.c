@@ -290,7 +290,7 @@ static s32 __cycle(usbstorage_handle *dev, u8 lun, u8 *buffer, u32 len, u8 *cb, 
 	u16 max_size;
 	u8 ep = write ? dev->ep_out : dev->ep_in;
 	s8 retries = USBSTORAGE_CYCLE_RETRIES + 1;
-	
+
 	if(usb2_mode)
 		max_size=MAX_TRANSFER_SIZE_V5;
 	else
@@ -440,7 +440,7 @@ s32 USBStorage_Open(usbstorage_handle *dev, s32 device_id, u16 vid, u16 pid)
 					|| uid->bInterfaceSubClass == MASS_STORAGE_SFF8070_COMMANDS) &&*/
 				   uid->bInterfaceProtocol == MASS_STORAGE_BULK_ONLY)
 			{
-				
+
 				if (uid->bNumEndpoints < 2)
 					continue;
 
@@ -455,9 +455,9 @@ s32 USBStorage_Open(usbstorage_handle *dev, s32 device_id, u16 vid, u16 pid)
 					}
 					else {
 						dev->ep_out = ued->bEndpointAddress;
-						if(ued->wMaxPacketSize > 64 && (dev->usb_fd>=0x20 || dev->usb_fd<-1)) 
+						if(ued->wMaxPacketSize > 64 && (dev->usb_fd>=0x20 || dev->usb_fd<-1))
 							usb2_mode=true;
-						else 
+						else
 							usb2_mode=false;
 					}
 				}
@@ -496,7 +496,7 @@ found:
 	LWP_MutexLock(dev->lock);
 	retval = __USB_CtrlMsgTimeout(dev, (USB_CTRLTYPE_DIR_DEVICE2HOST | USB_CTRLTYPE_TYPE_CLASS | USB_CTRLTYPE_REC_INTERFACE), USBSTORAGE_GET_MAX_LUN, 0, dev->interface, 1, max_lun);
 	LWP_MutexUnlock(dev->lock);
-	
+
 	if (retval < 0)
 		dev->max_lun = 1;
 	else
@@ -602,9 +602,9 @@ s32 USBStorage_MountLUN(usbstorage_handle *dev, u8 lun)
 		USBStorage_Reset(dev);
 		retval = __usbstorage_clearerrors(dev, lun);
 	}
-	
+
 	retval = USBStorage_Inquiry(dev,  lun);
-	
+
 	retval = USBStorage_ReadCapacity(dev, lun, &dev->sector_size[lun], &n_sectors);
 	if(retval >= 0 && (dev->sector_size[lun]<512 || n_sectors==0))
 		return INVALID_LUN;
@@ -618,11 +618,11 @@ s32 USBStorage_Inquiry(usbstorage_handle *dev, u8 lun)
 	s32 retval;
 	u8 cmd[] = {SCSI_INQUIRY, lun << 5,0,0,36,0};
 	u8 response[36];
-	
+
 	for(n=0;n<2;n++)
 	{
 		memset(response,0,36);
-	
+
 		retval = __cycle(dev, lun, response, 36, cmd, 6, 0, NULL, NULL);
 		if(retval>=0) break;
 	}
@@ -881,7 +881,7 @@ static bool __usbstorage_IsInserted(void)
 		pid = buffer[i].pid;
 		if (vid == 0 || pid == 0)
 			continue;
-			
+
 		if (vid == 0x0b95 && pid == 0x7720) // USB LAN
 			continue;
 
@@ -968,11 +968,11 @@ s32 USBStorage_ioctl(int request, ...)
 {
     int retval = 0;
     va_list ap;
-    
+
     if(!__mounted)
     	return -1;
-    
-    va_start(ap, request); 
+
+    va_start(ap, request);
 
     switch (request)
     {
@@ -989,7 +989,7 @@ s32 USBStorage_ioctl(int request, ...)
 			retval = -1;
 		    break;
     }
-    
+
     va_end(ap);
     return retval;
 }

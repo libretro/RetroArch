@@ -7,6 +7,9 @@
 *.elf
 *.dol
 *.map
+.tmp
+.tmp.c
+.tmp.cxx
 config.log
 /retroarch
 /retroarch.cfg
@@ -67,6 +70,19 @@ menu/driverspzarch.c
 *.depend
 *.rpx
 wiiu/wut/elf2rpl/elf2rpl
+/pkg/wiiu/retroarch
+/pkg/wiiu/wiiu
+/pkg/wiiu/rpx
+
+# 3ds
+/.lst
+*.3dsx
+*.cia
+*.3ds
+*.bnr
+*.smdh
+/retroarch_3ds.core
+/retroarch_3ds.icn
 
 # Ctags
 /tags
@@ -102,11 +118,13 @@ obj-unix/
 /pkg/msvc/Release Cg/*.lpl
 /pkg/msvc/Release Cg/*.cfg
 /pkg/msvc/*.db
+/pkg/msvc/.vs
+/pkg/msvc/*/.vs
 /pkg/msvc/msvc-2010/Release Cg/RetroArc.27FF7CE1.tlog/*.tlog
 /pkg/msvc/msvc-2010/Release Cg/RetroArc.27FF7CE1.tlog/*.lastbuildstate
 /pkg/msvc/msvc-2010/Release Cg/*.log
 /pkg/msvc/msvc-2010/Release Cg/*.obj
 /pkg/msvc/msvc-2010/Release Cg/*.res
 /pkg/msvc/msvc-2010/Release Cg/*.pdb
-
 retroarch.cfg
+Makefile.local

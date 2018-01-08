@@ -4,7 +4,7 @@
    "version": "2.0.0",
    "tasks": [
       {
-         "taskName": "Build",
+         "taskName": "msys2-mingw64 build",
          "type": "shell",
 
          "group": {
@@ -22,7 +22,7 @@
          }
       }
       {
-         "taskName": "Build with debugging symbols",
+         "taskName": "msys2-mingw64 build with debug symbols",
          "type": "shell",
 
          "group": "build",
@@ -38,7 +38,7 @@
          }
       }
       {
-         "taskName": "Build without reconfiguring",
+         "taskName": "msys2-mingw64 rebuild",
          "type": "shell",
 
          "group": "build",
@@ -54,7 +54,7 @@
          }
       }
       {
-         "taskName": "Clean",
+         "taskName": "msys2-mingw64 clean",
          "type": "shell",
 
          "group": "build",
@@ -70,7 +70,7 @@
          }
       }
       {
-         "taskName": "Start",
+         "taskName": "msys2-mingw64 run",
          "type": "shell",
 
          "group": {

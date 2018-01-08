@@ -38,27 +38,27 @@
 /* ARGB8888 scaler is split in two:
  *
  * First, horizontal scaler is applied.
- * Here, all 8-bit channels are expanded to 16-bit. Values are then shifted 7 
+ * Here, all 8-bit channels are expanded to 16-bit. Values are then shifted 7
  * to left to occupy 15 bits.
  *
- * The sign bit is kept empty as we have to do signed multiplication for the 
+ * The sign bit is kept empty as we have to do signed multiplication for the
  * filter.
  *
- * A mulhi [(a * b) >> 16] is applied which loses some precision, but is 
+ * A mulhi [(a * b) >> 16] is applied which loses some precision, but is
  * very efficient for SIMD.
  * It is accurate enough for 8-bit purposes.
  *
- * The fixed point 1.0 for filter is (1 << 14). After horizontal scale, 
- * the output is kept with 16-bit channels, and will now have 13 bits 
+ * The fixed point 1.0 for filter is (1 << 14). After horizontal scale,
+ * the output is kept with 16-bit channels, and will now have 13 bits
  * of precision as [(a * (1 << 14)) >> 16] is effectively a right shift by 2.
  *
- * Vertical scaler takes the 13 bit channels, and performs the 
+ * Vertical scaler takes the 13 bit channels, and performs the
  * same mulhi steps.
  * Another 2 bits of precision is lost, which ends up as 11 bits.
- * Scaling is now complete. Channels are shifted right by 3, and saturated 
+ * Scaling is now complete. Channels are shifted right by 3, and saturated
  * into 8-bit values.
  *
- * The C version of scalers perform the exact same operations as the 
+ * The C version of scalers perform the exact same operations as the
  * SIMD code for testing purposes.
  */
 
@@ -70,10 +70,10 @@ void scaler_argb8888_vert(const struct scaler_ctx *ctx, void *output_, int strid
 
    const int16_t *filter_vert = ctx->vert.filter;
 
-   for (h = 0; h < ctx->out_height; h++, 
+   for (h = 0; h < ctx->out_height; h++,
          filter_vert += ctx->vert.filter_stride, output += stride >> 2)
    {
-      const uint64_t *input_base = input + ctx->vert.filter_pos[h] 
+      const uint64_t *input_base = input + ctx->vert.filter_pos[h]
          * (ctx->scaled.stride >> 3);
 
       for (w = 0; w < ctx->out_width; w++)
@@ -135,9 +135,9 @@ void scaler_argb8888_vert(const struct scaler_ctx *ctx, void *output_, int strid
          res_g           >>= (7 - 2 - 2);
          res_b           >>= (7 - 2 - 2);
 
-         output[w]         = 
+         output[w]         =
             (clamp_8bit(res_a) << 24) |
-            (clamp_8bit(res_r) << 16) | 
+            (clamp_8bit(res_r) << 16) |
             (clamp_8bit(res_g) << 8)  |
             (clamp_8bit(res_b) << 0);
 #endif
@@ -221,7 +221,7 @@ void scaler_argb8888_horiz(const struct scaler_ctx *ctx, const void *input_, int
          }
 
          output[w]         = (
-               (uint64_t)res_a  << 48)  | 
+               (uint64_t)res_a  << 48)  |
                ((uint64_t)res_r << 32)  |
                ((uint64_t)res_g << 16)  |
                ((uint64_t)res_b << 0);

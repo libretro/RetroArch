@@ -58,6 +58,7 @@ COMPATIBILITY
 #endif
 
 #include "../libretro-common/compat/compat_fnmatch.c"
+#include "../libretro-common/compat/fopen_utf8.c"
 #include "../libretro-common/memmap/memalign.c"
 
 /*============================================================
@@ -159,7 +160,7 @@ ACHIEVEMENTS
 /*============================================================
 MD5
 ============================================================ */
-#if (defined(HAVE_CHEEVOS) && defined(HAVE_THREADS)) || (defined(HAVE_HTTPSERVER) && defined(HAVE_ZLIB))
+#if defined(HAVE_CHEEVOS) || (defined(HAVE_HTTPSERVER) && defined(HAVE_ZLIB))
 #include "../libretro-common/utils/md5.c"
 #endif
 
@@ -187,9 +188,8 @@ VIDEO CONTEXT
 #include "../gfx/drivers_context/wgl_ctx.c"
 #endif
 
-#if defined(_WIN32) && !defined(_XBOX)
 #include "../gfx/drivers_context/gdi_ctx.c"
-#endif
+#include "../gfx/display_servers/dispserv_win32.c"
 
 #if defined(HAVE_FFMPEG)
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
@@ -251,8 +251,11 @@ VIDEO CONTEXT
 
 #if defined(HAVE_X11)
 #include "../gfx/common/x11_common.c"
-#include "../gfx/common/dbus_common.c"
 #include "../gfx/common/xinerama_common.c"
+
+#ifdef HAVE_DBUS
+#include "../gfx/common/dbus_common.c"
+#endif
 
 #ifndef HAVE_OPENGLES
 #include "../gfx/drivers_context/x_ctx.c"
@@ -370,6 +373,7 @@ VIDEO DRIVER
 #endif
 
 #include "../gfx/drivers_renderchain/null_renderchain.c"
+#include "../gfx/display_servers/dispserv_null.c"
 
 #ifdef HAVE_OPENGL
 #include "../gfx/common/gl_common.c"
@@ -427,7 +431,7 @@ FONTS
 #include "../gfx/drivers_font_renderer/bitmapfont.c"
 #include "../gfx/font_driver.c"
 
-#if defined(HAVE_D3D9) && !defined(_XBOX)
+#if defined(HAVE_D3D9) && defined(HAVE_D3DX)
 #include "../gfx/drivers_font/d3d_w32_font.c"
 #endif
 
@@ -494,6 +498,7 @@ INPUT
 
 #ifdef HAVE_OVERLAY
 #include "../input/input_overlay.c"
+#include "../led/overlay_led_driver.c"
 #include "../tasks/task_overlay.c"
 #endif
 
@@ -664,6 +669,18 @@ CAMERA
 #include "../camera/drivers/nullcamera.c"
 
 /*============================================================
+LEDS
+============================================================ */
+
+#include "../led/led_driver.c"
+
+#include "../led/null_led_driver.c"
+
+#if defined(HAVE_RPILED)
+#include "../led/rpi_led_driver.c"
+#endif
+
+/*============================================================
 LOCATION
 ============================================================ */
 #if defined(ANDROID)
@@ -745,6 +762,7 @@ AUDIO
 DRIVERS
 ============================================================ */
 #include "../gfx/video_driver.c"
+#include "../gfx/video_display_server.c"
 #include "../gfx/video_coord_array.c"
 #include "../input/input_driver.c"
 #include "../audio/audio_driver.c"
@@ -819,6 +837,7 @@ FILE
 #include "../libretro-common/streams/file_stream_transforms.c"
 #include "../libretro-common/streams/interface_stream.c"
 #include "../libretro-common/streams/memory_stream.c"
+#include "../libretro-common/vfs/vfs_implementation.c"
 #include "../list_special.c"
 #include "../libretro-common/string/stdstring.c"
 #include "../libretro-common/file/nbio/nbio_stdio.c"
@@ -971,6 +990,29 @@ THREAD
 #if defined(HAVE_THREADS) && defined(XENON)
 #include "../thread/xenon_sdl_threads.c"
 #elif defined(HAVE_THREADS)
+
+#if defined(PSP)
+#include "../deps/pthreads/platform/helper/tls-helper.c"
+#include "../deps/pthreads/platform/psp/psp_osal.c"
+#include "../deps/pthreads/pte_main.c"
+#include "../deps/pthreads/pte.c"
+#include "../deps/pthreads/pthread_attr.c"
+#include "../deps/pthreads/pthread_barrier.c"
+#include "../deps/pthreads/pthread_cond.c"
+#include "../deps/pthreads/pthread_condattr.c"
+#include "../deps/pthreads/pthread_get.c"
+#include "../deps/pthreads/pthread_key.c"
+#include "../deps/pthreads/pthread_mutex.c"
+#include "../deps/pthreads/pthread_mutexattr.c"
+#include "../deps/pthreads/pthread_rwlock.c"
+#include "../deps/pthreads/pthread_rwlockattr.c"
+#include "../deps/pthreads/pthread_set.c"
+#include "../deps/pthreads/pthread_spin.c"
+#include "../deps/pthreads/pthread.c"
+#include "../deps/pthreads/sched.c"
+#include "../deps/pthreads/sem.c"
+#endif
+
 #include "../libretro-common/rthreads/rthreads.c"
 #include "../gfx/video_thread_wrapper.c"
 #include "../audio/audio_thread_wrapper.c"
@@ -1043,6 +1085,9 @@ MENU
 #include "../menu/menu_setting.c"
 #include "../menu/menu_cbs.c"
 #include "../menu/menu_content.c"
+
+#include "../menu/menu_networking.c"
+
 #include "../menu/widgets/menu_entry.c"
 #include "../menu/widgets/menu_filebrowser.c"
 #include "../menu/widgets/menu_dialog.c"
@@ -1151,10 +1196,6 @@ MENU
 #endif
 
 #include "../command.c"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #if defined(HAVE_NETWORKING)
 #include "../libretro-common/net/net_http_parse.c"
@@ -1270,14 +1311,11 @@ XML
 #include "../deps/miniupnpc/minisoap.c"
 #endif
 
+
 /*============================================================
 HTTP SERVER
 ============================================================ */
 #if defined(HAVE_HTTPSERVER) && defined(HAVE_ZLIB)
 #include "../deps/civetweb/civetweb.c"
 #include "network/httpserver/httpserver.c"
-#endif
-
-#ifdef __cplusplus
-}
 #endif

@@ -187,7 +187,7 @@ static int omapfb_detect_screen(omapfb_data_t *pdata)
 
    buff[0] = manager_name[0] = display_name[0] = '\0';
 
-   /* Find out the native screen resolution, which is needed to 
+   /* Find out the native screen resolution, which is needed to
     * properly center the scaled image data. */
    ret = stat(pdata->fbname, &status);
 
@@ -873,7 +873,7 @@ static void omap_render_msg(omap_video_t *vid, const char *msg)
       int base_x, base_y;
       int glyph_width, glyph_height;
       const uint8_t *src = NULL;
-      const struct font_glyph *glyph = 
+      const struct font_glyph *glyph =
          vid->font_driver->get_glyph(vid->font, (uint8_t)*msg);
 
       if (!glyph)
@@ -888,7 +888,7 @@ static void omap_render_msg(omap_video_t *vid, const char *msg)
       glyph_width          = glyph->width;
       glyph_height         = glyph->height;
 
-      src                  = atlas->buffer + glyph->atlas_offset_x + 
+      src                  = atlas->buffer + glyph->atlas_offset_x +
          glyph->atlas_offset_y * atlas->width;
 
       if (base_x < 0)
@@ -1085,7 +1085,7 @@ static bool omap_gfx_set_shader(void *data,
    (void)type;
    (void)path;
 
-   return false; 
+   return false;
 }
 
 static void omap_gfx_set_rotation(void *data, unsigned rotation)
@@ -1143,10 +1143,8 @@ static const video_poke_interface_t omap_gfx_poke_interface = {
    NULL, /* get_proc_address */
    NULL, /* set_aspect_ratio */
    NULL, /* apply_state_changes */
-#ifdef HAVE_MENU
    omap_gfx_set_texture_frame,
    omap_gfx_set_texture_enable,
-#endif
    NULL,
    NULL, /* show_mouse */
    NULL, /* grab_mouse_toggle */

@@ -36,6 +36,8 @@
 #include "../../config.h"
 #endif
 
+#include "../../frontend/frontend_driver.h"
+
 #include "menu_generic.h"
 
 #include "../menu_driver.h"
@@ -447,7 +449,7 @@ static void rgui_render(void *data, bool is_idle)
       unsigned new_val;
 
       menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &old_start);
-      
+
       new_val = (unsigned)(menu_input_pointer_state(MENU_POINTER_Y_AXIS)
          / (11 - 2 + old_start));
 
@@ -523,7 +525,7 @@ static void rgui_render(void *data, bool is_idle)
       back_buf[0] = back_msg[0] = '\0';
 
       strlcpy(back_buf, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK), sizeof(back_buf));
-      strlcpy(back_msg, string_to_upper(back_buf), sizeof(back_msg));
+      string_to_upper(back_buf);
       if (rgui_framebuf_data)
          blit_line(
                RGUI_TERM_START_X(fb_width),
@@ -532,7 +534,7 @@ static void rgui_render(void *data, bool is_idle)
                TITLE_COLOR(settings));
    }
 
-   strlcpy(title_buf, string_to_upper(title_buf), sizeof(title_buf));
+   string_to_upper(title_buf);
 
    if (rgui_framebuf_data)
       blit_line(
@@ -541,7 +543,7 @@ static void rgui_render(void *data, bool is_idle)
             RGUI_TERM_START_X(fb_width),
             title_buf, TITLE_COLOR(settings));
 
-   if (settings->bools.menu_core_enable && 
+   if (settings->bools.menu_core_enable &&
          menu_entries_get_core_title(title_msg, sizeof(title_msg)) == 0)
    {
       if (rgui_framebuf_data)
@@ -720,7 +722,7 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
       goto error;
 
    if (rgui_framebuf_data)
-      rgui_fill_rect(rgui_framebuf_data, 
+      rgui_fill_rect(rgui_framebuf_data,
             fb_pitch, 0, fb_height,
             fb_width, 4, rgui_gray_filler);
 

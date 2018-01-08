@@ -17,14 +17,17 @@
 #include <stdint.h>
 #include <unistd.h>
 
+#include <retro_miscellaneous.h>
+
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
 
 #include "../input_driver.h"
-
 #include "../input_keymaps.h"
+
 #include "cocoa_input.h"
+
 #include "../../gfx/video_driver.h"
 #include "../../driver.h"
 
@@ -56,7 +59,7 @@ static int cocoa_input_find_any_button_ret(cocoa_input_data_t *apple,
 
    if (state)
       for (i = 0; i < 256; i++)
-         if (RARCH_INPUT_STATE_BIT_GET_PTR(state,i))
+         if (BIT256_GET_PTR(state,i))
             return i;
    return -1;
 }
@@ -325,11 +328,6 @@ static int16_t cocoa_input_state(void *data,
    return 0;
 }
 
-static bool cocoa_input_meta_key_pressed(void *data, int key)
-{
-   return false;
-}
-
 static void cocoa_input_free(void *data)
 {
    unsigned i;
@@ -423,7 +421,6 @@ input_driver_t input_cocoa = {
    cocoa_input_init,
    cocoa_input_poll,
    cocoa_input_state,
-   cocoa_input_meta_key_pressed,
    cocoa_input_free,
    NULL,
    NULL,

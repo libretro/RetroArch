@@ -23,6 +23,7 @@
 #include <retro_timers.h>
 
 #include "../verbosity.h"
+#include "../gfx/video_display_server.h"
 #include "tasks_internal.h"
 
 enum http_status_enum
@@ -73,7 +74,7 @@ static int task_http_conn_iterate_transfer_parse(
       if (http->connection.handle && http->connection.cb)
          http->connection.cb(http, 0);
    }
-   
+
    net_http_connection_free(http->connection.handle);
 
    http->connection.handle = NULL;
@@ -234,6 +235,13 @@ static bool task_http_retriever(retro_task_t *task, void *data)
    return true;
 }
 
+static void http_transfer_progress_cb(retro_task_t *task)
+{
+   if (!task)
+      return;
+   video_display_server_set_window_progress(task->progress, task->finished);
+}
+
 static void* task_push_http_transfer_generic(
       struct http_connection_t *conn,
       const char *url, bool mute, const char *type,
@@ -285,6 +293,7 @@ static void* task_push_http_transfer_generic(
    t->state                = http;
    t->mute                 = mute;
    t->callback             = cb;
+   t->progress_cb          = http_transfer_progress_cb;
    t->user_data            = user_data;
    t->progress             = -1;
 

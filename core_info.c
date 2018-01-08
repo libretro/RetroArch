@@ -20,6 +20,7 @@
 #include <file/file_path.h>
 #include <lists/dir_list.h>
 #include <file/archive_file.h>
+#include <streams/file_stream.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -214,7 +215,7 @@ static bool core_info_list_iterate(
 
    fill_pathname_join(s,
          (!string_is_empty(settings->paths.path_libretro_info)) ?
-         settings->paths.path_libretro_info : 
+         settings->paths.path_libretro_info :
          settings->paths.directory_libretro,
          info_path_base, len);
 
@@ -255,9 +256,9 @@ static core_info_list_t *core_info_list_new(const char *path)
 
       info_path[0]          = '\0';
 
-      if ( 
+      if (
             core_info_list_iterate(info_path, info_path_size,
-            contents, i) 
+            contents, i)
             && path_is_valid(info_path))
       {
          char *tmp           = NULL;
@@ -270,14 +271,14 @@ static core_info_list_t *core_info_list_new(const char *path)
          if (!conf)
             continue;
 
-         if (config_get_string(conf, "display_name", &tmp) 
+         if (config_get_string(conf, "display_name", &tmp)
                && !string_is_empty(tmp))
          {
             core_info[i].display_name = strdup(tmp);
             free(tmp);
             tmp = NULL;
          }
-         if (config_get_string(conf, "corename", &tmp) 
+         if (config_get_string(conf, "corename", &tmp)
                && !string_is_empty(tmp))
          {
             core_info[i].core_name = strdup(tmp);
@@ -285,7 +286,7 @@ static core_info_list_t *core_info_list_new(const char *path)
             tmp = NULL;
          }
 
-         if (config_get_string(conf, "systemname", &tmp) 
+         if (config_get_string(conf, "systemname", &tmp)
                && !string_is_empty(tmp))
          {
             core_info[i].systemname = strdup(tmp);
@@ -293,7 +294,7 @@ static core_info_list_t *core_info_list_new(const char *path)
             tmp = NULL;
          }
 
-         if (config_get_string(conf, "manufacturer", &tmp) 
+         if (config_get_string(conf, "manufacturer", &tmp)
                && !string_is_empty(tmp))
          {
             core_info[i].system_manufacturer = strdup(tmp);
@@ -305,7 +306,7 @@ static core_info_list_t *core_info_list_new(const char *path)
 
          core_info[i].firmware_count = count;
 
-         if (config_get_string(conf, "supported_extensions", &tmp) 
+         if (config_get_string(conf, "supported_extensions", &tmp)
                && !string_is_empty(tmp))
          {
             core_info[i].supported_extensions      = strdup(tmp);
@@ -316,7 +317,7 @@ static core_info_list_t *core_info_list_new(const char *path)
             tmp = NULL;
          }
 
-         if (config_get_string(conf, "authors", &tmp) 
+         if (config_get_string(conf, "authors", &tmp)
                && !string_is_empty(tmp))
          {
             core_info[i].authors      = strdup(tmp);
@@ -327,7 +328,7 @@ static core_info_list_t *core_info_list_new(const char *path)
             tmp = NULL;
          }
 
-         if (config_get_string(conf, "permissions", &tmp) 
+         if (config_get_string(conf, "permissions", &tmp)
                && !string_is_empty(tmp))
          {
             core_info[i].permissions      = strdup(tmp);
@@ -338,7 +339,7 @@ static core_info_list_t *core_info_list_new(const char *path)
             tmp = NULL;
          }
 
-         if (config_get_string(conf, "license", &tmp) 
+         if (config_get_string(conf, "license", &tmp)
                && !string_is_empty(tmp))
          {
             core_info[i].licenses      = strdup(tmp);
@@ -349,7 +350,7 @@ static core_info_list_t *core_info_list_new(const char *path)
             tmp = NULL;
          }
 
-         if (config_get_string(conf, "categories", &tmp) 
+         if (config_get_string(conf, "categories", &tmp)
                && !string_is_empty(tmp))
          {
             core_info[i].categories      = strdup(tmp);
@@ -360,7 +361,7 @@ static core_info_list_t *core_info_list_new(const char *path)
             tmp = NULL;
          }
 
-         if (config_get_string(conf, "database", &tmp) 
+         if (config_get_string(conf, "database", &tmp)
                && !string_is_empty(tmp))
          {
             core_info[i].databases      = strdup(tmp);
@@ -371,7 +372,7 @@ static core_info_list_t *core_info_list_new(const char *path)
             tmp = NULL;
          }
 
-         if (config_get_string(conf, "notes", &tmp) 
+         if (config_get_string(conf, "notes", &tmp)
                && !string_is_empty(tmp))
          {
             core_info[i].notes     = strdup(tmp);
@@ -540,7 +541,7 @@ static bool core_info_list_update_missing_firmware_internal(
 
       fill_pathname_join(path, systemdir,
             info->firmware[i].path, path_size);
-      info->firmware[i].missing = !path_file_exists(path);
+      info->firmware[i].missing = !filestream_exists(path);
       if (info->firmware[i].missing && !info->firmware[i].optional)
       {
          rarch_ctl(RARCH_CTL_SET_MISSING_BIOS, NULL);
@@ -596,7 +597,7 @@ static void core_info_list_get_missing_firmware(
    {
       fill_pathname_join(path, systemdir,
             info->firmware[i].path, sizeof(path));
-      info->firmware[i].missing = !path_file_exists(path);
+      info->firmware[i].missing = !filestream_exists(path);
       *num_firmware += info->firmware[i].missing;
    }
 

@@ -144,7 +144,7 @@ s32 IOS_GetPreferredVersion()
 		iosFree(__ios_hid, titles);
 		return res;
 	}
-	
+
 	u32 *tmdbuffer = memalign(32, MAX_SIGNED_TMD_SIZE);
 
 	if(!tmdbuffer)
@@ -159,7 +159,7 @@ s32 IOS_GetPreferredVersion()
 		if(a != 1) continue;
 		if(b < IOS_MIN_VERSION) continue;
 		if(b > IOS_MAX_VERSION) continue;
-		
+
 		if (ES_GetStoredTMDSize(titles[i], &tmd_size) < 0)
 			continue;
 
@@ -171,7 +171,7 @@ s32 IOS_GetPreferredVersion()
 
 		if (!tmdbuffer[1] && !tmdbuffer[2])
 			continue;
-		
+
 		if((((s32)b) > ((s32)ver) && ver != 58) || b == 58) ver = b;
 	}
 #ifdef DEBUG_IOS
@@ -300,7 +300,7 @@ s32 __IOS_LaunchNewIOS(int version)
 #endif
 	for (counter = 0; !(read32(0x0d000004) & 2); counter++) {
 		udelay(1000);
-		
+
 		if (counter >= MAX_IPC_RETRIES)
 			break;
 	}

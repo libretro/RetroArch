@@ -763,7 +763,7 @@ endif
 ifneq (,$(findstring msvc,$(platform)))
    CFLAGS += -DHAVE_RGUI -DHAVE_MENU -DHAVE_GRIFFIN=1 -DRARCH_INTERNAL
 else
-   CFLAGS += -std=gnu99 -DSINC_LOWER_QUALITY -DHAVE_RGUI -DHAVE_MENU -DHAVE_GRIFFIN=1 -Wno-char-subscripts -DRARCH_INTERNAL
+   CFLAGS += -std=gnu99 -DHAVE_RGUI -DHAVE_MENU -DHAVE_GRIFFIN=1 -Wno-char-subscripts -DRARCH_INTERNAL
 endif
 
 ifeq ($(HAVE_MATERIALUI), 1)
@@ -832,7 +832,7 @@ ifeq ($(DEBUG), 1)
          CFLAGS += -Wp64
       endif
 
-      CFLAGS += -Od -Zi -D_DEBUG -MTd -TP
+      CFLAGS += -Od -Zi -D_DEBUG -MTd
       LDFLAGS += -DEBUG
    else
       CFLAGS += -O0 -g -DDEBUG
@@ -844,9 +844,10 @@ else ifeq ($(platform), vita)
 else ifneq (,$(findstring msvc,$(platform)))
    ifeq ($(platform), windows_msvc2003_x86)
       CFLAGS += -Wp64
+      LDFLAGS += -SUBSYSTEM:WINDOWS -ENTRY:mainCRTStartup
    endif
 
-   CFLAGS += -O2 -DNDEBUG -MT -TP
+   CFLAGS += -O2 -DNDEBUG -MT
 else
    CFLAGS += -O3
 endif

@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -45,6 +45,12 @@ typedef struct xaudio2 xaudio2_t;
 
 #define MAX_BUFFERS_MASK (MAX_BUFFERS - 1)
 
+#ifndef COINIT_MULTITHREADED
+#define COINIT_MULTITHREADED 0x00
+#endif
+
+#define XAUDIO2_WRITE_AVAILABLE(handle) ((handle)->bufsize * (MAX_BUFFERS - (handle)->buffers - 1))
+
 typedef struct
 {
    xaudio2_t *xa;
@@ -69,7 +75,7 @@ struct xaudio2
    virtual ~xaudio2() {}
 
    STDMETHOD_(void, OnBufferStart) (void *) {}
-   STDMETHOD_(void, OnBufferEnd) (void *) 
+   STDMETHOD_(void, OnBufferEnd) (void *)
    {
       InterlockedDecrement((LONG volatile*)&buffers);
       SetEvent(hEvent);
@@ -96,27 +102,27 @@ struct xaudio2
 };
 
 #ifndef __cplusplus
-static void WINAPI voice_on_buffer_end(void *handle_, void *data)		
-{		
-   xaudio2_t *handle = (xaudio2_t*)handle_;		
-   (void)data;		
-   InterlockedDecrement((LONG volatile*)&handle->buffers);		
-   SetEvent(handle->hEvent);		
-}		
+static void WINAPI voice_on_buffer_end(void *handle_, void *data)
+{
+   xaudio2_t *handle = (xaudio2_t*)handle_;
+   (void)data;
+   InterlockedDecrement((LONG volatile*)&handle->buffers);
+   SetEvent(handle->hEvent);
+}
 
-static void WINAPI dummy_voidp(void *handle, void *data) { (void)handle; (void)data; }		
-static void WINAPI dummy_nil(void *handle) { (void)handle; }		
-static void WINAPI dummy_uint32(void *handle, UINT32 dummy) { (void)handle; (void)dummy; }		
-static void WINAPI dummy_voidp_hresult(void *handle, void *data, HRESULT dummy) { (void)handle; (void)data; (void)dummy; }		
+static void WINAPI dummy_voidp(void *handle, void *data) { (void)handle; (void)data; }
+static void WINAPI dummy_nil(void *handle) { (void)handle; }
+static void WINAPI dummy_uint32(void *handle, UINT32 dummy) { (void)handle; (void)dummy; }
+static void WINAPI dummy_voidp_hresult(void *handle, void *data, HRESULT dummy) { (void)handle; (void)data; (void)dummy; }
 
-const struct IXAudio2VoiceCallbackVtbl voice_vtable = {		
-   dummy_uint32,		
-   dummy_nil,		
-   dummy_nil,		
-   dummy_voidp,		
-   voice_on_buffer_end,		
-   dummy_voidp,		
-   dummy_voidp_hresult,		
+const struct IXAudio2VoiceCallbackVtbl voice_vtable = {
+   dummy_uint32,
+   dummy_nil,
+   dummy_nil,
+   dummy_voidp,
+   voice_on_buffer_end,
+   dummy_voidp,
+   dummy_voidp_hresult,
 };
 #endif
 
@@ -190,10 +196,6 @@ static void xaudio2_free(xaudio2_t *handle)
 #endif
 }
 
-#ifndef COINIT_MULTITHREADED
-#define COINIT_MULTITHREADED 0x00
-#endif
-
 static xaudio2_t *xaudio2_new(unsigned samplerate, unsigned channels,
       size_t size, unsigned device)
 {
@@ -225,9 +227,9 @@ static xaudio2_t *xaudio2_new(unsigned samplerate, unsigned channels,
 
    xaudio2_set_wavefmt(&wfx, channels, samplerate);
 
-   if (FAILED(IXAudio2_CreateSourceVoice(handle->pXAudio2,		
-               &handle->pSourceVoice, &wfx,		
-               XAUDIO2_VOICE_NOSRC, XAUDIO2_DEFAULT_FREQ_RATIO,		
+   if (FAILED(IXAudio2_CreateSourceVoice(handle->pXAudio2,
+               &handle->pSourceVoice, &wfx,
+               XAUDIO2_VOICE_NOSRC, XAUDIO2_DEFAULT_FREQ_RATIO,
                (IXAudio2VoiceCallback*)handle, 0, 0)))
       goto error;
 
@@ -240,7 +242,7 @@ static xaudio2_t *xaudio2_new(unsigned samplerate, unsigned channels,
    if (!handle->buf)
       goto error;
 
-   if (FAILED(IXAudio2SourceVoice_Start(handle->pSourceVoice, 0, 
+   if (FAILED(IXAudio2SourceVoice_Start(handle->pSourceVoice, 0,
                XAUDIO2_COMMIT_NOW)))
       goto error;
 
@@ -251,21 +253,15 @@ error:
    return NULL;
 }
 
-static size_t xaudio2_write_avail(xaudio2_t *handle)
-{
-   return handle->bufsize * (MAX_BUFFERS - handle->buffers - 1);
-}
-
-static size_t xaudio2_write(xaudio2_t *handle, const void *buf, size_t bytes_)
+static size_t xaudio2_write(xaudio2_t *handle, const uint8_t *buffer, size_t bytes_)
 {
    unsigned bytes        = bytes_;
-   const uint8_t *buffer = (const uint8_t*)buf;
 
    while (bytes)
    {
       unsigned need   = MIN(bytes, handle->bufsize - handle->bufptr);
 
-      memcpy(handle->buf + handle->write_buffer * 
+      memcpy(handle->buf + handle->write_buffer *
             handle->bufsize + handle->bufptr,
             buffer, need);
 
@@ -344,7 +340,7 @@ static ssize_t xa_write(void *data, const void *buf, size_t size)
 
    if (xa->nonblock)
    {
-      size_t avail = xaudio2_write_avail(xa->xa);
+      size_t avail = XAUDIO2_WRITE_AVAILABLE(xa->xa);
 
       if (avail == 0)
          return 0;
@@ -352,7 +348,7 @@ static ssize_t xa_write(void *data, const void *buf, size_t size)
          size = avail;
    }
 
-   ret = xaudio2_write(xa->xa, buf, size);
+   ret = xaudio2_write(xa->xa, (const uint8_t*)buf, size);
    if (ret == 0 && size > 0)
       return -1;
    return ret;
@@ -408,7 +404,7 @@ static void xa_free(void *data)
 static size_t xa_write_avail(void *data)
 {
    xa_t *xa = (xa_t*)data;
-   return xaudio2_write_avail(xa->xa);
+   return XAUDIO2_WRITE_AVAILABLE(xa->xa);
 }
 
 static size_t xa_buffer_size(void *data)

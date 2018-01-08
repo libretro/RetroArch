@@ -28,7 +28,9 @@
 #ifdef WANT_GLSLANG
 #ifdef HAVE_VULKAN
 #include "../deps/glslang/glslang.cpp"
+#if 0
 #include "../deps/glslang/glslang_tab.cpp"
+#endif
 #include "../deps/glslang/glslang/SPIRV/disassemble.cpp"
 #include "../deps/glslang/glslang/SPIRV/doc.cpp"
 #include "../deps/glslang/glslang/SPIRV/GlslangToSpv.cpp"

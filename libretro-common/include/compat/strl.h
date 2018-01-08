@@ -26,7 +26,7 @@
 #include <string.h>
 #include <stddef.h>
 
-#ifdef HAVE_CONFIG_H
+#if defined(RARCH_INTERNAL) && defined(HAVE_CONFIG_H)
 #include "../../../config.h"
 #endif
 
@@ -41,7 +41,7 @@ RETRO_BEGIN_DECLS
 #endif
 
 #ifndef HAVE_STRL
-/* Avoid possible naming collisions during link since 
+/* Avoid possible naming collisions during link since
  * we prefer to use the actual name. */
 #define strlcpy(dst, src, size) strlcpy_retro__(dst, src, size)
 

@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -94,11 +94,6 @@ static void *xdk_input_init(const char *joypad_driver)
    return xdk;
 }
 
-static bool xdk_input_meta_key_pressed(void *data, int key)
-{
-   return false;
-}
-
 static uint64_t xdk_input_get_capabilities(void *data)
 {
    (void)data;
@@ -106,7 +101,7 @@ static uint64_t xdk_input_get_capabilities(void *data)
    return (1 << RETRO_DEVICE_JOYPAD) | (1 << RETRO_DEVICE_ANALOG);
 }
 
-/* FIXME - are we sure about treating low frequency motor as the 
+/* FIXME - are we sure about treating low frequency motor as the
  * "strong" motor? Does it apply for Xbox too? */
 
 static bool xdk_input_set_rumble(void *data, unsigned port,
@@ -119,9 +114,9 @@ static bool xdk_input_set_rumble(void *data, unsigned port,
 #endif
    xdk_input_t *xdk = (xdk_input_t*)data;
    bool val         = false;
-   
+
    (void)xdk;
-  
+
 #if 0
 #if defined(_XBOX360)
    if (effect == RETRO_RUMBLE_STRONG)
@@ -178,7 +173,6 @@ input_driver_t input_xinput = {
    xdk_input_init,
    xdk_input_poll,
    xdk_input_state,
-   xdk_input_meta_key_pressed,
    xdk_input_free_input,
    NULL,
    NULL,

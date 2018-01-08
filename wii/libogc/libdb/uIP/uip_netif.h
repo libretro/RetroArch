@@ -28,15 +28,15 @@ struct uip_ip_addr;
 
 struct uip_netif {
 	struct uip_netif *next;
-	
+
 	struct uip_ip_addr ip_addr;
 	struct uip_ip_addr netmask;
 	struct uip_ip_addr gw;
-	
+
 	s8_t (*input)(struct uip_pbuf *p,struct uip_netif *inp);
 	s8_t (*output)(struct uip_netif *netif,struct uip_pbuf *p,struct uip_ip_addr *ipaddr);
 	s8_t (*linkoutput)(struct uip_netif *netif,struct uip_pbuf *p);
-	
+
 	void *state;
 
 	u8_t hwaddr_len;
@@ -44,7 +44,7 @@ struct uip_netif {
 
 	u16_t mtu;
 	u8_t flags;
-	
+
 	s8_t name[2];
 	u8_t num;
 };

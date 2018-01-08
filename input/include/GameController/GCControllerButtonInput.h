@@ -12,7 +12,7 @@ GAMECONTROLLER_EXPORT
 
 /**
  Set this block if you want to be notified when the value on this button changes.
- 
+
  @param button the element that has been modified.
  @param value the value the button was set to at the time the valueChangedHandler fired.
  @param pressed the pressed state of the button at the time the valueChangedHandler fired.
@@ -28,7 +28,7 @@ typedef void (^GCControllerButtonValueChangedHandler)(GCControllerButtonInput *b
 /**
  Buttons are mostly used in a digital sense, thus we have a recommended method for checking for pressed state instead of
  interpreting the value.
- 
+
  As a general guideline a button is pressed if the value exceeds 25%. However there may be hysterisis applied
  to counter noisy input values, thus incidental values around the threshold value may not trigger a change
  in pressed state.

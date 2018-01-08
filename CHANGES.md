@@ -1,5 +1,84 @@
-# 1.7.0 (future)
-- CHEEVOS: Add badges
+# 1.7.1 (future)
+- 3DS: Now correctly reports amount of CPU cores.
+- 3DS: Frontend rating is now correctly implemented for both New 3DS/2DS and Old 3DS/2DS.
+- 3DS: Initial networking support, HTTP requests won't work yet.
+- AUDIO: Added 'Audio Resampler Quality' setting to Audio Settings. Setting this higher will increase sound quality at the expense of sound latency and/or performance. Setting this value lower will improve sound latency/performance at the expense of sound quality. Only has an effect if the Sinc resampler is used, and you have to restart the game for changes to take effect.
+- CHEEVOS: Fix unofficial achievements not being loaded.
+- CHEEVOS: Show the menu entries when no achievements are found even if hardcore mode is enabled.
+- CHEEVOS: Support Neo Geo Pocket.
+- COMMON: Bugfix for issue related to 'Windows mouse pointer visible when running MESS or MAME cores'.
+- COMMON: Fix bug 'Last item in a Playlist is ignored'.
+- COMMON: New LED API. Driver implemented for Raspberry Pi, proof of concept implemented for core MAME 2003.
+- DINPUT: don't reinitialize input driver on network events / media insertion / network drive connection
+- GUI: Allow changing menu font color.
+- GUI: Menu visibility options for RGUI and MaterialUI.
+- GUI/XMB: Add Monochrome Inverted icon theme.
+- GUI/XMB: Allow changing menu scale to 200%.
+- KEYMAPPER: prevent a condition that caused input_menu_toggle to stop working when a RETRO_DEVICE_KEYBOARD type device is enabled
+- LOCALIZATION: Update Italian translation.
+- LOCALIZATION: Update Spanish translation.
+- NSW: Initial Nintendo Switch port, based on libtransistor SDK.
+- PS3: Enable Cheevos.
+- PSP: Enable threading support through pthreads.
+- WINDOWS: Improved Unicode support (for cores/directory creation and 7zip archives).
+- WINDOWS: Show progress meter on taskbar for downloads (Windows 7 and up).
+- WIIU: Overlay support.
+- WIIU: Transparency support in menu + overlays.
+- WIIU: New HID pad support.
+
+# 1.7.0
+- CHEEVOS: Add badges for achievements, shows thumbnail images of achievements.
+- CHEEVOS: Leaderboard support.
+- CHEEVOS: Only disable savestates on hardcore mode if achievements are not available.
+- COMMANDLINE: Fix fullscreen toggle switch.
+- COMMON: Add 'Automatically Load Content To Playlist' feature, enabled by default.
+- COMMON: Fix slowmotion ratio always being reset back to 1.
+- COMMON: Optimized NBIO implementations now for Apple, Windows, and Linux. Uses mmap for Linux/Windows/BSD if/when available. File I/O should now be much faster for loading images inside the menu.
+- COMMON: Native Blissbox support now for latest firmware as of writing (2.0). Implementation through libusb and/or native Windows HID.
+- COMMON: New lightgun API.
+- COMMON: New VFS (Virtual File System) API.
+- COMMON: Fixed some playlist bugs.
+- COMMON: New snow shader.
+- COMMON: Fix Quick Menu title, no longer shows 'Select File'.
+- COMMON: Fix loading cores that require no content one after another.
+- COMMON: Map Delete key to Y button for non-unified menu keyboard controls.
+- COMMON: Fix for relative paths being normalised and generating a duplicate history entry.
+- EMSCRIPTEN: Fix references to browserfs.
+- FREEBSD: Support libusb HID input driver.
+- HAIKU: Buildfix.
+- INPUT: Map clear button to DEL key.
+- LINUX/X11: Add RetroArch logo to window title bar.
+- LINUX/X11: Input driver now supports new lightgun code.
+- LINUX/X11: Support window transparency (requires a compositing window manager).
+- LOBBIES: Fix for crash on join netplay rooms via touch / glui.
+- LOCALIZATION: Update Italian translation.
+- LOCALIZATION: Update Japanese translation.
+- LOCALIZATION: Update Portuguese-Brazilian translation.
+- LOCALIZATION: Update Polish translation.
+- LOCALIZATION: Update Russian translation.
+- MENU: Snowflake menu shader effect.
+- OSX/PPC: Fix the GL2 renderchain, had to use EXT versions of framebuffer/renderbuffer functions.
+- PS3: HTTP requests / downloads should now work.
+- PS3: Core Updater now works.
+- PS3: Improved font rendering, enable STB Unicode font renderer.
+- PSP: Make it work with Vita's Adrenaline.
+- PSP: Fix audio sync.
+- PSP: Fix content loading, port should be functional again.
+- PSP: Use 64MB when available.
+- SCANNER: Fix crash from Windows-incompatible format string.
+- VITA: Improve packaging, installation times.
+- WIIU: Disabled the controller patcher for now since it was the source of many stability issues.
+- VULKAN: Various stability fixes for WSI.
+- WINDOWS: Add MSVC 2017 solution.
+- WINDOWS: Get rid of the empty console window in MSVC 2010 builds.
+- WINDOWS: Raw input driver now supports new lightgun code.
+- WINDOWS: Use configured OSD/text message color on GDI driver.
+- WINDOWS/XINPUT: Populate XInput VID/PID from DInput so autoconfig doesn't rely solely on joypad names
+- WINDOWS/XINPUT: Fix crash that occurs in some situations with Steam running and a Steam Controller plugged in.
+- WINDOWS: Improve version reporting under System Information.
+- WINDOWS: Support window transparency.
+- WINDOWS: Correct usage of GetWindowPlacement per MS docs, fixes game window position on Win95/98.
+- WINDOWS: Added Visual Studio 2017 support.
 
 # 1.6.9
 - COMMON: Small memory leak.

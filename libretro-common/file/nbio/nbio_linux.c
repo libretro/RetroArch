@@ -50,7 +50,7 @@ struct nbio_linux_t
    size_t len;
 };
 
-/* there's also a Unix AIO thingy, but it's not in glibc 
+/* there's also a Unix AIO thingy, but it's not in glibc
  * and we don't want more dependencies */
 
 static int io_setup(unsigned nr, aio_context_t * ctxp)
@@ -58,7 +58,7 @@ static int io_setup(unsigned nr, aio_context_t * ctxp)
    return syscall(__NR_io_setup, nr, ctxp);
 }
 
-static int io_destroy(aio_context_t ctx) 
+static int io_destroy(aio_context_t ctx)
 {
    return syscall(__NR_io_destroy, ctx);
 }
@@ -117,7 +117,7 @@ static void *nbio_linux_open(const char * filename, unsigned mode)
       return NULL;
    }
 
-   handle       = malloc(sizeof(struct nbio_linux_t));
+   handle       = (struct nbio_linux_t*)malloc(sizeof(struct nbio_linux_t));
    handle->fd   = fd;
    handle->ctx  = ctx;
    handle->len  = lseek(fd, 0, SEEK_END);
@@ -163,7 +163,7 @@ static void nbio_linux_resize(void *data, size_t len)
 
    if (len < handle->len)
    {
-      /* this works perfectly fine if this check is removed, but it 
+      /* this works perfectly fine if this check is removed, but it
        * won't work on other nbio implementations */
       /* therefore, it's blocked so nobody accidentally relies on it */
       puts("ERROR - attempted file shrink operation, not implemented");
@@ -173,7 +173,7 @@ static void nbio_linux_resize(void *data, size_t len)
    if (ftruncate(handle->fd, len) != 0)
    {
       puts("ERROR - couldn't resize file (ftruncate)");
-      abort(); /* this one returns void and I can't find any other way 
+      abort(); /* this one returns void and I can't find any other way
                   for it to report failure */
    }
    handle->ptr = realloc(handle->ptr, len);

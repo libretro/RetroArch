@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -93,7 +93,7 @@ struct retro_core_t
    void (*retro_set_input_poll)(retro_input_poll_t);
    void (*retro_set_input_state)(retro_input_state_t);
    void (*retro_set_controller_port_device)(unsigned, unsigned);
-   void (*retro_reset)(void); 
+   void (*retro_reset)(void);
    void (*retro_run)(void);
    size_t (*retro_serialize_size)(void);
    bool (*retro_serialize)(void*, size_t);
@@ -122,7 +122,7 @@ bool libretro_get_shared_context(void);
 /**
  * init_libretro_sym:
  * @type                        : Type of core to be loaded.
- *                                If CORE_TYPE_DUMMY, will 
+ *                                If CORE_TYPE_DUMMY, will
  *                                load dummy symbols.
  *
  * Initializes libretro symbols and

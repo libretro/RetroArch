@@ -18,12 +18,12 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif //__cplusplus
+#endif /* __cplusplus */
 
 void setup_os_exceptions(void);
 
 #ifdef __cplusplus
 }
-#endif //__cplusplus
+#endif /* __cplusplus */
 
-#endif //__EXCEPTION_HANDLER_H_
+#endif /*__EXCEPTION_HANDLER_H_ */

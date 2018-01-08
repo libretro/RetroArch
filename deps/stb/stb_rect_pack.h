@@ -245,7 +245,7 @@ STBRP_DEF void stbrp_init_target(stbrp_context *context, int width, int height, 
    context->num_nodes = num_nodes;
    stbrp_setup_allow_out_of_mem(context, 0);
 
-   /* node 0 is the full width, 
+   /* node 0 is the full width,
     * node 1 is the sentinel (lets us not store width explicitly) */
    context->extra[0].x = 0;
    context->extra[0].y = 0;
@@ -268,7 +268,7 @@ static int stbrp__skyline_find_min_y(stbrp_context *c,
    int x1 = x0 + width;
 
    STBRP_ASSERT(first->x <= x0);
-   STBRP_ASSERT(node->next->x > x0); 
+   STBRP_ASSERT(node->next->x > x0);
    STBRP_ASSERT(node->x <= x0);
 
    min_y = 0;
@@ -417,7 +417,7 @@ static stbrp__findresult stbrp__skyline_find_best_pos(stbrp_context *c, int widt
             }
          }
          tail = tail->next;
-      }         
+      }
    }
 
    fr.prev_link = best;

@@ -1,11 +1,11 @@
-//////////////////////////////////////////////////////////////////////////////
-//
-//  Copyright (c) Microsoft Corporation.  All rights reserved.
-//
-//  File:       d3dx9shader.h
-//  Content:    D3DX Shader APIs
-//
-//////////////////////////////////////////////////////////////////////////////
+/*
+ *
+ *  Copyright (c) Microsoft Corporation.  All rights reserved.
+ *
+ *  File:       d3dx9shader.h
+ *  Content:    D3DX Shader APIs
+ *
+ */
 
 #include "d3dx9.h"
 
@@ -29,16 +29,15 @@
 #define D3DXSHADER_IEEE_STRICTNESS                (1 << 13)
 #define D3DXSHADER_USE_LEGACY_D3DX9_31_DLL        (1 << 16)
 
-
-// optimization level flags
+/* optimization level flags */
 #define D3DXSHADER_OPTIMIZATION_LEVEL0            (1 << 14)
 #define D3DXSHADER_OPTIMIZATION_LEVEL1            0
 #define D3DXSHADER_OPTIMIZATION_LEVEL2            ((1 << 14) | (1 << 15))
 #define D3DXSHADER_OPTIMIZATION_LEVEL3            (1 << 15)
 
-//----------------------------------------------------------------------------
-// D3DXCONSTTABLE flags:
-// -------------------
+/*
+ * D3DXCONSTTABLE flags:
+ */
 
 #define D3DXCONSTTABLE_LARGEADDRESSAWARE          (1 << 17)
 
@@ -57,9 +56,9 @@ typedef struct _D3DXMACRO
 } D3DXMACRO, *LPD3DXMACRO;
 
 
-//----------------------------------------------------------------------------
-// D3DXSEMANTIC:
-//----------------------------------------------------------------------------
+/*
+ * D3DXSEMANTIC:
+ */
 
 typedef struct _D3DXSEMANTIC
 {
@@ -70,9 +69,9 @@ typedef struct _D3DXSEMANTIC
 
 
 
-//----------------------------------------------------------------------------
-// D3DXREGISTER_SET:
-//----------------------------------------------------------------------------
+/*
+ * D3DXREGISTER_SET:
+ */
 
 typedef enum _D3DXREGISTER_SET
 {
@@ -81,15 +80,15 @@ typedef enum _D3DXREGISTER_SET
     D3DXRS_FLOAT4,
     D3DXRS_SAMPLER,
 
-    // force 32-bit size enum
+    /* force 32-bit size enum */
     D3DXRS_FORCE_DWORD = 0x7fffffff
 
 } D3DXREGISTER_SET, *LPD3DXREGISTER_SET;
 
 
-//----------------------------------------------------------------------------
-// D3DXPARAMETER_CLASS:
-//----------------------------------------------------------------------------
+/*
+ * D3DXPARAMETER_CLASS:
+ */
 
 typedef enum _D3DXPARAMETER_CLASS
 {
@@ -100,15 +99,15 @@ typedef enum _D3DXPARAMETER_CLASS
     D3DXPC_OBJECT,
     D3DXPC_STRUCT,
 
-    // force 32-bit size enum
+    /* force 32-bit size enum */
     D3DXPC_FORCE_DWORD = 0x7fffffff
 
 } D3DXPARAMETER_CLASS, *LPD3DXPARAMETER_CLASS;
 
 
-//----------------------------------------------------------------------------
-// D3DXPARAMETER_TYPE:
-//----------------------------------------------------------------------------
+/*
+ * D3DXPARAMETER_TYPE:
+ */
 
 typedef enum _D3DXPARAMETER_TYPE
 {
@@ -133,61 +132,61 @@ typedef enum _D3DXPARAMETER_TYPE
     D3DXPT_VERTEXFRAGMENT,
     D3DXPT_UNSUPPORTED,
 
-    // force 32-bit size enum
+    /* force 32-bit size enum */
     D3DXPT_FORCE_DWORD = 0x7fffffff
 
 } D3DXPARAMETER_TYPE, *LPD3DXPARAMETER_TYPE;
 
 
-//----------------------------------------------------------------------------
-// D3DXCONSTANTTABLE_DESC:
-//----------------------------------------------------------------------------
+/*
+ * D3DXCONSTANTTABLE_DESC:
+ */
 
 typedef struct _D3DXCONSTANTTABLE_DESC
 {
-    LPCSTR Creator;                     // Creator string
-    DWORD Version;                      // Shader version
-    UINT Constants;                     // Number of constants
+    LPCSTR Creator;                     /* Creator string */
+    DWORD Version;                      /* Shader version */
+    UINT Constants;                     /* Number of constants */
 
 } D3DXCONSTANTTABLE_DESC, *LPD3DXCONSTANTTABLE_DESC;
 
 
-//----------------------------------------------------------------------------
-// D3DXCONSTANT_DESC:
-//----------------------------------------------------------------------------
+/*
+ * D3DXCONSTANT_DESC:
+ */
 
 typedef struct _D3DXCONSTANT_DESC
 {
-    LPCSTR Name;                        // Constant name
+    LPCSTR Name;                        /* Constant name */
 
-    D3DXREGISTER_SET RegisterSet;       // Register set
-    UINT RegisterIndex;                 // Register index
-    UINT RegisterCount;                 // Number of registers occupied
+    D3DXREGISTER_SET RegisterSet;       /* Register set */
+    UINT RegisterIndex;                 /* Register index */
+    UINT RegisterCount;                 /* Number of registers occupied */
 
-    D3DXPARAMETER_CLASS Class;          // Class
-    D3DXPARAMETER_TYPE Type;            // Component type
+    D3DXPARAMETER_CLASS Class;          /* Class */
+    D3DXPARAMETER_TYPE Type;            /* Component type */
 
-    UINT Rows;                          // Number of rows
-    UINT Columns;                       // Number of columns
-    UINT Elements;                      // Number of array elements
-    UINT StructMembers;                 // Number of structure member sub-parameters
+    UINT Rows;                          /* Number of rows */
+    UINT Columns;                       /* Number of columns */
+    UINT Elements;                      /* Number of array elements */
+    UINT StructMembers;                 /* Number of structure member sub-parameters */
 
-    UINT Bytes;                         // Data size, in bytes
-    LPCVOID DefaultValue;               // Pointer to default value
+    UINT Bytes;                         /* Data size, in bytes */
+    LPCVOID DefaultValue;               /* Pointer to default value */
 
 } D3DXCONSTANT_DESC, *LPD3DXCONSTANT_DESC;
 
 
 
-//----------------------------------------------------------------------------
-// ID3DXConstantTable:
-//----------------------------------------------------------------------------
+/*
+ * ID3DXConstantTable:
+ */
 
 typedef interface ID3DXConstantTable ID3DXConstantTable;
 typedef interface ID3DXConstantTable *LPD3DXCONSTANTTABLE;
 
-// {AB3C758F-093E-4356-B762-4DB18F1B3A01}
-DEFINE_GUID(IID_ID3DXConstantTable, 
+/* {AB3C758F-093E-4356-B762-4DB18F1B3A01} */
+DEFINE_GUID(IID_ID3DXConstantTable,
 0xab3c758f, 0x93e, 0x4356, 0xb7, 0x62, 0x4d, 0xb1, 0x8f, 0x1b, 0x3a, 0x1);
 
 
@@ -196,26 +195,26 @@ DEFINE_GUID(IID_ID3DXConstantTable,
 
 DECLARE_INTERFACE_(ID3DXConstantTable, IUnknown)
 {
-    // IUnknown
+    /* IUnknown */
     STDMETHOD(QueryInterface)(THIS_ REFIID iid, LPVOID *ppv) PURE;
     STDMETHOD_(ULONG, AddRef)(THIS) PURE;
     STDMETHOD_(ULONG, Release)(THIS) PURE;
 
-    // Buffer
+    /* Buffer */
     STDMETHOD_(LPVOID, GetBufferPointer)(THIS) PURE;
     STDMETHOD_(DWORD, GetBufferSize)(THIS) PURE;
 
-    // Descs
+    /* Descs */
     STDMETHOD(GetDesc)(THIS_ D3DXCONSTANTTABLE_DESC *pDesc) PURE;
     STDMETHOD(GetConstantDesc)(THIS_ D3DXHANDLE hConstant, D3DXCONSTANT_DESC *pConstantDesc, UINT *pCount) PURE;
     STDMETHOD_(UINT, GetSamplerIndex)(THIS_ D3DXHANDLE hConstant) PURE;
 
-    // Handle operations
+    /* Handle operations */
     STDMETHOD_(D3DXHANDLE, GetConstant)(THIS_ D3DXHANDLE hConstant, UINT Index) PURE;
     STDMETHOD_(D3DXHANDLE, GetConstantByName)(THIS_ D3DXHANDLE hConstant, LPCSTR pName) PURE;
     STDMETHOD_(D3DXHANDLE, GetConstantElement)(THIS_ D3DXHANDLE hConstant, UINT Index) PURE;
 
-    // Set Constants
+    /* Set Constants */
     STDMETHOD(SetDefaults)(THIS_ LPDIRECT3DDEVICE9 pDevice) PURE;
     STDMETHOD(SetValue)(THIS_ LPDIRECT3DDEVICE9 pDevice, D3DXHANDLE hConstant, LPCVOID pData, UINT Bytes) PURE;
     STDMETHOD(SetBool)(THIS_ LPDIRECT3DDEVICE9 pDevice, D3DXHANDLE hConstant, BOOL b) PURE;
@@ -234,16 +233,15 @@ DECLARE_INTERFACE_(ID3DXConstantTable, IUnknown)
     STDMETHOD(SetMatrixTransposePointerArray)(THIS_ LPDIRECT3DDEVICE9 pDevice, D3DXHANDLE hConstant, CONST D3DXMATRIX** ppMatrix, UINT Count) PURE;
 };
 
-
-//----------------------------------------------------------------------------
-// ID3DXTextureShader:
-//----------------------------------------------------------------------------
+/*
+ * ID3DXTextureShader:
+ */
 
 typedef interface ID3DXTextureShader ID3DXTextureShader;
 typedef interface ID3DXTextureShader *LPD3DXTEXTURESHADER;
 
-// {3E3D67F8-AA7A-405d-A857-BA01D4758426}
-DEFINE_GUID(IID_ID3DXTextureShader, 
+/* {3E3D67F8-AA7A-405d-A857-BA01D4758426} */
+DEFINE_GUID(IID_ID3DXTextureShader,
 0x3e3d67f8, 0xaa7a, 0x405d, 0xa8, 0x57, 0xba, 0x1, 0xd4, 0x75, 0x84, 0x26);
 
 #undef INTERFACE
@@ -251,25 +249,25 @@ DEFINE_GUID(IID_ID3DXTextureShader,
 
 DECLARE_INTERFACE_(ID3DXTextureShader, IUnknown)
 {
-    // IUnknown
+    /* IUnknown */
     STDMETHOD(QueryInterface)(THIS_ REFIID iid, LPVOID *ppv) PURE;
     STDMETHOD_(ULONG, AddRef)(THIS) PURE;
     STDMETHOD_(ULONG, Release)(THIS) PURE;
 
-    // Gets
+    /* Gets */
     STDMETHOD(GetFunction)(THIS_ LPD3DXBUFFER *ppFunction) PURE;
     STDMETHOD(GetConstantBuffer)(THIS_ LPD3DXBUFFER *ppConstantBuffer) PURE;
 
-    // Descs
+    /* Descs */
     STDMETHOD(GetDesc)(THIS_ D3DXCONSTANTTABLE_DESC *pDesc) PURE;
     STDMETHOD(GetConstantDesc)(THIS_ D3DXHANDLE hConstant, D3DXCONSTANT_DESC *pConstantDesc, UINT *pCount) PURE;
 
-    // Handle operations
+    /* Handle operations */
     STDMETHOD_(D3DXHANDLE, GetConstant)(THIS_ D3DXHANDLE hConstant, UINT Index) PURE;
     STDMETHOD_(D3DXHANDLE, GetConstantByName)(THIS_ D3DXHANDLE hConstant, LPCSTR pName) PURE;
     STDMETHOD_(D3DXHANDLE, GetConstantElement)(THIS_ D3DXHANDLE hConstant, UINT Index) PURE;
 
-    // Set Constants
+    /* Set Constants */
     STDMETHOD(SetDefaults)(THIS) PURE;
     STDMETHOD(SetValue)(THIS_ D3DXHANDLE hConstant, LPCVOID pData, UINT Bytes) PURE;
     STDMETHOD(SetBool)(THIS_ D3DXHANDLE hConstant, BOOL b) PURE;
@@ -293,7 +291,7 @@ typedef enum _D3DXINCLUDE_TYPE
     D3DXINC_LOCAL,
     D3DXINC_SYSTEM,
 
-    // force 32-bit size enum
+    /* force 32-bit size enum */
     D3DXINC_FORCE_DWORD = 0x7fffffff
 
 } D3DXINCLUDE_TYPE, *LPD3DXINCLUDE_TYPE;
@@ -311,13 +309,13 @@ DECLARE_INTERFACE(ID3DXInclude)
 };
 
 
-//////////////////////////////////////////////////////////////////////////////
-// APIs //////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
+/*
+ * APIs
+ */
 
 #ifdef __cplusplus
 extern "C" {
-#endif //__cplusplus
+#endif
 
 HRESULT WINAPI
     D3DXAssembleShaderFromFileA(
@@ -460,9 +458,9 @@ HRESULT WINAPI
 
 HRESULT WINAPI
     D3DXDisassembleShader(
-        CONST DWORD*                    pShader, 
-        BOOL                            EnableColorCode, 
-        LPCSTR                          pComments, 
+        CONST DWORD*                    pShader,
+        BOOL                            EnableColorCode,
+        LPCSTR                          pComments,
         LPD3DXBUFFER*                   ppDisassembly);
 
 LPCSTR WINAPI
@@ -519,18 +517,18 @@ HRESULT WINAPI
 
 HRESULT WINAPI
     D3DXCreateTextureShader(
-        CONST DWORD*                    pFunction, 
+        CONST DWORD*                    pFunction,
         LPD3DXTEXTURESHADER*            ppTextureShader);
 
-HRESULT WINAPI 
+HRESULT WINAPI
     D3DXPreprocessShaderFromFileA(
         LPCSTR                       pSrcFile,
         CONST D3DXMACRO*             pDefines,
         LPD3DXINCLUDE                pInclude,
         LPD3DXBUFFER*                ppShaderText,
         LPD3DXBUFFER*                ppErrorMsgs);
-                                             
-HRESULT WINAPI 
+
+HRESULT WINAPI
     D3DXPreprocessShaderFromFileW(
         LPCWSTR                      pSrcFile,
         CONST D3DXMACRO*             pDefines,
@@ -543,8 +541,8 @@ HRESULT WINAPI
 #else
 #define D3DXPreprocessShaderFromFile D3DXPreprocessShaderFromFileA
 #endif
-                                             
-HRESULT WINAPI 
+
+HRESULT WINAPI
     D3DXPreprocessShaderFromResourceA(
         HMODULE                      hSrcModule,
         LPCSTR                       pSrcResource,
@@ -553,7 +551,7 @@ HRESULT WINAPI
         LPD3DXBUFFER*                ppShaderText,
         LPD3DXBUFFER*                ppErrorMsgs);
 
-HRESULT WINAPI 
+HRESULT WINAPI
     D3DXPreprocessShaderFromResourceW(
         HMODULE                      hSrcModule,
         LPCWSTR                      pSrcResource,
@@ -568,7 +566,7 @@ HRESULT WINAPI
 #define D3DXPreprocessShaderFromResource D3DXPreprocessShaderFromResourceA
 #endif
 
-HRESULT WINAPI 
+HRESULT WINAPI
     D3DXPreprocessShader(
         LPCSTR                       pSrcData,
         UINT                         SrcDataSize,
@@ -580,67 +578,67 @@ HRESULT WINAPI
 
 #ifdef __cplusplus
 }
-#endif //__cplusplus
+#endif
 
 
-//////////////////////////////////////////////////////////////////////////////
-// Shader comment block layouts //////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
+/*
+ * Shader comment block layouts
+ */
 
-//----------------------------------------------------------------------------
-// D3DXSHADER_CONSTANTTABLE:
-// -------------------------
-// Shader constant information; included as an CTAB comment block inside
-// shaders.  All offsets are BYTE offsets from start of CONSTANTTABLE struct.
-// Entries in the table are sorted by Name in ascending order.
-//----------------------------------------------------------------------------
+/*
+ * D3DXSHADER_CONSTANTTABLE:
+ * -------------------------
+ * Shader constant information; included as an CTAB comment block inside
+ * shaders.  All offsets are BYTE offsets from start of CONSTANTTABLE struct.
+ * Entries in the table are sorted by Name in ascending order.
+ */
 
 typedef struct _D3DXSHADER_CONSTANTTABLE
 {
-    DWORD Size;             // sizeof(D3DXSHADER_CONSTANTTABLE)
-    DWORD Creator;          // LPCSTR offset
-    DWORD Version;          // shader version
-    DWORD Constants;        // number of constants
-    DWORD ConstantInfo;     // D3DXSHADER_CONSTANTINFO[Constants] offset
-    DWORD Flags;            // flags shader was compiled with
-    DWORD Target;           // LPCSTR offset 
+    DWORD Size;             /* sizeof(D3DXSHADER_CONSTANTTABLE) */
+    DWORD Creator;          /* LPCSTR offset */
+    DWORD Version;          /* shader version */
+    DWORD Constants;        /* number of constants */
+    DWORD ConstantInfo;     /* D3DXSHADER_CONSTANTINFO[Constants] offset */
+    DWORD Flags;            /* flags shader was compiled with */
+    DWORD Target;           /* LPCSTR offset */
 
 } D3DXSHADER_CONSTANTTABLE, *LPD3DXSHADER_CONSTANTTABLE;
 
 
 typedef struct _D3DXSHADER_CONSTANTINFO
 {
-    DWORD Name;             // LPCSTR offset
-    WORD  RegisterSet;      // D3DXREGISTER_SET
-    WORD  RegisterIndex;    // register number
-    WORD  RegisterCount;    // number of registers
-    WORD  Reserved;         // reserved
-    DWORD TypeInfo;         // D3DXSHADER_TYPEINFO offset
-    DWORD DefaultValue;     // offset of default value
+    DWORD Name;             /* LPCSTR offset */
+    WORD  RegisterSet;      /* D3DXREGISTER_SET */
+    WORD  RegisterIndex;    /* register number */
+    WORD  RegisterCount;    /* number of registers */
+    WORD  Reserved;         /* reserved */
+    DWORD TypeInfo;         /* D3DXSHADER_TYPEINFO offset */
+    DWORD DefaultValue;     /* offset of default value */
 
 } D3DXSHADER_CONSTANTINFO, *LPD3DXSHADER_CONSTANTINFO;
 
 
 typedef struct _D3DXSHADER_TYPEINFO
 {
-    WORD  Class;            // D3DXPARAMETER_CLASS
-    WORD  Type;             // D3DXPARAMETER_TYPE
-    WORD  Rows;             // number of rows (matrices)
-    WORD  Columns;          // number of columns (vectors and matrices)
-    WORD  Elements;         // array dimension
-    WORD  StructMembers;    // number of struct members
-    DWORD StructMemberInfo; // D3DXSHADER_STRUCTMEMBERINFO[Members] offset
+    WORD  Class;            /* D3DXPARAMETER_CLASS */
+    WORD  Type;             /* D3DXPARAMETER_TYPE */
+    WORD  Rows;             /* number of rows (matrices) */
+    WORD  Columns;          /* number of columns (vectors and matrices) */
+    WORD  Elements;         /* array dimension */
+    WORD  StructMembers;    /* number of struct members */
+    DWORD StructMemberInfo; /* D3DXSHADER_STRUCTMEMBERINFO[Members] offset */
 
 } D3DXSHADER_TYPEINFO, *LPD3DXSHADER_TYPEINFO;
 
 
 typedef struct _D3DXSHADER_STRUCTMEMBERINFO
 {
-    DWORD Name;             // LPCSTR offset
-    DWORD TypeInfo;         // D3DXSHADER_TYPEINFO offset
+    DWORD Name;             /* LPCSTR offset */
+    DWORD TypeInfo;         /* D3DXSHADER_TYPEINFO offset */
 
 } D3DXSHADER_STRUCTMEMBERINFO, *LPD3DXSHADER_STRUCTMEMBERINFO;
 
 
 
-#endif //__D3DX9SHADER_H__
+#endif /* __D3DX9SHADER_H__ */

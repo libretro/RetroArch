@@ -151,7 +151,9 @@ done:
 }
 
 static void *resampler_CC_init(const struct resampler_config *config,
-      double bandwidth_mod, resampler_simd_mask_t mask)
+      double bandwidth_mod, 
+      enum resampler_quality quality,
+      resampler_simd_mask_t mask)
 {
    (void)mask;
    (void)bandwidth_mod;
@@ -492,18 +494,20 @@ static void resampler_CC_process(void *re_, struct resampler_data *data)
 
 
 static void *resampler_CC_init(const struct resampler_config *config,
-      double bandwidth_mod, resampler_simd_mask_t mask)
+      double bandwidth_mod, 
+      enum resampler_quality quality,
+      resampler_simd_mask_t mask)
 {
    int i;
    rarch_CC_resampler_t *re = (rarch_CC_resampler_t*)
       memalign_alloc(32, sizeof(rarch_CC_resampler_t));
 
-   /* TODO: lookup if NEON support can be detected at 
+   /* TODO: lookup if NEON support can be detected at
     * runtime and a funcptr set at runtime for either
     * C codepath or NEON codepath. This will help out
     * Android. */
    (void)mask;
-   (void)config; 
+   (void)config;
    if (!re)
       return NULL;
 

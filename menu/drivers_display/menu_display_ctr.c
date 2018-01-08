@@ -135,7 +135,7 @@ static void menu_display_ctr_draw(void *data)
    GPU_SetViewport(NULL,
          VIRT_TO_PHYS(ctr->drawbuffers.top.left),
          0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
-         ctr->video_mode == CTR_VIDEO_MODE_800x240 ? 
+         ctr->video_mode == CTR_VIDEO_MODE_800x240 ?
          CTR_TOP_FRAMEBUFFER_WIDTH * 2 : CTR_TOP_FRAMEBUFFER_WIDTH);
 
    GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
@@ -188,7 +188,7 @@ static bool menu_display_ctr_font_init_first(
 {
    font_data_t **handle = (font_data_t**)font_handle;
    *handle = font_driver_init_first(video_data,
-         font_path, font_size, true, 
+         font_path, font_size, true,
          is_threaded,
          FONT_DRIVER_RENDER_CTR);
    return *handle;

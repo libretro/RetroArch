@@ -124,7 +124,7 @@ static bool coretext_font_renderer_create_atlas(CTFontRef face, ct_font_renderer
 #if MAC_OS_X_VERSION_MAX_ALLOWED >= 1080
          kCTFontOrientationDefault,
 #else
-         kCTFontDefaultOrientation, 
+         kCTFontDefaultOrientation,
 #endif
          glyphs, advances, CT_ATLAS_SIZE);
 
@@ -177,8 +177,8 @@ static bool coretext_font_renderer_create_atlas(CTFontRef face, ct_font_renderer
 
    CGContextSetTextMatrix(offscreen, CGAffineTransformIdentity);
 
-   attr = CFDictionaryCreate(NULL, (const void **)&keys, (const void **)&values, 
-         sizeof(keys) / sizeof(keys[0]), &kCFTypeDictionaryKeyCallBacks, 
+   attr = CFDictionaryCreate(NULL, (const void **)&keys, (const void **)&values,
+         sizeof(keys) / sizeof(keys[0]), &kCFTypeDictionaryKeyCallBacks,
          &kCFTypeDictionaryValueCallBacks);
 
    for (i = 0; i < CT_ATLAS_SIZE; i++)
@@ -208,7 +208,7 @@ static bool coretext_font_renderer_create_atlas(CTFontRef face, ct_font_renderer
       glyph_cstr[1] = 0;
       glyph_cfstr   = CFStringCreateWithCString(
             NULL, glyph_cstr, kCFStringEncodingASCII );
-      attrString = 
+      attrString =
          CFAttributedStringCreate(NULL, glyph_cfstr, attr);
       CFRelease(glyph_cfstr);
       glyph_cfstr = NULL;
@@ -232,7 +232,7 @@ static bool coretext_font_renderer_create_atlas(CTFontRef face, ct_font_renderer
          for (c = 0; c < max_width; c++)
          {
             unsigned src_idx = (unsigned)(r * bytesPerRow + c);
-            unsigned dest_idx = 
+            unsigned dest_idx =
                (r + offset_y) * (CT_ATLAS_COLS * max_width) + (c + offset_x);
             uint8_t v = src[src_idx];
 

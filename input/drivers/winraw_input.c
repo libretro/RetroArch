@@ -356,9 +356,8 @@ static bool winraw_keyboard_pressed(winraw_input_t *wr, unsigned key)
 static bool winraw_mbutton_pressed(winraw_input_t *wr, unsigned port, unsigned key)
 {
 	unsigned i;
-	bool result;
 	winraw_mouse_t *mouse = NULL;
-	settings_t *settings = config_get_ptr();
+	settings_t *settings  = config_get_ptr();
 
 	if (port >= MAX_USERS)
 		return false;
@@ -763,11 +762,6 @@ static int16_t winraw_input_state(void *d,
    return 0;
 }
 
-static bool winraw_meta_key_pressed(void *u1, int u2)
-{
-   return false;
-}
-
 static void winraw_free(void *d)
 {
    winraw_input_t *wr = (winraw_input_t*)d;
@@ -842,7 +836,6 @@ input_driver_t input_winraw = {
    winraw_init,
    winraw_poll,
    winraw_input_state,
-   winraw_meta_key_pressed,
    winraw_free,
    NULL,
    NULL,

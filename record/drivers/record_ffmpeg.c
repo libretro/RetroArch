@@ -212,7 +212,7 @@ typedef struct ffmpeg
    struct ff_audio_info audio;
    struct ff_muxer_info muxer;
    struct ff_config_param config;
-   
+
    struct ffemu_params params;
 
    scond_t *cond;
@@ -348,6 +348,7 @@ static bool ffmpeg_init_audio(ffmpeg_t *handle)
       retro_resampler_realloc(&audio->resampler_data,
             &audio->resampler,
             settings->arrays.audio_resampler,
+            RESAMPLER_QUALITY_DONTCARE,
             audio->ratio);
    }
    else
@@ -646,7 +647,7 @@ static bool ffmpeg_init_muxer_post(ffmpeg_t *handle)
    stream->codec = handle->video.codec;
    stream->time_base = stream->codec->time_base;
    handle->muxer.vstream = stream;
-   handle->muxer.vstream->sample_aspect_ratio = 
+   handle->muxer.vstream->sample_aspect_ratio =
       handle->video.codec->sample_aspect_ratio;
 
    if (handle->config.audio_enable)
@@ -659,7 +660,7 @@ static bool ffmpeg_init_muxer_post(ffmpeg_t *handle)
    }
 
    av_dict_set(&handle->muxer.ctx->metadata, "title",
-         "RetroArch video dump", 0); 
+         "RetroArch video dump", 0);
 
    return avformat_write_header(handle->muxer.ctx, NULL) >= 0;
 }
@@ -717,7 +718,7 @@ static void deinit_thread_buf(ffmpeg_t *handle)
       fifo_free(handle->audio_fifo);
       handle->audio_fifo = NULL;
    }
-   
+
    if (handle->attr_fifo)
    {
       fifo_free(handle->attr_fifo);
@@ -1061,7 +1062,7 @@ static void planarize_audio(ffmpeg_t *handle)
 
    if (handle->audio.frames_in_buffer > handle->audio.planar_buf_frames)
    {
-      handle->audio.planar_buf = av_realloc(handle->audio.planar_buf, 
+      handle->audio.planar_buf = av_realloc(handle->audio.planar_buf,
             handle->audio.frames_in_buffer * handle->params.channels *
             handle->audio.sample_size);
       if (!handle->audio.planar_buf)
@@ -1222,16 +1223,16 @@ static bool ffmpeg_push_audio_thread(ffmpeg_t *handle,
    while (written_frames < aud->frames)
    {
       AVPacket pkt;
-      size_t can_write    = handle->audio.codec->frame_size - 
+      size_t can_write    = handle->audio.codec->frame_size -
          handle->audio.frames_in_buffer;
       size_t write_left   = aud->frames - written_frames;
       size_t write_frames = write_left > can_write ? can_write : write_left;
-      size_t write_size   = write_frames * 
+      size_t write_size   = write_frames *
          handle->params.channels * handle->audio.sample_size;
 
-      size_t bytes_in_buffer = handle->audio.frames_in_buffer * 
+      size_t bytes_in_buffer = handle->audio.frames_in_buffer *
          handle->params.channels * handle->audio.sample_size;
-      size_t written_bytes   = written_frames * 
+      size_t written_bytes   = written_frames *
          handle->params.channels * handle->audio.sample_size;
 
       memcpy(handle->audio.buffer + bytes_in_buffer,
@@ -1241,7 +1242,7 @@ static bool ffmpeg_push_audio_thread(ffmpeg_t *handle,
       written_frames                 += write_frames;
       handle->audio.frames_in_buffer += write_frames;
 
-      if ((handle->audio.frames_in_buffer 
+      if ((handle->audio.frames_in_buffer
                < (size_t)handle->audio.codec->frame_size) && require_block)
          break;
 
@@ -1301,16 +1302,16 @@ static void ffmpeg_flush_video(ffmpeg_t *handle)
 static void ffmpeg_flush_buffers(ffmpeg_t *handle)
 {
    bool did_work;
-   void *video_buf = av_malloc(2 * handle->params.fb_width * 
+   void *video_buf = av_malloc(2 * handle->params.fb_width *
          handle->params.fb_height * handle->video.pix_size);
-   size_t audio_buf_size = handle->config.audio_enable ? 
-      (handle->audio.codec->frame_size * 
+   size_t audio_buf_size = handle->config.audio_enable ?
+      (handle->audio.codec->frame_size *
        handle->params.channels * sizeof(int16_t)) : 0;
    void *audio_buf = NULL;
 
    if (audio_buf_size)
       audio_buf = av_malloc(audio_buf_size);
-   /* Try pushing data in an interleaving pattern to 
+   /* Try pushing data in an interleaving pattern to
     * ease the work of the muxer a bit. */
 
    do
@@ -1338,7 +1339,7 @@ static void ffmpeg_flush_buffers(ffmpeg_t *handle)
       if (fifo_read_avail(handle->attr_fifo) >= sizeof(attr_buf))
       {
          fifo_read(handle->attr_fifo, &attr_buf, sizeof(attr_buf));
-         fifo_read(handle->video_fifo, video_buf, 
+         fifo_read(handle->video_fifo, video_buf,
                attr_buf.height * attr_buf.pitch);
          attr_buf.data = video_buf;
          ffmpeg_push_video_thread(handle, &attr_buf);
@@ -1383,14 +1384,14 @@ static void ffmpeg_thread(void *data)
    size_t audio_buf_size;
    void *audio_buf = NULL;
    ffmpeg_t *ff    = (ffmpeg_t*)data;
-   /* For some reason, FFmpeg has a tendency to crash 
+   /* For some reason, FFmpeg has a tendency to crash
     * if we don't overallocate a bit. */
    void *video_buf = av_malloc(2 * ff->params.fb_width *
          ff->params.fb_height * ff->video.pix_size);
 
    retro_assert(video_buf);
 
-   audio_buf_size = ff->config.audio_enable ? 
+   audio_buf_size = ff->config.audio_enable ?
       (ff->audio.codec->frame_size * ff->params.channels * sizeof(int16_t)) : 0;
    audio_buf      = audio_buf_size ? av_malloc(audio_buf_size) : NULL;
 

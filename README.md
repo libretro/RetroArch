@@ -63,18 +63,24 @@ RetroArch also emphasizes on being easy to integrate into various launcher front
 
 RetroArch has been ported to the following platforms:
 
+   - DOS
    - Windows
    - Linux
+   - Emscripten
    - FreeBSD
    - NetBSD
-   - MacOS
+   - OpenBSD
+   - Haiku
+   - MacOS X
    - PlayStation 3
    - PlayStation Portable
-   - Original Xbox
-   - Xbox 360 (Libxenon/XeXDK)
-   - Wii, GameCube (Libogc)
-   - WiiU
+   - PlayStation Vita
+   - Original Microsoft Xbox
+   - Microsoft Xbox 360 (Libxenon/XeXDK)
+   - Nintendo Wii, GameCube (Libogc)
+   - Nintendo WiiU
    - Nintendo 3DS
+   - Nintendo Switch
    - Raspberry Pi
    - Android
    - iOS

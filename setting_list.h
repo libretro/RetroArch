@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -113,7 +113,7 @@ struct rarch_setting
 
    double               min;
    double               max;
-   
+
    const char           *rounding_fraction;
    const char           *name;
    const char           *short_description;
@@ -121,7 +121,7 @@ struct rarch_setting
    const char           *subgroup;
    const char           *parent_group;
    const char           *values;
-   
+
    change_handler_t              change_handler;
    change_handler_t              read_handler;
    action_start_handler_t        action_start;
@@ -143,7 +143,7 @@ struct rarch_setting
       float                      fraction;
       const struct retro_keybind *keybind;
    } default_value;
-   
+
    struct
    {
       union
@@ -357,7 +357,7 @@ bool CONFIG_HEX(
       unsigned int *target,
       enum msg_hash_enums name_enum_idx,
       enum msg_hash_enums SHORT_enum_idx,
-      unsigned int default_value, 
+      unsigned int default_value,
       rarch_setting_group_info_t *group_info,
       rarch_setting_group_info_t *subgroup_info,
       const char *parent_group,

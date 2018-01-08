@@ -73,6 +73,7 @@ elif [ $PLATFORM = "dex-ps3" ] ; then
 platform=ps3
 SALAMANDER=yes
 EXT=a
+OPTS=DEX_BUILD=1
 
 EXE_PATH=${CELL_SDK}/host-win32/bin
 MAKE_FSELF_NPDRM=${EXE_PATH}/make_fself_npdrm.exe
@@ -84,6 +85,7 @@ elif [ $PLATFORM = "cex-ps3" ]; then
 platform=ps3
 SALAMANDER=yes
 EXT=a
+OPTS=CEX_BUILD=1
 
 EXE_PATH=${CELL_SDK}/host-win32/bin
 SCETOOL_PATH=${PS3TOOLS_PATH}/scetool/scetool.exe
@@ -98,6 +100,7 @@ elif [ $PLATFORM = "ode-ps3" ]; then
 platform=ps3
 SALAMANDER=yes
 EXT=a
+OPTS=ODE_BUILD=1
 
 EXE_PATH=${CELL_SDK}/host-win32/bin
 GENPS3ISO_PATH=${PS3TOOLS_PATH}/ODE/genps3iso_v2.5
@@ -124,7 +127,7 @@ fi
 
 # Compile Salamander core
 if [ $SALAMANDER = "yes" ]; then
-   make -C ../ -f Makefile.${platform}.salamander || exit 1
+   make -C ../ -f Makefile.${platform}.salamander $OPTS || exit 1
    if [ $PLATFORM = "psp1" ] ; then
    mv -f ../EBOOT.PBP ../pkg/${platform}/EBOOT.PBP
    fi
@@ -193,16 +196,16 @@ for f in `ls -v *_${platform}.${EXT}`; do
 
    # Compile core
    if [ $MAKEFILE_GRIFFIN = "yes" ]; then
-      make -C ../ -f Makefile.griffin platform=${platform} $whole_archive $big_stack -j3 || exit 1
+      make -C ../ -f Makefile.griffin $OPTS platform=${platform} $whole_archive $big_stack -j3 || exit 1
    elif [ $PLATFORM = "emscripten" ]; then
        echo "BUILD COMMAND: make -C ../ -f Makefile.emscripten PTHREAD=$pthread ASYNC=$async LTO=$lto -j7 TARGET=${name}_libretro.js"
-       make -C ../ -f Makefile.emscripten PTHREAD=$pthread ASYNC=$async LTO=$lto -j7 TARGET=${name}_libretro.js || exit 1
+       make -C ../ -f Makefile.emscripten $OPTS PTHREAD=$pthread ASYNC=$async LTO=$lto -j7 TARGET=${name}_libretro.js || exit 1
    elif [ $PLATFORM = "unix" ]; then
       make -C ../ -f Makefile LINK=g++ $whole_archive $big_stack -j3 || exit 1
    elif [ $PLATFORM = "ctr" ]; then
-      make -C ../ -f Makefile.${platform} LIBRETRO=$name $whole_archive $big_stack -j3 || exit 1
+      make -C ../ -f Makefile.${platform} $OPTS LIBRETRO=$name $whole_archive $big_stack -j3 || exit 1
    else
-      make -C ../ -f Makefile.${platform} $whole_archive $big_stack -j3 || exit 1
+      make -C ../ -f Makefile.${platform} $OPTS $whole_archive $big_stack -j3 || exit 1
    fi
 
    # Do manual executable step
@@ -354,17 +357,20 @@ fi
 
 # Packaging
 if [ $PLATFORM = "dex-ps3" ] ; then
+   rsync -av ../pkg/${platform}/SSNE10000/USRDIR/cores/*.SELF ../pkg/${platform}/${PLATFORM}/
    $MAKE_FSELF_NPDRM -c ../retroarch-salamander_${platform}.elf ../pkg/${platform}/SSNE10000/USRDIR/EBOOT.BIN
    rm -rf ../retroarch-salamander_${platform}.elf
    $MAKE_PACKAGE_NPDRM ../pkg/${platform}_dex/package.conf ../pkg/${platform}/SSNE10000
    mv UP0001-SSNE10000_00-0000000000000001.pkg ../pkg/${platform}/RetroArch.PS3.DEX.PS3.pkg
 elif [ $PLATFORM = "cex-ps3" ] ; then
+   rsync -av ../pkg/${platform}/SSNE10000/USRDIR/cores/*.SELF ../pkg/${platform}/${PLATFORM}/
    $SCETOOL_PATH $SCETOOL_FLAGS_EBOOT ../retroarch-salamander_${platform}.elf ../pkg/${platform}/SSNE10000/USRDIR/EBOOT.BIN
    rm -rf ../retroarch-salamander_${platform}.elf
    (cd ../tools/ps3/ps3py && python2 setup.py build)
    find ../tools/ps3/ps3py/build -name '*.dll' -exec cp {} ../tools/ps3/ps3py \;
    ../tools/ps3/ps3py/pkg.py --contentid UP0001-SSNE10000_00-0000000000000001 ../pkg/${platform}/SSNE10000/ ../pkg/${platform}/RetroArch.PS3.CEX.PS3.pkg
 elif [ $PLATFORM = "ode-ps3" ] ; then
+   rsync -av ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/*.SELF ../pkg/${platform}/${PLATFORM}/
    $SCETOOL_PATH $SCETOOL_FLAGS_ODE ../retroarch-salamander_${platform}.elf ../pkg/${platform}_iso/PS3_GAME/USRDIR/EBOOT.BIN
    rm -rf ../retroarch-salamander_${platform}.elf
 

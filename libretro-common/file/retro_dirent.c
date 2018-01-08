@@ -67,7 +67,7 @@
 #include <unistd.h> /* stat() is defined here */
 #endif
 
-#if defined(_MSC_VER) && _MSC_VER < 1400 || defined(_XBOX)
+#if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500 || defined(_XBOX)
 #ifndef LEGACY_WIN32
 #define LEGACY_WIN32
 #endif
@@ -103,6 +103,7 @@ struct RDIR *retro_opendir(const char *name)
    char path_buf[1024];
    char *path_local   = NULL;
    wchar_t *path_wide = NULL;
+   unsigned path_len;
 #endif
    struct RDIR *rdir  = (struct RDIR*)calloc(1, sizeof(*rdir));
 
@@ -114,7 +115,13 @@ struct RDIR *retro_opendir(const char *name)
    (void)path_local;
 
    path_buf[0] = '\0';
-   snprintf(path_buf, sizeof(path_buf), "%s\\*", name);
+   path_len = strlen(name);
+
+   /* Non-NT platforms don't like extra slashes in the path */
+   if (name[path_len - 1] == '\\')
+      snprintf(path_buf, sizeof(path_buf), "%s*", name);
+   else
+      snprintf(path_buf, sizeof(path_buf), "%s\\*", name);
 #if defined(LEGACY_WIN32)
    path_local      = utf8_to_local_string_alloc(path_buf);
    rdir->directory = FindFirstFile(path_local, &rdir->entry);

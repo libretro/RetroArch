@@ -27,8 +27,6 @@
 #include "core_type.h"
 #include "core.h"
 
-#define runloop_cmd_press(current_input, id)     (RARCH_INPUT_STATE_BIT_GET(current_input, id))
-
 RETRO_BEGIN_DECLS
 
 enum rarch_ctl_state
@@ -244,7 +242,7 @@ typedef struct global
       size_t gpu_height;
    } record;
 
-   /* Settings and/or global state that is specific to 
+   /* Settings and/or global state that is specific to
     * a console-style implementation. */
    struct
    {
@@ -291,6 +289,8 @@ bool retroarch_validate_game_options(char *s, size_t len, bool mkdir);
 
 bool retroarch_is_forced_fullscreen(void);
 
+void retroarch_unset_forced_fullscreen(void);
+
 void retroarch_set_current_core_type(enum rarch_core_type type, bool explicitly_set);
 
 /**
@@ -322,11 +322,11 @@ global_t *global_get_ptr(void);
  *
  * Run Libretro core in RetroArch for one frame.
  *
- * Returns: 0 on successful run, 
- * Returns 1 if we have to wait until button input in order 
+ * Returns: 0 on successful run,
+ * Returns 1 if we have to wait until button input in order
  * to wake up the loop.
- * Returns -1 if we forcibly quit out of the 
- * RetroArch iteration loop. 
+ * Returns -1 if we forcibly quit out of the
+ * RetroArch iteration loop.
  **/
 int runloop_iterate(unsigned *sleep_ms);
 

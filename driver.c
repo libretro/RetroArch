@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -37,23 +37,13 @@
 #include "record/record_driver.h"
 #include "location/location_driver.h"
 #include "wifi/wifi_driver.h"
+#include "led/led_driver.h"
 #include "configuration.h"
 #include "core.h"
 #include "core_info.h"
 #include "driver.h"
 #include "retroarch.h"
 #include "verbosity.h"
-
-#define HASH_LOCATION_DRIVER           0x09189689U
-#define HASH_CAMERA_DRIVER             0xf25db959U
-#define HASH_MENU_DRIVER               0xd607fb05U
-#define HASH_INPUT_DRIVER              0x4c087840U
-#define HASH_INPUT_JOYPAD_DRIVER       0xab124146U
-#define HASH_VIDEO_DRIVER              0x1805a5e7U
-#define HASH_AUDIO_DRIVER              0x26594002U
-#define HASH_AUDIO_RESAMPLER_DRIVER    0xedcba9ecU
-#define HASH_RECORD_DRIVER             0x144cd2cfU
-#define HASH_WIFI_DRIVER               0x64d7d17fU
 
 /**
  * find_driver_nonempty:
@@ -72,62 +62,68 @@ static const void *find_driver_nonempty(const char *label, int i,
       char *s, size_t len)
 {
    const void *drv = NULL;
-   uint32_t hash   = msg_hash_calculate(label);
 
-   switch (hash)
+   if (string_is_equal(label, "camera_driver"))
    {
-      case HASH_CAMERA_DRIVER:
-         drv = camera_driver_find_handle(i);
-         if (drv)
-            strlcpy(s, camera_driver_find_ident(i), len);
-         break;
-      case HASH_LOCATION_DRIVER:
-         drv = location_driver_find_handle(i);
-         if (drv)
-            strlcpy(s, location_driver_find_ident(i), len);
-         break;
-      case HASH_MENU_DRIVER:
+      drv = camera_driver_find_handle(i);
+      if (drv)
+         strlcpy(s, camera_driver_find_ident(i), len);
+   }
+   else if (string_is_equal(label, "location_driver"))
+   {
+      drv = location_driver_find_handle(i);
+      if (drv)
+         strlcpy(s, location_driver_find_ident(i), len);
+   }
 #ifdef HAVE_MENU
-         drv = menu_driver_find_handle(i);
-         if (drv)
-            strlcpy(s, menu_driver_find_ident(i), len);
+   else if (string_is_equal(label, "menu_driver"))
+   {
+      drv = menu_driver_find_handle(i);
+      if (drv)
+         strlcpy(s, menu_driver_find_ident(i), len);
+   }
 #endif
-         break;
-      case HASH_INPUT_DRIVER:
-         drv = input_driver_find_handle(i);
-         if (drv)
-            strlcpy(s, input_driver_find_ident(i), len);
-         break;
-      case HASH_INPUT_JOYPAD_DRIVER:
-         drv = joypad_driver_find_handle(i);
-         if (drv)
-            strlcpy(s, joypad_driver_find_ident(i), len);
-         break;
-      case HASH_VIDEO_DRIVER:
-         drv = video_driver_find_handle(i);
-         if (drv)
-            strlcpy(s, video_driver_find_ident(i), len);
-         break;
-      case HASH_AUDIO_DRIVER:
-         drv = audio_driver_find_handle(i);
-         if (drv)
-            strlcpy(s, audio_driver_find_ident(i), len);
-         break;
-      case HASH_RECORD_DRIVER:
-         drv = record_driver_find_handle(i);
-         if (drv)
-            strlcpy(s, record_driver_find_ident(i), len);
-         break;
-      case HASH_AUDIO_RESAMPLER_DRIVER:
-         drv = audio_resampler_driver_find_handle(i);
-         if (drv)
-            strlcpy(s, audio_resampler_driver_find_ident(i), len);
-         break;
-      case HASH_WIFI_DRIVER:
-         drv = wifi_driver_find_handle(i);
-         if (drv)
-            strlcpy(s, wifi_driver_find_ident(i), len);
-         break;
+   else if (string_is_equal(label, "input_driver"))
+   {
+      drv = input_driver_find_handle(i);
+      if (drv)
+         strlcpy(s, input_driver_find_ident(i), len);
+   }
+   else if (string_is_equal(label, "input_joypad_driver"))
+   {
+      drv = joypad_driver_find_handle(i);
+      if (drv)
+         strlcpy(s, joypad_driver_find_ident(i), len);
+   }
+   else if (string_is_equal(label, "video_driver"))
+   {
+      drv = video_driver_find_handle(i);
+      if (drv)
+         strlcpy(s, video_driver_find_ident(i), len);
+   }
+   else if (string_is_equal(label, "audio_driver"))
+   {
+      drv = audio_driver_find_handle(i);
+      if (drv)
+         strlcpy(s, audio_driver_find_ident(i), len);
+   }
+   else if (string_is_equal(label, "record_driver"))
+   {
+      drv = record_driver_find_handle(i);
+      if (drv)
+         strlcpy(s, record_driver_find_ident(i), len);
+   }
+   else if (string_is_equal(label, "audio_resampler_driver"))
+   {
+      drv = audio_resampler_driver_find_handle(i);
+      if (drv)
+         strlcpy(s, audio_resampler_driver_find_ident(i), len);
+   }
+   else if (string_is_equal(label, "wifi_driver"))
+   {
+      drv = wifi_driver_find_handle(i);
+      if (drv)
+         strlcpy(s, wifi_driver_find_ident(i), len);
    }
 
    return drv;
@@ -150,7 +146,7 @@ static int driver_find_index(const char * label, const char *drv)
 
    str[0] = '\0';
 
-   for (i = 0; 
+   for (i = 0;
          find_driver_nonempty(label, i, str, sizeof(str)) != NULL; i++)
    {
       if (string_is_empty(str))
@@ -258,7 +254,7 @@ static void driver_adjust_system_rates(void)
  *
  * Sets audio and video drivers to nonblock state (if enabled).
  *
- * If nonblock state is false, sets 
+ * If nonblock state is false, sets
  * blocking state for both audio and video drivers instead.
  **/
 void driver_set_nonblock_state(void)
@@ -271,7 +267,7 @@ void driver_set_nonblock_state(void)
       settings_t *settings = config_get_ptr();
       bool video_nonblock  = enable;
 
-      if (     !settings->bools.video_vsync 
+      if (     !settings->bools.video_vsync
             || rarch_ctl(RARCH_CTL_IS_NONBLOCK_FORCED, NULL))
          video_nonblock = true;
       video_driver_set_nonblock_state(video_nonblock);
@@ -284,7 +280,7 @@ void driver_set_nonblock_state(void)
  * driver_update_system_av_info:
  * @data               : pointer to new A/V info
  *
- * Update the system Audio/Video information. 
+ * Update the system Audio/Video information.
  * Will reinitialize audio/video drivers.
  * Used by RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO.
  *
@@ -293,6 +289,7 @@ void driver_set_nonblock_state(void)
 static bool driver_update_system_av_info(const struct retro_system_av_info *info)
 {
    struct retro_system_av_info *av_info    = video_viewport_get_system_av_info();
+   settings_t *settings = config_get_ptr();
 
    memcpy(av_info, info, sizeof(*av_info));
    command_event(CMD_EVENT_REINIT, NULL);
@@ -308,6 +305,11 @@ static bool driver_update_system_av_info(const struct retro_system_av_info *info
       command_event(CMD_EVENT_RECORD_INIT, NULL);
    }
 
+   /* Hide mouse cursor in fullscreen after 
+    * a RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO call. */
+   if (settings->bools.video_fullscreen)
+      video_driver_hide_mouse();
+
    return true;
 }
 
@@ -321,6 +323,7 @@ static bool driver_update_system_av_info(const struct retro_system_av_info *info
 void drivers_init(int flags)
 {
    bool video_is_threaded = false;
+
    if (flags & DRIVER_VIDEO_MASK)
       video_driver_unset_own_driver();
    if (flags & DRIVER_AUDIO_MASK)
@@ -388,6 +391,11 @@ void drivers_init(int flags)
       if (input_driver_is_nonblock_state())
          driver_set_nonblock_state();
    }
+
+   if (flags & DRIVER_LED_MASK)
+   {
+      led_driver_init();
+   }
 }
 
 
@@ -402,17 +410,17 @@ void drivers_init(int flags)
  **/
 
 /**
- * Driver ownership - set this to true if the platform in question needs to 'own' 
- * the respective handle and therefore skip regular RetroArch 
+ * Driver ownership - set this to true if the platform in question needs to 'own'
+ * the respective handle and therefore skip regular RetroArch
  * driver teardown/reiniting procedure.
  *
- * If  to true, the 'free' function will get skipped. It is 
- * then up to the driver implementation to properly handle 
- * 'reiniting' inside the 'init' function and make sure it 
- * returns the existing handle instead of allocating and 
+ * If  to true, the 'free' function will get skipped. It is
+ * then up to the driver implementation to properly handle
+ * 'reiniting' inside the 'init' function and make sure it
+ * returns the existing handle instead of allocating and
  * returning a pointer to a new handle.
  *
- * Typically, if a driver intends to make use of this, it should 
+ * Typically, if a driver intends to make use of this, it should
  * set this to true at the end of its 'init' function.
  **/
 void driver_uninit(int flags)
@@ -434,6 +442,9 @@ void driver_uninit(int flags)
    if ((flags & DRIVER_WIFI_MASK) && !wifi_driver_ctl(RARCH_WIFI_CTL_OWNS_DRIVER, NULL))
       wifi_driver_ctl(RARCH_WIFI_CTL_DEINIT, NULL);
 
+   if (flags & DRIVER_LED)
+      led_driver_free();
+   
    if (flags & DRIVERS_VIDEO_INPUT)
       video_driver_free();
 
@@ -445,7 +456,7 @@ void driver_uninit(int flags)
 
    if ((flags & DRIVER_INPUT_MASK) && !input_driver_owns_driver())
       input_driver_destroy_data();
-
+   
    if ((flags & DRIVER_AUDIO_MASK) && !audio_driver_owns_driver())
       audio_driver_destroy_data();
 }

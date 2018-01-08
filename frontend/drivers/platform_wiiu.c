@@ -49,7 +49,7 @@
 #include "system/memory.h"
 #include "system/exception_handler.h"
 #include <sys/iosupport.h>
-
+#include <wiiu/syshid.h>
 #include <wiiu/os/foreground.h>
 #include <wiiu/gx2/event.h>
 #include <wiiu/procui.h>
@@ -57,10 +57,6 @@
 #include <wiiu/ios.h>
 #include <wiiu/vpad.h>
 #include <wiiu/kpad.h>
-
-#if defined(ENABLE_CONTROLLER_PATCHER)
-   #include "wiiu/controller_patcher/ControllerPatcherWrapper.h"
-#endif
 
 #include <fat.h>
 #include <iosuhax.h>
@@ -188,8 +184,8 @@ static void frontend_wiiu_exec(const char *path, bool should_load_game)
       u32 argc;
       char * argv[3];
       char args[];
-   }*param = getApplicationEndAddr();
-   int len = 0;
+   }*param     = getApplicationEndAddr();
+   int len     = 0;
    param->argc = 0;
 
    if(!path || !*path)
@@ -318,6 +314,8 @@ static volatile int wiiu_log_lock = 0;
 
 void wiiu_log_init(const char *ipString, int port)
 {
+   wiiu_log_lock = 0;
+
    wiiu_log_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
    if (wiiu_log_socket < 0)
@@ -355,16 +353,17 @@ static ssize_t wiiu_log_write(struct _reent *r, void *fd, const char *ptr, size_
    wiiu_log_lock = 1;
 
    int ret;
+   int remaining = len;
 
-   while (len > 0)
+   while (remaining > 0)
    {
-      int block = len < 1400 ? len : 1400; // take max 1400 bytes per UDP packet
+      int block = remaining < 1400 ? remaining : 1400; // take max 1400 bytes per UDP packet
       ret = send(wiiu_log_socket, ptr, block, 0);
 
       if (ret < 0)
          break;
 
-      len -= ret;
+      remaining -= ret;
       ptr += ret;
    }
 
@@ -395,7 +394,7 @@ static devoptab_t dotab_stdout =
 };
 #endif
 
-void SaveCallback()
+void SaveCallback(void)
 {
    OSSavesDone_ReadyToRelease();
 }
@@ -432,9 +431,6 @@ int main(int argc, char **argv)
    KPADInit();
 #endif
    verbosity_enable();
-#if !defined(IS_SALAMANDER) && defined(ENABLE_CONTROLLER_PATCHER)
-   ControllerPatcherInit();
-#endif
    fflush(stdout);
    DEBUG_VAR(ARGV_PTR);
    if(ARGV_PTR && ((u32)ARGV_PTR < 0x01000000))
@@ -494,9 +490,6 @@ int main(int argc, char **argv)
 
    }
    while (1);
-#if !defined(IS_SALAMANDER) && defined(ENABLE_CONTROLLER_PATCHER)
-   ControllerPatcherDeInit();
-#endif
    main_exit(NULL);
 #endif
 #endif
@@ -517,7 +510,7 @@ unsigned long _times_r(struct _reent *r, struct tms *tmsbuf)
    return 0;
 }
 
-void __eabi()
+void __eabi(void)
 {
 
 }
@@ -525,24 +518,23 @@ void __eabi()
 __attribute__((weak))
 void __init(void)
 {
-   extern void (**const __CTOR_LIST__)(void);
-   extern void (**const __CTOR_END__)(void);
+   extern void (*const __CTOR_LIST__)(void);
+   extern void (*const __CTOR_END__)(void);
 
-   void (**ctor)(void) = __CTOR_LIST__;
-   while (ctor < __CTOR_END__) {
+   void (*const *ctor)(void) = &__CTOR_LIST__;
+   while (ctor < &__CTOR_END__) {
       (*ctor++)();
    }
 }
 
-
 __attribute__((weak))
 void __fini(void)
 {
-   extern void (**const __DTOR_LIST__)(void);
-   extern void (**const __DTOR_END__)(void);
+   extern void (*const __DTOR_LIST__)(void);
+   extern void (*const __DTOR_END__)(void);
 
-   void (**dtor)(void) = __DTOR_LIST__;
-   while (dtor < __DTOR_END__) {
+   void (*const *dtor)(void) = &__DTOR_LIST__;
+   while (dtor < &__DTOR_END__) {
       (*dtor++)();
    }
 }
@@ -557,7 +549,7 @@ void someFunc(void *arg)
 
 static int mcp_hook_fd = -1;
 
-int MCPHookOpen()
+int MCPHookOpen(void)
 {
    //take over mcp thread
    mcp_hook_fd = IOS_Open("/dev/mcp", 0);
@@ -579,7 +571,7 @@ int MCPHookOpen()
    return 0;
 }
 
-void MCPHookClose()
+void MCPHookClose(void)
 {
    if (mcp_hook_fd < 0)
       return;
@@ -631,12 +623,14 @@ static void fsdev_exit(void)
 /* HBL elf entry point */
 int __entry_menu(int argc, char **argv)
 {
+   int ret;
+
    InitFunctionPointers();
    memoryInitialize();
    __init();
    fsdev_init();
 
-   int ret = main(argc, argv);
+   ret = main(argc, argv);
 
    fsdev_exit();
    __fini();
@@ -650,11 +644,14 @@ void _start(int argc, char **argv)
    memoryInitialize();
    __init();
    fsdev_init();
-
    main(argc, argv);
-
    fsdev_exit();
-//   __fini();
+
+   /* TODO: fix elf2rpl so it doesn't error with "Could not find matching symbol
+      for relocation" then uncomment this */
+#if 0
+   __fini();
+#endif
    memoryRelease();
    SYSRelaunchTitle(0, 0);
    exit(0);

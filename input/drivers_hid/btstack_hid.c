@@ -27,6 +27,7 @@
 #endif
 
 #include <boolean.h>
+#include <retro_miscellaneous.h>
 #include <rthreads/rthreads.h>
 #ifdef HAVE_DYNAMIC
 #include <dynamic/dylib.h>
@@ -1209,7 +1210,7 @@ static void btpad_packet_handler(uint8_t packet_type,
                   RARCH_LOG("[BTpad]: Got %.200s.\n", (char*)&packet[9]);
 
                   connection->slot  = pad_connection_pad_init(&slots[connection->slot],
-                        (char*)packet + 9, 0, 0, connection, &btpad_connection_send_control);
+                        (char*)packet + 9, 0, 0, connection, &btstack_hid);
                   connection->state = BTPAD_CONNECTED;
                }
                break;
@@ -1369,7 +1370,7 @@ static void btstack_hid_joypad_get_buttons(void *data, unsigned port, retro_bits
   if (hid)
     pad_connection_get_buttons(&hid->slots[port], port, state);
   else
-    RARCH_INPUT_STATE_CLEAR_PTR(state);
+    BIT256_CLEAR_ALL_PTR(state);
 }
 
 static bool btstack_hid_joypad_button(void *data, unsigned port, uint16_t joykey)
@@ -1383,7 +1384,7 @@ static bool btstack_hid_joypad_button(void *data, unsigned port, uint16_t joykey
 
   /* Check the button. */
   if ((port < MAX_USERS) && (joykey < 32))
-    return (RARCH_INPUT_STATE_BIT_GET(buttons, joykey) != 0);
+    return (BIT256_GET(buttons, joykey) != 0);
 
   return false;
 }
@@ -1423,7 +1424,7 @@ static int16_t btstack_hid_joypad_axis(void *data, unsigned port, uint32_t joyax
    return val;
 }
 
-static void btstack_hid_free(void *data)
+static void btstack_hid_free(const void *data)
 {
    btstack_hid_t *hid = (btstack_hid_t*)data;
 
@@ -1476,4 +1477,5 @@ hid_driver_t btstack_hid = {
    btstack_hid_joypad_rumble,
    btstack_hid_joypad_name,
    "btstack",
+   btpad_connection_send_control
 };

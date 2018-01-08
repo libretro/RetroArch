@@ -121,23 +121,23 @@ int main(int argc, char ** argv)
          printf("Usage: %s <db file> get-names <query expression>\n", argv[0]);
          goto error;
       }
-      
+
       query_exp = argv[3];
       error = NULL;
       q = libretrodb_query_compile(db, query_exp, strlen(query_exp), &error);
-      
+
       if (error)
       {
          printf("%s\n", error);
          goto error;
       }
-      
+
       if ((rv = libretrodb_cursor_open(db, cur, q)) != 0)
       {
          printf("Could not open cursor: %s\n", strerror(-rv));
          goto error;
       }
-      
+
       while (libretrodb_cursor_read_item(cur, &item) == 0)
       {
          if (item.type == RDT_MAP) //should always be true, but if false the program would segfault

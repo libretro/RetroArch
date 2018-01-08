@@ -42,6 +42,7 @@ const blissbox_pad_type_t blissbox_pad_types[] =
    {"A5200_TB", 50},
    {"A7800", 4},
    {"ATARI_KEYPAD", 43},
+   {"ATARI", 0},
    {"ATMARK", 10},
    {"BALLY", 42},
    {"CD32", 24},

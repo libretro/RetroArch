@@ -285,7 +285,7 @@ static void caca_set_texture_frame(void *data,
       caca_menu_frame = NULL;
    }
 
-   if ( !caca_menu_frame ||
+   if ( !caca_menu_frame            ||
          caca_menu_width  != width  ||
          caca_menu_height != height ||
          caca_menu_pitch  != pitch)
@@ -318,17 +318,10 @@ static const video_poke_interface_t caca_poke_interface = {
    NULL,
    NULL,
    NULL,
-#if defined(HAVE_MENU)
    caca_set_texture_frame,
    NULL,
    caca_set_osd_msg,
    NULL,
-#else
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-#endif
 
    NULL,
 #ifdef HAVE_MENU

@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -41,14 +41,6 @@ static int16_t nullinput_input_state(void *data,
    (void)id;
 
    return 0;
-}
-
-static bool nullinput_input_meta_key_pressed(void *data, int key)
-{
-   (void)data;
-   (void)key;
-
-   return false;
 }
 
 static void nullinput_input_free_input(void *data)
@@ -100,7 +92,6 @@ input_driver_t input_null = {
    nullinput_input_init,
    nullinput_input_poll,
    nullinput_input_state,
-   nullinput_input_meta_key_pressed,
    nullinput_input_free_input,
    nullinput_set_sensor_state,
    NULL,

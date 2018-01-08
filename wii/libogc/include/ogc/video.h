@@ -31,11 +31,11 @@ distribution.
 #ifndef __VIDEO_H__
 #define __VIDEO_H__
 
-/*! 
- * \file video.h 
+/*!
+ * \file video.h
  * \brief VIDEO subsystem
  *
- */ 
+ */
 
 #include <gctypes.h>
 #include "gx_struct.h"
@@ -46,7 +46,7 @@ distribution.
 #endif /* __cplusplus */
 
 
-/*! 
+/*!
  * \typedef void (*VIRetraceCallback)(u32 retraceCnt)
  * \brief function pointer typedef for the user's retrace callback
  * \param[in] retraceCnt current retrace count
@@ -59,7 +59,7 @@ void* VIDEO_GetNextFramebuffer();
 void* VIDEO_GetCurrentFramebuffer();
 
 
-/*! 
+/*!
  * \fn void VIDEO_Init()
  * \brief Initializes the VIDEO subsystem. This call should be done in the early stages of your main()
  *
@@ -68,7 +68,7 @@ void* VIDEO_GetCurrentFramebuffer();
 void VIDEO_Init();
 
 
-/*! 
+/*!
  * \fn void VIDEO_Flush()
  * \brief Flush the shadow registers to the drivers video registers.
  *
@@ -88,7 +88,7 @@ void VIDEO_Flush();
 void VIDEO_SetBlack(bool black);
 
 
-/*! 
+/*!
  * \fn u32 VIDEO_GetNextField()
  * \brief Get the next field in DS mode.
  *
@@ -97,7 +97,7 @@ void VIDEO_SetBlack(bool black);
 u32 VIDEO_GetNextField();
 
 
-/*! 
+/*!
  * \fn u32 VIDEO_GetCurrentLine()
  * \brief Get current video line
  *
@@ -106,7 +106,7 @@ u32 VIDEO_GetNextField();
 u32 VIDEO_GetCurrentLine();
 
 
-/*! 
+/*!
  * \fn u32 VIDEO_GetCurrentTvMode()
  * \brief Get current configured TV mode
  *
@@ -115,7 +115,7 @@ u32 VIDEO_GetCurrentLine();
 u32 VIDEO_GetCurrentTvMode();
 
 
-/*! 
+/*!
  * \fn void VIDEO_Configure(GXRModeObj *rmode)
  * \brief Configure the VI with the given render mode object
  *
@@ -127,7 +127,7 @@ void VIDEO_Configure(GXRModeObj *rmode);
 
 u32 VIDEO_GetFrameBufferSize(GXRModeObj *rmode);
 
-/*! 
+/*!
  * \fn void VIDEO_ClearFrameBuffer(GXRModeObj *rmode,void *fb,u32 color)
  * \brief Clear the given framebuffer.
  *
@@ -140,7 +140,7 @@ u32 VIDEO_GetFrameBufferSize(GXRModeObj *rmode);
 void VIDEO_ClearFrameBuffer(GXRModeObj *rmode,void *fb,u32 color);
 
 
-/*! 
+/*!
  * \fn void VIDEO_WaitVSync(void)
  * \brief Wait on the next vertical retrace
  *
@@ -149,7 +149,7 @@ void VIDEO_ClearFrameBuffer(GXRModeObj *rmode,void *fb,u32 color);
 void VIDEO_WaitVSync(void);
 
 
-/*! 
+/*!
  * \fn void VIDEO_SetNextFramebuffer(void *fb)
  * \brief Set the framebuffer for the next VI register update.
  *
@@ -158,7 +158,7 @@ void VIDEO_WaitVSync(void);
 void VIDEO_SetNextFramebuffer(void *fb);
 
 
-/*! 
+/*!
  * \fn void VIDEO_SetNextRightFramebuffer(void *fb)
  * \brief Set the right framebuffer for the next VI register update. This is used for 3D Gloves for instance.
  *
@@ -167,7 +167,7 @@ void VIDEO_SetNextFramebuffer(void *fb);
 void VIDEO_SetNextRightFramebuffer(void *fb);
 
 
-/*! 
+/*!
  * \fn VIRetraceCallback VIDEO_SetPreRetraceCallback(VIRetraceCallback callback)
  * \brief Set the Pre-Retrace callback function. This function is called within the video interrupt handler before the VI registers will be updated.
  *
@@ -178,7 +178,7 @@ void VIDEO_SetNextRightFramebuffer(void *fb);
 VIRetraceCallback VIDEO_SetPreRetraceCallback(VIRetraceCallback callback);
 
 
-/*! 
+/*!
  * \fn VIRetraceCallback VIDEO_SetPostRetraceCallback(VIRetraceCallback callback)
  * \brief Set the Post-Retrace callback function. This function is called within the video interrupt handler after the VI registers are updated.
  *
@@ -189,7 +189,7 @@ VIRetraceCallback VIDEO_SetPreRetraceCallback(VIRetraceCallback callback);
 VIRetraceCallback VIDEO_SetPostRetraceCallback(VIRetraceCallback callback);
 
 
-/*! 
+/*!
  * \fn u32 VIDEO_HaveComponentCable(void)
  * \brief Check for a component cable. This function returns 1 when a Component (YPbPr) cable is connected.
  *

@@ -592,7 +592,7 @@ bool menu_animation_get_ideal_delta_time(menu_animation_ctx_delta_t *delta)
 
 void menu_animation_update_time(bool timedate_enable)
 {
-   static retro_time_t 
+   static retro_time_t
       last_clock_update     = 0;
 
    cur_time                 = cpu_features_get_time_usec();
@@ -604,7 +604,7 @@ void menu_animation_update_time(bool timedate_enable)
       delta_time            = IDEAL_DELTA_TIME / 4;
    old_time                 = cur_time;
 
-   if (((cur_time - last_clock_update) > 1000000) 
+   if (((cur_time - last_clock_update) > 1000000)
          && timedate_enable)
    {
       animation_is_active   = true;
@@ -679,7 +679,7 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
       case MENU_ANIMATION_CTL_KILL_BY_SUBJECT:
          {
             unsigned i, j,  killed = 0;
-            menu_animation_ctx_subject_t *subject = 
+            menu_animation_ctx_subject_t *subject =
                (menu_animation_ctx_subject_t*)data;
             float            **sub = (float**)subject->data;
 

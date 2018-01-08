@@ -190,7 +190,7 @@ static int envelope_next_tick( struct envelope *envelope, int tick, int key_on )
 	}
 	return tick;
 }
-	
+
 static int envelope_calculate_ampl( struct envelope *envelope, int tick ) {
 	int idx, point, dt, da;
 	int ampl = envelope->points_ampl[ envelope->num_points - 1 ];

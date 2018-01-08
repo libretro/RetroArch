@@ -1383,7 +1383,7 @@ static int rjpeg__parse_entropy_coded_data(rjpeg__jpeg *z)
                   if (z->code_bits < 24)
                      rjpeg__grow_buffer_unsafe(z);
 
-                  /* if it's NOT a restart, then just bail, 
+                  /* if it's NOT a restart, then just bail,
                    * so we get corrupt data rather than no data */
                   if (!RJPEG__RESTART(z->marker))
                      return 1;
@@ -1666,10 +1666,10 @@ static int rjpeg__process_scan_header(rjpeg__jpeg *z)
    if (z->progressive)
    {
       /* Bad SOS. Corrupt JPEG? */
-      if (  z->spec_start > 63 || 
-            z->spec_end > 63   || 
-            z->spec_start > z->spec_end || 
-            z->succ_high > 13           || 
+      if (  z->spec_start > 63 ||
+            z->spec_end > 63   ||
+            z->spec_start > z->spec_end ||
+            z->succ_high > 13           ||
             z->succ_low > 13)
          return 0;
    }
@@ -1692,7 +1692,7 @@ static int rjpeg__process_frame_header(rjpeg__jpeg *z, int scan)
    rjpeg__context *s = z->s;
    int Lf,p,i,q, h_max=1,v_max=1,c;
    Lf = RJPEG__GET16BE(s);
-   
+
    /* JPEG */
 
    /* Bad SOF len. Corrupt JPEG? */
@@ -1716,7 +1716,7 @@ static int rjpeg__process_frame_header(rjpeg__jpeg *z, int scan)
       return 0;
 
    s->img_x = RJPEG__GET16BE(s);
-  
+
    /* No header width. Corrupt JPEG? */
    if (s->img_x == 0)
       return 0;
@@ -1824,7 +1824,7 @@ static int rjpeg__process_frame_header(rjpeg__jpeg *z, int scan)
          z->img_comp[i].linebuf   = NULL;
          z->img_comp[i].coeff_w   = (z->img_comp[i].w2 + 7) >> 3;
          z->img_comp[i].coeff_h   = (z->img_comp[i].h2 + 7) >> 3;
-         z->img_comp[i].raw_coeff = malloc(z->img_comp[i].coeff_w * 
+         z->img_comp[i].raw_coeff = malloc(z->img_comp[i].coeff_w *
                                     z->img_comp[i].coeff_h * 64 * sizeof(short) + 15);
          z->img_comp[i].coeff     = (short*) (((size_t) z->img_comp[i].raw_coeff + 15) & ~15);
       }
@@ -1942,7 +1942,7 @@ static int rjpeg__decode_jpeg_image(rjpeg__jpeg *j)
                   return 0;
             }
 
-            /* if we reach eof without hitting a marker, 
+            /* if we reach eof without hitting a marker,
              * rjpeg__get_marker() below will fail and we'll eventually return 0 */
          }
       }

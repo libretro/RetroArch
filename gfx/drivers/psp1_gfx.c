@@ -122,7 +122,7 @@ typedef struct psp1_video
 #define PSP_FRAME_SLICE_COUNT    (PSP_FRAME_ROWS_COUNT * PSP_FRAME_COLUMNS_COUNT)
 #define PSP_FRAME_VERTEX_COUNT   (PSP_FRAME_SLICE_COUNT * 2)
 
-static INLINE void psp_set_screen_coords (psp1_sprite_t* framecoords, 
+static INLINE void psp_set_screen_coords (psp1_sprite_t* framecoords,
       int x, int y, int width, int height, unsigned rotation)
 {
    int i;
@@ -261,7 +261,7 @@ static void psp_on_vblank(u32 sub, psp1_video_t *psp)
 static void *psp_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
-   /* TODO : add ASSERT() checks or use main RAM if 
+   /* TODO : add ASSERT() checks or use main RAM if
     * VRAM is too low for desired video->input_scale. */
 
    int pixel_format, lut_pixel_format, lut_block_count;
@@ -284,11 +284,11 @@ static void *psp_init(const video_info_t *video,
    psp->vp.full_width       = SCEGU_SCR_WIDTH;
    psp->vp.full_height      = SCEGU_SCR_HEIGHT;
 
-   /* Make sure anything using uncached pointers reserves 
+   /* Make sure anything using uncached pointers reserves
     * whole cachelines (memory address and size need to be a multiple of 64)
     * so it isn't overwritten by an unlucky cache writeback.
     *
-    * This includes display lists since the Gu library uses 
+    * This includes display lists since the Gu library uses
     * uncached pointers to write to them. */
 
    /* Allocate more space if bigger display lists are needed. */
@@ -367,8 +367,8 @@ static void *psp_init(const video_info_t *video,
       psp->draw_buffer      = SCEGU_VRAM_BP_0;
       psp->bpp_log2         = 1;
 
-      pixel_format          = 
-         (video_driver_get_pixel_format() == RETRO_PIXEL_FORMAT_0RGB1555) 
+      pixel_format          =
+         (video_driver_get_pixel_format() == RETRO_PIXEL_FORMAT_0RGB1555)
          ? GU_PSM_5551 : GU_PSM_5650 ;
 
       lut_pixel_format      = GU_PSM_T16;
@@ -410,7 +410,7 @@ static void *psp_init(const video_info_t *video,
 
    sceGuFinish();
    sceGuSync(0, 0);
- 
+
    /* TODO : check if necessary */
    sceDisplayWaitVblankStart();
    sceGuDisplay(GU_TRUE);
@@ -428,10 +428,10 @@ static void *psp_init(const video_info_t *video,
    /* green only */
    sceGuBlendFunc(GU_ADD, GU_FIX, GU_FIX, 0x0000FF00, 0xFFFFFFFF);
 
-   sceGuDrawArray(GU_SPRITES, GU_TEXTURE_32BITF | GU_VERTEX_32BITF | 
+   sceGuDrawArray(GU_SPRITES, GU_TEXTURE_32BITF | GU_VERTEX_32BITF |
          GU_TRANSFORM_2D, PSP_FRAME_VERTEX_COUNT, NULL,
          (void*)(psp->frame_coords));
-   
+
    /* restore */
    sceGuBlendFunc(GU_ADD, GU_FIX, GU_FIX, 0xFFFFFFFF, 0xFFFFFFFF);
 
@@ -446,7 +446,7 @@ static void *psp_init(const video_info_t *video,
 
    sceGuClutMode(pixel_format, 0, color_mask, 0);
    sceGuClutLoad(lut_block_count, LUT_b);
-   sceGuDrawArray(GU_SPRITES, GU_TEXTURE_32BITF | GU_VERTEX_32BITF | 
+   sceGuDrawArray(GU_SPRITES, GU_TEXTURE_32BITF | GU_VERTEX_32BITF |
          GU_TRANSFORM_2D, PSP_FRAME_VERTEX_COUNT, NULL,
          (void*)(psp->frame_coords));
 
@@ -544,10 +544,10 @@ static bool psp_frame(void *data, const void *frame,
    sceGuTexFilter(psp->tex_filter, psp->tex_filter);
    sceGuClear(GU_COLOR_BUFFER_BIT);
 
-   /* frame in VRAM ? texture/palette was 
+   /* frame in VRAM ? texture/palette was
     * set in core so draw directly */
-   if (psp->hw_render) 
-      sceGuDrawArray(GU_SPRITES, GU_TEXTURE_32BITF | GU_VERTEX_32BITF | 
+   if (psp->hw_render)
+      sceGuDrawArray(GU_SPRITES, GU_TEXTURE_32BITF | GU_VERTEX_32BITF |
             GU_TRANSFORM_2D, PSP_FRAME_VERTEX_COUNT, NULL,
             (void*)(psp->frame_coords));
    else
@@ -672,7 +672,7 @@ static void psp_set_texture_frame(void *data, const void *frame, bool rgb32,
 #endif
    sceGuBlendFunc(GU_ADD, GU_FIX, GU_FIX, 0xF0F0F0F0, 0x0F0F0F0F);
 ;
-   sceGuDrawArray(GU_SPRITES, GU_TEXTURE_32BITF | GU_VERTEX_32BITF | 
+   sceGuDrawArray(GU_SPRITES, GU_TEXTURE_32BITF | GU_VERTEX_32BITF |
          GU_TRANSFORM_2D, PSP_FRAME_VERTEX_COUNT, NULL,
          psp->menu.frame_coords);
    sceGuFinish();
@@ -725,7 +725,7 @@ static void psp_update_viewport(psp1_video_t* psp,
          if ((fabsf(device_aspect - desired_aspect) < 0.0001f)
                || (fabsf((16.0/9.0) - desired_aspect) < 0.02f))
          {
-            /* If the aspect ratios of screen and desired aspect 
+            /* If the aspect ratios of screen and desired aspect
              * ratio are sufficiently equal (floating point stuff),
              * assume they are actually equal.
              */
@@ -825,7 +825,7 @@ static void psp_apply_state_changes(void *data)
 static void psp_viewport_info(void *data, struct video_viewport *vp)
 {
    psp1_video_t *psp = (psp1_video_t*)data;
-   
+
    if (psp)
       *vp = psp->vp;
 }
@@ -844,10 +844,8 @@ static const video_poke_interface_t psp_poke_interface = {
    NULL, /* get_proc_address */
    psp_set_aspect_ratio,
    psp_apply_state_changes,
-#ifdef HAVE_MENU
    psp_set_texture_frame,
    psp_set_texture_enable,
-#endif
    NULL,
    NULL,
    NULL
@@ -951,7 +949,7 @@ static bool psp_set_shader(void *data,
    (void)type;
    (void)path;
 
-   return false; 
+   return false;
 }
 
 video_driver_t video_psp1 = {

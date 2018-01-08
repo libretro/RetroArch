@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -20,10 +20,14 @@
 
 #include <boolean.h>
 #include <libretro.h>
+#include <retro_common_api.h>
+#include <retro_environment.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
+
+RETRO_BEGIN_DECLS
 
 void libretro_dummy_retro_init(void);
 
@@ -299,5 +303,7 @@ void *libretro_videoprocessor_retro_get_memory_data(unsigned id);
 size_t libretro_videoprocessor_retro_get_memory_size(unsigned id);
 
 #endif
+
+RETRO_END_DECLS
 
 #endif

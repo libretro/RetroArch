@@ -48,7 +48,7 @@ void __CONF_DecryptTextBuffer(void)
 {
 	u32 key = 0x73B5DBFA;
 	int i;
-	
+
 	for(i=0; i<0x100; i++) {
 		__conf_txt_buffer[i] ^= key & 0xff;
 		key = (key<<1) | (key>>31);
@@ -59,30 +59,30 @@ s32 CONF_Init(void)
 {
 	int fd;
 	int ret;
-	
+
 	if(__conf_inited) return 0;
-	
+
 	fd = IOS_Open(__conf_file,1);
 	if(fd < 0) return fd;
-	
+
 	memset(__conf_buffer,0,0x4000);
 	memset(__conf_txt_buffer,0,0x101);
-	
+
 	ret = IOS_Read(fd, __conf_buffer, 0x4000);
 	IOS_Close(fd);
 	if(ret != 0x4000) return CONF_EBADFILE;
-	
+
 	fd = IOS_Open(__conf_txt_file,1);
 	if(fd < 0) return fd;
-	
+
 	ret = IOS_Read(fd, __conf_txt_buffer, 0x100);
 	IOS_Close(fd);
 	if(ret != 0x100) return CONF_EBADFILE;
-	
+
 	if(memcmp(__conf_buffer, "SCv0", 4)) return CONF_EBADFILE;
-	
+
 	__CONF_DecryptTextBuffer();
-	
+
 	__conf_inited = 1;
 	return 0;
 }
@@ -93,9 +93,9 @@ int __CONF_GetTxt(const char *name, char *buf, int length)
 	char *delim, *end;
 	int slen;
 	int nlen = strlen(name);
-	
+
 	if(!__conf_inited) return CONF_ENOTINIT;
-	
+
 	while(line < (__conf_txt_buffer+0x100) ) {
 		delim = strchr(line, '=');
 		if(delim && ((delim - line) == nlen) && !memcmp(name, line, nlen)) {
@@ -113,7 +113,7 @@ int __CONF_GetTxt(const char *name, char *buf, int length)
 				}
 			}
 		}
-		
+
 		// skip to line end
 		while(line < (__conf_txt_buffer+0x100) && *line++ != '\n');
 	}
@@ -127,7 +127,7 @@ u8 *__CONF_Find(const char *name)
 	int nlen = strlen(name);
 	count = *((u16*)(&__conf_buffer[4]));
 	offset = (u16*)&__conf_buffer[6];
-	
+
 	while(count--) {
 		if((nlen == ((__conf_buffer[*offset]&0x0F)+1)) && !memcmp(name, &__conf_buffer[*offset+1], nlen))
 			return &__conf_buffer[*offset];
@@ -141,10 +141,10 @@ s32 CONF_GetLength(const char *name)
 	u8 *entry;
 
 	if(!__conf_inited) return CONF_ENOTINIT;
-	
+
 	entry = __CONF_Find(name);
 	if(!entry) return CONF_ENOENT;
-	
+
 	switch(*entry>>5) {
 		case 1:
 			return *((u16*)&entry[strlen(name)+1]) + 1;
@@ -159,18 +159,18 @@ s32 CONF_GetLength(const char *name)
 		case 7:
 			return 1;
 		default:
-			return CONF_ENOTIMPL;	
+			return CONF_ENOTIMPL;
 	}
 }
 
-s32 CONF_GetType(const char *name) 
+s32 CONF_GetType(const char *name)
 {
 	u8 *entry;
 	if(!__conf_inited) return CONF_ENOTINIT;
-	
+
 	entry = __CONF_Find(name);
 	if(!entry) return CONF_ENOENT;
-	
+
 	return *entry>>5;
 }
 
@@ -179,14 +179,14 @@ s32 CONF_Get(const char *name, void *buffer, u32 length)
 	u8 *entry;
 	s32 len;
 	if(!__conf_inited) return CONF_ENOTINIT;
-	
+
 	entry = __CONF_Find(name);
 	if(!entry) return CONF_ENOENT;
-	
+
 	len = CONF_GetLength(name);
 	if(len<0) return len;
 	if(len>length) return CONF_ETOOBIG;
-	
+
 	switch(*entry>>5) {
 		case CONF_BIGARRAY:
 			memcpy(buffer, &entry[strlen(name)+3], len);
@@ -207,18 +207,18 @@ s32 CONF_Get(const char *name, void *buffer, u32 length)
 	return len;
 }
 
-s32 CONF_GetShutdownMode(void) 
+s32 CONF_GetShutdownMode(void)
 {
 	u8 idleconf[2] = {0,0};
 	int res;
-	
+
 	res = CONF_Get("IPL.IDL", idleconf, 2);
 	if(res<0) return res;
 	if(res!=2) return CONF_EBADVALUE;
 	return idleconf[0];
 }
 
-s32 CONF_GetIdleLedMode(void) 
+s32 CONF_GetIdleLedMode(void)
 {
 	int res;
 	u8 idleconf[2] = {0,0};
@@ -228,7 +228,7 @@ s32 CONF_GetIdleLedMode(void)
 	return idleconf[1];
 }
 
-s32 CONF_GetProgressiveScan(void) 
+s32 CONF_GetProgressiveScan(void)
 {
 	int res;
 	u8 val = 0;
@@ -238,7 +238,7 @@ s32 CONF_GetProgressiveScan(void)
 	return val;
 }
 
-s32 CONF_GetEuRGB60(void) 
+s32 CONF_GetEuRGB60(void)
 {
 	int res;
 	u8 val = 0;
@@ -248,7 +248,7 @@ s32 CONF_GetEuRGB60(void)
 	return val;
 }
 
-s32 CONF_GetIRSensitivity(void) 
+s32 CONF_GetIRSensitivity(void)
 {
 	int res;
 	u32 val = 0;
@@ -258,7 +258,7 @@ s32 CONF_GetIRSensitivity(void)
 	return val;
 }
 
-s32 CONF_GetSensorBarPosition(void) 
+s32 CONF_GetSensorBarPosition(void)
 {
 	int res;
 	u8 val = 0;
@@ -268,7 +268,7 @@ s32 CONF_GetSensorBarPosition(void)
 	return val;
 }
 
-s32 CONF_GetPadSpeakerVolume(void) 
+s32 CONF_GetPadSpeakerVolume(void)
 {
 	int res;
 	u8 val = 0;
@@ -278,7 +278,7 @@ s32 CONF_GetPadSpeakerVolume(void)
 	return val;
 }
 
-s32 CONF_GetPadMotorMode(void) 
+s32 CONF_GetPadMotorMode(void)
 {
 	int res;
 	u8 val = 0;
@@ -288,7 +288,7 @@ s32 CONF_GetPadMotorMode(void)
 	return val;
 }
 
-s32 CONF_GetSoundMode(void) 
+s32 CONF_GetSoundMode(void)
 {
 	int res;
 	u8 val = 0;
@@ -298,7 +298,7 @@ s32 CONF_GetSoundMode(void)
 	return val;
 }
 
-s32 CONF_GetLanguage(void) 
+s32 CONF_GetLanguage(void)
 {
 	int res;
 	u8 val = 0;
@@ -308,7 +308,7 @@ s32 CONF_GetLanguage(void)
 	return val;
 }
 
-s32 CONF_GetCounterBias(u32 *bias) 
+s32 CONF_GetCounterBias(u32 *bias)
 {
 	int res;
 	res = CONF_Get("IPL.CB", bias, 4);
@@ -317,7 +317,7 @@ s32 CONF_GetCounterBias(u32 *bias)
 	return CONF_ERR_OK;
 }
 
-s32 CONF_GetScreenSaverMode(void) 
+s32 CONF_GetScreenSaverMode(void)
 {
 	int res;
 	u8 val = 0;
@@ -327,7 +327,7 @@ s32 CONF_GetScreenSaverMode(void)
 	return val;
 }
 
-s32 CONF_GetDisplayOffsetH(s8 *offset) 
+s32 CONF_GetDisplayOffsetH(s8 *offset)
 {
 	int res;
 	res = CONF_Get("IPL.DH", offset, 1);
@@ -339,7 +339,7 @@ s32 CONF_GetDisplayOffsetH(s8 *offset)
 s32 CONF_GetPadDevices(conf_pads *pads)
 {
 	int res;
-	
+
 	res = CONF_Get("BT.DINF", pads, sizeof(conf_pads));
 	if(res < 0) return res;
 	if(res < sizeof(conf_pads)) return CONF_EBADVALUE;

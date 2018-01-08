@@ -69,7 +69,7 @@ static void netplay_crc_scan_callback(void *task_data,
    if (!string_is_empty(state->core_path) && !string_is_empty(state->content_path)
        && !state->contentless && !state->current)
    {
-      RARCH_LOG("[lobby] loading core %s with content file %s\n", 
+      RARCH_LOG("[lobby] loading core %s with content file %s\n",
          state->core_path, state->content_path);
 
       command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, state->hostname);
@@ -86,7 +86,7 @@ static void netplay_crc_scan_callback(void *task_data,
    else
 #endif
    /* contentless core */
-   if (!string_is_empty(state->core_path) && !string_is_empty(state->content_path) 
+   if (!string_is_empty(state->core_path) && !string_is_empty(state->content_path)
       && state->contentless)
    {
       content_ctx_info_t content_info = {0};
@@ -112,7 +112,7 @@ static void netplay_crc_scan_callback(void *task_data,
    /* no match found */
    else
    {
-      RARCH_LOG("Couldn't find a suitable %s\n", 
+      RARCH_LOG("Couldn't find a suitable %s\n",
          string_is_empty(state->content_path) ? "content file" : "core");
       runloop_msg_queue_push(
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY),
@@ -143,7 +143,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
       return;
    }
 
-   if (state->lpl_list->size == 0 && 
+   if (state->lpl_list->size == 0 &&
       string_is_not_equal_fast(state->content_path, "N/A", 3))
       goto no_playlists;
 
@@ -250,7 +250,7 @@ filename_matching:
 
                path_remove_extension(entry);
 
-               if ( !string_is_empty(entry) && 
+               if ( !string_is_empty(entry) &&
                      string_is_equal(entry, state->content_path) &&
                      strstr(state->core_extensions, path_get_extension(playlist_path)))
                {
@@ -313,7 +313,7 @@ bool task_push_netplay_crc_scan(uint32_t crc, char* name,
    netplay_crc_handle_t *state = (netplay_crc_handle_t*)calloc(1, sizeof(*state));
 
    core_info_get_list(&info);
-   
+
    if (!task || !state)
       goto error;
 
@@ -338,7 +338,7 @@ bool task_push_netplay_crc_scan(uint32_t crc, char* name,
    for (i=0; i < info->count; i++)
    {
       /* check if the core name matches.
-         TO-DO :we could try to load the core too to check 
+         TO-DO :we could try to load the core too to check
          if the version string matches too */
 #if 0
       printf("Info: %s State: %s", info->list[i].core_name, state->core_name);
@@ -347,7 +347,7 @@ bool task_push_netplay_crc_scan(uint32_t crc, char* name,
       {
          strlcpy(state->core_path, info->list[i].path, sizeof(state->core_path));
 
-         if (string_is_not_equal_fast(state->content_path, "N/A", 3) && 
+         if (string_is_not_equal_fast(state->content_path, "N/A", 3) &&
             !string_is_empty(info->list[i].supported_extensions))
          {
             strlcpy(state->core_extensions,
@@ -357,7 +357,7 @@ bool task_push_netplay_crc_scan(uint32_t crc, char* name,
       }
    }
 
-   /* blocking means no other task can run while this one is running, 
+   /* blocking means no other task can run while this one is running,
     * which is the default */
    task->type           = TASK_TYPE_BLOCKING;
    task->state          = state;

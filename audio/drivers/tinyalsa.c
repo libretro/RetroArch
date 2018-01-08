@@ -30,7 +30,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2017      - Charlton Head
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -508,7 +508,7 @@ struct snd_pcm_sw_params
 struct snd_pcm_hw_params
 {
    unsigned int flags;
-   struct snd_mask masks[SNDRV_PCM_HW_PARAM_LAST_MASK - 
+   struct snd_mask masks[SNDRV_PCM_HW_PARAM_LAST_MASK -
       SNDRV_PCM_HW_PARAM_FIRST_MASK + 1];
    struct snd_mask mres[5];	/* reserved masks */
    struct snd_interval intervals[SNDRV_PCM_HW_PARAM_LAST_INTERVAL -
@@ -753,9 +753,9 @@ struct pcm
    /** Flags that were passed to @ref pcm_open */
    unsigned int flags;
    /** Whether the PCM is running or not */
-   int running:1;
+   unsigned int running:1;
    /** Whether or not the PCM has been prepared */
-   int prepared:1;
+   unsigned int prepared:1;
    /** The number of underruns that have occured */
    int underruns;
    /** Size of the buffer */
@@ -2320,7 +2320,7 @@ tinyalsa_write(void *data, const void *buf_, size_t size_)
       }
    }
 
-   return written;			
+   return written;
 
 }
 
@@ -2366,7 +2366,7 @@ tinyalsa_start(void *data, bool is_shutdown)
 			RARCH_ERR("[TINYALSA]: Failed to unpause.\n");
 			return false;
 		}
-		
+
 		tinyalsa->is_paused = false;
 	}
 
@@ -2414,7 +2414,7 @@ static size_t tinyalsa_write_avail(void *data)
 static size_t tinyalsa_buffer_size(void *data)
 {
 	tinyalsa_t *tinyalsa = (tinyalsa_t*)data;
-	
+
 	return tinyalsa->buffer_size;
 }
 

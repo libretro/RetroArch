@@ -58,7 +58,7 @@ static s32 __lwp_mutex_locksupp(mutex_t lock,u32 timeout,u8 block)
 	mutex_st *p;
 
 	if(lock==LWP_MUTEX_NULL || LWP_OBJTYPE(lock)!=LWP_OBJTYPE_MUTEX) return -1;
-	
+
 	p = (mutex_st*)__lwp_objmgr_getisrdisable(&_lwp_mutex_objects,LWP_OBJMASKID(lock),&level);
 	if(!p) return -1;
 
@@ -102,7 +102,7 @@ s32 LWP_MutexInit(mutex_t *mutex,bool use_recursive)
 {
 	lwp_mutex_attr attr;
 	mutex_st *ret;
-	
+
 	if(!mutex) return -1;
 
 	ret = __lwp_mutex_allocate();

@@ -40,11 +40,11 @@ void __CheckARGV() {
 	}
 
 	u8 *dest = (u8 *)( ((int)__Arena1Lo + 3) & ~3);
-	
+
 	memmove(dest, __system_argv->commandLine, __system_argv->length);
 	__system_argv->commandLine = (char *)dest;
 	build_argv(__system_argv);
-	
-	__argvArena1Lo = (char *)__system_argv->endARGV;	
+
+	__argvArena1Lo = (char *)__system_argv->endARGV;
 
 }

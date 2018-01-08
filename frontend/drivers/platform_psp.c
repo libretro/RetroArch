@@ -26,7 +26,6 @@
 #include <psp2/power.h>
 #include <psp2/sysmodule.h>
 #include <psp2/appmgr.h>
-#include <pthread.h>
 
 #include "../../bootstrap/vita/sbrk.c"
 #include "../../bootstrap/vita/threading.c"
@@ -38,6 +37,8 @@
 #include <psppower.h>
 #include <pspsdk.h>
 #endif
+
+#include <pthread.h>
 
 #include <string/stdstring.h>
 #include <boolean.h>
@@ -288,7 +289,6 @@ static void frontend_psp_init(void *data)
 #ifdef VITA
    scePowerSetArmClockFrequency(444);
    sceSysmoduleLoadModule(SCE_SYSMODULE_NET);
-   pthread_init();
 #else
    (void)data;
    /* initialize debug screen */
@@ -300,6 +300,7 @@ static void frontend_psp_init(void *data)
    pspFpuSetEnable(0); /* disable FPU exceptions */
    scePowerSetClockFrequency(333,333,166);
 #endif
+   pthread_init();
 
 #endif
 

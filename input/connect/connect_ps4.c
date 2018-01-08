@@ -20,6 +20,7 @@
 
 #include <boolean.h>
 #include <retro_environment.h>
+#include <retro_miscellaneous.h>
 
 #include "joypad_connection.h"
 #include "../input_defines.h"
@@ -97,7 +98,7 @@ struct ps4
 struct hidpad_ps4_data
 {
    struct pad_connection* connection;
-   send_control_t send_control;
+   hid_driver_t *driver;
    struct ps4 data;
    uint32_t slot;
    bool have_led;
@@ -118,11 +119,11 @@ static void hidpad_ps4_send_control(struct hidpad_ps4_data* device)
    report_buffer[11] = rgb[(device->slot % 4)][2];
 #endif
 
-   device->send_control(device->connection,
+   device->driver->send_control(device->connection,
          report_buffer, sizeof(report_buffer));
 }
 
-static void* hidpad_ps4_init(void *data, uint32_t slot, send_control_t ptr)
+static void* hidpad_ps4_init(void *data, uint32_t slot, hid_driver_t *driver)
 {
 #if 0
    uint8_t magic_data[0x25];
@@ -137,14 +138,14 @@ static void* hidpad_ps4_init(void *data, uint32_t slot, send_control_t ptr)
    if (!connection)
       goto error;
 
-   device->connection   = connection;
-   device->slot         = slot;
-   device->send_control = ptr;
+   device->connection = connection;
+   device->slot       = slot;
+   device->driver     = driver;
 
 #if 0
    /* TODO - unsure of this */
    /* This is needed to get full input packet over bluetooth. */
-   device->send_control(device->connection, magic_data, 0x2);
+   device->driver->send_control(device->connection, magic_data, 0x2);
    (void)magic_data;
 #endif
 
@@ -187,64 +188,48 @@ static bool hidpad_ps4_check_dpad(struct ps4 *rpt, unsigned id)
 static void hidpad_ps4_get_buttons(void *data, retro_bits_t* state)
 {
    struct hidpad_ps4_data *device = (struct hidpad_ps4_data*)data;
-   struct ps4 *rpt = device ? (struct ps4*)&device->data : NULL;
+   struct ps4                *rpt = device ?
+      (struct ps4*)&device->data : NULL;
 
    if (!device || !rpt)
       return;
 
-    RARCH_INPUT_STATE_CLEAR_PTR( state );
+   BIT256_CLEAR_ALL_PTR( state );
 
-	if ( rpt->btn.r3 ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_R3 );
-	}
-	if ( rpt->btn.l3 ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_L3 );
-	}
-	if ( rpt->btn.options ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_START );
-	}
-	if ( rpt->btn.share ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_SELECT );
-	}
-	if ( rpt->btn.r2 ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_R2 );
-	}
-	if ( rpt->btn.l2 ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_L2 );
-	}
-	if ( rpt->btn.r1 ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_R );
-	}
-	if ( rpt->btn.l1 ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_L );
-	}
-	if ( rpt->btn.triangle ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_X );
-	}
-	if ( rpt->btn.circle ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_A );
-	}
-	if ( rpt->btn.cross ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_B );
-	}
-	if ( rpt->btn.square ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_Y );
-	}
-	if ( (hidpad_ps4_check_dpad(rpt, RETRO_DEVICE_ID_JOYPAD_LEFT)) ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_LEFT );
-	}
-	if ( (hidpad_ps4_check_dpad(rpt, RETRO_DEVICE_ID_JOYPAD_DOWN)) ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_DOWN );
-	}
-	if ( (hidpad_ps4_check_dpad(rpt, RETRO_DEVICE_ID_JOYPAD_RIGHT)) ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_RIGHT );
-	}
-	if ( (hidpad_ps4_check_dpad(rpt, RETRO_DEVICE_ID_JOYPAD_UP)) ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_UP );
-	}
-	if ( rpt->btn.ps ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RARCH_MENU_TOGGLE );
-	}
+   if (rpt->btn.r3)
+      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_R3 );
+   if (rpt->btn.l3)
+      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_L3 );
+   if (rpt->btn.options)
+      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_START );
+   if ( rpt->btn.share)
+      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_SELECT );
+   if ( rpt->btn.r2)
+      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_R2 );
+   if (rpt->btn.l2)
+      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_L2 );
+   if (rpt->btn.r1)
+      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_R );
+   if (rpt->btn.l1)
+      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_L );
+   if (rpt->btn.triangle)
+      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_X );
+   if (rpt->btn.circle)
+      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_A );
+   if (rpt->btn.cross)
+      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_B );
+   if (rpt->btn.square)
+      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_Y );
+   if ((hidpad_ps4_check_dpad(rpt, RETRO_DEVICE_ID_JOYPAD_LEFT)))
+      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_LEFT );
+   if ((hidpad_ps4_check_dpad(rpt, RETRO_DEVICE_ID_JOYPAD_DOWN)))
+      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_DOWN );
+   if ((hidpad_ps4_check_dpad(rpt, RETRO_DEVICE_ID_JOYPAD_RIGHT)))
+      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_RIGHT );
+   if ((hidpad_ps4_check_dpad(rpt, RETRO_DEVICE_ID_JOYPAD_UP)))
+      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_UP );
+   if (rpt->btn.ps)
+      BIT256_SET_PTR( state, RARCH_MENU_TOGGLE );
 }
 
 static int16_t hidpad_ps4_get_axis(void *data, unsigned axis)

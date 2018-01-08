@@ -1,7 +1,6 @@
 /* license:BSD-3-Clause
  * copyright-holders:Aaron Giles
- */
-/***************************************************************************
+***************************************************************************
 
     flac.c
 
@@ -59,7 +58,6 @@ void flac_decoder_free(flac_decoder* decoder)
 		FLAC__stream_decoder_delete(decoder->decoder);
 }
 
-
 /*-------------------------------------------------
  *  reset - reset state with the original
  *  parameters
@@ -82,8 +80,6 @@ static int flac_decoder_internal_reset(flac_decoder* decoder)
 	return FLAC__stream_decoder_process_until_end_of_metadata(decoder->decoder);
 }
 
-
-
 /*-------------------------------------------------
  *  reset - reset state with new memory parameters
  *  and a custom-generated header
@@ -97,18 +93,17 @@ int flac_decoder_reset(flac_decoder* decoder, uint32_t sample_rate, uint8_t num_
 	{
 		0x66, 0x4C, 0x61, 0x43,                         /* +00: 'fLaC' stream header */
 		0x80,                                           /* +04: metadata block type 0 (STREAMINFO), */
-														            /*      flagged as last block */
+								/*      flagged as last block */
 		0x00, 0x00, 0x22,                               /* +05: metadata block length = 0x22 */
 		0x00, 0x00,                                     /* +08: minimum block size */
 		0x00, 0x00,                                     /* +0A: maximum block size */
 		0x00, 0x00, 0x00,                               /* +0C: minimum frame size (0 == unknown) */
 		0x00, 0x00, 0x00,                               /* +0F: maximum frame size (0 == unknown) */
 		0x0A, 0xC4, 0x42, 0xF0, 0x00, 0x00, 0x00, 0x00, /* +12: sample rate (0x0ac44 == 44100), */
-														            /*      numchannels (2), sample bits (16), */
-														            /*      samples in stream (0 == unknown) */
+								/*      numchannels (2), sample bits (16), */
+								/*      samples in stream (0 == unknown) */
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /* +1A: MD5 signature (0 == none) */
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00  /* */
-														            /* +2A: start of stream data */
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00  /* +2A: start of stream data */
 	};
 	memcpy(decoder->custom_header, s_header_template, sizeof(s_header_template));
 	decoder->custom_header[0x08] = decoder->custom_header[0x0a] = block_size >> 8;
@@ -124,7 +119,6 @@ int flac_decoder_reset(flac_decoder* decoder, uint32_t sample_rate, uint8_t num_
 	decoder->compressed2_length = length;
 	return flac_decoder_internal_reset(decoder);
 }
-
 
 /*-------------------------------------------------
  *  decode_interleaved - decode to an interleaved
@@ -148,10 +142,8 @@ int flac_decoder_decode_interleaved(flac_decoder* decoder, int16_t *samples, uin
 	return 1;
 }
 
-
 #if 0
-/*
- *-------------------------------------------------
+/*-------------------------------------------------
  *  decode - decode to an multiple independent
  *  data streams
  *-------------------------------------------------
@@ -200,7 +192,6 @@ uint32_t flac_decoder_finish(flac_decoder* decoder)
 	return position;
 }
 
-
 /*-------------------------------------------------
  *  read_callback - handle reads from the input
  *  stream
@@ -242,7 +233,6 @@ FLAC__StreamDecoderReadStatus flac_decoder_read_callback(void* client_data, FLAC
 	return (*bytes < expected) ? FLAC__STREAM_DECODER_READ_STATUS_END_OF_STREAM : FLAC__STREAM_DECODER_READ_STATUS_CONTINUE;
 }
 
-
 /*-------------------------------------------------
  *  metadata_callback - handle STREAMINFO metadata
  *-------------------------------------------------
@@ -262,7 +252,6 @@ void flac_decoder_metadata_callback_static(const FLAC__StreamDecoder *decoder, c
 	fldecoder->channels = metadata->data.stream_info.channels;
 }
 
-
 /*-------------------------------------------------
  *  tell_callback - handle requests to find out
  *  where in the input stream we are
@@ -274,7 +263,6 @@ FLAC__StreamDecoderTellStatus flac_decoder_tell_callback_static(const FLAC__Stre
 	*absolute_byte_offset = ((flac_decoder *)client_data)->compressed_offset;
 	return FLAC__STREAM_DECODER_TELL_STATUS_OK;
 }
-
 
 /*-------------------------------------------------
  *  write_callback - handle writes to the output

@@ -254,7 +254,7 @@ protected:
     size_t currentChar;
 
     // This is for reporting what string/line an error occurred on, and can be overridden by #line.
-    // It remembers the last state of each source string as it is left for the next one, so unget() 
+    // It remembers the last state of each source string as it is left for the next one, so unget()
     // can restore that state.
     TSourceLoc* loc;  // an array
 

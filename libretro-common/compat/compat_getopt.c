@@ -112,8 +112,8 @@ static int parse_short(const char *optstring, char * const *argv)
 
    if (embedded_arg)
    {
-      /* If we see additional characters, 
-       * and they don't take arguments, this 
+      /* If we see additional characters,
+       * and they don't take arguments, this
        * means we have multiple flags in one. */
       memmove(&argv[0][1], &argv[0][2], strlen(&argv[0][2]) + 1);
       return opt[0];
@@ -138,7 +138,7 @@ static int parse_long(const struct option *longopts, char * const *argv)
 
    if (!opt)
       return '?';
-   
+
    /* getopt_long has an "optional" arg, but we don't bother with that. */
    if (opt->has_arg && !argv[1])
       return '?';

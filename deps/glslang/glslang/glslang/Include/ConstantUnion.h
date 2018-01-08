@@ -46,14 +46,14 @@ public:
     TConstUnion() : iConst(0), type(EbtInt) { }
 
     void setIConst(int i)
-    { 
-        iConst = i; 
+    {
+        iConst = i;
         type = EbtInt;
     }
 
     void setUConst(unsigned int u)
     {
-        uConst = u; 
+        uConst = u;
         type = EbtUint;
     }
 
@@ -71,13 +71,13 @@ public:
 
     void setDConst(double d)
     {
-        dConst = d; 
+        dConst = d;
         type = EbtDouble;
     }
 
     void setBConst(bool b)
     {
-        bConst = b; 
+        bConst = b;
         type = EbtBool;
     }
 
@@ -215,7 +215,7 @@ public:
     }
 
     bool operator>(const TConstUnion& constant) const
-    { 
+    {
         assert(type == constant.type);
         switch (type) {
         case EbtInt:
@@ -250,7 +250,7 @@ public:
     }
 
     bool operator<(const TConstUnion& constant) const
-    { 
+    {
         assert(type == constant.type);
         switch (type) {
         case EbtInt:
@@ -285,7 +285,7 @@ public:
     }
 
     TConstUnion operator+(const TConstUnion& constant) const
-    { 
+    {
         TConstUnion returnValue;
         assert(type == constant.type);
         switch (type) {
@@ -301,7 +301,7 @@ public:
     }
 
     TConstUnion operator-(const TConstUnion& constant) const
-    { 
+    {
         TConstUnion returnValue;
         assert(type == constant.type);
         switch (type) {
@@ -317,7 +317,7 @@ public:
     }
 
     TConstUnion operator*(const TConstUnion& constant) const
-    { 
+    {
         TConstUnion returnValue;
         assert(type == constant.type);
         switch (type) {
@@ -325,7 +325,7 @@ public:
         case EbtInt64: returnValue.setI64Const(i64Const * constant.i64Const); break;
         case EbtUint: returnValue.setUConst(uConst * constant.uConst); break;
         case EbtUint64: returnValue.setU64Const(u64Const * constant.u64Const); break;
-        case EbtDouble: returnValue.setDConst(dConst * constant.dConst); break; 
+        case EbtDouble: returnValue.setDConst(dConst * constant.dConst); break;
         default: assert(false && "Default missing");
         }
 
@@ -333,7 +333,7 @@ public:
     }
 
     TConstUnion operator%(const TConstUnion& constant) const
-    { 
+    {
         TConstUnion returnValue;
         assert(type == constant.type);
         switch (type) {
@@ -348,7 +348,7 @@ public:
     }
 
     TConstUnion operator>>(const TConstUnion& constant) const
-    { 
+    {
         TConstUnion returnValue;
         switch (type) {
         case EbtInt:
@@ -394,7 +394,7 @@ public:
     }
 
     TConstUnion operator<<(const TConstUnion& constant) const
-    { 
+    {
         TConstUnion returnValue;
         switch (type) {
         case EbtInt:
@@ -440,7 +440,7 @@ public:
     }
 
     TConstUnion operator&(const TConstUnion& constant) const
-    { 
+    {
         TConstUnion returnValue;
         assert(type == constant.type);
         switch (type) {
@@ -455,7 +455,7 @@ public:
     }
 
     TConstUnion operator|(const TConstUnion& constant) const
-    { 
+    {
         TConstUnion returnValue;
         assert(type == constant.type);
         switch (type) {
@@ -470,7 +470,7 @@ public:
     }
 
     TConstUnion operator^(const TConstUnion& constant) const
-    { 
+    {
         TConstUnion returnValue;
         assert(type == constant.type);
         switch (type) {
@@ -485,7 +485,7 @@ public:
     }
 
     TConstUnion operator~() const
-    { 
+    {
         TConstUnion returnValue;
         switch (type) {
         case EbtInt:  returnValue.setIConst(~iConst); break;
@@ -499,7 +499,7 @@ public:
     }
 
     TConstUnion operator&&(const TConstUnion& constant) const
-    { 
+    {
         TConstUnion returnValue;
         assert(type == constant.type);
         switch (type) {
@@ -511,7 +511,7 @@ public:
     }
 
     TConstUnion operator||(const TConstUnion& constant) const
-    { 
+    {
         TConstUnion returnValue;
         assert(type == constant.type);
         switch (type) {
@@ -544,7 +544,7 @@ private:
 // One convenience is being able to use [] to go inside the array, instead
 // of C++ assuming it as an array of pointers to vectors.
 //
-// General usage is that the size is known up front, and it is 
+// General usage is that the size is known up front, and it is
 // created once with the proper size.
 //
 class TConstUnionArray {

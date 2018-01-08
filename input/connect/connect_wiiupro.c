@@ -62,7 +62,7 @@ struct wiiupro_calib
 struct hidpad_wiiupro_data
 {
    struct pad_connection* connection;
-   send_control_t send_control;
+   hid_driver_t *driver;
    struct wiiupro data;
    uint32_t slot;
    bool have_led;
@@ -75,12 +75,12 @@ static void hidpad_wiiupro_send_control(struct hidpad_wiiupro_data* device)
 {
    /* 0x12 = Set data report; 0x34 = All buttons and analogs */
    static uint8_t report_buffer[4] = { 0xA2, 0x12, 0x00, 0x34 };
-   device->send_control(device->connection,
+   device->driver->send_control(device->connection,
          report_buffer, sizeof(report_buffer));
 }
 
 static void* hidpad_wiiupro_init(void *data,
-      uint32_t slot, send_control_t ptr)
+      uint32_t slot, hid_driver_t *driver)
 {
    struct pad_connection* connection = (struct pad_connection*)data;
    struct hidpad_wiiupro_data* device    = (struct hidpad_wiiupro_data*)
@@ -94,9 +94,9 @@ static void* hidpad_wiiupro_init(void *data,
    if (!connection)
       goto error;
 
-   device->connection   = connection;
-   device->slot         = slot;
-   device->send_control = ptr;
+   device->connection = connection;
+   device->slot       = slot;
+   device->driver     = driver;
 
    calib_data->calib_round = 0;
    /* Without this, the digital buttons won't be reported. */
@@ -121,64 +121,48 @@ static void hidpad_wiiupro_deinit(void *data)
 static void hidpad_wiiupro_get_buttons(void *data, retro_bits_t *state)
 {
    struct hidpad_wiiupro_data *device = (struct hidpad_wiiupro_data*)data;
-   struct wiiupro *rpt = device ? (struct wiiupro*)&device->data : NULL;
+   struct wiiupro                *rpt = device ?
+      (struct wiiupro*)&device->data : NULL;
 
    if (!device || !rpt)
       return;
 
-    RARCH_INPUT_STATE_CLEAR_PTR( state );
+   BIT256_CLEAR_ALL_PTR(state);
 
-	if ( rpt->btn.r3 ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_R3 );
-	}
-	if ( rpt->btn.l3 ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_L3 );
-	}
-	if ( rpt->btn.plus ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_START );
-	}
-	if ( rpt->btn.minus ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_SELECT );
-	}
-	if ( rpt->btn.zr ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_R2 );
-	}
-	if ( rpt->btn.zl ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_L2 );
-	}
-	if ( rpt->btn.r ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_R );
-	}
-	if ( rpt->btn.l ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_L );
-	}
-	if ( rpt->btn.x ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_X );
-	}
-	if ( rpt->btn.a ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_A );
-	}
-	if ( rpt->btn.b ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_B );
-	}
-	if ( rpt->btn.y ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_Y );
-	}
-	if ( rpt->btn.left ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_LEFT );
-	}
-	if ( rpt->btn.down ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_DOWN );
-	}
-	if ( rpt->btn.right ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_RIGHT );
-	}
-	if ( rpt->btn.up ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_UP );
-	}
-	if ( rpt->btn.home ) {
-		RARCH_INPUT_STATE_BIT_SET_PTR( state, RARCH_MENU_TOGGLE );
-	}
+   if (rpt->btn.r3)
+      BIT256_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_R3);
+   if (rpt->btn.l3)
+      BIT256_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_L3);
+   if (rpt->btn.plus)
+      BIT256_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_START);
+   if ( rpt->btn.minus)
+      BIT256_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_SELECT);
+   if ( rpt->btn.zr)
+      BIT256_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_R2);
+   if ( rpt->btn.zl)
+      BIT256_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_L2);
+   if ( rpt->btn.r)
+      BIT256_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_R);
+   if ( rpt->btn.l)
+      BIT256_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_L);
+   if ( rpt->btn.x)
+      BIT256_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_X);
+   if ( rpt->btn.a)
+      BIT256_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_A);
+   if ( rpt->btn.b)
+      BIT256_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_B);
+   if ( rpt->btn.y)
+      BIT256_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_Y);
+   if ( rpt->btn.left)
+      BIT256_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_LEFT);
+   if ( rpt->btn.down)
+      BIT256_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_DOWN);
+   if ( rpt->btn.right)
+      BIT256_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+   if ( rpt->btn.up)
+      BIT256_SET_PTR(state, RETRO_DEVICE_ID_JOYPAD_UP);
+   if ( rpt->btn.home)
+      BIT256_SET_PTR(state, RARCH_MENU_TOGGLE);
 }
 
 static int16_t hidpad_wiiupro_get_axis(void *data, unsigned axis)

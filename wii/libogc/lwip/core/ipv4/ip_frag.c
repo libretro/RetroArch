@@ -1,14 +1,14 @@
 /* @file
- * 
+ *
  * This is the IP packet segmentation and reassembly implementation.
  *
  */
 
 /*
  * Copyright (c) 2001-2004 Swedish Institute of Computer Science.
- * All rights reserved. 
- * 
- * Redistribution and use in source and binary forms, with or without modification, 
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
  *
  * 1. Redistributions of source code must retain the above copyright notice,
@@ -17,24 +17,24 @@
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
  * 3. The name of the author may not be used to endorse or promote products
- *    derived from this software without specific prior written permission. 
+ *    derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED 
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF 
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT 
- * SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, 
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT 
- * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN 
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING 
- * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY 
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED
+ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
+ * SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
+ * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+ * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
  * OF SUCH DAMAGE.
  *
  * This file is part of the lwIP TCP/IP stack.
- * 
- * Author: Jani Monoses <jani@iv.ro> 
+ *
+ * Author: Jani Monoses <jani@iv.ro>
  * original reassembly code by Adam Dunkels <adam@sics.se>
- * 
+ *
  */
 
 #include <string.h>
@@ -48,7 +48,7 @@
 
 
 /*
- * Copy len bytes from offset in pbuf to buffer 
+ * Copy len bytes from offset in pbuf to buffer
  *
  * helper used by both ip_reass and ip_frag
  */
@@ -288,7 +288,7 @@ static u8_t buf[MEM_ALIGN_SIZE(MAX_MTU)];
  * Chop the datagram in MTU sized chunks and send them in order
  * by using a fixed size static memory buffer (PBUF_ROM)
  */
-err_t 
+err_t
 ip_frag(struct pbuf *p, struct netif *netif, struct ip_addr *dest)
 {
   struct pbuf *rambuf;
@@ -344,8 +344,8 @@ ip_frag(struct pbuf *p, struct netif *netif, struct ip_addr *dest)
 
     if (last)
       pbuf_realloc(rambuf, left + IP_HLEN);
-    /* This part is ugly: we alloc a RAM based pbuf for 
-     * the link level header for each chunk and then 
+    /* This part is ugly: we alloc a RAM based pbuf for
+     * the link level header for each chunk and then
      * free it.A PBUF_ROM style pbuf for which pbuf_header
      * worked would make things simpler.
      */
@@ -356,8 +356,8 @@ ip_frag(struct pbuf *p, struct netif *netif, struct ip_addr *dest)
       IPFRAG_STATS_INC(ip_frag.xmit);
       pbuf_free(header);
     } else {
-      pbuf_free(rambuf);      
-      return ERR_MEM;    
+      pbuf_free(rambuf);
+      return ERR_MEM;
     }
     left -= cop;
   }

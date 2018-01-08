@@ -28,6 +28,7 @@
 #include <string/stdstring.h>
 #include <lists/string_list.h>
 #include <gfx/math/matrix_4x4.h>
+#include <streams/file_stream.h>
 #include <encodings/utf.h>
 #include <features/features_cpu.h>
 
@@ -35,9 +36,7 @@
 #include "../../config.h"
 #endif
 
-#ifndef HAVE_DYNAMIC
 #include "../../frontend/frontend_driver.h"
-#endif
 
 #include "menu_generic.h"
 
@@ -371,6 +370,13 @@ float gradient_dark[16] = {
    0.0, 0.0, 0.0, 1.00,
 };
 
+float gradient_light[16] = {
+   1.0, 1.0, 1.0, 1.00,
+   1.0, 1.0, 1.0, 1.00,
+   1.0, 1.0, 1.0, 1.00,
+   1.0, 1.0, 1.0, 1.00,
+};
+
 static void xmb_calculate_visible_range(const xmb_handle_t *xmb,
       unsigned height, size_t list_size, unsigned current,
       unsigned *first, unsigned *last);
@@ -396,6 +402,8 @@ const char* xmb_theme_ident(void)
          return "dot-art";
       case XMB_ICON_THEME_CUSTOM:
          return "custom";
+      case XMB_ICON_THEME_MONOCHROME_INVERTED:
+         return "monochrome-inverted";
       case XMB_ICON_THEME_MONOCHROME:
       default:
          break;
@@ -507,6 +515,8 @@ static float *xmb_gradient_ident(video_frame_info_t *video_info)
          return &gradient_volcanic_red[0];
       case XMB_THEME_DARK:
          return &gradient_dark[0];
+      case XMB_THEME_LIGHT:
+         return &gradient_light[0];
       case XMB_THEME_LEGACY_RED:
       default:
          break;
@@ -729,6 +739,7 @@ static void xmb_draw_text(
 {
    uint32_t color;
    uint8_t a8;
+   settings_t *settings;
 
    if (alpha > xmb->alpha)
       alpha = xmb->alpha;
@@ -739,7 +750,11 @@ static void xmb_draw_text(
    if (a8 == 0)
       return;
 
-   color = FONT_COLOR_RGBA(255, 255, 255, a8);
+   settings = config_get_ptr();
+   color = FONT_COLOR_RGBA(
+         settings->uints.menu_font_color_red,
+         settings->uints.menu_font_color_green,
+         settings->uints.menu_font_color_blue, a8);
 
    menu_display_draw_text(font, str, x, y,
          width, height, color, text_align, scale_factor,
@@ -1004,7 +1019,7 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
 
       if (!string_is_empty(tmp))
       {
-         while((scrub_char_pointer = strpbrk(tmp, "&*/:`<>?\\|")))
+         while((scrub_char_pointer = strpbrk(tmp, "&*/:`\"<>?\\|")))
             *scrub_char_pointer = '_';
       }
 
@@ -1077,7 +1092,7 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
 
          strlcat(path, file_path_str(FILE_PATH_PNG_EXTENSION), path_size);
 
-         if (path_file_exists(path))
+         if (filestream_exists(path))
          {
             if (!string_is_empty(xmb->savestate_thumbnail_file_path))
                free(xmb->savestate_thumbnail_file_path);
@@ -1097,7 +1112,7 @@ static void xmb_update_thumbnail_image(void *data)
    if (!xmb)
       return;
 
-   if (path_file_exists(xmb->thumbnail_file_path))
+   if (filestream_exists(xmb->thumbnail_file_path))
       task_push_image_load(xmb->thumbnail_file_path,
             menu_display_handle_thumbnail_upload, NULL);
    else
@@ -1142,7 +1157,7 @@ static void xmb_update_savestate_thumbnail_image(void *data)
       return;
 
    if (!string_is_empty(xmb->savestate_thumbnail_file_path)
-         && path_file_exists(xmb->savestate_thumbnail_file_path))
+         && filestream_exists(xmb->savestate_thumbnail_file_path))
       task_push_image_load(xmb->savestate_thumbnail_file_path,
             menu_display_handle_savestate_thumbnail_upload, NULL);
    else
@@ -1546,13 +1561,13 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
             file_path_str(FILE_PATH_PNG_EXTENSION),
             path_size);
 
-      if (!path_file_exists(path))
+      if (!filestream_exists(path))
          fill_pathname_application_special(path, path_size,
                APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG);
 
        if(!string_is_equal(path, xmb->background_file_path))
        {
-           if(path_file_exists(path))
+           if(filestream_exists(path))
            {
               task_push_image_load(path,
                   menu_display_handle_wallpaper_upload, NULL);
@@ -2252,7 +2267,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       if (get_badge_texture(new_id) != 0)
          return get_badge_texture(new_id);
       /* Should be replaced with placeholder badge icon. */
-      return xmb->textures.list[XMB_TEXTURE_SUBSETTING]; 
+      return xmb->textures.list[XMB_TEXTURE_SUBSETTING];
    }
 #endif
 
@@ -2376,30 +2391,29 @@ static int xmb_draw_item(
    }
    else
    {
-      enum msg_file_type type = FILE_TYPE_NONE;
-
       if (!string_is_empty(entry->value))
-          type                = msg_hash_to_file_type(msg_hash_calculate(entry->value));
-
-      switch (type)
       {
-         case FILE_TYPE_IN_CARCHIVE:
-         case FILE_TYPE_COMPRESSED:
-         case FILE_TYPE_MORE:
-         case FILE_TYPE_CORE:
-         case FILE_TYPE_DIRECT_LOAD:
-         case FILE_TYPE_RDB:
-         case FILE_TYPE_CURSOR:
-         case FILE_TYPE_PLAIN:
-         case FILE_TYPE_DIRECTORY:
-         case FILE_TYPE_MUSIC:
-         case FILE_TYPE_IMAGE:
-         case FILE_TYPE_MOVIE:
-            break;
-         default:
-            do_draw_text = true;
-            break;
+         if (
+               string_is_equal(entry->value, "...")     ||
+               string_is_equal(entry->value, "(COMP)")  ||
+               string_is_equal(entry->value, "(CORE)")  ||
+               string_is_equal(entry->value, "(MOVIE)") ||
+               string_is_equal(entry->value, "(MUSIC)") ||
+               string_is_equal(entry->value, "(DIR)")   ||
+               string_is_equal(entry->value, "(RDB)")   ||
+               string_is_equal(entry->value, "(CURSOR)")||
+               string_is_equal(entry->value, "(CFILE)") ||
+               string_is_equal(entry->value, "(FILE)")  ||
+               string_is_equal(entry->value, "(IMAGE)")
+            )
+         {
+         }
+         else
+               do_draw_text = true;
       }
+      else
+         do_draw_text = true;
+
    }
 
    if (string_is_empty(entry->value))
@@ -2758,6 +2772,9 @@ static void xmb_draw_bg(
             break;
          case XMB_SHADER_PIPELINE_BOKEH:
             draw.pipeline.id  = VIDEO_SHADER_MENU_5;
+            break;
+         case XMB_SHADER_PIPELINE_SNOWFLAKE:
+            draw.pipeline.id  = VIDEO_SHADER_MENU_6;
             break;
          default:
             break;
@@ -3490,28 +3507,28 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
 
    xmb->system_tab_end                = 0;
    xmb->tabs[xmb->system_tab_end]     = XMB_SYSTEM_TAB_MAIN;
-   if (settings->bools.menu_xmb_show_settings && !settings->bools.kiosk_mode_enable)
+   if (settings->bools.menu_content_show_settings && !settings->bools.kiosk_mode_enable)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_SETTINGS;
-   if (settings->bools.menu_xmb_show_favorites)
+   if (settings->bools.menu_content_show_favorites)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_FAVORITES;
-   if (settings->bools.menu_xmb_show_history)
+   if (settings->bools.menu_content_show_history)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_HISTORY;
 #ifdef HAVE_IMAGEVIEWER
-   if (settings->bools.menu_xmb_show_images)
+   if (settings->bools.menu_content_show_images)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_IMAGES;
 #endif
-   if (settings->bools.menu_xmb_show_music)
+   if (settings->bools.menu_content_show_music)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_MUSIC;
 #ifdef HAVE_FFMPEG
-   if (settings->bools.menu_xmb_show_video)
+   if (settings->bools.menu_content_show_video)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_VIDEO;
 #endif
 #ifdef HAVE_NETWORKING
-   if (settings->bools.menu_xmb_show_netplay)
+   if (settings->bools.menu_content_show_netplay)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_NETPLAY;
 #endif
 #ifdef HAVE_LIBRETRODB
-   if (settings->bools.menu_xmb_show_add && !settings->bools.kiosk_mode_enable)
+   if (settings->bools.menu_content_show_add && !settings->bools.kiosk_mode_enable)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_ADD;
 #endif
 
@@ -3836,7 +3853,7 @@ static void xmb_context_reset_background(const char *iconpath)
       strlcpy(path, settings->paths.path_menu_wallpaper,
             PATH_MAX_LENGTH * sizeof(char));
 
-   if (path_file_exists(path))
+   if (filestream_exists(path))
       task_push_image_load(path,
             menu_display_handle_wallpaper_upload, NULL);
 
@@ -4378,7 +4395,7 @@ static int xmb_list_push(void *data, void *userdata,
                }
             }
 #endif
-            if (!settings->bools.menu_xmb_show_settings && !string_is_empty(settings->paths.menu_xmb_show_settings_password))
+            if (!settings->bools.menu_content_show_settings && !string_is_empty(settings->paths.menu_content_show_settings_password))
             {
                entry.enum_idx      = MENU_ENUM_LABEL_XMB_MAIN_MENU_ENABLE_SETTINGS;
                menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);

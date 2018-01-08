@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -77,16 +77,9 @@ static void *d3dfonts_w32_init_font(void *video_data,
    d3dfonts->d3d   = (d3d_video_t*)video_data;
    d3dfonts->color = D3DCOLOR_XRGB(r, g, b);
 
-#ifdef __cplusplus
-   if (FAILED(D3DXCreateFontIndirect(
-               d3dfonts->d3d->dev, &desc, &d3dfonts->font)))
+   if (!d3dx_create_font_indirect(d3dfonts->d3d->dev,
+            &desc, (void**)&d3dfonts->font))
       goto error;
-#else
-   if (FAILED(D3DXCreateFontIndirect(
-               d3dfonts->d3d->dev, &desc,
-               (struct ID3DXFont**)&d3dfonts->font)))
-      goto error;
-#endif
 
    return d3dfonts;
 

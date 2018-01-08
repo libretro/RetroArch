@@ -31,6 +31,10 @@
 #include <retro_miscellaneous.h>
 #include <libretro.h>
 
+#ifdef HAVE_MENU
+#include "../menu/menu_driver.h"
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
@@ -81,12 +85,19 @@ void input_mapper_poll(input_mapper_t *handle)
    int i;
    settings_t *settings = config_get_ptr();
    unsigned device      = settings->uints.input_libretro_device[handle->port];
+#ifdef HAVE_MENU
+   bool menu_is_alive   = menu_driver_is_alive();
+#endif
 
    device              &= RETRO_DEVICE_MASK;
 
    /* for now we only handle keyboard inputs */
    if (device != RETRO_DEVICE_KEYBOARD)
       return;
+#ifdef HAVE_MENU
+   if (menu_is_alive)
+      return;
+#endif
 
    memset(handle->keys, 0, sizeof(handle->keys));
 
@@ -127,9 +138,9 @@ void input_mapper_state(
          if (id < RETROK_LAST)
          {
             /*
-               RARCH_LOG("State: UDLR %u %u %u %u\n", 
-               MAPPER_GET_KEY(handle, RETROK_UP), 
-               MAPPER_GET_KEY(handle, RETROK_DOWN), 
+               RARCH_LOG("State: UDLR %u %u %u %u\n",
+               MAPPER_GET_KEY(handle, RETROK_UP),
+               MAPPER_GET_KEY(handle, RETROK_DOWN),
                MAPPER_GET_KEY(handle, RETROK_LEFT),
                MAPPER_GET_KEY(handle, RETROK_RIGHT)
                );*/

@@ -38,12 +38,12 @@
 #include <retro_miscellaneous.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
+#include <compat/fopen_utf8.h>
 #include <compat/msvc.h>
 #include <file/config_file.h>
 #include <file/file_path.h>
 #include <lists/string_list.h>
 #include <string/stdstring.h>
-#include <rhash.h>
 #include <streams/file_stream.h>
 
 #define MAX_INCLUDE_DEPTH 16
@@ -53,7 +53,6 @@ struct config_entry_list
    /* If we got this from an #include,
     * do not allow overwrite. */
    bool readonly;
-   uint32_t key_hash;
 
    char *key;
    char *value;
@@ -78,40 +77,6 @@ struct config_file
 
 static config_file_t *config_file_new_internal(
       const char *path, unsigned depth);
-
-static char *getaline(RFILE *file)
-{
-   char* newline     = (char*)malloc(9);
-   char* newline_tmp = NULL;
-   size_t cur_size   = 8;
-   size_t idx        = 0;
-   int in            = filestream_getc(file);
-
-   if (!newline)
-      return NULL;
-
-   while (in != EOF && in != '\n')
-   {
-      if (idx == cur_size)
-      {
-         cur_size *= 2;
-         newline_tmp = (char*)realloc(newline, cur_size + 1);
-
-         if (!newline_tmp)
-         {
-            free(newline);
-            return NULL;
-         }
-
-         newline = newline_tmp;
-      }
-
-      newline[idx++] = in;
-      in = filestream_getc(file);
-   }
-   newline[idx] = '\0';
-   return newline;
-}
 
 static char *strip_comment(char *str)
 {
@@ -176,17 +141,15 @@ static char *extract_value(char *line, bool is_value)
    if (*line == '"')
    {
       line++;
+      if (*line == '"')
+         return NULL;
       tok = strtok_r(line, "\"", &save);
-      goto end;
    }
-   else if (*line == '\0') /* Nothing */
-      return NULL;
-
    /* We don't have that. Read until next space. */
-   tok = strtok_r(line, " \n\t\f\r\v", &save);
+   else if (*line != '\0') /* Nothing */
+      tok = strtok_r(line, " \n\t\f\r\v", &save);
 
-end:
-   if (tok)
+   if (tok && *tok)
       return strdup(tok);
    return NULL;
 }
@@ -225,7 +188,7 @@ static void add_child_list(config_file_t *parent, config_file_t *child)
    /* Rebase tail. */
    if (parent->entries)
    {
-      struct config_entry_list *head = 
+      struct config_entry_list *head =
          (struct config_entry_list*)parent->entries;
 
       while (head->next)
@@ -241,7 +204,8 @@ static void add_sub_conf(config_file_t *conf, char *path)
    char real_path[PATH_MAX_LENGTH];
    config_file_t         *sub_conf  = NULL;
    struct config_include_list *head = conf->includes;
-   struct config_include_list *node = (struct config_include_list*)malloc(sizeof(*node));
+   struct config_include_list *node = (struct config_include_list*)
+      malloc(sizeof(*node));
 
    if (node)
    {
@@ -284,15 +248,11 @@ static void add_sub_conf(config_file_t *conf, char *path)
    sub_conf = (config_file_t*)
       config_file_new_internal(real_path, conf->include_depth + 1);
    if (!sub_conf)
-   {
-      free(path);
       return;
-   }
 
    /* Pilfer internal list. */
    add_child_list(conf, sub_conf);
    config_file_free(sub_conf);
-   free(path);
 }
 
 static bool parse_line(config_file_t *conf,
@@ -309,22 +269,25 @@ static bool parse_line(config_file_t *conf,
 
    comment = strip_comment(line);
 
-   /* Starting line with # and include includes config files. */
-   if ((comment == line) && (conf->include_depth < MAX_INCLUDE_DEPTH))
+   /* Starting line with #include includes config files. */
+   if (comment == line)
    {
       comment++;
       if (strstr(comment, "include ") == comment)
       {
          char *line = comment + strlen("include ");
          char *path = extract_value(line, false);
+
          if (path)
-            add_sub_conf(conf, path);
+         {
+            if (conf->include_depth >= MAX_INCLUDE_DEPTH)
+               fprintf(stderr, "!!! #include depth exceeded for config. Might be a cycle.\n");
+            else
+               add_sub_conf(conf, path);
+            free(path);
+         }
          goto error;
       }
-   }
-   else if (conf->include_depth >= MAX_INCLUDE_DEPTH)
-   {
-      fprintf(stderr, "!!! #include depth exceeded for config. Might be a cycle.\n");
    }
 
    /* Skips to first character. */
@@ -346,11 +309,11 @@ static bool parse_line(config_file_t *conf,
 
       key[idx++] = *line++;
    }
-   key[idx] = '\0';
-   list->key = key;
-   list->key_hash = djb2_calculate(key);
+   key[idx]      = '\0';
+   list->key     = key;
 
-   list->value = extract_value(line, true);
+   list->value   = extract_value(line, true);
+
    if (!list->value)
    {
       list->key = NULL;
@@ -389,7 +352,9 @@ static config_file_t *config_file_new_internal(
       goto error;
 
    conf->include_depth = depth;
-   file                = filestream_open(path, RFILE_MODE_READ_TEXT, 0x4000);
+   file                = filestream_open(path,
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    if (!file)
    {
@@ -410,12 +375,11 @@ static config_file_t *config_file_new_internal(
       }
 
       list->readonly  = false;
-      list->key_hash  = 0;
       list->key       = NULL;
       list->value     = NULL;
       list->next      = NULL;
 
-      line            = getaline(file);
+      line            = filestream_getline(file);
 
       if (!line)
       {
@@ -524,7 +488,7 @@ config_file_t *config_file_new_from_string(const char *from_string)
    conf->tail          = NULL;
    conf->includes      = NULL;
    conf->include_depth = 0;
-   
+
    lines = string_split(from_string, "\n");
    if (!lines)
       return conf;
@@ -542,7 +506,6 @@ config_file_t *config_file_new_from_string(const char *from_string)
       }
 
       list->readonly  = false;
-      list->key_hash  = 0;
       list->key       = NULL;
       list->value     = NULL;
       list->next      = NULL;
@@ -577,17 +540,12 @@ config_file_t *config_file_new(const char *path)
 static struct config_entry_list *config_get_entry(const config_file_t *conf,
       const char *key, struct config_entry_list **prev)
 {
-   struct config_entry_list *entry;
-   struct config_entry_list *previous = NULL;
-
-   uint32_t hash = djb2_calculate(key);
-
-   if (prev)
-      previous = *prev;
+   struct config_entry_list *entry    = NULL;
+   struct config_entry_list *previous = prev ? *prev : NULL;
 
    for (entry = conf->entries; entry; entry = entry->next)
    {
-      if (hash == entry->key_hash && string_is_equal(key, entry->key))
+      if (string_is_equal(key, entry->key))
          return entry;
 
       previous = entry;
@@ -751,7 +709,7 @@ bool config_get_array(config_file_t *conf, const char *key,
 bool config_get_path(config_file_t *conf, const char *key,
       char *buf, size_t size)
 {
-#if defined(RARCH_CONSOLE)
+#if defined(RARCH_CONSOLE) || !defined(RARCH_INTERNAL)
    if (config_get_array(conf, key, buf, size))
       return true;
 #else
@@ -807,7 +765,6 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
       return;
 
    entry->readonly  = false;
-   entry->key_hash  = 0;
    entry->key       = strdup(key);
    entry->value     = strdup(val);
    entry->next      = NULL;
@@ -834,7 +791,7 @@ void config_unset(config_file_t *conf, const char *key)
 
 void config_set_path(config_file_t *conf, const char *entry, const char *val)
 {
-#if defined(RARCH_CONSOLE)
+#if defined(RARCH_CONSOLE) || !defined(RARCH_INTERNAL)
    config_set_string(conf, entry, val);
 #else
    char buf[PATH_MAX_LENGTH];
@@ -912,20 +869,25 @@ void config_set_bool(config_file_t *conf, const char *key, bool val)
 
 bool config_file_write(config_file_t *conf, const char *path)
 {
-   RFILE *file = NULL;
-
    if (!string_is_empty(path))
    {
-      file = filestream_open(path, RFILE_MODE_WRITE, 0x4000);
+      void* buf  = NULL;
+      FILE *file = fopen_utf8(path, "wb");
       if (!file)
          return false;
-      config_file_dump(conf, filestream_get_fp(file));
+
+      /* TODO: this is only useful for a few platforms, find which and add ifdef */
+      buf = calloc(1, 0x4000);
+      setvbuf(file, (char*)buf, _IOFBF, 0x4000);
+
+      config_file_dump(conf, file);
+
+      if (file != stdout)
+         fclose(file);
+      free(buf);
    }
    else
       config_file_dump(conf, stdout);
-
-   if (file)
-      filestream_close(file);
 
    return true;
 }
@@ -1001,3 +963,63 @@ bool config_file_exists(const char *path)
    config_file_free(config);
    return true;
 }
+
+#if 0
+static void test_config_file_parse_contains(
+      const char * cfgtext,
+      const char *key, const char *val)
+{
+   config_file_t *cfg = config_file_new_from_string(cfgtext);
+   char          *out = NULL;
+   bool            ok = false;
+
+   if (!cfg)
+      abort();
+
+   ok = config_get_string(cfg, key, &out);
+   if (ok != (bool)val)
+      abort();
+   if (!val)
+      return;
+
+   if (out == NULL)
+      out = strdup("");
+   if (strcmp(out, val) != 0)
+      abort();
+   free(out);
+}
+
+static void test_config_file(void)
+{
+   test_config_file_parse_contains("foo = \"bar\"\n",   "foo", "bar");
+   test_config_file_parse_contains("foo = \"bar\"",     "foo", "bar");
+   test_config_file_parse_contains("foo = \"bar\"\r\n", "foo", "bar");
+   test_config_file_parse_contains("foo = \"bar\"",     "foo", "bar");
+
+#if 0
+   /* turns out it treats empty as nonexistent - 
+    * should probably be fixed */
+   test_config_file_parse_contains("foo = \"\"\n",   "foo", "");
+   test_config_file_parse_contains("foo = \"\"",     "foo", "");
+   test_config_file_parse_contains("foo = \"\"\r\n", "foo", "");
+   test_config_file_parse_contains("foo = \"\"",     "foo", "");
+#endif
+
+   test_config_file_parse_contains("foo = \"\"\n",   "bar", NULL);
+   test_config_file_parse_contains("foo = \"\"",     "bar", NULL);
+   test_config_file_parse_contains("foo = \"\"\r\n", "bar", NULL);
+   test_config_file_parse_contains("foo = \"\"",     "bar", NULL);
+}
+
+/* compile with:
+ gcc config_file.c -g -I ../include/ \
+ ../streams/file_stream.c ../vfs/vfs_implementation.c ../lists/string_list.c \
+ ../compat/compat_strl.c file_path.c ../compat/compat_strcasestr.c \
+ && ./a.out
+*/
+
+int main(void)
+{
+	test_config_file();
+}
+#endif

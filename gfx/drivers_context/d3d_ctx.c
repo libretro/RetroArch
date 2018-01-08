@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2012-2014 - OV2
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -35,8 +35,10 @@
 
 #ifdef _MSC_VER
 #ifndef _XBOX
+#ifndef HAVE_DYLIB
 #pragma comment( lib, "d3d9" )
 #pragma comment( lib, "d3dx9" )
+#endif
 #ifdef HAVE_CG
 #pragma comment( lib, "cgd3d9" )
 #endif
@@ -275,62 +277,64 @@ static void gfx_ctx_d3d_get_video_size(void *data,
 
    widescreen_mode = video_mode.fIsWideScreen;
 #elif defined(_XBOX1)
-   DWORD video_mode = XGetVideoFlags();
-
-   *width  = 640;
-   *height = 480;
-
-   widescreen_mode = false;
-
-   /* Only valid in PAL mode, not valid for HDTV modes! */
-
-   if(XGetVideoStandard() == XC_VIDEO_STANDARD_PAL_I)
    {
-      /* Check for 16:9 mode (PAL REGION) */
-      if(video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
+      DWORD video_mode = XGetVideoFlags();
+
+      *width  = 640;
+      *height = 480;
+
+      widescreen_mode = false;
+
+      /* Only valid in PAL mode, not valid for HDTV modes! */
+
+      if(XGetVideoStandard() == XC_VIDEO_STANDARD_PAL_I)
       {
-         *width = 720;
-         //60 Hz, 720x480i
-         if(video_mode & XC_VIDEO_FLAGS_PAL_60Hz)
+         /* Check for 16:9 mode (PAL REGION) */
+         if(video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
+         {
+            *width = 720;
+            //60 Hz, 720x480i
+            if(video_mode & XC_VIDEO_FLAGS_PAL_60Hz)
+               *height = 480;
+            else //50 Hz, 720x576i
+               *height = 576;
+            widescreen_mode = true;
+         }
+      }
+      else
+      {
+         /* Check for 16:9 mode (NTSC REGIONS) */
+         if(video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
+         {
+            *width = 720;
             *height = 480;
-         else //50 Hz, 720x576i
-            *height = 576;
-         widescreen_mode = true;
+            widescreen_mode = true;
+         }
       }
-   }
-   else
-   {
-      /* Check for 16:9 mode (NTSC REGIONS) */
-      if(video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
-      {
-         *width = 720;
-         *height = 480;
-         widescreen_mode = true;
-      }
-   }
 
-   if(XGetAVPack() == XC_AV_PACK_HDTV)
-   {
-      if(video_mode & XC_VIDEO_FLAGS_HDTV_480p)
+      if(XGetAVPack() == XC_AV_PACK_HDTV)
       {
-         *width = 640;
-         *height  = 480;
-         widescreen_mode = false;
-         d3d->resolution_hd_enable = true;
-      }
-      else if(video_mode & XC_VIDEO_FLAGS_HDTV_720p)
-      {
-         *width = 1280;
-         *height  = 720;
-         widescreen_mode = true;
-         d3d->resolution_hd_enable = true;
-      }
-      else if(video_mode & XC_VIDEO_FLAGS_HDTV_1080i)
-      {
-         *width = 1920;
-         *height  = 1080;
-         widescreen_mode = true;
-         d3d->resolution_hd_enable = true;
+         if(video_mode & XC_VIDEO_FLAGS_HDTV_480p)
+         {
+            *width = 640;
+            *height  = 480;
+            widescreen_mode = false;
+            d3d->resolution_hd_enable = true;
+         }
+         else if(video_mode & XC_VIDEO_FLAGS_HDTV_720p)
+         {
+            *width = 1280;
+            *height  = 720;
+            widescreen_mode = true;
+            d3d->resolution_hd_enable = true;
+         }
+         else if(video_mode & XC_VIDEO_FLAGS_HDTV_1080i)
+         {
+            *width = 1920;
+            *height  = 1080;
+            widescreen_mode = true;
+            d3d->resolution_hd_enable = true;
+         }
       }
    }
 #endif
@@ -341,7 +345,7 @@ static void gfx_ctx_d3d_swap_interval(void *data, unsigned interval)
 {
    d3d_video_t      *d3d = (d3d_video_t*)data;
 #ifdef _XBOX
-   unsigned d3d_interval = interval ? 
+   unsigned d3d_interval = interval ?
       D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
 
    d3d_set_render_state(d3d->dev, XBOX_PRESENTATIONINTERVAL, d3d_interval);

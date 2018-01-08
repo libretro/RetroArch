@@ -32,6 +32,7 @@
 typedef struct
 {
    GX2Texture texture;
+   GX2_vec2* ubo_tex;
    const font_renderer_driver_t* font_driver;
    void* font_data;
    struct font_atlas* atlas;
@@ -79,6 +80,13 @@ static void* wiiu_font_init_font(void* data, const char* font_path,
 
    font->atlas->dirty = false;
 
+   font->ubo_tex = MEM1_alloc(sizeof(*font->ubo_tex), GX2_UNIFORM_BLOCK_ALIGNMENT);
+   font->ubo_tex->width = font->texture.surface.width;
+   font->ubo_tex->height = font->texture.surface.height;
+   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_UNIFORM_BLOCK, font->ubo_tex,
+                 sizeof(*font->ubo_tex));
+
+
    return font;
 }
 
@@ -93,6 +101,7 @@ static void wiiu_font_free_font(void* data, bool is_threaded)
       font->font_driver->free(font->font_data);
 
    MEM1_free(font->texture.surface.image);
+   MEM1_free(font->ubo_tex);
    free(font);
 }
 
@@ -142,9 +151,7 @@ static void wiiu_font_render_line(
    unsigned width   = video_info->width;
    unsigned height  = video_info->height;
    int x            = roundf(pos_x * width);
-   int y            = roundf((1.0f - pos_y) * height);
-   int delta_x      = 0;
-   int delta_y      = 0;
+   int y            = roundf((1.0 - pos_y) * height);
 
    if(wiiu->vertex_cache.current + (msg_len * 4) > wiiu->vertex_cache.size)
       return;
@@ -160,12 +167,10 @@ static void wiiu_font_render_line(
          break;
    }
 
-   position_t* pos = wiiu->vertex_cache.positions + wiiu->vertex_cache.current;
-   tex_coord_t* coord = wiiu->vertex_cache.tex_coords + wiiu->vertex_cache.current;
+   sprite_vertex_t* v = wiiu->vertex_cache.v + wiiu->vertex_cache.current;
 
    for (i = 0; i < msg_len; i++)
    {
-      int off_x, off_y, tex_x, tex_y, width, height;
       const char* msg_tmp            = &msg[i];
       unsigned code                  = utf8_walk(&msg_tmp);
       unsigned skip                  = msg_tmp - &msg[i];
@@ -182,55 +187,31 @@ static void wiiu_font_render_line(
       if (!glyph)
          continue;
 
-      off_x  = glyph->draw_offset_x;
-      off_y  = glyph->draw_offset_y;
-      tex_x  = glyph->atlas_offset_x;
-      tex_y  = glyph->atlas_offset_y;
-      width  = glyph->width;
-      height = glyph->height;
+      v->pos.x = x + glyph->draw_offset_x * scale;
+      v->pos.y = y + glyph->draw_offset_y * scale;
+      v->pos.width = glyph->width * scale;
+      v->pos.height = glyph->height * scale;
 
+      v->coord.u = glyph->atlas_offset_x;
+      v->coord.v = glyph->atlas_offset_y;
+      v->coord.width = glyph->width;
+      v->coord.height = glyph->height;
 
-      float x0 = x + off_x + delta_x * scale;
-      float y0 = y + off_y + delta_y * scale + height * scale;
-      float u0 = tex_x;
-      float v0 = tex_y;
-      float x1 = x0 + width * scale;
-      float y1 = y0 - height * scale;
-      float u1 = u0 + width;
-      float v1 = v0 + height;
+      v->color = color;
 
-      pos[0].x = (2.0f * x0 / wiiu->color_buffer.surface.width) - 1.0f;
-      pos[0].y = (-2.0f * y0 / wiiu->color_buffer.surface.height) + 1.0f;
-      pos[1].x = (2.0f * x1 / wiiu->color_buffer.surface.width) - 1.0f;;
-      pos[1].y = (-2.0f * y0 / wiiu->color_buffer.surface.height) + 1.0f;
-      pos[2].x = (2.0f * x1 / wiiu->color_buffer.surface.width) - 1.0f;;
-      pos[2].y = (-2.0f * y1 / wiiu->color_buffer.surface.height) + 1.0f;
-      pos[3].x = (2.0f * x0 / wiiu->color_buffer.surface.width) - 1.0f;;
-      pos[3].y = (-2.0f * y1 / wiiu->color_buffer.surface.height) + 1.0f;
-      pos += 4;
+      v++;
 
-      coord[0].u = u0 / font->texture.surface.width;
-      coord[0].v = v1 / font->texture.surface.height;
-      coord[1].u = u1 / font->texture.surface.width;
-      coord[1].v = v1 / font->texture.surface.height;
-      coord[2].u = u1 / font->texture.surface.width;
-      coord[2].v = v0 / font->texture.surface.height;
-      coord[3].u = u0 / font->texture.surface.width;
-      coord[3].v = v0 / font->texture.surface.height;
-      coord += 4;
-
-      delta_x += glyph->advance_x;
-      delta_y += glyph->advance_y;
+      x += glyph->advance_x * scale;
+      y += glyph->advance_y * scale;
    }
 
-   int count = pos - wiiu->vertex_cache.positions - wiiu->vertex_cache.current;
+   int count = v - wiiu->vertex_cache.v - wiiu->vertex_cache.current;
 
    if (!count)
       return;
 
 
-   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, wiiu->vertex_cache.positions + wiiu->vertex_cache.current, count * sizeof(position_t));
-   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, wiiu->vertex_cache.tex_coords + wiiu->vertex_cache.current, count * sizeof(tex_coord_t));
+   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, wiiu->vertex_cache.v + wiiu->vertex_cache.current, count * sizeof(wiiu->vertex_cache.v));
 
    if(font->atlas->dirty)
    {
@@ -244,25 +225,14 @@ static void wiiu_font_render_line(
    }
 
 
-#if 0
-   printf("%s\n", msg);
-   DEBUG_VAR(color);
-#endif
+   GX2SetPixelTexture(&font->texture, sprite_shader.ps.samplerVars[0].location);
+   GX2SetVertexUniformBlock(sprite_shader.vs.uniformBlocks[1].offset, sprite_shader.vs.uniformBlocks[1].size, font->ubo_tex);
 
-   GX2SetPixelTexture(&font->texture, wiiu->shader->sampler.location);
+   GX2DrawEx(GX2_PRIMITIVE_MODE_POINTS, count, wiiu->vertex_cache.current, 1);
 
-   GX2SetBlendConstantColor(((color >> 0) & 0xFF) / 255.0f, ((color >> 8) & 0xFF) / 255.0f,
-                            ((color >> 16) & 0xFF) / 255.0f, ((color >> 24) & 0xFF) / 255.0f);
+   GX2SetVertexUniformBlock(sprite_shader.vs.uniformBlocks[1].offset, sprite_shader.vs.uniformBlocks[1].size, wiiu->ubo_tex);
 
-   GX2SetBlendControl(GX2_RENDER_TARGET_0, GX2_BLEND_MODE_BLEND_FACTOR, GX2_BLEND_MODE_INV_SRC_ALPHA, GX2_BLEND_COMBINE_MODE_ADD,
-                      GX2_ENABLE,          GX2_BLEND_MODE_SRC_ALPHA, GX2_BLEND_MODE_INV_SRC_ALPHA, GX2_BLEND_COMBINE_MODE_ADD);
-
-   GX2DrawEx(GX2_PRIMITIVE_MODE_QUADS, count, wiiu->vertex_cache.current, 1);
-
-   GX2SetBlendControl(GX2_RENDER_TARGET_0, GX2_BLEND_MODE_SRC_ALPHA, GX2_BLEND_MODE_INV_SRC_ALPHA, GX2_BLEND_COMBINE_MODE_ADD,
-                      GX2_ENABLE,          GX2_BLEND_MODE_SRC_ALPHA, GX2_BLEND_MODE_INV_SRC_ALPHA, GX2_BLEND_COMBINE_MODE_ADD);
-
-   wiiu->vertex_cache.current = pos - wiiu->vertex_cache.positions;
+   wiiu->vertex_cache.current = v - wiiu->vertex_cache.v;
 }
 
 static void wiiu_font_render_message(
@@ -357,7 +327,7 @@ static void wiiu_font_render_msg(
       g              = (video_info->font_msg_color_g * 255);
       b              = (video_info->font_msg_color_b * 255);
       alpha          = 255;
-      color          = COLOR_ABGR(r, g, b, alpha);
+      color          = COLOR_RGBA(r, g, b, alpha);
 
       drop_x         = -2;
       drop_y         = -2;
@@ -376,7 +346,7 @@ static void wiiu_font_render_msg(
       g_dark         = g * drop_mod;
       b_dark         = b * drop_mod;
       alpha_dark     = alpha * drop_alpha;
-      color_dark     = COLOR_ABGR(r_dark, g_dark, b_dark, alpha_dark);
+      color_dark     = COLOR_RGBA(r_dark, g_dark, b_dark, alpha_dark);
 
       wiiu_font_render_message(video_info, font, msg, scale, color_dark,
                               x + scale * drop_x / width, y +

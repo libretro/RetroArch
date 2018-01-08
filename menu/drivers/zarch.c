@@ -184,7 +184,7 @@ static int16_t zarch_zui_input_state(zui_t *zui, enum zarch_zui_input_state stat
       case MENU_POINTER_ZARCH_Y:
          return menu_input_pointer_state(MENU_POINTER_Y_AXIS);
       case MENU_ZARCH_PRESSED:
-         if (     menu_input_mouse_state(MENU_MOUSE_LEFT_BUTTON) 
+         if (     menu_input_mouse_state(MENU_MOUSE_LEFT_BUTTON)
                || menu_input_pointer_state(MENU_POINTER_PRESSED))
             return 1;
          if (zui->action == MENU_ACTION_OK)
@@ -208,7 +208,7 @@ static bool zarch_zui_check_button_down(zui_t *zui,
    if (menu_input_mouse_check_vector_inside_hitbox(&hitbox))
       zui->item.hot = id;
 
-   if (     zui->item.hot == id 
+   if (     zui->item.hot == id
          && zarch_zui_input_state(zui, MENU_ZARCH_PRESSED))
    {
       zui->item.active = id;
@@ -232,7 +232,7 @@ static bool zarch_zui_check_button_up(zui_t *zui,
    if (menu_input_mouse_check_vector_inside_hitbox(&hitbox))
       zui->item.hot = id;
 
-   if (     zui->item.active == id 
+   if (     zui->item.active == id
          && !zarch_zui_input_state(zui, MENU_ZARCH_PRESSED))
    {
       if (zui->item.hot == id)
@@ -270,7 +270,7 @@ static void zarch_zui_draw_text(zui_t *zui,
    if (!zui || !zui->font || string_is_empty(text))
       return;
 
-   /* need to use height-y because the font renderer 
+   /* need to use height-y because the font renderer
     * uses a different model-view-projection (MVP). */
    params.x           = x / (float)zui->width;
    params.y           = (zui->height - y) / (float)zui->height;
@@ -305,7 +305,7 @@ static bool zarch_zui_button(zui_t *zui, int x1, int y1, const char *label)
 {
    if (!zui || !zui->font)
       return false;
-   return zarch_zui_button_full(zui, x1, y1, x1 
+   return zarch_zui_button_full(zui, x1, y1, x1
          + zarch_zui_strwidth(zui->font, label, 1.0) + 24, y1 + 64, label);
 }
 
@@ -468,7 +468,7 @@ static bool zarch_zui_gamepad_input(zui_t *zui,
 
          if (*gamepad_index < 0) /* and wraparound enabled */
             *gamepad_index = size -1;
-         else if (*gamepad_index >= (signed)cutoff_point) /* if greater than cutoff point, 
+         else if (*gamepad_index >= (signed)cutoff_point) /* if greater than cutoff point,
                                                 don't scroll */
             return false;
 
@@ -478,7 +478,7 @@ static bool zarch_zui_gamepad_input(zui_t *zui,
 
          if (*gamepad_index > (signed)(size - 1)) /* and wraparound enabled */
             *gamepad_index = 0;
-         else if (*gamepad_index >= (signed)cutoff_point) /* if greater than cutoff point, 
+         else if (*gamepad_index >= (signed)cutoff_point) /* if greater than cutoff point,
                                                 don't scroll */
             return false;
          return true;
@@ -527,7 +527,7 @@ static int zarch_zui_render_lay_root_recent(
 
          if (zarch_zui_list_item(
                   video_info,
-                  zui, tabbed, 0, 
+                  zui, tabbed, 0,
                   tabbed->tabline_size + j * ZUI_ITEM_SIZE_PX,
                   rich_label, i, entry_value, gamepad_index == (signed)i))
          {
@@ -634,7 +634,7 @@ static int zarch_zui_render_lay_root_load(
 
             for (i = 0; i < size; ++i)
             {
-               const char *basename = 
+               const char *basename =
                   path_basename(zui->load_dlist->elems[i].data);
                if (basename[0] != '.')
                   break;
@@ -750,11 +750,11 @@ static int zarch_zui_render_lay_root(video_frame_info_t *video_info,
    item[0] = '\0';
 
    snprintf(item, sizeof(item), "item id: %d\n", zui->active_id);
-   zarch_zui_draw_text(zui, ZUI_FG_NORMAL, 1600 +12, 300 + 41, item); 
+   zarch_zui_draw_text(zui, ZUI_FG_NORMAL, 1600 +12, 300 + 41, item);
    snprintf(item, sizeof(item), "tab  idx: %d\n", tabbed.active_id);
-   zarch_zui_draw_text(zui, ZUI_FG_NORMAL, 1600 +12, 300 + 81, item); 
+   zarch_zui_draw_text(zui, ZUI_FG_NORMAL, 1600 +12, 300 + 81, item);
    snprintf(item, sizeof(item), "item hot idx: %d\n", zui->item.hot);
-   zarch_zui_draw_text(zui, ZUI_FG_NORMAL, 1600 +12, 300 + 111, item); 
+   zarch_zui_draw_text(zui, ZUI_FG_NORMAL, 1600 +12, 300 + 111, item);
 #endif
 
    menu_display_push_quad(zui->width, zui->height,
@@ -879,7 +879,7 @@ static void zarch_frame(void *data, video_frame_info_t *video_info)
    settings_t *settings    = config_get_ptr();
    zui_t *zui              = (zui_t*)data;
    video_coord_array_t *ca = menu_display_get_coords_array();
-   
+
    if (!zui)
       return;
 
@@ -906,7 +906,7 @@ static void zarch_frame(void *data, video_frame_info_t *video_info)
    zui->item.hot  = 0;
 
    /* why do i need this? */
-   zui->mouse.wheel = menu_input_mouse_state(MENU_MOUSE_WHEEL_DOWN) - 
+   zui->mouse.wheel = menu_input_mouse_state(MENU_MOUSE_WHEEL_DOWN) -
       menu_input_mouse_state(MENU_MOUSE_WHEEL_UP);
 
    menu_display_coords_array_reset();
@@ -942,7 +942,7 @@ static void zarch_frame(void *data, video_frame_info_t *video_info)
       zarch_zui_draw_cursor(
             zarch_zui_input_state(zui, MENU_ZARCH_MOUSE_X),
             zarch_zui_input_state(zui, MENU_ZARCH_MOUSE_Y));
-         
+
 
    if (!zarch_zui_input_state(zui, MENU_ZARCH_PRESSED))
       zui->item.active = 0;
@@ -950,7 +950,7 @@ static void zarch_frame(void *data, video_frame_info_t *video_info)
       zui->item.active = -1;
 
    menu_display_blend_begin();
-   
+
    draw.x           = 0;
    draw.y           = 0;
    draw.width       = zui->width;
@@ -1063,7 +1063,7 @@ static void zarch_context_destroy(void *data)
    zui->font = NULL;
 }
 
-static bool zarch_load_image(void *userdata, 
+static bool zarch_load_image(void *userdata,
       void *data, enum menu_image_type type)
 {
    zui_t        *zui = (zui_t*)userdata;

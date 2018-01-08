@@ -4,7 +4,7 @@
 
  Copyright (c) 2006 Michael "Chishm" Chisholm
  Based on code originally written by MightyMax
-	
+
  Redistribution and use in source and binary forms, with or without modification,
  are permitted provided that the following conditions are met:
 

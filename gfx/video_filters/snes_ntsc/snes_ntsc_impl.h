@@ -87,7 +87,7 @@ static void init_filters( init_t* impl, snes_ntsc_setup_t const* setup )
 		/* quadratic mapping to reduce negative (blurring) range */
 		float to_angle = (float) setup->resolution + 1;
 		to_angle = PI / maxh * (float) LUMA_CUTOFF * (to_angle * to_angle + 1);
-		
+
 		kernels [kernel_size * 3 / 2] = maxh; /* default center value */
 		for ( i = 0; i < kernel_half * 2 + 1; i++ )
 		{
@@ -105,7 +105,7 @@ static void init_filters( init_t* impl, snes_ntsc_setup_t const* setup )
 				kernels [kernel_size * 3 / 2 - kernel_half + i] = dsf - (float) 0.5;
 			}
 		}
-		
+
 		/* apply blackman window and find sum */
 		sum = 0;
 		for ( i = 0; i < kernel_half * 2 + 1; i++ )
@@ -114,7 +114,7 @@ static void init_filters( init_t* impl, snes_ntsc_setup_t const* setup )
 			float blackman = 0.42f - 0.5f * (float) cos( x ) + 0.08f * (float) cos( x * 2 );
 			sum += (kernels [kernel_size * 3 / 2 - kernel_half + i] *= blackman);
 		}
-		
+
 		/* normalize kernel */
 		sum = 1.0f / sum;
 		for ( i = 0; i < kernel_half * 2 + 1; i++ )
@@ -130,7 +130,7 @@ static void init_filters( init_t* impl, snes_ntsc_setup_t const* setup )
 		float const cutoff_factor = -0.03125f;
 		float cutoff = (float) setup->bleed;
 		int i;
-		
+
 		if ( cutoff < 0 )
 		{
 			/* keep extreme value accessible only near upper end of scale (1.0) */
@@ -140,10 +140,10 @@ static void init_filters( init_t* impl, snes_ntsc_setup_t const* setup )
 			cutoff *= -30.0f / 0.65f;
 		}
 		cutoff = cutoff_factor - 0.65f * cutoff_factor * cutoff;
-		
+
 		for ( i = -kernel_half; i <= kernel_half; i++ )
 			kernels [kernel_size / 2 + i] = (float) exp( i * i * cutoff );
-		
+
 		/* normalize even and odd phases separately */
 		for ( i = 0; i < 2; i++ )
 		{
@@ -151,7 +151,7 @@ static void init_filters( init_t* impl, snes_ntsc_setup_t const* setup )
 			int x;
 			for ( x = i; x < kernel_size; x += 2 )
 				sum += kernels [x];
-			
+
 			sum = 1.0f / sum;
 			for ( x = i; x < kernel_size; x += 2 )
 			{
@@ -160,7 +160,7 @@ static void init_filters( init_t* impl, snes_ntsc_setup_t const* setup )
 			}
 		}
 	}
-	
+
 	/*
 	printf( "luma:\n" );
 	for ( i = kernel_size; i < kernel_size * 2; i++ )
@@ -169,7 +169,7 @@ static void init_filters( init_t* impl, snes_ntsc_setup_t const* setup )
 	for ( i = 0; i < kernel_size; i++ )
 		printf( "%f\n", kernels [i] );
 	*/
-	
+
 	/* generate linear rescale kernels */
 	#if rescale_out > 1
 	{
@@ -205,7 +205,7 @@ static void init( init_t* impl, snes_ntsc_setup_t const* setup )
 		if ( !setup->palette )
 			impl->contrast *= default_palette_contrast;
 	#endif
-	
+
 	impl->artifacts = (float) setup->artifacts;
 	if ( impl->artifacts > 0 )
 		impl->artifacts *= artifacts_max - artifacts_mid;
@@ -215,9 +215,9 @@ static void init( init_t* impl, snes_ntsc_setup_t const* setup )
 	if ( impl->fringing > 0 )
 		impl->fringing *= fringing_max - fringing_mid;
 	impl->fringing = impl->fringing * fringing_mid + fringing_mid;
-	
+
 	init_filters( impl, setup );
-	
+
 	/* generate gamma table */
 	if ( gamma_size > 1 )
 	{
@@ -229,7 +229,7 @@ static void init( init_t* impl, snes_ntsc_setup_t const* setup )
 			impl->to_float [i] =
 					(float) pow( i * to_float, gamma ) * impl->contrast + impl->brightness;
 	}
-	
+
 	/* setup decoder matricies */
 	{
 		float hue = (float) setup->hue * PI + PI / 180 * ext_decoder_hue;
@@ -241,13 +241,13 @@ static void init( init_t* impl, snes_ntsc_setup_t const* setup )
 			if ( STD_HUE_CONDITION( setup ) )
 				hue += PI / 180 * (std_decoder_hue - ext_decoder_hue);
 		}
-		
+
 		{
 			float s = (float) sin( hue ) * sat;
 			float c = (float) cos( hue ) * sat;
 			float* out = impl->to_rgb;
 			int n;
-			
+
 			n = burst_count;
 			do
 			{
@@ -336,16 +336,16 @@ static void gen_kernel( init_t* impl, float y, float i, float q, snes_ntsc_rgb_t
 			float const qc1 = (q + yy) * pixel->kernel [1];
 			float const ic2 = (i - yy) * pixel->kernel [2];
 			float const qc3 = (q - yy) * pixel->kernel [3];
-			
+
 			float const factor = impl->artifacts * pixel->negate;
 			float const ii = i * factor;
 			float const yc0 = (y + ii) * pixel->kernel [0];
 			float const yc2 = (y - ii) * pixel->kernel [2];
-			
+
 			float const qq = q * factor;
 			float const yc1 = (y + qq) * pixel->kernel [1];
 			float const yc3 = (y - qq) * pixel->kernel [3];
-			
+
 			float const* k = &impl->kernel [pixel->offset];
 			int n;
 			++pixel;
@@ -368,12 +368,12 @@ static void gen_kernel( init_t* impl, float y, float i, float q, snes_ntsc_rgb_t
 			}
 		}
 		while ( alignment_count > 1 && --alignment_remain );
-		
+
 		if ( burst_count <= 1 )
 			break;
-		
+
 		to_rgb += 6;
-		
+
 		ROTATE_IQ( i, q, -0.866025f, -0.5f ); /* -120 degrees */
 	}
 	while ( --burst_remain );

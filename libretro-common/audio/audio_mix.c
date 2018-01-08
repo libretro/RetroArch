@@ -56,7 +56,7 @@ void audio_mix_volume_SSE2(float *out, const float *in, float vol, size_t sample
       unsigned j;
       __m128 input[4];
       __m128 additive[4];
-      
+
       input[0]    = _mm_loadu_ps(out +  0);
       input[1]    = _mm_loadu_ps(out +  4);
       input[2]    = _mm_loadu_ps(out +  8);
@@ -111,20 +111,23 @@ void audio_mix_free_chunk(audio_chunk_t *chunk)
 audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate)
 {
    int sample_size;
+   ssize_t len          = 0;
+   void *buf            = NULL;
    audio_chunk_t *chunk = (audio_chunk_t*)calloc(1, sizeof(*chunk));
 
    if (!chunk)
       return NULL;
 
-   chunk->sample_rate = sample_rate;
-
-   if (!filestream_read_file(path, &chunk->buf, &chunk->len))
+   if (!filestream_read_file(path, &buf, &len))
    {
       printf("Could not open WAV file for reading.\n");
       goto error;
    }
 
-   chunk->rwav = (rwav_t*)malloc(sizeof(rwav_t));
+   chunk->sample_rate = sample_rate;
+   chunk->buf         = buf;
+   chunk->len         = len;
+   chunk->rwav        = (rwav_t*)malloc(sizeof(rwav_t));
 
    if (rwav_load(chunk->rwav, chunk->buf, chunk->len) == RWAV_ITERATE_ERROR)
    {
@@ -132,7 +135,7 @@ audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate)
       goto error;
    }
 
-   /* numsamples does not know or care about 
+   /* numsamples does not know or care about
     * multiple channels, but we need space for 2 */
    chunk->upsample_buf = (int16_t*)memalign_alloc(128,
          chunk->rwav->numsamples * 2 * sizeof(int16_t));
@@ -181,7 +184,7 @@ audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate)
       goto error;
    }
 
-   if (sample_rate != chunk->rwav->samplerate)
+   if (sample_rate != (int)chunk->rwav->samplerate)
    {
       chunk->resample = true;
       chunk->ratio = (double)sample_rate / chunk->rwav->samplerate;
@@ -189,6 +192,7 @@ audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate)
       retro_resampler_realloc(&chunk->resampler_data,
             &chunk->resampler,
             NULL,
+            RESAMPLER_QUALITY_DONTCARE,
             chunk->ratio);
 
       if (chunk->resampler && chunk->resampler_data)
@@ -204,7 +208,7 @@ audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate)
 
          info.data_in       = (const float*)chunk->float_buf;
          info.data_out      = chunk->float_resample_buf;
-         /* a 'frame' consists of two channels, so we set this 
+         /* a 'frame' consists of two channels, so we set this
           * to the number of samples irrespective of channel count */
          info.input_frames  = chunk->rwav->numsamples;
          info.output_frames = 0;

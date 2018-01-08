@@ -43,7 +43,7 @@ static void null_hid_joypad_get_buttons(void *data, unsigned port, retro_bits_t 
    (void)data;
    (void)port;
 
-   RARCH_INPUT_STATE_CLEAR_PTR(state);
+   BIT256_CLEAR_ALL_PTR(state);
 }
 
 static bool null_hid_joypad_button(void *data, unsigned port, uint16_t joykey)
@@ -80,7 +80,7 @@ static void *null_hid_init(void)
    return (null_hid_t*)calloc(1, sizeof(null_hid_t));
 }
 
-static void null_hid_free(void *data)
+static void null_hid_free(const void *data)
 {
    null_hid_t *hid_null = (null_hid_t*)data;
 

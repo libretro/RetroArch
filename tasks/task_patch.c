@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -80,7 +80,7 @@ struct bps_data
 struct ups_data
 {
    const uint8_t *patch_data;
-   const uint8_t *source_data; 
+   const uint8_t *source_data;
    uint8_t *target_data;
    unsigned patch_length;
    unsigned source_length;
@@ -161,9 +161,9 @@ static enum patch_error bps_apply_patch(
    bps.target_relative_offset = 0;
    bps.output_offset          = 0;
 
-   if (  (bps_read(&bps) != 'B') || 
+   if (  (bps_read(&bps) != 'B') ||
          (bps_read(&bps) != 'P') ||
-         (bps_read(&bps) != 'S') || 
+         (bps_read(&bps) != 'S') ||
          (bps_read(&bps) != '1'))
       return PATCH_PATCH_INVALID_HEADER;
 
@@ -254,37 +254,37 @@ static enum patch_error bps_apply_patch(
    return PATCH_SUCCESS;
 }
 
-static uint8_t ups_patch_read(struct ups_data *data) 
+static uint8_t ups_patch_read(struct ups_data *data)
 {
-   if (data && data->patch_offset < data->patch_length) 
+   if (data && data->patch_offset < data->patch_length)
    {
       uint8_t n = data->patch_data[data->patch_offset++];
-      data->patch_checksum = 
+      data->patch_checksum =
          ~(encoding_crc32(~data->patch_checksum, &n, 1));
       return n;
    }
    return 0x00;
 }
 
-static uint8_t ups_source_read(struct ups_data *data) 
+static uint8_t ups_source_read(struct ups_data *data)
 {
-   if (data && data->source_offset < data->source_length) 
+   if (data && data->source_offset < data->source_length)
    {
       uint8_t n = data->source_data[data->source_offset++];
-      data->source_checksum =  
+      data->source_checksum =
          ~(encoding_crc32(~data->source_checksum, &n, 1));
       return n;
    }
    return 0x00;
 }
 
-static void ups_target_write(struct ups_data *data, uint8_t n) 
+static void ups_target_write(struct ups_data *data, uint8_t n)
 {
 
-   if (data && data->target_offset < data->target_length) 
+   if (data && data->target_offset < data->target_length)
    {
       data->target_data[data->target_offset] = n;
-      data->target_checksum = 
+      data->target_checksum =
          ~(encoding_crc32(~data->target_checksum, &n, 1));
    }
 
@@ -292,15 +292,15 @@ static void ups_target_write(struct ups_data *data, uint8_t n)
       data->target_offset++;
 }
 
-static uint64_t ups_decode(struct ups_data *data) 
+static uint64_t ups_decode(struct ups_data *data)
 {
    uint64_t offset = 0, shift = 1;
-   while (true) 
+   while (true)
    {
       uint8_t x = ups_patch_read(data);
       offset   += (x & 0x7f) * shift;
 
-      if (x & 0x80) 
+      if (x & 0x80)
          break;
       shift <<= 7;
       offset += shift;
@@ -335,7 +335,7 @@ static enum patch_error ups_apply_patch(
    data.source_checksum = ~0;
    data.target_checksum = ~0;
 
-   if (data.patch_length < 18) 
+   if (data.patch_length < 18)
       return PATCH_PATCH_INVALID;
 
    if (
@@ -350,23 +350,23 @@ static enum patch_error ups_apply_patch(
    target_read_length = (unsigned)ups_decode(&data);
 
    if (     (data.source_length != source_read_length)
-         && (data.source_length != target_read_length)) 
+         && (data.source_length != target_read_length))
       return PATCH_SOURCE_INVALID;
 
    *targetlength = (data.source_length == source_read_length ?
          target_read_length : source_read_length);
 
-   if (data.target_length < *targetlength) 
+   if (data.target_length < *targetlength)
       return PATCH_TARGET_TOO_SMALL;
 
    data.target_length = (unsigned)*targetlength;
 
-   while (data.patch_offset < data.patch_length - 12) 
+   while (data.patch_offset < data.patch_length - 12)
    {
       unsigned length = (unsigned)ups_decode(&data);
-      while (length--) 
+      while (length--)
          ups_target_write(&data, ups_source_read(&data));
-      while (true) 
+      while (true)
       {
          uint8_t patch_xor = ups_patch_read(&data);
          ups_target_write(&data, patch_xor ^ ups_source_read(&data));
@@ -375,43 +375,43 @@ static enum patch_error ups_apply_patch(
       }
    }
 
-   while (data.source_offset < data.source_length) 
+   while (data.source_offset < data.source_length)
       ups_target_write(&data, ups_source_read(&data));
-   while (data.target_offset < data.target_length) 
+   while (data.target_offset < data.target_length)
       ups_target_write(&data, ups_source_read(&data));
 
 
-   for (i = 0; i < 4; i++) 
+   for (i = 0; i < 4; i++)
       source_read_checksum |= ups_patch_read(&data) << (i * 8);
-   for (i = 0; i < 4; i++) 
+   for (i = 0; i < 4; i++)
       target_read_checksum |= ups_patch_read(&data) << (i * 8);
 
    patch_result_checksum = ~data.patch_checksum;
    data.source_checksum  = ~data.source_checksum;
    data.target_checksum  = ~data.target_checksum;
 
-   for (i = 0; i < 4; i++) 
+   for (i = 0; i < 4; i++)
       patch_read_checksum |= ups_patch_read(&data) << (i * 8);
 
-   if (patch_result_checksum != patch_read_checksum) 
+   if (patch_result_checksum != patch_read_checksum)
       return PATCH_PATCH_INVALID;
 
    if (data.source_checksum == source_read_checksum
-         && data.source_length == source_read_length) 
+         && data.source_length == source_read_length)
    {
       if (data.target_checksum == target_read_checksum
-            && data.target_length == target_read_length) 
+            && data.target_length == target_read_length)
          return PATCH_SUCCESS;
       return PATCH_TARGET_INVALID;
-   } 
+   }
    else if (data.source_checksum == target_read_checksum
-         && data.source_length == target_read_length) 
+         && data.source_length == target_read_length)
    {
       if (data.target_checksum == source_read_checksum
-            && data.target_length == source_read_length) 
+            && data.target_length == source_read_length)
          return PATCH_SUCCESS;
       return PATCH_TARGET_INVALID;
-   } 
+   }
 
    return PATCH_SOURCE_INVALID;
 }
@@ -549,7 +549,7 @@ static bool try_bps_patch(bool allow_bps, const char *name_bps,
       uint8_t **buf, ssize_t *size)
 {
    if (allow_bps && !string_is_empty(name_bps))
-      if (path_is_valid(name_bps) && path_file_exists(name_bps))
+      if (path_is_valid(name_bps) && filestream_exists(name_bps))
       {
          ssize_t patch_size;
          bool ret                 = false;
@@ -576,7 +576,7 @@ static bool try_ups_patch(bool allow_ups, const char *name_ups,
       uint8_t **buf, ssize_t *size)
 {
    if (allow_ups && !string_is_empty(name_ups))
-      if (path_is_valid(name_ups) && path_file_exists(name_ups))
+      if (path_is_valid(name_ups) && filestream_exists(name_ups))
       {
          ssize_t patch_size;
          bool ret                 = false;
@@ -603,7 +603,7 @@ static bool try_ips_patch(bool allow_ips,
       const char *name_ips, uint8_t **buf, ssize_t *size)
 {
    if (allow_ips && !string_is_empty(name_ips))
-      if (path_is_valid(name_ips) && path_file_exists(name_ips))
+      if (path_is_valid(name_ips) && filestream_exists(name_ips))
       {
          ssize_t patch_size;
          bool ret                 = false;
@@ -649,8 +649,8 @@ static void patch_content(
    bool allow_ips   = !is_ups_pref && !is_bps_pref;
    bool allow_bps   = !is_ups_pref && !is_ips_pref;
 
-   if (    (unsigned)is_ips_pref 
-         + (unsigned)is_bps_pref 
+   if (    (unsigned)is_ips_pref
+         + (unsigned)is_bps_pref
          + (unsigned)is_ups_pref > 1)
    {
       RARCH_WARN("%s\n",
@@ -658,8 +658,8 @@ static void patch_content(
       return;
    }
 
-   if (     !try_ips_patch(allow_ips, name_ips, buf, size) 
-         && !try_bps_patch(allow_bps, name_bps, buf, size) 
+   if (     !try_ips_patch(allow_ips, name_ips, buf, size)
+         && !try_bps_patch(allow_bps, name_bps, buf, size)
          && !try_ups_patch(allow_ups, name_ups, buf, size))
    {
       RARCH_LOG("%s\n",

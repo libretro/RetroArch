@@ -18,7 +18,7 @@
 #define HCI_DH1							0x0010
 #define HCI_DH3							0x0800
 #define HCI_DH5							0x8000
-									
+
 #define HCI_HV1							0x0020
 #define HCI_HV2							0x0040
 #define HCI_HV3							0x0080
@@ -49,7 +49,7 @@
 #define LMP_HV3							0x20
 #define LMP_ULAW						0x40
 #define LMP_ALAW						0x80
-										
+
 #define LMP_CVSD						0x01
 #define LMP_PSCHEME						0x02
 #define LMP_PCONTROL					0x04
@@ -214,7 +214,7 @@
 #define HCI_SET_EV_MASK_OCF 0x01
 #define HCI_RESET_OCF 0x03
 #define HCI_SET_EV_FILTER_OCF 0x05
-#define HCI_R_STORED_LINK_KEY_OCF 0x0D 
+#define HCI_R_STORED_LINK_KEY_OCF 0x0D
 #define HCI_W_PAGE_TIMEOUT_OCF 0x18
 #define HCI_W_SCAN_EN_OCF 0x1A
 #define HCI_R_COD_OCF 0x23

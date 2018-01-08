@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -41,10 +41,12 @@
 
 #include <windows.h>
 #include <commdlg.h>
+#include <dbt.h>
 #include "../../retroarch.h"
 #include "../../input/input_driver.h"
 #include "../../input/input_keymaps.h"
 #include "../video_thread_wrapper.h"
+#include "../video_display_server.h"
 #include <shellapi.h>
 
 #ifdef HAVE_MENU
@@ -53,8 +55,8 @@
 
 #include <encodings/utf.h>
 
-/* Assume W-functions do not work below VC2005 and Xbox platforms */
-#if defined(_MSC_VER) && _MSC_VER < 1400 || defined(_XBOX)
+/* Assume W-functions do not work below Win2K and Xbox platforms */
+#if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500 || defined(_XBOX)
 
 #ifndef LEGACY_WIN32
 #define LEGACY_WIN32
@@ -68,7 +70,10 @@
 #define DragQueryFileR DragQueryFileW
 #endif
 
-extern LRESULT win32_menu_loop(HWND owner, WPARAM wparam);
+const GUID GUID_DEVINTERFACE_HID = { 0x4d1e55b2, 0xf16f, 0x11Cf, { 0x88, 0xcb, 0x00, 0x11, 0x11, 0x00, 0x00, 0x30 } };
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x501
+static HDEVNOTIFY notification_handler;
+#endif
 
 #if defined(HAVE_D3D9) || defined(HAVE_D3D8)
 extern bool dinput_handle_message(void *dinput, UINT message,
@@ -85,9 +90,11 @@ bool g_restore_desktop              = false;
 static bool doubleclick_on_titlebar = false;
 bool g_inited                       = false;
 static bool g_quit                  = false;
-static unsigned g_pos_x             = CW_USEDEFAULT;
-static unsigned g_pos_y             = CW_USEDEFAULT;
+static int g_pos_x                  = CW_USEDEFAULT;
+static int g_pos_y                  = CW_USEDEFAULT;
 static void *curD3D                 = NULL;
+static bool g_taskbar_is_created    = false;
+static unsigned g_taskbar_message   = 0;
 
 ui_window_win32_t main_window;
 
@@ -141,6 +148,16 @@ typedef REASON_CONTEXT POWER_REQUEST_CONTEXT, *PPOWER_REQUEST_CONTEXT, *LPPOWER_
 static HMONITOR win32_monitor_last;
 static HMONITOR win32_monitor_all[MAX_MONITORS];
 static unsigned win32_monitor_count              = 0;
+
+bool win32_taskbar_is_created(void)
+{
+   return g_taskbar_is_created;
+}
+
+void win32_set_taskbar_created(bool created)
+{
+   g_taskbar_is_created = created;
+}
 
 bool doubleclick_on_titlebar_pressed(void)
 {
@@ -442,7 +459,7 @@ static LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
          if (message == WM_KEYUP || message == WM_SYSKEYUP)
             keydown = false;
 
-#if _WIN32_WINNT >= 0x0501
+#if _WIN32_WINNT >= 0x0501 /* XP */
          if (string_is_equal_fast(config_get_ptr()->arrays.input_driver, "raw", 4))
             keycode = input_keymaps_translate_keysym_to_rk((unsigned)(wparam));
          else
@@ -512,7 +529,11 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
       case WM_QUIT:
          {
             WINDOWPLACEMENT placement;
+            memset(&placement, 0, sizeof(placement));
+            placement.length = sizeof(placement);
+
             GetWindowPlacement(main_window.hwnd, &placement);
+
             g_pos_x = placement.rcNormalPosition.left;
             g_pos_y = placement.rcNormalPosition.top;
             g_quit  = true;
@@ -589,6 +610,11 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
          return 0;
    }
 
+#if _WIN32_WINNT >= 0x0500 /* 2K */
+      if (g_taskbar_message && message == g_taskbar_message)
+         win32_set_taskbar_created(true);
+#endif
+
    if (dinput && dinput_handle_message(dinput,
             message, wparam, lparam))
       return 0;
@@ -636,6 +662,11 @@ LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
          }
          return 0;
    }
+
+#if _WIN32_WINNT >= 0x0500 /* 2K */
+      if (g_taskbar_message && message == g_taskbar_message)
+         win32_set_taskbar_created(true);
+#endif
 
 #if defined(HAVE_D3D9) || defined(HAVE_D3D8)
    if (dinput_wgl && dinput_handle_message(dinput_wgl,
@@ -730,6 +761,11 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
          return 0;
    }
 
+#if _WIN32_WINNT >= 0x0500 /* 2K */
+      if (g_taskbar_message && message == g_taskbar_message)
+         win32_set_taskbar_created(true);
+#endif
+
 #if defined(HAVE_D3D9) || defined(HAVE_D3D8)
    if (dinput_gdi && dinput_handle_message(dinput_gdi,
             message, wparam, lparam))
@@ -742,6 +778,10 @@ bool win32_window_create(void *data, unsigned style,
       RECT *mon_rect, unsigned width,
       unsigned height, bool fullscreen)
 {
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500 /* 2K */
+   DEV_BROADCAST_DEVICEINTERFACE notification_filter;
+#endif
+   settings_t *settings  = config_get_ptr();
 #ifndef _XBOX
    main_window.hwnd = CreateWindowEx(0,
          "RetroArch", "RetroArch",
@@ -753,9 +793,31 @@ bool win32_window_create(void *data, unsigned style,
    if (!main_window.hwnd)
       return false;
 
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500 /* 2K */
+   g_taskbar_message = RegisterWindowMessage("TaskbarButtonCreated");
+
+   ZeroMemory(&notification_filter, sizeof(notification_filter) );
+   notification_filter.dbcc_size       = sizeof(DEV_BROADCAST_DEVICEINTERFACE);
+   notification_filter.dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE;
+   notification_filter.dbcc_classguid  = GUID_DEVINTERFACE_HID;
+   notification_handler                = RegisterDeviceNotification(
+	   main_window.hwnd, &notification_filter, DEVICE_NOTIFY_WINDOW_HANDLE);
+
+   if (notification_handler)
+      RARCH_ERR("Error registering for notifications\n");
+#endif
+
    video_driver_display_type_set(RARCH_DISPLAY_WIN32);
    video_driver_display_set(0);
    video_driver_window_set((uintptr_t)main_window.hwnd);
+
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500 /* 2K */
+   /* Windows 2000 and above use layered windows to enable transparency */
+   SetWindowLongPtr(main_window.hwnd,
+        GWL_EXSTYLE,
+        GetWindowLongPtr(main_window.hwnd, GWL_EXSTYLE) | WS_EX_LAYERED);
+   SetLayeredWindowAttributes(main_window.hwnd, 0, (255 * settings->uints.video_window_opacity) / 100, LWA_ALPHA);
+#endif
 #endif
    return true;
 }
@@ -1130,6 +1192,9 @@ void win32_destroy_window(void)
 {
 #ifndef _XBOX
    UnregisterClass("RetroArch", GetModuleHandle(NULL));
+#endif
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x500 /* 2K */
+   UnregisterDeviceNotification(notification_handler);
 #endif
    main_window.hwnd = NULL;
 }

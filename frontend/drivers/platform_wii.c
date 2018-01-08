@@ -74,9 +74,9 @@ static void dol_copy_argv_path(const char *dolpath, const char *argpath)
    }
    /* a relative path */
    else if (
-         (strstr(dolpath, "sd:/")    != dolpath) && 
+         (strstr(dolpath, "sd:/")    != dolpath) &&
          (strstr(dolpath, "usb:/")   != dolpath) &&
-         (strstr(dolpath, "carda:/") != dolpath) && 
+         (strstr(dolpath, "carda:/") != dolpath) &&
          (strstr(dolpath, "cardb:/") != dolpath)
          )
    {
@@ -119,13 +119,13 @@ static void dol_copy_argv_path(const char *dolpath, const char *argpath)
    DCFlushRange(ARGS_ADDR, sizeof(struct __argv) + argv->length);
 }
 
-/* WARNING: after we move any data 
+/* WARNING: after we move any data
  * into EXECUTE_ADDR, we can no longer use any
  * heap memory and are restricted to the stack only. */
 void system_exec_wii(const char *_path, bool should_load_game)
 {
-   FILE *fp;
    size_t size, booter_size;
+   FILE *fp                        = NULL;
    void *dol                       = NULL;
    char path[PATH_MAX_LENGTH]      = {0};
    char game_path[PATH_MAX_LENGTH] = {0};
@@ -133,7 +133,7 @@ void system_exec_wii(const char *_path, bool should_load_game)
    bool original_verbose           = verbosity_is_enabled();
 #endif
 
-   /* copy heap info into stack so it survives 
+   /* copy heap info into stack so it survives
     * us moving the .dol into MEM2. */
    strlcpy(path, _path, sizeof(path));
    if (should_load_game)

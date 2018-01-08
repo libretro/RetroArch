@@ -30,6 +30,7 @@
 #endif
 
 #include <dinput.h>
+#include <dbt.h>
 
 #include <stdlib.h>
 #include <stddef.h>
@@ -362,11 +363,6 @@ static int16_t dinput_pressed_analog(struct dinput_input *di,
       pressed_plus  = 0x7fff;
 
    return pressed_plus + pressed_minus;
-}
-
-static bool dinput_meta_key_pressed(void *data, int key)
-{
-   return false;
 }
 
 static int16_t dinput_lightgun_aiming_state( struct dinput_input *di, unsigned idx, unsigned id )
@@ -807,9 +803,21 @@ bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lPa
             return true;
          }
       case WM_DEVICECHANGE:
-            if (di->joypad)
-               di->joypad->destroy();
-            di->joypad = input_joypad_init_driver(di->joypad_driver_name, di);
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500 /* 2K */
+            if (wParam == DBT_DEVICEARRIVAL  || wParam == DBT_DEVICEREMOVECOMPLETE)
+            {
+               PDEV_BROADCAST_HDR pHdr = (PDEV_BROADCAST_HDR)lParam;
+               if(pHdr->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE)
+               {
+                  PDEV_BROADCAST_DEVICEINTERFACE pDevInf = (PDEV_BROADCAST_DEVICEINTERFACE)pHdr;
+
+                  /* To-Do: Don't destroy everything, lets just handle new devices gracefully */
+                  if (di->joypad)
+                     di->joypad->destroy();
+                  di->joypad = input_joypad_init_driver(di->joypad_driver_name, di);
+               }
+            }
+#endif
          break;
       case WM_MOUSEWHEEL:
             if (((short) HIWORD(wParam))/120 > 0)
@@ -852,7 +860,7 @@ static void dinput_free(void *data)
       if (di->mouse)
          IDirectInputDevice8_Release(di->mouse);
 
-      if (string_is_empty(di->joypad_driver_name))
+      if (di->joypad_driver_name)
          free(di->joypad_driver_name);
 
       free(di);
@@ -925,7 +933,6 @@ input_driver_t input_dinput = {
    dinput_init,
    dinput_poll,
    dinput_input_state,
-   dinput_meta_key_pressed,
    dinput_free,
    NULL,
    NULL,

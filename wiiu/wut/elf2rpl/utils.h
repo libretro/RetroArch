@@ -16,7 +16,7 @@
 #include <byteswap.h>
 #endif
 
-// reinterpret_cast for value types
+/* reinterpret_cast for value types */
 template<typename DstType, typename SrcType>
 inline DstType
 bit_cast(const SrcType& src)
@@ -30,8 +30,8 @@ bit_cast(const SrcType& src)
    return dst;
 }
 
-// Utility class to swap endian for types of size 1, 2, 4, 8
-// other type sizes are not supported
+/* Utility class to swap endian for types of size 1, 2, 4, 8 */
+/* other type sizes are not supported */
 template<typename Type, unsigned Size = sizeof(Type)>
 struct byte_swap_t;
 
@@ -52,7 +52,7 @@ struct byte_swap_t<Type, 2>
 #ifdef PLATFORM_WINDOWS
       return bit_cast<Type>(_byteswap_ushort(bit_cast<uint16_t>(src)));
 #elif defined(PLATFORM_APPLE)
-      // Apple has no 16-bit byteswap intrinsic
+      /* Apple has no 16-bit byteswap intrinsic */
       const uint16_t data = bit_cast<uint16_t>(src);
       return bit_cast<Type>((uint16_t)((data >> 8) | (data << 8)));
 #elif defined(PLATFORM_LINUX)
@@ -91,7 +91,7 @@ struct byte_swap_t<Type, 8>
    }
 };
 
-// Swaps endian of src
+/* Swaps endian of src */
 template<typename Type>
 inline Type
 byte_swap(Type src)
@@ -99,7 +99,7 @@ byte_swap(Type src)
    return byte_swap_t<Type>::swap(src);
 }
 
-// Alignment helpers
+/* Alignment helpers */
 template<typename Type>
 constexpr inline Type
 align_up(Type value, size_t alignment)

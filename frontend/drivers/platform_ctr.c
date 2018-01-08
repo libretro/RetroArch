@@ -21,6 +21,9 @@
 #include <boolean.h>
 
 #include <3ds.h>
+#include <3ds/svc.h>
+#include <3ds/os.h>
+#include <3ds/services/cfgu.h>
 
 #include <file/file_path.h>
 
@@ -49,7 +52,7 @@
 #endif
 
 static enum frontend_fork ctr_fork_mode = FRONTEND_FORK_NONE;
-static const char* elf_path_cst = "sdmc:/retroarch/test.3dsx";
+static const char* elf_path_cst         = "sdmc:/retroarch/test.3dsx";
 
 static void frontend_ctr_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
@@ -99,10 +102,14 @@ static void frontend_ctr_get_environment_settings(int *argc, char *argv[],
 
 static void frontend_ctr_deinit(void *data)
 {
-   extern PrintConsole* currentConsole;
    Handle lcd_handle;
+   u32 parallax_layer_reg_state;
    u8 not_2DS;
+
+   extern PrintConsole* currentConsole;
+
    (void)data;
+
 #ifndef IS_SALAMANDER
    verbosity_enable();
 
@@ -115,21 +122,22 @@ static void frontend_ctr_deinit(void *data)
       wait_for_input();
 
    CFGU_GetModelNintendo2DS(&not_2DS);
+
    if(not_2DS && srvGetServiceHandle(&lcd_handle, "gsp::Lcd") >= 0)
    {
       u32 *cmdbuf = getThreadCommandBuffer();
-      cmdbuf[0] = 0x00110040;
-      cmdbuf[1] = 2;
+      cmdbuf[0]   = 0x00110040;
+      cmdbuf[1]   = 2;
       svcSendSyncRequest(lcd_handle);
       svcCloseHandle(lcd_handle);
    }
 
-   u32 parallax_layer_reg_state = (*(float*)0x1FF81080 == 0.0)? 0x0 : 0x00010001;
+   parallax_layer_reg_state = (*(float*)0x1FF81080 == 0.0)? 0x0 : 0x00010001;
    GSPGPU_WriteHWRegs(0x202000, &parallax_layer_reg_state, 4);
 
    cfguExit();
    ndspExit();
-   csndExit();   
+   csndExit();
    gfxTopRightFramebuffers[0] = NULL;
    gfxTopRightFramebuffers[1] = NULL;
    gfxExit();
@@ -144,6 +152,7 @@ static void frontend_ctr_exec(const char *path, bool should_load_game)
       char args[0x300 - 0x4];
    }param;
    int len;
+   uint64_t app_ID;
    Result res;
    extern char __argv_hmac[0x20];
 
@@ -151,7 +160,7 @@ static void frontend_ctr_exec(const char *path, bool should_load_game)
    DEBUG_STR(path);
 
    strlcpy(param.args, elf_path_cst, sizeof(param.args));
-   len = strlen(param.args) + 1;
+   len        = strlen(param.args) + 1;
    param.argc = 1;
 
    RARCH_LOG("Attempt to load core: [%s].\n", path);
@@ -164,7 +173,6 @@ static void frontend_ctr_exec(const char *path, bool should_load_game)
       RARCH_LOG("content path: [%s].\n", path_get(RARCH_PATH_CONTENT));
    }
 #endif
-   uint64_t app_ID;
    if(!path || !*path)
    {
       APT_GetProgramID(&app_ID);
@@ -172,11 +180,13 @@ static void frontend_ctr_exec(const char *path, bool should_load_game)
    }
    else
    {
-      u32 app_ID_low;
       char app_ID_str[11];
-      FILE* fp = fopen(path, "rb");
+      u32 app_ID_low    = 0;
+      FILE* fp          = fopen(path, "rb");
       size_t bytes_read = fread(app_ID_str, 1, sizeof(app_ID_str), fp);
+
       fclose(fp);
+
       if(bytes_read <= 0)
       {
          RARCH_LOG("error reading APP_ID from: [%s].\n", path);
@@ -189,12 +199,13 @@ static void frontend_ctr_exec(const char *path, bool should_load_game)
       RARCH_LOG("APP_ID [%s] -- > 0x%016llX.\n", app_ID_str, app_ID);
    }
 
-   if(R_SUCCEEDED(res = APT_PrepareToDoApplicationJump(0, app_ID, 0x1)))
+   res = APT_PrepareToDoApplicationJump(0, app_ID, 0x1);
+   if(R_SUCCEEDED(res))
         res = APT_DoApplicationJump(&param, sizeof(param.argc) + len, __argv_hmac);
 
    if(res)
    {
-      RARCH_LOG("Failed to load core\n");
+      RARCH_ERR("Failed to load core\n");
       dump_result_value(res);
    }
 
@@ -322,28 +333,28 @@ static void frontend_ctr_init(void *data)
 
    verbosity_enable();
 
-   gfxInit(GSP_BGR8_OES,GSP_RGB565_OES,false);   
+   gfxInit(GSP_BGR8_OES,GSP_RGB565_OES,false);
 
    u32 topSize = 400 * 240 * 3;
-	u32 bottomSize = 320 * 240 * 2;
+   u32 bottomSize = 320 * 240 * 2;
    linearFree(gfxTopLeftFramebuffers[0]);
-	linearFree(gfxTopLeftFramebuffers[1]);
-	linearFree(gfxBottomFramebuffers[0]);
-	linearFree(gfxBottomFramebuffers[1]);
-	linearFree(gfxTopRightFramebuffers[0]);
-	linearFree(gfxTopRightFramebuffers[1]);
+   linearFree(gfxTopLeftFramebuffers[1]);
+   linearFree(gfxBottomFramebuffers[0]);
+   linearFree(gfxBottomFramebuffers[1]);
+   linearFree(gfxTopRightFramebuffers[0]);
+   linearFree(gfxTopRightFramebuffers[1]);
 
-	gfxTopLeftFramebuffers[0]=linearAlloc(topSize * 2);
-	gfxTopRightFramebuffers[0] = gfxTopLeftFramebuffers[0] + topSize;
+   gfxTopLeftFramebuffers[0]=linearAlloc(topSize * 2);
+   gfxTopRightFramebuffers[0] = gfxTopLeftFramebuffers[0] + topSize;
 
    gfxTopLeftFramebuffers[1]=linearAlloc(topSize * 2);
    gfxTopRightFramebuffers[1] = gfxTopLeftFramebuffers[1] + topSize;
 
    gfxBottomFramebuffers[0]=linearAlloc(bottomSize);
-	gfxBottomFramebuffers[1]=linearAlloc(bottomSize);
+   gfxBottomFramebuffers[1]=linearAlloc(bottomSize);
 
    gfxSetFramebufferInfo(GFX_TOP, 0);
-	gfxSetFramebufferInfo(GFX_BOTTOM, 0);
+   gfxSetFramebufferInfo(GFX_BOTTOM, 0);
 
    gfxSet3D(true);
    consoleInit(GFX_BOTTOM, NULL);
@@ -356,16 +367,11 @@ static void frontend_ctr_init(void *data)
    }
    osSetSpeedupEnable(true);
 
-   audio_driver_t* dsp_audio_driver = &audio_ctr_dsp;
    if(csndInit() != 0)
-   {
-      dsp_audio_driver = &audio_ctr_csnd;
-      audio_ctr_csnd = audio_ctr_dsp;
-      audio_ctr_dsp  = audio_null;
-   }
+      audio_ctr_csnd = audio_null;
    ctr_check_dspfirm();
    if(ndspInit() != 0)
-      *dsp_audio_driver = audio_null;
+      audio_ctr_dsp = audio_null;
    cfguInit();
 #endif
 }
@@ -373,7 +379,29 @@ static void frontend_ctr_init(void *data)
 
 static int frontend_ctr_get_rating(void)
 {
-   return 3;
+   u8 device_model = 0xFF;
+   CFGU_GetSystemModel(&device_model);/*(0 = O3DS, 1 = O3DSXL, 2 = N3DS, 3 = 2DS, 4 = N3DSXL, 5 = N2DSXL)*/
+
+   switch (device_model)
+   {
+      case 0:
+      case 1:
+      case 3:
+         /*Old 3/2DS*/
+         return 3;
+
+      case 2:
+      case 4:
+      case 5:
+         /*New 3/2DS*/
+         return 6;
+
+      default:
+         /*Unknown Device Or Check Failed*/
+         break;
+   }
+
+   return -1;
 }
 
 enum frontend_architecture frontend_ctr_get_architecture(void)

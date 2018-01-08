@@ -43,7 +43,7 @@ struct net_ifinfo
 {
    struct net_ifinfo_entry *entries;
    size_t size;
-}; 
+};
 
 typedef struct net_ifinfo net_ifinfo_t;
 

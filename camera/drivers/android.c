@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -152,7 +152,7 @@ static void android_camera_stop(void *data)
 
    CALL_VOID_METHOD(env, android_app->activity->clazz,
          androidcamera->onCameraStop);
-   
+
    if (androidcamera->tex)
       video_driver_texture_unload((uintptr_t*)&androidcamera->tex);
 }
@@ -171,12 +171,12 @@ static bool android_camera_poll(void *data,
 
    (void)frame_raw_cb;
 
-   CALL_BOOLEAN_METHOD(env, newFrame, android_app->activity->clazz, 
+   CALL_BOOLEAN_METHOD(env, newFrame, android_app->activity->clazz,
          androidcamera->onCameraPoll);
 
    if (newFrame)
    {
-      /* FIXME: Identity for now. Use proper texture matrix as 
+      /* FIXME: Identity for now. Use proper texture matrix as
        * returned by Android Camera. */
       static const float affine[] = {
          1.0f, 0.0f, 0.0f,

@@ -87,9 +87,9 @@ int config_userdata_get_float_array(void *userdata, const char *key_str,
    }
 
    *values = (float*)calloc(num_default_values, sizeof(float));
-   memcpy(*values, default_values, sizeof(float) * num_default_values); 
-   *out_num_values = num_default_values; 
-   return false; 
+   memcpy(*values, default_values, sizeof(float) * num_default_values);
+   *out_num_values = num_default_values;
+   return false;
 }
 
 int config_userdata_get_int_array(void *userdata, const char *key_str,
@@ -135,7 +135,7 @@ int config_userdata_get_string(void *userdata, const char *key_str,
          config_get_string(usr->conf, key[1], &str))
    {
       *output = str;
-      return true; 
+      return true;
    }
 
    *output = strdup(default_output);

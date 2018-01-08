@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -14,17 +14,17 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "font_driver.h"
-#include "video_thread_wrapper.h"
-
-#include "../configuration.h"
-#include "../verbosity.h"
+#include <stdlib.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
 
-#include <stdlib.h>
+#include "font_driver.h"
+#include "video_thread_wrapper.h"
+
+#include "../configuration.h"
+#include "../verbosity.h"
 
 static const font_renderer_driver_t *font_backends[] = {
 #ifdef HAVE_FREETYPE
@@ -34,7 +34,7 @@ static const font_renderer_driver_t *font_backends[] = {
    &coretext_font_renderer,
 #endif
 #ifdef HAVE_STB_FONT
-#if defined(VITA) || defined(WIIU) || defined(ANDROID) || defined(_WIN32) && !defined(_XBOX) && !defined(_MSC_VER) || defined(_WIN32) && !defined(_XBOX) && defined(_MSC_VER) && _MSC_VER > 1400
+#if defined(VITA) || defined(WIIU) || defined(ANDROID) || defined(_WIN32) && !defined(_XBOX) && !defined(_MSC_VER) || (defined(_WIN32) && !defined(_XBOX) && defined(_MSC_VER) && _MSC_VER > 1400) || defined(__CELLOS_LV2__)
    &stb_unicode_font_renderer,
 #else
    &stb_font_renderer,
@@ -51,7 +51,7 @@ int font_renderer_create_default(const void **data, void **handle,
 {
 
    unsigned i;
-   const font_renderer_driver_t **drv = 
+   const font_renderer_driver_t **drv =
       (const font_renderer_driver_t**)data;
 
    for (i = 0; font_backends[i]; i++)
@@ -88,7 +88,7 @@ static const font_renderer_t *d3d_font_backends[] = {
    &d3d_xdk1_font,
 #elif defined(_XBOX360)
    &d3d_xbox360_font,
-#elif defined(_WIN32) && defined(HAVE_D3D9)
+#elif defined(_WIN32) && defined(HAVE_D3DX)
    &d3d_win32_font,
 #endif
    NULL
@@ -103,9 +103,9 @@ static bool d3d_font_init_first(
 
    for (i = 0; i < ARRAY_SIZE(d3d_font_backends); i++)
    {
-      void *data = d3d_font_backends[i]->init(
+      void *data = d3d_font_backends[i] ? d3d_font_backends[i]->init(
             video_data, font_path, font_size,
-            is_threaded);
+            is_threaded) : NULL;
 
       if (!data)
          continue;
@@ -502,8 +502,8 @@ font_data_t *font_driver_init_first(
    bool ok                 = false;
 #ifdef HAVE_THREADS
 
-   if (     threading_hint 
-         && is_threaded 
+   if (     threading_hint
+         && is_threaded
          && !video_driver_is_hw_context())
       ok = video_thread_font_init(&font_driver, &font_handle,
             video_data, font_path, font_size, api, font_init_first,
@@ -528,7 +528,7 @@ font_data_t *font_driver_init_first(
 
 void font_driver_init_osd(
       void *video_data,
-      bool threading_hint, 
+      bool threading_hint,
       bool is_threaded,
       enum font_driver_render_api api)
 {

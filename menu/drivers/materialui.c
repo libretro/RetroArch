@@ -28,6 +28,7 @@
 #include <formats/image.h>
 #include <gfx/math/matrix_4x4.h>
 #include <string/stdstring.h>
+#include <streams/file_stream.h>
 #include <lists/string_list.h>
 #include <encodings/utf.h>
 
@@ -35,9 +36,7 @@
 #include "../../config.h"
 #endif
 
-#ifndef HAVE_DYNAMIC
 #include "../../frontend/frontend_driver.h"
-#endif
 
 #include "menu_generic.h"
 
@@ -975,7 +974,7 @@ static void mui_render_label_value(mui_handle_t *mui, mui_node_t *node,
             1,
             switch_is_on ? &label_color[0] :  &pure_white[0]
       );
-   
+
    menu_entry_free(&entry);
 }
 
@@ -993,7 +992,7 @@ static void mui_render_menu_list(
    size_t entries_end                      = 0;
    file_list_t *list                       = NULL;
    uint64_t frame_count                    = mui->frame_count;
-   unsigned header_height                  = 
+   unsigned header_height                  =
       menu_display_get_header_height();
 
    mui->raster_block.carr.coords.vertices  = 0;
@@ -1001,9 +1000,9 @@ static void mui_render_menu_list(
 
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
 
-   list                                    = 
+   list                                    =
       menu_entries_get_selection_buf_ptr(0);
-   
+
    entries_end = menu_entries_get_size();
 
    for (i = 0; i < entries_end; i++)
@@ -1134,7 +1133,7 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
 {
    /* This controls the main background color */
    menu_display_ctx_clearcolor_t clearcolor;
-   
+
    menu_animation_ctx_ticker_t ticker;
    menu_display_ctx_draw_t draw;
    char msg[255];
@@ -1142,49 +1141,49 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
    char title_buf[255];
    char title_msg[255];
    float black_bg[16] = {
-      0, 0, 0, 0.75,		
-      0, 0, 0, 0.75,	
-      0, 0, 0, 0.75,		
-      0, 0, 0, 0.75,		
+      0, 0, 0, 0.75,
+      0, 0, 0, 0.75,
+      0, 0, 0, 0.75,
+      0, 0, 0, 0.75,
    };
 
-   float pure_white[16]=  {		
-      1.00, 1.00, 1.00, 1.00,		
-      1.00, 1.00, 1.00, 1.00,		
-      1.00, 1.00, 1.00, 1.00,		
-      1.00, 1.00, 1.00, 1.00,		
-   };		
-   float white_bg[16]=  {		
-      0.98, 0.98, 0.98, 1.00,		
-      0.98, 0.98, 0.98, 1.00,		
-      0.98, 0.98, 0.98, 1.00,		
-      0.98, 0.98, 0.98, 1.00,		
-   };		
-   float white_transp_bg[16]=  {		
-      0.98, 0.98, 0.98, 0.90,		
-      0.98, 0.98, 0.98, 0.90,		
-      0.98, 0.98, 0.98, 0.90,		
-      0.98, 0.98, 0.98, 0.90,		
-   };		
-   float grey_bg[16]=  {		
-      0.78, 0.78, 0.78, 0.90,		
-      0.78, 0.78, 0.78, 0.90,		
-      0.78, 0.78, 0.78, 0.90,		
-      0.78, 0.78, 0.78, 0.90,		
-   };		
-   /* TODO/FIXME  convert this over to new hex format */		
-   float greyish_blue[16] = {		
-      0.22, 0.28, 0.31, 1.00,		
-      0.22, 0.28, 0.31, 1.00,		
-      0.22, 0.28, 0.31, 1.00,		
-      0.22, 0.28, 0.31, 1.00,		
-   };		
-   float almost_black[16] = {		
-      0.13, 0.13, 0.13, 0.90,		
-      0.13, 0.13, 0.13, 0.90,		
-      0.13, 0.13, 0.13, 0.90,		
-      0.13, 0.13, 0.13, 0.90,		
-   };		
+   float pure_white[16]=  {
+      1.00, 1.00, 1.00, 1.00,
+      1.00, 1.00, 1.00, 1.00,
+      1.00, 1.00, 1.00, 1.00,
+      1.00, 1.00, 1.00, 1.00,
+   };
+   float white_bg[16]=  {
+      0.98, 0.98, 0.98, 1.00,
+      0.98, 0.98, 0.98, 1.00,
+      0.98, 0.98, 0.98, 1.00,
+      0.98, 0.98, 0.98, 1.00,
+   };
+   float white_transp_bg[16]=  {
+      0.98, 0.98, 0.98, 0.90,
+      0.98, 0.98, 0.98, 0.90,
+      0.98, 0.98, 0.98, 0.90,
+      0.98, 0.98, 0.98, 0.90,
+   };
+   float grey_bg[16]=  {
+      0.78, 0.78, 0.78, 0.90,
+      0.78, 0.78, 0.78, 0.90,
+      0.78, 0.78, 0.78, 0.90,
+      0.78, 0.78, 0.78, 0.90,
+   };
+   /* TODO/FIXME  convert this over to new hex format */
+   float greyish_blue[16] = {
+      0.22, 0.28, 0.31, 1.00,
+      0.22, 0.28, 0.31, 1.00,
+      0.22, 0.28, 0.31, 1.00,
+      0.22, 0.28, 0.31, 1.00,
+   };
+   float almost_black[16] = {
+      0.13, 0.13, 0.13, 0.90,
+      0.13, 0.13, 0.13, 0.90,
+      0.13, 0.13, 0.13, 0.90,
+      0.13, 0.13, 0.13, 0.90,
+   };
 
    float shadow_bg[16]=  {
       0.00, 0.00, 0.00, 0.00,
@@ -1193,26 +1192,26 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
       0.00, 0.00, 0.00, 0.20,
    };
 
-   uint32_t black_opaque_54        = 0x0000008a;		
-   uint32_t black_opaque_87        = 0x000000de;		
-   uint32_t white_opaque_70        = 0xffffffb3;		
+   uint32_t black_opaque_54        = 0x0000008a;
+   uint32_t black_opaque_87        = 0x000000de;
+   uint32_t white_opaque_70        = 0xffffffb3;
 
-   /* https://material.google.com/style/color.html#color-color-palette */		
-   /* Hex values converted to RGB normalized decimals, alpha set to 1 */		
-   float blue_500[16]              = {0};		
-   float blue_50[16]               = {0};		
-   float green_500[16]             = {0};		
-   float green_50[16]              = {0};		
-   float red_500[16]               = {0};		
-   float red_50[16]                = {0};		
-   float yellow_500[16]            = {0};		
-   float blue_grey_500[16]         = {0};		
-   float blue_grey_50[16]          = {0};		
-   float yellow_200[16]            = {0};		
-   float color_nv_header[16]       = {0};		
-   float color_nv_body[16]         = {0};		
-   float color_nv_accent[16]       = {0};		
-   float footer_bg_color_real[16]  = {0};		
+   /* https://material.google.com/style/color.html#color-color-palette */
+   /* Hex values converted to RGB normalized decimals, alpha set to 1 */
+   float blue_500[16]              = {0};
+   float blue_50[16]               = {0};
+   float green_500[16]             = {0};
+   float green_50[16]              = {0};
+   float red_500[16]               = {0};
+   float red_50[16]                = {0};
+   float yellow_500[16]            = {0};
+   float blue_grey_500[16]         = {0};
+   float blue_grey_50[16]          = {0};
+   float yellow_200[16]            = {0};
+   float color_nv_header[16]       = {0};
+   float color_nv_body[16]         = {0};
+   float color_nv_accent[16]       = {0};
+   float footer_bg_color_real[16]  = {0};
    float header_bg_color_real[16]  = {0};
 
    file_list_t *list               = NULL;
@@ -1229,16 +1228,16 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
    bool libretro_running           = video_info->libretro_running;
 
    /* Default is blue theme */
-   float *header_bg_color          = NULL;		
-   float *highlighted_entry_color  = NULL;		
-   float *footer_bg_color          = NULL;		
-   float *body_bg_color            = NULL;		
-   float *active_tab_marker_color  = NULL;		
+   float *header_bg_color          = NULL;
+   float *highlighted_entry_color  = NULL;
+   float *footer_bg_color          = NULL;
+   float *body_bg_color            = NULL;
+   float *active_tab_marker_color  = NULL;
    float *passive_tab_icon_color   = grey_bg;
 
    uint32_t sublabel_color         = 0x888888ff;
    uint32_t font_normal_color      = 0;
-   uint32_t font_hover_color       = 0;		
+   uint32_t font_hover_color       = 0;
    uint32_t font_header_color      = 0;
 
    if (!mui)
@@ -1612,7 +1611,7 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
 
       menu_display_draw_quad(0, 0, width, height, width, height, &black_bg[0]);
       snprintf(msg, sizeof(msg), "%s\n%s", label, str);
-   
+
       mui_render_messagebox(mui, video_info,
                msg, &body_bg_color[0], font_hover_color);
    }
@@ -1623,7 +1622,7 @@ static void mui_frame(void *data, video_frame_info_t *video_info)
 
       mui_render_messagebox(mui, video_info,
                mui->box_message, &body_bg_color[0], font_hover_color);
-      
+
       free(mui->box_message);
       mui->box_message    = NULL;
    }
@@ -1894,8 +1893,8 @@ static void mui_context_reset(void *data, bool is_threaded)
    menu_display_allocate_white_texture();
    mui_context_reset_textures(mui);
 
-   if (path_file_exists(settings->paths.path_menu_wallpaper))
-      task_push_image_load(settings->paths.path_menu_wallpaper, 
+   if (filestream_exists(settings->paths.path_menu_wallpaper))
+      task_push_image_load(settings->paths.path_menu_wallpaper,
             menu_display_handle_wallpaper_upload, NULL);
 }
 
@@ -2047,7 +2046,7 @@ static int mui_list_push(void *data, void *userdata,
             }
 
             if (frontend_driver_parse_drive_list(info->list, true) != 0)
-               menu_entries_append_enum(info->list, "/",          
+               menu_entries_append_enum(info->list, "/",
                      msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
                      MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
                      MENU_SETTING_ACTION, 0, 0);
@@ -2065,6 +2064,7 @@ static int mui_list_push(void *data, void *userdata,
          break;
       case DISPLAYLIST_MAIN_MENU:
          {
+            settings_t   *settings      = config_get_ptr();
             rarch_system_info_t *system = runloop_get_system_info();
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
@@ -2085,8 +2085,11 @@ static int mui_list_push(void *data, void *userdata,
             if (frontend_driver_has_fork())
 #endif
             {
-               entry.enum_idx      = MENU_ENUM_LABEL_CORE_LIST;
-               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+               if (settings->bools.menu_show_load_core)
+               {
+                  entry.enum_idx      = MENU_ENUM_LABEL_CORE_LIST;
+                  menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+               }
             }
 
             if (system->load_no_content)
@@ -2095,12 +2098,17 @@ static int mui_list_push(void *data, void *userdata,
                menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
             }
 
+            if (settings->bools.menu_show_load_content)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_LOAD_CONTENT_LIST;
+               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            }
 
-            entry.enum_idx      = MENU_ENUM_LABEL_LOAD_CONTENT_LIST;
-            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
-
-            entry.enum_idx      = MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY;
-            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            if (settings->bools.menu_content_show_history)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY;
+               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            }
 
 #if defined(HAVE_NETWORKING)
 #ifdef HAVE_LAKKA
@@ -2117,27 +2125,42 @@ static int mui_list_push(void *data, void *userdata,
             }
 #endif
 
-            entry.enum_idx      = MENU_ENUM_LABEL_NETPLAY;
-            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            if (settings->bools.menu_content_show_netplay)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_NETPLAY;
+               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            }
 #endif
-            entry.enum_idx      = MENU_ENUM_LABEL_INFORMATION_LIST;
-            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            if (settings->bools.menu_show_information)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_INFORMATION_LIST;
+               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            }
 #ifndef HAVE_DYNAMIC
             entry.enum_idx      = MENU_ENUM_LABEL_RESTART_RETROARCH;
             menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 #endif
-            entry.enum_idx      = MENU_ENUM_LABEL_CONFIGURATIONS_LIST;
-            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            if (settings->bools.menu_show_configurations)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_CONFIGURATIONS_LIST;
+               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            }
 
-            entry.enum_idx      = MENU_ENUM_LABEL_HELP_LIST;
-            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            if (settings->bools.menu_show_help)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_HELP_LIST;
+               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            }
 #if !defined(IOS)
             entry.enum_idx      = MENU_ENUM_LABEL_QUIT_RETROARCH;
             menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 #endif
 #if defined(HAVE_LAKKA)
-            entry.enum_idx      = MENU_ENUM_LABEL_REBOOT;
-            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            if (settings->bools.menu_show_reboot)
+            {
+               entry.enum_idx      = MENU_ENUM_LABEL_REBOOT;
+               menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+            }
 
             entry.enum_idx      = MENU_ENUM_LABEL_SHUTDOWN;
             menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
@@ -2279,9 +2302,9 @@ static int mui_pointer_up(void *userdata,
    return 0;
 }
 
-/* The menu system can insert menu entries on the fly. 
- * It is used in the shaders UI, the wifi UI, 
- * the netplay lobby, etc. 
+/* The menu system can insert menu entries on the fly.
+ * It is used in the shaders UI, the wifi UI,
+ * the netplay lobby, etc.
  *
  * This function allocates the mui_node_t
  *for the new entry. */
@@ -2599,7 +2622,7 @@ static void mui_list_insert(void *userdata,
                      node->texture_switch2_index = MUI_TEXTURE_UPDATER;
                      node->texture_switch2_set = true;
                   }
-            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY)) || 
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE))
                   )
             {

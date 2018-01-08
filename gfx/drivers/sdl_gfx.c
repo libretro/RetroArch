@@ -152,7 +152,7 @@ static void sdl_render_msg(sdl_video_t *vid, SDL_Surface *buffer,
 
       base_x = msg_base_x + glyph->draw_offset_x;
       base_y = msg_base_y + glyph->draw_offset_y;
-      src    = atlas->buffer + glyph->atlas_offset_x 
+      src    = atlas->buffer + glyph->atlas_offset_x
          + glyph->atlas_offset_y * atlas->width;
 
       if (base_x < 0)
@@ -466,11 +466,10 @@ static void sdl_apply_state_changes(void *data)
    (void)data;
 }
 
-#ifdef HAVE_MENU
 static void sdl_set_texture_frame(void *data, const void *frame, bool rgb32,
       unsigned width, unsigned height, float alpha)
 {
-   enum scaler_pix_fmt format = rgb32 
+   enum scaler_pix_fmt format = rgb32
       ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGBA4444;
    sdl_video_t           *vid = (sdl_video_t*)data;
 
@@ -499,6 +498,8 @@ static void sdl_set_texture_enable(void *data, bool state, bool full_screen)
    vid->menu.active = state;
 }
 
+
+#ifdef HAVE_MENU
 static void sdl_show_mouse(void *data, bool state)
 {
    (void)data;
@@ -530,16 +531,12 @@ static const video_poke_interface_t sdl_poke_interface = {
    NULL, /* get_proc_address */
    sdl_set_aspect_ratio,
    sdl_apply_state_changes,
-#ifdef HAVE_MENU
    sdl_set_texture_frame,
-#endif
-#ifdef HAVE_MENU
    sdl_set_texture_enable,
    NULL,
+#ifdef HAVE_MENU
    sdl_show_mouse,
 #else
-   NULL,
-   NULL,
    NULL,
 #endif
    sdl_grab_mouse_toggle,
@@ -560,7 +557,7 @@ static bool sdl_gfx_set_shader(void *data,
    (void)type;
    (void)path;
 
-   return false; 
+   return false;
 }
 
 static void sdl_gfx_set_rotation(void *data, unsigned rotation)

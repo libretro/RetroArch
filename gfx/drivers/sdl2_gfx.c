@@ -178,7 +178,7 @@ static void sdl2_render_msg(sdl2_video_t *vid, const char *msg)
    {
       SDL_Rect src_rect, dst_rect;
       int off_x, off_y, tex_x, tex_y;
-      const struct font_glyph *gly = 
+      const struct font_glyph *gly =
          vid->font_driver->get_glyph(vid->font_data, (uint8_t)*msg);
 
       if (!gly)
@@ -292,7 +292,7 @@ static void sdl_refresh_viewport(sdl2_video_t *vid)
             vid->video.force_aspect);
    else if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
-      const struct video_viewport *custom = 
+      const struct video_viewport *custom =
          (const struct video_viewport*)video_viewport_get_custom();
 
       vid->vp.x = custom->x;
@@ -672,8 +672,8 @@ static void sdl2_poke_apply_state_changes(void *data)
    vid->should_resize = true;
 }
 
-#ifdef HAVE_MENU
-static void sdl2_poke_set_texture_frame(void *data, const void *frame, bool rgb32,
+static void sdl2_poke_set_texture_frame(void *data,
+      const void *frame, bool rgb32,
       unsigned width, unsigned height, float alpha)
 {
    if (frame)
@@ -687,14 +687,16 @@ static void sdl2_poke_set_texture_frame(void *data, const void *frame, bool rgb3
    }
 }
 
-static void sdl2_poke_texture_enable(void *data, bool enable, bool full_screen)
+static void sdl2_poke_texture_enable(void *data,
+      bool enable, bool full_screen)
 {
-   sdl2_video_t *vid = (sdl2_video_t*)data;
+   sdl2_video_t *vid   = (sdl2_video_t*)data;
 
-   vid->menu.active = enable;
+   if (vid)
+      vid->menu.active = enable;
 }
 
-static void sdl2_poke_set_osd_msg(void *data, 
+static void sdl2_poke_set_osd_msg(void *data,
       video_frame_info_t *video_info,
       const char *msg,
       const void *params, void *font)
@@ -704,6 +706,7 @@ static void sdl2_poke_set_osd_msg(void *data,
    RARCH_LOG("[SDL2]: OSD MSG: %s\n", msg);
 }
 
+#ifdef HAVE_MENU
 static void sdl2_show_mouse(void *data, bool state)
 {
    (void)data;
@@ -731,16 +734,13 @@ static video_poke_interface_t sdl2_video_poke_interface = {
    NULL, /* get_proc_address */
    sdl2_poke_set_aspect_ratio,
    sdl2_poke_apply_state_changes,
-#ifdef HAVE_MENU
    sdl2_poke_set_texture_frame,
    sdl2_poke_texture_enable,
    sdl2_poke_set_osd_msg,
+#ifdef HAVE_MENU
    sdl2_show_mouse,
    sdl2_grab_mouse_toggle,
 #else
-   NULL,
-   NULL,
-   NULL,
    NULL,
    NULL,
 #endif
@@ -760,7 +760,7 @@ static bool sdl2_gfx_set_shader(void *data,
    (void)type;
    (void)path;
 
-   return false; 
+   return false;
 }
 
 video_driver_t video_sdl2 = {

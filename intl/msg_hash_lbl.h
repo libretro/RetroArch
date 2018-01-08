@@ -1161,6 +1161,12 @@ MSG_HASH(MENU_ENUM_LABEL_WIFI_SETTINGS,
       "wifi_settings")
 MSG_HASH(MENU_ENUM_LABEL_XMB_ALPHA_FACTOR,
       "xmb_alpha_factor")
+MSG_HASH(MENU_ENUM_LABEL_MENU_FONT_COLOR_RED,
+      "menu_font_color_red")
+MSG_HASH(MENU_ENUM_LABEL_MENU_FONT_COLOR_GREEN,
+      "menu_font_color_green")
+MSG_HASH(MENU_ENUM_LABEL_MENU_FONT_COLOR_BLUE,
+      "menu_font_color_blue")
 MSG_HASH(MENU_ENUM_LABEL_XMB_FONT,
       "xmb_font")
 MSG_HASH(MENU_ENUM_LABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
@@ -1173,24 +1179,24 @@ MSG_HASH(MENU_ENUM_LABEL_XMB_SCALE_FACTOR,
       "xmb_scale_factor")
 MSG_HASH(MENU_ENUM_LABEL_XMB_SHADOWS_ENABLE,
       "xmb_shadows_enable")
-MSG_HASH(MENU_ENUM_LABEL_XMB_SHOW_HISTORY,
-      "xmb_show_history")
-MSG_HASH(MENU_ENUM_LABEL_XMB_SHOW_ADD,
-      "xmb_show_add")
-MSG_HASH(MENU_ENUM_LABEL_XMB_SHOW_FAVORITES,
-      "xmb_show_favorites")
-MSG_HASH(MENU_ENUM_LABEL_XMB_SHOW_IMAGES,
-      "xmb_show_images")
-MSG_HASH(MENU_ENUM_LABEL_XMB_SHOW_MUSIC,
-      "xmb_show_music")
-MSG_HASH(MENU_ENUM_LABEL_XMB_SHOW_SETTINGS,
-      "xmb_show_settings")
-MSG_HASH(MENU_ENUM_LABEL_XMB_SHOW_SETTINGS_PASSWORD,
-      "xmb_show_settings_password")
-MSG_HASH(MENU_ENUM_LABEL_XMB_SHOW_VIDEO,
-      "xmb_show_video")
-MSG_HASH(MENU_ENUM_LABEL_XMB_SHOW_NETPLAY,
-      "xmb_show_netplay")
+MSG_HASH(MENU_ENUM_LABEL_CONTENT_SHOW_HISTORY,
+      "content_show_history")
+MSG_HASH(MENU_ENUM_LABEL_CONTENT_SHOW_ADD,
+      "content_show_add")
+MSG_HASH(MENU_ENUM_LABEL_CONTENT_SHOW_FAVORITES,
+      "content_show_favorites")
+MSG_HASH(MENU_ENUM_LABEL_CONTENT_SHOW_IMAGES,
+      "content_show_images")
+MSG_HASH(MENU_ENUM_LABEL_CONTENT_SHOW_MUSIC,
+      "content_show_music")
+MSG_HASH(MENU_ENUM_LABEL_CONTENT_SHOW_SETTINGS,
+      "content_show_settings")
+MSG_HASH(MENU_ENUM_LABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
+      "content_show_settings_password")
+MSG_HASH(MENU_ENUM_LABEL_CONTENT_SHOW_VIDEO,
+      "content_show_video")
+MSG_HASH(MENU_ENUM_LABEL_CONTENT_SHOW_NETPLAY,
+      "content_show_netplay")
 MSG_HASH(MENU_ENUM_LABEL_XMB_THEME,
       "xmb_theme")
 MSG_HASH(MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
@@ -1377,3 +1383,7 @@ MSG_HASH(MENU_ENUM_LABEL_FRAMECOUNT_SHOW,
       "framecount_show")
 MSG_HASH(MENU_ENUM_LABEL_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
       "automatically_add_content_to_playlist")
+MSG_HASH(MENU_ENUM_LABEL_VIDEO_WINDOW_OPACITY,
+      "video_window_opacity")
+MSG_HASH(MENU_ENUM_LABEL_AUDIO_RESAMPLER_QUALITY,
+      "audio_resampler_quality")

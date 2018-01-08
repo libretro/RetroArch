@@ -25,6 +25,9 @@
 #include <dynamic/dylib.h>
 #include <string/stdstring.h>
 #include <retro_assert.h>
+#include <libretro.h>
+#define VFS_FRONTEND
+#include <vfs/vfs_implementation.h>
 
 #include <features/features_cpu.h>
 
@@ -51,6 +54,7 @@
 #include "driver.h"
 #include "performance_counters.h"
 #include "gfx/video_driver.h"
+#include "led/led_driver.h"
 
 #include "cores/internal_cores.h"
 #include "frontend/frontend_driver.h"
@@ -199,11 +203,11 @@ static void libretro_get_environment_info(void (*func)(retro_environment_t),
    /* load_no_content gets set in this callback. */
    func(environ_cb_get_system_info);
 
-   /* It's possible that we just set get_system_info callback 
+   /* It's possible that we just set get_system_info callback
     * to the currently running core.
     *
     * Make sure we reset it to the actual environment callback.
-    * Ignore any environment callbacks here in case we're running 
+    * Ignore any environment callbacks here in case we're running
     * on the non-current core. */
    ignore_environment_cb = true;
    func(rarch_environment_cb);
@@ -339,11 +343,11 @@ bool libretro_get_system_info(const char *path,
       /* load_no_content gets set in this callback. */
       retro_set_environment(environ_cb_get_system_info);
 
-      /* It's possible that we just set get_system_info callback 
+      /* It's possible that we just set get_system_info callback
        * to the currently running core.
        *
        * Make sure we reset it to the actual environment callback.
-       * Ignore any environment callbacks here in case we're running 
+       * Ignore any environment callbacks here in case we're running
        * on the non-current core. */
       ignore_environment_cb = true;
       retro_set_environment(rarch_environment_cb);
@@ -712,11 +716,11 @@ static size_t mmap_add_bits_down(size_t n)
    n |= n >>  4;
    n |= n >>  8;
    n |= n >> 16;
-   
+
    /* double shift to avoid warnings on 32bit (it's dead code, but compilers suck) */
    if (sizeof(size_t) > 4)
       n |= n >> 16 >> 16;
-   
+
    return n;
 }
 
@@ -730,7 +734,7 @@ static size_t mmap_inflate(size_t addr, size_t mask)
       addr       = ((addr & ~tmp) << 1) | (addr & tmp);
       mask       = mask & (mask - 1);
    }
-   
+
    return addr;
 }
 
@@ -742,7 +746,7 @@ static size_t mmap_reduce(size_t addr, size_t mask)
       addr       = (addr & tmp) | ((addr >> 1) & ~tmp);
       mask       = (mask & (mask - 1)) >> 1;
    }
-   
+
    return addr;
 }
 
@@ -757,7 +761,7 @@ static bool mmap_preprocess_descriptors(rarch_memory_descriptor_t *first, unsign
    size_t                      top_addr = 1;
    rarch_memory_descriptor_t *desc      = NULL;
    const rarch_memory_descriptor_t *end = first + count;
-   
+
    for (desc = first; desc < end; desc++)
    {
       if (desc->core.select != 0)
@@ -765,43 +769,43 @@ static bool mmap_preprocess_descriptors(rarch_memory_descriptor_t *first, unsign
       else
          top_addr |= desc->core.start + desc->core.len - 1;
    }
-   
+
    top_addr = mmap_add_bits_down(top_addr);
-   
+
    for (desc = first; desc < end; desc++)
    {
       if (desc->core.select == 0)
       {
          if (desc->core.len == 0)
             return false;
-         
+
          if ((desc->core.len & (desc->core.len - 1)) != 0)
             return false;
-         
+
          desc->core.select = top_addr & ~mmap_inflate(mmap_add_bits_down(desc->core.len - 1),
                desc->core.disconnect);
       }
-      
+
       if (desc->core.len == 0)
          desc->core.len = mmap_add_bits_down(mmap_reduce(top_addr & ~desc->core.select,
                   desc->core.disconnect)) + 1;
-      
+
       if (desc->core.start & ~desc->core.select)
          return false;
-       
+
       while (mmap_reduce(top_addr & ~desc->core.select, desc->core.disconnect) >> 1 > desc->core.len - 1)
          desc->core.disconnect |= mmap_highest_bit(top_addr & ~desc->core.select & ~desc->core.disconnect);
-      
+
       desc->disconnect_mask = mmap_add_bits_down(desc->core.len - 1);
       desc->core.disconnect &= desc->disconnect_mask;
-      
+
       while ((~desc->disconnect_mask) >> 1 & desc->core.disconnect)
       {
          desc->disconnect_mask >>= 1;
          desc->core.disconnect &= desc->disconnect_mask;
       }
    }
-   
+
    return true;
 }
 
@@ -942,7 +946,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
    unsigned p;
    settings_t         *settings = config_get_ptr();
    rarch_system_info_t *system  = runloop_get_system_info();
-   
+
    if (ignore_environment_cb)
       return false;
 
@@ -1238,7 +1242,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       {
          struct retro_hw_render_callback *cb =
             (struct retro_hw_render_callback*)data;
-         struct retro_hw_render_callback *hwr = 
+         struct retro_hw_render_callback *hwr =
             video_driver_get_hw_context();
 
          RARCH_LOG("Environ SET_HW_RENDER.\n");
@@ -1253,7 +1257,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          cb->get_proc_address        = video_driver_get_proc_address;
 
          /* Old ABI. Don't copy garbage. */
-         if (cmd & RETRO_ENVIRONMENT_EXPERIMENTAL) 
+         if (cmd & RETRO_ENVIRONMENT_EXPERIMENTAL)
             memcpy(hwr,
                   cb, offsetof(struct retro_hw_render_callback, stencil));
          else
@@ -1392,7 +1396,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          cb->get_cpu_features = cpu_features_get;
          cb->get_perf_counter = cpu_features_get_perf_counter;
 
-         cb->perf_register    = performance_counter_register; 
+         cb->perf_register    = performance_counter_register;
          cb->perf_start       = core_performance_counter_start;
          cb->perf_stop        = core_performance_counter_stop;
          cb->perf_log         = retro_perf_log;
@@ -1494,7 +1498,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          }
          break;
       }
-      
+
       case RETRO_ENVIRONMENT_SET_MEMORY_MAPS:
       {
          if (system)
@@ -1575,9 +1579,9 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       {
          const struct retro_game_geometry *in_geom = NULL;
          struct retro_game_geometry *geom = NULL;
-         struct retro_system_av_info *av_info = 
+         struct retro_system_av_info *av_info =
             video_viewport_get_system_av_info();
-         
+
          if (av_info)
             geom = (struct retro_game_geometry*)&av_info->geometry;
 
@@ -1617,7 +1621,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE:
          return video_driver_get_hw_render_interface(
                (const struct retro_hw_render_interface**)data);
-      
+
       case RETRO_ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS:
 #ifdef HAVE_CHEEVOS
          {
@@ -1649,8 +1653,43 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          core_set_shared_context = true;
          break;
       }
+ 
+      case RETRO_ENVIRONMENT_GET_VFS_INTERFACE:
+      {
+         const uint32_t supported_vfs_version = 1;
+         static struct retro_vfs_interface vfs_iface =
+         {
+            retro_vfs_file_get_path_impl,
+            retro_vfs_file_open_impl,
+            retro_vfs_file_close_impl,
+            retro_vfs_file_size_impl,
+            retro_vfs_file_tell_impl,
+            retro_vfs_file_seek_impl,
+            retro_vfs_file_read_impl,
+            retro_vfs_file_write_impl,
+            retro_vfs_file_flush_impl,
+            retro_vfs_file_remove_impl
+         };
 
-      /* Default */
+         struct retro_vfs_interface_info *vfs_iface_info = (struct retro_vfs_interface_info *) data;
+         if (vfs_iface_info->required_interface_version <= supported_vfs_version)
+         {
+            vfs_iface_info->required_interface_version = supported_vfs_version;
+            vfs_iface_info->iface                      = &vfs_iface;
+         }
+
+         break;
+      }
+
+      case RETRO_ENVIRONMENT_GET_LED_INTERFACE:
+      {
+         struct retro_led_interface *ledintf =
+            (struct retro_led_interface *)data;
+         if (ledintf)
+            ledintf->set_led_state = led_driver_set_led;
+      }
+      break;
+      
       default:
          RARCH_LOG("Environ UNSUPPORTED (#%u).\n", cmd);
          return false;

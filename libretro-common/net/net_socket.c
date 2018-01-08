@@ -30,7 +30,7 @@ int socket_init(void **address, uint16_t port, const char *server, enum socket_t
    struct addrinfo hints = {0};
    struct addrinfo **addrinfo = (struct addrinfo**)address;
    struct addrinfo *addr = NULL;
-   
+
    if (!network_init())
       goto error;
 
@@ -132,7 +132,7 @@ bool socket_nonblock(int fd)
 }
 
 int socket_close(int fd)
-{ 
+{
 #if defined(_WIN32) && !defined(_XBOX360)
    /* WinSock has headers from the stone age. */
    return closesocket(fd);
@@ -236,7 +236,7 @@ int socket_connect(int fd, void *data, bool timeout_enable)
 {
    struct addrinfo *addr = (struct addrinfo*)data;
 
-#if !defined(_WIN32) && !defined(VITA) && !defined(WIIU)
+#if !defined(_WIN32) && !defined(VITA) && !defined(WIIU) && !defined(_3DS)
    if (timeout_enable)
    {
       struct timeval timeout;

@@ -21,8 +21,11 @@ CLIB=-lc
 PTHREADLIB=-lpthread
 SOCKETLIB=-lc
 SOCKETHEADER=
+INCLUDES='usr/include usr/local/include'
 
 if [ "$OS" = 'BSD' ]; then
+   [ -d /usr/local/include ] && add_dirs INCLUDE /usr/local/include
+   [ -d /usr/local/lib ] && add_dirs LIBRARY /usr/local/lib
    DYLIB=-lc;
 elif [ "$OS" = 'Haiku' ]; then
    DYLIB=""
@@ -46,7 +49,7 @@ if [ "$HAVE_VIDEOCORE" != "no" ]; then
    check_pkgconf VC_TEST bcm_host
 
    # use fallback if pkgconfig is not available
-   if [ ! "$VC_TEST_LIBS" ]; then
+   if [ -z "$VC_TEST_LIBS" ]; then
       [ -d /opt/vc/lib ] && add_dirs LIBRARY /opt/vc/lib /opt/vc/lib/GL
       check_lib '' VIDEOCORE -lbcm_host bcm_host_init "-lvcos -lvchiq_arm"
    else
@@ -56,10 +59,11 @@ fi
 
 if [ "$HAVE_VIDEOCORE" = 'yes' ]; then
    HAVE_OPENGLES='auto'
-   VC_PREFIX="brcm"
+   VC_PREFIX='brcm'
+   INCLUDES="${INCLUDES} opt/vc/include"
 
    # use fallback if pkgconfig is not available
-   if [ ! "$VC_TEST_LIBS" ]; then
+   if [ -z "$VC_TEST_LIBS" ]; then
       [ -d /opt/vc/include ] && add_dirs INCLUDE /opt/vc/include
       [ -d /opt/vc/include/interface/vcos/pthreads ] && add_dirs INCLUDE /opt/vc/include/interface/vcos/pthreads
       [ -d /opt/vc/include/interface/vmcs_host/linux ] && add_dirs INCLUDE /opt/vc/include/interface/vmcs_host/linux
@@ -132,7 +136,6 @@ fi
 
 if [ "$HAVE_EXYNOS" != "no" ]; then
    check_pkgconf EXYNOS libdrm_exynos
-   check_pkgconf DRM libdrm
 fi
 
 if [ "$HAVE_DISPMANX" != "no" ]; then
@@ -195,13 +198,11 @@ if [ "$HAVE_NETWORKING" = 'yes' ]; then
    HAVE_NETWORK_CMD=yes
    HAVE_NETWORKGAMEPAD=yes
 
-   if [ "$HAVE_MINIUPNPC" != "no" ]; then
-      check_lib '' MINIUPNPC "-lminiupnpc"
+   if [ "$HAVE_MINIUPNPC" = 'no' ]; then
+      HAVE_BUILTINMINIUPNPC=no
    fi
 
-   if [ "$HAVE_BUILTINMINIUPNPC" = "yes" ]; then
-      HAVE_MINIUPNPC='yes'
-   fi
+   check_lib '' MINIUPNPC '-lminiupnpc'
 else
    die : 'Warning: All networking features have been disabled.'
    HAVE_KEYMAPPER='no'
@@ -225,13 +226,18 @@ if [ "$HAVE_DYLIB" = 'no' ] && [ "$HAVE_DYNAMIC" = 'yes' ]; then
 fi
 
 check_pkgconf ALSA alsa
+check_val '' ALSA -lasound alsa
 check_lib '' CACA -lcaca
-check_header OSS sys/soundcard.h
-check_header OSS_BSD soundcard.h
-check_lib '' OSS_LIB -lossaudio
+
+if [ "$HAVE_OSS" != 'no' ]; then
+   check_header OSS sys/soundcard.h
+   check_header OSS_BSD soundcard.h
+   check_lib '' OSS_LIB -lossaudio
+fi
 
 if [ "$OS" = 'Linux' ]; then
    HAVE_TINYALSA=yes
+   HAVE_RPILED=yes
 fi
 
 if [ "$OS" = 'Darwin' ]; then
@@ -255,17 +261,27 @@ check_pkgconf PULSE libpulse
 check_pkgconf SDL sdl 1.2.10
 check_pkgconf SDL2 sdl2 2.0.0
 
-if [ "$HAVE_SDL2" = 'yes' ]; then
-   if [ "$HAVE_SDL2" = 'yes' ] && [ "$HAVE_SDL" = 'yes' ]; then
-      die : 'Notice: SDL drivers will be replaced by SDL2 ones.'
-      HAVE_SDL=no
-   elif [ "$HAVE_SDL2" = 'no' ]; then
-      die : 'Warning: SDL2 not found, skipping.'
-      HAVE_SDL2=no
-   fi
+check_val '' JACK -ljack
+check_val '' PULSE -lpulse
+check_val '' SDL -lSDL SDL
+check_val '' SDL2 -lSDL2 SDL2
+
+if [ "$HAVE_SDL2" = 'yes' ] && [ "$HAVE_SDL" = 'yes' ]; then
+   die : 'Notice: SDL drivers will be replaced by SDL2 ones.'
+   HAVE_SDL=no
+fi
+
+if [ "$HAVE_FLAC" = 'no' ]; then
+   HAVE_BUILTINFLAC=no
+elif [ "$HAVE_BUILTINFLAC" = 'yes' ]; then
+   HAVE_FLAC=yes
+else
+   check_pkgconf FLAC flac
+   check_val '' FLAC '-lFLAC'
 fi
 
 check_pkgconf LIBUSB libusb-1.0 1.0.13
+check_val '' LIBUSB -lusb-1.0 libusb-1.0
 
 if [ "$OS" = 'Win32' ]; then
    check_lib '' DINPUT -ldinput8
@@ -311,27 +327,38 @@ if [ "$HAVE_OPENGL" != 'no' ] && [ "$HAVE_OPENGLES" != 'yes' ]; then
    fi
 fi
 
-if [ "$HAVE_ZLIB" != 'no' ]; then
+if [ "$HAVE_ZLIB" = 'no' ]; then
+   HAVE_BUILTINZLIB=no
+elif [ "$HAVE_BUILTINZLIB" = 'yes' ]; then
+   HAVE_ZLIB=yes
+else
    check_pkgconf ZLIB zlib
    check_val '' ZLIB '-lz'
 fi
 
-if [ "$HAVE_THREADS" != 'no' ]; then
-   if [ "$HAVE_FFMPEG" != 'no' ]; then
-      check_pkgconf AVCODEC libavcodec 54
-      check_pkgconf AVFORMAT libavformat 54
-      check_pkgconf AVDEVICE libavdevice
-      check_pkgconf SWRESAMPLE libswresample
-      check_pkgconf AVRESAMPLE libavresample
-      check_pkgconf AVUTIL libavutil 51
-      check_pkgconf SWSCALE libswscale 2.1
-      check_header AV_CHANNEL_LAYOUT libavutil/channel_layout.h
+if [ "$HAVE_THREADS" != 'no' ] && [ "$HAVE_FFMPEG" != 'no' ]; then
+   check_pkgconf AVCODEC libavcodec 54
+   check_pkgconf AVFORMAT libavformat 54
+   check_pkgconf AVDEVICE libavdevice
+   check_pkgconf SWRESAMPLE libswresample
+   check_pkgconf AVRESAMPLE libavresample
+   check_pkgconf AVUTIL libavutil 51
+   check_pkgconf SWSCALE libswscale 2.1
 
-      HAVE_FFMPEG='yes'
-      if [ "$HAVE_AVCODEC" = 'no' ] || [ "$HAVE_SWRESAMPLE" = 'no' ] || [ "$HAVE_AVFORMAT" = 'no' ] || [ "$HAVE_AVUTIL" = 'no' ] || [ "$HAVE_SWSCALE" = 'no' ]; then
-         HAVE_FFMPEG='no'
-         die : 'Notice: FFmpeg built-in support disabled due to missing or unsuitable packages.'
-      fi
+   check_val '' AVCODEC -lavcodec
+   check_val '' AVFORMAT -lavformat
+   check_val '' AVDEVICE -lavdevice
+   check_val '' SWRESAMPLE -lswresample
+   check_val '' AVRESAMPLE -lavresample
+   check_val '' AVUTIL -lavutil
+   check_val '' SWSCALE -lswscale
+
+   check_header AV_CHANNEL_LAYOUT libavutil/channel_layout.h
+
+   HAVE_FFMPEG='yes'
+   if [ "$HAVE_AVCODEC" = 'no' ] || [ "$HAVE_SWRESAMPLE" = 'no' ] || [ "$HAVE_AVFORMAT" = 'no' ] || [ "$HAVE_AVUTIL" = 'no' ] || [ "$HAVE_SWSCALE" = 'no' ]; then
+      HAVE_FFMPEG='no'
+      die : 'Notice: FFmpeg built-in support disabled due to missing or unsuitable packages.'
    fi
 else
    die : 'Notice: Not building with threading support. Will skip FFmpeg.'
@@ -345,6 +372,9 @@ fi
 if [ "$HAVE_KMS" != "no" ]; then
    check_pkgconf GBM gbm 9.0
    check_pkgconf DRM libdrm
+   check_val '' GBM -lgbm
+   check_val '' DRM -ldrm libdrm
+
    if [ "$HAVE_GBM" = "yes" ] && [ "$HAVE_DRM" = "yes" ] && [ "$HAVE_EGL" = "yes" ]; then
       HAVE_KMS=yes
    elif [ "$HAVE_KMS" = "yes" ]; then
@@ -355,6 +385,7 @@ if [ "$HAVE_KMS" != "no" ]; then
 fi
 
 check_pkgconf LIBXML2 libxml-2.0
+check_val '' LIBXML2 -lxml2 libxml2
 
 if [ "$HAVE_EGL" = "yes" ]; then
    if [ "$HAVE_OPENGLES" != "no" ]; then
@@ -370,10 +401,8 @@ if [ "$HAVE_EGL" = "yes" ]; then
          fi
       fi
    fi
-   if [ "$HAVE_VG" != "no" ]; then
-      check_pkgconf VG "$VC_PREFIX"vg
-      check_val '' VG "-l${VC_PREFIX}OpenVG $EXTRA_GL_LIBS"
-   fi
+   check_pkgconf VG "$VC_PREFIX"vg
+   check_val '' VG "-l${VC_PREFIX}OpenVG $EXTRA_GL_LIBS"
 else
    HAVE_VG=no
    HAVE_OPENGLES=no
@@ -383,51 +412,58 @@ check_pkgconf V4L2 libv4l2
 check_pkgconf FREETYPE freetype2
 check_pkgconf X11 x11
 check_pkgconf XCB xcb
-
-if [ "$OS" != 'Darwin' ]; then
-   check_val '' X11 -lX11
-fi
-
 check_pkgconf WAYLAND wayland-egl
 check_pkgconf WAYLAND_CURSOR wayland-cursor
-
 check_pkgconf XKBCOMMON xkbcommon 0.3.2
 check_pkgconf DBUS dbus-1
 check_pkgconf XEXT xext
 check_pkgconf XF86VM xxf86vm
 
-if [ "$HAVE_X11" != "no" ]; then
-   check_val '' XEXT -lXext
-   check_val '' XF86VM -lXxf86vm
-else
+check_val '' V4L2 -lv4l2
+check_val '' FREETYPE -lfreetype freetype2
+check_val '' X11 -lX11
+check_val '' XCB -lxcb
+check_val '' WAYLAND '-lwayland-egl -lwayland-client'
+check_val '' WAYLAND_CURSOR -lwayland-cursor
+check_val '' XKBCOMMON -lxkbcommon
+check_val '' XEXT -lXext
+check_val '' XF86VM -lXxf86vm
+
+if [ "$HAVE_X11" = 'no' ]; then
    HAVE_XEXT=no; HAVE_XF86VM=no; HAVE_XINERAMA=no; HAVE_XSHM=no
 fi
 
 check_pkgconf XINERAMA xinerama
+check_val '' XINERAMA -lXinerama
+
 if [ "$HAVE_X11" = 'yes' ] && [ "$HAVE_XEXT" = 'yes' ] && [ "$HAVE_XF86VM" = 'yes' ]; then
    check_pkgconf XVIDEO xv
+   check_val '' XVIDEO -lXv
 else
    die : 'Notice: X11, Xext or xf86vm not present. Skipping X11 code paths.'
    HAVE_X11='no'
    HAVE_XVIDEO='no'
 fi
 
-if [ "$HAVE_UDEV" != "no" ]; then
-   check_pkgconf UDEV libudev
-   check_val '' UDEV "-ludev"
-fi
+check_pkgconf UDEV libudev
+check_val '' UDEV "-ludev"
 
 check_header XSHM X11/Xlib.h X11/extensions/XShm.h
-
 check_header PARPORT linux/parport.h
 check_header PARPORT linux/ppdev.h
 
 if [ "$OS" != 'Win32' ] && [ "$OS" != 'Linux' ]; then
    check_lib '' STRL "$CLIB" strlcpy
 fi
+
 check_lib '' STRCASESTR "$CLIB" strcasestr
 check_lib '' MMAP "$CLIB" mmap
-check_lib '' VULKAN -lvulkan vkCreateInstance
+
+if [ "$HAVE_VULKAN" != "no" ] && [ "$OS" = 'Win32' ]; then
+   HAVE_VULKAN=yes
+else
+   check_lib '' VULKAN -lvulkan vkCreateInstance
+fi
 
 check_pkgconf PYTHON python3
 

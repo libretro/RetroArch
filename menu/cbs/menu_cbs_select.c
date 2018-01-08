@@ -57,7 +57,7 @@ static int action_select_default(const char *path, const char *label, unsigned t
       menu_entry_free(&entry);
       return -1;
    }
-    
+
    if (cbs->setting)
    {
       switch (setting_get_type(cbs->setting))
@@ -80,7 +80,7 @@ static int action_select_default(const char *path, const char *label, unsigned t
             break;
       }
    }
-    
+
    if (action == MENU_ACTION_NOOP)
    {
        if (cbs->action_ok)
@@ -93,14 +93,14 @@ static int action_select_default(const char *path, const char *label, unsigned t
                action = MENU_ACTION_RIGHT;
        }
    }
-    
+
    if (action != MENU_ACTION_NOOP)
        ret = menu_entry_action(&entry, (unsigned)idx, action);
 
    menu_entry_free(&entry);
 
    task_queue_check();
-    
+
    return ret;
 }
 
@@ -148,16 +148,20 @@ static int action_select_input_desc(const char *path, const char *label, unsigne
    return action_right_input_desc(type, label, true);
 }
 
-static int action_select_input_desc_kbd(const char *path, const char *label, unsigned type,
+#ifdef HAVE_KEYMAPPER
+static int action_select_input_desc_kbd(const char *path,
+      const char *label, unsigned type,
    size_t idx)
 {
    return action_right_input_desc_kbd(type, label, true);
 }
+#endif
 
-static int action_select_netplay_connect_room(const char *path, const char *label, unsigned type,
-   size_t idx)
-{
 #ifdef HAVE_NETWORKING
+static int action_select_netplay_connect_room(const char *path,
+      const char *label, unsigned type,
+      size_t idx)
+{
    char tmp_hostname[4115];
 
    tmp_hostname[0] = '\0';
@@ -171,16 +175,16 @@ static int action_select_netplay_connect_room(const char *path, const char *labe
       snprintf(tmp_hostname,
             sizeof(tmp_hostname),
             "%s|%d",
-         netplay_room_list[idx - 3].mitm_address,
-         netplay_room_list[idx - 3].mitm_port);
+            netplay_room_list[idx - 3].mitm_address,
+            netplay_room_list[idx - 3].mitm_port);
    }
    else
    {
       snprintf(tmp_hostname,
             sizeof(tmp_hostname),
             "%s|%d",
-         netplay_room_list[idx - 3].address,
-         netplay_room_list[idx - 3].port);
+            netplay_room_list[idx - 3].address,
+            netplay_room_list[idx - 3].port);
    }
 
 #if 0
@@ -191,15 +195,12 @@ static int action_select_netplay_connect_room(const char *path, const char *labe
 #endif
 
    task_push_netplay_crc_scan(netplay_room_list[idx - 3].gamecrc,
-      netplay_room_list[idx - 3].gamename,
-      tmp_hostname, netplay_room_list[idx - 3].corename);
+         netplay_room_list[idx - 3].gamename,
+         tmp_hostname, netplay_room_list[idx - 3].corename);
 
-#else
-   return -1;
-
-#endif
    return 0;
 }
+#endif
 
 static int menu_cbs_init_bind_select_compare_type(
       menu_file_list_cbs_t *cbs, unsigned type)
@@ -269,7 +270,7 @@ int menu_cbs_init_bind_select(menu_file_list_cbs_t *cbs,
       BIND_ACTION_SELECT(cbs, action_select_netplay_connect_room);
       return 0;
    }
-#endif  
+#endif
 
    if (cbs->setting)
    {

@@ -16,7 +16,7 @@ void __lwp_queue_initialize(lwp_queue *queue,void *start_addr,u32 num_nodes,u32 
 	curr = __lwp_queue_head(queue);
 	queue->perm_null = NULL;
 	next = (lwp_node*)start_addr;
-	
+
 	while(count--) {
 		curr->next = next;
 		next->prev = curr;
@@ -31,7 +31,7 @@ lwp_node* __lwp_queue_get(lwp_queue *queue)
 {
 	u32 level;
 	lwp_node *ret = NULL;
-	
+
 	_CPU_ISR_Disable(level);
 	if(!__lwp_queue_isempty(queue)) {
 		ret	 = __lwp_queue_firstnodeI(queue);
@@ -43,7 +43,7 @@ lwp_node* __lwp_queue_get(lwp_queue *queue)
 void __lwp_queue_append(lwp_queue *queue,lwp_node *node)
 {
 	u32 level;
-	
+
 	_CPU_ISR_Disable(level);
 	__lwp_queue_appendI(queue,node);
 	_CPU_ISR_Restore(level);
@@ -52,7 +52,7 @@ void __lwp_queue_append(lwp_queue *queue,lwp_node *node)
 void __lwp_queue_extract(lwp_node *node)
 {
 	u32 level;
-	
+
 	_CPU_ISR_Disable(level);
 	__lwp_queue_extractI(node);
 	_CPU_ISR_Restore(level);
@@ -61,7 +61,7 @@ void __lwp_queue_extract(lwp_node *node)
 void __lwp_queue_insert(lwp_node *after,lwp_node *node)
 {
 	u32 level;
-	
+
 	_CPU_ISR_Disable(level);
 	__lwp_queue_insertI(after,node);
 	_CPU_ISR_Restore(level);

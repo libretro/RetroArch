@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  copyright (c) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -17,7 +17,9 @@
 #ifndef __GL_COMMON_H
 #define __GL_COMMON_H
 
+#include <boolean.h>
 #include <string.h>
+#include <retro_common_api.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -32,14 +34,124 @@
 #include "../font_driver.h"
 #include "../video_coord_array.h"
 #include "../video_driver.h"
-#include "../drivers/gl_symlinks.h"
+#include <glsym/glsym.h>
 
 RETRO_BEGIN_DECLS
 
-#define MAX_FENCES 4
+#if defined(HAVE_PSGL)
+#define RARCH_GL_FRAMEBUFFER GL_FRAMEBUFFER_OES
+#define RARCH_GL_FRAMEBUFFER_COMPLETE GL_FRAMEBUFFER_COMPLETE_OES
+#define RARCH_GL_COLOR_ATTACHMENT0 GL_COLOR_ATTACHMENT0_EXT
+#elif (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
+#define RARCH_GL_FRAMEBUFFER GL_FRAMEBUFFER_EXT
+#define RARCH_GL_FRAMEBUFFER_COMPLETE GL_FRAMEBUFFER_COMPLETE_EXT
+#define RARCH_GL_COLOR_ATTACHMENT0 GL_COLOR_ATTACHMENT0_EXT
+#else
+#define RARCH_GL_FRAMEBUFFER GL_FRAMEBUFFER
+#define RARCH_GL_FRAMEBUFFER_COMPLETE GL_FRAMEBUFFER_COMPLETE
+#define RARCH_GL_COLOR_ATTACHMENT0 GL_COLOR_ATTACHMENT0
+#endif
 
-#ifndef ARB_sync
-typedef struct __GLsync *GLsync;
+#if defined(HAVE_OPENGLES2) || defined(HAVE_OPENGLES3) || defined(HAVE_OPENGLES_3_1) || defined(HAVE_OPENGLES_3_2)
+#define RARCH_GL_RENDERBUFFER GL_RENDERBUFFER
+#if defined(HAVE_OPENGLES2)
+#define RARCH_GL_DEPTH24_STENCIL8 GL_DEPTH24_STENCIL8_OES
+#else
+#define RARCH_GL_DEPTH24_STENCIL8 GL_DEPTH24_STENCIL8
+#endif
+#define RARCH_GL_DEPTH_ATTACHMENT GL_DEPTH_ATTACHMENT
+#define RARCH_GL_STENCIL_ATTACHMENT GL_STENCIL_ATTACHMENT
+#elif (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
+#define RARCH_GL_RENDERBUFFER GL_RENDERBUFFER_EXT
+#define RARCH_GL_DEPTH24_STENCIL8 GL_DEPTH24_STENCIL8_EXT
+#define RARCH_GL_DEPTH_ATTACHMENT GL_DEPTH_ATTACHMENT_EXT
+#define RARCH_GL_STENCIL_ATTACHMENT GL_STENCIL_ATTACHMENT_EXT
+#elif defined(HAVE_PSGL)
+#define RARCH_GL_RENDERBUFFER GL_RENDERBUFFER_OES
+#define RARCH_GL_DEPTH24_STENCIL8 GL_DEPTH24_STENCIL8_SCE
+#define RARCH_GL_DEPTH_ATTACHMENT GL_DEPTH_ATTACHMENT_OES
+#define RARCH_GL_STENCIL_ATTACHMENT GL_STENCIL_ATTACHMENT_OES
+#else
+#define RARCH_GL_RENDERBUFFER GL_RENDERBUFFER
+#define RARCH_GL_DEPTH24_STENCIL8 GL_DEPTH24_STENCIL8
+#define RARCH_GL_DEPTH_ATTACHMENT GL_DEPTH_ATTACHMENT
+#define RARCH_GL_STENCIL_ATTACHMENT GL_STENCIL_ATTACHMENT
+#endif
+
+#if (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
+#define RARCH_GL_MAX_RENDERBUFFER_SIZE GL_MAX_RENDERBUFFER_SIZE_EXT
+#elif defined(HAVE_PSGL)
+#define RARCH_GL_MAX_RENDERBUFFER_SIZE GL_MAX_RENDERBUFFER_SIZE_OES
+#else
+#define RARCH_GL_MAX_RENDERBUFFER_SIZE GL_MAX_RENDERBUFFER_SIZE
+#endif
+
+#if defined(HAVE_PSGL)
+#define glGenerateMipmap glGenerateMipmapOES
+#endif
+
+#if defined(__APPLE__) || defined(HAVE_PSGL)
+#define GL_RGBA32F GL_RGBA32F_ARB
+#endif
+
+#if defined(HAVE_PSGL)
+#define RARCH_GL_INTERNAL_FORMAT32 GL_ARGB_SCE
+#define RARCH_GL_INTERNAL_FORMAT16 GL_RGB5 /* TODO: Verify if this is really 565 or just 555. */
+#define RARCH_GL_TEXTURE_TYPE32 GL_BGRA
+#define RARCH_GL_TEXTURE_TYPE16 GL_BGRA
+#define RARCH_GL_FORMAT32 GL_UNSIGNED_INT_8_8_8_8_REV
+#define RARCH_GL_FORMAT16 GL_RGB5
+#elif defined(HAVE_OPENGLES)
+/* Imgtec/SGX headers have this missing. */
+#ifndef GL_BGRA_EXT
+#define GL_BGRA_EXT 0x80E1
+#endif
+#ifndef GL_BGRA8_EXT
+#define GL_BGRA8_EXT 0x93A1
+#endif
+#ifdef IOS
+/* Stupid Apple */
+#define RARCH_GL_INTERNAL_FORMAT32 GL_RGBA
+#else
+#define RARCH_GL_INTERNAL_FORMAT32 GL_BGRA_EXT
+#endif
+#define RARCH_GL_INTERNAL_FORMAT16 GL_RGB
+#define RARCH_GL_TEXTURE_TYPE32 GL_BGRA_EXT
+#define RARCH_GL_TEXTURE_TYPE16 GL_RGB
+#define RARCH_GL_FORMAT32 GL_UNSIGNED_BYTE
+#define RARCH_GL_FORMAT16 GL_UNSIGNED_SHORT_5_6_5
+#else
+/* On desktop, we always use 32-bit. */
+#define RARCH_GL_INTERNAL_FORMAT32 GL_RGBA8
+#define RARCH_GL_INTERNAL_FORMAT16 GL_RGBA8
+#define RARCH_GL_TEXTURE_TYPE32 GL_BGRA
+#define RARCH_GL_TEXTURE_TYPE16 GL_BGRA
+#define RARCH_GL_FORMAT32 GL_UNSIGNED_INT_8_8_8_8_REV
+#define RARCH_GL_FORMAT16 GL_UNSIGNED_INT_8_8_8_8_REV
+
+/* GL_RGB565 internal format isn't in desktop GL
+ * until 4.1 core (ARB_ES2_compatibility).
+ * Check for this. */
+#ifndef GL_RGB565
+#define GL_RGB565 0x8D62
+#endif
+#define RARCH_GL_INTERNAL_FORMAT16_565 GL_RGB565
+#define RARCH_GL_TEXTURE_TYPE16_565 GL_RGB
+#define RARCH_GL_FORMAT16_565 GL_UNSIGNED_SHORT_5_6_5
+#endif
+
+#if defined(HAVE_OPENGLES2) /* TODO: Figure out exactly what. */
+#define NO_GL_CLAMP_TO_BORDER
+#endif
+
+#if defined(HAVE_OPENGLES)
+#ifndef GL_UNPACK_ROW_LENGTH
+#define GL_UNPACK_ROW_LENGTH  0x0CF2
+#endif
+
+#ifndef GL_SRGB_ALPHA_EXT
+#define GL_SRGB_ALPHA_EXT 0x8C42
+#endif
 #endif
 
 typedef struct gl
@@ -54,11 +166,7 @@ typedef struct gl
    bool fbo_inited;
    bool fbo_feedback_enable;
    bool hw_render_fbo_init;
-   bool hw_render_depth_init;
    bool has_fbo;
-   bool has_srgb_fbo_gles3;
-   bool has_fp_fbo;
-   bool has_srgb_fbo;
    bool hw_render_use;
    bool core_context_in_use;
 
@@ -71,7 +179,6 @@ typedef struct gl
    bool have_full_npot_support;
    bool have_mipmap;
 
-   bool egl_images;
    bool overlay_enable;
    bool overlay_full_screen;
    bool menu_texture_enable;
@@ -82,7 +189,6 @@ typedef struct gl
 
    int version_major;
    int version_minor;
-   int fbo_pass;
 
    GLuint tex_mag_filter;
    GLuint tex_min_filter;
@@ -91,13 +197,9 @@ typedef struct gl
    GLuint pbo;
    GLuint *overlay_tex;
    GLuint menu_texture;
-   GLuint vao;
    GLuint pbo_readback[4];
    GLuint texture[GFX_MAX_TEXTURES];
-   GLuint fbo[GFX_MAX_SHADERS];
-   GLuint fbo_texture[GFX_MAX_SHADERS];
    GLuint hw_render_fbo[GFX_MAX_TEXTURES];
-   GLuint hw_render_depth[GFX_MAX_TEXTURES];
 
    unsigned tex_index; /* For use with PREV. */
    unsigned textures;
@@ -110,7 +212,6 @@ typedef struct gl
    unsigned base_size; /* 2 or 4 */
    unsigned overlays;
    unsigned pbo_readback_index;
-   unsigned fence_count;
    unsigned last_width[GFX_MAX_TEXTURES];
    unsigned last_height[GFX_MAX_TEXTURES];
 
@@ -134,9 +235,7 @@ typedef struct gl
    video_info_t video_info;
    struct video_tex_info prev_info[GFX_MAX_TEXTURES];
    struct video_fbo_rect fbo_rect[GFX_MAX_SHADERS];
-   struct gfx_fbo_scale fbo_scale[GFX_MAX_SHADERS];
 
-   GLsync fences[MAX_FENCES];
    const gl_renderchain_driver_t *renderchain_driver;
    void *renderchain_data;
 } gl_t;

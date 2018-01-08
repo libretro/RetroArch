@@ -1,3 +1,4 @@
+#include <retro_common_api.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -214,7 +215,7 @@ void CORE_PREFIX(retro_init)(void)
 
    av_register_all();
 #if 0
-   /* FIXME: Occasionally crashes inside libavdevice 
+   /* FIXME: Occasionally crashes inside libavdevice
     * for some odd reason on reentrancy. Likely a libavdevice bug. */
    avdevice_register_all();
 #endif
@@ -272,7 +273,7 @@ void CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
 {
    static const struct retro_variable vars[] = {
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
-      { "ffmpeg_temporal_interp", "Temporal Interpolation; enabled|disabled" },
+      { "ffmpeg_temporal_interp", "Temporal Interpolation; disabled|enabled" },
 #ifdef HAVE_GL_FFT
       { "ffmpeg_fft_resolution", "FFT Resolution; 1280x720|1920x1080|2560x1440|3840x2160|640x360|320x180" },
       { "ffmpeg_fft_multisample", "FFT Multisample; 1x|2x|4x" },
@@ -548,7 +549,7 @@ void CORE_PREFIX(retro_run)(void)
 
    frame_cnt++;
 
-   /* Have to decode audio before video 
+   /* Have to decode audio before video
     * incase there are PTS fuckups due
     * to seeking. */
    if (audio_streams_num > 0)
@@ -679,20 +680,20 @@ void CORE_PREFIX(retro_run)(void)
 
          if (!temporal_interpolation)
             mix_factor = 1.0f;
-         
+
          glBindFramebuffer(GL_FRAMEBUFFER, hw_render.get_current_framebuffer());
          glClearColor(0, 0, 0, 1);
          glClear(GL_COLOR_BUFFER_BIT);
          glViewport(0, 0, media.width, media.height);
          glUseProgram(prog);
-         
+
          glUniform1f(mix_loc, mix_factor);
          glActiveTexture(GL_TEXTURE1);
          glBindTexture(GL_TEXTURE_2D, frames[1].tex);
          glActiveTexture(GL_TEXTURE0);
          glBindTexture(GL_TEXTURE_2D, frames[0].tex);
-         
-         
+
+
          glBindBuffer(GL_ARRAY_BUFFER, vbo);
          glVertexAttribPointer(vertex_loc, 2, GL_FLOAT, GL_FALSE,
                4 * sizeof(GLfloat), (const GLvoid*)(0 * sizeof(GLfloat)));
@@ -701,17 +702,17 @@ void CORE_PREFIX(retro_run)(void)
          glEnableVertexAttribArray(vertex_loc);
          glEnableVertexAttribArray(tex_loc);
          glBindBuffer(GL_ARRAY_BUFFER, 0);
-         
+
          glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
          glDisableVertexAttribArray(vertex_loc);
          glDisableVertexAttribArray(tex_loc);
-         
+
          glUseProgram(0);
          glActiveTexture(GL_TEXTURE1);
          glBindTexture(GL_TEXTURE_2D, 0);
          glActiveTexture(GL_TEXTURE0);
          glBindTexture(GL_TEXTURE_2D, 0);
-         
+
          CORE_PREFIX(video_cb)(RETRO_HW_FRAME_BUFFER_VALID,
                media.width, media.height, media.width * sizeof(uint32_t));
       }
@@ -731,10 +732,10 @@ void CORE_PREFIX(retro_run)(void)
       while (frames)
       {
          unsigned to_read = frames;
-         
+
          /* FFT size we use (1 << 11). Really shouldn't happen,
           * unless we use a crazy high sample rate. */
-         if (to_read > (1 << 11)) 
+         if (to_read > (1 << 11))
             to_read = 1 << 11;
 
          fft_step_fft(fft, buffer, to_read);
@@ -861,7 +862,7 @@ static bool open_codecs(void)
             break;
 
          case AVMEDIA_TYPE_VIDEO:
-            if (     !vctx 
+            if (     !vctx
                   && !codec_is_image(fctx->streams[i]->codec->codec_id))
             {
                if (!open_codec(&vctx, i))
@@ -872,7 +873,7 @@ static bool open_codecs(void)
 
          case AVMEDIA_TYPE_SUBTITLE:
 #ifdef HAVE_SSA
-            if (     subtitle_streams_num < MAX_STREAMS 
+            if (     subtitle_streams_num < MAX_STREAMS
                   && codec_id_is_ass(fctx->streams[i]->codec->codec_id))
             {
                int size;
@@ -923,7 +924,7 @@ static bool init_media_info(void)
    {
       media.width  = vctx->width;
       media.height = vctx->height;
-      media.aspect = (float)vctx->width * 
+      media.aspect = (float)vctx->width *
          av_q2d(vctx->sample_aspect_ratio) / vctx->height;
    }
 
@@ -1149,7 +1150,7 @@ static void render_ass_img(AVFrame *conv_frame, ASS_Image *img)
             dst_g = (g * src_alpha + dst_g * dst_alpha) >> 8;
             dst_b = (b * src_alpha + dst_b * dst_alpha) >> 8;
 
-            dst[x] = (0xffu << 24) | (dst_r << 16) | 
+            dst[x] = (0xffu << 24) | (dst_r << 16) |
                (dst_g << 8) | (dst_b << 0);
          }
       }
@@ -1171,7 +1172,7 @@ static void decode_thread(void *data)
    struct SwsContext *sws  = NULL;
 
    (void)data;
-   
+
    if (video_stream >= 0)
       sws = sws_getCachedContext(NULL,
             media.width, media.height, vctx->pix_fmt,
@@ -1295,7 +1296,7 @@ static void decode_thread(void *data)
                int stride;
                unsigned y;
                const uint8_t *src = NULL;
-               
+
                fifo_write(video_decode_fifo, &pts, sizeof(pts));
                src    = conv_frame->data[0];
                stride = conv_frame->linesize[0];
@@ -1377,8 +1378,8 @@ static void context_destroy(void)
 
 #include "gl_shaders/ffmpeg.glsl.vert.h"
 
-/* OpenGL ES note about main() -  Get format as GL_RGBA/GL_UNSIGNED_BYTE. 
- * Assume little endian, so we get ARGB -> BGRA byte order, and 
+/* OpenGL ES note about main() -  Get format as GL_RGBA/GL_UNSIGNED_BYTE.
+ * Assume little endian, so we get ARGB -> BGRA byte order, and
  * we have to swizzle to .BGR. */
 #ifdef HAVE_OPENGLES
 #include "gl_shaders/ffmpeg_es.glsl.frag.h"
@@ -1445,7 +1446,7 @@ static void context_reset(void)
 #if !defined(HAVE_OPENGLES)
       glGenBuffers(1, &frames[i].pbo);
       glBindBuffer(GL_PIXEL_UNPACK_BUFFER, frames[i].pbo);
-      glBufferData(GL_PIXEL_UNPACK_BUFFER, media.width 
+      glBufferData(GL_PIXEL_UNPACK_BUFFER, media.width
             * media.height * sizeof(uint32_t), NULL, GL_STREAM_DRAW);
       glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 #endif
@@ -1611,7 +1612,7 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 
    if (video_stream >= 0 || is_fft)
    {
-      video_decode_fifo = fifo_new(media.width 
+      video_decode_fifo = fifo_new(media.width
             * media.height * sizeof(uint32_t) * 32);
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)

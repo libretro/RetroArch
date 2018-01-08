@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -14,14 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdint.h>
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include "SDL.h"
-#include "SDL_audio.h"
-
 #include <boolean.h>
 #include <rthreads/rthreads.h>
 #include <queues/fifo_queue.h>
@@ -30,6 +22,14 @@
 
 #include "../audio_driver.h"
 #include "../../verbosity.h"
+
+#include <stdint.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "SDL.h"
+#include "SDL_audio.h"
 
 typedef struct sdl_audio
 {
@@ -93,7 +93,7 @@ static void *sdl_audio_init(const char *device,
    if (!sdl)
       return NULL;
 
-   /* We have to buffer up some data ourselves, so we let SDL 
+   /* We have to buffer up some data ourselves, so we let SDL
     * carry approximately half of the latency.
     *
     * SDL double buffers audio and we do as well. */
@@ -119,7 +119,7 @@ static void *sdl_audio_init(const char *device,
    sdl->cond                = scond_new();
 #endif
 
-   RARCH_LOG("[SDL audio]: Requested %u ms latency, got %d ms\n", 
+   RARCH_LOG("[SDL audio]: Requested %u ms latency, got %d ms\n",
          latency, (int)(out.samples * 4 * 1000 / (*new_rate)));
 
    /* Create a buffer twice as big as needed and prefill the buffer. */

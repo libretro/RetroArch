@@ -40,10 +40,10 @@ typedef struct xshm
 {
    Display* display;
    Window wndw;
-   
+
    int width;
    int height;
-   
+
    XShmSegmentInfo shmInfo;
    XImage* image;
    GC gc;
@@ -54,11 +54,11 @@ static void *xshm_gfx_init(const video_info_t *video,
 {
    xshm_t* xshm = (xshm_t*)malloc(sizeof(xshm_t));
    Window parent;
-   
+
    XInitThreads();
-   
+
    xshm->display = XOpenDisplay(NULL);
-   
+
 #ifdef RARCH_INTERNAL
    parent = DefaultRootWindow(xshm->display);
 #else
@@ -71,26 +71,26 @@ static void *xshm_gfx_init(const video_info_t *video,
                               0, 24, CopyFromParent, NULL, CWBorderPixel, &attributes);
    XSetWindowBackground(xshm->display, xshm->wndw, 0);
    XMapWindow(xshm->display, xshm->wndw);
-   
+
    xshm->shmInfo.shmid = shmget(IPC_PRIVATE, sizeof(uint32_t) * video->width * video->height,
                                 IPC_CREAT|0600);
    if (xshm->shmInfo.shmid<0) abort();//seems like an out of memory situation... let's just blow up
-   
+
    xshm->shmInfo.shmaddr = (char*)shmat(xshm->shmInfo.shmid, 0, 0);
    xshm->shmInfo.readOnly = False;
    XShmAttach(xshm->display, &xshm->shmInfo);
    XSync(xshm->display, False);//no idea why this is required, but I get weird errors without it
    xshm->image = XShmCreateImage(xshm->display, NULL, 24, ZPixmap,
                                  xshm->shmInfo.shmaddr, &xshm->shmInfo, video->width, video->height);
-   
+
    xshm->gc = XCreateGC(xshm->display, xshm->wndw, 0, NULL);
-   
+
    xshm->width = video->width;
    xshm->height = video->height;
-   
+
    if (input) *input = NULL;
    if (input_data) *input_data = NULL;
-   
+
    return xshm;
 }
 
@@ -100,7 +100,7 @@ static bool xshm_gfx_frame(void *data, const void *frame, unsigned width,
 {
    xshm_t* xshm = (xshm_t*)data;
    int y;
-   
+
    for (y=0;y<height;y++)
    {
       memcpy((uint8_t*)xshm->shmInfo.shmaddr + sizeof(uint32_t)*xshm->width*y,
@@ -110,17 +110,17 @@ static bool xshm_gfx_frame(void *data, const void *frame, unsigned width,
 #ifdef HAVE_MENU
    menu_driver_frame(video_info);
 #endif
-   
+
    XShmPutImage(xshm->display, xshm->wndw, xshm->gc, xshm->image,
                 0, 0, 0, 0, xshm->width, xshm->height, False);
    XFlush(xshm->display);
-   
+
    return true;
 }
 
 static void xshm_gfx_set_nonblock_state(void *data, bool toggle)
 {
-   
+
 }
 
 static bool xshm_gfx_alive(void *data)
@@ -140,17 +140,17 @@ static bool xshm_gfx_suppress_screensaver(void *data, bool enable)
 
 static void xshm_gfx_free(void *data)
 {
-   
+
 }
 
 static void xshm_gfx_set_rotation(void *data, unsigned rotation)
 {
-   
+
 }
 
 static void xshm_gfx_viewport_info(void *data, struct video_viewport *vp)
 {
-   
+
 }
 
 static bool xshm_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
@@ -160,29 +160,29 @@ static bool xshm_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 
 static void xshm_poke_set_filtering(void *data, unsigned index, bool smooth)
 {
-   
+
 }
 
 static void xshm_poke_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
-   
+
 }
 
 static void xshm_poke_apply_state_changes(void *data)
 {
-   
+
 }
 
 #ifdef HAVE_MENU
 static void xshm_poke_set_texture_frame(void *data, const void *frame, bool rgb32,
       unsigned width, unsigned height, float alpha)
 {
-   
+
 }
 
 static void xshm_poke_texture_enable(void *data, bool enable, bool full_screen)
 {
-   
+
 }
 
 static void xshm_poke_set_osd_msg(void *data,
@@ -190,17 +190,16 @@ static void xshm_poke_set_osd_msg(void *data,
       const char *msg,
       const struct font_params *params, void *font)
 {
-   
 }
 
 static void xshm_show_mouse(void *data, bool state)
 {
-   
+
 }
 
 static void xshm_grab_mouse_toggle(void *data)
 {
-   
+
 }
 #endif
 
@@ -218,16 +217,13 @@ static video_poke_interface_t xshm_video_poke_interface = {
    NULL, /* get_proc_address */
    xshm_poke_set_aspect_ratio,
    xshm_poke_apply_state_changes,
-#ifdef HAVE_MENU
    xshm_poke_set_texture_frame,
    xshm_poke_texture_enable,
    xshm_poke_set_osd_msg,
+#ifdef HAVE_MENU
    xshm_show_mouse,
    xshm_grab_mouse_toggle,
 #else
-   NULL,
-   NULL,
-   NULL,
    NULL,
    NULL,
 #endif
@@ -247,7 +243,7 @@ static bool xshm_gfx_set_shader(void *data,
    (void)type;
    (void)path;
 
-   return false; 
+   return false;
 }
 
 video_driver_t video_xshm = {

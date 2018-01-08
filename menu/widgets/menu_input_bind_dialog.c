@@ -74,7 +74,7 @@ static bool menu_input_key_bind_custom_bind_keyboard_cb(
    menu_input_binds.target->key = (enum retro_key)code;
    menu_input_binds.begin++;
    menu_input_binds.target++;
-   
+
    rarch_timer_begin_new_time(&menu_input_binds.timer, settings->uints.input_bind_timeout);
 
    return (menu_input_binds.begin <= menu_input_binds.last);
@@ -210,6 +210,8 @@ static void menu_input_key_bind_poll_bind_state(
 {
    unsigned b;
    rarch_joypad_info_t joypad_info;
+   const input_driver_t *input_ptr         = input_get_ptr();
+   void *input_data                        = input_get_data();
    const input_device_driver_t *joypad     =
       input_driver_get_joypad_driver();
    const input_device_driver_t *sec_joypad =
@@ -229,7 +231,8 @@ static void menu_input_key_bind_poll_bind_state(
    joypad_info.auto_binds     = NULL;
    joypad_info.axis_threshold = 0.0f;
 
-   state->skip = timed_out || current_input->input_state(current_input_data, joypad_info,
+   state->skip = timed_out || input_ptr->input_state(input_data,
+         joypad_info,
          NULL,
          0, RETRO_DEVICE_KEYBOARD, 0, RETROK_RETURN);
 

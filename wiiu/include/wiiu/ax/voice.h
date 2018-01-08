@@ -60,7 +60,7 @@ typedef uint32_t AXVoiceState;
 
 enum AX_VOICE_TYPE
 {
-   // Unknown
+   /* Unknown */
    AX_VOICE_TYPE_UNKNOWN
 };
 typedef uint32_t AXVoiceType;

@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -20,8 +20,6 @@
 
 #include "../drivers/d3d.h"
 #include "../common/d3d_common.h"
-
-#include "../include/d3d8/d3dx8math.h"
 
 #include "../video_driver.h"
 
@@ -78,17 +76,17 @@ static bool d3d8_renderchain_create_first_pass(void *data,
    LPDIRECT3DDEVICE d3dr     = (LPDIRECT3DDEVICE)d3d->dev;
    d3d8_renderchain_t *chain = (d3d8_renderchain_t*)d3d->renderchain_data;
 
-   chain->vertex_buf         = d3d_vertex_buffer_new(d3dr, 4 * sizeof(Vertex), 
-         D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, 
+   chain->vertex_buf         = d3d_vertex_buffer_new(d3dr, 4 * sizeof(Vertex),
+         D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED,
          NULL);
 
    if (!chain->vertex_buf)
       return false;
 
-   chain->tex = d3d_texture_new(d3dr, NULL, 
+   chain->tex = d3d_texture_new(d3dr, NULL,
          chain->tex_w, chain->tex_h, 1, 0,
-         info->rgb32 
-         ? 
+         info->rgb32
+         ?
 #ifdef _XBOX
          D3DFMT_LIN_X8R8G8B8 : D3DFMT_LIN_R5G6B5,
 #else
@@ -126,13 +124,14 @@ static void d3d8_renderchain_set_vertices(void *data, unsigned pass,
    {
       unsigned i;
       Vertex vert[4];
+      float tex_w, tex_h;
       void *verts        = NULL;
 
       chain->last_width  = vert_width;
       chain->last_height = vert_height;
 
-      float tex_w        = vert_width;
-      float tex_h        = vert_height;
+      tex_w              = vert_width;
+      tex_h              = vert_height;
 
       vert[0].x        = -1.0f;
       vert[0].y        = -1.0f;
@@ -193,7 +192,7 @@ static void d3d8_renderchain_blit_to_texture(void *data, const void *frame,
    }
 
    /* Set the texture to NULL so D3D doesn't complain about it being in use... */
-   d3d_set_texture(d3dr, 0, NULL); 
+   d3d_set_texture(d3dr, 0, NULL);
    d3d_texture_blit(chain->pixel_size, chain->tex,
          &d3dlr, frame, width, height, pitch);
 }
@@ -210,7 +209,7 @@ static void d3d8_renderchain_free(void *data)
 {
    d3d_video_t *chain = (d3d_video_t*)data;
 
-   if (!chain)
+   if (!chain || !chain->renderchain_data)
       return;
 
    d3d8_renderchain_deinit(chain->renderchain_data);
@@ -241,15 +240,15 @@ static bool d3d8_renderchain_init(void *data,
       )
 {
    unsigned width, height;
-   d3d_video_t *d3d                = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr           = (LPDIRECT3DDEVICE)d3d->dev;
-   const video_info_t *video_info  = (const video_info_t*)_video_info;
-   const LinkInfo *link_info       = (const LinkInfo*)info_data;
-   d3d8_renderchain_t *chain       = (d3d8_renderchain_t*)d3d->renderchain_data;
-   unsigned fmt                    = (rgb32) ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
-   struct video_viewport *custom_vp = video_viewport_get_custom();
+   d3d_video_t *d3d                       = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr                  = (LPDIRECT3DDEVICE)d3d->dev;
+   const video_info_t *video_info         = (const video_info_t*)_video_info;
+   const struct LinkInfo *link_info       = (const struct LinkInfo*)info_data;
+   d3d8_renderchain_t *chain              = (d3d8_renderchain_t*)d3d->renderchain_data;
+   unsigned fmt                           = (rgb32) ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
+   struct video_viewport *custom_vp       = video_viewport_get_custom();
    (void)final_viewport_data;
-   
+
    video_driver_get_size(&width, &height);
 
    chain->dev                   = (LPDIRECT3DDEVICE)dev_data;
@@ -346,7 +345,7 @@ static void d3d8_renderchain_convert_geometry(
    (void)width;
    (void)height;
    (void)final_viewport_data;
-   
+
    /* stub */
 }
 
@@ -361,7 +360,7 @@ static bool d3d8_renderchain_reinit(void *data,
       return false;
 
    chain->pixel_size         = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
-   chain->tex_w = chain->tex_h = RARCH_SCALE_BASE * video->input_scale; 
+   chain->tex_w = chain->tex_h = RARCH_SCALE_BASE * video->input_scale;
    RARCH_LOG(
          "Reinitializing renderchain - and textures (%u x %u @ %u bpp)\n",
          chain->tex_w, chain->tex_h, chain->pixel_size * CHAR_BIT);

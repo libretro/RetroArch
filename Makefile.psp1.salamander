@@ -1,4 +1,5 @@
-BUILD_PRX         = 1
+BUILD_PRX         = 0
+PSP_LARGE_MEMORY  = 1
 HAVE_FILE_LOGGER  = 0
 DEBUG             = 0
 
@@ -7,7 +8,7 @@ TARGET = retroarchpsp_salamander
 ifeq ($(DEBUG), 1)
    OPTIMIZE_LV	:= -O0 -g
 else
-   OPTIMIZE_LV	:= -O2 -g
+   OPTIMIZE_LV	:= -O2
 endif
 
 INCDIR = $(PSPPATH)/include libretro-common/include
@@ -24,7 +25,7 @@ ifeq ($(HAVE_FILE_LOGGER), 1)
 CFLAGS		+= -DHAVE_FILE_LOGGER
 endif
 
-CFLAGS += $(RARCH_DEFINES)
+CFLAGS += $(RARCH_DEFINES) 
 
 EXTRA_TARGETS   = EBOOT.PBP
 PSP_EBOOT_TITLE = RetroArch
@@ -45,6 +46,7 @@ OBJS = frontend/frontend_salamander.o \
 		 libretro-common/compat/compat_strcasestr.o \
 		 libretro-common/file/config_file.o \
 		 libretro-common/streams/file_stream.o \
+		 libretro-common/vfs/vfs_implementation.o \
 		 libretro-common/hash/rhash.o \
 		 file_path_str.o \
 		 verbosity.o \

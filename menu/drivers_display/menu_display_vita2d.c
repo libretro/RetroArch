@@ -89,17 +89,17 @@ static void menu_display_vita2d_blend_begin(void)
 
 static void menu_display_vita2d_blend_end(void)
 {
-  
+
 }
 
 static void menu_display_vita2d_viewport(void *data)
 {
    vita_video_t             *vita2d          = (vita_video_t*)video_driver_get_ptr(false);
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
-  
+
    if (!vita2d || !draw)
       return;
-    
+
 #if 0
    vita2d_texture_set_wvp(draw->x, draw->y, draw->width, draw->height);
 #endif
@@ -118,7 +118,7 @@ static void menu_display_vita2d_draw(void *data)
     const float *color               = NULL;
     vita_video_t             *vita2d = (vita_video_t*)video_driver_get_ptr(false);
     menu_display_ctx_draw_t *draw    = (menu_display_ctx_draw_t*)data;
-   
+
    if (!vita2d || !draw)
       return;
 
@@ -126,7 +126,7 @@ static void menu_display_vita2d_draw(void *data)
     vertex             = draw->coords->vertex;
     tex_coord          = draw->coords->tex_coord;
     color              = draw->coords->color;
-    
+
     if (!vertex)
        vertex          = menu_display_vita2d_get_default_vertices();
     if (!tex_coord)
@@ -141,7 +141,7 @@ static void menu_display_vita2d_draw(void *data)
 
     tex_width = vita2d_texture_get_width(texture);
     tex_height = vita2d_texture_get_height(texture);
-         
+
 #if 0
     vita2d_texture_set_program();
     menu_display_vita2d_viewport(draw);
@@ -155,7 +155,7 @@ static void menu_display_vita2d_draw(void *data)
     for (i = 0; i < draw->coords->vertices; i++)
     {
        pv[i].x       = *vertex++;
-       pv[i].y       = *vertex++; // Y-flip. Vulkan is top-left clip space 
+       pv[i].y       = *vertex++; // Y-flip. Vulkan is top-left clip space
        pv[i].z       = +0.5f;
        pv[i].u       = *tex_coord++;
        pv[i].v       = *tex_coord++;
@@ -169,7 +169,7 @@ static void menu_display_vita2d_draw(void *data)
    {
      default:
      {
-       
+
         int colorR = (int)((*color++)*255.f);
         int colorG = (int)((*color++)*255.f);
         int colorB = (int)((*color++)*255.f);
@@ -181,10 +181,10 @@ static void menu_display_vita2d_draw(void *data)
         vita2d_draw_texture_part_generic(texture, menu_display_prim_to_vita2d_enum(
                  draw->prim_type), pv, draw->coords->vertices);
 #endif
-                
-        vita2d_draw_texture_tint_scale(texture, draw->x, 
-                      PSP_FB_HEIGHT-draw->y-draw->height, 
-                      (float)draw->width/(float)tex_width, 
+
+        vita2d_draw_texture_tint_scale(texture, draw->x,
+                      PSP_FB_HEIGHT-draw->y-draw->height,
+                      (float)draw->width/(float)tex_width,
                       (float)draw->height/(float)tex_height,
                       RGBA8(colorR,colorG,colorB,colorA));
 
@@ -213,13 +213,13 @@ static void menu_display_vita2d_clear_color(menu_display_ctx_clearcolor_t *clear
 {
    if (!clearcolor)
       return;
-   vita2d_set_clear_color(RGBA8((int)(clearcolor->r*255.f), 
-                                (int)(clearcolor->g*255.f), 
-                                (int)(clearcolor->b*255.f), 
+   vita2d_set_clear_color(RGBA8((int)(clearcolor->r*255.f),
+                                (int)(clearcolor->g*255.f),
+                                (int)(clearcolor->b*255.f),
                                 (int)(clearcolor->a*255.f)));
-   vita2d_draw_rectangle(0,0,PSP_FB_WIDTH,PSP_FB_HEIGHT,RGBA8((int)(clearcolor->r*255.f), 
-                                (int)(clearcolor->g*255.f), 
-                                (int)(clearcolor->b*255.f), 
+   vita2d_draw_rectangle(0,0,PSP_FB_WIDTH,PSP_FB_HEIGHT,RGBA8((int)(clearcolor->r*255.f),
+                                (int)(clearcolor->g*255.f),
+                                (int)(clearcolor->b*255.f),
                                 (int)(clearcolor->a*255.f)));
 }
 

@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -34,7 +34,8 @@ RETRO_BEGIN_DECLS
       | DRIVER_LOCATION_MASK \
       | DRIVER_MENU_MASK \
       | DRIVERS_VIDEO_INPUT_MASK \
-      | DRIVER_WIFI_MASK )
+      | DRIVER_WIFI_MASK \
+      | DRIVER_LED_MASK )
 
 #define DRIVERS_CMD_ALL_BUT_MENU \
       ( DRIVER_AUDIO_MASK \
@@ -43,7 +44,8 @@ RETRO_BEGIN_DECLS
       | DRIVER_CAMERA_MASK \
       | DRIVER_LOCATION_MASK \
       | DRIVERS_VIDEO_INPUT_MASK \
-      | DRIVER_WIFI_MASK )
+      | DRIVER_WIFI_MASK \
+      | DRIVER_LED_MASK )
 
 enum
 {
@@ -54,7 +56,8 @@ enum
    DRIVER_LOCATION,
    DRIVER_MENU,
    DRIVERS_VIDEO_INPUT,
-   DRIVER_WIFI
+   DRIVER_WIFI,
+   DRIVER_LED
 };
 
 enum
@@ -66,7 +69,8 @@ enum
    DRIVER_LOCATION_MASK     = 1 << DRIVER_LOCATION,
    DRIVER_MENU_MASK         = 1 << DRIVER_MENU,
    DRIVERS_VIDEO_INPUT_MASK = 1 << DRIVERS_VIDEO_INPUT,
-   DRIVER_WIFI_MASK         = 1 << DRIVER_WIFI
+   DRIVER_WIFI_MASK         = 1 << DRIVER_WIFI,
+   DRIVER_LED_MASK          = 1 << DRIVER_LED
 };
 
 enum driver_ctl_state
@@ -74,7 +78,7 @@ enum driver_ctl_state
    RARCH_DRIVER_CTL_NONE = 0,
    RARCH_DRIVER_CTL_DEINIT,
 
-   /* Attempts to find a default driver for 
+   /* Attempts to find a default driver for
     * all driver types.
     *
     * Should be run before RARCH_DRIVER_CTL_INIT.
@@ -86,7 +90,7 @@ enum driver_ctl_state
     * calls audio_monitor_set_refresh_rate(). */
    RARCH_DRIVER_CTL_SET_REFRESH_RATE,
 
-   /* Update the system Audio/Video information. 
+   /* Update the system Audio/Video information.
     * Will reinitialize audio/video drivers.
     * Used by RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO. */
    RARCH_DRIVER_CTL_UPDATE_SYSTEM_AV_INFO,

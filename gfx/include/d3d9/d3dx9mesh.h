@@ -1,39 +1,39 @@
-//////////////////////////////////////////////////////////////////////////////
-//
-//  Copyright (C) Microsoft Corporation.  All Rights Reserved.
-//
-//  File:       d3dx9mesh.h
-//  Content:    D3DX mesh types and functions
-//
-//////////////////////////////////////////////////////////////////////////////
+/*
+ *
+ *  Copyright (C) Microsoft Corporation.  All Rights Reserved.
+ *
+ *  File:       d3dx9mesh.h
+ *  Content:    D3DX mesh types and functions
+ *
+ */
 
 #include "d3dx9.h"
 
 #ifndef __D3DX9MESH_H__
 #define __D3DX9MESH_H__
 
-// {7ED943DD-52E8-40b5-A8D8-76685C406330}
-DEFINE_GUID(IID_ID3DXBaseMesh, 
+/* {7ED943DD-52E8-40b5-A8D8-76685C406330} */
+DEFINE_GUID(IID_ID3DXBaseMesh,
 0x7ed943dd, 0x52e8, 0x40b5, 0xa8, 0xd8, 0x76, 0x68, 0x5c, 0x40, 0x63, 0x30);
 
 // {4020E5C2-1403-4929-883F-E2E849FAC195}
-DEFINE_GUID(IID_ID3DXMesh, 
+DEFINE_GUID(IID_ID3DXMesh,
 0x4020e5c2, 0x1403, 0x4929, 0x88, 0x3f, 0xe2, 0xe8, 0x49, 0xfa, 0xc1, 0x95);
 
 // {8875769A-D579-4088-AAEB-534D1AD84E96}
-DEFINE_GUID(IID_ID3DXPMesh, 
+DEFINE_GUID(IID_ID3DXPMesh,
 0x8875769a, 0xd579, 0x4088, 0xaa, 0xeb, 0x53, 0x4d, 0x1a, 0xd8, 0x4e, 0x96);
 
 // {667EA4C7-F1CD-4386-B523-7C0290B83CC5}
-DEFINE_GUID(IID_ID3DXSPMesh, 
+DEFINE_GUID(IID_ID3DXSPMesh,
 0x667ea4c7, 0xf1cd, 0x4386, 0xb5, 0x23, 0x7c, 0x2, 0x90, 0xb8, 0x3c, 0xc5);
 
 // {11EAA540-F9A6-4d49-AE6A-E19221F70CC4}
-DEFINE_GUID(IID_ID3DXSkinInfo, 
+DEFINE_GUID(IID_ID3DXSkinInfo,
 0x11eaa540, 0xf9a6, 0x4d49, 0xae, 0x6a, 0xe1, 0x92, 0x21, 0xf7, 0xc, 0xc4);
 
 // {3CE6CC22-DBF2-44f4-894D-F9C34A337139}
-DEFINE_GUID(IID_ID3DXPatchMesh, 
+DEFINE_GUID(IID_ID3DXPatchMesh,
 0x3ce6cc22, 0xdbf2, 0x44f4, 0x89, 0x4d, 0xf9, 0xc3, 0x4a, 0x33, 0x71, 0x39);
 
 //patch mesh can be quads or tris
@@ -49,11 +49,11 @@ typedef enum _D3DXPATCHMESHTYPE {
 enum _D3DXMESH {
     D3DXMESH_32BIT                  = 0x001, // If set, then use 32 bit indices, if not set use 16 bit indices.
     D3DXMESH_DONOTCLIP              = 0x002, // Use D3DUSAGE_DONOTCLIP for VB & IB.
-    D3DXMESH_POINTS                 = 0x004, // Use D3DUSAGE_POINTS for VB & IB. 
-    D3DXMESH_RTPATCHES              = 0x008, // Use D3DUSAGE_RTPATCHES for VB & IB. 
-    D3DXMESH_NPATCHES               = 0x4000,// Use D3DUSAGE_NPATCHES for VB & IB. 
+    D3DXMESH_POINTS                 = 0x004, // Use D3DUSAGE_POINTS for VB & IB.
+    D3DXMESH_RTPATCHES              = 0x008, // Use D3DUSAGE_RTPATCHES for VB & IB.
+    D3DXMESH_NPATCHES               = 0x4000,// Use D3DUSAGE_NPATCHES for VB & IB.
     D3DXMESH_VB_SYSTEMMEM           = 0x010, // Use D3DPOOL_SYSTEMMEM for VB. Overrides D3DXMESH_MANAGEDVERTEXBUFFER
-    D3DXMESH_VB_MANAGED             = 0x020, // Use D3DPOOL_MANAGED for VB. 
+    D3DXMESH_VB_MANAGED             = 0x020, // Use D3DPOOL_MANAGED for VB.
     D3DXMESH_VB_WRITEONLY           = 0x040, // Use D3DUSAGE_WRITEONLY for VB.
     D3DXMESH_VB_DYNAMIC             = 0x080, // Use D3DUSAGE_DYNAMIC for VB.
     D3DXMESH_VB_SOFTWAREPROCESSING = 0x8000, // Use D3DUSAGE_SOFTWAREPROCESSING for VB.
@@ -72,7 +72,7 @@ enum _D3DXMESH {
     D3DXMESH_MANAGED                = 0x220, // D3DXMESH_VB_MANAGED | D3DXMESH_IB_MANAGED
     D3DXMESH_WRITEONLY              = 0x440, // D3DXMESH_VB_WRITEONLY | D3DXMESH_IB_WRITEONLY
     D3DXMESH_DYNAMIC                = 0x880, // D3DXMESH_VB_DYNAMIC | D3DXMESH_IB_DYNAMIC
-    D3DXMESH_SOFTWAREPROCESSING   = 0x18000, // D3DXMESH_VB_SOFTWAREPROCESSING | D3DXMESH_IB_SOFTWAREPROCESSING
+    D3DXMESH_SOFTWAREPROCESSING   = 0x18000  // D3DXMESH_VB_SOFTWAREPROCESSING | D3DXMESH_IB_SOFTWAREPROCESSING
 
 };
 
@@ -84,18 +84,17 @@ enum _D3DXPATCHMESH {
 enum _D3DXMESHSIMP
 {
     D3DXMESHSIMP_VERTEX   = 0x1,
-    D3DXMESHSIMP_FACE     = 0x2,
-
+    D3DXMESHSIMP_FACE     = 0x2
 };
 
 typedef enum _D3DXCLEANTYPE {
 	D3DXCLEAN_BACKFACING	= 0x00000001,
 	D3DXCLEAN_BOWTIES		= 0x00000002,
-	
+
 	// Helper options
 	D3DXCLEAN_SKINNING		= D3DXCLEAN_BACKFACING,	// Bowtie cleaning modifies geometry and breaks skinning
 	D3DXCLEAN_OPTIMIZATION	= D3DXCLEAN_BACKFACING,
-	D3DXCLEAN_SIMPLIFICATION= D3DXCLEAN_BACKFACING | D3DXCLEAN_BOWTIES,	
+	D3DXCLEAN_SIMPLIFICATION= D3DXCLEAN_BACKFACING | D3DXCLEAN_BOWTIES
 } D3DXCLEANTYPE;
 
 enum _MAX_FVF_DECL_SIZE
@@ -116,7 +115,7 @@ typedef enum _D3DXTANGENT
     D3DXTANGENT_WEIGHT_EQUAL =              0x080,
     D3DXTANGENT_WIND_CW =                   0x0100,
     D3DXTANGENT_CALCULATE_NORMALS =         0x0200,
-    D3DXTANGENT_GENERATE_IN_PLACE =         0x0400,
+    D3DXTANGENT_GENERATE_IN_PLACE =         0x0400
 } D3DXTANGENT;
 
 // D3DXIMT_WRAP_U means the texture wraps in the U direction
@@ -126,7 +125,7 @@ typedef enum _D3DXIMT
 {
     D3DXIMT_WRAP_U =                    0x01,
     D3DXIMT_WRAP_V =                    0x02,
-    D3DXIMT_WRAP_UV =                   0x03,
+    D3DXIMT_WRAP_UV =                   0x03
 } D3DXIMT;
 
 // These options are only valid for UVAtlasCreate and UVAtlasPartition, we may add more for UVAtlasPack if necessary
@@ -137,7 +136,7 @@ typedef enum _D3DXUVATLAS
 {
     D3DXUVATLAS_DEFAULT               = 0x00,
     D3DXUVATLAS_GEODESIC_FAST         = 0x01,
-    D3DXUVATLAS_GEODESIC_QUALITY      = 0x02,
+    D3DXUVATLAS_GEODESIC_QUALITY      = 0x02
 } D3DXUVATLAS;
 
 typedef struct ID3DXBaseMesh *LPD3DXBASEMESH;
@@ -170,7 +169,7 @@ typedef D3DXMATERIAL *LPD3DXMATERIAL;
 
 typedef enum _D3DXEFFECTDEFAULTTYPE
 {
-    D3DXEDT_STRING = 0x1,       // pValue points to a null terminated ASCII string 
+    D3DXEDT_STRING = 0x1,       // pValue points to a null terminated ASCII string
     D3DXEDT_FLOATS = 0x2,       // pValue points to an array of floats - number of floats is NumBytes / sizeof(float)
     D3DXEDT_DWORD  = 0x3,       // pValue points to a DWORD
 
@@ -208,14 +207,14 @@ enum _D3DXWELDEPSILONSFLAGS
 {
     D3DXWELDEPSILONS_WELDALL             = 0x1,  // weld all vertices marked by adjacency as being overlapping
 
-    D3DXWELDEPSILONS_WELDPARTIALMATCHES  = 0x2,  // if a given vertex component is within epsilon, modify partial matched 
+    D3DXWELDEPSILONS_WELDPARTIALMATCHES  = 0x2,  // if a given vertex component is within epsilon, modify partial matched
                                                     // vertices so that both components identical AND if all components "equal"
                                                     // remove one of the vertices
     D3DXWELDEPSILONS_DONOTREMOVEVERTICES = 0x4,  // instructs weld to only allow modifications to vertices and not removal
                                                     // ONLY valid if D3DXWELDEPSILONS_WELDPARTIALMATCHES is set
                                                     // useful to modify vertices to be equal, but not allow vertices to be removed
 
-    D3DXWELDEPSILONS_DONOTSPLIT          = 0x8,  // instructs weld to specify the D3DXMESHOPT_DONOTSPLIT flag when doing an Optimize(ATTR_SORT)
+    D3DXWELDEPSILONS_DONOTSPLIT          = 0x8      // instructs weld to specify the D3DXMESHOPT_DONOTSPLIT flag when doing an Optimize(ATTR_SORT)
                                                     // if this flag is not set, all vertices that are in separate attribute groups
                                                     // will remain split and not welded.  Setting this flag can slow down software vertex processing
 
@@ -258,9 +257,9 @@ DECLARE_INTERFACE_(ID3DXBaseMesh, IUnknown)
     STDMETHOD_(DWORD, GetNumBytesPerVertex)(THIS) PURE;
     STDMETHOD_(DWORD, GetOptions)(THIS) PURE;
     STDMETHOD(GetDevice)(THIS_ LPDIRECT3DDEVICE9* ppDevice) PURE;
-    STDMETHOD(CloneMeshFVF)(THIS_ DWORD Options, 
+    STDMETHOD(CloneMeshFVF)(THIS_ DWORD Options,
                 DWORD FVF, LPDIRECT3DDEVICE9 pD3DDevice, LPD3DXMESH* ppCloneMesh) PURE;
-    STDMETHOD(CloneMesh)(THIS_ DWORD Options, 
+    STDMETHOD(CloneMesh)(THIS_ DWORD Options,
                 CONST D3DVERTEXELEMENT9 *pDeclaration, LPDIRECT3DDEVICE9 pD3DDevice, LPD3DXMESH* ppCloneMesh) PURE;
     STDMETHOD(GetVertexBuffer)(THIS_ LPDIRECT3DVERTEXBUFFER9* ppVB) PURE;
     STDMETHOD(GetIndexBuffer)(THIS_ LPDIRECT3DINDEXBUFFER9* ppIB) PURE;
@@ -298,9 +297,9 @@ DECLARE_INTERFACE_(ID3DXMesh, ID3DXBaseMesh)
     STDMETHOD_(DWORD, GetNumBytesPerVertex)(THIS) PURE;
     STDMETHOD_(DWORD, GetOptions)(THIS) PURE;
     STDMETHOD(GetDevice)(THIS_ LPDIRECT3DDEVICE9* ppDevice) PURE;
-    STDMETHOD(CloneMeshFVF)(THIS_ DWORD Options, 
+    STDMETHOD(CloneMeshFVF)(THIS_ DWORD Options,
                 DWORD FVF, LPDIRECT3DDEVICE9 pD3DDevice, LPD3DXMESH* ppCloneMesh) PURE;
-    STDMETHOD(CloneMesh)(THIS_ DWORD Options, 
+    STDMETHOD(CloneMesh)(THIS_ DWORD Options,
                 CONST D3DVERTEXELEMENT9 *pDeclaration, LPDIRECT3DDEVICE9 pD3DDevice, LPD3DXMESH* ppCloneMesh) PURE;
     STDMETHOD(GetVertexBuffer)(THIS_ LPDIRECT3DVERTEXBUFFER9* ppVB) PURE;
     STDMETHOD(GetIndexBuffer)(THIS_ LPDIRECT3DINDEXBUFFER9* ppIB) PURE;
@@ -320,10 +319,10 @@ DECLARE_INTERFACE_(ID3DXMesh, ID3DXBaseMesh)
     // ID3DXMesh
     STDMETHOD(LockAttributeBuffer)(THIS_ DWORD Flags, DWORD** ppData) PURE;
     STDMETHOD(UnlockAttributeBuffer)(THIS) PURE;
-    STDMETHOD(Optimize)(THIS_ DWORD Flags, CONST DWORD* pAdjacencyIn, DWORD* pAdjacencyOut, 
-                     DWORD* pFaceRemap, LPD3DXBUFFER *ppVertexRemap,  
+    STDMETHOD(Optimize)(THIS_ DWORD Flags, CONST DWORD* pAdjacencyIn, DWORD* pAdjacencyOut,
+                     DWORD* pFaceRemap, LPD3DXBUFFER *ppVertexRemap,
                      LPD3DXMESH* ppOptMesh) PURE;
-    STDMETHOD(OptimizeInplace)(THIS_ DWORD Flags, CONST DWORD* pAdjacencyIn, DWORD* pAdjacencyOut, 
+    STDMETHOD(OptimizeInplace)(THIS_ DWORD Flags, CONST DWORD* pAdjacencyIn, DWORD* pAdjacencyOut,
                      DWORD* pFaceRemap, LPD3DXBUFFER *ppVertexRemap) PURE;
     STDMETHOD(SetAttributeTable)(THIS_ CONST D3DXATTRIBUTERANGE *pAttribTable, DWORD cAttribTableSize) PURE;
 };
@@ -348,9 +347,9 @@ DECLARE_INTERFACE_(ID3DXPMesh, ID3DXBaseMesh)
     STDMETHOD_(DWORD, GetNumBytesPerVertex)(THIS) PURE;
     STDMETHOD_(DWORD, GetOptions)(THIS) PURE;
     STDMETHOD(GetDevice)(THIS_ LPDIRECT3DDEVICE9* ppDevice) PURE;
-    STDMETHOD(CloneMeshFVF)(THIS_ DWORD Options, 
+    STDMETHOD(CloneMeshFVF)(THIS_ DWORD Options,
                 DWORD FVF, LPDIRECT3DDEVICE9 pD3DDevice, LPD3DXMESH* ppCloneMesh) PURE;
-    STDMETHOD(CloneMesh)(THIS_ DWORD Options, 
+    STDMETHOD(CloneMesh)(THIS_ DWORD Options,
                 CONST D3DVERTEXELEMENT9 *pDeclaration, LPDIRECT3DDEVICE9 pD3DDevice, LPD3DXMESH* ppCloneMesh) PURE;
     STDMETHOD(GetVertexBuffer)(THIS_ LPDIRECT3DVERTEXBUFFER9* ppVB) PURE;
     STDMETHOD(GetIndexBuffer)(THIS_ LPDIRECT3DINDEXBUFFER9* ppIB) PURE;
@@ -368,9 +367,9 @@ DECLARE_INTERFACE_(ID3DXPMesh, ID3DXBaseMesh)
     STDMETHOD(UpdateSemantics)(THIS_ D3DVERTEXELEMENT9 Declaration[MAX_FVF_DECL_SIZE]) PURE;
 
     // ID3DXPMesh
-    STDMETHOD(ClonePMeshFVF)(THIS_ DWORD Options, 
+    STDMETHOD(ClonePMeshFVF)(THIS_ DWORD Options,
                 DWORD FVF, LPDIRECT3DDEVICE9 pD3DDevice, LPD3DXPMESH* ppCloneMesh) PURE;
-    STDMETHOD(ClonePMesh)(THIS_ DWORD Options, 
+    STDMETHOD(ClonePMesh)(THIS_ DWORD Options,
                 CONST D3DVERTEXELEMENT9 *pDeclaration, LPDIRECT3DDEVICE9 pD3DDevice, LPD3DXPMESH* ppCloneMesh) PURE;
     STDMETHOD(SetNumFaces)(THIS_ DWORD Faces) PURE;
     STDMETHOD(SetNumVertices)(THIS_ DWORD Vertices) PURE;
@@ -380,8 +379,8 @@ DECLARE_INTERFACE_(ID3DXPMesh, ID3DXBaseMesh)
     STDMETHOD_(DWORD, GetMinVertices)(THIS) PURE;
     STDMETHOD(Save)(THIS_ IStream *pStream, CONST D3DXMATERIAL* pMaterials, CONST D3DXEFFECTINSTANCE* pEffectInstances, DWORD NumMaterials) PURE;
 
-    STDMETHOD(Optimize)(THIS_ DWORD Flags, DWORD* pAdjacencyOut, 
-                     DWORD* pFaceRemap, LPD3DXBUFFER *ppVertexRemap,  
+    STDMETHOD(Optimize)(THIS_ DWORD Flags, DWORD* pAdjacencyOut,
+                     DWORD* pFaceRemap, LPD3DXBUFFER *ppVertexRemap,
                      LPD3DXMESH* ppOptMesh) PURE;
 
     STDMETHOD(OptimizeBaseLOD)(THIS_ DWORD Flags, DWORD* pFaceRemap) PURE;
@@ -413,13 +412,13 @@ DECLARE_INTERFACE_(ID3DXSPMesh, IUnknown)
     STDMETHOD(GetDeclaration)(THIS_ D3DVERTEXELEMENT9 Declaration[MAX_FVF_DECL_SIZE]) PURE;
     STDMETHOD_(DWORD, GetOptions)(THIS) PURE;
     STDMETHOD(GetDevice)(THIS_ LPDIRECT3DDEVICE9* ppDevice) PURE;
-    STDMETHOD(CloneMeshFVF)(THIS_ DWORD Options, 
+    STDMETHOD(CloneMeshFVF)(THIS_ DWORD Options,
                 DWORD FVF, LPDIRECT3DDEVICE9 pD3DDevice, DWORD *pAdjacencyOut, DWORD *pVertexRemapOut, LPD3DXMESH* ppCloneMesh) PURE;
-    STDMETHOD(CloneMesh)(THIS_ DWORD Options, 
+    STDMETHOD(CloneMesh)(THIS_ DWORD Options,
                 CONST D3DVERTEXELEMENT9 *pDeclaration, LPDIRECT3DDEVICE9 pD3DDevice, DWORD *pAdjacencyOut, DWORD *pVertexRemapOut, LPD3DXMESH* ppCloneMesh) PURE;
-    STDMETHOD(ClonePMeshFVF)(THIS_ DWORD Options, 
+    STDMETHOD(ClonePMeshFVF)(THIS_ DWORD Options,
                 DWORD FVF, LPDIRECT3DDEVICE9 pD3DDevice, DWORD *pVertexRemapOut, FLOAT *pErrorsByFace, LPD3DXPMESH* ppCloneMesh) PURE;
-    STDMETHOD(ClonePMesh)(THIS_ DWORD Options, 
+    STDMETHOD(ClonePMesh)(THIS_ DWORD Options,
                 CONST D3DVERTEXELEMENT9 *pDeclaration, LPDIRECT3DDEVICE9 pD3DDevice, DWORD *pVertexRemapOut, FLOAT *pErrorsbyFace, LPD3DXPMESH* ppCloneMesh) PURE;
     STDMETHOD(ReduceFaces)(THIS_ DWORD Faces) PURE;
     STDMETHOD(ReduceVertices)(THIS_ DWORD Vertices) PURE;
@@ -440,8 +439,8 @@ enum _D3DXMESHOPT {
     D3DXMESHOPT_STRIPREORDER  = 0x08000000,
     D3DXMESHOPT_IGNOREVERTS   = 0x10000000,  // optimize faces only, don't touch vertices
     D3DXMESHOPT_DONOTSPLIT    = 0x20000000,  // do not split vertices shared between attribute groups when attribute sorting
-    D3DXMESHOPT_DEVICEINDEPENDENT = 0x00400000,  // Only affects VCache.  uses a static known good cache size for all cards
-                            
+    D3DXMESHOPT_DEVICEINDEPENDENT = 0x00400000  // Only affects VCache.  uses a static known good cache size for all cards
+
     // D3DXMESHOPT_SHAREVB has been removed, please use D3DXMESH_VB_SHARE instead
 
 };
@@ -494,7 +493,7 @@ DECLARE_INTERFACE_(ID3DXPatchMesh, IUnknown)
     STDMETHOD(GetDevice)(THIS_ LPDIRECT3DDEVICE9 *ppDevice) PURE;
     STDMETHOD(GetPatchInfo)(THIS_ LPD3DXPATCHINFO PatchInfo) PURE;
 
-    // Control mesh access    
+    // Control mesh access
     STDMETHOD(GetVertexBuffer)(THIS_ LPDIRECT3DVERTEXBUFFER9* ppVB) PURE;
     STDMETHOD(GetIndexBuffer)(THIS_ LPDIRECT3DINDEXBUFFER9* ppIB) PURE;
     STDMETHOD(LockVertexBuffer)(THIS_ DWORD flags, LPVOID *ppData) PURE;
@@ -507,18 +506,18 @@ DECLARE_INTERFACE_(ID3DXPatchMesh, IUnknown)
     // This function returns the size of the tessellated mesh given a tessellation level.
     // This assumes uniform tessellation. For adaptive tessellation the Adaptive parameter must
     // be set to TRUE and TessellationLevel should be the max tessellation.
-    // This will result in the max mesh size necessary for adaptive tessellation.    
+    // This will result in the max mesh size necessary for adaptive tessellation.
     STDMETHOD(GetTessSize)(THIS_ FLOAT fTessLevel,DWORD Adaptive, DWORD *NumTriangles,DWORD *NumVertices) PURE;
-    
+
     //GenerateAdjacency determines which patches are adjacent with provided tolerance
     //this information is used internally to optimize tessellation
     STDMETHOD(GenerateAdjacency)(THIS_ FLOAT Tolerance) PURE;
-    
+
     //CloneMesh Creates a new patchmesh with the specified decl, and converts the vertex buffer
     //to the new decl. Entries in the new decl which are new are set to 0. If the current mesh
     //has adjacency, the new mesh will also have adjacency
     STDMETHOD(CloneMesh)(THIS_ DWORD Options, CONST D3DVERTEXELEMENT9 *pDecl, LPD3DXPATCHMESH *pMesh) PURE;
-    
+
     // Optimizes the patchmesh for efficient tessellation. This function is designed
     // to perform one time optimization for patch meshes that need to be tessellated
     // repeatedly by calling the Tessellate() method. The optimization performed is
@@ -542,8 +541,8 @@ DECLARE_INTERFACE_(ID3DXPatchMesh, IUnknown)
                                 D3DTEXTUREFILTERTYPE *MipFilter,
                                 D3DTEXTUREADDRESS *Wrap,
                                 DWORD *dwLODBias) PURE;
-        
-    // Performs the uniform tessellation based on the tessellation level. 
+
+    // Performs the uniform tessellation based on the tessellation level.
     // This function will perform more efficiently if the patch mesh has been optimized using the Optimize() call.
     STDMETHOD(Tessellate)(THIS_ FLOAT fTessLevel,LPD3DXMESH pMesh) PURE;
 
@@ -553,9 +552,9 @@ DECLARE_INTERFACE_(ID3DXPatchMesh, IUnknown)
     // at the 2 vertices it connects.
     // MaxTessLevel specifies the upper limit for adaptive tesselation.
     // This function will perform more efficiently if the patch mesh has been optimized using the Optimize() call.
-    STDMETHOD(TessellateAdaptive)(THIS_ 
+    STDMETHOD(TessellateAdaptive)(THIS_
         CONST D3DXVECTOR4 *pTrans,
-        DWORD dwMaxTessLevel, 
+        DWORD dwMaxTessLevel,
         DWORD dwMinTessLevel,
         LPD3DXMESH pMesh) PURE;
 
@@ -583,24 +582,24 @@ DECLARE_INTERFACE_(ID3DXSkinInfo, IUnknown)
 
     // This gets the max face influences based on a triangle mesh with the specified index buffer
     STDMETHOD(GetMaxFaceInfluences)(THIS_ LPDIRECT3DINDEXBUFFER9 pIB, DWORD NumFaces, DWORD* maxFaceInfluences) PURE;
-    
+
     // Set min bone influence. Bone influences that are smaller than this are ignored
     STDMETHOD(SetMinBoneInfluence)(THIS_ FLOAT MinInfl) PURE;
-    // Get min bone influence. 
+    // Get min bone influence.
     STDMETHOD_(FLOAT, GetMinBoneInfluence)(THIS) PURE;
-    
+
     // Bone names are returned by D3DXLoadSkinMeshFromXof. They are not used by any other method of this object
     STDMETHOD(SetBoneName)(THIS_ DWORD Bone, LPCSTR pName) PURE; // pName is copied to an internal string buffer
     STDMETHOD_(LPCSTR, GetBoneName)(THIS_ DWORD Bone) PURE; // A pointer to an internal string buffer is returned. Do not free this.
-    
+
     // Bone offset matrices are returned by D3DXLoadSkinMeshFromXof. They are not used by any other method of this object
     STDMETHOD(SetBoneOffsetMatrix)(THIS_ DWORD Bone, CONST D3DXMATRIX *pBoneTransform) PURE; // pBoneTransform is copied to an internal buffer
     STDMETHOD_(LPD3DXMATRIX, GetBoneOffsetMatrix)(THIS_ DWORD Bone) PURE; // A pointer to an internal matrix is returned. Do not free this.
-    
+
     // Clone a skin info object
     STDMETHOD(Clone)(THIS_ LPD3DXSKININFO* ppSkinInfo) PURE;
-    
-    // Update bone influence information to match vertices after they are reordered. This should be called 
+
+    // Update bone influence information to match vertices after they are reordered. This should be called
     // if the target vertex buffer has been reordered externally.
     STDMETHOD(Remap)(THIS_ DWORD NumVertices, DWORD* pVertexRemap) PURE;
 
@@ -611,39 +610,39 @@ DECLARE_INTERFACE_(ID3DXSkinInfo, IUnknown)
     STDMETHOD(GetDeclaration)(THIS_ D3DVERTEXELEMENT9 Declaration[MAX_FVF_DECL_SIZE]) PURE;
 
     // Apply SW skinning based on current pose matrices to the target vertices.
-    STDMETHOD(UpdateSkinnedMesh)(THIS_ 
-        CONST D3DXMATRIX* pBoneTransforms, 
-        CONST D3DXMATRIX* pBoneInvTransposeTransforms, 
-        LPCVOID pVerticesSrc, 
+    STDMETHOD(UpdateSkinnedMesh)(THIS_
+        CONST D3DXMATRIX* pBoneTransforms,
+        CONST D3DXMATRIX* pBoneInvTransposeTransforms,
+        LPCVOID pVerticesSrc,
         PVOID pVerticesDst) PURE;
 
     // Takes a mesh and returns a new mesh with per vertex blend weights and a bone combination
     // table that describes which bones affect which subsets of the mesh
-    STDMETHOD(ConvertToBlendedMesh)(THIS_ 
+    STDMETHOD(ConvertToBlendedMesh)(THIS_
         LPD3DXMESH pMesh,
-        DWORD Options, 
-        CONST DWORD *pAdjacencyIn, 
+        DWORD Options,
+        CONST DWORD *pAdjacencyIn,
         LPDWORD pAdjacencyOut,
-        DWORD* pFaceRemap, 
-        LPD3DXBUFFER *ppVertexRemap, 
+        DWORD* pFaceRemap,
+        LPD3DXBUFFER *ppVertexRemap,
         DWORD* pMaxFaceInfl,
-        DWORD* pNumBoneCombinations, 
-        LPD3DXBUFFER* ppBoneCombinationTable, 
+        DWORD* pNumBoneCombinations,
+        LPD3DXBUFFER* ppBoneCombinationTable,
         LPD3DXMESH* ppMesh) PURE;
 
-    // Takes a mesh and returns a new mesh with per vertex blend weights and indices 
+    // Takes a mesh and returns a new mesh with per vertex blend weights and indices
     // and a bone combination table that describes which bones palettes affect which subsets of the mesh
-    STDMETHOD(ConvertToIndexedBlendedMesh)(THIS_ 
+    STDMETHOD(ConvertToIndexedBlendedMesh)(THIS_
         LPD3DXMESH pMesh,
-        DWORD Options, 
-        DWORD paletteSize, 
-        CONST DWORD *pAdjacencyIn, 
-        LPDWORD pAdjacencyOut, 
-        DWORD* pFaceRemap, 
-        LPD3DXBUFFER *ppVertexRemap, 
+        DWORD Options,
+        DWORD paletteSize,
+        CONST DWORD *pAdjacencyIn,
+        LPDWORD pAdjacencyOut,
+        DWORD* pFaceRemap,
+        LPD3DXBUFFER *ppVertexRemap,
         DWORD* pMaxVertexInfl,
-        DWORD* pNumBoneCombinations, 
-        LPD3DXBUFFER* ppBoneCombinationTable, 
+        DWORD* pNumBoneCombinations,
+        LPD3DXBUFFER* ppBoneCombinationTable,
         LPD3DXMESH* ppMesh) PURE;
 };
 
@@ -652,28 +651,28 @@ extern "C" {
 #endif //__cplusplus
 
 
-HRESULT WINAPI 
+HRESULT WINAPI
     D3DXCreateMesh(
-        DWORD NumFaces, 
-        DWORD NumVertices, 
-        DWORD Options, 
-        CONST D3DVERTEXELEMENT9 *pDeclaration, 
-        LPDIRECT3DDEVICE9 pD3DDevice, 
+        DWORD NumFaces,
+        DWORD NumVertices,
+        DWORD Options,
+        CONST D3DVERTEXELEMENT9 *pDeclaration,
+        LPDIRECT3DDEVICE9 pD3DDevice,
         LPD3DXMESH* ppMesh);
 
-HRESULT WINAPI 
+HRESULT WINAPI
     D3DXCreateMeshFVF(
-        DWORD NumFaces, 
-        DWORD NumVertices, 
-        DWORD Options, 
-        DWORD FVF, 
-        LPDIRECT3DDEVICE9 pD3DDevice, 
+        DWORD NumFaces,
+        DWORD NumVertices,
+        DWORD Options,
+        DWORD FVF,
+        LPDIRECT3DDEVICE9 pD3DDevice,
         LPD3DXMESH* ppMesh);
 
-HRESULT WINAPI 
+HRESULT WINAPI
     D3DXCreateSPMesh(
-        LPD3DXMESH pMesh, 
-        CONST DWORD* pAdjacency, 
+        LPD3DXMESH pMesh,
+        CONST DWORD* pAdjacency,
         CONST D3DXATTRIBUTEWEIGHTS *pVertexAttributeWeights,
         CONST FLOAT *pVertexWeights,
         LPD3DXSPMESH* ppSMesh);
@@ -694,72 +693,72 @@ HRESULT WINAPI
     CONST DWORD* pAdjacency,
     LPD3DXBUFFER* ppErrorsAndWarnings);
 
-HRESULT WINAPI 
+HRESULT WINAPI
     D3DXGeneratePMesh(
-        LPD3DXMESH pMesh, 
-        CONST DWORD* pAdjacency, 
+        LPD3DXMESH pMesh,
+        CONST DWORD* pAdjacency,
         CONST D3DXATTRIBUTEWEIGHTS *pVertexAttributeWeights,
         CONST FLOAT *pVertexWeights,
-        DWORD MinValue, 
-        DWORD Options, 
+        DWORD MinValue,
+        DWORD Options,
         LPD3DXPMESH* ppPMesh);
 
-HRESULT WINAPI 
+HRESULT WINAPI
     D3DXSimplifyMesh(
-        LPD3DXMESH pMesh, 
-        CONST DWORD* pAdjacency, 
+        LPD3DXMESH pMesh,
+        CONST DWORD* pAdjacency,
         CONST D3DXATTRIBUTEWEIGHTS *pVertexAttributeWeights,
         CONST FLOAT *pVertexWeights,
-        DWORD MinValue, 
-        DWORD Options, 
+        DWORD MinValue,
+        DWORD Options,
         LPD3DXMESH* ppMesh);
 
-HRESULT WINAPI 
+HRESULT WINAPI
     D3DXComputeBoundingSphere(
         CONST D3DXVECTOR3 *pFirstPosition,  // pointer to first position
-        DWORD NumVertices, 
+        DWORD NumVertices,
         DWORD dwStride,                     // count in bytes to subsequent position vectors
-        D3DXVECTOR3 *pCenter, 
+        D3DXVECTOR3 *pCenter,
         FLOAT *pRadius);
 
-HRESULT WINAPI 
+HRESULT WINAPI
     D3DXComputeBoundingBox(
         CONST D3DXVECTOR3 *pFirstPosition,  // pointer to first position
-        DWORD NumVertices, 
+        DWORD NumVertices,
         DWORD dwStride,                     // count in bytes to subsequent position vectors
-        D3DXVECTOR3 *pMin, 
+        D3DXVECTOR3 *pMin,
         D3DXVECTOR3 *pMax);
 
-HRESULT WINAPI 
+HRESULT WINAPI
     D3DXComputeNormals(
         LPD3DXBASEMESH pMesh,
         CONST DWORD *pAdjacency);
 
-HRESULT WINAPI 
+HRESULT WINAPI
     D3DXCreateBuffer(
-        DWORD NumBytes, 
+        DWORD NumBytes,
         LPD3DXBUFFER *ppBuffer);
 
 
 HRESULT WINAPI
     D3DXLoadMeshFromXA(
-        LPCSTR pFilename, 
-        DWORD Options, 
-        LPDIRECT3DDEVICE9 pD3DDevice, 
+        LPCSTR pFilename,
+        DWORD Options,
+        LPDIRECT3DDEVICE9 pD3DDevice,
         LPD3DXBUFFER *ppAdjacency,
-        LPD3DXBUFFER *ppMaterials, 
-        LPD3DXBUFFER *ppEffectInstances, 
+        LPD3DXBUFFER *ppMaterials,
+        LPD3DXBUFFER *ppEffectInstances,
         DWORD *pNumMaterials,
         LPD3DXMESH *ppMesh);
 
 HRESULT WINAPI
     D3DXLoadMeshFromXW(
-        LPCWSTR pFilename, 
-        DWORD Options, 
-        LPDIRECT3DDEVICE9 pD3DDevice, 
+        LPCWSTR pFilename,
+        DWORD Options,
+        LPDIRECT3DDEVICE9 pD3DDevice,
         LPD3DXBUFFER *ppAdjacency,
-        LPD3DXBUFFER *ppMaterials, 
-        LPD3DXBUFFER *ppEffectInstances, 
+        LPD3DXBUFFER *ppMaterials,
+        LPD3DXBUFFER *ppEffectInstances,
         DWORD *pNumMaterials,
         LPD3DXMESH *ppMesh);
 
@@ -769,67 +768,67 @@ HRESULT WINAPI
 #define D3DXLoadMeshFromX D3DXLoadMeshFromXA
 #endif
 
-HRESULT WINAPI 
+HRESULT WINAPI
     D3DXLoadMeshFromXInMemory(
         LPCVOID Memory,
         DWORD SizeOfMemory,
-        DWORD Options, 
-        LPDIRECT3DDEVICE9 pD3DDevice, 
+        DWORD Options,
+        LPDIRECT3DDEVICE9 pD3DDevice,
         LPD3DXBUFFER *ppAdjacency,
-        LPD3DXBUFFER *ppMaterials, 
-        LPD3DXBUFFER *ppEffectInstances, 
+        LPD3DXBUFFER *ppMaterials,
+        LPD3DXBUFFER *ppEffectInstances,
         DWORD *pNumMaterials,
         LPD3DXMESH *ppMesh);
 
-HRESULT WINAPI 
+HRESULT WINAPI
     D3DXLoadMeshFromXResource(
         HMODULE Module,
         LPCSTR Name,
         LPCSTR Type,
-        DWORD Options, 
-        LPDIRECT3DDEVICE9 pD3DDevice, 
+        DWORD Options,
+        LPDIRECT3DDEVICE9 pD3DDevice,
         LPD3DXBUFFER *ppAdjacency,
-        LPD3DXBUFFER *ppMaterials, 
-        LPD3DXBUFFER *ppEffectInstances, 
+        LPD3DXBUFFER *ppMaterials,
+        LPD3DXBUFFER *ppEffectInstances,
         DWORD *pNumMaterials,
         LPD3DXMESH *ppMesh);
 
-HRESULT WINAPI 
+HRESULT WINAPI
     D3DXSaveMeshToXA(
         LPCSTR pFilename,
         LPD3DXMESH pMesh,
         CONST DWORD* pAdjacency,
         CONST D3DXMATERIAL* pMaterials,
-        CONST D3DXEFFECTINSTANCE* pEffectInstances, 
+        CONST D3DXEFFECTINSTANCE* pEffectInstances,
         DWORD NumMaterials,
         DWORD Format
         );
 
-HRESULT WINAPI 
+HRESULT WINAPI
     D3DXSaveMeshToXW(
         LPCWSTR pFilename,
         LPD3DXMESH pMesh,
         CONST DWORD* pAdjacency,
         CONST D3DXMATERIAL* pMaterials,
-        CONST D3DXEFFECTINSTANCE* pEffectInstances, 
+        CONST D3DXEFFECTINSTANCE* pEffectInstances,
         DWORD NumMaterials,
         DWORD Format
         );
-        
+
 #ifdef UNICODE
 #define D3DXSaveMeshToX D3DXSaveMeshToXW
 #else
 #define D3DXSaveMeshToX D3DXSaveMeshToXA
 #endif
-        
 
-HRESULT WINAPI 
+
+HRESULT WINAPI
     D3DXCreatePMeshFromStream(
-        IStream *pStream, 
+        IStream *pStream,
         DWORD Options,
-        LPDIRECT3DDEVICE9 pD3DDevice, 
+        LPDIRECT3DDEVICE9 pD3DDevice,
         LPD3DXBUFFER *ppMaterials,
-        LPD3DXBUFFER *ppEffectInstances, 
+        LPD3DXBUFFER *ppEffectInstances,
         DWORD* pNumMaterials,
         LPD3DXPMESH *ppPMesh);
 
@@ -838,10 +837,10 @@ HRESULT WINAPI
 HRESULT WINAPI
     D3DXCreateSkinInfo(
         DWORD NumVertices,
-        CONST D3DVERTEXELEMENT9 *pDeclaration, 
+        CONST D3DVERTEXELEMENT9 *pDeclaration,
         DWORD NumBones,
         LPD3DXSKININFO* ppSkinInfo);
-        
+
 // Creates a skin info object based on the number of vertices, number of bones, and a FVF describing the vertex layout of the target vertices
 // The bone names and initial bone transforms are not filled in the skin info object by this method.
 HRESULT WINAPI
@@ -850,34 +849,34 @@ HRESULT WINAPI
         DWORD FVF,
         DWORD NumBones,
         LPD3DXSKININFO* ppSkinInfo);
-        
+
 #ifdef __cplusplus
 }
 
 extern "C" {
 #endif //__cplusplus
 
-HRESULT WINAPI 
+HRESULT WINAPI
     D3DXLoadMeshFromXof(
-        LPD3DXFILEDATA pxofMesh, 
-        DWORD Options, 
-        LPDIRECT3DDEVICE9 pD3DDevice, 
+        LPD3DXFILEDATA pxofMesh,
+        DWORD Options,
+        LPDIRECT3DDEVICE9 pD3DDevice,
         LPD3DXBUFFER *ppAdjacency,
-        LPD3DXBUFFER *ppMaterials, 
-        LPD3DXBUFFER *ppEffectInstances, 
+        LPD3DXBUFFER *ppMaterials,
+        LPD3DXBUFFER *ppEffectInstances,
         DWORD *pNumMaterials,
         LPD3DXMESH *ppMesh);
 
 // This similar to D3DXLoadMeshFromXof, except also returns skinning info if present in the file
-// If skinning info is not present, ppSkinInfo will be NULL     
+// If skinning info is not present, ppSkinInfo will be NULL
 HRESULT WINAPI
     D3DXLoadSkinMeshFromXof(
-        LPD3DXFILEDATA pxofMesh, 
+        LPD3DXFILEDATA pxofMesh,
         DWORD Options,
         LPDIRECT3DDEVICE9 pD3DDevice,
         LPD3DXBUFFER* ppAdjacency,
         LPD3DXBUFFER* ppMaterials,
-        LPD3DXBUFFER *ppEffectInstances, 
+        LPD3DXBUFFER *ppEffectInstances,
         DWORD *pMatOut,
         LPD3DXSKININFO* ppSkinInfo,
         LPD3DXMESH* ppMesh);
@@ -894,12 +893,12 @@ HRESULT WINAPI
         DWORD NumBones,
         CONST D3DXBONECOMBINATION *pBoneCombinationTable,
         LPD3DXSKININFO* ppSkinInfo);
-        
+
 HRESULT WINAPI
     D3DXTessellateNPatches(
-        LPD3DXMESH pMeshIn,             
-        CONST DWORD* pAdjacencyIn,             
-        FLOAT NumSegs,                    
+        LPD3DXMESH pMeshIn,
+        CONST DWORD* pAdjacencyIn,
+        FLOAT NumSegs,
         BOOL  QuadraticInterpNormals,     // if false use linear intrep for normals, if true use quadratic
         LPD3DXMESH *ppMeshOut,
         LPD3DXBUFFER *ppAdjacencyOut);
@@ -907,7 +906,7 @@ HRESULT WINAPI
 
 //generates implied outputdecl from input decl
 //the decl generated from this should be used to generate the output decl for
-//the tessellator subroutines. 
+//the tessellator subroutines.
 
 HRESULT WINAPI
     D3DXGenerateOutputDecl(
@@ -917,14 +916,14 @@ HRESULT WINAPI
 //loads patches from an XFileData
 //since an X file can have up to 6 different patch meshes in it,
 //returns them in an array - pNumPatches will contain the number of
-//meshes in the actual file. 
+//meshes in the actual file.
 HRESULT WINAPI
     D3DXLoadPatchMeshFromXof(
         LPD3DXFILEDATA pXofObjMesh,
         DWORD Options,
         LPDIRECT3DDEVICE9 pD3DDevice,
         LPD3DXBUFFER *ppMaterials,
-        LPD3DXBUFFER *ppEffectInstances, 
+        LPD3DXBUFFER *ppEffectInstances,
         PDWORD pNumMaterials,
         LPD3DXPATCHMESH *ppMesh);
 
@@ -935,10 +934,10 @@ HRESULT WINAPI
         DWORD *pdwTriangles,    //output number of triangles
         DWORD *pdwVertices);    //output number of vertices
 
-//computes the size of a single triangle patch      
+//computes the size of a single triangle patch
 HRESULT WINAPI
     D3DXTriPatchSize(
-        CONST FLOAT *pfNumSegs, //segments for each edge (3)    
+        CONST FLOAT *pfNumSegs, //segments for each edge (3)
         DWORD *pdwTriangles,    //output number of triangles
         DWORD *pdwVertices);    //output number of vertices
 
@@ -964,25 +963,25 @@ HRESULT WINAPI
 
 
 
-//creates an NPatch PatchMesh from a D3DXMESH 
+//creates an NPatch PatchMesh from a D3DXMESH
 HRESULT WINAPI
     D3DXCreateNPatchMesh(
         LPD3DXMESH pMeshSysMem,
         LPD3DXPATCHMESH *pPatchMesh);
 
-      
+
 //creates a patch mesh
 HRESULT WINAPI
     D3DXCreatePatchMesh(
         CONST D3DXPATCHINFO *pInfo,     //patch type
         DWORD dwNumPatches,             //number of patches
         DWORD dwNumVertices,            //number of control vertices
-        DWORD dwOptions,                //options 
+        DWORD dwOptions,                //options
         CONST D3DVERTEXELEMENT9 *pDecl, //format of control vertices
-        LPDIRECT3DDEVICE9 pD3DDevice, 
+        LPDIRECT3DDEVICE9 pD3DDevice,
         LPD3DXPATCHMESH *pPatchMesh);
 
-        
+
 //returns the number of degenerates in a patch mesh -
 //text output put in string.
 HRESULT WINAPI
@@ -994,10 +993,10 @@ HRESULT WINAPI
 UINT WINAPI
     D3DXGetFVFVertexSize(DWORD FVF);
 
-UINT WINAPI 
+UINT WINAPI
     D3DXGetDeclVertexSize(CONST D3DVERTEXELEMENT9 *pDecl,DWORD Stream);
 
-UINT WINAPI 
+UINT WINAPI
     D3DXGetDeclLength(CONST D3DVERTEXELEMENT9 *pDecl);
 
 HRESULT WINAPI
@@ -1010,20 +1009,20 @@ HRESULT WINAPI
         CONST D3DVERTEXELEMENT9 *pDeclarator,
         DWORD *pFVF);
 
-HRESULT WINAPI 
+HRESULT WINAPI
     D3DXWeldVertices(
-        LPD3DXMESH pMesh,         
+        LPD3DXMESH pMesh,
         DWORD Flags,
-        CONST D3DXWELDEPSILONS *pEpsilons,                 
-        CONST DWORD *pAdjacencyIn, 
+        CONST D3DXWELDEPSILONS *pEpsilons,
+        CONST DWORD *pAdjacencyIn,
         DWORD *pAdjacencyOut,
-        DWORD *pFaceRemap, 
+        DWORD *pFaceRemap,
         LPD3DXBUFFER *ppVertexRemap);
 
 typedef struct _D3DXINTERSECTINFO
 {
     DWORD FaceIndex;                // index of face intersected
-    FLOAT U;                        // Barycentric Hit Coordinates    
+    FLOAT U;                        // Barycentric Hit Coordinates
     FLOAT V;                        // Barycentric Hit Coordinates
     FLOAT Dist;                     // Ray-Intersection Parameter Distance
 } D3DXINTERSECTINFO, *LPD3DXINTERSECTINFO;
@@ -1033,13 +1032,13 @@ HRESULT WINAPI
     D3DXIntersect(
         LPD3DXBASEMESH pMesh,
         CONST D3DXVECTOR3 *pRayPos,
-        CONST D3DXVECTOR3 *pRayDir, 
+        CONST D3DXVECTOR3 *pRayDir,
         BOOL    *pHit,              // True if any faces were intersected
         DWORD   *pFaceIndex,        // index of closest face intersected
-        FLOAT   *pU,                // Barycentric Hit Coordinates    
+        FLOAT   *pU,                // Barycentric Hit Coordinates
         FLOAT   *pV,                // Barycentric Hit Coordinates
         FLOAT   *pDist,             // Ray-Intersection Parameter Distance
-        LPD3DXBUFFER *ppAllHits,    // Array of D3DXINTERSECTINFOs for all hits (not just closest) 
+        LPD3DXBUFFER *ppAllHits,    // Array of D3DXINTERSECTINFOs for all hits (not just closest)
         DWORD   *pCountOfHits);     // Number of entries in AllHits array
 
 HRESULT WINAPI
@@ -1047,20 +1046,20 @@ HRESULT WINAPI
         LPD3DXBASEMESH pMesh,
         DWORD AttribId,
         CONST D3DXVECTOR3 *pRayPos,
-        CONST D3DXVECTOR3 *pRayDir, 
+        CONST D3DXVECTOR3 *pRayDir,
         BOOL    *pHit,              // True if any faces were intersected
         DWORD   *pFaceIndex,        // index of closest face intersected
-        FLOAT   *pU,                // Barycentric Hit Coordinates    
+        FLOAT   *pU,                // Barycentric Hit Coordinates
         FLOAT   *pV,                // Barycentric Hit Coordinates
         FLOAT   *pDist,             // Ray-Intersection Parameter Distance
-        LPD3DXBUFFER *ppAllHits,    // Array of D3DXINTERSECTINFOs for all hits (not just closest) 
+        LPD3DXBUFFER *ppAllHits,    // Array of D3DXINTERSECTINFOs for all hits (not just closest)
         DWORD   *pCountOfHits);     // Number of entries in AllHits array
 
 
 HRESULT WINAPI D3DXSplitMesh
     (
-    LPD3DXMESH pMeshIn,         
-    CONST DWORD *pAdjacencyIn, 
+    LPD3DXMESH pMeshIn,
+    CONST DWORD *pAdjacencyIn,
     CONST DWORD MaxSize,
     CONST DWORD Options,
     DWORD *pMeshesOut,
@@ -1070,7 +1069,7 @@ HRESULT WINAPI D3DXSplitMesh
     LPD3DXBUFFER *ppVertRemapArrayOut
     );
 
-BOOL WINAPI D3DXIntersectTri 
+BOOL WINAPI D3DXIntersectTri
 (
     CONST D3DXVECTOR3 *p0,           // Triangle vertex 0 position
     CONST D3DXVECTOR3 *p1,           // Triangle vertex 1 position
@@ -1088,9 +1087,9 @@ BOOL WINAPI
         CONST D3DXVECTOR3 *pRayPosition,
         CONST D3DXVECTOR3 *pRayDirection);
 
-BOOL WINAPI 
+BOOL WINAPI
     D3DXBoxBoundProbe(
-        CONST D3DXVECTOR3 *pMin, 
+        CONST D3DXVECTOR3 *pMin,
         CONST D3DXVECTOR3 *pMax,
         CONST D3DXVECTOR3 *pRayPosition,
         CONST D3DXVECTOR3 *pRayDirection);
@@ -1124,11 +1123,11 @@ HRESULT WINAPI D3DXComputeTangentFrameEx(ID3DXMesh *pMesh,
 //puts the binorm in BINORM[BinormIndex] also specified in the decl.
 //
 //If neither the binorm or the tangnet are in the meshes declaration,
-//the function will fail. 
+//the function will fail.
 //
 //If a tangent or Binorm field is in the Decl, but the user does not
 //wish D3DXComputeTangent to replace them, then D3DX_DEFAULT specified
-//in the TangentIndex or BinormIndex will cause it to ignore the specified 
+//in the TangentIndex or BinormIndex will cause it to ignore the specified
 //semantic.
 //
 //Wrap should be specified if the texture coordinates wrap.
@@ -1186,7 +1185,7 @@ typedef HRESULT (WINAPI *LPD3DXUVATLASCB)(FLOAT fPercentDone,  LPVOID lpUserCont
 //               integrated metric tensor for that face. This lets you control
 //               the way this triangle may be stretched in the atlas. The IMT
 //               passed in will be 3 floats (a,b,c) and specify a symmetric
-//               matrix (a b) that, given a vector (s,t), specifies the 
+//               matrix (a b) that, given a vector (s,t), specifies the
 //                      (b c)
 //               distance between a vector v1 and a vector v2 = v1 + (s,t) as
 //               sqrt((s, t) * M * (s, t)^T).
@@ -1202,7 +1201,7 @@ typedef HRESULT (WINAPI *LPD3DXUVATLASCB)(FLOAT fPercentDone,  LPVOID lpUserCont
 //               in some 2-D space. For D3DXUVAtlas, this space is created by
 //               letting S be the direction from the first to the second
 //               vertex, and T be the cross product between the normal and S.
-//               
+//
 //  pStatusCallback - Since the atlas creation process can be very CPU intensive,
 //                    this allows the programmer to specify a function to be called
 //                    periodically, similarly to how it is done in the PRT simulation
@@ -1459,7 +1458,7 @@ HRESULT WINAPI
         LPD3DXBUFFER *ppStripLengths,
         DWORD *pNumStrips);
 
-        
+
 //============================================================================
 //
 //  D3DXOptimizeFaces:
@@ -1485,17 +1484,17 @@ HRESULT WINAPI
 //============================================================================
 HRESULT WINAPI
     D3DXOptimizeFaces(
-        LPCVOID pbIndices, 
-        UINT cFaces, 
-        UINT cVertices, 
-        BOOL b32BitIndices, 
+        LPCVOID pbIndices,
+        UINT cFaces,
+        UINT cVertices,
+        BOOL b32BitIndices,
         DWORD* pFaceRemap);
-        
+
 //============================================================================
 //
 //  D3DXOptimizeVertices:
 //  --------------------
-//  Generate a vertex remapping to optimize for in order use of vertices for 
+//  Generate a vertex remapping to optimize for in order use of vertices for
 //    a given set of indices.  This is commonly used after applying the face
 //    remap generated by D3DXOptimizeFaces
 //
@@ -1516,10 +1515,10 @@ HRESULT WINAPI
 //============================================================================
 HRESULT WINAPI
     D3DXOptimizeVertices(
-        LPCVOID pbIndices, 
-        UINT cFaces, 
-        UINT cVertices, 
-        BOOL b32BitIndices, 
+        LPCVOID pbIndices,
+        UINT cFaces,
+        UINT cVertices,
+        BOOL b32BitIndices,
         DWORD* pVertexRemap);
 
 #ifdef __cplusplus
@@ -1546,8 +1545,8 @@ typedef enum _D3DXSHGPUSIMOPT {
     D3DXSHGPUSIMOPT_SHADOWRES1024 = 2,
     D3DXSHGPUSIMOPT_SHADOWRES2048 = 3,
 
-    D3DXSHGPUSIMOPT_HIGHQUALITY = 4,    
-    
+    D3DXSHGPUSIMOPT_HIGHQUALITY = 4,
+
     D3DXSHGPUSIMOPT_FORCE_DWORD = 0x7fffffff
 } D3DXSHGPUSIMOPT;
 
@@ -1560,7 +1559,7 @@ typedef struct _D3DXSHMATERIAL {
     BOOL          bMirror;  // Must be set to FALSE.  bMirror == TRUE not currently supported
     BOOL          bSubSurf; // true if the object does subsurface scattering - can't do this and be a mirror
 
-    // subsurface scattering parameters 
+    // subsurface scattering parameters
     FLOAT         RelativeIndexOfRefraction;
     D3DCOLORVALUE Absorption;
     D3DCOLORVALUE ReducedScattering;
@@ -1583,10 +1582,10 @@ typedef struct _D3DXSHPRTSPLITMESHVERTDATA {
 typedef struct _D3DXSHPRTSPLITMESHCLUSTERDATA {
     UINT uVertStart;     // initial index into remapped vertex array
     UINT uVertLength;    // number of vertices in this super cluster
-    
+
     UINT uFaceStart;     // initial index into face array
     UINT uFaceLength;    // number of faces in this super cluster
-    
+
     UINT uClusterStart;  // initial index into cluster array
     UINT uClusterLength; // number of clusters in this super cluster
 } D3DXSHPRTSPLITMESHCLUSTERDATA;
@@ -1601,19 +1600,19 @@ typedef HRESULT (WINAPI *LPD3DXSHPRTSIMCB)(float fPercentDone,  LPVOID lpUserCon
 
 // GUIDs
 // {F1827E47-00A8-49cd-908C-9D11955F8728}
-DEFINE_GUID(IID_ID3DXPRTBuffer, 
+DEFINE_GUID(IID_ID3DXPRTBuffer,
 0xf1827e47, 0xa8, 0x49cd, 0x90, 0x8c, 0x9d, 0x11, 0x95, 0x5f, 0x87, 0x28);
 
 // {A758D465-FE8D-45ad-9CF0-D01E56266A07}
-DEFINE_GUID(IID_ID3DXPRTCompBuffer, 
+DEFINE_GUID(IID_ID3DXPRTCompBuffer,
 0xa758d465, 0xfe8d, 0x45ad, 0x9c, 0xf0, 0xd0, 0x1e, 0x56, 0x26, 0x6a, 0x7);
 
 // {838F01EC-9729-4527-AADB-DF70ADE7FEA9}
-DEFINE_GUID(IID_ID3DXTextureGutterHelper, 
+DEFINE_GUID(IID_ID3DXTextureGutterHelper,
 0x838f01ec, 0x9729, 0x4527, 0xaa, 0xdb, 0xdf, 0x70, 0xad, 0xe7, 0xfe, 0xa9);
 
 // {683A4278-CD5F-4d24-90AD-C4E1B6855D53}
-DEFINE_GUID(IID_ID3DXPRTEngine, 
+DEFINE_GUID(IID_ID3DXPRTEngine,
 0x683a4278, 0xcd5f, 0x4d24, 0x90, 0xad, 0xc4, 0xe1, 0xb6, 0x85, 0x5d, 0x53);
 
 // interface defenitions
@@ -1654,26 +1653,26 @@ DECLARE_INTERFACE_(ID3DXPRTBuffer, IUnknown)
 
     // every scalar in buffer is multiplied by Scale
     STDMETHOD(ScaleBuffer)(THIS_ FLOAT Scale) PURE;
-    
+
     // every scalar contains the sum of this and pBuffers values
-    // pBuffer must have the same storage class/dimensions 
+    // pBuffer must have the same storage class/dimensions
     STDMETHOD(AddBuffer)(THIS_ LPD3DXPRTBUFFER pBuffer) PURE;
 
     // GutterHelper (described below) will fill in the gutter
     // regions of a texture by interpolating "internal" values
     STDMETHOD(AttachGH)(THIS_ LPD3DXTEXTUREGUTTERHELPER) PURE;
     STDMETHOD(ReleaseGH)(THIS) PURE;
-    
+
     // Evaluates attached gutter helper on the contents of this buffer
     STDMETHOD(EvalGH)(THIS) PURE;
 
     // extracts a given channel into texture pTexture
     // NumCoefficients starting from StartCoefficient are copied
-    STDMETHOD(ExtractTexture)(THIS_ UINT Channel, UINT StartCoefficient, 
+    STDMETHOD(ExtractTexture)(THIS_ UINT Channel, UINT StartCoefficient,
                               UINT NumCoefficients, LPDIRECT3DTEXTURE9 pTexture) PURE;
 
     // extracts NumCoefficients coefficients into mesh - only applicable on single channel
-    // buffers, otherwise just lockbuffer and copy data.  With SHPRT data NumCoefficients 
+    // buffers, otherwise just lockbuffer and copy data.  With SHPRT data NumCoefficients
     // should be Order^2
     STDMETHOD(ExtractToMesh)(THIS_ UINT NumCoefficients, D3DDECLUSAGE Usage, UINT UsageIndexStart,
                              LPD3DXMESH pScene) PURE;
@@ -1717,19 +1716,19 @@ DECLARE_INTERFACE_(ID3DXPRTCompBuffer, IUnknown)
     // copies basis vectors for cluster "Cluster" into pClusterBasis
     // (NumPCA+1)*NumCoeffs*NumChannels floats
     STDMETHOD(ExtractBasis)(THIS_ UINT Cluster, FLOAT *pClusterBasis) PURE;
-    
+
     // UINT per sample - which cluster it belongs to
     STDMETHOD(ExtractClusterIDs)(THIS_ UINT *pClusterIDs) PURE;
-    
+
     // copies NumExtract PCA projection coefficients starting at StartPCA
     // into pPCACoefficients - NumSamples*NumExtract floats copied
     STDMETHOD(ExtractPCA)(THIS_ UINT StartPCA, UINT NumExtract, FLOAT *pPCACoefficients) PURE;
 
     // copies NumPCA projection coefficients starting at StartPCA
     // into pTexture - should be able to cope with signed formats
-    STDMETHOD(ExtractTexture)(THIS_ UINT StartPCA, UINT NumpPCA, 
+    STDMETHOD(ExtractTexture)(THIS_ UINT StartPCA, UINT NumpPCA,
                               LPDIRECT3DTEXTURE9 pTexture) PURE;
-                              
+
     // copies NumPCA projection coefficients into mesh pScene
     // Usage is D3DDECLUSAGE where coefficients are to be stored
     // UsageIndexStart is starting index
@@ -1767,7 +1766,7 @@ DECLARE_INTERFACE_(ID3DXTextureGutterHelper, IUnknown)
     STDMETHOD_(ULONG, Release)(THIS) PURE;
 
     // ID3DXTextureGutterHelper
-    
+
     // dimensions of texture this is bound too
     STDMETHOD_(UINT, GetWidth)(THIS) PURE;
     STDMETHOD_(UINT, GetHeight)(THIS) PURE;
@@ -1775,19 +1774,19 @@ DECLARE_INTERFACE_(ID3DXTextureGutterHelper, IUnknown)
 
     // Applying gutters recomputes all of the gutter texels of class "2"
     // based on texels of class "1" or "4"
-    
+
     // Applies gutters to a raw float buffer - each texel is NumCoeffs floats
     // Width and Height must match GutterHelper
     STDMETHOD(ApplyGuttersFloat)(THIS_ FLOAT *pDataIn, UINT NumCoeffs, UINT Width, UINT Height);
-    
+
     // Applies gutters to pTexture
     // Dimensions must match GutterHelper
     STDMETHOD(ApplyGuttersTex)(THIS_ LPDIRECT3DTEXTURE9 pTexture);
-    
+
     // Applies gutters to a D3DXPRTBuffer
     // Dimensions must match GutterHelper
     STDMETHOD(ApplyGuttersPRT)(THIS_ LPD3DXPRTBUFFER pBuffer);
-       
+
     // Resamples a texture from a mesh onto this gutterhelpers
     // parameterization.  It is assumed that the UV coordinates
     // for this gutter helper are in TEXTURE 0 (usage/usage index)
@@ -1802,63 +1801,63 @@ DECLARE_INTERFACE_(ID3DXTextureGutterHelper, IUnknown)
     //              for pTextureIn
     // UsageIndex - which index for Usage above for pTextureIn
     // pTextureOut- Resampled texture
-    // 
+    //
     // Usage would generally be D3DDECLUSAGE_TEXCOORD  and UsageIndex other than zero
     STDMETHOD(ResampleTex)(THIS_ LPDIRECT3DTEXTURE9 pTextureIn,
                                  LPD3DXMESH pMeshIn,
                                  D3DDECLUSAGE Usage, UINT UsageIndex,
-                                 LPDIRECT3DTEXTURE9 pTextureOut);    
-    
+                                 LPDIRECT3DTEXTURE9 pTextureOut);
+
     // the routines below provide access to the data structures
     // used by the Apply functions
 
     // face map is a UINT per texel that represents the
-    // face of the mesh that texel belongs too - 
+    // face of the mesh that texel belongs too -
     // only valid if same texel is valid in pGutterData
     // pFaceData must be allocated by the user
     STDMETHOD(GetFaceMap)(THIS_ UINT *pFaceData) PURE;
-    
+
     // BaryMap is a D3DXVECTOR2 per texel
     // the 1st two barycentric coordinates for the corresponding
     // face (3rd weight is always 1-sum of first two)
     // only valid if same texel is valid in pGutterData
     // pBaryData must be allocated by the user
     STDMETHOD(GetBaryMap)(THIS_ D3DXVECTOR2 *pBaryData) PURE;
-    
+
     // TexelMap is a D3DXVECTOR2 per texel that
     // stores the location in pixel coordinates where the
     // corresponding texel is mapped
     // pTexelData must be allocated by the user
     STDMETHOD(GetTexelMap)(THIS_ D3DXVECTOR2 *pTexelData) PURE;
-    
+
     // GutterMap is a BYTE per texel
     // 0/1/2 for Invalid/Internal/Gutter texels
     // 4 represents a gutter texel that will be computed
     // during PRT
     // pGutterData must be allocated by the user
     STDMETHOD(GetGutterMap)(THIS_ BYTE *pGutterData) PURE;
-    
+
     // face map is a UINT per texel that represents the
-    // face of the mesh that texel belongs too - 
+    // face of the mesh that texel belongs too -
     // only valid if same texel is valid in pGutterData
     STDMETHOD(SetFaceMap)(THIS_ UINT *pFaceData) PURE;
-    
+
     // BaryMap is a D3DXVECTOR2 per texel
     // the 1st two barycentric coordinates for the corresponding
     // face (3rd weight is always 1-sum of first two)
     // only valid if same texel is valid in pGutterData
     STDMETHOD(SetBaryMap)(THIS_ D3DXVECTOR2 *pBaryData) PURE;
-    
+
     // TexelMap is a D3DXVECTOR2 per texel that
     // stores the location in pixel coordinates where the
     // corresponding texel is mapped
     STDMETHOD(SetTexelMap)(THIS_ D3DXVECTOR2 *pTexelData) PURE;
-    
+
     // GutterMap is a BYTE per texel
     // 0/1/2 for Invalid/Internal/Gutter texels
     // 4 represents a gutter texel that will be computed
     // during PRT
-    STDMETHOD(SetGutterMap)(THIS_ BYTE *pGutterData) PURE;    
+    STDMETHOD(SetGutterMap)(THIS_ BYTE *pGutterData) PURE;
 };
 
 
@@ -1895,7 +1894,7 @@ DECLARE_INTERFACE_(ID3DXPRTEngine, IUnknown)
     STDMETHOD_(ULONG, Release)(THIS) PURE;
 
     // ID3DXPRTEngine
-    
+
     // This sets a material per attribute in the scene mesh and it is
     // the only way to specify subsurface scattering parameters.  if
     // bSetAlbedo is FALSE, NumChannels must match the current
@@ -1909,53 +1908,53 @@ DECLARE_INTERFACE_(ID3DXPRTEngine, IUnknown)
     //  albedo that might have been set before.  FALSE won't clobber.
     // fLengthScale is used for subsurface scattering - scene is mapped into a 1mm unit cube
     //  and scaled by this amount
-    STDMETHOD(SetMeshMaterials)(THIS_ CONST D3DXSHMATERIAL **ppMaterials, UINT NumMeshes, 
+    STDMETHOD(SetMeshMaterials)(THIS_ CONST D3DXSHMATERIAL **ppMaterials, UINT NumMeshes,
                                 UINT NumChannels, BOOL bSetAlbedo, FLOAT fLengthScale) PURE;
-    
+
     // setting albedo per-vertex or per-texel over rides the albedos stored per mesh
     // but it does not over ride any other settings
-    
+
     // sets an albedo to be used per vertex - the albedo is represented as a float
     // pDataIn input pointer (pointint to albedo of 1st sample)
     // NumChannels 1 implies "grayscale" materials, set this to 3 to enable
     //  color bleeding effects
     // Stride - stride in bytes to get to next samples albedo
     STDMETHOD(SetPerVertexAlbedo)(THIS_ CONST VOID *pDataIn, UINT NumChannels, UINT Stride) PURE;
-    
+
     // represents the albedo per-texel instead of per-vertex (even if per-vertex PRT is used)
     // pAlbedoTexture - texture that stores the albedo (dimension arbitrary)
     // NumChannels 1 implies "grayscale" materials, set this to 3 to enable
     //  color bleeding effects
     // pGH - optional gutter helper, otherwise one is constructed in computation routines and
     //  destroyed (if not attached to buffers)
-    STDMETHOD(SetPerTexelAlbedo)(THIS_ LPDIRECT3DTEXTURE9 pAlbedoTexture, 
-                                 UINT NumChannels, 
+    STDMETHOD(SetPerTexelAlbedo)(THIS_ LPDIRECT3DTEXTURE9 pAlbedoTexture,
+                                 UINT NumChannels,
                                  LPD3DXTEXTUREGUTTERHELPER pGH) PURE;
-                                 
+
     // gets the per-vertex albedo
-    STDMETHOD(GetVertexAlbedo)(THIS_ D3DXCOLOR *pVertColors, UINT NumVerts) PURE;                                 
-                                 
+    STDMETHOD(GetVertexAlbedo)(THIS_ D3DXCOLOR *pVertColors, UINT NumVerts) PURE;
+
     // If pixel PRT is being computed normals default to ones that are interpolated
     // from the vertex normals.  This specifies a texture that stores an object
     // space normal map instead (must use a texture format that can represent signed values)
-    // pNormalTexture - normal map, must be same dimensions as PRTBuffers, signed                                
+    // pNormalTexture - normal map, must be same dimensions as PRTBuffers, signed
     STDMETHOD(SetPerTexelNormal)(THIS_ LPDIRECT3DTEXTURE9 pNormalTexture) PURE;
-                                 
+
     // Copies per-vertex albedo from mesh
     // pMesh - mesh that represents the scene.  It must have the same
     //  properties as the mesh used to create the PRTEngine
     // Usage - D3DDECLUSAGE to extract albedos from
     // NumChannels 1 implies "grayscale" materials, set this to 3 to enable
     //  color bleeding effects
-    STDMETHOD(ExtractPerVertexAlbedo)(THIS_ LPD3DXMESH pMesh, 
-                                      D3DDECLUSAGE Usage, 
+    STDMETHOD(ExtractPerVertexAlbedo)(THIS_ LPD3DXMESH pMesh,
+                                      D3DDECLUSAGE Usage,
                                       UINT NumChannels) PURE;
 
     // Resamples the input buffer into the output buffer
     // can be used to move between per-vertex and per-texel buffers.  This can also be used
     // to convert single channel buffers to 3-channel buffers and vice-versa.
     STDMETHOD(ResampleBuffer)(THIS_ LPD3DXPRTBUFFER pBufferIn, LPD3DXPRTBUFFER pBufferOut) PURE;
-    
+
     // Returns the scene mesh - including modifications from adaptive spatial sampling
     // The returned mesh only has positions, normals and texture coordinates (if defined)
     // pD3DDevice - d3d device that will be used to allocate the mesh
@@ -1998,10 +1997,10 @@ DECLARE_INTERFACE_(ID3DXPRTEngine, IUnknown)
     // Adaptive - if TRUE adaptive sampling (angular) is used
     // AdaptiveThresh - threshold used to terminate adaptive angular sampling
     //  ignored if adaptive sampling is not set
-    STDMETHOD(SetSamplingInfo)(THIS_ UINT NumRays, 
-                               BOOL UseSphere, 
-                               BOOL UseCosine, 
-                               BOOL Adaptive, 
+    STDMETHOD(SetSamplingInfo)(THIS_ UINT NumRays,
+                               BOOL UseSphere,
+                               BOOL UseCosine,
+                               BOOL Adaptive,
                                FLOAT AdaptiveThresh) PURE;
 
     // Methods that compute the direct lighting contribution for objects
@@ -2011,9 +2010,9 @@ DECLARE_INTERFACE_(ID3DXPRTEngine, IUnknown)
     //
     // SHOrder - order of SH to use
     // pDataOut - PRT buffer that is generated.  Can be single channel
-    STDMETHOD(ComputeDirectLightingSH)(THIS_ UINT SHOrder, 
+    STDMETHOD(ComputeDirectLightingSH)(THIS_ UINT SHOrder,
                                        LPD3DXPRTBUFFER pDataOut) PURE;
-                                       
+
     // Adaptive variant of above function.  This will refine the mesh
     // generating new vertices/faces to approximate the PRT signal
     // more faithfully.
@@ -2023,15 +2022,15 @@ DECLARE_INTERFACE_(ID3DXPRTEngine, IUnknown)
     // MinEdgeLength - minimum edge length that will be generated
     //  if value is too small a fairly conservative model dependent value
     //  is used
-    // MaxSubdiv - maximum subdivision level, if 0 is specified it 
+    // MaxSubdiv - maximum subdivision level, if 0 is specified it
     //  will default to 4
     // pDataOut - PRT buffer that is generated.  Can be single channel.
-    STDMETHOD(ComputeDirectLightingSHAdaptive)(THIS_ UINT SHOrder, 
+    STDMETHOD(ComputeDirectLightingSHAdaptive)(THIS_ UINT SHOrder,
                                                FLOAT AdaptiveThresh,
                                                FLOAT MinEdgeLength,
                                                UINT MaxSubdiv,
                                                LPD3DXPRTBUFFER pDataOut) PURE;
-                                       
+
     // Function that computes the direct lighting contribution for objects
     // light is always represented using spherical harmonics (SH)
     // This is done on the GPU and is much faster then using the CPU.
@@ -2068,7 +2067,7 @@ DECLARE_INTERFACE_(ID3DXPRTEngine, IUnknown)
     // pDataIn - input data (previous bounce)
     // pDataOut - result of subsurface scattering simulation
     // pDataTotal - [optional] results can be summed into this buffer
-    STDMETHOD(ComputeSS)(THIS_ LPD3DXPRTBUFFER pDataIn, 
+    STDMETHOD(ComputeSS)(THIS_ LPD3DXPRTBUFFER pDataIn,
                          LPD3DXPRTBUFFER pDataOut, LPD3DXPRTBUFFER pDataTotal) PURE;
 
     // Adaptive version of ComputeSS.
@@ -2079,11 +2078,11 @@ DECLARE_INTERFACE_(ID3DXPRTEngine, IUnknown)
     // MinEdgeLength - minimum edge length that will be generated
     //  if value is too small a fairly conservative model dependent value
     //  is used
-    // MaxSubdiv - maximum subdivision level, if 0 is specified it 
-    //  will default to 4    
+    // MaxSubdiv - maximum subdivision level, if 0 is specified it
+    //  will default to 4
     // pDataOut - result of subsurface scattering simulation
     // pDataTotal - [optional] results can be summed into this buffer
-    STDMETHOD(ComputeSSAdaptive)(THIS_ LPD3DXPRTBUFFER pDataIn, 
+    STDMETHOD(ComputeSSAdaptive)(THIS_ LPD3DXPRTBUFFER pDataIn,
                                  FLOAT AdaptiveThresh,
                                  FLOAT MinEdgeLength,
                                  UINT MaxSubdiv,
@@ -2093,7 +2092,7 @@ DECLARE_INTERFACE_(ID3DXPRTEngine, IUnknown)
     // works for SH based PRT or generic lighting
     // Albedo is not multiplied by result
     //
-    // pDataIn - previous bounces data 
+    // pDataIn - previous bounces data
     // pDataOut - PRT buffer that is generated
     // pDataTotal - [optional] can be used to keep a running sum
     STDMETHOD(ComputeBounce)(THIS_ LPD3DXPRTBUFFER pDataIn,
@@ -2102,16 +2101,16 @@ DECLARE_INTERFACE_(ID3DXPRTEngine, IUnknown)
 
     // Adaptive version of above function.
     //
-    // pDataIn - previous bounces data, can be single channel 
+    // pDataIn - previous bounces data, can be single channel
     // AdaptiveThresh - threshold for adaptive subdivision (in PRT vector error)
     //  if value is less then 1e-6f, 1e-6f is specified
     // MinEdgeLength - minimum edge length that will be generated
     //  if value is too small a fairly conservative model dependent value
     //  is used
-    // MaxSubdiv - maximum subdivision level, if 0 is specified it 
+    // MaxSubdiv - maximum subdivision level, if 0 is specified it
     //  will default to 4
     // pDataOut - PRT buffer that is generated
-    // pDataTotal - [optional] can be used to keep a running sum    
+    // pDataTotal - [optional] can be used to keep a running sum
     STDMETHOD(ComputeBounceAdaptive)(THIS_ LPD3DXPRTBUFFER pDataIn,
                                      FLOAT AdaptiveThresh,
                                      FLOAT MinEdgeLength,
@@ -2120,7 +2119,7 @@ DECLARE_INTERFACE_(ID3DXPRTEngine, IUnknown)
                                      LPD3DXPRTBUFFER pDataTotal) PURE;
 
     // Computes projection of distant SH radiance into a local SH radiance
-    // function.  This models how direct lighting is attenuated by the 
+    // function.  This models how direct lighting is attenuated by the
     // scene and is a form of "neighborhood transfer."  The result is
     // a linear operator (matrix) at every sample point, if you multiply
     // this matrix by the distant SH lighting coefficients you get an
@@ -2129,24 +2128,24 @@ DECLARE_INTERFACE_(ID3DXPRTEngine, IUnknown)
     // than be projected into another basis or used with any rendering
     // technique that uses spherical harmonics as input.
     // SetSamplingInfo must be called with TRUE for UseSphere and
-    // FALSE for UseCosine before this method is called.  
-    // Generates SHOrderIn*SHOrderIn*SHOrderOut*SHOrderOut scalars 
+    // FALSE for UseCosine before this method is called.
+    // Generates SHOrderIn*SHOrderIn*SHOrderOut*SHOrderOut scalars
     // per channel at each sample location.
     //
     // SHOrderIn  - Order of the SH representation of distant lighting
     // SHOrderOut - Order of the SH representation of local lighting
     // NumVolSamples  - Number of sample locations
     // pSampleLocs    - position of sample locations
-    // pDataOut       - PRT Buffer that will store output results    
-    STDMETHOD(ComputeVolumeSamplesDirectSH)(THIS_ UINT SHOrderIn, 
-                                            UINT SHOrderOut, 
+    // pDataOut       - PRT Buffer that will store output results
+    STDMETHOD(ComputeVolumeSamplesDirectSH)(THIS_ UINT SHOrderIn,
+                                            UINT SHOrderOut,
                                             UINT NumVolSamples,
                                             CONST D3DXVECTOR3 *pSampleLocs,
                                             LPD3DXPRTBUFFER pDataOut) PURE;
-                                    
+
     // At each sample location computes a linear operator (matrix) that maps
     // the representation of source radiance (NumCoeffs in pSurfDataIn)
-    // into a local incident radiance function approximated with spherical 
+    // into a local incident radiance function approximated with spherical
     // harmonics.  For example if a light map data is specified in pSurfDataIn
     // the result is an SH representation of the flow of light at each sample
     // point.  If PRT data for an outdoor scene is used, each sample point
@@ -2155,7 +2154,7 @@ DECLARE_INTERFACE_(ID3DXPRTEngine, IUnknown)
     // ComputeVolumeSamplesDirectSH this gives the complete representation for
     // how light arrives at each sample point parameterized by distant lighting.
     // SetSamplingInfo must be called with TRUE for UseSphere and
-    // FALSE for UseCosine before this method is called.    
+    // FALSE for UseCosine before this method is called.
     // Generates pSurfDataIn->NumCoeffs()*SHOrder*SHOrder scalars
     // per channel at each sample location.
     //
@@ -2164,8 +2163,8 @@ DECLARE_INTERFACE_(ID3DXPRTEngine, IUnknown)
     // NumVolSamples  - Number of sample locations
     // pSampleLocs    - position of sample locations
     // pDataOut       - PRT Buffer that will store output results
-    STDMETHOD(ComputeVolumeSamples)(THIS_ LPD3DXPRTBUFFER pSurfDataIn, 
-                                    UINT SHOrder, 
+    STDMETHOD(ComputeVolumeSamples)(THIS_ LPD3DXPRTBUFFER pSurfDataIn,
+                                    UINT SHOrder,
                                     UINT NumVolSamples,
                                     CONST D3DXVECTOR3 *pSampleLocs,
                                     LPD3DXPRTBUFFER pDataOut) PURE;
@@ -2185,7 +2184,7 @@ DECLARE_INTERFACE_(ID3DXPRTEngine, IUnknown)
                                           LPD3DXPRTBUFFER pDataOut) PURE;
 
 
-    // given the solution for PRT or light maps, computes transfer vector at arbitrary 
+    // given the solution for PRT or light maps, computes transfer vector at arbitrary
     // position/normal pairs in space
     //
     // pSurfDataIn  - input data
@@ -2204,21 +2203,21 @@ DECLARE_INTERFACE_(ID3DXPRTEngine, IUnknown)
     // Frees temporary data structures that can be created for subsurface scattering
     // this data is freed when the PRTComputeEngine is freed and is lazily created
     STDMETHOD(FreeSSData)(THIS) PURE;
-    
+
     // Frees temporary data structures that can be created for bounce simulations
     // this data is freed when the PRTComputeEngine is freed and is lazily created
     STDMETHOD(FreeBounceData)(THIS) PURE;
 
-    // This computes the Local Deformable PRT (LDPRT) coefficients relative to the 
-    // per sample normals that minimize error in a least squares sense with respect 
-    // to the input PRT data set.  These coefficients can be used with skinned/transformed 
-    // normals to model global effects with dynamic objects.  Shading normals can 
+    // This computes the Local Deformable PRT (LDPRT) coefficients relative to the
+    // per sample normals that minimize error in a least squares sense with respect
+    // to the input PRT data set.  These coefficients can be used with skinned/transformed
+    // normals to model global effects with dynamic objects.  Shading normals can
     // optionally be solved for - these normals (along with the LDPRT coefficients) can
     // more accurately represent the PRT signal.  The coefficients are for zonal
     // harmonics oriented in the normal/shading normal direction.
     //
     // pDataIn  - SH PRT dataset that is input
-    // SHOrder  - Order of SH to compute conv coefficients for 
+    // SHOrder  - Order of SH to compute conv coefficients for
     // pNormOut - Optional array of vectors (passed in) that will be filled with
     //             "shading normals", LDPRT coefficients are optimized for
     //             these normals.  This array must be the same size as the number of
@@ -2233,7 +2232,7 @@ DECLARE_INTERFACE_(ID3DXPRTEngine, IUnknown)
     // can be useful when using subsurface scattering
     // fScale - value to scale each vector in submesh by
     STDMETHOD(ScaleMeshChunk)(THIS_ UINT uMeshChunk, FLOAT fScale, LPD3DXPRTBUFFER pDataOut) PURE;
-    
+
     // mutliplies each PRT vector by the albedo - can be used if you want to have the albedo
     // burned into the dataset, often better not to do this.  If this is not done the user
     // must mutliply the albedo themselves when rendering - just multiply the albedo times
@@ -2245,7 +2244,7 @@ DECLARE_INTERFACE_(ID3DXPRTEngine, IUnknown)
     //
     // pDataOut - dataset that will get albedo pushed into it
     STDMETHOD(MultiplyAlbedo)(THIS_ LPD3DXPRTBUFFER pDataOut) PURE;
-    
+
     // Sets a pointer to an optional call back function that reports back to the
     // user percentage done and gives them the option of quitting
     // pCB - pointer to call back function, return S_OK for the simulation
@@ -2254,16 +2253,16 @@ DECLARE_INTERFACE_(ID3DXPRTEngine, IUnknown)
     //  will be invoked
     // lpUserContext - will be passed back to the users call back
     STDMETHOD(SetCallBack)(THIS_ LPD3DXSHPRTSIMCB pCB, FLOAT Frequency,  LPVOID lpUserContext) PURE;
-    
+
     // Returns TRUE if the ray intersects the mesh, FALSE if it does not.  This function
     // takes into account settings from SetMinMaxIntersection.  If the closest intersection
     // is not needed this function is more efficient compared to the ClosestRayIntersection
     // method.
     // pRayPos - origin of ray
     // pRayDir - normalized ray direction (normalization required for SetMinMax to be meaningful)
-    
+
     STDMETHOD_(BOOL, ShadowRayIntersects)(THIS_ CONST D3DXVECTOR3 *pRayPos, CONST D3DXVECTOR3 *pRayDir) PURE;
-    
+
     // Returns TRUE if the ray intersects the mesh, FALSE if it does not.  If there is an
     // intersection the closest face that was intersected and its first two barycentric coordinates
     // are returned.  This function takes into account settings from SetMinMaxIntersection.
@@ -2276,7 +2275,7 @@ DECLARE_INTERFACE_(ID3DXPRTEngine, IUnknown)
     // pU          - Barycentric coordinate for vertex 0
     // pV          - Barycentric coordinate for vertex 1
     // pDist       - Distance along ray where the intersection occured
-    
+
     STDMETHOD_(BOOL, ClosestRayIntersects)(THIS_ CONST D3DXVECTOR3 *pRayPos, CONST D3DXVECTOR3 *pRayDir,
                                            DWORD *pFaceIndex, FLOAT *pU, FLOAT *pV, FLOAT *pDist) PURE;
 };
@@ -2308,8 +2307,8 @@ extern "C" {
 //
 //============================================================================
 
-HRESULT WINAPI 
-    D3DXCreatePRTBuffer( 
+HRESULT WINAPI
+    D3DXCreatePRTBuffer(
         UINT NumSamples,
         UINT NumCoeffs,
         UINT NumChannels,
@@ -2338,7 +2337,7 @@ HRESULT WINAPI
 //============================================================================
 
 HRESULT WINAPI
-    D3DXCreatePRTBufferTex( 
+    D3DXCreatePRTBufferTex(
         UINT Width,
         UINT Height,
         UINT NumCoeffs,
@@ -2361,12 +2360,12 @@ HRESULT WINAPI
 
 HRESULT WINAPI
     D3DXLoadPRTBufferFromFileA(
-        LPCSTR pFilename, 
+        LPCSTR pFilename,
         LPD3DXPRTBUFFER*       ppBuffer);
-        
+
 HRESULT WINAPI
     D3DXLoadPRTBufferFromFileW(
-        LPCWSTR pFilename, 
+        LPCWSTR pFilename,
         LPD3DXPRTBUFFER*       ppBuffer);
 
 #ifdef UNICODE
@@ -2394,7 +2393,7 @@ HRESULT WINAPI
     D3DXSavePRTBufferToFileA(
         LPCSTR pFileName,
         LPD3DXPRTBUFFER pBuffer);
-        
+
 HRESULT WINAPI
     D3DXSavePRTBufferToFileW(
         LPCWSTR pFileName,
@@ -2404,7 +2403,7 @@ HRESULT WINAPI
 #define D3DXSavePRTBufferToFile D3DXSavePRTBufferToFileW
 #else
 #define D3DXSavePRTBufferToFile D3DXSavePRTBufferToFileA
-#endif                
+#endif
 
 
 //============================================================================
@@ -2423,12 +2422,12 @@ HRESULT WINAPI
 
 HRESULT WINAPI
     D3DXLoadPRTCompBufferFromFileA(
-        LPCSTR pFilename, 
+        LPCSTR pFilename,
         LPD3DXPRTCOMPBUFFER*       ppBuffer);
-        
+
 HRESULT WINAPI
     D3DXLoadPRTCompBufferFromFileW(
-        LPCWSTR pFilename, 
+        LPCWSTR pFilename,
         LPD3DXPRTCOMPBUFFER*       ppBuffer);
 
 #ifdef UNICODE
@@ -2455,7 +2454,7 @@ HRESULT WINAPI
     D3DXSavePRTCompBufferToFileA(
         LPCSTR pFileName,
         LPD3DXPRTCOMPBUFFER pBuffer);
-        
+
 HRESULT WINAPI
     D3DXSavePRTCompBufferToFileW(
         LPCWSTR pFileName,
@@ -2465,7 +2464,7 @@ HRESULT WINAPI
 #define D3DXSavePRTCompBufferToFile D3DXSavePRTCompBufferToFileW
 #else
 #define D3DXSavePRTCompBufferToFile D3DXSavePRTCompBufferToFileA
-#endif 
+#endif
 
 //============================================================================
 //
@@ -2496,10 +2495,10 @@ HRESULT WINAPI
 HRESULT WINAPI
     D3DXCreatePRTCompBuffer(
         D3DXSHCOMPRESSQUALITYTYPE Quality,
-        UINT NumClusters, 
+        UINT NumClusters,
         UINT NumPCA,
         LPD3DXSHPRTSIMCB pCB,
-        LPVOID lpUserContext,        
+        LPVOID lpUserContext,
         LPD3DXPRTBUFFER  pBufferIn,
         LPD3DXPRTCOMPBUFFER *ppBufferOut
     );
@@ -2527,11 +2526,11 @@ HRESULT WINAPI
 //============================================================================
 
 
-HRESULT WINAPI 
-    D3DXCreateTextureGutterHelper( 
+HRESULT WINAPI
+    D3DXCreateTextureGutterHelper(
         UINT Width,
         UINT Height,
-        LPD3DXMESH pMesh, 
+        LPD3DXMESH pMesh,
         FLOAT GutterSize,
         LPD3DXTEXTUREGUTTERHELPER* ppBuffer);
 
@@ -2560,12 +2559,12 @@ HRESULT WINAPI
 //============================================================================
 
 
-HRESULT WINAPI 
-    D3DXCreatePRTEngine( 
+HRESULT WINAPI
+    D3DXCreatePRTEngine(
         LPD3DXMESH pMesh,
         DWORD *pAdjacency,
         BOOL ExtractUVs,
-        LPD3DXMESH pBlockerMesh, 
+        LPD3DXMESH pBlockerMesh,
         LPD3DXPRTENGINE* ppEngine);
 
 //============================================================================
@@ -2602,15 +2601,15 @@ HRESULT WINAPI
 //============================================================================
 
 
-HRESULT WINAPI 
+HRESULT WINAPI
     D3DXConcatenateMeshes(
-        LPD3DXMESH *ppMeshes, 
-        UINT NumMeshes, 
-        DWORD Options, 
-        CONST D3DXMATRIX *pGeomXForms, 
-        CONST D3DXMATRIX *pTextureXForms, 
+        LPD3DXMESH *ppMeshes,
+        UINT NumMeshes,
+        DWORD Options,
+        CONST D3DXMATRIX *pGeomXForms,
+        CONST D3DXMATRIX *pTextureXForms,
         CONST D3DVERTEXELEMENT9 *pDecl,
-        LPDIRECT3DDEVICE9 pD3DDevice, 
+        LPDIRECT3DDEVICE9 pD3DDevice,
         LPD3DXMESH *ppMeshOut);
 
 //============================================================================
@@ -2636,16 +2635,16 @@ HRESULT WINAPI
 //      that corresponding cluster was assigned to
 //   pNumSuperClusters
 //      Returns the number of super clusters allocated
-//      
+//
 //============================================================================
 
-HRESULT WINAPI 
+HRESULT WINAPI
     D3DXSHPRTCompSuperCluster(
-        UINT *pClusterIDs, 
-        LPD3DXMESH pScene, 
-        UINT MaxNumClusters, 
+        UINT *pClusterIDs,
+        LPD3DXMESH pScene,
+        UINT MaxNumClusters,
         UINT NumClusters,
-        UINT *pSuperClusterIDs, 
+        UINT *pSuperClusterIDs,
         UINT *pNumSuperClusters);
 
 //============================================================================
@@ -2657,7 +2656,7 @@ HRESULT WINAPI
 //  to split the mesh into a group of faces/vertices per super cluster.
 //  Each super cluster contains all of the faces that contain any vertex
 //  classified in one of its clusters.  All of the vertices connected to this
-//  set of faces are also included with the returned array ppVertStatus 
+//  set of faces are also included with the returned array ppVertStatus
 //  indicating whether or not the vertex belongs to the supercluster.
 //
 //  Parameters:
@@ -2680,12 +2679,12 @@ HRESULT WINAPI
 //   NumFaces
 //      Number of faces in the original mesh (pInputIB is 3 times this length)
 //   ppIBData
-//      LPD3DXBUFFER holds raw index buffer that will contain the resulting split faces.  
+//      LPD3DXBUFFER holds raw index buffer that will contain the resulting split faces.
 //      Format determined by bIBIs32Bit.  Allocated by function
 //   pIBDataLength
 //      Length of ppIBData, assigned in function
 //   OutputIBIs32Bit
-//      Indicates whether the output index buffer is to be 32-bit (otherwise 
+//      Indicates whether the output index buffer is to be 32-bit (otherwise
 //      16-bit is assumed)
 //   ppFaceRemap
 //      LPD3DXBUFFER mapping of each face in ppIBData to original faces.  Length is
@@ -2703,33 +2702,33 @@ HRESULT WINAPI
 //
 //============================================================================
 
-HRESULT WINAPI 
+HRESULT WINAPI
     D3DXSHPRTCompSplitMeshSC(
-        UINT *pClusterIDs, 
-        UINT NumVertices, 
-        UINT NumClusters, 
-        UINT *pSuperClusterIDs, 
+        UINT *pClusterIDs,
+        UINT NumVertices,
+        UINT NumClusters,
+        UINT *pSuperClusterIDs,
         UINT NumSuperClusters,
-        LPVOID pInputIB, 
-        BOOL InputIBIs32Bit, 
+        LPVOID pInputIB,
+        BOOL InputIBIs32Bit,
         UINT NumFaces,
-        LPD3DXBUFFER *ppIBData, 
-        UINT *pIBDataLength, 
-        BOOL OutputIBIs32Bit, 
-        LPD3DXBUFFER *ppFaceRemap, 
-        LPD3DXBUFFER *ppVertData, 
-        UINT *pVertDataLength, 
+        LPD3DXBUFFER *ppIBData,
+        UINT *pIBDataLength,
+        BOOL OutputIBIs32Bit,
+        LPD3DXBUFFER *ppFaceRemap,
+        LPD3DXBUFFER *ppVertData,
+        UINT *pVertDataLength,
         UINT *pSCClusterList,
         D3DXSHPRTSPLITMESHCLUSTERDATA *pSCData);
-        
-        
+
+
 #ifdef __cplusplus
 }
 #endif //__cplusplus
 
 //////////////////////////////////////////////////////////////////////////////
 //
-//  Definitions of .X file templates used by mesh load/save functions 
+//  Definitions of .X file templates used by mesh load/save functions
 //    that are not RM standard
 //
 //////////////////////////////////////////////////////////////////////////////
@@ -2739,35 +2738,35 @@ DEFINE_GUID(DXFILEOBJ_XSkinMeshHeader,
 0x3cf169ce, 0xff7c, 0x44ab, 0x93, 0xc0, 0xf7, 0x8f, 0x62, 0xd1, 0x72, 0xe2);
 
 // {B8D65549-D7C9-4995-89CF-53A9A8B031E3}
-DEFINE_GUID(DXFILEOBJ_VertexDuplicationIndices, 
+DEFINE_GUID(DXFILEOBJ_VertexDuplicationIndices,
 0xb8d65549, 0xd7c9, 0x4995, 0x89, 0xcf, 0x53, 0xa9, 0xa8, 0xb0, 0x31, 0xe3);
 
 // {A64C844A-E282-4756-8B80-250CDE04398C}
-DEFINE_GUID(DXFILEOBJ_FaceAdjacency, 
+DEFINE_GUID(DXFILEOBJ_FaceAdjacency,
 0xa64c844a, 0xe282, 0x4756, 0x8b, 0x80, 0x25, 0xc, 0xde, 0x4, 0x39, 0x8c);
 
 // {6F0D123B-BAD2-4167-A0D0-80224F25FABB}
-DEFINE_GUID(DXFILEOBJ_SkinWeights, 
+DEFINE_GUID(DXFILEOBJ_SkinWeights,
 0x6f0d123b, 0xbad2, 0x4167, 0xa0, 0xd0, 0x80, 0x22, 0x4f, 0x25, 0xfa, 0xbb);
 
 // {A3EB5D44-FC22-429d-9AFB-3221CB9719A6}
-DEFINE_GUID(DXFILEOBJ_Patch, 
+DEFINE_GUID(DXFILEOBJ_Patch,
 0xa3eb5d44, 0xfc22, 0x429d, 0x9a, 0xfb, 0x32, 0x21, 0xcb, 0x97, 0x19, 0xa6);
 
 // {D02C95CC-EDBA-4305-9B5D-1820D7704BBF}
-DEFINE_GUID(DXFILEOBJ_PatchMesh, 
+DEFINE_GUID(DXFILEOBJ_PatchMesh,
 0xd02c95cc, 0xedba, 0x4305, 0x9b, 0x5d, 0x18, 0x20, 0xd7, 0x70, 0x4b, 0xbf);
 
 // {B9EC94E1-B9A6-4251-BA18-94893F02C0EA}
-DEFINE_GUID(DXFILEOBJ_PatchMesh9, 
+DEFINE_GUID(DXFILEOBJ_PatchMesh9,
 0xb9ec94e1, 0xb9a6, 0x4251, 0xba, 0x18, 0x94, 0x89, 0x3f, 0x2, 0xc0, 0xea);
 
 // {B6C3E656-EC8B-4b92-9B62-681659522947}
-DEFINE_GUID(DXFILEOBJ_PMInfo, 
+DEFINE_GUID(DXFILEOBJ_PMInfo,
 0xb6c3e656, 0xec8b, 0x4b92, 0x9b, 0x62, 0x68, 0x16, 0x59, 0x52, 0x29, 0x47);
 
 // {917E0427-C61E-4a14-9C64-AFE65F9E9844}
-DEFINE_GUID(DXFILEOBJ_PMAttributeRange, 
+DEFINE_GUID(DXFILEOBJ_PMAttributeRange,
 0x917e0427, 0xc61e, 0x4a14, 0x9c, 0x64, 0xaf, 0xe6, 0x5f, 0x9e, 0x98, 0x44);
 
 // {574CCC14-F0B3-4333-822D-93E8A8A08E4C}
@@ -2775,35 +2774,35 @@ DEFINE_GUID(DXFILEOBJ_PMVSplitRecord,
 0x574ccc14, 0xf0b3, 0x4333, 0x82, 0x2d, 0x93, 0xe8, 0xa8, 0xa0, 0x8e, 0x4c);
 
 // {B6E70A0E-8EF9-4e83-94AD-ECC8B0C04897}
-DEFINE_GUID(DXFILEOBJ_FVFData, 
+DEFINE_GUID(DXFILEOBJ_FVFData,
 0xb6e70a0e, 0x8ef9, 0x4e83, 0x94, 0xad, 0xec, 0xc8, 0xb0, 0xc0, 0x48, 0x97);
 
 // {F752461C-1E23-48f6-B9F8-8350850F336F}
-DEFINE_GUID(DXFILEOBJ_VertexElement, 
+DEFINE_GUID(DXFILEOBJ_VertexElement,
 0xf752461c, 0x1e23, 0x48f6, 0xb9, 0xf8, 0x83, 0x50, 0x85, 0xf, 0x33, 0x6f);
 
 // {BF22E553-292C-4781-9FEA-62BD554BDD93}
-DEFINE_GUID(DXFILEOBJ_DeclData, 
+DEFINE_GUID(DXFILEOBJ_DeclData,
 0xbf22e553, 0x292c, 0x4781, 0x9f, 0xea, 0x62, 0xbd, 0x55, 0x4b, 0xdd, 0x93);
 
 // {F1CFE2B3-0DE3-4e28-AFA1-155A750A282D}
-DEFINE_GUID(DXFILEOBJ_EffectFloats, 
+DEFINE_GUID(DXFILEOBJ_EffectFloats,
 0xf1cfe2b3, 0xde3, 0x4e28, 0xaf, 0xa1, 0x15, 0x5a, 0x75, 0xa, 0x28, 0x2d);
 
 // {D55B097E-BDB6-4c52-B03D-6051C89D0E42}
-DEFINE_GUID(DXFILEOBJ_EffectString, 
+DEFINE_GUID(DXFILEOBJ_EffectString,
 0xd55b097e, 0xbdb6, 0x4c52, 0xb0, 0x3d, 0x60, 0x51, 0xc8, 0x9d, 0xe, 0x42);
 
 // {622C0ED0-956E-4da9-908A-2AF94F3CE716}
-DEFINE_GUID(DXFILEOBJ_EffectDWord, 
+DEFINE_GUID(DXFILEOBJ_EffectDWord,
 0x622c0ed0, 0x956e, 0x4da9, 0x90, 0x8a, 0x2a, 0xf9, 0x4f, 0x3c, 0xe7, 0x16);
 
 // {3014B9A0-62F5-478c-9B86-E4AC9F4E418B}
-DEFINE_GUID(DXFILEOBJ_EffectParamFloats, 
+DEFINE_GUID(DXFILEOBJ_EffectParamFloats,
 0x3014b9a0, 0x62f5, 0x478c, 0x9b, 0x86, 0xe4, 0xac, 0x9f, 0x4e, 0x41, 0x8b);
 
 // {1DBC4C88-94C1-46ee-9076-2C28818C9481}
-DEFINE_GUID(DXFILEOBJ_EffectParamString, 
+DEFINE_GUID(DXFILEOBJ_EffectParamString,
 0x1dbc4c88, 0x94c1, 0x46ee, 0x90, 0x76, 0x2c, 0x28, 0x81, 0x8c, 0x94, 0x81);
 
 // {E13963BC-AE51-4c5d-B00F-CFA3A9D97CE5}
@@ -2811,15 +2810,15 @@ DEFINE_GUID(DXFILEOBJ_EffectParamDWord,
 0xe13963bc, 0xae51, 0x4c5d, 0xb0, 0xf, 0xcf, 0xa3, 0xa9, 0xd9, 0x7c, 0xe5);
 
 // {E331F7E4-0559-4cc2-8E99-1CEC1657928F}
-DEFINE_GUID(DXFILEOBJ_EffectInstance, 
+DEFINE_GUID(DXFILEOBJ_EffectInstance,
 0xe331f7e4, 0x559, 0x4cc2, 0x8e, 0x99, 0x1c, 0xec, 0x16, 0x57, 0x92, 0x8f);
 
 // {9E415A43-7BA6-4a73-8743-B73D47E88476}
-DEFINE_GUID(DXFILEOBJ_AnimTicksPerSecond, 
+DEFINE_GUID(DXFILEOBJ_AnimTicksPerSecond,
 0x9e415a43, 0x7ba6, 0x4a73, 0x87, 0x43, 0xb7, 0x3d, 0x47, 0xe8, 0x84, 0x76);
 
 // {7F9B00B3-F125-4890-876E-1CFFBF697C4D}
-DEFINE_GUID(DXFILEOBJ_CompressedAnimationSet, 
+DEFINE_GUID(DXFILEOBJ_CompressedAnimationSet,
 0x7f9b00b3, 0xf125, 0x4890, 0x87, 0x6e, 0x1c, 0x42, 0xbf, 0x69, 0x7c, 0x4d);
 
 #pragma pack(push, 1)
@@ -3001,5 +3000,5 @@ typedef struct _XFILECOMPRESSEDANIMATIONSET
             DWORD nAttributeMispredicts; \
             array DWORD attributeMispredicts[nAttributeMispredicts]; \
         } "
-        
-#endif //__D3DX9MESH_H__
+
+#endif /*__D3DX9MESH_H__ */

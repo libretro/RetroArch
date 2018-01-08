@@ -1,4 +1,4 @@
-/* This source as presented is a modified version of original wiiuse for use 
+/* This source as presented is a modified version of original wiiuse for use
  * with RetroArch, and must not be confused with the original software. */
 
 #include <stdio.h>
@@ -147,7 +147,7 @@ int wiiuse_set_flags(struct wiimote_t* wm, int enable, int disable) {
  *	the wiimote saves power by not transmitting it
  *	by default.
  */
-void wiiuse_motion_sensing(struct wiimote_t* wm, int status) 
+void wiiuse_motion_sensing(struct wiimote_t* wm, int status)
 {
 	if (status) {
 		if(WIIMOTE_IS_SET(wm,WIIMOTE_STATE_ACC)) return;
@@ -168,7 +168,7 @@ void wiiuse_motion_sensing(struct wiimote_t* wm, int status)
  *	@param wm		Pointer to a wiimote_t structure.
  */
 #ifdef HAVE_WIIUSE_RUMBLE
-void wiiuse_toggle_rumble(struct wiimote_t* wm) 
+void wiiuse_toggle_rumble(struct wiimote_t* wm)
 {
 	if (!wm) return;
 
@@ -184,7 +184,7 @@ void wiiuse_toggle_rumble(struct wiimote_t* wm)
  *	@param wm		Pointer to a wiimote_t structure.
  *	@param status	1 to enable, 0 to disable.
  */
-void wiiuse_rumble(struct wiimote_t* wm, int status) 
+void wiiuse_rumble(struct wiimote_t* wm, int status)
 {
 	if (status && WIIMOTE_IS_SET(wm,WIIMOTE_STATE_RUMBLE)) return;
 	else if(!status && !WIIMOTE_IS_SET(wm,WIIMOTE_STATE_RUMBLE)) return;
@@ -238,7 +238,7 @@ void wiiuse_status(struct wiimote_t *wm,cmd_blk_cb cb)
 	ubyte buf;
 
 	if(!wm || !WIIMOTE_IS_CONNECTED(wm)) return;
-	
+
 	buf = 0x00;
 	wiiuse_sendcmd(wm,WM_CMD_CTRL_STATUS,&buf,1,cb);
 }
@@ -250,7 +250,7 @@ int wiiuse_read_data(struct wiimote_t *wm,ubyte *buffer,uint addr,uword len,cmd_
 
 	if(!wm || !WIIMOTE_IS_CONNECTED(wm)) return 0;
 	if(!buffer || !len) return 0;
-	
+
 	cmd = (struct cmd_blk_t*)__lwp_queue_get(&wm->cmdq);
 	if(!cmd) return 0;
 
@@ -275,7 +275,7 @@ int wiiuse_write_data(struct wiimote_t *wm,uint addr,ubyte *data,ubyte len,cmd_b
 
 	if(!wm || !WIIMOTE_IS_CONNECTED(wm)) return 0;
 	if(!data || !len) return 0;
-	
+
 	cmd = (struct cmd_blk_t*)__lwp_queue_get(&wm->cmdq);
 	if(!cmd) return 0;
 

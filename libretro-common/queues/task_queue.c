@@ -99,6 +99,9 @@ static void task_queue_push_progress(retro_task_t *task)
          else
             task_queue_msg_push(task, 1, 60, false, "%s...", task->title);
       }
+
+      if (task->progress_cb)
+         task->progress_cb(task);
    }
 }
 
@@ -306,13 +309,13 @@ static void task_queue_remove(task_queue_t *queue, retro_task_t *task)
       queue->front = task->next;
       slock_unlock(queue_lock);
       task->next   = NULL;
-       
+
       return;
    }
 
    /* Parse queue */
    t = front;
-    
+
    while (t && t->next)
    {
       /* Remove task and update queue */

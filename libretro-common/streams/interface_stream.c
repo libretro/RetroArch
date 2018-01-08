@@ -57,6 +57,25 @@ struct intfstream_internal
 #endif
 };
 
+int64_t intfstream_get_size(intfstream_internal_t *intf)
+{
+   if (!intf)
+      return 0;
+
+   switch (intf->type)
+   {
+      case INTFSTREAM_FILE:
+         return filestream_get_size(intf->file.fp);
+      case INTFSTREAM_MEMORY:
+         return intf->memory.buf.size;
+      case INTFSTREAM_CHD:
+         /* TODO/FIXME - implement this */
+         break;
+   }
+
+   return 0;
+}
+
 bool intfstream_resize(intfstream_internal_t *intf, intfstream_info_t *info)
 {
    if (!intf || !info)
@@ -83,7 +102,7 @@ bool intfstream_resize(intfstream_internal_t *intf, intfstream_info_t *info)
 }
 
 bool intfstream_open(intfstream_internal_t *intf, const char *path,
-      unsigned mode, ssize_t len)
+      unsigned mode, unsigned hints)
 {
    if (!intf)
       return false;
@@ -91,7 +110,7 @@ bool intfstream_open(intfstream_internal_t *intf, const char *path,
    switch (intf->type)
    {
       case INTFSTREAM_FILE:
-         intf->file.fp = filestream_open(path, mode, len);
+         intf->file.fp = filestream_open(path, mode, hints);
          if (!intf->file.fp)
             return false;
          break;
@@ -114,6 +133,24 @@ bool intfstream_open(intfstream_internal_t *intf, const char *path,
    return true;
 }
 
+int intfstream_flush(intfstream_internal_t *intf)
+{
+   if (!intf)
+      return -1;
+
+   switch (intf->type)
+   {
+      case INTFSTREAM_FILE:
+         return filestream_flush(intf->file.fp);
+      case INTFSTREAM_MEMORY:
+      case INTFSTREAM_CHD:
+         /* Should we stub this for these interfaces? */
+         break;
+   }
+
+   return 0;
+}
+
 int intfstream_close(intfstream_internal_t *intf)
 {
    if (!intf)
@@ -122,13 +159,17 @@ int intfstream_close(intfstream_internal_t *intf)
    switch (intf->type)
    {
       case INTFSTREAM_FILE:
-         return filestream_close(intf->file.fp);
+         if (intf->file.fp)
+            return filestream_close(intf->file.fp);
+         return 0;
       case INTFSTREAM_MEMORY:
-         memstream_close(intf->memory.fp);
+         if (intf->memory.fp)
+            memstream_close(intf->memory.fp);
          return 0;
       case INTFSTREAM_CHD:
 #ifdef HAVE_CHD
-         chdstream_close(intf->chd.fp);
+         if (intf->chd.fp)
+            chdstream_close(intf->chd.fp);
 #endif
          return 0;
    }
@@ -183,7 +224,23 @@ int intfstream_seek(intfstream_internal_t *intf, int offset, int whence)
    switch (intf->type)
    {
       case INTFSTREAM_FILE:
-         return (int)filestream_seek(intf->file.fp, (int)offset, whence);
+         {
+            int seek_position = 0;
+            switch (whence)
+            {
+               case SEEK_SET:
+                  seek_position = RETRO_VFS_SEEK_POSITION_START;
+                  break;
+               case SEEK_CUR:
+                  seek_position = RETRO_VFS_SEEK_POSITION_CURRENT;
+                  break;
+               case SEEK_END:
+                  seek_position = RETRO_VFS_SEEK_POSITION_END;
+                  break;
+            }
+            return (int)filestream_seek(intf->file.fp, (int)offset,
+                  seek_position);
+         }
       case INTFSTREAM_MEMORY:
          return (int)memstream_seek(intf->memory.fp, offset, whence);
       case INTFSTREAM_CHD:
@@ -276,7 +333,7 @@ int intfstream_getc(intfstream_internal_t *intf)
 #ifdef HAVE_CHD
          return chdstream_getc(intf->chd.fp);
 #else
-         return -1;
+         break;
 #endif
    }
 
@@ -298,7 +355,7 @@ int intfstream_tell(intfstream_internal_t *intf)
 #ifdef HAVE_CHD
          return (int)chdstream_tell(intf->chd.fp);
 #else
-         return -1;
+         break;
 #endif
    }
 
@@ -339,4 +396,88 @@ void intfstream_putc(intfstream_internal_t *intf, int c)
       case INTFSTREAM_CHD:
          break;
    }
+}
+
+intfstream_t* intfstream_open_file(const char *path,
+      unsigned mode, unsigned hints)
+{
+   intfstream_info_t info;
+   intfstream_t *fd = NULL;
+
+   info.type        = INTFSTREAM_FILE;
+   fd               = (intfstream_t*)intfstream_init(&info);
+
+   if (!fd)
+      return NULL;
+
+   if (!intfstream_open(fd, path, mode, hints))
+      goto error;
+
+   return fd;
+
+error:
+   if (fd)
+   {
+      intfstream_close(fd);
+      free(fd);
+   }
+   return NULL;
+}
+
+intfstream_t *intfstream_open_memory(void *data,
+      unsigned mode, unsigned hints, size_t size)
+{
+   intfstream_info_t info;
+   intfstream_t *fd     = NULL;
+
+   info.type            = INTFSTREAM_MEMORY;
+   info.memory.buf.data = (uint8_t*)data;
+   info.memory.buf.size = size;
+   info.memory.writable = false;
+
+   fd                   = (intfstream_t*)intfstream_init(&info);
+
+   if (!fd)
+      return NULL;
+
+   if (!intfstream_open(fd, NULL, mode, hints))
+      goto error;
+
+   return fd;
+
+error:
+   if (fd)
+   {
+      intfstream_close(fd);
+      free(fd);
+   }
+   return NULL;
+}
+
+intfstream_t *intfstream_open_chd_track(const char *path,
+      unsigned mode, unsigned hints, int32_t track)
+{
+   intfstream_info_t info;
+   intfstream_t *fd = NULL;
+
+   info.type        = INTFSTREAM_CHD;
+   info.chd.track   = track;
+
+   fd               = (intfstream_t*)intfstream_init(&info);
+
+   if (!fd)
+      return NULL;
+
+   if (!intfstream_open(fd, path, mode, hints))
+      goto error;
+
+   return fd;
+
+error:
+   if (fd)
+   {
+      intfstream_close(fd);
+      free(fd);
+   }
+   return NULL;
 }

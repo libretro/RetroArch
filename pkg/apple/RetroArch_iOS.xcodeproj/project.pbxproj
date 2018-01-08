@@ -575,7 +575,6 @@
 					"-DHAVE_RTGA",
 					"-DHAVE_COCOATOUCH",
 					"-DHAVE_MAIN",
-					"-DSINC_LOWER_QUALITY",
 					"-DRARCH_INTERNAL",
 					"-DHAVE_THREADS",
 					"-DHAVE_FILTERS_BUILTIN",
@@ -660,7 +659,6 @@
 					"-DHAVE_RTGA",
 					"-DHAVE_COCOATOUCH",
 					"-DHAVE_MAIN",
-					"-DSINC_LOWER_QUALITY",
 					"-DRARCH_INTERNAL",
 					"-DHAVE_THREADS",
 					"-DHAVE_FILTERS_BUILTIN",
@@ -713,7 +711,6 @@
 					"-DHAVE_RTGA",
 					"-DHAVE_COCOATOUCH",
 					"-DHAVE_MAIN",
-					"-DSINC_LOWER_QUALITY",
 					"-DHAVE_THREADS",
 					"-DHAVE_FILTERS_BUILTIN",
 					"-DHAVE_7ZIP",
@@ -798,7 +795,6 @@
 					"-DHAVE_RTGA",
 					"-DHAVE_COCOATOUCH",
 					"-DHAVE_MAIN",
-					"-DSINC_LOWER_QUALITY",
 					"-DRARCH_INTERNAL",
 					"-DHAVE_THREADS",
 					"-DHAVE_FILTERS_BUILTIN",
@@ -879,7 +875,6 @@
 					"-DHAVE_RTGA",
 					"-DHAVE_COCOATOUCH",
 					"-DHAVE_MAIN",
-					"-DSINC_LOWER_QUALITY",
 					"-DRARCH_INTERNAL",
 					"-DHAVE_THREADS",
 					"-DHAVE_FILTERS_BUILTIN",
@@ -929,7 +924,6 @@
 					"-DHAVE_RTGA",
 					"-DHAVE_COCOATOUCH",
 					"-DHAVE_MAIN",
-					"-DSINC_LOWER_QUALITY",
 					"-DHAVE_THREADS",
 					"-DHAVE_FILTERS_BUILTIN",
 					"-DHAVE_7ZIP",
@@ -1012,7 +1006,6 @@
 					"-DHAVE_RTGA",
 					"-DHAVE_COCOATOUCH",
 					"-DHAVE_MAIN",
-					"-DSINC_LOWER_QUALITY",
 				);
 				"OTHER_LDFLAGS[arch=*]" = "-Wl,-segalign,4000";
 				SDKROOT = iphoneos;
@@ -1082,7 +1075,6 @@
 					"-DHAVE_RTGA",
 					"-DHAVE_COCOATOUCH",
 					"-DHAVE_MAIN",
-					"-DSINC_LOWER_QUALITY",
 				);
 				"OTHER_LDFLAGS[arch=*]" = "-Wl,-segalign,4000";
 				SDKROOT = iphoneos;
@@ -1155,7 +1147,6 @@
 					"-DHAVE_RTGA",
 					"-DHAVE_COCOATOUCH",
 					"-DHAVE_MAIN",
-					"-DSINC_LOWER_QUALITY",
 					"-DRARCH_INTERNAL",
 					"-DHAVE_THREADS",
 					"-DHAVE_FILTERS_BUILTIN",
@@ -1240,7 +1231,6 @@
 					"-DHAVE_RTGA",
 					"-DHAVE_COCOATOUCH",
 					"-DHAVE_MAIN",
-					"-DSINC_LOWER_QUALITY",
 					"-DRARCH_INTERNAL",
 					"-DHAVE_THREADS",
 					"-DHAVE_FILTERS_BUILTIN",
@@ -1293,7 +1283,6 @@
 					"-DHAVE_RTGA",
 					"-DHAVE_COCOATOUCH",
 					"-DHAVE_MAIN",
-					"-DSINC_LOWER_QUALITY",
 					"-DHAVE_THREADS",
 					"-DHAVE_FILTERS_BUILTIN",
 					"-DHAVE_7ZIP",

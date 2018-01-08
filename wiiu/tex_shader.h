@@ -15,34 +15,32 @@
 
 #ifndef TEX_SHADER_H
 #define TEX_SHADER_H
-#include <wiiu/gx2.h>
+
+#include <wiiu/shader_utils.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef struct __attribute__((aligned(GX2_VERTEX_BUFFER_ALIGNMENT)))
+typedef struct
 {
-   GX2VertexShader vs;
-   GX2PixelShader ps;
-   GX2SamplerVar sampler;
    struct
    {
-      GX2AttribVar position;
-      GX2AttribVar tex_coord;
-   } attributes;
-   struct
-   {
-      GX2AttribStream position;
-      GX2AttribStream tex_coord;
-   } attribute_stream;
-   GX2FetchShader fs;
-}tex_shader_t;
+      float x;
+      float y;
+   }pos;
 
-extern tex_shader_t tex_shader;
+   struct
+   {
+      float u;
+      float v;
+   }coord;
+}tex_shader_vertex_t;
+
+extern GX2Shader tex_shader;
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // TEX_SHADER_H
+#endif /* TEX_SHADER_H */

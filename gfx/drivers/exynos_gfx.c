@@ -195,10 +195,10 @@ static int exynos_get_device_index(void)
    return index;
 }
 
-/* The main pageflip handler, which the DRM executes 
+/* The main pageflip handler, which the DRM executes
  * when it flips to the page.
  *
- * Decreases the pending pageflip count and 
+ * Decreases the pending pageflip count and
  * updates the current page.
  */
 static void exynos_page_flip_handler(int fd, unsigned frame, unsigned sec,
@@ -222,7 +222,7 @@ static struct exynos_page *exynos_get_free_page(
 {
    unsigned i;
 
-   for (i = 0; i < cnt; ++i) 
+   for (i = 0; i < cnt; ++i)
    {
       if (!p[i].used)
          return &p[i];
@@ -1491,10 +1491,8 @@ static const video_poke_interface_t exynos_poke_interface = {
    NULL, /* get_proc_address */
    exynos_set_aspect_ratio,
    exynos_apply_state_changes,
-#ifdef HAVE_MENU
    exynos_set_texture_frame,
    exynos_set_texture_enable,
-#endif
    exynos_set_osd_msg,
    exynos_show_mouse
 };
@@ -1513,7 +1511,7 @@ static bool exynos_gfx_set_shader(void *data,
    (void)type;
    (void)path;
 
-   return false; 
+   return false;
 }
 
 static bool exynos_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)

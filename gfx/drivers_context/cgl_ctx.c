@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -116,7 +116,7 @@ static bool gfx_ctx_cgl_set_video_mode(void *data,
 static void gfx_ctx_cgl_destroy(void *data)
 {
    gfx_ctx_cgl_data_t *cgl = (gfx_ctx_cgl_data_t*)data;
-   
+
    if (cgl->glCtx)
    {
       CGLSetCurrentContext(NULL);
@@ -230,9 +230,9 @@ static CGSSurfaceID attach_gl_context_to_window(CGLContextObj glCtx,
     CGSConnectionID cid = CGSMainConnectionID();
 
     printf("cid:%d wid:%d\n", cid, wid);
- 
+
     /* determine window size */
-    /* FIXME/TODO - CGWindowListCopyWindowInfo was introduced on OSX 10.5, 
+    /* FIXME/TODO - CGWindowListCopyWindowInfo was introduced on OSX 10.5,
      * find alternative for lower versions. */
     wins = CGWindowListCopyWindowInfo(kCGWindowListOptionIncludingWindow, wid); /* expect one result only */
     win = (CFDictionaryRef)CFArrayGetValueAtIndex(wins, 0);
@@ -242,33 +242,33 @@ static CGSSurfaceID attach_gl_context_to_window(CGLContextObj glCtx,
     CFNumberGetValue((CFNumberRef)CFDictionaryGetValue(bnd, CFSTR("Height")),
        kCFNumberFloat64Type, &h);
     CFRelease(wins);
- 
+
     /* create a surface. */
     if(CGSAddSurface(cid, wid, &sid) != kCGErrorSuccess)
     {
        printf("ERR: no surface\n");
     }
     printf("sid:%d\n", sid);
- 
+
     /* set surface size, and order it frontmost */
     if(CGSSetSurfaceBounds(cid, wid, sid, CGRectMake(0, 0, w, h)) != kCGErrorSuccess)
        printf("ERR: cant set bounds\n");
     if(CGSOrderSurface(cid, wid, sid, 1, 0) != kCGErrorSuccess)
        printf("ERR: cant order front\n");
- 
+
     /* attach context to the surface */
     if(CGLSetSurface(glCtx, cid, wid, sid) != kCGErrorSuccess)
     {
        printf("ERR: cant set surface\n");
     }
- 
+
     /* check drawable */
     CGLGetParameter(glCtx, kCGLCPHasDrawable, &params);
     if(params != 1)
     {
        printf("ERR: no drawable\n");
     }
- 
+
     *width  = (int)w;
     *height = (int)h;
 

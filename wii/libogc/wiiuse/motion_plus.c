@@ -1,4 +1,4 @@
-/* This source as presented is a modified version of original wiiuse for use 
+/* This source as presented is a modified version of original wiiuse for use
  * with RetroArch, and must not be confused with the original software. */
 
 #include <stdio.h>
@@ -34,7 +34,7 @@ void wiiuse_motion_plus_check(struct wiimote_t *wm,ubyte *data,uword len)
 			/* handshake done */
 			wm->event = WIIUSE_MOTION_PLUS_ACTIVATED;
 			wm->exp.type = EXP_MOTION_PLUS;
-			
+
 			WIIMOTE_ENABLE_STATE(wm,WIIMOTE_STATE_EXP);
 			wiiuse_set_ir_mode(wm);
 		}
@@ -60,10 +60,10 @@ static void wiiuse_set_motion_plus_clear1(struct wiimote_t *wm,ubyte *data,uword
 void wiiuse_set_motion_plus(struct wiimote_t *wm, int status)
 {
 	ubyte val;
-	
+
 	if(WIIMOTE_IS_SET(wm,WIIMOTE_STATE_EXP_HANDSHAKE))
 		return;
-	
+
 	WIIMOTE_ENABLE_STATE(wm, WIIMOTE_STATE_EXP_HANDSHAKE);
 	if(status)
 	{

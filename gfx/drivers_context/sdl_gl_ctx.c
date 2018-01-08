@@ -14,8 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "SDL.h"
-
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
@@ -26,6 +24,8 @@
 
 #include "../../configuration.h"
 #include "../common/gl_common.h"
+
+#include "SDL.h"
 
 static enum gfx_ctx_api sdl_api = GFX_CTX_OPENGL_API;
 static unsigned       g_major = 2;
@@ -114,7 +114,7 @@ static void sdl_ctx_destroy(void *data)
 
    if (!sdl)
       return;
-   
+
    sdl_ctx_destroy_resources(sdl);
    free(sdl);
 }

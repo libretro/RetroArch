@@ -77,39 +77,48 @@ static void menu_display_wiiu_draw(void *data)
    if (wiiu->vertex_cache.current + 4 > wiiu->vertex_cache.size)
       return;
 
-   position_t* pos = wiiu->vertex_cache.positions + wiiu->vertex_cache.current;
-   tex_coord_t* coord = wiiu->vertex_cache.tex_coords + wiiu->vertex_cache.current;
+   sprite_vertex_t* v = wiiu->vertex_cache.v + wiiu->vertex_cache.current;
 
-   float x0 = draw->x;
-   float y0 = draw->y;
-   float x1 = x0 + draw->width;
-   float y1 = y0 + draw->height;
+   if(draw->coords->vertex && draw->coords->vertices == 4)
+   {
+      v->pos.x = MIN(MIN(MIN(draw->coords->vertex[0], draw->coords->vertex[2]), draw->coords->vertex[4]), draw->coords->vertex[6]);
+      v->pos.y = 1.0 - MAX(MAX(MAX(draw->coords->vertex[1], draw->coords->vertex[3]), draw->coords->vertex[5]), draw->coords->vertex[7]);
+      v->pos.width  = MAX(MAX(MAX(draw->coords->vertex[0], draw->coords->vertex[2]), draw->coords->vertex[4]), draw->coords->vertex[6]) - v->pos.x;
+      v->pos.height = 1.0 - MIN(MIN(MIN(draw->coords->vertex[1], draw->coords->vertex[3]), draw->coords->vertex[5]), draw->coords->vertex[7]) - v->pos.y;
+      v->pos.x *= wiiu->color_buffer.surface.width;
+      v->pos.y *= wiiu->color_buffer.surface.height;
+      v->pos.width *= wiiu->color_buffer.surface.width;
+      v->pos.height *= wiiu->color_buffer.surface.height;
+   }
+   else
+   {
+      v->pos.x = draw->x;
+      v->pos.y = wiiu->color_buffer.surface.height - draw->y - draw->height;
+      v->pos.width = draw->width;
+      v->pos.height = draw->height;
+   }
+   if(draw->coords->tex_coord && draw->coords->vertices == 4)
+   {
+      v->coord.u = MIN(MIN(MIN(draw->coords->tex_coord[0], draw->coords->tex_coord[2]), draw->coords->tex_coord[4]), draw->coords->tex_coord[6]);
+      v->coord.v = MIN(MIN(MIN(draw->coords->tex_coord[1], draw->coords->tex_coord[3]), draw->coords->tex_coord[5]), draw->coords->tex_coord[7]);
+      v->coord.width  = MAX(MAX(MAX(draw->coords->tex_coord[0], draw->coords->tex_coord[2]), draw->coords->tex_coord[4]), draw->coords->tex_coord[6]) - v->coord.u;
+      v->coord.height = MAX(MAX(MAX(draw->coords->tex_coord[1], draw->coords->tex_coord[3]), draw->coords->tex_coord[5]), draw->coords->tex_coord[7]) - v->coord.v;
+   }
+   else
+   {
+      v->coord.u = 0.0f;
+      v->coord.v = 0.0f;
+      v->coord.width = 1.0f;
+      v->coord.height = 1.0f;
+   }
 
-   pos[0].x = (2.0f * x0 / wiiu->color_buffer.surface.width) - 1.0f;
-   pos[0].y = (2.0f * y0 / wiiu->color_buffer.surface.height) - 1.0f;
-   pos[1].x = (2.0f * x1 / wiiu->color_buffer.surface.width) - 1.0f;;
-   pos[1].y = (2.0f * y0 / wiiu->color_buffer.surface.height) - 1.0f;
-   pos[2].x = (2.0f * x1 / wiiu->color_buffer.surface.width) - 1.0f;;
-   pos[2].y = (2.0f * y1 / wiiu->color_buffer.surface.height) - 1.0f;
-   pos[3].x = (2.0f * x0 / wiiu->color_buffer.surface.width) - 1.0f;;
-   pos[3].y = (2.0f * y1 / wiiu->color_buffer.surface.height) - 1.0f;
 
-   coord[0].u = 0.0f;
-   coord[0].v = 1.0f;
-   coord[1].u = 1.0f;
-   coord[1].v = 1.0f;
-   coord[2].u = 1.0f;
-   coord[2].v = 0.0f;
-   coord[3].u = 0.0f;
-   coord[3].v = 0.0f;
+   v->color = COLOR_RGBA(0xFF * draw->coords->color[0], 0xFF * draw->coords->color[1],
+                       0xFF * draw->coords->color[2], 0xFF * draw->coords->color[3]);
 
-   GX2SetPixelTexture(texture, wiiu->shader->sampler.location);
+   GX2SetPixelTexture(texture, sprite_shader.ps.samplerVars[0].location);
 
-//   GX2SetBlendConstantColor(draw->coords->color[3], draw->coords->color[2], draw->coords->color[1], draw->coords->color[0]);
-//   GX2SetBlendControl(GX2_RENDER_TARGET_0, GX2_BLEND_MODE_SRC_ALPHA, GX2_BLEND_MODE_INV_SRC_ALPHA, GX2_BLEND_COMBINE_MODE_ADD,
-//                      GX2_ENABLE,          GX2_BLEND_MODE_SRC_ALPHA, GX2_BLEND_MODE_INV_SRC_ALPHA, GX2_BLEND_COMBINE_MODE_ADD);
-
-   GX2DrawEx(GX2_PRIMITIVE_MODE_QUADS, 4, wiiu->vertex_cache.current, 1);
+   GX2DrawEx(GX2_PRIMITIVE_MODE_POINTS, 1, wiiu->vertex_cache.current, 1);
 
 #if 0
    printf("(%i,%i,%i,%i) , (%i,%i)\n", (int)draw->x,
@@ -117,7 +126,7 @@ static void menu_display_wiiu_draw(void *data)
          texture->surface.width, texture->surface.height);
 #endif
 
-   wiiu->vertex_cache.current += 4;
+   wiiu->vertex_cache.current ++;
 
 }
 

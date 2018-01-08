@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2014-2015 - Higor Euripedes
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -89,14 +89,9 @@ static int16_t sdl_analog_pressed(sdl_input_t *sdl, const struct retro_keybind *
    return pressed_plus + pressed_minus;
 }
 
-static bool sdl_input_meta_key_pressed(void *data, int key)
-{
-   return false;
-}
-
 static int16_t sdl_joypad_device_state(sdl_input_t *sdl,
       rarch_joypad_info_t joypad_info,
-      const struct retro_keybind *binds, 
+      const struct retro_keybind *binds,
       unsigned port, unsigned id, enum input_device_type *device)
 {
    if ((binds[id].key < RETROK_LAST) && sdl_key_pressed(binds[id].key))
@@ -200,9 +195,9 @@ static int16_t sdl_lightgun_device_state(sdl_input_t *sdl, unsigned id)
       case RETRO_DEVICE_ID_LIGHTGUN_TURBO:
          return sdl->mouse_r;
       case RETRO_DEVICE_ID_LIGHTGUN_START:
-         return sdl->mouse_m && sdl->mouse_r; 
+         return sdl->mouse_m && sdl->mouse_r;
       case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
-         return sdl->mouse_m && sdl->mouse_l; 
+         return sdl->mouse_m && sdl->mouse_l;
    }
 
    return 0;
@@ -409,7 +404,6 @@ input_driver_t input_sdl = {
    sdl_input_init,
    sdl_input_poll,
    sdl_input_state,
-   sdl_input_meta_key_pressed,
    sdl_input_free,
    NULL,
    NULL,

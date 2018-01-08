@@ -174,21 +174,18 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
 #if defined(HAVE_PSGL) || defined(HAVE_OPENGLES2) || defined(HAVE_OPENGLES3) || defined(HAVE_OPENGLES_3_1) || defined(HAVE_OPENGLES_3_2)
          return true;
 #else
-         if (     !gl_query_core_context_in_use() 
+         if (     !gl_query_core_context_in_use()
                && !gl_query_extension("ARB_framebuffer_object")
                && !gl_query_extension("EXT_framebuffer_object"))
             return false;
 
-         if (glGenFramebuffers
-               && glBindFramebuffer
-               && glFramebufferTexture2D
-               && glCheckFramebufferStatus
-               && glDeleteFramebuffers
-               && glGenRenderbuffers
-               && glBindRenderbuffer
-               && glFramebufferRenderbuffer
-               && glRenderbufferStorage
-               && glDeleteRenderbuffers)
+         if (gl_query_extension("ARB_framebuffer_object"))
+            return true;
+
+         if (gl_query_extension("EXT_framebuffer_object"))
+            return true;
+
+         if (major >= 3)
             return true;
          break;
 #endif

@@ -142,6 +142,13 @@ struct hostent *gethostbyname(const char *name)
 }
 
 int retro_epoll_fd;
+#elif defined(_3DS)
+#include <malloc.h>
+#include <3ds/types.h>
+#include <3ds/services/soc.h>
+#define SOC_ALIGN       0x1000
+#define SOC_BUFFERSIZE  0x100000
+static u32* _net_compat_net_memory;
 #elif defined(_WIN32)
 int inet_aton(const char *cp, struct in_addr *inp)
 {
@@ -204,7 +211,14 @@ int getaddrinfo_retro(const char *node, const char *service,
       if (!host || !host->h_addr_list[0])
          goto error;
 
+      in_addr->sin_family = host->h_addrtype;
+
+#if defined(AF_INET6) && !defined(__CELLOS_LV2__)
+      /* TODO/FIXME - In case we ever want to support IPv6 */
       in_addr->sin_addr.s_addr = inet_addr(host->h_addr_list[0]);
+#else
+      memcpy(&in_addr->sin_addr, host->h_addr, host->h_length);
+#endif
    }
    else
       goto error;
@@ -295,7 +309,7 @@ bool network_init(void)
 
       sceNetCtlInit();
    }
-   
+
    retro_epoll_fd = sceNetEpollCreate("epoll", 0);
 #elif defined(GEKKO)
    char t[16];
@@ -303,6 +317,13 @@ bool network_init(void)
       return false;
 #elif defined(WIIU)
    socket_lib_init();
+#elif defined(_3DS)
+    _net_compat_net_memory = (u32*)memalign(SOC_ALIGN, SOC_BUFFERSIZE);
+	if (_net_compat_net_memory == NULL)
+		return false;
+	Result ret = socInit(_net_compat_net_memory, SOC_BUFFERSIZE);//WIFI init
+	if (ret != 0)
+		return false;
 #else
    signal(SIGPIPE, SIG_IGN); /* Do not like SIGPIPE killing our app. */
 #endif
@@ -335,6 +356,14 @@ void network_deinit(void)
    }
 #elif defined(GEKKO) && !defined(HW_DOL)
    net_deinit();
+#elif defined(_3DS)
+   socExit();
+   
+   if(_net_compat_net_memory)
+   {
+	  free(_net_compat_net_memory);
+	  _net_compat_net_memory = NULL;
+   }
 #endif
 }
 
@@ -358,7 +387,7 @@ static int inet_aton(const char *cp, struct in_addr *addr)
 int inet_ptrton(int af, const char *src, void *dst)
 {
 #if defined(VITA) || defined(__ORBIS__)
-   return sceNetInetPton(af, src, dst);	
+   return sceNetInetPton(af, src, dst);
 #elif defined(GEKKO) || defined(_WIN32)
    /* TODO/FIXME - should use InetPton on Vista and later */
    return inet_aton(src, (struct in_addr*)dst);
@@ -385,7 +414,7 @@ struct in_addr6_compat
 #ifndef IM_INADDRSZ
 #define	IM_INADDRSZ		4
 #endif
-/* Taken from https://github.com/skywind3000/easenet/blob/master/inetbase.c 
+/* Taken from https://github.com/skywind3000/easenet/blob/master/inetbase.c
  */
 
 /* convert presentation format to network format */
@@ -438,7 +467,7 @@ inet_ntop6x(const unsigned char *src, char *dst, size_t size)
             cur.len  = 1;
          }
          else cur.len++;
-      } 
+      }
       else
       {
          if (cur.base != -1)
@@ -482,8 +511,8 @@ inet_ntop6x(const unsigned char *src, char *dst, size_t size)
       tp += inc;
    }
 
-   if (best.base != -1 && (best.base + best.len) == 
-         (IM_IN6ADDRSZ / IM_INT16SZ)) 
+   if (best.base != -1 && (best.base + best.len) ==
+         (IM_IN6ADDRSZ / IM_INT16SZ))
       *tp++ = ':';
 
    *tp++ = '\0';

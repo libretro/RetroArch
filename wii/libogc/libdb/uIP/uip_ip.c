@@ -88,7 +88,7 @@ static struct uip_pbuf* uip_ipreass(struct uip_pbuf *p)
   /* Check if the incoming fragment matches the one currently present
      in the reasembly buffer. If so, we proceed with copying the
      fragment into the buffer. */
-  if(ip_addr_cmp(&iphdr->src,&fraghdr->src) 
+  if(ip_addr_cmp(&iphdr->src,&fraghdr->src)
 	  && ip_addr_cmp(&iphdr->dst,&fraghdr->dst)
 	  && UIP_IPH_ID(iphdr) == UIP_IPH_ID(fraghdr)) {
 
@@ -108,12 +108,12 @@ static struct uip_pbuf* uip_ipreass(struct uip_pbuf *p)
        offset. */
 	i = UIP_IPH_HL(fraghdr)*4;
     uip_copyfrom_pbuf(p,&i,&uip_reassbuf[UIP_IP_HLEN+offset],len);
-      
+
     /* Update the bitmap. */
     if(offset / (8 * 8) == (offset + len) / (8 * 8)) {
       /* If the two endpoints are in the same byte, we only update
 	 that byte. */
-	     
+
       uip_reassbitmap[offset / (8 * 8)] |=
 	     bitmap_bits[(offset / 8 ) & 7] &
 	     ~bitmap_bits[((offset + len) / 8 ) & 7];
@@ -125,11 +125,11 @@ static struct uip_pbuf* uip_ipreass(struct uip_pbuf *p)
 	bitmap_bits[(offset / 8 ) & 7];
       for(i = 1 + offset / (8 * 8); i < (offset + len) / (8 * 8); ++i) {
 	uip_reassbitmap[i] = 0xff;
-      }      
+      }
       uip_reassbitmap[(offset + len) / (8 * 8)] |=
 	~bitmap_bits[((offset + len) / 8 ) & 7];
     }
-    
+
     /* If this fragment has the More Fragments flag set to zero, we
        know that this is the last fragment, so we can calculate the
        size of the entire packet. We also set the
@@ -140,7 +140,7 @@ static struct uip_pbuf* uip_ipreass(struct uip_pbuf *p)
       uip_reassflags |= UIP_REASS_FLAG_LASTFRAG;
       uip_reasslen = offset + len;
     }
-    
+
     /* Finally, we check if we have a full packet in the buffer. We do
        this by checking if we have the last fragment and if all bits
        in the bitmap are set. */
@@ -167,7 +167,7 @@ static struct uip_pbuf* uip_ipreass(struct uip_pbuf *p)
 	  UIP_IPH_OFFSET_SET(iphdr,0);
 	  UIP_IPH_CHKSUM_SET(iphdr,0);
 	  UIP_IPH_CHKSUM_SET(iphdr,uip_ipchksum(iphdr,UIP_IP_HLEN));
-	
+
       /* If we have come this far, we have a full packet in the
 	 buffer, so we allocate a pbuf and copy the packet into it. We
 	 also reset the timer. */
@@ -176,7 +176,7 @@ static struct uip_pbuf* uip_ipreass(struct uip_pbuf *p)
 	  uip_pbuf_free(p);
 	  p = uip_pbuf_alloc(UIP_PBUF_LINK,uip_reasslen,UIP_PBUF_POOL);
 	  if(p==NULL) return NULL;
-	  
+
 	  i = 0;
 	  for(q=p;q!=NULL;q=q->next) {
 		  UIP_MEMCPY(q->payload,&uip_reassbuf[i],((q->len>(uip_reasslen-i))?(uip_reasslen-i):q->len));
@@ -205,11 +205,11 @@ s8_t uip_ipfrag(struct uip_pbuf *p,struct uip_netif *netif,struct uip_ip_addr *i
 	u16_t mtu = netif->mtu;
 	u16_t poff = UIP_IP_HLEN;
 	u16_t nfb = 0;
-	
+
 	rambuf = uip_pbuf_alloc(UIP_PBUF_LINK,0,UIP_PBUF_REF);
 	rambuf->tot_len = rambuf->len = mtu;
 	rambuf->payload = MEM_ALIGN(buf);
-	
+
 	iphdr = rambuf->payload;
 	UIP_MEMCPY(iphdr,p->payload,UIP_IP_HLEN);
 
@@ -220,10 +220,10 @@ s8_t uip_ipfrag(struct uip_pbuf *p,struct uip_netif *netif,struct uip_ip_addr *i
 	left = p->tot_len - UIP_IP_HLEN;
 	while(left) {
 		last = (left<=(mtu-UIP_IP_HLEN));
-		
+
 		ofo += nfb;
 		tmp = omf|(UIP_IP_OFFMASK&ofo);
-		
+
 		if(!last) tmp |= UIP_IP_MF;
 		UIP_IPH_OFFSET_SET(iphdr,htons(tmp));
 
@@ -231,7 +231,7 @@ s8_t uip_ipfrag(struct uip_pbuf *p,struct uip_netif *netif,struct uip_ip_addr *i
 		cop = last?left:nfb*8;
 
 		p = uip_copyfrom_pbuf(p,&poff,(u8_t*)iphdr+UIP_IP_HLEN,cop);
-		
+
 		UIP_IPH_LEN_SET(iphdr,htons(cop+UIP_IP_HLEN));
 		UIP_IPH_CHKSUM_SET(iphdr,0);
 		UIP_IPH_CHKSUM_SET(iphdr,uip_ipchksum(iphdr,UIP_IP_HLEN));
@@ -264,7 +264,7 @@ struct uip_netif* uip_iproute(struct uip_ip_addr *dst)
 u8_t uip_ipaddr_isbroadcast(struct uip_ip_addr *addr,struct uip_netif *netif)
 {
 	if(addr->addr==ipaddr_broadcast.addr
-		|| addr->addr==ipaddr_any.addr) 
+		|| addr->addr==ipaddr_any.addr)
 		return 1;
 	else if(!(netif->flags&UIP_NETIF_FLAG_BROADCAST))
 		return 0;
@@ -289,7 +289,7 @@ s8_t uip_ipinput(struct uip_pbuf *p,struct uip_netif *inp)
 		uip_pbuf_free(p);
 		return 0;
 	}
-	
+
 	iphdr_len = UIP_IPH_HL(iphdr);
 	iphdr_len *= 4;
 
@@ -298,7 +298,7 @@ s8_t uip_ipinput(struct uip_pbuf *p,struct uip_netif *inp)
 		uip_pbuf_free(p);
 		return 0;
 	}
-	
+
 	if(uip_ipchksum(iphdr,iphdr_len)!=0) {
 	    UIP_STAT(++uip_stat.ip.drop);
 	    UIP_STAT(++uip_stat.ip.chkerr);
@@ -306,9 +306,9 @@ s8_t uip_ipinput(struct uip_pbuf *p,struct uip_netif *inp)
 		uip_pbuf_free(p);
 		return 0;
 	}
-	
+
 	uip_pbuf_realloc(p,ntohs(UIP_IPH_LEN(iphdr)));
-	
+
 	for(netif=uip_netif_list;netif!=NULL;netif=netif->next) {
 		if(uip_netif_isup(netif) && !ip_addr_isany(&netif->ip_addr)) {
 			if(ip_addr_cmp(&iphdr->dst,&netif->ip_addr) ||
@@ -321,7 +321,7 @@ s8_t uip_ipinput(struct uip_pbuf *p,struct uip_netif *inp)
 		uip_pbuf_free(p);
 		return 0;
 	}
-	
+
 	if((UIP_IPH_OFFSET(iphdr)&htons(UIP_IP_OFFMASK|UIP_IP_MF))!=0) {
 #if UIP_IP_REASSEMBLY
 		p = uip_ipreass(p);
@@ -423,7 +423,7 @@ s32_t uip_ipaton(const u8_t *cp,struct in_addr *addr)
 	c = *cp;
 	for(;;) {
 		if(!isdigit(c)) return 0;
-		
+
 		val = 0; base = 10;
 		if(c=='0') {
 			c = *++cp;
@@ -439,7 +439,7 @@ s32_t uip_ipaton(const u8_t *cp,struct in_addr *addr)
 			} else if(base==16 && isxdigit(c)) {
 				val = (val<<4)|(int)(c+10-(islower(c)?'a':'A'));
 				c = *++cp;
-			} else 
+			} else
 				break;
 		}
 		if(c=='.') {

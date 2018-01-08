@@ -426,7 +426,7 @@ struct stb_vorbis
    int    current_loc_valid;
 
   /* per-blocksize precomputed data */
-   
+
    /* twiddle factors */
    float *A[2],*B[2],*C[2];
    float *window[2];
@@ -737,7 +737,7 @@ static void compute_sorted_huffman(Codebook *c, uint8_t *lengths, uint32_t *valu
    if (!c->sparse) {
       int k = 0;
       for (i=0; i < c->entries; ++i)
-         if (include_in_sort(c, lengths[i])) 
+         if (include_in_sort(c, lengths[i]))
             c->sorted_codewords[k++] = bit_reverse(c->codewords[i]);
       assert(k == c->sorted_entries);
    } else {
@@ -943,7 +943,7 @@ static int start_page_no_capturepattern(vorb *f)
    /* header flag */
    f->page_flag = get8(f);
    /* absolute granule position */
-   loc0 = get32(f); 
+   loc0 = get32(f);
    loc1 = get32(f);
    /* @TODO: validate loc0,loc1 as valid positions?
     * stream serial number -- vorbis doesn't interleave, so discard */
@@ -1437,69 +1437,69 @@ static int predict_point(int x, int x0, int x1, int y0, int y1)
 /* the following table is block-copied from the specification */
 static float inverse_db_table[256] =
 {
-  1.0649863e-07f, 1.1341951e-07f, 1.2079015e-07f, 1.2863978e-07f, 
-  1.3699951e-07f, 1.4590251e-07f, 1.5538408e-07f, 1.6548181e-07f, 
-  1.7623575e-07f, 1.8768855e-07f, 1.9988561e-07f, 2.1287530e-07f, 
-  2.2670913e-07f, 2.4144197e-07f, 2.5713223e-07f, 2.7384213e-07f, 
-  2.9163793e-07f, 3.1059021e-07f, 3.3077411e-07f, 3.5226968e-07f, 
-  3.7516214e-07f, 3.9954229e-07f, 4.2550680e-07f, 4.5315863e-07f, 
-  4.8260743e-07f, 5.1396998e-07f, 5.4737065e-07f, 5.8294187e-07f, 
-  6.2082472e-07f, 6.6116941e-07f, 7.0413592e-07f, 7.4989464e-07f, 
-  7.9862701e-07f, 8.5052630e-07f, 9.0579828e-07f, 9.6466216e-07f, 
-  1.0273513e-06f, 1.0941144e-06f, 1.1652161e-06f, 1.2409384e-06f, 
-  1.3215816e-06f, 1.4074654e-06f, 1.4989305e-06f, 1.5963394e-06f, 
-  1.7000785e-06f, 1.8105592e-06f, 1.9282195e-06f, 2.0535261e-06f, 
-  2.1869758e-06f, 2.3290978e-06f, 2.4804557e-06f, 2.6416497e-06f, 
-  2.8133190e-06f, 2.9961443e-06f, 3.1908506e-06f, 3.3982101e-06f, 
-  3.6190449e-06f, 3.8542308e-06f, 4.1047004e-06f, 4.3714470e-06f, 
-  4.6555282e-06f, 4.9580707e-06f, 5.2802740e-06f, 5.6234160e-06f, 
-  5.9888572e-06f, 6.3780469e-06f, 6.7925283e-06f, 7.2339451e-06f, 
-  7.7040476e-06f, 8.2047000e-06f, 8.7378876e-06f, 9.3057248e-06f, 
-  9.9104632e-06f, 1.0554501e-05f, 1.1240392e-05f, 1.1970856e-05f, 
-  1.2748789e-05f, 1.3577278e-05f, 1.4459606e-05f, 1.5399272e-05f, 
-  1.6400004e-05f, 1.7465768e-05f, 1.8600792e-05f, 1.9809576e-05f, 
-  2.1096914e-05f, 2.2467911e-05f, 2.3928002e-05f, 2.5482978e-05f, 
-  2.7139006e-05f, 2.8902651e-05f, 3.0780908e-05f, 3.2781225e-05f, 
-  3.4911534e-05f, 3.7180282e-05f, 3.9596466e-05f, 4.2169667e-05f, 
-  4.4910090e-05f, 4.7828601e-05f, 5.0936773e-05f, 5.4246931e-05f, 
-  5.7772202e-05f, 6.1526565e-05f, 6.5524908e-05f, 6.9783085e-05f, 
-  7.4317983e-05f, 7.9147585e-05f, 8.4291040e-05f, 8.9768747e-05f, 
-  9.5602426e-05f, 0.00010181521f, 0.00010843174f, 0.00011547824f, 
-  0.00012298267f, 0.00013097477f, 0.00013948625f, 0.00014855085f, 
-  0.00015820453f, 0.00016848555f, 0.00017943469f, 0.00019109536f, 
-  0.00020351382f, 0.00021673929f, 0.00023082423f, 0.00024582449f, 
-  0.00026179955f, 0.00027881276f, 0.00029693158f, 0.00031622787f, 
-  0.00033677814f, 0.00035866388f, 0.00038197188f, 0.00040679456f, 
-  0.00043323036f, 0.00046138411f, 0.00049136745f, 0.00052329927f, 
-  0.00055730621f, 0.00059352311f, 0.00063209358f, 0.00067317058f, 
-  0.00071691700f, 0.00076350630f, 0.00081312324f, 0.00086596457f, 
-  0.00092223983f, 0.00098217216f, 0.0010459992f,  0.0011139742f, 
-  0.0011863665f,  0.0012634633f,  0.0013455702f,  0.0014330129f, 
-  0.0015261382f,  0.0016253153f,  0.0017309374f,  0.0018434235f, 
-  0.0019632195f,  0.0020908006f,  0.0022266726f,  0.0023713743f, 
-  0.0025254795f,  0.0026895994f,  0.0028643847f,  0.0030505286f, 
-  0.0032487691f,  0.0034598925f,  0.0036847358f,  0.0039241906f, 
-  0.0041792066f,  0.0044507950f,  0.0047400328f,  0.0050480668f, 
-  0.0053761186f,  0.0057254891f,  0.0060975636f,  0.0064938176f, 
-  0.0069158225f,  0.0073652516f,  0.0078438871f,  0.0083536271f, 
-  0.0088964928f,  0.009474637f,   0.010090352f,   0.010746080f, 
-  0.011444421f,   0.012188144f,   0.012980198f,   0.013823725f, 
-  0.014722068f,   0.015678791f,   0.016697687f,   0.017782797f, 
-  0.018938423f,   0.020169149f,   0.021479854f,   0.022875735f, 
-  0.024362330f,   0.025945531f,   0.027631618f,   0.029427276f, 
-  0.031339626f,   0.033376252f,   0.035545228f,   0.037855157f, 
-  0.040315199f,   0.042935108f,   0.045725273f,   0.048696758f, 
-  0.051861348f,   0.055231591f,   0.058820850f,   0.062643361f, 
-  0.066714279f,   0.071049749f,   0.075666962f,   0.080584227f, 
-  0.085821044f,   0.091398179f,   0.097337747f,   0.10366330f, 
-  0.11039993f,    0.11757434f,    0.12521498f,    0.13335215f, 
-  0.14201813f,    0.15124727f,    0.16107617f,    0.17154380f, 
-  0.18269168f,    0.19456402f,    0.20720788f,    0.22067342f, 
-  0.23501402f,    0.25028656f,    0.26655159f,    0.28387361f, 
-  0.30232132f,    0.32196786f,    0.34289114f,    0.36517414f, 
-  0.38890521f,    0.41417847f,    0.44109412f,    0.46975890f, 
-  0.50028648f,    0.53279791f,    0.56742212f,    0.60429640f, 
-  0.64356699f,    0.68538959f,    0.72993007f,    0.77736504f, 
+  1.0649863e-07f, 1.1341951e-07f, 1.2079015e-07f, 1.2863978e-07f,
+  1.3699951e-07f, 1.4590251e-07f, 1.5538408e-07f, 1.6548181e-07f,
+  1.7623575e-07f, 1.8768855e-07f, 1.9988561e-07f, 2.1287530e-07f,
+  2.2670913e-07f, 2.4144197e-07f, 2.5713223e-07f, 2.7384213e-07f,
+  2.9163793e-07f, 3.1059021e-07f, 3.3077411e-07f, 3.5226968e-07f,
+  3.7516214e-07f, 3.9954229e-07f, 4.2550680e-07f, 4.5315863e-07f,
+  4.8260743e-07f, 5.1396998e-07f, 5.4737065e-07f, 5.8294187e-07f,
+  6.2082472e-07f, 6.6116941e-07f, 7.0413592e-07f, 7.4989464e-07f,
+  7.9862701e-07f, 8.5052630e-07f, 9.0579828e-07f, 9.6466216e-07f,
+  1.0273513e-06f, 1.0941144e-06f, 1.1652161e-06f, 1.2409384e-06f,
+  1.3215816e-06f, 1.4074654e-06f, 1.4989305e-06f, 1.5963394e-06f,
+  1.7000785e-06f, 1.8105592e-06f, 1.9282195e-06f, 2.0535261e-06f,
+  2.1869758e-06f, 2.3290978e-06f, 2.4804557e-06f, 2.6416497e-06f,
+  2.8133190e-06f, 2.9961443e-06f, 3.1908506e-06f, 3.3982101e-06f,
+  3.6190449e-06f, 3.8542308e-06f, 4.1047004e-06f, 4.3714470e-06f,
+  4.6555282e-06f, 4.9580707e-06f, 5.2802740e-06f, 5.6234160e-06f,
+  5.9888572e-06f, 6.3780469e-06f, 6.7925283e-06f, 7.2339451e-06f,
+  7.7040476e-06f, 8.2047000e-06f, 8.7378876e-06f, 9.3057248e-06f,
+  9.9104632e-06f, 1.0554501e-05f, 1.1240392e-05f, 1.1970856e-05f,
+  1.2748789e-05f, 1.3577278e-05f, 1.4459606e-05f, 1.5399272e-05f,
+  1.6400004e-05f, 1.7465768e-05f, 1.8600792e-05f, 1.9809576e-05f,
+  2.1096914e-05f, 2.2467911e-05f, 2.3928002e-05f, 2.5482978e-05f,
+  2.7139006e-05f, 2.8902651e-05f, 3.0780908e-05f, 3.2781225e-05f,
+  3.4911534e-05f, 3.7180282e-05f, 3.9596466e-05f, 4.2169667e-05f,
+  4.4910090e-05f, 4.7828601e-05f, 5.0936773e-05f, 5.4246931e-05f,
+  5.7772202e-05f, 6.1526565e-05f, 6.5524908e-05f, 6.9783085e-05f,
+  7.4317983e-05f, 7.9147585e-05f, 8.4291040e-05f, 8.9768747e-05f,
+  9.5602426e-05f, 0.00010181521f, 0.00010843174f, 0.00011547824f,
+  0.00012298267f, 0.00013097477f, 0.00013948625f, 0.00014855085f,
+  0.00015820453f, 0.00016848555f, 0.00017943469f, 0.00019109536f,
+  0.00020351382f, 0.00021673929f, 0.00023082423f, 0.00024582449f,
+  0.00026179955f, 0.00027881276f, 0.00029693158f, 0.00031622787f,
+  0.00033677814f, 0.00035866388f, 0.00038197188f, 0.00040679456f,
+  0.00043323036f, 0.00046138411f, 0.00049136745f, 0.00052329927f,
+  0.00055730621f, 0.00059352311f, 0.00063209358f, 0.00067317058f,
+  0.00071691700f, 0.00076350630f, 0.00081312324f, 0.00086596457f,
+  0.00092223983f, 0.00098217216f, 0.0010459992f,  0.0011139742f,
+  0.0011863665f,  0.0012634633f,  0.0013455702f,  0.0014330129f,
+  0.0015261382f,  0.0016253153f,  0.0017309374f,  0.0018434235f,
+  0.0019632195f,  0.0020908006f,  0.0022266726f,  0.0023713743f,
+  0.0025254795f,  0.0026895994f,  0.0028643847f,  0.0030505286f,
+  0.0032487691f,  0.0034598925f,  0.0036847358f,  0.0039241906f,
+  0.0041792066f,  0.0044507950f,  0.0047400328f,  0.0050480668f,
+  0.0053761186f,  0.0057254891f,  0.0060975636f,  0.0064938176f,
+  0.0069158225f,  0.0073652516f,  0.0078438871f,  0.0083536271f,
+  0.0088964928f,  0.009474637f,   0.010090352f,   0.010746080f,
+  0.011444421f,   0.012188144f,   0.012980198f,   0.013823725f,
+  0.014722068f,   0.015678791f,   0.016697687f,   0.017782797f,
+  0.018938423f,   0.020169149f,   0.021479854f,   0.022875735f,
+  0.024362330f,   0.025945531f,   0.027631618f,   0.029427276f,
+  0.031339626f,   0.033376252f,   0.035545228f,   0.037855157f,
+  0.040315199f,   0.042935108f,   0.045725273f,   0.048696758f,
+  0.051861348f,   0.055231591f,   0.058820850f,   0.062643361f,
+  0.066714279f,   0.071049749f,   0.075666962f,   0.080584227f,
+  0.085821044f,   0.091398179f,   0.097337747f,   0.10366330f,
+  0.11039993f,    0.11757434f,    0.12521498f,    0.13335215f,
+  0.14201813f,    0.15124727f,    0.16107617f,    0.17154380f,
+  0.18269168f,    0.19456402f,    0.20720788f,    0.22067342f,
+  0.23501402f,    0.25028656f,    0.26655159f,    0.28387361f,
+  0.30232132f,    0.32196786f,    0.34289114f,    0.36517414f,
+  0.38890521f,    0.41417847f,    0.44109412f,    0.46975890f,
+  0.50028648f,    0.53279791f,    0.56742212f,    0.60429640f,
+  0.64356699f,    0.68538959f,    0.72993007f,    0.77736504f,
   0.82788260f,    0.88168307f,    0.9389798f,     1.0f
 };
 
@@ -1719,11 +1719,11 @@ static void decode_residue(vorb *f, float *residue_buffers[], int ch, int n, int
 #if LIBVORBIS_MDCT
 /* directly call the vorbis MDCT using an interface documented
  * by Jeff Roberts... useful for performance comparison */
-typedef struct 
+typedef struct
 {
   int n;
   int log2n;
-  
+
   float *trig;
   int   *bitrev;
 
@@ -1742,7 +1742,7 @@ void inverse_mdct(float *buffer, int n, vorb *f, int blocktype)
    if (M1.n == n) M = &M1;
    else if (M2.n == n) M = &M2;
    else if (M1.n == 0) { mdct_init(&M1, n); M = &M1; }
-   else { 
+   else {
       if (M2.n) __asm int 3;
       mdct_init(&M2, n);
       M = &M2;
@@ -2157,7 +2157,7 @@ static void inverse_mdct(float *buffer, int n, vorb *f, int blocktype)
          d1[0] = u[k4+1];
          d0[1] = u[k4+2];
          d0[0] = u[k4+3];
-         
+
          d0 -= 4;
          d1 -= 4;
          bitrev += 2;
@@ -2239,7 +2239,7 @@ static void inverse_mdct(float *buffer, int n, vorb *f, int blocktype)
          float p0,p1,p2,p3;
 
          p3 =  e[6]*B[7] - e[7]*B[6];
-         p2 = -e[6]*B[6] - e[7]*B[7]; 
+         p2 = -e[6]*B[6] - e[7]*B[7];
 
          d0[0] =   p3;
          d1[3] = - p3;
@@ -2247,7 +2247,7 @@ static void inverse_mdct(float *buffer, int n, vorb *f, int blocktype)
          d3[3] =   p2;
 
          p1 =  e[4]*B[5] - e[5]*B[4];
-         p0 = -e[4]*B[4] - e[5]*B[5]; 
+         p0 = -e[4]*B[4] - e[5]*B[5];
 
          d0[1] =   p1;
          d1[2] = - p1;
@@ -2255,7 +2255,7 @@ static void inverse_mdct(float *buffer, int n, vorb *f, int blocktype)
          d3[2] =   p0;
 
          p3 =  e[2]*B[3] - e[3]*B[2];
-         p2 = -e[2]*B[2] - e[3]*B[3]; 
+         p2 = -e[2]*B[2] - e[3]*B[3];
 
          d0[2] =   p3;
          d1[1] = - p3;
@@ -2263,7 +2263,7 @@ static void inverse_mdct(float *buffer, int n, vorb *f, int blocktype)
          d3[1] =   p2;
 
          p1 =  e[0]*B[1] - e[1]*B[0];
-         p0 = -e[0]*B[0] - e[1]*B[1]; 
+         p0 = -e[0]*B[0] - e[1]*B[1];
 
          d0[3] =   p1;
          d1[0] = - p1;
@@ -2497,7 +2497,7 @@ static int vorbis_decode_packet_rest(vorb *f, int *len, Mode *m, int left_start,
    for (i=0; i < map->submaps; ++i) {
       float *residue_buffers[STB_VORBIS_MAX_CHANNELS];
       int r;
-      uint8_t do_not_decode[256];
+      uint8_t do_not_decode[256] = {0};
       int ch = 0;
       for (j=0; j < f->channels; ++j) {
          if (map->chan[j].mux == i) {
@@ -2968,7 +2968,7 @@ static int start_decoder(vorb *f)
       } else {
          STBV_Point p[31*8+2];
          Floor1 *g = &f->floor_config[i].floor1;
-         int max_class = -1; 
+         int max_class = -1;
          g->partitions = get_bits(f, 5);
          for (j=0; j < g->partitions; ++j) {
             g->partition_class_list[j] = get_bits(f, 4);
@@ -3072,7 +3072,7 @@ static int start_decoder(vorb *f)
    f->mapping_count = get_bits(f,6)+1;
    f->mapping = (Mapping *) setup_malloc(f, f->mapping_count * sizeof(*f->mapping));
    for (i=0; i < f->mapping_count; ++i) {
-      Mapping *m = f->mapping + i;      
+      Mapping *m = f->mapping + i;
       int mapping_type = get_bits(f,16);
       if (mapping_type != 0) return error(f, VORBIS_invalid_setup);
       m->chan = (MappingChannel *) setup_malloc(f, f->channels * sizeof(*m->chan));
@@ -3473,7 +3473,7 @@ static int vorbis_analyze_page(stb_vorbis *f, ProbedPage *z)
     * will then require us to NOT discard all of the first frame we
     * decode, in some cases, which means an even weirder frame size
     * and extra code. what a fucking pain.
-   
+
     * we're going to discard the first packet if we
     * start the seek here, so we don't care about it. (we could actually
     * do better; if the first packet is long, and the previous packet
@@ -3567,7 +3567,7 @@ static int vorbis_seek_frame_from_page(stb_vorbis *f, uint32_t page_start, uint3
        * then leave frame pending */
       frames_to_skip = frame - 1;
       assert(frames_to_skip >= 0);
-      data_to_skip = -1;      
+      data_to_skip = -1;
    }
 
    set_file_offset(f, page_start);
@@ -3645,7 +3645,7 @@ static int vorbis_seek_base(stb_vorbis *f, unsigned int sample_number, int fine)
             return error(f, VORBIS_seek_failed);
 
          /* now we want to lerp between these for the target samples... */
-      
+
          /* step 1: we need to bias towards the page start... */
          if (start_offset + 4000 < end_offset)
             end_offset -= 4000;
@@ -3725,7 +3725,7 @@ unsigned int stb_vorbis_stream_length_in_samples(stb_vorbis *f)
       /* first, store the current decode position so we can restore it */
       restore_offset = stb_vorbis_get_file_offset(f);
 
-      /* now we want to seek back 64K from the end (the last page must 
+      /* now we want to seek back 64K from the end (the last page must
        * be at most a little less than 64K, but let's allow a little slop) */
       if (f->stream_len >= 65536 && f->stream_len-65536 >= f->first_audio_page_offset)
          previous_safe = f->stream_len - 65536;

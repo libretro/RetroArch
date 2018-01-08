@@ -16,16 +16,22 @@ IMPORT(OSSignalCond);
 IMPORT(OSInitSpinLock);
 IMPORT(OSUninterruptibleSpinLock_Acquire);
 IMPORT(OSUninterruptibleSpinLock_Release);
+IMPORT(OSFastMutex_Init);
+IMPORT(OSFastMutex_Lock);
+IMPORT(OSFastMutex_Unlock);
 IMPORT(OSSleepTicks);
 IMPORT(OSGetTitleID);
 IMPORT(OSIsThreadTerminated);
 IMPORT(OSSetThreadPriority);
 IMPORT(OSCreateThread);
+IMPORT(OSSetThreadCleanupCallback);
 IMPORT(OSResumeThread);
 IMPORT(OSIsThreadSuspended);
 IMPORT(OSSuspendThread);
 IMPORT(OSJoinThread);
 IMPORT(OSYieldThread);
+IMPORT(OSGetCoreId);
+IMPORT(OSIsMainCore);
 IMPORT(OSGetSystemTime);
 IMPORT(OSGetSystemTick);
 IMPORT(OSGetSymbolName);
@@ -164,6 +170,15 @@ IMPORT(GX2InitFetchShaderEx);
 IMPORT(GX2SetFetchShader);
 IMPORT(GX2SetVertexShader);
 IMPORT(GX2SetPixelShader);
+IMPORT(GX2SetGeometryShader);
+IMPORT(GX2SetGeometryUniformBlock);
+IMPORT(GX2SetVertexUniformBlock);
+IMPORT(GX2SetPixelUniformBlock);
+IMPORT(GX2CalcGeometryShaderInputRingBufferSize);
+IMPORT(GX2CalcGeometryShaderOutputRingBufferSize);
+IMPORT(GX2SetGeometryShaderInputRingBuffer);
+IMPORT(GX2SetGeometryShaderOutputRingBuffer);
+IMPORT(GX2SetShaderModeEx);
 IMPORT(GX2SetAttribBuffer);
 IMPORT(GX2InitTextureRegs);
 IMPORT(GX2InitSampler);
@@ -252,6 +267,7 @@ IMPORT(KBDTeardown);
 IMPORT_END();
 
 /* syshid */
+#ifdef WIIU_HID
 IMPORT_BEGIN(nsyshid);
 
 IMPORT(HIDSetup);
@@ -269,3 +285,4 @@ IMPORT(HIDRead);
 IMPORT(HIDWrite);
 
 IMPORT_END();
+#endif

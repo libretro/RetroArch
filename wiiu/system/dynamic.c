@@ -12,7 +12,7 @@
 
 #define IMPORT(name)       do{if(OSDynLoad_FindExport(handle, 0, #name, &addr_##name) < 0)OSFatal("Function " # name " is NULL");} while(0)
 #define IMPORT_BEGIN(lib)  OSDynLoad_Acquire(#lib ".rpl", &handle)
-//#define IMPORT_END()       OSDynLoad_Release(handle)
+/* #define IMPORT_END()       OSDynLoad_Release(handle) */
 #define IMPORT_END()
 
 void InitFunctionPointers(void)

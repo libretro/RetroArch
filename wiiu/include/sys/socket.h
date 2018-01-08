@@ -18,13 +18,13 @@ extern "C" {
 #define SOCK_DGRAM      2
 
 #define MSG_DONTWAIT    0x0020
-//#define MSG_DONTWAIT    0x0004
+/* #define MSG_DONTWAIT    0x0004 */
 
 #define SO_REUSEADDR    0x0004
 #define SO_NBIO         0x1014
 
 
-// return codes
+/* return codes */
 #define SO_SUCCESS      0
 #define SO_EWOULDBLOCK  6
 

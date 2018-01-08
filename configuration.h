@@ -27,23 +27,31 @@
 
 #include "gfx/video_driver.h"
 #include "input/input_defines.h"
+#include "led/led_defines.h"
 
 #define configuration_set_float(settings, var, newvar) \
+{ \
    settings->modified = true; \
-   var = newvar
+   var = newvar; \
+}
 
 #define configuration_set_bool(settings, var, newvar) \
+{ \
    settings->modified = true; \
-   var = newvar
+   var = newvar; \
+}
 
 #define configuration_set_uint(settings, var, newvar) \
+{ \
    settings->modified = true; \
-   var = newvar
+   var = newvar; \
+}
 
 #define configuration_set_int(settings, var, newvar) \
+{ \
    settings->modified = true; \
-   var = newvar
-
+   var = newvar; \
+}
 
 enum override_type
 {
@@ -138,14 +146,14 @@ typedef struct settings
       bool menu_show_reboot;
       bool menu_materialui_icons_enable;
       bool menu_xmb_shadows_enable;
-      bool menu_xmb_show_settings;
-      bool menu_xmb_show_favorites;
-      bool menu_xmb_show_images;
-      bool menu_xmb_show_music;
-      bool menu_xmb_show_video;
-      bool menu_xmb_show_netplay;
-      bool menu_xmb_show_history;
-      bool menu_xmb_show_add;
+      bool menu_content_show_settings;
+      bool menu_content_show_favorites;
+      bool menu_content_show_images;
+      bool menu_content_show_music;
+      bool menu_content_show_video;
+      bool menu_content_show_netplay;
+      bool menu_content_show_history;
+      bool menu_content_show_add;
       bool menu_unified_controls;
       bool quick_menu_show_take_screenshot;
       bool quick_menu_show_save_load_state;
@@ -294,7 +302,7 @@ typedef struct settings
       unsigned audio_block_frames;
       unsigned audio_latency;
 
-
+      unsigned audio_resampler_quality;
 
       unsigned input_turbo_period;
       unsigned input_turbo_duty_cycle;
@@ -318,6 +326,7 @@ typedef struct settings
       unsigned keymapper_port;
       unsigned video_window_x;
       unsigned video_window_y;
+      unsigned video_window_opacity;
       unsigned video_monitor_index;
       unsigned video_fullscreen_x;
       unsigned video_fullscreen_y;
@@ -343,6 +352,9 @@ typedef struct settings
       unsigned menu_xmb_theme;
       unsigned menu_xmb_color_theme;
       unsigned menu_materialui_color_theme;
+      unsigned menu_font_color_red;
+      unsigned menu_font_color_green;
+      unsigned menu_font_color_blue;
 
       unsigned camera_width;
       unsigned camera_height;
@@ -360,6 +372,8 @@ typedef struct settings
       unsigned input_keymapper_ids[RARCH_CUSTOM_BIND_LIST_END];
 
       unsigned input_remap_ids[MAX_USERS][RARCH_CUSTOM_BIND_LIST_END];
+
+      unsigned led_map[MAX_LEDS];
    } uints;
 
    struct
@@ -370,6 +384,7 @@ typedef struct settings
       char record_driver[32];
       char camera_driver[32];
       char wifi_driver[32];
+      char led_driver[32];
       char location_driver[32];
       char menu_driver[32];
       char cheevos_username[32];
@@ -405,7 +420,7 @@ typedef struct settings
       char browse_url[4096];
 
       char path_menu_xmb_font[PATH_MAX_LENGTH];
-      char menu_xmb_show_settings_password[PATH_MAX_LENGTH];
+      char menu_content_show_settings_password[PATH_MAX_LENGTH];
       char kiosk_mode_password[PATH_MAX_LENGTH];
       char path_cheat_database[PATH_MAX_LENGTH];
       char path_content_database[PATH_MAX_LENGTH];

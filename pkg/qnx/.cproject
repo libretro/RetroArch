@@ -54,7 +54,6 @@
 									<listOptionValue builtIn="false" value="HAVE_RGUI"/>
 									<listOptionValue builtIn="false" value="HAVE_MENU"/>
 									<listOptionValue builtIn="false" value="RARCH_MOBILE"/>
-									<listOptionValue builtIn="false" value="SINC_LOWER_QUALITY"/>
 									<listOptionValue builtIn="false" value="HAVE_GRIFFIN"/>
 									<listOptionValue builtIn="false" value="HAVE_LANGEXTRA"/>
 									<listOptionValue builtIn="false" value="__LIBRETRO__"/>
@@ -117,7 +116,6 @@
 									<listOptionValue builtIn="false" value="HAVE_RGUI"/>
 									<listOptionValue builtIn="false" value="HAVE_MENU"/>
 									<listOptionValue builtIn="false" value="RARCH_MOBILE"/>
-									<listOptionValue builtIn="false" value="SINC_LOWER_QUALITY"/>
 									<listOptionValue builtIn="false" value="HAVE_GRIFFIN"/>
 									<listOptionValue builtIn="false" value="HAVE_LANGEXTRA"/>
 									<listOptionValue builtIn="false" value="__LIBRETRO__"/>
@@ -241,7 +239,6 @@
 									<listOptionValue builtIn="false" value="HAVE_RGUI"/>
 									<listOptionValue builtIn="false" value="HAVE_MENU"/>
 									<listOptionValue builtIn="false" value="RARCH_MOBILE"/>
-									<listOptionValue builtIn="false" value="SINC_LOWER_QUALITY"/>
 									<listOptionValue builtIn="false" value="HAVE_GRIFFIN"/>
 									<listOptionValue builtIn="false" value="HAVE_LANGEXTRA"/>
 									<listOptionValue builtIn="false" value="__LIBRETRO__"/>
@@ -304,7 +301,6 @@
 									<listOptionValue builtIn="false" value="HAVE_RGUI"/>
 									<listOptionValue builtIn="false" value="HAVE_MENU"/>
 									<listOptionValue builtIn="false" value="RARCH_MOBILE"/>
-									<listOptionValue builtIn="false" value="SINC_LOWER_QUALITY"/>
 									<listOptionValue builtIn="false" value="HAVE_GRIFFIN"/>
 									<listOptionValue builtIn="false" value="HAVE_LANGEXTRA"/>
 									<listOptionValue builtIn="false" value="__LIBRETRO__"/>
@@ -431,7 +427,6 @@
 									<listOptionValue builtIn="false" value="HAVE_RGUI"/>
 									<listOptionValue builtIn="false" value="HAVE_MENU"/>
 									<listOptionValue builtIn="false" value="RARCH_MOBILE"/>
-									<listOptionValue builtIn="false" value="SINC_LOWER_QUALITY"/>
 									<listOptionValue builtIn="false" value="HAVE_GRIFFIN"/>
 									<listOptionValue builtIn="false" value="HAVE_LANGEXTRA"/>
 									<listOptionValue builtIn="false" value="__LIBRETRO__"/>
@@ -494,7 +489,6 @@
 									<listOptionValue builtIn="false" value="HAVE_RGUI"/>
 									<listOptionValue builtIn="false" value="HAVE_MENU"/>
 									<listOptionValue builtIn="false" value="RARCH_MOBILE"/>
-									<listOptionValue builtIn="false" value="SINC_LOWER_QUALITY"/>
 									<listOptionValue builtIn="false" value="HAVE_GRIFFIN"/>
 									<listOptionValue builtIn="false" value="HAVE_LANGEXTRA"/>
 									<listOptionValue builtIn="false" value="__LIBRETRO__"/>
@@ -618,7 +612,6 @@
 									<listOptionValue builtIn="false" value="HAVE_RGUI"/>
 									<listOptionValue builtIn="false" value="HAVE_MENU"/>
 									<listOptionValue builtIn="false" value="RARCH_MOBILE"/>
-									<listOptionValue builtIn="false" value="SINC_LOWER_QUALITY"/>
 									<listOptionValue builtIn="false" value="HAVE_GRIFFIN"/>
 									<listOptionValue builtIn="false" value="HAVE_LANGEXTRA"/>
 									<listOptionValue builtIn="false" value="__LIBRETRO__"/>
@@ -681,7 +674,6 @@
 									<listOptionValue builtIn="false" value="HAVE_RGUI"/>
 									<listOptionValue builtIn="false" value="HAVE_MENU"/>
 									<listOptionValue builtIn="false" value="RARCH_MOBILE"/>
-									<listOptionValue builtIn="false" value="SINC_LOWER_QUALITY"/>
 									<listOptionValue builtIn="false" value="HAVE_GRIFFIN"/>
 									<listOptionValue builtIn="false" value="HAVE_LANGEXTRA"/>
 									<listOptionValue builtIn="false" value="__LIBRETRO__"/>

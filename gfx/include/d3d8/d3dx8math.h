@@ -225,7 +225,7 @@ typedef struct _D3DMATRIX D3DXMATRIX, *LPD3DXMATRIX;
 // This class helps keep matrices 16-byte aligned as preferred by P4 cpus.
 // It aligns matrices on the stack and on the heap or in global scope.
 // It does this using __declspec(align(16)) which works on VC7 and on VC 6
-// with the processor pack. Unfortunately there is no way to detect the 
+// with the processor pack. Unfortunately there is no way to detect the
 // latter so this is turned on only on VC7. On other compilers this is the
 // the same as D3DXMATRIX.
 // Using this class on a compiler that does not actually do the alignment
@@ -614,8 +614,8 @@ D3DXVECTOR4* WINAPI D3DXVec3Transform
 D3DXVECTOR3* WINAPI D3DXVec3TransformCoord
     ( D3DXVECTOR3 *pOut, CONST D3DXVECTOR3 *pV, CONST D3DXMATRIX *pM );
 
-// Transform (x, y, z, 0) by matrix.  If you transforming a normal by a 
-// non-affine matrix, the matrix you pass to this function should be the 
+// Transform (x, y, z, 0) by matrix.  If you transforming a normal by a
+// non-affine matrix, the matrix you pass to this function should be the
 // transpose of the inverse of the matrix you would use to transform a coord.
 D3DXVECTOR3* WINAPI D3DXVec3TransformNormal
     ( D3DXVECTOR3 *pOut, CONST D3DXVECTOR3 *pV, CONST D3DXMATRIX *pM );
@@ -939,7 +939,7 @@ D3DXQUATERNION* WINAPI D3DXQuaternionLn
 // if q = (0, theta * v); exp(q) = (cos(theta), sin(theta) * v)
 D3DXQUATERNION* WINAPI D3DXQuaternionExp
     ( D3DXQUATERNION *pOut, CONST D3DXQUATERNION *pQ );
-      
+
 // Spherical linear interpolation between Q1 (t == 0) and Q2 (t == 1).
 // Expects unit quaternions.
 D3DXQUATERNION* WINAPI D3DXQuaternionSlerp
@@ -954,11 +954,11 @@ D3DXQUATERNION* WINAPI D3DXQuaternionSquad
       CONST D3DXQUATERNION *pC, FLOAT t );
 
 // Setup control points for spherical quadrangle interpolation
-// from Q1 to Q2.  The control points are chosen in such a way 
+// from Q1 to Q2.  The control points are chosen in such a way
 // to ensure the continuity of tangents with adjacent segments.
 void WINAPI D3DXQuaternionSquadSetup
     ( D3DXQUATERNION *pAOut, D3DXQUATERNION *pBOut, D3DXQUATERNION *pCOut,
-      CONST D3DXQUATERNION *pQ0, CONST D3DXQUATERNION *pQ1, 
+      CONST D3DXQUATERNION *pQ0, CONST D3DXQUATERNION *pQ1,
       CONST D3DXQUATERNION *pQ2, CONST D3DXQUATERNION *pQ3 );
 
 // Barycentric interpolation.
@@ -1084,7 +1084,7 @@ extern "C" {
 // Calculate Fresnel term given the cosine of theta (likely obtained by
 // taking the dot of two normals), and the refraction index of the material.
 FLOAT WINAPI D3DXFresnelTerm
-    (FLOAT CosTheta, FLOAT RefractionIndex);     
+    (FLOAT CosTheta, FLOAT RefractionIndex);
 
 #ifdef __cplusplus
 }
@@ -1197,9 +1197,9 @@ DECLARE_INTERFACE_(ID3DXMatrixStack, IUnknown)
 extern "C" {
 #endif
 
-HRESULT WINAPI 
-    D3DXCreateMatrixStack( 
-        DWORD               Flags, 
+HRESULT WINAPI
+    D3DXCreateMatrixStack(
+        DWORD               Flags,
         LPD3DXMATRIXSTACK*  ppStack);
 
 #ifdef __cplusplus

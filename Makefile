@@ -9,13 +9,18 @@ endif
 
 include config.mk
 
+# Put your favorite compile flags in this file, if you want different defaults than upstream.
+# Do not attempt to create that file upstream.
+# (It'd be better to put this comment in that file, but .gitignore doesn't work on files that exist in the repo.)
+-include Makefile.local
+
 TARGET = retroarch
 
 OBJDIR := obj-unix
 
 OBJ :=
 LIBS :=
-DEFINES := -DHAVE_CONFIG_H -DRARCH_INTERNAL -DHAVE_OVERLAY
+DEFINES := -DHAVE_CONFIG_H -DRARCH_INTERNAL
 DEFINES += -DGLOBAL_CONFIG_DIR='"$(GLOBAL_CONFIG_DIR)"'
 
 ifneq ($(findstring BSD,$(OS)),)
@@ -74,7 +79,7 @@ ifneq ($(findstring Win32,$(OS)),)
    LDFLAGS += -mwindows
 endif
 
-CFLAGS   += -Wall $(OPTIMIZE_FLAG) $(INCLUDE_DIRS) $(DEBUG_FLAG) -I. -Ideps -Ideps/stb
+CFLAGS   += -Wall $(OPTIMIZE_FLAG) $(INCLUDE_DIRS) -I. -Ideps -Ideps/stb
 
 APPEND_CFLAGS := $(CFLAGS)
 CXXFLAGS += $(APPEND_CFLAGS) -std=c++11 -D__STDC_CONSTANT_MACROS
@@ -205,13 +210,6 @@ install: $(TARGET)
 		mkdir -p $(DESTDIR)$(ASSETS_DIR)/retroarch/assets/glui; \
 		cp -r media/assets/xmb/  $(DESTDIR)$(ASSETS_DIR)/retroarch/assets; \
 		cp -r media/assets/glui/ $(DESTDIR)$(ASSETS_DIR)/retroarch/assets; \
-		echo "Removing unneeded source image files.."; \
-		rm -rf $(DESTDIR)$(ASSETS_DIR)/retroarch/assets/xmb/flatui/src; \
-		rm -rf $(DESTDIR)$(ASSETS_DIR)/retroarch/assets/xmb/monochrome/src; \
-		rm -rf $(DESTDIR)$(ASSETS_DIR)/retroarch/assets/xmb/retroactive/src; \
-		rm -rf $(DESTDIR)$(ASSETS_DIR)/retroarch/assets/xmb/neoactive/src; \
-		rm -rf $(DESTDIR)$(ASSETS_DIR)/retroarch/assets/xmb/retrosystem/src; \
-		rm -rf $(DESTDIR)$(ASSETS_DIR)/retroarch/assets/xmb/dot-art/src; \
 		echo "Asset copying done."; \
 	fi
 

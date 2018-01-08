@@ -13,6 +13,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* Assume W-functions do not work below Win2K and Xbox platforms */
+#if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500 || defined(_XBOX)
+
+#ifndef LEGACY_WIN32
+#define LEGACY_WIN32
+#endif
+
+#endif
 
 #ifdef _WIN32
 #include <direct.h>
@@ -45,6 +53,7 @@
 #include <compat/posix_string.h>
 #include <retro_assert.h>
 #include <retro_miscellaneous.h>
+#include <encodings/utf.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -171,6 +180,7 @@ void fill_pathname_abbreviate_special(char *out_path,
 bool fill_pathname_application_data(char *s, size_t len)
 {
 #if defined(_WIN32) && !defined(_XBOX)
+#ifdef LEGACY_WIN32
    const char *appdata = getenv("APPDATA");
 
    if (appdata)
@@ -178,6 +188,21 @@ bool fill_pathname_application_data(char *s, size_t len)
       strlcpy(s, appdata, len);
       return true;
    }
+#else
+   const wchar_t *appdataW = _wgetenv(L"APPDATA");
+
+   if (appdataW)
+   {
+      char *appdata = utf16_to_utf8_string_alloc(appdataW);
+
+      if (appdata)
+      {
+         strlcpy(s, appdata, len);
+         free(appdata);
+         return true;
+      }
+   }
+#endif
 
 #elif defined(OSX)
    const char *appdata = getenv("HOME");
@@ -224,7 +249,7 @@ void fill_pathname_application_path(char *s, size_t len)
 #endif
 #ifdef _WIN32
    DWORD ret;
-   wchar_t ws[PATH_MAX_LENGTH] = {0};
+   wchar_t wstr[PATH_MAX_LENGTH] = {0};
 #endif
 #ifdef __HAIKU__
    image_info info;
@@ -236,7 +261,22 @@ void fill_pathname_application_path(char *s, size_t len)
       return;
 
 #ifdef _WIN32
-   ret    = GetModuleFileName(GetModuleHandle(NULL), s, len - 1);
+#ifdef LEGACY_WIN32
+   ret    = GetModuleFileNameA(GetModuleHandle(NULL), s, len);
+#else
+   ret    = GetModuleFileNameW(GetModuleHandle(NULL), wstr, ARRAY_SIZE(wstr));
+
+   if (*wstr)
+   {
+      char *str = utf16_to_utf8_string_alloc(wstr);
+
+      if (str)
+      {
+         strlcpy(s, str, len);
+         free(str);
+      }
+   }
+#endif
    s[ret] = '\0';
 #elif defined(__APPLE__)
    if (bundle)

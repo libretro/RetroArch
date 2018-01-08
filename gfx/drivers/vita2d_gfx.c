@@ -42,7 +42,7 @@ extern void *memcpy_neon(void *dst, const void *src, size_t n);
 
 static void vita2d_gfx_set_viewport(void *data, unsigned viewport_width,
       unsigned viewport_height, bool force_full, bool allow_rotate);
-      
+
 static void *vita2d_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
@@ -86,7 +86,7 @@ static void *vita2d_gfx_init(const video_info_t *video,
    vita->vsync        = video->vsync;
    vita->rgb32        = video->rgb32;
 
-   vita->tex_filter   = video->smooth 
+   vita->tex_filter   = video->smooth
       ? SCE_GXM_TEXTURE_FILTER_LINEAR : SCE_GXM_TEXTURE_FILTER_POINT;
 
    video_driver_set_size(&temp_width, &temp_height);
@@ -106,7 +106,7 @@ static void *vita2d_gfx_init(const video_info_t *video,
 #ifdef HAVE_OVERLAY
    vita->overlay_enable     = false;
 #endif
-   font_driver_init_osd(vita, false, 
+   font_driver_init_osd(vita, false,
          video->is_threaded,
          FONT_DRIVER_RENDER_VITA2D);
 
@@ -479,21 +479,21 @@ static void vita2d_gfx_set_viewport(void *data, unsigned viewport_width,
 
          if (fabsf(device_aspect - desired_aspect) < 0.0001f)
          {
-            /* If the aspect ratios of screen and desired aspect 
-             * ratio are sufficiently equal (floating point stuff), 
+            /* If the aspect ratios of screen and desired aspect
+             * ratio are sufficiently equal (floating point stuff),
              * assume they are actually equal.
              */
          }
          else if (device_aspect > desired_aspect)
          {
-            delta          = (desired_aspect / device_aspect - 1.0f) 
+            delta          = (desired_aspect / device_aspect - 1.0f)
                / 2.0f + 0.5f;
             x              = (int)roundf(viewport_width * (0.5f - delta));
             viewport_width = (unsigned)roundf(2.0f * viewport_width * delta);
          }
          else
          {
-            delta           = (device_aspect / desired_aspect - 1.0f) 
+            delta           = (device_aspect / desired_aspect - 1.0f)
                / 2.0f + 0.5f;
             y               = (int)roundf(viewport_height * (0.5f - delta));
             viewport_height = (unsigned)roundf(2.0f * viewport_height * delta);
@@ -569,7 +569,7 @@ static void vita_set_filtering(void *data, unsigned index, bool smooth)
 
    if (vita)
    {
-      vita->tex_filter = smooth ? 
+      vita->tex_filter = smooth ?
          SCE_GXM_TEXTURE_FILTER_LINEAR : SCE_GXM_TEXTURE_FILTER_POINT;
       vita2d_texture_set_filters(vita->texture,vita->tex_filter,
             vita->tex_filter);
@@ -696,13 +696,13 @@ static uintptr_t vita_load_texture(void *video_data, void *data,
    uint32_t             *tex32    = NULL;
    const uint32_t *frame32        = NULL;
    struct texture_image *image    = (struct texture_image*)data;
-   struct vita2d_texture *texture = vita2d_create_empty_texture_format(image->width, 
+   struct vita2d_texture *texture = vita2d_create_empty_texture_format(image->width,
      image->height,SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB);
 
    if (!texture)
       return 0;
 
-   if ((filter_type == TEXTURE_FILTER_MIPMAP_LINEAR) || 
+   if ((filter_type == TEXTURE_FILTER_MIPMAP_LINEAR) ||
       (filter_type == TEXTURE_FILTER_LINEAR))
       vita2d_texture_set_filters(texture,
             SCE_GXM_TEXTURE_FILTER_LINEAR,
@@ -771,7 +771,7 @@ static bool vita_get_current_sw_framebuffer(void *data,
 
    framebuffer->data         = vita2d_texture_get_datap(vita->texture);
    framebuffer->pitch        = vita2d_texture_get_stride(vita->texture);
-   framebuffer->format       = vita->rgb32 
+   framebuffer->format       = vita->rgb32
       ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
    framebuffer->memory_flags = 0;
 
@@ -792,21 +792,14 @@ static const video_poke_interface_t vita_poke_interface = {
    NULL, /* get_proc_address */
    vita_set_aspect_ratio,
    vita_apply_state_changes,
-#ifdef HAVE_MENU
    vita_set_texture_frame,
    vita_set_texture_enable,
-   #else
-      NULL,
-      NULL,
-   #endif
-   #ifdef HAVE_MENU
-      vita_set_osd_msg,
-   #endif
-      NULL,
-      NULL,
-      NULL,
-      vita_get_current_sw_framebuffer,
-      NULL,
+   vita_set_osd_msg,
+   NULL,
+   NULL,
+   NULL,
+   vita_get_current_sw_framebuffer,
+   NULL,
  };
 
 static void vita2d_gfx_get_poke_interface(void *data,
@@ -849,7 +842,7 @@ static bool vita2d_overlay_load(void *data, const void *image_data, unsigned num
       for (j = 0; j < o->height; j++)
          for (k = 0; k < o->width; k++)
             tex32[k + j*stride] = frame32[k + j*pitch];
-      
+
       vita2d_overlay_tex_geom(vita, i, 0, 0, 1, 1); /* Default. Stretch to whole screen. */
       vita2d_overlay_vertex_geom(vita, i, 0, 0, 1, 1);
       vita->overlay[i].alpha_mod = 1.0f;
@@ -881,7 +874,7 @@ static void vita2d_overlay_vertex_geom(void *data, unsigned image,
 {
    vita_video_t          *vita = (vita_video_t*)data;
    struct vita_overlay_data *o = NULL;
-   
+
    /* Flipped, so we preserve top-down semantics. */
    /*y = 1.0f - y;
    h = -h;*/
@@ -891,7 +884,7 @@ static void vita2d_overlay_vertex_geom(void *data, unsigned image,
 
    if (o)
    {
-      
+
       o->w = w*PSP_FB_WIDTH/o->width;
       o->h = h*PSP_FB_HEIGHT/o->height;
       o->x = PSP_FB_WIDTH*(1-w)/2+x;
@@ -924,14 +917,14 @@ static void vita2d_render_overlay(void *data)
 
    for (i = 0; i < vita->overlays; i++)
    {
-      vita2d_draw_texture_tint_part_scale(vita->overlay[i].tex, 
-            vita->overlay[i].x, 
-            vita->overlay[i].y, 
-            vita->overlay[i].tex_x, 
-            vita->overlay[i].tex_y, 
-            vita->overlay[i].tex_w, 
-            vita->overlay[i].tex_h, 
-            vita->overlay[i].w, 
+      vita2d_draw_texture_tint_part_scale(vita->overlay[i].tex,
+            vita->overlay[i].x,
+            vita->overlay[i].y,
+            vita->overlay[i].tex_x,
+            vita->overlay[i].tex_y,
+            vita->overlay[i].tex_w,
+            vita->overlay[i].tex_h,
+            vita->overlay[i].w,
             vita->overlay[i].h,
             RGBA8(0xFF,0xFF,0xFF,(uint8_t)(vita->overlay[i].alpha_mod * 255.0f)));
    }

@@ -5,7 +5,7 @@
    "version": "0.2.0",
    "configurations": [
       {
-         "name": "MINGW64 (MSYS2) debug",
+         "name": "msys2-mingw64 debug",
          "type": "cppdbg",
          "request": "launch",
          "program": "${workspaceFolder}/retroarch.exe",
@@ -16,6 +16,26 @@
          "externalConsole": true,
          "MIMode": "gdb",
          "miDebuggerPath": "c:\\msys64\\mingw64\\bin\\gdb.exe",
+         "setupCommands": [
+            {
+               "description": "Enable pretty-printing for gdb",
+               "text": "-enable-pretty-printing",
+               "ignoreFailures": true
+            }
+         ]
+      },
+      {
+         "name": "msys2-mingw32 debug",
+         "type": "cppdbg",
+         "request": "launch",
+         "program": "${workspaceFolder}/retroarch.exe",
+         "args": [],
+         "stopAtEntry": false,
+         "cwd": "${workspaceFolder}",
+         "environment": [],
+         "externalConsole": true,
+         "MIMode": "gdb",
+         "miDebuggerPath": "c:\\msys64\\mingw32\\bin\\gdb.exe",
          "setupCommands": [
             {
                "description": "Enable pretty-printing for gdb",

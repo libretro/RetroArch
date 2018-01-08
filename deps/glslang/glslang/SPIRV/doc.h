@@ -32,6 +32,9 @@
 //ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //POSSIBILITY OF SUCH DAMAGE.
 
+#ifndef _SPIRV_doc_h
+#define _SPIRV_doc_h
+
 //
 // Parameterize the SPIR-V enumerants.
 //
@@ -195,7 +198,7 @@ public:
 // Parameterize a set of enumerants that form an enum
 class EnumDefinition : public EnumParameters {
 public:
-    EnumDefinition() : 
+    EnumDefinition() :
         ceiling(0), bitmask(false), getName(0), enumParams(0), operandParams(0) { }
     void set(int ceil, const char* (*name)(int), EnumParameters* ep, bool mask = false)
     {
@@ -258,3 +261,5 @@ const char* AccessQualifierString(int attr);
 void PrintOperands(const OperandParameters& operands, int reservedOperands);
 
 };  // end namespace spv
+
+#endif

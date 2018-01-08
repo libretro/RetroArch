@@ -673,7 +673,7 @@ void vita2d_texture_set_tint_color_uniform(unsigned int color){
 
 void vita2d_draw_texture_part_generic(const vita2d_texture *texture, SceGxmPrimitiveType type, vita2d_texture_vertex *vertices, unsigned int num_vertices)
 {
-	
+
 	uint16_t *indices = (uint16_t *)vita2d_pool_memalign(
 		num_vertices * sizeof(uint16_t), // 4 indices
 		sizeof(uint16_t));

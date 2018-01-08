@@ -1,11 +1,11 @@
-//////////////////////////////////////////////////////////////////////////////
-//
-//  Copyright (C) Microsoft Corporation.  All Rights Reserved.
-//
-//  File:       d3dx9tex.h
-//  Content:    D3DX texturing APIs
-//
-//////////////////////////////////////////////////////////////////////////////
+/*
+ *
+ *  Copyright (C) Microsoft Corporation.  All Rights Reserved.
+ *
+ *  File:       d3dx9tex.h
+ *  Content:    D3DX texturing APIs
+ *
+ */
 
 #include "d3dx9.h"
 
@@ -55,18 +55,18 @@ typedef enum _D3DXIMAGE_FILEFORMAT
     D3DXIFF_DDS         = 4,
     D3DXIFF_PPM         = 5,
     D3DXIFF_DIB         = 6,
-    D3DXIFF_HDR         = 7,       //high dynamic range formats
-    D3DXIFF_PFM         = 8,       //
+    D3DXIFF_HDR         = 7,       /* high dynamic range formats */
+    D3DXIFF_PFM         = 8,       
     D3DXIFF_FORCE_DWORD = 0x7fffffff
 
 } D3DXIMAGE_FILEFORMAT;
 
-typedef VOID (WINAPI *LPD3DXFILL2D)(D3DXVECTOR4 *pOut, 
+typedef VOID (WINAPI *LPD3DXFILL2D)(D3DXVECTOR4 *pOut,
     CONST D3DXVECTOR2 *pTexCoord, CONST D3DXVECTOR2 *pTexelSize, LPVOID pData);
 
-typedef VOID (WINAPI *LPD3DXFILL3D)(D3DXVECTOR4 *pOut, 
+typedef VOID (WINAPI *LPD3DXFILL3D)(D3DXVECTOR4 *pOut,
     CONST D3DXVECTOR3 *pTexCoord, CONST D3DXVECTOR3 *pTexelSize, LPVOID pData);
- 
+
 typedef struct _D3DXIMAGE_INFO
 {
     UINT                    Width;
@@ -81,8 +81,7 @@ typedef struct _D3DXIMAGE_INFO
 
 #ifdef __cplusplus
 extern "C" {
-#endif //__cplusplus
-
+#endif
 
 HRESULT WINAPI
     D3DXGetImageInfoFromFileA(
@@ -257,9 +256,9 @@ HRESULT WINAPI
         CONST RECT*               pSrcRect);
 
 
-//////////////////////////////////////////////////////////////////////////////
-// Load/Save Volume APIs /////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
+/*
+ * Load/Save Volume APIs
+ */
 
 HRESULT WINAPI
     D3DXLoadVolumeFromFileA(
@@ -390,9 +389,9 @@ HRESULT WINAPI
         CONST PALETTEENTRY*       pSrcPalette,
         CONST D3DBOX*             pSrcBox);
 
-//////////////////////////////////////////////////////////////////////////////
-// Create/Save Texture APIs //////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
+/*
+ * Create/Save Texture APIs
+ */
 
 HRESULT WINAPI
     D3DXCheckTextureRequirements(
@@ -575,8 +574,7 @@ HRESULT WINAPI
 #define D3DXCreateVolumeTextureFromResource D3DXCreateVolumeTextureFromResourceA
 #endif
 
-
-// FromFileEx
+/* FromFileEx */
 
 HRESULT WINAPI
     D3DXCreateTextureFromFileExA(
@@ -700,8 +698,7 @@ HRESULT WINAPI
 #define D3DXCreateVolumeTextureFromFileEx D3DXCreateVolumeTextureFromFileExA
 #endif
 
-
-// FromResourceEx
+/* FromResourceEx */
 
 HRESULT WINAPI
     D3DXCreateTextureFromResourceExA(
@@ -831,8 +828,7 @@ HRESULT WINAPI
 #define D3DXCreateVolumeTextureFromResourceEx D3DXCreateVolumeTextureFromResourceExA
 #endif
 
-
-// FromFileInMemory
+/* FromFileInMemory */
 
 HRESULT WINAPI
     D3DXCreateTextureFromFileInMemory(
@@ -856,7 +852,7 @@ HRESULT WINAPI
         LPDIRECT3DVOLUMETEXTURE9* ppVolumeTexture);
 
 
-// FromFileInMemoryEx
+/* FromFileInMemoryEx */
 
 HRESULT WINAPI
     D3DXCreateTextureFromFileInMemoryEx(
@@ -942,9 +938,9 @@ HRESULT WINAPI
 
 
 
-//////////////////////////////////////////////////////////////////////////////
-// Misc Texture APIs /////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
+/*
+ * Misc Texture APIs
+ */
 
 HRESULT WINAPI
     D3DXFilterTexture(
@@ -974,7 +970,7 @@ HRESULT WINAPI
         LPD3DXFILL3D              pFunction,
         LPVOID                    pData);
 
-HRESULT WINAPI 
+HRESULT WINAPI
     D3DXFillTextureTX(
         LPDIRECT3DTEXTURE9        pTexture,
         LPD3DXTEXTURESHADER       pTextureShader);
@@ -984,9 +980,9 @@ HRESULT WINAPI
     D3DXFillCubeTextureTX(
         LPDIRECT3DCUBETEXTURE9    pCubeTexture,
         LPD3DXTEXTURESHADER       pTextureShader);
-                                                
-                                                        
-HRESULT WINAPI 
+
+
+HRESULT WINAPI
     D3DXFillVolumeTextureTX(
         LPDIRECT3DVOLUMETEXTURE9  pVolumeTexture,
         LPD3DXTEXTURESHADER       pTextureShader);
@@ -1002,6 +998,6 @@ HRESULT WINAPI
 
 #ifdef __cplusplus
 }
-#endif //__cplusplus
+#endif
 
-#endif //__D3DX9TEX_H__
+#endif /* __D3DX9TEX_H__ */

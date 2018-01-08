@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -102,7 +102,7 @@ static void gfx_ctx_ps3_get_available_resolutions(void)
    }
 
    global->console.screen.resolutions.count = 0;
-   global->console.screen.resolutions.list  = 
+   global->console.screen.resolutions.list  =
       malloc(resolution_count * sizeof(uint32_t));
 
    for (i = 0; i < num_videomodes; i++)
@@ -119,20 +119,21 @@ static void gfx_ctx_ps3_get_available_resolutions(void)
          if (global->console.screen.resolutions.current.id == videomode[i])
          {
             defaultresolution = false;
-            global->console.screen.resolutions.current.idx = 
+            global->console.screen.resolutions.current.idx =
                global->console.screen.resolutions.count-1;
          }
       }
    }
 
-   /* In case we didn't specify a resolution - 
+   /* In case we didn't specify a resolution -
     * make the last resolution
-      that was added to the list (the highest resolution) 
+      that was added to the list (the highest resolution)
       the default resolution */
-   if (global->console.screen.resolutions.current.id > num_videomodes 
-         || defaultresolution)
-      global->console.screen.resolutions.current.idx = 
-         global->console.screen.resolutions.count - 1;
+   if (global->console.screen.resolutions.current.id > num_videomodes || defaultresolution)
+    {
+      global->console.screen.resolutions.current.idx = resolution_count - 1;
+      global->console.screen.resolutions.current.id = global->console.screen.resolutions.list[global->console.screen.resolutions.current.idx];
+    }
 
    global->console.screen.resolutions.check = true;
 }
@@ -194,7 +195,7 @@ static void gfx_ctx_ps3_get_video_size(void *data,
 
 #if defined(HAVE_PSGL)
    if (ps3)
-      psglGetDeviceDimensions(ps3->gl_device, width, height); 
+      psglGetDeviceDimensions(ps3->gl_device, width, height);
 #endif
 }
 
@@ -223,7 +224,7 @@ static void *gfx_ctx_ps3_init(video_frame_info_t *video_info, void *video_driver
    sys_spu_initialize(6, 1);
    psglInit(&options);
 
-   params.enable            = 
+   params.enable            =
       PSGL_DEVICE_PARAMETERS_COLOR_FORMAT |
       PSGL_DEVICE_PARAMETERS_DEPTH_FORMAT |
       PSGL_DEVICE_PARAMETERS_MULTISAMPLING_MODE;
@@ -264,7 +265,7 @@ static void *gfx_ctx_ps3_init(video_frame_info_t *video_info, void *video_driver
    psglResetCurrentContext();
 #endif
 
-   global->console.screen.pal_enable = 
+   global->console.screen.pal_enable =
       cellVideoOutGetResolutionAvailability(
             CELL_VIDEO_OUT_PRIMARY, CELL_VIDEO_OUT_RESOLUTION_576,
             CELL_VIDEO_OUT_ASPECT_AUTO, 0);

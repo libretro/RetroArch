@@ -493,7 +493,7 @@ static void gdi_set_texture_frame(void *data,
    }
 }
 
-static void gdi_set_osd_msg(void *data, 
+static void gdi_set_osd_msg(void *data,
       video_frame_info_t *video_info,
       const char *msg,
       const void *params, void *font)
@@ -546,17 +546,10 @@ static const video_poke_interface_t gdi_poke_interface = {
    NULL,
    NULL,
    NULL,
-#if defined(HAVE_MENU)
    gdi_set_texture_frame,
    NULL,
    gdi_set_osd_msg,
    NULL,
-#else
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-#endif
 
    NULL,
 #ifdef HAVE_MENU

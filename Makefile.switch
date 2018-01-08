@@ -1,0 +1,68 @@
+TARGET := retroarch_switch
+
+DEBUG                  ?= 0
+GRIFFIN_BUILD           = 0
+WHOLE_ARCHIVE_LINK      = 0
+
+OBJ :=
+
+DEFINES := -DSWITCH=1 -U__linux__ -U__linux
+
+ifeq ($(GRIFFIN_BUILD), 1)
+	OBJ += griffin/griffin.o
+	DEFINES += -DHAVE_GRIFFIN=1 -DHAVE_NEON -DHAVE_MATERIALUI -DHAVE_LIBRETRODB -DHAVE_CC_RESAMPLER
+	DEFINES += -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_RBMP -DHAVE_RTGA -DWANT_ZLIB
+else
+	HAVE_CC_RESAMPLER = 1
+	HAVE_MENU_COMMON = 1
+	HAVE_RTGA = 1
+	HAVE_RPNG = 1
+	HAVE_RJPEG = 1
+	HAVE_RBMP = 1
+	HAVE_RGUI = 1
+	HAVE_ZLIB = 1
+	HAVE_BUILTINZLIB = 1
+	HAVE_LIBRETRODB = 1
+	HAVE_ZARCH = 0
+	HAVE_MATERIALUI = 0 # enable later?
+	HAVE_XMB = 0
+	HAVE_STATIC_VIDEO_FILTERS = 1
+	HAVE_STATIC_AUDIO_FILTERS = 1
+	HAVE_MENU = 1
+
+	include Makefile.common
+        BLACKLIST :=
+	BLACKLIST += input/input_overlay.o
+        BLACKLIST += tasks/task_overlay.o
+	OBJ := $(filter-out $(BLACKLIST),$(OBJ))
+endif
+
+
+ifeq ($(strip $(LIBTRANSISTOR_HOME)),)
+$(error "Please set LIBTRANSISTOR_HOME in your environment. export LIBTRANSISTOR_HOME=<path t>o libtransistor")
+endif
+
+include $(LIBTRANSISTOR_HOME)/libtransistor.mk
+
+INCDIRS := -I. -Ideps/libz -Ilibretro-common/include -Ideps/stb -I$(LIBTRANSISTOR_HOME)/build/sdl2_install/include/SDL2/
+LIBDIRS := -L.
+
+TARGETS := $(TARGET).nro
+
+CFLAGS += $(INCDIRS) $(DEFINES) -Wunused-command-line-argument
+
+all: $(TARGETS)
+
+$(TARGET).nro.so: $(OBJ) libretro_switch.a fs.squashfs.o $(LIBTRANSISTOR_NRO_LIB) $(LIBTRANSISTOR_COMMON_LIBS)
+	$(LD) $(LD_FLAGS) --allow-multiple-definition -o $@ $(OBJ) libretro_switch.a fs.squashfs.o $(LIBTRANSISTOR_NRO_LDFLAGS) -lm
+
+%.squashfs.o: %.squashfs
+	$(LD) -s -r -b binary -m aarch64elf -T $(LIBTRANSISTOR_HOME)/fs.T -o $@ $<
+
+fs.squashfs: fs/*
+	mksquashfs $^ $@ -comp lz4 -nopad -noappend
+
+clean:
+	rm -f $(OBJ) $(TARGET).nro.so $(TARGET).nro
+
+.PHONY: clean all

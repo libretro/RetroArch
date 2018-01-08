@@ -322,7 +322,7 @@ static int wiiusb_hid_add_adapter(void *data, usb_device_entry *dev)
     * control name until we get its interface */
    adapter->slot = pad_connection_pad_init(hid->connections,
          "hid", desc.idVendor, desc.idProduct,
-         adapter, &wiiusb_hid_device_send_control);
+         adapter, &wiiusb_hid);
 
    if (adapter->slot == -1)
       goto error;
@@ -482,9 +482,11 @@ static void wiiusb_hid_joypad_get_buttons(void *data, unsigned port, retro_bits_
 {
   wiiusb_hid_t *hid = (wiiusb_hid_t*)data;
   if (hid)
-    return pad_connection_get_buttons(&hid->connections[port], port, state);
-  else
-    RARCH_INPUT_STATE_CLEAR_PTR(state);
+  {
+    pad_connection_get_buttons(&hid->connections[port], port, state);
+    return;
+  }
+  BIT256_CLEAR_ALL_PTR(state);
 }
 
 static bool wiiusb_hid_joypad_button(void *data, unsigned port, uint16_t joykey)
@@ -499,7 +501,7 @@ static bool wiiusb_hid_joypad_button(void *data, unsigned port, uint16_t joykey)
 
   /* Check the button. */
   if ((port < MAX_USERS) && (joykey < 32))
-    return (RARCH_INPUT_STATE_BIT_GET(buttons, joykey) != 0);
+    return (BIT256_GET(buttons, joykey) != 0);
 
   return false;
 }
@@ -544,7 +546,7 @@ static int16_t wiiusb_hid_joypad_axis(void *data,
    return val;
 }
 
-static void wiiusb_hid_free(void *data)
+static void wiiusb_hid_free(const void *data)
 {
    struct wiiusb_adapter      *adapter = NULL;
    struct wiiusb_adapter *next_adapter = NULL;
@@ -628,4 +630,5 @@ hid_driver_t wiiusb_hid = {
    wiiusb_hid_joypad_rumble,
    wiiusb_hid_joypad_name,
    "wiiusb",
+   wiiusb_hid_device_send_control,
 };

@@ -1,11 +1,11 @@
-///////////////////////////////////////////////////////////////////////////
-//
-//  Copyright (C) Microsoft Corporation.  All Rights Reserved.
-//
-//  File:       d3dx9shapes.h
-//  Content:    D3DX simple shapes
-//
-///////////////////////////////////////////////////////////////////////////
+/*
+ *
+ *  Copyright (C) Microsoft Corporation.  All Rights Reserved.
+ *
+ *  File:       d3dx9shapes.h
+ *  Content:    D3DX simple shapes
+ *
+ */
 
 #include "d3dx9.h"
 
@@ -16,39 +16,39 @@
 extern "C" {
 #endif
 
-HRESULT WINAPI 
+HRESULT WINAPI
     D3DXCreatePolygon(
         LPDIRECT3DDEVICE9   pDevice,
-        FLOAT               Length, 
-        UINT                Sides, 
+        FLOAT               Length,
+        UINT                Sides,
         LPD3DXMESH*         ppMesh,
         LPD3DXBUFFER*       ppAdjacency);
 
-HRESULT WINAPI 
+HRESULT WINAPI
     D3DXCreateBox(
-        LPDIRECT3DDEVICE9   pDevice, 
+        LPDIRECT3DDEVICE9   pDevice,
         FLOAT               Width,
         FLOAT               Height,
         FLOAT               Depth,
         LPD3DXMESH*         ppMesh,
         LPD3DXBUFFER*       ppAdjacency);
 
-HRESULT WINAPI 
+HRESULT WINAPI
     D3DXCreateCylinder(
         LPDIRECT3DDEVICE9   pDevice,
-        FLOAT               Radius1, 
-        FLOAT               Radius2, 
-        FLOAT               Length, 
-        UINT                Slices, 
-        UINT                Stacks,   
+        FLOAT               Radius1,
+        FLOAT               Radius2,
+        FLOAT               Length,
+        UINT                Slices,
+        UINT                Stacks,
         LPD3DXMESH*         ppMesh,
         LPD3DXBUFFER*       ppAdjacency);
 
 HRESULT WINAPI
     D3DXCreateSphere(
-        LPDIRECT3DDEVICE9  pDevice, 
-        FLOAT              Radius, 
-        UINT               Slices, 
+        LPDIRECT3DDEVICE9  pDevice,
+        FLOAT              Radius,
+        UINT               Slices,
         UINT               Stacks,
         LPD3DXMESH*        ppMesh,
         LPD3DXBUFFER*      ppAdjacency);
@@ -57,9 +57,9 @@ HRESULT WINAPI
     D3DXCreateTorus(
         LPDIRECT3DDEVICE9   pDevice,
         FLOAT               InnerRadius,
-        FLOAT               OuterRadius, 
+        FLOAT               OuterRadius,
         UINT                Sides,
-        UINT                Rings, 
+        UINT                Rings,
         LPD3DXMESH*         ppMesh,
         LPD3DXBUFFER*       ppAdjacency);
 

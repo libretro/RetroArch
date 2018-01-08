@@ -101,7 +101,7 @@ static struct buffer query_parse_table(struct buffer buff,
 /* Errors */
 static void query_raise_too_many_arguments(const char **error)
 {
-   strlcpy(tmp_error_buff, 
+   strlcpy(tmp_error_buff,
          "Too many arguments in function call.", sizeof(tmp_error_buff));
    *error = tmp_error_buff;
 }
@@ -236,12 +236,12 @@ static struct rmsgpack_dom_value query_func_between(
    {
       case RDT_INT:
          res.val.bool_ = (
-               (input.val.int_ >= argv[0].a.value.val.int_) 
+               (input.val.int_ >= argv[0].a.value.val.int_)
                && (input.val.int_ <= argv[1].a.value.val.int_));
          break;
       case RDT_UINT:
          res.val.bool_ = (
-               ((unsigned)input.val.int_ >= argv[0].a.value.val.uint_) 
+               ((unsigned)input.val.int_ >= argv[0].a.value.val.uint_)
                && (input.val.int_ <= argv[1].a.value.val.int_));
          break;
       default:
@@ -394,7 +394,7 @@ static struct buffer query_parse_integer(struct buffer buff,
 
 static struct buffer query_chomp(struct buffer buff)
 {
-   for (; (unsigned)buff.offset < buff.len 
+   for (; (unsigned)buff.offset < buff.len
          && isspace((int)buff.data[buff.offset]); buff.offset++);
    return buff;
 }
@@ -482,7 +482,7 @@ static struct buffer query_parse_string(struct buffer buff,
       value->type            = is_binstr ? RDT_BINARY : RDT_STRING;
       value->val.string.len  = (uint32_t)((buff.data + buff.offset) - str_start - 1);
 
-      count                  = is_binstr ? (value->val.string.len + 1) / 2 
+      count                  = is_binstr ? (value->val.string.len + 1) / 2
          : (value->val.string.len + 1);
       value->val.string.buff = (char*)calloc(count, sizeof(char));
 
@@ -625,7 +625,7 @@ static struct buffer query_parse_argument(struct buffer buff,
                query_peek(buff, "nil")
             || query_peek(buff, "true")
             || query_peek(buff, "false")
-            || query_peek(buff, "b\"") 
+            || query_peek(buff, "b\"")
             || query_peek(buff,  "b'") /* bin string prefix*/
             )
       )

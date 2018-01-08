@@ -57,7 +57,7 @@ static bool png_write_crc(RFILE *file, const uint8_t *data, size_t size)
 static bool png_write_ihdr(RFILE *file, const struct png_ihdr *ihdr)
 {
    uint8_t ihdr_raw[21];
-   
+
    ihdr_raw[0]  = '0';                 /* Size */
    ihdr_raw[1]  = '0';
    ihdr_raw[2]  = '0';
@@ -227,7 +227,9 @@ static bool rpng_save_image(const char *path,
    void *stream            = NULL;
    uint32_t total_in       = 0;
    uint32_t total_out      = 0;
-   RFILE *file             = filestream_open(path, RFILE_MODE_WRITE, -1);
+   RFILE *file             = filestream_open(path,
+         RETRO_VFS_FILE_ACCESS_WRITE,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
    if (!file)
       GOTO_END_ERROR();
 
@@ -272,7 +274,7 @@ static bool rpng_save_image(const char *path,
       /* Try every filtering method, and choose the method
        * which has most entries as zero.
        *
-       * This is probably not very optimal, but it's very 
+       * This is probably not very optimal, but it's very
        * simple to implement.
        */
       {

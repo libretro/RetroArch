@@ -1,4 +1,4 @@
-/* This source as presented is a modified version of original wiiuse for use 
+/* This source as presented is a modified version of original wiiuse for use
  * with RetroArch, and must not be confused with the original software. */
 
 #include <stdio.h>
@@ -36,7 +36,7 @@ static void event_data_read(struct wiimote_t *wm,ubyte *msg)
 	struct cmd_blk_t *cmd = wm->cmd_head;
 
 	wiiuse_pressed_buttons(wm,msg);
-	
+
 	if(!cmd) return;
 	if(!(cmd->state==CMD_SENT && cmd->data[0]==WM_CMD_READ_DATA)) return;
 
@@ -57,7 +57,7 @@ static void event_data_read(struct wiimote_t *wm,ubyte *msg)
 
 	len = ((msg[2]&0xf0)>>4)+1;
 	offset = BIG_ENDIAN_SHORT(*(uword*)(msg+3));
-	
+
 	//printf("addr: %08x\noffset: %d\nlen: %d\n",req->addr,offset,len);
 
 	op->readdata.addr = (op->readdata.addr&0xffff);
@@ -166,7 +166,7 @@ done:
 
 	cmd->state = CMD_DONE;
 	if(cmd->cb!=NULL) cmd->cb(wm,msg,6);
-	
+
 	__lwp_queue_append(&wm->cmdq,&cmd->node);
 	wiiuse_send_next_command(wm);
 }
@@ -193,7 +193,7 @@ static void handle_expansion(struct wiimote_t *wm,ubyte *msg)
  *
  *	@param wm		Pointer to a wiimote_t structure.
  */
-void idle_cycle(struct wiimote_t* wm) 
+void idle_cycle(struct wiimote_t* wm)
 {
 	/*
 	 *	Smooth the angles.

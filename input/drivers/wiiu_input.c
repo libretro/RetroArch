@@ -46,9 +46,6 @@ typedef struct wiiu_input
    const input_device_driver_t *joypad;
 } wiiu_input_t;
 
-uint64_t lifecycle_state;
-
-
 void kb_connection_callback(KBDKeyEvent *key)
 {
 	keyboardChannel = keyboardChannel + (key->channel + 0x01);
@@ -107,8 +104,8 @@ static int16_t wiiu_pointer_device_state(wiiu_input_t* wiiu, unsigned id)
 		case RETRO_DEVICE_ID_POINTER_PRESSED:
 		{
 			retro_bits_t state;
-			wiiu->joypad->get_buttons(0,&state);
-			return RARCH_INPUT_STATE_BIT_GET(state, VPAD_BUTTON_TOUCH) ? 1 : 0;
+			wiiu->joypad->get_buttons(0, &state);
+			return BIT256_GET(state, VPAD_BUTTON_TOUCH_BIT) ? 1 : 0;
 		}
 		case RETRO_DEVICE_ID_POINTER_X:
 			return wiiu->joypad->axis(0, 0xFFFF0004UL);
@@ -123,8 +120,11 @@ static void wiiu_input_poll(void *data)
 {
    wiiu_input_t *wiiu = (wiiu_input_t*)data;
 
-   if (wiiu && wiiu->joypad)
-      wiiu->joypad->poll();
+   if(!wiiu)
+     return;
+
+   if(wiiu->joypad)
+     wiiu->joypad->poll();
 }
 
 static bool wiiu_key_pressed(int key)
@@ -200,14 +200,6 @@ static void* wiiu_input_init(const char *joypad_driver)
    return wiiu;
 }
 
-static bool wiiu_input_meta_key_pressed(void *data, int key)
-{
-   if (BIT64_GET(lifecycle_state, key))
-      return true;
-
-   return false;
-}
-
 static uint64_t wiiu_input_get_capabilities(void *data)
 {
    (void)data;
@@ -263,7 +255,6 @@ input_driver_t input_wiiu = {
    wiiu_input_init,
    wiiu_input_poll,
    wiiu_input_state,
-   wiiu_input_meta_key_pressed,
    wiiu_input_free_input,
    NULL,
    NULL,

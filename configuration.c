@@ -19,6 +19,7 @@
 
 #include <ctype.h>
 
+#include <libretro.h>
 #include <file/config_file.h>
 #include <file/file_path.h>
 #include <compat/strl.h>
@@ -40,6 +41,7 @@
 #include "config.features.h"
 #include "input/input_keymaps.h"
 #include "input/input_remapping.h"
+#include "led/led_defines.h"
 #include "defaults.h"
 #include "core.h"
 #include "dirs.h"
@@ -128,6 +130,7 @@ enum video_driver_enum
    VIDEO_PSP1,
    VIDEO_VITA2D,
    VIDEO_CTR,
+   VIDEO_SWITCH,
    VIDEO_D3D9,
    VIDEO_VG,
    VIDEO_OMAP,
@@ -166,6 +169,7 @@ enum audio_driver_enum
    AUDIO_RWEBAUDIO,
    AUDIO_PSP,
    AUDIO_CTR,
+   AUDIO_SWITCH,
    AUDIO_NULL
 };
 
@@ -188,6 +192,7 @@ enum input_driver_enum
    INPUT_PS3,
    INPUT_PSP,
    INPUT_CTR,
+   INPUT_SWITCH,
    INPUT_XENON360,
    INPUT_WII,
    INPUT_WIIU,
@@ -210,6 +215,7 @@ enum joypad_driver_enum
    JOYPAD_XDK,
    JOYPAD_PSP,
    JOYPAD_CTR,
+   JOYPAD_SWITCH,
    JOYPAD_DINPUT,
    JOYPAD_UDEV,
    JOYPAD_LINUXRAW,
@@ -286,6 +292,8 @@ static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_VITA2D;
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_PSP1;
 #elif defined(_3DS)
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_CTR;
+#elif defined(SWITCH)
+static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SWITCH;
 #elif defined(HAVE_XVIDEO)
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_XVIDEO;
 #elif defined(HAVE_SDL)
@@ -314,6 +322,8 @@ static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_WIIU;
 static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PSP;
 #elif defined(_3DS)
 static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_CTR;
+#elif defined(SWITCH)
+static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_SWITCH;
 #elif defined(HAVE_PULSE)
 static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PULSE;
 #elif defined(HAVE_ALSA) && defined(HAVE_VIDEOCORE)
@@ -384,6 +394,8 @@ static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PS3;
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PSP;
 #elif defined(_3DS)
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_CTR;
+#elif defined(SWITCH)
+static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_SWITCH;
 #elif defined(GEKKO)
 static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_WII;
 #elif defined(WIIU)
@@ -424,6 +436,8 @@ static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_XDK;
 static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_PSP;
 #elif defined(_3DS)
 static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_CTR;
+#elif defined(SWITCH)
+static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_SWITCH;
 #elif defined(HAVE_DINPUT)
 static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_DINPUT;
 #elif defined(HAVE_UDEV)
@@ -596,6 +610,8 @@ const char *config_get_default_audio(void)
 #endif
       case AUDIO_CTR:
          return "csnd";
+      case AUDIO_SWITCH:
+         return "switch";
       case AUDIO_RWEBAUDIO:
          return "rwebaudio";
       case AUDIO_JACK:
@@ -682,6 +698,8 @@ const char *config_get_default_video(void)
          return "vita2d";
       case VIDEO_CTR:
          return "ctr";
+      case VIDEO_SWITCH:
+         return "switch";
       case VIDEO_XVIDEO:
          return "xvideo";
       case VIDEO_SDL:
@@ -738,6 +756,8 @@ const char *config_get_default_input(void)
 #endif
       case INPUT_CTR:
          return "ctr";
+      case INPUT_SWITCH:
+         return "switch";
       case INPUT_SDL:
          return "sdl";
       case INPUT_SDL2:
@@ -806,6 +826,8 @@ const char *config_get_default_joypad(void)
 #endif
       case JOYPAD_CTR:
          return "ctr";
+      case JOYPAD_SWITCH:
+         return "switch";
       case JOYPAD_DINPUT:
          return "dinput";
       case JOYPAD_UDEV:
@@ -881,6 +903,18 @@ const char *config_get_default_wifi(void)
          break;
    }
 
+   return "null";
+}
+
+/**
+ * config_get_default_led:
+ *
+ * Gets default led driver.
+ *
+ * Returns: Default led driver.
+ **/
+const char *config_get_default_led(void)
+{
    return "null";
 }
 
@@ -981,7 +1015,7 @@ static struct config_array_setting *populate_settings_array(settings_t *settings
    SETTING_ARRAY("bundle_assets_src_path",   settings->arrays.bundle_assets_src, false, NULL, true);
    SETTING_ARRAY("bundle_assets_dst_path",   settings->arrays.bundle_assets_dst, false, NULL, true);
    SETTING_ARRAY("bundle_assets_dst_path_subdir", settings->arrays.bundle_assets_dst_subdir, false, NULL, true);
-
+   SETTING_ARRAY("led_driver",               settings->arrays.led_driver, false, NULL, true);
    *size = count;
 
    return tmp;
@@ -996,8 +1030,8 @@ static struct config_path_setting *populate_settings_path(settings_t *settings, 
    /* Paths */
 #ifdef HAVE_XMB
    SETTING_PATH("xmb_font",                   settings->paths.path_menu_xmb_font, false, NULL, true);
-   SETTING_PATH("xmb_show_settings_password", settings->paths.menu_xmb_show_settings_password, false, NULL, true);
 #endif
+   SETTING_PATH("content_show_settings_password", settings->paths.menu_content_show_settings_password, false, NULL, true);
    SETTING_PATH("kiosk_mode_password",        settings->paths.kiosk_mode_password, false, NULL, true);
    SETTING_PATH("netplay_nickname",           settings->paths.username, false, NULL, true);
    SETTING_PATH("video_filter",               settings->paths.path_softfilter_plugin, false, NULL, true);
@@ -1213,17 +1247,22 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("quick_menu_show_save_game_overrides",  &settings->bools.quick_menu_show_save_game_overrides, true, quick_menu_show_save_game_overrides, false);
    SETTING_BOOL("quick_menu_show_information",   &settings->bools.quick_menu_show_information, true, quick_menu_show_information, false);
    SETTING_BOOL("kiosk_mode_enable",             &settings->bools.kiosk_mode_enable, true, kiosk_mode_enable, false);
-#ifdef HAVE_MATERIALUI
-   SETTING_BOOL("materialui_icons_enable",            &settings->bools.menu_materialui_icons_enable, true, materialui_icons_enable, false);
-#endif
-#ifdef HAVE_XMB
-   SETTING_BOOL("xmb_shadows_enable",            &settings->bools.menu_xmb_shadows_enable, true, xmb_shadows_enable, false);
-   SETTING_BOOL("xmb_show_settings",             &settings->bools.menu_xmb_show_settings, true, xmb_show_settings, false);
-   SETTING_BOOL("xmb_show_favorites",            &settings->bools.menu_xmb_show_favorites, true, xmb_show_favorites, false);
+   SETTING_BOOL("content_show_settings",         &settings->bools.menu_content_show_settings, true, content_show_settings, false);
+   SETTING_BOOL("content_show_favorites",        &settings->bools.menu_content_show_favorites, true, content_show_favorites, false);
 #ifdef HAVE_IMAGEVIEWER
-   SETTING_BOOL("xmb_show_images",               &settings->bools.menu_xmb_show_images, true, xmb_show_images, false);
+   SETTING_BOOL("content_show_images",           &settings->bools.menu_content_show_images, true, content_show_images, false);
 #endif
-   SETTING_BOOL("xmb_show_music",                &settings->bools.menu_xmb_show_music, true, xmb_show_music, false);
+   SETTING_BOOL("content_show_music",            &settings->bools.menu_content_show_music, true, content_show_music, false);
+#ifdef HAVE_FFMPEG
+   SETTING_BOOL("content_show_video",            &settings->bools.menu_content_show_video, true, content_show_video, false);
+#endif
+#ifdef HAVE_NETWORKING
+   SETTING_BOOL("content_show_netplay",          &settings->bools.menu_content_show_netplay, true, content_show_netplay, false);
+#endif
+   SETTING_BOOL("content_show_history",          &settings->bools.menu_content_show_history, true, content_show_history, false);
+#ifdef HAVE_LIBRETRODB
+   SETTING_BOOL("content_show_add",              &settings->bools.menu_content_show_add, true, content_show_add, false);
+#endif
    SETTING_BOOL("menu_show_load_core",           &settings->bools.menu_show_load_core, true, menu_show_load_core, false);
    SETTING_BOOL("menu_show_load_content",        &settings->bools.menu_show_load_content, true, menu_show_load_content, false);
    SETTING_BOOL("menu_show_information",         &settings->bools.menu_show_information, true, menu_show_information, false);
@@ -1233,23 +1272,18 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("menu_show_reboot",              &settings->bools.menu_show_reboot, true, menu_show_reboot, false);
    SETTING_BOOL("menu_show_online_updater",      &settings->bools.menu_show_online_updater, true, menu_show_online_updater, false);
    SETTING_BOOL("menu_show_core_updater",        &settings->bools.menu_show_core_updater, true, menu_show_core_updater, false);
-#ifdef HAVE_FFMPEG
-   SETTING_BOOL("xmb_show_video",                &settings->bools.menu_xmb_show_video, true, xmb_show_video, false);
-#endif
-#ifdef HAVE_NETWORKING
-   SETTING_BOOL("xmb_show_netplay",              &settings->bools.menu_xmb_show_netplay, true, xmb_show_netplay, false);
-#endif
-   SETTING_BOOL("xmb_show_history",              &settings->bools.menu_xmb_show_history, true, xmb_show_history, false);
-#ifdef HAVE_LIBRETRODB
-   SETTING_BOOL("xmb_show_add",                  &settings->bools.menu_xmb_show_add, true, xmb_show_add, false);
-#endif
-#endif
    SETTING_BOOL("filter_by_current_core",        &settings->bools.filter_by_current_core, false, false /* TODO */, false);
    SETTING_BOOL("rgui_show_start_screen",        &settings->bools.menu_show_start_screen, false, false /* TODO */, false);
    SETTING_BOOL("menu_navigation_wraparound_enable", &settings->bools.menu_navigation_wraparound_enable, true, true, false);
    SETTING_BOOL("menu_navigation_browser_filter_supported_extensions_enable",
          &settings->bools.menu_navigation_browser_filter_supported_extensions_enable, true, true, false);
    SETTING_BOOL("menu_show_advanced_settings",  &settings->bools.menu_show_advanced_settings, true, show_advanced_settings, false);
+#ifdef HAVE_MATERIALUI
+   SETTING_BOOL("materialui_icons_enable",       &settings->bools.menu_materialui_icons_enable, true, materialui_icons_enable, false);
+#endif
+#ifdef HAVE_XMB
+   SETTING_BOOL("xmb_shadows_enable",            &settings->bools.menu_xmb_shadows_enable, true, xmb_shadows_enable, false);
+#endif
 #endif
 #ifdef HAVE_CHEEVOS
    SETTING_BOOL("cheevos_enable",               &settings->bools.cheevos_enable, true, cheevos_enable, false);
@@ -1366,6 +1400,7 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("input_max_users",              input_driver_get_uint(INPUT_ACTION_MAX_USERS),        true, input_max_users, false);
    SETTING_UINT("input_menu_toggle_gamepad_combo", &settings->uints.input_menu_toggle_gamepad_combo, true, menu_toggle_gamepad_combo, false);
    SETTING_UINT("audio_latency",                &settings->uints.audio_latency, false, 0 /* TODO */, false);
+   SETTING_UINT("audio_resampler_quality",      &settings->uints.audio_resampler_quality, true, audio_resampler_quality_level, false);
    SETTING_UINT("audio_block_frames",           &settings->uints.audio_block_frames, true, 0, false);
    SETTING_UINT("rewind_granularity",           &settings->uints.rewind_granularity, true, rewind_granularity, false);
    SETTING_UINT("autosave_interval",            &settings->uints.autosave_interval,  true, autosave_interval, false);
@@ -1377,6 +1412,7 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("video_fullscreen_y",           &settings->uints.video_fullscreen_y,  true, fullscreen_y, false);
    SETTING_UINT("video_window_x",               &settings->uints.video_window_x,  true, fullscreen_x, false);
    SETTING_UINT("video_window_y",               &settings->uints.video_window_y,  true, fullscreen_y, false);
+   SETTING_UINT("video_window_opacity",         &settings->uints.video_window_opacity, true, window_opacity, false);
 #ifdef HAVE_COMMAND
    SETTING_UINT("network_cmd_port",             &settings->uints.network_cmd_port,    true, network_cmd_port, false);
 #endif
@@ -1397,6 +1433,9 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("xmb_scale_factor",             &settings->uints.menu_xmb_scale_factor, true, xmb_scale_factor, false);
    SETTING_UINT("xmb_theme",                    &settings->uints.menu_xmb_theme, true, xmb_icon_theme, false);
    SETTING_UINT("xmb_menu_color_theme",         &settings->uints.menu_xmb_color_theme, true, xmb_theme, false);
+   SETTING_UINT("menu_font_color_red",          &settings->uints.menu_font_color_red, true, menu_font_color_red, false);
+   SETTING_UINT("menu_font_color_green",        &settings->uints.menu_font_color_green, true, menu_font_color_green, false);
+   SETTING_UINT("menu_font_color_blue",         &settings->uints.menu_font_color_blue, true, menu_font_color_blue, false);
 #endif
    SETTING_UINT("materialui_menu_color_theme",  &settings->uints.menu_materialui_color_theme, true, MATERIALUI_THEME_BLUE, false);
    SETTING_UINT("menu_shader_pipeline",         &settings->uints.menu_xmb_shader_pipeline, true, menu_shader_pipeline, false);
@@ -1477,6 +1516,7 @@ static void config_set_defaults(void)
 #endif
    const char *def_camera          = config_get_default_camera();
    const char *def_wifi            = config_get_default_wifi();
+   const char *def_led             = config_get_default_led();
    const char *def_location        = config_get_default_location();
    const char *def_record          = config_get_default_record();
    struct config_float_setting      *float_settings = populate_settings_float  (settings, &float_settings_size);
@@ -1534,6 +1574,9 @@ static void config_set_defaults(void)
    if (def_wifi)
       strlcpy(settings->arrays.wifi_driver,
             def_wifi, sizeof(settings->arrays.wifi_driver));
+   if (def_led)
+      strlcpy(settings->arrays.led_driver,
+            def_led, sizeof(settings->arrays.led_driver));
    if (def_location)
       strlcpy(settings->arrays.location_driver,
             def_location, sizeof(settings->arrays.location_driver));
@@ -1576,11 +1619,6 @@ static void config_set_defaults(void)
 #endif
    settings->floats.video_scale                = scale;
 
-   if (retroarch_is_forced_fullscreen())
-   {
-      configuration_set_bool(settings, settings->bools.video_fullscreen, true);
-   }
-
    if (g_defaults.settings.video_threaded_enable != video_threaded)
       video_driver_set_threaded(g_defaults.settings.video_threaded_enable);
 
@@ -1607,9 +1645,9 @@ static void config_set_defaults(void)
    settings->rewind_buffer_size                = rewind_buffer_size;
 
 #ifdef HAVE_LAKKA
-   settings->bools.ssh_enable                  = path_file_exists(LAKKA_SSH_PATH);
-   settings->bools.samba_enable                = path_file_exists(LAKKA_SAMBA_PATH);
-   settings->bools.bluetooth_enable            = path_file_exists(LAKKA_BLUETOOTH_PATH);
+   settings->bools.ssh_enable                  = filestream_exists(LAKKA_SSH_PATH);
+   settings->bools.samba_enable                = filestream_exists(LAKKA_SAMBA_PATH);
+   settings->bools.bluetooth_enable            = filestream_exists(LAKKA_BLUETOOTH_PATH);
 #endif
 
 #ifdef HAVE_MENU
@@ -1894,11 +1932,14 @@ static void config_set_defaults(void)
  **/
 static config_file_t *open_default_config_file(void)
 {
+   bool has_application_data              = false;
    size_t path_size                       = PATH_MAX_LENGTH * sizeof(char);
    char *application_data                 = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    char *conf_path                        = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    char *app_path                         = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    config_file_t *conf                    = NULL;
+
+   (void)has_application_data;
 
    application_data[0] = conf_path[0] = app_path[0] = '\0';
 
@@ -1987,7 +2028,7 @@ static config_file_t *open_default_config_file(void)
       RARCH_WARN("Created new config file in: \"%s\".\n", conf_path);
    }
 #elif !defined(RARCH_CONSOLE)
-   bool has_application_data =
+   has_application_data =
       fill_pathname_application_data(application_data,
             path_size);
 
@@ -2375,9 +2416,6 @@ static bool config_load_file(const char *path, bool set_defaults,
          *bool_settings[i].ptr = tmp;
    }
 
-   if (!retroarch_is_forced_fullscreen())
-      CONFIG_GET_BOOL_BASE(conf, settings, bools.video_fullscreen, "video_fullscreen");
-
 #ifdef HAVE_NETWORKGAMEPAD
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -2461,6 +2499,19 @@ static bool config_load_file(const char *path, bool set_defaults,
          CONFIG_GET_INT_BASE(conf, settings, uints.input_libretro_device[i], buf);
       }
    }
+
+   /* LED map for use by the led driver */
+   for (i = 0; i < MAX_LEDS; i++)
+   {
+      char buf[64];
+
+      buf[0] = '\0';
+
+      snprintf(buf, sizeof(buf), "led%u_map", i + 1);
+      settings->uints.led_map[i]=-1;
+      CONFIG_GET_INT_BASE(conf, settings, uints.led_map[i], buf);
+   }
+
    {
       /* ugly hack around C89 not allowing mixing declarations and code */
       int buffer_size = 0;
@@ -2723,14 +2774,13 @@ static bool config_load_file(const char *path, bool set_defaults,
    /* Sanitize fastforward_ratio value - previously range was -1
     * and up (with 0 being skipped) */
    if (settings->floats.fastforward_ratio < 0.0f)
-   {
       configuration_set_float(settings, settings->floats.fastforward_ratio, 0.0f);
-   }
+
 
 #ifdef HAVE_LAKKA
-   settings->bools.ssh_enable       = path_file_exists(LAKKA_SSH_PATH);
-   settings->bools.samba_enable     = path_file_exists(LAKKA_SAMBA_PATH);
-   settings->bools.bluetooth_enable = path_file_exists(LAKKA_BLUETOOTH_PATH);
+   settings->bools.ssh_enable       = filestream_exists(LAKKA_SSH_PATH);
+   settings->bools.samba_enable     = filestream_exists(LAKKA_SAMBA_PATH);
+   settings->bools.bluetooth_enable = filestream_exists(LAKKA_BLUETOOTH_PATH);
 #endif
 
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL) &&
@@ -3792,17 +3842,23 @@ bool config_save_file(const char *path)
 
 #ifdef HAVE_LAKKA
    if (settings->bools.ssh_enable)
-      filestream_close(filestream_open(LAKKA_SSH_PATH, RFILE_MODE_WRITE, -1));
+      filestream_close(filestream_open(LAKKA_SSH_PATH,
+               RETRO_VFS_FILE_ACCESS_WRITE,
+               RETRO_VFS_FILE_ACCESS_HINT_NONE));
    else
-      path_file_remove(LAKKA_SSH_PATH);
+      filestream_delete(LAKKA_SSH_PATH);
    if (settings->bools.samba_enable)
-      filestream_close(filestream_open(LAKKA_SAMBA_PATH, RFILE_MODE_WRITE, -1));
+      filestream_close(filestream_open(LAKKA_SAMBA_PATH,
+               RETRO_VFS_FILE_ACCESS_WRITE,
+               RETRO_VFS_FILE_ACCESS_HINT_NONE));
    else
-      path_file_remove(LAKKA_SAMBA_PATH);
+      filestream_delete(LAKKA_SAMBA_PATH);
    if (settings->bools.bluetooth_enable)
-      filestream_close(filestream_open(LAKKA_BLUETOOTH_PATH, RFILE_MODE_WRITE, -1));
+      filestream_close(filestream_open(LAKKA_BLUETOOTH_PATH,
+               RETRO_VFS_FILE_ACCESS_WRITE,
+               RETRO_VFS_FILE_ACCESS_HINT_NONE));
    else
-      path_file_remove(LAKKA_BLUETOOTH_PATH);
+      filestream_delete(LAKKA_BLUETOOTH_PATH);
 #endif
 
    for (i = 0; i < MAX_USERS; i++)
@@ -3875,7 +3931,7 @@ bool config_save_overrides(int override_type)
    fill_pathname_join(override_directory, config_directory, core_name,
       path_size);
 
-   if(!path_file_exists(override_directory))
+   if (!filestream_exists(override_directory))
        path_mkdir(override_directory);
 
    /* Concatenate strings into full paths for core_path, game_path */

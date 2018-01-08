@@ -74,7 +74,7 @@ typedef struct nbio_intf
 } nbio_intf_t;
 
 /*
- * Creates an nbio structure for performing the 
+ * Creates an nbio structure for performing the
  * given operation on the given file.
  */
 void *nbio_open(const char * filename, unsigned mode);

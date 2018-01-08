@@ -84,7 +84,7 @@ bool scaler_ctx_gen_filter(struct scaler_ctx *ctx)
    if (!allocate_frames(ctx))
       return false;
 
-   if (     ctx->in_width  == ctx->out_width 
+   if (     ctx->in_width  == ctx->out_width
          && ctx->in_height == ctx->out_height)
    {
       ctx->unscaled     = true; /* Only pixel format conversion ... */
@@ -93,7 +93,7 @@ bool scaler_ctx_gen_filter(struct scaler_ctx *ctx)
          ctx->direct_pixconv = conv_copy;
       else
       {
-         /* Bind a pixel converter callback function to the 
+         /* Bind a pixel converter callback function to the
           * 'direct_pixconv' function pointer of the scaler context object. */
          switch (ctx->in_fmt)
          {

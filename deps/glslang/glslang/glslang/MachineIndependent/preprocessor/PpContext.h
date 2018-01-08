@@ -56,7 +56,7 @@ Except as expressly stated in this notice, no other rights or licenses
 express or implied, are granted by NVIDIA herein, including but not
 limited to any patent rights that may be infringed by your derivative
 works or by other works in which the NVIDIA Software may be
-incorporated. No hardware is licensed hereunder. 
+incorporated. No hardware is licensed hereunder.
 
 THE NVIDIA SOFTWARE IS BEING PROVIDED ON AN "AS IS" BASIS, WITHOUT
 WARRANTIES OR CONDITIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED,
@@ -94,7 +94,7 @@ class TPpToken {
 public:
     TPpToken() : token(0), space(false), ival(0), dval(0.0), atom(0)
     {
-        loc.init(); 
+        loc.init();
         name[0] = 0;
     }
 
@@ -239,7 +239,7 @@ protected:
     static const int maxMacroArgs = 64;
     static const int maxIfNesting = 64;
 
-    int ifdepth;                  // current #if-#else-#endif nesting in the cpp.c file (pre-processor)    
+    int ifdepth;                  // current #if-#else-#endif nesting in the cpp.c file (pre-processor)
     bool elseSeen[maxIfNesting];  // Keep a track of whether an else has been seen at a particular depth
     int elsetracker;              // #if-#else and #endif constructs...Counter.
 
@@ -301,11 +301,11 @@ protected:
     int extraTokenCheck(int atom, TPpToken* ppToken, int token);
     int eval(int token, int precedence, bool shortCircuit, int& res, bool& err, TPpToken * ppToken);
     int evalToToken(int token, bool shortCircuit, int& res, bool& err, TPpToken * ppToken);
-    int CPPif (TPpToken * ppToken); 
+    int CPPif (TPpToken * ppToken);
     int CPPifdef(int defined, TPpToken * ppToken);
     int CPPinclude(TPpToken * ppToken);
-    int CPPline(TPpToken * ppToken); 
-    int CPPerror(TPpToken * ppToken); 
+    int CPPline(TPpToken * ppToken);
+    int CPPerror(TPpToken * ppToken);
     int CPPpragma(TPpToken * ppToken);
     int CPPversion(TPpToken * ppToken);
     int CPPextension(TPpToken * ppToken);
@@ -331,7 +331,7 @@ protected:
     int ReadToken(TokenStream* pTok, TPpToken* ppToken);
     void pushTokenStreamInput(TokenStream *ts);
     void UngetToken(int token, TPpToken* ppToken);
-    
+
     class tTokenInput : public tInput {
     public:
         tTokenInput(TPpContext* pp, TokenStream* t) : tInput(pp), tokens(t) { }
@@ -387,7 +387,7 @@ protected:
                         return '\\';
                 } while (ch == '\\');
             }
-    
+
             // handle any non-escaped newline
             if (ch == '\r' || ch == '\n') {
                 if (ch == '\r' && input->peek() == '\n')
@@ -432,7 +432,7 @@ protected:
         TInputScanner* input;
     };
 
-    // Holds a reference to included file data, as well as a 
+    // Holds a reference to included file data, as well as a
     // prologue and an epilogue string. This can be scanned using the tInput
     // interface and acts as a single source string.
     class TokenizableIncludeFile : public tInput {

@@ -126,7 +126,7 @@ static bool task_overlay_load_desc(
    const char *box                      = NULL;
    config_file_t *conf                  = loader->conf;
 
-   overlay_desc_key[0] = conf_key[0] = 
+   overlay_desc_key[0] = conf_key[0] =
       overlay_desc_normalized_key[0] = overlay[0] = '\0';
 
    snprintf(overlay_desc_key, sizeof(overlay_desc_key),
@@ -177,7 +177,8 @@ static bool task_overlay_load_desc(
    box_hash       = djb2_calculate(box);
    key_hash       = djb2_calculate(key);
 
-   desc->key_mask = 0;
+   desc->retro_key_idx = 0;
+   BIT256_CLEAR_ALL(desc->button_mask);
 
    switch (key_hash)
    {
@@ -190,8 +191,8 @@ static bool task_overlay_load_desc(
       default:
          if (strstr(key, "retrok_") == key)
          {
-            desc->type     = OVERLAY_TYPE_KEYBOARD;
-            desc->key_mask = input_config_translate_str_to_rk(key + 7);
+            desc->type          = OVERLAY_TYPE_KEYBOARD;
+            desc->retro_key_idx = input_config_translate_str_to_rk(key + 7);
          }
          else
          {
@@ -203,11 +204,10 @@ static bool task_overlay_load_desc(
             for (; tmp; tmp = strtok_r(NULL, "|", &save))
             {
                if (!string_is_equal(tmp, file_path_str(FILE_PATH_NUL)))
-                  desc->key_mask |= UINT64_C(1) 
-                     << input_config_translate_str_to_bind_id(tmp);
+                  BIT256_SET(desc->button_mask, input_config_translate_str_to_bind_id(tmp));
             }
 
-            if (desc->key_mask & (UINT64_C(1) << RARCH_OVERLAY_NEXT))
+            if (BIT256_GET(desc->button_mask, RARCH_OVERLAY_NEXT))
             {
                char overlay_target_key[64];
 

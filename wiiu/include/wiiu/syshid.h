@@ -1,6 +1,15 @@
 #pragma once
 #include <wiiu/types.h>
 
+/*
+ * Report types for the report_type parameter in HIDSetReport()
+ */
+
+/*  what is 1? */
+#define HID_REPORT_OUTPUT  2
+#define HID_REPORT_FEATURE 3
+/* are there more? */
+
 typedef struct
 {
     uint32_t handle;
@@ -39,7 +48,7 @@ extern "C" {
 int32_t
 HIDSetup(void);
 
-int32_t 
+int32_t
 HIDTeardown(void);
 
 int32_t
@@ -51,74 +60,74 @@ HIDDelClient(HIDClient *p_client);
 int32_t
 HIDGetDescriptor(uint32_t handle,
                  uint8_t descriptor_type,
-                 uint8_t descriptor_index, 
-                 uint16_t language_id, 
-                 uint8_t *p_buffer, 
-                 uint32_t buffer_length, 
-                 HIDCallback hc, 
+                 uint8_t descriptor_index,
+                 uint16_t language_id,
+                 uint8_t *p_buffer,
+                 uint32_t buffer_length,
+                 HIDCallback hc,
                  void *p_user);
-                        
+
 int32_t
 HIDSetDescriptor(uint32_t handle,
                  uint8_t descriptor_type,
-                 uint8_t descriptor_index, 
-                 uint16_t language_id, 
-                 uint8_t *p_buffer, 
-                 uint32_t buffer_length, 
-                 HIDCallback hc, 
+                 uint8_t descriptor_index,
+                 uint16_t language_id,
+                 uint8_t *p_buffer,
+                 uint32_t buffer_length,
+                 HIDCallback hc,
                  void *p_user);
 
 int32_t
-HIDGetReport(uint32_t handle, 
-             uint8_t report_type, 
-             uint8_t report_id, 
-             uint8_t *p_buffer, 
-             uint32_t buffer_length, 
-             HIDCallback hc, 
+HIDGetReport(uint32_t handle,
+             uint8_t report_type,
+             uint8_t report_id,
+             uint8_t *p_buffer,
+             uint32_t buffer_length,
+             HIDCallback hc,
              void *p_user);
 
 int32_t
-HIDSetReport(uint32_t handle, 
-             uint8_t report_type, 
-             uint8_t report_id, 
-             uint8_t *p_buffer, 
-             uint32_t buffer_length, 
-             HIDCallback hc, 
+HIDSetReport(uint32_t handle,
+             uint8_t report_type,
+             uint8_t report_id,
+             uint8_t *p_buffer,
+             uint32_t buffer_length,
+             HIDCallback hc,
              void *p_user);
 
 int32_t
-HIDSetIdle(uint32_t handle, 
+HIDSetIdle(uint32_t handle,
            uint8_t interface_index,
-           uint8_t duration, 
-           HIDCallback hc, 
+           uint8_t duration,
+           HIDCallback hc,
            void *p_user);
 
 int32_t
 HIDSetProtocol(uint32_t handle,
-               uint8_t int32_terface_index,
-               uint8_t protocol, 
-               HIDCallback hc, 
-               void *p_user);
-                    
-int32_t
-HIDGetProtocol(uint32_t handle,
                uint8_t interface_index,
-               uint8_t * protocol, 
-               HIDCallback hc, 
+               uint8_t protocol,
+               HIDCallback hc,
                void *p_user);
 
 int32_t
-HIDRead(uint32_t handle, 
-        uint8_t *p_buffer, 
-        uint32_t buffer_length, 
-        HIDCallback hc, 
-        void *p_user);
-                
+HIDGetProtocol(uint32_t handle,
+               uint8_t interface_index,
+               uint8_t * protocol,
+               HIDCallback hc,
+               void *p_user);
+
 int32_t
-HIDWrite(uint32_t handle, 
-         uint8_t *p_buffer, 
-         uint32_t buffer_length, 
-         HIDCallback hc, 
+HIDRead(uint32_t handle,
+        uint8_t *p_buffer,
+        uint32_t buffer_length,
+        HIDCallback hc,
+        void *p_user);
+
+int32_t
+HIDWrite(uint32_t handle,
+         uint8_t *p_buffer,
+         uint32_t buffer_length,
+         HIDCallback hc,
          void *p_user);
 
 #ifdef __cplusplus

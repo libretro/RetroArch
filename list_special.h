@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2016-2017 - Brad Parker
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -22,6 +22,9 @@
 #include <stddef.h>
 
 #include <lists/string_list.h>
+#include <retro_environment.h>
+
+RETRO_BEGIN_DECLS
 
 enum dir_list_type
 {
@@ -61,5 +64,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
       void *data, unsigned *len, size_t *list_size);
 
 const char *char_list_new_special(enum string_list_type type, void *data);
+
+RETRO_END_DECLS
 
 #endif

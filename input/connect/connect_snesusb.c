@@ -31,7 +31,7 @@ struct hidpad_snesusb_data
    uint32_t buttons;
 };
 
-static void* hidpad_snesusb_init(void *data, uint32_t slot, send_control_t ptr)
+static void* hidpad_snesusb_init(void *data, uint32_t slot, hid_driver_t *driver)
 {
    struct pad_connection* connection = (struct pad_connection*)data;
    struct hidpad_snesusb_data* device    = (struct hidpad_snesusb_data*)
@@ -63,11 +63,12 @@ static void hidpad_snesusb_deinit(void *data)
 static void hidpad_snesusb_get_buttons(void *data, retro_bits_t *state)
 {
 	struct hidpad_snesusb_data *device = (struct hidpad_snesusb_data*)data;
-	if ( device ) {
-		RARCH_INPUT_STATE_COPY16_PTR(state, device->buttons);
-	} else {
-		RARCH_INPUT_STATE_CLEAR_PTR(state);
+	if (device)
+   {
+		BITS_COPY16_PTR(state, device->buttons);
 	}
+   else
+		BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t hidpad_snesusb_get_axis(void *data, unsigned axis)

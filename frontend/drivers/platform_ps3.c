@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -33,6 +33,7 @@
 
 #include <compat/strl.h>
 #include <string/stdstring.h>
+#include <streams/file_stream.h>
 #include <file/file_path.h>
 #ifndef IS_SALAMANDER
 #include <lists/file_list.h>
@@ -56,7 +57,7 @@ SYS_PROCESS_PARAM(1001, 0x100000)
 #else
 SYS_PROCESS_PARAM(1001, 0x200000)
 #endif
-   
+
 #ifdef HAVE_MULTIMAN
 #define MULTIMAN_SELF_FILE "/dev_hdd0/game/BLES80608/USRDIR/RELOAD.SELF"
 static bool multiman_detected  = false;
@@ -125,7 +126,7 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
 #ifdef HAVE_MULTIMAN
    /* not launched from external launcher, set default path */
    // second param is multiMAN SELF file
-   if(path_file_exists(argv[2]) && *argc > 1
+   if (     filestream_exists(argv[2]) && *argc > 1
          && (string_is_equal(argv[2], EMULATOR_CONTENT_DIR)))
    {
       multiman_detected = true;
@@ -189,7 +190,7 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
             break;
       }
 
-      if((get_attributes & CELL_GAME_ATTRIBUTE_APP_HOME) 
+      if((get_attributes & CELL_GAME_ATTRIBUTE_APP_HOME)
             == CELL_GAME_ATTRIBUTE_APP_HOME)
          RARCH_LOG("RetroArch was launched from host machine (APP_HOME).\n");
 
@@ -253,6 +254,15 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
             g_defaults.dirs[DEFAULT_DIR_CORE],
             "playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS],
+            g_defaults.dirs[DEFAULT_DIR_CORE],
+            "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS],
+            g_defaults.dirs[DEFAULT_DIR_CORE], "cheats",
+            sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG], 
+            g_defaults.dirs[DEFAULT_DIR_CORE],
+            "autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
    }
 
 #ifndef IS_SALAMANDER
@@ -588,7 +598,7 @@ static void frontend_ps3_process_args(int *argc, char *argv[])
    {
       char path[PATH_MAX_LENGTH] = {0};
       strlcpy(path, argv[0], sizeof(path));
-      if (path_file_exists(path))
+      if (filestream_exists(path))
          rarch_ctl(RARCH_CTL_SET_LIBRETRO_PATH, path);
    }
 #endif
