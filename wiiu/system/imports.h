@@ -267,6 +267,7 @@ IMPORT(KBDTeardown);
 IMPORT_END();
 
 /* syshid */
+#ifdef WIIU_HID
 IMPORT_BEGIN(nsyshid);
 
 IMPORT(HIDSetup);
@@ -284,3 +285,4 @@ IMPORT(HIDRead);
 IMPORT(HIDWrite);
 
 IMPORT_END();
+#endif

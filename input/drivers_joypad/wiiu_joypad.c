@@ -19,6 +19,7 @@
 #include "wiiu_dbg.h"
 
 static input_device_driver_t *pad_drivers[MAX_USERS];
+
 static bool ready = false;
 
 static bool wiiu_joypad_init(void *data);
@@ -42,7 +43,11 @@ static input_device_driver_t *get_driver_for_pad(unsigned pad)
   if(kpad_driver.query_pad(pad))
     return &kpad_driver;
 
+#ifdef WIIU_HID
   return &hidpad_driver;
+#else
+  return NULL;
+#endif
 }
 
 /**
@@ -65,7 +70,9 @@ static bool wiiu_joypad_init(void* data)
   // build_pad_map will fail (because all lookups will return false).
   wpad_driver.init(data);
   kpad_driver.init(data);
+#ifdef WIIU_HID
   hidpad_driver.init(data);
+#endif
 
   build_pad_map();
 
@@ -77,7 +84,11 @@ static bool wiiu_joypad_init(void* data)
 
 static bool wiiu_joypad_query_pad(unsigned pad)
 {
+#ifdef WIIU_HID
   return ready && pad < MAX_USERS;
+#else
+  return ready && pad < 5;
+#endif
 }
 
 static void wiiu_joypad_destroy(void)
@@ -86,7 +97,9 @@ static void wiiu_joypad_destroy(void)
 
   wpad_driver.destroy();
   kpad_driver.destroy();
+#ifdef WIIU_HID
   hidpad_driver.destroy();
+#endif
 }
 
 static bool wiiu_joypad_button(unsigned pad, uint16_t key)
@@ -117,7 +130,9 @@ static void wiiu_joypad_poll(void)
 {
   wpad_driver.poll();
   kpad_driver.poll();
+#ifdef WIIU_HID
   hidpad_driver.poll();
+#endif
 }
 
 static const char* wiiu_joypad_name(unsigned pad)
@@ -141,4 +156,3 @@ input_device_driver_t wiiu_joypad =
   wiiu_joypad_name,
   "wiiu",
 };
-
