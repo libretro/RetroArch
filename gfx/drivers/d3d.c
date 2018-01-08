@@ -586,9 +586,7 @@ void d3d_make_d3dpp(void *data,
    d3dpp->BackBufferCount         = 2;
    d3dpp->BackBufferFormat        = d3d_get_color_format_backbuffer(
          info->rgb32, windowed_enable);
-#ifndef _XBOX
    d3dpp->hDeviceWindow           = win32_get_window();
-#endif
 
 #ifdef _XBOX360
    d3dpp->FrontBufferFormat       = d3d_get_color_format_front_buffer();
@@ -672,11 +670,7 @@ void d3d_make_d3dpp(void *data,
 static bool d3d_init_base(void *data, const video_info_t *info)
 {
    D3DPRESENT_PARAMETERS d3dpp;
-#ifdef _XBOX
-   HWND focus_window = NULL;
-#else
    HWND focus_window = win32_get_window();
-#endif
    d3d_video_t *d3d  = (d3d_video_t*)data;
 
    memset(&d3dpp, 0, sizeof(d3dpp));
@@ -1453,9 +1447,7 @@ static bool d3d_frame(void *data, const void *frame,
    D3DVIEWPORT screen_vp;
    unsigned i                          = 0;
    d3d_video_t *d3d                    = (d3d_video_t*)data;
-#ifndef _XBOX
    HWND window                         = win32_get_window();
-#endif
    unsigned width                      = video_info->width;
    unsigned height                     = video_info->height;
 
@@ -1467,10 +1459,8 @@ static bool d3d_frame(void *data, const void *frame,
    /* We cannot recover in fullscreen. */
    if (d3d->needs_restore)
    {
-#ifndef _XBOX
       if (IsIconic(window))
          return true;
-#endif
 
       if (!d3d_restore(d3d))
       {

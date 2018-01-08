@@ -1179,7 +1179,11 @@ bool win32_has_focus(void)
 
 HWND win32_get_window(void)
 {
+#ifdef _XBOX
+   return NULL;
+#else
    return main_window.hwnd;
+#endif
 }
 
 void win32_window_reset(void)
