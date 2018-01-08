@@ -1284,9 +1284,7 @@ static void d3d_free(void *data)
    d3d->dev         = NULL;
    g_pD3D           = NULL;
 
-#ifndef _XBOX
    win32_monitor_from_window();
-#endif
 
    if (d3d)
       free(d3d);

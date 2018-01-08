@@ -1196,9 +1196,9 @@ void win32_destroy_window(void)
 {
 #ifndef _XBOX
    UnregisterClass("RetroArch", GetModuleHandle(NULL));
-#endif
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x500 /* 2K */
    UnregisterDeviceNotification(notification_handler);
+#endif
 #endif
    main_window.hwnd = NULL;
 }
