@@ -1355,6 +1355,7 @@ ifeq ($(HAVE_IBXM), 1)
 endif
 
 ifeq ($(HAVE_BUILTINFLAC),1)
+   HAVE_FLAC = 1
    CFLAGS  += -DHAVE_FLAC -I$(DEPS_DIR)/libFLAC/include
    DEFINES += -DHAVE_STDINT_H -DHAVE_LROUND -DFLAC__HAS_OGG=0 \
               -DFLAC_PACKAGE_VERSION="\"retroarch\""
