@@ -86,8 +86,8 @@ typedef struct
    struct
    {
       GFDFile* gfd;
-      float* vs_ubo;
-      float* ps_ubo;
+      float* vs_ubos[2];
+      float* ps_ubos[2];
       GX2Texture texture;
       GX2ColorBuffer color_buffer;
    }pass[GFX_MAX_SHADERS];
