@@ -53,7 +53,8 @@ static const wiiu_render_mode_t wiiu_render_mode_map[] =
    {1920, 1080, GX2_TV_RENDER_MODE_WIDE_1080P}  /* GX2_TV_SCAN_MODE_1080P */
 };
 
-static void wiiu_set_tex_coords(frame_vertex_t *v, GX2Texture *texture, float u0, float v0, float u1, float v1,
+static void wiiu_set_tex_coords(frame_vertex_t *v, GX2Texture *texture, float u0, float v0,
+                                float u1, float v1,
                                 unsigned rotation)
 {
    v[0].coord.u = u0 / texture->surface.width;
@@ -224,7 +225,7 @@ static void *wiiu_gfx_init(const video_info_t *video,
 
    /* setup scanbuffers */
    wiiu->render_mode = wiiu_render_mode_map[GX2GetSystemTVScanMode()];
-//   wiiu->render_mode = wiiu_render_mode_map[GX2_TV_SCAN_MODE_480P];
+   wiiu->render_mode = wiiu_render_mode_map[GX2_TV_SCAN_MODE_480P];
    GX2CalcTVSize(wiiu->render_mode.mode, GX2_SURFACE_FORMAT_UNORM_R8_G8_B8_A8,
                  GX2_BUFFERING_MODE_DOUBLE, &size, &tmp);
 
@@ -263,18 +264,21 @@ static void *wiiu_gfx_init(const video_info_t *video,
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU, wiiu->color_buffer.surface.image,
                  wiiu->color_buffer.surface.imageSize);
 
-   wiiu->ctx_state = (GX2ContextState *)MEM2_alloc(sizeof(GX2ContextState), GX2_CONTEXT_STATE_ALIGNMENT);
+   wiiu->ctx_state = (GX2ContextState *)MEM2_alloc(sizeof(GX2ContextState),
+                     GX2_CONTEXT_STATE_ALIGNMENT);
    GX2SetupContextStateEx(wiiu->ctx_state, GX2_TRUE);
 
    GX2SetContextState(wiiu->ctx_state);
    GX2SetColorBuffer(&wiiu->color_buffer, GX2_RENDER_TARGET_0);
-   GX2SetViewport(0.0f, 0.0f, wiiu->color_buffer.surface.width, wiiu->color_buffer.surface.height, 0.0f, 1.0f);
+   GX2SetViewport(0.0f, 0.0f, wiiu->color_buffer.surface.width, wiiu->color_buffer.surface.height,
+                  0.0f, 1.0f);
    GX2SetScissor(0, 0, wiiu->color_buffer.surface.width, wiiu->color_buffer.surface.height);
    GX2SetDepthOnlyControl(GX2_DISABLE, GX2_DISABLE, GX2_COMPARE_FUNC_ALWAYS);
    GX2SetColorControl(GX2_LOGIC_OP_COPY, 1, GX2_DISABLE, GX2_ENABLE);
    GX2SetBlendControl(GX2_RENDER_TARGET_0, GX2_BLEND_MODE_SRC_ALPHA, GX2_BLEND_MODE_INV_SRC_ALPHA,
                       GX2_BLEND_COMBINE_MODE_ADD,
-                      GX2_ENABLE,          GX2_BLEND_MODE_SRC_ALPHA, GX2_BLEND_MODE_INV_SRC_ALPHA, GX2_BLEND_COMBINE_MODE_ADD);
+                      GX2_ENABLE,          GX2_BLEND_MODE_SRC_ALPHA, GX2_BLEND_MODE_INV_SRC_ALPHA,
+                      GX2_BLEND_COMBINE_MODE_ADD);
    GX2SetCullOnlyControl(GX2_FRONT_FACE_CCW, GX2_DISABLE, GX2_DISABLE);
 
    GX2InitShader(&frame_shader);
@@ -294,8 +298,10 @@ static void *wiiu_gfx_init(const video_info_t *video,
    wiiu->ubo_mvp = MEM1_alloc(sizeof(*wiiu->ubo_mvp), GX2_UNIFORM_BLOCK_ALIGNMENT);
    wiiu_set_projection(wiiu);
 
-   wiiu->input_ring_buffer_size = GX2CalcGeometryShaderInputRingBufferSize(sprite_shader.vs.ringItemSize);
-   wiiu->output_ring_buffer_size = GX2CalcGeometryShaderOutputRingBufferSize(sprite_shader.gs.ringItemSize);
+   wiiu->input_ring_buffer_size = GX2CalcGeometryShaderInputRingBufferSize(
+                                     sprite_shader.vs.ringItemSize);
+   wiiu->output_ring_buffer_size = GX2CalcGeometryShaderOutputRingBufferSize(
+                                      sprite_shader.gs.ringItemSize);
    wiiu->input_ring_buffer = MEM1_alloc(wiiu->input_ring_buffer_size, 0x1000);
    wiiu->output_ring_buffer = MEM1_alloc(wiiu->output_ring_buffer_size, 0x1000);
 
@@ -526,7 +532,8 @@ static void gx2_overlay_set_alpha(void *data, unsigned image, float mod)
    {
       gx2->overlay[image].alpha_mod = mod;
       gx2->overlay[image].v.color = COLOR_RGBA(0xFF, 0xFF, 0xFF, 0xFF * gx2->overlay[image].alpha_mod);
-      GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, &gx2->overlay[image].v, sizeof(gx2->overlay[image].v));
+      GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, &gx2->overlay[image].v,
+                    sizeof(gx2->overlay[image].v));
    }
 }
 
@@ -576,8 +583,10 @@ static void wiiu_free_shader_preset(wiiu_video_t *wiiu)
    for (int i = 0; i < wiiu->shader_preset->passes; i++)
    {
       gfd_free(wiiu->pass[i].gfd);
-      MEM2_free(wiiu->pass[i].vs_ubo);
-      MEM2_free(wiiu->pass[i].ps_ubo);
+      MEM2_free(wiiu->pass[i].vs_ubos[0]);
+      MEM2_free(wiiu->pass[i].vs_ubos[1]);
+      MEM2_free(wiiu->pass[i].ps_ubos[0]);
+      MEM2_free(wiiu->pass[i].ps_ubos[1]);
       MEM1_free(wiiu->pass[i].texture.surface.image);
    }
 
@@ -641,10 +650,14 @@ static void wiiu_gfx_free(void *data)
 static bool wiiu_init_frame_textures(wiiu_video_t *wiiu, unsigned width, unsigned height)
 {
    MEM2_free(wiiu->texture.surface.image);
-   if(wiiu->shader_preset)
+
+   if (wiiu->shader_preset)
    {
       for (int i = 0; i < wiiu->shader_preset->passes; i++)
+      {
          MEM1_free(wiiu->pass[i].texture.surface.image);
+         wiiu->pass[i].texture.surface.image = NULL;
+      }
    }
 
    /* Initialize frame texture */
@@ -677,7 +690,7 @@ static bool wiiu_init_frame_textures(wiiu_video_t *wiiu, unsigned width, unsigne
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE, wiiu->texture.surface.image,
                  wiiu->texture.surface.imageSize);
 
-   if(wiiu->shader_preset)
+   if (wiiu->shader_preset)
    {
       for (int i = 0; i < wiiu->shader_preset->passes; i++)
       {
@@ -732,11 +745,13 @@ static bool wiiu_init_frame_textures(wiiu_video_t *wiiu, unsigned width, unsigne
          wiiu->pass[i].texture.surface.width       = width;
          wiiu->pass[i].texture.surface.height      = height;
          wiiu->pass[i].texture.surface.depth       = 1;
-   //      wiiu->pass[i].texture.surface.mipLevels   = 1;
-         wiiu->pass[i].texture.surface.format      = pass->fbo.fp_fbo? GX2_SURFACE_FORMAT_FLOAT_R32_G32_B32_A32 :
-                                                                       pass->fbo.srgb_fbo? GX2_SURFACE_FORMAT_SRGB_R8_G8_B8_A8 :
-                                                                                           GX2_SURFACE_FORMAT_UNORM_R8_G8_B8_A8;
-         wiiu->pass[i].texture.surface.use         = (GX2_SURFACE_USE_TEXTURE | GX2_SURFACE_USE_COLOR_BUFFER);
+         //      wiiu->pass[i].texture.surface.mipLevels   = 1;
+         wiiu->pass[i].texture.surface.format      = pass->fbo.fp_fbo ?
+               GX2_SURFACE_FORMAT_FLOAT_R32_G32_B32_A32 :
+               pass->fbo.srgb_fbo ? GX2_SURFACE_FORMAT_SRGB_R8_G8_B8_A8 :
+               GX2_SURFACE_FORMAT_UNORM_R8_G8_B8_A8;
+         wiiu->pass[i].texture.surface.use         = (GX2_SURFACE_USE_TEXTURE |
+               GX2_SURFACE_USE_COLOR_BUFFER);
          wiiu->pass[i].texture.viewNumSlices       = 1;
          wiiu->pass[i].texture.compMap             = GX2_COMP_SEL(_R, _G, _B, _A);
 
@@ -744,7 +759,8 @@ static bool wiiu_init_frame_textures(wiiu_video_t *wiiu, unsigned width, unsigne
          GX2InitTextureRegs(&wiiu->pass[i].texture);
 
 
-         if((i != (wiiu->shader_preset->passes - 1)) || (width != wiiu->vp.width) || (height != wiiu->vp.height))
+         if ((i != (wiiu->shader_preset->passes - 1)) || (width != wiiu->vp.width)
+               || (height != wiiu->vp.height))
          {
             wiiu->pass[i].texture.surface.image = MEM1_alloc(wiiu->pass[i].texture.surface.imageSize,
                                                   wiiu->pass[i].texture.surface.alignment);
@@ -770,6 +786,73 @@ static bool wiiu_init_frame_textures(wiiu_video_t *wiiu, unsigned width, unsigne
    return true;
 }
 
+static void wiiu_gfx_update_uniform_block(wiiu_video_t *wiiu, int pass, float *ubo, int id,
+      int size,
+      int uniformVarCount, GX2UniformVar *uniformVars)
+{
+   for (int i = 0; i < uniformVarCount; i++)
+   {
+      if (uniformVars[i].block != id)
+         continue;
+
+      const char *id = strrchr(uniformVars[i].name, '.');
+
+      if (!id)
+         continue;
+
+      id++;
+
+      float *dst = ubo + uniformVars[i].offset;
+
+      if (!strcmp(id, "OutputSize"))
+      {
+         ((GX2_vec4 *)dst)->x = wiiu->pass[pass].color_buffer.surface.width;
+         ((GX2_vec4 *)dst)->y = wiiu->pass[pass].color_buffer.surface.height;
+         ((GX2_vec4 *)dst)->z = 1.0f / wiiu->pass[pass].color_buffer.surface.width;
+         ((GX2_vec4 *)dst)->w = 1.0f / wiiu->pass[pass].color_buffer.surface.height;
+         continue;
+      }
+
+      if (!strcmp(id, "OriginalSize"))
+      {
+         ((GX2_vec4 *)dst)->x = wiiu->texture.surface.width;
+         ((GX2_vec4 *)dst)->y = wiiu->texture.surface.height;
+         ((GX2_vec4 *)dst)->z = 1.0f / wiiu->texture.surface.width;
+         ((GX2_vec4 *)dst)->w = 1.0f / wiiu->texture.surface.height;
+         continue;
+      }
+
+      if (!strcmp(id, "SourceSize"))
+      {
+         GX2Surface *source = (pass > 0) ? &wiiu->pass[pass - 1].texture.surface : &wiiu->texture.surface;
+         ((GX2_vec4 *)dst)->x = source->width;
+         ((GX2_vec4 *)dst)->y = source->height;
+         ((GX2_vec4 *)dst)->z = 1.0f / source->width;
+         ((GX2_vec4 *)dst)->w = 1.0f / source->height;
+         continue;
+      }
+
+      if (!strcmp(id, "MVP"))
+      {
+         memcpy(dst, wiiu->ubo_mvp, sizeof(*wiiu->ubo_mvp));
+         continue;
+      }
+
+
+      for (int k = 0; k < wiiu->shader_preset->num_parameters; k++)
+      {
+         if (!strcmp(id, wiiu->shader_preset->parameters[k].id))
+         {
+            *dst = wiiu->shader_preset->parameters[k].current;
+            *(u32 *)dst = __builtin_bswap32(*(u32 *)dst);
+            break;
+         }
+      }
+
+   }
+
+   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_UNIFORM_BLOCK, ubo, size);
+}
 
 static bool wiiu_gfx_frame(void *data, const void *frame,
                            unsigned width, unsigned height, uint64_t frame_count,
@@ -842,8 +925,8 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
 
    if (frame)
    {
-      if((width != wiiu->texture.surface.width) ||
-         (height != wiiu->texture.surface.height))
+      if ((width != wiiu->texture.surface.width) ||
+            (height != wiiu->texture.surface.height))
          wiiu_init_frame_textures(wiiu, width, height);
 
       wiiu->width  = width;
@@ -892,105 +975,51 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
    GX2SetShaderMode(GX2_SHADER_MODE_UNIFORM_BLOCK);
 
    GX2SetFetchShader(&frame_shader.fs);
-   GX2SetVertexUniformBlock(frame_shader.vs.uniformBlocks[0].offset, frame_shader.vs.uniformBlocks[0].size, wiiu->ubo_mvp);
    GX2SetAttribBuffer(0, 4 * sizeof(*wiiu->v), sizeof(*wiiu->v), wiiu->v);
 
    GX2Texture *texture = &wiiu->texture;
 
+   if (wiiu->shader_preset && !wiiu->pass[0].texture.surface.image)
+      wiiu_init_frame_textures(wiiu, width, height);
+
    if (wiiu->shader_preset)
    {
-      if(!wiiu->pass[0].texture.surface.image)
-         wiiu_init_frame_textures(wiiu, width, height);
-
       for (int i = 0; i < wiiu->shader_preset->passes; i++)
       {
 
          GX2SetVertexShader(wiiu->pass[i].gfd->vs);
-         GX2SetPixelShader(wiiu->pass[i].gfd->ps);
-
-//         if (wiiu->pass[i].gfd->vs->uniformBlockCount > 0)
-//            GX2SetVertexUniformBlock(wiiu->pass[i].gfd->vs->uniformBlocks[0].offset, wiiu->pass[i].gfd->vs->uniformBlocks[0].size, wiiu->ubo_mvp);
-
-//         GX2SetAttribBuffer(0, 4 * sizeof(*wiiu->v), sizeof(*wiiu->v), wiiu->v);
-
-//         if(wiiu->pass[i].vs_ubo)
-//            GX2SetVertexUniformBlock(wiiu->pass[i].gfd->vs->uniformBlocks[1].offset,
-//                  wiiu->pass[i].gfd->vs->uniformBlocks[1].size,
-//                  wiiu->pass[i].vs_ubo);
-
-         if (wiiu->pass[i].ps_ubo)
+         for (int j = 0; j < 2 && j < wiiu->pass[i].gfd->vs->uniformBlockCount; j++)
          {
-            for (int j = 0; j < wiiu->pass[i].gfd->ps->uniformVarCount; j++)
-            {
-               if (wiiu->pass[i].gfd->ps->uniformVars[j].block != 0)
-                  continue;
-
-               const char *id = strrchr(wiiu->pass[i].gfd->ps->uniformVars[j].name, '.');
-
-               if (!id)
-                  continue;
-
-               id++;
-
-               float *dst = wiiu->pass[i].ps_ubo + wiiu->pass[i].gfd->ps->uniformVars[j].offset;
-
-               if (!strcmp(id, "OutputSize"))
-               {
-                  ((GX2_vec4 *)dst)->x = wiiu->pass[i].color_buffer.surface.width;
-                  ((GX2_vec4 *)dst)->y = wiiu->pass[i].color_buffer.surface.height;
-                  ((GX2_vec4 *)dst)->z = 1.0f / wiiu->pass[i].color_buffer.surface.width;
-                  ((GX2_vec4 *)dst)->w = 1.0f / wiiu->pass[i].color_buffer.surface.height;
-                  continue;
-               }
-
-               if (!strcmp(id, "OriginalSize"))
-               {
-                  ((GX2_vec4 *)dst)->x = wiiu->texture.surface.width;
-                  ((GX2_vec4 *)dst)->y = wiiu->texture.surface.height;
-                  ((GX2_vec4 *)dst)->z = 1.0f / wiiu->texture.surface.width;
-                  ((GX2_vec4 *)dst)->w = 1.0f / wiiu->texture.surface.height;
-                  continue;
-               }
-
-               if (!strcmp(id, "SourceSize"))
-               {
-                  ((GX2_vec4 *)dst)->x = texture->surface.width;
-                  ((GX2_vec4 *)dst)->y = texture->surface.height;
-                  ((GX2_vec4 *)dst)->z = 1.0f / texture->surface.width;
-                  ((GX2_vec4 *)dst)->w = 1.0f / texture->surface.height;
-                  continue;
-               }
-
-               for (int k = 0; k < wiiu->shader_preset->num_parameters; k++)
-               {
-                  if (!strcmp(id, wiiu->shader_preset->parameters[k].id))
-                  {
-                     *dst = wiiu->shader_preset->parameters[k].current;
-                     *(u32 *)dst = __builtin_bswap32(*(u32 *)dst);
-                     break;
-                  }
-               }
-
-            }
-
-            GX2Invalidate(GX2_INVALIDATE_MODE_CPU_UNIFORM_BLOCK, wiiu->pass[i].ps_ubo,
-                          wiiu->pass[i].gfd->ps->uniformBlocks[0].size);
-
-            GX2SetPixelUniformBlock(wiiu->pass[i].gfd->ps->uniformBlocks[0].offset,
-                                    wiiu->pass[i].gfd->ps->uniformBlocks[0].size, wiiu->pass[i].ps_ubo);
+            wiiu_gfx_update_uniform_block(wiiu, i, wiiu->pass[i].vs_ubos[j], j,
+                                          wiiu->pass[i].gfd->vs->uniformBlocks[j].size,
+                                          wiiu->pass[i].gfd->vs->uniformVarCount, wiiu->pass[i].gfd->vs->uniformVars);
+            GX2SetVertexUniformBlock(wiiu->pass[i].gfd->vs->uniformBlocks[j].offset,
+                                     wiiu->pass[i].gfd->vs->uniformBlocks[j].size, wiiu->pass[i].vs_ubos[j]);
          }
 
+         GX2SetPixelShader(wiiu->pass[i].gfd->ps);
+         for (int j = 0; j < 2 && j < wiiu->pass[i].gfd->ps->uniformBlockCount; j++)
+         {
+            wiiu_gfx_update_uniform_block(wiiu, i, wiiu->pass[i].ps_ubos[j], j,
+                                          wiiu->pass[i].gfd->ps->uniformBlocks[j].size,
+                                          wiiu->pass[i].gfd->ps->uniformVarCount, wiiu->pass[i].gfd->ps->uniformVars);
+            GX2SetPixelUniformBlock(wiiu->pass[i].gfd->ps->uniformBlocks[j].offset,
+                                    wiiu->pass[i].gfd->ps->uniformBlocks[j].size, wiiu->pass[i].ps_ubos[j]);
+         }
 
          GX2SetPixelTexture(texture, wiiu->pass[i].gfd->ps->samplerVars[0].location);
-         GX2SetPixelSampler(wiiu->shader_preset->pass[i].filter ? &wiiu->sampler_linear : &wiiu->sampler_nearest,
+         GX2SetPixelSampler(wiiu->shader_preset->pass[i].filter ? &wiiu->sampler_linear :
+                            &wiiu->sampler_nearest,
                             wiiu->pass[i].gfd->ps->samplerVars[0].location);
 
-         if(wiiu->pass[i].color_buffer.surface.image)
+         if (wiiu->pass[i].color_buffer.surface.image)
          {
             GX2SetColorBuffer(&wiiu->pass[i].color_buffer, GX2_RENDER_TARGET_0);
-            GX2SetViewport(0.0f, 0.0f, wiiu->pass[i].color_buffer.surface.width, wiiu->pass[i].color_buffer.surface.height, 0.0f,
+            GX2SetViewport(0.0f, 0.0f, wiiu->pass[i].color_buffer.surface.width,
+                           wiiu->pass[i].color_buffer.surface.height, 0.0f,
                            1.0f);
-            GX2SetScissor(0, 0, wiiu->pass[i].color_buffer.surface.width, wiiu->pass[i].color_buffer.surface.height);
+            GX2SetScissor(0, 0, wiiu->pass[i].color_buffer.surface.width,
+                          wiiu->pass[i].color_buffer.surface.height);
             GX2DrawEx(GX2_PRIMITIVE_MODE_QUADS, 4, 0, 1);
 
             GX2Invalidate(GX2_INVALIDATE_MODE_TEXTURE, wiiu->pass[i].texture.surface.image,
@@ -1007,9 +1036,12 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
       GX2SetColorBuffer(&wiiu->color_buffer, GX2_RENDER_TARGET_0);
    }
 
-   if(texture)
+   if (texture)
    {
       GX2SetVertexShader(&frame_shader.vs);
+      GX2SetVertexUniformBlock(frame_shader.vs.uniformBlocks[0].offset,
+                               frame_shader.vs.uniformBlocks[0].size, wiiu->ubo_mvp);
+
       GX2SetPixelShader(&frame_shader.ps);
       GX2SetPixelTexture(texture, frame_shader.ps.samplerVars[0].location);
       GX2SetPixelSampler(wiiu->smooth ? &wiiu->sampler_linear : &wiiu->sampler_nearest,
@@ -1025,11 +1057,14 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
    GX2SetShader(&sprite_shader);
    GX2SetGeometryShaderInputRingBuffer(wiiu->input_ring_buffer, wiiu->input_ring_buffer_size);
    GX2SetGeometryShaderOutputRingBuffer(wiiu->output_ring_buffer, wiiu->output_ring_buffer_size);
-   GX2SetVertexUniformBlock(sprite_shader.vs.uniformBlocks[0].offset, sprite_shader.vs.uniformBlocks[0].size,
+   GX2SetVertexUniformBlock(sprite_shader.vs.uniformBlocks[0].offset,
+                            sprite_shader.vs.uniformBlocks[0].size,
                             wiiu->ubo_vp);
-   GX2SetVertexUniformBlock(sprite_shader.vs.uniformBlocks[1].offset, sprite_shader.vs.uniformBlocks[1].size,
+   GX2SetVertexUniformBlock(sprite_shader.vs.uniformBlocks[1].offset,
+                            sprite_shader.vs.uniformBlocks[1].size,
                             wiiu->ubo_tex);
-   GX2SetViewport(0.0f, 0.0f, wiiu->color_buffer.surface.width, wiiu->color_buffer.surface.height, 0.0f, 1.0f);
+   GX2SetViewport(0.0f, 0.0f, wiiu->color_buffer.surface.width, wiiu->color_buffer.surface.height,
+                  0.0f, 1.0f);
    GX2SetScissor(0, 0, wiiu->color_buffer.surface.width, wiiu->color_buffer.surface.height);
 
 #ifdef HAVE_OVERLAY
@@ -1177,20 +1212,22 @@ static bool wiiu_gfx_set_shader(void *data,
          return false;
       }
 
-      if (wiiu->pass[i].gfd->vs->uniformBlockCount > 1)
+      for (int j = 0; j < 2 && j < wiiu->pass[i].gfd->vs->uniformBlockCount; j++)
       {
-         wiiu->pass[i].vs_ubo = MEM2_alloc(wiiu->pass[i].gfd->vs->uniformBlocks[1].size, GX2_UNIFORM_BLOCK_ALIGNMENT);
-         memset(wiiu->pass[i].vs_ubo, 0, wiiu->pass[i].gfd->vs->uniformBlocks[1].size);
-         GX2Invalidate(GX2_INVALIDATE_MODE_CPU_UNIFORM_BLOCK, wiiu->pass[i].vs_ubo,
-                       wiiu->pass[i].gfd->vs->uniformBlocks[1].size);
+         wiiu->pass[i].vs_ubos[j] = MEM2_alloc(wiiu->pass[i].gfd->vs->uniformBlocks[j].size,
+                                               GX2_UNIFORM_BLOCK_ALIGNMENT);
+         memset(wiiu->pass[i].vs_ubos[j], 0, wiiu->pass[i].gfd->vs->uniformBlocks[j].size);
+         GX2Invalidate(GX2_INVALIDATE_MODE_CPU_UNIFORM_BLOCK, wiiu->pass[i].vs_ubos[j],
+                       wiiu->pass[i].gfd->vs->uniformBlocks[j].size);
       }
 
-      if (wiiu->pass[i].gfd->ps->uniformBlockCount > 0)
+      for (int j = 0; j < 2 && j < wiiu->pass[i].gfd->ps->uniformBlockCount; j++)
       {
-         wiiu->pass[i].ps_ubo = MEM2_alloc(wiiu->pass[i].gfd->ps->uniformBlocks[0].size, GX2_UNIFORM_BLOCK_ALIGNMENT);
-         memset(wiiu->pass[i].ps_ubo, 0, wiiu->pass[i].gfd->ps->uniformBlocks[0].size);
-         GX2Invalidate(GX2_INVALIDATE_MODE_CPU_UNIFORM_BLOCK, wiiu->pass[i].ps_ubo,
-                       wiiu->pass[i].gfd->ps->uniformBlocks[0].size);
+         wiiu->pass[i].ps_ubos[j] = MEM2_alloc(wiiu->pass[i].gfd->ps->uniformBlocks[j].size,
+                                               GX2_UNIFORM_BLOCK_ALIGNMENT);
+         memset(wiiu->pass[i].ps_ubos[j], 0, wiiu->pass[i].gfd->ps->uniformBlocks[j].size);
+         GX2Invalidate(GX2_INVALIDATE_MODE_CPU_UNIFORM_BLOCK, wiiu->pass[i].ps_ubos[j],
+                       wiiu->pass[i].gfd->ps->uniformBlocks[j].size);
       }
    }
 
