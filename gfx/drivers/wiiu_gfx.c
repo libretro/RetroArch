@@ -223,6 +223,8 @@ static void *wiiu_gfx_init(const video_info_t *video,
    };
    GX2Init(init_attributes);
 
+   wiiu->rgb32 = video->rgb32;
+
    /* setup scanbuffers */
    wiiu->render_mode = wiiu_render_mode_map[GX2GetSystemTVScanMode()];
 //   wiiu->render_mode = wiiu_render_mode_map[GX2_TV_SCAN_MODE_480P];
@@ -707,7 +709,6 @@ static bool wiiu_init_frame_textures(wiiu_video_t *wiiu, unsigned width, unsigne
    wiiu->texture.surface.dim         = GX2_SURFACE_DIM_TEXTURE_2D;
    wiiu->texture.surface.tileMode    = GX2_TILE_MODE_LINEAR_ALIGNED;
    wiiu->texture.viewNumSlices       = 1;
-   wiiu->rgb32                       = wiiu->rgb32;
 
    if (wiiu->rgb32)
    {
