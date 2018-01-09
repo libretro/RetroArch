@@ -225,7 +225,7 @@ static void *wiiu_gfx_init(const video_info_t *video,
 
    /* setup scanbuffers */
    wiiu->render_mode = wiiu_render_mode_map[GX2GetSystemTVScanMode()];
-   wiiu->render_mode = wiiu_render_mode_map[GX2_TV_SCAN_MODE_480P];
+//   wiiu->render_mode = wiiu_render_mode_map[GX2_TV_SCAN_MODE_480P];
    GX2CalcTVSize(wiiu->render_mode.mode, GX2_SURFACE_FORMAT_UNORM_R8_G8_B8_A8,
                  GX2_BUFFERING_MODE_DOUBLE, &size, &tmp);
 
