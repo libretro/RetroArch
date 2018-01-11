@@ -369,6 +369,12 @@ bool glslang_parse_meta(const vector<string> &lines, glslang_meta *meta)
 }
 
 #ifdef HAVE_VULKAN
+#ifdef _MSC_VER
+bool glslang_compile_shader(const char *shader_path, glslang_output *output)
+{
+   return false;
+}
+#else
 bool glslang_compile_shader(const char *shader_path, glslang_output *output)
 {
    vector<string> lines;
@@ -397,4 +403,5 @@ bool glslang_compile_shader(const char *shader_path, glslang_output *output)
 
    return true;
 }
+#endif
 #endif

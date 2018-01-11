@@ -6,7 +6,6 @@ DEBUG                      = 0
 GRIFFIN_BUILD              = 0
 SALAMANDER_BUILD           = 0
 WHOLE_ARCHIVE_LINK         = 0
-HAVE_HID                   = 0
 WIIU_HID                   = 0
 BUILD_DIR                  = objs/wiiu
 PC_DEVELOPMENT_IP_ADDRESS  ?=
@@ -15,6 +14,8 @@ PC_DEVELOPMENT_TCP_PORT	   ?=
 ifeq ($(SALAMANDER_BUILD),1)
    BUILD_DIR := $(BUILD_DIR)-salamander
    TARGET    := $(TARGET)_salamander
+else ifeq ($(GRIFFIN_BUILD),1)
+   BUILD_DIR := $(BUILD_DIR)-griffin
 endif
 
 ifeq ($(DEBUG),1)
@@ -70,12 +71,14 @@ else
    DEFINES += -DHAVE_UPDATE_ASSETS
    DEFINES += -DHAVE_FILTERS_BUILTIN
    DEFINES += -DHAVE_SLANG
+   DEFINES += -DHAVE_SHADERPIPELINE
 
    OBJ += wiiu/system/missing_libc_functions.o
    OBJ += wiiu/shader_utils.o
    OBJ += wiiu/tex_shader.o
    OBJ += wiiu/sprite_shader.o
    OBJ += wiiu/frame_shader.o
+   OBJ += wiiu/ribbon_shader.o
    OBJ += gfx/drivers_shader/slang_preprocess.o
    OBJ += gfx/drivers_shader/glslang_util.o
 
@@ -87,6 +90,7 @@ else
    #	DEFINES += -DWANT_IFADDRS
    #	DEFINES += -DHAVE_FREETYPE
    	DEFINES += -DHAVE_XMB -DHAVE_MATERIALUI
+#        DEFINES += -DHAVE_HID
    else
    	HAVE_MENU_COMMON = 1
    	HAVE_RTGA = 1
@@ -112,6 +116,7 @@ else
    	HAVE_OVERLAY = 1
    	HAVE_STATIC_VIDEO_FILTERS = 1
    	HAVE_STATIC_AUDIO_FILTERS = 1
+#        HAVE_HID = 1
    	WANT_LIBFAT = 1
    	WANT_IOSUHAX = 1
 

@@ -134,6 +134,8 @@ int main(int argc, const char** argv)
    fclose(vs_out_fp);
    fclose(ps_out_fp);
 
+   free(slang_buffer);
+
    return 0;
 }
 

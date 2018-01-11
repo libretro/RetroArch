@@ -35,6 +35,14 @@ typedef struct
       float u;
       float v;
    }coord;
+
+   struct
+   {
+      float r;
+      float g;
+      float b;
+      float a;
+   }color;
 }tex_shader_vertex_t;
 
 extern GX2Shader tex_shader;

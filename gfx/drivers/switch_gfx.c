@@ -165,15 +165,17 @@ static bool switch_frame(void *data, const void *frame,
    {
       for(y = 0; y < height; y++)
       {
+	 unsigned subx, suby;
          uint32_t pixel = 0;
 
          if (sw->rgb32)
          {
             const uint32_t *frame_pixels = frame;
             pixel = frame_pixels[(y*pitch/sizeof(uint32_t)) + x];
-         } else {
+         }
+	 else
+	 {
             const uint16_t *frame_pixels = frame;
-            unsigned subx, suby;
             uint32_t spixel = frame_pixels[(y*pitch/sizeof(uint16_t)) + x];
             uint8_t r       = (spixel >> 11) & 31;
             uint8_t g       = (spixel >> 5) & 63;

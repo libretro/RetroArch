@@ -1,7 +1,11 @@
+#pragma once
+
 #include <wiiu/gx2.h>
 
 #include "wiiu/frame_shader.h"
+#include "wiiu/tex_shader.h"
 #include "wiiu/sprite_shader.h"
+#include "wiiu/ribbon_shader.h"
 #include "gfx/video_shader_parse.h"
 
 #undef _X
@@ -55,8 +59,8 @@ typedef struct
    bool overlay_full_screen;
 #endif
 
-   GX2Sampler sampler_nearest;
-   GX2Sampler sampler_linear;
+   GX2Sampler sampler_nearest[RARCH_WRAP_MAX];
+   GX2Sampler sampler_linear[RARCH_WRAP_MAX];
    GX2Texture texture;
    frame_vertex_t* v;
    GX2_vec2* ubo_vp;
@@ -70,12 +74,21 @@ typedef struct
    int width;
    int height;
 
+   float* menu_display_coord_array;
+   ribbon_uniform_t* ribbon_ubo;
+
    struct
    {
       sprite_vertex_t* v;
       int size;
       int current;
    } vertex_cache;
+   struct
+   {
+      tex_shader_vertex_t* v;
+      int size;
+      int current;
+   } vertex_cache_tex;
 
    void* drc_scan_buffer;
    void* tv_scan_buffer;
@@ -86,11 +99,13 @@ typedef struct
    struct
    {
       GFDFile* gfd;
-      float* vs_ubo;
-      float* ps_ubo;
+      float* vs_ubos[2];
+      float* ps_ubos[2];
       GX2Texture texture;
       GX2ColorBuffer color_buffer;
+      bool mem1;
    }pass[GFX_MAX_SHADERS];
+   GX2Texture luts[GFX_MAX_TEXTURES];
 
    wiiu_render_mode_t render_mode;
    video_viewport_t vp;

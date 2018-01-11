@@ -1,4 +1,5 @@
 /*  RetroArch - A frontend for libretro.
+ *  Copyright (C) 2014-2018 - Ali Bouhlel
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -12,9 +13,34 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __LED_DEFINES__H
-#define __LED_DEFINES__H
+#pragma once
 
-#define MAX_LEDS 32
+#include <wiiu/shader_utils.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef struct
+{
+   struct
+   {
+      float x;
+      float y;
+      float z;
+   }pos;
+}ribbon_vertex_t;
+
+typedef struct
+__attribute__((scalar_storage_order ("little-endian")))
+__attribute__((aligned (16)))
+{
+   float time;
+}ribbon_uniform_t;
+
+
+extern GX2Shader ribbon_shader;
+
+#ifdef __cplusplus
+}
 #endif

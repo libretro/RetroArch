@@ -816,7 +816,8 @@ bool win32_window_create(void *data, unsigned style,
    SetWindowLongPtr(main_window.hwnd,
         GWL_EXSTYLE,
         GetWindowLongPtr(main_window.hwnd, GWL_EXSTYLE) | WS_EX_LAYERED);
-   SetLayeredWindowAttributes(main_window.hwnd, 0, (255 * settings->uints.video_window_opacity) / 100, LWA_ALPHA);
+   SetLayeredWindowAttributes(main_window.hwnd, 0, (255 * 
+            settings->uints.video_window_opacity) / 100, LWA_ALPHA);
 #endif
 #endif
    return true;
@@ -944,7 +945,7 @@ bool win32_suppress_screensaver(void *data, bool enable)
       if (frontend->get_os)
          frontend->get_os(tmp, sizeof(tmp), &major, &minor);
 
-      if (major*100+minor >= 601)
+      if (major * 100 + minor >= 601)
       {
 #if _WIN32_WINNT >= 0x0601
          /* Windows 7, 8, 10 codepath */
@@ -973,7 +974,7 @@ bool win32_suppress_screensaver(void *data, bool enable)
          }
 #endif
       }
-      else if (major*100+minor >= 410)
+      else if (major * 100 + minor >= 410)
       {
 #if _WIN32_WINDOWS >= 0x0410 || _WIN32_WINNT >= 0x0410
          /* 98 / 2K / XP / Vista codepath */
@@ -981,12 +982,12 @@ bool win32_suppress_screensaver(void *data, bool enable)
          return true;
 #endif
       }
-	  else
-	  {
+      else
+      {
          /* 95 / NT codepath */
-	     /* No way to block the screensaver. */
+         /* No way to block the screensaver. */
          return true;
-	  }
+      }
    }
 #endif
 
@@ -998,18 +999,17 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
    RECT *rect, RECT *mon_rect, DWORD *style)
 {
 #ifndef _XBOX
-   settings_t *settings = config_get_ptr();
-
-   /* Windows only reports the refresh rates for modelines as
-    * an integer, so video_refresh_rate needs to be rounded. Also, account
-    * for black frame insertion using video_refresh_rate set to half
-    * of the display refresh rate, as well as higher vsync swap intervals. */
-   float refresh_mod    = settings->bools.video_black_frame_insertion ? 2.0f : 1.0f;
-   unsigned refresh     = roundf(settings->floats.video_refresh_rate
-         * refresh_mod * settings->uints.video_swap_interval);
-
    if (fullscreen)
    {
+      settings_t *settings = config_get_ptr();
+      /* Windows only reports the refresh rates for modelines as
+       * an integer, so video_refresh_rate needs to be rounded. Also, account
+       * for black frame insertion using video_refresh_rate set to half
+       * of the display refresh rate, as well as higher vsync swap intervals. */
+      float refresh_mod    = settings->bools.video_black_frame_insertion ? 2.0f : 1.0f;
+      unsigned refresh     = roundf(settings->floats.video_refresh_rate
+            * refresh_mod * settings->uints.video_swap_interval);
+     
       if (windowed_full)
       {
          *style          = WS_EX_TOPMOST | WS_POPUP;
@@ -1022,7 +1022,7 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
 
          if (!win32_monitor_set_fullscreen(*width, *height,
                   refresh, current_mon->szDevice))
-          {}
+         {}
 
          /* Display settings might have changed, get new coordinates. */
          GetMonitorInfo(*hm_to_use, (LPMONITORINFO)current_mon);
@@ -1031,10 +1031,12 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
    }
    else
    {
-      *style       = WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
-      rect->right  = *width;
-      rect->bottom = *height;
+      *style          = WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
+      rect->right     = *width;
+      rect->bottom    = *height;
+
       AdjustWindowRect(rect, *style, FALSE);
+
       g_resize_width  = *width   = rect->right  - rect->left;
       g_resize_height = *height  = rect->bottom - rect->top;
    }
@@ -1179,7 +1181,11 @@ bool win32_has_focus(void)
 
 HWND win32_get_window(void)
 {
+#ifdef _XBOX
+   return NULL;
+#else
    return main_window.hwnd;
+#endif
 }
 
 void win32_window_reset(void)
@@ -1192,9 +1198,9 @@ void win32_destroy_window(void)
 {
 #ifndef _XBOX
    UnregisterClass("RetroArch", GetModuleHandle(NULL));
-#endif
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x500 /* 2K */
    UnregisterDeviceNotification(notification_handler);
+#endif
 #endif
    main_window.hwnd = NULL;
 }
@@ -1203,7 +1209,7 @@ void win32_get_video_output_prev(
       unsigned *width, unsigned *height)
 {
    DEVMODE dm;
-   int iModeNum;
+   unsigned i;
    bool found           = false;
    unsigned prev_width  = 0;
    unsigned prev_height = 0;
@@ -1216,9 +1222,9 @@ void win32_get_video_output_prev(
 
    win32_get_video_output_size(&curr_width, &curr_height);
 
-   for (iModeNum = 0;
-         EnumDisplaySettings(NULL, iModeNum, &dm) != 0;
-         iModeNum++)
+   for (i = 0;
+         EnumDisplaySettings(NULL, i, &dm) != 0;
+         i++)
    {
       if (     dm.dmPelsWidth == curr_width
             && dm.dmPelsHeight == curr_height)
@@ -1246,7 +1252,7 @@ void win32_get_video_output_next(
       unsigned *width, unsigned *height)
 {
    DEVMODE dm;
-   int iModeNum;
+   int i;
    bool found           = false;
    unsigned curr_width  = 0;
    unsigned curr_height = 0;
@@ -1256,9 +1262,9 @@ void win32_get_video_output_next(
 
    win32_get_video_output_size(&curr_width, &curr_height);
 
-   for (iModeNum = 0;
-         EnumDisplaySettings(NULL, iModeNum, &dm) != 0;
-         iModeNum++)
+   for (i = 0;
+         EnumDisplaySettings(NULL, i, &dm) != 0;
+         i++)
    {
       if (found)
       {

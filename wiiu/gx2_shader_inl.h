@@ -111,6 +111,7 @@
 #define _w 3
 #define _0 4
 #define _1 5
+#define _m 7 /*mask*/
 
 #define _xyzw 0b1111
 #define _xy__ 0b0011
@@ -118,6 +119,10 @@
 #define GX2_COMP_SEL(c0, c1, c2, c3) (((c0) << 24) | ((c1) << 16) | ((c2) << 8) | (c3))
 
 #define ALU_LITERAL(v)  to_QWORD(to_LE(v), 0)
+#define ALU_LITERAL2(v0,v1)  to_QWORD(to_LE(v0), to_LE(v1))
+#define ALU_LITERAL3(v0,v1,v2)  ALU_LITERAL2(v0,v1),ALU_LITERAL(v2)
+#define ALU_LITERAL4(v0,v1,v2,v3)  ALU_LITERAL2(v0,v1),ALU_LITERAL2(v2,v3)
+#define ALU_LITERAL5(v0,v1,v2,v3,v5)  ALU_LITERAL4(v0,v1,v2,v3),ALU_LITERAL(v4)
 
 /* SRCx_SEL special constants */
 #define ALU_SRC_1_DBL_L     0xF4
@@ -195,11 +200,17 @@
 #define CF_INST_EMIT_VERTEX   0x15
 #define CF_INST_MEM_RING      0x26
 /* ALU */
-#define OP2_INST_ADD          0x0
-#define OP2_INST_MUL          0x1
-#define OP2_INST_MUL_IEEE     0x2
-#define OP2_INST_MOV          0x19
-#define OP2_INST_RECIP_IEEE   0x66
+#define OP2_INST_ADD             0x0
+#define OP2_INST_MUL             0x1
+#define OP2_INST_MUL_IEEE        0x2
+#define OP2_INST_FRACT           0x10
+#define OP2_INST_FLOOR           0x14
+#define OP2_INST_MOV             0x19
+#define OP2_INST_DOT4_IEEE       0x51
+#define OP2_INST_RECIP_IEEE      0x66
+#define OP2_INST_RECIPSQRT_IEEE  0x69
+#define OP2_INST_SIN             0x6E
+#define OP2_INST_COS             0x6F
 
 #define OP3_INST_MULADD       0x10
 /* EXP */
@@ -207,7 +218,9 @@
 #define CF_INST_EXP_DONE 0x28
 
 /* TEX */
-#define TEX_INST_SAMPLE 0x10
+#define TEX_INST_GET_GRADIENTS_H 0x07
+#define TEX_INST_GET_GRADIENTS_V 0x08
+#define TEX_INST_SAMPLE          0x10
 
 /* VTX */
 #define VTX_INST_FETCH  0x0
@@ -298,34 +311,66 @@
    to_QWORD(ALU_WORD0(src0Sel, 0x0, src0Chan, 0x0, src1Sel, 0x0, src1Chan, 0x0, 0x0, 0x0), \
    ALU_WORD1_OP3(src2Sel, 0x0, src2Chan, 0x0, inst, 0x0, dstGpr, 0x0, dstChan, 0x0))
 
-#define ALU_MOV(dstGpr, dstChan, src0Sel, src0Chan) \
-   ALU_OP2(OP2_INST_MOV, dstGpr, dstChan, src0Sel, src0Chan, ALU_SRC_0, 0x0, ALU_OMOD_OFF)
-
-#define ALU_MOV_x2(dstGpr, dstChan, src0Sel, src0Chan) \
-   ALU_OP2(OP2_INST_MOV, dstGpr, dstChan, src0Sel, src0Chan, ALU_SRC_0, 0x0, ALU_OMOD_M2)
-
-#define ALU_MUL(dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan) \
-   ALU_OP2(OP2_INST_MUL, dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, ALU_OMOD_OFF)
-
-#define ALU_MULADD(dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, src2Sel, src2Chan) \
-   ALU_OP3(OP3_INST_MULADD, dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, src2Sel, src2Chan)
-
-#define ALU_MUL_IEEE(dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan) \
-   ALU_OP2(OP2_INST_MUL_IEEE, dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, ALU_OMOD_OFF)
-
 #define ALU_ADD(dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan) \
    ALU_OP2(OP2_INST_ADD, dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, ALU_OMOD_OFF)
 
 #define ALU_ADD_x2(dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan) \
    ALU_OP2(OP2_INST_ADD, dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, ALU_OMOD_M2)
 
+#define ALU_MUL(dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan) \
+   ALU_OP2(OP2_INST_MUL, dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, ALU_OMOD_OFF)
+
+#define ALU_MUL_IEEE(dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan) \
+   ALU_OP2(OP2_INST_MUL_IEEE, dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, ALU_OMOD_OFF)
+
+#define ALU_FRACT(dstGpr, dstChan, src0Sel, src0Chan) \
+   ALU_OP2(OP2_INST_FRACT, dstGpr, dstChan, src0Sel, src0Chan, ALU_SRC_0, 0x0, ALU_OMOD_OFF)
+
+#define ALU_FLOOR(dstGpr, dstChan, src0Sel, src0Chan) \
+   ALU_OP2(OP2_INST_FLOOR, dstGpr, dstChan, src0Sel, src0Chan, ALU_SRC_0, 0x0, ALU_OMOD_OFF)
+
+#define ALU_MOV(dstGpr, dstChan, src0Sel, src0Chan) \
+   ALU_OP2(OP2_INST_MOV, dstGpr, dstChan, src0Sel, src0Chan, ALU_SRC_0, 0x0, ALU_OMOD_OFF)
+
+#define ALU_MOV_x2(dstGpr, dstChan, src0Sel, src0Chan) \
+   ALU_OP2(OP2_INST_MOV, dstGpr, dstChan, src0Sel, src0Chan, ALU_SRC_0, 0x0, ALU_OMOD_M2)
+
+#define ALU_MOV_x4(dstGpr, dstChan, src0Sel, src0Chan) \
+   ALU_OP2(OP2_INST_MOV, dstGpr, dstChan, src0Sel, src0Chan, ALU_SRC_0, 0x0, ALU_OMOD_M4)
+
+#define ALU_DOT4_IEEE(dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan) \
+   ALU_OP2(OP2_INST_DOT4_IEEE, dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, ALU_OMOD_OFF)
+
 #define ALU_RECIP_IEEE(dstGpr, dstChan, src0Sel, src0Chan) \
    ALU_OP2(OP2_INST_RECIP_IEEE, dstGpr, dstChan, src0Sel, src0Chan, ALU_SRC_0, 0x0, ALU_OMOD_OFF)
+
+#define ALU_RECIPSQRT_IEEE(dstGpr, dstChan, src0Sel, src0Chan) \
+   ALU_OP2(OP2_INST_RECIPSQRT_IEEE, dstGpr, dstChan, src0Sel, src0Chan, ALU_SRC_0, 0x0, ALU_OMOD_OFF)
+
+#define ALU_SIN(dstGpr, dstChan, src0Sel, src0Chan) \
+   ALU_OP2(OP2_INST_SIN, dstGpr, dstChan, src0Sel, src0Chan, ALU_SRC_0, 0x0, ALU_OMOD_OFF)
+
+#define ALU_COS(dstGpr, dstChan, src0Sel, src0Chan) \
+   ALU_OP2(OP2_INST_COS, dstGpr, dstChan, src0Sel, src0Chan, ALU_SRC_0, 0x0, ALU_OMOD_OFF)
+
+#define ALU_MULADD(dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, src2Sel, src2Chan) \
+   ALU_OP3(OP3_INST_MULADD, dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, src2Sel, src2Chan)
 
 #define TEX_SAMPLE(dstReg, dstSelX, dstSelY, dstSelZ, dstSelW, srcReg, srcSelX, srcSelY, srcSelZ, srcSelW, resourceID, samplerID)\
    to_QWORD(TEX_WORD0(TEX_INST_SAMPLE, 0x0, 0x0, resourceID, srcReg, 0x0, 0x0), \
    TEX_WORD1(dstReg, 0x0, dstSelX, dstSelY, dstSelZ, dstSelW, 0x0, TEX_NORMALIZED, TEX_NORMALIZED, TEX_NORMALIZED, TEX_NORMALIZED)), \
    to_QWORD(TEX_WORD2(0x0, 0x0, 0x0, samplerID, _x, _y, _0, _x), 0x00000000)
+
+#define TEX_GET_GRADIENTS_H(dstReg, dstSelX, dstSelY, dstSelZ, dstSelW, srcReg, srcSelX, srcSelY, srcSelZ, srcSelW, resourceID, samplerID)\
+   to_QWORD(TEX_WORD0(TEX_INST_GET_GRADIENTS_H, 0x0, 0x0, resourceID, srcReg, 0x0, 0x0), \
+   TEX_WORD1(dstReg, 0x0, dstSelX, dstSelY, dstSelZ, dstSelW, 0x0, TEX_NORMALIZED, TEX_NORMALIZED, TEX_NORMALIZED, TEX_NORMALIZED)), \
+   to_QWORD(TEX_WORD2(0x0, 0x0, 0x0, samplerID, _x, _y, _z, _x), 0x00000000)
+
+#define TEX_GET_GRADIENTS_V(dstReg, dstSelX, dstSelY, dstSelZ, dstSelW, srcReg, srcSelX, srcSelY, srcSelZ, srcSelW, resourceID, samplerID)\
+   to_QWORD(TEX_WORD0(TEX_INST_GET_GRADIENTS_V, 0x0, 0x0, resourceID, srcReg, 0x0, 0x0), \
+   TEX_WORD1(dstReg, 0x0, dstSelX, dstSelY, dstSelZ, dstSelW, 0x0, TEX_NORMALIZED, TEX_NORMALIZED, TEX_NORMALIZED, TEX_NORMALIZED)), \
+   to_QWORD(TEX_WORD2(0x0, 0x0, 0x0, samplerID, _x, _y, _z, _x), 0x00000000)
+
 
 #define VTX_FETCH(dstReg, dstSelX, dstSelY, dstSelZ, dstSelW, srcReg, srcSelX, buffer_id, type, mega, offset) \
    to_QWORD(VTX_WORD0(VTX_INST_FETCH, type, buffer_id, srcReg, srcSelX, mega), VTX_WORD1(dstReg, dstSelX, dstSelY, dstSelZ, dstSelW)) , \

@@ -767,11 +767,14 @@ static void d3d_set_texture_stage_state(LPDIRECT3DDEVICE dev,
       unsigned sampler, unsigned value, unsigned type)
 {
 #if defined(HAVE_D3D9) && !defined(__cplusplus)
-   IDirect3DDevice9_SetTextureStageState(dev, sampler, (D3DTEXTURESTAGESTATETYPE)type, value);
+   if (IDirect3DDevice9_SetTextureStageState(dev, sampler, (D3DTEXTURESTAGESTATETYPE)type, value) != D3D_OK)
+      RARCH_ERR("SetTextureStageState call failed, sampler: %d, value: %d, type: %d\n", sampler, value, type);
 #elif defined(HAVE_D3D8) && !defined(__cplusplus)
-   IDirect3DDevice8_SetTextureStageState(dev, sampler, (D3DTEXTURESTAGESTATETYPE)type, value);
+   if (IDirect3DDevice8_SetTextureStageState(dev, sampler, (D3DTEXTURESTAGESTATETYPE)type, value) != D3D_OK)
+      RARCH_ERR("SetTextureStageState call failed, sampler: %d, value: %d, type: %d\n", sampler, value, type);
 #else
-   dev->SetTextureStageState(sampler, (D3DTEXTURESTAGESTATETYPE)type, value);
+   if (dev->SetTextureStageState(sampler, (D3DTEXTURESTAGESTATETYPE)type, value) != D3D_OK)
+      RARCH_ERR("SetTextureStageState call failed, sampler: %d, value: %d, type: %d\n", sampler, value, type);
 #endif
 }
 #endif

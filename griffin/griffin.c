@@ -352,6 +352,10 @@ VIDEO DRIVER
 #endif
 #endif
 
+#if defined(__wiiu__)
+#include "../gfx/drivers/wiiu_gfx.c"
+#endif
+
 #ifdef HAVE_SDL2
 #include "../gfx/drivers/sdl2_gfx.c"
 #endif
@@ -498,7 +502,7 @@ INPUT
 
 #ifdef HAVE_OVERLAY
 #include "../input/input_overlay.c"
-#include "../led/overlay_led_driver.c"
+#include "../led/drivers/led_overlay.c"
 #include "../tasks/task_overlay.c"
 #endif
 
@@ -527,6 +531,9 @@ INPUT
 #elif defined(GEKKO)
 #include "../input/drivers/gx_input.c"
 #include "../input/drivers_joypad/gx_joypad.c"
+#elif defined(__wiiu__)
+#include "../input/drivers/wiiu_input.c"
+#include "../input/drivers_joypad/wiiu_joypad.c"
 #elif defined(_XBOX)
 #include "../input/drivers/xdk_xinput_input.c"
 #include "../input/drivers_joypad/xdk_joypad.c"
@@ -674,10 +681,10 @@ LEDS
 
 #include "../led/led_driver.c"
 
-#include "../led/null_led_driver.c"
+#include "../led/drivers/led_null.c"
 
 #if defined(HAVE_RPILED)
-#include "../led/rpi_led_driver.c"
+#include "../led/drivers/led_rpi.c"
 #endif
 
 /*============================================================
@@ -706,6 +713,8 @@ AUDIO
 #include "../audio/drivers/xenon360_audio.c"
 #elif defined(GEKKO)
 #include "../audio/drivers/gx_audio.c"
+#elif defined(__wiiu__)
+#include "../audio/drivers/wiiu_audio.c"
 #elif defined(EMSCRIPTEN)
 #include "../audio/drivers/rwebaudio.c"
 #elif defined(PSP) || defined(VITA)
@@ -882,6 +891,8 @@ FRONTEND
 #ifdef HW_RVL
 #include "../frontend/drivers/platform_wii.c"
 #endif
+#elif defined(__wiiu__)
+#include "../frontend/drivers/platform_wiiu.c"
 #elif defined(PSP) || defined(VITA)
 #include "../frontend/drivers/platform_psp.c"
 #elif defined(_3DS)
@@ -1038,7 +1049,7 @@ NETPLAY
 #include "../libretro-common/net/net_http.c"
 #include "../libretro-common/net/net_natt.c"
 #include "../libretro-common/formats/json/jsonsax_full.c"
-#ifndef HAVE_SOCKET_LEGACY
+#if !defined(HAVE_SOCKET_LEGACY) && !defined(__wiiu__)
 #include "../libretro-common/net/net_ifinfo.c"
 #endif
 #include "../tasks/task_http.c"
@@ -1164,7 +1175,7 @@ MENU
 #include "../menu/drivers/rgui.c"
 #endif
 
-#if defined(HAVE_OPENGL) || defined(HAVE_VITA2D) || defined(_3DS) || defined(_MSC_VER)
+#if defined(HAVE_OPENGL) || defined(HAVE_VITA2D) || defined(_3DS) || defined(_MSC_VER) || defined(__wiiu__)
 #ifdef HAVE_XMB
 #include "../menu/drivers/xmb.c"
 #endif
