@@ -2,6 +2,7 @@
 - 3DS: Now correctly reports amount of CPU cores.
 - 3DS: Frontend rating is now correctly implemented for both New 3DS/2DS and Old 3DS/2DS.
 - 3DS: Initial networking support, HTTP requests won't work yet.
+- 3DS: Now reports memory and battery state.
 - AUDIO: Added 'Audio Resampler Quality' setting to Audio Settings. Setting this higher will increase sound quality at the expense of sound latency and/or performance. Setting this value lower will improve sound latency/performance at the expense of sound quality. Only has an effect if the Sinc resampler is used, and you have to restart the game for changes to take effect.
 - CHEEVOS: Fix unofficial achievements not being loaded.
 - CHEEVOS: Show the menu entries when no achievements are found even if hardcore mode is enabled.
