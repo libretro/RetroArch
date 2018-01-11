@@ -1028,12 +1028,12 @@ static int16_t udev_input_state(void *data,
             case RETRO_DEVICE_ID_LIGHTGUN_X:
                {
                   udev_input_mouse_t *mouse = udev_get_mouse(udev, port);
-                  return (mouse) ? : udev_mouse_get_x(mouse) : 0;
+                  return (mouse) ? udev_mouse_get_x(mouse) : 0;
                }
             case RETRO_DEVICE_ID_LIGHTGUN_Y:
                {
                   udev_input_mouse_t *mouse = udev_get_mouse(udev, port);
-                  return (mouse) ? : udev_mouse_get_y(mouse) : 0;
+                  return (mouse) ? udev_mouse_get_y(mouse) : 0;
                }
             case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
                return udev_is_pressed(udev, joypad_info, binds[port], port, RARCH_LIGHTGUN_START);
