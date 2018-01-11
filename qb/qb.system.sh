@@ -36,6 +36,7 @@ if [ -z "$CROSS_COMPILE" ] || [ -z "$OS" ]; then
 		'CYGWIN'*) OS='Cygwin';;
 		'Haiku') OS='Haiku';;
 		'MINGW'*) OS='Win32';;
+		'SunOS') OS='SunOS';;
 		*) OS="Win32";;
 	esac
 fi
