@@ -84,7 +84,7 @@ typedef struct record_driver
 {
    void *(*init)(const struct ffemu_params *params);
    void  (*free)(void *data);
-   bool  (*push_video)(void *data,const struct ffemu_video_data *video_data);
+   bool  (*push_video)(void *data, const struct ffemu_video_data *video_data);
    bool  (*push_audio)(void *data, const struct ffemu_audio_data *audio_data);
    bool  (*finalize)(void *data);
    const char *ident;

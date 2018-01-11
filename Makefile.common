@@ -199,7 +199,7 @@ OBJ += frontend/frontend.o \
        $(LIBRETRO_COMM_DIR)/audio/audio_mixer.o \
        input/input_driver.o \
        led/led_driver.o \
-       led/null_led_driver.o \
+       led/drivers/led_null.o \
        gfx/video_coord_array.o \
        gfx/video_display_server.o \
        gfx/video_driver.o \
@@ -796,7 +796,7 @@ ifeq ($(HAVE_OVERLAY), 1)
    OBJ += \
 	  tasks/task_overlay.o \
 	  input/input_overlay.o \
-	  led/overlay_led_driver.o
+	  led/drivers/led_overlay.o
 endif
 
 ifeq ($(HAVE_STB_FONT), 1)
@@ -1667,5 +1667,5 @@ OBJ += libretro-common/audio/dsp_filters/echo.o \
 endif
 
 ifeq ($(HAVE_RPILED), 1)
-   OBJ += led/rpi_led_driver.o
+   OBJ += led/drivers/led_rpi.o
 endif

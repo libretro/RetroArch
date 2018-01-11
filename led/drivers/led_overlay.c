@@ -1,12 +1,12 @@
 #include <stdio.h>
-#include "led_driver.h"
-#include "led_defines.h"
+#include "../led_driver.h"
+#include "../led_defines.h"
 
-#include "../configuration.h"
-#include "../verbosity.h"
+#include "../../configuration.h"
+#include "../../verbosity.h"
 
-#include "../gfx/video_driver.h"
-#include "../input/input_overlay.h"
+#include "../../gfx/video_driver.h"
+#include "../../input/input_overlay.h"
 
 typedef struct
 {
@@ -41,12 +41,12 @@ static void overlay_free(void)
     RARCH_LOG("[LED]: overlay LED driver free\n");
 }
 
-static void overlay_set(int led,int state)
+static void overlay_set(int led, int state)
 {
    int gpio = 0;
    if ((led < 0) || (led >= MAX_LEDS))
    {
-      RARCH_WARN("[LED]: invalid led %d\n",led);
+      RARCH_WARN("[LED]: invalid led %d\n", led);
       return;
    }
 
@@ -59,13 +59,12 @@ static void overlay_set(int led,int state)
          state ? OVERLAY_VISIBILITY_VISIBLE 
          : OVERLAY_VISIBILITY_HIDDEN);
 
-   RARCH_LOG("[LED]: set visibility %d %d\n",gpio,state);
+   RARCH_LOG("[LED]: set visibility %d %d\n", gpio, state);
 }
 
-static led_driver_t overlay_led_driver_ins = { 
+const led_driver_t overlay_led_driver = { 
    overlay_init,
    overlay_free,
-   overlay_set
+   overlay_set,
+   "Overlay"
 };
-
-led_driver_t *overlay_led_driver = &overlay_led_driver_ins;

@@ -31,7 +31,8 @@ typedef struct led_driver
 {
    void (*init)(void);
    void (*free)(void);
-   void (*set_led)(int led,int value);
+   void (*set_led)(int led, int value);
+   const char *ident;
 } led_driver_t;
 
 
@@ -39,11 +40,11 @@ bool led_driver_init(void);
 
 void led_driver_free(void);
 
-void led_driver_set_led(int led,int value);
+void led_driver_set_led(int led, int value);
 
-extern led_driver_t *null_led_driver;
-extern led_driver_t *overlay_led_driver;
-extern led_driver_t *rpi_led_driver;
+extern const led_driver_t null_led_driver;
+extern const led_driver_t overlay_led_driver;
+extern const led_driver_t rpi_led_driver;
 
 RETRO_END_DECLS
 
