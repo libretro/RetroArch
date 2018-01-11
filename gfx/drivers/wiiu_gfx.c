@@ -284,7 +284,9 @@ static void *wiiu_gfx_init(const video_info_t *video,
    GX2SetCullOnlyControl(GX2_FRONT_FACE_CCW, GX2_DISABLE, GX2_DISABLE);
 
    GX2InitShader(&frame_shader);
+   GX2InitShader(&tex_shader);
    GX2InitShader(&sprite_shader);
+   GX2InitShader(&ribbon_shader);
    GX2SetShader(&frame_shader);
 
    wiiu->ubo_vp  = MEM1_alloc(sizeof(*wiiu->ubo_vp), GX2_UNIFORM_BLOCK_ALIGNMENT);
@@ -360,6 +362,11 @@ static void *wiiu_gfx_init(const video_info_t *video,
    wiiu->vertex_cache.current    = 0;
    wiiu->vertex_cache.v  = MEM2_alloc(wiiu->vertex_cache.size
                                       * sizeof(*wiiu->vertex_cache.v), GX2_VERTEX_BUFFER_ALIGNMENT);
+
+   wiiu->vertex_cache_tex.size       = 0x1000;
+   wiiu->vertex_cache_tex.current    = 0;
+   wiiu->vertex_cache_tex.v  = MEM2_alloc(wiiu->vertex_cache_tex.size
+                                      * sizeof(*wiiu->vertex_cache_tex.v), GX2_VERTEX_BUFFER_ALIGNMENT);
 
    /* Initialize samplers */
    for (int i = 0; i < RARCH_WRAP_MAX; i++)
@@ -656,7 +663,9 @@ static void wiiu_gfx_free(void *data)
    GX2SetDRCEnable(GX2_DISABLE);
 
    GX2DestroyShader(&frame_shader);
+   GX2DestroyShader(&tex_shader);
    GX2DestroyShader(&sprite_shader);
+   GX2DestroyShader(&ribbon_shader);
    wiiu_free_shader_preset(wiiu);
 
 #ifdef HAVE_OVERLAY
@@ -670,6 +679,9 @@ static void wiiu_gfx_free(void *data)
    MEM2_free(wiiu->v);
    MEM2_free(wiiu->menu.v);
    MEM2_free(wiiu->vertex_cache.v);
+   MEM2_free(wiiu->vertex_cache_tex.v);
+   MEM2_free(wiiu->menu_display_coord_array);
+   MEM2_free(wiiu->ribbon_ubo);
 
    MEM1_free(wiiu->color_buffer.surface.image);
    MEM1_free(wiiu->ubo_vp);
@@ -1293,6 +1305,7 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
    }
 
    wiiu->vertex_cache.current = 0;
+   wiiu->vertex_cache_tex.current = 0;
    GX2SetAttribBuffer(0, wiiu->vertex_cache.size * sizeof(*wiiu->vertex_cache.v),
                       sizeof(*wiiu->vertex_cache.v), wiiu->vertex_cache.v);
    GX2SetPixelSampler(&wiiu->sampler_linear[RARCH_WRAP_EDGE],
@@ -1310,6 +1323,8 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
 
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER,
                  wiiu->vertex_cache.v, wiiu->vertex_cache.current * sizeof(*wiiu->vertex_cache.v));
+   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER,
+                 wiiu->vertex_cache_tex.v, wiiu->vertex_cache_tex.current * sizeof(*wiiu->vertex_cache_tex.v));
 
    if (wiiu->menu.enable)
       GX2DrawDone();

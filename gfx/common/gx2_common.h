@@ -1,7 +1,11 @@
+#pragma once
+
 #include <wiiu/gx2.h>
 
 #include "wiiu/frame_shader.h"
+#include "wiiu/tex_shader.h"
 #include "wiiu/sprite_shader.h"
+#include "wiiu/ribbon_shader.h"
 #include "gfx/video_shader_parse.h"
 
 #undef _X
@@ -70,12 +74,21 @@ typedef struct
    int width;
    int height;
 
+   float* menu_display_coord_array;
+   ribbon_uniform_t* ribbon_ubo;
+
    struct
    {
       sprite_vertex_t* v;
       int size;
       int current;
    } vertex_cache;
+   struct
+   {
+      tex_shader_vertex_t* v;
+      int size;
+      int current;
+   } vertex_cache_tex;
 
    void* drc_scan_buffer;
    void* tv_scan_buffer;
