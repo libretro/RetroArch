@@ -266,6 +266,8 @@ static INLINE unsigned gl_wrap_type_to_enum(enum gfx_wrap_type type)
          return GL_REPEAT;
       case RARCH_WRAP_MIRRORED_REPEAT:
          return GL_MIRRORED_REPEAT;
+      default:
+	 break;
    }
 
    return 0;
