@@ -25,6 +25,8 @@
 - WIIU: Overlay support.
 - WIIU: Transparency support in menu + overlays.
 - WIIU: New HID pad support.
+- WIIU: Shader support.
+- WIIU: Ribbon menu effect added (shaders).
 
 # 1.7.0
 - CHEEVOS: Add badges for achievements, shows thumbnail images of achievements.
