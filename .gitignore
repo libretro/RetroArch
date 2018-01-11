@@ -83,6 +83,7 @@ wiiu/wut/elf2rpl/elf2rpl
 *.smdh
 /retroarch_3ds.core
 /retroarch_3ds.icn
+/retroarch_3ds_salamander.icn
 
 # Ctags
 /tags

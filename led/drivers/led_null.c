@@ -12,18 +12,17 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "led_driver.h"
-#include "../verbosity.h"
+#include "../led_driver.h"
+#include "../../verbosity.h"
 
 static void null_init(void) { }
 static void null_free(void) { }
-static void null_set(int led,int state) { }
+static void null_set(int led, int state) { }
 
-static led_driver_t null_led_driver_ins = {
+const led_driver_t null_led_driver = {
    null_init,
    null_free,
-   null_set
+   null_set,
+   "null"
 };
-
-led_driver_t *null_led_driver = &null_led_driver_ins;
 

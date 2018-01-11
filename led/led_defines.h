@@ -12,8 +12,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __OUTPUT_DEFINES__H
-#define __OUTPUT_DEFINES__H
+#ifndef __LED_DEFINES__H
+#define __LED_DEFINES__H
 
 #define MAX_LEDS 32
 

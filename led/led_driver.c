@@ -19,7 +19,7 @@
 #include "../configuration.h"
 #include "../verbosity.h"
 
-static led_driver_t *current_led_driver = NULL;
+static const led_driver_t *current_led_driver = NULL;
 
 bool led_driver_init(void)
 {
@@ -29,20 +29,20 @@ bool led_driver_init(void)
    if(!drivername)
       drivername = (char*)"null";
 
-   current_led_driver = null_led_driver;
+   current_led_driver = &null_led_driver;
 
 #ifdef HAVE_OVERLAY
-   if(string_is_equal("overlay",drivername))
-      current_led_driver = overlay_led_driver;
+   if(string_is_equal("overlay", drivername))
+      current_led_driver = &overlay_led_driver;
 #endif
 
 #if HAVE_RPILED
    if(string_is_equal("rpi", drivername))
-      current_led_driver = rpi_led_driver;
+      current_led_driver = &rpi_led_driver;
 #endif          
 
    RARCH_LOG("[LED]: LED driver = '%s' %p\n",
-         drivername,current_led_driver);
+         drivername, current_led_driver);
 
    if(current_led_driver)
       (*current_led_driver->init)();
@@ -56,8 +56,8 @@ void led_driver_free(void)
       (*current_led_driver->free)();
 }
 
-void led_driver_set_led(int led,int value)
+void led_driver_set_led(int led, int value)
 {
    if(current_led_driver)
-      (*current_led_driver->set_led)(led,value);
+      (*current_led_driver->set_led)(led, value);
 }

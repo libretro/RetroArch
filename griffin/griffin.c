@@ -498,7 +498,7 @@ INPUT
 
 #ifdef HAVE_OVERLAY
 #include "../input/input_overlay.c"
-#include "../led/overlay_led_driver.c"
+#include "../led/drivers/led_overlay.c"
 #include "../tasks/task_overlay.c"
 #endif
 
@@ -674,10 +674,10 @@ LEDS
 
 #include "../led/led_driver.c"
 
-#include "../led/null_led_driver.c"
+#include "../led/drivers/led_null.c"
 
 #if defined(HAVE_RPILED)
-#include "../led/rpi_led_driver.c"
+#include "../led/drivers/led_rpi.c"
 #endif
 
 /*============================================================
