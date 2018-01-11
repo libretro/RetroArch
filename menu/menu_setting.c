@@ -1512,7 +1512,8 @@ static void get_string_representation_bind_device(void * data, char *s,
 
    if (map < max_devices)
    {
-      const char *device_name = input_config_get_device_name(map);
+      const char *device_name = input_config_get_device_display_name(map) ? 
+                                input_config_get_device_display_name(map) : input_config_get_device_name(map);
 
       if (!string_is_empty(device_name))
       {

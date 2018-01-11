@@ -491,18 +491,32 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
    {
        if (input_is_autoconfigured(controller))
        {
-           snprintf(tmp, sizeof(tmp), "Port #%d device name: %s (#%d)",
+            snprintf(tmp, sizeof(tmp), "Port #%d device name: %s (#%d)",
                  controller,
                  input_config_get_device_name(controller),
                  input_autoconfigure_get_device_name_index(controller));
-           menu_entries_append_enum(info->list, tmp, "",
+            menu_entries_append_enum(info->list, tmp, "",
                  MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
                  MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-           snprintf(tmp, sizeof(tmp), "Port #%d device VID/PID: %d/%d",
+            snprintf(tmp, sizeof(tmp), "Port #%d device display name: %s",
+                 controller,
+                 input_config_get_device_display_name(controller) ? 
+                    input_config_get_device_display_name(controller) : "N/A");
+            menu_entries_append_enum(info->list, tmp, "",
+                 MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
+                 MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+            snprintf(tmp, sizeof(tmp), "Port #%d device config name: %s",
+                 controller,
+                 input_config_get_device_display_name(controller) ? 
+                    input_config_get_device_config_name(controller) : "N/A");
+            menu_entries_append_enum(info->list, tmp, "",
+                 MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
+                 MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+            snprintf(tmp, sizeof(tmp), "Port #%d device VID/PID: %d/%d",
                  controller,
                  input_config_get_vid(controller),
                  input_config_get_pid(controller));
-           menu_entries_append_enum(info->list, tmp, "",
+            menu_entries_append_enum(info->list, tmp, "",
                  MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
                  MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
        }

@@ -52,6 +52,17 @@ RETRO_BEGIN_DECLS
       base->var = tmp; \
 } while(0)
 
+struct config_file
+{
+   char *path;
+   struct config_entry_list *entries;
+   struct config_entry_list *tail;
+   unsigned include_depth;
+
+   struct config_include_list *includes;
+};
+
+
 typedef struct config_file config_file_t;
 
 /* Config file format

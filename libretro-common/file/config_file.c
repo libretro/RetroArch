@@ -65,16 +65,6 @@ struct config_include_list
    struct config_include_list *next;
 };
 
-struct config_file
-{
-   char *path;
-   struct config_entry_list *entries;
-   struct config_entry_list *tail;
-   unsigned include_depth;
-
-   struct config_include_list *includes;
-};
-
 static config_file_t *config_file_new_internal(
       const char *path, unsigned depth);
 
