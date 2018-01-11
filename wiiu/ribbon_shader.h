@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2014-2016 - Ali Bouhlel
+ *  Copyright (C) 2014-2018 - Ali Bouhlel
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -13,8 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef TEX_SHADER_H
-#define TEX_SHADER_H
+#pragma once
 
 #include <wiiu/shader_utils.h>
 
@@ -28,27 +27,20 @@ typedef struct
    {
       float x;
       float y;
+      float z;
    }pos;
+}ribbon_vertex_t;
 
-   struct
-   {
-      float u;
-      float v;
-   }coord;
+typedef struct
+__attribute__((scalar_storage_order ("little-endian")))
+__attribute__((aligned (16)))
+{
+   float time;
+}ribbon_uniform_t;
 
-   struct
-   {
-      float r;
-      float g;
-      float b;
-      float a;
-   }color;
-}tex_shader_vertex_t;
 
-extern GX2Shader tex_shader;
+extern GX2Shader ribbon_shader;
 
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* TEX_SHADER_H */
