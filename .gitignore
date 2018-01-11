@@ -69,10 +69,13 @@ menu/driverspzarch.c
 # Wii U
 *.depend
 *.rpx
+*.last
 wiiu/wut/elf2rpl/elf2rpl
 /pkg/wiiu/retroarch
 /pkg/wiiu/wiiu
 /pkg/wiiu/rpx
+/wiiu-devel.properties
+
 
 # 3ds
 /.lst
