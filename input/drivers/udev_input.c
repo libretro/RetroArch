@@ -106,7 +106,7 @@ typedef struct
    int32_t x_min, y_min;
    int32_t x_max, y_max;
    int32_t x_rel, y_rel;
-   bool l, r, m;
+   bool l, r, m, b4, b5;
    bool wu, wd, whu, whd;
 } udev_input_mouse_t;
 
@@ -419,6 +419,15 @@ static void udev_handle_mouse(void *data,
             case BTN_MIDDLE:
                mouse->m = event->value;
                break;
+
+            /*case BTN_??:
+               mouse->b4 = event->value;
+               break;*/
+
+            /*case BTN_??:
+               mouse->b5 = event->value;
+               break;*/
+
             default:
                break;
          }
@@ -757,6 +766,49 @@ static bool udev_pointer_is_off_window(const udev_input_t *udev)
 #endif
 }
 
+static int16_t udev_lightgun_aiming_state(udev_input_t *udev, unsigned port, unsigned id )
+{
+   const int edge_detect = 32700;
+   struct video_viewport vp;
+   bool inside                 = false;
+   int16_t res_x               = 0;
+   int16_t res_y               = 0;
+   int16_t res_screen_x        = 0;
+   int16_t res_screen_y        = 0;
+
+   vp.x                        = 0;
+   vp.y                        = 0;
+   vp.width                    = 0;
+   vp.height                   = 0;
+   vp.full_width               = 0;
+   vp.full_height              = 0;
+
+   udev_input_mouse_t *mouse = udev_get_mouse(udev, port);
+
+   if (!mouse)
+      return 0;
+
+   if (!(video_driver_translate_coord_viewport_wrap(&vp, udev->pointer_x, udev->pointer_y,
+         &res_x, &res_y, &res_screen_x, &res_screen_y)))
+      return 0;
+
+   inside = (res_x >= -edge_detect) && (res_y >= -edge_detect) && (res_x <= edge_detect) && (res_y <= edge_detect);
+
+   switch ( id )
+   {
+   case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
+      return inside ? res_x : 0;
+   case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
+      return inside ? res_y : 0;
+   case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
+      return !inside;
+   default:
+      break;
+   }
+
+   return 0;
+}
+
 static int16_t udev_mouse_state(udev_input_t *udev,
       unsigned port, unsigned id, bool screen)
 {
@@ -781,6 +833,10 @@ static int16_t udev_mouse_state(udev_input_t *udev,
          return mouse->r;
       case RETRO_DEVICE_ID_MOUSE_MIDDLE:
          return mouse->m;
+      case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
+         return mouse->b4;
+      case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
+         return mouse->b5;
       case RETRO_DEVICE_ID_MOUSE_WHEELUP:
          return mouse->wu;
       case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
@@ -794,33 +850,67 @@ static int16_t udev_mouse_state(udev_input_t *udev,
    return 0;
 }
 
-static int16_t udev_lightgun_state(udev_input_t *udev,
-      unsigned port, unsigned id)
+static bool udev_keyboard_pressed(udev_input_t *udev, unsigned key)
 {
+   int bit = rarch_keysym_lut[key];
+   return BIT_GET(udev_key_state,bit);
+}
+
+static bool udev_mbutton_pressed(udev_input_t *udev, unsigned port, unsigned key)
+{
+   bool result;
+
    udev_input_mouse_t *mouse = udev_get_mouse(udev, port);
 
    if (!mouse)
-      return 0;
+      return false;
 
-   switch (id)
+   switch ( key )
    {
-      case RETRO_DEVICE_ID_LIGHTGUN_X:
-         return udev_mouse_get_x(mouse);
-      case RETRO_DEVICE_ID_LIGHTGUN_Y:
-         return udev_mouse_get_y(mouse);
-      case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
-         return mouse->l;
-      case RETRO_DEVICE_ID_LIGHTGUN_CURSOR:
-         return mouse->m;
-      case RETRO_DEVICE_ID_LIGHTGUN_TURBO:
-         return mouse->r;
-      case RETRO_DEVICE_ID_LIGHTGUN_START:
-         return mouse->m && mouse->r;
-      case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
-         return mouse->m && mouse->l;
+
+   case RETRO_DEVICE_ID_MOUSE_LEFT:
+      return mouse->l;
+   case RETRO_DEVICE_ID_MOUSE_RIGHT:
+      return mouse->r;
+   case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+      return mouse->m;
+   case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
+      return mouse->b4;
+   case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
+      return mouse->b5;
+   case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+      return mouse->wu;
+   case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+      return mouse->wd;
+   case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
+      return mouse->whu;
+   case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
+      return mouse->whd;
+
    }
 
-   return 0;
+   return false;
+}
+
+static bool udev_is_pressed(udev_input_t *udev,
+      rarch_joypad_info_t joypad_info,
+      const struct retro_keybind *binds,
+      unsigned port, unsigned id)
+{
+   const struct retro_keybind *bind = &binds[id];
+
+   if ( (bind->key < RETROK_LAST) && udev_keyboard_pressed(udev, bind->key) )
+      return true;
+
+   if (binds && binds[id].valid)
+   {
+      if (udev_mbutton_pressed(udev, port, bind->mbutton))
+         return true;
+      if (input_joypad_pressed(udev->joypad, joypad_info, port, binds, id))
+         return true;
+   }
+
+   return false;
 }
 
 static int16_t udev_analog_pressed(const struct retro_keybind *binds,
@@ -877,31 +967,79 @@ static int16_t udev_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         ret = BIT_GET(udev_key_state,
-               rarch_keysym_lut[binds[port][id].key]);
-         if (!ret)
-            ret = input_joypad_pressed(udev->joypad,
-                  joypad_info, port, binds[port], id);
-         return ret;
+         if (id < RARCH_BIND_LIST_END)
+            return udev_is_pressed(udev, joypad_info, binds[port], port, id);
+         break;
+
       case RETRO_DEVICE_ANALOG:
          ret = udev_analog_pressed(binds[port], idx, id);
          if (!ret && binds[port])
             ret = input_joypad_analog(udev->joypad,
                   joypad_info, port, idx, id, binds[port]);
          return ret;
+
       case RETRO_DEVICE_KEYBOARD:
-         return id < RETROK_LAST && BIT_GET(udev_key_state,
-               rarch_keysym_lut[(enum retro_key)id]);
+         return (id < RETROK_LAST) && udev_keyboard_pressed(udev, id);
+
       case RETRO_DEVICE_MOUSE:
          return udev_mouse_state(udev, port, id, false);
       case RARCH_DEVICE_MOUSE_SCREEN:
          return udev_mouse_state(udev, port, id, true);
+
       case RETRO_DEVICE_POINTER:
          return udev_pointer_state(udev, port, id, false);
       case RARCH_DEVICE_POINTER_SCREEN:
          return udev_pointer_state(udev, port, id, true);
+
       case RETRO_DEVICE_LIGHTGUN:
-         return udev_lightgun_state(udev, port, id);
+         switch ( id )
+         {
+            /*aiming*/
+            case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
+            case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
+            case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
+               return udev_lightgun_aiming_state( udev, port, id );
+
+            /*buttons*/
+            case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
+               return udev_is_pressed(udev, joypad_info, binds[port], port, RARCH_LIGHTGUN_TRIGGER);
+            case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
+               return udev_is_pressed(udev, joypad_info, binds[port], port, RARCH_LIGHTGUN_RELOAD);
+            case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
+               return udev_is_pressed(udev, joypad_info, binds[port], port, RARCH_LIGHTGUN_AUX_A);
+            case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:
+               return udev_is_pressed(udev, joypad_info, binds[port], port, RARCH_LIGHTGUN_AUX_B);
+            case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:
+               return udev_is_pressed(udev, joypad_info, binds[port], port, RARCH_LIGHTGUN_AUX_C);
+            case RETRO_DEVICE_ID_LIGHTGUN_START:
+               return udev_is_pressed(udev, joypad_info, binds[port], port, RARCH_LIGHTGUN_START);
+            case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
+               return udev_is_pressed(udev, joypad_info, binds[port], port, RARCH_LIGHTGUN_SELECT);
+            case RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP:
+               return udev_is_pressed(udev, joypad_info, binds[port], port, RARCH_LIGHTGUN_DPAD_UP);
+            case RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN:
+               return udev_is_pressed(udev, joypad_info, binds[port], port, RARCH_LIGHTGUN_DPAD_DOWN);
+            case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT:
+               return udev_is_pressed(udev, joypad_info, binds[port], port, RARCH_LIGHTGUN_DPAD_LEFT);
+            case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:
+               return udev_is_pressed(udev, joypad_info, binds[port], port, RARCH_LIGHTGUN_DPAD_RIGHT);
+
+            /*deprecated*/
+            case RETRO_DEVICE_ID_LIGHTGUN_X:
+               {
+                  udev_input_mouse_t *mouse = udev_get_mouse(udev, port);
+                  return (mouse) ? udev_mouse_get_x(mouse) : 0;
+               }
+            case RETRO_DEVICE_ID_LIGHTGUN_Y:
+               {
+                  udev_input_mouse_t *mouse = udev_get_mouse(udev, port);
+                  return (mouse) ? udev_mouse_get_y(mouse) : 0;
+               }
+            case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
+               return udev_is_pressed(udev, joypad_info, binds[port], port, RARCH_LIGHTGUN_START);
+
+         }
+         break;
    }
 
    return 0;
