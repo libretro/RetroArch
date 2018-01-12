@@ -174,6 +174,7 @@ typedef struct menu_displaylist_info
    bool need_refresh;
    bool need_entries_refresh;
    bool need_push;
+   bool need_push_no_playlist_entries;
    /* should we clear the displaylist before we push
     * entries onto it? */
    bool need_clear;
