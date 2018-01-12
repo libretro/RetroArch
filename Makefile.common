@@ -1107,6 +1107,7 @@ endif
 endif
 
 ifeq ($(HAVE_EGL), 1)
+	DEFINES += -DHAVE_EGL
    OBJ += gfx/common/egl_common.o
 endif
 
