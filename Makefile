@@ -37,6 +37,12 @@ ifneq ($(findstring Win32,$(OS)),)
    LDFLAGS += -static-libgcc -lwinmm
 endif
 
+ifneq ($(findstring SunOS,$(OS)),)
+   INSTALL = ginstall
+else
+   INSTALL = install
+endif
+
 include Makefile.common
 
 ifeq ($(shell $(CC) -v 2>&1 | grep -c "clang"),1)
@@ -197,13 +203,13 @@ install: $(TARGET)
 	mkdir -p $(DESTDIR)$(PREFIX)/share/applications 2>/dev/null || /bin/true
 	mkdir -p $(DESTDIR)$(MAN_DIR)/man6 2>/dev/null || /bin/true
 	mkdir -p $(DESTDIR)$(PREFIX)/share/pixmaps 2>/dev/null || /bin/true
-	install -m755 $(TARGET) $(DESTDIR)$(BIN_DIR)
-	install -m755 tools/cg2glsl.py $(DESTDIR)$(BIN_DIR)/retroarch-cg2glsl
-	install -m644 retroarch.cfg $(DESTDIR)$(GLOBAL_CONFIG_DIR)/retroarch.cfg
-	install -m644 retroarch.desktop $(DESTDIR)$(PREFIX)/share/applications
-	install -m644 docs/retroarch.6 $(DESTDIR)$(MAN_DIR)/man6
-	install -m644 docs/retroarch-cg2glsl.6 $(DESTDIR)$(MAN_DIR)/man6
-	install -m644 media/retroarch.svg $(DESTDIR)$(PREFIX)/share/pixmaps
+	$(INSTALL) -m755 $(TARGET) $(DESTDIR)$(BIN_DIR)
+	$(INSTALL) -m755 tools/cg2glsl.py $(DESTDIR)$(BIN_DIR)/retroarch-cg2glsl
+	$(INSTALL) -m644 retroarch.cfg $(DESTDIR)$(GLOBAL_CONFIG_DIR)/retroarch.cfg
+	$(INSTALL) -m644 retroarch.desktop $(DESTDIR)$(PREFIX)/share/applications
+	$(INSTALL) -m644 docs/retroarch.6 $(DESTDIR)$(MAN_DIR)/man6
+	$(INSTALL) -m644 docs/retroarch-cg2glsl.6 $(DESTDIR)$(MAN_DIR)/man6
+	$(INSTALL) -m644 media/retroarch.svg $(DESTDIR)$(PREFIX)/share/pixmaps
 	@if test -d media/assets; then \
 		echo "Installing media assets..."; \
 		mkdir -p $(DESTDIR)$(ASSETS_DIR)/retroarch/assets/xmb; \

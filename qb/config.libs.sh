@@ -22,6 +22,7 @@ PTHREADLIB=-lpthread
 SOCKETLIB=-lc
 SOCKETHEADER=
 INCLUDES='usr/include usr/local/include'
+SORT=sort
 
 if [ "$OS" = 'BSD' ]; then
    [ -d /usr/local/include ] && add_dirs INCLUDE /usr/local/include
@@ -39,6 +40,11 @@ elif [ "$OS" = 'Win32' ]; then
    DYLIB=
 elif [ "$OS" = 'Cygwin' ]; then
    die 1 'Error: Cygwin is not a supported platform. See https://bot.libretro.com/docs/compilation/windows/'
+elif [ "$OS" = 'SunOS' ]; then
+   SORT=gsort
+   # for now disabling Pulse as it breaks linking
+   # this will need to be investigated later
+   HAVE_PULSE=no
 fi
 
 add_define MAKEFILE DYLIB_LIB "$DYLIB"
@@ -514,6 +520,6 @@ while [ $# -gt 0 ]; do
    var="${tmpvar#HAVE_}"
    vars="${vars} $var"
 done
-VARS="$(printf %s "$vars" | tr ' ' '\n' | sort)"
+VARS="$(printf %s "$vars" | tr ' ' '\n' | $SORT)"
 create_config_make config.mk $(printf %s "$VARS")
 create_config_header config.h $(printf %s "$VARS")

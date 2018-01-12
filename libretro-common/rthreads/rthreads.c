@@ -21,7 +21,9 @@
  */
 
 #ifdef __unix__
+#ifndef __sun__
 #define _POSIX_C_SOURCE 199309
+#endif
 #endif
 
 #include <stdlib.h>
