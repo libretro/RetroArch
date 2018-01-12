@@ -1252,15 +1252,12 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
    size_t selection = menu_navigation_get_selection();
 
    if (!playlist)
-      return -1;
+      goto error;
 
    list_size = playlist_size(playlist);
 
    if (list_size == 0)
-   {
-      info->need_push_no_playlist_entries = true;
-      return 0;
-   }
+      goto error;
 
    if (!string_is_empty(info->path))
    {
@@ -1357,6 +1354,10 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
       free(fill_buf);
    }
 
+   return 0;
+
+error:
+   info->need_push_no_playlist_entries = true;
    return 0;
 }
 
