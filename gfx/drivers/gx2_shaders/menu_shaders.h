@@ -22,24 +22,21 @@ extern "C" {
 #endif
 
 typedef struct
-{
-   struct
-   {
-      float x;
-      float y;
-      float z;
-   }pos;
-}ribbon_vertex_t;
-
-typedef struct
 __attribute__((scalar_storage_order ("little-endian")))
 __attribute__((aligned (16)))
 {
+   GX2_mat4x4 mvp;
+   GX2_vec2 OutputSize;
    float time;
-}ribbon_uniform_t;
+}menu_shader_uniform_t;
 
 
 extern GX2Shader ribbon_shader;
+extern GX2Shader ribbon_simple_shader;
+extern GX2Shader snow_simple_shader;
+extern GX2Shader snow_shader;
+extern GX2Shader bokeh_shader;
+extern GX2Shader snowflake_shader;
 
 #ifdef __cplusplus
 }

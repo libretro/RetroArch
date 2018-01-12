@@ -69,7 +69,12 @@
 #define KCACHE0(bank, mode) | to_QWORD(CF_ALU_WORD0(0, bank, 0, mode), 0)
 #define KCACHE1(bank, mode) | to_QWORD(CF_ALU_WORD0(0, 0, bank, 0), CF_ALU_WORD1(mode,0, 0, 0, 0, 0))
 
-#define ALU_LAST        | to_QWORD(to_LE(1ull << 31), 0)
+
+#define DEACTIVATE               1
+#define UPDATE_EXEC_MASK(mode)   | to_QWORD(0, to_LE(mode << 2))
+#define UPDATE_PRED              | to_QWORD(0, to_LE(1ull << 3))
+#define CLAMP                    | to_QWORD(0, to_LE(1ull << 31))
+#define ALU_LAST                 | to_QWORD(to_LE(1ull << 31), 0)
 
 /* ALU */
 
@@ -139,6 +144,7 @@
 #define ALU_SRC_PS          0xFF
 
 #define _NEG                | (1 << 12)
+#define _ABS                | (1 << 13)
 
 #define ALU_OMOD_OFF          0x0
 #define ALU_OMOD_M2           0x1
@@ -193,26 +199,43 @@
 
 /* instructions */
 /* CF */
-#define CF_INST_TEX           0x01
-#define CF_INST_VTX           0x02
-#define CF_INST_ALU           0x08
-#define CF_INST_CALL_FS       0x13
-#define CF_INST_EMIT_VERTEX   0x15
-#define CF_INST_MEM_RING      0x26
+#define CF_INST_TEX              0x01
+#define CF_INST_VTX              0x02
+#define CF_INST_JUMP             0x0A
+#define CF_INST_ELSE             0x0D
+#define CF_INST_CALL_FS          0x13
+#define CF_INST_EMIT_VERTEX      0x15
+#define CF_INST_MEM_RING         0x26
+
+#define CF_INST_ALU              0x08
+#define CF_INST_ALU_PUSH_BEFORE  0x09
+#define CF_INST_ALU_POP_AFTER    0x0A
 /* ALU */
 #define OP2_INST_ADD             0x0
 #define OP2_INST_MUL             0x1
 #define OP2_INST_MUL_IEEE        0x2
+#define OP2_INST_MIN             0x04
+#define OP2_INST_MAX             0x03
+#define OP2_INST_MAX_DX10        0x05
 #define OP2_INST_FRACT           0x10
+#define OP2_INST_SETGT           0x09
+#define OP2_INST_SETE_DX10       0x0C
+#define OP2_INST_SETGT_DX10      0x0D
 #define OP2_INST_FLOOR           0x14
 #define OP2_INST_MOV             0x19
+#define OP2_INST_PRED_SETGT      0x21
+#define OP2_INST_PRED_SETE_INT   0x42
+#define OP2_INST_DOT4            0x50
 #define OP2_INST_DOT4_IEEE       0x51
 #define OP2_INST_RECIP_IEEE      0x66
 #define OP2_INST_RECIPSQRT_IEEE  0x69
+#define OP2_INST_SQRT_IEEE       0x6A
 #define OP2_INST_SIN             0x6E
 #define OP2_INST_COS             0x6F
 
-#define OP3_INST_MULADD       0x10
+#define OP3_INST_MULADD          0x10
+#define OP3_INST_CNDGT           0x19
+#define OP3_INST_CNDE_INT        0x1C
 /* EXP */
 #define CF_INST_EXP      0x27
 #define CF_INST_EXP_DONE 0x28
@@ -288,8 +311,12 @@
 
 #define TEX(addr, cnt) to_QWORD(CF_DWORD0(addr), CF_DWORD1(0x0, 0x0, CF_COND_ACTIVE, (cnt - 1), 0x0, CF_INST_TEX))
 #define VTX(addr, cnt) to_QWORD(CF_DWORD0(addr), CF_DWORD1(0x0, 0x0, CF_COND_ACTIVE, (cnt - 1), 0x0, CF_INST_VTX))
+#define JUMP(popCount, addr) to_QWORD(CF_DWORD0(addr), CF_DWORD1(popCount, 0x0, CF_COND_ACTIVE, 0x0, 0x0, CF_INST_JUMP))
+#define ELSE(popCount, addr) to_QWORD(CF_DWORD0(addr), CF_DWORD1(popCount, 0x0, CF_COND_ACTIVE, 0x0, 0x0, CF_INST_ELSE))
 
 #define ALU(addr, cnt) to_QWORD(CF_ALU_WORD0(addr, 0x0, 0x0, 0x0), CF_ALU_WORD1(0x0, 0x0, 0x0, (cnt - 1), 0x0, CF_INST_ALU))
+#define ALU_PUSH_BEFORE(addr, cnt) to_QWORD(CF_ALU_WORD0(addr, 0x0, 0x0, 0x0), CF_ALU_WORD1(0x0, 0x0, 0x0, (cnt - 1), 0x0, CF_INST_ALU_PUSH_BEFORE))
+#define ALU_POP_AFTER(addr, cnt) to_QWORD(CF_ALU_WORD0(addr, 0x0, 0x0, 0x0), CF_ALU_WORD1(0x0, 0x0, 0x0, (cnt - 1), 0x0, CF_INST_ALU_POP_AFTER))
 
 #define EXP_DONE(dstReg_and_type, srcReg, srcSelX, srcSelY, srcSelZ, srcSelW) to_QWORD(CF_EXP_WORD0(dstReg_and_type, srcReg, 0x0, 0x0, 0x0), \
    CF_EXP_WORD1(srcSelX, srcSelY, srcSelZ, srcSelW, 0x0, CF_INST_EXP_DONE))
@@ -304,8 +331,8 @@
 #define EMIT_VERTEX to_QWORD(0, CF_DWORD1(0, 0, 0, 0, 0, CF_INST_EMIT_VERTEX))
 
 #define ALU_OP2(inst, dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, omod) \
-   to_QWORD(ALU_WORD0(src0Sel, 0x0, src0Chan, 0x0, src1Sel, 0x0, src1Chan, 0x0, 0x0, 0x0), \
-   ALU_WORD1_OP2(0x0, 0x0, 0x0, 0x0, (((dstGpr&__) >> 7) ^ 0x1), omod, inst, 0x0, 0x0, dstGpr, 0x0, dstChan, 0x0))
+   to_QWORD(ALU_WORD0(((src0Sel) & ((1 << 13) - 1)), 0x0, src0Chan, 0x0, ((src1Sel) & ((1 << 13) - 1)), 0x0, src1Chan, 0x0, 0x0, 0x0), \
+   ALU_WORD1_OP2(((src0Sel) >> 13), ((src1Sel) >> 13), 0x0, 0x0, (((dstGpr&__) >> 7) ^ 0x1), omod, inst, 0x0, 0x0, dstGpr, 0x0, dstChan, 0x0))
 
 #define ALU_OP3(inst, dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, src2Sel, src2Chan) \
    to_QWORD(ALU_WORD0(src0Sel, 0x0, src0Chan, 0x0, src1Sel, 0x0, src1Chan, 0x0, 0x0, 0x0), \
@@ -317,11 +344,26 @@
 #define ALU_ADD_x2(dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan) \
    ALU_OP2(OP2_INST_ADD, dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, ALU_OMOD_M2)
 
+#define ALU_ADD_D2(dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan) \
+   ALU_OP2(OP2_INST_ADD, dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, ALU_OMOD_D2)
+
 #define ALU_MUL(dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan) \
    ALU_OP2(OP2_INST_MUL, dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, ALU_OMOD_OFF)
 
+#define ALU_MUL_x2(dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan) \
+   ALU_OP2(OP2_INST_MUL, dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, ALU_OMOD_M2)
+
+#define ALU_MUL_x4(dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan) \
+   ALU_OP2(OP2_INST_MUL, dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, ALU_OMOD_M4)
+
 #define ALU_MUL_IEEE(dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan) \
    ALU_OP2(OP2_INST_MUL_IEEE, dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, ALU_OMOD_OFF)
+
+#define ALU_MUL_IEEE_x2(dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan) \
+   ALU_OP2(OP2_INST_MUL_IEEE, dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, ALU_OMOD_M2)
+
+#define ALU_MUL_IEEE_x4(dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan) \
+   ALU_OP2(OP2_INST_MUL_IEEE, dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, ALU_OMOD_M4)
 
 #define ALU_FRACT(dstGpr, dstChan, src0Sel, src0Chan) \
    ALU_OP2(OP2_INST_FRACT, dstGpr, dstChan, src0Sel, src0Chan, ALU_SRC_0, 0x0, ALU_OMOD_OFF)
@@ -329,8 +371,17 @@
 #define ALU_FLOOR(dstGpr, dstChan, src0Sel, src0Chan) \
    ALU_OP2(OP2_INST_FLOOR, dstGpr, dstChan, src0Sel, src0Chan, ALU_SRC_0, 0x0, ALU_OMOD_OFF)
 
+#define ALU_SQRT_IEEE(dstGpr, dstChan, src0Sel, src0Chan) \
+   ALU_OP2(OP2_INST_SQRT_IEEE, dstGpr, dstChan, src0Sel, src0Chan, ALU_SRC_0, 0x0, ALU_OMOD_OFF)
+
+#define ALU_SQRT_IEEE_D2(dstGpr, dstChan, src0Sel, src0Chan) \
+   ALU_OP2(OP2_INST_SQRT_IEEE, dstGpr, dstChan, src0Sel, src0Chan, ALU_SRC_0, 0x0, ALU_OMOD_D2)
+
 #define ALU_MOV(dstGpr, dstChan, src0Sel, src0Chan) \
    ALU_OP2(OP2_INST_MOV, dstGpr, dstChan, src0Sel, src0Chan, ALU_SRC_0, 0x0, ALU_OMOD_OFF)
+
+#define ALU_MOV_D2(dstGpr, dstChan, src0Sel, src0Chan) \
+   ALU_OP2(OP2_INST_MOV, dstGpr, dstChan, src0Sel, src0Chan, ALU_SRC_0, 0x0, ALU_OMOD_D2)
 
 #define ALU_MOV_x2(dstGpr, dstChan, src0Sel, src0Chan) \
    ALU_OP2(OP2_INST_MOV, dstGpr, dstChan, src0Sel, src0Chan, ALU_SRC_0, 0x0, ALU_OMOD_M2)
@@ -340,6 +391,33 @@
 
 #define ALU_DOT4_IEEE(dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan) \
    ALU_OP2(OP2_INST_DOT4_IEEE, dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, ALU_OMOD_OFF)
+
+#define ALU_DOT4(dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan) \
+   ALU_OP2(OP2_INST_DOT4, dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, ALU_OMOD_OFF)
+
+#define ALU_PRED_SETGT(dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan) \
+   ALU_OP2(OP2_INST_PRED_SETGT, dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, ALU_OMOD_OFF)
+
+#define ALU_SETE_DX10(dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan) \
+   ALU_OP2(OP2_INST_SETE_DX10, dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, ALU_OMOD_OFF)
+
+#define ALU_SETGT_DX10(dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan) \
+   ALU_OP2(OP2_INST_SETGT_DX10, dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, ALU_OMOD_OFF)
+
+#define ALU_SETGT(dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan) \
+   ALU_OP2(OP2_INST_SETGT, dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, ALU_OMOD_OFF)
+
+#define ALU_PRED_SETE_INT(dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan) \
+   ALU_OP2(OP2_INST_PRED_SETE_INT, dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, ALU_OMOD_OFF)
+
+#define ALU_MIN(dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan) \
+   ALU_OP2(OP2_INST_MIN, dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, ALU_OMOD_OFF)
+
+#define ALU_MAX(dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan) \
+   ALU_OP2(OP2_INST_MAX, dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, ALU_OMOD_OFF)
+
+#define ALU_MAX_DX10(dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan) \
+   ALU_OP2(OP2_INST_MAX_DX10, dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, ALU_OMOD_OFF)
 
 #define ALU_RECIP_IEEE(dstGpr, dstChan, src0Sel, src0Chan) \
    ALU_OP2(OP2_INST_RECIP_IEEE, dstGpr, dstChan, src0Sel, src0Chan, ALU_SRC_0, 0x0, ALU_OMOD_OFF)
@@ -353,8 +431,17 @@
 #define ALU_COS(dstGpr, dstChan, src0Sel, src0Chan) \
    ALU_OP2(OP2_INST_COS, dstGpr, dstChan, src0Sel, src0Chan, ALU_SRC_0, 0x0, ALU_OMOD_OFF)
 
+#define ALU_COS_D2(dstGpr, dstChan, src0Sel, src0Chan) \
+   ALU_OP2(OP2_INST_COS, dstGpr, dstChan, src0Sel, src0Chan, ALU_SRC_0, 0x0, ALU_OMOD_D2)
+
 #define ALU_MULADD(dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, src2Sel, src2Chan) \
    ALU_OP3(OP3_INST_MULADD, dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, src2Sel, src2Chan)
+
+#define ALU_CNDGT(dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, src2Sel, src2Chan) \
+   ALU_OP3(OP3_INST_CNDGT, dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, src2Sel, src2Chan)
+
+#define ALU_CNDE_INT(dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, src2Sel, src2Chan) \
+   ALU_OP3(OP3_INST_CNDE_INT, dstGpr, dstChan, src0Sel, src0Chan, src1Sel, src1Chan, src2Sel, src2Chan)
 
 #define TEX_SAMPLE(dstReg, dstSelX, dstSelY, dstSelZ, dstSelW, srcReg, srcSelX, srcSelY, srcSelZ, srcSelW, resourceID, samplerID)\
    to_QWORD(TEX_WORD0(TEX_INST_SAMPLE, 0x0, 0x0, resourceID, srcReg, 0x0, 0x0), \

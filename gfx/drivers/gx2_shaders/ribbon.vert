@@ -1,12 +1,14 @@
 #version 150
 
-layout(location = 0) in vec3 VertexCoord;
-layout(location = 0) out vec3 vEC;
-
 uniform UBO
 {
+   mat4 MVP;
+   vec2 OutputSize;
    float time;
-} constants;
+} global;
+
+layout(location = 0) in vec2 VertexCoord;
+layout(location = 0) out vec3 vEC;
 
 float iqhash(float n)
 {
@@ -27,7 +29,7 @@ float noise(vec3 x)
 
 float xmb_noise2(vec3 x)
 {
-   return cos(x.z * 4.0) * cos(x.z + constants.time / 10.0 + x.x);
+   return cos(x.z * 4.0) * cos(x.z + global.time / 10.0 + x.x);
 }
 
 void main()
@@ -38,14 +40,14 @@ void main()
 
    v.y = xmb_noise2(v2) / 8.0;
 
-   v3.x -= constants.time / 5.0;
+   v3.x -= global.time / 5.0;
    v3.x /= 4.0;
 
-   v3.z -= constants.time / 10.0;
-   v3.y -= constants.time / 100.0;
+   v3.z -= global.time / 10.0;
+   v3.y -= global.time / 100.0;
 
    v.z -= noise(v3 * 7.0) / 15.0;
-   v.y -= noise(v3 * 7.0) / 15.0 + cos(v.x * 2.0 - constants.time / 2.0) / 5.0 - 0.3;
+   v.y -= noise(v3 * 7.0) / 15.0 + cos(v.x * 2.0 - global.time / 2.0) / 5.0 - 0.3;
    v.y = -v.y;
 
    vEC = v;

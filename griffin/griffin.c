@@ -353,7 +353,7 @@ VIDEO DRIVER
 #endif
 
 #if defined(__wiiu__)
-#include "../gfx/drivers/wiiu_gfx.c"
+#include "../gfx/drivers/gx2_gfx.c"
 #endif
 
 #ifdef HAVE_SDL2

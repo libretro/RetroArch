@@ -2,8 +2,10 @@
 
 uniform UBO
 {
+   mat4 MVP;
+   vec2 OutputSize;
    float time;
-} constants;
+} global;
 
 layout(location = 0) in vec3 vEC;
 layout(location = 0) out vec4 FragColor;

@@ -17,8 +17,8 @@
 #include <malloc.h>
 #include <string.h>
 #include <wiiu/gx2/common.h>
-#include "frame_shader.h"
 #include "gx2_shader_inl.h"
+#include "menu_shaders.h"
 
 __attribute__((aligned(GX2_SHADER_ALIGNMENT)))
 static struct
@@ -38,10 +38,10 @@ static struct
    },
    {
       ALU_MOV(_R7,_x, _R1,_x),
-      ALU_MUL_IEEE(__,_y, KC0(0),_x, ALU_SRC_LITERAL,_x),
-      ALU_MUL_IEEE(__,_z, KC0(0),_x, ALU_SRC_LITERAL,_y),
-      ALU_MUL_IEEE(__,_w, KC0(0),_x, ALU_SRC_LITERAL,_z),
-      ALU_MUL_IEEE(_R127,_w, KC0(0),_x, ALU_SRC_0_5,_x)
+      ALU_MUL_IEEE(__,_y, KC0(5),_x, ALU_SRC_LITERAL,_x),
+      ALU_MUL_IEEE(__,_z, KC0(5),_x, ALU_SRC_LITERAL,_y),
+      ALU_MUL_IEEE(__,_w, KC0(5),_x, ALU_SRC_LITERAL,_z),
+      ALU_MUL_IEEE(_R127,_w, KC0(5),_x, ALU_SRC_0_5,_x)
       ALU_LAST,
       ALU_LITERAL3(0x3E4CCCCD,0x3C23D70A,0x3DCCCCCD),
       ALU_ADD(__,_x, ALU_SRC_PV _NEG,_z, ALU_SRC_0, _x),
@@ -309,12 +309,12 @@ ps_program =
 
 static GX2AttribVar attributes[] =
 {
-   { "VertexCoord",  GX2_SHADER_VAR_TYPE_FLOAT3, 0, 0},
+   { "VertexCoord",  GX2_SHADER_VAR_TYPE_FLOAT2, 0, 0},
 };
 
 static GX2AttribStream attribute_stream[] =
 {
-   {0, 0, 0, GX2_ATTRIB_FORMAT_FLOAT_32_32_32,
+   {0, 0, 0, GX2_ATTRIB_FORMAT_FLOAT_32_32,
     GX2_ATTRIB_INDEX_PER_VERTEX, 0, GX2_COMP_SEL(_x, _y, _0, _1), GX2_ENDIAN_SWAP_DEFAULT}
 };
 

@@ -2,10 +2,10 @@
 
 #include <wiiu/gx2.h>
 
-#include "wiiu/frame_shader.h"
-#include "wiiu/tex_shader.h"
-#include "wiiu/sprite_shader.h"
-#include "wiiu/ribbon_shader.h"
+#include "gfx/drivers/gx2_shaders/frame.h"
+#include "gfx/drivers/gx2_shaders/tex.h"
+#include "gfx/drivers/gx2_shaders/sprite.h"
+#include "gfx/drivers/gx2_shaders/menu_shaders.h"
 #include "gfx/video_shader_parse.h"
 
 #undef _X
@@ -74,8 +74,8 @@ typedef struct
    int width;
    int height;
 
-   float* menu_display_coord_array;
-   ribbon_uniform_t* ribbon_ubo;
+   float* menu_shader_vbo;
+   menu_shader_uniform_t* menu_shader_ubo;
 
    struct
    {
