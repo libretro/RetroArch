@@ -244,6 +244,8 @@ static uint16_t input_config_pid[MAX_USERS];
 
 uint64_t lifecycle_state;
 char input_device_names[MAX_INPUT_DEVICES][64];
+char input_device_display_names[MAX_INPUT_DEVICES][64];
+char input_device_config_names[MAX_INPUT_DEVICES][64];
 struct retro_keybind input_config_binds[MAX_USERS][RARCH_BIND_LIST_END];
 struct retro_keybind input_autoconf_binds[MAX_USERS][RARCH_BIND_LIST_END];
 const struct retro_keybind *libretro_input_binds[MAX_USERS];
@@ -2690,6 +2692,20 @@ const char *input_config_get_device_name(unsigned port)
    return input_device_names[port];
 }
 
+const char *input_config_get_device_display_name(unsigned port)
+{
+   if (string_is_empty(input_device_display_names[port]))
+      return NULL;
+   return input_device_display_names[port];
+}
+
+const char *input_config_get_device_config_name(unsigned port)
+{
+   if (string_is_empty(input_device_config_names[port]))
+      return NULL;
+   return input_device_config_names[port];
+}
+
 void input_config_set_device_name(unsigned port, const char *name)
 {
    if (!string_is_empty(name))
@@ -2702,10 +2718,40 @@ void input_config_set_device_name(unsigned port, const char *name)
    }
 }
 
+void input_config_set_device_config_name(unsigned port, const char *name)
+{
+   if (!string_is_empty(name))
+   {
+      strlcpy(input_device_config_names[port],
+            name,
+            sizeof(input_device_config_names[port]));
+   }
+}
+
+void input_config_set_device_display_name(unsigned port, const char *name)
+{
+   if (!string_is_empty(name))
+   {
+      strlcpy(input_device_display_names[port],
+            name,
+            sizeof(input_device_display_names[port]));
+   }
+}
+
 void input_config_clear_device_name(unsigned port)
 {
    input_device_names[port][0] = '\0';
    input_autoconfigure_joypad_reindex_devices();
+}
+
+void input_config_clear_device_display_name(unsigned port)
+{
+   input_device_display_names[port][0] = '\0';
+}
+
+void input_config_clear_device_config_name(unsigned port)
+{
+   input_device_config_names[port][0] = '\0';
 }
 
 unsigned *input_config_get_device_ptr(unsigned port)

@@ -259,7 +259,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
             ? params->name : (!string_is_empty(display_name) ? display_name : "N/A"),
             msg_hash_to_str(MSG_DEVICE_CONFIGURED_IN_PORT),
             params->idx);
-
+   
       /* allow overriding the swap menu controls for player 1*/
       if (params->idx == 0)
       {
@@ -275,6 +275,8 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
          task_set_title(task, strdup(msg));
       }
    }
+   input_config_set_device_display_name(params->idx, display_name);
+   input_config_set_device_config_name(params->idx, path_basename(conf->path));
 
 
    input_autoconfigure_joypad_reindex_devices();
@@ -901,6 +903,8 @@ bool input_autoconfigure_disconnect(unsigned i, const char *ident)
    state->msg    = strdup(msg);
 
    input_config_clear_device_name(state->idx);
+   input_config_clear_device_display_name(state->idx);
+   input_config_clear_device_config_name(state->idx);
 
    task->state   = state;
    task->handler = input_autoconfigure_disconnect_handler;
