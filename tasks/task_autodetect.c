@@ -275,8 +275,14 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
          task_set_title(task, strdup(msg));
       }
    }
-   input_config_set_device_display_name(params->idx, display_name);
-   input_config_set_device_config_name(params->idx, path_basename(conf->path));
+   if (!string_is_empty(display_name))
+      input_config_set_device_display_name(params->idx, display_name);
+   else
+      input_config_set_device_display_name(params->idx, "N/A");
+   if (!string_is_empty(conf->path))
+      input_config_set_device_config_name(params->idx, path_basename(conf->path));
+   else
+      input_config_set_device_config_name(params->idx, "N/A");
 
 
    input_autoconfigure_joypad_reindex_devices();
