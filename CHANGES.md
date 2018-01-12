@@ -19,7 +19,7 @@
 - LOCALIZATION: Update Italian translation.
 - LOCALIZATION: Update Spanish translation.
 - NSW: Initial Nintendo Switch port, based on libtransistor SDK.
-- OPENSOLARIS: Initial port.
+- SOLARIS: Initial port.
 - PS3: Enable Cheevos.
 - PSP: Enable threading support through pthreads.
 - WINDOWS: Improved Unicode support (for cores/directory creation and 7zip archives).
