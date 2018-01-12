@@ -238,14 +238,14 @@ static const uint8_t buttons[] = {
    RETRO_DEVICE_ID_JOYPAD_B,
 };
 
-
 static uint16_t input_config_vid[MAX_USERS];
 static uint16_t input_config_pid[MAX_USERS];
 
+static char input_device_display_names[MAX_INPUT_DEVICES][64];
+static char input_device_config_names [MAX_INPUT_DEVICES][64];
+char        input_device_names        [MAX_INPUT_DEVICES][64];
+
 uint64_t lifecycle_state;
-char input_device_names[MAX_INPUT_DEVICES][64];
-char input_device_display_names[MAX_INPUT_DEVICES][64];
-char input_device_config_names[MAX_INPUT_DEVICES][64];
 struct retro_keybind input_config_binds[MAX_USERS][RARCH_BIND_LIST_END];
 struct retro_keybind input_autoconf_binds[MAX_USERS][RARCH_BIND_LIST_END];
 const struct retro_keybind *libretro_input_binds[MAX_USERS];
