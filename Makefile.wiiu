@@ -75,10 +75,15 @@ else
 
    OBJ += wiiu/system/missing_libc_functions.o
    OBJ += wiiu/shader_utils.o
-   OBJ += wiiu/tex_shader.o
-   OBJ += wiiu/sprite_shader.o
-   OBJ += wiiu/frame_shader.o
-   OBJ += wiiu/ribbon_shader.o
+   OBJ += gfx/drivers/gx2_shaders/tex.o
+   OBJ += gfx/drivers/gx2_shaders/sprite.o
+   OBJ += gfx/drivers/gx2_shaders/frame.o
+   OBJ += gfx/drivers/gx2_shaders/ribbon.o
+   OBJ += gfx/drivers/gx2_shaders/ribbon_simple.o
+   OBJ += gfx/drivers/gx2_shaders/bokeh.o
+   OBJ += gfx/drivers/gx2_shaders/snow.o
+   OBJ += gfx/drivers/gx2_shaders/snow_simple.o
+   OBJ += gfx/drivers/gx2_shaders/snowflake.o
    OBJ += gfx/drivers_shader/slang_preprocess.o
    OBJ += gfx/drivers_shader/glslang_util.o
 
@@ -124,7 +129,7 @@ else
    	BLACKLIST := $(LIBRETRO_COMM_DIR)/net/net_ifinfo.o
    	OBJ := $(filter-out $(BLACKLIST),$(OBJ))
 
-   	OBJ += gfx/drivers/wiiu_gfx.o
+   	OBJ += gfx/drivers/gx2_gfx.o
    	OBJ += gfx/drivers_font/wiiu_font.o
    	OBJ += menu/drivers_display/menu_display_wiiu.o
    	OBJ += input/drivers/wiiu_input.o

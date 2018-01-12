@@ -286,7 +286,13 @@ static void *wiiu_gfx_init(const video_info_t *video,
    GX2InitShader(&frame_shader);
    GX2InitShader(&tex_shader);
    GX2InitShader(&sprite_shader);
+   GX2InitShader(&ribbon_simple_shader);
    GX2InitShader(&ribbon_shader);
+   GX2InitShader(&bokeh_shader);
+   GX2InitShader(&snow_shader);
+   GX2InitShader(&snow_simple_shader);
+   GX2InitShader(&snowflake_shader);
+
    GX2SetShader(&frame_shader);
 
    wiiu->ubo_vp  = MEM1_alloc(sizeof(*wiiu->ubo_vp), GX2_UNIFORM_BLOCK_ALIGNMENT);
@@ -665,7 +671,13 @@ static void wiiu_gfx_free(void *data)
    GX2DestroyShader(&frame_shader);
    GX2DestroyShader(&tex_shader);
    GX2DestroyShader(&sprite_shader);
+   GX2DestroyShader(&ribbon_simple_shader);
    GX2DestroyShader(&ribbon_shader);
+   GX2DestroyShader(&bokeh_shader);
+   GX2DestroyShader(&snow_shader);
+   GX2DestroyShader(&snow_simple_shader);
+   GX2DestroyShader(&snowflake_shader);
+
    wiiu_free_shader_preset(wiiu);
 
 #ifdef HAVE_OVERLAY
@@ -680,8 +692,8 @@ static void wiiu_gfx_free(void *data)
    MEM2_free(wiiu->menu.v);
    MEM2_free(wiiu->vertex_cache.v);
    MEM2_free(wiiu->vertex_cache_tex.v);
-   MEM2_free(wiiu->menu_display_coord_array);
-   MEM2_free(wiiu->ribbon_ubo);
+   MEM2_free(wiiu->menu_shader_vbo);
+   MEM2_free(wiiu->menu_shader_ubo);
 
    MEM1_free(wiiu->color_buffer.surface.image);
    MEM1_free(wiiu->ubo_vp);

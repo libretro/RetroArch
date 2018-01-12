@@ -17,8 +17,8 @@
 #include <malloc.h>
 #include <string.h>
 #include <wiiu/gx2/common.h>
-#include "frame_shader.h"
 #include "gx2_shader_inl.h"
+#include "frame.h"
 
 __attribute__((aligned(GX2_SHADER_ALIGNMENT)))
 static struct
