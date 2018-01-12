@@ -201,6 +201,10 @@ static unsigned action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST;
       case ACTION_OK_DL_BROWSE_URL_LIST:
          return MENU_ENUM_LABEL_DEFERRED_BROWSE_URL_LIST;
+      case ACTION_OK_DL_MUSIC_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST;
+      case ACTION_OK_DL_IMAGES_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST;
       default:
          break;
    }
@@ -248,15 +252,6 @@ int generic_action_ok_displaylist_push(const char *path,
                MENU_ENUM_LABEL_DEFERRED_BROWSE_URL_START);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_BROWSE_URL_START;
          dl_type            = DISPLAYLIST_GENERIC;
-         break;
-      case ACTION_OK_DL_IMAGES_LIST:
-         info.type          = type;
-         info.directory_ptr = idx;
-         info_path          = label;
-         info_label         = msg_hash_to_str(
-               MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST);
-         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST;
-         dl_type           = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_VIDEO_LIST:
          info.type          = type;
@@ -448,15 +443,6 @@ int generic_action_ok_displaylist_push(const char *path,
          info_path          = settings->paths.directory_menu_content;
          info_label         = label;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
-         break;
-      case ACTION_OK_DL_MUSIC_LIST:
-         info.type          = type;
-         info.directory_ptr = idx;
-         info_path          = label;
-         info_label         = msg_hash_to_str(
-               MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST);
-         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST;
-         dl_type           = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_CHEAT_FILE:
          filebrowser_clear_type();
@@ -704,6 +690,8 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_PLAYLIST_COLLECTION:
       case ACTION_OK_DL_FAVORITES_LIST:
       case ACTION_OK_DL_BROWSE_URL_LIST:
+      case ACTION_OK_DL_MUSIC_LIST:
+      case ACTION_OK_DL_IMAGES_LIST:
          action_ok_dl_lbl(action_ok_dl_to_enum(action_type), DISPLAYLIST_GENERIC);
          break;
       case ACTION_OK_DL_CONTENT_SETTINGS:
