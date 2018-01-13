@@ -24,6 +24,7 @@
 - PSP: Enable threading support through pthreads.
 - WINDOWS: Improved Unicode support (for cores/directory creation and 7zip archives).
 - WINDOWS: Show progress meter on taskbar for downloads (Windows 7 and up).
+- WINDOWS: WS_EX_LAYERED drastically decreases performance, so only set it when needed (  transparency in windowed mode).
 - WIIU: Overlay support.
 - WIIU: Transparency support in menu + overlays.
 - WIIU: New HID pad support.
