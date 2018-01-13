@@ -46,13 +46,18 @@ struct apple_key_name_map_entry
 extern const struct apple_key_name_map_entry apple_key_name_map[];
 #endif
 
+#define RARCH_KEY_MAP_RWEBINPUT_SIZE 111
+
 extern const struct input_key_map input_config_key_map[];
 
 extern const struct rarch_key_map rarch_key_map_x11[];
 extern const struct rarch_key_map rarch_key_map_sdl[];
 extern const struct rarch_key_map rarch_key_map_sdl2[];
 extern const struct rarch_key_map rarch_key_map_dinput[];
-extern const struct rarch_key_map rarch_key_map_rwebinput[];
+
+ /* is generated at runtime so can't be const */
+extern struct rarch_key_map rarch_key_map_rwebinput[RARCH_KEY_MAP_RWEBINPUT_SIZE];
+
 extern const struct rarch_key_map rarch_key_map_linux[];
 extern const struct rarch_key_map rarch_key_map_apple_hid[];
 extern const struct rarch_key_map rarch_key_map_android[];
@@ -96,4 +101,3 @@ extern enum retro_key rarch_keysym_lut[RETROK_LAST];
 RETRO_END_DECLS
 
 #endif
-
