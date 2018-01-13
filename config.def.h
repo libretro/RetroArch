@@ -273,11 +273,11 @@ static bool menu_show_core_updater       = true;
 static bool content_show_settings    = true;
 static bool content_show_favorites   = true;
 #ifdef HAVE_IMAGEVIEWER
-static bool content_show_images      = true;
+static bool content_show_images      = false;
 #endif
-static bool content_show_music       = true;
+static bool content_show_music       = false;
 #ifdef HAVE_FFMPEG
-static bool content_show_video       = true;
+static bool content_show_video       = false;
 #endif
 #ifdef HAVE_NETWORKING
 static bool content_show_netplay     = true;
