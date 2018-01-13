@@ -252,7 +252,15 @@ static void stop_polling_thread(wiiu_hid_t *hid)
    if (!hid || !hid->polling_thread)
       return;
 
+   /* Unregister our HID client so we don't get any new events. */
+   if(hid->client) {
+     HIDDelClient(hid->client);
+     hid->client = NULL;
+   }
+
+   /* tell the thread it's time to stop. */
    hid->polling_thread_quit = true;
+   /* This returns once the thread runs and the cleanup method completes. */
    OSJoinThread(hid->polling_thread, &thread_result);
    free(hid->polling_thread);
    free(hid->polling_thread_stack);
@@ -494,7 +502,7 @@ static void wiiu_hid_polling_thread_cleanup(OSThread *thread, void *stack)
          if(adapter->state == ADAPTER_STATE_READING)
             incomplete++;
       }
-      /* We are clear for shutdown. Clean up the list 
+      /* We are clear for shutdown. Clean up the list
        * while we are holding the lock. */
       if(incomplete == 0)
       {
