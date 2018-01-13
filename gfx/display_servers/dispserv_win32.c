@@ -113,8 +113,20 @@ static bool win32_set_window_opacity(void *data, unsigned opacity)
 
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500
    /* Set window transparency on Windows 2000 and above */
-   if (SetLayeredWindowAttributes(hwnd, 0, (255 * opacity) / 100, LWA_ALPHA))
+   if(opacity < 100)
+   {
+      SetWindowLongPtr(hwnd,
+           GWL_EXSTYLE,
+           GetWindowLongPtr(hwnd, GWL_EXSTYLE) | WS_EX_LAYERED);
+      return SetLayeredWindowAttributes(hwnd, 0, (255 * opacity) / 100, LWA_ALPHA);
+   }
+   else
+   {
+      SetWindowLongPtr(hwnd,
+           GWL_EXSTYLE,
+           GetWindowLongPtr(hwnd, GWL_EXSTYLE) & ~WS_EX_LAYERED);
       return true;
+   }
 #endif
    return false;
 }
