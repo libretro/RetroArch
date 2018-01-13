@@ -130,15 +130,6 @@ enum application_special_type
 void fill_short_pathname_representation_wrapper(char* out_rep,
       const char *in_path, size_t size);
 
-/**
- * path_basedir:
- * @path               : path
- *
- * Extracts base directory by mutating path.
- * Keeps trailing '/'.
- **/
-void path_basedir_wrapper(char *path);
-
 const char *file_path_str(enum file_path_enum enum_idx);
 
 bool fill_pathname_application_data(char *s, size_t len);
