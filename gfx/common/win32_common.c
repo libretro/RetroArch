@@ -813,11 +813,14 @@ bool win32_window_create(void *data, unsigned style,
 
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500 /* 2K */
    /* Windows 2000 and above use layered windows to enable transparency */
-   SetWindowLongPtr(main_window.hwnd,
-        GWL_EXSTYLE,
-        GetWindowLongPtr(main_window.hwnd, GWL_EXSTYLE) | WS_EX_LAYERED);
-   SetLayeredWindowAttributes(main_window.hwnd, 0, (255 * 
-            settings->uints.video_window_opacity) / 100, LWA_ALPHA);
+   if(settings->uints.video_window_opacity < 100)
+   {
+      SetWindowLongPtr(main_window.hwnd,
+           GWL_EXSTYLE,
+           GetWindowLongPtr(main_window.hwnd, GWL_EXSTYLE) | WS_EX_LAYERED);
+      SetLayeredWindowAttributes(main_window.hwnd, 0, (255 *
+               settings->uints.video_window_opacity) / 100, LWA_ALPHA);
+   }
 #endif
 #endif
    return true;
