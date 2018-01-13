@@ -66,7 +66,7 @@ error:
    return NULL;
 }
 
-static bool rwebinput_key_pressed_internal(void *data, int key)
+static bool rwebinput_key_pressed(void *data, int key)
 {
    unsigned sym;
    bool ret;
@@ -89,16 +89,10 @@ static bool rwebinput_is_pressed(rwebinput_input_t *rwebinput,
       const struct retro_keybind *bind = &binds[id];
       int key                          = binds[id].key;
       return bind->valid && (key < RETROK_LAST)
-         && rwebinput_key_pressed_internal(rwebinput, key);
+         && rwebinput_key_pressed(rwebinput, key);
    }
 
    return false;
-}
-
-static bool rwebinput_key_pressed(void *data, int key)
-{
-   rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
-   return rwebinput_is_pressed(rwebinput, input_config_binds[0], key);
 }
 
 static int16_t rwebinput_mouse_state(rwebinput_input_t *rwebinput, unsigned id)

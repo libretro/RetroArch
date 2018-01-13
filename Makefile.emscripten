@@ -18,7 +18,7 @@ HAVE_RPNG   = 1
 HAVE_EMSCRIPTEN = 1
 HAVE_RGUI = 1
 HAVE_SDL = 0
-HAVE_SDL2 = 1
+HAVE_SDL2 = 0
 HAVE_ZLIB = 1
 WANT_ZLIB = 1
 HAVE_STATIC_VIDEO_FILTERS = 1
@@ -50,7 +50,7 @@ endif
 
 ifeq ($(ASYNC), 1)
    LDFLAGS += -s ASYNCIFY=$(ASYNC)
-endif  
+endif
 
 include Makefile.common
 
