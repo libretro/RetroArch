@@ -1250,11 +1250,11 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("content_show_settings",         &settings->bools.menu_content_show_settings, true, content_show_settings, false);
    SETTING_BOOL("content_show_favorites",        &settings->bools.menu_content_show_favorites, true, content_show_favorites, false);
 #ifdef HAVE_IMAGEVIEWER
-   SETTING_BOOL("content_show_images",           &settings->bools.menu_content_show_images, true, content_show_images, false);
+   SETTING_BOOL("content_show_images",           &settings->bools.menu_content_show_images, false, content_show_images, false);
 #endif
-   SETTING_BOOL("content_show_music",            &settings->bools.menu_content_show_music, true, content_show_music, false);
+   SETTING_BOOL("content_show_music",            &settings->bools.menu_content_show_music, false, content_show_music, false);
 #ifdef HAVE_FFMPEG
-   SETTING_BOOL("content_show_video",            &settings->bools.menu_content_show_video, true, content_show_video, false);
+   SETTING_BOOL("content_show_video",            &settings->bools.menu_content_show_video, false, content_show_video, false);
 #endif
 #ifdef HAVE_NETWORKING
    SETTING_BOOL("content_show_netplay",          &settings->bools.menu_content_show_netplay, true, content_show_netplay, false);
