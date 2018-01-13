@@ -97,11 +97,14 @@ static void wiiu_font_free_font(void* data, bool is_threaded)
    if (!font)
       return;
 
-   if (font->font_driver && font->font_data)
+   if (font->font_driver && font->font_data &&
+         font->font_driver->free)
       font->font_driver->free(font->font_data);
 
-   MEM1_free(font->texture.surface.image);
-   MEM1_free(font->ubo_tex);
+   if (font->texture.surface.image)
+      MEM1_free(font->texture.surface.image);
+   if (font->ubo_tex)
+      MEM1_free(font->ubo_tex);
    free(font);
 }
 
