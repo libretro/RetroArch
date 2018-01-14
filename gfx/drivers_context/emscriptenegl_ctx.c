@@ -43,6 +43,8 @@ typedef struct
 #endif
    unsigned fb_width;
    unsigned fb_height;
+   int initial_width;
+   int initial_height;
 } emscripten_ctx_data_t;
 
 static void gfx_ctx_emscripten_swap_interval(void *data, unsigned interval)
@@ -93,11 +95,18 @@ static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
 
    gfx_ctx_emscripten_get_canvas_size(&input_width, &input_height);
 
+   if (input_width == 0 || input_height == 0)
+   {
+      input_width = emscripten->initial_width;
+      input_height = emscripten->initial_height;
+      emscripten->fb_width = emscripten->fb_height = 0;
+   }
+
    *width      = (unsigned)input_width;
    *height     = (unsigned)input_height;
    *resize     = false;
 
-   if (*width != emscripten->fb_width || *height != emscripten->fb_height)
+   if (input_width != emscripten->fb_width || input_height != emscripten->fb_height)
    {
       printf("RESIZE: %dx%d\n", input_width, input_height);
       r = emscripten_set_canvas_element_size("#canvas", input_width, input_height);
@@ -176,6 +185,8 @@ static void *gfx_ctx_emscripten_init(video_frame_info_t *video_info, void *video
       return NULL;
 
    (void)video_driver;
+
+   emscripten_get_canvas_element_size("#canvas", &emscripten->initial_width, &emscripten->initial_height);
 
 #ifdef HAVE_EGL
    if (g_egl_inited)

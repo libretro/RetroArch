@@ -16,6 +16,7 @@
  */
 
 #include <emscripten/emscripten.h>
+#include <emscripten/html5.h>
 #include <string.h>
 
 #include <file/config_file.h>
@@ -169,7 +170,8 @@ int main(int argc, char *argv[])
 {
    settings_t *settings = config_get_ptr();
 
-   emscripten_set_canvas_size(800, 600);
+   emscripten_set_canvas_element_size("#canvas", 800, 600);
+   emscripten_set_element_css_size("#canvas", 800.0, 600.0);
    rarch_main(argc, argv, NULL);
    emscripten_set_main_loop(emscripten_mainloop,
          settings->bools.video_vsync ? 0 : INT_MAX, 1);
