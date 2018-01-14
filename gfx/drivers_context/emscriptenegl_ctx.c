@@ -184,7 +184,7 @@ static void *gfx_ctx_emscripten_init(video_frame_info_t *video_info, void *video
       return (void*)"emscripten";
    }
 
-   if (!egl_init_context(&emscripten->egl, EGL_NONE, EGL_DEFAULT_DISPLAY,
+   if (!egl_init_context(&emscripten->egl, EGL_NONE, (void *)EGL_DEFAULT_DISPLAY,
             &major, &minor, &n, attribute_list))
    {
       egl_report_error();
