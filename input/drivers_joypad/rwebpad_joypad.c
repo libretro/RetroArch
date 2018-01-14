@@ -32,9 +32,21 @@ static bool g_rwebpad_initialized;
 static EM_BOOL rwebpad_gamepad_cb(int event_type,
    const EmscriptenGamepadEvent *gamepad_event, void *user_data)
 {
+   unsigned vid = 0;
+   unsigned pid = 0;
+
    (void)event_type;
    (void)gamepad_event;
    (void)user_data;
+
+   if (strncmp(gamepad_event->mapping, "standard",
+       sizeof(gamepad_event->mapping)) == 0)
+   {
+      /* give a dummy vid/pid for automapping */
+      vid = 1;
+      pid = 1;
+   }
+
 
    if (event_type == EMSCRIPTEN_EVENT_GAMEPADCONNECTED)
    {
@@ -43,8 +55,8 @@ static EM_BOOL rwebpad_gamepad_cb(int event_type,
                NULL,                 /* display name */
                rwebpad_joypad.ident, /* driver */
                gamepad_event->index, /* idx */
-               0,                    /* vid */
-               0))                   /* pid */
+               vid,                  /* vid */
+               pid))                 /* pid */
          input_config_set_device_name(gamepad_event->index,
             gamepad_event->id);
    }
