@@ -246,6 +246,14 @@ static EM_BOOL rwebinput_input_cb(int event_type,
       strnlen(key_event->code, sizeof(key_event->code)));
    translated_keycode = input_keymaps_translate_keysym_to_rk(keycode);
 
+   if (translated_keycode == RETROK_BACKSPACE)
+      character = '\b';
+   else if (translated_keycode == RETROK_RETURN ||
+            translated_keycode == RETROK_KP_ENTER)
+      character = '\n';
+   else if (translated_keycode == RETROK_TAB)
+      character = '\t';
+
    input_keyboard_event(keydown, translated_keycode, character, mod,
       RETRO_DEVICE_KEYBOARD);
 
