@@ -43,9 +43,10 @@ typedef struct
 #endif
    unsigned fb_width;
    unsigned fb_height;
-   int initial_width;
-   int initial_height;
 } emscripten_ctx_data_t;
+
+static int emscripten_initial_width;
+static int emscripten_initial_height;
 
 static void gfx_ctx_emscripten_swap_interval(void *data, unsigned interval)
 {
@@ -78,7 +79,8 @@ static void gfx_ctx_emscripten_get_canvas_size(int *width, int *height)
 
       if (r != EMSCRIPTEN_RESULT_SUCCESS)
       {
-         RARCH_ERR("[EMSCRIPTEN/EGL]: Could not get screen dimensions: %d\n", r);
+         RARCH_ERR("[EMSCRIPTEN/EGL]: Could not get screen dimensions: %d\n",
+            r);
          *width = 800;
          *height = 600;
       }
@@ -97,8 +99,8 @@ static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
 
    if (input_width == 0 || input_height == 0)
    {
-      input_width = emscripten->initial_width;
-      input_height = emscripten->initial_height;
+      input_width = emscripten_initial_width;
+      input_height = emscripten_initial_height;
       emscripten->fb_width = emscripten->fb_height = 0;
    }
 
@@ -106,10 +108,11 @@ static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
    *height     = (unsigned)input_height;
    *resize     = false;
 
-   if (input_width != emscripten->fb_width || input_height != emscripten->fb_height)
+   if (input_width != emscripten->fb_width ||
+      input_height != emscripten->fb_height)
    {
-      printf("RESIZE: %dx%d\n", input_width, input_height);
-      r = emscripten_set_canvas_element_size("#canvas", input_width, input_height);
+      r = emscripten_set_canvas_element_size("#canvas",
+         input_width, input_height);
 
       if (r != EMSCRIPTEN_RESULT_SUCCESS)
       {
@@ -117,7 +120,8 @@ static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
       }
 
       /* fix Module.requestFullscreen messing with the canvas size */
-      r = emscripten_set_element_css_size("#canvas", (double)input_width, (double)input_height);
+      r = emscripten_set_element_css_size("#canvas",
+         (double)input_width, (double)input_height);
 
       if (r != EMSCRIPTEN_RESULT_SUCCESS)
       {
@@ -125,6 +129,7 @@ static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
       }
 
       *resize  = true;
+      emscripten_reinit_video = true;
    }
 
    emscripten->fb_width  = (unsigned)input_width;
@@ -156,7 +161,8 @@ static void gfx_ctx_emscripten_destroy(void *data)
    free(data);
 }
 
-static void *gfx_ctx_emscripten_init(video_frame_info_t *video_info, void *video_driver)
+static void *gfx_ctx_emscripten_init(video_frame_info_t *video_info,
+   void *video_driver)
 {
 #ifdef HAVE_EGL
    unsigned width, height;
@@ -186,7 +192,9 @@ static void *gfx_ctx_emscripten_init(video_frame_info_t *video_info, void *video
 
    (void)video_driver;
 
-   emscripten_get_canvas_element_size("#canvas", &emscripten->initial_width, &emscripten->initial_height);
+   if (emscripten_initial_width == 0 || emscripten_initial_height == 0)
+      emscripten_get_canvas_element_size("#canvas",
+         &emscripten_initial_width, &emscripten_initial_height);
 
 #ifdef HAVE_EGL
    if (g_egl_inited)
@@ -195,8 +203,8 @@ static void *gfx_ctx_emscripten_init(video_frame_info_t *video_info, void *video
       return (void*)"emscripten";
    }
 
-   if (!egl_init_context(&emscripten->egl, EGL_NONE, (void *)EGL_DEFAULT_DISPLAY,
-            &major, &minor, &n, attribute_list))
+   if (!egl_init_context(&emscripten->egl, EGL_NONE,
+      (void *)EGL_DEFAULT_DISPLAY, &major, &minor, &n, attribute_list))
    {
       egl_report_error();
       goto error;
