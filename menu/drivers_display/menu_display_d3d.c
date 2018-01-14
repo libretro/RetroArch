@@ -64,7 +64,7 @@ static void *menu_display_d3d_get_default_mvp(void)
    if (!d3d)
       return NULL;
    d3d_matrix_ortho_off_center_lh(&ortho, 0,
-         d3d->final_viewport.Width, 0, d3d->final_viewport.Height, 0, 1);
+         1, 0, 1, 0, 1);
    d3d_matrix_transpose(&mvp, &ortho);
    memcpy(default_mvp.data, (float*)&mvp, sizeof(default_mvp.data));
 
@@ -109,8 +109,8 @@ static void menu_display_d3d_blend_end(void)
 
 static void menu_display_d3d_viewport(void *data)
 {
+#if 0
    D3DVIEWPORT                vp = {0};
-   d3d_video_t              *d3d = (d3d_video_t*)video_driver_get_ptr(false);
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
 
    if (!d3d || !draw)
@@ -124,6 +124,7 @@ static void menu_display_d3d_viewport(void *data)
    vp.MaxZ   = 1.0f;
 
    d3d_set_viewports(d3d->dev, &vp);
+#endif
 }
 
 static void menu_display_d3d_bind_texture(void *data)
@@ -131,44 +132,64 @@ static void menu_display_d3d_bind_texture(void *data)
    d3d_video_t              *d3d = (d3d_video_t*)video_driver_get_ptr(false);
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
 
-   if (!d3d || !draw)
+   if (!d3d || !draw || !draw->texture)
       return;
 
-   d3d_set_texture(d3d->dev, 0, (LPDIRECT3DTEXTURE)draw->texture);
-   d3d_set_sampler_address_u(d3d->dev, 0, D3DTADDRESS_BORDER);
-   d3d_set_sampler_address_v(d3d->dev, 0, D3DTADDRESS_BORDER);
+
+   d3d_set_texture(d3d->dev, 0, (void*)draw->texture);
+   d3d_set_sampler_address_u(d3d->dev, 0, D3DTADDRESS_CLAMP);
+   d3d_set_sampler_address_v(d3d->dev, 0, D3DTADDRESS_CLAMP);
    d3d_set_sampler_minfilter(d3d->dev, 0, D3DTEXF_LINEAR);
    d3d_set_sampler_magfilter(d3d->dev, 0, D3DTEXF_LINEAR);
+   d3d_set_sampler_mipfilter(d3d->dev, 0, D3DTEXF_LINEAR);
+
 }
 
 static void menu_display_d3d_draw(void *data)
 {
-   video_shader_ctx_mvp_t mvp;
-   d3d_video_t              *d3d = (d3d_video_t*)video_driver_get_ptr(false);
+   unsigned i;
+   d3d_video_t *d3d              = (d3d_video_t*)video_driver_get_ptr(false);
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
+   float* pv                     = NULL;
+   const float *vertex           = NULL;
+   const float *tex_coord        = NULL;
+   const float *color            = NULL;
 
    if (!d3d || !draw)
       return;
 
-   if (!draw->coords->vertex)
+   if(d3d->menu_display.offset + draw->coords->vertices > d3d->menu_display.size)
+      return;
+
+   if (!draw->coords->vertex)      
       draw->coords->vertex        = menu_display_d3d_get_default_vertices();
    if (!draw->coords->tex_coord)
       draw->coords->tex_coord     = menu_display_d3d_get_default_tex_coords();
-   if (!draw->coords->lut_tex_coord)
-      draw->coords->lut_tex_coord = menu_display_d3d_get_default_tex_coords();
 
-   mvp.data   = d3d;
-   mvp.matrix = draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data
-      : (math_matrix_4x4*)menu_display_d3d_get_default_mvp();
+   pv        = (float*)d3d_vertex_buffer_lock(d3d->menu_display.buffer);
+   pv       += d3d->menu_display.offset * 8;
+   vertex    = draw->coords->vertex;
+   tex_coord = draw->coords->tex_coord;
+   color     = draw->coords->color;
 
-   video_driver_set_mvp(&mvp);
+   for (i = 0; i < draw->coords->vertices; i++)
+   {
+      *pv++ = (*vertex++ * draw->width) + draw->x;
+      *pv++ = ((1.0 - *vertex++) * draw->height) + draw->y;
+      *pv++ = *tex_coord++;
+      *pv++ = 1.0f - *tex_coord++;
+      *pv++ = *color++;
+      *pv++ = *color++;
+      *pv++ = *color++;
+      *pv++ = *color++;
+   }
+   d3d_vertex_buffer_unlock(d3d->menu_display.buffer);
 
-   menu_display_d3d_viewport(draw);
    menu_display_d3d_bind_texture(draw);
+   d3d_draw_primitive(d3d->dev, menu_display_prim_to_d3d_enum(draw->prim_type), d3d->menu_display.offset,
+                      draw->coords->vertices - (draw->prim_type == MENU_DISPLAY_PRIM_TRIANGLESTRIP? 2 : 0));
 
-   d3d_draw_primitive(d3d->dev, (D3DPRIMITIVETYPE)
-         menu_display_prim_to_d3d_enum(draw->prim_type),
-         0, draw->coords->vertices);
+   d3d->menu_display.offset += draw->coords->vertices;
 }
 
 static void menu_display_d3d_draw_pipeline(void *data)
@@ -210,10 +231,7 @@ static void menu_display_d3d_draw_pipeline(void *data)
 
 static void menu_display_d3d_restore_clear_color(void)
 {
-   d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(false);
-   DWORD    clear_color = 0x00000000;
-
-   d3d_clear(d3d->dev, 0, NULL, D3DCLEAR_TARGET, clear_color, 0, 0);
+   /* not needed */
 }
 
 static void menu_display_d3d_clear_color(menu_display_ctx_clearcolor_t *clearcolor)

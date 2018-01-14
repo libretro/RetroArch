@@ -69,6 +69,9 @@ void d3d_set_sampler_minfilter(LPDIRECT3DDEVICE dev,
 void d3d_set_sampler_magfilter(LPDIRECT3DDEVICE dev,
       unsigned sampler, unsigned value);
 
+void d3d_set_sampler_mipfilter(LPDIRECT3DDEVICE dev,
+      unsigned sampler, unsigned value);
+
 bool d3d_begin_scene(LPDIRECT3DDEVICE dev);
 
 void d3d_end_scene(LPDIRECT3DDEVICE dev);

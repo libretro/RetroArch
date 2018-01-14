@@ -489,6 +489,9 @@ static void d3d_deinitialize(d3d_video_t *d3d)
    font_driver_free_osd();
 
    d3d_deinit_chain(d3d);
+   d3d_vertex_buffer_free(d3d->menu_display.buffer, d3d->menu_display.decl);
+   d3d->menu_display.buffer = NULL;
+   d3d->menu_display.decl = NULL;
 }
 
 #if defined(HAVE_D3D8)
@@ -834,6 +837,12 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
 
       d3d_make_d3dpp(d3d, info, &d3dpp);
 
+      /* the D3DX font driver uses POOL_DEFAULT resources
+       * and will prevent a clean reset here
+       * another approach would be to keep track of all created D3D
+       * font objects and free/realloc them around the d3d_reset call  */
+
+      menu_driver_ctl(RARCH_MENU_CTL_DEINIT, NULL);
       if (!d3d_reset(d3d->dev, &d3dpp))
       {
          d3d_deinitialize(d3d);
@@ -844,6 +853,7 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
          if (ret)
             RARCH_LOG("[D3D]: Recovered from dead state.\n");
       }
+      menu_driver_init(info->is_threaded);
    }
 
    if (!ret)
@@ -866,6 +876,28 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
    font_driver_init_osd(d3d, false,
          info->is_threaded,
          FONT_DRIVER_RENDER_DIRECT3D_API);
+
+   static const D3DVERTEXELEMENT VertexElements[] =
+   {
+      { 0, 0 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
+      { 0, 2 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
+      { 0, 4 * sizeof(float), D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0 },
+      D3DDECL_END()
+   };
+
+   if (!d3d_vertex_declaration_new(d3d->dev,
+         (void*)VertexElements, (void**)&d3d->menu_display.decl))
+      return false;
+
+   d3d->menu_display.offset = 0;
+   d3d->menu_display.size = 1024;
+   d3d->menu_display.buffer = d3d_vertex_buffer_new(
+         d3d->dev, d3d->menu_display.size * 10 * sizeof(float),
+         D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_DEFAULT,
+         NULL);
+
+   if (!d3d->menu_display.buffer)
+      return false;
 
    return true;
 }
@@ -1002,7 +1034,7 @@ static void d3d_set_osd_msg(void *data,
    if (d3d->renderchain_driver->set_font_rect && params)
       d3d->renderchain_driver->set_font_rect(d3d, params);
 
-   font_driver_render_msg(video_info, NULL, msg, params);
+   font_driver_render_msg(video_info, font, msg, params);
 }
 
 static bool d3d_init_internal(d3d_video_t *d3d,
@@ -1448,7 +1480,6 @@ static bool d3d_frame(void *data, const void *frame,
    HWND window                         = win32_get_window();
    unsigned width                      = video_info->width;
    unsigned height                     = video_info->height;
-
    (void)i;
 
    if (!frame)
@@ -1506,16 +1537,16 @@ static bool d3d_frame(void *data, const void *frame,
       return false;
    }
 
-   if (msg)
-   {
-      struct font_params font_parms = {0};
-      font_driver_render_msg(video_info, NULL, msg, &font_parms);
-   }
+   d3d->renderchain_driver->set_mvp(d3d->renderchain_data, d3d, screen_vp.Width, screen_vp.Height, 0);
+   d3d_set_viewports(d3d->dev, &screen_vp);
 
 #ifdef HAVE_MENU
    if (d3d->menu && d3d->menu->enabled)
    {
       d3d_overlay_render(d3d, video_info, d3d->menu);
+      d3d->menu_display.offset = 0;
+      d3d_set_vertex_declaration(d3d->dev, d3d->menu_display.decl);
+      d3d_set_stream_source(d3d->dev, 0, d3d->menu_display.buffer, 0, 8 * sizeof(float));
       menu_driver_frame(video_info);
    }
 #endif
@@ -1527,6 +1558,9 @@ static bool d3d_frame(void *data, const void *frame,
          d3d_overlay_render(d3d, video_info, &d3d->overlays[i]);
    }
 #endif
+
+   if (msg && *msg)
+      font_driver_render_msg(video_info, NULL, msg, NULL);
 
    video_info->cb_update_window_title(
          video_info->context_data, video_info);
@@ -1686,10 +1720,39 @@ static void video_texture_load_d3d(d3d_video_t *d3d,
       enum texture_filter_type filter_type,
       uintptr_t *id)
 {
-   *id = (uintptr_t)d3d_texture_new(d3d->dev, NULL,
-         ti->width, ti->height, 1,
-         0, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, 0, 0, 0,
-         NULL, NULL);
+   D3DLOCKED_RECT d3dlr;
+   LPDIRECT3DTEXTURE tex = NULL;
+   unsigned usage = 0;
+
+   if((filter_type == TEXTURE_FILTER_MIPMAP_LINEAR) ||
+      (filter_type == TEXTURE_FILTER_MIPMAP_NEAREST))
+         usage |= D3DUSAGE_AUTOGENMIPMAP;
+
+   tex = d3d_texture_new(d3d->dev, NULL,
+               ti->width, ti->height, 0,
+               usage, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, 0, 0, 0,
+               NULL, NULL);
+
+   if (!tex)
+   {
+      RARCH_ERR("[D3D]: Failed to create texture\n");
+      return;
+   }
+
+   if (d3d_lock_rectangle(tex, 0, &d3dlr,
+            NULL, 0, D3DLOCK_NOSYSLOCK))
+   {
+      unsigned i;
+      uint32_t       *dst = (uint32_t*)(d3dlr.pBits);
+      const uint32_t *src = ti->pixels;
+      unsigned      pitch = d3dlr.Pitch >> 2;
+
+      for (i = 0; i < ti->height; i++, dst += pitch, src += ti->width)
+         memcpy(dst, src, ti->width << 2);
+      d3d_unlock_rectangle(tex);
+   }
+
+   *id = (uintptr_t)tex;
 }
 
 static int video_texture_load_wrap_d3d_mipmap(void *data)

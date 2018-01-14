@@ -93,6 +93,14 @@ typedef struct d3d_video
 
    char *shader_path;
 
+   struct
+   {
+      int size;
+      int offset;
+      LPDIRECT3DVERTEXBUFFER buffer;
+      LPDIRECT3DVERTEXDECLARATION decl;
+   }menu_display;
+
 #ifdef HAVE_OVERLAY
    size_t overlays_size;
    overlay_t *overlays;

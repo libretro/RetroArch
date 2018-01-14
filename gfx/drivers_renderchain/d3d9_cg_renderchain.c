@@ -239,15 +239,6 @@ error:
    return false;
 }
 
-static void d3d9_cg_renderchain_set_shader_mvp(cg_renderchain_t *chain, void *shader_data, void *matrix_data)
-{
-   CGprogram              *vPrg = (CGprogram*)shader_data;
-   const D3DMATRIX     *matrix  = (const D3DMATRIX*)matrix_data;
-   CGparameter cgpModelViewProj = cgGetNamedParameter(*vPrg, "modelViewProj");
-   if (cgpModelViewProj)
-      cgD3D9SetUniformMatrix(cgpModelViewProj, matrix);
-}
-
 static void d3d9_cg_renderchain_set_shader_params(
       cg_renderchain_t *chain,
       struct Pass *pass,
@@ -865,7 +856,7 @@ static bool d3d9_cg_renderchain_create_first_pass(
       chain->prev.last_height[i] = 0;
       chain->prev.vertex_buf[i]  = d3d_vertex_buffer_new(
             chain->dev, 4 * sizeof(struct CGVertex),
-            0, 0, D3DPOOL_DEFAULT, NULL);
+            D3DUSAGE_WRITEONLY, 0, D3DPOOL_DEFAULT, NULL);
 
       if (!chain->prev.vertex_buf[i])
          return false;
@@ -1096,7 +1087,7 @@ static bool d3d9_cg_renderchain_add_pass(
 
    pass.vertex_buf = d3d_vertex_buffer_new(chain->dev,
          4 * sizeof(struct CGVertex),
-         0, 0, D3DPOOL_DEFAULT, NULL);
+         D3DUSAGE_WRITEONLY, 0, D3DPOOL_DEFAULT, NULL);
 
    if (!pass.vertex_buf)
       return false;
@@ -1190,24 +1181,34 @@ static void d3d9_cg_renderchain_end_render(cg_renderchain_t *chain)
    chain->prev.ptr                          = (chain->prev.ptr + 1) & TEXTURESMASK;
 }
 
-static void d3d9_cg_renderchain_set_mvp(
-      void *chain_data,
-      void *data,
+static void d3d9_cg_renderchain_set_shader_mvp(
+      cg_renderchain_t *chain, CGprogram vPrg,
       unsigned vp_width, unsigned vp_height,
       unsigned rotation)
 {
-   D3DMATRIX proj, ortho, rot, tmp;
-   CGprogram     vPrg      = (CGprogram)data;
-   cg_renderchain_t *chain = (cg_renderchain_t*)chain_data;
+   D3DMATRIX proj, ortho, rot, matrix;
 
    d3d_matrix_ortho_off_center_lh(&ortho, 0, vp_width, 0, vp_height, 0, 1);
    d3d_matrix_identity(&rot);
    d3d_matrix_rotation_z(&rot, rotation * (D3D_PI / 2.0));
 
    d3d_matrix_multiply(&proj, &ortho, &rot);
-   d3d_matrix_transpose(&tmp, &proj);
+   d3d_matrix_transpose(&matrix, &proj);
 
-   d3d9_cg_renderchain_set_shader_mvp(chain, &vPrg, &tmp);
+   CGparameter cgpModelViewProj = cgGetNamedParameter(vPrg, "modelViewProj");
+   if (cgpModelViewProj)
+      cgD3D9SetUniformMatrix(cgpModelViewProj, &matrix);
+}
+
+static void d3d9_cg_renderchain_set_mvp(
+      void *chain_data,
+      void *data,
+      unsigned vp_width, unsigned vp_height,
+      unsigned rotation)
+{
+   cg_renderchain_t *chain = (cg_renderchain_t*)chain_data;
+
+   d3d9_cg_renderchain_set_shader_mvp(chain, chain->vStock, vp_width, vp_height, rotation);
 }
 
 static void cg_d3d9_renderchain_set_vertices(
@@ -1297,7 +1298,7 @@ static void cg_d3d9_renderchain_set_vertices(
 
    if (chain)
    {
-      d3d9_cg_renderchain_set_mvp(
+      d3d9_cg_renderchain_set_shader_mvp(
             chain, pass->vPrg, vp_width, vp_height, rotation);
       if (pass)
          d3d9_cg_renderchain_set_shader_params(chain, pass,
@@ -1561,7 +1562,7 @@ static bool d3d9_cg_renderchain_render(
       d3d9_cg_renderchain_end_render(chain);
       cgD3D9BindProgram(chain->fStock);
       cgD3D9BindProgram(chain->vStock);
-      d3d9_cg_renderchain_set_mvp(
+      d3d9_cg_renderchain_set_shader_mvp(
             chain, chain->vStock, chain->final_viewport->Width,
             chain->final_viewport->Height, 0);
    }
@@ -1590,13 +1591,10 @@ static void d3d9_cg_renderchain_set_font_rect(
    if (!d3d)
       return;
 
-   d3d->font_rect.left            = d3d->final_viewport.X +
-      d3d->final_viewport.Width * pos_x;
-   d3d->font_rect.right           = d3d->final_viewport.X +
-      d3d->final_viewport.Width;
-   d3d->font_rect.top             = d3d->final_viewport.Y +
-      (1.0f - pos_y) * d3d->final_viewport.Height - font_size;
-   d3d->font_rect.bottom          = d3d->final_viewport.Height;
+   d3d->font_rect.left            = d3d->video_info.width * pos_x;
+   d3d->font_rect.right           = d3d->video_info.width;
+   d3d->font_rect.top             = (1.0f - pos_y) * d3d->video_info.height - font_size;
+   d3d->font_rect.bottom          = d3d->video_info.height;
 
    d3d->font_rect_shifted         = d3d->font_rect;
    d3d->font_rect_shifted.left   -= 2;
