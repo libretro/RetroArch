@@ -25,6 +25,8 @@
 #include "../../tasks/tasks_internal.h"
 #include "../../verbosity.h"
 
+#define CLAMPDOUBLE(x) MIN(1.0, MAX(-1.0, (x)))
+
 static bool g_rwebpad_initialized;
 
 static EM_BOOL rwebpad_gamepad_cb(int event_type,
@@ -143,19 +145,22 @@ static int16_t rwebpad_joypad_axis(unsigned port_num, uint32_t joyaxis)
    EMSCRIPTEN_RESULT r;
    int16_t val = 0;
 
+   if (joyaxis == 0xFFFFFFFF)
+      return 0;
+
    r = emscripten_get_gamepad_status(port_num, &gamepad_state);
 
    if (r == EMSCRIPTEN_RESULT_SUCCESS)
    {
       if (AXIS_NEG_GET(joyaxis) < gamepad_state.numAxes)
       {
-         val = gamepad_state.axis[AXIS_NEG_GET(joyaxis)] * 0x7FFF;
+         val = CLAMPDOUBLE(gamepad_state.axis[AXIS_NEG_GET(joyaxis)]) * 0x7FFF;
          if (val > 0)
             val = 0;
       }
       else if (AXIS_POS_GET(joyaxis) < gamepad_state.numAxes)
       {
-         val = gamepad_state.axis[AXIS_POS_GET(joyaxis)] * 0x7FFF;
+         val = CLAMPDOUBLE(gamepad_state.axis[AXIS_POS_GET(joyaxis)]) * 0x7FFF;
          if (val < 0)
             val = 0;
       }
