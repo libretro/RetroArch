@@ -129,7 +129,6 @@ static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
       }
 
       *resize  = true;
-      emscripten_reinit_video = true;
    }
 
    emscripten->fb_width  = (unsigned)input_width;
