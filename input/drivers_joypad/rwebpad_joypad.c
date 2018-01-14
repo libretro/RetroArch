@@ -110,12 +110,8 @@ static bool rwebpad_joypad_button(unsigned port_num, uint16_t joykey)
    r = emscripten_get_gamepad_status(port_num, &gamepad_state);
 
    if (r == EMSCRIPTEN_RESULT_SUCCESS)
-   {
-      if (joykey < ARRAY_SIZE(gamepad_state.digitalButton))
-      {
+      if (joykey < gamepad_state.numButtons)
          return gamepad_state.digitalButton[joykey];
-      }
-   }
 
    return false;
 }
@@ -133,7 +129,7 @@ static void rwebpad_joypad_get_buttons(unsigned port_num, retro_bits_t *state)
    {
       int i;
 
-      for (i = 0; i < ARRAY_SIZE(gamepad_state.digitalButton); i++)
+      for (i = 0; i < gamepad_state.numButtons; i++)
       {
          if (gamepad_state.digitalButton[i])
             BIT256_SET_PTR(state, i);
@@ -146,15 +142,13 @@ static int16_t rwebpad_joypad_axis(unsigned port_num, uint32_t joyaxis)
    EmscriptenGamepadEvent gamepad_state;
    EMSCRIPTEN_RESULT r;
 
-   if (joyaxis > ARRAY_SIZE(gamepad_state.axis))
-      return 0;
-
    r = emscripten_get_gamepad_status(port_num, &gamepad_state);
 
    if (r == EMSCRIPTEN_RESULT_SUCCESS)
-      return gamepad_state.axis[joyaxis] * 0x7FFF;
-   else
-      return 0;
+      if (joyaxis < gamepad_state.numAxes)
+         return gamepad_state.axis[joyaxis] * 0x7FFF;
+
+   return 0;
 }
 
 static void rwebpad_joypad_poll(void)
