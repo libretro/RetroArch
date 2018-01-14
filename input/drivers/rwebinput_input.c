@@ -46,10 +46,18 @@ typedef struct rwebinput_key_to_code_map_entry
    enum retro_key rk;
 } rwebinput_key_to_code_map_entry_t;
 
-typedef struct rwebinput_key_states
+typedef struct rwebinput_keyboard_event
 {
-   bool keys[RETROK_LAST];
-} rwebinput_keyboard_state_t;
+   int type;
+   EmscriptenKeyboardEvent event;
+} rwebinput_keyboard_event_t;
+
+typedef struct rwebinput_keyboard_event_queue
+{
+   size_t count;
+   size_t max_size;
+   rwebinput_keyboard_event_t *events;
+} rwebinput_keyboard_event_queue_t;
 
 typedef struct rwebinput_mouse_states
 {
@@ -64,7 +72,7 @@ typedef struct rwebinput_mouse_states
 
 typedef struct rwebinput_input
 {
-   rwebinput_keyboard_state_t keyboard;
+   bool keys[RETROK_LAST];
    rwebinput_mouse_state_t mouse;
    const input_device_driver_t *joypad;
    bool blocked;
@@ -187,9 +195,9 @@ static const rwebinput_key_to_code_map_entry_t rwebinput_key_to_code_map[] =
    { "Power", RETROK_POWER },
 };
 
-static bool g_rwebinput_mouset_initialized;
-static rwebinput_keyboard_state_t *g_rwebinput_mouset_keyboard;
-static rwebinput_mouse_state_t *g_mouse;
+static bool g_rwebinput_initialized;
+static rwebinput_keyboard_event_queue_t *g_rwebinput_keyboard;
+static rwebinput_mouse_state_t *g_rwebinput_mouse;
 
 /* to make the string labels for codes from JavaScript work, we convert them
  * to CRC32 hashes for the LUT */
@@ -230,54 +238,22 @@ static void rwebinput_generate_lut(void)
 static EM_BOOL rwebinput_keyboard_cb(int event_type,
    const EmscriptenKeyboardEvent *key_event, void *user_data)
 {
-   uint32_t crc;
-   uint32_t keycode;
-   unsigned translated_keycode;
-   uint32_t character = 0;
-   uint16_t mod = 0;
-   bool keydown = event_type == EMSCRIPTEN_EVENT_KEYDOWN;
-
-   (void)user_data;
-
-   /* capture keypress events and silence them */
    if (event_type == EMSCRIPTEN_EVENT_KEYPRESS)
       return EM_TRUE;
 
-   /* a printable key: populate character field */
-   if (utf8len(key_event->key) == 1)
+   if (g_rwebinput_keyboard->count >= g_rwebinput_keyboard->max_size)
    {
-      const char *key_ptr = &key_event->key[0];
-      character = utf8_walk(&key_ptr);
+      size_t new_max = MAX(1, g_rwebinput_keyboard->max_size << 1);
+      g_rwebinput_keyboard->events = realloc(g_rwebinput_keyboard->events,
+         new_max * sizeof(g_rwebinput_keyboard->events[0]));
+      retro_assert(g_rwebinput_keyboard->events != NULL);
+      g_rwebinput_keyboard->max_size = new_max;
    }
 
-   if (key_event->ctrlKey)
-      mod |= RETROKMOD_CTRL;
-   if (key_event->altKey)
-      mod |= RETROKMOD_ALT;
-   if (key_event->shiftKey)
-      mod |= RETROKMOD_SHIFT;
-   if (key_event->metaKey)
-      mod |= RETROKMOD_META;
-
-   keycode = encoding_crc32(0, (const uint8_t *)key_event->code,
-      strnlen(key_event->code, sizeof(key_event->code)));
-   translated_keycode = input_keymaps_translate_keysym_to_rk(keycode);
-
-   if (translated_keycode == RETROK_BACKSPACE)
-      character = '\b';
-   else if (translated_keycode == RETROK_RETURN ||
-            translated_keycode == RETROK_KP_ENTER)
-      character = '\n';
-   else if (translated_keycode == RETROK_TAB)
-      character = '\t';
-
-   input_keyboard_event(keydown, translated_keycode, character, mod,
-      RETRO_DEVICE_KEYBOARD);
-
-   if (translated_keycode < RETROK_LAST)
-   {
-      g_rwebinput_mouset_keyboard->keys[translated_keycode] = keydown;
-   }
+   g_rwebinput_keyboard->events[g_rwebinput_keyboard->count].type = event_type;
+   memcpy(&g_rwebinput_keyboard->events[g_rwebinput_keyboard->count].event,
+      key_event, sizeof(*key_event));
+   g_rwebinput_keyboard->count++;
 
    return EM_TRUE;
 }
@@ -289,18 +265,18 @@ static EM_BOOL rwebinput_mouse_cb(int event_type,
 
    uint8_t mask = 1 << mouse_event->button;
 
-   g_mouse->x = mouse_event->canvasX;
-   g_mouse->y = mouse_event->canvasY;
-   g_mouse->delta_x += mouse_event->movementX;
-   g_mouse->delta_y += mouse_event->movementY;
+   g_rwebinput_mouse->x = mouse_event->canvasX;
+   g_rwebinput_mouse->y = mouse_event->canvasY;
+   g_rwebinput_mouse->delta_x += mouse_event->movementX;
+   g_rwebinput_mouse->delta_y += mouse_event->movementY;
 
    if (event_type ==  EMSCRIPTEN_EVENT_MOUSEDOWN)
    {
-      g_mouse->buttons |= mask;
+      g_rwebinput_mouse->buttons |= mask;
    }
    else if (event_type == EMSCRIPTEN_EVENT_MOUSEUP)
    {
-      g_mouse->buttons &= ~mask;
+      g_rwebinput_mouse->buttons &= ~mask;
    }
 
    return EM_TRUE;
@@ -312,8 +288,8 @@ static EM_BOOL rwebinput_wheel_cb(int event_type,
    (void)event_type;
    (void)user_data;
 
-   g_mouse->scroll_x += wheel_event->deltaX;
-   g_mouse->scroll_y += wheel_event->deltaY;
+   g_rwebinput_mouse->scroll_x += wheel_event->deltaX;
+   g_rwebinput_mouse->scroll_y += wheel_event->deltaY;
 
    return EM_TRUE;
 }
@@ -322,19 +298,19 @@ static void *rwebinput_input_init(const char *joypad_driver)
 {
    rwebinput_input_t *rwebinput =
       (rwebinput_input_t*)calloc(1, sizeof(*rwebinput));
-   g_rwebinput_mouset_keyboard = (rwebinput_keyboard_state_t*)
-      calloc(1, sizeof(rwebinput_keyboard_state_t));
-   g_mouse = (rwebinput_mouse_state_t*)
+   g_rwebinput_keyboard = (rwebinput_keyboard_event_queue_t*)
+      calloc(1, sizeof(rwebinput_keyboard_event_queue_t));
+   g_rwebinput_mouse = (rwebinput_mouse_state_t*)
       calloc(1, sizeof(rwebinput_mouse_state_t));
 
-   if (!rwebinput || !g_rwebinput_mouset_keyboard || !g_mouse)
+   if (!rwebinput || !g_rwebinput_keyboard || !g_rwebinput_mouse)
       goto error;
 
-   if (!g_rwebinput_mouset_initialized)
+   if (!g_rwebinput_initialized)
    {
       EMSCRIPTEN_RESULT r;
 
-      g_rwebinput_mouset_initialized = true;
+      g_rwebinput_initialized = true;
       rwebinput_generate_lut();
 
       /* emscripten currently doesn't have an API to remove handlers, so make
@@ -403,19 +379,18 @@ static void *rwebinput_input_init(const char *joypad_driver)
    return rwebinput;
 
 error:
-   free(g_rwebinput_mouset_keyboard);
-   free(g_mouse);
+   free(g_rwebinput_keyboard);
+   free(g_rwebinput_mouse);
    free(rwebinput);
    return NULL;
 }
 
-static bool rwebinput_key_pressed(rwebinput_keyboard_state_t *keyboard,
-   int key)
+static bool rwebinput_key_pressed(rwebinput_input_t *rwebinput, int key)
 {
    if (key >= RETROK_LAST)
       return false;
 
-   return keyboard->keys[key];
+   return rwebinput->keys[key];
 }
 
 static int16_t rwebinput_pointer_device_state(rwebinput_mouse_state_t *mouse,
@@ -505,7 +480,7 @@ static bool rwebinput_is_pressed(rwebinput_input_t *rwebinput,
       int key                          = bind->key;
 
       if (!rwebinput->blocked && (bind->key < RETROK_LAST) &&
-          rwebinput_key_pressed(&rwebinput->keyboard, key))
+          rwebinput_key_pressed(rwebinput, key))
          return true;
 
       if (bind->valid)
@@ -563,7 +538,7 @@ static int16_t rwebinput_input_state(void *data,
                idx, id, binds[port]);
          return ret;
       case RETRO_DEVICE_KEYBOARD:
-         return rwebinput_key_pressed(&rwebinput->keyboard, id);
+         return rwebinput_key_pressed(rwebinput, id);
       case RETRO_DEVICE_MOUSE:
          return rwebinput_mouse_state(&rwebinput->mouse, id, false);
       case RARCH_DEVICE_MOUSE_SCREEN:
@@ -581,24 +556,75 @@ static void rwebinput_input_free(void *data)
 {
    rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
 
-   free(g_rwebinput_mouset_keyboard);
-   g_rwebinput_mouset_keyboard = NULL;
-   free(g_mouse);
-   g_mouse = NULL;
+   if (g_rwebinput_keyboard)
+      free(g_rwebinput_keyboard->events);
+   free(g_rwebinput_keyboard);
+   g_rwebinput_keyboard = NULL;
+   free(g_rwebinput_mouse);
+   g_rwebinput_mouse = NULL;
    free(rwebinput);
+}
+static void rwebinput_process_keyboard_events(rwebinput_input_t *rwebinput,
+   rwebinput_keyboard_event_t *event)
+{
+   uint32_t crc;
+   uint32_t keycode;
+   unsigned translated_keycode;
+   uint32_t character = 0;
+   uint16_t mod = 0;
+   const EmscriptenKeyboardEvent *key_event = &event->event;
+   bool keydown = event->type == EMSCRIPTEN_EVENT_KEYDOWN;
+
+   /* a printable key: populate character field */
+   if (utf8len(key_event->key) == 1)
+   {
+      const char *key_ptr = &key_event->key[0];
+      character = utf8_walk(&key_ptr);
+   }
+
+   if (key_event->ctrlKey)
+      mod |= RETROKMOD_CTRL;
+   if (key_event->altKey)
+      mod |= RETROKMOD_ALT;
+   if (key_event->shiftKey)
+      mod |= RETROKMOD_SHIFT;
+   if (key_event->metaKey)
+      mod |= RETROKMOD_META;
+
+   keycode = encoding_crc32(0, (const uint8_t *)key_event->code,
+      strnlen(key_event->code, sizeof(key_event->code)));
+   translated_keycode = input_keymaps_translate_keysym_to_rk(keycode);
+
+   if (translated_keycode == RETROK_BACKSPACE)
+      character = '\b';
+   else if (translated_keycode == RETROK_RETURN ||
+            translated_keycode == RETROK_KP_ENTER)
+      character = '\n';
+   else if (translated_keycode == RETROK_TAB)
+      character = '\t';
+
+   input_keyboard_event(keydown, translated_keycode, character, mod,
+      RETRO_DEVICE_KEYBOARD);
+
+   if (translated_keycode < RETROK_LAST)
+   {
+      rwebinput->keys[translated_keycode] = keydown;
+   }
 }
 
 static void rwebinput_input_poll(void *data)
 {
-   unsigned i;
+   size_t i;
    rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
 
-   memcpy(&rwebinput->keyboard, g_rwebinput_mouset_keyboard,
-      sizeof(*g_rwebinput_mouset_keyboard));
-   memcpy(&rwebinput->mouse, g_mouse, sizeof(*g_mouse));
+   for (i = 0; i < g_rwebinput_keyboard->count; i++)
+      rwebinput_process_keyboard_events(rwebinput,
+         &g_rwebinput_keyboard->events[i]);
+   g_rwebinput_keyboard->count = 0;
 
-   g_mouse->delta_x = g_mouse->delta_y = 0;
-   g_mouse->scroll_x = g_mouse->scroll_y = 0.0;
+   memcpy(&rwebinput->mouse, g_rwebinput_mouse, sizeof(*g_rwebinput_mouse));
+   g_rwebinput_mouse->delta_x = g_rwebinput_mouse->delta_y = 0;
+   g_rwebinput_mouse->scroll_x = g_rwebinput_mouse->scroll_y = 0.0;
 
 	if (rwebinput->joypad)
 		rwebinput->joypad->poll();
