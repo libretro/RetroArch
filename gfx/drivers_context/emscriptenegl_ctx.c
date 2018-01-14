@@ -20,6 +20,7 @@
 #include <unistd.h>
 
 #include <emscripten/emscripten.h>
+#include <emscripten/html5.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -44,6 +45,9 @@ typedef struct
    unsigned fb_height;
 } emscripten_ctx_data_t;
 
+static int emscripten_initial_width;
+static int emscripten_initial_height;
+
 static void gfx_ctx_emscripten_swap_interval(void *data, unsigned interval)
 {
    (void)data;
@@ -51,23 +55,82 @@ static void gfx_ctx_emscripten_swap_interval(void *data, unsigned interval)
    (void)interval;
 }
 
+static void gfx_ctx_emscripten_get_canvas_size(int *width, int *height)
+{
+   EMSCRIPTEN_RESULT r;
+   EmscriptenFullscreenChangeEvent fullscreen_status;
+   bool is_fullscreen = false;
+
+   r = emscripten_get_fullscreen_status(&fullscreen_status);
+
+   if (r == EMSCRIPTEN_RESULT_SUCCESS)
+   {
+      if (fullscreen_status.isFullscreen)
+      {
+         is_fullscreen = true;
+         *width = fullscreen_status.screenWidth;
+         *height = fullscreen_status.screenHeight;
+      }
+   }
+
+   if (!is_fullscreen)
+   {
+      r = emscripten_get_canvas_element_size("#canvas", width, height);
+
+      if (r != EMSCRIPTEN_RESULT_SUCCESS)
+      {
+         RARCH_ERR("[EMSCRIPTEN/EGL]: Could not get screen dimensions: %d\n",
+            r);
+         *width = 800;
+         *height = 600;
+      }
+   }
+}
+
 static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
 {
+   EMSCRIPTEN_RESULT r;
    int input_width;
    int input_height;
-   int is_fullscreen;
    emscripten_ctx_data_t *emscripten = (emscripten_ctx_data_t*)data;
 
-   (void)data;
+   gfx_ctx_emscripten_get_canvas_size(&input_width, &input_height);
 
-   emscripten_get_canvas_size(&input_width, &input_height, &is_fullscreen);
+   if (input_width == 0 || input_height == 0)
+   {
+      input_width = emscripten_initial_width;
+      input_height = emscripten_initial_height;
+      emscripten->fb_width = emscripten->fb_height = 0;
+   }
+
    *width      = (unsigned)input_width;
    *height     = (unsigned)input_height;
    *resize     = false;
 
-   if (*width != emscripten->fb_width || *height != emscripten->fb_height)
+   if (input_width != emscripten->fb_width ||
+      input_height != emscripten->fb_height)
+   {
+      r = emscripten_set_canvas_element_size("#canvas",
+         input_width, input_height);
+
+      if (r != EMSCRIPTEN_RESULT_SUCCESS)
+      {
+         RARCH_ERR("[EMSCRIPTEN/EGL]: error resizing canvas: %d\n", r);
+      }
+
+      /* fix Module.requestFullscreen messing with the canvas size */
+      r = emscripten_set_element_css_size("#canvas",
+         (double)input_width, (double)input_height);
+
+      if (r != EMSCRIPTEN_RESULT_SUCCESS)
+      {
+         RARCH_ERR("[EMSCRIPTEN/EGL]: error resizing canvas css: %d\n", r);
+      }
+
       *resize  = true;
+      emscripten_reinit_video = true;
+   }
 
    emscripten->fb_width  = (unsigned)input_width;
    emscripten->fb_height = (unsigned)input_height;
@@ -98,7 +161,8 @@ static void gfx_ctx_emscripten_destroy(void *data)
    free(data);
 }
 
-static void *gfx_ctx_emscripten_init(video_frame_info_t *video_info, void *video_driver)
+static void *gfx_ctx_emscripten_init(video_frame_info_t *video_info,
+   void *video_driver)
 {
 #ifdef HAVE_EGL
    unsigned width, height;
@@ -128,6 +192,10 @@ static void *gfx_ctx_emscripten_init(video_frame_info_t *video_info, void *video
 
    (void)video_driver;
 
+   if (emscripten_initial_width == 0 || emscripten_initial_height == 0)
+      emscripten_get_canvas_element_size("#canvas",
+         &emscripten_initial_width, &emscripten_initial_height);
+
 #ifdef HAVE_EGL
    if (g_egl_inited)
    {
@@ -135,8 +203,8 @@ static void *gfx_ctx_emscripten_init(video_frame_info_t *video_info, void *video
       return (void*)"emscripten";
    }
 
-   if (!egl_init_context(&emscripten->egl, EGL_NONE, EGL_DEFAULT_DISPLAY,
-            &major, &minor, &n, attribute_list))
+   if (!egl_init_context(&emscripten->egl, EGL_NONE,
+      (void *)EGL_DEFAULT_DISPLAY, &major, &minor, &n, attribute_list))
    {
       egl_report_error();
       goto error;
@@ -202,20 +270,10 @@ static void gfx_ctx_emscripten_input_driver(void *data,
       const char *name,
       const input_driver_t **input, void **input_data)
 {
-   void *rwebinput = NULL;
+   void *rwebinput = input_rwebinput.init(name);
 
-   *input          = NULL;
-   *input_data     = NULL;
-
-#ifndef HAVE_SDL2
-   rwebinput = input_rwebinput.init();
-
-   if (!rwebinput)
-      return;
-
-   *input      = &input_rwebinput;
+   *input      = rwebinput ? &input_rwebinput : NULL;
    *input_data = rwebinput;
-#endif
 }
 
 static bool gfx_ctx_emscripten_has_focus(void *data)
