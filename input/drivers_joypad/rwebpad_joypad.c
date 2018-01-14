@@ -121,8 +121,6 @@ static void rwebpad_joypad_get_buttons(unsigned port_num, retro_bits_t *state)
    EmscriptenGamepadEvent gamepad_state;
    EMSCRIPTEN_RESULT r;
 
-   BIT256_CLEAR_ALL_PTR(state);
-
    r = emscripten_get_gamepad_status(port_num, &gamepad_state);
 
    if (r == EMSCRIPTEN_RESULT_SUCCESS)
@@ -135,6 +133,8 @@ static void rwebpad_joypad_get_buttons(unsigned port_num, retro_bits_t *state)
             BIT256_SET_PTR(state, i);
       }
    }
+   else
+      BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t rwebpad_joypad_axis(unsigned port_num, uint32_t joyaxis)
