@@ -57,7 +57,7 @@ static void emscripten_mainloop(void)
       return;
 
    main_exit(NULL);
-   exit(0);
+   emscripten_force_exit(0);
 }
 
 void cmd_savefiles(void)
