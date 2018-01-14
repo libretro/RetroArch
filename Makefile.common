@@ -554,6 +554,7 @@ endif
 ifeq ($(HAVE_EMSCRIPTEN), 1)
 OBJ += frontend/drivers/platform_emscripten.o \
        input/drivers/rwebinput_input.o \
+       input/drivers_joypad/rwebpad_joypad.o \
        audio/drivers/rwebaudio.o \
        camera/drivers/rwebcam.o
 endif

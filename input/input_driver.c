@@ -182,6 +182,9 @@ static input_device_driver_t *joypad_drivers[] = {
 #if defined(HAVE_HID) && !defined(WIIU)
    &hid_joypad,
 #endif
+#ifdef EMSCRIPTEN
+   &rwebpad_joypad,
+#endif
    &null_joypad,
    NULL,
 };
@@ -804,7 +807,7 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
 static INLINE bool input_keys_pressed_iterate(unsigned i,
       retro_bits_t* p_new_state)
 {
-   if ((i >= RARCH_FIRST_META_KEY) && 
+   if ((i >= RARCH_FIRST_META_KEY) &&
          BIT64_GET(lifecycle_state, i)
       )
       return true;

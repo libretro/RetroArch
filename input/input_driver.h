@@ -814,6 +814,7 @@ extern input_device_driver_t qnx_joypad;
 extern input_device_driver_t null_joypad;
 extern input_device_driver_t mfi_joypad;
 extern input_device_driver_t dos_joypad;
+extern input_device_driver_t rwebpad_joypad;
 
 extern input_driver_t input_android;
 extern input_driver_t input_sdl;
