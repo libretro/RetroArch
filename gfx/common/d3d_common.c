@@ -764,7 +764,7 @@ bool d3d_device_create_offscreen_plain_surface(
 #ifndef _XBOX360
 /* XBox 360 has no fixed-function pipeline. */
 static void d3d_set_texture_stage_state(LPDIRECT3DDEVICE dev,
-      unsigned sampler, unsigned value, unsigned type)
+      unsigned sampler, unsigned type, unsigned value)
 {
 #if defined(HAVE_D3D9) && !defined(__cplusplus)
    if (IDirect3DDevice9_SetTextureStageState(dev, sampler, (D3DTEXTURESTAGESTATETYPE)type, value) != D3D_OK)
@@ -844,6 +844,14 @@ void d3d_set_sampler_magfilter(LPDIRECT3DDEVICE dev,
    d3d_set_texture_stage_state(dev, sampler, D3DTSS_MAGFILTER, value);
 #else
    dev->SetSamplerState(sampler, D3DSAMP_MAGFILTER, value);
+#endif
+}
+
+void d3d_set_sampler_mipfilter(LPDIRECT3DDEVICE dev,
+      unsigned sampler, unsigned value)
+{
+#if defined(HAVE_D3D9)
+   IDirect3DDevice9_SetSamplerState(dev, sampler, D3DSAMP_MIPFILTER, value);
 #endif
 }
 
