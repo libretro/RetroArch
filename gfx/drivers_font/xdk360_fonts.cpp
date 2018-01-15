@@ -79,7 +79,6 @@ class PackedResource
 
       XBRESOURCE* m_pResourceTags;     /* Tags to associate names with the resources */
       DWORD       m_dwNumResourceTags; /* Number of resource tags */
-      BOOL m_bInitialized;             /* Resource is fully initialized */
 
    public:
       /* Loads the resources out of the specified bundle */
@@ -92,7 +91,7 @@ class PackedResource
 
       void Destroy();
 
-      BOOL    Initialized() const;
+      BOOL m_bInitialized;             /* Resource is fully initialized */
 
 #ifdef _XBOX360
       /* Retrieves the resource tags */
@@ -120,30 +119,11 @@ class PackedResource
          return pResource;
       }
 
-      /* Functions to retrieve resources by their offset */
-      void *GetData( DWORD dwOffset ) const
-      { return &m_pSysMemData[dwOffset]; }
-
-      LPDIRECT3DRESOURCE GetResource( DWORD dwOffset ) const
-      { return RegisterResource( (LPDIRECT3DRESOURCE)GetData(dwOffset) ); }
-
-      LPDIRECT3DTEXTURE GetTexture( DWORD dwOffset ) const
-      { return (LPDIRECT3DTEXTURE)GetResource( dwOffset ); }
-
-      LPDIRECT3DVERTEXBUFFER GetVertexBuffer( DWORD dwOffset ) const
-      { return (LPDIRECT3DVERTEXBUFFER)GetResource( dwOffset ); }
-
       /* Functions to retrieve resources by their name */
       void *GetData( const char* strName ) const;
 
-      LPDIRECT3DRESOURCE GetResource( const char* strName ) const
-      { return RegisterResource( (LPDIRECT3DRESOURCE)GetData( strName ) ); }
-
       LPDIRECT3DTEXTURE GetTexture( const char* strName ) const
-      { return (LPDIRECT3DTEXTURE)GetResource( strName ); }
-
-      LPDIRECT3DVERTEXBUFFER GetVertexBuffer( const char* strName ) const
-      { return (LPDIRECT3DVERTEXBUFFER)GetResource( strName ); }
+      { return (LPDIRECT3DTEXTURE)RegisterResource((LPDIRECT3DRESOURCE)GetData(strName)); }
 
       /* Constructor/destructor */
       PackedResource();
@@ -152,13 +132,13 @@ class PackedResource
 
 PackedResource::PackedResource()
 {
-   m_pSysMemData = NULL;
-   m_dwSysMemDataSize = 0L;
-   m_pVidMemData = NULL;
-   m_dwVidMemDataSize = 0L;
-   m_pResourceTags = NULL;
+   m_pSysMemData       = NULL;
+   m_pVidMemData       = NULL;
+   m_pResourceTags     = NULL;
+   m_dwSysMemDataSize  = 0L;
+   m_dwVidMemDataSize  = 0L;
    m_dwNumResourceTags = 0L;
-   m_bInitialized = FALSE;
+   m_bInitialized      = false;
 }
 
 
@@ -169,18 +149,18 @@ PackedResource::~PackedResource()
 
 void *PackedResource::GetData(const char *strName) const
 {
-   if (m_pResourceTags == NULL || strName == NULL)
+   if (!m_pResourceTags || !strName)
       return NULL;
 
 #if defined(_XBOX1)
    for (DWORD i=0; m_pResourceTags[i].strName; i++)
 #elif defined(_XBOX360)
-      for (DWORD i = 0; i < m_dwNumResourceTags; i++)
+   for (DWORD i = 0; i < m_dwNumResourceTags; i++)
 #endif
-      {
-         if (string_is_equal_noncase(strName, m_pResourceTags[i].strName))
-            return &m_pSysMemData[m_pResourceTags[i].dwOffset];
-      }
+   {
+      if (string_is_equal_noncase(strName, m_pResourceTags[i].strName))
+         return &m_pSysMemData[m_pResourceTags[i].dwOffset];
+   }
 
    return NULL;
 }
@@ -210,7 +190,7 @@ char g_strMediaPath[512] = "D:\\Media\\";
 
 static HRESULT FindMediaFile(char *strPath, const char *strFilename, size_t strPathsize)
 {
-   if(strFilename == NULL || strPath == NULL)
+   if (!strFilename || !strPath)
       return E_INVALIDARG;
 
    strlcpy(strPath, strFilename, strPathsize);
@@ -242,10 +222,10 @@ HRESULT PackedResource::Create(const char *strFilename)
    HANDLE hFile;
    DWORD dwNumBytesRead;
    XPR_HEADER xprh;
-   bool retval;
+   bool retval                   = false;
 #ifdef _XBOX1
-   BOOL bHasResourceOffsetsTable = FALSE;
    char strResourcePath[512];
+   bool bHasResourceOffsetsTable = false;
 
    if (FAILED(FindMediaFile(strResourcePath, strFilename, sizeof(strResourcePath))))
       return E_FAIL;
@@ -261,9 +241,9 @@ HRESULT PackedResource::Create(const char *strFilename)
 
 #if defined(_XBOX1)
    if(xprh.dwMagic == XPR0_MAGIC_VALUE)
-      bHasResourceOffsetsTable = FALSE;
+      bHasResourceOffsetsTable = false;
    else if(xprh.dwMagic == XPR1_MAGIC_VALUE)
-      bHasResourceOffsetsTable = TRUE;
+      bHasResourceOffsetsTable = true;
    else
 #elif defined(_XBOX360)
       if(!retval)
@@ -290,7 +270,8 @@ HRESULT PackedResource::Create(const char *strFilename)
 
    /* Allocate memory */
    m_pSysMemData = (BYTE*)malloc(m_dwSysMemDataSize);
-   if (m_pSysMemData == NULL)
+
+   if (!m_pSysMemData)
    {
       m_dwSysMemDataSize = 0;
       return E_FAIL;
@@ -304,7 +285,7 @@ HRESULT PackedResource::Create(const char *strFilename)
 #endif
      );
 
-   if(m_pVidMemData == NULL)
+   if(!m_pVidMemData)
    {
       m_dwSysMemDataSize = 0;
       m_dwVidMemDataSize = 0;
@@ -360,7 +341,7 @@ HRESULT PackedResource::Create(const char *strFilename)
    }
 #endif
 
-   m_bInitialized = TRUE;
+   m_bInitialized = true;
 
    return S_OK;
 }
@@ -380,24 +361,18 @@ void PackedResource::GetResourceTags(DWORD* pdwNumResourceTags,
 void PackedResource::Destroy()
 {
    free(m_pSysMemData);
-   m_pSysMemData = NULL;
-   m_dwSysMemDataSize = 0L;
 
    if (m_pVidMemData != NULL)
       FreeContiguousMemory(m_pVidMemData);
 
-   m_pVidMemData = NULL;
-   m_dwVidMemDataSize = 0L;
-
-   m_pResourceTags = NULL;
+   m_pSysMemData       = NULL;
+   m_pVidMemData       = NULL;
+   m_pResourceTags     = NULL;
+   m_dwSysMemDataSize  = 0L;
+   m_dwVidMemDataSize  = 0L;
    m_dwNumResourceTags = 0L;
 
-   m_bInitialized = FALSE;
-}
-
-BOOL PackedResource::Initialized() const
-{
-   return m_bInitialized;
+   m_bInitialized = false;
 }
 
 typedef struct GLYPH_ATTR
@@ -605,7 +580,7 @@ static void xdk360_free_font(void *data, bool is_threaded)
    font->s_FontLocals.m_pFontVertexShader = NULL;
    font->s_FontLocals.m_pFontVertexDecl   = NULL;
 
-   if (m_xprResource.Initialized())
+   if (m_xprResource.m_bInitialized)
       m_xprResource.Destroy();
 
    free(font);
