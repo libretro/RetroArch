@@ -818,6 +818,7 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
    unsigned width, height;
    bool ret             = true;
    settings_t *settings = config_get_ptr();
+#ifdef HAVE_D3D9
    static const D3DVERTEXELEMENT VertexElements[] =
    {
       { 0, 0 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
@@ -825,6 +826,7 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
       { 0, 4 * sizeof(float), D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0 },
       D3DDECL_END()
    };
+#endif
 
    if (!d3d)
       return false;
@@ -877,12 +879,14 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
          info->is_threaded,
          FONT_DRIVER_RENDER_DIRECT3D_API);
 
+#ifdef HAVE_D3D9
    if (!d3d_vertex_declaration_new(d3d->dev,
          (void*)VertexElements, (void**)&d3d->menu_display.decl))
       return false;
+#endif
 
    d3d->menu_display.offset = 0;
-   d3d->menu_display.size = 1024;
+   d3d->menu_display.size   = 1024;
    d3d->menu_display.buffer = d3d_vertex_buffer_new(
          d3d->dev, d3d->menu_display.size * 10 * sizeof(float),
          D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_DEFAULT,
@@ -1727,7 +1731,7 @@ static void video_texture_load_d3d(d3d_video_t *d3d,
    LPDIRECT3DTEXTURE tex = NULL;
    unsigned usage = 0;
 
-#ifndef _XBOX
+#ifndef HAVE_D3D8
    if((filter_type == TEXTURE_FILTER_MIPMAP_LINEAR) ||
       (filter_type == TEXTURE_FILTER_MIPMAP_NEAREST))
          usage |= D3DUSAGE_AUTOGENMIPMAP;
