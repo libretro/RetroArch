@@ -162,8 +162,6 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
       if (!string_is_empty(dir_path))
          path_mkdir(dir_path);
    }
-
-   snprintf(g_defaults.settings.menu, sizeof(g_defaults.settings.menu), "rgui");
 }
 
 int main(int argc, char *argv[])
