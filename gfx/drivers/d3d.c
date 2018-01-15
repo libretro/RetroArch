@@ -825,6 +825,13 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
    unsigned width, height;
    bool ret             = true;
    settings_t *settings = config_get_ptr();
+   static const D3DVERTEXELEMENT VertexElements[] =
+   {
+      { 0, 0 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
+      { 0, 2 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
+      { 0, 4 * sizeof(float), D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0 },
+      D3DDECL_END()
+   };
 
    if (!d3d)
       return false;
@@ -876,14 +883,6 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
    font_driver_init_osd(d3d, false,
          info->is_threaded,
          FONT_DRIVER_RENDER_DIRECT3D_API);
-
-   static const D3DVERTEXELEMENT VertexElements[] =
-   {
-      { 0, 0 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
-      { 0, 2 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
-      { 0, 4 * sizeof(float), D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0 },
-      D3DDECL_END()
-   };
 
    if (!d3d_vertex_declaration_new(d3d->dev,
          (void*)VertexElements, (void**)&d3d->menu_display.decl))
