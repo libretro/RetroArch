@@ -110,14 +110,15 @@
       {
          return function(text)
          {
-            console.log(text)
+            text = Array.prototype.slice.call(arguments).join(' ');
+            console.log(text);
          };
       })(),
 
       printErr: function(text)
       {
          var errArgs = Array.prototype.slice.call(arguments).join(' ');
-         console.error(errArgs)
+         console.error(errArgs);
       },
       canvas: document.getElementById('canvas'),
 
