@@ -1182,6 +1182,14 @@ static void d3d9_cg_renderchain_end_render(cg_renderchain_t *chain)
 }
 
 static void d3d9_cg_renderchain_set_shader_mvp(
+      cg_renderchain_t *chain, CGprogram vPrg, D3DMATRIX *matrix)
+{
+   CGparameter cgpModelViewProj = cgGetNamedParameter(vPrg, "modelViewProj");
+   if (cgpModelViewProj)
+      cgD3D9SetUniformMatrix(cgpModelViewProj, matrix);
+}
+
+static void d3d9_cg_renderchain_calc_and_set_shader_mvp(
       cg_renderchain_t *chain, CGprogram vPrg,
       unsigned vp_width, unsigned vp_height,
       unsigned rotation)
@@ -1195,20 +1203,28 @@ static void d3d9_cg_renderchain_set_shader_mvp(
    d3d_matrix_multiply(&proj, &ortho, &rot);
    d3d_matrix_transpose(&matrix, &proj);
 
-   CGparameter cgpModelViewProj = cgGetNamedParameter(vPrg, "modelViewProj");
-   if (cgpModelViewProj)
-      cgD3D9SetUniformMatrix(cgpModelViewProj, &matrix);
+   d3d9_cg_renderchain_set_shader_mvp(chain, vPrg, &matrix);
 }
 
 static void d3d9_cg_renderchain_set_mvp(
-      void *chain_data,
-      void *data,
-      unsigned vp_width, unsigned vp_height,
-      unsigned rotation)
-{
+         void *data,
+         void *chain_data,
+         void *shader_data,
+         const void *mat_data)
+{   
+   d3d_video_t *d3d        = (d3d_video_t*)data;
+
+#if 0
    cg_renderchain_t *chain = (cg_renderchain_t*)chain_data;
 
-   d3d9_cg_renderchain_set_shader_mvp(chain, chain->vStock, vp_width, vp_height, rotation);
+   if(shader_data)
+      d3d9_cg_renderchain_set_shader_mvp(chain, shader_data, mat_data);
+   else
+      d3d9_cg_renderchain_set_shader_mvp(chain, chain->vStock, mat_data);
+#else
+   d3d_set_vertex_shader_constantf(d3d->dev, 0, mat_data, 4);
+#endif
+
 }
 
 static void cg_d3d9_renderchain_set_vertices(
@@ -1298,7 +1314,7 @@ static void cg_d3d9_renderchain_set_vertices(
 
    if (chain)
    {
-      d3d9_cg_renderchain_set_shader_mvp(
+      d3d9_cg_renderchain_calc_and_set_shader_mvp(
             chain, pass->vPrg, vp_width, vp_height, rotation);
       if (pass)
          d3d9_cg_renderchain_set_shader_params(chain, pass,
@@ -1562,7 +1578,7 @@ static bool d3d9_cg_renderchain_render(
       d3d9_cg_renderchain_end_render(chain);
       cgD3D9BindProgram(chain->fStock);
       cgD3D9BindProgram(chain->vStock);
-      d3d9_cg_renderchain_set_shader_mvp(
+      d3d9_cg_renderchain_calc_and_set_shader_mvp(
             chain, chain->vStock, chain->final_viewport->Width,
             chain->final_viewport->Height, 0);
    }

@@ -111,6 +111,9 @@ bool d3d_set_pixel_shader(LPDIRECT3DDEVICE dev, void *data);
 bool d3d_set_vertex_shader(LPDIRECT3DDEVICE dev, unsigned index,
       void *data);
 
+bool d3d_set_vertex_shader_constantf(LPDIRECT3DDEVICE dev,
+      UINT start_register,const float* constant_data, unsigned vector4f_count);
+
 void d3d_texture_blit(unsigned pixel_size,
       LPDIRECT3DTEXTURE tex,
       D3DLOCKED_RECT *lr, const void *frame,
