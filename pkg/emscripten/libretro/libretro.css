@@ -6,9 +6,11 @@
 
 /**
  * Make sure the background of the player is black.
+ * Also make sure line height is 0 so there's no extra space on the bottom.
  */
 .webplayer-container {
   background-color: black;
+  line-height: 0;
 }
 
 /**
@@ -113,7 +115,6 @@ textarea {
    color: #565656 !important;
 }
 
-/* fix weird white bar in chrome when fullscreen */
-:-webkit-full-screen {
-  height: 100%;
+.navbar {
+  box-shadow: none;
 }
