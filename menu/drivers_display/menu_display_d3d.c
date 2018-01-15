@@ -63,7 +63,7 @@ static void *menu_display_d3d_get_default_mvp(void)
    return &id;
 }
 
-static unsigned menu_display_prim_to_d3d_enum(
+static D3DPRIMITIVETYPE menu_display_prim_to_d3d_enum(
       enum menu_display_prim_type prim_type)
 {
    switch (prim_type)
@@ -76,7 +76,8 @@ static unsigned menu_display_prim_to_d3d_enum(
          break;
    }
 
-   return 0;
+   /* TOD/FIXME - hack */
+   return (D3DPRIMITIVETYPE)0;
 }
 
 static void menu_display_d3d_blend_begin(void)
@@ -159,7 +160,6 @@ static void menu_display_d3d_draw(void *data)
 
    if(d3d->menu_display.offset + draw->coords->vertices > d3d->menu_display.size)
       return;
-
 
    pv        = (float*)d3d_vertex_buffer_lock(d3d->menu_display.buffer);
    pv       += d3d->menu_display.offset * 8;

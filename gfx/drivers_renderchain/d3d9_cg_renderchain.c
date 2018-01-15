@@ -1222,9 +1222,8 @@ static void d3d9_cg_renderchain_set_mvp(
    else
       d3d9_cg_renderchain_set_shader_mvp(chain, chain->vStock, mat_data);
 #else
-   d3d_set_vertex_shader_constantf(d3d->dev, 0, mat_data, 4);
+   d3d_set_vertex_shader_constantf(d3d->dev, 0, (const float*)mat_data, 4);
 #endif
-
 }
 
 static void cg_d3d9_renderchain_set_vertices(

@@ -102,7 +102,7 @@ typedef struct d3d_video
       int size;
       int offset;
       LPDIRECT3DVERTEXBUFFER buffer;
-      LPDIRECT3DVERTEXDECLARATION decl;
+      void *decl;
    }menu_display;
 
 #ifdef HAVE_OVERLAY

@@ -125,7 +125,7 @@ static char *lakka_get_project(void)
    info.enum_idx      = a; \
    dl_type            = b;
 
-static unsigned action_ok_dl_to_enum(unsigned lbl)
+static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
 {
    switch (lbl)
    {
@@ -209,7 +209,7 @@ static unsigned action_ok_dl_to_enum(unsigned lbl)
          break;
    }
 
-   return 0;
+   return MSG_UNKNOWN;
 }
 
 int generic_action_ok_displaylist_push(const char *path,

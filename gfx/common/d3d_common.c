@@ -1107,7 +1107,7 @@ bool d3d_create_vertex_shader(LPDIRECT3DDEVICE dev, const DWORD *a, void **b)
    if (!dev)
       return false;
 #if defined(__cplusplus)
-   if (dev->CreateVertexShader(a, b) != D3D_OK)
+   if (dev->CreateVertexShader(a, (IDirect3DVertexShader9**)b) != D3D_OK)
       return false;
 #else
    if (IDirect3DDevice9_CreateVertexShader(dev, a,
@@ -1126,7 +1126,7 @@ bool d3d_create_pixel_shader(LPDIRECT3DDEVICE dev, const DWORD *a, void **b)
    if (!dev)
       return false;
 #if defined(__cplusplus)
-   if (dev->CreatePixelShader(a, b) != D3D_OK)
+   if (dev->CreatePixelShader(a, (IDirect3DPixelShader9**)b) != D3D_OK)
       return false;
 #else
    if (IDirect3DDevice9_CreatePixelShader(dev, a,
