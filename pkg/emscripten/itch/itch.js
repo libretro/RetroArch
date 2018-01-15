@@ -48,7 +48,7 @@ var showError = function(error) {
 function cleanupStorage()
 {
    localStorage.clear();
-   if (BrowserFS.FileSystem.IndexedDB.isAvailable()) 
+   if (BrowserFS.FileSystem.IndexedDB.isAvailable())  
    {
       var req = indexedDB.deleteDatabase("RetroArch");
       req.onsuccess = function () {
