@@ -649,11 +649,7 @@ static void xdk360_render_msg_pre(xdk360_video_font_t * font)
    d3d_set_vertex_declaration(d3dr, font->s_FontLocals.m_pFontVertexDecl);
    d3d_set_vertex_shader(d3dr, 0, font->s_FontLocals.m_pFontVertexShader);
    d3d_set_pixel_shader(d3dr, font->s_FontLocals.m_pFontPixelShader);
-
-   /* Set the texture scaling factor as a vertex shader constant.
-    * Call here to avoid load hit store from writing to vTexScale above
-    */
-   d3dr->SetVertexShaderConstantF( 2, vTexScale, 1 );
+   d3d_set_vertex_shader_constantf(d3dr, 2, vTexScale, 1);
 }
 
 static void xdk360_draw_text(xdk360_video_font_t *font,
@@ -670,10 +666,7 @@ static void xdk360_draw_text(xdk360_video_font_t *font,
    vColor[2]   = ((0xffffffff & 0x000000ff) >> 0L)  / 255.0f;
    vColor[3]   = ((0xffffffff & 0xff000000) >> 24L) / 255.0f;
 
-   /* Perform the actual storing of the color constant here to prevent
-    * a load-hit-store by inserting work between the store and the use of
-    * the vColor array. */
-   d3dr->SetVertexShaderConstantF(1, vColor, 1);
+   d3d_set_vertex_shader_constantf(d3dr, 1, vColor, 1);
 
    m_fCursorX  = floorf(x);
    m_fCursorY  = floorf(y);

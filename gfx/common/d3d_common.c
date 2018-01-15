@@ -1184,10 +1184,17 @@ bool d3d_set_vertex_shader(LPDIRECT3DDEVICE dev, unsigned index,
 }
 
 bool d3d_set_vertex_shader_constantf(LPDIRECT3DDEVICE dev,
-      UINT start_register,const float* constant_data, unsigned vector4f_count)
+      UINT start_register,const float* constant_data,
+      unsigned vector4f_count)
 {
 #if defined(HAVE_D3D9)
-   return (IDirect3DDevice9_SetVertexShaderConstantF(dev, start_register, constant_data, vector4f_count) == D3D_OK);
+#ifdef __cplusplus
+   return (dev->SetVertexShaderConstantF(
+            start_register, constant_data, vector4f_count) == D3D_OK);
+#else
+   return (IDirect3DDevice9_SetVertexShaderConstantF(dev,
+            start_register, constant_data, vector4f_count) == D3D_OK);
+#endif
 #endif
    return false;
 }
