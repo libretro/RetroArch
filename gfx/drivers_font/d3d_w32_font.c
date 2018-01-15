@@ -39,8 +39,8 @@ typedef struct
 #else
    ID3DXFont *font;
 #endif
-   uint32_t color;
    uint32_t font_size;
+   uint32_t ascent;
 } d3dfonts_t;
 
 #ifdef __cplusplus
@@ -49,9 +49,11 @@ typedef struct
 
 #if !defined(__cplusplus) || defined(CINTERFACE)
 #define IDirect3DXFont_DrawTextA(p, a, b, c, d, e, f) (p)->lpVtbl->DrawTextA(p, a, b, c, d, e, f)
+#define IDirect3DXFont_GetTextMetricsA(p, a) (p)->lpVtbl->GetTextMetricsA(p, a)
 #define IDirect3DXFont_Release(p) (p)->lpVtbl->Release(p)
 #else
 #define IDirect3DXFont_DrawTextA(p, a, b, c, d, e, f) (p)->DrawTextA(a, b, c, d, e, f)
+#define IDirect3DXFont_GetTextMetricsA(p, a) (p)->GetTextMetricsA(a)
 #define IDirect3DXFont_Release(p) (p)->Release()
 #endif
 
@@ -74,23 +76,19 @@ static void *d3dfonts_w32_init_font(void *video_data,
 #endif
    };
    d3dfonts_t *d3dfonts = (d3dfonts_t*)calloc(1, sizeof(*d3dfonts));
-   uint32_t r           = (settings->floats.video_msg_color_r * 255);
-   uint32_t g           = (settings->floats.video_msg_color_g * 255);
-   uint32_t b           = (settings->floats.video_msg_color_b * 255);
-   r &= 0xff;
-   g &= 0xff;
-   b &= 0xff;
-
    if (!d3dfonts)
       return NULL;
 
-   d3dfonts->font_size = font_size;
+   d3dfonts->font_size = font_size * 1.2; /* to match the other font drivers */
    d3dfonts->d3d       = (d3d_video_t*)video_data;
-   d3dfonts->color     = D3DCOLOR_XRGB(r, g, b);
 
+   desc.Height = d3dfonts->font_size;
    if (!d3dx_create_font_indirect(d3dfonts->d3d->dev,
             &desc, (void**)&d3dfonts->font))
       goto error;
+
+   IDirect3DXFont_GetTextMetricsA(d3dfonts->font, &metrics);
+   d3dfonts->ascent = metrics.tmAscent;
 
    return d3dfonts;
 
@@ -131,7 +129,8 @@ static int d3dfonts_w32_get_message_width(void* data, const char* msg,
 static void d3dfonts_w32_render_msg(video_frame_info_t *video_info, void *data, const char *msg,
       const void *userdata)
 {
-   unsigned color, format;
+   unsigned format;
+   unsigned a, r, g, b;
    RECT rect, *p_rect;
    RECT rect_shifted, *p_rect_shifted;
    settings_t *settings             = config_get_ptr();
@@ -152,21 +151,17 @@ static void d3dfonts_w32_render_msg(video_frame_info_t *video_info, void *data, 
    if (!d3d_begin_scene(d3dfonts->d3d->dev))
       return;
 
-   color          = d3dfonts->color;
    format         = DT_LEFT;
    p_rect         = &d3dfonts->d3d->font_rect;
    p_rect_shifted = &d3dfonts->d3d->font_rect_shifted;
 
    if(params)
    {
-      unsigned a, r, g, b;
 
       a = FONT_COLOR_GET_ALPHA(params->color);
       r = FONT_COLOR_GET_RED(params->color);
       g = FONT_COLOR_GET_GREEN(params->color);
       b = FONT_COLOR_GET_BLUE(params->color);
-
-      color = D3DCOLOR_ARGB(a, r, g, b);
 
       switch (params->text_align)
       {
@@ -188,7 +183,7 @@ static void d3dfonts_w32_render_msg(video_frame_info_t *video_info, void *data, 
             break;
       }
 
-      rect.top    = (1.0 - params->y) * height - d3dfonts->font_size;
+      rect.top    = (1.0 - params->y) * height - d3dfonts->ascent;
       rect.bottom = height;
       p_rect      = &rect;
 
@@ -207,22 +202,30 @@ static void d3dfonts_w32_render_msg(video_frame_info_t *video_info, void *data, 
          p_rect_shifted       = &rect_shifted;
       }
    }
+   else
+   {
+      a = 255;
+      r = video_info->font_msg_color_r * 255;
+      g = video_info->font_msg_color_g * 255;
+      b = video_info->font_msg_color_b * 255;
+   }
 
    if(drop_x || drop_y)
    {
-      unsigned a, r, g, b;
+      unsigned drop_a, drop_r, drop_g, drop_b;
 
-      a = FONT_COLOR_GET_ALPHA(color) * drop_alpha;
-      r = FONT_COLOR_GET_RED(color) * drop_mod;
-      g = FONT_COLOR_GET_GREEN(color) * drop_mod;
-      b = FONT_COLOR_GET_BLUE(color) * drop_mod;
+      drop_a = a * drop_alpha;
+      drop_r = r * drop_mod;
+      drop_g = g * drop_mod;
+      drop_b = b * drop_mod;
 
-      IDirect3DXFont_DrawTextA(d3dfonts->font, NULL, msg, -1,
-         p_rect_shifted, format, D3DCOLOR_ARGB(a, r, g, b));
+      IDirect3DXFont_DrawTextA(d3dfonts->font, NULL, msg, -1, p_rect_shifted, format,
+         D3DCOLOR_ARGB(drop_a , drop_r, drop_g, drop_b));
    }
 
+
    IDirect3DXFont_DrawTextA(d3dfonts->font, NULL, msg, -1,
-      p_rect, format, color);
+      p_rect, format, D3DCOLOR_ARGB(a, r, g, b));
 
    d3d_end_scene(d3dfonts->d3d->dev);
 }

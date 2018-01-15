@@ -1183,6 +1183,14 @@ bool d3d_set_vertex_shader(LPDIRECT3DDEVICE dev, unsigned index,
    return true;
 }
 
+bool d3d_set_vertex_shader_constantf(LPDIRECT3DDEVICE dev,
+      UINT start_register,const float* constant_data, unsigned vector4f_count)
+{
+#if defined(HAVE_D3D9)
+   return (IDirect3DDevice9_SetVertexShaderConstantF(dev, start_register, constant_data, vector4f_count) == D3D_OK);
+#endif
+   return false;
+}
 
 void d3d_texture_blit(unsigned pixel_size,
       LPDIRECT3DTEXTURE tex, D3DLOCKED_RECT *lr, const void *frame,
