@@ -27,6 +27,8 @@ MEMORY = 536870912
 
 PRECISE_F32 = 2
 
+OBJDIR := obj-emscripten
+
 ifneq ($(NATIVE_ZLIB),)
    WANT_ZLIB = 0
 endif
@@ -76,45 +78,26 @@ endif
 CFLAGS += -DHAVE_RPNG -Wall -I. -Ilibretro-common/include -std=gnu99 -s USE_ZLIB=1 \
           -s EXPORTED_FUNCTIONS="['_main', '_malloc', '_cmd_savefiles', '_cmd_save_state', '_cmd_take_screenshot']"
 
+RARCH_OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
+
 all: $(TARGET)
 
-$(TARGET): $(OBJ)
+$(TARGET): $(RARCH_OBJ)
 	@$(if $(Q), $(shell echo echo LD $@),)
-	$(Q)$(LD) -o $@ $(OBJ) $(libretro) $(LIBS) $(LDFLAGS)
+	$(Q)$(LD) -o $@ $(RARCH_OBJ) $(libretro) $(LIBS) $(LDFLAGS)
 
-%.o: %.c
+$(OBJDIR)/%.o: %.c
+	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) $(EOPTS) -c -o $@ $<
 
-%.o: %.cpp
+$(OBJDIR)/%.o: %.cpp
+	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CXX $<),)
 	$(Q)$(CXX) $(CXXFLAGS) $(DEFINES) $(EOPTS) -c -o $@ $<
 
 clean:
-	rm -f *.o
-	rm -f deps/libz/*.o
-	rm -f frontend/*.o
-	rm -f menu/*.o
-	rm -f menu/disp/*.o
-	rm -f audio/*.o
-	rm -f compat/*.o
-	rm -f compat/rxml/*.o
-	rm -f conf/*.o
-	rm -f gfx/scaler/*.o
-	rm -f gfx/*.o
-	rm -f gfx/d3d/*.o
-	rm -f gfx/drivers_context/*.o
-	rm -f gfx/math/*.o
-	rm -f gfx/drivers_font/*.o
-	rm -f gfx/drivers_font_renderer/*.o
-	rm -f gfx/py_state/*.o
-	rm -f gfx/rpng/*.o
-	rm -f gfx/glsym/*.o
-	rm -f record/*.o
-	rm -f input/*.o
-	rm -f tools/*.o
-	rm -f libretro-common/*/*.o
+	rm -rf $(OBJDIR)
 	rm -f $(TARGET)
-	rm -f *.d
 
 .PHONY: all clean
