@@ -138,3 +138,4 @@ Makefile.local
 retroarch.js
 retroarch.js.mem
 *.bc
+*.wasm

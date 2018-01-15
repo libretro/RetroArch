@@ -25,7 +25,6 @@ HAVE_STATIC_VIDEO_FILTERS = 1
 HAVE_STATIC_AUDIO_FILTERS = 1
 MEMORY = 536870912
 
-# XXX: setting this to 1/2 currently crashes Firefox nightly
 PRECISE_F32 = 2
 
 ifneq ($(NATIVE_ZLIB),)
@@ -65,7 +64,7 @@ ifeq ($(DEBUG), 1)
    LDFLAGS += -O0 -g
    CFLAGS += -O0 -g
 else
-   LDFLAGS += -O2
+   LDFLAGS += -O2 -s WASM=1
    # WARNING: some optimizations can break some cores (ex: LTO breaks tyrquake)
    LDFLAGS += -s PRECISE_F32=$(PRECISE_F32)
    ifeq ($(LTO), 1)
@@ -74,7 +73,7 @@ else
    CFLAGS += -O2
 endif
 
-CFLAGS += -DHAVE_RPNG -Wall -Wno-unused-result -Wno-unused-variable -I. -Ilibretro-common/include -std=gnu99 -s USE_ZLIB=1 \
+CFLAGS += -DHAVE_RPNG -Wall -I. -Ilibretro-common/include -std=gnu99 -s USE_ZLIB=1 \
           -s EXPORTED_FUNCTIONS="['_main', '_malloc', '_cmd_savefiles', '_cmd_save_state', '_cmd_take_screenshot']"
 
 all: $(TARGET)
