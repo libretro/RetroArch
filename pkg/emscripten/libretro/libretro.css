@@ -92,8 +92,23 @@ textarea {
     font-size: 0.7em;
     height: 95%;
     width:  95%;
-    border-style: none; 
-    border-color: transparent; 
+    border-style: none;
+    border-color: transparent;
     overflow: auto;
     resize: none;
+}
+
+/**
+ * Toggle Top Navigation
+ */
+.toggleMenu {
+   float: right;
+}
+.showMenu {
+   position: absolute;
+   right: 0;
+   cursor: pointer;
+}
+#icnShowMenu {
+   color: #565656 !important;
 }
