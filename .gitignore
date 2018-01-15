@@ -132,3 +132,9 @@ obj-unix/
 /pkg/msvc/msvc-2010/Release Cg/*.pdb
 retroarch.cfg
 Makefile.local
+
+# Emscripten artifacts
+
+retroarch.js
+retroarch.js.mem
+*.bc
