@@ -268,24 +268,13 @@ var Module =
   arguments: ["-v", "--menu"],
   preRun: [],
   postRun: [],
-  print: (function()
+  print: function(text)
   {
-     var element = document.getElementById('output');
-     element.value = ''; // clear browser cache
-     return function(text)
-     {
-        text = Array.prototype.slice.call(arguments).join(' ');
-        element.value += text + "\n";
-        element.scrollTop = 99999; // focus on bottom
-     };
-  })(),
-
+     console.log(text);
+  },
   printErr: function(text)
   {
-     var text = Array.prototype.slice.call(arguments).join(' ');
-     var element = document.getElementById('output');
-     element.value += text + "\n";
-     element.scrollTop = 99999; // focus on bottom
+     console.log(text);
   },
   canvas: document.getElementById('canvas'),
   totalDependencies: 0,
