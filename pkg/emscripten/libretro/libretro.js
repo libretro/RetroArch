@@ -230,6 +230,13 @@ $(function() {
       placement: 'right'
    });
 
+   // Allow hiding the top menu.
+   $('.showMenu').hide();
+   $('#btnHideMenu, .showMenu').click(function () {
+      $('nav').slideToggle('slow');
+      $('.showMenu').toggle('slow');
+   });
+
    /**
     * Attempt to disable some default browser keys.
     */

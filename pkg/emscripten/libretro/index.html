@@ -95,6 +95,11 @@
                    </li>
                 </div>
                </ul>
+               <div class="toggleMenu">
+                  <button class="btn btn-primary" id="btnHideMenu" title="Toggle Menu">
+                     <span class="fa fa-chevron-up" id="icnHideMenu"></span> <span class="sr-only">Hide Top Navigation</span>
+                  </button>
+               </div>
            </div>
            <!--/.Collapse content-->
        </div>
@@ -102,6 +107,11 @@
    <div class="bg-inverse webplayer-container">
       <div class="container">
          <div class="webplayer_border text-xs-center" id="canvas_div">
+            <div class="showMenu">
+               <button type="button" class="btn btn-link">
+                  <span class="fa fa-chevron-down" id="icnShowMenu"></span> <span class="sr-only">Show Top Navigation</span>
+               </button>
+            </div>
             <canvas class="webplayer" id="canvas" tabindex="1" oncontextmenu="event.preventDefault()" style="display: none"></canvas>
             <img class="webplayer-preview img-fluid" src="media/canvas.png" width="960px" height="720px" alt="RetroArch Logo">
          </div>
