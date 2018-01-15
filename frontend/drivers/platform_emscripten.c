@@ -195,7 +195,6 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
 int main(int argc, char *argv[])
 {
    EMSCRIPTEN_RESULT r;
-   settings_t *settings = config_get_ptr();
 
    emscripten_set_canvas_element_size("#canvas", 800, 600);
    emscripten_set_element_css_size("#canvas", 800.0, 600.0);
