@@ -1727,9 +1727,11 @@ static void video_texture_load_d3d(d3d_video_t *d3d,
    LPDIRECT3DTEXTURE tex = NULL;
    unsigned usage = 0;
 
+#ifndef _XBOX
    if((filter_type == TEXTURE_FILTER_MIPMAP_LINEAR) ||
       (filter_type == TEXTURE_FILTER_MIPMAP_NEAREST))
          usage |= D3DUSAGE_AUTOGENMIPMAP;
+#endif
 
    tex = d3d_texture_new(d3d->dev, NULL,
                ti->width, ti->height, 0,

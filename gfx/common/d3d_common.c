@@ -1192,8 +1192,14 @@ bool d3d_set_vertex_shader_constantf(LPDIRECT3DDEVICE dev,
    return (dev->SetVertexShaderConstantF(
             start_register, constant_data, vector4f_count) == D3D_OK);
 #else
+#ifdef _XBOX
+   IDirect3DDevice9_SetVertexShaderConstantF(dev,
+            start_register, constant_data, vector4f_count);
+   return true;
+#else
    return (IDirect3DDevice9_SetVertexShaderConstantF(dev,
             start_register, constant_data, vector4f_count) == D3D_OK);
+#endif
 #endif
 #endif
    return false;
@@ -1231,8 +1237,13 @@ bool d3d_get_render_state(void *data, D3DRENDERSTATETYPE state, DWORD *value)
       return false;
 
 #if defined(HAVE_D3D9) && !defined(__cplusplus)
+#ifdef _XBOX
+   IDirect3DDevice9_GetRenderState(dev, state, value);
+   return true;
+#else
    if (IDirect3DDevice9_GetRenderState(dev, state, value) == D3D_OK)
       return true;
+#endif
 #elif defined(HAVE_D3D8) && !defined(__cplusplus)
    if (IDirect3DDevice8_GetRenderState(dev, state, value) == D3D_OK)
       return true;
