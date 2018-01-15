@@ -51,8 +51,11 @@ static int emscripten_initial_height;
 static void gfx_ctx_emscripten_swap_interval(void *data, unsigned interval)
 {
    (void)data;
-   /* no way to control VSync in WebGL. */
-   (void)interval;
+
+   if (interval == 0)
+      emscripten_set_main_loop_timing(EM_TIMING_SETIMMEDIATE, 0);
+   else
+      emscripten_set_main_loop_timing(EM_TIMING_RAF, (int)interval);
 }
 
 static void gfx_ctx_emscripten_get_canvas_size(int *width, int *height)
