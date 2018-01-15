@@ -798,9 +798,10 @@ typedef struct video_driver
 
 typedef struct d3d_renderchain_driver
 {
-   void (*set_mvp)(void *chain_data,
-         void *data, unsigned vp_width,
-         unsigned vp_height, unsigned rotation);
+   void (*set_mvp)(void *data,
+         void *chain_data,
+         void *shader_data,
+         const void *mat_data);
    void (*chain_free)(void *data);
    void *(*chain_new)(void);
    bool (*reinit)(void *data, const void *info_data);

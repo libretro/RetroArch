@@ -42,23 +42,19 @@ typedef struct d3d8_renderchain
 } d3d8_renderchain_t;
 
 static void d3d8_renderchain_set_mvp(
+      void *data,
       void *chain_data,
-      void *data, unsigned vp_width,
-      unsigned vp_height, unsigned rotation)
+      void *shader_data,
+      const void *mat_data)
 {
+   D3DMATRIX identity;
    d3d_video_t      *d3d = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
-   D3DMATRIX p_out, p_rotate, mat;
 
-   (void)chain_data;
+   d3d_matrix_identity(&identity);
 
-   d3d_matrix_ortho_off_center_lh(&mat, 0, vp_width,  vp_height, 0, 0.0f, 1.0f);
-   d3d_matrix_identity(&p_out);
-   d3d_matrix_rotation_z(&p_rotate, rotation * (M_PI / 2.0));
-
-   d3d_set_transform(d3dr, D3DTS_WORLD, &p_rotate);
-   d3d_set_transform(d3dr, D3DTS_VIEW, &p_out);
-   d3d_set_transform(d3dr, D3DTS_PROJECTION, &p_out);
+   d3d_set_transform(d3d->dev, D3DTS_WORLD, &identity);
+   d3d_set_transform(d3d->dev, D3DTS_VIEW, &identity);
+   d3d_set_transform(d3d->dev, D3DTS_PROJECTION, mat_data);
 }
 
 static void d3d8_renderchain_clear(void *data)

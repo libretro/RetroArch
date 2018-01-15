@@ -339,6 +339,14 @@ static void d3d_viewport_info(void *data, struct video_viewport *vp)
    d3d->renderchain_driver->viewport_info(d3d, vp);
 }
 
+static void d3d_set_mvp(void *data,
+      void *shader_data,
+      const void *mat_data)
+{
+   d3d_video_t *d3d = (d3d_video_t*)data;
+   d3d->renderchain_driver->set_mvp(d3d, d3d->renderchain_data, shader_data, mat_data);
+}
+
 static void d3d_overlay_render(d3d_video_t *d3d,
       video_frame_info_t *video_info,
       overlay_t *overlay)
@@ -347,7 +355,6 @@ static void d3d_overlay_render(d3d_video_t *d3d,
    void *verts;
    unsigned i;
    float vert[4][9];
-   float overlay_width, overlay_height;
    unsigned width      = video_info->width;
    unsigned height     = video_info->height;
 
@@ -374,21 +381,14 @@ static void d3d_overlay_render(d3d_video_t *d3d,
 
    d3d_viewport_info(d3d, &vp);
 
-   overlay_width   = vp.width;
-   overlay_height  = vp.height;
-
-   vert[0][0]      = overlay->vert_coords[0] * overlay_width;
-   vert[1][0]      = (overlay->vert_coords[0] + overlay->vert_coords[2])
-      * overlay_width;
-   vert[2][0]      = overlay->vert_coords[0] * overlay_width;
-   vert[3][0]      = (overlay->vert_coords[0] + overlay->vert_coords[2])
-      * overlay_width;
-   vert[0][1]      = overlay->vert_coords[1] * overlay_height;
-   vert[1][1]      = overlay->vert_coords[1] * overlay_height;
-   vert[2][1]      = (overlay->vert_coords[1] + overlay->vert_coords[3])
-      * overlay_height;
-   vert[3][1]      = (overlay->vert_coords[1] + overlay->vert_coords[3])
-      * overlay_height;
+   vert[0][0]      = overlay->vert_coords[0];
+   vert[1][0]      = overlay->vert_coords[0] + overlay->vert_coords[2];
+   vert[2][0]      = overlay->vert_coords[0];
+   vert[3][0]      = overlay->vert_coords[0] + overlay->vert_coords[2];
+   vert[0][1]      = overlay->vert_coords[1];
+   vert[1][1]      = overlay->vert_coords[1];
+   vert[2][1]      = overlay->vert_coords[1] + overlay->vert_coords[3];
+   vert[3][1]      = overlay->vert_coords[1] + overlay->vert_coords[3];
 
    vert[0][3]      = overlay->tex_coords[0];
    vert[1][3]      = overlay->tex_coords[0] + overlay->tex_coords[2];
@@ -398,13 +398,6 @@ static void d3d_overlay_render(d3d_video_t *d3d,
    vert[1][4]      = overlay->tex_coords[1];
    vert[2][4]      = overlay->tex_coords[1] + overlay->tex_coords[3];
    vert[3][4]      = overlay->tex_coords[1] + overlay->tex_coords[3];
-
-   /* Align texels and vertices. */
-   for (i = 0; i < 4; i++)
-   {
-      vert[i][0]  -= 0.5f;
-      vert[i][1]  += 0.5f;
-   }
 
    verts = d3d_vertex_buffer_lock(overlay->vert_buf);
    memcpy(verts, vert, sizeof(vert));
@@ -825,6 +818,13 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
    unsigned width, height;
    bool ret             = true;
    settings_t *settings = config_get_ptr();
+   static const D3DVERTEXELEMENT VertexElements[] =
+   {
+      { 0, 0 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
+      { 0, 2 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
+      { 0, 4 * sizeof(float), D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0 },
+      D3DDECL_END()
+   };
 
    if (!d3d)
       return false;
@@ -877,14 +877,6 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
          info->is_threaded,
          FONT_DRIVER_RENDER_DIRECT3D_API);
 
-   static const D3DVERTEXELEMENT VertexElements[] =
-   {
-      { 0, 0 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
-      { 0, 2 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
-      { 0, 4 * sizeof(float), D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0 },
-      D3DDECL_END()
-   };
-
    if (!d3d_vertex_declaration_new(d3d->dev,
          (void*)VertexElements, (void**)&d3d->menu_display.decl))
       return false;
@@ -898,6 +890,11 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
 
    if (!d3d->menu_display.buffer)
       return false;
+
+   d3d_matrix_ortho_off_center_lh(&d3d->mvp_transposed, 0, 1, 0, 1, 0, 1);
+   d3d_matrix_transpose(&d3d->mvp, &d3d->mvp_transposed);
+
+   d3d_set_render_state(d3d->dev, D3DRS_CULLMODE, D3DCULL_NONE);
 
    return true;
 }
@@ -1537,16 +1534,18 @@ static bool d3d_frame(void *data, const void *frame,
       return false;
    }
 
-   d3d->renderchain_driver->set_mvp(d3d->renderchain_data, d3d, screen_vp.Width, screen_vp.Height, 0);
-   d3d_set_viewports(d3d->dev, &screen_vp);
 
 #ifdef HAVE_MENU
    if (d3d->menu && d3d->menu->enabled)
    {
+      d3d_set_mvp(d3d, NULL, &d3d->mvp);
       d3d_overlay_render(d3d, video_info, d3d->menu);
+
       d3d->menu_display.offset = 0;
       d3d_set_vertex_declaration(d3d->dev, d3d->menu_display.decl);
       d3d_set_stream_source(d3d->dev, 0, d3d->menu_display.buffer, 0, 8 * sizeof(float));
+
+      d3d_set_viewports(d3d->dev, &screen_vp);
       menu_driver_frame(video_info);
    }
 #endif
@@ -1554,13 +1553,17 @@ static bool d3d_frame(void *data, const void *frame,
 #ifdef HAVE_OVERLAY
    if (d3d->overlays_enabled)
    {
+      d3d_set_mvp(d3d, NULL, &d3d->mvp);
       for (i = 0; i < d3d->overlays_size; i++)
          d3d_overlay_render(d3d, video_info, &d3d->overlays[i]);
    }
 #endif
 
    if (msg && *msg)
+   {
+      d3d_set_viewports(d3d->dev, &screen_vp);
       font_driver_render_msg(video_info, NULL, msg, NULL);
+   }
 
    video_info->cb_update_window_title(
          video_info->context_data, video_info);
@@ -1724,9 +1727,11 @@ static void video_texture_load_d3d(d3d_video_t *d3d,
    LPDIRECT3DTEXTURE tex = NULL;
    unsigned usage = 0;
 
+#ifndef _XBOX
    if((filter_type == TEXTURE_FILTER_MIPMAP_LINEAR) ||
       (filter_type == TEXTURE_FILTER_MIPMAP_NEAREST))
          usage |= D3DUSAGE_AUTOGENMIPMAP;
+#endif
 
    tex = d3d_texture_new(d3d->dev, NULL,
                ti->width, ti->height, 0,
@@ -1807,18 +1812,6 @@ static void d3d_unload_texture(void *data, uintptr_t id)
 
    texid = (LPDIRECT3DTEXTURE)id;
    d3d_texture_free(texid);
-}
-
-static void d3d_set_mvp(void *data,
-      void *shader_data,
-      const void *mat_data)
-{
-   d3d_video_t *d3d = (d3d_video_t*)data;
-   if (d3d && d3d->renderchain_driver->set_mvp)
-      d3d->renderchain_driver->set_mvp(
-            d3d->renderchain_data,
-            data,
-            640, 480, 0);
 }
 
 static const video_poke_interface_t d3d_poke_interface = {

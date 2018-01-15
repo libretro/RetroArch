@@ -57,18 +57,10 @@ static const float *menu_display_d3d_get_default_tex_coords(void)
 
 static void *menu_display_d3d_get_default_mvp(void)
 {
-   static math_matrix_4x4 default_mvp;
-   D3DMATRIX ortho, mvp;
-   d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(false);
+   static math_matrix_4x4 id;
+   matrix_4x4_identity(id);
 
-   if (!d3d)
-      return NULL;
-   d3d_matrix_ortho_off_center_lh(&ortho, 0,
-         1, 0, 1, 0, 1);
-   d3d_matrix_transpose(&mvp, &ortho);
-   memcpy(default_mvp.data, (float*)&mvp, sizeof(default_mvp.data));
-
-   return &default_mvp;
+   return &id;
 }
 
 static unsigned menu_display_prim_to_d3d_enum(
@@ -112,12 +104,13 @@ static void menu_display_d3d_viewport(void *data)
 #if 0
    D3DVIEWPORT                vp = {0};
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
+   d3d_video_t              *d3d = (d3d_video_t*)video_driver_get_ptr(false);
 
    if (!d3d || !draw)
       return;
 
    vp.X      = draw->x;
-   vp.Y      = draw->y;
+   vp.Y      = d3d->video_info.height - (draw->y + draw->height);
    vp.Width  = draw->width;
    vp.Height = draw->height;
    vp.MinZ   = 0.0f;
@@ -148,7 +141,10 @@ static void menu_display_d3d_bind_texture(void *data)
 static void menu_display_d3d_draw(void *data)
 {
    unsigned i;
-   d3d_video_t *d3d              = (d3d_video_t*)video_driver_get_ptr(false);
+   video_shader_ctx_mvp_t mvp;
+   math_matrix_4x4 mop, m1, m2;
+   unsigned width, height;
+   d3d_video_t *d3d              = (d3d_video_t*)video_driver_get_ptr(false);   
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
    float* pv                     = NULL;
    const float *vertex           = NULL;
@@ -158,13 +154,12 @@ static void menu_display_d3d_draw(void *data)
    if (!d3d || !draw)
       return;
 
+   if(draw->pipeline.id)
+      return;
+
    if(d3d->menu_display.offset + draw->coords->vertices > d3d->menu_display.size)
       return;
 
-   if (!draw->coords->vertex)      
-      draw->coords->vertex        = menu_display_d3d_get_default_vertices();
-   if (!draw->coords->tex_coord)
-      draw->coords->tex_coord     = menu_display_d3d_get_default_tex_coords();
 
    pv        = (float*)d3d_vertex_buffer_lock(d3d->menu_display.buffer);
    pv       += d3d->menu_display.offset * 8;
@@ -172,12 +167,17 @@ static void menu_display_d3d_draw(void *data)
    tex_coord = draw->coords->tex_coord;
    color     = draw->coords->color;
 
+   if (!vertex)
+      vertex    = menu_display_d3d_get_default_vertices();
+   if (!tex_coord)
+      tex_coord = menu_display_d3d_get_default_tex_coords();
+
    for (i = 0; i < draw->coords->vertices; i++)
    {
-      *pv++ = (*vertex++ * draw->width) + draw->x;
-      *pv++ = ((1.0 - *vertex++) * draw->height) + draw->y;
+      *pv++ = *vertex++;
+      *pv++ = *vertex++;
       *pv++ = *tex_coord++;
-      *pv++ = 1.0f - *tex_coord++;
+      *pv++ = *tex_coord++;
       *pv++ = *color++;
       *pv++ = *color++;
       *pv++ = *color++;
@@ -185,6 +185,25 @@ static void menu_display_d3d_draw(void *data)
    }
    d3d_vertex_buffer_unlock(d3d->menu_display.buffer);
 
+   if(!draw->matrix_data)
+      draw->matrix_data = menu_display_d3d_get_default_mvp();
+
+   /* ugh */
+   video_driver_get_size(&width, &height);
+   matrix_4x4_scale(m1, 2.0, 2.0, 0);
+   matrix_4x4_translate(mop, -1.0, -1.0, 0);
+   matrix_4x4_multiply(m2, mop, m1);
+   matrix_4x4_multiply(m1, *((math_matrix_4x4*)draw->matrix_data), m2);
+   matrix_4x4_scale(mop, (draw->width / 2.0) / width, (draw->height / 2.0) / height, 0);
+   matrix_4x4_multiply(m2, mop, m1);
+   matrix_4x4_translate(mop, (draw->x + (draw->width / 2.0)) / width, (draw->y + (draw->height / 2.0)) / height,0);
+   matrix_4x4_multiply(m1, mop, m2);
+   matrix_4x4_multiply(m2, d3d->mvp_transposed, m1);
+   d3d_matrix_transpose(&m1, &m2);
+
+   mvp.data = d3d;
+   mvp.matrix = &m1;
+   video_driver_set_mvp(&mvp);
    menu_display_d3d_bind_texture(draw);
    d3d_draw_primitive(d3d->dev, menu_display_prim_to_d3d_enum(draw->prim_type), d3d->menu_display.offset,
                       draw->coords->vertices - (draw->prim_type == MENU_DISPLAY_PRIM_TRIANGLESTRIP? 2 : 0));

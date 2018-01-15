@@ -1183,6 +1183,27 @@ bool d3d_set_vertex_shader(LPDIRECT3DDEVICE dev, unsigned index,
    return true;
 }
 
+bool d3d_set_vertex_shader_constantf(LPDIRECT3DDEVICE dev,
+      UINT start_register,const float* constant_data,
+      unsigned vector4f_count)
+{
+#if defined(HAVE_D3D9)
+#ifdef __cplusplus
+   return (dev->SetVertexShaderConstantF(
+            start_register, constant_data, vector4f_count) == D3D_OK);
+#else
+#ifdef _XBOX
+   IDirect3DDevice9_SetVertexShaderConstantF(dev,
+            start_register, constant_data, vector4f_count);
+   return true;
+#else
+   return (IDirect3DDevice9_SetVertexShaderConstantF(dev,
+            start_register, constant_data, vector4f_count) == D3D_OK);
+#endif
+#endif
+#endif
+   return false;
+}
 
 void d3d_texture_blit(unsigned pixel_size,
       LPDIRECT3DTEXTURE tex, D3DLOCKED_RECT *lr, const void *frame,
@@ -1206,6 +1227,31 @@ void d3d_texture_blit(unsigned pixel_size,
 #endif
       d3d_unlock_rectangle(tex);
    }
+}
+
+bool d3d_get_render_state(void *data, D3DRENDERSTATETYPE state, DWORD *value)
+{
+   LPDIRECT3DDEVICE dev = (LPDIRECT3DDEVICE)data;
+
+   if (!dev)
+      return false;
+
+#if defined(HAVE_D3D9) && !defined(__cplusplus)
+#ifdef _XBOX
+   IDirect3DDevice9_GetRenderState(dev, state, value);
+   return true;
+#else
+   if (IDirect3DDevice9_GetRenderState(dev, state, value) == D3D_OK)
+      return true;
+#endif
+#elif defined(HAVE_D3D8) && !defined(__cplusplus)
+   if (IDirect3DDevice8_GetRenderState(dev, state, value) == D3D_OK)
+      return true;
+#else
+   if (dev->GetRenderState(state, value) == D3D_OK)
+      return true;
+#endif
+   return false;
 }
 
 void d3d_set_render_state(void *data, D3DRENDERSTATETYPE state, DWORD value)

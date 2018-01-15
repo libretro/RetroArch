@@ -3,47 +3,8 @@
  *
  * This provides the basic JavaScript for the RetroArch web player.
  */
-var client = new Dropbox.Client({ key: "il6e10mfd7pgf8r" });
 var BrowserFS = BrowserFS;
 var afs;
-
-var showError = function(error) {
-  switch (error.status) {
-  case Dropbox.ApiError.INVALID_TOKEN:
-  // If you're using dropbox.js, the only cause behind this error is that
-  // the user token expired.
-  // Get the user through the authentication flow again.
-  break;
-
-  case Dropbox.ApiError.NOT_FOUND:
-  // The file or folder you tried to access is not in the user's Dropbox.
-  // Handling this error is specific to your application.
-  break;
-
-  case Dropbox.ApiError.OVER_QUOTA:
-  // The user is over their Dropbox quota.
-  // Tell them their Dropbox is full. Refreshing the page won't help.
-  break;
-
-  case Dropbox.ApiError.RATE_LIMITED:
-  // Too many API requests. Tell the user to try again later.
-  // Long-term, optimize your code to use fewer API calls.
-  break;
-
-  case Dropbox.ApiError.NETWORK_ERROR:
-  // An error occurred at the XMLHttpRequest layer.
-  // Most likely, the user's network connection is down.
-  // API calls will not succeed until the user gets back online.
-  break;
-
-  case Dropbox.ApiError.INVALID_PARAM:
-  case Dropbox.ApiError.OAUTH_ERROR:
-  case Dropbox.ApiError.INVALID_METHOD:
-  default:
-  // Caused by a bug in dropbox.js, in your application, or in Dropbox.
-  // Tell the user an error occurred, ask them to refresh the page.
-  }
-};
 
 function cleanupStorage()
 {
@@ -65,52 +26,8 @@ function cleanupStorage()
    document.getElementById("btnClean").disabled = true;
 }
 
-function dropboxInit()
-{
-  document.getElementById("btnDrop").disabled = true;
-  $('#icnDrop').removeClass('fa-dropbox');
-  $('#icnDrop').addClass('fa-spinner fa-spin');
-
-
-  client.authDriver(new Dropbox.AuthDriver.Redirect());
-  client.authenticate({ rememberUser: true }, function(error, client)
-  {
-     if (error)
-     {
-        return showError(error);
-     }
-     dropboxSync(client, dropboxSyncComplete);
-  });
-}
-
-function dropboxSync(dropboxClient, cb)
-{
-  var dbfs = new BrowserFS.FileSystem.Dropbox(dropboxClient);
-  // Wrap in afsFS.
-  afs = new BrowserFS.FileSystem.AsyncMirror(
-     new BrowserFS.FileSystem.InMemory(), dbfs);
-
-  afs.initialize(function(err)
-  {
-      // Initialize it as the root file system.
-      //BrowserFS.initialize(afs);
-      cb();
-  });
-}
-
-function dropboxSyncComplete()
-{
-  $('#icnDrop').removeClass('fa-spinner').removeClass('fa-spin');
-  $('#icnDrop').addClass('fa-check');
-  console.log("WEBPLAYER: Dropbox sync successful");
-
-  setupFileSystem("dropbox");
-  preLoadingComplete();
-}
-
 function idbfsInit()
 {
-   document.getElementById("btnLocal").disabled = true;
    $('#icnLocal').removeClass('fa-globe');
    $('#icnLocal').addClass('fa-spinner fa-spin');
    var imfs = new BrowserFS.FileSystem.InMemory();
@@ -209,7 +126,6 @@ function startRetroArch()
 {
    $('.webplayer').show();
    $('.webplayer-preview').hide();
-   document.getElementById("btnDrop").disabled = true;
    document.getElementById("btnRun").disabled = true;
 
    $('#btnFullscreen').removeClass('disabled');
@@ -303,6 +219,13 @@ $(function() {
       placement: 'right'
    });
 
+   // Allow hiding the top menu.
+   $('.showMenu').hide();
+   $('#btnHideMenu, .showMenu').click(function () {
+      $('nav').slideToggle('slow');
+      $('.showMenu').toggle('slow');
+   });
+
    /**
     * Attempt to disable some default browser keys.
     */
@@ -359,19 +282,9 @@ $(function() {
    {
       $('#icnRun').removeClass('fa-spinner').removeClass('fa-spin');
       $('#icnRun').addClass('fa-play');
-
-      if (localStorage.getItem("backend") == "dropbox")
-      {
-         $('#lblDrop').addClass('active');
-         $('#lblLocal').removeClass('active');
-         dropboxInit();
-      }
-      else
-      {
-         $('#lblDrop').removeClass('active');
-         $('#lblLocal').addClass('active');
-         idbfsInit();
-      }
+      $('#lblDrop').removeClass('active');
+      $('#lblLocal').addClass('active');
+      idbfsInit();
    });
  });
 

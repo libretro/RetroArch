@@ -111,6 +111,9 @@ bool d3d_set_pixel_shader(LPDIRECT3DDEVICE dev, void *data);
 bool d3d_set_vertex_shader(LPDIRECT3DDEVICE dev, unsigned index,
       void *data);
 
+bool d3d_set_vertex_shader_constantf(LPDIRECT3DDEVICE dev,
+      UINT start_register,const float* constant_data, unsigned vector4f_count);
+
 void d3d_texture_blit(unsigned pixel_size,
       LPDIRECT3DTEXTURE tex,
       D3DLOCKED_RECT *lr, const void *frame,
@@ -144,7 +147,11 @@ bool d3d_device_get_render_target(LPDIRECT3DDEVICE dev,
 void d3d_device_set_render_target(LPDIRECT3DDEVICE dev, unsigned idx,
       void *data);
 
-void d3d_set_render_state(void *data, D3DRENDERSTATETYPE state, DWORD value);
+bool d3d_get_render_state(void *data,
+      D3DRENDERSTATETYPE state, DWORD *value);
+
+void d3d_set_render_state(void *data,
+      D3DRENDERSTATETYPE state, DWORD value);
 
 void d3d_device_set_render_target(LPDIRECT3DDEVICE dev, unsigned idx,
       void *data);

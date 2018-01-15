@@ -390,6 +390,15 @@ void fill_pathname_abbreviate_special(char *out_path,
       const char *in_path, size_t size);
 
 /**
+ * path_basedir:
+ * @path               : path
+ *
+ * Extracts base directory by mutating path.
+ * Keeps trailing '/'.
+ **/
+void path_basedir_wrapper(char *path);
+
+/**
  * path_char_is_slash:
  * @c                  : character
  *
