@@ -29,7 +29,8 @@ var LibraryRWebAudio = {
       process: function(queueBuffers) {
          var currentTime = RA.getCurrentPerfTime();
          for (var i = 0; i < RA.bufIndex; i++) {
-            if (RA.buffers[i].endTime < currentTime) {
+            if (RA.buffers[i].endTime !== 0 && RA.buffers[i].endTime < currentTime) {
+               RA.buffers[i].endTime = 0;
                var buf = RA.buffers.splice(i, 1);
                RA.buffers[RA.numBuffers - 1] = buf[0];
                i--;
@@ -87,7 +88,10 @@ var LibraryRWebAudio = {
       RA.numBuffers = ((latency * RA.context.sampleRate) / (1000 * RA.BUFFER_SIZE))|0;
       if (RA.numBuffers < 2) RA.numBuffers = 2;
 
-      for (var i = 0; i < RA.numBuffers; i++) RA.buffers[i] = RA.context.createBuffer(2, RA.BUFFER_SIZE, RA.context.sampleRate);
+      for (var i = 0; i < RA.numBuffers; i++) {
+         RA.buffers[i] = RA.context.createBuffer(2, RA.BUFFER_SIZE, RA.context.sampleRate);
+         RA.buffers[i].endTime = 0
+      }
 
       RA.nonblock = false;
       RA.startTime = 0;
@@ -146,7 +150,7 @@ var LibraryRWebAudio = {
    },
 
    RWebAudioBufferSize: function() {
-      return RA.numBuffers * RA.BUFFER_SIZE + RA.BUFFER_SIZE;
+      return RA.numBuffers * RA.BUFFER_SIZE * 8;
    },
 
    RWebAudioWriteAvail: function() {
