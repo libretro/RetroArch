@@ -141,8 +141,13 @@ static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
 
 static void gfx_ctx_emscripten_swap_buffers(void *data, void *data2)
 {
-   (void)data;
-   /* no-op in emscripten, no way to force swap/wait for VSync in browsers */
+   emscripten_ctx_data_t *emscripten = (emscripten_ctx_data_t*)data;
+
+   /* doesn't really do anything in WebGL, but it might if we use WebGL workers
+    * in the future */
+#ifdef HAVE_EGL
+   egl_swap_buffers(&emscripten->egl);
+#endif
 }
 
 static void gfx_ctx_emscripten_get_video_size(void *data,
