@@ -34,9 +34,6 @@
       <input type="textbox" id="latency" size="3" maxlength="3" value="96"> <label for="latency" id="latency-label">Audio latency (ms) (increase if you hear pops at fullspeed, can only be done before loading game)</label>
    </div>
 
-   <hr/>
-   <textarea class="emscripten" id="output" rows="8"></textarea>
-   <hr>
    <div class="emscripten" id="controls">
       Controls:<br>
       <br>
@@ -65,7 +62,7 @@
       count = files.length;
       document.getElementById("openrom").innerHTML = '';
       document.getElementById("openrom").style.display = 'none';
-      for (var i = 0; i < files.length; i++) 
+      for (var i = 0; i < files.length; i++)
       {
          filereader = new FileReader();
          filereader.file_name = files[i].name;
@@ -103,35 +100,30 @@
       Module.FS_createDataFile('/', name, dataView, true, false);
    }
 
-   var Module = 
+   var Module =
    {
       noInitialRun: true,
       arguments: ["-v", "--menu"],
       preRun: [],
       postRun: [],
-      print: (function() 
+      print: (function()
       {
-         var element = document.getElementById('output');
-         element.value = ''; // clear browser cache
-         return function(text) 
+         return function(text)
          {
             text = Array.prototype.slice.call(arguments).join(' ');
-            element.value += text + "\n";
-            element.scrollTop = 99999; // focus on bottom
+            console.log(text);
          };
       })(),
 
       printErr: function(text)
       {
-         var text = Array.prototype.slice.call(arguments).join(' ');
-         var element = document.getElementById('output');
-         element.value += text + "\n";
-         element.scrollTop = 99999; // focus on bottom
+         var errArgs = Array.prototype.slice.call(arguments).join(' ');
+         console.error(errArgs);
       },
       canvas: document.getElementById('canvas'),
 
       totalDependencies: 0,
-      monitorRunDependencies: function(left) 
+      monitorRunDependencies: function(left)
       {
          this.totalDependencies = Math.max(this.totalDependencies, left);
       }
