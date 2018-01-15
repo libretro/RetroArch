@@ -92,8 +92,13 @@ textarea {
     font-size: 0.7em;
     height: 95%;
     width:  95%;
-    border-style: none; 
-    border-color: transparent; 
+    border-style: none;
+    border-color: transparent;
     overflow: auto;
     resize: none;
+}
+
+/* fix weird white bar in chrome when fullscreen */
+:-webkit-full-screen {
+  height: 100%;
 }
