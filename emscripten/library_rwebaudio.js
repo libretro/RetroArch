@@ -23,7 +23,7 @@ var LibraryRWebAudio = {
 
       getCurrentPerfTime: function() {
          if (RA.startTime) return (window['performance']['now']() - RA.startTime) / 1000;
-         else throw 'getCurrentPerfTime() called before start time set';
+         else return 0;
       },
 
       process: function(queueBuffers) {
@@ -97,7 +97,7 @@ var LibraryRWebAudio = {
       Module["pauseMainLoop"]();
       return 1;
    },
-   
+
    RWebAudioSampleRate: function() {
       return RA.context.sampleRate;
    },
