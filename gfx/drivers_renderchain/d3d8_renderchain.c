@@ -189,8 +189,13 @@ static void d3d8_renderchain_blit_to_texture(void *data, const void *frame,
 
    /* Set the texture to NULL so D3D doesn't complain about it being in use... */
    d3d_set_texture(d3dr, 0, NULL);
-   d3d_texture_blit(chain->pixel_size, chain->tex,
-         &d3dlr, frame, width, height, pitch);
+
+   if (d3d_lock_rectangle(chain->tex, 0, &d3dlr, NULL, 0, 0))
+   {
+      d3d_texture_blit(chain->pixel_size, chain->tex,
+            &d3dlr, frame, width, height, pitch);
+      d3d_unlock_rectangle(chain->tex);
+   }
 }
 
 static void d3d8_renderchain_deinit(void *data)

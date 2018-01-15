@@ -74,6 +74,7 @@ struct CGVertex
 struct Pass
 {
    struct LinkInfo info;
+   D3DPOOL pool;
    LPDIRECT3DTEXTURE tex;
    LPDIRECT3DVERTEXBUFFER vertex_buf;
    CGprogram vPrg, fPrg;
@@ -939,6 +940,7 @@ static bool d3d9_cg_renderchain_set_pass_size(
 
       pass->info.tex_w = width;
       pass->info.tex_h = height;
+      pass->pool       = D3DPOOL_DEFAULT;
       pass->tex        = d3d_texture_new(chain->dev, NULL,
             width, height, 1,
             D3DUSAGE_RENDERTARGET,
@@ -1078,6 +1080,7 @@ static bool d3d9_cg_renderchain_add_pass(
    pass.last_width             = 0;
    pass.last_height            = 0;
    pass.attrib_map             = unsigned_vector_list_new();
+   pass.pool                   = D3DPOOL_DEFAULT;
 
    d3d9_cg_load_program(chain, &pass.fPrg,
          &pass.vPrg, info->pass->source.path, true);
@@ -1339,7 +1342,9 @@ static void cg_d3d9_renderchain_blit_to_texture(
    D3DLOCKED_RECT d3dlr;
    struct Pass *first = (struct Pass*)&chain->passes->data[0];
 
-   if (first->last_width != width || first->last_height != height)
+   if (
+         (first->last_width != width || first->last_height != height)
+      )
    {
       d3d_lock_rectangle(first->tex, 0, &d3dlr,
             NULL, first->info.tex_h, D3DLOCK_NOSYSLOCK);
@@ -1347,8 +1352,12 @@ static void cg_d3d9_renderchain_blit_to_texture(
             NULL, first->info.tex_h, D3DLOCK_NOSYSLOCK);
    }
 
-   d3d_texture_blit(chain->pixel_size, first->tex,
-         &d3dlr, frame, width, height, pitch);
+   if (d3d_lock_rectangle(first->tex, 0, &d3dlr, NULL, 0, 0))
+   {
+      d3d_texture_blit(chain->pixel_size, first->tex,
+            &d3dlr, frame, width, height, pitch);
+      d3d_unlock_rectangle(first->tex);
+   }
 }
 
 static void cg_d3d9_renderchain_unbind_all(cg_renderchain_t *chain)

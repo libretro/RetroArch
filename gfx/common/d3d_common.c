@@ -1206,27 +1206,24 @@ bool d3d_set_vertex_shader_constantf(LPDIRECT3DDEVICE dev,
 }
 
 void d3d_texture_blit(unsigned pixel_size,
-      LPDIRECT3DTEXTURE tex, D3DLOCKED_RECT *lr, const void *frame,
+      LPDIRECT3DTEXTURE tex,
+      D3DLOCKED_RECT *lr, const void *frame,
       unsigned width, unsigned height, unsigned pitch)
 {
-   if (d3d_lock_rectangle(tex, 0, lr, NULL, 0, 0))
-   {
 #if defined(_XBOX360)
-      D3DSURFACE_DESC desc;
-      d3d_texture_get_level_desc(tex, 0, &desc);
-      XGCopySurface(lr->pBits, lr->Pitch, width, height, desc.Format, NULL,
-            frame, pitch, desc.Format, NULL, 0, 0);
+   D3DSURFACE_DESC desc;
+   d3d_texture_get_level_desc(tex, 0, &desc);
+   XGCopySurface(lr->pBits, lr->Pitch, width, height, desc.Format, NULL,
+         frame, pitch, desc.Format, NULL, 0, 0);
 #else
-      unsigned y;
-      for (y = 0; y < height; y++)
-      {
-         const uint8_t *in = (const uint8_t*)frame + y * pitch;
-         uint8_t *out = (uint8_t*)lr->pBits + y * lr->Pitch;
-         memcpy(out, in, width * pixel_size);
-      }
-#endif
-      d3d_unlock_rectangle(tex);
+   unsigned y;
+   for (y = 0; y < height; y++)
+   {
+      const uint8_t *in = (const uint8_t*)frame + y * pitch;
+      uint8_t *out = (uint8_t*)lr->pBits + y * lr->Pitch;
+      memcpy(out, in, width * pixel_size);
    }
+#endif
 }
 
 bool d3d_get_render_state(void *data, D3DRENDERSTATETYPE state, DWORD *value)
