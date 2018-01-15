@@ -286,12 +286,9 @@ $(function() {
    {
       $('#icnRun').removeClass('fa-spinner').removeClass('fa-spin');
       $('#icnRun').addClass('fa-play');
-
-
-         $('#lblDrop').removeClass('active');
-         $('#lblLocal').addClass('active');
-         idbfsInit();
-
+      $('#lblDrop').removeClass('active');
+      $('#lblLocal').addClass('active');
+      idbfsInit();
    });
  });
 
