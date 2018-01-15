@@ -44,6 +44,8 @@
 #include "../../tasks/tasks_internal.h"
 #include "../../file_path_special.h"
 
+void RWebAudioRecalibrateTime(void);
+
 static unsigned emscripten_fullscreen_reinit;
 
 static EM_BOOL emscripten_fullscreenchange_cb(int event_type,
@@ -63,6 +65,8 @@ static void emscripten_mainloop(void)
 {
    unsigned sleep_ms = 0;
    int ret;
+
+   RWebAudioRecalibrateTime();
 
    if (emscripten_fullscreen_reinit != 0)
    {

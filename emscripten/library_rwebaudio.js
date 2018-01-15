@@ -41,8 +41,8 @@ var LibraryRWebAudio = {
 
       fillBuffer: function(buf, samples) {
          var count = 0;
-         var leftBuffer = RA.buffers[RA.bufIndex].getChannelData(0);
-         var rightBuffer = RA.buffers[RA.bufIndex].getChannelData(1);
+         const leftBuffer = RA.buffers[RA.bufIndex].getChannelData(0);
+         const rightBuffer = RA.buffers[RA.bufIndex].getChannelData(1);
          while (samples && RA.bufOffset !== RA.BUFFER_SIZE) {
             leftBuffer[RA.bufOffset] = {{{ makeGetValue('buf', 'count * 8', 'float') }}};
             rightBuffer[RA.bufOffset] = {{{ makeGetValue('buf', 'count * 8 + 4', 'float') }}};
@@ -74,7 +74,7 @@ var LibraryRWebAudio = {
       block: function() {
          do {
             RA.process();
-         } while (RA.bufIndex === RA.numBuffers - 1);
+         } while (RA.bufIndex === RA.numBuffers);
       }
    },
 
@@ -112,16 +112,17 @@ var LibraryRWebAudio = {
       var count = 0;
 
       while (samples) {
+         if (RA.bufIndex === RA.numBuffers) {
+            if (RA.nonblock) break;
+            else RA.block();
+         }
+
          var fill = RA.fillBuffer(buf, samples);
          samples -= fill;
          count += fill;
          buf += fill * 8;
 
          if (RA.bufOffset === RA.BUFFER_SIZE) {
-            if (RA.bufIndex === RA.numBuffers - 1) {
-               if (RA.nonblock) break;
-               else RA.block();
-            }
             RA.queueAudio();
          }
       }
@@ -146,7 +147,6 @@ var LibraryRWebAudio = {
    RWebAudioFree: function() {
       RA.bufIndex = 0;
       RA.bufOffset = 0;
-      return;
    },
 
    RWebAudioBufferSize: function() {
@@ -156,6 +156,12 @@ var LibraryRWebAudio = {
    RWebAudioWriteAvail: function() {
       RA.process();
       return ((RA.numBuffers - RA.bufIndex) * RA.BUFFER_SIZE - RA.bufOffset) * 8;
+   },
+
+   RWebAudioRecalibrateTime: function() {
+      if (RA.startTime) {
+         RA.startTime = window['performance']['now']() - RA.context.currentTime * 1000;
+      }
    }
 };
 
