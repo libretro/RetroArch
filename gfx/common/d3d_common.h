@@ -24,6 +24,12 @@
 
 RETRO_BEGIN_DECLS
 
+typedef struct d3d_texture
+{
+   LPDIRECT3DTEXTURE data;
+   D3DPOOL pool;
+} d3d_texture_t;
+
 bool d3d_swap(void *data, LPDIRECT3DDEVICE dev);
 
 LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(LPDIRECT3DDEVICE dev,
