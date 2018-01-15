@@ -184,24 +184,13 @@ var Module =
   arguments: ["-v", "--menu"],
   preRun: [],
   postRun: [],
-  print: (function()
+  print: function(text)
   {
-     var element = document.getElementById('output');
-     element.value = ''; // clear browser cache
-     return function(text)
-     {
-        text = Array.prototype.slice.call(arguments).join(' ');
-        element.value += text + "\n";
-        element.scrollTop = 99999; // focus on bottom
-     };
-  })(),
-
+     console.log(text);
+  },
   printErr: function(text)
   {
-     var text = Array.prototype.slice.call(arguments).join(' ');
-     var element = document.getElementById('output');
-     element.value += text + "\n";
-     element.scrollTop = 99999; // focus on bottom
+     console.log(text);
   },
   canvas: document.getElementById('canvas'),
   totalDependencies: 0,
@@ -306,31 +295,7 @@ function keyPress(k)
 }
 
 kp = function(k, event) {
-   var oEvent = document.createEvent('KeyboardEvent');
-
-   // Chromium Hack
-   Object.defineProperty(oEvent, 'keyCode', {
-      get : function() {
-         return this.keyCodeVal;
-      }
-   });
-   Object.defineProperty(oEvent, 'which', {
-      get : function() {
-         return this.keyCodeVal;
-      }
-   });
-
-   if (oEvent.initKeyboardEvent) {
-      oEvent.initKeyboardEvent(event, true, true, document.defaultView, false, false, false, false, k, k);
-   } else {
-      oEvent.initKeyEvent(event, true, true, document.defaultView, false, false, false, false, k, 0);
-   }
-
-   oEvent.keyCodeVal = k;
-
-   if (oEvent.keyCode !== k) {
-      alert("keyCode mismatch " + oEvent.keyCode + "(" + oEvent.which + ")");
-   }
+   var oEvent = new KeyboardEvent(event, { code: k });
 
    document.dispatchEvent(oEvent);
    document.getElementById('canvas').focus();

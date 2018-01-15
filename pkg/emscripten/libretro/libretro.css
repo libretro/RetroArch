@@ -112,3 +112,8 @@ textarea {
 #icnShowMenu {
    color: #565656 !important;
 }
+
+/* fix weird white bar in chrome when fullscreen */
+:-webkit-full-screen {
+  height: 100%;
+}

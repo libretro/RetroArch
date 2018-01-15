@@ -567,7 +567,6 @@ static void rwebinput_input_free(void *data)
 static void rwebinput_process_keyboard_events(rwebinput_input_t *rwebinput,
    rwebinput_keyboard_event_t *event)
 {
-   uint32_t crc;
    uint32_t keycode;
    unsigned translated_keycode;
    uint32_t character = 0;

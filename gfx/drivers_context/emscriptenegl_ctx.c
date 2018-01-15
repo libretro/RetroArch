@@ -51,8 +51,11 @@ static int emscripten_initial_height;
 static void gfx_ctx_emscripten_swap_interval(void *data, unsigned interval)
 {
    (void)data;
-   /* no way to control VSync in WebGL. */
-   (void)interval;
+
+   if (interval == 0)
+      emscripten_set_main_loop_timing(EM_TIMING_SETIMMEDIATE, 0);
+   else
+      emscripten_set_main_loop_timing(EM_TIMING_RAF, (int)interval);
 }
 
 static void gfx_ctx_emscripten_get_canvas_size(int *width, int *height)
@@ -138,8 +141,13 @@ static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
 
 static void gfx_ctx_emscripten_swap_buffers(void *data, void *data2)
 {
-   (void)data;
-   /* no-op in emscripten, no way to force swap/wait for VSync in browsers */
+   emscripten_ctx_data_t *emscripten = (emscripten_ctx_data_t*)data;
+
+   /* doesn't really do anything in WebGL, but it might if we use WebGL workers
+    * in the future */
+#ifdef HAVE_EGL
+   egl_swap_buffers(&emscripten->egl);
+#endif
 }
 
 static void gfx_ctx_emscripten_get_video_size(void *data,

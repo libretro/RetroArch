@@ -39,14 +39,42 @@
 #include "../../defaults.h"
 #include "../../content.h"
 #include "../../retroarch.h"
+#include "../../verbosity.h"
 #include "../../command.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../file_path_special.h"
 
+void RWebAudioRecalibrateTime(void);
+
+static unsigned emscripten_fullscreen_reinit;
+
+static EM_BOOL emscripten_fullscreenchange_cb(int event_type,
+   const EmscriptenFullscreenChangeEvent *fullscreen_change_event,
+   void *user_data)
+{
+   (void)event_type;
+   (void)fullscreen_change_event;
+   (void)user_data;
+
+   emscripten_fullscreen_reinit = 5;
+
+   return EM_TRUE;
+}
+
 static void emscripten_mainloop(void)
 {
    unsigned sleep_ms = 0;
-   int           ret = runloop_iterate(&sleep_ms);
+   int ret;
+
+   RWebAudioRecalibrateTime();
+
+   if (emscripten_fullscreen_reinit != 0)
+   {
+      if (--emscripten_fullscreen_reinit == 0)
+         command_event(CMD_EVENT_REINIT, NULL);
+   }
+
+   ret = runloop_iterate(&sleep_ms);
 
    if (ret == 1 && sleep_ms > 0)
       retro_sleep(sleep_ms);
@@ -162,19 +190,24 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
       if (!string_is_empty(dir_path))
          path_mkdir(dir_path);
    }
-
-   snprintf(g_defaults.settings.menu, sizeof(g_defaults.settings.menu), "rgui");
 }
 
 int main(int argc, char *argv[])
 {
-   settings_t *settings = config_get_ptr();
+   EMSCRIPTEN_RESULT r;
 
    emscripten_set_canvas_element_size("#canvas", 800, 600);
    emscripten_set_element_css_size("#canvas", 800.0, 600.0);
+   emscripten_set_main_loop(emscripten_mainloop, 0, 0);
    rarch_main(argc, argv, NULL);
-   emscripten_set_main_loop(emscripten_mainloop,
-         settings->bools.video_vsync ? 0 : INT_MAX, 1);
+
+   r = emscripten_set_fullscreenchange_callback("#document", NULL, false,
+      emscripten_fullscreenchange_cb);
+   if (r != EMSCRIPTEN_RESULT_SUCCESS)
+   {
+      RARCH_ERR(
+         "[EMSCRIPTEN/CTX] failed to create fullscreen callback: %d\n", r);
+   }
 
    return 0;
 }
