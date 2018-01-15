@@ -224,6 +224,7 @@ enum joypad_driver_enum
    JOYPAD_DOS,
    JOYPAD_HID,
    JOYPAD_QNX,
+   JOYPAD_RWEBPAD,
    JOYPAD_NULL
 };
 
@@ -454,6 +455,8 @@ static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_DOS;
 static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_HID;
 #elif defined(__QNX__)
 static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_QNX;
+#elif defined(EMSCRIPTEN)
+static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_RWEBPAD;
 #else
 static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_NULL;
 #endif
@@ -783,9 +786,9 @@ const char *config_get_default_input(void)
       case INPUT_COCOA:
          return "cocoa";
       case INPUT_QNX:
-      	 return "qnx_input";
+          return "qnx_input";
       case INPUT_RWEBINPUT:
-      	 return "rwebinput";
+          return "rwebinput";
       case INPUT_DOS:
          return "dos";
       case INPUT_NULL:
@@ -846,6 +849,8 @@ const char *config_get_default_joypad(void)
          return "hid";
       case JOYPAD_QNX:
          return "qnx";
+      case JOYPAD_RWEBPAD:
+         return "rwebpad";
       case JOYPAD_DOS:
          return "dos";
       case JOYPAD_NULL:
