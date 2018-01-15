@@ -1223,6 +1223,26 @@ void d3d_texture_blit(unsigned pixel_size,
    }
 }
 
+bool d3d_get_render_state(void *data, D3DRENDERSTATETYPE state, DWORD *value)
+{
+   LPDIRECT3DDEVICE dev = (LPDIRECT3DDEVICE)data;
+
+   if (!dev)
+      return false;
+
+#if defined(HAVE_D3D9) && !defined(__cplusplus)
+   if (IDirect3DDevice9_GetRenderState(dev, state, value) == D3D_OK)
+      return true;
+#elif defined(HAVE_D3D8) && !defined(__cplusplus)
+   if (IDirect3DDevice8_GetRenderState(dev, state, value) == D3D_OK)
+      return true;
+#else
+   if (dev->GetRenderState(state, value) == D3D_OK)
+      return true;
+#endif
+   return false;
+}
+
 void d3d_set_render_state(void *data, D3DRENDERSTATETYPE state, DWORD value)
 {
    LPDIRECT3DDEVICE dev = (LPDIRECT3DDEVICE)data;

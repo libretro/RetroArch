@@ -630,7 +630,8 @@ static void xdk360_render_msg_pre(xdk360_video_font_t * font)
    LPDIRECT3DDEVICE d3dr = font->d3d->dev;
 
    /* Save state. */
-   d3dr->GetRenderState( D3DRS_VIEWPORTENABLE, (DWORD*)&font->m_dwSavedState );
+   d3d_get_render_state(d3dr, D3DRS_VIEWPORTENABLE,
+         (DWORD*)&font->m_dwSavedState );
 
    /* Set the texture scaling factor as a vertex shader constant. */
    /* Get the description */
@@ -639,8 +640,7 @@ static void xdk360_render_msg_pre(xdk360_video_font_t * font)
    /* Set render state. */
    d3d_set_texture(d3dr, 0, font->m_pFontTexture);
 
-   /* Read the TextureDesc here to ensure no load/hit/store from d3d_texture_get_level_desc(). */
-   vTexScale[0] = 1.0f / TextureDesc.Width;		/* LHS due to int->float conversion. */
+   vTexScale[0] = 1.0f / TextureDesc.Width;
    vTexScale[1] = 1.0f / TextureDesc.Height;
    vTexScale[2] = 0.0f;
    vTexScale[3] = 0.0f;
