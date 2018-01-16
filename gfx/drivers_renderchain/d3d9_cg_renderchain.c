@@ -1062,7 +1062,7 @@ static void d3d9_cg_renderchain_set_final_viewport(
       const void *viewport_data)
 {
    d3d_video_t                  *d3d = (d3d_video_t*)data;
-   cg_renderchain_t           *chain = (cg_renderchain_t*)renderchain_data;
+   cg_renderchain_t              *chain = (cg_renderchain_t*)renderchain_data;
    const D3DVIEWPORT *final_viewport = (const D3DVIEWPORT*)viewport_data;
 
    if (chain)
@@ -1165,12 +1165,8 @@ static bool d3d9_cg_renderchain_add_lut(void *data,
 static void d3d9_cg_renderchain_add_state_tracker(
       void *data, void *tracker_data)
 {
-   state_tracker_t    *tracker = (state_tracker_t*)tracker_data;
+   state_tracker_t *tracker = (state_tracker_t*)tracker_data;
    cg_renderchain_t     *chain = (cg_renderchain_t*)data;
-
-   if (!chain)
-      return;
-
    if (chain->state_tracker)
       state_tracker_free(chain->state_tracker);
    chain->state_tracker = tracker;
@@ -1321,13 +1317,16 @@ static void cg_d3d9_renderchain_set_vertices(
       d3d_vertex_buffer_unlock(pass->vertex_buf);
    }
 
-   d3d9_cg_renderchain_calc_and_set_shader_mvp(
-         chain, pass->vPrg, vp_width, vp_height, rotation);
-   if (pass)
-      d3d9_cg_renderchain_set_shader_params(chain, pass,
-            width, height,
-            info->tex_w, info->tex_h,
-            vp_width, vp_height);
+   if (chain)
+   {
+      d3d9_cg_renderchain_calc_and_set_shader_mvp(
+            chain, pass->vPrg, vp_width, vp_height, rotation);
+      if (pass)
+         d3d9_cg_renderchain_set_shader_params(chain, pass,
+               width, height,
+               info->tex_w, info->tex_h,
+               vp_width, vp_height);
+   }
 }
 
 static void cg_d3d9_renderchain_blit_to_texture(
@@ -1483,17 +1482,18 @@ static bool d3d9_cg_renderchain_render(
       unsigned width, unsigned height,
       unsigned pitch, unsigned rotation)
 {
+   LPDIRECT3DDEVICE d3dr;
    LPDIRECT3DSURFACE back_buffer, target;
    unsigned i, current_width, current_height, out_width = 0, out_height = 0;
    struct Pass *last_pass  = NULL;
    d3d_video_t *d3d        = (d3d_video_t*)data;
    cg_renderchain_t *chain = d3d ? (cg_renderchain_t*)d3d->renderchain_data : NULL;
-   LPDIRECT3DDEVICE d3dr   = chain ? (LPDIRECT3DDEVICE)chain->dev           : NULL;
 
-   if (!chain)
-      return false;
-
-   d3d9_cg_renderchain_start_render(chain);
+   if (chain)
+   {
+      d3dr   = (LPDIRECT3DDEVICE)chain->dev;
+      d3d9_cg_renderchain_start_render(chain);
+   }
 
    current_width         = width;
    current_height        = height;
@@ -1534,14 +1534,16 @@ static bool d3d9_cg_renderchain_render(
       viewport.Width  = out_width;
       viewport.Height = out_height;
 
-      d3d_set_viewports(chain->dev, &viewport);
+      if (chain)
+         d3d_set_viewports(chain->dev, &viewport);
 
       cg_d3d9_renderchain_set_vertices(chain, from_pass,
             current_width, current_height,
             out_width, out_height,
             out_width, out_height, 0);
 
-      cg_d3d9_renderchain_render_pass(chain, from_pass, i + 1);
+      if (chain)
+         cg_d3d9_renderchain_render_pass(chain, from_pass, i + 1);
 
       current_width = out_width;
       current_height = out_height;
@@ -1558,7 +1560,8 @@ static bool d3d9_cg_renderchain_render(
          &out_width, &out_height,
          current_width, current_height, chain->final_viewport);
 
-   d3d_set_viewports(chain->dev, chain->final_viewport);
+   if (chain)
+      d3d_set_viewports(chain->dev, chain->final_viewport);
 
    cg_d3d9_renderchain_set_vertices(chain, last_pass,
          current_width, current_height,
@@ -1566,19 +1569,23 @@ static bool d3d9_cg_renderchain_render(
          chain->final_viewport->Width, chain->final_viewport->Height,
          rotation);
 
-   cg_d3d9_renderchain_render_pass(chain,
-         last_pass, chain->passes->count);
+   if (chain)
+      cg_d3d9_renderchain_render_pass(chain,
+            last_pass, chain->passes->count);
 
    chain->frame_count++;
 
    d3d_surface_free(back_buffer);
 
-   d3d9_cg_renderchain_end_render(chain);
-   cgD3D9BindProgram(chain->fStock);
-   cgD3D9BindProgram(chain->vStock);
-   d3d9_cg_renderchain_calc_and_set_shader_mvp(
-         chain, chain->vStock, chain->final_viewport->Width,
-         chain->final_viewport->Height, 0);
+   if (chain)
+   {
+      d3d9_cg_renderchain_end_render(chain);
+      cgD3D9BindProgram(chain->fStock);
+      cgD3D9BindProgram(chain->vStock);
+      d3d9_cg_renderchain_calc_and_set_shader_mvp(
+            chain, chain->vStock, chain->final_viewport->Width,
+            chain->final_viewport->Height, 0);
+   }
 
    return true;
 }
