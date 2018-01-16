@@ -190,30 +190,30 @@ static bool d3d9_cg_load_program(void *data,
    CGprofile fragment_profile = cgD3D9GetLatestPixelProfile();
    const char **fragment_opts = cgD3D9GetOptimalOptions(fragment_profile);
    const char **vertex_opts   = cgD3D9GetOptimalOptions(vertex_profile);
-   cg_renderchain_t *cg_data  = (cg_renderchain_t*)data;
+   cg_renderchain_t *chain    = (cg_renderchain_t*)data;
 
    RARCH_LOG("[D3D Cg]: Vertex profile: %s\n", cgGetProfileString(vertex_profile));
    RARCH_LOG("[D3D Cg]: Fragment profile: %s\n", cgGetProfileString(fragment_profile));
 
    if (path_is_file && !string_is_empty(prog))
-      *fPrg = cgCreateProgramFromFile(cg_data->cgCtx, CG_SOURCE,
+      *fPrg = cgCreateProgramFromFile(chain->cgCtx, CG_SOURCE,
             prog, fragment_profile, "main_fragment", fragment_opts);
    else
-      *fPrg = cgCreateProgram(cg_data->cgCtx, CG_SOURCE, stock_cg_d3d9_program,
+      *fPrg = cgCreateProgram(chain->cgCtx, CG_SOURCE, stock_cg_d3d9_program,
             fragment_profile, "main_fragment", fragment_opts);
 
-   list = cgGetLastListing(cg_data->cgCtx);
+   list = cgGetLastListing(chain->cgCtx);
    if (list)
       listing_f = strdup(list);
 
    if (path_is_file && !string_is_empty(prog))
-      *vPrg = cgCreateProgramFromFile(cg_data->cgCtx, CG_SOURCE,
+      *vPrg = cgCreateProgramFromFile(chain->cgCtx, CG_SOURCE,
             prog, vertex_profile, "main_vertex", vertex_opts);
    else
-      *vPrg = cgCreateProgram(cg_data->cgCtx, CG_SOURCE, stock_cg_d3d9_program,
+      *vPrg = cgCreateProgram(chain->cgCtx, CG_SOURCE, stock_cg_d3d9_program,
             vertex_profile, "main_vertex", vertex_opts);
 
-   list = cgGetLastListing(cg_data->cgCtx);
+   list = cgGetLastListing(chain->cgCtx);
    if (list)
       listing_v = strdup(list);
 
@@ -633,64 +633,64 @@ static void d3d9_cg_renderchain_bind_pass(
 static void d3d9_cg_deinit_progs(void *data)
 {
    unsigned i;
-   cg_renderchain_t *cg_data = (cg_renderchain_t*)data;
+   cg_renderchain_t *chain = (cg_renderchain_t*)data;
 
-   if (!cg_data)
+   if (!chain)
       return;
 
    RARCH_LOG("CG: Destroying programs.\n");
 
-   if (cg_data->passes->count >= 1)
+   if (chain->passes->count >= 1)
    {
-      d3d_vertex_buffer_free(NULL, cg_data->passes->data[0].vertex_decl);
+      d3d_vertex_buffer_free(NULL, chain->passes->data[0].vertex_decl);
 
-      for (i = 1; i < cg_data->passes->count; i++)
+      for (i = 1; i < chain->passes->count; i++)
       {
-         if (cg_data->passes->data[i].tex)
-            d3d_texture_free(cg_data->passes->data[i].tex);
-         cg_data->passes->data[i].tex = NULL;
+         if (chain->passes->data[i].tex)
+            d3d_texture_free(chain->passes->data[i].tex);
+         chain->passes->data[i].tex = NULL;
          d3d_vertex_buffer_free(
-               cg_data->passes->data[i].vertex_buf,
-               cg_data->passes->data[i].vertex_decl);
+               chain->passes->data[i].vertex_buf,
+               chain->passes->data[i].vertex_decl);
 
-         if (cg_data->passes->data[i].fPrg)
-            cgDestroyProgram(cg_data->passes->data[i].fPrg);
-         if (cg_data->passes->data[i].vPrg)
-            cgDestroyProgram(cg_data->passes->data[i].vPrg);
+         if (chain->passes->data[i].fPrg)
+            cgDestroyProgram(chain->passes->data[i].fPrg);
+         if (chain->passes->data[i].vPrg)
+            cgDestroyProgram(chain->passes->data[i].vPrg);
       }
    }
 
-   if (cg_data->fStock)
-      cgDestroyProgram(cg_data->fStock);
-   if (cg_data->vStock)
-      cgDestroyProgram(cg_data->vStock);
+   if (chain->fStock)
+      cgDestroyProgram(chain->fStock);
+   if (chain->vStock)
+      cgDestroyProgram(chain->vStock);
 }
 
 static void d3d9_cg_destroy_resources(void *data)
 {
    unsigned i;
-   cg_renderchain_t *cg_data = (cg_renderchain_t*)data;
+   cg_renderchain_t *chain = (cg_renderchain_t*)data;
 
    for (i = 0; i < TEXTURES; i++)
    {
-      if (cg_data->prev.tex[i])
-         d3d_texture_free(cg_data->prev.tex[i]);
-      if (cg_data->prev.vertex_buf[i])
-         d3d_vertex_buffer_free(cg_data->prev.vertex_buf[i], NULL);
+      if (chain->prev.tex[i])
+         d3d_texture_free(chain->prev.tex[i]);
+      if (chain->prev.vertex_buf[i])
+         d3d_vertex_buffer_free(chain->prev.vertex_buf[i], NULL);
    }
 
-   d3d9_cg_deinit_progs(cg_data);
+   d3d9_cg_deinit_progs(chain);
 
-   for (i = 0; i < cg_data->luts->count; i++)
+   for (i = 0; i < chain->luts->count; i++)
    {
-      if (cg_data->luts->data[i].tex)
-         d3d_texture_free(cg_data->luts->data[i].tex);
+      if (chain->luts->data[i].tex)
+         d3d_texture_free(chain->luts->data[i].tex);
    }
 
-   if (cg_data->state_tracker)
+   if (chain->state_tracker)
    {
-      state_tracker_free(cg_data->state_tracker);
-      cg_data->state_tracker = NULL;
+      state_tracker_free(chain->state_tracker);
+      chain->state_tracker = NULL;
    }
 
    cgD3D9UnloadAllPrograms();
@@ -699,50 +699,53 @@ static void d3d9_cg_destroy_resources(void *data)
 
 static void d3d9_cg_deinit_context_state(void *data)
 {
-   cg_renderchain_t *cg_data = (cg_renderchain_t*)data;
-   if (cg_data->cgCtx)
+   cg_renderchain_t *chain = (cg_renderchain_t*)data;
+   if (!chain)
+      return;
+
+   if (chain->cgCtx)
    {
       RARCH_LOG("CG: Destroying context.\n");
-      cgDestroyContext(cg_data->cgCtx);
+      cgDestroyContext(chain->cgCtx);
    }
-   cg_data->cgCtx = NULL;
+   chain->cgCtx = NULL;
 }
 
 void d3d9_cg_renderchain_free(void *data)
 {
-   cg_renderchain_t *cg_data = (cg_renderchain_t*)data;
+   cg_renderchain_t *chain = (cg_renderchain_t*)data;
 
-   if (!cg_data)
+   if (!chain)
       return;
 
-   d3d9_cg_destroy_resources(cg_data);
+   d3d9_cg_destroy_resources(chain);
 
-   if (cg_data->passes)
+   if (chain->passes)
    {
       unsigned i;
 
-      for (i = 0; i < cg_data->passes->count; i++)
+      for (i = 0; i < chain->passes->count; i++)
       {
-         if (cg_data->passes->data[i].attrib_map)
-            free(cg_data->passes->data[i].attrib_map);
+         if (chain->passes->data[i].attrib_map)
+            free(chain->passes->data[i].attrib_map);
       }
 
-      pass_vector_list_free(cg_data->passes);
+      pass_vector_list_free(chain->passes);
 
-      cg_data->passes = NULL;
+      chain->passes = NULL;
    }
 
-   lut_info_vector_list_free(cg_data->luts);
-   unsigned_vector_list_free(cg_data->bound_tex);
-   unsigned_vector_list_free(cg_data->bound_vert);
+   lut_info_vector_list_free(chain->luts);
+   unsigned_vector_list_free(chain->bound_tex);
+   unsigned_vector_list_free(chain->bound_vert);
 
-   cg_data->luts = NULL;
-   cg_data->bound_tex = NULL;
-   cg_data->bound_vert = NULL;
+   chain->luts         = NULL;
+   chain->bound_tex    = NULL;
+   chain->bound_vert   = NULL;
 
-   d3d9_cg_deinit_context_state(cg_data);
+   d3d9_cg_deinit_context_state(chain);
 
-   free(cg_data);
+   free(chain);
 }
 
 static void *d3d9_cg_renderchain_new(void)
@@ -1558,7 +1561,7 @@ static bool d3d9_cg_renderchain_render(
          current_width, current_height, chain->final_viewport);
 
    if (chain)
-      d3d_set_viewports(chain->dev, &chain->final_viewport);
+      d3d_set_viewports(chain->dev, chain->final_viewport);
 
    cg_d3d9_renderchain_set_vertices(chain, last_pass,
          current_width, current_height,
