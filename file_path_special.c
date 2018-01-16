@@ -28,10 +28,6 @@
 #include <unistd.h>
 #endif
 
-#ifdef __APPLE__
-#include <CoreFoundation/CoreFoundation.h>
-#endif
-
 #ifdef __QNX__
 #include <libgen.h>
 #endif
