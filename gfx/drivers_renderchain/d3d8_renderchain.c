@@ -281,37 +281,43 @@ static void d3d8_renderchain_set_final_viewport(void *data,
    /* stub */
 }
 
-static bool d3d8_renderchain_render(void *data, const void *frame,
-      unsigned frame_width, unsigned frame_height,
-      unsigned pitch, unsigned rotation)
+static bool d3d8_renderchain_render_pass(
+      d3d_video_t *d3d, LPDIRECT3DDEVICE d3dr,
+      d3d8_renderchain_t *chain,
+      unsigned pass_index)
 {
    unsigned i;
-   unsigned width, height;
-   d3d_video_t      *d3d     = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr     = (LPDIRECT3DDEVICE)d3d->dev;
    settings_t *settings      = config_get_ptr();
-   d3d8_renderchain_t *chain = (d3d8_renderchain_t*)d3d->renderchain_data;
 
-   chain->frame_count++;
-
-   video_driver_get_size(&width, &height);
-
-   d3d8_renderchain_blit_to_texture(chain, frame, frame_width, frame_height, pitch);
-   d3d8_renderchain_set_vertices(d3d, 1, frame_width, frame_height, chain->frame_count);
-
-   d3d_set_texture(d3dr, 0, chain->tex);
+   d3d_set_texture(d3dr, pass_index, chain->tex);
    d3d_set_viewports(chain->dev, &d3d->final_viewport);
-   d3d_set_sampler_minfilter(d3dr, 0, settings->bools.video_smooth ?
+   d3d_set_sampler_magfilter(d3dr, pass_index, settings->bools.video_smooth ?
          D3DTEXF_LINEAR : D3DTEXF_POINT);
-   d3d_set_sampler_magfilter(d3dr, 0, settings->bools.video_smooth ?
+   d3d_set_sampler_minfilter(d3dr, pass_index, settings->bools.video_smooth ?
          D3DTEXF_LINEAR : D3DTEXF_POINT);
 
    d3d_set_vertex_declaration(d3dr, chain->vertex_decl);
+
    for (i = 0; i < 4; i++)
       d3d_set_stream_source(d3dr, i, chain->vertex_buf, 0, sizeof(Vertex));
 
    d3d_draw_primitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
-   d3d8_renderchain_set_mvp(chain, d3d, width, height, d3d->dev_rotation);
+}
+
+static bool d3d8_renderchain_render(void *data, const void *frame,
+      unsigned frame_width, unsigned frame_height,
+      unsigned pitch, unsigned rotation)
+{
+   d3d_video_t      *d3d     = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr     = (LPDIRECT3DDEVICE)d3d->dev;
+   d3d8_renderchain_t *chain = (d3d8_renderchain_t*)d3d->renderchain_data;
+
+   d3d8_renderchain_blit_to_texture(chain, frame, frame_width, frame_height, pitch);
+   d3d8_renderchain_set_vertices(d3d, 1, frame_width, frame_height, chain->frame_count);
+
+   d3d8_renderchain_render_pass(d3d, d3dr, chain, 0);
+
+   chain->frame_count++;
 
    return true;
 }
