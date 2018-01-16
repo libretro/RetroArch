@@ -720,13 +720,13 @@ bool config_get_bool(config_file_t *conf, const char *key, bool *in)
 
    if (entry)
    {
-      if (string_is_equal_fast(entry->value, "true", 4))
+      if (string_is_equal(entry->value, "true"))
          *in = true;
-      else if (string_is_equal_fast(entry->value, "1", 1))
+      else if (string_is_equal(entry->value, "1"))
          *in = true;
-      else if (string_is_equal_fast(entry->value, "false", 5))
+      else if (string_is_equal(entry->value, "false"))
          *in = false;
-      else if (string_is_equal_fast(entry->value, "0", 1))
+      else if (string_is_equal(entry->value, "0"))
          *in = false;
       else
          return false;

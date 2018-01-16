@@ -175,19 +175,19 @@ static int intfstream_get_serial(intfstream_t *fd, char *serial)
     return 0;
   }
 
-  if (string_is_equal_fast(system_name, "psp", 3))
+  if (string_is_equal(system_name, "psp"))
   {
     if (detect_psp_game(fd, serial) == 0)
       return 0;
     RARCH_LOG("%s '%s'\n", msg_hash_to_str(MSG_FOUND_DISK_LABEL), serial);
   }
-  else if (string_is_equal_fast(system_name, "ps1", 3))
+  else if (string_is_equal(system_name, "ps1"))
   {
     if (detect_ps1_game(fd, serial) == 0)
       return 0;
     RARCH_LOG("%s '%s'\n", msg_hash_to_str(MSG_FOUND_DISK_LABEL), serial);
   }
-  else if (string_is_equal_fast(system_name, "gc", 2))
+  else if (string_is_equal(system_name, "gc"))
   {
     if (detect_gc_game(fd, serial) == 0)
       return 0;

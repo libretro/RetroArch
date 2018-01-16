@@ -233,7 +233,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
    input_autoconfigure_joypad_conf(conf,
          input_autoconf_binds[params->idx]);
 
-   if (string_is_equal_fast(device_type, "remote", 6))
+   if (string_is_equal(device_type, "remote"))
    {
       static bool remote_is_bound        = false;
 

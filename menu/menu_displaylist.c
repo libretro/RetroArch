@@ -2523,7 +2523,7 @@ static int menu_displaylist_parse_horizontal_list(
 
    playlist_qsort(playlist);
 
-   if (string_is_equal_fast(lpl_basename, "content_history", 15))
+   if (string_is_equal(lpl_basename, "content_history"))
       is_historylist = true;
 
    menu_displaylist_parse_playlist(info,
@@ -5388,7 +5388,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_CHEEVOS_LEADERBOARDS_ENABLE,
                PARSE_ONLY_BOOL, false);
-         if (string_is_equal_fast(settings->arrays.menu_driver, "xmb", 3))
+         if (string_is_equal(settings->arrays.menu_driver, "xmb"))
          {
             menu_displaylist_parse_settings_enum(menu, info,
                  MENU_ENUM_LABEL_CHEEVOS_BADGES_ENABLE,
@@ -5434,7 +5434,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_WIFI_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         if (string_is_equal_fast(settings->arrays.wifi_driver, "null", 4))
+         if (string_is_equal(settings->arrays.wifi_driver, "null"))
             menu_entries_append_enum(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND),
                   msg_hash_to_str(MENU_ENUM_LABEL_NO_NETWORKS_FOUND),

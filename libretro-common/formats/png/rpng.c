@@ -152,7 +152,7 @@ static enum png_chunk_type png_chunk_type(const struct png_chunk *chunk)
 
    for (i = 0; i < ARRAY_SIZE(chunk_map); i++)
    {
-      if (string_is_equal_fast(chunk->type, chunk_map[i].id, 4))
+      if (string_is_equal(chunk->type, chunk_map[i].id))
          return chunk_map[i].type;
    }
 

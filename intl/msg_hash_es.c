@@ -234,7 +234,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Controlador de vídeo actual.");
 
-         if (string_is_equal_fast(settings->arrays.video_driver, "gl", 2))
+         if (string_is_equal(settings->arrays.video_driver, "gl"))
          {
             snprintf(s, len,
                   "Controlador de vídeo OpenGL. \n"
@@ -249,7 +249,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "del controlador GL que tenga tu \n"
                   "tarjeta gráfica.");
          }
-         else if (string_is_equal_fast(settings->arrays.video_driver, "sdl2", 4))
+         else if (string_is_equal(settings->arrays.video_driver, "sdl2"))
          {
             snprintf(s, len,
                   "Controlador de vídeo SDL 2.\n"
@@ -261,7 +261,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "libretro por software depende de la \n"
                   "implementación SDL de tu plataforma.");
          }
-         else if (string_is_equal_fast(settings->arrays.video_driver, "sdl1", 4))
+         else if (string_is_equal(settings->arrays.video_driver, "sdl1"))
          {
             snprintf(s, len,
                   "Controlador de vídeo SDL.\n"
@@ -273,7 +273,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "a lo óptimo. Utilízalo únicamente como \n"
                   "último recurso.");
          }
-         else if (string_is_equal_fast(settings->arrays.video_driver, "d3d", 3))
+         else if (string_is_equal(settings->arrays.video_driver, "d3d"))
          {
             snprintf(s, len,
                   "Controlador de vídeo Direct3D. \n"
@@ -283,7 +283,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "del controlador D3D de tu tarjeta \n"
                   "gráfica.");
          }
-         else if (string_is_equal_fast(settings->arrays.video_driver, "exynos", 6))
+         else if (string_is_equal(settings->arrays.video_driver, "exynos"))
          {
             snprintf(s, len,
                   "Controlador de vídeo Exynos-G2D. \n"
@@ -297,7 +297,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "renderizados por software debería \n"
                   "ser óptimo.");
          }
-         else if (string_is_equal_fast(settings->arrays.video_driver, "drm", 3))
+         else if (string_is_equal(settings->arrays.video_driver, "drm"))
          {
             snprintf(s, len,
                   "Controlador de vídeo de DRM simple. \n"
@@ -308,7 +308,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                   " \n"
                   "El blitting se hace por software.");
          }
-         else if (string_is_equal_fast(settings->arrays.video_driver, "sunxi", 5))
+         else if (string_is_equal(settings->arrays.video_driver, "sunxi"))
          {
             snprintf(s, len,
                   "Controlador de vídeo Sunxi-G2D. \n"
