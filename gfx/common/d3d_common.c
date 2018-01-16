@@ -472,9 +472,11 @@ LPDIRECT3DTEXTURE d3d_texture_new(LPDIRECT3DDEVICE dev,
    HRESULT hr;
    LPDIRECT3DTEXTURE buf;
 
+#ifndef _XBOX
 #ifdef HAVE_D3D9
    if (want_mipmap)
       usage |= D3DUSAGE_AUTOGENMIPMAP;
+#endif
 #endif
 
 #ifdef HAVE_D3DX
