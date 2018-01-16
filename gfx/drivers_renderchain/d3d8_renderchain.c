@@ -57,14 +57,6 @@ static void d3d8_renderchain_set_mvp(
    d3d_set_transform(d3d->dev, D3DTS_PROJECTION, mat_data);
 }
 
-static void d3d8_renderchain_clear(void *data)
-{
-   d3d8_renderchain_t *chain = (d3d8_renderchain_t*)data;
-
-   d3d_texture_free(chain->tex);
-   d3d_vertex_buffer_free(chain->vertex_buf, chain->vertex_decl);
-}
-
 static bool d3d8_renderchain_create_first_pass(void *data,
       const video_info_t *info)
 {
@@ -214,7 +206,10 @@ static void d3d8_renderchain_free(void *data)
       return;
 
    d3d8_renderchain_deinit(chain->renderchain_data);
-   d3d8_renderchain_clear(chain->renderchain_data);
+  
+   if (chain->tex)
+      d3d_texture_free(chain->tex);
+   d3d_vertex_buffer_free(chain->vertex_buf, chain->vertex_decl);
 
 #if 0
    if (chain->tracker)
