@@ -33,6 +33,9 @@
 #include <retro_assert.h>
 #include <string/stdstring.h>
 
+#ifdef __APPLE__
+#include <CoreFoundation/CoreFoundation.h>
+#endif
 #ifndef __MACH__
 #include <compat/strl.h>
 #include <compat/posix_string.h>
