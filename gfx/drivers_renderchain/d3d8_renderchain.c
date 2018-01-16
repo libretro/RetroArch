@@ -279,11 +279,16 @@ static bool d3d8_renderchain_init(void *data,
 static void d3d8_renderchain_set_final_viewport(void *data,
       void *renderchain_data, const void *viewport_data)
 {
-   (void)data;
-   (void)renderchain_data;
-   (void)viewport_data;
+   d3d_video_t                  *d3d = (d3d_video_t*)data;
+   d3d8_renderchain_t *chain         = (d3d8_renderchain_t*)renderchain_data;
+   const D3DVIEWPORT *final_viewport = (const D3DVIEWPORT*)viewport_data;
 
-   /* stub */
+   if (chain)
+      chain->final_viewport = (D3DVIEWPORT*)final_viewport;
+
+#if 0
+   d3d_recompute_pass_sizes(chain, d3d);
+#endif
 }
 
 static void d3d8_renderchain_render_pass(
