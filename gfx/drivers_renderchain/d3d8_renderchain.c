@@ -158,15 +158,14 @@ static void d3d8_renderchain_set_vertices(void *data, unsigned pass,
       vert[2].rhw      = 1.0f;
       vert[3].rhw      = 1.0f;
 
-      vert[0].u        = tex_w;
-      vert[0].v        = tex_h;
-      vert[1].u        = tex_w;
-      vert[1].v        = tex_h;
-      vert[2].u        = tex_w;
-      vert[2].v        = tex_h;
-      vert[3].u        = tex_w;
-      vert[3].v        = tex_h;
-#endif
+      vert[0].u        = 0.0f;
+      vert[0].v        = tex_w;
+      vert[1].u        = 0.0f;
+      vert[1].v        = tex_w;
+      vert[2].u        = tex_h;
+      vert[2].v        = 0.0f;
+      vert[3].u        = tex_h;
+      vert[3].v        = 0.0f;
 #endif
 
       /* TODO/FIXME - might not need this for D3D8 */
