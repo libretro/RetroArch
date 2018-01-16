@@ -55,13 +55,6 @@
 #include "../../defines/d3d_defines.h"
 #include "../../verbosity.h"
 
-#ifdef _XBOX
-#ifndef HAVE_FBO
-#define HAVE_FBO
-#endif
-
-#endif
-
 static LPDIRECT3D g_pD3D;
 
 static bool d3d_init_imports(d3d_video_t *d3d)
@@ -245,7 +238,6 @@ static bool d3d_init_singlepass(d3d_video_t *d3d)
    return true;
 }
 
-#ifdef HAVE_FBO
 static bool d3d_init_multipass(d3d_video_t *d3d, const char *shader_path)
 {
    unsigned i;
@@ -313,16 +305,13 @@ static bool d3d_init_multipass(d3d_video_t *d3d, const char *shader_path)
 
    return true;
 }
-#endif
 
 static bool d3d_process_shader(d3d_video_t *d3d)
 {
-#ifdef HAVE_FBO
    const char *shader_path = d3d->shader_path;
    if (d3d && !string_is_empty(shader_path) &&
          string_is_equal(path_get_extension(shader_path), "cgp"))
       return d3d_init_multipass(d3d, shader_path);
-#endif
 
    return d3d_init_singlepass(d3d);
 }
