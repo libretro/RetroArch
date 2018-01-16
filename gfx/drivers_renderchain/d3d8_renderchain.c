@@ -190,23 +190,13 @@ static void d3d8_renderchain_blit_to_texture(void *data, const void *frame,
    }
 }
 
-static void d3d8_renderchain_deinit(void *data)
-{
-   d3d8_renderchain_t *renderchain = (d3d8_renderchain_t*)data;
-
-   if (renderchain)
-      free(renderchain);
-}
-
 static void d3d8_renderchain_free(void *data)
 {
    d3d8_renderchain_t *chain = (d3d8_renderchain_t*)data;
 
-   if (!chain || !chain->renderchain_data)
+   if (!chain)
       return;
 
-   d3d8_renderchain_deinit(chain->renderchain_data);
-  
    if (chain->tex)
       d3d_texture_free(chain->tex);
    d3d_vertex_buffer_free(chain->vertex_buf, chain->vertex_decl);
@@ -215,6 +205,8 @@ static void d3d8_renderchain_free(void *data)
    if (chain->tracker)
       state_tracker_free(chain->tracker);
 #endif
+
+   free(chain);
 }
 
 
