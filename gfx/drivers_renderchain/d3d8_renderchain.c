@@ -268,7 +268,7 @@ static void d3d8_renderchain_set_final_viewport(void *data,
    /* stub */
 }
 
-static bool d3d8_renderchain_render_pass(
+static void d3d8_renderchain_render_pass(
       d3d_video_t *d3d, LPDIRECT3DDEVICE d3dr,
       d3d8_renderchain_t *chain,
       unsigned pass_index)
