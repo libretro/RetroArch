@@ -275,8 +275,10 @@ static void d3d8_renderchain_set_final_viewport(void *data,
 static void d3d8_renderchain_render_pass(
       d3d_video_t *d3d, LPDIRECT3DDEVICE d3dr,
       d3d8_renderchain_t *chain,
-      unsigned pass_index)
+      unsigned pass_index,
+      unsigned rotation)
 {
+   D3DMATRIX proj, ortho, rot, matrix;
    unsigned i;
    settings_t *settings      = config_get_ptr();
 
@@ -292,6 +294,14 @@ static void d3d8_renderchain_render_pass(
    for (i = 0; i < 4; i++)
       d3d_set_stream_source(d3dr, i, chain->vertex_buf, 0, sizeof(Vertex));
 
+   d3d_matrix_ortho_off_center_lh(&ortho, 0, d3d->final_viewport.Width,
+      0, d3d->final_viewport.Height, 0, 1);
+   d3d_matrix_identity(&rot);
+   d3d_matrix_rotation_z(&rot, rotation * (M_PI / 2.0));
+   d3d_matrix_multiply(&proj, &ortho, &rot);
+   d3d_matrix_transpose(&matrix, &proj);
+   d3d8_renderchain_set_mvp(d3d, chain, NULL, &matrix);
+
    d3d_draw_primitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
 }
 
@@ -306,7 +316,7 @@ static bool d3d8_renderchain_render(void *data, const void *frame,
    d3d8_renderchain_blit_to_texture(chain, frame, frame_width, frame_height, pitch);
    d3d8_renderchain_set_vertices(d3d, 1, frame_width, frame_height, chain->frame_count);
 
-   d3d8_renderchain_render_pass(d3d, d3dr, chain, 0);
+   d3d8_renderchain_render_pass(d3d, d3dr, chain, 0, rotation);
 
    chain->frame_count++;
 
