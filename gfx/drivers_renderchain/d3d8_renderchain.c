@@ -124,30 +124,34 @@ static void d3d8_renderchain_set_vertices(void *data, unsigned pass,
       vert[0].x        = -1.0f;
       vert[0].y        = -1.0f;
       vert[0].z        =  1.0f;
-      vert[0].rhw      = 0.0f;
+
       vert[0].u        = tex_h;
       vert[0].v        = 0.0f;
 
       vert[1].x        =  1.0f;
       vert[1].y        = -1.0f;
       vert[1].z        =  1.0f;
-      vert[1].rhw      = tex_w;
       vert[1].u        = tex_h;
       vert[1].v        = 0.0f;
 
       vert[2].x        = -1.0f;
       vert[2].y        =  1.0f;
       vert[2].z        =  1.0f;
-      vert[2].rhw      = 0.0f;
       vert[2].u        = 0.0f;
       vert[2].v        = 0.0f;
 
       vert[3].x        =  1.0f;
       vert[3].y        =  1.0f;
       vert[3].z        =  1.0f;
-      vert[3].rhw      = tex_w;
       vert[3].u        = 0.0f;
       vert[3].v        = 0.0f;
+
+#ifdef _XBOX
+      vert[0].rhw      = 0.0f;
+      vert[1].rhw      = tex_w;
+      vert[2].rhw      = 0.0f;
+      vert[3].rhw      = tex_w;
+#endif
 
       /* Align texels and vertices. */
       for (i = 0; i < 4; i++)
