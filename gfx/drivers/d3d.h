@@ -59,7 +59,7 @@ typedef struct Vertex
    float x, y;
 #if defined(HAVE_D3D8)
    float z;
-#ifdef _XBOX
+#if 1
    float rhw;
 #endif
 #endif
