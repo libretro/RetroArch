@@ -1068,9 +1068,9 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
    if (!string_is_empty(entry.label))
    {
       if (     (settings->bools.savestate_thumbnail_enable)
-            && ((string_is_equal_fast(entry.label, "state_slot", 10))
-               || (string_is_equal_fast(entry.label, "loadstate", 9))
-               || (string_is_equal_fast(entry.label, "savestate", 9))))
+            && ((string_is_equal(entry.label, "state_slot"))
+               || (string_is_equal(entry.label, "loadstate"))
+               || (string_is_equal(entry.label, "savestate"))))
       {
          size_t path_size         = 8024 * sizeof(char);
          char             *path   = (char*)malloc(8204 * sizeof(char));
