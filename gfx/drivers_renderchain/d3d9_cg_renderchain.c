@@ -1326,13 +1326,6 @@ static void cg_d3d9_renderchain_set_vertices(
    }
 }
 
-static void cg_d3d9_renderchain_set_viewport(
-      cg_renderchain_t *chain,
-      D3DVIEWPORT *vp)
-{
-   d3d_set_viewports(chain->dev, vp);
-}
-
 static void cg_d3d9_renderchain_blit_to_texture(
       cg_renderchain_t *chain,
       const void *frame,
@@ -1539,7 +1532,7 @@ static bool d3d9_cg_renderchain_render(
       viewport.Height = out_height;
 
       if (chain)
-         cg_d3d9_renderchain_set_viewport(chain, &viewport);
+         d3d_set_viewports(chain->dev, &viewport);
 
       cg_d3d9_renderchain_set_vertices(chain, from_pass,
             current_width, current_height,
@@ -1565,7 +1558,7 @@ static bool d3d9_cg_renderchain_render(
          current_width, current_height, chain->final_viewport);
 
    if (chain)
-      cg_d3d9_renderchain_set_viewport(chain, chain->final_viewport);
+      d3d_set_viewports(chain->dev, &chain->final_viewport);
 
    cg_d3d9_renderchain_set_vertices(chain, last_pass,
          current_width, current_height,
