@@ -212,7 +212,6 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
 
 static bool d3d_init_singlepass(d3d_video_t *d3d)
 {
-#ifndef _XBOX
    struct video_shader_pass *pass = NULL;
 
    if (!d3d)
@@ -233,7 +232,6 @@ static bool d3d_init_singlepass(d3d_video_t *d3d)
    if (!string_is_empty(d3d->shader_path))
       strlcpy(pass->source.path, d3d->shader_path,
             sizeof(pass->source.path));
-#endif
 
    return true;
 }
@@ -1381,7 +1379,7 @@ static bool d3d_overlay_load(void *data,
                   0,
                   D3DFMT_A8R8G8B8,
                   D3DPOOL_MANAGED, 0, 0, 0,
-                  NULL, NULL);
+                  NULL, NULL, false);
 
       if (!overlay->tex)
       {
@@ -1640,7 +1638,7 @@ static void d3d_set_menu_texture_frame(void *data,
       d3d->menu->tex = d3d_texture_new(d3d->dev, NULL,
             width, height, 1,
             0, D3DFMT_A8R8G8B8,
-            D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL);
+            D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL, false);
 
       if (!d3d->menu->tex)
       {
@@ -1718,18 +1716,19 @@ static void video_texture_load_d3d(d3d_video_t *d3d,
 {
    D3DLOCKED_RECT d3dlr;
    LPDIRECT3DTEXTURE tex = NULL;
-   unsigned usage = 0;
+   unsigned usage        = 0;
+   bool want_mipmap      = false;
 
 #ifndef HAVE_D3D8
    if((filter_type == TEXTURE_FILTER_MIPMAP_LINEAR) ||
       (filter_type == TEXTURE_FILTER_MIPMAP_NEAREST))
-         usage |= D3DUSAGE_AUTOGENMIPMAP;
+      want_mipmap        = true;
 #endif
 
    tex = d3d_texture_new(d3d->dev, NULL,
                ti->width, ti->height, 0,
                usage, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, 0, 0, 0,
-               NULL, NULL);
+               NULL, NULL, want_mipmap);
 
    if (!tex)
    {

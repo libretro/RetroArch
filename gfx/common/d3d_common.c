@@ -467,10 +467,15 @@ LPDIRECT3DTEXTURE d3d_texture_new(LPDIRECT3DDEVICE dev,
       unsigned miplevels, unsigned usage, D3DFORMAT format,
       D3DPOOL pool, unsigned filter, unsigned mipfilter,
       D3DCOLOR color_key, void *src_info_data,
-      PALETTEENTRY *palette)
+      PALETTEENTRY *palette, bool want_mipmap)
 {
    HRESULT hr;
    LPDIRECT3DTEXTURE buf;
+
+#ifdef HAVE_D3D9
+   if (want_mipmap)
+      usage |= D3DUSAGE_AUTOGENMIPMAP;
+#endif
 
 #ifdef HAVE_D3DX
    if (path)

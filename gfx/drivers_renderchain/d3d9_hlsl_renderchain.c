@@ -109,7 +109,7 @@ static bool hlsl_d3d9_renderchain_create_first_pass(void *data,
 #else
          info->rgb32 ? D3DFMT_X8R8G8B8 : D3DFMT_R5G6B5,
 #endif
-         0, 0, 0, 0, NULL, NULL);
+         0, 0, 0, 0, NULL, NULL, false);
 
    if (!chain->tex)
       return false;
