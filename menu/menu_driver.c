@@ -1847,13 +1847,16 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                   menu_driver_find_handle(i);
             else
             {
-               unsigned d;
-               RARCH_WARN("Couldn't find any menu driver named \"%s\"\n",
-                     settings->arrays.menu_driver);
-               RARCH_LOG_OUTPUT("Available menu drivers are:\n");
-               for (d = 0; menu_driver_find_handle(d); d++)
-                  RARCH_LOG_OUTPUT("\t%s\n", menu_driver_find_ident(d));
-               RARCH_WARN("Going to default to first menu driver...\n");
+               if (verbosity_is_enabled())
+               {
+                  unsigned d;
+                  RARCH_WARN("Couldn't find any menu driver named \"%s\"\n",
+                        settings->arrays.menu_driver);
+                  RARCH_LOG_OUTPUT("Available menu drivers are:\n");
+                  for (d = 0; menu_driver_find_handle(d); d++)
+                     RARCH_LOG_OUTPUT("\t%s\n", menu_driver_find_ident(d));
+                  RARCH_WARN("Going to default to first menu driver...\n");
+               }
 
                menu_driver_ctx = (const menu_ctx_driver_t*)
                   menu_driver_find_handle(0);
