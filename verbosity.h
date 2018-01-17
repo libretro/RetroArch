@@ -20,6 +20,7 @@
 
 #include <boolean.h>
 #include <retro_common_api.h>
+#include <retro_inline.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -128,12 +129,27 @@ void logger_send_v(const char *__format, va_list args);
 #else
 void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap);
 void RARCH_LOG(const char *fmt, ...);
-void RARCH_LOG_OUTPUT_V(const char *tag, const char *msg, va_list ap);
 void RARCH_LOG_OUTPUT(const char *msg, ...);
-void RARCH_WARN_V(const char *tag, const char *fmt, va_list ap);
 void RARCH_WARN(const char *fmt, ...);
-void RARCH_ERR_V(const char *tag, const char *fmt, va_list ap);
 void RARCH_ERR(const char *fmt, ...);
+
+static INLINE void RARCH_LOG_OUTPUT_V(const char *tag,
+      const char *msg, va_list ap)
+{
+   RARCH_LOG_V(tag, msg, ap);
+}
+
+static INLINE void RARCH_WARN_V(const char *tag,
+      const char *fmt, va_list ap)
+{
+   RARCH_LOG_V(tag, fmt, ap);
+}
+
+static INLINE void RARCH_ERR_V(const char *tag,
+      const char *fmt, va_list ap)
+{
+   RARCH_LOG_V(tag, fmt, ap);
+}
 #endif
 
 RETRO_END_DECLS

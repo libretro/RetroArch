@@ -682,6 +682,9 @@ static void rarch_log_libretro(enum retro_log_level level,
    if ((unsigned)level < settings->uints.libretro_log_level)
       return;
 
+   if (!verbosity_is_enabled())
+      return;
+
    va_start(vp, fmt);
 
    switch (level)

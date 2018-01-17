@@ -241,9 +241,6 @@ static int sevenzip_file_read(
          {
             size_t output_size   = 0;
 
-            /*RARCH_LOG_OUTPUT("Opened archive %s. Now trying to extract %s\n",
-                  path, needle);*/
-
             /* C LZMA SDK does not support chunked extraction - see here:
              * sourceforge.net/p/sevenzip/discussion/45798/thread/6fb59aaf/
              * */
