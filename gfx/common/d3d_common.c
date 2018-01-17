@@ -204,9 +204,9 @@ bool d3d_initialize_symbols(void)
 #if defined(HAVE_D3D9)
 #if defined(DEBUG) || defined(_DEBUG)
    g_d3d_dll  = dylib_load("d3d9d.dll");
-#else
-   g_d3d_dll  = dylib_load("d3d9.dll");
+   if(!g_d3d_dll)
 #endif
+      g_d3d_dll  = dylib_load("d3d9.dll");
 #ifdef HAVE_D3DX
    g_d3dx_dll = dylib_load_d3dx();
 #endif
@@ -221,9 +221,9 @@ bool d3d_initialize_symbols(void)
 #elif defined(HAVE_D3D8)
 #if defined(DEBUG) || defined(_DEBUG)
    g_d3d_dll  = dylib_load("d3d8d.dll");
-#else
-   g_d3d_dll  = dylib_load("d3d8.dll");
+   if(!g_d3d_dll)
 #endif
+      g_d3d_dll  = dylib_load("d3d8.dll");
    if (!g_d3d_dll)
       return false;
 #endif
@@ -431,7 +431,7 @@ bool d3d_texture_get_surface_level(LPDIRECT3DTEXTURE tex,
    if (SUCCEEDED(IDirect3DTexture9_GetSurfaceLevel(tex, idx, (IDirect3DSurface9**)_ppsurface_level)))
       return true;
 #elif defined(HAVE_D3D8) && !defined(__cplusplus)
-   if (SUCCEEDED(IDirect3DTexture8_GetSurfaceLevel(tex, idx, (LPDIRECT3DSURFACE**)_ppsurface_level)))
+   if (SUCCEEDED(IDirect3DTexture8_GetSurfaceLevel(tex, idx, (IDirect3DSurface8**)_ppsurface_level)))
       return true;
 #else
    if (SUCCEEDED(tex->GetSurfaceLevel(idx, (ID3DSURFACE**)_ppsurface_level)))
@@ -683,11 +683,11 @@ void *d3d_vertex_buffer_lock(void *vertbuf_ptr)
 #elif defined(_XBOX360)
    buf = D3DVertexBuffer_Lock(vertbuf, 0, 0, 0);
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
-   IDirect3DVertexBuffer9_Lock(vertbuf, 0, sizeof(buf), &buf, 0);
+   IDirect3DVertexBuffer9_Lock(vertbuf, 0, 0, &buf, 0);
 #elif defined(HAVE_D3D8) && !defined(__cplusplus)
-   IDirect3DVertexBuffer8_Lock(vertbuf, 0, sizeof(buf), &buf, 0);
+   IDirect3DVertexBuffer8_Lock(vertbuf, 0, 0, (BYTE**)&buf, 0);
 #else
-   vertbuf->Lock(0, sizeof(buf), &buf, 0);
+   vertbuf->Lock(0, 0, &buf, 0);
 #endif
 
    if (!buf)
@@ -1074,7 +1074,7 @@ void d3d_set_texture(LPDIRECT3DDEVICE dev, unsigned sampler,
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DDevice9_SetTexture(dev, sampler, (IDirect3DBaseTexture9*)tex);
 #elif defined(HAVE_D3D8) && !defined(__cplusplus)
-   IDirect3DDevice8_SetTexture(dev, sampler, tex);
+   IDirect3DDevice8_SetTexture(dev, sampler, (IDirect3DBaseTexture8*)tex);
 #else
    dev->SetTexture(sampler, tex);
 #endif

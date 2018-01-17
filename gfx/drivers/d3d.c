@@ -341,7 +341,8 @@ static void d3d_overlay_render(d3d_video_t *d3d,
    struct video_viewport vp;
    void *verts;
    unsigned i;
-   float vert[4][9];
+   Vertex vert[4];
+
    unsigned width      = video_info->width;
    unsigned height     = video_info->height;
 
@@ -351,7 +352,7 @@ static void d3d_overlay_render(d3d_video_t *d3d,
    if (!overlay->vert_buf)
    {
       overlay->vert_buf = d3d_vertex_buffer_new(
-      d3d->dev, sizeof(vert), 0, 0, D3DPOOL_MANAGED, NULL);
+      d3d->dev, sizeof(vert), D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, NULL);
 
 	  if (!overlay->vert_buf)
 		  return;
@@ -359,49 +360,45 @@ static void d3d_overlay_render(d3d_video_t *d3d,
 
    for (i = 0; i < 4; i++)
    {
-      vert[i][2]   = 0.5f;
-      vert[i][5]   = 1.0f;
-      vert[i][6]   = 1.0f;
-      vert[i][7]   = 1.0f;
-      vert[i][8]   = overlay->alpha_mod;
+      vert[i].z    = 0.5f;
+      vert[i].color   = (((uint32_t)(overlay->alpha_mod * 0xFF)) << 24) | 0xFFFFFF;
    }
 
    d3d_viewport_info(d3d, &vp);
 
-   vert[0][0]      = overlay->vert_coords[0];
-   vert[1][0]      = overlay->vert_coords[0] + overlay->vert_coords[2];
-   vert[2][0]      = overlay->vert_coords[0];
-   vert[3][0]      = overlay->vert_coords[0] + overlay->vert_coords[2];
-   vert[0][1]      = overlay->vert_coords[1];
-   vert[1][1]      = overlay->vert_coords[1];
-   vert[2][1]      = overlay->vert_coords[1] + overlay->vert_coords[3];
-   vert[3][1]      = overlay->vert_coords[1] + overlay->vert_coords[3];
+   vert[0].x      = overlay->vert_coords[0];
+   vert[1].x      = overlay->vert_coords[0] + overlay->vert_coords[2];
+   vert[2].x      = overlay->vert_coords[0];
+   vert[3].x      = overlay->vert_coords[0] + overlay->vert_coords[2];
+   vert[0].y      = overlay->vert_coords[1];
+   vert[1].y      = overlay->vert_coords[1];
+   vert[2].y      = overlay->vert_coords[1] + overlay->vert_coords[3];
+   vert[3].y      = overlay->vert_coords[1] + overlay->vert_coords[3];
 
-   vert[0][3]      = overlay->tex_coords[0];
-   vert[1][3]      = overlay->tex_coords[0] + overlay->tex_coords[2];
-   vert[2][3]      = overlay->tex_coords[0];
-   vert[3][3]      = overlay->tex_coords[0] + overlay->tex_coords[2];
-   vert[0][4]      = overlay->tex_coords[1];
-   vert[1][4]      = overlay->tex_coords[1];
-   vert[2][4]      = overlay->tex_coords[1] + overlay->tex_coords[3];
-   vert[3][4]      = overlay->tex_coords[1] + overlay->tex_coords[3];
+   vert[0].u      = overlay->tex_coords[0];
+   vert[1].u      = overlay->tex_coords[0] + overlay->tex_coords[2];
+   vert[2].u      = overlay->tex_coords[0];
+   vert[3].u      = overlay->tex_coords[0] + overlay->tex_coords[2];
+   vert[0].v      = overlay->tex_coords[1];
+   vert[1].v      = overlay->tex_coords[1];
+   vert[2].v      = overlay->tex_coords[1] + overlay->tex_coords[3];
+   vert[3].v      = overlay->tex_coords[1] + overlay->tex_coords[3];
 
    verts = d3d_vertex_buffer_lock(overlay->vert_buf);
    memcpy(verts, vert, sizeof(vert));
    d3d_vertex_buffer_unlock(overlay->vert_buf);
 
    d3d_enable_blend_func(d3d->dev);
-
 #if defined(HAVE_D3D9)
    {
       LPDIRECT3DVERTEXDECLARATION vertex_decl;
       /* set vertex declaration for overlay. */
       D3DVERTEXELEMENT vElems[4] = {
-         {0, 0,  D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT,
+         {0, offsetof(Vertex, x),  D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT,
             D3DDECLUSAGE_POSITION, 0},
-         {0, 12, D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT,
+         {0, offsetof(Vertex, u), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT,
             D3DDECLUSAGE_TEXCOORD, 0},
-         {0, 20, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT,
+         {0, offsetof(Vertex, color), D3DDECLTYPE_D3DCOLOR, D3DDECLMETHOD_DEFAULT,
             D3DDECLUSAGE_COLOR, 0},
          D3DDECL_END()
       };
@@ -409,6 +406,8 @@ static void d3d_overlay_render(d3d_video_t *d3d,
       d3d_set_vertex_declaration(d3d->dev, vertex_decl);
       d3d_vertex_declaration_free(vertex_decl);
    }
+#elif defined(HAVE_D3D8)
+   d3d_set_vertex_shader(d3d->dev, D3DFVF_CUSTOMVERTEX, NULL);
 #endif
 
    d3d_set_stream_source(d3d->dev, 0, overlay->vert_buf,

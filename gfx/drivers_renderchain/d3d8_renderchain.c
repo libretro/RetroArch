@@ -47,14 +47,18 @@ static void d3d8_renderchain_set_mvp(
       void *shader_data,
       const void *mat_data)
 {
-   D3DMATRIX identity;
+   D3DMATRIX matrix;
    d3d_video_t      *d3d = (d3d_video_t*)data;
 
-   d3d_matrix_identity(&identity);
+   d3d_matrix_identity(&matrix);
 
-   d3d_set_transform(d3d->dev, D3DTS_WORLD, &identity);
-   d3d_set_transform(d3d->dev, D3DTS_VIEW, &identity);
-   d3d_set_transform(d3d->dev, D3DTS_PROJECTION, mat_data);
+   d3d_set_transform(d3d->dev, D3DTS_PROJECTION, &matrix);
+   d3d_set_transform(d3d->dev, D3DTS_VIEW, &matrix);
+
+   if (mat_data)
+      d3d_matrix_transpose(&matrix, mat_data);
+
+   d3d_set_transform(d3d->dev, D3DTS_WORLD, &matrix);
 }
 
 static bool d3d8_renderchain_create_first_pass(void *data,
@@ -80,14 +84,14 @@ static bool d3d8_renderchain_create_first_pass(void *data,
 #else
          D3DFMT_X8R8G8B8 : D3DFMT_R5G6B5,
 #endif
-         0, 0, 0, 0, NULL, NULL,
+         D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL,
          false);
 
    if (!chain->tex)
       return false;
 
-   d3d_set_sampler_address_u(d3dr, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-   d3d_set_sampler_address_v(d3dr, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+   d3d_set_sampler_address_u(d3dr, 0, D3DTADDRESS_BORDER);
+   d3d_set_sampler_address_v(d3dr, 0, D3DTADDRESS_BORDER);
    d3d_set_render_state(d3dr, D3DRS_LIGHTING, 0);
    d3d_set_render_state(d3dr, D3DRS_CULLMODE, D3DCULL_NONE);
    d3d_set_render_state(d3dr, D3DRS_ZENABLE, FALSE);
@@ -121,20 +125,20 @@ static void d3d8_renderchain_set_vertices(void *data, unsigned pass,
       tex_h              = vert_height;
 
       vert[0].x        = -1.0f;
-      vert[0].y        = -1.0f;
+      vert[0].y        =  1.0f;
       vert[0].z        =  1.0f;
 
 
       vert[1].x        =  1.0f;
-      vert[1].y        = -1.0f;
+      vert[1].y        =  1.0f;
       vert[1].z        =  1.0f;
 
       vert[2].x        = -1.0f;
-      vert[2].y        =  1.0f;
+      vert[2].y        = -1.0f;
       vert[2].z        =  1.0f;
 
       vert[3].x        =  1.0f;
-      vert[3].y        =  1.0f;
+      vert[3].y        = -1.0f;
       vert[3].z        =  1.0f;
 
 #ifdef _XBOX
@@ -152,19 +156,19 @@ static void d3d8_renderchain_set_vertices(void *data, unsigned pass,
       vert[3].u        = 0.0f;
       vert[3].v        = 0.0f;
 #else
-      vert[0].rhw      = 1.0f;
-      vert[1].rhw      = 1.0f;
-      vert[2].rhw      = 1.0f;
-      vert[3].rhw      = 1.0f;
-
       vert[0].u        = 0.0f;
-      vert[0].v        = tex_w;
-      vert[1].u        = 0.0f;
-      vert[1].v        = tex_w;
-      vert[2].u        = tex_h;
-      vert[2].v        = 0.0f;
-      vert[3].u        = tex_h;
-      vert[3].v        = 0.0f;
+      vert[0].v        = 0.0f;
+      vert[1].u        = tex_w / chain->tex_w;
+      vert[1].v        = 0.0f;
+      vert[2].u        = 0.0f;
+      vert[2].v        = tex_h / chain->tex_h;
+      vert[3].u        = tex_w / chain->tex_w;
+      vert[3].v        = tex_h / chain->tex_h;
+
+      vert[0].color    = 0xFFFFFFFF;
+      vert[1].color    = 0xFFFFFFFF;
+      vert[2].color    = 0xFFFFFFFF;
+      vert[3].color    = 0xFFFFFFFF;
 #endif
 
       /* TODO/FIXME - might not need this for D3D8 */
@@ -295,30 +299,18 @@ static void d3d8_renderchain_render_pass(
       unsigned pass_index,
       unsigned rotation)
 {
-   D3DMATRIX proj, ortho, rot, matrix;
-   unsigned i;
    settings_t *settings      = config_get_ptr();
 
-   d3d_set_texture(d3dr, pass_index, chain->tex);
-   d3d_set_viewports(chain->dev, &d3d->final_viewport);
+   d3d_set_texture(d3dr, 0, chain->tex);
    d3d_set_sampler_magfilter(d3dr, pass_index, settings->bools.video_smooth ?
          D3DTEXF_LINEAR : D3DTEXF_POINT);
    d3d_set_sampler_minfilter(d3dr, pass_index, settings->bools.video_smooth ?
          D3DTEXF_LINEAR : D3DTEXF_POINT);
 
-   d3d_set_vertex_declaration(d3dr, chain->vertex_decl);
-
-   for (i = 0; i < 4; i++)
-      d3d_set_stream_source(d3dr, i, chain->vertex_buf, 0, sizeof(Vertex));
-
-   d3d_matrix_ortho_off_center_lh(&ortho, 0, d3d->final_viewport.Width,
-      0, d3d->final_viewport.Height, 0, 1);
-   d3d_matrix_identity(&rot);
-   d3d_matrix_rotation_z(&rot, rotation * (M_PI / 2.0));
-   d3d_matrix_multiply(&proj, &ortho, &rot);
-   d3d_matrix_transpose(&matrix, &proj);
-   d3d8_renderchain_set_mvp(d3d, chain, NULL, &matrix);
-
+   d3d_set_viewports(chain->dev, &d3d->final_viewport);
+   d3d_set_vertex_shader(d3dr, D3DFVF_CUSTOMVERTEX, NULL);
+   d3d_set_stream_source(d3dr, 0, chain->vertex_buf, 0, sizeof(Vertex));
+   d3d8_renderchain_set_mvp(d3d, chain, NULL, NULL);
    d3d_draw_primitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
 }
 
