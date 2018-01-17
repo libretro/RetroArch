@@ -259,7 +259,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
    elif [ $PLATFORM = "emscripten" ] ; then
       mkdir -p ../pkg/emscripten/
       mv -f ../${name}_libretro.js ../pkg/emscripten/${name}_libretro.js
-      mv -f ../${name}_libretro.js.mem ../pkg/emscripten/${name}_libretro.js.mem
+      mv -f ../${name}_libretro.wasm ../pkg/emscripten/${name}_libretro.wasm
       if [ $pthread != 0 ] ; then
          mv -f ../pthread-main.js ../pkg/emscripten/pthread-main.js
       fi
