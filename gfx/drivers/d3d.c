@@ -568,7 +568,9 @@ void d3d_make_d3dpp(void *data,
    d3dpp->BackBufferCount         = 2;
    d3dpp->BackBufferFormat        = d3d_get_color_format_backbuffer(
          info->rgb32, windowed_enable);
+#ifndef _XBOX
    d3dpp->hDeviceWindow           = win32_get_window();
+#endif
 
 #ifdef _XBOX360
    d3dpp->FrontBufferFormat       = d3d_get_color_format_front_buffer();
@@ -652,8 +654,12 @@ void d3d_make_d3dpp(void *data,
 static bool d3d_init_base(void *data, const video_info_t *info)
 {
    D3DPRESENT_PARAMETERS d3dpp;
-   HWND focus_window = win32_get_window();
+   HWND focus_window;
    d3d_video_t *d3d  = (d3d_video_t*)data;
+
+#ifndef _XBOX
+   focus_window      = win32_get_window();
+#endif
 
    memset(&d3dpp, 0, sizeof(d3dpp));
 
