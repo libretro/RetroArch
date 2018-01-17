@@ -155,14 +155,6 @@ static void d3d8_renderchain_set_vertices(void *data, unsigned pass,
       vert[2].color    = 0xFFFFFFFF;
       vert[3].color    = 0xFFFFFFFF;
 
-      /* TODO/FIXME - might not need this for D3D8 */
-      /* Align texels and vertices. */
-      for (i = 0; i < 4; i++)
-      {
-         vert[i].x    -= 0.5f / ((float)chain->tex_w);
-         vert[i].y    += 0.5f / ((float)chain->tex_h);
-      }
-
       verts = d3d_vertex_buffer_lock(chain->vertex_buf);
       memcpy(verts, vert, sizeof(vert));
       d3d_vertex_buffer_unlock(chain->vertex_buf);
