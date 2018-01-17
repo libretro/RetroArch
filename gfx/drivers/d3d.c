@@ -1303,7 +1303,9 @@ static void d3d_free(void *data)
    d3d->dev         = NULL;
    g_pD3D           = NULL;
 
+#ifndef _XBOX
    win32_monitor_from_window();
+#endif
 
    if (d3d)
       free(d3d);
@@ -1464,7 +1466,6 @@ static bool d3d_frame(void *data, const void *frame,
    D3DVIEWPORT screen_vp;
    unsigned i                          = 0;
    d3d_video_t *d3d                    = (d3d_video_t*)data;
-   HWND window                         = win32_get_window();
    unsigned width                      = video_info->width;
    unsigned height                     = video_info->height;
    (void)i;
@@ -1475,8 +1476,11 @@ static bool d3d_frame(void *data, const void *frame,
    /* We cannot recover in fullscreen. */
    if (d3d->needs_restore)
    {
+#ifndef _XBOX
+      HWND window = win32_get_window();
       if (IsIconic(window))
          return true;
+#endif
 
       if (!d3d_restore(d3d))
       {
