@@ -133,23 +133,9 @@ void RARCH_LOG_OUTPUT(const char *msg, ...);
 void RARCH_WARN(const char *fmt, ...);
 void RARCH_ERR(const char *fmt, ...);
 
-static INLINE void RARCH_LOG_OUTPUT_V(const char *tag,
-      const char *msg, va_list ap)
-{
-   RARCH_LOG_V(tag, msg, ap);
-}
-
-static INLINE void RARCH_WARN_V(const char *tag,
-      const char *fmt, va_list ap)
-{
-   RARCH_LOG_V(tag, fmt, ap);
-}
-
-static INLINE void RARCH_ERR_V(const char *tag,
-      const char *fmt, va_list ap)
-{
-   RARCH_LOG_V(tag, fmt, ap);
-}
+#define RARCH_LOG_OUTPUT_V RARCH_LOG_V
+#define RARCH_WARN_V RARCH_LOG_V
+#define RARCH_ERR_V RARCH_LOG_V
 #endif
 
 RETRO_END_DECLS
