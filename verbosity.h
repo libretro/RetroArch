@@ -20,7 +20,6 @@
 
 #include <boolean.h>
 #include <retro_common_api.h>
-#include <retro_inline.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
