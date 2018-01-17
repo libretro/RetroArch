@@ -260,8 +260,6 @@ static int sevenzip_file_read(
 
                if (!filestream_write_file(optional_outfile, ptr, outsize))
                {
-                  /*RARCH_ERR("Could not open outfilepath %s.\n",
-                        optional_outfile);*/
                   res        = SZ_OK;
                   file_found = true;
                   outsize    = -1;
