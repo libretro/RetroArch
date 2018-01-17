@@ -228,11 +228,11 @@ void RARCH_WARN(const char *fmt, ...)
 void RARCH_ERR(const char *fmt, ...)
 {
    va_list ap;
-   va_start(ap, fmt);
 
    if (!verbosity_is_enabled())
       return;
 
+   va_start(ap, fmt);
    RARCH_ERR_V(file_path_str(FILE_PATH_LOG_ERROR), fmt, ap);
    va_end(ap);
 }
