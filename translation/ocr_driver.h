@@ -20,9 +20,13 @@ typedef struct ocr_driver
 	const char *ident;
 } ocr_driver_t;
 
+#ifdef HAVE_TESSERACT
 extern const ocr_driver_t ocr_tesseract;
+#endif
 extern const ocr_driver_t ocr_null;
 
-char* ocr_get_text(struct ocr_image_info image);
+bool  ocr_driver_init(void);
+void  ocr_driver_free(void);
+char* ocr_driver_get_text(struct ocr_image_info image);
 
 #endif
