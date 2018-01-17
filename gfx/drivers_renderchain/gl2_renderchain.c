@@ -1038,8 +1038,8 @@ static bool gl2_renderchain_init_hw_render(
       status = gl2_check_fb_status(RARCH_GL_FRAMEBUFFER);
       if (status != RARCH_GL_FRAMEBUFFER_COMPLETE)
       {
-         RARCH_ERR("[GL]: Failed to create HW render FBO #%u, error: 0x%u.\n",
-               i, (unsigned)status);
+         RARCH_ERR("[GL]: Failed to create HW render FBO #%u, error: 0x%04x.\n",
+               i, status);
          return false;
       }
    }
