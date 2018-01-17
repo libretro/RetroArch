@@ -1999,7 +1999,7 @@ const char *msg_hash_to_str_ko(enum msg_hash_enums msg) {
 #ifdef HAVE_MENU
     const char *ret = menu_hash_to_str_ko_label_enum(msg);
 
-    if (ret && (string_is_not_equal_fast(ret, "null", 4)))
+    if (ret && (string_is_not_equal(ret, "null")))
        return ret;
 #endif
 

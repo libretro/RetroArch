@@ -2366,7 +2366,7 @@ static bool setting_append_list(
                   parent_group);
          }
 
-         if (string_is_not_equal_fast(settings->arrays.menu_driver, "xmb", 3))
+         if (string_is_not_equal(settings->arrays.menu_driver, "xmb"))
          {
             CONFIG_ACTION(
                   list, list_info,
@@ -2702,7 +2702,7 @@ static bool setting_append_list(
                parent_group);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
-         if (string_is_not_equal_fast(settings->arrays.wifi_driver, "null", 4))
+         if (string_is_not_equal(settings->arrays.wifi_driver, "null"))
          {
             CONFIG_ACTION(
                   list, list_info,
@@ -5177,7 +5177,7 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-         if (string_is_not_equal_fast(settings->arrays.menu_driver, "rgui", 4))
+         if (string_is_not_equal(settings->arrays.menu_driver, "rgui"))
          {
             CONFIG_PATH(
                   list, list_info,
@@ -6395,7 +6395,7 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE);
 
-         if (string_is_not_equal_fast(ui_companion_driver_get_ident(), "null", 4))
+         if (string_is_not_equal(ui_companion_driver_get_ident(), "null"))
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -7490,7 +7490,7 @@ static bool setting_append_list(
                general_read_handler);
          (*list)[list_info->index - 1].action_start = directory_action_start_generic;
 
-         if (string_is_not_equal_fast(settings->arrays.record_driver, "null", 4))
+         if (string_is_not_equal(settings->arrays.record_driver, "null"))
          {
             CONFIG_DIR(
                   list, list_info,
@@ -7656,7 +7656,7 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "State",
                &group_info, &subgroup_info, parent_group);
 
-         if (string_is_not_equal_fast(settings->arrays.camera_driver, "null", 4))
+         if (string_is_not_equal(settings->arrays.camera_driver, "null"))
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -7674,7 +7674,7 @@ static bool setting_append_list(
                   SD_FLAG_NONE);
          }
 
-         if (string_is_not_equal_fast(settings->arrays.location_driver, "null", 4))
+         if (string_is_not_equal(settings->arrays.location_driver, "null"))
          {
             CONFIG_BOOL(
                   list, list_info,
