@@ -28,26 +28,17 @@
    cbs->action_get_title_ident = #name;
 #endif
 
-static void replace_chars(char *str, char c1, char c2)
-{
-   char *pos = NULL;
-   while((pos = strchr(str, c1)))
-      *pos = c2;
-}
-
 static void sanitize_to_string(char *s, const char *label, size_t len)
 {
-   char new_label[255];
+   char *pos = NULL;
+   if (string_is_empty(label) || !s)
+      return;
 
-   new_label[0] = '\0';
+   strlcpy(s, label, len);
 
-   if (!string_is_empty(label))
-      strlcpy(new_label, label, sizeof(new_label));
-   if (s && !string_is_empty(new_label))
-   {
-      strlcpy(s, new_label, len);
-      replace_chars(s, '_', ' ');
-   }
+   /* replace characters */
+   while((pos = strchr(s, '_')))
+      *pos = ' ';
 }
 
 static int fill_title(char *s, const char *title, const char *path, size_t len)
