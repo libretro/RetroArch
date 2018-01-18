@@ -55,7 +55,7 @@ static INLINE int pthread_create(pthread_t *thread,
       const pthread_attr_t *attr, void *(*start_routine)(void*), void *arg)
 {
    s32 prio = 0;
-   Thread new_ctr_thread
+   Thread new_ctr_thread;
       
    if (!mutex_inited)
    {
