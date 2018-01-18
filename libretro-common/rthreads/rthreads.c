@@ -47,6 +47,8 @@
 #endif
 #elif defined(GEKKO)
 #include "gx_pthread.h"
+#elif defined(_3DS)
+#include "ctr_pthread.h"
 #elif defined(__CELLOS_LV2__)
 #include <pthread.h>
 #include <sys/sys_time.h>
@@ -801,7 +803,7 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
    sys_time_get_current_time(&s, &n);
    now.tv_sec  = s;
    now.tv_nsec = n;
-#elif defined(__mips__) || defined(VITA)
+#elif defined(__mips__) || defined(VITA) || defined(_3DS)
    struct timeval tm;
 
    gettimeofday(&tm, NULL);

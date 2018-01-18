@@ -28,26 +28,15 @@
    cbs->action_get_title_ident = #name;
 #endif
 
-static void replace_chars(char *str, char c1, char c2)
-{
-   char *pos = NULL;
-   while((pos = strchr(str, c1)))
-      *pos = c2;
-}
-
 static void sanitize_to_string(char *s, const char *label, size_t len)
 {
-   char new_label[255];
+   char *pos = NULL;
 
-   new_label[0] = '\0';
+   strlcpy(s, label, len);
 
-   if (!string_is_empty(label))
-      strlcpy(new_label, label, sizeof(new_label));
-   if (s && !string_is_empty(new_label))
-   {
-      strlcpy(s, new_label, len);
-      replace_chars(s, '_', ' ');
-   }
+   /* replace characters */
+   while((pos = strchr(s, '_')))
+      *pos = ' ';
 }
 
 static int fill_title(char *s, const char *title, const char *path, size_t len)
@@ -60,14 +49,17 @@ static int fill_title(char *s, const char *title, const char *path, size_t len)
 static int action_get_title_action_generic(const char *path, const char *label,
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, label, len);
+   if (s && !string_is_empty(label))
+      sanitize_to_string(s, label, len);
    return 0;
 }
 
 #define default_title_macro(func_name, lbl) \
   static int (func_name)(const char *path, const char *label, unsigned menu_type, char *s, size_t len) \
 { \
-   sanitize_to_string(s, msg_hash_to_str(lbl), len); \
+   const char *str = msg_hash_to_str(lbl); \
+   if (s && !string_is_empty(str)) \
+      sanitize_to_string(s, str, len); \
    return 0; \
 }
 
