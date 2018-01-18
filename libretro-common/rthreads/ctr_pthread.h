@@ -40,9 +40,9 @@ typedef LightEvent pthread_cond_t;
 typedef int        pthread_condattr_t;
 
 /* libctru threads return void but pthreads return void pointer */
-bool mutex_inited = false;
-LightLock safe_double_thread_launch;
-void *(*start_routine_jump)(void*);
+static bool mutex_inited = false;
+static LightLock safe_double_thread_launch;
+static void *(*start_routine_jump)(void*);
 
 static void ctr_thread_launcher(void* data)
 {
@@ -66,12 +66,13 @@ static INLINE int pthread_create(pthread_t *thread,
    s32 prio = 0;
    svcGetThreadPriority(&prio, CUR_THREAD_HANDLE);
    start_routine_jump = start_routine;
-   thread = threadCreate(ctr_thread_launcher, arg, STACKSIZE, prio - 1, -1/*No affinity, use any CPU*/, false);
-   if (thread == NULL)
+   Thread new_ctr_thread = threadCreate(ctr_thread_launcher, arg, STACKSIZE, prio - 1, -1/*No affinity, use any CPU*/, false);
+   if (new_ctr_thread == NULL)
    {
 	   LightLock_Unlock(&safe_double_thread_launch);
 	   return EAGAIN;
    }
+   *thread = new_ctr_thread;
    return 0;
 }
 
