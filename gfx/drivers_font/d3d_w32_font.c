@@ -43,10 +43,6 @@ typedef struct
    uint32_t ascent;
 } d3dfonts_t;
 
-#ifdef __cplusplus
-#else
-#endif
-
 #if !defined(__cplusplus) || defined(CINTERFACE)
 #define IDirect3DXFont_DrawTextA(p, a, b, c, d, e, f) (p)->lpVtbl->DrawTextA(p, a, b, c, d, e, f)
 #define IDirect3DXFont_GetTextMetricsA(p, a) (p)->lpVtbl->GetTextMetricsA(p, a)
@@ -63,7 +59,7 @@ static void *d3dfonts_w32_init_font(void *video_data,
 {
    TEXTMETRICA metrics;
    settings_t *settings = config_get_ptr();
-   D3DXFONT_DESC desc = {
+   D3DXFONT_DESC desc   = {
       (int)(font_size), 0, 400, 0,
       false, DEFAULT_CHARSET,
       OUT_TT_PRECIS,
@@ -79,16 +75,18 @@ static void *d3dfonts_w32_init_font(void *video_data,
    if (!d3dfonts)
       return NULL;
 
-   d3dfonts->font_size = font_size * 1.2; /* to match the other font drivers */
-   d3dfonts->d3d       = (d3d_video_t*)video_data;
+   d3dfonts->font_size  = font_size * 1.2; /* to match the other font drivers */
+   d3dfonts->d3d        = (d3d_video_t*)video_data;
 
-   desc.Height = d3dfonts->font_size;
+   desc.Height          = d3dfonts->font_size;
+
    if (!d3dx_create_font_indirect(d3dfonts->d3d->dev,
             &desc, (void**)&d3dfonts->font))
       goto error;
 
    IDirect3DXFont_GetTextMetricsA(d3dfonts->font, &metrics);
-   d3dfonts->ascent = metrics.tmAscent;
+
+   d3dfonts->ascent     = metrics.tmAscent;
 
    return d3dfonts;
 
@@ -120,19 +118,21 @@ static int d3dfonts_w32_get_message_width(void* data, const char* msg,
    if (!d3dfonts || !d3dfonts->d3d | !msg)
       return 0;
 
-   IDirect3DXFont_DrawTextA(d3dfonts->font, NULL, msg, msg_len? msg_len : -1, &box, DT_CALCRECT, 0);
+   IDirect3DXFont_DrawTextA(d3dfonts->font, NULL, msg,
+         msg_len? msg_len : -1, &box, DT_CALCRECT, 0);
 
    return box.right - box.left;
 }
 
 
-static void d3dfonts_w32_render_msg(video_frame_info_t *video_info, void *data, const char *msg,
-      const void *userdata)
+static void d3dfonts_w32_render_msg(video_frame_info_t *video_info,
+      void *data, const char *msg, const void *userdata)
 {
    unsigned format;
    unsigned a, r, g, b;
-   RECT rect, *p_rect;
-   RECT rect_shifted, *p_rect_shifted;
+   RECT rect, rect_shifted;
+   RECT *p_rect_shifted             = NULL;
+   RECT *p_rect                     = NULL;
    settings_t *settings             = config_get_ptr();
    const struct font_params *params = (const struct font_params*)userdata;
    d3dfonts_t *d3dfonts             = (d3dfonts_t*)data;
@@ -143,11 +143,8 @@ static void d3dfonts_w32_render_msg(video_frame_info_t *video_info, void *data, 
    int drop_x                       = -2;
    int drop_y                       = -2;
 
-   if (!d3dfonts || !d3dfonts->d3d)
+   if (!d3dfonts || !d3dfonts->d3d || !msg)
       return;
-   if (!msg)
-      return;
-
    if (!d3d_begin_scene(d3dfonts->d3d->dev))
       return;
 
@@ -212,15 +209,14 @@ static void d3dfonts_w32_render_msg(video_frame_info_t *video_info, void *data, 
 
    if(drop_x || drop_y)
    {
-      unsigned drop_a, drop_r, drop_g, drop_b;
+      unsigned drop_a = a * drop_alpha;
+      unsigned drop_r = r * drop_mod;
+      unsigned drop_g = g * drop_mod;
+      unsigned drop_b = b * drop_mod;
 
-      drop_a = a * drop_alpha;
-      drop_r = r * drop_mod;
-      drop_g = g * drop_mod;
-      drop_b = b * drop_mod;
-
-      IDirect3DXFont_DrawTextA(d3dfonts->font, NULL, msg, -1, p_rect_shifted, format,
-         D3DCOLOR_ARGB(drop_a , drop_r, drop_g, drop_b));
+      IDirect3DXFont_DrawTextA(d3dfonts->font, NULL,
+            msg, -1, p_rect_shifted, format,
+            D3DCOLOR_ARGB(drop_a , drop_r, drop_g, drop_b));
    }
 
 

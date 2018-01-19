@@ -135,11 +135,9 @@ static int16_t xdk_joypad_axis(unsigned port_num, uint32_t joyaxis)
 static void xdk_joypad_poll(void)
 {
    unsigned port;
-#ifdef _XBOX1
-   unsigned int dwInsertions, dwRemovals;
-#endif
-
 #if defined(_XBOX1)
+   unsigned int dwInsertions, dwRemovals;
+
 #ifdef __cplusplus
    XGetDeviceChanges(XDEVICE_TYPE_GAMEPAD,
          reinterpret_cast<PDWORD>(&dwInsertions),
@@ -153,7 +151,7 @@ static void xdk_joypad_poll(void)
 
    for (port = 0; port < MAX_PADS; port++)
    {
-	  unsigned i, j;
+      unsigned i, j;
       XINPUT_STATE state_tmp;
       uint64_t *state_cur    = NULL;
 #ifdef _XBOX1
@@ -188,7 +186,7 @@ static void xdk_joypad_poll(void)
          m_pollingParameters.bInputInterval = 8;
          m_pollingParameters.bOutputInterval = 8;
          gamepads[port] = XInputOpen(XDEVICE_TYPE_GAMEPAD, port,
-               XDEVICE_NO_SLOT, NULL);
+               XDEVICE_NO_SLOT, &m_pollingParameters);
 
          xdk_joypad_autodetect_add(port);
       }

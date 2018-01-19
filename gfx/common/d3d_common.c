@@ -363,9 +363,7 @@ bool d3d_get_adapter_display_mode(LPDIRECT3D d3d,
 
 bool d3d_swap(void *data, LPDIRECT3DDEVICE dev)
 {
-#if defined(_XBOX1)
-   D3DDevice_Swap(0);
-#elif defined(_XBOX360)
+#if defined(_XBOX360)
    D3DDevice_Present(dev);
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
    if (IDirect3DDevice9_Present(dev, NULL, NULL, NULL, NULL) == D3DERR_DEVICELOST)
@@ -383,9 +381,7 @@ bool d3d_swap(void *data, LPDIRECT3DDEVICE dev)
 void d3d_set_transform(LPDIRECT3DDEVICE dev,
       D3DTRANSFORMSTATETYPE state, CONST D3DMATRIX *matrix)
 {
-#if defined(_XBOX1)
-   D3DDevice_SetTransform(state, matrix);
-#elif !defined(_XBOX360)
+#if !defined(_XBOX360)
    /* XBox 360 D3D9 does not support fixed-function pipeline. */
 
 #if defined(HAVE_D3D9) && !defined(__cplusplus)
@@ -678,9 +674,7 @@ void *d3d_vertex_buffer_lock(void *vertbuf_ptr)
    void                      *buf = NULL;
    LPDIRECT3DVERTEXBUFFER vertbuf = (LPDIRECT3DVERTEXBUFFER)vertbuf_ptr;
 
-#if defined(_XBOX1)
-   buf = (void*)D3DVertexBuffer_Lock2(vertbuf, 0);
-#elif defined(_XBOX360)
+#if defined(_XBOX360)
    buf = D3DVertexBuffer_Lock(vertbuf, 0, 0, 0);
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DVertexBuffer9_Lock(vertbuf, 0, 0, &buf, 0);
@@ -789,10 +783,7 @@ static void d3d_set_texture_stage_state(LPDIRECT3DDEVICE dev,
 void d3d_set_sampler_address_u(LPDIRECT3DDEVICE dev,
       unsigned sampler, unsigned value)
 {
-#if defined(_XBOX1)
-   D3D__DirtyFlags |= (D3DDIRTYFLAG_TEXTURE_STATE_0 << sampler);
-   D3D__TextureState[sampler][D3DTSS_ADDRESSU] = value;
-#elif defined(_XBOX360)
+#if defined(_XBOX360)
    D3DDevice_SetSamplerState_AddressU_Inline(dev, sampler, value);
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DDevice9_SetSamplerState(dev, sampler, D3DSAMP_ADDRESSU, value);
@@ -806,10 +797,7 @@ void d3d_set_sampler_address_u(LPDIRECT3DDEVICE dev,
 void d3d_set_sampler_address_v(LPDIRECT3DDEVICE dev,
       unsigned sampler, unsigned value)
 {
-#if defined(_XBOX1)
-   D3D__DirtyFlags |= (D3DDIRTYFLAG_TEXTURE_STATE_0 << sampler);
-   D3D__TextureState[sampler][D3DTSS_ADDRESSV] = value;
-#elif defined(_XBOX360)
+#if defined(_XBOX360)
    D3DDevice_SetSamplerState_AddressV_Inline(dev, sampler, value);
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DDevice9_SetSamplerState(dev, sampler, D3DSAMP_ADDRESSV, value);
@@ -823,10 +811,7 @@ void d3d_set_sampler_address_v(LPDIRECT3DDEVICE dev,
 void d3d_set_sampler_minfilter(LPDIRECT3DDEVICE dev,
       unsigned sampler, unsigned value)
 {
-#if defined(_XBOX1)
-   D3D__DirtyFlags |= (D3DDIRTYFLAG_TEXTURE_STATE_0 << sampler);
-   D3D__TextureState[sampler][D3DTSS_MINFILTER] = value;
-#elif defined(_XBOX360)
+#if defined(_XBOX360)
    D3DDevice_SetSamplerState_MinFilter(dev, sampler, value);
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DDevice9_SetSamplerState(dev, sampler, D3DSAMP_MINFILTER, value);
@@ -840,10 +825,7 @@ void d3d_set_sampler_minfilter(LPDIRECT3DDEVICE dev,
 void d3d_set_sampler_magfilter(LPDIRECT3DDEVICE dev,
       unsigned sampler, unsigned value)
 {
-#if defined(_XBOX1)
-   D3D__DirtyFlags |= (D3DDIRTYFLAG_TEXTURE_STATE_0 << sampler);
-   D3D__TextureState[sampler][D3DTSS_MAGFILTER] = value;
-#elif defined(_XBOX360)
+#if defined(_XBOX360)
    D3DDevice_SetSamplerState_MagFilter(dev, sampler, value);
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DDevice9_SetSamplerState(dev, sampler, D3DSAMP_MAGFILTER, value);
@@ -910,9 +892,7 @@ static void d3d_draw_primitive_internal(LPDIRECT3DDEVICE dev,
 void d3d_draw_primitive(LPDIRECT3DDEVICE dev,
       D3DPRIMITIVETYPE type, unsigned start, unsigned count)
 {
-#if defined(_XBOX1)
-   D3DDevice_DrawVertices(type, start, D3DVERTEXCOUNT(type, count));
-#elif defined(_XBOX360)
+#if defined(_XBOX360)
    D3DDevice_DrawVertices(dev, type, start, D3DVERTEXCOUNT(type, count));
 #else
    if (d3d_begin_scene(dev))
@@ -927,9 +907,7 @@ void d3d_clear(LPDIRECT3DDEVICE dev,
       unsigned count, const D3DRECT *rects, unsigned flags,
       D3DCOLOR color, float z, unsigned stencil)
 {
-#if defined(_XBOX1)
-   D3DDevice_Clear(count, rects, flags, color, z, stencil);
-#elif defined(_XBOX360)
+#if defined(_XBOX360)
    D3DDevice_Clear(dev, count, rects, flags, color, z,
          stencil, false);
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
@@ -1042,8 +1020,6 @@ void d3d_set_viewports(LPDIRECT3DDEVICE dev, D3DVIEWPORT *vp)
 {
 #if defined(_XBOX360)
    D3DDevice_SetViewport(dev, vp);
-#elif defined(_XBOX1)
-   D3DDevice_SetViewport(vp);
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DDevice9_SetViewport(dev, vp);
 #elif defined(HAVE_D3D8) && !defined(__cplusplus)
@@ -1057,9 +1033,7 @@ void d3d_set_texture(LPDIRECT3DDEVICE dev, unsigned sampler,
       void *tex_data)
 {
    LPDIRECT3DTEXTURE tex = (LPDIRECT3DTEXTURE)tex_data;
-#if defined(_XBOX1)
-   D3DDevice_SetTexture(sampler, tex);
-#elif defined(_XBOX360)
+#if defined(_XBOX360)
    unsigned fetchConstant =
       GPU_CONVERT_D3D_TO_HARDWARE_TEXTUREFETCHCONSTANT(sampler);
    uint64_t pendingMask3 =
@@ -1345,16 +1319,16 @@ void d3d_disable_blend_func(void *data)
 
 void d3d_set_vertex_declaration(void *data, void *vertex_data)
 {
+#if defined(HAVE_D3D9)
    LPDIRECT3DDEVICE dev             = (LPDIRECT3DDEVICE)data;
    if (!dev)
       return;
 
-#ifdef _XBOX1
-   d3d_set_vertex_shader(dev, D3DFVF_XYZ | D3DFVF_TEX1, NULL);
-#elif defined(HAVE_D3D9) && !defined(__cplusplus)
-   IDirect3DDevice9_SetVertexDeclaration(dev, (LPDIRECT3DVERTEXDECLARATION)vertex_data);
-#elif defined(HAVE_D3D9)
+#ifdef __cplusplus
    dev->SetVertexDeclaration((LPDIRECT3DVERTEXDECLARATION)vertex_data);
+#else
+   IDirect3DDevice9_SetVertexDeclaration(dev, (LPDIRECT3DVERTEXDECLARATION)vertex_data);
+#endif
 #endif
 }
 

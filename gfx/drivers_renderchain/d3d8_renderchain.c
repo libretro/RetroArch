@@ -113,7 +113,6 @@ static void d3d8_renderchain_set_vertices(void *data, unsigned pass,
 
    if (chain->last_width != vert_width || chain->last_height != vert_height)
    {
-      unsigned i;
       Vertex vert[4];
       float tex_w, tex_h;
       void *verts        = NULL;
