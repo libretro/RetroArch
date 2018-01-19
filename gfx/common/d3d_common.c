@@ -1057,9 +1057,7 @@ void d3d_set_texture(LPDIRECT3DDEVICE dev, unsigned sampler,
       void *tex_data)
 {
    LPDIRECT3DTEXTURE tex = (LPDIRECT3DTEXTURE)tex_data;
-#if defined(_XBOX1)
-   D3DDevice_SetTexture(sampler, tex);
-#elif defined(_XBOX360)
+#if defined(_XBOX360)
    unsigned fetchConstant =
       GPU_CONVERT_D3D_TO_HARDWARE_TEXTUREFETCHCONSTANT(sampler);
    uint64_t pendingMask3 =
