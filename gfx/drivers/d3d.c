@@ -1204,26 +1204,6 @@ static void *d3d_init(const video_info_t *info,
    if (!d3d_initialize_symbols())
       return NULL;
 
-#ifdef _XBOX
-   if (video_driver_get_ptr(false))
-   {
-      d3d = (d3d_video_t*)video_driver_get_ptr(false);
-
-      /* Reinitialize renderchain as we
-       * might have changed pixel formats.*/
-      if (d3d->renderchain_driver->reinit(d3d, (const void*)info))
-      {
-         d3d_deinit_chain(d3d);
-         d3d_init_chain(d3d, info);
-
-         input_driver_set(input, input_data);
-
-         video_driver_set_own_driver();
-         return d3d;
-      }
-   }
-#endif
-
    d3d = (d3d_video_t*)calloc(1, sizeof(*d3d));
    if (!d3d)
       goto error;
@@ -1251,9 +1231,6 @@ static void *d3d_init(const video_info_t *info,
    }
 
    d3d->keep_aspect       = info->force_aspect;
-#ifdef _XBOX
-   video_driver_set_own_driver();
-#endif
 
    return d3d;
 
