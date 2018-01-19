@@ -411,10 +411,6 @@ static char *purge_xml_comments(const char *str)
 
 rxml_document_t *rxml_load_document(const char *path)
 {
-#ifndef RXML_TEST
-   RARCH_WARN("Using RXML as drop in for libxml2. Behavior might be very buggy.\n");
-#endif
-
    char *memory_buffer     = NULL;
    char *new_memory_buffer = NULL;
    const char *mem_ptr     = NULL;

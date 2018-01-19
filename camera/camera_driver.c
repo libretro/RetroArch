@@ -157,14 +157,17 @@ bool camera_driver_ctl(enum rarch_camera_ctl_state state, void *data)
                camera_driver = (const camera_driver_t*)camera_driver_find_handle(i);
             else
             {
-               unsigned d;
-               RARCH_ERR("Couldn't find any camera driver named \"%s\"\n",
-                     settings->arrays.camera_driver);
-               RARCH_LOG_OUTPUT("Available camera drivers are:\n");
-               for (d = 0; camera_driver_find_handle(d); d++)
-                  RARCH_LOG_OUTPUT("\t%s\n", camera_driver_find_ident(d));
+               if (verbosity_is_enabled())
+               {
+                  unsigned d;
+                  RARCH_ERR("Couldn't find any camera driver named \"%s\"\n",
+                        settings->arrays.camera_driver);
+                  RARCH_LOG_OUTPUT("Available camera drivers are:\n");
+                  for (d = 0; camera_driver_find_handle(d); d++)
+                     RARCH_LOG_OUTPUT("\t%s\n", camera_driver_find_ident(d));
 
-               RARCH_WARN("Going to default to first camera driver...\n");
+                  RARCH_WARN("Going to default to first camera driver...\n");
+               }
 
                camera_driver = (const camera_driver_t*)camera_driver_find_handle(0);
 

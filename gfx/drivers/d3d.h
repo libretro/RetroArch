@@ -56,13 +56,8 @@ typedef struct
 
 typedef struct Vertex
 {
-   float x, y;
-#if defined(HAVE_D3D8)
-   float z;
-#if 1
-   float rhw;
-#endif
-#endif
+   float x, y, z;
+   uint32_t color;
    float u, v;
 } Vertex;
 

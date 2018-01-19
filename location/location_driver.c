@@ -106,14 +106,18 @@ void find_location_driver(void)
       location_driver = (const location_driver_t*)location_driver_find_handle(i);
    else
    {
-      unsigned d;
-      RARCH_ERR("Couldn't find any location driver named \"%s\"\n",
-            settings->arrays.location_driver);
-      RARCH_LOG_OUTPUT("Available location drivers are:\n");
-      for (d = 0; location_driver_find_handle(d); d++)
-         RARCH_LOG_OUTPUT("\t%s\n", location_driver_find_ident(d));
 
-      RARCH_WARN("Going to default to first location driver...\n");
+      if (verbosity_is_enabled())
+      {
+         unsigned d;
+         RARCH_ERR("Couldn't find any location driver named \"%s\"\n",
+               settings->arrays.location_driver);
+         RARCH_LOG_OUTPUT("Available location drivers are:\n");
+         for (d = 0; location_driver_find_handle(d); d++)
+            RARCH_LOG_OUTPUT("\t%s\n", location_driver_find_ident(d));
+
+         RARCH_WARN("Going to default to first location driver...\n");
+      }
 
       location_driver = (const location_driver_t*)location_driver_find_handle(0);
 

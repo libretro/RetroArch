@@ -1843,13 +1843,16 @@ bool video_driver_find_driver(void)
       current_video = (video_driver_t*)video_driver_find_handle(i);
    else
    {
-      unsigned d;
-      RARCH_ERR("Couldn't find any video driver named \"%s\"\n",
-            settings->arrays.video_driver);
-      RARCH_LOG_OUTPUT("Available video drivers are:\n");
-      for (d = 0; video_driver_find_handle(d); d++)
-         RARCH_LOG_OUTPUT("\t%s\n", video_driver_find_ident(d));
-      RARCH_WARN("Going to default to first video driver...\n");
+      if (verbosity_is_enabled())
+      {
+         unsigned d;
+         RARCH_ERR("Couldn't find any video driver named \"%s\"\n",
+               settings->arrays.video_driver);
+         RARCH_LOG_OUTPUT("Available video drivers are:\n");
+         for (d = 0; video_driver_find_handle(d); d++)
+            RARCH_LOG_OUTPUT("\t%s\n", video_driver_find_ident(d));
+         RARCH_WARN("Going to default to first video driver...\n");
+      }
 
       current_video = (video_driver_t*)video_driver_find_handle(0);
 
