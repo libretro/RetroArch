@@ -23,8 +23,6 @@
 
 #include "../menu_driver.h"
 
-#include "../../retroarch.h"
-#include "../../gfx/font_driver.h"
 #include "../../gfx/video_driver.h"
 #include "../../gfx/drivers/d3d.h"
 #include "../../gfx/common/d3d_common.h"
@@ -102,23 +100,6 @@ static void menu_display_d3d_blend_end(void)
 
 static void menu_display_d3d_viewport(void *data)
 {
-#if 0
-   D3DVIEWPORT                vp = {0};
-   menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
-   d3d_video_t              *d3d = (d3d_video_t*)video_driver_get_ptr(false);
-
-   if (!d3d || !draw)
-      return;
-
-   vp.X      = draw->x;
-   vp.Y      = d3d->video_info.height - (draw->y + draw->height);
-   vp.Width  = draw->width;
-   vp.Height = draw->height;
-   vp.MinZ   = 0.0f;
-   vp.MaxZ   = 1.0f;
-
-   d3d_set_viewports(d3d->dev, &vp);
-#endif
 }
 
 static void menu_display_d3d_bind_texture(void *data)
@@ -152,20 +133,22 @@ static void menu_display_d3d_draw(void *data)
    const float *tex_coord        = NULL;
    const float *color            = NULL;
 
-   if (!d3d || !draw)
+   if (!d3d || !draw || draw->pipeline.id)
+      return;
+   if((d3d->menu_display.offset + draw->coords->vertices )
+         > d3d->menu_display.size)
       return;
 
-   if(draw->pipeline.id)
+   pv           = (Vertex*)
+      d3d_vertex_buffer_lock(d3d->menu_display.buffer);
+
+   if (!pv)
       return;
 
-   if(d3d->menu_display.offset + draw->coords->vertices > d3d->menu_display.size)
-      return;
-
-   pv        = (Vertex*)d3d_vertex_buffer_lock(d3d->menu_display.buffer);
-   pv       += d3d->menu_display.offset;
-   vertex    = draw->coords->vertex;
-   tex_coord = draw->coords->tex_coord;
-   color     = draw->coords->color;
+   pv          += d3d->menu_display.offset;
+   vertex       = draw->coords->vertex;
+   tex_coord    = draw->coords->tex_coord;
+   color        = draw->coords->color;
 
    if (!vertex)
       vertex    = menu_display_d3d_get_default_vertices();
@@ -175,14 +158,17 @@ static void menu_display_d3d_draw(void *data)
    for (i = 0; i < draw->coords->vertices; i++)
    {
       int colors[4];
-      pv[i].x = *vertex++;
-      pv[i].y = *vertex++;
-      pv[i].z = 0.5f;
 
-      colors[0] = *color++ * 0xFF;
-      colors[1] = *color++ * 0xFF;
-      colors[2] = *color++ * 0xFF;
-      colors[3] = *color++ * 0xFF;
+      colors[0]   = *color++ * 0xFF;
+      colors[1]   = *color++ * 0xFF;
+      colors[2]   = *color++ * 0xFF;
+      colors[3]   = *color++ * 0xFF;
+
+      pv[i].x     = *vertex++;
+      pv[i].y     = *vertex++;
+      pv[i].z     = 0.5f;
+      pv[i].u     = *tex_coord++;
+      pv[i].v     = *tex_coord++;
 
       pv[i].color =
          D3DCOLOR_ARGB(
@@ -191,9 +177,6 @@ static void menu_display_d3d_draw(void *data)
                colors[1], /* G */
                colors[2]  /* B */
                );
-
-      pv[i].u = *tex_coord++;
-      pv[i].v = *tex_coord++;
    }
    d3d_vertex_buffer_unlock(d3d->menu_display.buffer);
 
@@ -202,23 +185,33 @@ static void menu_display_d3d_draw(void *data)
 
    /* ugh */
    video_driver_get_size(&width, &height);
-   matrix_4x4_scale(m1, 2.0, 2.0, 0);
+   matrix_4x4_scale(m1,       2.0,  2.0, 0);
    matrix_4x4_translate(mop, -1.0, -1.0, 0);
    matrix_4x4_multiply(m2, mop, m1);
-   matrix_4x4_multiply(m1, *((math_matrix_4x4*)draw->matrix_data), m2);
-   matrix_4x4_scale(mop, (draw->width / 2.0) / width, (draw->height / 2.0) / height, 0);
+   matrix_4x4_multiply(m1,
+         *((math_matrix_4x4*)draw->matrix_data), m2);
+   matrix_4x4_scale(mop,
+         (draw->width  / 2.0) / width,
+         (draw->height / 2.0) / height, 0);
    matrix_4x4_multiply(m2, mop, m1);
-   matrix_4x4_translate(mop, (draw->x + (draw->width / 2.0)) / width, (draw->y + (draw->height / 2.0)) / height,0);
+   matrix_4x4_translate(mop,
+         (draw->x + (draw->width  / 2.0)) / width,
+         (draw->y + (draw->height / 2.0)) / height,
+         0);
    matrix_4x4_multiply(m1, mop, m2);
    matrix_4x4_multiply(m2, d3d->mvp_transposed, m1);
    d3d_matrix_transpose(&m1, &m2);
 
-   mvp.data = d3d;
+   mvp.data   = d3d;
    mvp.matrix = &m1;
    video_driver_set_mvp(&mvp);
    menu_display_d3d_bind_texture(draw);
-   d3d_draw_primitive(d3d->dev, menu_display_prim_to_d3d_enum(draw->prim_type), d3d->menu_display.offset,
-                      draw->coords->vertices - (draw->prim_type == MENU_DISPLAY_PRIM_TRIANGLESTRIP? 2 : 0));
+   d3d_draw_primitive(d3d->dev,
+         menu_display_prim_to_d3d_enum(draw->prim_type),
+         d3d->menu_display.offset,
+         draw->coords->vertices - 
+         ((draw->prim_type == MENU_DISPLAY_PRIM_TRIANGLESTRIP) 
+          ? 2 : 0));
 
    d3d->menu_display.offset += draw->coords->vertices;
 }
@@ -227,34 +220,42 @@ static void menu_display_d3d_draw_pipeline(void *data)
 {
 #if defined(HAVE_HLSL) || defined(HAVE_CG)
    menu_display_ctx_draw_t *draw     = (menu_display_ctx_draw_t*)data;
-   struct uniform_info uniform_param = {0};
    static float t                    = 0;
-   video_coord_array_t *ca           = menu_display_get_coords_array();
+   video_coord_array_t *ca           = NULL;
+   
+   if (!draw)
+      return;
 
-   (void)uniform_param;
+   ca                                = menu_display_get_coords_array();
 
-   draw->x           = 0;
-   draw->y           = 0;
-   draw->coords      = (struct video_coords*)(&ca->coords);
-   draw->matrix_data = NULL;
+   draw->x                           = 0;
+   draw->y                           = 0;
+   draw->coords                      = NULL;
+   draw->matrix_data                 = NULL;
+
+   if (ca)
+      draw->coords                   = (struct video_coords*)&ca->coords;
 
    switch (draw->pipeline.id)
    {
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
       case VIDEO_SHADER_MENU_3:
+         {
+            struct uniform_info uniform_param  = {0};
+            t                                 += 0.01;
 
-         t += 0.01;
+            (void)uniform_param;
 
-         uniform_param.enabled           = true;
-         uniform_param.lookup.enable     = true;
-         uniform_param.lookup.add_prefix = true;
-         uniform_param.lookup.idx        = draw->pipeline.id;
-         uniform_param.lookup.type       = SHADER_PROGRAM_VERTEX;
-         uniform_param.type              = UNIFORM_1F;
-         uniform_param.lookup.ident      = "time";
-         uniform_param.result.f.v0       = t;
-
+            uniform_param.enabled              = true;
+            uniform_param.lookup.enable        = true;
+            uniform_param.lookup.add_prefix    = true;
+            uniform_param.lookup.idx           = draw->pipeline.id;
+            uniform_param.lookup.type          = SHADER_PROGRAM_VERTEX;
+            uniform_param.type                 = UNIFORM_1F;
+            uniform_param.lookup.ident         = "time";
+            uniform_param.result.f.v0          = t;
+         }
          break;
    }
 #endif
@@ -265,10 +266,12 @@ static void menu_display_d3d_restore_clear_color(void)
    /* not needed */
 }
 
-static void menu_display_d3d_clear_color(menu_display_ctx_clearcolor_t *clearcolor)
+static void menu_display_d3d_clear_color(
+      menu_display_ctx_clearcolor_t *clearcolor)
 {
-   DWORD    clear_color                      = 0;
-   d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(false);
+   DWORD    clear_color = 0;
+   d3d_video_t     *d3d = (d3d_video_t*)
+      video_driver_get_ptr(false);
 
    if (!d3d || !clearcolor)
       return;
