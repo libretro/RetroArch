@@ -1012,7 +1012,7 @@ static void d3d_recompute_pass_sizes(cg_renderchain_t *chain,
       d3d_video_t *d3d)
 {
    unsigned i;
-   struct LinkInfo link_info         = {0};
+   struct LinkInfo link_info;
    unsigned current_width            = d3d->video_info.input_scale * RARCH_SCALE_BASE;
    unsigned current_height           = d3d->video_info.input_scale * RARCH_SCALE_BASE;
    unsigned out_width                = 0;
