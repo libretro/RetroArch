@@ -2472,72 +2472,40 @@ typedef struct
    uint8_t reserve[8];
 } cheevos_nes_header_t;
 
-#define CORO_VARS \
-   void *data; \
-   size_t len; \
-   const char *path; \
-   settings_t *settings; \
-   struct retro_system_info sysinfo; \
-   unsigned i; \
-   unsigned j; \
-   unsigned k; \
-   const char *ext; \
-   MD5_CTX md5; \
-   unsigned char hash[16]; \
-   unsigned gameid; \
-   char *json; \
-   size_t count; \
-   size_t offset; \
-   cheevos_nes_header_t header; \
-   size_t romsize, bytes; \
-   int mapper; \
-   bool round; \
-   intfstream_t *stream; \
-   size_t size; \
-   char url[256]; \
-   struct http_connection_t *conn; \
-   struct http_t *http; \
-   retro_time_t t0; \
-   char badge_basepath[PATH_MAX_LENGTH]; \
-   char badge_fullpath[PATH_MAX_LENGTH]; \
-   char badge_name[16]; \
-   cheevo_t *cheevo; \
-   const cheevo_t *cheevo_end;
-
 #include "coro.h"
 
-#define CHEEVOS_VAR_INFO            CORO_VAR(info)
-#define CHEEVOS_VAR_DATA            CORO_VAR(data)
-#define CHEEVOS_VAR_LEN             CORO_VAR(len)
-#define CHEEVOS_VAR_PATH            CORO_VAR(path)
-#define CHEEVOS_VAR_SETTINGS        CORO_VAR(settings)
-#define CHEEVOS_VAR_SYSINFO         CORO_VAR(sysinfo)
-#define CHEEVOS_VAR_I               CORO_VAR(i)
-#define CHEEVOS_VAR_J               CORO_VAR(j)
-#define CHEEVOS_VAR_K               CORO_VAR(k)
-#define CHEEVOS_VAR_EXT             CORO_VAR(ext)
-#define CHEEVOS_VAR_MD5             CORO_VAR(md5)
-#define CHEEVOS_VAR_HASH            CORO_VAR(hash)
-#define CHEEVOS_VAR_GAMEID          CORO_VAR(gameid)
-#define CHEEVOS_VAR_JSON            CORO_VAR(json)
-#define CHEEVOS_VAR_COUNT           CORO_VAR(count)
-#define CHEEVOS_VAR_OFFSET          CORO_VAR(offset)
-#define CHEEVOS_VAR_HEADER          CORO_VAR(header)
-#define CHEEVOS_VAR_ROMSIZE         CORO_VAR(romsize)
-#define CHEEVOS_VAR_BYTES           CORO_VAR(bytes)
-#define CHEEVOS_VAR_MAPPER          CORO_VAR(mapper)
-#define CHEEVOS_VAR_ROUND           CORO_VAR(round)
-#define CHEEVOS_VAR_STREAM          CORO_VAR(stream)
-#define CHEEVOS_VAR_SIZE            CORO_VAR(size)
-#define CHEEVOS_VAR_URL             CORO_VAR(url)
-#define CHEEVOS_VAR_CONN            CORO_VAR(conn)
-#define CHEEVOS_VAR_HTTP            CORO_VAR(http)
-#define CHEEVOS_VAR_T0              CORO_VAR(t0)
-#define CHEEVOS_VAR_BADGE_PATH      CORO_VAR(badge_fullpath)
-#define CHEEVOS_VAR_BADGE_BASE_PATH CORO_VAR(badge_fullpath)
-#define CHEEVOS_VAR_BADGE_NAME      CORO_VAR(badge_name)
-#define CHEEVOS_VAR_CHEEVO_CURR     CORO_VAR(cheevo)
-#define CHEEVOS_VAR_CHEEVO_END      CORO_VAR(cheevo_end)
+#define CHEEVOS_VAR_INFO            coro->info
+#define CHEEVOS_VAR_DATA            coro->data
+#define CHEEVOS_VAR_LEN             coro->len
+#define CHEEVOS_VAR_PATH            coro->path
+#define CHEEVOS_VAR_SETTINGS        coro->settings
+#define CHEEVOS_VAR_SYSINFO         coro->sysinfo
+#define CHEEVOS_VAR_I               coro->i
+#define CHEEVOS_VAR_J               coro->j
+#define CHEEVOS_VAR_K               coro->k
+#define CHEEVOS_VAR_EXT             coro->ext
+#define CHEEVOS_VAR_MD5             coro->md5
+#define CHEEVOS_VAR_HASH            coro->hash
+#define CHEEVOS_VAR_GAMEID          coro->gameid
+#define CHEEVOS_VAR_JSON            coro->json
+#define CHEEVOS_VAR_COUNT           coro->count
+#define CHEEVOS_VAR_OFFSET          coro->offset
+#define CHEEVOS_VAR_HEADER          coro->header
+#define CHEEVOS_VAR_ROMSIZE         coro->romsize
+#define CHEEVOS_VAR_BYTES           coro->bytes
+#define CHEEVOS_VAR_MAPPER          coro->mapper
+#define CHEEVOS_VAR_ROUND           coro->round
+#define CHEEVOS_VAR_STREAM          coro->stream
+#define CHEEVOS_VAR_SIZE            coro->size
+#define CHEEVOS_VAR_URL             coro->url
+#define CHEEVOS_VAR_CONN            coro->conn
+#define CHEEVOS_VAR_HTTP            coro->http
+#define CHEEVOS_VAR_T0              coro->t0
+#define CHEEVOS_VAR_BADGE_PATH      coro->badge_fullpath
+#define CHEEVOS_VAR_BADGE_BASE_PATH coro->badge_fullpath
+#define CHEEVOS_VAR_BADGE_NAME      coro->badge_name
+#define CHEEVOS_VAR_CHEEVO_CURR     coro->cheevo
+#define CHEEVOS_VAR_CHEEVO_END      coro->cheevo_end
 
 static int cheevos_iterate(coro_t* coro)
 {
