@@ -1380,13 +1380,8 @@ static bool d3d_overlay_load(void *data,
    for (i = 0; i < num_images; i++)
    {
       D3DLOCKED_RECT d3dlr;
-#ifdef _XBOX
-      unsigned width     = next_pow2(images[i].width);
-      unsigned height    = next_pow2(images[i].height);
-#else
       unsigned width     = images[i].width;
       unsigned height    = images[i].height;
-#endif
       overlay_t *overlay = (overlay_t*)&d3d->overlays[i];
 
       overlay->tex       = d3d_texture_new(d3d->dev, NULL,
