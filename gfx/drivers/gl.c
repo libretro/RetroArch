@@ -1346,7 +1346,6 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident, const video_
     *
     * have_sync       - Use ARB_sync to reduce latency.
     */
-   gl->has_fbo                   = gl_check_capability(GL_CAPS_FBO);
    gl->have_full_npot_support    = gl_check_capability(GL_CAPS_FULL_NPOT_SUPPORT);
    gl->have_mipmap               = gl_check_capability(GL_CAPS_MIPMAP);
    gl->have_es2_compat           = gl_check_capability(GL_CAPS_ES2_COMPAT);
@@ -1784,6 +1783,12 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
    glBlendEquation(GL_FUNC_ADD);
 
+   gl->hw_render_use    = false;
+   gl->has_fbo          = gl_check_capability(GL_CAPS_FBO);
+
+   if (gl->has_fbo && hwr->context_type != RETRO_HW_CONTEXT_NONE)
+      gl->hw_render_use = true;
+
    if (!resolve_extensions(gl, ctx_driver->ident, video))
       goto error;
 
@@ -1821,10 +1826,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
     * but still need multiple textures with PREV.
     */
    gl->textures         = 4;
-   gl->hw_render_use    = false;
-
-   if (gl->has_fbo && hwr->context_type != RETRO_HW_CONTEXT_NONE)
-      gl->hw_render_use = true;
 
    if (gl->hw_render_use)
    {
