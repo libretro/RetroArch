@@ -1649,8 +1649,13 @@ static void d3d_set_menu_texture_frame(void *data,
             d3d->menu->tex_w != width ||
             d3d->menu->tex_h != height)
    {
+#ifdef _XBOX
+      width     = next_pow2(width);
+      height    = next_pow2(height);
+#endif
+
       if (d3d->menu)
-	     d3d_texture_free(d3d->menu->tex);
+         d3d_texture_free(d3d->menu->tex);
 
       d3d->menu->tex = d3d_texture_new(d3d->dev, NULL,
             width, height, 1,
