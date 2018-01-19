@@ -43,10 +43,6 @@ typedef struct
    uint32_t ascent;
 } d3dfonts_t;
 
-#ifdef __cplusplus
-#else
-#endif
-
 #if !defined(__cplusplus) || defined(CINTERFACE)
 #define IDirect3DXFont_DrawTextA(p, a, b, c, d, e, f) (p)->lpVtbl->DrawTextA(p, a, b, c, d, e, f)
 #define IDirect3DXFont_GetTextMetricsA(p, a) (p)->lpVtbl->GetTextMetricsA(p, a)
