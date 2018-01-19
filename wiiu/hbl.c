@@ -26,6 +26,10 @@
 
 #include "hbl.h"
 
+#ifdef WIIU_LOG_RPX
+#include "../verbosity.h"
+#endif
+
 #define MEM_AREA_TABLE              ((s_mem_area*)(MEM_BASE + 0x1600))
 #define ELF_DATA_ADDR               (*(volatile unsigned int*)(MEM_BASE + 0x1300 + 0x00))
 #define ELF_DATA_SIZE               (*(volatile unsigned int*)(MEM_BASE + 0x1300 + 0x04))
@@ -182,6 +186,62 @@ static int HomebrewCopyMemory(u8 *address, u32 bytes, u32 args_size)
    return bytes;
 }
 
+#ifdef WIIU_LOG_RPX
+
+#define LINE_LEN 32
+/**
+ * This is called between when the RPX is read off the storage medium and
+ * when it is sent to the loader. It prints a hexdump to the logger, which
+ * can then be parsed out by a script.
+ *
+ * If we can at least semi-reliably generate the "System Memory Error", this
+ * can be useful in identifying if the problem is corrupt file i/o vs in-memory
+ * corruption.
+ */
+void log_rpx(const char *filepath, unsigned char *buf, size_t len)
+{
+  unsigned int line_buffer[LINE_LEN];
+  int i, offset;
+
+  RARCH_LOG("=== BEGIN file=%s size=%d ===\n", filepath, len);
+  for(i = 0; i < len; i++)
+  {
+    offset = i % LINE_LEN;
+    line_buffer[offset] = buf[i];
+
+    if(offset == (LINE_LEN-1)) {
+      RARCH_LOG("%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n",
+	line_buffer[0], line_buffer[1], line_buffer[2], line_buffer[3],
+	line_buffer[4], line_buffer[5], line_buffer[6], line_buffer[7],
+	line_buffer[8], line_buffer[9], line_buffer[10], line_buffer[11],
+	line_buffer[12], line_buffer[13], line_buffer[14], line_buffer[15],
+	line_buffer[16], line_buffer[17], line_buffer[18], line_buffer[19],
+	line_buffer[20], line_buffer[21], line_buffer[22], line_buffer[23],
+	line_buffer[24], line_buffer[25], line_buffer[26], line_buffer[27],
+	line_buffer[28], line_buffer[29], line_buffer[30], line_buffer[31]);
+    }
+  }
+  if((len % LINE_LEN) != 0) {
+    for(i = (LINE_LEN - (len % LINE_LEN)); i < LINE_LEN; i++)
+    {
+      line_buffer[i] = 0;
+    }
+    RARCH_LOG("%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n",
+        line_buffer[0], line_buffer[1], line_buffer[2], line_buffer[3],
+	line_buffer[4], line_buffer[5], line_buffer[6], line_buffer[7],
+	line_buffer[8], line_buffer[9], line_buffer[10], line_buffer[11],
+	line_buffer[16], line_buffer[17], line_buffer[18], line_buffer[19],
+	line_buffer[20], line_buffer[21], line_buffer[22], line_buffer[23],
+	line_buffer[24], line_buffer[25], line_buffer[26], line_buffer[27],
+	line_buffer[28], line_buffer[29], line_buffer[30], line_buffer[31]);
+
+  }
+  RARCH_LOG("=== END %s ===\n", filepath);
+
+}
+
+#endif
+
 int HBL_loadToMemory(const char *filepath, u32 args_size)
 {
    if (!filepath || !*filepath)
@@ -202,14 +262,16 @@ int HBL_loadToMemory(const char *filepath, u32 args_size)
    u32 fileSize = ftell(fp);
    fseek(fp, 0, SEEK_SET);
 
-
-   unsigned char *buffer = (unsigned char *) memalign(0x40, (fileSize + 0x3F) & ~0x3F);
+   size_t buffer_size = (fileSize + 0x3f) & ~0x3f;
+   unsigned char *buffer = (unsigned char *) memalign(0x40, buffer_size);
 
    if (!buffer)
    {
       printf("Not enough memory\n");
       return -1;
    }
+
+   memset(buffer, 0, buffer_size);
 
    /* Copy rpl in memory */
    while (bytesRead < fileSize)
@@ -242,6 +304,9 @@ int HBL_loadToMemory(const char *filepath, u32 args_size)
       printf("File read failure");
       return -1;
    }
+#ifdef WIIU_LOG_RPX
+   log_rpx(filepath, buffer, bytesRead);
+#endif
 
    int ret = HomebrewCopyMemory(buffer, bytesRead, args_size);
 
