@@ -1,6 +1,6 @@
 TARGET := retroarch.js
 
-EOPT = USE_ZLIB=1 USE_SDL=2 # Emscripten specific options
+EOPT = USE_ZLIB=1 # Emscripten specific options
 EOPTS = $(addprefix -s $(EMPTY), $(EOPT)) # Add '-s ' to each option
 
 PTHREAD = 0
