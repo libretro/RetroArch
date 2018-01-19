@@ -37,11 +37,6 @@ Released under the CC0: https://creativecommons.org/publicdomain/zero/1.0/
     case __LINE__: ; \
   } while ( 0 )
 
-#define CORO_STOP() \
-  do { \
-    return 0; \
-  } while ( 0 )
-
 /* The coroutine entry point, never use 0 as a label */
 #define CORO_BEGIN 0
 
@@ -49,7 +44,7 @@ Released under the CC0: https://creativecommons.org/publicdomain/zero/1.0/
 #define CORO_SETUP( x ) \
   do { \
     ( x )->step = CORO_BEGIN; \
-    ( x )->sp = 0; \
+    ( x )->sp   = 0; \
   } while ( 0 )
 
 /* A coroutine */
@@ -66,8 +61,6 @@ typedef struct
    unsigned i;
    unsigned j;
    unsigned k;
-   int mapper;
-   size_t romsize;
    size_t bytes;
    size_t count;
    size_t offset;
