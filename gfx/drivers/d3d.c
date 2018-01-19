@@ -864,11 +864,13 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
 
 #ifdef HAVE_D3D9
    {
-      static const D3DVERTEXELEMENT VertexElements[] =
-      {
-         { 0, 0 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
-         { 0, 2 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
-         { 0, 4 * sizeof(float), D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0 },
+      static const D3DVERTEXELEMENT VertexElements[4] = {
+         {0, offsetof(Vertex, x),  D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT,
+            D3DDECLUSAGE_POSITION, 0},
+         {0, offsetof(Vertex, u), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT,
+            D3DDECLUSAGE_TEXCOORD, 0},
+         {0, offsetof(Vertex, color), D3DDECLTYPE_D3DCOLOR, D3DDECLMETHOD_DEFAULT,
+            D3DDECLUSAGE_COLOR, 0},
          D3DDECL_END()
       };
       if (!d3d_vertex_declaration_new(d3d->dev,
@@ -880,7 +882,7 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
    d3d->menu_display.offset = 0;
    d3d->menu_display.size   = 1024;
    d3d->menu_display.buffer = d3d_vertex_buffer_new(
-         d3d->dev, d3d->menu_display.size * 10 * sizeof(float),
+         d3d->dev, d3d->menu_display.size * sizeof(Vertex),
          D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_DEFAULT,
          NULL);
 
@@ -1543,7 +1545,7 @@ static bool d3d_frame(void *data, const void *frame,
 
       d3d->menu_display.offset = 0;
       d3d_set_vertex_declaration(d3d->dev, d3d->menu_display.decl);
-      d3d_set_stream_source(d3d->dev, 0, d3d->menu_display.buffer, 0, 8 * sizeof(float));
+      d3d_set_stream_source(d3d->dev, 0, d3d->menu_display.buffer, 0, sizeof(Vertex));
 
       d3d_set_viewports(d3d->dev, &screen_vp);
       menu_driver_frame(video_info);

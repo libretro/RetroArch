@@ -1108,7 +1108,8 @@ endif
 endif
 
 ifeq ($(HAVE_EGL), 1)
-	DEFINES += -DHAVE_EGL
+   DEFINES += -DHAVE_EGL $(EGL_CFLAGS)
+   LIBS += $(EGL_LIBS)
    OBJ += gfx/common/egl_common.o
 endif
 

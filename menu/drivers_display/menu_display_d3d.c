@@ -147,7 +147,7 @@ static void menu_display_d3d_draw(void *data)
    unsigned width, height;
    d3d_video_t *d3d              = (d3d_video_t*)video_driver_get_ptr(false);   
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
-   float* pv                     = NULL;
+   Vertex * pv                   = NULL;
    const float *vertex           = NULL;
    const float *tex_coord        = NULL;
    const float *color            = NULL;
@@ -161,8 +161,8 @@ static void menu_display_d3d_draw(void *data)
    if(d3d->menu_display.offset + draw->coords->vertices > d3d->menu_display.size)
       return;
 
-   pv        = (float*)d3d_vertex_buffer_lock(d3d->menu_display.buffer);
-   pv       += d3d->menu_display.offset * 8;
+   pv        = (Vertex*)d3d_vertex_buffer_lock(d3d->menu_display.buffer);
+   pv       += d3d->menu_display.offset;
    vertex    = draw->coords->vertex;
    tex_coord = draw->coords->tex_coord;
    color     = draw->coords->color;
@@ -174,14 +174,26 @@ static void menu_display_d3d_draw(void *data)
 
    for (i = 0; i < draw->coords->vertices; i++)
    {
-      *pv++ = *vertex++;
-      *pv++ = *vertex++;
-      *pv++ = *tex_coord++;
-      *pv++ = *tex_coord++;
-      *pv++ = *color++;
-      *pv++ = *color++;
-      *pv++ = *color++;
-      *pv++ = *color++;
+      int colors[4];
+      pv[i].x = *vertex++;
+      pv[i].y = *vertex++;
+      pv[i].z = 0.5f;
+
+      colors[0] = *color++ * 0xFF;
+      colors[1] = *color++ * 0xFF;
+      colors[2] = *color++ * 0xFF;
+      colors[3] = *color++ * 0xFF;
+
+      pv[i].color =
+         D3DCOLOR_ARGB(
+               colors[3], /* A */
+               colors[0], /* R */
+               colors[1], /* G */
+               colors[2]  /* B */
+               );
+
+      pv[i].u = *tex_coord++;
+      pv[i].v = *tex_coord++;
    }
    d3d_vertex_buffer_unlock(d3d->menu_display.buffer);
 

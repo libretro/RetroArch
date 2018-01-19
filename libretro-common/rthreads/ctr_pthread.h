@@ -40,9 +40,9 @@ typedef LightEvent pthread_cond_t;
 typedef int        pthread_condattr_t;
 
 /* libctru threads return void but pthreads return void pointer */
-bool mutex_inited = false;
-LightLock safe_double_thread_launch;
-void *(*start_routine_jump)(void*);
+static bool mutex_inited = false;
+static LightLock safe_double_thread_launch;
+static void *(*start_routine_jump)(void*);
 
 static void ctr_thread_launcher(void* data)
 {
@@ -54,6 +54,9 @@ static void ctr_thread_launcher(void* data)
 static INLINE int pthread_create(pthread_t *thread,
       const pthread_attr_t *attr, void *(*start_routine)(void*), void *arg)
 {
+   s32 prio = 0;
+   Thread new_ctr_thread;
+      
    if (!mutex_inited)
    {
 	   LightLock_Init(&safe_double_thread_launch);
@@ -63,15 +66,18 @@ static INLINE int pthread_create(pthread_t *thread,
    /*Must wait if attempting to launch 2 threads at once to prevent corruption of function pointer*/
    while (LightLock_TryLock(&safe_double_thread_launch) != 0);
    
-   s32 prio = 0;
    svcGetThreadPriority(&prio, CUR_THREAD_HANDLE);
+   
    start_routine_jump = start_routine;
-   thread = threadCreate(ctr_thread_launcher, arg, STACKSIZE, prio - 1, -1/*No affinity, use any CPU*/, false);
-   if (thread == NULL)
+   new_ctr_thread     = threadCreate(ctr_thread_launcher, arg, STACKSIZE, prio - 1, -1/*No affinity, use any CPU*/, false);
+   
+   if (!new_ctr_thread)
    {
 	   LightLock_Unlock(&safe_double_thread_launch);
 	   return EAGAIN;
    }
+   
+   *thread = new_ctr_thread;
    return 0;
 }
 
@@ -142,15 +148,14 @@ static INLINE int pthread_cond_timedwait(pthread_cond_t *cond,
    while (true)
    {
        struct timespec now = {0};
-	   /* Missing clock_gettime*/
+	    /* Missing clock_gettime*/
        struct timeval tm;
+      
        gettimeofday(&tm, NULL);
        now.tv_sec = tm.tv_sec;
        now.tv_nsec = tm.tv_usec * 1000;
        if (LightEvent_TryWait(cond) != 0 || now.tv_sec > abstime->tv_sec || (now.tv_sec == abstime->tv_sec && now.tv_nsec > abstime->tv_nsec))
-       {
 		   break;
-       }
    }
 	
    return 0;
@@ -184,9 +189,7 @@ static INLINE int pthread_cond_destroy(pthread_cond_t *cond)
 static INLINE int pthread_equal(pthread_t t1, pthread_t t2)
 {
 	if (threadGetHandle(t1) == threadGetHandle(t2))
-	{
 		return 1;
-	}
 	return 0;
 }
 
