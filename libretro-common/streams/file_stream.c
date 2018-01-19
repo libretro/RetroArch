@@ -478,8 +478,7 @@ char *filestream_getline(RFILE *stream)
 
          if (!newline_tmp)
          {
-            if (newline)
-               free(newline);
+            free(newline);
             return NULL;
          }
 
