@@ -187,7 +187,7 @@ static void xdk_joypad_poll(void)
          m_pollingParameters.bInputInterval = 8;
          m_pollingParameters.bOutputInterval = 8;
          gamepads[port] = XInputOpen(XDEVICE_TYPE_GAMEPAD, port,
-               XDEVICE_NO_SLOT, NULL);
+               XDEVICE_NO_SLOT, &m_pollingParameters);
 
          xdk_joypad_autodetect_add(port);
       }
