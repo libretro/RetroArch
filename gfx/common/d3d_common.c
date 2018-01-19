@@ -977,9 +977,7 @@ bool d3d_lock_rectangle(LPDIRECT3DTEXTURE tex,
       unsigned level, D3DLOCKED_RECT *lock_rect, RECT *rect,
       unsigned rectangle_height, unsigned flags)
 {
-#if defined(_XBOX)
-   D3DTexture_LockRect(tex, level, lock_rect, rect, flags);
-#elif defined(HAVE_D3D9) && !defined(__cplusplus)
+#if defined(HAVE_D3D9) && !defined(__cplusplus)
    if (IDirect3DTexture9_LockRect(tex, level, lock_rect, (const RECT*)rect, flags) != D3D_OK)
       return false;
 #elif defined(HAVE_D3D8) && !defined(__cplusplus)
