@@ -5,23 +5,6 @@
 Released under the CC0: https://creativecommons.org/publicdomain/zero/1.0/
 */
 
-/* Use at the beginning of the coroutine, you must have declared a variable coro_t* coro */
-#define CORO_ENTER() \
-  { \
-  CORO_again: ; \
-  switch ( coro->step ) { \
-  case CORO_BEGIN: ;
-
-/* Use to define labels which are targets to GOTO and GOSUB */
-#define CORO_SUB( x ) \
-  case x: ;
-
-/* Use at the end of the coroutine */
-#define CORO_LEAVE() \
-  } \
-  } \
-  do { return 0; } while ( 0 )
-
 /* Go to the x label */
 #define CORO_GOTO( x ) \
   do { \
