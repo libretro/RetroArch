@@ -288,7 +288,8 @@ static void cheevos_log_url(const char* format, const char* url)
    char* aux      = NULL;
    char* next     = NULL;
 
-   strlcpy(copy, url, sizeof(copy));
+   if (!string_is_empty(url))
+      strlcpy(copy, url, sizeof(copy));
 
    aux = strstr(copy, "?p=");
 
@@ -392,6 +393,9 @@ static void cheevos_add_int(char** aux, size_t* left, int v)
 
 static void cheevos_log_var(const cheevos_var_t* var)
 {
+   if (!var)
+      return;
+
    RARCH_LOG("[CHEEVOS]: size: %s\n",
       var->size == CHEEVOS_VAR_SIZE_BIT_0 ? "bit 0" :
       var->size == CHEEVOS_VAR_SIZE_BIT_1 ? "bit 1" :
@@ -420,6 +424,9 @@ static void cheevos_log_var(const cheevos_var_t* var)
 
 static void cheevos_log_cond(const cheevos_cond_t* cond)
 {
+   if (!cond)
+      return;
+
    RARCH_LOG("[CHEEVOS]: condition %p\n", cond);
    RARCH_LOG("[CHEEVOS]: type:     %s\n",
       cond->type == CHEEVOS_COND_TYPE_STANDARD   ? "standard" :
@@ -449,7 +456,10 @@ static void cheevos_log_cond(const cheevos_cond_t* cond)
 static void cheevos_log_cheevo(const cheevo_t* cheevo,
       const cheevos_field_t* memaddr_ud)
 {
-   RARCH_LOG("[CHEEVOS]: cheevo %p\n", cheevo);
+   if (!cheevo || !memaddr_ud)
+      return;
+
+   RARCH_LOG("[CHEEVOS]:  cheevo %p\n", cheevo);
    RARCH_LOG("[CHEEVOS]:  id:      %u\n", cheevo->id);
    RARCH_LOG("[CHEEVOS]:  title:   %s\n", cheevo->title);
    RARCH_LOG("[CHEEVOS]:  desc:    %s\n", cheevo->description);
@@ -457,12 +467,16 @@ static void cheevos_log_cheevo(const cheevo_t* cheevo,
    RARCH_LOG("[CHEEVOS]:  badge:   %s\n", cheevo->badge);
    RARCH_LOG("[CHEEVOS]:  points:  %u\n", cheevo->points);
    RARCH_LOG("[CHEEVOS]:  sets:    TBD\n");
-   RARCH_LOG("[CHEEVOS]:  memaddr: %.*s\n", (int)memaddr_ud->length, memaddr_ud->string);
+   RARCH_LOG("[CHEEVOS]:  memaddr: %.*s\n",
+         (int)memaddr_ud->length, memaddr_ud->string);
 }
 
 static void cheevos_add_var_size(char** aux, size_t* left,
       const cheevos_var_t* var)
 {
+   if (!var)
+      return;
+
    switch( var->size )
    {
       case CHEEVOS_VAR_SIZE_BIT_0:
@@ -511,6 +525,9 @@ static void cheevos_add_var_size(char** aux, size_t* left,
 static void cheevos_add_var(const cheevos_var_t* var, char** memaddr,
       size_t *left)
 {
+   if (!var)
+      return;
+
    if (   var->type == CHEEVOS_VAR_TYPE_ADDRESS
        || var->type == CHEEVOS_VAR_TYPE_DELTA_MEM)
    {
@@ -532,19 +549,21 @@ static void cheevos_add_var(const cheevos_var_t* var, char** memaddr,
 static void cheevos_build_memaddr(const cheevos_condition_t* condition,
       char* memaddr, size_t left)
 {
-   char *aux = memaddr;
-   const cheevos_condset_t* condset;
-   const cheevos_cond_t* cond;
    size_t i, j;
+   const cheevos_cond_t* cond;
+   const cheevos_condset_t *condset;
+   char                        *aux = memaddr;
 
    left--; /* reserve one char for the null terminator */
 
-   for (i = 0, condset = condition->condsets; i < condition->count; i++, condset++)
+   for  (i = 0, condset = condition->condsets; 
+         i < condition->count; i++, condset++)
    {
       if (i != 0)
          cheevos_add_char(&aux, &left, 'S');
 
-      for (j = 0, cond = condset->conds; j < condset->count; j++, cond++)
+      for  (j = 0, cond = condset->conds; 
+            j < condset->count; j++, cond++)
       {
          if (j != 0)
             cheevos_add_char(&aux, &left, '_');
@@ -746,7 +765,8 @@ static int cheevos_get_value(const char *json, unsigned key_hash,
    if ((jsonsax_parse(json, &handlers, (void*)&ud) == JSONSAX_OK)
          && ud.value && ud.length < length)
    {
-      strlcpy(value, ud.value, ud.length + 1);
+      if (!string_is_empty(ud.value))
+         strlcpy(value, ud.value, ud.length + 1);
       return 0;
    }
 
@@ -760,8 +780,13 @@ Count number of achievements in a JSON file.
 static int cheevos_count__json_end_array(void *userdata)
 {
   cheevos_countud_t* ud = (cheevos_countud_t*)userdata;
-  ud->in_cheevos = 0;
-  ud->in_lboards = 0;
+
+  if (ud)
+  {
+     ud->in_cheevos     = 0;
+     ud->in_lboards     = 0;
+  }
+
   return 0;
 }
 
@@ -794,7 +819,7 @@ static int cheevos_count__json_number(void *userdata,
          long flags = strtol(number, NULL, 10);
 
          if (flags == 3)
-            ud->core_count++; /* Core achievements */
+            ud->core_count++;       /* Core achievements */
          else if (flags == 5)
             ud->unofficial_count++; /* Unofficial achievements */
       }
@@ -970,7 +995,8 @@ static int cheevos_parse_expression(cheevos_expr_t *expr, const char* mem)
 {
    unsigned i;
    const char *aux;
-   char       *end = NULL;
+   cheevos_term_t *terms  = NULL;
+   char       *end        = NULL;
 
    if (expr)
    {
@@ -985,10 +1011,14 @@ static int cheevos_parse_expression(cheevos_expr_t *expr, const char* mem)
       expr->count += *aux == '_';
    }
 
-   expr->terms = (cheevos_term_t*)calloc(expr->count, sizeof(cheevos_term_t));
+   if (expr->count > 0)
+      terms = (cheevos_term_t*)
+         calloc(expr->count, sizeof(cheevos_term_t));
 
-   if (!expr->terms)
+   if (!terms)
       return -1;
+
+   expr->terms = terms;
 
    for (i = 0; i < expr->count; i++)
    {
@@ -2334,7 +2364,8 @@ bool cheevos_get_description(cheevos_ctx_desc_t *desc)
          desc->idx -= cheevos_locals.unofficial.count;
       }
 
-      strlcpy(desc->s, cheevos[desc->idx].description, desc->len);
+      if (!string_is_empty(cheevos[desc->idx].description))
+         strlcpy(desc->s, cheevos[desc->idx].description, desc->len);
    }
    else
       *desc->s = 0;
