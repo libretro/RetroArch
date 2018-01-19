@@ -105,9 +105,9 @@ static bool d3d_init_imports(d3d_video_t *d3d)
 
 static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
 {
+   struct LinkInfo link_info;
    unsigned current_width, current_height, out_width, out_height;
    unsigned i                   = 0;
-   struct LinkInfo link_info    = {0};
 
    (void)i;
    (void)current_width;
@@ -116,11 +116,12 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
    (void)out_height;
 
    /* Setup information for first pass. */
+   link_info.pass  = NULL;
+   link_info.tex_w = video_info->input_scale * RARCH_SCALE_BASE;
+   link_info.tex_h = video_info->input_scale * RARCH_SCALE_BASE;
 #ifndef _XBOX
    link_info.pass  = &d3d->shader.pass[0];
 #endif
-   link_info.tex_w = link_info.tex_h =
-      video_info->input_scale * RARCH_SCALE_BASE;
 
    if (!renderchain_d3d_init_first(&d3d->renderchain_driver,
 	   &d3d->renderchain_data))
