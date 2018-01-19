@@ -151,8 +151,6 @@ static void xdk_joypad_poll(void)
       XINPUT_STATE state_tmp;
       uint64_t *state_cur    = NULL;
 #if defined(_XBOX1)
-      XINPUT_CAPABILITIES caps[MAX_PADS];
-      (void)caps;
       bool device_removed    = false;
       bool device_inserted   = false;
 
