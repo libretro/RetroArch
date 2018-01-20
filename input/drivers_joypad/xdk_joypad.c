@@ -85,8 +85,7 @@ static const uint16_t button_index_to_bitmap_code[] =  {
    XINPUT_GAMEPAD_START,
    XINPUT_GAMEPAD_BACK,
    XINPUT_GAMEPAD_LEFT_THUMB,
-   XINPUT_GAMEPAD_RIGHT_THUMB,
-   XINPUT_GAMEPAD_GUIDE
+   XINPUT_GAMEPAD_RIGHT_THUMB
 };
 #endif
 
@@ -149,7 +148,7 @@ static bool xdk_joypad_button(unsigned port_num, uint16_t joykey)
          break;
    }
 #else
-   if (joykey < num_buttons)
+   if (joykey < 10)
       return btn_word & button_index_to_bitmap_code[joykey];
 #endif
 
@@ -291,7 +290,7 @@ static void xdk_joypad_poll(void)
 
       g_xinput_states[port].connected = !
       (XInputGetState(
-#ifdef _XBOX
+#ifdef _XBOX1
          gamepads[port]
 #else
          port
