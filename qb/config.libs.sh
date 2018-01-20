@@ -10,10 +10,15 @@ add_define MAKEFILE NOUNUSED_VARIABLE "$HAVE_NOUNUSED_VARIABLE"
 [ -z "$CROSS_COMPILE" ] && [ -d /opt/local/lib ] && add_dirs LIBRARY /opt/local/lib
 
 [ "$GLOBAL_CONFIG_DIR" ] || \
-{	case "$PREFIX" in
-		/usr*) GLOBAL_CONFIG_DIR=/etc ;;
-		*) GLOBAL_CONFIG_DIR="$PREFIX"/etc ;;
-	esac
+{
+	if [ "$OS" = 'Haiku' ]; then
+		GLOBAL_CONFIG_DIR="$PREFIX"/settings
+	else
+		case "$PREFIX" in
+			/usr*) GLOBAL_CONFIG_DIR=/etc ;;
+			*) GLOBAL_CONFIG_DIR="$PREFIX"/etc ;;
+		esac
+	fi
 }
 
 DYLIB=-ldl;
@@ -160,7 +165,7 @@ fi
 
 if [ "$OS" = 'Haiku' ]; then
 add_define MAKEFILE ASSETS_DIR "${ASSETS_DIR:-${PREFIX}/data}"
-add_define MAKEFILE MAN_DIR "${MAN_DIR:-${PREFIX}/documentation}"
+add_define MAKEFILE MAN_DIR "${MAN_DIR:-${PREFIX}/documentation/man}"
 else
 add_define MAKEFILE ASSETS_DIR "${ASSETS_DIR:-${PREFIX}/share}"
 add_define MAKEFILE MAN_DIR "${MAN_DIR:-${PREFIX}/share/man}"
