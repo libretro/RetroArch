@@ -199,13 +199,16 @@ static void xdk_joypad_poll(void)
        * the device handle will be NULL. */
       if (XInputPoll(gamepads[port]) != ERROR_SUCCESS)
          continue;
-
-      if (XInputGetState(gamepads[port], &state_tmp) != ERROR_SUCCESS)
-         continue;
-#elif defined(_XBOX360)
-      if (XInputGetState(port, &state_tmp) == ERROR_DEVICE_NOT_CONNECTED)
-         continue;
 #endif
+
+      if (XInputGetState(
+#ifdef _XBOX
+         gamepads[port]
+#else
+         port
+#endif
+         , &state_tmp) == ERROR_DEVICE_NOT_CONNECTED)
+         continue;
 
       state_cur  = &pad_state[port];
 
