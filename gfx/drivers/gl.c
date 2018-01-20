@@ -1188,6 +1188,8 @@ static bool gl_frame(void *data, const void *frame,
 #endif
             gl_pbo_async_readback(gl);
 
+   /* emscripten has to do black frame insertion in its main loop */
+#ifndef EMSCRIPTEN
    /* Disable BFI during fast forward, slow-motion,
     * and pause to prevent flicker. */
    if (
@@ -1199,6 +1201,7 @@ static bool gl_frame(void *data, const void *frame,
       video_info->cb_swap_buffers(video_info->context_data, video_info);
       glClear(GL_COLOR_BUFFER_BIT);
    }
+#endif
 
    video_info->cb_swap_buffers(video_info->context_data, video_info);
 

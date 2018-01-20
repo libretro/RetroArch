@@ -140,3 +140,6 @@ retroarch.js
 retroarch.js.mem
 *.bc
 *.wasm
+
+# only ignore .js files in the repo root
+/*.js
