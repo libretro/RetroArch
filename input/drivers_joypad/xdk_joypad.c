@@ -28,7 +28,6 @@ typedef struct
 static xinput_joypad_state g_xinput_states[MAX_PADS];
 
 static uint64_t pad_state[MAX_PADS];
-static int16_t analog_state[MAX_PADS][2][2];
 #ifdef _XBOX1
 static HANDLE gamepads[MAX_PADS];
 #endif
@@ -83,10 +82,11 @@ static bool xdk_joypad_button(unsigned port_num, uint16_t joykey)
 
 static int16_t xdk_joypad_axis(unsigned port_num, uint32_t joyaxis)
 {
-   int val     = 0;
-   int axis    = -1;
-   bool is_neg = false;
-   bool is_pos = false;
+   int val             = 0;
+   int axis            = -1;
+   bool is_neg         = false;
+   bool is_pos         = false;
+   XINPUT_GAMEPAD *pad = NULL;
 
    if (joyaxis == AXIS_NONE || port_num >= MAX_PADS)
       return 0;
@@ -102,19 +102,21 @@ static int16_t xdk_joypad_axis(unsigned port_num, uint32_t joyaxis)
       is_pos = true;
    }
 
+   pad = &(g_xinput_states[port_num].xstate.Gamepad);
+
    switch (axis)
    {
       case 0:
-         val = analog_state[port_num][0][0];
+         val = pad->sThumbLX;
          break;
       case 1:
-         val = analog_state[port_num][0][1];
+         val = pad->sThumbLY;
          break;
       case 2:
-         val = analog_state[port_num][1][0];
+         val = pad->sThumbRX;
          break;
       case 3:
-         val = analog_state[port_num][1][1];
+         val = pad->sThumbRY;
          break;
    }
 
@@ -122,6 +124,10 @@ static int16_t xdk_joypad_axis(unsigned port_num, uint32_t joyaxis)
       val = 0;
    else if (is_pos && val < 0)
       val = 0;
+
+   /* Clamp to avoid warnings */
+   if (val == -32768)
+      val = -32767;
 
    return val;
 }
@@ -243,16 +249,6 @@ static void xdk_joypad_poll(void)
 #endif
       *state_cur |= ((g_xinput_states[port].xstate.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L3) : 0);
       *state_cur |= ((g_xinput_states[port].xstate.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R3) : 0);
-
-      analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_X]  = g_xinput_states[port].xstate.Gamepad.sThumbLX;
-      analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y]  = g_xinput_states[port].xstate.Gamepad.sThumbLY;
-      analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = g_xinput_states[port].xstate.Gamepad.sThumbRX;
-      analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = g_xinput_states[port].xstate.Gamepad.sThumbRY;
-
-      for (i = 0; i < 2; i++)
-         for (j = 0; j < 2; j++)
-            if (analog_state[port][i][j] == -0x8000)
-               analog_state[port][i][j] = -0x7fff;
    }
 }
 
@@ -268,10 +264,6 @@ static void xdk_joypad_destroy(void)
    for (i = 0; i < MAX_PADS; i++)
    {
       pad_state[i] = 0;
-      analog_state[i][0][0] = 0;
-      analog_state[i][0][1] = 0;
-      analog_state[i][1][0] = 0;
-      analog_state[i][1][1] = 0;
 
       memset(&g_xinput_states[i], 0, sizeof(xinput_joypad_state));
 #if defined(_XBOX1)
