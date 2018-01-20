@@ -253,12 +253,8 @@ bool path_mkdir(const char *dir)
    bool norecurse     = false;
    char     *basedir  = NULL;
 
-   printf("dir = \"%s\"\n", dir);
-
    if (dir && *dir)
       basedir         = strdup(dir);
-
-   printf("basedir in path_mkdir = \"%s\"\n", basedir);
 
    if (!basedir)
       return false;

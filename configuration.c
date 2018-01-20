@@ -2063,7 +2063,9 @@ static config_file_t *open_default_config_file(void)
       /* Try to create a new config file. */
 
       strlcpy(conf_path, application_data, path_size);
+
       fill_pathname_basedir(basedir, conf_path, path_size);
+
       fill_pathname_join(conf_path, conf_path,
             file_path_str(FILE_PATH_MAIN_CONFIG), path_size);
 
