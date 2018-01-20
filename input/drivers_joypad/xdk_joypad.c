@@ -101,7 +101,6 @@ static bool xdk_joypad_button(unsigned port_num, uint16_t joykey)
    btn_word = g_xinput_states[port_num].xstate.Gamepad.wButtons;
    hat_dir  = GET_HAT_DIR(joykey);
 
-#if 0
    if (hat_dir)
    {
       switch (hat_dir)
@@ -119,6 +118,7 @@ static bool xdk_joypad_button(unsigned port_num, uint16_t joykey)
       return false; /* hat requested and no hat button down. */
    }
 
+#if 0
    if (joykey < num_buttons)
       return btn_word & button_index_to_bitmap_code[joykey];
 #else
@@ -282,10 +282,6 @@ static void xdk_joypad_poll(void)
       state_cur  = &pad_state[port];
 
       *state_cur = 0;
-      *state_cur |= ((g_xinput_states[port].xstate.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0);
-      *state_cur |= ((g_xinput_states[port].xstate.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0);
-      *state_cur |= ((g_xinput_states[port].xstate.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP) : 0);
-      *state_cur |= ((g_xinput_states[port].xstate.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0);
       *state_cur |= ((g_xinput_states[port].xstate.Gamepad.wButtons & XINPUT_GAMEPAD_START) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_START) : 0);
       *state_cur |= ((g_xinput_states[port].xstate.Gamepad.wButtons & XINPUT_GAMEPAD_BACK) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0);
 

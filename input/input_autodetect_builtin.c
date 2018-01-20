@@ -483,10 +483,10 @@ DECL_BTN(x, 9) \
 DECL_BTN(y, 1) \
 DECL_BTN(start, 3) \
 DECL_BTN(select, 2) \
-DECL_BTN(up, 4) \
-DECL_BTN(down, 5) \
-DECL_BTN(left, 6) \
-DECL_BTN(right, 7) \
+DECL_BTN(up, h0up) \
+DECL_BTN(down, h0down) \
+DECL_BTN(left, h0left) \
+DECL_BTN(right, h0right) \
 DECL_BTN(l, 10) \
 DECL_BTN(r, 11) \
 DECL_BTN(l3, 14) \
