@@ -1645,7 +1645,7 @@ bool d3dx_compile_shader(
       void *pperrormsgs,
       void *ppconstanttable)
 {
-#ifdef HAVE_D3DX
+#if defined(HAVE_D3DX) && defined(HAVE_D3D9)
    if (D3DCompileShader)
    {
       if (D3DCompileShader(
@@ -1677,7 +1677,7 @@ bool d3dx_compile_shader_from_file(
       void *pperrormsgs,
       void *ppconstanttable)
 {
-#ifdef HAVE_D3DX
+#if defined(HAVE_D3DX) && defined(HAVE_D3D9)
    if (D3DCompileShaderFromFile)
    {
       if (D3DCompileShaderFromFile(
