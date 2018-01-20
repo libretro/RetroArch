@@ -122,6 +122,22 @@ static bool xdk_joypad_button(unsigned port_num, uint16_t joykey)
    if (joykey < num_buttons)
       return btn_word & button_index_to_bitmap_code[joykey];
 #else
+#ifdef _XBOX1
+   switch (joykey)
+   {
+      case RETRO_DEVICE_ID_JOYPAD_A:
+         return (g_xinput_states[port_num].xstate.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_B] > XINPUT_GAMEPAD_MAX_CROSSTALK);
+      case RETRO_DEVICE_ID_JOYPAD_B:
+         return (g_xinput_states[port_num].xstate.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_A] > XINPUT_GAMEPAD_MAX_CROSSTALK);
+      case RETRO_DEVICE_ID_JOYPAD_Y:
+         return (g_xinput_states[port_num].xstate.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_X] > XINPUT_GAMEPAD_MAX_CROSSTALK);
+      case RETRO_DEVICE_ID_JOYPAD_X:
+         return (g_xinput_states[port_num].xstate.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_Y] > XINPUT_GAMEPAD_MAX_CROSSTALK);
+      default:
+         break;
+   }
+#endif
+
    return pad_state[port_num] & (UINT64_C(1) << joykey);
 #endif
 }
@@ -274,10 +290,6 @@ static void xdk_joypad_poll(void)
       *state_cur |= ((g_xinput_states[port].xstate.Gamepad.wButtons & XINPUT_GAMEPAD_BACK) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0);
 
 #if defined(_XBOX1)
-      *state_cur |= ((g_xinput_states[port].xstate.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_B]) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_A) : 0);
-      *state_cur |= ((g_xinput_states[port].xstate.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_A]) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_B) : 0);
-      *state_cur |= ((g_xinput_states[port].xstate.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_Y]) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_X) : 0);
-      *state_cur |= ((g_xinput_states[port].xstate.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_X]) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_Y) : 0);
       *state_cur |= ((g_xinput_states[port].xstate.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_LEFT_TRIGGER]) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L) : 0);
       *state_cur |= ((g_xinput_states[port].xstate.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_RIGHT_TRIGGER]) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R) : 0);
       *state_cur |= ((g_xinput_states[port].xstate.Gamepad.bAnalogButtons[XINPUT_GAMEPAD_WHITE]) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L2) : 0);
