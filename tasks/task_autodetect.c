@@ -50,6 +50,7 @@
 #include <setupapi.h>
 #include <hidsdi.h>
 /* Why doesn't including cguid.h work to get a GUID_NULL instead? */
+__attribute__((weak))
 const GUID GUID_NULL = {0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
 #endif
 

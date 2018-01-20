@@ -21,14 +21,6 @@
 #undef DIRECTINPUT_VERSION
 #define DIRECTINPUT_VERSION 0x0800
 
-#ifndef WM_MOUSEHWHEEL
-#define WM_MOUSEHWHEEL 0x20e
-#endif
-
-#ifndef WM_MOUSEWHEEL
-#define WM_MOUSEWHEEL 0x020A
-#endif
-
 #include <dinput.h>
 #include <dbt.h>
 
@@ -38,6 +30,14 @@
 #include <boolean.h>
 
 #include <windowsx.h>
+
+#ifndef WM_MOUSEHWHEEL
+#define WM_MOUSEHWHEEL 0x20e
+#endif
+
+#ifndef WM_MOUSEWHEEL
+#define WM_MOUSEWHEEL 0x020A
+#endif
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"

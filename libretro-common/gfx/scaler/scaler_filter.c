@@ -26,8 +26,8 @@
 #include <gfx/scaler/filter.h>
 #include <gfx/scaler/scaler_int.h>
 #include <retro_inline.h>
-#include <retro_math.h>
 #include <filters.h>
+#include <retro_math.h>
 
 #define FILTER_UNITY (1 << 14)
 
