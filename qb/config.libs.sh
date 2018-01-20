@@ -157,9 +157,16 @@ fi
    add_define MAKEFILE libretro "$LIBRETRO"
 }
 
+
+if [ "$OS" = 'Haiku' ]; then
+add_define MAKEFILE ASSETS_DIR "${ASSETS_DIR:-${PREFIX}/data}"
+add_define MAKEFILE MAN_DIR "${MAN_DIR:-${PREFIX}/documentation}"
+else
 add_define MAKEFILE ASSETS_DIR "${ASSETS_DIR:-${PREFIX}/share}"
-add_define MAKEFILE BIN_DIR "${BIN_DIR:-${PREFIX}/bin}"
 add_define MAKEFILE MAN_DIR "${MAN_DIR:-${PREFIX}/share/man}"
+fi
+
+add_define MAKEFILE BIN_DIR "${BIN_DIR:-${PREFIX}/bin}"
 
 if [ "$OS" = 'DOS' ]; then
    HAVE_SHADERPIPELINE=no

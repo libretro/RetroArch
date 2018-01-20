@@ -1,6 +1,10 @@
 MAKEFILE_DEFINES=''
 CONFIG_DEFINES=''
 
+if [ "$OS" = 'Haiku' ]; then
+	PREFIX="/boot/home/config/non-packaged"
+fi
+
 [ "$PREFIX" ] || PREFIX="/usr/local"
 
 add_define() # $1 = MAKEFILE or CONFIG $2 = define $3 = value
