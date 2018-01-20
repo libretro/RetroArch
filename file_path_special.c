@@ -102,10 +102,10 @@ bool fill_pathname_application_data(char *s, size_t len)
    const char *appdata = getenv("HOME");
 
    /* XDG_CONFIG_HOME falls back to $HOME/.config with most Unix systems */
-   /* On HaikuOS, it is set by default to /home/user/config/settings */
+   /* On Haiku, it is set by default to /home/user/config/settings */
    if (xdg)
    {
-      fill_pathname_join(s, xdg, "retroarch", len);
+      fill_pathname_join(s, xdg, "retroarch/", len);
       return true;
    }
 
