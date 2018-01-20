@@ -151,7 +151,6 @@ static void xdk_joypad_poll(void)
 
    for (port = 0; port < MAX_PADS; port++)
    {
-      unsigned i, j;
       uint64_t *state_cur    = NULL;
 #if defined(_XBOX1)
       bool device_removed    = false;
