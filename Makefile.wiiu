@@ -7,6 +7,7 @@ GRIFFIN_BUILD              = 0
 SALAMANDER_BUILD           = 0
 WHOLE_ARCHIVE_LINK         = 0
 WIIU_HID                   = 0
+WIIU_LOG_RPX               = 0
 BUILD_DIR                  = objs/wiiu
 PC_DEVELOPMENT_IP_ADDRESS  ?=
 PC_DEVELOPMENT_TCP_PORT	   ?=
@@ -38,10 +39,24 @@ OBJ += wiiu/hbl.o
 
 DEFINES :=
 
+ifeq ($(WIIU_LOG_RPX),1)
+   defines += -DWIIU_LOG_RPX
+endif
+
 ifeq ($(WIIU_HID),1)
    DEFINES += -DWIIU_HID
    OBJ += wiiu/input/hidpad_driver.o
    OBJ += wiiu/input/wiiu_hid.o
+   OBJ += input/connect/joypad_connection.o \
+          input/connect/connect_ps2adapter.o \
+          input/connect/connect_psxadapter.o \
+          input/connect/connect_ps3.o \
+          input/connect/connect_ps4.o \
+          input/connect/connect_wii.o \
+          input/connect/connect_nesusb.o \
+          input/connect/connect_snesusb.o \
+          input/connect/connect_wiiupro.o \
+          input/connect/connect_wiiugca.o
 endif
 
 ifeq ($(SALAMANDER_BUILD),1)
@@ -95,7 +110,6 @@ else
    #	DEFINES += -DWANT_IFADDRS
    #	DEFINES += -DHAVE_FREETYPE
    	DEFINES += -DHAVE_XMB -DHAVE_MATERIALUI
-#        DEFINES += -DHAVE_HID
    else
    	HAVE_MENU_COMMON = 1
    	HAVE_RTGA = 1
@@ -121,7 +135,6 @@ else
    	HAVE_OVERLAY = 1
    	HAVE_STATIC_VIDEO_FILTERS = 1
    	HAVE_STATIC_AUDIO_FILTERS = 1
-#        HAVE_HID = 1
    	WANT_LIBFAT = 1
    	WANT_IOSUHAX = 1
 

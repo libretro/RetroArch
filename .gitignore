@@ -7,6 +7,7 @@
 *.elf
 *.dol
 *.map
+*.swp
 .tmp
 .tmp.c
 .tmp.cxx
