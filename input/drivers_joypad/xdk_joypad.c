@@ -23,9 +23,6 @@ static uint64_t pad_state[MAX_PADS];
 static int16_t analog_state[MAX_PADS][2][2];
 #ifdef _XBOX1
 static HANDLE gamepads[MAX_PADS];
-static DWORD dwDeviceMask;
-static bool bInserted[MAX_PADS];
-static bool bRemoved[MAX_PADS];
 #endif
 
 static const char* const XBOX_CONTROLLER_NAMES[4] =
@@ -38,7 +35,7 @@ static const char* const XBOX_CONTROLLER_NAMES[4] =
 
 static const char *xdk_joypad_name(unsigned pad)
 {
-   return input_config_get_device_name(pad);
+   return XBOX_CONTROLLER_NAMES[pad];
 }
 
 static void xdk_joypad_autodetect_add(unsigned autoconf_pad)
@@ -131,12 +128,11 @@ static int16_t xdk_joypad_axis(unsigned port_num, uint32_t joyaxis)
    return val;
 }
 
-
 static void xdk_joypad_poll(void)
 {
    unsigned port;
 #if defined(_XBOX1)
-   unsigned int dwInsertions, dwRemovals;
+   DWORD dwInsertions, dwRemovals;
 
 #ifdef __cplusplus
    XGetDeviceChanges(XDEVICE_TYPE_GAMEPAD,
@@ -154,19 +150,23 @@ static void xdk_joypad_poll(void)
       unsigned i, j;
       XINPUT_STATE state_tmp;
       uint64_t *state_cur    = NULL;
-#ifdef _XBOX1
-      XINPUT_CAPABILITIES caps[MAX_PADS];
-      (void)caps;
+#if defined(_XBOX1)
+      bool device_removed    = false;
+      bool device_inserted   = false;
 
+      /* handle inserted devices. */
       /* handle removed devices. */
-      bRemoved[port] = (dwRemovals & (1 << port)) ? true : false;
+      if (dwRemovals & (1 << port))
+         device_removed = true;
+      if (dwInsertions & (1 << port))
+         device_inserted = true;
 
-      if(bRemoved[port])
+      if (device_removed)
       {
          /* if the controller was removed after
           * XGetDeviceChanges but before
           * XInputOpen, the device handle will be NULL. */
-         if(gamepads[port])
+         if (gamepads[port])
             XInputClose(gamepads[port]);
 
          gamepads[port]  = 0;
@@ -175,17 +175,17 @@ static void xdk_joypad_poll(void)
          input_autoconfigure_disconnect(port, xdk_joypad.ident);
       }
 
-      /* handle inserted devices. */
-      bInserted[port] = (dwInsertions & (1 << port)) ? true : false;
-
-      if(bInserted[port])
+      if (device_inserted)
       {
          XINPUT_POLLING_PARAMETERS m_pollingParameters;
-         m_pollingParameters.fAutoPoll = FALSE;
-         m_pollingParameters.fInterruptOut = TRUE;
-         m_pollingParameters.bInputInterval = 8;
+
+         m_pollingParameters.fAutoPoll       = FALSE;
+         m_pollingParameters.fInterruptOut   = TRUE;
+         m_pollingParameters.bInputInterval  = 8;
          m_pollingParameters.bOutputInterval = 8;
-         gamepads[port] = XInputOpen(XDEVICE_TYPE_GAMEPAD, port,
+
+         gamepads[port]                      = XInputOpen(
+               XDEVICE_TYPE_GAMEPAD, port,
                XDEVICE_NO_SLOT, &m_pollingParameters);
 
          xdk_joypad_autodetect_add(port);
@@ -197,9 +197,6 @@ static void xdk_joypad_poll(void)
       /* if the controller is removed after
        * XGetDeviceChanges but before XInputOpen,
        * the device handle will be NULL. */
-#endif
-
-#if defined(_XBOX1)
       if (XInputPoll(gamepads[port]) != ERROR_SUCCESS)
          continue;
 
@@ -261,6 +258,21 @@ static bool xdk_joypad_query_pad(unsigned pad)
 
 static void xdk_joypad_destroy(void)
 {
+   unsigned i;
+
+   for (i = 0; i < MAX_PADS; i++)
+   {
+      pad_state[i] = 0;
+      analog_state[i][0][0] = 0;
+      analog_state[i][0][1] = 0;
+      analog_state[i][1][0] = 0;
+      analog_state[i][1][1] = 0;
+#if defined(_XBOX1)
+      if (gamepads[i])
+         XInputClose(gamepads[i]);
+      gamepads[i]  = 0;
+#endif
+   }
 }
 
 input_device_driver_t xdk_joypad = {
