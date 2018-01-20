@@ -119,9 +119,7 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
    link_info.pass  = NULL;
    link_info.tex_w = video_info->input_scale * RARCH_SCALE_BASE;
    link_info.tex_h = video_info->input_scale * RARCH_SCALE_BASE;
-#ifndef _XBOX
    link_info.pass  = &d3d->shader.pass[0];
-#endif
 
    if (!renderchain_d3d_init_first(&d3d->renderchain_driver,
 	   &d3d->renderchain_data))
@@ -655,7 +653,7 @@ void d3d_make_d3dpp(void *data,
 static bool d3d_init_base(void *data, const video_info_t *info)
 {
    D3DPRESENT_PARAMETERS d3dpp;
-   HWND focus_window;
+   HWND focus_window = NULL;
    d3d_video_t *d3d  = (d3d_video_t*)data;
 
 #ifndef _XBOX
