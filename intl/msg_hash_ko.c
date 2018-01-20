@@ -25,6 +25,12 @@
 #include "../configuration.h"
 #include "../verbosity.h"
 
+#if defined(_MSC_VER) && !defined(_XBOX)
+/* https://support.microsoft.com/en-us/kb/980263 */
+#pragma execution_character_set("utf-8")
+#pragma warning(disable: 4566)
+#endif
+
 int menu_hash_get_help_ko_enum(enum msg_hash_enums msg, char *s, size_t len) {
     uint32_t driver_hash = 0;
     settings_t *settings = config_get_ptr();

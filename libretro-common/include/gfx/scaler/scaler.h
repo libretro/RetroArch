@@ -23,12 +23,12 @@
 #ifndef __LIBRETRO_SDK_SCALER_H__
 #define __LIBRETRO_SDK_SCALER_H__
 
-#include <retro_common_api.h>
-
 #include <stdint.h>
 #include <stddef.h>
 #include <boolean.h>
 #include <clamping.h>
+
+#include <retro_common_api.h>
 
 RETRO_BEGIN_DECLS
 

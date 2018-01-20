@@ -23,11 +23,11 @@
 
 #include <windows.h>
 #include <winerror.h>
+#include <propidl.h>
 #include <initguid.h>
 #include <mmdeviceapi.h>
 #include <mmreg.h>
 #include <audioclient.h>
-#include <propidl.h>
 
 #include <lists/string_list.h>
 #include <queues/fifo_queue.h>

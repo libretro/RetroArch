@@ -76,10 +76,14 @@ typedef int ssize_t;
 #endif
 
 #ifdef _MSC_VER
+#if _MSC_VER >= 1800
+#include <inttypes.h>
+#else
 #ifndef PRId64
 #define PRId64 "I64d"
 #define PRIu64 "I64u"
 #define PRIuPTR "Iu"
+#endif
 #endif
 #else
 /* C++11 says this one isn't needed, but apparently (some versions of) mingw require it anyways */
