@@ -84,12 +84,12 @@ int font_renderer_create_default(const void **data, void **handle,
 
 #ifdef HAVE_D3D
 static const font_renderer_t *d3d_font_backends[] = {
-#if defined(_XBOX1)
-   &d3d_xdk1_font,
 #elif defined(_XBOX360)
    &d3d_xbox360_font,
 #elif defined(_WIN32) && defined(HAVE_D3DX)
    &d3d_win32_font,
+#elif defined(_XBOX1)
+   &d3d_xdk1_font,
 #endif
    NULL
 };
