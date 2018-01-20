@@ -217,7 +217,7 @@ static void xdk_joypad_poll(void)
 #else
          port
 #endif
-         , &(g_xinput_states[port].xstate) == ERROR_DEVICE_NOT_CONNECTED);
+         , &g_xinput_states[port].xstate) == ERROR_DEVICE_NOT_CONNECTED);
 
       if (!g_xinput_states[port].connected)
          continue;
