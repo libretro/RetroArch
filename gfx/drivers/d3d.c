@@ -478,6 +478,24 @@ static void d3d_deinitialize(d3d_video_t *d3d)
 #define FS_PRESENTINTERVAL(pp) ((pp)->PresentationInterval)
 #endif
 
+static D3DFORMAT d3d_get_argb8888_format(void)
+{
+#ifdef _XBOX
+   return D3DFMT_LIN_A8R8G8B8;
+#else
+   return D3DFMT_A8R8G8B8;
+#endif
+}
+
+static D3DFORMAT d3d_get_xrgb8888_format(void)
+{
+#ifdef _XBOX
+   return D3DFMT_LIN_X8R8G8B8;
+#else
+   return D3DFMT_X8R8G8B8;
+#endif
+}
+
 static D3DFORMAT d3d_get_color_format_backbuffer(bool rgb32, bool windowed)
 {
    D3DFORMAT fmt = D3DFMT_UNKNOWN;
@@ -1316,6 +1334,12 @@ static void d3d_overlay_tex_geom(
    d3d->overlays[index].tex_coords[1] = y;
    d3d->overlays[index].tex_coords[2] = w;
    d3d->overlays[index].tex_coords[3] = h;
+#ifdef _XBOX1
+   d3d->overlays[index].tex_coords[0] *= d3d->overlays[index].tex_w;
+   d3d->overlays[index].tex_coords[1] *= d3d->overlays[index].tex_h;
+   d3d->overlays[index].tex_coords[2] *= d3d->overlays[index].tex_w;
+   d3d->overlays[index].tex_coords[3] *= d3d->overlays[index].tex_h;
+#endif
 }
 
 static void d3d_overlay_vertex_geom(
@@ -1362,7 +1386,7 @@ static bool d3d_overlay_load(void *data,
       overlay->tex       = d3d_texture_new(d3d->dev, NULL,
                   width, height, 1,
                   0,
-                  D3DFMT_A8R8G8B8,
+                  d3d_get_argb8888_format(),
                   D3DPOOL_MANAGED, 0, 0, 0,
                   NULL, NULL, false);
 
@@ -1624,7 +1648,7 @@ static void d3d_set_menu_texture_frame(void *data,
 
       d3d->menu->tex = d3d_texture_new(d3d->dev, NULL,
             width, height, 1,
-            0, D3DFMT_A8R8G8B8,
+            0, d3d_get_argb8888_format(),
             D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL, false);
 
       if (!d3d->menu->tex)
@@ -1633,8 +1657,12 @@ static void d3d_set_menu_texture_frame(void *data,
          return;
       }
 
-      d3d->menu->tex_w = width;
-      d3d->menu->tex_h = height;
+      d3d->menu->tex_w          = width;
+      d3d->menu->tex_h          = height;
+#ifdef _XBOX1
+      d3d->menu->tex_coords [2] = width;
+      d3d->menu->tex_coords[3]  = height;
+#endif
    }
 
    d3d->menu->alpha_mod = alpha;
@@ -1714,7 +1742,8 @@ static void video_texture_load_d3d(d3d_video_t *d3d,
 
    tex = d3d_texture_new(d3d->dev, NULL,
                ti->width, ti->height, 0,
-               usage, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, 0, 0, 0,
+               usage, d3d_get_argb8888_format(),
+               D3DPOOL_MANAGED, 0, 0, 0,
                NULL, NULL, want_mipmap);
 
    if (!tex)
