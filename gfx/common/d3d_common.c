@@ -382,8 +382,12 @@ bool d3d_get_adapter_display_mode(LPDIRECT3D d3d,
 bool d3d_swap(void *data, LPDIRECT3DDEVICE dev)
 {
 #if defined(HAVE_D3D9) && !defined(__cplusplus)
+#ifdef _XBOX
+   IDirect3DDevice9_Present(dev, NULL, NULL, NULL, NULL);
+#else
    if (IDirect3DDevice9_Present(dev, NULL, NULL, NULL, NULL) == D3DERR_DEVICELOST)
       return false;
+#endif
 #elif defined(HAVE_D3D8) && !defined(__cplusplus)
    if (IDirect3DDevice8_Present(dev, NULL, NULL, NULL, NULL) == D3DERR_DEVICELOST)
       return false;
@@ -972,8 +976,12 @@ bool d3d_lock_rectangle(LPDIRECT3DTEXTURE tex,
       unsigned rectangle_height, unsigned flags)
 {
 #if defined(HAVE_D3D9) && !defined(__cplusplus)
+#ifdef _XBOX
+   IDirect3DTexture9_LockRect(tex, level, lock_rect, (const RECT*)rect, flags);
+#else
    if (IDirect3DTexture9_LockRect(tex, level, lock_rect, (const RECT*)rect, flags) != D3D_OK)
       return false;
+#endif
 #elif defined(HAVE_D3D8) && !defined(__cplusplus)
    if (IDirect3DTexture8_LockRect(tex, level, lock_rect, rect, flags) != D3D_OK)
       return false;
@@ -1129,8 +1137,12 @@ bool d3d_set_vertex_shader(LPDIRECT3DDEVICE dev, unsigned index,
       return false;
 #elif defined(HAVE_D3D9) && !defined(__cplusplus)
    LPDIRECT3DVERTEXSHADER shader = (LPDIRECT3DVERTEXSHADER)data;
+#ifdef _XBOX
+   IDirect3DDevice9_SetVertexShader(dev, shader);
+#else
    if (IDirect3DDevice9_SetVertexShader(dev, shader) != D3D_OK)
       return false;
+#endif
 #else
    LPDIRECT3DVERTEXSHADER shader = (LPDIRECT3DVERTEXSHADER)data;
    if (dev->SetVertexShader(shader) != D3D_OK)
