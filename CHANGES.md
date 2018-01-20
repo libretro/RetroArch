@@ -19,6 +19,7 @@
 - GUI: Menu visibility options for RGUI and MaterialUI.
 - GUI/XMB: Add Monochrome Inverted icon theme.
 - GUI/XMB: Allow changing menu scale to 200%.
+- HAIKU: Restored port.
 - KEYMAPPER: prevent a condition that caused input_menu_toggle to stop working when a RETRO_DEVICE_KEYBOARD type device is enabled
 - GL: ignore hard gpu sync when fast-forwarding
 - LOCALIZATION: Update Italian translation.
@@ -34,9 +35,10 @@
 - WINDOWS: WS_EX_LAYERED drastically decreases performance, so only set it when needed (transparency in windowed mode).
 - WIIU: Overlay support.
 - WIIU: Transparency support in menu + overlays.
-- WIIU: New HID pad support.
+- WIIU: Increased stability during core switching.
 - WIIU: Shader support.
 - WIIU: Menu shader effects added (shaders).
+- XBOX OG: Restored port.
 
 # 1.7.0
 - CHEEVOS: Add badges for achievements, shows thumbnail images of achievements.
