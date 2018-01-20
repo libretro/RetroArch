@@ -142,12 +142,18 @@ static void d3d8_renderchain_set_vertices(void *data, unsigned pass,
 
       vert[0].u        = 0.0f;
       vert[0].v        = 0.0f;
-      vert[1].u        = tex_w / chain->tex_w;
       vert[1].v        = 0.0f;
       vert[2].u        = 0.0f;
-      vert[2].v        = tex_h / chain->tex_h;
-      vert[3].u        = tex_w / chain->tex_w;
-      vert[3].v        = tex_h / chain->tex_h;
+      vert[1].u        = tex_w;
+      vert[2].v        = tex_h;
+      vert[3].u        = tex_w;
+      vert[3].v        = tex_h;
+#ifndef _XBOX1
+      vert[1].u       /= chain->tex_w;
+      vert[2].v       /= chain->tex_h;
+      vert[3].u       /= chain->tex_w;
+      vert[3].v       /= chain->tex_h;
+#endif
 
       vert[0].color    = 0xFFFFFFFF;
       vert[1].color    = 0xFFFFFFFF;
