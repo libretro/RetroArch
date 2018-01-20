@@ -60,11 +60,9 @@ static void gfx_ctx_emscripten_swap_interval(void *data, unsigned interval)
 
 static void gfx_ctx_emscripten_get_canvas_size(int *width, int *height)
 {
-   EMSCRIPTEN_RESULT r;
    EmscriptenFullscreenChangeEvent fullscreen_status;
-   bool is_fullscreen = false;
-
-   r = emscripten_get_fullscreen_status(&fullscreen_status);
+   bool  is_fullscreen = false;
+   EMSCRIPTEN_RESULT r = emscripten_get_fullscreen_status(&fullscreen_status);
 
    if (r == EMSCRIPTEN_RESULT_SUCCESS)
    {
@@ -118,18 +116,14 @@ static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
          input_width, input_height);
 
       if (r != EMSCRIPTEN_RESULT_SUCCESS)
-      {
          RARCH_ERR("[EMSCRIPTEN/EGL]: error resizing canvas: %d\n", r);
-      }
 
       /* fix Module.requestFullscreen messing with the canvas size */
       r = emscripten_set_element_css_size("#canvas",
          (double)input_width, (double)input_height);
 
       if (r != EMSCRIPTEN_RESULT_SUCCESS)
-      {
          RARCH_ERR("[EMSCRIPTEN/EGL]: error resizing canvas css: %d\n", r);
-      }
 
       *resize  = true;
    }
@@ -155,6 +149,9 @@ static void gfx_ctx_emscripten_get_video_size(void *data,
 {
    emscripten_ctx_data_t *emscripten = (emscripten_ctx_data_t*)data;
 
+   if (!emscripten)
+      return;
+
    *width  = emscripten->fb_width;
    *height = emscripten->fb_height;
 }
@@ -162,6 +159,9 @@ static void gfx_ctx_emscripten_get_video_size(void *data,
 static void gfx_ctx_emscripten_destroy(void *data)
 {
    emscripten_ctx_data_t *emscripten = (emscripten_ctx_data_t*)data;
+
+   if (!emscripten)
+      return;
 
    egl_destroy(&emscripten->egl);
 
