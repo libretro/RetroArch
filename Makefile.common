@@ -115,6 +115,13 @@ else
    OSX := 0
 endif
 
+ifneq ($(findstring Haiku,$(OS)),)
+   LIBS += -lroot -lnetwork
+	HAVE_UNIX = 1
+else
+   LIBS += -lm
+endif
+
 ifneq ($(findstring Linux,$(OS)),)
    LIBS += -lrt
    OBJ += input/drivers/linuxraw_input.o \
@@ -129,12 +136,6 @@ endif
 
 ifeq ($(TARGET), retroarch_3ds)
 	OBJ += frontend/drivers/platform_ctr.o
-endif
-
-ifeq ($(findstring Haiku,$(OS)),)
-   LIBS += -lm
-else
-   LIBS += -lroot -lnetwork
 endif
 
 # Git
@@ -1108,7 +1109,8 @@ endif
 endif
 
 ifeq ($(HAVE_EGL), 1)
-	DEFINES += -DHAVE_EGL
+   DEFINES += -DHAVE_EGL $(EGL_CFLAGS)
+   LIBS += $(EGL_LIBS)
    OBJ += gfx/common/egl_common.o
 endif
 
