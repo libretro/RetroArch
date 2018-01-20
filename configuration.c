@@ -2036,7 +2036,6 @@ static config_file_t *open_default_config_file(void)
    has_application_data =
       fill_pathname_application_data(application_data,
             path_size);
-   printf("application_data = \"%s\"\n", application_data);
 
    if (has_application_data)
    {
