@@ -35,7 +35,7 @@ static const char* const XBOX_CONTROLLER_NAMES[4] =
 
 static const char *xdk_joypad_name(unsigned pad)
 {
-   return input_config_get_device_name(pad);
+   return XBOX_CONTROLLER_NAMES[pad];
 }
 
 static void xdk_joypad_autodetect_add(unsigned autoconf_pad)
