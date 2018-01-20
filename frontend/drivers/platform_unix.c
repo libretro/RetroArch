@@ -1226,6 +1226,8 @@ static void frontend_unix_get_os(char *s,
    strlcpy(s, "DragonFly BSD", len);
 #elif defined(BSD)
    strlcpy(s, "BSD", len);
+#elif defined(__HAIKU__)
+   strlcpy(s, "Haiku", len);
 #else
    strlcpy(s, "Linux", len);
 #endif
