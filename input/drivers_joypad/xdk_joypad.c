@@ -272,6 +272,8 @@ static void xdk_joypad_destroy(void)
       analog_state[i][0][1] = 0;
       analog_state[i][1][0] = 0;
       analog_state[i][1][1] = 0;
+
+      memset(&g_xinput_states[i], 0, sizeof(xinput_joypad_state));
 #if defined(_XBOX1)
       if (gamepads[i])
          XInputClose(gamepads[i]);
