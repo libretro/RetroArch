@@ -49,8 +49,11 @@
 
 /* @(#) $Id$ */
 
-#include "deflate.h"
+#ifdef DEBUG
+#include <stdio.h>
+#endif
 
+#include "deflate.h"
 const char deflate_copyright[] =
 " deflate 1.2.8 Copyright 1995-2013 Jean-loup Gailly and Mark Adler ";
 /*
