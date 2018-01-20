@@ -1696,3 +1696,30 @@ bool d3dx_compile_shader_from_file(
 #endif
    return false;
 }
+
+D3DFORMAT d3d_get_rgb565_format(void)
+{
+#ifdef _XBOX
+   return D3DFMT_LIN_R5G6B5;
+#else
+   return D3DFMT_R5G6B5;
+#endif
+}
+
+D3DFORMAT d3d_get_argb8888_format(void)
+{
+#ifdef _XBOX
+   return D3DFMT_LIN_A8R8G8B8;
+#else
+   return D3DFMT_A8R8G8B8;
+#endif
+}
+
+D3DFORMAT d3d_get_xrgb8888_format(void)
+{
+#ifdef _XBOX
+   return D3DFMT_LIN_X8R8G8B8;
+#else
+   return D3DFMT_X8R8G8B8;
+#endif
+}

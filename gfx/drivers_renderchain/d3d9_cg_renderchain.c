@@ -864,7 +864,8 @@ static bool d3d9_cg_renderchain_create_first_pass(
 
       chain->prev.tex[i] = d3d_texture_new(chain->dev, NULL,
             info->tex_w, info->tex_h, 1, 0,
-            (fmt == RETRO_PIXEL_FORMAT_RGB565) ? D3DFMT_R5G6B5 : D3DFMT_X8R8G8B8,
+            (fmt == RETRO_PIXEL_FORMAT_RGB565) ? 
+            d3d_get_rgb565_format() : d3d_get_xrgb8888_format(),
             D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL, false);
 
       if (!chain->prev.tex[i])
@@ -945,7 +946,7 @@ static bool d3d9_cg_renderchain_set_pass_size(
             width, height, 1,
             D3DUSAGE_RENDERTARGET,
             chain->passes->data[chain->passes->count - 1].info.pass->fbo.fp_fbo ?
-            D3DFMT_A32B32G32R32F : D3DFMT_A8R8G8B8,
+            D3DFMT_A32B32G32R32F : d3d_get_argb8888_format(),
             D3DPOOL_DEFAULT, 0, 0, 0,
             NULL, NULL, false);
 
@@ -1103,7 +1104,7 @@ static bool d3d9_cg_renderchain_add_pass(
          1,
          D3DUSAGE_RENDERTARGET,
          chain->passes->data[chain->passes->count - 1].info.pass->fbo.fp_fbo
-         ? D3DFMT_A32B32G32R32F : D3DFMT_A8R8G8B8,
+         ? D3DFMT_A32B32G32R32F : d3d_get_argb8888_format(),
          D3DPOOL_DEFAULT, 0, 0, 0, NULL, NULL, false);
 
    if (!pass.tex)
@@ -1648,7 +1649,8 @@ static bool d3d9_cg_renderchain_read_viewport(
    if (
          !d3d_device_get_render_target(d3dr, 0, (void**)&target)     ||
          !d3d_device_create_offscreen_plain_surface(d3dr, width, height,
-            D3DFMT_X8R8G8B8, D3DPOOL_SYSTEMMEM, (void**)&dest, NULL) ||
+            d3d_get_xrgb8888_format(),
+            D3DPOOL_SYSTEMMEM, (void**)&dest, NULL) ||
          !d3d_device_get_render_target_data(d3dr, (void*)target, (void*)dest)
          )
    {

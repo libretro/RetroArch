@@ -79,11 +79,7 @@ static bool d3d8_renderchain_create_first_pass(void *data,
          chain->tex_w, chain->tex_h, 1, 0,
          info->rgb32
          ?
-#ifdef _XBOX
-         D3DFMT_LIN_X8R8G8B8 : D3DFMT_LIN_R5G6B5,
-#else
-         D3DFMT_X8R8G8B8 : D3DFMT_R5G6B5,
-#endif
+         d3d_get_xrgb8888_format() : d3d_get_rgb565_format(),
          D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL,
          false);
 

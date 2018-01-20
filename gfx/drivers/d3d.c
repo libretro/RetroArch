@@ -478,30 +478,12 @@ static void d3d_deinitialize(d3d_video_t *d3d)
 #define FS_PRESENTINTERVAL(pp) ((pp)->PresentationInterval)
 #endif
 
-static D3DFORMAT d3d_get_argb8888_format(void)
-{
-#ifdef _XBOX
-   return D3DFMT_LIN_A8R8G8B8;
-#else
-   return D3DFMT_A8R8G8B8;
-#endif
-}
-
-static D3DFORMAT d3d_get_xrgb8888_format(void)
-{
-#ifdef _XBOX
-   return D3DFMT_LIN_X8R8G8B8;
-#else
-   return D3DFMT_X8R8G8B8;
-#endif
-}
-
 static D3DFORMAT d3d_get_color_format_backbuffer(bool rgb32, bool windowed)
 {
    D3DFORMAT fmt = D3DFMT_X8R8G8B8;
 #ifdef _XBOX
    if (!rgb32)
-      fmt        = D3DFMT_LIN_R5G6B5;
+      fmt        = d3d_get_rgb565_format();
 #else
    if (windowed)
    {

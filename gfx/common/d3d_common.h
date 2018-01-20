@@ -247,6 +247,10 @@ bool d3dx_compile_shader_from_file(
       void *pperrormsgs,
       void *ppconstanttable);
 
+D3DFORMAT d3d_get_rgb565_format(void);
+D3DFORMAT d3d_get_argb8888_format(void);
+D3DFORMAT d3d_get_xrgb8888_format(void);
+
 RETRO_END_DECLS
 
 #endif

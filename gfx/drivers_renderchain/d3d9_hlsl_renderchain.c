@@ -104,11 +104,8 @@ static bool hlsl_d3d9_renderchain_create_first_pass(void *data,
 
    chain->tex = d3d_texture_new(d3dr, NULL,
          chain->tex_w, chain->tex_h, 1, 0,
-#ifdef _XBOX
-         info->rgb32 ? D3DFMT_LIN_X8R8G8B8 : D3DFMT_LIN_R5G6B5,
-#else
-         info->rgb32 ? D3DFMT_X8R8G8B8 : D3DFMT_R5G6B5,
-#endif
+         info->rgb32 ? 
+         d3d_get_xrgb8888_format() : d3d_get_rgb565_format(),
          0, 0, 0, 0, NULL, NULL, false);
 
    if (!chain->tex)
