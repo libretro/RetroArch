@@ -91,12 +91,12 @@ static int16_t xdk_joypad_axis(unsigned port_num, uint32_t joyaxis)
    if (joyaxis == AXIS_NONE || port_num >= MAX_PADS)
       return 0;
 
-   if (AXIS_NEG_GET(joyaxis) < 4)
+   if (AXIS_NEG_GET(joyaxis) <= 3)
    {
       axis = AXIS_NEG_GET(joyaxis);
       is_neg = true;
    }
-   else if (AXIS_POS_GET(joyaxis) < 4)
+   else if (AXIS_POS_GET(joyaxis) <= 5)
    {
       axis = AXIS_POS_GET(joyaxis);
       is_pos = true;
