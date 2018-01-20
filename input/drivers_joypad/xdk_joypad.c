@@ -72,12 +72,58 @@ static bool xdk_joypad_init(void *data)
    return true;
 }
 
+#if 0
+/* Buttons are provided by XInput as bits of a uint16.
+ * Map from rarch button index (0..10) to a mask to bitwise-& the buttons against.
+ * dpad is handled seperately. */
+static const uint16_t button_index_to_bitmap_code[] =  {
+   XINPUT_GAMEPAD_A,
+   XINPUT_GAMEPAD_B,
+   XINPUT_GAMEPAD_X,
+   XINPUT_GAMEPAD_Y,
+   XINPUT_GAMEPAD_LEFT_SHOULDER,
+   XINPUT_GAMEPAD_RIGHT_SHOULDER,
+   XINPUT_GAMEPAD_START,
+   XINPUT_GAMEPAD_BACK,
+   XINPUT_GAMEPAD_LEFT_THUMB,
+   XINPUT_GAMEPAD_RIGHT_THUMB,
+   XINPUT_GAMEPAD_GUIDE
+};
+#endif
+
 static bool xdk_joypad_button(unsigned port_num, uint16_t joykey)
 {
+   uint16_t btn_word  = 0;
+   unsigned hat_dir   = 0;
    if (port_num >= MAX_PADS)
       return false;
 
+   btn_word = g_xinput_states[port_num].xstate.Gamepad.wButtons;
+   hat_dir  = GET_HAT_DIR(joykey);
+
+#if 0
+   if (hat_dir)
+   {
+      switch (hat_dir)
+      {
+         case HAT_UP_MASK:
+            return btn_word & XINPUT_GAMEPAD_DPAD_UP;
+         case HAT_DOWN_MASK:
+            return btn_word & XINPUT_GAMEPAD_DPAD_DOWN;
+         case HAT_LEFT_MASK:
+            return btn_word & XINPUT_GAMEPAD_DPAD_LEFT;
+         case HAT_RIGHT_MASK:
+            return btn_word & XINPUT_GAMEPAD_DPAD_RIGHT;
+      }
+
+      return false; /* hat requested and no hat button down. */
+   }
+
+   if (joykey < num_buttons)
+      return btn_word & button_index_to_bitmap_code[joykey];
+#else
    return pad_state[port_num] & (UINT64_C(1) << joykey);
+#endif
 }
 
 static int16_t xdk_joypad_axis(unsigned port_num, uint32_t joyaxis)
