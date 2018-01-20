@@ -22,6 +22,7 @@
 - KEYMAPPER: prevent a condition that caused input_menu_toggle to stop working when a RETRO_DEVICE_KEYBOARD type device is enabled
 - GL: ignore hard gpu sync when fast-forwarding
 - LOCALIZATION: Update Italian translation.
+- LOCALIZATION: Update Japanese translation.
 - LOCALIZATION: Update Spanish translation.
 - NSW: Initial Nintendo Switch port, based on libtransistor SDK.
 - SOLARIS: Initial port.
