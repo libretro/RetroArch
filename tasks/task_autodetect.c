@@ -233,7 +233,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
    input_autoconfigure_joypad_conf(conf,
          input_autoconf_binds[params->idx]);
 
-   if (string_is_equal_fast(device_type, "remote", 6))
+   if (string_is_equal(device_type, "remote"))
    {
       static bool remote_is_bound        = false;
 
@@ -278,7 +278,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
    if (!string_is_empty(display_name))
       input_config_set_device_display_name(params->idx, display_name);
    else
-      input_config_set_device_display_name(params->idx, "N/A");
+      input_config_set_device_display_name(params->idx, params->name);
    if (!string_is_empty(conf->path))
       input_config_set_device_config_name(params->idx, path_basename(conf->path));
    else

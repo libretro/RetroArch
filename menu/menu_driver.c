@@ -209,39 +209,39 @@ static bool menu_display_check_compatibility(
       case MENU_VIDEO_DRIVER_GENERIC:
          return true;
       case MENU_VIDEO_DRIVER_OPENGL:
-         if (string_is_equal_fast(video_driver, "gl", 2))
+         if (string_is_equal(video_driver, "gl"))
             return true;
          break;
       case MENU_VIDEO_DRIVER_VULKAN:
-         if (string_is_equal_fast(video_driver, "vulkan", 6))
+         if (string_is_equal(video_driver, "vulkan"))
             return true;
          break;
       case MENU_VIDEO_DRIVER_DIRECT3D:
-         if (string_is_equal_fast(video_driver, "d3d", 3))
+         if (string_is_equal(video_driver, "d3d"))
             return true;
          break;
       case MENU_VIDEO_DRIVER_VITA2D:
-         if (string_is_equal_fast(video_driver, "vita2d", 6))
+         if (string_is_equal(video_driver, "vita2d"))
             return true;
          break;
       case MENU_VIDEO_DRIVER_CTR:
-         if (string_is_equal_fast(video_driver, "ctr", 3))
+         if (string_is_equal(video_driver, "ctr"))
             return true;
          break;
       case MENU_VIDEO_DRIVER_WIIU:
-         if (string_is_equal_fast(video_driver, "gx2", 3))
+         if (string_is_equal(video_driver, "gx2"))
             return true;
          break;
       case MENU_VIDEO_DRIVER_CACA:
-         if (string_is_equal_fast(video_driver, "caca", 4))
+         if (string_is_equal(video_driver, "caca"))
             return true;
          break;
       case MENU_VIDEO_DRIVER_GDI:
-         if (string_is_equal_fast(video_driver, "gdi", 3))
+         if (string_is_equal(video_driver, "gdi"))
             return true;
          break;
       case MENU_VIDEO_DRIVER_VGA:
-         if (string_is_equal_fast(video_driver, "vga", 3))
+         if (string_is_equal(video_driver, "vga"))
             return true;
          break;
    }
@@ -1847,13 +1847,16 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                   menu_driver_find_handle(i);
             else
             {
-               unsigned d;
-               RARCH_WARN("Couldn't find any menu driver named \"%s\"\n",
-                     settings->arrays.menu_driver);
-               RARCH_LOG_OUTPUT("Available menu drivers are:\n");
-               for (d = 0; menu_driver_find_handle(d); d++)
-                  RARCH_LOG_OUTPUT("\t%s\n", menu_driver_find_ident(d));
-               RARCH_WARN("Going to default to first menu driver...\n");
+               if (verbosity_is_enabled())
+               {
+                  unsigned d;
+                  RARCH_WARN("Couldn't find any menu driver named \"%s\"\n",
+                        settings->arrays.menu_driver);
+                  RARCH_LOG_OUTPUT("Available menu drivers are:\n");
+                  for (d = 0; menu_driver_find_handle(d); d++)
+                     RARCH_LOG_OUTPUT("\t%s\n", menu_driver_find_ident(d));
+                  RARCH_WARN("Going to default to first menu driver...\n");
+               }
 
                menu_driver_ctx = (const menu_ctx_driver_t*)
                   menu_driver_find_handle(0);

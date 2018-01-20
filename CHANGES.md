@@ -5,26 +5,33 @@
 - 3DS: Now reports memory and battery state.
 - AUDIO: Added 'Audio Resampler Quality' setting to Audio Settings. Setting this higher will increase sound quality at the expense of sound latency and/or performance. Setting this value lower will improve sound latency/performance at the expense of sound quality. Only has an effect if the Sinc resampler is used, and you have to restart the game for changes to take effect.
 - CHEEVOS: Fix unofficial achievements not being loaded.
-- CHEEVOS: Show the menu entries when no achievements are found even if hardcore mode is enabled.
+- CHEEVOS: Show savestate menu entries when no achievements are found even if hardcore mode is enabled.
 - CHEEVOS: Support Neo Geo Pocket.
 - COMMON: Bugfix for issue related to 'Windows mouse pointer visible when running MESS or MAME cores'.
 - COMMON: Fix bug 'Last item in a Playlist is ignored'.
 - COMMON: New LED API. Driver implemented for Raspberry Pi, proof of concept implemented for core MAME 2003.
+- D3D8: Direct3D 8 can now work on systems that have Direct3D 8 installed.
+- D3D9: Add menu support for MaterialUI/XMB.
 - DINPUT: don't reinitialize input driver on network events / media insertion / network drive connection
+- INPUT: show friendly names when available under input binds and system information
+- INPUT: show the config name when available under system information
 - GUI: Allow changing menu font color.
 - GUI: Menu visibility options for RGUI and MaterialUI.
 - GUI/XMB: Add Monochrome Inverted icon theme.
 - GUI/XMB: Allow changing menu scale to 200%.
 - KEYMAPPER: prevent a condition that caused input_menu_toggle to stop working when a RETRO_DEVICE_KEYBOARD type device is enabled
+- GL: ignore hard gpu sync when fast-forwarding
 - LOCALIZATION: Update Italian translation.
+- LOCALIZATION: Update Japanese translation.
 - LOCALIZATION: Update Spanish translation.
 - NSW: Initial Nintendo Switch port, based on libtransistor SDK.
 - SOLARIS: Initial port.
 - PS3: Enable Cheevos.
 - PSP: Enable threading support through pthreads.
+- SHIELD ATV: Allow the remote / gamepad takeover hack to work with the 2017 gamepad
 - WINDOWS: Improved Unicode support (for cores/directory creation and 7zip archives).
 - WINDOWS: Show progress meter on taskbar for downloads (Windows 7 and up).
-- WINDOWS: WS_EX_LAYERED drastically decreases performance, so only set it when needed (  transparency in windowed mode).
+- WINDOWS: WS_EX_LAYERED drastically decreases performance, so only set it when needed (transparency in windowed mode).
 - WIIU: Overlay support.
 - WIIU: Transparency support in menu + overlays.
 - WIIU: New HID pad support.

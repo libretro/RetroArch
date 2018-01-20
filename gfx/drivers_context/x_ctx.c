@@ -965,7 +965,7 @@ static void gfx_ctx_x_input_driver(void *data,
 #ifdef HAVE_UDEV
    settings_t *settings = config_get_ptr();
 
-   if (string_is_equal_fast(settings->arrays.input_driver, "udev", 5))
+   if (string_is_equal(settings->arrays.input_driver, "udev"))
    {
       *input_data = input_udev.init(joypad_name);
       if (*input_data)

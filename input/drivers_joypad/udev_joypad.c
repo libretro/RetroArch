@@ -449,14 +449,14 @@ static void udev_joypad_poll(void)
          const char *action  = udev_device_get_action(dev);
          const char *devnode = udev_device_get_devnode(dev);
 
-         if (val && string_is_equal_fast(val, "1", 1) && devnode)
+         if (val && string_is_equal(val, "1") && devnode)
          {
-            if (string_is_equal_fast(action, "add", 3))
+            if (string_is_equal(action, "add"))
             {
                RARCH_LOG("[udev]: Hotplug add: %s.\n", devnode);
                udev_check_device(dev, devnode);
             }
-            else if (string_is_equal_fast(action, "remove", 6))
+            else if (string_is_equal(action, "remove"))
             {
                RARCH_LOG("[udev]: Hotplug remove: %s.\n", devnode);
                udev_joypad_remove_device(devnode);

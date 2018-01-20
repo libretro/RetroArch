@@ -618,20 +618,20 @@ static void audio_driver_flush(const int16_t *data, size_t samples)
       double   direction   = (double)delta_mid / half_size;
       double   adjust      = 1.0 + audio_driver_rate_control_delta * direction;
 
-#if 0
-      RARCH_LOG_OUTPUT("[Audio]: Audio buffer is %u%% full\n",
-            (unsigned)(100 - (avail * 100) / audio_driver_buffer_size));
-#endif
-
       audio_driver_free_samples_buf
          [write_idx]               = avail;
       audio_source_ratio_current   =
          audio_source_ratio_original * adjust;
 
 #if 0
-      RARCH_LOG_OUTPUT("[Audio]: New rate: %lf, Orig rate: %lf\n",
-            audio_source_ratio_current,
-            audio_source_ratio_original);
+      if (verbosity_is_enabled())
+      {
+         RARCH_LOG_OUTPUT("[Audio]: Audio buffer is %u%% full\n",
+               (unsigned)(100 - (avail * 100) / audio_driver_buffer_size));
+         RARCH_LOG_OUTPUT("[Audio]: New rate: %lf, Orig rate: %lf\n",
+               audio_source_ratio_current,
+               audio_source_ratio_original);
+      }
 #endif
    }
 
@@ -862,13 +862,16 @@ bool audio_driver_find_driver(void)
       current_audio = (const audio_driver_t*)audio_driver_find_handle(i);
    else
    {
-      unsigned d;
-      RARCH_ERR("Couldn't find any audio driver named \"%s\"\n",
-            settings->arrays.audio_driver);
-      RARCH_LOG_OUTPUT("Available audio drivers are:\n");
-      for (d = 0; audio_driver_find_handle(d); d++)
-         RARCH_LOG_OUTPUT("\t%s\n", audio_driver_find_ident(d));
-      RARCH_WARN("Going to default to first audio driver...\n");
+      if (verbosity_is_enabled())
+      {
+         unsigned d;
+         RARCH_ERR("Couldn't find any audio driver named \"%s\"\n",
+               settings->arrays.audio_driver);
+         RARCH_LOG_OUTPUT("Available audio drivers are:\n");
+         for (d = 0; audio_driver_find_handle(d); d++)
+            RARCH_LOG_OUTPUT("\t%s\n", audio_driver_find_ident(d));
+         RARCH_WARN("Going to default to first audio driver...\n");
+      }
 
       current_audio = (const audio_driver_t*)audio_driver_find_handle(0);
 

@@ -537,7 +537,7 @@ bool video_shader_resolve_parameters(config_file_t *conf,
       /* First try to use the more robust slang implementation to support #includes. */
       /* FIXME: The check for slang can be removed if it's sufficiently tested for
        * GLSL/Cg as well, it should be the same implementation. */
-      if (string_is_equal_fast(path_get_extension(path), "slang", 5) &&
+      if (string_is_equal(path_get_extension(path), "slang") &&
             slang_preprocess_parse_parameters(shader->pass[i].source.path, shader))
       {
          free(line);

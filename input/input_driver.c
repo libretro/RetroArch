@@ -182,6 +182,9 @@ static input_device_driver_t *joypad_drivers[] = {
 #if defined(HAVE_HID) && !defined(WIIU)
    &hid_joypad,
 #endif
+#ifdef EMSCRIPTEN
+   &rwebpad_joypad,
+#endif
    &null_joypad,
    NULL,
 };
@@ -804,7 +807,7 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
 static INLINE bool input_keys_pressed_iterate(unsigned i,
       retro_bits_t* p_new_state)
 {
-   if ((i >= RARCH_FIRST_META_KEY) && 
+   if ((i >= RARCH_FIRST_META_KEY) &&
          BIT64_GET(lifecycle_state, i)
       )
       return true;
@@ -2336,13 +2339,13 @@ static void parse_hat(struct retro_keybind *bind, const char *str)
       return;
    }
 
-   if      (string_is_equal_fast(dir, "up", 2))
+   if      (string_is_equal(dir, "up"))
       hat_dir = HAT_UP_MASK;
-   else if (string_is_equal_fast(dir, "down", 4))
+   else if (string_is_equal(dir, "down"))
       hat_dir = HAT_DOWN_MASK;
-   else if (string_is_equal_fast(dir, "left", 4))
+   else if (string_is_equal(dir, "left"))
       hat_dir = HAT_LEFT_MASK;
-   else if (string_is_equal_fast(dir, "right", 5))
+   else if (string_is_equal(dir, "right"))
       hat_dir = HAT_RIGHT_MASK;
 
    if (hat_dir)

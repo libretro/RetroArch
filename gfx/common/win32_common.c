@@ -460,7 +460,7 @@ static LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
             keydown = false;
 
 #if _WIN32_WINNT >= 0x0501 /* XP */
-         if (string_is_equal_fast(config_get_ptr()->arrays.input_driver, "raw", 4))
+         if (string_is_equal(config_get_ptr()->arrays.input_driver, "raw"))
             keycode = input_keymaps_translate_keysym_to_rk((unsigned)(wparam));
          else
 #endif

@@ -114,14 +114,17 @@ void find_record_driver(void)
       recording_driver = (const record_driver_t*)record_driver_find_handle(i);
    else
    {
-      unsigned d;
+      if (verbosity_is_enabled())
+      {
+         unsigned d;
 
-      RARCH_ERR("Couldn't find any record driver named \"%s\"\n",
-            settings->arrays.record_driver);
-      RARCH_LOG_OUTPUT("Available record drivers are:\n");
-      for (d = 0; record_driver_find_handle(d); d++)
-         RARCH_LOG_OUTPUT("\t%s\n", record_driver_find_ident(d));
-      RARCH_WARN("Going to default to first record driver...\n");
+         RARCH_ERR("Couldn't find any record driver named \"%s\"\n",
+               settings->arrays.record_driver);
+         RARCH_LOG_OUTPUT("Available record drivers are:\n");
+         for (d = 0; record_driver_find_handle(d); d++)
+            RARCH_LOG_OUTPUT("\t%s\n", record_driver_find_ident(d));
+         RARCH_WARN("Going to default to first record driver...\n");
+      }
 
       recording_driver = (const record_driver_t*)record_driver_find_handle(0);
 

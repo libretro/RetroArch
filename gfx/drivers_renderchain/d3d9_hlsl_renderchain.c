@@ -45,28 +45,17 @@ typedef struct hlsl_d3d9_renderchain
 void hlsl_set_proj_matrix(void *data, void *matrix_data);
 
 static void hlsl_d3d9_renderchain_set_mvp(
+      void *data,
       void *chain_data,
-      void *data, unsigned vp_width,
-      unsigned vp_height, unsigned rotation)
+      void *shader_data,
+      const void *mat_data)
 {
-   video_shader_ctx_mvp_t mvp;
-   D3DMATRIX proj, ortho, rot, tmp;
    d3d_video_t      *d3d = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
 
-   d3d_matrix_ortho_off_center_lh(&ortho, 0, vp_width, 0, vp_height, 0, 1);
-   d3d_matrix_identity(&rot);
-   d3d_matrix_rotation_z(&rot, rotation * (M_PI / 2.0));
-
-   d3d_matrix_multiply(&proj, &ortho, &rot);
-   d3d_matrix_transpose(&tmp, &proj);
-
-   hlsl_set_proj_matrix((void*)&d3d->shader, &rot);
-
-   mvp.data   = d3d;
-   mvp.matrix = &rot;
-
-   video_driver_set_mvp(&mvp);
+   if(shader_data)
+      hlsl_set_proj_matrix(shader_data, mat_data);
+   else
+      hlsl_set_proj_matrix((void*)&d3d->shader, mat_data);
 }
 
 static void hlsl_d3d9_renderchain_clear(void *data)
@@ -120,7 +109,7 @@ static bool hlsl_d3d9_renderchain_create_first_pass(void *data,
 #else
          info->rgb32 ? D3DFMT_X8R8G8B8 : D3DFMT_R5G6B5,
 #endif
-         0, 0, 0, 0, NULL, NULL);
+         0, 0, 0, 0, NULL, NULL, false);
 
    if (!chain->tex)
       return false;
@@ -244,8 +233,13 @@ static void hlsl_d3d9_renderchain_blit_to_texture(
 
    /* Set the texture to NULL so D3D doesn't complain about it being in use... */
    d3d_set_texture(d3dr, 0, NULL);
-   d3d_texture_blit(chain->pixel_size, chain->tex,
-         &d3dlr, frame, width, height, pitch);
+
+   if (d3d_lock_rectangle(chain->tex, 0, &d3dlr, NULL, 0, 0))
+   {
+      d3d_texture_blit(chain->pixel_size, chain->tex,
+            &d3dlr, frame, width, height, pitch);
+      d3d_unlock_rectangle(chain->tex);
+   }
 }
 
 static void hlsl_d3d9_renderchain_deinit(void *data)

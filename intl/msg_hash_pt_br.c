@@ -823,7 +823,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
             snprintf(s, len,
                      "Driver de vídeo atual.");
 
-            if (string_is_equal_fast(settings->arrays.video_driver, "gl", 2))
+            if (string_is_equal(settings->arrays.video_driver, "gl"))
             {
                 snprintf(s, len,
                          "Driver de vídeo OpenGL. \n"
@@ -836,7 +836,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                                  "Libretro GL ou renderizados por software \n"
                                  "é dependente do driver GL de sua placa de vídeo.");
             }
-            else if (string_is_equal_fast(settings->arrays.video_driver, "sdl2", 4))
+            else if (string_is_equal(settings->arrays.video_driver, "sdl2"))
             {
                 snprintf(s, len,
                          "Driver de vídeo SDL 2.\n"
@@ -848,7 +848,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                                  "libretro renderizados por software é dependente \n"
                                  "da implementação SDL da sua plataforma.");
             }
-            else if (string_is_equal_fast(settings->arrays.video_driver, "sdl1", 4))
+            else if (string_is_equal(settings->arrays.video_driver, "sdl1"))
             {
                 snprintf(s, len,
                          "Driver de vídeo SDL. \n"
@@ -859,7 +859,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                                  "O desempenho é considerado medíocre. \n"
                                  "Cosidere utilizar apenas como último recurso.");
             }
-            else if (string_is_equal_fast(settings->arrays.video_driver, "d3d", 3))
+            else if (string_is_equal(settings->arrays.video_driver, "d3d"))
             {
                 snprintf(s, len,
                          "Driver de vídeo Direct3D. \n"
@@ -868,7 +868,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                                  "software depende do driver D3D de base da\n"
                                  "sua placa de vídeo).");
             }
-            else if (string_is_equal_fast(settings->arrays.video_driver, "exynos", 6))
+            else if (string_is_equal(settings->arrays.video_driver, "exynos"))
             {
                 snprintf(s, len,
                          "Driver de vídeo Exynos-G2D. \n"
@@ -880,7 +880,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                                  "O desempenho de núcleos renderizados por \n"
                                  "por hardware deve ser ótimo.");
             }
-            else if (string_is_equal_fast(settings->arrays.video_driver, "drm", 3))
+            else if (string_is_equal(settings->arrays.video_driver, "drm"))
             {
                 snprintf(s, len,
                          "Driver de vídeo Plain DRM. \n"
@@ -889,7 +889,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                                  "usando libdrm para escala por hardware \n"
                                  "utilizando overlay de GPU.");
             }
-            else if (string_is_equal_fast(settings->arrays.video_driver, "sunxi", 5))
+            else if (string_is_equal(settings->arrays.video_driver, "sunxi"))
             {
                 snprintf(s, len,
                          "Driver de vídeo Sunxi-G2D. \n"

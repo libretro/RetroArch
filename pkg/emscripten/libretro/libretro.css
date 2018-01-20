@@ -6,9 +6,11 @@
 
 /**
  * Make sure the background of the player is black.
+ * Also make sure line height is 0 so there's no extra space on the bottom.
  */
 .webplayer-container {
   background-color: black;
+  line-height: 0;
 }
 
 /**
@@ -92,8 +94,27 @@ textarea {
     font-size: 0.7em;
     height: 95%;
     width:  95%;
-    border-style: none; 
-    border-color: transparent; 
+    border-style: none;
+    border-color: transparent;
     overflow: auto;
     resize: none;
+}
+
+/**
+ * Toggle Top Navigation
+ */
+.toggleMenu {
+   float: right;
+}
+.showMenu {
+   position: absolute;
+   right: 0;
+   cursor: pointer;
+}
+#icnShowMenu {
+   color: #565656 !important;
+}
+
+.navbar {
+  box-shadow: none;
 }

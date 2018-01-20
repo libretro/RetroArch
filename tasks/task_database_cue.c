@@ -382,7 +382,7 @@ int detect_system(intfstream_t *fd, const char **system_name)
       if (read < MAGIC_LEN)
          continue;
 
-      if (string_is_equal_fast(MAGIC_NUMBERS[i].magic, magic, MAGIC_LEN))
+      if (string_is_equal(MAGIC_NUMBERS[i].magic, magic))
       {
          *system_name = MAGIC_NUMBERS[i].system_name;
          rv = 0;

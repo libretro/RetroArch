@@ -125,7 +125,7 @@ static char *lakka_get_project(void)
    info.enum_idx      = a; \
    dl_type            = b;
 
-static unsigned action_ok_dl_to_enum(unsigned lbl)
+static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
 {
    switch (lbl)
    {
@@ -209,7 +209,7 @@ static unsigned action_ok_dl_to_enum(unsigned lbl)
          break;
    }
 
-   return 0;
+   return MSG_UNKNOWN;
 }
 
 int generic_action_ok_displaylist_push(const char *path,
@@ -1171,23 +1171,23 @@ static int generic_action_ok(const char *path,
          break;
       case ACTION_OK_SET_DIRECTORY:
          flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DIRECTORY_SETTINGS_LIST);
-         ret = set_path_generic(filebrowser_label, action_path);
+         ret        = set_path_generic(filebrowser_label, action_path);
          break;
       case ACTION_OK_SET_PATH_VIDEO_FILTER:
          flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_SETTINGS_LIST);
-         ret = set_path_generic(menu_label, action_path);
+         ret        = set_path_generic(menu_label, action_path);
          break;
       case ACTION_OK_SET_PATH_AUDIO_FILTER:
          flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST);
-         ret = set_path_generic(menu_label, action_path);
+         ret        = set_path_generic(menu_label, action_path);
          break;
       case ACTION_OK_SET_PATH_OVERLAY:
          flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ONSCREEN_OVERLAY_SETTINGS_LIST);
-         ret = set_path_generic(menu_label, action_path);
+         ret        = set_path_generic(menu_label, action_path);
          break;
       case ACTION_OK_SET_PATH:
          flush_type = MENU_SETTINGS;
-         ret = set_path_generic(menu_label, action_path);
+         ret        = set_path_generic(menu_label, action_path);
          break;
       default:
          flush_char = msg_hash_to_str(flush_id);
@@ -1209,13 +1209,16 @@ static int default_action_ok_load_content_with_core_from_menu(const char *_path,
    content_info.argv                   = NULL;
    content_info.args                   = NULL;
    content_info.environ_get            = NULL;
-   if (!task_push_load_content_with_core_from_menu(_path, &content_info, (enum rarch_core_type)_type, NULL, NULL))
+   if (!task_push_load_content_with_core_from_menu(
+            _path, &content_info,
+            (enum rarch_core_type)_type, NULL, NULL))
       return -1;
    content_add_to_playlist(_path);
    return 0;
 }
 
-static int default_action_ok_load_content_from_playlist_from_menu(const char *_path, const char *path, const char *entry_label)
+static int default_action_ok_load_content_from_playlist_from_menu(const char *_path,
+      const char *path, const char *entry_label)
 {
    content_ctx_info_t content_info;
    content_info.argc                   = 0;
@@ -1401,7 +1404,8 @@ static int action_ok_playlist_entry_collection(const char *path,
    playlist_get_index(playlist,
          playlist_info.idx, &path, NULL, NULL, NULL, NULL, NULL);
 
-   return default_action_ok_load_content_from_playlist_from_menu(new_core_path, path, entry_label);
+   return default_action_ok_load_content_from_playlist_from_menu(
+         new_core_path, path, entry_label);
 }
 
 static int action_ok_playlist_entry(const char *path,

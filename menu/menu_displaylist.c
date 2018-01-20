@@ -2523,7 +2523,7 @@ static int menu_displaylist_parse_horizontal_list(
 
    playlist_qsort(playlist);
 
-   if (string_is_equal_fast(lpl_basename, "content_history", 15))
+   if (string_is_equal(lpl_basename, "content_history"))
       is_historylist = true;
 
    menu_displaylist_parse_playlist(info,
@@ -2594,9 +2594,12 @@ static int menu_displaylist_parse_load_content_settings(
                MENU_SETTING_ACTION_SCREENSHOT, 0, 0);
       }
 
+
+      if (settings->bools.quick_menu_show_save_load_state 
 #ifdef HAVE_CHEEVOS
-      if (settings->bools.quick_menu_show_save_load_state &&
-          !(settings->bools.cheevos_hardcore_mode_enable && cheevos_loaded))
+          && !(settings->bools.cheevos_hardcore_mode_enable && cheevos_loaded)
+#endif
+         )
       {
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_STATE_SLOT, PARSE_ONLY_INT, true);
@@ -2615,8 +2618,11 @@ static int menu_displaylist_parse_load_content_settings(
       }
 
       if (settings->bools.quick_menu_show_save_load_state &&
-          settings->bools.quick_menu_show_undo_save_load_state &&
-          !(settings->bools.cheevos_hardcore_mode_enable && cheevos_loaded))
+          settings->bools.quick_menu_show_undo_save_load_state
+#ifdef HAVE_CHEEVOS
+          && !(settings->bools.cheevos_hardcore_mode_enable && cheevos_loaded)
+#endif
+         )
       {
          menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE),
@@ -2630,7 +2636,7 @@ static int menu_displaylist_parse_load_content_settings(
                MENU_ENUM_LABEL_UNDO_SAVE_STATE,
                MENU_SETTING_ACTION_LOADSTATE, 0, 0);
       }
-#endif
+
 
       if (settings->bools.quick_menu_show_add_to_favorites)
       {
@@ -5382,7 +5388,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_CHEEVOS_LEADERBOARDS_ENABLE,
                PARSE_ONLY_BOOL, false);
-         if (string_is_equal_fast(settings->arrays.menu_driver, "xmb", 3))
+         if (string_is_equal(settings->arrays.menu_driver, "xmb"))
          {
             menu_displaylist_parse_settings_enum(menu, info,
                  MENU_ENUM_LABEL_CHEEVOS_BADGES_ENABLE,
@@ -5428,7 +5434,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_WIFI_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         if (string_is_equal_fast(settings->arrays.wifi_driver, "null", 4))
+         if (string_is_equal(settings->arrays.wifi_driver, "null"))
             menu_entries_append_enum(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND),
                   msg_hash_to_str(MENU_ENUM_LABEL_NO_NETWORKS_FOUND),
@@ -6029,7 +6035,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_LOGGING_SETTINGS,   PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS,   PARSE_ACTION, false);
-         if (string_is_not_equal_fast(settings->arrays.record_driver, "null", 4))
+         if (string_is_not_equal(settings->arrays.record_driver, "null"))
             ret = menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_RECORDING_SETTINGS,   PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,

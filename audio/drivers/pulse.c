@@ -20,6 +20,7 @@
 #include <pulse/pulseaudio.h>
 
 #include <boolean.h>
+#include <retro_miscellaneous.h>
 #include <retro_endianness.h>
 
 #include "../audio_driver.h"

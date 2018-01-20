@@ -24,6 +24,12 @@
 
 RETRO_BEGIN_DECLS
 
+typedef struct d3d_texture
+{
+   LPDIRECT3DTEXTURE data;
+   D3DPOOL pool;
+} d3d_texture_t;
+
 bool d3d_swap(void *data, LPDIRECT3DDEVICE dev);
 
 LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(LPDIRECT3DDEVICE dev,
@@ -46,7 +52,7 @@ LPDIRECT3DTEXTURE d3d_texture_new(LPDIRECT3DDEVICE dev,
       unsigned miplevels, unsigned usage, D3DFORMAT format,
       D3DPOOL pool, unsigned filter, unsigned mipfilter,
       D3DCOLOR color_key, void *src_info,
-      PALETTEENTRY *palette);
+      PALETTEENTRY *palette, bool want_mipmap);
 
 void d3d_set_stream_source(LPDIRECT3DDEVICE dev, unsigned stream_no,
       void *stream_vertbuf, unsigned offset_bytes,
@@ -67,6 +73,9 @@ void d3d_set_sampler_minfilter(LPDIRECT3DDEVICE dev,
       unsigned sampler, unsigned value);
 
 void d3d_set_sampler_magfilter(LPDIRECT3DDEVICE dev,
+      unsigned sampler, unsigned value);
+
+void d3d_set_sampler_mipfilter(LPDIRECT3DDEVICE dev,
       unsigned sampler, unsigned value);
 
 bool d3d_begin_scene(LPDIRECT3DDEVICE dev);
@@ -108,6 +117,9 @@ bool d3d_set_pixel_shader(LPDIRECT3DDEVICE dev, void *data);
 bool d3d_set_vertex_shader(LPDIRECT3DDEVICE dev, unsigned index,
       void *data);
 
+bool d3d_set_vertex_shader_constantf(LPDIRECT3DDEVICE dev,
+      UINT start_register,const float* constant_data, unsigned vector4f_count);
+
 void d3d_texture_blit(unsigned pixel_size,
       LPDIRECT3DTEXTURE tex,
       D3DLOCKED_RECT *lr, const void *frame,
@@ -141,7 +153,11 @@ bool d3d_device_get_render_target(LPDIRECT3DDEVICE dev,
 void d3d_device_set_render_target(LPDIRECT3DDEVICE dev, unsigned idx,
       void *data);
 
-void d3d_set_render_state(void *data, D3DRENDERSTATETYPE state, DWORD value);
+bool d3d_get_render_state(void *data,
+      D3DRENDERSTATETYPE state, DWORD *value);
+
+void d3d_set_render_state(void *data,
+      D3DRENDERSTATETYPE state, DWORD value);
 
 void d3d_device_set_render_target(LPDIRECT3DDEVICE dev, unsigned idx,
       void *data);

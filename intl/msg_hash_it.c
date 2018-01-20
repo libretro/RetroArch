@@ -209,7 +209,7 @@ int menu_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Driver video attuale.");
 
-         if (string_is_equal_fast(settings->arrays.video_driver, "gl", 2))
+         if (string_is_equal(settings->arrays.video_driver, "gl"))
          {
             snprintf(s, len,
                   "Diver video OpenGL. \n"
@@ -223,7 +223,7 @@ int menu_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "dalla tua scheda grafica \n"
                   "sottostante driver GL).");
          }
-         else if (string_is_equal_fast(settings->arrays.video_driver, "sdl2", 4))
+         else if (string_is_equal(settings->arrays.video_driver, "sdl2"))
          {
             snprintf(s, len,
                   "Driver video SDL 2.\n"
@@ -235,7 +235,7 @@ int menu_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "renderizzati via software dipende \n"
                   "dall'implementazzione sulla tua piattaforma SDL.");
          }
-         else if (string_is_equal_fast(settings->arrays.video_driver, "sdl1", 4))
+         else if (string_is_equal(settings->arrays.video_driver, "sdl1"))
          {
             snprintf(s, len,
                   "Driver video SDL.\n"
@@ -246,7 +246,7 @@ int menu_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "Le performance sono considerate quasi ottimali. \n"
                   "Considera di usare questo soltanto come ultima scelta.");
          }
-         else if (string_is_equal_fast(settings->arrays.video_driver, "d3d", 3))
+         else if (string_is_equal(settings->arrays.video_driver, "d3d"))
          {
             snprintf(s, len,
                   "Driver video Direct3D. \n"
@@ -255,7 +255,7 @@ int menu_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "software dipende dal driver D3D inerente \n"
                   "alla tua scheda video).");
          }
-         else if (string_is_equal_fast(settings->arrays.video_driver, "exynos", 6))
+         else if (string_is_equal(settings->arrays.video_driver, "exynos"))
          {
             snprintf(s, len,
                   "Exynos-G2D Video Driver. \n"
@@ -267,7 +267,7 @@ int menu_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "Le performance per i core renderizzati via software \n"
                   "dovrebbero essere ottimali.");
          }
-         else if (string_is_equal_fast(settings->arrays.video_driver, "sunxi", 5))
+         else if (string_is_equal(settings->arrays.video_driver, "sunxi"))
          {
             snprintf(s, len,
                   "Driver video Sunxi-G2D. \n"

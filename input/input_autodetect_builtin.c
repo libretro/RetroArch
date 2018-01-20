@@ -37,7 +37,8 @@
 #define DECL_AXIS(axis, bind) "input_" #axis "_axis = " #bind "\n"
 #define DECL_AXIS_EX(axis, bind, name) "input_" #axis "_axis = " #bind "\ninput_" #axis "_axis_label = \"" name "\"\n"
 #define DECL_MENU(btn) "input_menu_toggle_btn = " #btn "\n"
-#define DECL_AUTOCONF_DEVICE(device, driver, binds) "input_device = \"" device "\" \ninput_driver = \"" driver "\"                    \n" binds
+#define DECL_AUTOCONF_DEVICE(device, driver, binds) "input_device = \"" device "\"\ninput_driver = \"" driver "\"\n" binds
+#define DECL_AUTOCONF_PID(pid, vid, driver, binds) "input_product_id = " #pid "\ninput_vendor_id = " #vid "\ninput_driver = \"" driver "\"\n" binds
 
 /* TODO/FIXME - Missing L2/R2 */
 
@@ -528,10 +529,39 @@ DECL_AXIS(r_x_minus, -2) \
 DECL_AXIS(r_y_plus,  +3) \
 DECL_AXIS(r_y_minus, -3)
 
+#define EMSCRIPTEN_DEFAULT_BINDS \
+DECL_BTN(a, 1) \
+DECL_BTN(b, 0) \
+DECL_BTN(x, 3) \
+DECL_BTN(y, 2) \
+DECL_BTN(start, 9) \
+DECL_BTN(select, 8) \
+DECL_BTN(up, 12) \
+DECL_BTN(down, 13) \
+DECL_BTN(left, 14) \
+DECL_BTN(right, 15) \
+DECL_BTN(l, 4) \
+DECL_BTN(r, 5) \
+DECL_BTN(l2, 6) \
+DECL_BTN(r2, 7) \
+DECL_BTN(l3, 10) \
+DECL_BTN(r3, 11) \
+DECL_AXIS(l_x_plus,  +0) \
+DECL_AXIS(l_x_minus, -0) \
+DECL_AXIS(l_y_plus,  +1) \
+DECL_AXIS(l_y_minus, -1) \
+DECL_AXIS(r_x_plus,  +2) \
+DECL_AXIS(r_x_minus, -2) \
+DECL_AXIS(r_y_plus,  +3) \
+DECL_AXIS(r_y_minus, -3)
+
 const char* const input_builtin_autoconfs[] =
 {
 #if defined(_WIN32) && defined(_XBOX)
-   DECL_AUTOCONF_DEVICE("XInput Controller", "xdk", XINPUT_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("XInput Controller (User 1)", "xdk", XINPUT_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("XInput Controller (User 2)", "xdk", XINPUT_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("XInput Controller (User 3)", "xdk", XINPUT_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("XInput Controller (User 4)", "xdk", XINPUT_DEFAULT_BINDS),
 #elif defined(_WIN32)
 #if !defined(__STDC_C89__) && !defined(__STDC_C89_AMENDMENT_1__)
    DECL_AUTOCONF_DEVICE("XInput Controller (User 1)", "xinput", XINPUT_DEFAULT_BINDS),
@@ -588,6 +618,9 @@ const char* const input_builtin_autoconfs[] =
 #endif
 #ifdef __SWITCH__
    DECL_AUTOCONF_DEVICE("Switch Controller", "switch", SWITCH_DEFAULT_BINDS),
+#endif
+#ifdef EMSCRIPTEN
+   DECL_AUTOCONF_PID(1, 1, "rwebpad", EMSCRIPTEN_DEFAULT_BINDS),
 #endif
    NULL
 };

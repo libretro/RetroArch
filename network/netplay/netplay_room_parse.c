@@ -197,7 +197,7 @@ static JSON_Parser_HandlerResult JSON_CALL ObjectMemberHandler(JSON_Parser parse
       return JSON_Parser_Continue;
 
    if (pCtx->state == STATE_OBJECT_START && !string_is_empty(pValue)
-         && string_is_equal_fast(pValue, "fields", 6))
+         && string_is_equal(pValue, "fields"))
       pCtx->state = STATE_FIELDS_START;
 
    if (pCtx->state == STATE_FIELDS_OBJECT_START)
@@ -208,82 +208,82 @@ static JSON_Parser_HandlerResult JSON_CALL ObjectMemberHandler(JSON_Parser parse
 
       if (!string_is_empty(pValue))
       {
-         if (string_is_equal_fast(pValue, "username", 8))
+         if (string_is_equal(pValue, "username"))
          {
             pCtx->cur_field       = strdup(pValue);
             pCtx->cur_member      = &rooms->cur->nickname;
          }
-         else if (string_is_equal_fast(pValue, "game_name", 9))
+         else if (string_is_equal(pValue, "game_name"))
          {
             pCtx->cur_field       = strdup(pValue);
             pCtx->cur_member      = &rooms->cur->gamename;
          }
-         else if (string_is_equal_fast(pValue, "core_name", 9))
+         else if (string_is_equal(pValue, "core_name"))
          {
             pCtx->cur_field       = strdup(pValue);
             pCtx->cur_member      = &rooms->cur->corename;
          }
-         else if (string_is_equal_fast(pValue, "ip", 2))
+         else if (string_is_equal(pValue, "ip"))
          {
             pCtx->cur_field       = strdup(pValue);
             pCtx->cur_member      = &rooms->cur->address;
          }
-         else if (string_is_equal_fast(pValue, "port", 4))
+         else if (string_is_equal(pValue, "port"))
          {
             pCtx->cur_field       = strdup(pValue);
             pCtx->cur_member      = &rooms->cur->port;
          }
-         else if (string_is_equal_fast(pValue, "game_crc", 8))
+         else if (string_is_equal(pValue, "game_crc"))
          {
             pCtx->cur_field       = strdup(pValue);
             pCtx->cur_member      = &rooms->cur->gamecrc;
          }
-         else if (string_is_equal_fast(pValue, "core_version", 12))
+         else if (string_is_equal(pValue, "core_version"))
          {
             pCtx->cur_field       = strdup(pValue);
             pCtx->cur_member      = &rooms->cur->coreversion;
          }
-         else if (string_is_equal_fast(pValue, "has_password", 12))
+         else if (string_is_equal(pValue, "has_password"))
          {
             pCtx->cur_field       = strdup(pValue);
             pCtx->cur_member      = &rooms->cur->has_password;
          }
-         else if (string_is_equal_fast(pValue, "has_spectate_password", 21))
+         else if (string_is_equal(pValue, "has_spectate_password"))
          {
             pCtx->cur_field       = strdup(pValue);
             pCtx->cur_member      = &rooms->cur->has_spectate_password;
          }
-         else if (string_is_equal_fast(pValue, "fixed", 5))
+         else if (string_is_equal(pValue, "fixed"))
          {
             pCtx->cur_field       = strdup(pValue);
             pCtx->cur_member      = &rooms->cur->fixed;
          }
-         else if (string_is_equal_fast(pValue, "mitm_ip", 7))
+         else if (string_is_equal(pValue, "mitm_ip"))
          {
             pCtx->cur_field       = strdup(pValue);
             pCtx->cur_member      = &rooms->cur->mitm_address;
          }
-         else if (string_is_equal_fast(pValue, "mitm_port", 9))
+         else if (string_is_equal(pValue, "mitm_port"))
          {
             pCtx->cur_field       = strdup(pValue);
             pCtx->cur_member      = &rooms->cur->mitm_port;
          }
-         else if (string_is_equal_fast(pValue, "host_method", 11))
+         else if (string_is_equal(pValue, "host_method"))
          {
             pCtx->cur_field       = strdup(pValue);
             pCtx->cur_member      = &rooms->cur->host_method;
          }
-         else if (string_is_equal_fast(pValue, "retroarch_version", 17))
+         else if (string_is_equal(pValue, "retroarch_version"))
          {
             pCtx->cur_field       = strdup(pValue);
             pCtx->cur_member      = &rooms->cur->retroarch_version;
          }
-         else if (string_is_equal_fast(pValue, "country", 7))
+         else if (string_is_equal(pValue, "country"))
          {
             pCtx->cur_field       = strdup(pValue);
             pCtx->cur_member      = &rooms->cur->country;
          }
-         else if (string_is_equal_fast(pValue, "frontend", 7))
+         else if (string_is_equal(pValue, "frontend"))
          {
             pCtx->cur_field       = strdup(pValue);
             pCtx->cur_member      = &rooms->cur->frontend;

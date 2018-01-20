@@ -375,6 +375,10 @@ enum retro_key
    RETROK_x              = 120,
    RETROK_y              = 121,
    RETROK_z              = 122,
+   RETROK_LEFTBRACE      = 123,
+   RETROK_BAR            = 124,
+   RETROK_RIGHTBRACE     = 125,
+   RETROK_TILDE          = 126,
    RETROK_DELETE         = 127,
 
    RETROK_KP0            = 256,

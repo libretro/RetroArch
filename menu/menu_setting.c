@@ -2366,7 +2366,7 @@ static bool setting_append_list(
                   parent_group);
          }
 
-         if (string_is_not_equal_fast(settings->arrays.menu_driver, "xmb", 3))
+         if (string_is_not_equal(settings->arrays.menu_driver, "xmb"))
          {
             CONFIG_ACTION(
                   list, list_info,
@@ -2702,7 +2702,7 @@ static bool setting_append_list(
                parent_group);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
-         if (string_is_not_equal_fast(settings->arrays.wifi_driver, "null", 4))
+         if (string_is_not_equal(settings->arrays.wifi_driver, "null"))
          {
             CONFIG_ACTION(
                   list, list_info,
@@ -3439,7 +3439,7 @@ static bool setting_append_list(
                &setting_get_string_representation_st_float_video_refresh_rate_auto;
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
-            if (string_is_equal_fast(settings->arrays.video_driver, "gl", 2))
+            if (string_is_equal(settings->arrays.video_driver, "gl"))
             {
                CONFIG_BOOL(
                      list, list_info,
@@ -3806,7 +3806,7 @@ static bool setting_append_list(
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
-            if (string_is_equal_fast(settings->arrays.video_driver, "gl", 2))
+            if (string_is_equal(settings->arrays.video_driver, "gl"))
             {
                CONFIG_BOOL(
                      list, list_info,
@@ -4216,7 +4216,7 @@ static bool setting_append_list(
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
 #ifdef HAVE_WASAPI
-         if (string_is_equal_fast(settings->arrays.audio_driver, "wasapi", 6))
+         if (string_is_equal(settings->arrays.audio_driver, "wasapi"))
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -5177,7 +5177,7 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-         if (string_is_not_equal_fast(settings->arrays.menu_driver, "rgui", 4))
+         if (string_is_not_equal(settings->arrays.menu_driver, "rgui"))
          {
             CONFIG_PATH(
                   list, list_info,
@@ -5224,7 +5224,7 @@ static bool setting_append_list(
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
          }
 
-         if (string_is_equal_fast(settings->arrays.menu_driver, "xmb", 3))
+         if (string_is_equal(settings->arrays.menu_driver, "xmb"))
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -5372,7 +5372,7 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE);
 
-         if (string_is_equal_fast(settings->arrays.menu_driver, "xmb", 3))
+         if (string_is_equal(settings->arrays.menu_driver, "xmb"))
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -5471,9 +5471,10 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "Display", &group_info, &subgroup_info, parent_group);
 
-         /* only GLUI uses these values, don't show them on other drivers */
-         if (string_is_equal_fast(settings->arrays.menu_driver, "glui", 4))
+         if (string_is_equal(settings->arrays.menu_driver, "glui"))
          {
+            /* only GLUI uses these values, don't show 
+             * them on other drivers */
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.menu_dpi_override_enable,
@@ -5504,9 +5505,10 @@ static bool setting_append_list(
          }
 
 #ifdef HAVE_XMB
-         /* only XMB uses these values, don't show them on other drivers */
-         if (string_is_equal_fast(settings->arrays.menu_driver, "xmb", 3))
+         if (string_is_equal(settings->arrays.menu_driver, "xmb"))
          {
+            /* only XMB uses these values, don't show 
+             * them on other drivers. */
             CONFIG_UINT(
                   list, list_info,
                   &settings->uints.menu_xmb_alpha_factor,
@@ -5758,7 +5760,7 @@ static bool setting_append_list(
 #endif
 				  
 #ifdef HAVE_XMB
-         if (string_is_equal_fast(settings->arrays.menu_driver, "xmb", 3))
+         if (string_is_equal(settings->arrays.menu_driver, "xmb"))
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -5907,9 +5909,10 @@ static bool setting_append_list(
 #endif
 
 #ifdef HAVE_MATERIALUI
-         /* only MaterialUI uses these values, don't show them on other drivers */
-         if (string_is_equal_fast(settings->arrays.menu_driver, "glui", 4))
+         if (string_is_equal(settings->arrays.menu_driver, "glui"))
          {
+            /* only MaterialUI uses these values, don't show 
+             * them on other drivers. */
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.menu_materialui_icons_enable,
@@ -5983,7 +5986,7 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_ADVANCED);
 
-         if (string_is_equal_fast(settings->arrays.menu_driver, "xmb", 3))
+         if (string_is_equal(settings->arrays.menu_driver, "xmb"))
          {
             CONFIG_UINT(
                   list, list_info,
@@ -6392,7 +6395,7 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE);
 
-         if (string_is_not_equal_fast(ui_companion_driver_get_ident(), "null", 4))
+         if (string_is_not_equal(ui_companion_driver_get_ident(), "null"))
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -7487,7 +7490,7 @@ static bool setting_append_list(
                general_read_handler);
          (*list)[list_info->index - 1].action_start = directory_action_start_generic;
 
-         if (string_is_not_equal_fast(settings->arrays.record_driver, "null", 4))
+         if (string_is_not_equal(settings->arrays.record_driver, "null"))
          {
             CONFIG_DIR(
                   list, list_info,
@@ -7653,7 +7656,7 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "State",
                &group_info, &subgroup_info, parent_group);
 
-         if (string_is_not_equal_fast(settings->arrays.camera_driver, "null", 4))
+         if (string_is_not_equal(settings->arrays.camera_driver, "null"))
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -7671,7 +7674,7 @@ static bool setting_append_list(
                   SD_FLAG_NONE);
          }
 
-         if (string_is_not_equal_fast(settings->arrays.location_driver, "null", 4))
+         if (string_is_not_equal(settings->arrays.location_driver, "null"))
          {
             CONFIG_BOOL(
                   list, list_info,

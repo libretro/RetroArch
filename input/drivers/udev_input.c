@@ -615,18 +615,18 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
    action        = udev_device_get_action(dev);
    devnode       = udev_device_get_devnode(dev);
 
-   if (val_key && string_is_equal_fast(val_key, "1", 1) && devnode)
+   if (val_key && string_is_equal(val_key, "1") && devnode)
    {
       /* EV_KEY device, can be a keyboard or a remote control device.  */
       dev_type   = UDEV_INPUT_KEYBOARD;
       cb         = udev_handle_keyboard;
    }
-   else if (val_mouse && string_is_equal_fast(val_mouse, "1", 1) && devnode)
+   else if (val_mouse && string_is_equal(val_mouse, "1") && devnode)
    {
       dev_type   = UDEV_INPUT_MOUSE;
       cb         = udev_handle_mouse;
    }
-   else if (val_touchpad && string_is_equal_fast(val_touchpad, "1", 1) && devnode)
+   else if (val_touchpad && string_is_equal(val_touchpad, "1") && devnode)
    {
       dev_type   = UDEV_INPUT_TOUCHPAD;
       cb         = udev_handle_mouse;
@@ -634,13 +634,13 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
    else
       goto end;
 
-   if (string_is_equal_fast(action, "add", 3))
+   if (string_is_equal(action, "add"))
    {
       RARCH_LOG("[udev]: Hotplug add %s: %s.\n",
             g_dev_type_str[dev_type], devnode);
       udev_input_add_device(udev, dev_type, devnode, cb);
    }
-   else if (string_is_equal_fast(action, "remove", 6))
+   else if (string_is_equal(action, "remove"))
    {
       RARCH_LOG("[udev]: Hotplug remove %s: %s.\n",
             g_dev_type_str[dev_type], devnode);

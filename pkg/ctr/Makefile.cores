@@ -78,7 +78,6 @@ else ifeq ($(LIBRETRO), picodrive)
 	APP_BANNER          = pkg/ctr/assets/picodrive_banner.png
 	APP_USE_SVCHAX      = 1
 
-
 else ifeq ($(LIBRETRO), mgba)
 	APP_TITLE           = mGBA Libretro
 	APP_AUTHOR          = Jeffrey Pfau
@@ -130,7 +129,6 @@ else ifeq ($(LIBRETRO), fbalpha2012_cps2)
 	APP_BANNER          = pkg/ctr/assets/fbalpha2012_cps2_banner.png
 	APP_SYSTEM_MODE     = 80MB
 
-
 else ifeq ($(LIBRETRO), mednafen_pce_fast)
 	APP_TITLE           = Mednafen/Beetle PCE FAST
 	APP_AUTHOR          = Ryphecha
@@ -171,7 +169,6 @@ else ifeq ($(LIBRETRO), mame2003)
 	APP_ICON            = pkg/ctr/assets/mame2003.png
 	APP_BANNER          = pkg/ctr/assets/mame2003_banner.png
 	APP_BIG_TEXT_SECTION = 1
-
 
 else ifeq ($(LIBRETRO), snes9x2002)
 	APP_TITLE           = Snes9x 2002
@@ -241,5 +238,19 @@ else ifeq ($(LIBRETRO), fuse)
    APP_UNIQUE_ID       = 0xBAC1F
    APP_ICON            = pkg/ctr/assets/fuse.png
    APP_BANNER          = pkg/ctr/assets/fuse_banner.png
+   
+else ifeq ($(LIBRETRO), stella)
+	APP_TITLE           = Stella Libretro
+	APP_PRODUCT_CODE    = RARCH-STELLA
+	APP_UNIQUE_ID       = 0xBAC2C
+	APP_ICON            = pkg/ctr/assets/stella.png
+	APP_BANNER          = pkg/ctr/assets/stella_banner.png
+	
+else ifeq ($(LIBRETRO), prosystem)
+	APP_TITLE           = ProSystem Libretro
+	APP_PRODUCT_CODE    = RARCH-PROSYSTEM
+	APP_UNIQUE_ID       = 0xBAC3C
+	APP_ICON            = pkg/ctr/assets/prosystem.png
+	APP_BANNER          = pkg/ctr/assets/prosystem_banner.png
 
 endif

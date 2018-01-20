@@ -405,19 +405,24 @@ static bool format_support(const drmModePlanePtr ovr, uint32_t fmt)
 static uint64_t drm_plane_type(drmModePlane *plane)
 {
    int i,j;
-   /* The property values and their names are stored in different arrays, so we
-    * access them simultaneously here.
-    * We are interested in OVERLAY planes only, that's type 0 or DRM_PLANE_TYPE_OVERLAY
+
+   /* The property values and their names are stored in different arrays, 
+    * so we access them simultaneously here.
+    * We are interested in OVERLAY planes only, that's 
+    * type 0 or DRM_PLANE_TYPE_OVERLAY
     * (see /usr/xf86drmMode.h for definition). */
    drmModeObjectPropertiesPtr props =
-      drmModeObjectGetProperties(drm.fd, plane->plane_id, DRM_MODE_OBJECT_PLANE);
+      drmModeObjectGetProperties(drm.fd, plane->plane_id,
+            DRM_MODE_OBJECT_PLANE);
 
    for (j = 0; j < props->count_props; j++)
    {
       /* found the type property */
-      if (string_is_equal_fast(drmModeGetProperty(drm.fd, props->props[j])->name, "type", 4))
+      if (string_is_equal(
+               drmModeGetProperty(drm.fd, props->props[j])->name, "type"))
          return (props->prop_values[j]);
    }
+
    return (0);
 }
 

@@ -840,7 +840,7 @@ static void *gl_glsl_init(void *data, const char *path)
       bool ret             = false;
       const char *path_ext = path_get_extension(path);
 
-      if (string_is_equal_fast(path_ext, "glslp", 5))
+      if (string_is_equal(path_ext, "glslp"))
       {
          conf = config_file_new(path);
          if (conf)
@@ -849,7 +849,7 @@ static void *gl_glsl_init(void *data, const char *path)
             glsl->shader->modern = true;
          }
       }
-      else if (string_is_equal_fast(path_ext, "glsl", 4))
+      else if (string_is_equal(path_ext, "glsl"))
       {
          strlcpy(glsl->shader->pass[0].source.path, path,
                sizeof(glsl->shader->pass[0].source.path));

@@ -17,6 +17,8 @@
 #ifndef __D3DVIDEO_INTF_H__
 #define __D3DVIDEO_INTF_H__
 
+#include <gfx/math/matrix_4x4.h>
+
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
@@ -54,11 +56,8 @@ typedef struct
 
 typedef struct Vertex
 {
-   float x, y;
-#if defined(HAVE_D3D8)
-   float z;
-   float rhw;
-#endif
+   float x, y, z;
+   uint32_t color;
    float u, v;
 } Vertex;
 
@@ -83,6 +82,8 @@ typedef struct d3d_video
 
    RECT font_rect;
    RECT font_rect_shifted;
+   math_matrix_4x4 mvp;
+   math_matrix_4x4 mvp_transposed;
 
    struct video_viewport vp;
    struct video_shader shader;
@@ -92,6 +93,14 @@ typedef struct d3d_video
    D3DVIEWPORT final_viewport;
 
    char *shader_path;
+
+   struct
+   {
+      int size;
+      int offset;
+      LPDIRECT3DVERTEXBUFFER buffer;
+      void *decl;
+   }menu_display;
 
 #ifdef HAVE_OVERLAY
    size_t overlays_size;

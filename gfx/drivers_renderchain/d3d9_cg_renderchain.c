@@ -74,6 +74,7 @@ struct CGVertex
 struct Pass
 {
    struct LinkInfo info;
+   D3DPOOL pool;
    LPDIRECT3DTEXTURE tex;
    LPDIRECT3DVERTEXBUFFER vertex_buf;
    CGprogram vPrg, fPrg;
@@ -237,15 +238,6 @@ error:
    free(listing_v);
 
    return false;
-}
-
-static void d3d9_cg_renderchain_set_shader_mvp(cg_renderchain_t *chain, void *shader_data, void *matrix_data)
-{
-   CGprogram              *vPrg = (CGprogram*)shader_data;
-   const D3DMATRIX     *matrix  = (const D3DMATRIX*)matrix_data;
-   CGparameter cgpModelViewProj = cgGetNamedParameter(*vPrg, "modelViewProj");
-   if (cgpModelViewProj)
-      cgD3D9SetUniformMatrix(cgpModelViewProj, matrix);
 }
 
 static void d3d9_cg_renderchain_set_shader_params(
@@ -865,7 +857,7 @@ static bool d3d9_cg_renderchain_create_first_pass(
       chain->prev.last_height[i] = 0;
       chain->prev.vertex_buf[i]  = d3d_vertex_buffer_new(
             chain->dev, 4 * sizeof(struct CGVertex),
-            0, 0, D3DPOOL_DEFAULT, NULL);
+            D3DUSAGE_WRITEONLY, 0, D3DPOOL_DEFAULT, NULL);
 
       if (!chain->prev.vertex_buf[i])
          return false;
@@ -873,7 +865,7 @@ static bool d3d9_cg_renderchain_create_first_pass(
       chain->prev.tex[i] = d3d_texture_new(chain->dev, NULL,
             info->tex_w, info->tex_h, 1, 0,
             (fmt == RETRO_PIXEL_FORMAT_RGB565) ? D3DFMT_R5G6B5 : D3DFMT_X8R8G8B8,
-            D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL);
+            D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL, false);
 
       if (!chain->prev.tex[i])
          return false;
@@ -948,13 +940,14 @@ static bool d3d9_cg_renderchain_set_pass_size(
 
       pass->info.tex_w = width;
       pass->info.tex_h = height;
+      pass->pool       = D3DPOOL_DEFAULT;
       pass->tex        = d3d_texture_new(chain->dev, NULL,
             width, height, 1,
             D3DUSAGE_RENDERTARGET,
             chain->passes->data[chain->passes->count - 1].info.pass->fbo.fp_fbo ?
             D3DFMT_A32B32G32R32F : D3DFMT_A8R8G8B8,
             D3DPOOL_DEFAULT, 0, 0, 0,
-            NULL, NULL);
+            NULL, NULL, false);
 
       if (!pass->tex)
          return false;
@@ -1019,7 +1012,7 @@ static void d3d_recompute_pass_sizes(cg_renderchain_t *chain,
       d3d_video_t *d3d)
 {
    unsigned i;
-   struct LinkInfo link_info         = {0};
+   struct LinkInfo link_info;
    unsigned current_width            = d3d->video_info.input_scale * RARCH_SCALE_BASE;
    unsigned current_height           = d3d->video_info.input_scale * RARCH_SCALE_BASE;
    unsigned out_width                = 0;
@@ -1087,6 +1080,7 @@ static bool d3d9_cg_renderchain_add_pass(
    pass.last_width             = 0;
    pass.last_height            = 0;
    pass.attrib_map             = unsigned_vector_list_new();
+   pass.pool                   = D3DPOOL_DEFAULT;
 
    d3d9_cg_load_program(chain, &pass.fPrg,
          &pass.vPrg, info->pass->source.path, true);
@@ -1096,7 +1090,7 @@ static bool d3d9_cg_renderchain_add_pass(
 
    pass.vertex_buf = d3d_vertex_buffer_new(chain->dev,
          4 * sizeof(struct CGVertex),
-         0, 0, D3DPOOL_DEFAULT, NULL);
+         D3DUSAGE_WRITEONLY, 0, D3DPOOL_DEFAULT, NULL);
 
    if (!pass.vertex_buf)
       return false;
@@ -1110,7 +1104,7 @@ static bool d3d9_cg_renderchain_add_pass(
          D3DUSAGE_RENDERTARGET,
          chain->passes->data[chain->passes->count - 1].info.pass->fbo.fp_fbo
          ? D3DFMT_A32B32G32R32F : D3DFMT_A8R8G8B8,
-         D3DPOOL_DEFAULT, 0, 0, 0, NULL, NULL);
+         D3DPOOL_DEFAULT, 0, 0, 0, NULL, NULL, false);
 
    if (!pass.tex)
       return false;
@@ -1144,7 +1138,8 @@ static bool d3d9_cg_renderchain_add_lut(void *data,
          0,
          0,
          NULL,
-         NULL
+         NULL,
+         false
          );
 
    RARCH_LOG("[D3D]: LUT texture loaded: %s.\n", path);
@@ -1190,24 +1185,49 @@ static void d3d9_cg_renderchain_end_render(cg_renderchain_t *chain)
    chain->prev.ptr                          = (chain->prev.ptr + 1) & TEXTURESMASK;
 }
 
-static void d3d9_cg_renderchain_set_mvp(
-      void *chain_data,
-      void *data,
+static void d3d9_cg_renderchain_set_shader_mvp(
+      cg_renderchain_t *chain, CGprogram vPrg, D3DMATRIX *matrix)
+{
+   CGparameter cgpModelViewProj = cgGetNamedParameter(vPrg, "modelViewProj");
+   if (cgpModelViewProj)
+      cgD3D9SetUniformMatrix(cgpModelViewProj, matrix);
+}
+
+static void d3d9_cg_renderchain_calc_and_set_shader_mvp(
+      cg_renderchain_t *chain, CGprogram vPrg,
       unsigned vp_width, unsigned vp_height,
       unsigned rotation)
 {
-   D3DMATRIX proj, ortho, rot, tmp;
-   CGprogram     vPrg      = (CGprogram)data;
-   cg_renderchain_t *chain = (cg_renderchain_t*)chain_data;
+   D3DMATRIX proj, ortho, rot, matrix;
 
    d3d_matrix_ortho_off_center_lh(&ortho, 0, vp_width, 0, vp_height, 0, 1);
    d3d_matrix_identity(&rot);
    d3d_matrix_rotation_z(&rot, rotation * (D3D_PI / 2.0));
 
    d3d_matrix_multiply(&proj, &ortho, &rot);
-   d3d_matrix_transpose(&tmp, &proj);
+   d3d_matrix_transpose(&matrix, &proj);
 
-   d3d9_cg_renderchain_set_shader_mvp(chain, &vPrg, &tmp);
+   d3d9_cg_renderchain_set_shader_mvp(chain, vPrg, &matrix);
+}
+
+static void d3d9_cg_renderchain_set_mvp(
+         void *data,
+         void *chain_data,
+         void *shader_data,
+         const void *mat_data)
+{   
+   d3d_video_t *d3d        = (d3d_video_t*)data;
+
+#if 0
+   cg_renderchain_t *chain = (cg_renderchain_t*)chain_data;
+
+   if(shader_data)
+      d3d9_cg_renderchain_set_shader_mvp(chain, shader_data, mat_data);
+   else
+      d3d9_cg_renderchain_set_shader_mvp(chain, chain->vStock, mat_data);
+#else
+   d3d_set_vertex_shader_constantf(d3d->dev, 0, (const float*)mat_data, 4);
+#endif
 }
 
 static void cg_d3d9_renderchain_set_vertices(
@@ -1297,7 +1317,7 @@ static void cg_d3d9_renderchain_set_vertices(
 
    if (chain)
    {
-      d3d9_cg_renderchain_set_mvp(
+      d3d9_cg_renderchain_calc_and_set_shader_mvp(
             chain, pass->vPrg, vp_width, vp_height, rotation);
       if (pass)
          d3d9_cg_renderchain_set_shader_params(chain, pass,
@@ -1323,7 +1343,9 @@ static void cg_d3d9_renderchain_blit_to_texture(
    D3DLOCKED_RECT d3dlr;
    struct Pass *first = (struct Pass*)&chain->passes->data[0];
 
-   if (first->last_width != width || first->last_height != height)
+   if (
+         (first->last_width != width || first->last_height != height)
+      )
    {
       d3d_lock_rectangle(first->tex, 0, &d3dlr,
             NULL, first->info.tex_h, D3DLOCK_NOSYSLOCK);
@@ -1331,8 +1353,12 @@ static void cg_d3d9_renderchain_blit_to_texture(
             NULL, first->info.tex_h, D3DLOCK_NOSYSLOCK);
    }
 
-   d3d_texture_blit(chain->pixel_size, first->tex,
-         &d3dlr, frame, width, height, pitch);
+   if (d3d_lock_rectangle(first->tex, 0, &d3dlr, NULL, 0, 0))
+   {
+      d3d_texture_blit(chain->pixel_size, first->tex,
+            &d3dlr, frame, width, height, pitch);
+      d3d_unlock_rectangle(first->tex);
+   }
 }
 
 static void cg_d3d9_renderchain_unbind_all(cg_renderchain_t *chain)
@@ -1561,7 +1587,7 @@ static bool d3d9_cg_renderchain_render(
       d3d9_cg_renderchain_end_render(chain);
       cgD3D9BindProgram(chain->fStock);
       cgD3D9BindProgram(chain->vStock);
-      d3d9_cg_renderchain_set_mvp(
+      d3d9_cg_renderchain_calc_and_set_shader_mvp(
             chain, chain->vStock, chain->final_viewport->Width,
             chain->final_viewport->Height, 0);
    }
@@ -1590,13 +1616,10 @@ static void d3d9_cg_renderchain_set_font_rect(
    if (!d3d)
       return;
 
-   d3d->font_rect.left            = d3d->final_viewport.X +
-      d3d->final_viewport.Width * pos_x;
-   d3d->font_rect.right           = d3d->final_viewport.X +
-      d3d->final_viewport.Width;
-   d3d->font_rect.top             = d3d->final_viewport.Y +
-      (1.0f - pos_y) * d3d->final_viewport.Height - font_size;
-   d3d->font_rect.bottom          = d3d->final_viewport.Height;
+   d3d->font_rect.left            = d3d->video_info.width * pos_x;
+   d3d->font_rect.right           = d3d->video_info.width;
+   d3d->font_rect.top             = (1.0f - pos_y) * d3d->video_info.height - font_size;
+   d3d->font_rect.bottom          = d3d->video_info.height;
 
    d3d->font_rect_shifted         = d3d->font_rect;
    d3d->font_rect_shifted.left   -= 2;

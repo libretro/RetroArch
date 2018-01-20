@@ -128,12 +128,13 @@ void logger_send_v(const char *__format, va_list args);
 #else
 void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap);
 void RARCH_LOG(const char *fmt, ...);
-void RARCH_LOG_OUTPUT_V(const char *tag, const char *msg, va_list ap);
 void RARCH_LOG_OUTPUT(const char *msg, ...);
-void RARCH_WARN_V(const char *tag, const char *fmt, va_list ap);
 void RARCH_WARN(const char *fmt, ...);
-void RARCH_ERR_V(const char *tag, const char *fmt, va_list ap);
 void RARCH_ERR(const char *fmt, ...);
+
+#define RARCH_LOG_OUTPUT_V RARCH_LOG_V
+#define RARCH_WARN_V RARCH_LOG_V
+#define RARCH_ERR_V RARCH_LOG_V
 #endif
 
 RETRO_END_DECLS
