@@ -1818,7 +1818,7 @@ static void frontend_unix_get_env(int *argc,
 
    if (xdg)
       snprintf(base_path, sizeof(base_path),
-            "%s/retroarch", xdg);
+            "%s/retroarch/", xdg);
    else if (home)
       snprintf(base_path, sizeof(base_path),
             "%s/.config/retroarch", home);
@@ -1826,11 +1826,11 @@ static void frontend_unix_get_env(int *argc,
       snprintf(base_path, sizeof(base_path), "retroarch");
 
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], base_path,
-         "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+         "cores/", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], base_path,
-         "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
+         "cores/", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG], base_path,
-         "autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
+         "autoconfig/", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
 
    if (path_is_directory("/usr/local/share/retroarch/assets"))
       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS],
@@ -1884,6 +1884,7 @@ static void frontend_unix_get_env(int *argc,
    for (i = 0; i < DEFAULT_DIR_LAST; i++)
    {
       const char *dir_path = g_defaults.dirs[i];
+	  printf("dir_path = \"%s\"\n", dir_path);
       if (!string_is_empty(dir_path))
          path_mkdir(dir_path);
    }
