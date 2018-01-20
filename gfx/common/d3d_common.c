@@ -29,10 +29,28 @@
 
 #include "d3d_common.h"
 
+#ifdef HAVE_D3DX
+
 #if defined(HAVE_D3D9)
+
+#ifdef _XBOX
+#include <d3dx9core.h>
+#include <d3dx9tex.h>
+#else
 #include "../include/d3d9/d3dx9tex.h"
+#endif
+
 #elif defined(HAVE_D3D8)
+
+#ifdef _XBOX
+#include <d3dx8core.h>
+#include <d3dx8tex.h>
+#else
 #include "../include/d3d8/d3dx8tex.h"
+#endif
+
+#endif
+
 #endif
 
 #ifdef _XBOX
