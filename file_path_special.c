@@ -106,7 +106,6 @@ bool fill_pathname_application_data(char *s, size_t len)
    if (xdg)
    {
       fill_pathname_join(s, xdg, "retroarch/", len);
-	  printf("Filling \"%s\"\n", s);
       return true;
    }
 

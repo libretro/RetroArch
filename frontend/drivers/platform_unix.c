@@ -1884,7 +1884,6 @@ static void frontend_unix_get_env(int *argc,
    for (i = 0; i < DEFAULT_DIR_LAST; i++)
    {
       const char *dir_path = g_defaults.dirs[i];
-	  printf("dir_path = \"%s\"\n", dir_path);
       if (!string_is_empty(dir_path))
          path_mkdir(dir_path);
    }
