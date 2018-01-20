@@ -180,6 +180,16 @@ static int16_t xdk_joypad_axis(unsigned port_num, uint32_t joyaxis)
       case 3:
          val = pad->sThumbRY;
          break;
+      case 4:
+#ifdef _XBOX360
+         val = pad->bLeftTrigger  * 32767 / 255;
+#endif
+         break; /* map 0..255 to 0..32767 */
+      case 5:
+#ifdef _XBOX360
+         val = pad->bRightTrigger * 32767 / 255;
+#endif
+         break;
    }
 
    if (is_neg && val > 0)
@@ -295,8 +305,6 @@ static void xdk_joypad_poll(void)
       *state_cur |= ((g_xinput_states[port].xstate.Gamepad.wButtons & XINPUT_GAMEPAD_A) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_B) : 0);
       *state_cur |= ((g_xinput_states[port].xstate.Gamepad.wButtons & XINPUT_GAMEPAD_Y) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_X) : 0);
       *state_cur |= ((g_xinput_states[port].xstate.Gamepad.wButtons & XINPUT_GAMEPAD_X) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_Y) : 0);
-      *state_cur |= ((g_xinput_states[port].xstate.Gamepad.bLeftTrigger > 128) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L) : 0);
-      *state_cur |= ((g_xinput_states[port].xstate.Gamepad.bRightTrigger > 128) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R) : 0);
       *state_cur |= ((g_xinput_states[port].xstate.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L2) : 0);
       *state_cur |= ((g_xinput_states[port].xstate.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R2) : 0);
 #endif
