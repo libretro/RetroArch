@@ -389,6 +389,7 @@ typedef struct settings
       char menu_driver[32];
       char cheevos_username[32];
       char cheevos_password[32];
+      char cheevos_token[32];
       char video_context_driver[32];
       char audio_driver[32];
       char audio_resampler[32];
