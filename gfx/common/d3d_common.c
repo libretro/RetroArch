@@ -162,55 +162,48 @@ void *d3d_create(void)
 }
 
 #ifdef HAVE_DYNAMIC_D3D
-dylib_t dylib_load_d3dx(void)
+
+#ifdef HAVE_D3DX
+static const char *d3dx9_dll_list[] = 
 {
-   dylib_t dll = NULL;
+   "d3dx9_24.dll",
+   "d3dx9_25.dll",
+   "d3dx9_26.dll",
+   "d3dx9_27.dll",
+   "d3dx9_28.dll",
+   "d3dx9_29.dll",
+   "d3dx9_30.dll",
+   "d3dx9_31.dll",
+   "d3dx9_32.dll",
+   "d3dx9_33.dll",
+   "d3dx9_34.dll",
+   "d3dx9_35.dll",
+   "d3dx9_36.dll",
+   "d3dx9_37.dll",
+   "d3dx9_38.dll",
+   "d3dx9_39.dll",
+   "d3dx9_40.dll",
+   "d3dx9_41.dll",
+   "d3dx9_42.dll",
+   "d3dx9_43.dll",
+   NULL
+};
+
+static dylib_t dylib_load_d3dx(void)
+{
+   dylib_t dll           = NULL;
 
 #if defined(HAVE_D3D9)
-   dll = dylib_load("d3dx9_24.dll");
+   const char **dll_name = d3dx9_dll_list;
 
-   if (!dll)
-      dll = dylib_load("d3dx9_25.dll");
-   if (!dll)
-      dll = dylib_load("d3dx9_26.dll");
-   if (!dll)
-      dll = dylib_load("d3dx9_27.dll");
-   if (!dll)
-      dll = dylib_load("d3dx9_28.dll");
-   if (!dll)
-      dll = dylib_load("d3dx9_29.dll");
-   if (!dll)
-      dll = dylib_load("d3dx9_30.dll");
-   if (!dll)
-      dll = dylib_load("d3dx9_31.dll");
-   if (!dll)
-      dll = dylib_load("d3dx9_32.dll");
-   if (!dll)
-      dll = dylib_load("d3dx9_33.dll");
-   if (!dll)
-      dll = dylib_load("d3dx9_34.dll");
-   if (!dll)
-      dll = dylib_load("d3dx9_35.dll");
-   if (!dll)
-      dll = dylib_load("d3dx9_36.dll");
-   if (!dll)
-      dll = dylib_load("d3dx9_37.dll");
-   if (!dll)
-      dll = dylib_load("d3dx9_38.dll");
-   if (!dll)
-      dll = dylib_load("d3dx9_39.dll");
-   if (!dll)
-      dll = dylib_load("d3dx9_40.dll");
-   if (!dll)
-      dll = dylib_load("d3dx9_41.dll");
-   if (!dll)
-      dll = dylib_load("d3dx9_42.dll");
-   if (!dll)
-      dll = dylib_load("d3dx9_43.dll");
+   while (!dll && *dll_name)
+      dll = dylib_load(*dll_name++);
 #endif
 
    return dll;
 }
+#endif
+
 #endif
 
 bool d3d_initialize_symbols(void)
@@ -221,12 +214,12 @@ bool d3d_initialize_symbols(void)
 
 #if defined(HAVE_D3D9)
 #if defined(DEBUG) || defined(_DEBUG)
-   g_d3d_dll  = dylib_load("d3d9d.dll");
+   g_d3d_dll     = dylib_load("d3d9d.dll");
    if(!g_d3d_dll)
 #endif
       g_d3d_dll  = dylib_load("d3d9.dll");
 #ifdef HAVE_D3DX
-   g_d3dx_dll = dylib_load_d3dx();
+   g_d3dx_dll    = dylib_load_d3dx();
 #endif
 
    if (!g_d3d_dll)
@@ -238,7 +231,7 @@ bool d3d_initialize_symbols(void)
 
 #elif defined(HAVE_D3D8)
 #if defined(DEBUG) || defined(_DEBUG)
-   g_d3d_dll  = dylib_load("d3d8d.dll");
+   g_d3d_dll     = dylib_load("d3d8d.dll");
    if(!g_d3d_dll)
 #endif
       g_d3d_dll  = dylib_load("d3d8.dll");
