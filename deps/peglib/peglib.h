@@ -1,4 +1,4 @@
-﻿//
+//
 //  peglib.h
 //
 //  Copyright (c) 2015-17 Yuji Hirose. All rights reserved.
@@ -2238,6 +2238,20 @@ struct AstBase : public Annotation
 
     std::vector<std::shared_ptr<AstBase<Annotation>>> nodes;
     std::shared_ptr<AstBase<Annotation>>              parent;
+    static peg::AstBase<Annotation> empty;
+    AstBase<Annotation>& operator [] (const char* name)
+    {
+       for(std::shared_ptr<AstBase<Annotation>>& node : nodes)
+       {
+          if(node->name == name)
+             return *node;
+       }
+       return empty;
+    }
+    operator const char *()
+    {
+       return token.c_str();
+    }
 };
 
 template <typename T>
@@ -2769,6 +2783,14 @@ private:
 };
 
 } // namespace peg
+
+
+template<class _Elem, class _Traits, typename Annotation>
+std::basic_ios<_Elem, _Traits> &operator << (std::basic_ios<_Elem, _Traits> &ios,
+      peg::AstBase<Annotation> &node)
+{
+   return ios << node.token.c_str();
+}
 
 #endif
 
