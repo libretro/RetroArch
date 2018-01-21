@@ -170,7 +170,7 @@ static unsigned swap_interval = 1;
 static const bool video_threaded = false;
 
 #if defined(HAVE_THREADS)
-#if defined(GEKKO) || defined(PSP) || defined(_3DS) || defined(_XBOX1)
+#if defined(GEKKO) || defined(PSP) || defined(_3DS)
 /* For single-core consoles right now it's better to have this be disabled. */
 static const bool threaded_data_runloop_enable = false;
 #else
