@@ -71,6 +71,7 @@ RetroArch has been ported to the following platforms:
    - NetBSD
    - OpenBSD
    - Haiku
+   - Solaris
    - MacOS X
    - PlayStation 3
    - PlayStation Portable
