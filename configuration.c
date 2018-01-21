@@ -132,6 +132,8 @@ enum video_driver_enum
    VIDEO_CTR,
    VIDEO_SWITCH,
    VIDEO_D3D9,
+   VIDEO_D3D11,
+   VIDEO_D3D12,
    VIDEO_VG,
    VIDEO_OMAP,
    VIDEO_EXYNOS,
@@ -695,6 +697,10 @@ const char *config_get_default_video(void)
       case VIDEO_XDK_D3D:
       case VIDEO_D3D9:
          return "d3d";
+      case VIDEO_D3D11:
+         return "d3d11";
+      case VIDEO_D3D12:
+         return "d3d12";
       case VIDEO_PSP1:
          return "psp1";
       case VIDEO_VITA2D:

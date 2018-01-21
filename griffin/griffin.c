@@ -345,6 +345,14 @@ VIDEO DRIVER
 
 #endif
 
+#if defined(HAVE_D3D11)
+#include "../gfx/drivers/d3d11.c"
+#endif
+
+#if defined(HAVE_D3D12)
+#include "../gfx/drivers/d3d12.c"
+#endif
+
 #if defined(GEKKO)
 #ifdef HW_RVL
 #include "../gfx/drivers/gx_gfx_vi_encoder.c"
