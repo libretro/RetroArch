@@ -7,6 +7,10 @@ ARCH            = amd64
 BUILD_DIR       = objs/msvc
 
 
+WindowsSdkDir = C:\Program Files (x86)\Windows Kits\10\$(NOTHING)
+WindowsSDKVersion := 10.0.14393.0\$(NOTHING)
+VCINSTALLDIR := C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\$(NOTHING)
+
 HAVE_D3DX                := 1
 HAVE_D3D8                := 0
 HAVE_D3D9                := 1
@@ -14,6 +18,7 @@ HAVE_D3D11               := 1
 HAVE_D3D12               := 1
 HAVE_CG                  := 1
 HAVE_OPENGL              := 1
+HAVE_VULKAN              := 1
 
 HAVE_RPNG                := 1
 HAVE_ZLIB                := 1
@@ -44,6 +49,14 @@ HAVE_LANGEXTRA           := 1
 HAVE_CHEEVOS             := 1
 HAVE_KEYMAPPER           := 1
 
+include Makefile.common
+CXXFLAGS  := $(filter-out  -fpermissive -Wno-switch -Wno-sign-compare -fno-strict-aliasing -Wno-maybe-uninitialized -Wno-reorder -Wno-parentheses,$(CXXFLAGS))
+CXXFLAGS  += $(CFLAGS)
+LIBS      := $(filter-out  -lstdc++,$(LIBS))
+ifeq ($(HAVE_VULKAN),1)
+   DEFINES += -DHAVE_VULKAN
+endif
+
 ifeq ($(ARCH),x64)
    ARCH := amd64
 endif
@@ -72,10 +85,6 @@ CROSS =
 endif
 
 
-WindowsSdkDir = C:\Program Files (x86)\Windows Kits\10\$(NOTHING)
-WindowsSDKVersion := 10.0.14393.0\$(NOTHING)
-VCINSTALLDIR := C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\$(NOTHING)
-
 INCLUDE := $(VCINSTALLDIR)include;$(VCINSTALLDIR)atlmfc\include;$(WindowsSdkDir)include\$(WindowsSDKVersion)ucrt;$(WindowsSdkDir)include\$(WindowsSDKVersion)shared;$(WindowsSdkDir)include\$(WindowsSDKVersion)um;
 LIB     := $(VCINSTALLDIR)LIB\$(CROSS);$(VCINSTALLDIR)atlmfc\lib\$(CROSS);$(WindowsSdkDir)lib\$(WindowsSDKVersion)ucrt\$(TARGET_ARCH2);$(WindowsSdkDir)lib\$(WindowsSDKVersion)um\$(TARGET_ARCH2);C:\Program Files (x86)\NVIDIA Corporation\Cg\lib.$(TARGET_ARCH2);C:\Program Files (x86)\Microsoft DirectX SDK (February 2010)\Lib\$(TARGET_ARCH2);
 LIBPATH := $(VCINSTALLDIR)LIB\$(CROSS);$(VCINSTALLDIR)atlmfc\lib\$(CROSS);
@@ -97,7 +106,6 @@ export PATH    := $(PATH)
 #$(info PATH : $(PATH))
 #$(error end)
 
-DEFINES :=
 ifeq ($(TARGET_ARCH),x64)
 DEFINES += -D__x86_64__
 else
@@ -112,7 +120,7 @@ FLAGS  += -Gm- -Zc:inline -fp:precise -Zc:forScope -GR- -Gd -Oi -volatile:iso
 
 
 CFLAGS += -TC
-CXXFLAGS += -TP
+CXXFLAGS += -TP -EHsc
 WARNINGS += -WX -W3
 WARNINGS += -wd4101 -wd4996 -wd4244 -wd4267 -wd4090 -wd4305 -wd4146 -wd4334 -wd4018
 
@@ -130,13 +138,9 @@ FLAGS += -GS -Gy -Od -RTC1 -D_SECURE_SCL=1 -Zi
 FLAGS += -MDd
 LDFLAGS += -DEBUG
 DEFINES += -DDEBUG -D_DEBUG
-#LIBS +=  -ld3d9 -ld3dx9d
-
 else
 FLAGS += -GS- -Gy- -O2 -Ob2 -GF -GT -Oy -Ot -D_SECURE_SCL=0
 FLAGS += -MD
-#LIBS +=  -ld3d9 -ld3dx9
-
 endif
 
 
@@ -155,21 +159,16 @@ ifneq ($(V), 1)
 endif
 
 
-OBJ :=
-include Makefile.common
-
 ifeq ($(GRIFFIN_BUILD), 1)
-   OBJ := griffin/griffin.o
-   DEFINES_BLACKLIST := -DHAVE_COMPRESSION
-   DEFINES := $(filter-out $(DEFINES_BLACKLIST),$(DEFINES))
-   DEFINES += -DHAVE_GRIFFIN -DUSE_MATH_DEFINES
+   OBJ       := griffin/griffin.o griffin/griffin_cpp.o
+   DEFINES   += -DHAVE_GRIFFIN -DUSE_MATH_DEFINES
 else
-   DEFINES += -DJSON_STATIC
+   DEFINES   += -DWANT_GLSLANG
    BLACKLIST :=
    OBJ := $(filter-out $(BLACKLIST),$(OBJ))
 endif
 
-DEFINES += -DRARCH_INTERNAL -DHAVE_DYNAMIC
+DEFINES += -DRARCH_INTERNAL -DHAVE_DYNAMIC -DJSON_STATIC
 INCLUDE_DIRS += -I. -Igfx/include
 
 #OBJ := version_git.o
@@ -178,11 +177,9 @@ OBJ := $(patsubst %rarch.o,%rarch.res,$(OBJ))
 OBJ := $(addprefix $(BUILD_DIR)/,$(OBJ))
 OBJ := $(OBJ:.o=.obj)
 
-#INCDIRS := -I. -Ideps -Ideps/stb -Ideps/libz -Ideps/7zip -Ilibretro-common/include
 
 
-#CFLAGS = $(FLAGS)
-#CXXFLAGS = $(FLAGS)
+
 LDFLAGS += -WX -SUBSYSTEM:WINDOWS -ENTRY:mainCRTStartup
 
 DEFINES := $(patsubst -f%,,$(DEFINES))
@@ -233,28 +230,23 @@ MAKEDEPS = echo $@: $< \\ > $(BUILD_DIR)/$*.depend && \
 #MAKEDEPS :=
 
 $(BUILD_DIR)/%.obj: %.cpp
-	@$(if $(Q), echo CXX $<,)
 	@mkdir -p $(dir $@)
 	$(Q)$(CXX) -c -Fo:$@ $< $(FLAGS) $(CXXFLAGS) $(DEFINES) $(INCLUDE_DIRS) $(WARNINGS) $(DEPFLAGS)
 	@$(MAKEDEPS)
 
 $(BUILD_DIR)/%.obj: %.c
-	@$(if $(Q), echo CC $<,)
 	@mkdir -p $(dir $@)
 	$(Q)$(CC) -c -Fo:$@ $< $(FLAGS) $(CFLAGS) $(DEFINES) $(INCLUDE_DIRS) $(WARNINGS) $(DEPFLAGS)
 	@$(MAKEDEPS)
 
 $(BUILD_DIR)/%.res: %.rc
-	@$(if $(Q), echo RC $<,)
 	@mkdir -p $(dir $@)
 	$(Q)$(RC) $<
 	$(Q)mv $*.res $@
 
 $(BUILD_DIR)/$(TARGET): $(OBJ) .$(TARGET).last
-	@$(if $(Q), echo LD $@,)
 	@touch .$(TARGET).last
 	$(Q)$(LD) $(OBJ) $(LDFLAGS) $(LIBS) -out:$(BUILD_DIR)/$(TARGET)
-
 
 %.depend: ;
 %.last: ;
