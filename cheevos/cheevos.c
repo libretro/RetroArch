@@ -3441,32 +3441,46 @@ found:
 
                   if (cheevos_locals.token[0])
                      CORO_RET();
+                  bool via_token = false;
 
                   {
                      char urle_user[64];
-                     char urle_pwd[64];
+                     char urle_login[64];
                      const char *username = coro ? coro->settings->arrays.cheevos_username : NULL;
-                     const char *password = coro ? coro->settings->arrays.cheevos_password : NULL;
+                     const char *login;
 
-                     if (!username || !*username || !password || !*password)
+                     if (coro)
+                     {
+                        if (coro->settings->arrays.cheevos_token[0])
+                        {
+                           login = coro->settings->arrays.cheevos_token;
+                           via_token = true;
+                        }
+                        else
+                           login = coro->settings->arrays.cheevos_password;
+                     }
+                     else
+                        login = NULL;
+
+                     if (!username || !*username || !login || !*login)
                      {
                         runloop_msg_queue_push(
-                              "Missing Retro Achievements account information.",
+                              "Missing RetroAchievements account information.",
                               0, 5 * 60, false);
                         runloop_msg_queue_push(
                               "Please fill in your account information in Settings.",
                               0, 5 * 60, false);
-                        RARCH_ERR("[CHEEVOS]: username and/or password not informed.\n");
+                        RARCH_ERR("[CHEEVOS]: login info not informed.\n");
                         return 0;
                      }
 
                      cheevos_url_encode(username, urle_user, sizeof(urle_user));
-                     cheevos_url_encode(password, urle_pwd, sizeof(urle_pwd));
+                     cheevos_url_encode(login, urle_login, sizeof(urle_login));
 
                      snprintf(
                            coro->url, sizeof(coro->url),
-                           "http://retroachievements.org/dorequest.php?r=login&u=%s&p=%s",
-                           urle_user, urle_pwd
+                           "http://retroachievements.org/dorequest.php?r=login&u=%s&%c=%s",
+                           urle_user, via_token ? 't' : 'p', urle_login
                            );
 
                      coro->url[sizeof(coro->url) - 1] = 0;
@@ -3501,12 +3515,28 @@ found:
                            msg[sizeof(msg) - 1] = 0;
                            runloop_msg_queue_push(msg, 0, 3 * 60, false);
                         }
+
+                        /* Save token to config and clear pass on success */
+                        *coro->settings->arrays.cheevos_password = '\0';
+                        strncpy(
+                           coro->settings->arrays.cheevos_token, 
+                           cheevos_locals.token, sizeof(cheevos_locals.token)
+                        );
+
                         CORO_RET();
                      }
                   }
 
-                  runloop_msg_queue_push("Retro Achievements login error.", 0, 5 * 60, false);
-                  RARCH_ERR("[CHEEVOS]: error getting user token.\n");
+                  runloop_msg_queue_push("RetroAchievements login error.", 0, 5 * 60, false);
+
+                  if (!via_token)
+                     RARCH_ERR("[CHEEVOS]: error signing in using password.\n");
+                  else
+                  {
+                     RARCH_ERR("[CHEEVOS]: error signing in using token.\n");
+                     *coro->settings->arrays.cheevos_token = '\0';
+                  }
+
                   return 0;
 
                   /**************************************************************************
