@@ -12,6 +12,8 @@
 - COMMON: New LED API. Driver implemented for Raspberry Pi, proof of concept implemented for core MAME 2003.
 - D3D8: Direct3D 8 can now work on systems that have Direct3D 8 installed.
 - D3D9: Add menu support for MaterialUI/XMB.
+- D3D11: Initial video driver implementation.
+- D3D12: Initial video driver implementation.
 - DINPUT: don't reinitialize input driver on network events / media insertion / network drive connection
 - INPUT: show friendly names when available under input binds and system information
 - INPUT: show the config name when available under system information
@@ -25,11 +27,12 @@
 - LOCALIZATION: Update Italian translation.
 - LOCALIZATION: Update Japanese translation.
 - LOCALIZATION: Update Spanish translation.
-- SWITCH: Initial Nintendo Switch port, based on libtransistor SDK.
 - SOLARIS: Initial port.
+- SWITCH: Initial Nintendo Switch port, based on libtransistor SDK.
 - PS3: Enable Cheevos.
 - PSP: Enable threading support through pthreads.
 - SHIELD ATV: Allow the remote / gamepad takeover hack to work with the 2017 gamepad
+- VULKAN: Fix swapchain recreation bug on Nvidia GPUs with Windows 10 through workaround (will be properly resolved in a future driver version).
 - WINDOWS: Improved Unicode support (for cores/directory creation and 7zip archives).
 - WINDOWS: Show progress meter on taskbar for downloads (Windows 7 and up).
 - WINDOWS: WS_EX_LAYERED drastically decreases performance, so only set it when needed (transparency in windowed mode).
