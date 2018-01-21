@@ -25,6 +25,16 @@
 #include "gfx/common/d3d12_common.h"
 #include "gfx/common/d3dcompiler_common.h"
 
+static void d3d12_set_filtering(void *data, unsigned index, bool smooth)
+{
+   d3d12_video_t *d3d12 = (d3d12_video_t *)data;
+
+   if (smooth)
+      d3d12->frame.sampler = d3d12->sampler_linear;
+   else
+      d3d12->frame.sampler = d3d12->sampler_nearest;
+}
+
 static void *d3d12_gfx_init(const video_info_t *video,
                             const input_driver_t **input, void **input_data)
 {
@@ -52,7 +62,7 @@ static void *d3d12_gfx_init(const video_info_t *video,
    d3d12->chain.vsync = video->vsync;
    d3d12->frame.rgb32 = video->rgb32;
 
-   if (!d3d12_init_context(d3d12))
+   if (!d3d12_init_base(d3d12))
       goto error;
 
    if (!d3d12_init_descriptors(d3d12))
@@ -61,36 +71,17 @@ static void *d3d12_gfx_init(const video_info_t *video,
    if (!d3d12_init_pipeline(d3d12))
       goto error;
 
-   if(!d3d12_init_queue(d3d12))
-      return false;
+   if (!d3d12_init_queue(d3d12))
+      goto error;
 
    if (!d3d12_init_swapchain(d3d12, video->width, video->height, main_window.hwnd))
       goto error;
 
+   d3d12_create_fullscreen_quad_vbo(d3d12->device, &d3d12->frame.vbo_view, &d3d12->frame.vbo);
+   d3d12_create_fullscreen_quad_vbo(d3d12->device, &d3d12->menu.vbo_view,  &d3d12->menu.vbo);
 
-   {
-      d3d12_vertex_t vertices[] =
-      {
-         {{ -1.0f, -1.0f}, {0.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},
-         {{ -1.0f,  1.0f}, {0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},
-         {{ 1.0f, -1.0f}, {1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},
-         {{ 1.0f,  1.0f}, {1.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},
-      };
+   d3d12_set_filtering(d3d12, 0, video->smooth);
 
-      d3d12->frame.vbo_view.SizeInBytes = sizeof(vertices);
-      d3d12->frame.vbo_view.StrideInBytes = sizeof(*vertices);
-      d3d12_create_vertex_buffer(d3d12->device, &d3d12->frame.vbo_view, &d3d12->frame.vbo);
-
-      {
-         void *vertex_data_begin;
-         D3D12_RANGE read_range = {0, 0};
-
-         D3D12Map(d3d12->frame.vbo, 0, &read_range, &vertex_data_begin);
-         memcpy(vertex_data_begin, vertices, sizeof(vertices));
-         D3D12Unmap(d3d12->frame.vbo, 0, NULL);
-      }
-
-   }
    return d3d12;
 
 error:
@@ -104,20 +95,21 @@ static bool d3d12_gfx_frame(void *data, const void *frame,
                             unsigned width, unsigned height, uint64_t frame_count,
                             unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
-   D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle;
    d3d12_video_t *d3d12 = (d3d12_video_t *)data;
 
    (void)msg;
-   (void)rtvHandle;
 
    D3D12ResetCommandAllocator(d3d12->queue.allocator);
 
    D3D12ResetGraphicsCommandList(d3d12->queue.cmd, d3d12->queue.allocator, d3d12->pipe.handle);
    D3D12SetGraphicsRootSignature(d3d12->queue.cmd, d3d12->pipe.rootSignature);
-   D3D12SetDescriptorHeaps(d3d12->queue.cmd, 1, &d3d12->pipe.srv_heap.handle);
+   {
+      D3D12DescriptorHeap desc_heaps [] = {d3d12->pipe.srv_heap.handle, d3d12->pipe.sampler_heap.handle};
+      D3D12SetDescriptorHeaps(d3d12->queue.cmd, countof(desc_heaps), desc_heaps);
+   }
 
-   d3d12_transition(d3d12->queue.cmd, d3d12->chain.renderTargets[d3d12->chain.frame_index],
-                    D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+   d3d12_resource_transition(d3d12->queue.cmd, d3d12->chain.renderTargets[d3d12->chain.frame_index],
+                             D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
    D3D12RSSetViewports(d3d12->queue.cmd, 1, &d3d12->chain.viewport);
    D3D12RSSetScissorRects(d3d12->queue.cmd, 1, &d3d12->chain.scissorRect);
@@ -131,7 +123,7 @@ static bool d3d12_gfx_frame(void *data, const void *frame,
    if (data && width && height)
    {
       if (!d3d12->frame.tex.handle || (d3d12->frame.tex.desc.Width != width)
-            || (d3d12->frame.tex.desc.Height = height))
+            || (d3d12->frame.tex.desc.Height != height))
       {
          if (d3d12->frame.tex.handle)
             Release(d3d12->frame.tex.handle);
@@ -143,15 +135,18 @@ static bool d3d12_gfx_frame(void *data, const void *frame,
          d3d12->frame.tex.desc.Height = height;
          d3d12->frame.tex.desc.Format = d3d12->frame.rgb32 ? DXGI_FORMAT_B8G8R8A8_UNORM :
                                         DXGI_FORMAT_B5G6R5_UNORM;
-         d3d12_create_texture(d3d12->device, &d3d12->pipe.srv_heap, 0, &d3d12->frame.tex);
+         d3d12_create_texture(d3d12->device, &d3d12->pipe.srv_heap, SRV_HEAP_SLOT_FRAME_TEXTURE,
+                              &d3d12->frame.tex);
       }
 
       {
          unsigned i;
+         D3D12_RANGE read_range = {0, 0};
          const uint8_t *in  = frame;
          uint8_t       *out = NULL;
 
-         D3D12Map(d3d12->frame.tex.upload_buffer, 0, NULL, &out);
+
+         D3D12Map(d3d12->frame.tex.upload_buffer, 0, &read_range, &out);
          out += d3d12->frame.tex.layout.Offset;
 
          for (i = 0; i < height; i++)
@@ -165,28 +160,27 @@ static bool d3d12_gfx_frame(void *data, const void *frame,
       }
 
       d3d12_upload_texture(d3d12->queue.cmd, &d3d12->frame.tex);
+
+      d3d12_set_texture(d3d12->queue.cmd, &d3d12->frame.tex);
+      d3d12_set_sampler(d3d12->queue.cmd, d3d12->frame.sampler);
       D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->frame.vbo_view);
-      D3D12SetGraphicsRootDescriptorTable(d3d12->queue.cmd, 0,
-                                          d3d12->frame.tex.gpu_descriptor); /* set texture */
       D3D12DrawInstanced(d3d12->queue.cmd, 4, 1, 0, 0);
    }
-
 
    if (d3d12->menu.enabled && d3d12->menu.tex.handle)
    {
-      if(d3d12->menu.tex.dirty)
+      if (d3d12->menu.tex.dirty)
          d3d12_upload_texture(d3d12->queue.cmd, &d3d12->menu.tex);
-#if 0
-         D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->frame.vbo_view);
-#endif
-      D3D12SetGraphicsRootDescriptorTable(d3d12->queue.cmd, 0,
-                                          d3d12->menu.tex.gpu_descriptor); /* set texture */
+
+      d3d12_set_texture(d3d12->queue.cmd, &d3d12->menu.tex);
+      d3d12_set_sampler(d3d12->queue.cmd, d3d12->menu.sampler);
+      D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->menu.vbo_view);
       D3D12DrawInstanced(d3d12->queue.cmd, 4, 1, 0, 0);
    }
 
 
-   d3d12_transition(d3d12->queue.cmd, d3d12->chain.renderTargets[d3d12->chain.frame_index],
-                    D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+   d3d12_resource_transition(d3d12->queue.cmd, d3d12->chain.renderTargets[d3d12->chain.frame_index],
+                             D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
    D3D12CloseGraphicsCommandList(d3d12->queue.cmd);
 
    D3D12ExecuteGraphicsCommandLists(d3d12->queue.handle, 1, &d3d12->queue.cmd);
@@ -229,8 +223,13 @@ static bool d3d12_gfx_alive(void *data)
    bool resize;
    unsigned width;
    unsigned height;
+
    win32_check_window(&quit, &resize, &width, &height);
-   return true;
+
+   if (width != 0 && height != 0)
+      video_driver_set_size(&width, &height);
+
+   return !quit;
 }
 
 static bool d3d12_gfx_focus(void *data)
@@ -256,10 +255,14 @@ static void d3d12_gfx_free(void *data)
    d3d12_video_t *d3d12 = (d3d12_video_t *)data;
 
    Release(d3d12->frame.vbo);
+
    if (d3d12->frame.tex.handle)
-   Release(d3d12->frame.tex.handle);
+      Release(d3d12->frame.tex.handle);
+
    if (d3d12->frame.tex.upload_buffer)
-   Release(d3d12->frame.tex.upload_buffer);
+      Release(d3d12->frame.tex.upload_buffer);
+
+   Release(d3d12->menu.vbo);
 
    if (d3d12->menu.tex.handle)
       Release(d3d12->menu.tex.handle);
@@ -267,6 +270,7 @@ static void d3d12_gfx_free(void *data)
    if (d3d12->menu.tex.handle)
       Release(d3d12->menu.tex.upload_buffer);
 
+   Release(d3d12->pipe.sampler_heap.handle);
    Release(d3d12->pipe.srv_heap.handle);
    Release(d3d12->pipe.rtv_heap.handle);
    Release(d3d12->pipe.rootSignature);
@@ -341,19 +345,22 @@ static void d3d12_set_menu_texture_frame(void *data,
       d3d12->menu.tex.desc.Width = width;
       d3d12->menu.tex.desc.Height = height;
       d3d12->menu.tex.desc.Format = rgb32 ? DXGI_FORMAT_B8G8R8A8_UNORM : DXGI_FORMAT_B4G4R4A4_UNORM;
-      d3d12_create_texture(d3d12->device, &d3d12->pipe.srv_heap, 1, &d3d12->menu.tex);
+      d3d12_create_texture(d3d12->device, &d3d12->pipe.srv_heap, SRV_HEAP_SLOT_MENU_TEXTURE,
+                           &d3d12->menu.tex);
    }
 
-   {
+   {      
       unsigned i, j;
+      D3D12_RANGE read_range = {0, 0};
       uint8_t *out  = NULL;
 
-      D3D12Map(d3d12->menu.tex.upload_buffer, 0, NULL, &out);
+      D3D12Map(d3d12->menu.tex.upload_buffer, 0, &read_range, &out);
       out += d3d12->menu.tex.layout.Offset;
 
-      if(rgb32)
+      if (rgb32)
       {
          const uint32_t *in = frame;
+
          for (i = 0; i < height; i++)
          {
             memcpy(out, in, width * sizeof(*in));
@@ -364,6 +371,7 @@ static void d3d12_set_menu_texture_frame(void *data,
       else
       {
          const uint16_t *in = frame;
+
          for (i = 0; i < height; i++)
          {
             for (j = 0; j < width; j++)
@@ -373,8 +381,9 @@ static void d3d12_set_menu_texture_frame(void *data,
                unsigned b = ((in[j] >>  4) & 0xF);
                unsigned a = ((in[j] >>  0) & 0xF);
 
-               ((uint16_t*)out)[j] = (b << 0) | (g << 4) | (r << 8) |(a << 12);
+               ((uint16_t *)out)[j] = (b << 0) | (g << 4) | (r << 8) | (a << 12);
             }
+
             in += width;
             out += d3d12->menu.tex.layout.Footprint.RowPitch;
          }
@@ -383,8 +392,23 @@ static void d3d12_set_menu_texture_frame(void *data,
 
       D3D12Unmap(d3d12->menu.tex.upload_buffer, 0, NULL);
    }
+
    d3d12->menu.tex.dirty = true;
    d3d12->menu.alpha = alpha;
+
+   {
+      D3D12_RANGE read_range = {0, 0};
+      d3d12_vertex_t *v;
+
+      D3D12Map(d3d12->menu.vbo, 0, &read_range, &v);
+      v[0].color[3] = alpha;
+      v[1].color[3] = alpha;
+      v[2].color[3] = alpha;
+      v[3].color[3] = alpha;
+      D3D12Unmap(d3d12->menu.vbo, 0, NULL);
+   }
+   d3d12->menu.sampler = config_get_ptr()->bools.menu_linear_filter ?
+                         d3d12->sampler_linear : d3d12->sampler_nearest;
 }
 static void d3d12_set_menu_texture_enable(void *data,
       bool state, bool full_screen)
@@ -394,7 +418,6 @@ static void d3d12_set_menu_texture_enable(void *data,
    d3d12->menu.enabled            = state;
    d3d12->menu.fullscreen         = full_screen;
 }
-
 
 static const video_poke_interface_t d3d12_poke_interface =
 {
