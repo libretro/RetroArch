@@ -113,7 +113,7 @@ D3D12SerializeVersionedRootSignature(const D3D12_VERSIONED_ROOT_SIGNATURE_DESC *
 
 #include <wiiu/wiiu_dbg.h>
 
-bool d3d12_init_context(d3d12_video_t *d3d12)
+bool d3d12_init_base(d3d12_video_t *d3d12)
 {
 
 #ifdef DEBUG
@@ -144,7 +144,7 @@ bool d3d12_init_context(d3d12_video_t *d3d12)
 bool d3d12_init_queue(d3d12_video_t *d3d12)
 {
    {
-      D3D12_COMMAND_QUEUE_DESC desc =
+      static const D3D12_COMMAND_QUEUE_DESC desc =
       {
          .Type = D3D12_COMMAND_LIST_TYPE_DIRECT,
          .Flags = D3D12_COMMAND_QUEUE_FLAG_NONE,
@@ -185,8 +185,9 @@ bool d3d12_init_swapchain(d3d12_video_t *d3d12, int width, int height, HWND hwnd
          .BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT,
          .OutputWindow = hwnd,
          .Windowed = TRUE,
+#if 1
          .SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL,
-#if 0
+#else
          .SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD,
 #endif
       };
@@ -221,10 +222,30 @@ static void d3d12_init_descriptor_heap(D3D12Device device, d3d12_descriptor_heap
    out->stride = D3D12GetDescriptorHandleIncrementSize(device, out->desc.Type);
 }
 
+static void d3d12_init_sampler(D3D12Device device, d3d12_descriptor_heap_t *heap, descriptor_heap_slot_t heap_index,
+                               D3D12_FILTER filter, D3D12_TEXTURE_ADDRESS_MODE address_mode, D3D12_GPU_DESCRIPTOR_HANDLE* dst)
+{
+   D3D12_SAMPLER_DESC sampler_desc =
+   {
+      .Filter = filter,
+      .AddressU = address_mode,
+      .AddressV = address_mode,
+      .AddressW = address_mode,
+      .MipLODBias = 0,
+      .MaxAnisotropy = 0,
+      .ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER,
+      .BorderColor = {0.0f},
+      .MinLOD = 0.0f,
+      .MaxLOD = D3D12_FLOAT32_MAX,
+   };
+   D3D12_CPU_DESCRIPTOR_HANDLE handle = {heap->cpu.ptr + heap_index * heap->stride};
+   D3D12CreateSampler(device, &sampler_desc, handle);
+   dst->ptr = heap->gpu.ptr + heap_index * heap->stride;
+}
 
 bool d3d12_init_descriptors(d3d12_video_t *d3d12)
 {
-   static const D3D12_DESCRIPTOR_RANGE desc_table[] =
+   static const D3D12_DESCRIPTOR_RANGE srv_table[] =
    {
       {
          .RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
@@ -237,40 +258,33 @@ bool d3d12_init_descriptors(d3d12_video_t *d3d12)
          .OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND,
       },
    };
-
+   static const D3D12_DESCRIPTOR_RANGE sampler_table[] =
+   {
+      {
+         .RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER,
+         .NumDescriptors = 1,
+         .BaseShaderRegister = 0,
+         .RegisterSpace = 0,
+         .OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND,
+      },
+   };
 
    static const D3D12_ROOT_PARAMETER rootParameters[] =
    {
       {
          .ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
-         .DescriptorTable = {countof(desc_table), desc_table},
+         .DescriptorTable = {countof(srv_table), srv_table},
          .ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL,
       },
-   };
-
-   static const D3D12_STATIC_SAMPLER_DESC samplers[] =
-   {
       {
-         .Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR,
-         .AddressU = D3D12_TEXTURE_ADDRESS_MODE_BORDER,
-         .AddressV = D3D12_TEXTURE_ADDRESS_MODE_BORDER,
-         .AddressW = D3D12_TEXTURE_ADDRESS_MODE_BORDER,
-         .MipLODBias = 0,
-         .MaxAnisotropy = 0,
-         .ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER,
-         .BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK,
-         .MinLOD = 0.0f,
-         .MaxLOD = D3D12_FLOAT32_MAX,
-         .ShaderRegister = 0,
-         .RegisterSpace = 0,
+         .ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
+         .DescriptorTable = {countof(sampler_table), sampler_table},
          .ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL,
       },
    };
-
    static const D3D12_ROOT_SIGNATURE_DESC desc =
    {
       .NumParameters = countof(rootParameters), rootParameters,
-      .NumStaticSamplers = countof(samplers), samplers,
       .Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT,
    };
 
@@ -297,10 +311,21 @@ bool d3d12_init_descriptors(d3d12_video_t *d3d12)
    d3d12_init_descriptor_heap(d3d12->device, &d3d12->pipe.rtv_heap);
 
    d3d12->pipe.srv_heap.desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-   d3d12->pipe.srv_heap.desc.NumDescriptors = 16;
+   d3d12->pipe.srv_heap.desc.NumDescriptors = SRV_HEAP_SLOT_MAX;
    d3d12->pipe.srv_heap.desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
    d3d12_init_descriptor_heap(d3d12->device, &d3d12->pipe.srv_heap);
 
+   d3d12->pipe.sampler_heap.desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
+   d3d12->pipe.sampler_heap.desc.NumDescriptors = SAMPLER_HEAP_SLOT_MAX;
+   d3d12->pipe.sampler_heap.desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+   d3d12_init_descriptor_heap(d3d12->device, &d3d12->pipe.sampler_heap);
+
+   d3d12_init_sampler(d3d12->device, &d3d12->pipe.sampler_heap,
+                      SAMPLER_HEAP_SLOT_LINEAR, D3D12_FILTER_MIN_MAG_MIP_LINEAR,
+                      D3D12_TEXTURE_ADDRESS_MODE_BORDER, &d3d12->sampler_linear);
+   d3d12_init_sampler(d3d12->device, &d3d12->pipe.sampler_heap,
+                      SAMPLER_HEAP_SLOT_NEAREST, D3D12_FILTER_MIN_MAG_MIP_POINT,
+                      D3D12_TEXTURE_ADDRESS_MODE_BORDER, &d3d12->sampler_nearest);
    return true;
 }
 
@@ -313,7 +338,7 @@ bool d3d12_init_pipeline(d3d12_video_t *d3d12)
 #include "gfx/drivers/d3d_shaders/opaque_sm5.hlsl.h"
       ;
 
-   D3D12_INPUT_ELEMENT_DESC inputElementDesc[] =
+   static const D3D12_INPUT_ELEMENT_DESC inputElementDesc[] =
    {
       {"POSITION", 0, DXGI_FORMAT_R32G32_FLOAT,       0, offsetof(d3d12_vertex_t, position), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
       {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,       0, offsetof(d3d12_vertex_t, texcoord), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
@@ -321,7 +346,7 @@ bool d3d12_init_pipeline(d3d12_video_t *d3d12)
    };
 
 
-   D3D12_RASTERIZER_DESC rasterizerDesc =
+   static const D3D12_RASTERIZER_DESC rasterizerDesc =
    {
       .FillMode = D3D12_FILL_MODE_SOLID,
       .CullMode = D3D12_CULL_MODE_BACK,
@@ -336,20 +361,17 @@ bool d3d12_init_pipeline(d3d12_video_t *d3d12)
       .ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF,
    };
 
-   const D3D12_RENDER_TARGET_BLEND_DESC defaultRenderTargetBlendDesc =
-   {
-      .BlendEnable = FALSE, .LogicOpEnable = FALSE,
-      D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD,
-      D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD,
-      D3D12_LOGIC_OP_NOOP,
-      D3D12_COLOR_WRITE_ENABLE_ALL,
-   };
-
-   D3D12_BLEND_DESC blendDesc =
+   static const D3D12_BLEND_DESC blendDesc =
    {
       .AlphaToCoverageEnable = FALSE,
       .IndependentBlendEnable = FALSE,
-      .RenderTarget[0] = defaultRenderTargetBlendDesc,
+      .RenderTarget[0] =
+      {
+         .BlendEnable = TRUE, .LogicOpEnable = FALSE,
+         D3D12_BLEND_SRC_ALPHA, D3D12_BLEND_INV_SRC_ALPHA, D3D12_BLEND_OP_ADD,
+         D3D12_BLEND_SRC_ALPHA, D3D12_BLEND_INV_SRC_ALPHA, D3D12_BLEND_OP_ADD,
+         D3D12_LOGIC_OP_NOOP, D3D12_COLOR_WRITE_ENABLE_ALL,
+      },
    };
 
    if (!d3d_compile(stock, sizeof(stock), "VSMain", "vs_5_0", &vs_code))
@@ -388,7 +410,7 @@ bool d3d12_init_pipeline(d3d12_video_t *d3d12)
 void d3d12_create_vertex_buffer(D3D12Device device, D3D12_VERTEX_BUFFER_VIEW *view,
                                 D3D12Resource *vbo)
 {
-   D3D12_HEAP_PROPERTIES heap_props =
+   static const D3D12_HEAP_PROPERTIES heap_props =
    {
       .Type = D3D12_HEAP_TYPE_UPLOAD,
       .CreationNodeMask = 1,
@@ -411,7 +433,7 @@ void d3d12_create_vertex_buffer(D3D12Device device, D3D12_VERTEX_BUFFER_VIEW *vi
    view->BufferLocation = D3D12GetGPUVirtualAddress(*vbo);
 }
 
-void d3d12_create_texture(D3D12Device device, d3d12_descriptor_heap_t *heap, int heap_index,
+void d3d12_create_texture(D3D12Device device, d3d12_descriptor_heap_t *heap, descriptor_heap_slot_t heap_index,
                           d3d12_texture_t *tex)
 {
    {
@@ -453,7 +475,7 @@ void d3d12_create_texture(D3D12Device device, d3d12_descriptor_heap_t *heap, int
          .ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D,
          .Texture2D.MipLevels = tex->desc.MipLevels,
       };
-      D3D12_CPU_DESCRIPTOR_HANDLE handle = {heap->cpu.ptr + heap_index *heap->stride};
+      D3D12_CPU_DESCRIPTOR_HANDLE handle = {heap->cpu.ptr + heap_index * heap->stride};
       D3D12CreateShaderResourceView(device, tex->handle, &view_desc, handle);
       tex->gpu_descriptor.ptr = heap->gpu.ptr + heap_index * heap->stride;
    }
@@ -476,13 +498,37 @@ void d3d12_upload_texture(D3D12GraphicsCommandList cmd, d3d12_texture_t *texture
       .SubresourceIndex = 0,
    };
 
-   d3d12_transition(cmd, texture->handle,
+   d3d12_resource_transition(cmd, texture->handle,
                     D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
 
    D3D12CopyTextureRegion(cmd, &dst, 0, 0, 0, &src, NULL);
 
-   d3d12_transition(cmd, texture->handle,
+   d3d12_resource_transition(cmd, texture->handle,
                     D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
    texture->dirty = false;
+}
+
+void d3d12_create_fullscreen_quad_vbo(D3D12Device device, D3D12_VERTEX_BUFFER_VIEW *view, D3D12Resource *vbo)
+{
+   static const d3d12_vertex_t vertices[] =
+   {
+      {{ -1.0f, -1.0f}, {0.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},
+      {{ -1.0f,  1.0f}, {0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},
+      {{ 1.0f, -1.0f}, {1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},
+      {{ 1.0f,  1.0f}, {1.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},
+   };
+
+   view->SizeInBytes = sizeof(vertices);
+   view->StrideInBytes = sizeof(*vertices);
+   d3d12_create_vertex_buffer(device, view, vbo);
+
+   {
+      void *vertex_data_begin;
+      D3D12_RANGE read_range = {0, 0};
+
+      D3D12Map(*vbo, 0, &read_range, &vertex_data_begin);
+      memcpy(vertex_data_begin, vertices, sizeof(vertices));
+      D3D12Unmap(*vbo, 0, NULL);
+   }
 }

@@ -109,39 +109,36 @@ static void* d3d11_gfx_init(const video_info_t* video,
          .SampleDesc.Count = 1,
          .SampleDesc.Quality = 0,
          .Windowed = TRUE,
-#if 0
-         .SwapEffect = DXGI_SWAP_EFFECT_DISCARD,
-#endif
          .SwapEffect = DXGI_SWAP_EFFECT_SEQUENTIAL,
 #if 0
+         .SwapEffect = DXGI_SWAP_EFFECT_DISCARD,
          .SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL,
          .SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD,
 #endif
       };
 
-/* #ifdef DEBUG */
+#ifdef DEBUG
       flags |= D3D11_CREATE_DEVICE_DEBUG;
-/* #endif */
+#endif
 
       D3D11CreateDeviceAndSwapChain(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, flags,
                                     &requested_feature_level, 1, D3D11_SDK_VERSION, &desc,
                                     (IDXGISwapChain**)&d3d11->swapChain, &d3d11->device, &d3d11->supportedFeatureLevel, &d3d11->context);
    }
 
-#if 0
-   d3d = *device->lpVtbl;
-   ctx = *context->lpVtbl;
-   dxgi = *swapChain->lpVtbl;
-#endif
+   {
+      D3D11Texture2D backBuffer;
+      DXGIGetSwapChainBufferD3D11(d3d11->swapChain, 0, &backBuffer);
+      D3D11CreateTexture2DRenderTargetView(d3d11->device, backBuffer, NULL, &d3d11->renderTargetView);
+      Release(backBuffer);
+   }
 
-   D3D11Texture2D backBuffer;
-   DXGIGetSwapChainBufferD3D11(d3d11->swapChain, 0, &backBuffer);
-   D3D11CreateTexture2DRenderTargetView(d3d11->device, backBuffer, NULL, &d3d11->renderTargetView);
-   Release(backBuffer);
    D3D11SetRenderTargets(d3d11->context, 1, &d3d11->renderTargetView, NULL);
 
-   D3D11_VIEWPORT vp = {0, 0, video->width, video->height, 0.0f, 1.0f};
-   D3D11SetViewports(d3d11->context, 1, &vp);
+   {
+      D3D11_VIEWPORT vp = {0, 0, video->width, video->height, 0.0f, 1.0f};
+      D3D11SetViewports(d3d11->context, 1, &vp);
+   }
 
 
    d3d11->frame_width = video->input_scale * RARCH_SCALE_BASE;
@@ -184,21 +181,17 @@ static void* d3d11_gfx_init(const video_info_t* video,
    {
       D3D11_SAMPLER_DESC desc =
       {
-         .Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR,
+         .Filter = D3D11_FILTER_MIN_MAG_MIP_POINT,
          .AddressU = D3D11_TEXTURE_ADDRESS_BORDER,
          .AddressV = D3D11_TEXTURE_ADDRESS_BORDER,
          .AddressW = D3D11_TEXTURE_ADDRESS_BORDER,
-         .MipLODBias = 0.0f,
          .MaxAnisotropy = 1,
          .ComparisonFunc = D3D11_COMPARISON_NEVER,
-         .BorderColor[0] = 0.0f,
-         .BorderColor[1] = 0.0f,
-         .BorderColor[2] = 0.0f,
-         .BorderColor[3] = 0.0f,
          .MinLOD = -D3D11_FLOAT32_MAX,
          .MaxLOD = D3D11_FLOAT32_MAX,
       };
       D3D11CreateSamplerState(d3d11->device, &desc, &d3d11->sampler_nearest);
+
       desc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
       D3D11CreateSamplerState(d3d11->device, &desc, &d3d11->sampler_linear);
    }
@@ -367,9 +360,6 @@ static bool d3d11_gfx_frame(void* data, const void* frame,
    if(msg && *msg)
       gfx_ctx_d3d.update_window_title(NULL, video_info);
 
-
-
-
    return true;
 }
 
@@ -386,8 +376,13 @@ static bool d3d11_gfx_alive(void* data)
    bool resize;
    unsigned width;
    unsigned height;
+
    win32_check_window(&quit, &resize, &width, &height);
-   return true;
+
+   if (width != 0 && height != 0)
+      video_driver_set_size(&width, &height);
+
+   return !quit;
 }
 
 static bool d3d11_gfx_focus(void* data)

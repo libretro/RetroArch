@@ -892,6 +892,7 @@ typedef struct
       D3D12RootSignature rootSignature; /* descriptor layout */
       d3d12_descriptor_heap_t srv_heap; /* ShaderResouceView descritor heap */
       d3d12_descriptor_heap_t rtv_heap; /* RenderTargetView descritor heap */
+      d3d12_descriptor_heap_t sampler_heap;
    }pipe;
 
    struct
@@ -911,6 +912,7 @@ typedef struct
       D3D12Resource vbo;
       D3D12_VERTEX_BUFFER_VIEW vbo_view;
       d3d12_texture_t tex;
+      D3D12_GPU_DESCRIPTOR_HANDLE sampler;
       bool rgb32;
    }frame;
 
@@ -919,29 +921,51 @@ typedef struct
       D3D12Resource vbo;
       D3D12_VERTEX_BUFFER_VIEW vbo_view;
       d3d12_texture_t tex;
+      D3D12_GPU_DESCRIPTOR_HANDLE sampler;
 
       float alpha;
       bool enabled;
       bool fullscreen;
    }menu;
 
+   D3D12_GPU_DESCRIPTOR_HANDLE sampler_linear;
+   D3D12_GPU_DESCRIPTOR_HANDLE sampler_nearest;
+
 #ifdef DEBUG
    D3D12Debug debugController;
 #endif
 } d3d12_video_t;
 
+enum
+{
+   DESC_TABLE_INDEX_SRV_TEXTURE = 0,
+   DESC_TABLE_INDEX_SAMPLER,
+};
+typedef enum
+{
+   SAMPLER_HEAP_SLOT_LINEAR = 0,
+   SAMPLER_HEAP_SLOT_NEAREST,
+   SAMPLER_HEAP_SLOT_MAX,
 
-bool d3d12_init_context(d3d12_video_t* d3d12);
+   SRV_HEAP_SLOT_FRAME_TEXTURE = 0,
+   SRV_HEAP_SLOT_MENU_TEXTURE,
+   SRV_HEAP_SLOT_CUSTOM,
+   SRV_HEAP_SLOT_MAX = 16
+}descriptor_heap_slot_t;
+
+bool d3d12_init_base(d3d12_video_t* d3d12);
 bool d3d12_init_descriptors(d3d12_video_t* d3d12);
 bool d3d12_init_pipeline(d3d12_video_t* d3d12);
 bool d3d12_init_swapchain(d3d12_video_t* d3d12, int width, int height, HWND hwnd);
 bool d3d12_init_queue(d3d12_video_t *d3d12);
 
 void d3d12_create_vertex_buffer(D3D12Device device, D3D12_VERTEX_BUFFER_VIEW* view, D3D12Resource* vbo);
-void d3d12_create_texture(D3D12Device device, d3d12_descriptor_heap_t* heap, int heap_index, d3d12_texture_t *tex);
+void d3d12_create_texture(D3D12Device device, d3d12_descriptor_heap_t* heap, descriptor_heap_slot_t heap_index, d3d12_texture_t *tex);
 void d3d12_upload_texture(D3D12GraphicsCommandList cmd, d3d12_texture_t* texture);
 
-static inline d3d12_transition(D3D12GraphicsCommandList cmd, D3D12Resource resource,
+void d3d12_create_fullscreen_quad_vbo(D3D12Device device, D3D12_VERTEX_BUFFER_VIEW *view, D3D12Resource *vbo);
+
+static inline d3d12_resource_transition(D3D12GraphicsCommandList cmd, D3D12Resource resource,
                                D3D12_RESOURCE_STATES state_before, D3D12_RESOURCE_STATES state_after)
 {
    D3D12_RESOURCE_BARRIER barrier =
@@ -955,3 +979,14 @@ static inline d3d12_transition(D3D12GraphicsCommandList cmd, D3D12Resource resou
    };
    D3D12ResourceBarrier(cmd, 1, &barrier);
 }
+
+static inline d3d12_set_texture(D3D12GraphicsCommandList cmd, const d3d12_texture_t* texture)
+{
+   D3D12SetGraphicsRootDescriptorTable(cmd, DESC_TABLE_INDEX_SRV_TEXTURE, texture->gpu_descriptor);
+}
+
+static inline d3d12_set_sampler(D3D12GraphicsCommandList cmd, D3D12_GPU_DESCRIPTOR_HANDLE sampler)
+{
+   D3D12SetGraphicsRootDescriptorTable(cmd, DESC_TABLE_INDEX_SAMPLER, sampler);
+}
+
