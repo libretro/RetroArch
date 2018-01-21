@@ -16,6 +16,7 @@
 #include "spirv_cross.hpp"
 #include "slang_reflection.hpp"
 #include <vector>
+#include <algorithm>
 #include <stdio.h>
 #include "../../verbosity.h"
 

@@ -17,11 +17,11 @@
 #define HAVE_IBXM 1
 
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
-#define HAVE_SHADERS
+#define HAVE_SHADERS 1
 #endif
 
 #if defined(HAVE_ZLIB) || defined(HAVE_7ZIP)
-#define HAVE_COMPRESSION
+#define HAVE_COMPRESSION 1
 #endif
 
 #if _MSC_VER
@@ -1050,7 +1050,7 @@ THREAD
 NETPLAY
 ============================================================ */
 #ifdef HAVE_NETWORKING
-#define JSON_STATIC /* must come before netplay_room_parse and jsonsax_full */
+#define JSON_STATIC 1 /* must come before netplay_room_parse and jsonsax_full */
 #include "../network/netplay/netplay_delta.c"
 #include "../network/netplay/netplay_frontend.c"
 #include "../network/netplay/netplay_handshake.c"
@@ -1298,7 +1298,7 @@ XML
 ============================================================ */
 #if 0
 #ifndef HAVE_LIBXML2
-#define RXML_LIBXML2_COMPAT
+#define RXML_LIBXML2_COMPAT 1
 #include "../libretro-common/formats/xml/rxml.c"
 #endif
 #endif
