@@ -109,24 +109,30 @@ static void* d3d11_gfx_init(const video_info_t* video,
          .SampleDesc.Count = 1,
          .SampleDesc.Quality = 0,
          .Windowed = TRUE,
-//         .SwapEffect = DXGI_SWAP_EFFECT_DISCARD,
+#if 0
+         .SwapEffect = DXGI_SWAP_EFFECT_DISCARD,
+#endif
          .SwapEffect = DXGI_SWAP_EFFECT_SEQUENTIAL,
-//         .SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL,
-//         .SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD,
+#if 0
+         .SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL,
+         .SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD,
+#endif
       };
 
-//#ifdef DEBUG
+/* #ifdef DEBUG */
       flags |= D3D11_CREATE_DEVICE_DEBUG;
-//#endif
+/* #endif */
 
       D3D11CreateDeviceAndSwapChain(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, flags,
                                     &requested_feature_level, 1, D3D11_SDK_VERSION, &desc,
                                     (IDXGISwapChain**)&d3d11->swapChain, &d3d11->device, &d3d11->supportedFeatureLevel, &d3d11->context);
    }
 
-//  d3d = *device->lpVtbl;
-//  ctx = *context->lpVtbl;
-//  dxgi = *swapChain->lpVtbl;
+#if 0
+   d3d = *device->lpVtbl;
+   ctx = *context->lpVtbl;
+   dxgi = *swapChain->lpVtbl;
+#endif
 
    D3D11Texture2D backBuffer;
    DXGIGetSwapChainBufferD3D11(d3d11->swapChain, 0, &backBuffer);
@@ -148,7 +154,9 @@ static void* d3d11_gfx_init(const video_info_t* video,
          .MipLevels = 1,
          .ArraySize = 1,
          .Format = DXGI_FORMAT_B8G8R8A8_UNORM,
-//         .Format = d3d11->rgb32? DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM,
+#if 0
+         .Format = d3d11->rgb32? DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM,
+#endif
          .SampleDesc.Count = 1,
          .SampleDesc.Quality = 0,
          .Usage = D3D11_USAGE_DEFAULT,

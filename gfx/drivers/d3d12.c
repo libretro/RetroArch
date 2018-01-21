@@ -175,7 +175,9 @@ static bool d3d12_gfx_frame(void *data, const void *frame,
    {
       if(d3d12->menu.tex.dirty)
          d3d12_upload_texture(d3d12->queue.cmd, &d3d12->menu.tex);
-//         D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->frame.vbo_view);
+#if 0
+         D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->frame.vbo_view);
+#endif
       D3D12SetGraphicsRootDescriptorTable(d3d12->queue.cmd, 0,
                                           d3d12->menu.tex.gpu_descriptor); /* set texture */
       D3D12DrawInstanced(d3d12->queue.cmd, 4, 1, 0, 0);

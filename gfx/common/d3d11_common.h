@@ -28,12 +28,14 @@
 
 #define CINTERFACE
 #define COBJMACROS
-//#ifdef __GNUC__
-//#define WIDL_C_INLINE_WRAPPERS
-//#include <_mingw.h>
-//#undef __forceinline
-//#define __forceinline inline __attribute__((__always_inline__))
-//#endif
+#if 0
+#ifdef __GNUC__
+#define WIDL_C_INLINE_WRAPPERS
+#include <_mingw.h>
+#undef __forceinline
+#define __forceinline inline __attribute__((__always_inline__))
+#endif
+#endif
 
 #include <d3d11.h>
 #include "dxgi_common.h"

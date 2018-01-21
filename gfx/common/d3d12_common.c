@@ -177,14 +177,18 @@ bool d3d12_init_swapchain(d3d12_video_t *d3d12, int width, int height, HWND hwnd
          .BufferDesc.Height = height,
          .BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM,
          .SampleDesc.Count = 1,
-//         .BufferDesc.RefreshRate.Numerator = 60,
-//         .BufferDesc.RefreshRate.Denominator = 1,
-//         .SampleDesc.Quality = 0,
+#if 0
+         .BufferDesc.RefreshRate.Numerator = 60,
+         .BufferDesc.RefreshRate.Denominator = 1,
+         .SampleDesc.Quality = 0,
+#endif
          .BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT,
          .OutputWindow = hwnd,
          .Windowed = TRUE,
          .SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL,
-//         .SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD,
+#if 0
+         .SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD,
+#endif
       };
       DXGICreateSwapChain(d3d12->factory, d3d12->queue.handle, &desc, &d3d12->chain.handle);
    }
@@ -227,7 +231,9 @@ bool d3d12_init_descriptors(d3d12_video_t *d3d12)
          .NumDescriptors = 1,
          .BaseShaderRegister = 0,
          .RegisterSpace = 0,
-//            .Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC, /* version 1_1 only */
+#if 0
+            .Flags = D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC, /* version 1_1 only */
+#endif
          .OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND,
       },
    };
