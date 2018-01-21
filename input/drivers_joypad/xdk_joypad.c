@@ -21,12 +21,15 @@
 
 typedef struct
 {
-   HANDLE handle;
    XINPUT_STATE xstate;
    bool connected;
 } xinput_joypad_state;
 
 static xinput_joypad_state g_xinput_states[MAX_PADS];
+
+#ifdef _XBOX1
+static HANDLE gamepads[MAX_PADS];
+#endif
 
 static const char* const XBOX_CONTROLLER_NAMES[4] =
 {
@@ -249,10 +252,10 @@ static void xdk_joypad_poll(void)
          /* if the controller was removed after
           * XGetDeviceChanges but before
           * XInputOpen, the device handle will be NULL. */
-         if (g_xinput_states[port].handle)
-            XInputClose(g_xinput_states[port].handle);
+         if (gamepads[port])
+            XInputClose(gamepads[port]);
 
-         g_xinput_states[port].handle  = 0;
+         gamepads[port]  = 0;
 
          input_autoconfigure_disconnect(port, xdk_joypad.ident);
       }
@@ -266,20 +269,20 @@ static void xdk_joypad_poll(void)
          m_pollingParameters.bInputInterval  = 8;
          m_pollingParameters.bOutputInterval = 8;
 
-         g_xinput_states[port].handle        = XInputOpen(
+         gamepads[port]                      = XInputOpen(
                XDEVICE_TYPE_GAMEPAD, port,
                XDEVICE_NO_SLOT, &m_pollingParameters);
 
          xdk_joypad_autodetect_add(port);
       }
 
-      if (!g_xinput_states[port].handle)
+      if (!gamepads[port])
          continue;
 
       /* if the controller is removed after
        * XGetDeviceChanges but before XInputOpen,
        * the device handle will be NULL. */
-      if (XInputPoll(g_xinput_states[port].handle) != ERROR_SUCCESS)
+      if (XInputPoll(gamepads[port]) != ERROR_SUCCESS)
          continue;
 #endif
       
@@ -288,7 +291,7 @@ static void xdk_joypad_poll(void)
       g_xinput_states[port].connected = !
       (XInputGetState(
 #ifdef _XBOX1
-         g_xinput_states[port].handle
+         gamepads[port]
 #else
          port
 #endif
@@ -309,9 +312,9 @@ static void xdk_joypad_destroy(void)
    {
       memset(&g_xinput_states[i], 0, sizeof(xinput_joypad_state));
 #if defined(_XBOX1)
-      if (g_xinput_states[i].handle)
-         XInputClose(g_xinput_states[i].handle);
-      g_x_input_states[i].handle  = 0;
+      if (gamepads[i])
+         XInputClose(gamepads[i]);
+      gamepads[i]  = 0;
 #endif
    }
 }
