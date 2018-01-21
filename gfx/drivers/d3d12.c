@@ -1,4 +1,4 @@
-/*  RetroArch - A frontend for libretro.
+﻿/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2014-2018 - Ali Bouhlel
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -104,10 +104,11 @@ static bool d3d12_gfx_frame(void *data, const void *frame,
                             unsigned width, unsigned height, uint64_t frame_count,
                             unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
-   (void)msg;
-
-   d3d12_video_t *d3d12 = (d3d12_video_t *)data;
    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle;
+   d3d12_video_t *d3d12 = (d3d12_video_t *)data;
+
+   (void)msg;
+   (void)rtvHandle;
 
    D3D12ResetCommandAllocator(d3d12->queue.allocator);
 
@@ -146,9 +147,9 @@ static bool d3d12_gfx_frame(void *data, const void *frame,
       }
 
       {
-         int i, j;
-         const uint8_t *in = frame;
-         uint8_t *out;
+         unsigned i;
+         const uint8_t *in  = frame;
+         uint8_t       *out = NULL;
 
          D3D12Map(d3d12->frame.tex.upload_buffer, 0, NULL, &out);
          out += d3d12->frame.tex.layout.Offset;
@@ -344,8 +345,8 @@ static void d3d12_set_menu_texture_frame(void *data,
    }
 
    {
-      int i, j;
-      uint8_t *out;
+      unsigned i, j;
+      uint8_t *out  = NULL;
 
       D3D12Map(d3d12->menu.tex.upload_buffer, 0, NULL, &out);
       out += d3d12->menu.tex.layout.Offset;

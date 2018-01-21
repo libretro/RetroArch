@@ -1,4 +1,4 @@
-/*  RetroArch - A frontend for libretro.
+﻿/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -136,7 +136,7 @@ static void menu_display_d3d_draw(void *data)
    if (!d3d || !draw || draw->pipeline.id)
       return;
    if((d3d->menu_display.offset + draw->coords->vertices )
-         > d3d->menu_display.size)
+         > (unsigned)d3d->menu_display.size)
       return;
 
    pv           = (Vertex*)

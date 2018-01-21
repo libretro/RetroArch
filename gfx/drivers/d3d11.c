@@ -1,4 +1,4 @@
-/*  RetroArch - A frontend for libretro.
+﻿/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2014-2018 - Ali Bouhlel
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -283,7 +283,7 @@ static bool d3d11_gfx_frame(void* data, const void* frame,
       D3D11_MAPPED_SUBRESOURCE mapped_frame;
       D3D11MapTexture2D(d3d11->context, d3d11->frame_staging, 0, D3D11_MAP_WRITE, 0, &mapped_frame);
       {
-         int i, j;
+         unsigned i, j;
 
          if (d3d11->rgb32)
          {
@@ -518,7 +518,7 @@ static void d3d11_set_menu_texture_frame(void* data,
       D3D11_MAPPED_SUBRESOURCE mapped_frame;
       D3D11MapTexture2D(d3d11->context, d3d11->menu.tex, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_frame);
       {
-         int i,j;
+         unsigned i, j;
 
          if (rgb32)
          {
