@@ -311,7 +311,7 @@ static void xdk_joypad_destroy(void)
 #if defined(_XBOX1)
       if (g_xinput_states[i].handle)
          XInputClose(g_xinput_states[i].handle);
-      g_xinput_states[i].handle  = 0;
+      g_x_input_states[i].handle  = 0;
 #endif
    }
 }
