@@ -460,21 +460,27 @@ bool filestream_write_file(const char *path, const void *data, ssize_t size)
 
 char *filestream_getline(RFILE *stream)
 {
-   char* newline     = (char*)malloc(9);
-   char* newline_tmp = NULL;
-   size_t cur_size   = 8;
-   size_t idx        = 0;
-   int in            = filestream_getc(stream);
+   char* newline_tmp  = NULL;
+   size_t cur_size    = 8;
+   size_t idx         = 0;
+   int in             = 0;
+   char* newline      = (char*)malloc(9);
 
-   if (!newline)
+   if (!stream || !newline)
+   {
+      if (newline)
+         free(newline);
       return NULL;
+   }
+
+   in                 = filestream_getc(stream);
 
    while (in != EOF && in != '\n')
    {
       if (idx == cur_size)
       {
-         cur_size *= 2;
-         newline_tmp = (char*)realloc(newline, cur_size + 1);
+         cur_size    *= 2;
+         newline_tmp  = (char*)realloc(newline, cur_size + 1);
 
          if (!newline_tmp)
          {
@@ -482,13 +488,13 @@ char *filestream_getline(RFILE *stream)
             return NULL;
          }
 
-         newline = newline_tmp;
+         newline     = newline_tmp;
       }
 
       newline[idx++] = in;
       in             = filestream_getc(stream);
    }
 
-   newline[idx] = '\0';
+   newline[idx]      = '\0';
    return newline;
 }
