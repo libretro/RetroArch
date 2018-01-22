@@ -38,6 +38,7 @@ typedef struct d3d8_renderchain
    void *vertex_decl;
    unsigned tex_w;
    unsigned tex_h;
+   unsigned rotation;
    uint64_t frame_count;
 } d3d8_renderchain_t;
 
@@ -47,18 +48,21 @@ static void d3d8_renderchain_set_mvp(
       void *shader_data,
       const void *mat_data)
 {
-   D3DMATRIX matrix;
+   D3DMATRIX proj, ortho, rot;
    d3d_video_t      *d3d = (d3d_video_t*)data;
+   d3d8_renderchain_t *chain = (d3d8_renderchain_t*)chain_data;
 
-   d3d_matrix_identity(&matrix);
+   if (!d3d || !chain)
+      return;
 
-   d3d_set_transform(d3d->dev, D3DTS_PROJECTION, &matrix);
-   d3d_set_transform(d3d->dev, D3DTS_VIEW, &matrix);
+   d3d_matrix_ortho_off_center_lh(&ortho, 0, 1, 0, 1, 0.0f, 1.0f);
+   d3d_matrix_identity(&rot);
+   d3d_set_transform(d3d->dev, D3DTS_VIEW, &rot);
+   d3d_set_transform(d3d->dev, D3DTS_PROJECTION, &rot);
+   d3d_matrix_rotation_z(&rot, chain->rotation * (M_PI / 2.0));
+   d3d_matrix_multiply(&proj, &ortho, &rot);
 
-   if (mat_data)
-      d3d_matrix_transpose(&matrix, mat_data);
-
-   d3d_set_transform(d3d->dev, D3DTS_WORLD, &matrix);
+   d3d_set_transform(d3d->dev, D3DTS_WORLD, &proj);
 }
 
 static bool d3d8_renderchain_create_first_pass(void *data,
@@ -283,6 +287,7 @@ static void d3d8_renderchain_render_pass(
          D3DTEXF_LINEAR : D3DTEXF_POINT);
    d3d_set_sampler_minfilter(d3dr, pass_index, settings->bools.video_smooth ?
          D3DTEXF_LINEAR : D3DTEXF_POINT);
+   chain->rotation = rotation;
 
    d3d_set_viewports(chain->dev, &d3d->final_viewport);
    d3d_set_vertex_shader(d3dr, D3DFVF_CUSTOMVERTEX, NULL);
