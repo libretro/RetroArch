@@ -285,7 +285,8 @@ bool netplay_lan_ad_server(netplay_t *netplay)
             continue;
          }
 
-         strlcpy(reply_addr, ad_packet_buffer.address, NETPLAY_HOST_STR_LEN);
+         if (!string_is_empty(ad_packet_buffer.address))
+            strlcpy(reply_addr, ad_packet_buffer.address, NETPLAY_HOST_STR_LEN);
 
          for (k = 0; k < interfaces.size; k++)
          {

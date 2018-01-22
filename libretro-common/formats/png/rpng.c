@@ -1160,7 +1160,7 @@ void rpng_free(rpng_t *rpng)
          free(rpng->process->inflate_buf);
       if (rpng->process->stream)
       {
-         if (rpng->process->stream_backend)
+         if (rpng->process->stream_backend && rpng->process->stream_backend->stream_free)
             rpng->process->stream_backend->stream_free(rpng->process->stream);
          else
             free(rpng->process->stream);
