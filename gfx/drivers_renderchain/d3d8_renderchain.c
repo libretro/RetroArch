@@ -119,7 +119,7 @@ static void d3d8_renderchain_set_vertices(void *data, unsigned pass,
       tex_w              = vert_width;
       tex_h              = vert_height;
 
-      vert[0].x        =  0.0f;
+      vert[0].x        = -1.0f;
       vert[0].y        =  1.0f;
       vert[0].z        =  1.0f;
 
@@ -128,12 +128,12 @@ static void d3d8_renderchain_set_vertices(void *data, unsigned pass,
       vert[1].y        =  1.0f;
       vert[1].z        =  1.0f;
 
-      vert[2].x        =  0.0f;
-      vert[2].y        =  0.0f;
+      vert[2].x        = -1.0f;
+      vert[2].y        = -1.0f;
       vert[2].z        =  1.0f;
 
       vert[3].x        =  1.0f;
-      vert[3].y        =  0.0f;
+      vert[3].y        = -1.0f;
       vert[3].z        =  1.0f;
 
       vert[0].u        = 0.0f;
@@ -287,7 +287,7 @@ static void d3d8_renderchain_render_pass(
    d3d_set_viewports(chain->dev, &d3d->final_viewport);
    d3d_set_vertex_shader(d3dr, D3DFVF_CUSTOMVERTEX, NULL);
    d3d_set_stream_source(d3dr, 0, chain->vertex_buf, 0, sizeof(Vertex));
-   d3d8_renderchain_set_mvp(d3d, chain, NULL, &d3d->mvp);
+   d3d8_renderchain_set_mvp(d3d, chain, NULL, NULL);
    d3d_draw_primitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
 }
 

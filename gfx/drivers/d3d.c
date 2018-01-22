@@ -775,7 +775,6 @@ static void d3d_set_viewport(void *data,
       bool force_full,
       bool allow_rotate)
 {
-   D3DMATRIX proj, ortho, rot, matrix;
    D3DVIEWPORT viewport;
    int x               = 0;
    int y               = 0;
@@ -801,12 +800,6 @@ static void d3d_set_viewport(void *data,
 
    if (d3d->renderchain_driver && d3d->renderchain_driver->set_font_rect)
       d3d->renderchain_driver->set_font_rect(d3d, NULL);
-
-   d3d_matrix_ortho_off_center_lh(&ortho, 0, 1, 0, 1, 0.0f, 1.0f);
-   d3d_matrix_identity(&rot);
-   d3d_matrix_rotation_z(&rot, d3d->dev_rotation * (M_PI / 2.0));
-   d3d_matrix_multiply(&proj, &ortho, &rot);
-   d3d_matrix_transpose(&d3d->mvp, &matrix);
 }
 
 static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
@@ -1163,15 +1156,15 @@ static bool d3d_init_internal(d3d_video_t *d3d,
    return true;
 }
 
-static void d3d_set_rotation(void *data, unsigned val)
+static void d3d_set_rotation(void *data, unsigned rot)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
+   struct video_ortho ortho = {0, 1, 0, 1, -1, 1};
 
    if (!d3d)
       return;
 
-   d3d->dev_rotation  = val;
-   d3d->should_resize = true;
+   d3d->dev_rotation = rot;
 }
 
 static void d3d_show_mouse(void *data, bool state)
@@ -1514,7 +1507,6 @@ static bool d3d_frame(void *data, const void *frame,
       d3d_clear(d3d->dev, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
    }
 
-
    if (!d3d->renderchain_driver->render(
             d3d,
             frame, frame_width, frame_height,
@@ -1721,9 +1713,6 @@ static void video_texture_load_d3d(d3d_video_t *d3d,
    LPDIRECT3DTEXTURE tex = NULL;
    unsigned usage        = 0;
    bool want_mipmap      = false;
-
-   if (!d3d || !ti || ti->width == 0 || ti->height == 0)
-      return;
 
 #ifndef HAVE_D3D8
    if((filter_type == TEXTURE_FILTER_MIPMAP_LINEAR) ||
