@@ -317,12 +317,10 @@ static void d3d_viewport_info(void *data, struct video_viewport *vp)
 {
    d3d_video_t *d3d   = (d3d_video_t*)data;
 
-   if (  !d3d ||
-         !d3d->renderchain_driver ||
-         !d3d->renderchain_driver->viewport_info)
-      return;
-
-   d3d->renderchain_driver->viewport_info(d3d, vp);
+   if (  d3d &&
+         d3d->renderchain_driver &&
+         d3d->renderchain_driver->viewport_info)
+      d3d->renderchain_driver->viewport_info(d3d, vp);
 }
 
 static void d3d_set_mvp(void *data,
@@ -330,7 +328,11 @@ static void d3d_set_mvp(void *data,
       const void *mat_data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
-   d3d->renderchain_driver->set_mvp(d3d, d3d->renderchain_data, shader_data, mat_data);
+
+   if (  d3d &&
+         d3d->renderchain_driver &&
+         d3d->renderchain_driver->set_mvp)
+      d3d->renderchain_driver->set_mvp(d3d, d3d->renderchain_data, shader_data, mat_data);
 }
 
 static void d3d_overlay_render(d3d_video_t *d3d,
