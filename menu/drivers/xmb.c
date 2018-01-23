@@ -3870,23 +3870,27 @@ static void xmb_context_reset_textures(
 
 static void xmb_context_reset_background(const char *iconpath)
 {
-   char *path                  = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char *path                  = NULL;
    settings_t *settings        = config_get_ptr();
+   const char *path_menu_wp    = settings->paths.path_menu_wallpaper;
 
-   path[0] = '\0';
+   if (!string_is_empty(path_menu_wp))
+      path = strdup(path_menu_wp);
+   else if (!string_is_empty(iconpath))
+   {
+      path    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      path[0] = '\0';
 
-   fill_pathname_join(path, iconpath, "bg.png",
-         PATH_MAX_LENGTH * sizeof(char));
-
-   if (!string_is_empty(settings->paths.path_menu_wallpaper))
-      strlcpy(path, settings->paths.path_menu_wallpaper,
+      fill_pathname_join(path, iconpath, "bg.png",
             PATH_MAX_LENGTH * sizeof(char));
+   }
 
    if (filestream_exists(path))
       task_push_image_load(path,
             menu_display_handle_wallpaper_upload, NULL);
 
-   free(path);
+   if (path)
+      free(path);
 }
 
 static void xmb_context_reset(void *data, bool is_threaded)
