@@ -55,9 +55,9 @@
 #include "../../defines/d3d_defines.h"
 #include "../../verbosity.h"
 
-static LPDIRECT3D g_pD3D;
+static LPDIRECT3D g_pD3D8;
 
-static bool d3d_init_imports(d3d_video_t *d3d)
+static bool d3d8_init_imports(d3d_video_t *d3d)
 {
    retro_ctx_memory_info_t    mem_info;
    state_tracker_t *state_tracker         = NULL;
@@ -103,7 +103,7 @@ static bool d3d_init_imports(d3d_video_t *d3d)
    return true;
 }
 
-static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
+static bool d3d8_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
 {
    struct LinkInfo link_info;
    unsigned current_width, current_height, out_width, out_height;
@@ -199,7 +199,7 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
 
       if (d3d->renderchain_driver->add_state_tracker)
       {
-         if (!d3d_init_imports(d3d))
+         if (!d3d8_init_imports(d3d))
          {
             RARCH_ERR("[D3D]: Failed to init imports.\n");
             return false;
@@ -210,7 +210,7 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
    return true;
 }
 
-static bool d3d_init_singlepass(d3d_video_t *d3d)
+static bool d3d8_init_singlepass(d3d_video_t *d3d)
 {
    struct video_shader_pass *pass = NULL;
 
@@ -236,7 +236,7 @@ static bool d3d_init_singlepass(d3d_video_t *d3d)
    return true;
 }
 
-static bool d3d_init_multipass(d3d_video_t *d3d, const char *shader_path)
+static bool d3d8_init_multipass(d3d_video_t *d3d, const char *shader_path)
 {
    unsigned i;
    bool            use_extra_pass = false;
@@ -304,17 +304,17 @@ static bool d3d_init_multipass(d3d_video_t *d3d, const char *shader_path)
    return true;
 }
 
-static bool d3d_process_shader(d3d_video_t *d3d)
+static bool d3d8_process_shader(d3d_video_t *d3d)
 {
    const char *shader_path = d3d->shader_path;
    if (d3d && !string_is_empty(shader_path) &&
          string_is_equal(path_get_extension(shader_path), "cgp"))
-      return d3d_init_multipass(d3d, shader_path);
+      return d3d8_init_multipass(d3d, shader_path);
 
-   return d3d_init_singlepass(d3d);
+   return d3d8_init_singlepass(d3d);
 }
 
-static void d3d_viewport_info(void *data, struct video_viewport *vp)
+static void d3d8_viewport_info(void *data, struct video_viewport *vp)
 {
    d3d_video_t *d3d   = (d3d_video_t*)data;
 
@@ -324,7 +324,7 @@ static void d3d_viewport_info(void *data, struct video_viewport *vp)
       d3d->renderchain_driver->viewport_info(d3d, vp);
 }
 
-static void d3d_set_mvp(void *data,
+static void d3d8_set_mvp(void *data,
       void *shader_data,
       const void *mat_data)
 {
@@ -336,7 +336,7 @@ static void d3d_set_mvp(void *data,
       d3d->renderchain_driver->set_mvp(d3d, d3d->renderchain_data, shader_data, mat_data);
 }
 
-static void d3d_overlay_render(d3d_video_t *d3d,
+static void d3d8_overlay_render(d3d_video_t *d3d,
       video_frame_info_t *video_info,
       overlay_t *overlay)
 {
@@ -366,7 +366,7 @@ static void d3d_overlay_render(d3d_video_t *d3d,
       vert[i].color   = (((uint32_t)(overlay->alpha_mod * 0xFF)) << 24) | 0xFFFFFF;
    }
 
-   d3d_viewport_info(d3d, &vp);
+   d3d8_viewport_info(d3d, &vp);
 
    vert[0].x      = overlay->vert_coords[0];
    vert[1].x      = overlay->vert_coords[0] + overlay->vert_coords[2];
@@ -406,7 +406,7 @@ static void d3d_overlay_render(d3d_video_t *d3d,
       vp_full.Height = height;
       vp_full.MinZ   = 0.0f;
       vp_full.MaxZ   = 1.0f;
-      d3d_set_viewports(d3d->dev, &vp_full);
+      d3d8_set_viewports(d3d->dev, &vp_full);
    }
 
    /* Render overlay. */
@@ -419,10 +419,10 @@ static void d3d_overlay_render(d3d_video_t *d3d,
 
    /* Restore previous state. */
    d3d_disable_blend_func(d3d->dev);
-   d3d_set_viewports(d3d->dev, &d3d->final_viewport);
+   d3d8_set_viewports(d3d->dev, &d3d->final_viewport);
 }
 
-static void d3d_free_overlay(d3d_video_t *d3d, overlay_t *overlay)
+static void d3d8_free_overlay(d3d_video_t *d3d, overlay_t *overlay)
 {
    if (!d3d)
       return;
@@ -431,7 +431,7 @@ static void d3d_free_overlay(d3d_video_t *d3d, overlay_t *overlay)
    d3d_vertex_buffer_free(overlay->vert_buf, NULL);
 }
 
-static void d3d_deinit_chain(d3d_video_t *d3d)
+static void d3d8_deinit_chain(d3d_video_t *d3d)
 {
    if (!d3d || !d3d->renderchain_driver)
       return;
@@ -443,14 +443,14 @@ static void d3d_deinit_chain(d3d_video_t *d3d)
    d3d->renderchain_data   = NULL;
 }
 
-static void d3d_deinitialize(d3d_video_t *d3d)
+static void d3d8_deinitialize(d3d_video_t *d3d)
 {
    if (!d3d)
       return;
 
    font_driver_free_osd();
 
-   d3d_deinit_chain(d3d);
+   d3d8_deinit_chain(d3d);
    d3d_vertex_buffer_free(d3d->menu_display.buffer, d3d->menu_display.decl);
    d3d->menu_display.buffer = NULL;
    d3d->menu_display.decl = NULL;
@@ -458,7 +458,7 @@ static void d3d_deinitialize(d3d_video_t *d3d)
 
 #define FS_PRESENTINTERVAL(pp) ((pp)->FullScreen_PresentationInterval)
 
-static D3DFORMAT d3d_get_color_format_backbuffer(bool rgb32, bool windowed)
+static D3DFORMAT d3d8_get_color_format_backbuffer(bool rgb32, bool windowed)
 {
    D3DFORMAT fmt = D3DFMT_X8R8G8B8;
 #ifdef _XBOX
@@ -468,14 +468,14 @@ static D3DFORMAT d3d_get_color_format_backbuffer(bool rgb32, bool windowed)
    if (windowed)
    {
       D3DDISPLAYMODE display_mode;
-      if (d3d_get_adapter_display_mode(g_pD3D, 0, &display_mode))
+      if (d3d_get_adapter_display_mode(g_pD3D8, 0, &display_mode))
          fmt = display_mode.Format;
    }
 #endif
    return fmt;
 }
 
-static bool d3d_is_windowed_enable(bool info_fullscreen)
+static bool d3d8_is_windowed_enable(bool info_fullscreen)
 {
 #ifndef _XBOX
    settings_t *settings = config_get_ptr();
@@ -487,11 +487,11 @@ static bool d3d_is_windowed_enable(bool info_fullscreen)
    return false;
 }
 
-void d3d_make_d3dpp(void *data,
+void d3d8_make_d3dpp(void *data,
       const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp)
 {
    d3d_video_t *d3d               = (d3d_video_t*)data;
-   bool windowed_enable           = d3d_is_windowed_enable(info->fullscreen);
+   bool windowed_enable           = d3d8_is_windowed_enable(info->fullscreen);
 
    memset(d3dpp, 0, sizeof(*d3dpp));
 
@@ -526,7 +526,7 @@ void d3d_make_d3dpp(void *data,
 
    d3dpp->SwapEffect              = D3DSWAPEFFECT_DISCARD;
    d3dpp->BackBufferCount         = 2;
-   d3dpp->BackBufferFormat        = d3d_get_color_format_backbuffer(
+   d3dpp->BackBufferFormat        = d3d8_get_color_format_backbuffer(
          info->rgb32, windowed_enable);
 #ifndef _XBOX
    d3dpp->hDeviceWindow           = win32_get_window();
@@ -591,7 +591,7 @@ void d3d_make_d3dpp(void *data,
 #endif
 }
 
-static bool d3d_init_base(void *data, const video_info_t *info)
+static bool d3d8_init_base(void *data, const video_info_t *info)
 {
    D3DPRESENT_PARAMETERS d3dpp;
    HWND focus_window = NULL;
@@ -603,19 +603,19 @@ static bool d3d_init_base(void *data, const video_info_t *info)
 
    memset(&d3dpp, 0, sizeof(d3dpp));
 
-   g_pD3D            = (LPDIRECT3D)d3d_create();
+   g_pD3D8            = (LPDIRECT3D)d3d_create();
 
    /* this needs g_pD3D created first */
-   d3d_make_d3dpp(d3d, info, &d3dpp);
+   d3d8_make_d3dpp(d3d, info, &d3dpp);
 
-   if (!g_pD3D)
+   if (!g_pD3D8)
    {
       RARCH_ERR("[D3D]: Failed to create D3D interface.\n");
       return false;
    }
 
    if (!d3d_create_device(&d3d->dev, &d3dpp,
-            g_pD3D,
+            g_pD3D8,
             focus_window,
             d3d->cur_mon_id)
       )
@@ -627,7 +627,7 @@ static bool d3d_init_base(void *data, const video_info_t *info)
    return true;
 }
 
-static void d3d_calculate_rect(void *data,
+static void d3d8_calculate_rect(void *data,
       unsigned *width, unsigned *height,
       int *x, int *y,
       bool force_full,
@@ -713,7 +713,7 @@ static void d3d_calculate_rect(void *data,
    }
 }
 
-static void d3d_set_viewport(void *data,
+static void d3d8_set_viewport(void *data,
       unsigned width, unsigned height,
       bool force_full,
       bool allow_rotate)
@@ -723,7 +723,7 @@ static void d3d_set_viewport(void *data,
    int y               = 0;
    d3d_video_t *d3d = (d3d_video_t*)data;
 
-   d3d_calculate_rect(data, &width, &height, &x, &y,
+   d3d8_calculate_rect(data, &width, &height, &x, &y,
          force_full, allow_rotate);
 
    /* D3D doesn't support negative X/Y viewports ... */
@@ -745,7 +745,7 @@ static void d3d_set_viewport(void *data,
       d3d->renderchain_driver->set_font_rect(d3d, NULL);
 }
 
-static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
+static bool d3d8_initialize(d3d_video_t *d3d, const video_info_t *info)
 {
    unsigned width, height;
    bool ret             = true;
@@ -754,13 +754,13 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
    if (!d3d)
       return false;
 
-   if (!g_pD3D)
-      ret = d3d_init_base(d3d, info);
+   if (!g_pD3D8)
+      ret = d3d8_init_base(d3d, info);
    else if (d3d->needs_restore)
    {
       D3DPRESENT_PARAMETERS d3dpp;
 
-      d3d_make_d3dpp(d3d, info, &d3dpp);
+      d3d8_make_d3dpp(d3d, info, &d3dpp);
 
       /* the D3DX font driver uses POOL_DEFAULT resources
        * and will prevent a clean reset here
@@ -770,11 +770,11 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
       menu_driver_ctl(RARCH_MENU_CTL_DEINIT, NULL);
       if (!d3d_reset(d3d->dev, &d3dpp))
       {
-         d3d_deinitialize(d3d);
-         d3d_device_free(NULL, g_pD3D);
-         g_pD3D = NULL;
+         d3d8_deinitialize(d3d);
+         d3d_device_free(NULL, g_pD3D8);
+         g_pD3D8 = NULL;
 
-         ret = d3d_init_base(d3d, info);
+         ret = d3d8_init_base(d3d, info);
          if (ret)
             RARCH_LOG("[D3D]: Recovered from dead state.\n");
       }
@@ -784,14 +784,14 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
    if (!ret)
       return ret;
 
-   if (!d3d_init_chain(d3d, info))
+   if (!d3d8_init_chain(d3d, info))
    {
       RARCH_ERR("[D3D]: Failed to initialize render chain.\n");
       return false;
    }
 
    video_driver_get_size(&width, &height);
-   d3d_set_viewport(d3d,
+   d3d8_set_viewport(d3d,
 	   width, height, false, true);
 
    font_driver_init_osd(d3d, false,
@@ -823,9 +823,9 @@ static bool d3d_restore(void *data)
    if (!d3d)
       return false;
 
-   d3d_deinitialize(d3d);
+   d3d8_deinitialize(d3d);
 
-   if (!d3d_initialize(d3d, &d3d->video_info))
+   if (!d3d8_initialize(d3d, &d3d->video_info))
    {
       RARCH_ERR("[D3D]: Restore error.\n");
       return false;
@@ -837,7 +837,7 @@ static bool d3d_restore(void *data)
 }
 
 
-static void d3d_set_nonblock_state(void *data, bool state)
+static void d3d8_set_nonblock_state(void *data, bool state)
 {
    unsigned interval            = state ? 0 : 1;
    d3d_video_t            *d3d = (d3d_video_t*)data;
@@ -854,7 +854,7 @@ static void d3d_set_nonblock_state(void *data, bool state)
 #endif
 }
 
-static bool d3d_alive(void *data)
+static bool d3d8_alive(void *data)
 {
    gfx_ctx_size_t size_data;
    unsigned temp_width  = 0;
@@ -893,13 +893,13 @@ static bool d3d_alive(void *data)
    return ret;
 }
 
-static bool d3d_suppress_screensaver(void *data, bool enable)
+static bool d3d8_suppress_screensaver(void *data, bool enable)
 {
    bool enabled = enable;
    return video_context_driver_suppress_screensaver(&enabled);
 }
 
-static void d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
+static void d3d8_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
 
@@ -931,14 +931,14 @@ static void d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    d3d->should_resize = true;
 }
 
-static void d3d_apply_state_changes(void *data)
+static void d3d8_apply_state_changes(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
    if (d3d)
       d3d->should_resize = true;
 }
 
-static void d3d_set_osd_msg(void *data,
+static void d3d8_set_osd_msg(void *data,
       video_frame_info_t *video_info,
       const char *msg,
       const void *params, void *font)
@@ -951,7 +951,7 @@ static void d3d_set_osd_msg(void *data,
    font_driver_render_msg(video_info, font, msg, params);
 }
 
-static bool d3d_init_internal(d3d_video_t *d3d,
+static bool d3d8_init_internal(d3d_video_t *d3d,
       const video_info_t *info, const input_driver_t **input,
       void **input_data)
 {
@@ -1062,11 +1062,11 @@ static bool d3d_init_internal(d3d_video_t *d3d,
       }
    }
 
-   if (!d3d_process_shader(d3d))
+   if (!d3d8_process_shader(d3d))
       return false;
 
    d3d->video_info = *info;
-   if (!d3d_initialize(d3d, &d3d->video_info))
+   if (!d3d8_initialize(d3d, &d3d->video_info))
       return false;
 
    inp.input      = input;
@@ -1078,7 +1078,7 @@ static bool d3d_init_internal(d3d_video_t *d3d,
    return true;
 }
 
-static void d3d_set_rotation(void *data, unsigned rot)
+static void d3d8_set_rotation(void *data, unsigned rot)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
    struct video_ortho ortho = {0, 1, 0, 1, -1, 1};
@@ -1089,12 +1089,12 @@ static void d3d_set_rotation(void *data, unsigned rot)
    d3d->dev_rotation = rot;
 }
 
-static void d3d_show_mouse(void *data, bool state)
+static void d3d8_show_mouse(void *data, bool state)
 {
    video_context_driver_show_mouse(&state);
 }
 
-static const gfx_ctx_driver_t *d3d_get_context(void *data)
+static const gfx_ctx_driver_t *d3d8_get_context(void *data)
 {
    unsigned minor       = 0;
    unsigned major       = 8;
@@ -1106,7 +1106,7 @@ static const gfx_ctx_driver_t *d3d_get_context(void *data)
          api, major, minor, false);
 }
 
-static void *d3d_init(const video_info_t *info,
+static void *d3d8_init(const video_info_t *info,
       const input_driver_t **input, void **input_data)
 {
    d3d_video_t            *d3d        = NULL;
@@ -1119,7 +1119,7 @@ static void *d3d_init(const video_info_t *info,
    if (!d3d)
       goto error;
 
-   ctx_driver = d3d_get_context(d3d);
+   ctx_driver = d3d8_get_context(d3d);
    if (!ctx_driver)
       goto error;
 
@@ -1135,7 +1135,7 @@ static void *d3d_init(const video_info_t *info,
 
    video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
 
-   if (!d3d_init_internal(d3d, info, input, input_data))
+   if (!d3d8_init_internal(d3d, info, input, input_data))
    {
       RARCH_ERR("[D3D]: Failed to init D3D.\n");
       goto error;
@@ -1153,7 +1153,7 @@ error:
 }
 
 #ifdef HAVE_OVERLAY
-static void d3d_free_overlays(d3d_video_t *d3d)
+static void d3d8_free_overlays(d3d_video_t *d3d)
 {
    unsigned i;
 
@@ -1161,14 +1161,14 @@ static void d3d_free_overlays(d3d_video_t *d3d)
       return;
 
    for (i = 0; i < d3d->overlays_size; i++)
-      d3d_free_overlay(d3d, &d3d->overlays[i]);
+      d3d8_free_overlay(d3d, &d3d->overlays[i]);
    free(d3d->overlays);
    d3d->overlays      = NULL;
    d3d->overlays_size = 0;
 }
 #endif
 
-static void d3d_free(void *data)
+static void d3d8_free(void *data)
 {
    d3d_video_t   *d3d = (d3d_video_t*)data;
 
@@ -1176,19 +1176,19 @@ static void d3d_free(void *data)
       return;
 
 #ifdef HAVE_OVERLAY
-   d3d_free_overlays(d3d);
+   d3d8_free_overlays(d3d);
    if (d3d->overlays)
       free(d3d->overlays);
    d3d->overlays      = NULL;
    d3d->overlays_size = 0;
 #endif
 
-   d3d_free_overlay(d3d, d3d->menu);
+   d3d8_free_overlay(d3d, d3d->menu);
    if (d3d->menu)
       free(d3d->menu);
    d3d->menu          = NULL;
 
-   d3d_deinitialize(d3d);
+   d3d8_deinitialize(d3d);
 
    video_context_driver_free();
 
@@ -1196,9 +1196,9 @@ static void d3d_free(void *data)
       free(d3d->shader_path);
 
    d3d->shader_path = NULL;
-   d3d_device_free(d3d->dev, g_pD3D);
+   d3d_device_free(d3d->dev, g_pD3D8);
    d3d->dev         = NULL;
-   g_pD3D           = NULL;
+   g_pD3D8          = NULL;
 
 #ifndef _XBOX
    win32_monitor_from_window();
@@ -1215,7 +1215,7 @@ static void d3d_free(void *data)
 }
 
 #ifdef HAVE_OVERLAY
-static void d3d_overlay_tex_geom(
+static void d3d8_overlay_tex_geom(
       void *data,
       unsigned index,
       float x, float y,
@@ -1237,7 +1237,7 @@ static void d3d_overlay_tex_geom(
 #endif
 }
 
-static void d3d_overlay_vertex_geom(
+static void d3d8_overlay_vertex_geom(
       void *data,
       unsigned index,
       float x, float y,
@@ -1255,7 +1255,7 @@ static void d3d_overlay_vertex_geom(
    d3d->overlays[index].vert_coords[3] = h;
 }
 
-static bool d3d_overlay_load(void *data,
+static bool d3d8_overlay_load(void *data,
       const void *image_data, unsigned num_images)
 {
    unsigned i, y;
@@ -1267,7 +1267,7 @@ static bool d3d_overlay_load(void *data,
    if (!d3d)
 	   return false;
 
-   d3d_free_overlays(d3d);
+   d3d8_free_overlays(d3d);
    d3d->overlays      = (overlay_t*)calloc(num_images, sizeof(*d3d->overlays));
    d3d->overlays_size = num_images;
 
@@ -1307,14 +1307,14 @@ static bool d3d_overlay_load(void *data,
       overlay->tex_h         = height;
 
       /* Default. Stretch to whole screen. */
-      d3d_overlay_tex_geom(d3d, i, 0, 0, 1, 1);
-      d3d_overlay_vertex_geom(d3d, i, 0, 0, 1, 1);
+      d3d8_overlay_tex_geom(d3d, i, 0, 0, 1, 1);
+      d3d8_overlay_vertex_geom(d3d, i, 0, 0, 1, 1);
    }
 
    return true;
 }
 
-static void d3d_overlay_enable(void *data, bool state)
+static void d3d8_overlay_enable(void *data, bool state)
 {
    unsigned i;
    d3d_video_t            *d3d = (d3d_video_t*)data;
@@ -1328,7 +1328,7 @@ static void d3d_overlay_enable(void *data, bool state)
    video_context_driver_show_mouse(&state);
 }
 
-static void d3d_overlay_full_screen(void *data, bool enable)
+static void d3d8_overlay_full_screen(void *data, bool enable)
 {
    unsigned i;
    d3d_video_t *d3d = (d3d_video_t*)data;
@@ -1337,31 +1337,31 @@ static void d3d_overlay_full_screen(void *data, bool enable)
       d3d->overlays[i].fullscreen = enable;
 }
 
-static void d3d_overlay_set_alpha(void *data, unsigned index, float mod)
+static void d3d8_overlay_set_alpha(void *data, unsigned index, float mod)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
    if (d3d)
       d3d->overlays[index].alpha_mod = mod;
 }
 
-static const video_overlay_interface_t d3d_overlay_interface = {
-   d3d_overlay_enable,
-   d3d_overlay_load,
-   d3d_overlay_tex_geom,
-   d3d_overlay_vertex_geom,
-   d3d_overlay_full_screen,
-   d3d_overlay_set_alpha,
+static const video_overlay_interface_t d3d8_overlay_interface = {
+   d3d8_overlay_enable,
+   d3d8_overlay_load,
+   d3d8_overlay_tex_geom,
+   d3d8_overlay_vertex_geom,
+   d3d8_overlay_full_screen,
+   d3d8_overlay_set_alpha,
 };
 
-static void d3d_get_overlay_interface(void *data,
+static void d3d8_get_overlay_interface(void *data,
       const video_overlay_interface_t **iface)
 {
    (void)data;
-   *iface = &d3d_overlay_interface;
+   *iface = &d3d8_overlay_interface;
 }
 #endif
 
-static bool d3d_frame(void *data, const void *frame,
+static bool d3d8_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height,
       uint64_t frame_count, unsigned pitch,
       const char *msg, video_frame_info_t *video_info)
@@ -1394,7 +1394,7 @@ static bool d3d_frame(void *data, const void *frame,
 
    if (d3d->should_resize)
    {
-      d3d_set_viewport(d3d, width, height, false, true);
+      d3d8_set_viewport(d3d, width, height, false, true);
       if (d3d->renderchain_driver->set_final_viewport)
          d3d->renderchain_driver->set_final_viewport(d3d,
                d3d->renderchain_data, &d3d->final_viewport);
@@ -1410,7 +1410,7 @@ static bool d3d_frame(void *data, const void *frame,
    screen_vp.MaxZ   = 1;
    screen_vp.Width  = width;
    screen_vp.Height = height;
-   d3d_set_viewports(d3d->dev, &screen_vp);
+   d3d8_set_viewports(d3d->dev, &screen_vp);
    d3d_clear(d3d->dev, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
 
    /* Insert black frame first, so we
@@ -1435,14 +1435,14 @@ static bool d3d_frame(void *data, const void *frame,
 #ifdef HAVE_MENU
    if (d3d->menu && d3d->menu->enabled)
    {
-      d3d_set_mvp(d3d, NULL, &d3d->mvp);
-      d3d_overlay_render(d3d, video_info, d3d->menu);
+      d3d8_set_mvp(d3d, NULL, &d3d->mvp);
+      d3d8_overlay_render(d3d, video_info, d3d->menu);
 
       d3d->menu_display.offset = 0;
       d3d_set_vertex_declaration(d3d->dev, d3d->menu_display.decl);
       d3d_set_stream_source(d3d->dev, 0, d3d->menu_display.buffer, 0, sizeof(Vertex));
 
-      d3d_set_viewports(d3d->dev, &screen_vp);
+      d3d8_set_viewports(d3d->dev, &screen_vp);
       menu_driver_frame(video_info);
    }
 #endif
@@ -1450,15 +1450,15 @@ static bool d3d_frame(void *data, const void *frame,
 #ifdef HAVE_OVERLAY
    if (d3d->overlays_enabled)
    {
-      d3d_set_mvp(d3d, NULL, &d3d->mvp);
+      d3d8_set_mvp(d3d, NULL, &d3d->mvp);
       for (i = 0; i < d3d->overlays_size; i++)
-         d3d_overlay_render(d3d, video_info, &d3d->overlays[i]);
+         d3d8_overlay_render(d3d, video_info, &d3d->overlays[i]);
    }
 #endif
 
    if (msg && *msg)
    {
-      d3d_set_viewports(d3d->dev, &screen_vp);
+      d3d8_set_viewports(d3d->dev, &screen_vp);
       font_driver_render_msg(video_info, NULL, msg, NULL);
    }
 
@@ -1471,7 +1471,7 @@ static bool d3d_frame(void *data, const void *frame,
    return true;
 }
 
-static bool d3d_read_viewport(void *data, uint8_t *buffer, bool is_idle)
+static bool d3d8_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    d3d_video_t *d3d   = (d3d_video_t*)data;
 
@@ -1483,7 +1483,7 @@ static bool d3d_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    return d3d->renderchain_driver->read_viewport(d3d, buffer, false);
 }
 
-static bool d3d_set_shader(void *data,
+static bool d3d8_set_shader(void *data,
       enum rarch_shader_type type, const char *path)
 {
    d3d_video_t *d3d       = (d3d_video_t*)data;
@@ -1504,13 +1504,13 @@ static bool d3d_set_shader(void *data,
          break;
    }
 
-   if (!d3d_process_shader(d3d) || !d3d_restore(d3d))
+   if (!d3d8_process_shader(d3d) || !d3d_restore(d3d))
    {
       RARCH_ERR("[D3D]: Setting shader failed.\n");
       if (!string_is_empty(old_shader))
       {
          d3d->shader_path = strdup(old_shader);
-         d3d_process_shader(d3d);
+         d3d8_process_shader(d3d);
          d3d_restore(d3d);
       }
       free(old_shader);
@@ -1520,7 +1520,7 @@ static bool d3d_set_shader(void *data,
    return true;
 }
 
-static void d3d_set_menu_texture_frame(void *data,
+static void d3d8_set_menu_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
 {
@@ -1607,7 +1607,7 @@ static void d3d_set_menu_texture_frame(void *data,
    }
 }
 
-static void d3d_set_menu_texture_enable(void *data,
+static void d3d8_set_menu_texture_enable(void *data,
       bool state, bool full_screen)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
@@ -1619,7 +1619,7 @@ static void d3d_set_menu_texture_enable(void *data,
    d3d->menu->fullscreen         = full_screen;
 }
 
-static void video_texture_load_d3d(d3d_video_t *d3d,
+static void d3d8_video_texture_load_d3d(d3d_video_t *d3d,
       struct texture_image *ti,
       enum texture_filter_type filter_type,
       uintptr_t *id)
@@ -1655,51 +1655,51 @@ static void video_texture_load_d3d(d3d_video_t *d3d,
    *id = (uintptr_t)tex;
 }
 
-static int video_texture_load_wrap_d3d_mipmap(void *data)
+static int d3d8_video_texture_load_wrap_d3d_mipmap(void *data)
 {
    uintptr_t id = 0;
-   video_texture_load_d3d((d3d_video_t*)video_driver_get_ptr(true),
+   d3d8_video_texture_load_d3d((d3d_video_t*)video_driver_get_ptr(true),
          (struct texture_image*)data, TEXTURE_FILTER_MIPMAP_LINEAR, &id);
    return id;
 }
 
-static int video_texture_load_wrap_d3d(void *data)
+static int d3d8_video_texture_load_wrap_d3d(void *data)
 {
    uintptr_t id = 0;
-   video_texture_load_d3d((d3d_video_t*)video_driver_get_ptr(true),
+   d3d8_video_texture_load_d3d((d3d_video_t*)video_driver_get_ptr(true),
          (struct texture_image*)data, TEXTURE_FILTER_LINEAR, &id);
    return id;
 }
 
-static uintptr_t d3d_load_texture(void *video_data, void *data,
+static uintptr_t d3d8_load_texture(void *video_data, void *data,
       bool threaded, enum texture_filter_type filter_type)
 {
    uintptr_t id = 0;
 
    if (threaded)
    {
-      custom_command_method_t func = video_texture_load_wrap_d3d;
+      custom_command_method_t func = d3d8_video_texture_load_wrap_d3d;
 
       switch (filter_type)
       {
          case TEXTURE_FILTER_MIPMAP_LINEAR:
          case TEXTURE_FILTER_MIPMAP_NEAREST:
-            func = video_texture_load_wrap_d3d_mipmap;
+            func = d3d8_video_texture_load_wrap_d3d_mipmap;
             break;
          default:
-            func = video_texture_load_wrap_d3d;
+            func = d3d8_video_texture_load_wrap_d3d;
             break;
       }
 
       return video_thread_texture_load(data, func);
    }
 
-   video_texture_load_d3d((d3d_video_t*)video_driver_get_ptr(false),
+   d3d8_video_texture_load_d3d((d3d_video_t*)video_driver_get_ptr(false),
          (struct texture_image*)data, filter_type, &id);
    return id;
 }
 
-static void d3d_unload_texture(void *data, uintptr_t id)
+static void d3d8_unload_texture(void *data, uintptr_t id)
 {
    LPDIRECT3DTEXTURE texid;
    if (!id)
@@ -1711,9 +1711,9 @@ static void d3d_unload_texture(void *data, uintptr_t id)
 
 static const video_poke_interface_t d3d_poke_interface = {
    NULL,                            /* set_coords */
-   d3d_set_mvp,
-   d3d_load_texture,
-   d3d_unload_texture,
+   d3d8_set_mvp,
+   d3d8_load_texture,
+   d3d8_unload_texture,
    NULL,
    NULL,
    NULL, /* get_video_output_size */
@@ -1721,16 +1721,16 @@ static const video_poke_interface_t d3d_poke_interface = {
    NULL, /* get_video_output_next */
    NULL, /* get_current_framebuffer */
    NULL, /* get_proc_address */
-   d3d_set_aspect_ratio,
-   d3d_apply_state_changes,
-   d3d_set_menu_texture_frame,
-   d3d_set_menu_texture_enable,
-   d3d_set_osd_msg,
+   d3d8_set_aspect_ratio,
+   d3d8_apply_state_changes,
+   d3d8_set_menu_texture_frame,
+   d3d8_set_menu_texture_enable,
+   d3d8_set_osd_msg,
 
-   d3d_show_mouse,
+   d3d8_show_mouse,
 };
 
-static void d3d_get_poke_interface(void *data,
+static void d3d8_get_poke_interface(void *data,
       const video_poke_interface_t **iface)
 {
    (void)data;
@@ -1738,23 +1738,23 @@ static void d3d_get_poke_interface(void *data,
 }
 
 video_driver_t video_d3d8 = {
-   d3d_init,
-   d3d_frame,
-   d3d_set_nonblock_state,
-   d3d_alive,
+   d3d8_init,
+   d3d8_frame,
+   d3d8_set_nonblock_state,
+   d3d8_alive,
    NULL,                      /* focus */
-   d3d_suppress_screensaver,
+   d3d8_suppress_screensaver,
    NULL,                      /* has_windowed */
-   d3d_set_shader,
-   d3d_free,
+   d3d8_set_shader,
+   d3d8_free,
    "d3d8",
-   d3d_set_viewport,
-   d3d_set_rotation,
-   d3d_viewport_info,
-   d3d_read_viewport,
+   d3d8_set_viewport,
+   d3d8_set_rotation,
+   d3d8_viewport_info,
+   d3d8_read_viewport,
    NULL,                      /* read_frame_raw */
 #ifdef HAVE_OVERLAY
-   d3d_get_overlay_interface,
+   d3d8_get_overlay_interface,
 #endif
-   d3d_get_poke_interface
+   d3d8_get_poke_interface
 };
