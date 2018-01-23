@@ -869,44 +869,11 @@ bool png_realloc_idat(const struct png_chunk *chunk, struct idat_buffer *buf)
 static struct rpng_process *rpng_process_init(rpng_t *rpng, unsigned *width, unsigned *height)
 {
    uint8_t *inflate_buf         = NULL;
-   struct rpng_process *process = (struct rpng_process*)malloc(sizeof(*process));
+   struct rpng_process *process = (struct rpng_process*)calloc(1, sizeof(*process));
 
    if (!process)
       return NULL;
 
-   process->inflate_initialized    = false;
-   process->adam7_pass_initialized = false;
-   process->pass_initialized       = false;
-   process->prev_scanline          = NULL;
-   process->decoded_scanline       = NULL;
-   process->inflate_buf            = NULL;
-
-   process->ihdr.width             = 0;
-   process->ihdr.height            = 0;
-   process->ihdr.depth             = 0;
-   process->ihdr.color_type        = 0;
-   process->ihdr.compression       = 0;
-   process->ihdr.filter            = 0;
-   process->ihdr.interlace         = 0;
-
-   process->restore_buf_size       = 0;
-   process->restore_buf_size       = 0;
-   process->adam7_restore_buf_size = 0;
-   process->data_restore_buf_size  = 0;
-   process->inflate_buf_size       = 0;
-   process->avail_in       = 0;
-   process->avail_out      = 0;
-   process->total_out      = 0;
-   process->pass_size      = 0;
-   process->bpp            = 0;
-   process->pitch          = 0;
-   process->h              = 0;
-   process->pass_width     = 0;
-   process->pass_height    = 0;
-   process->pass_pos       = 0;
-   process->data           = NULL;
-   process->palette        = NULL;
-   process->stream         = NULL;
    process->stream_backend = trans_stream_get_zlib_inflate_backend();
 
    png_pass_geom(&rpng->ihdr, rpng->ihdr.width,
