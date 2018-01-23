@@ -69,9 +69,7 @@ static void *switch_init(const video_info_t *video,
 
    RARCH_LOG("loading switch gfx driver, width: %d, height: %d\n", video->width, video->height);
 
-   if (libtransistor_context.magic != LIBTRANSISTOR_CONTEXT_MAGIC)
-      RARCH_LOG("running under CTU, skipping graphics init...\n");
-   else if(has_initialized)
+   if(has_initialized)
 	   RARCH_LOG("global graphics were already initialized; skipping...\n");
    else
    {
@@ -218,12 +216,6 @@ static bool switch_frame(void *data, const void *frame,
       exit(0);
    }
 #endif
-
-   if (libtransistor_context.magic != LIBTRANSISTOR_CONTEXT_MAGIC)
-   {
-      RARCH_LOG("running under CTU; skipping frame\n");
-      return true;
-   }
 
    if (msg != NULL && strlen(msg) > 0)
       RARCH_LOG("message: %s\n", msg);
