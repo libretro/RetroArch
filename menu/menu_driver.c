@@ -1297,18 +1297,15 @@ void menu_display_reset_textures_list(
       uintptr_t *item, enum texture_filter_type filter_type)
 {
    struct texture_image ti;
-   char *texpath               = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   size_t texpath_size         = PATH_MAX_LENGTH * sizeof(char);
+   char texpath[PATH_MAX_LENGTH] = {0};
 
-   texpath[0]                  = '\0';
-
-   ti.width                    = 0;
-   ti.height                   = 0;
-   ti.pixels                   = NULL;
-   ti.supports_rgba            = video_driver_supports_rgba();
+   ti.width                      = 0;
+   ti.height                     = 0;
+   ti.pixels                     = NULL;
+   ti.supports_rgba              = video_driver_supports_rgba();
 
    if (!string_is_empty(texture_path))
-      fill_pathname_join(texpath, iconpath, texture_path, texpath_size);
+      fill_pathname_join(texpath, iconpath, texture_path, sizeof(texpath));
 
    if (string_is_empty(texpath) || !filestream_exists(texpath))
       goto error;
@@ -1319,12 +1316,6 @@ void menu_display_reset_textures_list(
    video_driver_texture_load(&ti,
          filter_type, item);
    image_texture_free(&ti);
-
-   free(texpath);
-   return;
-
-error:
-   free(texpath);
 }
 
 bool menu_driver_is_binding_state(void)
