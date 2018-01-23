@@ -548,9 +548,11 @@ static const int netplay_check_frames = 600;
 
 static const bool netplay_use_mitm_server = false;
 
+#ifdef HAVE_NETWORKING
 static const unsigned netplay_share_digital = RARCH_NETPLAY_SHARE_DIGITAL_NO_PREFERENCE;
 
 static const unsigned netplay_share_analog = RARCH_NETPLAY_SHARE_ANALOG_NO_PREFERENCE;
+#endif
 
 /* On save state load, block SRAM from being overwritten.
  * This could potentially lead to buggy games. */
