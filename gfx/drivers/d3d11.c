@@ -230,6 +230,24 @@ static bool d3d11_gfx_frame(
 {
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
 
+   if (d3d11->need_resize)
+   {
+      D3D11Texture2D backBuffer;
+      D3D11_VIEWPORT vp = { 0, 0, video_info->width, video_info->height, 0.0f, 1.0f };
+
+      Release(d3d11->renderTargetView);
+      DXGIResizeBuffers(d3d11->swapChain, 0, 0, 0, 0, 0);
+
+      DXGIGetSwapChainBufferD3D11(d3d11->swapChain, 0, &backBuffer);
+      D3D11CreateTexture2DRenderTargetView(d3d11->device, backBuffer, NULL, &d3d11->renderTargetView);
+      Release(backBuffer);
+
+      D3D11SetRenderTargets(d3d11->ctx, 1, &d3d11->renderTargetView, NULL);
+      D3D11SetViewports(d3d11->ctx, 1, &vp);
+
+      d3d11->need_resize = false;
+   }
+
    PERF_START();
    D3D11ClearRenderTargetView(d3d11->ctx, d3d11->renderTargetView, d3d11->clearcolor);
 
@@ -303,9 +321,9 @@ static bool d3d11_gfx_alive(void* data)
    unsigned width;
    unsigned height;
 
-   (void)data;
+   d3d11_video_t* d3d11 = (d3d11_video_t*)data;
 
-   win32_check_window(&quit, &resize, &width, &height);
+   win32_check_window(&quit, &d3d11->need_resize, &width, &height);
 
    if (width != 0 && height != 0)
       video_driver_set_size(&width, &height);

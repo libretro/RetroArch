@@ -217,6 +217,26 @@ static bool d3d10_gfx_frame(
    (void)msg;
 
    d3d10_video_t* d3d10 = (d3d10_video_t*)data;
+
+   if (d3d10->need_resize)
+   {
+      D3D10Texture2D backBuffer;
+      D3D10_VIEWPORT vp = { 0, 0, video_info->width, video_info->height, 0.0f, 1.0f };
+
+      Release(d3d10->renderTargetView);
+      DXGIResizeBuffers(d3d10->swapChain, 0, 0, 0, 0, 0);
+
+      DXGIGetSwapChainBufferD3D10(d3d10->swapChain, 0, &backBuffer);
+      D3D10CreateTexture2DRenderTargetView(d3d10->device, backBuffer, NULL, &d3d10->renderTargetView);
+      Release(backBuffer);
+
+      D3D10SetRenderTargets(d3d10->device, 1, &d3d10->renderTargetView, NULL);
+      D3D10SetViewports(d3d10->device, 1, &vp);
+
+      d3d10->need_resize = false;
+   }
+
+
    PERF_START();
    D3D10ClearRenderTargetView(d3d10->device, d3d10->renderTargetView, d3d10->clearcolor);
 
@@ -286,7 +306,9 @@ static bool d3d10_gfx_alive(void* data)
    unsigned width;
    unsigned height;
 
-   win32_check_window(&quit, &resize, &width, &height);
+   d3d10_video_t* d3d10 = (d3d10_video_t*)data;
+
+   win32_check_window(&quit, &d3d10->need_resize, &width, &height);
 
    if (width != 0 && height != 0)
       video_driver_set_size(&width, &height);

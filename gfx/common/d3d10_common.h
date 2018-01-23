@@ -1123,6 +1123,7 @@ typedef struct
    DXGI_FORMAT format;
 
    bool vsync;
+   bool need_resize;
 } d3d10_video_t;
 
 void d3d10_init_texture(D3D10Device device, d3d10_texture_t* texture);

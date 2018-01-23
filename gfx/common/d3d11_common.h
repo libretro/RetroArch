@@ -2501,6 +2501,7 @@ typedef struct
    DXGI_FORMAT format;
 
    bool vsync;
+   bool need_resize;
 } d3d11_video_t;
 
 void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture);
