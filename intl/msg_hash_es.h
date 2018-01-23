@@ -35,10 +35,6 @@ MSG_HASH(
 	"No se pasaron argumentos y no hay menú integrado, Mostrando ayuda.."
 	)
 MSG_HASH(
-	MSG_NETPLAY_USERS_HAS_FLIPPED,
-	"Usuarios de juego en red se fueron"
-	)
-MSG_HASH(
 	MSG_SETTING_DISK_IN_TRAY,
 	"Poniendo disco en bandeja"
 	)
@@ -53,10 +49,6 @@ MSG_HASH(
 MSG_HASH(
 	MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N,
 	"Unido como jugador %d"
-	)
-MSG_HASH(
-	MSG_NETPLAY_IMPLEMENTATIONS_DIFFER,
-	"Las implementaciones difieren. Asegurate de usar la misma versión de Retroarch y del núcleo"
 	)
 MSG_HASH(
 	MSG_NETPLAY_ENDIAN_DEPENDENT,
@@ -1183,10 +1175,6 @@ MSG_HASH(
 	"Silenciar audio"
 	)
 MSG_HASH(
-	MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FLIP,
-	"Juego en red: intercambiar usuarios"
-	)
-MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH,
 	"Juego en red: cambiar modo juego/espectador"
 	)
@@ -1585,10 +1573,6 @@ MSG_HASH(
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
 	"Rango de latencia en frames"
-	)
-MSG_HASH(
-	MENU_ENUM_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT,
-	"Juego en red: P2 Usa Control 1"
 	)
 MSG_HASH(
 	MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES,
@@ -4845,10 +4829,6 @@ MSG_HASH(
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
 	"Ordenar guardados rápidos en carpetas nombradas por núcleo"
-	)
-MSG_HASH(
-	MENU_ENUM_SUBLABEL_NETPLAY_CLIENT_SWAP_INPUT,
-	"Al ser cliente de juego en red, usar controles de jugador 1"
 	)
 MSG_HASH(
 	MENU_ENUM_SUBLABEL_CORE_UPDATER_BUILDBOT_URL,

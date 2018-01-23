@@ -1549,6 +1549,7 @@ ifeq ($(HAVE_NETWORKING), 1)
 			network/netplay/netplay_handshake.o \
 			network/netplay/netplay_init.o \
 			network/netplay/netplay_io.o \
+			network/netplay/netplay_keyboard.o \
 			network/netplay/netplay_sync.o \
 			network/netplay/netplay_discovery.o \
 			network/netplay/netplay_buf.o \

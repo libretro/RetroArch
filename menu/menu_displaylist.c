@@ -5544,9 +5544,20 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   PARSE_ONLY_BOOL, false) != -1)
                count++;
             if (menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_NETPLAY_CLIENT_SWAP_INPUT,
-                  PARSE_ONLY_BOOL, false) != -1)
+                  MENU_ENUM_LABEL_NETPLAY_SHARE_DIGITAL,
+                  PARSE_ONLY_UINT, false) != -1)
                count++;
+            if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_NETPLAY_SHARE_ANALOG,
+                  PARSE_ONLY_UINT, false) != -1)
+               count++;
+            for (user = 0; user < MAX_USERS; user++)
+            {
+               if (menu_displaylist_parse_settings_enum(menu, info,
+                     MENU_ENUM_LABEL_NETPLAY_REQUEST_DEVICE_1 + user,
+                     PARSE_ONLY_BOOL, false) != -1)
+                  count++;
+            }
             if (menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_NETWORK_CMD_ENABLE,
                   PARSE_ONLY_BOOL, false) != -1)

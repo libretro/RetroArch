@@ -27,6 +27,10 @@
 #include "config.h"
 #endif
 
+#ifdef HAVE_NETWORKING
+#include "network/netplay/netplay.h"
+#endif
+
 #if defined(HW_RVL)
 #define MAX_GAMMA_SETTING 30
 #elif defined(GEKKO)
@@ -543,6 +547,10 @@ static const unsigned netplay_delay_frames = 16;
 static const int netplay_check_frames = 600;
 
 static const bool netplay_use_mitm_server = false;
+
+static const unsigned netplay_share_digital = RARCH_NETPLAY_SHARE_DIGITAL_NO_PREFERENCE;
+
+static const unsigned netplay_share_analog = RARCH_NETPLAY_SHARE_ANALOG_NO_PREFERENCE;
 
 /* On save state load, block SRAM from being overwritten.
  * This could potentially lead to buggy games. */
