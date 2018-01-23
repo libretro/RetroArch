@@ -36,6 +36,7 @@ HAVE_MINIUPNPC=auto        # Mini UPnP client library (for NAT traversal)
 HAVE_BUILTINMINIUPNPC=yes  # Bake in Mini UPnP client library (for NAT traversal)
 C89_BUILTINMINIUPNPC=no
 HAVE_D3D9=yes              # Direct3D 9 support
+HAVE_D3D10=no              # Direct3D 10 support
 HAVE_D3D11=no              # Direct3D 11 support
 HAVE_D3D12=no              # Direct3D 11 support
 HAVE_D3DX=yes              # Direct3DX support

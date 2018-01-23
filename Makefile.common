@@ -1216,6 +1216,10 @@ ifeq ($(findstring 1, $(HAVE_VULKAN) $(HAVE_D3D10) $(HAVE_D3D11) $(HAVE_D3D12)),
    INCLUDE_DIRS += -Igfx/include
 endif
 
+ifeq ($(findstring 1, $(HAVE_D3D10) $(HAVE_D3D11) $(HAVE_D3D12)),1)
+   INCLUDE_DIRS += -Igfx/include/dxsdk
+endif
+
 ifeq ($(WANT_WGL), 1)
 	OBJ += gfx/drivers_context/wgl_ctx.o
 LIBS += -lcomctl32
