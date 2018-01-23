@@ -870,10 +870,12 @@ static void xmb_render_messagebox_internal(
 {
    unsigned i, y_position;
    int x, y, longest = 0, longest_width = 0;
-   float line_height = 0;
+   float line_height        = 0;
    unsigned width           = video_info->width;
    unsigned height          = video_info->height;
-   struct string_list *list = string_split(message, "\n");
+   struct string_list *list = !string_is_empty(message) 
+      ? string_split(message, "\n") : NULL;
+
    if (!list || !xmb)
    {
       if (list)
