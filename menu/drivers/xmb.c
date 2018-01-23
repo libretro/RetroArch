@@ -944,19 +944,20 @@ end:
 static void xmb_update_thumbnail_path(void *data, unsigned i)
 {
    menu_entry_t entry;
-   unsigned entry_type       = 0;
-   char *scrub_char_pointer  = NULL;
-   settings_t     *settings  = config_get_ptr();
-   xmb_handle_t     *xmb     = (xmb_handle_t*)data;
-   playlist_t     *playlist  = NULL;
-   const char    *core_name  = NULL;
-   char             *tmp     = NULL;
-   char            *tmp_new2 = (char*)
+   unsigned entry_type            = 0;
+   char *scrub_char_pointer       = NULL;
+   char new_path[PATH_MAX_LENGTH] = {0};
+   settings_t     *settings       = config_get_ptr();
+   xmb_handle_t     *xmb          = (xmb_handle_t*)data;
+   playlist_t     *playlist       = NULL;
+   const char    *core_name       = NULL;
+   char             *tmp          = NULL;
+   char            *tmp_new2      = (char*)
       malloc(PATH_MAX_LENGTH * sizeof(char));
-   char            *tmp_new  = (char*)
+   char            *tmp_new       = (char*)
       malloc(PATH_MAX_LENGTH * sizeof(char));
 
-   tmp_new[0] = tmp_new2[0]  = '\0';
+   tmp_new[0] = tmp_new2[0]       = '\0';
 
    if (!string_is_empty(xmb->thumbnail_file_path))
       xmb->thumbnail_file_path[0] = '\0';
@@ -980,10 +981,10 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
       {
          if (!string_is_empty(entry.path))
             fill_pathname_join(
-                  xmb->thumbnail_file_path,
+                  new_path,
                   node->fullpath,
                   entry.path,
-                  sizeof(xmb->thumbnail_file_path));
+                  sizeof(new_path));
 
          goto end;
       }
@@ -1005,25 +1006,25 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
       if (string_is_equal(core_name, "imageviewer"))
       {
          if (!string_is_empty(entry.label))
-            strlcpy(xmb->thumbnail_file_path, entry.label,
-                  sizeof(xmb->thumbnail_file_path));
+            strlcpy(new_path, entry.label,
+                  sizeof(new_path));
          goto end;
       }
    }
 
    if (!string_is_empty(xmb->thumbnail_system))
       fill_pathname_join(
-            xmb->thumbnail_file_path,
+            new_path,
             settings->paths.directory_thumbnails,
             xmb->thumbnail_system,
-            sizeof(xmb->thumbnail_file_path));
+            sizeof(new_path));
 
-   if (!string_is_empty(xmb->thumbnail_file_path))
-      fill_pathname_join(tmp_new2, xmb->thumbnail_file_path,
+   if (!string_is_empty(new_path))
+      fill_pathname_join(tmp_new2, new_path,
             xmb_thumbnails_ident(), PATH_MAX_LENGTH * sizeof(char));
 
    if (!string_is_empty(tmp_new2))
-      strlcpy(xmb->thumbnail_file_path, tmp_new2,
+      strlcpy(new_path, tmp_new2,
             PATH_MAX_LENGTH * sizeof(char));
 
    /* Scrub characters that are not cross-platform and/or violate the
@@ -1044,20 +1045,23 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
    if (!string_is_empty(tmp))
    {
       fill_pathname_join(tmp_new,
-            xmb->thumbnail_file_path,
+            new_path,
             tmp, PATH_MAX_LENGTH * sizeof(char));
       if (!string_is_empty(tmp_new))
-         strlcpy(xmb->thumbnail_file_path,
-               tmp_new, sizeof(xmb->thumbnail_file_path));
+         strlcpy(new_path,
+               tmp_new, sizeof(new_path));
    }
    free(tmp);
 
-   if (!string_is_empty(xmb->thumbnail_file_path))
-      strlcat(xmb->thumbnail_file_path,
+   if (!string_is_empty(new_path))
+      strlcat(new_path,
             file_path_str(FILE_PATH_PNG_EXTENSION),
-            sizeof(xmb->thumbnail_file_path));
+            sizeof(new_path));
 
 end:
+   if (!string_is_empty(new_path))
+      strlcpy(xmb->thumbnail_file_path, new_path,
+            sizeof(xmb->thumbnail_file_path));
    menu_entry_free(&entry);
    if (tmp_new)
       free(tmp_new);
