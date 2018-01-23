@@ -1626,12 +1626,11 @@ static void d3d8_video_texture_load_d3d(d3d_video_t *d3d,
 {
    D3DLOCKED_RECT d3dlr;
    unsigned usage        = 0;
-   bool want_mipmap      = false;
    LPDIRECT3DTEXTURE tex = d3d_texture_new(d3d->dev, NULL,
                ti->width, ti->height, 0,
                usage, d3d_get_argb8888_format(),
                D3DPOOL_MANAGED, 0, 0, 0,
-               NULL, NULL, want_mipmap);
+               NULL, NULL, false);
 
    if (!tex)
    {
@@ -1655,14 +1654,6 @@ static void d3d8_video_texture_load_d3d(d3d_video_t *d3d,
    *id = (uintptr_t)tex;
 }
 
-static int d3d8_video_texture_load_wrap_d3d_mipmap(void *data)
-{
-   uintptr_t id = 0;
-   d3d8_video_texture_load_d3d((d3d_video_t*)video_driver_get_ptr(true),
-         (struct texture_image*)data, TEXTURE_FILTER_MIPMAP_LINEAR, &id);
-   return id;
-}
-
 static int d3d8_video_texture_load_wrap_d3d(void *data)
 {
    uintptr_t id = 0;
@@ -1679,18 +1670,6 @@ static uintptr_t d3d8_load_texture(void *video_data, void *data,
    if (threaded)
    {
       custom_command_method_t func = d3d8_video_texture_load_wrap_d3d;
-
-      switch (filter_type)
-      {
-         case TEXTURE_FILTER_MIPMAP_LINEAR:
-         case TEXTURE_FILTER_MIPMAP_NEAREST:
-            func = d3d8_video_texture_load_wrap_d3d_mipmap;
-            break;
-         default:
-            func = d3d8_video_texture_load_wrap_d3d;
-            break;
-      }
-
       return video_thread_texture_load(data, func);
    }
 
