@@ -406,7 +406,7 @@ static void d3d8_overlay_render(d3d_video_t *d3d,
       vp_full.Height = height;
       vp_full.MinZ   = 0.0f;
       vp_full.MaxZ   = 1.0f;
-      d3d8_set_viewports(d3d->dev, &vp_full);
+      d3d_set_viewports(d3d->dev, &vp_full);
    }
 
    /* Render overlay. */
