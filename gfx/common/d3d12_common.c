@@ -21,6 +21,20 @@
 
 #include "verbosity.h"
 
+#ifdef __MINGW32__
+#define DEFINE_GUIDW(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) const GUID DECLSPEC_SELECTANY name = { l, w1, w2, { b1, b2, b3, b4, b5, b6, b7, b8 } }
+
+DEFINE_GUIDW(IID_ID3D12PipelineState, 0x765a30f3, 0xf624, 0x4c6f, 0xa8, 0x28, 0xac, 0xe9, 0x48, 0x62, 0x24, 0x45);
+DEFINE_GUIDW(IID_ID3D12RootSignature, 0xc54a6b66, 0x72df, 0x4ee8, 0x8b, 0xe5, 0xa9, 0x46, 0xa1, 0x42, 0x92, 0x14);
+DEFINE_GUIDW(IID_ID3D12Resource, 0x696442be, 0xa72e, 0x4059, 0xbc, 0x79, 0x5b, 0x5c, 0x98, 0x04, 0x0f, 0xad);
+DEFINE_GUIDW(IID_ID3D12CommandAllocator, 0x6102dee4, 0xaf59, 0x4b09, 0xb9, 0x99, 0xb4, 0x4d, 0x73, 0xf0, 0x9b, 0x24);
+DEFINE_GUIDW(IID_ID3D12Fence, 0x0a753dcf, 0xc4d8, 0x4b91, 0xad, 0xf6, 0xbe, 0x5a, 0x60, 0xd9, 0x5a, 0x76);
+DEFINE_GUIDW(IID_ID3D12DescriptorHeap, 0x8efb471d, 0x616c, 0x4f49, 0x90, 0xf7, 0x12, 0x7b, 0xb7, 0x63, 0xfa, 0x51);
+DEFINE_GUIDW(IID_ID3D12GraphicsCommandList, 0x5b160d0f, 0xac1b, 0x4185, 0x8b, 0xa8, 0xb3, 0xae, 0x42, 0xa5, 0xa4, 0x55);
+DEFINE_GUIDW(IID_ID3D12CommandQueue, 0x0ec870a6, 0x5d7e, 0x4c22, 0x8c, 0xfc, 0x5b, 0xaa, 0xe0, 0x76, 0x16, 0xed);
+DEFINE_GUIDW(IID_ID3D12Device, 0x189819f1, 0x1db6, 0x4b57, 0xbe, 0x54, 0x18, 0x21, 0x33, 0x9b, 0x85, 0xf7);
+#endif
+
 static dylib_t     d3d12_dll;
 static const char *d3d12_dll_name = "d3d12.dll";
 
@@ -146,7 +160,7 @@ bool d3d12_init_queue(d3d12_video_t *d3d12)
          .Type  = D3D12_COMMAND_LIST_TYPE_DIRECT,
          .Flags = D3D12_COMMAND_QUEUE_FLAG_NONE,
       };
-      D3D12CreateCommandQueue(d3d12->device, &desc, &d3d12->queue.handle);
+      D3D12CreateCommandQueue(d3d12->device, (D3D12_COMMAND_QUEUE_DESC*)&desc, &d3d12->queue.handle);
    }
 
    D3D12CreateCommandAllocator(
@@ -431,7 +445,9 @@ void d3d12_create_vertex_buffer(
       .Layout           = D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
    };
 
-   D3D12CreateCommittedResource(device, &heap_props, D3D12_HEAP_FLAG_NONE, &resource_desc,
+   D3D12CreateCommittedResource(device,
+         (D3D12_HEAP_PROPERTIES*)&heap_props,
+         D3D12_HEAP_FLAG_NONE, &resource_desc,
          D3D12_RESOURCE_STATE_GENERIC_READ, NULL, vbo);
    view->BufferLocation = D3D12GetGPUVirtualAddress(*vbo);
 }
