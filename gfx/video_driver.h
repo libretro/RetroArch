@@ -33,10 +33,6 @@
 #include "../input/input_overlay.h"
 #endif
 
-#ifdef HAVE_D3D
-#include "common/d3d_common.h"
-#endif
-
 #include "video_defines.h"
 #include "video_coord_array.h"
 #include "video_filter.h"
@@ -1321,7 +1317,7 @@ bool video_shader_driver_compile_program(struct shader_program_info *program_inf
 bool video_shader_driver_wrap_type(video_shader_ctx_wrap_t *wrap);
 
 bool renderchain_d3d_init_first(
-      enum d3d_comm_api api,
+      unsigned api,
       const d3d_renderchain_driver_t **renderchain_driver,
       void **renderchain_handle);
 

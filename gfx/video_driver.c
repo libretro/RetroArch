@@ -3426,11 +3426,12 @@ void video_driver_set_mvp(video_shader_ctx_mvp_t *mvp)
 }
 
 bool renderchain_d3d_init_first(
-      enum d3d_comm_api api,
+      unsigned api,
       const d3d_renderchain_driver_t **renderchain_driver,
       void **renderchain_handle)
 {
-   switch (api)
+#ifdef HAVE_D3D
+   switch ((enum d3d_comm_api)api)
    {
       case D3D_COMM_D3D9:
 #ifdef HAVE_D3D9
@@ -3478,6 +3479,7 @@ bool renderchain_d3d_init_first(
       case D3D_COMM_NONE:
          break;
    }
+#endif
 
    return false;
 }
