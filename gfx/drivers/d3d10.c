@@ -263,7 +263,7 @@ static bool d3d10_gfx_frame(
       }
    }
 
-   DXGIPresent(d3d10->swapChain, !d3d10->vsync, 0);
+   DXGIPresent(d3d10->swapChain, !!d3d10->vsync, 0);
    PERF_STOP();
 
    if (msg && *msg)
