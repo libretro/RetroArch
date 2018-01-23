@@ -1308,10 +1308,10 @@ void menu_display_reset_textures_list(
       fill_pathname_join(texpath, iconpath, texture_path, sizeof(texpath));
 
    if (string_is_empty(texpath) || !filestream_exists(texpath))
-      goto error;
+      return;
 
    if (!image_texture_load(&ti, texpath))
-      goto error;
+      return;
 
    video_driver_texture_load(&ti,
          filter_type, item);
