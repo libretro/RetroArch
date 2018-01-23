@@ -53,7 +53,7 @@
 
 #endif
 
-static enum d3d_comm_api d3d_common_api = D3D_COMM_NONE;
+static enum gfx_ctx_api d3d_common_api = GFX_CTX_NONE;
 
 #ifdef _XBOX
 #include <xgraphics.h>
@@ -208,7 +208,7 @@ static dylib_t dylib_load_d3dx(void)
 
 #endif
 
-bool d3d_initialize_symbols(enum d3d_comm_api api)
+bool d3d_initialize_symbols(enum gfx_ctx_api api)
 {
 #ifdef HAVE_DYNAMIC_D3D
    if (dylib_initialized)
@@ -216,7 +216,7 @@ bool d3d_initialize_symbols(enum d3d_comm_api api)
 
    switch (api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #if defined(HAVE_D3D9)
 #if defined(DEBUG) || defined(_DEBUG)
          g_d3d_dll     = dylib_load("d3d9d.dll");
@@ -231,7 +231,7 @@ bool d3d_initialize_symbols(enum d3d_comm_api api)
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #if defined(HAVE_D3D8)
 #if defined(DEBUG) || defined(_DEBUG)
          g_d3d_dll     = dylib_load("d3d8d.dll");
@@ -240,7 +240,8 @@ bool d3d_initialize_symbols(enum d3d_comm_api api)
             g_d3d_dll  = dylib_load("d3d8.dll");
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 
@@ -272,7 +273,7 @@ bool d3d_initialize_symbols(enum d3d_comm_api api)
 
    switch (api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
          SDKVersion               = 31;
 #ifdef HAVE_D3D9 
 #ifdef HAVE_DYNAMIC_D3D
@@ -282,7 +283,7 @@ bool d3d_initialize_symbols(enum d3d_comm_api api)
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
          SDKVersion = 220;
 #ifdef HAVE_D3D8
 #ifdef HAVE_DYNAMIC_D3D
@@ -296,7 +297,8 @@ bool d3d_initialize_symbols(enum d3d_comm_api api)
 #endif
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 
@@ -331,7 +333,7 @@ void d3d_deinitialize_symbols(void)
 
    dylib_initialized = false;
 #endif
-   d3d_common_api    = D3D_COMM_NONE;
+   d3d_common_api    = GFX_CTX_NONE;
 }
 
 bool d3d_check_device_type(LPDIRECT3D d3d,
@@ -344,7 +346,7 @@ bool d3d_check_device_type(LPDIRECT3D d3d,
       return false;
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
 #ifdef __cplusplus
          if (FAILED(d3d->CheckDeviceType(
@@ -365,7 +367,7 @@ bool d3d_check_device_type(LPDIRECT3D d3d,
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
 #ifdef __cplusplus
          if (FAILED(d3d->CheckDeviceType(
@@ -386,7 +388,8 @@ bool d3d_check_device_type(LPDIRECT3D d3d,
 #endif
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          return false;
    }
 
@@ -402,7 +405,7 @@ bool d3d_get_adapter_display_mode(LPDIRECT3D d3d,
 
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
 #ifdef _XBOX
          return true;
@@ -415,7 +418,7 @@ bool d3d_get_adapter_display_mode(LPDIRECT3D d3d,
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
 #ifdef __cplusplus
          if (FAILED(d3d->GetAdapterDisplayMode(idx, display_mode)))
@@ -426,7 +429,8 @@ bool d3d_get_adapter_display_mode(LPDIRECT3D d3d,
 #endif
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          return false;
    }
 
@@ -437,7 +441,7 @@ bool d3d_swap(void *data, LPDIRECT3DDEVICE dev)
 {
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
 #ifdef __cplusplus
 #ifdef _XBOX
@@ -457,7 +461,7 @@ bool d3d_swap(void *data, LPDIRECT3DDEVICE dev)
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
 #ifdef __cplusplus
          if (dev->Present(NULL, NULL, NULL, NULL) != D3D_OK)
@@ -469,7 +473,8 @@ bool d3d_swap(void *data, LPDIRECT3DDEVICE dev)
 #endif
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
    return true;
@@ -480,7 +485,7 @@ void d3d_set_transform(LPDIRECT3DDEVICE dev,
 {
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
          /* XBox 360 D3D9 does not support fixed-function pipeline. */
 #ifdef HAVE_D3D9
 #ifndef _XBOX
@@ -492,7 +497,7 @@ void d3d_set_transform(LPDIRECT3DDEVICE dev,
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
 #ifdef __cplusplus
          dev->SetTransform(state, matrix);
@@ -501,10 +506,10 @@ void d3d_set_transform(LPDIRECT3DDEVICE dev,
 #endif
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
-
 }
 
 bool d3d_texture_get_level_desc(LPDIRECT3DTEXTURE tex,
@@ -514,7 +519,7 @@ bool d3d_texture_get_level_desc(LPDIRECT3DTEXTURE tex,
       return false;
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
 #ifdef __cplusplus
          if (SUCCEEDED(tex->GetLevelDesc(idx, (D3DSURFACE_DESC*)_ppsurface_level)))
@@ -530,7 +535,7 @@ bool d3d_texture_get_level_desc(LPDIRECT3DTEXTURE tex,
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
 #ifdef __cplusplus
          if (SUCCEEDED(tex->GetLevelDesc(idx, (D3DSURFACE_DESC*)_ppsurface_level)))
@@ -541,7 +546,8 @@ bool d3d_texture_get_level_desc(LPDIRECT3DTEXTURE tex,
 #endif
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 
@@ -556,7 +562,7 @@ bool d3d_texture_get_surface_level(LPDIRECT3DTEXTURE tex,
 
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
 #ifdef __cplusplus
          if (SUCCEEDED(tex->GetSurfaceLevel(idx, (ID3DSURFACE**)_ppsurface_level)))
@@ -567,7 +573,7 @@ bool d3d_texture_get_surface_level(LPDIRECT3DTEXTURE tex,
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
 #ifdef __cplusplus
          if (SUCCEEDED(tex->GetSurfaceLevel(idx, (ID3DSURFACE**)_ppsurface_level)))
@@ -578,7 +584,8 @@ bool d3d_texture_get_surface_level(LPDIRECT3DTEXTURE tex,
 #endif
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 
@@ -631,7 +638,7 @@ LPDIRECT3DTEXTURE d3d_texture_new(LPDIRECT3DDEVICE dev,
 
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
 #ifndef _XBOX
          if (want_mipmap)
@@ -648,7 +655,7 @@ LPDIRECT3DTEXTURE d3d_texture_new(LPDIRECT3DDEVICE dev,
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
 #ifdef __cplusplus
          hr = dev->CreateTexture(
@@ -661,7 +668,8 @@ LPDIRECT3DTEXTURE d3d_texture_new(LPDIRECT3DDEVICE dev,
 #endif
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 
@@ -678,7 +686,7 @@ void d3d_texture_free(LPDIRECT3DTEXTURE tex)
 
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
 #ifdef __cplusplus
          tex->Release();
@@ -687,7 +695,7 @@ void d3d_texture_free(LPDIRECT3DTEXTURE tex)
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
 #ifdef __cplusplus
          tex->Release();
@@ -696,7 +704,8 @@ void d3d_texture_free(LPDIRECT3DTEXTURE tex)
 #endif
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 }
@@ -710,7 +719,7 @@ bool d3d_surface_lock_rect(void *data, void *data2)
 
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
 #ifdef __cplusplus
          if (FAILED(surf->LockRect((D3DLOCKED_RECT*)data2, NULL, D3DLOCK_READONLY)))
@@ -725,7 +734,7 @@ bool d3d_surface_lock_rect(void *data, void *data2)
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
 #ifdef __cplusplus
          if (FAILED(surf->LockRect((D3DLOCKED_RECT*)data2, NULL, D3DLOCK_READONLY)))
@@ -736,7 +745,8 @@ bool d3d_surface_lock_rect(void *data, void *data2)
 #endif
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 
@@ -751,7 +761,7 @@ void d3d_surface_unlock_rect(void *data)
 
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
 #ifdef __cplusplus
          surf->UnlockRect();
@@ -760,7 +770,7 @@ void d3d_surface_unlock_rect(void *data)
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
 #ifdef __cplusplus
          surf->UnlockRect();
@@ -769,7 +779,8 @@ void d3d_surface_unlock_rect(void *data)
 #endif
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 }
@@ -781,7 +792,7 @@ void d3d_surface_free(void *data)
       return;
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
 #ifdef __cplusplus
          surf->Release();
@@ -790,7 +801,7 @@ void d3d_surface_free(void *data)
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
 #ifdef __cplusplus
          surf->Release();
@@ -799,7 +810,8 @@ void d3d_surface_free(void *data)
 #endif
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 }
@@ -811,7 +823,7 @@ void d3d_vertex_declaration_free(void *data)
 
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
 #ifdef __cplusplus
          {
@@ -825,8 +837,9 @@ void d3d_vertex_declaration_free(void *data)
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
-      case D3D_COMM_NONE:
+      case GFX_CTX_DIRECT3D8_API:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 }
@@ -836,7 +849,7 @@ bool d3d_vertex_declaration_new(LPDIRECT3DDEVICE dev,
 {
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
          {
             const D3DVERTEXELEMENT   *vertex_elements = (const D3DVERTEXELEMENT*)vertex_data;
@@ -852,8 +865,9 @@ bool d3d_vertex_declaration_new(LPDIRECT3DDEVICE dev,
          }
 #endif
          break;
-      case D3D_COMM_D3D8:
-      case D3D_COMM_NONE:
+      case GFX_CTX_DIRECT3D8_API:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 
@@ -869,7 +883,7 @@ LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(LPDIRECT3DDEVICE dev,
 
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
 		 if (usage == 0)
 		 {
@@ -893,7 +907,7 @@ LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(LPDIRECT3DDEVICE dev,
 
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
 #ifdef __cplusplus
          hr = dev->CreateVertexBuffer(length, usage, fvf, pool, &buf, NULL);
@@ -903,7 +917,8 @@ LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(LPDIRECT3DDEVICE dev,
 #endif
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 
@@ -922,7 +937,7 @@ void d3d_vertex_buffer_unlock(void *vertbuf_ptr)
 
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
 #ifdef __cplusplus
          vertbuf->Unlock();
@@ -931,7 +946,7 @@ void d3d_vertex_buffer_unlock(void *vertbuf_ptr)
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
 #ifdef __cplusplus
          vertbuf->Unlock();
@@ -940,7 +955,8 @@ void d3d_vertex_buffer_unlock(void *vertbuf_ptr)
 #endif
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 
@@ -953,7 +969,7 @@ void *d3d_vertex_buffer_lock(void *vertbuf_ptr)
 
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
 #ifdef __cplusplus
          vertbuf->Lock(0, 0, &buf, 0);
@@ -962,7 +978,7 @@ void *d3d_vertex_buffer_lock(void *vertbuf_ptr)
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
 #ifdef __cplusplus
          vertbuf->Lock(0, 0, &buf, 0);
@@ -971,7 +987,8 @@ void *d3d_vertex_buffer_lock(void *vertbuf_ptr)
 #endif
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 
@@ -985,7 +1002,7 @@ void d3d_vertex_buffer_free(void *vertex_data, void *vertex_declaration)
 {
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
          if (vertex_data)
          {
@@ -1006,7 +1023,7 @@ void d3d_vertex_buffer_free(void *vertex_data, void *vertex_declaration)
          }
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
          if (vertex_data)
          {
@@ -1020,7 +1037,8 @@ void d3d_vertex_buffer_free(void *vertex_data, void *vertex_declaration)
          }
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 }
@@ -1036,7 +1054,7 @@ void d3d_set_stream_source(LPDIRECT3DDEVICE dev, unsigned stream_no,
 
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
 #ifdef __cplusplus
          dev->SetStreamSource(stream_no, stream_vertbuf, offset_bytes, stride);
@@ -1047,7 +1065,7 @@ void d3d_set_stream_source(LPDIRECT3DDEVICE dev, unsigned stream_no,
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
 #ifdef __cplusplus
          dev->SetStreamSource(stream_no, stream_vertbuf, offset_bytes, stride);
@@ -1056,7 +1074,8 @@ void d3d_set_stream_source(LPDIRECT3DDEVICE dev, unsigned stream_no,
 #endif
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 }
@@ -1072,7 +1091,7 @@ bool d3d_device_create_offscreen_plain_surface(
 {
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifndef _XBOX
 #ifdef HAVE_D3D9
 #ifdef __cplusplus
@@ -1092,8 +1111,9 @@ bool d3d_device_create_offscreen_plain_surface(
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
-      case D3D_COMM_NONE:
+      case GFX_CTX_DIRECT3D8_API:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 
@@ -1105,7 +1125,7 @@ static void d3d_set_texture_stage_state(LPDIRECT3DDEVICE dev,
 {
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
          /* XBox 360 has no fixed-function pipeline. */
 #ifndef _XBOX
 #ifdef HAVE_D3D9
@@ -1119,7 +1139,7 @@ static void d3d_set_texture_stage_state(LPDIRECT3DDEVICE dev,
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
 #ifdef __cplusplus
          if (dev->SetTextureStageState(sampler, (D3DTEXTURESTAGESTATETYPE)type, value) != D3D_OK)
@@ -1130,7 +1150,8 @@ static void d3d_set_texture_stage_state(LPDIRECT3DDEVICE dev,
 #endif
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 }
@@ -1140,7 +1161,7 @@ void d3d_set_sampler_address_u(LPDIRECT3DDEVICE dev,
 {
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
 #ifdef __cplusplus
          dev->SetSamplerState(sampler, D3DSAMP_ADDRESSU, value);
@@ -1149,12 +1170,13 @@ void d3d_set_sampler_address_u(LPDIRECT3DDEVICE dev,
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
          d3d_set_texture_stage_state(dev, sampler, D3DTSS_ADDRESSU, value);
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 }
@@ -1164,7 +1186,7 @@ void d3d_set_sampler_address_v(LPDIRECT3DDEVICE dev,
 {
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
 #ifdef __cplusplus
          dev->SetSamplerState(sampler, D3DSAMP_ADDRESSV, value);
@@ -1173,12 +1195,13 @@ void d3d_set_sampler_address_v(LPDIRECT3DDEVICE dev,
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
          d3d_set_texture_stage_state(dev, sampler, D3DTSS_ADDRESSV, value);
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 }
@@ -1188,7 +1211,7 @@ void d3d_set_sampler_minfilter(LPDIRECT3DDEVICE dev,
 {
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
 #ifdef __cplusplus
          dev->SetSamplerState(sampler, D3DSAMP_MINFILTER, value);
@@ -1197,12 +1220,13 @@ void d3d_set_sampler_minfilter(LPDIRECT3DDEVICE dev,
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
          d3d_set_texture_stage_state(dev, sampler, D3DTSS_MINFILTER, value);
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 }
@@ -1212,7 +1236,7 @@ void d3d_set_sampler_magfilter(LPDIRECT3DDEVICE dev,
 {
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
 #ifdef __cplusplus
          dev->SetSamplerState(sampler, D3DSAMP_MAGFILTER, value);
@@ -1221,12 +1245,13 @@ void d3d_set_sampler_magfilter(LPDIRECT3DDEVICE dev,
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
          d3d_set_texture_stage_state(dev, sampler, D3DTSS_MAGFILTER, value);
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 }
@@ -1236,13 +1261,14 @@ void d3d_set_sampler_mipfilter(LPDIRECT3DDEVICE dev,
 {
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
          IDirect3DDevice9_SetSamplerState(dev, sampler, D3DSAMP_MIPFILTER, value);
 #endif
          break;
-      case D3D_COMM_D3D8:
-      case D3D_COMM_NONE:
+      case GFX_CTX_DIRECT3D8_API:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 }
@@ -1251,7 +1277,7 @@ bool d3d_begin_scene(LPDIRECT3DDEVICE dev)
 {
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
 #ifdef __cplusplus
          if (FAILED(dev->BeginScene()))
@@ -1266,7 +1292,7 @@ bool d3d_begin_scene(LPDIRECT3DDEVICE dev)
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
 #ifdef __cplusplus
 #ifdef _XBOX
@@ -1285,7 +1311,8 @@ bool d3d_begin_scene(LPDIRECT3DDEVICE dev)
 #endif
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 
@@ -1296,7 +1323,7 @@ void d3d_end_scene(LPDIRECT3DDEVICE dev)
 {
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
 #ifdef __cplusplus
          dev->EndScene();
@@ -1305,7 +1332,7 @@ void d3d_end_scene(LPDIRECT3DDEVICE dev)
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
 #ifdef __cplusplus
          dev->EndScene();
@@ -1314,7 +1341,8 @@ void d3d_end_scene(LPDIRECT3DDEVICE dev)
 #endif
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 }
@@ -1324,7 +1352,7 @@ static void d3d_draw_primitive_internal(LPDIRECT3DDEVICE dev,
 {
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
 #ifdef __cplusplus
          dev->DrawPrimitive(type, start, count);
@@ -1333,7 +1361,7 @@ static void d3d_draw_primitive_internal(LPDIRECT3DDEVICE dev,
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
 #ifdef __cplusplus
          dev->DrawPrimitive(type, start, count);
@@ -1342,7 +1370,8 @@ static void d3d_draw_primitive_internal(LPDIRECT3DDEVICE dev,
 #endif
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 }
@@ -1363,7 +1392,7 @@ void d3d_clear(LPDIRECT3DDEVICE dev,
 {
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
 #ifdef __cplusplus
          dev->Clear(count, rects, flags, color, z, stencil);
@@ -1373,7 +1402,7 @@ void d3d_clear(LPDIRECT3DDEVICE dev,
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
 #ifdef __cplusplus
          dev->Clear(count, rects, flags, color, z, stencil);
@@ -1383,7 +1412,8 @@ void d3d_clear(LPDIRECT3DDEVICE dev,
 #endif
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 }
@@ -1396,7 +1426,7 @@ bool d3d_device_get_render_target_data(LPDIRECT3DDEVICE dev,
 
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifndef _XBOX
 #ifdef HAVE_D3D9
 #ifdef __cplusplus
@@ -1409,8 +1439,9 @@ bool d3d_device_get_render_target_data(LPDIRECT3DDEVICE dev,
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
-      case D3D_COMM_NONE:
+      case GFX_CTX_DIRECT3D8_API:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 
@@ -1425,7 +1456,7 @@ bool d3d_device_get_render_target(LPDIRECT3DDEVICE dev,
 
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
 #ifdef __cplusplus
          if (SUCCEEDED(dev->GetRenderTarget(idx,
@@ -1438,7 +1469,7 @@ bool d3d_device_get_render_target(LPDIRECT3DDEVICE dev,
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
 #ifdef __cplusplus
          if (SUCCEEDED(dev->GetRenderTarget(
@@ -1451,7 +1482,8 @@ bool d3d_device_get_render_target(LPDIRECT3DDEVICE dev,
 #endif
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 
@@ -1465,7 +1497,7 @@ bool d3d_lock_rectangle(LPDIRECT3DTEXTURE tex,
 {
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
 #ifdef __cplusplus
          if (FAILED(tex->LockRect(level, lock_rect, rect, flags)))
@@ -1480,7 +1512,7 @@ bool d3d_lock_rectangle(LPDIRECT3DTEXTURE tex,
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
 #ifdef __cplusplus
          if (FAILED(tex->LockRect(level, lock_rect, rect, flags)))
@@ -1491,7 +1523,8 @@ bool d3d_lock_rectangle(LPDIRECT3DTEXTURE tex,
 #endif
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 
@@ -1502,7 +1535,7 @@ void d3d_unlock_rectangle(LPDIRECT3DTEXTURE tex)
 {
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
 #ifdef __cplusplus
          tex->UnlockRect(0);
@@ -1511,7 +1544,7 @@ void d3d_unlock_rectangle(LPDIRECT3DTEXTURE tex)
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
 #ifdef __cplusplus
          tex->UnlockRect(0);
@@ -1520,7 +1553,8 @@ void d3d_unlock_rectangle(LPDIRECT3DTEXTURE tex)
 #endif
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 }
@@ -1540,7 +1574,7 @@ void d3d_set_viewports(LPDIRECT3DDEVICE dev, D3DVIEWPORT *vp)
 {
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
 #ifdef __cplusplus
          dev->SetViewport(vp);
@@ -1549,7 +1583,7 @@ void d3d_set_viewports(LPDIRECT3DDEVICE dev, D3DVIEWPORT *vp)
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
 #ifdef __cplusplus
          dev->SetViewport(vp);
@@ -1558,7 +1592,8 @@ void d3d_set_viewports(LPDIRECT3DDEVICE dev, D3DVIEWPORT *vp)
 #endif
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 }
@@ -1573,7 +1608,7 @@ void d3d_set_texture(LPDIRECT3DDEVICE dev, unsigned sampler,
 
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
 #ifdef __cplusplus
          dev->SetTexture(sampler, tex);
@@ -1582,7 +1617,7 @@ void d3d_set_texture(LPDIRECT3DDEVICE dev, unsigned sampler,
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
 #ifdef __cplusplus
          dev->SetTexture(sampler, tex);
@@ -1591,7 +1626,8 @@ void d3d_set_texture(LPDIRECT3DDEVICE dev, unsigned sampler,
 #endif
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 }
@@ -1600,7 +1636,7 @@ void d3d_free_vertex_shader(LPDIRECT3DDEVICE dev, void *data)
 {
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
          {
             IDirect3DVertexShader9 *vs = (IDirect3DVertexShader9*)data;
@@ -1614,8 +1650,9 @@ void d3d_free_vertex_shader(LPDIRECT3DDEVICE dev, void *data)
          }
 #endif
          break;
-      case D3D_COMM_D3D8:
-      case D3D_COMM_NONE:
+      case GFX_CTX_DIRECT3D8_API:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 }
@@ -1624,7 +1661,7 @@ void d3d_free_pixel_shader(LPDIRECT3DDEVICE dev, void *data)
 {
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
          {
             IDirect3DPixelShader9 *ps = (IDirect3DPixelShader9*)data;
@@ -1638,8 +1675,9 @@ void d3d_free_pixel_shader(LPDIRECT3DDEVICE dev, void *data)
          }
 #endif
          break;
-      case D3D_COMM_D3D8:
-      case D3D_COMM_NONE:
+      case GFX_CTX_DIRECT3D8_API:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 }
@@ -1651,7 +1689,7 @@ bool d3d_create_vertex_shader(LPDIRECT3DDEVICE dev, const DWORD *a, void **b)
 
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
 #if defined(__cplusplus)
          if (dev->CreateVertexShader(a, (IDirect3DVertexShader9**)b) == D3D_OK)
@@ -1663,9 +1701,9 @@ bool d3d_create_vertex_shader(LPDIRECT3DDEVICE dev, const DWORD *a, void **b)
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
-         break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_DIRECT3D8_API:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 
@@ -1678,7 +1716,7 @@ bool d3d_create_pixel_shader(LPDIRECT3DDEVICE dev, const DWORD *a, void **b)
       return false;
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
 #ifdef __cplusplus
          if (dev->CreatePixelShader(a, (IDirect3DPixelShader9**)b) == D3D_OK)
@@ -1690,8 +1728,9 @@ bool d3d_create_pixel_shader(LPDIRECT3DDEVICE dev, const DWORD *a, void **b)
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
-      case D3D_COMM_NONE:
+      case GFX_CTX_DIRECT3D8_API:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 
@@ -1702,7 +1741,7 @@ bool d3d_set_pixel_shader(LPDIRECT3DDEVICE dev, void *data)
 {
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
          {
             LPDIRECT3DPIXELSHADER d3dps = (LPDIRECT3DPIXELSHADER)data;
@@ -1724,8 +1763,9 @@ bool d3d_set_pixel_shader(LPDIRECT3DDEVICE dev, void *data)
          }
 #endif
          break;
-      case D3D_COMM_D3D8:
-      case D3D_COMM_NONE:
+      case GFX_CTX_DIRECT3D8_API:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 
@@ -1737,7 +1777,7 @@ bool d3d_set_vertex_shader(LPDIRECT3DDEVICE dev, unsigned index,
 {
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
          {
 #ifdef HAVE_D3D9
             LPDIRECT3DVERTEXSHADER shader = (LPDIRECT3DVERTEXSHADER)data;
@@ -1755,7 +1795,7 @@ bool d3d_set_vertex_shader(LPDIRECT3DDEVICE dev, unsigned index,
 #endif
          }
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
          {
 #ifdef __cplusplus
@@ -1769,7 +1809,8 @@ bool d3d_set_vertex_shader(LPDIRECT3DDEVICE dev, unsigned index,
          }
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 
@@ -1782,7 +1823,7 @@ bool d3d_set_vertex_shader_constantf(LPDIRECT3DDEVICE dev,
 {
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #if defined(HAVE_D3D9)
 #ifdef __cplusplus
 #ifdef _XBOX
@@ -1806,8 +1847,9 @@ bool d3d_set_vertex_shader_constantf(LPDIRECT3DDEVICE dev,
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
-      case D3D_COMM_NONE:
+      case GFX_CTX_DIRECT3D8_API:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 
@@ -1837,7 +1879,7 @@ bool d3d_get_render_state(void *data, D3DRENDERSTATETYPE state, DWORD *value)
 
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
 #ifdef __cplusplus
          if (dev->GetRenderState(state, value) == D3D_OK)
@@ -1853,7 +1895,7 @@ bool d3d_get_render_state(void *data, D3DRENDERSTATETYPE state, DWORD *value)
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
 #ifdef __cplusplus
          if (dev->GetRenderState(state, value) == D3D_OK)
@@ -1864,7 +1906,8 @@ bool d3d_get_render_state(void *data, D3DRENDERSTATETYPE state, DWORD *value)
 #endif
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 
@@ -1880,7 +1923,7 @@ void d3d_set_render_state(void *data, D3DRENDERSTATETYPE state, DWORD value)
 
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
 #ifdef __cplusplus
          dev->SetRenderState(state, value);
@@ -1889,7 +1932,7 @@ void d3d_set_render_state(void *data, D3DRENDERSTATETYPE state, DWORD value)
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
 #ifdef __cplusplus
          dev->SetRenderState(state, value);
@@ -1898,7 +1941,8 @@ void d3d_set_render_state(void *data, D3DRENDERSTATETYPE state, DWORD value)
 #endif
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 }
@@ -1922,7 +1966,7 @@ void d3d_device_set_render_target(LPDIRECT3DDEVICE dev, unsigned idx,
 
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
 #ifdef __cplusplus
          dev->SetRenderTarget(idx, surf);
@@ -1931,7 +1975,7 @@ void d3d_device_set_render_target(LPDIRECT3DDEVICE dev, unsigned idx,
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
 #ifdef __cplusplus
          dev->SetRenderTarget(idx, surf);
@@ -1940,7 +1984,8 @@ void d3d_device_set_render_target(LPDIRECT3DDEVICE dev, unsigned idx,
 #endif
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 }
@@ -1962,7 +2007,7 @@ void d3d_frame_postprocess(void *data)
 {
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
          {
 #if defined(_XBOX)
@@ -1983,8 +2028,9 @@ void d3d_frame_postprocess(void *data)
          }
 #endif
          break;
-      case D3D_COMM_D3D9:
-      case D3D_COMM_NONE:
+      case GFX_CTX_DIRECT3D9_API:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 }
@@ -2007,7 +2053,7 @@ void d3d_set_vertex_declaration(void *data, void *vertex_data)
 
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #if defined(HAVE_D3D9)
 #ifdef __cplusplus
          dev->SetVertexDeclaration((LPDIRECT3DVERTEXDECLARATION)vertex_data);
@@ -2016,8 +2062,9 @@ void d3d_set_vertex_declaration(void *data, void *vertex_data)
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
-      case D3D_COMM_NONE:
+      case GFX_CTX_DIRECT3D8_API:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 }
@@ -2028,7 +2075,7 @@ static bool d3d_reset_internal(LPDIRECT3DDEVICE dev,
 {
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
 #ifdef __cplusplus
          if ((dev->Reset(d3dpp) == D3D_OK))
@@ -2039,7 +2086,7 @@ static bool d3d_reset_internal(LPDIRECT3DDEVICE dev,
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
 #ifdef __cplusplus
          if ((dev->Reset(d3dpp) == D3D_OK))
@@ -2050,7 +2097,8 @@ static bool d3d_reset_internal(LPDIRECT3DDEVICE dev,
 #endif
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 
@@ -2061,7 +2109,7 @@ static HRESULT d3d_test_cooperative_level(LPDIRECT3DDEVICE dev)
 {
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifndef _XBOX
 #ifdef HAVE_D3D9
 #ifdef __cplusplus
@@ -2073,7 +2121,7 @@ static HRESULT d3d_test_cooperative_level(LPDIRECT3DDEVICE dev)
          break;
 #endif
 #endif
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifndef _XBOX
 #ifdef HAVE_D3D8
 #ifdef __cplusplus
@@ -2085,7 +2133,8 @@ static HRESULT d3d_test_cooperative_level(LPDIRECT3DDEVICE dev)
          break;
 #endif
 #endif
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 
@@ -2101,7 +2150,7 @@ static bool d3d_create_device_internal(LPDIRECT3DDEVICE *dev,
 {
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
 #ifdef __cplusplus
          if (SUCCEEDED(d3d->CreateDevice(
@@ -2124,7 +2173,7 @@ static bool d3d_create_device_internal(LPDIRECT3DDEVICE *dev,
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
 #ifdef __cplusplus
          if (SUCCEEDED(d3d->CreateDevice(
@@ -2147,7 +2196,8 @@ static bool d3d_create_device_internal(LPDIRECT3DDEVICE *dev,
 #endif
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 
@@ -2217,7 +2267,7 @@ bool d3d_device_get_backbuffer(LPDIRECT3DDEVICE dev,
 
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
 #ifdef __cplusplus
          if (SUCCEEDED(dev->GetBackBuffer( 
@@ -2234,7 +2284,7 @@ bool d3d_device_get_backbuffer(LPDIRECT3DDEVICE dev,
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
 #ifdef __cplusplus
          if (SUCCEEDED(dev->GetBackBuffer(idx,
@@ -2249,7 +2299,8 @@ bool d3d_device_get_backbuffer(LPDIRECT3DDEVICE dev,
 #endif
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 
@@ -2261,7 +2312,7 @@ void d3d_device_free(LPDIRECT3DDEVICE dev, LPDIRECT3D pd3d)
 {
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
          if (dev)
          {
@@ -2282,7 +2333,7 @@ void d3d_device_free(LPDIRECT3DDEVICE dev, LPDIRECT3D pd3d)
          }
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
 
          if (dev)
@@ -2304,7 +2355,8 @@ void d3d_device_free(LPDIRECT3DDEVICE dev, LPDIRECT3D pd3d)
          }
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 
@@ -2417,7 +2469,7 @@ bool d3dx_create_font_indirect(LPDIRECT3DDEVICE dev,
 {
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3DX
 #ifdef HAVE_D3D9
 #ifdef __cplusplus
@@ -2433,7 +2485,7 @@ bool d3dx_create_font_indirect(LPDIRECT3DDEVICE dev,
 #endif
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3DX
 #ifdef HAVE_D3D8
          if (SUCCEEDED(D3DCreateFontIndirect(
@@ -2443,7 +2495,8 @@ bool d3dx_create_font_indirect(LPDIRECT3DDEVICE dev,
 #endif
 #endif
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 
@@ -2454,7 +2507,7 @@ void d3dxbuffer_release(void *data)
 {
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
          {
 #ifdef HAVE_D3D9
 #ifdef HAVE_D3DX
@@ -2475,8 +2528,9 @@ void d3dxbuffer_release(void *data)
 #endif
          }
          break;
-      case D3D_COMM_D3D8:
-      case D3D_COMM_NONE:
+      case GFX_CTX_DIRECT3D8_API:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 }
@@ -2495,7 +2549,7 @@ bool d3dx_compile_shader(
 {
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #if defined(HAVE_D3DX) && defined(HAVE_D3D9)
          if (D3DCompileShader)
             if (D3DCompileShader(
@@ -2512,8 +2566,9 @@ bool d3dx_compile_shader(
                return true;
 #endif
          break;
-      case D3D_COMM_D3D8:
-      case D3D_COMM_NONE:
+      case GFX_CTX_DIRECT3D8_API:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
    return false;
@@ -2532,7 +2587,7 @@ bool d3dx_compile_shader_from_file(
 {
    switch (d3d_common_api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #if defined(HAVE_D3DX) && defined(HAVE_D3D9)
          if (D3DCompileShaderFromFile)
             if (D3DCompileShaderFromFile(
@@ -2548,8 +2603,9 @@ bool d3dx_compile_shader_from_file(
                return true;
 #endif
          break;
-      case D3D_COMM_D3D8:
-      case D3D_COMM_NONE:
+      case GFX_CTX_DIRECT3D8_API:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
    return false;

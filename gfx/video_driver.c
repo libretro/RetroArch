@@ -3426,14 +3426,13 @@ void video_driver_set_mvp(video_shader_ctx_mvp_t *mvp)
 }
 
 bool renderchain_d3d_init_first(
-      unsigned api,
+      enum gfx_ctx_api api,
       const d3d_renderchain_driver_t **renderchain_driver,
       void **renderchain_handle)
 {
-#ifdef HAVE_D3D
-   switch ((enum d3d_comm_api)api)
+   switch (api)
    {
-      case D3D_COMM_D3D9:
+      case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
          {
             static const d3d_renderchain_driver_t *renderchain_d3d_drivers[] = {
@@ -3462,7 +3461,7 @@ bool renderchain_d3d_init_first(
          }
 #endif
          break;
-      case D3D_COMM_D3D8:
+      case GFX_CTX_DIRECT3D8_API:
          {
 #ifdef HAVE_D3D8
             void *data = d3d8_d3d_renderchain.chain_new();
@@ -3476,10 +3475,10 @@ bool renderchain_d3d_init_first(
 #endif
          }
          break;
-      case D3D_COMM_NONE:
+      case GFX_CTX_NONE:
+      default:
          break;
    }
-#endif
 
    return false;
 }

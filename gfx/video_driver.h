@@ -1317,7 +1317,7 @@ bool video_shader_driver_compile_program(struct shader_program_info *program_inf
 bool video_shader_driver_wrap_type(video_shader_ctx_wrap_t *wrap);
 
 bool renderchain_d3d_init_first(
-      unsigned api,
+      enum gfx_ctx_api,
       const d3d_renderchain_driver_t **renderchain_driver,
       void **renderchain_handle);
 

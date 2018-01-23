@@ -121,7 +121,7 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
    link_info.tex_h = video_info->input_scale * RARCH_SCALE_BASE;
    link_info.pass  = &d3d->shader.pass[0];
 
-   if (!renderchain_d3d_init_first(D3D_COMM_D3D8,
+   if (!renderchain_d3d_init_first(GFX_CTX_DIRECT3D8_API,
             &d3d->renderchain_driver,
             &d3d->renderchain_data))
    {
@@ -1112,7 +1112,7 @@ static void *d3d_init(const video_info_t *info,
    d3d_video_t            *d3d        = NULL;
    const gfx_ctx_driver_t *ctx_driver = NULL;
 
-   if (!d3d_initialize_symbols(D3D_COMM_D3D8))
+   if (!d3d_initialize_symbols(GFX_CTX_DIRECT3D8_API))
       return NULL;
 
    d3d = (d3d_video_t*)calloc(1, sizeof(*d3d));
