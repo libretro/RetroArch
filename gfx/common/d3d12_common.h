@@ -1172,6 +1172,7 @@ typedef struct
    DXGI_FORMAT                 format;
    D3D12_GPU_DESCRIPTOR_HANDLE sampler_linear;
    D3D12_GPU_DESCRIPTOR_HANDLE sampler_nearest;
+   bool need_resize;
 
 #ifdef DEBUG
    D3D12Debug debugController;

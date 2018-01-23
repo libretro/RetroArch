@@ -103,7 +103,32 @@ static bool d3d12_gfx_frame(
 {
    d3d12_video_t* d3d12 = (d3d12_video_t*)data;
 
-   (void)msg;
+   if (d3d12->need_resize)
+   {
+      int i;
+
+      for (int i = 0; i < countof(d3d12->chain.renderTargets); i++)
+         Release(d3d12->chain.renderTargets[i]);
+
+      DXGIResizeBuffers(d3d12->chain.handle, 0, 0, 0, 0, 0);
+
+      for (int i = 0; i < countof(d3d12->chain.renderTargets); i++)
+      {
+         DXGIGetSwapChainBuffer(d3d12->chain.handle, i, &d3d12->chain.renderTargets[i]);
+         D3D12CreateRenderTargetView(
+               d3d12->device, d3d12->chain.renderTargets[i], NULL, d3d12->chain.desc_handles[i]);
+      }
+
+      d3d12->chain.viewport.Width     = video_info->width;
+      d3d12->chain.viewport.Height    = video_info->height;
+      d3d12->chain.scissorRect.right  = video_info->width;
+      d3d12->chain.scissorRect.bottom = video_info->height;
+      d3d12->chain.frame_index = DXGIGetCurrentBackBufferIndex(d3d12->chain.handle);
+
+      d3d12->need_resize = false;
+   }
+
+
    PERF_START();
    D3D12ResetCommandAllocator(d3d12->queue.allocator);
 
@@ -209,7 +234,9 @@ static bool d3d12_gfx_alive(void* data)
    unsigned width;
    unsigned height;
 
-   win32_check_window(&quit, &resize, &width, &height);
+   d3d12_video_t* d3d12 = (d3d12_video_t*)data;
+
+   win32_check_window(&quit, &d3d12->need_resize, &width, &height);
 
    if (width != 0 && height != 0)
       video_driver_set_size(&width, &height);
