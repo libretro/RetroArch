@@ -243,7 +243,7 @@ retro_time_t cpu_features_get_time_usec(void)
 #endif
 }
 
-#if defined(__x86_64__) || defined(__i386__) || defined(__i486__) || defined(__i686__)
+#if defined(__x86_64__) || defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(_M_X64) || defined(_M_IX86)
 #define CPU_X86
 #endif
 
