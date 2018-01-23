@@ -24,11 +24,9 @@ void set_badge_menu_texture(badges_ctx_t * badges, int i)
 {
    char badge_file[16];
    char fullpath[PATH_MAX_LENGTH];
-   const char * locked_suffix = (badges->badge_locked[i] == true) 
-      ? "_lock.png" : ".png";
 
-   snprintf(badge_file, sizeof(badge_file), "%s", badges->badge_id_list[i]);
-   strcat(badge_file, locked_suffix);
+   snprintf(badge_file, sizeof(badge_file), "%s%s", badges->badge_id_list[i],
+         badges->badge_locked[i] ? "_lock.png" : ".png");
 
    fill_pathname_application_special(fullpath,
          PATH_MAX_LENGTH * sizeof(char),
@@ -54,7 +52,7 @@ void set_badge_info (badges_ctx_t *badge_struct, int id,
 menu_texture_item get_badge_texture(int id)
 {
    settings_t *settings = config_get_ptr();
-   if (!settings->bools.cheevos_badges_enable)
+   if (!settings || !settings->bools.cheevos_badges_enable)
       return (menu_texture_item)NULL;
 
    return badges_ctx.menu_texture_list[id];
