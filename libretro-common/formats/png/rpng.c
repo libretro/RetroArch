@@ -686,8 +686,8 @@ static int png_reverse_filter_adam7_iterate(uint32_t **data_,
       const struct png_ihdr *ihdr,
       struct rpng_process *pngp)
 {
-   int ret = 0;
-   bool to_next = pngp->pass_pos < ARRAY_SIZE(passes);
+   int        ret = 0;
+   bool   to_next = pngp->pass_pos < ARRAY_SIZE(passes);
    uint32_t *data = *data_;
 
    if (!to_next)
@@ -762,7 +762,7 @@ static int png_reverse_filter_iterate(rpng_t *rpng, uint32_t **data)
    if (!rpng)
       return false;
 
-   if (rpng->ihdr.interlace)
+   if (rpng->ihdr.interlace && rpng->process)
       return png_reverse_filter_adam7(data, &rpng->ihdr, rpng->process);
 
    return png_reverse_filter_regular_iterate(data, &rpng->ihdr, rpng->process);
