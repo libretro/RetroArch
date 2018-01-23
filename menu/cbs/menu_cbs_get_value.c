@@ -1718,6 +1718,7 @@ static void menu_action_setting_disp_set_label_setting_path(file_list_t* list,
    strlcpy(s2, path, len2);
 }
 
+#ifdef HAVE_NETWORKING
 static void menu_action_setting_disp_set_label_netplay_share_digital(file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
       const char *label,
@@ -1795,6 +1796,7 @@ static void menu_action_setting_disp_set_label_netplay_share_analog(file_list_t*
    }
    strlcpy(s, src, len);
 }
+#endif // HAVE_NETWORKING
 
 static int menu_cbs_init_bind_get_string_representation_compare_label(
       menu_file_list_cbs_t *cbs)
@@ -1899,6 +1901,7 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_menu_input_keyboard_gamepad_mapping_type);
             break;
+#ifdef HAVE_NETWORKING
          case MENU_ENUM_LABEL_NETPLAY_SHARE_DIGITAL:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_netplay_share_digital);
@@ -1907,6 +1910,7 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_netplay_share_analog);
             break;
+#endif // HAVE_NETWORKING
          case MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST:
          case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
          case MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
