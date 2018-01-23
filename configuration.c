@@ -132,6 +132,7 @@ enum video_driver_enum
    VIDEO_SWITCH,
    VIDEO_D3D8,
    VIDEO_D3D9,
+   VIDEO_D3D10,
    VIDEO_D3D11,
    VIDEO_D3D12,
    VIDEO_VG,
@@ -698,6 +699,8 @@ const char *config_get_default_video(void)
          return "d3d8";
       case VIDEO_D3D9:
          return "d3d9";
+      case VIDEO_D3D10:
+         return "d3d10";
       case VIDEO_D3D11:
          return "d3d11";
       case VIDEO_D3D12:

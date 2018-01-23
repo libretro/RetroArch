@@ -119,6 +119,8 @@ vector<string> overloaded_list =
    "SetPrivateDataInterface",
    "SetPrivateData",
    "GetPrivateData",
+   "Map",
+   "Unmap",
    "Reset",
    "Signal",
    "BeginEvent",
@@ -136,6 +138,13 @@ vector<string> overloaded_list =
    "GetContextFlags",
    "GetCertificate",
    "GetCertificateSize",
+   "Begin",
+   "End",
+   "GetData",
+
+   "CopySubresourceRegion",
+   "CreateRenderTargetView",
+   "CreateShaderResourceView",
 };
 
 vector<string> action_list =
@@ -174,10 +183,11 @@ vector<string> base_objects_list =
 {
    "IUnknown",
    "ID3D12Object",
-   "ID3D12Resource",
+//   "ID3D12Resource",
    "IDXGIObject",
    "IDXGIResource",
-   "D3D11Resource",
+//   "ID3D11Resource",
+//   "ID3D10Resource",
 };
 
 //string insert_name(const char* fname, const char* name)

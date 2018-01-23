@@ -13,6 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <assert.h>
 #include <dynamic/dylib.h>
 
 #include "dxgi_common.h"
@@ -20,20 +21,222 @@
 HRESULT WINAPI CreateDXGIFactory1(REFIID riid, void **ppFactory)
 {
    static dylib_t dxgi_dll;
-   static HRESULT (WINAPI *fp)(REFIID, void **);
+   static HRESULT(WINAPI * fp)(REFIID, void **);
 
-   if(!dxgi_dll)
+   if (!dxgi_dll)
       dxgi_dll = dylib_load("dxgi.dll");
 
-   if(!dxgi_dll)
+   if (!dxgi_dll)
       return TYPE_E_CANTLOADLIBRARY;
 
-   if(!fp)
-      fp = (HRESULT (WINAPI *)(REFIID, void **))dylib_proc(dxgi_dll, "CreateDXGIFactory1");
+   if (!fp)
+      fp = (HRESULT(WINAPI *)(REFIID, void **))dylib_proc(dxgi_dll, "CreateDXGIFactory1");
 
-   if(!fp)
+   if (!fp)
       return TYPE_E_CANTLOADLIBRARY;
 
    return fp(riid, ppFactory);
 }
 
+DXGI_FORMAT *dxgi_get_format_fallback_list(DXGI_FORMAT format)
+{
+   static DXGI_FORMAT format_unknown = DXGI_FORMAT_UNKNOWN;
+
+   switch ((unsigned)format)
+   {
+      case DXGI_FORMAT_R8G8B8A8_UNORM:
+      {
+         static DXGI_FORMAT formats[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_B8G8R8A8_UNORM,
+                                          DXGI_FORMAT_B8G8R8X8_UNORM, DXGI_FORMAT_UNKNOWN };
+         return formats;
+      }
+      case DXGI_FORMAT_B8G8R8A8_UNORM:
+      {
+         static DXGI_FORMAT formats[] = { DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM,
+                                          DXGI_FORMAT_UNKNOWN };
+         return formats;
+      }
+      case DXGI_FORMAT_B8G8R8X8_UNORM:
+      {
+         static DXGI_FORMAT formats[] = { DXGI_FORMAT_B8G8R8X8_UNORM, DXGI_FORMAT_B8G8R8A8_UNORM,
+                                          DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_UNKNOWN };
+         return formats;
+      }
+      case DXGI_FORMAT_B5G6R5_UNORM:
+      {
+         static DXGI_FORMAT formats[] = { DXGI_FORMAT_B5G6R5_UNORM, DXGI_FORMAT_B8G8R8X8_UNORM,
+                                          DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM,
+                                          DXGI_FORMAT_UNKNOWN };
+         return formats;
+      }
+      case DXGI_FORMAT_EX_A4R4G4B4_UNORM:
+      case DXGI_FORMAT_B4G4R4A4_UNORM:
+      {
+         static DXGI_FORMAT formats[] = { DXGI_FORMAT_B4G4R4A4_UNORM, DXGI_FORMAT_B8G8R8A8_UNORM,
+                                          DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_UNKNOWN };
+         return formats;
+      }
+      default:
+         assert(0);
+   }
+   return &format_unknown;
+}
+
+#define FORMAT_PROCESS_( \
+      src_type, src_rb, src_gb, src_bb, src_ab, src_rs, src_gs, src_bs, src_as, dst_type, dst_rb, \
+      dst_gb, dst_bb, dst_ab, dst_rs, dst_gs, dst_bs, dst_as) \
+   do \
+   { \
+      if (((src_rs == dst_rs && src_rb == dst_rb) || !dst_rb) && \
+          ((src_gs == dst_gs && src_gb == dst_gb) || !dst_gb) && \
+          ((src_bs == dst_bs && src_bb == dst_bb) || !dst_bb) && \
+          ((src_as == dst_as && src_ab == dst_ab) || !dst_ab)) \
+      { \
+         const UINT8 *in  = src_data; \
+         UINT8 *      out = dst_data; \
+         for (i = 0; i < height; i++) \
+         { \
+            memcpy(out, in, width * sizeof(src_type)); \
+            in += src_pitch ? src_pitch : width * sizeof(src_type); \
+            out += dst_pitch ? dst_pitch : width * sizeof(dst_type); \
+         } \
+      } \
+      else \
+      { \
+         const src_type *src_ptr = (const src_type *)src_data; \
+         dst_type *      dst_ptr = (dst_type *)dst_data; \
+         if (src_pitch) \
+            src_pitch -= width * sizeof(*src_ptr); \
+         if (dst_pitch) \
+            dst_pitch -= width * sizeof(*dst_ptr); \
+         for (i = 0; i < height; i++) \
+         { \
+            for (j = 0; j < width; j++) \
+            { \
+               unsigned r, g, b, a; \
+               src_type src_val = *src_ptr++; \
+               if (src_rb) \
+               { \
+                  r = (src_val >> src_rs) & ((1 << src_rb) - 1); \
+                  r = (src_rb < dst_rb) \
+                            ? (r << (dst_rb - src_rb)) | \
+                                    (r >> ((2 * src_rb > dst_rb) ? 2 * src_rb - dst_rb : 0)) \
+                            : r >> (src_rb - dst_rb); \
+               } \
+               if (src_gb) \
+               { \
+                  g = (src_val >> src_gs) & ((1 << src_gb) - 1); \
+                  g = (src_gb < dst_gb) \
+                            ? (g << (dst_gb - src_gb)) | \
+                                    (g >> ((2 * src_gb > dst_gb) ? 2 * src_gb - dst_gb : 0)) \
+                            : g >> (src_gb - dst_gb); \
+               } \
+               if (src_bb) \
+               { \
+                  b = (src_val >> src_bs) & ((1 << src_bb) - 1); \
+                  b = (src_bb < dst_bb) \
+                            ? (b << (dst_bb - src_bb)) | \
+                                    (b >> ((2 * src_bb > dst_bb) ? 2 * src_bb - dst_bb : 0)) \
+                            : b >> (src_bb - dst_bb); \
+               } \
+               if (src_ab) \
+               { \
+                  a = (src_val >> src_as) & ((1 << src_ab) - 1); \
+                  a = (src_ab < dst_ab) \
+                            ? (a << (dst_ab - src_ab)) | \
+                                    (a >> ((2 * src_ab > dst_ab) ? 2 * src_ab - dst_ab : 0)) \
+                            : a >> (src_ab - dst_ab); \
+               } \
+               *dst_ptr++ = ((src_rb ? r : 0) << dst_rs) | ((src_gb ? g : 0) << dst_gs) | \
+                            ((src_bb ? b : 0) << dst_bs) | \
+                            ((src_ab ? a : ((1 << dst_ab) - 1)) << dst_as); \
+            } \
+            src_ptr = (src_type *)((UINT8 *)src_ptr + src_pitch); \
+            dst_ptr = (dst_type *)((UINT8 *)dst_ptr + dst_pitch); \
+         } \
+      } \
+   } while (0)
+
+#define FORMAT_PROCESS(args) FORMAT_PROCESS_ args
+
+#define FORMAT_DST(st, dt) \
+   case dt: \
+   { \
+      FORMAT_PROCESS((st##_DESCS, dt##_DESCS)); \
+      break; \
+   }
+
+#define FORMAT_SRC(st) \
+   case st: \
+   { \
+      switch ((unsigned)dst_format) \
+      { \
+         FORMAT_DST_LIST(st); \
+         default: \
+            assert(0); \
+            break; \
+      } \
+      break; \
+   }
+
+/*                                                        r, g, b, a      r,  g,  b,  a */
+#define DXGI_FORMAT_R8G8B8A8_UNORM_DESCS       UINT32,    8, 8, 8, 8,     0,  8, 16, 24
+#define DXGI_FORMAT_B8G8R8X8_UNORM_DESCS       UINT32,    8, 8, 8, 0,    16,  8,  0,  0
+#define DXGI_FORMAT_B8G8R8A8_UNORM_DESCS       UINT32,    8, 8, 8, 8,    16,  8,  0, 24
+#define DXGI_FORMAT_B5G6R5_UNORM_DESCS         UINT16,    5, 6, 5, 0,    11,  5,  0,  0
+#define DXGI_FORMAT_B5G5R5A1_UNORM_DESCS       UINT16,    5, 5, 5, 1,    10,  5,  0, 11
+#define DXGI_FORMAT_B4G4R4A4_UNORM_DESCS       UINT16,    4, 4, 4, 4,     8,  4,  0, 12
+#define DXGI_FORMAT_EX_A4R4G4B4_UNORM_DESCS    UINT16,    4, 4, 4, 4,     4,  8, 12,  0
+
+#define FORMAT_SRC_LIST() \
+   FORMAT_SRC(DXGI_FORMAT_R8G8B8A8_UNORM); \
+   FORMAT_SRC(DXGI_FORMAT_B8G8R8X8_UNORM); \
+   FORMAT_SRC(DXGI_FORMAT_B5G6R5_UNORM); \
+   FORMAT_SRC(DXGI_FORMAT_B5G5R5A1_UNORM); \
+   FORMAT_SRC(DXGI_FORMAT_B4G4R4A4_UNORM); \
+   FORMAT_SRC(DXGI_FORMAT_B8G8R8A8_UNORM); \
+   FORMAT_SRC(DXGI_FORMAT_EX_A4R4G4B4_UNORM)
+
+#define FORMAT_DST_LIST(srcfmt) \
+   FORMAT_DST(srcfmt, DXGI_FORMAT_R8G8B8A8_UNORM); \
+   FORMAT_DST(srcfmt, DXGI_FORMAT_B8G8R8X8_UNORM); \
+   FORMAT_DST(srcfmt, DXGI_FORMAT_B5G6R5_UNORM); \
+   FORMAT_DST(srcfmt, DXGI_FORMAT_B5G5R5A1_UNORM); \
+   FORMAT_DST(srcfmt, DXGI_FORMAT_B4G4R4A4_UNORM); \
+   FORMAT_DST(srcfmt, DXGI_FORMAT_B8G8R8A8_UNORM); \
+   FORMAT_DST(srcfmt, DXGI_FORMAT_EX_A4R4G4B4_UNORM)
+
+#ifdef _MSC_VER
+#pragma warning(disable : 4293)
+#endif
+void dxgi_copy(
+      int         width,
+      int         height,
+      DXGI_FORMAT src_format,
+      int         src_pitch,
+      const void *src_data,
+      DXGI_FORMAT dst_format,
+      int         dst_pitch,
+      void *      dst_data)
+{
+   int i, j;
+#if defined(PERF_START) && defined(PERF_STOP)
+   PERF_START();
+#endif
+
+   switch ((unsigned)src_format)
+   {
+      FORMAT_SRC_LIST();
+
+      default:
+         assert(0);
+         break;
+   }
+
+#if defined(PERF_START) && defined(PERF_STOP)
+   PERF_STOP();
+#endif
+}
+#ifdef _MSC_VER
+#pragma warning(default : 4293)
+#endif

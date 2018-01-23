@@ -1337,6 +1337,7 @@ extern video_driver_t video_ctr;
 extern video_driver_t video_switch;
 extern video_driver_t video_d3d8;
 extern video_driver_t video_d3d9;
+extern video_driver_t video_d3d10;
 extern video_driver_t video_d3d11;
 extern video_driver_t video_d3d12;
 extern video_driver_t video_gx;
