@@ -14,6 +14,7 @@ VCINSTALLDIR := C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\$(NOTHING
 HAVE_D3DX                := 1
 HAVE_D3D8                := 0
 HAVE_D3D9                := 1
+HAVE_D3D10               := 1
 HAVE_D3D11               := 1
 HAVE_D3D12               := 1
 HAVE_CG                  := 1
@@ -50,6 +51,7 @@ HAVE_CHEEVOS             := 1
 HAVE_KEYMAPPER           := 1
 
 include Makefile.common
+CFLAGS    := $(filter-out  -Wno-unknown-pragmas,$(CFLAGS))
 CXXFLAGS  := $(filter-out  -fpermissive -Wno-switch -Wno-sign-compare -fno-strict-aliasing -Wno-maybe-uninitialized -Wno-reorder -Wno-parentheses,$(CXXFLAGS))
 CXXFLAGS  += $(CFLAGS)
 LIBS      := $(filter-out  -lstdc++,$(LIBS))

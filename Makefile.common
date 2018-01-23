@@ -1186,8 +1186,7 @@ ifeq ($(HAVE_VULKAN), 1)
            -I$(DEPS_DIR)/glslang \
            -I$(DEPS_DIR)/SPIRV-Cross
 
-   CXXFLAGS += -Wno-switch -Wno-sign-compare -fno-strict-aliasing -Wno-maybe-uninitialized -Wno-reorder -Wno-parentheses -Igfx/include
-   CFLAGS  += -Igfx/include
+   CXXFLAGS += -Wno-switch -Wno-sign-compare -fno-strict-aliasing -Wno-maybe-uninitialized -Wno-reorder -Wno-parentheses
 
    GLSLANG_OBJ     := $(GLSLANG_SOURCES:.cpp=.o)
    SPIRV_CROSS_OBJ := $(SPIRV_CROSS_SOURCES:.cpp=.o)
@@ -1211,6 +1210,10 @@ ifeq ($(HAVE_VULKAN), 1)
    endif
    LIBS += -lstdc++
    DEFINES += -DHAVE_SLANG
+endif
+
+ifeq ($(findstring 1, $(HAVE_VULKAN) $(HAVE_D3D10) $(HAVE_D3D11) $(HAVE_D3D12)),1)
+   INCLUDE_DIRS += -Igfx/include
 endif
 
 ifeq ($(WANT_WGL), 1)
@@ -1289,30 +1292,25 @@ endif
    endif
 endif
 
+ifeq ($(HAVE_D3D10), 1)
+   OBJ += gfx/drivers/d3d10.o gfx/common/d3d10_common.o
+   DEFINES += -DHAVE_D3D10
+endif
+
 ifeq ($(HAVE_D3D11), 1)
    OBJ += gfx/drivers/d3d11.o gfx/common/d3d11_common.o
    DEFINES += -DHAVE_D3D11
-#   LIBS += -ld3d11
-   WANT_DXGI = 1
-   WANT_D3DCOMPILER = 1
 endif
 
 ifeq ($(HAVE_D3D12), 1)
    OBJ += gfx/drivers/d3d12.o gfx/common/d3d12_common.o
    DEFINES += -DHAVE_D3D12
-#   LIBS += -ld3d12
-   WANT_DXGI = 1
-   WANT_D3DCOMPILER = 1
 endif
 
-ifeq ($(WANT_D3DCOMPILER), 1)
+ifneq ($(findstring 1, $(HAVE_D3D10) $(HAVE_D3D11) $(HAVE_D3D12)),)
    OBJ += gfx/common/d3dcompiler_common.o
-#   LIBS += -ld3dcompiler
-endif
-
-ifeq ($(WANT_DXGI), 1)
    OBJ += gfx/common/dxgi_common.o
-#   LIBS += -ldxgi
+   CFLAGS += -Wno-unknown-pragmas
 endif
 
 ifeq ($(HAVE_D3D8), 1)

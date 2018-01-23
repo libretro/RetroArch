@@ -37,7 +37,9 @@
 
 #include "../font_driver.h"
 #include "../video_driver.h"
+#if defined(HAVE_D3D8) || defined(HAVE_D3D9)
 #include "../common/d3d_common.h"
+#endif
 #ifdef _XBOX
 #include "../../defines/xdk_defines.h"
 #endif

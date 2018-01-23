@@ -75,7 +75,7 @@ const GUID GUID_DEVINTERFACE_HID = { 0x4d1e55b2, 0xf16f, 0x11Cf, { 0x88, 0xcb, 0
 static HDEVNOTIFY notification_handler;
 #endif
 
-#if defined(HAVE_D3D9) || defined(HAVE_D3D8)
+#if defined(HAVE_D3D8) || defined(HAVE_D3D9) || defined (HAVE_D3D10) || defined (HAVE_D3D11) || defined (HAVE_D3D12)
 extern bool dinput_handle_message(void *dinput, UINT message,
       WPARAM wParam, LPARAM lParam);
 extern void *dinput_gdi;
@@ -569,7 +569,7 @@ static void win32_set_droppable(ui_window_win32_t *window, bool droppable)
       DragAcceptFiles_func(window->hwnd, droppable);
 }
 
-#if defined(HAVE_D3D9) || defined(HAVE_D3D8)
+#if defined(HAVE_D3D8) || defined(HAVE_D3D9) || defined (HAVE_D3D10) || defined (HAVE_D3D11) || defined (HAVE_D3D12)
 LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {

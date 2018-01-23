@@ -345,6 +345,11 @@ VIDEO DRIVER
 
 #endif
 
+#if defined(HAVE_D3D10)
+#include "../gfx/drivers/d3d10.c"
+#include "../gfx/common/d3d10_common.c"
+#endif
+
 #if defined(HAVE_D3D11)
 #include "../gfx/drivers/d3d11.c"
 #include "../gfx/common/d3d11_common.c"
@@ -355,7 +360,7 @@ VIDEO DRIVER
 #include "../gfx/common/d3d12_common.c"
 #endif
 
-#if defined(HAVE_D3D11) || defined(HAVE_D3D12)
+#if defined(HAVE_D3D10) || defined(HAVE_D3D11) || defined(HAVE_D3D12)
 #include "../gfx/common/d3dcompiler_common.c"
 #include "../gfx/common/dxgi_common.c"
 #endif

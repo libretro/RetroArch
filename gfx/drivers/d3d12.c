@@ -25,9 +25,9 @@
 #include "gfx/common/d3d12_common.h"
 #include "gfx/common/d3dcompiler_common.h"
 
-static void d3d12_set_filtering(void *data, unsigned index, bool smooth)
+static void d3d12_set_filtering(void* data, unsigned index, bool smooth)
 {
-   d3d12_video_t *d3d12 = (d3d12_video_t *)data;
+   d3d12_video_t* d3d12 = (d3d12_video_t*)data;
 
    if (smooth)
       d3d12->frame.sampler = d3d12->sampler_linear;
@@ -35,13 +35,13 @@ static void d3d12_set_filtering(void *data, unsigned index, bool smooth)
       d3d12->frame.sampler = d3d12->sampler_nearest;
 }
 
-static void *d3d12_gfx_init(const video_info_t *video,
-                            const input_driver_t **input, void **input_data)
+static void*
+d3d12_gfx_init(const video_info_t* video, const input_driver_t** input, void** input_data)
 {
-   WNDCLASSEX wndclass = {0};
-   settings_t *settings = config_get_ptr();
-   gfx_ctx_input_t inp = {input, input_data};
-   d3d12_video_t *d3d12 = (d3d12_video_t *)calloc(1, sizeof(*d3d12));
+   WNDCLASSEX      wndclass = { 0 };
+   settings_t*     settings = config_get_ptr();
+   gfx_ctx_input_t inp      = { input, input_data };
+   d3d12_video_t*  d3d12    = (d3d12_video_t*)calloc(1, sizeof(*d3d12));
 
    if (!d3d12)
       return NULL;
@@ -59,9 +59,6 @@ static void *d3d12_gfx_init(const video_info_t *video,
 
    gfx_ctx_d3d.input_driver(NULL, settings->arrays.input_joypad_driver, input, input_data);
 
-   d3d12->chain.vsync = video->vsync;
-   d3d12->frame.rgb32 = video->rgb32;
-
    if (!d3d12_init_base(d3d12))
       goto error;
 
@@ -78,9 +75,13 @@ static void *d3d12_gfx_init(const video_info_t *video,
       goto error;
 
    d3d12_create_fullscreen_quad_vbo(d3d12->device, &d3d12->frame.vbo_view, &d3d12->frame.vbo);
-   d3d12_create_fullscreen_quad_vbo(d3d12->device, &d3d12->menu.vbo_view,  &d3d12->menu.vbo);
+   d3d12_create_fullscreen_quad_vbo(d3d12->device, &d3d12->menu.vbo_view, &d3d12->menu.vbo);
 
    d3d12_set_filtering(d3d12, 0, video->smooth);
+
+   d3d12->chain.vsync = video->vsync;
+   d3d12->format      = video->rgb32 ? DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM;
+   d3d12->frame.texture.desc.Format = d3d12_get_closest_match_texture2D(d3d12->device, d3d12->format);
 
    return d3d12;
 
@@ -90,105 +91,87 @@ error:
    return NULL;
 }
 
-
-static bool d3d12_gfx_frame(void *data, const void *frame,
-                            unsigned width, unsigned height, uint64_t frame_count,
-                            unsigned pitch, const char *msg, video_frame_info_t *video_info)
+static bool d3d12_gfx_frame(
+      void*               data,
+      const void*         frame,
+      unsigned            width,
+      unsigned            height,
+      uint64_t            frame_count,
+      unsigned            pitch,
+      const char*         msg,
+      video_frame_info_t* video_info)
 {
-   d3d12_video_t *d3d12 = (d3d12_video_t *)data;
+   d3d12_video_t* d3d12 = (d3d12_video_t*)data;
 
    (void)msg;
-
+   PERF_START();
    D3D12ResetCommandAllocator(d3d12->queue.allocator);
 
    D3D12ResetGraphicsCommandList(d3d12->queue.cmd, d3d12->queue.allocator, d3d12->pipe.handle);
    D3D12SetGraphicsRootSignature(d3d12->queue.cmd, d3d12->pipe.rootSignature);
    {
-      D3D12DescriptorHeap desc_heaps [] = {d3d12->pipe.srv_heap.handle, d3d12->pipe.sampler_heap.handle};
+      D3D12DescriptorHeap desc_heaps[] = { d3d12->pipe.srv_heap.handle,
+                                           d3d12->pipe.sampler_heap.handle };
       D3D12SetDescriptorHeaps(d3d12->queue.cmd, countof(desc_heaps), desc_heaps);
    }
 
-   d3d12_resource_transition(d3d12->queue.cmd, d3d12->chain.renderTargets[d3d12->chain.frame_index],
-                             D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+   d3d12_resource_transition(
+         d3d12->queue.cmd, d3d12->chain.renderTargets[d3d12->chain.frame_index],
+         D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
    D3D12RSSetViewports(d3d12->queue.cmd, 1, &d3d12->chain.viewport);
    D3D12RSSetScissorRects(d3d12->queue.cmd, 1, &d3d12->chain.scissorRect);
-   D3D12OMSetRenderTargets(d3d12->queue.cmd, 1, &d3d12->chain.desc_handles[d3d12->chain.frame_index],
-                           FALSE, NULL);
-   D3D12ClearRenderTargetView(d3d12->queue.cmd, d3d12->chain.desc_handles[d3d12->chain.frame_index],
-                              d3d12->chain.clearcolor, 0, NULL);
+   D3D12OMSetRenderTargets(
+         d3d12->queue.cmd, 1, &d3d12->chain.desc_handles[d3d12->chain.frame_index], FALSE, NULL);
+   D3D12ClearRenderTargetView(
+         d3d12->queue.cmd, d3d12->chain.desc_handles[d3d12->chain.frame_index],
+         d3d12->chain.clearcolor, 0, NULL);
 
    D3D12IASetPrimitiveTopology(d3d12->queue.cmd, D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
    if (data && width && height)
    {
-      if (!d3d12->frame.tex.handle || (d3d12->frame.tex.desc.Width != width)
-            || (d3d12->frame.tex.desc.Height != height))
+      if (!d3d12->frame.texture.handle || (d3d12->frame.texture.desc.Width != width) ||
+          (d3d12->frame.texture.desc.Height != height))
       {
-         if (d3d12->frame.tex.handle)
-            Release(d3d12->frame.tex.handle);
-
-         if (d3d12->frame.tex.upload_buffer)
-            Release(d3d12->frame.tex.upload_buffer);
-
-         d3d12->frame.tex.desc.Width = width;
-         d3d12->frame.tex.desc.Height = height;
-         d3d12->frame.tex.desc.Format = d3d12->frame.rgb32 ? DXGI_FORMAT_B8G8R8A8_UNORM :
-                                        DXGI_FORMAT_B5G6R5_UNORM;
-         d3d12_create_texture(d3d12->device, &d3d12->pipe.srv_heap, SRV_HEAP_SLOT_FRAME_TEXTURE,
-                              &d3d12->frame.tex);
+         d3d12->frame.texture.desc.Width  = width;
+         d3d12->frame.texture.desc.Height = height;
+         d3d12_init_texture(
+               d3d12->device, &d3d12->pipe.srv_heap, SRV_HEAP_SLOT_FRAME_TEXTURE,
+               &d3d12->frame.texture);
       }
+      d3d12_update_texture(width, height, pitch, d3d12->format, frame, &d3d12->frame.texture);
 
-      {
-         unsigned i;
-         D3D12_RANGE read_range = {0, 0};
-         const uint8_t *in  = frame;
-         uint8_t       *out = NULL;
-
-
-         D3D12Map(d3d12->frame.tex.upload_buffer, 0, &read_range, &out);
-         out += d3d12->frame.tex.layout.Offset;
-
-         for (i = 0; i < height; i++)
-         {
-            memcpy(out, in, width * (d3d12->frame.rgb32 ? 4 : 2));
-            in += pitch;
-            out += d3d12->frame.tex.layout.Footprint.RowPitch;
-         }
-
-         D3D12Unmap(d3d12->frame.tex.upload_buffer, 0, NULL);
-      }
-
-      d3d12_upload_texture(d3d12->queue.cmd, &d3d12->frame.tex);
-
-      d3d12_set_texture(d3d12->queue.cmd, &d3d12->frame.tex);
+      d3d12_upload_texture(d3d12->queue.cmd, &d3d12->frame.texture);
+      d3d12_set_texture(d3d12->queue.cmd, &d3d12->frame.texture);
       d3d12_set_sampler(d3d12->queue.cmd, d3d12->frame.sampler);
       D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->frame.vbo_view);
       D3D12DrawInstanced(d3d12->queue.cmd, 4, 1, 0, 0);
    }
 
-   if (d3d12->menu.enabled && d3d12->menu.tex.handle)
+   if (d3d12->menu.enabled && d3d12->menu.texture.handle)
    {
-      if (d3d12->menu.tex.dirty)
-         d3d12_upload_texture(d3d12->queue.cmd, &d3d12->menu.tex);
+      if (d3d12->menu.texture.dirty)
+         d3d12_upload_texture(d3d12->queue.cmd, &d3d12->menu.texture);
 
-      d3d12_set_texture(d3d12->queue.cmd, &d3d12->menu.tex);
+      d3d12_set_texture(d3d12->queue.cmd, &d3d12->menu.texture);
       d3d12_set_sampler(d3d12->queue.cmd, d3d12->menu.sampler);
       D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->menu.vbo_view);
       D3D12DrawInstanced(d3d12->queue.cmd, 4, 1, 0, 0);
    }
 
-
-   d3d12_resource_transition(d3d12->queue.cmd, d3d12->chain.renderTargets[d3d12->chain.frame_index],
-                             D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+   d3d12_resource_transition(
+         d3d12->queue.cmd, d3d12->chain.renderTargets[d3d12->chain.frame_index],
+         D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
    D3D12CloseGraphicsCommandList(d3d12->queue.cmd);
 
    D3D12ExecuteGraphicsCommandLists(d3d12->queue.handle, 1, &d3d12->queue.cmd);
 
 #if 1
-   DXGIPresent(d3d12->chain.handle, !!d3d12->chain.vsync, 0);
+   //   DXGIPresent(d3d12->chain.handle, !!d3d12->chain.vsync, 0);
+   DXGIPresent(d3d12->chain.handle, 0, 0);
 #else
-   DXGI_PRESENT_PARAMETERS pp = {0};
+   DXGI_PRESENT_PARAMETERS pp = { 0 };
    DXGIPresent1(d3d12->swapchain, 0, 0, &pp);
 #endif
 
@@ -197,12 +180,14 @@ static bool d3d12_gfx_frame(void *data, const void *frame,
 
    if (D3D12GetCompletedValue(d3d12->queue.fence) < d3d12->queue.fenceValue)
    {
-      D3D12SetEventOnCompletion(d3d12->queue.fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
+      D3D12SetEventOnCompletion(
+            d3d12->queue.fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
       WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
    }
 
    d3d12->queue.fenceValue++;
    d3d12->chain.frame_index = DXGIGetCurrentBackBufferIndex(d3d12->chain.handle);
+   PERF_STOP();
 
    if (msg && *msg)
       gfx_ctx_d3d.update_window_title(NULL, video_info);
@@ -210,17 +195,17 @@ static bool d3d12_gfx_frame(void *data, const void *frame,
    return true;
 }
 
-static void d3d12_gfx_set_nonblock_state(void *data, bool toggle)
+static void d3d12_gfx_set_nonblock_state(void* data, bool toggle)
 {
-   d3d12_video_t *d3d12 = (d3d12_video_t *)data;
-   d3d12->chain.vsync = !toggle;
+   d3d12_video_t* d3d12 = (d3d12_video_t*)data;
+   d3d12->chain.vsync   = !toggle;
 }
 
-static bool d3d12_gfx_alive(void *data)
+static bool d3d12_gfx_alive(void* data)
 {
    (void)data;
-   bool quit;
-   bool resize;
+   bool     quit;
+   bool     resize;
    unsigned width;
    unsigned height;
 
@@ -232,43 +217,31 @@ static bool d3d12_gfx_alive(void *data)
    return !quit;
 }
 
-static bool d3d12_gfx_focus(void *data)
-{
-   return win32_has_focus();
-}
+static bool d3d12_gfx_focus(void* data) { return win32_has_focus(); }
 
-static bool d3d12_gfx_suppress_screensaver(void *data, bool enable)
+static bool d3d12_gfx_suppress_screensaver(void* data, bool enable)
 {
    (void)data;
    (void)enable;
    return false;
 }
 
-static bool d3d12_gfx_has_windowed(void *data)
+static bool d3d12_gfx_has_windowed(void* data)
 {
    (void)data;
    return true;
 }
 
-static void d3d12_gfx_free(void *data)
+static void d3d12_gfx_free(void* data)
 {
-   d3d12_video_t *d3d12 = (d3d12_video_t *)data;
+   d3d12_video_t* d3d12 = (d3d12_video_t*)data;
 
    Release(d3d12->frame.vbo);
-
-   if (d3d12->frame.tex.handle)
-      Release(d3d12->frame.tex.handle);
-
-   if (d3d12->frame.tex.upload_buffer)
-      Release(d3d12->frame.tex.upload_buffer);
-
+   Release(d3d12->frame.texture.handle);
+   Release(d3d12->frame.texture.upload_buffer);
    Release(d3d12->menu.vbo);
-
-   if (d3d12->menu.tex.handle)
-      Release(d3d12->menu.tex.handle);
-
-   if (d3d12->menu.tex.handle)
-      Release(d3d12->menu.tex.upload_buffer);
+   Release(d3d12->menu.texture.handle);
+   Release(d3d12->menu.texture.upload_buffer);
 
    Release(d3d12->pipe.sampler_heap.handle);
    Release(d3d12->pipe.srv_heap.handle);
@@ -295,8 +268,7 @@ static void d3d12_gfx_free(void *data)
    free(d3d12);
 }
 
-static bool d3d12_gfx_set_shader(void *data,
-                                 enum rarch_shader_type type, const char *path)
+static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const char* path)
 {
    (void)data;
    (void)type;
@@ -305,21 +277,19 @@ static bool d3d12_gfx_set_shader(void *data,
    return false;
 }
 
-static void d3d12_gfx_set_rotation(void *data,
-                                   unsigned rotation)
+static void d3d12_gfx_set_rotation(void* data, unsigned rotation)
 {
    (void)data;
    (void)rotation;
 }
 
-static void d3d12_gfx_viewport_info(void *data,
-                                    struct video_viewport *vp)
+static void d3d12_gfx_viewport_info(void* data, struct video_viewport* vp)
 {
    (void)data;
    (void)vp;
 }
 
-static bool d3d12_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
+static bool d3d12_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
 {
    (void)data;
    (void)buffer;
@@ -327,78 +297,29 @@ static bool d3d12_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    return true;
 }
 
-static void d3d12_set_menu_texture_frame(void *data,
-      const void *frame, bool rgb32, unsigned width, unsigned height,
-      float alpha)
+static void d3d12_set_menu_texture_frame(
+      void* data, const void* frame, bool rgb32, unsigned width, unsigned height, float alpha)
 {
-   d3d12_video_t *d3d12 = (d3d12_video_t *)data;
+   d3d12_video_t* d3d12  = (d3d12_video_t*)data;
+   int            pitch  = width * (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t));
+   DXGI_FORMAT    format = rgb32 ? DXGI_FORMAT_B8G8R8A8_UNORM : DXGI_FORMAT_EX_A4R4G4B4_UNORM;
 
-   if (!d3d12->menu.tex.handle || (d3d12->menu.tex.desc.Width != width)
-         || (d3d12->menu.tex.desc.Height = height))
+   if (d3d12->menu.texture.desc.Width != width || d3d12->menu.texture.desc.Height != height)
    {
-      if (d3d12->menu.tex.handle)
-         Release(d3d12->menu.tex.handle);
-
-      if (d3d12->menu.tex.upload_buffer)
-         Release(d3d12->menu.tex.upload_buffer);
-
-      d3d12->menu.tex.desc.Width = width;
-      d3d12->menu.tex.desc.Height = height;
-      d3d12->menu.tex.desc.Format = rgb32 ? DXGI_FORMAT_B8G8R8A8_UNORM : DXGI_FORMAT_B4G4R4A4_UNORM;
-      d3d12_create_texture(d3d12->device, &d3d12->pipe.srv_heap, SRV_HEAP_SLOT_MENU_TEXTURE,
-                           &d3d12->menu.tex);
+      d3d12->menu.texture.desc.Width  = width;
+      d3d12->menu.texture.desc.Height = height;
+      d3d12->menu.texture.desc.Format = d3d12_get_closest_match_texture2D(d3d12->device, format);
+      d3d12_init_texture(
+            d3d12->device, &d3d12->pipe.srv_heap, SRV_HEAP_SLOT_MENU_TEXTURE, &d3d12->menu.texture);
    }
 
-   {      
-      unsigned i, j;
-      D3D12_RANGE read_range = {0, 0};
-      uint8_t *out  = NULL;
+   d3d12_update_texture(width, height, pitch, format, frame, &d3d12->menu.texture);
 
-      D3D12Map(d3d12->menu.tex.upload_buffer, 0, &read_range, &out);
-      out += d3d12->menu.tex.layout.Offset;
-
-      if (rgb32)
-      {
-         const uint32_t *in = frame;
-
-         for (i = 0; i < height; i++)
-         {
-            memcpy(out, in, width * sizeof(*in));
-            in += width;
-            out += d3d12->menu.tex.layout.Footprint.RowPitch;
-         }
-      }
-      else
-      {
-         const uint16_t *in = frame;
-
-         for (i = 0; i < height; i++)
-         {
-            for (j = 0; j < width; j++)
-            {
-               unsigned r = ((in[j] >> 12) & 0xF);
-               unsigned g = ((in[j] >>  8) & 0xF);
-               unsigned b = ((in[j] >>  4) & 0xF);
-               unsigned a = ((in[j] >>  0) & 0xF);
-
-               ((uint16_t *)out)[j] = (b << 0) | (g << 4) | (r << 8) | (a << 12);
-            }
-
-            in += width;
-            out += d3d12->menu.tex.layout.Footprint.RowPitch;
-         }
-
-      }
-
-      D3D12Unmap(d3d12->menu.tex.upload_buffer, 0, NULL);
-   }
-
-   d3d12->menu.tex.dirty = true;
    d3d12->menu.alpha = alpha;
 
    {
-      D3D12_RANGE read_range = {0, 0};
-      d3d12_vertex_t *v;
+      D3D12_RANGE     read_range = { 0, 0 };
+      d3d12_vertex_t* v;
 
       D3D12Map(d3d12->menu.vbo, 0, &read_range, &v);
       v[0].color[3] = alpha;
@@ -407,51 +328,47 @@ static void d3d12_set_menu_texture_frame(void *data,
       v[3].color[3] = alpha;
       D3D12Unmap(d3d12->menu.vbo, 0, NULL);
    }
-   d3d12->menu.sampler = config_get_ptr()->bools.menu_linear_filter ?
-                         d3d12->sampler_linear : d3d12->sampler_nearest;
+   d3d12->menu.sampler = config_get_ptr()->bools.menu_linear_filter ? d3d12->sampler_linear
+                                                                    : d3d12->sampler_nearest;
 }
-static void d3d12_set_menu_texture_enable(void *data,
-      bool state, bool full_screen)
+static void d3d12_set_menu_texture_enable(void* data, bool state, bool full_screen)
 {
-   d3d12_video_t *d3d12 = (d3d12_video_t *)data;
+   d3d12_video_t* d3d12 = (d3d12_video_t*)data;
 
-   d3d12->menu.enabled            = state;
-   d3d12->menu.fullscreen         = full_screen;
+   d3d12->menu.enabled    = state;
+   d3d12->menu.fullscreen = full_screen;
 }
 
-static const video_poke_interface_t d3d12_poke_interface =
-{
-   NULL, /* set_coords */
-   NULL, /* set_mvp */
-   NULL, /* load_texture */
-   NULL, /* unload_texture */
-   NULL, /* set_video_mode */
-   NULL, /* set_filtering */
-   NULL, /* get_video_output_size */
-   NULL, /* get_video_output_prev */
-   NULL, /* get_video_output_next */
-   NULL, /* get_current_framebuffer */
-   NULL, /* get_proc_address */
-   NULL, /* set_aspect_ratio */
-   NULL, /* apply_state_changes */
-   d3d12_set_menu_texture_frame, /* set_texture_frame */
+static const video_poke_interface_t d3d12_poke_interface = {
+   NULL,                          /* set_coords */
+   NULL,                          /* set_mvp */
+   NULL,                          /* load_texture */
+   NULL,                          /* unload_texture */
+   NULL,                          /* set_video_mode */
+   NULL,                          /* set_filtering */
+   NULL,                          /* get_video_output_size */
+   NULL,                          /* get_video_output_prev */
+   NULL,                          /* get_video_output_next */
+   NULL,                          /* get_current_framebuffer */
+   NULL,                          /* get_proc_address */
+   NULL,                          /* set_aspect_ratio */
+   NULL,                          /* apply_state_changes */
+   d3d12_set_menu_texture_frame,  /* set_texture_frame */
    d3d12_set_menu_texture_enable, /* set_texture_enable */
-   NULL, /* set_osd_msg */
-   NULL, /* show_mouse */
-   NULL, /* grab_mouse_toggle */
-   NULL, /* get_current_shader */
-   NULL, /* get_current_software_framebuffer */
-   NULL, /* get_hw_render_interface */
+   NULL,                          /* set_osd_msg */
+   NULL,                          /* show_mouse */
+   NULL,                          /* grab_mouse_toggle */
+   NULL,                          /* get_current_shader */
+   NULL,                          /* get_current_software_framebuffer */
+   NULL,                          /* get_hw_render_interface */
 };
 
-static void d3d12_gfx_get_poke_interface(void *data,
-      const video_poke_interface_t **iface)
+static void d3d12_gfx_get_poke_interface(void* data, const video_poke_interface_t** iface)
 {
    *iface = &d3d12_poke_interface;
 }
 
-video_driver_t video_d3d12 =
-{
+video_driver_t video_d3d12 = {
    d3d12_gfx_init,
    d3d12_gfx_frame,
    d3d12_gfx_set_nonblock_state,
