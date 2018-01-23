@@ -947,9 +947,12 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
    char            *tmp_new = (char*)
       malloc(PATH_MAX_LENGTH * sizeof(char));
 
+   if (!string_is_empty(xmb->thumbnail_file_path))
+      xmb->thumbnail_file_path[0] = '\0';
+
    menu_entry_init(&entry);
 
-   if (!xmb)
+   if (!xmb || string_is_empty(settings->paths.directory_thumbnails))
       goto end;
 
    menu_entry_get(&entry, 0, i, NULL, true);
