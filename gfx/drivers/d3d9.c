@@ -121,8 +121,9 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
    link_info.tex_h = video_info->input_scale * RARCH_SCALE_BASE;
    link_info.pass  = &d3d->shader.pass[0];
 
-   if (!renderchain_d3d_init_first(&d3d->renderchain_driver,
-	   &d3d->renderchain_data))
+   if (!renderchain_d3d_init_first(D3D_COMM_D3D9,
+            &d3d->renderchain_driver,
+            &d3d->renderchain_data))
    {
 	   RARCH_ERR("[D3D]: Renderchain could not be initialized.\n");
 	   return false;
@@ -339,11 +340,20 @@ static void d3d_overlay_render(d3d_video_t *d3d,
       video_frame_info_t *video_info,
       overlay_t *overlay)
 {
+   LPDIRECT3DVERTEXDECLARATION vertex_decl;
    struct video_viewport vp;
    void *verts;
    unsigned i;
    Vertex vert[4];
-
+   D3DVERTEXELEMENT vElems[4] = {
+      {0, offsetof(Vertex, x),  D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT,
+         D3DDECLUSAGE_POSITION, 0},
+      {0, offsetof(Vertex, u), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT,
+         D3DDECLUSAGE_TEXCOORD, 0},
+      {0, offsetof(Vertex, color), D3DDECLTYPE_D3DCOLOR, D3DDECLMETHOD_DEFAULT,
+         D3DDECLUSAGE_COLOR, 0},
+      D3DDECL_END()
+   };
    unsigned width      = video_info->width;
    unsigned height     = video_info->height;
 
@@ -390,26 +400,11 @@ static void d3d_overlay_render(d3d_video_t *d3d,
    d3d_vertex_buffer_unlock(overlay->vert_buf);
 
    d3d_enable_blend_func(d3d->dev);
-#if defined(HAVE_D3D9)
-   {
-      LPDIRECT3DVERTEXDECLARATION vertex_decl;
-      /* set vertex declaration for overlay. */
-      D3DVERTEXELEMENT vElems[4] = {
-         {0, offsetof(Vertex, x),  D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT,
-            D3DDECLUSAGE_POSITION, 0},
-         {0, offsetof(Vertex, u), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT,
-            D3DDECLUSAGE_TEXCOORD, 0},
-         {0, offsetof(Vertex, color), D3DDECLTYPE_D3DCOLOR, D3DDECLMETHOD_DEFAULT,
-            D3DDECLUSAGE_COLOR, 0},
-         D3DDECL_END()
-      };
-      d3d_vertex_declaration_new(d3d->dev, &vElems, (void**)&vertex_decl);
-      d3d_set_vertex_declaration(d3d->dev, vertex_decl);
-      d3d_vertex_declaration_free(vertex_decl);
-   }
-#elif defined(HAVE_D3D8)
-   d3d_set_vertex_shader(d3d->dev, D3DFVF_CUSTOMVERTEX, NULL);
-#endif
+
+   /* set vertex declaration for overlay. */
+   d3d_vertex_declaration_new(d3d->dev, &vElems, (void**)&vertex_decl);
+   d3d_set_vertex_declaration(d3d->dev, vertex_decl);
+   d3d_vertex_declaration_free(vertex_decl);
 
    d3d_set_stream_source(d3d->dev, 0, overlay->vert_buf,
          0, sizeof(*vert));
@@ -474,11 +469,7 @@ static void d3d_deinitialize(d3d_video_t *d3d)
    d3d->menu_display.decl = NULL;
 }
 
-#if defined(HAVE_D3D8)
-#define FS_PRESENTINTERVAL(pp) ((pp)->FullScreen_PresentationInterval)
-#else
 #define FS_PRESENTINTERVAL(pp) ((pp)->PresentationInterval)
-#endif
 
 static D3DFORMAT d3d_get_color_format_backbuffer(bool rgb32, bool windowed)
 {
@@ -497,7 +488,7 @@ static D3DFORMAT d3d_get_color_format_backbuffer(bool rgb32, bool windowed)
    return fmt;
 }
 
-#ifdef _XBOX360
+#ifdef _XBOX
 static D3DFORMAT d3d_get_color_format_front_buffer(void)
 {
    return D3DFMT_LE_X8R8G8B8;
@@ -520,7 +511,7 @@ void d3d_make_d3dpp(void *data,
       const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp)
 {
    d3d_video_t *d3d               = (d3d_video_t*)data;
-#ifdef _XBOX360
+#ifdef _XBOX
    /* TODO/FIXME - get rid of global state dependencies. */
    global_t *global               = global_get_ptr();
    bool gamma_enable              = global ? 
@@ -555,21 +546,12 @@ void d3d_make_d3dpp(void *data,
       }
    }
 
-#ifdef HAVE_D3D8
-   /* PresentationInterval must be zero for windowed mode on DX8. */
-   if (d3dpp->Windowed)
-      FS_PRESENTINTERVAL(d3dpp)   = D3DPRESENT_INTERVAL_DEFAULT;
-#endif
-
    d3dpp->SwapEffect              = D3DSWAPEFFECT_DISCARD;
    d3dpp->BackBufferCount         = 2;
    d3dpp->BackBufferFormat        = d3d_get_color_format_backbuffer(
          info->rgb32, windowed_enable);
-#ifndef _XBOX
-   d3dpp->hDeviceWindow           = win32_get_window();
-#endif
 
-#ifdef _XBOX360
+#ifdef _XBOX
    d3dpp->FrontBufferFormat       = d3d_get_color_format_front_buffer();
 
    if (gamma_enable)
@@ -579,6 +561,8 @@ void d3d_make_d3dpp(void *data,
       d3dpp->FrontBufferFormat    = (D3DFORMAT)MAKESRGBFMT(
             d3dpp->FrontBufferFormat);
    }
+#else
+   d3dpp->hDeviceWindow           = win32_get_window();
 #endif
 
    if (!windowed_enable)
@@ -603,48 +587,11 @@ void d3d_make_d3dpp(void *data,
 #ifdef _XBOX
    d3dpp->MultiSampleType         = D3DMULTISAMPLE_NONE;
    d3dpp->EnableAutoDepthStencil  = FALSE;
-#if defined(_XBOX1)
-   {
-      /* Get the "video mode" */
-      DWORD video_mode            = XGetVideoFlags();
-
-      /* Check if we are able to use progressive mode. */
-      if (video_mode & XC_VIDEO_FLAGS_HDTV_480p)
-         d3dpp->Flags = D3DPRESENTFLAG_PROGRESSIVE;
-      else
-         d3dpp->Flags = D3DPRESENTFLAG_INTERLACED;
-
-      /* Only valid in PAL mode, not valid for HDTV modes. */
-      if (XGetVideoStandard() == XC_VIDEO_STANDARD_PAL_I)
-      {
-         if (video_mode & XC_VIDEO_FLAGS_PAL_60Hz)
-            d3dpp->FullScreen_RefreshRateInHz = 60;
-         else
-            d3dpp->FullScreen_RefreshRateInHz = 50;
-      }
-
-      if (XGetAVPack() == XC_AV_PACK_HDTV)
-      {
-         if (video_mode & XC_VIDEO_FLAGS_HDTV_480p)
-            d3dpp->Flags = D3DPRESENTFLAG_PROGRESSIVE;
-         else if (video_mode & XC_VIDEO_FLAGS_HDTV_720p)
-            d3dpp->Flags = D3DPRESENTFLAG_PROGRESSIVE;
-         else if (video_mode & XC_VIDEO_FLAGS_HDTV_1080i)
-            d3dpp->Flags = D3DPRESENTFLAG_INTERLACED;
-      }
-
-#if 0
-      if (widescreen_mode)
-         d3dpp->Flags |= D3DPRESENTFLAG_WIDESCREEN;
-#endif
-   }
-#elif defined(_XBOX360)
 #if 0
    if (!widescreen_mode)
       d3dpp->Flags |= D3DPRESENTFLAG_NO_LETTERBOX;
 #endif
    d3dpp->MultiSampleQuality      = 0;
-#endif
 #endif
 }
 
@@ -851,7 +798,7 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
    d3d_set_viewport(d3d,
 	   width, height, false, true);
 
-#if defined(_XBOX360)
+#ifdef _XBOX
    strlcpy(settings->paths.path_font, "game:\\media\\Arial_12.xpr",
          sizeof(settings->paths.path_font));
 #endif
@@ -859,7 +806,6 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
          info->is_threaded,
          FONT_DRIVER_RENDER_DIRECT3D_API);
 
-#ifdef HAVE_D3D9
    {
       static const D3DVERTEXELEMENT VertexElements[4] = {
          {0, offsetof(Vertex, x),  D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT,
@@ -874,7 +820,6 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
                (void*)VertexElements, (void**)&d3d->menu_display.decl))
          return false;
    }
-#endif
 
    d3d->menu_display.offset = 0;
    d3d->menu_display.size   = 1024;
@@ -1174,16 +1119,10 @@ static void d3d_show_mouse(void *data, bool state)
 
 static const gfx_ctx_driver_t *d3d_get_context(void *data)
 {
-   /* Default to Direct3D9 for now.
-   TODO: GL core contexts through ANGLE? */
+   /* TODO: GL core contexts through ANGLE? */
    unsigned minor       = 0;
-#if defined(HAVE_D3D8)
-   unsigned major       = 8;
-   enum gfx_ctx_api api = GFX_CTX_DIRECT3D8_API;
-#else
    unsigned major       = 9;
    enum gfx_ctx_api api = GFX_CTX_DIRECT3D9_API;
-#endif
    settings_t *settings = config_get_ptr();
 
    return video_context_driver_init_first(data,
@@ -1197,7 +1136,7 @@ static void *d3d_init(const video_info_t *info,
    d3d_video_t            *d3d        = NULL;
    const gfx_ctx_driver_t *ctx_driver = NULL;
 
-   if (!d3d_initialize_symbols())
+   if (!d3d_initialize_symbols(D3D_COMM_D3D9))
       return NULL;
 
    d3d = (d3d_video_t*)calloc(1, sizeof(*d3d));
@@ -1314,12 +1253,6 @@ static void d3d_overlay_tex_geom(
    d3d->overlays[index].tex_coords[1] = y;
    d3d->overlays[index].tex_coords[2] = w;
    d3d->overlays[index].tex_coords[3] = h;
-#ifdef _XBOX1
-   d3d->overlays[index].tex_coords[0] *= d3d->overlays[index].tex_w;
-   d3d->overlays[index].tex_coords[1] *= d3d->overlays[index].tex_h;
-   d3d->overlays[index].tex_coords[2] *= d3d->overlays[index].tex_w;
-   d3d->overlays[index].tex_coords[3] *= d3d->overlays[index].tex_h;
-#endif
 }
 
 static void d3d_overlay_vertex_geom(
@@ -1639,10 +1572,6 @@ static void d3d_set_menu_texture_frame(void *data,
 
       d3d->menu->tex_w          = width;
       d3d->menu->tex_h          = height;
-#ifdef _XBOX1
-      d3d->menu->tex_coords [2] = width;
-      d3d->menu->tex_coords[3]  = height;
-#endif
    }
 
    d3d->menu->alpha_mod = alpha;
@@ -1714,11 +1643,9 @@ static void video_texture_load_d3d(d3d_video_t *d3d,
    unsigned usage        = 0;
    bool want_mipmap      = false;
 
-#ifndef HAVE_D3D8
    if((filter_type == TEXTURE_FILTER_MIPMAP_LINEAR) ||
       (filter_type == TEXTURE_FILTER_MIPMAP_NEAREST))
       want_mipmap        = true;
-#endif
 
    tex = d3d_texture_new(d3d->dev, NULL,
                ti->width, ti->height, 0,
@@ -1830,7 +1757,7 @@ static void d3d_get_poke_interface(void *data,
    *iface = &d3d_poke_interface;
 }
 
-video_driver_t video_d3d = {
+video_driver_t video_d3d9 = {
    d3d_init,
    d3d_frame,
    d3d_set_nonblock_state,
@@ -1840,7 +1767,7 @@ video_driver_t video_d3d = {
    NULL,                      /* has_windowed */
    d3d_set_shader,
    d3d_free,
-   "d3d",
+   "d3d9",
    d3d_set_viewport,
    d3d_set_rotation,
    d3d_viewport_info,

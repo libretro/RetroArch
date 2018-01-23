@@ -268,8 +268,11 @@ static const video_driver_t *video_drivers[] = {
 #if defined(HAVE_D3D12)
    &video_d3d12,
 #endif
-#if defined(HAVE_D3D)
-   &video_d3d,
+#if defined(HAVE_D3D9)
+   &video_d3d9,
+#endif
+#if defined(HAVE_D3D8)
+   &video_d3d8,
 #endif
 #ifdef HAVE_VITA2D
    &video_vita2d,
@@ -413,19 +416,6 @@ static const shader_backend_t *shader_ctx_drivers[] = {
    NULL
 };
 
-static const d3d_renderchain_driver_t *renderchain_d3d_drivers[] = {
-#if defined(_WIN32) && defined(HAVE_D3D9) && defined(HAVE_CG)
-   &cg_d3d9_renderchain,
-#endif
-#if defined(_WIN32) && defined(HAVE_D3D9) && defined(HAVE_HLSL)
-   &hlsl_d3d9_renderchain,
-#endif
-#if defined(_WIN32) && defined(HAVE_D3D8)
-   &d3d8_d3d_renderchain,
-#endif
-   &null_d3d_renderchain,
-   NULL
-};
 
 static const gl_renderchain_driver_t *renderchain_gl_drivers[] = {
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
@@ -3436,22 +3426,58 @@ void video_driver_set_mvp(video_shader_ctx_mvp_t *mvp)
 }
 
 bool renderchain_d3d_init_first(
+      enum d3d_comm_api api,
       const d3d_renderchain_driver_t **renderchain_driver,
       void **renderchain_handle)
 {
    unsigned i;
 
-   for (i = 0; renderchain_d3d_drivers[i]; i++)
+   switch (api)
    {
-      void *data = renderchain_d3d_drivers[i]->chain_new();
+      case D3D_COMM_D3D9:
+#ifdef HAVE_D3D9
+         {
+            static const d3d_renderchain_driver_t *renderchain_d3d_drivers[] = {
+#if defined(_WIN32) && defined(HAVE_CG)
+               &cg_d3d9_renderchain,
+#endif
+#if defined(_WIN32) && defined(HAVE_HLSL)
+               &hlsl_d3d9_renderchain,
+#endif
+               &null_d3d_renderchain,
+               NULL
+            };
+            for (i = 0; renderchain_d3d_drivers[i]; i++)
+            {
+               void *data = renderchain_d3d_drivers[i]->chain_new();
 
-      if (!data)
-         continue;
+               if (!data)
+                  continue;
 
-      *renderchain_driver = renderchain_d3d_drivers[i];
-      *renderchain_handle = data;
-      return true;
+               *renderchain_driver = renderchain_d3d_drivers[i];
+               *renderchain_handle = data;
+               return true;
+            }
+         }
+#endif
+         break;
+      case D3D_COMM_D3D8:
+         {
+#ifdef HAVE_D3D8
+            void *data = d3d8_d3d_renderchain.chain_new();
+
+            if (data)
+            {
+               *renderchain_driver    = &d3d8_d3d_renderchain;
+               *renderchain_handle    = data;
+            }
+#endif
+         }
+         break;
+      case D3D_COMM_NONE:
+         break;
    }
+
 
    return false;
 }

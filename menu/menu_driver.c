@@ -217,7 +217,9 @@ static bool menu_display_check_compatibility(
             return true;
          break;
       case MENU_VIDEO_DRIVER_DIRECT3D:
-         if (string_is_equal(video_driver, "d3d"))
+         if (  string_is_equal(video_driver, "d3d9") ||
+               string_is_equal(video_driver, "d3d8")
+               )
             return true;
          break;
       case MENU_VIDEO_DRIVER_VITA2D:

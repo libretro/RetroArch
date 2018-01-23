@@ -126,11 +126,11 @@ enum video_driver_enum
    VIDEO_WII,
    VIDEO_WIIU,
    VIDEO_XENON360,
-   VIDEO_XDK_D3D,
    VIDEO_PSP1,
    VIDEO_VITA2D,
    VIDEO_CTR,
    VIDEO_SWITCH,
+   VIDEO_D3D8,
    VIDEO_D3D9,
    VIDEO_D3D11,
    VIDEO_D3D12,
@@ -283,10 +283,10 @@ static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_WII;
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_WIIU;
 #elif defined(XENON)
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_XENON360;
-#elif (defined(_XBOX1) || defined(_XBOX360)) && (defined(HAVE_D3D8) || defined(HAVE_D3D9))
-static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_XDK_D3D;
 #elif defined(HAVE_D3D9)
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_D3D9;
+#elif defined(HAVE_D3D8)
+static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_D3D8;
 #elif defined(HAVE_VG)
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_VG;
 #elif defined(HAVE_VITA2D)
@@ -694,9 +694,10 @@ const char *config_get_default_video(void)
          return "gx2";
       case VIDEO_XENON360:
          return "xenon360";
-      case VIDEO_XDK_D3D:
+      case VIDEO_D3D8:
+         return "d3d8";
       case VIDEO_D3D9:
-         return "d3d";
+         return "d3d9";
       case VIDEO_D3D11:
          return "d3d11";
       case VIDEO_D3D12:

@@ -1333,9 +1333,19 @@ ifeq ($(HAVE_DX_COMMON), 1)
 	LIBS += -ldxguid
 endif
 
+ifeq ($(HAVE_D3D8), 1)
+	DEFINES += -DHAVE_D3D8
+	OBJ += gfx/drivers/d3d9.o
+endif
+
+ifeq ($(HAVE_D3D9), 1)
+	DEFINES += -DHAVE_D3D9
+	OBJ += gfx/drivers/d3d9.o
+endif
+
 ifeq ($(HAVE_D3D_COMMON), 1)
 	DEFINES += -DHAVE_D3D
-   OBJ += gfx/drivers/d3d.o \
+	OBJ     += \
           gfx/common/d3d_common.o \
           gfx/drivers_context/d3d_ctx.o
 

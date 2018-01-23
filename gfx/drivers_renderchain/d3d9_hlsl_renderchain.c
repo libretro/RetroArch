@@ -184,8 +184,10 @@ static void hlsl_d3d9_renderchain_set_vertices(
       d3d_vertex_buffer_unlock(chain->vertex_buf);
    }
 
-   hlsl_d3d9_renderchain_set_mvp(chain,
-         d3d, width, height, d3d->dev_rotation);
+   /* TODO/FIXME - last parameter is mat_data, should be set to
+   something other than NULL */
+   hlsl_d3d9_renderchain_set_mvp(d3d, chain, &d3d->shader,
+         NULL);
 
    shader_info.data = d3d;
    shader_info.idx  = pass;
@@ -386,8 +388,10 @@ static bool hlsl_d3d9_renderchain_render(void *data, const void *frame,
       d3d_set_stream_source(d3dr, i, chain->vertex_buf, 0, sizeof(Vertex));
 
    d3d_draw_primitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
-   hlsl_d3d9_renderchain_set_mvp(
-         chain, d3d, width, height, d3d->dev_rotation);
+   /* TODO/FIXME - last parameter is mat_data - should be something
+   other than NULL */
+   hlsl_d3d9_renderchain_set_mvp(d3d,
+         chain, &d3d->shader, NULL);
 
    return true;
 }

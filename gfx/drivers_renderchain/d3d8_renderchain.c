@@ -144,7 +144,7 @@ static void d3d8_renderchain_set_vertices(void *data, unsigned pass,
       vert[2].v        = tex_h;
       vert[3].u        = tex_w;
       vert[3].v        = tex_h;
-#ifndef _XBOX1
+#ifndef _XBOX
       vert[1].u       /= chain->tex_w;
       vert[2].v       /= chain->tex_h;
       vert[3].u       /= chain->tex_w;

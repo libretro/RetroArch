@@ -19,10 +19,16 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
-#include "win32_common.h"
 #include "../../defines/d3d_defines.h"
 
 RETRO_BEGIN_DECLS
+
+enum d3d_comm_api
+{
+   D3D_COMM_NONE = 0,
+   D3D_COMM_D3D8,
+   D3D_COMM_D3D9
+};
 
 typedef struct d3d_texture
 {
@@ -207,7 +213,7 @@ void d3d_device_free(LPDIRECT3DDEVICE dev, LPDIRECT3D pd3d);
 
 void *d3d_create(void);
 
-bool d3d_initialize_symbols(void);
+bool d3d_initialize_symbols(enum d3d_comm_api api);
 
 void d3d_deinitialize_symbols(void);
 

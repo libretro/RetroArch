@@ -324,14 +324,15 @@ VIDEO DRIVER
 ============================================================ */
 #if defined(HAVE_D3D)
 #include "../gfx/common/d3d_common.c"
-#include "../gfx/drivers/d3d.c"
 #include "../gfx/drivers_context/d3d_ctx.c"
 
 #if defined(HAVE_D3D8)
+#include "../gfx/drivers/d3d8.c"
 #include "../gfx/drivers_renderchain/d3d8_renderchain.c"
 #endif
 
 #if defined(HAVE_D3D9)
+#include "../gfx/drivers/d3d9.c"
 
 #ifdef HAVE_HLSL
 #include "../gfx/drivers_renderchain/d3d9_hlsl_renderchain.c"
