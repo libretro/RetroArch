@@ -553,15 +553,11 @@ static void announce_play_spectate(netplay_t *netplay,
    {
       case NETPLAY_CONNECTION_SPECTATING:
          if (nick)
-         {
-            snprintf_p(msg, sizeof(msg) - 1,
+            snprintf(msg, sizeof(msg) - 1,
                   msg_hash_to_str(MSG_NETPLAY_PLAYER_S_LEFT), NETPLAY_NICK_LEN,
                   nick);
-         }
          else
-         {
             strlcpy(msg, msg_hash_to_str(MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME), sizeof(msg));
-         }
          break;
 
       case NETPLAY_CONNECTION_PLAYING:
@@ -590,18 +586,13 @@ static void announce_play_spectate(netplay_t *netplay,
          {
             /* Only have one device, simpler message */
             if (nick)
-            {
-               snprintf_p(msg, sizeof(msg) - 1,
+               snprintf(msg, sizeof(msg) - 1,
                      msg_hash_to_str(MSG_NETPLAY_S_HAS_JOINED_AS_PLAYER_N),
                      NETPLAY_NICK_LEN, nick, one_device + 1);
-            }
             else
-            {
                snprintf(msg, sizeof(msg) - 1,
                      msg_hash_to_str(MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N),
                      one_device + 1);
-            }
-
          }
          else
          {
@@ -621,20 +612,16 @@ static void announce_play_spectate(netplay_t *netplay,
 
             /* Then we make the final string */
             if (nick)
-            {
-               snprintf_p(msg, sizeof(msg) - 1,
+               snprintf(msg, sizeof(msg) - 1,
                      msg_hash_to_str(
                            MSG_NETPLAY_S_HAS_JOINED_WITH_INPUT_DEVICES_S),
                      NETPLAY_NICK_LEN, nick, sizeof(device_str),
                      device_str);
-            }
             else
-            {
                snprintf(msg, sizeof(msg) - 1,
                      msg_hash_to_str(
                            MSG_NETPLAY_YOU_HAVE_JOINED_WITH_INPUT_DEVICES_S),
                      sizeof(device_str), device_str);
-            }
          }
 
          break;

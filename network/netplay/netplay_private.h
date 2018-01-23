@@ -95,13 +95,6 @@ typedef uint32_t client_bitmap_t;
 #define NETPLAY_COMPRESSION_SUPPORTED 0
 #endif
 
-/* Positional snprintf */
-#ifdef _MSC_VER
-#define snprintf_p _snprintf_p
-#else /* sensible systems */
-#define snprintf_p snprintf
-#endif
-
 enum netplay_cmd
 {
    /* Basic commands */
