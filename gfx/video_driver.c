@@ -3430,8 +3430,6 @@ bool renderchain_d3d_init_first(
       const d3d_renderchain_driver_t **renderchain_driver,
       void **renderchain_handle)
 {
-   unsigned i;
-
    switch (api)
    {
       case D3D_COMM_D3D9:
@@ -3447,6 +3445,8 @@ bool renderchain_d3d_init_first(
                &null_d3d_renderchain,
                NULL
             };
+            unsigned i;
+
             for (i = 0; renderchain_d3d_drivers[i]; i++)
             {
                void *data = renderchain_d3d_drivers[i]->chain_new();
@@ -3478,7 +3478,6 @@ bool renderchain_d3d_init_first(
       case D3D_COMM_NONE:
          break;
    }
-
 
    return false;
 }
