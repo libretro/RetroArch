@@ -419,7 +419,7 @@ static void d3d8_overlay_render(d3d_video_t *d3d,
 
    /* Restore previous state. */
    d3d_disable_blend_func(d3d->dev);
-   d3d8_set_viewports(d3d->dev, &d3d->final_viewport);
+   d3d_set_viewports(d3d->dev, &d3d->final_viewport);
 }
 
 static void d3d8_free_overlay(d3d_video_t *d3d, overlay_t *overlay)
@@ -1410,7 +1410,7 @@ static bool d3d8_frame(void *data, const void *frame,
    screen_vp.MaxZ   = 1;
    screen_vp.Width  = width;
    screen_vp.Height = height;
-   d3d8_set_viewports(d3d->dev, &screen_vp);
+   d3d_set_viewports(d3d->dev, &screen_vp);
    d3d_clear(d3d->dev, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
 
    /* Insert black frame first, so we
@@ -1442,7 +1442,7 @@ static bool d3d8_frame(void *data, const void *frame,
       d3d_set_vertex_declaration(d3d->dev, d3d->menu_display.decl);
       d3d_set_stream_source(d3d->dev, 0, d3d->menu_display.buffer, 0, sizeof(Vertex));
 
-      d3d8_set_viewports(d3d->dev, &screen_vp);
+      d3d_set_viewports(d3d->dev, &screen_vp);
       menu_driver_frame(video_info);
    }
 #endif
@@ -1458,7 +1458,7 @@ static bool d3d8_frame(void *data, const void *frame,
 
    if (msg && *msg)
    {
-      d3d8_set_viewports(d3d->dev, &screen_vp);
+      d3d_set_viewports(d3d->dev, &screen_vp);
       font_driver_render_msg(video_info, NULL, msg, NULL);
    }
 
