@@ -804,7 +804,6 @@ typedef struct d3d_renderchain_driver
          const void *mat_data);
    void (*chain_free)(void *data);
    void *(*chain_new)(void);
-   bool (*reinit)(void *data, const void *info_data);
    bool (*init)(void *data,
          const void *video_info_data,
          void *dev_data,

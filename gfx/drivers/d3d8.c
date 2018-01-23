@@ -57,52 +57,6 @@
 
 static LPDIRECT3D g_pD3D8;
 
-static bool d3d8_init_imports(d3d_video_t *d3d)
-{
-   retro_ctx_memory_info_t    mem_info;
-   state_tracker_t *state_tracker         = NULL;
-   struct state_tracker_info tracker_info = {0};
-
-   if (!d3d->shader.variables)
-      return true;
-
-   mem_info.id                    = RETRO_MEMORY_SYSTEM_RAM;
-
-   core_get_memory(&mem_info);
-
-   tracker_info.script_class      = NULL;
-   tracker_info.wram              = (uint8_t*)mem_info.data;
-   tracker_info.info              = d3d->shader.variable;
-   tracker_info.info_elem         = d3d->shader.variables;
-   tracker_info.script            = NULL;
-   tracker_info.script_is_file    = false;
-
-#ifdef HAVE_PYTHON
-   if (*d3d->shader.script_path)
-   {
-      tracker_info.script         = d3d->shader.script_path;
-      tracker_info.script_is_file = true;
-   }
-
-   if (*d3d->shader.script_class)
-      tracker_info.script_class   = d3d->shader.script_class;
-#endif
-
-   state_tracker                  = 
-      state_tracker_init(&tracker_info);
-
-   if (!state_tracker)
-   {
-      RARCH_ERR("[D3D]: Failed to initialize state tracker.\n");
-      return false;
-   }
-
-   d3d->renderchain_driver->add_state_tracker(
-         d3d->renderchain_data, state_tracker);
-
-   return true;
-}
-
 static bool d3d8_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
 {
    struct LinkInfo link_info;
@@ -146,35 +100,6 @@ static bool d3d8_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
 
    RARCH_LOG("[D3D]: Renderchain driver: %s\n", d3d->renderchain_driver->ident);
 
-#ifndef _XBOX
-   current_width  = link_info.tex_w;
-   current_height = link_info.tex_h;
-   out_width      = 0;
-   out_height     = 0;
-
-   for (i = 1; i < d3d->shader.passes; i++)
-   {
-      d3d->renderchain_driver->convert_geometry(d3d->renderchain_data,
-		    &link_info,
-            &out_width, &out_height,
-            current_width, current_height, &d3d->final_viewport);
-
-      link_info.pass  = &d3d->shader.pass[i];
-      link_info.tex_w = next_pow2(out_width);
-      link_info.tex_h = next_pow2(out_height);
-
-      current_width = out_width;
-      current_height = out_height;
-
-      if (!d3d->renderchain_driver->add_pass(
-               d3d->renderchain_data, &link_info))
-      {
-         RARCH_ERR("[D3D]: Failed to add pass.\n");
-         return false;
-      }
-   }
-#endif
-
    if (d3d->renderchain_driver)
    {
       if (d3d->renderchain_driver->add_lut)
@@ -194,15 +119,6 @@ static bool d3d8_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
                RARCH_ERR("[D3D]: Failed to init LUTs.\n");
                return false;
             }
-         }
-      }
-
-      if (d3d->renderchain_driver->add_state_tracker)
-      {
-         if (!d3d8_init_imports(d3d))
-         {
-            RARCH_ERR("[D3D]: Failed to init imports.\n");
-            return false;
          }
       }
    }
@@ -234,84 +150,6 @@ static bool d3d8_init_singlepass(d3d_video_t *d3d)
             sizeof(pass->source.path));
 
    return true;
-}
-
-static bool d3d8_init_multipass(d3d_video_t *d3d, const char *shader_path)
-{
-   unsigned i;
-   bool            use_extra_pass = false;
-   struct video_shader_pass *pass = NULL;
-   config_file_t            *conf = config_file_new(shader_path);
-
-   if (!conf)
-   {
-      RARCH_ERR("[D3D]: Failed to load preset.\n");
-      return false;
-   }
-
-   memset(&d3d->shader, 0, sizeof(d3d->shader));
-
-   if (!video_shader_read_conf_cgp(conf, &d3d->shader))
-   {
-      config_file_free(conf);
-      RARCH_ERR("[D3D]: Failed to parse CGP file.\n");
-      return false;
-   }
-
-   config_file_free(conf);
-
-   if (!string_is_empty(shader_path))
-      video_shader_resolve_relative(&d3d->shader, shader_path);
-   RARCH_LOG("[D3D]: Found %u shaders.\n", d3d->shader.passes);
-
-   for (i = 0; i < d3d->shader.passes; i++)
-   {
-      if (d3d->shader.pass[i].fbo.valid)
-         continue;
-
-      d3d->shader.pass[i].fbo.scale_y = 1.0f;
-      d3d->shader.pass[i].fbo.scale_x = 1.0f;
-      d3d->shader.pass[i].fbo.type_x  = RARCH_SCALE_INPUT;
-      d3d->shader.pass[i].fbo.type_y  = RARCH_SCALE_INPUT;
-   }
-
-   use_extra_pass       = d3d->shader.passes < GFX_MAX_SHADERS &&
-      d3d->shader.pass[d3d->shader.passes - 1].fbo.valid;
-
-   if (use_extra_pass)
-   {
-      d3d->shader.passes++;
-      pass              = (struct video_shader_pass*)
-         &d3d->shader.pass[d3d->shader.passes - 1];
-
-      pass->fbo.scale_x = 1.0f;
-      pass->fbo.scale_y = 1.0f;
-      pass->fbo.type_x  = RARCH_SCALE_VIEWPORT;
-      pass->fbo.type_y  = RARCH_SCALE_VIEWPORT;
-      pass->filter      = RARCH_FILTER_UNSPEC;
-   }
-   else
-   {
-      pass              = (struct video_shader_pass*)
-         &d3d->shader.pass[d3d->shader.passes - 1];
-
-      pass->fbo.scale_x = 1.0f;
-      pass->fbo.scale_y = 1.0f;
-      pass->fbo.type_x  = RARCH_SCALE_VIEWPORT;
-      pass->fbo.type_y  = RARCH_SCALE_VIEWPORT;
-   }
-
-   return true;
-}
-
-static bool d3d8_process_shader(d3d_video_t *d3d)
-{
-   const char *shader_path = d3d->shader_path;
-   if (d3d && !string_is_empty(shader_path) &&
-         string_is_equal(path_get_extension(shader_path), "cgp"))
-      return d3d8_init_multipass(d3d, shader_path);
-
-   return d3d8_init_singlepass(d3d);
 }
 
 static void d3d8_viewport_info(void *data, struct video_viewport *vp)
@@ -1040,29 +878,7 @@ static bool d3d8_init_internal(d3d_video_t *d3d,
 	   windowed_full, &rect);
 #endif
 
-   /* This should only be done once here
-    * to avoid set_shader() to be overridden
-    * later. */
-   if (settings->bools.video_shader_enable)
-   {
-      enum rarch_shader_type type =
-         video_shader_parse_type(settings->paths.path_shader,
-               RARCH_SHADER_NONE);
-
-      switch (type)
-      {
-         case RARCH_SHADER_CG:
-            if (!string_is_empty(d3d->shader_path))
-               free(d3d->shader_path);
-            if (!string_is_empty(settings->paths.path_shader))
-               d3d->shader_path = strdup(settings->paths.path_shader);
-            break;
-         default:
-            break;
-      }
-   }
-
-   if (!d3d8_process_shader(d3d))
+   if (!d3d8_init_singlepass(d3d))
       return false;
 
    d3d->video_info = *info;
@@ -1395,10 +1211,6 @@ static bool d3d8_frame(void *data, const void *frame,
    if (d3d->should_resize)
    {
       d3d8_set_viewport(d3d, width, height, false, true);
-      if (d3d->renderchain_driver->set_final_viewport)
-         d3d->renderchain_driver->set_final_viewport(d3d,
-               d3d->renderchain_data, &d3d->final_viewport);
-
       d3d->should_resize = false;
    }
 
@@ -1486,38 +1298,7 @@ static bool d3d8_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 static bool d3d8_set_shader(void *data,
       enum rarch_shader_type type, const char *path)
 {
-   d3d_video_t *d3d       = (d3d_video_t*)data;
-   char *old_shader       = (d3d && !string_is_empty(d3d->shader_path)) ? strdup(d3d->shader_path) : NULL;
-
-   if (!string_is_empty(d3d->shader_path))
-      free(d3d->shader_path);
-   d3d->shader_path = NULL;
-
-   switch (type)
-   {
-      case RARCH_SHADER_CG:
-      case RARCH_SHADER_HLSL:
-         if (!string_is_empty(path))
-            d3d->shader_path = strdup(path);
-         break;
-      default:
-         break;
-   }
-
-   if (!d3d8_process_shader(d3d) || !d3d_restore(d3d))
-   {
-      RARCH_ERR("[D3D]: Setting shader failed.\n");
-      if (!string_is_empty(old_shader))
-      {
-         d3d->shader_path = strdup(old_shader);
-         d3d8_process_shader(d3d);
-         d3d_restore(d3d);
-      }
-      free(old_shader);
-      return false;
-   }
-
-   return true;
+   return false;
 }
 
 static void d3d8_set_menu_texture_frame(void *data,

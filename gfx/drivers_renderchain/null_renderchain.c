@@ -122,7 +122,6 @@ d3d_renderchain_driver_t null_d3d_renderchain = {
    NULL,
    null_renderchain_free,
    null_renderchain_new,
-   NULL,
    null_renderchain_init,
    null_renderchain_set_final_viewport,
    null_renderchain_add_pass,

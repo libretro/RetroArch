@@ -432,27 +432,6 @@ static void hlsl_d3d9_renderchain_convert_geometry(
    /* stub */
 }
 
-static bool hlsl_d3d9_renderchain_reinit(void *data,
-      const void *video_data)
-{
-   d3d_video_t *d3d                = (d3d_video_t*)data;
-   const video_info_t *video       = (const video_info_t*)video_data;
-   hlsl_d3d9_renderchain_t *chain  = (hlsl_d3d9_renderchain_t*)d3d->renderchain_data;
-
-   if (!d3d)
-      return false;
-
-   chain->pixel_size         = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
-   chain->tex_w              = RARCH_SCALE_BASE * video->input_scale;
-   chain->tex_h              = RARCH_SCALE_BASE * video->input_scale;
-
-   RARCH_LOG(
-         "Reinitializing renderchain - and textures (%u x %u @ %u bpp)\n",
-         chain->tex_w, chain->tex_h, chain->pixel_size * CHAR_BIT);
-
-   return true;
-}
-
 static void hlsl_d3d9_renderchain_viewport_info(
       void *data, struct video_viewport *vp)
 {
@@ -477,7 +456,6 @@ d3d_renderchain_driver_t hlsl_d3d9_renderchain = {
    hlsl_d3d9_renderchain_set_mvp,
    hlsl_d3d9_renderchain_free,
    hlsl_d3d9_renderchain_new,
-   hlsl_d3d9_renderchain_reinit,
    hlsl_d3d9_renderchain_init,
    hlsl_d3d9_renderchain_set_final_viewport,
    hlsl_d3d9_renderchain_add_pass,

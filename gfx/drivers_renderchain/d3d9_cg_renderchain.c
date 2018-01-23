@@ -1709,7 +1709,6 @@ d3d_renderchain_driver_t cg_d3d9_renderchain = {
    d3d9_cg_renderchain_set_mvp,
    d3d9_cg_renderchain_free,
    d3d9_cg_renderchain_new,
-   NULL,
    d3d9_cg_renderchain_init,
    d3d9_cg_renderchain_set_final_viewport,
    d3d9_cg_renderchain_add_pass,

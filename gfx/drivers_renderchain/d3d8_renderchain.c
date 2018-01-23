@@ -261,13 +261,6 @@ static bool d3d8_renderchain_init(void *data,
 static void d3d8_renderchain_set_final_viewport(void *data,
       void *renderchain_data, const void *viewport_data)
 {
-   d3d_video_t                  *d3d = (d3d_video_t*)data;
-   d3d8_renderchain_t *chain         = (d3d8_renderchain_t*)renderchain_data;
-   const D3DVIEWPORT *final_viewport = (const D3DVIEWPORT*)viewport_data;
-
-#if 0
-   d3d_recompute_pass_sizes(chain, d3d);
-#endif
 }
 
 static void d3d8_renderchain_render_pass(
@@ -343,25 +336,6 @@ static void d3d8_renderchain_convert_geometry(
    /* stub */
 }
 
-static bool d3d8_renderchain_reinit(void *data,
-      const void *video_data)
-{
-   d3d_video_t *d3d           = (d3d_video_t*)data;
-   const video_info_t *video  = (const video_info_t*)video_data;
-   d3d8_renderchain_t *chain  = (d3d8_renderchain_t*)d3d->renderchain_data;
-
-   if (!d3d)
-      return false;
-
-   chain->pixel_size         = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
-   chain->tex_w = chain->tex_h = RARCH_SCALE_BASE * video->input_scale;
-   RARCH_LOG(
-         "Reinitializing renderchain - and textures (%u x %u @ %u bpp)\n",
-         chain->tex_w, chain->tex_h, chain->pixel_size * CHAR_BIT);
-
-   return true;
-}
-
 static void d3d8_renderchain_viewport_info(void *data,
       struct video_viewport *vp)
 {
@@ -386,7 +360,6 @@ d3d_renderchain_driver_t d3d8_d3d_renderchain = {
    d3d8_renderchain_set_mvp,
    d3d8_renderchain_free,
    d3d8_renderchain_new,
-   d3d8_renderchain_reinit,
    d3d8_renderchain_init,
    d3d8_renderchain_set_final_viewport,
    d3d8_renderchain_add_pass,
