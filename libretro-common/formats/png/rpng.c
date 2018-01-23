@@ -1220,7 +1220,7 @@ bool rpng_set_buf_ptr(rpng_t *rpng, void *data)
 
 rpng_t *rpng_alloc(void)
 {
-   rpng_t *rpng = (rpng_t*)calloc(1, sizeof(rpng_t));
+   rpng_t *rpng = (rpng_t*)calloc(1, sizeof(*rpng));
    if (!rpng)
       return NULL;
    return rpng;

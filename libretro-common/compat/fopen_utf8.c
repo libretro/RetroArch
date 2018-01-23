@@ -22,7 +22,8 @@ FILE* fopen_utf8(const char * filename, const char * mode)
    if (!filename_local)
       return NULL;
    ret = fopen(filename_local, mode);
-   free(filename_local);
+   if (filename_local)
+      free(filename_local);
    return ret;
 #else
    wchar_t * filename_w = utf8_to_utf16_string_alloc(filename);

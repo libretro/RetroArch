@@ -69,7 +69,8 @@ static void zlib_inflate_stream_free(void *data)
       return;
    if (z->inited)
       inflateEnd(&z->z);
-   free(z);
+   if (z)
+      free(z);
 }
 
 static bool zlib_deflate_define(void *data, const char *prop, uint32_t val)
