@@ -42,7 +42,15 @@ struct _wiimote_state
 
 static bool ready = false;
 
-wiimote_state wiimotes[WIIU_WIIMOTE_CHANNELS];
+/* it would be nice to use designated initializers here,
+ * but those are only in C99 and newer. Oh well.
+ */
+wiimote_state wiimotes[WIIU_WIIMOTE_CHANNELS] = {
+  { 0, {{0,0},{0,0},{0,0}}, WIIMOTE_TYPE_NONE },
+  { 0, {{0,0},{0,0},{0,0}}, WIIMOTE_TYPE_NONE },
+  { 0, {{0,0},{0,0},{0,0}}, WIIMOTE_TYPE_NONE },
+  { 0, {{0,0},{0,0},{0,0}}, WIIMOTE_TYPE_NONE },
+};
 
 static unsigned to_wiimote_channel(unsigned pad)
 {
@@ -122,7 +130,7 @@ static void kpad_poll_one_channel(unsigned channel, KPADData *kpad)
    switch(kpad->device_type)
    {
       case WIIMOTE_TYPE_PRO:
-         wiimotes[channel].button_state = kpad->classic.btns_h 
+         wiimotes[channel].button_state = kpad->classic.btns_h
             & ~WIIU_PRO_BUTTON_MASK;
          pad_functions.set_axis_value(wiimotes[channel].analog_state,
                WIIU_READ_STICK(kpad->classic.lstick_x),
@@ -131,7 +139,7 @@ static void kpad_poll_one_channel(unsigned channel, KPADData *kpad)
                WIIU_READ_STICK(kpad->classic.rstick_y), 0, 0);
          break;
       case WIIMOTE_TYPE_CLASSIC:
-         wiimotes[channel].button_state = kpad->classic.btns_h 
+         wiimotes[channel].button_state = kpad->classic.btns_h
             & ~CLASSIC_BUTTON_MASK;
          pad_functions.set_axis_value(wiimotes[channel].analog_state,
                WIIU_READ_STICK(kpad->classic.lstick_x),
@@ -156,13 +164,17 @@ static void kpad_poll_one_channel(unsigned channel, KPADData *kpad)
 static void kpad_poll(void)
 {
    unsigned channel;
+   KPADData kpad;
+   int32_t result = 0;
 
    for (channel = 0; channel < WIIU_WIIMOTE_CHANNELS; channel++)
    {
-      KPADData kpad;
+      memset(&kpad, 0, sizeof(kpad));
 
-      if (!KPADRead(channel, &kpad, 1))
+      result = KPADRead(channel, &kpad, 1);
+      if (result == 0) {
          continue;
+      }
 
       kpad_poll_one_channel(channel, &kpad);
    }
@@ -186,6 +198,7 @@ static const char *kpad_name(unsigned pad)
          return PAD_NAME_WIIMOTE;
       case WIIMOTE_TYPE_NONE:
       default:
+         RARCH_LOG("[kpad]: Unknown pad type %d\n", wiimotes[pad].type);
          return "N/A";
    }
 }
