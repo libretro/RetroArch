@@ -3933,8 +3933,7 @@ static void xmb_context_reset(void *data, bool is_threaded)
          xmb_update_thumbnail_image(xmb);
       xmb_update_savestate_thumbnail_image(xmb);
 
-      if (iconpath)
-         free(iconpath);
+      free(iconpath);
    }
 }
 
