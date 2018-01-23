@@ -241,8 +241,8 @@ typedef struct xmb_handle
    char *thumbnail_system;
    char *thumbnail_content;
    char *savestate_thumbnail_file_path;
+   char *thumbnail_file_path;
    char background_file_path[PATH_MAX_LENGTH];
-   char thumbnail_file_path[PATH_MAX_LENGTH];
 
    file_list_t *selection_buf_old;
    file_list_t *horizontal_list;
@@ -959,9 +959,6 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
 
    tmp_new[0] = tmp_new2[0]       = '\0';
 
-   if (!string_is_empty(xmb->thumbnail_file_path))
-      xmb->thumbnail_file_path[0] = '\0';
-
    menu_entry_init(&entry);
 
    if (!xmb || string_is_empty(settings->paths.directory_thumbnails))
@@ -991,7 +988,6 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
    }
    else if (filebrowser_get_type() != FILEBROWSER_NONE)
    {
-      xmb->thumbnail_file_path[0] = '\0';
       xmb->thumbnail              = 0;
       goto end;
    }
@@ -1060,8 +1056,7 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
 
 end:
    if (!string_is_empty(new_path))
-      strlcpy(xmb->thumbnail_file_path, new_path,
-            sizeof(xmb->thumbnail_file_path));
+      xmb->thumbnail_file_path = strdup(new_path);
    menu_entry_free(&entry);
    if (tmp_new)
       free(tmp_new);
@@ -1132,7 +1127,7 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
 static void xmb_update_thumbnail_image(void *data)
 {
    xmb_handle_t *xmb = (xmb_handle_t*)data;
-   if (!xmb)
+   if (!xmb || string_is_empty(xmb->thumbnail_file_path))
       return;
 
    if (filestream_exists(xmb->thumbnail_file_path))
@@ -1140,6 +1135,9 @@ static void xmb_update_thumbnail_image(void *data)
             menu_display_handle_thumbnail_upload, NULL);
    else
       xmb->thumbnail = 0;
+
+   free(xmb->thumbnail_file_path);
+   xmb->thumbnail_file_path = NULL;
 }
 
 static void xmb_set_thumbnail_system(void *data, char*s, size_t len)
@@ -3626,6 +3624,8 @@ static void xmb_free(void *data)
          free(xmb->thumbnail_content);
       if (!string_is_empty(xmb->savestate_thumbnail_file_path))
          free(xmb->savestate_thumbnail_file_path);
+      if (!string_is_empty(xmb->thumbnail_file_path))
+         free(xmb->thumbnail_file_path);
    }
 
    font_driver_bind_block(NULL, NULL);
