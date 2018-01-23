@@ -944,14 +944,19 @@ end:
 static void xmb_update_thumbnail_path(void *data, unsigned i)
 {
    menu_entry_t entry;
-   unsigned entry_type      = 0;
-   char *scrub_char_pointer = NULL;
-   settings_t     *settings = config_get_ptr();
-   xmb_handle_t     *xmb    = (xmb_handle_t*)data;
-   playlist_t     *playlist = NULL;
-   const char    *core_name = NULL;
-   char            *tmp_new = (char*)
+   unsigned entry_type       = 0;
+   char *scrub_char_pointer  = NULL;
+   settings_t     *settings  = config_get_ptr();
+   xmb_handle_t     *xmb     = (xmb_handle_t*)data;
+   playlist_t     *playlist  = NULL;
+   const char    *core_name  = NULL;
+   char             *tmp     = NULL;
+   char            *tmp_new2 = (char*)
       malloc(PATH_MAX_LENGTH * sizeof(char));
+   char            *tmp_new  = (char*)
+      malloc(PATH_MAX_LENGTH * sizeof(char));
+
+   tmp_new[0] = tmp_new2[0]  = '\0';
 
    if (!string_is_empty(xmb->thumbnail_file_path))
       xmb->thumbnail_file_path[0] = '\0';
@@ -971,7 +976,7 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
       xmb_node_t *node = (xmb_node_t*)
          file_list_get_userdata_at_offset(selection_buf, i);
 
-      if (node && node->fullpath)
+      if (!string_is_empty(node->fullpath))
       {
          if (!string_is_empty(entry.path))
             fill_pathname_join(
@@ -1013,38 +1018,38 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
             xmb->thumbnail_system,
             sizeof(xmb->thumbnail_file_path));
 
-   fill_pathname_join(xmb->thumbnail_file_path, xmb->thumbnail_file_path,
-         xmb_thumbnails_ident(), sizeof(xmb->thumbnail_file_path));
+   if (!string_is_empty(xmb->thumbnail_file_path))
+      fill_pathname_join(tmp_new2, xmb->thumbnail_file_path,
+            xmb_thumbnails_ident(), PATH_MAX_LENGTH * sizeof(char));
 
+   if (!string_is_empty(tmp_new2))
+      strlcpy(xmb->thumbnail_file_path, tmp_new2,
+            PATH_MAX_LENGTH * sizeof(char));
+
+   /* Scrub characters that are not cross-platform and/or violate the
+    * No-Intro filename standard:
+    * http://datomatic.no-intro.org/stuff/The%20Official%20No-Intro%20Convention%20(20071030).zip
+    * Replace these characters in the entry name with underscores.
+    */
+   if (!string_is_empty(xmb->thumbnail_content))
+      tmp = strdup(xmb->thumbnail_content);
+
+   if (!string_is_empty(tmp))
    {
-      char             *tmp    = NULL;
-      /* Scrub characters that are not cross-platform and/or violate the
-       * No-Intro filename standard:
-       * http://datomatic.no-intro.org/stuff/The%20Official%20No-Intro%20Convention%20(20071030).zip
-       * Replace these characters in the entry name with underscores.
-       */
-      if (!string_is_empty(xmb->thumbnail_content))
-         tmp = strdup(xmb->thumbnail_content);
-
-      if (!string_is_empty(tmp))
-      {
-         while((scrub_char_pointer = strpbrk(tmp, "&*/:`\"<>?\\|")))
-            *scrub_char_pointer = '_';
-      }
-
-      /* Look for thumbnail file with this scrubbed filename */
-      tmp_new[0] = '\0';
-
-      if (!string_is_empty(tmp))
-      {
-         fill_pathname_join(tmp_new,
-               xmb->thumbnail_file_path,
-               tmp, PATH_MAX_LENGTH * sizeof(char));
-         strlcpy(xmb->thumbnail_file_path,
-               tmp_new, sizeof(xmb->thumbnail_file_path));
-      }
-      free(tmp);
+      while((scrub_char_pointer = strpbrk(tmp, "&*/:`\"<>?\\|")))
+         *scrub_char_pointer = '_';
    }
+
+   /* Look for thumbnail file with this scrubbed filename */
+   if (!string_is_empty(tmp))
+   {
+      fill_pathname_join(tmp_new,
+            xmb->thumbnail_file_path,
+            tmp, PATH_MAX_LENGTH * sizeof(char));
+      strlcpy(xmb->thumbnail_file_path,
+            tmp_new, sizeof(xmb->thumbnail_file_path));
+   }
+   free(tmp);
 
    strlcat(xmb->thumbnail_file_path,
          file_path_str(FILE_PATH_PNG_EXTENSION),
@@ -1052,7 +1057,10 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
 
 end:
    menu_entry_free(&entry);
-   free(tmp_new);
+   if (tmp_new)
+      free(tmp_new);
+   if (tmp_new2)
+      free(tmp_new2);
 }
 
 static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
