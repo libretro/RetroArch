@@ -518,7 +518,7 @@ static void d3d8_free_overlay(d3d_video_t *d3d, overlay_t *overlay)
 
 static void d3d8_deinit_chain(d3d_video_t *d3d)
 {
-   d3d8_renderchain_free(d3d8->renderchain_data);
+   d3d8_renderchain_free(d3d->renderchain_data);
 
    d3d->renderchain_data   = NULL;
 }
