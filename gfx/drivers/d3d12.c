@@ -348,7 +348,7 @@ static void d3d12_set_menu_texture_frame(
       D3D12_RANGE     read_range = { 0, 0 };
       d3d12_vertex_t* v;
 
-      D3D12Map(d3d12->menu.vbo, 0, &read_range, &v);
+      D3D12Map(d3d12->menu.vbo, 0, &read_range, (void**)&v);
       v[0].color[3] = alpha;
       v[1].color[3] = alpha;
       v[2].color[3] = alpha;

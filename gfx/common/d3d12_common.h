@@ -1217,7 +1217,7 @@ void d3d12_upload_texture(D3D12GraphicsCommandList cmd, d3d12_texture_t* texture
 void d3d12_create_fullscreen_quad_vbo(
       D3D12Device device, D3D12_VERTEX_BUFFER_VIEW* view, D3D12Resource* vbo);
 
-static inline d3d12_resource_transition(D3D12GraphicsCommandList cmd, D3D12Resource resource,
+static inline void d3d12_resource_transition(D3D12GraphicsCommandList cmd, D3D12Resource resource,
       D3D12_RESOURCE_STATES state_before, D3D12_RESOURCE_STATES state_after)
 {
    D3D12_RESOURCE_BARRIER barrier = {
@@ -1231,12 +1231,12 @@ static inline d3d12_resource_transition(D3D12GraphicsCommandList cmd, D3D12Resou
    D3D12ResourceBarrier(cmd, 1, &barrier);
 }
 
-static inline d3d12_set_texture(D3D12GraphicsCommandList cmd, const d3d12_texture_t* texture)
+static inline void d3d12_set_texture(D3D12GraphicsCommandList cmd, const d3d12_texture_t* texture)
 {
    D3D12SetGraphicsRootDescriptorTable(cmd, DESC_TABLE_INDEX_SRV_TEXTURE, texture->gpu_descriptor);
 }
 
-static inline d3d12_set_sampler(D3D12GraphicsCommandList cmd, D3D12_GPU_DESCRIPTOR_HANDLE sampler)
+static inline void d3d12_set_sampler(D3D12GraphicsCommandList cmd, D3D12_GPU_DESCRIPTOR_HANDLE sampler)
 {
    D3D12SetGraphicsRootDescriptorTable(cmd, DESC_TABLE_INDEX_SAMPLER, sampler);
 }
@@ -1247,7 +1247,7 @@ static inline void d3d12_update_texture(int width, int height, int pitch, DXGI_F
    uint8_t*    dst;
    D3D12_RANGE read_range = { 0, 0 };
 
-   D3D12Map(texture->upload_buffer, 0, &read_range, &dst);
+   D3D12Map(texture->upload_buffer, 0, &read_range, (void**)&dst);
 
    dxgi_copy(width, height, format, pitch, data, texture->desc.Format,
          texture->layout.Footprint.RowPitch, dst + texture->layout.Offset);
