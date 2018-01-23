@@ -242,7 +242,7 @@ typedef struct xmb_handle
    char *thumbnail_content;
    char *savestate_thumbnail_file_path;
    char *thumbnail_file_path;
-   char background_file_path[PATH_MAX_LENGTH];
+   char *bg_file_path;
 
    file_list_t *selection_buf_old;
    file_list_t *horizontal_list;
@@ -1586,14 +1586,15 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
          fill_pathname_application_special(path, path_size,
                APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG);
 
-       if(!string_is_equal(path, xmb->background_file_path))
+       if(!string_is_equal(path, xmb->bg_file_path))
        {
            if(filestream_exists(path))
            {
               task_push_image_load(path,
                   menu_display_handle_wallpaper_upload, NULL);
-              strlcpy(xmb->background_file_path,
-                    path, sizeof(xmb->background_file_path));
+              if (!string_is_empty(xmb->bg_file_path))
+                 free(xmb->bg_file_path);
+              xmb->bg_file_path = strdup(path);
            }
        }
 
@@ -3626,6 +3627,8 @@ static void xmb_free(void *data)
          free(xmb->savestate_thumbnail_file_path);
       if (!string_is_empty(xmb->thumbnail_file_path))
          free(xmb->thumbnail_file_path);
+      if (!string_is_empty(xmb->bg_file_path))
+         free(xmb->bg_file_path);
    }
 
    font_driver_bind_block(NULL, NULL);
@@ -3889,12 +3892,19 @@ static void xmb_context_reset(void *data, bool is_threaded)
 
    if (xmb)
    {
-      char *iconpath = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-      iconpath[0]    = '\0';
+      char bg_file_path[PATH_MAX_LENGTH] = {0};
+      char *iconpath    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      iconpath[0]       = '\0';
 
-      fill_pathname_application_special(xmb->background_file_path,
-            sizeof(xmb->background_file_path),
-            APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG);
+      fill_pathname_application_special(bg_file_path,
+            sizeof(bg_file_path), APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG);
+
+      if (!string_is_empty(bg_file_path))
+      {
+         if (!string_is_empty(xmb->bg_file_path))
+            free(xmb->bg_file_path);
+         xmb->bg_file_path = strdup(bg_file_path);
+      }
 
       fill_pathname_application_special(iconpath,
             PATH_MAX_LENGTH * sizeof(char),
