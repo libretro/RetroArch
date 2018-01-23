@@ -3461,20 +3461,6 @@ bool renderchain_d3d_init_first(
          }
 #endif
          break;
-      case GFX_CTX_DIRECT3D8_API:
-         {
-#ifdef HAVE_D3D8
-            void *data = d3d8_d3d_renderchain.chain_new();
-
-            if (data)
-            {
-               *renderchain_driver    = &d3d8_d3d_renderchain;
-               *renderchain_handle    = data;
-               return true;
-            }
-#endif
-         }
-         break;
       case GFX_CTX_NONE:
       default:
          break;

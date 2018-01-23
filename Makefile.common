@@ -1325,8 +1325,6 @@ ifeq ($(HAVE_D3DX), 1)
    LIBS += -ld3dx8
 endif
 endif
-
-   OBJ += gfx/drivers_renderchain/d3d8_renderchain.o
 endif
 
 ifeq ($(HAVE_DX_COMMON), 1)

@@ -328,7 +328,6 @@ VIDEO DRIVER
 
 #if defined(HAVE_D3D8)
 #include "../gfx/drivers/d3d8.c"
-#include "../gfx/drivers_renderchain/d3d8_renderchain.c"
 #endif
 
 #if defined(HAVE_D3D9)
