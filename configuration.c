@@ -2252,8 +2252,9 @@ static bool check_shader_compatibility(enum file_path_enum enum_idx)
       return true;
    }
 
-   if (string_is_equal(settings->arrays.video_driver, "gl") ||
-       string_is_equal(settings->arrays.video_driver, "d3d")
+   if (string_is_equal(settings->arrays.video_driver, "gl")   ||
+       string_is_equal(settings->arrays.video_driver, "d3d8") ||
+       string_is_equal(settings->arrays.video_driver, "d3d9")
       )
    {
       if (enum_idx == FILE_PATH_SLANGP_EXTENSION)
