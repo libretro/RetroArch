@@ -991,7 +991,7 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
    else if (filebrowser_get_type() != FILEBROWSER_NONE)
    {
       xmb->thumbnail_file_path[0] = '\0';
-      xmb->thumbnail = 0;
+      xmb->thumbnail              = 0;
       goto end;
    }
 
@@ -1046,14 +1046,16 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
       fill_pathname_join(tmp_new,
             xmb->thumbnail_file_path,
             tmp, PATH_MAX_LENGTH * sizeof(char));
-      strlcpy(xmb->thumbnail_file_path,
-            tmp_new, sizeof(xmb->thumbnail_file_path));
+      if (!string_is_empty(tmp_new))
+         strlcpy(xmb->thumbnail_file_path,
+               tmp_new, sizeof(xmb->thumbnail_file_path));
    }
    free(tmp);
 
-   strlcat(xmb->thumbnail_file_path,
-         file_path_str(FILE_PATH_PNG_EXTENSION),
-         sizeof(xmb->thumbnail_file_path));
+   if (!string_is_empty(xmb->thumbnail_file_path))
+      strlcat(xmb->thumbnail_file_path,
+            file_path_str(FILE_PATH_PNG_EXTENSION),
+            sizeof(xmb->thumbnail_file_path));
 
 end:
    menu_entry_free(&entry);
