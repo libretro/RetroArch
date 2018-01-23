@@ -108,7 +108,8 @@ export PATH    := $(PATH)
 #$(info PATH : $(PATH))
 #$(error end)
 
-ifeq ($(TARGET_ARCH),x64)
+DEFINES += -D__SSE__ -D__SSE2__
+ifeq ($(TARGET_ARCH2),x64)
 DEFINES += -D__x86_64__
 else
 #DEFINES += -D__i686__
