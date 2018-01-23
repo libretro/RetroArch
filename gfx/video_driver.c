@@ -3470,6 +3470,7 @@ bool renderchain_d3d_init_first(
             {
                *renderchain_driver    = &d3d8_d3d_renderchain;
                *renderchain_handle    = data;
+               return true;
             }
 #endif
          }
