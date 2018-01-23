@@ -143,11 +143,12 @@ static bool d3d12_gfx_frame(
       d3d12_update_texture(width, height, pitch, d3d12->format, frame, &d3d12->frame.texture);
 
       d3d12_upload_texture(d3d12->queue.cmd, &d3d12->frame.texture);
-      d3d12_set_texture(d3d12->queue.cmd, &d3d12->frame.texture);
-      d3d12_set_sampler(d3d12->queue.cmd, d3d12->frame.sampler);
-      D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->frame.vbo_view);
-      D3D12DrawInstanced(d3d12->queue.cmd, 4, 1, 0, 0);
    }
+
+   d3d12_set_texture(d3d12->queue.cmd, &d3d12->frame.texture);
+   d3d12_set_sampler(d3d12->queue.cmd, d3d12->frame.sampler);
+   D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->frame.vbo_view);
+   D3D12DrawInstanced(d3d12->queue.cmd, 4, 1, 0, 0);
 
    if (d3d12->menu.enabled && d3d12->menu.texture.handle)
    {
@@ -168,8 +169,7 @@ static bool d3d12_gfx_frame(
    D3D12ExecuteGraphicsCommandLists(d3d12->queue.handle, 1, &d3d12->queue.cmd);
 
 #if 1
-   //   DXGIPresent(d3d12->chain.handle, !!d3d12->chain.vsync, 0);
-   DXGIPresent(d3d12->chain.handle, 0, 0);
+   DXGIPresent(d3d12->chain.handle, !!d3d12->chain.vsync, 0);
 #else
    DXGI_PRESENT_PARAMETERS pp = { 0 };
    DXGIPresent1(d3d12->swapchain, 0, 0, &pp);
