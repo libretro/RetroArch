@@ -229,9 +229,10 @@ bool d3d_initialize_symbols(enum d3d_comm_api api)
          if (!g_d3dx_dll)
             return false;
 #endif
+#endif
          break;
       case D3D_COMM_D3D8:
-#elif defined(HAVE_D3D8)
+#if defined(HAVE_D3D8)
 #if defined(DEBUG) || defined(_DEBUG)
          g_d3d_dll     = dylib_load("d3d8d.dll");
          if(!g_d3d_dll)
