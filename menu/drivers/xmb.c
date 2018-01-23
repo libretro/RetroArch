@@ -945,23 +945,15 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
 {
    menu_entry_t entry;
    unsigned entry_type            = 0;
-   char *scrub_char_pointer       = NULL;
    char new_path[PATH_MAX_LENGTH] = {0};
    settings_t     *settings       = config_get_ptr();
    xmb_handle_t     *xmb          = (xmb_handle_t*)data;
    playlist_t     *playlist       = NULL;
-   const char    *core_name       = NULL;
-   char             *tmp          = NULL;
-   char            *tmp_new2      = (char*)
-      malloc(PATH_MAX_LENGTH * sizeof(char));
-   char            *tmp_new       = (char*)
-      malloc(PATH_MAX_LENGTH * sizeof(char));
-
-   tmp_new[0] = tmp_new2[0]       = '\0';
+   const char    *dir_thumbnails  = settings->paths.directory_thumbnails;
 
    menu_entry_init(&entry);
 
-   if (!xmb || string_is_empty(settings->paths.directory_thumbnails))
+   if (!xmb || string_is_empty(dir_thumbnails))
       goto end;
 
    menu_entry_get(&entry, 0, i, NULL, true);
@@ -996,6 +988,7 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
 
    if (playlist)
    {
+      const char    *core_name       = NULL;
       playlist_get_index(playlist, i,
             NULL, NULL, NULL, &core_name, NULL, NULL);
 
@@ -1008,20 +1001,29 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
       }
    }
 
+   /* Append thumbnail system directory */
    if (!string_is_empty(xmb->thumbnail_system))
       fill_pathname_join(
             new_path,
-            settings->paths.directory_thumbnails,
+            dir_thumbnails,
             xmb->thumbnail_system,
             sizeof(new_path));
 
    if (!string_is_empty(new_path))
+   {
+      char            *tmp_new2      = (char*)
+         malloc(PATH_MAX_LENGTH * sizeof(char));
+
+      tmp_new2[0]                    = '\0';
+
+      /* Append Named_Snaps/Named_Boxart/Named_Titles */
       fill_pathname_join(tmp_new2, new_path,
             xmb_thumbnails_ident(), PATH_MAX_LENGTH * sizeof(char));
 
-   if (!string_is_empty(tmp_new2))
       strlcpy(new_path, tmp_new2,
             PATH_MAX_LENGTH * sizeof(char));
+      free(tmp_new2);
+   }
 
    /* Scrub characters that are not cross-platform and/or violate the
     * No-Intro filename standard:
@@ -1029,26 +1031,32 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
     * Replace these characters in the entry name with underscores.
     */
    if (!string_is_empty(xmb->thumbnail_content))
-      tmp = strdup(xmb->thumbnail_content);
-
-   if (!string_is_empty(tmp))
    {
+      char *scrub_char_pointer       = NULL;
+      char            *tmp_new       = (char*)
+         malloc(PATH_MAX_LENGTH * sizeof(char));
+      char            *tmp           = strdup(xmb->thumbnail_content);
+
+      tmp_new[0]                     = '\0';
+
       while((scrub_char_pointer = strpbrk(tmp, "&*/:`\"<>?\\|")))
          *scrub_char_pointer = '_';
-   }
 
-   /* Look for thumbnail file with this scrubbed filename */
-   if (!string_is_empty(tmp))
-   {
+      /* Look for thumbnail file with this scrubbed filename */
+
       fill_pathname_join(tmp_new,
             new_path,
             tmp, PATH_MAX_LENGTH * sizeof(char));
+
       if (!string_is_empty(tmp_new))
          strlcpy(new_path,
                tmp_new, sizeof(new_path));
-   }
-   free(tmp);
 
+      free(tmp_new);
+      free(tmp);
+   }
+
+   /* Append png extension */
    if (!string_is_empty(new_path))
       strlcat(new_path,
             file_path_str(FILE_PATH_PNG_EXTENSION),
@@ -1058,10 +1066,6 @@ end:
    if (!string_is_empty(new_path))
       xmb->thumbnail_file_path = strdup(new_path);
    menu_entry_free(&entry);
-   if (tmp_new)
-      free(tmp_new);
-   if (tmp_new2)
-      free(tmp_new2);
 }
 
 static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
@@ -1069,15 +1073,12 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
    menu_entry_t entry;
    settings_t     *settings = config_get_ptr();
    xmb_handle_t     *xmb    = (xmb_handle_t*)data;
-   playlist_t     *playlist = NULL;
 
    if (!xmb)
       return;
 
    menu_entry_init(&entry);
    menu_entry_get(&entry, 0, i, NULL, true);
-
-   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
 
    if (!string_is_empty(xmb->savestate_thumbnail_file_path))
       free(xmb->savestate_thumbnail_file_path);
@@ -1098,10 +1099,12 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
 
          if (global)
          {
-            if (settings->ints.state_slot > 0)
+            int state_slot = settings->ints.state_slot;
+
+            if (state_slot > 0)
                snprintf(path, path_size, "%s%d",
-                     global->name.savestate, settings->ints.state_slot);
-            else if (settings->ints.state_slot < 0)
+                     global->name.savestate, state_slot);
+            else if (state_slot < 0)
                fill_pathname_join_delim(path,
                      global->name.savestate, "auto", '.', path_size);
             else
