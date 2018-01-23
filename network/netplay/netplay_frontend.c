@@ -115,10 +115,10 @@ static bool netplay_can_poll(netplay_t *netplay)
  */
 static bool get_self_input_state(netplay_t *netplay)
 {
+   unsigned i;
    struct delta_frame *ptr = &netplay->buffer[netplay->self_ptr];
    netplay_input_state_t istate = NULL;
    uint32_t devices, used_devices = 0, devi, dev_type, local_device;
-   size_t i;
 
    if (!netplay_delta_frame_ready(netplay, ptr, netplay->self_frame_count))
       return false;
@@ -192,7 +192,7 @@ static bool get_self_input_state(netplay_t *netplay)
                int16_t tmp_y = cb(local_device, dtype, 0, 1);
                state[1] = (uint16_t)tmp_x | (((uint16_t)tmp_y) << 16);
                for (i = 2;
-                     i <= ((dtype == RETRO_DEVICE_MOUSE) ?
+                     i <= (unsigned)((dtype == RETRO_DEVICE_MOUSE) ?
                            RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN :
                            RETRO_DEVICE_ID_LIGHTGUN_START);
                      i++)
@@ -1246,7 +1246,6 @@ uint8_t netplay_settings_share_mode(void)
  */
 static void netplay_toggle_play_spectate(netplay_t *netplay)
 {
-   size_t i;
    enum rarch_netplay_connection_mode mode;
 
    if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING ||

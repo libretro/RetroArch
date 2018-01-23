@@ -289,10 +289,8 @@ static bool send_input_frame(netplay_t *netplay, struct delta_frame *dframe,
 bool netplay_send_cur_input(netplay_t *netplay,
    struct netplay_connection *connection)
 {
-   struct delta_frame *dframe = &netplay->buffer[netplay->self_ptr];
    uint32_t from_client, to_client;
-   size_t i;
-   netplay_input_state_t istate;
+   struct delta_frame *dframe = &netplay->buffer[netplay->self_ptr];
 
    if (netplay->is_server)
    {
@@ -910,10 +908,8 @@ static bool netplay_get_cmd(netplay_t *netplay,
    struct netplay_connection *connection, bool *had_input)
 {
    uint32_t cmd;
-   uint32_t flip_frame;
    uint32_t cmd_size;
    ssize_t recvd;
-   char msg[512];
 
    /* We don't handle the initial handshake here */
    if (connection->mode < NETPLAY_CONNECTION_CONNECTED)
@@ -949,7 +945,6 @@ static bool netplay_get_cmd(netplay_t *netplay,
       case NETPLAY_CMD_INPUT:
          {
             uint32_t frame_num, client_num, input_size, devices, device;
-            unsigned i;
             struct delta_frame *dframe;
 
             if (cmd_size < 2*sizeof(uint32_t))
@@ -1324,7 +1319,6 @@ static bool netplay_get_cmd(netplay_t *netplay,
                else
                {
                   uint32_t frame_count;
-                  netplay_input_state_t istate;
 
                   /* It wants future frames, make sure we don't capture or send intermediate ones */
                   START(netplay->self_ptr);

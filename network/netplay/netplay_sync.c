@@ -228,9 +228,9 @@ static void merge_analog_part(netplay_t *netplay,
       uint32_t device, uint32_t clients, uint32_t word, uint8_t bit)
 {
    netplay_input_state_t simstate;
-   uint32_t client, client_count = 0;;
-   uint8_t share_mode = netplay->device_share_modes[device] & NETPLAY_SHARE_ANALOG_BITS;
-   int32_t value = 0, new_value;
+   uint32_t client, client_count = 0;
+   uint8_t share_mode            = netplay->device_share_modes[device] & NETPLAY_SHARE_ANALOG_BITS;
+   int32_t value                 = 0, new_value;
 
    /* Make sure all real clients are accounted for */
    for (simstate = simframe->real_input[device]; simstate; simstate = simstate->next)

@@ -938,7 +938,7 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
    struct netplay_connection *connection, bool *had_input)
 {
    uint32_t cmd[2];
-   uint32_t new_frame_count, client_num, flip_frame;
+   uint32_t new_frame_count, client_num;
    uint32_t device;
    uint32_t local_sram_size, remote_sram_size;
    size_t i, j;
