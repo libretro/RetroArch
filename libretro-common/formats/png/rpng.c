@@ -489,6 +489,8 @@ static void png_reverse_filter_adam7_deinterlace_pass(uint32_t *data,
 
 static void png_reverse_filter_deinit(struct rpng_process *pngp)
 {
+   if (!pngp)
+      return;
    if (pngp->decoded_scanline)
       free(pngp->decoded_scanline);
    pngp->decoded_scanline = NULL;

@@ -874,7 +874,7 @@ static void xmb_render_messagebox_internal(
    unsigned width           = video_info->width;
    unsigned height          = video_info->height;
    struct string_list *list = string_split(message, "\n");
-   if (!list)
+   if (!list || !xmb)
       return;
 
    if (list->elems == 0)
