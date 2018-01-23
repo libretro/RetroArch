@@ -757,7 +757,6 @@ void netplay_sync_post_frame(netplay_t *netplay, bool stalled)
       {
          while (netplay->replay_frame_count < netplay->run_frame_count)
          {
-            struct delta_frame *ptr = &netplay->buffer[netplay->replay_ptr];
             if (netplay_resolve_input(netplay, netplay->replay_ptr, true))
                break;
             netplay->replay_ptr = NEXT_PTR(netplay->replay_ptr);

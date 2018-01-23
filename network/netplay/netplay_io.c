@@ -1139,7 +1139,6 @@ static bool netplay_get_cmd(netplay_t *netplay,
       {
          uint32_t client_num;
          uint32_t payload[1];
-         settings_t *settings = config_get_ptr();
 
          if (cmd_size != sizeof(uint32_t))
          {
