@@ -25,6 +25,11 @@
 #endif
 
 #define CINTERFACE
+#ifdef __MINGW32__
+#ifndef __in_ecount_opt
+#define __in_ecount_opt(s)
+#endif
+#endif
 #include <d3d12.h>
 #include "dxgi_common.h"
 

@@ -2239,8 +2239,6 @@ enum D3D12_MESSAGE_ID
         D3D12_MESSAGE_ID_D3D12_MESSAGES_END	= ( D3D12_MESSAGE_ID_VIDEO_PROCESS_FRAMES_INVALID_ARGUMENT + 1 ) 
     } 	D3D12_MESSAGE_ID;
 
-static_assert(D3D12_MESSAGE_ID_GPU_BASED_VALIDATION_UNSUPPORTED == 1000, "Publicly released SDK D3D12_MESSAGE_ID enum values must not be changed. New enum values must be added to the end of the list.");
-static_assert(D3D12_MESSAGE_ID_COPY_INVALIDLAYOUT == 1067, "Publicly released SDK D3D12_MESSAGE_ID enum values must not be changed. New enum values must be added to the end of the list.");
 typedef struct D3D12_MESSAGE
     {
     D3D12_MESSAGE_CATEGORY Category;
