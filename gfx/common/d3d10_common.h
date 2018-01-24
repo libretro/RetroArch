@@ -1073,6 +1073,9 @@ static inline HRESULT D3D10CreateTexture2DShaderResourceView(
 
    /* internal */
 
+#include <retro_math.h>
+#include <gfx/math/matrix_4x4.h>
+#include "gfx/video_driver.h"
 #include <stdbool.h>
 
 typedef struct d3d10_vertex_t
@@ -1099,13 +1102,22 @@ typedef struct
    D3D10Device           device;
    D3D10RenderTargetView renderTargetView;
    D3D10InputLayout      layout;
+   D3D10Buffer           ubo;
    D3D10VertexShader     vs;
    D3D10PixelShader      ps;
    D3D10SamplerState     sampler_nearest;
    D3D10SamplerState     sampler_linear;
    D3D10BlendState       blend_enable;
    D3D10BlendState       blend_disable;
+   math_matrix_4x4       mvp, mvp_no_rot;
+   struct video_viewport vp;
+   D3D10_VIEWPORT        viewport;
+   DXGI_FORMAT           format;
    float                 clearcolor[4];
+   bool                  vsync;
+   bool                  resize_chain;
+   bool                  keep_aspect;
+   bool                  resize_viewport;
    struct
    {
       d3d10_texture_t   texture;
@@ -1118,12 +1130,11 @@ typedef struct
    {
       d3d10_texture_t   texture;
       D3D10Buffer       vbo;
+      D3D10Buffer       ubo;
       D3D10SamplerState sampler;
+      D3D10_VIEWPORT    viewport;
+      int               rotation;
    } frame;
-   DXGI_FORMAT format;
-
-   bool vsync;
-   bool need_resize;
 } d3d10_video_t;
 
 void d3d10_init_texture(D3D10Device device, d3d10_texture_t* texture);

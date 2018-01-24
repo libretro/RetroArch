@@ -934,6 +934,7 @@ void video_driver_free(void);
 void video_driver_free_hw_context(void);
 void video_driver_monitor_reset(void);
 void video_driver_set_aspect_ratio(void);
+void video_driver_update_viewport(struct video_viewport* vp, bool force_full, bool keep_aspect);
 void video_driver_show_mouse(void);
 void video_driver_hide_mouse(void);
 void video_driver_set_nonblock_state(bool toggle);

@@ -305,17 +305,26 @@ bool d3d12_init_descriptors(d3d12_video_t* d3d12)
       },
    };
 
-   static const D3D12_ROOT_PARAMETER rootParameters[] = {
-      {
-            .ParameterType    = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
-            .DescriptorTable  = { countof(srv_table), srv_table },
-            .ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL,
-      },
-      {
-            .ParameterType    = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
-            .DescriptorTable  = { countof(sampler_table), sampler_table },
-            .ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL,
-      },
+   static const D3D12_ROOT_PARAMETER rootParameters[ROOT_INDEX_MAX] = {
+      [ROOT_INDEX_TEXTURE_TABLE] =
+            {
+                  .ParameterType    = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
+                  .DescriptorTable  = { countof(srv_table), srv_table },
+                  .ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL,
+            },
+      [ROOT_INDEX_SAMPLER_TABLE] =
+            {
+                  .ParameterType    = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
+                  .DescriptorTable  = { countof(sampler_table), sampler_table },
+                  .ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL,
+            },
+      [ROOT_INDEX_UBO] =
+            {
+                  .ParameterType             = D3D12_ROOT_PARAMETER_TYPE_CBV,
+                  .Descriptor.ShaderRegister = 0,
+                  .Descriptor.RegisterSpace  = 0,
+                  .ShaderVisibility          = D3D12_SHADER_VISIBILITY_VERTEX,
+            },
    };
    static const D3D12_ROOT_SIGNATURE_DESC desc = {
       .NumParameters = countof(rootParameters),
@@ -454,8 +463,8 @@ bool d3d12_init_pipeline(d3d12_video_t* d3d12)
    return true;
 }
 
-void d3d12_create_vertex_buffer(
-      D3D12Device device, D3D12_VERTEX_BUFFER_VIEW* view, D3D12Resource* vbo)
+D3D12_GPU_VIRTUAL_ADDRESS
+d3d12_create_buffer(D3D12Device device, UINT size_in_bytes, D3D12Resource* buffer)
 {
    static const D3D12_HEAP_PROPERTIES heap_props = {
       .Type             = D3D12_HEAP_TYPE_UPLOAD,
@@ -465,7 +474,7 @@ void d3d12_create_vertex_buffer(
 
    D3D12_RESOURCE_DESC resource_desc = {
       .Dimension        = D3D12_RESOURCE_DIMENSION_BUFFER,
-      .Width            = view->SizeInBytes,
+      .Width            = size_in_bytes,
       .Height           = 1,
       .DepthOrArraySize = 1,
       .MipLevels        = 1,
@@ -475,8 +484,9 @@ void d3d12_create_vertex_buffer(
 
    D3D12CreateCommittedResource(
          device, (D3D12_HEAP_PROPERTIES*)&heap_props, D3D12_HEAP_FLAG_NONE, &resource_desc,
-         D3D12_RESOURCE_STATE_GENERIC_READ, NULL, vbo);
-   view->BufferLocation = D3D12GetGPUVirtualAddress(*vbo);
+         D3D12_RESOURCE_STATE_GENERIC_READ, NULL, buffer);
+
+   return D3D12GetGPUVirtualAddress(*buffer);
 }
 
 void d3d12_init_texture(
@@ -565,15 +575,15 @@ void d3d12_create_fullscreen_quad_vbo(
       D3D12Device device, D3D12_VERTEX_BUFFER_VIEW* view, D3D12Resource* vbo)
 {
    static const d3d12_vertex_t vertices[] = {
-      { { -1.0f, -1.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
-      { { -1.0f, 1.0f }, { 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
-      { { 1.0f, -1.0f }, { 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
+      { { 0.0f, 0.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
+      { { 0.0f, 1.0f }, { 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
+      { { 1.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
       { { 1.0f, 1.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
    };
 
-   view->SizeInBytes   = sizeof(vertices);
-   view->StrideInBytes = sizeof(*vertices);
-   d3d12_create_vertex_buffer(device, view, vbo);
+   view->SizeInBytes    = sizeof(vertices);
+   view->StrideInBytes  = sizeof(*vertices);
+   view->BufferLocation = d3d12_create_buffer(device, view->SizeInBytes, vbo);
 
    {
       void*       vertex_data_begin;

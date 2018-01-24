@@ -35,6 +35,45 @@ static void d3d12_set_filtering(void* data, unsigned index, bool smooth)
       d3d12->frame.sampler = d3d12->sampler_nearest;
 }
 
+static void d3d12_gfx_set_rotation(void* data, unsigned rotation)
+{
+   math_matrix_4x4  rot;
+   math_matrix_4x4* mvp;
+   D3D12_RANGE      read_range = { 0, 0 };
+   d3d12_video_t*   d3d12      = (d3d12_video_t*)data;
+
+   d3d12->frame.rotation = 3 * rotation;
+
+   matrix_4x4_rotate_z(rot, d3d12->frame.rotation * (M_PI / 2.0f));
+   matrix_4x4_multiply(d3d12->mvp, rot, d3d12->mvp_no_rot);
+
+   D3D12Map(d3d12->frame.ubo, 0, &read_range, (void**)&mvp);
+   *mvp = d3d12->mvp;
+   D3D12Unmap(d3d12->frame.ubo, 0, NULL);
+}
+
+static void d3d12_update_viewport(void* data, bool force_full)
+{
+   d3d12_video_t* d3d12 = (d3d12_video_t*)data;
+
+   video_driver_update_viewport(&d3d12->vp, force_full, d3d12->keep_aspect);
+
+   d3d12->frame.viewport.TopLeftX = (float)d3d12->vp.x;
+   d3d12->frame.viewport.TopLeftY = (float)d3d12->vp.y;
+   d3d12->frame.viewport.Width    = (float)d3d12->vp.width;
+   d3d12->frame.viewport.Height   = (float)d3d12->vp.height;
+   d3d12->frame.viewport.MaxDepth = 0.0f;
+   d3d12->frame.viewport.MaxDepth = 1.0f;
+
+   /* having to add vp.x and vp.y here doesn't make any sense */
+   d3d12->frame.scissorRect.top    = 0;
+   d3d12->frame.scissorRect.left   = 0;
+   d3d12->frame.scissorRect.right  = d3d12->vp.x + d3d12->vp.width;
+   d3d12->frame.scissorRect.bottom = d3d12->vp.y + d3d12->vp.height;
+
+   d3d12->resize_viewport = false;
+}
+
 static void*
 d3d12_gfx_init(const video_info_t* video, const input_driver_t** input, void** input_data)
 {
@@ -79,9 +118,34 @@ d3d12_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
 
    d3d12_set_filtering(d3d12, 0, video->smooth);
 
+   d3d12->keep_aspect = video->force_aspect;
    d3d12->chain.vsync = video->vsync;
    d3d12->format      = video->rgb32 ? DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM;
-   d3d12->frame.texture.desc.Format = d3d12_get_closest_match_texture2D(d3d12->device, d3d12->format);
+   d3d12->frame.texture.desc.Format =
+         d3d12_get_closest_match_texture2D(d3d12->device, d3d12->format);
+
+   d3d12->ubo_view.SizeInBytes = sizeof(math_matrix_4x4);
+   d3d12->ubo_view.BufferLocation =
+         d3d12_create_buffer(d3d12->device, d3d12->ubo_view.SizeInBytes, &d3d12->ubo);
+
+   d3d12->frame.ubo_view.SizeInBytes = sizeof(math_matrix_4x4);
+   d3d12->frame.ubo_view.BufferLocation =
+         d3d12_create_buffer(d3d12->device, d3d12->frame.ubo_view.SizeInBytes, &d3d12->frame.ubo);
+
+   matrix_4x4_ortho(d3d12->mvp_no_rot, 0.0f, 1.0f, 0.0f, 1.0f, -1.0f, 1.0f);
+
+   {
+      math_matrix_4x4* mvp;
+      D3D12_RANGE      read_range = { 0, 0 };
+      D3D12Map(d3d12->ubo, 0, &read_range, (void**)&mvp);
+      *mvp = d3d12->mvp_no_rot;
+      D3D12Unmap(d3d12->ubo, 0, NULL);
+   }
+
+   d3d12_gfx_set_rotation(d3d12, 0);
+   d3d12->vp.full_width   = video->width;
+   d3d12->vp.full_height  = video->height;
+   d3d12->resize_viewport = true;
 
    return d3d12;
 
@@ -103,7 +167,7 @@ static bool d3d12_gfx_frame(
 {
    d3d12_video_t* d3d12 = (d3d12_video_t*)data;
 
-   if (d3d12->need_resize)
+   if (d3d12->resize_chain)
    {
       int i;
 
@@ -119,15 +183,10 @@ static bool d3d12_gfx_frame(
                d3d12->device, d3d12->chain.renderTargets[i], NULL, d3d12->chain.desc_handles[i]);
       }
 
-      d3d12->chain.viewport.Width     = video_info->width;
-      d3d12->chain.viewport.Height    = video_info->height;
-      d3d12->chain.scissorRect.right  = video_info->width;
-      d3d12->chain.scissorRect.bottom = video_info->height;
       d3d12->chain.frame_index = DXGIGetCurrentBackBufferIndex(d3d12->chain.handle);
-
-      d3d12->need_resize = false;
+      d3d12->resize_chain      = false;
+      d3d12->resize_viewport   = true;
    }
-
 
    PERF_START();
    D3D12ResetCommandAllocator(d3d12->queue.allocator);
@@ -144,8 +203,6 @@ static bool d3d12_gfx_frame(
          d3d12->queue.cmd, d3d12->chain.renderTargets[d3d12->chain.frame_index],
          D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
-   D3D12RSSetViewports(d3d12->queue.cmd, 1, &d3d12->chain.viewport);
-   D3D12RSSetScissorRects(d3d12->queue.cmd, 1, &d3d12->chain.scissorRect);
    D3D12OMSetRenderTargets(
          d3d12->queue.cmd, 1, &d3d12->chain.desc_handles[d3d12->chain.frame_index], FALSE, NULL);
    D3D12ClearRenderTargetView(
@@ -153,11 +210,9 @@ static bool d3d12_gfx_frame(
          d3d12->chain.clearcolor, 0, NULL);
 
    D3D12IASetPrimitiveTopology(d3d12->queue.cmd, D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-
    if (data && width && height)
    {
-      if (!d3d12->frame.texture.handle || (d3d12->frame.texture.desc.Width != width) ||
-          (d3d12->frame.texture.desc.Height != height))
+      if (d3d12->frame.texture.desc.Width != width || d3d12->frame.texture.desc.Height != height)
       {
          d3d12->frame.texture.desc.Width  = width;
          d3d12->frame.texture.desc.Height = height;
@@ -169,7 +224,16 @@ static bool d3d12_gfx_frame(
 
       d3d12_upload_texture(d3d12->queue.cmd, &d3d12->frame.texture);
    }
+#if 0 /* custom viewport doesn't call apply_state_changes, so we can't rely on this for now */
+   if (d3d12->resize_viewport)
+#endif
+   d3d12_update_viewport(d3d12, false);
 
+   D3D12RSSetViewports(d3d12->queue.cmd, 1, &d3d12->frame.viewport);
+   D3D12RSSetScissorRects(d3d12->queue.cmd, 1, &d3d12->frame.scissorRect);
+
+   D3D12SetGraphicsRootConstantBufferView(
+         d3d12->queue.cmd, ROOT_INDEX_UBO, d3d12->frame.ubo_view.BufferLocation);
    d3d12_set_texture(d3d12->queue.cmd, &d3d12->frame.texture);
    d3d12_set_sampler(d3d12->queue.cmd, d3d12->frame.sampler);
    D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->frame.vbo_view);
@@ -179,6 +243,15 @@ static bool d3d12_gfx_frame(
    {
       if (d3d12->menu.texture.dirty)
          d3d12_upload_texture(d3d12->queue.cmd, &d3d12->menu.texture);
+
+      D3D12SetGraphicsRootConstantBufferView(
+            d3d12->queue.cmd, ROOT_INDEX_UBO, d3d12->ubo_view.BufferLocation);
+
+      if (d3d12->menu.fullscreen)
+      {
+         D3D12RSSetViewports(d3d12->queue.cmd, 1, &d3d12->chain.viewport);
+         D3D12RSSetScissorRects(d3d12->queue.cmd, 1, &d3d12->chain.scissorRect);
+      }
 
       d3d12_set_texture(d3d12->queue.cmd, &d3d12->menu.texture);
       d3d12_set_sampler(d3d12->queue.cmd, d3d12->menu.sampler);
@@ -228,18 +301,13 @@ static void d3d12_gfx_set_nonblock_state(void* data, bool toggle)
 
 static bool d3d12_gfx_alive(void* data)
 {
-   (void)data;
-   bool     quit;
-   bool     resize;
-   unsigned width;
-   unsigned height;
-
+   bool           quit;
    d3d12_video_t* d3d12 = (d3d12_video_t*)data;
 
-   win32_check_window(&quit, &d3d12->need_resize, &width, &height);
+   win32_check_window(&quit, &d3d12->resize_chain, &d3d12->vp.full_width, &d3d12->vp.full_height);
 
-   if (width != 0 && height != 0)
-      video_driver_set_size(&width, &height);
+   if (d3d12->resize_chain && d3d12->vp.full_width != 0 && d3d12->vp.full_height != 0)
+      video_driver_set_size(&d3d12->vp.full_width, &d3d12->vp.full_height);
 
    return !quit;
 }
@@ -263,6 +331,7 @@ static void d3d12_gfx_free(void* data)
 {
    d3d12_video_t* d3d12 = (d3d12_video_t*)data;
 
+   Release(d3d12->frame.ubo);
    Release(d3d12->frame.vbo);
    Release(d3d12->frame.texture.handle);
    Release(d3d12->frame.texture.upload_buffer);
@@ -270,6 +339,7 @@ static void d3d12_gfx_free(void* data)
    Release(d3d12->menu.texture.handle);
    Release(d3d12->menu.texture.upload_buffer);
 
+   Release(d3d12->ubo);
    Release(d3d12->pipe.sampler_heap.handle);
    Release(d3d12->pipe.srv_heap.handle);
    Release(d3d12->pipe.rtv_heap.handle);
@@ -304,16 +374,11 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
    return false;
 }
 
-static void d3d12_gfx_set_rotation(void* data, unsigned rotation)
-{
-   (void)data;
-   (void)rotation;
-}
-
 static void d3d12_gfx_viewport_info(void* data, struct video_viewport* vp)
 {
-   (void)data;
-   (void)vp;
+   d3d12_video_t* d3d12 = (d3d12_video_t*)data;
+
+   *vp = d3d12->vp;
 }
 
 static bool d3d12_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
@@ -366,28 +431,47 @@ static void d3d12_set_menu_texture_enable(void* data, bool state, bool full_scre
    d3d12->menu.fullscreen = full_screen;
 }
 
+static void d3d12_gfx_set_aspect_ratio(void* data, unsigned aspect_ratio_idx)
+{
+   d3d12_video_t* d3d12 = (d3d12_video_t*)data;
+
+   if (!d3d12)
+      return;
+
+   d3d12->keep_aspect     = true;
+   d3d12->resize_viewport = true;
+}
+
+static void d3d12_gfx_apply_state_changes(void* data)
+{
+   d3d12_video_t* d3d12 = (d3d12_video_t*)data;
+
+   if (d3d12)
+      d3d12->resize_viewport = true;
+}
+
 static const video_poke_interface_t d3d12_poke_interface = {
-   NULL,                          /* set_coords */
-   NULL,                          /* set_mvp */
-   NULL,                          /* load_texture */
-   NULL,                          /* unload_texture */
-   NULL,                          /* set_video_mode */
-   NULL,                          /* set_filtering */
-   NULL,                          /* get_video_output_size */
-   NULL,                          /* get_video_output_prev */
-   NULL,                          /* get_video_output_next */
-   NULL,                          /* get_current_framebuffer */
-   NULL,                          /* get_proc_address */
-   NULL,                          /* set_aspect_ratio */
-   NULL,                          /* apply_state_changes */
-   d3d12_set_menu_texture_frame,  /* set_texture_frame */
-   d3d12_set_menu_texture_enable, /* set_texture_enable */
-   NULL,                          /* set_osd_msg */
-   NULL,                          /* show_mouse */
-   NULL,                          /* grab_mouse_toggle */
-   NULL,                          /* get_current_shader */
-   NULL,                          /* get_current_software_framebuffer */
-   NULL,                          /* get_hw_render_interface */
+   NULL, /* set_coords */
+   NULL, /* set_mvp */
+   NULL, /* load_texture */
+   NULL, /* unload_texture */
+   NULL, /* set_video_mode */
+   d3d12_set_filtering,
+   NULL, /* get_video_output_size */
+   NULL, /* get_video_output_prev */
+   NULL, /* get_video_output_next */
+   NULL, /* get_current_framebuffer */
+   NULL, /* get_proc_address */
+   d3d12_gfx_set_aspect_ratio,
+   d3d12_gfx_apply_state_changes,
+   d3d12_set_menu_texture_frame,
+   d3d12_set_menu_texture_enable,
+   NULL, /* set_osd_msg */
+   NULL, /* show_mouse */
+   NULL, /* grab_mouse_toggle */
+   NULL, /* get_current_shader */
+   NULL, /* get_current_software_framebuffer */
+   NULL, /* get_hw_render_interface */
 };
 
 static void d3d12_gfx_get_poke_interface(void* data, const video_poke_interface_t** iface)

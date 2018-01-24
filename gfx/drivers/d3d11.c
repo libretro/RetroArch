@@ -28,6 +28,49 @@
 #include "../common/d3dcompiler_common.h"
 #include "../../performance_counters.h"
 
+static void d3d11_set_filtering(void* data, unsigned index, bool smooth)
+{
+   d3d11_video_t* d3d11 = (d3d11_video_t*)data;
+
+   if (smooth)
+      d3d11->frame.sampler = d3d11->sampler_linear;
+   else
+      d3d11->frame.sampler = d3d11->sampler_nearest;
+}
+
+static void d3d11_gfx_set_rotation(void* data, unsigned rotation)
+{
+   math_matrix_4x4  rot;
+   math_matrix_4x4* mvp;
+   d3d11_video_t*   d3d11 = (d3d11_video_t*)data;
+
+   d3d11->frame.rotation = 3 * rotation;
+
+   matrix_4x4_rotate_z(rot, d3d11->frame.rotation * (M_PI / 2.0f));
+   matrix_4x4_multiply(d3d11->mvp, rot, d3d11->mvp_no_rot);
+
+   D3D11_MAPPED_SUBRESOURCE mapped_ubo;
+   D3D11MapBuffer(d3d11->ctx, d3d11->frame.ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo);
+   *(math_matrix_4x4*)mapped_ubo.pData = d3d11->mvp;
+   D3D11UnmapBuffer(d3d11->ctx, d3d11->frame.ubo, 0);
+}
+
+static void d3d11_update_viewport(void* data, bool force_full)
+{
+   d3d11_video_t* d3d11 = (d3d11_video_t*)data;
+
+   video_driver_update_viewport(&d3d11->vp, force_full, d3d11->keep_aspect);
+
+   d3d11->frame.viewport.TopLeftX = (float)d3d11->vp.x;
+   d3d11->frame.viewport.TopLeftY = (float)d3d11->vp.y;
+   d3d11->frame.viewport.Width    = (float)d3d11->vp.width;
+   d3d11->frame.viewport.Height   = (float)d3d11->vp.height;
+   d3d11->frame.viewport.MaxDepth = 0.0f;
+   d3d11->frame.viewport.MaxDepth = 1.0f;
+
+   d3d11->resize_viewport = false;
+}
+
 static void*
 d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** input_data)
 {
@@ -95,11 +138,11 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
 
    D3D11SetRenderTargets(d3d11->ctx, 1, &d3d11->renderTargetView, NULL);
 
-   {
-      D3D11_VIEWPORT vp = { 0, 0, video->width, video->height, 0.0f, 1.0f };
-      D3D11SetViewports(d3d11->ctx, 1, &vp);
-   }
-
+   d3d11->vp.full_width   = video->width;
+   d3d11->vp.full_height  = video->height;
+   d3d11->viewport.Width  = video->width;
+   d3d11->viewport.Height = video->height;
+   d3d11->resize_viewport = true;
    d3d11->vsync  = video->vsync;
    d3d11->format = video->rgb32 ? DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM;
 
@@ -109,6 +152,21 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
 
    d3d11->menu.texture.desc.Format = DXGI_FORMAT_B4G4R4A4_UNORM;
    d3d11->menu.texture.desc.Usage  = D3D11_USAGE_DEFAULT;
+
+   matrix_4x4_ortho(d3d11->mvp_no_rot, 0.0f, 1.0f, 0.0f, 1.0f, -1.0f, 1.0f);
+
+   {
+      D3D11_BUFFER_DESC desc = {
+         .ByteWidth      = sizeof(math_matrix_4x4),
+         .Usage          = D3D11_USAGE_DYNAMIC,
+         .BindFlags      = D3D11_BIND_CONSTANT_BUFFER,
+         .CPUAccessFlags = D3D11_CPU_ACCESS_WRITE,
+      };
+      D3D11_SUBRESOURCE_DATA ubo_data = { &d3d11->mvp_no_rot };
+      D3D11CreateBuffer(d3d11->device, &desc, &ubo_data, &d3d11->ubo);
+      D3D11CreateBuffer(d3d11->device, &desc, NULL, &d3d11->frame.ubo);
+   }
+   d3d11_gfx_set_rotation(d3d11, 0);
 
    {
       D3D11_SAMPLER_DESC desc = {
@@ -127,11 +185,13 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
       D3D11CreateSamplerState(d3d11->device, &desc, &d3d11->sampler_linear);
    }
 
+   d3d11_set_filtering(d3d11, 0, video->smooth);
+
    {
       d3d11_vertex_t vertices[] = {
-         { { -1.0f, -1.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
-         { { -1.0f, 1.0f }, { 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
-         { { 1.0f, -1.0f }, { 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
+         { { 0.0f, 0.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
+         { { 0.0f, 1.0f }, { 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
+         { { 1.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
          { { 1.0f, 1.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
       };
 
@@ -144,11 +204,10 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
             .CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE,
          };
          D3D11_SUBRESOURCE_DATA vertexData = { vertices };
-         D3D11CreateBuffer(d3d11->device, &desc, &vertexData, &d3d11->frame.vbo);
+         D3D11CreateBuffer(d3d11->device, &desc, &vertexData, &d3d11->menu.vbo);
          desc.Usage          = D3D11_USAGE_IMMUTABLE;
          desc.CPUAccessFlags = 0;
-
-         D3D11CreateBuffer(d3d11->device, &desc, &vertexData, &d3d11->menu.vbo);
+         D3D11CreateBuffer(d3d11->device, &desc, &vertexData, &d3d11->frame.vbo);
       }
       D3D11SetPrimitiveTopology(d3d11->ctx, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
    }
@@ -231,10 +290,9 @@ static bool d3d11_gfx_frame(
 {
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
 
-   if (d3d11->need_resize)
+   if (d3d11->resize_chain)
    {
       D3D11Texture2D backBuffer;
-      D3D11_VIEWPORT vp = { 0, 0, video_info->width, video_info->height, 0.0f, 1.0f };
 
       Release(d3d11->renderTargetView);
       DXGIResizeBuffers(d3d11->swapChain, 0, 0, 0, 0, 0);
@@ -245,9 +303,11 @@ static bool d3d11_gfx_frame(
       Release(backBuffer);
 
       D3D11SetRenderTargets(d3d11->ctx, 1, &d3d11->renderTargetView, NULL);
-      D3D11SetViewports(d3d11->ctx, 1, &vp);
+      d3d11->viewport.Width  = video_info->width;
+      d3d11->viewport.Height = video_info->height;
 
-      d3d11->need_resize = false;
+      d3d11->resize_chain    = false;
+      d3d11->resize_viewport = true;
    }
 
    PERF_START();
@@ -274,9 +334,17 @@ static bool d3d11_gfx_frame(
    {
       UINT stride = sizeof(d3d11_vertex_t);
       UINT offset = 0;
+
+#if 0 /* custom viewport doesn't call apply_state_changes, so we can't rely on this for now */
+   if (d3d11->resize_viewport)
+#endif
+      d3d11_update_viewport(d3d11, false);
+
+      D3D11SetViewports(d3d11->ctx, 1, &d3d11->frame.viewport);
       D3D11SetVertexBuffers(d3d11->ctx, 0, 1, &d3d11->frame.vbo, &stride, &offset);
+      D3D11SetVShaderConstantBuffers(d3d11->ctx, 0, 1, &d3d11->frame.ubo);
       D3D11SetPShaderResources(d3d11->ctx, 0, 1, &d3d11->frame.texture.view);
-      D3D11SetPShaderSamplers(d3d11->ctx, 0, 1, &d3d11->sampler_linear);
+      D3D11SetPShaderSamplers(d3d11->ctx, 0, 1, &d3d11->frame.sampler);
 
       D3D11SetBlendState(d3d11->ctx, d3d11->blend_disable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
       D3D11Draw(d3d11->ctx, 4, 0);
@@ -289,9 +357,12 @@ static bool d3d11_gfx_frame(
                   d3d11->ctx, d3d11->menu.texture.handle, 0, 0, 0, 0, d3d11->menu.texture.staging,
                   0, NULL);
 
+         if (d3d11->menu.fullscreen)
+            D3D11SetViewports(d3d11->ctx, 1, &d3d11->viewport);
          D3D11SetVertexBuffers(d3d11->ctx, 0, 1, &d3d11->menu.vbo, &stride, &offset);
+         D3D11SetVShaderConstantBuffers(d3d11->ctx, 0, 1, &d3d11->ubo);
          D3D11SetPShaderResources(d3d11->ctx, 0, 1, &d3d11->menu.texture.view);
-         D3D11SetPShaderSamplers(d3d11->ctx, 0, 1, &d3d11->sampler_linear);
+         D3D11SetPShaderSamplers(d3d11->ctx, 0, 1, &d3d11->menu.sampler);
 
          D3D11Draw(d3d11->ctx, 4, 0);
       }
@@ -318,17 +389,13 @@ static void d3d11_gfx_set_nonblock_state(void* data, bool toggle)
 
 static bool d3d11_gfx_alive(void* data)
 {
-   bool     quit;
-   bool     resize;
-   unsigned width;
-   unsigned height;
-
+   bool           quit;
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
 
-   win32_check_window(&quit, &d3d11->need_resize, &width, &height);
+   win32_check_window(&quit, &d3d11->resize_chain, &d3d11->vp.full_width, &d3d11->vp.full_height);
 
-   if (width != 0 && height != 0)
-      video_driver_set_size(&width, &height);
+   if (d3d11->resize_chain && d3d11->vp.full_width != 0 && d3d11->vp.full_height != 0)
+      video_driver_set_size(&d3d11->vp.full_width, &d3d11->vp.full_height);
 
    return !quit;
 }
@@ -355,6 +422,7 @@ static void d3d11_gfx_free(void* data)
    if (!d3d11)
       return;
 
+   Release(d3d11->frame.ubo);
    Release(d3d11->frame.texture.view);
    Release(d3d11->frame.texture.handle);
    Release(d3d11->frame.texture.staging);
@@ -365,6 +433,7 @@ static void d3d11_gfx_free(void* data)
    Release(d3d11->menu.texture.view);
    Release(d3d11->menu.vbo);
 
+   Release(d3d11->ubo);
    Release(d3d11->blend_enable);
    Release(d3d11->blend_disable);
    Release(d3d11->sampler_nearest);
@@ -391,16 +460,11 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
    return false;
 }
 
-static void d3d11_gfx_set_rotation(void* data, unsigned rotation)
-{
-   (void)data;
-   (void)rotation;
-}
-
 static void d3d11_gfx_viewport_info(void* data, struct video_viewport* vp)
 {
-   (void)data;
-   (void)vp;
+   d3d11_video_t* d3d11 = (d3d11_video_t*)data;
+
+   *vp = d3d11->vp;
 }
 
 static bool d3d11_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
@@ -427,6 +491,8 @@ static void d3d11_set_menu_texture_frame(
    }
 
    d3d11_update_texture(d3d11->ctx, width, height, pitch, format, frame, &d3d11->menu.texture);
+   d3d11->menu.sampler = config_get_ptr()->bools.menu_linear_filter ? d3d11->sampler_linear
+                                                                    : d3d11->sampler_nearest;
 }
 static void d3d11_set_menu_texture_enable(void* data, bool state, bool full_screen)
 {
@@ -439,28 +505,47 @@ static void d3d11_set_menu_texture_enable(void* data, bool state, bool full_scre
    d3d11->menu.fullscreen = full_screen;
 }
 
+static void d3d11_gfx_set_aspect_ratio(void* data, unsigned aspect_ratio_idx)
+{
+   d3d11_video_t* d3d11 = (d3d11_video_t*)data;
+
+   if (!d3d11)
+      return;
+
+   d3d11->keep_aspect     = true;
+   d3d11->resize_viewport = true;
+}
+
+static void d3d11_gfx_apply_state_changes(void* data)
+{
+   d3d11_video_t* d3d11 = (d3d11_video_t*)data;
+
+   if (d3d11)
+      d3d11->resize_viewport = true;
+}
+
 static const video_poke_interface_t d3d11_poke_interface = {
-   NULL,                          /* set_coords */
-   NULL,                          /* set_mvp */
-   NULL,                          /* load_texture */
-   NULL,                          /* unload_texture */
-   NULL,                          /* set_video_mode */
-   NULL,                          /* set_filtering */
-   NULL,                          /* get_video_output_size */
-   NULL,                          /* get_video_output_prev */
-   NULL,                          /* get_video_output_next */
-   NULL,                          /* get_current_framebuffer */
-   NULL,                          /* get_proc_address */
-   NULL,                          /* set_aspect_ratio */
-   NULL,                          /* apply_state_changes */
-   d3d11_set_menu_texture_frame,  /* set_texture_frame */
-   d3d11_set_menu_texture_enable, /* set_texture_enable */
-   NULL,                          /* set_osd_msg */
-   NULL,                          /* show_mouse */
-   NULL,                          /* grab_mouse_toggle */
-   NULL,                          /* get_current_shader */
-   NULL,                          /* get_current_software_framebuffer */
-   NULL,                          /* get_hw_render_interface */
+   NULL, /* set_coords */
+   NULL, /* set_mvp */
+   NULL, /* load_texture */
+   NULL, /* unload_texture */
+   NULL, /* set_video_mode */
+   d3d11_set_filtering,
+   NULL, /* get_video_output_size */
+   NULL, /* get_video_output_prev */
+   NULL, /* get_video_output_next */
+   NULL, /* get_current_framebuffer */
+   NULL, /* get_proc_address */
+   d3d11_gfx_set_aspect_ratio,
+   d3d11_gfx_apply_state_changes,
+   d3d11_set_menu_texture_frame,
+   d3d11_set_menu_texture_enable,
+   NULL, /* set_osd_msg */
+   NULL, /* show_mouse */
+   NULL, /* grab_mouse_toggle */
+   NULL, /* get_current_shader */
+   NULL, /* get_current_software_framebuffer */
+   NULL, /* get_hw_render_interface */
 };
 
 static void d3d11_gfx_get_poke_interface(void* data, const video_poke_interface_t** iface)

@@ -1764,10 +1764,106 @@ void video_driver_monitor_reset(void)
 void video_driver_set_aspect_ratio(void)
 {
    settings_t *settings = config_get_ptr();
+
+   switch (settings->uints.video_aspect_ratio_idx)
+   {
+      case ASPECT_RATIO_SQUARE:
+         video_driver_set_viewport_square_pixel();
+         break;
+
+      case ASPECT_RATIO_CORE:
+         video_driver_set_viewport_core();
+         break;
+
+      case ASPECT_RATIO_CONFIG:
+         video_driver_set_viewport_config();
+         break;
+
+      default:
+         break;
+   }
+
+   video_driver_set_aspect_ratio_value(
+            aspectratio_lut[settings->uints.video_aspect_ratio_idx].value);
+
    if (!video_driver_poke || !video_driver_poke->set_aspect_ratio)
       return;
    video_driver_poke->set_aspect_ratio(
          video_driver_data, settings->uints.video_aspect_ratio_idx);
+}
+
+void video_driver_update_viewport(struct video_viewport* vp, bool force_full, bool keep_aspect)
+{
+   gfx_ctx_aspect_t aspect_data;
+   float            device_aspect = (float)vp->full_width / vp->full_height;
+   settings_t*      settings      = config_get_ptr();
+
+   aspect_data.aspect = &device_aspect;
+   aspect_data.width  = vp->full_width;
+   aspect_data.height = vp->full_height;
+
+   video_context_driver_translate_aspect(&aspect_data);
+
+   vp->x      = 0;
+   vp->y      = 0;
+   vp->width  = vp->full_width;
+   vp->height = vp->full_height;
+
+   if (settings->bools.video_scale_integer && !force_full)
+   {
+      video_viewport_get_scaled_integer(
+            vp, vp->full_width, vp->full_height, video_driver_get_aspect_ratio(), keep_aspect);
+   }
+   else if (keep_aspect && !force_full)
+   {
+      float desired_aspect = video_driver_get_aspect_ratio();
+
+#if defined(HAVE_MENU)
+      if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      {
+         const struct video_viewport* custom = video_viewport_get_custom();
+
+         vp->x      = custom->x;
+         vp->y      = custom->y;
+         vp->width  = custom->width;
+         vp->height = custom->height;
+      }
+      else
+#endif
+      {
+         float delta;
+
+         if (fabsf(device_aspect - desired_aspect) < 0.0001f)
+         {
+            /* If the aspect ratios of screen and desired aspect
+             * ratio are sufficiently equal (floating point stuff),
+             * assume they are actually equal.
+             */
+         }
+         else if (device_aspect > desired_aspect)
+         {
+            delta      = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
+            vp->x      = (int)roundf(vp->full_width * (0.5f - delta));
+            vp->width  = (unsigned)roundf(2.0f * vp->full_width * delta);
+            vp->y      = 0;
+            vp->height = vp->full_height;
+         }
+         else
+         {
+            vp->x      = 0;
+            vp->width  = vp->full_width;
+            delta      = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
+            vp->y      = (int)roundf(vp->full_height * (0.5f - delta));
+            vp->height = (unsigned)roundf(2.0f * vp->full_height * delta);
+         }
+      }
+   }
+
+#if defined(RARCH_MOBILE)
+   /* In portrait mode, we want viewport to gravitate to top of screen. */
+   if (device_aspect < 1.0f)
+      d3d12->vp.y = 0;
+#endif
 }
 
 void video_driver_show_mouse(void)

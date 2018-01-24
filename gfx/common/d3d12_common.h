@@ -1285,7 +1285,11 @@ D3D12GetGPUDescriptorHandleForHeapStart(D3D12DescriptorHeap descriptor_heap)
 }
 #endif
 
-/* internal */
+   /* internal */
+
+#include <retro_math.h>
+#include <gfx/math/matrix_4x4.h>
+#include "gfx/video_driver.h"
 
 typedef struct d3d12_vertex_t
 {
@@ -1316,6 +1320,7 @@ typedef struct
    UINT64                             total_bytes;
    bool                               dirty;
 } d3d12_texture_t;
+
 typedef struct
 {
    unsigned    cur_mon_id;
@@ -1356,10 +1361,15 @@ typedef struct
 
    struct
    {
-      D3D12Resource               vbo;
-      D3D12_VERTEX_BUFFER_VIEW    vbo_view;
-      d3d12_texture_t             texture;
-      D3D12_GPU_DESCRIPTOR_HANDLE sampler;
+      D3D12Resource                   ubo;
+      D3D12_CONSTANT_BUFFER_VIEW_DESC ubo_view;
+      D3D12Resource                   vbo;
+      D3D12_VERTEX_BUFFER_VIEW        vbo_view;
+      d3d12_texture_t                 texture;
+      D3D12_GPU_DESCRIPTOR_HANDLE     sampler;
+      D3D12_VIEWPORT                  viewport;
+      D3D12_RECT                      scissorRect;
+      int                             rotation;
    } frame;
 
    struct
@@ -1374,10 +1384,16 @@ typedef struct
       bool  fullscreen;
    } menu;
 
-   DXGI_FORMAT                 format;
-   D3D12_GPU_DESCRIPTOR_HANDLE sampler_linear;
-   D3D12_GPU_DESCRIPTOR_HANDLE sampler_nearest;
-   bool                        need_resize;
+   D3D12Resource                   ubo;
+   D3D12_CONSTANT_BUFFER_VIEW_DESC ubo_view;
+   DXGI_FORMAT                     format;
+   D3D12_GPU_DESCRIPTOR_HANDLE     sampler_linear;
+   D3D12_GPU_DESCRIPTOR_HANDLE     sampler_nearest;
+   math_matrix_4x4                 mvp, mvp_no_rot;
+   struct video_viewport           vp;
+   bool                            resize_chain;
+   bool                            keep_aspect;
+   bool                            resize_viewport;
 
 #ifdef DEBUG
    D3D12Debug debugController;
@@ -1386,9 +1402,12 @@ typedef struct
 
 enum
 {
-   DESC_TABLE_INDEX_SRV_TEXTURE = 0,
-   DESC_TABLE_INDEX_SAMPLER,
-};
+   ROOT_INDEX_TEXTURE_TABLE = 0,
+   ROOT_INDEX_SAMPLER_TABLE,
+   ROOT_INDEX_UBO,
+   ROOT_INDEX_MAX,
+} root_signature_parameter_index_t;
+
 typedef enum {
    SAMPLER_HEAP_SLOT_LINEAR = 0,
    SAMPLER_HEAP_SLOT_NEAREST,
@@ -1406,8 +1425,8 @@ bool d3d12_init_pipeline(d3d12_video_t* d3d12);
 bool d3d12_init_swapchain(d3d12_video_t* d3d12, int width, int height, HWND hwnd);
 bool d3d12_init_queue(d3d12_video_t* d3d12);
 
-void d3d12_create_vertex_buffer(
-      D3D12Device device, D3D12_VERTEX_BUFFER_VIEW* view, D3D12Resource* vbo);
+D3D12_GPU_VIRTUAL_ADDRESS
+d3d12_create_buffer(D3D12Device device, UINT size_in_bytes, D3D12Resource* buffer);
 
 void d3d12_init_texture(
       D3D12Device              device,
@@ -1439,13 +1458,13 @@ static inline void d3d12_resource_transition(
 
 static inline void d3d12_set_texture(D3D12GraphicsCommandList cmd, const d3d12_texture_t* texture)
 {
-   D3D12SetGraphicsRootDescriptorTable(cmd, DESC_TABLE_INDEX_SRV_TEXTURE, texture->gpu_descriptor);
+   D3D12SetGraphicsRootDescriptorTable(cmd, ROOT_INDEX_TEXTURE_TABLE, texture->gpu_descriptor);
 }
 
 static inline void
 d3d12_set_sampler(D3D12GraphicsCommandList cmd, D3D12_GPU_DESCRIPTOR_HANDLE sampler)
 {
-   D3D12SetGraphicsRootDescriptorTable(cmd, DESC_TABLE_INDEX_SAMPLER, sampler);
+   D3D12SetGraphicsRootDescriptorTable(cmd, ROOT_INDEX_SAMPLER_TABLE, sampler);
 }
 
 static inline void d3d12_update_texture(
