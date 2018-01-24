@@ -32,58 +32,7 @@
 		0FDA2A8A1BE1AFA800F2B5DA /* iOS/Resources/Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */; };
 		0FDA2A8B1BE1AFA800F2B5DA /* iOS/Resources/PauseIndicatorView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 83D632DE19ECFCC4009E3161 /* iOS/Resources/PauseIndicatorView.xib */; };
 		0FDA2A8C1BE1AFA800F2B5DA /* iOS/modules in Resources */ = {isa = PBXBuildFile; fileRef = 83EB675F19EEAF050096F441 /* iOS/modules */; };
-		501232CA192E5FC40063A359 /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 501232C9192E5FC40063A359 /* griffin.c */; };
-		501232CC192E5FDC0063A359 /* sinc_resampler_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 501232CB192E5FDC0063A359 /* sinc_resampler_neon.S */; };
-		501232CE192E5FE30063A359 /* s16_to_float_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 501232CD192E5FE30063A359 /* s16_to_float_neon.S */; };
-		501881EC184BAD6D006F665D /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 501881EB184BAD6D006F665D /* AVFoundation.framework */; };
-		501881EE184BB54C006F665D /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 501881ED184BB54C006F665D /* CoreMedia.framework */; };
-		503700881ACA18E400A51A37 /* cc_resampler_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 50D00E8D19D117C400EBA71E /* cc_resampler_neon.S */; };
-		503700891ACA18E400A51A37 /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 50521A431AA23BF500185CC9 /* griffin_objc.m */; };
-		5037008A1ACA18E400A51A37 /* s16_to_float_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 501232CD192E5FE30063A359 /* s16_to_float_neon.S */; };
-		5037008B1ACA18E400A51A37 /* sinc_resampler_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 501232CB192E5FDC0063A359 /* sinc_resampler_neon.S */; };
-		5037008C1ACA18E400A51A37 /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 501232C9192E5FC40063A359 /* griffin.c */; };
-		5037008E1ACA18E400A51A37 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50C3B1AD1AB1107100F478D3 /* QuartzCore.framework */; };
-		503700901ACA18E400A51A37 /* CoreText.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 696012F119F3389A006A1088 /* CoreText.framework */; };
-		503700911ACA18E400A51A37 /* CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50CCC827185E0E7D001F5BC8 /* CoreLocation.framework */; };
-		503700921ACA18E400A51A37 /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 501881ED184BB54C006F665D /* CoreMedia.framework */; };
-		503700931ACA18E400A51A37 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 501881EB184BAD6D006F665D /* AVFoundation.framework */; };
-		503700941ACA18E400A51A37 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50E7189E184B88AA001956CE /* CoreVideo.framework */; };
-		503700951ACA18E400A51A37 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5816C9ACF500D64A22 /* AudioToolbox.framework */; };
-		503700961ACA18E400A51A37 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5416C9AC3300D64A22 /* CoreAudio.framework */; };
-		503700971ACA18E400A51A37 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2916C1D4EA009DE44C /* UIKit.framework */; };
-		503700981ACA18E400A51A37 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2B16C1D4EA009DE44C /* Foundation.framework */; };
-		503700991ACA18E400A51A37 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2D16C1D4EA009DE44C /* CoreGraphics.framework */; };
-		5037009A1ACA18E400A51A37 /* GLKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2F16C1D4EA009DE44C /* GLKit.framework */; };
-		5037009B1ACA18E400A51A37 /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE3116C1D4EA009DE44C /* OpenGLES.framework */; };
-		5037009F1ACA18E400A51A37 /* iOS/Resources/ic_pause.png in Resources */ = {isa = PBXBuildFile; fileRef = 83D632DB19ECFCC4009E3161 /* iOS/Resources/ic_pause.png */; };
-		503700A01ACA18E400A51A37 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 967894611788EBD800D6CA69 /* InfoPlist.strings */; };
-		503700A11ACA18E400A51A37 /* iOS/Resources/Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */; };
-		503700A21ACA18E400A51A37 /* iOS/Resources/PauseIndicatorView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 83D632DE19ECFCC4009E3161 /* iOS/Resources/PauseIndicatorView.xib */; };
-		503700A31ACA18E400A51A37 /* iOS/modules in Resources */ = {isa = PBXBuildFile; fileRef = 83EB675F19EEAF050096F441 /* iOS/modules */; };
-		5040F0501AE47ED4006F6972 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 5040F04F1AE47ED4006F6972 /* libz.dylib */; };
-		5040F0511AE47EE2006F6972 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 5040F04F1AE47ED4006F6972 /* libz.dylib */; };
-		5041BAF41A9D40D000A77A33 /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 963C3C33186E3DED00A6EB1E /* GameController.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
-		50521A441AA23BF500185CC9 /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 50521A431AA23BF500185CC9 /* griffin_objc.m */; };
-		507E056B1CE9C67500E023D3 /* float_to_s16_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 507E056A1CE9C67500E023D3 /* float_to_s16_neon.S */; };
-		507E056C1CE9C69300E023D3 /* float_to_s16_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 507E056A1CE9C67500E023D3 /* float_to_s16_neon.S */; };
 		507E056D1CE9C69400E023D3 /* float_to_s16_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 507E056A1CE9C67500E023D3 /* float_to_s16_neon.S */; };
-		50C3B1AE1AB1107200F478D3 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50C3B1AD1AB1107100F478D3 /* QuartzCore.framework */; };
-		50CCC828185E0E7D001F5BC8 /* CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50CCC827185E0E7D001F5BC8 /* CoreLocation.framework */; };
-		50D00E8E19D117C400EBA71E /* cc_resampler_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 50D00E8D19D117C400EBA71E /* cc_resampler_neon.S */; };
-		50E7189F184B88AA001956CE /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50E7189E184B88AA001956CE /* CoreVideo.framework */; };
-		696012F219F3389A006A1088 /* CoreText.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 696012F119F3389A006A1088 /* CoreText.framework */; };
-		69D31DE41A547EC800EF4C92 /* iOS/Resources/Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */; };
-		83D632E219ECFCC4009E3161 /* iOS/Resources/ic_pause.png in Resources */ = {isa = PBXBuildFile; fileRef = 83D632DB19ECFCC4009E3161 /* iOS/Resources/ic_pause.png */; };
-		83D632E519ECFCC4009E3161 /* iOS/Resources/PauseIndicatorView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 83D632DE19ECFCC4009E3161 /* iOS/Resources/PauseIndicatorView.xib */; };
-		83EB676019EEAF050096F441 /* iOS/modules in Resources */ = {isa = PBXBuildFile; fileRef = 83EB675F19EEAF050096F441 /* iOS/modules */; };
-		96366C5516C9AC3300D64A22 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5416C9AC3300D64A22 /* CoreAudio.framework */; };
-		96366C5916C9ACF500D64A22 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5816C9ACF500D64A22 /* AudioToolbox.framework */; };
-		967894631788EBD800D6CA69 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 967894611788EBD800D6CA69 /* InfoPlist.strings */; };
-		96AFAE2A16C1D4EA009DE44C /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2916C1D4EA009DE44C /* UIKit.framework */; };
-		96AFAE2C16C1D4EA009DE44C /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2B16C1D4EA009DE44C /* Foundation.framework */; };
-		96AFAE2E16C1D4EA009DE44C /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2D16C1D4EA009DE44C /* CoreGraphics.framework */; };
-		96AFAE3016C1D4EA009DE44C /* GLKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE2F16C1D4EA009DE44C /* GLKit.framework */; };
-		96AFAE3216C1D4EA009DE44C /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96AFAE3116C1D4EA009DE44C /* OpenGLES.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -94,7 +43,6 @@
 		501232CD192E5FE30063A359 /* s16_to_float_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = s16_to_float_neon.S; path = "../../libretro-common/audio/conversion/s16_to_float_neon.S"; sourceTree = SOURCE_ROOT; };
 		501881EB184BAD6D006F665D /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		501881ED184BB54C006F665D /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
-		503700AD1ACA18E400A51A37 /* RetroArch copy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "RetroArch copy.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		503700AE1ACA18E400A51A37 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = iOS/Info.plist; sourceTree = SOURCE_ROOT; };
 		5040F04F1AE47ED4006F6972 /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
 		50521A431AA23BF500185CC9 /* griffin_objc.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = griffin_objc.m; path = ../../griffin/griffin_objc.m; sourceTree = SOURCE_ROOT; };
@@ -113,7 +61,6 @@
 		963C3C33186E3DED00A6EB1E /* GameController.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameController.framework; path = System/Library/Frameworks/GameController.framework; sourceTree = SDKROOT; };
 		9678945F1788EBD000D6CA69 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = iOS/Info.plist; sourceTree = SOURCE_ROOT; };
 		967894621788EBD800D6CA69 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = iOS/en.lproj/InfoPlist.strings; sourceTree = SOURCE_ROOT; };
-		96AFAE2516C1D4EA009DE44C /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		96AFAE2916C1D4EA009DE44C /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		96AFAE2B16C1D4EA009DE44C /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		96AFAE2D16C1D4EA009DE44C /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
@@ -146,52 +93,17 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		5037008D1ACA18E400A51A37 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				5040F0511AE47EE2006F6972 /* libz.dylib in Frameworks */,
-				5037008E1ACA18E400A51A37 /* QuartzCore.framework in Frameworks */,
-				503700901ACA18E400A51A37 /* CoreText.framework in Frameworks */,
-				503700911ACA18E400A51A37 /* CoreLocation.framework in Frameworks */,
-				503700921ACA18E400A51A37 /* CoreMedia.framework in Frameworks */,
-				503700931ACA18E400A51A37 /* AVFoundation.framework in Frameworks */,
-				503700941ACA18E400A51A37 /* CoreVideo.framework in Frameworks */,
-				503700951ACA18E400A51A37 /* AudioToolbox.framework in Frameworks */,
-				503700961ACA18E400A51A37 /* CoreAudio.framework in Frameworks */,
-				503700971ACA18E400A51A37 /* UIKit.framework in Frameworks */,
-				503700981ACA18E400A51A37 /* Foundation.framework in Frameworks */,
-				503700991ACA18E400A51A37 /* CoreGraphics.framework in Frameworks */,
-				5037009A1ACA18E400A51A37 /* GLKit.framework in Frameworks */,
-				5037009B1ACA18E400A51A37 /* OpenGLES.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		96AFAE2216C1D4EA009DE44C /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				5040F0501AE47ED4006F6972 /* libz.dylib in Frameworks */,
-				50C3B1AE1AB1107200F478D3 /* QuartzCore.framework in Frameworks */,
-				5041BAF41A9D40D000A77A33 /* GameController.framework in Frameworks */,
-				696012F219F3389A006A1088 /* CoreText.framework in Frameworks */,
-				50CCC828185E0E7D001F5BC8 /* CoreLocation.framework in Frameworks */,
-				501881EE184BB54C006F665D /* CoreMedia.framework in Frameworks */,
-				501881EC184BAD6D006F665D /* AVFoundation.framework in Frameworks */,
-				50E7189F184B88AA001956CE /* CoreVideo.framework in Frameworks */,
-				96366C5916C9ACF500D64A22 /* AudioToolbox.framework in Frameworks */,
-				96366C5516C9AC3300D64A22 /* CoreAudio.framework in Frameworks */,
-				96AFAE2A16C1D4EA009DE44C /* UIKit.framework in Frameworks */,
-				96AFAE2C16C1D4EA009DE44C /* Foundation.framework in Frameworks */,
-				96AFAE2E16C1D4EA009DE44C /* CoreGraphics.framework in Frameworks */,
-				96AFAE3016C1D4EA009DE44C /* GLKit.framework in Frameworks */,
-				96AFAE3216C1D4EA009DE44C /* OpenGLES.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		508E6B1420185D3200A16D1F /* Recovered References */ = {
+			isa = PBXGroup;
+			children = (
+				501232CB192E5FDC0063A359 /* sinc_resampler_neon.S */,
+			);
+			name = "Recovered References";
+			sourceTree = "<group>";
+		};
 		83D632D719ECFCC4009E3161 /* Assets */ = {
 			isa = PBXGroup;
 			children = (
@@ -216,6 +128,7 @@
 				96AFAE3416C1D4EA009DE44C /* Supporting Files */,
 				503700AE1ACA18E400A51A37 /* Info.plist */,
 				0FDA2A921BE1AFA800F2B5DA /* RetroArch_iOS9-Info.plist */,
+				508E6B1420185D3200A16D1F /* Recovered References */,
 			);
 			indentWidth = 3;
 			sourceTree = "<group>";
@@ -224,8 +137,6 @@
 		96AFAE2616C1D4EA009DE44C /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				96AFAE2516C1D4EA009DE44C /* RetroArch.app */,
-				503700AD1ACA18E400A51A37 /* RetroArch copy.app */,
 				0FDA2A911BE1AFA800F2B5DA /* RetroArch.app */,
 			);
 			name = Products;
@@ -330,40 +241,6 @@
 			productReference = 0FDA2A911BE1AFA800F2B5DA /* RetroArch.app */;
 			productType = "com.apple.product-type.application";
 		};
-		503700861ACA18E400A51A37 /* RetroArch iOS6 */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 503700AA1ACA18E400A51A37 /* Build configuration list for PBXNativeTarget "RetroArch iOS6" */;
-			buildPhases = (
-				503700871ACA18E400A51A37 /* Sources */,
-				5037008D1ACA18E400A51A37 /* Frameworks */,
-				5037009D1ACA18E400A51A37 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = "RetroArch iOS6";
-			productName = RetroArch;
-			productReference = 503700AD1ACA18E400A51A37 /* RetroArch copy.app */;
-			productType = "com.apple.product-type.application";
-		};
-		96AFAE2416C1D4EA009DE44C /* RetroArch */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 96AFAE5416C1D4EA009DE44C /* Build configuration list for PBXNativeTarget "RetroArch" */;
-			buildPhases = (
-				96AFAE2116C1D4EA009DE44C /* Sources */,
-				96AFAE2216C1D4EA009DE44C /* Frameworks */,
-				96AFAE2316C1D4EA009DE44C /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = RetroArch;
-			productName = RetroArch;
-			productReference = 96AFAE2516C1D4EA009DE44C /* RetroArch.app */;
-			productType = "com.apple.product-type.application";
-		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -374,17 +251,11 @@
 				ORGANIZATIONNAME = RetroArch;
 				TargetAttributes = {
 					0FDA2A701BE1AFA800F2B5DA = {
-						DevelopmentTeam = R72X3BF4KE;
-					};
-					503700861ACA18E400A51A37 = {
-						DevelopmentTeam = UK699V5ZS8;
-					};
-					96AFAE2416C1D4EA009DE44C = {
 						DevelopmentTeam = UK699V5ZS8;
 					};
 				};
 			};
-			buildConfigurationList = 96AFAE1F16C1D4EA009DE44C /* Build configuration list for PBXProject "RetroArch_iOS" */;
+			buildConfigurationList = 96AFAE1F16C1D4EA009DE44C /* Build configuration list for PBXProject "RetroArch_iOS9" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
@@ -396,8 +267,6 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				96AFAE2416C1D4EA009DE44C /* RetroArch */,
-				503700861ACA18E400A51A37 /* RetroArch iOS6 */,
 				0FDA2A701BE1AFA800F2B5DA /* RetroArch iOS9 */,
 			);
 		};
@@ -413,30 +282,6 @@
 				0FDA2A8A1BE1AFA800F2B5DA /* iOS/Resources/Media.xcassets in Resources */,
 				0FDA2A8B1BE1AFA800F2B5DA /* iOS/Resources/PauseIndicatorView.xib in Resources */,
 				0FDA2A8C1BE1AFA800F2B5DA /* iOS/modules in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		5037009D1ACA18E400A51A37 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				5037009F1ACA18E400A51A37 /* iOS/Resources/ic_pause.png in Resources */,
-				503700A01ACA18E400A51A37 /* InfoPlist.strings in Resources */,
-				503700A11ACA18E400A51A37 /* iOS/Resources/Media.xcassets in Resources */,
-				503700A21ACA18E400A51A37 /* iOS/Resources/PauseIndicatorView.xib in Resources */,
-				503700A31ACA18E400A51A37 /* iOS/modules in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		96AFAE2316C1D4EA009DE44C /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				83D632E219ECFCC4009E3161 /* iOS/Resources/ic_pause.png in Resources */,
-				967894631788EBD800D6CA69 /* InfoPlist.strings in Resources */,
-				69D31DE41A547EC800EF4C92 /* iOS/Resources/Media.xcassets in Resources */,
-				83D632E519ECFCC4009E3161 /* iOS/Resources/PauseIndicatorView.xib in Resources */,
-				83EB676019EEAF050096F441 /* iOS/modules in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -472,32 +317,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		503700871ACA18E400A51A37 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				507E056C1CE9C69300E023D3 /* float_to_s16_neon.S in Sources */,
-				503700881ACA18E400A51A37 /* cc_resampler_neon.S in Sources */,
-				503700891ACA18E400A51A37 /* griffin_objc.m in Sources */,
-				5037008A1ACA18E400A51A37 /* s16_to_float_neon.S in Sources */,
-				5037008B1ACA18E400A51A37 /* sinc_resampler_neon.S in Sources */,
-				5037008C1ACA18E400A51A37 /* griffin.c in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		96AFAE2116C1D4EA009DE44C /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				507E056B1CE9C67500E023D3 /* float_to_s16_neon.S in Sources */,
-				50D00E8E19D117C400EBA71E /* cc_resampler_neon.S in Sources */,
-				50521A441AA23BF500185CC9 /* griffin_objc.m in Sources */,
-				501232CE192E5FE30063A359 /* s16_to_float_neon.S in Sources */,
-				501232CC192E5FDC0063A359 /* sinc_resampler_neon.S in Sources */,
-				501232CA192E5FC40063A359 /* griffin.c in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXVariantGroup section */
@@ -522,7 +341,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
-				DEVELOPMENT_TEAM = R72X3BF4KE;
+				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
@@ -605,7 +424,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
-				DEVELOPMENT_TEAM = R72X3BF4KE;
+				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
@@ -727,215 +546,6 @@
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = armv7;
 				WARNING_CFLAGS = "-Wno-invalid-source-encoding";
-				WRAPPER_EXTENSION = app;
-			};
-			name = Release;
-		};
-		503700AB1ACA18E400A51A37 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ARCHS = armv7;
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
-				CLANG_CXX_LIBRARY = "libstdc++";
-				CODE_SIGN_IDENTITY = "iPhone Developer";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
-				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
-				DEVELOPMENT_TEAM = UK699V5ZS8;
-				ENABLE_BITCODE = NO;
-				GCC_PRECOMPILE_PREFIX_HEADER = NO;
-				GCC_PREFIX_HEADER = "";
-				HEADER_SEARCH_PATHS = (
-					../../,
-					"../../libretro-common/include",
-					../../deps/stb,
-					../../deps/libz,
-					../../deps,
-				);
-				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
-				LD_NO_PIE = YES;
-				LIBRARY_SEARCH_PATHS = "";
-				ONLY_ACTIVE_ARCH = NO;
-				OTHER_CFLAGS = (
-					"-DHAVE_NETWORKGAMEPAD",
-					"-DHAVE_CORETEXT",
-					"-DHAVE_HID",
-					"-DHAVE_NETWORKING",
-					"-DHAVE_AVFOUNDATION",
-					"-DHAVE_GRIFFIN",
-					"-DHAVE_STB_VORBIS",
-					"-DHAVE_MINIUPNPC",
-					"-DHAVE_BUILTINMINIUPNPC",
-					"-DHAVE_UPDATE_ASSETS",
-					"-DHAVE_LANGEXTRA",
-					"-DHAVE_CHEEVOS",
-					"-DHAVE_IMAGEVIEWER",
-					"-DHAVE_CORETEXT",
-					"-DHAVE_CORELOCATION",
-					"-DHAVE_RGUI",
-					"-DHAVE_MENU",
-					"-DHAVE_LIBRETRODB",
-					"-DIOS",
-					"-DHAVE_OPENGL",
-					"-DHAVE_OPENGLES",
-					"-DHAVE_OPENGLES2",
-					"-DHAVE_CC_RESAMPLER",
-					"-DHAVE_GLSL",
-					"-DINLINE=inline",
-					"-D__LIBRETRO__",
-					"-DRARCH_MOBILE",
-					"-DHAVE_COREAUDIO",
-					"-DHAVE_DYNAMIC",
-					"-DHAVE_OVERLAY",
-					"-DHAVE_ZLIB",
-					"-DHAVE_RPNG",
-					"-DHAVE_RJPEG",
-					"-DHAVE_RBMP",
-					"-DHAVE_RTGA",
-					"-DHAVE_COCOATOUCH",
-					"-DHAVE_MAIN",
-					"-DRARCH_INTERNAL",
-					"-DHAVE_THREADS",
-					"-DHAVE_FILTERS_BUILTIN",
-					"-DHAVE_MATERIALUI",
-					"-DHAVE_XMB",
-					"-DHAVE_SHADERPIPELINE",
-					"-D_LZMA_UINT32_IS_ULONG",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch6;
-				PRODUCT_NAME = "RetroArch copy";
-				PROVISIONING_PROFILE = "";
-				VALID_ARCHS = armv7;
-				WRAPPER_EXTENSION = app;
-			};
-			name = Debug;
-		};
-		503700AC1ACA18E400A51A37 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ARCHS = armv7;
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
-				CLANG_CXX_LIBRARY = "libstdc++";
-				CODE_SIGN_IDENTITY = "iPhone Developer";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
-				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
-				DEVELOPMENT_TEAM = UK699V5ZS8;
-				ENABLE_BITCODE = NO;
-				GCC_PRECOMPILE_PREFIX_HEADER = NO;
-				GCC_PREFIX_HEADER = "";
-				HEADER_SEARCH_PATHS = (
-					../../,
-					"../../libretro-common/include",
-					../../deps/stb,
-					../../deps/libz,
-					../../deps,
-				);
-				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
-				LD_NO_PIE = YES;
-				LIBRARY_SEARCH_PATHS = "";
-				OTHER_CFLAGS = (
-					"-DNS_BLOCK_ASSERTIONS=1",
-					"-DNDEBUG",
-					"-DHAVE_NETWORKGAMEPAD",
-					"-DHAVE_CORETEXT",
-					"-DHAVE_HID",
-					"-DHAVE_NETWORKING",
-					"-DHAVE_AVFOUNDATION",
-					"-DHAVE_GRIFFIN",
-					"-DHAVE_STB_VORBIS",
-					"-DHAVE_MINIUPNPC",
-					"-DHAVE_BUILTINMINIUPNPC",
-					"-DHAVE_UPDATE_ASSETS",
-					"-DHAVE_LANGEXTRA",
-					"-DHAVE_CHEEVOS",
-					"-DHAVE_IMAGEVIEWER",
-					"-DHAVE_CORELOCATION",
-					"-DHAVE_RGUI",
-					"-DHAVE_MENU",
-					"-DHAVE_LIBRETRODB",
-					"-DIOS",
-					"-DHAVE_OPENGL",
-					"-DHAVE_OPENGLES",
-					"-DHAVE_OPENGLES2",
-					"-DHAVE_CC_RESAMPLER",
-					"-DHAVE_GLSL",
-					"-DINLINE=inline",
-					"-D__LIBRETRO__",
-					"-DRARCH_MOBILE",
-					"-DHAVE_COREAUDIO",
-					"-DHAVE_DYNAMIC",
-					"-DHAVE_OVERLAY",
-					"-DHAVE_ZLIB",
-					"-DHAVE_RPNG",
-					"-DHAVE_RJPEG",
-					"-DHAVE_RBMP",
-					"-DHAVE_RTGA",
-					"-DHAVE_COCOATOUCH",
-					"-DHAVE_MAIN",
-					"-DRARCH_INTERNAL",
-					"-DHAVE_THREADS",
-					"-DHAVE_FILTERS_BUILTIN",
-					"-DHAVE_7ZIP",
-					"-DHAVE_MATERIALUI",
-					"-DHAVE_XMB",
-					"-DHAVE_SHADERPIPELINE",
-					"-D_LZMA_UINT32_IS_ULONG",
-				);
-				"OTHER_CFLAGS[arch=*]" = (
-					"-DNS_BLOCK_ASSERTIONS=1",
-					"-DNDEBUG",
-					"-DHAVE_NETWORKGAMEPAD",
-					"-DHAVE_CORETEXT",
-					"-DHAVE_HID",
-					"-DHAVE_NETWORKING",
-					"-DHAVE_AVFOUNDATION",
-					"-DHAVE_GRIFFIN",
-					"-DHAVE_STB_VORBIS",
-					"-DHAVE_MINIUPNPC",
-					"-DHAVE_BUILTINMINIUPNPC",
-					"-DHAVE_UPDATE_ASSETS",
-					"-DHAVE_LANGEXTRA",
-					"-DHAVE_CHEEVOS",
-					"-DHAVE_IMAGEVIEWER",
-					"-DHAVE_CORELOCATION",
-					"-DHAVE_RGUI",
-					"-DHAVE_MENU",
-					"-DHAVE_LIBRETRODB",
-					"-DIOS",
-					"-DHAVE_OPENGL",
-					"-DHAVE_OPENGLES",
-					"-DHAVE_OPENGLES2",
-					"-DHAVE_CC_RESAMPLER",
-					"-DHAVE_GLSL",
-					"-DINLINE=inline",
-					"-D__LIBRETRO__",
-					"-DRARCH_MOBILE",
-					"-DHAVE_COREAUDIO",
-					"-DHAVE_DYNAMIC",
-					"-DRARCH_INTERNAL",
-					"-DHAVE_OVERLAY",
-					"-DHAVE_ZLIB",
-					"-DHAVE_RPNG",
-					"-DHAVE_RJPEG",
-					"-DHAVE_RBMP",
-					"-DHAVE_RTGA",
-					"-DHAVE_COCOATOUCH",
-					"-DHAVE_MAIN",
-					"-DHAVE_THREADS",
-					"-DHAVE_FILTERS_BUILTIN",
-					"-DHAVE_7ZIP",
-					"-DHAVE_MATERIALUI",
-					"-DHAVE_XMB",
-					"-DHAVE_SHADERPIPELINE",
-					"-D_LZMA_UINT32_IS_ULONG",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArch6;
-				PRODUCT_NAME = "RetroArch copy";
-				PROVISIONING_PROFILE = "";
-				VALID_ARCHS = armv7;
 				WRAPPER_EXTENSION = app;
 			};
 			name = Release;
@@ -1084,225 +694,6 @@
 			};
 			name = Release;
 		};
-		96AFAE5516C1D4EA009DE44C /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ARCHS = armv7;
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
-				CLANG_CXX_LIBRARY = "libstdc++";
-				CODE_SIGN_IDENTITY = "iPhone Developer";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
-				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
-				DEVELOPMENT_TEAM = UK699V5ZS8;
-				ENABLE_BITCODE = NO;
-				GCC_PRECOMPILE_PREFIX_HEADER = NO;
-				GCC_PREFIX_HEADER = "";
-				HEADER_SEARCH_PATHS = (
-					../../,
-					"../../libretro-common/include",
-					../../deps/stb,
-					../../deps/libz,
-					../../deps,
-				);
-				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
-				LD_NO_PIE = YES;
-				LIBRARY_SEARCH_PATHS = "";
-				ONLY_ACTIVE_ARCH = NO;
-				OTHER_CFLAGS = (
-					"-DHAVE_NETWORKGAMEPAD",
-					"-DHAVE_CORETEXT",
-					"-DHAVE_HID",
-					"-DHAVE_NETWORKING",
-					"-DHAVE_AVFOUNDATION",
-					"-DHAVE_GRIFFIN",
-					"-DHAVE_STB_VORBIS",
-					"-DHAVE_MINIUPNPC",
-					"-DHAVE_BUILTINMINIUPNPC",
-					"-DHAVE_UPDATE_ASSETS",
-					"-DHAVE_LANGEXTRA",
-					"-DHAVE_CHEEVOS",
-					"-DHAVE_IMAGEVIEWER",
-					"-DHAVE_CORELOCATION",
-					"-DHAVE_RGUI",
-					"-DHAVE_MENU",
-					"-DHAVE_LIBRETRODB",
-					"-DIOS",
-					"-DHAVE_OPENGL",
-					"-DHAVE_OPENGLES",
-					"-DHAVE_OPENGLES2",
-					"-DHAVE_CC_RESAMPLER",
-					"-DHAVE_GLSL",
-					"-DINLINE=inline",
-					"-D__LIBRETRO__",
-					"-DRARCH_MOBILE",
-					"-DHAVE_COREAUDIO",
-					"-DHAVE_DYNAMIC",
-					"-DHAVE_OVERLAY",
-					"-DHAVE_ZLIB",
-					"-DHAVE_RPNG",
-					"-DHAVE_RJPEG",
-					"-DHAVE_RBMP",
-					"-DHAVE_RTGA",
-					"-DHAVE_COCOATOUCH",
-					"-DHAVE_MAIN",
-					"-DRARCH_INTERNAL",
-					"-DHAVE_THREADS",
-					"-DHAVE_FILTERS_BUILTIN",
-					"-DHAVE_MATERIALUI",
-					"-DHAVE_XMB",
-					"-DHAVE_SHADERPIPELINE",
-					"-D_LZMA_UINT32_IS_ULONG",
-					"-DHAVE_MFI",
-					"-DHAVE_BTSTACK",
-					"-DHAVE_AVFOUNDATION",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchG;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE = "";
-				VALID_ARCHS = armv7;
-				WARNING_CFLAGS = "-Wno-invalid-source-encoding";
-				WRAPPER_EXTENSION = app;
-			};
-			name = Debug;
-		};
-		96AFAE5616C1D4EA009DE44C /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ARCHS = armv7;
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
-				CLANG_CXX_LIBRARY = "libstdc++";
-				CODE_SIGN_IDENTITY = "iPhone Developer";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
-				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
-				DEVELOPMENT_TEAM = UK699V5ZS8;
-				ENABLE_BITCODE = NO;
-				GCC_PRECOMPILE_PREFIX_HEADER = NO;
-				GCC_PREFIX_HEADER = "";
-				HEADER_SEARCH_PATHS = (
-					../../,
-					"../../libretro-common/include",
-					../../deps/stb,
-					../../deps/libz,
-					../../deps,
-				);
-				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
-				LD_NO_PIE = YES;
-				LIBRARY_SEARCH_PATHS = "";
-				OTHER_CFLAGS = (
-					"-DNS_BLOCK_ASSERTIONS=1",
-					"-DNDEBUG",
-					"-DHAVE_NETWORKGAMEPAD",
-					"-DHAVE_CORETEXT",
-					"-DHAVE_HID",
-					"-DHAVE_NETWORKING",
-					"-DHAVE_AVFOUNDATION",
-					"-DHAVE_GRIFFIN",
-					"-DHAVE_STB_VORBIS",
-					"-DHAVE_MINIUPNPC",
-					"-DHAVE_BUILTINMINIUPNPC",
-					"-DHAVE_UPDATE_ASSETS",
-					"-DHAVE_LANGEXTRA",
-					"-DHAVE_CHEEVOS",
-					"-DHAVE_IMAGEVIEWER",
-					"-DHAVE_CORELOCATION",
-					"-DHAVE_RGUI",
-					"-DHAVE_MENU",
-					"-DHAVE_LIBRETRODB",
-					"-DIOS",
-					"-DHAVE_OPENGL",
-					"-DHAVE_OPENGLES",
-					"-DHAVE_OPENGLES2",
-					"-DHAVE_CC_RESAMPLER",
-					"-DHAVE_GLSL",
-					"-DINLINE=inline",
-					"-D__LIBRETRO__",
-					"-DRARCH_MOBILE",
-					"-DHAVE_COREAUDIO",
-					"-DHAVE_DYNAMIC",
-					"-DHAVE_OVERLAY",
-					"-DHAVE_ZLIB",
-					"-DHAVE_RPNG",
-					"-DHAVE_RJPEG",
-					"-DHAVE_RBMP",
-					"-DHAVE_RTGA",
-					"-DHAVE_COCOATOUCH",
-					"-DHAVE_MAIN",
-					"-DRARCH_INTERNAL",
-					"-DHAVE_THREADS",
-					"-DHAVE_FILTERS_BUILTIN",
-					"-DHAVE_7ZIP",
-					"-DHAVE_MATERIALUI",
-					"-DHAVE_XMB",
-					"-DHAVE_SHADERPIPELINE",
-					"-D_LZMA_UINT32_IS_ULONG",
-					"-DHAVE_MFI",
-					"-DHAVE_BTSTACK",
-					"-DHAVE_AVFOUNDATION",
-				);
-				"OTHER_CFLAGS[arch=*]" = (
-					"-DNS_BLOCK_ASSERTIONS=1",
-					"-DNDEBUG",
-					"-DHAVE_NETWORKGAMEPAD",
-					"-DHAVE_CORETEXT",
-					"-DHAVE_HID",
-					"-DHAVE_NETWORKING",
-					"-DHAVE_AVFOUNDATION",
-					"-DHAVE_GRIFFIN",
-					"-DHAVE_STB_VORBIS",
-					"-DHAVE_MINIUPNPC",
-					"-DHAVE_BUILTINMINIUPNPC",
-					"-DHAVE_UPDATE_ASSETS",
-					"-DHAVE_LANGEXTRA",
-					"-DHAVE_CHEEVOS",
-					"-DHAVE_IMAGEVIEWER",
-					"-DHAVE_CORELOCATION",
-					"-DHAVE_RGUI",
-					"-DHAVE_MENU",
-					"-DHAVE_LIBRETRODB",
-					"-DIOS",
-					"-DHAVE_OPENGL",
-					"-DHAVE_OPENGLES",
-					"-DHAVE_OPENGLES2",
-					"-DHAVE_CC_RESAMPLER",
-					"-DHAVE_GLSL",
-					"-DINLINE=inline",
-					"-D__LIBRETRO__",
-					"-DRARCH_MOBILE",
-					"-DHAVE_COREAUDIO",
-					"-DHAVE_DYNAMIC",
-					"-DRARCH_INTERNAL",
-					"-DHAVE_OVERLAY",
-					"-DHAVE_ZLIB",
-					"-DHAVE_RPNG",
-					"-DHAVE_RJPEG",
-					"-DHAVE_RBMP",
-					"-DHAVE_RTGA",
-					"-DHAVE_COCOATOUCH",
-					"-DHAVE_MAIN",
-					"-DHAVE_THREADS",
-					"-DHAVE_FILTERS_BUILTIN",
-					"-DHAVE_7ZIP",
-					"-DHAVE_MATERIALUI",
-					"-DHAVE_XMB",
-					"-DHAVE_SHADERPIPELINE",
-					"-D_LZMA_UINT32_IS_ULONG",
-					"-DHAVE_MFI",
-					"-DHAVE_BTSTACK",
-					"-DHAVE_AVFOUNDATION",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchG;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE = "";
-				VALID_ARCHS = armv7;
-				WARNING_CFLAGS = "-Wno-invalid-source-encoding";
-				WRAPPER_EXTENSION = app;
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -1315,29 +706,11 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		503700AA1ACA18E400A51A37 /* Build configuration list for PBXNativeTarget "RetroArch iOS6" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				503700AB1ACA18E400A51A37 /* Debug */,
-				503700AC1ACA18E400A51A37 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		96AFAE1F16C1D4EA009DE44C /* Build configuration list for PBXProject "RetroArch_iOS" */ = {
+		96AFAE1F16C1D4EA009DE44C /* Build configuration list for PBXProject "RetroArch_iOS9" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				96AFAE5216C1D4EA009DE44C /* Debug */,
 				96AFAE5316C1D4EA009DE44C /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		96AFAE5416C1D4EA009DE44C /* Build configuration list for PBXNativeTarget "RetroArch" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				96AFAE5516C1D4EA009DE44C /* Debug */,
-				96AFAE5616C1D4EA009DE44C /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
