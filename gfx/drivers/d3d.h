@@ -85,6 +85,7 @@ typedef struct d3d_video
    RECT font_rect;
    RECT font_rect_shifted;
    math_matrix_4x4 mvp;
+   math_matrix_4x4 mvp_rotate;
    math_matrix_4x4 mvp_transposed;
 
    struct video_viewport vp;
