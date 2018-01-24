@@ -22,6 +22,7 @@
 #include "verbosity.h"
 
 #ifdef __MINGW32__
+/* clang-format off */
 #define DEFINE_GUIDW(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) const GUID DECLSPEC_SELECTANY name = { l, w1, w2, { b1, b2, b3, b4, b5, b6, b7, b8 } }
 
 DEFINE_GUIDW(IID_ID3D12PipelineState, 0x765a30f3, 0xf624, 0x4c6f, 0xa8, 0x28, 0xac, 0xe9, 0x48, 0x62, 0x24, 0x45);
@@ -51,13 +52,14 @@ DEFINE_GUIDW(IID_ID3D12DebugDevice, 0x3febd6dd, 0x4973, 0x4787, 0x81, 0x94, 0xe4
 DEFINE_GUIDW(IID_ID3D12DebugCommandQueue, 0x09e0bf36, 0x54ac, 0x484f, 0x88, 0x47, 0x4b, 0xae, 0xea, 0xb6, 0x05, 0x3a);
 DEFINE_GUIDW(IID_ID3D12DebugCommandList1, 0x102ca951, 0x311b, 0x4b01, 0xb1, 0x1f, 0xec, 0xb8, 0x3e, 0x06, 0x1b, 0x37);
 DEFINE_GUIDW(IID_ID3D12DebugCommandList, 0x09e0bf36, 0x54ac, 0x484f, 0x88, 0x47, 0x4b, 0xae, 0xea, 0xb6, 0x05, 0x3f);
+/* clang-format on */
 #endif
 
 static dylib_t     d3d12_dll;
-static const char *d3d12_dll_name = "d3d12.dll";
+static const char* d3d12_dll_name = "d3d12.dll";
 
 HRESULT WINAPI D3D12CreateDevice(
-      IUnknown *pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, REFIID riid, void **ppDevice)
+      IUnknown* pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, REFIID riid, void** ppDevice)
 {
    if (!d3d12_dll)
       d3d12_dll = dylib_load(d3d12_dll_name);
@@ -76,7 +78,7 @@ HRESULT WINAPI D3D12CreateDevice(
    return TYPE_E_CANTLOADLIBRARY;
 }
 
-HRESULT WINAPI D3D12GetDebugInterface(REFIID riid, void **ppvDebug)
+HRESULT WINAPI D3D12GetDebugInterface(REFIID riid, void** ppvDebug)
 {
    if (!d3d12_dll)
       d3d12_dll = dylib_load(d3d12_dll_name);
@@ -95,10 +97,11 @@ HRESULT WINAPI D3D12GetDebugInterface(REFIID riid, void **ppvDebug)
    return TYPE_E_CANTLOADLIBRARY;
 }
 
-HRESULT WINAPI D3D12SerializeRootSignature(const D3D12_ROOT_SIGNATURE_DESC *pRootSignature,
-      D3D_ROOT_SIGNATURE_VERSION                                            Version,
-      ID3DBlob **                                                           ppBlob,
-      ID3DBlob **                                                           ppErrorBlob)
+HRESULT WINAPI D3D12SerializeRootSignature(
+      const D3D12_ROOT_SIGNATURE_DESC* pRootSignature,
+      D3D_ROOT_SIGNATURE_VERSION       Version,
+      ID3DBlob**                       ppBlob,
+      ID3DBlob**                       ppErrorBlob)
 {
    if (!d3d12_dll)
       d3d12_dll = dylib_load(d3d12_dll_name);
@@ -119,9 +122,9 @@ HRESULT WINAPI D3D12SerializeRootSignature(const D3D12_ROOT_SIGNATURE_DESC *pRoo
 }
 
 HRESULT WINAPI D3D12SerializeVersionedRootSignature(
-      const D3D12_VERSIONED_ROOT_SIGNATURE_DESC *pRootSignature,
-      ID3DBlob **                                ppBlob,
-      ID3DBlob **                                ppErrorBlob)
+      const D3D12_VERSIONED_ROOT_SIGNATURE_DESC* pRootSignature,
+      ID3DBlob**                                 ppBlob,
+      ID3DBlob**                                 ppErrorBlob)
 {
    if (!d3d12_dll)
       d3d12_dll = dylib_load(d3d12_dll_name);
@@ -143,7 +146,7 @@ HRESULT WINAPI D3D12SerializeVersionedRootSignature(
 
 #include <wiiu/wiiu_dbg.h>
 
-bool d3d12_init_base(d3d12_video_t *d3d12)
+bool d3d12_init_base(d3d12_video_t* d3d12)
 {
 
 #ifdef DEBUG
@@ -171,21 +174,23 @@ bool d3d12_init_base(d3d12_video_t *d3d12)
    return true;
 }
 
-bool d3d12_init_queue(d3d12_video_t *d3d12)
+bool d3d12_init_queue(d3d12_video_t* d3d12)
 {
    {
       static const D3D12_COMMAND_QUEUE_DESC desc = {
          .Type  = D3D12_COMMAND_LIST_TYPE_DIRECT,
          .Flags = D3D12_COMMAND_QUEUE_FLAG_NONE,
       };
-      D3D12CreateCommandQueue(d3d12->device, (D3D12_COMMAND_QUEUE_DESC*)&desc, &d3d12->queue.handle);
+      D3D12CreateCommandQueue(
+            d3d12->device, (D3D12_COMMAND_QUEUE_DESC*)&desc, &d3d12->queue.handle);
    }
 
    D3D12CreateCommandAllocator(
          d3d12->device, D3D12_COMMAND_LIST_TYPE_DIRECT, &d3d12->queue.allocator);
 
-   D3D12CreateGraphicsCommandList(d3d12->device, 0, D3D12_COMMAND_LIST_TYPE_DIRECT,
-         d3d12->queue.allocator, d3d12->pipe.handle, &d3d12->queue.cmd);
+   D3D12CreateGraphicsCommandList(
+         d3d12->device, 0, D3D12_COMMAND_LIST_TYPE_DIRECT, d3d12->queue.allocator,
+         d3d12->pipe.handle, &d3d12->queue.cmd);
 
    D3D12CloseGraphicsCommandList(d3d12->queue.cmd);
 
@@ -196,7 +201,7 @@ bool d3d12_init_queue(d3d12_video_t *d3d12)
    return true;
 }
 
-bool d3d12_init_swapchain(d3d12_video_t *d3d12, int width, int height, HWND hwnd)
+bool d3d12_init_swapchain(d3d12_video_t* d3d12, int width, int height, HWND hwnd)
 {
    {
       DXGI_SWAP_CHAIN_DESC desc = {
@@ -243,7 +248,7 @@ bool d3d12_init_swapchain(d3d12_video_t *d3d12, int width, int height, HWND hwnd
    return true;
 }
 
-static void d3d12_init_descriptor_heap(D3D12Device device, d3d12_descriptor_heap_t *out)
+static void d3d12_init_descriptor_heap(D3D12Device device, d3d12_descriptor_heap_t* out)
 {
    D3D12CreateDescriptorHeap(device, &out->desc, &out->handle);
    out->cpu    = D3D12GetCPUDescriptorHandleForHeapStart(out->handle);
@@ -251,12 +256,13 @@ static void d3d12_init_descriptor_heap(D3D12Device device, d3d12_descriptor_heap
    out->stride = D3D12GetDescriptorHandleIncrementSize(device, out->desc.Type);
 }
 
-static void d3d12_init_sampler(D3D12Device device,
-      d3d12_descriptor_heap_t *            heap,
-      descriptor_heap_slot_t               heap_index,
-      D3D12_FILTER                         filter,
-      D3D12_TEXTURE_ADDRESS_MODE           address_mode,
-      D3D12_GPU_DESCRIPTOR_HANDLE *        dst)
+static void d3d12_init_sampler(
+      D3D12Device                  device,
+      d3d12_descriptor_heap_t*     heap,
+      descriptor_heap_slot_t       heap_index,
+      D3D12_FILTER                 filter,
+      D3D12_TEXTURE_ADDRESS_MODE   address_mode,
+      D3D12_GPU_DESCRIPTOR_HANDLE* dst)
 {
    D3D12_SAMPLER_DESC sampler_desc = {
       .Filter         = filter,
@@ -275,7 +281,7 @@ static void d3d12_init_sampler(D3D12Device device,
    dst->ptr = heap->gpu.ptr + heap_index * heap->stride;
 }
 
-bool d3d12_init_descriptors(d3d12_video_t *d3d12)
+bool d3d12_init_descriptors(d3d12_video_t* d3d12)
 {
    static const D3D12_DESCRIPTOR_RANGE srv_table[] = {
       {
@@ -324,14 +330,16 @@ bool d3d12_init_descriptors(d3d12_video_t *d3d12)
 
       if (error)
       {
-         RARCH_ERR("[D3D12]: CreateRootSignature failed :\n%s\n",
-               (const char *)D3DGetBufferPointer(error));
+         RARCH_ERR(
+               "[D3D12]: CreateRootSignature failed :\n%s\n",
+               (const char*)D3DGetBufferPointer(error));
          Release(error);
          return false;
       }
 
-      D3D12CreateRootSignature(d3d12->device, 0, D3DGetBufferPointer(signature),
-            D3DGetBufferSize(signature), &d3d12->pipe.rootSignature);
+      D3D12CreateRootSignature(
+            d3d12->device, 0, D3DGetBufferPointer(signature), D3DGetBufferSize(signature),
+            &d3d12->pipe.rootSignature);
       Release(signature);
    }
 
@@ -350,16 +358,18 @@ bool d3d12_init_descriptors(d3d12_video_t *d3d12)
    d3d12->pipe.sampler_heap.desc.Flags          = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
    d3d12_init_descriptor_heap(d3d12->device, &d3d12->pipe.sampler_heap);
 
-   d3d12_init_sampler(d3d12->device, &d3d12->pipe.sampler_heap, SAMPLER_HEAP_SLOT_LINEAR,
+   d3d12_init_sampler(
+         d3d12->device, &d3d12->pipe.sampler_heap, SAMPLER_HEAP_SLOT_LINEAR,
          D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_BORDER,
          &d3d12->sampler_linear);
-   d3d12_init_sampler(d3d12->device, &d3d12->pipe.sampler_heap, SAMPLER_HEAP_SLOT_NEAREST,
+   d3d12_init_sampler(
+         d3d12->device, &d3d12->pipe.sampler_heap, SAMPLER_HEAP_SLOT_NEAREST,
          D3D12_FILTER_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_BORDER,
          &d3d12->sampler_nearest);
    return true;
 }
 
-bool d3d12_init_pipeline(d3d12_video_t *d3d12)
+bool d3d12_init_pipeline(d3d12_video_t* d3d12)
 {
    D3DBlob vs_code;
    D3DBlob ps_code;
@@ -370,11 +380,11 @@ bool d3d12_init_pipeline(d3d12_video_t *d3d12)
 
    static const D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
       { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d12_vertex_t, position),
-            D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
       { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d12_vertex_t, texcoord),
-            D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
       { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, offsetof(d3d12_vertex_t, color),
-            D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
    };
 
    static const D3D12_RASTERIZER_DESC rasterizerDesc = {
@@ -445,7 +455,7 @@ bool d3d12_init_pipeline(d3d12_video_t *d3d12)
 }
 
 void d3d12_create_vertex_buffer(
-      D3D12Device device, D3D12_VERTEX_BUFFER_VIEW *view, D3D12Resource *vbo)
+      D3D12Device device, D3D12_VERTEX_BUFFER_VIEW* view, D3D12Resource* vbo)
 {
    static const D3D12_HEAP_PROPERTIES heap_props = {
       .Type             = D3D12_HEAP_TYPE_UPLOAD,
@@ -463,17 +473,17 @@ void d3d12_create_vertex_buffer(
       .Layout           = D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
    };
 
-   D3D12CreateCommittedResource(device,
-         (D3D12_HEAP_PROPERTIES*)&heap_props,
-         D3D12_HEAP_FLAG_NONE, &resource_desc,
+   D3D12CreateCommittedResource(
+         device, (D3D12_HEAP_PROPERTIES*)&heap_props, D3D12_HEAP_FLAG_NONE, &resource_desc,
          D3D12_RESOURCE_STATE_GENERIC_READ, NULL, vbo);
    view->BufferLocation = D3D12GetGPUVirtualAddress(*vbo);
 }
 
-void d3d12_init_texture(D3D12Device device,
-      d3d12_descriptor_heap_t *     heap,
-      descriptor_heap_slot_t        heap_index,
-      d3d12_texture_t *             texture)
+void d3d12_init_texture(
+      D3D12Device              device,
+      d3d12_descriptor_heap_t* heap,
+      descriptor_heap_slot_t   heap_index,
+      d3d12_texture_t*         texture)
 {
    Release(texture->handle);
    Release(texture->upload_buffer);
@@ -485,11 +495,13 @@ void d3d12_init_texture(D3D12Device device,
       texture->desc.SampleDesc.Count = 1;
 
       D3D12_HEAP_PROPERTIES heap_props = { D3D12_HEAP_TYPE_DEFAULT, 0, 0, 1, 1 };
-      D3D12CreateCommittedResource(device, &heap_props, D3D12_HEAP_FLAG_NONE, &texture->desc,
+      D3D12CreateCommittedResource(
+            device, &heap_props, D3D12_HEAP_FLAG_NONE, &texture->desc,
             D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, NULL, &texture->handle);
    }
 
-   D3D12GetCopyableFootprints(device, &texture->desc, 0, 1, 0, &texture->layout, &texture->num_rows,
+   D3D12GetCopyableFootprints(
+         device, &texture->desc, 0, 1, 0, &texture->layout, &texture->num_rows,
          &texture->row_size_in_bytes, &texture->total_bytes);
 
    {
@@ -504,7 +516,8 @@ void d3d12_init_texture(D3D12Device device,
       };
       D3D12_HEAP_PROPERTIES heap_props = { D3D12_HEAP_TYPE_UPLOAD, 0, 0, 1, 1 };
 
-      D3D12CreateCommittedResource(device, &heap_props, D3D12_HEAP_FLAG_NONE, &buffer_desc,
+      D3D12CreateCommittedResource(
+            device, &heap_props, D3D12_HEAP_FLAG_NONE, &buffer_desc,
             D3D12_RESOURCE_STATE_GENERIC_READ, NULL, &texture->upload_buffer);
    }
 
@@ -521,7 +534,7 @@ void d3d12_init_texture(D3D12Device device,
    }
 }
 
-void d3d12_upload_texture(D3D12GraphicsCommandList cmd, d3d12_texture_t *texture)
+void d3d12_upload_texture(D3D12GraphicsCommandList cmd, d3d12_texture_t* texture)
 {
    D3D12_TEXTURE_COPY_LOCATION src = {
       .pResource       = texture->upload_buffer,
@@ -535,19 +548,21 @@ void d3d12_upload_texture(D3D12GraphicsCommandList cmd, d3d12_texture_t *texture
       .SubresourceIndex = 0,
    };
 
-   d3d12_resource_transition(cmd, texture->handle, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+   d3d12_resource_transition(
+         cmd, texture->handle, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
          D3D12_RESOURCE_STATE_COPY_DEST);
 
    D3D12CopyTextureRegion(cmd, &dst, 0, 0, 0, &src, NULL);
 
-   d3d12_resource_transition(cmd, texture->handle, D3D12_RESOURCE_STATE_COPY_DEST,
+   d3d12_resource_transition(
+         cmd, texture->handle, D3D12_RESOURCE_STATE_COPY_DEST,
          D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
    texture->dirty = false;
 }
 
 void d3d12_create_fullscreen_quad_vbo(
-      D3D12Device device, D3D12_VERTEX_BUFFER_VIEW *view, D3D12Resource *vbo)
+      D3D12Device device, D3D12_VERTEX_BUFFER_VIEW* view, D3D12Resource* vbo)
 {
    static const d3d12_vertex_t vertices[] = {
       { { -1.0f, -1.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
@@ -561,7 +576,7 @@ void d3d12_create_fullscreen_quad_vbo(
    d3d12_create_vertex_buffer(device, view, vbo);
 
    {
-      void *      vertex_data_begin;
+      void*       vertex_data_begin;
       D3D12_RANGE read_range = { 0, 0 };
 
       D3D12Map(*vbo, 0, &read_range, &vertex_data_begin);
@@ -573,14 +588,14 @@ void d3d12_create_fullscreen_quad_vbo(
 DXGI_FORMAT d3d12_get_closest_match(
       D3D12Device device, DXGI_FORMAT desired_format, D3D12_FORMAT_SUPPORT1 desired_format_support)
 {
-   DXGI_FORMAT *format = dxgi_get_format_fallback_list(desired_format);
+   DXGI_FORMAT* format = dxgi_get_format_fallback_list(desired_format);
    UINT         format_support;
    while (*format != DXGI_FORMAT_UNKNOWN)
    {
       D3D12_FEATURE_DATA_FORMAT_SUPPORT format_support = { *format };
       if (SUCCEEDED(D3D12CheckFeatureSupport(
                 device, D3D12_FEATURE_FORMAT_SUPPORT, &format_support, sizeof(format_support))) &&
-            ((format_support.Support1 & desired_format_support) == desired_format_support))
+          ((format_support.Support1 & desired_format_support) == desired_format_support))
          break;
       format++;
    }

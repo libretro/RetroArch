@@ -29,11 +29,11 @@
 #include <d3dcompiler.h>
 
 #ifndef countof
-#define countof(a) (sizeof(a)/ sizeof(*a))
+#define countof(a) (sizeof(a) / sizeof(*a))
 #endif
 
 #ifndef __uuidof
-#define __uuidof(type) &IID_##type
+#define __uuidof(type) & IID_##type
 #endif
 
 #ifndef COM_RELEASE_DECLARED
@@ -41,12 +41,16 @@
 #if defined(__cplusplus) && !defined(CINTERFACE)
 static inline ULONG Release(IUnknown* object)
 {
-   return object->Release();
+   if (object)
+      return object->Release();
+   return 0;
 }
 #else
 static inline ULONG Release(void* object)
 {
-   return ((IUnknown*)object)->lpVtbl->Release(object);
+   if (object)
+      return ((IUnknown*)object)->lpVtbl->Release(object);
+   return 0;
 }
 #endif
 #endif
@@ -56,33 +60,32 @@ static inline ULONG Release(void* object)
 typedef ID3DBlob*                D3DBlob;
 typedef ID3DDestructionNotifier* D3DDestructionNotifier;
 
-
-static inline ULONG D3DReleaseBlob(D3DBlob blob)
-{
-   return blob->lpVtbl->Release(blob);
-}
+static inline ULONG  D3DReleaseBlob(D3DBlob blob) { return blob->lpVtbl->Release(blob); }
 static inline LPVOID D3DGetBufferPointer(D3DBlob blob)
 {
    return blob->lpVtbl->GetBufferPointer(blob);
 }
-static inline SIZE_T D3DGetBufferSize(D3DBlob blob)
-{
-   return blob->lpVtbl->GetBufferSize(blob);
-}
-static inline ULONG D3DReleaseDestructionNotifier(D3DDestructionNotifier destruction_notifier)
+static inline SIZE_T D3DGetBufferSize(D3DBlob blob) { return blob->lpVtbl->GetBufferSize(blob); }
+static inline ULONG  D3DReleaseDestructionNotifier(D3DDestructionNotifier destruction_notifier)
 {
    return destruction_notifier->lpVtbl->Release(destruction_notifier);
 }
-static inline HRESULT D3DRegisterDestructionCallback(D3DDestructionNotifier destruction_notifier, PFN_DESTRUCTION_CALLBACK callback_fn, void* data, UINT* callback_id)
+static inline HRESULT D3DRegisterDestructionCallback(
+      D3DDestructionNotifier   destruction_notifier,
+      PFN_DESTRUCTION_CALLBACK callback_fn,
+      void*                    data,
+      UINT*                    callback_id)
 {
-   return destruction_notifier->lpVtbl->RegisterDestructionCallback(destruction_notifier, callback_fn, data, callback_id);
+   return destruction_notifier->lpVtbl->RegisterDestructionCallback(
+         destruction_notifier, callback_fn, data, callback_id);
 }
-static inline HRESULT D3DUnregisterDestructionCallback(D3DDestructionNotifier destruction_notifier, UINT callback_id)
+static inline HRESULT
+D3DUnregisterDestructionCallback(D3DDestructionNotifier destruction_notifier, UINT callback_id)
 {
-   return destruction_notifier->lpVtbl->UnregisterDestructionCallback(destruction_notifier, callback_id);
+   return destruction_notifier->lpVtbl->UnregisterDestructionCallback(
+         destruction_notifier, callback_id);
 }
 
 /* end of auto-generated */
-
 
 bool d3d_compile(const char* src, size_t size, LPCSTR entrypoint, LPCSTR target, D3DBlob* out);

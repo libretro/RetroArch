@@ -18,10 +18,10 @@
 
 #include "dxgi_common.h"
 
-HRESULT WINAPI CreateDXGIFactory1(REFIID riid, void **ppFactory)
+HRESULT WINAPI CreateDXGIFactory1(REFIID riid, void** ppFactory)
 {
    static dylib_t dxgi_dll;
-   static HRESULT(WINAPI * fp)(REFIID, void **);
+   static HRESULT(WINAPI * fp)(REFIID, void**);
 
    if (!dxgi_dll)
       dxgi_dll = dylib_load("dxgi.dll");
@@ -30,7 +30,7 @@ HRESULT WINAPI CreateDXGIFactory1(REFIID riid, void **ppFactory)
       return TYPE_E_CANTLOADLIBRARY;
 
    if (!fp)
-      fp = (HRESULT(WINAPI *)(REFIID, void **))dylib_proc(dxgi_dll, "CreateDXGIFactory1");
+      fp = (HRESULT(WINAPI*)(REFIID, void**))dylib_proc(dxgi_dll, "CreateDXGIFactory1");
 
    if (!fp)
       return TYPE_E_CANTLOADLIBRARY;
@@ -38,7 +38,7 @@ HRESULT WINAPI CreateDXGIFactory1(REFIID riid, void **ppFactory)
    return fp(riid, ppFactory);
 }
 
-DXGI_FORMAT *dxgi_get_format_fallback_list(DXGI_FORMAT format)
+DXGI_FORMAT* dxgi_get_format_fallback_list(DXGI_FORMAT format)
 {
    static DXGI_FORMAT format_unknown = DXGI_FORMAT_UNKNOWN;
 
@@ -92,8 +92,8 @@ DXGI_FORMAT *dxgi_get_format_fallback_list(DXGI_FORMAT format)
           ((src_bs == dst_bs && src_bb == dst_bb) || !dst_bb) && \
           ((src_as == dst_as && src_ab == dst_ab) || !dst_ab)) \
       { \
-         const UINT8 *in  = src_data; \
-         UINT8 *      out = dst_data; \
+         const UINT8* in  = src_data; \
+         UINT8*       out = dst_data; \
          for (i = 0; i < height; i++) \
          { \
             memcpy(out, in, width * sizeof(src_type)); \
@@ -103,8 +103,8 @@ DXGI_FORMAT *dxgi_get_format_fallback_list(DXGI_FORMAT format)
       } \
       else \
       { \
-         const src_type *src_ptr = (const src_type *)src_data; \
-         dst_type *      dst_ptr = (dst_type *)dst_data; \
+         const src_type* src_ptr = (const src_type*)src_data; \
+         dst_type*       dst_ptr = (dst_type*)dst_data; \
          if (src_pitch) \
             src_pitch -= width * sizeof(*src_ptr); \
          if (dst_pitch) \
@@ -151,8 +151,8 @@ DXGI_FORMAT *dxgi_get_format_fallback_list(DXGI_FORMAT format)
                             ((src_bb ? b : 0) << dst_bs) | \
                             ((src_ab ? a : ((1 << dst_ab) - 1)) << dst_as); \
             } \
-            src_ptr = (src_type *)((UINT8 *)src_ptr + src_pitch); \
-            dst_ptr = (dst_type *)((UINT8 *)dst_ptr + dst_pitch); \
+            src_ptr = (src_type*)((UINT8*)src_ptr + src_pitch); \
+            dst_ptr = (dst_type*)((UINT8*)dst_ptr + dst_pitch); \
          } \
       } \
    } while (0)
@@ -179,7 +179,8 @@ DXGI_FORMAT *dxgi_get_format_fallback_list(DXGI_FORMAT format)
       break; \
    }
 
-/*                                                        r, g, b, a      r,  g,  b,  a */
+/* clang-format off */
+/*                                                        r, g, b, a,     r,  g,  b,  a */
 #define DXGI_FORMAT_R8G8B8A8_UNORM_DESCS       UINT32,    8, 8, 8, 8,     0,  8, 16, 24
 #define DXGI_FORMAT_B8G8R8X8_UNORM_DESCS       UINT32,    8, 8, 8, 0,    16,  8,  0,  0
 #define DXGI_FORMAT_B8G8R8A8_UNORM_DESCS       UINT32,    8, 8, 8, 8,    16,  8,  0, 24
@@ -205,6 +206,7 @@ DXGI_FORMAT *dxgi_get_format_fallback_list(DXGI_FORMAT format)
    FORMAT_DST(srcfmt, DXGI_FORMAT_B4G4R4A4_UNORM); \
    FORMAT_DST(srcfmt, DXGI_FORMAT_B8G8R8A8_UNORM); \
    FORMAT_DST(srcfmt, DXGI_FORMAT_EX_A4R4G4B4_UNORM)
+   /* clang-format on */
 
 #ifdef _MSC_VER
 #pragma warning(disable : 4293)
@@ -214,10 +216,10 @@ void dxgi_copy(
       int         height,
       DXGI_FORMAT src_format,
       int         src_pitch,
-      const void *src_data,
+      const void* src_data,
       DXGI_FORMAT dst_format,
       int         dst_pitch,
-      void *      dst_data)
+      void*       dst_data)
 {
    int i, j;
 #if defined(PERF_START) && defined(PERF_STOP)

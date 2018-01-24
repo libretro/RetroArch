@@ -227,7 +227,8 @@ static bool d3d10_gfx_frame(
       DXGIResizeBuffers(d3d10->swapChain, 0, 0, 0, 0, 0);
 
       DXGIGetSwapChainBufferD3D10(d3d10->swapChain, 0, &backBuffer);
-      D3D10CreateTexture2DRenderTargetView(d3d10->device, backBuffer, NULL, &d3d10->renderTargetView);
+      D3D10CreateTexture2DRenderTargetView(
+            d3d10->device, backBuffer, NULL, &d3d10->renderTargetView);
       Release(backBuffer);
 
       D3D10SetRenderTargets(d3d10->device, 1, &d3d10->renderTargetView, NULL);
@@ -235,7 +236,6 @@ static bool d3d10_gfx_frame(
 
       d3d10->need_resize = false;
    }
-
 
    PERF_START();
    D3D10ClearRenderTargetView(d3d10->device, d3d10->renderTargetView, d3d10->clearcolor);
