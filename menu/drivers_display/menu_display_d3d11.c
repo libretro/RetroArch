@@ -69,16 +69,16 @@ static void menu_display_d3d11_draw(void* data)
    v->coords.w = 1.0f;
    v->coords.h = 1.0f;
 
-   v->colors[0] = DXGI_COLOR_RGBA(
+   v->colors[3] = DXGI_COLOR_RGBA(
          0xFF * draw->coords->color[0], 0xFF * draw->coords->color[1],
          0xFF * draw->coords->color[2], 0xFF * draw->coords->color[3]);
-   v->colors[1] = DXGI_COLOR_RGBA(
+   v->colors[2] = DXGI_COLOR_RGBA(
          0xFF * draw->coords->color[4], 0xFF * draw->coords->color[5],
          0xFF * draw->coords->color[6], 0xFF * draw->coords->color[7]);
-   v->colors[2] = DXGI_COLOR_RGBA(
+   v->colors[1] = DXGI_COLOR_RGBA(
          0xFF * draw->coords->color[8], 0xFF * draw->coords->color[9],
          0xFF * draw->coords->color[10], 0xFF * draw->coords->color[11]);
-   v->colors[3] = DXGI_COLOR_RGBA(
+   v->colors[0] = DXGI_COLOR_RGBA(
          0xFF * draw->coords->color[12], 0xFF * draw->coords->color[13],
          0xFF * draw->coords->color[14], 0xFF * draw->coords->color[15]);
 
