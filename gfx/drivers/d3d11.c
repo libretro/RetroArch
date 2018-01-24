@@ -14,18 +14,19 @@
  */
 
 #include <assert.h>
-#include <string/stdstring.h>
 
-#include "driver.h"
-#include "verbosity.h"
-#include "configuration.h"
-#include "gfx/video_driver.h"
-#include "gfx/common/win32_common.h"
-#include "gfx/common/d3d11_common.h"
-#include "gfx/common/dxgi_common.h"
-#include "gfx/common/d3dcompiler_common.h"
-#include "performance_counters.h"
+#include <string/stdstring.h>
 #include <gfx/scaler/pixconv.h>
+
+#include "../../driver.h"
+#include "../../verbosity.h"
+#include "../configuration.h"
+#include "../video_driver.h"
+#include "../common/win32_common.h"
+#include "../common/d3d11_common.h"
+#include "../common/dxgi_common.h"
+#include "../common/d3dcompiler_common.h"
+#include "../../performance_counters.h"
 
 static void*
 d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** input_data)

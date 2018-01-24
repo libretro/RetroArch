@@ -107,8 +107,10 @@ typedef struct
 extern int g_xinput_pad_indexes[MAX_USERS];
 extern bool g_xinput_block_pads;
 
+#ifdef HAVE_DYNAMIC
 /* For xinput1_n.dll */
 static dylib_t g_xinput_dll;
+#endif
 
 /* Function pointer, to be assigned with dylib_proc */
 typedef uint32_t (__stdcall *XInputGetStateEx_t)(uint32_t, XINPUT_STATE*);
@@ -178,7 +180,7 @@ static bool xinput_joypad_init(void *data)
    const char *version = "1.4";
 
    (void)data;
-
+#ifdef HAVE_DYNAMIC
    g_xinput_dll = NULL;
 
    /* Find the correct path to load the DLL from.
@@ -210,6 +212,9 @@ static bool xinput_joypad_init(void *data)
     * First try to load ordinal 100 (XInputGetStateEx).
     */
    g_XInputGetStateEx = (XInputGetStateEx_t)dylib_proc(g_xinput_dll, (const char*)100);
+#else
+   g_XInputGetStateEx = (XInputGetStateEx_t)XInputGetStateEx;
+#endif
    g_xinput_guide_button_supported = true;
 
    if (!g_XInputGetStateEx)
@@ -218,22 +223,34 @@ static bool xinput_joypad_init(void *data)
        * XInputGetState, at the cost of losing guide button support.
        */
       g_xinput_guide_button_supported = false;
+#ifdef HAVE_DYNAMIC
       g_XInputGetStateEx = (XInputGetStateEx_t)dylib_proc(g_xinput_dll, "XInputGetState");
+#else
+	  g_XInputGetStateEx = (XInputGetStateEx_t)XInputGetState;
+#endif
 
       if (!g_XInputGetStateEx)
       {
          RARCH_ERR("[XInput]: Failed to init: DLL is invalid or corrupt.\n");
+#ifdef HAVE_DYNAMIC
          dylib_close(g_xinput_dll);
+#endif
          return false; /* DLL was loaded but did not contain the correct function. */
       }
       RARCH_WARN("[XInput]: No guide button support.\n");
    }
 
+#ifdef HAVE_DYNAMIC
    g_XInputSetState = (XInputSetState_t)dylib_proc(g_xinput_dll, "XInputSetState");
+#else
+   g_XInputSetState = (XInputSetState_t)XInputSetState;
+#endif
    if (!g_XInputSetState)
    {
       RARCH_ERR("[XInput]: Failed to init: DLL is invalid or corrupt.\n");
+#ifdef HAVE_DYNAMIC
       dylib_close(g_xinput_dll);
+#endif
       return false; /* DLL was loaded but did not contain the correct function. */
    }
 
@@ -323,9 +340,11 @@ static void xinput_joypad_destroy(void)
    for (i = 0; i < 4; ++i)
       memset(&g_xinput_states[i], 0, sizeof(xinput_joypad_state));
 
+#ifdef HAVE_DYNAMIC
    dylib_close(g_xinput_dll);
 
    g_xinput_dll        = NULL;
+#endif
    g_XInputGetStateEx  = NULL;
    g_XInputSetState    = NULL;
 
