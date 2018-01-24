@@ -84,7 +84,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;HAVE_MENU;HAVE_XMB;HAVE_RGUI;HAVE_MATERIALUI;_DEBUG;_WINDOWS;HAVE_XAUDIO;HAVE_DSOUND;HAVE_DINPUT;HAVE_D3D;HAVE_D3D9;HAVE_GL;HAVE_GLSL;HAVE_THREADS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;HAVE_MENU;HAVE_XMB;HAVE_RGUI;HAVE_MATERIALUI;_DEBUG;_WINDOWS;HAVE_XAUDIO;HAVE_DSOUND;HAVE_DINPUT;HAVE_D3D;HAVE_D3D9;HAVE_OPENGL;HAVE_GLSL;HAVE_THREADS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(SolutionDir)\..\..\gfx\include\dxsdk;$(SolutionDir)\..\..\gfx\include;$(SolutionDir)\..\..\libretro-common\include;$(SolutionDir)\..\..\deps;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -98,7 +98,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;HAVE_MENU;HAVE_XMB;HAVE_RGUI;HAVE_MATERIALUI;_DEBUG;_WINDOWS;HAVE_XAUDIO;HAVE_DSOUND;HAVE_DINPUT;HAVE_D3D;HAVE_D3D9;HAVE_GL;HAVE_GLSL;HAVE_THREADS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;HAVE_MENU;HAVE_XMB;HAVE_RGUI;HAVE_MATERIALUI;_DEBUG;_WINDOWS;HAVE_XAUDIO;HAVE_DSOUND;HAVE_DINPUT;HAVE_D3D;HAVE_D3D9;HAVE_OPENGL;HAVE_GLSL;HAVE_THREADS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(SolutionDir)\..\..\gfx\include\dxsdk;$(SolutionDir)\..\..\gfx\include;$(SolutionDir)\..\..\libretro-common\include;$(SolutionDir)\..\..\deps;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -114,7 +114,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;HAVE_MENU;HAVE_XMB;HAVE_RGUI;HAVE_MATERIALUI;NDEBUG;_WINDOWS;HAVE_XAUDIO;HAVE_DSOUND;HAVE_DINPUT;HAVE_D3D;HAVE_D3D9;HAVE_GL;HAVE_GLSL;HAVE_THREADS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;HAVE_MENU;HAVE_XMB;HAVE_RGUI;HAVE_MATERIALUI;NDEBUG;_WINDOWS;HAVE_XAUDIO;HAVE_DSOUND;HAVE_DINPUT;HAVE_D3D;HAVE_D3D9;HAVE_OPENGL;HAVE_GLSL;HAVE_THREADS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(SolutionDir)\..\..\gfx\include\dxsdk;$(SolutionDir)\..\..\gfx\include;$(SolutionDir)\..\..\libretro-common\include;$(SolutionDir)\..\..\deps;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -132,7 +132,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;HAVE_MENU;HAVE_XMB;HAVE_RGUI;HAVE_MATERIALUI;NDEBUG;_WINDOWS;HAVE_XAUDIO;HAVE_DSOUND;HAVE_DINPUT;HAVE_D3D;HAVE_D3D9;HAVE_GL;HAVE_GLSL;HAVE_THREADS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;HAVE_MENU;HAVE_XMB;HAVE_RGUI;HAVE_MATERIALUI;NDEBUG;_WINDOWS;HAVE_XAUDIO;HAVE_DSOUND;HAVE_DINPUT;HAVE_D3D;HAVE_D3D9;HAVE_OPENGL;HAVE_GLSL;HAVE_THREADS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(SolutionDir)\..\..\gfx\include\dxsdk;$(SolutionDir)\..\..\gfx\include;$(SolutionDir)\..\..\libretro-common\include;$(SolutionDir)\..\..\deps;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
