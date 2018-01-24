@@ -817,7 +817,7 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 - (void)menuBack
 {
 #ifdef HAVE_MENU
-   menu_entry_t entry = {{0}};
+   menu_entry_t entry = {0};
    size_t selection   = menu_navigation_get_selection();
 
    menu_entry_get(&entry, 0, selection, NULL, false);
