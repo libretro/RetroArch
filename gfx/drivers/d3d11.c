@@ -231,9 +231,9 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    {
       D3D11_SAMPLER_DESC desc = {
          .Filter         = D3D11_FILTER_MIN_MAG_MIP_POINT,
-         .AddressU       = D3D11_TEXTURE_ADDRESS_BORDER,
-         .AddressV       = D3D11_TEXTURE_ADDRESS_BORDER,
-         .AddressW       = D3D11_TEXTURE_ADDRESS_BORDER,
+         .AddressU       = D3D11_TEXTURE_ADDRESS_CLAMP,
+         .AddressV       = D3D11_TEXTURE_ADDRESS_CLAMP,
+         .AddressW       = D3D11_TEXTURE_ADDRESS_CLAMP,
          .MaxAnisotropy  = 1,
          .ComparisonFunc = D3D11_COMPARISON_NEVER,
          .MinLOD         = -D3D11_FLOAT32_MAX,
