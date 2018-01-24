@@ -76,8 +76,7 @@ static void d3d8_renderchain_set_mvp(
       void *data,
       void *chain_data,
       void *shader_data,
-      const void *mat_data,
-      bool allow_rotate)
+      const void *mat_data)
 {
    D3DMATRIX matrix;
    d3d_video_t      *d3d = (d3d_video_t*)data;
@@ -86,9 +85,6 @@ static void d3d8_renderchain_set_mvp(
 
    d3d_set_transform(d3d->dev, D3DTS_PROJECTION, &matrix);
    d3d_set_transform(d3d->dev, D3DTS_VIEW, &matrix);
-
-   if (allow_rotate)
-      d3d_matrix_rotation_z(&rot, d3d->dev_rotation * (M_PI / 2.0));
 
    if (mat_data)
       d3d_matrix_transpose(&matrix, mat_data);
@@ -276,7 +272,7 @@ static void d3d8_renderchain_render_pass(
    d3d_set_viewports(chain->dev, &d3d->final_viewport);
    d3d_set_vertex_shader(d3dr, D3DFVF_CUSTOMVERTEX, NULL);
    d3d_set_stream_source(d3dr, 0, chain->vertex_buf, 0, sizeof(Vertex));
-   d3d8_renderchain_set_mvp(d3d, chain, NULL, &d3d->mvp, true);
+   d3d8_renderchain_set_mvp(d3d, chain, NULL, &d3d->mvp);
    d3d_draw_primitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
 }
 
@@ -418,12 +414,11 @@ static void d3d8_viewport_info(void *data, struct video_viewport *vp)
 
 static void d3d8_set_mvp(void *data,
       void *shader_data,
-      const void *mat_data, bool allow_rotate)
+      const void *mat_data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
    if (d3d)
-      d3d8_renderchain_set_mvp(d3d, d3d->renderchain_data, shader_data,
-            mat_data, allow_rotate);
+      d3d8_renderchain_set_mvp(d3d, d3d->renderchain_data, shader_data, mat_data);
 }
 
 static void d3d8_overlay_render(d3d_video_t *d3d,
@@ -1495,7 +1490,7 @@ static bool d3d8_frame(void *data, const void *frame,
 #ifdef HAVE_MENU
    if (d3d->menu && d3d->menu->enabled)
    {
-      d3d8_set_mvp(d3d, NULL, &d3d->mvp, false);
+      d3d8_set_mvp(d3d, NULL, &d3d->mvp);
       d3d8_overlay_render(d3d, video_info, d3d->menu);
 
       d3d->menu_display.offset = 0;
@@ -1510,7 +1505,7 @@ static bool d3d8_frame(void *data, const void *frame,
 #ifdef HAVE_OVERLAY
    if (d3d->overlays_enabled)
    {
-      d3d8_set_mvp(d3d, NULL, &d3d->mvp, false);
+      d3d8_set_mvp(d3d, NULL, &d3d->mvp);
       for (i = 0; i < d3d->overlays_size; i++)
          d3d8_overlay_render(d3d, video_info, &d3d->overlays[i]);
    }
