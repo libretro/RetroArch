@@ -1859,16 +1859,10 @@ void video_driver_update_viewport(struct video_viewport* vp, bool force_full, bo
       }
    }
 
-   /* TODO/FIXME - messy - maybe we should add a new function to the
-    * video driver interface instead to hide away implementation details */
 #if defined(RARCH_MOBILE)
-#ifdef HAVE_D3D
-#ifdef HAVE_D3D12
    /* In portrait mode, we want viewport to gravitate to top of screen. */
    if (device_aspect < 1.0f)
-      d3d12->vp.y = 0;
-#endif
-#endif
+      vp->y = 0;
 #endif
 }
 
