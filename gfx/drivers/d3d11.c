@@ -28,6 +28,7 @@
 #include "../common/dxgi_common.h"
 #include "../common/d3dcompiler_common.h"
 #include "../../performance_counters.h"
+#include "../../menu/menu_driver.h"
 
 static void d3d11_set_filtering(void* data, unsigned index, bool smooth)
 {
@@ -92,6 +93,7 @@ static void d3d11_gfx_free(void* data)
 
    Release(d3d11->sprites.vs);
    Release(d3d11->sprites.ps);
+   Release(d3d11->sprites.ps_8bit);
    Release(d3d11->sprites.gs);
    Release(d3d11->sprites.vbo);
    Release(d3d11->sprites.layout);
@@ -107,6 +109,9 @@ static void d3d11_gfx_free(void* data)
    Release(d3d11->state);
    Release(d3d11->renderTargetView);
    Release(d3d11->swapChain);
+
+   font_driver_free_osd();
+
    Release(d3d11->ctx);
    Release(d3d11->device);
 
@@ -119,6 +124,8 @@ static void*
 d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** input_data)
 {
    WNDCLASSEX      wndclass = { 0 };
+   MONITORINFOEX   current_mon;
+   HMONITOR        hm_to_use;
    settings_t*     settings = config_get_ptr();
    gfx_ctx_input_t inp      = { input, input_data };
    d3d11_video_t*  d3d11    = (d3d11_video_t*)calloc(1, sizeof(*d3d11));
@@ -131,7 +138,17 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    wndclass.lpfnWndProc = WndProcD3D;
    win32_window_init(&wndclass, true, NULL);
 
-   if (!win32_set_video_mode(d3d11, video->width, video->height, video->fullscreen))
+   win32_monitor_info(&current_mon, &hm_to_use, &d3d11->cur_mon_id);
+
+   d3d11->vp.full_width  = video->width;
+   d3d11->vp.full_height = video->height;
+
+   if (!d3d11->vp.full_width)
+      d3d11->vp.full_width = current_mon.rcMonitor.right - current_mon.rcMonitor.left;
+   if (!d3d11->vp.full_height)
+      d3d11->vp.full_height = current_mon.rcMonitor.bottom - current_mon.rcMonitor.top;
+
+   if (!win32_set_video_mode(d3d11, d3d11->vp.full_width, d3d11->vp.full_height, video->fullscreen))
    {
       RARCH_ERR("[D3D11]: win32_set_video_mode failed.\n");
       goto error;
@@ -144,8 +161,8 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
       D3D_FEATURE_LEVEL    requested_feature_level = D3D_FEATURE_LEVEL_11_0;
       DXGI_SWAP_CHAIN_DESC desc                    = {
          .BufferCount                        = 1,
-         .BufferDesc.Width                   = video->width,
-         .BufferDesc.Height                  = video->height,
+         .BufferDesc.Width                   = d3d11->vp.full_width,
+         .BufferDesc.Height                  = d3d11->vp.full_height,
          .BufferDesc.Format                  = DXGI_FORMAT_R8G8B8A8_UNORM,
          .BufferDesc.RefreshRate.Numerator   = 60,
          .BufferDesc.RefreshRate.Denominator = 1,
@@ -182,10 +199,9 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
 
    D3D11SetRenderTargets(d3d11->ctx, 1, &d3d11->renderTargetView, NULL);
 
-   d3d11->vp.full_width   = video->width;
-   d3d11->vp.full_height  = video->height;
-   d3d11->viewport.Width  = video->width;
-   d3d11->viewport.Height = video->height;
+   video_driver_set_size(&d3d11->vp.full_width, &d3d11->vp.full_height);
+   d3d11->viewport.Width  = d3d11->vp.full_width;
+   d3d11->viewport.Height = d3d11->vp.full_height;
    d3d11->resize_viewport = true;
    d3d11->vsync           = video->vsync;
    d3d11->format          = video->rgb32 ? DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM;
@@ -251,8 +267,8 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
          desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
          D3D11CreateBuffer(d3d11->device, &desc, &vertexData, &d3d11->menu.vbo);
 
-         d3d11->sprites.size = sizeof(d3d11_sprite_t) * 1024;
-         desc.ByteWidth      = d3d11->sprites.size;
+         d3d11->sprites.capacity = 4096;
+         desc.ByteWidth          = sizeof(d3d11_sprite_t) * d3d11->sprites.capacity;
          D3D11CreateBuffer(d3d11->device, &desc, NULL, &d3d11->sprites.vbo);
       }
    }
@@ -425,6 +441,7 @@ static bool d3d11_gfx_frame(
 
       d3d11->resize_chain    = false;
       d3d11->resize_viewport = true;
+      video_driver_set_size(&video_info->width, &video_info->height);
    }
 
    PERF_START();
@@ -507,6 +524,9 @@ static bool d3d11_gfx_frame(
 
       d3d11->sprites.offset  = 0;
       d3d11->sprites.enabled = true;
+
+      if (d3d11->menu.enabled)
+         menu_driver_frame(video_info);
 
       if (msg && *msg)
       {
@@ -646,11 +666,51 @@ static void d3d11_gfx_set_osd_msg(
          printf("OSD msg: %s\n", msg);
    }
 }
+static uintptr_t d3d11_gfx_load_texture(
+      void* video_data, void* data, bool threaded, enum texture_filter_type filter_type)
+{
+   d3d11_video_t*        d3d11     = (d3d11_video_t*)video_data;
+   struct texture_image* image     = (struct texture_image*)data;
+   D3D11_BOX             frame_box = { 0, 0, 0, image->width, image->height, 1 };
+
+   if (!d3d11)
+      return 0;
+
+   d3d11_texture_t* texture = calloc(1, sizeof(*texture));
+
+   texture->desc.Width  = image->width;
+   texture->desc.Height = image->height;
+   texture->desc.Format =
+         d3d11_get_closest_match_texture2D(d3d11->device, DXGI_FORMAT_B8G8R8A8_UNORM);
+
+   d3d11_init_texture(d3d11->device, texture);
+
+   d3d11_update_texture(
+         d3d11->ctx, image->width, image->height, 0, DXGI_FORMAT_B8G8R8A8_UNORM, image->pixels,
+         texture);
+   D3D11CopyTexture2DSubresourceRegion(
+         d3d11->ctx, texture->handle, 0, 0, 0, 0, texture->staging, 0, &frame_box);
+
+   return (uintptr_t)texture;
+}
+static void d3d11_gfx_unload_texture(void* data, uintptr_t handle)
+{
+   d3d11_texture_t* texture = (d3d11_texture_t*)handle;
+
+   if (!texture)
+      return;
+
+   Release(texture->view);
+   Release(texture->staging);
+   Release(texture->handle);
+   free(texture);
+}
+
 static const video_poke_interface_t d3d11_poke_interface = {
    NULL, /* set_coords */
    NULL, /* set_mvp */
-   NULL, /* load_texture */
-   NULL, /* unload_texture */
+   d3d11_gfx_load_texture,
+   d3d11_gfx_unload_texture,
    NULL, /* set_video_mode */
    d3d11_set_filtering,
    NULL, /* get_video_output_size */

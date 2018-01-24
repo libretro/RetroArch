@@ -2538,7 +2538,7 @@ typedef struct
       D3D11Buffer         vbo;
       D3D11InputLayout    layout;
       int                 offset;
-      int                 size;
+      int                 capacity;
       bool                enabled;
    } sprites;
 } d3d11_video_t;

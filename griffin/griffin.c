@@ -1162,6 +1162,10 @@ MENU
 #include "../menu/drivers_display/menu_display_d3d.c"
 #endif
 
+#if defined(HAVE_D3D11)
+#include "../menu/drivers_display/menu_display_d3d11.c"
+#endif
+
 #ifdef HAVE_OPENGL
 #include "../menu/drivers_display/menu_display_gl.c"
 #endif

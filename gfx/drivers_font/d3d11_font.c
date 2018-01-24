@@ -56,13 +56,12 @@ d3d11_font_init_font(void* data, const char* font_path, float font_size, bool is
    font->texture.desc.Height = font->atlas->height;
    font->texture.desc.Format =
          d3d11_get_closest_match_texture2D(d3d11->device, DXGI_FORMAT_A8_UNORM);
-   DEBUG_INT(font->texture.desc.Format);
    d3d11_init_texture(d3d11->device, &font->texture);
    d3d11_update_texture(
-         d3d11->ctx, font->atlas->width, font->atlas->height, font->atlas->width, DXGI_FORMAT_A8_UNORM,
-         font->atlas->buffer, &font->texture);
+         d3d11->ctx, font->atlas->width, font->atlas->height, font->atlas->width,
+         DXGI_FORMAT_A8_UNORM, font->atlas->buffer, &font->texture);
    font->texture.dirty = true;
-   font->atlas->dirty = false;
+   font->atlas->dirty  = false;
 
    return font;
 }
@@ -127,14 +126,16 @@ static void d3d11_font_render_line(
       float               pos_y,
       unsigned            text_align)
 {
-   unsigned       i;
-   d3d11_video_t* d3d11  = (d3d11_video_t*)video_driver_get_ptr(false);
-   unsigned       width  = video_info->width;
-   unsigned       height = video_info->height;
-   int            x      = roundf(pos_x * width);
-   int            y      = roundf((1.0 - pos_y) * height);
+   unsigned                 i, count;
+   D3D11_MAPPED_SUBRESOURCE mapped_vbo;
+   d3d11_sprite_t*          v;
+   d3d11_video_t*           d3d11  = (d3d11_video_t*)video_driver_get_ptr(false);
+   unsigned                 width  = video_info->width;
+   unsigned                 height = video_info->height;
+   int                      x      = roundf(pos_x * width);
+   int                      y      = roundf((1.0 - pos_y) * height);
 
-   if (!d3d11->sprites.enabled || d3d11->sprites.offset + msg_len  > d3d11->sprites.size)
+   if (!d3d11->sprites.enabled || d3d11->sprites.offset + msg_len > d3d11->sprites.capacity)
       return;
 
    switch (text_align)
@@ -148,12 +149,12 @@ static void d3d11_font_render_line(
          break;
    }
 
-   D3D11_MAPPED_SUBRESOURCE mapped_vbo;
    D3D11MapBuffer(d3d11->ctx, d3d11->sprites.vbo, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo);
-   d3d11_sprite_t* v = (d3d11_sprite_t*)mapped_vbo.pData + d3d11->sprites.offset;
+   v = (d3d11_sprite_t*)mapped_vbo.pData + d3d11->sprites.offset;
 
    for (i = 0; i < msg_len; i++)
    {
+      const struct font_glyph* glyph;
       const char* msg_tmp = &msg[i];
       unsigned    code    = utf8_walk(&msg_tmp);
       unsigned    skip    = msg_tmp - &msg[i];
@@ -161,7 +162,7 @@ static void d3d11_font_render_line(
       if (skip > 1)
          i += skip - 1;
 
-      const struct font_glyph* glyph = font->font_driver->get_glyph(font->font_data, code);
+      glyph = font->font_driver->get_glyph(font->font_data, code);
 
       if (!glyph) /* Do something smarter here ... */
          glyph = font->font_driver->get_glyph(font->font_data, '?');
@@ -177,7 +178,7 @@ static void d3d11_font_render_line(
       v->coords.u = glyph->atlas_offset_x / (float)font->texture.desc.Width;
       v->coords.v = glyph->atlas_offset_y / (float)font->texture.desc.Height;
       v->coords.w = glyph->width / (float)font->texture.desc.Width;
-      v->coords.h = glyph->height  / (float)font->texture.desc.Height;
+      v->coords.h = glyph->height / (float)font->texture.desc.Height;
 
       v->colors[0] = color;
       v->colors[1] = color;
@@ -190,9 +191,7 @@ static void d3d11_font_render_line(
       y += glyph->advance_y * scale;
    }
 
-   v++;
-
-   int count = v - ((d3d11_sprite_t*)mapped_vbo.pData + d3d11->sprites.offset);
+   count = v - ((d3d11_sprite_t*)mapped_vbo.pData + d3d11->sprites.offset);
    D3D11UnmapBuffer(d3d11->ctx, d3d11->sprites.vbo, 0);
 
    if (!count)
@@ -200,20 +199,18 @@ static void d3d11_font_render_line(
 
    if (font->atlas->dirty)
    {
-
       d3d11_update_texture(
-            d3d11->ctx, font->atlas->width, font->atlas->height, font->atlas->width, DXGI_FORMAT_A8_UNORM,
-            font->atlas->buffer, &font->texture);
-      font->atlas->dirty = false;
+            d3d11->ctx, font->atlas->width, font->atlas->height, font->atlas->width,
+            DXGI_FORMAT_A8_UNORM, font->atlas->buffer, &font->texture);
+      font->atlas->dirty  = false;
       font->texture.dirty = true;
    }
 
-   if(font->texture.dirty)
+   if (font->texture.dirty)
    {
       D3D11_BOX frame_box = { 0, 0, 0, font->atlas->width, font->atlas->height, 1 };
       D3D11CopyTexture2DSubresourceRegion(
-            d3d11->ctx, font->texture.handle, 0, 0, 0, 0, font->texture.staging, 0,
-            &frame_box);
+            d3d11->ctx, font->texture.handle, 0, 0, 0, 0, font->texture.staging, 0, &frame_box);
       font->texture.dirty = false;
    }
 

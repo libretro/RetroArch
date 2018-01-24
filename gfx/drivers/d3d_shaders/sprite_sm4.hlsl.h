@@ -74,13 +74,10 @@ SRC(
       float4 PSMain(PSInput input) : SV_TARGET
       {
          return input.color * t0.Sample(s0, input.texcoord);
-   //               return input.color;
       };
       float4 PSMainA8(PSInput input) : SV_TARGET
       {
-   //      return t0.Sample(s0, input.texcoord).a;
          return input.color * t0.Sample(s0, input.texcoord).a;
-   //               return input.color;
       };
 
 )
