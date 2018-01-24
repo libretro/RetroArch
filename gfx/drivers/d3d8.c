@@ -150,7 +150,7 @@ static void d3d8_renderchain_set_vertices(void *data, unsigned pass,
       tex_w              = vert_width;
       tex_h              = vert_height;
 
-      vert[0].x        = -1.0f;
+      vert[0].x        =  0.0f;
       vert[0].y        =  1.0f;
       vert[0].z        =  1.0f;
 
@@ -159,12 +159,12 @@ static void d3d8_renderchain_set_vertices(void *data, unsigned pass,
       vert[1].y        =  1.0f;
       vert[1].z        =  1.0f;
 
-      vert[2].x        = -1.0f;
-      vert[2].y        = -1.0f;
+      vert[2].x        =  0.0f;
+      vert[2].y        =  0.0f;
       vert[2].z        =  1.0f;
 
       vert[3].x        =  1.0f;
-      vert[3].y        = -1.0f;
+      vert[3].y        =  0.0f;
       vert[3].z        =  1.0f;
 
       vert[0].u        = 0.0f;
@@ -272,7 +272,7 @@ static void d3d8_renderchain_render_pass(
    d3d_set_viewports(chain->dev, &d3d->final_viewport);
    d3d_set_vertex_shader(d3dr, D3DFVF_CUSTOMVERTEX, NULL);
    d3d_set_stream_source(d3dr, 0, chain->vertex_buf, 0, sizeof(Vertex));
-   d3d8_renderchain_set_mvp(d3d, chain, NULL, NULL);
+   d3d8_renderchain_set_mvp(d3d, chain, NULL, &d3d->mvp);
    d3d_draw_primitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
 }
 
@@ -798,6 +798,7 @@ static void d3d8_set_viewport(void *data,
       bool force_full,
       bool allow_rotate)
 {
+   D3DMATRIX proj, ortho, rot, matrix;
    D3DVIEWPORT viewport;
    int x               = 0;
    int y               = 0;
@@ -820,6 +821,12 @@ static void d3d8_set_viewport(void *data,
    viewport.MaxZ       = 1.0f;
 
    d3d->final_viewport = viewport;
+
+   d3d_matrix_ortho_off_center_lh(&ortho, 0, 1, 0, 1, 0.0f, 1.0f);
+   d3d_matrix_identity(&rot);
+   d3d_matrix_rotation_z(&rot, d3d->dev_rotation * (M_PI / 2.0));
+   d3d_matrix_multiply(&proj, &ortho, &rot);
+   d3d_matrix_transpose(&d3d->mvp, &matrix);
 }
 
 static bool d3d8_initialize(d3d_video_t *d3d, const video_info_t *info)
@@ -1133,12 +1140,12 @@ static bool d3d8_init_internal(d3d_video_t *d3d,
 static void d3d8_set_rotation(void *data, unsigned rot)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
-   struct video_ortho ortho = {0, 1, 0, 1, -1, 1};
 
    if (!d3d)
       return;
 
-   d3d->dev_rotation = rot;
+   d3d->dev_rotation  = rot;
+   d3d->should_resize = true;
 }
 
 static void d3d8_show_mouse(void *data, bool state)
