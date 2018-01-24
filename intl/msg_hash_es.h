@@ -5702,3 +5702,7 @@ MSG_HASH(
 	MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
 	"Valores mas bajos favorecen el rendimiento y bajan la latencia a costa de la calidad, incrementar el valor aumentará la calidad a costa del rendimiento y latencia"
 	)
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_PLACEHOLDER,
+      "Shader Placeholder")
+MSG_HASH(MENU_ENUM_SUBLABEL_SHADER_PLACEHOLDER,
+      "Shader Placeholder sublabel")

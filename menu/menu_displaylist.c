@@ -1367,6 +1367,11 @@ static int menu_displaylist_parse_shader_options(menu_displaylist_info_t *info)
    unsigned pass_count = menu_shader_manager_get_amount_passes();
 
    menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_PLACEHOLDER),
+         msg_hash_to_str(MENU_ENUM_LABEL_SHADER_PLACEHOLDER),
+         MENU_ENUM_LABEL_SHADER_PLACEHOLDER,
+         MENU_SETTING_ACTION, 0, 0);
+   menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES),
          msg_hash_to_str(MENU_ENUM_LABEL_SHADER_APPLY_CHANGES),
          MENU_ENUM_LABEL_SHADER_APPLY_CHANGES,
