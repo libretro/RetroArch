@@ -12,6 +12,7 @@
 - COMMON: New LED API. Driver implemented for Raspberry Pi, proof of concept implemented for core MAME 2003.
 - D3D8: Direct3D 8 can now work on systems that have Direct3D 8 installed.
 - D3D9: Add menu support for MaterialUI/XMB.
+- D3D10: Initial video driver implementation.
 - D3D11: Initial video driver implementation.
 - D3D12: Initial video driver implementation.
 - DINPUT: don't reinitialize input driver on network events / media insertion / network drive connection
