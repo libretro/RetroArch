@@ -240,7 +240,8 @@ static bool d3d11_gfx_frame(
       DXGIResizeBuffers(d3d11->swapChain, 0, 0, 0, 0, 0);
 
       DXGIGetSwapChainBufferD3D11(d3d11->swapChain, 0, &backBuffer);
-      D3D11CreateTexture2DRenderTargetView(d3d11->device, backBuffer, NULL, &d3d11->renderTargetView);
+      D3D11CreateTexture2DRenderTargetView(
+            d3d11->device, backBuffer, NULL, &d3d11->renderTargetView);
       Release(backBuffer);
 
       D3D11SetRenderTargets(d3d11->ctx, 1, &d3d11->renderTargetView, NULL);
