@@ -124,7 +124,6 @@ static void resampler_sinc_process_neon(void *re_, struct resampler_data *data)
 
       while (resamp->time < phases)
       {
-         unsigned i;
          const float *buffer_l    = resamp->buffer_l + resamp->ptr;
          const float *buffer_r    = resamp->buffer_r + resamp->ptr;
          unsigned taps            = resamp->taps;
@@ -400,33 +399,33 @@ static void resampler_sinc_process_c(void *re_, struct resampler_data *data)
 
          if (resamp->window_type == SINC_WINDOW_KAISER)
          {
-            phase_table              = resamp->phase_table + phase * taps * 2;
-            delta_table              = phase_table + taps;
-            delta                    = (float)
+            phase_table           = resamp->phase_table + phase * taps * 2;
+            delta_table           = phase_table + taps;
+            delta                 = (float)
                (resamp->time & resamp->subphase_mask) * resamp->subphase_mod;
          }
          else
          {
-            phase_table              = resamp->phase_table + phase * taps;
+            phase_table           = resamp->phase_table + phase * taps;
          }
 
          for (i = 0; i < taps; i++)
          {
-            float sinc_val = phase_table[i];
+            float sinc_val        = phase_table[i];
 
             if (resamp->window_type == SINC_WINDOW_KAISER)
-               sinc_val    = sinc_val + delta_table[i] * delta;
+               sinc_val           = sinc_val + delta_table[i] * delta;
 
-            sum_l         += buffer_l[i] * sinc_val;
-            sum_r         += buffer_r[i] * sinc_val;
+            sum_l                += buffer_l[i] * sinc_val;
+            sum_r                += buffer_r[i] * sinc_val;
          }
 
-         output[0] = sum_l;
-         output[1] = sum_r;
+         output[0]                = sum_l;
+         output[1]                = sum_r;
 
-         output += 2;
+         output                  += 2;
          out_frames++;
-         resamp->time += ratio;
+         resamp->time            += ratio;
       }
 
    }
