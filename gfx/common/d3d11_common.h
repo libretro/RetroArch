@@ -2449,6 +2449,11 @@ D3D11UnmapBuffer(D3D11DeviceContext device_context, D3D11Buffer buffer, UINT sub
    device_context->lpVtbl->Unmap(device_context, (D3D11Resource)buffer, subresource);
 }
 
+   /* internal */
+
+#include <retro_math.h>
+#include <gfx/math/matrix_4x4.h>
+#include "gfx/video_driver.h"
 #include <assert.h>
 #include <stdbool.h>
 
@@ -2477,13 +2482,22 @@ typedef struct
    D3D11DeviceContext    ctx;
    D3D11RenderTargetView renderTargetView;
    D3D11InputLayout      layout;
+   D3D11Buffer           ubo;
    D3D11VertexShader     vs;
    D3D11PixelShader      ps;
    D3D11SamplerState     sampler_nearest;
    D3D11SamplerState     sampler_linear;
    D3D11BlendState       blend_enable;
    D3D11BlendState       blend_disable;
+   math_matrix_4x4       mvp, mvp_no_rot;
+   struct video_viewport vp;
+   D3D11_VIEWPORT        viewport;
+   DXGI_FORMAT           format;
    float                 clearcolor[4];
+   bool                  vsync;
+   bool                  resize_chain;
+   bool                  keep_aspect;
+   bool                  resize_viewport;
    struct
    {
       d3d11_texture_t   texture;
@@ -2496,12 +2510,11 @@ typedef struct
    {
       d3d11_texture_t   texture;
       D3D11Buffer       vbo;
+      D3D11Buffer       ubo;
       D3D11SamplerState sampler;
+      D3D11_VIEWPORT    viewport;
+      int               rotation;
    } frame;
-   DXGI_FORMAT format;
-
-   bool vsync;
-   bool need_resize;
 } d3d11_video_t;
 
 void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture);

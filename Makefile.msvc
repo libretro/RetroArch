@@ -253,6 +253,7 @@ $(BUILD_DIR)/$(TARGET): $(OBJ) .$(TARGET).last
 
 %.depend: ;
 %.last: ;
+%.h : ;
 
 clean:
 	rm -f $(OBJ) $(TARGET)

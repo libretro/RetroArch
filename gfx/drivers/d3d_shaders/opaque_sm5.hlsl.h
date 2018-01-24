@@ -7,10 +7,11 @@ SRC(
       float2 texcoord : TEXCOORD0;
       float4 color : COLOR;
    };
+   uniform float4x4 modelViewProj;
    PSInput VSMain(float4 position : POSITION, float2 texcoord : TEXCOORD0, float4 color : COLOR)
    {
       PSInput result;
-      result.position = position;
+      result.position = mul(modelViewProj, position);
       result.texcoord = texcoord;
       result.color = color;
       return result;

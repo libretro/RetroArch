@@ -25,6 +25,48 @@
 #include "gfx/common/dxgi_common.h"
 #include "gfx/common/d3dcompiler_common.h"
 
+static void d3d10_set_filtering(void* data, unsigned index, bool smooth)
+{
+   d3d10_video_t* d3d10 = (d3d10_video_t*)data;
+
+   if (smooth)
+      d3d10->frame.sampler = d3d10->sampler_linear;
+   else
+      d3d10->frame.sampler = d3d10->sampler_nearest;
+}
+
+static void d3d10_gfx_set_rotation(void* data, unsigned rotation)
+{
+   math_matrix_4x4  rot;
+   math_matrix_4x4* mvp;
+   d3d10_video_t*   d3d10 = (d3d10_video_t*)data;
+
+   d3d10->frame.rotation = 3 * rotation;
+
+   matrix_4x4_rotate_z(rot, d3d10->frame.rotation * (M_PI / 2.0f));
+   matrix_4x4_multiply(d3d10->mvp, rot, d3d10->mvp_no_rot);
+
+   D3D10MapBuffer(d3d10->frame.ubo, D3D10_MAP_WRITE_DISCARD, 0, (void**)&mvp);
+   *mvp = d3d10->mvp;
+   D3D10UnmapBuffer(d3d10->frame.ubo);
+}
+
+static void d3d10_update_viewport(void* data, bool force_full)
+{
+   d3d10_video_t* d3d10 = (d3d10_video_t*)data;
+
+   video_driver_update_viewport(&d3d10->vp, force_full, d3d10->keep_aspect);
+
+   d3d10->frame.viewport.TopLeftX = (float)d3d10->vp.x;
+   d3d10->frame.viewport.TopLeftY = (float)d3d10->vp.y;
+   d3d10->frame.viewport.Width    = (float)d3d10->vp.width;
+   d3d10->frame.viewport.Height   = (float)d3d10->vp.height;
+   d3d10->frame.viewport.MaxDepth = 0.0f;
+   d3d10->frame.viewport.MaxDepth = 1.0f;
+
+   d3d10->resize_viewport = false;
+}
+
 static void*
 d3d10_gfx_init(const video_info_t* video, const input_driver_t** input, void** input_data)
 {
@@ -56,8 +98,10 @@ d3d10_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
          .BufferDesc.Width  = video->width,
          .BufferDesc.Height = video->height,
          .BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM,
-         //         .BufferDesc.RefreshRate.Numerator = 60,
-         //         .BufferDesc.RefreshRate.Denominator = 1,
+#if 0
+         .BufferDesc.RefreshRate.Numerator   = 60,
+         .BufferDesc.RefreshRate.Denominator = 1,
+#endif
          .BufferUsage        = DXGI_USAGE_RENDER_TARGET_OUTPUT,
          .OutputWindow       = main_window.hwnd,
          .SampleDesc.Count   = 1,
@@ -65,9 +109,9 @@ d3d10_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
          .Windowed           = TRUE,
          .SwapEffect         = DXGI_SWAP_EFFECT_DISCARD,
 #if 0
-         .SwapEffect = DXGI_SWAP_EFFECT_SEQUENTIAL,
-         .SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL,
-         .SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD,
+         .SwapEffect                         = DXGI_SWAP_EFFECT_SEQUENTIAL,
+         .SwapEffect                         = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL,
+         .SwapEffect                         = DXGI_SWAP_EFFECT_FLIP_DISCARD,
 #endif
       };
 
@@ -89,19 +133,26 @@ d3d10_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    }
 
    D3D10SetRenderTargets(d3d10->device, 1, &d3d10->renderTargetView, NULL);
+   d3d10->vp.full_width   = video->width;
+   d3d10->vp.full_height  = video->height;
+   d3d10->viewport.Width  = video->width;
+   d3d10->viewport.Height = video->height;
+   d3d10->resize_viewport = true;
+
+   matrix_4x4_ortho(d3d10->mvp_no_rot, 0.0f, 1.0f, 0.0f, 1.0f, -1.0f, 1.0f);
 
    {
-      D3D10_VIEWPORT vp = { 0, 0, video->width, video->height, 0.0f, 1.0f };
-      D3D10SetViewports(d3d10->device, 1, &vp);
+      D3D10_BUFFER_DESC desc = {
+         .ByteWidth      = sizeof(math_matrix_4x4),
+         .Usage          = D3D10_USAGE_DYNAMIC,
+         .BindFlags      = D3D10_BIND_CONSTANT_BUFFER,
+         .CPUAccessFlags = D3D10_CPU_ACCESS_WRITE,
+      };
+      D3D10_SUBRESOURCE_DATA ubo_data = { &d3d10->mvp_no_rot };
+      D3D10CreateBuffer(d3d10->device, &desc, &ubo_data, &d3d10->ubo);
+      D3D10CreateBuffer(d3d10->device, &desc, NULL, &d3d10->frame.ubo);
    }
-
-   d3d10->vsync  = video->vsync;
-   d3d10->format = video->rgb32 ? DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM;
-
-   d3d10->frame.texture.desc.Format =
-         d3d10_get_closest_match_texture2D(d3d10->device, d3d10->format);
-   d3d10->frame.texture.desc.Usage = D3D10_USAGE_DEFAULT;
-   d3d10->menu.texture.desc.Usage  = D3D10_USAGE_DEFAULT;
+   d3d10_gfx_set_rotation(d3d10, 0);
 
    {
       D3D10_SAMPLER_DESC desc = {
@@ -120,11 +171,22 @@ d3d10_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
       D3D10CreateSamplerState(d3d10->device, &desc, &d3d10->sampler_linear);
    }
 
+   d3d10_set_filtering(d3d10, 0, video->smooth);
+
+   d3d10->keep_aspect = video->force_aspect;
+   d3d10->vsync       = video->vsync;
+   d3d10->format      = video->rgb32 ? DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM;
+
+   d3d10->frame.texture.desc.Format =
+         d3d10_get_closest_match_texture2D(d3d10->device, d3d10->format);
+   d3d10->frame.texture.desc.Usage = D3D10_USAGE_DEFAULT;
+   d3d10->menu.texture.desc.Usage  = D3D10_USAGE_DEFAULT;
+
    {
       d3d10_vertex_t vertices[] = {
-         { { -1.0f, -1.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
-         { { -1.0f, 1.0f }, { 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
-         { { 1.0f, -1.0f }, { 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
+         { { 0.0f, 0.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
+         { { 0.0f, 1.0f }, { 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
+         { { 1.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
          { { 1.0f, 1.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f } },
       };
 
@@ -218,10 +280,9 @@ static bool d3d10_gfx_frame(
 
    d3d10_video_t* d3d10 = (d3d10_video_t*)data;
 
-   if (d3d10->need_resize)
+   if (d3d10->resize_chain)
    {
       D3D10Texture2D backBuffer;
-      D3D10_VIEWPORT vp = { 0, 0, video_info->width, video_info->height, 0.0f, 1.0f };
 
       Release(d3d10->renderTargetView);
       DXGIResizeBuffers(d3d10->swapChain, 0, 0, 0, 0, 0);
@@ -232,9 +293,11 @@ static bool d3d10_gfx_frame(
       Release(backBuffer);
 
       D3D10SetRenderTargets(d3d10->device, 1, &d3d10->renderTargetView, NULL);
-      D3D10SetViewports(d3d10->device, 1, &vp);
+      d3d10->viewport.Width  = video_info->width;
+      d3d10->viewport.Height = video_info->height;
 
-      d3d10->need_resize = false;
+      d3d10->resize_chain    = false;
+      d3d10->resize_viewport = true;
    }
 
    PERF_START();
@@ -260,24 +323,34 @@ static bool d3d10_gfx_frame(
    {
       UINT stride = sizeof(d3d10_vertex_t);
       UINT offset = 0;
+#if 0 /* custom viewport doesn't call apply_state_changes, so we can't rely on this for now */
+   if (d3d10->resize_viewport)
+#endif
+      d3d10_update_viewport(d3d10, false);
+
+      D3D10SetViewports(d3d10->device, 1, &d3d10->frame.viewport);
       D3D10SetVertexBuffers(d3d10->device, 0, 1, &d3d10->frame.vbo, &stride, &offset);
+      D3D10SetVShaderConstantBuffers(d3d10->device, 0, 1, &d3d10->frame.ubo);
       D3D10SetPShaderResources(d3d10->device, 0, 1, &d3d10->frame.texture.view);
-      D3D10SetPShaderSamplers(d3d10->device, 0, 1, &d3d10->sampler_linear);
+      D3D10SetPShaderSamplers(d3d10->device, 0, 1, &d3d10->frame.sampler);
 
       D3D10SetBlendState(d3d10->device, d3d10->blend_disable, NULL, D3D10_DEFAULT_SAMPLE_MASK);
       D3D10Draw(d3d10->device, 4, 0);
       D3D10SetBlendState(d3d10->device, d3d10->blend_enable, NULL, D3D10_DEFAULT_SAMPLE_MASK);
 
-      if (d3d10->menu.enabled)
+      if (d3d10->menu.enabled && d3d10->menu.texture.handle)
       {
          if (d3d10->menu.texture.dirty)
             D3D10CopyTexture2DSubresourceRegion(
                   d3d10->device, d3d10->menu.texture.handle, 0, 0, 0, 0,
                   d3d10->menu.texture.staging, 0, NULL);
 
+         if (d3d10->menu.fullscreen)
+            D3D10SetViewports(d3d10->device, 1, &d3d10->viewport);
          D3D10SetVertexBuffers(d3d10->device, 0, 1, &d3d10->menu.vbo, &stride, &offset);
+         D3D10SetVShaderConstantBuffers(d3d10->device, 0, 1, &d3d10->ubo);
          D3D10SetPShaderResources(d3d10->device, 0, 1, &d3d10->menu.texture.view);
-         D3D10SetPShaderSamplers(d3d10->device, 0, 1, &d3d10->sampler_linear);
+         D3D10SetPShaderSamplers(d3d10->device, 0, 1, &d3d10->menu.sampler);
 
          D3D10Draw(d3d10->device, 4, 0);
       }
@@ -300,18 +373,13 @@ static void d3d10_gfx_set_nonblock_state(void* data, bool toggle)
 
 static bool d3d10_gfx_alive(void* data)
 {
-   (void)data;
-   bool     quit;
-   bool     resize;
-   unsigned width;
-   unsigned height;
-
+   bool           quit;
    d3d10_video_t* d3d10 = (d3d10_video_t*)data;
 
-   win32_check_window(&quit, &d3d10->need_resize, &width, &height);
+   win32_check_window(&quit, &d3d10->resize_chain, &d3d10->vp.full_width, &d3d10->vp.full_height);
 
-   if (width != 0 && height != 0)
-      video_driver_set_size(&width, &height);
+   if (d3d10->resize_chain && d3d10->vp.full_width != 0 && d3d10->vp.full_height != 0)
+      video_driver_set_size(&d3d10->vp.full_width, &d3d10->vp.full_height);
 
    return !quit;
 }
@@ -335,16 +403,18 @@ static void d3d10_gfx_free(void* data)
 {
    d3d10_video_t* d3d10 = (d3d10_video_t*)data;
 
+   Release(d3d10->frame.ubo);
+   Release(d3d10->frame.vbo);
    Release(d3d10->frame.texture.view);
    Release(d3d10->frame.texture.handle);
    Release(d3d10->frame.texture.staging);
-   Release(d3d10->frame.vbo);
 
    Release(d3d10->menu.texture.handle);
    Release(d3d10->menu.texture.staging);
    Release(d3d10->menu.texture.view);
    Release(d3d10->menu.vbo);
 
+   Release(d3d10->ubo);
    Release(d3d10->blend_enable);
    Release(d3d10->blend_disable);
    Release(d3d10->sampler_nearest);
@@ -370,16 +440,11 @@ static bool d3d10_gfx_set_shader(void* data, enum rarch_shader_type type, const 
    return false;
 }
 
-static void d3d10_gfx_set_rotation(void* data, unsigned rotation)
-{
-   (void)data;
-   (void)rotation;
-}
-
 static void d3d10_gfx_viewport_info(void* data, struct video_viewport* vp)
 {
-   (void)data;
-   (void)vp;
+   d3d10_video_t* d3d10 = (d3d10_video_t*)data;
+
+   *vp = d3d10->vp;
 }
 
 static bool d3d10_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
@@ -406,6 +471,8 @@ static void d3d10_set_menu_texture_frame(
    }
 
    d3d10_update_texture(width, height, pitch, format, frame, &d3d10->menu.texture);
+   d3d10->menu.sampler = config_get_ptr()->bools.menu_linear_filter ? d3d10->sampler_linear
+                                                                    : d3d10->sampler_nearest;
 }
 static void d3d10_set_menu_texture_enable(void* data, bool state, bool full_screen)
 {
@@ -415,28 +482,47 @@ static void d3d10_set_menu_texture_enable(void* data, bool state, bool full_scre
    d3d10->menu.fullscreen = full_screen;
 }
 
+static void d3d10_gfx_set_aspect_ratio(void* data, unsigned aspect_ratio_idx)
+{
+   d3d10_video_t* d3d10 = (d3d10_video_t*)data;
+
+   if (!d3d10)
+      return;
+
+   d3d10->keep_aspect     = true;
+   d3d10->resize_viewport = true;
+}
+
+static void d3d10_gfx_apply_state_changes(void* data)
+{
+   d3d10_video_t* d3d10 = (d3d10_video_t*)data;
+
+   //   if (d3d10)
+   //      d3d10->resize_viewport = true;
+}
+
 static const video_poke_interface_t d3d10_poke_interface = {
-   NULL,                          /* set_coords */
-   NULL,                          /* set_mvp */
-   NULL,                          /* load_texture */
-   NULL,                          /* unload_texture */
-   NULL,                          /* set_video_mode */
-   NULL,                          /* set_filtering */
-   NULL,                          /* get_video_output_size */
-   NULL,                          /* get_video_output_prev */
-   NULL,                          /* get_video_output_next */
-   NULL,                          /* get_current_framebuffer */
-   NULL,                          /* get_proc_address */
-   NULL,                          /* set_aspect_ratio */
-   NULL,                          /* apply_state_changes */
-   d3d10_set_menu_texture_frame,  /* set_texture_frame */
-   d3d10_set_menu_texture_enable, /* set_texture_enable */
-   NULL,                          /* set_osd_msg */
-   NULL,                          /* show_mouse */
-   NULL,                          /* grab_mouse_toggle */
-   NULL,                          /* get_current_shader */
-   NULL,                          /* get_current_software_framebuffer */
-   NULL,                          /* get_hw_render_interface */
+   NULL, /* set_coords */
+   NULL, /* set_mvp */
+   NULL, /* load_texture */
+   NULL, /* unload_texture */
+   NULL, /* set_video_mode */
+   d3d10_set_filtering,
+   NULL, /* get_video_output_size */
+   NULL, /* get_video_output_prev */
+   NULL, /* get_video_output_next */
+   NULL, /* get_current_framebuffer */
+   NULL, /* get_proc_address */
+   d3d10_gfx_set_aspect_ratio,
+   d3d10_gfx_apply_state_changes,
+   d3d10_set_menu_texture_frame,
+   d3d10_set_menu_texture_enable,
+   NULL, /* set_osd_msg */
+   NULL, /* show_mouse */
+   NULL, /* grab_mouse_toggle */
+   NULL, /* get_current_shader */
+   NULL, /* get_current_software_framebuffer */
+   NULL, /* get_hw_render_interface */
 };
 
 static void d3d10_gfx_get_poke_interface(void* data, const video_poke_interface_t** iface)
