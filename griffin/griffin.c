@@ -512,6 +512,10 @@ FONTS
 #include "../gfx/drivers_font/vulkan_raster_font.c"
 #endif
 
+#if defined(HAVE_D3D11)
+#include "../gfx/drivers_font/d3d11_font.c"
+#endif
+
 /*============================================================
 INPUT
 ============================================================ */

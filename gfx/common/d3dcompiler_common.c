@@ -19,6 +19,14 @@
 #include "gfx/common/d3dcompiler_common.h"
 #include "verbosity.h"
 
+static dylib_t     d3dcompiler_dll;
+static const char* d3dcompiler_dll_list[] = {
+   "D3DCompiler_47.dll", "D3DCompiler_46.dll", "D3DCompiler_45.dll", "D3DCompiler_44.dll",
+   "D3DCompiler_43.dll", "D3DCompiler_42.dll", "D3DCompiler_41.dll", "D3DCompiler_40.dll",
+   "D3DCompiler_39.dll", "D3DCompiler_38.dll", "D3DCompiler_37.dll", "D3DCompiler_36.dll",
+   "D3DCompiler_35.dll", "D3DCompiler_34.dll", "D3DCompiler_33.dll", NULL,
+};
+
 HRESULT WINAPI D3DCompile(
       LPCVOID pSrcData,
       SIZE_T  SrcDataSize,
@@ -32,22 +40,13 @@ HRESULT WINAPI D3DCompile(
       ID3DBlob**              ppCode,
       ID3DBlob**              ppErrorMsgs)
 {
-   static dylib_t     d3dcompiler_dll;
-   static const char* dll_list[] = {
-      "D3DCompiler_47.dll", "D3DCompiler_46.dll", "D3DCompiler_45.dll", "D3DCompiler_44.dll",
-      "D3DCompiler_43.dll", "D3DCompiler_42.dll", "D3DCompiler_41.dll", "D3DCompiler_40.dll",
-      "D3DCompiler_39.dll", "D3DCompiler_38.dll", "D3DCompiler_37.dll", "D3DCompiler_36.dll",
-      "D3DCompiler_35.dll", "D3DCompiler_34.dll", "D3DCompiler_33.dll", NULL,
-   };
-   const char** dll_name = dll_list;
-
+   const char** dll_name = d3dcompiler_dll_list;
    while (!d3dcompiler_dll && *dll_name)
       d3dcompiler_dll = dylib_load(*dll_name++);
 
    if (d3dcompiler_dll)
    {
       static pD3DCompile fp;
-
       if (!fp)
          fp = (pD3DCompile)dylib_proc(d3dcompiler_dll, "D3DCompile");
 
@@ -55,6 +54,40 @@ HRESULT WINAPI D3DCompile(
          return fp(
                pSrcData, SrcDataSize, pSourceName, pDefines, pInclude, pEntrypoint, pTarget, Flags1,
                Flags2, ppCode, ppErrorMsgs);
+   }
+
+   return TYPE_E_CANTLOADLIBRARY;
+}
+
+HRESULT WINAPI D3DCompileFromFile(
+      LPCWSTR                 pFileName,
+      const D3D_SHADER_MACRO* pDefines,
+      ID3DInclude*            pInclude,
+      LPCSTR                  pEntrypoint,
+      LPCSTR                  pTarget,
+      UINT                    Flags1,
+      UINT                    Flags2,
+      ID3DBlob**              ppCode,
+      ID3DBlob**              ppErrorMsgs)
+{
+   const char** dll_name = d3dcompiler_dll_list;
+   while (!d3dcompiler_dll && *dll_name)
+      d3dcompiler_dll = dylib_load(*dll_name++);
+
+   if (d3dcompiler_dll)
+   {
+      typedef HRESULT(WINAPI * pD3DCompileFromFile)(
+            LPCWSTR pFileName, const D3D_SHADER_MACRO* pDefines, ID3DInclude* pInclude,
+            LPCSTR pEntrypoint, LPCSTR pTarget, UINT Flags1, UINT Flags2, ID3DBlob** ppCode,
+            ID3DBlob** ppErrorMsgs);
+      static pD3DCompileFromFile fp;
+      if (!fp)
+         fp = (pD3DCompileFromFile)dylib_proc(d3dcompiler_dll, "D3DCompileFromFile");
+
+      if (fp)
+         return fp(
+               pFileName, pDefines, pInclude, pEntrypoint, pTarget, Flags1, Flags2, ppCode,
+               ppErrorMsgs);
    }
 
    return TYPE_E_CANTLOADLIBRARY;
@@ -71,12 +104,35 @@ bool d3d_compile(const char* src, size_t size, LPCSTR entrypoint, LPCSTR target,
 
    if (FAILED(D3DCompile(
              src, size, NULL, NULL, NULL, entrypoint, target, compileflags, 0, out, &error_msg)))
-      return false;
-
-   if (error_msg)
    {
-      RARCH_ERR("D3DCompile failed :\n%s\n", (const char*)D3DGetBufferPointer(error_msg));
-      Release(error_msg);
+      if (error_msg)
+      {
+         RARCH_ERR("D3DCompile failed :\n%s\n", (const char*)D3DGetBufferPointer(error_msg));
+         Release(error_msg);
+      }
+      return false;
+   }
+
+   return true;
+}
+
+bool d3d_compile_from_file(LPCWSTR filename, LPCSTR entrypoint, LPCSTR target, D3DBlob* out)
+{
+   D3DBlob error_msg;
+   UINT    compileflags = 0;
+
+#ifdef DEBUG
+   compileflags |= D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+#endif
+
+   if (FAILED(D3DCompileFromFile(
+             filename, NULL, NULL, entrypoint, target, compileflags, 0, out, &error_msg)))
+   {
+      if (error_msg)
+      {
+         RARCH_ERR("D3DCompile failed :\n%s\n", (const char*)D3DGetBufferPointer(error_msg));
+         Release(error_msg);
+      }
       return false;
    }
 

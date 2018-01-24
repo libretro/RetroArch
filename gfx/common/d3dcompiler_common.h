@@ -89,3 +89,4 @@ D3DUnregisterDestructionCallback(D3DDestructionNotifier destruction_notifier, UI
 /* end of auto-generated */
 
 bool d3d_compile(const char* src, size_t size, LPCSTR entrypoint, LPCSTR target, D3DBlob* out);
+bool d3d_compile_from_file(LPCWSTR filename, LPCSTR entrypoint, LPCSTR target, D3DBlob* out);
