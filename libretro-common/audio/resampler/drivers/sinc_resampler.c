@@ -88,6 +88,13 @@ typedef struct rarch_sinc_resampler
 } rarch_sinc_resampler_t;
 
 #if defined(__ARM_NEON__)
+#if TARGET_OS_IPHONE
+#else
+#define WANT_NEON
+#endif
+#endif
+
+#ifdef WANT_NEON
 /* Assumes that taps >= 8, and that taps is a multiple of 8. */
 void process_sinc_neon_asm(float *out, const float *left,
       const float *right, const float *coeff, unsigned taps);
@@ -639,7 +646,7 @@ static void *resampler_sinc_new(const struct resampler_config *config,
    else
 #endif
    {
-#if defined(__ARM_NEON__)
+#if defined(WANT_NEON)
       re->taps     = (re->taps + 7) & ~7;
 #else
       re->taps     = (re->taps + 3) & ~3;
@@ -689,7 +696,7 @@ static void *resampler_sinc_new(const struct resampler_config *config,
    }
    else if (mask & RESAMPLER_SIMD_NEON && re->window_type != SINC_WINDOW_KAISER)
    {
-#if defined(__ARM_NEON__)
+#if defined(WANT_NEON)
       sinc_resampler.process = resampler_sinc_process_neon;
 #endif
    }
@@ -709,3 +716,5 @@ retro_resampler_t sinc_resampler = {
    "sinc",
    "sinc"
 };
+
+#undef WANT_NEON
