@@ -46,7 +46,10 @@ static void d3d11_gfx_set_rotation(void* data, unsigned rotation)
    math_matrix_4x4* mvp;
    d3d11_video_t*   d3d11 = (d3d11_video_t*)data;
 
-   d3d11->frame.rotation = 3 * rotation;
+   if(!d3d11)
+      return;
+
+   d3d11->frame.rotation = rotation;
 
    matrix_4x4_rotate_z(rot, d3d11->frame.rotation * (M_PI / 2.0f));
    matrix_4x4_multiply(d3d11->mvp, rot, d3d11->mvp_no_rot);
@@ -210,7 +213,6 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
          d3d11_get_closest_match_texture2D(d3d11->device, d3d11->format);
    d3d11->frame.texture.desc.Usage = D3D11_USAGE_DEFAULT;
 
-   d3d11->menu.texture.desc.Format = DXGI_FORMAT_B4G4R4A4_UNORM;
    d3d11->menu.texture.desc.Usage  = D3D11_USAGE_DEFAULT;
 
    matrix_4x4_ortho(d3d11->mvp_no_rot, 0.0f, 1.0f, 0.0f, 1.0f, -1.0f, 1.0f);
