@@ -75,7 +75,7 @@ const GUID GUID_DEVINTERFACE_HID = { 0x4d1e55b2, 0xf16f, 0x11Cf, { 0x88, 0xcb, 0
 static HDEVNOTIFY notification_handler;
 #endif
 
-#if defined(HAVE_D3D8) || defined(HAVE_D3D9) || defined (HAVE_D3D10) || defined (HAVE_D3D11) || defined (HAVE_D3D12)
+#ifdef HAVE_DINPUT
 extern bool dinput_handle_message(void *dinput, UINT message,
       WPARAM wParam, LPARAM lParam);
 extern void *dinput_gdi;
@@ -569,7 +569,6 @@ static void win32_set_droppable(ui_window_win32_t *window, bool droppable)
       DragAcceptFiles_func(window->hwnd, droppable);
 }
 
-#if defined(HAVE_D3D8) || defined(HAVE_D3D9) || defined (HAVE_D3D10) || defined (HAVE_D3D11) || defined (HAVE_D3D12)
 LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
@@ -616,9 +615,11 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
          win32_set_taskbar_created(true);
 #endif
 
+#ifdef HAVE_DINPUT
    if (dinput && dinput_handle_message(dinput,
             message, wparam, lparam))
       return 0;
+#endif
    return DefWindowProc(hwnd, message, wparam, lparam);
 }
 #endif
@@ -669,7 +670,7 @@ LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
          win32_set_taskbar_created(true);
 #endif
 
-#if defined(HAVE_D3D9) || defined(HAVE_D3D8)
+#ifdef HAVE_DINPUT
    if (dinput_wgl && dinput_handle_message(dinput_wgl,
             message, wparam, lparam))
       return 0;
@@ -767,7 +768,7 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
          win32_set_taskbar_created(true);
 #endif
 
-#if defined(HAVE_D3D9) || defined(HAVE_D3D8)
+#ifdef HAVE_DINPUT
    if (dinput_gdi && dinput_handle_message(dinput_gdi,
             message, wparam, lparam))
       return 0;

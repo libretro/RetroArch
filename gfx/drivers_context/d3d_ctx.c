@@ -175,14 +175,20 @@ static bool gfx_ctx_d3d_bind_api(void *data,
    (void)data;
    (void)major;
    (void)minor;
-   (void)api;
 
-#if defined(HAVE_D3D8)
-   return api == GFX_CTX_DIRECT3D8_API;
-#else
-   /* As long as we don't have a D3D11 implementation, we default to this */
-   return api == GFX_CTX_DIRECT3D9_API;
-#endif
+   switch (api)
+   {
+      case GFX_CTX_DIRECT3D8_API:
+         if (api == GFX_CTX_DIRECT3D8_API)
+            return true;
+         break;
+      case GFX_CTX_DIRECT3D9_API:
+         if (api == GFX_CTX_DIRECT3D9_API)
+            return true;
+         break;
+   }
+
+   return false;
 }
 
 static void *gfx_ctx_d3d_init(video_frame_info_t *video_info, void *video_driver)
