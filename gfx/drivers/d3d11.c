@@ -43,7 +43,6 @@ static void d3d11_set_filtering(void* data, unsigned index, bool smooth)
 static void d3d11_gfx_set_rotation(void* data, unsigned rotation)
 {
    math_matrix_4x4  rot;
-   math_matrix_4x4* mvp;
    d3d11_video_t*   d3d11 = (d3d11_video_t*)data;
 
    if (!d3d11)

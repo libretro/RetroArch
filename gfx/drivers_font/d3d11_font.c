@@ -1,4 +1,4 @@
-/*  RetroArch - A frontend for libretro.
+﻿/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2014-2018 - Ali Bouhlel
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -36,7 +36,6 @@ typedef struct
 static void*
 d3d11_font_init_font(void* data, const char* font_path, float font_size, bool is_threaded)
 {
-   uint32_t       i;
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
    d3d11_font_t*  font  = (d3d11_font_t*)calloc(1, sizeof(*font));
 

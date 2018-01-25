@@ -1,4 +1,4 @@
-/*  RetroArch - A frontend for libretro.
+﻿/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2014-2018 - Ali Bouhlel
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -599,7 +599,7 @@ DXGI_FORMAT d3d12_get_closest_match(
       D3D12Device device, DXGI_FORMAT desired_format, D3D12_FORMAT_SUPPORT1 desired_format_support)
 {
    DXGI_FORMAT* format = dxgi_get_format_fallback_list(desired_format);
-   UINT         format_support;
+
    while (*format != DXGI_FORMAT_UNKNOWN)
    {
       D3D12_FEATURE_DATA_FORMAT_SUPPORT format_support = { *format };

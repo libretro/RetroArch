@@ -172,14 +172,14 @@ static bool d3d12_gfx_frame(
 
    if (d3d12->resize_chain)
    {
-      int i;
+      unsigned i;
 
-      for (int i = 0; i < countof(d3d12->chain.renderTargets); i++)
+      for (i = 0; i < countof(d3d12->chain.renderTargets); i++)
          Release(d3d12->chain.renderTargets[i]);
 
       DXGIResizeBuffers(d3d12->chain.handle, 0, 0, 0, 0, 0);
 
-      for (int i = 0; i < countof(d3d12->chain.renderTargets); i++)
+      for (i = 0; i < countof(d3d12->chain.renderTargets); i++)
       {
          DXGIGetSwapChainBuffer(d3d12->chain.handle, i, &d3d12->chain.renderTargets[i]);
          D3D12CreateRenderTargetView(

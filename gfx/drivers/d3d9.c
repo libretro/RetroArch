@@ -1,4 +1,4 @@
-/*  RetroArch - A frontend for libretro.
+﻿/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2012-2014 - OV2
@@ -722,7 +722,6 @@ static void d3d9_set_viewport(void *data,
       bool force_full,
       bool allow_rotate)
 {
-   D3DVIEWPORT9 viewport;
    int x               = 0;
    int y               = 0;
    d3d_video_t *d3d = (d3d_video_t*)data;
