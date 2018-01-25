@@ -2866,6 +2866,40 @@ bool d3dx_compile_shader(
    return false;
 }
 
+void d3dx_font_release(void *data)
+{
+#ifdef HAVE_D3DX
+#if !defined(__cplusplus) || defined(CINTERFACE)
+   ID3DXFont *font = (ID3DXFont*)data;
+   if (!font)
+      return;
+   font->lpVtbl->Release(font);
+#else
+   LPD3DXFONT font = (LPD3DXFONT)data;
+   if (!font)
+      return;
+   font->Release();
+#endif
+#endif
+}
+
+void d3dx_font_get_text_metrics(void *data, void *metrics)
+{
+#ifdef HAVE_D3DX
+#if !defined(__cplusplus) || defined(CINTERFACE)
+   ID3DXFont *font = (ID3DXFont*)data;
+   if (!font)
+      return;
+   font->lpVtbl->GetTextMetrics(font, (TEXTMETRICA*)metrics);
+#else
+   LPD3DXFONT font = (LPD3DXFONT)data;
+   if (!font)
+      return;
+   font->GetTextMetricsA((TEXTMETRICA*)metrics);
+#endif
+#endif
+}
+
 bool d3dx_compile_shader_from_file(
       const char *src,
       const void *pdefines,

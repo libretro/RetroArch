@@ -220,7 +220,11 @@ bool d3d_check_device_type(void *d3d,
 bool d3dx_create_font_indirect(void *dev,
       void *desc, void **font_data);
 
+void d3dx_font_get_text_metrics(void *data, void *metrics);
+
 void d3dxbuffer_release(void *data);
+
+void d3dx_font_release(void *data);
 
 D3DTEXTUREFILTERTYPE d3d_translate_filter(unsigned type);
 

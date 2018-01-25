@@ -19,6 +19,7 @@
 #endif
 
 #include "../drivers/d3d.h"
+#include "../common/d3d_common.h"
 #include "../font_driver.h"
 
 #include "../../configuration.h"
@@ -45,12 +46,8 @@ typedef struct
 
 #if !defined(__cplusplus) || defined(CINTERFACE)
 #define IDirect3DXFont_DrawTextA(p, a, b, c, d, e, f) (p)->lpVtbl->DrawTextA(p, a, b, c, d, e, f)
-#define IDirect3DXFont_GetTextMetricsA(p, a) (p)->lpVtbl->GetTextMetricsA(p, a)
-#define IDirect3DXFont_Release(p) (p)->lpVtbl->Release(p)
 #else
 #define IDirect3DXFont_DrawTextA(p, a, b, c, d, e, f) (p)->DrawTextA(a, b, c, d, e, f)
-#define IDirect3DXFont_GetTextMetricsA(p, a) (p)->GetTextMetricsA(a)
-#define IDirect3DXFont_Release(p) (p)->Release()
 #endif
 
 static void *d3dfonts_w32_init_font(void *video_data,
@@ -84,7 +81,8 @@ static void *d3dfonts_w32_init_font(void *video_data,
             &desc, (void**)&d3dfonts->font))
       goto error;
 
-   IDirect3DXFont_GetTextMetricsA(d3dfonts->font, &metrics);
+
+   d3dx_font_get_text_metrics(d3dfonts->font, &metrics);
 
    d3dfonts->ascent     = metrics.tmAscent;
 
@@ -103,7 +101,7 @@ static void d3dfonts_w32_free_font(void *data, bool is_threaded)
       return;
 
    if (d3dfonts->font)
-      IDirect3DXFont_Release(d3dfonts->font);
+      d3dx_font_release(d3dfonts->font);
 
    free(d3dfonts);
 }
