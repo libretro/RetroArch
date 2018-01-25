@@ -63,10 +63,10 @@ static void d3d11_update_viewport(void* data, bool force_full)
 
    video_driver_update_viewport(&d3d11->vp, force_full, d3d11->keep_aspect);
 
-   d3d11->frame.viewport.TopLeftX = (float)d3d11->vp.x;
-   d3d11->frame.viewport.TopLeftY = (float)d3d11->vp.y;
-   d3d11->frame.viewport.Width    = (float)d3d11->vp.width;
-   d3d11->frame.viewport.Height   = (float)d3d11->vp.height;
+   d3d11->frame.viewport.TopLeftX = d3d11->vp.x;
+   d3d11->frame.viewport.TopLeftY = d3d11->vp.y;
+   d3d11->frame.viewport.Width    = d3d11->vp.width;
+   d3d11->frame.viewport.Height   = d3d11->vp.height;
    d3d11->frame.viewport.MaxDepth = 0.0f;
    d3d11->frame.viewport.MaxDepth = 1.0f;
 
@@ -456,8 +456,6 @@ static bool d3d11_gfx_frame(
 
    if (frame && width && height)
    {
-      D3D11_BOX frame_box = { 0, 0, 0, width, height, 1 };
-
       if (d3d11->frame.texture.desc.Width != width || d3d11->frame.texture.desc.Height != height)
       {
          d3d11->frame.texture.desc.Width  = width;
