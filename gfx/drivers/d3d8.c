@@ -264,7 +264,7 @@ static void d3d8_renderchain_render_pass(
       unsigned rotation)
 {
    settings_t *settings      = config_get_ptr();
-   bool video_smooth         = settings->bools.video_smooth
+   bool video_smooth         = settings->bools.video_smooth;
 
    d3d_set_texture(d3dr, 0, chain->tex);
    d3d_set_sampler_magfilter(d3dr, pass_index, video_smooth ?
