@@ -1301,7 +1301,7 @@ void d3d_set_sampler_minfilter(void *_dev,
          break;
       case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
-         d3d_set_texture_stage_state(dev, sampler, D3DTSS_MINFILTER, value);
+         d3d_set_texture_stage_state(_dev, sampler, D3DTSS_MINFILTER, value);
 #endif
          break;
       case GFX_CTX_NONE:
@@ -1331,7 +1331,7 @@ void d3d_set_sampler_magfilter(void *_dev,
          break;
       case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
-         d3d_set_texture_stage_state(dev, sampler, D3DTSS_MAGFILTER, value);
+         d3d_set_texture_stage_state(_dev, sampler, D3DTSS_MAGFILTER, value);
 #endif
          break;
       case GFX_CTX_NONE:
