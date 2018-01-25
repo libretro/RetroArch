@@ -569,6 +569,7 @@ static void win32_set_droppable(ui_window_win32_t *window, bool droppable)
       DragAcceptFiles_func(window->hwnd, droppable);
 }
 
+#ifdef HAVE_D3D
 LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {

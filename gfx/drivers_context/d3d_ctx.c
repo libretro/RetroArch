@@ -27,6 +27,7 @@
 #include <string/stdstring.h>
 
 #include "../drivers/d3d.h"
+#include "../common/d3d_common.h"
 #include "../common/win32_common.h"
 
 #include "../../configuration.h"
@@ -185,6 +186,8 @@ static bool gfx_ctx_d3d_bind_api(void *data,
       case GFX_CTX_DIRECT3D9_API:
          if (api == GFX_CTX_DIRECT3D9_API)
             return true;
+         break;
+      default:
          break;
    }
 
