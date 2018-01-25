@@ -109,7 +109,7 @@ typedef struct cg_renderchain
    } prev;
    CGprogram vStock;
    CGprogram fStock;
-   LPDIRECT3DDEVICE dev;
+   void *dev;
    const video_info_t *video_info;
    state_tracker_t *state_tracker;
    D3DVIEWPORT *final_viewport;
@@ -910,7 +910,7 @@ static bool d3d9_cg_renderchain_init(void *data,
       return false;
    }
 
-   chain->dev            = (LPDIRECT3DDEVICE)dev_;
+   chain->dev            = (void*)dev_;
    chain->video_info     = video_info;
    chain->state_tracker  = NULL;
    chain->final_viewport = (D3DVIEWPORT*)final_viewport_;
@@ -1482,18 +1482,13 @@ static bool d3d9_cg_renderchain_render(
       unsigned width, unsigned height,
       unsigned pitch, unsigned rotation)
 {
-   LPDIRECT3DDEVICE d3dr;
    LPDIRECT3DSURFACE back_buffer, target;
    unsigned i, current_width, current_height, out_width = 0, out_height = 0;
    struct Pass *last_pass  = NULL;
    d3d_video_t *d3d        = (d3d_video_t*)data;
    cg_renderchain_t *chain = d3d ? (cg_renderchain_t*)d3d->renderchain_data : NULL;
 
-   if (chain)
-   {
-      d3dr   = (LPDIRECT3DDEVICE)chain->dev;
-      d3d9_cg_renderchain_start_render(chain);
-   }
+   d3d9_cg_renderchain_start_render(chain);
 
    current_width         = width;
    current_height        = height;
@@ -1505,7 +1500,7 @@ static bool d3d9_cg_renderchain_render(
          frame_data, width, height, pitch);
 
    /* Grab back buffer. */
-   d3d_device_get_render_target(d3dr, 0, (void**)&back_buffer);
+   d3d_device_get_render_target(chain->dev, 0, (void**)&back_buffer);
 
    /* In-between render target passes. */
    for (i = 0; i < chain->passes->count - 1; i++)
@@ -1516,7 +1511,7 @@ static bool d3d9_cg_renderchain_render(
 
       d3d_texture_get_surface_level(to_pass->tex, 0, (void**)&target);
 
-      d3d_device_set_render_target(d3dr, 0, (void*)target);
+      d3d_device_set_render_target(chain->dev, 0, (void*)target);
 
       d3d9_cg_renderchain_convert_geometry(chain, &from_pass->info,
             &out_width, &out_height,
@@ -1528,8 +1523,8 @@ static bool d3d9_cg_renderchain_render(
       viewport.MinZ   = 0.0f;
       viewport.MaxZ   = 1.0f;
 
-      d3d_set_viewports(d3dr, &viewport);
-      d3d_clear(d3dr, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
+      d3d_set_viewports(chain->dev, &viewport);
+      d3d_clear(chain->dev, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
 
       viewport.Width  = out_width;
       viewport.Height = out_height;
@@ -1551,7 +1546,7 @@ static bool d3d9_cg_renderchain_render(
    }
 
    /* Final pass */
-   d3d_device_set_render_target(d3dr, 0, (void*)back_buffer);
+   d3d_device_set_render_target(chain->dev, 0, (void*)back_buffer);
 
    last_pass = (struct Pass*)&chain->passes->
       data[chain->passes->count - 1];
@@ -1632,7 +1627,7 @@ static bool d3d9_cg_renderchain_read_viewport(
    LPDIRECT3DSURFACE dest   = NULL;
    bool ret                 = true;
    d3d_video_t *d3d         = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr    = (LPDIRECT3DDEVICE)d3d->dev;
+   LPDIRECT3DDEVICE9 d3dr   = (LPDIRECT3DDEVICE9)d3d->dev;
 
    video_driver_get_size(&width, &height);
 

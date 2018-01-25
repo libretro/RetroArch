@@ -437,41 +437,47 @@ bool d3d_get_adapter_display_mode(LPDIRECT3D d3d,
    return true;
 }
 
-bool d3d_swap(void *data, LPDIRECT3DDEVICE dev)
+bool d3d_swap(void *data, void *_dev)
 {
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifdef HAVE_D3D9
+            LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
 #ifdef __cplusplus
 #ifdef _XBOX
-         dev->Present(NULL, NULL, NULL, NULL);
+            dev->Present(NULL, NULL, NULL, NULL);
 #else
-         if (dev->Present(NULL, NULL, NULL, NULL) != D3D_OK)
-            return false;
+            if (dev->Present(NULL, NULL, NULL, NULL) != D3D_OK)
+               return false;
 #endif
 #else
 #ifdef _XBOX
-         IDirect3DDevice9_Present(dev, NULL, NULL, NULL, NULL);
+            IDirect3DDevice9_Present(dev, NULL, NULL, NULL, NULL);
 #else
-         if (IDirect3DDevice9_Present(dev, NULL, NULL, NULL, NULL) 
-               == D3DERR_DEVICELOST)
-            return false;
+            if (IDirect3DDevice9_Present(dev, NULL, NULL, NULL, NULL) 
+                  == D3DERR_DEVICELOST)
+               return false;
 #endif
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
+         {
 #ifdef HAVE_D3D8
+            LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)_dev;
 #ifdef __cplusplus
-         if (dev->Present(NULL, NULL, NULL, NULL) != D3D_OK)
-            return false;
+            if (dev->Present(NULL, NULL, NULL, NULL) != D3D_OK)
+               return false;
 #else
-         if (IDirect3DDevice8_Present(dev, NULL, NULL, NULL, NULL) 
-               == D3DERR_DEVICELOST)
-            return false;
+            if (IDirect3DDevice8_Present(dev, NULL, NULL, NULL, NULL) 
+                  == D3DERR_DEVICELOST)
+               return false;
 #endif
 #endif
+         }
          break;
       case GFX_CTX_NONE:
       default:
@@ -480,31 +486,37 @@ bool d3d_swap(void *data, LPDIRECT3DDEVICE dev)
    return true;
 }
 
-void d3d_set_transform(LPDIRECT3DDEVICE dev,
+void d3d_set_transform(void *_dev,
       D3DTRANSFORMSTATETYPE state, CONST D3DMATRIX *matrix)
 {
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
-         /* XBox 360 D3D9 does not support fixed-function pipeline. */
+         {
+            /* XBox 360 D3D9 does not support fixed-function pipeline. */
 #ifdef HAVE_D3D9
 #ifndef _XBOX
+            LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
 #ifdef __cplusplus
-         dev->SetTransform(state, matrix);
+            dev->SetTransform(state, matrix);
 #else
-         IDirect3DDevice9_SetTransform(dev, state, matrix);
+            IDirect3DDevice9_SetTransform(dev, state, matrix);
 #endif
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
+         {
 #ifdef HAVE_D3D8
+            LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)_dev;
 #ifdef __cplusplus
-         dev->SetTransform(state, matrix);
+            dev->SetTransform(state, matrix);
 #else
-         IDirect3DDevice8_SetTransform(dev, state, matrix);
+            IDirect3DDevice8_SetTransform(dev, state, matrix);
 #endif
 #endif
+         }
          break;
       case GFX_CTX_NONE:
       default:
@@ -594,7 +606,7 @@ bool d3d_texture_get_surface_level(LPDIRECT3DTEXTURE tex,
 
 #ifdef HAVE_D3DX
 static LPDIRECT3DTEXTURE d3d_texture_new_from_file(
-      LPDIRECT3DDEVICE dev,
+      void *dev,
       const char *path, unsigned width, unsigned height,
       unsigned miplevels, unsigned usage, D3DFORMAT format,
       D3DPOOL pool, unsigned filter, unsigned mipfilter,
@@ -602,19 +614,41 @@ static LPDIRECT3DTEXTURE d3d_texture_new_from_file(
       PALETTEENTRY *palette)
 {
    LPDIRECT3DTEXTURE buf = NULL;
-   HRESULT            hr = D3DCreateTextureFromFile(dev,
-         path, width, height, miplevels, usage, format,
-         pool, filter, mipfilter, color_key, src_info_data,
-         palette, &buf);
+   {
+      HRESULT hr = E_FAIL;
 
-   if (FAILED(hr))
-	   return NULL;
+      switch (d3d_common_api)
+      {
+         case GFX_CTX_DIRECT3D9_API:
+#if defined(HAVE_D3D9)
+            hr = D3DCreateTextureFromFile((LPDIRECT3DDEVICE9)dev,
+                  path, width, height, miplevels, usage, format,
+                  pool, filter, mipfilter, color_key, src_info_data,
+                  palette, &buf);
+#endif
+            break;
+         case GFX_CTX_DIRECT3D8_API:
+#if defined(HAVE_D3D8)
+            hr = D3DCreateTextureFromFile((LPDIRECT3DDEVICE8)dev,
+                  path, width, height, miplevels, usage, format,
+                  pool, filter, mipfilter, color_key, src_info_data,
+                  palette, &buf);
+#endif
+            break;
+         default:
+            break;
+      }
+
+      if (FAILED(hr))
+         return NULL;
+
+   }
 
    return buf;
 }
 #endif
 
-LPDIRECT3DTEXTURE d3d_texture_new(LPDIRECT3DDEVICE dev,
+LPDIRECT3DTEXTURE d3d_texture_new(void *_dev,
       const char *path, unsigned width, unsigned height,
       unsigned miplevels, unsigned usage, D3DFORMAT format,
       D3DPOOL pool, unsigned filter, unsigned mipfilter,
@@ -627,7 +661,7 @@ LPDIRECT3DTEXTURE d3d_texture_new(LPDIRECT3DDEVICE dev,
    if (path)
    {
 #ifdef HAVE_D3DX
-      return d3d_texture_new_from_file(dev,
+      return d3d_texture_new_from_file(_dev,
             path, width, height, miplevels,
             usage, format, pool, filter, mipfilter,
             color_key, src_info_data, palette);
@@ -639,34 +673,40 @@ LPDIRECT3DTEXTURE d3d_texture_new(LPDIRECT3DDEVICE dev,
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifdef HAVE_D3D9
+            LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
 #ifndef _XBOX
-         if (want_mipmap)
-            usage |= D3DUSAGE_AUTOGENMIPMAP;
+            if (want_mipmap)
+               usage |= D3DUSAGE_AUTOGENMIPMAP;
 #endif
 #ifdef __cplusplus
-         hr = dev->CreateTexture(
-               width, height, miplevels, usage,
-               format, pool, &buf, NULL);
+            hr = dev->CreateTexture(
+                  width, height, miplevels, usage,
+                  format, pool, &buf, NULL);
 #else
-         hr = IDirect3DDevice9_CreateTexture(dev,
-               width, height, miplevels, usage,
-               format, pool, &buf, NULL);
+            hr = IDirect3DDevice9_CreateTexture(dev,
+                  width, height, miplevels, usage,
+                  format, pool, &buf, NULL);
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
+         {
 #ifdef HAVE_D3D8
+            LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)_dev;
 #ifdef __cplusplus
-         hr = dev->CreateTexture(
-               width, height, miplevels, usage,
-               format, pool, &buf);
+            hr = dev->CreateTexture(
+                  width, height, miplevels, usage,
+                  format, pool, &buf);
 #else
-         hr = IDirect3DDevice8_CreateTexture(dev,
-               width, height, miplevels, usage,
-               format, pool, &buf);
+            hr = IDirect3DDevice8_CreateTexture(dev,
+                  width, height, miplevels, usage,
+                  format, pool, &buf);
 #endif
 #endif
+         }
          break;
       case GFX_CTX_NONE:
       default:
@@ -844,7 +884,7 @@ void d3d_vertex_declaration_free(void *data)
    }
 }
 
-bool d3d_vertex_declaration_new(LPDIRECT3DDEVICE dev,
+bool d3d_vertex_declaration_new(void *_dev,
       const void *vertex_data, void **decl_data)
 {
    switch (d3d_common_api)
@@ -852,6 +892,7 @@ bool d3d_vertex_declaration_new(LPDIRECT3DDEVICE dev,
       case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
          {
+            LPDIRECT3DDEVICE9                    dev  = (LPDIRECT3DDEVICE9)_dev;
             const D3DVERTEXELEMENT   *vertex_elements = (const D3DVERTEXELEMENT*)vertex_data;
             LPDIRECT3DVERTEXDECLARATION **vertex_decl = (LPDIRECT3DVERTEXDECLARATION**)decl_data;
 
@@ -874,7 +915,7 @@ bool d3d_vertex_declaration_new(LPDIRECT3DDEVICE dev,
    return false;
 }
 
-LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(LPDIRECT3DDEVICE dev,
+LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(void *_dev,
       unsigned length, unsigned usage,
       unsigned fvf, D3DPOOL pool, void *handle)
 {
@@ -884,38 +925,44 @@ LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(LPDIRECT3DDEVICE dev,
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifdef HAVE_D3D9
-		 if (usage == 0)
-		 {
+            LPDIRECT3DDEVICE9 dev  = (LPDIRECT3DDEVICE9)_dev;
+            if (usage == 0)
+            {
 #ifndef _XBOX
 #ifdef __cplusplus
-            if (dev->GetSoftwareVertexProcessing())
-               usage = D3DUSAGE_SOFTWAREPROCESSING;
+               if (dev->GetSoftwareVertexProcessing())
+                  usage = D3DUSAGE_SOFTWAREPROCESSING;
 #else
-            if (IDirect3DDevice9_GetSoftwareVertexProcessing(dev))
-               usage = D3DUSAGE_SOFTWAREPROCESSING;
+               if (IDirect3DDevice9_GetSoftwareVertexProcessing(dev))
+                  usage = D3DUSAGE_SOFTWAREPROCESSING;
 #endif
 #endif         
-         }
+            }
 
 #ifdef __cplusplus
-         hr = dev->CreateVertexBuffer(length, usage, fvf, pool, &buf, NULL);
+            hr = dev->CreateVertexBuffer(length, usage, fvf, pool, &buf, NULL);
 #else
-         hr = IDirect3DDevice9_CreateVertexBuffer(dev, length, usage, fvf, pool,
-               &buf, NULL);
+            hr = IDirect3DDevice9_CreateVertexBuffer(dev, length, usage, fvf, pool,
+                  &buf, NULL);
 #endif
 
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
+         {
 #ifdef HAVE_D3D8
+            LPDIRECT3DDEVICE8 dev  = (LPDIRECT3DDEVICE8)_dev;
 #ifdef __cplusplus
-         hr = dev->CreateVertexBuffer(length, usage, fvf, pool, &buf, NULL);
+            hr = dev->CreateVertexBuffer(length, usage, fvf, pool, &buf, NULL);
 #else
-         hr = IDirect3DDevice8_CreateVertexBuffer(dev, length, usage, fvf, pool,
-               &buf);
+            hr = IDirect3DDevice8_CreateVertexBuffer(dev, length, usage, fvf, pool,
+                  &buf);
 #endif
 #endif
+         }
          break;
       case GFX_CTX_NONE:
       default:
@@ -1043,7 +1090,7 @@ void d3d_vertex_buffer_free(void *vertex_data, void *vertex_declaration)
    }
 }
 
-void d3d_set_stream_source(LPDIRECT3DDEVICE dev, unsigned stream_no,
+void d3d_set_stream_source(void *_dev, unsigned stream_no,
       void *stream_vertbuf_ptr, unsigned offset_bytes,
       unsigned stride)
 {
@@ -1055,24 +1102,30 @@ void d3d_set_stream_source(LPDIRECT3DDEVICE dev, unsigned stream_no,
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifdef HAVE_D3D9
+            LPDIRECT3DDEVICE9 dev  = (LPDIRECT3DDEVICE9)_dev;
 #ifdef __cplusplus
-         dev->SetStreamSource(stream_no, stream_vertbuf, offset_bytes, stride);
+            dev->SetStreamSource(stream_no, stream_vertbuf, offset_bytes, stride);
 #else
-         IDirect3DDevice9_SetStreamSource(dev, stream_no, stream_vertbuf,
-               offset_bytes,
-               stride);
+            IDirect3DDevice9_SetStreamSource(dev, stream_no, stream_vertbuf,
+                  offset_bytes,
+                  stride);
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
+         {
 #ifdef HAVE_D3D8
+            LPDIRECT3DDEVICE8 dev  = (LPDIRECT3DDEVICE8)_dev;
 #ifdef __cplusplus
-         dev->SetStreamSource(stream_no, stream_vertbuf, offset_bytes, stride);
+            dev->SetStreamSource(stream_no, stream_vertbuf, offset_bytes, stride);
 #else
-         IDirect3DDevice8_SetStreamSource(dev, stream_no, stream_vertbuf, stride);
+            IDirect3DDevice8_SetStreamSource(dev, stream_no, stream_vertbuf, stride);
 #endif
 #endif
+         }
          break;
       case GFX_CTX_NONE:
       default:
@@ -1081,7 +1134,7 @@ void d3d_set_stream_source(LPDIRECT3DDEVICE dev, unsigned stream_no,
 }
 
 bool d3d_device_create_offscreen_plain_surface(
-      LPDIRECT3DDEVICE dev,
+      void *_dev,
       unsigned width,
       unsigned height,
       unsigned format,
@@ -1092,24 +1145,27 @@ bool d3d_device_create_offscreen_plain_surface(
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifndef _XBOX
 #ifdef HAVE_D3D9
+            LPDIRECT3DDEVICE9 dev  = (LPDIRECT3DDEVICE9)_dev;
 #ifdef __cplusplus
-         if (SUCCEEDED(dev->CreateOffscreenPlainSurface(width, height,
-                     (D3DFORMAT)format, (D3DPOOL)pool,
-                     (LPDIRECT3DSURFACE*)surf_data,
-                     (HANDLE*)data)))
-            return true;
+            if (SUCCEEDED(dev->CreateOffscreenPlainSurface(width, height,
+                        (D3DFORMAT)format, (D3DPOOL)pool,
+                        (LPDIRECT3DSURFACE*)surf_data,
+                        (HANDLE*)data)))
+               return true;
 #else
-         if (SUCCEEDED(IDirect3DDevice9_CreateOffscreenPlainSurface(dev,
-                     width, height,
-                     (D3DFORMAT)format, (D3DPOOL)pool,
-                     (LPDIRECT3DSURFACE*)surf_data,
-                     (HANDLE*)data)))
-            return true;
+            if (SUCCEEDED(IDirect3DDevice9_CreateOffscreenPlainSurface(dev,
+                        width, height,
+                        (D3DFORMAT)format, (D3DPOOL)pool,
+                        (LPDIRECT3DSURFACE*)surf_data,
+                        (HANDLE*)data)))
+               return true;
 #endif
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
       case GFX_CTX_NONE:
@@ -1120,35 +1176,41 @@ bool d3d_device_create_offscreen_plain_surface(
    return false;
 }
 
-static void d3d_set_texture_stage_state(LPDIRECT3DDEVICE dev,
+static void d3d_set_texture_stage_state(void *_dev,
       unsigned sampler, unsigned type, unsigned value)
 {
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
-         /* XBox 360 has no fixed-function pipeline. */
+         {
+            /* XBox 360 has no fixed-function pipeline. */
 #ifndef _XBOX
 #ifdef HAVE_D3D9
+            LPDIRECT3DDEVICE9 dev  = (LPDIRECT3DDEVICE9)_dev;
 #ifdef __cplusplus
-         if (dev->SetTextureStageState(sampler, (D3DTEXTURESTAGESTATETYPE)type, value) != D3D_OK)
-            RARCH_ERR("SetTextureStageState call failed, sampler: %d, value: %d, type: %d\n", sampler, value, type);
+            if (dev->SetTextureStageState(sampler, (D3DTEXTURESTAGESTATETYPE)type, value) != D3D_OK)
+               RARCH_ERR("SetTextureStageState call failed, sampler: %d, value: %d, type: %d\n", sampler, value, type);
 #else
-         if (IDirect3DDevice9_SetTextureStageState(dev, sampler, (D3DTEXTURESTAGESTATETYPE)type, value) != D3D_OK)
-            RARCH_ERR("SetTextureStageState call failed, sampler: %d, value: %d, type: %d\n", sampler, value, type);
+            if (IDirect3DDevice9_SetTextureStageState(dev, sampler, (D3DTEXTURESTAGESTATETYPE)type, value) != D3D_OK)
+               RARCH_ERR("SetTextureStageState call failed, sampler: %d, value: %d, type: %d\n", sampler, value, type);
 #endif
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
+         {
 #ifdef HAVE_D3D8
+            LPDIRECT3DDEVICE8 dev  = (LPDIRECT3DDEVICE8)_dev;
 #ifdef __cplusplus
-         if (dev->SetTextureStageState(sampler, (D3DTEXTURESTAGESTATETYPE)type, value) != D3D_OK)
-            RARCH_ERR("SetTextureStageState call failed, sampler: %d, value: %d, type: %d\n", sampler, value, type);
+            if (dev->SetTextureStageState(sampler, (D3DTEXTURESTAGESTATETYPE)type, value) != D3D_OK)
+               RARCH_ERR("SetTextureStageState call failed, sampler: %d, value: %d, type: %d\n", sampler, value, type);
 #else
-         if (IDirect3DDevice8_SetTextureStageState(dev, sampler, (D3DTEXTURESTAGESTATETYPE)type, value) != D3D_OK)
-            RARCH_ERR("SetTextureStageState call failed, sampler: %d, value: %d, type: %d\n", sampler, value, type);
+            if (IDirect3DDevice8_SetTextureStageState(dev, sampler, (D3DTEXTURESTAGESTATETYPE)type, value) != D3D_OK)
+               RARCH_ERR("SetTextureStageState call failed, sampler: %d, value: %d, type: %d\n", sampler, value, type);
 #endif
 #endif
+         }
          break;
       case GFX_CTX_NONE:
       default:
@@ -1156,24 +1218,30 @@ static void d3d_set_texture_stage_state(LPDIRECT3DDEVICE dev,
    }
 }
 
-void d3d_set_sampler_address_u(LPDIRECT3DDEVICE dev,
+void d3d_set_sampler_address_u(void *_dev,
       unsigned sampler, unsigned value)
 {
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifdef HAVE_D3D9
+            LPDIRECT3DDEVICE9 dev  = (LPDIRECT3DDEVICE9)_dev;
 #ifdef __cplusplus
-         dev->SetSamplerState(sampler, D3DSAMP_ADDRESSU, value);
+            dev->SetSamplerState(sampler, D3DSAMP_ADDRESSU, value);
 #else
-         IDirect3DDevice9_SetSamplerState(dev, sampler, D3DSAMP_ADDRESSU, value);
+            IDirect3DDevice9_SetSamplerState(dev, sampler, D3DSAMP_ADDRESSU, value);
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
+         {
 #ifdef HAVE_D3D8
-         d3d_set_texture_stage_state(dev, sampler, D3DTSS_ADDRESSU, value);
+            LPDIRECT3DDEVICE8 dev  = (LPDIRECT3DDEVICE8)_dev;
+            d3d_set_texture_stage_state(dev, sampler, D3DTSS_ADDRESSU, value);
 #endif
+         }
          break;
       case GFX_CTX_NONE:
       default:
@@ -1181,24 +1249,30 @@ void d3d_set_sampler_address_u(LPDIRECT3DDEVICE dev,
    }
 }
 
-void d3d_set_sampler_address_v(LPDIRECT3DDEVICE dev,
+void d3d_set_sampler_address_v(void *_dev,
       unsigned sampler, unsigned value)
 {
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifdef HAVE_D3D9
+            LPDIRECT3DDEVICE9 dev  = (LPDIRECT3DDEVICE9)_dev;
 #ifdef __cplusplus
-         dev->SetSamplerState(sampler, D3DSAMP_ADDRESSV, value);
+            dev->SetSamplerState(sampler, D3DSAMP_ADDRESSV, value);
 #else
-         IDirect3DDevice9_SetSamplerState(dev, sampler, D3DSAMP_ADDRESSV, value);
+            IDirect3DDevice9_SetSamplerState(dev, sampler, D3DSAMP_ADDRESSV, value);
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
+         {
 #ifdef HAVE_D3D8
-         d3d_set_texture_stage_state(dev, sampler, D3DTSS_ADDRESSV, value);
+            LPDIRECT3DDEVICE8 dev  = (LPDIRECT3DDEVICE8)_dev;
+            d3d_set_texture_stage_state(dev, sampler, D3DTSS_ADDRESSV, value);
 #endif
+         }
          break;
       case GFX_CTX_NONE:
       default:
@@ -1206,19 +1280,24 @@ void d3d_set_sampler_address_v(LPDIRECT3DDEVICE dev,
    }
 }
 
-void d3d_set_sampler_minfilter(LPDIRECT3DDEVICE dev,
+void d3d_set_sampler_minfilter(void *_dev,
       unsigned sampler, unsigned value)
 {
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifdef HAVE_D3D9
+            LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
+            if (!dev)
+               return;
 #ifdef __cplusplus
-         dev->SetSamplerState(sampler, D3DSAMP_MINFILTER, value);
+            dev->SetSamplerState(sampler, D3DSAMP_MINFILTER, value);
 #else
-         IDirect3DDevice9_SetSamplerState(dev, sampler, D3DSAMP_MINFILTER, value);
+            IDirect3DDevice9_SetSamplerState(dev, sampler, D3DSAMP_MINFILTER, value);
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
@@ -1231,19 +1310,24 @@ void d3d_set_sampler_minfilter(LPDIRECT3DDEVICE dev,
    }
 }
 
-void d3d_set_sampler_magfilter(LPDIRECT3DDEVICE dev,
+void d3d_set_sampler_magfilter(void *_dev,
       unsigned sampler, unsigned value)
 {
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifdef HAVE_D3D9
+            LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
+            if (!dev)
+               return;
 #ifdef __cplusplus
-         dev->SetSamplerState(sampler, D3DSAMP_MAGFILTER, value);
+            dev->SetSamplerState(sampler, D3DSAMP_MAGFILTER, value);
 #else
-         IDirect3DDevice9_SetSamplerState(dev, sampler, D3DSAMP_MAGFILTER, value);
+            IDirect3DDevice9_SetSamplerState(dev, sampler, D3DSAMP_MAGFILTER, value);
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
@@ -1256,15 +1340,21 @@ void d3d_set_sampler_magfilter(LPDIRECT3DDEVICE dev,
    }
 }
 
-void d3d_set_sampler_mipfilter(LPDIRECT3DDEVICE dev,
+void d3d_set_sampler_mipfilter(void *_dev,
       unsigned sampler, unsigned value)
 {
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifdef HAVE_D3D9
-         IDirect3DDevice9_SetSamplerState(dev, sampler, D3DSAMP_MIPFILTER, value);
+            LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
+            if (!dev)
+               return;
+            IDirect3DDevice9_SetSamplerState(dev, sampler,
+                  D3DSAMP_MIPFILTER, value);
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
       case GFX_CTX_NONE:
@@ -1273,43 +1363,53 @@ void d3d_set_sampler_mipfilter(LPDIRECT3DDEVICE dev,
    }
 }
 
-bool d3d_begin_scene(LPDIRECT3DDEVICE dev)
+bool d3d_begin_scene(void *_dev)
 {
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifdef HAVE_D3D9
+            LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
+            if (!dev)
+               return false;
 #ifdef __cplusplus
-         if (FAILED(dev->BeginScene()))
-            return false;
+            if (FAILED(dev->BeginScene()))
+               return false;
 #else
 #if defined(_XBOX)
-         IDirect3DDevice9_BeginScene(dev);
+            IDirect3DDevice9_BeginScene(dev);
 #else
-         if (FAILED(IDirect3DDevice9_BeginScene(dev)))
-            return false;
+            if (FAILED(IDirect3DDevice9_BeginScene(dev)))
+               return false;
 #endif
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
+         {
 #ifdef HAVE_D3D8
+            LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)_dev;
+            if (!dev)
+               return false;
 #ifdef __cplusplus
 #ifdef _XBOX
-         dev->BeginScene();
+            dev->BeginScene();
 #else
-         if (FAILED(dev->BeginScene()))
-            return false;
+            if (FAILED(dev->BeginScene()))
+               return false;
 #endif
 #else
 #ifdef _XBOX
-         IDirect3DDevice8_BeginScene(dev);
+            IDirect3DDevice8_BeginScene(dev);
 #else
-         if (FAILED(IDirect3DDevice8_BeginScene(dev)))
-            return false;
+            if (FAILED(IDirect3DDevice8_BeginScene(dev)))
+               return false;
 #endif
 #endif
 #endif
+         }
          break;
       case GFX_CTX_NONE:
       default:
@@ -1319,27 +1419,37 @@ bool d3d_begin_scene(LPDIRECT3DDEVICE dev)
    return true;
 }
 
-void d3d_end_scene(LPDIRECT3DDEVICE dev)
+void d3d_end_scene(void *_dev)
 {
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifdef HAVE_D3D9
+            LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
+            if (!dev)
+               return;
 #ifdef __cplusplus
-         dev->EndScene();
+            dev->EndScene();
 #else
-         IDirect3DDevice9_EndScene(dev);
+            IDirect3DDevice9_EndScene(dev);
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
+         {
 #ifdef HAVE_D3D8
+            LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)_dev;
+            if (!dev)
+               return;
 #ifdef __cplusplus
-         dev->EndScene();
+            dev->EndScene();
 #else
-         IDirect3DDevice8_EndScene(dev);
+            IDirect3DDevice8_EndScene(dev);
 #endif
 #endif
+         }
          break;
       case GFX_CTX_NONE:
       default:
@@ -1347,28 +1457,38 @@ void d3d_end_scene(LPDIRECT3DDEVICE dev)
    }
 }
 
-static void d3d_draw_primitive_internal(LPDIRECT3DDEVICE dev,
+static void d3d_draw_primitive_internal(void *_dev,
       D3DPRIMITIVETYPE type, unsigned start, unsigned count)
 {
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifdef HAVE_D3D9
+            LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
+            if (!dev)
+               return;
 #ifdef __cplusplus
-         dev->DrawPrimitive(type, start, count);
+            dev->DrawPrimitive(type, start, count);
 #else
-         IDirect3DDevice9_DrawPrimitive(dev, type, start, count);
+            IDirect3DDevice9_DrawPrimitive(dev, type, start, count);
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
+         {
 #ifdef HAVE_D3D8
+            LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)_dev;
+            if (!dev)
+               return;
 #ifdef __cplusplus
-         dev->DrawPrimitive(type, start, count);
+            dev->DrawPrimitive(type, start, count);
 #else
-         IDirect3DDevice8_DrawPrimitive(dev, type, start, count);
+            IDirect3DDevice8_DrawPrimitive(dev, type, start, count);
 #endif
 #endif
+         }
          break;
       case GFX_CTX_NONE:
       default:
@@ -1376,7 +1496,7 @@ static void d3d_draw_primitive_internal(LPDIRECT3DDEVICE dev,
    }
 }
 
-void d3d_draw_primitive(LPDIRECT3DDEVICE dev,
+void d3d_draw_primitive(void *dev,
       D3DPRIMITIVETYPE type, unsigned start, unsigned count)
 {
    if (!d3d_begin_scene(dev))
@@ -1386,31 +1506,41 @@ void d3d_draw_primitive(LPDIRECT3DDEVICE dev,
    d3d_end_scene(dev);
 }
 
-void d3d_clear(LPDIRECT3DDEVICE dev,
+void d3d_clear(void *_dev,
       unsigned count, const D3DRECT *rects, unsigned flags,
       D3DCOLOR color, float z, unsigned stencil)
 {
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifdef HAVE_D3D9
+            LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
+            if (!dev)
+               return;
 #ifdef __cplusplus
-         dev->Clear(count, rects, flags, color, z, stencil);
+            dev->Clear(count, rects, flags, color, z, stencil);
 #else
-         IDirect3DDevice9_Clear(dev, count, rects, flags,
-               color, z, stencil);
+            IDirect3DDevice9_Clear(dev, count, rects, flags,
+                  color, z, stencil);
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
+         {
 #ifdef HAVE_D3D8
+            LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)_dev;
+            if (!dev)
+               return;
 #ifdef __cplusplus
-         dev->Clear(count, rects, flags, color, z, stencil);
+            dev->Clear(count, rects, flags, color, z, stencil);
 #else
-         IDirect3DDevice8_Clear(dev, count, rects, flags,
-               color, z, stencil);
+            IDirect3DDevice8_Clear(dev, count, rects, flags,
+                  color, z, stencil);
 #endif
 #endif
+         }
          break;
       case GFX_CTX_NONE:
       default:
@@ -1418,7 +1548,7 @@ void d3d_clear(LPDIRECT3DDEVICE dev,
    }
 }
 
-bool d3d_device_get_render_target_data(LPDIRECT3DDEVICE dev,
+bool d3d_device_get_render_target_data(void *_dev,
       void *_src, void *_dst)
 {
    LPDIRECT3DSURFACE src = (LPDIRECT3DSURFACE)_src;
@@ -1427,17 +1557,23 @@ bool d3d_device_get_render_target_data(LPDIRECT3DDEVICE dev,
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifndef _XBOX
 #ifdef HAVE_D3D9
+            LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
+            if (!dev)
+               return false;
 #ifdef __cplusplus
-         if (SUCCEEDED(dev->GetRenderTargetData(src, dst)))
-            return true;
+            if (SUCCEEDED(dev->GetRenderTargetData(src, dst)))
+               return true;
 #else
-         if (SUCCEEDED(IDirect3DDevice9_GetRenderTargetData(dev, src, dst)))
-            return true;
+            if (SUCCEEDED(IDirect3DDevice9_GetRenderTargetData(
+                        dev, src, dst)))
+               return true;
 #endif
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
       case GFX_CTX_NONE:
@@ -1448,39 +1584,46 @@ bool d3d_device_get_render_target_data(LPDIRECT3DDEVICE dev,
    return false;
 }
 
-bool d3d_device_get_render_target(LPDIRECT3DDEVICE dev,
+bool d3d_device_get_render_target(void *_dev,
       unsigned idx, void **data)
 {
-   if (!dev)
-	   return false;
-
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifdef HAVE_D3D9
+            LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
+            if (!dev)
+               return false;
 #ifdef __cplusplus
-         if (SUCCEEDED(dev->GetRenderTarget(idx,
-                     (LPDIRECT3DSURFACE*)data)))
-            return true;
+            if (SUCCEEDED(dev->GetRenderTarget(idx,
+                        (LPDIRECT3DSURFACE*)data)))
+               return true;
 #else
-         if (SUCCEEDED(IDirect3DDevice9_GetRenderTarget(dev,
-                     idx, (LPDIRECT3DSURFACE*)data)))
-            return true;
+            if (SUCCEEDED(IDirect3DDevice9_GetRenderTarget(dev,
+                        idx, (LPDIRECT3DSURFACE*)data)))
+               return true;
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
+         {
 #ifdef HAVE_D3D8
+            LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)_dev;
+            if (!dev)
+               return false;
 #ifdef __cplusplus
-         if (SUCCEEDED(dev->GetRenderTarget(
-                     (LPDIRECT3DSURFACE*)data)))
-            return true;
+            if (SUCCEEDED(dev->GetRenderTarget(
+                        (LPDIRECT3DSURFACE*)data)))
+               return true;
 #else
-         if (SUCCEEDED(IDirect3DDevice8_GetRenderTarget(dev,
-                     (LPDIRECT3DSURFACE*)data)))
-            return true;
+            if (SUCCEEDED(IDirect3DDevice8_GetRenderTarget(dev,
+                        (LPDIRECT3DSURFACE*)data)))
+               return true;
 #endif
 #endif
+         }
          break;
       case GFX_CTX_NONE:
       default:
@@ -1570,27 +1713,37 @@ void d3d_lock_rectangle_clear(LPDIRECT3DTEXTURE tex,
    d3d_unlock_rectangle(tex);
 }
 
-void d3d_set_viewports(LPDIRECT3DDEVICE dev, D3DVIEWPORT *vp)
+void d3d_set_viewports(void *_dev, D3DVIEWPORT *vp)
 {
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifdef HAVE_D3D9
+            LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
+            if (!dev)
+               return;
 #ifdef __cplusplus
-         dev->SetViewport(vp);
+            dev->SetViewport(vp);
 #else
-         IDirect3DDevice9_SetViewport(dev, vp);
+            IDirect3DDevice9_SetViewport(dev, vp);
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
+         {
 #ifdef HAVE_D3D8
+            LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)_dev;
+            if (!dev)
+               return;
 #ifdef __cplusplus
-         dev->SetViewport(vp);
+            dev->SetViewport(vp);
 #else
-         IDirect3DDevice8_SetViewport(dev, vp);
+            IDirect3DDevice8_SetViewport(dev, vp);
 #endif
 #endif
+         }
          break;
       case GFX_CTX_NONE:
       default:
@@ -1598,7 +1751,7 @@ void d3d_set_viewports(LPDIRECT3DDEVICE dev, D3DVIEWPORT *vp)
    }
 }
 
-void d3d_set_texture(LPDIRECT3DDEVICE dev, unsigned sampler,
+void d3d_set_texture(void *_dev, unsigned sampler,
       void *tex_data)
 {
    LPDIRECT3DTEXTURE tex = (LPDIRECT3DTEXTURE)tex_data;
@@ -1609,22 +1762,34 @@ void d3d_set_texture(LPDIRECT3DDEVICE dev, unsigned sampler,
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifdef HAVE_D3D9
+            LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
+            if (!dev)
+               return;
 #ifdef __cplusplus
-         dev->SetTexture(sampler, tex);
+            dev->SetTexture(sampler, tex);
 #else
-         IDirect3DDevice9_SetTexture(dev, sampler, (IDirect3DBaseTexture9*)tex);
+            IDirect3DDevice9_SetTexture(dev, sampler,
+                  (IDirect3DBaseTexture9*)tex);
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
+         {
 #ifdef HAVE_D3D8
+            LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)_dev;
+            if (!dev)
+               return;
 #ifdef __cplusplus
-         dev->SetTexture(sampler, tex);
+            dev->SetTexture(sampler, tex);
 #else
-         IDirect3DDevice8_SetTexture(dev, sampler, (IDirect3DBaseTexture8*)tex);
+            IDirect3DDevice8_SetTexture(dev, sampler,
+                  (IDirect3DBaseTexture8*)tex);
 #endif
 #endif
+         }
          break;
       case GFX_CTX_NONE:
       default:
@@ -1632,13 +1797,14 @@ void d3d_set_texture(LPDIRECT3DDEVICE dev, unsigned sampler,
    }
 }
 
-void d3d_free_vertex_shader(LPDIRECT3DDEVICE dev, void *data)
+void d3d_free_vertex_shader(void *_dev, void *data)
 {
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
          {
+            LPDIRECT3DDEVICE9      dev = (LPDIRECT3DDEVICE9)_dev;
             IDirect3DVertexShader9 *vs = (IDirect3DVertexShader9*)data;
             if (!dev || !vs)
                return;
@@ -1657,14 +1823,15 @@ void d3d_free_vertex_shader(LPDIRECT3DDEVICE dev, void *data)
    }
 }
 
-void d3d_free_pixel_shader(LPDIRECT3DDEVICE dev, void *data)
+void d3d_free_pixel_shader(void *_dev, void *data)
 {
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
          {
-            IDirect3DPixelShader9 *ps = (IDirect3DPixelShader9*)data;
+            LPDIRECT3DDEVICE9      dev = (LPDIRECT3DDEVICE9)_dev;
+            IDirect3DPixelShader9 *ps  = (IDirect3DPixelShader9*)data;
             if (!dev || !ps)
                return;
 #ifdef __cplusplus
@@ -1682,24 +1849,27 @@ void d3d_free_pixel_shader(LPDIRECT3DDEVICE dev, void *data)
    }
 }
 
-bool d3d_create_vertex_shader(LPDIRECT3DDEVICE dev, const DWORD *a, void **b)
+bool d3d_create_vertex_shader(void *_dev, const DWORD *a, void **b)
 {
-   if (!dev)
+   if (!_dev)
       return false;
 
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifdef HAVE_D3D9
+            LPDIRECT3DDEVICE9      dev = (LPDIRECT3DDEVICE9)_dev;
 #if defined(__cplusplus)
-         if (dev->CreateVertexShader(a, (IDirect3DVertexShader9**)b) == D3D_OK)
-            return true;
+            if (dev->CreateVertexShader(a, (IDirect3DVertexShader9**)b) == D3D_OK)
+               return true;
 #else
-         if (IDirect3DDevice9_CreateVertexShader(dev, a,
-                  (LPDIRECT3DVERTEXSHADER*)b) == D3D_OK)
-            return true;
+            if (IDirect3DDevice9_CreateVertexShader(dev, a,
+                     (LPDIRECT3DVERTEXSHADER*)b) == D3D_OK)
+               return true;
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
       case GFX_CTX_NONE:
@@ -1710,23 +1880,27 @@ bool d3d_create_vertex_shader(LPDIRECT3DDEVICE dev, const DWORD *a, void **b)
    return false;
 }
 
-bool d3d_create_pixel_shader(LPDIRECT3DDEVICE dev, const DWORD *a, void **b)
+bool d3d_create_pixel_shader(void *_dev, const DWORD *a, void **b)
 {
-   if (!dev)
+   if (!_dev)
       return false;
+
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifdef HAVE_D3D9
+            LPDIRECT3DDEVICE9      dev = (LPDIRECT3DDEVICE9)_dev;
 #ifdef __cplusplus
-         if (dev->CreatePixelShader(a, (IDirect3DPixelShader9**)b) == D3D_OK)
-            return true;
+            if (dev->CreatePixelShader(a, (IDirect3DPixelShader9**)b) == D3D_OK)
+               return true;
 #else
-         if (IDirect3DDevice9_CreatePixelShader(dev, a,
-                  (LPDIRECT3DPIXELSHADER*)b) == D3D_OK)
-            return true;
+            if (IDirect3DDevice9_CreatePixelShader(dev, a,
+                     (LPDIRECT3DPIXELSHADER*)b) == D3D_OK)
+               return true;
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
       case GFX_CTX_NONE:
@@ -1737,13 +1911,14 @@ bool d3d_create_pixel_shader(LPDIRECT3DDEVICE dev, const DWORD *a, void **b)
    return false;
 }
 
-bool d3d_set_pixel_shader(LPDIRECT3DDEVICE dev, void *data)
+bool d3d_set_pixel_shader(void *_dev, void *data)
 {
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
          {
+            LPDIRECT3DDEVICE9      dev  = (LPDIRECT3DDEVICE9)_dev;
             LPDIRECT3DPIXELSHADER d3dps = (LPDIRECT3DPIXELSHADER)data;
             if (!dev || !d3dps)
                return false;
@@ -1772,7 +1947,7 @@ bool d3d_set_pixel_shader(LPDIRECT3DDEVICE dev, void *data)
    return false;
 }
 
-bool d3d_set_vertex_shader(LPDIRECT3DDEVICE dev, unsigned index,
+bool d3d_set_vertex_shader(void *_dev, unsigned index,
       void *data)
 {
    switch (d3d_common_api)
@@ -1780,6 +1955,7 @@ bool d3d_set_vertex_shader(LPDIRECT3DDEVICE dev, unsigned index,
       case GFX_CTX_DIRECT3D9_API:
          {
 #ifdef HAVE_D3D9
+            LPDIRECT3DDEVICE9      dev    = (LPDIRECT3DDEVICE9)_dev;
             LPDIRECT3DVERTEXSHADER shader = (LPDIRECT3DVERTEXSHADER)data;
 #ifdef __cplusplus
             if (dev->SetVertexShader(shader) != D3D_OK)
@@ -1798,8 +1974,10 @@ bool d3d_set_vertex_shader(LPDIRECT3DDEVICE dev, unsigned index,
       case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
          {
+            LPDIRECT3DDEVICE8      dev    = (LPDIRECT3DDEVICE8)_dev;
 #ifdef __cplusplus
             LPDIRECT3DVERTEXSHADER shader = (LPDIRECT3DVERTEXSHADER)data;
+
             if (dev->SetVertexShader(shader) != D3D_OK)
                return false;
 #else
@@ -1817,35 +1995,38 @@ bool d3d_set_vertex_shader(LPDIRECT3DDEVICE dev, unsigned index,
    return true;
 }
 
-bool d3d_set_vertex_shader_constantf(LPDIRECT3DDEVICE dev,
+bool d3d_set_vertex_shader_constantf(void *_dev,
       UINT start_register,const float* constant_data,
       unsigned vector4f_count)
 {
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #if defined(HAVE_D3D9)
+            LPDIRECT3DDEVICE9      dev    = (LPDIRECT3DDEVICE9)_dev;
 #ifdef __cplusplus
 #ifdef _XBOX
-         dev->SetVertexShaderConstantF(
-               start_register, constant_data, vector4f_count);
+            dev->SetVertexShaderConstantF(
+                  start_register, constant_data, vector4f_count);
 #else
-         if (dev->SetVertexShaderConstantF(
-                  start_register, constant_data, vector4f_count) == D3D_OK)
-            return true;
+            if (dev->SetVertexShaderConstantF(
+                     start_register, constant_data, vector4f_count) == D3D_OK)
+               return true;
 #endif
 #else
 #ifdef _XBOX
-         IDirect3DDevice9_SetVertexShaderConstantF(dev,
-               start_register, constant_data, vector4f_count);
-         return true;
-#else
-         if (IDirect3DDevice9_SetVertexShaderConstantF(dev,
-                  start_register, constant_data, vector4f_count) == D3D_OK)
+            IDirect3DDevice9_SetVertexShaderConstantF(dev,
+                  start_register, constant_data, vector4f_count);
             return true;
+#else
+            if (IDirect3DDevice9_SetVertexShaderConstantF(dev,
+                     start_register, constant_data, vector4f_count) == D3D_OK)
+               return true;
 #endif
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
       case GFX_CTX_NONE:
@@ -1872,39 +2053,42 @@ void d3d_texture_blit(unsigned pixel_size,
 
 bool d3d_get_render_state(void *data, D3DRENDERSTATETYPE state, DWORD *value)
 {
-   LPDIRECT3DDEVICE dev = (LPDIRECT3DDEVICE)data;
-
-   if (!dev)
-      return false;
-
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifdef HAVE_D3D9
+            LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)data;
 #ifdef __cplusplus
-         if (dev->GetRenderState(state, value) == D3D_OK)
-            return true;
+            if (dev && dev->GetRenderState(state, value) == D3D_OK)
+               return true;
 #else
 #ifdef _XBOX
-         IDirect3DDevice9_GetRenderState(dev, state, value);
-         return true;
-#else
-         if (IDirect3DDevice9_GetRenderState(dev, state, value) == D3D_OK)
+            if (!dev)
+               return false;
+            IDirect3DDevice9_GetRenderState(dev, state, value);
             return true;
+#else
+            if (dev && IDirect3DDevice9_GetRenderState(dev, state, value) == D3D_OK)
+               return true;
 #endif
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
+         {
 #ifdef HAVE_D3D8
+            LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)data;
 #ifdef __cplusplus
-         if (dev->GetRenderState(state, value) == D3D_OK)
-            return true;
+            if (dev && dev->GetRenderState(state, value) == D3D_OK)
+               return true;
 #else
-         if (IDirect3DDevice8_GetRenderState(dev, state, value) == D3D_OK)
-            return true;
+            if (dev && IDirect3DDevice8_GetRenderState(dev, state, value) == D3D_OK)
+               return true;
 #endif
 #endif
+         }
          break;
       case GFX_CTX_NONE:
       default:
@@ -1916,30 +2100,35 @@ bool d3d_get_render_state(void *data, D3DRENDERSTATETYPE state, DWORD *value)
 
 void d3d_set_render_state(void *data, D3DRENDERSTATETYPE state, DWORD value)
 {
-   LPDIRECT3DDEVICE dev = (LPDIRECT3DDEVICE)data;
-
-   if (!dev)
-      return;
-
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifdef HAVE_D3D9
+            LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)data;
+            if (!dev)
+               return;
 #ifdef __cplusplus
-         dev->SetRenderState(state, value);
+            dev->SetRenderState(state, value);
 #else
-         IDirect3DDevice9_SetRenderState(dev, state, value);
+            IDirect3DDevice9_SetRenderState(dev, state, value);
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
+         {
 #ifdef HAVE_D3D8
+            LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)data;
+            if (!dev)
+               return;
 #ifdef __cplusplus
-         dev->SetRenderState(state, value);
+            dev->SetRenderState(state, value);
 #else
-         IDirect3DDevice8_SetRenderState(dev, state, value);
+            IDirect3DDevice8_SetRenderState(dev, state, value);
 #endif
 #endif
+         }
          break;
       case GFX_CTX_NONE:
       default:
@@ -1949,17 +2138,15 @@ void d3d_set_render_state(void *data, D3DRENDERSTATETYPE state, DWORD value)
 
 void d3d_enable_blend_func(void *data)
 {
-   LPDIRECT3DDEVICE dev = (LPDIRECT3DDEVICE)data;
-
-   if (!dev)
+   if (!data)
       return;
 
-   d3d_set_render_state(dev, D3DRS_SRCBLEND,  D3DBLEND_SRCALPHA);
-   d3d_set_render_state(dev, D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-   d3d_set_render_state(dev, D3DRS_ALPHABLENDENABLE, true);
+   d3d_set_render_state(data, D3DRS_SRCBLEND,  D3DBLEND_SRCALPHA);
+   d3d_set_render_state(data, D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+   d3d_set_render_state(data, D3DRS_ALPHABLENDENABLE, true);
 }
 
-void d3d_device_set_render_target(LPDIRECT3DDEVICE dev, unsigned idx,
+void d3d_device_set_render_target(void *_dev, unsigned idx,
       void *data)
 {
    LPDIRECT3DSURFACE surf = (LPDIRECT3DSURFACE)data;
@@ -1967,22 +2154,32 @@ void d3d_device_set_render_target(LPDIRECT3DDEVICE dev, unsigned idx,
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifdef HAVE_D3D9
+            LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
+            if (!dev)
+               return;
 #ifdef __cplusplus
-         dev->SetRenderTarget(idx, surf);
+            dev->SetRenderTarget(idx, surf);
 #else
-         IDirect3DDevice9_SetRenderTarget(dev, idx, surf);
+            IDirect3DDevice9_SetRenderTarget(dev, idx, surf);
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
+         {
 #ifdef HAVE_D3D8
+            LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)_dev;
+            if (!dev)
+               return;
 #ifdef __cplusplus
-         dev->SetRenderTarget(idx, surf);
+            dev->SetRenderTarget(idx, surf);
 #else
-         IDirect3DDevice8_SetRenderTarget(dev, surf, NULL);
+            IDirect3DDevice8_SetRenderTarget(dev, surf, NULL);
 #endif
 #endif
+         }
          break;
       case GFX_CTX_NONE:
       default:
@@ -1992,15 +2189,10 @@ void d3d_device_set_render_target(LPDIRECT3DDEVICE dev, unsigned idx,
 
 void d3d_enable_alpha_blend_texture_func(void *data)
 {
-   LPDIRECT3DDEVICE dev = (LPDIRECT3DDEVICE)data;
-
-   if (!dev)
-      return;
-
    /* Also blend the texture with the set alpha value. */
-   d3d_set_texture_stage_state(dev, 0, D3DTSS_ALPHAOP,     D3DTOP_MODULATE);
-   d3d_set_texture_stage_state(dev, 0, D3DTSS_ALPHAARG1,   D3DTA_DIFFUSE);
-   d3d_set_texture_stage_state(dev, 0, D3DTSS_ALPHAARG2,   D3DTA_TEXTURE);
+   d3d_set_texture_stage_state(data, 0, D3DTSS_ALPHAOP,     D3DTOP_MODULATE);
+   d3d_set_texture_stage_state(data, 0, D3DTSS_ALPHAARG1,   D3DTA_DIFFUSE);
+   d3d_set_texture_stage_state(data, 0, D3DTSS_ALPHAARG2,   D3DTA_TEXTURE);
 }
 
 void d3d_frame_postprocess(void *data)
@@ -2014,7 +2206,7 @@ void d3d_frame_postprocess(void *data)
             global_t        *global = global_get_ptr();
 
 #ifdef __cplusplus
-            LPDIRECT3DDEVICE    dev = (LPDIRECT3DDEVICE)data;
+            LPDIRECT3DDEVICE8   dev = (LPDIRECT3DDEVICE8)data;
             if (!dev)
                return;
 
@@ -2037,30 +2229,26 @@ void d3d_frame_postprocess(void *data)
 
 void d3d_disable_blend_func(void *data)
 {
-   LPDIRECT3DDEVICE dev = (LPDIRECT3DDEVICE)data;
-
-   if (!dev)
-      return;
-
-   d3d_set_render_state(dev, D3DRS_ALPHABLENDENABLE, false);
+   d3d_set_render_state(data, D3DRS_ALPHABLENDENABLE, false);
 }
 
 void d3d_set_vertex_declaration(void *data, void *vertex_data)
 {
-   LPDIRECT3DDEVICE dev             = (LPDIRECT3DDEVICE)data;
-   if (!dev)
-      return;
-
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #if defined(HAVE_D3D9)
+            LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)data;
+            if (!dev)
+               return;
 #ifdef __cplusplus
-         dev->SetVertexDeclaration((LPDIRECT3DVERTEXDECLARATION)vertex_data);
+            dev->SetVertexDeclaration((LPDIRECT3DVERTEXDECLARATION)vertex_data);
 #else
-         IDirect3DDevice9_SetVertexDeclaration(dev, (LPDIRECT3DVERTEXDECLARATION)vertex_data);
+            IDirect3DDevice9_SetVertexDeclaration(dev, (LPDIRECT3DVERTEXDECLARATION)vertex_data);
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
       case GFX_CTX_NONE:
@@ -2069,33 +2257,43 @@ void d3d_set_vertex_declaration(void *data, void *vertex_data)
    }
 }
 
-static bool d3d_reset_internal(LPDIRECT3DDEVICE dev,
+static bool d3d_reset_internal(void *data,
       D3DPRESENT_PARAMETERS *d3dpp
       )
 {
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifdef HAVE_D3D9
+            LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)data;
+            if (!dev)
+               return false;
 #ifdef __cplusplus
-         if ((dev->Reset(d3dpp) == D3D_OK))
-            return true;
+            if ((dev->Reset(d3dpp) == D3D_OK))
+               return true;
 #else
-         if (IDirect3DDevice9_Reset(dev, d3dpp) == D3D_OK)
-            return true;
+            if (IDirect3DDevice9_Reset(dev, d3dpp) == D3D_OK)
+               return true;
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
+         {
 #ifdef HAVE_D3D8
+            LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)data;
+            if (!dev)
+               return false;
 #ifdef __cplusplus
-         if ((dev->Reset(d3dpp) == D3D_OK))
-            return true;
+            if ((dev->Reset(d3dpp) == D3D_OK))
+               return true;
 #else
-         if (IDirect3DDevice8_Reset(dev, d3dpp) == D3D_OK)
-            return true;
+            if (IDirect3DDevice8_Reset(dev, d3dpp) == D3D_OK)
+               return true;
 #endif
 #endif
+         }
          break;
       case GFX_CTX_NONE:
       default:
@@ -2105,34 +2303,42 @@ static bool d3d_reset_internal(LPDIRECT3DDEVICE dev,
    return false;
 }
 
-static HRESULT d3d_test_cooperative_level(LPDIRECT3DDEVICE dev)
+static HRESULT d3d_test_cooperative_level(void *data)
 {
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifndef _XBOX
 #ifdef HAVE_D3D9
+            LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)data;
+            if (!dev)
+               return E_FAIL;
 #ifdef __cplusplus
-         return dev->TestCooperativeLevel();
+            return dev->TestCooperativeLevel();
 #else
-         return IDirect3DDevice9_TestCooperativeLevel(dev);
+            return IDirect3DDevice9_TestCooperativeLevel(dev);
 #endif
-#else
+#endif
+#endif
+         }
          break;
-#endif
-#endif
       case GFX_CTX_DIRECT3D8_API:
+         {
 #ifndef _XBOX
 #ifdef HAVE_D3D8
+            LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)data;
+            if (!dev)
+               return E_FAIL;
 #ifdef __cplusplus
-         return dev->TestCooperativeLevel();
+            return dev->TestCooperativeLevel();
 #else
-         return IDirect3DDevice8_TestCooperativeLevel(dev);
+            return IDirect3DDevice8_TestCooperativeLevel(dev);
 #endif
-#else
+#endif
+#endif
+         }
          break;
-#endif
-#endif
       case GFX_CTX_NONE:
       default:
          break;
@@ -2141,7 +2347,8 @@ static HRESULT d3d_test_cooperative_level(LPDIRECT3DDEVICE dev)
    return E_FAIL;
 }
 
-static bool d3d_create_device_internal(LPDIRECT3DDEVICE *dev,
+static bool d3d_create_device_internal(
+      void *data,
       D3DPRESENT_PARAMETERS *d3dpp,
       LPDIRECT3D d3d,
       HWND focus_window,
@@ -2151,50 +2358,60 @@ static bool d3d_create_device_internal(LPDIRECT3DDEVICE *dev,
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifdef HAVE_D3D9
+            LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)data;
+            if (!dev)
+               return false;
 #ifdef __cplusplus
-         if (SUCCEEDED(d3d->CreateDevice(
-                     cur_mon_id,
-                     D3DDEVTYPE_HAL,
-                     focus_window,
-                     behavior_flags,
-                     d3dpp,
-                     dev)))
-            return true;
+            if (SUCCEEDED(d3d->CreateDevice(
+                        cur_mon_id,
+                        D3DDEVTYPE_HAL,
+                        focus_window,
+                        behavior_flags,
+                        d3dpp,
+                        dev)))
+               return true;
 #else
-         if (SUCCEEDED(IDirect3D9_CreateDevice(d3d,
-                     cur_mon_id,
-                     D3DDEVTYPE_HAL,
-                     focus_window,
-                     behavior_flags,
-                     d3dpp,
-                     dev)))
-            return true;
+            if (SUCCEEDED(IDirect3D9_CreateDevice(d3d,
+                        cur_mon_id,
+                        D3DDEVTYPE_HAL,
+                        focus_window,
+                        behavior_flags,
+                        d3dpp,
+                        (IDirect3DDevice9**)dev)))
+               return true;
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
+         {
 #ifdef HAVE_D3D8
+            LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)data;
+            if (!dev)
+               return false;
 #ifdef __cplusplus
-         if (SUCCEEDED(d3d->CreateDevice(
-                     cur_mon_id,
-                     D3DDEVTYPE_HAL,
-                     focus_window,
-                     behavior_flags,
-                     d3dpp,
-                     dev)))
-            return true;
+            if (SUCCEEDED(d3d->CreateDevice(
+                        cur_mon_id,
+                        D3DDEVTYPE_HAL,
+                        focus_window,
+                        behavior_flags,
+                        d3dpp,
+                        dev)))
+               return true;
 #else
-         if (SUCCEEDED(IDirect3D8_CreateDevice(d3d,
-                     cur_mon_id,
-                     D3DDEVTYPE_HAL,
-                     focus_window,
-                     behavior_flags,
-                     d3dpp,
-                     dev)))
-            return true;
+            if (SUCCEEDED(IDirect3D8_CreateDevice(d3d,
+                        cur_mon_id,
+                        D3DDEVTYPE_HAL,
+                        focus_window,
+                        behavior_flags,
+                        d3dpp,
+                        dev)))
+               return true;
 #endif
 #endif
+         }
          break;
       case GFX_CTX_NONE:
       default:
@@ -2204,7 +2421,7 @@ static bool d3d_create_device_internal(LPDIRECT3DDEVICE *dev,
    return false;
 }
 
-bool d3d_create_device(LPDIRECT3DDEVICE *dev,
+bool d3d_create_device(void *dev,
       D3DPRESENT_PARAMETERS *d3dpp,
       LPDIRECT3D d3d,
       HWND focus_window,
@@ -2224,7 +2441,7 @@ bool d3d_create_device(LPDIRECT3DDEVICE *dev,
    return true;
 }
 
-bool d3d_reset(LPDIRECT3DDEVICE dev, D3DPRESENT_PARAMETERS *d3dpp)
+bool d3d_reset(void *dev, D3DPRESENT_PARAMETERS *d3dpp)
 {
    const char *err = NULL;
 
@@ -2258,46 +2475,53 @@ bool d3d_reset(LPDIRECT3DDEVICE dev, D3DPRESENT_PARAMETERS *d3dpp)
    return false;
 }
 
-bool d3d_device_get_backbuffer(LPDIRECT3DDEVICE dev, 
+bool d3d_device_get_backbuffer(void *_dev, 
       unsigned idx, unsigned swapchain_idx, 
       unsigned backbuffer_type, void **data)
 {
-   if (!dev)
-      return false;
-
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifdef HAVE_D3D9
+            LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
+            if (!dev)
+               return false;
 #ifdef __cplusplus
-         if (SUCCEEDED(dev->GetBackBuffer( 
-                     swapchain_idx, idx, 
-                     (D3DBACKBUFFER_TYPE)backbuffer_type,
-                     (LPDIRECT3DSURFACE*)data)))
-            return true;
+            if (SUCCEEDED(dev->GetBackBuffer( 
+                        swapchain_idx, idx, 
+                        (D3DBACKBUFFER_TYPE)backbuffer_type,
+                        (LPDIRECT3DSURFACE*)data)))
+               return true;
 #else
-         if (SUCCEEDED(IDirect3DDevice9_GetBackBuffer(dev, 
-                     swapchain_idx, idx, 
-                     (D3DBACKBUFFER_TYPE)backbuffer_type,
-                     (LPDIRECT3DSURFACE*)data)))
-            return true;
+            if (SUCCEEDED(IDirect3DDevice9_GetBackBuffer(dev, 
+                        swapchain_idx, idx, 
+                        (D3DBACKBUFFER_TYPE)backbuffer_type,
+                        (LPDIRECT3DSURFACE*)data)))
+               return true;
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
+         {
 #ifdef HAVE_D3D8
+            LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)_dev;
+            if (!dev)
+               return false;
 #ifdef __cplusplus
-         if (SUCCEEDED(dev->GetBackBuffer(idx,
-                     (D3DBACKBUFFER_TYPE)backbuffer_type,
-                     (LPDIRECT3DSURFACE*)data)))
-            return true;
+            if (SUCCEEDED(dev->GetBackBuffer(idx,
+                        (D3DBACKBUFFER_TYPE)backbuffer_type,
+                        (LPDIRECT3DSURFACE*)data)))
+               return true;
 #else
-         if (SUCCEEDED(IDirect3DDevice8_GetBackBuffer(dev, idx,
-                     (D3DBACKBUFFER_TYPE)backbuffer_type,
-                     (LPDIRECT3DSURFACE*)data)))
-            return true;
+            if (SUCCEEDED(IDirect3DDevice8_GetBackBuffer(dev, idx,
+                        (D3DBACKBUFFER_TYPE)backbuffer_type,
+                        (LPDIRECT3DSURFACE*)data)))
+               return true;
 #endif
 #endif
+         }
          break;
       case GFX_CTX_NONE:
       default:
@@ -2308,52 +2532,57 @@ bool d3d_device_get_backbuffer(LPDIRECT3DDEVICE dev,
 }
 
 
-void d3d_device_free(LPDIRECT3DDEVICE dev, LPDIRECT3D pd3d)
+void d3d_device_free(void *_dev, LPDIRECT3D pd3d)
 {
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifdef HAVE_D3D9
-         if (dev)
-         {
+            LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
+            if (dev)
+            {
 #ifdef __cplusplus
-            dev->Release();
+               dev->Release();
 #else
-            IDirect3DDevice9_Release(dev);
+               IDirect3DDevice9_Release(dev);
 #endif
-         }
+            }
 
-         if (pd3d)
-         {
+            if (pd3d)
+            {
 #ifdef __cplusplus
-            pd3d->Release();
+               pd3d->Release();
 #else
-            IDirect3D9_Release(pd3d);
+               IDirect3D9_Release(pd3d);
+#endif
+            }
 #endif
          }
-#endif
          break;
       case GFX_CTX_DIRECT3D8_API:
+         {
 #ifdef HAVE_D3D8
-
-         if (dev)
-         {
+            LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)_dev;
+            if (dev)
+            {
 #ifdef __cplusplus
-            dev->Release();
+               dev->Release();
 #else
-            IDirect3DDevice8_Release(dev);
+               IDirect3DDevice8_Release(dev);
 #endif
-         }
+            }
 
-         if (pd3d)
-         {
+            if (pd3d)
+            {
 #if defined(__cplusplus)
-            pd3d->Release();
+               pd3d->Release();
 #else
-            IDirect3D8_Release(pd3d);
+               IDirect3D8_Release(pd3d);
+#endif
+            }
 #endif
          }
-#endif
          break;
       case GFX_CTX_NONE:
       default:
@@ -2464,36 +2693,42 @@ void *d3d_matrix_rotation_z(void *_pout, float angle)
    return pout;
 }
 
-bool d3dx_create_font_indirect(LPDIRECT3DDEVICE dev,
+bool d3dx_create_font_indirect(void *_dev,
       void *desc, void **font_data)
 {
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifdef HAVE_D3DX
 #ifdef HAVE_D3D9
+            LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
 #ifdef __cplusplus
-         if (SUCCEEDED(D3DCreateFontIndirect(
-                     dev, (D3DXFONT_DESC*)desc, font_data)))
-            return true;
+            if (SUCCEEDED(D3DCreateFontIndirect(
+                        dev, (D3DXFONT_DESC*)desc, font_data)))
+               return true;
 #else
-         if (SUCCEEDED(D3DCreateFontIndirect(
-                     dev, (D3DXFONT_DESC*)desc,
-                     (struct ID3DXFont**)font_data)))
-            return true;
+            if (SUCCEEDED(D3DCreateFontIndirect(
+                        dev, (D3DXFONT_DESC*)desc,
+                        (struct ID3DXFont**)font_data)))
+               return true;
 #endif
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
+         {
 #ifdef HAVE_D3DX
 #ifdef HAVE_D3D8
-         if (SUCCEEDED(D3DCreateFontIndirect(
-                     dev, (CONST LOGFONT*)desc,
-                     (struct ID3DXFont**)font_data)))
-            return true;
+            LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)_dev;
+            if (SUCCEEDED(D3DCreateFontIndirect(
+                        dev, (CONST LOGFONT*)desc,
+                        (struct ID3DXFont**)font_data)))
+               return true;
 #endif
 #endif
+         }
          break;
       case GFX_CTX_NONE:
       default:

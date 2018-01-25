@@ -30,9 +30,9 @@ typedef struct d3d_texture
    D3DPOOL pool;
 } d3d_texture_t;
 
-bool d3d_swap(void *data, LPDIRECT3DDEVICE dev);
+bool d3d_swap(void *data, void *dev);
 
-LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(LPDIRECT3DDEVICE dev,
+LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(void *dev,
       unsigned length, unsigned usage, unsigned fvf,
       D3DPOOL pool, void *handle);
 
@@ -47,45 +47,45 @@ bool d3d_texture_get_level_desc(LPDIRECT3DTEXTURE tex,
 bool d3d_texture_get_surface_level(LPDIRECT3DTEXTURE tex,
       unsigned idx, void **_ppsurface_level);
 
-LPDIRECT3DTEXTURE d3d_texture_new(LPDIRECT3DDEVICE dev,
+LPDIRECT3DTEXTURE d3d_texture_new(void *dev,
       const char *path, unsigned width, unsigned height,
       unsigned miplevels, unsigned usage, D3DFORMAT format,
       D3DPOOL pool, unsigned filter, unsigned mipfilter,
       D3DCOLOR color_key, void *src_info,
       PALETTEENTRY *palette, bool want_mipmap);
 
-void d3d_set_stream_source(LPDIRECT3DDEVICE dev, unsigned stream_no,
+void d3d_set_stream_source(void *dev, unsigned stream_no,
       void *stream_vertbuf, unsigned offset_bytes,
       unsigned stride);
 
 void d3d_texture_free(LPDIRECT3DTEXTURE tex);
 
-void d3d_set_transform(LPDIRECT3DDEVICE dev,
+void d3d_set_transform(void *dev,
       D3DTRANSFORMSTATETYPE state, CONST D3DMATRIX *matrix);
 
-void d3d_set_sampler_address_u(LPDIRECT3DDEVICE dev,
+void d3d_set_sampler_address_u(void *dev,
       unsigned sampler, unsigned value);
 
-void d3d_set_sampler_address_v(LPDIRECT3DDEVICE dev,
+void d3d_set_sampler_address_v(void *dev,
       unsigned sampler, unsigned value);
 
-void d3d_set_sampler_minfilter(LPDIRECT3DDEVICE dev,
+void d3d_set_sampler_minfilter(void *dev,
       unsigned sampler, unsigned value);
 
-void d3d_set_sampler_magfilter(LPDIRECT3DDEVICE dev,
+void d3d_set_sampler_magfilter(void *dev,
       unsigned sampler, unsigned value);
 
-void d3d_set_sampler_mipfilter(LPDIRECT3DDEVICE dev,
+void d3d_set_sampler_mipfilter(void *dev,
       unsigned sampler, unsigned value);
 
-bool d3d_begin_scene(LPDIRECT3DDEVICE dev);
+bool d3d_begin_scene(void *dev);
 
-void d3d_end_scene(LPDIRECT3DDEVICE dev);
+void d3d_end_scene(void *dev);
 
-void d3d_draw_primitive(LPDIRECT3DDEVICE dev,
+void d3d_draw_primitive(void *dev,
       D3DPRIMITIVETYPE type, unsigned start, unsigned count);
 
-void d3d_clear(LPDIRECT3DDEVICE dev,
+void d3d_clear(void *dev,
       unsigned count, const D3DRECT *rects, unsigned flags,
       D3DCOLOR color, float z, unsigned stencil);
 
@@ -99,25 +99,25 @@ void d3d_lock_rectangle_clear(LPDIRECT3DTEXTURE tex,
 
 void d3d_unlock_rectangle(LPDIRECT3DTEXTURE tex);
 
-void d3d_set_texture(LPDIRECT3DDEVICE dev, unsigned sampler,
+void d3d_set_texture(void *dev, unsigned sampler,
       void *tex_data);
 
-bool d3d_create_vertex_shader(LPDIRECT3DDEVICE dev,
+bool d3d_create_vertex_shader(void *dev,
       const DWORD *a, void **b);
 
-bool d3d_create_pixel_shader(LPDIRECT3DDEVICE dev,
+bool d3d_create_pixel_shader(void *dev,
       const DWORD *a, void **b);
 
-void d3d_free_pixel_shader(LPDIRECT3DDEVICE dev, void *data);
+void d3d_free_pixel_shader(void *dev, void *data);
 
-void d3d_free_vertex_shader(LPDIRECT3DDEVICE dev, void *data);
+void d3d_free_vertex_shader(void *dev, void *data);
 
-bool d3d_set_pixel_shader(LPDIRECT3DDEVICE dev, void *data);
+bool d3d_set_pixel_shader(void *dev, void *data);
 
-bool d3d_set_vertex_shader(LPDIRECT3DDEVICE dev, unsigned index,
+bool d3d_set_vertex_shader(void *dev, unsigned index,
       void *data);
 
-bool d3d_set_vertex_shader_constantf(LPDIRECT3DDEVICE dev,
+bool d3d_set_vertex_shader_constantf(void *dev,
       UINT start_register,const float* constant_data, unsigned vector4f_count);
 
 void d3d_texture_blit(unsigned pixel_size,
@@ -125,12 +125,12 @@ void d3d_texture_blit(unsigned pixel_size,
       D3DLOCKED_RECT *lr, const void *frame,
       unsigned width, unsigned height, unsigned pitch);
 
-bool d3d_vertex_declaration_new(LPDIRECT3DDEVICE dev,
+bool d3d_vertex_declaration_new(void *dev,
       const void *vertex_data, void **decl_data);
 
 void d3d_vertex_declaration_free(void *data);
 
-void d3d_set_viewports(LPDIRECT3DDEVICE dev, D3DVIEWPORT *vp);
+void d3d_set_viewports(void *dev, D3DVIEWPORT *vp);
 
 void d3d_enable_blend_func(void *data);
 
@@ -144,13 +144,13 @@ void d3d_frame_postprocess(void *data);
 
 void d3d_surface_free(void *data);
 
-bool d3d_device_get_render_target_data(LPDIRECT3DDEVICE dev,
+bool d3d_device_get_render_target_data(void *dev,
       void *_src, void *_dst);
 
-bool d3d_device_get_render_target(LPDIRECT3DDEVICE dev,
+bool d3d_device_get_render_target(void *dev,
       unsigned idx, void **data);
 
-void d3d_device_set_render_target(LPDIRECT3DDEVICE dev, unsigned idx,
+void d3d_device_set_render_target(void *dev, unsigned idx,
       void *data);
 
 bool d3d_get_render_state(void *data,
@@ -159,11 +159,11 @@ bool d3d_get_render_state(void *data,
 void d3d_set_render_state(void *data,
       D3DRENDERSTATETYPE state, DWORD value);
 
-void d3d_device_set_render_target(LPDIRECT3DDEVICE dev, unsigned idx,
+void d3d_device_set_render_target(void *dev, unsigned idx,
       void *data);
 
 bool d3d_device_create_offscreen_plain_surface(
-      LPDIRECT3DDEVICE dev,
+      void *dev,
       unsigned width,
       unsigned height,
       unsigned format,
@@ -191,19 +191,19 @@ bool d3d_get_adapter_display_mode(LPDIRECT3D d3d,
       unsigned idx,
       D3DDISPLAYMODE *display_mode);
 
-bool d3d_create_device(LPDIRECT3DDEVICE *dev,
+bool d3d_create_device(void *dev,
       D3DPRESENT_PARAMETERS *d3dpp,
       LPDIRECT3D d3d,
       HWND focus_window,
       unsigned cur_mon_id);
 
-bool d3d_reset(LPDIRECT3DDEVICE dev, D3DPRESENT_PARAMETERS *d3dpp);
+bool d3d_reset(void *dev, D3DPRESENT_PARAMETERS *d3dpp);
 
-bool d3d_device_get_backbuffer(LPDIRECT3DDEVICE dev, 
+bool d3d_device_get_backbuffer(void *dev, 
       unsigned idx, unsigned swapchain_idx, 
       unsigned backbuffer_type, void **data);
 
-void d3d_device_free(LPDIRECT3DDEVICE dev, LPDIRECT3D pd3d);
+void d3d_device_free(void *dev, LPDIRECT3D pd3d);
 
 void *d3d_create(void);
 
@@ -217,7 +217,7 @@ bool d3d_check_device_type(LPDIRECT3D d3d,
       D3DFORMAT backbuffer_format,
       bool windowed_mode);
 
-bool d3dx_create_font_indirect(LPDIRECT3DDEVICE dev,
+bool d3dx_create_font_indirect(void *dev,
       void *desc, void **font_data);
 
 void d3dxbuffer_release(void *data);

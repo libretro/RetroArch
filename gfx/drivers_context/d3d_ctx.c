@@ -81,9 +81,8 @@ static bool gfx_ctx_d3d_set_resize(void *data, unsigned new_width, unsigned new_
 static void gfx_ctx_d3d_swap_buffers(void *data, void *data2)
 {
    d3d_video_t      *d3d = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
-
-   d3d_swap(d3d, d3dr);
+   if (d3d)
+      d3d_swap(d3d, d3d->dev);
 }
 
 static void gfx_ctx_d3d_update_title(void *data, void *data2)

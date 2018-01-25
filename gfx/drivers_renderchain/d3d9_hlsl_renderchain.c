@@ -34,7 +34,7 @@ typedef struct hlsl_d3d9_renderchain
    unsigned tex_w;
    unsigned tex_h;
    uint64_t frame_count;
-   LPDIRECT3DDEVICE dev;
+   void *dev;
    LPDIRECT3DTEXTURE tex;
    LPDIRECT3DVERTEXBUFFER vertex_buf;
    LPDIRECT3DVERTEXDECLARATION vertex_decl;
@@ -76,33 +76,31 @@ static bool hlsl_d3d9_renderchain_init_shader_fvf(void *data, void *pass_data)
    };
    d3d_video_t *d3d               = (d3d_video_t*)data;
    d3d_video_t *pass              = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr          = (LPDIRECT3DDEVICE)d3d->dev;
    hlsl_d3d9_renderchain_t *chain = (hlsl_d3d9_renderchain_t*)
       d3d->renderchain_data;
 
    (void)pass_data;
 
-   return d3d_vertex_declaration_new(d3dr,
+   return d3d_vertex_declaration_new(d3d->dev,
          VertexElements, (void**)&chain->vertex_decl);
 }
 
 static bool hlsl_d3d9_renderchain_create_first_pass(void *data,
       const video_info_t *info)
 {
-   d3d_video_t *d3d         = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr    = (LPDIRECT3DDEVICE)d3d->dev;
+   d3d_video_t       *d3d         = (d3d_video_t*)data;
    hlsl_d3d9_renderchain_t *chain = (hlsl_d3d9_renderchain_t*)
       d3d->renderchain_data;
 
    chain->vertex_buf        = d3d_vertex_buffer_new(
-         d3dr, 4 * sizeof(Vertex),
+         d3d->dev, 4 * sizeof(Vertex),
          D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED,
          NULL);
 
    if (!chain->vertex_buf)
       return false;
 
-   chain->tex = d3d_texture_new(d3dr, NULL,
+   chain->tex = d3d_texture_new(d3d->dev, NULL,
          chain->tex_w, chain->tex_h, 1, 0,
          info->rgb32 ? 
          d3d_get_xrgb8888_format() : d3d_get_rgb565_format(),
@@ -111,10 +109,10 @@ static bool hlsl_d3d9_renderchain_create_first_pass(void *data,
    if (!chain->tex)
       return false;
 
-   d3d_set_sampler_address_u(d3dr, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-   d3d_set_sampler_address_v(d3dr, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
-   d3d_set_render_state(d3dr, D3DRS_CULLMODE, D3DCULL_NONE);
-   d3d_set_render_state(d3dr, D3DRS_ZENABLE, FALSE);
+   d3d_set_sampler_address_u(d3d->dev, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
+   d3d_set_sampler_address_v(d3d->dev, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+   d3d_set_render_state(d3d->dev, D3DRS_CULLMODE, D3DCULL_NONE);
+   d3d_set_render_state(d3d->dev, D3DRS_ZENABLE, FALSE);
 
    if (!hlsl_d3d9_renderchain_init_shader_fvf(chain, chain))
       return false;
@@ -218,7 +216,6 @@ static void hlsl_d3d9_renderchain_blit_to_texture(
 {
    D3DLOCKED_RECT d3dlr;
    hlsl_d3d9_renderchain_t *chain = (hlsl_d3d9_renderchain_t*)data;
-   LPDIRECT3DDEVICE d3dr    = (LPDIRECT3DDEVICE)chain->dev;
 
    d3d_frame_postprocess(chain);
 
@@ -231,7 +228,7 @@ static void hlsl_d3d9_renderchain_blit_to_texture(
    }
 
    /* Set the texture to NULL so D3D doesn't complain about it being in use... */
-   d3d_set_texture(d3dr, 0, NULL);
+   d3d_set_texture(chain->dev, 0, NULL);
 
    if (d3d_lock_rectangle(chain->tex, 0, &d3dlr, NULL, 0, 0))
    {
@@ -311,7 +308,6 @@ static bool hlsl_d3d9_renderchain_init(void *data,
 {
    unsigned width, height;
    d3d_video_t *d3d                   = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr              = (LPDIRECT3DDEVICE)d3d->dev;
    const video_info_t *video_info     = (const video_info_t*)_video_info;
    const struct LinkInfo *link_info   = (const struct LinkInfo*)info_data;
    hlsl_d3d9_renderchain_t *chain     = (hlsl_d3d9_renderchain_t*)
@@ -327,7 +323,7 @@ static bool hlsl_d3d9_renderchain_init(void *data,
 
    video_driver_get_size(&width, &height);
 
-   chain->dev                         = (LPDIRECT3DDEVICE)dev_data;
+   chain->dev                         = (LPDIRECT3DDEVICE9)dev_data;
    chain->pixel_size                  = (fmt == RETRO_PIXEL_FORMAT_RGB565) ? 2 : 4;
    chain->tex_w                       = link_info->tex_w;
    chain->tex_h                       = link_info->tex_h;
@@ -362,7 +358,6 @@ static bool hlsl_d3d9_renderchain_render(void *data, const void *frame,
    unsigned i;
    unsigned width, height;
    d3d_video_t      *d3d          = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr          = (LPDIRECT3DDEVICE)d3d->dev;
    settings_t *settings           = config_get_ptr();
    hlsl_d3d9_renderchain_t *chain = (hlsl_d3d9_renderchain_t*)d3d->renderchain_data;
    bool video_smooth              = settings->bools.video_smooth;
@@ -376,18 +371,17 @@ static bool hlsl_d3d9_renderchain_render(void *data, const void *frame,
    hlsl_d3d9_renderchain_set_vertices(d3d,
          1, frame_width, frame_height, chain->frame_count);
 
-   d3d_set_texture(d3dr, 0, chain->tex);
+   d3d_set_texture(chain->dev, 0, chain->tex);
    d3d_set_viewports(chain->dev, &d3d->final_viewport);
-   d3d_set_sampler_minfilter(d3dr, 0,
+   d3d_set_sampler_minfilter(chain->dev, 0,
          video_smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
-   d3d_set_sampler_magfilter(d3dr, 0,
+   d3d_set_sampler_magfilter(chain->dev, 0,
          video_smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
 
-   d3d_set_vertex_declaration(d3dr, chain->vertex_decl);
+   d3d_set_vertex_declaration(chain->dev, chain->vertex_decl);
    for (i = 0; i < 4; i++)
-      d3d_set_stream_source(d3dr, i, chain->vertex_buf, 0, sizeof(Vertex));
-
-   d3d_draw_primitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
+      d3d_set_stream_source(chain->dev, i, chain->vertex_buf, 0, sizeof(Vertex));
+   d3d_draw_primitive(chain->dev, D3DPT_TRIANGLESTRIP, 0, 2);
    /* TODO/FIXME - last parameter is mat_data - should be something
    other than NULL */
    hlsl_d3d9_renderchain_set_mvp(d3d,

@@ -191,7 +191,7 @@ static void hlsl_set_params(void *data, void *shader_data,
    float ori_size[2], tex_size[2], out_size[2];
    float frame_cnt                        = frame_counter;
    d3d_video_t *d3d                       = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr                  = (LPDIRECT3DDEVICE)d3d->dev;
+   LPDIRECT3DDEVICE9 d3dr                 = (LPDIRECT3DDEVICE9)d3d->dev;
    const struct video_tex_info *info      = (const struct video_tex_info*)_info;
    const struct video_tex_info *prev_info = (const struct video_tex_info*)_prev_info;
    const struct video_tex_info *fbo_info  = (const struct video_tex_info*)_fbo_info;
@@ -236,7 +236,7 @@ static bool hlsl_compile_program(
    hlsl_shader_data_t *hlsl                  = (hlsl_shader_data_t*)data;
    d3d_video_t *d3d                          = (d3d_video_t*)hlsl->d3d;
    struct shader_program_hlsl_data *program  = (struct shader_program_hlsl_data*)program_data;
-   LPDIRECT3DDEVICE d3dr                     = (LPDIRECT3DDEVICE)d3d->dev;
+   LPDIRECT3DDEVICE9 d3dr                    = (LPDIRECT3DDEVICE9)d3d->dev;
    ID3DXBuffer *listing_f                    = NULL;
    ID3DXBuffer *listing_v                    = NULL;
    ID3DXBuffer *code_f                       = NULL;
@@ -516,9 +516,9 @@ static void hlsl_deinit(void *data)
 
 static void hlsl_use(void *data, void *shader_data, unsigned idx, bool set_active)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
+   d3d_video_t              *d3d = (d3d_video_t*)data;
    hlsl_shader_data_t *hlsl_data = (hlsl_shader_data_t*)shader_data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
+   LPDIRECT3DDEVICE9        d3dr = (LPDIRECT3DDEVICE9)d3d->dev;
 
    if (hlsl_data && hlsl_data->prg[idx].vprg && hlsl_data->prg[idx].fprg)
    {
@@ -562,7 +562,7 @@ static void hlsl_shader_scale(void *data, unsigned idx, struct gfx_fbo_scale *sc
 static bool hlsl_set_mvp(void *data, void *shader_data, const void *mat_data)
 {
    d3d_video_t *d3d                = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr           = (LPDIRECT3DDEVICE)d3d->dev;
+   LPDIRECT3DDEVICE9 d3dr          = (LPDIRECT3DDEVICE9)d3d->dev;
    hlsl_shader_data_t *hlsl_data   = (hlsl_shader_data_t*)shader_data;
    const math_matrix_4x4 *mat      = (const math_matrix_4x4*)mat_data;
 

@@ -60,7 +60,7 @@ static LPDIRECT3D g_pD3D8;
 typedef struct d3d8_renderchain
 {
    unsigned pixel_size;
-   LPDIRECT3DDEVICE dev;
+   LPDIRECT3DDEVICE8 dev;
    const video_info_t *video_info;
    LPDIRECT3DTEXTURE tex;
    LPDIRECT3DVERTEXBUFFER vertex_buf;
@@ -96,7 +96,7 @@ static bool d3d8_renderchain_create_first_pass(void *data,
       const video_info_t *info)
 {
    d3d_video_t *d3d          = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr     = (LPDIRECT3DDEVICE)d3d->dev;
+   LPDIRECT3DDEVICE8 d3dr     = (LPDIRECT3DDEVICE8)d3d->dev;
    d3d8_renderchain_t *chain = (d3d8_renderchain_t*)d3d->renderchain_data;
 
    chain->vertex_buf         = d3d_vertex_buffer_new(d3dr, 4 * sizeof(Vertex),
@@ -198,7 +198,7 @@ static void d3d8_renderchain_blit_to_texture(void *data, const void *frame,
 {
    D3DLOCKED_RECT d3dlr;
    d3d8_renderchain_t *chain = (d3d8_renderchain_t*)data;
-   LPDIRECT3DDEVICE d3dr     = (LPDIRECT3DDEVICE)chain->dev;
+   LPDIRECT3DDEVICE8 d3dr     = (LPDIRECT3DDEVICE8)chain->dev;
 
    d3d_frame_postprocess(chain);
 
@@ -256,7 +256,7 @@ static void d3d8_renderchain_viewport_info(void *data,
 }
 
 static void d3d8_renderchain_render_pass(
-      d3d_video_t *d3d, LPDIRECT3DDEVICE d3dr,
+      d3d_video_t *d3d, LPDIRECT3DDEVICE8 d3dr,
       d3d8_renderchain_t *chain,
       unsigned pass_index,
       unsigned rotation)
@@ -281,7 +281,7 @@ static bool d3d8_renderchain_render(void *data, const void *frame,
       unsigned pitch, unsigned rotation)
 {
    d3d_video_t      *d3d     = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr     = (LPDIRECT3DDEVICE)d3d->dev;
+   LPDIRECT3DDEVICE8 d3dr     = (LPDIRECT3DDEVICE8)d3d->dev;
    d3d8_renderchain_t *chain = (d3d8_renderchain_t*)d3d->renderchain_data;
 
    d3d8_renderchain_blit_to_texture(chain, frame, frame_width, frame_height, pitch);
@@ -304,7 +304,7 @@ static bool d3d8_renderchain_init(void *data,
 {
    unsigned width, height;
    d3d_video_t *d3d                       = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr                  = (LPDIRECT3DDEVICE)d3d->dev;
+   LPDIRECT3DDEVICE8 d3dr                  = (LPDIRECT3DDEVICE8)d3d->dev;
    const video_info_t *video_info         = (const video_info_t*)_video_info;
    const struct LinkInfo *link_info       = (const struct LinkInfo*)info_data;
    d3d8_renderchain_t *chain              = (d3d8_renderchain_t*)d3d->renderchain_data;
@@ -314,7 +314,7 @@ static bool d3d8_renderchain_init(void *data,
 
    video_driver_get_size(&width, &height);
 
-   chain->dev                   = (LPDIRECT3DDEVICE)dev_data;
+   chain->dev                   = (LPDIRECT3DDEVICE8)dev_data;
    chain->pixel_size            = (fmt == RETRO_PIXEL_FORMAT_RGB565) ? 2 : 4;
    chain->tex_w                 = link_info->tex_w;
    chain->tex_h                 = link_info->tex_h;

@@ -92,7 +92,7 @@ typedef struct d3d_video
    struct video_shader shader;
    video_info_t video_info;
    WNDCLASSEX windowClass;
-   LPDIRECT3DDEVICE dev;
+   void *dev;
    D3DVIEWPORT final_viewport;
 
    char *shader_path;
