@@ -299,7 +299,7 @@ static void d3d11_font_render_msg(
       g          = FONT_COLOR_GET_GREEN(params->color);
       b          = FONT_COLOR_GET_BLUE(params->color);
       alpha      = FONT_COLOR_GET_ALPHA(params->color);
-      color      = params->color;
+      color      = DXGI_COLOR_RGBA(r, g, b, alpha);
    }
    else
    {
