@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2013-2014 - Jason Fetters
  *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Courtesy Contributor - Olivier Parra
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -92,6 +93,29 @@ static void iohidmanager_append_record(apple_input_rec_t *rec, apple_input_rec_t
    while(tmp->next)
       tmp = tmp->next;
    tmp->next = b;
+}
+
+/* Insert a new detected button into a button ordered list.
+ * Button list example with Nimbus Controller:
+ *                  +-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+ * "id" list member |  1  |  2  |  3  |  4  |  5  |  6  |  7  |  8  | 144 | 145 | 146 | 147 | 547 |
+ *  Final Button ID |  0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |  8  |  9  | 10  | 11  | 12  |
+ *                  +-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+ *           Ranges |<         X/Y/A/B/L1/L2/R1/R2 buttons         >|<        D-PAD        >|MENU |
+ * In that way, HID button IDs allocation:
+ *   - becomes robust and determinist
+ *   - remains compatible with previous algorithm (i.e. btn->id = (uint32_t)(use - 1)) and so
+ *             compatible with previous autoconfig files.
+ */
+static void iohidmanager_append_record_ordered(apple_input_rec_t **p_rec, apple_input_rec_t *b)
+{
+    apple_input_rec_t *tmp = *p_rec;
+    while(tmp && (tmp->id <= b->id)) {
+        p_rec = &tmp->next;
+        tmp = tmp->next;
+    }
+    b->next = tmp;
+    *p_rec = b;
 }
 
 static bool iohidmanager_hid_joypad_query(void *data, unsigned pad)
@@ -662,14 +686,14 @@ static void iohidmanager_hid_device_add(void *data, IOReturn result,
          if(iohidmanager_check_for_id(adapter->buttons,btn->id))
          {
             if(tmpButtons)
-               iohidmanager_append_record(tmpButtons, btn);
+               iohidmanager_append_record_ordered(&tmpButtons, btn);
             else
                tmpButtons = btn;
          }
          else
          {
             if(adapter->buttons)
-               iohidmanager_append_record(adapter->buttons, btn);
+               iohidmanager_append_record_ordered(&adapter->buttons, btn);
             else
                adapter->buttons = btn;
          }
