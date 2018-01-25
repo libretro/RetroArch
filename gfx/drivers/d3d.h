@@ -63,6 +63,16 @@ typedef struct Vertex
    float u, v;
 } Vertex;
 
+typedef struct d3d_video_viewport
+{
+   DWORD x;
+   DWORD y;
+   DWORD width;
+   DWORD height;
+   float min_z;
+   float max_z;
+} d3d_video_viewport_t;
+
 typedef struct d3d_video
 {
    bool keep_aspect;
@@ -93,7 +103,7 @@ typedef struct d3d_video
    video_info_t video_info;
    WNDCLASSEX windowClass;
    void *dev;
-   D3DVIEWPORT final_viewport;
+   d3d_video_viewport_t final_viewport;
 
    char *shader_path;
 

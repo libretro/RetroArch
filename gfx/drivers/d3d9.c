@@ -411,7 +411,7 @@ static void d3d9_overlay_render(d3d_video_t *d3d,
 
    if (overlay->fullscreen)
    {
-      D3DVIEWPORT vp_full;
+      D3DVIEWPORT9 vp_full;
 
       vp_full.X      = 0;
       vp_full.Y      = 0;
@@ -722,7 +722,7 @@ static void d3d9_set_viewport(void *data,
       bool force_full,
       bool allow_rotate)
 {
-   D3DVIEWPORT viewport;
+   D3DVIEWPORT9 viewport;
    int x               = 0;
    int y               = 0;
    d3d_video_t *d3d = (d3d_video_t*)data;
@@ -736,14 +736,12 @@ static void d3d9_set_viewport(void *data,
    if (y < 0)
       y = 0;
 
-   viewport.X          = x;
-   viewport.Y          = y;
-   viewport.Width      = width;
-   viewport.Height     = height;
-   viewport.MinZ       = 0.0f;
-   viewport.MaxZ       = 1.0f;
-
-   d3d->final_viewport = viewport;
+   d3d->final_viewport.x      = x;
+   d3d->final_viewport.y      = y;
+   d3d->final_viewport.width  = width;
+   d3d->final_viewport.height = height;
+   d3d->final_viewport.min_z  = 0.0f;
+   d3d->final_viewport.max_z  = 1.0f;
 
    if (d3d->renderchain_driver && d3d->renderchain_driver->set_font_rect)
       d3d->renderchain_driver->set_font_rect(d3d, NULL);
@@ -1384,7 +1382,7 @@ static bool d3d9_frame(void *data, const void *frame,
       uint64_t frame_count, unsigned pitch,
       const char *msg, video_frame_info_t *video_info)
 {
-   D3DVIEWPORT screen_vp;
+   D3DVIEWPORT9 screen_vp;
    unsigned i                          = 0;
    d3d_video_t *d3d                    = (d3d_video_t*)data;
    unsigned width                      = video_info->width;

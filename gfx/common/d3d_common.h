@@ -130,7 +130,7 @@ bool d3d_vertex_declaration_new(void *dev,
 
 void d3d_vertex_declaration_free(void *data);
 
-void d3d_set_viewports(void *dev, D3DVIEWPORT *vp);
+void d3d_set_viewports(void *dev, void *vp);
 
 void d3d_enable_blend_func(void *data);
 

@@ -1767,7 +1767,7 @@ void d3d_lock_rectangle_clear(void *tex,
    d3d_unlock_rectangle(tex);
 }
 
-void d3d_set_viewports(void *_dev, D3DVIEWPORT *vp)
+void d3d_set_viewports(void *_dev, void *_vp)
 {
    switch (d3d_common_api)
    {
@@ -1775,6 +1775,7 @@ void d3d_set_viewports(void *_dev, D3DVIEWPORT *vp)
          {
 #ifdef HAVE_D3D9
             LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
+            D3DVIEWPORT9      *vp = (D3DVIEWPORT9*)_vp;
             if (!dev)
                return;
 #ifdef __cplusplus
@@ -1789,6 +1790,7 @@ void d3d_set_viewports(void *_dev, D3DVIEWPORT *vp)
          {
 #ifdef HAVE_D3D8
             LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)_dev;
+            D3DVIEWPORT8      *vp = (D3DVIEWPORT8*)_vp;
             if (!dev)
                return;
 #ifdef __cplusplus

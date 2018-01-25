@@ -112,7 +112,7 @@ typedef struct cg_renderchain
    void *dev;
    const video_info_t *video_info;
    state_tracker_t *state_tracker;
-   D3DVIEWPORT *final_viewport;
+   D3DVIEWPORT9 *final_viewport;
    CGcontext cgCtx;
    struct pass_vector_list *passes;
    struct lut_info_vector_list *luts;
@@ -913,7 +913,7 @@ static bool d3d9_cg_renderchain_init(void *data,
    chain->dev            = (void*)dev_;
    chain->video_info     = video_info;
    chain->state_tracker  = NULL;
-   chain->final_viewport = (D3DVIEWPORT*)final_viewport_;
+   chain->final_viewport = (D3DVIEWPORT9*)final_viewport_;
    chain->frame_count    = 0;
    chain->pixel_size     = (fmt == RETRO_PIXEL_FORMAT_RGB565) ? 2 : 4;
 
@@ -971,9 +971,9 @@ static void d3d9_cg_renderchain_convert_geometry(
       unsigned height,
       void *final_viewport_data)
 {
-   const struct LinkInfo *info = (const struct LinkInfo*)info_data;
-   cg_renderchain_t *chain     = (cg_renderchain_t*)data;
-   D3DVIEWPORT *final_viewport = (D3DVIEWPORT*)final_viewport_data;
+   const struct LinkInfo *info                 = (const struct LinkInfo*)info_data;
+   cg_renderchain_t *chain                     = (cg_renderchain_t*)data;
+   D3DVIEWPORT9 *final_viewport                = (D3DVIEWPORT9*)final_viewport_data;
 
    if (!chain || !info)
       return;
@@ -1059,12 +1059,12 @@ static void d3d9_cg_renderchain_set_final_viewport(
       void *renderchain_data,
       const void *viewport_data)
 {
-   d3d_video_t                  *d3d = (d3d_video_t*)data;
+   d3d_video_t                  *d3d    = (d3d_video_t*)data;
    cg_renderchain_t              *chain = (cg_renderchain_t*)renderchain_data;
-   const D3DVIEWPORT *final_viewport = (const D3DVIEWPORT*)viewport_data;
+   const D3DVIEWPORT9 *final_viewport   = (const D3DVIEWPORT9*)viewport_data;
 
-   if (chain)
-      chain->final_viewport = (D3DVIEWPORT*)final_viewport;
+   if (chain && final_viewport)
+      chain->final_viewport = (D3DVIEWPORT9*)final_viewport;
 
    d3d_recompute_pass_sizes(chain, d3d);
 }
@@ -1324,7 +1324,7 @@ static void cg_d3d9_renderchain_set_vertices(
 
 static void cg_d3d9_renderchain_set_viewport(
       cg_renderchain_t *chain,
-      D3DVIEWPORT *vp)
+      D3DVIEWPORT9 *vp)
 {
    d3d_set_viewports(chain->dev, vp);
 }
@@ -1505,9 +1505,9 @@ static bool d3d9_cg_renderchain_render(
    /* In-between render target passes. */
    for (i = 0; i < chain->passes->count - 1; i++)
    {
-      D3DVIEWPORT   viewport = {0};
-      struct Pass *from_pass = (struct Pass*)&chain->passes->data[i];
-      struct Pass *to_pass   = (struct Pass*)&chain->passes->data[i + 1];
+      D3DVIEWPORT9   viewport = {0};
+      struct Pass *from_pass  = (struct Pass*)&chain->passes->data[i];
+      struct Pass *to_pass    = (struct Pass*)&chain->passes->data[i + 1];
 
       d3d_texture_get_surface_level(to_pass->tex, 0, (void**)&target);
 
@@ -1653,13 +1653,13 @@ static bool d3d9_cg_renderchain_read_viewport(
       unsigned pitchpix       = rect.Pitch / 4;
       const uint32_t *pixels  = (const uint32_t*)rect.pBits;
 
-      pixels                 += d3d->final_viewport.X;
-      pixels                 += (d3d->final_viewport.Height - 1) * pitchpix;
-      pixels                 -= d3d->final_viewport.Y * pitchpix;
+      pixels                 += d3d->final_viewport.x;
+      pixels                 += (d3d->final_viewport.height - 1) * pitchpix;
+      pixels                 -= d3d->final_viewport.y * pitchpix;
 
-      for (y = 0; y < d3d->final_viewport.Height; y++, pixels -= pitchpix)
+      for (y = 0; y < d3d->final_viewport.height; y++, pixels -= pitchpix)
       {
-         for (x = 0; x < d3d->final_viewport.Width; x++)
+         for (x = 0; x < d3d->final_viewport.width; x++)
          {
             *buffer++ = (pixels[x] >>  0) & 0xff;
             *buffer++ = (pixels[x] >>  8) & 0xff;
@@ -1691,10 +1691,10 @@ static void d3d9_cg_renderchain_viewport_info(
 
    video_driver_get_size(&width, &height);
 
-   vp->x            = d3d->final_viewport.X;
-   vp->y            = d3d->final_viewport.Y;
-   vp->width        = d3d->final_viewport.Width;
-   vp->height       = d3d->final_viewport.Height;
+   vp->x            = d3d->final_viewport.x;
+   vp->y            = d3d->final_viewport.y;
+   vp->width        = d3d->final_viewport.width;
+   vp->height       = d3d->final_viewport.height;
 
    vp->full_width   = width;
    vp->full_height  = height;

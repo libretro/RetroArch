@@ -246,10 +246,10 @@ static void d3d8_renderchain_viewport_info(void *data,
 
    video_driver_get_size(&width, &height);
 
-   vp->x            = d3d->final_viewport.X;
-   vp->y            = d3d->final_viewport.Y;
-   vp->width        = d3d->final_viewport.Width;
-   vp->height       = d3d->final_viewport.Height;
+   vp->x            = d3d->final_viewport.x;
+   vp->y            = d3d->final_viewport.y;
+   vp->width        = d3d->final_viewport.width;
+   vp->height       = d3d->final_viewport.height;
 
    vp->full_width   = width;
    vp->full_height  = height;
@@ -261,6 +261,7 @@ static void d3d8_renderchain_render_pass(
       unsigned pass_index,
       unsigned rotation)
 {
+   D3DVIEWPORT8 vp;
    settings_t *settings      = config_get_ptr();
 
    d3d_set_texture(d3dr, 0, chain->tex);
@@ -269,7 +270,7 @@ static void d3d8_renderchain_render_pass(
    d3d_set_sampler_minfilter(d3dr, pass_index, settings->bools.video_smooth ?
          D3DTEXF_LINEAR : D3DTEXF_POINT);
 
-   d3d_set_viewports(chain->dev, &d3d->final_viewport);
+   d3d_set_viewports(chain->dev, (D3DVIEWPORT8*)&d3d->final_viewport);
    d3d_set_vertex_shader(d3dr, D3DFVF_CUSTOMVERTEX, NULL);
    d3d_set_stream_source(d3dr, 0, chain->vertex_buf, 0, sizeof(Vertex));
    d3d8_renderchain_set_mvp(d3d, chain, NULL, &d3d->mvp_rotate);
@@ -297,7 +298,6 @@ static bool d3d8_renderchain_render(void *data, const void *frame,
 static bool d3d8_renderchain_init(void *data,
       const void *_video_info,
       void *dev_data,
-      const void *final_viewport_data,
       const void *info_data,
       bool rgb32
       )
@@ -310,7 +310,6 @@ static bool d3d8_renderchain_init(void *data,
    d3d8_renderchain_t *chain              = (d3d8_renderchain_t*)d3d->renderchain_data;
    unsigned fmt                           = (rgb32) ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
    struct video_viewport *custom_vp       = video_viewport_get_custom();
-   (void)final_viewport_data;
 
    video_driver_get_size(&width, &height);
 
@@ -365,7 +364,7 @@ static bool d3d8_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
          !d3d8_renderchain_init(
             d3d,
             &d3d->video_info,
-            d3d->dev, &d3d->final_viewport, &link_info,
+            d3d->dev, &link_info,
             d3d->video_info.rgb32)
       )
    {
@@ -425,6 +424,7 @@ static void d3d8_overlay_render(d3d_video_t *d3d,
       video_frame_info_t *video_info,
       overlay_t *overlay)
 {
+   D3DVIEWPORT8 vp_full;
    struct video_viewport vp;
    void *verts;
    unsigned i;
@@ -483,7 +483,6 @@ static void d3d8_overlay_render(d3d_video_t *d3d,
 
    if (overlay->fullscreen)
    {
-      D3DVIEWPORT vp_full;
 
       vp_full.X      = 0;
       vp_full.Y      = 0;
@@ -504,6 +503,7 @@ static void d3d8_overlay_render(d3d_video_t *d3d,
 
    /* Restore previous state. */
    d3d_disable_blend_func(d3d->dev);
+
    d3d_set_viewports(d3d->dev, &d3d->final_viewport);
 }
 
@@ -799,7 +799,6 @@ static void d3d8_set_viewport(void *data,
       bool allow_rotate)
 {
    D3DMATRIX proj, ortho, rot, matrix;
-   D3DVIEWPORT viewport;
    int x               = 0;
    int y               = 0;
    d3d_video_t *d3d = (d3d_video_t*)data;
@@ -813,14 +812,12 @@ static void d3d8_set_viewport(void *data,
    if (y < 0)
       y = 0;
 
-   viewport.X          = x;
-   viewport.Y          = y;
-   viewport.Width      = width;
-   viewport.Height     = height;
-   viewport.MinZ       = 0.0f;
-   viewport.MaxZ       = 1.0f;
-
-   d3d->final_viewport = viewport;
+   d3d->final_viewport.x     = x;
+   d3d->final_viewport.y     = y;
+   d3d->final_viewport.width = width;
+   d3d->final_viewport.height= height;
+   d3d->final_viewport.min_z = 0.0f;
+   d3d->final_viewport.max_z = 0.0f;
 
    d3d_matrix_ortho_off_center_lh(&ortho, 0, 1, 0, 1, 0.0f, 1.0f);
    d3d_matrix_identity(&rot);
@@ -1426,7 +1423,7 @@ static bool d3d8_frame(void *data, const void *frame,
       uint64_t frame_count, unsigned pitch,
       const char *msg, video_frame_info_t *video_info)
 {
-   D3DVIEWPORT screen_vp;
+   D3DVIEWPORT8 screen_vp;
    unsigned i                          = 0;
    d3d_video_t *d3d                    = (d3d_video_t*)data;
    unsigned width                      = video_info->width;
