@@ -211,10 +211,12 @@ static void d3d11_font_render_line(
       font->atlas->dirty = false;
    }
 
-   D3D11SetPShader(d3d11->ctx, d3d11->sprites.ps_8bit, NULL, 0);
    d3d11_set_texture_and_sampler(d3d11->ctx, 0, &font->texture);
+   D3D11SetBlendState(d3d11->ctx, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
+
+   D3D11SetPShader(d3d11->ctx, d3d11->sprites.shader_font.ps, NULL, 0);
    D3D11Draw(d3d11->ctx, count, d3d11->sprites.offset);
-   D3D11SetPShader(d3d11->ctx, d3d11->sprites.ps, NULL, 0);
+   D3D11SetPShader(d3d11->ctx, d3d11->sprites.shader.ps, NULL, 0);
 
    d3d11->sprites.offset += count;
 }

@@ -32,9 +32,17 @@ static const float* menu_display_d3d11_get_default_tex_coords(void) { return NUL
 
 static void* menu_display_d3d11_get_default_mvp(void) { return NULL; }
 
-static void menu_display_d3d11_blend_begin(void) {}
+static void menu_display_d3d11_blend_begin(void)
+{
+   d3d11_video_t* d3d11 = (d3d11_video_t*)video_driver_get_ptr(false);
+   D3D11SetBlendState(d3d11->ctx, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
+}
 
-static void menu_display_d3d11_blend_end(void) {}
+static void menu_display_d3d11_blend_end(void)
+{
+   d3d11_video_t* d3d11 = (d3d11_video_t*)video_driver_get_ptr(false);
+   D3D11SetBlendState(d3d11->ctx, d3d11->blend_disable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
+}
 
 static void menu_display_d3d11_viewport(void* data) {}
 
@@ -46,79 +54,24 @@ static void menu_display_d3d11_draw(void* data)
    if (!d3d11 || !draw || !draw->texture)
       return;
 
-   if (draw->pipeline.id)
+   switch (draw->pipeline.id)
    {
-      switch (draw->pipeline.id)
-      {
-         case VIDEO_SHADER_MENU:
-            D3D11SetInputLayout(d3d11->ctx, d3d11->ribbon_layout);
-            D3D11SetVShader(d3d11->ctx, d3d11->ribbon_vs, NULL, 0);
-            D3D11SetPShader(d3d11->ctx, d3d11->ribbon_ps, NULL, 0);
-            D3D11SetGShader(d3d11->ctx, NULL, NULL, 0);
-            break;
-#if 0
+      case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
-         D3D11SetVShader(d3d11->ctx, d3d11->ribbon_simple_vs, NULL, 0);
-         D3D11SetPShader(d3d11->ctx, d3d11->ribbon_simple_ps, NULL, 0);
-         D3D11SetGShader(d3d11->ctx, NULL, NULL, 0);
-         break;
+#if 0
       case VIDEO_SHADER_MENU_3:
-         D3D11SetVShader(d3d11->ctx, d3d11->snow_simple_vs, NULL, 0);
-         D3D11SetPShader(d3d11->ctx, d3d11->snow_simple_ps, NULL, 0);
-         D3D11SetGShader(d3d11->ctx, NULL, NULL, 0);
-         break;
       case VIDEO_SHADER_MENU_4:
-         D3D11SetVShader(d3d11->ctx, d3d11->snow_vs, NULL, 0);
-         D3D11SetPShader(d3d11->ctx, d3d11->snow_ps, NULL, 0);
-         D3D11SetGShader(d3d11->ctx, NULL, NULL, 0);
-         break;
       case VIDEO_SHADER_MENU_5:
-         D3D11SetVShader(d3d11->ctx, d3d11->bokeh_vs, NULL, 0);
-         D3D11SetPShader(d3d11->ctx, d3d11->bokeh_ps, NULL, 0);
-         D3D11SetGShader(d3d11->ctx, NULL, NULL, 0);
-         break;
       case VIDEO_SHADER_MENU_6:
-         D3D11SetVShader(d3d11->ctx, d3d11->snowflake_vs, NULL, 0);
-         D3D11SetPShader(d3d11->ctx, d3d11->snowflake_ps, NULL, 0);
-         D3D11SetGShader(d3d11->ctx, NULL, NULL, 0);
-         break;
 #endif
-         default:
-            break;
-      }
+         d3d11_set_shader(d3d11->ctx, &d3d11->shaders[draw->pipeline.id]);
+         D3D11Draw(d3d11->ctx, draw->coords->vertices, 0);
 
-      switch (draw->pipeline.id)
-      {
-         case VIDEO_SHADER_MENU:
-#if 0
-         case VIDEO_SHADER_MENU_2:
-#endif
-            D3D11Draw(d3d11->ctx, draw->coords->vertices, 0);
-            D3D11SetBlendState(d3d11->ctx, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
-#if 0
-         case VIDEO_SHADER_MENU_3:
-         case VIDEO_SHADER_MENU_4:
-         case VIDEO_SHADER_MENU_5:
-         case VIDEO_SHADER_MENU_6:
-            D3D11Draw(d3d11->ctx, 1, 0);
-            break;
-#endif
-      }
-
-      {
-         UINT stride = sizeof(d3d11_sprite_t);
-         UINT offset = 0;
-
-         D3D11SetVertexBuffers(d3d11->ctx, 0, 1, &d3d11->sprites.vbo, &stride, &offset);
-      }
-
-      D3D11SetInputLayout(d3d11->ctx, d3d11->sprites.layout);
-      D3D11SetPrimitiveTopology(d3d11->ctx, D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
-      D3D11SetVShader(d3d11->ctx, d3d11->sprites.vs, NULL, 0);
-      D3D11SetPShader(d3d11->ctx, d3d11->sprites.ps, NULL, 0);
-      D3D11SetGShader(d3d11->ctx, d3d11->sprites.gs, NULL, 0);
-
-      return;
+         D3D11SetBlendState(d3d11->ctx, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
+         d3d11_set_shader(d3d11->ctx, &d3d11->sprites.shader);
+         D3D11SetVertexBuffer(d3d11->ctx, 0, d3d11->sprites.vbo, sizeof(d3d11_sprite_t), 0);
+         D3D11SetPrimitiveTopology(d3d11->ctx, D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
+         return;
    }
 
    if (!d3d11->sprites.enabled)
@@ -127,45 +80,46 @@ static void menu_display_d3d11_draw(void* data)
    if (d3d11->sprites.offset + 1 > d3d11->sprites.capacity)
       d3d11->sprites.offset = 0;
 
-   D3D11_MAPPED_SUBRESOURCE mapped_vbo;
-   D3D11MapBuffer(d3d11->ctx, d3d11->sprites.vbo, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo);
-   d3d11_sprite_t* v = (d3d11_sprite_t*)mapped_vbo.pData + d3d11->sprites.offset;
+   {
+      D3D11_MAPPED_SUBRESOURCE mapped_vbo;
+      D3D11MapBuffer(
+            d3d11->ctx, d3d11->sprites.vbo, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo);
+      d3d11_sprite_t* v = (d3d11_sprite_t*)mapped_vbo.pData + d3d11->sprites.offset;
 
-   v->pos.x = draw->x / (float)d3d11->viewport.Width;
-   v->pos.y = (d3d11->viewport.Height - draw->y - draw->height) / (float)d3d11->viewport.Height;
-   v->pos.w = draw->width / (float)d3d11->viewport.Width;
-   v->pos.h = draw->height / (float)d3d11->viewport.Height;
+      v->pos.x = draw->x / (float)d3d11->viewport.Width;
+      v->pos.y = (d3d11->viewport.Height - draw->y - draw->height) / (float)d3d11->viewport.Height;
+      v->pos.w = draw->width / (float)d3d11->viewport.Width;
+      v->pos.h = draw->height / (float)d3d11->viewport.Height;
 
-   v->coords.u = 0.0f;
-   v->coords.v = 0.0f;
-   v->coords.w = 1.0f;
-   v->coords.h = 1.0f;
+      v->coords.u = 0.0f;
+      v->coords.v = 0.0f;
+      v->coords.w = 1.0f;
+      v->coords.h = 1.0f;
 
-   if (draw->scale_factor)
-      v->params.scaling = draw->scale_factor;
-   else
-      v->params.scaling = 1.0f;
-   v->params.rotation = draw->rotation;
+      if (draw->scale_factor)
+         v->params.scaling = draw->scale_factor;
+      else
+         v->params.scaling = 1.0f;
 
-   v->colors[3] = DXGI_COLOR_RGBA(
-         0xFF * draw->coords->color[0], 0xFF * draw->coords->color[1],
-         0xFF * draw->coords->color[2], 0xFF * draw->coords->color[3]);
-   v->colors[2] = DXGI_COLOR_RGBA(
-         0xFF * draw->coords->color[4], 0xFF * draw->coords->color[5],
-         0xFF * draw->coords->color[6], 0xFF * draw->coords->color[7]);
-   v->colors[1] = DXGI_COLOR_RGBA(
-         0xFF * draw->coords->color[8], 0xFF * draw->coords->color[9],
-         0xFF * draw->coords->color[10], 0xFF * draw->coords->color[11]);
-   v->colors[0] = DXGI_COLOR_RGBA(
-         0xFF * draw->coords->color[12], 0xFF * draw->coords->color[13],
-         0xFF * draw->coords->color[14], 0xFF * draw->coords->color[15]);
+      v->params.rotation = draw->rotation;
 
-   D3D11UnmapBuffer(d3d11->ctx, d3d11->sprites.vbo, 0);
-#if 0
-   D3D11SetPShader(d3d11->ctx, d3d11->sprites.ps, NULL, 0);
-#endif
+      v->colors[3] = DXGI_COLOR_RGBA(
+            0xFF * draw->coords->color[0], 0xFF * draw->coords->color[1],
+            0xFF * draw->coords->color[2], 0xFF * draw->coords->color[3]);
+      v->colors[2] = DXGI_COLOR_RGBA(
+            0xFF * draw->coords->color[4], 0xFF * draw->coords->color[5],
+            0xFF * draw->coords->color[6], 0xFF * draw->coords->color[7]);
+      v->colors[1] = DXGI_COLOR_RGBA(
+            0xFF * draw->coords->color[8], 0xFF * draw->coords->color[9],
+            0xFF * draw->coords->color[10], 0xFF * draw->coords->color[11]);
+      v->colors[0] = DXGI_COLOR_RGBA(
+            0xFF * draw->coords->color[12], 0xFF * draw->coords->color[13],
+            0xFF * draw->coords->color[14], 0xFF * draw->coords->color[15]);
+
+      D3D11UnmapBuffer(d3d11->ctx, d3d11->sprites.vbo, 0);
+   }
+
    d3d11_set_texture_and_sampler(d3d11->ctx, 0, (d3d11_texture_t*)draw->texture);
-
    D3D11Draw(d3d11->ctx, 1, d3d11->sprites.offset);
    d3d11->sprites.offset++;
    return;
@@ -184,9 +138,7 @@ static void menu_display_d3d11_draw_pipeline(void* data)
    switch (draw->pipeline.id)
    {
       case VIDEO_SHADER_MENU:
-#if 0
-   case VIDEO_SHADER_MENU_2:
-#endif
+      case VIDEO_SHADER_MENU_2:
       {
          ca = menu_display_get_coords_array();
 
@@ -200,29 +152,19 @@ static void menu_display_d3d11_draw_pipeline(void* data)
             D3D11_SUBRESOURCE_DATA vertexData = { ca->coords.vertex };
             D3D11CreateBuffer(d3d11->device, &desc, &vertexData, &d3d11->menu_pipeline_vbo);
          }
-
+         D3D11SetVertexBuffer(d3d11->ctx, 0, d3d11->menu_pipeline_vbo, 2 * sizeof(float), 0);
          draw->coords->vertices = ca->coords.vertices;
-
-         {
-            UINT stride = 2 * sizeof(float);
-            UINT offset = 0;
-            D3D11SetVertexBuffers(d3d11->ctx, 0, 1, &d3d11->menu_pipeline_vbo, &stride, &offset);
-         }
          D3D11SetBlendState(d3d11->ctx, d3d11->blend_pipeline, NULL, D3D11_DEFAULT_SAMPLE_MASK);
+         break;
       }
-      break;
 #if 0
       case VIDEO_SHADER_MENU_3:
       case VIDEO_SHADER_MENU_4:
       case VIDEO_SHADER_MENU_5:
       case VIDEO_SHADER_MENU_6:
-      {
-         UINT stride = sizeof(d3d11_sprite_t);
-         UINT offset = 0;
-         D3D11SetVertexBuffers(d3d11->ctx, 0, 1, &d3d11->frame.vbo, &stride, &offset);
-         D3D11SetInputLayout(d3d11->ctx, d3d11->layout);
-      }
-      break;
+         D3D11SetVertexBuffer(d3d11->ctx, 0, d3d11->frame.vbo, sizeof(d3d11_vertex_t), 0);
+         draw->coords->vertices = 4;
+         break;
 #endif
       default:
          return;
@@ -243,8 +185,7 @@ static void menu_display_d3d11_restore_clear_color(void) {}
 
 static void menu_display_d3d11_clear_color(menu_display_ctx_clearcolor_t* clearcolor)
 {
-   DWORD          clear_color = 0;
-   d3d11_video_t* d3d11       = (d3d11_video_t*)video_driver_get_ptr(false);
+   d3d11_video_t* d3d11 = (d3d11_video_t*)video_driver_get_ptr(false);
 
    if (!d3d11 || !clearcolor)
       return;

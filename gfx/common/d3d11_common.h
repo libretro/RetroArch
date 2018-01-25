@@ -2500,7 +2500,6 @@ typedef struct
 #endif
 #endif
 
-
 typedef struct ALIGN(16)
 {
    math_matrix_4x4 mvp;
@@ -2512,7 +2511,15 @@ typedef struct ALIGN(16)
    float time;
 } d3d11_uniform_t;
 
-static_assert(!(sizeof(d3d11_uniform_t)&0xF), "sizeof(d3d11_uniform_t) must be a multiple of 16");
+static_assert(!(sizeof(d3d11_uniform_t) & 0xF), "sizeof(d3d11_uniform_t) must be a multiple of 16");
+
+typedef struct
+{
+   D3D11VertexShader   vs;
+   D3D11PixelShader    ps;
+   D3D11GeometryShader gs;
+   D3D11InputLayout    layout;
+} d3d11_shader_t;
 
 typedef struct
 {
@@ -2523,20 +2530,14 @@ typedef struct
    D3D11DeviceContext    ctx;
    D3D11RasterizerState  state;
    D3D11RenderTargetView renderTargetView;
-   D3D11InputLayout      layout;
    D3D11Buffer           ubo;
    d3d11_uniform_t       ubo_values;
-   D3D11VertexShader     vs;
-   D3D11PixelShader      ps;
    D3D11SamplerState     sampler_nearest;
    D3D11SamplerState     sampler_linear;
    D3D11BlendState       blend_enable;
    D3D11BlendState       blend_disable;
    D3D11BlendState       blend_pipeline;
    D3D11Buffer           menu_pipeline_vbo;
-   D3D11VertexShader     ribbon_vs;
-   D3D11PixelShader      ribbon_ps;
-   D3D11InputLayout      ribbon_layout;
    math_matrix_4x4       mvp, mvp_no_rot;
    struct video_viewport vp;
    D3D11_VIEWPORT        viewport;
@@ -2563,17 +2564,14 @@ typedef struct
    } frame;
    struct
    {
-      D3D11VertexShader   vs;
-      D3D11PixelShader    ps;
-      D3D11PixelShader    ps_8bit;
-      D3D11GeometryShader gs;
-      D3D11Buffer         vbo;
-      D3D11InputLayout    layout;
-      int                 offset;
-      int                 capacity;
-      bool                enabled;
+      d3d11_shader_t shader;
+      d3d11_shader_t shader_font;
+      D3D11Buffer    vbo;
+      int            offset;
+      int            capacity;
+      bool           enabled;
    } sprites;
-
+   d3d11_shader_t shaders[GFX_MAX_SHADERS];
 } d3d11_video_t;
 
 void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture);
@@ -2596,9 +2594,55 @@ d3d11_get_closest_match_texture2D(D3D11Device device, DXGI_FORMAT desired_format
          D3D11_FORMAT_SUPPORT_TEXTURE2D | D3D11_FORMAT_SUPPORT_SHADER_SAMPLE);
 }
 
-static inline void d3d11_set_texture_and_sampler(
-      D3D11DeviceContext ctx, UINT slot, d3d11_texture_t* texture)
+static inline void
+d3d11_set_texture_and_sampler(D3D11DeviceContext ctx, UINT slot, d3d11_texture_t* texture)
 {
    D3D11SetPShaderResources(ctx, slot, 1, &texture->view);
    D3D11SetPShaderSamplers(ctx, slot, 1, &texture->sampler);
+}
+
+bool d3d11_init_shader(
+      D3D11Device               device,
+      void*                     src,
+      size_t                    size,
+      LPCSTR                    vs_entry,
+      LPCSTR                    ps_entry,
+      LPCSTR                    gs_entry,
+      D3D11_INPUT_ELEMENT_DESC* input_element_descs,
+      UINT                      num_elements,
+      d3d11_shader_t*           out);
+
+static inline void d3d11_release_shader(d3d11_shader_t* shader)
+{
+   Release(shader->layout);
+   Release(shader->vs);
+   Release(shader->ps);
+   Release(shader->gs);
+}
+
+static inline void d3d11_set_shader(D3D11DeviceContext ctx, d3d11_shader_t* shader)
+{
+   D3D11SetInputLayout(ctx, shader->layout);
+   D3D11SetVShader(ctx, shader->vs, NULL, 0);
+   D3D11SetPShader(ctx, shader->ps, NULL, 0);
+   D3D11SetGShader(ctx, shader->gs, NULL, 0);
+}
+static inline void D3D11SetVertexBuffer(
+      D3D11DeviceContext device_context,
+      UINT               slot,
+      D3D11Buffer const  vertex_buffer,
+      UINT               stride,
+      UINT               offset)
+{
+   D3D11SetVertexBuffers(device_context, slot, 1, &vertex_buffer, &stride, &offset);
+}
+static inline void D3D11SetVShaderConstantBuffer(
+      D3D11DeviceContext device_context, UINT slot, D3D11Buffer const constant_buffer)
+{
+   D3D11SetVShaderConstantBuffers(device_context, slot, 1, &constant_buffer);
+}
+static inline void D3D11SetPShaderConstantBuffer(
+      D3D11DeviceContext device_context, UINT slot, D3D11Buffer const constant_buffer)
+{
+   D3D11SetPShaderConstantBuffers(device_context, slot, 1, &constant_buffer);
 }

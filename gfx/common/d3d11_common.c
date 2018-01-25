@@ -14,7 +14,7 @@
  */
 
 #include "d3d11_common.h"
-
+#include "d3dcompiler_common.h"
 #include <dynamic/dylib.h>
 
 static dylib_t d3d11_dll;
@@ -70,7 +70,7 @@ void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
    if (texture->desc.MiscFlags & D3D11_RESOURCE_MISC_GENERATE_MIPS)
    {
       texture->desc.BindFlags |= D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
-      unsigned width = texture->desc.Width >> 5;
+      unsigned width  = texture->desc.Width >> 5;
       unsigned height = texture->desc.Height >> 5;
       while (width && height)
       {
@@ -144,4 +144,59 @@ d3d11_get_closest_match(D3D11Device device, DXGI_FORMAT desired_format, UINT des
    }
    assert(*format);
    return *format;
+}
+
+bool d3d11_init_shader(
+      D3D11Device               device,
+      void*                     src,
+      size_t                    size,
+      LPCSTR                    vs_entry,
+      LPCSTR                    ps_entry,
+      LPCSTR                    gs_entry,
+      D3D11_INPUT_ELEMENT_DESC* input_element_descs,
+      UINT                      num_elements,
+      d3d11_shader_t*           out)
+{
+   D3DBlob vs_code;
+   D3DBlob ps_code;
+   D3DBlob gs_code;
+
+   if (size) /* char array */
+   {
+      if (!d3d_compile(src, size, vs_entry, "vs_5_0", &vs_code))
+         return false;
+      if (!d3d_compile(src, size, ps_entry, "ps_5_0", &ps_code))
+         return false;
+      if (gs_entry && !d3d_compile(src, size, gs_entry, "gs_5_0", &gs_code))
+         return false;
+   }
+   else /* LPCWSTR filename */
+   {
+      if (!d3d_compile_from_file(src, vs_entry, "vs_5_0", &vs_code))
+         return false;
+      if (!d3d_compile_from_file(src, ps_entry, "ps_5_0", &ps_code))
+         return false;
+      if (gs_entry && !d3d_compile_from_file(src, gs_entry, "gs_5_0", &gs_code))
+         return false;
+   }
+
+   D3D11CreateVertexShader(
+         device, D3DGetBufferPointer(vs_code), D3DGetBufferSize(vs_code), NULL, &out->vs);
+   D3D11CreateInputLayout(
+         device, input_element_descs, num_elements, D3DGetBufferPointer(vs_code),
+         D3DGetBufferSize(vs_code), &out->layout);
+   Release(vs_code);
+
+   D3D11CreatePixelShader(
+         device, D3DGetBufferPointer(ps_code), D3DGetBufferSize(ps_code), NULL, &out->ps);
+   Release(ps_code);
+
+   if (gs_entry)
+   {
+      D3D11CreateGeometryShader(
+            device, D3DGetBufferPointer(gs_code), D3DGetBufferSize(gs_code), NULL, &out->gs);
+      Release(gs_code);
+   }
+
+   return true;
 }
