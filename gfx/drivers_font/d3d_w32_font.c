@@ -24,31 +24,29 @@
 
 #include "../../configuration.h"
 
-#if defined(HAVE_D3D9)
-#include "../include/d3d9/d3dx9core.h"
-#elif defined(HAVE_D3D8)
-#include "../include/d3d8/d3dx8core.h"
-#endif
-
 #include <tchar.h>
+
+typedef struct d3dx_font_desc
+{
+    INT Height;
+    UINT Width;
+    UINT Weight;
+    UINT MipLevels;
+    BOOL Italic;
+    BYTE CharSet;
+    BYTE OutputPrecision;
+    BYTE Quality;
+    BYTE PitchAndFamily;
+    CHAR FaceName[32];
+} d3dx_font_desc_t;
 
 typedef struct
 {
    d3d_video_t *d3d;
-#ifdef __cplusplus
-   LPD3DXFONT font;
-#else
-   ID3DXFont *font;
-#endif
+   void *font;
    uint32_t font_size;
    uint32_t ascent;
 } d3dfonts_t;
-
-#if !defined(__cplusplus) || defined(CINTERFACE)
-#define IDirect3DXFont_DrawTextA(p, a, b, c, d, e, f) (p)->lpVtbl->DrawTextA(p, a, b, c, d, e, f)
-#else
-#define IDirect3DXFont_DrawTextA(p, a, b, c, d, e, f) (p)->DrawTextA(a, b, c, d, e, f)
-#endif
 
 static void *d3dfonts_w32_init_font(void *video_data,
       const char *font_path, float font_size,
@@ -56,7 +54,7 @@ static void *d3dfonts_w32_init_font(void *video_data,
 {
    TEXTMETRICA metrics;
    settings_t *settings = config_get_ptr();
-   D3DXFONT_DESC desc   = {
+   d3dx_font_desc_t desc   = {
       (int)(font_size), 0, 400, 0,
       false, DEFAULT_CHARSET,
       OUT_TT_PRECIS,
@@ -116,7 +114,7 @@ static int d3dfonts_w32_get_message_width(void* data, const char* msg,
    if (!d3dfonts || !d3dfonts->d3d | !msg)
       return 0;
 
-   IDirect3DXFont_DrawTextA(d3dfonts->font, NULL, msg,
+   d3dx_font_draw_text(d3dfonts->font, NULL, (void*)msg,
          msg_len? msg_len : -1, &box, DT_CALCRECT, 0);
 
    return box.right - box.left;
@@ -212,13 +210,12 @@ static void d3dfonts_w32_render_msg(video_frame_info_t *video_info,
       unsigned drop_g = g * drop_mod;
       unsigned drop_b = b * drop_mod;
 
-      IDirect3DXFont_DrawTextA(d3dfonts->font, NULL,
-            msg, -1, p_rect_shifted, format,
+      d3dx_font_draw_text(d3dfonts->font, NULL,
+            (void*)msg, -1, p_rect_shifted, format,
             D3DCOLOR_ARGB(drop_a , drop_r, drop_g, drop_b));
    }
 
-
-   IDirect3DXFont_DrawTextA(d3dfonts->font, NULL, msg, -1,
+   d3dx_font_draw_text(d3dfonts->font, NULL, (void*)msg, -1,
       p_rect, format, D3DCOLOR_ARGB(a, r, g, b));
 
    d3d_end_scene(d3dfonts->d3d->dev);

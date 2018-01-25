@@ -220,6 +220,9 @@ bool d3d_check_device_type(void *d3d,
 bool d3dx_create_font_indirect(void *dev,
       void *desc, void **font_data);
 
+void d3dx_font_draw_text(void *data, void *sprite_data, void *string_data,
+      unsigned count, void *rect_data, unsigned format, unsigned color);
+
 void d3dx_font_get_text_metrics(void *data, void *metrics);
 
 void d3dxbuffer_release(void *data);

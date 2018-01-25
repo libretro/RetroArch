@@ -2866,6 +2866,28 @@ bool d3dx_compile_shader(
    return false;
 }
 
+void d3dx_font_draw_text(void *data, void *sprite_data, void *string_data,
+      unsigned count, void *rect_data, unsigned format, unsigned color)
+{
+#ifdef HAVE_D3DX
+#if !defined(__cplusplus) || defined(CINTERFACE)
+   ID3DXFont *font = (ID3DXFont*)data;
+   if (!font)
+      return;
+   return font->lpVtbl->DrawText(font, (LPD3DXSPRITE)sprite_data,
+         (LPCTSTR)string_data, count, (LPRECT)rect_data,
+         (DWORD)format, (D3DCOLOR)color);
+#else
+   LPD3DXFONT font = (LPD3DXFONT)data;
+   if (!font)
+      return;
+   font->DrawText((LPD3DXSPRITE)sprite_data,
+         (LPCTSTR)string_data, count, (LPRECT)rect_data,
+         (DWORD)format, (D3DCOLOR)color);
+#endif
+#endif
+}
+
 void d3dx_font_release(void *data)
 {
 #ifdef HAVE_D3DX

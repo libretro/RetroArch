@@ -46,6 +46,7 @@
 #include "../../verbosity.h"
 
 #include "../../gfx/drivers/d3d.h"
+#include "../../gfx/common/d3d_common.h"
 
 #define XUI_CONTROL_NAVIGATE_OK (XUI_CONTROL_NAVIGATE_RIGHT + 1)
 
