@@ -27,8 +27,6 @@
 #include "../../configuration.h"
 #include "../../verbosity.h"
 
-#include "d3d_common.h"
-
 #if defined(HAVE_D3D9)
 #include <d3d9.h>
 
@@ -56,6 +54,8 @@
 #endif
 
 #endif
+
+#include "d3d_common.h"
 
 static enum gfx_ctx_api d3d_common_api = GFX_CTX_NONE;
 

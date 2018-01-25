@@ -856,14 +856,16 @@ static bool d3d9_cg_renderchain_create_first_pass(
    {
       chain->prev.last_width[i]  = 0;
       chain->prev.last_height[i] = 0;
-      chain->prev.vertex_buf[i]  = d3d_vertex_buffer_new(
+      chain->prev.vertex_buf[i]  = (LPDIRECT3DVERTEXBUFFER9)
+         d3d_vertex_buffer_new(
             chain->dev, 4 * sizeof(struct CGVertex),
             D3DUSAGE_WRITEONLY, 0, D3DPOOL_DEFAULT, NULL);
 
       if (!chain->prev.vertex_buf[i])
          return false;
 
-      chain->prev.tex[i] = d3d_texture_new(chain->dev, NULL,
+      chain->prev.tex[i] = (LPDIRECT3DTEXTURE9)
+         d3d_texture_new(chain->dev, NULL,
             info->tex_w, info->tex_h, 1, 0,
             (fmt == RETRO_PIXEL_FORMAT_RGB565) ? 
             d3d_get_rgb565_format() : d3d_get_xrgb8888_format(),
@@ -943,7 +945,8 @@ static bool d3d9_cg_renderchain_set_pass_size(
       pass->info.tex_w = width;
       pass->info.tex_h = height;
       pass->pool       = D3DPOOL_DEFAULT;
-      pass->tex        = d3d_texture_new(chain->dev, NULL,
+      pass->tex        = (LPDIRECT3DTEXTURE9)
+         d3d_texture_new(chain->dev, NULL,
             width, height, 1,
             D3DUSAGE_RENDERTARGET,
             chain->passes->data[chain->passes->count - 1].info.pass->fbo.fp_fbo ?
@@ -1090,14 +1093,15 @@ static bool d3d9_cg_renderchain_add_pass(
    if (!d3d9_cg_renderchain_init_shader_fvf(chain, &pass))
       return false;
 
-   pass.vertex_buf = d3d_vertex_buffer_new(chain->dev,
+   pass.vertex_buf = (LPDIRECT3DVERTEXBUFFER9)
+      d3d_vertex_buffer_new(chain->dev,
          4 * sizeof(struct CGVertex),
          D3DUSAGE_WRITEONLY, 0, D3DPOOL_DEFAULT, NULL);
 
    if (!pass.vertex_buf)
       return false;
 
-   pass.tex = d3d_texture_new(
+   pass.tex = (LPDIRECT3DTEXTURE9)d3d_texture_new(
          chain->dev,
          NULL,
          info->tex_w,
@@ -1127,7 +1131,8 @@ static bool d3d9_cg_renderchain_add_lut(void *data,
 {
    struct lut_info info;
    cg_renderchain_t *chain = (cg_renderchain_t*)data;
-   LPDIRECT3DTEXTURE9 lut  = d3d_texture_new(
+   LPDIRECT3DTEXTURE9 lut  = (LPDIRECT3DTEXTURE9)
+      d3d_texture_new(
          chain->dev,
          path,
          D3D_DEFAULT_NONPOW2,

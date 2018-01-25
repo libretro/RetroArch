@@ -1659,7 +1659,7 @@ static void d3d9_video_texture_load_d3d(d3d_video_t *d3d,
       (filter_type == TEXTURE_FILTER_MIPMAP_NEAREST))
       want_mipmap        = true;
 
-   tex = d3d_texture_new(d3d->dev, NULL,
+   tex = (LPDIRECT3DTEXTURE9)d3d_texture_new(d3d->dev, NULL,
                ti->width, ti->height, 0,
                usage, d3d_get_argb8888_format(),
                D3DPOOL_MANAGED, 0, 0, 0,
