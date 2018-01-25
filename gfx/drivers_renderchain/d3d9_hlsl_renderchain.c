@@ -19,6 +19,7 @@
 #include <retro_math.h>
 
 #include "../drivers/d3d.h"
+#include "../../defines/d3d_defines.h"
 #include "../common/d3d_common.h"
 
 #include "../video_driver.h"
@@ -35,9 +36,9 @@ typedef struct hlsl_d3d9_renderchain
    unsigned tex_h;
    uint64_t frame_count;
    void *dev;
-   LPDIRECT3DTEXTURE tex;
-   LPDIRECT3DVERTEXBUFFER vertex_buf;
-   LPDIRECT3DVERTEXDECLARATION vertex_decl;
+   LPDIRECT3DTEXTURE9 tex;
+   LPDIRECT3DVERTEXBUFFER9 vertex_buf;
+   LPDIRECT3DVERTEXDECLARATION9 vertex_decl;
    const video_info_t *video_info;
 } hlsl_d3d9_renderchain_t;
 
@@ -68,7 +69,7 @@ static void hlsl_d3d9_renderchain_clear(void *data)
 
 static bool hlsl_d3d9_renderchain_init_shader_fvf(void *data, void *pass_data)
 {
-   static const D3DVERTEXELEMENT VertexElements[] =
+   static const D3DVERTEXELEMENT9 VertexElements[] =
    {
       { 0, 0 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
       { 0, 2 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },

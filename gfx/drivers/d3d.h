@@ -27,19 +27,10 @@
 #define HAVE_WINDOW
 #endif
 
-#include "../../defines/d3d_defines.h"
-
-#ifdef _XBOX1
-#include <xfont.h>
-#endif
-
 #include "../../driver.h"
 
 #include "../font_driver.h"
 #include "../video_driver.h"
-#if defined(HAVE_D3D8) || defined(HAVE_D3D9)
-#include "../common/d3d_common.h"
-#endif
 #ifdef _XBOX
 #include "../../defines/xdk_defines.h"
 #endif
@@ -111,7 +102,7 @@ typedef struct d3d_video
    {
       int size;
       int offset;
-      LPDIRECT3DVERTEXBUFFER buffer;
+      void *buffer;
       void *decl;
    }menu_display;
 
@@ -121,8 +112,7 @@ typedef struct d3d_video
 #endif
 } d3d_video_t;
 
-void d3d_make_d3dpp(void *data,
-      const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp);
+void d3d_make_d3dpp(void *data, const video_info_t *info, void *_d3dpp);
 
 #endif
 

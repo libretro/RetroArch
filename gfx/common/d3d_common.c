@@ -601,7 +601,7 @@ bool d3d_texture_get_surface_level(void *_tex,
             if (!tex)
                return false;
 #ifdef __cplusplus
-            if (SUCCEEDED(tex->GetSurfaceLevel(idx, (ID3DSURFACE**)_ppsurface_level)))
+            if (SUCCEEDED(tex->GetSurfaceLevel(idx, (IDirect3DSurface9**)_ppsurface_level)))
                return true;
 #else
             if (SUCCEEDED(IDirect3DTexture9_GetSurfaceLevel(tex, idx, (IDirect3DSurface9**)_ppsurface_level)))
@@ -617,7 +617,7 @@ bool d3d_texture_get_surface_level(void *_tex,
             if (!tex)
                return false;
 #ifdef __cplusplus
-            if (SUCCEEDED(tex->GetSurfaceLevel(idx, (ID3DSURFACE**)_ppsurface_level)))
+            if (SUCCEEDED(tex->GetSurfaceLevel(idx, (IDirect3DSurface8**)_ppsurface_level)))
                return true;
 #else
             if (SUCCEEDED(IDirect3DTexture8_GetSurfaceLevel(tex, idx, (IDirect3DSurface8**)_ppsurface_level)))

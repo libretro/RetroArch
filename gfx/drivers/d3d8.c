@@ -28,6 +28,8 @@
 #include <retro_math.h>
 
 #include "d3d.h"
+#include "../../defines/d3d_defines.h"
+#include "../common/d3d_common.h"
 #include "../video_coord_array.h"
 #include "../../configuration.h"
 #include "../../dynamic.h"
@@ -568,9 +570,10 @@ static bool d3d8_is_windowed_enable(bool info_fullscreen)
 }
 
 void d3d8_make_d3dpp(void *data,
-      const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp)
+      const video_info_t *info, void *_d3dpp)
 {
    d3d_video_t *d3d               = (d3d_video_t*)data;
+   D3DPRESENT_PARAMETERS *d3dpp   = (D3DPRESENT_PARAMETERS*)_d3dpp;
    bool windowed_enable           = d3d8_is_windowed_enable(info->fullscreen);
 
    memset(d3dpp, 0, sizeof(*d3dpp));

@@ -29,6 +29,7 @@
 #include <compat/strl.h>
 #include <string/stdstring.h>
 
+#include "../common/d3d_common.h"
 #include "../drivers/d3d.h"
 #include "../drivers/d3d_shaders/opaque.cg.d3d9.h"
 
@@ -73,13 +74,13 @@ struct CGVertex
 
 struct Pass
 {
+   unsigned last_width, last_height;
    struct LinkInfo info;
    D3DPOOL pool;
    LPDIRECT3DTEXTURE9 tex;
-   LPDIRECT3DVERTEXBUFFER vertex_buf;
+   LPDIRECT3DVERTEXBUFFER9 vertex_buf;
    CGprogram vPrg, fPrg;
-   unsigned last_width, last_height;
-   LPDIRECT3DVERTEXDECLARATION vertex_decl;
+   LPDIRECT3DVERTEXDECLARATION9 vertex_decl;
    struct unsigned_vector_list *attrib_map;
 };
 
@@ -102,7 +103,7 @@ typedef struct cg_renderchain
    struct
    {
       LPDIRECT3DTEXTURE9 tex[TEXTURES];
-      LPDIRECT3DVERTEXBUFFER vertex_buf[TEXTURES];
+      LPDIRECT3DVERTEXBUFFER9 vertex_buf[TEXTURES];
       unsigned ptr;
       unsigned last_width[TEXTURES];
       unsigned last_height[TEXTURES];
@@ -294,8 +295,8 @@ static bool d3d9_cg_renderchain_init_shader_fvf(void *data, void *pass_data)
    bool stream_taken[4]                        = {false};
    cg_renderchain_t *chain                     = (cg_renderchain_t*)data;
    struct Pass          *pass                  = (struct Pass*)pass_data;
-   static const D3DVERTEXELEMENT decl_end      = D3DDECL_END();
-   D3DVERTEXELEMENT decl[MAXD3DDECLLENGTH]     = {{0}};
+   static const D3DVERTEXELEMENT9 decl_end     = D3DDECL_END();
+   D3DVERTEXELEMENT9 decl[MAXD3DDECLLENGTH]    = {{0}};
    bool *indices                               = NULL;
 
    if (cgD3D9GetVertexDeclaration(pass->vPrg, decl) == CG_FALSE)
@@ -327,7 +328,7 @@ static bool d3d9_cg_renderchain_init_shader_fvf(void *data, void *pass_data)
 
    if (param)
    {
-      static const D3DVERTEXELEMENT element =
+      static const D3DVERTEXELEMENT9 element =
       {
          0, 0 * sizeof(float),
          D3DDECLTYPE_FLOAT3,
@@ -349,7 +350,7 @@ static bool d3d9_cg_renderchain_init_shader_fvf(void *data, void *pass_data)
 
    if (param)
    {
-      static const D3DVERTEXELEMENT tex_coord0    = DECL_FVF_TEXCOORD(1, 3, 0);
+      static const D3DVERTEXELEMENT9 tex_coord0    = DECL_FVF_TEXCOORD(1, 3, 0);
       stream_taken[1] = true;
       texcoord0_taken = true;
       RARCH_LOG("[FVF]: TEXCOORD0 semantic found.\n");
@@ -361,7 +362,7 @@ static bool d3d9_cg_renderchain_init_shader_fvf(void *data, void *pass_data)
    param = d3d9_cg_find_param_from_semantic(cgGetFirstParameter(pass->vPrg, CG_PROGRAM), "TEXCOORD1");
    if (param)
    {
-      static const D3DVERTEXELEMENT tex_coord1    = DECL_FVF_TEXCOORD(2, 5, 1);
+      static const D3DVERTEXELEMENT9 tex_coord1    = DECL_FVF_TEXCOORD(2, 5, 1);
       stream_taken[2] = true;
       texcoord1_taken = true;
       RARCH_LOG("[FVF]: TEXCOORD1 semantic found.\n");
@@ -376,7 +377,7 @@ static bool d3d9_cg_renderchain_init_shader_fvf(void *data, void *pass_data)
 
    if (param)
    {
-      static const D3DVERTEXELEMENT color = DECL_FVF_COLOR(3, 7, 0);
+      static const D3DVERTEXELEMENT9 color = DECL_FVF_COLOR(3, 7, 0);
       stream_taken[3] = true;
       RARCH_LOG("[FVF]: COLOR0 semantic found.\n");
       index           = cgGetParameterResourceIndex(param);
@@ -405,7 +406,7 @@ static bool d3d9_cg_renderchain_init_shader_fvf(void *data, void *pass_data)
          unsigned_vector_list_append(pass->attrib_map, 0);
       else
       {
-         D3DVERTEXELEMENT elem = DECL_FVF_TEXCOORD(index, 3, tex_index);
+         D3DVERTEXELEMENT9 elem = DECL_FVF_TEXCOORD(index, 3, tex_index);
 
          unsigned_vector_list_append(pass->attrib_map, index);
 
@@ -462,7 +463,7 @@ static void d3d9_cg_renderchain_bind_orig(cg_renderchain_t *chain,
    param = cgGetNamedParameter(pass->vPrg, "ORIG.tex_coord");
    if (param)
    {
-      LPDIRECT3DVERTEXBUFFER vert_buf = (LPDIRECT3DVERTEXBUFFER)chain->passes->data[0].vertex_buf;
+      LPDIRECT3DVERTEXBUFFER9 vert_buf = (LPDIRECT3DVERTEXBUFFER9)chain->passes->data[0].vertex_buf;
 
       index = pass->attrib_map->data[cgGetParameterResourceIndex(param)];
 
@@ -537,7 +538,7 @@ static void d3d9_cg_renderchain_bind_prev(void *data, const void *pass_data)
       param = cgGetNamedParameter(pass->vPrg, attr_coord);
       if (param)
       {
-         LPDIRECT3DVERTEXBUFFER vert_buf = (LPDIRECT3DVERTEXBUFFER)
+         LPDIRECT3DVERTEXBUFFER9 vert_buf = (LPDIRECT3DVERTEXBUFFER9)
             chain->prev.vertex_buf[(chain->prev.ptr - (i + 1)) & TEXTURESMASK];
 
          index = pass->attrib_map->data[cgGetParameterResourceIndex(param)];

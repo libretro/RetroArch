@@ -25,8 +25,6 @@
 /* Direct3D 9 */
 #include <d3d9.h>
 
-#define ID3DSURFACE                    IDirect3DSurface9
-
 #define LPDIRECT3D                     LPDIRECT3D9
 #define LPDIRECT3DDEVICE               LPDIRECT3DDEVICE9
 #define LPDIRECT3DTEXTURE              LPDIRECT3DTEXTURE9
@@ -40,8 +38,6 @@
 #define LPDIRECT3DRESOURCE             LPDIRECT3DRESOURCE9
 #define D3DVERTEXELEMENT               D3DVERTEXELEMENT9
 #define D3DVIEWPORT                    D3DVIEWPORT9
-
-#define D3DCREATE_CTX                  Direct3DCreate9
 
 #ifndef D3DCREATE_SOFTWARE_VERTEXPROCESSING
 #define D3DCREATE_SOFTWARE_VERTEXPROCESSING 0
@@ -66,9 +62,6 @@
 #define LPDIRECT3DRESOURCE             LPDIRECT3DRESOURCE8
 #define D3DVERTEXELEMENT               D3DVERTEXELEMENT8
 #define D3DVIEWPORT                    D3DVIEWPORT8
-
-#define ID3DSURFACE                    IDirect3DSurface8
-#define D3DCREATE_CTX                  Direct3DCreate8
 
 #if !defined(D3DLOCK_NOSYSLOCK) && defined(_XBOX)
 #define D3DLOCK_NOSYSLOCK (0)
