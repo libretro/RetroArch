@@ -70,6 +70,12 @@ static void menu_display_d3d11_draw(void* data)
    v->coords.w = 1.0f;
    v->coords.h = 1.0f;
 
+   if(draw->scale_factor)
+      v->params.scaling = draw->scale_factor;
+   else
+      v->params.scaling = 1.0f;
+   v->params.rotation = draw->rotation;
+
    v->colors[3] = DXGI_COLOR_RGBA(
          0xFF * draw->coords->color[0], 0xFF * draw->coords->color[1],
          0xFF * draw->coords->color[2], 0xFF * draw->coords->color[3]);

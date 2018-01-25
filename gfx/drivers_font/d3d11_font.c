@@ -138,7 +138,7 @@ static void d3d11_font_render_line(
    if (!d3d11->sprites.enabled || msg_len > d3d11->sprites.capacity)
       return;
 
-   if(d3d11->sprites.offset + msg_len > d3d11->sprites.capacity)
+   if (d3d11->sprites.offset + msg_len > d3d11->sprites.capacity)
       d3d11->sprites.offset = 0;
 
    switch (text_align)
@@ -158,9 +158,9 @@ static void d3d11_font_render_line(
    for (i = 0; i < msg_len; i++)
    {
       const struct font_glyph* glyph;
-      const char* msg_tmp = &msg[i];
-      unsigned    code    = utf8_walk(&msg_tmp);
-      unsigned    skip    = msg_tmp - &msg[i];
+      const char*              msg_tmp = &msg[i];
+      unsigned                 code    = utf8_walk(&msg_tmp);
+      unsigned                 skip    = msg_tmp - &msg[i];
 
       if (skip > 1)
          i += skip - 1;
@@ -182,6 +182,9 @@ static void d3d11_font_render_line(
       v->coords.v = glyph->atlas_offset_y / (float)font->texture.desc.Height;
       v->coords.w = glyph->width / (float)font->texture.desc.Width;
       v->coords.h = glyph->height / (float)font->texture.desc.Height;
+
+      v->params.scaling  = 1;
+      v->params.rotation = 0;
 
       v->colors[0] = color;
       v->colors[1] = color;

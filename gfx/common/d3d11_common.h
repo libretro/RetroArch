@@ -2484,6 +2484,11 @@ typedef struct
       float u, v, w, h;
    } coords;
    UINT32 colors[4];
+   struct
+   {
+      float scaling;
+      float rotation;
+   }params;
 } d3d11_sprite_t;
 
 typedef struct

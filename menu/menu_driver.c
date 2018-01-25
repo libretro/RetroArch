@@ -615,9 +615,11 @@ void menu_display_draw_bg(menu_display_ctx_draw_t *draw,
    coords.vertex        = new_vertex;
    coords.tex_coord     = new_tex_coord;
    coords.lut_tex_coord = new_tex_coord;
-   coords.color         = (const float*)draw->color;
+   coords.color         = (const float*)draw->color;   
 
-   draw->coords      = &coords;
+   draw->coords         = &coords;
+   draw->scale_factor   = 1.0f;
+   draw->rotation       = 0.0f;
 
    if (draw->texture)
       add_opacity_to_wallpaper = true;
@@ -660,15 +662,17 @@ void menu_display_draw_quad(
    if (menu_disp && menu_disp->blend_begin)
       menu_disp->blend_begin();
 
-   draw.x           = x;
-   draw.y           = (int)height - y - (int)h;
-   draw.width       = w;
-   draw.height      = h;
-   draw.coords      = &coords;
-   draw.matrix_data = NULL;
-   draw.texture     = menu_display_white_texture;
-   draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
-   draw.pipeline.id = 0;
+   draw.x            = x;
+   draw.y            = (int)height - y - (int)h;
+   draw.width        = w;
+   draw.height       = h;
+   draw.coords       = &coords;
+   draw.matrix_data  = NULL;
+   draw.texture      = menu_display_white_texture;
+   draw.prim_type    = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+   draw.pipeline.id  = 0;
+   draw.scale_factor = 1.0f;
+   draw.rotation     = 0.0f;
 
    menu_display_draw(&draw);
 

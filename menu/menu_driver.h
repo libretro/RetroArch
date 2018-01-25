@@ -379,6 +379,8 @@ typedef struct menu_display_ctx_draw
       size_t backend_data_size;
       bool active;
    } pipeline;
+   float rotation;
+   float scale_factor;
 } menu_display_ctx_draw_t;
 
 typedef struct menu_display_ctx_rotate_draw

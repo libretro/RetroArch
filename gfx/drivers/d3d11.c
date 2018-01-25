@@ -330,8 +330,10 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
            D3D11_INPUT_PER_VERTEX_DATA, 0 },
          { "COLOR", 3, DXGI_FORMAT_R8G8B8A8_UNORM, 0, offsetof(d3d11_sprite_t, colors[3]),
            D3D11_INPUT_PER_VERTEX_DATA, 0 },
+         { "PARAMS", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_sprite_t, params),
+           D3D11_INPUT_PER_VERTEX_DATA, 0 },
       };
-#if 1
+#if 0
       d3d_compile(sprite, sizeof(sprite), "VSMain", "vs_5_0", &vs_code);
       d3d_compile(sprite, sizeof(sprite), "PSMain", "ps_5_0", &ps_code);
       d3d_compile(sprite, sizeof(sprite), "PSMainA8", "ps_5_0", &ps_A8_code);
@@ -521,7 +523,6 @@ static bool d3d11_gfx_frame(
       D3D11SetVertexBuffers(d3d11->ctx, 0, 1, &d3d11->sprites.vbo, &sprite_stride, &offset);
       D3D11SetPShaderSamplers(d3d11->ctx, 0, 1, &d3d11->sampler_linear);
       D3D11SetBlendState(d3d11->ctx, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
-
 
       d3d11->sprites.enabled = true;
 
