@@ -70,9 +70,7 @@ typedef struct d3d_video
    bool should_resize;
    bool quitting;
    bool needs_restore;
-#ifdef HAVE_OVERLAY
    bool overlays_enabled;
-#endif
    /* TODO - refactor this away properly. */
    bool resolution_hd_enable;
 
