@@ -293,10 +293,6 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    }
 
    {
-      static const char shader[] =
-#include "d3d_shaders/opaque_sm5.hlsl.h"
-            ;
-
       D3D11_INPUT_ELEMENT_DESC desc[] = {
          { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_vertex_t, position),
            D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -305,6 +301,11 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
          { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, offsetof(d3d11_vertex_t, color),
            D3D11_INPUT_PER_VERTEX_DATA, 0 },
       };
+
+      static const char shader[] =
+#include "d3d_shaders/opaque_sm5.hlsl.h"
+            ;
+
       if (!d3d11_init_shader(
                 d3d11->device, shader, sizeof(shader), "VSMain", "PSMain", NULL, desc,
                 countof(desc), &d3d11->shaders[VIDEO_SHADER_STOCK_BLEND]))
@@ -312,11 +313,6 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    }
 
    {
-
-      static const char shader[] =
-#include "d3d_shaders/sprite_sm4.hlsl.h"
-            ;
-
       D3D11_INPUT_ELEMENT_DESC desc[] = {
          { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, offsetof(d3d11_sprite_t, pos),
            D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -334,6 +330,10 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
            D3D11_INPUT_PER_VERTEX_DATA, 0 },
       };
 
+      static const char shader[] =
+#include "d3d_shaders/sprite_sm4.hlsl.h"
+            ;
+
       if (!d3d11_init_shader(
                 d3d11->device, shader, sizeof(shader), "VSMain", "PSMain", "GSMain", desc,
                 countof(desc), &d3d11->sprites.shader))
@@ -345,91 +345,65 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    }
 
    {
-      static const char shader[] =
-#include "d3d_shaders/ribbon_sm4.hlsl.h"
-            ;
-
       D3D11_INPUT_ELEMENT_DESC desc[] = {
          { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
       };
 
+      static const char ribbon[] =
+#include "d3d_shaders/ribbon_sm4.hlsl.h"
+            ;
+      static const char ribbon_simple[] =
+#include "d3d_shaders/ribbon_simple_sm4.hlsl.h"
+            ;
+
       if (!d3d11_init_shader(
-                d3d11->device, shader, sizeof(shader), "VSMain", "PSMain", NULL, desc,
+                d3d11->device, ribbon, sizeof(ribbon), "VSMain", "PSMain", NULL, desc,
                 countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU]))
          goto error;
-   }
-
-   {
-      static const char shader[] =
-#include "d3d_shaders/ribbon_sm4.hlsl.h"
-            ;
-
-      D3D11_INPUT_ELEMENT_DESC desc[] = {
-         { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-      };
 
       if (!d3d11_init_shader(
-                d3d11->device, shader, sizeof(shader), "VSMain", "PSMain", NULL, desc,
+                d3d11->device, ribbon_simple, sizeof(ribbon_simple), "VSMain", "PSMain", NULL, desc,
                 countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_2]))
          goto error;
    }
 
    {
-      static const char shader[] =
-#include "d3d_shaders/ribbon_sm4.hlsl.h"
-            ;
-
       D3D11_INPUT_ELEMENT_DESC desc[] = {
-         { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+         { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_vertex_t, position),
+           D3D11_INPUT_PER_VERTEX_DATA, 0 },
+         { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_vertex_t, texcoord),
+           D3D11_INPUT_PER_VERTEX_DATA, 0 },
       };
 
+      static const char simple_snow[] =
+#include "d3d_shaders/simple_snow_sm4.hlsl.h"
+            ;
+      static const char snow[] =
+#include "d3d_shaders/snow_sm4.hlsl.h"
+            ;
+      static const char bokeh[] =
+#include "d3d_shaders/bokeh_sm4.hlsl.h"
+            ;
+      static const char snowflake[] =
+#include "d3d_shaders/snowflake_sm4.hlsl.h"
+            ;
+
       if (!d3d11_init_shader(
-                d3d11->device, shader, sizeof(shader), "VSMain", "PSMain", NULL, desc,
+                d3d11->device, simple_snow, sizeof(simple_snow), "VSMain", "PSMain", NULL, desc,
                 countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_3]))
          goto error;
-   }
-
-   {
-      static const char shader[] =
-#include "d3d_shaders/ribbon_sm4.hlsl.h"
-            ;
-
-      D3D11_INPUT_ELEMENT_DESC desc[] = {
-         { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-      };
-
       if (!d3d11_init_shader(
-                d3d11->device, shader, sizeof(shader), "VSMain", "PSMain", NULL, desc,
-                countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_4]))
+                d3d11->device, snow, sizeof(snow), "VSMain", "PSMain", NULL, desc, countof(desc),
+                &d3d11->shaders[VIDEO_SHADER_MENU_4]))
          goto error;
-   }
-
-   {
-      static const char shader[] =
-#include "d3d_shaders/ribbon_sm4.hlsl.h"
-            ;
-
-      D3D11_INPUT_ELEMENT_DESC desc[] = {
-         { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-      };
 
       if (!d3d11_init_shader(
-                d3d11->device, shader, sizeof(shader), "VSMain", "PSMain", NULL, desc,
-                countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_5]))
+                d3d11->device, bokeh, sizeof(bokeh), "VSMain", "PSMain", NULL, desc, countof(desc),
+                &d3d11->shaders[VIDEO_SHADER_MENU_5]))
          goto error;
-   }
-
-   {
-      static const char shader[] =
-#include "d3d_shaders/ribbon_sm4.hlsl.h"
-            ;
-
-      D3D11_INPUT_ELEMENT_DESC desc[] = {
-         { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-      };
 
       if (!d3d11_init_shader(
-                d3d11->device, shader, sizeof(shader), "VSMain", "PSMain", NULL, desc,
+                d3d11->device, snowflake, sizeof(snowflake), "VSMain", "PSMain", NULL, desc,
                 countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_6]))
          goto error;
    }

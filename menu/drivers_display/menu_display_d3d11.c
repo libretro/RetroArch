@@ -58,12 +58,10 @@ static void menu_display_d3d11_draw(void* data)
    {
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
-#if 0
       case VIDEO_SHADER_MENU_3:
       case VIDEO_SHADER_MENU_4:
       case VIDEO_SHADER_MENU_5:
       case VIDEO_SHADER_MENU_6:
-#endif
          d3d11_set_shader(d3d11->ctx, &d3d11->shaders[draw->pipeline.id]);
          D3D11Draw(d3d11->ctx, draw->coords->vertices, 0);
 
@@ -157,7 +155,7 @@ static void menu_display_d3d11_draw_pipeline(void* data)
          D3D11SetBlendState(d3d11->ctx, d3d11->blend_pipeline, NULL, D3D11_DEFAULT_SAMPLE_MASK);
          break;
       }
-#if 0
+
       case VIDEO_SHADER_MENU_3:
       case VIDEO_SHADER_MENU_4:
       case VIDEO_SHADER_MENU_5:
@@ -165,7 +163,6 @@ static void menu_display_d3d11_draw_pipeline(void* data)
          D3D11SetVertexBuffer(d3d11->ctx, 0, d3d11->frame.vbo, sizeof(d3d11_vertex_t), 0);
          draw->coords->vertices = 4;
          break;
-#endif
       default:
          return;
    }
