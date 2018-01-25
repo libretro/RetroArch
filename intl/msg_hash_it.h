@@ -3292,10 +3292,10 @@ MSG_HASH(MENU_ENUM_SUBLABEL_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
 MSG_HASH(MSG_SCANNING_OF_FILE_FINISHED,
       "Scansione del file completata")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
-      "Audio Resampler Quality")
+      "Qualità del Resampler Audio")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
-      "Lower this value to favor performance/lower latency over audio quality, increase if you want better audio quality at the expense of performance/lower latency.")
+      "Abbassare questo valore per favorire prestazioni/bassa latenza rispetto alla qualità audio, aumentare se si desidera una migliore qualità audio a scapito delle prestazioni/minore latenza.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_PLACEHOLDER,
-      "Shader Placeholder")
+      "Shader Segnaposto")
 MSG_HASH(MENU_ENUM_SUBLABEL_SHADER_PLACEHOLDER,
-      "Shader Placeholder sublabel")
+      "Shader Segnaposto sotto etichetta")
