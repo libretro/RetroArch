@@ -1,18 +1,22 @@
 #ifndef __OCR_DRIVER__H
 #define __OCR_DRIVER__H
 
+#include <boolean.h>
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
+
 struct ocr_image_info
 {
-	int 	 game_character_set;
-	unsigned image_width;
-	unsigned image_height;
+	unsigned width;
+	unsigned height;
 	unsigned pixel_format;
-	void*    image_data;
+	void*    data;
 };
 
 typedef struct ocr_driver
 {
-	void* (*init)();
+	void* (*init)(int game_character_set);
 	void  (*free)(void* data);
 	
 	/* returned char pointers do not need to be freed but are 1 time use, they may be destroyed on the next call to get_text */
@@ -31,5 +35,7 @@ void  ocr_driver_free(void);
 
 /* returned char pointers do not need to be freed but are 1 time use, they may be destroyed on the next call to ocr_driver_get_text */
 char* ocr_driver_get_text(struct ocr_image_info image);
+
+RETRO_END_DECLS
 
 #endif

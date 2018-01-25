@@ -1,5 +1,8 @@
+#include <string/stdstring.h>
+
 #include "translation_driver.h"
 #include "ocr_driver.h"
+#include "../configuration.h"
 
 static const translation_driver_t *translation_backends[] = {
 	&translation_cached_google,
@@ -10,11 +13,26 @@ static const translation_driver_t *translation_backends[] = {
 static const translation_driver_t *current_translation_backend = NULL;
 static void *translation_data = NULL;
 
+
+static const translation_driver_t *translation_find_backend(const char* ident)
+{
+	unsigned i;
+
+	for (i = 0; translation_backends[i]; i++)
+	{
+		if (string_is_equal(translation_backends[i]->ident, ident))
+			return translation_backends[i];
+	}
+
+	return NULL;
+}
+
 bool  translation_driver_init(void)
 {
-	/*TODO: find name of active driver*/
-	
+	settings_t *settings = config_get_ptr();
+	current_translation_backend = translation_find_backend(settings->arrays.translation_driver);
 	translation_data = NULL;
+	
 	if (current_translation_backend)
 		translation_data = (*current_translation_backend->init)();
 	return translation_data != NULL;

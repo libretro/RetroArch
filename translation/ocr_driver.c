@@ -1,4 +1,8 @@
+#include <string/stdstring.h>
+#include <libretro.h>
+
 #include "ocr_driver.h"
+#include "../configuration.h"
 
 static const ocr_driver_t *ocr_backends[] = {
 #ifdef HAVE_TESSERACT
@@ -11,13 +15,31 @@ static const ocr_driver_t *ocr_backends[] = {
 static const ocr_driver_t *current_ocr_backend = NULL;
 static void *ocr_data = NULL;
 
+
+static const ocr_driver_t *ocr_find_backend(const char* ident)
+{
+	unsigned i;
+
+	for (i = 0; ocr_backends[i]; i++)
+	{
+		if (string_is_equal(ocr_backends[i]->ident, ident))
+			return ocr_backends[i];
+	}
+
+	return NULL;
+}
+
 bool  ocr_driver_init(void)
 {	
-	/*TODO: find name of active driver*/
-	
+	settings_t *settings = config_get_ptr();
+	int game_char_set = RETRO_LANGUAGE_DUMMY;
+	current_ocr_backend = ocr_find_backend(settings->arrays.ocr_driver);
 	ocr_data = NULL;
+	
+	/* TODO: get game language */
+	
 	if (current_ocr_backend)
-		ocr_data = (*current_ocr_backend->init)();
+		ocr_data = (*current_ocr_backend->init)(game_char_set);
 	return ocr_data != NULL;
 }
 

@@ -2494,7 +2494,7 @@ static bool setting_append_list(
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
 #if !defined(IOS)
-         /* Apple rejects iOS apps that lets you forcibly quit an application. */
+         /* Apple rejects iOS apps that let you forcibly quit them. */
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_QUIT_RETROARCH,

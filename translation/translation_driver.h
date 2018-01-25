@@ -1,7 +1,12 @@
 #ifndef __TRANSLATION_DRIVER__H
 #define __TRANSLATION_DRIVER__H
 
+#include <boolean.h>
+#include <retro_common_api.h>
+
 #include "ocr_driver.h"
+
+RETRO_BEGIN_DECLS
 
 enum translation_init_errors
 {
@@ -40,5 +45,7 @@ void  translation_driver_free(void);
 
 /* returned char pointers do not need to be freed but are 1 time use, they may be destroyed on the next call to translation_driver_translate_image */
 char* translation_driver_translate_image(struct ocr_image_info image);
+
+RETRO_END_DECLS
 
 #endif
