@@ -58,7 +58,7 @@
 
 struct lut_info
 {
-   LPDIRECT3DTEXTURE tex;
+   LPDIRECT3DTEXTURE9 tex;
    char id[64];
    bool smooth;
 };
@@ -75,7 +75,7 @@ struct Pass
 {
    struct LinkInfo info;
    D3DPOOL pool;
-   LPDIRECT3DTEXTURE tex;
+   LPDIRECT3DTEXTURE9 tex;
    LPDIRECT3DVERTEXBUFFER vertex_buf;
    CGprogram vPrg, fPrg;
    unsigned last_width, last_height;
@@ -101,7 +101,7 @@ typedef struct cg_renderchain
    unsigned frame_count;
    struct
    {
-      LPDIRECT3DTEXTURE tex[TEXTURES];
+      LPDIRECT3DTEXTURE9 tex[TEXTURES];
       LPDIRECT3DVERTEXBUFFER vertex_buf[TEXTURES];
       unsigned ptr;
       unsigned last_width[TEXTURES];
@@ -516,11 +516,11 @@ static void d3d9_cg_renderchain_bind_prev(void *data, const void *pass_data)
       param = cgGetNamedParameter(pass->fPrg, attr_texture);
       if (param)
       {
-         LPDIRECT3DTEXTURE tex;
+         LPDIRECT3DTEXTURE9 tex;
 
          index = cgGetParameterResourceIndex(param);
 
-         tex = (LPDIRECT3DTEXTURE)
+         tex = (LPDIRECT3DTEXTURE9)
             chain->prev.tex[(chain->prev.ptr - (i + 1)) & TEXTURESMASK];
 
          d3d_set_texture(chain->dev, index, tex);
@@ -1126,7 +1126,7 @@ static bool d3d9_cg_renderchain_add_lut(void *data,
 {
    struct lut_info info;
    cg_renderchain_t *chain = (cg_renderchain_t*)data;
-   LPDIRECT3DTEXTURE lut = d3d_texture_new(
+   LPDIRECT3DTEXTURE9 lut  = d3d_texture_new(
          chain->dev,
          path,
          D3D_DEFAULT_NONPOW2,

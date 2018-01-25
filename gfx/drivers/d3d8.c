@@ -62,7 +62,7 @@ typedef struct d3d8_renderchain
    unsigned pixel_size;
    LPDIRECT3DDEVICE8 dev;
    const video_info_t *video_info;
-   LPDIRECT3DTEXTURE tex;
+   LPDIRECT3DTEXTURE8 tex;
    LPDIRECT3DVERTEXBUFFER vertex_buf;
    unsigned last_width;
    unsigned last_height;
@@ -1643,8 +1643,8 @@ static void d3d8_video_texture_load_d3d(d3d_video_t *d3d,
       uintptr_t *id)
 {
    D3DLOCKED_RECT d3dlr;
-   unsigned usage        = 0;
-   LPDIRECT3DTEXTURE tex = d3d_texture_new(d3d->dev, NULL,
+   unsigned usage         = 0;
+   LPDIRECT3DTEXTURE8 tex = d3d_texture_new(d3d->dev, NULL,
                ti->width, ti->height, 0,
                usage, d3d_get_argb8888_format(),
                D3DPOOL_MANAGED, 0, 0, 0,
@@ -1698,11 +1698,11 @@ static uintptr_t d3d8_load_texture(void *video_data, void *data,
 
 static void d3d8_unload_texture(void *data, uintptr_t id)
 {
-   LPDIRECT3DTEXTURE texid;
+   LPDIRECT3DTEXTURE8 texid;
    if (!id)
 	   return;
 
-   texid = (LPDIRECT3DTEXTURE)id;
+   texid = (LPDIRECT3DTEXTURE8)id;
    d3d_texture_free(texid);
 }
 

@@ -26,7 +26,7 @@ RETRO_BEGIN_DECLS
 
 typedef struct d3d_texture
 {
-   LPDIRECT3DTEXTURE data;
+   void *data;
    D3DPOOL pool;
 } d3d_texture_t;
 
@@ -41,13 +41,13 @@ void d3d_vertex_buffer_unlock(void *data);
 
 void d3d_vertex_buffer_free(void *vertex_data, void *vertex_declaration);
 
-bool d3d_texture_get_level_desc(LPDIRECT3DTEXTURE tex,
+bool d3d_texture_get_level_desc(void *tex,
       unsigned idx, void *_ppsurface_level);
 
-bool d3d_texture_get_surface_level(LPDIRECT3DTEXTURE tex,
+bool d3d_texture_get_surface_level(void *tex,
       unsigned idx, void **_ppsurface_level);
 
-LPDIRECT3DTEXTURE d3d_texture_new(void *dev,
+void *d3d_texture_new(void *dev,
       const char *path, unsigned width, unsigned height,
       unsigned miplevels, unsigned usage, D3DFORMAT format,
       D3DPOOL pool, unsigned filter, unsigned mipfilter,
@@ -58,7 +58,7 @@ void d3d_set_stream_source(void *dev, unsigned stream_no,
       void *stream_vertbuf, unsigned offset_bytes,
       unsigned stride);
 
-void d3d_texture_free(LPDIRECT3DTEXTURE tex);
+void d3d_texture_free(void *tex);
 
 void d3d_set_transform(void *dev,
       D3DTRANSFORMSTATETYPE state, CONST D3DMATRIX *matrix);
@@ -89,15 +89,15 @@ void d3d_clear(void *dev,
       unsigned count, const D3DRECT *rects, unsigned flags,
       D3DCOLOR color, float z, unsigned stencil);
 
-bool d3d_lock_rectangle(LPDIRECT3DTEXTURE tex,
+bool d3d_lock_rectangle(void *tex,
       unsigned level, D3DLOCKED_RECT *lock_rect, RECT *rect,
       unsigned rectangle_height, unsigned flags);
 
-void d3d_lock_rectangle_clear(LPDIRECT3DTEXTURE tex,
+void d3d_lock_rectangle_clear(void *tex,
       unsigned level, D3DLOCKED_RECT *lock_rect, RECT *rect,
       unsigned rectangle_height, unsigned flags);
 
-void d3d_unlock_rectangle(LPDIRECT3DTEXTURE tex);
+void d3d_unlock_rectangle(void *tex);
 
 void d3d_set_texture(void *dev, unsigned sampler,
       void *tex_data);
@@ -121,7 +121,7 @@ bool d3d_set_vertex_shader_constantf(void *dev,
       UINT start_register,const float* constant_data, unsigned vector4f_count);
 
 void d3d_texture_blit(unsigned pixel_size,
-      LPDIRECT3DTEXTURE tex,
+      void *tex,
       D3DLOCKED_RECT *lr, const void *frame,
       unsigned width, unsigned height, unsigned pitch);
 

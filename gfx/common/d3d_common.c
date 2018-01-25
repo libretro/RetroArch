@@ -543,39 +543,43 @@ void d3d_set_transform(void *_dev,
    }
 }
 
-bool d3d_texture_get_level_desc(LPDIRECT3DTEXTURE tex,
+bool d3d_texture_get_level_desc(void *_tex,
       unsigned idx, void *_ppsurface_level)
 {
-   if (!tex)
-      return false;
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifdef HAVE_D3D9
+            LPDIRECT3DTEXTURE9 tex = (LPDIRECT3DTEXTURE9)_tex;
 #ifdef __cplusplus
-         if (SUCCEEDED(tex->GetLevelDesc(idx, (D3DSURFACE_DESC*)_ppsurface_level)))
-            return true;
+            if (SUCCEEDED(tex->GetLevelDesc(idx, (D3DSURFACE_DESC*)_ppsurface_level)))
+               return true;
 #else
 #if defined(_XBOX)
-         D3DTexture_GetLevelDesc(tex, idx, (D3DSURFACE_DESC*)_ppsurface_level);
-         return true;
-#else
-         if (SUCCEEDED(IDirect3DTexture9_GetLevelDesc(tex, idx, (D3DSURFACE_DESC*)_ppsurface_level)))
+            D3DTexture_GetLevelDesc(tex, idx, (D3DSURFACE_DESC*)_ppsurface_level);
             return true;
+#else
+            if (SUCCEEDED(IDirect3DTexture9_GetLevelDesc(tex, idx, (D3DSURFACE_DESC*)_ppsurface_level)))
+               return true;
 #endif
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
+         {
 #ifdef HAVE_D3D8
+            LPDIRECT3DTEXTURE8 tex = (LPDIRECT3DTEXTURE8)_tex;
 #ifdef __cplusplus
-         if (SUCCEEDED(tex->GetLevelDesc(idx, (D3DSURFACE_DESC*)_ppsurface_level)))
-            return true;
+            if (SUCCEEDED(tex->GetLevelDesc(idx, (D3DSURFACE_DESC*)_ppsurface_level)))
+               return true;
 #else
-         if (SUCCEEDED(IDirect3DTexture8_GetLevelDesc(tex, idx, (D3DSURFACE_DESC*)_ppsurface_level)))
-            return true;
+            if (SUCCEEDED(IDirect3DTexture8_GetLevelDesc(tex, idx, (D3DSURFACE_DESC*)_ppsurface_level)))
+               return true;
 #endif
 #endif
+         }
          break;
       case GFX_CTX_NONE:
       default:
@@ -585,35 +589,42 @@ bool d3d_texture_get_level_desc(LPDIRECT3DTEXTURE tex,
    return false;
 }
 
-bool d3d_texture_get_surface_level(LPDIRECT3DTEXTURE tex,
+bool d3d_texture_get_surface_level(void *_tex,
       unsigned idx, void **_ppsurface_level)
 {
-   if (!tex)
-      return false;
-
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifdef HAVE_D3D9
+            LPDIRECT3DTEXTURE9 tex = (LPDIRECT3DTEXTURE9)_tex;
+            if (!tex)
+               return false;
 #ifdef __cplusplus
-         if (SUCCEEDED(tex->GetSurfaceLevel(idx, (ID3DSURFACE**)_ppsurface_level)))
-            return true;
+            if (SUCCEEDED(tex->GetSurfaceLevel(idx, (ID3DSURFACE**)_ppsurface_level)))
+               return true;
 #else
-         if (SUCCEEDED(IDirect3DTexture9_GetSurfaceLevel(tex, idx, (IDirect3DSurface9**)_ppsurface_level)))
-            return true;
+            if (SUCCEEDED(IDirect3DTexture9_GetSurfaceLevel(tex, idx, (IDirect3DSurface9**)_ppsurface_level)))
+               return true;
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
+         {
 #ifdef HAVE_D3D8
+            LPDIRECT3DTEXTURE8 tex = (LPDIRECT3DTEXTURE8)_tex;
+            if (!tex)
+               return false;
 #ifdef __cplusplus
-         if (SUCCEEDED(tex->GetSurfaceLevel(idx, (ID3DSURFACE**)_ppsurface_level)))
-            return true;
+            if (SUCCEEDED(tex->GetSurfaceLevel(idx, (ID3DSURFACE**)_ppsurface_level)))
+               return true;
 #else
-         if (SUCCEEDED(IDirect3DTexture8_GetSurfaceLevel(tex, idx, (IDirect3DSurface8**)_ppsurface_level)))
-            return true;
+            if (SUCCEEDED(IDirect3DTexture8_GetSurfaceLevel(tex, idx, (IDirect3DSurface8**)_ppsurface_level)))
+               return true;
 #endif
 #endif
+         }
          break;
       case GFX_CTX_NONE:
       default:
@@ -624,7 +635,7 @@ bool d3d_texture_get_surface_level(LPDIRECT3DTEXTURE tex,
 }
 
 #ifdef HAVE_D3DX
-static LPDIRECT3DTEXTURE d3d_texture_new_from_file(
+static void *d3d_texture_new_from_file(
       void *dev,
       const char *path, unsigned width, unsigned height,
       unsigned miplevels, unsigned usage, D3DFORMAT format,
@@ -632,42 +643,39 @@ static LPDIRECT3DTEXTURE d3d_texture_new_from_file(
       D3DCOLOR color_key, void *src_info_data,
       PALETTEENTRY *palette)
 {
-   LPDIRECT3DTEXTURE buf = NULL;
+   void *buf  = NULL;
+   HRESULT hr = E_FAIL;
+
+   switch (d3d_common_api)
    {
-      HRESULT hr = E_FAIL;
-
-      switch (d3d_common_api)
-      {
-         case GFX_CTX_DIRECT3D9_API:
+      case GFX_CTX_DIRECT3D9_API:
 #if defined(HAVE_D3D9)
-            hr = D3DCreateTextureFromFile((LPDIRECT3DDEVICE9)dev,
-                  path, width, height, miplevels, usage, format,
-                  pool, filter, mipfilter, color_key, src_info_data,
-                  palette, &buf);
+         hr = D3DCreateTextureFromFile((LPDIRECT3DDEVICE9)dev,
+               path, width, height, miplevels, usage, format,
+               pool, filter, mipfilter, color_key, src_info_data,
+               palette, (struct IDirect3DTexture9**)&buf);
 #endif
-            break;
-         case GFX_CTX_DIRECT3D8_API:
+         break;
+      case GFX_CTX_DIRECT3D8_API:
 #if defined(HAVE_D3D8)
-            hr = D3DCreateTextureFromFile((LPDIRECT3DDEVICE8)dev,
-                  path, width, height, miplevels, usage, format,
-                  pool, filter, mipfilter, color_key, src_info_data,
-                  palette, &buf);
+         hr = D3DCreateTextureFromFile((LPDIRECT3DDEVICE8)dev,
+               path, width, height, miplevels, usage, format,
+               pool, filter, mipfilter, color_key, src_info_data,
+               palette, (struct IDirect3DTeture8**)&buf);
 #endif
-            break;
-         default:
-            break;
-      }
-
-      if (FAILED(hr))
-         return NULL;
-
+         break;
+      default:
+         break;
    }
+
+   if (FAILED(hr))
+      return NULL;
 
    return buf;
 }
 #endif
 
-LPDIRECT3DTEXTURE d3d_texture_new(void *_dev,
+void *d3d_texture_new(void *_dev,
       const char *path, unsigned width, unsigned height,
       unsigned miplevels, unsigned usage, D3DFORMAT format,
       D3DPOOL pool, unsigned filter, unsigned mipfilter,
@@ -675,7 +683,7 @@ LPDIRECT3DTEXTURE d3d_texture_new(void *_dev,
       PALETTEENTRY *palette, bool want_mipmap)
 {
    HRESULT hr            = S_OK;
-   LPDIRECT3DTEXTURE buf = NULL;
+   void *buf             = NULL;
 
    if (path)
    {
@@ -702,11 +710,11 @@ LPDIRECT3DTEXTURE d3d_texture_new(void *_dev,
 #ifdef __cplusplus
             hr = dev->CreateTexture(
                   width, height, miplevels, usage,
-                  format, pool, &buf, NULL);
+                  format, pool, (LPDIRECT3DTEXTURE9)&buf, NULL);
 #else
             hr = IDirect3DDevice9_CreateTexture(dev,
                   width, height, miplevels, usage,
-                  format, pool, &buf, NULL);
+                  format, pool, (struct IDirect3DTexture9**)&buf, NULL);
 #endif
 #endif
          }
@@ -718,11 +726,11 @@ LPDIRECT3DTEXTURE d3d_texture_new(void *_dev,
 #ifdef __cplusplus
             hr = dev->CreateTexture(
                   width, height, miplevels, usage,
-                  format, pool, &buf);
+                  format, pool, (LPDIRECT3DTEXTURE8)&buf);
 #else
             hr = IDirect3DDevice8_CreateTexture(dev,
                   width, height, miplevels, usage,
-                  format, pool, &buf);
+                  format, pool, (LPDIRECT3DTEXTURE8)&buf);
 #endif
 #endif
          }
@@ -738,30 +746,37 @@ LPDIRECT3DTEXTURE d3d_texture_new(void *_dev,
    return buf;
 }
 
-void d3d_texture_free(LPDIRECT3DTEXTURE tex)
+void d3d_texture_free(void *_tex)
 {
-   if (!tex)
-      return;
-
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifdef HAVE_D3D9
+            LPDIRECT3DTEXTURE9 tex = (LPDIRECT3DTEXTURE9)_tex;
+            if (!tex)
+               return;
 #ifdef __cplusplus
-         tex->Release();
+            tex->Release();
 #else
-         IDirect3DTexture9_Release(tex);
+            IDirect3DTexture9_Release(tex);
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
+         {
 #ifdef HAVE_D3D8
+            LPDIRECT3DTEXTURE8 tex = (LPDIRECT3DTEXTURE8)_tex;
+            if (!tex)
+               return;
 #ifdef __cplusplus
-         tex->Release();
+            tex->Release();
 #else
-         IDirect3DTexture8_Release(tex);
+            IDirect3DTexture8_Release(tex);
 #endif
 #endif
+         }
          break;
       case GFX_CTX_NONE:
       default:
@@ -1653,37 +1668,47 @@ bool d3d_device_get_render_target(void *_dev,
 }
 
 
-bool d3d_lock_rectangle(LPDIRECT3DTEXTURE tex,
+bool d3d_lock_rectangle(void *_tex,
       unsigned level, D3DLOCKED_RECT *lock_rect, RECT *rect,
       unsigned rectangle_height, unsigned flags)
 {
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifdef HAVE_D3D9
+            LPDIRECT3DTEXTURE9 tex = (LPDIRECT3DTEXTURE9)_tex;
+            if (!tex)
+               return false;
 #ifdef __cplusplus
-         if (FAILED(tex->LockRect(level, lock_rect, rect, flags)))
-            return false;
+            if (FAILED(tex->LockRect(level, lock_rect, rect, flags)))
+               return false;
 #else
 #ifdef _XBOX
-         IDirect3DTexture9_LockRect(tex, level, lock_rect, (const RECT*)rect, flags);
+            IDirect3DTexture9_LockRect(tex, level, lock_rect, (const RECT*)rect, flags);
 #else
-         if (IDirect3DTexture9_LockRect(tex, level, lock_rect, (const RECT*)rect, flags) != D3D_OK)
-            return false;
+            if (IDirect3DTexture9_LockRect(tex, level, lock_rect, (const RECT*)rect, flags) != D3D_OK)
+               return false;
 #endif
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
+         {
 #ifdef HAVE_D3D8
+            LPDIRECT3DTEXTURE8 tex = (LPDIRECT3DTEXTURE8)_tex;
+            if (!tex)
+               return false;
 #ifdef __cplusplus
-         if (FAILED(tex->LockRect(level, lock_rect, rect, flags)))
-            return false;
+            if (FAILED(tex->LockRect(level, lock_rect, rect, flags)))
+               return false;
 #else
-         if (IDirect3DTexture8_LockRect(tex, level, lock_rect, rect, flags) != D3D_OK)
-            return false;
+            if (IDirect3DTexture8_LockRect(tex, level, lock_rect, rect, flags) != D3D_OK)
+               return false;
 #endif
 #endif
+         }
          break;
       case GFX_CTX_NONE:
       default:
@@ -1693,27 +1718,37 @@ bool d3d_lock_rectangle(LPDIRECT3DTEXTURE tex,
    return true;
 }
 
-void d3d_unlock_rectangle(LPDIRECT3DTEXTURE tex)
+void d3d_unlock_rectangle(void *_tex)
 {
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifdef HAVE_D3D9
+            LPDIRECT3DTEXTURE9 tex = (LPDIRECT3DTEXTURE9)_tex;
+            if (!tex)
+               return;
 #ifdef __cplusplus
-         tex->UnlockRect(0);
+            tex->UnlockRect(0);
 #else
-         IDirect3DTexture9_UnlockRect(tex, 0);
+            IDirect3DTexture9_UnlockRect(tex, 0);
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
+         {
 #ifdef HAVE_D3D8
+            LPDIRECT3DTEXTURE8 tex = (LPDIRECT3DTEXTURE8)_tex;
+            if (!tex)
+               return;
 #ifdef __cplusplus
-         tex->UnlockRect(0);
+            tex->UnlockRect(0);
 #else
-         IDirect3DTexture8_UnlockRect(tex, 0);
+            IDirect3DTexture8_UnlockRect(tex, 0);
 #endif
 #endif
+         }
          break;
       case GFX_CTX_NONE:
       default:
@@ -1721,7 +1756,7 @@ void d3d_unlock_rectangle(LPDIRECT3DTEXTURE tex)
    }
 }
 
-void d3d_lock_rectangle_clear(LPDIRECT3DTEXTURE tex,
+void d3d_lock_rectangle_clear(void *tex,
       unsigned level, D3DLOCKED_RECT *lock_rect, RECT *rect,
       unsigned rectangle_height, unsigned flags)
 {
@@ -1773,18 +1808,14 @@ void d3d_set_viewports(void *_dev, D3DVIEWPORT *vp)
 void d3d_set_texture(void *_dev, unsigned sampler,
       void *tex_data)
 {
-   LPDIRECT3DTEXTURE tex = (LPDIRECT3DTEXTURE)tex_data;
-
-   if (!tex)
-      return;
-
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
          {
 #ifdef HAVE_D3D9
-            LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
-            if (!dev)
+            LPDIRECT3DTEXTURE9 tex = (LPDIRECT3DTEXTURE9)tex_data;
+            LPDIRECT3DDEVICE9 dev  = (LPDIRECT3DDEVICE9)_dev;
+            if (!dev || !tex)
                return;
 #ifdef __cplusplus
             dev->SetTexture(sampler, tex);
@@ -1798,8 +1829,9 @@ void d3d_set_texture(void *_dev, unsigned sampler,
       case GFX_CTX_DIRECT3D8_API:
          {
 #ifdef HAVE_D3D8
-            LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)_dev;
-            if (!dev)
+            LPDIRECT3DTEXTURE8 tex = (LPDIRECT3DTEXTURE8)tex_data;
+            LPDIRECT3DDEVICE8 dev  = (LPDIRECT3DDEVICE8)_dev;
+            if (!dev || !tex)
                return;
 #ifdef __cplusplus
             dev->SetTexture(sampler, tex);
@@ -2057,7 +2089,7 @@ bool d3d_set_vertex_shader_constantf(void *_dev,
 }
 
 void d3d_texture_blit(unsigned pixel_size,
-      LPDIRECT3DTEXTURE tex,
+      void *tex,
       D3DLOCKED_RECT *lr, const void *frame,
       unsigned width, unsigned height, unsigned pitch)
 {

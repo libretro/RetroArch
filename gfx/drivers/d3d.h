@@ -52,7 +52,7 @@ typedef struct
    float tex_coords[4];
    float vert_coords[4];
    float alpha_mod;
-   LPDIRECT3DTEXTURE tex;
+   void *tex;
    void *vert_buf;
 } overlay_t;
 

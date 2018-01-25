@@ -1639,9 +1639,9 @@ static void d3d9_video_texture_load_d3d(d3d_video_t *d3d,
       uintptr_t *id)
 {
    D3DLOCKED_RECT d3dlr;
-   LPDIRECT3DTEXTURE tex = NULL;
-   unsigned usage        = 0;
-   bool want_mipmap      = false;
+   LPDIRECT3DTEXTURE9 tex = NULL;
+   unsigned usage         = 0;
+   bool want_mipmap       = false;
 
    if((filter_type == TEXTURE_FILTER_MIPMAP_LINEAR) ||
       (filter_type == TEXTURE_FILTER_MIPMAP_NEAREST))
@@ -1721,11 +1721,11 @@ static uintptr_t d3d9_load_texture(void *video_data, void *data,
 
 static void d3d9_unload_texture(void *data, uintptr_t id)
 {
-   LPDIRECT3DTEXTURE texid;
+   LPDIRECT3DTEXTURE9 texid;
    if (!id)
 	   return;
 
-   texid = (LPDIRECT3DTEXTURE)id;
+   texid = (LPDIRECT3DTEXTURE9)id;
    d3d_texture_free(texid);
 }
 
