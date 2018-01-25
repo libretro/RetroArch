@@ -49,6 +49,7 @@ HAVE_OVERLAY             := 1
 HAVE_LANGEXTRA           := 1
 HAVE_CHEEVOS             := 1
 HAVE_KEYMAPPER           := 1
+HAVE_SHADERPIPELINE      := 1
 
 include Makefile.common
 CFLAGS    := $(filter-out  -Wno-unknown-pragmas,$(CFLAGS))
