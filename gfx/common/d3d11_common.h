@@ -2491,6 +2491,26 @@ typedef struct
    } params;
 } d3d11_sprite_t;
 
+#ifndef ALIGN
+#ifdef _MSC_VER
+#define ALIGN(x) __declspec(align(x))
+#else
+#define ALIGN(x) __attribute__((aligned(x)))
+#endif
+#endif
+
+ALIGN(16)
+typedef struct
+{
+   math_matrix_4x4 mvp;
+   struct
+   {
+      float width;
+      float height;
+   } OutputSize;
+   float time;
+} d3d11_uniform_t;
+
 typedef struct
 {
    unsigned              cur_mon_id;
@@ -2502,12 +2522,18 @@ typedef struct
    D3D11RenderTargetView renderTargetView;
    D3D11InputLayout      layout;
    D3D11Buffer           ubo;
+   d3d11_uniform_t       ubo_values;
    D3D11VertexShader     vs;
    D3D11PixelShader      ps;
    D3D11SamplerState     sampler_nearest;
    D3D11SamplerState     sampler_linear;
    D3D11BlendState       blend_enable;
    D3D11BlendState       blend_disable;
+   D3D11BlendState       blend_pipeline;
+   D3D11Buffer           menu_pipeline_vbo;
+   D3D11VertexShader     ribbon_vs;
+   D3D11PixelShader      ribbon_ps;
+   D3D11InputLayout      ribbon_layout;
    math_matrix_4x4       mvp, mvp_no_rot;
    struct video_viewport vp;
    D3D11_VIEWPORT        viewport;
@@ -2544,6 +2570,7 @@ typedef struct
       int                 capacity;
       bool                enabled;
    } sprites;
+
 } d3d11_video_t;
 
 void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture);

@@ -43,7 +43,7 @@
 
 #define RARCH_SCALE_BASE 256
 
-#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL) || defined(HAVE_SLANG)
+#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_D3D11)
 #ifndef HAVE_SHADER_MANAGER
 #define HAVE_SHADER_MANAGER
 #endif
