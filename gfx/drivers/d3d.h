@@ -106,10 +106,8 @@ typedef struct d3d_video
       void *decl;
    }menu_display;
 
-#ifdef HAVE_OVERLAY
    size_t overlays_size;
    overlay_t *overlays;
-#endif
 } d3d_video_t;
 
 void d3d_make_d3dpp(void *data, const video_info_t *info, void *_d3dpp);
