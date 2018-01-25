@@ -27,6 +27,14 @@
 #include "../../gfx/drivers/d3d.h"
 #include "../../gfx/common/d3d_common.h"
 
+#if defined(HAVE_D3D9)
+#include <d3d9types.h>
+#endif
+
+#if defined(HAVE_D3D8)
+#include <d3d8types.h>
+#endif
+
 #define BYTE_CLAMP(i) (int) ((((i) > 255) ? 255 : (((i) < 0) ? 0 : (i))))
 
 static const float d3d_vertexes[] = {

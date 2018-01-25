@@ -23,7 +23,9 @@
 
 #if defined(HAVE_D3D9)
 /* Direct3D 9 */
+#if 0
 #include <d3d9.h>
+#endif
 
 #if 0
 #define LPDIRECT3D                     LPDIRECT3D9
@@ -46,10 +48,12 @@
 #endif
 
 #elif defined(HAVE_D3D8)
+#if 0
 #ifdef _XBOX
 #include <xtl.h>
 #else
 #include "../gfx/include/d3d8/d3d8.h"
+#endif
 #endif
 
 /* Direct3D 8 */

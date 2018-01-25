@@ -22,6 +22,14 @@
 #include "../common/d3d_common.h"
 #include "../font_driver.h"
 
+#ifdef HAVE_D3D9
+#include <d3d9types.h>
+#endif
+
+#ifdef HAVE_D3D8
+#include <d3d8types.h>
+#endif
+
 #include "../../configuration.h"
 
 #include <tchar.h>

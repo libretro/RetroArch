@@ -29,10 +29,10 @@
 
 #include "d3d_common.h"
 
-#ifdef HAVE_D3DX
-
 #if defined(HAVE_D3D9)
+#include <d3d9.h>
 
+#ifdef HAVE_D3DX
 #ifdef _XBOX
 #include <d3dx9core.h>
 #include <d3dx9tex.h>
@@ -40,15 +40,19 @@
 #include "../include/d3d9/d3dx9tex.h"
 #endif
 
-#elif defined(HAVE_D3D8)
+#endif
+#endif
 
+#if defined(HAVE_D3D8)
+#include <d3d8.h>
+
+#ifdef HAVE_D3DX
 #ifdef _XBOX
 #include <d3dx8core.h>
 #include <d3dx8tex.h>
 #else
 #include "../include/d3d8/d3dx8tex.h"
 #endif
-
 #endif
 
 #endif
@@ -338,8 +342,8 @@ void d3d_deinitialize_symbols(void)
 
 bool d3d_check_device_type(void *_d3d,
       unsigned idx,
-      D3DFORMAT disp_format,
-      D3DFORMAT backbuffer_format,
+      INT32 disp_format,
+      INT32 backbuffer_format,
       bool windowed_mode)
 {
    switch (d3d_common_api)
@@ -354,16 +358,16 @@ bool d3d_check_device_type(void *_d3d,
             if (FAILED(d3d->CheckDeviceType(
                         0,
                         D3DDEVTYPE_HAL,
-                        disp_format,
-                        backbuffer_format,
+                        (D3DFORMAT)disp_format,
+                        (D3DFORMAT)backbuffer_format,
                         windowed_mode)))
                return false;
 #else
             if (FAILED(IDirect3D9_CheckDeviceType(d3d,
                         0,
                         D3DDEVTYPE_HAL,
-                        disp_format,
-                        backbuffer_format,
+                        (D3DFORMAT)disp_format,
+                        (D3DFORMAT)backbuffer_format,
                         windowed_mode)))
                return false;
 #endif
@@ -407,11 +411,8 @@ bool d3d_check_device_type(void *_d3d,
 bool d3d_get_adapter_display_mode(
       void *_d3d,
       unsigned idx,
-      D3DDISPLAYMODE *display_mode)
+      void *display_mode)
 {
-   if (!display_mode)
-      return false;
-
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
@@ -423,10 +424,10 @@ bool d3d_get_adapter_display_mode(
 #ifdef _XBOX
             return true;
 #elif defined(__cplusplus)
-            if (FAILED(d3d->GetAdapterDisplayMode(idx, display_mode)))
+            if (FAILED(d3d->GetAdapterDisplayMode(idx, (D3DDISPLAYMODE*)display_mode)))
                return false;
 #else
-            if (FAILED(IDirect3D9_GetAdapterDisplayMode(d3d, idx, display_mode)))
+            if (FAILED(IDirect3D9_GetAdapterDisplayMode(d3d, idx, (D3DDISPLAYMODE*)display_mode)))
                return false;
 #endif
 #endif
@@ -439,10 +440,10 @@ bool d3d_get_adapter_display_mode(
             if (!d3d)
                return false;
 #ifdef __cplusplus
-            if (FAILED(d3d->GetAdapterDisplayMode(idx, display_mode)))
+            if (FAILED(d3d->GetAdapterDisplayMode(idx, (D3DDISPLAYMODE*)display_mode)))
                return false;
 #else
-            if (FAILED(IDirect3D8_GetAdapterDisplayMode(d3d, idx, display_mode)))
+            if (FAILED(IDirect3D8_GetAdapterDisplayMode(d3d, idx, (D3DDISPLAYMODE*)display_mode)))
                return false;
 #endif
 #endif
@@ -506,8 +507,9 @@ bool d3d_swap(void *data, void *_dev)
 }
 
 void d3d_set_transform(void *_dev,
-      D3DTRANSFORMSTATETYPE state, CONST D3DMATRIX *matrix)
+      INT32 state, const void *_matrix)
 {
+   CONST D3DMATRIX *matrix = (CONST D3DMATRIX*)_matrix;
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
@@ -517,9 +519,9 @@ void d3d_set_transform(void *_dev,
 #ifndef _XBOX
             LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
 #ifdef __cplusplus
-            dev->SetTransform(state, matrix);
+            dev->SetTransform((D3DTRANSFORMSTATETYPE)state, matrix);
 #else
-            IDirect3DDevice9_SetTransform(dev, state, matrix);
+            IDirect3DDevice9_SetTransform(dev, (D3DTRANSFORMSTATETYPE)state, matrix);
 #endif
 #endif
 #endif
@@ -530,9 +532,9 @@ void d3d_set_transform(void *_dev,
 #ifdef HAVE_D3D8
             LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)_dev;
 #ifdef __cplusplus
-            dev->SetTransform(state, matrix);
+            dev->SetTransform((D3DTRANSFORMSTATETYPE)state, matrix);
 #else
-            IDirect3DDevice8_SetTransform(dev, state, matrix);
+            IDirect3DDevice8_SetTransform(dev, (D3DTRANSFORMSTATETYPE)state, matrix);
 #endif
 #endif
          }
@@ -639,8 +641,8 @@ static void *d3d_texture_new_from_file(
       void *dev,
       const char *path, unsigned width, unsigned height,
       unsigned miplevels, unsigned usage, D3DFORMAT format,
-      D3DPOOL pool, unsigned filter, unsigned mipfilter,
-      D3DCOLOR color_key, void *src_info_data,
+      INT32 pool, unsigned filter, unsigned mipfilter,
+      INT32 color_key, void *src_info_data,
       PALETTEENTRY *palette)
 {
    void *buf  = NULL;
@@ -677,9 +679,9 @@ static void *d3d_texture_new_from_file(
 
 void *d3d_texture_new(void *_dev,
       const char *path, unsigned width, unsigned height,
-      unsigned miplevels, unsigned usage, D3DFORMAT format,
-      D3DPOOL pool, unsigned filter, unsigned mipfilter,
-      D3DCOLOR color_key, void *src_info_data,
+      unsigned miplevels, unsigned usage, INT32 format,
+      INT32 pool, unsigned filter, unsigned mipfilter,
+      INT32 color_key, void *src_info_data,
       PALETTEENTRY *palette, bool want_mipmap)
 {
    HRESULT hr            = S_OK;
@@ -690,7 +692,7 @@ void *d3d_texture_new(void *_dev,
 #ifdef HAVE_D3DX
       return d3d_texture_new_from_file(_dev,
             path, width, height, miplevels,
-            usage, format, pool, filter, mipfilter,
+            usage, (D3DFORMAT)format, pool, filter, mipfilter,
             color_key, src_info_data, palette);
 #else
       return NULL;
@@ -710,11 +712,12 @@ void *d3d_texture_new(void *_dev,
 #ifdef __cplusplus
             hr = dev->CreateTexture(
                   width, height, miplevels, usage,
-                  format, pool, (LPDIRECT3DTEXTURE9)&buf, NULL);
+                  (D3DFORMAT)format, pool, (LPDIRECT3DTEXTURE9)&buf, NULL);
 #else
             hr = IDirect3DDevice9_CreateTexture(dev,
                   width, height, miplevels, usage,
-                  format, pool, (struct IDirect3DTexture9**)&buf, NULL);
+                  (D3DFORMAT)format, pool,
+                  (struct IDirect3DTexture9**)&buf, NULL);
 #endif
 #endif
          }
@@ -726,11 +729,11 @@ void *d3d_texture_new(void *_dev,
 #ifdef __cplusplus
             hr = dev->CreateTexture(
                   width, height, miplevels, usage,
-                  format, pool, (LPDIRECT3DTEXTURE8)&buf);
+                  (D3DFORMAT)format, pool, (LPDIRECT3DTEXTURE8)&buf);
 #else
             hr = IDirect3DDevice8_CreateTexture(dev,
                   width, height, miplevels, usage,
-                  format, pool, (struct IDirect3DTexture8**)&buf);
+                  (D3DFORMAT)format, pool, (struct IDirect3DTexture8**)&buf);
 #endif
 #endif
          }
@@ -970,7 +973,7 @@ bool d3d_vertex_declaration_new(void *_dev,
 
 void *d3d_vertex_buffer_new(void *_dev,
       unsigned length, unsigned usage,
-      unsigned fvf, D3DPOOL pool, void *handle)
+      unsigned fvf, INT32 pool, void *handle)
 {
    HRESULT hr   = S_OK;
    void    *buf = NULL;
@@ -1568,7 +1571,7 @@ static void d3d_draw_primitive_internal(void *_dev,
 }
 
 void d3d_draw_primitive(void *dev,
-      D3DPRIMITIVETYPE type, unsigned start, unsigned count)
+      INT32 type, unsigned start, unsigned count)
 {
    if (!d3d_begin_scene(dev))
       return;
@@ -1578,8 +1581,8 @@ void d3d_draw_primitive(void *dev,
 }
 
 void d3d_clear(void *_dev,
-      unsigned count, const D3DRECT *rects, unsigned flags,
-      D3DCOLOR color, float z, unsigned stencil)
+      unsigned count, const void *rects, unsigned flags,
+      INT32 color, float z, unsigned stencil)
 {
    switch (d3d_common_api)
    {
@@ -1590,9 +1593,9 @@ void d3d_clear(void *_dev,
             if (!dev)
                return;
 #ifdef __cplusplus
-            dev->Clear(count, rects, flags, color, z, stencil);
+            dev->Clear(count, (const D3DRECT*)rects, flags, color, z, stencil);
 #else
-            IDirect3DDevice9_Clear(dev, count, rects, flags,
+            IDirect3DDevice9_Clear(dev, count, (const D3DRECT*)rects, flags,
                   color, z, stencil);
 #endif
 #endif
@@ -1605,9 +1608,9 @@ void d3d_clear(void *_dev,
             if (!dev)
                return;
 #ifdef __cplusplus
-            dev->Clear(count, rects, flags, color, z, stencil);
+            dev->Clear(count, (const D3DRECT*)rects, flags, color, z, stencil);
 #else
-            IDirect3DDevice8_Clear(dev, count, rects, flags,
+            IDirect3DDevice8_Clear(dev, count, (const D3DRECT*)rects, flags,
                   color, z, stencil);
 #endif
 #endif
@@ -1706,9 +1709,11 @@ bool d3d_device_get_render_target(void *_dev,
 
 
 bool d3d_lock_rectangle(void *_tex,
-      unsigned level, D3DLOCKED_RECT *lock_rect, RECT *rect,
+      unsigned level, void *_lr, RECT *rect,
       unsigned rectangle_height, unsigned flags)
 {
+   D3DLOCKED_RECT *lr = (D3DLOCKED_RECT*)_lr;
+
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
@@ -1718,13 +1723,13 @@ bool d3d_lock_rectangle(void *_tex,
             if (!tex)
                return false;
 #ifdef __cplusplus
-            if (FAILED(tex->LockRect(level, lock_rect, rect, flags)))
+            if (FAILED(tex->LockRect(level, lr, rect, flags)))
                return false;
 #else
 #ifdef _XBOX
-            IDirect3DTexture9_LockRect(tex, level, lock_rect, (const RECT*)rect, flags);
+            IDirect3DTexture9_LockRect(tex, level, lr, (const RECT*)rect, flags);
 #else
-            if (IDirect3DTexture9_LockRect(tex, level, lock_rect, (const RECT*)rect, flags) != D3D_OK)
+            if (IDirect3DTexture9_LockRect(tex, level, lr, (const RECT*)rect, flags) != D3D_OK)
                return false;
 #endif
 #endif
@@ -1738,10 +1743,10 @@ bool d3d_lock_rectangle(void *_tex,
             if (!tex)
                return false;
 #ifdef __cplusplus
-            if (FAILED(tex->LockRect(level, lock_rect, rect, flags)))
+            if (FAILED(tex->LockRect(level, lr, rect, flags)))
                return false;
 #else
-            if (IDirect3DTexture8_LockRect(tex, level, lock_rect, rect, flags) != D3D_OK)
+            if (IDirect3DTexture8_LockRect(tex, level, lr, rect, flags) != D3D_OK)
                return false;
 #endif
 #endif
@@ -1794,13 +1799,14 @@ void d3d_unlock_rectangle(void *_tex)
 }
 
 void d3d_lock_rectangle_clear(void *tex,
-      unsigned level, D3DLOCKED_RECT *lock_rect, RECT *rect,
+      unsigned level, void *_lr, RECT *rect,
       unsigned rectangle_height, unsigned flags)
 {
+   D3DLOCKED_RECT *lr = (D3DLOCKED_RECT*)_lr;
 #if defined(_XBOX)
    level = 0;
 #endif
-   memset(lock_rect->pBits, level, rectangle_height * lock_rect->Pitch);
+   memset(lr->pBits, level, rectangle_height * lr->Pitch);
    d3d_unlock_rectangle(tex);
 }
 
@@ -2129,10 +2135,12 @@ bool d3d_set_vertex_shader_constantf(void *_dev,
 
 void d3d_texture_blit(unsigned pixel_size,
       void *tex,
-      D3DLOCKED_RECT *lr, const void *frame,
+      void *_lr, const void *frame,
       unsigned width, unsigned height, unsigned pitch)
 {
    unsigned y;
+   D3DLOCKED_RECT *lr = (D3DLOCKED_RECT*)_lr;
+
    for (y = 0; y < height; y++)
    {
       const uint8_t *in = (const uint8_t*)frame + y * pitch;
@@ -2141,7 +2149,7 @@ void d3d_texture_blit(unsigned pixel_size,
    }
 }
 
-bool d3d_get_render_state(void *data, D3DRENDERSTATETYPE state, DWORD *value)
+bool d3d_get_render_state(void *data, INT32 state, DWORD *value)
 {
    switch (d3d_common_api)
    {
@@ -2150,16 +2158,16 @@ bool d3d_get_render_state(void *data, D3DRENDERSTATETYPE state, DWORD *value)
 #ifdef HAVE_D3D9
             LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)data;
 #ifdef __cplusplus
-            if (dev && dev->GetRenderState(state, value) == D3D_OK)
+            if (dev && dev->GetRenderState((D3DRENDERSTATETYPE)state, value) == D3D_OK)
                return true;
 #else
 #ifdef _XBOX
             if (!dev)
                return false;
-            IDirect3DDevice9_GetRenderState(dev, state, value);
+            IDirect3DDevice9_GetRenderState(dev, (D3DRENDERSTATETYPE)state, value);
             return true;
 #else
-            if (dev && IDirect3DDevice9_GetRenderState(dev, state, value) == D3D_OK)
+            if (dev && IDirect3DDevice9_GetRenderState(dev, (D3DRENDERSTATETYPE)state, value) == D3D_OK)
                return true;
 #endif
 #endif
@@ -2171,10 +2179,10 @@ bool d3d_get_render_state(void *data, D3DRENDERSTATETYPE state, DWORD *value)
 #ifdef HAVE_D3D8
             LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)data;
 #ifdef __cplusplus
-            if (dev && dev->GetRenderState(state, value) == D3D_OK)
+            if (dev && dev->GetRenderState((D3DRENDERSTATETYPE)state, value) == D3D_OK)
                return true;
 #else
-            if (dev && IDirect3DDevice8_GetRenderState(dev, state, value) == D3D_OK)
+            if (dev && IDirect3DDevice8_GetRenderState(dev, (D3DRENDERSTATETYPE)state, value) == D3D_OK)
                return true;
 #endif
 #endif
@@ -2188,7 +2196,7 @@ bool d3d_get_render_state(void *data, D3DRENDERSTATETYPE state, DWORD *value)
    return false;
 }
 
-void d3d_set_render_state(void *data, D3DRENDERSTATETYPE state, DWORD value)
+void d3d_set_render_state(void *data, INT32 state, DWORD value)
 {
    switch (d3d_common_api)
    {
@@ -2199,9 +2207,9 @@ void d3d_set_render_state(void *data, D3DRENDERSTATETYPE state, DWORD value)
             if (!dev)
                return;
 #ifdef __cplusplus
-            dev->SetRenderState(state, value);
+            dev->SetRenderState((D3DRENDERSTATETYPE)state, value);
 #else
-            IDirect3DDevice9_SetRenderState(dev, state, value);
+            IDirect3DDevice9_SetRenderState(dev, (D3DRENDERSTATETYPE)state, value);
 #endif
 #endif
          }
@@ -2213,9 +2221,9 @@ void d3d_set_render_state(void *data, D3DRENDERSTATETYPE state, DWORD value)
             if (!dev)
                return;
 #ifdef __cplusplus
-            dev->SetRenderState(state, value);
+            dev->SetRenderState((D3DRENDERSTATETYPE)state, value);
 #else
-            IDirect3DDevice8_SetRenderState(dev, state, value);
+            IDirect3DDevice8_SetRenderState(dev, (D3DRENDERSTATETYPE)state, value);
 #endif
 #endif
          }
@@ -2515,7 +2523,7 @@ static bool d3d_create_device_internal(
 }
 
 bool d3d_create_device(void *dev,
-      D3DPRESENT_PARAMETERS *d3dpp,
+      void *d3dpp,
       void *d3d,
       HWND focus_window,
       unsigned cur_mon_id)
@@ -2534,7 +2542,7 @@ bool d3d_create_device(void *dev,
    return true;
 }
 
-bool d3d_reset(void *dev, D3DPRESENT_PARAMETERS *d3dpp)
+bool d3d_reset(void *dev, void *d3dpp)
 {
    const char *err = NULL;
 
@@ -2686,7 +2694,7 @@ void d3d_device_free(void *_dev, void *_pd3d)
 
 }
 
-D3DTEXTUREFILTERTYPE d3d_translate_filter(unsigned type)
+INT32 d3d_translate_filter(unsigned type)
 {
    switch (type)
    {
@@ -2997,7 +3005,7 @@ bool d3dx_compile_shader_from_file(
    return false;
 }
 
-D3DFORMAT d3d_get_rgb565_format(void)
+INT32 d3d_get_rgb565_format(void)
 {
 #ifdef _XBOX
    return D3DFMT_LIN_R5G6B5;
@@ -3006,7 +3014,7 @@ D3DFORMAT d3d_get_rgb565_format(void)
 #endif
 }
 
-D3DFORMAT d3d_get_argb8888_format(void)
+INT32 d3d_get_argb8888_format(void)
 {
 #ifdef _XBOX
    return D3DFMT_LIN_A8R8G8B8;
@@ -3015,7 +3023,7 @@ D3DFORMAT d3d_get_argb8888_format(void)
 #endif
 }
 
-D3DFORMAT d3d_get_xrgb8888_format(void)
+INT32 d3d_get_xrgb8888_format(void)
 {
 #ifdef _XBOX
    return D3DFMT_LIN_X8R8G8B8;

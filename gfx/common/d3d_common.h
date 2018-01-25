@@ -19,7 +19,6 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
-#include "../../defines/d3d_defines.h"
 #include "../video_driver.h"
 
 RETRO_BEGIN_DECLS
@@ -27,14 +26,14 @@ RETRO_BEGIN_DECLS
 typedef struct d3d_texture
 {
    void *data;
-   D3DPOOL pool;
+   INT32 pool;
 } d3d_texture_t;
 
 bool d3d_swap(void *data, void *dev);
 
 void *d3d_vertex_buffer_new(void *dev,
       unsigned length, unsigned usage, unsigned fvf,
-      D3DPOOL pool, void *handle);
+      INT32 pool, void *handle);
 
 void *d3d_vertex_buffer_lock(void *data);
 void d3d_vertex_buffer_unlock(void *data);
@@ -49,9 +48,9 @@ bool d3d_texture_get_surface_level(void *tex,
 
 void *d3d_texture_new(void *dev,
       const char *path, unsigned width, unsigned height,
-      unsigned miplevels, unsigned usage, D3DFORMAT format,
-      D3DPOOL pool, unsigned filter, unsigned mipfilter,
-      D3DCOLOR color_key, void *src_info,
+      unsigned miplevels, unsigned usage, INT32 format,
+      INT32 pool, unsigned filter, unsigned mipfilter,
+      INT32 color_key, void *src_info,
       PALETTEENTRY *palette, bool want_mipmap);
 
 void d3d_set_stream_source(void *dev, unsigned stream_no,
@@ -61,7 +60,7 @@ void d3d_set_stream_source(void *dev, unsigned stream_no,
 void d3d_texture_free(void *tex);
 
 void d3d_set_transform(void *dev,
-      D3DTRANSFORMSTATETYPE state, CONST D3DMATRIX *matrix);
+      INT32 state, const void *_matrix);
 
 void d3d_set_sampler_address_u(void *dev,
       unsigned sampler, unsigned value);
@@ -83,18 +82,18 @@ bool d3d_begin_scene(void *dev);
 void d3d_end_scene(void *dev);
 
 void d3d_draw_primitive(void *dev,
-      D3DPRIMITIVETYPE type, unsigned start, unsigned count);
+      INT32 type, unsigned start, unsigned count);
 
 void d3d_clear(void *dev,
-      unsigned count, const D3DRECT *rects, unsigned flags,
-      D3DCOLOR color, float z, unsigned stencil);
+      unsigned count, const void *rects, unsigned flags,
+      INT32 color, float z, unsigned stencil);
 
 bool d3d_lock_rectangle(void *tex,
-      unsigned level, D3DLOCKED_RECT *lock_rect, RECT *rect,
+      unsigned level, void *lock_rect, RECT *rect,
       unsigned rectangle_height, unsigned flags);
 
 void d3d_lock_rectangle_clear(void *tex,
-      unsigned level, D3DLOCKED_RECT *lock_rect, RECT *rect,
+      unsigned level, void *lock_rect, RECT *rect,
       unsigned rectangle_height, unsigned flags);
 
 void d3d_unlock_rectangle(void *tex);
@@ -122,7 +121,7 @@ bool d3d_set_vertex_shader_constantf(void *dev,
 
 void d3d_texture_blit(unsigned pixel_size,
       void *tex,
-      D3DLOCKED_RECT *lr, const void *frame,
+      void *lr, const void *frame,
       unsigned width, unsigned height, unsigned pitch);
 
 bool d3d_vertex_declaration_new(void *dev,
@@ -154,10 +153,10 @@ void d3d_device_set_render_target(void *dev, unsigned idx,
       void *data);
 
 bool d3d_get_render_state(void *data,
-      D3DRENDERSTATETYPE state, DWORD *value);
+      INT32 state, DWORD *value);
 
 void d3d_set_render_state(void *data,
-      D3DRENDERSTATETYPE state, DWORD value);
+      INT32 state, DWORD value);
 
 void d3d_device_set_render_target(void *dev, unsigned idx,
       void *data);
@@ -189,15 +188,15 @@ void *d3d_matrix_rotation_z(void *_pout, float angle);
 
 bool d3d_get_adapter_display_mode(void *d3d,
       unsigned idx,
-      D3DDISPLAYMODE *display_mode);
+      void *display_mode);
 
 bool d3d_create_device(void *dev,
-      D3DPRESENT_PARAMETERS *d3dpp,
+      void *d3dpp,
       void *d3d,
       HWND focus_window,
       unsigned cur_mon_id);
 
-bool d3d_reset(void *dev, D3DPRESENT_PARAMETERS *d3dpp);
+bool d3d_reset(void *dev, void *d3dpp);
 
 bool d3d_device_get_backbuffer(void *dev, 
       unsigned idx, unsigned swapchain_idx, 
@@ -213,8 +212,8 @@ void d3d_deinitialize_symbols(void);
 
 bool d3d_check_device_type(void *d3d,
       unsigned idx,
-      D3DFORMAT disp_format,
-      D3DFORMAT backbuffer_format,
+      INT32 disp_format,
+      INT32 backbuffer_format,
       bool windowed_mode);
 
 bool d3dx_create_font_indirect(void *dev,
@@ -229,7 +228,7 @@ void d3dxbuffer_release(void *data);
 
 void d3dx_font_release(void *data);
 
-D3DTEXTUREFILTERTYPE d3d_translate_filter(unsigned type);
+INT32 d3d_translate_filter(unsigned type);
 
 bool d3dx_compile_shader(
       const char *src,
@@ -254,9 +253,9 @@ bool d3dx_compile_shader_from_file(
       void *pperrormsgs,
       void *ppconstanttable);
 
-D3DFORMAT d3d_get_rgb565_format(void);
-D3DFORMAT d3d_get_argb8888_format(void);
-D3DFORMAT d3d_get_xrgb8888_format(void);
+INT32 d3d_get_rgb565_format(void);
+INT32 d3d_get_argb8888_format(void);
+INT32 d3d_get_xrgb8888_format(void);
 
 RETRO_END_DECLS
 
