@@ -35,9 +35,9 @@ static void d3d11_set_filtering(void* data, unsigned index, bool smooth)
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
 
    if (smooth)
-      d3d11->frame.sampler = d3d11->sampler_linear;
+      d3d11->frame.texture.sampler = d3d11->sampler_linear;
    else
-      d3d11->frame.sampler = d3d11->sampler_nearest;
+      d3d11->frame.texture.sampler = d3d11->sampler_nearest;
 }
 
 static void d3d11_gfx_set_rotation(void* data, unsigned rotation)
@@ -467,9 +467,6 @@ static bool d3d11_gfx_frame(
 
       d3d11_update_texture(
             d3d11->ctx, width, height, pitch, d3d11->format, frame, &d3d11->frame.texture);
-      D3D11CopyTexture2DSubresourceRegion(
-            d3d11->ctx, d3d11->frame.texture.handle, 0, 0, 0, 0, d3d11->frame.texture.staging, 0,
-            &frame_box);
    }
 
    {
@@ -482,8 +479,7 @@ static bool d3d11_gfx_frame(
       d3d11_update_viewport(d3d11, false);
 
       D3D11SetViewports(d3d11->ctx, 1, &d3d11->frame.viewport);
-      D3D11SetPShaderResources(d3d11->ctx, 0, 1, &d3d11->frame.texture.view);
-      D3D11SetPShaderSamplers(d3d11->ctx, 0, 1, &d3d11->frame.sampler);
+      d3d11_set_texture_and_sampler(d3d11->ctx, 0, &d3d11->frame.texture);
 
       D3D11SetVertexBuffers(d3d11->ctx, 0, 1, &d3d11->frame.vbo, &stride, &offset);
       D3D11SetVShaderConstantBuffers(d3d11->ctx, 0, 1, &d3d11->frame.ubo);
@@ -493,20 +489,11 @@ static bool d3d11_gfx_frame(
 
       if (d3d11->menu.enabled && d3d11->menu.texture.handle)
       {
-         if (d3d11->menu.texture.dirty)
-         {
-            D3D11CopyTexture2DSubresourceRegion(
-                  d3d11->ctx, d3d11->menu.texture.handle, 0, 0, 0, 0, d3d11->menu.texture.staging,
-                  0, NULL);
-            d3d11->menu.texture.dirty = false;
-         }
-
          if (d3d11->menu.fullscreen)
             D3D11SetViewports(d3d11->ctx, 1, &d3d11->viewport);
          D3D11SetVertexBuffers(d3d11->ctx, 0, 1, &d3d11->menu.vbo, &stride, &offset);
          D3D11SetVShaderConstantBuffers(d3d11->ctx, 0, 1, &d3d11->ubo);
-         D3D11SetPShaderResources(d3d11->ctx, 0, 1, &d3d11->menu.texture.view);
-         D3D11SetPShaderSamplers(d3d11->ctx, 0, 1, &d3d11->menu.sampler);
+         d3d11_set_texture_and_sampler(d3d11->ctx, 0, &d3d11->menu.texture);
 
          D3D11Draw(d3d11->ctx, 4, 0);
       }
@@ -521,7 +508,6 @@ static bool d3d11_gfx_frame(
       D3D11SetInputLayout(d3d11->ctx, d3d11->sprites.layout);
       D3D11SetPrimitiveTopology(d3d11->ctx, D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
       D3D11SetVertexBuffers(d3d11->ctx, 0, 1, &d3d11->sprites.vbo, &sprite_stride, &offset);
-      D3D11SetPShaderSamplers(d3d11->ctx, 0, 1, &d3d11->sampler_linear);
       D3D11SetBlendState(d3d11->ctx, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
 
       d3d11->sprites.enabled = true;
@@ -621,7 +607,7 @@ static void d3d11_set_menu_texture_frame(
    }
 
    d3d11_update_texture(d3d11->ctx, width, height, pitch, format, frame, &d3d11->menu.texture);
-   d3d11->menu.sampler = config_get_ptr()->bools.menu_linear_filter ? d3d11->sampler_linear
+   d3d11->menu.texture.sampler = config_get_ptr()->bools.menu_linear_filter ? d3d11->sampler_linear
                                                                     : d3d11->sampler_nearest;
 }
 static void d3d11_set_menu_texture_enable(void* data, bool state, bool full_screen)
@@ -672,15 +658,30 @@ static uintptr_t d3d11_gfx_load_texture(
 {
    d3d11_video_t*        d3d11     = (d3d11_video_t*)video_data;
    struct texture_image* image     = (struct texture_image*)data;
-   D3D11_BOX             frame_box = { 0, 0, 0, image->width, image->height, 1 };
 
    if (!d3d11)
       return 0;
 
    d3d11_texture_t* texture = calloc(1, sizeof(*texture));
 
-   texture->desc.Width  = image->width;
-   texture->desc.Height = image->height;
+   switch(filter_type)
+   {
+   case TEXTURE_FILTER_MIPMAP_LINEAR:
+      texture->desc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
+      /* fallthrough */
+   case TEXTURE_FILTER_LINEAR:
+      texture->sampler = d3d11->sampler_linear;
+      break;
+   case TEXTURE_FILTER_MIPMAP_NEAREST:
+      texture->desc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
+      /* fallthrough */
+   case TEXTURE_FILTER_NEAREST:
+      texture->sampler = d3d11->sampler_nearest;
+      break;
+   }
+
+   texture->desc.Width     = image->width;
+   texture->desc.Height    = image->height;
    texture->desc.Format =
          d3d11_get_closest_match_texture2D(d3d11->device, DXGI_FORMAT_B8G8R8A8_UNORM);
 
@@ -689,8 +690,6 @@ static uintptr_t d3d11_gfx_load_texture(
    d3d11_update_texture(
          d3d11->ctx, image->width, image->height, 0, DXGI_FORMAT_B8G8R8A8_UNORM, image->pixels,
          texture);
-   D3D11CopyTexture2DSubresourceRegion(
-         d3d11->ctx, texture->handle, 0, 0, 0, 0, texture->staging, 0, &frame_box);
 
    return (uintptr_t)texture;
 }
