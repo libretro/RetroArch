@@ -97,8 +97,8 @@
 
 struct shader_program_hlsl_data
 {
-   LPDIRECT3DVERTEXSHADER vprg;
-   LPDIRECT3DPIXELSHADER fprg;
+   LPDIRECT3DVERTEXSHADER9 vprg;
+   LPDIRECT3DPIXELSHADER9 fprg;
 
    D3DXHANDLE	   vid_size_f;
    D3DXHANDLE	   tex_size_f;

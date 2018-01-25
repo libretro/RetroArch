@@ -236,7 +236,7 @@ HRESULT XuiTextureLoader(IXuiDevice *pDevice, LPCWSTR szFileName,
          D3DX_DEFAULT_NONPOW2,
          1,
          D3DUSAGE_CPU_CACHED_MEMORY,
-         d3d_get_argb8888_format(),
+         (D3DFORMAT)d3d_get_argb8888_format(),
          D3DPOOL_DEFAULT,
          D3DX_FILTER_NONE,
          D3DX_FILTER_NONE,
@@ -298,7 +298,7 @@ static void* xui_init(void **userdata, bool video_is_threaded)
 
    d3d_make_d3dpp(d3d, &video_info, &d3dpp);
 
-   hr = app.InitShared(d3d->dev, &d3dpp,
+   hr = app.InitShared((D3DDevice*)d3d->dev, &d3dpp,
          (PFN_XUITEXTURELOADER)XuiTextureLoader);
 
    if (FAILED(hr))

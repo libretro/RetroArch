@@ -366,7 +366,11 @@ static void d3d9_overlay_render(d3d_video_t *d3d,
    {
       overlay->vert_buf = d3d_vertex_buffer_new(
       d3d->dev, sizeof(vert), D3DUSAGE_WRITEONLY,
+#ifdef _XBOX
+	  0,
+#else
       D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1,
+#endif
       D3DPOOL_MANAGED, NULL);
 
 	  if (!overlay->vert_buf)
@@ -828,7 +832,11 @@ static bool d3d9_initialize(d3d_video_t *d3d, const video_info_t *info)
    d3d->menu_display.buffer = d3d_vertex_buffer_new(
          d3d->dev, d3d->menu_display.size * sizeof(Vertex),
          D3DUSAGE_WRITEONLY,
-         D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1,
+#ifdef _XBOX
+         0,
+#else
+		 D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1,
+#endif
          D3DPOOL_DEFAULT,
          NULL);
 
