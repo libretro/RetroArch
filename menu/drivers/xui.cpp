@@ -411,7 +411,7 @@ static void xui_frame(void *data, video_frame_info_t *video_info)
    XUIMessageRender msgRender;
    D3DXMATRIX matOrigView;
    const char *message   = NULL;
-   D3DVIEWPORT vp_full   = {0};
+   D3DVIEWPORT9 vp_full  = {0};
    d3d_video_t *d3d      = (d3d_video_t*)video_driver_get_ptr(false);
 
    if (!d3d)

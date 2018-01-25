@@ -22,6 +22,7 @@
 #include <d3dx9shader.h>
 
 #include "../../defines/d3d_defines.h"
+#include "../common/d3d_common.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"

@@ -438,10 +438,10 @@ static void hlsl_d3d9_renderchain_viewport_info(
 
    video_driver_get_size(&width, &height);
 
-   vp->x            = d3d->final_viewport.X;
-   vp->y            = d3d->final_viewport.Y;
-   vp->width        = d3d->final_viewport.Width;
-   vp->height       = d3d->final_viewport.Height;
+   vp->x            = d3d->final_viewport.x;
+   vp->y            = d3d->final_viewport.y;
+   vp->width        = d3d->final_viewport.width;
+   vp->height       = d3d->final_viewport.height;
 
    vp->full_width   = width;
    vp->full_height  = height;
