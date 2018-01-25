@@ -730,7 +730,7 @@ void *d3d_texture_new(void *_dev,
 #else
             hr = IDirect3DDevice8_CreateTexture(dev,
                   width, height, miplevels, usage,
-                  format, pool, (LPDIRECT3DTEXTURE8)&buf);
+                  format, pool, (struct IDirect3DTexture8**)&buf);
 #endif
 #endif
          }
@@ -1012,7 +1012,7 @@ void *d3d_vertex_buffer_new(void *_dev,
             hr = dev->CreateVertexBuffer(length, usage, fvf, pool, &buf, NULL);
 #else
             hr = IDirect3DDevice8_CreateVertexBuffer(dev, length, usage, fvf, pool,
-                  &buf);
+                  (struct IDirect3DVertexBuffer8**)&buf);
 #endif
 #endif
          }
@@ -1143,7 +1143,7 @@ void d3d_vertex_buffer_free(void *vertex_data, void *vertex_declaration)
 #ifdef HAVE_D3D8
          if (vertex_data)
          {
-            LPDIRECT3DVERTEXBUFFER buf = (LPDIRECT3DVERTEXBUFFER)vertex_data;
+            LPDIRECT3DVERTEXBUFFER8 buf = (LPDIRECT3DVERTEXBUFFER8)vertex_data;
 #ifdef __cplusplus
             buf->Release();
 #else
@@ -2500,7 +2500,7 @@ static bool d3d_create_device_internal(
                         focus_window,
                         behavior_flags,
                         d3dpp,
-                        dev)))
+                        (IDirect3DDevice8**)dev)))
                return true;
 #endif
 #endif

@@ -63,7 +63,7 @@ typedef struct d3d8_renderchain
    LPDIRECT3DDEVICE8 dev;
    const video_info_t *video_info;
    LPDIRECT3DTEXTURE8 tex;
-   LPDIRECT3DVERTEXBUFFER vertex_buf;
+   LPDIRECT3DVERTEXBUFFER8 vertex_buf;
    unsigned last_width;
    unsigned last_height;
    void *vertex_decl;
