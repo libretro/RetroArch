@@ -266,11 +266,6 @@ typedef struct global
             rarch_resolution_t initial;
          } resolutions;
       } screen;
-
-      struct
-      {
-         bool system_bgm_enable;
-      } sound;
    } console;
 } global_t;
 

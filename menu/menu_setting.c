@@ -4025,24 +4025,6 @@ static bool setting_append_list(
          menu_settings_list_current_add_range(list, list_info, -80, 12, 1.0, true, true);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
-#ifdef __CELLOS_LV2__
-         CONFIG_BOOL(
-               list, list_info,
-               &global->console.sound.system_bgm_enable,
-               MENU_ENUM_LABEL_SYSTEM_BGM_ENABLE,
-               MENU_ENUM_LABEL_VALUE_SYSTEM_BGM_ENABLE,
-               false,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE
-               );
-#endif
-
          END_SUB_GROUP(list, list_info, parent_group);
 
          parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
