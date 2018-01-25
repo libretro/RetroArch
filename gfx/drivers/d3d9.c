@@ -55,7 +55,7 @@
 #include "../../defines/d3d_defines.h"
 #include "../../verbosity.h"
 
-static LPDIRECT3D g_pD3D9;
+static LPDIRECT3D9 g_pD3D9;
 
 static bool d3d9_init_imports(d3d_video_t *d3d)
 {
@@ -607,7 +607,7 @@ static bool d3d9_init_base(void *data, const video_info_t *info)
 
    memset(&d3dpp, 0, sizeof(d3dpp));
 
-   g_pD3D9            = (LPDIRECT3D)d3d_create();
+   g_pD3D9            = (LPDIRECT3D9)d3d_create();
 
    /* this needs g_pD3D9 created first */
    d3d_make_d3dpp(d3d, info, &d3dpp);

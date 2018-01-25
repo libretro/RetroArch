@@ -187,13 +187,13 @@ void * d3d_matrix_identity(void *_pout);
 
 void *d3d_matrix_rotation_z(void *_pout, float angle);
 
-bool d3d_get_adapter_display_mode(LPDIRECT3D d3d,
+bool d3d_get_adapter_display_mode(void *d3d,
       unsigned idx,
       D3DDISPLAYMODE *display_mode);
 
 bool d3d_create_device(void *dev,
       D3DPRESENT_PARAMETERS *d3dpp,
-      LPDIRECT3D d3d,
+      void *d3d,
       HWND focus_window,
       unsigned cur_mon_id);
 
@@ -203,7 +203,7 @@ bool d3d_device_get_backbuffer(void *dev,
       unsigned idx, unsigned swapchain_idx, 
       unsigned backbuffer_type, void **data);
 
-void d3d_device_free(void *dev, LPDIRECT3D pd3d);
+void d3d_device_free(void *dev, void *pd3d);
 
 void *d3d_create(void);
 
@@ -211,7 +211,7 @@ bool d3d_initialize_symbols(enum gfx_ctx_api api);
 
 void d3d_deinitialize_symbols(void);
 
-bool d3d_check_device_type(LPDIRECT3D d3d,
+bool d3d_check_device_type(void *d3d,
       unsigned idx,
       D3DFORMAT disp_format,
       D3DFORMAT backbuffer_format,

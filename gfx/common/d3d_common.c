@@ -336,57 +336,65 @@ void d3d_deinitialize_symbols(void)
    d3d_common_api    = GFX_CTX_NONE;
 }
 
-bool d3d_check_device_type(LPDIRECT3D d3d,
+bool d3d_check_device_type(void *_d3d,
       unsigned idx,
       D3DFORMAT disp_format,
       D3DFORMAT backbuffer_format,
       bool windowed_mode)
 {
-   if (!d3d)
-      return false;
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifdef HAVE_D3D9
+            LPDIRECT3D9 d3d = (LPDIRECT3D9)_d3d;
+            if (!d3d)
+               return false;
 #ifdef __cplusplus
-         if (FAILED(d3d->CheckDeviceType(
-                     0,
-                     D3DDEVTYPE_HAL,
-                     disp_format,
-                     backbuffer_format,
-                     windowed_mode)))
-            return false;
+            if (FAILED(d3d->CheckDeviceType(
+                        0,
+                        D3DDEVTYPE_HAL,
+                        disp_format,
+                        backbuffer_format,
+                        windowed_mode)))
+               return false;
 #else
-         if (FAILED(IDirect3D9_CheckDeviceType(d3d,
-                     0,
-                     D3DDEVTYPE_HAL,
-                     disp_format,
-                     backbuffer_format,
-                     windowed_mode)))
-            return false;
+            if (FAILED(IDirect3D9_CheckDeviceType(d3d,
+                        0,
+                        D3DDEVTYPE_HAL,
+                        disp_format,
+                        backbuffer_format,
+                        windowed_mode)))
+               return false;
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
+         {
 #ifdef HAVE_D3D8
+            LPDIRECT3D8 d3d = (LPDIRECT3D8)_d3d;
+            if (!d3d)
+               return false;
 #ifdef __cplusplus
-         if (FAILED(d3d->CheckDeviceType(
-                     0,
-                     D3DDEVTYPE_HAL,
-                     disp_format,
-                     backbuffer_format,
-                     windowed_mode)))
-            return false;
+            if (FAILED(d3d->CheckDeviceType(
+                        0,
+                        D3DDEVTYPE_HAL,
+                        disp_format,
+                        backbuffer_format,
+                        windowed_mode)))
+               return false;
 #else
-         if (FAILED(IDirect3D8_CheckDeviceType(d3d,
-                     0,
-                     D3DDEVTYPE_HAL,
-                     disp_format,
-                     backbuffer_format,
-                     windowed_mode)))
-            return false;
+            if (FAILED(IDirect3D8_CheckDeviceType(d3d,
+                        0,
+                        D3DDEVTYPE_HAL,
+                        disp_format,
+                        backbuffer_format,
+                        windowed_mode)))
+               return false;
 #endif
 #endif
+         }
          break;
       case GFX_CTX_NONE:
       default:
@@ -396,38 +404,49 @@ bool d3d_check_device_type(LPDIRECT3D d3d,
    return true;
 }
 
-bool d3d_get_adapter_display_mode(LPDIRECT3D d3d,
+bool d3d_get_adapter_display_mode(
+      void *_d3d,
       unsigned idx,
       D3DDISPLAYMODE *display_mode)
 {
-   if (!display_mode || !d3d)
+   if (!display_mode)
       return false;
 
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifdef HAVE_D3D9
+            LPDIRECT3D9 d3d = (LPDIRECT3D9)_d3d;
+            if (!d3d)
+               return false;
 #ifdef _XBOX
-         return true;
+            return true;
 #elif defined(__cplusplus)
-         if (FAILED(d3d->GetAdapterDisplayMode(idx, display_mode)))
-            return false;
+            if (FAILED(d3d->GetAdapterDisplayMode(idx, display_mode)))
+               return false;
 #else
-         if (FAILED(IDirect3D9_GetAdapterDisplayMode(d3d, idx, display_mode)))
-            return false;
+            if (FAILED(IDirect3D9_GetAdapterDisplayMode(d3d, idx, display_mode)))
+               return false;
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
+         {
 #ifdef HAVE_D3D8
+            LPDIRECT3D8 d3d = (LPDIRECT3D8)_d3d;
+            if (!d3d)
+               return false;
 #ifdef __cplusplus
-         if (FAILED(d3d->GetAdapterDisplayMode(idx, display_mode)))
-            return false;
+            if (FAILED(d3d->GetAdapterDisplayMode(idx, display_mode)))
+               return false;
 #else
-         if (FAILED(IDirect3D8_GetAdapterDisplayMode(d3d, idx, display_mode)))
-            return false;
+            if (FAILED(IDirect3D8_GetAdapterDisplayMode(d3d, idx, display_mode)))
+               return false;
 #endif
 #endif
+         }
          break;
       case GFX_CTX_NONE:
       default:
@@ -2350,7 +2369,7 @@ static HRESULT d3d_test_cooperative_level(void *data)
 static bool d3d_create_device_internal(
       void *data,
       D3DPRESENT_PARAMETERS *d3dpp,
-      LPDIRECT3D d3d,
+      void *_d3d,
       HWND focus_window,
       unsigned cur_mon_id,
       DWORD behavior_flags)
@@ -2360,6 +2379,7 @@ static bool d3d_create_device_internal(
       case GFX_CTX_DIRECT3D9_API:
          {
 #ifdef HAVE_D3D9
+            LPDIRECT3D9       d3d = (LPDIRECT3D9)_d3d;
             LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)data;
             if (!dev)
                return false;
@@ -2388,6 +2408,7 @@ static bool d3d_create_device_internal(
       case GFX_CTX_DIRECT3D8_API:
          {
 #ifdef HAVE_D3D8
+            LPDIRECT3D8       d3d = (LPDIRECT3D8)_d3d;
             LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)data;
             if (!dev)
                return false;
@@ -2423,7 +2444,7 @@ static bool d3d_create_device_internal(
 
 bool d3d_create_device(void *dev,
       D3DPRESENT_PARAMETERS *d3dpp,
-      LPDIRECT3D d3d,
+      void *d3d,
       HWND focus_window,
       unsigned cur_mon_id)
 {
@@ -2532,13 +2553,14 @@ bool d3d_device_get_backbuffer(void *_dev,
 }
 
 
-void d3d_device_free(void *_dev, LPDIRECT3D pd3d)
+void d3d_device_free(void *_dev, void *_pd3d)
 {
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
          {
 #ifdef HAVE_D3D9
+            LPDIRECT3D9      pd3d = (LPDIRECT3D9)_pd3d;
             LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
             if (dev)
             {
@@ -2563,6 +2585,7 @@ void d3d_device_free(void *_dev, LPDIRECT3D pd3d)
       case GFX_CTX_DIRECT3D8_API:
          {
 #ifdef HAVE_D3D8
+            LPDIRECT3D8      pd3d = (LPDIRECT3D8)_pd3d;
             LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)_dev;
             if (dev)
             {
