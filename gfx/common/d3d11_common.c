@@ -59,9 +59,6 @@ void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
    Release(texture->staging);
    Release(texture->view);
 
-   //   .Usage = D3D11_USAGE_DYNAMIC,
-   //   .CPUAccessFlags = D3D11_CPU_ACCESS_WRITE,
-
    texture->desc.MipLevels          = 1;
    texture->desc.ArraySize          = 1;
    texture->desc.SampleDesc.Count   = 1;
@@ -69,7 +66,20 @@ void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
    texture->desc.BindFlags          = D3D11_BIND_SHADER_RESOURCE;
    texture->desc.CPUAccessFlags =
          texture->desc.Usage == D3D11_USAGE_DYNAMIC ? D3D11_CPU_ACCESS_WRITE : 0;
-   texture->desc.MiscFlags = 0;
+
+   if (texture->desc.MiscFlags & D3D11_RESOURCE_MISC_GENERATE_MIPS)
+   {
+      texture->desc.BindFlags |= D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
+      unsigned width = texture->desc.Width >> 5;
+      unsigned height = texture->desc.Height >> 5;
+      while (width && height)
+      {
+         width >>= 1;
+         height >>= 1;
+         texture->desc.MipLevels++;
+      }
+   }
+
    D3D11CreateTexture2D(device, &texture->desc, NULL, &texture->handle);
 
    {
@@ -84,7 +94,9 @@ void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
 
    {
       D3D11_TEXTURE2D_DESC desc = texture->desc;
+      desc.MipLevels            = 1;
       desc.BindFlags            = 0;
+      desc.MiscFlags            = 0;
       desc.Usage                = D3D11_USAGE_STAGING;
       desc.CPUAccessFlags       = D3D11_CPU_ACCESS_WRITE;
       D3D11CreateTexture2D(device, &desc, NULL, &texture->staging);
@@ -101,6 +113,7 @@ void d3d11_update_texture(
       d3d11_texture_t*   texture)
 {
    D3D11_MAPPED_SUBRESOURCE mapped_texture;
+   D3D11_BOX                frame_box = { 0, 0, 0, width, height, 1 };
 
    D3D11MapTexture2D(ctx, texture->staging, 0, D3D11_MAP_WRITE, 0, &mapped_texture);
 
@@ -110,8 +123,11 @@ void d3d11_update_texture(
 
    D3D11UnmapTexture2D(ctx, texture->staging, 0);
 
-   if (texture->desc.Usage == D3D11_USAGE_DEFAULT)
-      texture->dirty = true;
+   D3D11CopyTexture2DSubresourceRegion(
+         ctx, texture->handle, 0, 0, 0, 0, texture->staging, 0, &frame_box);
+
+   if (texture->desc.MiscFlags & D3D11_RESOURCE_MISC_GENERATE_MIPS)
+      D3D11GenerateMips(ctx, texture->view);
 }
 
 DXGI_FORMAT

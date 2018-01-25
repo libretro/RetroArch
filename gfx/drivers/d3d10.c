@@ -41,7 +41,11 @@ static void d3d10_gfx_set_rotation(void* data, unsigned rotation)
    math_matrix_4x4* mvp;
    d3d10_video_t*   d3d10 = (d3d10_video_t*)data;
 
-   d3d10->frame.rotation = 3 * rotation;
+   if(!d3d10)
+      return;
+
+   d3d10->frame.rotation = rotation;
+
 
    matrix_4x4_rotate_z(rot, d3d10->frame.rotation * (M_PI / 2.0f));
    matrix_4x4_multiply(d3d10->mvp, rot, d3d10->mvp_no_rot);
@@ -71,6 +75,8 @@ static void*
 d3d10_gfx_init(const video_info_t* video, const input_driver_t** input, void** input_data)
 {
    WNDCLASSEX      wndclass = { 0 };
+   MONITORINFOEX   current_mon;
+   HMONITOR        hm_to_use;
    settings_t*     settings = config_get_ptr();
    gfx_ctx_input_t inp      = { input, input_data };
    d3d10_video_t*  d3d10    = (d3d10_video_t*)calloc(1, sizeof(*d3d10));
@@ -82,6 +88,16 @@ d3d10_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    win32_monitor_init();
    wndclass.lpfnWndProc = WndProcD3D;
    win32_window_init(&wndclass, true, NULL);
+
+   win32_monitor_info(&current_mon, &hm_to_use, &d3d10->cur_mon_id);
+
+   d3d10->vp.full_width  = video->width;
+   d3d10->vp.full_height = video->height;
+
+   if (!d3d10->vp.full_width)
+      d3d10->vp.full_width = current_mon.rcMonitor.right - current_mon.rcMonitor.left;
+   if (!d3d10->vp.full_height)
+      d3d10->vp.full_height = current_mon.rcMonitor.bottom - current_mon.rcMonitor.top;
 
    if (!win32_set_video_mode(d3d10, video->width, video->height, video->fullscreen))
    {
@@ -133,11 +149,18 @@ d3d10_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    }
 
    D3D10SetRenderTargets(d3d10->device, 1, &d3d10->renderTargetView, NULL);
-   d3d10->vp.full_width   = video->width;
-   d3d10->vp.full_height  = video->height;
    d3d10->viewport.Width  = video->width;
    d3d10->viewport.Height = video->height;
    d3d10->resize_viewport = true;
+   d3d10->keep_aspect = video->force_aspect;
+   d3d10->vsync       = video->vsync;
+   d3d10->format      = video->rgb32 ? DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM;
+
+   d3d10->frame.texture.desc.Format =
+         d3d10_get_closest_match_texture2D(d3d10->device, d3d10->format);
+   d3d10->frame.texture.desc.Usage = D3D10_USAGE_DEFAULT;
+
+   d3d10->menu.texture.desc.Usage  = D3D10_USAGE_DEFAULT;
 
    matrix_4x4_ortho(d3d10->mvp_no_rot, 0.0f, 1.0f, 0.0f, 1.0f, -1.0f, 1.0f);
 
@@ -172,15 +195,6 @@ d3d10_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    }
 
    d3d10_set_filtering(d3d10, 0, video->smooth);
-
-   d3d10->keep_aspect = video->force_aspect;
-   d3d10->vsync       = video->vsync;
-   d3d10->format      = video->rgb32 ? DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM;
-
-   d3d10->frame.texture.desc.Format =
-         d3d10_get_closest_match_texture2D(d3d10->device, d3d10->format);
-   d3d10->frame.texture.desc.Usage = D3D10_USAGE_DEFAULT;
-   d3d10->menu.texture.desc.Usage  = D3D10_USAGE_DEFAULT;
 
    {
       d3d10_vertex_t vertices[] = {

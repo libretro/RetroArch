@@ -2470,7 +2470,7 @@ typedef struct
    D3D11Texture2D          staging;
    D3D11_TEXTURE2D_DESC    desc;
    D3D11ShaderResourceView view;
-   bool                    dirty;
+   D3D11SamplerState       sampler;
 } d3d11_texture_t;
 
 typedef struct
@@ -2488,7 +2488,7 @@ typedef struct
    {
       float scaling;
       float rotation;
-   }params;
+   } params;
 } d3d11_sprite_t;
 
 typedef struct
@@ -2519,20 +2519,18 @@ typedef struct
    bool                  resize_viewport;
    struct
    {
-      d3d11_texture_t   texture;
-      D3D11Buffer       vbo;
-      D3D11SamplerState sampler;
-      bool              enabled;
-      bool              fullscreen;
+      d3d11_texture_t texture;
+      D3D11Buffer     vbo;
+      bool            enabled;
+      bool            fullscreen;
    } menu;
    struct
    {
-      d3d11_texture_t   texture;
-      D3D11Buffer       vbo;
-      D3D11Buffer       ubo;
-      D3D11SamplerState sampler;
-      D3D11_VIEWPORT    viewport;
-      int               rotation;
+      d3d11_texture_t texture;
+      D3D11Buffer     vbo;
+      D3D11Buffer     ubo;
+      D3D11_VIEWPORT  viewport;
+      int             rotation;
    } frame;
    struct
    {
@@ -2566,4 +2564,11 @@ d3d11_get_closest_match_texture2D(D3D11Device device, DXGI_FORMAT desired_format
    return d3d11_get_closest_match(
          device, desired_format,
          D3D11_FORMAT_SUPPORT_TEXTURE2D | D3D11_FORMAT_SUPPORT_SHADER_SAMPLE);
+}
+
+static inline d3d11_set_texture_and_sampler(
+      D3D11DeviceContext ctx, UINT slot, d3d11_texture_t* texture)
+{
+   D3D11SetPShaderResources(ctx, slot, 1, &texture->view);
+   D3D11SetPShaderSamplers(ctx, slot, 1, &texture->sampler);
 }

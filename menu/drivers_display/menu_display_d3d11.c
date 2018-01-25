@@ -52,9 +52,8 @@ static void menu_display_d3d11_draw(void* data)
    if (!d3d11->sprites.enabled)
       return;
 
-   if(d3d11->sprites.offset + 1 > d3d11->sprites.capacity)
+   if (d3d11->sprites.offset + 1 > d3d11->sprites.capacity)
       d3d11->sprites.offset = 0;
-
 
    D3D11_MAPPED_SUBRESOURCE mapped_vbo;
    D3D11MapBuffer(d3d11->ctx, d3d11->sprites.vbo, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo);
@@ -70,7 +69,7 @@ static void menu_display_d3d11_draw(void* data)
    v->coords.w = 1.0f;
    v->coords.h = 1.0f;
 
-   if(draw->scale_factor)
+   if (draw->scale_factor)
       v->params.scaling = draw->scale_factor;
    else
       v->params.scaling = 1.0f;
@@ -93,8 +92,7 @@ static void menu_display_d3d11_draw(void* data)
 #if 0
    D3D11SetPShader(d3d11->ctx, d3d11->sprites.ps, NULL, 0);
 #endif
-   D3D11SetPShaderResources(d3d11->ctx, 0, 1, &((d3d11_texture_t*)draw->texture)->view);
-
+   d3d11_set_texture_and_sampler(d3d11->ctx, 0, (d3d11_texture_t*)draw->texture);
 
    D3D11Draw(d3d11->ctx, 1, d3d11->sprites.offset);
    d3d11->sprites.offset++;

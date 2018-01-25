@@ -42,7 +42,10 @@ static void d3d12_gfx_set_rotation(void* data, unsigned rotation)
    D3D12_RANGE      read_range = { 0, 0 };
    d3d12_video_t*   d3d12      = (d3d12_video_t*)data;
 
-   d3d12->frame.rotation = 3 * rotation;
+   if(!d3d12)
+      return;
+
+   d3d12->frame.rotation = rotation;
 
    matrix_4x4_rotate_z(rot, d3d12->frame.rotation * (M_PI / 2.0f));
    matrix_4x4_multiply(d3d12->mvp, rot, d3d12->mvp_no_rot);
