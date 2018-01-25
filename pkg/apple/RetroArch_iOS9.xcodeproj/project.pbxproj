@@ -251,7 +251,7 @@
 				ORGANIZATIONNAME = RetroArch;
 				TargetAttributes = {
 					0FDA2A701BE1AFA800F2B5DA = {
-						DevelopmentTeam = UK699V5ZS8;
+						DevelopmentTeam = 38QVPJE4NW;
 					};
 				};
 			};
@@ -341,7 +341,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
-				DEVELOPMENT_TEAM = UK699V5ZS8;
+				DEVELOPMENT_TEAM = 38QVPJE4NW;
 				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
@@ -360,7 +360,6 @@
 				OTHER_CFLAGS = (
 					"-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_CORETEXT",
-					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
@@ -424,7 +423,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
-				DEVELOPMENT_TEAM = UK699V5ZS8;
+				DEVELOPMENT_TEAM = 38QVPJE4NW;
 				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
@@ -444,7 +443,6 @@
 					"-DNDEBUG",
 					"-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_CORETEXT",
-					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
@@ -495,7 +493,6 @@
 					"-DNDEBUG",
 					"-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_CORETEXT",
-					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
