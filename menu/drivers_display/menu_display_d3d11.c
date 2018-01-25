@@ -53,7 +53,8 @@ static void menu_display_d3d11_draw(void* data)
       return;
 
    if(d3d11->sprites.offset + 1 > d3d11->sprites.capacity)
-      return;
+      d3d11->sprites.offset = 0;
+
 
    D3D11_MAPPED_SUBRESOURCE mapped_vbo;
    D3D11MapBuffer(d3d11->ctx, d3d11->sprites.vbo, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo);

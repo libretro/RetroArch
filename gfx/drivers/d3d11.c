@@ -522,7 +522,7 @@ static bool d3d11_gfx_frame(
       D3D11SetPShaderSamplers(d3d11->ctx, 0, 1, &d3d11->sampler_linear);
       D3D11SetBlendState(d3d11->ctx, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
 
-      d3d11->sprites.offset  = 0;
+
       d3d11->sprites.enabled = true;
 
       if (d3d11->menu.enabled)
