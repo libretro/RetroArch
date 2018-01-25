@@ -63,9 +63,9 @@ static void *d3dfonts_w32_init_font(void *video_data,
       CLIP_DEFAULT_PRECIS,
       DEFAULT_PITCH,
 #ifdef UNICODE
-	  _T(L"Verdana") /* Hardcode FTL */
+	  _T(L"Verdana")
 #else
-      _T("Verdana") /* Hardcode FTL */
+      _T("Verdana")
 #endif
    };
    d3dfonts_t *d3dfonts = (d3dfonts_t*)calloc(1, sizeof(*d3dfonts));
