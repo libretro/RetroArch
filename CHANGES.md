@@ -10,6 +10,7 @@
 - COMMON: Bugfix for issue related to 'Windows mouse pointer visible when running MESS or MAME cores'.
 - COMMON: Fix bug 'Last item in a Playlist is ignored'.
 - COMMON: New LED API. Driver implemented for Raspberry Pi, proof of concept implemented for core MAME 2003.
+- COMMON: Add quick menu option to watch shader files for changes and recompile them automatically (Linux only for now).
 - D3D8: Direct3D 8 can now work on systems that have Direct3D 8 installed.
 - D3D9: Add menu support for MaterialUI/XMB.
 - D3D10: Initial video driver implementation.

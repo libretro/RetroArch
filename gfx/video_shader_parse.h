@@ -231,6 +231,8 @@ bool video_shader_resolve_parameters(config_file_t *conf,
 enum rarch_shader_type video_shader_parse_type(const char *path,
       enum rarch_shader_type fallback);
 
+bool video_shader_check_for_changes(void);
+
 RETRO_END_DECLS
 
 #endif

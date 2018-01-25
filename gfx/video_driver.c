@@ -3332,7 +3332,6 @@ static struct video_shader *video_shader_driver_get_current_shader_null(void *da
    return NULL;
 }
 
-
 static void video_shader_driver_set_params_null(void *data, void *shader_data,
       unsigned width, unsigned height,
       unsigned tex_width, unsigned tex_height,

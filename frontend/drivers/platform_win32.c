@@ -584,5 +584,7 @@ frontend_ctx_driver_t frontend_ctx_win32 = {
    NULL,                            /* destroy_sighandler_state */
    frontend_win32_attach_console,   /* attach_console */
    frontend_win32_detach_console,   /* detach_console */
+   NULL,                            /* watch_path_for_changes */
+   NULL,                            /* check_for_path_changes */
    "win32"
 };

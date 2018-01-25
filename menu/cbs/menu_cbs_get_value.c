@@ -309,6 +309,30 @@ static void menu_action_setting_disp_set_label_pipeline(
 
 }
 
+static void menu_action_setting_disp_set_label_shader_watch_for_changes(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   settings_t *settings = config_get_ptr();
+
+   *s = '\0';
+   *w = 19;
+   strlcpy(s2, path, len2);
+
+   if (settings)
+   {
+      if (settings->bools.video_shader_watch_files)
+         snprintf(s, len, "%s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TRUE));
+      else
+         snprintf(s, len, "%s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FALSE));
+   }
+}
+
 static void menu_action_setting_disp_set_label_shader_num_passes(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -1872,6 +1896,10 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          case MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_shader_num_passes);
+            break;
+         case MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_shader_watch_for_changes);
             break;
          case MENU_ENUM_LABEL_XMB_RIBBON_ENABLE:
             BIND_ACTION_GET_VALUE(cbs,

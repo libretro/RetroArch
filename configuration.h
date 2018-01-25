@@ -81,6 +81,7 @@ typedef struct settings
       bool video_aspect_ratio_auto;
       bool video_scale_integer;
       bool video_shader_enable;
+      bool video_shader_watch_files;
       bool video_threaded;
       bool video_font_enable;
       bool video_disable_composition;

@@ -404,6 +404,9 @@ static const bool post_filter_record = false;
 /* Screenshots post-shaded GPU output if available. */
 static const bool gpu_screenshot = true;
 
+/* Watch shader files for changes and auto-apply as necessary. */
+static const bool video_shader_watch_files = false;
+
 /* Screenshots named automatically. */
 static const bool auto_screenshot_filename = true;
 

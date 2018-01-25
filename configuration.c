@@ -1211,6 +1211,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("rewind_enable",                 &settings->bools.rewind_enable, true, rewind_enable, false);
    SETTING_BOOL("audio_sync",                    &settings->bools.audio_sync, true, audio_sync, false);
    SETTING_BOOL("video_shader_enable",           &settings->bools.video_shader_enable, true, shader_enable, false);
+   SETTING_BOOL("video_shader_watch_files",      &settings->bools.video_shader_watch_files, true, video_shader_watch_files, false);
 
    /* Let implementation decide if automatic, or 1:1 PAR. */
    SETTING_BOOL("video_aspect_ratio_auto",       &settings->bools.video_aspect_ratio_auto, true, aspect_ratio_auto, false);

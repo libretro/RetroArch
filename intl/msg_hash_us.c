@@ -1071,6 +1071,15 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "saved to Shader Directory."
             );
             break;
+        case MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES:
+            snprintf(s, len,
+                     "Watch shader files for new changes. \n"
+                     " \n"
+                     "After saving changes to a shader on disk, \n"
+                     "it will automatically be recompiled \n"
+                     "and applied to the running content."
+            );
+            break;
         case MENU_ENUM_LABEL_MENU_TOGGLE:
             snprintf(s, len,
                      "Toggles menu.");

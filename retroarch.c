@@ -2994,6 +2994,12 @@ static enum runloop_state runloop_check_state(
       old_cheat_index_toggle             = cheat_index_toggle;
    }
 
+   if (settings->bools.video_shader_watch_files)
+   {
+      if (video_shader_check_for_changes())
+         command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
+   }
+
    return RUNLOOP_STATE_ITERATE;
 }
 
