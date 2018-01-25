@@ -1136,6 +1136,7 @@ void menu_display_draw_cursor(
    draw.matrix_data     = NULL;
    draw.texture         = texture;
    draw.prim_type       = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+   draw.pipeline.id     = 0;
 
    menu_display_draw(&draw);
 

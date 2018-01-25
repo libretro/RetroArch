@@ -93,27 +93,35 @@ static void d3d11_gfx_free(void* data)
    Release(d3d11->menu.texture.view);
    Release(d3d11->menu.vbo);
 
-   Release(d3d11->sprites.vs);
-   Release(d3d11->sprites.ps);
-   Release(d3d11->sprites.ps_8bit);
-   Release(d3d11->sprites.gs);
+   Release(d3d11->sprites.shader.vs);
+   Release(d3d11->sprites.shader.ps);
+   Release(d3d11->sprites.shader.gs);
+   Release(d3d11->sprites.shader.layout);
+   Release(d3d11->sprites.shader_font.vs);
+   Release(d3d11->sprites.shader_font.ps);
+   Release(d3d11->sprites.shader_font.gs);
+   Release(d3d11->sprites.shader_font.layout);
    Release(d3d11->sprites.vbo);
-   Release(d3d11->sprites.layout);
+
+   d3d11_release_shader(&d3d11->shaders[VIDEO_SHADER_STOCK_BLEND]);
+   d3d11_release_shader(&d3d11->shaders[VIDEO_SHADER_MENU]);
+   d3d11_release_shader(&d3d11->shaders[VIDEO_SHADER_MENU_2]);
+   d3d11_release_shader(&d3d11->shaders[VIDEO_SHADER_MENU_3]);
+   d3d11_release_shader(&d3d11->shaders[VIDEO_SHADER_MENU_4]);
+   d3d11_release_shader(&d3d11->shaders[VIDEO_SHADER_MENU_5]);
+   d3d11_release_shader(&d3d11->shaders[VIDEO_SHADER_MENU_6]);
 
    Release(d3d11->menu_pipeline_vbo);
-   Release(d3d11->ribbon_vs);
-   Release(d3d11->ribbon_ps);
-   Release(d3d11->ribbon_layout);
+   Release(d3d11->blend_pipeline);
 
    Release(d3d11->ubo);
+
    Release(d3d11->blend_enable);
    Release(d3d11->blend_disable);
-   Release(d3d11->blend_pipeline);
+
    Release(d3d11->sampler_nearest);
    Release(d3d11->sampler_linear);
-   Release(d3d11->ps);
-   Release(d3d11->vs);
-   Release(d3d11->layout);
+
    Release(d3d11->state);
    Release(d3d11->renderTargetView);
    Release(d3d11->swapChain);
@@ -284,13 +292,6 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    }
 
    {
-      D3DBlob vs_code;
-      D3DBlob ps_code;
-
-      static const char stock[] =
-#include "d3d_shaders/opaque_sm5.hlsl.h"
-            ;
-
       D3D11_INPUT_ELEMENT_DESC desc[] = {
          { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_vertex_t, position),
            D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -300,33 +301,17 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
            D3D11_INPUT_PER_VERTEX_DATA, 0 },
       };
 
-      d3d_compile(stock, sizeof(stock), "VSMain", "vs_5_0", &vs_code);
-      d3d_compile(stock, sizeof(stock), "PSMain", "ps_5_0", &ps_code);
+      static const char shader[] =
+#include "d3d_shaders/opaque_sm5.hlsl.h"
+            ;
 
-      D3D11CreateVertexShader(
-            d3d11->device, D3DGetBufferPointer(vs_code), D3DGetBufferSize(vs_code), NULL,
-            &d3d11->vs);
-      D3D11CreatePixelShader(
-            d3d11->device, D3DGetBufferPointer(ps_code), D3DGetBufferSize(ps_code), NULL,
-            &d3d11->ps);
-      D3D11CreateInputLayout(
-            d3d11->device, desc, countof(desc), D3DGetBufferPointer(vs_code),
-            D3DGetBufferSize(vs_code), &d3d11->layout);
-
-      Release(vs_code);
-      Release(ps_code);
+      if (!d3d11_init_shader(
+                d3d11->device, shader, sizeof(shader), "VSMain", "PSMain", NULL, desc,
+                countof(desc), &d3d11->shaders[VIDEO_SHADER_STOCK_BLEND]))
+         goto error;
    }
 
    {
-      D3DBlob vs_code;
-      D3DBlob ps_code;
-      D3DBlob ps_A8_code;
-      D3DBlob gs_code;
-
-      static const char sprite[] =
-#include "d3d_shaders/sprite_sm4.hlsl.h"
-            ;
-
       D3D11_INPUT_ELEMENT_DESC desc[] = {
          { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, offsetof(d3d11_sprite_t, pos),
            D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -343,83 +328,83 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
          { "PARAMS", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_sprite_t, params),
            D3D11_INPUT_PER_VERTEX_DATA, 0 },
       };
-#if 1
-      d3d_compile(sprite, sizeof(sprite), "VSMain", "vs_5_0", &vs_code);
-      d3d_compile(sprite, sizeof(sprite), "PSMain", "ps_5_0", &ps_code);
-      d3d_compile(sprite, sizeof(sprite), "PSMainA8", "ps_5_0", &ps_A8_code);
-      d3d_compile(sprite, sizeof(sprite), "GSMain", "gs_5_0", &gs_code);
-#else
-      if (!d3d_compile_from_file(
-                L"gfx/drivers/d3d_shaders/sprite_sm4.hlsl", "VSMain", "vs_5_0", &vs_code))
-         goto error;
-      if (!d3d_compile_from_file(
-                L"gfx/drivers/d3d_shaders/sprite_sm4.hlsl", "PSMain", "ps_5_0", &ps_code))
-         goto error;
-      if (!d3d_compile_from_file(
-                L"gfx/drivers/d3d_shaders/sprite_sm4.hlsl", "PSMainA8", "ps_5_0", &ps_A8_code))
-         goto error;
-      if (!d3d_compile_from_file(
-                L"gfx/drivers/d3d_shaders/sprite_sm4.hlsl", "GSMain", "gs_5_0", &gs_code))
-         goto error;
-#endif
 
-      D3D11CreateVertexShader(
-            d3d11->device, D3DGetBufferPointer(vs_code), D3DGetBufferSize(vs_code), NULL,
-            &d3d11->sprites.vs);
-      D3D11CreatePixelShader(
-            d3d11->device, D3DGetBufferPointer(ps_code), D3DGetBufferSize(ps_code), NULL,
-            &d3d11->sprites.ps);
-      D3D11CreatePixelShader(
-            d3d11->device, D3DGetBufferPointer(ps_A8_code), D3DGetBufferSize(ps_A8_code), NULL,
-            &d3d11->sprites.ps_8bit);
-      D3D11CreateGeometryShader(
-            d3d11->device, D3DGetBufferPointer(gs_code), D3DGetBufferSize(gs_code), NULL,
-            &d3d11->sprites.gs);
-      D3D11CreateInputLayout(
-            d3d11->device, desc, countof(desc), D3DGetBufferPointer(vs_code),
-            D3DGetBufferSize(vs_code), &d3d11->sprites.layout);
+      static const char shader[] =
+#include "d3d_shaders/sprite_sm4.hlsl.h"
+            ;
 
-      Release(vs_code);
-      Release(ps_code);
-      Release(ps_A8_code);
-      Release(gs_code);
+      if (!d3d11_init_shader(
+                d3d11->device, shader, sizeof(shader), "VSMain", "PSMain", "GSMain", desc,
+                countof(desc), &d3d11->sprites.shader))
+         goto error;
+      if (!d3d11_init_shader(
+                d3d11->device, shader, sizeof(shader), "VSMain", "PSMainA8", "GSMain", desc,
+                countof(desc), &d3d11->sprites.shader_font))
+         goto error;
    }
 
    {
-      D3DBlob vs_code;
-      D3DBlob ps_code;
-
-      static const char shader[] =
-#include "d3d_shaders/ribbon_sm4.hlsl.h"
-            ;
-
       D3D11_INPUT_ELEMENT_DESC desc[] = {
          { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
       };
-#if 1
-      d3d_compile(shader, sizeof(shader), "VSMain", "vs_5_0", &vs_code);
-      d3d_compile(shader, sizeof(shader), "PSMain", "ps_5_0", &ps_code);
-#else
-      if (!d3d_compile_from_file(
-                L"gfx/drivers/d3d_shaders/ribbon_sm4.hlsl", "VSMain", "vs_5_0", &vs_code))
-         goto error;
-      if (!d3d_compile_from_file(
-                L"gfx/drivers/d3d_shaders/ribbon_sm4.hlsl", "PSMain", "ps_5_0", &ps_code))
-         goto error;
-#endif
 
-      D3D11CreateVertexShader(
-            d3d11->device, D3DGetBufferPointer(vs_code), D3DGetBufferSize(vs_code), NULL,
-            &d3d11->ribbon_vs);
-      D3D11CreatePixelShader(
-            d3d11->device, D3DGetBufferPointer(ps_code), D3DGetBufferSize(ps_code), NULL,
-            &d3d11->ribbon_ps);
-      D3D11CreateInputLayout(
-            d3d11->device, desc, countof(desc), D3DGetBufferPointer(vs_code),
-            D3DGetBufferSize(vs_code), &d3d11->ribbon_layout);
+      static const char ribbon[] =
+#include "d3d_shaders/ribbon_sm4.hlsl.h"
+            ;
+      static const char ribbon_simple[] =
+#include "d3d_shaders/ribbon_simple_sm4.hlsl.h"
+            ;
 
-      Release(vs_code);
-      Release(ps_code);
+      if (!d3d11_init_shader(
+                d3d11->device, ribbon, sizeof(ribbon), "VSMain", "PSMain", NULL, desc,
+                countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU]))
+         goto error;
+
+      if (!d3d11_init_shader(
+                d3d11->device, ribbon_simple, sizeof(ribbon_simple), "VSMain", "PSMain", NULL, desc,
+                countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_2]))
+         goto error;
+   }
+
+   {
+      D3D11_INPUT_ELEMENT_DESC desc[] = {
+         { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_vertex_t, position),
+           D3D11_INPUT_PER_VERTEX_DATA, 0 },
+         { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_vertex_t, texcoord),
+           D3D11_INPUT_PER_VERTEX_DATA, 0 },
+      };
+
+      static const char simple_snow[] =
+#include "d3d_shaders/simple_snow_sm4.hlsl.h"
+            ;
+      static const char snow[] =
+#include "d3d_shaders/snow_sm4.hlsl.h"
+            ;
+      static const char bokeh[] =
+#include "d3d_shaders/bokeh_sm4.hlsl.h"
+            ;
+      static const char snowflake[] =
+#include "d3d_shaders/snowflake_sm4.hlsl.h"
+            ;
+
+      if (!d3d11_init_shader(
+                d3d11->device, simple_snow, sizeof(simple_snow), "VSMain", "PSMain", NULL, desc,
+                countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_3]))
+         goto error;
+      if (!d3d11_init_shader(
+                d3d11->device, snow, sizeof(snow), "VSMain", "PSMain", NULL, desc, countof(desc),
+                &d3d11->shaders[VIDEO_SHADER_MENU_4]))
+         goto error;
+
+      if (!d3d11_init_shader(
+                d3d11->device, bokeh, sizeof(bokeh), "VSMain", "PSMain", NULL, desc, countof(desc),
+                &d3d11->shaders[VIDEO_SHADER_MENU_5]))
+         goto error;
+
+      if (!d3d11_init_shader(
+                d3d11->device, snowflake, sizeof(snowflake), "VSMain", "PSMain", NULL, desc,
+                countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_6]))
+         goto error;
    }
 
    {
@@ -440,7 +425,7 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
       };
       D3D11CreateBlendState(d3d11->device, &blend_desc, &d3d11->blend_enable);
 
-      blend_desc.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
+      blend_desc.RenderTarget[0].SrcBlend  = D3D11_BLEND_ONE;
       blend_desc.RenderTarget[0].DestBlend = D3D11_BLEND_ONE;
       D3D11CreateBlendState(d3d11->device, &blend_desc, &d3d11->blend_pipeline);
 
@@ -449,8 +434,8 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    }
    {
       D3D11_RASTERIZER_DESC desc = {
-         .FillMode        = D3D11_FILL_SOLID,
-         .CullMode        = D3D11_CULL_NONE,
+         .FillMode = D3D11_FILL_SOLID,
+         .CullMode = D3D11_CULL_NONE,
       };
       D3D11CreateRasterizerState(d3d11->device, &desc, &d3d11->state);
    }
@@ -503,10 +488,7 @@ static bool d3d11_gfx_frame(
 
    PERF_START();
    D3D11ClearRenderTargetView(d3d11->ctx, d3d11->renderTargetView, d3d11->clearcolor);
-   D3D11SetVShader(d3d11->ctx, d3d11->vs, NULL, 0);
-   D3D11SetPShader(d3d11->ctx, d3d11->ps, NULL, 0);
-   D3D11SetGShader(d3d11->ctx, NULL, NULL, 0);
-   D3D11SetInputLayout(d3d11->ctx, d3d11->layout);
+   d3d11_set_shader(d3d11->ctx, &d3d11->shaders[VIDEO_SHADER_STOCK_BLEND]);
    D3D11SetPrimitiveTopology(d3d11->ctx, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
    if (frame && width && height)
@@ -522,61 +504,52 @@ static bool d3d11_gfx_frame(
             d3d11->ctx, width, height, pitch, d3d11->format, frame, &d3d11->frame.texture);
    }
 
-   {
-      UINT stride = sizeof(d3d11_vertex_t);
-      UINT offset = 0;
-
 #if 0 /* custom viewport doesn't call apply_state_changes, so we can't rely on this for now */
    if (d3d11->resize_viewport)
 #endif
-      d3d11_update_viewport(d3d11, false);
+   d3d11_update_viewport(d3d11, false);
 
-      D3D11SetViewports(d3d11->ctx, 1, &d3d11->frame.viewport);
-      d3d11_set_texture_and_sampler(d3d11->ctx, 0, &d3d11->frame.texture);
+   D3D11SetViewports(d3d11->ctx, 1, &d3d11->frame.viewport);
+   d3d11_set_texture_and_sampler(d3d11->ctx, 0, &d3d11->frame.texture);
 
-      D3D11SetVertexBuffers(d3d11->ctx, 0, 1, &d3d11->frame.vbo, &stride, &offset);
-      D3D11SetVShaderConstantBuffers(d3d11->ctx, 0, 1, &d3d11->frame.ubo);
-      D3D11SetBlendState(d3d11->ctx, d3d11->blend_disable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
-      D3D11Draw(d3d11->ctx, 4, 0);
-      //      D3D11SetBlendState(d3d11->ctx, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
+   D3D11SetVertexBuffer(d3d11->ctx, 0, d3d11->frame.vbo, sizeof(d3d11_vertex_t), 0);
+   D3D11SetVShaderConstantBuffers(d3d11->ctx, 0, 1, &d3d11->frame.ubo);
 
-      if (d3d11->menu.enabled && d3d11->menu.texture.handle)
-      {
-         if (d3d11->menu.fullscreen)
-            D3D11SetViewports(d3d11->ctx, 1, &d3d11->viewport);
-         D3D11SetVertexBuffers(d3d11->ctx, 0, 1, &d3d11->menu.vbo, &stride, &offset);
-         D3D11SetVShaderConstantBuffers(d3d11->ctx, 0, 1, &d3d11->ubo);
-         d3d11_set_texture_and_sampler(d3d11->ctx, 0, &d3d11->menu.texture);
+   D3D11SetBlendState(d3d11->ctx, d3d11->blend_disable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
+   D3D11Draw(d3d11->ctx, 4, 0);
 
-         D3D11Draw(d3d11->ctx, 4, 0);
-      }
-   }
+   D3D11SetBlendState(d3d11->ctx, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
+
+   if (d3d11->menu.enabled && d3d11->menu.texture.handle)
    {
-      UINT sprite_stride = sizeof(d3d11_sprite_t);
-      UINT offset        = 0;
-      D3D11SetViewports(d3d11->ctx, 1, &d3d11->viewport);
-      D3D11SetVShader(d3d11->ctx, d3d11->sprites.vs, NULL, 0);
-      D3D11SetPShader(d3d11->ctx, d3d11->sprites.ps, NULL, 0);
-      D3D11SetGShader(d3d11->ctx, d3d11->sprites.gs, NULL, 0);
-      D3D11SetInputLayout(d3d11->ctx, d3d11->sprites.layout);
-      D3D11SetPrimitiveTopology(d3d11->ctx, D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
-      D3D11SetVertexBuffers(d3d11->ctx, 0, 1, &d3d11->sprites.vbo, &sprite_stride, &offset);
-      D3D11SetBlendState(d3d11->ctx, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
+      if (d3d11->menu.fullscreen)
+         D3D11SetViewports(d3d11->ctx, 1, &d3d11->viewport);
+
+      D3D11SetVertexBuffer(d3d11->ctx, 0, d3d11->menu.vbo, sizeof(d3d11_vertex_t), 0);
       D3D11SetVShaderConstantBuffers(d3d11->ctx, 0, 1, &d3d11->ubo);
-      D3D11SetPShaderConstantBuffers(d3d11->ctx, 0, 1, &d3d11->ubo);
-
-      d3d11->sprites.enabled = true;
-
-      if (d3d11->menu.enabled)
-         menu_driver_frame(video_info);
-
-      if (msg && *msg)
-      {
-         font_driver_render_msg(video_info, NULL, msg, NULL);
-         gfx_ctx_d3d.update_window_title(NULL, video_info);
-      }
-      d3d11->sprites.enabled = false;
+      d3d11_set_texture_and_sampler(d3d11->ctx, 0, &d3d11->menu.texture);
+      D3D11Draw(d3d11->ctx, 4, 0);
    }
+
+   D3D11SetViewports(d3d11->ctx, 1, &d3d11->viewport);
+
+   d3d11_set_shader(d3d11->ctx, &d3d11->sprites.shader);
+   D3D11SetPrimitiveTopology(d3d11->ctx, D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
+   D3D11SetVertexBuffer(d3d11->ctx, 0, d3d11->sprites.vbo, sizeof(d3d11_sprite_t), 0);
+   D3D11SetVShaderConstantBuffer(d3d11->ctx, 0, d3d11->ubo);
+   D3D11SetPShaderConstantBuffer(d3d11->ctx, 0, d3d11->ubo);
+
+   d3d11->sprites.enabled = true;
+
+   if (d3d11->menu.enabled)
+      menu_driver_frame(video_info);
+
+   if (msg && *msg)
+   {
+      font_driver_render_msg(video_info, NULL, msg, NULL);
+      gfx_ctx_d3d.update_window_title(NULL, video_info);
+   }
+   d3d11->sprites.enabled = false;
 
    DXGIPresent(d3d11->swapChain, !!d3d11->vsync, 0);
    PERF_STOP();
