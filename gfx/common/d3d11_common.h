@@ -2496,11 +2496,12 @@ typedef struct
 #define ALIGN(x) __declspec(align(x))
 #else
 #define ALIGN(x) __attribute__((aligned(x)))
+#define static_assert _Static_assert
 #endif
 #endif
 
-ALIGN(16)
-typedef struct
+
+typedef struct ALIGN(16)
 {
    math_matrix_4x4 mvp;
    struct
@@ -2510,6 +2511,8 @@ typedef struct
    } OutputSize;
    float time;
 } d3d11_uniform_t;
+
+static_assert(!(sizeof(d3d11_uniform_t)&0xF), "sizeof(d3d11_uniform_t) must be a multiple of 16");
 
 typedef struct
 {
@@ -2593,7 +2596,7 @@ d3d11_get_closest_match_texture2D(D3D11Device device, DXGI_FORMAT desired_format
          D3D11_FORMAT_SUPPORT_TEXTURE2D | D3D11_FORMAT_SUPPORT_SHADER_SAMPLE);
 }
 
-static inline d3d11_set_texture_and_sampler(
+static inline void d3d11_set_texture_and_sampler(
       D3D11DeviceContext ctx, UINT slot, d3d11_texture_t* texture)
 {
    D3D11SetPShaderResources(ctx, slot, 1, &texture->view);
