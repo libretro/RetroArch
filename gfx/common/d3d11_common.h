@@ -2475,11 +2475,30 @@ typedef struct
 
 typedef struct
 {
+   struct
+   {
+      float x, y, w, h;
+   } pos;
+   struct
+   {
+      float u, v, w, h;
+   } coords;
+   UINT32 colors[4];
+   struct
+   {
+      float scaling;
+      float rotation;
+   }params;
+} d3d11_sprite_t;
+
+typedef struct
+{
    unsigned              cur_mon_id;
    DXGISwapChain         swapChain;
    D3D11Device           device;
    D3D_FEATURE_LEVEL     supportedFeatureLevel;
    D3D11DeviceContext    ctx;
+   D3D11RasterizerState  state;
    D3D11RenderTargetView renderTargetView;
    D3D11InputLayout      layout;
    D3D11Buffer           ubo;
@@ -2515,6 +2534,18 @@ typedef struct
       D3D11_VIEWPORT    viewport;
       int               rotation;
    } frame;
+   struct
+   {
+      D3D11VertexShader   vs;
+      D3D11PixelShader    ps;
+      D3D11PixelShader    ps_8bit;
+      D3D11GeometryShader gs;
+      D3D11Buffer         vbo;
+      D3D11InputLayout    layout;
+      int                 offset;
+      int                 capacity;
+      bool                enabled;
+   } sprites;
 } d3d11_video_t;
 
 void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture);

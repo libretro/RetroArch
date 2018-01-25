@@ -76,6 +76,20 @@ DXGI_FORMAT* dxgi_get_format_fallback_list(DXGI_FORMAT format)
                                           DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_UNKNOWN };
          return formats;
       }
+      case DXGI_FORMAT_A8_UNORM:
+      {
+         static DXGI_FORMAT formats[] = { DXGI_FORMAT_A8_UNORM,       DXGI_FORMAT_R8_UNORM,
+                                          DXGI_FORMAT_R8G8_UNORM,     DXGI_FORMAT_R8G8B8A8_UNORM,
+                                          DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_FORMAT_UNKNOWN };
+         return formats;
+      }
+      case DXGI_FORMAT_R8_UNORM:
+      {
+         static DXGI_FORMAT formats[] = { DXGI_FORMAT_R8_UNORM,       DXGI_FORMAT_A8_UNORM,
+                                          DXGI_FORMAT_R8G8_UNORM,     DXGI_FORMAT_R8G8B8A8_UNORM,
+                                          DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_FORMAT_UNKNOWN };
+         return formats;
+      }
       default:
          assert(0);
    }
@@ -87,7 +101,8 @@ DXGI_FORMAT* dxgi_get_format_fallback_list(DXGI_FORMAT format)
       dst_gb, dst_bb, dst_ab, dst_rs, dst_gs, dst_bs, dst_as) \
    do \
    { \
-      if (((src_rs == dst_rs && src_rb == dst_rb) || !dst_rb) && \
+      if ((sizeof(src_type) == sizeof(dst_type)) && \
+          ((src_rs == dst_rs && src_rb == dst_rb) || !dst_rb) && \
           ((src_gs == dst_gs && src_gb == dst_gb) || !dst_gb) && \
           ((src_bs == dst_bs && src_bb == dst_bb) || !dst_bb) && \
           ((src_as == dst_as && src_ab == dst_ab) || !dst_ab)) \
@@ -184,6 +199,8 @@ DXGI_FORMAT* dxgi_get_format_fallback_list(DXGI_FORMAT format)
 #define DXGI_FORMAT_R8G8B8A8_UNORM_DESCS       UINT32,    8, 8, 8, 8,     0,  8, 16, 24
 #define DXGI_FORMAT_B8G8R8X8_UNORM_DESCS       UINT32,    8, 8, 8, 0,    16,  8,  0,  0
 #define DXGI_FORMAT_B8G8R8A8_UNORM_DESCS       UINT32,    8, 8, 8, 8,    16,  8,  0, 24
+#define DXGI_FORMAT_A8_UNORM_DESCS             UINT8,     0, 0, 0, 8,     0,  0,  0,  0
+#define DXGI_FORMAT_R8_UNORM_DESCS             UINT8,     8, 0, 0, 0,     0,  0,  0,  0
 #define DXGI_FORMAT_B5G6R5_UNORM_DESCS         UINT16,    5, 6, 5, 0,    11,  5,  0,  0
 #define DXGI_FORMAT_B5G5R5A1_UNORM_DESCS       UINT16,    5, 5, 5, 1,    10,  5,  0, 11
 #define DXGI_FORMAT_B4G4R4A4_UNORM_DESCS       UINT16,    4, 4, 4, 4,     8,  4,  0, 12
@@ -192,6 +209,8 @@ DXGI_FORMAT* dxgi_get_format_fallback_list(DXGI_FORMAT format)
 #define FORMAT_SRC_LIST() \
    FORMAT_SRC(DXGI_FORMAT_R8G8B8A8_UNORM); \
    FORMAT_SRC(DXGI_FORMAT_B8G8R8X8_UNORM); \
+   FORMAT_SRC(DXGI_FORMAT_A8_UNORM); \
+   FORMAT_SRC(DXGI_FORMAT_R8_UNORM); \
    FORMAT_SRC(DXGI_FORMAT_B5G6R5_UNORM); \
    FORMAT_SRC(DXGI_FORMAT_B5G5R5A1_UNORM); \
    FORMAT_SRC(DXGI_FORMAT_B4G4R4A4_UNORM); \
@@ -201,6 +220,8 @@ DXGI_FORMAT* dxgi_get_format_fallback_list(DXGI_FORMAT format)
 #define FORMAT_DST_LIST(srcfmt) \
    FORMAT_DST(srcfmt, DXGI_FORMAT_R8G8B8A8_UNORM); \
    FORMAT_DST(srcfmt, DXGI_FORMAT_B8G8R8X8_UNORM); \
+   FORMAT_DST(srcfmt, DXGI_FORMAT_A8_UNORM); \
+   FORMAT_DST(srcfmt, DXGI_FORMAT_R8_UNORM); \
    FORMAT_DST(srcfmt, DXGI_FORMAT_B5G6R5_UNORM); \
    FORMAT_DST(srcfmt, DXGI_FORMAT_B5G5R5A1_UNORM); \
    FORMAT_DST(srcfmt, DXGI_FORMAT_B4G4R4A4_UNORM); \

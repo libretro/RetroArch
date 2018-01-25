@@ -67,8 +67,9 @@ void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
    texture->desc.SampleDesc.Count   = 1;
    texture->desc.SampleDesc.Quality = 0;
    texture->desc.BindFlags          = D3D11_BIND_SHADER_RESOURCE;
-   texture->desc.CPUAccessFlags     = 0;
-   texture->desc.MiscFlags          = 0;
+   texture->desc.CPUAccessFlags =
+         texture->desc.Usage == D3D11_USAGE_DYNAMIC ? D3D11_CPU_ACCESS_WRITE : 0;
+   texture->desc.MiscFlags = 0;
    D3D11CreateTexture2D(device, &texture->desc, NULL, &texture->handle);
 
    {

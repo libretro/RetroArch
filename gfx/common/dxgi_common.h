@@ -542,6 +542,8 @@ static inline HRESULT DXGICreateFactory(DXGIFactory* factory)
 
 /* internal */
 
+#define DXGI_COLOR_RGBA(r, g, b, a) (((UINT32)(a) << 24) | ((UINT32)(b) << 16) | ((UINT32)(g) << 8) | ((UINT32)(r) << 0))
+
 typedef enum {
    DXGI_FORMAT_EX_A4R4G4B4_UNORM = 1000,
 } DXGI_FORMAT_EX;
