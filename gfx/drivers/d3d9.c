@@ -53,8 +53,6 @@
 #include "../font_driver.h"
 
 #include "../../core.h"
-
-#include "../../defines/d3d_defines.h"
 #include "../../verbosity.h"
 
 static LPDIRECT3D9 g_pD3D9;
