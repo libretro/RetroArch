@@ -15,7 +15,8 @@ typedef struct ocr_driver
 	void* (*init)();
 	void  (*free)(void* data);
 	
-	char* (*get_text)(struct ocr_image_info image);
+	/* returned char pointers do not need to be freed but are 1 time use, they may be destroyed on the next call to get_text */
+	char* (*get_text)(void* data, struct ocr_image_info image);
 	
 	const char *ident;
 } ocr_driver_t;
@@ -27,6 +28,8 @@ extern const ocr_driver_t ocr_null;
 
 bool  ocr_driver_init(void);
 void  ocr_driver_free(void);
+
+/* returned char pointers do not need to be freed but are 1 time use, they may be destroyed on the next call to ocr_driver_get_text */
 char* ocr_driver_get_text(struct ocr_image_info image);
 
 #endif
