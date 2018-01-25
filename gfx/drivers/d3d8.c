@@ -261,13 +261,13 @@ static void d3d8_renderchain_render_pass(
       unsigned pass_index,
       unsigned rotation)
 {
-   D3DVIEWPORT8 vp;
    settings_t *settings      = config_get_ptr();
+   bool video_smooth         = settings->bools.video_smooth
 
    d3d_set_texture(d3dr, 0, chain->tex);
-   d3d_set_sampler_magfilter(d3dr, pass_index, settings->bools.video_smooth ?
+   d3d_set_sampler_magfilter(d3dr, pass_index, video_smooth ?
          D3DTEXF_LINEAR : D3DTEXF_POINT);
-   d3d_set_sampler_minfilter(d3dr, pass_index, settings->bools.video_smooth ?
+   d3d_set_sampler_minfilter(d3dr, pass_index, video_smooth ?
          D3DTEXF_LINEAR : D3DTEXF_POINT);
 
    d3d_set_viewports(chain->dev, (D3DVIEWPORT8*)&d3d->final_viewport);
