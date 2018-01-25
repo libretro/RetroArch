@@ -340,12 +340,12 @@ static void d3d9_overlay_render(d3d_video_t *d3d,
       video_frame_info_t *video_info,
       overlay_t *overlay)
 {
-   LPDIRECT3DVERTEXDECLARATION vertex_decl;
+   LPDIRECT3DVERTEXDECLARATION9 vertex_decl;
    struct video_viewport vp;
    void *verts;
    unsigned i;
    Vertex vert[4];
-   D3DVERTEXELEMENT vElems[4] = {
+   D3DVERTEXELEMENT9 vElems[4] = {
       {0, offsetof(Vertex, x),  D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT,
          D3DDECLUSAGE_POSITION, 0},
       {0, offsetof(Vertex, u), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT,
@@ -363,7 +363,9 @@ static void d3d9_overlay_render(d3d_video_t *d3d,
    if (!overlay->vert_buf)
    {
       overlay->vert_buf = d3d_vertex_buffer_new(
-      d3d->dev, sizeof(vert), D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, NULL);
+      d3d->dev, sizeof(vert), D3DUSAGE_WRITEONLY,
+      D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1,
+      D3DPOOL_MANAGED, NULL);
 
 	  if (!overlay->vert_buf)
 		  return;
@@ -805,7 +807,7 @@ static bool d3d9_initialize(d3d_video_t *d3d, const video_info_t *info)
          FONT_DRIVER_RENDER_DIRECT3D_API);
 
    {
-      static const D3DVERTEXELEMENT VertexElements[4] = {
+      static const D3DVERTEXELEMENT9 VertexElements[4] = {
          {0, offsetof(Vertex, x),  D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT,
             D3DDECLUSAGE_POSITION, 0},
          {0, offsetof(Vertex, u), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT,
@@ -823,7 +825,9 @@ static bool d3d9_initialize(d3d_video_t *d3d, const video_info_t *info)
    d3d->menu_display.size   = 1024;
    d3d->menu_display.buffer = d3d_vertex_buffer_new(
          d3d->dev, d3d->menu_display.size * sizeof(Vertex),
-         D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_DEFAULT,
+         D3DUSAGE_WRITEONLY,
+         D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1,
+         D3DPOOL_DEFAULT,
          NULL);
 
    if (!d3d->menu_display.buffer)

@@ -95,7 +95,9 @@ static bool hlsl_d3d9_renderchain_create_first_pass(void *data,
 
    chain->vertex_buf        = d3d_vertex_buffer_new(
          d3d->dev, 4 * sizeof(Vertex),
-         D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED,
+         D3DUSAGE_WRITEONLY,
+         D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1,
+         D3DPOOL_MANAGED,
          NULL);
 
    if (!chain->vertex_buf)

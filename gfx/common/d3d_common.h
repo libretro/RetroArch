@@ -32,7 +32,7 @@ typedef struct d3d_texture
 
 bool d3d_swap(void *data, void *dev);
 
-LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(void *dev,
+void *d3d_vertex_buffer_new(void *dev,
       unsigned length, unsigned usage, unsigned fvf,
       D3DPOOL pool, void *handle);
 

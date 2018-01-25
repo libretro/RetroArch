@@ -100,7 +100,9 @@ static bool d3d8_renderchain_create_first_pass(void *data,
    d3d8_renderchain_t *chain = (d3d8_renderchain_t*)d3d->renderchain_data;
 
    chain->vertex_buf         = d3d_vertex_buffer_new(d3dr, 4 * sizeof(Vertex),
-         D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED,
+         D3DUSAGE_WRITEONLY,
+         D3DFVF_XYZ | D3DFVF_TEX1 | D3DFVF_DIFFUSE,
+         D3DPOOL_MANAGED,
          NULL);
 
    if (!chain->vertex_buf)
@@ -271,7 +273,9 @@ static void d3d8_renderchain_render_pass(
          D3DTEXF_LINEAR : D3DTEXF_POINT);
 
    d3d_set_viewports(chain->dev, (D3DVIEWPORT8*)&d3d->final_viewport);
-   d3d_set_vertex_shader(d3dr, D3DFVF_CUSTOMVERTEX, NULL);
+   d3d_set_vertex_shader(d3dr,
+         D3DFVF_XYZ | D3DFVF_TEX1 | D3DFVF_DIFFUSE,
+         NULL);
    d3d_set_stream_source(d3dr, 0, chain->vertex_buf, 0, sizeof(Vertex));
    d3d8_renderchain_set_mvp(d3d, chain, NULL, &d3d->mvp_rotate);
    d3d_draw_primitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
@@ -439,7 +443,9 @@ static void d3d8_overlay_render(d3d_video_t *d3d,
    if (!overlay->vert_buf)
    {
       overlay->vert_buf = d3d_vertex_buffer_new(
-      d3d->dev, sizeof(vert), D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, NULL);
+      d3d->dev, sizeof(vert), D3DUSAGE_WRITEONLY,
+      D3DFVF_XYZ | D3DFVF_TEX1 | D3DFVF_DIFFUSE,
+      D3DPOOL_MANAGED, NULL);
 
 	  if (!overlay->vert_buf)
 		  return;
@@ -476,7 +482,9 @@ static void d3d8_overlay_render(d3d_video_t *d3d,
    d3d_vertex_buffer_unlock(overlay->vert_buf);
 
    d3d_enable_blend_func(d3d->dev);
-   d3d_set_vertex_shader(d3d->dev, D3DFVF_CUSTOMVERTEX, NULL);
+   d3d_set_vertex_shader(d3d->dev,
+         D3DFVF_XYZ | D3DFVF_TEX1 | D3DFVF_DIFFUSE,
+         NULL);
 
    d3d_set_stream_source(d3d->dev, 0, overlay->vert_buf,
          0, sizeof(*vert));
@@ -885,7 +893,9 @@ static bool d3d8_initialize(d3d_video_t *d3d, const video_info_t *info)
    d3d->menu_display.size   = 1024;
    d3d->menu_display.buffer = d3d_vertex_buffer_new(
          d3d->dev, d3d->menu_display.size * sizeof(Vertex),
-         D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_DEFAULT,
+         D3DUSAGE_WRITEONLY,
+         D3DFVF_XYZ | D3DFVF_TEX1 | D3DFVF_DIFFUSE,
+         D3DPOOL_DEFAULT,
          NULL);
 
    if (!d3d->menu_display.buffer)

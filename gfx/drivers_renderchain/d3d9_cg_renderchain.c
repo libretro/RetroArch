@@ -1483,7 +1483,7 @@ static bool d3d9_cg_renderchain_render(
       unsigned width, unsigned height,
       unsigned pitch, unsigned rotation)
 {
-   LPDIRECT3DSURFACE back_buffer, target;
+   LPDIRECT3DSURFACE9 back_buffer, target;
    unsigned i, current_width, current_height, out_width = 0, out_height = 0;
    struct Pass *last_pass  = NULL;
    d3d_video_t *d3d        = (d3d_video_t*)data;
@@ -1624,11 +1624,11 @@ static bool d3d9_cg_renderchain_read_viewport(
 {
    unsigned width, height;
    D3DLOCKED_RECT rect;
-   LPDIRECT3DSURFACE target = NULL;
-   LPDIRECT3DSURFACE dest   = NULL;
-   bool ret                 = true;
-   d3d_video_t *d3d         = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE9 d3dr   = (LPDIRECT3DDEVICE9)d3d->dev;
+   LPDIRECT3DSURFACE9 target = NULL;
+   LPDIRECT3DSURFACE9 dest   = NULL;
+   bool ret                  = true;
+   d3d_video_t *d3d          = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE9 d3dr    = (LPDIRECT3DDEVICE9)d3d->dev;
 
    video_driver_get_size(&width, &height);
 

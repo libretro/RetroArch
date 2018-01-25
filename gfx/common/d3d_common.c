@@ -786,38 +786,43 @@ void d3d_texture_free(void *_tex)
 
 bool d3d_surface_lock_rect(void *data, void *data2)
 {
-   LPDIRECT3DSURFACE surf = (LPDIRECT3DSURFACE)data;
-
-   if (!surf)
-      return false;
-
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifdef HAVE_D3D9
+            LPDIRECT3DSURFACE9 surf = (LPDIRECT3DSURFACE9)data;
+            if (!surf)
+               return false;
 #ifdef __cplusplus
-         if (FAILED(surf->LockRect((D3DLOCKED_RECT*)data2, NULL, D3DLOCK_READONLY)))
-            return false;
+            if (FAILED(surf->LockRect((D3DLOCKED_RECT*)data2, NULL, D3DLOCK_READONLY)))
+               return false;
 #else
 #if defined(_XBOX)
-         IDirect3DSurface9_LockRect(surf, (D3DLOCKED_RECT*)data2, NULL, D3DLOCK_READONLY);
+            IDirect3DSurface9_LockRect(surf, (D3DLOCKED_RECT*)data2, NULL, D3DLOCK_READONLY);
 #else
-         if (FAILED(IDirect3DSurface9_LockRect(surf, (D3DLOCKED_RECT*)data2, NULL, D3DLOCK_READONLY)))
-            return false;
+            if (FAILED(IDirect3DSurface9_LockRect(surf, (D3DLOCKED_RECT*)data2, NULL, D3DLOCK_READONLY)))
+               return false;
 #endif
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
+         {
 #ifdef HAVE_D3D8
+            LPDIRECT3DSURFACE8 surf = (LPDIRECT3DSURFACE8)data;
+            if (!surf)
+               return false;
 #ifdef __cplusplus
-         if (FAILED(surf->LockRect((D3DLOCKED_RECT*)data2, NULL, D3DLOCK_READONLY)))
-            return false;
+            if (FAILED(surf->LockRect((D3DLOCKED_RECT*)data2, NULL, D3DLOCK_READONLY)))
+               return false;
 #else
-         if (FAILED(IDirect3DSurface8_LockRect(surf, (D3DLOCKED_RECT*)data2, NULL, D3DLOCK_READONLY)))
-            return false;
+            if (FAILED(IDirect3DSurface8_LockRect(surf, (D3DLOCKED_RECT*)data2, NULL, D3DLOCK_READONLY)))
+               return false;
 #endif
 #endif
+         }
          break;
       case GFX_CTX_NONE:
       default:
@@ -829,29 +834,36 @@ bool d3d_surface_lock_rect(void *data, void *data2)
 
 void d3d_surface_unlock_rect(void *data)
 {
-   LPDIRECT3DSURFACE surf = (LPDIRECT3DSURFACE)data;
-   if (!surf)
-      return;
 
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifdef HAVE_D3D9
+            LPDIRECT3DSURFACE9 surf = (LPDIRECT3DSURFACE9)data;
+            if (!surf)
+               return;
 #ifdef __cplusplus
-         surf->UnlockRect();
+            surf->UnlockRect();
 #else
-         IDirect3DSurface9_UnlockRect(surf);
+            IDirect3DSurface9_UnlockRect(surf);
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
+         {
 #ifdef HAVE_D3D8
+            LPDIRECT3DSURFACE8 surf = (LPDIRECT3DSURFACE8)data;
+            if (!surf)
+               return;
 #ifdef __cplusplus
-         surf->UnlockRect();
+            surf->UnlockRect();
 #else
-         IDirect3DSurface8_UnlockRect(surf);
+            IDirect3DSurface8_UnlockRect(surf);
 #endif
 #endif
+         }
          break;
       case GFX_CTX_NONE:
       default:
@@ -861,28 +873,35 @@ void d3d_surface_unlock_rect(void *data)
 
 void d3d_surface_free(void *data)
 {
-   LPDIRECT3DSURFACE surf = (LPDIRECT3DSURFACE)data;
-   if (!surf)
-      return;
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifdef HAVE_D3D9
+            LPDIRECT3DSURFACE9 surf = (LPDIRECT3DSURFACE9)data;
+            if (!surf)
+               return;
 #ifdef __cplusplus
-         surf->Release();
+            surf->Release();
 #else
-         IDirect3DSurface9_Release(surf);
+            IDirect3DSurface9_Release(surf);
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
+         {
 #ifdef HAVE_D3D8
+            LPDIRECT3DSURFACE8 surf = (LPDIRECT3DSURFACE8)data;
+            if (!surf)
+               return;
 #ifdef __cplusplus
-         surf->Release();
+            surf->Release();
 #else
-         IDirect3DSurface8_Release(surf);
+            IDirect3DSurface8_Release(surf);
 #endif
 #endif
+         }
          break;
       case GFX_CTX_NONE:
       default:
@@ -901,13 +920,13 @@ void d3d_vertex_declaration_free(void *data)
 #ifdef HAVE_D3D9
 #ifdef __cplusplus
          {
-            LPDIRECT3DVERTEXDECLARATION vertex_decl = 
-               (LPDIRECT3DVERTEXDECLARATION)data;
+            LPDIRECT3DVERTEXDECLARATION9 vertex_decl = 
+               (LPDIRECT3DVERTEXDECLARATION9)data;
             if (vertex_decl)
                vertex_decl->Release();
          }
 #else
-         IDirect3DVertexDeclaration9_Release((LPDIRECT3DVERTEXDECLARATION)data);
+         IDirect3DVertexDeclaration9_Release((LPDIRECT3DVERTEXDECLARATION9)data);
 #endif
 #endif
          break;
@@ -926,9 +945,9 @@ bool d3d_vertex_declaration_new(void *_dev,
       case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
          {
-            LPDIRECT3DDEVICE9                    dev  = (LPDIRECT3DDEVICE9)_dev;
-            const D3DVERTEXELEMENT   *vertex_elements = (const D3DVERTEXELEMENT*)vertex_data;
-            LPDIRECT3DVERTEXDECLARATION **vertex_decl = (LPDIRECT3DVERTEXDECLARATION**)decl_data;
+            LPDIRECT3DDEVICE9                    dev   = (LPDIRECT3DDEVICE9)_dev;
+            const D3DVERTEXELEMENT9   *vertex_elements = (const D3DVERTEXELEMENT9*)vertex_data;
+            LPDIRECT3DVERTEXDECLARATION9 **vertex_decl = (LPDIRECT3DVERTEXDECLARATION9**)decl_data;
 
 #if defined(__cplusplus)
             if (SUCCEEDED(dev->CreateVertexDeclaration(vertex_elements, (IDirect3DVertexDeclaration9**)vertex_decl)))
@@ -949,12 +968,12 @@ bool d3d_vertex_declaration_new(void *_dev,
    return false;
 }
 
-LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(void *_dev,
+void *d3d_vertex_buffer_new(void *_dev,
       unsigned length, unsigned usage,
       unsigned fvf, D3DPOOL pool, void *handle)
 {
-   HRESULT hr                 = S_OK;
-   LPDIRECT3DVERTEXBUFFER buf = NULL;
+   HRESULT hr   = S_OK;
+   void    *buf = NULL;
 
    switch (d3d_common_api)
    {
@@ -976,10 +995,10 @@ LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(void *_dev,
             }
 
 #ifdef __cplusplus
-            hr = dev->CreateVertexBuffer(length, usage, fvf, pool, &buf, NULL);
+            hr = dev->CreateVertexBuffer(length, usage, fvf, pool, (LPDIRECT3DVERTEXBUFFER9*)&buf, NULL);
 #else
             hr = IDirect3DDevice9_CreateVertexBuffer(dev, length, usage, fvf, pool,
-                  &buf, NULL);
+                  (LPDIRECT3DVERTEXBUFFER9*)&buf, NULL);
 #endif
 
 #endif
@@ -1011,30 +1030,37 @@ LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(void *_dev,
 
 void d3d_vertex_buffer_unlock(void *vertbuf_ptr)
 {
-   LPDIRECT3DVERTEXBUFFER vertbuf = (LPDIRECT3DVERTEXBUFFER)vertbuf_ptr;
-
-   if (!vertbuf)
-      return;
-
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifdef HAVE_D3D9
+            LPDIRECT3DVERTEXBUFFER9 vertbuf = (LPDIRECT3DVERTEXBUFFER9)vertbuf_ptr;
+
+            if (!vertbuf)
+               return;
 #ifdef __cplusplus
-         vertbuf->Unlock();
+            vertbuf->Unlock();
 #else
-         IDirect3DVertexBuffer9_Unlock(vertbuf);
+            IDirect3DVertexBuffer9_Unlock(vertbuf);
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
+         {
 #ifdef HAVE_D3D8
+            LPDIRECT3DVERTEXBUFFER8 vertbuf = (LPDIRECT3DVERTEXBUFFER8)vertbuf_ptr;
+
+            if (!vertbuf)
+               return;
 #ifdef __cplusplus
-         vertbuf->Unlock();
+            vertbuf->Unlock();
 #else
-         IDirect3DVertexBuffer8_Unlock(vertbuf);
+            IDirect3DVertexBuffer8_Unlock(vertbuf);
 #endif
 #endif
+         }
          break;
       case GFX_CTX_NONE:
       default:
@@ -1045,28 +1071,37 @@ void d3d_vertex_buffer_unlock(void *vertbuf_ptr)
 
 void *d3d_vertex_buffer_lock(void *vertbuf_ptr)
 {
-   void                      *buf = NULL;
-   LPDIRECT3DVERTEXBUFFER vertbuf = (LPDIRECT3DVERTEXBUFFER)vertbuf_ptr;
+   void *buf = NULL;
 
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
+         {
 #ifdef HAVE_D3D9
+            LPDIRECT3DVERTEXBUFFER9 vertbuf = (LPDIRECT3DVERTEXBUFFER9)vertbuf_ptr;
+            if (!vertbuf)
+               return NULL;
 #ifdef __cplusplus
-         vertbuf->Lock(0, 0, &buf, 0);
+            vertbuf->Lock(0, 0, &buf, 0);
 #else
-         IDirect3DVertexBuffer9_Lock(vertbuf, 0, 0, &buf, 0);
+            IDirect3DVertexBuffer9_Lock(vertbuf, 0, 0, &buf, 0);
 #endif
 #endif
+         }
          break;
       case GFX_CTX_DIRECT3D8_API:
+         {
 #ifdef HAVE_D3D8
+            LPDIRECT3DVERTEXBUFFER8 vertbuf = (LPDIRECT3DVERTEXBUFFER8)vertbuf_ptr;
+            if (!vertbuf)
+               return NULL;
 #ifdef __cplusplus
-         vertbuf->Lock(0, 0, &buf, 0);
+            vertbuf->Lock(0, 0, &buf, 0);
 #else
-         IDirect3DVertexBuffer8_Lock(vertbuf, 0, 0, (BYTE**)&buf, 0);
+            IDirect3DVertexBuffer8_Lock(vertbuf, 0, 0, (BYTE**)&buf, 0);
 #endif
 #endif
+         }
          break;
       case GFX_CTX_NONE:
       default:
@@ -1087,7 +1122,7 @@ void d3d_vertex_buffer_free(void *vertex_data, void *vertex_declaration)
 #ifdef HAVE_D3D9
          if (vertex_data)
          {
-            LPDIRECT3DVERTEXBUFFER buf = (LPDIRECT3DVERTEXBUFFER)vertex_data;
+            LPDIRECT3DVERTEXBUFFER9 buf = (LPDIRECT3DVERTEXBUFFER9)vertex_data;
 #ifdef __cplusplus
             buf->Release();
 #else
@@ -1098,7 +1133,7 @@ void d3d_vertex_buffer_free(void *vertex_data, void *vertex_declaration)
 
          if (vertex_declaration)
          {
-            LPDIRECT3DVERTEXDECLARATION vertex_decl = (LPDIRECT3DVERTEXDECLARATION)vertex_declaration;
+            LPDIRECT3DVERTEXDECLARATION9 vertex_decl = (LPDIRECT3DVERTEXDECLARATION9)vertex_declaration;
             d3d_vertex_declaration_free(vertex_decl);
             vertex_decl = NULL;
          }
@@ -1128,10 +1163,6 @@ void d3d_set_stream_source(void *_dev, unsigned stream_no,
       void *stream_vertbuf_ptr, unsigned offset_bytes,
       unsigned stride)
 {
-	LPDIRECT3DVERTEXBUFFER stream_vertbuf = (LPDIRECT3DVERTEXBUFFER)stream_vertbuf_ptr;
-
-   if (!stream_vertbuf)
-      return;
 
    switch (d3d_common_api)
    {
@@ -1139,6 +1170,9 @@ void d3d_set_stream_source(void *_dev, unsigned stream_no,
          {
 #ifdef HAVE_D3D9
             LPDIRECT3DDEVICE9 dev  = (LPDIRECT3DDEVICE9)_dev;
+            LPDIRECT3DVERTEXBUFFER9 stream_vertbuf = (LPDIRECT3DVERTEXBUFFER9)stream_vertbuf_ptr;
+            if (!stream_vertbuf)
+               return;
 #ifdef __cplusplus
             dev->SetStreamSource(stream_no, stream_vertbuf, offset_bytes, stride);
 #else
@@ -1153,6 +1187,9 @@ void d3d_set_stream_source(void *_dev, unsigned stream_no,
          {
 #ifdef HAVE_D3D8
             LPDIRECT3DDEVICE8 dev  = (LPDIRECT3DDEVICE8)_dev;
+            LPDIRECT3DVERTEXBUFFER8 stream_vertbuf = (LPDIRECT3DVERTEXBUFFER8)stream_vertbuf_ptr;
+            if (!stream_vertbuf)
+               return;
 #ifdef __cplusplus
             dev->SetStreamSource(stream_no, stream_vertbuf, offset_bytes, stride);
 #else
@@ -1186,14 +1223,14 @@ bool d3d_device_create_offscreen_plain_surface(
 #ifdef __cplusplus
             if (SUCCEEDED(dev->CreateOffscreenPlainSurface(width, height,
                         (D3DFORMAT)format, (D3DPOOL)pool,
-                        (LPDIRECT3DSURFACE*)surf_data,
+                        (LPDIRECT3DSURFACE9*)surf_data,
                         (HANDLE*)data)))
                return true;
 #else
             if (SUCCEEDED(IDirect3DDevice9_CreateOffscreenPlainSurface(dev,
                         width, height,
                         (D3DFORMAT)format, (D3DPOOL)pool,
-                        (LPDIRECT3DSURFACE*)surf_data,
+                        (LPDIRECT3DSURFACE9*)surf_data,
                         (HANDLE*)data)))
                return true;
 #endif
@@ -1585,8 +1622,6 @@ void d3d_clear(void *_dev,
 bool d3d_device_get_render_target_data(void *_dev,
       void *_src, void *_dst)
 {
-   LPDIRECT3DSURFACE src = (LPDIRECT3DSURFACE)_src;
-   LPDIRECT3DSURFACE dst = (LPDIRECT3DSURFACE)_dst;
 
    switch (d3d_common_api)
    {
@@ -1594,7 +1629,9 @@ bool d3d_device_get_render_target_data(void *_dev,
          {
 #ifndef _XBOX
 #ifdef HAVE_D3D9
-            LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
+            LPDIRECT3DSURFACE9 src = (LPDIRECT3DSURFACE9)_src;
+            LPDIRECT3DSURFACE9 dst = (LPDIRECT3DSURFACE9)_dst;
+            LPDIRECT3DDEVICE9 dev  = (LPDIRECT3DDEVICE9)_dev;
             if (!dev)
                return false;
 #ifdef __cplusplus
@@ -1631,11 +1668,11 @@ bool d3d_device_get_render_target(void *_dev,
                return false;
 #ifdef __cplusplus
             if (SUCCEEDED(dev->GetRenderTarget(idx,
-                        (LPDIRECT3DSURFACE*)data)))
+                        (LPDIRECT3DSURFACE9*)data)))
                return true;
 #else
             if (SUCCEEDED(IDirect3DDevice9_GetRenderTarget(dev,
-                        idx, (LPDIRECT3DSURFACE*)data)))
+                        idx, (LPDIRECT3DSURFACE9*)data)))
                return true;
 #endif
 #endif
@@ -1649,11 +1686,11 @@ bool d3d_device_get_render_target(void *_dev,
                return false;
 #ifdef __cplusplus
             if (SUCCEEDED(dev->GetRenderTarget(
-                        (LPDIRECT3DSURFACE*)data)))
+                        (LPDIRECT3DSURFACE8*)data)))
                return true;
 #else
             if (SUCCEEDED(IDirect3DDevice8_GetRenderTarget(dev,
-                        (LPDIRECT3DSURFACE*)data)))
+                        (LPDIRECT3DSURFACE8*)data)))
                return true;
 #endif
 #endif
@@ -1918,7 +1955,7 @@ bool d3d_create_vertex_shader(void *_dev, const DWORD *a, void **b)
                return true;
 #else
             if (IDirect3DDevice9_CreateVertexShader(dev, a,
-                     (LPDIRECT3DVERTEXSHADER*)b) == D3D_OK)
+                     (LPDIRECT3DVERTEXSHADER9*)b) == D3D_OK)
                return true;
 #endif
 #endif
@@ -1949,7 +1986,7 @@ bool d3d_create_pixel_shader(void *_dev, const DWORD *a, void **b)
                return true;
 #else
             if (IDirect3DDevice9_CreatePixelShader(dev, a,
-                     (LPDIRECT3DPIXELSHADER*)b) == D3D_OK)
+                     (LPDIRECT3DPIXELSHADER9*)b) == D3D_OK)
                return true;
 #endif
 #endif
@@ -1971,8 +2008,8 @@ bool d3d_set_pixel_shader(void *_dev, void *data)
       case GFX_CTX_DIRECT3D9_API:
 #ifdef HAVE_D3D9
          {
-            LPDIRECT3DDEVICE9      dev  = (LPDIRECT3DDEVICE9)_dev;
-            LPDIRECT3DPIXELSHADER d3dps = (LPDIRECT3DPIXELSHADER)data;
+            LPDIRECT3DDEVICE9       dev  = (LPDIRECT3DDEVICE9)_dev;
+            LPDIRECT3DPIXELSHADER9 d3dps = (LPDIRECT3DPIXELSHADER9)data;
             if (!dev || !d3dps)
                return false;
 #if defined(__cplusplus)
@@ -2008,8 +2045,8 @@ bool d3d_set_vertex_shader(void *_dev, unsigned index,
       case GFX_CTX_DIRECT3D9_API:
          {
 #ifdef HAVE_D3D9
-            LPDIRECT3DDEVICE9      dev    = (LPDIRECT3DDEVICE9)_dev;
-            LPDIRECT3DVERTEXSHADER shader = (LPDIRECT3DVERTEXSHADER)data;
+            LPDIRECT3DDEVICE9       dev    = (LPDIRECT3DDEVICE9)_dev;
+            LPDIRECT3DVERTEXSHADER9 shader = (LPDIRECT3DVERTEXSHADER9)data;
 #ifdef __cplusplus
             if (dev->SetVertexShader(shader) != D3D_OK)
                return false;
@@ -2027,9 +2064,9 @@ bool d3d_set_vertex_shader(void *_dev, unsigned index,
       case GFX_CTX_DIRECT3D8_API:
 #ifdef HAVE_D3D8
          {
-            LPDIRECT3DDEVICE8      dev    = (LPDIRECT3DDEVICE8)_dev;
+            LPDIRECT3DDEVICE8      dev     = (LPDIRECT3DDEVICE8)_dev;
 #ifdef __cplusplus
-            LPDIRECT3DVERTEXSHADER shader = (LPDIRECT3DVERTEXSHADER)data;
+            LPDIRECT3DVERTEXSHADER8 shader = (LPDIRECT3DVERTEXSHADER8)data;
 
             if (dev->SetVertexShader(shader) != D3D_OK)
                return false;
@@ -2202,14 +2239,14 @@ void d3d_enable_blend_func(void *data)
 void d3d_device_set_render_target(void *_dev, unsigned idx,
       void *data)
 {
-   LPDIRECT3DSURFACE surf = (LPDIRECT3DSURFACE)data;
 
    switch (d3d_common_api)
    {
       case GFX_CTX_DIRECT3D9_API:
          {
 #ifdef HAVE_D3D9
-            LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
+            LPDIRECT3DSURFACE9 surf = (LPDIRECT3DSURFACE9)data;
+            LPDIRECT3DDEVICE9   dev = (LPDIRECT3DDEVICE9)_dev;
             if (!dev)
                return;
 #ifdef __cplusplus
@@ -2223,6 +2260,7 @@ void d3d_device_set_render_target(void *_dev, unsigned idx,
       case GFX_CTX_DIRECT3D8_API:
          {
 #ifdef HAVE_D3D8
+            LPDIRECT3DSURFACE8 surf = (LPDIRECT3DSURFACE8)data;
             LPDIRECT3DDEVICE8 dev = (LPDIRECT3DDEVICE8)_dev;
             if (!dev)
                return;
@@ -2296,9 +2334,9 @@ void d3d_set_vertex_declaration(void *data, void *vertex_data)
             if (!dev)
                return;
 #ifdef __cplusplus
-            dev->SetVertexDeclaration((LPDIRECT3DVERTEXDECLARATION)vertex_data);
+            dev->SetVertexDeclaration((LPDIRECT3DVERTEXDECLARATION9)vertex_data);
 #else
-            IDirect3DDevice9_SetVertexDeclaration(dev, (LPDIRECT3DVERTEXDECLARATION)vertex_data);
+            IDirect3DDevice9_SetVertexDeclaration(dev, (LPDIRECT3DVERTEXDECLARATION9)vertex_data);
 #endif
 #endif
          }
@@ -2546,13 +2584,13 @@ bool d3d_device_get_backbuffer(void *_dev,
             if (SUCCEEDED(dev->GetBackBuffer( 
                         swapchain_idx, idx, 
                         (D3DBACKBUFFER_TYPE)backbuffer_type,
-                        (LPDIRECT3DSURFACE*)data)))
+                        (LPDIRECT3DSURFACE9*)data)))
                return true;
 #else
             if (SUCCEEDED(IDirect3DDevice9_GetBackBuffer(dev, 
                         swapchain_idx, idx, 
                         (D3DBACKBUFFER_TYPE)backbuffer_type,
-                        (LPDIRECT3DSURFACE*)data)))
+                        (LPDIRECT3DSURFACE9*)data)))
                return true;
 #endif
 #endif
@@ -2567,12 +2605,12 @@ bool d3d_device_get_backbuffer(void *_dev,
 #ifdef __cplusplus
             if (SUCCEEDED(dev->GetBackBuffer(idx,
                         (D3DBACKBUFFER_TYPE)backbuffer_type,
-                        (LPDIRECT3DSURFACE*)data)))
+                        (LPDIRECT3DSURFACE8*)data)))
                return true;
 #else
             if (SUCCEEDED(IDirect3DDevice8_GetBackBuffer(dev, idx,
                         (D3DBACKBUFFER_TYPE)backbuffer_type,
-                        (LPDIRECT3DSURFACE*)data)))
+                        (LPDIRECT3DSURFACE8*)data)))
                return true;
 #endif
 #endif
@@ -2874,7 +2912,7 @@ void d3dx_font_draw_text(void *data, void *sprite_data, void *string_data,
    ID3DXFont *font = (ID3DXFont*)data;
    if (!font)
       return;
-   return font->lpVtbl->DrawText(font, (LPD3DXSPRITE)sprite_data,
+   font->lpVtbl->DrawText(font, (LPD3DXSPRITE)sprite_data,
          (LPCTSTR)string_data, count, (LPRECT)rect_data,
          (DWORD)format, (D3DCOLOR)color);
 #else
