@@ -54,9 +54,9 @@ static void hlsl_d3d9_renderchain_set_mvp(
    d3d_video_t      *d3d = (d3d_video_t*)data;
 
    if(shader_data)
-      hlsl_set_proj_matrix(shader_data, mat_data);
+      hlsl_set_proj_matrix(shader_data, (void*)mat_data);
    else
-      hlsl_set_proj_matrix((void*)&d3d->shader, mat_data);
+      hlsl_set_proj_matrix((void*)&d3d->shader, (void*)mat_data);
 }
 
 static void hlsl_d3d9_renderchain_clear(void *data)
