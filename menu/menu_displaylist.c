@@ -5559,7 +5559,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             for (user = 0; user < MAX_USERS; user++)
             {
                if (menu_displaylist_parse_settings_enum(menu, info,
-                     MENU_ENUM_LABEL_NETPLAY_REQUEST_DEVICE_1 + user,
+                     (enum msg_hash_enums)(MENU_ENUM_LABEL_NETPLAY_REQUEST_DEVICE_1 + user),
                      PARSE_ONLY_BOOL, false) != -1)
                   count++;
             }

@@ -384,8 +384,8 @@ bool d3d_check_device_type(void *_d3d,
             if (FAILED(d3d->CheckDeviceType(
                         0,
                         D3DDEVTYPE_HAL,
-                        disp_format,
-                        backbuffer_format,
+                        (D3DFORMAT)disp_format,
+                        (D3DFORMAT)backbuffer_format,
                         windowed_mode)))
                return false;
 #else
@@ -729,11 +729,11 @@ void *d3d_texture_new(void *_dev,
 #ifdef __cplusplus
             hr = dev->CreateTexture(
                   width, height, miplevels, usage,
-                  (D3DFORMAT)format, pool, (LPDIRECT3DTEXTURE8)&buf);
+                  (D3DFORMAT)format, (D3DPOOL)pool, (IDirect3DTexture8**)&buf);
 #else
             hr = IDirect3DDevice8_CreateTexture(dev,
                   width, height, miplevels, usage,
-                  (D3DFORMAT)format, pool, (struct IDirect3DTexture8**)&buf);
+                  (D3DFORMAT)format, (D3DPOOL)pool, (struct IDirect3DTexture8**)&buf);
 #endif
 #endif
          }
@@ -1012,7 +1012,7 @@ void *d3d_vertex_buffer_new(void *_dev,
 #ifdef HAVE_D3D8
             LPDIRECT3DDEVICE8 dev  = (LPDIRECT3DDEVICE8)_dev;
 #ifdef __cplusplus
-            hr = dev->CreateVertexBuffer(length, usage, fvf, pool, &buf, NULL);
+            hr = dev->CreateVertexBuffer(length, usage, fvf, (D3DPOOL)pool, (IDirect3DVertexBuffer8**)&buf);
 #else
             hr = IDirect3DDevice8_CreateVertexBuffer(dev, length, usage, fvf, pool,
                   (struct IDirect3DVertexBuffer8**)&buf);
@@ -1099,7 +1099,7 @@ void *d3d_vertex_buffer_lock(void *vertbuf_ptr)
             if (!vertbuf)
                return NULL;
 #ifdef __cplusplus
-            vertbuf->Lock(0, 0, &buf, 0);
+            vertbuf->Lock(0, 0, (BYTE**)&buf, 0);
 #else
             IDirect3DVertexBuffer8_Lock(vertbuf, 0, 0, (BYTE**)&buf, 0);
 #endif
@@ -1576,7 +1576,7 @@ void d3d_draw_primitive(void *dev,
    if (!d3d_begin_scene(dev))
       return;
 
-   d3d_draw_primitive_internal(dev, type, start, count);
+   d3d_draw_primitive_internal(dev, (D3DPRIMITIVETYPE)type, start, count);
    d3d_end_scene(dev);
 }
 
@@ -2499,7 +2499,7 @@ static bool d3d_create_device_internal(
                         focus_window,
                         behavior_flags,
                         d3dpp,
-                        dev)))
+                        (IDirect3DDevice8**)dev)))
                return true;
 #else
             if (SUCCEEDED(IDirect3D8_CreateDevice(d3d,
@@ -2529,13 +2529,14 @@ bool d3d_create_device(void *dev,
       unsigned cur_mon_id)
 {
    if (!d3d_create_device_internal(dev,
-            d3dpp,
+            (D3DPRESENT_PARAMETERS*)d3dpp,
             d3d,
             focus_window,
             cur_mon_id,
             D3DCREATE_HARDWARE_VERTEXPROCESSING))
       if (!d3d_create_device_internal(
-               dev, d3dpp, d3d, focus_window,
+               dev,
+               (D3DPRESENT_PARAMETERS*)d3dpp, d3d, focus_window,
                cur_mon_id,
                D3DCREATE_SOFTWARE_VERTEXPROCESSING))
          return false;
@@ -2546,7 +2547,7 @@ bool d3d_reset(void *dev, void *d3dpp)
 {
    const char *err = NULL;
 
-   if (d3d_reset_internal(dev, d3dpp))
+   if (d3d_reset_internal(dev, (D3DPRESENT_PARAMETERS*)d3dpp))
       return true;
 
    RARCH_WARN("[D3D]: Attempting to recover from dead state...\n");

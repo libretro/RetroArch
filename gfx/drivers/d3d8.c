@@ -101,7 +101,7 @@ static bool d3d8_renderchain_create_first_pass(void *data,
    LPDIRECT3DDEVICE8 d3dr     = (LPDIRECT3DDEVICE8)d3d->dev;
    d3d8_renderchain_t *chain = (d3d8_renderchain_t*)d3d->renderchain_data;
 
-   chain->vertex_buf         = d3d_vertex_buffer_new(d3dr, 4 * sizeof(Vertex),
+   chain->vertex_buf         = (LPDIRECT3DVERTEXBUFFER8)d3d_vertex_buffer_new(d3dr, 4 * sizeof(Vertex),
          D3DUSAGE_WRITEONLY,
          D3DFVF_XYZ | D3DFVF_TEX1 | D3DFVF_DIFFUSE,
          D3DPOOL_MANAGED,
@@ -110,7 +110,7 @@ static bool d3d8_renderchain_create_first_pass(void *data,
    if (!chain->vertex_buf)
       return false;
 
-   chain->tex = d3d_texture_new(d3dr, NULL,
+   chain->tex = (LPDIRECT3DTEXTURE8)d3d_texture_new(d3dr, NULL,
          chain->tex_w, chain->tex_h, 1, 0,
          info->rgb32
          ?
@@ -1654,7 +1654,7 @@ static void d3d8_video_texture_load_d3d(d3d_video_t *d3d,
 {
    D3DLOCKED_RECT d3dlr;
    unsigned usage         = 0;
-   LPDIRECT3DTEXTURE8 tex = d3d_texture_new(d3d->dev, NULL,
+   LPDIRECT3DTEXTURE8 tex = (LPDIRECT3DTEXTURE8)d3d_texture_new(d3d->dev, NULL,
                ti->width, ti->height, 0,
                usage, d3d_get_argb8888_format(),
                D3DPOOL_MANAGED, 0, 0, 0,
