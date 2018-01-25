@@ -654,7 +654,8 @@ static void *d3d_texture_new_from_file(
 #if defined(HAVE_D3D9)
          hr = D3DCreateTextureFromFile((LPDIRECT3DDEVICE9)dev,
                path, width, height, miplevels, usage, format,
-               pool, filter, mipfilter, color_key, src_info_data,
+               (D3DPOOL)pool, filter, mipfilter, color_key,
+               (D3DXIMAGE_INFO*)src_info_data,
                palette, (struct IDirect3DTexture9**)&buf);
 #endif
          break;
@@ -662,7 +663,7 @@ static void *d3d_texture_new_from_file(
 #if defined(HAVE_D3D8)
          hr = D3DCreateTextureFromFile((LPDIRECT3DDEVICE8)dev,
                path, width, height, miplevels, usage, format,
-               pool, filter, mipfilter, color_key, src_info_data,
+               (D3DPOOL)pool, filter, mipfilter, color_key, src_info_data,
                palette, (struct IDirect3DTeture8**)&buf);
 #endif
          break;
@@ -692,7 +693,8 @@ void *d3d_texture_new(void *_dev,
 #ifdef HAVE_D3DX
       return d3d_texture_new_from_file(_dev,
             path, width, height, miplevels,
-            usage, (D3DFORMAT)format, pool, filter, mipfilter,
+            usage, (D3DFORMAT)format,
+            (D3DPOOL)pool, filter, mipfilter,
             color_key, src_info_data, palette);
 #else
       return NULL;
@@ -712,11 +714,14 @@ void *d3d_texture_new(void *_dev,
 #ifdef __cplusplus
             hr = dev->CreateTexture(
                   width, height, miplevels, usage,
-                  (D3DFORMAT)format, pool, (LPDIRECT3DTEXTURE9)&buf, NULL);
+                  (D3DFORMAT)format,
+                  (D3DPOOL)pool,
+                  (struct IDirect3DTexture9**)&buf, NULL);
 #else
             hr = IDirect3DDevice9_CreateTexture(dev,
                   width, height, miplevels, usage,
-                  (D3DFORMAT)format, pool,
+                  (D3DFORMAT)format,
+                  (D3DPOOL)pool,
                   (struct IDirect3DTexture9**)&buf, NULL);
 #endif
 #endif
@@ -998,9 +1003,12 @@ void *d3d_vertex_buffer_new(void *_dev,
             }
 
 #ifdef __cplusplus
-            hr = dev->CreateVertexBuffer(length, usage, fvf, pool, (LPDIRECT3DVERTEXBUFFER9*)&buf, NULL);
+            hr = dev->CreateVertexBuffer(length, usage, fvf,
+                  (D3DPOOL)pool,
+                  (LPDIRECT3DVERTEXBUFFER9*)&buf, NULL);
 #else
-            hr = IDirect3DDevice9_CreateVertexBuffer(dev, length, usage, fvf, pool,
+            hr = IDirect3DDevice9_CreateVertexBuffer(dev, length, usage, fvf,
+                  (D3DPOOL)pool,
                   (LPDIRECT3DVERTEXBUFFER9*)&buf, NULL);
 #endif
 
@@ -1014,7 +1022,8 @@ void *d3d_vertex_buffer_new(void *_dev,
 #ifdef __cplusplus
             hr = dev->CreateVertexBuffer(length, usage, fvf, (D3DPOOL)pool, (IDirect3DVertexBuffer8**)&buf);
 #else
-            hr = IDirect3DDevice8_CreateVertexBuffer(dev, length, usage, fvf, pool,
+            hr = IDirect3DDevice8_CreateVertexBuffer(dev, length, usage, fvf,
+                  (D3DPOOL)pool,
                   (struct IDirect3DVertexBuffer8**)&buf);
 #endif
 #endif
@@ -2470,7 +2479,7 @@ static bool d3d_create_device_internal(
                         focus_window,
                         behavior_flags,
                         d3dpp,
-                        dev)))
+                        (IDirect3DDevice9**)dev)))
                return true;
 #else
             if (SUCCEEDED(IDirect3D9_CreateDevice(d3d,
@@ -2809,7 +2818,8 @@ bool d3dx_create_font_indirect(void *_dev,
             LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
 #ifdef __cplusplus
             if (SUCCEEDED(D3DCreateFontIndirect(
-                        dev, (D3DXFONT_DESC*)desc, font_data)))
+                        dev, (D3DXFONT_DESC*)desc,
+                        (struct ID3DXFont**)font_data)))
                return true;
 #else
             if (SUCCEEDED(D3DCreateFontIndirect(
