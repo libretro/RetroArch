@@ -333,7 +333,7 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
          { "PARAMS", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_sprite_t, params),
            D3D11_INPUT_PER_VERTEX_DATA, 0 },
       };
-#if 0
+#if 1
       d3d_compile(sprite, sizeof(sprite), "VSMain", "vs_5_0", &vs_code);
       d3d_compile(sprite, sizeof(sprite), "PSMain", "ps_5_0", &ps_code);
       d3d_compile(sprite, sizeof(sprite), "PSMainA8", "ps_5_0", &ps_A8_code);

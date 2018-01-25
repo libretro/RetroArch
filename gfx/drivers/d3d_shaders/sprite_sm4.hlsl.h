@@ -10,6 +10,7 @@ SRC(
          float4 color1 : COLOR1;
          float4 color2 : COLOR2;
          float4 color3 : COLOR3;
+         float2 params : PARAMS;
       };
       struct GSInput
       {
@@ -31,6 +32,8 @@ SRC(
       {
          GSInput output;
          output.position = input.position * 2.0;
+         output.position.xy += output.position.zw * (1.0 - input.params.x) * 0.5f;
+         output.position.zw *= input.params.x;
          output.position.w *= -1.0;
          output.position.x = output.position.x - 1.0;
          output.position.y = 1.0 - output.position.y;
@@ -74,10 +77,15 @@ SRC(
       float4 PSMain(PSInput input) : SV_TARGET
       {
          return input.color * t0.Sample(s0, input.texcoord);
+   //      return float4(1.0f, 1.0f, 1.0f, 1.0f);
+   //               return input.color;
       };
       float4 PSMainA8(PSInput input) : SV_TARGET
       {
+   //      return t0.Sample(s0, input.texcoord).a;
          return input.color * t0.Sample(s0, input.texcoord).a;
+   //               return input.color;
       };
+
 
 )
