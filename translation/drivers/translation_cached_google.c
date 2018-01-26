@@ -9,12 +9,12 @@ static void translation_cached_google_free(void* data)
 {
 }
 
-static char* translation_cached_google_translate_text(const char* game_text)
+static char* translation_cached_google_translate_text(void* data, const char* game_text)
 {
 	return "";
 }
 
-static char* translation_cached_google_translate_image(struct ocr_image_info image)
+static char* translation_cached_google_translate_image(void* data, struct ocr_image_info image)
 {
 	return "";
 }
