@@ -627,8 +627,9 @@ static void xdk360_draw_text(xdk360_video_font_t *font,
       float x, float y, const wchar_t * strText)
 {
    uint32_t dwNumChars;
-   volatile float *pVertex;
    float vColor[4], m_fCursorX, m_fCursorY;
+   volatile float *pVertex = NULL;
+   LPDIRECT3DDEVICE9 dev   = (LPDIRECT3DDEVICE9)font->d3d->dev;
 
    /* Set the color as a vertex shader constant. */
    vColor[0]   = ((0xffffffff & 0x00ff0000) >> 16L) / 255.0f;
@@ -636,7 +637,7 @@ static void xdk360_draw_text(xdk360_video_font_t *font,
    vColor[2]   = ((0xffffffff & 0x000000ff) >> 0L)  / 255.0f;
    vColor[3]   = ((0xffffffff & 0xff000000) >> 24L) / 255.0f;
 
-   d3d_set_vertex_shader_constantf(font->d3d->dev, 1, vColor, 1);
+   d3d_set_vertex_shader_constantf(dev, 1, vColor, 1);
 
    m_fCursorX  = floorf(x);
    m_fCursorY  = floorf(y);
@@ -653,8 +654,13 @@ static void xdk360_draw_text(xdk360_video_font_t *font,
     */
 
    dwNumChars = wcslen(strText);
-   font->d3d->dev->BeginVertices(D3DPT_QUADLIST, 4 * dwNumChars,
+#ifdef __cplusplus
+   dev->BeginVertices(D3DPT_QUADLIST, 4 * dwNumChars,
          sizeof(XMFLOAT4), (void**)&pVertex);
+#else
+   D3DDevice_BeginVertices(dev, D3DPT_QUADLIST, 4 * dwNumChars,
+         sizeof(XMFLOAT4), (void**)&pVertex);
+#endif
 
    /* Draw four vertices for each glyph. */
    while (*strText)
@@ -752,7 +758,11 @@ static void xdk360_draw_text(xdk360_video_font_t *font,
       dwNumChars--;
    }
 
-   font->d3d->dev->EndVertices();
+#ifdef __cplusplus
+   dev->EndVertices();
+#else
+   D3DDevice_EndVertices(dev);
+#endif
 }
 
 static void xdk360_render_msg(
