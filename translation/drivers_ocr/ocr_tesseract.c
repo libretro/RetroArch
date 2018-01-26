@@ -5,37 +5,36 @@
 
 static void* ocr_tesseract_init(int game_character_set)
 {
-	const char* tess_char_set = NULL;
-	switch (game_character_set)
-	{
-		case RETRO_LANGUAGE_JAPANESE:
-		tess_char_set = "jpn";
-		break;
-		
-		case RETRO_LANGUAGE_ENGLISH:
-		tess_char_set = "eng";
-		break;
-		
-		case RETRO_LANGUAGE_SPANISH:
-		tess_char_set = "spa";
-		break;
-	}
-	
-	if (!tess_char_set)
-		return NULL;
-	
-	char* lang_data_dir = NULL;
-	
-	/* TODO: get lang data from system dir */
-	
-	bool pass = tess_init(lang_data_dir, tess_char_set);
-	if (pass)
-	{
-		/* data is unused by tesseract */
-		return (void*)32;
-	}
-	
-	return NULL;
+   bool pass                 = false;
+   char* lang_data_dir       = NULL;
+   const char* tess_char_set = NULL;
+
+   switch (game_character_set)
+   {
+      case RETRO_LANGUAGE_JAPANESE:
+         tess_char_set = "jpn";
+         break;
+
+      case RETRO_LANGUAGE_ENGLISH:
+         tess_char_set = "eng";
+         break;
+
+      case RETRO_LANGUAGE_SPANISH:
+         tess_char_set = "spa";
+         break;
+   }
+
+   if (!tess_char_set)
+      return NULL;
+
+   /* TODO: get lang data from system dir */
+   pass = tess_init(lang_data_dir, tess_char_set);
+
+   /* data is unused by tesseract */
+   if (pass)
+      return (void*)32;
+
+   return NULL;
 }
 	
 static void ocr_tesseract_free(void* data)
