@@ -130,7 +130,7 @@
 #define DEFAULT_EXT ""
 #endif
 
-#define SHADER_FILE_WATCH_DELAY_FRAMES 5
+#define SHADER_FILE_WATCH_DELAY_FRAMES 10
 
 /* Descriptive names for options without short variant.
  *
