@@ -18,6 +18,8 @@
 #include <retro_inline.h>
 #include <retro_math.h>
 
+#include <d3d9.h>
+
 #include "../drivers/d3d.h"
 #include "../../defines/d3d_defines.h"
 #include "../common/d3d_common.h"
