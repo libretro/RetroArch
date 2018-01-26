@@ -112,13 +112,13 @@ typedef struct cg_renderchain
    CGprogram fStock;
    void *dev;
    const video_info_t *video_info;
-   state_tracker_t *state_tracker;
    D3DVIEWPORT9 *final_viewport;
-   CGcontext cgCtx;
    struct pass_vector_list *passes;
-   struct lut_info_vector_list *luts;
    struct unsigned_vector_list *bound_tex;
    struct unsigned_vector_list *bound_vert;
+   struct lut_info_vector_list *luts;
+   state_tracker_t *state_tracker;
+   CGcontext cgCtx;
 } cg_renderchain_t;
 
 static INLINE bool d3d9_cg_validate_param_name(const char *name)
@@ -1402,6 +1402,36 @@ static void cg_d3d9_renderchain_unbind_all(cg_renderchain_t *chain)
    }
 }
 
+static void cg_d3d9_renderchain_set_params(
+      cg_renderchain_t *chain,
+      struct Pass *pass,
+      unsigned pass_index)
+{
+   unsigned i;
+
+   /* Set state parameters. */
+   if (chain->state_tracker)
+   {
+      /* Only query uniforms in first pass. */
+      static struct state_tracker_uniform tracker_info[GFX_MAX_VARIABLES];
+      static unsigned cnt = 0;
+
+      if (pass_index == 1)
+         cnt = state_tracker_get_uniform(chain->state_tracker, tracker_info,
+               GFX_MAX_VARIABLES, chain->frame_count);
+
+      for (i = 0; i < cnt; i++)
+      {
+         CGparameter param_f = cgGetNamedParameter(
+               pass->fPrg, tracker_info[i].id);
+         CGparameter param_v = cgGetNamedParameter(
+               pass->vPrg, tracker_info[i].id);
+         d3d9_cg_set_param_1f(param_f, &tracker_info[i].value);
+         d3d9_cg_set_param_1f(param_v, &tracker_info[i].value);
+      }
+   }
+}
+
 static void cg_d3d9_renderchain_render_pass(
       cg_renderchain_t *chain,
       struct Pass *pass,
@@ -1458,27 +1488,7 @@ static void cg_d3d9_renderchain_render_pass(
 
    d3d9_cg_renderchain_bind_pass(chain, pass, pass_index);
 
-   /* Set state parameters. */
-   if (chain->state_tracker)
-   {
-      /* Only query uniforms in first pass. */
-      static struct state_tracker_uniform tracker_info[GFX_MAX_VARIABLES];
-      static unsigned cnt = 0;
-
-      if (pass_index == 1)
-         cnt = state_tracker_get_uniform(chain->state_tracker, tracker_info,
-               GFX_MAX_VARIABLES, chain->frame_count);
-
-      for (i = 0; i < cnt; i++)
-      {
-         CGparameter param_f = cgGetNamedParameter(
-               pass->fPrg, tracker_info[i].id);
-         CGparameter param_v = cgGetNamedParameter(
-               pass->vPrg, tracker_info[i].id);
-         d3d9_cg_set_param_1f(param_f, &tracker_info[i].value);
-         d3d9_cg_set_param_1f(param_v, &tracker_info[i].value);
-      }
-   }
+   cg_d3d9_renderchain_set_params(chain, pass, pass_index);
 
    d3d_draw_primitive(chain->dev, D3DPT_TRIANGLESTRIP, 0, 2);
 
