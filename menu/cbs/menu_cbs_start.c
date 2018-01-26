@@ -40,6 +40,8 @@
 #include "../../input/input_driver.h"
 #include "../../input/input_remapping.h"
 
+#include "../../config.def.h"
+
 #ifndef BIND_ACTION_START
 #define BIND_ACTION_START(cbs, name) \
    cbs->action_start = name; \
@@ -166,6 +168,13 @@ static int action_start_shader_filter_pass(unsigned type, const char *label)
    return menu_shader_manager_clear_pass_filter(pass);
 }
 
+static int action_start_shader_watch_for_changes(unsigned type, const char *label)
+{
+   settings_t *settings = config_get_ptr();
+   settings->bools.video_shader_watch_files = video_shader_watch_files;
+   return 0;
+}
+
 static int action_start_shader_num_passes(unsigned type, const char *label)
 {
    return menu_shader_manager_clear_num_passes();
@@ -278,6 +287,9 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_FILTER_PASS:
             BIND_ACTION_START(cbs, action_start_shader_filter_pass);
+            break;
+         case MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES:
+            BIND_ACTION_START(cbs, action_start_shader_watch_for_changes);
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES:
             BIND_ACTION_START(cbs, action_start_shader_num_passes);

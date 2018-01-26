@@ -384,4 +384,29 @@ void frontend_driver_destroy_signal_handler_state(void)
       return;
    frontend->destroy_signal_handler_state();
 }
+
+bool frontend_driver_can_watch_for_changes(void)
+{
+   frontend_ctx_driver_t *frontend = frontend_get_ptr();
+   if (!frontend || !frontend->watch_path_for_changes)
+      return false;
+   return true;
+}
+
+void frontend_driver_watch_path_for_changes(struct string_list *list, int flags, path_change_data_t **change_data)
+{
+   frontend_ctx_driver_t *frontend = frontend_get_ptr();
+   if (!frontend || !frontend->watch_path_for_changes)
+      return;
+   frontend->watch_path_for_changes(list, flags, change_data);
+}
+
+bool frontend_driver_check_for_path_changes(path_change_data_t *change_data)
+{
+   frontend_ctx_driver_t *frontend = frontend_get_ptr();
+   if (!frontend || !frontend->check_for_path_changes)
+      return false;
+   return frontend->check_for_path_changes(change_data);
+}
+
 #endif

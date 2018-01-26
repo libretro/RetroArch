@@ -3223,7 +3223,3 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
       "Audio Resampler Quality")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
       "Lower this value to favor performance/lower latency over audio quality, increase if you want better audio quality at the expense of performance/lower latency.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_PLACEHOLDER,
-      "Shader Placeholder")
-MSG_HASH(MENU_ENUM_SUBLABEL_SHADER_PLACEHOLDER,
-      "Shader Placeholder sublabel")

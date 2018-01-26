@@ -2990,7 +2990,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_LIBRETRO_INFO_PATH,
 MSG_HASH(MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
       "If a joypad is plugged in, that joypad will be autoconfigured if a config file corresponding to it is present inside this directory.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
-      "すべてのコレクションをこのフォルダに保存する。")
+      "すべてのプレイリストをこのフォルダに保存する。")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
       "If set to a directory, content which is temporarily extracted (e.g. from archives) will be extracted to this directory."
@@ -3256,7 +3256,7 @@ MSG_HASH(MSG_GAME_REMAP_FILE_LOADED,
 MSG_HASH(MSG_CORE_REMAP_FILE_LOADED,
       "コアの優先ファイルをロードしました。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-      "Automatically add content to playlist")
+      "自動的にコンテンツをプレイリストに追加")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
       "Automatically scans loaded content so they appear inside playlists.")
 MSG_HASH(MSG_SCANNING_OF_FILE_FINISHED,
@@ -3267,7 +3267,5 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
       "Audio Resampler Quality")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
       "Lower this value to favor performance/lower latency over audio quality, increase if you want better audio quality at the expense of performance/lower latency.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_PLACEHOLDER,
-      "Shader Placeholder")
-MSG_HASH(MENU_ENUM_SUBLABEL_SHADER_PLACEHOLDER,
-      "Shader Placeholder sublabel")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES,
+      "シェーダーファイルの変更を監視")
