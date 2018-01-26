@@ -13,26 +13,8 @@ void main()
     bvec4 l = bvec4(false, true, false, false);
     FragColor = mix(vIn0, vIn1, l);
     bool f = true;
-    FragColor = vec4(mix(vIn2, vIn3, f));
-    highp vec4 _35;
-    if (f)
-    {
-        _35 = vIn0;
-    }
-    else
-    {
-        _35 = vIn1;
-    }
-    FragColor = _35;
-    highp float _44;
-    if (f)
-    {
-        _44 = vIn2;
-    }
-    else
-    {
-        _44 = vIn3;
-    }
-    FragColor = vec4(_44);
+    FragColor = vec4(f ? vIn3 : vIn2);
+    FragColor = mix(vIn1, vIn0, bvec4(f));
+    FragColor = vec4(f ? vIn2 : vIn3);
 }
 

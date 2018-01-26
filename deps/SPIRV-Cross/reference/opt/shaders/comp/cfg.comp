@@ -1,0 +1,56 @@
+#version 310 es
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+layout(binding = 0, std430) buffer SSBO
+{
+    float data;
+} _11;
+
+float _180;
+
+void main()
+{
+    if (_11.data != 0.0)
+    {
+        _11.data = 10.0;
+    }
+    else
+    {
+        _11.data = 15.0;
+    }
+    switch (int(_11.data))
+    {
+        case 0:
+        {
+            _11.data = 20.0;
+            break;
+        }
+        case 1:
+        {
+            _11.data = 30.0;
+            break;
+        }
+    }
+    switch (int(_11.data))
+    {
+        case 0:
+        {
+            break;
+        }
+        case 1:
+        {
+            break;
+        }
+    }
+    float _181;
+    _181 = _180;
+    for (int _179 = 0; _179 < 20; _179++, _181 += 10.0)
+    {
+    }
+    _11.data = _181;
+    do
+    {
+    } while (_180 != 20.0);
+    _11.data = _180;
+}
+

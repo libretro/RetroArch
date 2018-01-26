@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 ARM Limited
+ * Copyright 2015-2017 ARM Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ template <typename T>
 struct image2DBase
 {
 	virtual ~image2DBase() = default;
-	inline virtual T load(glm::ivec2 coord)
+	inline virtual T load(glm::ivec2 coord) const
 	{
 		return T(0, 0, 0, 1);
 	}

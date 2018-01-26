@@ -6,6 +6,18 @@ struct PatchData
     vec4 LODs;
 };
 
+layout(binding = 0, std140) uniform PerPatch
+{
+    PatchData Patches[256];
+} _53;
+
+layout(binding = 2, std140) uniform GlobalGround
+{
+    vec4 GroundScale;
+    vec4 GroundPosition;
+    vec4 InvGroundSize_PatchScale;
+} _156;
+
 layout(binding = 0, std140) uniform GlobalVSData
 {
     vec4 g_ViewProj_Row0;
@@ -26,19 +38,7 @@ layout(binding = 0, std140) uniform GlobalVSData
     vec4 g_ShadowVP_Row1;
     vec4 g_ShadowVP_Row2;
     vec4 g_ShadowVP_Row3;
-} _58;
-
-layout(binding = 0, std140) uniform PerPatch
-{
-    PatchData Patches[256];
-} _284;
-
-layout(binding = 2, std140) uniform GlobalGround
-{
-    vec4 GroundScale;
-    vec4 GroundPosition;
-    vec4 InvGroundSize_PatchScale;
-} _381;
+} _236;
 
 layout(binding = 1) uniform mediump sampler2D TexLOD;
 layout(binding = 0) uniform mediump sampler2D TexHeightmap;
@@ -51,34 +51,34 @@ layout(location = 0) out vec2 TexCoord;
 
 vec2 warp_position()
 {
-    float vlod = dot(LODWeights, _284.Patches[(gl_InstanceID + SPIRV_Cross_BaseInstance)].LODs);
-    vlod = mix(vlod, _284.Patches[(gl_InstanceID + SPIRV_Cross_BaseInstance)].Position.w, all(equal(LODWeights, vec4(0.0))));
+    float vlod = dot(LODWeights, _53.Patches[(gl_InstanceID + SPIRV_Cross_BaseInstance)].LODs);
+    vlod = all(equal(LODWeights, vec4(0.0))) ? _53.Patches[(gl_InstanceID + SPIRV_Cross_BaseInstance)].Position.w : vlod;
     float floor_lod = floor(vlod);
     float fract_lod = vlod - floor_lod;
     uint ufloor_lod = uint(floor_lod);
     uvec2 uPosition = uvec2(Position);
     uvec2 mask = (uvec2(1u) << uvec2(ufloor_lod, ufloor_lod + 1u)) - uvec2(1u);
-    uint _332;
+    uint _106;
     if (uPosition.x < 32u)
     {
-        _332 = mask.x;
+        _106 = mask.x;
     }
     else
     {
-        _332 = 0u;
+        _106 = 0u;
     }
-    uint _342 = _332;
-    uint _343;
+    uint _116 = _106;
+    uint _117;
     if (uPosition.y < 32u)
     {
-        _343 = mask.y;
+        _117 = mask.y;
     }
     else
     {
-        _343 = 0u;
+        _117 = 0u;
     }
-    uvec2 rounding = uvec2(_342, _343);
-    vec4 lower_upper_snapped = vec4((uPosition + rounding).xyxy & ~mask.xxyy);
+    uvec2 rounding = uvec2(_116, _117);
+    vec4 lower_upper_snapped = vec4((uPosition + rounding).xyxy & (~mask).xxyy);
     return mix(lower_upper_snapped.xy, lower_upper_snapped.zw, vec2(fract_lod));
 }
 
@@ -92,19 +92,19 @@ vec2 lod_factor(vec2 uv)
 
 void main()
 {
-    vec2 PatchPos = _284.Patches[(gl_InstanceID + SPIRV_Cross_BaseInstance)].Position.xz * _381.InvGroundSize_PatchScale.zw;
+    vec2 PatchPos = _53.Patches[(gl_InstanceID + SPIRV_Cross_BaseInstance)].Position.xz * _156.InvGroundSize_PatchScale.zw;
     vec2 WarpedPos = warp_position();
     vec2 VertexPos = PatchPos + WarpedPos;
-    vec2 NormalizedPos = VertexPos * _381.InvGroundSize_PatchScale.xy;
+    vec2 NormalizedPos = VertexPos * _156.InvGroundSize_PatchScale.xy;
     vec2 param = NormalizedPos;
     vec2 lod = lod_factor(param);
-    vec2 Offset = _381.InvGroundSize_PatchScale.xy * exp2(lod.x);
+    vec2 Offset = _156.InvGroundSize_PatchScale.xy * exp2(lod.x);
     float Elevation = mix(textureLod(TexHeightmap, NormalizedPos + (Offset * 0.5), lod.x).x, textureLod(TexHeightmap, NormalizedPos + (Offset * 1.0), lod.x + 1.0).x, lod.y);
     vec3 WorldPos = vec3(NormalizedPos.x, Elevation, NormalizedPos.y);
-    WorldPos *= _381.GroundScale.xyz;
-    WorldPos += _381.GroundPosition.xyz;
-    EyeVec = WorldPos - _58.g_CamPos.xyz;
-    TexCoord = NormalizedPos + (_381.InvGroundSize_PatchScale.xy * 0.5);
-    gl_Position = (((_58.g_ViewProj_Row0 * WorldPos.x) + (_58.g_ViewProj_Row1 * WorldPos.y)) + (_58.g_ViewProj_Row2 * WorldPos.z)) + _58.g_ViewProj_Row3;
+    WorldPos *= _156.GroundScale.xyz;
+    WorldPos += _156.GroundPosition.xyz;
+    EyeVec = WorldPos - _236.g_CamPos.xyz;
+    TexCoord = NormalizedPos + (_156.InvGroundSize_PatchScale.xy * 0.5);
+    gl_Position = (((_236.g_ViewProj_Row0 * WorldPos.x) + (_236.g_ViewProj_Row1 * WorldPos.y)) + (_236.g_ViewProj_Row2 * WorldPos.z)) + _236.g_ViewProj_Row3;
 }
 

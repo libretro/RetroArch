@@ -1,0 +1,33 @@
+#version 310 es
+#extension GL_OES_shader_image_atomic : require
+layout(local_size_x = 1) in;
+
+layout(r32ui, binding = 0) uniform highp uimage2D uImage;
+layout(r32i, binding = 1) uniform highp iimage2D iImage;
+layout(binding = 2, std430) buffer SSBO
+{
+    uint u32;
+    int  i32;
+} ssbo;
+
+void main()
+{
+    atomicAdd(ssbo.u32, 1u);
+    atomicOr(ssbo.u32, 1u);
+    atomicXor(ssbo.u32, 1u);
+    atomicAnd(ssbo.u32, 1u);
+    atomicMin(ssbo.u32, 1u);
+    atomicMax(ssbo.u32, 1u);
+    atomicExchange(ssbo.u32, 1u);
+    atomicCompSwap(ssbo.u32, 10u, 2u);
+
+    atomicAdd(ssbo.i32, 1);
+    atomicOr(ssbo.i32, 1);
+    atomicXor(ssbo.i32, 1);
+    atomicAnd(ssbo.i32, 1);
+    atomicMin(ssbo.i32, 1);
+    atomicMax(ssbo.i32, 1);
+    atomicExchange(ssbo.i32, 1);
+    atomicCompSwap(ssbo.i32, 10, 2);
+}
+

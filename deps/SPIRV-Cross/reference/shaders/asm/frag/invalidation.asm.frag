@@ -1,8 +1,8 @@
 #version 450
 
-in float v0;
-in float v1;
-out float FragColor;
+layout(location = 0) in float v0;
+layout(location = 1) in float v1;
+layout(location = 0) out float FragColor;
 
 void main()
 {

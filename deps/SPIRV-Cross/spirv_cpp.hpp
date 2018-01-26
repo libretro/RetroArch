@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 ARM Limited
+ * Copyright 2015-2017 ARM Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,12 @@ public:
 	    : CompilerGLSL(move(spirv_))
 	{
 	}
+
+	CompilerCPP(const uint32_t *ir, size_t word_count)
+	    : CompilerGLSL(ir, word_count)
+	{
+	}
+
 	std::string compile() override;
 
 	// Sets a custom symbol name that can override
@@ -48,14 +54,14 @@ private:
 	void emit_function_prototype(SPIRFunction &func, uint64_t return_flags) override;
 
 	void emit_resources();
-	void emit_buffer_block(const SPIRVariable &type);
-	void emit_push_constant_block(const SPIRVariable &var);
+	void emit_buffer_block(const SPIRVariable &type) override;
+	void emit_push_constant_block(const SPIRVariable &var) override;
 	void emit_interface_block(const SPIRVariable &type);
 	void emit_block_chain(SPIRBlock &block);
-	void emit_uniform(const SPIRVariable &var);
+	void emit_uniform(const SPIRVariable &var) override;
 	void emit_shared(const SPIRVariable &var);
 	void emit_block_struct(SPIRType &type);
-	std::string variable_decl(const SPIRType &type, const std::string &name) override;
+	std::string variable_decl(const SPIRType &type, const std::string &name, uint32_t id) override;
 
 	std::string argument_decl(const SPIRFunction::Parameter &arg);
 

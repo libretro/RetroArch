@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 ARM Limited
+ * Copyright 2016-2017 ARM Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,12 @@
 #ifndef SPIRV_CROSS_CFG_HPP
 #define SPIRV_CROSS_CFG_HPP
 
-#include "spirv_cross.hpp"
+#include "spirv_common.hpp"
 #include <assert.h>
 
 namespace spirv_cross
 {
+class Compiler;
 class CFG
 {
 public:
@@ -67,11 +68,15 @@ public:
 	}
 
 	template <typename Op>
-	void walk_from(uint32_t block, const Op &op) const
+	void walk_from(std::unordered_set<uint32_t> &seen_blocks, uint32_t block, const Op &op) const
 	{
+		if (seen_blocks.count(block))
+			return;
+		seen_blocks.insert(block);
+
 		op(block);
 		for (auto b : succeeding_edges[block])
-			walk_from(b, op);
+			walk_from(seen_blocks, b, op);
 	}
 
 private:
@@ -89,7 +94,6 @@ private:
 	bool post_order_visit(uint32_t block);
 	uint32_t visit_count = 0;
 
-	uint32_t update_common_dominator(uint32_t a, uint32_t b);
 	bool is_back_edge(uint32_t to) const;
 };
 
