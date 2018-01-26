@@ -1422,7 +1422,7 @@ static bool wiiu_gfx_set_shader(void *data,
       for (int i = 0; i < wiiu->shader_preset->passes; i++)
           slang_preprocess_parse_parameters(wiiu->shader_preset->pass[i].source.path, wiiu->shader_preset);
  
-          video_shader_resolve_current_parameters(conf, wiiu->shader_preset);
+      video_shader_resolve_current_parameters(conf, wiiu->shader_preset);
    #endif
           config_file_free(conf);
 
