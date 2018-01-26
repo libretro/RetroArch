@@ -33,6 +33,12 @@ typedef struct d3d_texture
 #define D3DCOLOR_ARGB(_a, _r, _g, _b) ( (DWORD)( ( ( (_a)&0xff)<<24)|( ( (_r)&0xff)<<16)|( ( (_g)&0xff)<<8)|( (_b)&0xff) ) )
 #endif
 
+#define D3DTADDRESS_COMM_CLAMP           3
+#define D3DTEXF_COMM_LINEAR              2
+#define D3DPT_COMM_TRIANGLESTRIP         5
+
+#define D3D_COMM_CLEAR_TARGET            0x00000001l  /* Clear target surface */
+
 bool d3d_swap(void *data, void *dev);
 
 void *d3d_vertex_buffer_new(void *dev,

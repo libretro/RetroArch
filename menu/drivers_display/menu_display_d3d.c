@@ -27,14 +27,6 @@
 #include "../../gfx/drivers/d3d.h"
 #include "../../gfx/common/d3d_common.h"
 
-#if defined(HAVE_D3D9)
-#include <d3d9types.h>
-#endif
-
-#if defined(HAVE_D3D8)
-#include <d3d8types.h>
-#endif
-
 #define BYTE_CLAMP(i) (int) ((((i) > 255) ? 255 : (((i) < 0) ? 0 : (i))))
 
 static const float d3d_vertexes[] = {
@@ -69,21 +61,21 @@ static void *menu_display_d3d_get_default_mvp(void)
    return &id;
 }
 
-static D3DPRIMITIVETYPE menu_display_prim_to_d3d_enum(
+static INT32 menu_display_prim_to_d3d_enum(
       enum menu_display_prim_type prim_type)
 {
    switch (prim_type)
    {
       case MENU_DISPLAY_PRIM_TRIANGLES:
       case MENU_DISPLAY_PRIM_TRIANGLESTRIP:
-         return D3DPT_TRIANGLESTRIP;
+         return D3DPT_COMM_TRIANGLESTRIP;
       case MENU_DISPLAY_PRIM_NONE:
       default:
          break;
    }
 
    /* TOD/FIXME - hack */
-   return (D3DPRIMITIVETYPE)0;
+   return 0;
 }
 
 static void menu_display_d3d_blend_begin(void)
@@ -120,11 +112,11 @@ static void menu_display_d3d_bind_texture(void *data)
 
 
    d3d_set_texture(d3d->dev, 0, (void*)draw->texture);
-   d3d_set_sampler_address_u(d3d->dev, 0, D3DTADDRESS_CLAMP);
-   d3d_set_sampler_address_v(d3d->dev, 0, D3DTADDRESS_CLAMP);
-   d3d_set_sampler_minfilter(d3d->dev, 0, D3DTEXF_LINEAR);
-   d3d_set_sampler_magfilter(d3d->dev, 0, D3DTEXF_LINEAR);
-   d3d_set_sampler_mipfilter(d3d->dev, 0, D3DTEXF_LINEAR);
+   d3d_set_sampler_address_u(d3d->dev, 0, D3DTADDRESS_COMM_CLAMP);
+   d3d_set_sampler_address_v(d3d->dev, 0, D3DTADDRESS_COMM_CLAMP);
+   d3d_set_sampler_minfilter(d3d->dev, 0, D3DTEXF_COMM_LINEAR);
+   d3d_set_sampler_magfilter(d3d->dev, 0, D3DTEXF_COMM_LINEAR);
+   d3d_set_sampler_mipfilter(d3d->dev, 0, D3DTEXF_COMM_LINEAR);
 
 }
 
@@ -301,7 +293,7 @@ static void menu_display_d3d_clear_color(
          BYTE_CLAMP(clearcolor->b * 255.0f)  /* B */
          );
 
-   d3d_clear(d3d->dev, 0, NULL, D3DCLEAR_TARGET, clear_color, 0, 0);
+   d3d_clear(d3d->dev, 0, NULL, D3D_COMM_CLEAR_TARGET, clear_color, 0, 0);
 }
 
 static bool menu_display_d3d_font_init_first(
