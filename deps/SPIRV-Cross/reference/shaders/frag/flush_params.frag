@@ -9,7 +9,7 @@ struct Structy
 
 layout(location = 0) out vec4 FragColor;
 
-void foo2(out Structy f)
+void foo2(inout Structy f)
 {
     f.c = vec4(10.0);
 }

@@ -15,6 +15,9 @@
                OpName %b "b"
                OpName %v1 "v1"
                OpName %FragColor "FragColor"
+               OpDecorate %v0 Location 0
+               OpDecorate %v1 Location 1
+               OpDecorate %FragColor Location 0
           %2 = OpTypeVoid
           %3 = OpTypeFunction %2
           %float = OpTypeFloat 32

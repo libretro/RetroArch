@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 ARM Limited
+ * Copyright 2015-2017 ARM Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 #include "spirv_cpp.hpp"
+#include "spirv_glsl.hpp"
+#include "spirv_hlsl.hpp"
 #include "spirv_msl.hpp"
 #include <algorithm>
 #include <cstdio>
@@ -26,19 +28,23 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4996)
+#endif
+
 using namespace spv;
 using namespace spirv_cross;
 using namespace std;
 
 #ifdef SPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS
-#define THROW(x)                   \
-	do                             \
-	{                              \
-		fprintf(stderr, "%s.", x); \
-		exit(1);                   \
-	} while (0)
+static inline void THROW(const char *str)
+{
+	fprintf(stderr, "SPIRV-Cross will abort: %s\n", str);
+	fflush(stderr);
+	abort();
+}
 #else
-#define THROW(x) runtime_error(x)
+#define THROW(x) throw runtime_error(x)
 #endif
 
 struct CLIParser;
@@ -187,7 +193,7 @@ static bool write_string_to_file(const char *path, const char *string)
 	FILE *file = fopen(path, "w");
 	if (!file)
 	{
-		fprintf(file, "Failed to write file: %s\n", path);
+		fprintf(stderr, "Failed to write file: %s\n", path);
 		return false;
 	}
 
@@ -200,10 +206,15 @@ static void print_resources(const Compiler &compiler, const char *tag, const vec
 {
 	fprintf(stderr, "%s\n", tag);
 	fprintf(stderr, "=============\n\n");
+	bool print_ssbo = !strcmp(tag, "ssbos");
+
 	for (auto &res : resources)
 	{
 		auto &type = compiler.get_type(res.type_id);
 		auto mask = compiler.get_decoration_mask(res.id);
+
+		if (print_ssbo && compiler.buffer_is_hlsl_counter_buffer(res.id))
+			continue;
 
 		// If we don't have a name, use the fallback for the type instead of the variable
 		// for SSBOs and UBOs since those are the only meaningful names to use externally.
@@ -217,7 +228,7 @@ static void print_resources(const Compiler &compiler, const char *tag, const vec
 
 		uint32_t block_size = 0;
 		if (is_sized_block)
-			block_size = compiler.get_declared_struct_size(compiler.get_type(res.base_type_id));
+			block_size = uint32_t(compiler.get_declared_struct_size(compiler.get_type(res.base_type_id)));
 
 		string array;
 		for (auto arr : type.array)
@@ -234,8 +245,16 @@ static void print_resources(const Compiler &compiler, const char *tag, const vec
 			fprintf(stderr, " (Binding : %u)", compiler.get_decoration(res.id, DecorationBinding));
 		if (mask & (1ull << DecorationInputAttachmentIndex))
 			fprintf(stderr, " (Attachment : %u)", compiler.get_decoration(res.id, DecorationInputAttachmentIndex));
+		if (mask & (1ull << DecorationNonReadable))
+			fprintf(stderr, " writeonly");
+		if (mask & (1ull << DecorationNonWritable))
+			fprintf(stderr, " readonly");
 		if (is_sized_block)
 			fprintf(stderr, " (BlockSize : %u bytes)", block_size);
+
+		uint32_t counter_id = 0;
+		if (print_ssbo && compiler.buffer_get_hlsl_counter_buffer(res.id, counter_id))
+			fprintf(stderr, " (HLSL counter buffer ID: %u)", counter_id);
 		fprintf(stderr, "\n");
 	}
 	fprintf(stderr, "=============\n\n");
@@ -380,6 +399,21 @@ static void print_spec_constants(const Compiler &compiler)
 	fprintf(stderr, "==================\n\n");
 }
 
+static void print_capabilities_and_extensions(const Compiler &compiler)
+{
+	fprintf(stderr, "Capabilities\n");
+	fprintf(stderr, "============\n");
+	for (auto &capability : compiler.get_declared_capabilities())
+		fprintf(stderr, "Capability: %u\n", static_cast<unsigned>(capability));
+	fprintf(stderr, "============\n\n");
+
+	fprintf(stderr, "Extensions\n");
+	fprintf(stderr, "============\n");
+	for (auto &ext : compiler.get_declared_extensions())
+		fprintf(stderr, "Extension: %s\n", ext.c_str());
+	fprintf(stderr, "============\n\n");
+}
+
 struct PLSArg
 {
 	PlsFormat format;
@@ -399,43 +433,71 @@ struct VariableTypeRemap
 	string new_variable_type;
 };
 
+struct InterfaceVariableRename
+{
+	StorageClass storageClass;
+	uint32_t location;
+	string variable_name;
+};
+
 struct CLIArguments
 {
 	const char *input = nullptr;
 	const char *output = nullptr;
 	const char *cpp_interface_name = nullptr;
 	uint32_t version = 0;
+	uint32_t shader_model = 0;
+	uint32_t msl_version = 0;
 	bool es = false;
 	bool set_version = false;
+	bool set_shader_model = false;
+	bool set_msl_version = false;
 	bool set_es = false;
 	bool dump_resources = false;
 	bool force_temporary = false;
 	bool flatten_ubo = false;
 	bool fixup = false;
+	bool yflip = false;
+	bool sso = false;
 	vector<PLSArg> pls_in;
 	vector<PLSArg> pls_out;
 	vector<Remap> remaps;
 	vector<string> extensions;
 	vector<VariableTypeRemap> variable_type_remaps;
+	vector<InterfaceVariableRename> interface_variable_renames;
+	vector<HLSLVertexAttributeRemap> hlsl_attr_remap;
 	string entry;
+
+	vector<pair<string, string>> entry_point_rename;
 
 	uint32_t iterations = 1;
 	bool cpp = false;
-	bool metal = false;
+	bool msl = false;
+	bool hlsl = false;
+	bool hlsl_compat = false;
 	bool vulkan_semantics = false;
+	bool flatten_multidimensional_arrays = false;
+	bool use_420pack_extension = true;
 	bool remove_unused = false;
-	bool cfg_analysis = true;
 };
 
 static void print_help()
 {
-	fprintf(stderr, "Usage: spirv-cross [--output <output path>] [SPIR-V file] [--es] [--no-es] [--no-cfg-analysis] "
-	                "[--version <GLSL "
-	                "version>] [--dump-resources] [--help] [--force-temporary] [--cpp] [--cpp-interface-name <name>] "
-	                "[--metal] [--vulkan-semantics] [--flatten-ubo] [--fixup-clipspace] [--iterations iter] [--pls-in "
-	                "format input-name] [--pls-out format output-name] [--remap source_name target_name components] "
-	                "[--extension ext] [--entry name] [--remove-unused-variables] "
-	                "[--remap-variable-type <variable_name> <new_variable_type>]\n");
+	fprintf(stderr, "Usage: spirv-cross [--output <output path>] [SPIR-V file] [--es] [--no-es] "
+	                "[--version <GLSL version>] [--dump-resources] [--help] [--force-temporary] "
+	                "[--vulkan-semantics] [--flatten-ubo] [--fixup-clipspace] [--flip-vert-y] [--iterations iter] "
+	                "[--cpp] [--cpp-interface-name <name>] "
+	                "[--msl] [--msl-version <MMmmpp>]"
+	                "[--hlsl] [--shader-model] [--hlsl-enable-compat] "
+	                "[--separate-shader-objects]"
+	                "[--pls-in format input-name] [--pls-out format output-name] [--remap source_name target_name "
+	                "components] [--extension ext] [--entry name] [--remove-unused-variables] "
+	                "[--flatten-multidimensional-arrays] [--no-420pack-extension] "
+	                "[--remap-variable-type <variable_name> <new_variable_type>] "
+	                "[--rename-interface-variable <in|out> <location> <new_variable_name>] "
+	                "[--set-hlsl-vertex-input-semantic <location> <semantic>] "
+	                "[--rename-entry-point <old> <new>] "
+	                "\n");
 }
 
 static bool remap_generic(Compiler &compiler, const vector<Resource> &resources, const Remap &remap)
@@ -522,7 +584,34 @@ static PlsFormat pls_format(const char *str)
 		return PlsNone;
 }
 
-int main(int argc, char *argv[])
+void rename_interface_variable(Compiler &compiler, const vector<Resource> &resources,
+                               const InterfaceVariableRename &rename)
+{
+	for (auto &v : resources)
+	{
+		if (!compiler.has_decoration(v.id, spv::DecorationLocation))
+			continue;
+
+		auto loc = compiler.get_decoration(v.id, spv::DecorationLocation);
+		if (loc != rename.location)
+			continue;
+
+		auto &type = compiler.get_type(v.base_type_id);
+
+		// This is more of a friendly variant. If we need to rename interface variables, we might have to rename
+		// structs as well and make sure all the names match up.
+		if (type.basetype == SPIRType::Struct)
+		{
+			compiler.set_name(v.base_type_id, join("SPIRV_Cross_Interface_Location", rename.location));
+			for (uint32_t i = 0; i < uint32_t(type.member_types.size()); i++)
+				compiler.set_member_name(v.base_type_id, i, join("InterfaceMember", i));
+		}
+
+		compiler.set_name(v.id, rename.variable_name);
+	}
+}
+
+static int main_inner(int argc, char *argv[])
 {
 	CLIArguments args;
 	CLICallbacks cbs;
@@ -544,18 +633,36 @@ int main(int argc, char *argv[])
 		args.version = parser.next_uint();
 		args.set_version = true;
 	});
-	cbs.add("--no-cfg-analysis", [&args](CLIParser &) { args.cfg_analysis = false; });
 	cbs.add("--dump-resources", [&args](CLIParser &) { args.dump_resources = true; });
 	cbs.add("--force-temporary", [&args](CLIParser &) { args.force_temporary = true; });
 	cbs.add("--flatten-ubo", [&args](CLIParser &) { args.flatten_ubo = true; });
 	cbs.add("--fixup-clipspace", [&args](CLIParser &) { args.fixup = true; });
+	cbs.add("--flip-vert-y", [&args](CLIParser &) { args.yflip = true; });
 	cbs.add("--iterations", [&args](CLIParser &parser) { args.iterations = parser.next_uint(); });
 	cbs.add("--cpp", [&args](CLIParser &) { args.cpp = true; });
 	cbs.add("--cpp-interface-name", [&args](CLIParser &parser) { args.cpp_interface_name = parser.next_string(); });
-	cbs.add("--metal", [&args](CLIParser &) { args.metal = true; });
+	cbs.add("--metal", [&args](CLIParser &) { args.msl = true; }); // Legacy compatibility
+	cbs.add("--msl", [&args](CLIParser &) { args.msl = true; });
+	cbs.add("--hlsl", [&args](CLIParser &) { args.hlsl = true; });
+	cbs.add("--hlsl-enable-compat", [&args](CLIParser &) { args.hlsl_compat = true; });
 	cbs.add("--vulkan-semantics", [&args](CLIParser &) { args.vulkan_semantics = true; });
+	cbs.add("--flatten-multidimensional-arrays", [&args](CLIParser &) { args.flatten_multidimensional_arrays = true; });
+	cbs.add("--no-420pack-extension", [&args](CLIParser &) { args.use_420pack_extension = false; });
 	cbs.add("--extension", [&args](CLIParser &parser) { args.extensions.push_back(parser.next_string()); });
+	cbs.add("--rename-entry-point", [&args](CLIParser &parser) {
+		auto old_name = parser.next_string();
+		auto new_name = parser.next_string();
+		args.entry_point_rename.push_back({ old_name, new_name });
+	});
 	cbs.add("--entry", [&args](CLIParser &parser) { args.entry = parser.next_string(); });
+	cbs.add("--separate-shader-objects", [&args](CLIParser &) { args.sso = true; });
+	cbs.add("--set-hlsl-vertex-input-semantic", [&args](CLIParser &parser) {
+		HLSLVertexAttributeRemap remap;
+		remap.location = parser.next_uint();
+		remap.semantic = parser.next_string();
+		args.hlsl_attr_remap.push_back(move(remap));
+	});
+
 	cbs.add("--remap", [&args](CLIParser &parser) {
 		string src = parser.next_string();
 		string dst = parser.next_string();
@@ -569,6 +676,19 @@ int main(int argc, char *argv[])
 		args.variable_type_remaps.push_back({ move(var_name), move(new_type) });
 	});
 
+	cbs.add("--rename-interface-variable", [&args](CLIParser &parser) {
+		StorageClass cls = StorageClassMax;
+		string clsStr = parser.next_string();
+		if (clsStr == "in")
+			cls = StorageClassInput;
+		else if (clsStr == "out")
+			cls = StorageClassOutput;
+
+		uint32_t loc = parser.next_uint();
+		string var_name = parser.next_string();
+		args.interface_variable_renames.push_back({ cls, loc, move(var_name) });
+	});
+
 	cbs.add("--pls-in", [&args](CLIParser &parser) {
 		auto fmt = pls_format(parser.next_string());
 		auto name = parser.next_string();
@@ -578,6 +698,14 @@ int main(int argc, char *argv[])
 		auto fmt = pls_format(parser.next_string());
 		auto name = parser.next_string();
 		args.pls_out.push_back({ move(fmt), move(name) });
+	});
+	cbs.add("--shader-model", [&args](CLIParser &parser) {
+		args.shader_model = parser.next_uint();
+		args.set_shader_model = true;
+	});
+	cbs.add("--msl-version", [&args](CLIParser &parser) {
+		args.msl_version = parser.next_uint();
+		args.set_msl_version = true;
 	});
 
 	cbs.add("--remove-unused-variables", [&args](CLIParser &) { args.remove_unused = true; });
@@ -612,8 +740,18 @@ int main(int argc, char *argv[])
 		if (args.cpp_interface_name)
 			static_cast<CompilerCPP *>(compiler.get())->set_interface_name(args.cpp_interface_name);
 	}
-	else if (args.metal)
+	else if (args.msl)
+	{
 		compiler = unique_ptr<CompilerMSL>(new CompilerMSL(read_spirv_file(args.input)));
+
+		auto *msl_comp = static_cast<CompilerMSL *>(compiler.get());
+		auto msl_opts = msl_comp->get_options();
+		if (args.set_msl_version)
+			msl_opts.msl_version = args.msl_version;
+		msl_comp->set_options(msl_opts);
+	}
+	else if (args.hlsl)
+		compiler = unique_ptr<CompilerHLSL>(new CompilerHLSL(read_spirv_file(args.input)));
 	else
 	{
 		combined_image_samplers = !args.vulkan_semantics;
@@ -631,6 +769,9 @@ int main(int argc, char *argv[])
 		compiler->set_variable_type_remap_callback(move(remap_cb));
 	}
 
+	for (auto &rename : args.entry_point_rename)
+		compiler->rename_entry_point(rename.first, rename.second);
+
 	if (!args.entry.empty())
 		compiler->set_entry_point(args.entry);
 
@@ -647,10 +788,37 @@ int main(int argc, char *argv[])
 	if (args.set_es)
 		opts.es = args.es;
 	opts.force_temporary = args.force_temporary;
+	opts.separate_shader_objects = args.sso;
+	opts.flatten_multidimensional_arrays = args.flatten_multidimensional_arrays;
+	opts.enable_420pack_extension = args.use_420pack_extension;
 	opts.vulkan_semantics = args.vulkan_semantics;
 	opts.vertex.fixup_clipspace = args.fixup;
-	opts.cfg_analysis = args.cfg_analysis;
+	opts.vertex.flip_vert_y = args.yflip;
 	compiler->set_options(opts);
+
+	// Set HLSL specific options.
+	if (args.hlsl)
+	{
+		auto *hlsl = static_cast<CompilerHLSL *>(compiler.get());
+		auto hlsl_opts = hlsl->get_options();
+		if (args.set_shader_model)
+		{
+			if (args.shader_model < 30)
+			{
+				fprintf(stderr, "Shader model earlier than 30 (3.0) not supported.\n");
+				return EXIT_FAILURE;
+			}
+
+			hlsl_opts.shader_model = args.shader_model;
+		}
+
+		if (args.hlsl_compat)
+		{
+			// Enable all compat options.
+			hlsl_opts.point_size_compat = true;
+		}
+		hlsl->set_options(hlsl_opts);
+	}
 
 	ShaderResources res;
 	if (args.remove_unused)
@@ -663,8 +831,12 @@ int main(int argc, char *argv[])
 		res = compiler->get_shader_resources();
 
 	if (args.flatten_ubo)
+	{
 		for (auto &ubo : res.uniform_buffers)
-			compiler->flatten_interface_block(ubo.id);
+			compiler->flatten_buffer_block(ubo.id);
+		for (auto &ubo : res.push_constant_buffers)
+			compiler->flatten_buffer_block(ubo.id);
+	}
 
 	auto pls_inputs = remap_pls(args.pls_in, res.stage_inputs, &res.subpass_inputs);
 	auto pls_outputs = remap_pls(args.pls_out, res.stage_outputs, nullptr);
@@ -683,11 +855,25 @@ int main(int argc, char *argv[])
 			continue;
 	}
 
+	for (auto &rename : args.interface_variable_renames)
+	{
+		if (rename.storageClass == StorageClassInput)
+			rename_interface_variable(*compiler, res.stage_inputs, rename);
+		else if (rename.storageClass == StorageClassOutput)
+			rename_interface_variable(*compiler, res.stage_outputs, rename);
+		else
+		{
+			fprintf(stderr, "error at --rename-interface-variable <in|out> ...\n");
+			return EXIT_FAILURE;
+		}
+	}
+
 	if (args.dump_resources)
 	{
 		print_resources(*compiler, res);
 		print_push_constant_resources(*compiler, res.push_constant_buffers);
 		print_spec_constants(*compiler);
+		print_capabilities_and_extensions(*compiler);
 	}
 
 	if (combined_image_samplers)
@@ -703,10 +889,35 @@ int main(int argc, char *argv[])
 
 	string glsl;
 	for (uint32_t i = 0; i < args.iterations; i++)
-		glsl = compiler->compile();
+	{
+		if (args.hlsl)
+			glsl = static_cast<CompilerHLSL *>(compiler.get())->compile(move(args.hlsl_attr_remap));
+		else
+			glsl = compiler->compile();
+	}
 
 	if (args.output)
 		write_string_to_file(args.output, glsl.c_str());
 	else
 		printf("%s", glsl.c_str());
+
+	return EXIT_SUCCESS;
+}
+
+int main(int argc, char *argv[])
+{
+#ifdef SPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS
+	return main_inner(argc, argv);
+#else
+	// Make sure we catch the exception or it just disappears into the aether on Windows.
+	try
+	{
+		return main_inner(argc, argv);
+	}
+	catch (const std::exception &e)
+	{
+		fprintf(stderr, "SPIRV-Cross threw an exception: %s\n", e.what());
+		return EXIT_FAILURE;
+	}
+#endif
 }

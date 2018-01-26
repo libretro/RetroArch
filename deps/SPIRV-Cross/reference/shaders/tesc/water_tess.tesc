@@ -12,9 +12,9 @@ layout(std140) uniform UBO
     vec4 uFrustum[6];
 } _41;
 
-out patch vec2 vOutPatchPosBase;
-out patch vec4 vPatchLods;
-in vec2 vPatchPosBase[32];
+layout(location = 1) patch out vec2 vOutPatchPosBase;
+layout(location = 2) patch out vec4 vPatchLods;
+layout(location = 0) in vec2 vPatchPosBase[];
 
 bool frustum_cull(vec2 p0)
 {

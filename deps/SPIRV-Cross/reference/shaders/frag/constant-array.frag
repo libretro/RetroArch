@@ -9,7 +9,7 @@ struct Foobar
 };
 
 layout(location = 0) out vec4 FragColor;
-layout(location = 0) in mediump flat int index;
+layout(location = 0) flat in mediump int index;
 
 vec4 resolve(Foobar f)
 {

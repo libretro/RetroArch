@@ -14,10 +14,10 @@ layout(binding = 1, std140) uniform UBO
 
 layout(binding = 0) uniform mediump sampler2D uHeightmapDisplacement;
 
-in patch vec2 vOutPatchPosBase;
-in patch vec4 vPatchLods;
-out vec4 vGradNormalTex;
-out vec3 vWorld;
+layout(location = 0) patch in vec2 vOutPatchPosBase;
+layout(location = 1) patch in vec4 vPatchLods;
+layout(location = 1) out vec4 vGradNormalTex;
+layout(location = 0) out vec3 vWorld;
 
 vec2 lerp_vertex(vec2 tess_coord)
 {

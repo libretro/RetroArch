@@ -9,8 +9,8 @@ layout(binding = 4, std140) uniform UBO
 
 layout(binding = 0) uniform mediump sampler2D uHeight;
 layout(binding = 1) uniform mediump sampler2D uDisplacement;
-layout(binding = 2, rgba16f) uniform mediump writeonly image2D iHeightDisplacement;
-layout(binding = 3, rgba16f) uniform mediump writeonly image2D iGradJacobian;
+layout(binding = 2, rgba16f) uniform writeonly mediump image2D iHeightDisplacement;
+layout(binding = 3, rgba16f) uniform writeonly mediump image2D iGradJacobian;
 
 mediump float jacobian(mediump vec2 dDdx, mediump vec2 dDdy)
 {

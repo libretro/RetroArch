@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 ARM Limited
+ * Copyright 2015-2017 ARM Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -171,8 +171,9 @@ void CompilerCPP::emit_resources()
 			auto &type = get<SPIRType>(var.basetype);
 
 			if (var.storage != StorageClassFunction && type.pointer && type.storage == StorageClassUniform &&
-			    !is_hidden_variable(var) && (meta[type.self].decoration.decoration_flags &
-			                                 ((1ull << DecorationBlock) | (1ull << DecorationBufferBlock))))
+			    !is_hidden_variable(var) &&
+			    (meta[type.self].decoration.decoration_flags &
+			     ((1ull << DecorationBlock) | (1ull << DecorationBufferBlock))))
 			{
 				emit_buffer_block(var);
 			}
@@ -242,6 +243,8 @@ void CompilerCPP::emit_resources()
 	if (emitted)
 		statement("");
 
+	declare_undefined_values();
+
 	statement("inline void init(spirv_cross_shader& s)");
 	begin_scope();
 	statement(resource_type, "::init(s);");
@@ -279,6 +282,9 @@ void CompilerCPP::emit_resources()
 
 string CompilerCPP::compile()
 {
+	// Force a classic "C" locale, reverts when function returns
+	ClassicLocale classic_locale;
+
 	// Do not deal with ES-isms like precision, older extensions and such.
 	options.es = false;
 	options.version = 450;
@@ -293,6 +299,8 @@ string CompilerCPP::compile()
 	backend.flexible_member_array_supported = false;
 	backend.explicit_struct_type = true;
 	backend.use_initializer_list = true;
+
+	update_active_builtins();
 
 	uint32_t pass_count = 0;
 	do
@@ -321,6 +329,9 @@ string CompilerCPP::compile()
 
 	// Emit C entry points
 	emit_c_linkage();
+
+	// Entry point in CPP is always main() for the time being.
+	get_entry_point().name = "main";
 
 	return buffer->str();
 }
@@ -416,7 +427,7 @@ string CompilerCPP::argument_decl(const SPIRFunction::Parameter &arg)
 	return join(constref ? "const " : "", base, " &", variable_name);
 }
 
-string CompilerCPP::variable_decl(const SPIRType &type, const string &name)
+string CompilerCPP::variable_decl(const SPIRType &type, const string &name, uint32_t /* id */)
 {
 	string base = type_to_glsl(type);
 	remap_variable_type_name(type, name, base);
