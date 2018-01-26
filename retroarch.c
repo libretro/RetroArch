@@ -130,6 +130,8 @@
 #define DEFAULT_EXT ""
 #endif
 
+#define SHADER_FILE_WATCH_DELAY_FRAMES 5
+
 /* Descriptive names for options without short variant.
  *
  * Please keep the name in sync with the option name.
@@ -2996,8 +2998,31 @@ static enum runloop_state runloop_check_state(
 
    if (settings->bools.video_shader_watch_files)
    {
+      static bool need_to_apply = false;
+      static int elapsed_frames = 0;
+
       if (video_shader_check_for_changes())
-         command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
+      {
+         need_to_apply = true;
+         elapsed_frames = 0;
+      }
+
+      /* If a file is modified atomically (moved/renamed from a different file), we have no idea how long that might take.
+       * If we're trying to re-apply shaders immediately after changes are made to the original file(s), the filesystem might be in an in-between
+       * state where the new file hasn't been moved over yet and the original file was already deleted. This leaves us no choice
+       * but to wait an arbitrary amount of time and hope for the best.
+       */
+      if (need_to_apply)
+      {
+         if (elapsed_frames > SHADER_FILE_WATCH_DELAY_FRAMES)
+         {
+            need_to_apply = false;
+            elapsed_frames = 0;
+            command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
+         }
+         else
+            elapsed_frames++;
+      }
    }
 
    return RUNLOOP_STATE_ITERATE;

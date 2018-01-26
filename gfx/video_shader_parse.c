@@ -809,7 +809,12 @@ bool video_shader_read_conf_cgp(config_file_t *conf,
 
    if (settings->bools.video_shader_watch_files)
    {
-      frontend_driver_watch_path_for_changes(file_list, PATH_CHANGE_TYPE_WRITE_FILE_CLOSED, &file_change_data);
+      int flags = PATH_CHANGE_TYPE_MODIFIED |
+                  PATH_CHANGE_TYPE_WRITE_FILE_CLOSED |
+                  PATH_CHANGE_TYPE_FILE_MOVED |
+                  PATH_CHANGE_TYPE_FILE_DELETED;
+
+      frontend_driver_watch_path_for_changes(file_list, flags, &file_change_data);
       string_list_free(file_list);
    }
 

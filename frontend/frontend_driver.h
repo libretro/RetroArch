@@ -56,10 +56,13 @@ enum frontend_architecture
    FRONTEND_ARCH_TILE
 };
 
+/* different platforms may only support some of these types */
 enum path_change_type
 {
    PATH_CHANGE_TYPE_MODIFIED = (1 << 0),
-   PATH_CHANGE_TYPE_WRITE_FILE_CLOSED = (1 << 1)
+   PATH_CHANGE_TYPE_WRITE_FILE_CLOSED = (1 << 1),
+   PATH_CHANGE_TYPE_FILE_MOVED = (1 << 2),
+   PATH_CHANGE_TYPE_FILE_DELETED = (1 << 3)
 };
 
 typedef struct path_change_data

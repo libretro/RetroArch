@@ -2357,6 +2357,10 @@ static void frontend_unix_watch_path_for_changes(struct string_list *list, int f
       inotify_mask |= IN_MODIFY;
    if (flags & PATH_CHANGE_TYPE_WRITE_FILE_CLOSED)
       inotify_mask |= IN_CLOSE_WRITE;
+   if (flags & PATH_CHANGE_TYPE_FILE_MOVED)
+      inotify_mask |= IN_MOVE_SELF;
+   if (flags & PATH_CHANGE_TYPE_FILE_DELETED)
+      inotify_mask |= IN_DELETE_SELF;
 
    inotify_data->flags = inotify_mask;
 
