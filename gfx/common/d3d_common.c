@@ -255,26 +255,6 @@ bool d3d_initialize_symbols(enum gfx_ctx_api api)
    
    d3d_common_api           = api;
 
-#ifdef HAVE_DYNAMIC_D3D
-#ifdef HAVE_D3DX
-#ifdef UNICODE
-   D3DCreateFontIndirect    = (D3DXCreateFontIndirect_t)dylib_proc(g_d3dx_dll, "D3DXCreateFontIndirectW");
-#else
-   D3DCreateFontIndirect    = (D3DXCreateFontIndirect_t)dylib_proc(g_d3dx_dll, "D3DXCreateFontIndirectA");
-#endif
-   D3DCreateTextureFromFile = (D3DCreateTextureFromFile_t)dylib_proc(g_d3dx_dll, "D3DXCreateTextureFromFileExA");
-   D3DCompileShaderFromFile = (D3DCompileShaderFromFile_t)dylib_proc(g_d3dx_dll, "D3DXCompileShaderFromFile");
-   D3DCompileShader         = (D3DCompileShader_t)dylib_proc(g_d3dx_dll, "D3DXCompileShader");
-#endif
-#else
-#ifdef HAVE_D3DX
-   D3DCreateFontIndirect    = D3DXCreateFontIndirect;
-   D3DCreateTextureFromFile = D3DXCreateTextureFromFileExA;
-   D3DCompileShaderFromFile = D3DXCompileShaderFromFile;
-   D3DCompileShader         = D3DXCompileShader;
-#endif
-#endif
-
    switch (api)
    {
       case GFX_CTX_DIRECT3D9_API:
@@ -282,8 +262,24 @@ bool d3d_initialize_symbols(enum gfx_ctx_api api)
 #ifdef HAVE_D3D9 
 #ifdef HAVE_DYNAMIC_D3D
          D3DCreate                = (D3DCreate_t)dylib_proc(g_d3d_dll, "Direct3DCreate9");
+#ifdef HAVE_D3DX
+         D3DCompileShaderFromFile = (D3DCompileShaderFromFile_t)dylib_proc(g_d3dx_dll, "D3DXCompileShaderFromFile");
+         D3DCompileShader         = (D3DCompileShader_t)dylib_proc(g_d3dx_dll, "D3DXCompileShader");
+#ifdef UNICODE
+         D3DCreateFontIndirect    = (D3DXCreateFontIndirect_t)dylib_proc(g_d3dx_dll, "D3DXCreateFontIndirectW");
+#else
+         D3DCreateFontIndirect    = (D3DXCreateFontIndirect_t)dylib_proc(g_d3dx_dll, "D3DXCreateFontIndirectA");
+#endif
+         D3DCreateTextureFromFile = (D3DCreateTextureFromFile_t)dylib_proc(g_d3dx_dll, "D3DXCreateTextureFromFileExA");
+#endif
 #else
          D3DCreate                = Direct3DCreate9;
+#ifdef HAVE_D3DX
+         D3DCompileShaderFromFile = D3DXCompileShaderFromFile;
+         D3DCompileShader         = D3DXCompileShader;
+         D3DCreateFontIndirect    = D3DXCreateFontIndirect;
+         D3DCreateTextureFromFile = D3DXCreateTextureFromFileExA;
+#endif
 #endif
 #endif
          break;
@@ -293,11 +289,19 @@ bool d3d_initialize_symbols(enum gfx_ctx_api api)
 #ifdef HAVE_DYNAMIC_D3D
          D3DCreate                = (D3DCreate_t)dylib_proc(g_d3d_dll, "Direct3DCreate8");
 #ifdef HAVE_D3DX
-         D3DCreateFontIndirect    = D3DXCreateFontIndirect;
-         D3DCreateTextureFromFile = D3DXCreateTextureFromFileExA;
+#ifdef UNICODE
+         D3DCreateFontIndirect    = (D3DXCreateFontIndirect_t)dylib_proc(g_d3dx_dll, "D3DXCreateFontIndirectW");
+#else
+         D3DCreateFontIndirect    = (D3DXCreateFontIndirect_t)dylib_proc(g_d3dx_dll, "D3DXCreateFontIndirectA");
+#endif
+         D3DCreateTextureFromFile = (D3DCreateTextureFromFile_t)dylib_proc(g_d3dx_dll, "D3DXCreateTextureFromFileExA");
 #endif
 #else
          D3DCreate                = Direct3DCreate8;
+#ifdef HAVE_D3DX
+         D3DCreateFontIndirect    = D3DXCreateFontIndirect;
+         D3DCreateTextureFromFile = D3DXCreateTextureFromFileExA;
+#endif
 #endif
 #endif
          break;
