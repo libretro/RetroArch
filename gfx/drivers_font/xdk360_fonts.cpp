@@ -82,26 +82,28 @@ class PackedResource
 
    public:
       /* Loads the resources out of the specified bundle */
-#if defined(_XBOX1)
-      HRESULT Create( const char *strFilename, DWORD dwNumResourceTags = 0L, 
-            XBRESOURCE* pResourceTags = NULL );
-#elif defined(_XBOX360)
-      HRESULT Create( const char * strFilename );
-#endif
+      HRESULT Create(const char *strFilename, DWORD dwNumResourceTags, 
+            void *pResourceTags);
 
       void Destroy();
 
       BOOL m_bInitialized;             /* Resource is fully initialized */
 
-#ifdef _XBOX360
       /* Retrieves the resource tags */
       void GetResourceTags( DWORD* pdwNumResourceTags, XBRESOURCE** ppResourceTags );
-#endif
+      /* Functions to retrieve resources by their name */
+      void *GetData( const char* strName );
+      void *GetTexture(const char* strName);
 
-      /* Helper function to make sure a resource is registered */
-      LPDIRECT3DRESOURCE RegisterResource( LPDIRECT3DRESOURCE pResource ) const
-      {
+      /* Constructor/destructor */
+      PackedResource();
+      ~PackedResource();
+};
+
+void *PackedResource::GetTexture(const char* strName)
+{ 
 #ifdef _XBOX1
+		  LPDIRECT3DRESOURCE8 pResource = (LPDIRECT3DRESOURCE8)GetData(strName);
          /* Register the resource, if it has not yet been registered. We mark
           * a resource as registered by upping it's reference count. */
          if( pResource && ( pResource->Common & D3DCOMMON_REFCOUNT_MASK ) == 1 )
@@ -115,20 +117,12 @@ class PackedResource
 
             pResource->AddRef();
          }
+		 return (LPDIRECT3DTEXTURE8)pResource;
+#elif defined(_XBOX360)
+		 LPDIRECT3DRESOURCE9 pResource = (LPDIRECT3DRESOURCE9)GetData(strName);
+         return (LPDIRECT3DTEXTURE9)pResource;
 #endif
-         return pResource;
-      }
-
-      /* Functions to retrieve resources by their name */
-      void *GetData( const char* strName ) const;
-
-      LPDIRECT3DTEXTURE GetTexture( const char* strName ) const
-      { return (LPDIRECT3DTEXTURE)RegisterResource((LPDIRECT3DRESOURCE)GetData(strName)); }
-
-      /* Constructor/destructor */
-      PackedResource();
-      ~PackedResource();
-};
+}
 
 PackedResource::PackedResource()
 {
@@ -141,13 +135,12 @@ PackedResource::PackedResource()
    m_bInitialized      = false;
 }
 
-
 PackedResource::~PackedResource()
 {
    Destroy();
 }
 
-void *PackedResource::GetData(const char *strName) const
+void *PackedResource::GetData(const char *strName)
 {
    if (!m_pResourceTags || !strName)
       return NULL;
@@ -211,18 +204,18 @@ static HRESULT FindMediaFile(char *strPath, const char *strFilename, size_t strP
 
 #endif
 
-#if defined(_XBOX1)
 HRESULT PackedResource::Create(const char *strFilename,
-      DWORD dwNumResourceTags, XBRESOURCE* pResourceTags)
-#elif defined(_XBOX360)
-HRESULT PackedResource::Create(const char *strFilename)
-#endif
+      DWORD dwNumResourceTags, void* pResourceTags)
 {
    unsigned i;
    HANDLE hFile;
    DWORD dwNumBytesRead;
    XPR_HEADER xprh;
    bool retval                   = false;
+#ifdef _XBOX360
+   (void)dwNumResourceTags;
+   (void)pResourceTags;
+#endif
 #ifdef _XBOX1
    char strResourcePath[512];
    bool bHasResourceOffsetsTable = false;
@@ -336,7 +329,7 @@ HRESULT PackedResource::Create(const char *strFilename)
    /* Use user-supplied number of resources and the resource tags */
    if(dwNumResourceTags != 0 || pResourceTags != NULL)
    {
-      m_pResourceTags     = pResourceTags;
+      m_pResourceTags     = (XBRESOURCE*)pResourceTags;
       m_dwNumResourceTags = dwNumResourceTags;
    }
 #endif
@@ -346,17 +339,17 @@ HRESULT PackedResource::Create(const char *strFilename)
    return S_OK;
 }
 
-#ifdef _XBOX360
 void PackedResource::GetResourceTags(DWORD* pdwNumResourceTags,
       XBRESOURCE** ppResourceTags)
 {
+#ifdef _XBOX360
    if (pdwNumResourceTags)
       (*pdwNumResourceTags) = m_dwNumResourceTags;
 
    if (ppResourceTags)
       (*ppResourceTags) = m_pResourceTags;
-}
 #endif
+}
 
 void PackedResource::Destroy()
 {
@@ -403,7 +396,7 @@ typedef struct
    float m_fFontBottomPadding;          /* Padding below the strike zone. */
    float m_fFontYAdvance;               /* Number of pixels to move the cursor for a line feed. */
    wchar_t * m_TranslatorTable;         /* ASCII to glyph lookup table. */
-   D3DTexture* m_pFontTexture;
+   void *m_pFontTexture;
    const GLYPH_ATTR* m_Glyphs;          /* Array of glyphs. */
 } xdk360_video_font_t;
 
@@ -490,7 +483,7 @@ static void *xdk360_init_font(void *video_data,
 {
    uint32_t dwFileVersion;
    const void *pFontData      = NULL;
-   D3DTexture *pFontTexture   = NULL;
+   void *pFontTexture         = NULL;
    const uint8_t * pData      = NULL;
    xdk360_video_font_t *font  = (xdk360_video_font_t*)calloc(1, sizeof(*font));
 
@@ -508,7 +501,7 @@ static void *xdk360_init_font(void *video_data,
    font->m_TranslatorTable    = NULL;
 
    /* Create the font. */
-   if (FAILED( m_xprResource.Create(font_path)))
+   if (FAILED( m_xprResource.Create(font_path, 0, NULL)))
       goto error;
 
    pFontTexture               = m_xprResource.GetTexture( "FontTexture" );
