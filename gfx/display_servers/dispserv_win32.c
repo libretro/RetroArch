@@ -93,8 +93,10 @@ static void* win32_display_server_init(void)
    return dispserv;
 }
 
-static void win32_display_server_destroy(void)
+static void win32_display_server_destroy(void *data)
 {
+   dispserv_win32_t *dispserv = (dispserv_win32_t*)data;
+
 #ifdef HAS_TASKBAR_EXT
    if (g_taskbarList && win32_taskbar_is_created())
    {
@@ -102,6 +104,9 @@ static void win32_display_server_destroy(void)
       g_taskbarList = NULL;
    }
 #endif
+
+   if (dispserv)
+      free(dispserv);
 }
 
 static bool win32_set_window_opacity(void *data, unsigned opacity)
