@@ -39,7 +39,6 @@ typedef struct hlsl_d3d9_renderchain
    LPDIRECT3DTEXTURE9 tex;
    LPDIRECT3DVERTEXBUFFER9 vertex_buf;
    LPDIRECT3DVERTEXDECLARATION9 vertex_decl;
-   const video_info_t *video_info;
 } hlsl_d3d9_renderchain_t;
 
 /* TODO/FIXME - this forward declaration should not be necesary */
