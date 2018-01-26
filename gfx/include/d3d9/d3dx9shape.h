@@ -97,7 +97,6 @@ HRESULT WINAPI
 #define D3DXCreateText D3DXCreateTextA
 #endif
 
-
 #ifdef __cplusplus
 }
 #endif

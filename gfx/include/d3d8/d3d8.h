@@ -12,11 +12,10 @@
 
 #ifndef DIRECT3D_VERSION
 #define DIRECT3D_VERSION         0x0800
-#endif  //DIRECT3D_VERSION
+#endif
 
-// include this file content only if compiling for DX8 interfaces
+/* include this file content only if compiling for DX8 interfaces */
 #if(DIRECT3D_VERSION >= 0x0800)
-
 
 /* This identifier is passed to Direct3DCreate8 in order to ensure that an
  * application was built against the correct header files. This number is
@@ -149,15 +148,9 @@ extern "C" {
 
 IDirect3D8 * WINAPI Direct3DCreate8(UINT SDKVersion);
 
-
 /*
  * Direct3D interfaces
  */
-
-
-
-
-
 
 #undef INTERFACE
 #define INTERFACE IDirect3D8
@@ -222,24 +215,6 @@ typedef struct IDirect3D8 *LPDIRECT3D8, *PDIRECT3D8;
 #define IDirect3D8_GetAdapterMonitor(p,a) (p)->GetAdapterMonitor(a)
 #define IDirect3D8_CreateDevice(p,a,b,c,d,e,f) (p)->CreateDevice(a,b,c,d,e,f)
 #endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #undef INTERFACE
 #define INTERFACE IDirect3DDevice8
@@ -548,8 +523,6 @@ typedef struct IDirect3DDevice8 *LPDIRECT3DDEVICE8, *PDIRECT3DDEVICE8;
 #define IDirect3DDevice8_DeletePatch(p,a) (p)->DeletePatch(a)
 #endif
 
-
-
 #undef INTERFACE
 #define INTERFACE IDirect3DSwapChain8
 
@@ -580,8 +553,6 @@ typedef struct IDirect3DSwapChain8 *LPDIRECT3DSWAPCHAIN8, *PDIRECT3DSWAPCHAIN8;
 #define IDirect3DSwapChain8_Present(p,a,b,c,d) (p)->Present(a,b,c,d)
 #define IDirect3DSwapChain8_GetBackBuffer(p,a,b,c) (p)->GetBackBuffer(a,b,c)
 #endif
-
-
 
 #undef INTERFACE
 #define INTERFACE IDirect3DResource8
@@ -631,9 +602,6 @@ typedef struct IDirect3DResource8 *LPDIRECT3DRESOURCE8, *PDIRECT3DRESOURCE8;
 #define IDirect3DResource8_PreLoad(p) (p)->PreLoad()
 #define IDirect3DResource8_GetType(p) (p)->GetType()
 #endif
-
-
-
 
 #undef INTERFACE
 #define INTERFACE IDirect3DBaseTexture8
@@ -692,10 +660,6 @@ typedef struct IDirect3DBaseTexture8 *LPDIRECT3DBASETEXTURE8, *PDIRECT3DBASETEXT
 #define IDirect3DBaseTexture8_GetLOD(p) (p)->GetLOD()
 #define IDirect3DBaseTexture8_GetLevelCount(p) (p)->GetLevelCount()
 #endif
-
-
-
-
 
 #undef INTERFACE
 #define INTERFACE IDirect3DTexture8
@@ -770,10 +734,6 @@ typedef struct IDirect3DTexture8 *LPDIRECT3DTEXTURE8, *PDIRECT3DTEXTURE8;
 #define IDirect3DTexture8_AddDirtyRect(p,a) (p)->AddDirtyRect(a)
 #endif
 
-
-
-
-
 #undef INTERFACE
 #define INTERFACE IDirect3DVolumeTexture8
 
@@ -846,10 +806,6 @@ typedef struct IDirect3DVolumeTexture8 *LPDIRECT3DVOLUMETEXTURE8, *PDIRECT3DVOLU
 #define IDirect3DVolumeTexture8_UnlockBox(p,a) (p)->UnlockBox(a)
 #define IDirect3DVolumeTexture8_AddDirtyBox(p,a) (p)->AddDirtyBox(a)
 #endif
-
-
-
-
 
 #undef INTERFACE
 #define INTERFACE IDirect3DCubeTexture8
@@ -924,9 +880,6 @@ typedef struct IDirect3DCubeTexture8 *LPDIRECT3DCUBETEXTURE8, *PDIRECT3DCUBETEXT
 #define IDirect3DCubeTexture8_AddDirtyRect(p,a,b) (p)->AddDirtyRect(a,b)
 #endif
 
-
-
-
 #undef INTERFACE
 #define INTERFACE IDirect3DVertexBuffer8
 
@@ -984,9 +937,6 @@ typedef struct IDirect3DVertexBuffer8 *LPDIRECT3DVERTEXBUFFER8, *PDIRECT3DVERTEX
 #define IDirect3DVertexBuffer8_Unlock(p) (p)->Unlock()
 #define IDirect3DVertexBuffer8_GetDesc(p,a) (p)->GetDesc(a)
 #endif
-
-
-
 
 #undef INTERFACE
 #define INTERFACE IDirect3DIndexBuffer8
@@ -1046,9 +996,6 @@ typedef struct IDirect3DIndexBuffer8 *LPDIRECT3DINDEXBUFFER8, *PDIRECT3DINDEXBUF
 #define IDirect3DIndexBuffer8_GetDesc(p,a) (p)->GetDesc(a)
 #endif
 
-
-
-
 #undef INTERFACE
 #define INTERFACE IDirect3DSurface8
 
@@ -1097,9 +1044,6 @@ typedef struct IDirect3DSurface8 *LPDIRECT3DSURFACE8, *PDIRECT3DSURFACE8;
 #define IDirect3DSurface8_LockRect(p,a,b,c) (p)->LockRect(a,b,c)
 #define IDirect3DSurface8_UnlockRect(p) (p)->UnlockRect()
 #endif
-
-
-
 
 #undef INTERFACE
 #define INTERFACE IDirect3DVolume8
@@ -1235,7 +1179,6 @@ typedef struct IDirect3DVolume8 *LPDIRECT3DVOLUME8, *PDIRECT3DVOLUME8;
  *   Also valid for VertexBuffer::CreateVertexBuffer
  ****************************************************************************/
 
-
 /*
  *  DirectDraw error codes
  */
@@ -1275,5 +1218,5 @@ typedef struct IDirect3DVolume8 *LPDIRECT3DVOLUME8, *PDIRECT3DVOLUME8;
 #endif
 
 #endif /* (DIRECT3D_VERSION >= 0x0800) */
-#endif /* _D3D_H_ */
 
+#endif /* _D3D_H_ */
