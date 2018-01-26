@@ -193,6 +193,14 @@ static bool d3d9_cg_load_program(void *data,
    const char **vertex_opts   = cgD3D9GetOptimalOptions(vertex_profile);
    cg_renderchain_t *cg_data  = (cg_renderchain_t*)data;
 
+   if (
+         fragment_profile == CG_PROFILE_UNKNOWN ||
+         vertex_profile   == CG_PROFILE_UNKNOWN)
+   {
+      RARCH_ERR("Invalid profile type\n");
+      goto error;
+   }
+
    RARCH_LOG("[D3D Cg]: Vertex profile: %s\n", cgGetProfileString(vertex_profile));
    RARCH_LOG("[D3D Cg]: Fragment profile: %s\n", cgGetProfileString(fragment_profile));
 
