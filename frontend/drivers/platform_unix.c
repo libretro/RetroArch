@@ -2285,6 +2285,8 @@ static void frontend_unix_watch_path_for_changes(struct string_list *list, int f
          free(*change_data);
          return;
       }
+      else
+         return;
    }
    else if (list->size == 0)
       return;
@@ -2344,7 +2346,11 @@ static void frontend_unix_watch_path_for_changes(struct string_list *list, int f
       return;
    }
 
-   socket_nonblock(fd);
+   if (!socket_nonblock(fd))
+   {
+      RARCH_WARN("watch_path_for_changes: Could not set socket to non-blocking.\n");
+      return;
+   }
 
    inotify_data = (inotify_data_t*)calloc(1, sizeof(*inotify_data));
    inotify_data->fd = fd;
@@ -2391,7 +2397,7 @@ static bool frontend_unix_check_for_path_changes(path_change_data_t *change_data
    {
       i = 0;
 
-      while (i < length)
+      while (i < length && i < sizeof(buffer))
       {
          struct inotify_event *event = (struct inotify_event *)&buffer[i];
 

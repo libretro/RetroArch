@@ -799,7 +799,11 @@ bool video_shader_read_conf_cgp(config_file_t *conf,
    for (i = 0; i < shader->passes; i++)
    {
       if (!video_shader_parse_pass(conf, &shader->pass[i], i))
+      {
+         if (file_list)
+            string_list_free(file_list);
          return false;
+      }
 
       if (settings->bools.video_shader_watch_files)
       {
