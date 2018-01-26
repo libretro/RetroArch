@@ -3377,6 +3377,9 @@ static bool video_shader_driver_get_feedback_pass_null(void *data, unsigned *idx
 
 static void video_shader_driver_reset_to_defaults(void)
 {
+   if (!current_shader)
+      return;
+
    if (!current_shader->wrap_type)
       current_shader->wrap_type         = video_shader_driver_wrap_type_null;
    if (current_shader->set_mvp)
