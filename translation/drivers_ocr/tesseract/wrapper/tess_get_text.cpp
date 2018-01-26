@@ -17,7 +17,8 @@ bool tess_init(const char* lang_data_dir, const char* language)
 
    if (api->Init(lang_data_dir, language))
    {
-      snprintf(tess_last_error, ERROR_BUFFER_LENGTH, "Could not initialize tesseract.\n");
+      snprintf(tess_last_error, ERROR_BUFFER_LENGTH,
+            "Could not initialize tesseract.\n");
       return false;
    }
 
@@ -39,7 +40,7 @@ char* tess_get_text(tess_image image)
       delete [] one_time_return_pointer;
 
    api->SetImage(image.data, image.width, image.height,
-         image.bytes_per_pixel, image.width * image.bytes_per_pixel/*bytes per line*/);
+         image.bytes_per_pixel, image.width * image.bytes_per_pixel);
    one_time_return_pointer = api->GetUTF8Text();
    return one_time_return_pointer;
 }
