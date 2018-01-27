@@ -109,6 +109,7 @@
 #include "managers/cheat_manager.h"
 #include "managers/state_manager.h"
 #include "tasks/tasks_internal.h"
+#include "performance_counters.h"
 
 #include "version.h"
 #include "version_git.h"
@@ -130,7 +131,7 @@
 #define DEFAULT_EXT ""
 #endif
 
-#define SHADER_FILE_WATCH_DELAY_FRAMES 10
+#define SHADER_FILE_WATCH_DELAY_MSEC 500
 
 /* Descriptive names for options without short variant.
  *
@@ -2998,13 +2999,22 @@ static enum runloop_state runloop_check_state(
 
    if (settings->bools.video_shader_watch_files)
    {
+      static rarch_timer_t timer = {0};
       static bool need_to_apply = false;
-      static int elapsed_frames = 0;
 
       if (video_shader_check_for_changes())
       {
          need_to_apply = true;
-         elapsed_frames = 0;
+
+         if (!rarch_timer_is_running(&timer))
+         {
+            /* rarch_timer_t convenience functions only support whole seconds. */
+
+            /* rarch_timer_begin */
+            timer.timeout_end = cpu_features_get_time_usec() + SHADER_FILE_WATCH_DELAY_MSEC * 1000;
+            timer.timer_begin = true;
+            timer.timer_end = false;
+         }
       }
 
       /* If a file is modified atomically (moved/renamed from a different file), we have no idea how long that might take.
@@ -3014,14 +3024,16 @@ static enum runloop_state runloop_check_state(
        */
       if (need_to_apply)
       {
-         if (elapsed_frames > SHADER_FILE_WATCH_DELAY_FRAMES)
+         /* rarch_timer_tick */
+         timer.current = cpu_features_get_time_usec();
+         timer.timeout = (timer.timeout_end - timer.current) / 1000;
+
+         if (!timer.timer_end && rarch_timer_has_expired(&timer))
          {
+            rarch_timer_end(&timer);
             need_to_apply = false;
-            elapsed_frames = 0;
             command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
          }
-         else
-            elapsed_frames++;
       }
    }
 
