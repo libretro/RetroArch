@@ -66,8 +66,8 @@ static void build_pad_map(void)
 
 static bool wiiu_joypad_init(void* data)
 {
-  // the sub-drivers have to init first, otherwise
-  // build_pad_map will fail (because all lookups will return false).
+  /* the sub-drivers have to init first, otherwise
+   * build_pad_map will fail (because all lookups will return false). */
   wpad_driver.init(data);
   kpad_driver.init(data);
 #ifdef WIIU_HID

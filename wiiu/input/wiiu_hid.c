@@ -214,8 +214,6 @@ static void start_polling_thread(wiiu_hid_t *hid)
       goto error;
    }
 
-   RARCH_LOG("[hid]: thread: 0x%x; stack: 0x%x\n", thread, stack);
-
    if (!OSCreateThread(thread,
             wiiu_hid_polling_thread,
             1, (char *)hid,
@@ -641,6 +639,11 @@ static void delete_adapter(wiiu_adapter_t *adapter)
       free(adapter->rx_buffer);
       adapter->rx_buffer = NULL;
    }
+   if(adapter->tx_buffer)
+   {
+      free(adapter->tx_buffer);
+      adapter->tx_buffer = NULL;
+   }
    free(adapter);
 }
 
@@ -654,9 +657,9 @@ static wiiu_attach_event *new_attach_event(HIDDevice *device)
    event->vendor_id          = device->vid;
    event->product_id         = device->pid;
    event->interface_index    = device->interface_index;
-   event->is_keyboard        = (device->sub_class == 1 
+   event->is_keyboard        = (device->sub_class == 1
          && device->protocol == 1);
-   event->is_mouse           = (device->sub_class == 1 
+   event->is_mouse           = (device->sub_class == 1
          && device->protocol == 2);
    event->max_packet_size_rx = device->max_packet_size_rx;
    event->max_packet_size_tx = device->max_packet_size_tx;
