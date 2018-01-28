@@ -614,6 +614,8 @@ void fill_pathname_parent_dir_name(char *out_dir,
    in_dir = find_last_slash(temp) + 1;
 
    strlcpy(out_dir, in_dir, size);
+
+   free(temp);
 }
 
 /**
