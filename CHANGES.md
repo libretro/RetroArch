@@ -36,6 +36,8 @@
 - LOCALIZATION: Update Spanish translation.
 - NETPLAY: Add menu option to select different MITM (relay) server locations.
 - OSX: Modify HID buttons detection algorithm.
+- SHADERS: Allow saving of shader presets based on the parent directory (Saving one for */foo/bar/mario.sfc* would result in *shaders/presets/corename/bar.ext*). We decided it's safer to still isolate the presets to a single core because different cores may treat video output differently.
+- SHADERS: Don't save the path to the current preset to the main config. This was causing weird behavior, instead it will try to load *currentconfig.ext* and it will save a preset with that name when select *apply shader preset*. The resulting shader will restore properly after restarting and even after core/parent/game specific presets are loaded
 - SOLARIS: Initial port.
 - SWITCH: Initial Nintendo Switch port, based on libtransistor SDK.
 - PS3: Enable Cheevos.
