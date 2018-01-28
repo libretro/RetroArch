@@ -358,6 +358,7 @@ default_sublabel_macro(action_bind_sublabel_shader_num_passes,                  
 default_sublabel_macro(action_bind_sublabel_shader_preset,                         MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET)
 default_sublabel_macro(action_bind_sublabel_shader_preset_save_as,                 MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS)
 default_sublabel_macro(action_bind_sublabel_shader_preset_save_core,               MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CORE)
+default_sublabel_macro(action_bind_sublabel_shader_preset_save_parent,             MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT)
 default_sublabel_macro(action_bind_sublabel_shader_preset_save_game,               MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME)
 default_sublabel_macro(action_bind_sublabel_shader_parameters,                     MENU_ENUM_SUBLABEL_VIDEO_SHADER_PARAMETERS)
 default_sublabel_macro(action_bind_sublabel_shader_preset_parameters,              MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PARAMETERS)
@@ -504,6 +505,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_preset_save_core);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_PARENT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_preset_save_parent);
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_preset_save_game);
