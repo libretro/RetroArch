@@ -1915,12 +1915,7 @@ static int generic_action_ok_shader_preset_save(const char *path,
          break;
       case ACTION_OK_SHADER_PRESET_SAVE_PARENT:
          {
-            strlcpy(tmp, path_get(RARCH_PATH_BASENAME), sizeof(tmp));
-            path_basedir(tmp);
-            char* last_slash = find_last_slash(tmp);
-            last_slash[0] = '\0';
-            last_slash = find_last_slash(tmp);
-            strlcpy(tmp, last_slash + 1, sizeof(tmp));
+            fill_pathname_parent_dir_name(tmp, path_get(RARCH_PATH_BASENAME), sizeof(tmp));
             fill_pathname_join(file, directory, tmp, sizeof(file));
          }
          break;
