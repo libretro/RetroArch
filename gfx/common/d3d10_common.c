@@ -42,6 +42,7 @@ HRESULT WINAPI D3D10CreateDeviceAndSwapChain(
 {
    static PFN_D3D10_CREATE_DEVICE_AND_SWAP_CHAIN fp;
 
+#ifdef HAVE_DYNAMIC
    if (!d3d10_dll)
       d3d10_dll = dylib_load("d3d10.dll");
 
@@ -51,6 +52,9 @@ HRESULT WINAPI D3D10CreateDeviceAndSwapChain(
    if (!fp)
       fp = (PFN_D3D10_CREATE_DEVICE_AND_SWAP_CHAIN)dylib_proc(
             d3d10_dll, "D3D10CreateDeviceAndSwapChain");
+#else
+      fp = D3D10CreateDeviceAndSwapChain;
+#endif
 
    if (!fp)
       return TYPE_E_CANTLOADLIBRARY;
@@ -78,12 +82,12 @@ void d3d10_init_texture(D3D10Device device, d3d10_texture_t* texture)
    D3D10CreateTexture2D(device, &texture->desc, NULL, &texture->handle);
 
    {
-      D3D10_SHADER_RESOURCE_VIEW_DESC view_desc = {
-         .Format                    = texture->desc.Format,
-         .ViewDimension             = D3D_SRV_DIMENSION_TEXTURE2D,
-         .Texture2D.MostDetailedMip = 0,
-         .Texture2D.MipLevels       = -1,
-      };
+      D3D10_SHADER_RESOURCE_VIEW_DESC view_desc = { 0 };
+      view_desc.Format                    = texture->desc.Format;
+      view_desc.ViewDimension             = D3D_SRV_DIMENSION_TEXTURE2D;
+      view_desc.Texture2D.MostDetailedMip = 0;
+      view_desc.Texture2D.MipLevels       = -1;
+
       D3D10CreateTexture2DShaderResourceView(device, texture->handle, &view_desc, &texture->view);
    }
 
