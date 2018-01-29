@@ -369,7 +369,7 @@ bool glslang_parse_meta(const vector<string> &lines, glslang_meta *meta)
 }
 
 #ifdef HAVE_VULKAN
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && !defined(WANT_GLSLANG)
 bool glslang_compile_shader(const char *shader_path, glslang_output *output)
 {
    return false;

@@ -27,9 +27,12 @@
 #include <string/stdstring.h>
 #include <streams/interface_stream.h>
 #include <streams/file_stream.h>
+#include <lists/string_list.h>
 
 #include "../msg_hash.h"
 #include "../verbosity.h"
+#include "../configuration.h"
+#include "../frontend/frontend_driver.h"
 #include "video_shader_parse.h"
 
 #ifdef HAVE_SLANG
@@ -52,6 +55,8 @@
 #define SEMANTIC_TRANSITION_PREVIOUS   0x536abbacU
 #define SEMANTIC_TRANSITION_COUNT      0x3ef2af78U
 #define SEMANTIC_PYTHON                0x15efc547U
+
+static path_change_data_t *file_change_data = NULL;
 
 /**
  * wrap_mode_to_str:
@@ -755,6 +760,11 @@ bool video_shader_read_conf_cgp(config_file_t *conf,
 {
    unsigned i;
    unsigned shaders = 0;
+   settings_t *settings = config_get_ptr();
+   struct string_list *file_list = NULL;
+   union string_list_elem_attr attr = {0};
+
+   (void)file_list;
 
    memset(shader, 0, sizeof(*shader));
    shader->type = RARCH_SHADER_CG;
@@ -776,10 +786,40 @@ bool video_shader_read_conf_cgp(config_file_t *conf,
 
    shader->passes = MIN(shaders, GFX_MAX_SHADERS);
 
+   if (settings->bools.video_shader_watch_files)
+   {
+      if (file_change_data)
+         frontend_driver_watch_path_for_changes(NULL, 0, &file_change_data);
+
+      file_change_data = NULL;
+      file_list = string_list_new();
+      string_list_append(file_list, conf->path, attr);
+   }
+
    for (i = 0; i < shader->passes; i++)
    {
       if (!video_shader_parse_pass(conf, &shader->pass[i], i))
+      {
+         if (file_list)
+            string_list_free(file_list);
          return false;
+      }
+
+      if (settings->bools.video_shader_watch_files)
+      {
+         string_list_append(file_list, shader->pass[i].source.path, attr);
+      }
+   }
+
+   if (settings->bools.video_shader_watch_files)
+   {
+      int flags = PATH_CHANGE_TYPE_MODIFIED |
+                  PATH_CHANGE_TYPE_WRITE_FILE_CLOSED |
+                  PATH_CHANGE_TYPE_FILE_MOVED |
+                  PATH_CHANGE_TYPE_FILE_DELETED;
+
+      frontend_driver_watch_path_for_changes(file_list, flags, &file_change_data);
+      string_list_free(file_list);
    }
 
    if (!video_shader_parse_textures(conf, shader))
@@ -1198,3 +1238,10 @@ void video_shader_resolve_relative(struct video_shader *shader,
    free(tmp_path);
 }
 
+bool video_shader_check_for_changes(void)
+{
+   if (!file_change_data)
+      return false;
+
+   return frontend_driver_check_for_path_changes(file_change_data);
+}

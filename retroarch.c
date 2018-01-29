@@ -109,6 +109,7 @@
 #include "managers/cheat_manager.h"
 #include "managers/state_manager.h"
 #include "tasks/tasks_internal.h"
+#include "performance_counters.h"
 
 #include "version.h"
 #include "version_git.h"
@@ -129,6 +130,8 @@
 #else
 #define DEFAULT_EXT ""
 #endif
+
+#define SHADER_FILE_WATCH_DELAY_MSEC 500
 
 /* Descriptive names for options without short variant.
  *
@@ -2692,20 +2695,13 @@ static enum runloop_state runloop_check_state(
 #ifdef HAVE_NETWORKING
    /* Check Netplay */
    {
-      static bool old_netplay_flip  = false;
       static bool old_netplay_watch = false;
-      bool netplay_flip             = BIT256_GET(
-            current_input, RARCH_NETPLAY_FLIP);
       bool netplay_watch            = BIT256_GET(
             current_input, RARCH_NETPLAY_GAME_WATCH);
-
-      if (netplay_flip && !old_netplay_flip)
-         netplay_driver_ctl(RARCH_NETPLAY_CTL_FLIP_PLAYERS, NULL);
 
       if (netplay_watch && !old_netplay_watch)
          netplay_driver_ctl(RARCH_NETPLAY_CTL_GAME_WATCH, NULL);
 
-      old_netplay_flip              = netplay_flip;
       old_netplay_watch             = netplay_watch;
    }
 #endif
@@ -2999,6 +2995,46 @@ static enum runloop_state runloop_check_state(
       old_cheat_index_plus               = cheat_index_plus;
       old_cheat_index_minus              = cheat_index_minus;
       old_cheat_index_toggle             = cheat_index_toggle;
+   }
+
+   if (settings->bools.video_shader_watch_files)
+   {
+      static rarch_timer_t timer = {0};
+      static bool need_to_apply = false;
+
+      if (video_shader_check_for_changes())
+      {
+         need_to_apply = true;
+
+         if (!rarch_timer_is_running(&timer))
+         {
+            /* rarch_timer_t convenience functions only support whole seconds. */
+
+            /* rarch_timer_begin */
+            timer.timeout_end = cpu_features_get_time_usec() + SHADER_FILE_WATCH_DELAY_MSEC * 1000;
+            timer.timer_begin = true;
+            timer.timer_end = false;
+         }
+      }
+
+      /* If a file is modified atomically (moved/renamed from a different file), we have no idea how long that might take.
+       * If we're trying to re-apply shaders immediately after changes are made to the original file(s), the filesystem might be in an in-between
+       * state where the new file hasn't been moved over yet and the original file was already deleted. This leaves us no choice
+       * but to wait an arbitrary amount of time and hope for the best.
+       */
+      if (need_to_apply)
+      {
+         /* rarch_timer_tick */
+         timer.current = cpu_features_get_time_usec();
+         timer.timeout = (timer.timeout_end - timer.current) / 1000;
+
+         if (!timer.timer_end && rarch_timer_has_expired(&timer))
+         {
+            rarch_timer_end(&timer);
+            need_to_apply = false;
+            command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
+         }
+      }
    }
 
    return RUNLOOP_STATE_ITERATE;

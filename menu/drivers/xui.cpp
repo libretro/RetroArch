@@ -46,6 +46,7 @@
 #include "../../verbosity.h"
 
 #include "../../gfx/drivers/d3d.h"
+#include "../../gfx/common/d3d_common.h"
 
 #define XUI_CONTROL_NAVIGATE_OK (XUI_CONTROL_NAVIGATE_RIGHT + 1)
 
@@ -235,7 +236,7 @@ HRESULT XuiTextureLoader(IXuiDevice *pDevice, LPCWSTR szFileName,
          D3DX_DEFAULT_NONPOW2,
          1,
          D3DUSAGE_CPU_CACHED_MEMORY,
-         D3DFMT_LIN_A8R8G8B8,
+         (D3DFORMAT)d3d_get_argb8888_format(),
          D3DPOOL_DEFAULT,
          D3DX_FILTER_NONE,
          D3DX_FILTER_NONE,
@@ -297,7 +298,7 @@ static void* xui_init(void **userdata, bool video_is_threaded)
 
    d3d_make_d3dpp(d3d, &video_info, &d3dpp);
 
-   hr = app.InitShared(d3d->dev, &d3dpp,
+   hr = app.InitShared((D3DDevice*)d3d->dev, &d3dpp,
          (PFN_XUITEXTURELOADER)XuiTextureLoader);
 
    if (FAILED(hr))
@@ -411,7 +412,7 @@ static void xui_frame(void *data, video_frame_info_t *video_info)
    XUIMessageRender msgRender;
    D3DXMATRIX matOrigView;
    const char *message   = NULL;
-   D3DVIEWPORT vp_full   = {0};
+   D3DVIEWPORT9 vp_full  = {0};
    d3d_video_t *d3d      = (d3d_video_t*)video_driver_get_ptr(false);
 
    if (!d3d)

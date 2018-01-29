@@ -27,6 +27,8 @@ void* video_display_server_init(void)
 {
    enum rarch_display_type type = video_driver_display_type_get();
 
+   video_display_server_destroy();
+
    switch (type)
    {
       case RARCH_DISPLAY_WIN32:
@@ -54,7 +56,9 @@ void* video_display_server_init(void)
 
 void video_display_server_destroy(void)
 {
-
+   if (current_display_server && current_display_server->destroy)
+      if (current_display_server_data)
+         current_display_server->destroy(current_display_server_data);
 }
 
 bool video_display_server_set_window_opacity(unsigned opacity)

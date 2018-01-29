@@ -262,8 +262,20 @@ static const video_driver_t *video_drivers[] = {
 #ifdef XENON
    &video_xenon360,
 #endif
-#if defined(HAVE_D3D)
-   &video_d3d,
+#if defined(HAVE_D3D10)
+   &video_d3d10,
+#endif
+#if defined(HAVE_D3D11)
+   &video_d3d11,
+#endif
+#if defined(HAVE_D3D12)
+   &video_d3d12,
+#endif
+#if defined(HAVE_D3D9)
+   &video_d3d9,
+#endif
+#if defined(HAVE_D3D8)
+   &video_d3d8,
 #endif
 #ifdef HAVE_VITA2D
    &video_vita2d,
@@ -407,19 +419,6 @@ static const shader_backend_t *shader_ctx_drivers[] = {
    NULL
 };
 
-static const d3d_renderchain_driver_t *renderchain_d3d_drivers[] = {
-#if defined(_WIN32) && defined(HAVE_D3D9) && defined(HAVE_CG)
-   &cg_d3d9_renderchain,
-#endif
-#if defined(_WIN32) && defined(HAVE_D3D9) && defined(HAVE_HLSL)
-   &hlsl_d3d9_renderchain,
-#endif
-#if defined(_WIN32) && defined(HAVE_D3D8)
-   &d3d8_d3d_renderchain,
-#endif
-   &null_d3d_renderchain,
-   NULL
-};
 
 static const gl_renderchain_driver_t *renderchain_gl_drivers[] = {
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
@@ -1765,10 +1764,106 @@ void video_driver_monitor_reset(void)
 void video_driver_set_aspect_ratio(void)
 {
    settings_t *settings = config_get_ptr();
+
+   switch (settings->uints.video_aspect_ratio_idx)
+   {
+      case ASPECT_RATIO_SQUARE:
+         video_driver_set_viewport_square_pixel();
+         break;
+
+      case ASPECT_RATIO_CORE:
+         video_driver_set_viewport_core();
+         break;
+
+      case ASPECT_RATIO_CONFIG:
+         video_driver_set_viewport_config();
+         break;
+
+      default:
+         break;
+   }
+
+   video_driver_set_aspect_ratio_value(
+            aspectratio_lut[settings->uints.video_aspect_ratio_idx].value);
+
    if (!video_driver_poke || !video_driver_poke->set_aspect_ratio)
       return;
    video_driver_poke->set_aspect_ratio(
          video_driver_data, settings->uints.video_aspect_ratio_idx);
+}
+
+void video_driver_update_viewport(struct video_viewport* vp, bool force_full, bool keep_aspect)
+{
+   gfx_ctx_aspect_t aspect_data;
+   float            device_aspect = (float)vp->full_width / vp->full_height;
+   settings_t*      settings      = config_get_ptr();
+
+   aspect_data.aspect = &device_aspect;
+   aspect_data.width  = vp->full_width;
+   aspect_data.height = vp->full_height;
+
+   video_context_driver_translate_aspect(&aspect_data);
+
+   vp->x      = 0;
+   vp->y      = 0;
+   vp->width  = vp->full_width;
+   vp->height = vp->full_height;
+
+   if (settings->bools.video_scale_integer && !force_full)
+   {
+      video_viewport_get_scaled_integer(
+            vp, vp->full_width, vp->full_height, video_driver_get_aspect_ratio(), keep_aspect);
+   }
+   else if (keep_aspect && !force_full)
+   {
+      float desired_aspect = video_driver_get_aspect_ratio();
+
+#if defined(HAVE_MENU)
+      if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      {
+         const struct video_viewport* custom = video_viewport_get_custom();
+
+         vp->x      = custom->x;
+         vp->y      = custom->y;
+         vp->width  = custom->width;
+         vp->height = custom->height;
+      }
+      else
+#endif
+      {
+         float delta;
+
+         if (fabsf(device_aspect - desired_aspect) < 0.0001f)
+         {
+            /* If the aspect ratios of screen and desired aspect
+             * ratio are sufficiently equal (floating point stuff),
+             * assume they are actually equal.
+             */
+         }
+         else if (device_aspect > desired_aspect)
+         {
+            delta      = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
+            vp->x      = (int)roundf(vp->full_width * (0.5f - delta));
+            vp->width  = (unsigned)roundf(2.0f * vp->full_width * delta);
+            vp->y      = 0;
+            vp->height = vp->full_height;
+         }
+         else
+         {
+            vp->x      = 0;
+            vp->width  = vp->full_width;
+            delta      = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
+            vp->y      = (int)roundf(vp->full_height * (0.5f - delta));
+            vp->height = (unsigned)roundf(2.0f * vp->full_height * delta);
+         }
+      }
+   }
+
+#if defined(RARCH_MOBILE)
+   /* In portrait mode, we want viewport to gravitate to top of screen. */
+   if (device_aspect < 1.0f)
+      vp->y = 0;
+#endif
 }
 
 void video_driver_show_mouse(void)
@@ -3237,7 +3332,6 @@ static struct video_shader *video_shader_driver_get_current_shader_null(void *da
    return NULL;
 }
 
-
 static void video_shader_driver_set_params_null(void *data, void *shader_data,
       unsigned width, unsigned height,
       unsigned tex_width, unsigned tex_height,
@@ -3283,6 +3377,9 @@ static bool video_shader_driver_get_feedback_pass_null(void *data, unsigned *idx
 
 static void video_shader_driver_reset_to_defaults(void)
 {
+   if (!current_shader)
+      return;
+
    if (!current_shader->wrap_type)
       current_shader->wrap_type         = video_shader_driver_wrap_type_null;
    if (current_shader->set_mvp)
@@ -3430,21 +3527,44 @@ void video_driver_set_mvp(video_shader_ctx_mvp_t *mvp)
 }
 
 bool renderchain_d3d_init_first(
+      enum gfx_ctx_api api,
       const d3d_renderchain_driver_t **renderchain_driver,
       void **renderchain_handle)
 {
-   unsigned i;
-
-   for (i = 0; renderchain_d3d_drivers[i]; i++)
+   switch (api)
    {
-      void *data = renderchain_d3d_drivers[i]->chain_new();
+      case GFX_CTX_DIRECT3D9_API:
+#ifdef HAVE_D3D9
+         {
+            static const d3d_renderchain_driver_t *renderchain_d3d_drivers[] = {
+#if defined(_WIN32) && defined(HAVE_CG)
+               &cg_d3d9_renderchain,
+#endif
+#if defined(_WIN32) && defined(HAVE_HLSL)
+               &hlsl_d3d9_renderchain,
+#endif
+               &null_d3d_renderchain,
+               NULL
+            };
+            unsigned i;
 
-      if (!data)
-         continue;
+            for (i = 0; renderchain_d3d_drivers[i]; i++)
+            {
+               void *data = renderchain_d3d_drivers[i]->chain_new();
 
-      *renderchain_driver = renderchain_d3d_drivers[i];
-      *renderchain_handle = data;
-      return true;
+               if (!data)
+                  continue;
+
+               *renderchain_driver = renderchain_d3d_drivers[i];
+               *renderchain_handle = data;
+               return true;
+            }
+         }
+#endif
+         break;
+      case GFX_CTX_NONE:
+      default:
+         break;
    }
 
    return false;

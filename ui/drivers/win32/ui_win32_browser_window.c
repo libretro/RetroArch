@@ -19,7 +19,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../../gfx/common/win32_common.h"
 #include <windows.h>
+#include <commdlg.h>
+#include <commctrl.h>
 
 #include "../../ui_companion_driver.h"
 

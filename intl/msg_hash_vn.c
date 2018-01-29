@@ -93,10 +93,6 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                   "Bật/tắt bàn phím trên màn hình.");
             break;
-         case RARCH_NETPLAY_FLIP:
-            snprintf(s, len,
-                  "Netplay flip users.");
-            break;
          case RARCH_SLOWMOTION:
             snprintf(s, len,
                   "Nhấn để xem chậm.");
@@ -1671,11 +1667,6 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
                "The username of the person running RetroArch. \n"
                "This will be used for playing online games.");
          break;
-      case MENU_ENUM_LABEL_NETPLAY_CLIENT_SWAP_INPUT:
-         snprintf(s, len,
-               "When being client over netplay, use \n"
-               "keybinds for player 1.");
-         break;
       case MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT:
          snprintf(s, len,
                "The port of the host IP address. \n"
@@ -1777,10 +1768,6 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
       case MENU_ENUM_LABEL_SAVE_STATE:
          snprintf(s, len,
                "Saves state.");
-         break;
-      case MENU_ENUM_LABEL_NETPLAY_FLIP_PLAYERS:
-         snprintf(s, len,
-               "Netplay flip users.");
          break;
       case MENU_ENUM_LABEL_CHEAT_INDEX_PLUS:
          snprintf(s, len,

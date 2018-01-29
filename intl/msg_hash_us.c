@@ -95,10 +95,6 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
              snprintf(s, len,
                    "Toggles onscreen keyboard.");
              break;
-          case RARCH_NETPLAY_FLIP:
-             snprintf(s, len,
-                   "Netplay flip users.");
-             break;
           case RARCH_NETPLAY_GAME_WATCH:
              snprintf(s, len,
                    "Netplay toggle play/spectate mode.");
@@ -1075,6 +1071,15 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "saved to Shader Directory."
             );
             break;
+        case MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES:
+            snprintf(s, len,
+                     "Watch shader files for new changes. \n"
+                     " \n"
+                     "After saving changes to a shader on disk, \n"
+                     "it will automatically be recompiled \n"
+                     "and applied to the running content."
+            );
+            break;
         case MENU_ENUM_LABEL_MENU_TOGGLE:
             snprintf(s, len,
                      "Toggles menu.");
@@ -1753,11 +1758,6 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "The username of the person running RetroArch. \n"
                              "This will be used for playing online games.");
             break;
-        case MENU_ENUM_LABEL_NETPLAY_CLIENT_SWAP_INPUT:
-            snprintf(s, len,
-                     "When being client over netplay, use \n"
-                             "keybinds for player 1.");
-            break;
         case MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT:
             snprintf(s, len,
                      "The port of the host IP address. \n"
@@ -1872,10 +1872,6 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
         case MENU_ENUM_LABEL_SAVE_STATE:
             snprintf(s, len,
                      "Saves state.");
-            break;
-        case MENU_ENUM_LABEL_NETPLAY_FLIP_PLAYERS:
-            snprintf(s, len,
-                     "Netplay flip users.");
             break;
         case MENU_ENUM_LABEL_NETPLAY_GAME_WATCH:
             snprintf(s, len,

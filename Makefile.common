@@ -115,6 +115,13 @@ else
    OSX := 0
 endif
 
+ifneq ($(findstring Haiku,$(OS)),)
+   LIBS += -lroot -lnetwork
+	HAVE_UNIX = 1
+else
+   LIBS += -lm
+endif
+
 ifneq ($(findstring Linux,$(OS)),)
    LIBS += -lrt
    OBJ += input/drivers/linuxraw_input.o \
@@ -129,12 +136,6 @@ endif
 
 ifeq ($(TARGET), retroarch_3ds)
 	OBJ += frontend/drivers/platform_ctr.o
-endif
-
-ifeq ($(findstring Haiku,$(OS)),)
-   LIBS += -lm
-else
-   LIBS += -lroot -lnetwork
 endif
 
 # Git
@@ -1108,7 +1109,8 @@ endif
 endif
 
 ifeq ($(HAVE_EGL), 1)
-	DEFINES += -DHAVE_EGL
+   DEFINES += -DHAVE_EGL $(EGL_CFLAGS)
+   LIBS += $(EGL_LIBS)
    OBJ += gfx/common/egl_common.o
 endif
 
@@ -1184,8 +1186,7 @@ ifeq ($(HAVE_VULKAN), 1)
            -I$(DEPS_DIR)/glslang \
            -I$(DEPS_DIR)/SPIRV-Cross
 
-   CXXFLAGS += -Wno-switch -Wno-sign-compare -fno-strict-aliasing -Wno-maybe-uninitialized -Wno-reorder -Wno-parentheses -Igfx/include
-   CFLAGS  += -Igfx/include
+   CXXFLAGS += -Wno-switch -Wno-sign-compare -fno-strict-aliasing -Wno-maybe-uninitialized -Wno-reorder -Wno-parentheses
 
    GLSLANG_OBJ     := $(GLSLANG_SOURCES:.cpp=.o)
    SPIRV_CROSS_OBJ := $(SPIRV_CROSS_SOURCES:.cpp=.o)
@@ -1209,6 +1210,14 @@ ifeq ($(HAVE_VULKAN), 1)
    endif
    LIBS += -lstdc++
    DEFINES += -DHAVE_SLANG
+endif
+
+ifeq ($(findstring 1, $(HAVE_VULKAN) $(HAVE_D3D10) $(HAVE_D3D11) $(HAVE_D3D12)),1)
+   INCLUDE_DIRS += -Igfx/include
+endif
+
+ifeq ($(findstring 1, $(HAVE_D3D10) $(HAVE_D3D11) $(HAVE_D3D12)),1)
+   INCLUDE_DIRS += -Igfx/include/dxsdk
 endif
 
 ifeq ($(WANT_WGL), 1)
@@ -1287,6 +1296,28 @@ endif
    endif
 endif
 
+ifeq ($(HAVE_D3D10), 1)
+   OBJ += gfx/drivers/d3d10.o gfx/common/d3d10_common.o
+   DEFINES += -DHAVE_D3D10
+endif
+
+ifeq ($(HAVE_D3D11), 1)
+   OBJ += gfx/drivers/d3d11.o gfx/common/d3d11_common.o \
+      gfx/drivers_font/d3d11_font.o menu/drivers_display/menu_display_d3d11.o
+   DEFINES += -DHAVE_D3D11
+endif
+
+ifeq ($(HAVE_D3D12), 1)
+   OBJ += gfx/drivers/d3d12.o gfx/common/d3d12_common.o
+   DEFINES += -DHAVE_D3D12
+endif
+
+ifneq ($(findstring 1, $(HAVE_D3D10) $(HAVE_D3D11) $(HAVE_D3D12)),)
+   OBJ += gfx/common/d3dcompiler_common.o
+   OBJ += gfx/common/dxgi_common.o
+   CFLAGS += -Wno-unknown-pragmas
+endif
+
 ifeq ($(HAVE_D3D8), 1)
 	HAVE_D3D_COMMON = 1
    HAVE_DX_COMMON  = 1
@@ -1297,17 +1328,25 @@ ifeq ($(HAVE_D3DX), 1)
    LIBS += -ld3dx8
 endif
 endif
-
-   OBJ += gfx/drivers_renderchain/d3d8_renderchain.o
 endif
 
 ifeq ($(HAVE_DX_COMMON), 1)
 	LIBS += -ldxguid
 endif
 
+ifeq ($(HAVE_D3D8), 1)
+	DEFINES += -DHAVE_D3D8
+	OBJ += gfx/drivers/d3d9.o
+endif
+
+ifeq ($(HAVE_D3D9), 1)
+	DEFINES += -DHAVE_D3D9
+	OBJ += gfx/drivers/d3d9.o
+endif
+
 ifeq ($(HAVE_D3D_COMMON), 1)
 	DEFINES += -DHAVE_D3D
-   OBJ += gfx/drivers/d3d.o \
+	OBJ     += \
           gfx/common/d3d_common.o \
           gfx/drivers_context/d3d_ctx.o
 
@@ -1511,6 +1550,7 @@ ifeq ($(HAVE_NETWORKING), 1)
 			network/netplay/netplay_handshake.o \
 			network/netplay/netplay_init.o \
 			network/netplay/netplay_io.o \
+			network/netplay/netplay_keyboard.o \
 			network/netplay/netplay_sync.o \
 			network/netplay/netplay_discovery.o \
 			network/netplay/netplay_buf.o \

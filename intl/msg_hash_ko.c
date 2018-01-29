@@ -25,6 +25,12 @@
 #include "../configuration.h"
 #include "../verbosity.h"
 
+#if defined(_MSC_VER) && !defined(_XBOX)
+/* https://support.microsoft.com/en-us/kb/980263 */
+#pragma execution_character_set("utf-8")
+#pragma warning(disable: 4566)
+#endif
+
 int menu_hash_get_help_ko_enum(enum msg_hash_enums msg, char *s, size_t len) {
     uint32_t driver_hash = 0;
     settings_t *settings = config_get_ptr();
@@ -84,10 +90,6 @@ int menu_hash_get_help_ko_enum(enum msg_hash_enums msg, char *s, size_t len) {
             case RARCH_OSK:
                 snprintf(s, len,
                          "온스크린 키보드 전환.");
-                break;
-            case RARCH_NETPLAY_FLIP:
-                snprintf(s, len,
-                         "넷플레이 사용자 넘김.");
                 break;
             case RARCH_NETPLAY_GAME_WATCH:
                 snprintf(s, len,
@@ -1723,11 +1725,6 @@ int menu_hash_get_help_ko_enum(enum msg_hash_enums msg, char *s, size_t len) {
                      "The username of the person running RetroArch. \n"
                              "This will be used for playing online games.");
             break;
-        case MENU_ENUM_LABEL_NETPLAY_CLIENT_SWAP_INPUT:
-            snprintf(s, len,
-                     "When being client over netplay, use \n"
-                             "keybinds for player 1.");
-            break;
         case MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT:
             snprintf(s, len,
                      "The port of the host IP address. \n"
@@ -1842,10 +1839,6 @@ int menu_hash_get_help_ko_enum(enum msg_hash_enums msg, char *s, size_t len) {
         case MENU_ENUM_LABEL_SAVE_STATE:
             snprintf(s, len,
                      "Saves state.");
-            break;
-        case MENU_ENUM_LABEL_NETPLAY_FLIP_PLAYERS:
-            snprintf(s, len,
-                     "Netplay flip users.");
             break;
         case MENU_ENUM_LABEL_NETPLAY_GAME_WATCH:
             snprintf(s, len,

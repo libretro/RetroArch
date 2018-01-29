@@ -291,6 +291,18 @@ void fill_pathname_basedir_noext(char *out_dir,
       const char *in_path, size_t size);
 
 /**
+ * fill_pathname_parent_dir_name:
+ * @out_dir            : output directory
+ * @in_dir             : input directory
+ * @size               : size of output directory
+ *
+ * Copies only the parent directory name of @in_dir into @out_dir.
+ * The two buffers must not overlap. Removes trailing '/'.
+ **/
+void fill_pathname_parent_dir_name(char *out_dir,
+      const char *in_dir, size_t size);
+
+/**
  * fill_pathname_parent_dir:
  * @out_dir            : output directory
  * @in_dir             : input directory

@@ -16,9 +16,14 @@ FILE* fopen_utf8(const char * filename, const char * mode)
 #if defined(_XBOX)
    return fopen(filename, mode);
 #elif defined(LEGACY_WIN32)
+   FILE             *ret = NULL;
    char * filename_local = utf8_to_local_string_alloc(filename);
-   FILE* ret = fopen(filename_local, mode);
-   free(filename_local);
+
+   if (!filename_local)
+      return NULL;
+   ret = fopen(filename_local, mode);
+   if (filename_local)
+      free(filename_local);
    return ret;
 #else
    wchar_t * filename_w = utf8_to_utf16_string_alloc(filename);

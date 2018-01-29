@@ -27,6 +27,24 @@
 #include <sys/utsname.h>
 #include <sys/resource.h>
 
+#ifdef __linux__
+#include <linux/version.h>
+/* inotify API was added in 2.6.13 */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,13)
+#define HAS_INOTIFY
+#define INOTIFY_BUF_LEN (1024 * (sizeof(struct inotify_event) + 16))
+
+#include <sys/inotify.h>
+#include <net/net_socket.h>
+
+#define VECTOR_LIST_TYPE int
+#define VECTOR_LIST_NAME int
+#include "../../libretro-common/lists/vector_list.c"
+#undef VECTOR_LIST_TYPE
+#undef VECTOR_LIST_NAME
+#endif
+#endif
+
 #include <signal.h>
 #include <pthread.h>
 
@@ -45,6 +63,7 @@
 #include <retro_dirent.h>
 #include <retro_inline.h>
 #include <compat/strl.h>
+#include <compat/fopen_utf8.h>
 #include <rhash.h>
 #include <lists/file_list.h>
 #include <file/file_path.h>
@@ -81,7 +100,6 @@ enum
 
 struct android_app *g_android;
 
-
 static pthread_key_t thread_key;
 
 static char screenshot_dir[PATH_MAX_LENGTH];
@@ -102,6 +120,17 @@ static volatile sig_atomic_t unix_sighandler_quit;
 
 #ifndef HAVE_DYNAMIC
 static enum frontend_fork unix_fork_mode = FRONTEND_FORK_NONE;
+#endif
+
+#ifdef HAS_INOTIFY
+typedef struct inotify_data
+{
+   int fd;
+   int flags;
+   struct int_vector_list *wd_list;
+   struct string_list *path_list;
+} inotify_data_t;
+
 #endif
 
 int system_property_get(const char *command,
@@ -1226,6 +1255,8 @@ static void frontend_unix_get_os(char *s,
    strlcpy(s, "DragonFly BSD", len);
 #elif defined(BSD)
    strlcpy(s, "BSD", len);
+#elif defined(__HAIKU__)
+   strlcpy(s, "Haiku", len);
 #else
    strlcpy(s, "Linux", len);
 #endif
@@ -2221,6 +2252,193 @@ static void frontend_unix_destroy_signal_handler_state(void)
    unix_sighandler_quit = 0;
 }
 
+/* To free change_data, call the function again with a NULL string_list while providing change_data again */
+static void frontend_unix_watch_path_for_changes(struct string_list *list, int flags, path_change_data_t **change_data)
+{
+#ifdef HAS_INOTIFY
+   int major = 0;
+   int minor = 0;
+   int inotify_mask = 0, fd = 0;
+   unsigned i, krel = 0;
+   struct utsname buffer;
+   inotify_data_t *inotify_data;
+
+   if (!list)
+   {
+      if (change_data && *change_data)
+      {
+         /* free the original data */
+         inotify_data = (inotify_data_t*)((*change_data)->data);
+
+         if (inotify_data->wd_list->count > 0)
+         {
+            for (i = 0; i < inotify_data->wd_list->count; i++)
+            {
+               inotify_rm_watch(inotify_data->fd, inotify_data->wd_list->data[i]);
+            }
+         }
+
+         int_vector_list_free(inotify_data->wd_list);
+         string_list_free(inotify_data->path_list);
+         close(inotify_data->fd);
+         free(inotify_data);
+         free(*change_data);
+         return;
+      }
+      else
+         return;
+   }
+   else if (list->size == 0)
+      return;
+   else
+      if (!change_data)
+         return;
+
+   if (uname(&buffer) != 0)
+   {
+      RARCH_WARN("watch_path_for_changes: Failed to get current kernel version.\n");
+      return;
+   }
+
+   /* get_os doesn't provide all three */
+   sscanf(buffer.release, "%d.%d.%u", &major, &minor, &krel);
+
+   /* check if we are actually running on a high enough kernel version as well */
+   if (major < 2)
+   {
+      RARCH_WARN("watch_path_for_changes: inotify unsupported on this kernel version (%d.%d.%u).\n", major, minor, krel);
+      return;
+   }
+   else if (major == 2)
+   {
+      if (minor < 6)
+      {
+         RARCH_WARN("watch_path_for_changes: inotify unsupported on this kernel version (%d.%d.%u).\n", major, minor, krel);
+         return;
+      }
+      else if (minor == 6)
+      {
+         if (krel < 13)
+         {
+            RARCH_WARN("watch_path_for_changes: inotify unsupported on this kernel version (%d.%d.%u).\n", major, minor, krel);
+            return;
+         }
+         else
+         {
+            /* anything >= 2.6.13 is supported */
+         }
+      }
+      else
+      {
+         /* anything >= 2.7 is supported */
+      }
+   }
+   else
+   {
+      /* anything >= 3 is supported */
+   }
+
+   fd = inotify_init();
+
+   if (fd < 0)
+   {
+      RARCH_WARN("watch_path_for_changes: Could not initialize inotify.\n");
+      return;
+   }
+
+   if (!socket_nonblock(fd))
+   {
+      RARCH_WARN("watch_path_for_changes: Could not set socket to non-blocking.\n");
+      return;
+   }
+
+   inotify_data = (inotify_data_t*)calloc(1, sizeof(*inotify_data));
+   inotify_data->fd = fd;
+
+   inotify_data->wd_list = int_vector_list_new();
+   inotify_data->path_list = string_list_new();
+
+   /* handle other flags here as new ones are added */
+   if (flags & PATH_CHANGE_TYPE_MODIFIED)
+      inotify_mask |= IN_MODIFY;
+   if (flags & PATH_CHANGE_TYPE_WRITE_FILE_CLOSED)
+      inotify_mask |= IN_CLOSE_WRITE;
+   if (flags & PATH_CHANGE_TYPE_FILE_MOVED)
+      inotify_mask |= IN_MOVE_SELF;
+   if (flags & PATH_CHANGE_TYPE_FILE_DELETED)
+      inotify_mask |= IN_DELETE_SELF;
+
+   inotify_data->flags = inotify_mask;
+
+   for (i = 0; i < list->size; i++)
+   {
+      int wd = inotify_add_watch(fd, list->elems[i].data, inotify_mask);
+      union string_list_elem_attr attr = {0};
+
+      RARCH_LOG("Watching file for changes: %s\n", list->elems[i].data);
+
+      int_vector_list_append(inotify_data->wd_list, wd);
+      string_list_append(inotify_data->path_list, list->elems[i].data, attr);
+   }
+
+   *change_data = (path_change_data_t*)calloc(1, sizeof(path_change_data_t));
+   (*change_data)->data = inotify_data;
+#endif
+}
+
+static bool frontend_unix_check_for_path_changes(path_change_data_t *change_data)
+{
+#ifdef HAS_INOTIFY
+   inotify_data_t *inotify_data = (inotify_data_t*)(change_data->data);
+   char buffer[INOTIFY_BUF_LEN] = {0};
+   int length, i = 0;
+
+   while ((length = read(inotify_data->fd, buffer, INOTIFY_BUF_LEN)) > 0)
+   {
+      i = 0;
+
+      while (i < length && i < sizeof(buffer))
+      {
+         struct inotify_event *event = (struct inotify_event *)&buffer[i];
+
+         if (event->mask & inotify_data->flags)
+         {
+            unsigned j;
+
+            /* A successful close does not guarantee that the data has been successfully saved to disk, as the kernel defers writes. It is not common for a file system to flush the buffers when the stream is closed.
+             * So we manually fsync() here to flush the data to disk, to make sure that the new data is immediately available when the file is re-read.
+             */
+            for (j = 0; j < inotify_data->wd_list->count; j++)
+            {
+               if (inotify_data->wd_list->data[j] == event->wd)
+               {
+                  /* found the right file, now sync it */
+                  const char *path = inotify_data->path_list->elems[j].data;
+                  FILE *fp = fopen_utf8(path, "rb");
+
+                  RARCH_LOG("file change detected: %s\n", path);
+
+                  if (fp)
+                  {
+                     fsync(fileno(fp));
+                     fclose(fp);
+                  }
+               }
+            }
+
+            return true;
+         }
+
+         i += sizeof(struct inotify_event) + event->len;
+      }
+   }
+
+   return false;
+#else
+   return false;
+#endif
+}
+
 frontend_ctx_driver_t frontend_ctx_unix = {
    frontend_unix_get_env,       /* environment_get */
    frontend_unix_init,          /* init */
@@ -2262,6 +2480,8 @@ frontend_ctx_driver_t frontend_ctx_unix = {
 #ifdef HAVE_LAKKA
    frontend_unix_get_lakka_version,    /* get_lakka_version */
 #endif
+   frontend_unix_watch_path_for_changes,
+   frontend_unix_check_for_path_changes,
 #ifdef ANDROID
    "android"
 #else

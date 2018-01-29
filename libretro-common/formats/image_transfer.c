@@ -49,9 +49,13 @@ void image_transfer_free(void *data, enum image_type_enum type)
 #endif
          break;
       case IMAGE_TYPE_PNG:
+         {
 #ifdef HAVE_RPNG
-         rpng_free((rpng_t*)data);
+            rpng_t *rpng = (rpng_t*)data;
+            if (rpng)
+               rpng_free(rpng);
 #endif
+         }
          break;
       case IMAGE_TYPE_JPEG:
 #ifdef HAVE_RJPEG

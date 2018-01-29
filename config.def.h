@@ -27,6 +27,10 @@
 #include "config.h"
 #endif
 
+#ifdef HAVE_NETWORKING
+#include "network/netplay/netplay.h"
+#endif
+
 #if defined(HW_RVL)
 #define MAX_GAMMA_SETTING 30
 #elif defined(GEKKO)
@@ -170,7 +174,7 @@ static unsigned swap_interval = 1;
 static const bool video_threaded = false;
 
 #if defined(HAVE_THREADS)
-#if defined(GEKKO) || defined(PSP) || defined(_3DS) || defined(_XBOX1)
+#if defined(GEKKO) || defined(PSP) || defined(_3DS)
 /* For single-core consoles right now it's better to have this be disabled. */
 static const bool threaded_data_runloop_enable = false;
 #else
@@ -400,6 +404,9 @@ static const bool post_filter_record = false;
 /* Screenshots post-shaded GPU output if available. */
 static const bool gpu_screenshot = true;
 
+/* Watch shader files for changes and auto-apply as necessary. */
+static const bool video_shader_watch_files = false;
+
 /* Screenshots named automatically. */
 static const bool auto_screenshot_filename = true;
 
@@ -544,6 +551,12 @@ static const int netplay_check_frames = 600;
 
 static const bool netplay_use_mitm_server = false;
 
+#ifdef HAVE_NETWORKING
+static const unsigned netplay_share_digital = RARCH_NETPLAY_SHARE_DIGITAL_NO_PREFERENCE;
+
+static const unsigned netplay_share_analog = RARCH_NETPLAY_SHARE_ANALOG_NO_PREFERENCE;
+#endif
+
 /* On save state load, block SRAM from being overwritten.
  * This could potentially lead to buggy games. */
 static const bool block_sram_overwrite = false;
@@ -670,7 +683,7 @@ static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/apple/
 #endif
 #elif defined(_WIN32) && !defined(_XBOX)
 #if _MSC_VER == 1600
-#if defined(__x86_64__)
+#if defined(__x86_64__) || defined(_M_X64)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2010/x86_64/latest/";
 #elif defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(_M_IX86) || defined(_M_IA64)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2010/x86/latest/";
@@ -680,7 +693,7 @@ static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/window
 #elif _MSC_VER == 1310
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2003/x86/latest/";
 #else
-#if defined(__x86_64__)
+#if defined(__x86_64__) || defined(_M_X64)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows/x86_64/latest/";
 #elif defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(_M_IX86) || defined(_M_IA64)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows/x86/latest/";

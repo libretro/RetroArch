@@ -10,7 +10,7 @@ layout(binding = 4, std140) uniform GlobalPSData
     vec4 g_ResolutionParams;
     vec4 g_TimeParams;
     vec4 g_FogColor_Distance;
-} _56;
+} _101;
 
 layout(binding = 2) uniform mediump sampler2D TexNormalmap;
 
@@ -47,7 +47,7 @@ void main()
     vec3 grass = vec3(0.100000001490116119384765625, 0.300000011920928955078125, 0.100000001490116119384765625);
     vec3 dirt = vec3(0.100000001490116119384765625);
     vec3 snow = vec3(0.800000011920928955078125);
-    float grass_snow = smoothstep(0.0, 0.1500000059604644775390625, (_56.g_CamPos.y + EyeVec.y) / 200.0);
+    float grass_snow = smoothstep(0.0, 0.1500000059604644775390625, (_101.g_CamPos.y + EyeVec.y) / 200.0);
     vec3 base = mix(grass, snow, vec3(grass_snow));
     float edge = smoothstep(0.699999988079071044921875, 0.75, Normal.y);
     Color = mix(dirt, base, vec3(edge));

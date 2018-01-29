@@ -111,7 +111,7 @@ static int cb_image_menu_thumbnail(void *data, size_t len)
    unsigned height                  = 0;
    nbio_handle_t        *nbio       = (nbio_handle_t*)data;
    struct nbio_image_handle *image  = (struct nbio_image_handle*)nbio->data;
-   int retval                       = task_image_process(image, &width, &height);
+   int retval                       = image ? task_image_process(image, &width, &height) : IMAGE_PROCESS_ERROR;
 
    if ((retval == IMAGE_PROCESS_ERROR)    ||
        (retval == IMAGE_PROCESS_ERROR_END)

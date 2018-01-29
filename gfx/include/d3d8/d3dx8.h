@@ -1,11 +1,11 @@
-///////////////////////////////////////////////////////////////////////////
-//
-//  Copyright (C) Microsoft Corporation.  All Rights Reserved.
-//
-//  File:       d3dx8.h
-//  Content:    D3DX utility library
-//
-///////////////////////////////////////////////////////////////////////////
+/*
+ *
+ *  Copyright (C) Microsoft Corporation.  All Rights Reserved.
+ *
+ *  File:       d3dx8.h
+ *  Content:    D3DX utility library
+ *
+ */
 
 #ifndef __D3DX8_H__
 #define __D3DX8_H__
@@ -29,7 +29,6 @@
 #endif
 #endif
 
-
 #define D3DX_DEFAULT ULONG_MAX
 #define D3DX_DEFAULT_FLOAT FLT_MAX
 
@@ -40,5 +39,4 @@
 #include "d3dx8shape.h"
 #include "d3dx8effect.h"
 
-
-#endif //__D3DX8_H__
+#endif /* __D3DX8_H__ */

@@ -1414,13 +1414,17 @@ static bool wiiu_gfx_set_shader(void *data,
       return false;
    }
 
-   config_file_free(conf);
-
    video_shader_resolve_relative(wiiu->shader_preset, path);
 
-//   video_shader_resolve_parameters(conf, &shader);
-   for (int i = 0; i < wiiu->shader_preset->passes; i++)
-      slang_preprocess_parse_parameters(wiiu->shader_preset->pass[i].source.path, wiiu->shader_preset);
+   #if 0
+		video_shader_resolve_parameters(conf, wiiu->shader_preset);
+   #else
+      for (int i = 0; i < wiiu->shader_preset->passes; i++)
+          slang_preprocess_parse_parameters(wiiu->shader_preset->pass[i].source.path, wiiu->shader_preset);
+ 
+      video_shader_resolve_current_parameters(conf, wiiu->shader_preset);
+   #endif
+          config_file_free(conf);
 
    for (int i = 0; i < wiiu->shader_preset->passes; i++)
    {

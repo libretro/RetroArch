@@ -1260,12 +1260,10 @@ static void frontend_xdk_exec(const char *path, bool should_load_game)
 #ifndef IS_SALAMANDER
    bool original_verbose       = verbosity_is_enabled();
 #endif
-#if defined(_XBOX)
 #if defined(_XBOX1)
    LAUNCH_DATA ptr;
 #elif defined(_XBOX360)
    char game_path[1024] = {0};
-#endif
 #endif
    (void)should_load_game;
 
@@ -1273,7 +1271,6 @@ static void frontend_xdk_exec(const char *path, bool should_load_game)
    if (!string_is_empty(path))
       XLaunchNewImage(path, NULL);
 #else
-#ifdef _XBOX
 #if defined(_XBOX1)
    memset(&ptr, 0, sizeof(ptr));
 
@@ -1291,7 +1288,6 @@ static void frontend_xdk_exec(const char *path, bool should_load_game)
 
    if (!string_is_empty(path))
       XLaunchNewImage(path, 0);
-#endif
 #endif
 #endif
 #ifndef IS_SALAMANDER
@@ -1444,5 +1440,7 @@ frontend_ctx_driver_t frontend_ctx_xdk = {
    NULL,                         /* destroy_sighandler_state */
    NULL,                         /* attach_console */
    NULL,                         /* detach_console */
+   NULL,                         /* watch_path_for_changes */
+   NULL,                         /* check_for_path_changes */
    "xdk",
 };

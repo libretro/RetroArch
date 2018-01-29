@@ -252,5 +252,19 @@ else ifeq ($(LIBRETRO), prosystem)
 	APP_UNIQUE_ID       = 0xBAC3C
 	APP_ICON            = pkg/ctr/assets/prosystem.png
 	APP_BANNER          = pkg/ctr/assets/prosystem_banner.png
+	
+else ifeq ($(LIBRETRO), gw)
+	APP_TITLE           = Game&Watch Libretro
+	APP_PRODUCT_CODE    = RARCH-GW
+	APP_UNIQUE_ID       = 0xBAC2D
+	APP_ICON            = pkg/ctr/assets/gw.png
+	APP_BANNER          = pkg/ctr/assets/gw_banner.png
+	
+else ifeq ($(LIBRETRO), handy)
+	APP_TITLE           = Handy Libretro
+	APP_PRODUCT_CODE    = RARCH-HANDY
+	APP_UNIQUE_ID       = 0xBAC7C
+	APP_ICON            = pkg/ctr/assets/handy.png
+	APP_BANNER          = pkg/ctr/assets/handy_banner.png
 
 endif

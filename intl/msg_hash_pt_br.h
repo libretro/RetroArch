@@ -25,9 +25,6 @@ MSG_HASH(MSG_PUBLIC_ADDRESS,
 MSG_HASH(MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
 	 "Nenhum argumento fornecido e nenhum menu interno, exibindo ajuda..."
 	)
-MSG_HASH(MSG_NETPLAY_USERS_HAS_FLIPPED,
-	 "Usuários do Netplay foram invertidos"
-	)
 MSG_HASH(MSG_SETTING_DISK_IN_TRAY,
 	 "Definindo disco na bandeja"
 	)
@@ -39,9 +36,6 @@ MSG_HASH(MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
 	)
 MSG_HASH(MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N,
 	 "Você se juntou como jogador %d"
-	)
-MSG_HASH(MSG_NETPLAY_IMPLEMENTATIONS_DIFFER,
-	 "As implementações são diferentes. Certifique-se de que está usando exatamente as mesmas versões do RetroArch e do núcleo."
 	)
 MSG_HASH(MSG_NETPLAY_ENDIAN_DEPENDENT,
 	 "Este núcleo não suporta Netplay inter-arquitetura entre estes sistemas"
@@ -857,9 +851,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_MOVIE_RECORD_TOGGLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE,
 	 "Alternar áudio mudo"
 	)
-MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FLIP,
-	 "Inverter usuários do Netplay"
-	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH,
 	 "Alternar modo jogador/espectador do Netplay"
 	)
@@ -1159,9 +1150,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
 	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
 	 "Faixa de Quadros de Latência de Entrada"
-	)
-MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT,
-	 "J2 do Netplay Usa C1"
 	)
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES,
 	 "Atraso de Quadros do Netplay"
@@ -3580,9 +3568,6 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
 	)
 MSG_HASH(MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
 	 "Ordenar os Estados de Jogo em pastas com o nome do núcleo utilizado."
-	)
-MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_CLIENT_SWAP_INPUT,
-	 "Ao se tornar cliente do Netplay, use os vínculos de teclas para o Jogador 1."
 	)
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_UPDATER_BUILDBOT_URL,
 	 "URL para o diretório de atualização de núcleos no buildbot do Libreto."

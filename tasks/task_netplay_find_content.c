@@ -39,7 +39,6 @@
 
 typedef struct
 {
-   struct string_list *lpl_list;
    char content_crc[PATH_MAX_LENGTH];
    char content_path[PATH_MAX_LENGTH];
    char hostname[512];
@@ -49,6 +48,7 @@ typedef struct
    bool found;
    bool current;
    bool contentless;
+   struct string_list *lpl_list;
 } netplay_crc_handle_t;
 
 static void netplay_crc_scan_callback(void *task_data,
@@ -127,7 +127,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
 {
    size_t i, j;
    netplay_crc_handle_t *state = (netplay_crc_handle_t*)task->state;
-   char current[PATH_MAX_LENGTH];
+
    task_set_progress(task, 0);
    task_free_title(task);
    task_set_title(task, strdup("Looking for compatible content..."));
@@ -153,6 +153,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
       /* CRC matching */
       if (!string_is_equal(state->content_crc, "00000000|crc"))
       {
+         char current[PATH_MAX_LENGTH];
          RARCH_LOG("[lobby] testing CRC matching for: %s\n", state->content_crc);
 
          snprintf(current, sizeof(current), "%X|crc", content_get_crc());

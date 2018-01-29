@@ -241,8 +241,8 @@ typedef struct xmb_handle
    char *thumbnail_system;
    char *thumbnail_content;
    char *savestate_thumbnail_file_path;
-   char background_file_path[PATH_MAX_LENGTH];
-   char thumbnail_file_path[PATH_MAX_LENGTH];
+   char *thumbnail_file_path;
+   char *bg_file_path;
 
    file_list_t *selection_buf_old;
    file_list_t *horizontal_list;
@@ -633,6 +633,8 @@ static void xmb_draw_icon(
 
    draw.width           = icon_size;
    draw.height          = icon_size;
+   draw.rotation        = rotation;
+   draw.scale_factor    = scale_factor;
 #if defined(VITA) || defined(WIIU)
    draw.width          *= scale_factor;
    draw.height         *= scale_factor;
@@ -870,12 +872,18 @@ static void xmb_render_messagebox_internal(
 {
    unsigned i, y_position;
    int x, y, longest = 0, longest_width = 0;
-   float line_height = 0;
+   float line_height        = 0;
    unsigned width           = video_info->width;
    unsigned height          = video_info->height;
-   struct string_list *list = string_split(message, "\n");
-   if (!list)
+   struct string_list *list = !string_is_empty(message) 
+      ? string_split(message, "\n") : NULL;
+
+   if (!list || !xmb)
+   {
+      if (list)
+         string_list_free(list);
       return;
+   }
 
    if (list->elems == 0)
       goto end;
@@ -938,18 +946,16 @@ end:
 static void xmb_update_thumbnail_path(void *data, unsigned i)
 {
    menu_entry_t entry;
-   unsigned entry_type      = 0;
-   char *scrub_char_pointer = NULL;
-   settings_t     *settings = config_get_ptr();
-   xmb_handle_t     *xmb    = (xmb_handle_t*)data;
-   playlist_t     *playlist = NULL;
-   const char    *core_name = NULL;
-   char            *tmp_new = (char*)
-      malloc(PATH_MAX_LENGTH * sizeof(char));
+   unsigned entry_type            = 0;
+   char new_path[PATH_MAX_LENGTH] = {0};
+   settings_t     *settings       = config_get_ptr();
+   xmb_handle_t     *xmb          = (xmb_handle_t*)data;
+   playlist_t     *playlist       = NULL;
+   const char    *dir_thumbnails  = settings->paths.directory_thumbnails;
 
    menu_entry_init(&entry);
 
-   if (!xmb)
+   if (!xmb || string_is_empty(dir_thumbnails))
       goto end;
 
    menu_entry_get(&entry, 0, i, NULL, true);
@@ -962,22 +968,21 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
       xmb_node_t *node = (xmb_node_t*)
          file_list_get_userdata_at_offset(selection_buf, i);
 
-      if (node && node->fullpath)
+      if (!string_is_empty(node->fullpath))
       {
          if (!string_is_empty(entry.path))
             fill_pathname_join(
-                  xmb->thumbnail_file_path,
+                  new_path,
                   node->fullpath,
                   entry.path,
-                  sizeof(xmb->thumbnail_file_path));
+                  sizeof(new_path));
 
          goto end;
       }
    }
    else if (filebrowser_get_type() != FILEBROWSER_NONE)
    {
-      xmb->thumbnail_file_path[0] = '\0';
-      xmb->thumbnail = 0;
+      xmb->thumbnail              = 0;
       goto end;
    }
 
@@ -985,65 +990,84 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
 
    if (playlist)
    {
+      const char    *core_name       = NULL;
       playlist_get_index(playlist, i,
             NULL, NULL, NULL, &core_name, NULL, NULL);
 
       if (string_is_equal(core_name, "imageviewer"))
       {
          if (!string_is_empty(entry.label))
-            strlcpy(xmb->thumbnail_file_path, entry.label,
-                  sizeof(xmb->thumbnail_file_path));
+            strlcpy(new_path, entry.label,
+                  sizeof(new_path));
          goto end;
       }
    }
 
+   /* Append thumbnail system directory */
    if (!string_is_empty(xmb->thumbnail_system))
       fill_pathname_join(
-            xmb->thumbnail_file_path,
-            settings->paths.directory_thumbnails,
+            new_path,
+            dir_thumbnails,
             xmb->thumbnail_system,
-            sizeof(xmb->thumbnail_file_path));
+            sizeof(new_path));
 
-   fill_pathname_join(xmb->thumbnail_file_path, xmb->thumbnail_file_path,
-         xmb_thumbnails_ident(), sizeof(xmb->thumbnail_file_path));
-
+   if (!string_is_empty(new_path))
    {
-      char             *tmp    = NULL;
-      /* Scrub characters that are not cross-platform and/or violate the
-       * No-Intro filename standard:
-       * http://datomatic.no-intro.org/stuff/The%20Official%20No-Intro%20Convention%20(20071030).zip
-       * Replace these characters in the entry name with underscores.
-       */
-      if (!string_is_empty(xmb->thumbnail_content))
-         tmp = strdup(xmb->thumbnail_content);
+      char            *tmp_new2      = (char*)
+         malloc(PATH_MAX_LENGTH * sizeof(char));
 
-      if (!string_is_empty(tmp))
-      {
-         while((scrub_char_pointer = strpbrk(tmp, "&*/:`\"<>?\\|")))
-            *scrub_char_pointer = '_';
-      }
+      tmp_new2[0]                    = '\0';
+
+      /* Append Named_Snaps/Named_Boxart/Named_Titles */
+      fill_pathname_join(tmp_new2, new_path,
+            xmb_thumbnails_ident(), PATH_MAX_LENGTH * sizeof(char));
+
+      strlcpy(new_path, tmp_new2,
+            PATH_MAX_LENGTH * sizeof(char));
+      free(tmp_new2);
+   }
+
+   /* Scrub characters that are not cross-platform and/or violate the
+    * No-Intro filename standard:
+    * http://datomatic.no-intro.org/stuff/The%20Official%20No-Intro%20Convention%20(20071030).zip
+    * Replace these characters in the entry name with underscores.
+    */
+   if (!string_is_empty(xmb->thumbnail_content))
+   {
+      char *scrub_char_pointer       = NULL;
+      char            *tmp_new       = (char*)
+         malloc(PATH_MAX_LENGTH * sizeof(char));
+      char            *tmp           = strdup(xmb->thumbnail_content);
+
+      tmp_new[0]                     = '\0';
+
+      while((scrub_char_pointer = strpbrk(tmp, "&*/:`\"<>?\\|")))
+         *scrub_char_pointer = '_';
 
       /* Look for thumbnail file with this scrubbed filename */
-      tmp_new[0] = '\0';
 
-      if (!string_is_empty(tmp))
-      {
-         fill_pathname_join(tmp_new,
-               xmb->thumbnail_file_path,
-               tmp, PATH_MAX_LENGTH * sizeof(char));
-         strlcpy(xmb->thumbnail_file_path,
-               tmp_new, sizeof(xmb->thumbnail_file_path));
-      }
+      fill_pathname_join(tmp_new,
+            new_path,
+            tmp, PATH_MAX_LENGTH * sizeof(char));
+
+      if (!string_is_empty(tmp_new))
+         strlcpy(new_path,
+               tmp_new, sizeof(new_path));
+
+      free(tmp_new);
       free(tmp);
    }
 
-   strlcat(xmb->thumbnail_file_path,
-         file_path_str(FILE_PATH_PNG_EXTENSION),
-         sizeof(xmb->thumbnail_file_path));
+   /* Append png extension */
+   if (!string_is_empty(new_path))
+      strlcat(new_path,
+            file_path_str(FILE_PATH_PNG_EXTENSION),
+            sizeof(new_path));
 
 end:
+   if (!string_is_empty(new_path))
+      xmb->thumbnail_file_path = strdup(new_path);
    menu_entry_free(&entry);
-   free(tmp_new);
 }
 
 static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
@@ -1051,15 +1075,12 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
    menu_entry_t entry;
    settings_t     *settings = config_get_ptr();
    xmb_handle_t     *xmb    = (xmb_handle_t*)data;
-   playlist_t     *playlist = NULL;
 
    if (!xmb)
       return;
 
    menu_entry_init(&entry);
    menu_entry_get(&entry, 0, i, NULL, true);
-
-   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
 
    if (!string_is_empty(xmb->savestate_thumbnail_file_path))
       free(xmb->savestate_thumbnail_file_path);
@@ -1080,10 +1101,12 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
 
          if (global)
          {
-            if (settings->ints.state_slot > 0)
+            int state_slot = settings->ints.state_slot;
+
+            if (state_slot > 0)
                snprintf(path, path_size, "%s%d",
-                     global->name.savestate, settings->ints.state_slot);
-            else if (settings->ints.state_slot < 0)
+                     global->name.savestate, state_slot);
+            else if (state_slot < 0)
                fill_pathname_join_delim(path,
                      global->name.savestate, "auto", '.', path_size);
             else
@@ -1109,7 +1132,7 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
 static void xmb_update_thumbnail_image(void *data)
 {
    xmb_handle_t *xmb = (xmb_handle_t*)data;
-   if (!xmb)
+   if (!xmb || string_is_empty(xmb->thumbnail_file_path))
       return;
 
    if (filestream_exists(xmb->thumbnail_file_path))
@@ -1117,6 +1140,9 @@ static void xmb_update_thumbnail_image(void *data)
             menu_display_handle_thumbnail_upload, NULL);
    else
       xmb->thumbnail = 0;
+
+   free(xmb->thumbnail_file_path);
+   xmb->thumbnail_file_path = NULL;
 }
 
 static void xmb_set_thumbnail_system(void *data, char*s, size_t len)
@@ -1565,14 +1591,15 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
          fill_pathname_application_special(path, path_size,
                APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG);
 
-       if(!string_is_equal(path, xmb->background_file_path))
+       if(!string_is_equal(path, xmb->bg_file_path))
        {
            if(filestream_exists(path))
            {
               task_push_image_load(path,
                   menu_display_handle_wallpaper_upload, NULL);
-              strlcpy(xmb->background_file_path,
-                    path, sizeof(xmb->background_file_path));
+              if (!string_is_empty(xmb->bg_file_path))
+                 free(xmb->bg_file_path);
+              xmb->bg_file_path = strdup(path);
            }
        }
 
@@ -3603,6 +3630,10 @@ static void xmb_free(void *data)
          free(xmb->thumbnail_content);
       if (!string_is_empty(xmb->savestate_thumbnail_file_path))
          free(xmb->savestate_thumbnail_file_path);
+      if (!string_is_empty(xmb->thumbnail_file_path))
+         free(xmb->thumbnail_file_path);
+      if (!string_is_empty(xmb->bg_file_path))
+         free(xmb->bg_file_path);
    }
 
    font_driver_bind_block(NULL, NULL);
@@ -3841,23 +3872,27 @@ static void xmb_context_reset_textures(
 
 static void xmb_context_reset_background(const char *iconpath)
 {
-   char *path                  = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   char *path                  = NULL;
    settings_t *settings        = config_get_ptr();
+   const char *path_menu_wp    = settings->paths.path_menu_wallpaper;
 
-   path[0] = '\0';
+   if (!string_is_empty(path_menu_wp))
+      path = strdup(path_menu_wp);
+   else if (!string_is_empty(iconpath))
+   {
+      path    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      path[0] = '\0';
 
-   fill_pathname_join(path, iconpath, "bg.png",
-         PATH_MAX_LENGTH * sizeof(char));
-
-   if (!string_is_empty(settings->paths.path_menu_wallpaper))
-      strlcpy(path, settings->paths.path_menu_wallpaper,
+      fill_pathname_join(path, iconpath, "bg.png",
             PATH_MAX_LENGTH * sizeof(char));
+   }
 
    if (filestream_exists(path))
       task_push_image_load(path,
             menu_display_handle_wallpaper_upload, NULL);
 
-   free(path);
+   if (path)
+      free(path);
 }
 
 static void xmb_context_reset(void *data, bool is_threaded)
@@ -3866,12 +3901,19 @@ static void xmb_context_reset(void *data, bool is_threaded)
 
    if (xmb)
    {
-      char *iconpath = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-      iconpath[0]    = '\0';
+      char bg_file_path[PATH_MAX_LENGTH] = {0};
+      char *iconpath    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      iconpath[0]       = '\0';
 
-      fill_pathname_application_special(xmb->background_file_path,
-            sizeof(xmb->background_file_path),
-            APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG);
+      fill_pathname_application_special(bg_file_path,
+            sizeof(bg_file_path), APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG);
+
+      if (!string_is_empty(bg_file_path))
+      {
+         if (!string_is_empty(xmb->bg_file_path))
+            free(xmb->bg_file_path);
+         xmb->bg_file_path = strdup(bg_file_path);
+      }
 
       fill_pathname_application_special(iconpath,
             PATH_MAX_LENGTH * sizeof(char),

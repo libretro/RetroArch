@@ -90,6 +90,9 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #ifdef HAVE_D3D
    &menu_display_ctx_d3d,
 #endif
+#ifdef HAVE_D3D11
+   &menu_display_ctx_d3d11,
+#endif
 #ifdef HAVE_OPENGL
    &menu_display_ctx_gl,
 #endif
@@ -217,7 +220,13 @@ static bool menu_display_check_compatibility(
             return true;
          break;
       case MENU_VIDEO_DRIVER_DIRECT3D:
-         if (string_is_equal(video_driver, "d3d"))
+         if (  string_is_equal(video_driver, "d3d9") ||
+               string_is_equal(video_driver, "d3d8")
+               )
+            return true;
+         break;
+      case MENU_VIDEO_DRIVER_DIRECT3D11:
+         if (string_is_equal(video_driver, "d3d11"))
             return true;
          break;
       case MENU_VIDEO_DRIVER_VITA2D:
@@ -606,9 +615,11 @@ void menu_display_draw_bg(menu_display_ctx_draw_t *draw,
    coords.vertex        = new_vertex;
    coords.tex_coord     = new_tex_coord;
    coords.lut_tex_coord = new_tex_coord;
-   coords.color         = (const float*)draw->color;
+   coords.color         = (const float*)draw->color;   
 
-   draw->coords      = &coords;
+   draw->coords         = &coords;
+   draw->scale_factor   = 1.0f;
+   draw->rotation       = 0.0f;
 
    if (draw->texture)
       add_opacity_to_wallpaper = true;
@@ -651,15 +662,17 @@ void menu_display_draw_quad(
    if (menu_disp && menu_disp->blend_begin)
       menu_disp->blend_begin();
 
-   draw.x           = x;
-   draw.y           = (int)height - y - (int)h;
-   draw.width       = w;
-   draw.height      = h;
-   draw.coords      = &coords;
-   draw.matrix_data = NULL;
-   draw.texture     = menu_display_white_texture;
-   draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
-   draw.pipeline.id = 0;
+   draw.x            = x;
+   draw.y            = (int)height - y - (int)h;
+   draw.width        = w;
+   draw.height       = h;
+   draw.coords       = &coords;
+   draw.matrix_data  = NULL;
+   draw.texture      = menu_display_white_texture;
+   draw.prim_type    = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+   draw.pipeline.id  = 0;
+   draw.scale_factor = 1.0f;
+   draw.rotation     = 0.0f;
 
    menu_display_draw(&draw);
 
@@ -1123,6 +1136,7 @@ void menu_display_draw_cursor(
    draw.matrix_data     = NULL;
    draw.texture         = texture;
    draw.prim_type       = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+   draw.pipeline.id     = 0;
 
    menu_display_draw(&draw);
 
@@ -1295,34 +1309,25 @@ void menu_display_reset_textures_list(
       uintptr_t *item, enum texture_filter_type filter_type)
 {
    struct texture_image ti;
-   char *texpath               = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   size_t texpath_size         = PATH_MAX_LENGTH * sizeof(char);
+   char texpath[PATH_MAX_LENGTH] = {0};
 
-   texpath[0]                  = '\0';
-
-   ti.width                    = 0;
-   ti.height                   = 0;
-   ti.pixels                   = NULL;
-   ti.supports_rgba            = video_driver_supports_rgba();
+   ti.width                      = 0;
+   ti.height                     = 0;
+   ti.pixels                     = NULL;
+   ti.supports_rgba              = video_driver_supports_rgba();
 
    if (!string_is_empty(texture_path))
-      fill_pathname_join(texpath, iconpath, texture_path, texpath_size);
+      fill_pathname_join(texpath, iconpath, texture_path, sizeof(texpath));
 
    if (string_is_empty(texpath) || !filestream_exists(texpath))
-      goto error;
+      return;
 
    if (!image_texture_load(&ti, texpath))
-      goto error;
+      return;
 
    video_driver_texture_load(&ti,
          filter_type, item);
    image_texture_free(&ti);
-
-   free(texpath);
-   return;
-
-error:
-   free(texpath);
 }
 
 bool menu_driver_is_binding_state(void)

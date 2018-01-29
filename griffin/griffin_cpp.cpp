@@ -14,14 +14,15 @@
 */
 
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
-#define HAVE_SHADERS
+#define HAVE_SHADERS 1
 #endif
 
 #if defined(HAVE_ZLIB) || defined(HAVE_7ZIP)
-#define HAVE_COMPRESSION
+#define HAVE_COMPRESSION 1
 #endif
 
 #if defined(_MSC_VER)
+#include <string.h>
 #include <compat/posix_string.h>
 #endif
 
@@ -81,7 +82,6 @@
 #include "../deps/glslang/glslang/hlsl/hlslParseHelper.cpp"
 #include "../deps/glslang/glslang/hlsl/hlslScanContext.cpp"
 #include "../deps/glslang/glslang/hlsl/hlslTokenStream.cpp"
-
 #ifdef _WIN32
 #include "../deps/glslang/glslang/glslang/OSDependent/Windows/ossource.cpp"
 #endif
@@ -122,6 +122,7 @@ VIDEO DRIVER
 #include "../gfx/drivers_shader/shader_vulkan.cpp"
 #include "../gfx/drivers_shader/glslang_util.cpp"
 #include "../gfx/drivers_shader/slang_reflection.cpp"
+#include "../gfx/drivers_shader/slang_preprocess.cpp"
 #include "../deps/SPIRV-Cross/spirv_cross.cpp"
 #include "../deps/SPIRV-Cross/spirv_cfg.cpp"
 #endif

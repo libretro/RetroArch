@@ -49,8 +49,12 @@
 #include <ks.h>
 #include <setupapi.h>
 #include <hidsdi.h>
+
+#ifndef __cplusplus
 /* Why doesn't including cguid.h work to get a GUID_NULL instead? */
+__attribute__((weak))
 const GUID GUID_NULL = {0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
+#endif
 #endif
 
 #include "../input/input_driver.h"
@@ -67,7 +71,7 @@ const GUID GUID_NULL = {0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
 /* HID Class-Specific Requests values. See section 7.2 of the HID specifications */
 #define USB_HID_GET_REPORT 0x01
 #define USB_CTRL_IN LIBUSB_ENDPOINT_IN|LIBUSB_REQUEST_TYPE_CLASS|LIBUSB_RECIPIENT_INTERFACE
-#define USB_PACKET_CTRL_LEN 64
+#define USB_PACKET_CTRL_LEN 5
 #define USB_TIMEOUT 5000 /* timeout in ms */
 
 /* only one blissbox per machine is currently supported */

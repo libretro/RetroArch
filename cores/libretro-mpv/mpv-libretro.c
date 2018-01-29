@@ -15,6 +15,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <dlfcn.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -62,6 +63,84 @@ static void fallback_log(enum retro_log_level level, const char *fmt, ...)
 	va_start(va, fmt);
 	vfprintf(stderr, fmt, va);
 	va_end(va);
+}
+
+static void print_mpv_logs(void)
+{
+	/* Print out mpv logs */
+	if(event_waiting > 0)
+	{
+		while(1)
+		{
+			mpv_event *mp_event = mpv_wait_event(mpv, 0);
+			if(mp_event->event_id == MPV_EVENT_NONE)
+				break;
+
+			if(mp_event->event_id == MPV_EVENT_LOG_MESSAGE)
+			{
+				struct mpv_event_log_message *msg =
+					(struct mpv_event_log_message *)mp_event->data;
+				log_cb(RETRO_LOG_INFO, "mpv: [%s] %s: %s",
+						msg->prefix, msg->level, msg->text);
+			}
+			else if(mp_event->event_id == MPV_EVENT_END_FILE)
+			{
+				struct mpv_event_end_file *eof =
+					(struct mpv_event_end_file *)mp_event->data;
+
+				if(eof->reason == MPV_END_FILE_REASON_EOF)
+					environ_cb(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
+#if 0
+				/* The following could be done instead if the file was not
+				 * closed once the end was reached - allowing the user to seek
+				 * back without reopening the file.
+				 */
+				struct retro_message ra_msg = {
+					"Finished playing file", 60 * 5, /* 5 seconds */
+				};
+
+				environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE, &ra_msg);RETRO_ENVIRONMENT_SHUTDOWN
+#endif
+			}
+			else
+			{
+				log_cb(RETRO_LOG_INFO, "mpv: %s\n",
+						mpv_event_name(mp_event->event_id));
+			}
+		}
+
+		event_waiting = 0;
+	}
+}
+
+static void *get_proc_address_mpv(void *fn_ctx, const char *name)
+{
+	/* The "ISO C forbids conversion of function pointer to object pointer
+	 * type" warning is suppressed.
+	 */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+	void *proc_addr = (void *) hw_render.get_proc_address(name);
+#pragma GCC diagnostic pop
+
+    // EGL 1.4 (supported by the RPI firmware) does not necessarily return
+    // function pointers for core functions.
+    if (!proc_addr) {
+		void *h = dlopen("/opt/vc/lib/libGLESv2.so", RTLD_LAZY);
+
+		if (!h)
+			h = dlopen("/usr/lib/libGLESv2.so", RTLD_LAZY);
+
+        if (h) {
+            proc_addr = dlsym(h, name);
+            dlclose(h);
+        }
+    }
+
+	if(proc_addr == NULL)
+		log_cb(RETRO_LOG_ERROR, "Failure obtaining %s proc address\n", name);
+
+	return proc_addr;
 }
 
 static void on_mpv_events(void *mpv)
@@ -128,6 +207,9 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
 		.sample_rate = sampling_rate,
 	};
 
+	/* We don't know the dimensions of the video yet, so we set some good
+	 * defaults in the meantime.
+	 */
 	info->geometry = (struct retro_game_geometry) {
 		.base_width   = 256,
 		.base_height  = 144,
@@ -157,22 +239,6 @@ void retro_set_environment(retro_environment_t cb)
 		log_cb = fallback_log;
 }
 
-static void *get_proc_address_mpv(void *fn_ctx, const char *name)
-{
-	/* The "ISO C forbids conversion of function pointer to object pointer
-	 * type" warning is suppressed.
-	 */
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-	void *proc_addr = (void *) hw_render.get_proc_address(name);
-#pragma GCC diagnostic pop
-
-	if(proc_addr == NULL)
-		log_cb(RETRO_LOG_ERROR, "Failure obtaining %s proc address\n", name);
-
-	return proc_addr;
-}
-
 static void context_reset(void)
 {
 	const char *cmd[] = {"loadfile", filepath, NULL};
@@ -183,7 +249,7 @@ static void context_reset(void)
 
 	mpv = mpv_create();
 
-	if(!mpv)
+	if(mpv == NULL)
 	{
 		log_cb(RETRO_LOG_ERROR, "failed creating context\n");
 		exit(EXIT_FAILURE);
@@ -198,7 +264,7 @@ static void context_reset(void)
     /* When normal mpv events are available. */
 	mpv_set_wakeup_callback(mpv, on_mpv_events, NULL);
 
-	if(mpv_request_log_messages(mpv, "info") < 0)
+	if(mpv_request_log_messages(mpv, "v") < 0)
 		log_cb(RETRO_LOG_ERROR, "mpv logging failed\n");
 
 	/* The OpenGL API is somewhat separate from the normal mpv API. This only
@@ -206,16 +272,16 @@ static void context_reset(void)
 	 */
 	mpv_gl = mpv_get_sub_api(mpv, MPV_SUB_API_OPENGL_CB);
 
-	if(!mpv_gl)
+	if(mpv_gl == NULL)
 	{
 		log_cb(RETRO_LOG_ERROR, "failed to create mpv GL API handle\n");
-		exit(EXIT_FAILURE);
+		goto err;
 	}
 
 	if(mpv_opengl_cb_init_gl(mpv_gl, NULL, get_proc_address_mpv, NULL) < 0)
 	{
 		log_cb(RETRO_LOG_ERROR, "failed to initialize mpv GL context\n");
-		exit(EXIT_FAILURE);
+		goto err;
 	}
 
 	/* Actually using the opengl_cb state has to be explicitly requested.
@@ -224,7 +290,7 @@ static void context_reset(void)
 	if(mpv_set_option_string(mpv, "vo", "opengl-cb") < 0)
 	{
 		log_cb(RETRO_LOG_ERROR, "failed to set video output to OpenGL\n");
-		exit(EXIT_FAILURE);
+		goto err;
 	}
 
 	if(mpv_set_option_string(mpv, "hwdec", "auto") < 0)
@@ -232,9 +298,10 @@ static void context_reset(void)
 
 	if(mpv_command(mpv, cmd) != 0)
 	{
-		log_cb(RETRO_LOG_ERROR, "failed to issue mpv_command\n");
-		exit(EXIT_FAILURE);
+		log_cb(RETRO_LOG_ERROR, "failed to issue mpv_command to load file\n");
+		goto err;
 	}
+
 
 	/* Keep trying until mpv accepts the property. This is done to seek to the
 	 * point in the file after the previous context was destroyed. If no
@@ -244,9 +311,19 @@ static void context_reset(void)
 	 */
 	while(mpv_set_property(mpv,
 				"playback-time", MPV_FORMAT_INT64, &playback_time) < 0)
-	{}
+	{
+		/* Garbage fix to overflowing log */
+		usleep(10);
+	}
 
 	log_cb(RETRO_LOG_INFO, "Context reset.\n");
+
+	return;
+
+err:
+	/* Print mpv logs to see why mpv failed. */
+	print_mpv_logs();
+	exit(EXIT_FAILURE);
 }
 
 static void context_destroy(void)
@@ -257,30 +334,13 @@ static void context_destroy(void)
 	log_cb(RETRO_LOG_INFO, "Context destroyed.\n");
 }
 
-#ifdef HAVE_OPENGLES
 static bool retro_init_hw_context(void)
 {
-#if defined(HAVE_OPENGLES_3_1)
-	hw_render.context_type = RETRO_HW_CONTEXT_OPENGLES_VERSION;
-	hw_render.version_major = 3;
-	hw_render.version_minor = 1;
-#elif defined(HAVE_OPENGLES3)
-	hw_render.context_type = RETRO_HW_CONTEXT_OPENGLES3;
-#else
+#if defined(HAVE_OPENGLES)
 	hw_render.context_type = RETRO_HW_CONTEXT_OPENGLES2;
-#endif
-	hw_render.context_reset = context_reset;
-	hw_render.context_destroy = context_destroy;
-
-	if (!environ_cb(RETRO_ENVIRONMENT_SET_HW_RENDER, &hw_render))
-		return false;
-
-	return true;
-}
 #else
-static bool retro_init_hw_context(void)
-{
 	hw_render.context_type = RETRO_HW_CONTEXT_OPENGL;
+#endif
 	hw_render.context_reset = context_reset;
 	hw_render.context_destroy = context_destroy;
 
@@ -289,7 +349,6 @@ static bool retro_init_hw_context(void)
 
 	return true;
 }
-#endif
 
 void retro_set_audio_sample(retro_audio_sample_t cb)
 {
@@ -418,6 +477,11 @@ void retro_run(void)
 		mpv_get_property(mpv, "dwidth", MPV_FORMAT_INT64, &width);
 		mpv_get_property(mpv, "dheight", MPV_FORMAT_INT64, &height);
 
+		/* We don't know the dimensions of the video when
+		 * retro_get_system_av_info is called, so we have to set it here for
+		 * the correct aspect ratio.
+		 * This is not a temporary change
+		 */
 		struct retro_game_geometry geometry = {
 			.base_width   = width,
 			.base_height  = height,
@@ -428,33 +492,11 @@ void retro_run(void)
 			.aspect_ratio = -1,
 		};
 
-		environ_cb(RETRO_ENVIRONMENT_SET_GEOMETRY, &geometry);
+		environ_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &geometry);
 		updated_video_dimensions = true;
 	}
 
-	/* Print out mpv logs */
-	if(event_waiting > 0)
-	{
-		while(1)
-		{
-			mpv_event *mp_event = mpv_wait_event(mpv, 0);
-			if(mp_event->event_id == MPV_EVENT_NONE)
-				break;
-
-			log_cb(RETRO_LOG_INFO, "mpv: ");
-			if(mp_event->event_id == MPV_EVENT_LOG_MESSAGE)
-			{
-				struct mpv_event_log_message *msg =
-					(struct mpv_event_log_message *)mp_event->data;
-				log_cb(RETRO_LOG_INFO, "[%s] %s: %s",
-						msg->prefix, msg->level, msg->text);
-			}
-			else
-				log_cb(RETRO_LOG_INFO, "%s\n", mpv_event_name(mp_event->event_id));
-		}
-
-		event_waiting = 0;
-	}
+	print_mpv_logs();
 
 	retropad_update_input();
 	/* TODO #2: Implement an audio callback feature in to libmpv */
@@ -506,7 +548,7 @@ bool retro_load_game(const struct retro_game_info *info)
 	environ_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, desc);
 
 	/* Not bothered if this fails. Assuming the default is selected anyway. */
-	if(!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
+	if(environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt) == false)
 	{
 		log_cb(RETRO_LOG_ERROR, "XRGB8888 is not supported.\n");
 
@@ -515,7 +557,7 @@ bool retro_load_game(const struct retro_game_info *info)
 		environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt);
 	}
 
-	if(!retro_init_hw_context())
+	if(retro_init_hw_context() == false)
 	{
 		log_cb(RETRO_LOG_ERROR, "HW Context could not be initialized\n");
 		return false;

@@ -1,4 +1,8 @@
+#include <string/stdstring.h>
+#include <libretro.h>
+
 #include "ocr_driver.h"
+#include "../configuration.h"
 
 static const ocr_driver_t *ocr_backends[] = {
 #ifdef HAVE_TESSERACT
@@ -9,27 +13,46 @@ static const ocr_driver_t *ocr_backends[] = {
 };
 
 static const ocr_driver_t *current_ocr_backend = NULL;
+static void *ocr_data = NULL;
+
+
+static const ocr_driver_t *ocr_find_backend(const char* ident)
+{
+	unsigned i;
+
+	for (i = 0; ocr_backends[i]; i++)
+	{
+		if (string_is_equal(ocr_backends[i]->ident, ident))
+			return ocr_backends[i];
+	}
+
+	return NULL;
+}
 
 bool  ocr_driver_init(void)
 {	
-	/*TODO: find name of active driver*/
+	settings_t *settings = config_get_ptr();
+	int game_char_set = RETRO_LANGUAGE_DUMMY;
+	current_ocr_backend = ocr_find_backend(settings->arrays.ocr_driver);
+	ocr_data = NULL;
 	
-	bool success = false;
+	/* TODO: get game language */
+	
 	if (current_ocr_backend)
-		success = (*current_ocr_backend->init)();
-	return success;
+		ocr_data = (*current_ocr_backend->init)(game_char_set);
+	return ocr_data != NULL;
 }
 
 void  ocr_driver_free(void)
 {
-	if (current_ocr_backend)
-		(*current_ocr_backend->free)();
+	if (current_ocr_backend && ocr_data)
+		(*current_ocr_backend->free)(ocr_data);
 }
 
 char* ocr_driver_get_text(struct ocr_image_info image)
 {
 	char* image_string = NULL;
-	if (current_ocr_backend)
-		image_string = (*current_ocr_backend->get_text)(image);
+	if (current_ocr_backend && ocr_data)
+		image_string = (*current_ocr_backend->get_text)(ocr_data, image);
 	return image_string;
 }

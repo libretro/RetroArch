@@ -2,7 +2,7 @@
 #extension GL_EXT_tessellation_shader : require
 
 layout(vertices = 1) out;
-in vec2 vPatchPosBase[];
+layout(location = 0) in vec2 vPatchPosBase[];
 
 layout(std140) uniform UBO
 {
@@ -14,8 +14,8 @@ layout(std140) uniform UBO
     vec4 uFrustum[6];
 };
 
-patch out vec2 vOutPatchPosBase;
-patch out vec4 vPatchLods;
+layout(location = 1) patch out vec2 vOutPatchPosBase;
+layout(location = 2) patch out vec4 vPatchLods;
 
 float lod_factor(vec2 pos_)
 {

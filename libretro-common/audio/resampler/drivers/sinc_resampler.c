@@ -88,6 +88,13 @@ typedef struct rarch_sinc_resampler
 } rarch_sinc_resampler_t;
 
 #if defined(__ARM_NEON__)
+#if TARGET_OS_IPHONE
+#else
+#define WANT_NEON
+#endif
+#endif
+
+#ifdef WANT_NEON
 /* Assumes that taps >= 8, and that taps is a multiple of 8. */
 void process_sinc_neon_asm(float *out, const float *left,
       const float *right, const float *coeff, unsigned taps);
@@ -124,7 +131,6 @@ static void resampler_sinc_process_neon(void *re_, struct resampler_data *data)
 
       while (resamp->time < phases)
       {
-         unsigned i;
          const float *buffer_l    = resamp->buffer_l + resamp->ptr;
          const float *buffer_r    = resamp->buffer_r + resamp->ptr;
          unsigned taps            = resamp->taps;
@@ -400,33 +406,33 @@ static void resampler_sinc_process_c(void *re_, struct resampler_data *data)
 
          if (resamp->window_type == SINC_WINDOW_KAISER)
          {
-            phase_table              = resamp->phase_table + phase * taps * 2;
-            delta_table              = phase_table + taps;
-            delta                    = (float)
+            phase_table           = resamp->phase_table + phase * taps * 2;
+            delta_table           = phase_table + taps;
+            delta                 = (float)
                (resamp->time & resamp->subphase_mask) * resamp->subphase_mod;
          }
          else
          {
-            phase_table              = resamp->phase_table + phase * taps;
+            phase_table           = resamp->phase_table + phase * taps;
          }
 
          for (i = 0; i < taps; i++)
          {
-            float sinc_val = phase_table[i];
+            float sinc_val        = phase_table[i];
 
             if (resamp->window_type == SINC_WINDOW_KAISER)
-               sinc_val    = sinc_val + delta_table[i] * delta;
+               sinc_val           = sinc_val + delta_table[i] * delta;
 
-            sum_l         += buffer_l[i] * sinc_val;
-            sum_r         += buffer_r[i] * sinc_val;
+            sum_l                += buffer_l[i] * sinc_val;
+            sum_r                += buffer_r[i] * sinc_val;
          }
 
-         output[0] = sum_l;
-         output[1] = sum_r;
+         output[0]                = sum_l;
+         output[1]                = sum_r;
 
-         output += 2;
+         output                  += 2;
          out_frames++;
-         resamp->time += ratio;
+         resamp->time            += ratio;
       }
 
    }
@@ -640,7 +646,7 @@ static void *resampler_sinc_new(const struct resampler_config *config,
    else
 #endif
    {
-#if defined(__ARM_NEON__)
+#if defined(WANT_NEON)
       re->taps     = (re->taps + 7) & ~7;
 #else
       re->taps     = (re->taps + 3) & ~3;
@@ -690,7 +696,7 @@ static void *resampler_sinc_new(const struct resampler_config *config,
    }
    else if (mask & RESAMPLER_SIMD_NEON && re->window_type != SINC_WINDOW_KAISER)
    {
-#if defined(__ARM_NEON__)
+#if defined(WANT_NEON)
       sinc_resampler.process = resampler_sinc_process_neon;
 #endif
    }
@@ -710,3 +716,5 @@ retro_resampler_t sinc_resampler = {
    "sinc",
    "sinc"
 };
+
+#undef WANT_NEON

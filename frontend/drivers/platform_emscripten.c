@@ -24,6 +24,8 @@
 #include <file/file_path.h>
 #include <string/stdstring.h>
 #include <retro_timers.h>
+#include <gfx/video_frame.h>
+#include <glsym/glsym.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -47,6 +49,7 @@
 void RWebAudioRecalibrateTime(void);
 
 static unsigned emscripten_fullscreen_reinit;
+static unsigned emscripten_frame_count = 0;
 
 static EM_BOOL emscripten_fullscreenchange_cb(int event_type,
    const EmscriptenFullscreenChangeEvent *fullscreen_change_event,
@@ -63,10 +66,31 @@ static EM_BOOL emscripten_fullscreenchange_cb(int event_type,
 
 static void emscripten_mainloop(void)
 {
-   unsigned sleep_ms = 0;
    int ret;
+   video_frame_info_t video_info;
+   unsigned sleep_ms = 0;
 
    RWebAudioRecalibrateTime();
+
+   emscripten_frame_count++;
+
+   video_driver_build_info(&video_info);
+
+   /* Disable BFI during fast forward, slow-motion,
+    * and pause to prevent flicker. */
+   if (
+         video_info.black_frame_insertion
+         && !video_info.input_driver_nonblock_state
+         && !video_info.runloop_is_slowmotion
+         && !video_info.runloop_is_paused)
+   {
+      if ((emscripten_frame_count & 1) == 0)
+      {
+         glClear(GL_COLOR_BUFFER_BIT);
+         video_info.cb_swap_buffers(video_info.context_data, &video_info);
+         return;
+      }
+   }
 
    if (emscripten_fullscreen_reinit != 0)
    {
@@ -236,5 +260,7 @@ frontend_ctx_driver_t frontend_ctx_emscripten = {
    NULL,                         /* destroy_signal_handler_state */
    NULL,                         /* attach_console */
    NULL,                         /* detach_console */
+   NULL,                         /* watch_path_for_changes */
+   NULL,                         /* check_for_path_changes */
    "emscripten"
 };

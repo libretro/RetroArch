@@ -3,8 +3,8 @@
 layout(triangles) in;
 layout(max_vertices = 3, triangle_strip) out;
 
-out vec3 vNormal;
-in VertexData
+layout(location = 0) out vec3 vNormal;
+layout(location = 0) in VertexData
 {
     vec3 normal;
 } vin[3];

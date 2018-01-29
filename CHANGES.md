@@ -10,8 +10,12 @@
 - COMMON: Bugfix for issue related to 'Windows mouse pointer visible when running MESS or MAME cores'.
 - COMMON: Fix bug 'Last item in a Playlist is ignored'.
 - COMMON: New LED API. Driver implemented for Raspberry Pi, proof of concept implemented for core MAME 2003.
+- COMMON: Add quick menu option to watch shader files for changes and recompile them automatically (Linux only for now).
 - D3D8: Direct3D 8 can now work on systems that have Direct3D 8 installed.
 - D3D9: Add menu support for MaterialUI/XMB.
+- D3D10: Initial video driver implementation.
+- D3D11: Initial video driver implementation.
+- D3D12: Initial video driver implementation.
 - DINPUT: don't reinitialize input driver on network events / media insertion / network drive connection
 - INPUT: show friendly names when available under input binds and system information
 - INPUT: show the config name when available under system information
@@ -19,23 +23,29 @@
 - GUI: Menu visibility options for RGUI and MaterialUI.
 - GUI/XMB: Add Monochrome Inverted icon theme.
 - GUI/XMB: Allow changing menu scale to 200%.
+- HAIKU: Restored port.
 - KEYMAPPER: prevent a condition that caused input_menu_toggle to stop working when a RETRO_DEVICE_KEYBOARD type device is enabled
 - GL: ignore hard gpu sync when fast-forwarding
+- IOS10/11: Handle hardware keyboards and iCade controllers
 - LOCALIZATION: Update Italian translation.
+- LOCALIZATION: Update Japanese translation.
 - LOCALIZATION: Update Spanish translation.
-- NSW: Initial Nintendo Switch port, based on libtransistor SDK.
+- OSX: Modify HID buttons detection algorithm. 
 - SOLARIS: Initial port.
+- SWITCH: Initial Nintendo Switch port, based on libtransistor SDK.
 - PS3: Enable Cheevos.
 - PSP: Enable threading support through pthreads.
 - SHIELD ATV: Allow the remote / gamepad takeover hack to work with the 2017 gamepad
+- VULKAN: Fix swapchain recreation bug on Nvidia GPUs with Windows 10 through workaround (will be properly resolved in a future driver version).
 - WINDOWS: Improved Unicode support (for cores/directory creation and 7zip archives).
 - WINDOWS: Show progress meter on taskbar for downloads (Windows 7 and up).
 - WINDOWS: WS_EX_LAYERED drastically decreases performance, so only set it when needed (transparency in windowed mode).
 - WIIU: Overlay support.
 - WIIU: Transparency support in menu + overlays.
-- WIIU: New HID pad support.
+- WIIU: Increased stability during core switching.
 - WIIU: Shader support.
 - WIIU: Menu shader effects added (shaders).
+- XBOX OG: Restored port.
 
 # 1.7.0
 - CHEEVOS: Add badges for achievements, shows thumbnail images of achievements.

@@ -1,4 +1,4 @@
-/* RetroArch - A frontend for libretro.
+﻿/* RetroArch - A frontend for libretro.
 * Copyright (C) 2010-2014 - Hans-Kristian Arntzen
 * Copyright (C) 2011-2017 - Daniel De Matteis
 *
@@ -17,11 +17,11 @@
 #define HAVE_IBXM 1
 
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
-#define HAVE_SHADERS
+#define HAVE_SHADERS 1
 #endif
 
 #if defined(HAVE_ZLIB) || defined(HAVE_7ZIP)
-#define HAVE_COMPRESSION
+#define HAVE_COMPRESSION 1
 #endif
 
 #if _MSC_VER
@@ -324,14 +324,14 @@ VIDEO DRIVER
 ============================================================ */
 #if defined(HAVE_D3D)
 #include "../gfx/common/d3d_common.c"
-#include "../gfx/drivers/d3d.c"
 #include "../gfx/drivers_context/d3d_ctx.c"
 
 #if defined(HAVE_D3D8)
-#include "../gfx/drivers_renderchain/d3d8_renderchain.c"
+#include "../gfx/drivers/d3d8.c"
 #endif
 
 #if defined(HAVE_D3D9)
+#include "../gfx/drivers/d3d9.c"
 
 #ifdef HAVE_HLSL
 #include "../gfx/drivers_renderchain/d3d9_hlsl_renderchain.c"
@@ -343,6 +343,26 @@ VIDEO DRIVER
 
 #endif
 
+#endif
+
+#if defined(HAVE_D3D11)
+#include "../gfx/drivers/d3d11.c"
+#include "../gfx/common/d3d11_common.c"
+#endif
+
+#if defined(HAVE_D3D12)
+#include "../gfx/drivers/d3d12.c"
+#include "../gfx/common/d3d12_common.c"
+#endif
+
+#if defined(HAVE_D3D10)
+#include "../gfx/drivers/d3d10.c"
+#include "../gfx/common/d3d10_common.c"
+#endif
+
+#if defined(HAVE_D3D10) || defined(HAVE_D3D11) || defined(HAVE_D3D12)
+#include "../gfx/common/d3dcompiler_common.c"
+#include "../gfx/common/dxgi_common.c"
 #endif
 
 #if defined(GEKKO)
@@ -490,6 +510,10 @@ FONTS
 
 #if defined(HAVE_VULKAN)
 #include "../gfx/drivers_font/vulkan_raster_font.c"
+#endif
+
+#if defined(HAVE_D3D11)
+#include "../gfx/drivers_font/d3d11_font.c"
 #endif
 
 /*============================================================
@@ -1035,12 +1059,13 @@ THREAD
 NETPLAY
 ============================================================ */
 #ifdef HAVE_NETWORKING
-#define JSON_STATIC /* must come before netplay_room_parse and jsonsax_full */
+#define JSON_STATIC 1 /* must come before netplay_room_parse and jsonsax_full */
 #include "../network/netplay/netplay_delta.c"
 #include "../network/netplay/netplay_frontend.c"
 #include "../network/netplay/netplay_handshake.c"
 #include "../network/netplay/netplay_init.c"
 #include "../network/netplay/netplay_io.c"
+#include "../network/netplay/netplay_keyboard.c"
 #include "../network/netplay/netplay_sync.c"
 #include "../network/netplay/netplay_discovery.c"
 #include "../network/netplay/netplay_buf.c"
@@ -1135,6 +1160,10 @@ MENU
 
 #if defined(HAVE_D3D)
 #include "../menu/drivers_display/menu_display_d3d.c"
+#endif
+
+#if defined(HAVE_D3D11)
+#include "../menu/drivers_display/menu_display_d3d11.c"
 #endif
 
 #ifdef HAVE_OPENGL
@@ -1283,7 +1312,7 @@ XML
 ============================================================ */
 #if 0
 #ifndef HAVE_LIBXML2
-#define RXML_LIBXML2_COMPAT
+#define RXML_LIBXML2_COMPAT 1
 #include "../libretro-common/formats/xml/rxml.c"
 #endif
 #endif
@@ -1322,7 +1351,6 @@ XML
 #include "../deps/miniupnpc/minixml.c"
 #include "../deps/miniupnpc/minisoap.c"
 #endif
-
 
 /*============================================================
 HTTP SERVER

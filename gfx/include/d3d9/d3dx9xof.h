@@ -1,11 +1,11 @@
-///////////////////////////////////////////////////////////////////////////
-//
-//  Copyright (C) Microsoft Corporation.  All Rights Reserved.
-//
-//  File:       d3dx9xof.h
-//  Content:    D3DX .X File types and functions
-//
-///////////////////////////////////////////////////////////////////////////
+/*
+ *
+ *  Copyright (C) Microsoft Corporation.  All Rights Reserved.
+ *
+ *  File:       d3dx9xof.h
+ *  Content:    D3DX .X File types and functions
+ *
+ */
 
 #include "d3dx9.h"
 
@@ -14,7 +14,7 @@
 
 #if defined( __cplusplus )
 extern "C" {
-#endif // defined( __cplusplus )
+#endif /* defined( __cplusplus ) */
 
 typedef DWORD D3DXF_FILEFORMAT;
 
@@ -267,7 +267,7 @@ WIN_TYPES(ID3DXFileData,             D3DXFILEDATA);
 WIN_TYPES(ID3DXFileSaveData,         D3DXFILESAVEDATA);
 
 #if defined( __cplusplus )
-} // extern "C"
-#endif // defined( __cplusplus )
+} /* extern "C" */
+#endif /* defined( __cplusplus ) */
 
-#endif // !defined( __D3DX9XOF_H__ )
+#endif /* !defined( __D3DX9XOF_H__ ) */

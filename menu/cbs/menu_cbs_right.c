@@ -327,6 +327,14 @@ static int action_right_shader_num_passes(unsigned type, const char *label,
    return 0;
 }
 
+static int action_right_shader_watch_for_changes(unsigned type, const char *label,
+      bool wraparound)
+{
+   settings_t *settings = config_get_ptr();
+   settings->bools.video_shader_watch_files = !settings->bools.video_shader_watch_files;
+   return 0;
+}
+
 static int action_right_video_resolution(unsigned type, const char *label,
       bool wraparound)
 {
@@ -591,6 +599,9 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
                break;
             case MENU_ENUM_LABEL_VIDEO_SHADER_DEFAULT_FILTER:
                BIND_ACTION_RIGHT(cbs, action_right_shader_filter_default);
+               break;
+            case MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES:
+               BIND_ACTION_RIGHT(cbs, action_right_shader_watch_for_changes);
                break;
             case MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES:
                BIND_ACTION_RIGHT(cbs, action_right_shader_num_passes);

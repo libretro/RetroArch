@@ -34,9 +34,12 @@ static void* x11_display_server_init(void)
    return dispserv;
 }
 
-static void x11_display_server_destroy(void)
+static void x11_display_server_destroy(void *data)
 {
+   dispserv_x11_t *dispserv = (dispserv_x11_t*)data;
 
+   if (dispserv)
+      free(dispserv);
 }
 
 static bool x11_set_window_opacity(void *data, unsigned opacity)

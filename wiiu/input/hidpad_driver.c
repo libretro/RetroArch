@@ -61,7 +61,6 @@ error:
    if (hid_data)
    {
       wiiu_hid.free(hid_data);
-      free(hid_data);
       hid_data = NULL;
    }
    return NULL;
@@ -71,7 +70,6 @@ static bool hidpad_init(void *data)
 {
    (void *)data;
 
-#if 0
    hid_driver = init_hid_driver();
    if (!hid_driver)
    {
@@ -83,9 +81,6 @@ static bool hidpad_init(void *data)
    ready = true;
 
    return true;
-#else
-   return false;
-#endif
 }
 
 static bool hidpad_query_pad(unsigned pad)
@@ -97,12 +92,16 @@ static void hidpad_destroy(void)
 {
    ready = false;
 
-   if (!hid_driver)
-      return;
+   if(hid_driver) {
+     hid_driver->free(hid_data);
+     hid_data = NULL;
+     hid_driver = NULL;
+   }
 
-   hid_driver->free(get_hid_data());
-   free(hid_data);
-   hid_data = NULL;
+   if(hid_data) {
+     free(hid_data);
+     hid_data = NULL;
+   }
 }
 
 static bool hidpad_button(unsigned pad, uint16_t button)

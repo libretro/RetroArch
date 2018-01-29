@@ -27,6 +27,7 @@
 #include <string/stdstring.h>
 
 #include "../drivers/d3d.h"
+#include "../common/d3d_common.h"
 #include "../common/win32_common.h"
 
 #include "../../configuration.h"
@@ -81,9 +82,8 @@ static bool gfx_ctx_d3d_set_resize(void *data, unsigned new_width, unsigned new_
 static void gfx_ctx_d3d_swap_buffers(void *data, void *data2)
 {
    d3d_video_t      *d3d = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
-
-   d3d_swap(d3d, d3dr);
+   if (d3d)
+      d3d_swap(d3d, d3d->dev);
 }
 
 static void gfx_ctx_d3d_update_title(void *data, void *data2)
@@ -176,14 +176,22 @@ static bool gfx_ctx_d3d_bind_api(void *data,
    (void)data;
    (void)major;
    (void)minor;
-   (void)api;
 
-#if defined(HAVE_D3D8)
-   return api == GFX_CTX_DIRECT3D8_API;
-#else
-   /* As long as we don't have a D3D11 implementation, we default to this */
-   return api == GFX_CTX_DIRECT3D9_API;
-#endif
+   switch (api)
+   {
+      case GFX_CTX_DIRECT3D8_API:
+         if (api == GFX_CTX_DIRECT3D8_API)
+            return true;
+         break;
+      case GFX_CTX_DIRECT3D9_API:
+         if (api == GFX_CTX_DIRECT3D9_API)
+            return true;
+         break;
+      default:
+         break;
+   }
+
+   return false;
 }
 
 static void *gfx_ctx_d3d_init(video_frame_info_t *video_info, void *video_driver)

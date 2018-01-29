@@ -84,12 +84,12 @@ int font_renderer_create_default(const void **data, void **handle,
 
 #ifdef HAVE_D3D
 static const font_renderer_t *d3d_font_backends[] = {
-#if defined(_XBOX1)
-   &d3d_xdk1_font,
-#elif defined(_XBOX360)
+#if defined(_XBOX360)
    &d3d_xbox360_font,
 #elif defined(_WIN32) && defined(HAVE_D3DX)
    &d3d_win32_font,
+#elif defined(_XBOX1)
+   &d3d_xdk1_font,
 #endif
    NULL
 };
@@ -278,6 +278,37 @@ static bool vulkan_font_init_first(
 }
 #endif
 
+#ifdef HAVE_D3D11
+static const font_renderer_t *d3d11_font_backends[] = {
+   &d3d11_font,
+   NULL,
+};
+
+static bool d3d11_font_init_first(
+      const void **font_driver, void **font_handle,
+      void *video_data, const char *font_path,
+      float font_size, bool is_threaded)
+{
+   unsigned i;
+
+   for (i = 0; d3d11_font_backends[i]; i++)
+   {
+      void *data = d3d11_font_backends[i]->init(video_data,
+            font_path, font_size,
+            is_threaded);
+
+      if (!data)
+         continue;
+
+      *font_driver = d3d11_font_backends[i];
+      *font_handle = data;
+      return true;
+   }
+
+   return false;
+}
+#endif
+
 #ifdef HAVE_VITA2D
 static const font_renderer_t *vita2d_font_backends[] = {
    &vita2d_vita_font
@@ -392,6 +423,11 @@ static bool font_init_first(
 #ifdef HAVE_VULKAN
       case FONT_DRIVER_RENDER_VULKAN_API:
          return vulkan_font_init_first(font_driver, font_handle,
+               video_data, font_path, font_size, is_threaded);
+#endif
+#ifdef HAVE_D3D11
+      case FONT_DRIVER_RENDER_D3D11_API:
+         return d3d11_font_init_first(font_driver, font_handle,
                video_data, font_path, font_size, is_threaded);
 #endif
 #ifdef HAVE_VITA2D

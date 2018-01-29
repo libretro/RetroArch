@@ -573,7 +573,10 @@ static void audio_driver_flush(const int16_t *data, size_t samples)
    runloop_get_status(&is_paused, &is_idle, &is_slowmotion,
          &is_perfcnt_enable);
 
-   if (is_paused || !audio_driver_active || !audio_driver_input_data)
+   if (            is_paused                || 
+		   !audio_driver_active     || 
+		   !audio_driver_input_data ||
+		   !audio_driver_output_samples_buf)
       return;
 
    convert_s16_to_float(audio_driver_input_data, data, samples,

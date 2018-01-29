@@ -106,6 +106,10 @@ early (i.e., it only forwards data on the frame it's reached), it must also
 inform all clients of its own current frame even if it has no input. The
 NOINPUT command is provided for that purpose.
 
+Each client has a client number, and the server is always client number 0.
+Client numbers are currently limited to 0-31, as they're used in 32-bit
+bitmaps.
+
 The handshake procedure (this part is done by both server and client):
 1) Send connection header
 2) Receive and verify connection header
@@ -155,18 +159,16 @@ Command: INPUT
 Payload:
     {
        frame number: uint32
-       is server data: 1 bit
-       player: 31 bits
-       joypad input: uint32
-       analog 1 input: uint32
-       analog 2 input: uint32
+       client number: uint32
+       input data: variable
     }
 Description:
     Input state for each frame. Netplay must send an INPUT command for every
-    frame in order to function at all. Client's player value is ignored. Server
-    indicates which frames are its own input data because INPUT is a
-    synchronization point: No synchronization events from the given frame may
-    arrive after the server's input for the frame.
+    frame in order to function at all. When sent from the server (client 0),
+    INPUT is a synchronization point: No synchronization events from the given
+    frame may arrive after the server's input for the frame. The actual size of
+    the input data is variable, but must match the expected size for each of
+    the devices the given client controls.
 
 Command: NOINPUT
 Payload:
@@ -213,9 +215,10 @@ Payload:
     {
        frame number: uint32
        paused?: 1 bit
-       connected players: 31 bits
-       flip frame: uint32
+       client number: 31 bits
        controller devices: uint32[16]
+       share modes: uint8[16]
+       controller-client mapping: uint32[16]
        client nick: char[32]
        sram: variable
     }
@@ -236,23 +239,31 @@ Description:
 Command: PLAY
 Payload:
     {
-       reserved: 31 bits
        as slave?: 1 bit
+       reserved: 7 bits
+       preferred share mode: 8 bits
+       requested device(s): 16 bits
     }
 Description:
     Request to enter player mode. The client must wait for a MODE command
     before sending input. Server may refuse or force slave connections, so the
-    request is not necessarily honored. Payload may be elided if zero.
+    request is not necessarily honored. If no devices are explicitly requested,
+    the server may choose how to assign; the default is to assign the first
+    unassigned device, and share the first device if all devices are assigned
+    and the first device is shareable.
 
 Command: MODE
 Payload:
     {
        frame number: uint32
-       reserved: 13 bits
-       slave: 1 bit
-       playing: 1 bit
        you: 1 bit
-       player number: uint16
+       playing: 1 bit
+       slave: 1 bit
+       reserved: 13 bits
+       client number: uint16
+       device bitmap: uint32
+       share modes: uint8[16]
+       nick: char[32]
     }
 Description:
     Inform of a connection mode change (possibly of the receiving client). Only
@@ -346,3 +357,43 @@ Unused
 
 Command: CFG_ACK
 Unused
+
+
+Input types
+
+Each input device uses a number of words fixed by the type of device. When
+buttons are listed, they are listed from lowest bit to highest bit, i.e.,
+reverse order. When insufficient buttons are present to represent to represent
+a full 32-bit word, the remainder are reserved and unused.
+
+JOYPAD
+    {
+       B, Y, Select, Start, Up, Down, Left, Right, A, X, L, R, L2, R2, L3, R3
+    }
+
+MOUSE
+    {
+       unused, unused, Left, Right, Wheel up, Wheel down, Middle, Horizontal
+       wheel up, Horizontal wheel down
+       Y: int16
+       X: int16
+    }
+
+KEYBOARD
+   (5 words, see netplay_keys.h)
+
+LIGHTGUN
+   {
+      unused, unused, Trigger, Cursor, Turbo, Pause, Start
+      Y: int16
+      X: int16
+   }
+
+ANALOG
+    {
+       buttons: uint32, as JOYPAD
+       Left analog Y: int16
+       Left analog X: int16
+       Right analog Y: int16
+       Right analog X: int16
+    }

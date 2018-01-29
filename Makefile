@@ -16,7 +16,11 @@ include config.mk
 
 TARGET = retroarch
 
-OBJDIR := obj-unix
+ifeq ($(DEBUG), 1)
+   OBJDIR := obj-unix/debug
+else
+   OBJDIR := obj-unix/release
+endif
 
 OBJ :=
 LIBS :=
@@ -71,6 +75,7 @@ endif
 
 ifeq ($(DEBUG), 1)
    OPTIMIZE_FLAG = -O0 -g
+   DEFINES += -DDEBUG -D_DEBUG
 else
    OPTIMIZE_FLAG = -O3 -ffast-math
 endif

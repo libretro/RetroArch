@@ -87,10 +87,6 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                   "Bildschirmtastatur ein-/ausschalten.");
             break;
-         case RARCH_NETPLAY_FLIP:
-            snprintf(s, len,
-                  "Netplay-Spieler tauschen.");
-            break;
          case RARCH_NETPLAY_GAME_WATCH:
                 snprintf(s, len,
                   "Im Netplay zwischen Spiel- und Beobachter-Modus wechseln.");
@@ -1772,11 +1768,6 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Der Benutzername der Person, die RetroArch verwendet. \n"
                "Wird in Online-Spielen verwendet.");
          break;
-      case MENU_ENUM_LABEL_NETPLAY_CLIENT_SWAP_INPUT:
-         snprintf(s, len,
-               "Verwendet Tastenbelegung für Spieler 1, \n"
-               "wenn du Teilnehmer an einem Netplay-Spiel bist.");
-         break;
       case MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT:
          snprintf(s, len,
                "Der Port der Host-IP-Adresse. \n"
@@ -1891,10 +1882,6 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
       case MENU_ENUM_LABEL_SAVE_STATE:
          snprintf(s, len,
                "Speichert Save-State.");
-         break;
-      case MENU_ENUM_LABEL_NETPLAY_FLIP_PLAYERS:
-         snprintf(s, len,
-               "Netplay-Benutzer vertauschen.");
          break;
       case MENU_ENUM_LABEL_CHEAT_INDEX_PLUS:
          snprintf(s, len,

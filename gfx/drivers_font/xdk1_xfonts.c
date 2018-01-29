@@ -15,6 +15,7 @@
  */
 
 #include <xtl.h>
+#include <xfont.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"

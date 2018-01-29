@@ -1,4 +1,4 @@
-/*  RetroArch - A frontend for libretro.
+﻿/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -61,21 +61,21 @@ static void *menu_display_d3d_get_default_mvp(void)
    return &id;
 }
 
-static D3DPRIMITIVETYPE menu_display_prim_to_d3d_enum(
+static INT32 menu_display_prim_to_d3d_enum(
       enum menu_display_prim_type prim_type)
 {
    switch (prim_type)
    {
       case MENU_DISPLAY_PRIM_TRIANGLES:
       case MENU_DISPLAY_PRIM_TRIANGLESTRIP:
-         return D3DPT_TRIANGLESTRIP;
+         return D3DPT_COMM_TRIANGLESTRIP;
       case MENU_DISPLAY_PRIM_NONE:
       default:
          break;
    }
 
    /* TOD/FIXME - hack */
-   return (D3DPRIMITIVETYPE)0;
+   return 0;
 }
 
 static void menu_display_d3d_blend_begin(void)
@@ -112,11 +112,11 @@ static void menu_display_d3d_bind_texture(void *data)
 
 
    d3d_set_texture(d3d->dev, 0, (void*)draw->texture);
-   d3d_set_sampler_address_u(d3d->dev, 0, D3DTADDRESS_CLAMP);
-   d3d_set_sampler_address_v(d3d->dev, 0, D3DTADDRESS_CLAMP);
-   d3d_set_sampler_minfilter(d3d->dev, 0, D3DTEXF_LINEAR);
-   d3d_set_sampler_magfilter(d3d->dev, 0, D3DTEXF_LINEAR);
-   d3d_set_sampler_mipfilter(d3d->dev, 0, D3DTEXF_LINEAR);
+   d3d_set_sampler_address_u(d3d->dev, 0, D3DTADDRESS_COMM_CLAMP);
+   d3d_set_sampler_address_v(d3d->dev, 0, D3DTADDRESS_COMM_CLAMP);
+   d3d_set_sampler_minfilter(d3d->dev, 0, D3DTEXF_COMM_LINEAR);
+   d3d_set_sampler_magfilter(d3d->dev, 0, D3DTEXF_COMM_LINEAR);
+   d3d_set_sampler_mipfilter(d3d->dev, 0, D3DTEXF_COMM_LINEAR);
 
 }
 
@@ -136,7 +136,7 @@ static void menu_display_d3d_draw(void *data)
    if (!d3d || !draw || draw->pipeline.id)
       return;
    if((d3d->menu_display.offset + draw->coords->vertices )
-         > d3d->menu_display.size)
+         > (unsigned)d3d->menu_display.size)
       return;
 
    pv           = (Vertex*)
@@ -169,6 +169,16 @@ static void menu_display_d3d_draw(void *data)
       pv[i].z     = 0.5f;
       pv[i].u     = *tex_coord++;
       pv[i].v     = *tex_coord++;
+#ifdef _XBOX1
+      {
+         D3DSURFACE_DESC desc;
+         if (d3d_texture_get_level_desc(draw->texture, 0, &desc))
+         {
+            pv[i].u *= desc.Width;
+            pv[i].v *= desc.Height;
+         }
+      }
+#endif
 
       pv[i].color =
          D3DCOLOR_ARGB(
@@ -283,7 +293,7 @@ static void menu_display_d3d_clear_color(
          BYTE_CLAMP(clearcolor->b * 255.0f)  /* B */
          );
 
-   d3d_clear(d3d->dev, 0, NULL, D3DCLEAR_TARGET, clear_color, 0, 0);
+   d3d_clear(d3d->dev, 0, NULL, D3D_COMM_CLEAR_TARGET, clear_color, 0, 0);
 }
 
 static bool menu_display_d3d_font_init_first(

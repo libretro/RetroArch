@@ -27,17 +27,10 @@
 #define HAVE_WINDOW
 #endif
 
-#include "../../defines/d3d_defines.h"
-
-#ifdef _XBOX1
-#include <xfont.h>
-#endif
-
 #include "../../driver.h"
 
 #include "../font_driver.h"
 #include "../video_driver.h"
-#include "../common/d3d_common.h"
 #ifdef _XBOX
 #include "../../defines/xdk_defines.h"
 #endif
@@ -50,7 +43,7 @@ typedef struct
    float tex_coords[4];
    float vert_coords[4];
    float alpha_mod;
-   LPDIRECT3DTEXTURE tex;
+   void *tex;
    void *vert_buf;
 } overlay_t;
 
@@ -61,15 +54,23 @@ typedef struct Vertex
    float u, v;
 } Vertex;
 
+typedef struct d3d_video_viewport
+{
+   DWORD x;
+   DWORD y;
+   DWORD width;
+   DWORD height;
+   float min_z;
+   float max_z;
+} d3d_video_viewport_t;
+
 typedef struct d3d_video
 {
    bool keep_aspect;
    bool should_resize;
    bool quitting;
    bool needs_restore;
-#ifdef HAVE_OVERLAY
    bool overlays_enabled;
-#endif
    /* TODO - refactor this away properly. */
    bool resolution_hd_enable;
 
@@ -83,14 +84,15 @@ typedef struct d3d_video
    RECT font_rect;
    RECT font_rect_shifted;
    math_matrix_4x4 mvp;
+   math_matrix_4x4 mvp_rotate;
    math_matrix_4x4 mvp_transposed;
 
    struct video_viewport vp;
    struct video_shader shader;
    video_info_t video_info;
    WNDCLASSEX windowClass;
-   LPDIRECT3DDEVICE dev;
-   D3DVIEWPORT final_viewport;
+   void *dev;
+   d3d_video_viewport_t final_viewport;
 
    char *shader_path;
 
@@ -98,18 +100,15 @@ typedef struct d3d_video
    {
       int size;
       int offset;
-      LPDIRECT3DVERTEXBUFFER buffer;
+      void *buffer;
       void *decl;
    }menu_display;
 
-#ifdef HAVE_OVERLAY
    size_t overlays_size;
    overlay_t *overlays;
-#endif
 } d3d_video_t;
 
-void d3d_make_d3dpp(void *data,
-      const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp);
+void d3d_make_d3dpp(void *data, const video_info_t *info, void *_d3dpp);
 
 #endif
 

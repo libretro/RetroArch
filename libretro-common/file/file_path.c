@@ -36,6 +36,9 @@
 #ifdef __APPLE__
 #include <CoreFoundation/CoreFoundation.h>
 #endif
+#ifdef __HAIKU__
+#include <kernel/image.h>
+#endif
 #ifndef __MACH__
 #include <compat/strl.h>
 #include <compat/posix_string.h>
@@ -589,6 +592,30 @@ void fill_pathname_basedir_noext(char *out_dir,
 {
    fill_pathname_basedir(out_dir, in_path, size);
    path_remove_extension(out_dir);
+}
+
+/**
+ * fill_pathname_parent_dir_name:
+ * @out_dir            : output directory
+ * @in_dir             : input directory
+ * @size               : size of output directory
+ *
+ * Copies only the parent directory name of @in_dir into @out_dir.
+ * The two buffers must not overlap. Removes trailing '/'.
+ **/
+void fill_pathname_parent_dir_name(char *out_dir,
+      const char *in_dir, size_t size)
+{
+   char *temp = strdup(in_dir);
+   char *last = find_last_slash(temp);
+
+   *last = '\0';
+
+   in_dir = find_last_slash(temp) + 1;
+
+   strlcpy(out_dir, in_dir, size);
+
+   free(temp);
 }
 
 /**

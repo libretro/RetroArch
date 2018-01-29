@@ -43,6 +43,10 @@
 #include "../../verbosity.h"
 #include "../../wifi/wifi_driver.h"
 
+#ifdef HAVE_NETWORKING
+#include "../network/netplay/netplay.h"
+#endif
+
 #ifndef BIND_ACTION_GET_VALUE
 #define BIND_ACTION_GET_VALUE(cbs, name) \
    cbs->action_get_value = name; \
@@ -303,6 +307,30 @@ static void menu_action_setting_disp_set_label_pipeline(
 
    strlcpy(s2, path, len2);
 
+}
+
+static void menu_action_setting_disp_set_label_shader_watch_for_changes(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   settings_t *settings = config_get_ptr();
+
+   *s = '\0';
+   *w = 19;
+   strlcpy(s2, path, len2);
+
+   if (settings)
+   {
+      if (settings->bools.video_shader_watch_files)
+         snprintf(s, len, "%s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TRUE));
+      else
+         snprintf(s, len, "%s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FALSE));
+   }
 }
 
 static void menu_action_setting_disp_set_label_shader_num_passes(
@@ -1714,6 +1742,86 @@ static void menu_action_setting_disp_set_label_setting_path(file_list_t* list,
    strlcpy(s2, path, len2);
 }
 
+#ifdef HAVE_NETWORKING
+static void menu_action_setting_disp_set_label_netplay_share_digital(file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   settings_t *settings = config_get_ptr();
+   const char *src;
+
+   if (!settings)
+      return;
+
+   strlcpy(s2, path, len2);
+   *w = 19;
+   switch (settings->uints.netplay_share_digital)
+   {
+      case RARCH_NETPLAY_SHARE_DIGITAL_NO_PREFERENCE:
+         src = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NO_PREFERENCE);
+         break;
+
+      case RARCH_NETPLAY_SHARE_DIGITAL_OR:
+         src = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_OR);
+         break;
+
+      case RARCH_NETPLAY_SHARE_DIGITAL_XOR:
+         src = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_XOR);
+         break;
+
+      case RARCH_NETPLAY_SHARE_DIGITAL_VOTE:
+         src = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_VOTE);
+         break;
+
+      default:
+         src = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE);
+         break;
+   }
+   strlcpy(s, src, len);
+}
+
+static void menu_action_setting_disp_set_label_netplay_share_analog(file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   settings_t *settings = config_get_ptr();
+   const char *src;
+
+   if (!settings)
+      return;
+
+   strlcpy(s2, path, len2);
+   *w = 19;
+   switch (settings->uints.netplay_share_analog)
+   {
+      case RARCH_NETPLAY_SHARE_ANALOG_NO_PREFERENCE:
+         src = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NO_PREFERENCE);
+         break;
+
+      case RARCH_NETPLAY_SHARE_ANALOG_MAX:
+         src = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_MAX);
+         break;
+
+      case RARCH_NETPLAY_SHARE_ANALOG_AVERAGE:
+         src = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_AVERAGE);
+         break;
+
+      default:
+         src = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE);
+         break;
+   }
+   strlcpy(s, src, len);
+}
+#endif // HAVE_NETWORKING
+
 static int menu_cbs_init_bind_get_string_representation_compare_label(
       menu_file_list_cbs_t *cbs)
 {
@@ -1789,6 +1897,10 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_shader_num_passes);
             break;
+         case MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_shader_watch_for_changes);
+            break;
          case MENU_ENUM_LABEL_XMB_RIBBON_ENABLE:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_pipeline);
@@ -1817,6 +1929,16 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_menu_input_keyboard_gamepad_mapping_type);
             break;
+#ifdef HAVE_NETWORKING
+         case MENU_ENUM_LABEL_NETPLAY_SHARE_DIGITAL:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_netplay_share_digital);
+            break;
+         case MENU_ENUM_LABEL_NETPLAY_SHARE_ANALOG:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_netplay_share_analog);
+            break;
+#endif // HAVE_NETWORKING
          case MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST:
          case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
          case MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:

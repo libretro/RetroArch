@@ -179,8 +179,6 @@ enum event_command
    CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED,
    /* Deinitializes netplay system. */
    CMD_EVENT_NETPLAY_DEINIT,
-   /* Flip netplay players. */
-   CMD_EVENT_NETPLAY_FLIP_PLAYERS,
    /* Switch between netplay gaming and watching. */
    CMD_EVENT_NETPLAY_GAME_WATCH,
    /* Initializes BSV movie. */

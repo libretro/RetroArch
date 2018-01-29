@@ -26,7 +26,7 @@ RETRO_BEGIN_DECLS
 typedef struct video_display_server
 {
    void *(*init)(void);
-   void (*destroy)(void);
+   void (*destroy)(void *data);
    bool (*set_window_opacity)(void *data, unsigned opacity);
    bool (*set_window_progress)(void *data, int progress, bool finished);
    const char *ident;

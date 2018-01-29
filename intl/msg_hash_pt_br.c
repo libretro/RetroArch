@@ -93,10 +93,6 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                 snprintf(s, len,
                          "Alternar o teclado virtual.");
                 break;
-            case RARCH_NETPLAY_FLIP:
-                snprintf(s, len,
-                         "Inverter usuários do Netplay.");
-                break;
             case RARCH_NETPLAY_GAME_WATCH:
                 snprintf(s, len,
                          "Alternar modo jogador/espectador do Netplay.");
@@ -1828,11 +1824,6 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
                              "o RetroArch. \n"
                              "Será utilizado para jogos online.");
             break;
-        case MENU_ENUM_LABEL_NETPLAY_CLIENT_SWAP_INPUT:
-            snprintf(s, len,
-                     "Ao ser o cliente de Netplay, use os \n"
-                             "vínculos de teclas do jogador 1.");
-            break;
         case MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT:
             snprintf(s, len,
                      "A porta do endereço de IP do hospedeiro. \n"
@@ -1951,10 +1942,6 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len) 
         case MENU_ENUM_LABEL_SAVE_STATE:
             snprintf(s, len,
                      "Salvar Estado de Jogo.");
-            break;
-        case MENU_ENUM_LABEL_NETPLAY_FLIP_PLAYERS:
-            snprintf(s, len,
-                     "Inverter usuários do Netplay.");
             break;
         case MENU_ENUM_LABEL_NETPLAY_GAME_WATCH:
             snprintf(s, len,

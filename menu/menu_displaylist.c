@@ -1371,6 +1371,14 @@ static int menu_displaylist_parse_shader_options(menu_displaylist_info_t *info)
          msg_hash_to_str(MENU_ENUM_LABEL_SHADER_APPLY_CHANGES),
          MENU_ENUM_LABEL_SHADER_APPLY_CHANGES,
          MENU_SETTING_ACTION, 0, 0);
+   if (frontend_driver_can_watch_for_changes())
+   {
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES),
+            msg_hash_to_str(MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES),
+            MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES,
+            0, 0, 0);
+   }
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET),
          msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET),
@@ -5544,9 +5552,20 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   PARSE_ONLY_BOOL, false) != -1)
                count++;
             if (menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_NETPLAY_CLIENT_SWAP_INPUT,
-                  PARSE_ONLY_BOOL, false) != -1)
+                  MENU_ENUM_LABEL_NETPLAY_SHARE_DIGITAL,
+                  PARSE_ONLY_UINT, false) != -1)
                count++;
+            if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_NETPLAY_SHARE_ANALOG,
+                  PARSE_ONLY_UINT, false) != -1)
+               count++;
+            for (user = 0; user < MAX_USERS; user++)
+            {
+               if (menu_displaylist_parse_settings_enum(menu, info,
+                     (enum msg_hash_enums)(MENU_ENUM_LABEL_NETPLAY_REQUEST_DEVICE_1 + user),
+                     PARSE_ONLY_BOOL, false) != -1)
+                  count++;
+            }
             if (menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_NETWORK_CMD_ENABLE,
                   PARSE_ONLY_BOOL, false) != -1)
