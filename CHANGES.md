@@ -30,6 +30,7 @@
 - LOCALIZATION: Update Italian translation.
 - LOCALIZATION: Update Japanese translation.
 - LOCALIZATION: Update Spanish translation.
+- OSX: Modify HID buttons detection algorithm. 
 - SOLARIS: Initial port.
 - SWITCH: Initial Nintendo Switch port, based on libtransistor SDK.
 - PS3: Enable Cheevos.
