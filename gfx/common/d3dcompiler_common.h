@@ -15,6 +15,8 @@
 
 #pragma once
 
+#include <retro_inline.h>
+
 #ifdef __MINGW32__
 #define __REQUIRED_RPCNDR_H_VERSION__ 475
 #define _In_
@@ -39,14 +41,14 @@
 #ifndef COM_RELEASE_DECLARED
 #define COM_RELEASE_DECLARED
 #if defined(__cplusplus) && !defined(CINTERFACE)
-static inline ULONG Release(IUnknown* object)
+static INLINE ULONG Release(IUnknown* object)
 {
    if (object)
       return object->Release();
    return 0;
 }
 #else
-static inline ULONG Release(void* object)
+static INLINE ULONG Release(void* object)
 {
    if (object)
       return ((IUnknown*)object)->lpVtbl->Release(object);
@@ -60,17 +62,17 @@ static inline ULONG Release(void* object)
 typedef ID3DBlob*                D3DBlob;
 typedef ID3DDestructionNotifier* D3DDestructionNotifier;
 
-static inline ULONG  D3DReleaseBlob(D3DBlob blob) { return blob->lpVtbl->Release(blob); }
-static inline LPVOID D3DGetBufferPointer(D3DBlob blob)
+static INLINE ULONG  D3DReleaseBlob(D3DBlob blob) { return blob->lpVtbl->Release(blob); }
+static INLINE LPVOID D3DGetBufferPointer(D3DBlob blob)
 {
    return blob->lpVtbl->GetBufferPointer(blob);
 }
-static inline SIZE_T D3DGetBufferSize(D3DBlob blob) { return blob->lpVtbl->GetBufferSize(blob); }
-static inline ULONG  D3DReleaseDestructionNotifier(D3DDestructionNotifier destruction_notifier)
+static INLINE SIZE_T D3DGetBufferSize(D3DBlob blob) { return blob->lpVtbl->GetBufferSize(blob); }
+static INLINE ULONG  D3DReleaseDestructionNotifier(D3DDestructionNotifier destruction_notifier)
 {
    return destruction_notifier->lpVtbl->Release(destruction_notifier);
 }
-static inline HRESULT D3DRegisterDestructionCallback(
+static INLINE HRESULT D3DRegisterDestructionCallback(
       D3DDestructionNotifier   destruction_notifier,
       PFN_DESTRUCTION_CALLBACK callback_fn,
       void*                    data,
@@ -79,7 +81,7 @@ static inline HRESULT D3DRegisterDestructionCallback(
    return destruction_notifier->lpVtbl->RegisterDestructionCallback(
          destruction_notifier, callback_fn, data, callback_id);
 }
-static inline HRESULT
+static INLINE HRESULT
 D3DUnregisterDestructionCallback(D3DDestructionNotifier destruction_notifier, UINT callback_id)
 {
    return destruction_notifier->lpVtbl->UnregisterDestructionCallback(

@@ -685,13 +685,14 @@ static void d3d11_gfx_set_osd_msg(
 static uintptr_t d3d11_gfx_load_texture(
       void* video_data, void* data, bool threaded, enum texture_filter_type filter_type)
 {
+   d3d11_texture_t *texture    = NULL;
    d3d11_video_t*        d3d11 = (d3d11_video_t*)video_data;
    struct texture_image* image = (struct texture_image*)data;
 
    if (!d3d11)
       return 0;
 
-   d3d11_texture_t* texture = calloc(1, sizeof(*texture));
+   texture                     = (d3d11_texture_t*)calloc(1, sizeof(*texture));
 
    switch (filter_type)
    {

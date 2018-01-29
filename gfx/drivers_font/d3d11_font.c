@@ -19,11 +19,11 @@
 #include <math.h>
 #include <encodings/utf.h>
 
-#include "gfx/font_driver.h"
-#include "gfx/video_driver.h"
-#include "gfx/common/d3d11_common.h"
+#include "../font_driver.h"
+#include "../video_driver.h"
+#include "../common/d3d11_common.h"
 
-#include "verbosity.h"
+#include "../../verbosity.h"
 
 typedef struct
 {
@@ -93,6 +93,7 @@ static int d3d11_font_get_message_width(void* data, const char* msg, unsigned ms
 
    for (i = 0; i < msg_len; i++)
    {
+      const struct font_glyph *glyph;
       const char* msg_tmp = &msg[i];
       unsigned    code    = utf8_walk(&msg_tmp);
       unsigned    skip    = msg_tmp - &msg[i];
@@ -100,7 +101,7 @@ static int d3d11_font_get_message_width(void* data, const char* msg, unsigned ms
       if (skip > 1)
          i += skip - 1;
 
-      const struct font_glyph* glyph = font->font_driver->get_glyph(font->font_data, code);
+      glyph = font->font_driver->get_glyph(font->font_data, code);
 
       if (!glyph) /* Do something smarter here ... */
          glyph = font->font_driver->get_glyph(font->font_data, '?');

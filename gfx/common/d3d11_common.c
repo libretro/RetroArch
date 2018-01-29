@@ -15,9 +15,11 @@
 
 #include "d3d11_common.h"
 #include "d3dcompiler_common.h"
+#ifdef HAVE_DYNAMIC
 #include <dynamic/dylib.h>
 
 static dylib_t d3d11_dll;
+#endif
 
 HRESULT WINAPI D3D11CreateDeviceAndSwapChain(
       IDXGIAdapter*   pAdapter,
@@ -35,6 +37,7 @@ HRESULT WINAPI D3D11CreateDeviceAndSwapChain(
 {
    static PFN_D3D11_CREATE_DEVICE_AND_SWAP_CHAIN fp;
 
+#ifdef HAVE_DYNAMIC
    if (!d3d11_dll)
       d3d11_dll = dylib_load("d3d11.dll");
 
@@ -44,6 +47,9 @@ HRESULT WINAPI D3D11CreateDeviceAndSwapChain(
    if (!fp)
       fp = (PFN_D3D11_CREATE_DEVICE_AND_SWAP_CHAIN)dylib_proc(
             d3d11_dll, "D3D11CreateDeviceAndSwapChain");
+#else
+      fp = D3D11CreateDeviceAndSwapChain;
+#endif
 
    if (!fp)
       return TYPE_E_CANTLOADLIBRARY;
@@ -83,12 +89,11 @@ void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
    D3D11CreateTexture2D(device, &texture->desc, NULL, &texture->handle);
 
    {
-      D3D11_SHADER_RESOURCE_VIEW_DESC view_desc = {
-         .Format                    = texture->desc.Format,
-         .ViewDimension             = D3D_SRV_DIMENSION_TEXTURE2D,
-         .Texture2D.MostDetailedMip = 0,
-         .Texture2D.MipLevels       = -1,
-      };
+	  D3D11_SHADER_RESOURCE_VIEW_DESC view_desc = { 0 };
+	  view_desc.Format                    = texture->desc.Format;
+	  view_desc.ViewDimension             = D3D_SRV_DIMENSION_TEXTURE2D;
+	  view_desc.Texture2D.MostDetailedMip = 0;
+	  view_desc.Texture2D.MipLevels       = -1;
       D3D11CreateTexture2DShaderResourceView(device, texture->handle, &view_desc, &texture->view);
    }
 

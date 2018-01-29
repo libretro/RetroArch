@@ -19,12 +19,12 @@
 #include "config.h"
 #endif
 
-#include "menu/menu_driver.h"
+#include "../menu_driver.h"
 
-#include "retroarch.h"
-#include "gfx/font_driver.h"
-#include "gfx/video_driver.h"
-#include "gfx/common/d3d11_common.h"
+#include "../../retroarch.h"
+#include "../../gfx/font_driver.h"
+#include "../../gfx/video_driver.h"
+#include "../../gfx/common/d3d11_common.h"
 
 static const float* menu_display_d3d11_get_default_vertices(void) { return NULL; }
 
@@ -197,10 +197,13 @@ static bool menu_display_d3d11_font_init_first(
       float       font_size,
       bool        is_threaded)
 {
-   font_data_t** handle = (font_data_t**)font_handle;
-   *handle              = font_driver_init_first(
-         video_data, font_path, font_size, true, is_threaded, FONT_DRIVER_RENDER_D3D11_API);
-   return *handle;
+   font_data_t** handle    = (font_data_t**)font_handle;
+   font_data_t *new_handle = font_driver_init_first(
+	   video_data, font_path, font_size, true, is_threaded, FONT_DRIVER_RENDER_D3D11_API);
+   if (!new_handle)
+	   return false;
+   *handle                 = new_handle;
+   return true;
 }
 
 menu_display_ctx_driver_t menu_display_ctx_d3d11 = {

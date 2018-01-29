@@ -20,8 +20,9 @@
 
 HRESULT WINAPI CreateDXGIFactory1(REFIID riid, void** ppFactory)
 {
-   static dylib_t dxgi_dll;
    static HRESULT(WINAPI * fp)(REFIID, void**);
+#ifdef HAVE_DYNAMIC
+   static dylib_t dxgi_dll;
 
    if (!dxgi_dll)
       dxgi_dll = dylib_load("dxgi.dll");
@@ -31,6 +32,9 @@ HRESULT WINAPI CreateDXGIFactory1(REFIID riid, void** ppFactory)
 
    if (!fp)
       fp = (HRESULT(WINAPI*)(REFIID, void**))dylib_proc(dxgi_dll, "CreateDXGIFactory1");
+#else
+      fp = CreateDXGIFactory1;
+#endif
 
    if (!fp)
       return TYPE_E_CANTLOADLIBRARY;
