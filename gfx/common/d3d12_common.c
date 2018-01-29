@@ -305,6 +305,7 @@ static void d3d12_init_sampler(
 
 bool d3d12_init_descriptors(d3d12_video_t* d3d12)
 {
+   D3D12_ROOT_SIGNATURE_DESC desc;
    static const D3D12_DESCRIPTOR_RANGE srv_table[] = {
       {
             .RangeType          = D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
@@ -327,32 +328,36 @@ bool d3d12_init_descriptors(d3d12_video_t* d3d12)
       },
    };
 
-   static const D3D12_ROOT_PARAMETER rootParameters[ROOT_INDEX_MAX] = {
-      [ROOT_INDEX_TEXTURE_TABLE] =
+   D3D12_ROOT_PARAMETER rootParameters[ROOT_INDEX_MAX] = {
             {
-                  .ParameterType    = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
-                  .DescriptorTable  = { countof(srv_table), srv_table },
-                  .ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL,
+                  D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
+				  {0},
+                  D3D12_SHADER_VISIBILITY_PIXEL,
             },
-      [ROOT_INDEX_SAMPLER_TABLE] =
             {
-                  .ParameterType    = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
-                  .DescriptorTable  = { countof(sampler_table), sampler_table },
-                  .ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL,
+                  D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
+				  {0},
+                  D3D12_SHADER_VISIBILITY_PIXEL,
             },
-      [ROOT_INDEX_UBO] =
             {
-                  .ParameterType             = D3D12_ROOT_PARAMETER_TYPE_CBV,
-                  .Descriptor.ShaderRegister = 0,
-                  .Descriptor.RegisterSpace  = 0,
-                  .ShaderVisibility          = D3D12_SHADER_VISIBILITY_VERTEX,
-            },
+                  D3D12_ROOT_PARAMETER_TYPE_CBV,
+				  { 0 },
+                  D3D12_SHADER_VISIBILITY_VERTEX,
+            }
    };
-   static const D3D12_ROOT_SIGNATURE_DESC desc = {
-      .NumParameters = countof(rootParameters),
-      rootParameters,
-      .Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT,
-   };
+
+   rootParameters[0].DescriptorTable.NumDescriptorRanges = countof(srv_table);
+   rootParameters[0].DescriptorTable.pDescriptorRanges   = srv_table;
+   rootParameters[1].DescriptorTable.NumDescriptorRanges = countof(sampler_table);
+   rootParameters[1].DescriptorTable.pDescriptorRanges   = sampler_table;
+   rootParameters[2].Descriptor.RegisterSpace            = 0;
+   rootParameters[2].Descriptor.ShaderRegister           = 0;
+
+   desc.NumParameters     = countof(rootParameters);
+   desc.pParameters       = rootParameters;
+   desc.NumStaticSamplers = 0;
+   desc.pStaticSamplers   = NULL;
+   desc.Flags             = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
    {
       D3DBlob signature;
@@ -457,24 +462,48 @@ bool d3d12_init_pipeline(d3d12_video_t* d3d12)
       return false;
 
    {
-      D3D12_GRAPHICS_PIPELINE_STATE_DESC psodesc = {
-         .pRootSignature     = d3d12->pipe.rootSignature,
-         .VS.pShaderBytecode = D3DGetBufferPointer(vs_code),
-         D3DGetBufferSize(vs_code),
-         .PS.pShaderBytecode = D3DGetBufferPointer(ps_code),
-         D3DGetBufferSize(ps_code),
-         .BlendState                      = blendDesc,
-         .SampleMask                      = UINT_MAX,
-         .RasterizerState                 = rasterizerDesc,
-         .DepthStencilState.DepthEnable   = FALSE,
-         .DepthStencilState.StencilEnable = FALSE,
-         .InputLayout.pInputElementDescs  = inputElementDesc,
-         countof(inputElementDesc),
-         .PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
-         .NumRenderTargets      = 1,
-         .RTVFormats[0]         = DXGI_FORMAT_R8G8B8A8_UNORM,
-         .SampleDesc.Count      = 1,
-      };
+	   D3D12_GRAPHICS_PIPELINE_STATE_DESC psodesc = {
+		   .pRootSignature = d3d12->pipe.rootSignature,
+		   .VS.pShaderBytecode = D3DGetBufferPointer(vs_code),
+		   .VS.BytecodeLength = D3DGetBufferSize(vs_code),
+		   .PS.pShaderBytecode = D3DGetBufferPointer(ps_code),
+		   .PS.BytecodeLength = D3DGetBufferSize(ps_code),
+		   .BlendState.AlphaToCoverageEnable = FALSE,
+		   .BlendState.IndependentBlendEnable = FALSE,
+		   .BlendState.RenderTarget[0] =
+		   {
+			   .BlendEnable = TRUE,
+			   .LogicOpEnable = FALSE,
+			   D3D12_BLEND_SRC_ALPHA,
+			   D3D12_BLEND_INV_SRC_ALPHA,
+			   D3D12_BLEND_OP_ADD,
+			   D3D12_BLEND_SRC_ALPHA,
+			   D3D12_BLEND_INV_SRC_ALPHA,
+			   D3D12_BLEND_OP_ADD,
+			   D3D12_LOGIC_OP_NOOP,
+			   D3D12_COLOR_WRITE_ENABLE_ALL,
+		   },
+		   .SampleMask = UINT_MAX,
+		   .RasterizerState.FillMode = D3D12_FILL_MODE_SOLID,
+		   .RasterizerState.CullMode = D3D12_CULL_MODE_BACK,
+		   .RasterizerState.FrontCounterClockwise = FALSE,
+		   .RasterizerState.DepthBias = D3D12_DEFAULT_DEPTH_BIAS,
+		   .RasterizerState.DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP,
+		   .RasterizerState.SlopeScaledDepthBias = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS,
+		   .RasterizerState.DepthClipEnable = TRUE,
+		   .RasterizerState.MultisampleEnable = FALSE,
+		   .RasterizerState.AntialiasedLineEnable = FALSE,
+		   .RasterizerState.ForcedSampleCount = 0,
+		   .RasterizerState.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF,
+		   .DepthStencilState.DepthEnable = FALSE,
+		   .DepthStencilState.StencilEnable = FALSE,
+		   .InputLayout.pInputElementDescs = inputElementDesc,
+		   .InputLayout.NumElements = countof(inputElementDesc),
+		   .PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
+		   .NumRenderTargets = 1,
+		   .RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM,
+		   .SampleDesc.Count = 1,
+	   };
 
       D3D12CreateGraphicsPipelineState(d3d12->device, &psodesc, &d3d12->pipe.handle);
    }
