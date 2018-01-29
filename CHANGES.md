@@ -26,6 +26,7 @@
 - HAIKU: Restored port.
 - KEYMAPPER: prevent a condition that caused input_menu_toggle to stop working when a RETRO_DEVICE_KEYBOARD type device is enabled
 - GL: ignore hard gpu sync when fast-forwarding
+- IOS10/11: Handle hardware keyboards and iCade controllers
 - LOCALIZATION: Update Italian translation.
 - LOCALIZATION: Update Japanese translation.
 - LOCALIZATION: Update Spanish translation.
