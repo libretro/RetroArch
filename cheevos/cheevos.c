@@ -38,10 +38,6 @@
 #include "../menu/menu_entries.h"
 #endif
 
-#ifdef HAVE_THREADS
-#include <rthreads/rthreads.h>
-#endif
-
 #include "badges.h"
 #include "cheevos.h"
 #include "var.h"
@@ -223,11 +219,6 @@ typedef struct
 
 typedef struct
 {
-   retro_task_t* task;
-#ifdef HAVE_THREADS
-   slock_t*      task_lock;
-#endif
-
    cheevos_console_t console_id;
    bool core_supports;
    bool addrs_patched;
@@ -256,24 +247,16 @@ typedef struct
 
 static cheevos_locals_t cheevos_locals =
 {
-   /* task                */ NULL,
-#ifdef HAVE_THREADS
-   /* task_lock           */ NULL,
-#endif
-
    /* console_id          */ CHEEVOS_CONSOLE_NONE,
    /* core_supports       */ true,
    /* addrs_patched       */ false,
    /* add_buffer          */ 0,
    /* add_hits            */ 0,
-
    /* core                */ {NULL, 0},
    /* unofficial          */ {NULL, 0},
    /* leaderboards        */ NULL,
    /* lboard_count        */ 0,
-
    /* token               */ {0},
-
    {
    /* meminfo[0]          */ {NULL, 0, 0},
    /* meminfo[1]          */ {NULL, 0, 0},
@@ -282,17 +265,9 @@ static cheevos_locals_t cheevos_locals =
    }
 };
 
-bool cheevos_loaded = false;
-int cheats_are_enabled = 0;
-int cheats_were_enabled = 0;
-
-#ifdef HAVE_THREADS
-#define CHEEVOS_LOCK(l)   do { slock_lock(l); } while (0)
-#define CHEEVOS_UNLOCK(l) do { slock_unlock(l); } while (0)
-#else
-#define CHEEVOS_LOCK(l)
-#define CHEEVOS_UNLOCK(l)
-#endif
+bool cheevos_loaded      = false;
+int  cheats_are_enabled  = 0;
+int  cheats_were_enabled = 0;
 
 /*****************************************************************************
 Supporting functions.
@@ -2487,28 +2462,18 @@ bool cheevos_apply_cheats(bool *data_bool)
 
 bool cheevos_unload(void)
 {
-   CHEEVOS_LOCK(cheevos_locals.task_lock);
+   if (!cheevos_loaded)
+      return false;
 
-   if (cheevos_locals.task)
-   {
-      task_queue_cancel_task(cheevos_locals.task);
-      while (cheevos_locals.task) /* nothing */;
-   }
-
-   if (cheevos_loaded)
-   {
-      cheevos_free_cheevo_set(&cheevos_locals.core);
-      cheevos_free_cheevo_set(&cheevos_locals.unofficial);
-   }
-
-   CHEEVOS_UNLOCK(cheevos_locals.task_lock);
+   cheevos_free_cheevo_set(&cheevos_locals.core);
+   cheevos_free_cheevo_set(&cheevos_locals.unofficial);
 
    cheevos_locals.core.cheevos       = NULL;
    cheevos_locals.unofficial.cheevos = NULL;
    cheevos_locals.core.count         = 0;
    cheevos_locals.unofficial.count   = 0;
 
-   cheevos_loaded     = false;
+   cheevos_loaded                    = 0;
 
    return true;
 }
@@ -2730,6 +2695,7 @@ void cheevos_test(void)
 bool cheevos_set_cheats(void)
 {
    cheats_were_enabled = cheats_are_enabled;
+
    return true;
 }
 
@@ -2749,21 +2715,6 @@ cheevos_console_t cheevos_get_console(void)
 }
 
 #include "coro.h"
-
-/* Uncomment the following two lines to debug cheevos_iterate, this will
- * disable the coroutine yielding.
- * 
- * The code is very easy to understand. It's meant to be like BASIC:
- * CORO_GOTO will jump execution to another label, CORO_GOSUB will
- * call another label, and CORO_RET will return from a CORO_GOSUB.
- * 
- * This coroutine code is inspired in a very old pure C implementation
- * that runs everywhere:
- * 
- * https://www.chiark.greenend.org.uk/~sgtatham/coroutines.html
- */
-/*#undef CORO_YIELD
-#define CORO_YIELD()*/
 
 enum
 {
@@ -3768,20 +3719,13 @@ static void cheevos_task_handler(retro_task_t *task)
    if (!coro)
       return;
 
-   if (!cheevos_iterate(coro) || task_get_cancelled(task))
+   if (!cheevos_iterate(coro))
    {
       task_set_finished(task, true);
-
-      CHEEVOS_LOCK(cheevos_locals.task_lock);
-      cheevos_locals.task = NULL;
-      CHEEVOS_UNLOCK(cheevos_locals.task_lock);
-
       if (coro->data)
          free(coro->data);
-
       if ((void*)coro->path)
          free((void*)coro->path);
-
       free((void*)coro);
    }
 }
@@ -3792,7 +3736,7 @@ bool cheevos_load(const void *data)
    const struct retro_game_info *info = NULL;
    coro_t *coro                       = NULL;
 
-   cheevos_loaded = false;
+   cheevos_loaded = 0;
 
    if (!cheevos_locals.core_supports || !data)
       return false;
@@ -3851,18 +3795,6 @@ bool cheevos_load(const void *data)
    task->progress  = 0;
    task->title     = NULL;
 
-#ifdef HAVE_THREADS
-   if (cheevos_locals.task_lock == NULL)
-   {
-      cheevos_locals.task_lock = slock_new();
-   }
-#endif
-
-   CHEEVOS_LOCK(cheevos_locals.task_lock);
-   cheevos_locals.task = task;
-   CHEEVOS_UNLOCK(cheevos_locals.task_lock);
-
    task_queue_push(task);
-
    return true;
 }
