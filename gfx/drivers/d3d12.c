@@ -16,14 +16,15 @@
 #include <assert.h>
 #include <string/stdstring.h>
 
-#include "driver.h"
-#include "verbosity.h"
-#include "configuration.h"
-#include "gfx/video_driver.h"
-#include "gfx/common/win32_common.h"
-#include "gfx/common/dxgi_common.h"
-#include "gfx/common/d3d12_common.h"
-#include "gfx/common/d3dcompiler_common.h"
+#include "../video_driver.h"
+#include "../common/win32_common.h"
+#include "../common/dxgi_common.h"
+#include "../common/d3d12_common.h"
+#include "../common/d3dcompiler_common.h"
+
+#include "../../driver.h"
+#include "../../verbosity.h"
+#include "../../configuration.h"
 
 static void d3d12_set_filtering(void* data, unsigned index, bool smooth)
 {

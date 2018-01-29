@@ -19,7 +19,7 @@
 #include "dxgi_common.h"
 #include "d3dcompiler_common.h"
 
-#include "verbosity.h"
+#include "../verbosity.h"
 
 #ifdef __MINGW32__
 /* clang-format off */
@@ -61,39 +61,51 @@ static const char* d3d12_dll_name = "d3d12.dll";
 HRESULT WINAPI D3D12CreateDevice(
       IUnknown* pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, REFIID riid, void** ppDevice)
 {
+	static PFN_D3D12_CREATE_DEVICE fp;
+#ifdef HAVE_DYNAMIC
    if (!d3d12_dll)
       d3d12_dll = dylib_load(d3d12_dll_name);
 
-   if (d3d12_dll)
-   {
-      static PFN_D3D12_CREATE_DEVICE fp;
+   if (!d3d12_dll)
+      goto error;
 
-      if (!fp)
-         fp = (PFN_D3D12_CREATE_DEVICE)dylib_proc(d3d12_dll, "D3D12CreateDevice");
+   if (!fp)
+      fp = (PFN_D3D12_CREATE_DEVICE)dylib_proc(d3d12_dll, "D3D12CreateDevice");
+#else
+      fp = D3D12CreateDevice;
+#endif
 
-      if (fp)
-         return fp(pAdapter, MinimumFeatureLevel, riid, ppDevice);
-   }
+   if (fp)
+	   return fp(pAdapter, MinimumFeatureLevel, riid, ppDevice);
 
+#ifdef HAVE_DYNAMIC
+error:
+#endif
    return TYPE_E_CANTLOADLIBRARY;
 }
 
 HRESULT WINAPI D3D12GetDebugInterface(REFIID riid, void** ppvDebug)
 {
+   static PFN_D3D12_GET_DEBUG_INTERFACE fp;
+#ifdef HAVE_DYNAMIC
    if (!d3d12_dll)
       d3d12_dll = dylib_load(d3d12_dll_name);
 
-   if (d3d12_dll)
-   {
-      static PFN_D3D12_GET_DEBUG_INTERFACE fp;
+   if (!d3d12_dll)
+	   goto error;
 
-      if (!fp)
-         fp = (PFN_D3D12_GET_DEBUG_INTERFACE)dylib_proc(d3d12_dll, "D3D12GetDebugInterface");
+   if (!fp)
+      fp = (PFN_D3D12_GET_DEBUG_INTERFACE)dylib_proc(d3d12_dll, "D3D12GetDebugInterface");
+#else
+      fp = D3D12GetDebugInterface;
+#endif
 
-      if (fp)
-         return fp(riid, ppvDebug);
-   }
+	if (fp)
+		return fp(riid, ppvDebug);
 
+#ifdef HAVE_DYNAMIC
+error:
+#endif
    return TYPE_E_CANTLOADLIBRARY;
 }
 
@@ -103,21 +115,27 @@ HRESULT WINAPI D3D12SerializeRootSignature(
       ID3DBlob**                       ppBlob,
       ID3DBlob**                       ppErrorBlob)
 {
+   static PFN_D3D12_SERIALIZE_ROOT_SIGNATURE fp;
+#ifdef HAVE_DYNAMIC
    if (!d3d12_dll)
       d3d12_dll = dylib_load(d3d12_dll_name);
 
-   if (d3d12_dll)
-   {
-      static PFN_D3D12_SERIALIZE_ROOT_SIGNATURE fp;
+   if (!d3d12_dll)
+      goto error;
 
-      if (!fp)
-         fp = (PFN_D3D12_SERIALIZE_ROOT_SIGNATURE)dylib_proc(
+   if (!fp)
+      fp = (PFN_D3D12_SERIALIZE_ROOT_SIGNATURE)dylib_proc(
                d3d12_dll, "D3D12SerializeRootSignature");
+#else
+   fp = D3D12SerializeRootSignature;
+#endif
 
-      if (fp)
-         return fp(pRootSignature, Version, ppBlob, ppErrorBlob);
-   }
+   if (fp)
+      return fp(pRootSignature, Version, ppBlob, ppErrorBlob);
 
+#ifdef HAVE_DYNAMIC
+error:
+#endif
    return TYPE_E_CANTLOADLIBRARY;
 }
 
@@ -126,25 +144,29 @@ HRESULT WINAPI D3D12SerializeVersionedRootSignature(
       ID3DBlob**                                 ppBlob,
       ID3DBlob**                                 ppErrorBlob)
 {
+   static PFN_D3D12_SERIALIZE_VERSIONED_ROOT_SIGNATURE fp;
+#ifdef HAVE_DYNAMIC
    if (!d3d12_dll)
       d3d12_dll = dylib_load(d3d12_dll_name);
 
-   if (d3d12_dll)
-   {
-      static PFN_D3D12_SERIALIZE_VERSIONED_ROOT_SIGNATURE fp;
+   if (!d3d12_dll)
+      goto error;
 
-      if (!fp)
-         fp = (PFN_D3D12_SERIALIZE_VERSIONED_ROOT_SIGNATURE)dylib_proc(
+   if (!fp)
+      fp = (PFN_D3D12_SERIALIZE_VERSIONED_ROOT_SIGNATURE)dylib_proc(
                d3d12_dll, "D3D12SerializeRootSignature");
+#else
+   fp = (PFN_D3D12_SERIALIZE_VERSIONED_ROOT_SIGNATURE)D3D12SerializeRootSignature; 
+#endif
 
-      if (fp)
-         return fp(pRootSignature, ppBlob, ppErrorBlob);
-   }
+   if (fp)
+	   return fp(pRootSignature, ppBlob, ppErrorBlob);
 
+#ifdef HAVE_DYNAMIC
+error:
+#endif
    return TYPE_E_CANTLOADLIBRARY;
 }
-
-#include <wiiu/wiiu_dbg.h>
 
 bool d3d12_init_base(d3d12_video_t* d3d12)
 {
@@ -384,7 +406,7 @@ bool d3d12_init_pipeline(d3d12_video_t* d3d12)
    D3DBlob ps_code;
 
    static const char stock[] =
-#include "gfx/drivers/d3d_shaders/opaque_sm5.hlsl.h"
+#include "../drivers/d3d_shaders/opaque_sm5.hlsl.h"
          ;
 
    static const D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
@@ -532,13 +554,16 @@ void d3d12_init_texture(
    }
 
    {
-      D3D12_SHADER_RESOURCE_VIEW_DESC view_desc = {
-         .Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
-         .Format                  = texture->desc.Format,
-         .ViewDimension           = D3D12_SRV_DIMENSION_TEXTURE2D,
-         .Texture2D.MipLevels     = texture->desc.MipLevels,
-      };
-      D3D12_CPU_DESCRIPTOR_HANDLE handle = { heap->cpu.ptr + heap_index * heap->stride };
+	  D3D12_CPU_DESCRIPTOR_HANDLE handle;
+	  D3D12_SHADER_RESOURCE_VIEW_DESC view_desc = { 0 };
+
+	  view_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	  view_desc.Format                  = texture->desc.Format;
+	  view_desc.ViewDimension           = D3D12_SRV_DIMENSION_TEXTURE2D;
+	  view_desc.Texture2D.MipLevels     = texture->desc.MipLevels;
+
+      handle.ptr                        = heap->cpu.ptr + heap_index * heap->stride;
+
       D3D12CreateShaderResourceView(device, texture->handle, &view_desc, handle);
       texture->gpu_descriptor.ptr = heap->gpu.ptr + heap_index * heap->stride;
    }
@@ -546,17 +571,16 @@ void d3d12_init_texture(
 
 void d3d12_upload_texture(D3D12GraphicsCommandList cmd, d3d12_texture_t* texture)
 {
-   D3D12_TEXTURE_COPY_LOCATION src = {
-      .pResource       = texture->upload_buffer,
-      .Type            = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT,
-      .PlacedFootprint = texture->layout,
-   };
+   D3D12_TEXTURE_COPY_LOCATION src = { 0 };
+   D3D12_TEXTURE_COPY_LOCATION dst = { 0 };
 
-   D3D12_TEXTURE_COPY_LOCATION dst = {
-      .pResource        = texture->handle,
-      .Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
-      .SubresourceIndex = 0,
-   };
+   src.pResource        = texture->upload_buffer;
+   src.Type             = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+   src.PlacedFootprint  = texture->layout;
+
+   dst.pResource        = texture->handle;
+   dst.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+   dst.SubresourceIndex = 0;
 
    d3d12_resource_transition(
          cmd, texture->handle, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,

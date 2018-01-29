@@ -16,6 +16,7 @@
 #pragma once
 
 #include <retro_inline.h>
+#include <boolean.h>
 
 #ifdef __MINGW32__
 #define __REQUIRED_RPCNDR_H_VERSION__ 475

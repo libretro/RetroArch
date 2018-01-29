@@ -2635,15 +2635,15 @@ static INLINE void D3D11SetVertexBuffer(
       UINT               stride,
       UINT               offset)
 {
-   D3D11SetVertexBuffers(device_context, slot, 1, &vertex_buffer, &stride, &offset);
+   D3D11SetVertexBuffers(device_context, slot, 1, (ID3D11Buffer** const)&vertex_buffer, &stride, &offset);
 }
 static INLINE void D3D11SetVShaderConstantBuffer(
       D3D11DeviceContext device_context, UINT slot, D3D11Buffer const constant_buffer)
 {
-   D3D11SetVShaderConstantBuffers(device_context, slot, 1, &constant_buffer);
+   D3D11SetVShaderConstantBuffers(device_context, slot, 1, (ID3D11Buffer** const)&constant_buffer);
 }
 static INLINE void D3D11SetPShaderConstantBuffer(
       D3D11DeviceContext device_context, UINT slot, D3D11Buffer const constant_buffer)
 {
-   D3D11SetPShaderConstantBuffers(device_context, slot, 1, &constant_buffer);
+   D3D11SetPShaderConstantBuffers(device_context, slot, 1, (ID3D11Buffer** const)&constant_buffer);
 }
