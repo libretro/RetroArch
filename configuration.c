@@ -2875,27 +2875,40 @@ static bool config_load_file(const char *path, bool set_defaults,
 
    ret = true;
 
+   /* Find a compatible startup shader*/
+   if (!string_is_empty(settings->paths.directory_video_shader))
    {
-      const char *shader_ext = path_get_extension(settings->paths.path_shader);
+      /* Get the config filename */
+      const char *s = path_basename(path_get(RARCH_PATH_CONFIG));
+      strlcpy (tmp_str, s, PATH_MAX_LENGTH);
+      path_remove_extension(tmp_str);
 
-      if (!string_is_empty(shader_ext))
+      for(i = FILE_PATH_CGP_EXTENSION; i <= FILE_PATH_SLANGP_EXTENSION; i++)
       {
-         for(i = FILE_PATH_CGP_EXTENSION; i <= FILE_PATH_SLANGP_EXTENSION; i++)
+         if (!check_shader_compatibility((enum file_path_enum)(i)))
+            continue;
+
+         /* Build up the startup shader path from the config name and the
+            supported extensions */
+         fill_pathname_join_special_ext(settings->paths.path_shader,
+               settings->paths.directory_video_shader, "", tmp_str,
+               file_path_str((enum file_path_enum)(i)),
+               sizeof(settings->paths.path_shader));
+
+         /* Check if the shader exists */
+         if (!path_is_valid(settings->paths.path_shader))
          {
-            enum file_path_enum ext = (enum file_path_enum)(i);
-            if(!strstr(file_path_str(ext), shader_ext))
-               continue;
-
-            if (check_shader_compatibility(ext))
-               continue;
-
-            RARCH_LOG("Incompatible shader for backend %s, clearing...\n",
-                  settings->arrays.video_driver);
-            settings->paths.path_shader[0] = '\0';
-            break;
+            RARCH_LOG("Shaders: no startup shader found at %s.\n", settings->paths.path_shader);
+            continue;
          }
+
+         /* Game shader preset exists, load it */
+         RARCH_LOG("Shaders: startup shader found at %s.\n", settings->paths.path_shader);
+
+         path_set(RARCH_PATH_DEFAULT_SHADER_PRESET, settings->paths.path_shader);
       }
    }
+
 
 end:
    if (conf)
