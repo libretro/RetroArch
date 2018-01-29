@@ -104,7 +104,7 @@ typedef struct hlsl_shader_data hlsl_shader_data_t;
 
 struct hlsl_shader_data
 {
-   d3d_video_t *d3d;
+   LPDIRECT3DDEVICE9 dev;
    struct shader_program_hlsl_data prg[RARCH_HLSL_MAX_SHADERS];
    unsigned active_idx;
    struct video_shader *cg_shader;
@@ -174,14 +174,13 @@ static void hlsl_set_params(void *data, void *shader_data,
 {
    float ori_size[2], tex_size[2], out_size[2];
    float frame_cnt                        = frame_counter;
-   d3d_video_t *d3d                       = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE9 d3dr                 = (LPDIRECT3DDEVICE9)d3d->dev;
    const struct video_tex_info *info      = (const struct video_tex_info*)_info;
    const struct video_tex_info *prev_info = (const struct video_tex_info*)_prev_info;
    const struct video_tex_info *fbo_info  = (const struct video_tex_info*)_fbo_info;
    hlsl_shader_data_t *hlsl               = (hlsl_shader_data_t*)shader_data;
+   LPDIRECT3DDEVICE9 d3dr                 = (LPDIRECT3DDEVICE9)hlsl->dev;
 
-   if (!hlsl)
+   if (!hlsl || !d3dr)
       return;
 
    ori_size[0] = (float)width;
@@ -199,20 +198,26 @@ static void hlsl_set_params(void *data, void *shader_data,
    set_param_2f(hlsl->prg[hlsl->active_idx].vid_size_f, ori_size, hlsl->prg[hlsl->active_idx].f_ctable);
    set_param_2f(hlsl->prg[hlsl->active_idx].tex_size_f, tex_size, hlsl->prg[hlsl->active_idx].f_ctable);
    set_param_2f(hlsl->prg[hlsl->active_idx].out_size_f, out_size, hlsl->prg[hlsl->active_idx].f_ctable);
+
    if (hlsl->prg[hlsl->active_idx].frame_cnt_f)
-      d3dx_constant_table_set_float(hlsl->prg[hlsl->active_idx].f_ctable, d3dr,
-      hlsl->prg[hlsl->active_idx].frame_cnt_f, frame_cnt);
+      d3dx_constant_table_set_float(hlsl->prg[hlsl->active_idx].f_ctable,
+            d3dr,hlsl->prg[hlsl->active_idx].frame_cnt_f, frame_cnt);
+
    if (hlsl->prg[hlsl->active_idx].frame_dir_f)
-      d3dx_constant_table_set_float(hlsl->prg[hlsl->active_idx].f_ctable, d3dr, hlsl->prg[hlsl->active_idx].frame_dir_f, state_manager_frame_is_reversed() ? -1.0 : 1.0);
+      d3dx_constant_table_set_float(hlsl->prg[hlsl->active_idx].f_ctable,
+            d3dr, hlsl->prg[hlsl->active_idx].frame_dir_f, state_manager_frame_is_reversed() ? -1.0 : 1.0);
 
    set_param_2f(hlsl->prg[hlsl->active_idx].vid_size_v, ori_size, hlsl->prg[hlsl->active_idx].v_ctable);
    set_param_2f(hlsl->prg[hlsl->active_idx].tex_size_v, tex_size, hlsl->prg[hlsl->active_idx].v_ctable);
    set_param_2f(hlsl->prg[hlsl->active_idx].out_size_v, out_size, hlsl->prg[hlsl->active_idx].v_ctable);
+
    if (hlsl->prg[hlsl->active_idx].frame_cnt_v)
-      d3dx_constant_table_set_float(hlsl->prg[hlsl->active_idx].v_ctable, d3dr,
-            hlsl->prg[hlsl->active_idx].frame_cnt_v, frame_cnt);
+      d3dx_constant_table_set_float(hlsl->prg[hlsl->active_idx].v_ctable,
+            d3dr, hlsl->prg[hlsl->active_idx].frame_cnt_v, frame_cnt);
+
    if (hlsl->prg[hlsl->active_idx].frame_dir_v)
-      d3dx_constant_table_set_float(hlsl->prg[hlsl->active_idx].v_ctable, d3dr, hlsl->prg[hlsl->active_idx].frame_dir_v, state_manager_frame_is_reversed() ? -1.0 : 1.0);
+      d3dx_constant_table_set_float(hlsl->prg[hlsl->active_idx].v_ctable,
+            d3dr, hlsl->prg[hlsl->active_idx].frame_dir_v, state_manager_frame_is_reversed() ? -1.0 : 1.0);
 
    /* TODO - set lookup textures/FBO textures/state parameters/etc */
 }
@@ -224,9 +229,8 @@ static bool hlsl_compile_program(
       struct shader_program_info *program_info)
 {
    hlsl_shader_data_t *hlsl                  = (hlsl_shader_data_t*)data;
-   d3d_video_t *d3d                          = (d3d_video_t*)hlsl->d3d;
    struct shader_program_hlsl_data *program  = (struct shader_program_hlsl_data*)program_data;
-   LPDIRECT3DDEVICE9 d3dr                    = (LPDIRECT3DDEVICE9)d3d->dev;
+   LPDIRECT3DDEVICE9 d3dr                    = (LPDIRECT3DDEVICE9)hlsl->dev;
    ID3DXBuffer *listing_f                    = NULL;
    ID3DXBuffer *listing_v                    = NULL;
    ID3DXBuffer *code_f                       = NULL;
@@ -268,9 +272,9 @@ static bool hlsl_compile_program(
 
 error:
    RARCH_ERR("Cg/HLSL error:\n");
-   if(listing_f)
+   if (listing_f)
       RARCH_ERR("Fragment:\n%s\n", (char*)d3dx_get_buffer_ptr(listing_f));
-   if(listing_v)
+   if (listing_v)
       RARCH_ERR("Vertex:\n%s\n", (char*)d3dx_get_buffer_ptr(listing_v));
    d3dxbuffer_release((void*)listing_f);
    d3dxbuffer_release((void*)listing_v);
@@ -278,14 +282,12 @@ error:
    return false;
 }
 
-static bool hlsl_load_stock(hlsl_shader_data_t *hlsl, void *data)
+static bool hlsl_load_stock(hlsl_shader_data_t *hlsl)
 {
    struct shader_program_info program_info;
 
    program_info.combined     = stock_hlsl_program;
    program_info.is_file      = false;
-
-   hlsl->d3d                 = (d3d_video_t*)data;
 
    if (!hlsl_compile_program(hlsl, 0, &hlsl->prg[0], &program_info))
    {
@@ -316,7 +318,7 @@ static void hlsl_set_program_attributes(hlsl_shader_data_t *hlsl, unsigned i)
 }
 
 static bool hlsl_load_shader(hlsl_shader_data_t *hlsl,
-      void *data, const char *cgp_path, unsigned i)
+      const char *cgp_path, unsigned i)
 {
    struct shader_program_info program_info;
    char path_buf[PATH_MAX_LENGTH];
@@ -331,17 +333,15 @@ static bool hlsl_load_shader(hlsl_shader_data_t *hlsl,
 
    RARCH_LOG("Loading Cg/HLSL shader: \"%s\".\n", path_buf);
 
-   hlsl->d3d = (d3d_video_t*)data;
-
    if (!hlsl_compile_program(hlsl, i + 1, &hlsl->prg[i + 1], &program_info))
       return false;
 
    return true;
 }
 
-static bool hlsl_load_plain(hlsl_shader_data_t *hlsl, void *data, const char *path)
+static bool hlsl_load_plain(hlsl_shader_data_t *hlsl, const char *path)
 {
-   if (!hlsl_load_stock(hlsl, data))
+   if (!hlsl_load_stock(hlsl))
       return false;
 
    hlsl->cg_shader = (struct video_shader*)calloc(1, sizeof(*hlsl->cg_shader));
@@ -362,7 +362,6 @@ static bool hlsl_load_plain(hlsl_shader_data_t *hlsl, void *data, const char *pa
       strlcpy(hlsl->cg_shader->pass[0].source.path,
             path, sizeof(hlsl->cg_shader->pass[0].source.path));
 
-      hlsl->d3d = (d3d_video_t*)data;
       if (!hlsl_compile_program(hlsl, 1, &hlsl->prg[1], &program_info))
          return false;
    }
@@ -378,41 +377,32 @@ static bool hlsl_load_plain(hlsl_shader_data_t *hlsl, void *data, const char *pa
 static void hlsl_deinit_progs(hlsl_shader_data_t *hlsl)
 {
    unsigned i;
+
    for (i = 1; i < RARCH_HLSL_MAX_SHADERS; i++)
    {
       if (hlsl->prg[i].fprg && hlsl->prg[i].fprg != hlsl->prg[0].fprg)
-         d3d_free_pixel_shader(hlsl->d3d->dev, hlsl->prg[i].fprg);
+         d3d_free_pixel_shader(hlsl->dev, hlsl->prg[i].fprg);
       if (hlsl->prg[i].vprg && hlsl->prg[i].vprg != hlsl->prg[0].vprg)
-         d3d_free_vertex_shader(hlsl->d3d->dev, hlsl->prg[i].vprg);
+         d3d_free_vertex_shader(hlsl->dev, hlsl->prg[i].vprg);
 
       hlsl->prg[i].fprg = NULL;
       hlsl->prg[i].vprg = NULL;
    }
 
    if (hlsl->prg[0].fprg)
-      d3d_free_pixel_shader(hlsl->d3d->dev, hlsl->prg[0].fprg);
+      d3d_free_pixel_shader(hlsl->dev, hlsl->prg[0].fprg);
    if (hlsl->prg[0].vprg)
-      d3d_free_vertex_shader(hlsl->d3d->dev, hlsl->prg[0].vprg);
+      d3d_free_vertex_shader(hlsl->dev, hlsl->prg[0].vprg);
 
    hlsl->prg[0].fprg = NULL;
    hlsl->prg[0].vprg = NULL;
 }
 
-static void hlsl_deinit_state(hlsl_shader_data_t *hlsl)
-{
-   hlsl_deinit_progs(hlsl);
-   memset(hlsl->prg, 0, sizeof(hlsl->prg));
-
-   if (hlsl->cg_shader)
-      free(hlsl->cg_shader);
-   hlsl->cg_shader = NULL;
-}
-
-static bool hlsl_load_preset(hlsl_shader_data_t *hlsl, void *data, const char *path)
+static bool hlsl_load_preset(hlsl_shader_data_t *hlsl, const char *path)
 {
    unsigned i;
    config_file_t *conf = NULL;
-   if (!hlsl_load_stock(hlsl, data))
+   if (!hlsl_load_stock(hlsl))
       return false;
 
    RARCH_LOG("Loading Cg meta-shader: %s\n", path);
@@ -443,7 +433,7 @@ static bool hlsl_load_preset(hlsl_shader_data_t *hlsl, void *data, const char *p
 
    for (i = 0; i < hlsl->cg_shader->passes; i++)
    {
-      if (!hlsl_load_shader(hlsl, data, path, i))
+      if (!hlsl_load_shader(hlsl, path, i))
          goto error;
    }
 
@@ -462,80 +452,92 @@ error:
 static void *hlsl_init(void *data, const char *path)
 {
    unsigned i;
-   d3d_video_t *d3d = (d3d_video_t*)data;
-   hlsl_shader_data_t *hlsl_data = (hlsl_shader_data_t*)
+   d3d_video_t         *d3d = (d3d_video_t*)data;
+   hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)
       calloc(1, sizeof(hlsl_shader_data_t));
 
-   if (!hlsl_data)
-      return NULL;
+   if (!hlsl || !d3d)
+      goto error;
+
+   hlsl->dev         = d3d->dev;
+
+   if (!hlsl->dev)
+      goto error;
 
    if (path && (string_is_equal(path_get_extension(path), ".cgp")))
    {
-      if (!hlsl_load_preset(hlsl_data, d3d, path))
+      if (!hlsl_load_preset(hlsl, path))
          goto error;
    }
    else
    {
-      if (!hlsl_load_plain(hlsl_data, d3d, path))
+      if (!hlsl_load_plain(hlsl, path))
          goto error;
    }
 
-   for(i = 1; i <= hlsl_data->cg_shader->passes; i++)
-      hlsl_set_program_attributes(hlsl_data, i);
+   for(i = 1; i <= hlsl->cg_shader->passes; i++)
+      hlsl_set_program_attributes(hlsl, i);
 
-   d3d_set_vertex_shader(d3d->dev, 1, hlsl_data->prg[1].vprg);
-   d3d_set_pixel_shader(d3d->dev, hlsl_data->prg[1].fprg);
+   d3d_set_vertex_shader(hlsl->dev, 1, hlsl->prg[1].vprg);
+   d3d_set_pixel_shader(hlsl->dev, hlsl->prg[1].fprg);
 
-   return hlsl_data;
+   return hlsl;
 
 error:
-   if (hlsl_data)
-      free(hlsl_data);
+   if (hlsl)
+      free(hlsl);
    return NULL;
 }
 
 static void hlsl_deinit(void *data)
 {
-   hlsl_shader_data_t *hlsl_data = (hlsl_shader_data_t*)data;
+   hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)data;
 
-   hlsl_deinit_state(hlsl_data);
+   if (!hlsl)
+      return;
 
-   if (hlsl_data)
-      free(hlsl_data);
+   hlsl_deinit_progs(hlsl);
+   memset(hlsl->prg, 0, sizeof(hlsl->prg));
+
+   if (hlsl->cg_shader)
+      free(hlsl->cg_shader);
+   hlsl->cg_shader = NULL;
+
+   if (hlsl)
+      free(hlsl);
 }
 
 static void hlsl_use(void *data, void *shader_data, unsigned idx, bool set_active)
 {
-   d3d_video_t              *d3d = (d3d_video_t*)data;
-   hlsl_shader_data_t *hlsl_data = (hlsl_shader_data_t*)shader_data;
-   LPDIRECT3DDEVICE9        d3dr = (LPDIRECT3DDEVICE9)d3d->dev;
+   hlsl_shader_data_t *hlsl      = (hlsl_shader_data_t*)shader_data;
+   LPDIRECT3DDEVICE9        d3dr = hlsl ? (LPDIRECT3DDEVICE9)hlsl->dev : NULL;
 
-   if (hlsl_data && hlsl_data->prg[idx].vprg && hlsl_data->prg[idx].fprg)
-   {
-      if (set_active)
-         hlsl_data->active_idx = idx;
+   if (!hlsl || !hlsl->prg[idx].vprg || !hlsl->prg[idx].fprg)
+      return;
 
-      d3d_set_vertex_shader(d3dr, idx, hlsl_data->prg[idx].vprg);
-      d3d_set_pixel_shader(d3dr, hlsl_data->prg[idx].fprg);
-   }
+   if (set_active)
+      hlsl->active_idx = idx;
+
+   d3d_set_vertex_shader(d3dr, idx, hlsl->prg[idx].vprg);
+   d3d_set_pixel_shader(d3dr, hlsl->prg[idx].fprg);
 }
 
 static unsigned hlsl_num(void *data)
 {
-   hlsl_shader_data_t *hlsl_data = (hlsl_shader_data_t*)data;
-   if (hlsl_data)
-      return hlsl_data->cg_shader->passes;
+   hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)data;
+   if (hlsl)
+      return hlsl->cg_shader->passes;
    return 0;
 }
 
 static bool hlsl_filter_type(void *data, unsigned idx, bool *smooth)
 {
-   hlsl_shader_data_t *hlsl_data = (hlsl_shader_data_t*)data;
-   if (hlsl_data && idx
-         && (hlsl_data->cg_shader->pass[idx - 1].filter != RARCH_FILTER_UNSPEC))
+   hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)data;
+   if (hlsl && idx
+         && (hlsl->cg_shader->pass[idx - 1].filter != RARCH_FILTER_UNSPEC))
    {
       *smooth = RARCH_FILTER_LINEAR;
-      hlsl_data->cg_shader->pass[idx - 1].filter = RARCH_FILTER_LINEAR;
+      hlsl->cg_shader->pass[idx - 1].filter = RARCH_FILTER_LINEAR;
       return true;
    }
    return false;
@@ -543,28 +545,26 @@ static bool hlsl_filter_type(void *data, unsigned idx, bool *smooth)
 
 static void hlsl_shader_scale(void *data, unsigned idx, struct gfx_fbo_scale *scale)
 {
-   hlsl_shader_data_t *hlsl_data = (hlsl_shader_data_t*)data;
-   if (hlsl_data && idx)
-      *scale = hlsl_data->cg_shader->pass[idx - 1].fbo;
+   hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)data;
+   if (hlsl && idx)
+      *scale = hlsl->cg_shader->pass[idx - 1].fbo;
    else
       scale->valid = false;
 }
 
 static bool hlsl_set_mvp(void *data, void *shader_data, const void *mat_data)
 {
-   d3d_video_t *d3d                = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE9 d3dr          = (LPDIRECT3DDEVICE9)d3d->dev;
-   hlsl_shader_data_t *hlsl_data   = (hlsl_shader_data_t*)shader_data;
+   hlsl_shader_data_t *hlsl        = (hlsl_shader_data_t*)shader_data;
+   LPDIRECT3DDEVICE9 d3dr          = hlsl ? (LPDIRECT3DDEVICE9)hlsl->dev : NULL;
    const math_matrix_4x4 *mat      = (const math_matrix_4x4*)mat_data;
 
-   if(hlsl_data && hlsl_data->prg[hlsl_data->active_idx].mvp)
-   {
-      ID3DXConstantTable_SetMatrix(hlsl_data->prg[hlsl_data->active_idx].v_ctable, d3dr,
-            hlsl_data->prg[hlsl_data->active_idx].mvp,
-            &hlsl_data->prg[hlsl_data->active_idx].mvp_val);
-      return true;
-   }
-   return false;
+   if (!hlsl || !hlsl->prg[hlsl->active_idx].mvp)
+      return false;
+
+   ID3DXConstantTable_SetMatrix(hlsl->prg[hlsl->active_idx].v_ctable, d3dr,
+         hlsl->prg[hlsl->active_idx].mvp,
+         &hlsl->prg[hlsl->active_idx].mvp_val);
+   return true;
 }
 
 static bool hlsl_mipmap_input(void *data, unsigned idx)
