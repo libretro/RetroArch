@@ -3046,3 +3046,40 @@ INT32 d3d_get_xrgb8888_format(void)
    return D3DFMT_X8R8G8B8;
 #endif
 }
+
+const void *d3dx_get_buffer_ptr(void *data)
+{
+#if defined(HAVE_D3DX) && defined(HAVE_D3D9)
+   ID3DXBuffer *listing = (ID3DXBuffer*)data;
+   if (!listing)
+      return NULL;
+#ifdef __cplusplus
+   return listing->GetBufferPointer();
+#else
+   return listing->lpVtbl->GetBufferPointer(listing);
+#endif
+#else
+   return NULL;
+#endif
+}
+
+const bool d3dx_constant_table_set_float(void *p,
+      void *a,
+      const void *b, float val)
+{
+#if defined(HAVE_D3DX) && defined(HAVE_D3D9)
+   LPDIRECT3DDEVICE9    dev     = (LPDIRECT3DDEVICE9)a;
+   D3DXHANDLE        handle     = (D3DXHANDLE)b;
+   LPD3DXCONSTANTTABLE consttbl = (LPD3DXCONSTANTTABLE)p;
+   if (!consttbl || !dev || !handle)
+      return false;
+#ifdef __cplusplus
+   if (consttbl->SetFloat(dev, handle, val) == D3D_OK)
+      return true;
+#else
+   if (consttbl->lpVtbl->SetFloat(consttbl, dev, handle, val) == D3D_OK)
+      return true;
+#endif
+#endif
+   return false;
+}

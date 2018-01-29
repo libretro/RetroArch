@@ -263,6 +263,11 @@ bool d3dx_compile_shader_from_file(
       void *pperrormsgs,
       void *ppconstanttable);
 
+const void *d3dx_get_buffer_ptr(void *data);
+
+const bool d3dx_constant_table_set_float(void *p,
+      void *a, const void *b, float val);
+
 INT32 d3d_get_rgb565_format(void);
 INT32 d3d_get_argb8888_format(void);
 INT32 d3d_get_xrgb8888_format(void);

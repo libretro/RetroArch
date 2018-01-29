@@ -46,14 +46,6 @@
 #define ID3DXConstantTable_SetFloatArray(p,a,b,c,d) (p)->SetFloatArray(a,b,c,d)
 #endif
 
-#ifndef ID3DXConstantTable_SetFloat
-#define ID3DXConstantTable_SetFloat(p,a,b,c) (p)->SetFloat(a,b,c)
-#endif
-
-#ifndef ID3DXConstantTable_GetBufferPointer
-#define ID3DXConstantTable_GetBufferPointer(p) (p)->GetBufferPointer()
-#endif
-
 #ifndef ID3DXConstantTable_GetConstantByName
 #define ID3DXConstantTable_GetConstantByName(p,a,b)  ((p)->GetConstantByName(a, b))
 #endif
@@ -72,14 +64,6 @@
 #define ID3DXConstantTable_SetFloatArray(p,a,b,c,d) (p)->lpVtbl->SetFloatArray(p,a,b,c,d)
 #endif
 
-#ifndef ID3DXConstantTable_SetFloat
-#define ID3DXConstantTable_SetFloat(p,a,b,c) (p)->lpVtbl->SetFloat(p,a,b,c)
-#endif
-
-#ifndef ID3DXConstantTable_GetBufferPointer
-#define ID3DXConstantTable_GetBufferPointer(p) (p)->lpVtbl->GetBufferPointer(p)
-#endif
-
 #ifndef ID3DXConstantTable_GetConstantByName
 #define ID3DXConstantTable_GetConstantByName(p,a,b)  ((p)->lpVtbl->GetConstantByName(p, a, b))
 #endif
@@ -91,7 +75,6 @@
 #endif
 
 #define set_param_2f(param, xy, constanttable) if (param) { ID3DXConstantTable_SetFloatArray(constanttable, d3dr, param, xy, 2); }
-#define set_param_1f(param, x, constanttable)  if (param) { ID3DXConstantTable_SetFloat(constanttable, d3dr, param, x); }
 #define get_constant_by_name(a, b, constanttable) ID3DXConstantTable_GetConstantByName(constanttable, a, b)
 
 
@@ -216,14 +199,20 @@ static void hlsl_set_params(void *data, void *shader_data,
    set_param_2f(hlsl->prg[hlsl->active_idx].vid_size_f, ori_size, hlsl->prg[hlsl->active_idx].f_ctable);
    set_param_2f(hlsl->prg[hlsl->active_idx].tex_size_f, tex_size, hlsl->prg[hlsl->active_idx].f_ctable);
    set_param_2f(hlsl->prg[hlsl->active_idx].out_size_f, out_size, hlsl->prg[hlsl->active_idx].f_ctable);
-   set_param_1f(hlsl->prg[hlsl->active_idx].frame_cnt_f, frame_cnt, hlsl->prg[hlsl->active_idx].f_ctable);
-   set_param_1f(hlsl->prg[hlsl->active_idx].frame_dir_f, state_manager_frame_is_reversed() ? -1.0 : 1.0, hlsl->prg[hlsl->active_idx].f_ctable);
+   if (hlsl->prg[hlsl->active_idx].frame_cnt_f)
+      d3dx_constant_table_set_float(hlsl->prg[hlsl->active_idx].f_ctable, d3dr,
+      hlsl->prg[hlsl->active_idx].frame_cnt_f, frame_cnt);
+   if (hlsl->prg[hlsl->active_idx].frame_dir_f)
+      d3dx_constant_table_set_float(hlsl->prg[hlsl->active_idx].f_ctable, d3dr, hlsl->prg[hlsl->active_idx].frame_dir_f, state_manager_frame_is_reversed() ? -1.0 : 1.0);
 
    set_param_2f(hlsl->prg[hlsl->active_idx].vid_size_v, ori_size, hlsl->prg[hlsl->active_idx].v_ctable);
    set_param_2f(hlsl->prg[hlsl->active_idx].tex_size_v, tex_size, hlsl->prg[hlsl->active_idx].v_ctable);
    set_param_2f(hlsl->prg[hlsl->active_idx].out_size_v, out_size, hlsl->prg[hlsl->active_idx].v_ctable);
-   set_param_1f(hlsl->prg[hlsl->active_idx].frame_cnt_v, frame_cnt, hlsl->prg[hlsl->active_idx].v_ctable);
-   set_param_1f(hlsl->prg[hlsl->active_idx].frame_dir_v, state_manager_frame_is_reversed() ? -1.0 : 1.0, hlsl->prg[hlsl->active_idx].v_ctable);
+   if (hlsl->prg[hlsl->active_idx].frame_cnt_v)
+      d3dx_constant_table_set_float(hlsl->prg[hlsl->active_idx].v_ctable, d3dr,
+            hlsl->prg[hlsl->active_idx].frame_cnt_v, frame_cnt);
+   if (hlsl->prg[hlsl->active_idx].frame_dir_v)
+      d3dx_constant_table_set_float(hlsl->prg[hlsl->active_idx].v_ctable, d3dr, hlsl->prg[hlsl->active_idx].frame_dir_v, state_manager_frame_is_reversed() ? -1.0 : 1.0);
 
    /* TODO - set lookup textures/FBO textures/state parameters/etc */
 }
@@ -270,8 +259,8 @@ static bool hlsl_compile_program(
          goto error;
    }
 
-   d3d_create_pixel_shader(d3dr, (const DWORD*)ID3DXConstantTable_GetBufferPointer(code_f),  (void**)&program->fprg);
-   d3d_create_vertex_shader(d3dr, (const DWORD*)ID3DXConstantTable_GetBufferPointer(code_v), (void**)&program->vprg);
+   d3d_create_pixel_shader(d3dr, (const DWORD*)d3dx_get_buffer_ptr(code_f),  (void**)&program->fprg);
+   d3d_create_vertex_shader(d3dr, (const DWORD*)d3dx_get_buffer_ptr(code_v), (void**)&program->vprg);
    d3dxbuffer_release((void*)code_f);
    d3dxbuffer_release((void*)code_v);
 
@@ -280,9 +269,9 @@ static bool hlsl_compile_program(
 error:
    RARCH_ERR("Cg/HLSL error:\n");
    if(listing_f)
-      RARCH_ERR("Fragment:\n%s\n", (char*)ID3DXConstantTable_GetBufferPointer(listing_f));
+      RARCH_ERR("Fragment:\n%s\n", (char*)d3dx_get_buffer_ptr(listing_f));
    if(listing_v)
-      RARCH_ERR("Vertex:\n%s\n", (char*)ID3DXConstantTable_GetBufferPointer(listing_v));
+      RARCH_ERR("Vertex:\n%s\n", (char*)d3dx_get_buffer_ptr(listing_v));
    d3dxbuffer_release((void*)listing_f);
    d3dxbuffer_release((void*)listing_v);
 
@@ -545,7 +534,8 @@ static bool hlsl_filter_type(void *data, unsigned idx, bool *smooth)
    if (hlsl_data && idx
          && (hlsl_data->cg_shader->pass[idx - 1].filter != RARCH_FILTER_UNSPEC))
    {
-      *smooth = hlsl_data->cg_shader->pass[idx - 1].filter = RARCH_FILTER_LINEAR;
+      *smooth = RARCH_FILTER_LINEAR;
+      hlsl_data->cg_shader->pass[idx - 1].filter = RARCH_FILTER_LINEAR;
       return true;
    }
    return false;
