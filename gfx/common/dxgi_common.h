@@ -9,9 +9,15 @@
 #define _Null_
 
 #define _Out_writes_bytes_opt_(s)
+#define _Out_writes_bytes_(s)
+#define _In_reads_bytes_(s)
+#define _Inout_opt_bytecount_(s)
 
 #define __in
 #define __out
+#define _Inout_
+#define _COM_Outptr_
+
 #define __in_bcount(size)
 #define __in_ecount(size)
 #define __out_bcount(size)
@@ -19,9 +25,13 @@
 #define __out_ecount(size)
 #define __inout
 #define __deref_out_ecount(size)
+#define __in_ecount_opt(s)
+
+#ifndef __cplusplus
+#define static_assert _Static_assert
+#endif
 #endif
 
-#define CINTERFACE
 #include <assert.h>
 #include <dxgi1_5.h>
 
@@ -29,8 +39,12 @@
 #define countof(a) (sizeof(a) / sizeof(*a))
 #endif
 
-#ifndef __uuidof
-#define __uuidof(type) & IID_##type
+#ifndef uuidof
+#if defined(__cplusplus)
+#define uuidof(type) IID_##type
+#else
+#define uuidof(type) &IID_##type
+#endif
 #endif
 
 #ifndef COM_RELEASE_DECLARED
@@ -72,6 +86,7 @@ typedef IDXGIFactoryMedia*      DXGIFactoryMedia;
 typedef IDXGISwapChainMedia*    DXGISwapChainMedia;
 typedef IDXGISwapChain3*        DXGISwapChain;
 
+#if !defined(__cplusplus) || defined(CINTERFACE)
 static INLINE ULONG DXGIReleaseDeviceSubObject(DXGIDeviceSubObject device_sub_object)
 {
    return device_sub_object->lpVtbl->Release(device_sub_object);
@@ -415,7 +430,7 @@ static INLINE HRESULT DXGIPresent(DXGISwapChain swap_chain, UINT sync_interval, 
 }
 static INLINE HRESULT DXGIGetBuffer(DXGISwapChain swap_chain, UINT buffer, IDXGISurface** out)
 {
-   return swap_chain->lpVtbl->GetBuffer(swap_chain, buffer, __uuidof(IDXGISurface), (void**)out);
+   return swap_chain->lpVtbl->GetBuffer(swap_chain, buffer, uuidof(IDXGISurface), (void**)out);
 }
 static INLINE HRESULT
 DXGISetFullscreenState(DXGISwapChain swap_chain, BOOL fullscreen, DXGIOutput target)
@@ -544,12 +559,12 @@ DXGISetColorSpace1(DXGISwapChain swap_chain, DXGI_COLOR_SPACE_TYPE color_space)
 {
    return swap_chain->lpVtbl->SetColorSpace1(swap_chain, color_space);
 }
-
+#endif
 /* end of auto-generated */
 
 static INLINE HRESULT DXGICreateFactory(DXGIFactory* factory)
 {
-   return CreateDXGIFactory1(__uuidof(IDXGIFactory1), (void**)factory);
+   return CreateDXGIFactory1(uuidof(IDXGIFactory1), (void**)factory);
 }
 
 /* internal */

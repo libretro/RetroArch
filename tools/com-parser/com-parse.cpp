@@ -560,7 +560,7 @@ public:
       }
 
       if(!riid.empty())
-         out << ", __uuidof(" << riid << "), (void**)out";
+         out << ", uuidof(" << riid << "), (void**)out";
 
       out << ");\n";
       out << "}\n";

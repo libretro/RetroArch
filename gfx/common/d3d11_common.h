@@ -17,66 +17,8 @@
 
 #include <retro_inline.h>
 
-#ifdef __MINGW32__
-#define __REQUIRED_RPCNDR_H_VERSION__ 475
-#define _In_
-#define _In_opt_
-#define _Null_
-
-#define _Out_writes_bytes_opt_(s)
-#define _Inout_opt_bytecount_(s)
-
-#define __in
-#define __out
-#define __in_bcount(size)
-#define __in_ecount(size)
-#define __out_bcount(size)
-#define __out_bcount_part(size, length)
-#define __out_ecount(size)
-#define __inout
-#define __deref_out_ecount(size)
-#endif
-
-#define CINTERFACE
-#define COBJMACROS
-#if 0
-#ifdef __GNUC__
-#define WIDL_C_INLINE_WRAPPERS
-#include <_mingw.h>
-#undef __forceinline
-#define __forceinline inline __attribute__((__always_inline__))
-#endif
-#endif
-
-#include <d3d11.h>
 #include "dxgi_common.h"
-
-#ifndef countof
-#define countof(a) (sizeof(a) / sizeof(*a))
-#endif
-
-#ifndef __uuidof
-#define __uuidof(type) & IID_##type
-#endif
-
-#ifndef COM_RELEASE_DECLARED
-#define COM_RELEASE_DECLARED
-#if defined(__cplusplus) && !defined(CINTERFACE)
-static INLINE ULONG Release(IUnknown* object)
-{
-   if (object)
-      return object->Release();
-   return 0;
-}
-#else
-static INLINE ULONG Release(void* object)
-{
-   if (object)
-      return ((IUnknown*)object)->lpVtbl->Release(object);
-   return 0;
-}
-#endif
-#endif
+#include <d3d11.h>
 
 typedef ID3D11InputLayout*       D3D11InputLayout;
 typedef ID3D11RasterizerState*   D3D11RasterizerState;
@@ -2103,7 +2045,7 @@ static INLINE HRESULT
 D3D11OpenSharedResource(D3D11Device device, HANDLE h_resource, ID3D11Resource** out)
 {
    return device->lpVtbl->OpenSharedResource(
-         device, h_resource, __uuidof(ID3D11Resource), (void**)out);
+         device, h_resource, uuidof(ID3D11Resource), (void**)out);
 }
 static INLINE HRESULT
 D3D11CheckFormatSupport(D3D11Device device, DXGI_FORMAT format, UINT* format_support)
@@ -2393,7 +2335,7 @@ static INLINE BOOL D3D11GetMuteDebugOutput(D3D11InfoQueue info_queue)
 static INLINE HRESULT
 DXGIGetSwapChainBufferD3D11(DXGISwapChain swap_chain, UINT buffer, D3D11Texture2D* out)
 {
-   return swap_chain->lpVtbl->GetBuffer(swap_chain, buffer, __uuidof(ID3D11Texture2D), (void**)out);
+   return swap_chain->lpVtbl->GetBuffer(swap_chain, buffer, uuidof(ID3D11Texture2D), (void**)out);
 }
 
 static INLINE HRESULT D3D11MapTexture2D(
@@ -2507,7 +2449,6 @@ typedef struct
 #define ALIGN(x) __declspec(align(x))
 #else
 #define ALIGN(x) __attribute__((aligned(x)))
-#define static_assert _Static_assert
 #endif
 #endif
 
@@ -2614,7 +2555,7 @@ d3d11_set_texture_and_sampler(D3D11DeviceContext ctx, UINT slot, d3d11_texture_t
 
 bool d3d11_init_shader(
       D3D11Device               device,
-      void*                     src,
+      const void*               src,
       size_t                    size,
       LPCSTR                    vs_entry,
       LPCSTR                    ps_entry,

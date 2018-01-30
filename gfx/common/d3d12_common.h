@@ -17,58 +17,8 @@
 
 #include <retro_inline.h>
 
-#ifdef __MINGW32__
-#define __REQUIRED_RPCNDR_H_VERSION__ 475
-#define _In_
-#define _In_opt_
-#define _Null_
-#define __in_ecount_opt(s)
-#define static_assert _Static_assert
-#define _Out_writes_bytes_opt_(s)
-
-#define __in
-#define __out
-#define __in_bcount(size)
-#define __in_ecount(size)
-#define __out_bcount(size)
-#define __out_bcount_part(size, length)
-#define __out_ecount(size)
-#define __inout
-#define __deref_out_ecount(size)
-#endif
-
-#define CINTERFACE
-#include <d3d12.h>
 #include "dxgi_common.h"
-
-#ifndef countof
-#define countof(a) (sizeof(a) / sizeof(*a))
-#endif
-
-#ifndef __uuidof
-#define __uuidof(type) & IID_##type
-#endif
-
-#ifndef COM_RELEASE_DECLARED
-#define COM_RELEASE_DECLARED
-#if defined(__cplusplus) && !defined(CINTERFACE)
-static INLINE ULONG Release(IUnknown* object)
-{
-   if (object)
-      return object->Release();
-
-   return 0;
-}
-#else
-static INLINE ULONG Release(void* object)
-{
-   if (object)
-      return ((IUnknown*)object)->lpVtbl->Release(object);
-
-   return 0;
-}
-#endif
-#endif
+#include <d3d12.h>
 
 /* auto-generated */
 
@@ -690,25 +640,25 @@ static INLINE HRESULT D3D12CreateCommandQueue(
       D3D12Device device, D3D12_COMMAND_QUEUE_DESC* desc, ID3D12CommandQueue** out)
 {
    return device->lpVtbl->CreateCommandQueue(
-         device, desc, __uuidof(ID3D12CommandQueue), (void**)out);
+         device, desc, uuidof(ID3D12CommandQueue), (void**)out);
 }
 static INLINE HRESULT D3D12CreateCommandAllocator(
       D3D12Device device, D3D12_COMMAND_LIST_TYPE type, ID3D12CommandAllocator** out)
 {
    return device->lpVtbl->CreateCommandAllocator(
-         device, type, __uuidof(ID3D12CommandAllocator), (void**)out);
+         device, type, uuidof(ID3D12CommandAllocator), (void**)out);
 }
 static INLINE HRESULT D3D12CreateGraphicsPipelineState(
       D3D12Device device, D3D12_GRAPHICS_PIPELINE_STATE_DESC* desc, ID3D12PipelineState** out)
 {
    return device->lpVtbl->CreateGraphicsPipelineState(
-         device, desc, __uuidof(ID3D12PipelineState), (void**)out);
+         device, desc, uuidof(ID3D12PipelineState), (void**)out);
 }
 static INLINE HRESULT D3D12CreateComputePipelineState(
       D3D12Device device, D3D12_COMPUTE_PIPELINE_STATE_DESC* desc, ID3D12PipelineState** out)
 {
    return device->lpVtbl->CreateComputePipelineState(
-         device, desc, __uuidof(ID3D12PipelineState), (void**)out);
+         device, desc, uuidof(ID3D12PipelineState), (void**)out);
 }
 static INLINE HRESULT D3D12CreateCommandList(
       D3D12Device             device,
@@ -719,7 +669,7 @@ static INLINE HRESULT D3D12CreateCommandList(
       ID3D12CommandList**     out)
 {
    return device->lpVtbl->CreateCommandList(
-         device, node_mask, type, command_allocator, initial_state, __uuidof(ID3D12CommandList),
+         device, node_mask, type, command_allocator, initial_state, uuidof(ID3D12CommandList),
          (void**)out);
 }
 static INLINE HRESULT D3D12CheckFeatureSupport(
@@ -737,7 +687,7 @@ static INLINE HRESULT D3D12CreateDescriptorHeap(
       D3D12DescriptorHeap*        out)
 {
    return device->lpVtbl->CreateDescriptorHeap(
-         device, descriptor_heap_desc, __uuidof(ID3D12DescriptorHeap), (void**)out);
+         device, descriptor_heap_desc, uuidof(ID3D12DescriptorHeap), (void**)out);
 }
 static INLINE UINT D3D12GetDescriptorHandleIncrementSize(
       D3D12Device device, D3D12_DESCRIPTOR_HEAP_TYPE descriptor_heap_type)
@@ -753,7 +703,7 @@ static INLINE HRESULT D3D12CreateRootSignature(
 {
    return device->lpVtbl->CreateRootSignature(
          device, node_mask, blob_with_root_signature, blob_length_in_bytes,
-         __uuidof(ID3D12RootSignature), (void**)out);
+         uuidof(ID3D12RootSignature), (void**)out);
 }
 static INLINE void D3D12CreateConstantBufferView(
       D3D12Device                      device,
@@ -853,11 +803,11 @@ static INLINE HRESULT D3D12CreateCommittedResource(
 {
    return device->lpVtbl->CreateCommittedResource(
          device, heap_properties, heap_flags, desc, initial_resource_state, optimized_clear_value,
-         __uuidof(ID3D12Resource), (void**)out);
+         uuidof(ID3D12Resource), (void**)out);
 }
 static INLINE HRESULT D3D12CreateHeap(D3D12Device device, D3D12_HEAP_DESC* desc, ID3D12Heap** out)
 {
-   return device->lpVtbl->CreateHeap(device, desc, __uuidof(ID3D12Heap), (void**)out);
+   return device->lpVtbl->CreateHeap(device, desc, uuidof(ID3D12Heap), (void**)out);
 }
 static INLINE HRESULT D3D12CreatePlacedResource(
       D3D12Device           device,
@@ -870,7 +820,7 @@ static INLINE HRESULT D3D12CreatePlacedResource(
 {
    return device->lpVtbl->CreatePlacedResource(
          device, heap, heap_offset, desc, initial_state, optimized_clear_value,
-         __uuidof(ID3D12Resource), (void**)out);
+         uuidof(ID3D12Resource), (void**)out);
 }
 static INLINE HRESULT D3D12CreateReservedResource(
       D3D12Device           device,
@@ -880,13 +830,13 @@ static INLINE HRESULT D3D12CreateReservedResource(
       ID3D12Resource**      out)
 {
    return device->lpVtbl->CreateReservedResource(
-         device, desc, initial_state, optimized_clear_value, __uuidof(ID3D12Resource), (void**)out);
+         device, desc, initial_state, optimized_clear_value, uuidof(ID3D12Resource), (void**)out);
 }
 static INLINE HRESULT D3D12CreateFence(
       D3D12Device device, UINT64 initial_value, D3D12_FENCE_FLAGS flags, ID3D12Fence** out)
 {
    return device->lpVtbl->CreateFence(
-         device, initial_value, flags, __uuidof(ID3D12Fence), (void**)out);
+         device, initial_value, flags, uuidof(ID3D12Fence), (void**)out);
 }
 static INLINE HRESULT D3D12GetDeviceRemovedReason(D3D12Device device)
 {
@@ -910,7 +860,7 @@ static INLINE void D3D12GetCopyableFootprints(
 static INLINE HRESULT
 D3D12CreateQueryHeap(D3D12Device device, D3D12_QUERY_HEAP_DESC* desc, ID3D12Heap** out)
 {
-   return device->lpVtbl->CreateQueryHeap(device, desc, __uuidof(ID3D12Heap), (void**)out);
+   return device->lpVtbl->CreateQueryHeap(device, desc, uuidof(ID3D12Heap), (void**)out);
 }
 static INLINE HRESULT D3D12SetStablePowerState(D3D12Device device, BOOL enable)
 {
@@ -923,7 +873,7 @@ static INLINE HRESULT D3D12CreateCommandSignature(
       ID3D12CommandSignature**      out)
 {
    return device->lpVtbl->CreateCommandSignature(
-         device, desc, root_signature, __uuidof(ID3D12CommandSignature), (void**)out);
+         device, desc, root_signature, uuidof(ID3D12CommandSignature), (void**)out);
 }
 static INLINE void D3D12GetResourceTiling(
       D3D12Device               device,
@@ -960,7 +910,7 @@ static INLINE HRESULT D3D12LoadGraphicsPipeline(
       ID3D12PipelineState**               out)
 {
    return pipeline_library->lpVtbl->LoadGraphicsPipeline(
-         pipeline_library, name, desc, __uuidof(ID3D12PipelineState), (void**)out);
+         pipeline_library, name, desc, uuidof(ID3D12PipelineState), (void**)out);
 }
 static INLINE HRESULT D3D12LoadComputePipeline(
       D3D12PipelineLibrary               pipeline_library,
@@ -969,7 +919,7 @@ static INLINE HRESULT D3D12LoadComputePipeline(
       ID3D12PipelineState**              out)
 {
    return pipeline_library->lpVtbl->LoadComputePipeline(
-         pipeline_library, name, desc, __uuidof(ID3D12PipelineState), (void**)out);
+         pipeline_library, name, desc, uuidof(ID3D12PipelineState), (void**)out);
 }
 static INLINE SIZE_T D3D12GetSerializedSize(D3D12PipelineLibrary pipeline_library)
 {
@@ -1204,14 +1154,14 @@ static INLINE BOOL D3D12GetMuteDebugOutput(D3D12InfoQueue info_queue)
 
 static INLINE HRESULT D3D12GetDebugInterface_(D3D12Debug* out)
 {
-   return D3D12GetDebugInterface(__uuidof(ID3D12Debug), (void**)out);
+   return D3D12GetDebugInterface(uuidof(ID3D12Debug), (void**)out);
 }
 
 static INLINE HRESULT
 D3D12CreateDevice_(DXGIAdapter adapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, D3D12Device* out)
 {
    return D3D12CreateDevice(
-         (IUnknown*)adapter, MinimumFeatureLevel, __uuidof(ID3D12Device), (void**)out);
+         (IUnknown*)adapter, MinimumFeatureLevel, uuidof(ID3D12Device), (void**)out);
 }
 
 static INLINE HRESULT D3D12CreateGraphicsCommandList(
@@ -1224,7 +1174,7 @@ static INLINE HRESULT D3D12CreateGraphicsCommandList(
 {
    return device->lpVtbl->CreateCommandList(
          device, node_mask, type, command_allocator, initial_state,
-         __uuidof(ID3D12GraphicsCommandList), (void**)out);
+         uuidof(ID3D12GraphicsCommandList), (void**)out);
 }
 
 static INLINE void D3D12ClearRenderTargetView(
@@ -1258,7 +1208,7 @@ static INLINE HRESULT
 DXGIGetSwapChainBuffer(DXGISwapChain swapchain, UINT buffer, D3D12Resource* surface)
 {
    return swapchain->lpVtbl->GetBuffer(
-         swapchain, buffer, __uuidof(ID3D12Resource), (void**)surface);
+         swapchain, buffer, uuidof(ID3D12Resource), (void**)surface);
 }
 static INLINE void D3D12SetDescriptorHeaps(
       D3D12GraphicsCommandList   command_list,

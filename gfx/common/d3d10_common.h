@@ -17,66 +17,8 @@
 
 #include <retro_inline.h>
 
-#ifdef __MINGW32__
-#define __REQUIRED_RPCNDR_H_VERSION__ 475
-#define _In_
-#define _In_opt_
-#define _Null_
-
-#define _Out_writes_bytes_opt_(s)
-#define _Inout_opt_bytecount_(s)
-
-#define __in
-#define __out
-#define __in_bcount(size)
-#define __in_ecount(size)
-#define __out_bcount(size)
-#define __out_bcount_part(size, length)
-#define __out_ecount(size)
-#define __inout
-#define __deref_out_ecount(size)
-#endif
-
-#define CINTERFACE
-#define COBJMACROS
-#if 0
-#ifdef __GNUC__
-#define WIDL_C_INLINE_WRAPPERS
-#include <_mingw.h>
-#undef __forceinline
-#define __forceinline inline __attribute__((__always_inline__))
-#endif
-#endif
-
-#include <d3d10.h>
 #include "dxgi_common.h"
-
-#ifndef countof
-#define countof(a) (sizeof(a) / sizeof(*a))
-#endif
-
-#ifndef __uuidof
-#define __uuidof(type) & IID_##type
-#endif
-
-#ifndef COM_RELEASE_DECLARED
-#define COM_RELEASE_DECLARED
-#if defined(__cplusplus) && !defined(CINTERFACE)
-static INLINE ULONG Release(IUnknown* object)
-{
-   if (object)
-      return object->Release();
-   return 0;
-}
-#else
-static INLINE ULONG Release(void* object)
-{
-   if (object)
-      return ((IUnknown*)object)->lpVtbl->Release(object);
-   return 0;
-}
-#endif
-#endif
+#include <d3d10.h>
 
 typedef ID3D10InputLayout*       D3D10InputLayout;
 typedef ID3D10RasterizerState*   D3D10RasterizerState;
@@ -823,7 +765,7 @@ static INLINE HRESULT
 D3D10OpenSharedResource(D3D10Device device, HANDLE h_resource, ID3D10Resource** out)
 {
    return device->lpVtbl->OpenSharedResource(
-         device, h_resource, __uuidof(ID3D10Resource), (void**)out);
+         device, h_resource, uuidof(ID3D10Resource), (void**)out);
 }
 static INLINE void D3D10SetTextFilterSize(D3D10Device device, UINT width, UINT height)
 {
@@ -1049,7 +991,7 @@ static INLINE BOOL D3D10GetMuteDebugOutput(D3D10InfoQueue info_queue)
 static INLINE HRESULT
 DXGIGetSwapChainBufferD3D10(DXGISwapChain swap_chain, UINT buffer, D3D10Texture2D* out)
 {
-   return swap_chain->lpVtbl->GetBuffer(swap_chain, buffer, __uuidof(ID3D10Texture2D), (void**)out);
+   return swap_chain->lpVtbl->GetBuffer(swap_chain, buffer, uuidof(ID3D10Texture2D), (void**)out);
 }
 static INLINE void D3D10CopyTexture2DSubresourceRegion(
       D3D10Device    device,
