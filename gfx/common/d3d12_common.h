@@ -25,6 +25,16 @@
 #define __in_ecount_opt(s)
 #define static_assert _Static_assert
 #define _Out_writes_bytes_opt_(s)
+
+#define __in
+#define __out
+#define __in_bcount(size)
+#define __in_ecount(size)
+#define __out_bcount(size)
+#define __out_bcount_part(size, length)
+#define __out_ecount(size)
+#define __inout
+#define __deref_out_ecount(size)
 #endif
 
 #define CINTERFACE
