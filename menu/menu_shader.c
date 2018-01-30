@@ -130,7 +130,7 @@ bool menu_shader_manager_init(void)
 #ifdef HAVE_SHADER_MANAGER
    settings_t *settings        = config_get_ptr();
    const char *config_path     = path_get(RARCH_PATH_CONFIG);
-   const char *path_shader     = settings->paths.path_shader;
+   const char *path_shader     = retroarch_get_shader_preset();
 
    menu_shader_manager_free();
 
