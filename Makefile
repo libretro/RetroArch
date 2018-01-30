@@ -16,10 +16,12 @@ include config.mk
 
 TARGET = retroarch
 
+OBJDIR_BASE := obj-unix
+
 ifeq ($(DEBUG), 1)
-   OBJDIR := obj-unix/debug
+   OBJDIR := $(OBJDIR_BASE)/debug
 else
-   OBJDIR := obj-unix/release
+   OBJDIR := $(OBJDIR_BASE)/release
 endif
 
 OBJ :=
@@ -236,7 +238,7 @@ uninstall:
 	rm -rf $(DESTDIR)$(ASSETS_DIR)/retroarch
 
 clean:
-	rm -rf $(OBJDIR)
+	rm -rf $(OBJDIR_BASE)
 	rm -f $(TARGET)
 	rm -f *.d
 
