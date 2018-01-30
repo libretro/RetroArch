@@ -135,10 +135,10 @@ static void d3d11_font_render_line(
    int                      x      = roundf(pos_x * width);
    int                      y      = roundf((1.0 - pos_y) * height);
 
-   if (!d3d11->sprites.enabled || msg_len > d3d11->sprites.capacity)
+   if (!d3d11->sprites.enabled || msg_len > (unsigned)d3d11->sprites.capacity)
       return;
 
-   if (d3d11->sprites.offset + msg_len > d3d11->sprites.capacity)
+   if (d3d11->sprites.offset + msg_len > (unsigned)d3d11->sprites.capacity)
       d3d11->sprites.offset = 0;
 
    switch (text_align)
