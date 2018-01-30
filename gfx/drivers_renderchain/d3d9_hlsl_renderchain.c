@@ -296,7 +296,7 @@ static bool hlsl_d3d9_renderchain_init_shader(void *data,
 
    init.shader_type               = RARCH_SHADER_HLSL;
    init.data                      = data;
-   init.path                      = settings->paths.path_shader;
+   init.path                      = retroarch_get_shader_preset();
    init.shader                    = &hlsl_backend;
 
    RARCH_LOG("D3D]: Using HLSL shader backend.\n");
