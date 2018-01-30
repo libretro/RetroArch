@@ -222,7 +222,9 @@ static video_poke_interface_t xshm_video_poke_interface = {
    xshm_poke_set_osd_msg,
    xshm_show_mouse,
    xshm_grab_mouse_toggle,
-   NULL,
+   NULL,                   /* get_current_shader */
+   NULL,                   /* get_current_software_framebuffer */
+   NULL                    /* get_hw_render_interface */
 };
 
 static void xshm_gfx_poke_interface(void *data, const video_poke_interface_t **iface)

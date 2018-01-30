@@ -799,7 +799,7 @@ static const video_poke_interface_t vita_poke_interface = {
    NULL,
    NULL,
    vita_get_current_sw_framebuffer,
-   NULL,
+   NULL
  };
 
 static void vita2d_gfx_get_poke_interface(void *data,

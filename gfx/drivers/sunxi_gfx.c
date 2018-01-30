@@ -947,8 +947,12 @@ static const video_poke_interface_t sunxi_poke_interface = {
    NULL, /* sunxi_apply_state_changes */
    sunxi_set_texture_frame,
    sunxi_set_texture_enable,
-   NULL, /* sunxi_set_osd_msg */
-   NULL  /* sunxi_show_mouse */
+   NULL,                         /* set_osd_msg */
+   NULL,                         /* show_mouse */
+   NULL,                         /* grab_mouse_toggle */
+   NULL,                         /* get_current_shader */
+   NULL,                         /* get_current_software_framebuffer */
+   NULL                          /* get_hw_render_interface */
 };
 
 static void sunxi_gfx_get_poke_interface(void *data,

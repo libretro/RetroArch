@@ -1735,6 +1735,10 @@ static const video_poke_interface_t d3d_poke_interface = {
    d3d8_set_osd_msg,
 
    d3d8_show_mouse,
+   NULL,                         /* grab_mouse_toggle */
+   NULL,                         /* get_current_shader */
+   NULL,                         /* get_current_software_framebuffer */
+   NULL                          /* get_hw_render_interface */
 };
 
 static void d3d8_get_poke_interface(void *data,

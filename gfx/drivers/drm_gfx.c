@@ -979,8 +979,12 @@ static const video_poke_interface_t drm_poke_interface = {
    NULL, /* drm_apply_state_changes */
    drm_set_texture_frame,
    drm_set_texture_enable,
-   NULL, /* drm_set_osd_msg */
-   NULL  /* drm_show_mouse */
+   NULL,                         /* drm_set_osd_msg */
+   NULL,                         /* drm_show_mouse */
+   NULL,                         /* grab_mouse_toggle */
+   NULL,                         /* get_current_shader */
+   NULL,                         /* get_current_software_framebuffer */
+   NULL                          /* get_hw_render_interface */
 };
 
 static void drm_gfx_get_poke_interface(void *data,

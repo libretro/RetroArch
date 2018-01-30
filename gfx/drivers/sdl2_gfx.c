@@ -737,7 +737,9 @@ static video_poke_interface_t sdl2_video_poke_interface = {
    sdl2_poke_set_osd_msg,
    sdl2_show_mouse,
    sdl2_grab_mouse_toggle,
-   NULL,
+   NULL,                         /* get_current_shader */
+   NULL,                         /* get_current_software_framebuffer */
+   NULL                          /* get_hw_render_interface */
 };
 
 static void sdl2_gfx_poke_interface(void *data, const video_poke_interface_t **iface)

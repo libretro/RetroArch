@@ -550,9 +550,10 @@ static const video_poke_interface_t gdi_poke_interface = {
    NULL,
    gdi_set_osd_msg,
    NULL,
-
-   NULL,
-   NULL,
+   NULL,                         /* grab_mouse_toggle */
+   NULL,                         /* get_current_shader */
+   NULL,                         /* get_current_software_framebuffer */
+   NULL                          /* get_hw_render_interface */
 };
 
 static void gdi_gfx_get_poke_interface(void *data,

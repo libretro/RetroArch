@@ -846,9 +846,12 @@ static const video_poke_interface_t psp_poke_interface = {
    psp_apply_state_changes,
    psp_set_texture_frame,
    psp_set_texture_enable,
-   NULL,
-   NULL,
-   NULL
+   NULL,                        /* set_osd_msg */
+   NULL,                        /* show_mouse  */
+   NULL,                        /* grab_mouse_toggle */
+   NULL,                        /* get_current_shader */
+   NULL,                        /* get_current_software_framebuffer */
+   NULL                         /* get_hw_render_interface */
 };
 
 static void psp_get_poke_interface(void *data,

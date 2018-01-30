@@ -1281,6 +1281,12 @@ static const video_poke_interface_t gx_poke_interface = {
    gx_apply_state_changes,
    gx_set_texture_frame,
    gx_set_texture_enable,
+   NULL,                         /* set_osd_msg */
+   NULL,                         /* show_mouse */
+   NULL,                         /* grab_mouse_toggle */
+   NULL,                         /* get_current_shader */
+   NULL,                         /* get_current_software_framebuffer */
+   NULL                          /* get_hw_render_interface */
 };
 
 static void gx_get_poke_interface(void *data,

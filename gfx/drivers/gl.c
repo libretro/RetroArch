@@ -2564,6 +2564,8 @@ static const video_poke_interface_t gl_poke_interface = {
    gl_show_mouse,
    NULL,
    gl_get_current_shader,
+   NULL,                      /* get_current_software_framebuffer */
+   NULL                       /* get_hw_render_interface */
 };
 
 static void gl_get_poke_interface(void *data,

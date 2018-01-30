@@ -646,8 +646,12 @@ static const video_poke_interface_t dispmanx_poke_interface = {
    NULL, /* dispmanx_apply_state_changes */
    dispmanx_set_texture_frame,
    dispmanx_set_texture_enable,
-   NULL, /* dispmanx_set_osd_msg */
-   NULL  /* dispmanx_show_mouse */
+   NULL,                         /* set_osd_msg */
+   NULL,                         /* show_mouse */
+   NULL,                         /* grab_mouse_toggle */
+   NULL,                         /* get_current_shader */
+   NULL,                         /* get_current_software_framebuffer */
+   NULL                          /* get_hw_render_interface */
 };
 
 static void dispmanx_gfx_get_poke_interface(void *data,
