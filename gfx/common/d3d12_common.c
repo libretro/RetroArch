@@ -331,17 +331,17 @@ bool d3d12_init_descriptors(d3d12_video_t* d3d12)
    D3D12_ROOT_PARAMETER rootParameters[ROOT_INDEX_MAX] = {
             {
                   D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
-				  {0},
+                  {{0}},
                   D3D12_SHADER_VISIBILITY_PIXEL,
             },
             {
                   D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
-				  {0},
+                  {{0}},
                   D3D12_SHADER_VISIBILITY_PIXEL,
             },
             {
                   D3D12_ROOT_PARAMETER_TYPE_CBV,
-				  { 0 },
+                  {{0}},
                   D3D12_SHADER_VISIBILITY_VERTEX,
             }
    };
