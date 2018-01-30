@@ -56,35 +56,35 @@ struct passwd* getpwuid(uid_t uid) {
 
 /* Basic Cafe OS clock thingy. */
 int _gettimeofday_r(struct _reent *ptr,
-    struct timeval* ptimeval,
-    void* ptimezone) {
+   struct timeval* ptimeval,
+   void* ptimezone) {
 
-    OSTime cosTime;
-    uint64_t cosSecs;
-    uint32_t cosUSecs;
-    time_t unixSecs;
+   OSTime cosTime;
+   uint64_t cosSecs;
+   uint32_t cosUSecs;
+   time_t unixSecs;
 
-    /* We need somewhere to put our output */
-    if (ptimeval == NULL) {
-        errno = EFAULT;
-        return -1;
-    }
+   /* We need somewhere to put our output */
+   if (ptimeval == NULL) {
+      errno = EFAULT;
+      return -1;
+   }
 
-    /* Get Cafe OS clock in seconds; epoch 2000-01-01 00:00 */
-    cosTime = OSGetTime();
-    cosSecs = ticks_to_sec(cosTime);
+   /* Get Cafe OS clock in seconds; epoch 2000-01-01 00:00 */
+   cosTime = OSGetTime();
+   cosSecs = ticks_to_sec(cosTime);
 
-    /* Get extra milliseconds */
-    cosUSecs = ticks_to_us(cosTime) - (cosSecs * 1000000);
+   /* Get extra milliseconds */
+   cosUSecs = ticks_to_us(cosTime) - (cosSecs * 1000000);
 
-    /* Convert to Unix time, epoch 1970-01-01 00:00.
-    Constant value is seconds between 1970 and 2000.
-    time_t is 32bit here, so the Wii U is vulnerable to the 2038 problem. */
-    unixSecs = cosSecs + 946684800;
+   /* Convert to Unix time, epoch 1970-01-01 00:00.
+   Constant value is seconds between 1970 and 2000.
+   time_t is 32bit here, so the Wii U is vulnerable to the 2038 problem. */
+   unixSecs = cosSecs + 946684800;
 
-    ptimeval->tv_sec = unixSecs;
-    ptimeval->tv_usec = cosUSecs;
-    return 0;
+   ptimeval->tv_sec = unixSecs;
+   ptimeval->tv_usec = cosUSecs;
+   return 0;
 }
 
 /* POSIX clock in all its glory */
@@ -100,16 +100,16 @@ int clock_gettime(clockid_t clk_id, struct timespec* tp) {
 
    switch (clk_id) {
       case CLOCK_REALTIME:
-      /* Just wrap gettimeofday. Cheating, I know. */
+         /* Just wrap gettimeofday. Cheating, I know. */
          ret = _gettimeofday_r(NULL, &ptimeval, NULL);
          if (ret) return -1;
 
          tp->tv_sec = ptimeval.tv_sec;
          tp->tv_nsec = ptimeval.tv_usec * 1000;
-         break;
+      break;
       default:
          errno = EINVAL;
          return -1;
    }
-	return 0;
+   return 0;
 }
