@@ -105,10 +105,10 @@ error:
 bool d3d_compile(const char* src, size_t size, LPCSTR entrypoint, LPCSTR target, D3DBlob* out)
 {
    D3DBlob error_msg;
-#ifdef DEBUG
-   UINT compileflags    = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
-#else
    UINT compileflags    = 0;
+
+#ifdef DEBUG
+   compileflags        |= D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
 #endif
 
    if (FAILED(D3DCompile(
@@ -128,10 +128,10 @@ bool d3d_compile(const char* src, size_t size, LPCSTR entrypoint, LPCSTR target,
 bool d3d_compile_from_file(LPCWSTR filename, LPCSTR entrypoint, LPCSTR target, D3DBlob* out)
 {
    D3DBlob error_msg;
-#ifdef DEBUG
-   UINT compileflags    = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
-#else
    UINT compileflags    = 0;
+
+#ifdef DEBUG
+   compileflags        |= D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
 #endif
 
    if (FAILED(D3DCompileFromFile(
