@@ -19,14 +19,12 @@
 #include "config.h"
 #endif
 
-#ifdef HAVE_DYNAMIC
-#include <dynamic/dylib.h>
-#endif
-
 #include "d3dcompiler_common.h"
 #include "../../verbosity.h"
 
 #ifdef HAVE_DYNAMIC
+#include <dynamic/dylib.h>
+
 static dylib_t     d3dcompiler_dll;
 static const char* d3dcompiler_dll_list[] = {
    "D3DCompiler_47.dll", "D3DCompiler_46.dll", "D3DCompiler_45.dll", "D3DCompiler_44.dll",
@@ -34,7 +32,6 @@ static const char* d3dcompiler_dll_list[] = {
    "D3DCompiler_39.dll", "D3DCompiler_38.dll", "D3DCompiler_37.dll", "D3DCompiler_36.dll",
    "D3DCompiler_35.dll", "D3DCompiler_34.dll", "D3DCompiler_33.dll", NULL,
 };
-#endif
 
 HRESULT WINAPI D3DCompile(
       LPCVOID pSrcData,
@@ -50,7 +47,6 @@ HRESULT WINAPI D3DCompile(
       ID3DBlob**              ppErrorMsgs)
 {
    static pD3DCompile fp;
-#ifdef HAVE_DYNAMIC
    const char** dll_name = d3dcompiler_dll_list;
    while (!d3dcompiler_dll && *dll_name)
       d3dcompiler_dll = dylib_load(*dll_name++);
@@ -60,17 +56,13 @@ HRESULT WINAPI D3DCompile(
 
    if (!fp)
       fp = (pD3DCompile)dylib_proc(d3dcompiler_dll, "D3DCompile");
-#else
-   fp = D3DCompile;
-#endif
+
    if (fp)
       return fp(
 		  pSrcData, SrcDataSize, pSourceName, pDefines, pInclude, pEntrypoint, pTarget, Flags1,
 		  Flags2, ppCode, ppErrorMsgs);
 
-#ifdef HAVE_DYNAMIC
 error:
-#endif
    return TYPE_E_CANTLOADLIBRARY;
 }
 
@@ -90,7 +82,6 @@ HRESULT WINAPI D3DCompileFromFile(
 		LPCSTR pEntrypoint, LPCSTR pTarget, UINT Flags1, UINT Flags2, ID3DBlob** ppCode,
 		ID3DBlob** ppErrorMsgs);
    static pD3DCompileFromFile fp;
-#ifdef HAVE_DYNAMIC
    const char** dll_name = d3dcompiler_dll_list;
    while (!d3dcompiler_dll && *dll_name)
       d3dcompiler_dll = dylib_load(*dll_name++);
@@ -100,28 +91,24 @@ HRESULT WINAPI D3DCompileFromFile(
 
    if (!fp)
       fp = (pD3DCompileFromFile)dylib_proc(d3dcompiler_dll, "D3DCompileFromFile");
-#else
-      fp = D3DCompileFromFile;
-#endif
 
    if (fp)
       return fp(
                pFileName, pDefines, pInclude, pEntrypoint, pTarget, Flags1, Flags2, ppCode,
                ppErrorMsgs);
 
-#ifdef HAVE_DYNAMIC
 error:
-#endif
    return TYPE_E_CANTLOADLIBRARY;
 }
+#endif
 
 bool d3d_compile(const char* src, size_t size, LPCSTR entrypoint, LPCSTR target, D3DBlob* out)
 {
    D3DBlob error_msg;
-   UINT    compileflags = 0;
-
 #ifdef DEBUG
-   compileflags |= D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+   UINT compileflags    = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+#else
+   UINT compileflags    = 0;
 #endif
 
    if (FAILED(D3DCompile(
@@ -141,10 +128,10 @@ bool d3d_compile(const char* src, size_t size, LPCSTR entrypoint, LPCSTR target,
 bool d3d_compile_from_file(LPCWSTR filename, LPCSTR entrypoint, LPCSTR target, D3DBlob* out)
 {
    D3DBlob error_msg;
-   UINT    compileflags = 0;
-
 #ifdef DEBUG
-   compileflags |= D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+   UINT compileflags    = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+#else
+   UINT compileflags    = 0;
 #endif
 
    if (FAILED(D3DCompileFromFile(

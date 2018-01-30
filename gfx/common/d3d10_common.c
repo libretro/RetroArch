@@ -13,11 +13,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <gfx/scaler/pixconv.h>
+
 #include "d3d10_common.h"
 
+#ifdef HAVE_DYNAMIC
 #include <dynamic/dylib.h>
-
-static dylib_t d3d10_dll;
 
 typedef HRESULT(WINAPI* PFN_D3D10_CREATE_DEVICE_AND_SWAP_CHAIN)(
       IDXGIAdapter*         pAdapter,
@@ -40,9 +41,9 @@ HRESULT WINAPI D3D10CreateDeviceAndSwapChain(
       ID3D10Device**        ppDevice)
 
 {
+   static dylib_t d3d10_dll;
    static PFN_D3D10_CREATE_DEVICE_AND_SWAP_CHAIN fp;
 
-#ifdef HAVE_DYNAMIC
    if (!d3d10_dll)
       d3d10_dll = dylib_load("d3d10.dll");
 
@@ -52,16 +53,15 @@ HRESULT WINAPI D3D10CreateDeviceAndSwapChain(
    if (!fp)
       fp = (PFN_D3D10_CREATE_DEVICE_AND_SWAP_CHAIN)dylib_proc(
             d3d10_dll, "D3D10CreateDeviceAndSwapChain");
-#else
-      fp = D3D10CreateDeviceAndSwapChain;
-#endif
 
    if (!fp)
       return TYPE_E_CANTLOADLIBRARY;
 
    return fp(
-         pAdapter, DriverType, Software, Flags, SDKVersion, pSwapChainDesc, ppSwapChain, ppDevice);
+         pAdapter, DriverType, Software, Flags, SDKVersion,
+         pSwapChainDesc, ppSwapChain, ppDevice);
 }
+#endif
 
 void d3d10_init_texture(D3D10Device device, d3d10_texture_t* texture)
 {
@@ -88,7 +88,8 @@ void d3d10_init_texture(D3D10Device device, d3d10_texture_t* texture)
       view_desc.Texture2D.MostDetailedMip = 0;
       view_desc.Texture2D.MipLevels       = -1;
 
-      D3D10CreateTexture2DShaderResourceView(device, texture->handle, &view_desc, &texture->view);
+      D3D10CreateTexture2DShaderResourceView(device,
+            texture->handle, &view_desc, &texture->view);
    }
 
    {
@@ -100,7 +101,6 @@ void d3d10_init_texture(D3D10Device device, d3d10_texture_t* texture)
    }
 }
 
-#include <gfx/scaler/pixconv.h>
 void d3d10_update_texture(
       int              width,
       int              height,
@@ -111,15 +111,18 @@ void d3d10_update_texture(
 {
    D3D10_MAPPED_TEXTURE2D mapped_texture;
 
-   D3D10MapTexture2D(texture->staging, 0, D3D10_MAP_WRITE, 0, &mapped_texture);
+   D3D10MapTexture2D(texture->staging, 0, D3D10_MAP_WRITE, 0,
+         &mapped_texture);
 
 #if 0
    PERF_START();
-   conv_rgb565_argb8888(mapped_texture.pData, data, width, height, mapped_texture.RowPitch, pitch);
+   conv_rgb565_argb8888(mapped_texture.pData, data, width, height,
+         mapped_texture.RowPitch, pitch);
    PERF_STOP();
 #else
    dxgi_copy(
-         width, height, format, pitch, data, texture->desc.Format, mapped_texture.RowPitch,
+         width, height, format, pitch, data, texture->desc.Format,
+         mapped_texture.RowPitch,
          mapped_texture.pData);
 #endif
 
@@ -130,14 +133,16 @@ void d3d10_update_texture(
 }
 
 DXGI_FORMAT
-d3d10_get_closest_match(D3D10Device device, DXGI_FORMAT desired_format, UINT desired_format_support)
+d3d10_get_closest_match(D3D10Device device,
+      DXGI_FORMAT desired_format, UINT desired_format_support)
 {
    DXGI_FORMAT* format = dxgi_get_format_fallback_list(desired_format);
    UINT         format_support;
 
    while (*format != DXGI_FORMAT_UNKNOWN)
    {
-      if (SUCCEEDED(D3D10CheckFormatSupport(device, *format, &format_support)) &&
+      if (SUCCEEDED(D3D10CheckFormatSupport(device, *format,
+                  &format_support)) &&
           ((format_support & desired_format_support) == desired_format_support))
          break;
       format++;

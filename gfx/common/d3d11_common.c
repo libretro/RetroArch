@@ -15,11 +15,10 @@
 
 #include "d3d11_common.h"
 #include "d3dcompiler_common.h"
+
 #ifdef HAVE_DYNAMIC
 #include <dynamic/dylib.h>
 
-static dylib_t d3d11_dll;
-#endif
 
 HRESULT WINAPI D3D11CreateDeviceAndSwapChain(
       IDXGIAdapter*   pAdapter,
@@ -35,9 +34,9 @@ HRESULT WINAPI D3D11CreateDeviceAndSwapChain(
       D3D_FEATURE_LEVEL*          pFeatureLevel,
       ID3D11DeviceContext**       ppImmediateContext)
 {
+   static dylib_t d3d11_dll;
    static PFN_D3D11_CREATE_DEVICE_AND_SWAP_CHAIN fp;
 
-#ifdef HAVE_DYNAMIC
    if (!d3d11_dll)
       d3d11_dll = dylib_load("d3d11.dll");
 
@@ -47,9 +46,6 @@ HRESULT WINAPI D3D11CreateDeviceAndSwapChain(
    if (!fp)
       fp = (PFN_D3D11_CREATE_DEVICE_AND_SWAP_CHAIN)dylib_proc(
             d3d11_dll, "D3D11CreateDeviceAndSwapChain");
-#else
-      fp = D3D11CreateDeviceAndSwapChain;
-#endif
 
    if (!fp)
       return TYPE_E_CANTLOADLIBRARY;
@@ -58,6 +54,7 @@ HRESULT WINAPI D3D11CreateDeviceAndSwapChain(
          pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion,
          pSwapChainDesc, ppSwapChain, ppDevice, pFeatureLevel, ppImmediateContext);
 }
+#endif
 
 void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
 {

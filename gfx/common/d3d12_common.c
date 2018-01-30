@@ -13,13 +13,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <dynamic/dylib.h>
-
 #include "d3d12_common.h"
 #include "dxgi_common.h"
 #include "d3dcompiler_common.h"
 
 #include "../verbosity.h"
+
+#ifdef HAVE_DYNAMIC
+#include <dynamic/dylib.h>
+#endif
 
 #ifdef __MINGW32__
 /* clang-format off */
@@ -55,6 +57,7 @@ DEFINE_GUIDW(IID_ID3D12DebugCommandList, 0x09e0bf36, 0x54ac, 0x484f, 0x88, 0x47,
 /* clang-format on */
 #endif
 
+#ifdef HAVE_DYNAMIC
 static dylib_t     d3d12_dll;
 static const char* d3d12_dll_name = "d3d12.dll";
 
@@ -62,7 +65,6 @@ HRESULT WINAPI D3D12CreateDevice(
       IUnknown* pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, REFIID riid, void** ppDevice)
 {
 	static PFN_D3D12_CREATE_DEVICE fp;
-#ifdef HAVE_DYNAMIC
    if (!d3d12_dll)
       d3d12_dll = dylib_load(d3d12_dll_name);
 
@@ -71,23 +73,17 @@ HRESULT WINAPI D3D12CreateDevice(
 
    if (!fp)
       fp = (PFN_D3D12_CREATE_DEVICE)dylib_proc(d3d12_dll, "D3D12CreateDevice");
-#else
-      fp = D3D12CreateDevice;
-#endif
 
    if (fp)
 	   return fp(pAdapter, MinimumFeatureLevel, riid, ppDevice);
 
-#ifdef HAVE_DYNAMIC
 error:
-#endif
    return TYPE_E_CANTLOADLIBRARY;
 }
 
 HRESULT WINAPI D3D12GetDebugInterface(REFIID riid, void** ppvDebug)
 {
    static PFN_D3D12_GET_DEBUG_INTERFACE fp;
-#ifdef HAVE_DYNAMIC
    if (!d3d12_dll)
       d3d12_dll = dylib_load(d3d12_dll_name);
 
@@ -96,16 +92,11 @@ HRESULT WINAPI D3D12GetDebugInterface(REFIID riid, void** ppvDebug)
 
    if (!fp)
       fp = (PFN_D3D12_GET_DEBUG_INTERFACE)dylib_proc(d3d12_dll, "D3D12GetDebugInterface");
-#else
-      fp = D3D12GetDebugInterface;
-#endif
 
 	if (fp)
 		return fp(riid, ppvDebug);
 
-#ifdef HAVE_DYNAMIC
 error:
-#endif
    return TYPE_E_CANTLOADLIBRARY;
 }
 
@@ -116,7 +107,6 @@ HRESULT WINAPI D3D12SerializeRootSignature(
       ID3DBlob**                       ppErrorBlob)
 {
    static PFN_D3D12_SERIALIZE_ROOT_SIGNATURE fp;
-#ifdef HAVE_DYNAMIC
    if (!d3d12_dll)
       d3d12_dll = dylib_load(d3d12_dll_name);
 
@@ -126,16 +116,11 @@ HRESULT WINAPI D3D12SerializeRootSignature(
    if (!fp)
       fp = (PFN_D3D12_SERIALIZE_ROOT_SIGNATURE)dylib_proc(
                d3d12_dll, "D3D12SerializeRootSignature");
-#else
-   fp = D3D12SerializeRootSignature;
-#endif
 
    if (fp)
       return fp(pRootSignature, Version, ppBlob, ppErrorBlob);
 
-#ifdef HAVE_DYNAMIC
 error:
-#endif
    return TYPE_E_CANTLOADLIBRARY;
 }
 
@@ -145,7 +130,6 @@ HRESULT WINAPI D3D12SerializeVersionedRootSignature(
       ID3DBlob**                                 ppErrorBlob)
 {
    static PFN_D3D12_SERIALIZE_VERSIONED_ROOT_SIGNATURE fp;
-#ifdef HAVE_DYNAMIC
    if (!d3d12_dll)
       d3d12_dll = dylib_load(d3d12_dll_name);
 
@@ -155,18 +139,14 @@ HRESULT WINAPI D3D12SerializeVersionedRootSignature(
    if (!fp)
       fp = (PFN_D3D12_SERIALIZE_VERSIONED_ROOT_SIGNATURE)dylib_proc(
                d3d12_dll, "D3D12SerializeRootSignature");
-#else
-   fp = (PFN_D3D12_SERIALIZE_VERSIONED_ROOT_SIGNATURE)D3D12SerializeRootSignature; 
-#endif
 
    if (fp)
 	   return fp(pRootSignature, ppBlob, ppErrorBlob);
 
-#ifdef HAVE_DYNAMIC
 error:
-#endif
    return TYPE_E_CANTLOADLIBRARY;
 }
+#endif
 
 bool d3d12_init_base(d3d12_video_t* d3d12)
 {
