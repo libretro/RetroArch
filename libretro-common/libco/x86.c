@@ -44,7 +44,7 @@ static unsigned char co_swap_function[] = {
 #ifdef _WIN32
 #include <windows.h>
 
-void co_init(void)
+static void co_init(void)
 {
    DWORD old_privileges;
    VirtualProtect(co_swap_function,
@@ -54,7 +54,7 @@ void co_init(void)
 #include <unistd.h>
 #include <sys/mman.h>
 
-void co_init(void)
+static void co_init(void)
 {
    unsigned long addr = (unsigned long)co_swap_function;
    unsigned long base = addr - (addr % sysconf(_SC_PAGESIZE));

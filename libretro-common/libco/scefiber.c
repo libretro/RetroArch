@@ -29,7 +29,7 @@ int32_t sceFiberSwitch(SceFiber* fiber, uint32_t argOnRunTo, uint32_t* argOnRun)
 
 int32_t sceFiberReturnToThread(uint32_t argOnReturn, uint32_t* argOnRun);
 
-void co_thunk(uint32_t argOnInitialize, uint32_t argOnRun)
+static void co_thunk(uint32_t argOnInitialize, uint32_t argOnRun)
 {
    ((void (*)(void))argOnInitialize)();
 }

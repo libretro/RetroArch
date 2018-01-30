@@ -22,7 +22,7 @@ extern "C" {
 static thread_local uint32_t co_active_buffer[64];
 static thread_local cothread_t co_active_handle;
 
-asm (
+__asm__ (
 #if defined(__thumb2__)
       ".thumb\n"
       ".align 2\n"
