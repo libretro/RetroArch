@@ -78,7 +78,6 @@ d3d10_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
    MONITORINFOEX   current_mon;
    HMONITOR        hm_to_use;
    settings_t*     settings = config_get_ptr();
-   gfx_ctx_input_t inp      = { input, input_data };
    d3d10_video_t*  d3d10    = (d3d10_video_t*)calloc(1, sizeof(*d3d10));
 
    if (!d3d10)
@@ -105,7 +104,7 @@ d3d10_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
       goto error;
    }
 
-   gfx_ctx_d3d.input_driver(NULL, settings->arrays.input_joypad_driver, input, input_data);
+   dxgi_input_driver(settings->arrays.input_joypad_driver, input, input_data);
 
    {
       UINT                 flags = 0;
@@ -374,7 +373,7 @@ static bool d3d10_gfx_frame(
    PERF_STOP();
 
    if (msg && *msg)
-      gfx_ctx_d3d.update_window_title(NULL, video_info);
+      dxgi_update_title(video_info);
 
    return true;
 }

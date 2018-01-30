@@ -13,15 +13,28 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <compat/strl.h>
+#include <string/stdstring.h>
 #include <assert.h>
-#include <dynamic/dylib.h>
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include "dxgi_common.h"
+#include "../../configuration.h"
+#include "../../verbosity.h"
+#include "../../ui/ui_companion_driver.h"
+#include "../video_driver.h"
+#include "win32_common.h"
+
+#ifdef HAVE_DYNAMIC
+#include <dynamic/dylib.h>
 
 HRESULT WINAPI CreateDXGIFactory1(REFIID riid, void** ppFactory)
 {
    static HRESULT(WINAPI * fp)(REFIID, void**);
-#ifdef HAVE_DYNAMIC
+
    static dylib_t dxgi_dll;
 
    if (!dxgi_dll)
@@ -32,15 +45,13 @@ HRESULT WINAPI CreateDXGIFactory1(REFIID riid, void** ppFactory)
 
    if (!fp)
       fp = (HRESULT(WINAPI*)(REFIID, void**))dylib_proc(dxgi_dll, "CreateDXGIFactory1");
-#else
-      fp = CreateDXGIFactory1;
-#endif
 
    if (!fp)
       return TYPE_E_CANTLOADLIBRARY;
 
    return fp(riid, ppFactory);
 }
+#endif
 
 DXGI_FORMAT* dxgi_get_format_fallback_list(DXGI_FORMAT format)
 {
@@ -267,3 +278,55 @@ void dxgi_copy(
 #ifdef _MSC_VER
 #pragma warning(default : 4293)
 #endif
+
+void dxgi_update_title(video_frame_info_t* video_info)
+{
+   const ui_window_t* window = ui_companion_driver_get_window_ptr();
+
+   if (video_info->fps_show)
+   {
+      MEMORYSTATUS stat;
+      char         mem[128];
+
+      mem[0] = '\0';
+
+      GlobalMemoryStatus(&stat);
+      snprintf(
+            mem, sizeof(mem), "|| MEM: %.2f/%.2fMB", stat.dwAvailPhys / (1024.0f * 1024.0f),
+            stat.dwTotalPhys / (1024.0f * 1024.0f));
+      strlcat(video_info->fps_text, mem, sizeof(video_info->fps_text));
+   }
+
+   if (window)
+   {
+      char title[128];
+
+      title[0] = '\0';
+
+      video_driver_get_window_title(title, sizeof(title));
+
+      if (title[0])
+         window->set_title(&main_window, title);
+   }
+}
+
+void dxgi_input_driver(const char* name, const input_driver_t** input, void** input_data)
+{
+   settings_t* settings = config_get_ptr();
+
+#if _WIN32_WINNT >= 0x0501
+   /* winraw only available since XP */
+   if (string_is_equal(settings->arrays.input_driver, "raw"))
+   {
+      *input_data = input_winraw.init(name);
+      if (*input_data)
+      {
+         *input = &input_winraw;
+         return;
+      }
+   }
+#endif
+
+   *input_data = input_dinput.init(name);
+   *input      = *input_data ? &input_dinput : NULL;
+}

@@ -769,11 +769,15 @@ static INLINE HRESULT DXGICreateFactory(DXGIFactory* factory)
 
 /* internal */
 
+#include "../video_driver.h"
+
 #define DXGI_COLOR_RGBA(r, g, b, a) (((UINT32)(a) << 24) | ((UINT32)(b) << 16) | ((UINT32)(g) << 8) | ((UINT32)(r) << 0))
 
 typedef enum {
    DXGI_FORMAT_EX_A4R4G4B4_UNORM = 1000,
 } DXGI_FORMAT_EX;
+
+RETRO_BEGIN_DECLS
 
 DXGI_FORMAT* dxgi_get_format_fallback_list(DXGI_FORMAT format);
 
@@ -786,6 +790,11 @@ void dxgi_copy(
       DXGI_FORMAT dst_format,
       int         dst_pitch,
       void*       dst_data);
+
+void dxgi_update_title(video_frame_info_t* video_info);
+void dxgi_input_driver(const char* name, const input_driver_t** input, void** input_data);
+
+RETRO_END_DECLS
 
 #if 1
 #include "../../performance_counters.h"

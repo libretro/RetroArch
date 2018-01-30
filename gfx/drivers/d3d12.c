@@ -83,7 +83,6 @@ d3d12_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
 {
    WNDCLASSEX      wndclass = { 0 };
    settings_t*     settings = config_get_ptr();
-   gfx_ctx_input_t inp      = { input, input_data };
    d3d12_video_t*  d3d12    = (d3d12_video_t*)calloc(1, sizeof(*d3d12));
 
    if (!d3d12)
@@ -100,7 +99,7 @@ d3d12_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
       goto error;
    }
 
-   gfx_ctx_d3d.input_driver(NULL, settings->arrays.input_joypad_driver, input, input_data);
+   dxgi_input_driver(settings->arrays.input_joypad_driver, input, input_data);
 
    if (!d3d12_init_base(d3d12))
       goto error;
@@ -292,7 +291,7 @@ static bool d3d12_gfx_frame(
    PERF_STOP();
 
    if (msg && *msg)
-      gfx_ctx_d3d.update_window_title(NULL, video_info);
+      dxgi_update_title(video_info);
 
    return true;
 }
