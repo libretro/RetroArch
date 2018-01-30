@@ -499,14 +499,12 @@ static void sdl_set_texture_enable(void *data, bool state, bool full_screen)
 }
 
 
-#ifdef HAVE_MENU
 static void sdl_show_mouse(void *data, bool state)
 {
    (void)data;
 
    SDL_ShowCursor(state);
 }
-#endif
 
 static void sdl_grab_mouse_toggle(void *data)
 {
@@ -534,11 +532,7 @@ static const video_poke_interface_t sdl_poke_interface = {
    sdl_set_texture_frame,
    sdl_set_texture_enable,
    NULL,
-#ifdef HAVE_MENU
    sdl_show_mouse,
-#else
-   NULL,
-#endif
    sdl_grab_mouse_toggle,
    NULL
 };

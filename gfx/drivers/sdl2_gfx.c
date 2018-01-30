@@ -706,7 +706,6 @@ static void sdl2_poke_set_osd_msg(void *data,
    RARCH_LOG("[SDL2]: OSD MSG: %s\n", msg);
 }
 
-#ifdef HAVE_MENU
 static void sdl2_show_mouse(void *data, bool state)
 {
    (void)data;
@@ -718,7 +717,6 @@ static void sdl2_grab_mouse_toggle(void *data)
    sdl2_video_t *vid = (sdl2_video_t*)data;
    SDL_SetWindowGrab(vid->window, SDL_GetWindowGrab(vid->window));
 }
-#endif
 
 static video_poke_interface_t sdl2_video_poke_interface = {
    NULL,       /* set_coords */
@@ -737,13 +735,8 @@ static video_poke_interface_t sdl2_video_poke_interface = {
    sdl2_poke_set_texture_frame,
    sdl2_poke_texture_enable,
    sdl2_poke_set_osd_msg,
-#ifdef HAVE_MENU
    sdl2_show_mouse,
    sdl2_grab_mouse_toggle,
-#else
-   NULL,
-   NULL,
-#endif
    NULL,
 };
 

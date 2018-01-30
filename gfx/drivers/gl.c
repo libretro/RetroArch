@@ -2561,16 +2561,9 @@ static const video_poke_interface_t gl_poke_interface = {
    gl_set_texture_frame,
    gl_set_texture_enable,
    gl_set_osd_msg,
-#if defined(HAVE_MENU)
    gl_show_mouse,
-#else
    NULL,
-#endif
-
-   NULL,
-#ifdef HAVE_MENU
    gl_get_current_shader,
-#endif
 };
 
 static void gl_get_poke_interface(void *data,

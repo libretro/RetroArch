@@ -69,7 +69,7 @@ static void *switch_init(const video_info_t *video,
 
    RARCH_LOG("loading switch gfx driver, width: %d, height: %d\n", video->width, video->height);
 
-   if(has_initialized)
+   if (has_initialized)
 	   RARCH_LOG("global graphics were already initialized; skipping...\n");
    else
    {
@@ -192,17 +192,23 @@ static bool switch_frame(void *data, const void *frame,
    }
 
 #if defined(HAVE_MENU)
-   if(sw->menu_texture.enable)
+   if (sw->menu_texture.enable)
 	{
 		menu_driver_frame(video_info);
 
-		if(sw->menu_texture.pixels != NULL)
+		if (sw->menu_texture.pixels)
 		{
-			//if(sw->menu_texture.fullscreen) {
+#if 0
+			if (sw->menu_texture.fullscreen)
+         {
+#endif
 				scaler_ctx_scale(&sw->menu_texture.scaler, image, sw->menu_texture.pixels);
-				//} else {
-				
-				//}
+#if 0
+         }
+         else
+         {
+         }
+#endif
 		}
 	}
 #endif
@@ -217,11 +223,11 @@ static bool switch_frame(void *data, const void *frame,
    }
 #endif
 
-   if (msg != NULL && strlen(msg) > 0)
+   if (msg && strlen(msg) > 0)
       RARCH_LOG("message: %s\n", msg);
 
    do {
-	   if (sw->vsync) // vsync seems to sometimes return before the buffer has actually been dequeued?
+	   if (sw->vsync) /* vsync seems to sometimes return before the buffer has actually been dequeued? */
 		   switch_wait_vsync(sw);
 	   
 	   post_vsync = svcGetSystemTick();
@@ -323,15 +329,15 @@ static void switch_set_texture_frame(
 {
    switch_video_t *sw = data;
 
-   if (  sw->menu_texture.pixels == NULL || 
-         sw->menu_texture.width != width ||
+   if (  !sw->menu_texture.pixels         || 
+         sw->menu_texture.width  != width ||
          sw->menu_texture.height != height)
    {
-      if(sw->menu_texture.pixels != NULL)
+      if (sw->menu_texture.pixels)
          free(sw->menu_texture.pixels);
 
       sw->menu_texture.pixels = malloc(width * height * 4);
-      if(sw->menu_texture.pixels == NULL)
+      if (!sw->menu_texture.pixels)
       {
          RARCH_ERR("failed to allocate buffer for menu texture\n");
          return;
@@ -355,14 +361,14 @@ static void switch_set_texture_frame(
 
       sctx->scaler_type = SCALER_TYPE_POINT;
 
-      if(!scaler_ctx_gen_filter(sctx))
+      if (!scaler_ctx_gen_filter(sctx))
       {
          RARCH_ERR("failed to generate scaler for menu texture\n");
          return;
       }
    }
 
-   if(rgb32)
+   if (rgb32)
       memcpy(sw->menu_texture.pixels, frame, width * height * 4);
    else
       conv_rgb565_argb8888(sw->menu_texture.pixels, frame,

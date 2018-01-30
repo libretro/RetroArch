@@ -324,9 +324,7 @@ static const video_poke_interface_t caca_poke_interface = {
    NULL,
 
    NULL,
-#ifdef HAVE_MENU
    NULL,
-#endif
 };
 
 static void caca_gfx_get_poke_interface(void *data,
