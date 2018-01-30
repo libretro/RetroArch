@@ -507,11 +507,6 @@ int main(int argc, char **argv)
    return 0;
 }
 
-unsigned long _times_r(struct _reent *r, struct tms *tmsbuf)
-{
-   return 0;
-}
-
 void __eabi(void)
 {
 
