@@ -427,16 +427,17 @@ static int general_push(menu_displaylist_info_t *info,
 
             if (!string_is_empty(new_exts))
             {
-               union string_list_elem_attr attr;
                size_t path_size               = PATH_MAX_LENGTH * sizeof(char);
                struct string_list *str_list3  = string_split(new_exts, "|");
 
-               attr.i                         = 0;
-
 #ifdef HAVE_IBXM
-               string_list_append(str_list3, "s3m", attr);
-               string_list_append(str_list3, "mod", attr);
-               string_list_append(str_list3, "xm", attr);
+               {
+                  union string_list_elem_attr attr;
+                  attr.i = 0;
+                  string_list_append(str_list3, "s3m", attr);
+                  string_list_append(str_list3, "mod", attr);
+                  string_list_append(str_list3, "xm", attr);
+               }
 #endif
                string_list_join_concat(newstring2, path_size,
                      str_list3, "|");
@@ -500,14 +501,16 @@ static int general_push(menu_displaylist_info_t *info,
                   str_list2, "|");
 
             {
-               union string_list_elem_attr attr;
                struct string_list *str_list3  = string_split(newstring, "|");
-               attr.i                         = 0;
 
 #ifdef HAVE_IBXM
-               string_list_append(str_list3, "s3m", attr);
-               string_list_append(str_list3, "mod", attr);
-               string_list_append(str_list3, "xm", attr);
+               {
+                  union string_list_elem_attr attr;
+                  attr.i = 0;
+                  string_list_append(str_list3, "s3m", attr);
+                  string_list_append(str_list3, "mod", attr);
+                  string_list_append(str_list3, "xm", attr);
+               }
 #endif
                string_list_join_concat(newstring2, path_size,
                      str_list3, "|");

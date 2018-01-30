@@ -126,7 +126,7 @@ FLAGS  += -Gm- -Zc:inline -fp:precise -Zc:forScope -GR- -Gd -Oi -volatile:iso
 CFLAGS += -TC
 CXXFLAGS += -TP -EHsc
 WARNINGS += -WX -W3
-WARNINGS += -wd4101 -wd4996 -wd4244 -wd4267 -wd4090 -wd4305 -wd4146 -wd4334 -wd4018
+WARNINGS += -wd4101 -wd4996 -wd4244 -wd4267 -wd4090 -wd4305 -wd4146 -wd4334 -wd4018 -wd4800
 
 CC = cl.exe
 CXX = cl.exe

@@ -18,61 +18,15 @@
 #include <retro_inline.h>
 #include <boolean.h>
 
-#ifdef __MINGW32__
-#define __REQUIRED_RPCNDR_H_VERSION__ 475
-#define _In_
-#define _In_opt_
-#define _Null_
-
-#define _Out_writes_bytes_opt_(s)
-
-#define __in
-#define __out
-#define __in_bcount(size)
-#define __in_ecount(size)
-#define __out_bcount(size)
-#define __out_bcount_part(size, length)
-#define __out_ecount(size)
-#define __inout
-#define __deref_out_ecount(size)
-#endif
-
-#define CINTERFACE
+#include "dxgi_common.h"
 #include <d3dcommon.h>
 #include <d3dcompiler.h>
-
-#ifndef countof
-#define countof(a) (sizeof(a) / sizeof(*a))
-#endif
-
-#ifndef __uuidof
-#define __uuidof(type) & IID_##type
-#endif
-
-#ifndef COM_RELEASE_DECLARED
-#define COM_RELEASE_DECLARED
-#if defined(__cplusplus) && !defined(CINTERFACE)
-static INLINE ULONG Release(IUnknown* object)
-{
-   if (object)
-      return object->Release();
-   return 0;
-}
-#else
-static INLINE ULONG Release(void* object)
-{
-   if (object)
-      return ((IUnknown*)object)->lpVtbl->Release(object);
-   return 0;
-}
-#endif
-#endif
 
 /* auto-generated */
 
 typedef ID3DBlob*                D3DBlob;
 typedef ID3DDestructionNotifier* D3DDestructionNotifier;
-
+#if !defined(__cplusplus) || defined(CINTERFACE)
 static INLINE ULONG  D3DReleaseBlob(D3DBlob blob) { return blob->lpVtbl->Release(blob); }
 static INLINE LPVOID D3DGetBufferPointer(D3DBlob blob)
 {
@@ -98,7 +52,7 @@ D3DUnregisterDestructionCallback(D3DDestructionNotifier destruction_notifier, UI
    return destruction_notifier->lpVtbl->UnregisterDestructionCallback(
          destruction_notifier, callback_id);
 }
-
+#endif
 /* end of auto-generated */
 
 bool d3d_compile(const char* src, size_t size, LPCSTR entrypoint, LPCSTR target, D3DBlob* out);

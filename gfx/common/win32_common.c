@@ -569,7 +569,7 @@ static void win32_set_droppable(ui_window_win32_t *window, bool droppable)
       DragAcceptFiles_func(window->hwnd, droppable);
 }
 
-#ifdef HAVE_D3D
+#if defined(HAVE_D3D) || defined (HAVE_D3D10) || defined (HAVE_D3D11) || defined (HAVE_D3D12)
 LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
@@ -617,9 +617,13 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
 #endif
 
 #ifdef HAVE_DINPUT
-   if (dinput && dinput_handle_message(dinput,
-            message, wparam, lparam))
-      return 0;
+      if (input_get_ptr() == &input_dinput)
+      {
+         void* input_data = input_get_data();
+         if (input_data && dinput_handle_message(input_data,
+               message, wparam, lparam))
+            return 0;
+      }
 #endif
    return DefWindowProc(hwnd, message, wparam, lparam);
 }

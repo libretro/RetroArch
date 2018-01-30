@@ -19,7 +19,6 @@
 #ifdef HAVE_DYNAMIC
 #include <dynamic/dylib.h>
 
-
 HRESULT WINAPI D3D11CreateDeviceAndSwapChain(
       IDXGIAdapter*   pAdapter,
       D3D_DRIVER_TYPE DriverType,
@@ -34,7 +33,7 @@ HRESULT WINAPI D3D11CreateDeviceAndSwapChain(
       D3D_FEATURE_LEVEL*          pFeatureLevel,
       ID3D11DeviceContext**       ppImmediateContext)
 {
-   static dylib_t d3d11_dll;
+   static dylib_t                                d3d11_dll;
    static PFN_D3D11_CREATE_DEVICE_AND_SWAP_CHAIN fp;
 
    if (!d3d11_dll)
@@ -86,11 +85,11 @@ void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
    D3D11CreateTexture2D(device, &texture->desc, NULL, &texture->handle);
 
    {
-	  D3D11_SHADER_RESOURCE_VIEW_DESC view_desc = { 0 };
-	  view_desc.Format                    = texture->desc.Format;
-	  view_desc.ViewDimension             = D3D_SRV_DIMENSION_TEXTURE2D;
-	  view_desc.Texture2D.MostDetailedMip = 0;
-	  view_desc.Texture2D.MipLevels       = -1;
+      D3D11_SHADER_RESOURCE_VIEW_DESC view_desc = { 0 };
+      view_desc.Format                          = texture->desc.Format;
+      view_desc.ViewDimension                   = D3D_SRV_DIMENSION_TEXTURE2D;
+      view_desc.Texture2D.MostDetailedMip       = 0;
+      view_desc.Texture2D.MipLevels             = -1;
       D3D11CreateTexture2DShaderResourceView(device, texture->handle, &view_desc, &texture->view);
    }
 
@@ -150,7 +149,7 @@ d3d11_get_closest_match(D3D11Device device, DXGI_FORMAT desired_format, UINT des
 
 bool d3d11_init_shader(
       D3D11Device               device,
-      void*                     src,
+      const void*               src,
       size_t                    size,
       LPCSTR                    vs_entry,
       LPCSTR                    ps_entry,
