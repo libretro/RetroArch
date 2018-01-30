@@ -5,6 +5,22 @@
 Released under the CC0: https://creativecommons.org/publicdomain/zero/1.0/
 */
 
+/* Use at the beginning of the coroutine, you must have declared a variable coro_t* coro */
+#define CORO_ENTER() \
+  { \
+  CORO_again: ; \
+  switch ( coro->step ) { \
+  case CORO_BEGIN: ;
+
+/* Use to define labels which are targets to GOTO and GOSUB */
+#define CORO_SUB( x ) \
+  case x: ;
+
+/* Use at the end of the coroutine */
+#define CORO_LEAVE() \
+  } } \
+  do { return 0; } while ( 0 )
+
 /* Go to the x label */
 #define CORO_GOTO( x ) \
   do { \
@@ -13,7 +29,6 @@ Released under the CC0: https://creativecommons.org/publicdomain/zero/1.0/
   } while ( 0 )
 
 /* Go to a subroutine, execution continues until the subroutine returns via RET */
-/* x is the subroutine label, y and z are the A and B arguments */
 #define CORO_GOSUB( x ) \
   do { \
     coro->stack[ coro->sp++ ] = __LINE__; \
@@ -40,50 +55,16 @@ Released under the CC0: https://creativecommons.org/publicdomain/zero/1.0/
 /* The coroutine entry point, never use 0 as a label */
 #define CORO_BEGIN 0
 
-/* Sets up a coroutine, x is a pointer to coro_t */
-#define CORO_SETUP( x ) \
+/* Sets up the coroutine */
+#define CORO_SETUP() \
   do { \
-    ( x )->step = CORO_BEGIN; \
-    ( x )->sp   = 0; \
+    coro->step = CORO_BEGIN; \
+    coro->sp   = 0; \
   } while ( 0 )
 
-/* A coroutine */
-typedef struct
-{
-   /* co-routine specific variables  */
-   char badge_name[16];
-   char url[256];
-   char badge_basepath[PATH_MAX_LENGTH];
-   char badge_fullpath[PATH_MAX_LENGTH];
-   unsigned char hash[16];
-   bool round;
-   unsigned gameid;
-   unsigned i;
-   unsigned j;
-   unsigned k;
-   size_t bytes;
-   size_t count;
-   size_t offset;
-   size_t len;
-   size_t size;
-   MD5_CTX md5;
-   cheevos_nes_header_t header;
-   retro_time_t t0;
-   struct retro_system_info sysinfo;
-   void *data;
-   char *json;
-   const char *path;
-   const char *ext;
-   intfstream_t *stream;
-   cheevo_t *cheevo;
-   settings_t *settings;
-   struct http_connection_t *conn;
-   struct http_t *http;
-   const cheevo_t *cheevo_end;
-
-   /* co-routine general variables  */
-   int step, sp;
-   int stack[ 8 ];
-} coro_t;
+/* Add this macro to your coro_t structure containing the variables for the coroutine */
+#define CORO_FIELDS \
+  int step, sp; \
+  int stack[ 8 ];
 
 #endif /* CORO_H */
