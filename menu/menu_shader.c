@@ -30,6 +30,7 @@
 #include "../file_path_special.h"
 #include "../configuration.h"
 #include "../paths.h"
+#include "../retroarch.h"
 #include "../verbosity.h"
 
 #ifdef HAVE_SHADER_MANAGER
