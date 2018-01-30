@@ -60,7 +60,7 @@ static int generic_shader_action_parameter_left(
    return 0;
 }
 
-int shader_action_parameter_left(unsigned type, const char *label, bool wraparound)
+static int shader_action_parameter_left(unsigned type, const char *label, bool wraparound)
 {
    video_shader_ctx_t shader_info;
    struct video_shader_parameter *param = NULL;
