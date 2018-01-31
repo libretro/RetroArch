@@ -2477,15 +2477,11 @@ static int menu_displaylist_parse_horizontal_list(
 {
    menu_ctx_list_t list_info;
    menu_ctx_list_t list_horiz_info;
-   char lpl_basename[PATH_MAX_LENGTH];
-   char path_playlist[PATH_MAX_LENGTH];
    bool is_historylist                 = false;
    playlist_t *playlist                = NULL;
    menu_handle_t        *menu          = NULL;
    struct item_file *item              = NULL;
    settings_t      *settings           = config_get_ptr();
-
-   lpl_basename[0] = path_playlist[0]  = '\0';
 
    menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_SELECTION, &list_info);
 
@@ -2505,31 +2501,32 @@ static int menu_displaylist_parse_horizontal_list(
    if (!item)
       return -1;
 
-   fill_pathname_base_noext(lpl_basename, item->path, sizeof(lpl_basename));
+   if (!string_is_empty(item->path))
+   {
+      char path_playlist[PATH_MAX_LENGTH];
+      char lpl_basename[PATH_MAX_LENGTH];
+      lpl_basename[0]   = '\0';
+      path_playlist[0]  = '\0';
 
-   fill_pathname_join(
-         path_playlist,
-         settings->paths.directory_playlist,
-         item->path,
-         sizeof(path_playlist));
+      fill_pathname_base_noext(lpl_basename, item->path, sizeof(lpl_basename));
+      menu_driver_set_thumbnail_system(lpl_basename, sizeof(lpl_basename));
+      if (string_is_equal(lpl_basename, "content_history"))
+         is_historylist = true;
 
-   menu_driver_set_thumbnail_system(lpl_basename, sizeof(lpl_basename));
-
-   menu_displaylist_set_new_playlist(menu, path_playlist);
-
-   strlcpy(path_playlist,
-         msg_hash_to_str(MENU_ENUM_LABEL_COLLECTION),
-         sizeof(path_playlist));
+      fill_pathname_join(
+            path_playlist,
+            settings->paths.directory_playlist,
+            item->path,
+            sizeof(path_playlist));
+      menu_displaylist_set_new_playlist(menu, path_playlist);
+   }
 
    menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
 
    playlist_qsort(playlist);
 
-   if (string_is_equal(lpl_basename, "content_history"))
-      is_historylist = true;
-
    menu_displaylist_parse_playlist(info,
-         playlist, path_playlist, is_historylist);
+         playlist, msg_hash_to_str(MENU_ENUM_LABEL_COLLECTION), is_historylist);
 
    return 0;
 }
