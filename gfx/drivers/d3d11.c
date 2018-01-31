@@ -207,7 +207,11 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
             { "TEXCOORD", 1, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_vertex_t, texcoord),
               D3D11_INPUT_PER_VERTEX_DATA, 0 },
          };
-
+#ifdef DEBUG
+         bool save_hlsl = true;
+#else
+         bool save_hlsl = false;
+#endif
          const char* vs_src = d3d11->shader_preset->pass[i].source.string.vertex;
          const char* ps_src = d3d11->shader_preset->pass[i].source.string.fragment;
          const char* vs_ext = ".vs.hlsl";
@@ -221,15 +225,17 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
          strncpy(vs_filename + base_len, vs_ext, strlen(vs_ext) + 1);
          strncpy(ps_filename + base_len, ps_ext, strlen(ps_ext) + 1);
 
-         d3d11_init_shader(
-               d3d11->device, vs_src, 0, vs_filename, "main", NULL, NULL, desc, countof(desc),
-               &d3d11->pass[i].shader);
+         if (!d3d11_init_shader(
+                   d3d11->device, vs_src, 0, vs_filename, "main", NULL, NULL, desc, countof(desc),
+                   &d3d11->pass[i].shader))
+            save_hlsl = true;
 
-         d3d11_init_shader(
-               d3d11->device, ps_src, 0, ps_filename, NULL, "main", NULL, NULL, 0,
-               &d3d11->pass[i].shader);
+         if (!d3d11_init_shader(
+                   d3d11->device, ps_src, 0, ps_filename, NULL, "main", NULL, NULL, 0,
+                   &d3d11->pass[i].shader))
+            save_hlsl = true;
 
-         if (!d3d11->pass[i].shader.vs || !d3d11->pass[i].shader.ps)
+         if (save_hlsl)
          {
             FILE* fp = fopen(vs_filename, "w");
             fwrite(vs_src, 1, strlen(vs_src), fp);
@@ -246,7 +252,7 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
          free(d3d11->shader_preset->pass[i].source.string.vertex);
          free(d3d11->shader_preset->pass[i].source.string.fragment);
 
-         d3d11->shader_preset->pass[i].source.string.vertex = NULL;
+         d3d11->shader_preset->pass[i].source.string.vertex   = NULL;
          d3d11->shader_preset->pass[i].source.string.fragment = NULL;
 
          if (!d3d11->pass[i].shader.vs || !d3d11->pass[i].shader.ps)
