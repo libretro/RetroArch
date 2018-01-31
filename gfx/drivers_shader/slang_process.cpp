@@ -329,11 +329,7 @@ bool slang_process(
          ps->set_options(options);
 
          std::vector<HLSLVertexAttributeRemap> vs_attrib_remap;
-#if 0
-         /* remaps vertex shader output too so disable for now */
-         vs_attrib_remap.push_back({ 0, "POSITION" });
-         vs_attrib_remap.push_back({ 1, "TEXCOORD" });
-#endif
+
          /* not exactly a vertex attribute but this remaps
           * float2 FragCoord :TEXCOORD# to float4 FragCoord : SV_POSITION */
          std::vector<HLSLVertexAttributeRemap> ps_attrib_remap;
@@ -370,11 +366,8 @@ bool slang_process(
       else
          goto error;
 
-      pass.source.string.vertex = (char*)malloc(vs_code.size() + 1);
-      memcpy(pass.source.string.vertex, vs_code.c_str(), vs_code.size() + 1);
-
-      pass.source.string.fragment = (char*)malloc(ps_code.size() + 1);
-      memcpy(pass.source.string.fragment, ps_code.c_str(), ps_code.size() + 1);
+      pass.source.string.vertex   = strdup(vs_code.c_str());
+      pass.source.string.fragment = strdup(ps_code.c_str());
 
       if (!slang_process_reflection(
                 vs_compiler, ps_compiler, vs_resources, ps_resources, shader_info, pass_number,
@@ -383,7 +376,7 @@ bool slang_process(
 
    } catch (const std::exception& e)
    {
-      RARCH_ERR("[slang]: spir2cross threw exception: %s.\n", e.what());
+      RARCH_ERR("[slang]: SPIRV-Cross threw exception: %s.\n", e.what());
       goto error;
    }
 

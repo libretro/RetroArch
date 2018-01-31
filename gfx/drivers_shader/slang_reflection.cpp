@@ -673,7 +673,7 @@ bool slang_reflect_spirv(const std::vector<uint32_t> &vertex,
    }
    catch (const std::exception &e)
    {
-      RARCH_ERR("[slang]: spir2cross threw exception: %s.\n", e.what());
+      RARCH_ERR("[slang]: SPIRV-Cross threw exception: %s.\n", e.what());
       return false;
    }
 }
