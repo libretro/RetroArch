@@ -2552,15 +2552,6 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 
    old_swapchain               = vk->swapchain;
 
-   if (/* NVIDIA WAR */ 
-         vk->context.gpu_properties.vendorID == 0x10DE && 
-         old_swapchain                       != VK_NULL_HANDLE)
-   {
-      RARCH_LOG("[Vulkan]: Old swapchain destroyed.\n");
-      vkDestroySwapchainKHR(vk->context.device, old_swapchain, NULL);
-      old_swapchain = VK_NULL_HANDLE;
-   }
-
    info.surface                = vk->vk_surface;
    info.minImageCount          = desired_swapchain_images;
    info.imageFormat            = format.format;
@@ -2582,13 +2573,6 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    {
       RARCH_ERR("[Vulkan]: Failed to create swapchain.\n");
       return false;
-   }
-
-   if (  vk->context.gpu_properties.vendorID != 0x10DE && 
-         old_swapchain != VK_NULL_HANDLE)
-   {
-      RARCH_LOG("[Vulkan]: Recycled old swapchain.\n");
-      vkDestroySwapchainKHR(vk->context.device, old_swapchain, NULL);
    }
 
    vk->context.swapchain_width  = swapchain_size.width;
