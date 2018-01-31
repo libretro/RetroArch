@@ -245,6 +245,7 @@ bool command_set_shader(const char *arg)
          msg_hash_to_str(MSG_APPLYING_SHADER),
          arg);
 
+   retroarch_set_shader_preset(arg);
    return video_driver_set_shader(type, arg);
 }
 

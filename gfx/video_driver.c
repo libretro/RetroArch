@@ -31,6 +31,8 @@
 #include <gfx/video_frame.h>
 #include <formats/image.h>
 
+#include "menu/menu_shader.h"
+
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
@@ -672,9 +674,17 @@ retro_proc_address_t video_driver_get_proc_address(const char *sym)
 bool video_driver_set_shader(enum rarch_shader_type type,
       const char *path)
 {
+   bool ret = false;
    if (current_video->set_shader)
-      return current_video->set_shader(video_driver_data, type, path);
-   return false;
+      ret = current_video->set_shader(video_driver_data, type, path);
+
+   if (ret)
+   {
+      menu_shader_manager_free();
+      menu_shader_manager_init();
+   }
+
+   return ret;
 }
 
 static void video_driver_filter_free(void)
