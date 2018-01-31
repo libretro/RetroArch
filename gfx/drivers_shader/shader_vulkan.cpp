@@ -28,7 +28,7 @@
 #include <formats/image.h>
 #include <retro_miscellaneous.h>
 
-#include "slang_reflection.hpp"
+#include "slang_reflection.h"
 
 #include "../video_driver.h"
 #include "../../verbosity.h"
@@ -863,8 +863,8 @@ bool vulkan_filter_chain::init_feedback()
    return true;
 }
 
-template <typename M, typename P>
-static bool set_unique_map(M &m, const string &name, const P &p)
+template <typename P>
+static bool set_unique_map(unordered_map<string, P> &m, const string &name, const P &p)
 {
    auto itr = m.find(name);
    if (itr != end(m))

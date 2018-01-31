@@ -57,21 +57,21 @@ HRESULT WINAPI D3D11CreateDeviceAndSwapChain(
 
 void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
 {
-   Release(texture->handle);
-   Release(texture->staging);
-   Release(texture->view);
+   bool is_render_target = texture->desc.BindFlags & D3D11_BIND_RENDER_TARGET;
+
+   d3d11_release_texture(texture);
 
    texture->desc.MipLevels          = 1;
    texture->desc.ArraySize          = 1;
    texture->desc.SampleDesc.Count   = 1;
    texture->desc.SampleDesc.Quality = 0;
-   texture->desc.BindFlags          = D3D11_BIND_SHADER_RESOURCE;
+   texture->desc.BindFlags         |= D3D11_BIND_SHADER_RESOURCE;
    texture->desc.CPUAccessFlags =
          texture->desc.Usage == D3D11_USAGE_DYNAMIC ? D3D11_CPU_ACCESS_WRITE : 0;
 
    if (texture->desc.MiscFlags & D3D11_RESOURCE_MISC_GENERATE_MIPS)
    {
-      texture->desc.BindFlags |= D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
+      texture->desc.BindFlags |= D3D11_BIND_RENDER_TARGET;
       unsigned width  = texture->desc.Width >> 5;
       unsigned height = texture->desc.Height >> 5;
       while (width && height)
@@ -93,6 +93,9 @@ void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
       D3D11CreateTexture2DShaderResourceView(device, texture->handle, &view_desc, &texture->view);
    }
 
+   if (is_render_target)
+      D3D11CreateTexture2DRenderTargetView(device, texture->handle, NULL, &texture->rt_view);
+   else
    {
       D3D11_TEXTURE2D_DESC desc = texture->desc;
       desc.MipLevels            = 1;
@@ -102,6 +105,11 @@ void d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
       desc.CPUAccessFlags       = D3D11_CPU_ACCESS_WRITE;
       D3D11CreateTexture2D(device, &desc, NULL, &texture->staging);
    }
+
+   texture->size_data.x = texture->desc.Width;
+   texture->size_data.y = texture->desc.Height;
+   texture->size_data.z = 1.0f / texture->desc.Width;
+   texture->size_data.w = 1.0f / texture->desc.Height;
 }
 
 void d3d11_update_texture(
@@ -162,35 +170,44 @@ bool d3d11_init_shader(
    D3DBlob ps_code;
    D3DBlob gs_code;
 
-   if (size) /* char array */
+   if (size < 0) /* LPCWSTR filename */
    {
-      if (!d3d_compile(src, size, vs_entry, "vs_5_0", &vs_code))
+      if (vs_entry && !d3d_compile_from_file(src, vs_entry, "vs_5_0", &vs_code))
          return false;
-      if (!d3d_compile(src, size, ps_entry, "ps_5_0", &ps_code))
-         return false;
-      if (gs_entry && !d3d_compile(src, size, gs_entry, "gs_5_0", &gs_code))
-         return false;
-   }
-   else /* LPCWSTR filename */
-   {
-      if (!d3d_compile_from_file(src, vs_entry, "vs_5_0", &vs_code))
-         return false;
-      if (!d3d_compile_from_file(src, ps_entry, "ps_5_0", &ps_code))
+      if (ps_entry && !d3d_compile_from_file(src, ps_entry, "ps_5_0", &ps_code))
          return false;
       if (gs_entry && !d3d_compile_from_file(src, gs_entry, "gs_5_0", &gs_code))
          return false;
    }
+   else /* char array */
+   {
+      if (!size)
+         size = strlen(src);
 
-   D3D11CreateVertexShader(
-         device, D3DGetBufferPointer(vs_code), D3DGetBufferSize(vs_code), NULL, &out->vs);
-   D3D11CreateInputLayout(
-         device, input_element_descs, num_elements, D3DGetBufferPointer(vs_code),
-         D3DGetBufferSize(vs_code), &out->layout);
-   Release(vs_code);
+      if (vs_entry && !d3d_compile(src, size, vs_entry, "vs_5_0", &vs_code))
+         return false;
+      if (ps_entry && !d3d_compile(src, size, ps_entry, "ps_5_0", &ps_code))
+         return false;
+      if (gs_entry && !d3d_compile(src, size, gs_entry, "gs_5_0", &gs_code))
+         return false;
+   }
 
-   D3D11CreatePixelShader(
-         device, D3DGetBufferPointer(ps_code), D3DGetBufferSize(ps_code), NULL, &out->ps);
-   Release(ps_code);
+   if (vs_entry)
+   {
+      D3D11CreateVertexShader(
+            device, D3DGetBufferPointer(vs_code), D3DGetBufferSize(vs_code), NULL, &out->vs);
+      D3D11CreateInputLayout(
+            device, input_element_descs, num_elements, D3DGetBufferPointer(vs_code),
+            D3DGetBufferSize(vs_code), &out->layout);
+      Release(vs_code);
+   }
+
+   if (ps_entry)
+   {
+      D3D11CreatePixelShader(
+            device, D3DGetBufferPointer(ps_code), D3DGetBufferSize(ps_code), NULL, &out->ps);
+      Release(ps_code);
+   }
 
    if (gs_entry)
    {

@@ -1157,12 +1157,8 @@ enum rarch_shader_type video_shader_parse_type(const char *path,
          break;
       case FILE_TYPE_SHADER_SLANG:
       case FILE_TYPE_SHADER_PRESET_SLANGP:
-#ifdef __wiiu__
-         return RARCH_SHADER_SLANG;
-#else
          shader_type = RARCH_SHADER_SLANG;
          break;
-#endif
       default:
          break;
    }
@@ -1178,7 +1174,9 @@ enum rarch_shader_type video_shader_parse_type(const char *path,
          if (cg_supported && shader_type == RARCH_SHADER_CG)
             return shader_type;
          break;
+      case GFX_CTX_DIRECT3D11_API:
       case GFX_CTX_VULKAN_API:
+      case GFX_CTX_GX2_API:
          if (shader_type == RARCH_SHADER_SLANG)
             return shader_type;
          break;

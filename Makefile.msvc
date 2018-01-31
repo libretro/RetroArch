@@ -20,6 +20,10 @@ HAVE_D3D12               := 1
 HAVE_CG                  := 1
 HAVE_OPENGL              := 1
 HAVE_VULKAN              := 1
+HAVE_XAUDIO              := 1
+HAVE_XINPUT              := 1
+HAVE_WASAPI              := 0
+HAVE_THREAD_STORAGE      := 1
 
 HAVE_RPNG                := 1
 HAVE_ZLIB                := 1
@@ -52,13 +56,11 @@ HAVE_KEYMAPPER           := 1
 HAVE_SHADERPIPELINE      := 1
 
 include Makefile.common
-CFLAGS    := $(filter-out  -Wno-unknown-pragmas,$(CFLAGS))
-CXXFLAGS  := $(filter-out  -fpermissive -Wno-switch -Wno-sign-compare -fno-strict-aliasing -Wno-maybe-uninitialized -Wno-reorder -Wno-parentheses,$(CXXFLAGS))
-CXXFLAGS  += $(CFLAGS)
-LIBS      := $(filter-out  -lstdc++,$(LIBS))
-ifeq ($(HAVE_VULKAN),1)
-   DEFINES += -DHAVE_VULKAN
-endif
+INCLUDE_DIRS := $(patsubst  -isystem%,-I%,$(INCLUDE_DIRS))
+CFLAGS       := $(filter-out  -Wno-unknown-pragmas,$(CFLAGS))
+CXXFLAGS     := $(filter-out  -fpermissive -Wno-switch -Wno-sign-compare -fno-strict-aliasing -Wno-maybe-uninitialized -Wno-reorder -Wno-parentheses,$(CXXFLAGS))
+CXXFLAGS     += $(CFLAGS)
+LIBS         := $(filter-out  -lstdc++,$(LIBS))
 
 ifeq ($(ARCH),x64)
    ARCH := amd64
@@ -138,13 +140,13 @@ LDFLAGS  += -nologo -wx -nxcompat -machine:$(TARGET_ARCH2)
 
 
 ifeq ($(DEBUG),1)
-FLAGS += -GS -Gy -Od -RTC1 -D_SECURE_SCL=1 -Zi
-FLAGS += -MDd
-LDFLAGS += -DEBUG
-DEFINES += -DDEBUG -D_DEBUG
+   FLAGS += -GS -Gy -Od -RTC1 -D_SECURE_SCL=1 -Zi
+   FLAGS += -MDd
+   LDFLAGS += -DEBUG
+   DEFINES += -DDEBUG -D_DEBUG
 else
-FLAGS += -GS- -Gy- -O2 -Ob2 -GF -GT -Oy -Ot -D_SECURE_SCL=0
-FLAGS += -MD
+   FLAGS += -GS- -Gy- -O2 -Ob2 -GF -GT -Oy -Ot -D_SECURE_SCL=0
+   FLAGS += -MD
 endif
 
 
@@ -167,7 +169,6 @@ ifeq ($(GRIFFIN_BUILD), 1)
    OBJ       := griffin/griffin.o griffin/griffin_cpp.o
    DEFINES   += -DHAVE_GRIFFIN -DUSE_MATH_DEFINES
 else
-   DEFINES   += -DWANT_GLSLANG
    BLACKLIST :=
    OBJ := $(filter-out $(BLACKLIST),$(OBJ))
 endif
@@ -252,9 +253,7 @@ $(BUILD_DIR)/$(TARGET): $(OBJ) .$(TARGET).last
 	@touch .$(TARGET).last
 	$(Q)$(LD) $(OBJ) $(LDFLAGS) $(LIBS) -out:$(BUILD_DIR)/$(TARGET)
 
-%.depend: ;
-%.last: ;
-%.h : ;
+%.h %.hpp %.depend %.last: ;
 
 clean:
 	rm -f $(OBJ) $(TARGET)

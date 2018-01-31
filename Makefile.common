@@ -1153,54 +1153,18 @@ endif
 
 ifeq ($(HAVE_VULKAN), 1)
    ifneq ($(findstring Win32,$(OS)),)
-      GLSLANG_PLATFORM := Windows
-		WANT_WGL = 1
-   else
-      GLSLANG_PLATFORM := Unix
-   endif
-
-   GLSLANG_SOURCES := \
-      $(wildcard $(DEPS_DIR)/glslang/*.cpp) \
-      $(wildcard $(DEPS_DIR)/glslang/glslang/SPIRV/*.cpp) \
-      $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/GenericCodeGen/*.cpp) \
-      $(wildcard $(DEPS_DIR)/glslang/glslang/OGLCompilersDLL/*.cpp) \
-      $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/*.cpp) \
-      $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/preprocessor/*.cpp) \
-      $(wildcard $(DEPS_DIR)/glslang/glslang/hlsl/*.cpp) \
-      $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/OSDependent/$(GLSLANG_PLATFORM)/*.cpp)
-
-   SPIRV_CROSS_SOURCES := $(DEPS_DIR)/SPIRV-Cross/spirv_cross.cpp \
-								  $(DEPS_DIR)/SPIRV-Cross/spirv_cfg.cpp
-   ifneq ($(findstring Win32,$(OS)),)
+      WANT_WGL = 1
       # Trivial temporary workaround for MinGW and glslang.
       CXXFLAGS += -fpermissive
    endif
 
-   DEFINES += \
-           -I$(DEPS_DIR)/glslang/glslang/glslang/OSDependent/$(GLSLANG_PLATFORM) \
-           -I$(DEPS_DIR)/glslang/glslang/OGLCompilersDLL \
-           -I$(DEPS_DIR)/glslang/glslang \
-           -I$(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent \
-           -I$(DEPS_DIR)/glslang/glslang/glslang/Public \
-           -I$(DEPS_DIR)/glslang/glslang/SPIRV \
-           -I$(DEPS_DIR)/glslang \
-           -I$(DEPS_DIR)/SPIRV-Cross
-
    CXXFLAGS += -Wno-switch -Wno-sign-compare -fno-strict-aliasing -Wno-maybe-uninitialized -Wno-reorder -Wno-parentheses
-
-   GLSLANG_OBJ     := $(GLSLANG_SOURCES:.cpp=.o)
-   SPIRV_CROSS_OBJ := $(SPIRV_CROSS_SOURCES:.cpp=.o)
 
    OBJ += gfx/drivers/vulkan.o \
           gfx/common/vulkan_common.o \
           $(LIBRETRO_COMM_DIR)/vulkan/vulkan_symbol_wrapper.o \
           gfx/drivers_font/vulkan_raster_font.o \
-          gfx/drivers_shader/shader_vulkan.o \
-          gfx/drivers_shader/glslang_util.o \
-          gfx/drivers_shader/slang_reflection.o \
-          gfx/drivers_shader/slang_preprocess.o \
-          $(GLSLANG_OBJ) \
-          $(SPIRV_CROSS_OBJ)
+          gfx/drivers_shader/shader_vulkan.o
 
    ifeq ($(HAVE_VULKAN_DISPLAY), 1)
       OBJ += gfx/drivers_context/khr_display_ctx.o
@@ -1209,20 +1173,12 @@ ifeq ($(HAVE_VULKAN), 1)
       OBJ += menu/drivers_display/menu_display_vulkan.o
    endif
    LIBS += -lstdc++
-   DEFINES += -DHAVE_SLANG
-endif
-
-ifeq ($(findstring 1, $(HAVE_VULKAN) $(HAVE_D3D10) $(HAVE_D3D11) $(HAVE_D3D12)),1)
+   DEFINES += -DHAVE_VULKAN
    INCLUDE_DIRS += -Igfx/include
-endif
 
-ifeq ($(findstring 1, $(HAVE_D3D10) $(HAVE_D3D11) $(HAVE_D3D12)),1)
-   INCLUDE_DIRS += -Igfx/include/dxsdk
-endif
-
-ifeq ($(WANT_WGL), 1)
-	OBJ += gfx/drivers_context/wgl_ctx.o
-LIBS += -lcomctl32
+   HAVE_SLANG       = 1
+   HAVE_GLSLANG     = 1
+   HAVE_SPIRV_CROSS = 1
 endif
 
 ifeq ($(HAVE_OMAP), 1)
@@ -1305,6 +1261,9 @@ ifeq ($(HAVE_D3D11), 1)
    OBJ += gfx/drivers/d3d11.o gfx/common/d3d11_common.o \
       gfx/drivers_font/d3d11_font.o menu/drivers_display/menu_display_d3d11.o
    DEFINES += -DHAVE_D3D11
+   HAVE_SLANG       = 1
+   HAVE_GLSLANG     = 1
+   HAVE_SPIRV_CROSS = 1
 endif
 
 ifeq ($(HAVE_D3D12), 1)
@@ -1313,6 +1272,7 @@ ifeq ($(HAVE_D3D12), 1)
 endif
 
 ifneq ($(findstring 1, $(HAVE_D3D10) $(HAVE_D3D11) $(HAVE_D3D12)),)
+   INCLUDE_DIRS += -isystemgfx/include/dxsdk
    OBJ += gfx/common/d3dcompiler_common.o
    OBJ += gfx/common/dxgi_common.o
    CFLAGS += -Wno-unknown-pragmas
@@ -1353,6 +1313,58 @@ ifeq ($(HAVE_D3D_COMMON), 1)
    ifeq ($(HAVE_MENU_COMMON), 1)
       OBJ += menu/drivers_display/menu_display_d3d.o
    endif
+endif
+
+ifeq ($(HAVE_SLANG),1)
+   DEFINES += -DHAVE_SLANG
+   OBJ += gfx/drivers_shader/slang_process.o
+   OBJ += gfx/drivers_shader/slang_preprocess.o
+   OBJ += gfx/drivers_shader/glslang_util.o
+   OBJ += gfx/drivers_shader/slang_reflection.o
+endif
+
+ifeq ($(HAVE_GLSLANG), 1)
+   DEFINES      += -DHAVE_GLSLANG
+
+   ifneq ($(findstring Win32,$(OS)),)
+      GLSLANG_PLATFORM := Windows
+   else
+      GLSLANG_PLATFORM := Unix
+   endif
+
+   INCLUDE_DIRS += \
+      -I$(DEPS_DIR)/glslang/glslang/glslang/OSDependent/$(GLSLANG_PLATFORM) \
+      -I$(DEPS_DIR)/glslang/glslang/OGLCompilersDLL \
+      -I$(DEPS_DIR)/glslang/glslang \
+      -I$(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent \
+      -I$(DEPS_DIR)/glslang/glslang/glslang/Public \
+      -I$(DEPS_DIR)/glslang/glslang/SPIRV \
+      -I$(DEPS_DIR)/glslang
+
+   GLSLANG_SOURCES := \
+      $(wildcard $(DEPS_DIR)/glslang/*.cpp) \
+      $(wildcard $(DEPS_DIR)/glslang/glslang/SPIRV/*.cpp) \
+      $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/GenericCodeGen/*.cpp) \
+      $(wildcard $(DEPS_DIR)/glslang/glslang/OGLCompilersDLL/*.cpp) \
+      $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/*.cpp) \
+      $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/preprocessor/*.cpp) \
+      $(wildcard $(DEPS_DIR)/glslang/glslang/hlsl/*.cpp) \
+      $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/OSDependent/$(GLSLANG_PLATFORM)/*.cpp)
+
+   OBJ += $(GLSLANG_SOURCES:.cpp=.o)
+endif
+
+ifeq ($(HAVE_SPIRV_CROSS), 1)
+   INCLUDE_DIRS += -I$(DEPS_DIR)/SPIRV-Cross
+   OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_cross.o
+   OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_cfg.o
+   OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_glsl.o
+   OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_hlsl.o
+endif
+
+ifeq ($(WANT_WGL), 1)
+	OBJ += gfx/drivers_context/wgl_ctx.o
+   LIBS += -lcomctl32
 endif
 
 #ifeq ($(HAVE_LIBXML2), 1)

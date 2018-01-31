@@ -368,13 +368,8 @@ bool glslang_parse_meta(const vector<string> &lines, glslang_meta *meta)
    return true;
 }
 
-#ifdef HAVE_VULKAN
-#if defined(_MSC_VER) && !defined(WANT_GLSLANG)
-bool glslang_compile_shader(const char *shader_path, glslang_output *output)
-{
-   return false;
-}
-#else
+
+#if defined(HAVE_GLSLANG) && !defined(HAVE_GRIFFIN)
 bool glslang_compile_shader(const char *shader_path, glslang_output *output)
 {
    vector<string> lines;
@@ -403,5 +398,9 @@ bool glslang_compile_shader(const char *shader_path, glslang_output *output)
 
    return true;
 }
-#endif
+#else
+bool glslang_compile_shader(const char *shader_path, glslang_output *output)
+{
+   return false;
+}
 #endif

@@ -23,17 +23,9 @@
 
 using namespace std;
 
-bool slang_preprocess_parse_parameters(const char *shader_path,
+bool slang_preprocess_parse_parameters(glslang_meta& meta,
       struct video_shader *shader)
 {
-   glslang_meta meta;
-   vector<string> lines;
-   if (!glslang_read_shader_file(shader_path, &lines, true))
-      return false;
-
-   if (!glslang_parse_meta(lines, &meta))
-      return false;
-
    unsigned old_num_parameters = shader->num_parameters;
 
    // Assumes num_parameters is initialized to something sane.
@@ -83,5 +75,19 @@ bool slang_preprocess_parse_parameters(const char *shader_path,
    }
 
    return true;
+}
+
+bool slang_preprocess_parse_parameters(const char *shader_path,
+      struct video_shader *shader)
+{
+   glslang_meta meta;
+   vector<string> lines;
+   if (!glslang_read_shader_file(shader_path, &lines, true))
+      return false;
+
+   if (!glslang_parse_meta(lines, &meta))
+      return false;
+
+   return slang_preprocess_parse_parameters(meta, shader);
 }
 

@@ -52,7 +52,7 @@ HRESULT WINAPI D3DCompile(
       d3dcompiler_dll = dylib_load(*dll_name++);
 
    if (!d3dcompiler_dll)
-      goto error;
+      return TYPE_E_CANTLOADLIBRARY;
 
    if (!fp)
       fp = (pD3DCompile)dylib_proc(d3dcompiler_dll, "D3DCompile");
@@ -62,7 +62,6 @@ HRESULT WINAPI D3DCompile(
 		  pSrcData, SrcDataSize, pSourceName, pDefines, pInclude, pEntrypoint, pTarget, Flags1,
 		  Flags2, ppCode, ppErrorMsgs);
 
-error:
    return TYPE_E_CANTLOADLIBRARY;
 }
 
@@ -87,7 +86,7 @@ HRESULT WINAPI D3DCompileFromFile(
       d3dcompiler_dll = dylib_load(*dll_name++);
 
    if (!d3dcompiler_dll)
-	   goto error;
+	   return TYPE_E_CANTLOADLIBRARY;
 
    if (!fp)
       fp = (pD3DCompileFromFile)dylib_proc(d3dcompiler_dll, "D3DCompileFromFile");
@@ -97,7 +96,29 @@ HRESULT WINAPI D3DCompileFromFile(
                pFileName, pDefines, pInclude, pEntrypoint, pTarget, Flags1, Flags2, ppCode,
                ppErrorMsgs);
 
-error:
+   return TYPE_E_CANTLOADLIBRARY;
+}
+
+HRESULT WINAPI
+        D3DReflect(LPCVOID pSrcData, SIZE_T SrcDataSize, REFIID pInterface, void** ppReflector)
+{
+   typedef HRESULT(WINAPI * pD3DCompileFromFile)(
+         LPCVOID pSrcData, SIZE_T SrcDataSize, REFIID pInterface, void** ppReflector);
+   static pD3DCompileFromFile fp;
+
+   const char** dll_name = d3dcompiler_dll_list;
+   while (!d3dcompiler_dll && *dll_name)
+      d3dcompiler_dll = dylib_load(*dll_name++);
+
+   if (!d3dcompiler_dll)
+      return TYPE_E_CANTLOADLIBRARY;
+
+   if (!fp)
+      fp = (pD3DCompileFromFile)dylib_proc(d3dcompiler_dll, "D3DReflect");
+
+   if (fp)
+      return fp(pSrcData, SrcDataSize, pInterface, ppReflector);
+
    return TYPE_E_CANTLOADLIBRARY;
 }
 #endif

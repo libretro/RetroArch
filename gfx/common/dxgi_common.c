@@ -59,9 +59,32 @@ DXGI_FORMAT* dxgi_get_format_fallback_list(DXGI_FORMAT format)
 
    switch ((unsigned)format)
    {
+      case DXGI_FORMAT_R32G32B32A32_FLOAT:
+      {
+         static DXGI_FORMAT formats[] = { DXGI_FORMAT_R32G32B32A32_FLOAT,
+                                          DXGI_FORMAT_R16G16B16A16_FLOAT,
+                                          DXGI_FORMAT_R32G32B32_FLOAT, DXGI_FORMAT_R11G11B10_FLOAT,
+                                          DXGI_FORMAT_UNKNOWN };
+         return formats;
+      }
+      case DXGI_FORMAT_R16G16B16A16_FLOAT:
+      {
+         static DXGI_FORMAT formats[] = { DXGI_FORMAT_R16G16B16A16_FLOAT,
+                                          DXGI_FORMAT_R32G32B32A32_FLOAT,
+                                          DXGI_FORMAT_R32G32B32_FLOAT, DXGI_FORMAT_R11G11B10_FLOAT,
+                                          DXGI_FORMAT_UNKNOWN };
+         return formats;
+      }
       case DXGI_FORMAT_R8G8B8A8_UNORM:
       {
          static DXGI_FORMAT formats[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_B8G8R8A8_UNORM,
+                                          DXGI_FORMAT_B8G8R8X8_UNORM, DXGI_FORMAT_UNKNOWN };
+         return formats;
+      }
+      case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+      {
+         static DXGI_FORMAT formats[] = { DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,
+                                          DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_B8G8R8A8_UNORM,
                                           DXGI_FORMAT_B8G8R8X8_UNORM, DXGI_FORMAT_UNKNOWN };
          return formats;
       }
