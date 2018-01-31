@@ -274,6 +274,7 @@ static bool content_load(content_ctx_info_t *info)
    }
 
 #ifdef HAVE_MENU
+   /* TODO/FIXME - can we get rid of this? */
    menu_shader_manager_init();
 #endif
    command_event(CMD_EVENT_HISTORY_INIT, NULL);
