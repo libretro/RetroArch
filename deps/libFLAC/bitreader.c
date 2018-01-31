@@ -34,6 +34,8 @@
 #  include <config.h>
 #endif
 
+#include <retro_miscellaneous.h>
+
 #include <stdlib.h>
 #include <string.h>
 #include "private/bitmath.h"
@@ -516,7 +518,7 @@ FLAC__bool FLAC__bitreader_skip_bits_no_crc(FLAC__BitReader *br, unsigned bits)
 		FLAC__uint32 x;
 
 		if(n != 0) {
-			m = flac_min(8-n, bits);
+			m = MIN(8-n, bits);
 			if(!FLAC__bitreader_read_raw_uint32(br, &x, m))
 				return false;
 			bits -= m;

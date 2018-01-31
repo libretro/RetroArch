@@ -39,6 +39,9 @@
 #include <string.h> /* for memset/memcpy() */
 #include <sys/stat.h> /* for stat() */
 #include <sys/types.h> /* for off_t */
+
+#include <retro_miscellaneous.h>
+
 #include "share/compat.h"
 #include "FLAC/assert.h"
 #include "share/alloc.h"
@@ -2758,7 +2761,7 @@ FLAC__bool read_residual_partitioned_rice_(FLAC__StreamDecoder *decoder, unsigne
 	/* invalid predictor and partition orders mush be handled in the callers */
 	FLAC__ASSERT(partition_order > 0? partition_samples >= predictor_order : decoder->private_->frame.header.blocksize >= predictor_order);
 
-	if(!FLAC__format_entropy_coding_method_partitioned_rice_contents_ensure_size(partitioned_rice_contents, flac_max(6u, partition_order))) {
+	if(!FLAC__format_entropy_coding_method_partitioned_rice_contents_ensure_size(partitioned_rice_contents, MAX(6u, partition_order))) {
 		decoder->protected_->state = FLAC__STREAM_DECODER_MEMORY_ALLOCATION_ERROR;
 		return false;
 	}

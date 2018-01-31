@@ -34,6 +34,8 @@
 #  include <config.h>
 #endif
 
+#include <retro_miscellaneous.h>
+
 #include <math.h>
 #include <string.h>
 #include "share/compat.h"
@@ -235,11 +237,11 @@ unsigned FLAC__fixed_compute_best_predictor(const FLAC__int32 data[], unsigned d
 		error -= last_error_3; total_error_4 += local_abs(error); last_error_3 = save;
 	}
 
-	if(total_error_0 < flac_min(flac_min(flac_min(total_error_1, total_error_2), total_error_3), total_error_4))
+	if(total_error_0 < MIN(MIN(MIN(total_error_1, total_error_2), total_error_3), total_error_4))
 		order = 0;
-	else if(total_error_1 < flac_min(flac_min(total_error_2, total_error_3), total_error_4))
+	else if(total_error_1 < MIN(MIN(total_error_2, total_error_3), total_error_4))
 		order = 1;
-	else if(total_error_2 < flac_min(total_error_3, total_error_4))
+	else if(total_error_2 < MIN(total_error_3, total_error_4))
 		order = 2;
 	else if(total_error_3 < total_error_4)
 		order = 3;
@@ -297,11 +299,11 @@ unsigned FLAC__fixed_compute_best_predictor_wide(const FLAC__int32 data[], unsig
 		error -= last_error_3; total_error_4 += local_abs(error); last_error_3 = save;
 	}
 
-	if(total_error_0 < flac_min(flac_min(flac_min(total_error_1, total_error_2), total_error_3), total_error_4))
+	if(total_error_0 < MIN(MIN(MIN(total_error_1, total_error_2), total_error_3), total_error_4))
 		order = 0;
-	else if(total_error_1 < flac_min(flac_min(total_error_2, total_error_3), total_error_4))
+	else if(total_error_1 < MIN(MIN(total_error_2, total_error_3), total_error_4))
 		order = 1;
-	else if(total_error_2 < flac_min(total_error_3, total_error_4))
+	else if(total_error_2 < MIN(total_error_3, total_error_4))
 		order = 2;
 	else if(total_error_3 < total_error_4)
 		order = 3;
