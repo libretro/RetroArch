@@ -303,6 +303,11 @@ static void menu_action_setting_disp_set_label_pipeline(
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOWFLAKE), len);
          break;
+      case XMB_SHADER_PIPELINE_FIREWORKS:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_FIREWORKS), len);
+         break;
    }
 
    strlcpy(s2, path, len2);
