@@ -1626,47 +1626,45 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       {
          for (j = 0; j < playlist_size(playlist); j++)
          {
-            char elem0[PATH_MAX_LENGTH];
-            char elem1[PATH_MAX_LENGTH];
             const char *crc32                = NULL;
             bool match_found                 = false;
             struct string_list *tmp_str_list = NULL;
-
-            elem0[0] = elem1[0] = '\0';
 
             playlist_get_index(playlist, j,
                   NULL, NULL, NULL, NULL,
                   NULL, &crc32);
 
             if (crc32)
-            {
                 tmp_str_list = string_split(crc32, "|");
-            }
 
             if (!tmp_str_list)
                continue;
 
             if (tmp_str_list->size > 0)
-               strlcpy(elem0, tmp_str_list->elems[0].data, sizeof(elem0));
-            if (tmp_str_list->size > 1)
-               strlcpy(elem1, tmp_str_list->elems[1].data, sizeof(elem1));
-
-            switch (msg_hash_to_file_type(msg_hash_calculate(elem1)))
             {
-               case FILE_TYPE_CRC:
-                  if (string_is_equal(crc_str, elem0))
-                     match_found = true;
-                  break;
-               case FILE_TYPE_SHA1:
-                  if (string_is_equal(db_info_entry->sha1, elem0))
-                     match_found = true;
-                  break;
-               case FILE_TYPE_MD5:
-                  if (string_is_equal(db_info_entry->md5, elem0))
-                     match_found = true;
-                  break;
-               default:
-                  break;
+               if (tmp_str_list->size > 1)
+               {
+                  const char *elem0 = tmp_str_list->elems[0].data;
+                  const char *elem1 = tmp_str_list->elems[1].data;
+
+                  switch (msg_hash_to_file_type(msg_hash_calculate(elem1)))
+                  {
+                     case FILE_TYPE_CRC:
+                        if (string_is_equal(crc_str, elem0))
+                           match_found = true;
+                        break;
+                     case FILE_TYPE_SHA1:
+                        if (string_is_equal(db_info_entry->sha1, elem0))
+                           match_found = true;
+                        break;
+                     case FILE_TYPE_MD5:
+                        if (string_is_equal(db_info_entry->md5, elem0))
+                           match_found = true;
+                        break;
+                     default:
+                        break;
+                  }
+               }
             }
 
             string_list_free(tmp_str_list);
