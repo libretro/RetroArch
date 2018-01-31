@@ -18,6 +18,7 @@
 #include <wiiu/os.h>
 #include <wiiu/gx2.h>
 #include <formats/image.h>
+#include <file/file_path.h>
 
 #include "../../driver.h"
 #include "../../configuration.h"
@@ -52,6 +53,9 @@ static const wiiu_render_mode_t wiiu_render_mode_map[] =
    {1920, 1080, GX2_TV_RENDER_MODE_WIDE_1080P}, /* GX2_TV_SCAN_MODE_1080I */
    {1920, 1080, GX2_TV_RENDER_MODE_WIDE_1080P}  /* GX2_TV_SCAN_MODE_1080P */
 };
+
+static bool wiiu_gfx_set_shader(void *data,
+                                enum rarch_shader_type type, const char *path);
 
 static void wiiu_set_tex_coords(frame_vertex_t *v, GX2Texture *texture, float u0, float v0,
                                 float u1, float v1,
@@ -191,6 +195,7 @@ static void wiiu_gfx_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 static void *wiiu_gfx_init(const video_info_t *video,
                            const input_driver_t **input, void **input_data)
 {
+   settings_t *settings = config_get_ptr();
    float refresh_rate = 60.0f / 1.001f;
    u32 size           = 0;
    u32 tmp            = 0;
@@ -205,7 +210,6 @@ static void *wiiu_gfx_init(const video_info_t *video,
 
    if (input && input_data)
    {
-      settings_t *settings = config_get_ptr();
       wiiuinput            = input_wiiu.init(settings->arrays.input_joypad_driver);
       *input               = wiiuinput ? &input_wiiu : NULL;
       *input_data          = wiiuinput;
@@ -439,6 +443,14 @@ static void *wiiu_gfx_init(const video_info_t *video,
    font_driver_init_osd(wiiu, false,
                         video->is_threaded,
                         FONT_DRIVER_RENDER_WIIU);
+
+   if(settings->bools.video_shader_enable)
+   {
+      const char* ext = path_get_extension(settings->paths.path_shader);
+
+      if(ext && !strncmp(ext, "slang", 5))
+         wiiu_gfx_set_shader(wiiu, RARCH_SHADER_SLANG, settings->paths.path_shader);
+   }
 
    return wiiu;
 }
