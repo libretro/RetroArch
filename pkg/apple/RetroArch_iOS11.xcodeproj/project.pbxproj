@@ -47,7 +47,7 @@
 		83D632DB19ECFCC4009E3161 /* iOS/Resources/ic_pause.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = iOS/Resources/ic_pause.png; sourceTree = SOURCE_ROOT; };
 		83D632DE19ECFCC4009E3161 /* iOS/Resources/PauseIndicatorView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = iOS/Resources/PauseIndicatorView.xib; sourceTree = SOURCE_ROOT; };
 		83EB675F19EEAF050096F441 /* iOS/modules */ = {isa = PBXFileReference; lastKnownFileType = folder; path = iOS/modules; sourceTree = SOURCE_ROOT; };
-		9204BE2B1D319EF300BD49DB /* RetroArchiOS10.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArchiOS10.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9204BE2B1D319EF300BD49DB /* RetroArchiOS11.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArchiOS11.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		96366C5416C9AC3300D64A22 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
 		96366C5816C9ACF500D64A22 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
 		963C3C33186E3DED00A6EB1E /* GameController.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameController.framework; path = System/Library/Frameworks/GameController.framework; sourceTree = SDKROOT; };
@@ -118,7 +118,7 @@
 		96AFAE2616C1D4EA009DE44C /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				9204BE2B1D319EF300BD49DB /* RetroArchiOS10.app */,
+				9204BE2B1D319EF300BD49DB /* RetroArchiOS11.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -194,9 +194,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		9204BE091D319EF300BD49DB /* RetroArchiOS10 */ = {
+		9204BE091D319EF300BD49DB /* RetroArchiOS11 */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 9204BE281D319EF300BD49DB /* Build configuration list for PBXNativeTarget "RetroArchiOS10" */;
+			buildConfigurationList = 9204BE281D319EF300BD49DB /* Build configuration list for PBXNativeTarget "RetroArchiOS11" */;
 			buildPhases = (
 				9204BE0A1D319EF300BD49DB /* Sources */,
 				9204BE111D319EF300BD49DB /* Frameworks */,
@@ -207,9 +207,9 @@
 			);
 			dependencies = (
 			);
-			name = RetroArchiOS10;
+			name = RetroArchiOS11;
 			productName = RetroArch;
-			productReference = 9204BE2B1D319EF300BD49DB /* RetroArchiOS10.app */;
+			productReference = 9204BE2B1D319EF300BD49DB /* RetroArchiOS11.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -222,12 +222,12 @@
 				ORGANIZATIONNAME = RetroArch;
 				TargetAttributes = {
 					9204BE091D319EF300BD49DB = {
-						DevelopmentTeam = 38QVPJE4NW;
+						DevelopmentTeam = UK699V5ZS8;
 						DevelopmentTeamName = "Yoshinobu Sugawara";
 					};
 				};
 			};
-			buildConfigurationList = 96AFAE1F16C1D4EA009DE44C /* Build configuration list for PBXProject "RetroArch_iOS10" */;
+			buildConfigurationList = 96AFAE1F16C1D4EA009DE44C /* Build configuration list for PBXProject "RetroArch_iOS11" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
@@ -239,7 +239,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				9204BE091D319EF300BD49DB /* RetroArchiOS10 */,
+				9204BE091D319EF300BD49DB /* RetroArchiOS11 */,
 			);
 		};
 /* End PBXProject section */
@@ -309,7 +309,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
-				DEVELOPMENT_TEAM = 38QVPJE4NW;
+				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
@@ -321,7 +321,7 @@
 					../../deps,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				LD_NO_PIE = YES;
 				LIBRARY_SEARCH_PATHS = "";
 				ONLY_ACTIVE_ARCH = NO;
@@ -374,7 +374,7 @@
 					"-DHAVE_BTSTACK",
 					"-DHAVE_AVFOUNDATION",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS10;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = "armv7 arm64";
@@ -393,7 +393,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
-				DEVELOPMENT_TEAM = 38QVPJE4NW;
+				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_BITCODE = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = NO;
 				GCC_PREFIX_HEADER = "";
@@ -405,7 +405,7 @@
 					../../deps,
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				LD_NO_PIE = YES;
 				LIBRARY_SEARCH_PATHS = "";
 				OTHER_CFLAGS = (
@@ -512,7 +512,7 @@
 					"-DHAVE_BTSTACK",
 					"-DHAVE_AVFOUNDATION",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS10;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
 				VALID_ARCHS = "armv7 arm64";
@@ -670,7 +670,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		9204BE281D319EF300BD49DB /* Build configuration list for PBXNativeTarget "RetroArchiOS10" */ = {
+		9204BE281D319EF300BD49DB /* Build configuration list for PBXNativeTarget "RetroArchiOS11" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				9204BE291D319EF300BD49DB /* Debug */,
@@ -679,7 +679,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		96AFAE1F16C1D4EA009DE44C /* Build configuration list for PBXProject "RetroArch_iOS10" */ = {
+		96AFAE1F16C1D4EA009DE44C /* Build configuration list for PBXProject "RetroArch_iOS11" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				96AFAE5216C1D4EA009DE44C /* Debug */,
