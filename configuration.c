@@ -1025,6 +1025,7 @@ static struct config_array_setting *populate_settings_array(settings_t *settings
 #ifdef HAVE_CHEEVOS
    SETTING_ARRAY("cheevos_username",         settings->arrays.cheevos_username, false, NULL, true);
    SETTING_ARRAY("cheevos_password",         settings->arrays.cheevos_password, false, NULL, true);
+   SETTING_ARRAY("cheevos_token",            settings->arrays.cheevos_token, false, NULL, true);
 #endif
    SETTING_ARRAY("video_context_driver",     settings->arrays.video_context_driver,   false, NULL, true);
    SETTING_ARRAY("audio_driver",             settings->arrays.audio_driver,           false, NULL, true);
@@ -1693,6 +1694,7 @@ static void config_set_defaults(void)
 #ifdef HAVE_CHEEVOS
    *settings->arrays.cheevos_username                 = '\0';
    *settings->arrays.cheevos_password                 = '\0';
+   *settings->arrays.cheevos_token                    = '\0';
 #endif
 
    input_config_reset();
