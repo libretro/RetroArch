@@ -138,7 +138,7 @@ bool menu_shader_manager_init(void)
    menu_driver_shader          = (struct video_shader*)
       calloc(1, sizeof(struct video_shader));
 
-   if (!menu_driver_shader)
+   if (!menu_driver_shader || !path_shader)
       return false;
 
    /* In a multi-config setting, we can't have

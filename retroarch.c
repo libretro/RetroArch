@@ -1945,14 +1945,14 @@ char* retroarch_get_shader_preset(void)
 {
    settings_t *settings = config_get_ptr();
    if (!settings->bools.video_shader_enable)
-      return "";
+      return NULL;
 
    if (!string_is_empty(runtime_shader_preset))
       return runtime_shader_preset;
    else if (!string_is_empty(settings->paths.path_shader))
       return settings->paths.path_shader;
    else
-      return "";
+      return NULL;
 }
 
 bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx, void *data)
