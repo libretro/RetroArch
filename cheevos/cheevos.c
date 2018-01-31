@@ -2488,11 +2488,25 @@ bool cheevos_apply_cheats(bool *data_bool)
 bool cheevos_unload(void)
 {
    CHEEVOS_LOCK(cheevos_locals.task_lock);
+   bool running = cheevos_locals.task != NULL;
+   CHEEVOS_UNLOCK(cheevos_locals.task_lock);
 
-   if (cheevos_locals.task)
+   if (running)
    {
+#ifdef CHEEVOS_VERBOSE
+      RARCH_LOG("[CHEEVOS]: Asked the load thread to terminate\n");
+#endif
       task_queue_cancel_task(cheevos_locals.task);
-      while (cheevos_locals.task) /* nothing */;
+
+#ifdef HAVE_THREADS
+      do
+      {
+         CHEEVOS_LOCK(cheevos_locals.task_lock);
+         running = cheevos_locals.task != NULL;
+         CHEEVOS_UNLOCK(cheevos_locals.task_lock);
+      }
+      while (running);
+#endif
    }
 
    if (cheevos_loaded)
@@ -2500,8 +2514,6 @@ bool cheevos_unload(void)
       cheevos_free_cheevo_set(&cheevos_locals.core);
       cheevos_free_cheevo_set(&cheevos_locals.unofficial);
    }
-
-   CHEEVOS_UNLOCK(cheevos_locals.task_lock);
 
    cheevos_locals.core.cheevos       = NULL;
    cheevos_locals.unofficial.cheevos = NULL;
@@ -2907,7 +2919,7 @@ static int cheevos_iterate(coro_t *coro)
          * But set the above anyways, 
          * command_read_ram needs it. */
       if (!coro->settings->bools.cheevos_enable)
-         return 0;
+         CORO_STOP();
 
       /* Load the content into memory, or copy it 
          * over to our own buffer */
@@ -2919,7 +2931,7 @@ static int cheevos_iterate(coro_t *coro)
                RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
          if (!coro->stream)
-            return 0;
+            CORO_STOP();
 
          CORO_YIELD();
          coro->len         = 0;
@@ -2935,7 +2947,7 @@ static int cheevos_iterate(coro_t *coro)
          {
             intfstream_close(coro->stream);
             free(coro->stream);
-            return 0;
+            CORO_STOP();
          }
 
          for (;;)
@@ -3036,7 +3048,7 @@ static int cheevos_iterate(coro_t *coro)
       }
 
       RARCH_LOG("[CHEEVOS]: this game doesn't feature achievements.\n");
-      return 0;
+      CORO_STOP();
 
 found:
 
@@ -3062,7 +3074,7 @@ found:
       {
          runloop_msg_queue_push("Error loading achievements.", 0, 5 * 60, false);
          RARCH_ERR("[CHEEVOS]: error loading achievements.\n");
-         return 0;
+         CORO_STOP();
       }
 #endif
 
@@ -3077,7 +3089,7 @@ found:
       {
          if ((void*)coro->json)
             free((void*)coro->json);
-         return 0;
+         CORO_STOP();
       }
 
       if ((void*)coro->json)
@@ -3132,7 +3144,7 @@ found:
          cheevos_unload();
 
       CORO_GOSUB(GET_BADGES);
-      return 0;
+      CORO_STOP();
 
       /**************************************************************************
        * Info   Tries to identify a SNES game
@@ -3434,7 +3446,7 @@ found:
       if (!coro->json)
       {
          RARCH_ERR("[CHEEVOS]: error getting achievements for game id %u.\n", coro->gameid);
-         return 0;
+         CORO_STOP();
       }
 
       RARCH_LOG("[CHEEVOS]: got achievements for game id %u.\n", coro->gameid);
@@ -3538,7 +3550,7 @@ found:
                   "Please fill in your account information in Settings.",
                   0, 5 * 60, false);
             RARCH_ERR("[CHEEVOS]: username and/or password not informed.\n");
-            return 0;
+            CORO_STOP();
          }
 
          cheevos_url_encode(username, urle_user, sizeof(urle_user));
@@ -3588,7 +3600,7 @@ found:
 
       runloop_msg_queue_push("Retro Achievements login error.", 0, 5 * 60, false);
       RARCH_ERR("[CHEEVOS]: error getting user token.\n");
-      return 0;
+      CORO_STOP();
 
       /**************************************************************************
        * Info    Pauses execution for five seconds
@@ -3805,6 +3817,17 @@ static void cheevos_task_handler(retro_task_t *task)
       CHEEVOS_LOCK(cheevos_locals.task_lock);
       cheevos_locals.task = NULL;
       CHEEVOS_UNLOCK(cheevos_locals.task_lock);
+
+#ifdef CHEEVOS_VERBOSE
+      if (task_get_cancelled(task))
+      {
+         RARCH_LOG("[CHEEVOS]: Load task cancelled\n");
+      }
+      else
+      {
+         RARCH_LOG("[CHEEVOS]: Load task finished\n");
+      }
+#endif
 
       if (coro->data)
          free(coro->data);

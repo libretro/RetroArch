@@ -62,6 +62,11 @@ Released under the CC0: https://creativecommons.org/publicdomain/zero/1.0/
     coro->sp   = 0; \
   } while ( 0 )
 
+#define CORO_STOP() \
+  do { \
+    return 0; \
+  } while ( 0 )
+
 /* Add this macro to your coro_t structure containing the variables for the coroutine */
 #define CORO_FIELDS \
   int step, sp; \
