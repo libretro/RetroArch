@@ -46,7 +46,9 @@
 #endif
 #include <strings.h>
 #include <errno.h>
+#ifndef closesocket
 #define closesocket close
+#endif
 #endif /* #else _WIN32 */
 #ifdef __GNU__
 #define MAXHOSTNAMELEN 64
