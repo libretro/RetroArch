@@ -30,7 +30,9 @@
 #include <sys/param.h>
 #include <sys/select.h>
 #include <errno.h>
+#ifndef closesocket
 #define closesocket close
+#endif
 #include <netdb.h>
 #include <netinet/in.h>
 /* defining MINIUPNPC_IGNORE_EINTR enable the ignore of interruptions

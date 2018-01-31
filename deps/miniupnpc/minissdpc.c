@@ -58,7 +58,9 @@ struct sockaddr_un {
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <net/if.h>
+#ifndef closesocket
 #define closesocket close
+#endif
 #endif
 
 #if !defined(__DragonFly__) && !defined(__OpenBSD__) && !defined(__NetBSD__) && !defined(__APPLE__) && !defined(_WIN32) && !defined(__CYGWIN__) && !defined(__sun) && !defined(__GNU__) && !defined(__FreeBSD_kernel__)  && !defined(__HAIKU__)
