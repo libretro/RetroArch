@@ -22,6 +22,8 @@
     #include "amd64.c"
   #elif defined _ARCH_PPC
     #include "ppc.c"
+  #elif defined(__aarch64__)
+    #include "aarch64.c"
   #elif defined VITA
     #include "scefiber.c"
   #elif defined(__ARM_EABI__) || defined(__arm__)
