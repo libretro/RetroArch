@@ -236,8 +236,8 @@ d3d10_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
            D3D10_INPUT_PER_VERTEX_DATA, 0 },
       };
 
-      d3d_compile(stock, sizeof(stock), "VSMain", "vs_4_0", &vs_code);
-      d3d_compile(stock, sizeof(stock), "PSMain", "ps_4_0", &ps_code);
+      d3d_compile(stock, sizeof(stock), NULL, "VSMain", "vs_4_0", &vs_code);
+      d3d_compile(stock, sizeof(stock), NULL, "PSMain", "ps_4_0", &ps_code);
 
       D3D10CreateVertexShader(
             d3d10->device, D3DGetBufferPointer(vs_code), D3DGetBufferSize(vs_code), &d3d10->vs);

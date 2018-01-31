@@ -156,27 +156,28 @@ d3d11_get_closest_match(D3D11Device device, DXGI_FORMAT desired_format, UINT des
 }
 
 bool d3d11_init_shader(
-      D3D11Device               device,
-      const void*               src,
-      size_t                    size,
-      LPCSTR                    vs_entry,
-      LPCSTR                    ps_entry,
-      LPCSTR                    gs_entry,
-      D3D11_INPUT_ELEMENT_DESC* input_element_descs,
-      UINT                      num_elements,
-      d3d11_shader_t*           out)
+      D3D11Device                     device,
+      const char*                     src,
+      size_t                          size,
+      const void*                     src_name,
+      LPCSTR                          vs_entry,
+      LPCSTR                          ps_entry,
+      LPCSTR                          gs_entry,
+      const D3D11_INPUT_ELEMENT_DESC* input_element_descs,
+      UINT                            num_elements,
+      d3d11_shader_t*                 out)
 {
    D3DBlob vs_code;
    D3DBlob ps_code;
    D3DBlob gs_code;
 
-   if (size < 0) /* LPCWSTR filename */
+   if (!src) /* LPCWSTR filename */
    {
-      if (vs_entry && !d3d_compile_from_file(src, vs_entry, "vs_5_0", &vs_code))
+      if (vs_entry && !d3d_compile_from_file(src_name, vs_entry, "vs_5_0", &vs_code))
          return false;
-      if (ps_entry && !d3d_compile_from_file(src, ps_entry, "ps_5_0", &ps_code))
+      if (ps_entry && !d3d_compile_from_file(src_name, ps_entry, "ps_5_0", &ps_code))
          return false;
-      if (gs_entry && !d3d_compile_from_file(src, gs_entry, "gs_5_0", &gs_code))
+      if (gs_entry && !d3d_compile_from_file(src_name, gs_entry, "gs_5_0", &gs_code))
          return false;
    }
    else /* char array */
@@ -184,11 +185,11 @@ bool d3d11_init_shader(
       if (!size)
          size = strlen(src);
 
-      if (vs_entry && !d3d_compile(src, size, vs_entry, "vs_5_0", &vs_code))
+      if (vs_entry && !d3d_compile(src, size, src_name, vs_entry, "vs_5_0", &vs_code))
          return false;
-      if (ps_entry && !d3d_compile(src, size, ps_entry, "ps_5_0", &ps_code))
+      if (ps_entry && !d3d_compile(src, size, src_name, ps_entry, "ps_5_0", &ps_code))
          return false;
-      if (gs_entry && !d3d_compile(src, size, gs_entry, "gs_5_0", &gs_code))
+      if (gs_entry && !d3d_compile(src, size, src_name, gs_entry, "gs_5_0", &gs_code))
          return false;
    }
 

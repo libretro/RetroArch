@@ -123,7 +123,7 @@ HRESULT WINAPI
 }
 #endif
 
-bool d3d_compile(const char* src, size_t size, LPCSTR entrypoint, LPCSTR target, D3DBlob* out)
+bool d3d_compile(const char* src, size_t size, LPCSTR src_name, LPCSTR entrypoint, LPCSTR target, D3DBlob* out)
 {
    D3DBlob error_msg;
    UINT compileflags    = 0;
@@ -133,7 +133,7 @@ bool d3d_compile(const char* src, size_t size, LPCSTR entrypoint, LPCSTR target,
 #endif
 
    if (FAILED(D3DCompile(
-             src, size, NULL, NULL, NULL, entrypoint, target, compileflags, 0, out, &error_msg)))
+             src, size, src_name, NULL, NULL, entrypoint, target, compileflags, 0, out, &error_msg)))
    {
       if (error_msg)
       {

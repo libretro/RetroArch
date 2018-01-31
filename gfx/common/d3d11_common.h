@@ -1912,12 +1912,12 @@ static INLINE HRESULT D3D11CreateDepthStencilView(
    return device->lpVtbl->CreateDepthStencilView(device, resource, desc, depth_stencil_view);
 }
 static INLINE HRESULT D3D11CreateInputLayout(
-      D3D11Device               device,
-      D3D11_INPUT_ELEMENT_DESC* input_element_descs,
-      UINT                      num_elements,
-      void*                     shader_bytecode_with_input_signature,
-      SIZE_T                    bytecode_length,
-      D3D11InputLayout*         input_layout)
+      D3D11Device                     device,
+      const D3D11_INPUT_ELEMENT_DESC* input_element_descs,
+      UINT                            num_elements,
+      void*                           shader_bytecode_with_input_signature,
+      SIZE_T                          bytecode_length,
+      D3D11InputLayout*               input_layout)
 {
    return device->lpVtbl->CreateInputLayout(
          device, input_element_descs, num_elements, shader_bytecode_with_input_signature,
@@ -2597,15 +2597,16 @@ d3d11_get_closest_match_texture2D(D3D11Device device, DXGI_FORMAT desired_format
 }
 
 bool d3d11_init_shader(
-      D3D11Device               device,
-      const void*               src,
-      size_t                    size,
-      LPCSTR                    vs_entry,
-      LPCSTR                    ps_entry,
-      LPCSTR                    gs_entry,
-      D3D11_INPUT_ELEMENT_DESC* input_element_descs,
-      UINT                      num_elements,
-      d3d11_shader_t*           out);
+      D3D11Device                     device,
+      const char*                     src,
+      size_t                          size,
+      const void*                     src_name,
+      LPCSTR                          vs_entry,
+      LPCSTR                          ps_entry,
+      LPCSTR                          gs_entry,
+      const D3D11_INPUT_ELEMENT_DESC* input_element_descs,
+      UINT                            num_elements,
+      d3d11_shader_t*                 out);
 
 static INLINE void d3d11_release_shader(d3d11_shader_t* shader)
 {

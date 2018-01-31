@@ -435,10 +435,10 @@ bool d3d12_init_pipeline(d3d12_video_t* d3d12)
             },
    };
 
-   if (!d3d_compile(stock, sizeof(stock), "VSMain", "vs_5_0", &vs_code))
+   if (!d3d_compile(stock, sizeof(stock), NULL, "VSMain", "vs_5_0", &vs_code))
       return false;
 
-   if (!d3d_compile(stock, sizeof(stock), "PSMain", "ps_5_0", &ps_code))
+   if (!d3d_compile(stock, sizeof(stock), NULL, "PSMain", "ps_5_0", &ps_code))
       return false;
 
    {

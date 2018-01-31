@@ -208,20 +208,49 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
               D3D11_INPUT_PER_VERTEX_DATA, 0 },
          };
 
-         if (!d3d11_init_shader(
-                   d3d11->device, d3d11->shader_preset->pass[i].source.string.vertex, 0, "main",
-                   NULL, NULL, desc, countof(desc), &d3d11->pass[i].shader))
-            goto error;
+         const char* vs_src = d3d11->shader_preset->pass[i].source.string.vertex;
+         const char* ps_src = d3d11->shader_preset->pass[i].source.string.fragment;
+         const char* vs_ext = ".vs.hlsl";
+         const char* ps_ext = ".ps.hlsl";
+         int   base_len     = strlen(d3d11->shader_preset->pass[i].source.path) - strlen(".slang");
+         char* vs_filename  = (char*)malloc(base_len + strlen(vs_ext) + 1);
+         char* ps_filename  = (char*)malloc(base_len + strlen(ps_ext) + 1);
+
+         strncpy(vs_filename, d3d11->shader_preset->pass[i].source.path, base_len);
+         strncpy(ps_filename, d3d11->shader_preset->pass[i].source.path, base_len);
+         strncpy(vs_filename + base_len, vs_ext, strlen(vs_ext) + 1);
+         strncpy(ps_filename + base_len, ps_ext, strlen(ps_ext) + 1);
+
+         d3d11_init_shader(
+               d3d11->device, vs_src, 0, vs_filename, "main", NULL, NULL, desc, countof(desc),
+               &d3d11->pass[i].shader);
+
+         d3d11_init_shader(
+               d3d11->device, ps_src, 0, ps_filename, NULL, "main", NULL, NULL, 0,
+               &d3d11->pass[i].shader);
+
+         if (!d3d11->pass[i].shader.vs || !d3d11->pass[i].shader.ps)
+         {
+            FILE* fp = fopen(vs_filename, "w");
+            fwrite(vs_src, 1, strlen(vs_src), fp);
+            fclose(fp);
+
+            fp = fopen(ps_filename, "w");
+            fwrite(ps_src, 1, strlen(ps_src), fp);
+            fclose(fp);
+         }
+
+         free(vs_filename);
+         free(ps_filename);
+
          free(d3d11->shader_preset->pass[i].source.string.vertex);
-         d3d11->shader_preset->pass[i].source.string.vertex = NULL;
-
-         if (!d3d11_init_shader(
-                   d3d11->device, d3d11->shader_preset->pass[i].source.string.fragment, 0, NULL,
-                   "main", NULL, NULL, 0, &d3d11->pass[i].shader))
-            goto error;
-
          free(d3d11->shader_preset->pass[i].source.string.fragment);
+
+         d3d11->shader_preset->pass[i].source.string.vertex = NULL;
          d3d11->shader_preset->pass[i].source.string.fragment = NULL;
+
+         if (!d3d11->pass[i].shader.vs || !d3d11->pass[i].shader.ps)
+            goto error;
       }
 
       for (int j = 0; j < SLANG_CBUFFER_MAX; j++)
@@ -496,7 +525,7 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
             ;
 
       if (!d3d11_init_shader(
-                d3d11->device, shader, sizeof(shader), "VSMain", "PSMain", NULL, desc,
+                d3d11->device, shader, sizeof(shader), NULL, "VSMain", "PSMain", NULL, desc,
                 countof(desc), &d3d11->shaders[VIDEO_SHADER_STOCK_BLEND]))
          goto error;
    }
@@ -524,11 +553,11 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
             ;
 
       if (!d3d11_init_shader(
-                d3d11->device, shader, sizeof(shader), "VSMain", "PSMain", "GSMain", desc,
+                d3d11->device, shader, sizeof(shader), NULL, "VSMain", "PSMain", "GSMain", desc,
                 countof(desc), &d3d11->sprites.shader))
          goto error;
       if (!d3d11_init_shader(
-                d3d11->device, shader, sizeof(shader), "VSMain", "PSMainA8", "GSMain", desc,
+                d3d11->device, shader, sizeof(shader), NULL, "VSMain", "PSMainA8", "GSMain", desc,
                 countof(desc), &d3d11->sprites.shader_font))
          goto error;
    }
@@ -546,13 +575,13 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
             ;
 
       if (!d3d11_init_shader(
-                d3d11->device, ribbon, sizeof(ribbon), "VSMain", "PSMain", NULL, desc,
+                d3d11->device, ribbon, sizeof(ribbon), NULL, "VSMain", "PSMain", NULL, desc,
                 countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU]))
          goto error;
 
       if (!d3d11_init_shader(
-                d3d11->device, ribbon_simple, sizeof(ribbon_simple), "VSMain", "PSMain", NULL, desc,
-                countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_2]))
+                d3d11->device, ribbon_simple, sizeof(ribbon_simple), NULL, "VSMain", "PSMain", NULL,
+                desc, countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_2]))
          goto error;
    }
 
@@ -578,21 +607,21 @@ d3d11_gfx_init(const video_info_t* video, const input_driver_t** input, void** i
             ;
 
       if (!d3d11_init_shader(
-                d3d11->device, simple_snow, sizeof(simple_snow), "VSMain", "PSMain", NULL, desc,
-                countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_3]))
+                d3d11->device, simple_snow, sizeof(simple_snow), NULL, "VSMain", "PSMain", NULL,
+                desc, countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_3]))
          goto error;
       if (!d3d11_init_shader(
-                d3d11->device, snow, sizeof(snow), "VSMain", "PSMain", NULL, desc, countof(desc),
-                &d3d11->shaders[VIDEO_SHADER_MENU_4]))
-         goto error;
-
-      if (!d3d11_init_shader(
-                d3d11->device, bokeh, sizeof(bokeh), "VSMain", "PSMain", NULL, desc, countof(desc),
-                &d3d11->shaders[VIDEO_SHADER_MENU_5]))
+                d3d11->device, snow, sizeof(snow), NULL, "VSMain", "PSMain", NULL, desc,
+                countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_4]))
          goto error;
 
       if (!d3d11_init_shader(
-                d3d11->device, snowflake, sizeof(snowflake), "VSMain", "PSMain", NULL, desc,
+                d3d11->device, bokeh, sizeof(bokeh), NULL, "VSMain", "PSMain", NULL, desc,
+                countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_5]))
+         goto error;
+
+      if (!d3d11_init_shader(
+                d3d11->device, snowflake, sizeof(snowflake), NULL, "VSMain", "PSMain", NULL, desc,
                 countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_6]))
          goto error;
    }
@@ -850,7 +879,7 @@ static bool d3d11_gfx_frame(
                D3D11MapBuffer(d3d11->ctx, buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &res);
                while (uniform->size)
                {
-                  if(uniform->data)
+                  if (uniform->data)
                      memcpy((uint8_t*)res.pData + uniform->offset, uniform->data, uniform->size);
                   uniform++;
                }
