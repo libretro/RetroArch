@@ -61,12 +61,6 @@ struct sockaddr_un {
 #define closesocket close
 #endif
 
-#ifdef _WIN32
-#define PRINT_SOCKET_ERROR(x)    printf("Socket error: %s, %d\n", x, WSAGetLastError());
-#else
-#define PRINT_SOCKET_ERROR(x) perror(x)
-#endif
-
 #if !defined(__DragonFly__) && !defined(__OpenBSD__) && !defined(__NetBSD__) && !defined(__APPLE__) && !defined(_WIN32) && !defined(__CYGWIN__) && !defined(__sun) && !defined(__GNU__) && !defined(__FreeBSD_kernel__)  && !defined(__HAIKU__)
 #define HAS_IP_MREQN
 #endif
@@ -523,7 +517,6 @@ ssdpDiscoverDevices(const char * const deviceTypes[],
 	{
 		if(error)
 			*error = MINISSDPC_SOCKET_ERROR;
-		PRINT_SOCKET_ERROR("socket");
 		return NULL;
 	}
 	/* reception */
@@ -589,9 +582,7 @@ ssdpDiscoverDevices(const char * const deviceTypes[],
 						struct in_addr mc_if;
 						memset(&mc_if, 0, sizeof(mc_if));
 						mc_if.s_addr = pIPAddrTable->table[i].dwAddr;
-						if(setsockopt(sudp, IPPROTO_IP, IP_MULTICAST_IF, (const char *)&mc_if, sizeof(mc_if)) < 0) {
-							PRINT_SOCKET_ERROR("setsockopt");
-						}
+						setsockopt(sudp, IPPROTO_IP, IP_MULTICAST_IF, (const char *)&mc_if, sizeof(mc_if)) < 0;
 						((struct sockaddr_in *)&sockudp_r)->sin_addr.s_addr = pIPAddrTable->table[i].dwAddr;
 #ifndef DEBUG
 						break;
@@ -613,7 +604,6 @@ ssdpDiscoverDevices(const char * const deviceTypes[],
 	{
 		if(error)
 			*error = MINISSDPC_SOCKET_ERROR;
-		PRINT_SOCKET_ERROR("setsockopt(SO_REUSEADDR,...)");
 		return NULL;
 	}
 
@@ -624,7 +614,6 @@ ssdpDiscoverDevices(const char * const deviceTypes[],
 #endif /* _WIN32 */
 	{
 		/* not a fatal error */
-		PRINT_SOCKET_ERROR("setsockopt(IP_MULTICAST_TTL,...)");
 	}
 
 	if(multicastif)
@@ -637,7 +626,6 @@ ssdpDiscoverDevices(const char * const deviceTypes[],
 			unsigned int ifindex = if_nametoindex(multicastif); /* eth0, etc. */
 			if(setsockopt(sudp, IPPROTO_IPV6, IPV6_MULTICAST_IF, &ifindex, sizeof(ifindex)) < 0)
 			{
-				PRINT_SOCKET_ERROR("setsockopt IPV6_MULTICAST_IF");
 			}
 #else
 #ifdef DEBUG
@@ -652,7 +640,6 @@ ssdpDiscoverDevices(const char * const deviceTypes[],
 				((struct sockaddr_in *)&sockudp_r)->sin_addr.s_addr = mc_if.s_addr;
 				if(setsockopt(sudp, IPPROTO_IP, IP_MULTICAST_IF, (const char *)&mc_if, sizeof(mc_if)) < 0)
 				{
-					PRINT_SOCKET_ERROR("setsockopt IP_MULTICAST_IF");
 				}
 			} else {
 #ifdef HAS_IP_MREQN
@@ -662,7 +649,6 @@ ssdpDiscoverDevices(const char * const deviceTypes[],
 				reqn.imr_ifindex = if_nametoindex(multicastif);
 				if(setsockopt(sudp, IPPROTO_IP, IP_MULTICAST_IF, (const char *)&reqn, sizeof(reqn)) < 0)
 				{
-					PRINT_SOCKET_ERROR("setsockopt IP_MULTICAST_IF");
 				}
 #elif !defined(_WIN32)
 				struct ifreq ifr;
@@ -671,12 +657,10 @@ ssdpDiscoverDevices(const char * const deviceTypes[],
 				ifr.ifr_name[IFNAMSIZ-1] = '\0';
 				if(ioctl(sudp, SIOCGIFADDR, &ifr, &ifrlen) < 0)
 				{
-					PRINT_SOCKET_ERROR("ioctl(...SIOCGIFADDR...)");
 				}
 				mc_if.s_addr = ((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr.s_addr;
 				if(setsockopt(sudp, IPPROTO_IP, IP_MULTICAST_IF, (const char *)&mc_if, sizeof(mc_if)) < 0)
 				{
-					PRINT_SOCKET_ERROR("setsockopt IP_MULTICAST_IF");
 				}
 #else /* _WIN32 */
 #ifdef DEBUG
@@ -694,7 +678,6 @@ ssdpDiscoverDevices(const char * const deviceTypes[],
 	{
 		if(error)
 			*error = MINISSDPC_SOCKET_ERROR;
-		PRINT_SOCKET_ERROR("bind");
 		closesocket(sudp);
 		return NULL;
 	}
@@ -751,7 +734,6 @@ ssdpDiscoverDevices(const char * const deviceTypes[],
 		if (n < 0) {
 			if(error)
 				*error = MINISSDPC_SOCKET_ERROR;
-			PRINT_SOCKET_ERROR("sendto");
 			break;
 		}
 #else /* #ifdef NO_GETADDRINFO */
@@ -782,7 +764,6 @@ ssdpDiscoverDevices(const char * const deviceTypes[],
 					fprintf(stderr, "host:%s port:%s\n", hbuf, sbuf);
 				}
 #endif
-				PRINT_SOCKET_ERROR("sendto");
 				continue;
 			}
 		}

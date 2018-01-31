@@ -24,12 +24,6 @@
 /* only for malloc */
 #include <stdlib.h>
 
-#ifdef _WIN32
-#define PRINT_SOCKET_ERROR(x)    printf("Socket error: %s, %d\n", x, WSAGetLastError());
-#else
-#define PRINT_SOCKET_ERROR(x) perror(x)
-#endif
-
 /* httpWrite sends the headers and the body to the socket
  * and returns the number of bytes sent */
 static int
@@ -51,20 +45,8 @@ httpWrite(int fd, const char * body, int bodysize,
 	memcpy(p+headerssize, body, bodysize);
 	/*n = write(fd, p, headerssize+bodysize);*/
 	n = (int)send(fd, p, headerssize+bodysize, 0);
-	if(n<0) {
-	  PRINT_SOCKET_ERROR("send");
-	}
 	/* disable send on the socket */
 	/* draytek routers dont seems to like that... */
-#if 0
-#ifdef _WIN32
-	if(shutdown(fd, SD_SEND)<0) {
-#else
-	if(shutdown(fd, SHUT_WR)<0)	{ /*SD_SEND*/
-#endif
-		PRINT_SOCKET_ERROR("shutdown");
-	}
-#endif
 	free(p);
 	return n;
 }

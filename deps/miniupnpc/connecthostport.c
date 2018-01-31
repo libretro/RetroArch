@@ -42,13 +42,6 @@
 #endif /* #ifndef USE_GETHOSTBYNAME */
 #endif /* #else _WIN32 */
 
-/* definition of PRINT_SOCKET_ERROR */
-#ifdef _WIN32
-#define PRINT_SOCKET_ERROR(x)    printf("Socket error: %s, %d\n", x, WSAGetLastError());
-#else
-#define PRINT_SOCKET_ERROR(x) perror(x)
-#endif
-
 #if defined(__amigaos__) || defined(__amigaos4__)
 #define herror(A) printf("%s\n", A)
 #endif
@@ -92,23 +85,18 @@ int connecthostport(const char * host, unsigned short port,
 	memset(dest.sin_zero, 0, sizeof(dest.sin_zero));
 	s = socket(PF_INET, SOCK_STREAM, 0);
 	if(s < 0)
-	{
-		PRINT_SOCKET_ERROR("socket");
 		return -1;
-	}
 #ifdef MINIUPNPC_SET_SOCKET_TIMEOUT
 	/* setting a 3 seconds timeout for the connect() call */
 	timeout.tv_sec = 3;
 	timeout.tv_usec = 0;
 	if(setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(struct timeval)) < 0)
 	{
-		PRINT_SOCKET_ERROR("setsockopt SO_RCVTIMEO");
 	}
 	timeout.tv_sec = 3;
 	timeout.tv_usec = 0;
 	if(setsockopt(s, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(struct timeval)) < 0)
 	{
-		PRINT_SOCKET_ERROR("setsockopt SO_SNDTIMEO");
 	}
 #endif /* #ifdef MINIUPNPC_SET_SOCKET_TIMEOUT */
 	dest.sin_family = AF_INET;
@@ -131,7 +119,6 @@ int connecthostport(const char * host, unsigned short port,
 		/*n = getpeername(s, NULL, &len);*/
 		len = sizeof(err);
 		if(getsockopt(s, SOL_SOCKET, SO_ERROR, &err, &len) < 0) {
-			PRINT_SOCKET_ERROR("getsockopt");
 			closesocket(s);
 			return -1;
 		}
@@ -143,7 +130,6 @@ int connecthostport(const char * host, unsigned short port,
 #endif /* #ifdef MINIUPNPC_IGNORE_EINTR */
 	if(n<0)
 	{
-		PRINT_SOCKET_ERROR("connect");
 		closesocket(s);
 		return -1;
 	}
@@ -201,13 +187,11 @@ int connecthostport(const char * host, unsigned short port,
 		timeout.tv_usec = 0;
 		if(setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (const char *)&timeout, sizeof(struct timeval)) < 0)
 		{
-			PRINT_SOCKET_ERROR("setsockopt");
 		}
 		timeout.tv_sec = 3;
 		timeout.tv_usec = 0;
 		if(setsockopt(s, SOL_SOCKET, SO_SNDTIMEO, (const char *)&timeout, sizeof(struct timeval)) < 0)
 		{
-			PRINT_SOCKET_ERROR("setsockopt");
 		}
 #endif /* #ifdef MINIUPNPC_SET_SOCKET_TIMEOUT */
 		n = connect(s, p->ai_addr, p->ai_addrlen);
@@ -228,7 +212,6 @@ int connecthostport(const char * host, unsigned short port,
 			/*n = getpeername(s, NULL, &len);*/
 			len = sizeof(err);
 			if(getsockopt(s, SOL_SOCKET, SO_ERROR, &err, &len) < 0) {
-				PRINT_SOCKET_ERROR("getsockopt");
 				closesocket(s);
 				freeaddrinfo(ai);
 				return -1;
@@ -251,15 +234,9 @@ int connecthostport(const char * host, unsigned short port,
 	}
 	freeaddrinfo(ai);
 	if(s < 0)
-	{
-		PRINT_SOCKET_ERROR("socket");
 		return -1;
-	}
 	if(n < 0)
-	{
-		PRINT_SOCKET_ERROR("connect");
 		return -1;
-	}
 #endif /* #ifdef USE_GETHOSTBYNAME */
 	return s;
 }
