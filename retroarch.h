@@ -288,7 +288,7 @@ void retroarch_unset_forced_fullscreen(void);
 
 void retroarch_set_current_core_type(enum rarch_core_type type, bool explicitly_set);
 
-void retroarch_set_shader_preset(char* preset);
+void retroarch_set_shader_preset(const char* preset);
 
 void retroarch_unset_shader_preset(void);
 

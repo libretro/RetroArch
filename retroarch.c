@@ -1926,7 +1926,7 @@ void retroarch_unset_forced_fullscreen(void)
 }
 
 /* set a runtime shader preset without overwriting the settings value */
-void retroarch_set_shader_preset(char* preset)
+void retroarch_set_shader_preset(const char* preset)
 {
    if (!string_is_empty(preset))
       strlcpy(runtime_shader_preset, preset, sizeof(runtime_shader_preset));
