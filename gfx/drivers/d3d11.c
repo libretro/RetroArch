@@ -151,12 +151,15 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
       {
          /* no history support yet */
          texture_map_t texture_map[3 + GFX_MAX_SHADERS + GFX_MAX_TEXTURES + 1] = {
-            { SLANG_TEXTURE_SEMANTIC_ORIGINAL, 0, &d3d11->frame.texture, &d3d11->pass[i].sampler,
-              &d3d11->frame.texture.size_data },
-            { SLANG_TEXTURE_SEMANTIC_SOURCE, 0, source, &d3d11->pass[i].sampler,
-              &source->size_data },
-            { SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY, 0, &d3d11->frame.texture,
-              &d3d11->pass[i].sampler, &d3d11->frame.texture.size_data },
+            SL_TEXTURE_MAP(
+                  SLANG_TEXTURE_SEMANTIC_ORIGINAL, d3d11->frame.texture, d3d11->pass[i].sampler,
+                  d3d11->frame.texture.size_data),
+            SL_TEXTURE_MAP(
+                  SLANG_TEXTURE_SEMANTIC_SOURCE, *source, d3d11->pass[i].sampler,
+                  source->size_data),
+            SL_TEXTURE_MAP(
+                  SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY, d3d11->frame.texture,
+                  d3d11->pass[i].sampler, d3d11->frame.texture.size_data),
          };
 
          {
@@ -166,29 +169,26 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
 
             for (int j = 0; j < i; j++)
             {
-               ptr->semantic     = SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT;
-               ptr->id           = j;
-               ptr->texture_data = &d3d11->pass[j].rt;
-               ptr->sampler_data = &d3d11->pass[i].sampler;
+               *ptr = (texture_map_t)SL_TEXTURE_MAP_ARRAY(
+                     SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, j, d3d11->pass[j].rt,
+                     d3d11->pass[i].sampler, d3d11->pass[j].rt.size_data);
                ptr++;
             }
 
             for (int j = 0; j < d3d11->shader_preset->luts; j++)
             {
-               ptr->semantic     = SLANG_TEXTURE_SEMANTIC_USER;
-               ptr->id           = j;
-               ptr->texture_data = &d3d11->luts[j];
-               ptr->size_data    = &d3d11->luts[j].size_data;
-               ptr->sampler_data = &d3d11->luts[j].sampler;
+               *ptr = (texture_map_t)SL_TEXTURE_MAP_ARRAY(
+                     SLANG_TEXTURE_SEMANTIC_USER, j, d3d11->luts[j], d3d11->luts[j].sampler,
+                     d3d11->luts[j].size_data);
                ptr++;
             }
          }
 
          uniform_map_t uniform_map[] = {
-            { SLANG_SEMANTIC_MVP, &d3d11->mvp },
-            { SLANG_SEMANTIC_OUTPUT, &d3d11->pass[i].rt.size_data },
-            { SLANG_SEMANTIC_FRAME_COUNT, &d3d11->pass[i].frame_count },
-            { SLANG_SEMANTIC_FINAL_VIEWPORT, &d3d11->frame.output_size },
+            SL_UNIFORM_MAP(SLANG_SEMANTIC_MVP, d3d11->mvp),
+            SL_UNIFORM_MAP(SLANG_SEMANTIC_OUTPUT, d3d11->pass[i].rt.size_data),
+            SL_UNIFORM_MAP(SLANG_SEMANTIC_FRAME_COUNT, d3d11->pass[i].frame_count),
+            SL_UNIFORM_MAP(SLANG_SEMANTIC_FINAL_VIEWPORT, d3d11->frame.output_size),
             { 0 }
          };
 
@@ -743,12 +743,15 @@ static bool d3d11_init_frame_textures(d3d11_video_t* d3d11, unsigned width, unsi
          for (int j = 0; j < d3d11->pass[i].semantics.texture_count; j++)
          {
             texture_sem_t*          texture_sem = &d3d11->pass[i].semantics.textures[j];
-            D3D11ShaderResourceView view        = ((d3d11_texture_t*)texture_sem->data)->view;
-            D3D11SamplerStateRef    sampler     = *(D3D11SamplerStateRef*)texture_sem->sampler_data;
+            D3D11ShaderResourceView view    = ((d3d11_texture_t*)texture_sem->texture_data)->view;
+            D3D11SamplerStateRef    sampler = *(D3D11SamplerStateRef*)texture_sem->sampler_data;
+            int slot = texture_sem->binding - d3d11->pass[i].semantics.min_binding;
 
-            d3d11->pass[i].textures[texture_sem->binding] = view;
-            d3d11->pass[i].samplers[texture_sem->binding] = sampler;
+            d3d11->pass[i].textures[slot] = view;
+            d3d11->pass[i].samplers[slot] = sampler;
          }
+         d3d11->pass[i].num_bindings =
+               d3d11->pass[i].semantics.max_binding - d3d11->pass[i].semantics.min_binding + 1;
       }
    }
 
@@ -845,9 +848,10 @@ static bool d3d11_gfx_frame(
                uniform_sem_t*           uniform = buffer_sem->uniforms;
 
                D3D11MapBuffer(d3d11->ctx, buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &res);
-               while (uniform->data)
+               while (uniform->size)
                {
-                  memcpy((uint8_t*)res.pData + uniform->offset, uniform->data, uniform->size);
+                  if(uniform->data)
+                     memcpy((uint8_t*)res.pData + uniform->offset, uniform->data, uniform->size);
                   uniform++;
                }
                D3D11UnmapBuffer(d3d11->ctx, buffer, 0);
@@ -865,10 +869,10 @@ static bool d3d11_gfx_frame(
          D3D11RenderTargetView null_rt = NULL;
          D3D11SetRenderTargets(d3d11->ctx, 1, &null_rt, NULL);
          D3D11SetPShaderResources(
-               d3d11->ctx, 0, d3d11->pass[i].semantics.texture_binding_max + 1,
+               d3d11->ctx, d3d11->pass[i].semantics.min_binding, d3d11->pass[i].num_bindings,
                d3d11->pass[i].textures);
          D3D11SetPShaderSamplers(
-               d3d11->ctx, 0, d3d11->pass[i].semantics.texture_binding_max + 1,
+               d3d11->ctx, d3d11->pass[i].semantics.min_binding, d3d11->pass[i].num_bindings,
                d3d11->pass[i].samplers);
 
          if (d3d11->pass[i].rt.handle)

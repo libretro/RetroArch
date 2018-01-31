@@ -2559,6 +2559,7 @@ typedef struct
       pass_semantics_t           semantics;
       D3D11ShaderResourceViewRef textures[SLANG_NUM_BINDINGS];
       D3D11SamplerStateRef       samplers[SLANG_NUM_BINDINGS];
+      int                        num_bindings;
       float                      frame_count;
    } pass[GFX_MAX_SHADERS];
 

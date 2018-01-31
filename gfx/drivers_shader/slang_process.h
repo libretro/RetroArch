@@ -27,16 +27,32 @@ typedef struct
 {
    enum slang_semantic semantic;
    void*               data;
+   const char*         id;
 } uniform_map_t;
 
 typedef struct
 {
    enum slang_texture_semantic semantic;
-   int                         id;
+   int                         index;
    void*                       texture_data;
+   const char*                 texture_id;
    void*                       sampler_data;
+   const char*                 sampler_id;
    void*                       size_data;
+   const char*                 size_id;
 } texture_map_t;
+
+#define SL_UNIFORM_MAP(sem, data) \
+   { \
+      sem, &data, #data \
+   }
+
+#define SL_TEXTURE_MAP_ARRAY(sem, index, tex, sampl, size) \
+   { \
+      sem, index, &tex, #tex, &sampl, #sampl, &size, #size \
+   }
+
+#define SL_TEXTURE_MAP(sem, tex, sampl, size) SL_TEXTURE_MAP_ARRAY(sem, 0, tex, sampl, size)
 
 typedef struct
 {
@@ -46,17 +62,22 @@ typedef struct
 
 typedef struct
 {
-   void*    data;
-   unsigned size;
-   unsigned offset;
+   void*       data;
+   const char* data_id;
+   unsigned    size;
+   unsigned    offset;
+   char        id[64];
 } uniform_sem_t;
 
 typedef struct
 {
-   void*    data;
-   void*    sampler_data;
-   unsigned stage_mask;
-   unsigned binding;
+   void*       texture_data;
+   const char* texture_id;
+   void*       sampler_data;
+   const char* sampler_id;
+   unsigned    stage_mask;
+   unsigned    binding;
+   char        id[64];
 } texture_sem_t;
 
 typedef struct
@@ -72,7 +93,8 @@ typedef struct
 {
    int            texture_count;
    texture_sem_t* textures;
-   int            texture_binding_max;
+   int            max_binding;
+   int            min_binding;
    cbuffer_sem_t  cbuffers[SLANG_CBUFFER_MAX];
 } pass_semantics_t;
 

@@ -27,6 +27,60 @@ static bool set_unique_map(unordered_map<string, P>& m, const string& name, cons
    return true;
 }
 
+template <typename M, typename S>
+static string get_semantic_name(const unordered_map<string, M>* map, S semantic, unsigned index)
+{
+   for (const pair<string, M>& m : *map)
+   {
+      if (m.second.semantic == semantic && m.second.index == index)
+         return m.first;
+   }
+   return string();
+}
+
+static string
+get_semantic_name(slang_reflection& reflection, slang_semantic semantic, unsigned index)
+{
+   static const char* names[] = {
+      "MVP",
+      "OutputSize",
+      "FinalViewportSize",
+      "FrameCount",
+   };
+   if ((int)semantic < sizeof(names) / sizeof(*names))
+      return std::string(names[semantic]);
+
+   return get_semantic_name(reflection.semantic_map, semantic, index);
+}
+
+static string
+get_semantic_name(slang_reflection& reflection, slang_texture_semantic semantic, unsigned index)
+{
+   static const char* names[] = {
+      "Original", "Source", "OriginalHistory", "PassOutput", "PassFeedback",
+   };
+   if ((int)semantic < (int)SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY)
+      return std::string(names[semantic]);
+   else if ((int)semantic < sizeof(names) / sizeof(*names))
+      return std::string(names[semantic]) + to_string(index);
+
+   return get_semantic_name(reflection.texture_semantic_map, semantic, index);
+}
+
+static string get_size_semantic_name(
+      slang_reflection& reflection, slang_texture_semantic semantic, unsigned index)
+{
+   static const char* names[] = {
+      "OriginalSize", "SourceSize", "OriginalHistorySize", "PassOutputSize", "PassFeedbackSize",
+   };
+   if ((int)semantic < (int)SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY)
+      return std::string(names[semantic]);
+   if ((int)semantic < sizeof(names) / sizeof(*names))
+      return std::string(names[semantic]) + to_string(index);
+
+   return get_semantic_name(reflection.texture_semantic_uniform_map, semantic, index);
+}
+
 static bool slang_process_reflection(
       const Compiler*        vs_compiler,
       const Compiler*        ps_compiler,
@@ -75,11 +129,12 @@ static bool slang_process_reflection(
          return false;
    }
 
-   unordered_map<string, slang_semantic_map> semantic_map;
+   unordered_map<string, slang_semantic_map> uniform_semantic_map;
    for (unsigned i = 0; i < shader_info->num_parameters; i++)
    {
       if (!set_unique_map(
-                semantic_map, shader_info->parameters[i].id, { SLANG_SEMANTIC_FLOAT_PARAMETER, i }))
+                uniform_semantic_map, shader_info->parameters[i].id,
+                { SLANG_SEMANTIC_FLOAT_PARAMETER, i }))
          return false;
    }
 
@@ -87,7 +142,7 @@ static bool slang_process_reflection(
    sl_reflection.pass_number                  = pass_number;
    sl_reflection.texture_semantic_map         = &texture_semantic_map;
    sl_reflection.texture_semantic_uniform_map = &texture_semantic_uniform_map;
-   sl_reflection.semantic_map                 = &semantic_map;
+   sl_reflection.semantic_map                 = &uniform_semantic_map;
 
    if (!slang_reflect(*vs_compiler, *ps_compiler, vs_resources, ps_resources, &sl_reflection))
    {
@@ -111,8 +166,12 @@ static bool slang_process_reflection(
    uniform_map_t* uniform_map = semantics_map->uniform_map;
    while (uniform_map->data)
    {
-      slang_semantic_meta& src = sl_reflection.semantics[uniform_map->semantic];
-      uniform_sem_t uniform = { uniform_map->data, src.num_components * (unsigned)sizeof(float) };
+      slang_semantic_meta& src     = sl_reflection.semantics[uniform_map->semantic];
+      uniform_sem_t        uniform = { uniform_map->data, uniform_map->id,
+                                src.num_components * (unsigned)sizeof(float) };
+
+      string uniform_id = get_semantic_name(sl_reflection, uniform_map->semantic, 0);
+      strncpy(uniform.id, uniform_id.c_str(), sizeof(uniform.id));
 
       if (src.push_constant)
       {
@@ -131,7 +190,11 @@ static bool slang_process_reflection(
    for (int i = 0; i < sl_reflection.semantic_float_parameters.size(); i++)
    {
       slang_semantic_meta& src     = sl_reflection.semantic_float_parameters[i];
-      uniform_sem_t        uniform = { &shader_info->parameters[i].current, sizeof(float) };
+      uniform_sem_t        uniform = { &shader_info->parameters[i].current,
+                                "shader_info->parameter[i].current", sizeof(float) };
+
+      string uniform_id = get_semantic_name(sl_reflection, SLANG_SEMANTIC_FLOAT_PARAMETER, i);
+      strncpy(uniform.id, uniform_id.c_str(), sizeof(uniform.id));
 
       if (src.push_constant)
       {
@@ -145,24 +208,42 @@ static bool slang_process_reflection(
       }
    }
 
+   out->min_binding           = SLANG_NUM_BINDINGS;
    texture_map_t* texture_map = semantics_map->texture_map;
+
    while (texture_map->texture_data)
    {
-      if (texture_map->id < sl_reflection.semantic_textures[texture_map->semantic].size())
+      if (texture_map->index < sl_reflection.semantic_textures[texture_map->semantic].size())
       {
          slang_texture_semantic_meta& src =
-               sl_reflection.semantic_textures[texture_map->semantic][texture_map->id];
+               sl_reflection.semantic_textures[texture_map->semantic][texture_map->index];
 
          if (src.stage_mask)
          {
-            texture_sem_t texture = { texture_map->texture_data, texture_map->sampler_data };
+            texture_sem_t texture = { texture_map->texture_data, texture_map->texture_id,
+                                      texture_map->sampler_data, texture_map->sampler_id };
             texture.stage_mask    = src.stage_mask;
             texture.binding       = src.binding;
-            if (out->texture_binding_max < src.binding)
-               out->texture_binding_max = src.binding;
+            string id = get_semantic_name(sl_reflection, texture_map->semantic, texture_map->index);
+
+            strncpy(texture.id, id.c_str(), sizeof(texture.id));
+
+            if (out->max_binding < src.binding)
+               out->max_binding = src.binding;
+
+            if (out->min_binding > src.binding)
+               out->min_binding = src.binding;
+
             textures.push_back(texture);
 
-            uniform_sem_t uniform = { texture_map->size_data, 4 * sizeof(float) };
+            uniform_sem_t uniform = { texture_map->size_data, texture_map->size_id,
+                                      4 * sizeof(float) };
+
+            string uniform_id =
+                  get_size_semantic_name(sl_reflection, texture_map->semantic, texture_map->index);
+
+            strncpy(uniform.id, uniform_id.c_str(), sizeof(uniform.id));
+
             if (src.push_constant)
             {
                uniform.offset = src.push_constant_offset;
@@ -177,6 +258,9 @@ static bool slang_process_reflection(
       }
       texture_map++;
    }
+
+   if (out->min_binding > out->max_binding)
+      out->min_binding = out->max_binding;
 
    out->texture_count = textures.size();
 
