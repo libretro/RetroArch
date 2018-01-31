@@ -493,7 +493,7 @@ char *find_last_slash(const char *str)
  **/
 void fill_pathname_slash(char *path, size_t size)
 {
-   size_t path_len = strlen(path);
+   size_t        path_len = strlen(path);
    const char *last_slash = find_last_slash(path);
 
    /* Try to preserve slash type. */
@@ -679,9 +679,10 @@ void fill_str_dated_filename(char *out_filename,
    format[0] = '\0';
 
    strftime(format, sizeof(format), "-%y%m%d-%H%M%S.", localtime(&cur_time));
-   strlcpy(out_filename, in_str, size);
-   strlcat(out_filename, format, size);
-   strlcat(out_filename, ext, size);
+
+   fill_pathname_join_concat_noext(out_filename,
+         in_str, format, ext,
+         size);
 }
 
 /**
