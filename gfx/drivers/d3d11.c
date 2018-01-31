@@ -780,13 +780,10 @@ static bool d3d11_init_frame_textures(d3d11_video_t* d3d11, unsigned width, unsi
             texture_sem_t*          texture_sem = &d3d11->pass[i].semantics.textures[j];
             D3D11ShaderResourceView view    = ((d3d11_texture_t*)texture_sem->texture_data)->view;
             D3D11SamplerStateRef    sampler = *(D3D11SamplerStateRef*)texture_sem->sampler_data;
-            int slot = texture_sem->binding - d3d11->pass[i].semantics.min_binding;
 
-            d3d11->pass[i].textures[slot] = view;
-            d3d11->pass[i].samplers[slot] = sampler;
+            d3d11->pass[i].textures[texture_sem->binding] = view;
+            d3d11->pass[i].samplers[texture_sem->binding] = sampler;
          }
-         d3d11->pass[i].num_bindings =
-               d3d11->pass[i].semantics.max_binding - d3d11->pass[i].semantics.min_binding + 1;
       }
    }
 
@@ -903,12 +900,8 @@ static bool d3d11_gfx_frame(
 
          D3D11RenderTargetView null_rt = NULL;
          D3D11SetRenderTargets(d3d11->ctx, 1, &null_rt, NULL);
-         D3D11SetPShaderResources(
-               d3d11->ctx, d3d11->pass[i].semantics.min_binding, d3d11->pass[i].num_bindings,
-               d3d11->pass[i].textures);
-         D3D11SetPShaderSamplers(
-               d3d11->ctx, d3d11->pass[i].semantics.min_binding, d3d11->pass[i].num_bindings,
-               d3d11->pass[i].samplers);
+         D3D11SetPShaderResources(d3d11->ctx, 0, SLANG_NUM_BINDINGS, d3d11->pass[i].textures);
+         D3D11SetPShaderSamplers(d3d11->ctx, 0, SLANG_NUM_BINDINGS, d3d11->pass[i].samplers);
 
          if (d3d11->pass[i].rt.handle)
          {

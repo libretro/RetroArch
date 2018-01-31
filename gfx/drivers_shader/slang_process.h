@@ -93,8 +93,6 @@ typedef struct
 {
    int            texture_count;
    texture_sem_t* textures;
-   int            max_binding;
-   int            min_binding;
    cbuffer_sem_t  cbuffers[SLANG_CBUFFER_MAX];
 } pass_semantics_t;
 

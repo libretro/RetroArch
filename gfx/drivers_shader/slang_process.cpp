@@ -208,7 +208,6 @@ static bool slang_process_reflection(
       }
    }
 
-   out->min_binding           = SLANG_NUM_BINDINGS;
    texture_map_t* texture_map = semantics_map->texture_map;
 
    while (texture_map->texture_data)
@@ -227,12 +226,6 @@ static bool slang_process_reflection(
             string id = get_semantic_name(sl_reflection, texture_map->semantic, texture_map->index);
 
             strncpy(texture.id, id.c_str(), sizeof(texture.id));
-
-            if (out->max_binding < src.binding)
-               out->max_binding = src.binding;
-
-            if (out->min_binding > src.binding)
-               out->min_binding = src.binding;
 
             textures.push_back(texture);
 
@@ -258,9 +251,6 @@ static bool slang_process_reflection(
       }
       texture_map++;
    }
-
-   if (out->min_binding > out->max_binding)
-      out->min_binding = out->max_binding;
 
    out->texture_count = textures.size();
 
