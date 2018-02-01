@@ -174,25 +174,29 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
       return 0;
    }
 
-   fill_pathname_noext(tmp,
-         msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME),
-         ": ",
-         sizeof(tmp));
    if (core_info->core_name)
-      strlcat(tmp, core_info->core_name, sizeof(tmp));
+   {
+      fill_pathname_join_concat_noext(tmp,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME),
+            ": ",
+            core_info->core_name,
+            sizeof(tmp));
+      menu_entries_append_enum(info->list, tmp, "",
+            MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+   }
 
-   menu_entries_append_enum(info->list, tmp, "",
-         MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
-   fill_pathname_noext(tmp,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL),
-         ": ",
-         sizeof(tmp));
    if (core_info->display_name)
-      strlcat(tmp, core_info->display_name, sizeof(tmp));
-   menu_entries_append_enum(info->list, tmp, "",
-         MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+   {
+      fill_pathname_join_concat_noext(tmp,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL),
+            ": ",
+            core_info->display_name,
+            sizeof(tmp));
+      menu_entries_append_enum(info->list, tmp, "",
+            MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+   }
 
    if (core_info->systemname)
    {
@@ -549,8 +553,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
          fill_pathname_join_concat_noext(tmp,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION),
                ": ",
-               frontend->get_lakka_version ?
-               tmp2 : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+               tmp2,
                sizeof(tmp));
          menu_entries_append_enum(info->list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
@@ -565,8 +568,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
          fill_pathname_join_concat_noext(tmp,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME),
                ": ",
-               frontend->get_name ?
-               tmp2 : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+               tmp2,
                sizeof(tmp));
          menu_entries_append_enum(info->list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
@@ -578,20 +580,22 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
          frontend->get_os(tmp2, sizeof(tmp2), &major, &minor);
          snprintf(tmp, sizeof(tmp), "%s : %s (v%d.%d)",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS),
-               frontend->get_os
-               ? tmp2 : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+               tmp2,
                major, minor);
          menu_entries_append_enum(info->list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
       }
 
-      snprintf(tmp, sizeof(tmp), "%s : %d",
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETRORATING_LEVEL),
-            frontend->get_rating ? frontend->get_rating() : -1);
-      menu_entries_append_enum(info->list, tmp, "",
-            MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
-            MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+      if (frontend->get_rating)
+      {
+         snprintf(tmp, sizeof(tmp), "%s : %d",
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETRORATING_LEVEL),
+               frontend->get_rating());
+         menu_entries_append_enum(info->list, tmp, "",
+               MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
+               MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+      }
 
       {
          char tmp[PATH_MAX_LENGTH];
