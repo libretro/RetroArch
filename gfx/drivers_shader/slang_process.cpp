@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 #include "verbosity.h"
-#include "glslang_util.hpp"
+#include "glslang_util.h"
 #include "slang_preprocess.h"
 #include "slang_reflection.h"
 #include "slang_process.h"
@@ -151,8 +151,6 @@ static bool slang_process_reflection(
       return false;
    }
 
-   memset(out, 0x00, sizeof(*out));
-
    out->cbuffers[SLANG_CBUFFER_UBO].stage_mask = sl_reflection.ubo_stage_mask;
    out->cbuffers[SLANG_CBUFFER_UBO].binding    = sl_reflection.ubo_binding;
    out->cbuffers[SLANG_CBUFFER_UBO].size       = (sl_reflection.ubo_size + 0xF) & ~0xF;
@@ -294,6 +292,18 @@ bool slang_process(
 
    if (!slang_preprocess_parse_parameters(output.meta, shader_info))
       return false;
+
+   out->format = output.meta.rt_format;
+
+   if (out->format == SLANG_FORMAT_UNKNOWN)
+   {
+      if (pass.fbo.srgb_fbo)
+         out->format = SLANG_FORMAT_R8G8B8A8_SRGB;
+      else if (pass.fbo.fp_fbo)
+         out->format = SLANG_FORMAT_R16G16B16A16_SFLOAT;
+      else
+         out->format = SLANG_FORMAT_R8G8B8A8_UNORM;
+   }
 
    pass.source.string.vertex   = NULL;
    pass.source.string.fragment = NULL;

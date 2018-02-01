@@ -13,6 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <string.h>
+
 #include "d3d11_common.h"
 #include "d3dcompiler_common.h"
 
@@ -148,10 +150,15 @@ void d3d11_update_texture(
 DXGI_FORMAT
 d3d11_get_closest_match(D3D11Device device, DXGI_FORMAT desired_format, UINT desired_format_support)
 {
+   DXGI_FORMAT default_list[] = {desired_format, DXGI_FORMAT_UNKNOWN};
    DXGI_FORMAT* format = dxgi_get_format_fallback_list(desired_format);
-   UINT         format_support;
+
+   if(!format)
+      format = default_list;
+
    while (*format != DXGI_FORMAT_UNKNOWN)
    {
+      UINT         format_support;
       if (SUCCEEDED(D3D11CheckFormatSupport(device, *format, &format_support)) &&
           ((format_support & desired_format_support) == desired_format_support))
          break;

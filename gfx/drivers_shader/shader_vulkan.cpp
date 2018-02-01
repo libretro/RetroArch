@@ -15,7 +15,7 @@
  */
 
 #include "shader_vulkan.h"
-#include "glslang_util.hpp"
+#include "glslang_util.h"
 #include <vector>
 #include <memory>
 #include <functional>

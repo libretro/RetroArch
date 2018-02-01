@@ -29,7 +29,7 @@
 #include "config.h"
 #endif
 
-#include "glslang_util.hpp"
+#include "glslang_util.h"
 #ifdef HAVE_VULKAN
 #include "glslang.hpp"
 #endif

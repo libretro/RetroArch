@@ -14,7 +14,7 @@
  */
 
 #include "slang_preprocess.h"
-#include "glslang_util.hpp"
+#include "glslang_util.h"
 #include <vector>
 #include <string>
 #include <algorithm>

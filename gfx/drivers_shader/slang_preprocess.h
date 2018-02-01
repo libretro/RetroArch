@@ -32,7 +32,7 @@ RETRO_END_DECLS
 
 #ifdef __cplusplus
 
-#include "glslang_util.hpp"
+#include "glslang_util.h"
 
 bool slang_preprocess_parse_parameters(glslang_meta& meta,
       struct video_shader *shader);

@@ -22,6 +22,7 @@
 
 #include "../video_shader_parse.h"
 #include "slang_reflection.h"
+#include "glslang_util.h"
 
 typedef struct
 {
@@ -94,6 +95,7 @@ typedef struct
    int            texture_count;
    texture_sem_t* textures;
    cbuffer_sem_t  cbuffers[SLANG_CBUFFER_MAX];
+   glslang_format format;
 } pass_semantics_t;
 
 #define SLANG_STAGE_VERTEX_MASK (1 << 0)

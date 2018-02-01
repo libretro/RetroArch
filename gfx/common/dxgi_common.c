@@ -55,8 +55,6 @@ HRESULT WINAPI CreateDXGIFactory1(REFIID riid, void** ppFactory)
 
 DXGI_FORMAT* dxgi_get_format_fallback_list(DXGI_FORMAT format)
 {
-   static DXGI_FORMAT format_unknown = DXGI_FORMAT_UNKNOWN;
-
    switch ((unsigned)format)
    {
       case DXGI_FORMAT_R32G32B32A32_FLOAT:
@@ -129,9 +127,9 @@ DXGI_FORMAT* dxgi_get_format_fallback_list(DXGI_FORMAT format)
          return formats;
       }
       default:
-         assert(0);
+         break;
    }
-   return &format_unknown;
+   return NULL;
 }
 
 #define FORMAT_PROCESS_( \
@@ -352,4 +350,55 @@ void dxgi_input_driver(const char* name, const input_driver_t** input, void** in
 
    *input_data = input_dinput.init(name);
    *input      = *input_data ? &input_dinput : NULL;
+}
+
+DXGI_FORMAT glslang_format_to_dxgi(glslang_format fmt)
+{
+#undef FMT_
+#define FMT_(x)  case SLANG_FORMAT_##x: return DXGI_FORMAT_##x
+#undef FMT2
+#define FMT2(x,y) case SLANG_FORMAT_##x: return y
+
+   switch (fmt)
+   {
+   FMT_(R8_UNORM);
+   FMT_(R8_SINT);
+   FMT_(R8_UINT);
+   FMT_(R8G8_UNORM);
+   FMT_(R8G8_SINT);
+   FMT_(R8G8_UINT);
+   FMT_(R8G8B8A8_UNORM);
+   FMT_(R8G8B8A8_SINT);
+   FMT_(R8G8B8A8_UINT);
+   FMT2(R8G8B8A8_SRGB, DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
+
+   FMT2(A2B10G10R10_UNORM_PACK32, DXGI_FORMAT_R10G10B10A2_UNORM);
+   FMT2(A2B10G10R10_UINT_PACK32, DXGI_FORMAT_R10G10B10A2_UNORM);
+
+   FMT_(R16_UINT);
+   FMT_(R16_SINT);
+   FMT2(R16_SFLOAT, DXGI_FORMAT_R16_FLOAT);
+   FMT_(R16G16_UINT);
+   FMT_(R16G16_SINT);
+   FMT2(R16G16_SFLOAT, DXGI_FORMAT_R16G16_FLOAT);
+   FMT_(R16G16B16A16_UINT);
+   FMT_(R16G16B16A16_SINT);
+   FMT2(R16G16B16A16_SFLOAT, DXGI_FORMAT_R16G16B16A16_FLOAT);
+
+   FMT_(R32_UINT);
+   FMT_(R32_SINT);
+   FMT2(R32_SFLOAT, DXGI_FORMAT_R32_FLOAT);
+   FMT_(R32G32_UINT);
+   FMT_(R32G32_SINT);
+   FMT2(R32G32_SFLOAT, DXGI_FORMAT_R32G32_FLOAT);
+   FMT_(R32G32B32A32_UINT);
+   FMT_(R32G32B32A32_SINT);
+   FMT2(R32G32B32A32_SFLOAT, DXGI_FORMAT_R32G32B32A32_FLOAT);
+
+   case SLANG_FORMAT_UNKNOWN:
+   default:
+      break;
+   }
+
+   return DXGI_FORMAT_UNKNOWN;
 }

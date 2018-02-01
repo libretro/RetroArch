@@ -76,14 +76,14 @@ static void d3d11_update_viewport(void* data, bool force_full)
    d3d11->frame.viewport.Height   = d3d11->vp.height;
    d3d11->frame.viewport.MaxDepth = 0.0f;
    d3d11->frame.viewport.MaxDepth = 1.0f;
-   if(d3d11->frame.output_size.x != d3d11->vp.width ||
-      d3d11->frame.output_size.y != d3d11->vp.height)
+   if (d3d11->frame.output_size.x != d3d11->vp.width ||
+       d3d11->frame.output_size.y != d3d11->vp.height)
       d3d11->resize_fbos = true;
 
-   d3d11->frame.output_size.x     = d3d11->vp.width;
-   d3d11->frame.output_size.y     = d3d11->vp.height;
-   d3d11->frame.output_size.z     = 1.0f / d3d11->vp.width;
-   d3d11->frame.output_size.w     = 1.0f / d3d11->vp.height;
+   d3d11->frame.output_size.x = d3d11->vp.width;
+   d3d11->frame.output_size.y = d3d11->vp.height;
+   d3d11->frame.output_size.z = 1.0f / d3d11->vp.width;
+   d3d11->frame.output_size.w = 1.0f / d3d11->vp.height;
 
    d3d11->resize_viewport = false;
 }
@@ -754,10 +754,7 @@ static bool d3d11_init_frame_textures(d3d11_video_t* d3d11, unsigned width, unsi
          d3d11->pass[i].rt.desc.Width     = width;
          d3d11->pass[i].rt.desc.Height    = height;
          d3d11->pass[i].rt.desc.BindFlags = D3D11_BIND_RENDER_TARGET;
-         d3d11->pass[i].rt.desc.Format    = pass->fbo.fp_fbo ? DXGI_FORMAT_R32G32B32A32_FLOAT
-                                                          : pass->fbo.srgb_fbo
-                                                                  ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB
-                                                                  : DXGI_FORMAT_R8G8B8A8_UNORM;
+         d3d11->pass[i].rt.desc.Format    = glslang_format_to_dxgi(d3d11->pass[i].semantics.format);
 
          if ((i != (d3d11->shader_preset->passes - 1)) || (width != d3d11->vp.width) ||
              (height != d3d11->vp.height))
@@ -830,7 +827,7 @@ static bool d3d11_gfx_frame(
 
       d3d11->resize_chain    = false;
       d3d11->resize_viewport = true;
-      video_driver_set_size(&video_info->width, &video_info->height);      
+      video_driver_set_size(&video_info->width, &video_info->height);
    }
 
    PERF_START();

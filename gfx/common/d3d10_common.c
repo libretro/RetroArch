@@ -136,13 +136,16 @@ DXGI_FORMAT
 d3d10_get_closest_match(D3D10Device device,
       DXGI_FORMAT desired_format, UINT desired_format_support)
 {
+   DXGI_FORMAT default_list[] = {desired_format, DXGI_FORMAT_UNKNOWN};
    DXGI_FORMAT* format = dxgi_get_format_fallback_list(desired_format);
-   UINT         format_support;
+
+   if(!format)
+      format = default_list;
 
    while (*format != DXGI_FORMAT_UNKNOWN)
    {
-      if (SUCCEEDED(D3D10CheckFormatSupport(device, *format,
-                  &format_support)) &&
+      UINT format_support;
+      if (SUCCEEDED(D3D10CheckFormatSupport(device, *format, &format_support)) &&
           ((format_support & desired_format_support) == desired_format_support))
          break;
       format++;
