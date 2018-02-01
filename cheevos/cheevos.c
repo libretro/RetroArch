@@ -611,19 +611,19 @@ static void cheevos_build_memaddr(const cheevos_condition_t* condition,
             case CHEEVOS_COND_OP_EQUALS:
                cheevos_add_char(&aux, &left, '=');
                break;
-      		case CHEEVOS_COND_OP_GREATER_THAN:
+            case CHEEVOS_COND_OP_GREATER_THAN:
                cheevos_add_char(&aux, &left, '>');
                break;
-      		case CHEEVOS_COND_OP_GREATER_THAN_OR_EQUAL:
+            case CHEEVOS_COND_OP_GREATER_THAN_OR_EQUAL:
                cheevos_add_string(&aux, &left, ">=");
                break;
-      		case CHEEVOS_COND_OP_LESS_THAN:
+            case CHEEVOS_COND_OP_LESS_THAN:
                cheevos_add_char(&aux, &left, '<');
                break;
-      		case CHEEVOS_COND_OP_LESS_THAN_OR_EQUAL:
+            case CHEEVOS_COND_OP_LESS_THAN_OR_EQUAL:
                cheevos_add_string(&aux, &left, "<=");
                break;
-      		case CHEEVOS_COND_OP_NOT_EQUAL_TO:
+            case CHEEVOS_COND_OP_NOT_EQUAL_TO:
                cheevos_add_string(&aux, &left, "!=");
                break;
          }
@@ -3095,6 +3095,26 @@ found:
       if ((void*)coro->json)
          free((void*)coro->json);
 
+      if (   cheevos_locals.core.count == 0
+            && cheevos_locals.unofficial.count == 0
+            && cheevos_locals.lboard_count == 0)
+      {
+         runloop_msg_queue_push(
+               "This game has no achievements.",
+               0, 5 * 60, false);
+
+         cheevos_free_cheevo_set(&cheevos_locals.core);
+         cheevos_free_cheevo_set(&cheevos_locals.unofficial);
+
+         cheevos_locals.core.cheevos       = NULL;
+         cheevos_locals.unofficial.cheevos = NULL;
+         cheevos_locals.core.count         = 0;
+         cheevos_locals.unofficial.count   = 0;
+
+         cheevos_loaded     = false;
+         CORO_STOP();
+      }
+
       cheevos_loaded = true;
 
       /*
@@ -3109,39 +3129,27 @@ found:
          */
       CORO_GOSUB(PLAYING);
 
-      if (coro->settings->bools.cheevos_verbose_enable)
+      if (coro->settings->bools.cheevos_verbose_enable && cheevos_locals.core.count > 0)
       {
-         if(cheevos_locals.core.count > 0)
-         {
-            char msg[256];
-            int mode                     = CHEEVOS_ACTIVE_SOFTCORE;
-            const cheevo_t* cheevo       = cheevos_locals.core.cheevos;
-            const cheevo_t* end          = cheevo + cheevos_locals.core.count;
-            int number_of_unlocked       = cheevos_locals.core.count;
+         char msg[256];
+         int mode                     = CHEEVOS_ACTIVE_SOFTCORE;
+         const cheevo_t* cheevo       = cheevos_locals.core.cheevos;
+         const cheevo_t* end          = cheevo + cheevos_locals.core.count;
+         int number_of_unlocked       = cheevos_locals.core.count;
 
-            if (coro->settings->bools.cheevos_hardcore_mode_enable)
-               mode = CHEEVOS_ACTIVE_HARDCORE;
+         if (coro->settings->bools.cheevos_hardcore_mode_enable)
+            mode = CHEEVOS_ACTIVE_HARDCORE;
 
-            for (; cheevo < end; cheevo++)
-               if(cheevo->active & mode)
-                  number_of_unlocked--;
+         for (; cheevo < end; cheevo++)
+            if(cheevo->active & mode)
+               number_of_unlocked--;
 
-            snprintf(msg, sizeof(msg),
-                  "You have %d of %d achievements unlocked.",
-                  number_of_unlocked, cheevos_locals.core.count);
-            msg[sizeof(msg) - 1] = 0;
-            runloop_msg_queue_push(msg, 0, 6 * 60, false);
-         }
-         else
-            runloop_msg_queue_push(
-                  "This game has no achievements.",
-                  0, 5 * 60, false);
+         snprintf(msg, sizeof(msg),
+               "You have %d of %d achievements unlocked.",
+               number_of_unlocked, cheevos_locals.core.count);
+         msg[sizeof(msg) - 1] = 0;
+         runloop_msg_queue_push(msg, 0, 6 * 60, false);
       }
-
-      if (   cheevos_locals.core.count == 0
-            && cheevos_locals.unofficial.count == 0
-            && cheevos_locals.lboard_count == 0)
-         cheevos_unload();
 
       CORO_GOSUB(GET_BADGES);
       CORO_STOP();
