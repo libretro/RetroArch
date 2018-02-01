@@ -392,13 +392,32 @@ bool slang_process(
          {
             try
             {
+               string name = vs->get_name(id);
+
+               if(name == "line" ||
+                  name == "point" ||
+                  name == "linear")
+                  vs->set_name(id, string("var_") + name);
+
+               id++;
+            }
+            catch (const std::exception& e)
+            {
+               break;
+            }
+         }
+
+         id = 0;
+         while(true)
+         {
+            try
+            {
                string name = ps->get_name(id);
 
-               if(name == "line")
-               {
-                  ps->set_name(id, "var_line");
-                  break;
-               }
+               if(name == "line" ||
+                  name == "point" ||
+                  name == "linear")
+                  ps->set_name(id, string("var_") + name);
 
                id++;
             }
