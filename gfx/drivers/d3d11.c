@@ -937,6 +937,7 @@ static bool d3d11_gfx_frame(
       if (d3d11->menu.fullscreen)
          D3D11SetViewports(d3d11->ctx, 1, &d3d11->viewport);
 
+      d3d11_set_shader(d3d11->ctx, &d3d11->shaders[VIDEO_SHADER_STOCK_BLEND]);
       D3D11SetVertexBuffer(d3d11->ctx, 0, d3d11->menu.vbo, sizeof(d3d11_vertex_t), 0);
       D3D11SetVShaderConstantBuffers(d3d11->ctx, 0, 1, &d3d11->ubo);
       d3d11_set_texture_and_sampler(d3d11->ctx, 0, &d3d11->menu.texture);
@@ -1036,7 +1037,6 @@ static void d3d11_set_menu_texture_frame(
       void* data, const void* frame, bool rgb32, unsigned width, unsigned height, float alpha)
 {
    d3d11_video_t* d3d11  = (d3d11_video_t*)data;
-   int            pitch  = width * (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t));
    DXGI_FORMAT    format = rgb32 ? DXGI_FORMAT_B8G8R8A8_UNORM : DXGI_FORMAT_EX_A4R4G4B4_UNORM;
 
    if (d3d11->menu.texture.desc.Width != width || d3d11->menu.texture.desc.Height != height)
@@ -1047,11 +1047,12 @@ static void d3d11_set_menu_texture_frame(
       d3d11_init_texture(d3d11->device, &d3d11->menu.texture);
    }
 
-   d3d11_update_texture(d3d11->ctx, width, height, pitch, format, frame, &d3d11->menu.texture);
+   d3d11_update_texture(d3d11->ctx, width, height, 0, format, frame, &d3d11->menu.texture);
    d3d11->menu.texture.sampler = config_get_ptr()->bools.menu_linear_filter
                                        ? d3d11->sampler_linear
                                        : d3d11->sampler_nearest;
 }
+
 static void d3d11_set_menu_texture_enable(void* data, bool state, bool full_screen)
 {
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
