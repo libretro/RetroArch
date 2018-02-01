@@ -173,18 +173,20 @@ bool d3d11_init_shader(
       UINT                            num_elements,
       d3d11_shader_t*                 out)
 {
-   D3DBlob vs_code;
-   D3DBlob ps_code;
-   D3DBlob gs_code;
+   D3DBlob vs_code = NULL;
+   D3DBlob ps_code = NULL;
+   D3DBlob gs_code = NULL;
+
+   bool success = true;
 
    if (!src) /* LPCWSTR filename */
    {
       if (vs_entry && !d3d_compile_from_file(src_name, vs_entry, "vs_5_0", &vs_code))
-         return false;
+         success = false;
       if (ps_entry && !d3d_compile_from_file(src_name, ps_entry, "ps_5_0", &ps_code))
-         return false;
+         success = false;
       if (gs_entry && !d3d_compile_from_file(src_name, gs_entry, "gs_5_0", &gs_code))
-         return false;
+         success = false;
    }
    else /* char array */
    {
@@ -192,41 +194,33 @@ bool d3d11_init_shader(
          size = strlen(src);
 
       if (vs_entry && !d3d_compile(src, size, src_name, vs_entry, "vs_5_0", &vs_code))
-         return false;
+         success = false;
       if (ps_entry && !d3d_compile(src, size, src_name, ps_entry, "ps_5_0", &ps_code))
-         return false;
+         success = false;
       if (gs_entry && !d3d_compile(src, size, src_name, gs_entry, "gs_5_0", &gs_code))
-         return false;
+         success = false;
    }
 
-   if (vs_entry)
-   {
+   if (vs_code)
       D3D11CreateVertexShader(
             device, D3DGetBufferPointer(vs_code), D3DGetBufferSize(vs_code), NULL, &out->vs);
 
-      if (input_element_descs)
-         D3D11CreateInputLayout(
-               device, input_element_descs, num_elements, D3DGetBufferPointer(vs_code),
-               D3DGetBufferSize(vs_code), &out->layout);
-
-      Release(vs_code);
-   }
-
-   if (ps_entry)
-   {
+   if (ps_code)
       D3D11CreatePixelShader(
             device, D3DGetBufferPointer(ps_code), D3DGetBufferSize(ps_code), NULL, &out->ps);
 
-      Release(ps_code);
-   }
-
-   if (gs_entry)
-   {
+   if (gs_code)
       D3D11CreateGeometryShader(
             device, D3DGetBufferPointer(gs_code), D3DGetBufferSize(gs_code), NULL, &out->gs);
 
-      Release(gs_code);
-   }
+   if (vs_code && input_element_descs)
+      D3D11CreateInputLayout(
+            device, input_element_descs, num_elements, D3DGetBufferPointer(vs_code),
+            D3DGetBufferSize(vs_code), &out->layout);
 
-   return true;
+   Release(vs_code);
+   Release(ps_code);
+   Release(gs_code);
+
+   return success;
 }
