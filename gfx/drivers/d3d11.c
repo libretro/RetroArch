@@ -128,6 +128,8 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
    D3D11Flush(d3d11->ctx);
    d3d11_free_shader_preset(d3d11);
 
+   d3d11->resize_fbos = true;
+
    if (!path)
       return true;
 
@@ -709,8 +711,7 @@ static bool d3d11_init_frame_textures(d3d11_video_t* d3d11, unsigned width, unsi
          switch (pass->fbo.type_x)
          {
             case RARCH_SCALE_INPUT:
-               if (pass->fbo.scale_x)
-                  width *= pass->fbo.scale_x;
+               width *= pass->fbo.scale_x;
                break;
 
             case RARCH_SCALE_VIEWPORT:
@@ -728,8 +729,7 @@ static bool d3d11_init_frame_textures(d3d11_video_t* d3d11, unsigned width, unsi
          switch (pass->fbo.type_y)
          {
             case RARCH_SCALE_INPUT:
-               if (pass->fbo.scale_y)
-                  height *= pass->fbo.scale_y;
+               height *= pass->fbo.scale_y;
                break;
 
             case RARCH_SCALE_VIEWPORT:
@@ -750,17 +750,18 @@ static bool d3d11_init_frame_textures(d3d11_video_t* d3d11, unsigned width, unsi
          if (!height)
             height = d3d11->vp.height;
 
-         d3d11->pass[i].viewport.Width    = width;
-         d3d11->pass[i].viewport.Height   = height;
-         d3d11->pass[i].viewport.MaxDepth = 1.0;
-         d3d11->pass[i].rt.desc.Width     = width;
-         d3d11->pass[i].rt.desc.Height    = height;
-         d3d11->pass[i].rt.desc.BindFlags = D3D11_BIND_RENDER_TARGET;
-         d3d11->pass[i].rt.desc.Format    = glslang_format_to_dxgi(d3d11->pass[i].semantics.format);
+         RARCH_LOG("[D3D11]: Updating framebuffer size %u x %u.\n", width, height);
 
          if ((i != (d3d11->shader_preset->passes - 1)) || (width != d3d11->vp.width) ||
              (height != d3d11->vp.height))
          {
+            d3d11->pass[i].viewport.Width    = width;
+            d3d11->pass[i].viewport.Height   = height;
+            d3d11->pass[i].viewport.MaxDepth = 1.0;
+            d3d11->pass[i].rt.desc.Width     = width;
+            d3d11->pass[i].rt.desc.Height    = height;
+            d3d11->pass[i].rt.desc.BindFlags = D3D11_BIND_RENDER_TARGET;
+            d3d11->pass[i].rt.desc.Format = glslang_format_to_dxgi(d3d11->pass[i].semantics.format);
             d3d11_init_texture(d3d11->device, &d3d11->pass[i].rt);
          }
          else
@@ -787,6 +788,7 @@ static bool d3d11_init_frame_textures(d3d11_video_t* d3d11, unsigned width, unsi
    }
 
    d3d11->resize_fbos = false;
+
    return true;
 #if 0
 error:
@@ -844,6 +846,9 @@ static bool d3d11_gfx_frame(
    if (frame && width && height)
    {
       if (d3d11->frame.texture.desc.Width != width || d3d11->frame.texture.desc.Height != height)
+         d3d11->resize_fbos = true;
+
+      if (d3d11->resize_fbos)
          d3d11_init_frame_textures(d3d11, width, height);
 
       d3d11_update_texture(
@@ -852,10 +857,6 @@ static bool d3d11_gfx_frame(
 
    D3D11SetVertexBuffer(d3d11->ctx, 0, d3d11->frame.vbo, sizeof(d3d11_vertex_t), 0);
    D3D11SetBlendState(d3d11->ctx, d3d11->blend_disable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
-
-   /* todo: single pass shaders can also have an empty rt texture */
-   if (d3d11->shader_preset && (d3d11->resize_fbos || !d3d11->pass[0].rt.handle))
-      d3d11_init_frame_textures(d3d11, width, height);
 
    d3d11_texture_t* texture = &d3d11->frame.texture;
 
