@@ -96,7 +96,7 @@ static bool slang_process_reflection(
 
    for (unsigned i = 0; i <= pass_number; i++)
    {
-      if(!*shader_info->pass[i].alias)
+      if (!*shader_info->pass[i].alias)
          continue;
 
       string name = shader_info->pass[i].alias;
@@ -351,15 +351,17 @@ bool slang_process(
       vs_resources = vs_compiler->get_shader_resources();
       ps_resources = ps_compiler->get_shader_resources();
 
-      if(!vs_resources.uniform_buffers.empty())
+      if (!vs_resources.uniform_buffers.empty())
          vs_compiler->set_decoration(vs_resources.uniform_buffers[0].id, spv::DecorationBinding, 0);
-      if(!ps_resources.uniform_buffers.empty())
+      if (!ps_resources.uniform_buffers.empty())
          ps_compiler->set_decoration(ps_resources.uniform_buffers[0].id, spv::DecorationBinding, 0);
 
-      if(!vs_resources.push_constant_buffers.empty())
-         vs_compiler->set_decoration(vs_resources.push_constant_buffers[0].id, spv::DecorationBinding, 1);
-      if(!ps_resources.push_constant_buffers.empty())
-         ps_compiler->set_decoration(ps_resources.push_constant_buffers[0].id, spv::DecorationBinding, 1);
+      if (!vs_resources.push_constant_buffers.empty())
+         vs_compiler->set_decoration(
+               vs_resources.push_constant_buffers[0].id, spv::DecorationBinding, 1);
+      if (!ps_resources.push_constant_buffers.empty())
+         ps_compiler->set_decoration(
+               ps_resources.push_constant_buffers[0].id, spv::DecorationBinding, 1);
 
       if (dst_type == RARCH_SHADER_HLSL || dst_type == RARCH_SHADER_CG)
       {
@@ -375,63 +377,60 @@ bool slang_process(
          /* not exactly a vertex attribute but this remaps
           * float2 FragCoord :TEXCOORD# to float4 FragCoord : SV_POSITION */
          std::vector<HLSLVertexAttributeRemap> ps_attrib_remap;
-         for (Resource& resource : ps_resources.stage_inputs)
-         {
-            if (ps->get_name(resource.id) == "FragCoord")
-            {
-               uint32_t location = ps->get_decoration(resource.id, spv::DecorationLocation);
-               ps_attrib_remap.push_back({ location, "SV_Position" });
-            }
-         }
 
          /* "line"  is a reserved keyword in hlsl
           * maybe there is an easier way to rename a variable ? */
 
          int id = 0;
-         while(true)
+         while (true)
          {
             try
             {
                string name = vs->get_name(id);
 
-               if(name == "line" ||
-                  name == "point" ||
-                  name == "linear")
+               if (name == "line" || name == "point" || name == "linear")
                   vs->set_name(id, string("var_") + name);
 
                id++;
-            }
-            catch (const std::exception& e)
+            } catch (const std::exception& e)
             {
                break;
             }
          }
 
          id = 0;
-         while(true)
+         while (true)
          {
             try
             {
                string name = ps->get_name(id);
 
-               if(name == "line" ||
-                  name == "point" ||
-                  name == "linear")
+               if (name == "line" || name == "point" || name == "linear")
                   ps->set_name(id, string("var_") + name);
 
                id++;
-            }
-            catch (const std::exception& e)
+            } catch (const std::exception& e)
             {
                break;
             }
          }
 
-         VariableTypeRemapCallback ps_var_remap_cb =
-               [](const SPIRType& type, const std::string& var_name, std::string& name_of_type) {
-                  if (var_name == "FragCoord")
+         VariableTypeRemapCallback ps_var_remap_cb = [&](const SPIRType&    type,
+                                                         const std::string& var_name,
+                                                         std::string&       name_of_type) {
+            if (var_name == "FragCoord")
+            {
+               for (Resource& resource : ps_resources.stage_inputs)
+               {
+                  if (ps->get_name(resource.id) == "FragCoord")
+                  {
+                     uint32_t location = ps->get_decoration(resource.id, spv::DecorationLocation);
+                     ps_attrib_remap.push_back({ location, "SV_Position" });
                      name_of_type = "float4";
-               };
+                  }
+               }
+            }
+         };
          ps->set_variable_type_remap_callback(ps_var_remap_cb);
 
          vs_code = vs->compile(vs_attrib_remap);
