@@ -709,7 +709,8 @@ static bool d3d11_init_frame_textures(d3d11_video_t* d3d11, unsigned width, unsi
          switch (pass->fbo.type_x)
          {
             case RARCH_SCALE_INPUT:
-               width *= pass->fbo.scale_x;
+               if (pass->fbo.scale_x)
+                  width *= pass->fbo.scale_x;
                break;
 
             case RARCH_SCALE_VIEWPORT:
@@ -727,7 +728,8 @@ static bool d3d11_init_frame_textures(d3d11_video_t* d3d11, unsigned width, unsi
          switch (pass->fbo.type_y)
          {
             case RARCH_SCALE_INPUT:
-               height *= pass->fbo.scale_y;
+               if (pass->fbo.scale_y)
+                  height *= pass->fbo.scale_y;
                break;
 
             case RARCH_SCALE_VIEWPORT:
